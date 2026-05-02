@@ -932,15 +932,39 @@ body.resize-mode .userbox.userbox-with-bg {
   border-color: rgba(140, 75, 30, 0.55);
 }
 
-/* === 本のページ立体モード === */
-/* safe-area に perspective を掛けて、 userbox に rotateY を適用 (transform は JS が
-   inline で書く: translate(...) perspective(...) rotateY(...))。 transform-origin で
-   左ページ右辺 / 右ページ左辺を支点にする */
+/* === 本のページ立体モード (旧 Approach A — book-tilt) ===
+   個別 userbox の rotateY 単純傾斜。 視覚的に弱いので Corner Pin (下) に置き換え予定 */
 body.book-tilt #safe-area {
   perspective: 1800px;
   transform-style: preserve-3d;
 }
 body.book-tilt .userbox { transform-style: preserve-3d; }
+
+/* === Corner Pin モード (Approach B+) ===
+   2 つの page container に matrix3d を適用 → 4 角ハンドルで自由変形 */
+.page-pin-container {
+  position: absolute;
+  pointer-events: none;
+  transform-origin: 0 0;
+  /* デフォルトでは何もしない。 corner-pin-mode 中に JS が transform を入れる */
+}
+.page-pin-container > .userbox { pointer-events: auto; }
+.page-corner {
+  position: absolute;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;  /* 左上を中心に */
+  background: #ff50c8;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: move;
+  z-index: 100;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.page-corner[data-page="right"] { background: #50c8ff; }
+body:not(.corner-pin-mode) .page-corner { display: none; }
+body:not(.corner-pin-mode) .page-pin-container { transform: none !important; }
+/* corner-pin-mode 中、 元の userbox の半透明色は邪魔なので透明に */
+body.corner-pin-mode .userbox { background: rgba(255, 178, 86, 0.18); }
 
 /* PNG export 選択メニュー (split button のドロップダウン) */
 .png-export-menu {
@@ -1336,7 +1360,7 @@ body.resize-mode .ruler { display: block; }
     <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
-    <button id="book-tilt-toggle" title="本のページに合わせて userbox を perspective 傾斜させる (左ページ右に傾く / 右ページ左に傾く)">📐 ページ立体 OFF</button>
+    <button id="corner-pin-toggle" title="ページごとの 4 角を自由にドラッグして本のページに合わせ込む (After Effects のコーナーピン風)">🎯 コーナーピン OFF</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -1414,8 +1438,21 @@ body.resize-mode .ruler { display: block; }
     <div class="safe-area zukan-safe" id="safe-area">
       <!-- センター位置の見える化 (show-safe で表示) -->
       <div class="center-dot" aria-hidden="true"></div>
-      <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る。 作った枠 (.userbox)
-           は __userboxes として saved-layout に永続化。 各 userbox には × 削除ボタン。 -->
+      <!-- コーナーピン用のページ container (corner-pin-mode 中だけ機能)。
+           userbox を center X で left/right ページに分けて reparent し、
+           container 自体に matrix3d を適用 → 4 角ドラッグで全体が変形 -->
+      <div class="page-pin-container" id="page-pin-left" data-page="left"></div>
+      <div class="page-pin-container" id="page-pin-right" data-page="right"></div>
+      <!-- 4 角ハンドル (ページ × 4 = 8 個) -->
+      <div class="page-corner" data-page="left" data-corner="tl"></div>
+      <div class="page-corner" data-page="left" data-corner="tr"></div>
+      <div class="page-corner" data-page="left" data-corner="br"></div>
+      <div class="page-corner" data-page="left" data-corner="bl"></div>
+      <div class="page-corner" data-page="right" data-corner="tl"></div>
+      <div class="page-corner" data-page="right" data-corner="tr"></div>
+      <div class="page-corner" data-page="right" data-corner="br"></div>
+      <div class="page-corner" data-page="right" data-corner="bl"></div>
+      <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る -->
     </div>
 
     <!-- Annotation overlay -->
@@ -2292,6 +2329,7 @@ function takeLayoutSnapshot() {
   data.__texts = collectEditableTexts();
   data.__userboxes = collectUserboxes();
   data.__hidden = collectHiddenKeys();
+  if (typeof cornerPin === 'object' && cornerPin) data.__cornerPin = JSON.parse(JSON.stringify(cornerPin));
   return data;
 }
 function collectHiddenKeys() {
@@ -2423,6 +2461,14 @@ function loadResizeState() {
     if (data.__guides) restoreGuides(data.__guides);
     if (data.__texts) applyEditableTexts(data.__texts);
     if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
+    if (data.__cornerPin && typeof cornerPin === 'object') {
+      ['left', 'right'].forEach(p => {
+        if (Array.isArray(data.__cornerPin[p]) && data.__cornerPin[p].length === 4) {
+          cornerPin[p] = data.__cornerPin[p].map(pt => ({ x: pt.x, y: pt.y }));
+        }
+      });
+      if (typeof applyCornerPin === 'function') applyCornerPin();
+    }
   } catch(e) {}
 }
 function resetResizeState() {
@@ -2916,21 +2962,79 @@ function makeHandle(el, pos, axes) {
     };
     const primaryTarget = { el, sides: primarySides };
     captureTarget(primaryTarget);
+
+    // ── グループ corner-drag 拡縮 モード判定 ──
+    // 角ハンドル (sides.length === 2) + el が選択中 + 選択 ≥2 個 なら、
+    // 全グループを bounding box の center を支点にスケール。
+    const isGroupCornerScale = primarySides.length === 2
+      && typeof selectedElements !== 'undefined'
+      && selectedElements.has(el)
+      && selectedElements.size >= 2;
+    let groupScale = null;
+    if (isGroupCornerScale) {
+      const sel = [...selectedElements];
+      const rects = sel.map(s => bcrInStage(s, stageRect, scale));
+      const minLeft = Math.min(...rects.map(r => r.left));
+      const maxRight = Math.max(...rects.map(r => r.right));
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      const gcx = (minLeft + maxRight) / 2;
+      const gcy = (minTop + maxBottom) / 2;
+      groupScale = {
+        gcx, gcy,
+        primaryOrigW: primaryTarget.startW,
+        primaryOrigH: primaryTarget.startH,
+        targets: sel.map((s, i) => ({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        })),
+      };
+    }
+
     // Hold Ctrl/Cmd to disable linking for this drag
     const linkingDisabled = e.ctrlKey || e.metaKey;
-    const linkedTargets = linkingDisabled ? [] : findLinkedTargets(el, primarySides);
+    const linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
     linkedTargets.forEach(t => captureTarget(t));
-    // Visual: highlight linked
     linkedTargets.forEach(t => t.el.classList.add('edge-linked'));
 
     const onMove = (e2) => {
       const dx = (e2.clientX - startX) / scale;
       const dy = (e2.clientY - startY) / scale;
-      const sym = e2.altKey;  // Alt: 中心固定
-      // (Shift で aspect-lock は v1 では未対応 — 数値パネルで手入力推奨)
-      // Apply to primary
+      const sym = e2.altKey;
+
+      if (groupScale) {
+        // primary の意図サイズから factor を算出 (W と H の平均)
+        let newW = groupScale.primaryOrigW, newH = groupScale.primaryOrigH;
+        if (primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW + dx);
+        if (primarySides.includes('w') && !primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW - dx);
+        if (primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH + dy);
+        if (primarySides.includes('n') && !primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH - dy);
+        const factor = (newW / groupScale.primaryOrigW + newH / groupScale.primaryOrigH) / 2;
+        groupScale.targets.forEach(t => {
+          t.el.style.width  = Math.round(t.origW * factor) + 'px';
+          t.el.style.height = Math.round(t.origH * factor) + 'px';
+          // 中心を group center 周りにスケール
+          const newCx = groupScale.gcx + (t.origCx - groupScale.gcx) * factor;
+          const newCy = groupScale.gcy + (t.origCy - groupScale.gcy) * factor;
+          const sizeShiftX = (t.origW * factor - t.origW) / 2;
+          const sizeShiftY = (t.origH * factor - t.origH) / 2;
+          t.el._tx = t.origTx + (newCx - t.origCx) - sizeShiftX;
+          t.el._ty = t.origTy + (newCy - t.origCy) - sizeShiftY;
+          if (typeof setElTransform === 'function') setElTransform(t.el);
+          else t.el.style.transform = `translate(${t.el._tx}px, ${t.el._ty}px)`;
+          t.el._resizeUpdateLabel && t.el._resizeUpdateLabel();
+        });
+        return;  // skip the normal performResize path
+      }
+
+      // 通常パス: primary + linked を performResize
       performResize(primaryTarget, primarySides, dx, dy, sym, axes, stageRect, scale);
-      // Apply to linked (no aspect, no sym for linked)
       linkedTargets.forEach(t => {
         performResize(t, t.sides, dx, dy, false, 'wh', stageRect, scale);
       });
@@ -2939,8 +3043,8 @@ function makeHandle(el, pos, axes) {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       linkedTargets.forEach(t => t.el.classList.remove('edge-linked'));
-      // Push history for each changed target
-      [primaryTarget, ...linkedTargets].forEach(t => {
+      const allTargets = groupScale ? groupScale.targets : [primaryTarget, ...linkedTargets];
+      allTargets.forEach(t => {
         const after = getResizeState(t.el);
         if (JSON.stringify(after) !== JSON.stringify(t.before)) {
           pushHistory({ type: 'resize', el: t.el, before: t.before, after });
@@ -3548,19 +3652,181 @@ function setElTransform(el) {
   el.style.transform = t;
 }
 
-const bookTiltBtn = document.getElementById('book-tilt-toggle');
-function setBookTiltMode(on) {
-  document.body.classList.toggle('book-tilt', on);
-  if (bookTiltBtn) {
-    bookTiltBtn.textContent = on ? '📐 ページ立体 ON' : '📐 ページ立体 OFF';
-    bookTiltBtn.classList.toggle('active', on);
-  }
-  // 全 userbox の transform を再計算
-  document.querySelectorAll('.userbox').forEach(setElTransform);
-  try { localStorage.setItem('zukan_book_tilt', on ? '1' : '0'); } catch(_) {}
+// ───── Corner Pin (Approach B+) ─────
+// 2 ページの 4 角を独立に動かして book の見開きに合わせる。
+// matrix3d は 3x3 homography を 4x4 に拡張した CSS 形式で表現。
+// 公知の adjugate 法で source rect → target quad の射影変換を計算。
+const SAFE_W = 1600, SAFE_H = 900;
+const PAGE_W = SAFE_W / 2;  // 800
+// 各ページの 4 角の初期座標 (safe-area 内、 順序 = TL, TR, BR, BL)
+const cornerPin = {
+  left:  [{x: 0,         y: 0},      {x: PAGE_W,   y: 0},      {x: PAGE_W,   y: SAFE_H}, {x: 0,        y: SAFE_H}],
+  right: [{x: PAGE_W,    y: 0},      {x: SAFE_W,   y: 0},      {x: SAFE_W,   y: SAFE_H}, {x: PAGE_W,   y: SAFE_H}],
+};
+
+function _adj(m) {
+  return [
+    m[4]*m[8]-m[5]*m[7], m[2]*m[7]-m[1]*m[8], m[1]*m[5]-m[2]*m[4],
+    m[5]*m[6]-m[3]*m[8], m[0]*m[8]-m[2]*m[6], m[2]*m[3]-m[0]*m[5],
+    m[3]*m[7]-m[4]*m[6], m[1]*m[6]-m[0]*m[7], m[0]*m[4]-m[1]*m[3]
+  ];
 }
-bookTiltBtn && bookTiltBtn.addEventListener('click', () => setBookTiltMode(!document.body.classList.contains('book-tilt')));
-try { if (localStorage.getItem('zukan_book_tilt') === '1') setBookTiltMode(true); } catch(_) {}
+function _multmm(a, b) {
+  const c = new Array(9);
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    let s = 0; for (let k = 0; k < 3; k++) s += a[3*i+k] * b[3*k+j];
+    c[3*i+j] = s;
+  }
+  return c;
+}
+function _multmv(m, v) {
+  return [
+    m[0]*v[0] + m[1]*v[1] + m[2]*v[2],
+    m[3]*v[0] + m[4]*v[1] + m[5]*v[2],
+    m[6]*v[0] + m[7]*v[1] + m[8]*v[2],
+  ];
+}
+function _basisToPoints(x1, y1, x2, y2, x3, y3, x4, y4) {
+  const m = [x1, x2, x3, y1, y2, y3, 1, 1, 1];
+  const v = _multmv(_adj(m), [x4, y4, 1]);
+  return _multmm(m, [v[0], 0, 0,  0, v[1], 0,  0, 0, v[2]]);
+}
+function _general2DProjection(x1s,y1s,x1d,y1d, x2s,y2s,x2d,y2d, x3s,y3s,x3d,y3d, x4s,y4s,x4d,y4d) {
+  const s = _basisToPoints(x1s,y1s, x2s,y2s, x3s,y3s, x4s,y4s);
+  const d = _basisToPoints(x1d,y1d, x2d,y2d, x3d,y3d, x4d,y4d);
+  return _multmm(d, _adj(s));
+}
+function getMatrix3d(w, h, p) {
+  // p[0..3] = TL, TR, BR, BL の dst 座標
+  let t = _general2DProjection(
+    0, 0, p[0].x, p[0].y,
+    w, 0, p[1].x, p[1].y,
+    0, h, p[3].x, p[3].y,
+    w, h, p[2].x, p[2].y
+  );
+  for (let i = 0; i < 9; i++) t[i] = t[i] / t[8];
+  // CSS matrix3d の column-major に並べる
+  return [
+    t[0], t[3], 0, t[6],
+    t[1], t[4], 0, t[7],
+    0,    0,    1, 0,
+    t[2], t[5], 0, t[8]
+  ];
+}
+
+function applyCornerPin() {
+  ['left', 'right'].forEach(page => {
+    const c = cornerPin[page];
+    const baseLeft = page === 'left' ? 0 : PAGE_W;
+    const container = document.getElementById('page-pin-' + page);
+    if (!container) return;
+    container.style.left = baseLeft + 'px';
+    container.style.top = '0';
+    container.style.width = PAGE_W + 'px';
+    container.style.height = SAFE_H + 'px';
+    if (document.body.classList.contains('corner-pin-mode')) {
+      // container 内座標で matrix3d 計算
+      const local = c.map(p => ({ x: p.x - baseLeft, y: p.y }));
+      const m = getMatrix3d(PAGE_W, SAFE_H, local);
+      container.style.transform = `matrix3d(${m.join(',')})`;
+    } else {
+      container.style.transform = '';
+    }
+  });
+  // ハンドル位置を corners に合わせて更新 (corner-pin-mode 中のみ表示)
+  ['left', 'right'].forEach(page => {
+    cornerPin[page].forEach((p, i) => {
+      const cn = ['tl', 'tr', 'br', 'bl'][i];
+      const handle = document.querySelector(`.page-corner[data-page="${page}"][data-corner="${cn}"]`);
+      if (handle) {
+        handle.style.left = p.x + 'px';
+        handle.style.top  = p.y + 'px';
+      }
+    });
+  });
+}
+
+function attachCornerHandles() {
+  document.querySelectorAll('.page-corner').forEach(h => {
+    h.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      const page = h.dataset.page;
+      const cn = h.dataset.corner;
+      const idx = ['tl', 'tr', 'br', 'bl'].indexOf(cn);
+      const startX = e.clientX, startY = e.clientY;
+      const startPos = { ...cornerPin[page][idx] };
+      const stageEl0 = document.getElementById('stage');
+      const sR = stageEl0.getBoundingClientRect();
+      const sW = parseFloat(getComputedStyle(stageEl0).width);
+      const scale = sR.width / sW || 1;
+      const onMove = (e2) => {
+        const dx = (e2.clientX - startX) / scale;
+        const dy = (e2.clientY - startY) / scale;
+        cornerPin[page][idx] = { x: startPos.x + dx, y: startPos.y + dy };
+        applyCornerPin();
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        saveResizeState();
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+function reparentUserboxesIntoPages() {
+  // Corner Pin ON: userbox を center X で left/right page container に reparent
+  document.querySelectorAll('.userbox').forEach(el => {
+    const left = parseFloat(el.style.left) || 0;
+    const tx = el._tx || 0;
+    const w = parseFloat(el.style.width) || el.offsetWidth || 0;
+    const cx = left + tx + w / 2;
+    const page = cx < PAGE_W ? 'left' : 'right';
+    const container = document.getElementById('page-pin-' + page);
+    const baseLeft = page === 'left' ? 0 : PAGE_W;
+    if (!el.dataset.origLeft) {
+      el.dataset.origLeft = el.style.left;
+      el.dataset.origPage = page;
+    }
+    el.style.left = (left - baseLeft) + 'px';
+    container.appendChild(el);
+  });
+}
+function unparentUserboxesFromPages() {
+  const safe = document.getElementById('safe-area');
+  document.querySelectorAll('.userbox').forEach(el => {
+    if (el.dataset.origLeft) {
+      el.style.left = el.dataset.origLeft;
+      delete el.dataset.origLeft;
+      delete el.dataset.origPage;
+    }
+    safe.appendChild(el);
+  });
+}
+
+const cornerPinBtn = document.getElementById('corner-pin-toggle');
+function setCornerPinMode(on) {
+  if (on) {
+    document.body.classList.add('corner-pin-mode');
+    reparentUserboxesIntoPages();
+  } else {
+    unparentUserboxesFromPages();
+    document.body.classList.remove('corner-pin-mode');
+  }
+  if (cornerPinBtn) {
+    cornerPinBtn.textContent = on ? '🎯 コーナーピン ON' : '🎯 コーナーピン OFF';
+    cornerPinBtn.classList.toggle('active', on);
+  }
+  applyCornerPin();
+  try { localStorage.setItem('zukan_corner_pin', on ? '1' : '0'); } catch(_) {}
+}
+cornerPinBtn && cornerPinBtn.addEventListener('click', () => setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
+attachCornerHandles();
+applyCornerPin();
+try { if (localStorage.getItem('zukan_corner_pin') === '1') setCornerPinMode(true); } catch(_) {}
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
 // 通常 (resize-mode ON): 空き領域 drag で新規作成。 既存枠の上は select/move/resize

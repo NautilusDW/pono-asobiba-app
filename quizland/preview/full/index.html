@@ -2609,21 +2609,72 @@ function makeHandle(el, pos, axes) {
     };
     const primaryTarget = { el, sides: primarySides };
     captureTarget(primaryTarget);
-    // Hold Ctrl/Cmd to disable linking for this drag
+
+    // ── グループ corner-drag 拡縮 (zukan からポート) ──
+    const isGroupCornerScale = primarySides.length === 2
+      && typeof selectedElements !== 'undefined'
+      && selectedElements.has(el)
+      && selectedElements.size >= 2;
+    let groupScale = null;
+    if (isGroupCornerScale) {
+      const sel = [...selectedElements];
+      const rects = sel.map(s => bcrInStage(s, stageRect, scale));
+      const minLeft = Math.min(...rects.map(r => r.left));
+      const maxRight = Math.max(...rects.map(r => r.right));
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      const gcx = (minLeft + maxRight) / 2;
+      const gcy = (minTop + maxBottom) / 2;
+      groupScale = {
+        gcx, gcy,
+        primaryOrigW: primaryTarget.startW,
+        primaryOrigH: primaryTarget.startH,
+        targets: sel.map((s, i) => ({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        })),
+      };
+    }
+
     const linkingDisabled = e.ctrlKey || e.metaKey;
-    const linkedTargets = linkingDisabled ? [] : findLinkedTargets(el, primarySides);
+    const linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
     linkedTargets.forEach(t => captureTarget(t));
-    // Visual: highlight linked
     linkedTargets.forEach(t => t.el.classList.add('edge-linked'));
 
     const onMove = (e2) => {
       const dx = (e2.clientX - startX) / scale;
       const dy = (e2.clientY - startY) / scale;
-      const sym = e2.altKey;  // Alt: 中心固定
-      // (Shift で aspect-lock は v1 では未対応 — 数値パネルで手入力推奨)
-      // Apply to primary
+      const sym = e2.altKey;
+
+      if (groupScale) {
+        let newW = groupScale.primaryOrigW, newH = groupScale.primaryOrigH;
+        if (primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW + dx);
+        if (primarySides.includes('w') && !primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW - dx);
+        if (primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH + dy);
+        if (primarySides.includes('n') && !primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH - dy);
+        const factor = (newW / groupScale.primaryOrigW + newH / groupScale.primaryOrigH) / 2;
+        groupScale.targets.forEach(t => {
+          t.el.style.width  = Math.round(t.origW * factor) + 'px';
+          t.el.style.height = Math.round(t.origH * factor) + 'px';
+          const newCx = groupScale.gcx + (t.origCx - groupScale.gcx) * factor;
+          const newCy = groupScale.gcy + (t.origCy - groupScale.gcy) * factor;
+          const sizeShiftX = (t.origW * factor - t.origW) / 2;
+          const sizeShiftY = (t.origH * factor - t.origH) / 2;
+          t.el._tx = t.origTx + (newCx - t.origCx) - sizeShiftX;
+          t.el._ty = t.origTy + (newCy - t.origCy) - sizeShiftY;
+          t.el.style.transform = `translate(${t.el._tx}px, ${t.el._ty}px)`;
+          t.el._resizeUpdateLabel && t.el._resizeUpdateLabel();
+        });
+        return;
+      }
+
       performResize(primaryTarget, primarySides, dx, dy, sym, axes, stageRect, scale);
-      // Apply to linked (no aspect, no sym for linked)
       linkedTargets.forEach(t => {
         performResize(t, t.sides, dx, dy, false, 'wh', stageRect, scale);
       });
@@ -2632,8 +2683,8 @@ function makeHandle(el, pos, axes) {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       linkedTargets.forEach(t => t.el.classList.remove('edge-linked'));
-      // Push history for each changed target
-      [primaryTarget, ...linkedTargets].forEach(t => {
+      const allTargets = groupScale ? groupScale.targets : [primaryTarget, ...linkedTargets];
+      allTargets.forEach(t => {
         const after = getResizeState(t.el);
         if (JSON.stringify(after) !== JSON.stringify(t.before)) {
           pushHistory({ type: 'resize', el: t.el, before: t.before, after });
