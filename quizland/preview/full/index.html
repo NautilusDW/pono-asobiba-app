@@ -1254,19 +1254,39 @@ function applyVariantSize(variant) {
 }
 
 // ───── Layout rendering ─────
+// テスト用: スロットに wordmatch (ocean) のイラストを順番に入れる。
+// currentImg (image-upload で指定) が無い時のフォールバック。
+const TEST_SLOT_IMAGES = [
+  '../../../assets/images/ocean/Mushroom/Mushroom_normal_1.png',
+  '../../../assets/images/ocean/Butterfly/Butterfly_normal_1.png',
+  '../../../assets/images/ocean/Bee/Bee_normal_1.png',
+  '../../../assets/images/ocean/Ant/Ant_normal_1.png',
+  '../../../assets/images/ocean/Ladybird/Ladybird_normal_1.png',
+  '../../../assets/images/ocean/Cherry/Cherry_normal_1.png',
+  '../../../assets/images/ocean/Grapes/Grapes_normal_1.png',
+  '../../../assets/images/ocean/Lemon/Lemon_normal_1.png',
+  '../../../assets/images/ocean/Watermelon/Watermelon_normal_1.png',
+];
+let _slotIdxCursor = 0;
+
 function buildLayout(value) {
   const [type, n] = value.split('-');
   const count = parseInt(n, 10);
   const board = document.getElementById('board');
   board.innerHTML = '';
+  _slotIdxCursor = 0;  // レイアウト再構築時にリセット
 
   function slot() {
     const d = document.createElement('div');
     d.className = 'slot';
-    d.textContent = 'slot';
-    if (currentImg) {
-      d.style.backgroundImage = `url(${currentImg})`;
+    const url = currentImg || TEST_SLOT_IMAGES[_slotIdxCursor % TEST_SLOT_IMAGES.length];
+    _slotIdxCursor += 1;
+    if (url) {
+      d.style.backgroundImage = `url(${url})`;
       d.classList.add('has-img');
+      d.textContent = '';  // テスト画像が入れば 'slot' 文字を消す
+    } else {
+      d.textContent = 'slot';
     }
     return d;
   }
