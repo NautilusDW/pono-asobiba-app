@@ -785,17 +785,44 @@ body.resize-mode .resizable.edge-linked {
 body.wireframe-only .stage {
   background: #ffffff !important;
 }
-body.wireframe-only .resizable {
+/* resize-mode かどうかに依らず、 quizland の主要パーツの background-image を全部消す。
+   各パーツは個別に `.X { background-image: url(...) !important; }` で指定されてて
+   それぞれ specificity (0,1,0) + !important で効いてるので、 こちらは
+   `body.wireframe-only .X` (0,2,1) + !important で確実に上書きする。 */
+body.wireframe-only .hdr-pill,
+body.wireframe-only .hdr-left,
+body.wireframe-only .hdr-left .owl-icon,
+body.wireframe-only .hdr-left .title-card,
+body.wireframe-only .hdr-left .progress-num,
+body.wireframe-only .hdr-left .dot,
+body.wireframe-only .hdr-right .ctrl-btn,
+body.wireframe-only .q-text-card,
+body.wireframe-only .q-text-card .audio,
+body.wireframe-only .board,
+body.wireframe-only .answer-tray,
+body.wireframe-only .chip,
+body.wireframe-only .chip .circle,
+body.wireframe-only .hint,
+body.wireframe-only .character,
+body.wireframe-only .slot {
   background: transparent !important;
   background-image: none !important;
+  background-color: transparent !important;
   border: 2px solid #1a1a1a !important;
   outline: none !important;
   box-shadow: none !important;
   color: #1a1a1a !important;
+  text-shadow: none !important;
+}
+/* CSS で塗ってる要素 (チップの円・色チップ等) も中身を消す */
+body.wireframe-only .chip[data-color] .circle {
+  background: transparent !important;
 }
 body.wireframe-only .resize-handle,
 body.wireframe-only .resize-size-label,
-body.wireframe-only .ruler {
+body.wireframe-only .ruler,
+body.wireframe-only .resizable.selected,
+body.wireframe-only .resizable.edge-linked {
   display: none !important;
 }
 body.wireframe-only .editable-text {
@@ -886,6 +913,17 @@ body.resize-mode .ruler { display: block; }
 }
 .guide.h { left: 24px; right: 0; height: 1px; cursor: ns-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
 .guide.v { top: calc(var(--toolbar-h, 0) + 24px); bottom: 0; width: 1px; cursor: ew-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+/* 1px の見た目はそのままに、 hit 領域だけ ±6px に拡張 (掴みやすく) */
+.guide.h::before {
+  content: ''; position: absolute;
+  left: 0; right: 0; top: -6px; bottom: -6px;
+  cursor: ns-resize; background: transparent;
+}
+.guide.v::before {
+  content: ''; position: absolute;
+  top: 0; bottom: 0; left: -6px; right: -6px;
+  cursor: ew-resize; background: transparent;
+}
 .guide:hover { background: #00d4ff; }
 .guide-label {
   position: absolute;

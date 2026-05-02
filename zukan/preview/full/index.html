@@ -1161,6 +1161,17 @@ body.resize-mode .ruler { display: block; }
 }
 .guide.h { left: 24px; right: 0; height: 1px; cursor: ns-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
 .guide.v { top: calc(var(--toolbar-h, 0) + 24px); bottom: 0; width: 1px; cursor: ew-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+/* 1px の見た目はそのままに、 hit 領域だけ ±6px に拡張 (掴みやすく) */
+.guide.h::before {
+  content: ''; position: absolute;
+  left: 0; right: 0; top: -6px; bottom: -6px;
+  cursor: ns-resize; background: transparent;
+}
+.guide.v::before {
+  content: ''; position: absolute;
+  top: 0; bottom: 0; left: -6px; right: -6px;
+  cursor: ew-resize; background: transparent;
+}
 .guide:hover { background: #00d4ff; }
 .guide-label {
   position: absolute;
