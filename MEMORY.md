@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T07:09:51Z - zukan プレビュー: BG.png (bottom) + main.png (top) を 1600x900 にリサイズして 2 層重ねの background に設定。 CSS multi-bg で一番上 = main、 下 = BG、 fallback = #2a2a2a。 sw.js 630→631
+- **タスク**: zukan プレビュー: BG.png (bottom) + main.png (top) を 1600x900 にリサイズして 2 層重ねの background に設定。 CSS multi-bg で一番上 = main、 下 = BG、 fallback = #2a2a2a。 sw.js 630→631
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 258, "ToolSearch": 1, "Grep": 28, "Read": 45, "Edit": 159, "Write": 9}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-02T07:01:41Z - quizland プレビュー: シート ON 時に装飾系 PNG (owl-icon/title-card/character/ctrl-btn/dot/audio/circle/hint) を残してフレーム系のみ隠す。 q-text (まんなかは なにいろ?) を RESIZABLE_SPEC に追加 + inline-block 化で移動可能に。 sw.js 629→630
 - **タスク**: quizland プレビュー: シート ON 時に装飾系 PNG (owl-icon/title-card/character/ctrl-btn/dot/audio/circle/hint) を残してフレーム系のみ隠す。 q-text (まんなかは なにいろ?) を RESIZABLE_SPEC に追加 + inline-block 化で移動可能に。 sw.js 629→630
 - **結果**: 成功
@@ -194,19 +207,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 158, "Bash": 253, "Read": 51, "Write": 11, "ToolSearch": 1, "Grep": 26}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T05:50:05Z - quizland プレビューにワイヤー表示トグル + PNG 書き出し追加 (zukan の対応版を移植、 RESIZABLE_SPEC ラベル使用、 BCR 経由で位置取得) + zukan の STORAGE_KEY を quizland と分離 (anno collision バグ修正、 旧キーから auto migration)。 sw.js 620→621
-- **タスク**: quizland プレビューにワイヤー表示トグル + PNG 書き出し追加 (zukan の対応版を移植、 RESIZABLE_SPEC ラベル使用、 BCR 経由で位置取得) + zukan の STORAGE_KEY を quizland と分離 (anno collision バグ修正、 旧キーから auto migration)。 sw.js 620→621
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 15
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 164, "Bash": 248, "Read": 51, "Write": 11, "ToolSearch": 1, "Grep": 25}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
