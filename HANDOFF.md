@@ -14,47 +14,14 @@
 
 ## Active (進行中 / 未着手)
 
-### 🔁 Codex 依頼: Quizland パーツ — 土台フレーム 4 枚だけ先に再生成 (3 巡目 step1) (2026-05-02)
-
-**段取り**: ユーザー要望で **まず一番下の土台 4 枚だけ作って、 fit をチェックしてから残りに進む** 段階的アプローチへ変更。 1 枚ずつ承認して進めるのではなく、 この 4 枚をワンパスで生成してプレビューに置いて確認。 OK なら次の Codex 依頼で残り (chip / circle / owl-icon / progress-num / dots / hint / character / audio) を生成、 NG なら寸法/装飾感を調整してまた 4 枚再生成。
-
-**生成対象 (4 枚)**: 寸法は `quizland/preview/full/saved-layout.json` の現在値準拠。
-
-| ファイル | 寸法 (px) | 内容 |
-|---|---|---|
-| `assets/preview-placeholders/title-card.png` | **296 × 128** | ヘッダー左ピル内の **タイトルロゴ札** ( 「フクロウはかせの」 「なぞなぞ」 という文字を **焼き込んでよい**)。 ロゴ外周の枠と装飾は OK |
-| `assets/preview-placeholders/q-text-card.png` | **867 × 193** | 問題文 (横長) を入れる **巻物 / 帯カードの空フレーム**。 文字は焼き込まない (CSS で別個に乗せる)。 audio ボタンの丸も焼き込まない (audio.png は別個) |
-| `assets/preview-placeholders/board.png` | **867 × 551** | 問題ボード (4 つのスロットを置く土台、 木枠 + 中身は紙/パッチメント風)。 中の 4 スロットの絵は焼き込まない (item-slot.png が別個) |
-| `assets/preview-placeholders/answer-tray.png` | **722 × 554** | 4 択チップを置く **回答トレイの土台**。 中のチップ枠 / 色丸は焼き込まない (chip.png / circle.png が別個) |
-
-**生成ルール (前回までの学び込み)**:
-
-1. **RGBA 透過 PNG** で背景は完全透明
-2. **指定寸法ぴったり** (1×, 2×, 3× 解像度のいずれかで縦横比厳守)
-3. **装飾 (葉/どんぐり/花/ツル/羽根) は画像の外周 10% マージン内に収める**。 中央 80% × 80% は文字や中身を乗せても被らないクリーンな content area
-4. **フレーム線は細めに**。 厚すぎる木枠で内側を侵食しない
-5. **「サブフレームの焼き込み」 禁止**。 親に子要素を焼き込まない (例: q-text-card に audio 丸を焼き込まない、 board に slot を焼き込まない、 answer-tray に chip を焼き込まない、 title-card は **タイトル文字のみ OK** で他要素は焼き込まない)
-6. 仕上がった PNG は `python scripts/auto_optimize_image.py <files...>` を必ず通す。 透過維持
-
-**bbox 確認方法 (Codex 側)**:
-
-- `quizland/preview/full/index.html` を開いて 4 つの bbox を確認: `.title-card` / `.q-text-card` / `.board` / `.answer-tray`
-- ヘッダー右側 **🔁 グリッド比較** トグル ON で旧グリッド placeholder と並べて寸法・配置感を比較できる
-- 完了後 Claude に伝えるか、 PR / commit に 「step1 完了」 と記載
-
-**ステップ 2 (この 4 枚 OK 後の予定)**:
-残り 13 枚を生成。 寸法は次の Active セクションで Claude が再掲する予定: `owl-icon` / `progress-num` / `dot` / `audio` / `item-slot` / `chip` / `circle` / `hint` / `character` / `hdr-pill` (= 空のピル枠だけ、 子要素は焼き込まない)
-
-> **触らないファイル (今回はそのまま)**:
-> - `assets/preview-placeholders/stage-bg.png` (背景はすでにあるので維持)
-> - `assets/preview-placeholders/grid/` (旧グリッド比較用、 維持)
->
-> **今回 step1 では生成不要 (ユーザー指定で除外)**:
-> - `ctrl-btn-news.png` / `ctrl-btn-settings.png` (おしらせ/せってい のボタン、 後の step で生成予定)
+- 現在なし
 
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-02 — `zukan/preview/full/` を新設。 `quizland/preview/full/` の編集ツール (resize / multi-select / linked-edge / numeric panel / 🔁 グリッド比較) をそのままコピーし、 safe area 内コンテンツを森の図鑑用に置換 (タイトル看板 / 開いた本 / 3x3 コレクショングリッド / 詳細ページ + スタンプ + フィールド / 右タブ / クマ + 吹き出し / 下部ボタン)。 saved-layout.json 同期パスは `zukan/preview/full/saved-layout.json` に分離、 RESIZE_KEY も別 (`zukan_preview_sizes_v1`)。 quizland 側はそのまま温存。 GH_LAYOUT_PATH 切替 + sw.js 604 → 605 バンプ。 (by Claude)
+- 2026-05-02 — Codex が `saved-layout.json` 更新後の bbox に合わせて Quizland パーツを再生成。基準は `generated_images/019dd74b.../ig_037714a0...png` の左上ゲーム画面。`stage-bg.png` と `ctrl-btn-news.png` / `ctrl-btn-settings.png` を除く全パーツを新規シート生成し、ローカルで切り出し + RGBA 透過 + 指定寸法へ再配置して `assets/preview-placeholders/*.png` に反映。フレーム類は前回より細め・内側広めに調整。ボタン2枚は再生成せず既存ソースから透過化だけ再実施。 (by Codex)
 
 - 2026-05-02 — sw.js CACHE_VERSION 601 → 602 バンプ (Codex の Quizland パーツ再生成 = RGBA 透過 + 仕様寸法ぴったり 反映)。 全 17 枚を `Image.open().mode` で確認、 stage-bg 以外全部 RGBA で仕様寸法ぴったりだった。 Active セクションをクローズ。 (by Claude)
 - 2026-05-02 — Codex が Quizland パーツを **RGBA 透過 PNG + 指定寸法ぴったり** で再生成。 マゼンタ背景の元 GPT Image 2 出力を透過化 + 自動トリミング + 指定外寸へリサイズして `assets/preview-placeholders/*.png` を上書き。 全身フクロウ博士のみ新規生成し `character.png` / `assets/images/quizland/owl_professor_guide.png` に反映。 `title_back.png` / `title_logo.png` も更新 (`title_logo.png` のフクロウ込みかは保留判断)。 (by Codex)
