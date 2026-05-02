@@ -919,6 +919,15 @@ body.resize-mode .zukan-safe .resizable {
   border-color: rgba(120, 75, 200, 0.95);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
+/* 背景画像入りの userbox は半透明オレンジを消して画像をくっきり見せる */
+.userbox.userbox-with-bg {
+  background-color: transparent !important;
+  border-color: transparent;
+}
+body.resize-mode .userbox.userbox-with-bg {
+  /* 編集モード中は薄い枠線で位置がわかるようにする */
+  border-color: rgba(140, 75, 30, 0.55);
+}
 
 /* === 本のページ立体モード === */
 /* safe-area に perspective を掛けて、 userbox に rotateY を適用 (transform は JS が
@@ -3508,7 +3517,7 @@ window.addEventListener('keydown', e => {
 
 let userboxCounter = 0;
 function createUserbox(opts) {
-  // opts: { id?, label?, left, top, w, h, tx?, ty?, groupId? }
+  // opts: { id?, label?, left, top, w, h, tx?, ty?, groupId?, bgImage? }
   userboxCounter += 1;
   const id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
   const label = opts.label || ('枠' + userboxCounter);
@@ -3517,6 +3526,15 @@ function createUserbox(opts) {
   div.dataset.userboxId = id;
   div.dataset.userboxLabel = label;
   if (opts.groupId) div.dataset.groupId = opts.groupId;
+  if (opts.bgImage) {
+    div.dataset.bgImage = opts.bgImage;
+    div.style.backgroundImage = `url("${opts.bgImage}")`;
+    div.style.backgroundSize = 'contain';
+    div.style.backgroundRepeat = 'no-repeat';
+    div.style.backgroundPosition = 'center';
+    div.style.backgroundColor = 'transparent';
+    div.classList.add('userbox-with-bg');
+  }
   div.style.left = opts.left;
   div.style.top = opts.top;
   if (opts.w) div.style.width = opts.w;
@@ -3581,6 +3599,7 @@ function collectUserboxes() {
     tx: el._tx || 0,
     ty: el._ty || 0,
     groupId: el.dataset.groupId || '',
+    bgImage: el.dataset.bgImage || '',
   }));
 }
 function restoreUserboxes(arr) {
