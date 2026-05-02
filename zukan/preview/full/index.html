@@ -139,6 +139,26 @@ body.show-safe .safe-area::before {
   pointer-events: none;
   z-index: 2;
 }
+/* セーフエリア中心のクロスヘア (マゼンタ) ─ safe-area と色を変えて区別 */
+body.show-safe .safe-area {
+  background-image:
+    linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+body.show-safe .safe-area > .center-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #ff50c8;
+  border-radius: 50%;
+  background: rgba(255, 80, 200, 0.25);
+  pointer-events: none;
+  z-index: 3;
+}
+body:not(.show-safe) .center-dot { display: none; }
 body.show-safe .safe-area::after {
   content: "16:9 safe area";
   position: absolute;
@@ -881,9 +901,11 @@ body.resize-mode .zukan-safe .resizable {
 /* === userbox: ユーザーがドラッグで作った矩形フレーム ─────────────── */
 .userbox {
   position: absolute;
-  background: rgba(255, 200, 110, 0.18);
-  border: 2px solid rgba(110, 70, 32, 0.85);
-  border-radius: 6px;
+  /* 半透明のオレンジで塗りつぶす — 背景の森背景が透けないように、 かつ重なった時に
+     下の userbox が透けて見える程度の不透明度に。 hue は edit 時にカスタマイズ可能 */
+  background: rgba(255, 178, 86, 0.55);
+  border: 3px solid rgba(140, 75, 30, 0.95);
+  border-radius: 8px;
   box-sizing: border-box;
 }
 .userbox-badge {
@@ -1032,6 +1054,28 @@ body.resize-mode.has-selection .numeric-panel { display: block; }
 .numeric-panel input[type="number"]:focus { border-color: #ff8a3d; outline: none; }
 .numeric-panel input[type="number"]::placeholder { color: #555; font-style: italic; font-size: 10px; }
 .numeric-panel .np-hint { color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3; }
+.numeric-panel .np-section-title {
+  margin-top: 10px; margin-bottom: 4px;
+  font-size: 11px; font-weight: 700; color: #ffba6b;
+  border-top: 1px solid #444; padding-top: 8px;
+}
+.numeric-panel .np-align-row {
+  display: flex; gap: 4px; margin-bottom: 4px;
+}
+.numeric-panel .np-align {
+  flex: 1; padding: 4px 6px;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 3px;
+  cursor: pointer; font: 600 12px ui-monospace, Menlo, Consolas, monospace;
+}
+.numeric-panel .np-align:hover { background: #3a3a3a; border-color: #ff8a3d; color: #fff; }
+.numeric-panel .np-apply {
+  padding: 3px 10px;
+  background: #6a4ed4; color: #fff;
+  border: 1px solid #8a5ef0; border-radius: 3px;
+  cursor: pointer; font: 600 11px sans-serif;
+}
+.numeric-panel .np-apply:hover { background: #7a5ee0; }
 
 /* ─── ルーラー + ガイドライン ─── */
 .ruler {
@@ -1216,6 +1260,27 @@ body.resize-mode .ruler { display: block; }
     <label>TX <input type="number" id="np-tx" step="1"></label>
     <label>TY <input type="number" id="np-ty" step="1"></label>
   </div>
+  <div class="np-row">
+    <label>LEFT <input type="number" id="np-left" step="1"></label>
+    <label>TOP <input type="number" id="np-top" step="1"></label>
+  </div>
+  <div class="np-row">
+    <label>SCALE% <input type="number" id="np-scale" step="1" placeholder="100"></label>
+    <button class="np-apply" id="np-scale-apply" title="選択中の W/H を SCALE% で拡縮">適用</button>
+  </div>
+  <div class="np-section-title">整列 (選択中の要素を)</div>
+  <div class="np-align-row">
+    <button class="np-align" data-mode="left" title="左揃え (選択範囲)">⇤</button>
+    <button class="np-align" data-mode="centerH" title="水平センター揃え (選択範囲)">⇔</button>
+    <button class="np-align" data-mode="right" title="右揃え (選択範囲)">⇥</button>
+    <button class="np-align" data-mode="top" title="上揃え (選択範囲)">⤒</button>
+    <button class="np-align" data-mode="centerV" title="垂直センター揃え (選択範囲)">⇕</button>
+    <button class="np-align" data-mode="bottom" title="下揃え (選択範囲)">⤓</button>
+  </div>
+  <div class="np-align-row">
+    <button class="np-align" data-mode="canvasH" title="キャンバス水平センターに移動">↔ Canvas</button>
+    <button class="np-align" data-mode="canvasV" title="キャンバス垂直センターに移動">↕ Canvas</button>
+  </div>
   <div class="np-hint">
     Shift+クリックで複数選択 / 値変更で全選択へ反映 / 隣接フレームの辺は自動リンク
   </div>
@@ -1229,6 +1294,8 @@ body.resize-mode .ruler { display: block; }
   <div class="stage" id="stage">
     <!-- 16:9 safe area inner -->
     <div class="safe-area zukan-safe" id="safe-area">
+      <!-- センター位置の見える化 (show-safe で表示) -->
+      <div class="center-dot" aria-hidden="true"></div>
       <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る。 作った枠 (.userbox)
            は __userboxes として saved-layout に永続化。 各 userbox には × 削除ボタン。 -->
     </div>
@@ -2220,8 +2287,10 @@ function updateNumericPanel() {
     if (prop === 'h') return parseFloat(el.style.height) || el.offsetHeight;
     if (prop === 'tx') return Math.round(el._tx || 0);
     if (prop === 'ty') return Math.round(el._ty || 0);
+    if (prop === 'left') return parseFloat(el.style.left) || 0;
+    if (prop === 'top') return parseFloat(el.style.top) || 0;
   };
-  ['w','h','tx','ty'].forEach(prop => {
+  ['w','h','tx','ty','left','top'].forEach(prop => {
     const input = document.getElementById('np-' + prop);
     if (!input) return;
     if (document.activeElement === input) return; // don't clobber while typing
@@ -2254,6 +2323,10 @@ function applyNumericInput(prop, valueStr) {
     } else if (prop === 'ty') {
       el._ty = value;
       el.style.transform = `translate(${el._tx || 0}px, ${el._ty}px)`;
+    } else if (prop === 'left') {
+      el.style.left = value + 'px';
+    } else if (prop === 'top') {
+      el.style.top = value + 'px';
     }
     el._resizeUpdateLabel && el._resizeUpdateLabel();
   });
@@ -2268,12 +2341,104 @@ function applyNumericInput(prop, valueStr) {
 }
 
 // Numeric panel input wiring (one-time)
-['w','h','tx','ty'].forEach(prop => {
+['w','h','tx','ty','left','top'].forEach(prop => {
   document.addEventListener('change', e => {
     if (e.target && e.target.id === 'np-' + prop) {
       applyNumericInput(prop, e.target.value);
     }
   });
+});
+
+// SCALE% 適用 (選択中の W/H を percent に基づいて拡縮)
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'np-scale-apply') {
+    const input = document.getElementById('np-scale');
+    const pct = parseFloat(input.value);
+    if (Number.isNaN(pct) || pct <= 0) return;
+    const factor = pct / 100;
+    const sel = [...selectedElements];
+    if (sel.length === 0) return;
+    const beforeMap = new Map();
+    sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+    sel.forEach(el => {
+      const w = parseFloat(el.style.width) || el.offsetWidth;
+      const h = parseFloat(el.style.height) || el.offsetHeight;
+      el.style.width = Math.round(w * factor) + 'px';
+      el.style.height = Math.round(h * factor) + 'px';
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    });
+    sel.forEach(el => {
+      const after = getResizeState(el);
+      const before = beforeMap.get(el);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        pushHistory({ type: 'resize', el, before, after });
+      }
+    });
+    saveResizeState();
+    updateNumericPanel();
+    input.value = '';
+  }
+});
+
+// 整列ボタン
+function alignSelected(mode) {
+  const sel = [...selectedElements];
+  if (sel.length === 0) return;
+  if (sel.length < 2 && !mode.startsWith('canvas')) return;
+  const stageRect = stage.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const scale = stageRect.width / stageW || 1;
+  const rects = sel.map(el => {
+    const r = el.getBoundingClientRect();
+    const left = (r.left - stageRect.left) / scale;
+    const top = (r.top - stageRect.top) / scale;
+    const right = (r.right - stageRect.left) / scale;
+    const bottom = (r.bottom - stageRect.top) / scale;
+    return { el, left, top, right, bottom, cx: (left + right) / 2, cy: (top + bottom) / 2 };
+  });
+  let anchor = null; // {axis: 'x'|'y', kind: 'left'|'right'|'top'|'bottom'|'cx'|'cy', value}
+  if (mode === 'left')      anchor = { kind: 'left',   value: Math.min(...rects.map(r => r.left)) };
+  else if (mode === 'right')   anchor = { kind: 'right',  value: Math.max(...rects.map(r => r.right)) };
+  else if (mode === 'top')     anchor = { kind: 'top',    value: Math.min(...rects.map(r => r.top)) };
+  else if (mode === 'bottom')  anchor = { kind: 'bottom', value: Math.max(...rects.map(r => r.bottom)) };
+  else if (mode === 'centerH') anchor = { kind: 'cx',     value: rects.reduce((s, r) => s + r.cx, 0) / rects.length };
+  else if (mode === 'centerV') anchor = { kind: 'cy',     value: rects.reduce((s, r) => s + r.cy, 0) / rects.length };
+  else if (mode === 'canvasH' || mode === 'canvasV') {
+    const safe = document.getElementById('safe-area').getBoundingClientRect();
+    if (mode === 'canvasH') anchor = { kind: 'cx', value: ((safe.left + safe.right) / 2 - stageRect.left) / scale };
+    else                    anchor = { kind: 'cy', value: ((safe.top + safe.bottom) / 2 - stageRect.top) / scale };
+  }
+  if (!anchor) return;
+  const beforeMap = new Map();
+  sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+  rects.forEach(r => {
+    let dx = 0, dy = 0;
+    if (anchor.kind === 'left')   dx = anchor.value - r.left;
+    else if (anchor.kind === 'right')  dx = anchor.value - r.right;
+    else if (anchor.kind === 'top')    dy = anchor.value - r.top;
+    else if (anchor.kind === 'bottom') dy = anchor.value - r.bottom;
+    else if (anchor.kind === 'cx')     dx = anchor.value - r.cx;
+    else if (anchor.kind === 'cy')     dy = anchor.value - r.cy;
+    r.el._tx = (r.el._tx || 0) + dx;
+    r.el._ty = (r.el._ty || 0) + dy;
+    r.el.style.transform = `translate(${r.el._tx}px, ${r.el._ty}px)`;
+    r.el._resizeUpdateLabel && r.el._resizeUpdateLabel();
+  });
+  sel.forEach(el => {
+    const after = getResizeState(el);
+    const before = beforeMap.get(el);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el, before, after });
+    }
+  });
+  saveResizeState();
+  updateNumericPanel();
+}
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.np-align');
+  if (btn) {
+    alignSelected(btn.dataset.mode);
+  }
 });
 
 // Click on stage background clears selection
