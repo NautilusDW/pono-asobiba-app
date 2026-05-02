@@ -14,13 +14,14 @@
 
 ## Active (進行中 / 未着手)
 
-- 現在なし
 - 2026-05-02 - Quizland imagegen workflow note (by Codex): 次回以降、ユーザー明示がない限り画像生成は GPT Image 2 を使う。メイン土台フレームは個別生成せず、16:9 または 21:9 のベタ塗り背景シートで一括生成し、背景/alpha を抜いて各 bbox に切り出す。上に載るフレーム・装飾・アイコン類は後段で生成する。目的はフレーム太さとデザインの不一致を避けること。
+- 2026-05-02 - sw.js CACHE_VERSION bump needed (by Codex): `assets/preview-placeholders/hint.png` を右上フクロウ用の空吹き出しに差し替えたため、Claude 側で `sw.js` のバンプ確認をお願いします。
 
 ---
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-02 — Codex が Quizland preview の右上フクロウ用 `assets/preview-placeholders/hint.png` だけを GPT Image 2 生成元から再作成。現在の `.hint` 表示枠に合わせて `391x63` の RGBA 透過 PNG にし、マゼンタ背景/疑似グリッド残り 0 を確認。 (by Codex)
 - 2026-05-02 — `zukan/preview/full/` を新設。 `quizland/preview/full/` の編集ツール (resize / multi-select / linked-edge / numeric panel / 🔁 グリッド比較) をそのままコピーし、 safe area 内コンテンツを森の図鑑用に置換 (タイトル看板 / 開いた本 / 3x3 コレクショングリッド / 詳細ページ + スタンプ + フィールド / 右タブ / クマ + 吹き出し / 下部ボタン)。 saved-layout.json 同期パスは `zukan/preview/full/saved-layout.json` に分離、 RESIZE_KEY も別 (`zukan_preview_sizes_v1`)。 quizland 側はそのまま温存。 GH_LAYOUT_PATH 切替 + sw.js 604 → 605 バンプ。 (by Claude)
 - 2026-05-02 — Codex が `saved-layout.json` 更新後の bbox に合わせて Quizland パーツを再生成。基準は `generated_images/019dd74b.../ig_037714a0...png` の左上ゲーム画面。`stage-bg.png` と `ctrl-btn-news.png` / `ctrl-btn-settings.png` を除く全パーツを新規シート生成し、ローカルで切り出し + RGBA 透過 + 指定寸法へ再配置して `assets/preview-placeholders/*.png` に反映。フレーム類は前回より細め・内側広めに調整。ボタン2枚は再生成せず既存ソースから透過化だけ再実施。 (by Codex)
 
