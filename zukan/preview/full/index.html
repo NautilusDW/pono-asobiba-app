@@ -920,6 +920,16 @@ body.resize-mode .zukan-safe .resizable {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
+/* === 本のページ立体モード === */
+/* safe-area に perspective を掛けて、 userbox に rotateY を適用 (transform は JS が
+   inline で書く: translate(...) perspective(...) rotateY(...))。 transform-origin で
+   左ページ右辺 / 右ページ左辺を支点にする */
+body.book-tilt #safe-area {
+  perspective: 1800px;
+  transform-style: preserve-3d;
+}
+body.book-tilt .userbox { transform-style: preserve-3d; }
+
 /* PNG export 選択メニュー (split button のドロップダウン) */
 .png-export-menu {
   position: absolute;
@@ -1314,6 +1324,7 @@ body.resize-mode .ruler { display: block; }
     <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
+    <button id="book-tilt-toggle" title="本のページに合わせて userbox を perspective 傾斜させる (左ページ右に傾く / 右ページ左に傾く)">📐 ページ立体 OFF</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -1763,7 +1774,7 @@ function setResize(el, st) {
   el._tx = st.tx || 0;
   el._ty = st.ty || 0;
   if (el._tx || el._ty) {
-    el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+    setElTransform(el);
   } else {
     el.style.transform = '';
   }
@@ -2383,7 +2394,7 @@ function loadResizeState() {
         if (s.tx || s.ty) {
           el._tx = s.tx || 0;
           el._ty = s.ty || 0;
-          el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+          setElTransform(el);
         }
       });
     });
@@ -2495,10 +2506,10 @@ function applyNumericInput(prop, valueStr) {
       }
     } else if (prop === 'tx') {
       el._tx = value;
-      el.style.transform = `translate(${el._tx}px, ${el._ty || 0}px)`;
+      setElTransform(el);
     } else if (prop === 'ty') {
       el._ty = value;
-      el.style.transform = `translate(${el._tx || 0}px, ${el._ty}px)`;
+      setElTransform(el);
     } else if (prop === 'left') {
       el.style.left = value + 'px';
     } else if (prop === 'top') {
@@ -2573,7 +2584,7 @@ document.addEventListener('click', e => {
         const dyNeeded = targetCenterY - (oldCenterY + sizeShiftY);
         el._tx = (el._tx || 0) + dxNeeded;
         el._ty = (el._ty || 0) + dyNeeded;
-        el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+        setElTransform(el);
       }
       el._resizeUpdateLabel && el._resizeUpdateLabel();
     });
@@ -2631,7 +2642,7 @@ function alignSelected(mode) {
     else if (anchor.kind === 'cy')     dy = anchor.value - r.cy;
     r.el._tx = (r.el._tx || 0) + dx;
     r.el._ty = (r.el._ty || 0) + dy;
-    r.el.style.transform = `translate(${r.el._tx}px, ${r.el._ty}px)`;
+    setElTransform(r.el);
     r.el._resizeUpdateLabel && r.el._resizeUpdateLabel();
   });
   sel.forEach(el => {
@@ -2748,7 +2759,7 @@ function performResize(target, sides, dx, dy, sym, axes, stageRect, scale) {
   }
   el._tx = startTx;
   el._ty = startTy;
-  el.style.transform = `translate(${startTx}px, ${startTy}px)`;
+  el._tx = startTx; el._ty = startTy; setElTransform(el);
   const cur = bcrInStage(el, stageRect, scale);
   let needTx = 0, needTy = 0;
   if (sym) {
@@ -2766,7 +2777,7 @@ function performResize(target, sides, dx, dy, sym, axes, stageRect, scale) {
   }
   el._tx = startTx + needTx;
   el._ty = startTy + needTy;
-  el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+  setElTransform(el);
   el._resizeUpdateLabel && el._resizeUpdateLabel();
 }
 
@@ -2917,7 +2928,7 @@ function attachMoveDrag(el) {
       startStates.forEach(s => {
         s.el._tx = s.tx + dx;
         s.el._ty = s.ty + dy;
-        s.el.style.transform = `translate(${s.el._tx}px, ${s.el._ty}px)`;
+        setElTransform(s.el);
       });
     };
     const onUp = () => {
@@ -3435,6 +3446,44 @@ function doPaste() {
   showLayoutToast(`${userboxClipboard.length} 個ペースト`);
 }
 
+// ───── 本のページ立体モード (Approach A) ─────
+// userbox の transform 文字列を一元化するヘルパ。 _tx, _ty を必ず読み、
+// book-tilt モード時は左/右ページに応じた perspective + rotateY を追加する。
+function setElTransform(el) {
+  if (!el) return;
+  const tx = el._tx || 0;
+  const ty = el._ty || 0;
+  let t = `translate(${tx}px, ${ty}px)`;
+  if (document.body.classList.contains('book-tilt') && el.classList.contains('userbox')) {
+    const baseLeft = parseFloat(el.style.left) || 0;
+    const w = parseFloat(el.style.width) || el.offsetWidth || 0;
+    const safeW = 1600;
+    const cx = baseLeft + tx + w / 2;  // userbox 中心 X (safe-area 座標)
+    const isLeftPage = cx < safeW / 2;
+    const tiltY = isLeftPage ? 5 : -5;   // 左ページ右傾き、 右ページ左傾き
+    const originX = isLeftPage ? '100%' : '0%';  // 綴じ目側を支点に
+    el.style.transformOrigin = `${originX} 50%`;
+    t += ` rotateY(${tiltY}deg)`;
+  } else {
+    el.style.transformOrigin = '';
+  }
+  el.style.transform = t;
+}
+
+const bookTiltBtn = document.getElementById('book-tilt-toggle');
+function setBookTiltMode(on) {
+  document.body.classList.toggle('book-tilt', on);
+  if (bookTiltBtn) {
+    bookTiltBtn.textContent = on ? '📐 ページ立体 ON' : '📐 ページ立体 OFF';
+    bookTiltBtn.classList.toggle('active', on);
+  }
+  // 全 userbox の transform を再計算
+  document.querySelectorAll('.userbox').forEach(setElTransform);
+  try { localStorage.setItem('zukan_book_tilt', on ? '1' : '0'); } catch(_) {}
+}
+bookTiltBtn && bookTiltBtn.addEventListener('click', () => setBookTiltMode(!document.body.classList.contains('book-tilt')));
+try { if (localStorage.getItem('zukan_book_tilt') === '1') setBookTiltMode(true); } catch(_) {}
+
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
 // 通常 (resize-mode ON): 空き領域 drag で新規作成。 既存枠の上は select/move/resize
 // 強制 (draw-mode ON): 既存枠の上でも常に新規作成 (重なった枠の上で作りたい時用)
@@ -3516,7 +3565,7 @@ function createUserbox(opts) {
   if (opts.tx || opts.ty) {
     div._tx = opts.tx || 0;
     div._ty = opts.ty || 0;
-    div.style.transform = `translate(${div._tx}px, ${div._ty}px)`;
+    setElTransform(div);
   }
   return div;
 }
