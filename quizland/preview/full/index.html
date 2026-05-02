@@ -2912,9 +2912,20 @@ function setDrawMode(on) {
 drawBtn && drawBtn.addEventListener('click', () => {
   if (!document.body.classList.contains('resize-mode')) enableResize();
   setDrawMode(!drawModeOn);
+  if (typeof showLayoutToast === 'function') {
+    showLayoutToast(drawModeOn ? '矩形追加 ON: 空き領域をドラッグして矩形を作成' : '矩形追加 OFF');
+  }
 });
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
+  // Delete / Backspace で選択中の要素を隠す (input/contenteditable にフォーカス中は除外)
+  if ((e.key === 'Delete' || e.key === 'Backspace') &&
+      !e.target.matches('input, textarea, [contenteditable="true"]') &&
+      document.body.classList.contains('resize-mode') &&
+      typeof selectedElements !== 'undefined' && selectedElements.size > 0) {
+    e.preventDefault();
+    if (typeof hideSelectedElements === 'function') hideSelectedElements();
+  }
 });
 
 let userboxCounter = 0;
