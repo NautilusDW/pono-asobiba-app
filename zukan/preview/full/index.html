@@ -3875,7 +3875,11 @@ function _uploadTexture(gl, src) {
   if (!src) return;
   if (!_glTex) _glTex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, _glTex);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  // **重要**: メッシュの uv (0,0) は HTML 上の top-left。 FLIP_Y_WEBGL = false
+  // (デフォルト) で texImage2D すると canvas pixel (0,0) = source top-left が
+  // texture pixel (0,0) に直接格納され、 texture(0,0) サンプル = source top-left。
+  // FLIP_Y を true にすると上下逆になって表示が逆さまになるので明示 false。
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
