@@ -945,12 +945,19 @@ body.resize-mode .zukan-safe .resizable {
   user-select: none;
 }
 .userbox-del:hover { background: #d04040; }
-body:not(.resize-mode) .userbox-badge,
-body:not(.resize-mode) .userbox-del { display: none; }
+body:not(.resize-mode):not(.draw-mode) .userbox-badge,
+body:not(.resize-mode):not(.draw-mode) .userbox-del { display: none; }
 
 /* サイズ調整 ON 中: ステージの空き領域は crosshair (新規矩形を描ける合図)。
    userbox 自体は move カーソル (既存ルールが上書き) */
 body.resize-mode .stage { cursor: crosshair; }
+
+/* 矩形追加モード (draw-mode ON): 既存 userbox はクリック透過にして
+   重なってる場所でも常に新規矩形を作れるようにする */
+body.draw-mode .stage { cursor: crosshair; }
+body.draw-mode .resizable { pointer-events: none; }
+/* ハンドル類はそのまま機能させない (draw 中はリサイズできない) */
+body.draw-mode .resize-handle, body.draw-mode .userbox-badge, body.draw-mode .userbox-del { pointer-events: none; }
 .userbox-preview {
   position: absolute;
   background: rgba(255, 138, 61, 0.20);
@@ -1236,7 +1243,8 @@ body.resize-mode .ruler { display: block; }
   </div>
 
   <div>
-    <button id="resize-toggle" title="ドラッグでサイズ調整 / 既存枠の外をドラッグで新規矩形を追加">📐 サイズ調整 OFF</button>
+    <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
+    <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
@@ -2946,6 +2954,8 @@ function disableResize() {
   document.querySelectorAll('.resize-handle, .resize-size-label').forEach(el => el.remove());
   document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); el.classList.remove('selected'); el.classList.remove('edge-linked'); delete el._resizeUpdateLabel; });
   clearSelection();
+  // resize-mode を抜けたら draw-mode も自動で OFF
+  if (typeof setDrawMode === 'function' && drawModeOn) setDrawMode(false);
 }
 document.getElementById('resize-toggle').addEventListener('click', () => {
   if (document.body.classList.contains('resize-mode')) disableResize();
@@ -3149,8 +3159,26 @@ function doPaste() {
 }
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
-// サイズ調整 ON 中、 既存 userbox の外側をドラッグすると自動的に新規矩形が作られる。
-// 別途のモード切替は不要 (1 つの 📐 サイズ調整 ボタンに統合)。
+// 通常 (resize-mode ON): 空き領域 drag で新規作成。 既存枠の上は select/move/resize
+// 強制 (draw-mode ON): 既存枠の上でも常に新規作成 (重なった枠の上で作りたい時用)
+
+const drawBtn = document.getElementById('userbox-add');
+let drawModeOn = false;
+function setDrawMode(on) {
+  drawModeOn = on;
+  document.body.classList.toggle('draw-mode', on);
+  if (drawBtn) {
+    drawBtn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
+    drawBtn.classList.toggle('active', on);
+  }
+}
+drawBtn && drawBtn.addEventListener('click', () => {
+  if (!document.body.classList.contains('resize-mode')) enableResize();
+  setDrawMode(!drawModeOn);
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
+});
 
 let userboxCounter = 0;
 function createUserbox(opts) {
@@ -3236,12 +3264,16 @@ function restoreUserboxes(arr) {
   arr.forEach(box => createUserbox(box));
 }
 
-// ステージ mousedown でドラッグ開始 (サイズ調整 ON + 既存枠の外、 のみ)
+// ステージ mousedown でドラッグ開始
+//   通常: resize-mode ON + 既存枠の外、 で新規作成
+//   強制: draw-mode ON ならどこでも作成 (既存枠の上でも)
 const stageEl = document.getElementById('stage');
 stageEl.addEventListener('mousedown', e => {
   if (!document.body.classList.contains('resize-mode')) return;
-  // 既存の userbox / ハンドル / ツールバー類の上では何もしない
-  if (e.target.closest('.resizable, .toolbar, .resize-handle, .userbox-badge, .userbox-del, .ruler, .guide, .numeric-panel')) return;
+  // ツールバーなど特殊エリアは draw-mode でもスキップ
+  if (e.target.closest('.toolbar, .ruler, .guide, .numeric-panel')) return;
+  // draw-mode OFF の時のみ、 既存枠/ハンドルの上では何もしない (= select/move 経路に任せる)
+  if (!drawModeOn && e.target.closest('.resizable, .resize-handle, .userbox-badge, .userbox-del')) return;
   e.preventDefault();
   e.stopPropagation();
   const stageRect = stageEl.getBoundingClientRect();
