@@ -123,13 +123,19 @@
     "w": "442px",
     "h": "83px",
     "tx": 0,
-    "ty": 0
+    "ty": 1
   },
   ".character|0": {
     "w": "200px",
     "h": "199px",
     "tx": -138,
     "ty": -561.5
+  },
+  ".char-hint|0": {
+    "w": "326px",
+    "h": "133px",
+    "tx": -125,
+    "ty": -568
   },
   "__guides": [
     {
@@ -157,6 +163,11 @@
     "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(2)>span": "あお",
     "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(3)>span": "きいろ",
     "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(4)>span": "みどり",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.hint:nth-of-type(1)": " よく見て かんがえてみよう！"
-  }
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.hint.user-hidden:nth-of-type(1)": " よく見て かんがえてみよう！",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.char-hint:nth-of-type(2)": "ヒント！"
+  },
+  "__hidden": [
+    ".hint|0"
+  ],
+  "__userboxes": []
 }
