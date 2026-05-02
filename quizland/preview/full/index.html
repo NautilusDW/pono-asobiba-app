@@ -304,6 +304,11 @@ body.show-safe .safe-area::after {
   position: relative;
   box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
 }
+/* 問題文 span を resizable で動かせるように inline-block 化 (リサイズハンドルが付く) */
+#q-text {
+  display: inline-block;
+  padding: 4px 8px;
+}
 .q-text-card .audio {
   /* 通常のフレックス子要素として右端に配置 (position: absolute はリサイズ時に挙動が
      ややこしくなるので避ける) */
@@ -793,20 +798,14 @@ body.sheet-on .stage::after {
   pointer-events: none;
   z-index: 5;  /* 背景の上、 CSS-positioned テキストより下 */
 }
-/* シートが下にあるので、 個別パーツの背景画像は消す (二重写しを避ける) */
+/* シートが下にあるので、 *枠系* placeholder の背景画像だけ消す (二重写しを避ける)。
+   フクロウ博士・タイトル札・1/5 札・ドット・ボタン・音声丸・色丸・吹き出しなどの
+   *装飾系* はシートに含まれないので、 既存の placeholder PNG を残して上に重ねる */
 body.sheet-on .hdr-pill,
-body.sheet-on .hdr-left .owl-icon,
-body.sheet-on .hdr-left .title-card,
-body.sheet-on .hdr-left .progress-num,
-body.sheet-on .hdr-left .dot,
-body.sheet-on .hdr-right .ctrl-btn,
 body.sheet-on .q-text-card,
-body.sheet-on .q-text-card .audio,
 body.sheet-on .board,
 body.sheet-on .answer-tray,
 body.sheet-on .chip,
-body.sheet-on .hint,
-body.sheet-on .character,
 body.sheet-on .slot {
   background-image: none !important;
   background-color: transparent !important;
@@ -1948,7 +1947,8 @@ const RESIZABLE_SPEC = [
   ['.hdr-left .progress-num',  'wh', '1/5'],
   ['.hdr-left .dots',          'wh', '進捗ドット5個'],
   ['.hdr-right .ctrl-btn',     'wh', '右ボタン'],
-  ['.q-text-card',             'wh', '問題文'],
+  ['.q-text-card',             'wh', '問題文カード'],
+  ['#q-text',                  'wh', '問題文 (まんなかは…)'],
   ['.q-text-card .audio',      'wh', '音声ボタン'],
   ['.board',                   'wh', '問題ボード'],
   ['.answer-tray',             'wh', 'トレイ'],
