@@ -1382,14 +1382,25 @@ function buildLayout(value) {
   function slot() {
     const d = document.createElement('div');
     d.className = 'slot';
+    d.textContent = 'slot';   // フォールバック表示 (画像が来るまでこれが見える)
     const url = currentImg || TEST_SLOT_IMAGES[_slotIdxCursor % TEST_SLOT_IMAGES.length];
     _slotIdxCursor += 1;
     if (url) {
-      d.style.backgroundImage = `url(${url})`;
-      d.classList.add('has-img');
-      d.textContent = '';  // テスト画像が入れば 'slot' 文字を消す
-    } else {
-      d.textContent = 'slot';
+      // 画像が実際にロード成功したときだけ has-img を付ける。
+      // 旧コード: URL を付けて即 has-img → 画像が 404 だと
+      //   .slot.has-img { background-color: transparent; color: transparent }
+      //   が効いて完全透明になり 「スロットが消えた」 ように見えていた。
+      const img = new Image();
+      img.onload = () => {
+        d.style.backgroundImage = `url(${url})`;
+        d.classList.add('has-img');
+        d.textContent = '';
+      };
+      img.onerror = () => {
+        console.warn('[slot] image load failed:', url);
+        // 'slot' テキストとデフォルト灰色のままにしておく
+      };
+      img.src = url;
     }
     return d;
   }
@@ -1419,6 +1430,11 @@ function buildLayout(value) {
   // 個数ごとに保存されたサイズ (またはデフォルト) を反映
   applyVariantSize(value);
   updateBboxLabels();
+  // 診断: 実際にいくつスロットができて、 サイズはどうなっているか
+  const slots = board.querySelectorAll('.slot');
+  const r0 = slots[0]?.getBoundingClientRect();
+  const slotSize = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
+  console.info('[buildLayout]', value, '→ slots:', slots.length, '--slot-size:', slotSize, 'first slot rect:', r0 ? {w: r0.width, h: r0.height} : null);
 }
 
 let currentImg = null;
