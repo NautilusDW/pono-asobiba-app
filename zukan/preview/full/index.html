@@ -111,10 +111,11 @@ html, body {
   height: var(--canvas-h);
   margin: 0 auto;
   position: relative;
-  /* 森の図鑑: BG.png を一番下、 main.png (絵本本体) をその上に重ねる。
-     CSS multi-bg は 先に書いたものほど手前 (top layer)。 #2a2a2a は最終 fallback */
+  /* 森の図鑑: BG.png を 21:9 全面 cover、 main.png (絵本本体) は安全領域内に
+     収まるサイズで center 配置 (cover だと title が縦方向にクロップされて切れるため)。
+     1300×731 = 1600×900 safe-area の 81% (安全領域内に余白付きで収まる)。 */
   background:
-    url('../../../assets/preview-placeholders/zukan-main.png') center / cover no-repeat,
+    url('../../../assets/preview-placeholders/zukan-main.png') center / 1300px 731px no-repeat,
     url('../../../assets/preview-placeholders/zukan-bg.jpg') center / cover no-repeat,
     #2a2a2a;
   border: 1px dashed #555;
