@@ -3783,10 +3783,24 @@ function _initWebGL() {
   }
   _bezCanvas.width  = SAFE_W * 2;   // retina
   _bezCanvas.height = SAFE_H * 2;
-  // 複数のオプション組合せを順番に試す。 display:none の canvas で null を返す
-  // バグ対策に、 まず確実に visible 状態にしてから getContext。
-  const prevVis = _bezCanvas.style.visibility;
+  // 確実に in-flow に
   _bezCanvas.style.visibility = 'visible';
+  _bezCanvas.style.display    = 'block';
+  // まず 「DOM 外の」 throwaway canvas で WebGL が本当に使えるかテスト
+  const probe = document.createElement('canvas');
+  probe.width = 64; probe.height = 64;
+  const probeGL = probe.getContext('webgl') || probe.getContext('experimental-webgl');
+  if (!probeGL) {
+    window._lastBezierError =
+      'WebGL が使えません (probe canvas でも null)。 \n' +
+      '・ハードウェアアクセラレーションが無効かも (ブラウザ設定で有効化)\n' +
+      '・chrome://gpu (Chrome) / about:support (Firefox) で WebGL2 enabled を確認\n' +
+      '・ブラウザ拡張で WebGL がブロックされている可能性も\n' +
+      '\nそれでも動かない場合は Cmd+Shift+R / Ctrl+Shift+R でハードリロードしてみてください';
+    console.error(window._lastBezierError);
+    return null;
+  }
+  // probe OK → 本番 canvas で複数オプションを試す
   const optsList = [
     { premultipliedAlpha: true,  alpha: true },
     { premultipliedAlpha: false, alpha: true },
@@ -3797,9 +3811,10 @@ function _initWebGL() {
     _gl = _bezCanvas.getContext('webgl', opts) || _bezCanvas.getContext('experimental-webgl', opts);
     if (_gl) break;
   }
-  if (!_gl) _bezCanvas.style.visibility = prevVis;
   if (!_gl) {
-    window._lastBezierError = 'getContext("webgl") returned null after trying all fallbacks. ブラウザの WebGL が無効になっている可能性 (chrome://gpu で確認)';
+    window._lastBezierError =
+      'probe canvas は OK だったのに #bezier-canvas で getContext null (再現条件不明)。\n' +
+      'Cmd+Shift+R / Ctrl+Shift+R でハードリロードしてみてください';
     console.error(window._lastBezierError);
     return null;
   }

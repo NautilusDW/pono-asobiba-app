@@ -1431,12 +1431,31 @@ function buildLayout(value) {
   }
   // 個数ごとに保存されたサイズ (またはデフォルト) を反映
   applyVariantSize(value);
+  // --slot-size が 0 や極小だとスロットが完全に潰れて見えないので最小 60px に強制
+  const sizePxRaw = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
+  const sizePxNum = parseFloat(sizePxRaw) || 0;
+  if (sizePxNum < 60) {
+    console.warn('[buildLayout] --slot-size too small (' + sizePxRaw + ') → forcing 130px');
+    document.documentElement.style.setProperty('--slot-size', '130px');
+  }
   updateBboxLabels();
-  // 診断: 実際にいくつスロットができて、 サイズはどうなっているか
+  // 診断 (画面右上に見える badge も出す):
   const slots = board.querySelectorAll('.slot');
   const r0 = slots[0]?.getBoundingClientRect();
-  const slotSize = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
-  console.info('[buildLayout]', value, '→ slots:', slots.length, '--slot-size:', slotSize, 'first slot rect:', r0 ? {w: r0.width, h: r0.height} : null);
+  const boardRect = board.getBoundingClientRect();
+  const finalSize = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
+  const msg = `slots:${slots.length} size:${finalSize} firstW×H:${r0?Math.round(r0.width)+'×'+Math.round(r0.height):'-'} board:${Math.round(boardRect.width)}×${Math.round(boardRect.height)}`;
+  console.warn('[buildLayout]', value, '→', msg);
+  // 既存 badge を消して新規追加
+  document.querySelectorAll('.qz-debug-badge').forEach(e => e.remove());
+  if (slots.length === 0 || (r0 && r0.width < 20)) {
+    const badge = document.createElement('div');
+    badge.className = 'qz-debug-badge';
+    badge.style.cssText = 'position:fixed;top:60px;left:8px;background:#c00;color:#fff;padding:8px 12px;border-radius:6px;font:600 12px monospace;z-index:99999;max-width:340px;line-height:1.4;cursor:pointer';
+    badge.textContent = '⚠ slot 異常: ' + msg + ' (clickで閉じる)';
+    badge.onclick = () => badge.remove();
+    document.body.appendChild(badge);
+  }
 }
 
 let currentImg = null;
