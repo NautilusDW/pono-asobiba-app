@@ -965,6 +965,7 @@ body.resize-mode .ruler { display: block; }
     <button class="tool-btn" data-tool="arrow">↗ 矢印</button>
     <button class="tool-btn" data-tool="line">─ 線</button>
     <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
+    <label title="新規注釈の色 / 選択中の要素にも反映" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">色 <input type="color" id="anno-color" value="#ff3b6b" style="width:32px;height:24px;border:none;background:transparent;padding:0;cursor:pointer;"></label>
     <button id="anno-clear">🗑 全消去</button>
     <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
   </div>
@@ -1069,7 +1070,7 @@ body.resize-mode .ruler { display: block; }
       <svg id="anno-svg" preserveAspectRatio="none">
         <defs>
           <marker id="anno-arrow-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-            <polygon points="0,0 10,5 0,10" fill="#ff3b6b"></polygon>
+            <polygon points="0,0 10,5 0,10" fill="currentColor"></polygon>
           </marker>
         </defs>
       </svg>
@@ -1251,19 +1252,23 @@ function scheduleSave() {
 function collectState() {
   return {
     markers: [...annoLayer.querySelectorAll('.anno-marker')].map(m => ({
-      x: parseFloat(m.style.left), y: parseFloat(m.style.top), label: m.textContent
+      x: parseFloat(m.style.left), y: parseFloat(m.style.top), label: m.textContent,
+      color: m.dataset.annoColor || ''
     })),
     texts: [...annoLayer.querySelectorAll('.anno-text')].map(t => ({
-      x: parseFloat(t.style.left), y: parseFloat(t.style.top), content: t.textContent
+      x: parseFloat(t.style.left), y: parseFloat(t.style.top), content: t.textContent,
+      color: t.dataset.annoColor || ''
     })),
     rects: [...annoSvg.querySelectorAll('rect.anno-rect')].map(r => ({
       x: +r.getAttribute('x'), y: +r.getAttribute('y'),
-      w: +r.getAttribute('width'), h: +r.getAttribute('height')
+      w: +r.getAttribute('width'), h: +r.getAttribute('height'),
+      color: r.dataset.annoColor || ''
     })),
     arrows: [...annoSvg.querySelectorAll('line.anno-arrow-line')].map(l => ({
       x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'),
       x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2'),
-      head: l.classList.contains('with-head')
+      head: l.classList.contains('with-head'),
+      color: l.dataset.annoColor || ''
     })),
     labelIdx,
     settings: {
@@ -1312,20 +1317,21 @@ function loadState() {
     }
 
     // 注釈を復元 (履歴には登録しない)
-    (data.markers || []).forEach(m => restoreMarker(m.x, m.y, m.label));
-    (data.texts || []).forEach(t => restoreText(t.x, t.y, t.content));
-    (data.rects || []).forEach(r => restoreRect(r.x, r.y, r.w, r.h));
-    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2, a.head !== false));
+    (data.markers || []).forEach(m => restoreMarker(m.x, m.y, m.label, m.color));
+    (data.texts || []).forEach(t => restoreText(t.x, t.y, t.content, t.color));
+    (data.rects || []).forEach(r => restoreRect(r.x, r.y, r.w, r.h, r.color));
+    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2, a.head !== false, a.color));
 
     if (typeof data.labelIdx === 'number') labelIdx = data.labelIdx;
     return true;
   } catch(e) { return false; }
 }
-function restoreMarker(x, y, label) {
+function restoreMarker(x, y, label, color) {
   const m = document.createElement('div');
   m.className = 'anno-marker';
   m.style.left = x + 'px'; m.style.top = y + 'px';
   m.textContent = label;
+  if (color) applyAnnoColor(m, color);
   annoLayer.appendChild(m);
   attachDeleteHandlers(m);
   m.addEventListener('dblclick', ev => {
@@ -1334,11 +1340,12 @@ function restoreMarker(x, y, label) {
     if (t !== null) { m.textContent = t; scheduleSave(); }
   });
 }
-function restoreText(x, y, content) {
+function restoreText(x, y, content, color) {
   const t = document.createElement('div');
   t.className = 'anno-text';
   t.style.left = x + 'px'; t.style.top = y + 'px';
   t.textContent = content;
+  if (color) applyAnnoColor(t, color);
   annoLayer.appendChild(t);
   attachDeleteHandlers(t);
   t.addEventListener('dblclick', ev => {
@@ -1349,19 +1356,21 @@ function restoreText(x, y, content) {
     else { t.textContent = v; scheduleSave(); }
   });
 }
-function restoreRect(x, y, w, h) {
+function restoreRect(x, y, w, h, color) {
   const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   r.setAttribute('class', 'anno-rect'); r.setAttribute('rx', 6);
   r.setAttribute('x', x); r.setAttribute('y', y);
   r.setAttribute('width', w); r.setAttribute('height', h);
+  if (color) applyAnnoColor(r, color);
   annoSvg.appendChild(r);
   attachDeleteHandlers(r);
 }
-function restoreArrow(x1, y1, x2, y2, hasHead) {
+function restoreArrow(x1, y1, x2, y2, hasHead, color) {
   const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   l.setAttribute('class', hasHead ? 'anno-arrow-line with-head' : 'anno-arrow-line');
   l.setAttribute('x1', x1); l.setAttribute('y1', y1);
   l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+  if (color) applyAnnoColor(l, color);
   annoSvg.appendChild(l);
   attachDeleteHandlers(l);
 }
@@ -1493,7 +1502,13 @@ function selectEl(el) {
   if (selectedEl) selectedEl.classList.remove('anno-selected');
   clearHandles();
   selectedEl = el;
-  if (el) { el.classList.add('anno-selected'); updateHandles(); }
+  if (el) {
+    el.classList.add('anno-selected');
+    updateHandles();
+    if (annoColorInput && el.dataset && el.dataset.annoColor) {
+      annoColorInput.value = el.dataset.annoColor;
+    }
+  }
 }
 function clearHandles() {
   annoSvg.querySelectorAll('.anno-handle, .anno-handle-hit').forEach(h => h.remove());
@@ -1622,11 +1637,37 @@ function attachDeleteHandlers(el) {
   });
 }
 
+// ───── 注釈の色 (現在のピッカー値) ─────
+const annoColorInput = document.getElementById('anno-color');
+let currentAnnoColor = (annoColorInput && annoColorInput.value) || '#ff3b6b';
+function applyAnnoColor(el, color) {
+  if (!el || !color) return;
+  if (el.classList.contains('anno-marker')) {
+    el.style.backgroundColor = color;
+  } else if (el.classList.contains('anno-text')) {
+    el.style.borderColor = color;
+  } else if (el.classList.contains('anno-arrow-line')) {
+    el.style.color = color;
+    el.style.stroke = color;
+  } else if (el.classList.contains('anno-rect')) {
+    el.style.stroke = color;
+  }
+  el.dataset.annoColor = color;
+}
+annoColorInput && annoColorInput.addEventListener('input', e => {
+  currentAnnoColor = e.target.value;
+  if (selectedEl) {
+    applyAnnoColor(selectedEl, currentAnnoColor);
+    scheduleSave();
+  }
+});
+
 function addMarker(x, y, label) {
   const m = document.createElement('div');
   m.className = 'anno-marker';
   m.style.left = x + 'px'; m.style.top = y + 'px';
   m.textContent = label || nextLabelChar();
+  applyAnnoColor(m, currentAnnoColor);
   annoLayer.appendChild(m);
   attachDeleteHandlers(m);
   m.addEventListener('dblclick', ev => {
@@ -1644,6 +1685,7 @@ function addText(x, y) {
   t.className = 'anno-text';
   t.style.left = x + 'px'; t.style.top = y + 'px';
   t.textContent = text;
+  applyAnnoColor(t, currentAnnoColor);
   annoLayer.appendChild(t);
   attachDeleteHandlers(t);
   t.addEventListener('dblclick', ev => {
@@ -1684,6 +1726,7 @@ annoLayer.addEventListener('mousedown', e => {
       // arrow ツールには .with-head クラスを付けて先端を出す。 line はクラス無しで素線
       tempShape.setAttribute('class', currentTool === 'arrow' ? 'anno-arrow-line with-head' : 'anno-arrow-line');
     }
+    applyAnnoColor(tempShape, currentAnnoColor);
     annoSvg.appendChild(tempShape);
     const onMove = (e2) => {
       const p = getStageCoords(e2);
