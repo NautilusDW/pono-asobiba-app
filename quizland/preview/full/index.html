@@ -780,6 +780,43 @@ body.resize-mode .resizable.edge-linked {
   outline-offset: 3px;
 }
 
+/* === シート画像オーバーレイモード ===
+   ユーザー手描きの 1 枚画像 (assets/preview-placeholders/quizland-sheet-v1.png) を
+   ステージに被せる。 個別の placeholder bg-image は非表示にして、 CSS-positioned な
+   テキスト/チップ円/ドット/ボタン中身などはそのまま上に重なって表示される。
+   bbox 位置との完全一致は不要 (ユーザー指示) — ざっくり載せるだけ。 */
+body.sheet-on .stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../../../assets/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+  z-index: 5;  /* 背景の上、 CSS-positioned テキストより下 */
+}
+/* シートが下にあるので、 個別パーツの背景画像は消す (二重写しを避ける) */
+body.sheet-on .hdr-pill,
+body.sheet-on .hdr-left .owl-icon,
+body.sheet-on .hdr-left .title-card,
+body.sheet-on .hdr-left .progress-num,
+body.sheet-on .hdr-left .dot,
+body.sheet-on .hdr-right .ctrl-btn,
+body.sheet-on .q-text-card,
+body.sheet-on .q-text-card .audio,
+body.sheet-on .board,
+body.sheet-on .answer-tray,
+body.sheet-on .chip,
+body.sheet-on .hint,
+body.sheet-on .character,
+body.sheet-on .slot {
+  background-image: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* テキスト・絵文字・チップ中身は前面に出す (sheet の z-index:5 より上) */
+body.sheet-on .safe-area > .hdr,
+body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
+
 /* === ワイヤーフレーム表示モード === */
 /* 背景・装飾画像を消して bbox 線だけ残す。 Codex に渡す参照用 */
 body.wireframe-only .stage {
@@ -1039,8 +1076,9 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
+    <button id="sheet-toggle" title="ユーザー手描きの 1 枚シート画像をステージ全体に重ねる (個別 placeholder は非表示)">🪟 シート画像 OFF</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
-    <button id="export-wireframe-png" title="現在の bbox 配置を 2100×900 の白背景 PNG で書き出し (Codex に渡す参照画像用)">🖼 ワイヤー PNG</button>
+    <button id="export-wireframe-png" title="現在の bbox 配置を 1600×900 の白背景 PNG で書き出し (Codex に渡す参照画像用)">🖼 ワイヤー PNG</button>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
@@ -2643,6 +2681,19 @@ function applyGridMode(on) {
 }
 gridBtn.addEventListener('click', () => applyGridMode(!document.body.classList.contains('grid-mode')));
 try { if (localStorage.getItem('quizland_preview_grid_mode') === '1') applyGridMode(true); } catch(_) {}
+
+// ───── 1 枚シート画像オーバーレイ ─────
+const sheetBtn = document.getElementById('sheet-toggle');
+function setSheetMode(on) {
+  document.body.classList.toggle('sheet-on', on);
+  if (sheetBtn) {
+    sheetBtn.textContent = on ? '🪟 シート画像 ON' : '🪟 シート画像 OFF';
+    sheetBtn.classList.toggle('active', on);
+  }
+  try { localStorage.setItem('quizland_sheet_mode', on ? '1' : '0'); } catch(_) {}
+}
+sheetBtn && sheetBtn.addEventListener('click', () => setSheetMode(!document.body.classList.contains('sheet-on')));
+try { if (localStorage.getItem('quizland_sheet_mode') === '1') setSheetMode(true); } catch(_) {}
 
 // ───── ワイヤーフレーム表示 + PNG 書き出し ─────
 const wireframeBtn = document.getElementById('wireframe-toggle');
