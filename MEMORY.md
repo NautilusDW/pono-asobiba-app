@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T11:07:27Z - zukan preview: Subdivided Corner Pin (3x3 mesh per page = 18 制御点)
+- **タスク**: zukan preview: Subdivided Corner Pin (3x3 mesh per page = 18 制御点)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 252, "Read": 32, "Edit": 188, "Grep": 24, "Write": 3, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-02T10:10:50Z - zukan に Corner Pin (4 角 x 2 page、 matrix3d で射影変換、 userbox を center X で page container に reparent、 saved-layout 永続化) + 両エディタにグループ corner-drag 拡縮 (factor 計算 → group center 基準で全選択拡縮) を実装。 sw.js 641→642
 - **タスク**: zukan に Corner Pin (4 角 x 2 page、 matrix3d で射影変換、 userbox を center X で page container に reparent、 saved-layout 永続化) + 両エディタにグループ corner-drag 拡縮 (factor 計算 → group center 基準で全選択拡縮) を実装。 sw.js 641→642
 - **結果**: 成功
@@ -194,19 +207,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 158, "Bash": 259, "ToolSearch": 1, "Grep": 28, "Read": 45, "Write": 9}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T06:57:27Z - ユーザー指定の Zukan\main.png を 1600x900 JPG にリサイズして assets/preview-placeholders/zukan-bg.jpg に保存、 zukan プレビューの stage 背景に center/cover で適用 (#2a2a2a fallback)。 sw.js 628→629
-- **タスク**: ユーザー指定の Zukan\main.png を 1600x900 JPG にリサイズして assets/preview-placeholders/zukan-bg.jpg に保存、 zukan プレビューの stage 背景に center/cover で適用 (#2a2a2a fallback)。 sw.js 628→629
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 259, "Edit": 158, "Read": 47, "ToolSearch": 1, "Grep": 26, "Write": 9}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
