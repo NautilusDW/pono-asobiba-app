@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T00:49:14Z - zukan プレビュー: resize-mode 切替時のレイアウト崩壊バグを修正 (body.resize-mode .resizable の position:relative が zukan の absolute 配置を破壊していた)
+- **タスク**: zukan プレビュー: resize-mode 切替時のレイアウト崩壊バグを修正 (body.resize-mode .resizable の position:relative が zukan の absolute 配置を破壊していた)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 220, "Write": 12, "Edit": 207, "Read": 43, "WebSearch": 1, "WebFetch": 1, "ToolSearch": 1, "Grep": 15}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-02T00:24:55Z - zukan/preview/full/ 新設 (quizland 編集ツールをコピー → 森の図鑑用に safe area 内コンテンツを置換、 GH_LAYOUT_PATH と RESIZE_KEY を分離) + Codex の Quizland パーツ全 17 枚再生成 を取り込んで commit & push、 sw.js 604→605 バンプ
 - **タスク**: zukan/preview/full/ 新設 (quizland 編集ツールをコピー → 森の図鑑用に safe area 内コンテンツを置換、 GH_LAYOUT_PATH と RESIZE_KEY を分離) + Codex の Quizland パーツ全 17 枚再生成 を取り込んで commit & push、 sw.js 604→605 バンプ
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 218, "Edit": 223, "Read": 32, "Grep": 4, "ToolSearch": 2, "WebSearch": 10, "WebFetch": 4, "Write": 7}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-01T18:16:56Z - quizland/preview に 🔁 グリッド比較 トグル追加 + 旧グリッド placeholder 復元 + Codex 再依頼 HANDOFF 記述 + sw.js 600→601 バンプ
-- **タスク**: quizland/preview に 🔁 グリッド比較 トグル追加 + 旧グリッド placeholder 復元 + Codex 再依頼 HANDOFF 記述 + sw.js 600→601 バンプ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 34
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 226, "Bash": 216, "Read": 31, "Grep": 4, "ToolSearch": 2, "WebSearch": 10, "WebFetch": 4, "Write": 7}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
