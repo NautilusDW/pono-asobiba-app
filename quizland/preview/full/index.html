@@ -904,6 +904,12 @@ body.sheet-on .slot {
   border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
   border-radius: 12px;
 }
+/* シート画像にフクロウ博士アイコンが既に描かれているので、 placeholder の
+   .owl-icon は非表示。 visibility:hidden でレイアウトの幅は保持 */
+body.sheet-on .hdr-left .owl-icon {
+  visibility: hidden !important;
+  background-image: none !important;
+}
 /* テキスト・絵文字・チップ中身は前面に出す (sheet の z-index:5 より上) */
 body.sheet-on .safe-area > .hdr,
 body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
@@ -1128,7 +1134,7 @@ body.resize-mode .ruler { display: block; }
 }
 </style>
 </head>
-<body class="show-safe">
+<body class="show-safe sheet-on">
 
 <div class="toolbar">
   <div>
@@ -1452,17 +1458,14 @@ function buildLayout(value) {
   const finalSize = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
   const msg = `slots:${slots.length} size:${finalSize} firstW×H:${r0?Math.round(r0.width)+'×'+Math.round(r0.height):'-'} board:${Math.round(boardRect.width)}×${Math.round(boardRect.height)}`;
   console.warn('[buildLayout]', value, '→', msg);
-  // 既存 badge を消して新規追加
+  // 既存 badge を消して新規追加。 sheet-on はデフォルト ON が本番なので警告は出さず、
+  // 本当に異常 (slots:0 or サイズ < 20px) の時だけ赤い badge を出す。
   document.querySelectorAll('.qz-debug-badge').forEach(e => e.remove());
-  const inSheet = document.body.classList.contains('sheet-on');
-  if (slots.length === 0 || (r0 && r0.width < 20) || inSheet) {
+  if (slots.length === 0 || (r0 && r0.width < 20)) {
     const badge = document.createElement('div');
     badge.className = 'qz-debug-badge';
-    badge.style.cssText = 'position:fixed;top:60px;left:8px;background:#c00;color:#fff;padding:8px 12px;border-radius:6px;font:600 12px monospace;z-index:99999;max-width:380px;line-height:1.4;cursor:pointer';
-    let warn = '';
-    if (inSheet) warn = '🪟 シート画像 ON が原因で slot がほぼ透明 (薄い破線だけ表示)。 ツールバーの 「シート画像 ON」 を OFF にすると placeholder 画像が戻ります。\n';
-    badge.textContent = warn + 'slot 状態: ' + msg + ' (clickで閉じる)';
-    badge.style.whiteSpace = 'pre-wrap';
+    badge.style.cssText = 'position:fixed;top:60px;left:8px;background:#c00;color:#fff;padding:8px 12px;border-radius:6px;font:600 12px monospace;z-index:99999;max-width:380px;line-height:1.4;cursor:pointer;white-space:pre-wrap';
+    badge.textContent = '⚠ slot 異常: ' + msg + ' (clickで閉じる)';
     badge.onclick = () => badge.remove();
     document.body.appendChild(badge);
   }
@@ -3002,7 +3005,14 @@ function setSheetMode(on) {
   try { localStorage.setItem('quizland_sheet_mode', on ? '1' : '0'); } catch(_) {}
 }
 sheetBtn && sheetBtn.addEventListener('click', () => setSheetMode(!document.body.classList.contains('sheet-on')));
-try { if (localStorage.getItem('quizland_sheet_mode') === '1') setSheetMode(true); } catch(_) {}
+// sheet-on は body class でデフォルト ON (本番モード)。 localStorage で明示的に
+// '0' (= ユーザーが一度 OFF にした) の時だけ OFF にして placeholder モードに戻す。
+// localStorage に何もない場合 (新規ユーザー / リセット後) は ON のまま。
+try {
+  const saved = localStorage.getItem('quizland_sheet_mode');
+  if (saved === '0') setSheetMode(false);
+  else setSheetMode(true);  // ON でボタンラベル / classList を整える
+} catch(_) {}
 
 // ───── ワイヤーフレーム表示 + PNG 書き出し ─────
 const wireframeBtn = document.getElementById('wireframe-toggle');

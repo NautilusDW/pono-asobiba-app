@@ -3890,9 +3890,11 @@ async function _captureSnapshot() {
   if (_bezCanvas) _bezCanvas.style.visibility = 'hidden';
   document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = 'hidden');
   await new Promise(r => requestAnimationFrame(r));   // CSS 反映待ち
-  // safe-area だけだと .stage の BG (zukan-bg + main) は含まれない → stage を撮影
-  const stageEl0 = document.getElementById('stage');
-  console.info('[bezier] capture starting, stage rect:', stageEl0?.getBoundingClientRect());
+  // userbox だけ warp、 BG は CSS のまま固定 → safe-area を撮影 (BG は .stage 側
+  // の CSS background-image なので safe-area には含まれない、 結果として透明背景の
+  // userbox レイヤーだけがテクスチャになる)
+  const safeAreaEl = document.getElementById('safe-area');
+  console.info('[bezier] capture starting, safe-area rect:', safeAreaEl?.getBoundingClientRect());
   let snapshot = null;
   try {
     if (typeof html2canvas !== 'function') {
@@ -3902,7 +3904,7 @@ async function _captureSnapshot() {
       document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = '');
       return null;
     }
-    snapshot = await html2canvas(stageEl0, {
+    snapshot = await html2canvas(safeAreaEl, {
       backgroundColor: null,
       scale: 1,
       logging: false,
@@ -3934,10 +3936,10 @@ async function _captureSnapshot() {
   return snapshot;
 }
 
-// stage は 2100×900、 safe-area (1600×900) は中央配置 (左 250px オフセット)
-const STAGE_W = 2100;
-const _UV_OFF_X = (STAGE_W - SAFE_W) / 2 / STAGE_W;   // 0.1190
-const _UV_PAGE_W = PAGE_W / STAGE_W;                   // 0.3810
+// safe-area (1600×900) を撮影 → texture は safe-area と同じアスペクト
+// 左ページ u = 0..0.5、 右ページ u = 0.5..1
+const _UV_OFF_X  = 0.0;
+const _UV_PAGE_W = 0.5;
 
 function applyBezierWarp() {
   if (!document.body.classList.contains('corner-pin-mode')) return;
