@@ -940,19 +940,25 @@ body.book-tilt #safe-area {
 }
 body.book-tilt .userbox { transform-style: preserve-3d; }
 
-/* === Corner Pin モード (Approach B+) ===
-   2 つの page container に matrix3d を適用 → 4 角ハンドルで自由変形 */
+/* === Corner Pin / Mesh Pin モード ===
+   各ページに 4 つの cell container (2×2 mesh) を配置、 各 cell に matrix3d。
+   9 制御点 / page を独立に動かす */
 .page-pin-container {
   position: absolute;
   pointer-events: none;
   transform-origin: 0 0;
-  /* デフォルトでは何もしない。 corner-pin-mode 中に JS が transform を入れる */
 }
-.page-pin-container > .userbox { pointer-events: auto; }
+.page-cell {
+  position: absolute;
+  pointer-events: none;
+  transform-origin: 0 0;
+  overflow: visible;
+}
+.page-cell > .userbox { pointer-events: auto; }
 .page-corner {
   position: absolute;
   width: 18px; height: 18px;
-  margin: -9px 0 0 -9px;  /* 左上を中心に */
+  margin: -9px 0 0 -9px;
   background: #ff50c8;
   border: 2px solid #fff;
   border-radius: 50%;
@@ -961,9 +967,10 @@ body.book-tilt .userbox { transform-style: preserve-3d; }
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 .page-corner[data-page="right"] { background: #50c8ff; }
+/* 中央線 / 中央点ハンドルは少し小さく */
+.page-corner.mid { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
 body:not(.corner-pin-mode) .page-corner { display: none; }
-body:not(.corner-pin-mode) .page-pin-container { transform: none !important; }
-/* corner-pin-mode 中、 元の userbox の半透明色は邪魔なので透明に */
+body:not(.corner-pin-mode) .page-cell { transform: none !important; }
 body.corner-pin-mode .userbox { background: rgba(255, 178, 86, 0.18); }
 
 /* PNG export 選択メニュー (split button のドロップダウン) */
@@ -1360,7 +1367,7 @@ body.resize-mode .ruler { display: block; }
     <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
-    <button id="corner-pin-toggle" title="ページごとの 4 角を自由にドラッグして本のページに合わせ込む (After Effects のコーナーピン風)">🎯 コーナーピン OFF</button>
+    <button id="corner-pin-toggle" title="ページを 2×2 cell に分割した 9 制御点 (3×3) を独立にドラッグ。 4 隅 + 中央 + 各辺中点で本のページの曲がりを近似 (= Subdivided Corner Pin / メッシュピン)">🎯 メッシュピン OFF</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -1438,20 +1445,12 @@ body.resize-mode .ruler { display: block; }
     <div class="safe-area zukan-safe" id="safe-area">
       <!-- センター位置の見える化 (show-safe で表示) -->
       <div class="center-dot" aria-hidden="true"></div>
-      <!-- コーナーピン用のページ container (corner-pin-mode 中だけ機能)。
-           userbox を center X で left/right ページに分けて reparent し、
-           container 自体に matrix3d を適用 → 4 角ドラッグで全体が変形 -->
+      <!-- メッシュピン (Subdivided Corner Pin)。 各ページを 2×2 cell に分割 (= 4 cell)、
+           各 cell に独立な matrix3d を計算。 ページの 3×3 の制御点 (= 9 点 / page, 18 点合計)
+           を独立にドラッグすることで本のページの曲がりを近似。 cell container と
+           ハンドルは JS で動的生成 -->
       <div class="page-pin-container" id="page-pin-left" data-page="left"></div>
       <div class="page-pin-container" id="page-pin-right" data-page="right"></div>
-      <!-- 4 角ハンドル (ページ × 4 = 8 個) -->
-      <div class="page-corner" data-page="left" data-corner="tl"></div>
-      <div class="page-corner" data-page="left" data-corner="tr"></div>
-      <div class="page-corner" data-page="left" data-corner="br"></div>
-      <div class="page-corner" data-page="left" data-corner="bl"></div>
-      <div class="page-corner" data-page="right" data-corner="tl"></div>
-      <div class="page-corner" data-page="right" data-corner="tr"></div>
-      <div class="page-corner" data-page="right" data-corner="br"></div>
-      <div class="page-corner" data-page="right" data-corner="bl"></div>
       <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る -->
     </div>
 
@@ -2329,7 +2328,7 @@ function takeLayoutSnapshot() {
   data.__texts = collectEditableTexts();
   data.__userboxes = collectUserboxes();
   data.__hidden = collectHiddenKeys();
-  if (typeof cornerPin === 'object' && cornerPin) data.__cornerPin = JSON.parse(JSON.stringify(cornerPin));
+  if (typeof meshPin === 'object' && meshPin) data.__meshPin = JSON.parse(JSON.stringify(meshPin));
   return data;
 }
 function collectHiddenKeys() {
@@ -2461,13 +2460,38 @@ function loadResizeState() {
     if (data.__guides) restoreGuides(data.__guides);
     if (data.__texts) applyEditableTexts(data.__texts);
     if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
-    if (data.__cornerPin && typeof cornerPin === 'object') {
+    if (data.__meshPin && typeof meshPin === 'object') {
       ['left', 'right'].forEach(p => {
-        if (Array.isArray(data.__cornerPin[p]) && data.__cornerPin[p].length === 4) {
-          cornerPin[p] = data.__cornerPin[p].map(pt => ({ x: pt.x, y: pt.y }));
+        const mp = data.__meshPin[p];
+        if (!Array.isArray(mp) || mp.length !== 3) return;
+        for (let r = 0; r < 3; r++) {
+          if (!Array.isArray(mp[r]) || mp[r].length !== 3) continue;
+          for (let c = 0; c < 3; c++) {
+            const pt = mp[r][c];
+            if (pt && typeof pt.x === 'number' && typeof pt.y === 'number') {
+              meshPin[p][r][c] = { x: pt.x, y: pt.y };
+            }
+          }
         }
       });
-      if (typeof applyCornerPin === 'function') applyCornerPin();
+      if (typeof applyMeshPin === 'function') applyMeshPin();
+    } else if (data.__cornerPin && typeof meshPin === 'object') {
+      // 旧 __cornerPin (4 角 / page) → 新 __meshPin (3×3 / page) を双線形補間で生成
+      ['left', 'right'].forEach(p => {
+        const cp = data.__cornerPin[p];
+        if (!Array.isArray(cp) || cp.length !== 4) return;
+        const baseLeft = p === 'left' ? 0 : PAGE_W;
+        const tl = cp[0], tr = cp[1], br = cp[2], bl = cp[3];
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const u = c / 2, v = r / 2;
+            const x = (1-u)*(1-v)*tl.x + u*(1-v)*tr.x + (1-u)*v*bl.x + u*v*br.x;
+            const y = (1-u)*(1-v)*tl.y + u*(1-v)*tr.y + (1-u)*v*bl.y + u*v*br.y;
+            meshPin[p][r][c] = { x: x - baseLeft, y };  // safe-area → page-local
+          }
+        }
+      });
+      if (typeof applyMeshPin === 'function') applyMeshPin();
     }
   } catch(e) {}
 }
@@ -3652,16 +3676,29 @@ function setElTransform(el) {
   el.style.transform = t;
 }
 
-// ───── Corner Pin (Approach B+) ─────
-// 2 ページの 4 角を独立に動かして book の見開きに合わせる。
-// matrix3d は 3x3 homography を 4x4 に拡張した CSS 形式で表現。
-// 公知の adjugate 法で source rect → target quad の射影変換を計算。
+// ───── Subdivided Corner Pin (Mesh Pin) ─────
+// 各ページを 2×2 cell に分割 (= 4 cell × 2 page = 8 cell)。
+// 制御点は 3×3 の格子 (= 9 点 / page, 18 点合計) を独立に動かせる。
+// 各 cell に matrix3d を割り当てて、 4 cell の境界が滑らかにつながる
+// (隣接 cell が同じ mesh point を共有するため C0 連続)。
+// 座標系: meshPin[page][row][col] は **page-local** (0..PAGE_W × 0..SAFE_H)。
+// ハンドルは safe-area 座標で表示するので baseLeft を足して位置決め。
 const SAFE_W = 1600, SAFE_H = 900;
-const PAGE_W = SAFE_W / 2;  // 800
-// 各ページの 4 角の初期座標 (safe-area 内、 順序 = TL, TR, BR, BL)
-const cornerPin = {
-  left:  [{x: 0,         y: 0},      {x: PAGE_W,   y: 0},      {x: PAGE_W,   y: SAFE_H}, {x: 0,        y: SAFE_H}],
-  right: [{x: PAGE_W,    y: 0},      {x: SAFE_W,   y: 0},      {x: SAFE_W,   y: SAFE_H}, {x: PAGE_W,   y: SAFE_H}],
+const PAGE_W = SAFE_W / 2;   // 800
+const HALF_W = PAGE_W / 2;   // 400
+const HALF_H = SAFE_H / 2;   // 450
+
+function _initMeshGrid() {
+  const g = [];
+  for (let r = 0; r < 3; r++) {
+    g[r] = [];
+    for (let c = 0; c < 3; c++) g[r][c] = { x: c * HALF_W, y: r * HALF_H };
+  }
+  return g;
+}
+const meshPin = {
+  left:  _initMeshGrid(),
+  right: _initMeshGrid(),
 };
 
 function _adj(m) {
@@ -3714,9 +3751,50 @@ function getMatrix3d(w, h, p) {
   ];
 }
 
-function applyCornerPin() {
+// 各ページに 4 cell (2×2) の container を JS で動的生成
+function _ensureCellContainers() {
   ['left', 'right'].forEach(page => {
-    const c = cornerPin[page];
+    const container = document.getElementById('page-pin-' + page);
+    if (!container || container._cellsInit) return;
+    container._cellsInit = true;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'page-cell';
+        cell.dataset.page = page;
+        cell.dataset.col = c;
+        cell.dataset.row = r;
+        cell.id = `page-cell-${page}-${c}-${r}`;
+        container.appendChild(cell);
+      }
+    }
+  });
+}
+
+// 各ページに 9 個 (3×3) のハンドルを safe-area 直下に動的生成
+function _ensureMeshHandles() {
+  const safe = document.getElementById('safe-area');
+  if (!safe) return;
+  ['left', 'right'].forEach(page => {
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        if (document.querySelector(`.page-corner[data-page="${page}"][data-col="${c}"][data-row="${r}"]`)) continue;
+        const h = document.createElement('div');
+        h.className = 'page-corner';
+        if (c === 1 || r === 1) h.classList.add('mid');  // 角以外は少し小さく
+        h.dataset.page = page;
+        h.dataset.col = c;
+        h.dataset.row = r;
+        safe.appendChild(h);
+      }
+    }
+  });
+}
+
+function applyMeshPin() {
+  _ensureCellContainers();
+  ['left', 'right'].forEach(page => {
+    const grid = meshPin[page];
     const baseLeft = page === 'left' ? 0 : PAGE_W;
     const container = document.getElementById('page-pin-' + page);
     if (!container) return;
@@ -3724,38 +3802,65 @@ function applyCornerPin() {
     container.style.top = '0';
     container.style.width = PAGE_W + 'px';
     container.style.height = SAFE_H + 'px';
-    if (document.body.classList.contains('corner-pin-mode')) {
-      // container 内座標で matrix3d 計算
-      const local = c.map(p => ({ x: p.x - baseLeft, y: p.y }));
-      const m = getMatrix3d(PAGE_W, SAFE_H, local);
-      container.style.transform = `matrix3d(${m.join(',')})`;
-    } else {
-      container.style.transform = '';
+    container.style.transform = '';   // container 自体は変形しない (cell 単位で変形)
+
+    const inMode = document.body.classList.contains('corner-pin-mode');
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const cell = document.getElementById(`page-cell-${page}-${c}-${r}`);
+        if (!cell) continue;
+        const srcLeft = c * HALF_W;
+        const srcTop  = r * HALF_H;
+        cell.style.left   = srcLeft + 'px';
+        cell.style.top    = srcTop  + 'px';
+        cell.style.width  = HALF_W  + 'px';
+        cell.style.height = HALF_H  + 'px';
+        if (inMode) {
+          // この cell の 4 角 (page-local 座標、 順序 = TL, TR, BR, BL)
+          const dst = [
+            grid[r][c],
+            grid[r][c+1],
+            grid[r+1][c+1],
+            grid[r+1][c],
+          ];
+          // matrix3d は cell 内ローカル座標 (cell 左上を原点) で計算
+          const dstLocal = dst.map(p => ({ x: p.x - srcLeft, y: p.y - srcTop }));
+          const m = getMatrix3d(HALF_W, HALF_H, dstLocal);
+          cell.style.transform = `matrix3d(${m.join(',')})`;
+        } else {
+          cell.style.transform = '';
+        }
+      }
     }
   });
-  // ハンドル位置を corners に合わせて更新 (corner-pin-mode 中のみ表示)
+  // ハンドル位置更新 (page-local → safe-area 座標)
   ['left', 'right'].forEach(page => {
-    cornerPin[page].forEach((p, i) => {
-      const cn = ['tl', 'tr', 'br', 'bl'][i];
-      const handle = document.querySelector(`.page-corner[data-page="${page}"][data-corner="${cn}"]`);
-      if (handle) {
-        handle.style.left = p.x + 'px';
-        handle.style.top  = p.y + 'px';
+    const grid = meshPin[page];
+    const baseLeft = page === 'left' ? 0 : PAGE_W;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const handle = document.querySelector(`.page-corner[data-page="${page}"][data-col="${c}"][data-row="${r}"]`);
+        if (handle) {
+          handle.style.left = (grid[r][c].x + baseLeft) + 'px';
+          handle.style.top  = grid[r][c].y + 'px';
+        }
       }
-    });
+    }
   });
 }
 
-function attachCornerHandles() {
+function attachMeshHandles() {
   document.querySelectorAll('.page-corner').forEach(h => {
+    if (h._handlerAttached) return;
+    h._handlerAttached = true;
     h.addEventListener('mousedown', e => {
       e.stopPropagation();
       e.preventDefault();
       const page = h.dataset.page;
-      const cn = h.dataset.corner;
-      const idx = ['tl', 'tr', 'br', 'bl'].indexOf(cn);
+      const c = parseInt(h.dataset.col, 10);
+      const r = parseInt(h.dataset.row, 10);
       const startX = e.clientX, startY = e.clientY;
-      const startPos = { ...cornerPin[page][idx] };
+      const startPos = { ...meshPin[page][r][c] };
       const stageEl0 = document.getElementById('stage');
       const sR = stageEl0.getBoundingClientRect();
       const sW = parseFloat(getComputedStyle(stageEl0).width);
@@ -3763,8 +3868,8 @@ function attachCornerHandles() {
       const onMove = (e2) => {
         const dx = (e2.clientX - startX) / scale;
         const dy = (e2.clientY - startY) / scale;
-        cornerPin[page][idx] = { x: startPos.x + dx, y: startPos.y + dy };
-        applyCornerPin();
+        meshPin[page][r][c] = { x: startPos.x + dx, y: startPos.y + dy };
+        applyMeshPin();
       };
       const onUp = () => {
         window.removeEventListener('mousemove', onMove);
@@ -3778,30 +3883,47 @@ function attachCornerHandles() {
 }
 
 function reparentUserboxesIntoPages() {
-  // Corner Pin ON: userbox を center X で left/right page container に reparent
+  // Mesh Pin ON: userbox を center X/Y で 該当 cell に reparent
+  // 元の position は dataset に退避してトグル OFF 時に復元する
+  _ensureCellContainers();
   document.querySelectorAll('.userbox').forEach(el => {
     const left = parseFloat(el.style.left) || 0;
+    const top  = parseFloat(el.style.top)  || 0;
     const tx = el._tx || 0;
-    const w = parseFloat(el.style.width) || el.offsetWidth || 0;
+    const ty = el._ty || 0;
+    const w = parseFloat(el.style.width)  || el.offsetWidth  || 0;
+    const h = parseFloat(el.style.height) || el.offsetHeight || 0;
     const cx = left + tx + w / 2;
+    const cy = top  + ty + h / 2;
     const page = cx < PAGE_W ? 'left' : 'right';
-    const container = document.getElementById('page-pin-' + page);
     const baseLeft = page === 'left' ? 0 : PAGE_W;
+    const cellCol = (cx - baseLeft) < HALF_W ? 0 : 1;
+    const cellRow = cy < HALF_H ? 0 : 1;
+    const cell = document.getElementById(`page-cell-${page}-${cellCol}-${cellRow}`);
+    if (!cell) return;
     if (!el.dataset.origLeft) {
-      el.dataset.origLeft = el.style.left;
+      el.dataset.origLeft = el.style.left || '';
+      el.dataset.origTop  = el.style.top  || '';
       el.dataset.origPage = page;
+      el.dataset.origCellCol = String(cellCol);
+      el.dataset.origCellRow = String(cellRow);
     }
-    el.style.left = (left - baseLeft) + 'px';
-    container.appendChild(el);
+    el.style.left = (left - baseLeft - cellCol * HALF_W) + 'px';
+    el.style.top  = (top - cellRow * HALF_H) + 'px';
+    cell.appendChild(el);
   });
 }
 function unparentUserboxesFromPages() {
   const safe = document.getElementById('safe-area');
   document.querySelectorAll('.userbox').forEach(el => {
-    if (el.dataset.origLeft) {
-      el.style.left = el.dataset.origLeft;
+    if (el.dataset.origLeft !== undefined) {
+      if (el.dataset.origLeft) el.style.left = el.dataset.origLeft;
+      if (el.dataset.origTop)  el.style.top  = el.dataset.origTop;
       delete el.dataset.origLeft;
+      delete el.dataset.origTop;
       delete el.dataset.origPage;
+      delete el.dataset.origCellCol;
+      delete el.dataset.origCellRow;
     }
     safe.appendChild(el);
   });
@@ -3817,15 +3939,17 @@ function setCornerPinMode(on) {
     document.body.classList.remove('corner-pin-mode');
   }
   if (cornerPinBtn) {
-    cornerPinBtn.textContent = on ? '🎯 コーナーピン ON' : '🎯 コーナーピン OFF';
+    cornerPinBtn.textContent = on ? '🎯 メッシュピン ON' : '🎯 メッシュピン OFF';
     cornerPinBtn.classList.toggle('active', on);
   }
-  applyCornerPin();
+  applyMeshPin();
   try { localStorage.setItem('zukan_corner_pin', on ? '1' : '0'); } catch(_) {}
 }
 cornerPinBtn && cornerPinBtn.addEventListener('click', () => setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
-attachCornerHandles();
-applyCornerPin();
+_ensureCellContainers();
+_ensureMeshHandles();
+attachMeshHandles();
+applyMeshPin();
 try { if (localStorage.getItem('zukan_corner_pin') === '1') setCornerPinMode(true); } catch(_) {}
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
