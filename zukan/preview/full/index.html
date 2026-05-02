@@ -908,6 +908,11 @@ body.resize-mode .zukan-safe .resizable {
   border-radius: 8px;
   box-sizing: border-box;
 }
+/* group メンバー: 紫の二重枠で識別 */
+.userbox[data-group-id] {
+  border-color: rgba(120, 75, 200, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
 .userbox-badge {
   position: absolute;
   top: -22px; left: 0;
@@ -2307,8 +2312,27 @@ function refreshSelectionUI() {
   document.body.classList.toggle('has-selection', selectedElements.size > 0);
   updateNumericPanel();
 }
-function selectOnly(el) { selectedElements.clear(); if (el) selectedElements.add(el); refreshSelectionUI(); }
-function toggleSelect(el) { if (selectedElements.has(el)) selectedElements.delete(el); else selectedElements.add(el); refreshSelectionUI(); }
+function selectOnly(el) {
+  selectedElements.clear();
+  if (el) selectedElements.add(el);
+  if (typeof expandGroupSelection === 'function') expandGroupSelection(selectedElements);
+  refreshSelectionUI();
+}
+function toggleSelect(el) {
+  if (!el) return;
+  // group 操作: 1 個でも group メンバーが入ってたら group ごと add/remove
+  const gid = el.dataset && el.dataset.groupId;
+  if (gid) {
+    const allMembers = [...document.querySelectorAll(`.userbox[data-group-id="${gid}"]`)];
+    const allIn = allMembers.every(m => selectedElements.has(m));
+    if (allIn) allMembers.forEach(m => selectedElements.delete(m));
+    else allMembers.forEach(m => selectedElements.add(m));
+  } else {
+    if (selectedElements.has(el)) selectedElements.delete(el);
+    else selectedElements.add(el);
+  }
+  refreshSelectionUI();
+}
 function clearSelection() { selectedElements.clear(); refreshSelectionUI(); }
 
 function elementShortLabel(el) {
@@ -2394,6 +2418,8 @@ function applyNumericInput(prop, valueStr) {
 });
 
 // SCALE% 適用 (選択中の W/H を percent に基づいて拡縮)
+// 複数選択 (= group 含む) の場合は **選択範囲の中心を基準に位置も連動させる**
+//   → グループとして 1 個の塊のように拡縮できる
 document.addEventListener('click', e => {
   if (e.target && e.target.id === 'np-scale-apply') {
     const input = document.getElementById('np-scale');
@@ -2404,11 +2430,43 @@ document.addEventListener('click', e => {
     if (sel.length === 0) return;
     const beforeMap = new Map();
     sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+    const isGroup = sel.length >= 2;
+    let cx = 0, cy = 0;
+    if (isGroup) {
+      const { stageRect, scale } = getStageRectInfo();
+      const rects = sel.map(el => bcrInStage(el, stageRect, scale));
+      const minLeft = Math.min(...rects.map(r => r.left));
+      const maxRight = Math.max(...rects.map(r => r.right));
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      cx = (minLeft + maxRight) / 2;
+      cy = (minTop + maxBottom) / 2;
+    }
+    const { stageRect, scale } = getStageRectInfo();
     sel.forEach(el => {
+      const oldRect = bcrInStage(el, stageRect, scale);
       const w = parseFloat(el.style.width) || el.offsetWidth;
       const h = parseFloat(el.style.height) || el.offsetHeight;
       el.style.width = Math.round(w * factor) + 'px';
       el.style.height = Math.round(h * factor) + 'px';
+      // グループ拡縮: 各要素の中心位置を center 基準に factor 倍する
+      // 縦横サイズ変化分 = (oldW - newW)/2 を anchor (top-left) 補正としてさらに足す
+      // 実用上は: 「要素中心が center から (oldCenterX-cx)*factor の位置に来る」 が目標
+      if (isGroup) {
+        const oldCenterX = (oldRect.left + oldRect.right) / 2;
+        const oldCenterY = (oldRect.top + oldRect.bottom) / 2;
+        const targetCenterX = cx + (oldCenterX - cx) * factor;
+        const targetCenterY = cy + (oldCenterY - cy) * factor;
+        // 新しい中心 = 元中心 + (top-left の伸縮ずれ) + tx 補正
+        // top-left は variable; サイズ変化で右下に伸びたぶん中心がずれる: oldCenterX → oldCenterX + (newW-oldW)/2
+        const sizeShiftX = (w * factor - w) / 2;
+        const sizeShiftY = (h * factor - h) / 2;
+        const dxNeeded = targetCenterX - (oldCenterX + sizeShiftX);
+        const dyNeeded = targetCenterY - (oldCenterY + sizeShiftY);
+        el._tx = (el._tx || 0) + dxNeeded;
+        el._ty = (el._ty || 0) + dyNeeded;
+        el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+      }
       el._resizeUpdateLabel && el._resizeUpdateLabel();
     });
     sel.forEach(el => {
@@ -2979,14 +3037,76 @@ function computeMoveSnap(primaryEl, startRect, dx, dy) {
 
 // 内部クリップボード (OS の clipboard ではなく、 同セッションでの複製用)
 let userboxClipboard = [];
+function isEditableTarget(t) {
+  if (!t || !(t instanceof Element)) return false;
+  if (typeof t.matches !== 'function') return false;
+  // contenteditable=true のもの、 input/textarea
+  if (t.matches('input, textarea')) return true;
+  // contenteditable は属性値 "false" なら通す (matches('[contenteditable]') は属性さえあれば true なので注意)
+  let cur = t;
+  while (cur && cur !== document.body) {
+    const v = cur.getAttribute && cur.getAttribute('contenteditable');
+    if (v === 'true' || v === '') return true;
+    if (v === 'false') return false;
+    cur = cur.parentElement;
+  }
+  return false;
+}
+// グループ化 ID 採番 + ヘルパ
+let userboxGroupCounter = 0;
+function expandGroupSelection(set) {
+  // set 内に group メンバーがいたら、 同 group の他メンバーも選択に加える
+  const seenGroups = new Set();
+  set.forEach(el => {
+    const gid = el.dataset && el.dataset.groupId;
+    if (gid) seenGroups.add(gid);
+  });
+  seenGroups.forEach(gid => {
+    document.querySelectorAll(`.userbox[data-group-id="${gid}"]`).forEach(g => set.add(g));
+  });
+}
+
 window.addEventListener('keydown', e => {
   if (!document.body.classList.contains('resize-mode')) return;
-  if (e.target.matches('input, textarea, [contenteditable]')) return;
+  if (isEditableTarget(e.target)) return;
   const isCopy  = (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C');
   const isPaste = (e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V');
-  if (isCopy) {
+  const isDup   = (e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D');
+  const isGroup   = (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'g' || e.key === 'G');
+  const isUngroup = (e.ctrlKey || e.metaKey) && e.shiftKey  && (e.key === 'g' || e.key === 'G');
+  if (isGroup) {
+    e.preventDefault();
     const sel = [...selectedElements].filter(el => el.classList.contains('userbox'));
-    if (sel.length === 0) return;
+    if (sel.length < 2) {
+      showLayoutToast('2 個以上選択してから Ctrl+G');
+      return;
+    }
+    userboxGroupCounter += 1;
+    const gid = 'g-' + Date.now() + '-' + userboxGroupCounter;
+    sel.forEach(el => { el.dataset.groupId = gid; });
+    saveResizeState();
+    showLayoutToast(`${sel.length} 個をグループ化`);
+    return;
+  }
+  if (isUngroup) {
+    e.preventDefault();
+    const sel = [...selectedElements].filter(el => el.classList.contains('userbox') && el.dataset.groupId);
+    if (sel.length === 0) {
+      showLayoutToast('グループ解除する枠が選択されていません');
+      return;
+    }
+    sel.forEach(el => { delete el.dataset.groupId; });
+    saveResizeState();
+    showLayoutToast(`${sel.length} 個のグループを解除`);
+    return;
+  }
+  if (isCopy || isDup) {
+    const sel = [...selectedElements].filter(el => el.classList.contains('userbox'));
+    if (sel.length === 0) {
+      e.preventDefault();
+      showLayoutToast('コピー対象の枠が選択されていません');
+      return;
+    }
     e.preventDefault();
     userboxClipboard = sel.map(el => ({
       label: el.dataset.userboxLabel,
@@ -2998,27 +3118,35 @@ window.addEventListener('keydown', e => {
       ty: el._ty || 0,
     }));
     showLayoutToast(`${sel.length} 個コピー`);
+    // Ctrl+D は即ペーストもする (ワンキー複製)
+    if (isDup) doPaste();
   } else if (isPaste) {
-    if (userboxClipboard.length === 0) return;
     e.preventDefault();
-    selectedElements.clear();
-    userboxClipboard.forEach(box => {
-      const el = createUserbox({
-        label: box.label,
-        left: (parseFloat(box.left) + 20) + 'px',
-        top:  (parseFloat(box.top)  + 20) + 'px',
-        w: box.w,
-        h: box.h,
-        tx: box.tx,
-        ty: box.ty,
-      });
-      selectedElements.add(el);
-    });
-    refreshSelectionUI();
-    saveResizeState();
-    showLayoutToast(`${userboxClipboard.length} 個ペースト`);
+    doPaste();
   }
 });
+function doPaste() {
+  if (userboxClipboard.length === 0) {
+    showLayoutToast('クリップボードが空です (Ctrl+C で先にコピー)');
+    return;
+  }
+  selectedElements.clear();
+  userboxClipboard.forEach(box => {
+    const el = createUserbox({
+      label: box.label,
+      left: (parseFloat(box.left) + 20) + 'px',
+      top:  (parseFloat(box.top)  + 20) + 'px',
+      w: box.w,
+      h: box.h,
+      tx: box.tx,
+      ty: box.ty,
+    });
+    selectedElements.add(el);
+  });
+  refreshSelectionUI();
+  saveResizeState();
+  showLayoutToast(`${userboxClipboard.length} 個ペースト`);
+}
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
 // サイズ調整 ON 中、 既存 userbox の外側をドラッグすると自動的に新規矩形が作られる。
@@ -3026,7 +3154,7 @@ window.addEventListener('keydown', e => {
 
 let userboxCounter = 0;
 function createUserbox(opts) {
-  // opts: { id?, label?, left, top, w, h, tx?, ty? }
+  // opts: { id?, label?, left, top, w, h, tx?, ty?, groupId? }
   userboxCounter += 1;
   const id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
   const label = opts.label || ('枠' + userboxCounter);
@@ -3034,6 +3162,7 @@ function createUserbox(opts) {
   div.className = 'userbox';
   div.dataset.userboxId = id;
   div.dataset.userboxLabel = label;
+  if (opts.groupId) div.dataset.groupId = opts.groupId;
   div.style.left = opts.left;
   div.style.top = opts.top;
   if (opts.w) div.style.width = opts.w;
@@ -3097,6 +3226,7 @@ function collectUserboxes() {
     h: el.style.height,
     tx: el._tx || 0,
     ty: el._ty || 0,
+    groupId: el.dataset.groupId || '',
   }));
 }
 function restoreUserboxes(arr) {
