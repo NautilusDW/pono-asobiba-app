@@ -516,30 +516,24 @@ body.sheet-on .hdr-right .ctrl-btn {
   border: 3px solid rgba(231, 203, 149, 0.92);
   box-shadow: 0 10px 22px rgba(120, 83, 20, 0.12);
 }
-.trivia-display { position: relative; }
+.trivia-display { position: relative; display: flex; justify-content: center; align-items: flex-start; }
 .trivia-pono {
   width: 380px; height: 380px;  /* 280→380 (約1.36倍、ステージを埋める存在感に) */
   object-fit: contain;
   border-radius: 24px;
   filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
+  margin-top: 60px; /* ポノを下方向に移動 (バルーンを上に置けるよう余白確保) */
 }
-.trivia-bubble {
+.trivia-balloon {
   position: absolute;
-  top: -8px; right: -16px;
-  font-size: 36px;
-  font-weight: 900;
-  color: #FF6B9D;
-  background: #fff;
-  border-radius: 50%;
-  width: 60px; height: 60px;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 3px 12px rgba(255,107,157,0.3);
-  animation: quizBubbleBlink 2.5s ease-in-out infinite;
-}
-@keyframes quizBubbleBlink {
-  0%, 70%, 100% { opacity: 1; transform: scale(1); }
-  80% { opacity: 0.3; transform: scale(0.85); }
-  90% { opacity: 1; transform: scale(1.1); }
+  top: -10px;
+  right: 8%;
+  width: 180px;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 6px 12px rgba(120, 83, 20, 0.18));
 }
 
 /* ===== Answer column (right) ===== */
@@ -1713,26 +1707,31 @@ function renderOpposite(stage, q) {
   wrap.textContent = q.word;
   stage.appendChild(wrap);
 }
+// バルーンランダム選択 (連続で同じ画像を出さない)
+let _lastBalloonIdx = -1;
+function pickBalloonSrc() {
+  let idx;
+  do {
+    idx = 1 + Math.floor(Math.random() * 6);  // 1-6
+  } while (idx === _lastBalloonIdx);
+  _lastBalloonIdx = idx;
+  return '../assets/images/quizland/balloons/ballon_' + String(idx).padStart(2, '0') + '.png';
+}
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
 
-  const video = document.createElement('video');
-  video.src = '../assets/videos/ThinkingPono.mp4';
-  video.autoplay = true;
-  video.loop = true;
-  video.muted = true;
-  video.playsInline = true;
-  video.setAttribute('playsinline', '');
-  video.setAttribute('webkit-playsinline', '');
-  video.className = 'trivia-pono';
-  video.play().catch(function() {});
-  wrap.appendChild(video);
+  const pono = document.createElement('img');
+  pono.src = '../assets/images/characters/pono/dance/dance_cool.png';
+  pono.alt = '';
+  pono.className = 'trivia-pono';
+  wrap.appendChild(pono);
 
-  const bubble = document.createElement('div');
-  bubble.className = 'trivia-bubble';
-  bubble.textContent = '?';
-  wrap.appendChild(bubble);
+  const balloon = document.createElement('img');
+  balloon.src = pickBalloonSrc();
+  balloon.alt = '';
+  balloon.className = 'trivia-balloon';
+  wrap.appendChild(balloon);
 
   stage.appendChild(wrap);
 }
