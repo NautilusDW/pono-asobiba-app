@@ -592,7 +592,13 @@ body.sheet-on .hdr-right .ctrl-btn {
   text-align: center;
   line-height: 1.2;
 }
-.chip:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wood-dark), 0 4px 8px var(--paper-shadow); }
+.chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
+.chip:active,
+.chip.pressed {
+  transform: translateY(3px) scale(0.97);
+  background: linear-gradient(180deg, #FDE68A, #FCD34D) !important;
+  box-shadow: 0 2px 0 var(--wood-dark), 0 3px 6px var(--paper-shadow);
+}
 .chip.correct {
   background: linear-gradient(180deg, #BDF5C2, #6FD480) !important;
   border-color: var(--success) !important;
@@ -622,8 +628,8 @@ body.sheet-on .hdr-right .ctrl-btn {
 }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 /* チップ内の手描きスクリブル円 (色問題用) */
@@ -1225,9 +1231,9 @@ const HAKASE_DIALOGUE = {
       'ぜんぶ みえているかな？',
     ],
     order_color: [
-      'ひだりから じゅんばんに みてみよう',
-      'まんなかの いろは なにじゃろう？',
-      'みぎはし、ひだりはし、よく みてみるのじゃ',
+      'いろを じゅんばんに みていこう',
+      'もんだいで きかれている ばしょの いろを みつけよう',
+      'まんなか、はし、よく みてみるのじゃ',
     ],
     shape_name: [
       'かどの かずを かぞえてみるのじゃ',
@@ -1346,11 +1352,10 @@ function showProblemDialogue(question) {
     ? HAKASE_DIALOGUE.problem.byCategory[cat]
     : pickRandom(HAKASE_DIALOGUE.problem.general);
   setHakaseDialogue(text);
-  // 5秒後にヒント1へ自動切替
+  // 自動ヒントは廃止 (汎用文がカテゴリと噛み合わず混乱を招くため)。
+  // ユーザーが吹き出しをタップしたらカテゴリ別ヒント2へ進む。
   clearTimeout(_autoHintTimer);
-  _autoHintTimer = setTimeout(() => {
-    if (_hintLevel === 0) showHint1();
-  }, HINT_AUTO_DELAY_MS);
+  _autoHintTimer = null;
 }
 
 function showHint1() {
@@ -1865,6 +1870,11 @@ function onChoice(idx, btn) {
   clearTimeout(_autoHintTimer);
   if (locked) return;
   locked = true;
+  // モバイルでも :active が反応しづらい場合に備え、明示的に押下表示を出す
+  if (btn) {
+    btn.classList.add('pressed');
+    setTimeout(() => { btn.classList.remove('pressed'); }, 150);
+  }
   ensureAudio();
   const correct = (idx === currentQ.answer);
   if (correct) {
