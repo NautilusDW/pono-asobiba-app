@@ -1725,17 +1725,17 @@ function pickBalloonSrc() {
   _lastBalloonIdx = idx;
   return '../assets/images/quizland/balloons/ballon_' + String(idx).padStart(2, '0') + '.png';
 }
-// ポノのポーズ (思案中らしい表情のみ採用 — walk/point/cheer/hooray は action 寄りなので除外)
-// 質問表示中は flip-book 風に約1.2秒ごとに次のポーズに切替えてアニメーションさせる
+// ポノのポーズ (考え中・思案中の表情のみ — 嬉しそうに踊ってる感じは除外)
+// 質問表示中は flip-book 風に約1.5秒ごとに次のポーズに切替えてアニメーションさせる
 const TRIVIA_POSES = [
-  'dance_cool.png',    // 腕組み思案
-  'dance_tilt.png',    // 両手斜め下に広げる
-  'dance_shy.png',     // 顎前で両手を組む
-  'dance_smile.png',   // 目閉じ笑顔
-  'dance_wave.png',    // 片手上げ
-  'dance_hi.png',      // 両手真横に
+  'think_chin_clasp.png',         // 顎前で両手を組む (うーん…)
+  'think_arms_crossed_side.png',  // 横向き腕組み (考え中)
+  'think_neutral.png',            // ふつうに立って静かに思案
+  'think_arms_crossed_down.png',  // 腕組みうつむき気味 (じっくり)
+  'think_point.png',              // 指さし (なるほど…)
+  'think_arms_crossed_front.png', // 正面腕組み (どれにしようかな)
 ];
-const TRIVIA_POSE_INTERVAL_MS = 1200; // ~1.2s/枚
+const TRIVIA_POSE_INTERVAL_MS = 1500; // ~1.5s/枚 (落ち着いた間で考えてる感)
 let _triviaPoseInterval = null;
 let _triviaPoseIdx = 0;
 
