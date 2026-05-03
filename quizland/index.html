@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="../common/layout/layout-shared.css">
 <script src="../common/layout/layout-applier.js" defer></script>
 <script src="../common/layout/layout-system.js" defer></script>
+<script src="../common/page-nav.js" defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
@@ -262,22 +263,36 @@ body.sheet-on .hdr-left .title-card span {
   padding: 4px 14px;
   box-sizing: content-box;
 }
+/* Inactive dot: empty slot (progress-mark.png の枠が透けて見える) */
 .hdr-left .dot {
   height: 100%;
   aspect-ratio: 1;
   width: auto;
   flex: 0 0 auto;
-  background-color: #d6b56a;
+  background-color: transparent;
+  background-image: none;
+  border: 2px dashed rgba(120, 80, 20, 0.25);
+  border-radius: 50%;
+}
+/* Done dot: dot.png をそのまま (色tint無し、元画像のオレンジ) */
+.hdr-left .dot.done {
+  background-color: transparent;
   background-image: url('../assets/preview-placeholders/dot.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  background-blend-mode: multiply;
-  border: 2px solid var(--wood-mid);
-  border-radius: 50%;
+  border: none;
 }
-.hdr-left .dot.done { background-color: #f3a330; }
-.hdr-left .dot.current { background-color: #F7A718; transform: scale(1.18); }
+/* Current dot: 同 dot.png + わずかに大きく */
+.hdr-left .dot.current {
+  background-color: transparent;
+  background-image: url('../assets/preview-placeholders/dot.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  transform: scale(1.18);
+}
 /* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
 body.sheet-on .hdr-left .dots {
   background-image: url('../assets/preview-placeholders/progress-mark.png') !important;

@@ -289,6 +289,65 @@ LayoutSystem.init({
 
 ---
 
+## 7.6 Page navigation widget (`common/page-nav.js`)
+
+`common/layout/` 本体とは別に、 **どのページにも 1 行で貼れる軽量フローティング
+ナビゲーション widget** を `common/page-nav.js` として用意してあります。
+旧 `preview/full/` のような legacy ページや、 layout-editor が動いていない
+ページからでも、編集可能ページ間を行き来できます。
+
+### 使い方
+
+`<head>` の末尾に 1 行追加するだけ:
+
+```html
+<script src="../common/page-nav.js" defer></script>
+```
+
+(`preview/full/` のような 2 階層下のページからは
+ `<script src="../../common/page-nav.js" defer></script>`)
+
+### 自動表示ルール
+
+以下のいずれかを満たすときだけ FAB (🌐 50×50px、画面右上) が表示されます:
+
+- URL に `?edit=1` が付いている (= layout-editor 起動中)
+- `location.pathname` に `/preview/full/` を含む (= legacy サンドボックス)
+
+通常のプレイモードでは表示されません。
+`?nonav=1` を付ければ強制 opt-out できます。
+
+### 設定の上書き
+
+`window.PageNavConfig` を **page-nav.js を読み込む前に** 定義しておくと、
+ページ一覧と表示位置を上書きできます:
+
+```html
+<script>
+  window.PageNavConfig = {
+    pages: [
+      { name: 'なぞなぞ', url: '/quizland/?edit=1' },
+      { name: 'ずかん',  url: '/zukan/preview/full/' },
+    ],
+    position: 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+  };
+</script>
+<script src="../common/page-nav.js" defer></script>
+```
+
+省略時は `DEFAULT_PAGES` (なぞなぞ / なぞなぞ サンドボックス / ずかん) と
+`top-right` が使われます。
+
+### ふるまい
+
+- ボタンを押すとドロップダウン (240px、最大 8 件スクロール) が開く
+- 現在ページ (`location.pathname` がエントリと一致) は 📍 マーク付き・リンク化なし
+- ドロップダウンの **閉じる** ボタン / 外側クリック / `Esc` で閉じる
+- `z-index: 999999` (layout-editor のツールバーより上)
+- layout-editor 内蔵の **🌐 ページ** ボタンと併存 OK (どちらも独立に動作)
+
+---
+
 ## 8. Dynamic content
 
 ページ内で実行時に DOM を生成する要素 (例: `quizland` の `.chip` を `renderChoices` で毎問描き直す) に対応するには、
