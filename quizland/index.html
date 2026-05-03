@@ -1725,8 +1725,8 @@ function pickBalloonSrc() {
   _lastBalloonIdx = idx;
   return '../assets/images/quizland/balloons/ballon_' + String(idx).padStart(2, '0') + '.png';
 }
-// ポノのポーズランダム選択 (連続で同じポーズを出さない)
-// 思案中らしい表情のポーズのみ採用 (walk/point/cheer/hooray は action 寄りなので除外)
+// ポノのポーズ (思案中らしい表情のみ採用 — walk/point/cheer/hooray は action 寄りなので除外)
+// 質問表示中は flip-book 風に約1.2秒ごとに次のポーズに切替えてアニメーションさせる
 const TRIVIA_POSES = [
   'dance_cool.png',    // 腕組み思案
   'dance_tilt.png',    // 両手斜め下に広げる
@@ -1735,15 +1735,29 @@ const TRIVIA_POSES = [
   'dance_wave.png',    // 片手上げ
   'dance_hi.png',      // 両手真横に
 ];
-let _lastPoseIdx = -1;
-function pickPoseSrc() {
-  let idx;
-  do {
-    idx = Math.floor(Math.random() * TRIVIA_POSES.length);
-  } while (idx === _lastPoseIdx);
-  _lastPoseIdx = idx;
-  return '../assets/images/characters/pono/dance/' + TRIVIA_POSES[idx];
+const TRIVIA_POSE_INTERVAL_MS = 1200; // ~1.2s/枚
+let _triviaPoseInterval = null;
+let _triviaPoseIdx = 0;
+
+function startTriviaPoseAnimation(imgEl) {
+  // ランダムな開始位置 → そこから順番にループ (flip-book)
+  _triviaPoseIdx = Math.floor(Math.random() * TRIVIA_POSES.length);
+  imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_triviaPoseIdx];
+
+  if (_triviaPoseInterval) clearInterval(_triviaPoseInterval);
+  _triviaPoseInterval = setInterval(function() {
+    _triviaPoseIdx = (_triviaPoseIdx + 1) % TRIVIA_POSES.length;
+    imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_triviaPoseIdx];
+  }, TRIVIA_POSE_INTERVAL_MS);
 }
+
+function stopTriviaPoseAnimation() {
+  if (_triviaPoseInterval) {
+    clearInterval(_triviaPoseInterval);
+    _triviaPoseInterval = null;
+  }
+}
+
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
@@ -1751,7 +1765,6 @@ function renderTrivia(stage, q) {
   const ponoWrap = document.createElement('div');
   ponoWrap.className = 'trivia-pono-wrap';
   const pono = document.createElement('img');
-  pono.src = pickPoseSrc();
   pono.alt = '';
   pono.className = 'trivia-pono';
   ponoWrap.appendChild(pono);
@@ -1764,6 +1777,9 @@ function renderTrivia(stage, q) {
   wrap.appendChild(balloon);
 
   stage.appendChild(wrap);
+
+  // flip-book アニメーション開始 (質問が出ている間ずっとループ)
+  startTriviaPoseAnimation(pono);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1956,6 +1972,7 @@ function ponoJump() {
 
 function nextQuestion() {
   clearTimeout(_autoHintTimer);
+  stopTriviaPoseAnimation(); // 前の質問のポーズ循環を必ず止める (interval リーク防止)
   questionIdx++;
   if (questionIdx >= TOTAL_Q) {
     showResult();
@@ -1969,6 +1986,7 @@ function nextQuestion() {
 // ═══════════════════════════════════════════════════════════
 function showResult() {
   clearTimeout(_autoHintTimer);
+  stopTriviaPoseAnimation(); // 結果画面ではアニメーションを止める
   showClearDialogue(correctCount, TOTAL_Q);
   const cleared = correctCount >= Math.ceil(TOTAL_Q * 0.7); // 70% 以上で clear
   document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
