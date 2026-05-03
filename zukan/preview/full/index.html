@@ -4131,17 +4131,23 @@ function resetBezierMesh() {
 bezierResetBtn && bezierResetBtn.addEventListener('click', resetBezierMesh);
 
 // ───── ステージのズーム ─────
-// ベジェの制御点が画面外に出ると掴めなくなるので CSS transform: scale で
-// stage 全体を縮小/拡大できるように。 中の userbox 座標系は変わらないので、
-// ハンドルドラッグのスケール計算 (sR.width / sW) もそのまま正しく動く。
+// ベジェの制御点が画面外に出ると掴めなくなるので stage 全体を縮小/拡大できるように。
+// **重要**: transform: scale() だと見かけだけ縮んで layout box の大きさは元の
+// ままなので、 スクロール可能領域は変わらず 「下が切れたまま」 になっていた。
+// CSS `zoom` は見かけ + layout 両方変えるので、 zoom 0.5 にすれば実際に
+// stage が半分の領域として扱われ、 viewport 内に全部収まる。
 let _stageZoom = 1.0;
 function applyStageZoom(z) {
   _stageZoom = Math.max(0.25, Math.min(3.0, z));
   const stageEl0 = document.getElementById('stage');
   if (stageEl0) {
-    stageEl0.style.transformOrigin = '0 0';
-    stageEl0.style.transform = _stageZoom === 1 ? '' : `scale(${_stageZoom})`;
+    // 旧 transform を残してると競合するので念のため空に
+    stageEl0.style.transform = '';
+    stageEl0.style.transformOrigin = '';
+    stageEl0.style.zoom = _stageZoom === 1 ? '' : String(_stageZoom);
   }
+  // ボタン表示を更新 (現在の zoom 倍率)
+  if (zoomFitBtn) zoomFitBtn.textContent = Math.round(_stageZoom * 100) + '%';
 }
 const zoomOutBtn = document.getElementById('zoom-out');
 const zoomFitBtn = document.getElementById('zoom-fit');
