@@ -715,37 +715,62 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
 }
 .diff-row {
   display: flex; flex-direction: row;
-  gap: 10px;
-  width: 100%; max-width: 360px;
+  gap: 16px;
+  width: 100%; max-width: 720px;
   justify-content: center;
+  align-items: stretch;
 }
 .diff-btn {
   flex: 1 1 0;
-  padding: 12px 6px;
-  border: 3px solid var(--wood-mid);
-  border-radius: 18px;
-  background: var(--paper);
+  min-height: 120px;
+  min-width: 0;
+  padding: 1em 0.6em;
+  border: 4px solid var(--wood-mid);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
   font-family: inherit;
   font-weight: 900;
   color: var(--text);
-  font-size: 0.95rem;
   cursor: pointer;
   text-align: center;
-  line-height: 1.2;
-  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px rgba(80,50,10,0.25);
+  line-height: 1.1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  box-shadow: 0 5px 0 var(--wood-dark), 0 8px 16px rgba(80,50,10,0.28);
   transition: transform 0.1s, background 0.15s, border-color 0.15s, box-shadow 0.1s;
+}
+.diff-btn .diff-stars {
+  font-size: clamp(28px, 5.5vw, 44px);
+  line-height: 1;
+  color: #C49A2C; /* muted gold for inactive */
+  text-shadow: 1px 1px 0 rgba(80,50,10,0.25);
+  letter-spacing: 0.05em;
+}
+.diff-btn .diff-label {
+  font-size: clamp(20px, 3.6vw, 28px);
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: 0.04em;
 }
 .diff-btn:active {
   transform: translateY(2px);
   box-shadow: 0 2px 0 var(--wood-dark), 0 3px 6px rgba(80,50,10,0.25);
 }
 .diff-btn.is-active {
-  background: var(--primary);
+  background: linear-gradient(180deg, #FBBF24, var(--primary));
   border-color: var(--wood-dark);
   color: #fff;
-  text-shadow: 1px 1px 0 rgba(80,50,10,0.4);
   transform: scale(1.04);
-  box-shadow: 0 4px 0 var(--wood-dark), 0 0 0 3px var(--hint-bg) inset, 0 6px 14px rgba(80,50,10,0.3);
+  box-shadow: 0 5px 0 var(--wood-dark), 0 0 0 3px var(--hint-bg) inset, 0 8px 18px rgba(80,50,10,0.32);
+}
+.diff-btn.is-active .diff-stars {
+  color: #FFD700; /* bright gold for active */
+  text-shadow: 1px 1px 0 rgba(80,50,10,0.45), 0 0 6px rgba(255,215,0,0.5);
+}
+.diff-btn.is-active .diff-label {
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(80,50,10,0.5);
 }
 
 /* ===== Result modal ===== */
@@ -905,9 +930,18 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
   </div>
   <div class="diff-screen-title">むずかしさ</div>
   <div class="diff-row" id="diff-row">
-    <button class="diff-btn" data-diff="easy">やさしい</button>
-    <button class="diff-btn" data-diff="normal">ふつう</button>
-    <button class="diff-btn" data-diff="hard">むずかしい</button>
+    <button class="diff-btn" data-diff="easy" aria-pressed="false">
+      <span class="diff-stars">★</span>
+      <span class="diff-label">かんたん</span>
+    </button>
+    <button class="diff-btn" data-diff="normal" aria-pressed="false">
+      <span class="diff-stars">★★</span>
+      <span class="diff-label">ふつう</span>
+    </button>
+    <button class="diff-btn" data-diff="hard" aria-pressed="false">
+      <span class="diff-stars">★★★</span>
+      <span class="diff-label">むずかしい</span>
+    </button>
   </div>
 </div>
 
