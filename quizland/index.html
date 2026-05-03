@@ -995,28 +995,6 @@ body.layout-editor-on .character img {
   to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* ===== Detail popup (正解後の解説) ===== */
-#detail-popup {
-  position: fixed;
-  bottom: 12%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(30,58,95,0.95);
-  color: #FDE68A;
-  padding: 12px 22px;
-  border-radius: 16px;
-  font-size: 1rem;
-  font-weight: 700;
-  max-width: 80vw;
-  text-align: center;
-  z-index: 9999;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  line-height: 1.5;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
 /* Common menu (右上隅) ─ ポノメニュー位置調整 */
 .pono-menu-toggle {
   width: 1px !important;
@@ -1328,6 +1306,14 @@ const HAKASE_DIALOGUE = {
   },
 };
 
+const HAKASE_DETAIL_INTROS = [
+  'ふむふむ、',
+  'そうじゃ、',
+  'じつはな、',
+  'おもしろいことに、',
+  'しっておるかな？ ',
+];
+
 const RARE_PRAISE_CHANCE = 0.1;
 const CONSECUTIVE_MISS_THRESHOLD = 2;
 const HINT_AUTO_DELAY_MS = 5000;
@@ -1383,6 +1369,12 @@ function showCorrectDialogue() {
     ? pickRandom(HAKASE_DIALOGUE.rarePraise)
     : pickRandom(HAKASE_DIALOGUE.correct);
   setHakaseDialogue(text);
+}
+
+function showDetailDialogue(detail) {
+  if (!detail) return;
+  const intro = pickRandom(HAKASE_DETAIL_INTROS);
+  setHakaseDialogue(intro + detail);
 }
 
 function showWrongDialogue() {
@@ -1893,18 +1885,17 @@ function onChoice(idx, btn) {
       var a = JSON.parse(localStorage.getItem(k) || '[]');
       if (a.indexOf('quizland') === -1) { a.push('quizland'); localStorage.setItem(k, JSON.stringify(a)); }
     })();
-    var infoText = currentQ.detail || currentQ.hint || null;
-    if (infoText) {
+    if (currentQ.detail) {
       setTimeout(() => {
-        showDetail(infoText);
-        if (typeof Narration !== 'undefined' && currentQ.detail) {
+        showDetailDialogue(currentQ.detail);
+        if (typeof Narration !== 'undefined') {
           var dKey = narrationKey(currentQ, 'detail');
           if (dKey && Narration.hasEntry(dKey)) Narration.play(dKey);
         }
-      }, 600);
-      setTimeout(nextQuestion, 2800);
+      }, 1500);
+      setTimeout(nextQuestion, 4500);
     } else {
-      setTimeout(nextQuestion, 1000);
+      setTimeout(nextQuestion, 2000);
     }
   } else {
     btn.classList.add('wrong');
@@ -1915,18 +1906,6 @@ function onChoice(idx, btn) {
     // もう1回チャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
     locked = false;
   }
-}
-
-function showDetail(text) {
-  let el = document.getElementById('detail-popup');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'detail-popup';
-    document.body.appendChild(el);
-  }
-  el.textContent = '💡 ' + text;
-  el.style.opacity = '1';
-  setTimeout(() => { el.style.opacity = '0'; }, 2000);
 }
 
 function showFeedback(text, wrong) {
