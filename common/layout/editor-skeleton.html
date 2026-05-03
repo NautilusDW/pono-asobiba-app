@@ -1,0 +1,183 @@
+<!--
+  ====================================================================
+  common/layout/editor-skeleton.html
+  --------------------------------------------------------------------
+  新規エディタ作成時の **コピペ元テンプレート**。
+  このファイルを直接ロードしても動かない (プレースホルダ ＜...＞ が残っているため)。
+
+  使い方:
+    1. このファイル丸ごとコピーして、新規エディタの index.html として配置する
+       (例: zukan/preview/myeditor/index.html)
+    2. ディレクトリ階層に応じて ＜relative path＞ を common/ への相対パスに書き換える
+       - 1 階層下 (foo/index.html)              → "../common"
+       - 2 階層下 (foo/bar/index.html)          → "../../common"
+       - 3 階層下 (foo/bar/baz/index.html)      → "../../../common"
+    3. ＜エディタ名＞ をページタイトルに (例: "ずかん 調査画面")
+    4. ＜path/to/this-editor/...＞ を GitHub プロキシ用パスに
+       (例: "zukan/preview/myeditor/saved-layout.json")
+    5. editableSelectors に編集対象セレクタを列挙
+    6. DOM (.stage 内) と CSS (:root / .stage 配下) を必要なだけ書く
+    7. 同階層に空の saved-layout.json (`{}`) を置く (任意・無くても警告のみ)
+
+  踏みやすい罠 (このテンプレートで対策済み):
+    - layout-applier.js を defer で先に読み忘れると toolbar が出ない
+        → editor-bootstrap.js が順序保証で全部ロードしてくれる。
+    - body.layout-editor-on のスタイルで `.resizable { position: relative }`
+      を上書きすると絶対配置レイヤーが消失する。
+        → 下の「Wave 7 対策」ブロックで absolute を !important で固定。
+  ====================================================================
+-->
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>＜エディタ名＞ 位置調整エディター</title>
+
+  <!-- 共通スタイル (編集モード/再生モード共通の見た目) -->
+  <link rel="stylesheet" href="＜relative path＞/layout/layout-shared.css">
+
+  <style>
+    :root {
+      /* キャンバス寸法の例 (21:9)。ページに合わせて調整。 */
+      --stage-w: 2100px;
+      --stage-h: 900px;
+    }
+
+    /* ───── ページ全体 ─────────────────────────────────────────────── */
+    body {
+      margin: 0;
+      background: #1a1a1a;
+      color: #eee;
+      font-family: 'Hiragino Maru Gothic ProN', 'M PLUS Rounded 1c',
+                   'ヒラギノ丸ゴ ProN W4', 'Yu Gothic', 'メイリオ', sans-serif;
+      overflow: auto;
+    }
+
+    /* ───── ステージ (キャンバス) ─────────────────────────────────── */
+    .stage-wrap {
+      width: 100vw;
+      height: 100vh;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .stage {
+      position: relative;
+      width: var(--stage-w);
+      height: var(--stage-h);
+      margin: 0 auto;
+      background: #1a2a1a;
+      border: 1px dashed #555;
+      overflow: hidden;
+    }
+
+    /* ───── ＜各レイヤーの絶対配置 CSS をここに書く＞ ────────────────
+       例:
+       .outer-bg {
+         position: absolute; left: 0; top: 0;
+         width: 100%; height: 100%;
+         z-index: 0;
+         pointer-events: none;
+       }
+       .layer-a {
+         position: absolute; left: 200px; top: 100px;
+         width: 400px; height: 300px;
+         z-index: 2;
+         background: rgba(255, 200, 80, 0.4);
+       }
+    */
+    .outer-bg {
+      position: absolute; left: 0; top: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      /* background: url('outer.png') center/cover no-repeat; */
+    }
+
+    /* ───── Wave 7 対策: 編集モードでも絶対配置を維持 ─────────────────
+       layout-editor.css は .resizable に対して transform/position を
+       触る場合があり、ページ側で意図せず relative 化されると、
+       絶対配置レイヤーがフロー上に流れて画面から消える事故が起きる。
+       ここで対象レイヤーを absolute !important で固定しておく。
+       ─────────────────────────────────────────────────────────── */
+    body.layout-editor-on .outer-bg
+    /* , body.layout-editor-on .layer-a */
+    {
+      position: absolute !important;
+    }
+
+    /* ───── ヘルプノート (任意。再生モードでは半透明、編集モードで強調) */
+    .help-note {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      max-width: 360px;
+      z-index: 50;
+      opacity: 0.7;
+      line-height: 1.6;
+    }
+    body.layout-editor-on .help-note {
+      opacity: 1;
+      z-index: 30; /* toolbar より下に */
+    }
+    .help-note code {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ステージ本体: editableSelectors はこの中の要素を対象にする -->
+  <div id="stage" class="stage-wrap">
+    <div class="stage">
+      <!-- ＜各レイヤーの DOM をここに書く＞
+           例:
+             <div class="outer-bg"><img src="outer.png" alt=""></div>
+             <div class="layer-a"></div>
+      -->
+      <div class="outer-bg"></div>
+    </div>
+  </div>
+
+  <!-- ヘルプノート: ユーザーへのガイダンス。不要なら削除して OK。 -->
+  <div class="help-note">
+    URL に <code>?edit=1</code> を付けると編集モード。<br>
+    ドラッグでレイヤー移動、四隅でリサイズ、💾 で saved-layout.json に保存。<br>
+    <strong>新規エディタ作成手順:</strong>
+    このテンプレを copy → ＜relative path＞ を実環境に合わせて書き換え →
+    editableSelectors と DOM/CSS を埋める。
+  </div>
+
+  <!-- ============================================================
+       エディタ起動
+       editor-bootstrap.js が以下を順序保証でロード + init:
+         1. layout-applier.js
+         2. layout-system.js
+         3. page-nav.js
+       ============================================================ -->
+  <script>
+    window.EditorBootstrapConfig = {
+      layoutUrl: 'saved-layout.json',
+      canvas: '#stage',
+      /*
+        ※ editableSelectors は最低1エントリ必須。
+        空のまま起動するとツールバーは出るが「編集対象が無い」状態になり、
+        ドラッグ可能な要素がゼロのため不具合と誤認しやすい。
+        コメントアウトの例を最低1つ復活させてから本実装に進むこと。
+      */
+      editableSelectors: [
+        // ['.outer-bg', 'wh', '外側背景'],
+        // ['.layer-a',  'wh', 'レイヤー A'],
+      ],
+      ghPath: '＜path/to/this-editor/saved-layout.json＞',
+    };
+  </script>
+  <script src="＜relative path＞/layout/editor-bootstrap.js" defer></script>
+</body>
+</html>

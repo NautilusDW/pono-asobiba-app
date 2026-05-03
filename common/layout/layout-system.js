@@ -18,15 +18,15 @@
   var DEFAULT_DEBOUNCE_MS = 250;
 
   // Built-in default page list for the editor's "🌐 ページ" navigation menu.
+  // 単一ソース: ページ配列は common/page-nav.js の DEFAULT_PAGES を真実とし、
+  // window.PONO_PAGES 経由で取得する。読み込み順保険として遅延参照する。
   // Page authors can override via init({ pages: [...] }).
   // Each entry: { name: string, url: string, current?: boolean }
-  var DEFAULT_PAGES = [
-    { name: 'なぞなぞ', url: '/quizland/?edit=1' },
-    { name: 'なぞなぞ サンドボックス', url: '/quizland/preview/full/' },
-    { name: 'ずかん (preview/full / ベジェ)', url: '/zukan/preview/full/' },
-    { name: 'ずかん (調査画面)', url: '/zukan/preview/investigation/?edit=1' },
-    // Add wordmatch, oto, bento, maze when they migrate
-  ];
+  function getDefaultPages() {
+    return (window.PONO_PAGES && Array.isArray(window.PONO_PAGES))
+      ? window.PONO_PAGES.slice()
+      : [];
+  }
 
   // currentScript captures the <script> tag of layout-system.js itself.
   // Must be read at top-level (before async/Promise turns), otherwise
@@ -208,7 +208,7 @@
     if (config && typeof config === 'object' && !('pages' in config)) {
       editorCfg = {};
       for (var k in config) { if (Object.prototype.hasOwnProperty.call(config, k)) editorCfg[k] = config[k]; }
-      editorCfg.pages = DEFAULT_PAGES.slice();
+      editorCfg.pages = getDefaultPages();
     }
     return Promise.all([
       loadCss(cssUrl).catch(function (e) { console.warn('[LayoutSystem]', e); }),

@@ -24,12 +24,18 @@
   //  デフォルト設定
   // -----------------------------------------------------------------
   var DEFAULT_PAGES = [
-    { name: 'なぞなぞ',                url: '/quizland/?edit=1' },
-    { name: 'なぞなぞ サンドボックス', url: '/quizland/preview/full/' },
-    { name: 'ずかん (ベジェ編集)',    url: '/zukan/preview/full/' },
-    { name: 'ずかん (調査画面)',      url: '/zukan/preview/investigation/?edit=1' },
+    { name: 'なぞなぞ',                  url: '/quizland/?edit=1' },
+    { name: 'なぞなぞ サンドボックス',   url: '/quizland/preview/full/' },
+    { name: 'ずかん (ベジェ編集あり)',   url: '/zukan/preview/full/' },
+    { name: 'ずかん (調査画面)',         url: '/zukan/preview/investigation/?edit=1' },
     // (other pages added as they become editable)
   ];
+
+  // 単一ソース: 他モジュール (e.g. layout-system.js / layout-editor) からも
+  // 同じページ一覧を参照できるよう、グローバルに公開する。
+  // shouldShowNav() による early-return より前に代入するため、ナビが
+  // 非表示のページ (?edit 無しなど) でもこの配列は利用可能になる。
+  window.PONO_PAGES = DEFAULT_PAGES;
 
   var cfg = (window.PageNavConfig && typeof window.PageNavConfig === 'object')
     ? window.PageNavConfig
