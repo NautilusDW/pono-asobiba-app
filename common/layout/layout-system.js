@@ -24,6 +24,7 @@
     { name: 'なぞなぞ', url: '/quizland/?edit=1' },
     { name: 'なぞなぞ サンドボックス', url: '/quizland/preview/full/' },
     { name: 'ずかん (preview/full / ベジェ)', url: '/zukan/preview/full/' },
+    { name: 'ずかん (調査画面)', url: '/zukan/preview/investigation/?edit=1' },
     // Add wordmatch, oto, bento, maze when they migrate
   ];
 

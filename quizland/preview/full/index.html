@@ -1170,6 +1170,17 @@ body.resize-mode .ruler { display: block; }
   pointer-events: none;
 }
 </style>
+<script>
+  // page-nav.js 用の編集ページ一覧 (全エディタで統一)
+  window.PageNavConfig = {
+    pages: [
+      { name: 'なぞなぞ', url: '/quizland/?edit=1' },
+      { name: 'なぞなぞ (旧サンドボックス) (このページ)', url: location.pathname, current: true },
+      { name: 'ずかん (ベジェ編集あり)', url: '/zukan/preview/full/' },
+      { name: 'ずかん (調査画面)', url: '/zukan/preview/investigation/?edit=1' },
+    ],
+  };
+</script>
 <script src="../../common/page-nav.js" defer></script>
 </head>
 <body class="show-safe sheet-on">
