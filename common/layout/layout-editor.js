@@ -1236,7 +1236,7 @@
     panel.innerHTML =
       '<h4>選択中: <span id="np-count">0</span> 個</h4>' +
       '<div class="np-targets" id="np-targets">(なし)</div>' +
-      makeSpinnerRow('w', 'W') + makeSpinnerRow('h', 'H') +
+      makeSpinnerRow('w', 'W', { aspect: true }) + makeSpinnerRow('h', 'H') +
       makeSpinnerRow('tx', 'TX') + makeSpinnerRow('ty', 'TY') +
       '<div class="np-section-title">表示</div>' +
       '<div class="np-align-row">' +
