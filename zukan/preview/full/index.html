@@ -945,6 +945,13 @@ body.book-tilt .userbox { transform-style: preserve-3d; }
    16 制御点 / page (= 32 点合計) をドラッグして本のページの曲面を作る。
    注: display:none の canvas に getContext('webgl') すると null を返す
    Chromium/Firefox のバグ回避のため visibility ベースで隠す */
+/* ベジェ ON 時はステージの overflow:hidden を解除して、 safe-area 外に飛んだ
+   ベジェハンドル も画面に出せるようにする (旧コードでは stage の境界で
+   クリップされて、 一度外に飛ばすと掴めなくなっていた)。 さらに body の
+   overflow-x:hidden も解除して、 viewport 外の handle にスクロールで到達できる
+   ようにする (zoom out + 縦横スクロール の組合せで全 handle に到達可能に) */
+body.corner-pin-mode .stage { overflow: visible !important; }
+body.corner-pin-mode { overflow: auto !important; }
 #bezier-canvas {
   position: absolute;
   left: 0; top: 0;
