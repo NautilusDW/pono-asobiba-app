@@ -425,19 +425,22 @@ html, body {
   <!-- Layer 2: 16:9 safe area -->
   <div class="safe-area" id="safeArea">
 
-    <!-- Layer 3: investigation window (positioned absolute inside safe area) -->
-    <div class="window-wrap" id="windowWrap">
+    <!-- Layer 3a: field background (picture content). 隠れパーツ /
+         hotspot もここに JS で注入され、 picture に追従する。 -->
+    <div class="field-bg" id="fieldBg">
       <img class="window-bg" id="windowBg" alt=""
            onerror="this.style.display='none';">
-      <img class="window-frame" id="windowFrame" alt=""
-           onerror="this.style.display='none';">
 
-      <!-- Progress badge -->
+      <!-- Progress badge (picture content 内に表示) -->
       <div class="progress-badge" id="progressBadge"></div>
 
       <!-- Layer 4: hidden animal part (inserted by JS) -->
       <!-- Layer 5: hotspot button (inserted by JS) -->
     </div>
+
+    <!-- Layer 3b: window frame (装飾レイヤー、独立兄弟) -->
+    <img class="window-frame" id="windowFrame" alt=""
+         onerror="this.style.display='none';">
 
     <!-- Layer 6: hint panel -->
     <aside class="hint-panel" id="hintPanel">
