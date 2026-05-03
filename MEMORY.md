@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T02:12:16Z - quizland UI port: preview/full の新デザインを quizland/index.html に inject 戦略で適用 (acorns/garden/flowers 除外、 sound effects 保持、 168問対応維持)
+- **タスク**: quizland UI port: preview/full の新デザインを quizland/index.html に inject 戦略で適用 (acorns/garden/flowers 除外、 sound effects 保持、 168問対応維持)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 62
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 15, "Grep": 2, "Bash": 18, "Agent": 19, "ToolSearch": 1, "Write": 3, "Edit": 3}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-03T00:48:11Z - Team C quiz refinement: weather + body カテゴリの難易度・正確性レビュー (questions.js 非改変、_review/team-c-weather-body.md を作成)
 - **タスク**: Team C quiz refinement: weather + body カテゴリの難易度・正確性レビュー (questions.js 非改変、_review/team-c-weather-body.md を作成)
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 160, "Bash": 264, "Read": 42, "Write": 9, "Grep": 25}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T07:15:30Z - zukan プレビュー: main.png (絵本本体) を background-size cover → 固定 1300x731 px に変更。 cover がクロップしてタイトルが切れていた問題を解消。 BG.jpg は cover のまま (21:9 全面)。 sw.js 631→632
-- **タスク**: zukan プレビュー: main.png (絵本本体) を background-size cover → 固定 1300x731 px に変更。 cover がクロップしてタイトルが切れていた問題を解消。 BG.jpg は cover のまま (21:9 全面)。 sw.js 631→632
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 8
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Grep": 28, "Read": 45, "Edit": 161, "Bash": 257, "Write": 9}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -9,11 +9,9 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
-<script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/narration.js"></script>
 <script src="./data/questions.js"></script>
-<script src="./data/flowers.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
@@ -1430,6 +1428,391 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   text-decoration: none;
   font-weight: 700;
 }
+
+/* ===========================================================
+   v2 Layout (preview/full からのポート: hdr-pill + q-text-card +
+   board + answer-tray + bottom-right). 旧 .header/.hud/.stage の
+   CSS は markup から削除済みなので残っていても効かない (上書き目的
+   で同じ selector も一部再定義している)。
+   =========================================================== */
+
+/* Game shell: 16:9 セーフエリアを内側に持つラッパに変更 */
+.game-shell {
+  width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
+  max-width: 1600px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: calc(100dvh - 16px);
+  display: block;
+  position: relative;
+  align-self: center;
+  /* 旧 grid 設定をリセット */
+  grid-template-columns: none;
+  grid-template-rows: none;
+  gap: 0;
+}
+.safe-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: clamp(72px, 14%, 130px) minmax(0, 1fr);
+  grid-template-columns: 1fr;
+  gap: clamp(8px, 1.2vh, 16px);
+  padding: clamp(8px, 1.4vh, 16px);
+  box-sizing: border-box;
+}
+
+/* ── Header row ── */
+.hdr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: clamp(8px, 1.2vw, 16px);
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+}
+.hdr-left.hdr-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 16px);
+  padding: clamp(4px, 0.8vh, 10px) clamp(10px, 1.6vw, 22px);
+  height: 100%;
+  min-height: 0;
+  border-radius: clamp(28px, 6vh, 48px);
+  background:
+    linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
+    repeating-linear-gradient(
+      90deg,
+      var(--quiz-wood-dark) 0 16px,
+      var(--quiz-wood-mid) 16px 32px,
+      var(--quiz-wood-light) 32px 42px,
+      var(--quiz-wood-mid) 42px 58px
+    ) border-box;
+  border: clamp(3px, 0.6vh, 5px) solid transparent;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.56),
+    0 4px 10px var(--quiz-frame-shadow);
+  overflow: hidden;
+}
+.hdr-left .owl-icon {
+  flex: 0 0 auto;
+  width: clamp(48px, 9vh, 88px);
+  height: clamp(48px, 9vh, 88px);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f4e4c4, #d8b78a);
+  border: clamp(2px, 0.4vh, 3px) solid var(--quiz-wood-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.hdr-left .owl-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  transform: scale(1.6);
+  transform-origin: 50% 18%;
+}
+.hdr-left .title-card {
+  flex: 0 0 auto;
+  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
+  border: clamp(2px, 0.4vh, 3px) solid var(--quiz-wood-dark);
+  border-radius: clamp(8px, 1.2vw, 14px);
+  padding: clamp(2px, 0.5vh, 6px) clamp(8px, 1.2vw, 16px);
+  color: #fff7d0;
+  font-weight: 800;
+  font-size: clamp(0.8rem, 1.9vh, 1.18rem);
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  text-align: center;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+.hdr-left .title-card small {
+  display: block;
+  font-size: clamp(0.55rem, 1.25vh, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.hdr-left .progress-num {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: clamp(1.5px, 0.3vh, 2px) solid var(--quiz-wood-dark);
+  border-radius: clamp(10px, 1.4vw, 18px);
+  padding: clamp(2px, 0.4vh, 6px) clamp(10px, 1.4vw, 20px);
+  font-weight: 900;
+  font-size: clamp(0.95rem, 2.2vh, 1.4rem);
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+.hdr-left .dots {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 12px);
+  height: clamp(12px, 2vh, 18px);
+}
+.hdr-left .dot {
+  display: inline-block;
+  height: 100%;
+  aspect-ratio: 1;
+  width: auto;
+  flex: 0 0 auto;
+  background: #d6b56a;
+  border: clamp(1.5px, 0.3vh, 2px) solid var(--quiz-wood-mid);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: background 0.3s, transform 0.3s, border-color 0.3s;
+}
+.hdr-left .dot.done {
+  background: #f3a330;
+  border-color: var(--quiz-wood-dark);
+}
+.hdr-left .dot.current {
+  background: #F7A718;
+  border-color: #B96A12;
+  transform: scale(1.18);
+}
+
+/* Right header buttons (タイトルへ / せってい) */
+.hdr-right {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 12px);
+  justify-self: end;
+  height: 100%;
+}
+.hdr-right .ctrl-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, 0.5vh, 6px);
+  height: 100%;
+  min-height: clamp(56px, 11vh, 110px);
+  padding: clamp(4px, 0.8vh, 10px) clamp(8px, 1vw, 14px);
+  border: clamp(2px, 0.4vh, 3px) solid var(--quiz-wood-dark);
+  border-radius: clamp(12px, 1.6vw, 22px);
+  background: linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom));
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 800;
+  font-size: clamp(0.62rem, 1.35vh, 0.92rem);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 5px 10px rgba(120,83,20,0.1);
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.hdr-right .ctrl-btn .icon {
+  font-size: clamp(1.1rem, 3vh, 2rem);
+  line-height: 1;
+}
+.hdr-right .ctrl-btn .ctrl-label {
+  line-height: 1.05;
+}
+.hdr-right .ctrl-btn:active { transform: scale(0.96); }
+
+/* ── Body row (左 q-col + 右 a-col) ── */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: clamp(8px, 1.2vw, 16px);
+  align-items: stretch;
+  min-height: 0;
+}
+.q-col, .a-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.2vh, 14px);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  justify-content: center;
+}
+
+/* Question text card (上) */
+.q-text-card {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1vw, 16px);
+  padding: clamp(10px, 1.5vh, 20px) clamp(60px, 6vw, 90px) clamp(10px, 1.5vh, 20px) clamp(20px, 2vw, 32px);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 228, 0.94), rgba(250, 230, 190, 0.88)) padding-box,
+    repeating-linear-gradient(
+      90deg,
+      var(--quiz-wood-dark) 0 22px,
+      var(--quiz-wood-mid) 22px 48px,
+      var(--quiz-wood-light) 48px 62px,
+      var(--quiz-wood-mid) 62px 88px
+    ) border-box;
+  border: clamp(4px, 0.6vw, 7px) solid transparent;
+  border-radius: clamp(14px, 1.6vw, 22px);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
+    0 6px 14px rgba(120, 83, 20, 0.16);
+  min-height: clamp(50px, 9vh, 90px);
+}
+.q-text-card #question-text {
+  font-size: clamp(0.96rem, 2.1vh, 1.55rem);
+  font-weight: 900;
+  color: #6f4b1e;
+  text-align: center;
+  line-height: 1.28;
+  white-space: pre-line;
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.9);
+}
+.q-text-card .audio {
+  position: absolute;
+  top: 50%;
+  right: clamp(10px, 1vw, 18px);
+  transform: translateY(-50%);
+  width: clamp(38px, 6vh, 58px);
+  height: clamp(38px, 6vh, 58px);
+  border: clamp(2px, 0.4vh, 3px) solid rgba(132, 89, 34, 0.72);
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--quiz-wood-light), var(--quiz-wood-mid));
+  color: #fffaf0;
+  font-size: clamp(1rem, 2.2vh, 1.4rem);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    0 6px 14px rgba(196, 122, 14, 0.26);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Board (問題内容を載せる紙ボード) */
+.board {
+  flex: 1 1 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: clamp(10px, 1.4vh, 22px);
+  background:
+    linear-gradient(180deg, rgba(255, 244, 211, 0.92), rgba(255, 236, 185, 0.82)) padding-box,
+    repeating-linear-gradient(
+      90deg,
+      var(--quiz-wood-dark) 0 22px,
+      var(--quiz-wood-mid) 22px 48px,
+      var(--quiz-wood-light) 48px 62px,
+      var(--quiz-wood-mid) 62px 88px
+    ) border-box;
+  border: clamp(5px, 0.7vw, 9px) solid transparent;
+  border-radius: clamp(16px, 1.8vw, 28px);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.52),
+    0 8px 16px rgba(120, 83, 20, 0.16);
+  overflow: hidden;
+}
+.board #stage-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(10px, 1.2vw, 22px);
+  min-height: 0;
+}
+
+/* Answer tray (4チップを囲う木枠) */
+.answer-tray {
+  flex: 0 0 auto;
+  background: #b07a3a;
+  border: clamp(4px, 0.6vw, 7px) solid var(--quiz-wood-dark);
+  border-radius: clamp(14px, 1.8vw, 22px);
+  padding: clamp(8px, 1.2vh, 16px);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.32),
+    0 8px 16px rgba(120, 83, 20, 0.18);
+}
+/* 旧 .choices の wood-frame border は answer-tray に持たせたので、
+   tray 内側の choices は枠なし・背景透明にする */
+.answer-tray .choices {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(8px, 1vw, 14px);
+  width: 100%;
+  height: 100%;
+  align-content: stretch;
+  min-height: 0;
+}
+
+/* Bottom-right: hint (ふきだし) + character (フクロウ博士) */
+.bottom-right {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: clamp(6px, 1vw, 12px);
+  margin-top: 0;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+.bottom-right .char-hint {
+  flex: 0 1 auto;
+  position: relative;
+  align-self: center;
+  padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.6vw, 20px);
+  background: linear-gradient(180deg, #fff8d4, var(--quiz-paper-bottom, #FBE1A6));
+  border: clamp(2px, 0.4vh, 3px) solid #b89a3a;
+  border-radius: clamp(12px, 1.6vw, 18px);
+  font-size: clamp(0.78rem, 1.5vh, 1.05rem);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  box-shadow: 0 4px 0 #b89a3a, 0 6px 12px var(--quiz-frame-shadow);
+}
+.bottom-right .character {
+  flex: 0 0 auto;
+  position: relative;
+  width: clamp(72px, 12vw, 160px);
+  height: clamp(72px, 12vw, 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.22));
+}
+.bottom-right .character img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* ── 横画面でのちょっと小さい (高さ 500px 未満) 時、 character を非表示にして
+     bottom-right が問題ボードに被らないようにする ── */
+@media (orientation: landscape) and (max-height: 520px) {
+  .bottom-right .character { display: none; }
+  .bottom-right .char-hint { font-size: clamp(0.68rem, 2.6vh, 0.85rem); }
+  .hdr-left .title-card small { display: none; }
+}
+@media (orientation: landscape) and (max-height: 420px) {
+  .bottom-right { display: none; }
+}
+
+/* (旧 .header / .hud などの CSS は markup から消えたので何にもバインド
+   しない。 そのまま残置。 ) */
 </style>
 </head>
 <body>
@@ -1480,31 +1863,64 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   <button class="cat-start-btn" id="cat-start-btn">スタート！ ▶</button>
 </div>
 
-<!-- ===== Game UI ===== -->
+<!-- ===== Game UI (new layout: hdr-pill + q-col + a-col) =====
+     Visual structure ported from quizland/preview/full/index.html (sandbox).
+     既存ゲームロジックの ID (#question-text, #stage-area, #choices, #hud-progress,
+     #q-num, #q-total, #hud-back-btn, #question-speaker, #pono-avatar) はそのまま
+     新レイアウト内に配置している。 -->
 <div class="game-shell">
-<div class="header">
-  <div class="pono-avatar" id="pono-avatar">
-    <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
+  <div class="safe-area">
+    <!-- Top header row: 左に hdr-pill (owl + title + progress)、 右に ctrl-btn 群 -->
+    <div class="hdr">
+      <div class="hdr-left hdr-pill">
+        <div class="owl-icon">
+          <img src="../assets/images/quizland/owl_professor_guide.png" alt="" aria-hidden="true">
+        </div>
+        <div class="title-card">
+          <small>フクロウはかせの</small>
+          <span>なぞなぞ</span>
+        </div>
+        <div class="progress-num"><span id="q-num">1</span> / <span id="q-total">5</span></div>
+        <div class="dots hud-progress" id="hud-progress"></div>
+      </div>
+
+      <div class="hdr-right">
+        <button id="hud-back-btn" type="button" class="ctrl-btn" aria-label="タイトルへ もどる">
+          <span class="icon" aria-hidden="true">🏠</span>
+          <span class="ctrl-label">タイトル</span>
+        </button>
+        <button id="hud-settings-btn" type="button" class="ctrl-btn" aria-label="せってい">
+          <span class="icon" aria-hidden="true">⚙️</span>
+          <span class="ctrl-label">せってい</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body: 左に q-col (問題カード + ボード)、 右に a-col (答えトレイ + 吹き出し+ owl) -->
+    <div class="body">
+      <div class="q-col">
+        <div class="q-text-card">
+          <span id="question-text">よういちゅう…</span>
+          <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ" style="display:none;">🔊</button>
+        </div>
+        <div class="board" id="board">
+          <div id="stage-area"></div>
+        </div>
+      </div>
+
+      <div class="a-col">
+        <div class="answer-tray">
+          <div class="choices" id="choices"></div>
+        </div>
+        <div class="bottom-right">
+          <div class="char-hint" id="char-hint">ヒント！</div>
+          <div class="character" id="pono-avatar">
+            <img src="../assets/images/quizland/owl_professor_guide.png" alt="フクロウ博士">
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <h1>フクロウ博士のなぞなぞ</h1>
-</div>
-
-<div class="hud">
-  <button id="hud-back-btn" style="background:none;border:none;font-family:inherit;font-size:0.75rem;font-weight:900;color:var(--text-light);cursor:pointer;padding:2px 4px;">◀ タイトルへ</button>
-  <div id="hud-label">もんだい <span id="q-num">1</span> / <span id="q-total">5</span></div>
-  <div id="hud-seeds" style="font-weight:900;color:#F59E0B;font-size:0.9rem;" aria-label="てもちのたね">🌱 <span id="hud-seeds-count">0</span></div>
-  <div class="hud-progress" id="hud-progress"></div>
-</div>
-
-<div class="stage">
-  <div class="question-wrap" style="position:relative;">
-    <div class="question" id="question-text">よういちゅう…</div>
-    <button id="question-speaker" aria-label="もんだいを よむ" style="position:absolute;top:50%;right:-4px;transform:translateY(-50%);background:#FBBF24;border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15);display:none;">🔊</button>
-  </div>
-  <div id="stage-area"></div>
-  <div class="choices" id="choices"></div>
-</div>
-
 </div>
 <!-- ===== Feedback bubble ===== -->
 <div class="feedback" id="feedback">やったー！</div>
@@ -1515,39 +1931,10 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
     <div class="modal-icon" id="result-icon">🎉</div>
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
-    <button class="modal-btn" id="result-garden-btn" style="background:linear-gradient(135deg,#10B981,#34D399);">🌼 おにわへ ▶</button>
     <button class="modal-btn" id="result-btn">もう一回 ▶</button>
-    <button class="modal-btn modal-btn-enc" id="result-enc-btn">🌼 おはな ずかん</button>
     <button class="modal-btn modal-btn-cat" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
-</div>
-
-<!-- ===== Garden overlay ===== -->
-<div class="garden-overlay" id="garden-overlay">
-  <div class="garden-header">
-    <div class="garden-title">🌼 おにわ</div>
-    <button class="garden-close" id="garden-close" aria-label="とじる">✕</button>
-  </div>
-  <div class="garden-body">
-    <div class="garden-hint" id="garden-hint">そらのますに たねを うえよう！</div>
-    <div class="garden-grid" id="garden-grid"></div>
-    <div class="garden-seeds-row">
-      <span class="seed-emoji">🌱</span>
-      <span>もってる たね: <span id="garden-seed-count">0</span> / 10</span>
-    </div>
-  </div>
-</div>
-<div class="garden-toast" id="garden-toast"></div>
-
-<!-- ===== Flower encyclopedia overlay ===== -->
-<div class="flower-enc" id="flower-enc">
-  <div class="flower-enc-header">
-    <div class="flower-enc-title">🌼 おはな ずかん</div>
-    <div class="flower-enc-progress" id="flower-enc-progress">0 / 20</div>
-    <button class="flower-enc-close" id="flower-enc-close" aria-label="とじる">✕</button>
-  </div>
-  <div class="flower-enc-body" id="flower-enc-body"></div>
 </div>
 
 <script>
@@ -1565,273 +1952,9 @@ let currentQ = null;
 let locked = false;
 
 // ═══════════════════════════════════════════════════════════
-// Flower garden
+// (Garden / Seeds / Flower encyclopedia は MVP 対象外のため削除済み。
+//  acorns / stickers / flowers の wiring も無し)
 // ═══════════════════════════════════════════════════════════
-const LS_FLOWERS_DISCOVERED = 'pono_flowers_discovered';
-
-function getDiscoveredFlowers() {
-  try {
-    return JSON.parse(localStorage.getItem(LS_FLOWERS_DISCOVERED) || '[]');
-  } catch (e) { return []; }
-}
-
-function recordDiscovery(flowerId) {
-  const list = getDiscoveredFlowers();
-  if (list.indexOf(flowerId) === -1) {
-    list.push(flowerId);
-    try { localStorage.setItem(LS_FLOWERS_DISCOVERED, JSON.stringify(list)); } catch (e) {}
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// Seed stock + Garden (育てる系)
-// ═══════════════════════════════════════════════════════════
-const LS_SEEDS = 'pono_quizland_seeds';
-const LS_GARDEN = 'pono_quizland_garden';
-const LS_SESSION_NONCE = 'pono_quizland_session_nonce';
-const GARDEN_CELLS = 4;
-const SEED_MAX = 10;
-
-function getSeeds() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(LS_SEEDS) || '[]');
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) { return []; }
-}
-function setSeeds(list) {
-  try { localStorage.setItem(LS_SEEDS, JSON.stringify(list.slice(0, SEED_MAX))); } catch (e) {}
-}
-function addSeed(flowerId) {
-  const list = getSeeds();
-  if (list.length >= SEED_MAX) return false; // 上限で打ち切り
-  list.push(flowerId);
-  setSeeds(list);
-  return true;
-}
-
-function emptyGarden() {
-  const arr = [];
-  for (let i = 0; i < GARDEN_CELLS; i++) {
-    arr.push({ stage: null, flowerId: null, lastWaterNonce: 0 });
-  }
-  return arr;
-}
-function getGarden() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(LS_GARDEN) || 'null');
-    if (Array.isArray(arr) && arr.length === GARDEN_CELLS) return arr;
-  } catch (e) {}
-  return emptyGarden();
-}
-function setGarden(arr) {
-  try { localStorage.setItem(LS_GARDEN, JSON.stringify(arr)); } catch (e) {}
-}
-
-function getSessionNonce() {
-  const n = parseInt(localStorage.getItem(LS_SESSION_NONCE) || '0', 10);
-  return isNaN(n) ? 0 : n;
-}
-function bumpSessionNonce() {
-  const n = getSessionNonce() + 1;
-  try { localStorage.setItem(LS_SESSION_NONCE, String(n)); } catch (e) {}
-  return n;
-}
-
-function plantSeed(cellIdx) {
-  const garden = getGarden();
-  const cell = garden[cellIdx];
-  if (!cell || cell.stage !== null) return false;
-  const seeds = getSeeds();
-  if (seeds.length === 0) return false;
-  const flowerId = seeds.shift();
-  setSeeds(seeds);
-  garden[cellIdx] = { stage: 0, flowerId: flowerId, lastWaterNonce: 0 };
-  setGarden(garden);
-  return true;
-}
-
-function waterCell(cellIdx) {
-  const garden = getGarden();
-  const cell = garden[cellIdx];
-  if (!cell || cell.stage === null || cell.stage >= 2) return false;
-  const nonce = getSessionNonce();
-  if (cell.lastWaterNonce === nonce) return false; // このセッション内既に水やり済
-  cell.stage = Math.min(2, cell.stage + 1);
-  cell.lastWaterNonce = nonce;
-  setGarden(garden);
-  return true;
-}
-
-function harvestCell(cellIdx) {
-  const garden = getGarden();
-  const cell = garden[cellIdx];
-  if (!cell || cell.stage !== 2) return false;
-  if (cell.flowerId) recordDiscovery(cell.flowerId);
-  garden[cellIdx] = { stage: null, flowerId: null, lastWaterNonce: 0 };
-  setGarden(garden);
-  return true;
-}
-
-function updateSeedHUD() {
-  const el = document.getElementById('hud-seeds-count');
-  if (el) el.textContent = String(getSeeds().length);
-}
-
-function renderSeedToast(flowerId) {
-  // 正解時に獲得種を小さく演出 (任意)。シンプルに HUD の数字更新のみでも伝わる。
-  updateSeedHUD();
-  const hud = document.getElementById('hud-seeds');
-  if (hud) {
-    hud.animate(
-      [{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }],
-      { duration: 450, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
-    );
-  }
-}
-
-// ─── Garden overlay rendering ───
-const STAGE_EMOJI = { 0: '🟤', 1: '🌱' }; // stage 2 は花 emoji を動的に差し込む
-
-function renderGarden() {
-  const grid = document.getElementById('garden-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  const garden = getGarden();
-  garden.forEach(function(cell, idx) {
-    const el = document.createElement('div');
-    el.className = 'garden-cell';
-    el.dataset.idx = idx;
-    if (cell.stage === null) {
-      el.textContent = '🕳️';
-      el.style.fontSize = 'clamp(1.8rem, 10vw, 3.2rem)';
-    } else if (cell.stage === 2) {
-      const f = (typeof window.findFlower === 'function') ? window.findFlower(cell.flowerId) : null;
-      el.textContent = f ? f.emoji : '🌸';
-      if (f) el.style.setProperty('--cell-bg', f.bg || '#FFE88C');
-      el.classList.add('bloomed');
-    } else {
-      el.textContent = STAGE_EMOJI[cell.stage] || '🟤';
-    }
-    el.addEventListener('click', function() { onGardenCellTap(idx); });
-    grid.appendChild(el);
-  });
-  const cnt = document.getElementById('garden-seed-count');
-  if (cnt) cnt.textContent = String(getSeeds().length);
-}
-
-function showGardenToast(text) {
-  const el = document.getElementById('garden-toast');
-  if (!el) return;
-  el.textContent = text;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(function() { el.classList.remove('show'); }, 1200);
-}
-
-function onGardenCellTap(idx) {
-  const garden = getGarden();
-  const cell = garden[idx];
-  if (!cell) return;
-  if (cell.stage === null) {
-    // 空マス: 種を植える
-    const seeds = getSeeds();
-    if (seeds.length === 0) {
-      showGardenToast('🌱 たねが ないよ');
-      return;
-    }
-    if (plantSeed(idx)) {
-      playCorrect();
-      renderGarden();
-      updateSeedHUD();
-      showGardenToast('🌱 たねを うえた！');
-    }
-    return;
-  }
-  if (cell.stage === 2) {
-    // 開花: おかたづけ
-    if (harvestCell(idx)) {
-      playFanfare();
-      renderGarden();
-      showGardenToast('🌼 ずかんに のせたよ！');
-    }
-    return;
-  }
-  // stage 0 or 1: 水やり
-  if (cell.lastWaterNonce === getSessionNonce()) {
-    showGardenToast('💧 もう みずあげたよ');
-    return;
-  }
-  if (waterCell(idx)) {
-    playCorrect();
-    renderGarden();
-    const grid = document.getElementById('garden-grid');
-    if (grid) {
-      const cells = grid.querySelectorAll('.garden-cell');
-      if (cells[idx]) {
-        cells[idx].classList.remove('watered');
-        void cells[idx].offsetWidth;
-        cells[idx].classList.add('watered');
-      }
-    }
-    const after = getGarden()[idx];
-    if (after && after.stage === 2) {
-      showGardenToast('🌸 さいた〜！');
-      launchConfetti();
-    } else {
-      showGardenToast('💧 みずやり おわり');
-    }
-  }
-}
-
-function openGarden() {
-  renderGarden();
-  const ov = document.getElementById('garden-overlay');
-  if (ov) ov.classList.add('visible');
-}
-function closeGarden() {
-  const ov = document.getElementById('garden-overlay');
-  if (ov) ov.classList.remove('visible');
-}
-
-function applySeasonTheme() {
-  if (typeof window.getCurrentSeason === 'function') {
-    document.body.dataset.season = window.getCurrentSeason();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// Flower encyclopedia
-// ═══════════════════════════════════════════════════════════
-function openFlowerEnc() {
-  const enc = document.getElementById('flower-enc');
-  const body = document.getElementById('flower-enc-body');
-  const prog = document.getElementById('flower-enc-progress');
-  if (!enc || !body || !window.QUIZLAND_FLOWERS) return;
-  const discovered = getDiscoveredFlowers();
-  body.innerHTML = '';
-  window.QUIZLAND_FLOWERS.forEach(function(f) {
-    const found = discovered.indexOf(f.id) !== -1;
-    const card = document.createElement('div');
-    card.className = 'flower-enc-card' + (found ? ' discovered' : '');
-    if (found) card.style.background = 'linear-gradient(160deg, ' + f.bg + '66, rgba(255,255,255,0.15))';
-    const em = document.createElement('div');
-    em.className = 'flower-enc-emoji';
-    em.textContent = found ? f.emoji : '❓';
-    const nm = document.createElement('div');
-    nm.className = 'flower-enc-name';
-    nm.textContent = found ? f.name : '？？？';
-    card.appendChild(em);
-    card.appendChild(nm);
-    body.appendChild(card);
-  });
-  prog.textContent = discovered.length + ' / ' + window.QUIZLAND_FLOWERS.length;
-  enc.classList.add('visible');
-}
-
-function closeFlowerEnc() {
-  const enc = document.getElementById('flower-enc');
-  if (enc) enc.classList.remove('visible');
-}
 
 // 選択中カテゴリー（デフォルト: 全部ON）
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
@@ -2196,8 +2319,8 @@ function updateHUD() {
   const prog = document.getElementById('hud-progress');
   prog.innerHTML = '';
   for (let i = 0; i < TOTAL_Q; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'hud-dot';
+    const dot = document.createElement('span');
+    dot.className = 'dot hud-dot';
     if (i < questionIdx) dot.classList.add('done');
     if (i === questionIdx) dot.classList.add('current');
     prog.appendChild(dot);
@@ -2218,11 +2341,6 @@ function onChoice(idx, btn) {
     showFeedback('やったー！');
     ponoJump();
     launchConfetti();
-    var flower = (typeof window.pickFlower === 'function') ? window.pickFlower() : null;
-    if (flower) {
-      if (addSeed(flower.id)) renderSeedToast(flower.id);
-      else updateSeedHUD(); // 上限到達時もカウント表示を同期
-    }
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
     // スタンプラリー: プレイ記録
@@ -2305,309 +2423,23 @@ function showResult() {
   document.getElementById('result-overlay').classList.remove('hidden');
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
-    if (window.addAcornsDaily) window.addAcornsDaily('quizland', 5, 5, { reason: 'quizland_clear' });
     playFanfare();
     launchConfetti();
     setTimeout(launchConfetti, 400);
-  }
-  // 種が1個以上 or 花壇に育成中のマスがあれば にわ を自動で開く
-  var hasSeeds = getSeeds().length > 0;
-  var hasActiveCell = getGarden().some(function(c) { return c.stage !== null; });
-  if (hasSeeds || hasActiveCell) {
-    setTimeout(openGarden, 1000);
   }
 }
 
 // ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
-function upgradeGameLayout() {
-  const shell = document.querySelector('.game-shell');
-  const header = document.querySelector('.header');
-  const stage = document.querySelector('.stage');
-  const questionWrap = stage && stage.querySelector('.question-wrap');
-  const stageArea = document.getElementById('stage-area');
-  const choices = document.getElementById('choices');
-  if (!shell || !header || !stage || !questionWrap || !stageArea || !choices) return;
-  if (stage.querySelector('.question-panel')) return;
-
-  const title = header.querySelector('h1');
-  if (title) title.textContent = 'フクロウ博士のなぞなぞ';
-
-  const avatarImg = header.querySelector('.pono-avatar img');
-  if (avatarImg) {
-    avatarImg.src = '../assets/images/quizland/owl_professor_guide.png';
-  }
-  if (avatarImg) avatarImg.alt = 'ポノ';
-
-  const backBtn = document.getElementById('hud-back-btn');
-  if (backBtn) {
-    backBtn.removeAttribute('style');
-    backBtn.textContent = '◀ タイトルへ';
-  }
-
-  const seeds = document.getElementById('hud-seeds');
-  if (seeds) {
-    const count = document.getElementById('hud-seeds-count');
-    const current = count ? count.textContent : '0';
-    seeds.removeAttribute('style');
-    seeds.setAttribute('aria-label', 'てもちのたね');
-    seeds.innerHTML = '🌱 <span id="hud-seeds-count">' + current + '</span>';
-  }
-
-  questionWrap.removeAttribute('style');
-
-  const speaker = document.getElementById('question-speaker');
-  if (speaker) {
-    speaker.removeAttribute('style');
-    speaker.setAttribute('aria-label', 'もんだいを よむ');
-    speaker.textContent = '🔊';
-  }
-
-  const questionText = document.getElementById('question-text');
-  if (questionText) questionText.textContent = 'よういちゅう…';
-
-  const questionPanel = document.createElement('section');
-  questionPanel.className = 'question-panel';
-
-  const questionChip = document.createElement('div');
-  questionChip.className = 'panel-chip';
-  questionChip.textContent = 'フクロウはかせからの もんだい';
-
-  const questionBoard = document.createElement('div');
-  questionBoard.className = 'question-board';
-  questionBoard.appendChild(stageArea);
-
-  questionPanel.appendChild(questionChip);
-  questionPanel.appendChild(questionWrap);
-  questionPanel.appendChild(questionBoard);
-
-  const answerPanel = document.createElement('aside');
-  answerPanel.className = 'answer-panel';
-
-  const answerGuide = document.createElement('div');
-  answerGuide.className = 'answer-guide';
-
-  const owl = document.createElement('img');
-  owl.className = 'answer-guide__owl';
-  owl.src = '../assets/images/quizland/owl_professor_guide.png';
-  owl.alt = '';
-
-  const answerCopy = document.createElement('div');
-  answerCopy.className = 'answer-guide__copy';
-
-  const answerChip = document.createElement('div');
-  answerChip.className = 'panel-chip panel-chip--leaf';
-  answerChip.textContent = 'こたえを えらぼう';
-
-  const answerText = document.createElement('p');
-  answerText.innerHTML = '4つの なかから<br>ぴったりの こたえを えらんでね。';
-
-  answerCopy.appendChild(answerChip);
-  answerCopy.appendChild(answerText);
-  answerGuide.appendChild(owl);
-  answerGuide.appendChild(answerCopy);
-
-  answerPanel.appendChild(answerGuide);
-  answerPanel.appendChild(choices);
-
-  const answerNote = document.createElement('div');
-  answerNote.className = 'answer-note';
-  answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>繧医￥隕九※ 縺九ｓ縺後∴縺ｦ縺ｿ繧医≧・・/span>';
-  answerPanel.appendChild(answerNote);
-
-  stage.replaceChildren(questionPanel, answerPanel);
-
-  if (title) title.textContent = 'フクロウ博士のなぞなぞ';
-  if (avatarImg) avatarImg.alt = 'フクロウ博士';
-  if (backBtn) backBtn.textContent = '◀ タイトルへ';
-  if (seeds) {
-    seeds.setAttribute('aria-label', 'てもちのたね');
-    seeds.innerHTML = '🌱 <span id="hud-seeds-count">0</span>';
-  }
-  if (speaker) {
-    speaker.setAttribute('aria-label', 'もんだいを よむ');
-    speaker.textContent = '🔊';
-  }
-  if (questionText) questionText.textContent = 'よういちゅう…';
-  questionChip.textContent = 'フクロウはかせからの もんだい';
-  answerChip.textContent = 'こたえを えらぼう';
-  answerText.innerHTML = '4つの なかから<br>ぴったりの こたえを えらんでね。';
-  answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>よく見て考えてみよう！</span>';
-}
-
-function upgradeGameLayoutV2() {
-  const shell = document.querySelector('.game-shell');
-  const header = document.querySelector('.header');
-  const hud = document.querySelector('.hud');
-  const stage = document.querySelector('.stage');
-  const questionWrap = stage && stage.querySelector('.question-wrap');
-  const stageArea = document.getElementById('stage-area');
-  const choices = document.getElementById('choices');
-  if (!shell || !header || !hud || !stage || !questionWrap || !stageArea || !choices) return;
-  if (stage.querySelector('.question-panel')) return;
-
-  const title = header.querySelector('h1');
-  if (title) {
-    title.textContent = 'フクロウ博士のなぞなぞ';
-    title.classList.add('sr-only');
-  }
-
-  const avatar = header.querySelector('.pono-avatar');
-  if (avatar) avatar.remove();
-
-  if (!header.querySelector('.header-owl')) {
-    const headerOwl = document.createElement('div');
-    headerOwl.className = 'header-owl';
-    headerOwl.setAttribute('aria-hidden', 'true');
-    const headerOwlImg = document.createElement('img');
-    headerOwlImg.src = '../assets/images/quizland/owl_professor_guide.png';
-    headerOwlImg.alt = '';
-    headerOwl.appendChild(headerOwlImg);
-    header.prepend(headerOwl);
-  }
-
-  if (!header.querySelector('.header-logo')) {
-    const headerLogo = document.createElement('img');
-    headerLogo.className = 'header-logo';
-    headerLogo.src = '../assets/images/quizland/title_logo.png';
-    headerLogo.alt = 'フクロウ博士のなぞなぞ';
-    header.appendChild(headerLogo);
-  }
-
-  const label = document.getElementById('hud-label');
-  if (label) {
-    label.innerHTML = '<span id="q-num">1</span> / <span id="q-total">5</span>';
-    if (label.parentNode !== header) header.appendChild(label);
-  }
-
-  const progress = document.getElementById('hud-progress');
-  if (progress && progress.parentNode !== header) header.appendChild(progress);
-
-  const backBtn = document.getElementById('hud-back-btn');
-  if (backBtn) {
-    backBtn.removeAttribute('style');
-    backBtn.setAttribute('aria-label', 'タイトルへ もどる');
-    backBtn.innerHTML = '<span class="hud-back-icon" aria-hidden="true">🏠</span><span class="hud-back-text">タイトル</span>';
-    hud.appendChild(backBtn);
-  }
-
-  const seeds = document.getElementById('hud-seeds');
-  if (seeds) {
-    const count = document.getElementById('hud-seeds-count');
-    const current = count ? count.textContent : '0';
-    seeds.removeAttribute('style');
-    seeds.setAttribute('aria-label', 'てもっている たね');
-    seeds.innerHTML = '<span aria-hidden="true">🌱</span><span id="hud-seeds-count">' + current + '</span>';
-    hud.appendChild(seeds);
-  }
-
-  let noticeBtn = document.getElementById('hud-notice-btn');
-  if (!noticeBtn) {
-    noticeBtn = document.createElement('button');
-    noticeBtn.id = 'hud-notice-btn';
-    noticeBtn.type = 'button';
-    noticeBtn.className = 'hud-action-btn';
-    noticeBtn.innerHTML = '<span class="hud-action-icon" aria-hidden="true">🔔</span><span class="hud-action-text">おしらせ</span>';
-    noticeBtn.addEventListener('pointerdown', function(e) {
-      e.preventDefault();
-      alert('いまは おしらせは ありません。');
-    });
-  }
-  hud.appendChild(noticeBtn);
-
-  let settingsBtn = document.getElementById('hud-settings-btn');
-  if (!settingsBtn) {
-    settingsBtn = document.createElement('button');
-    settingsBtn.id = 'hud-settings-btn';
-    settingsBtn.type = 'button';
-    settingsBtn.className = 'hud-action-btn';
-    settingsBtn.innerHTML = '<span class="hud-action-icon" aria-hidden="true">⚙️</span><span class="hud-action-text">せってい</span>';
-    settingsBtn.addEventListener('pointerdown', function(e) {
-      e.preventDefault();
-      const menuToggle = document.querySelector('.pono-menu-toggle');
-      if (menuToggle) {
-        const evt = typeof PointerEvent === 'function'
-          ? new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' })
-          : new Event('pointerdown', { bubbles: true, cancelable: true });
-        menuToggle.dispatchEvent(evt);
-      }
-    });
-  }
-  hud.appendChild(settingsBtn);
-
-  questionWrap.removeAttribute('style');
-
-  const speaker = document.getElementById('question-speaker');
-  if (speaker) {
-    speaker.removeAttribute('style');
-    speaker.setAttribute('aria-label', 'もんだいを よむ');
-    speaker.textContent = '🔊';
-  }
-
-  const questionText = document.getElementById('question-text');
-  if (questionText) questionText.textContent = 'よういちゅう…';
-
-  const questionPanel = document.createElement('section');
-  questionPanel.className = 'question-panel';
-
-  const questionChip = document.createElement('div');
-  questionChip.className = 'panel-chip';
-  questionChip.textContent = 'フクロウ博士からの もんだい';
-
-  const questionBoard = document.createElement('div');
-  questionBoard.className = 'question-board';
-  questionBoard.appendChild(stageArea);
-
-  questionPanel.appendChild(questionChip);
-  questionPanel.appendChild(questionWrap);
-  questionPanel.appendChild(questionBoard);
-
-  const answerPanel = document.createElement('aside');
-  answerPanel.className = 'answer-panel';
-
-  const answerGuide = document.createElement('div');
-  answerGuide.className = 'answer-guide';
-
-  const owl = document.createElement('img');
-  owl.className = 'answer-guide__owl';
-  owl.src = '../assets/images/quizland/owl_professor_guide.png';
-  owl.alt = '';
-
-  const answerCopy = document.createElement('div');
-  answerCopy.className = 'answer-guide__copy';
-
-  const answerChip = document.createElement('div');
-  answerChip.className = 'panel-chip panel-chip--leaf';
-  answerChip.textContent = '';
-
-  const answerText = document.createElement('p');
-  answerText.innerHTML = '';
-
-  answerCopy.appendChild(answerChip);
-  answerCopy.appendChild(answerText);
-  answerGuide.appendChild(owl);
-  answerGuide.appendChild(answerCopy);
-
-  answerPanel.appendChild(answerGuide);
-  answerPanel.appendChild(choices);
-
-  const answerNote = document.createElement('div');
-  answerNote.className = 'answer-note';
-  answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>よく見て かんがえてみよう！</span>';
-  answerPanel.appendChild(answerNote);
-
-  stage.replaceChildren(questionPanel, answerPanel);
-}
+// 注: 旧 upgradeGameLayoutV2() は HTML 直接構造化により不要になり削除済み。
+//     新レイアウト (preview/full ベース: hdr-pill + q-text-card + board + answer-tray)
+//     は body 内に直接書いている。
 
 function initGame() {
-  upgradeGameLayoutV2();
   playlist = buildPlaylist();
   questionIdx = 0;
   correctCount = 0;
-  applySeasonTheme();
-  bumpSessionNonce();
-  updateSeedHUD();
   document.getElementById('result-overlay').classList.add('hidden');
   loadQuestion(playlist[0]);
 }
@@ -2663,8 +2495,6 @@ const MODE_TO_CATEGORIES = {
 };
 
 // タイトル画面タップ → モード選択画面へ (BGM もここで起動)
-upgradeGameLayoutV2();
-
 document.getElementById('start-screen').addEventListener('click', function() {
   ensureAudio();
   startBGM();
@@ -2733,17 +2563,21 @@ document.getElementById('result-cat-btn').addEventListener('click', function() {
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 
-// Flower encyclopedia open/close
-document.getElementById('result-enc-btn').addEventListener('click', openFlowerEnc);
-document.getElementById('flower-enc-close').addEventListener('click', closeFlowerEnc);
-
-// Garden overlay open/close
-document.getElementById('result-garden-btn').addEventListener('click', openGarden);
-document.getElementById('garden-close').addEventListener('click', closeGarden);
-
-// Apply season theme on first load (before game starts)
-applySeasonTheme();
-updateSeedHUD();
+// HUD settings button → 共通メニューを開く (旧 upgradeGameLayoutV2 と同等)
+(function() {
+  var settingsBtn = document.getElementById('hud-settings-btn');
+  if (!settingsBtn) return;
+  settingsBtn.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    var menuToggle = document.querySelector('.pono-menu-toggle');
+    if (menuToggle) {
+      var evt = typeof PointerEvent === 'function'
+        ? new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' })
+        : new Event('pointerdown', { bubbles: true, cancelable: true });
+      menuToggle.dispatchEvent(evt);
+    }
+  });
+})();
 
 })();
 </script>
