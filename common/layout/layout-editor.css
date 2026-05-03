@@ -84,7 +84,8 @@ body.layout-editor-on .le-toast.le-toast-error { background: rgba(220, 70, 70, 0
   Wave 7 (2026-05-03) で発覚した絶対配置レイヤー消失バグの構造的解決。
 */
 body.layout-editor-on .resizable {
-  outline: 2px dashed rgba(0, 212, 255, 0.6);
+  /* Foxtrot-2: 未選択は控えめなグレー枠 (重なり時に選択中が映えるよう) */
+  outline: 2px dashed rgba(160, 160, 160, 0.45);
   outline-offset: 2px;
   cursor: move;
 }
@@ -109,13 +110,44 @@ body.layout-editor-on .resizable.le-preferred {
   outline-offset: 4px;
   box-shadow: 0 0 0 2px rgba(255, 208, 0, 0.35), 0 0 14px rgba(255, 208, 0, 0.55);
 }
+/* Echo-2: preferredTarget が active の間、bbox が重なる他のレイヤーは
+   一時的に pointer-events を無効化して、preferredTarget の本体・ハンドルが
+   確実にクリック / ドラッグ可能になるようにする。
+   完全重なり (.field-bg ⇔ .window-frame など) のターゲット切り替えバグ対策。
+   解除条件: preferredTarget が null になった時 or 別要素が preferred になった時に
+   refreshPreferredTargetUI() 経由で外される。
+   別要素を選びたい場合は要素一覧パネルから選び直す。 */
+body.layout-editor-on .resizable.le-pointer-suppressed {
+  pointer-events: none !important;
+}
+body.layout-editor-on .resizable.le-pointer-suppressed > .resize-handle,
+body.layout-editor-on .resizable.le-pointer-suppressed > .resize-size-label,
+body.layout-editor-on .resizable.le-pointer-suppressed > .userbox-badge,
+body.layout-editor-on .resizable.le-pointer-suppressed > .userbox-del,
+body.layout-editor-on .resizable.le-pointer-suppressed > .le-lock-badge {
+  pointer-events: none !important;
+}
 body.layout-editor-on .resize-handle {
   position: absolute;
-  background: #00d4ff;
+  /* Foxtrot-2: デフォルトは未選択を表すグレーで控えめに (z-index は維持) */
+  background: #888;
+  opacity: 0.55;
   border: 2px solid #fff;
   z-index: 60;
   pointer-events: auto;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+/* Foxtrot-2: 選択中は青で目立たせる + 前面に */
+body.layout-editor-on .resizable.selected > .resize-handle {
+  background: #00d4ff;
+  opacity: 1;
+  z-index: 62;
+}
+/* Foxtrot-2: preferredTarget はゴールド (既存ハイライトに連動) */
+body.layout-editor-on .resizable.le-preferred > .resize-handle {
+  background: #ffd000;
+  opacity: 1;
+  z-index: 63;
 }
 body.layout-editor-on .resize-handle.edge-n,
 body.layout-editor-on .resize-handle.edge-s {
@@ -221,6 +253,36 @@ body.layout-editor-on .numeric-panel .np-align {
 }
 body.layout-editor-on .numeric-panel .np-hint {
   color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3;
+}
+/* Foxtrot-2: 画像要素選択時の Natural サイズ + パーセント表示 */
+body.layout-editor-on .numeric-panel .np-natural-info {
+  font-size: 11px;
+  color: #aaa;
+  padding: 4px 6px;
+  margin-top: 6px;
+  border-top: 1px dashed #444;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  line-height: 1.3;
+}
+body.layout-editor-on .numeric-panel .np-natural-info b {
+  color: #ffba6b;
+  font-weight: 700;
+}
+body.layout-editor-on .numeric-panel .np-reset-100 {
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #2a2a2a;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+}
+body.layout-editor-on .numeric-panel .np-reset-100:hover {
+  background: #3a3a3a;
+  border-color: #ff8a3d;
+  color: #fff;
 }
 /* Aspect-ratio lock toggle (FEATURE: Yankee) — sits in the W row, links W/H. */
 body.layout-editor-on .numeric-panel .np-row.np-row-aspect {

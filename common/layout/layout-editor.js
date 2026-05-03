@@ -925,6 +925,8 @@
         }
       });
       updateNumericPanel();
+      // Echo-2: リサイズ後にも bbox 重なり再評価
+      applyPreferredPointerSuppression();
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -1010,6 +1012,8 @@
           }
         });
         updateNumericPanel();
+        // Echo-2: 移動後に preferredTarget 周辺の bbox 関係が変わるので再評価
+        applyPreferredPointerSuppression();
       };
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
@@ -1066,6 +1070,43 @@
         row.classList.toggle('preferred', !!(el && el === state.preferredTarget));
       });
     }
+    // Echo-2: 完全重なりレイヤーの pointer-events 抑止 — preferredTarget 以外で
+    // bbox が重なっている要素は一時的に pointer-events: none にして、
+    // 「青い四角を直接ドラッグしても手前のレイヤーに掴まれる」問題を解消する。
+    applyPreferredPointerSuppression();
+  }
+
+  // Echo-2: preferredTarget set 時、それと bbox が重なる他 .resizable に
+  // .le-pointer-suppressed を付与し、CSS で pointer-events: none にする。
+  // preferredTarget 自身とそのハンドル / 子孫はそのままクリック可能。
+  // preferredTarget が解除されたら全要素から外す。
+  function applyPreferredPointerSuppression() {
+    var pt = state.preferredTarget;
+    var all = $$('.resizable');
+    if (!pt) {
+      all.forEach(function (el) { el.classList.remove('le-pointer-suppressed'); });
+      return;
+    }
+    var ptRect = pt.getBoundingClientRect();
+    var ptOk = ptRect.width > 0 && ptRect.height > 0;
+    all.forEach(function (el) {
+      if (el === pt || (pt.contains && pt.contains(el)) || (el.contains && el.contains(pt))) {
+        // 自分自身 / 親子関係は抑止しない (子孫のクリック→pt にバブル可能にするため)
+        el.classList.remove('le-pointer-suppressed');
+        return;
+      }
+      if (!ptOk) { el.classList.remove('le-pointer-suppressed'); return; }
+      var r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) {
+        el.classList.remove('le-pointer-suppressed');
+        return;
+      }
+      if (rectsIntersect(r, ptRect)) {
+        el.classList.add('le-pointer-suppressed');
+      } else {
+        el.classList.remove('le-pointer-suppressed');
+      }
+    });
   }
   function selectOnly(el) {
     state.selectedElements.clear();
@@ -1354,6 +1395,9 @@
       '<div class="np-targets" id="np-targets">(なし)</div>' +
       makeSpinnerRow('w', 'W', { aspect: true }) + makeSpinnerRow('h', 'H') +
       makeSpinnerRow('tx', 'TX') + makeSpinnerRow('ty', 'TY') +
+      // Foxtrot-2: 単一画像選択時に natural size とパーセントを表示
+      '<div class="np-natural-info" id="np-natural-info" style="display:none"></div>' +
+      '<button class="np-reset-100" id="np-reset-100" type="button" style="display:none" title="自然サイズ (100%) に戻す">100% に戻す</button>' +
       '<div class="np-section-title">表示</div>' +
       '<div class="np-align-row">' +
       '  <button class="np-align" id="np-hide" title="選択中の要素を非表示">🗑 隠す</button>' +
@@ -1368,7 +1412,47 @@
     wireAlignmentToolbar(panel);
     panel.querySelector('#np-hide').addEventListener('click', hideSelectedElements);
     panel.querySelector('#np-show-all').addEventListener('click', showAllHiddenElements);
+    var resetBtn = panel.querySelector('#np-reset-100');
+    if (resetBtn) resetBtn.addEventListener('click', resetImageTo100Pct);
     syncAspectLockButton();
+  }
+
+  // Foxtrot-2: 選択要素が画像 (img) もしくは img を 1 つだけ含むラッパなら、
+  // その naturalWidth / naturalHeight を返す。条件外なら null。
+  function getImageNaturalSize(el) {
+    if (!el) return null;
+    if (el.tagName === 'IMG' && el.naturalWidth > 0 && el.naturalHeight > 0) {
+      return { w: el.naturalWidth, h: el.naturalHeight, img: el };
+    }
+    var inner = el.querySelectorAll && el.querySelectorAll('img');
+    if (inner && inner.length === 1 && inner[0].naturalWidth > 0 && inner[0].naturalHeight > 0) {
+      return { w: inner[0].naturalWidth, h: inner[0].naturalHeight, img: inner[0] };
+    }
+    return null;
+  }
+
+  // Foxtrot-2: 「100% に戻す」ボタン — 単一画像選択時に natural size を W/H に流し込む
+  function resetImageTo100Pct() {
+    if (!state.selectedElements || state.selectedElements.size !== 1) return;
+    var sel = Array.from(state.selectedElements)[0];
+    var ns = getImageNaturalSize(sel);
+    if (!sel || !ns) return;
+    // 縦横比ロックの有無に関わらず natural の正確な W,H を直接流し込む。
+    // applyNumericInput は内部で aspect-link を呼ぶが、片方ずつ書き込めば
+    // 最終値は natural と一致する (W → linkedH を 100% に置換 → H で確定)。
+    // ロック中の互換性のため明示的に両軸を applyOnePropToEl で書き込み、
+    // 履歴に 1 個の resize として積む。
+    var before = getResizeState(sel);
+    applyOnePropToEl(sel, 'w', ns.w);
+    applyOnePropToEl(sel, 'h', ns.h);
+    var after = getResizeState(sel);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el: sel, before: before, after: after });
+    }
+    // ロック中なら新サイズで比率をキャプチャし直す (1:1 リセット後の意図に揃える)
+    if (state.aspectLocked) captureAspectRatios();
+    updateNumericPanel();
+    showToast('自然サイズ (' + ns.w + '×' + ns.h + ') に戻しました');
   }
 
   function makeSpinnerRow(prop, label, opts) {
@@ -1580,6 +1664,50 @@
       if (allSame) { input.value = vals[0]; input.placeholder = ''; }
       else { input.value = ''; input.placeholder = '異なる'; }
     });
+
+    // Foxtrot-2: 単一選択かつ画像ならば、自然サイズと現在の表示比率 (%) を表示。
+    // 非画像 / 複数選択 / 画像未ロード時は非表示。
+    var infoEl = panel.querySelector('#np-natural-info');
+    var resetBtn = panel.querySelector('#np-reset-100');
+    var ns = (sel.length === 1) ? getImageNaturalSize(sel[0]) : null;
+    // 画像未ロードのケース: 1個選択 & img はあるが naturalWidth=0 なら、
+    // load 完了時に再描画する one-shot リスナを張る (再選択不要にする)
+    if (!ns && sel.length === 1) {
+      var single0 = sel[0];
+      var probe = (single0.tagName === 'IMG') ? single0 : (function () {
+        var inner = single0.querySelectorAll && single0.querySelectorAll('img');
+        return (inner && inner.length === 1) ? inner[0] : null;
+      })();
+      if (probe && probe.naturalWidth === 0 && !probe._foxtrot2NaturalListen) {
+        probe._foxtrot2NaturalListen = true;
+        probe.addEventListener('load', function () {
+          probe._foxtrot2NaturalListen = false;
+          updateNumericPanel();
+        }, { once: true });
+      }
+    }
+    if (infoEl && resetBtn) {
+      if (ns) {
+        var single = sel[0];
+        // style に明示の値が無ければ offsetWidth/Height にフォールバック (= getVal と同じ)
+        var realW = parseFloat(single.style.width) || single.offsetWidth || 0;
+        var realH = parseFloat(single.style.height) || single.offsetHeight || 0;
+        var pctW = (realW / ns.w * 100);
+        var pctH = (realH / ns.h * 100);
+        var fmt = function (n) {
+          // 整数なら小数なし、それ以外は小数1桁
+          return (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
+        };
+        infoEl.innerHTML =
+          '自然: ' + ns.w + '×' + ns.h +
+          ' &nbsp;<b>' + fmt(pctW) + '% × ' + fmt(pctH) + '%</b>';
+        infoEl.style.display = '';
+        resetBtn.style.display = '';
+      } else {
+        infoEl.style.display = 'none';
+        resetBtn.style.display = 'none';
+      }
+    }
   }
 
   // ====================================================================
@@ -3775,7 +3903,7 @@
     // Remove handles + size labels but KEEP applied styles
     $$('.resize-handle, .resize-size-label').forEach(function (el) { el.remove(); });
     $$('.resizable').forEach(function (el) {
-      el.classList.remove('resizable', 'selected', 'edge-linked', 'le-locked', 'le-preferred');
+      el.classList.remove('resizable', 'selected', 'edge-linked', 'le-locked', 'le-preferred', 'le-pointer-suppressed');
       delete el._resizeUpdateLabel;
     });
     $$('.le-lock-badge').forEach(function (b) { b.remove(); });
@@ -3827,6 +3955,10 @@
     // Charlie-2: editor disable で preferredTarget もリセット
     state.preferredTarget = null;
     $$('.le-preferred').forEach(function (e) { e.classList.remove('le-preferred'); });
+    // Echo-2: pointer-events 抑止クラスも cleanup
+    document.querySelectorAll('.le-pointer-suppressed').forEach(function (e) {
+      e.classList.remove('le-pointer-suppressed');
+    });
     emit('mode', 'play');
   }
 
