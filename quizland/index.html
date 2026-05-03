@@ -1011,6 +1011,104 @@ body.layout-editor-on .character img {
   right: max(16px, env(safe-area-inset-right)) !important;
   top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
 }
+
+/* ===== Quick "back to menu" pill (本編プレイ中の保険動線) =====
+   お知らせ / せってい の右隣に並べる小さな丸ボタン。play.html へ戻る。
+   .stage 内 (transform: scale 配下) ではなく viewport 直下に置くことで、
+   どの aspect-ratio でも一貫した押しやすいサイズで表示される。
+   タイトル/モード選択画面では透明にしてゲーム中だけ見せる
+   (タイトル画面は start-screen が z-index:50 で前面なので、被って見えない)。 */
+.quiz-back-to-menu {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: calc(max(16px, env(safe-area-inset-right)) + 56px);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 248, 224, 0.92);
+  border: 2px solid var(--wood-dark);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 2px 0 var(--wood-dark), 0 4px 10px rgba(0,0,0,0.25);
+  -webkit-tap-highlight-color: transparent;
+}
+.quiz-back-to-menu:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--wood-dark), 0 2px 6px rgba(0,0,0,0.25);
+}
+.quiz-back-to-menu .back-icon { font-size: 16px; line-height: 1; }
+.quiz-back-to-menu .back-label { font-size: 13px; letter-spacing: 0.04em; }
+
+/* ===== Aspect-ratio defensive rules (iPad 4:3 / iPhone 19.5:9 etc.) =====
+   fitStage が Math.max (cover-fit) で stage を viewport 全体に広げるため、
+   16:9 より縦長の viewport では canvas の左右が画面外にクリップされる。
+   safe-area (16:9 / 1600×900) は canvas の中央にあり、--safe-w が visible
+   slice より広いと UI (hdr / answer-tray / character) が画面外に逃げてしまう。
+   visible slice (canvas-px) ≈ vw × canvas-h / vh なので、
+   各 max-aspect-ratio に対し safe-w を slice 内に収まるよう詰める。
+
+   16:9 (1.7778) viewport (1920×1080 等) は無調整のまま 1600px で OK。
+   iPhone 横持ち (19.5:9 ≈ 2.16) は visible slice ≈ 1951 → 余裕あり、無調整。 */
+@media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
+  /* 厳密に 16:9 より狭い (16:10 1920×1200 等の比較的近いもの)
+     visible slice ≈ 1440 canvas-px → safe-w 1400 は -40 buffer で OK */
+  :root {
+    --safe-w: 1400px;
+  }
+  /* hdr の 1fr 700px は a-col が安定しているのでそのまま、ただし 700px は
+     1400 の 50% で広すぎるので 600px に詰めて q-col に余裕を残す */
+  .hdr { grid-template-columns: 1fr 600px; }
+  .body { grid-template-columns: 1fr 600px; }
+}
+@media (orientation: landscape) and (max-aspect-ratio: 14/9) {
+  /* iPad Pro 11" (1668×1194 ≈ 1.397) や 1366×1024 など。
+     visible slice ≈ 1098 canvas-px → safe-w 1080 で -18 buffer */
+  :root {
+    --safe-w: 1080px;
+  }
+  .hdr { grid-template-columns: 1fr 480px; }
+  .body { grid-template-columns: 1fr 480px; }
+  .hdr-right .ctrl-btn { width: 96px; height: 96px; font-size: 14px; }
+  .hdr-right .ctrl-btn .icon { font-size: 32px; }
+  .answer-tray { padding: 12px; }
+  .answer-panel { gap: 12px; }
+  .character { width: 160px; height: 180px; }
+  .char-hint { min-width: 200px; font-size: 18px; }
+}
+@media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+  /* iPad 1024×768、iPad Pro 12.9 2048×1536 など真正 4:3
+     visible slice ≈ 1097 canvas-px → safe-w 1020 で -77 buffer */
+  :root {
+    --safe-w: 1020px;
+  }
+  .hdr { grid-template-columns: 1fr 440px; }
+  .body { grid-template-columns: 1fr 440px; gap: 12px; }
+  .hdr-right .ctrl-btn { width: 88px; height: 88px; font-size: 13px; }
+  .hdr-right .ctrl-btn .icon { font-size: 28px; }
+  .hdr-right { gap: 8px; }
+  .q-text-card { font-size: 26px; padding: 18px 60px 18px 24px; min-height: 140px; }
+  .board { height: 440px; }
+  .answer-tray { padding: 12px; }
+  .answer-panel { gap: 10px; }
+  .chip { height: 180px; font-size: 30px; }
+  .chip.chip-count { font-size: 48px; }
+  .character { width: 150px; height: 170px; }
+  .char-hint { min-width: 190px; font-size: 17px; }
+}
+@media (orientation: landscape) and (max-aspect-ratio: 5/4) {
+  /* 1280×1024 等、超 4:3。visible slice ≈ 1029 → safe-w 980 で -49 buffer */
+  :root {
+    --safe-w: 980px;
+  }
+  .hdr { grid-template-columns: 1fr 420px; }
+  .body { grid-template-columns: 1fr 420px; }
+}
 </style>
 </head>
 <body class="sheet-on">
@@ -1124,6 +1222,15 @@ body.layout-editor-on .character img {
     </div>
   </div>
 </div>
+
+<!-- ===== 仮: メニューに戻るボタン (お知らせ/せってい の隣あたり) =====
+     ユーザーが本編からタイトル/モード選択に直接戻れる導線が無いため、
+     play.html (メニュー) へ確実に戻れる丸ピルを画面右上隅に常設する。
+     スタート画面 (z-index: 50) は前面に出るのでタイトル中は被って見えない。 -->
+<a href="../play.html" class="quiz-back-to-menu" id="quiz-back-to-menu" aria-label="メニューに戻る">
+  <span class="back-icon" aria-hidden="true">🏠</span>
+  <span class="back-label">メニュー</span>
+</a>
 
 <!-- Feedback / Result / Detail popup -->
 <div class="feedback" id="feedback">やったー！</div>
@@ -1415,7 +1522,16 @@ if (document.readyState === 'loading') {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Stage auto-fit (preview/full の preview-mode と同じ計算)
+// Stage auto-fit (cover-fit / play.html と同じ Math.max ロジック)
+// --------------------------------------------------------------
+// 旧実装は Math.min (contain) だったため iPad 4:3 / iPhone 19.5:9 で
+// 大きなレターボックス黒帯が発生していた。 Math.max (cover-fit) に
+// 切り替えて viewport を完全に埋め、 上下/左右にあふれる canvas 端
+// (sheet-on の装飾領域) のみクリップされるようにする。
+// 16:9 より縦長の viewport では safe-area が画面外にこぼれないよう、
+// CSS 側の max-aspect-ratio メディアクエリで --safe-w を visible slice
+// 内に詰めてある (お知らせ/せってい/回答チップ/キャラはすべて safe-area
+// 内に収まる)。
 // ═══════════════════════════════════════════════════════════
 const stageEl = document.getElementById('stage');
 function fitStage() {
@@ -1423,11 +1539,13 @@ function fitStage() {
   const stageW = parseFloat(getComputedStyle(stageEl).width);
   const stageH = parseFloat(getComputedStyle(stageEl).height);
   if (!stageW || !stageH) return;
-  const scale = Math.min(w / stageW, h / stageH);
+  // cover-fit: 大きい方のスケールを採用して片方の軸が viewport 端に
+  // ぴったり収まり、もう片方は overflow + clip させる
+  const scale = Math.max(w / stageW, h / stageH);
   const scaledW = stageW * scale;
   const scaledH = stageH * scale;
-  const offsetX = (w - scaledW) / 2;
-  const offsetY = (h - scaledH) / 2;
+  const offsetX = (w - scaledW) / 2;  // 横はみ出しは中央寄せで両側均等にクリップ
+  const offsetY = (h - scaledH) / 2;  // 縦も同様 (普通は 0 か正、片方軸はぴったり)
   stageEl.style.transformOrigin = '0 0';
   stageEl.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
 }

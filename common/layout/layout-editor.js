@@ -723,7 +723,7 @@
     return linked;
   }
 
-  function performResize(target, sides, dx, dy, sym, axes, stageRect, scale) {
+  function performResize(target, sides, dx, dy, sym, axes, stageRect, scale, aspectLock) {
     var el = target.el;
     var startW = target.startW, startH = target.startH;
     var startTx = target.startTx, startTy = target.startTy;
@@ -734,13 +734,32 @@
     if (sides.indexOf('w') >= 0 && sides.indexOf('e') < 0) newW = Math.max(20, startW - factor * dx);
     if (sides.indexOf('s') >= 0) newH = Math.max(20, startH + factor * dy);
     if (sides.indexOf('n') >= 0 && sides.indexOf('s') < 0) newH = Math.max(20, startH - factor * dy);
+    // Yankee: aspect-ratio lock — force partner axis to follow.
+    if (aspectLock && target.aspect && isFinite(target.aspect) && target.aspect > 0) {
+      var hasW = sides.indexOf('e') >= 0 || sides.indexOf('w') >= 0;
+      var hasH = sides.indexOf('s') >= 0 || sides.indexOf('n') >= 0;
+      if (hasW && hasH) {
+        // Corner drag: pick axis with larger relative change as the driver.
+        var rW = Math.abs(newW - startW) / Math.max(1, startW);
+        var rH = Math.abs(newH - startH) / Math.max(1, startH);
+        if (rW >= rH) newH = Math.max(20, newW / target.aspect);
+        else newW = Math.max(20, newH * target.aspect);
+      } else if (hasW) {
+        newH = Math.max(20, newW / target.aspect);
+      } else if (hasH) {
+        newW = Math.max(20, newH * target.aspect);
+      }
+    }
     // Snap to grid
     newW = snapValue(newW);
     newH = snapValue(newH);
-    if (axes.indexOf('w') >= 0 && (sides.indexOf('e') >= 0 || sides.indexOf('w') >= 0)) {
+    var wActive = sides.indexOf('e') >= 0 || sides.indexOf('w') >= 0;
+    var hActive = sides.indexOf('s') >= 0 || sides.indexOf('n') >= 0;
+    if (aspectLock && target.aspect) { wActive = true; hActive = true; }
+    if (axes.indexOf('w') >= 0 && wActive) {
       el.style.width = newW + 'px';
     }
-    if (axes.indexOf('h') >= 0 && (sides.indexOf('s') >= 0 || sides.indexOf('n') >= 0)) {
+    if (axes.indexOf('h') >= 0 && hActive) {
       el.style.height = newH + 'px';
       if (el.matches('.hdr-left')) {
         document.documentElement.style.setProperty('--header-h', newH + 'px');
@@ -880,9 +899,10 @@
         return;
       }
 
-      performResize(primaryTarget, primarySides, dx, dy, sym, axes, info.stageRect, info.scale);
+      var aspectLock = !!state.aspectLocked;
+      performResize(primaryTarget, primarySides, dx, dy, sym, axes, info.stageRect, info.scale, aspectLock);
       linkedTargets.forEach(function (t) {
-        performResize(t, t.sides, dx, dy, false, 'wh', info.stageRect, info.scale);
+        performResize(t, t.sides, dx, dy, false, 'wh', info.stageRect, info.scale, false);
       });
       emit('transform', { kind: 'resize', el: el });
     };
@@ -996,6 +1016,9 @@
   function refreshSelectionUI() {
     $$('.resizable').forEach(function (e) { e.classList.toggle('selected', state.selectedElements.has(e)); });
     document.body.classList.toggle('has-selection', state.selectedElements.size > 0);
+    // Yankee: when aspect-lock is on, re-capture ratios for the new selection so
+    // editing W/H from this point forward respects each element's current ratio.
+    if (state.aspectLocked) captureAspectRatios();
     updateNumericPanel();
     refreshElementListSelection();
     refreshTopToolbarAlign();
@@ -1252,14 +1275,22 @@
     wireAlignmentToolbar(panel);
     panel.querySelector('#np-hide').addEventListener('click', hideSelectedElements);
     panel.querySelector('#np-show-all').addEventListener('click', showAllHiddenElements);
+    syncAspectLockButton();
   }
 
-  function makeSpinnerRow(prop, label) {
-    return '<div class="np-row">' +
+  function makeSpinnerRow(prop, label, opts) {
+    var rowCls = 'np-row' + (opts && opts.aspect ? ' np-row-aspect' : '');
+    var aspectBtn = (opts && opts.aspect)
+      ? '<button class="le-aspect-lock" id="np-aspect-lock" type="button"' +
+        ' data-aspect-locked="false" aria-label="縦横比をロック"' +
+        ' title="縦横比をロック (W と H を比例して連動)">🔓</button>'
+      : '';
+    return '<div class="' + rowCls + '">' +
       '<label>' + label +
       '  <button class="np-spin np-minus" data-prop="' + prop + '" data-dir="-1" tabindex="-1">−</button>' +
       '  <input type="number" id="np-' + prop + '" step="1">' +
       '  <button class="np-spin np-plus" data-prop="' + prop + '" data-dir="+1" tabindex="-1">+</button>' +
+      aspectBtn +
       '</label>' +
       '</div>';
   }
@@ -1287,6 +1318,67 @@
         stepNumeric(btn.dataset.prop, dir * step);
       });
     });
+    var lockBtn = $('#np-aspect-lock', root);
+    if (lockBtn) {
+      lockBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleAspectLock();
+      });
+    }
+  }
+
+  // ====================================================================
+  //  Aspect ratio lock (Yankee) — link W <-> H in the numeric panel
+  // ====================================================================
+
+  function captureAspectRatios() {
+    var map = new WeakMap();
+    if (!state.selectedElements) { state.aspectRatios = map; return; }
+    state.selectedElements.forEach(function (el) {
+      var w = parseFloat(el.style.width) || el.offsetWidth;
+      var h = parseFloat(el.style.height) || el.offsetHeight;
+      if (w > 0 && h > 0) map.set(el, w / h);
+    });
+    state.aspectRatios = map;
+  }
+
+  function syncAspectLockButton() {
+    if (!state.numericPanelEl) return;
+    var btn = state.numericPanelEl.querySelector('#np-aspect-lock');
+    if (!btn) return;
+    var locked = !!state.aspectLocked;
+    btn.dataset.aspectLocked = locked ? 'true' : 'false';
+    btn.textContent = locked ? '🔒' : '🔓';
+    btn.setAttribute('aria-label', locked ? '縦横比のロックを解除' : '縦横比をロック');
+    btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
+  }
+
+  function toggleAspectLock() {
+    state.aspectLocked = !state.aspectLocked;
+    if (state.aspectLocked) {
+      captureAspectRatios();
+    } else {
+      state.aspectRatios = null;
+    }
+    syncAspectLockButton();
+    showToast(state.aspectLocked ? '縦横比をロックしました' : '縦横比のロックを解除');
+  }
+
+  function getAspectRatioFor(el) {
+    if (!state.aspectLocked || !state.aspectRatios) return 0;
+    var r = state.aspectRatios.get(el);
+    if (r && isFinite(r) && r > 0) return r;
+    // Fallback: capture on the fly if missing (e.g. selection changed but
+    // re-capture didn't run yet).
+    var w = parseFloat(el.style.width) || el.offsetWidth;
+    var h = parseFloat(el.style.height) || el.offsetHeight;
+    if (w > 0 && h > 0) {
+      r = w / h;
+      try { state.aspectRatios.set(el, r); } catch (e) {}
+      return r;
+    }
+    return 0;
   }
 
   function stepNumeric(prop, delta) {
@@ -1302,6 +1394,7 @@
       else cur = el._ty || 0;
       var nv = cur + delta;
       applyOnePropToEl(el, prop, nv);
+      applyAspectLinkedProp(el, prop, nv);
     });
     sel.forEach(function (el) {
       var after = getResizeState(el);
@@ -1311,6 +1404,22 @@
       }
     });
     updateNumericPanel();
+  }
+
+  // If aspectLocked is on and prop is 'w' or 'h', also apply the partner axis
+  // for the given element using the captured ratio.
+  function applyAspectLinkedProp(el, prop, value) {
+    if (!state.aspectLocked) return;
+    if (prop !== 'w' && prop !== 'h') return;
+    var ratio = getAspectRatioFor(el);
+    if (!ratio) return;
+    if (prop === 'w') {
+      var newH = Math.max(1, Math.round(value / ratio));
+      applyOnePropToEl(el, 'h', newH);
+    } else {
+      var newW = Math.max(1, Math.round(value * ratio));
+      applyOnePropToEl(el, 'w', newW);
+    }
   }
 
   function applyOnePropToEl(el, prop, value) {
@@ -1338,7 +1447,10 @@
     var hadLocked = sel.some(isLocked);
     var beforeMap = new Map();
     sel.forEach(function (el) { beforeMap.set(el, getResizeState(el)); });
-    sel.forEach(function (el) { applyOnePropToEl(el, prop, value); });
+    sel.forEach(function (el) {
+      applyOnePropToEl(el, prop, value);
+      applyAspectLinkedProp(el, prop, value);
+    });
     sel.forEach(function (el) {
       var after = getResizeState(el);
       var before = beforeMap.get(el);
@@ -3541,6 +3653,8 @@
     state.listPanelEl = null;
     state.rulerH = null;
     state.rulerV = null;
+    state.aspectLocked = false;
+    state.aspectRatios = null;
     emit('mode', 'play');
   }
 
