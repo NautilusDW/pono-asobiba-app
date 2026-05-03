@@ -1091,6 +1091,32 @@ body.game-started .quiz-back-to-menu {
   .answer-panel { gap: 12px; }
   .character { width: 160px; height: 180px; }
   .char-hint { min-width: 200px; font-size: 18px; }
+  /* 14:9 用: 解説/結果まわりの「詳細画面」も grid 準拠に縮める */
+  .q-text-card { font-size: 28px; padding: 18px 70px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
+  #q-text { font-size: 26px; }
+  .trivia-pono-wrap { width: 320px !important; height: 200px !important; margin-top: 50px !important; }
+  .trivia-pono { width: 320px !important; height: 320px !important; }
+  .trivia-balloon { width: 150px !important; }
+  .emoji-main-img { max-width: 320px !important; max-height: 320px !important; }
+  .opposite-display { font-size: 72px !important; padding: 20px 40px !important; }
+  /* saved-layout.json の inline width/height/transform を打ち消し、
+     visible slice (1098 canvas-px) を超える要素を grid に従わせる。
+     transform は 0,0 にリセットして 16:9 想定の絶対オフセットを除去。 */
+  .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-left .owl-icon { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
+  .hdr-left .title-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
+  .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .q-text-card .audio { width: 70px !important; height: 70px !important; transform: translateY(-50%) !important; }
+  .board { width: auto !important; transform: translate(0, 0) !important; }
+  .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .chip { width: 220px !important; transform: translate(0, 0) !important; }
+  .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
+  .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
+  .char-hint { width: auto !important; height: auto !important; max-width: 280px !important; transform: translate(0, 0) !important; }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
   /* iPad 1024×768、iPad Pro 12.9 2048×1536 など真正 4:3
@@ -1103,16 +1129,49 @@ body.game-started .quiz-back-to-menu {
   .hdr-right .ctrl-btn { width: 88px; height: 88px; font-size: 13px; }
   .hdr-right .ctrl-btn .icon { font-size: 28px; }
   .hdr-right { gap: 8px; }
-  .q-text-card { font-size: 26px; padding: 18px 60px 18px 24px; min-height: 140px; }
-  /* saved-layout.json の inline width/height (specificity が高い) を上書きするため
-     character / chip / board のサイズには !important を付けて 4:3 用の縮小値を効かせる */
-  .board { height: 440px !important; }
+  .q-text-card { font-size: 26px; padding: 18px 60px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
+  #q-text { font-size: 24px; }
   .answer-tray { padding: 12px; }
   .answer-panel { gap: 10px; }
-  .chip { height: 180px; font-size: 30px; width: 260px !important; }
+  .chip { height: 180px; font-size: 30px; }
+  .chip.txt-medium { font-size: 22px; }
+  .chip.txt-long { font-size: 18px; }
   .chip.chip-count { font-size: 48px; }
-  .character { width: 150px !important; height: 170px !important; }
-  .char-hint { min-width: 190px; font-size: 17px; }
+  .char-hint { min-width: 180px; font-size: 16px; padding: 10px 14px; }
+  /* 4:3 用 詳細画面 (showDetailDialogue で同じ吹き出しに長文が入る) と
+     trivia-display (Pono ダンス + balloon)、emoji/opposite 出題画面を
+     visible slice (1097 canvas-px) と board (440px 高) に収める */
+  .trivia-pono-wrap { width: 280px !important; height: 180px !important; margin-top: 40px !important; }
+  .trivia-pono { width: 280px !important; height: 280px !important; }
+  .trivia-balloon { width: 130px !important; top: -6px !important; right: 6% !important; }
+  .emoji-main-img { max-width: 280px !important; max-height: 280px !important; }
+  .opposite-display { font-size: 64px !important; padding: 18px 36px !important; }
+  /* ─────────────────────────────────────────────────────────
+     saved-layout.json は 16:9 (1600 canvas-px) 想定で width/height と
+     transform: translate(tx, ty) を inline で書き込んでいる。
+     visible slice が 1097 canvas-px に縮んだ 4:3 では、saved 値 (例:
+     .hdr-left 979px / .q-text-card 971px / .board 999px / .answer-tray
+     ty=169 / .character ty=-566) が grid トラックを破って横切れ・文字
+     ずれを起こすので、当該プロパティを !important で打ち消し、grid と
+     CSS の縮小値を効かせる。 transform は translate(0, 0) で 16:9 用の
+     絶対オフセットを完全に除去 (audio ボタンだけは absolute centering の
+     translateY(-50%) を維持)。
+     ───────────────────────────────────────────────────────── */
+  .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-left .owl-icon { width: 88px !important; height: 88px !important; transform: translate(0, 0) !important; }
+  .hdr-left .title-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 16px !important; }
+  .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 18px !important; padding: 4px 14px !important; }
+  .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
+  .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .q-text-card .audio { width: 64px !important; height: 64px !important; transform: translateY(-50%) !important; right: 14px !important; }
+  .board { width: auto !important; height: 440px !important; transform: translate(0, 0) !important; }
+  .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .chip { width: 200px !important; transform: translate(0, 0) !important; }
+  .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
+  .character { width: 140px !important; height: 158px !important; transform: translate(0, 0) !important; }
+  .char-hint { width: auto !important; height: auto !important; max-width: 260px !important; transform: translate(0, 0) !important; }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
   /* 1280×1024 等、超 4:3。visible slice ≈ 1029 → safe-w 980 で -49 buffer */
@@ -1121,6 +1180,33 @@ body.game-started .quiz-back-to-menu {
   }
   .hdr { grid-template-columns: 1fr 420px; }
   .body { grid-template-columns: 1fr 420px; }
+  .hdr-right .ctrl-btn { width: 84px; height: 84px; font-size: 12px; }
+  .hdr-right .ctrl-btn .icon { font-size: 26px; }
+  .q-text-card { font-size: 24px; padding: 16px 56px 16px 22px; min-height: 130px; max-width: calc(var(--safe-w) * 0.96); }
+  /* 5:4 用 詳細画面 (吹き出し長文) と trivia-display + emoji/opposite を更に詰める */
+  .trivia-pono-wrap { width: 240px !important; height: 156px !important; margin-top: 32px !important; }
+  .trivia-pono { width: 240px !important; height: 240px !important; }
+  .trivia-balloon { width: 116px !important; top: -4px !important; right: 4% !important; }
+  .emoji-main-img { max-width: 240px !important; max-height: 240px !important; }
+  .opposite-display { font-size: 56px !important; padding: 14px 28px !important; }
+  /* 5:4 は 4:3 より更に狭いので 4:3 と同じ inline 打ち消しを継承する */
+  .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-left .owl-icon { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
+  .hdr-left .title-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 15px !important; }
+  .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 17px !important; }
+  .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
+  .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  .q-text-card .audio { width: 60px !important; height: 60px !important; transform: translateY(-50%) !important; right: 12px !important; }
+  .board { width: auto !important; height: 420px !important; transform: translate(0, 0) !important; }
+  .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; padding: 10px !important; }
+  .answer-panel { gap: 8px !important; }
+  .chip { width: 190px !important; height: 170px !important; font-size: 28px !important; transform: translate(0, 0) !important; }
+  .chip.chip-count { font-size: 44px !important; }
+  .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
+  .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
+  .char-hint { width: auto !important; height: auto !important; min-width: 170px !important; max-width: 240px !important; font-size: 15px !important; transform: translate(0, 0) !important; }
 }
 </style>
 </head>
