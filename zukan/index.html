@@ -9,9 +9,10 @@
  * ポノのもりのずかん 調査画面
  *  Layer 1: 21:9 outer background (fixed, full viewport)
  *  Layer 2: 16:9 safe area (centered, max-fit)
- *  Layer 3: investigation window (bg image + frame image)
- *  Layer 4: hidden animal part (positioned by ratio)
- *  Layer 5: hotspot (transparent button, ratio-based)
+ *  Layer 3a: .field-bg  (picture content + 隠れパーツ + hotspot を含む)
+ *  Layer 3b: .window-frame (装飾木枠、独立した兄弟レイヤー)
+ *  Layer 4: hidden animal part (.field-bg の子, positioned by ratio)
+ *  Layer 5: hotspot (.field-bg の子, transparent button, ratio-based)
  *  Layer 6: hint panel (right side)
  *  Layer 7: pono guide (bottom-left)
  *  Layer 8: discovery popup (overlay, hidden by default)
@@ -72,8 +73,12 @@ html, body {
   z-index: 1;
 }
 
-/* ---------- Layer 3: investigation window ---------------------------- */
-.window-wrap {
+/* ---------- Layer 3a: field background (picture content) -------------
+ * 旧 .window-wrap を廃止し、 .field-bg を picture content の本体とする。
+ * 隠れパーツ / hotspot はこの中に注入され、 picture に追従する。
+ * overflow: hidden で picture からはみ出した hotspot を隠す。
+ * ------------------------------------------------------------------- */
+.field-bg {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -85,6 +90,7 @@ html, body {
   overflow: hidden;
   background: #cfe7d4; /* fallback green field */
   box-shadow: var(--soft-shadow);
+  z-index: 2;
 }
 .window-bg {
   position: absolute;
@@ -94,14 +100,23 @@ html, body {
   object-fit: cover;
   display: block;
 }
+
+/* ---------- Layer 3b: window frame (装飾レイヤー、独立兄弟) ---------
+ * .field-bg と独立して配置される。 中央透明な木枠 PNG なので
+ * pointer-events: none を維持し、 picture content への hotspot タップを
+ * 遮らない。 既定では .field-bg と同じ位置・寸法に重ねて表示する。
+ * ------------------------------------------------------------------- */
 .window-frame {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  aspect-ratio: 16 / 9;
   pointer-events: none;
   display: block;
+  object-fit: fill;
+  z-index: 5;
 }
 
 /* ---------- Layer 4: hidden animal part ------------------------------ */

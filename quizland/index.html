@@ -584,7 +584,7 @@ body.sheet-on .hdr-right .ctrl-btn {
   gap: 12px;
   color: var(--text);
   font-weight: 800;
-  font-size: 28px;
+  font-size: 36px;
   box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
   position: relative;
   height: 220px;
@@ -594,6 +594,10 @@ body.sheet-on .hdr-right .ctrl-btn {
   text-align: center;
   line-height: 1.2;
 }
+/* 文字数に応じてフォントサイズを自動調整 (renderChoices で付与) */
+.chip.txt-medium { font-size: 28px; }
+.chip.txt-long   { font-size: 22px; }
+.chip.has-image  { font-size: 24px; }
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
 .chip:active,
 .chip.pressed {
@@ -1725,17 +1729,17 @@ function pickBalloonSrc() {
   _lastBalloonIdx = idx;
   return '../assets/images/quizland/balloons/ballon_' + String(idx).padStart(2, '0') + '.png';
 }
-// ポノのポーズ (考え中・思案中の表情のみ — 嬉しそうに踊ってる感じは除外)
-// 質問表示中は flip-book 風に約1.5秒ごとに次のポーズに切替えてアニメーションさせる
+// ポノのポーズ (旧 ThinkingPono.mp4 動画から直接フレーム抽出 + chroma key で alpha化)
+// ハッシュ比較でユニークな5ポーズだけ抽出 (各2秒ホールド) → 同じものを繋いで綺麗化
+// 元動画と全く同じ動きを再現する flip-book アニメーション
 const TRIVIA_POSES = [
-  'think_chin_clasp.png',         // 顎前で両手を組む (うーん…)
-  'think_arms_crossed_side.png',  // 横向き腕組み (考え中)
-  'think_neutral.png',            // ふつうに立って静かに思案
-  'think_arms_crossed_down.png',  // 腕組みうつむき気味 (じっくり)
-  'think_point.png',              // 指さし (なるほど…)
-  'think_arms_crossed_front.png', // 正面腕組み (どれにしようかな)
+  'think_video/think_v_01.png',
+  'think_video/think_v_02.png',
+  'think_video/think_v_03.png',
+  'think_video/think_v_04.png',
+  'think_video/think_v_05.png',
 ];
-const TRIVIA_POSE_INTERVAL_MS = 1500; // ~1.5s/枚 (落ち着いた間で考えてる感)
+const TRIVIA_POSE_INTERVAL_MS = 2000; // 2秒/枚 (元動画と同じ pacing)
 let _triviaPoseInterval = null;
 let _triviaPoseIdx = 0;
 
@@ -1788,6 +1792,13 @@ function renderTrivia(stage, q) {
 //   - count_total → chip-count (大きい数字)
 //   - その他       → chip + テキスト
 // ═══════════════════════════════════════════════════════════
+function chipSizeClass(text) {
+  if (!text) return '';
+  const len = String(text).length;
+  if (len <= 5) return '';            // default (大きめ)
+  if (len <= 10) return 'txt-medium'; // 中
+  return 'txt-long';                  // 長文用に小さく
+}
 function renderChoices(q) {
   const tray = document.getElementById('answer-panel');
   tray.innerHTML = '';
@@ -1798,6 +1809,7 @@ function renderChoices(q) {
     btn.type = 'button';
     if (q.type === 'order_color') {
       btn.dataset.color = choice;
+      btn.classList.add('has-image'); // 丸 + ラベル のレイアウト
       const c = document.createElement('div');
       c.className = 'circle';
       btn.appendChild(c);
@@ -1814,6 +1826,8 @@ function renderChoices(q) {
       const label = document.createElement('span');
       label.textContent = choice;
       btn.appendChild(label);
+      const sizeCls = chipSizeClass(choice);
+      if (sizeCls) btn.classList.add(sizeCls);
     }
     btn.addEventListener('pointerdown', function(e) {
       e.preventDefault();

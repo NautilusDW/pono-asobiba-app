@@ -119,10 +119,15 @@ body.show-safe .safe-area::after {
   pointer-events: none;
 }
 
-/* ───── Layer 3: Investigation window (16:9) ───────────────────── */
-.window-wrap {
+/* ───── Layer 3a: Field background (picture content) ───────────────
+ * 旧 .window-wrap は削除し、 .field-bg と .window-frame を兄弟として
+ * 独立配置する。 .field-bg が picture content の本体で、隠れパーツ /
+ * ホットスポットはこの中に入る (picture に追従)。
+ * 既定値は .window-frame と同じ寸法・位置にしておくことで、初期表示
+ * では従来どおり「枠と背景がぴったり重なって見える」状態になる。
+ * ──────────────────────────────────────────────────────────────── */
+.field-bg {
   position: absolute;
-  /* 既定値: safe-area 中央寄り、ヒントパネル分を右に空ける */
   left: 330px;
   top: 140px;
   width: 1100px;
@@ -132,14 +137,7 @@ body.show-safe .safe-area::after {
   overflow: hidden;
   background: #cfe7d4;
   box-shadow: var(--soft-shadow);
-  pointer-events: auto;       /* 編集モードでドラッグ可能 */
-}
-.field-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  pointer-events: auto;
 }
 .field-bg img {
   width: 100%;
@@ -149,11 +147,18 @@ body.show-safe .safe-area::after {
   user-select: none;
   -webkit-user-drag: none;
 }
+
+/* ───── Layer 3b: Window frame (装飾レイヤーのみ) ─────────────────
+ * .field-bg の上に独立して重なる。中央透明な木枠 PNG なので
+ * pointer-events: none を維持し、 hotspot のクリックを遮らない。
+ * ──────────────────────────────────────────────────────────────── */
 .window-frame {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: 330px;
+  top: 140px;
+  width: 1100px;
+  height: 620px;
+  z-index: 5;
   pointer-events: none;
 }
 .window-frame img {
@@ -166,8 +171,8 @@ body.show-safe .safe-area::after {
 }
 
 /* ───── Layer 4: hidden animal part (rabbit ears, etc) ───────────
- * 本番 zukan/index.html と同じく .window-wrap の子要素として
- * window-wrap 1100×620 基準の絶対 px 配置にする。
+ * .field-bg の子要素として配置 (picture に追従)。
+ * field-bg 1100×620 基準の絶対 px 配置。
  * 比率 → px: x=0.64→704px, y=0.38→236px, w=0.08→88px。
  */
 .hidden-part {
@@ -189,7 +194,8 @@ body.show-safe .safe-area::after {
 }
 
 /* ───── Layer 5: hotspot (debug visualization in editor) ─────────
- * .window-wrap 内に配置 (本番 .hotspot と同じ親)。
+ * .field-bg の子として配置 (本番でも .field-bg 内に注入される)。
+ * field-bg 1100×620 基準。
  * 比率 → px: x=0.62→682, y=0.34→211, w=0.14→154, h=0.18→112。
  */
 .hotspot-debug {
@@ -372,7 +378,6 @@ body:not(.layout-editor-on) .hotspot-debug { opacity: 0.55; }
  * 問題ないので含めない。)
  * ──────────────────────────────────────────────────────────────── */
 body.layout-editor-on .outer-bg,
-body.layout-editor-on .window-wrap,
 body.layout-editor-on .field-bg,
 body.layout-editor-on .window-frame,
 body.layout-editor-on .hidden-part,
@@ -430,18 +435,11 @@ body:not(.layout-editor-on) .help-note {
     <!-- Layer 2: 16:9 safe area (display-only guide) -->
     <div class="safe-area" id="safe-area"></div>
 
-    <!-- Layer 3: investigation window (frame + field bg)
-         本番 zukan/index.html に合わせて、隠れパーツ / ホットスポットも
-         window-wrap の子として配置 (座標は window-wrap 1100×620 基準)。 -->
-    <div class="window-wrap" data-le-label="調査ウィンドウ">
-      <div class="field-bg" data-le-label="花の小道 背景">
-        <img src="../../../assets/zukan/search/flower_path_field_16x9.png" alt=""
-             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
-      </div>
-      <div class="window-frame" data-le-label="ウィンドウ枠">
-        <img src="../../../assets/zukan/ui/investigation_window_frame_16x9.png" alt=""
-             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
-      </div>
+    <!-- Layer 3a: field background (picture content) — 隠れパーツ /
+         ホットスポットの親。 picture に追従させたいので field-bg の子。 -->
+    <div class="field-bg" data-le-label="花の小道 背景">
+      <img src="../../../assets/zukan/search/flower_path_field_16x9.png" alt=""
+           onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
 
       <!-- Layer 4: hidden animal part (rabbit ears) -->
       <div class="hidden-part" data-le-label="隠れパーツ (うさぎ耳)">
@@ -453,6 +451,12 @@ body:not(.layout-editor-on) .help-note {
       <div class="hotspot-debug" data-le-label="ホットスポット">
         タップ判定エリア
       </div>
+    </div>
+
+    <!-- Layer 3b: window frame (decoration only, sibling of .field-bg) -->
+    <div class="window-frame" data-le-label="ウィンドウ枠">
+      <img src="../../../assets/zukan/ui/investigation_window_frame_16x9.png" alt=""
+           onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
     </div>
 
     <!-- Layer 6: hint panel -->
@@ -500,11 +504,11 @@ body:not(.layout-editor-on) .help-note {
   画像はすべて既存アセットを <code>../../../assets/...</code> から参照。<br>
   <br>
   <strong>本番 zukan/index.html への反映ルール:</strong><br>
-  保存された CSS px を window-wrap 寸法 1100×620 で割り、
-  本番の比率 <code>{x,y,w,h}</code> に変換する。<br>
-  ・<code>.hotspot</code> の <code>{x, y, w, h}</code> = (CSS px ÷ 1100, ÷ 620, ÷ 1100, ÷ 620)<br>
-  ・<code>.hidden-part</code> の <code>{x, y, w}</code> = (CSS px ÷ 1100, ÷ 620, ÷ 1100)<br>
-  ※ window-wrap 自体のサイズを変更した場合は、寸法を再確認すること。
+  比率 = 子要素の CSS px ÷ <code>.field-bg</code> の width / height<br>
+  ・<code>.hotspot</code> の <code>{x, y, w, h}</code> = (px ÷ field-bg.width, ÷ field-bg.height, ÷ field-bg.width, ÷ field-bg.height)<br>
+  ・<code>.hidden-part</code> の <code>{x, y, w}</code> = (px ÷ field-bg.width, ÷ field-bg.height, ÷ field-bg.width)<br>
+  ※ <code>.field-bg</code> の寸法 (既定 1100×620) を変更した場合は、寸法を再確認すること。<br>
+  ※ <code>.window-frame</code> は装飾レイヤーで、<code>.field-bg</code> と独立して動かせる。
 </div>
 
 <script>
@@ -514,9 +518,8 @@ body:not(.layout-editor-on) .help-note {
  * ============================================================ */
 const ZK_INV_RESIZABLE_SELECTORS = [
   ['.outer-bg',          'wh', '外側背景 (21:9)'],
-  ['.window-wrap',       'wh', '調査ウィンドウ'],
-  ['.field-bg',          'wh', '花の小道 背景'],
-  ['.window-frame',      'wh', 'ウィンドウ枠'],
+  ['.field-bg',          'wh', '花の小道 背景 (picture)'],
+  ['.window-frame',      'wh', 'ウィンドウ枠 (装飾)'],
   ['.hidden-part',       'wh', '隠れパーツ (うさぎ耳)'],
   ['.hotspot-debug',     'wh', 'ホットスポット'],
   ['.hint-panel',        'wh', 'ヒントパネル'],

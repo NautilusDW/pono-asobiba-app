@@ -293,7 +293,7 @@ const QUIZLAND_QUESTIONS = {
       detail:'ペンギンは とべないけど うみを およぐのが とくいだよ！'},
     { level:2, type:'trivia', category:'trivia',
       q:'タコの あしは なんぼん？',
-      answer:1, choices:['6ぼん','8ぼん','10ぼん','4ぼん'] ,
+      answer:1, choices:['6ぽん','8ぽん','10ぽん','4ほん'] ,
       detail:'8ぼんの うでで えものを つかまえたり あるいたりするよ！'},
     { level:2, type:'trivia', category:'trivia',
       q:'せかいで いちばん はやい りくの どうぶつは？',
