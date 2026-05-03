@@ -388,6 +388,11 @@ body.layout-editor-on .discovery-popup {
   position: absolute !important;
 }
 
+/* 編集モード時のみ window-frame をクリック可能に（直接ドラッグ操作のため） */
+body.layout-editor-on .window-frame {
+  pointer-events: auto !important;
+}
+
 /* ヘルプノート (編集モードのみ目立つ) */
 .help-note {
   position: fixed;
