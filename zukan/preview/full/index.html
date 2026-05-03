@@ -4187,6 +4187,25 @@ bezierResetBtn && bezierResetBtn.addEventListener('click', resetBezierMesh);
 // ベジェ操作の取り消しボタン + Ctrl+Z
 const bezierUndoBtn = document.getElementById('bezier-undo');
 bezierUndoBtn && bezierUndoBtn.addEventListener('click', undoBezier);
+
+// ベジェプレビューモード: 機能はオンのまま、 ハンドル + userbox の orange BG を
+// 隠して warp 結果だけ見せる。 ON にした瞬間に再スナップショットして orange
+// 抜きのテクスチャに置き換え、 OFF にしたらまた orange 入りで撮り直す。
+const bezierPreviewBtn = document.getElementById('bezier-preview');
+async function setBezierPreview(on) {
+  document.body.classList.toggle('bezier-preview-mode', on);
+  if (bezierPreviewBtn) {
+    bezierPreviewBtn.textContent = on ? '👁 プレビュー ON' : '👁 プレビュー OFF';
+    bezierPreviewBtn.classList.toggle('active', on);
+  }
+  // bezier mode 中なら再スナップショットして即反映
+  if (document.body.classList.contains('corner-pin-mode')) {
+    await _captureSnapshot();
+    applyBezierWarp();
+  }
+}
+bezierPreviewBtn && bezierPreviewBtn.addEventListener('click', () =>
+  setBezierPreview(!document.body.classList.contains('bezier-preview-mode')));
 window.addEventListener('keydown', (e) => {
   // bezier mode 中だけ Ctrl+Z を奪う (普段はブラウザのデフォルトに任せる)
   if (!document.body.classList.contains('corner-pin-mode')) return;
