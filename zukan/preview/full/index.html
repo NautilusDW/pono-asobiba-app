@@ -1379,6 +1379,9 @@ body.resize-mode .ruler { display: block; }
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
     <button id="corner-pin-toggle" title="bicubic Bezier patch (4×4 = 16 制御点 / page、 32 点合計) でページを真の曲面として warp。 ON にした瞬間にページを html2canvas でスナップショット撮影 → WebGL シェーダ内で曲面変形">🌀 ベジェワープ OFF</button>
     <button id="bezier-reset" title="ベジェ制御点を初期格子 (= 平面 / 歪み無し) に戻す">↺ ベジェリセット</button>
+    <button id="zoom-out" title="ズームアウト (画面外の制御点が見えるように縮小)">🔍−</button>
+    <button id="zoom-fit"  title="ズーム 100% に戻す">100%</button>
+    <button id="zoom-in"  title="ズームイン">🔍+</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -4126,6 +4129,32 @@ function resetBezierMesh() {
   saveResizeState();
 }
 bezierResetBtn && bezierResetBtn.addEventListener('click', resetBezierMesh);
+
+// ───── ステージのズーム ─────
+// ベジェの制御点が画面外に出ると掴めなくなるので CSS transform: scale で
+// stage 全体を縮小/拡大できるように。 中の userbox 座標系は変わらないので、
+// ハンドルドラッグのスケール計算 (sR.width / sW) もそのまま正しく動く。
+let _stageZoom = 1.0;
+function applyStageZoom(z) {
+  _stageZoom = Math.max(0.25, Math.min(3.0, z));
+  const stageEl0 = document.getElementById('stage');
+  if (stageEl0) {
+    stageEl0.style.transformOrigin = '0 0';
+    stageEl0.style.transform = _stageZoom === 1 ? '' : `scale(${_stageZoom})`;
+  }
+}
+const zoomOutBtn = document.getElementById('zoom-out');
+const zoomFitBtn = document.getElementById('zoom-fit');
+const zoomInBtn  = document.getElementById('zoom-in');
+zoomOutBtn && zoomOutBtn.addEventListener('click', () => applyStageZoom(_stageZoom - 0.1));
+zoomFitBtn && zoomFitBtn.addEventListener('click', () => applyStageZoom(1.0));
+zoomInBtn  && zoomInBtn .addEventListener('click', () => applyStageZoom(_stageZoom + 0.1));
+// Ctrl + マウスホイール でも調整できるように (preview の操作中に手早く)
+document.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  applyStageZoom(_stageZoom + (e.deltaY < 0 ? 0.1 : -0.1));
+}, { passive: false });
 
 // 初期化時はハンドルだけ準備 (実体は OFF 状態で非表示)。 WebGL は撮影時に init。
 _ensureBezierHandles();
