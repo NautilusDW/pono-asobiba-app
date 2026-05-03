@@ -656,6 +656,93 @@
       }
     }
 
+    /* ===== iPad 4:3 / narrow-landscape defensive rules =====
+       JS cover-fit (Math.max) snaps the canvas to the *taller* axis on
+       narrow viewports (e.g. iPad 1024×768 = 4:3, iPad Pro 12.9
+       2048×1536 = 4:3, 5:4 displays). At those aspect ratios the
+       1463px 16:9 safe-area is wider than the visible canvas slice
+       (≈ vw × 823/vh canvas-px), so bottom-nav (anchored to right
+       edge of safe-w) and for-parents (anchored to left edge of safe-w)
+       get clipped off the screen. We narrow --safe-w to match the
+       visible slice — every offset that uses calc((canvas-w - safe-w)/2)
+       follows automatically, and grid columns inside .play-main reflow.
+
+       16:9 viewports (PCs / iPhone landscape) are unaffected because
+       max-aspect-ratio: 16/9 doesn't match them.
+    */
+    @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
+      /* Strictly narrower than 16:9 (1599/900 ≈ 1.7767 < 16/9 = 1.7778)
+         so true 1920×1080 / 16:9 PCs stay on the 1463 safe-area path.
+         16:10 visible canvas slice ≈ 1316.8px → safe-w 1310 leaves ~7px buffer. */
+      :root {
+        --safe-w: 1310px;          /* ~16:10 viewport visible slice (S2: -10px buffer) */
+      }
+      .play-main {
+        grid-template-columns: 420px 1fr;
+        gap: 56px;
+        padding: 30px 24px 100px 32px;
+      }
+      .brand-sign { width: 420px; }
+      .brand-sign > img.brand-ribbon { width: 380px; }
+      .brand-ribbon { width: 380px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 14/9) {
+      /* Catches 14:10-ish iPad Pro 11" (1668×1194 ≈ 1.397) and 1366×1024
+         (ratio 1.334, just over 4/3 — visible canvas slice ≈ 1098.1px).
+         safe-w 1080 stays inside the tightest slice with ~18px buffer. */
+      :root {
+        --safe-w: 1080px;          /* tighter than visible 14/10..1366×1024 slices */
+      }
+      .play-main {
+        grid-template-columns: 380px 1fr;
+        gap: 48px;
+        padding: 30px 20px 100px 28px;
+      }
+      .brand-sign { width: 380px; }
+      .brand-sign > img.brand-ribbon { width: 345px; }
+      .brand-ribbon { width: 345px; }
+      /* Shrink bottom-nav + for-parents so 4 buttons (incl. せってい) fit
+         inside the safe area without clipping at the right edge. */
+      .bottom-nav { --nav-sprite-w: 400px; }
+      .for-parents { width: 340px; height: 88px; }
+      .for-parents__label { margin-left: 98px; margin-right: 28px; font-size: 23px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+      /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
+         At 4:3 the visible canvas slice is vw × 823/vh ≈ 1097.3 canvas-px,
+         so safe-w must drop well below that. 1020 leaves ~77px buffer
+         so the 300px-wide bottom-nav (4 buttons incl. せってい) is fully visible. */
+      :root {
+        --safe-w: 1020px;
+      }
+      .play-main {
+        grid-template-columns: 320px 1fr;
+        gap: 32px;
+        padding: 24px 18px 100px 24px;
+      }
+      .brand-sign { width: 320px; }
+      .brand-sign > img.brand-ribbon { width: 290px; }
+      .brand-ribbon { width: 290px; margin-top: -42px; }
+      .brand-col { padding-top: 20px; }
+      /* bottom-nav and for-parents stay side-by-side; nudge them so they
+         read as a balanced pair inside the narrower safe-area. */
+      .bottom-nav { --nav-sprite-w: 300px; }
+      .for-parents { width: 300px; height: 78px; }
+      .for-parents__label { margin-left: 86px; margin-right: 22px; font-size: 21px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
+      /* 1280×1024 etc. (very rare). Visible canvas slice ≈ 1029.5px,
+         so safe-w 980 leaves ~49px buffer. */
+      :root { --safe-w: 980px; }
+      .play-main { grid-template-columns: 310px 1fr; gap: 28px; }
+      .brand-sign { width: 310px; }
+      .brand-sign > img.brand-ribbon { width: 282px; }
+      .brand-ribbon { width: 282px; }
+      .bottom-nav { --nav-sprite-w: 280px; }
+      .for-parents { width: 280px; height: 74px; }
+      .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 20px; }
+    }
+
     /* ===== Bottom Navigation =====
        Shared wooden base sprite + four transparent hit areas so the actions
        stay independent while the visuals read as one grouped control. */
