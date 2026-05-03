@@ -549,18 +549,18 @@ function renderQuestion(q) {
   const outerImg = document.getElementById('outerBgImg');
   setImg(outerImg, q.wideBg);
 
-  // Layer 3: window bg + frame
-  const windowWrap = document.getElementById('windowWrap');
+  // Layer 3a/3b: picture content + 独立兄弟の装飾木枠
+  const fieldBg = document.getElementById('fieldBg');
   setImg(document.getElementById('windowBg'), q.fieldBg);
   setImg(document.getElementById('windowFrame'), q.windowFrame);
 
   // Progress badge
   document.getElementById('progressBadge').textContent = q.progressText || '';
 
-  // Clear previously injected hidden part / hotspot
-  windowWrap.querySelectorAll('.hidden-part, .hotspot').forEach(n => n.remove());
+  // Clear previously injected hidden part / hotspot (.field-bg 内に注入)
+  fieldBg.querySelectorAll('.hidden-part, .hotspot').forEach(n => n.remove());
 
-  // Layer 4: hidden animal part
+  // Layer 4: hidden animal part (.field-bg の子。 picture に追従)
   if (q.hiddenPart && q.hiddenPartStyle) {
     const hp = document.createElement('img');
     hp.className = 'hidden-part' + (DEBUG_HOTSPOT ? ' hidden-part-debug' : '');
@@ -580,10 +580,10 @@ function renderQuestion(q) {
     pctRect(hp, q.hiddenPartStyle);
     // height: keep proportional via auto, but enforce min via aspect-ratio
     hp.style.height = 'auto';
-    windowWrap.appendChild(hp);
+    fieldBg.appendChild(hp);
   }
 
-  // Layer 5: hotspot
+  // Layer 5: hotspot (.field-bg の子。 picture に追従)
   if (q.hotspot) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -591,7 +591,7 @@ function renderQuestion(q) {
     btn.setAttribute('aria-label', q.animalName + 'を みつける');
     pctRect(btn, q.hotspot);
     btn.addEventListener('click', onHotspotTap);
-    windowWrap.appendChild(btn);
+    fieldBg.appendChild(btn);
   }
 
   // Layer 6: hint panel
