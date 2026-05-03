@@ -62,7 +62,12 @@ html, body {
   display: block;
 }
 
-/* ---------- Layer 2: 16:9 safe area ---------------------------------- */
+/* ---------- Layer 2: 16:9 safe area ----------------------------------
+ * iPad など 4:3 ビューポートでも safe-area は 16:9 に収める計算。
+ * overflow: hidden は浮動小数点誤差や iOS Safari の aspect-ratio 計算
+ * タイミングずれで子要素が viewport 端から微小はみ出すのを物理的に
+ * クリップして「横が切れる」症状を防ぐ防御策。
+ * ------------------------------------------------------------------- */
 .safe-area {
   position: fixed;
   top: 50%;
@@ -71,6 +76,7 @@ html, body {
   width: min(100vw, calc(100vh * 16 / 9));
   height: min(100vh, calc(100vw * 9 / 16));
   z-index: 1;
+  overflow: hidden;
 }
 
 /* ---------- Layer 3a: field background (picture content) -------------
@@ -410,6 +416,24 @@ html, body {
   font-size: 18px;
   line-height: 1.6;
 }
+/* ---------- 4:3 寄りビューポート (iPad 等) 用の保険 -------------------
+ * 16:9 safe-area は計算上 viewport に収まるが、 iOS Safari の浮動小数点
+ * 誤差や aspect-ratio 計算タイミングのずれで微小はみ出しが起きうる。
+ * hint-panel / pono-guide の幅と端マージンを少し詰めて余裕を確保する。
+ * 閾値 15/9 (≈1.667) は 16:9 PC (1.778) を確実に除外しつつ、
+ * iPad 4:3 (1.333) や 3:2 (1.5) など縦長寄りの端末で発火する。
+ * ------------------------------------------------------------------- */
+@media (max-aspect-ratio: 15/9) {
+  .hint-panel {
+    width: 12%;
+    right: 1.2%;
+  }
+  .pono-guide {
+    width: 26%;
+    left: 1.2%;
+  }
+}
+
 @media (max-aspect-ratio: 1/1) and (max-width: 600px) {
   .rotate-hint { display: flex; }
 }
