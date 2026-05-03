@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T03:27:33Z - quizland 難易度ピッカー UI 追加 (やさしい/ふつう/むずかしい + localStorage保存 + DIFF_MIN_LEVEL バグ修正 + sw.js v673)
+- **タスク**: quizland 難易度ピッカー UI 追加 (やさしい/ふつう/むずかしい + localStorage保存 + DIFF_MIN_LEVEL バグ修正 + sw.js v673)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 81
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 17, "Grep": 2, "Bash": 27, "Agent": 25, "ToolSearch": 1, "Write": 4, "Edit": 4}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-03T02:59:13Z - quizland UI port v2 (Replace strategy: preview/full を視覚的土台に slim main logic を埋め込み、 sheet-on デフォルト + auto-fit stage 化、 sw.js 671→672)
 - **タスク**: quizland UI port v2 (Replace strategy: preview/full を視覚的土台に slim main logic を埋め込み、 sheet-on デフォルト + auto-fit stage 化、 sw.js 671→672)
 - **結果**: 成功
@@ -194,19 +207,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 36, "Edit": 187, "Grep": 28, "Bash": 244, "Write": 5}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-02T08:05:23Z - quizland のスロットに wordmatch ocean のテストイラスト 9 種を順番に表示 + zukan に Approach A (本ページ立体モード: userbox X 中心で左/右ページ判定 → rotateY ±5deg + transform-origin 綴じ目側) を実装、 全 transform 設定を helper setElTransform 経由に refactor。 sw.js 635→636
-- **タスク**: quizland のスロットに wordmatch ocean のテストイラスト 9 種を順番に表示 + zukan に Approach A (本ページ立体モード: userbox X 中心で左/右ページ判定 → rotateY ±5deg + transform-origin 綴じ目側) を実装、 全 transform 設定を helper setElTransform 経由に refactor。 sw.js 635→636
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 39, "Edit": 175, "Grep": 28, "Bash": 251, "Write": 7}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

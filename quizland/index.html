@@ -703,6 +703,51 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
   margin-top: 4px;
 }
 
+/* ===== Difficulty picker (mode-screen 内, mode-btn の下) ===== */
+.diff-screen-title {
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(0.95rem, 3.4vw, 1.25rem);
+  color: #5D3A00;
+  text-shadow: 1px 1px 0 #FFF8E0;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-top: 4px;
+}
+.diff-row {
+  display: flex; flex-direction: row;
+  gap: 10px;
+  width: 100%; max-width: 360px;
+  justify-content: center;
+}
+.diff-btn {
+  flex: 1 1 0;
+  padding: 12px 6px;
+  border: 3px solid var(--wood-mid);
+  border-radius: 18px;
+  background: var(--paper);
+  font-family: inherit;
+  font-weight: 900;
+  color: var(--text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px rgba(80,50,10,0.25);
+  transition: transform 0.1s, background 0.15s, border-color 0.15s, box-shadow 0.1s;
+}
+.diff-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--wood-dark), 0 3px 6px rgba(80,50,10,0.25);
+}
+.diff-btn.is-active {
+  background: var(--primary);
+  border-color: var(--wood-dark);
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(80,50,10,0.4);
+  transform: scale(1.04);
+  box-shadow: 0 4px 0 var(--wood-dark), 0 0 0 3px var(--hint-bg) inset, 0 6px 14px rgba(80,50,10,0.3);
+}
+
 /* ===== Result modal ===== */
 .overlay {
   position: fixed; inset: 0; z-index: 200;
@@ -858,6 +903,12 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
       <span class="mode-sub">てんき・からだ・なんでも</span>
     </button>
   </div>
+  <div class="diff-screen-title">むずかしさ</div>
+  <div class="diff-row" id="diff-row">
+    <button class="diff-btn" data-diff="easy">やさしい</button>
+    <button class="diff-btn" data-diff="normal">ふつう</button>
+    <button class="diff-btn" data-diff="hard">むずかしい</button>
+  </div>
 </div>
 
 <!-- ===== Game stage (preview/full のフレームをそのまま) ===== -->
@@ -958,9 +1009,17 @@ let locked = false;
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
 let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
 // 難易度
-let selectedDifficulty = 'easy'; // 'easy'|'normal'|'hard'
+// Lv1 = やさしい, Lv2 = ふつう, Lv3 = むずかしい (各 56 問 / 全 168 問)
+// 各レベルだけを抽出するために min == max のレンジで指定する
+const DIFF_LEVELS = ['easy', 'normal', 'hard'];
+const DIFF_MIN_LEVEL = { easy: 1, normal: 2, hard: 3 };
 const DIFF_MAX_LEVEL = { easy: 1, normal: 2, hard: 3 };
-const DIFF_MIN_LEVEL = { easy: 1, normal: 1, hard: 3 };
+const DIFF_STORAGE_KEY = 'pono_quizland_difficulty';
+let selectedDifficulty = 'easy'; // 'easy'|'normal'|'hard'
+try {
+  const _saved = localStorage.getItem(DIFF_STORAGE_KEY);
+  if (_saved && DIFF_LEVELS.indexOf(_saved) !== -1) selectedDifficulty = _saved;
+} catch (e) { /* localStorage 不可なら デフォルト 'easy' */ }
 // やさしい(inspire) = 文字読めない3-4歳でも遊べる: 色・数・形 (絵中心)
 // ものしり(know)    = 5-6 歳〜: トリビア・天気・体・反対語 (文字読み必須)
 const MODE_TO_CATEGORIES = {
@@ -1494,6 +1553,29 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     }
   });
 });
+
+// 難易度ピル: タップで selectedDifficulty を更新 + localStorage 保存
+function refreshDiffActive() {
+  document.querySelectorAll('.diff-btn').forEach(function(b) {
+    if (b.dataset.diff === selectedDifficulty) {
+      b.classList.add('is-active');
+      b.setAttribute('aria-pressed', 'true');
+    } else {
+      b.classList.remove('is-active');
+      b.setAttribute('aria-pressed', 'false');
+    }
+  });
+}
+document.querySelectorAll('.diff-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const d = btn.dataset.diff;
+    if (DIFF_LEVELS.indexOf(d) === -1) return;
+    selectedDifficulty = d;
+    try { localStorage.setItem(DIFF_STORAGE_KEY, d); } catch (e) { /* ignore */ }
+    refreshDiffActive();
+  });
+});
+refreshDiffActive();
 
 // HUD 左ボタン (おしらせ → モード選択画面へ戻る)
 document.getElementById('hud-back-btn').addEventListener('click', function() {
