@@ -650,20 +650,29 @@ body.sheet-on .hdr-right .ctrl-btn {
 .char-hint {
   flex: 0 0 auto;
   position: relative;
-  width: 235px;
-  height: 63px;
+  /* saved-layout が width/height を inline 指定するが、長文は縦に伸ばしたいので
+     height は !important で auto 扱いに上書きする (min-height で下限を保つ) */
+  min-width: 235px;
+  min-height: 63px;
+  height: auto !important;
   background-image: url('../assets/preview-placeholders/hint-60.png');
-  background-size: contain;
+  background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  text-align: center;
+  padding: 12px 18px;
+  box-sizing: border-box;
+  font-size: 22px;
   font-weight: 700;
+  line-height: 1.4;
   color: #4a3a1a;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .character {
   width: 200px; height: 220px;
@@ -1209,10 +1218,46 @@ const HAKASE_DIALOGUE = {
     'ヒントは すぐそばに あるぞ',
     'よく みてみよう',
   ],
-  hint2Fallback: [
+  hint2FallbackByCategory: {
+    count_total: [
+      'ひとつずつ ゆびで さして かぞえてみよう',
+      '1, 2, 3 って ゆっくり かぞえるのじゃ',
+      'ぜんぶ みえているかな？',
+    ],
+    order_color: [
+      'ひだりから じゅんばんに みてみよう',
+      'まんなかの いろは なにじゃろう？',
+      'みぎはし、ひだりはし、よく みてみるのじゃ',
+    ],
+    shape_name: [
+      'かどの かずを かぞえてみるのじゃ',
+      'まる、しかく、さんかく、どれに にとるかな？',
+      'よく しっている かたちじゃぞ',
+    ],
+    opposite: [
+      'はんたいの いみの ことばを さがすのじゃ',
+      '"おおきい" の はんたいは "ちいさい"、それと おなじ かんがえかたじゃ',
+      'にている いみじゃ なくて、ちがう ほうじゃ',
+    ],
+    weather: [
+      'おてんきの なまえじゃ',
+      'あめ、ゆき、はれ、くもり、どれかな？',
+      'そらを みあげる ところを そうぞうしてみよう',
+    ],
+    body: [
+      'じぶんの からだを さわって みよう',
+      'みみ、め、はな、くち、どこじゃろう？',
+      'なにを する ときに つかう ところかな？',
+    ],
+    trivia: [
+      'みたことが ある いきものじゃ',
+      'よく ある ものじゃぞ',
+      'ふだんの くらしで であうかも しれんのう',
+    ],
+  },
+  // 共通フォールバック (カテゴリ不明時)
+  hint2FallbackGeneric: [
     'ほっほっほ、もうすこしじゃ',
-    'いちばん たいせつな ぶぶんは どこかな？',
-    'ちかいものは どれかな？',
     'じっくり えらんでみよう',
   ],
   correct: [
@@ -1315,8 +1360,15 @@ function showHint1() {
 
 function showHint2(question) {
   _hintLevel = 2;
-  const text = (question && question.hint) ? question.hint : pickRandom(HAKASE_DIALOGUE.hint2Fallback);
-  setHakaseDialogue(text);
+  if (question && question.hint) {
+    setHakaseDialogue(question.hint);
+    return;
+  }
+  // カテゴリ別フォールバック
+  const cat = question && (question.category || question._cat || question.type);
+  const pool = (cat && HAKASE_DIALOGUE.hint2FallbackByCategory[cat])
+            || HAKASE_DIALOGUE.hint2FallbackGeneric;
+  setHakaseDialogue(pickRandom(pool));
 }
 
 function showCorrectDialogue() {
@@ -1808,6 +1860,9 @@ function updateHUD() {
 // Answer handling
 // ═══════════════════════════════════════════════════════════
 function onChoice(idx, btn) {
+  // 自動ヒント (showProblemDialogue で 5 秒後にセット) が回答後に発火して
+  // セリフを上書きしないように、最初に必ずキャンセルする
+  clearTimeout(_autoHintTimer);
   if (locked) return;
   locked = true;
   ensureAudio();
