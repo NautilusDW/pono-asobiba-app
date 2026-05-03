@@ -4188,9 +4188,12 @@ bezierResetBtn && bezierResetBtn.addEventListener('click', resetBezierMesh);
 const bezierUndoBtn = document.getElementById('bezier-undo');
 bezierUndoBtn && bezierUndoBtn.addEventListener('click', undoBezier);
 
-// ベジェプレビューモード: 機能はオンのまま、 ハンドル + userbox の orange BG を
-// 隠して warp 結果だけ見せる。 ON にした瞬間に再スナップショットして orange
-// 抜きのテクスチャに置き換え、 OFF にしたらまた orange 入りで撮り直す。
+// ベジェプレビューモード:
+// ON  = ベジェ ON + ハンドル/orange 非表示 でクリーンな warp 結果を表示
+// OFF = ベジェ OFF (= 編集モードに戻る)。 mesh 制御点は保存されたまま、
+//       次回 ON でまた warp に戻れる。
+// (旧仕様: OFF にしても bezier は ON のままで warp の orange だけ残って混乱
+//  していた → OFF で編集モードに戻すよう統合した)
 const bezierPreviewBtn = document.getElementById('bezier-preview');
 async function setBezierPreview(on) {
   document.body.classList.toggle('bezier-preview-mode', on);
@@ -4198,10 +4201,20 @@ async function setBezierPreview(on) {
     bezierPreviewBtn.textContent = on ? '👁 プレビュー ON' : '👁 プレビュー OFF';
     bezierPreviewBtn.classList.toggle('active', on);
   }
-  // bezier mode 中なら再スナップショットして即反映
-  if (document.body.classList.contains('corner-pin-mode')) {
-    await _captureSnapshot();
-    applyBezierWarp();
+  if (on) {
+    // 必要なら自動でベジェ ON (プレビューは warp 表示が前提)
+    if (!document.body.classList.contains('corner-pin-mode')) {
+      await setCornerPinMode(true);
+    } else {
+      // 既に bezier ON → 再スナップショットして orange 抜きのクリーン表示に
+      await _captureSnapshot();
+      applyBezierWarp();
+    }
+  } else {
+    // プレビュー OFF → ベジェも OFF にして編集モードに戻る (= 旧 userbox 表示)
+    if (document.body.classList.contains('corner-pin-mode')) {
+      await setCornerPinMode(false);
+    }
   }
 }
 bezierPreviewBtn && bezierPreviewBtn.addEventListener('click', () =>
