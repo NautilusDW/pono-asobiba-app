@@ -243,6 +243,7 @@ side-by-side / overlay / onion-skin の比較モードで使う元絵は、
 | `enableEditor` | `boolean` | (auto) | true で常時 ON / false で常時 OFF / 未指定で URL 判定 |
 | `editorQueryParam` | `string` | `'edit'` | エディタ起動クエリ名 |
 | `editorQueryValue` | `string` | `'1'` | エディタ起動クエリ値 |
+| `pages` | `Array<{name, url, current?}>` | (built-in default list) | ツールバーの **🌐 ページ** ドロップダウンに並ぶ移動先。詳細は §7.5 |
 
 ### コールバック
 
@@ -252,6 +253,39 @@ side-by-side / overlay / onion-skin の比較モードで使う元絵は、
 | `onReady` | `({ applier, editor, data })` | applier 適用完了 + (任意で) editor enable 完了後 |
 | `onSave` | `(data, response)` | 保存成功時 |
 | `onError` | `(err)` | fetch / apply / save の失敗時 |
+
+---
+
+### Page navigation (`🌐 ページ` button)
+
+ツールバーの **🌐 ページ** ボタンを押すと、編集可能な他ページへジャンプできるドロップダウンが開きます。
+
+各エントリのスキーマ:
+
+| フィールド | 型 | 必須 | 説明 |
+|---------|----|------|------|
+| `name` | `string` | ✅ | ドロップダウンに表示されるラベル |
+| `url` | `string` | ✅ | クリック時の遷移先 (相対 / 絶対どちらも可) |
+| `current` | `boolean` | - | `true` の項目は 📍 マーク付きでリンク化されない (現在ページの目印) |
+
+例:
+
+```js
+LayoutSystem.init({
+  // ...
+  pages: [
+    { name: 'なぞなぞ (このページ)',  url: location.pathname + '?edit=1', current: true },
+    { name: 'なぞなぞ (旧サンドボックス)', url: '/quizland/preview/full/' },
+    { name: 'ずかん (ベジェ編集あり)', url: '/zukan/preview/full/' },
+  ],
+});
+```
+
+`pages` を渡さなかった場合は `layout-system.js` 内蔵のデフォルト一覧
+(`なぞなぞ` / `なぞなぞ サンドボックス` / `ずかん`) が使われます。
+明示的に `pages: []` を渡すとボタン自体を非表示にできます。
+
+ドロップダウン外をクリックすると閉じます。Esc キーや別ボタンの操作でも閉じます。
 
 ---
 

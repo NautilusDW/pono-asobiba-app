@@ -816,3 +816,60 @@ body.layout-editor-on .le-toolbar .le-align-tb button:disabled {
   body.layout-editor-on .le-row-btn { width: 28px; height: 28px; font-size: 16px; }
   body.layout-editor-on .numeric-panel .np-spin { width: 28px; height: 28px; font-size: 15px; }
 }
+
+/* === 🌐 Page navigation dropdown === */
+body.layout-editor-on .le-pages-btn[aria-expanded="true"] {
+  background: #6a4ed4;
+  border-color: #8a5ef0;
+}
+body.layout-editor-on .le-pages-dropdown {
+  position: fixed;
+  z-index: 9100;
+  min-width: 240px;
+  max-width: 360px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  padding: 6px 0;
+  font: 12px system-ui, -apple-system, sans-serif;
+}
+body.layout-editor-on .le-pages-dropdown-title {
+  font-size: 11px;
+  color: #ffba6b;
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 4px;
+  text-transform: none;
+  font-weight: 600;
+}
+body.layout-editor-on .le-pages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+body.layout-editor-on .le-pages-list li {
+  margin: 0;
+}
+body.layout-editor-on .le-pages-list a,
+body.layout-editor-on .le-pages-list span {
+  display: block;
+  padding: 8px 14px;
+  color: #eee;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+body.layout-editor-on .le-pages-list a:hover {
+  background: #2a2a2a;
+  color: #ffba6b;
+}
+body.layout-editor-on .le-pages-list .le-pages-current span,
+body.layout-editor-on .le-pages-list li.le-pages-current > span {
+  color: #ffba6b;
+  background: rgba(106, 78, 212, 0.15);
+  cursor: default;
+  font-weight: 600;
+}

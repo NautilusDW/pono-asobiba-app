@@ -239,6 +239,14 @@ body.sheet-on .hdr-left .title-card span {
   flex: 0 0 auto;
   margin-left: auto;
 }
+/* preview/full から移植: progress-num.png を背景に被せ、 sheet-on では枠だけ消す
+   テキスト "1/5" は dynamic content なので CSS テキストはそのまま表示する */
+.hdr-left .progress-num {
+  background-image: url('../assets/preview-placeholders/progress-num.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
 .hdr-left .dots {
   display: flex;
   gap: 10px;
@@ -246,18 +254,34 @@ body.sheet-on .hdr-left .title-card span {
   height: 14px;
   align-items: center;
   justify-content: space-between;
+  /* preview/full から移植: progress-mark.png を装飾ピルとして背景に */
+  background-image: url('../assets/preview-placeholders/progress-mark.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  padding: 4px 14px;
+  box-sizing: content-box;
 }
 .hdr-left .dot {
   height: 100%;
   aspect-ratio: 1;
   width: auto;
   flex: 0 0 auto;
-  background: #d6b56a;
+  background-color: #d6b56a;
+  background-image: url('../assets/preview-placeholders/dot.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-blend-mode: multiply;
   border: 2px solid var(--wood-mid);
   border-radius: 50%;
 }
 .hdr-left .dot.done { background-color: #f3a330; }
 .hdr-left .dot.current { background-color: #F7A718; transform: scale(1.18); }
+/* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
+body.sheet-on .hdr-left .dots {
+  background-image: url('../assets/preview-placeholders/progress-mark.png') !important;
+}
 
 .hdr-right {
   display: inline-flex;
@@ -632,6 +656,17 @@ body.sheet-on .hdr-right .ctrl-btn {
   width: 100%; height: 100%;
   object-fit: contain;
   pointer-events: none;
+}
+/* layout-editor-on: .character は flex item + transform の組み合わせで
+   ハンドルが画像配下に隠れて掴めないことがあるため、
+   pointer-events と z-index を明示的に確保する。
+   (position: relative は元から付与済み + .resizable 側でも relative が当たる) */
+body.layout-editor-on .character {
+  pointer-events: auto;
+  z-index: 10;
+}
+body.layout-editor-on .character img {
+  pointer-events: none; /* 画像でクリックを吸わせない (元の指定を再宣言) */
 }
 .character.jump {
   animation: ponoJump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1180,6 +1215,11 @@ const QZ_RESIZABLE_SELECTORS = [
       canvas: '#stage',
       editableSelectors: QZ_RESIZABLE_SELECTORS,
       ghPath: 'quizland/saved-layout.json',
+      pages: [
+        { name: 'なぞなぞ (このページ)', url: location.pathname + '?edit=1', current: true },
+        { name: 'なぞなぞ (旧サンドボックス)', url: '/quizland/preview/full/' },
+        { name: 'ずかん (ベジェ編集あり)', url: '/zukan/preview/full/' },
+      ],
     });
   }
   if (window.LayoutSystem) boot();

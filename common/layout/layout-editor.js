@@ -120,6 +120,8 @@
     originalCanvasWidth: null, // R3: remember stage width before comparison side-mode
     multiSelectMode: false,    // U10: iPad-friendly multi-select toggle
     previewExitBtn: null,      // R2: exit affordance during preview
+    pagesDropdownEl: null,     // 🌐 page navigation dropdown
+    pagesDocClickHandler: null,// outside-click handler for the dropdown
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -2109,7 +2111,7 @@
     if (!state.canvasEl) return;
     state.canvasEl.addEventListener('mousedown', function (e) {
       if (!state.enabled) return;
-      if (e.target.closest('.le-toolbar, .le-ruler, .le-guide, .numeric-panel, .le-list-panel, .le-help-modal, .le-comparison-picker')) return;
+      if (e.target.closest('.le-toolbar, .le-ruler, .le-guide, .numeric-panel, .le-list-panel, .le-help-modal, .le-comparison-picker, .le-pages-dropdown')) return;
       if (!state.drawModeOn && e.target.closest('.resizable, .resize-handle, .userbox-badge, .userbox-del')) return;
       if (!state.drawModeOn) return;
       e.preventDefault(); e.stopPropagation();
@@ -2205,6 +2207,7 @@
       '</select>' +
       '<button id="le-comparison" title="比較モード" aria-label="比較モード">🆚 比較</button>' +
       '<button id="le-list-toggle" title="要素一覧" aria-label="要素一覧パネル切替">📋 要素</button>' +
+      '<button id="le-pages" class="le-pages-btn" title="他の編集ページへ移動" aria-label="ページ移動" aria-haspopup="true" aria-expanded="false">🌐 ページ</button>' +
       '<button id="le-help" title="?: ヘルプ" aria-label="ヘルプ">❓</button>' +
       '</div>' +
       '<div class="le-tb-group">' +
@@ -2266,6 +2269,19 @@
       // R1: persist open/closed state
       try { localStorage.setItem('pono_layout_panel_open', nowOpen ? '1' : '0'); } catch (e) {}
     });
+    // 🌐 Page navigation: hide button when no pages configured.
+    var pagesBtn = tb.querySelector('#le-pages');
+    if (pagesBtn) {
+      var pages = state.config && state.config.pages;
+      if (!pages || !pages.length) {
+        pagesBtn.style.display = 'none';
+      } else {
+        pagesBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          togglePagesDropdown(pagesBtn);
+        });
+      }
+    }
     tb.querySelector('#le-help').addEventListener('click', showHelpModal);
     tb.querySelector('#le-zoom-slider').addEventListener('input', function (e) {
       setZoom(parseInt(e.target.value, 10) / 100);
@@ -2473,6 +2489,73 @@
   //  Help modal (FEATURE 27)
   // ====================================================================
 
+  // ====================================================================
+  //  🌐 Page navigation dropdown
+  // ====================================================================
+  function togglePagesDropdown(anchorBtn) {
+    if (state.pagesDropdownEl) { closePagesDropdown(); return; }
+    var pages = (state.config && state.config.pages) || [];
+    if (!pages.length) return;
+
+    var dd = document.createElement('div');
+    dd.className = 'le-pages-dropdown';
+    var rect = anchorBtn.getBoundingClientRect();
+    dd.style.top  = (rect.bottom + 4) + 'px';
+    dd.style.left = Math.max(8, rect.left) + 'px';
+
+    var html = '<div class="le-pages-dropdown-title">編集可能なページ</div><ul class="le-pages-list">';
+    pages.forEach(function (p) {
+      if (!p || !p.name) return;
+      var name = String(p.name);
+      var url  = p.url ? String(p.url) : '';
+      if (p.current) {
+        html += '<li class="le-pages-current"><span>📍 ' + escHtml(name) + '</span></li>';
+      } else if (url) {
+        html += '<li><a href="' + escAttr(url) + '">' + escHtml(name) + '</a></li>';
+      } else {
+        html += '<li><span>' + escHtml(name) + '</span></li>';
+      }
+    });
+    html += '</ul>';
+    dd.innerHTML = html;
+    document.body.appendChild(dd);
+    state.pagesDropdownEl = dd;
+    if (anchorBtn) anchorBtn.setAttribute('aria-expanded', 'true');
+
+    // Click outside closes.
+    var docHandler = function (e) {
+      if (!state.pagesDropdownEl) return;
+      if (state.pagesDropdownEl.contains(e.target)) return;
+      if (anchorBtn && anchorBtn.contains(e.target)) return;
+      closePagesDropdown();
+    };
+    state.pagesDocClickHandler = docHandler;
+    // Defer attaching to avoid catching the same click that opened the menu.
+    setTimeout(function () {
+      document.addEventListener('click', docHandler, true);
+    }, 0);
+  }
+
+  function closePagesDropdown() {
+    if (state.pagesDropdownEl) {
+      state.pagesDropdownEl.remove();
+      state.pagesDropdownEl = null;
+    }
+    if (state.pagesDocClickHandler) {
+      try { document.removeEventListener('click', state.pagesDocClickHandler, true); } catch (e) {}
+      state.pagesDocClickHandler = null;
+    }
+    var btn = state.toolbarEl && state.toolbarEl.querySelector('#le-pages');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;';
+    });
+  }
+  function escAttr(s) { return escHtml(s); }
+
   function showHelpModal() {
     if (state.helpModalEl) { state.helpModalEl.remove(); state.helpModalEl = null; return; }
     var modal = document.createElement('div');
@@ -2633,6 +2716,7 @@
       if (e.target.closest('.le-help-modal')) return;
       if (e.target.closest('.le-comparison-picker')) return;
       if (e.target.closest('.le-context-menu')) return;
+      if (e.target.closest('.le-pages-dropdown')) return;
       if (state.selectedElements.size > 0) clearSelection();
     };
     addManagedListener(document, 'mousedown', bgHandler);
@@ -2771,6 +2855,7 @@
     if (state.rulerH) state.rulerH.remove();
     if (state.rulerV) state.rulerV.remove();
     if (state.helpModalEl) state.helpModalEl.remove();
+    closePagesDropdown();
     if (state.previewExitBtn) { state.previewExitBtn.remove(); state.previewExitBtn = null; }
     var ctxMenu = $('#le-context-menu');
     if (ctxMenu) ctxMenu.remove();

@@ -17,6 +17,16 @@
   var VERSION = '1.0.0';
   var DEFAULT_DEBOUNCE_MS = 250;
 
+  // Built-in default page list for the editor's "🌐 ページ" navigation menu.
+  // Page authors can override via init({ pages: [...] }).
+  // Each entry: { name: string, url: string, current?: boolean }
+  var DEFAULT_PAGES = [
+    { name: 'なぞなぞ', url: '/quizland/?edit=1' },
+    { name: 'なぞなぞ サンドボックス', url: '/quizland/preview/full/' },
+    { name: 'ずかん (preview/full / ベジェ)', url: '/zukan/preview/full/' },
+    // Add wordmatch, oto, bento, maze when they migrate
+  ];
+
   // currentScript captures the <script> tag of layout-system.js itself.
   // Must be read at top-level (before async/Promise turns), otherwise
   // document.currentScript is null inside callbacks.
@@ -190,12 +200,21 @@
   function loadEditor(config) {
     var jsUrl  = appendVersion(siblingUrl('layout-editor.js'));
     var cssUrl = appendVersion(siblingUrl('layout-editor.css'));
+    // Inject default pages list (for the toolbar's 🌐 nav dropdown) when the
+    // page author didn't provide one. If `pages` is explicitly set to null /
+    // false / [] the editor will hide the button entirely.
+    var editorCfg = config;
+    if (config && typeof config === 'object' && !('pages' in config)) {
+      editorCfg = {};
+      for (var k in config) { if (Object.prototype.hasOwnProperty.call(config, k)) editorCfg[k] = config[k]; }
+      editorCfg.pages = DEFAULT_PAGES.slice();
+    }
     return Promise.all([
       loadCss(cssUrl).catch(function (e) { console.warn('[LayoutSystem]', e); }),
       loadScript(jsUrl).catch(function (e) { console.warn('[LayoutSystem]', e); }),
     ]).then(function () {
       if (window.LayoutEditor && typeof window.LayoutEditor.enable === 'function') {
-        try { window.LayoutEditor.enable(config); }
+        try { window.LayoutEditor.enable(editorCfg); }
         catch (e) { console.warn('[LayoutSystem] LayoutEditor.enable threw', e); }
       }
     });
