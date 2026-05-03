@@ -208,6 +208,25 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
   flex: 0 0 auto;
 }
 .hdr-left .title-card small { font-size: 11px; display: block; }
+/* preview/full から移植: title-card.png を背景に被せ、 sheet-on では CSS テキストを透明化 */
+.hdr-left .title-card {
+  background-image: url('../assets/preview-placeholders/title-card.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+body.sheet-on .hdr-left .title-card {
+  background-image: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body.sheet-on .hdr-left .title-card,
+body.sheet-on .hdr-left .title-card small,
+body.sheet-on .hdr-left .title-card span {
+  color: transparent !important;
+  text-shadow: none !important;
+}
 .hdr-left .progress-num {
   background: linear-gradient(180deg, #fff8e0, #f0dfa6);
   border: 2px solid var(--wood-dark);
@@ -265,6 +284,31 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
 }
 .hdr-right .ctrl-btn .icon { font-size: 40px; line-height: 1; }
 .hdr-right .ctrl-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wood-dark), 0 4px 8px var(--paper-shadow); }
+
+/* preview/full から移植: 🔔 / ⚙️ の emoji を消し、 PNG を背景に被せる */
+.hdr-right .ctrl-btn:nth-child(1) {
+  background-image: url('../assets/preview-placeholders/ctrl-btn-news.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.hdr-right .ctrl-btn:nth-child(2) {
+  background-image: url('../assets/preview-placeholders/ctrl-btn-settings.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.hdr-right .ctrl-btn .icon,
+.hdr-right .ctrl-btn .ctrl-label {
+  color: transparent;
+}
+/* sheet-on のときは PNG も枠も全部消してシート絵だけ */
+body.sheet-on .hdr-right .ctrl-btn {
+  background-image: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
 
 /* ===== Body (左 q-col / 右 a-col) ===== */
 .body {
@@ -663,92 +707,92 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
   background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 24px;
-  gap: 18px;
+  padding: 12px;
+  gap: 8px;
 }
 .mode-screen.hidden { display: none; }
 .mode-screen-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  font-size: clamp(1rem, 3.4vw, 1.4rem);
   color: #5D3A00;
   text-shadow: 2px 2px 0 #FFF8E0;
   letter-spacing: 0.05em;
   text-align: center;
 }
 .mode-screen-row {
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 8px;
   width: 100%; max-width: 360px;
 }
 .mode-screen .mode-btn {
-  padding: 18px 24px;
+  padding: 10px 18px;
   border: 4px solid #FBBF24;
-  border-radius: 22px;
+  border-radius: 18px;
   background: #fff;
   font-family: inherit;
   font-weight: 900;
   color: #5D4E37;
-  font-size: 1.15rem;
+  font-size: 1rem;
   cursor: pointer;
   text-align: left;
-  line-height: 1.35;
+  line-height: 1.25;
   box-shadow: 0 6px 18px rgba(0,0,0,0.18);
   transition: transform 0.1s;
 }
 .mode-screen .mode-btn:active { transform: scale(0.96); }
 .mode-screen .mode-btn .mode-sub {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #A89880;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 /* ===== Difficulty picker (mode-screen 内, mode-btn の下) ===== */
 .diff-screen-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(0.95rem, 3.4vw, 1.25rem);
+  font-size: clamp(0.85rem, 2.8vw, 1.1rem);
   color: #5D3A00;
   text-shadow: 1px 1px 0 #FFF8E0;
   letter-spacing: 0.08em;
   text-align: center;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .diff-row {
   display: flex; flex-direction: row;
-  gap: 16px;
+  gap: 8px;
   width: 100%; max-width: 720px;
   justify-content: center;
   align-items: stretch;
 }
 .diff-btn {
   flex: 1 1 0;
-  min-height: 120px;
+  min-height: 64px;
   min-width: 0;
-  padding: 1em 0.6em;
+  padding: 0.4em 0.5em;
   border: 4px solid var(--wood-mid);
-  border-radius: 22px;
+  border-radius: 18px;
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   font-family: inherit;
   font-weight: 900;
   color: var(--text);
   cursor: pointer;
   text-align: center;
-  line-height: 1.1;
+  line-height: 1.05;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 8px;
-  box-shadow: 0 5px 0 var(--wood-dark), 0 8px 16px rgba(80,50,10,0.28);
+  gap: 4px;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 14px rgba(80,50,10,0.28);
   transition: transform 0.1s, background 0.15s, border-color 0.15s, box-shadow 0.1s;
 }
 .diff-btn .diff-stars {
-  font-size: clamp(28px, 5.5vw, 44px);
+  font-size: clamp(20px, 4vw, 32px);
   line-height: 1;
   color: #C49A2C; /* muted gold for inactive */
   text-shadow: 1px 1px 0 rgba(80,50,10,0.25);
   letter-spacing: 0.05em;
 }
 .diff-btn .diff-label {
-  font-size: clamp(20px, 3.6vw, 28px);
+  font-size: clamp(14px, 3vw, 22px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: 0.04em;
@@ -1084,6 +1128,107 @@ window.addEventListener('orientationchange', function () { setTimeout(fitStage, 
 fitStage();
 
 // ═══════════════════════════════════════════════════════════
+// Saved-layout loader (preview/full と完全互換)
+// --------------------------------------------------------------
+// preview/full のサイズ調整ツールで保存した tx/ty/w/h を、 本番ゲームでも
+// そのまま再現するための最小フェッチ + アプライヤ。 編集系 (resize ハンドル
+// 追加, dirty UI, GitHub PUT 等) は一切含まない、 「読んで当てる」 だけ。
+//
+// データ形式 (saved-layout.json):
+//   { "<sel>|<idx>": { w, h, tx, ty }, ..., "__headerH": "...px",
+//     "__hidden": [...], "__texts": {...} }
+//
+// 当てるタイミング:
+//   1) fetch 完了直後 (静的要素: hdr-pill / q-text-card / board / answer-tray /
+//      character / char-hint 等)
+//   2) renderChoices() 後 (動的に生成される .chip と .chip .circle)
+// ═══════════════════════════════════════════════════════════
+const QZ_LAYOUT_URL = './preview/full/saved-layout.json';
+const QZ_RESIZABLE_SELECTORS = [
+  '.hdr-left',
+  '.hdr-left .owl-icon',
+  '.hdr-left .title-card',
+  '.hdr-left .progress-num',
+  '.hdr-left .dots',
+  '.hdr-right .ctrl-btn',
+  '.q-text-card',
+  '#q-text',
+  '.q-text-card .audio',
+  '.board',
+  '.answer-tray',
+  '.chip',
+  '.chip .circle',
+  '.hint',
+  '.character',
+  '.char-hint',
+];
+let qzSavedLayout = null;          // fetch 結果のキャッシュ
+let qzSavedLayoutLoaded = false;   // 1 度でも fetch 完了したか
+
+function qzApplyOne(el, s) {
+  if (!el || !s) return;
+  if (s.w) el.style.width = s.w;
+  if (s.h) el.style.height = s.h;
+  const tx = s.tx || 0, ty = s.ty || 0;
+  if (tx || ty) {
+    el._tx = tx; el._ty = ty;
+    // CSS の transform を直接書き換え (preview/full の挙動と同じ)
+    el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+  }
+}
+
+function qzApplySavedLayout(scopeRoot) {
+  // scopeRoot を渡せば、 そのサブツリーだけを再適用 (renderChoices 後に使う)
+  if (!qzSavedLayout) return;
+  const data = qzSavedLayout;
+  QZ_RESIZABLE_SELECTORS.forEach(function(sel) {
+    const list = (scopeRoot || document).querySelectorAll(sel);
+    list.forEach(function(el, i) {
+      const key = sel + '|' + i;
+      const s = data[key];
+      if (s) qzApplyOne(el, s);
+    });
+  });
+  // __headerH (hdr の高さ調整)
+  if (data.__headerH) {
+    document.documentElement.style.setProperty('--header-h', data.__headerH);
+  }
+  // __hidden: 隠す指定 (例: .hint|0)
+  if (Array.isArray(data.__hidden)) {
+    data.__hidden.forEach(function(key) {
+      const m = key && key.match(/^(.+)\|(\d+)$/);
+      if (!m) return;
+      const all = document.querySelectorAll(m[1]);
+      const el = all[parseInt(m[2], 10)];
+      if (el) el.classList.add('user-hidden');
+    });
+  }
+}
+
+(function loadSavedLayout() {
+  fetch(QZ_LAYOUT_URL + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      qzSavedLayoutLoaded = true;
+      if (!data) return;
+      qzSavedLayout = data;
+      qzApplySavedLayout();
+      // チップが既に描画済みかも (loadQuestion が先に走った場合) → 再適用
+      if (document.querySelector('#answer-panel .chip')) {
+        qzApplySavedLayout(document.getElementById('answer-panel'));
+      }
+    })
+    .catch(function(e) { console.warn('[quizland] saved-layout fetch failed', e); });
+})();
+
+// 隠すクラス (preview/full と同じ振る舞い)
+(function injectHiddenStyle() {
+  const s = document.createElement('style');
+  s.textContent = '.user-hidden{display:none !important;}';
+  document.head.appendChild(s);
+})();
+
+// ═══════════════════════════════════════════════════════════
 // Audio (BGM + 効果音)
 // ═══════════════════════════════════════════════════════════
 window._imgCacheBust = Date.now();
@@ -1371,6 +1516,9 @@ function renderChoices(q) {
     });
     tray.appendChild(btn);
   });
+  // 保存済みレイアウト (.chip|0..3, .chip .circle|0..3) を当てる。
+  // fetch がまだなら qzSavedLayout が null で何も起きず、 fetch 完了時に再適用される。
+  qzApplySavedLayout(document.getElementById('answer-panel'));
 }
 
 function loadQuestion(q) {
