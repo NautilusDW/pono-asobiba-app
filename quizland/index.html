@@ -1116,7 +1116,7 @@ body.layout-editor-on .character img {
             <div class="answer-panel" id="answer-panel"></div>
           </div>
           <div class="bottom-right">
-            <div class="char-hint" id="char-hint">ヒント！</div>
+            <div class="char-hint" id="char-hint-bubble"><span id="char-hint-text">ヒント！</span></div>
             <div class="character" id="pono-avatar">
               <img src="../assets/images/quizland/owl_professor_guide.png" alt="フクロウ博士">
             </div>
@@ -1178,6 +1178,188 @@ const MODE_TO_CATEGORIES = {
   know:    ['trivia', 'weather', 'body', 'opposite']
 };
 let selectedMode = 'inspire';
+
+// ═══════════════════════════════════════════════════════════
+// ふくろうはかせ セリフ (8カテゴリ: 問題/ヒント1/ヒント2/正解/レア褒め/不正解/連続ミス/クリア)
+// ═══════════════════════════════════════════════════════════
+const HAKASE_DIALOGUE = {
+  problem: {
+    general: [
+      'さてさて…これは わかるかな？',
+      'よくみて かんがえるのじゃ',
+      'ふむふむ… これは おもしろい もんだいじゃ',
+      'これは どうかな？',
+      'じっくり みてみよう',
+      'さあ、なんじゃろう？',
+    ],
+    byCategory: {
+      order_color: 'なにいろに みえるかな？',
+      count_total: 'かぞえて みようか',
+      shape_name:  'どんな かたちに みえるかな？',
+      opposite:    'はんたいの ことば、わかるかな？',
+      trivia:      'ふむふむ、これは ものしりクイズじゃ！',
+      weather:     'ふむふむ、これは ものしりクイズじゃ！',
+      body:        'ふむふむ、これは ものしりクイズじゃ！',
+    },
+  },
+  hint1: [
+    'ふむ… すこし むずかしいかな？',
+    'ちがいを よーく みるのじゃ',
+    'かたちに ちゅうもくしてみるのじゃ',
+    'ヒントは すぐそばに あるぞ',
+    'よく みてみよう',
+  ],
+  hint2Fallback: [
+    'ほっほっほ、もうすこしじゃ',
+    'いちばん たいせつな ぶぶんは どこかな？',
+    'ちかいものは どれかな？',
+    'じっくり えらんでみよう',
+  ],
+  correct: [
+    'おお！ せいかいじゃ！',
+    'よいぞ よいぞ！',
+    'きみ、なかなか するどいのう',
+    'その ひらめき、すばらしい！',
+    'ふむふむ、よくできたのう',
+    'お見事じゃ！',
+    'そのとおり じゃ！',
+    'ばっちり じゃ！',
+    'やるのう！',
+    'かしこいのう！',
+  ],
+  rarePraise: [
+    'ほっほっほ…わしも まけておれんな',
+    'きみは もう はかせの なかまじゃな',
+    'これは わしも おどろいたわい',
+    'きみの あたまは すごいのう',
+    'これは てんさいじゃな！',
+    'わしの まけじゃ、ほっほっほ',
+  ],
+  wrong: [
+    'ふむ… ちがったようじゃな',
+    'だいじょうぶ、もういちど かんがえてみよう',
+    'あわてんで よいぞ',
+    'ふむふむ… おしいのう',
+    'そっか、ちがったか',
+    'まあ そんなときも あるさ',
+    'もういちど、よーく みてみよう',
+    'ゆっくりでよいぞ',
+  ],
+  consecutiveMiss: [
+    'むずかしいかの？',
+    'ヒントを みてみるかい？',
+    'いっしょに かんがえてみよう',
+    'ふむ… むずかしいのう',
+    'ヒントが あるぞ、みてみる？',
+    'ゆっくり いこうか',
+  ],
+  clear: {
+    perfect: [
+      'ぜんもん せいかい！ きみは もう、もりの なぞなぞマスターじゃな！',
+      'ほっほっほ、わしも おどろいた！',
+      'きみは もう、はかせを こえとるかも しれんのう',
+    ],
+    good: [
+      'りっぱじゃ！ よくできた！',
+      'お見事 じゃった！',
+      'ふむふむ、たのしかったのう',
+    ],
+    okay: [
+      'よくがんばったのう',
+      'ほっほっほ、いい かんじじゃ',
+      'また いっしょに あそぼうな',
+    ],
+    tryAgain: [
+      'また あそびに きてくれよな',
+      'あわてず、ゆっくりで よいぞ',
+      'つぎは もっと できるはずじゃ',
+    ],
+  },
+};
+
+const RARE_PRAISE_CHANCE = 0.1;
+const CONSECUTIVE_MISS_THRESHOLD = 2;
+const HINT_AUTO_DELAY_MS = 5000;
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// セリフ管理状態
+let _consecutiveMisses = 0;
+let _hintLevel = 0;  // 0 = 問題表示時, 1 = ヒント1, 2 = ヒント2
+let _autoHintTimer = null;
+
+function setHakaseDialogue(text) {
+  const el = document.getElementById('char-hint-text');
+  if (el) el.textContent = text;
+}
+
+function showProblemDialogue(question) {
+  _hintLevel = 0;
+  const cat = (question && (question.category || question._cat || question.type)) || null;
+  // 50% でカテゴリ別、50% で general (バリエーション増加)
+  const text = (cat && Math.random() < 0.5 && HAKASE_DIALOGUE.problem.byCategory[cat])
+    ? HAKASE_DIALOGUE.problem.byCategory[cat]
+    : pickRandom(HAKASE_DIALOGUE.problem.general);
+  setHakaseDialogue(text);
+  // 5秒後にヒント1へ自動切替
+  clearTimeout(_autoHintTimer);
+  _autoHintTimer = setTimeout(() => {
+    if (_hintLevel === 0) showHint1();
+  }, HINT_AUTO_DELAY_MS);
+}
+
+function showHint1() {
+  _hintLevel = 1;
+  setHakaseDialogue(pickRandom(HAKASE_DIALOGUE.hint1));
+}
+
+function showHint2(question) {
+  _hintLevel = 2;
+  const text = (question && question.hint) ? question.hint : pickRandom(HAKASE_DIALOGUE.hint2Fallback);
+  setHakaseDialogue(text);
+}
+
+function showCorrectDialogue() {
+  _consecutiveMisses = 0;
+  const useRare = Math.random() < RARE_PRAISE_CHANCE;
+  const text = useRare
+    ? pickRandom(HAKASE_DIALOGUE.rarePraise)
+    : pickRandom(HAKASE_DIALOGUE.correct);
+  setHakaseDialogue(text);
+}
+
+function showWrongDialogue() {
+  _consecutiveMisses++;
+  const text = _consecutiveMisses >= CONSECUTIVE_MISS_THRESHOLD
+    ? pickRandom(HAKASE_DIALOGUE.consecutiveMiss)
+    : pickRandom(HAKASE_DIALOGUE.wrong);
+  setHakaseDialogue(text);
+}
+
+function showClearDialogue(correctCnt, totalCnt) {
+  const ratio = totalCnt > 0 ? (correctCnt / totalCnt) : 0;
+  let pool;
+  if (ratio === 1)        pool = HAKASE_DIALOGUE.clear.perfect;
+  else if (ratio >= 0.8)  pool = HAKASE_DIALOGUE.clear.good;
+  else if (ratio >= 0.6)  pool = HAKASE_DIALOGUE.clear.okay;
+  else                    pool = HAKASE_DIALOGUE.clear.tryAgain;
+  setHakaseDialogue(pickRandom(pool));
+}
+
+// 吹き出しクリックでヒント2を表示
+function _bindHakaseBubbleClick() {
+  const bubble = document.getElementById('char-hint-bubble');
+  if (!bubble) return;
+  bubble.style.cursor = 'pointer';
+  bubble.addEventListener('click', () => {
+    if (currentQ) showHint2(currentQ);
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _bindHakaseBubbleClick, { once: true });
+} else {
+  _bindHakaseBubbleClick();
+}
 
 // ═══════════════════════════════════════════════════════════
 // Stage auto-fit (preview/full の preview-mode と同じ計算)
@@ -1575,6 +1757,7 @@ function loadQuestion(q) {
   renderChoices(q);
   updateHUD();
   setupNarration(q);
+  showProblemDialogue(q);
 }
 
 // ── Narration: 自動再生 or 🔊ボタンで問題文を読み上げ
@@ -1633,6 +1816,7 @@ function onChoice(idx, btn) {
     btn.classList.add('correct');
     playCorrect();
     showFeedback('やったー！');
+    showCorrectDialogue();
     ponoJump();
     launchConfetti();
     correctCount++;
@@ -1661,6 +1845,7 @@ function onChoice(idx, btn) {
     btn.disabled = true;
     playWrong();
     showFeedback('もういっかい！', true);
+    showWrongDialogue();
     // もう1回チャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
     locked = false;
   }
@@ -1696,6 +1881,7 @@ function ponoJump() {
 }
 
 function nextQuestion() {
+  clearTimeout(_autoHintTimer);
   questionIdx++;
   if (questionIdx >= TOTAL_Q) {
     showResult();
@@ -1708,6 +1894,8 @@ function nextQuestion() {
 // Result
 // ═══════════════════════════════════════════════════════════
 function showResult() {
+  clearTimeout(_autoHintTimer);
+  showClearDialogue(correctCount, TOTAL_Q);
   const cleared = correctCount >= Math.ceil(TOTAL_Q * 0.7); // 70% 以上で clear
   document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
   document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
