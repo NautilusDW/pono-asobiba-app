@@ -47,7 +47,7 @@ with sync_playwright() as p:
     except Exception as e:
         print(f"goto error: {e}")
     # wait a long time
-    time.sleep(20)
+    time.sleep(60)
 
     info = page.evaluate(
         """() => ({
