@@ -936,11 +936,9 @@ body.sheet-on .slot {
   border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
   border-radius: 12px;
 }
-/* slot を 10px 上にずらす微調整 (= padding-bottom を padding-top より 20px 大きく
-   すると align-items:center の content area 中心が 10px 上にシフトする) */
-body.sheet-on .board {
-  padding: 16px 16px 36px 16px !important;
-}
+/* (slot 位置の微調整は body.sheet-on .board の padding ハードコードを撤去。
+   user 側でサイズ調整ツールで .board を選択して tx/ty で動かす方針に変更。
+   saved-layout に永続化される) */
 /* sheet-on で .dot の背景色 / border を消す。 dot.png は透明部分のある丸画像
    なので、 box の四角い背景色 + 茶色 border が透けて見えていた (= 1 個目だけ
    四角く見える原因の 1 つ。 .dot.done を削除しても残っていた) */
