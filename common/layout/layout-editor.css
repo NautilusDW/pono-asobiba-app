@@ -137,17 +137,15 @@ body.layout-editor-on .resize-handle {
   pointer-events: auto;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
-/* Foxtrot-2: 選択中は青で目立たせる + 前面に */
+/* Foxtrot-2: 選択中は青で目立たせる + 前面に。
+   Golf-2: preferredTarget であってもこの青を上書きしない。
+   preferredTarget はハンドル色を奪わず、outline (.le-preferred) と
+   要素一覧の ★ で識別する。要素一覧から選択した要素 (selected かつ preferred)
+   が「選択中なのに青ハンドルが見えない」状態を解消する。 */
 body.layout-editor-on .resizable.selected > .resize-handle {
   background: #00d4ff;
   opacity: 1;
   z-index: 62;
-}
-/* Foxtrot-2: preferredTarget はゴールド (既存ハイライトに連動) */
-body.layout-editor-on .resizable.le-preferred > .resize-handle {
-  background: #ffd000;
-  opacity: 1;
-  z-index: 63;
 }
 body.layout-editor-on .resize-handle.edge-n,
 body.layout-editor-on .resize-handle.edge-s {

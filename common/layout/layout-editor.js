@@ -1417,17 +1417,64 @@
     syncAspectLockButton();
   }
 
-  // Foxtrot-2: 選択要素が画像 (img) もしくは img を 1 つだけ含むラッパなら、
-  // その naturalWidth / naturalHeight を返す。条件外なら null。
-  function getImageNaturalSize(el) {
+  // Golf-2: 「100% に戻す」と自然サイズ表示を、選択要素そのものが <img> の場合
+  // だけに限定する。Foxtrot-2 ではラッパ内に img が 1 個ならその img の natural
+  // を返していたが、ユーザー視点では「ラッパ (例: .hint-panel) を選択したのに
+  // 中の silhouette img の natural にラッパごとリサイズされる」誤誘導になるため
+  // 廃止。wrapper を 100% に戻したい場合はその wrapper 内の img を直接選択する。
+  // Hotel-2: CSS background-image 要素 (例: .discovery-popup) も natural size を
+  //   非同期取得して 100% リセットを可能にする。url を Image() で probe してキャッシュ。
+  var bgImageNaturalCache = new Map(); // url → { status, w, h, callbacks }
+  function getBgImageUrl(el) {
+    if (!el || !el.nodeType || el.nodeType !== 1) return null;
+    var bg;
+    try {
+      bg = (el.style && el.style.backgroundImage) || '';
+      if (!bg || bg === 'none') bg = getComputedStyle(el).backgroundImage || '';
+    } catch (e) { return null; }
+    if (!bg || bg === 'none') return null;
+    // 'url("...")' or 'url(\'...\')' or 'url(...)' を抽出 (multi-bg は先頭のみ採用)
+    var m = bg.match(/url\(["']?([^"')]+)["']?\)/);
+    return m ? m[1] : null;
+  }
+  function getBgImageNaturalSize(el, onLoad) {
+    var url = getBgImageUrl(el);
+    if (!url) return null;
+    var cached = bgImageNaturalCache.get(url);
+    if (cached && cached.status === 'loaded') return { w: cached.w, h: cached.h };
+    if (cached && cached.status === 'error') return null;
+    if (cached && cached.status === 'loading') {
+      if (onLoad) cached.callbacks.push(onLoad);
+      return null;
+    }
+    // 新規 probe
+    var entry = { status: 'loading', callbacks: onLoad ? [onLoad] : [] };
+    bgImageNaturalCache.set(url, entry);
+    var probe = new Image();
+    probe.onload = function () {
+      var cbs = (bgImageNaturalCache.get(url) || {}).callbacks || [];
+      bgImageNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
+      cbs.forEach(function (cb) { try { cb && cb(); } catch (e) {} });
+    };
+    probe.onerror = function () {
+      bgImageNaturalCache.set(url, { status: 'error' });
+    };
+    probe.src = url;
+    return null;
+  }
+  // Hotel-2: el が <img> なら従来通り naturalWidth/Height、そうでなければ
+  //   CSS background-image を probe して natural size を取得。bg の場合は
+  //   isBg:true をマークして UI 側でラベルを切り替えられるようにする。
+  function getImageNaturalSize(el, onLoad) {
     if (!el) return null;
-    if (el.tagName === 'IMG' && el.naturalWidth > 0 && el.naturalHeight > 0) {
-      return { w: el.naturalWidth, h: el.naturalHeight, img: el };
+    if (el.tagName === 'IMG') {
+      if (el.naturalWidth > 0 && el.naturalHeight > 0) {
+        return { w: el.naturalWidth, h: el.naturalHeight, img: el };
+      }
+      return null;
     }
-    var inner = el.querySelectorAll && el.querySelectorAll('img');
-    if (inner && inner.length === 1 && inner[0].naturalWidth > 0 && inner[0].naturalHeight > 0) {
-      return { w: inner[0].naturalWidth, h: inner[0].naturalHeight, img: inner[0] };
-    }
+    var bg = getBgImageNaturalSize(el, onLoad);
+    if (bg) return { w: bg.w, h: bg.h, isBg: true };
     return null;
   }
 
@@ -1667,17 +1714,20 @@
 
     // Foxtrot-2: 単一選択かつ画像ならば、自然サイズと現在の表示比率 (%) を表示。
     // 非画像 / 複数選択 / 画像未ロード時は非表示。
+    // Hotel-2: <img> だけでなく background-image を持つ要素にも対応 (probe を非同期で
+    //   ロードして load 完了時に panel を再描画)。
     var infoEl = panel.querySelector('#np-natural-info');
     var resetBtn = panel.querySelector('#np-reset-100');
-    var ns = (sel.length === 1) ? getImageNaturalSize(sel[0]) : null;
-    // 画像未ロードのケース: 1個選択 & img はあるが naturalWidth=0 なら、
-    // load 完了時に再描画する one-shot リスナを張る (再選択不要にする)
+    var ns = null;
+    if (sel.length === 1) {
+      ns = getImageNaturalSize(sel[0], function () { updateNumericPanel(); });
+    }
+    // 画像未ロードのケース: 1個選択 & 選択要素自身が img で naturalWidth=0 なら、
+    // load 完了時に再描画する one-shot リスナを張る (再選択不要にする)。
+    // Golf-2: wrapper 内 img は対象外 (getImageNaturalSize と一貫させる)。
     if (!ns && sel.length === 1) {
       var single0 = sel[0];
-      var probe = (single0.tagName === 'IMG') ? single0 : (function () {
-        var inner = single0.querySelectorAll && single0.querySelectorAll('img');
-        return (inner && inner.length === 1) ? inner[0] : null;
-      })();
+      var probe = (single0.tagName === 'IMG') ? single0 : null;
       if (probe && probe.naturalWidth === 0 && !probe._foxtrot2NaturalListen) {
         probe._foxtrot2NaturalListen = true;
         probe.addEventListener('load', function () {
@@ -1698,8 +1748,10 @@
           // 整数なら小数なし、それ以外は小数1桁
           return (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
         };
+        // Hotel-2: bg-image 要素には「自然 (背景)」と明示
+        var label = ns.isBg ? '自然 (背景)' : '自然';
         infoEl.innerHTML =
-          '自然: ' + ns.w + '×' + ns.h +
+          label + ': ' + ns.w + '×' + ns.h +
           ' &nbsp;<b>' + fmt(pctW) + '% × ' + fmt(pctH) + '%</b>';
         infoEl.style.display = '';
         resetBtn.style.display = '';
@@ -3492,7 +3544,8 @@
     return true;
   }
 
-  // Strict swap: returns true if swap happened, null if ambiguous (caller falls back to insert).
+  // Strict swap: returns 'img' | 'bg' | 'inner-img' if swap happened (truthy),
+  //   null if ambiguous (caller falls back to insert).
   // Decision order:
   //   1. element is <img>            → swap its src
   //   2. element has background-image → swap that
@@ -3502,16 +3555,16 @@
     if (!element) return null;
     if (element.tagName === 'IMG') {
       var isDropped = element.parentNode && element.parentNode.classList && element.parentNode.classList.contains('le-dropped-img');
-      return swapImgSrcUndoable(element, dataUrl, { afterSave: isDropped }) ? true : null;
+      return swapImgSrcUndoable(element, dataUrl, { afterSave: isDropped }) ? 'img' : null;
     }
     if (elementHasBackgroundImage(element)) {
-      return swapBackgroundImageUndoable(element, dataUrl) ? true : null;
+      return swapBackgroundImageUndoable(element, dataUrl) ? 'bg' : null;
     }
     var innerImgs;
     try { innerImgs = element.querySelectorAll('img'); } catch (e) { innerImgs = null; }
     if (innerImgs && innerImgs.length === 1) {
       var dropWrap = element.classList && element.classList.contains('le-dropped-img');
-      return swapImgSrcUndoable(innerImgs[0], dataUrl, { afterSave: dropWrap }) ? true : null;
+      return swapImgSrcUndoable(innerImgs[0], dataUrl, { afterSave: dropWrap }) ? 'inner-img' : null;
     }
     return null;
   }
@@ -3748,15 +3801,24 @@
             }
             if (i === 0 && firstSelected && isImageElement(firstSelected)) {
               // Case 2: try strict swap on selected element (img / bg-image / single inner img only).
+              // Hotel-2: replaceImageSrc は 'img' | 'bg' | 'inner-img' | null を返す。
+              //   bg / img のどちらに差し替わったかをトーストで明示し、同じ画像を
+              //   ドロップした際に「差し替わってない?」と感じる UX を解消する。
               var swapResult = replaceImageSrc(firstSelected, dataUrl);
-              if (swapResult === true) {
-                if (!result.resized) showToast('画像を差し替えました');
+              if (swapResult) {
+                if (!result.resized) {
+                  if (swapResult === 'bg') {
+                    showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
+                  } else {
+                    showToast('画像を差し替えました (Ctrl+Z で戻せます)');
+                  }
+                }
                 // swap is undoable via pushHistory inside swapImg/BgUndoable.
                 scheduleDirtyUpdate();
               } else {
                 // Ambiguous (e.g. multiple inner imgs) → insert new layer at drop point.
                 insertNewImageLayer(canvas, dropX, dropY, dataUrl, file.name);
-                if (!result.resized) showToast('画像を挿入しました');
+                if (!result.resized) showToast('画像を新規挿入しました (Ctrl+Z で戻せます)');
               }
             } else {
               // Case 1 (or subsequent files in case 2): new layer.
@@ -3764,7 +3826,7 @@
               var ox = dropX + i * 18;
               var oy = dropY + i * 18;
               insertNewImageLayer(canvas, ox, oy, dataUrl, file.name);
-              if (i === 0 && !result.resized) showToast('画像を挿入しました');
+              if (i === 0 && !result.resized) showToast('画像を新規挿入しました (Ctrl+Z で戻せます)');
             }
           }).catch(function (err) {
             console.warn('[LayoutEditor] readAndResizeImage failed', err);
