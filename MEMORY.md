@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T04:44:02Z - quizland visual fixes 1-5: --header-h 142px, sheet-on UI 表示復活, audio btn 表示, stage items 縦中央, chip 数字 縦中央
+- **タスク**: quizland visual fixes 1-5: --header-h 142px, sheet-on UI 表示復活, audio btn 表示, stage items 縦中央, chip 数字 縦中央
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 29
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 163, "Bash": 230, "Read": 63, "Write": 2, "Grep": 41, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-03T04:15:05Z - quizland UI 最終rebuild: saved-layout.json loader/applier を本番に追加 (preview/full と完全互換、tx/ty/w/h/__hidden/__headerH 全て反映)、sw.js 674→675
 - **タスク**: quizland UI 最終rebuild: saved-layout.json loader/applier を本番に追加 (preview/full と完全互換、tx/ty/w/h/__hidden/__headerH 全て反映)、sw.js 674→675
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 223, "Edit": 170, "Read": 60, "Grep": 44, "Write": 2, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T11:07:27Z - zukan preview: Subdivided Corner Pin (3x3 mesh per page = 18 制御点)
-- **タスク**: zukan preview: Subdivided Corner Pin (3x3 mesh per page = 18 制御点)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 252, "Read": 32, "Edit": 188, "Grep": 24, "Write": 3, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

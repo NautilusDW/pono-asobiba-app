@@ -50,7 +50,7 @@
   --canvas-h: 900px;
   --safe-w: 1600px;
   --safe-h: 900px;
-  --header-h: 150px;
+  --header-h: 142px;
 
   /* Slot (board 内) */
   --slot-size: 130px;
@@ -215,12 +215,12 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
   background-repeat: no-repeat;
   background-position: center;
 }
+/* sheet-on: title-card.png は表示したまま、 枠と影だけシート絵と二重にならないよう消す */
 body.sheet-on .hdr-left .title-card {
-  background-image: none !important;
-  background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
+/* PNG にテキストが描画されているので CSS テキストは透明化 (二重防止) */
 body.sheet-on .hdr-left .title-card,
 body.sheet-on .hdr-left .title-card small,
 body.sheet-on .hdr-left .title-card span {
@@ -302,10 +302,9 @@ body.sheet-on .hdr-left .title-card span {
 .hdr-right .ctrl-btn .ctrl-label {
   color: transparent;
 }
-/* sheet-on のときは PNG も枠も全部消してシート絵だけ */
+/* sheet-on: bell/gear PNG は表示したまま、 枠と影だけシート絵と二重にならないよう消す
+   (CSS テキスト .icon / .ctrl-label は上の color: transparent ルールで透明化済み) */
 body.sheet-on .hdr-right .ctrl-btn {
-  background-image: none !important;
-  background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
@@ -382,17 +381,22 @@ body.sheet-on .hdr-right .ctrl-btn {
   display: flex;
   justify-content: center;
   align-items: center;
+  align-content: center;
   flex-wrap: wrap;
   gap: 24px;
   min-height: 0;
 }
 
-/* item-row (color/count) — preview/full の slot 配列に近い見た目 */
+/* item-row (color/count) — preview/full の slot 配列に近い見た目
+   stage-area が flex-wrap+align-content:center で row 全体を中央に寄せる前提。
+   row 自身の縦伸長を防ぐため align-self:center + flex:0 0 auto を明示。 */
 .item-row {
   display: flex;
   gap: 24px;
   justify-content: center;
   align-items: center;
+  align-self: center;
+  flex: 0 0 auto;
   flex-wrap: wrap;
 }
 
@@ -556,7 +560,17 @@ body.sheet-on .hdr-right .ctrl-btn {
   border-color: var(--danger) !important;
   animation: shake 0.4s;
 }
+/* count_total 用: 数字を確実にチップ中央に配置
+   - line-height:1 で descender 余白を排除
+   - padding/margin 0 + flex 中央配置で完全センタリング */
 .chip.chip-count { font-size: 56px; }
+.chip.chip-count .chip-count-num {
+  display: block;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
 @keyframes popIn {
   0% { transform: scale(1); }
   50% { transform: scale(1.12); }
@@ -1031,7 +1045,7 @@ body.sheet-on .hdr-right .ctrl-btn {
         <div class="q-col">
           <div class="q-text-card">
             <span id="q-text">よういちゅう…</span>
-            <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ" style="display:none;">🔊</button>
+            <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ">🔊</button>
           </div>
           <div class="board" id="board">
             <div id="stage-area"></div>
@@ -1503,7 +1517,10 @@ function renderChoices(q) {
       btn.appendChild(label);
     } else if (q.type === 'count_total') {
       btn.classList.add('chip-count');
-      btn.textContent = String(choice);
+      const num = document.createElement('span');
+      num.className = 'chip-count-num';
+      num.textContent = String(choice);
+      btn.appendChild(num);
     } else {
       const label = document.createElement('span');
       label.textContent = choice;
