@@ -94,6 +94,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T09:53:02Z - zukan/index.html のアセット参照を root-relative から相対パスに置換 (7箇所)
+- **タスク**: zukan/index.html のアセット参照を root-relative から相対パスに置換 (7箇所)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 226
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 35, "Grep": 7, "Bash": 100, "Agent": 57, "ToolSearch": 2, "Write": 7, "Edit": 16, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-03T09:51:33Z - zukan investigation エディター C2/C3 レビュー対応 (DOM ネスト本番揃え+__version整数化+discovery条件表示+help-note拡張+onerror+filter分離)
+- **タスク**: zukan investigation エディター C2/C3 レビュー対応 (DOM ネスト本番揃え+__version整数化+discovery条件表示+help-note拡張+onerror+filter分離)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 18
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 12, "ToolSearch": 1, "Read": 2, "Write": 1, "Edit": 1, "Bash": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-03T09:42:47Z - ふくろうはかせ dialogue 4-issue fix: per-category hint fallback + bubble wrap/grow + 22px font + clearTimeout in onChoice + sw 691→692
 - **タスク**: ふくろうはかせ dialogue 4-issue fix: per-category hint fallback + bubble wrap/grow + 22px font + clearTimeout in onChoice + sw 691→692
 - **結果**: 成功
@@ -182,32 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 51, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T06:59:45Z - Phase 6: quizland layout migration (copy saved-layout.json + flip layoutUrl/ghPath + bump sw.js to 682)
-- **タスク**: Phase 6: quizland layout migration (copy saved-layout.json + flip layoutUrl/ghPath + bump sw.js to 682)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 135
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 48, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T06:54:33Z - Phase4 layout-editor 修正: R1-R3 (panel toggle/preview exit/comparison width), C1-C3 (cleanup/save timing/409), U4-U10 (alignment toolbar位置/右クリック/locked override/userbox undo/anno key shortcuts/comparison memory/iPad multi-select)
-- **タスク**: Phase4 layout-editor 修正: R1-R3 (panel toggle/preview exit/comparison width), C1-C3 (cleanup/save timing/409), U4-U10 (alignment toolbar位置/右クリック/locked override/userbox undo/anno key shortcuts/comparison memory/iPad multi-select)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 134
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 47, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

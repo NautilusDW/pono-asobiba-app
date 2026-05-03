@@ -164,14 +164,17 @@ body.show-safe .safe-area::after {
   -webkit-user-drag: none;
 }
 
-/* ───── Layer 4: hidden animal part (rabbit ears, etc) ─────────── */
+/* ───── Layer 4: hidden animal part (rabbit ears, etc) ───────────
+ * 本番 zukan/index.html と同じく .window-wrap の子要素として
+ * window-wrap 1100×620 基準の絶対 px 配置にする。
+ * 比率 → px: x=0.64→704px, y=0.38→236px, w=0.08→88px。
+ */
 .hidden-part {
   position: absolute;
-  /* 初期値: window 内 (0.64, 0.38) ≒ stage 絶対 (1034, 376) */
-  left: 1034px;
-  top: 376px;
-  width: 90px;
-  height: 90px;
+  left: 704px;
+  top: 236px;
+  width: 88px;
+  height: 88px;
   z-index: 3;
   pointer-events: auto;
 }
@@ -184,12 +187,14 @@ body.show-safe .safe-area::after {
   -webkit-user-drag: none;
 }
 
-/* ───── Layer 5: hotspot (debug visualization in editor) ───────── */
+/* ───── Layer 5: hotspot (debug visualization in editor) ─────────
+ * .window-wrap 内に配置 (本番 .hotspot と同じ親)。
+ * 比率 → px: x=0.62→682, y=0.34→211, w=0.14→154, h=0.18→112。
+ */
 .hotspot-debug {
   position: absolute;
-  /* 初期値: window 内 (0.62, 0.34, 0.14, 0.18) ≒ stage 絶対 (1012, 351, 154, 112) */
-  left: 1012px;
-  top: 351px;
+  left: 682px;
+  top: 211px;
   width: 154px;
   height: 112px;
   z-index: 4;
@@ -310,7 +315,9 @@ body.show-safe .safe-area::after {
   font-weight: 700;
 }
 
-/* ───── Layer 8: discovery popup (visible while editing) ───────── */
+/* ───── Layer 8: discovery popup (visible while editing) ─────────
+ * プレビュー時 (?edit=1 なし) は非表示、編集モードでのみ表示。
+ */
 .discovery-popup {
   position: absolute;
   left: 1660px;
@@ -322,13 +329,17 @@ body.show-safe .safe-area::after {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   padding: 24px 28px 18px;
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
   color: var(--brown);
   pointer-events: auto;
+}
+body.layout-editor-on .discovery-popup,
+body.editor-mode .discovery-popup {
+  display: flex;
 }
 .discovery-popup .dp-title {
   font-size: 18px;
@@ -390,38 +401,47 @@ body:not(.layout-editor-on) .help-note {
 
     <!-- Layer 1: 21:9 outer background -->
     <div class="outer-bg" data-le-label="外側背景">
-      <img src="../../../assets/zukan/bg/zukan_outer_bg_21x9.png" alt="">
+      <img src="../../../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+           onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
     </div>
 
     <!-- Layer 2: 16:9 safe area (display-only guide) -->
     <div class="safe-area" id="safe-area"></div>
 
-    <!-- Layer 3: investigation window (frame + field bg) -->
+    <!-- Layer 3: investigation window (frame + field bg)
+         本番 zukan/index.html に合わせて、隠れパーツ / ホットスポットも
+         window-wrap の子として配置 (座標は window-wrap 1100×620 基準)。 -->
     <div class="window-wrap" data-le-label="調査ウィンドウ">
       <div class="field-bg" data-le-label="花の小道 背景">
-        <img src="../../../assets/zukan/search/flower_path_field_16x9.png" alt="">
+        <img src="../../../assets/zukan/search/flower_path_field_16x9.png" alt=""
+             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
       </div>
       <div class="window-frame" data-le-label="ウィンドウ枠">
-        <img src="../../../assets/zukan/ui/investigation_window_frame_16x9.png" alt="">
+        <img src="../../../assets/zukan/ui/investigation_window_frame_16x9.png" alt=""
+             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
       </div>
-    </div>
 
-    <!-- Layer 4: hidden animal part (rabbit ears) -->
-    <div class="hidden-part" data-le-label="隠れパーツ (うさぎ耳)">
-      <img src="../../../assets/zukan/hidden_parts/rabbit_ears_hidden.png" alt="">
-    </div>
+      <!-- Layer 4: hidden animal part (rabbit ears) -->
+      <div class="hidden-part" data-le-label="隠れパーツ (うさぎ耳)">
+        <img src="../../../assets/zukan/hidden_parts/rabbit_ears_hidden.png" alt=""
+             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
+      </div>
 
-    <!-- Layer 5: hotspot (debug visualization) -->
-    <div class="hotspot-debug" data-le-label="ホットスポット">
-      タップ判定エリア
+      <!-- Layer 5: hotspot (debug visualization) -->
+      <div class="hotspot-debug" data-le-label="ホットスポット">
+        タップ判定エリア
+      </div>
     </div>
 
     <!-- Layer 6: hint panel -->
     <aside class="hint-panel" data-le-label="ヒントパネル">
       <h2 class="hint-title">みつけたい<br>なかま</h2>
       <div class="hint-silhouette">
-        <!-- silhouette アセットがまだ無いので、 通常 rabbit を背景なしで仮置き -->
-        <img src="../../../assets/zukan/animals/flower_path/rabbit.png" alt="" style="filter: brightness(0) opacity(0.7);">
+        <!-- silhouette アセットがまだ無いので、 通常 rabbit を背景なしで仮置き
+             Safari 互換のため filter と opacity を分離 -->
+        <img src="../../../assets/zukan/animals/flower_path/rabbit.png" alt=""
+             style="filter: brightness(0); opacity: 0.7;"
+             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
       </div>
       <div class="hint-list">
         <div class="hint-item">ヒント1: ながい みみが あるよ。</div>
@@ -431,7 +451,8 @@ body:not(.layout-editor-on) .help-note {
     <!-- Layer 7: pono guide -->
     <div class="pono-guide" data-le-label="ポノ案内">
       <div class="pono-portrait" data-le-label="ポノ画像">
-        <img src="../../../assets/zukan/ui/map_pono_guide.png" alt="">
+        <img src="../../../assets/zukan/ui/map_pono_guide.png" alt=""
+             onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
       </div>
       <div class="pono-bubble" data-le-label="ポノ吹き出し">
         ヒントを ヒントに さがしてみよう！
@@ -451,10 +472,17 @@ body:not(.layout-editor-on) .help-note {
 <!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
 <div class="help-note">
   <h4>調査画面 位置調整エディター</h4>
-  URL に <code>?edit=1</code> を付けるとエディタ起動。<br>
-  ドラッグ＆リサイズ → <code>💾 保存</code> で
-  <code>saved-layout.json</code> に書き込まれます。
-  画像はすべて既存アセットを <code>../../../assets/...</code> から参照。
+  URL に <code>?edit=1</code> を付けると編集モード。<br>
+  ドラッグでレイヤー移動、四隅でリサイズ、
+  <code>💾</code> で <code>saved-layout.json</code> に保存。<br>
+  画像はすべて既存アセットを <code>../../../assets/...</code> から参照。<br>
+  <br>
+  <strong>本番 zukan/index.html への反映ルール:</strong><br>
+  保存された CSS px を window-wrap 寸法 1100×620 で割り、
+  本番の比率 <code>{x,y,w,h}</code> に変換する。<br>
+  ・<code>.hotspot</code> の <code>{x, y, w, h}</code> = (CSS px ÷ 1100, ÷ 620, ÷ 1100, ÷ 620)<br>
+  ・<code>.hidden-part</code> の <code>{x, y, w}</code> = (CSS px ÷ 1100, ÷ 620, ÷ 1100)<br>
+  ※ window-wrap 自体のサイズを変更した場合は、寸法を再確認すること。
 </div>
 
 <script>

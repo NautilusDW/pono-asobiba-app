@@ -165,7 +165,7 @@ html, body {
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
-  background-image: url('/assets/zukan/ui/hint_panel_empty.png');
+  background-image: url('../assets/zukan/ui/hint_panel_empty.png');
   background-size: cover;
   background-position: center;
 }
@@ -193,6 +193,8 @@ html, body {
   height: 100%;
   object-fit: contain;
   display: block;
+  filter: brightness(0);
+  opacity: 0.7;
 }
 .hint-list {
   flex: 1;
@@ -474,13 +476,13 @@ const zukanQuestions = [
     type: "appearance",
     animalId: "rabbit",
     animalName: "うさぎ",
-    fieldBg: "/assets/zukan/search/flower_path_field_16x9.png",
-    wideBg: "/assets/zukan/bg/zukan_outer_bg_21x9.png",
-    windowFrame: "/assets/zukan/ui/investigation_window_frame_16x9.png",
-    hiddenPart: "/assets/zukan/hidden_parts/rabbit_ears_hidden.png",
+    fieldBg: "../assets/zukan/search/flower_path_field_16x9.png",
+    wideBg: "../assets/zukan/bg/zukan_outer_bg_21x9.png",
+    windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
+    hiddenPart: "../assets/zukan/hidden_parts/rabbit_ears_hidden.png",
     hiddenPartStyle: { x: 0.64, y: 0.38, w: 0.08 },
-    animalImage: "/assets/zukan/animals/rabbit.png",
-    animalSilhouette: "/assets/zukan/animals/silhouette/rabbit.png",
+    animalImage: "../assets/zukan/animals/flower_path/rabbit.png",
+    animalSilhouette: "../assets/zukan/animals/flower_path/rabbit.png",
     guideText: "おはなに まぎれて\nかくれているよ！\nよーく みてみよう！",
     hints: [
       "おはなの かげで\nなにかが うごいたよ",
