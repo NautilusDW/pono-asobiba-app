@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T23:29:33Z - illustration-list.json/md/codex-batch-generate.md にシート方式バッチ生成戦略を追加
+- **タスク**: illustration-list.json/md/codex-batch-generate.md にシート方式バッチ生成戦略を追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 329
+- **エラー数**: 25
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 48, "Grep": 14, "Bash": 154, "Agent": 72, "ToolSearch": 2, "Write": 7, "Edit": 30, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-03T23:19:23Z - Team Delta-2: layout-editor.js 画像差し替え厳格化(img/bg-image/単一innerImg)+image-swap/bg-image-swap/insertのundo対応
 - **タスク**: Team Delta-2: layout-editor.js 画像差し替え厳格化(img/bg-image/単一innerImg)+image-swap/bg-image-swap/insertのundo対応
 - **結果**: 成功
@@ -187,19 +200,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-05-03T13:51:58Z - Quizland 全イラスト必要リスト (色・形・動物・体・天気) 作成
 - **タスク**: Quizland 全イラスト必要リスト (色・形・動物・体・天気) 作成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 92
-- **エラー数**: 12
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 67, "ToolSearch": 1, "Read": 3, "Write": 3, "Edit": 8, "Bash": 9, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-03T13:50:42Z - 要素一覧パネルで Shift+Click 範囲選択 / Ctrl+Click トグル選択を追加 (layout-editor.js)
-- **タスク**: 要素一覧パネルで Shift+Click 範囲選択 / Ctrl+Click トグル選択を追加 (layout-editor.js)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 92
