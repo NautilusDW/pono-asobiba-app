@@ -23,6 +23,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-03 - Generated zukan map foreground UI assets: `map_pono_guide.png`, `map_decision_button.png`, `map_signpost_arrow.png`, and `map_guide_note_empty.png` under `assets/zukan/ui/`. All are RGBA transparent PNGs under 3MB; button text was drawn locally as `けってい` instead of relying on generated text. (by Codex)
 - 2026-05-03 - Generated and organized zukan investigation screen assets: 21:9 outer background, 16:9 investigation frame, 16:9 flower path field, rabbit ears/cat tail/bird shadow hidden overlays, empty hint panel, and empty discovery popup. Hidden overlays are RGBA with border-connected white removed; reusable field background contains no animal parts. (by Codex)
 
 - 2026-05-02 — Codex が Quizland preview の右上フクロウ用 `assets/preview-placeholders/hint.png` だけを GPT Image 2 生成元から再作成。現在の `.hint` 表示枠に合わせて `391x63` の RGBA 透過 PNG にし、マゼンタ背景/疑似グリッド残り 0 を確認。 (by Codex)
