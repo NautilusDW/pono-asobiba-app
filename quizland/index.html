@@ -13,6 +13,11 @@
 <script src="../common/menu.js"></script>
 <script src="../common/narration.js"></script>
 <script src="./data/questions.js"></script>
+<!-- Layout system (Phase A+B): saved-layout.json applier (always loaded).
+     Editor (drag/resize/save) は ?edit=1 のときだけ自動で遅延ロード。 -->
+<link rel="stylesheet" href="../common/layout/layout-shared.css">
+<script src="../common/layout/layout-applier.js" defer></script>
+<script src="../common/layout/layout-system.js" defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
@@ -1138,104 +1143,52 @@ window.addEventListener('orientationchange', function () { setTimeout(fitStage, 
 fitStage();
 
 // ═══════════════════════════════════════════════════════════
-// Saved-layout loader (preview/full と完全互換)
+// Saved-layout loader (common/layout システム経由)
 // --------------------------------------------------------------
 // preview/full のサイズ調整ツールで保存した tx/ty/w/h を、 本番ゲームでも
-// そのまま再現するための最小フェッチ + アプライヤ。 編集系 (resize ハンドル
-// 追加, dirty UI, GitHub PUT 等) は一切含まない、 「読んで当てる」 だけ。
-//
-// データ形式 (saved-layout.json):
-//   { "<sel>|<idx>": { w, h, tx, ty }, ..., "__headerH": "...px",
-//     "__hidden": [...], "__texts": {...} }
-//
-// 当てるタイミング:
-//   1) fetch 完了直後 (静的要素: hdr-pill / q-text-card / board / answer-tray /
-//      character / char-hint 等)
-//   2) renderChoices() 後 (動的に生成される .chip と .chip .circle)
+// そのまま再現する。 実装は ../common/layout/layout-system.js に外出し。
+// 編集系 (resize ハンドル / dirty UI / GitHub PUT 等) は ?edit=1 のときだけ
+// layout-editor.js が遅延ロードされる (Phase 4)。
 // ═══════════════════════════════════════════════════════════
-const QZ_LAYOUT_URL = './preview/full/saved-layout.json';
 const QZ_RESIZABLE_SELECTORS = [
-  '.hdr-left',
-  '.hdr-left .owl-icon',
-  '.hdr-left .title-card',
-  '.hdr-left .progress-num',
-  '.hdr-left .dots',
-  '.hdr-right .ctrl-btn',
-  '.q-text-card',
-  '#q-text',
-  '.q-text-card .audio',
-  '.board',
-  '.answer-tray',
-  '.chip',
-  '.chip .circle',
-  '.hint',
-  '.character',
-  '.char-hint',
+  ['.hdr-left',                'wh', 'ヘッダーピル'],
+  ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
+  ['.hdr-left .title-card',    'wh', 'タイトル札'],
+  ['.hdr-left .progress-num',  'wh', '1/5 札'],
+  ['.hdr-left .dots',          'wh', 'ドット'],
+  ['.hdr-right .ctrl-btn',     'wh', 'コントロールボタン'],
+  ['.q-text-card',             'wh', '問題カード'],
+  ['#q-text',                  'wh', '問題テキスト'],
+  ['.q-text-card .audio',      'wh', '音声ボタン'],
+  ['.board',                   'wh', '盤面'],
+  ['.answer-tray',             'wh', '回答トレイ'],
+  ['.chip',                    'wh', '回答チップ'],
+  ['.chip .circle',            'wh', 'チップ丸'],
+  ['.hint',                    'wh', 'ヒント'],
+  ['.character',               'wh', 'キャラクター'],
+  ['.char-hint',               'wh', 'キャラ吹き出し'],
 ];
-let qzSavedLayout = null;          // fetch 結果のキャッシュ
-let qzSavedLayoutLoaded = false;   // 1 度でも fetch 完了したか
 
-function qzApplyOne(el, s) {
-  if (!el || !s) return;
-  if (s.w) el.style.width = s.w;
-  if (s.h) el.style.height = s.h;
-  const tx = s.tx || 0, ty = s.ty || 0;
-  if (tx || ty) {
-    el._tx = tx; el._ty = ty;
-    // CSS の transform を直接書き換え (preview/full の挙動と同じ)
-    el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
-  }
-}
-
-function qzApplySavedLayout(scopeRoot) {
-  // scopeRoot を渡せば、 そのサブツリーだけを再適用 (renderChoices 後に使う)
-  if (!qzSavedLayout) return;
-  const data = qzSavedLayout;
-  QZ_RESIZABLE_SELECTORS.forEach(function(sel) {
-    const list = (scopeRoot || document).querySelectorAll(sel);
-    list.forEach(function(el, i) {
-      const key = sel + '|' + i;
-      const s = data[key];
-      if (s) qzApplyOne(el, s);
-    });
-  });
-  // __headerH (hdr の高さ調整)
-  if (data.__headerH) {
-    document.documentElement.style.setProperty('--header-h', data.__headerH);
-  }
-  // __hidden: 隠す指定 (例: .hint|0)
-  if (Array.isArray(data.__hidden)) {
-    data.__hidden.forEach(function(key) {
-      const m = key && key.match(/^(.+)\|(\d+)$/);
-      if (!m) return;
-      const all = document.querySelectorAll(m[1]);
-      const el = all[parseInt(m[2], 10)];
-      if (el) el.classList.add('user-hidden');
+/* Layout editor: append ?edit=1 to URL for visual layout editing.
+   Saves to quizland/saved-layout.json via /api/gh/ proxy.
+   preview/full/ remains as legacy sandbox (untouched). */
+(function initLayoutSystem() {
+  function boot() {
+    if (!window.LayoutSystem) { console.warn('[quizland] LayoutSystem not loaded'); return; }
+    window.LayoutSystem.init({
+      layoutUrl: './saved-layout.json',
+      canvas: '#stage',
+      editableSelectors: QZ_RESIZABLE_SELECTORS,
+      ghPath: 'quizland/saved-layout.json',
     });
   }
-}
-
-(function loadSavedLayout() {
-  fetch(QZ_LAYOUT_URL + '?t=' + Date.now(), { cache: 'no-store' })
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(data) {
-      qzSavedLayoutLoaded = true;
-      if (!data) return;
-      qzSavedLayout = data;
-      qzApplySavedLayout();
-      // チップが既に描画済みかも (loadQuestion が先に走った場合) → 再適用
-      if (document.querySelector('#answer-panel .chip')) {
-        qzApplySavedLayout(document.getElementById('answer-panel'));
-      }
-    })
-    .catch(function(e) { console.warn('[quizland] saved-layout fetch failed', e); });
-})();
-
-// 隠すクラス (preview/full と同じ振る舞い)
-(function injectHiddenStyle() {
-  const s = document.createElement('style');
-  s.textContent = '.user-hidden{display:none !important;}';
-  document.head.appendChild(s);
+  if (window.LayoutSystem) boot();
+  else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    // defer 属性付きの layout-system.js が後で評価される場合に備えて少し遅延
+    setTimeout(boot, 0);
+  }
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -1529,9 +1482,16 @@ function renderChoices(q) {
     });
     tray.appendChild(btn);
   });
-  // 保存済みレイアウト (.chip|0..3, .chip .circle|0..3) を当てる。
-  // fetch がまだなら qzSavedLayout が null で何も起きず、 fetch 完了時に再適用される。
-  qzApplySavedLayout(document.getElementById('answer-panel'));
+  // 保存済みレイアウト (.chip|0..3, .chip .circle|0..3) を動的に再適用。
+  // fetch がまだなら window._currentLayoutData が null で何も起きず、
+  // LayoutSystem 初回 fetch 完了 → MutationObserver 経由で自動再適用される。
+  if (window.LayoutApplier && window._currentLayoutData) {
+    window.LayoutApplier.apply(
+      window._currentLayoutData,
+      document.getElementById('answer-panel'),
+      { selectors: QZ_RESIZABLE_SELECTORS }
+    );
+  }
 }
 
 function loadQuestion(q) {

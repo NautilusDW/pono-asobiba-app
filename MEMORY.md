@@ -15,6 +15,7 @@
 - **迷路 画像ステージ Phase 1**: [memory/feature_maze_image_stage.md](memory/feature_maze_image_stage.md) — `?image=<name>` でAI生成画像背景+ポリライン歩行+カメラ追従。横画面前提。Phase 2 (エディタ・細線化) 未着手
 - **迷路ラフ作成ツール**: [memory/feature_maze_rough_maker.md](memory/feature_maze_rough_maker.md) — `tools/maze-rough.html` で 32×18 タイルラフを描いて PNG 出力 → 生成 AI に「道の形を守って絵本風に」と一緒に渡すワークフロー
 - **クリーンエッジスタジオ タイムライン再生**: [memory/feature_timeline_player.md](memory/feature_timeline_player.md) — 分割スプライトをID連番順に並べてFPS+各コマフレーム数で即時再生。スプライトカードはサムネドラッグで並び替え可、🎯ボタンで比較タブの元矩形にジャンプ
+- **Layout System (`common/layout/`)**: [memory/reference_layout_system.md](memory/reference_layout_system.md) — WYSIWYG レイアウトエディタ + applier 共通モジュール。`LayoutSystem.init()` 4 行で opt-in、`?edit=1` でエディタ遅延ロード。ページ author docs は `common/layout/README.md`
 
 ---
 
@@ -93,6 +94,71 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T07:20:00Z - Layout system page-author docs (common/layout/README.md) + memory reference 作成
+- **タスク**: Layout system page-author docs (common/layout/README.md) + memory reference 作成
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 138
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 51, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-03T06:59:45Z - Phase 6: quizland layout migration (copy saved-layout.json + flip layoutUrl/ghPath + bump sw.js to 682)
+- **タスク**: Phase 6: quizland layout migration (copy saved-layout.json + flip layoutUrl/ghPath + bump sw.js to 682)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 135
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 48, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-03T06:54:33Z - Phase4 layout-editor 修正: R1-R3 (panel toggle/preview exit/comparison width), C1-C3 (cleanup/save timing/409), U4-U10 (alignment toolbar位置/右クリック/locked override/userbox undo/anno key shortcuts/comparison memory/iPad multi-select)
+- **タスク**: Phase4 layout-editor 修正: R1-R3 (panel toggle/preview exit/comparison width), C1-C3 (cleanup/save timing/409), U4-U10 (alignment toolbar位置/右クリック/locked override/userbox undo/anno key shortcuts/comparison memory/iPad multi-select)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 134
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 47, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-03T06:22:39Z - Phase 4 Implementer: layout-editor.js + layout-editor.css フル実装 (27機能 + UX upgrades, 2550 + 739 lines)
+- **タスク**: Phase 4 Implementer: layout-editor.js + layout-editor.css フル実装 (27機能 + UX upgrades, 2550 + 739 lines)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 131
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 44, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-03T05:49:49Z - Layout system Phase A+B: extract qzApplySavedLayout into common/layout/{layout-applier,layout-system,layout-shared.css} + quizland/index.html migrated to LayoutSystem.init + sw.js 678→679
+- **タスク**: Layout system Phase A+B: extract qzApplySavedLayout into common/layout/{layout-applier,layout-system,layout-shared.css} + quizland/index.html migrated to LayoutSystem.init + sw.js 678→679
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 129
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 30, "Grep": 4, "Bash": 39, "Agent": 42, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-03T04:44:02Z - quizland visual fixes 1-5: --header-h 142px, sheet-on UI 表示復活, audio btn 表示, stage items 縦中央, chip 数字 縦中央
 - **タスク**: quizland visual fixes 1-5: --header-h 142px, sheet-on UI 表示復活, audio btn 表示, stage items 縦中央, chip 数字 縦中央
 - **結果**: 成功
@@ -143,70 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 1, "Read": 18, "Grep": 2, "Bash": 28, "Agent": 28, "ToolSearch": 1, "Write": 4, "Edit": 4}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T03:27:33Z - quizland 難易度ピッカー UI 追加 (やさしい/ふつう/むずかしい + localStorage保存 + DIFF_MIN_LEVEL バグ修正 + sw.js v673)
-- **タスク**: quizland 難易度ピッカー UI 追加 (やさしい/ふつう/むずかしい + localStorage保存 + DIFF_MIN_LEVEL バグ修正 + sw.js v673)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 81
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 17, "Grep": 2, "Bash": 27, "Agent": 25, "ToolSearch": 1, "Write": 4, "Edit": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T02:59:13Z - quizland UI port v2 (Replace strategy: preview/full を視覚的土台に slim main logic を埋め込み、 sheet-on デフォルト + auto-fit stage 化、 sw.js 671→672)
-- **タスク**: quizland UI port v2 (Replace strategy: preview/full を視覚的土台に slim main logic を埋め込み、 sheet-on デフォルト + auto-fit stage 化、 sw.js 671→672)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 73
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 15, "Grep": 2, "Bash": 24, "Agent": 22, "ToolSearch": 1, "Write": 4, "Edit": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T02:12:16Z - quizland UI port: preview/full の新デザインを quizland/index.html に inject 戦略で適用 (acorns/garden/flowers 除外、 sound effects 保持、 168問対応維持)
-- **タスク**: quizland UI port: preview/full の新デザインを quizland/index.html に inject 戦略で適用 (acorns/garden/flowers 除外、 sound effects 保持、 168問対応維持)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 62
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 15, "Grep": 2, "Bash": 18, "Agent": 19, "ToolSearch": 1, "Write": 3, "Edit": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T00:48:11Z - Team C quiz refinement: weather + body カテゴリの難易度・正確性レビュー (questions.js 非改変、_review/team-c-weather-body.md を作成)
-- **タスク**: Team C quiz refinement: weather + body カテゴリの難易度・正確性レビュー (questions.js 非改変、_review/team-c-weather-body.md を作成)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 23
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 171, "Bash": 222, "Read": 60, "Grep": 44, "Write": 2, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T00:47:53Z - Team D trivia quiz refinement: Lv1 8問新規作成 + Lv2/Lv3 評価提案 (_review/team-d-trivia.md)
-- **タスク**: Team D trivia quiz refinement: Lv1 8問新規作成 + Lv2/Lv3 評価提案 (_review/team-d-trivia.md)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 23
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 223, "Edit": 170, "Read": 60, "Grep": 44, "Write": 2, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
