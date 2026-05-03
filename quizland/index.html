@@ -517,12 +517,20 @@ body.sheet-on .hdr-right .ctrl-btn {
   box-shadow: 0 10px 22px rgba(120, 83, 20, 0.12);
 }
 .trivia-display { position: relative; display: flex; justify-content: center; align-items: flex-start; }
+.trivia-pono-wrap {
+  width: 380px;
+  height: 240px;       /* ~63% of 380 — upper body only (legs cut off) */
+  position: relative;
+  overflow: hidden;
+  margin-top: 60px;    /* バルーンを上に置けるよう余白確保 */
+  display: inline-block;
+}
 .trivia-pono {
   width: 380px; height: 380px;  /* 280→380 (約1.36倍、ステージを埋める存在感に) */
   object-fit: contain;
-  border-radius: 24px;
+  object-position: top;  /* anchor to top so wrapper crops the legs */
+  display: block;
   filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
-  margin-top: 60px; /* ポノを下方向に移動 (バルーンを上に置けるよう余白確保) */
 }
 .trivia-balloon {
   position: absolute;
@@ -1717,15 +1725,37 @@ function pickBalloonSrc() {
   _lastBalloonIdx = idx;
   return '../assets/images/quizland/balloons/ballon_' + String(idx).padStart(2, '0') + '.png';
 }
+// ポノのポーズランダム選択 (連続で同じポーズを出さない)
+// 思案中らしい表情のポーズのみ採用 (walk/point/cheer/hooray は action 寄りなので除外)
+const TRIVIA_POSES = [
+  'dance_cool.png',    // 腕組み思案
+  'dance_tilt.png',    // 両手斜め下に広げる
+  'dance_shy.png',     // 顎前で両手を組む
+  'dance_smile.png',   // 目閉じ笑顔
+  'dance_wave.png',    // 片手上げ
+  'dance_hi.png',      // 両手真横に
+];
+let _lastPoseIdx = -1;
+function pickPoseSrc() {
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * TRIVIA_POSES.length);
+  } while (idx === _lastPoseIdx);
+  _lastPoseIdx = idx;
+  return '../assets/images/characters/pono/dance/' + TRIVIA_POSES[idx];
+}
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
 
+  const ponoWrap = document.createElement('div');
+  ponoWrap.className = 'trivia-pono-wrap';
   const pono = document.createElement('img');
-  pono.src = '../assets/images/characters/pono/dance/dance_cool.png';
+  pono.src = pickPoseSrc();
   pono.alt = '';
   pono.className = 'trivia-pono';
-  wrap.appendChild(pono);
+  ponoWrap.appendChild(pono);
+  wrap.appendChild(ponoWrap);
 
   const balloon = document.createElement('img');
   balloon.src = pickBalloonSrc();
