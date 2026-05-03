@@ -1,4 +1,5 @@
 {
+  "__version": 2,
   ".hdr-left|0": {
     "w": "979px",
     "h": "142px",
@@ -14,8 +15,8 @@
   ".hdr-left .title-card|0": {
     "w": "296px",
     "h": "128px",
-    "tx": -3,
-    "ty": 3
+    "tx": -35.512901945216356,
+    "ty": 3.833664152441445
   },
   ".hdr-left .progress-num|0": {
     "w": "119px",
@@ -95,36 +96,6 @@
     "tx": -101,
     "ty": 2
   },
-  ".chip .circle|0": {
-    "w": "",
-    "h": "110px",
-    "tx": 0,
-    "ty": 0
-  },
-  ".chip .circle|1": {
-    "w": "",
-    "h": "",
-    "tx": 0,
-    "ty": 0
-  },
-  ".chip .circle|2": {
-    "w": "",
-    "h": "",
-    "tx": 0,
-    "ty": 0
-  },
-  ".chip .circle|3": {
-    "w": "",
-    "h": "",
-    "tx": 0,
-    "ty": 0
-  },
-  ".hint|0": {
-    "w": "442px",
-    "h": "83px",
-    "tx": 0,
-    "ty": 1
-  },
   ".character|0": {
     "w": "200px",
     "h": "199px",
@@ -152,22 +123,8 @@
     }
   ],
   "__headerH": "142px",
-  "__texts": {
-    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.title-card:nth-of-type(2)>small": "フクロウはかせの",
-    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.title-card:nth-of-type(2)>span": "なぞなぞ",
-    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.progress-num:nth-of-type(3)": "1 / 5",
-    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-right:nth-of-type(2)>div.ctrl-btn:nth-of-type(1)>span:nth-of-type(2)": "おしらせ",
-    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-right:nth-of-type(2)>div.ctrl-btn:nth-of-type(2)>span:nth-of-type(2)": "せってい",
-    "span#q-text": "まんなかは なにいろ？",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(1)>span": "あか",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(2)>span": "あお",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(3)>span": "きいろ",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(4)>span": "みどり",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.hint.user-hidden:nth-of-type(1)": "💡 よく見て かんがえてみよう！",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.char-hint:nth-of-type(2)": "ヒント！"
-  },
-  "__hidden": [
-    ".hint|0"
-  ],
-  "__userboxes": []
+  "__texts": {},
+  "__hidden": [],
+  "__userboxes": [],
+  "__locked": []
 }
