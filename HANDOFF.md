@@ -14,12 +14,16 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-03 - sw.js CACHE_VERSION bump needed (by Codex): Added/updated zukan investigation image assets under `assets/zukan/`. Codex did not edit `sw.js`; please bump cache before deploy if these assets should refresh in PWA cache.
+
 - 2026-05-02 - Quizland imagegen workflow note (by Codex): 次回以降、ユーザー明示がない限り画像生成は GPT Image 2 を使う。メイン土台フレームは個別生成せず、16:9 または 21:9 のベタ塗り背景シートで一括生成し、背景/alpha を抜いて各 bbox に切り出す。上に載るフレーム・装飾・アイコン類は後段で生成する。目的はフレーム太さとデザインの不一致を避けること。
 - 2026-05-03 - sw.js CACHE_VERSION bump needed (by Codex): `assets/preview-placeholders/hint.png` の右上フクロウ用空吹き出し差し替えに加えて、`assets/preview-placeholders/board.png` の左右内側紙面を補修したため、Claude 側で `sw.js` のバンプ確認をお願いします。
 
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-03 - Generated and organized zukan investigation screen assets: 21:9 outer background, 16:9 investigation frame, 16:9 flower path field, rabbit ears/cat tail/bird shadow hidden overlays, empty hint panel, and empty discovery popup. Hidden overlays are RGBA with border-connected white removed; reusable field background contains no animal parts. (by Codex)
 
 - 2026-05-02 — Codex が Quizland preview の右上フクロウ用 `assets/preview-placeholders/hint.png` だけを GPT Image 2 生成元から再作成。現在の `.hint` 表示枠に合わせて `391x63` の RGBA 透過 PNG にし、マゼンタ背景/疑似グリッド残り 0 を確認。 (by Codex)
 - 2026-05-03 — Codex が Quizland preview の `assets/preview-placeholders/board.png` を元画像のままピクセル補修。木枠・葉・外側アルファは維持し、左右内側の紙面だけを中央の既存紙テクスチャ寄せで広げて、縦方向の不自然な隙間感を軽減。サイズは `867x554` RGBA のまま。 (by Codex)
