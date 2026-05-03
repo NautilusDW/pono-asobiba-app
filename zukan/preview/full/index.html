@@ -969,6 +969,16 @@ body.corner-pin-mode { overflow: auto !important; }
 }
 body.corner-pin-mode #bezier-canvas,
 body.corner-pin-mode #bezier-handle-layer { visibility: visible; }
+/* ベジェプレビューモード: 機能 ON のままハンドルとオレンジ半透明 BG を消して
+   warp 結果だけ見せる。 (撮影時にも適用されるので、 テクスチャ自体が
+   オレンジ抜きで生成される) */
+body.bezier-preview-mode .userbox {
+  background: none !important;
+  border-color: transparent !important;
+}
+body.corner-pin-mode.bezier-preview-mode .bezier-handle {
+  display: none !important;
+}
 /* 制御点ハンドル */
 .bezier-handle {
   position: absolute;
@@ -1387,6 +1397,7 @@ body.resize-mode .ruler { display: block; }
     <button id="corner-pin-toggle" title="bicubic Bezier patch (4×4 = 16 制御点 / page、 32 点合計) でページを真の曲面として warp。 ON にした瞬間にページを html2canvas でスナップショット撮影 → WebGL シェーダ内で曲面変形">🌀 ベジェワープ OFF</button>
     <button id="bezier-undo"  title="ベジェ操作を 1 つ取り消す (Ctrl+Z)">↶ 取り消し</button>
     <button id="bezier-reset" title="ベジェ制御点を初期格子 (= 平面 / 歪み無し) に戻す">↺ ベジェリセット</button>
+    <button id="bezier-preview" title="ベジェ ON のままハンドルと userbox オレンジ半透明 BG を非表示にして、 warp 結果だけ見るプレビューモード">👁 プレビュー OFF</button>
     <button id="zoom-out" title="ズームアウト (画面外の制御点が見えるように縮小)">🔍−</button>
     <button id="zoom-fit"  title="ズーム 100% に戻す">100%</button>
     <button id="zoom-in"  title="ズームイン">🔍+</button>

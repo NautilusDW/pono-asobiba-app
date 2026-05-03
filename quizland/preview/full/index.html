@@ -700,16 +700,26 @@ body.preview-mode .stage {
 .hdr-left .title-card { background-image: url('../../../assets/preview-placeholders/title-card.png') !important; }
 .hdr-left .progress-num { background-image: url('../../../assets/preview-placeholders/progress-num.png') !important; }
 .hdr-left .dot { background-image: url('../../../assets/preview-placeholders/dot.png') !important; }
-.hdr-left .dots { background-image: url('../../../assets/preview-placeholders/progress-mark.png') !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
-  /* 5 個のオレンジ玉が このトラックの上に乗っかる演出。 width/height は
-     リサイズツールで saved-layout に保存した値が優先される (デフォルトは
-     親 grid の min-content) */
-  min-height: 28px;
-  padding: 0 8px;  /* 左右に少し余白 → 玉が枠の端に張り付かない */
+/* progress-mark.png は 1991x790 の縦長アートなので、 dots (デフォルト 28px 高さ) に
+   直接 background-image すると縦に潰れて見えなくなる。 ::before の絶対配置で
+   dots より大きな領域を確保 (上下に padding 拡張) して描画する */
+.hdr-left .dots { position: relative; }
+.hdr-left .dots::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  top: -22px;
+  bottom: -22px;
+  background-image: url('../../../assets/preview-placeholders/progress-mark.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 0;
+  pointer-events: none;
 }
+/* dot 自体は ::before の上に重ねる */
+.hdr-left .dot { position: relative; z-index: 1; }
 .hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-news.png') !important; }
 .hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-settings.png') !important; }
 .q-text-card { background-image: url('../../../assets/preview-placeholders/q-text-card.png') !important; }
@@ -925,6 +935,12 @@ body.sheet-on .hdr-left .progress-num {
 body.sheet-on .slot {
   border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
   border-radius: 12px;
+}
+/* シート画像の board アートは上のスペースが狭め (ページが上に開く構図) なので、
+   .board の内容を上方向に詰めて視覚的に中央へ。 padding-bottom を増やすと
+   align-items:center の対象になる content area が上にシフトする */
+body.sheet-on .board {
+  padding: 16px 16px 80px 16px !important;
 }
 /* (フクロウアイコン関連の改変は user 指示の理解違いがあったので一旦戻し中) */
 /* テキスト・絵文字・チップ中身は前面に出す (sheet の z-index:5 より上) */
