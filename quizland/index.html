@@ -266,16 +266,17 @@ body.sheet-on .hdr-left .title-card span {
   padding: 4px 14px;
   box-sizing: content-box;
 }
-/* Inactive dot: empty slot (progress-mark.png の枠が透けて見える)
-   aspect-ratio が flex で不安定なので width = height を明示して真円を保つ */
+/* Inactive dot: 真円維持 + 紙色で埋めて progress-mark.png の貫通横線を隠す
+   (透明にすると左右のコネクタ線がドット中央を横断して横長楕円に見える問題への対処) */
 .hdr-left .dot {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  background-color: transparent;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  background-color: var(--paper);
   background-image: none;
-  border: 2px dashed rgba(120, 80, 20, 0.25);
+  border: 2px dashed rgba(120, 80, 20, 0.35);
   border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 250, 230, 0.6);
 }
 /* Done dot: dot.png をそのまま (色tint無し、元画像のオレンジ) */
 .hdr-left .dot.done {
