@@ -100,6 +100,19 @@ echo "{}" > mypage/saved-layout.json
 
 ラベル無しで applier-only に使う場合は `'selector'` 単独でも受け付けます (エディタで使うときは tuple 推奨)。
 
+### `data-le-keep-position` 属性（Wave 7 対策）
+
+絶対配置（`position: absolute` / `fixed`）で組まれているレイヤーをエディタで編集対象にする場合、
+共通CSS の `.resizable { position: relative }` 強制が座標系を破壊する事象がある。
+`data-le-keep-position` 属性を要素に付ければ position 上書きを opt-out できる。
+
+```html
+<div class="outer-bg" data-le-keep-position>...</div>
+```
+
+editableSelectors に登録する一方で、HTMLマークアップに上記属性を付与しておけば、
+編集モード時も `position: absolute` を維持したまま drag/resize が可能。
+
 ---
 
 ## 4. `saved-layout.json` のフォーマット
@@ -275,14 +288,30 @@ LayoutSystem.init({
   // ...
   pages: [
     { name: 'なぞなぞ (このページ)',  url: location.pathname + '?edit=1', current: true },
-    { name: 'なぞなぞ (旧サンドボックス)', url: '/quizland/preview/full/' },
+    { name: 'なぞなぞ サンドボックス', url: '/quizland/preview/full/' },
     { name: 'ずかん (ベジェ編集あり)', url: '/zukan/preview/full/' },
+    { name: 'ずかん (調査画面)',      url: '/zukan/preview/investigation/?edit=1' },
   ],
 });
 ```
 
-`pages` を渡さなかった場合は `layout-system.js` 内蔵のデフォルト一覧
-(`なぞなぞ` / `なぞなぞ サンドボックス` / `ずかん`) が使われます。
+#### デフォルト一覧の単一ソース (Wave 8 改修)
+
+`pages` を渡さなかった場合、`layout-system.js` は **`common/page-nav.js` の `DEFAULT_PAGES`** を `window.PONO_PAGES` 経由で遅延参照します (`getDefaultPages()` で `.slice()` してコピー)。これにより、page-nav widget と layout-editor の **🌐 ページ** ボタンが常に同じ一覧を表示します。
+
+現在のデフォルト一覧 (4 エントリ):
+
+| name | url |
+|------|-----|
+| なぞなぞ | `/quizland/?edit=1` |
+| なぞなぞ サンドボックス | `/quizland/preview/full/` |
+| ずかん (ベジェ編集あり) | `/zukan/preview/full/` |
+| ずかん (調査画面) | `/zukan/preview/investigation/?edit=1` |
+
+> **新エディタ追加時は `common/page-nav.js` の `DEFAULT_PAGES` に 1 行追加するだけで両系統 (page-nav widget と layout-editor のページボタン) に反映されます。** 各ページの `init({ pages })` を個別に書き換える必要はありません。
+
+`window.PONO_PAGES` は `Object.freeze(DEFAULT_PAGES.slice())` で公開されているため、外部から `push` / `splice` / 要素差し替えはできません (shallow freeze)。
+
 明示的に `pages: []` を渡すとボタン自体を非表示にできます。
 
 ドロップダウン外をクリックすると閉じます。Esc キーや別ボタンの操作でも閉じます。
@@ -335,8 +364,9 @@ LayoutSystem.init({
 <script src="../common/page-nav.js" defer></script>
 ```
 
-省略時は `DEFAULT_PAGES` (なぞなぞ / なぞなぞ サンドボックス / ずかん) と
-`top-right` が使われます。
+省略時は `DEFAULT_PAGES` (なぞなぞ / なぞなぞ サンドボックス / ずかん (ベジェ編集あり) / ずかん (調査画面) の 4 エントリ) と `top-right` が使われます。
+`DEFAULT_PAGES` は `window.PONO_PAGES` として `Object.freeze(...slice())` で公開され、`layout-system.js` 側の **🌐 ページ** ボタンも同じ配列を遅延参照します (単一ソース)。
+新エディタを追加するときは `common/page-nav.js` の `DEFAULT_PAGES` に 1 行追加するだけで両系統に反映されます。
 
 ### ふるまい
 

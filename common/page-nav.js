@@ -35,7 +35,8 @@
   // 同じページ一覧を参照できるよう、グローバルに公開する。
   // shouldShowNav() による early-return より前に代入するため、ナビが
   // 非表示のページ (?edit 無しなど) でもこの配列は利用可能になる。
-  window.PONO_PAGES = DEFAULT_PAGES;
+  // 外部からの mutation を防ぐ shallow freeze
+  window.PONO_PAGES = Object.freeze(DEFAULT_PAGES.slice());
 
   var cfg = (window.PageNavConfig && typeof window.PageNavConfig === 'object')
     ? window.PageNavConfig

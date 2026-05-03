@@ -7,15 +7,13 @@
 
 <!-- ────────────────────────────────────────────────────────────────
      共通レイアウトシステム
-     - layout-shared.css : 編集モード/再生モード共通の見た目
-     - layout-system.js  : ?edit=1 でエディタを遅延ロード
-     - page-nav.js       : 編集ページ間ナビ
+     - layout-shared.css   : 編集モード/再生モード共通の見た目
+     - editor-bootstrap.js : layout-applier → layout-system → page-nav を
+                              直列ロードし、 EditorBootstrapConfig で起動
      パスは zukan/preview/investigation/ から root まで 3 階層上。
      ──────────────────────────────────────────────────────────────── -->
 <link rel="stylesheet" href="../../../common/layout/layout-shared.css">
-<script src="../../../common/layout/layout-applier.js" defer></script>
-<script src="../../../common/layout/layout-system.js" defer></script>
-<script src="../../../common/page-nav.js" defer></script>
+<script src="../../../common/layout/editor-bootstrap.js" defer></script>
 
 <style>
 :root {
@@ -536,35 +534,17 @@ const ZK_INV_RESIZABLE_SELECTORS = [
 ];
 
 /* ============================================================
- * LayoutSystem.init を defer 後に起動。 quizland/index.html と同じ
- * パターン (boot 関数 + readyState チェック)。
+ * editor-bootstrap.js が defer で 3 スクリプトを直列ロード後、
+ * この config を使って LayoutSystem.init を呼ぶ。 pages 省略時は
+ * page-nav.js が公開する window.PONO_PAGES が自動採用される。
  * ============================================================ */
-(function initLayoutSystem() {
-  function boot() {
-    if (!window.LayoutSystem) {
-      console.warn('[zukan/preview/investigation] LayoutSystem not loaded');
-      return;
-    }
-    window.LayoutSystem.init({
-      layoutUrl: './saved-layout.json',
-      canvas: '#stage',
-      editableSelectors: ZK_INV_RESIZABLE_SELECTORS,
-      ghPath: 'zukan/preview/investigation/saved-layout.json',
-      pages: [
-        { name: 'なぞなぞ', url: '/quizland/?edit=1' },
-        { name: 'なぞなぞ (旧サンドボックス)', url: '/quizland/preview/full/' },
-        { name: 'ずかん (ベジェ編集あり)', url: '/zukan/preview/full/' },
-        { name: 'ずかん (調査画面) (このページ)', url: location.pathname + '?edit=1', current: true },
-      ],
-    });
-  }
-  if (window.LayoutSystem) boot();
-  else if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    setTimeout(boot, 0);
-  }
-})();
+window.EditorBootstrapConfig = {
+  layoutUrl: './saved-layout.json',
+  canvas: '#stage',
+  editableSelectors: ZK_INV_RESIZABLE_SELECTORS,
+  ghPath: 'zukan/preview/investigation/saved-layout.json',
+  // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
+};
 </script>
 </body>
 </html>

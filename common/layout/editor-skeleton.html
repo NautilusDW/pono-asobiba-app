@@ -94,6 +94,11 @@
       /* background: url('outer.png') center/cover no-repeat; */
     }
 
+    /*
+      Wave 7 対策: 編集モードで絶対配置レイヤーが position:relative に上書きされる罠を回避。
+      下記の !important workaround と、HTML タグに `data-le-keep-position` 属性を付ける方式（cleaner、推奨）の2通りあり。
+      詳細は common/layout/README.md §3 の「data-le-keep-position 属性」セクション参照。
+    */
     /* ───── Wave 7 対策: 編集モードでも絶対配置を維持 ─────────────────
        layout-editor.css は .resizable に対して transform/position を
        触る場合があり、ページ側で意図せず relative 化されると、

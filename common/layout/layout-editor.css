@@ -75,11 +75,21 @@ body.layout-editor-on .le-toast.le-toast-error { background: rgba(220, 70, 70, 0
 }
 
 /* === Resize handles === */
+/*
+  .resizable はリサイズハンドル (position: absolute) の起点として
+  closest positioned ancestor を必要とするため position: relative を当てる。
+  ただし元から position: absolute / fixed で配置されているレイヤー
+  (絶対配置レイヤー) では relative 化されると座標系が崩壊する。
+  data-le-keep-position 属性を付ければ position 上書きを opt-out できる。
+  Wave 7 (2026-05-03) で発覚した絶対配置レイヤー消失バグの構造的解決。
+*/
 body.layout-editor-on .resizable {
-  position: relative;
   outline: 2px dashed rgba(0, 212, 255, 0.6);
   outline-offset: 2px;
   cursor: move;
+}
+body.layout-editor-on .resizable:not([data-le-keep-position]) {
+  position: relative;
 }
 body.layout-editor-on .resizable.selected {
   outline: 3px solid #ff8a3d !important;
