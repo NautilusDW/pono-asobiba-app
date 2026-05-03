@@ -17,6 +17,25 @@
 
 ---
 
+## 🎨 シート方式 (推奨ワークフロー)
+
+統一感とスピード重視で、似た系統は1枚のシートにまとめて生成 → ローカルで切り出し:
+
+| シート | 内容 | サイズ | API呼出数 |
+|---|---|---|---|
+| `_sheets/sheet_colors.png` | 8色のチップを 4×2 グリッド | 2048×1024 | 1回 |
+| `_sheets/sheet_shapes.png` | 8形を 4×2 グリッド | 2048×1024 | 1回 |
+| `_sheets/sheet_weather.png` | 4天気を 2×2 グリッド | 1536×1024 | 1回 |
+
+シート生成後、各 cell を bbox 通りに切り出して個別 PNG として保存します (Codex/Pillow で自動)。
+
+色チップ + 形 + 天気は **3 API呼出 = 20枚** に短縮 (旧: 20回)。
+動物11 + 体7 = 18個別 と合わせて 合計 **21 API呼出 = 38枚** 生成。
+
+詳細は `illustration-list.json` の `sheets[]` 参照。
+
+---
+
 ## ① 色チップ (8枚)
 
 正方形 + 角丸の塗りベタイラスト。色は QUIZLAND_COLORS の値を使う。
@@ -47,12 +66,12 @@
 | ファイル | 形 | 色 | プロンプト |
 |---|---|---|---|
 | `shape_circle.png`    | まる       | yellow `#FBBF24` | `A single simple yellow circle (#FBBF24) for kids, solid fill, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
-| `shape_square.png`    | しかく     | blue `#60A5FA`   | `A single simple blue square (#60A5FA) for kids, solid fill with slightly rounded corners, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
-| `shape_triangle.png`  | さんかく   | green `#10B981`  | `A single simple green equilateral triangle (#10B981) for kids, solid fill with slightly rounded corners, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, pointing up, no text.` |
+| `shape_square.png`    | しかく     | blue `#60A5FA`   | `A single simple blue square (#60A5FA) for kids, solid fill with SHARP clean corners (NOT rounded — corners must be clearly defined as 90-degree angles since this teaches kids 'how many corners does this shape have'), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
+| `shape_triangle.png`  | さんかく   | green `#10B981`  | `A single simple green equilateral triangle (#10B981) for kids, solid fill with SHARP clean corners (NOT rounded — all 3 corners must be clearly defined as sharp points since this teaches kids 'how many corners does this shape have'), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, pointing up, no text.` |
 | `shape_star.png`      | ほし       | orange `#F97316` | `A single simple orange 5-pointed star (#F97316) for kids, solid fill, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
 | `shape_heart.png`     | ハート     | pink `#EC4899`   | `A single simple pink heart (#EC4899) for kids, solid fill, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
-| `shape_rectangle.png` | ながしかく | purple `#8B5CF6` | `A single simple purple horizontal rectangle (#8B5CF6) for kids, solid fill with slightly rounded corners, wider than tall (3:2), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
-| `shape_diamond.png`   | ひしがた   | red `#EF4444`    | `A single simple red diamond / rhombus (#EF4444) for kids, solid fill with slightly rounded corners, oriented as a kite (one corner up, one down), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
+| `shape_rectangle.png` | ながしかく | purple `#8B5CF6` | `A single simple purple horizontal rectangle (#8B5CF6) for kids, solid fill with SHARP clean corners (NOT rounded — all 4 corners must be clearly defined as 90-degree angles since this teaches kids 'how many corners does this shape have'), wider than tall (3:2), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
+| `shape_diamond.png`   | ひしがた   | red `#EF4444`    | `A single simple red diamond / rhombus (#EF4444) for kids, solid fill with SHARP clean corners (NOT rounded — all 4 corners must be clearly defined as sharp points since this teaches kids 'how many corners does this shape have'), oriented as a kite (one corner up, one down), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
 | `shape_oval.png`      | たまごがた | teal `#14B8A6`   | `A single simple teal oval / egg shape (#14B8A6) for kids, solid fill, slightly taller than wide, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.` |
 
 ---

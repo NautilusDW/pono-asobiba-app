@@ -1,135 +1,56 @@
 {
   "common_style": "kid-friendly illustration for ages 3-6, hand-drawn watercolor style with subtle paper texture, warm wood/paper Japanese children's book aesthetic, soft drop shadow, transparent PNG, centered subject, no text, no labels",
   "default_size": "1024x1024",
+  "sheets": [
+    {
+      "sheet_id": "sheet_colors",
+      "purpose": "8 color chips, 4x2 grid",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_colors.png",
+      "size": "2048x1024",
+      "prompt": "A 4 columns × 2 rows grid (total 2048x1024) of 8 simple kid-friendly square color chips, each cell 512x512. Each chip has solid color, rounded corners, soft drop shadow. Top row left-to-right: red (#EF4444), blue (#3B82F6), yellow (#FBBF24), green (#10B981). Bottom row left-to-right: pink (#EC4899), orange (#F97316), purple (#8B5CF6), cyan (#06B6D4). All chips share the same hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, white space between cells. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "color_red",    "save_path": "assets/images/quizland/illust/color/color_red.png",    "bbox": [0, 0, 512, 512] },
+        { "id": "color_blue",   "save_path": "assets/images/quizland/illust/color/color_blue.png",   "bbox": [512, 0, 512, 512] },
+        { "id": "color_yellow", "save_path": "assets/images/quizland/illust/color/color_yellow.png", "bbox": [1024, 0, 512, 512] },
+        { "id": "color_green",  "save_path": "assets/images/quizland/illust/color/color_green.png",  "bbox": [1536, 0, 512, 512] },
+        { "id": "color_pink",   "save_path": "assets/images/quizland/illust/color/color_pink.png",   "bbox": [0, 512, 512, 512] },
+        { "id": "color_orange", "save_path": "assets/images/quizland/illust/color/color_orange.png", "bbox": [512, 512, 512, 512] },
+        { "id": "color_purple", "save_path": "assets/images/quizland/illust/color/color_purple.png", "bbox": [1024, 512, 512, 512] },
+        { "id": "color_cyan",   "save_path": "assets/images/quizland/illust/color/color_cyan.png",   "bbox": [1536, 512, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_shapes",
+      "purpose": "8 basic shapes, 4x2 grid, sharp corners on geometric shapes",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_shapes.png",
+      "size": "2048x1024",
+      "prompt": "A 4 columns × 2 rows grid (total 2048x1024) of 8 simple kid-friendly basic shapes, each cell 512x512. Top row left-to-right: yellow (#FBBF24) circle, blue (#60A5FA) square (with SHARP 90-degree corners, NOT rounded), green (#10B981) equilateral triangle pointing up (with SHARP corners), orange (#F97316) 5-pointed star. Bottom row left-to-right: pink (#EC4899) heart, purple (#8B5CF6) horizontal rectangle (3:2 ratio, SHARP 90-degree corners), red (#EF4444) diamond/rhombus oriented as kite (SHARP corners), teal (#14B8A6) oval/egg shape (slightly taller than wide). IMPORTANT: square/triangle/rectangle/diamond must have CLEARLY DEFINED SHARP CORNERS (this teaches kids 'how many corners does this shape have'). Circle/heart/oval naturally have curves. All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "shape_circle",    "save_path": "assets/images/quizland/illust/shape/shape_circle.png",    "bbox": [0, 0, 512, 512] },
+        { "id": "shape_square",    "save_path": "assets/images/quizland/illust/shape/shape_square.png",    "bbox": [512, 0, 512, 512] },
+        { "id": "shape_triangle",  "save_path": "assets/images/quizland/illust/shape/shape_triangle.png",  "bbox": [1024, 0, 512, 512] },
+        { "id": "shape_star",      "save_path": "assets/images/quizland/illust/shape/shape_star.png",      "bbox": [1536, 0, 512, 512] },
+        { "id": "shape_heart",     "save_path": "assets/images/quizland/illust/shape/shape_heart.png",     "bbox": [0, 512, 512, 512] },
+        { "id": "shape_rectangle", "save_path": "assets/images/quizland/illust/shape/shape_rectangle.png", "bbox": [512, 512, 512, 512] },
+        { "id": "shape_diamond",   "save_path": "assets/images/quizland/illust/shape/shape_diamond.png",   "bbox": [1024, 512, 512, 512] },
+        { "id": "shape_oval",      "save_path": "assets/images/quizland/illust/shape/shape_oval.png",      "bbox": [1536, 512, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_weather",
+      "purpose": "4 weather scenes, 2x2 grid",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_weather.png",
+      "size": "1536x1024",
+      "prompt": "A 2 columns × 2 rows grid (total 1536x1024) of 4 weather/nature scenes for kids, each cell 768x512. Top-left: a clear 7-color rainbow over a hill (red, orange, yellow, green, blue, indigo, violet — clearly visible). Top-right: a small puddle on asphalt after rain, with soft reflection. Bottom-left: a single magnified hexagonal snowflake on dark blue background, intricate 6-fold symmetry clearly visible. Bottom-right: a typhoon spiral viewed from above, swirling clouds. All in hand-drawn watercolor children's book style with subtle paper texture, warm Japanese aesthetic, soft drop shadow. White space between cells. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "weather_rainbow_count", "save_path": "assets/images/quizland/illust/weather/weather_rainbow_count.png", "bbox": [0, 0, 768, 512] },
+        { "id": "weather_puddle",        "save_path": "assets/images/quizland/illust/weather/weather_puddle.png",        "bbox": [768, 0, 768, 512] },
+        { "id": "weather_snowflake",     "save_path": "assets/images/quizland/illust/weather/weather_snowflake.png",     "bbox": [0, 512, 768, 512] },
+        { "id": "weather_typhoon",       "save_path": "assets/images/quizland/illust/weather/weather_typhoon.png",       "bbox": [768, 512, 768, 512] }
+      ]
+    }
+  ],
   "items": [
-    {
-      "id": "color_red",
-      "category": "color",
-      "filename": "color_red.png",
-      "save_path": "assets/images/quizland/illust/color/color_red.png",
-      "prompt": "A simple kid-friendly square color chip, solid red (#EF4444), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_blue",
-      "category": "color",
-      "filename": "color_blue.png",
-      "save_path": "assets/images/quizland/illust/color/color_blue.png",
-      "prompt": "A simple kid-friendly square color chip, solid blue (#3B82F6), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_yellow",
-      "category": "color",
-      "filename": "color_yellow.png",
-      "save_path": "assets/images/quizland/illust/color/color_yellow.png",
-      "prompt": "A simple kid-friendly square color chip, solid yellow (#FBBF24), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_green",
-      "category": "color",
-      "filename": "color_green.png",
-      "save_path": "assets/images/quizland/illust/color/color_green.png",
-      "prompt": "A simple kid-friendly square color chip, solid green (#10B981), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_pink",
-      "category": "color",
-      "filename": "color_pink.png",
-      "save_path": "assets/images/quizland/illust/color/color_pink.png",
-      "prompt": "A simple kid-friendly square color chip, solid pink (#EC4899), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_orange",
-      "category": "color",
-      "filename": "color_orange.png",
-      "save_path": "assets/images/quizland/illust/color/color_orange.png",
-      "prompt": "A simple kid-friendly square color chip, solid orange (#F97316), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_purple",
-      "category": "color",
-      "filename": "color_purple.png",
-      "save_path": "assets/images/quizland/illust/color/color_purple.png",
-      "prompt": "A simple kid-friendly square color chip, solid purple (#8B5CF6), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "color_cyan",
-      "category": "color",
-      "filename": "color_cyan.png",
-      "save_path": "assets/images/quizland/illust/color/color_cyan.png",
-      "prompt": "A simple kid-friendly square color chip, solid cyan (#06B6D4), rounded corners, soft drop shadow, hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_circle",
-      "category": "shape",
-      "filename": "shape_circle.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_circle.png",
-      "prompt": "A single simple yellow circle (#FBBF24) for kids, solid fill, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_square",
-      "category": "shape",
-      "filename": "shape_square.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_square.png",
-      "prompt": "A single simple blue square (#60A5FA) for kids, solid fill with slightly rounded corners, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_triangle",
-      "category": "shape",
-      "filename": "shape_triangle.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_triangle.png",
-      "prompt": "A single simple green equilateral triangle (#10B981) for kids, solid fill with slightly rounded corners, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, pointing up, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_star",
-      "category": "shape",
-      "filename": "shape_star.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_star.png",
-      "prompt": "A single simple orange 5-pointed star (#F97316) for kids, solid fill, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_heart",
-      "category": "shape",
-      "filename": "shape_heart.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_heart.png",
-      "prompt": "A single simple pink heart (#EC4899) for kids, solid fill, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_rectangle",
-      "category": "shape",
-      "filename": "shape_rectangle.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_rectangle.png",
-      "prompt": "A single simple purple horizontal rectangle (#8B5CF6) for kids, solid fill with slightly rounded corners, wider than tall (3:2), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_diamond",
-      "category": "shape",
-      "filename": "shape_diamond.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_diamond.png",
-      "prompt": "A single simple red diamond / rhombus (#EF4444) for kids, solid fill with slightly rounded corners, oriented as a kite (one corner up, one down), soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "shape_oval",
-      "category": "shape",
-      "filename": "shape_oval.png",
-      "save_path": "assets/images/quizland/illust/shape/shape_oval.png",
-      "prompt": "A single simple teal oval / egg shape (#14B8A6) for kids, solid fill, slightly taller than wide, soft drop shadow, hand-drawn watercolor children's book style with subtle paper texture, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
     {
       "id": "animal_penguin",
       "category": "animal",
@@ -217,38 +138,6 @@
       "save_path": "assets/images/quizland/illust/animal/animal_banana_tree.png",
       "prompt": "A cute friendly banana plant (not a real tree, with soft herbaceous trunk) bearing a bunch of yellow bananas, large green leaves, slight smile on the trunk face. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
       "size": "1024x1024"
-    },
-    {
-      "id": "weather_rainbow_7color",
-      "category": "weather",
-      "filename": "weather_rainbow_7color.png",
-      "save_path": "assets/images/quizland/illust/weather/weather_rainbow_7color.png",
-      "prompt": "A bright clean 7-color rainbow arc with each band clearly distinct: red, orange, yellow, green, blue, indigo, violet, from outer to inner. Soft white cloud at each end. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "weather_puddle",
-      "category": "weather",
-      "filename": "weather_puddle.png",
-      "save_path": "assets/images/quizland/illust/weather/weather_puddle.png",
-      "prompt": "A small reflective puddle of water on grey asphalt ground, with a few ripples and a soft sky reflection in it, after rain. Couple of small raindrops nearby. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "weather_snowflake_hex",
-      "category": "weather",
-      "filename": "weather_snowflake_hex.png",
-      "save_path": "assets/images/quizland/illust/weather/weather_snowflake_hex.png",
-      "prompt": "A single large hexagonal snowflake crystal with clearly visible 6 symmetrical arms, light blue-white delicate fractal pattern, sparkling. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
-      "size": "1024x1024"
-    },
-    {
-      "id": "weather_typhoon",
-      "category": "weather",
-      "filename": "weather_typhoon.png",
-      "save_path": "assets/images/quizland/illust/weather/weather_typhoon.png",
-      "prompt": "A typhoon viewed from above (satellite-style but cartoon-friendly): large white spiral cloud system with a clear round eye in the center, blue ocean below. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1536x1024, centered, no text.",
-      "size": "1536x1024"
     },
     {
       "id": "body_skin",
