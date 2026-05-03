@@ -1378,6 +1378,7 @@ body.resize-mode .ruler { display: block; }
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
     <button id="corner-pin-toggle" title="bicubic Bezier patch (4×4 = 16 制御点 / page、 32 点合計) でページを真の曲面として warp。 ON にした瞬間にページを html2canvas でスナップショット撮影 → WebGL シェーダ内で曲面変形">🌀 ベジェワープ OFF</button>
+    <button id="bezier-reset" title="ベジェ制御点を初期格子 (= 平面 / 歪み無し) に戻す">↺ ベジェリセット</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -4093,6 +4094,19 @@ async function setCornerPinMode(on) {
     document.body.classList.remove('corner-pin-mode');
     _glTextureCanvas = null;
     document.querySelectorAll('.bezier-debug-thumb').forEach(e => e.remove());
+    // OFF 時に canvas を完全に「無効化」: 描画内容クリア + inline style リセット
+    // ↓ 旧 「OFF にしてもピンクの warped userbox 残像が残る」 バグの修正
+    if (_gl && _bezCanvas) {
+      _gl.viewport(0, 0, _bezCanvas.width, _bezCanvas.height);
+      _gl.clearColor(0, 0, 0, 0);
+      _gl.clear(_gl.COLOR_BUFFER_BIT);
+    }
+    if (_bezCanvas) {
+      // _initWebGL で付けた inline visibility/display を解除して、 CSS の
+      // visibility:hidden を有効化させる
+      _bezCanvas.style.visibility = '';
+      _bezCanvas.style.display = '';
+    }
   }
   if (cornerPinBtn) {
     cornerPinBtn.textContent = on ? '🌀 ベジェワープ ON' : '🌀 ベジェワープ OFF';
@@ -4101,6 +4115,18 @@ async function setCornerPinMode(on) {
 }
 cornerPinBtn && cornerPinBtn.addEventListener('click', () =>
   setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
+
+// ベジェ制御点を初期格子 (= 平面 / 歪み無し) に戻すリセットボタン
+const bezierResetBtn = document.getElementById('bezier-reset');
+function resetBezierMesh() {
+  bezierMesh.left  = _initBezierGrid();
+  bezierMesh.right = _initBezierGrid();
+  _updateBezierHandlePositions();
+  if (document.body.classList.contains('corner-pin-mode')) applyBezierWarp();
+  saveResizeState();
+}
+bezierResetBtn && bezierResetBtn.addEventListener('click', resetBezierMesh);
+
 // 初期化時はハンドルだけ準備 (実体は OFF 状態で非表示)。 WebGL は撮影時に init。
 _ensureBezierHandles();
 // 旧バージョンで保存された ON フラグが残っていると毎回 auto-toggle されるので削除
