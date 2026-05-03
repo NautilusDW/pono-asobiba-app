@@ -30,3 +30,7 @@ assets/**/*.opt.tmp
 .claude/.docs-review-pending
 .claude/.docs-skip-once
 .claude/.docs-hook-state/
+
+# 診断・一時ファイル（auto-commit でリポジトリに混入するのを防ぐ）
+_tmp*
+_tmp_*

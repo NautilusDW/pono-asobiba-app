@@ -29,3 +29,7 @@ fishtest.png
 fishtest_clean.png
 assets/_orig_audio_backup/
 assets/_orig_image_backup/
+
+# 診断・一時ファイル（staging への混入防止）
+_tmp*
+_tmp_*
