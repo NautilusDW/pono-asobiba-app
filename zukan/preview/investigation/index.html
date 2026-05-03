@@ -362,6 +362,27 @@ body.editor-mode .discovery-popup {
 /* 要素にホバー時のヒント (編集モード時のみ目立つ) */
 body:not(.layout-editor-on) .hotspot-debug { opacity: 0.55; }
 
+/* ───── 編集モード時の position 上書き ─────────────────────────────
+ * layout-editor.css は `body.layout-editor-on .resizable { position: relative; }`
+ * を当てるが、本ページの内側レイヤーは絶対配置 (left/top px) で
+ * 描いているので、 そのまま relative 化されると正常な配置が崩壊する。
+ * したがって編集対象セレクタの中で「絶対配置を維持したい」要素は
+ * !important で明示的に absolute を保つ。 (flex 子の hint-silhouette /
+ * pono-portrait / pono-bubble は static のまま relative 化されても
+ * 問題ないので含めない。)
+ * ──────────────────────────────────────────────────────────────── */
+body.layout-editor-on .outer-bg,
+body.layout-editor-on .window-wrap,
+body.layout-editor-on .field-bg,
+body.layout-editor-on .window-frame,
+body.layout-editor-on .hidden-part,
+body.layout-editor-on .hotspot-debug,
+body.layout-editor-on .hint-panel,
+body.layout-editor-on .pono-guide,
+body.layout-editor-on .discovery-popup {
+  position: absolute !important;
+}
+
 /* ヘルプノート (編集モードのみ目立つ) */
 .help-note {
   position: fixed;
