@@ -938,9 +938,10 @@ body.sheet-on .slot {
 }
 /* シート画像の board アートは上のスペースが狭め (ページが上に開く構図) なので、
    .board の内容を上方向に詰めて視覚的に中央へ。 padding-bottom を増やすと
-   align-items:center の対象になる content area が上にシフトする */
+   align-items:center の対象になる content area が上にシフトする (現在
+   140px → ~62px 上シフト) */
 body.sheet-on .board {
-  padding: 16px 16px 80px 16px !important;
+  padding: 0 16px 140px 16px !important;
 }
 /* (フクロウアイコン関連の改変は user 指示の理解違いがあったので一旦戻し中) */
 /* テキスト・絵文字・チップ中身は前面に出す (sheet の z-index:5 より上) */
@@ -1299,7 +1300,9 @@ body.resize-mode .ruler { display: block; }
           </div>
           <div class="progress-num editable-text" contenteditable="true">1 / 5</div>
           <div class="dots">
-            <span class="dot done"></span>
+            <!-- 旧: 1 個目に "done" クラスが付いていて四角い background-color が
+                 はみ出して見えていた → user 指示で削除 (5 個全部同じ見た目に) -->
+            <span class="dot"></span>
             <span class="dot"></span>
             <span class="dot"></span>
             <span class="dot"></span>
