@@ -240,7 +240,7 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'opposite', category:'opposite', word:'あかるい',   q:'「あかるい」の はんたいは？',   answer:0, choices:['くらい','やさしい','きつい','ちいさい'] },
     { level:3, type:'opposite', category:'opposite', word:'うえ',       q:'「うえ」の はんたいは？',       answer:3, choices:['みぎ','まえ','ひだり','した'] },
     { level:3, type:'opposite', category:'opposite', word:'あたらしい', q:'「あたらしい」の はんたいは？', answer:2, choices:['やすい','おもい','ふるい','かるい'] },
-    { level:3, type:'opposite', category:'opposite', word:'たすける',   q:'「たすける」の はんたいは？',   answer:1, choices:['いっしょに あそぶ','じゃまを する','たすけて あげる','なにも しない'] },
+    { level:3, type:'opposite', category:'opposite', word:'たすける',   q:'「たすける」の はんたいは？',   answer:1, choices:['いっしょに あそぶ','じゃまを する','なかよく する','なにも しない'] },
     { level:3, type:'opposite', category:'opposite', word:'でかける',   q:'「でかける」の はんたいは？',   answer:3, choices:['あそぶ','たべる','ねる','かえる'] },
     { level:3, type:'opposite', category:'opposite', word:'ほめる',     q:'「ほめる」の はんたいは？',     answer:0, choices:['しかる','おこる','いう','にらむ'] },
     { level:3, type:'opposite', category:'opposite', word:'おしえる',   q:'「おしえる」の はんたいは？',   answer:2, choices:['はなす','きく','ならう','よむ'] }
