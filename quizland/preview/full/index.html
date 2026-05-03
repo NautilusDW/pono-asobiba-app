@@ -700,6 +700,16 @@ body.preview-mode .stage {
 .hdr-left .title-card { background-image: url('../../../assets/preview-placeholders/title-card.png') !important; }
 .hdr-left .progress-num { background-image: url('../../../assets/preview-placeholders/progress-num.png') !important; }
 .hdr-left .dot { background-image: url('../../../assets/preview-placeholders/dot.png') !important; }
+.hdr-left .dots { background-image: url('../../../assets/preview-placeholders/progress-mark.png') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  /* 5 個のオレンジ玉が このトラックの上に乗っかる演出。 width/height は
+     リサイズツールで saved-layout に保存した値が優先される (デフォルトは
+     親 grid の min-content) */
+  min-height: 28px;
+  padding: 0 8px;  /* 左右に少し余白 → 玉が枠の端に張り付かない */
+}
 .hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-news.png') !important; }
 .hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-settings.png') !important; }
 .q-text-card { background-image: url('../../../assets/preview-placeholders/q-text-card.png') !important; }
