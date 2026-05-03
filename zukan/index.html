@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ポノのもりのずかん - しらべる</title>
+<style>
+/* ====================================================================
+ * ポノのもりのずかん 調査画面
+ *  Layer 1: 21:9 outer background (fixed, full viewport)
+ *  Layer 2: 16:9 safe area (centered, max-fit)
+ *  Layer 3: investigation window (bg image + frame image)
+ *  Layer 4: hidden animal part (positioned by ratio)
+ *  Layer 5: hotspot (transparent button, ratio-based)
+ *  Layer 6: hint panel (right side)
+ *  Layer 7: pono guide (bottom-left)
+ *  Layer 8: discovery popup (overlay, hidden by default)
+ * ==================================================================== */
+
+:root {
+  --brown: #6b4423;
+  --brown-light: #8a5a2a;
+  --cream: #fdf6e3;
+  --cream-2: #f5e9c4;
+  --green: #4a7c59;
+  --green-light: #6fa67d;
+  --paper: #f9efd0;
+  --paper-shadow: rgba(80, 50, 10, 0.25);
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --jp-font: 'Hiragino Maru Gothic ProN', 'M PLUS Rounded 1c',
+             'ヒラギノ丸ゴ ProN W4', 'Yu Gothic', 'メイリオ', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--jp-font);
+  color: var(--brown);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Layer 1: 21:9 outer background --------------------------- */
+.outer-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, #6fa67d 0%, #4a7c59 60%, #355e44 100%);
+  overflow: hidden;
+}
+.outer-bg img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- Layer 2: 16:9 safe area ---------------------------------- */
+.safe-area {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  z-index: 1;
+}
+
+/* ---------- Layer 3: investigation window ---------------------------- */
+.window-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 16:9 window centred in safe area; leave room for hint panel + pono */
+  width: 70%;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #cfe7d4; /* fallback green field */
+  box-shadow: var(--soft-shadow);
+}
+.window-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.window-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  display: block;
+}
+
+/* ---------- Layer 4: hidden animal part ------------------------------ */
+.hidden-part {
+  position: absolute;
+  pointer-events: none; /* hotspot handles taps */
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.hidden-part-debug {
+  outline: 2px dashed red;
+  background: rgba(255, 0, 0, 0.15);
+}
+
+/* ---------- Layer 5: hotspot (tap target) ---------------------------- */
+.hotspot {
+  position: absolute;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  border-radius: 12px;
+}
+.hotspot.debug {
+  outline: 2px dashed red;
+  background: rgba(255, 0, 0, 0.15);
+}
+
+/* ---------- Progress badge (top of window) --------------------------- */
+.progress-badge {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  color: var(--brown);
+  padding: 6px 18px;
+  border-radius: 14px;
+  font-size: clamp(12px, 1.4vw, 18px);
+  font-weight: 700;
+  box-shadow: var(--soft-shadow);
+  z-index: 5;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---------- Layer 6: hint panel (right side) ------------------------- */
+.hint-panel {
+  position: absolute;
+  top: 4%;
+  right: 1%;
+  width: 13%;
+  height: 92%;
+  background: var(--cream);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--soft-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  background-image: url('/assets/zukan/ui/hint_panel_empty.png');
+  background-size: cover;
+  background-position: center;
+}
+.hint-title {
+  font-size: clamp(10px, 1.1vw, 15px);
+  font-weight: 700;
+  color: var(--brown);
+  text-align: center;
+  margin: 0;
+}
+.hint-silhouette {
+  width: 80%;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  background: #c9b48a;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hint-silhouette img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.hint-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  font-size: clamp(9px, 1vw, 13px);
+  line-height: 1.4;
+  color: var(--brown);
+}
+.hint-item {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 6px 8px;
+  white-space: pre-line;
+  border-left: 3px solid var(--green);
+}
+.hint-button {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px;
+  font-family: var(--jp-font);
+  font-size: clamp(10px, 1.1vw, 14px);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+.hint-button:disabled {
+  background: #b0b0b0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.hint-button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* ---------- Layer 7: pono guide (bottom-left) ------------------------ */
+.pono-guide {
+  position: absolute;
+  left: 1%;
+  bottom: 3%;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 28%;
+  z-index: 4;
+}
+.pono-portrait {
+  width: 22%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: #a06a3a;
+  border: 3px solid var(--cream);
+  box-shadow: var(--soft-shadow);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  font-weight: 700;
+}
+.pono-bubble {
+  flex: 1;
+  background: var(--cream);
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: var(--soft-shadow);
+  white-space: pre-line;
+  font-size: clamp(11px, 1.2vw, 16px);
+  line-height: 1.5;
+  color: var(--brown);
+  position: relative;
+}
+.pono-bubble::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  bottom: 14px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 12px 8px 0;
+  border-color: transparent var(--cream) transparent transparent;
+}
+
+/* ---------- Layer 8: discovery popup --------------------------------- */
+.discovery-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.discovery-overlay.show {
+  display: flex;
+}
+.discovery-card {
+  background: var(--paper);
+  background-image:
+    linear-gradient(rgba(249, 239, 208, 0.85), rgba(245, 233, 196, 0.85));
+  background-size: cover;
+  border-radius: 22px;
+  padding: 28px 36px;
+  width: min(420px, 80vw);
+  max-height: 90vh;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+              inset 0 0 0 4px rgba(110, 70, 32, 0.25);
+  color: var(--brown);
+  font-family: var(--jp-font);
+  position: relative;
+  overflow: auto;
+}
+.discovery-title {
+  font-size: clamp(20px, 2.4vw, 30px);
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: #c64b1f;
+}
+.discovery-img {
+  width: 65%;
+  margin: 0 auto 12px;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  background: #e6d3a3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(110, 70, 32, 0.2);
+}
+.discovery-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.discovery-name {
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 700;
+  margin: 6px 0 4px;
+}
+.discovery-sub {
+  font-size: clamp(12px, 1.3vw, 16px);
+  margin: 0 0 16px;
+  color: var(--brown-light);
+}
+.discovery-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 22px;
+  font-family: var(--jp-font);
+  font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
+}
+.discovery-btn:disabled {
+  background: #b0b0b0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.discovery-btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+.discovery-done {
+  margin-top: 12px;
+  font-size: clamp(12px, 1.3vw, 16px);
+  color: var(--green);
+  font-weight: 700;
+  display: none;
+}
+.discovery-done.show {
+  display: block;
+}
+
+/* ---------- Portrait orientation hint -------------------------------- */
+.rotate-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+@media (max-aspect-ratio: 1/1) and (max-width: 600px) {
+  .rotate-hint { display: flex; }
+}
+</style>
+</head>
+<body>
+  <!-- Layer 1: 21:9 outer background -->
+  <div class="outer-bg" id="outerBg">
+    <img id="outerBgImg" alt=""
+         onerror="this.style.display='none';">
+  </div>
+
+  <!-- Layer 2: 16:9 safe area -->
+  <div class="safe-area" id="safeArea">
+
+    <!-- Layer 3: investigation window (positioned absolute inside safe area) -->
+    <div class="window-wrap" id="windowWrap">
+      <img class="window-bg" id="windowBg" alt=""
+           onerror="this.style.display='none';">
+      <img class="window-frame" id="windowFrame" alt=""
+           onerror="this.style.display='none';">
+
+      <!-- Progress badge -->
+      <div class="progress-badge" id="progressBadge"></div>
+
+      <!-- Layer 4: hidden animal part (inserted by JS) -->
+      <!-- Layer 5: hotspot button (inserted by JS) -->
+    </div>
+
+    <!-- Layer 6: hint panel -->
+    <aside class="hint-panel" id="hintPanel">
+      <h2 class="hint-title">みつけたい<br>なかま</h2>
+      <div class="hint-silhouette" id="hintSilhouette">
+        <img id="hintSilhouetteImg" alt=""
+             onerror="this.style.display='none';">
+      </div>
+      <div class="hint-list" id="hintList"></div>
+      <button class="hint-button" id="hintButton" type="button">つぎのヒント</button>
+    </aside>
+
+    <!-- Layer 7: pono guide -->
+    <div class="pono-guide" id="ponoGuide">
+      <div class="pono-portrait" id="ponoPortrait">ポノ</div>
+      <div class="pono-bubble" id="ponoBubble"></div>
+    </div>
+  </div>
+
+  <!-- Layer 8: discovery popup -->
+  <div class="discovery-overlay" id="discoveryOverlay" role="dialog"
+       aria-modal="true" aria-labelledby="discoveryTitle">
+    <div class="discovery-card">
+      <h3 class="discovery-title" id="discoveryTitle">みつけた！</h3>
+      <div class="discovery-img" id="discoveryImg">
+        <img id="discoveryImgEl" alt=""
+             onerror="this.style.display='none';">
+      </div>
+      <p class="discovery-name" id="discoveryName"></p>
+      <p class="discovery-sub">ずかんに とうろく！</p>
+      <button class="discovery-btn" id="discoveryBtn" type="button">ずかんに とうろく</button>
+      <p class="discovery-done" id="discoveryDone">とうろくしました！</p>
+    </div>
+  </div>
+
+  <!-- Portrait rotate hint -->
+  <div class="rotate-hint">
+    がめんを よこむきに してね！
+  </div>
+
+<script>
+/* ====================================================================
+ * Data
+ * ==================================================================== */
+const zukanQuestions = [
+  {
+    id: "flower_rabbit_001",
+    areaId: "flowerPath",
+    areaName: "花の小道",
+    progressText: "花の小道 1/6",
+    type: "appearance",
+    animalId: "rabbit",
+    animalName: "うさぎ",
+    fieldBg: "/assets/zukan/search/flower_path_field_16x9.png",
+    wideBg: "/assets/zukan/bg/zukan_outer_bg_21x9.png",
+    windowFrame: "/assets/zukan/ui/investigation_window_frame_16x9.png",
+    hiddenPart: "/assets/zukan/hidden_parts/rabbit_ears_hidden.png",
+    hiddenPartStyle: { x: 0.64, y: 0.38, w: 0.08 },
+    animalImage: "/assets/zukan/animals/rabbit.png",
+    animalSilhouette: "/assets/zukan/animals/silhouette/rabbit.png",
+    guideText: "おはなに まぎれて\nかくれているよ！\nよーく みてみよう！",
+    hints: [
+      "おはなの かげで\nなにかが うごいたよ",
+      "ながい おみみが\nみえるかも？",
+      "ぴょんぴょん はねる\nどうぶつだよ"
+    ],
+    hotspot: { x: 0.62, y: 0.34, w: 0.14, h: 0.18 }
+  }
+];
+
+const DEBUG_HOTSPOT = true;
+
+/* ====================================================================
+ * State
+ * ==================================================================== */
+let currentQuestion = zukanQuestions[0];
+let revealedHints = 1; // start with 1 hint visible
+let registered = false;
+
+/* ====================================================================
+ * Helpers
+ * ==================================================================== */
+function setImg(el, src) {
+  if (!el) return;
+  if (!src) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.src = src;
+  el.alt = '';
+}
+
+function pctRect(target, rect) {
+  // rect: { x, y, w, h? } in 0..1 ratio relative to parent
+  target.style.left = (rect.x * 100) + '%';
+  target.style.top = (rect.y * 100) + '%';
+  target.style.width = (rect.w * 100) + '%';
+  if (typeof rect.h === 'number') {
+    target.style.height = (rect.h * 100) + '%';
+  }
+}
+
+/* ====================================================================
+ * Render
+ * ==================================================================== */
+function renderQuestion(q) {
+  // Layer 1: outer background
+  const outerImg = document.getElementById('outerBgImg');
+  setImg(outerImg, q.wideBg);
+
+  // Layer 3: window bg + frame
+  const windowWrap = document.getElementById('windowWrap');
+  setImg(document.getElementById('windowBg'), q.fieldBg);
+  setImg(document.getElementById('windowFrame'), q.windowFrame);
+
+  // Progress badge
+  document.getElementById('progressBadge').textContent = q.progressText || '';
+
+  // Clear previously injected hidden part / hotspot
+  windowWrap.querySelectorAll('.hidden-part, .hotspot').forEach(n => n.remove());
+
+  // Layer 4: hidden animal part
+  if (q.hiddenPart && q.hiddenPartStyle) {
+    const hp = document.createElement('img');
+    hp.className = 'hidden-part' + (DEBUG_HOTSPOT ? ' hidden-part-debug' : '');
+    hp.src = q.hiddenPart;
+    hp.alt = '';
+    hp.draggable = false;
+    hp.onerror = function () {
+      // Replace with a coloured div so layout stays
+      const fb = document.createElement('div');
+      fb.className = hp.className;
+      fb.style.cssText = hp.style.cssText;
+      fb.style.background = '#a06a3a';
+      fb.style.borderRadius = '8px';
+      fb.style.aspectRatio = '1 / 1';
+      hp.replaceWith(fb);
+    };
+    pctRect(hp, q.hiddenPartStyle);
+    // height: keep proportional via auto, but enforce min via aspect-ratio
+    hp.style.height = 'auto';
+    windowWrap.appendChild(hp);
+  }
+
+  // Layer 5: hotspot
+  if (q.hotspot) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hotspot' + (DEBUG_HOTSPOT ? ' debug' : '');
+    btn.setAttribute('aria-label', q.animalName + 'を みつける');
+    pctRect(btn, q.hotspot);
+    btn.addEventListener('click', onHotspotTap);
+    windowWrap.appendChild(btn);
+  }
+
+  // Layer 6: hint panel
+  const sil = document.getElementById('hintSilhouetteImg');
+  setImg(sil, q.animalSilhouette);
+  renderHints();
+
+  // Layer 7: pono guide
+  document.getElementById('ponoBubble').textContent = q.guideText || '';
+
+  // Layer 8: discovery popup content (hidden until tapped)
+  setImg(document.getElementById('discoveryImgEl'), q.animalImage);
+  document.getElementById('discoveryName').textContent = q.animalName || '';
+}
+
+function renderHints() {
+  const list = document.getElementById('hintList');
+  const btn = document.getElementById('hintButton');
+  const hints = currentQuestion.hints || [];
+  list.replaceChildren();
+  for (let i = 0; i < revealedHints && i < hints.length; i++) {
+    const div = document.createElement('div');
+    div.className = 'hint-item';
+    div.textContent = hints[i];
+    list.appendChild(div);
+  }
+  if (revealedHints >= hints.length) {
+    btn.disabled = true;
+    btn.textContent = 'ヒントは ぜんぶ みたよ';
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'つぎのヒント';
+  }
+}
+
+/* ====================================================================
+ * Interaction
+ * ==================================================================== */
+function onHotspotTap() {
+  openDiscovery();
+}
+
+function openDiscovery() {
+  registered = false;
+  const overlay = document.getElementById('discoveryOverlay');
+  const btn = document.getElementById('discoveryBtn');
+  const done = document.getElementById('discoveryDone');
+  btn.disabled = false;
+  btn.style.display = '';
+  done.classList.remove('show');
+  overlay.classList.add('show');
+}
+
+function closeDiscovery() {
+  document.getElementById('discoveryOverlay').classList.remove('show');
+}
+
+function onRegister() {
+  if (registered) return;
+  registered = true;
+  console.log('登録: ' + currentQuestion.animalId);
+  const btn = document.getElementById('discoveryBtn');
+  btn.disabled = true;
+  document.getElementById('discoveryDone').classList.add('show');
+}
+
+function onNextHint() {
+  const total = (currentQuestion.hints || []).length;
+  if (revealedHints < total) {
+    revealedHints += 1;
+    renderHints();
+  }
+}
+
+/* ====================================================================
+ * Init
+ * ==================================================================== */
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('hintButton').addEventListener('click', onNextHint);
+  document.getElementById('discoveryBtn').addEventListener('click', onRegister);
+
+  // Allow tapping outside the card to dismiss the popup
+  document.getElementById('discoveryOverlay').addEventListener('click', function (e) {
+    if (e.target === this) closeDiscovery();
+  });
+
+  renderQuestion(currentQuestion);
+});
+</script>
+</body>
+</html>
