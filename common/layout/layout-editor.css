@@ -102,6 +102,13 @@ body.layout-editor-on .resizable.edge-linked {
 body.layout-editor-on .resizable.le-locked {
   outline-color: rgba(180, 90, 200, 0.7);
 }
+/* Charlie-2: 要素一覧から選択された preferredTarget を強調表示。
+   重なっているレイヤーがあっても、直接ドラッグで動かせる優先ターゲットを示す。 */
+body.layout-editor-on .resizable.le-preferred {
+  outline: 3px solid #ffd000 !important;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 2px rgba(255, 208, 0, 0.35), 0 0 14px rgba(255, 208, 0, 0.55);
+}
 body.layout-editor-on .resize-handle {
   position: absolute;
   background: #00d4ff;
@@ -284,6 +291,13 @@ body.layout-editor-on .le-list-row {
 }
 body.layout-editor-on .le-list-row:hover { background: rgba(255, 255, 255, 0.05); }
 body.layout-editor-on .le-list-row.selected { background: rgba(255, 138, 61, 0.18); }
+body.layout-editor-on .le-list-row.preferred {
+  box-shadow: inset 3px 0 0 #ffd000;
+}
+body.layout-editor-on .le-list-row.preferred .le-row-label::before {
+  content: "★ ";
+  color: #ffd000;
+}
 body.layout-editor-on .le-row-btn {
   background: transparent;
   color: #ddd;

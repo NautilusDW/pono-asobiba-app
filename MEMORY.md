@@ -94,6 +94,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T23:19:23Z - Team Delta-2: layout-editor.js 画像差し替え厳格化(img/bg-image/単一innerImg)+image-swap/bg-image-swap/insertのundo対応
+- **タスク**: Team Delta-2: layout-editor.js 画像差し替え厳格化(img/bg-image/単一innerImg)+image-swap/bg-image-swap/insertのundo対応
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 103
+- **エラー数**: 12
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 78, "ToolSearch": 1, "Read": 3, "Write": 3, "Edit": 8, "Bash": 9, "Glob": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-03T23:15:20Z - Charlie-2: 要素一覧z-index降順ソート + preferredTargetピアススルー優先選択 (リスト経由選択を canvas drag で優先)
+- **タスク**: Charlie-2: 要素一覧z-index降順ソート + preferredTargetピアススルー優先選択 (リスト経由選択を canvas drag で優先)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 102
+- **エラー数**: 12
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 77, "ToolSearch": 1, "Read": 3, "Write": 3, "Edit": 8, "Bash": 9, "Glob": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-03T17:42:04Z - Bravo-2続編: quizland 14:9メディアクエリにcharacter/chip/chip.circle/q-text-card.audioのwidth/height!important追加でiPad Pro 11inchのsaved-layout inline値を完全打ち消し
 - **タスク**: Bravo-2続編: quizland 14:9メディアクエリにcharacter/chip/chip.circle/q-text-card.audioのwidth/height!important追加でiPad Pro 11inchのsaved-layout inline値を完全打ち消し
 - **結果**: 成功
@@ -182,32 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 67, "ToolSearch": 1, "Read": 3, "Write": 3, "Edit": 8, "Bash": 9, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-03T13:47:18Z - layout-editor.js drop image auto-resize: MAX_DIMENSION=1600 with format-preserving Canvas resize, JPEG q=0.9, fallback to original on failure
-- **タスク**: layout-editor.js drop image auto-resize: MAX_DIMENSION=1600 with format-preserving Canvas resize, JPEG q=0.9, fallback to original on failure
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 312
-- **エラー数**: 24
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 46, "Grep": 13, "Bash": 150, "Agent": 68, "ToolSearch": 2, "Write": 7, "Edit": 24, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-03T13:43:41Z - Team Victor: layout-editor に Alt+Click 重なりレイヤー貫通選択 + Shift+Drag マーキー範囲選択を実装、視覚フィードバック (le-alt-down / le-marquee) 追加
-- **タスク**: Team Victor: layout-editor に Alt+Click 重なりレイヤー貫通選択 + Shift+Drag マーキー範囲選択を実装、視覚フィードバック (le-alt-down / le-marquee) 追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 90
-- **エラー数**: 12
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 65, "ToolSearch": 1, "Read": 3, "Write": 3, "Edit": 8, "Bash": 9, "Glob": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

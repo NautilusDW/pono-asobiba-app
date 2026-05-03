@@ -125,6 +125,7 @@
     pagesDocClickHandler: null,// outside-click handler for the dropdown
     aspectLocked: false,       // Yankee: numeric-panel 縦横比ロックトグル
     aspectRatios: null,        // WeakMap<el, ratio> — capture時の W/H 比率
+    preferredTarget: null,     // Charlie-2: 要素一覧から選択した要素を canvas 操作の優先ターゲットに
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -516,6 +517,8 @@
     else if (op.type === 'hide') op.el.classList.add('user-hidden');
     else if (op.type === 'show') op.el.classList.remove('user-hidden');
     else if (op.type === 'text') op.el.textContent = op.after;
+    else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
+    else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
     refreshLockBadges();
   }
   function applyInverse(op) {
@@ -528,6 +531,8 @@
     else if (op.type === 'hide') op.el.classList.remove('user-hidden');
     else if (op.type === 'show') op.el.classList.add('user-hidden');
     else if (op.type === 'text') op.el.textContent = op.before;
+    else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
+    else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
     refreshLockBadges();
   }
 
@@ -934,7 +939,14 @@
         // Locked: still allow selection (so numeric panel is editable for review),
         // but no drag.
         if (e.shiftKey || state.multiSelectMode) { toggleSelect(el); }
-        else { selectOnly(el); }
+        else {
+          selectOnly(el);
+          // Charlie-2: canvas 由来の単独選択は preferred を解除
+          if (state.preferredTarget !== el) {
+            state.preferredTarget = null;
+            refreshPreferredTargetUI();
+          }
+        }
         return;
       }
       var tgt = e.target;
@@ -952,7 +964,14 @@
 
       // U10: Shift-click OR multi-select toggle mode → extend selection
       if (e.shiftKey || state.multiSelectMode) { toggleSelect(el); return; }
-      if (!state.selectedElements.has(el)) selectOnly(el);
+      if (!state.selectedElements.has(el)) {
+        selectOnly(el);
+        // Charlie-2: canvas で別要素を直接クリック → preferred 解除
+        if (state.preferredTarget !== el) {
+          state.preferredTarget = null;
+          refreshPreferredTargetUI();
+        }
+      }
 
       var targets = Array.from(state.selectedElements).filter(function (t) { return !isLocked(t); });
       if (targets.length === 0) return;
@@ -1020,9 +1039,33 @@
     // editing W/H from this point forward respects each element's current ratio.
     if (state.aspectLocked) captureAspectRatios();
     updateNumericPanel();
+    // Charlie-2: preferred は selection に依存して reconcile されるので先に走らせる
+    refreshPreferredTargetUI();
     refreshElementListSelection();
     refreshTopToolbarAlign();
     emit('select', Array.from(state.selectedElements));
+  }
+  // Charlie-2: preferredTarget が selection 外になったら自動解除し、
+  // 視覚フィードバック (.le-preferred) を描画する。
+  function refreshPreferredTargetUI() {
+    if (state.preferredTarget && !state.selectedElements.has(state.preferredTarget)) {
+      state.preferredTarget = null;
+    }
+    $$('.resizable').forEach(function (e) {
+      e.classList.toggle('le-preferred', e === state.preferredTarget);
+    });
+    // 要素一覧の preferred マーカーも更新 (refreshSelectionUI 経由でない単発呼び出し用)
+    if (state.listPanelEl) {
+      var rows = state.listPanelEl.querySelectorAll('.le-list-row');
+      rows.forEach(function (row) {
+        var key = row.dataset.key;
+        var m = key && key.match(/^(.+)\|(\d+)$/);
+        if (!m) return;
+        var all = $$(m[1]);
+        var el = all[parseInt(m[2], 10)];
+        row.classList.toggle('preferred', !!(el && el === state.preferredTarget));
+      });
+    }
   }
   function selectOnly(el) {
     state.selectedElements.clear();
@@ -1034,7 +1077,12 @@
     else state.selectedElements.add(el);
     refreshSelectionUI();
   }
-  function clearSelection() { state.selectedElements.clear(); refreshSelectionUI(); }
+  function clearSelection() {
+    state.selectedElements.clear();
+    // Charlie-2: 全選択解除時は preferred も解除
+    state.preferredTarget = null;
+    refreshSelectionUI();
+  }
   function addToSelection(el) {
     if (!el) return;
     state.selectedElements.add(el);
@@ -1154,6 +1202,9 @@
           selectOnly(stack[nextIdx]);
           showToast('レイヤー ' + (nextIdx + 1) + ' / ' + stack.length);
         }
+        // Charlie-2: Alt+Click 系は明示的なレイヤードリル操作なので preferred 解除
+        state.preferredTarget = null;
+        refreshPreferredTargetUI();
         return;
       }
 
@@ -1164,8 +1215,50 @@
         e.preventDefault();
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        // Charlie-2: マーキー由来の選択は preferred 上書きしない (リスト由来でない)
+        state.preferredTarget = null;
+        refreshPreferredTargetUI();
         startMarquee(e.clientX, e.clientY, e.shiftKey);
         return;
+      }
+
+      // --- Charlie-2 機能B: preferredTarget 優先ターゲット pierce-through ---
+      // 要素一覧で選んだ要素が現在選択中で、クリック位置がその要素の bbox 内に
+      // あるなら、上に重なっている他要素のハンドラを抑止して preferredTarget の
+      // ドラッグハンドラだけを走らせる。Shift/Ctrl/Meta 等の修飾は通常動作優先。
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var pt = state.preferredTarget;
+        if (pt && state.selectedElements && state.selectedElements.has(pt) &&
+            !pt.classList.contains('user-hidden') && !isLocked(pt)) {
+          var rect = pt.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0 &&
+              e.clientX >= rect.left && e.clientX <= rect.right &&
+              e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            // クリック先が pt 自身 / その子孫なら、通常通り pt.attachMoveDrag が掴む
+            // ので何もしない (multi-select 維持のため)。
+            // クリック先が pt を含まない (= 上に重なる別 .resizable など) 場合、
+            // 他要素の handler を捕食して pt のハンドラを直接呼ぶ。
+            var inPt = (e.target === pt) || (pt.contains && pt.contains(e.target));
+            if (!inPt) {
+              e.stopPropagation();
+              if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+              // pt 上で発火したかのように同じ MouseEvent をディスパッチ。
+              // attachMoveDrag は el.addEventListener('mousedown', handler) で
+              // 登録済みなので、新しい MouseEvent を pt に対して dispatch すると
+              // 同じ handler が実行される。
+              var fake = new MouseEvent('mousedown', {
+                bubbles: true, cancelable: true,
+                clientX: e.clientX, clientY: e.clientY,
+                button: e.button, buttons: e.buttons,
+                shiftKey: e.shiftKey, ctrlKey: e.ctrlKey,
+                altKey: e.altKey, metaKey: e.metaKey,
+                view: window
+              });
+              pt.dispatchEvent(fake);
+              return;
+            }
+          }
+        }
       }
     };
     addManagedListener(document, 'mousedown', handler, true /* capture */);
@@ -1630,20 +1723,40 @@
     if (!state.listPanelEl) return;
     var body = state.listPanelEl.querySelector('.le-list-body');
     body.innerHTML = '';
+    // Charlie-2 機能A:
+    // 要素一覧は Photoshop/Figma 慣習に倣い、視覚的に手前のレイヤー
+    // (z-index 高い) を上位に出す。spec 全件分の row 情報をいったん集めてから
+    // z-index 降順でソートして描画する。
+    var rowEntries = [];
     state.spec.forEach(function (entry) {
       var sel = entry[0], label = entry[2] || sel;
       $$(sel).forEach(function (el, idx) {
-        var key = sel + '|' + idx;
-        var hidden = el.classList.contains('user-hidden');
-        var locked = state.locked.has(key);
-        var row = document.createElement('div');
-        row.className = 'le-list-row';
-        row.dataset.key = key;
-        row.innerHTML =
-          '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
-          '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
-          '<span class="le-row-label">' + label + '</span>' +
-          '<span class="le-row-key">' + key + '</span>';
+        rowEntries.push({ el: el, sel: sel, idx: idx, label: label });
+      });
+    });
+    rowEntries.sort(function (a, b) {
+      var zA = zIndexOf(a.el);
+      var zB = zIndexOf(b.el);
+      if (zB !== zA) return zB - zA; // z-index 降順 (手前が上)
+      // 同 z-index は CSS painting order 通り「DOM 後ろ = 視覚的に手前」なので上位へ
+      var pos = a.el.compareDocumentPosition(b.el);
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return 1;
+      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return -1;
+      return 0;
+    });
+    rowEntries.forEach(function (re) {
+      var el = re.el, sel = re.sel, idx = re.idx, label = re.label;
+      var key = sel + '|' + idx;
+      var hidden = el.classList.contains('user-hidden');
+      var locked = state.locked.has(key);
+      var row = document.createElement('div');
+      row.className = 'le-list-row';
+      row.dataset.key = key;
+      row.innerHTML =
+        '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
+        '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
+        '<span class="le-row-label">' + label + '</span>' +
+        '<span class="le-row-key">' + key + '</span>';
         // Prevent text selection caused by Shift+Click across list rows
         row.addEventListener('mousedown', function (e) {
           if (e.shiftKey || e.ctrlKey || e.metaKey) e.preventDefault();
@@ -1693,18 +1806,26 @@
                 if (targets.length) selectMultiple(targets);
                 else selectOnly(el);
               }
+              // Charlie-2: 範囲選択時は最終クリック要素を優先ターゲットに
+              state.preferredTarget = el;
+              refreshPreferredTargetUI();
               // Do NOT update lastClickedListKey on shift-click, anchor stays put
             } else if (e.ctrlKey || e.metaKey) {
               toggleSelect(el);
               state.lastClickedListKey = key;
+              // Charlie-2: list 由来 toggle でも優先ターゲットに昇格
+              state.preferredTarget = state.selectedElements.has(el) ? el : null;
+              refreshPreferredTargetUI();
             } else {
               selectOnly(el);
               state.lastClickedListKey = key;
+              // Charlie-2: 単一選択時は明示的にこの要素を優先ターゲットに
+              state.preferredTarget = el;
+              refreshPreferredTargetUI();
             }
           }
         });
-        body.appendChild(row);
-      });
+      body.appendChild(row);
     });
     // Defensive: if anchor row no longer exists (element deleted), drop the anchor
     if (state.lastClickedListKey) {
@@ -1725,6 +1846,8 @@
       var all = $$(m[1]);
       var el = all[parseInt(m[2], 10)];
       row.classList.toggle('selected', el && state.selectedElements.has(el));
+      // Charlie-2: 優先ターゲットに行マーカー
+      row.classList.toggle('preferred', el && el === state.preferredTarget);
     });
   }
 
@@ -3201,26 +3324,68 @@
     });
   }
 
+  function elementHasBackgroundImage(el) {
+    if (!el || !el.nodeType || el.nodeType !== 1) return false;
+    try {
+      var bg = getComputedStyle(el).backgroundImage;
+      return !!(bg && bg !== 'none' && bg.indexOf('url(') >= 0);
+    } catch (e) { return false; }
+  }
+
   function isImageElement(el) {
     if (!el) return false;
     if (el.tagName === 'IMG') return true;
-    try { return !!el.querySelector('img'); } catch (e) { return false; }
+    if (elementHasBackgroundImage(el)) return true;
+    try {
+      var inner = el.querySelectorAll('img');
+      return inner && inner.length === 1;
+    } catch (e) { return false; }
   }
 
+  function swapImgSrcUndoable(img, newSrc, opts) {
+    var oldSrc = img.src;
+    if (oldSrc === newSrc) return true;
+    img.src = newSrc;
+    var afterSave = !!(opts && opts.afterSave);
+    pushHistory({ type: 'image-swap', el: img, before: oldSrc, after: newSrc, _afterSave: afterSave });
+    if (afterSave) try { saveDroppedImages(); } catch (e) {}
+    return true;
+  }
+
+  function swapBackgroundImageUndoable(el, newSrc) {
+    var current = el.style.backgroundImage;
+    if (!current || current === '') {
+      try { current = getComputedStyle(el).backgroundImage || ''; } catch (e) { current = ''; }
+    }
+    var newBg = 'url("' + newSrc + '")';
+    if (current === newBg) return true;
+    el.style.backgroundImage = newBg;
+    pushHistory({ type: 'bg-image-swap', el: el, before: current, after: newBg });
+    return true;
+  }
+
+  // Strict swap: returns true if swap happened, null if ambiguous (caller falls back to insert).
+  // Decision order:
+  //   1. element is <img>            → swap its src
+  //   2. element has background-image → swap that
+  //   3. element contains exactly one inner <img> → swap that
+  //   4. otherwise (0 or >=2 inner imgs, no bg) → null (ambiguous, fall back)
   function replaceImageSrc(element, dataUrl) {
-    if (!element) return false;
-    var changed = false;
+    if (!element) return null;
     if (element.tagName === 'IMG') {
-      element.src = dataUrl;
-      changed = true;
-    } else {
-      var img = element.querySelector('img');
-      if (img) { img.src = dataUrl; changed = true; }
+      var isDropped = element.parentNode && element.parentNode.classList && element.parentNode.classList.contains('le-dropped-img');
+      return swapImgSrcUndoable(element, dataUrl, { afterSave: isDropped }) ? true : null;
     }
-    if (changed && element.classList && element.classList.contains('le-dropped-img')) {
-      saveDroppedImages();
+    if (elementHasBackgroundImage(element)) {
+      return swapBackgroundImageUndoable(element, dataUrl) ? true : null;
     }
-    return changed;
+    var innerImgs;
+    try { innerImgs = element.querySelectorAll('img'); } catch (e) { innerImgs = null; }
+    if (innerImgs && innerImgs.length === 1) {
+      var dropWrap = element.classList && element.classList.contains('le-dropped-img');
+      return swapImgSrcUndoable(innerImgs[0], dataUrl, { afterSave: dropWrap }) ? true : null;
+    }
+    return null;
   }
 
   function nextDropId() {
@@ -3264,6 +3429,10 @@
 
     canvas.appendChild(wrap);
     try { attachHandle(wrap, 'wh'); } catch (e) { console.warn('[LayoutEditor] attachHandle on dropped image failed', e); }
+
+    // Make the insert undoable. On undo the wrapper is removed; on redo it is
+    // re-inserted into the canvas (parent/next captured at history-push time).
+    pushHistory({ type: 'add', el: wrap, parent: canvas, next: null });
 
     var innerImg = wrap.querySelector('img');
     if (innerImg) {
@@ -3450,14 +3619,14 @@
               showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
             }
             if (i === 0 && firstSelected && isImageElement(firstSelected)) {
-              // Case 2: replace src of selected image
-              var ok = replaceImageSrc(firstSelected, dataUrl);
-              if (ok) {
+              // Case 2: try strict swap on selected element (img / bg-image / single inner img only).
+              var swapResult = replaceImageSrc(firstSelected, dataUrl);
+              if (swapResult === true) {
                 if (!result.resized) showToast('画像を差し替えました');
-                // image-swap is not yet undoable (no inverse handler); just mark dirty.
+                // swap is undoable via pushHistory inside swapImg/BgUndoable.
                 scheduleDirtyUpdate();
               } else {
-                // Couldn't swap → fall back to insert
+                // Ambiguous (e.g. multiple inner imgs) → insert new layer at drop point.
                 insertNewImageLayer(canvas, dropX, dropY, dataUrl, file.name);
                 if (!result.resized) showToast('画像を挿入しました');
               }
@@ -3606,7 +3775,7 @@
     // Remove handles + size labels but KEEP applied styles
     $$('.resize-handle, .resize-size-label').forEach(function (el) { el.remove(); });
     $$('.resizable').forEach(function (el) {
-      el.classList.remove('resizable', 'selected', 'edge-linked', 'le-locked');
+      el.classList.remove('resizable', 'selected', 'edge-linked', 'le-locked', 'le-preferred');
       delete el._resizeUpdateLabel;
     });
     $$('.le-lock-badge').forEach(function (b) { b.remove(); });
@@ -3655,6 +3824,9 @@
     state.rulerV = null;
     state.aspectLocked = false;
     state.aspectRatios = null;
+    // Charlie-2: editor disable で preferredTarget もリセット
+    state.preferredTarget = null;
+    $$('.le-preferred').forEach(function (e) { e.classList.remove('le-preferred'); });
     emit('mode', 'play');
   }
 
