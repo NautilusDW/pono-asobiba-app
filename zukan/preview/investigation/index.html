@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ポノのもりのずかん 調査画面 ─ 位置調整エディター</title>
+
+<!-- ────────────────────────────────────────────────────────────────
+     共通レイアウトシステム
+     - layout-shared.css : 編集モード/再生モード共通の見た目
+     - layout-system.js  : ?edit=1 でエディタを遅延ロード
+     - page-nav.js       : 編集ページ間ナビ
+     パスは zukan/preview/investigation/ から root まで 3 階層上。
+     ──────────────────────────────────────────────────────────────── -->
+<link rel="stylesheet" href="../../../common/layout/layout-shared.css">
+<script src="../../../common/layout/layout-system.js" defer></script>
+<script src="../../../common/page-nav.js" defer></script>
+
+<style>
+:root {
+  /* キャンバス比率: 21:9 outer / 16:9 safe area inner */
+  --canvas-w: 2100px;
+  --canvas-h: 900px;
+  --safe-w: 1600px;
+  --safe-h: 900px;
+  --safe-left: 250px;   /* (canvas-w - safe-w) / 2 */
+
+  --paper: #f9efd0;
+  --paper-2: #f5e9c4;
+  --brown: #6b4423;
+  --brown-light: #8a5a2a;
+  --green: #4a7c59;
+  --green-light: #6fa67d;
+  --cream: #fdf6e3;
+  --paper-shadow: rgba(80, 50, 10, 0.25);
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  --safe-border: rgba(0, 212, 255, 0.4);
+  --window-debug: rgba(255, 200, 80, 0.8);
+
+  --jp-font: 'Hiragino Maru Gothic ProN', 'M PLUS Rounded 1c',
+             'ヒラギノ丸ゴ ProN W4', 'Yu Gothic', 'メイリオ', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #0c0c0c;
+  color: #f0f0f0;
+  font-family: var(--jp-font);
+  font-size: 14px;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ───── Stage (21:9 outer) ─────────────────────────────────────── */
+.stage-wrap {
+  padding: 24px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stage {
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  margin: 0 auto;
+  position: relative;
+  background: #1a2a1a;
+  border: 1px dashed #555;
+  overflow: hidden;
+}
+
+/* ───── Layer 1: 21:9 outer background ─────────────────────────── */
+.outer-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  z-index: 0;
+  pointer-events: none;
+}
+.outer-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ───── Layer 2: 16:9 safe area (visible guide) ────────────────── */
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: var(--safe-left);
+  width: var(--safe-w);
+  height: var(--safe-h);
+  z-index: 1;
+  pointer-events: none;       /* リサイズハンドルが内側要素を覆わないように */
+}
+body.show-safe .safe-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--safe-border);
+  pointer-events: none;
+}
+body.show-safe .safe-area::after {
+  content: "16:9 safe area (1600×900)";
+  position: absolute;
+  top: 4px; left: 8px;
+  font-size: 11px;
+  color: var(--safe-border);
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* ───── Layer 3: Investigation window (16:9) ───────────────────── */
+.window-wrap {
+  position: absolute;
+  /* 既定値: safe-area 中央寄り、ヒントパネル分を右に空ける */
+  left: 330px;
+  top: 140px;
+  width: 1100px;
+  height: 620px;
+  z-index: 2;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #cfe7d4;
+  box-shadow: var(--soft-shadow);
+  pointer-events: auto;       /* 編集モードでドラッグ可能 */
+}
+.field-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.field-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.window-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.window-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ───── Layer 4: hidden animal part (rabbit ears, etc) ─────────── */
+.hidden-part {
+  position: absolute;
+  /* 初期値: window 内 (0.64, 0.38) ≒ stage 絶対 (1034, 376) */
+  left: 1034px;
+  top: 376px;
+  width: 90px;
+  height: 90px;
+  z-index: 3;
+  pointer-events: auto;
+}
+.hidden-part img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ───── Layer 5: hotspot (debug visualization in editor) ───────── */
+.hotspot-debug {
+  position: absolute;
+  /* 初期値: window 内 (0.62, 0.34, 0.14, 0.18) ≒ stage 絶対 (1012, 351, 154, 112) */
+  left: 1012px;
+  top: 351px;
+  width: 154px;
+  height: 112px;
+  z-index: 4;
+  border: 2px dashed #ff5566;
+  background: rgba(255, 80, 100, 0.15);
+  border-radius: 12px;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c33;
+  text-shadow: 0 1px 0 #fff;
+  user-select: none;
+}
+
+/* ───── Layer 6: hint panel (right side) ───────────────────────── */
+.hint-panel {
+  position: absolute;
+  left: 1690px;
+  top: 60px;
+  width: 220px;
+  height: 780px;
+  z-index: 5;
+  background-image: url('../../../assets/zukan/ui/hint_panel_empty.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  padding: 60px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--brown);
+  pointer-events: auto;
+}
+.hint-title {
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0;
+  color: var(--brown);
+}
+.hint-silhouette {
+  width: 80%;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  background: #c9b48a;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hint-silhouette img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.hint-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--brown);
+}
+.hint-item {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--green);
+  white-space: pre-line;
+}
+
+/* ───── Layer 7: pono guide (bottom-left) ──────────────────────── */
+.pono-guide {
+  position: absolute;
+  left: 270px;
+  top: 680px;
+  width: 420px;
+  height: 200px;
+  z-index: 5;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.pono-portrait {
+  width: 130px;
+  height: 130px;
+  flex-shrink: 0;
+}
+.pono-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.pono-bubble {
+  flex: 1;
+  height: 130px;
+  background-image: url('../../../assets/zukan/ui/map_guide_note_empty.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  padding: 24px 28px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--brown);
+  display: flex;
+  align-items: center;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* ───── Layer 8: discovery popup (visible while editing) ───────── */
+.discovery-popup {
+  position: absolute;
+  left: 1660px;
+  top: 690px;
+  width: 380px;
+  height: 180px;
+  z-index: 6;
+  background-image: url('../../../assets/zukan/ui/discovery_popup_empty.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  padding: 24px 28px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--brown);
+  pointer-events: auto;
+}
+.discovery-popup .dp-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #c64b1f;
+  margin: 0;
+}
+.discovery-popup .dp-name {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+}
+.discovery-popup .dp-sub {
+  font-size: 12px;
+  color: var(--brown-light);
+  margin: 0;
+}
+
+/* 要素にホバー時のヒント (編集モード時のみ目立つ) */
+body:not(.layout-editor-on) .hotspot-debug { opacity: 0.55; }
+
+/* ヘルプノート (編集モードのみ目立つ) */
+.help-note {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  max-width: 320px;
+  background: rgba(20, 20, 20, 0.92);
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 50;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+.help-note h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #ffd66f;
+}
+.help-note code {
+  background: #2a2a2a;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+body:not(.layout-editor-on) .help-note {
+  opacity: 0.7;
+}
+</style>
+</head>
+<body class="show-safe">
+
+<!-- 21:9 ステージ。 LayoutSystem.init 時 canvas: '#stage' で指定する。 -->
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+
+    <!-- Layer 1: 21:9 outer background -->
+    <div class="outer-bg" data-le-label="外側背景">
+      <img src="../../../assets/zukan/bg/zukan_outer_bg_21x9.png" alt="">
+    </div>
+
+    <!-- Layer 2: 16:9 safe area (display-only guide) -->
+    <div class="safe-area" id="safe-area"></div>
+
+    <!-- Layer 3: investigation window (frame + field bg) -->
+    <div class="window-wrap" data-le-label="調査ウィンドウ">
+      <div class="field-bg" data-le-label="花の小道 背景">
+        <img src="../../../assets/zukan/search/flower_path_field_16x9.png" alt="">
+      </div>
+      <div class="window-frame" data-le-label="ウィンドウ枠">
+        <img src="../../../assets/zukan/ui/investigation_window_frame_16x9.png" alt="">
+      </div>
+    </div>
+
+    <!-- Layer 4: hidden animal part (rabbit ears) -->
+    <div class="hidden-part" data-le-label="隠れパーツ (うさぎ耳)">
+      <img src="../../../assets/zukan/hidden_parts/rabbit_ears_hidden.png" alt="">
+    </div>
+
+    <!-- Layer 5: hotspot (debug visualization) -->
+    <div class="hotspot-debug" data-le-label="ホットスポット">
+      タップ判定エリア
+    </div>
+
+    <!-- Layer 6: hint panel -->
+    <aside class="hint-panel" data-le-label="ヒントパネル">
+      <h2 class="hint-title">みつけたい<br>なかま</h2>
+      <div class="hint-silhouette">
+        <!-- silhouette アセットがまだ無いので、 通常 rabbit を背景なしで仮置き -->
+        <img src="../../../assets/zukan/animals/flower_path/rabbit.png" alt="" style="filter: brightness(0) opacity(0.7);">
+      </div>
+      <div class="hint-list">
+        <div class="hint-item">ヒント1: ながい みみが あるよ。</div>
+      </div>
+    </aside>
+
+    <!-- Layer 7: pono guide -->
+    <div class="pono-guide" data-le-label="ポノ案内">
+      <div class="pono-portrait" data-le-label="ポノ画像">
+        <img src="../../../assets/zukan/ui/map_pono_guide.png" alt="">
+      </div>
+      <div class="pono-bubble" data-le-label="ポノ吹き出し">
+        ヒントを ヒントに さがしてみよう！
+      </div>
+    </div>
+
+    <!-- Layer 8: discovery popup (placed bottom-right while editing) -->
+    <div class="discovery-popup" data-le-label="発見ポップアップ">
+      <p class="dp-title">みつけた！</p>
+      <p class="dp-name">うさぎ</p>
+      <p class="dp-sub">ずかんに とうろく！</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
+<div class="help-note">
+  <h4>調査画面 位置調整エディター</h4>
+  URL に <code>?edit=1</code> を付けるとエディタ起動。<br>
+  ドラッグ＆リサイズ → <code>💾 保存</code> で
+  <code>saved-layout.json</code> に書き込まれます。
+  画像はすべて既存アセットを <code>../../../assets/...</code> から参照。
+</div>
+
+<script>
+/* ============================================================
+ * 編集対象セレクタ。 zukan/preview/full/ の Bezier 編集ではなく、
+ * common/layout/ の WYSIWYG (drag/resize/snap/save) を使う。
+ * ============================================================ */
+const ZK_INV_RESIZABLE_SELECTORS = [
+  ['.outer-bg',          'wh', '外側背景 (21:9)'],
+  ['.window-wrap',       'wh', '調査ウィンドウ'],
+  ['.field-bg',          'wh', '花の小道 背景'],
+  ['.window-frame',      'wh', 'ウィンドウ枠'],
+  ['.hidden-part',       'wh', '隠れパーツ (うさぎ耳)'],
+  ['.hotspot-debug',     'wh', 'ホットスポット'],
+  ['.hint-panel',        'wh', 'ヒントパネル'],
+  ['.hint-silhouette',   'wh', 'シルエット枠'],
+  ['.pono-guide',        'wh', 'ポノ案内 (まとめ)'],
+  ['.pono-portrait',     'wh', 'ポノ画像'],
+  ['.pono-bubble',       'wh', 'ポノ吹き出し'],
+  ['.discovery-popup',   'wh', '発見ポップアップ'],
+];
+
+/* ============================================================
+ * LayoutSystem.init を defer 後に起動。 quizland/index.html と同じ
+ * パターン (boot 関数 + readyState チェック)。
+ * ============================================================ */
+(function initLayoutSystem() {
+  function boot() {
+    if (!window.LayoutSystem) {
+      console.warn('[zukan/preview/investigation] LayoutSystem not loaded');
+      return;
+    }
+    window.LayoutSystem.init({
+      layoutUrl: './saved-layout.json',
+      canvas: '#stage',
+      editableSelectors: ZK_INV_RESIZABLE_SELECTORS,
+      ghPath: 'zukan/preview/investigation/saved-layout.json',
+      pages: [
+        { name: 'ずかん 調査画面 (このページ)', url: location.pathname + '?edit=1', current: true },
+        { name: 'ずかん (本番プレイ)',           url: '/zukan/' },
+        { name: 'ずかん 図鑑エディタ (full)',   url: '/zukan/preview/full/' },
+        { name: 'なぞなぞ',                      url: '/quizland/?edit=1' },
+      ],
+    });
+  }
+  if (window.LayoutSystem) boot();
+  else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    setTimeout(boot, 0);
+  }
+})();
+</script>
+</body>
+</html>
