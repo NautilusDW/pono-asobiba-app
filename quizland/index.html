@@ -9,671 +9,513 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/first-clear.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/narration.js"></script>
 <script src="./data/questions.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ============================================================
+   Quizland v2 (Strategy: Replace)
+   --------------------------------------------------------------
+   このファイルは quizland/preview/full/index.html を視覚的土台と
+   して採用する。 stage は 2100×900 (21:9) の固定キャンバスで、
+   内側に 16:9 の safe-area (1600×900) を持つ。 端末サイズに合わせて
+   transform: scale で常時 fit させる (preview/full の preview-mode を
+   標準動作にしたもの)。
+
+   既存のゲームロジック (slim 版: questions/categories/render/audio/
+   achievements 連携) はそのまま温存し、 IDs を preview/full の DOM に
+   合わせて再配線している。
+   ============================================================ */
 
 :root {
-  --bg: #FFF8E7;
+  /* preview/full から取り込んだトーン (木枠/紙質/フクロウ) */
+  --bg: #0c0c0c;
+  --paper: #f5e9c4;
+  --paper-2: #e8d293;
+  --paper-shadow: rgba(80, 50, 10, 0.3);
+  --wood-dark: #6e4520;
+  --wood-mid: #8a5a2a;
+  --wood-light: #b07a3a;
+  --hint-bg: #fff3c4;
+  --text: #4a2d0a;
+  --text-light: #f0f0f0;
+  --owl-bg: #b08acf;
+
+  /* 21:9 outer / 16:9 safe area inner (preview/full と同じ) */
+  --canvas-w: 2100px;
+  --canvas-h: 900px;
+  --safe-w: 1600px;
+  --safe-h: 900px;
+  --header-h: 150px;
+
+  /* Slot (board 内) */
+  --slot-size: 130px;
+  --slot-color: #E0E0E0;
+  --slot-radius: 16px;
+  --gap: 16px;
+
+  /* 既存ゲームロジックが参照している色 (correct/wrong/seasons 等) */
   --primary: #F59E0B;
   --primary-light: #FDE68A;
   --accent: #FBBF24;
-  --text: #5D4E37;
-  --text-light: #A89880;
   --success: #10B981;
   --danger: #EF4444;
-  --shadow: rgba(93,78,55,0.12);
-  --radius: 20px;
-  --quiz-wood-dark: #7B451D;
-  --quiz-wood-mid: #B87330;
-  --quiz-wood-light: #D79A45;
-  --quiz-paper-top: rgba(255, 249, 231, 0.94);
-  --quiz-paper-bottom: rgba(247, 225, 181, 0.86);
-  --quiz-frame-shadow: rgba(120, 83, 20, 0.18);
-  --quiz-safe-gap: clamp(6px, 0.85vw, 14px);
 }
-
+* { box-sizing: border-box; }
 html, body {
-  /* 21:9 端末で全体が縦に伸びてスクロール状態になる問題への対応 (2026-04-29):
-     viewport の高さに固定して、 内側コンテンツを 100dvh に収める。 */
-  height: 100dvh;
-  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-  color: var(--text);
+  margin: 0; padding: 0;
+  width: 100%; height: 100dvh;
+  overflow: hidden;
+  background: #0c0c0c;
+  color: var(--text-light);
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
   overscroll-behavior: none;
 }
 
-body {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px clamp(12px, 2vw, 24px) 8px;
-  margin: 0;
+/* ===== Stage container (auto-fit on viewport) ===== */
+.stage-wrap {
+  position: fixed; inset: 0;
   overflow: hidden;
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 249, 236, 0.5), rgba(255, 245, 220, 0.72)),
-    url('../assets/images/quizland/title_back.png') center / cover no-repeat;
-  opacity: 0.94;
-  z-index: -2;
-}
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.82), transparent 28%),
-    radial-gradient(circle at 86% 14%, rgba(255, 224, 163, 0.55), transparent 24%),
-    linear-gradient(180deg, rgba(255, 247, 230, 0.2), rgba(245, 158, 11, 0.08));
-  pointer-events: none;
-  z-index: -1;
-}
-
-.game-shell {
-  /* CSS-first template:
-     1600x900相当の16:9安全領域を先に確定し、この矩形を生成画像の基準にする。
-     後で画像化する場合も各パーツは同じアスペクト比の箱にだけ差し込む。
-     1600x900時の想定枠:
-     top-left bar 1300x78 / top-right controls 280x78 / left panel 1000x790 / right panel 560x790。
-     縦向き用レイアウトは作らず、縦持ちは横向き案内だけを表示する。 */
-  width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
-  max-width: 1600px;
-  aspect-ratio: 16 / 9;
-  height: auto;
-  max-height: calc(100dvh - 16px);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(170px, 20%, 280px);
-  grid-template-rows: clamp(56px, 9.2%, 78px) minmax(0, 1fr);
-  gap: var(--quiz-safe-gap);
-  min-height: 0;
-  align-self: center;
+  background: #000;
 }
 .stage {
-  min-height: 0;
-}
-.question-panel {
-  min-height: 0 !important;
-}
-
-.sr-only {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+  top: 0; left: 0;
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  background: url('../assets/preview-placeholders/stage-bg.png') center / cover no-repeat;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  transform-origin: 0 0;  /* JS が translate + scale を当てる */
 }
 
-/* ===== Header template =====
-   位置: 16:9安全領域の左上。用途: タイトルロゴ用の札。
-   画像生成時はこの矩形と同じ比率で、文字を入れない木札背景だけを作る。 */
-.header {
+/* ===== シート画像オーバーレイ (preview/full のシート手描き 1 枚絵) ===== */
+body.sheet-on .stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../assets/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+  z-index: 5;
+}
+body.sheet-on .hdr-pill,
+body.sheet-on .q-text-card,
+body.sheet-on .board,
+body.sheet-on .answer-tray,
+body.sheet-on .chip,
+body.sheet-on .slot {
+  background-image: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body.sheet-on .hdr-left .progress-num {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center;
+  color: #4a2d0a !important;
+  font-weight: 900;
+  font-size: 22px;
   position: relative;
-  grid-column: 1;
-  grid-row: 1;
-  width: min(100%, 700px);
-  height: 100%;
-  justify-self: start;
+  z-index: 7;
+}
+body.sheet-on .slot {
+  border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
+  border-radius: 12px;
+}
+body.sheet-on .hdr-left .dot {
+  background-color: transparent !important;
+  border: none !important;
+}
+body.sheet-on .safe-area > .hdr,
+body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
+
+/* ===== Safe area (16:9 inner, preview/full と同じ) ===== */
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: calc((var(--canvas-w) - var(--safe-w)) / 2);
+  width: var(--safe-w);
+  height: var(--safe-h);
   display: grid;
-  grid-template-columns: clamp(48px, 7.3vh, 72px) minmax(132px, 0.48fr) clamp(70px, 10%, 110px) max-content;
+  grid-template-rows: var(--header-h) 1fr;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+
+/* ===== Header (top, hdr-pill 左 + ctrl-btn 群 右) ===== */
+.hdr {
+  display: grid;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
   align-items: center;
-  gap: clamp(6px, 0.8vw, 12px);
-  aspect-ratio: auto;
-  min-height: auto;
-  padding: clamp(4px, 0.6vh, 7px) clamp(8px, 1vw, 14px);
-  border: clamp(3px, 0.5vh, 5px) solid transparent;
-  border-radius: clamp(14px, 1.4vw, 22px);
+  height: var(--header-h);
+}
+.hdr-pill {
+  display: inline-flex; align-items: center; gap: 12px;
   background:
-    linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 16px,
-      var(--quiz-wood-mid) 16px 32px,
-      var(--quiz-wood-light) 32px 42px,
-      var(--quiz-wood-mid) 42px 58px
-    ) border-box;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.56),
-    0 4px 10px var(--quiz-frame-shadow);
-  overflow: visible;
+    linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 4px solid var(--wood-dark);
+  border-radius: 50px;
+  padding: 6px 18px;
+  height: calc(100% - 14px);
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
 }
-.header::after {
-  content: none;
-}
-.header-owl {
-  width: clamp(54px, 8.4vh, 78px);
-  height: clamp(54px, 8.4vh, 78px);
-  justify-self: center;
-  align-self: center;
-  position: relative;
-  overflow: hidden;
-  border-radius: 50%;
-  background: transparent;
-  filter: drop-shadow(0 7px 10px rgba(88, 55, 20, 0.2));
-}
-.header-owl img {
+.hdr-left {
+  gap: 16px;
+  padding: 6px 18px 6px 8px;
   width: 100%;
-  height: 100%;
+  justify-content: flex-start;
+}
+.hdr-left .owl-icon {
+  width: 64px; height: 64px;
+  background: linear-gradient(180deg, #f4e4c4, #d8b78a);
+  border: 3px solid var(--wood-dark);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.hdr-left .owl-icon img {
+  width: 100%; height: 100%;
   object-fit: cover;
   object-position: 50% 18%;
-  transform: scale(1.65);
+  transform: scale(1.6);
   transform-origin: 50% 18%;
 }
-.header-logo {
-  position: relative;
-  z-index: 1;
-  width: auto;
-  height: clamp(34px, 6.2vh, 56px);
-  max-width: min(100%, 220px);
-  max-height: 82%;
-  margin-left: 0;
-  object-fit: contain;
-  justify-self: start;
-  align-self: center;
-  filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.12));
+.hdr-left .title-card {
+  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
+  border: 3px solid var(--wood-dark);
+  border-radius: 12px;
+  padding: 4px 14px;
+  color: #fff7d0;
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  text-align: center;
+  line-height: 1.1;
+  flex: 0 0 auto;
 }
-.header #hud-label {
-  order: initial;
-  min-height: clamp(32px, 5.2vh, 46px);
-  padding: 0 clamp(9px, 1.1vw, 15px);
-  border-radius: clamp(10px, 1.2vw, 18px);
-  background: linear-gradient(180deg, rgba(255, 249, 235, 0.94), rgba(246, 224, 179, 0.86));
-  border: 2px solid rgba(217, 171, 94, 0.62);
-  color: #6f461b;
-  font-size: clamp(0.98rem, 2.65vh, 1.55rem);
-  line-height: 1;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.62);
-}
-.header .hud-progress {
-  order: initial;
-  justify-content: start;
-  gap: clamp(7px, 1.2vw, 14px);
-  padding: 0;
-}
-
-/* ===== HUD ===== */
-.hud {
-  position: relative;
-  grid-column: 2;
-  grid-row: 1;
-  width: 100%;
-  height: 100%;
-  justify-self: center;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: clamp(4px, 0.55vw, 8px);
-  aspect-ratio: auto;
-  min-height: auto;
-  padding: clamp(4px, 0.6vh, 7px) clamp(6px, 0.8vw, 11px);
-  border: clamp(3px, 0.5vh, 5px) solid transparent;
-  border-radius: clamp(12px, 1.2vw, 20px);
-  background:
-    linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 18px,
-      var(--quiz-wood-mid) 18px 36px,
-      var(--quiz-wood-light) 36px 48px,
-      var(--quiz-wood-mid) 48px 66px
-    ) border-box;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.56),
-    0 4px 10px var(--quiz-frame-shadow);
-  font-size: clamp(0.68rem, 1.6vh, 0.92rem);
-  font-weight: 700;
-}
-.hud > * {
-  min-width: 0;
-  position: relative;
-  z-index: 1;
-}
-#hud-back-btn {
-  order: initial;
-}
-#hud-back-btn,
-.hud-action-btn {
-  min-height: clamp(36px, 6.4vh, 54px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border: 2px solid rgba(211, 163, 84, 0.54);
-  border-radius: clamp(10px, 1.3vw, 18px);
-  background: linear-gradient(180deg, rgba(255, 249, 232, 0.96), rgba(245, 220, 171, 0.88));
-  color: #734917;
-  font-family: inherit;
-  font-size: clamp(0.54rem, 1.25vh, 0.7rem);
+.hdr-left .title-card small { font-size: 11px; display: block; }
+.hdr-left .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
   font-weight: 900;
+  font-size: 22px;
+  color: var(--text);
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.hdr-left .dots {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  height: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+.hdr-left .dot {
+  height: 100%;
+  aspect-ratio: 1;
+  width: auto;
+  flex: 0 0 auto;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
+  border-radius: 50%;
+}
+.hdr-left .dot.done { background-color: #f3a330; }
+.hdr-left .dot.current { background-color: #F7A718; transform: scale(1.18); }
+
+.hdr-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+.hdr-right .ctrl-btn {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 120px;
+  height: 120px;
+  padding: 8px;
+  font-weight: 800;
+  font-size: 16px;
+  gap: 6px;
+  background:
+    linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 4px solid var(--wood-dark);
+  border-radius: 18px;
+  color: var(--text);
   cursor: pointer;
-  padding: 0 3px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 5px 10px rgba(120,83,20,0.1);
+  font-family: inherit;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
   -webkit-tap-highlight-color: transparent;
 }
-.hud-action-icon,
-.hud-back-icon {
-  font-size: clamp(0.95rem, 2.45vh, 1.35rem);
-  line-height: 1;
-}
-.hud-action-text,
-.hud-back-text {
-  line-height: 1.05;
-  white-space: nowrap;
-}
-#hud-label,
-#hud-seeds {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: clamp(32px, 5.2vh, 46px);
-  padding: 0 6px;
-  border-radius: 18px;
-  background: transparent;
-  box-shadow: none;
-}
-#hud-label {
-  order: 1;
-  color: #7A4D19;
-  font-size: clamp(0.74rem, 1.7vh, 1.02rem);
-  letter-spacing: 0.02em;
-}
-#hud-seeds {
-  display: none !important;
-}
-.hud-progress {
-  order: initial;
-  display: flex;
-  justify-content: center;
-  gap: clamp(4px, 1vw, 12px);
-  padding: 0 clamp(6px, 1.4vw, 18px);
-}
-.hud-dot {
-  width: clamp(10px, 1.8vh, 20px); height: clamp(10px, 1.8vh, 20px);
-  border-radius: 50%;
-  background: rgba(248, 220, 154, 0.9);
-  border: 2px solid rgba(176, 114, 33, 0.72);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-  transition: background 0.3s, transform 0.3s, border-color 0.3s;
-  flex-shrink: 0;
-}
-.hud-dot.done {
-  background: #9CC765;
-  border-color: #5D7F2D;
-}
-.hud-dot.current {
-  background: #F7A718;
-  border-color: #B96A12;
-  transform: scale(1.12);
-}
+.hdr-right .ctrl-btn .icon { font-size: 40px; line-height: 1; }
+.hdr-right .ctrl-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wood-dark), 0 4px 8px var(--paper-shadow); }
 
-/* ===== Stage area ===== */
-.stage {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  width: 100%;
+/* ===== Body (左 q-col / 右 a-col) ===== */
+.body {
   display: grid;
-  grid-template-columns: minmax(0, 64fr) minmax(200px, 34fr);
-  gap: var(--quiz-safe-gap);
-  align-items: stretch;
-  min-height: 0;
-}
-.question-panel,
-.answer-panel {
-  position: relative;
-  border-radius: clamp(18px, 1.8vw, 30px);
-  padding: clamp(8px, 0.9vw, 14px);
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
-.question-panel::before,
-.answer-panel::before {
-  content: none;
-}
-.question-panel {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: clamp(48px, 11%, 72px) minmax(0, 1fr);
-  grid-template-areas:
-    "question"
-    "board";
-  gap: clamp(8px, 1vw, 14px);
-}
-.answer-panel {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  grid-template-areas:
-    "choices";
-  gap: clamp(8px, 1vw, 14px);
-  width: min(100%, 470px);
-  height: min(100%, 72%);
-  align-self: center;
-  justify-self: center;
-  overflow: visible;
-}
-.panel-chip {
-  align-self: center;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  min-height: clamp(32px, 5.4vh, 44px);
-  padding: 0 clamp(14px, 1.4vw, 22px);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #F6E6B6, #DFAE55);
-  color: #7A4D19;
-  font-size: clamp(0.72rem, 1.45vh, 0.92rem);
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 6px 14px rgba(120, 83, 20, 0.12);
-}
-.panel-chip--leaf {
-  background: linear-gradient(180deg, #D9EB95, #B2D05B);
-  color: #5B6525;
-}
-.question-panel > .panel-chip {
-  display: none;
-}
-.answer-guide {
-  position: absolute;
-  right: clamp(-44px, -2.8vw, -24px);
-  bottom: clamp(-22px, -1.5vw, -10px);
-  z-index: 1;
-  display: block;
-  align-items: center;
-  width: clamp(112px, 12.5vw, 200px);
-  min-height: auto;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  pointer-events: none;
-}
-.answer-guide__owl {
-  position: static;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 12px 16px rgba(120, 83, 20, 0.18));
-  transform: scale(1.3);
-  transform-origin: 50% 100%;
-}
-.answer-guide__copy {
-  display: none;
-}
-.answer-guide__copy p {
-  font-size: clamp(0.72rem, 1.45vh, 0.95rem);
-  font-weight: 700;
-  line-height: 1.42;
-  color: #876233;
-}
-.question-wrap {
-  grid-area: question;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  width: min(90%, 740px);
-  margin: 0;
-  min-height: 0;
-  padding: 0 clamp(42px, 4.2vw, 62px) 0 clamp(24px, 2.6vw, 38px);
-  border: clamp(5px, 0.65vw, 9px) solid transparent;
-  border-radius: clamp(16px, 1.7vw, 26px);
-  background:
-    linear-gradient(180deg, rgba(255, 247, 228, 0.94), rgba(250, 230, 190, 0.88)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 22px,
-      var(--quiz-wood-mid) 22px 48px,
-      var(--quiz-wood-light) 48px 62px,
-      var(--quiz-wood-mid) 62px 88px
-    ) border-box;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
-    0 8px 16px rgba(120, 83, 20, 0.14);
-}
-.question-board {
-  grid-area: board;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  padding: clamp(12px, 1.2vw, 22px);
-  border: clamp(6px, 0.7vw, 11px) solid transparent;
-  border-radius: clamp(20px, 2vw, 32px);
-  background:
-    linear-gradient(180deg, rgba(255, 244, 211, 0.92), rgba(255, 236, 185, 0.82)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 22px,
-      var(--quiz-wood-mid) 22px 48px,
-      var(--quiz-wood-light) 48px 62px,
-      var(--quiz-wood-mid) 62px 88px
-    ) border-box;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.52),
-    0 10px 20px rgba(120, 83, 20, 0.16);
-}
-
-.question-panel {
-  width: 100%;
-  height: min(100%, 82%);
-  align-self: center;
-}
-
-.question {
-  font-size: clamp(1.14rem, 2.25vh, 1.7rem);
-  font-weight: 900;
-  color: #6f4b1e;
-  text-align: center;
-  line-height: 1.28;
-  white-space: pre-line;
-  text-wrap: balance;
-  word-break: keep-all;
-  overflow-wrap: normal;
-  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.9);
-}
-#question-speaker {
-  position: absolute;
-  top: 50%;
-  right: 18px;
-  transform: translateY(-50%);
-  width: 58px;
-  height: 58px;
-  border: 3px solid rgba(132, 89, 34, 0.72);
-  border-radius: 50%;
-  background: linear-gradient(180deg, #F6D27C, #CD8A2D);
-  color: #fffaf0;
-  font-size: 1.4rem;
-  cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.4),
-    0 8px 18px rgba(196, 122, 14, 0.26);
-  display: none;
-}
-
-#stage-area {
-  width: 100%;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
   height: 100%;
+  align-items: stretch;
+}
+.q-col, .a-col { min-width: 0; }
+.q-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  justify-content: center;
+}
+.q-text-card {
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 22px 80px 22px 32px;
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 32px;
+  min-height: 170px;
+  line-height: 1.4;
+  position: relative;
+  box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
+}
+#q-text {
+  display: inline-block;
+  padding: 4px 8px;
+  text-align: center;
+}
+.q-text-card .audio {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+  border: 3px solid var(--wood-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  flex: 0 0 auto;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ===== Board (問題コンテンツの紙ボード) ===== */
+.board {
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
+  height: 500px;
+  overflow: hidden;
+}
+#stage-area {
+  width: 100%; height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: clamp(14px, 1.4vw, 24px);
+  gap: 24px;
   min-height: 0;
 }
 
-/* ===== Item rows (for order/count) ===== */
+/* item-row (color/count) — preview/full の slot 配列に近い見た目 */
 .item-row {
   display: flex;
-  gap: clamp(14px, 1.6vw, 28px);
+  gap: 24px;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 }
+
+/* color-chip: dotted-slot 風の枠 + 色面 */
 .color-chip {
-  width: clamp(64px, min(14vw, 32vh), 134px);
-  height: clamp(64px, min(14vw, 32vh), 134px);
-  border-radius: clamp(18px, 2vw, 28px);
-  border: 3px solid rgba(255,255,255,0.8);
-  box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16);
+  width: var(--slot-size);
+  height: var(--slot-size);
+  border-radius: var(--slot-radius);
+  border: 4px solid rgba(255,255,255,0.85);
+  box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16),
+              inset 0 0 0 2px rgba(0,0,0,0.06);
 }
+
+/* count-item: scratchy paper-card 風 */
 .count-item {
-  width: clamp(82px, min(17vw, 37vh), 170px);
-  height: clamp(82px, min(17vw, 37vh), 170px);
+  width: var(--slot-size);
+  height: var(--slot-size);
   object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(120, 83, 20, 0.18));
 }
 
 /* ===== Shapes ===== */
 .shape-display {
-  width: min(100%, 420px);
-  height: 100%;
-  max-height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 100%; height: 100%;
+  display: flex; justify-content: center; align-items: center;
 }
-.shape-circle { width: clamp(104px, min(18vw, 38vh), 260px); height: clamp(104px, min(18vw, 38vh), 260px); border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-square { width: clamp(104px, min(18vw, 38vh), 260px); height: clamp(104px, min(18vw, 38vh), 260px); border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-triangle {
-  width: 0; height: 0;
-  border-left: clamp(58px, min(9vw, 18vh), 132px) solid transparent;
-  border-right: clamp(58px, min(9vw, 18vh), 132px) solid transparent;
-  border-bottom: clamp(100px, min(16vw, 32vh), 230px) solid #10B981;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
-}
-.shape-star {
-  font-size: clamp(116px, min(20vw, 42vh), 290px); line-height: 1;
-  color: #F97316;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
-}
-.shape-heart {
-  font-size: clamp(116px, min(20vw, 42vh), 290px); line-height: 1;
-  color: #EC4899;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
-}
-.shape-rectangle { width: clamp(148px, min(24vw, 44vh), 350px); height: clamp(76px, min(12vw, 24vh), 178px); border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-diamond {
-  width: clamp(104px, min(17vw, 36vh), 230px); height: clamp(104px, min(17vw, 36vh), 230px);
-  background: #EF4444;
-  transform: rotate(45deg);
-  border-radius: 20px;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.15);
-}
-.shape-oval { width: clamp(150px, min(24vw, 44vh), 350px); height: clamp(82px, min(13vw, 26vh), 190px); border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-circle    { width: 230px; height: 230px; border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-square    { width: 230px; height: 230px; border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-triangle  { width: 0; height: 0; border-left: 120px solid transparent; border-right: 120px solid transparent; border-bottom: 210px solid #10B981; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
+.shape-star      { font-size: 280px; line-height: 1; color: #F97316; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
+.shape-heart     { font-size: 280px; line-height: 1; color: #EC4899; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
+.shape-rectangle { width: 320px; height: 170px; border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-diamond   { width: 220px; height: 220px; background: #EF4444; transform: rotate(45deg); border-radius: 20px; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-oval      { width: 320px; height: 170px; border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 
-/* ===== Choices ===== */
-.choices {
-  grid-area: choices;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(8px, 0.9vw, 14px);
-  align-content: stretch;
-  padding: clamp(10px, 1vw, 18px);
-  border: clamp(6px, 0.7vw, 11px) solid transparent;
-  border-radius: clamp(20px, 2vw, 32px);
-  background:
-    linear-gradient(180deg, rgba(255, 247, 228, 0.88), rgba(251, 229, 188, 0.8)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 22px,
-      var(--quiz-wood-mid) 22px 48px,
-      var(--quiz-wood-light) 48px 62px,
-      var(--quiz-wood-mid) 62px 88px
-    ) border-box;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.52),
-    0 10px 20px rgba(120, 83, 20, 0.16);
-  min-height: 0;
-}
-.choice-btn {
-  position: relative;
-  padding: clamp(8px, 0.9vw, 14px);
-  border: 3px solid rgba(226, 188, 116, 0.52);
-  border-radius: clamp(18px, 1.8vw, 28px);
-  background:
-    linear-gradient(180deg, rgba(255,253,247,0.92), rgba(247,233,200,0.82));
-  color: #714E24;
-  font-family: inherit;
-  font-size: clamp(1.18rem, 2.8vh, 1.9rem);
-  font-weight: 900;
-  cursor: pointer;
-  transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+/* ===== Emoji / Trivia / Opposite ===== */
+.emoji-display {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 16px;
+  max-width: 100%;
+  text-align: center;
+}
+.emoji-main {
+  font-size: 220px;
+  line-height: 1;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
+}
+.emoji-main-img {
+  max-width: 360px;
+  max-height: 360px;
+  object-fit: contain;
+}
+.emoji-hint {
+  font-size: 18px;
+  font-weight: 700;
+  color: #8A6A42;
+  text-align: center;
+  background: rgba(255,255,255,0.85);
+  border-radius: 999px;
+  padding: 8px 18px;
+  box-shadow: 0 2px 6px rgba(120, 83, 20, 0.12);
+}
+.opposite-display {
+  font-size: 84px;
+  font-weight: 900;
+  color: #D36B12;
+  text-shadow: 0 4px 0 rgba(255, 246, 221, 0.95);
+  padding: 24px 48px;
+  background: linear-gradient(180deg, #FFF7E5, #F8DE9F);
+  border-radius: 26px;
+  border: 3px solid rgba(231, 203, 149, 0.92);
+  box-shadow: 0 10px 22px rgba(120, 83, 20, 0.12);
+}
+.trivia-display { position: relative; }
+.trivia-pono {
+  width: 280px; height: 280px;
+  object-fit: contain;
+  border-radius: 24px;
+  filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
+}
+.trivia-bubble {
+  position: absolute;
+  top: -8px; right: -16px;
+  font-size: 36px;
+  font-weight: 900;
+  color: #FF6B9D;
+  background: #fff;
+  border-radius: 50%;
+  width: 60px; height: 60px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 12px rgba(255,107,157,0.3);
+  animation: quizBubbleBlink 2.5s ease-in-out infinite;
+}
+@keyframes quizBubbleBlink {
+  0%, 70%, 100% { opacity: 1; transform: scale(1); }
+  80% { opacity: 0.3; transform: scale(0.85); }
+  90% { opacity: 1; transform: scale(1.1); }
+}
+
+/* ===== Answer column (right) ===== */
+.a-col {
+  display: flex; flex-direction: column;
+  gap: 18px;
+  height: 100%;
   justify-content: center;
-  gap: clamp(8px, 1vh, 14px);
-  flex-wrap: nowrap;
-  min-height: 0;
+}
+.answer-tray {
+  background: #b07a3a;
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 18px;
+  flex: 0 0 auto;
+}
+.answer-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  width: 100%;
+}
+.bottom-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 8px;
+}
+.bottom-right .character {
+  flex: 0 0 auto;
+}
+.chip {
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 28px;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+  position: relative;
+  height: 220px;
+  cursor: pointer;
+  font-family: inherit;
   -webkit-tap-highlight-color: transparent;
   text-align: center;
-  line-height: 1.35;
-  white-space: nowrap;
-  box-shadow:
-    0 8px 16px rgba(120, 83, 20, 0.08),
-    inset 0 1px 0 rgba(255,255,255,0.78);
+  line-height: 1.2;
 }
-.choice-btn span {
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-@media (hover: hover) {
-  .choice-btn:hover {
-    background: linear-gradient(180deg, #FFF8E8, #F0DBA8);
-    box-shadow: 0 16px 26px rgba(120, 83, 20, 0.16), inset 0 1px 0 rgba(255,255,255,0.9);
-  }
-}
-.choice-btn:active { transform: scale(0.97); }
-.choice-btn.correct {
-  background: #D1FAE5 !important;
+.chip:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wood-dark), 0 4px 8px var(--paper-shadow); }
+.chip.correct {
+  background: linear-gradient(180deg, #BDF5C2, #6FD480) !important;
   border-color: var(--success) !important;
   color: #065F46;
   animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.choice-btn.wrong {
-  background: #FEE2E2 !important;
+.chip.wrong {
+  background: linear-gradient(180deg, #FED7D7, #F19999) !important;
   border-color: var(--danger) !important;
   animation: shake 0.4s;
 }
-.choice-btn--count {
-  font-size: clamp(2.35rem, min(5.4vw, 8vh), 4.3rem);
-}
-.choice-color {
-  width: clamp(46px, min(7.6vw, 13vh), 88px);
-  height: clamp(46px, min(7.6vw, 13vh), 88px);
-  border-radius: clamp(12px, 1.5vw, 20px);
-  border: 2px solid rgba(255,255,255,0.8);
-  flex-shrink: 0;
-}
+.chip.chip-count { font-size: 56px; }
 @keyframes popIn {
   0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+  50% { transform: scale(1.12); }
   100% { transform: scale(1); }
 }
 @keyframes shake {
@@ -682,483 +524,97 @@ body::after {
   75% { transform: translateX(8px); }
 }
 
-@media (orientation: landscape) and (min-width: 761px) {
-  .game-shell {
-    width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
-    height: auto;
-    max-height: calc(100dvh - 16px);
-    grid-template-columns: minmax(0, 1fr) clamp(170px, 20%, 280px);
-    grid-template-rows: clamp(56px, 9.2%, 78px) minmax(0, 1fr);
-    gap: var(--quiz-safe-gap);
-  }
-  .header {
-    grid-column: 1;
-    grid-row: 1;
-    width: min(100%, 700px);
-    height: 100%;
-    min-height: 0;
-    aspect-ratio: auto;
-    grid-template-columns: clamp(48px, 7.3vh, 72px) minmax(132px, 0.48fr) clamp(70px, 10%, 110px) max-content;
-    padding: clamp(4px, 0.6vh, 7px) clamp(8px, 1vw, 14px);
-  }
-  .header-logo {
-    width: auto;
-    height: clamp(34px, 6.2vh, 56px);
-    max-width: min(100%, 220px);
-    max-height: 82%;
-    margin-left: 0;
-  }
-  .hud {
-    grid-column: 2;
-    grid-row: 1;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    aspect-ratio: auto;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: clamp(4px, 0.6vh, 7px) clamp(6px, 0.8vw, 11px);
-  }
-  #hud-back-btn,
-  .hud-action-btn {
-    min-height: clamp(36px, 6.4vh, 54px);
-  }
-  .header #hud-label {
-    min-height: clamp(32px, 5.2vh, 46px);
-  }
-  .stage {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 0;
-    height: 100%;
-    grid-template-columns: minmax(0, 64fr) minmax(200px, 34fr);
-    gap: var(--quiz-safe-gap);
-  }
-  .question-panel,
-  .answer-panel {
-    height: min(100%, 82%);
-    min-height: 0 !important;
-    padding: clamp(8px, 0.9vw, 14px);
-  }
-  .answer-panel {
-    width: min(100%, 470px);
-    height: min(100%, 72%);
-    align-self: center;
-    justify-self: center;
-  }
-  .question-panel {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: clamp(48px, 11%, 72px) minmax(0, 1fr);
-    grid-template-areas:
-      "question"
-      "board";
-    gap: clamp(8px, 1vw, 14px);
-  }
-  .answer-panel {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr);
-    grid-template-areas:
-      "choices";
-    gap: clamp(8px, 1vw, 14px);
-  }
-  .panel-chip {
-    min-height: clamp(28px, 5vh, 38px);
-    font-size: clamp(0.72rem, 1.45vh, 0.88rem);
-  }
-  .question-panel > .panel-chip {
-    display: none;
-  }
-  .question-wrap {
-    grid-area: question;
-    justify-self: center;
-    align-self: center;
-    width: min(90%, 740px);
-    min-height: 0;
-    margin: 0;
-    padding: 0 clamp(42px, 4.2vw, 62px) 0 clamp(24px, 2.6vw, 38px);
-  }
-  .question {
-    color: #7a5322;
-    font-size: clamp(1.14rem, 2.25vh, 1.7rem);
-    line-height: 1.25;
-    text-shadow: 0 1px 0 rgba(255, 250, 232, 0.88);
-  }
-  .question-board {
-    grid-area: board;
-    flex: none;
-    height: 100%;
-    min-height: 0;
-    padding: clamp(12px, 1.2vw, 22px);
-    border-width: clamp(6px, 0.7vw, 11px);
-  }
-  #stage-area {
-    min-height: 0;
-    height: 100%;
-  }
-  .answer-guide {
-    position: absolute;
-    right: clamp(-44px, -2.8vw, -24px);
-    bottom: clamp(-22px, -1.5vw, -10px);
-    width: clamp(112px, 12.5vw, 200px);
-    min-height: auto;
-    margin: 0;
-    padding: 0;
-  }
-  .answer-guide__owl {
-    width: 100%;
-  }
-  .answer-guide__copy {
-    display: none;
-  }
-  .choices {
-    grid-area: choices;
-    flex: none;
-    min-height: 0;
-    height: auto;
-    padding: clamp(10px, 1vw, 18px);
-    gap: clamp(8px, 0.9vw, 14px);
-    border-width: clamp(6px, 0.7vw, 11px);
-  }
-  .choice-btn {
-    min-height: 0;
-    padding: clamp(8px, 0.9vw, 14px);
-    font-size: clamp(1.12rem, 2.55vh, 1.78rem);
-  }
-  .answer-note {
-    grid-area: note;
-    margin-top: 0;
-  }
-  .choice-btn--count {
-    font-size: clamp(2rem, min(5.2vw, 7.2vh), 3.8rem);
-  }
-  .shape-display {
-    height: 100%;
-    max-height: 100%;
-  }
-  .shape-circle,
-  .shape-square {
-    width: clamp(104px, min(18vw, 38vh), 260px);
-    height: clamp(104px, min(18vw, 38vh), 260px);
-  }
-}
-
-@media (orientation: landscape) and (max-height: 500px) {
-  .question-wrap {
-    width: min(90%, 520px);
-  }
-  .question {
-    font-size: clamp(0.95rem, 4vh, 1.22rem);
-  }
-  .choices {
-    padding: clamp(5px, 1.1vh, 8px);
-    gap: clamp(5px, 1.2vh, 8px);
-  }
-  .choice-btn {
-    gap: clamp(3px, 0.8vh, 6px);
-    padding: clamp(4px, 1vh, 7px);
-    font-size: clamp(0.82rem, 3.2vh, 1rem);
-  }
-  .choice-btn--count {
-    font-size: clamp(1.55rem, 7vh, 2.35rem);
-  }
-  .choice-color {
-    width: clamp(32px, 9.5vh, 48px);
-    height: clamp(32px, 9.5vh, 48px);
-  }
-  .answer-guide {
-    right: clamp(-8px, -1vw, -4px);
-    bottom: clamp(-4px, -0.8vh, 0px);
-    width: clamp(62px, 9vw, 82px);
-  }
-  .answer-guide__owl {
-    transform: scale(1.08);
-  }
-  .item-row {
-    gap: clamp(7px, 1.6vh, 10px);
-  }
-  .color-chip,
-  .count-item {
-    width: clamp(48px, 16vh, 66px);
-    height: clamp(48px, 16vh, 66px);
-  }
-}
-
-/* ===== Feedback bubble ===== */
-.feedback {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  background: #fff;
-  border: 4px solid var(--success);
-  border-radius: 24px;
-  padding: 20px 36px;
-  font-size: 1.6rem;
-  font-weight: 900;
-  color: var(--success);
-  z-index: 100;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  pointer-events: none;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  white-space: nowrap;
-}
-.feedback.show { transform: translate(-50%, -50%) scale(1); }
-
-/* ===== Confetti ===== */
-.confetti {
-  position: fixed;
-  top: -20px;
-  width: 10px; height: 14px;
-  z-index: 90;
-  pointer-events: none;
-  animation: confFall 2.5s linear forwards;
-}
-@keyframes confFall {
-  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-}
-
-/* ===== Garden overlay ===== */
-.garden-overlay {
-  position: fixed; inset: 0; z-index: 9200;
-  background: rgba(30, 18, 48, 0.88);
-  display: flex; flex-direction: column;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.25s;
-}
-.garden-overlay.visible { opacity: 1; pointer-events: all; }
-.garden-header {
-  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-  background: rgba(255,255,255,0.08);
-  border-bottom: 1px solid rgba(255,255,255,0.15);
-}
-.garden-title { flex: 1; font-size: 1.15rem; font-weight: 900; color: #FFE88C; }
-.garden-close {
-  background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
-  width: 36px; height: 36px; color: #fff; font-size: 1.1rem;
-  font-family: inherit; cursor: pointer;
-}
-.garden-body {
-  flex: 1; overflow-y: auto; padding: 20px 16px;
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
-  max-width: 540px; width: 100%; margin: 0 auto;
-}
-.garden-hint {
-  font-size: 0.88rem; font-weight: 700; color: rgba(255,255,255,0.85);
-  text-align: center; line-height: 1.5;
-}
-.garden-grid {
-  width: 100%;
-  background: linear-gradient(180deg, #A0826D 0%, #8B6F47 100%);
-  border-radius: 20px;
-  padding: 18px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.3);
-}
-.garden-cell {
-  aspect-ratio: 1;
-  border-radius: 18px;
-  background: rgba(0,0,0,0.22);
-  display: flex; align-items: center; justify-content: center;
-  font-size: clamp(2.2rem, 12vw, 4rem); line-height: 1;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-  cursor: pointer;
-  position: relative;
-  transition: transform 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.garden-cell:active { transform: scale(0.96); }
-.garden-cell.bloomed {
-  background: radial-gradient(circle, var(--cell-bg, #FFE88C) 0%, rgba(255,255,255,0.4) 80%);
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.2);
-  animation: bloomPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.garden-cell.watered {
-  animation: waterShake 0.4s;
-}
-@keyframes bloomPop {
-  0%   { transform: scale(0);   }
-  60%  { transform: scale(1.35); }
-  100% { transform: scale(1);   }
-}
-@keyframes waterShake {
-  0%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-6px); }
-  60% { transform: translateY(2px); }
-}
-.garden-seeds-row {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 16px; padding: 10px 20px;
-  font-weight: 900; font-size: 1rem; color: #fff;
-}
-.garden-seeds-row .seed-emoji { font-size: 1.4rem; }
-.garden-toast {
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  background: rgba(30, 18, 48, 0.92);
-  color: #FFE88C;
-  padding: 14px 24px; border-radius: 16px;
-  font-size: 1rem; font-weight: 900;
-  z-index: 9300; pointer-events: none;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  white-space: nowrap;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-}
-.garden-toast.show { transform: translate(-50%, -50%) scale(1); }
-
-/* ===== Season themes ===== */
-body[data-season="spring"] { background: linear-gradient(170deg, #FFF0F5 0%, #FFE4E8 50%, #FFB6C1 100%); }
-body[data-season="summer"] { background: linear-gradient(170deg, #E0F7FA 0%, #B3E5FC 50%, #81D4FA 100%); }
-body[data-season="autumn"] { background: linear-gradient(170deg, #FFF3E0 0%, #FFE0B2 50%, #FFAB91 100%); }
-body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BBDEFB 50%, #D1E9FF 100%); }
-
-/* ===== Flower encyclopedia ===== */
-.flower-enc {
-  position: fixed; inset: 0; z-index: 9100;
-  background: rgba(30, 18, 48, 0.92);
-  display: flex; flex-direction: column;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.25s;
-}
-.flower-enc.visible { opacity: 1; pointer-events: all; }
-.flower-enc-header {
-  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-  background: rgba(255,255,255,0.08);
-  border-bottom: 1px solid rgba(255,255,255,0.15);
-}
-.flower-enc-title { flex: 1; font-size: 1.15rem; font-weight: 900; color: #FFD6E0; }
-.flower-enc-progress {
-  font-size: 0.78rem; font-weight: 700; color: #FCD34D;
-  background: rgba(252,211,77,0.15); border-radius: 12px; padding: 3px 10px;
-}
-.flower-enc-close {
-  background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
-  width: 36px; height: 36px; color: #fff; font-size: 1.1rem;
-  font-family: inherit; cursor: pointer;
-}
-.flower-enc-body {
-  flex: 1; overflow-y: auto; padding: 14px;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-  max-width: 540px; width: 100%; margin: 0 auto;
-}
-.flower-enc-card {
-  background: rgba(255,255,255,0.08);
-  border-radius: 14px; padding: 10px 4px;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  aspect-ratio: 0.95;
-}
-.flower-enc-card.discovered { background: rgba(255,255,255,0.18); }
-.flower-enc-emoji { font-size: 2rem; line-height: 1; }
-.flower-enc-card:not(.discovered) .flower-enc-emoji { filter: grayscale(1) brightness(0.5); opacity: 0.5; }
-.flower-enc-name { font-size: 0.68rem; font-weight: 700; color: #fff; text-align: center; }
-.flower-enc-card:not(.discovered) .flower-enc-name { color: rgba(255,255,255,0.4); }
-
-.modal-btn-enc {
-  background: linear-gradient(135deg, #EC4899, #F472B6) !important;
-}
-
-/* ===== Emoji / Opposite display ===== */
-.emoji-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  max-width: 100%;
-  text-align: center;
-}
-.emoji-main {
-  font-size: clamp(120px, 16vw, 220px);
-  line-height: 1;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
-}
-.emoji-main-img {
-  max-width: min(100%, 340px);
-  max-height: min(44vh, 340px);
-  object-fit: contain;
-}
-.emoji-hint {
-  font-size: clamp(0.98rem, 1.05vw, 1.15rem);
-  font-weight: 700;
-  color: #8A6A42;
-  text-align: center;
-  background: rgba(255,255,255,0.72);
-  border-radius: 999px;
-  padding: 8px 14px;
-}
-.opposite-display {
-  font-size: clamp(2.7rem, 4.4vw, 5.4rem);
-  font-weight: 900;
-  color: #D36B12;
-  text-shadow: 0 4px 0 rgba(255, 246, 221, 0.95);
-  padding: 18px 36px;
-  background: linear-gradient(180deg, #FFF7E5, #F8DE9F);
-  border-radius: 26px;
-  border: 3px solid rgba(231, 203, 149, 0.92);
-  box-shadow: 0 10px 22px rgba(120, 83, 20, 0.12);
-}
-.trivia-display .trivia-pono {
-  width: clamp(190px, 19vw, 300px);
-  height: clamp(190px, 19vw, 300px);
-  object-fit: contain;
-  border-radius: 24px;
-  filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
-}
-.trivia-bubble {
-  position: absolute;
-  top: -8px;
-  right: -16px;
-  font-size: clamp(1.9rem, 2vw, 2.4rem);
-  font-weight: 900;
-  color: #FF6B9D;
-  background: #fff;
+/* チップ内の手描きスクリブル円 (色問題用) */
+.chip .circle {
+  width: 110px; height: 110px;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,0.04) 0 4px,
+      rgba(0,0,0,0.06) 4px 8px),
+    var(--slot-color);
+  border: 3px solid rgba(0,0,0,0.1);
+}
+.chip[data-color="red"]    .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #d23f3f; }
+.chip[data-color="blue"]   .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #3d6dc7; }
+.chip[data-color="yellow"] .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #e8c43a; }
+.chip[data-color="green"]  .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #4ea84e; }
+.chip[data-color="pink"]   .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #EC4899; }
+.chip[data-color="orange"] .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #F97316; }
+.chip[data-color="purple"] .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #8B5CF6; }
+.chip[data-color="cyan"]   .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #06B6D4; }
+
+/* ===== char-hint (吹き出し) + character (フクロウ博士) ===== */
+.char-hint {
+  flex: 0 0 auto;
+  position: relative;
+  width: 235px;
+  height: 63px;
+  background-image: url('../assets/preview-placeholders/hint-60.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 3px 12px rgba(255,107,157,0.3);
-  animation: quizBubbleBlink 2.5s ease-in-out infinite;
+  font-size: 18px;
+  font-weight: 700;
+  color: #4a3a1a;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  white-space: nowrap;
 }
-.answer-note {
-  grid-area: note;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  justify-self: center;
-  gap: 10px;
-  padding: 12px 24px;
-  border-radius: 999px;
-  border: 2px solid rgba(233, 201, 135, 0.74);
-  background: linear-gradient(180deg, #FFFDF6, #F5E7BE);
-  color: #735125;
-  font-size: 1rem;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(120, 83, 20, 0.08);
+.character {
+  width: 200px; height: 220px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  margin-bottom: -8px;
 }
-.answer-note__icon {
-  font-size: 1.35rem;
+.character img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  pointer-events: none;
 }
-
-/* Common menu is opened from the in-HUD settings button on this screen. */
-.pono-menu-toggle {
-  width: 1px !important;
-  height: 1px !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+.character.jump {
+  animation: ponoJump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.pono-dropdown {
-  left: auto !important;
-  right: max(16px, env(safe-area-inset-right)) !important;
-  top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
+@keyframes ponoJump {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-30px); }
+  100% { transform: translateY(0); }
 }
 
-/* ===== Start screen ===== */
-/* ===== Title (Start) Screen =====
-   BG (1600×679 = 21:9) を cover で全画面、ロゴは左上に絶対配置。
-   端末アスペクト差は side cropping で吸収 (バー無し)。 */
+/* ===== 縦持ち警告 ===== */
+.landscape-notice { display: none; }
+@media (orientation: portrait) {
+  .landscape-notice {
+    display: flex;
+    flex-direction: column;
+    position: fixed; inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.92);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #FFE8B0;
+    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+    gap: 18px;
+  }
+  .landscape-notice .rotate-icon {
+    font-size: 4rem;
+    animation: rotateHint 1.6s ease-in-out infinite;
+  }
+  .landscape-notice p {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+  }
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(90deg); }
+  }
+}
+
+/* ===== Start Screen ===== */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
   background: #C4D9A2 url('../assets/images/quizland/title_back.png') center / cover no-repeat;
@@ -1167,12 +623,9 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   overflow: hidden;
 }
 .start-screen.hidden { display: none; }
-/* ロゴと「タップしてスタート」を flex column wrapper で強制縦並び。
-   絶対配置でも親 wrapper 内なので必ずロゴの直下に表示される。 */
 .start-content {
   position: absolute;
-  top: 4%;
-  left: 5%;
+  top: 4%; left: 5%;
   width: min(54%, 580px);
   display: flex;
   flex-direction: column;
@@ -1204,47 +657,12 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   50%      { opacity: 1;    transform: scale(1.06); }
 }
 
-/* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
-.landscape-notice {
-  display: none;
-}
-@media (orientation: portrait) {
-  .landscape-notice {
-    display: flex;
-    flex-direction: column;
-    position: fixed; inset: 0;
-    z-index: 9999;
-    background: rgba(0,0,0,0.92);
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #FFE8B0;
-    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-    gap: 18px;
-  }
-  .landscape-notice .rotate-icon {
-    font-size: 4rem;
-    animation: rotateHint 1.6s ease-in-out infinite;
-  }
-  .landscape-notice p {
-    font-size: 1.5rem;
-    line-height: 1.4;
-    letter-spacing: 0.06em;
-  }
-  @keyframes rotateHint {
-    0%, 100% { transform: rotate(0deg); }
-    50%      { transform: rotate(90deg); }
-  }
-}
-
-/* ===== Mode select screen (after tap-to-start) ===== */
+/* ===== Mode Select Screen ===== */
 .mode-screen {
   position: fixed; inset: 0; z-index: 49;
   background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
   padding: 24px;
   gap: 18px;
 }
@@ -1285,93 +703,6 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   margin-top: 4px;
 }
 
-/* ===== Category screen ===== */
-.category-screen {
-  position: fixed; inset: 0; z-index: 45;
-  background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
-  display: flex; flex-direction: column; align-items: center;
-  padding: 28px 16px 24px; gap: 14px; overflow-y: auto;
-}
-.category-screen.hidden { display: none; }
-.cat-title { font-size: 1.3rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #F59E0B; }
-.cat-subtitle { font-size: 0.82rem; font-weight: 700; color: #5D4E37; }
-.cat-all-btn {
-  padding: 7px 22px; border: 2px solid #fff; border-radius: 50px;
-  background: rgba(255,255,255,0.35); color: #fff;
-  font-family: inherit; font-size: 0.82rem; font-weight: 900; cursor: pointer;
-  transition: background 0.15s;
-}
-.cat-all-btn:hover { background: rgba(255,255,255,0.55); }
-.cat-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px; width: 100%; max-width: 400px;
-}
-.cat-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 10px 6px; border: 3px solid rgba(255,255,255,0.45); border-radius: 16px;
-  background: rgba(255,255,255,0.25); cursor: pointer;
-  font-family: inherit; font-weight: 900; color: #5D4E37;
-  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
-}
-.cat-btn.selected {
-  background: #fff; border-color: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
-}
-.cat-emoji { font-size: 1.8rem; line-height: 1.1; }
-.cat-label { font-size: 0.64rem; text-align: center; line-height: 1.3; }
-.diff-btn {
-  padding: 8px 16px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50px;
-  background: rgba(255,255,255,0.25); cursor: pointer;
-  font-family: inherit; font-size: 0.8rem; font-weight: 900; color: #5D4E37;
-  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
-}
-.diff-btn.selected {
-  background: #fff; border-color: #fff;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-}
-.cat-start-btn {
-  padding: 15px 48px; border: none; border-radius: 50px;
-  background: linear-gradient(135deg, #EF4444, #F97316);
-  color: #fff; font-family: inherit; font-size: 1.15rem; font-weight: 900;
-  cursor: pointer; box-shadow: 0 6px 20px rgba(239,68,68,0.4);
-  transition: transform 0.15s; animation: pulse 1.8s ease-in-out infinite;
-}
-.cat-start-btn:active { transform: scale(0.95); }
-.cat-start-btn:disabled { opacity: 0.45; animation: none; }
-.start-title {
-  font-size: 2.6rem;
-  font-weight: 900;
-  color: #fff;
-  text-shadow: 3px 3px 0 #F59E0B, 6px 6px 0 rgba(0,0,0,0.15);
-  text-align: center;
-  line-height: 1.2;
-}
-.start-subtitle {
-  font-size: 1rem;
-  color: #5D4E37;
-  font-weight: 700;
-  text-align: center;
-}
-.start-btn {
-  padding: 18px 48px;
-  border: none;
-  border-radius: 50px;
-  background: linear-gradient(135deg, #EF4444, #F97316);
-  color: #fff;
-  font-family: inherit;
-  font-size: 1.3rem;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(239,68,68,0.4);
-  transition: transform 0.15s;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-.start-btn:active { transform: scale(0.95); }
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
 /* ===== Result modal ===== */
 .overlay {
   position: fixed; inset: 0; z-index: 200;
@@ -1388,10 +719,10 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   width: 90vw;
   text-align: center;
   box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   gap: 14px;
   align-items: center;
+  color: var(--text);
 }
 .modal-icon { font-size: 3rem; line-height: 1; }
 .modal-title {
@@ -1429,395 +760,78 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   font-weight: 700;
 }
 
-/* ===========================================================
-   v2 Layout (preview/full からのポート: hdr-pill + q-text-card +
-   board + answer-tray + bottom-right). 旧 .header/.hud/.stage の
-   CSS は markup から削除済みなので残っていても効かない (上書き目的
-   で同じ selector も一部再定義している)。
-   =========================================================== */
-
-/* Game shell: 16:9 セーフエリアを内側に持つラッパに変更 */
-.game-shell {
-  width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
-  max-width: 1600px;
-  aspect-ratio: 16 / 9;
-  height: auto;
-  max-height: calc(100dvh - 16px);
-  display: block;
-  position: relative;
-  align-self: center;
-  /* 旧 grid 設定をリセット */
-  grid-template-columns: none;
-  grid-template-rows: none;
-  gap: 0;
-}
-.safe-area {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-rows: clamp(72px, 14%, 130px) minmax(0, 1fr);
-  grid-template-columns: 1fr;
-  gap: clamp(8px, 1.2vh, 16px);
-  padding: clamp(8px, 1.4vh, 16px);
-  box-sizing: border-box;
-}
-
-/* ── Header row ── */
-.hdr {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  gap: clamp(8px, 1.2vw, 16px);
-  align-items: center;
-  height: 100%;
-  min-height: 0;
-}
-.hdr-left.hdr-pill {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: clamp(8px, 1.2vw, 16px);
-  padding: clamp(4px, 0.8vh, 10px) clamp(10px, 1.6vw, 22px);
-  height: 100%;
-  min-height: 0;
-  border-radius: clamp(28px, 6vh, 48px);
-  background:
-    linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 16px,
-      var(--quiz-wood-mid) 16px 32px,
-      var(--quiz-wood-light) 32px 42px,
-      var(--quiz-wood-mid) 42px 58px
-    ) border-box;
-  border: clamp(3px, 0.6vh, 5px) solid transparent;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.56),
-    0 4px 10px var(--quiz-frame-shadow);
-  overflow: hidden;
-}
-.hdr-left .owl-icon {
-  flex: 0 0 auto;
-  width: clamp(48px, 9vh, 88px);
-  height: clamp(48px, 9vh, 88px);
-  border-radius: 50%;
-  background: linear-gradient(180deg, #f4e4c4, #d8b78a);
-  border: clamp(2px, 0.4vh, 3px) solid var(--quiz-wood-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.hdr-left .owl-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 18%;
-  transform: scale(1.6);
-  transform-origin: 50% 18%;
-}
-.hdr-left .title-card {
-  flex: 0 0 auto;
-  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
-  border: clamp(2px, 0.4vh, 3px) solid var(--quiz-wood-dark);
-  border-radius: clamp(8px, 1.2vw, 14px);
-  padding: clamp(2px, 0.5vh, 6px) clamp(8px, 1.2vw, 16px);
-  color: #fff7d0;
-  font-weight: 800;
-  font-size: clamp(0.8rem, 1.9vh, 1.18rem);
-  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
-  text-align: center;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-}
-.hdr-left .title-card small {
-  display: block;
-  font-size: clamp(0.55rem, 1.25vh, 0.78rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.hdr-left .progress-num {
-  flex: 0 0 auto;
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
-  border: clamp(1.5px, 0.3vh, 2px) solid var(--quiz-wood-dark);
-  border-radius: clamp(10px, 1.4vw, 18px);
-  padding: clamp(2px, 0.4vh, 6px) clamp(10px, 1.4vw, 20px);
+/* ===== Feedback bubble ===== */
+.feedback {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: #fff;
+  border: 4px solid var(--success);
+  border-radius: 24px;
+  padding: 20px 36px;
+  font-size: 1.6rem;
   font-weight: 900;
-  font-size: clamp(0.95rem, 2.2vh, 1.4rem);
-  color: var(--text);
-  letter-spacing: 0.04em;
-}
-.hdr-left .dots {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: clamp(6px, 1vw, 12px);
-  height: clamp(12px, 2vh, 18px);
-}
-.hdr-left .dot {
-  display: inline-block;
-  height: 100%;
-  aspect-ratio: 1;
-  width: auto;
-  flex: 0 0 auto;
-  background: #d6b56a;
-  border: clamp(1.5px, 0.3vh, 2px) solid var(--quiz-wood-mid);
-  border-radius: 50%;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-  transition: background 0.3s, transform 0.3s, border-color 0.3s;
-}
-.hdr-left .dot.done {
-  background: #f3a330;
-  border-color: var(--quiz-wood-dark);
-}
-.hdr-left .dot.current {
-  background: #F7A718;
-  border-color: #B96A12;
-  transform: scale(1.18);
-}
-
-/* Right header buttons (タイトルへ / せってい) */
-.hdr-right {
-  display: inline-flex;
-  align-items: center;
-  gap: clamp(6px, 1vw, 12px);
-  justify-self: end;
-  height: 100%;
-}
-.hdr-right .ctrl-btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(2px, 0.5vh, 6px);
-  height: 100%;
-  min-height: clamp(56px, 11vh, 110px);
-  padding: clamp(4px, 0.8vh, 10px) clamp(8px, 1vw, 14px);
-  border: clamp(2px, 0.4vh, 3px) solid var(--quiz-wood-dark);
-  border-radius: clamp(12px, 1.6vw, 22px);
-  background: linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom));
-  color: var(--text);
-  font-family: inherit;
-  font-weight: 800;
-  font-size: clamp(0.62rem, 1.35vh, 0.92rem);
-  cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 5px 10px rgba(120,83,20,0.1);
-  -webkit-tap-highlight-color: transparent;
-  white-space: nowrap;
-}
-.hdr-right .ctrl-btn .icon {
-  font-size: clamp(1.1rem, 3vh, 2rem);
-  line-height: 1;
-}
-.hdr-right .ctrl-btn .ctrl-label {
-  line-height: 1.05;
-}
-.hdr-right .ctrl-btn:active { transform: scale(0.96); }
-
-/* ── Body row (左 q-col + 右 a-col) ── */
-.body {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-  gap: clamp(8px, 1.2vw, 16px);
-  align-items: stretch;
-  min-height: 0;
-}
-.q-col, .a-col {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 1.2vh, 14px);
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-  justify-content: center;
-}
-
-/* Question text card (上) */
-.q-text-card {
-  position: relative;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(8px, 1vw, 16px);
-  padding: clamp(10px, 1.5vh, 20px) clamp(60px, 6vw, 90px) clamp(10px, 1.5vh, 20px) clamp(20px, 2vw, 32px);
-  background:
-    linear-gradient(180deg, rgba(255, 247, 228, 0.94), rgba(250, 230, 190, 0.88)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 22px,
-      var(--quiz-wood-mid) 22px 48px,
-      var(--quiz-wood-light) 48px 62px,
-      var(--quiz-wood-mid) 62px 88px
-    ) border-box;
-  border: clamp(4px, 0.6vw, 7px) solid transparent;
-  border-radius: clamp(14px, 1.6vw, 22px);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
-    0 6px 14px rgba(120, 83, 20, 0.16);
-  min-height: clamp(50px, 9vh, 90px);
-}
-.q-text-card #question-text {
-  font-size: clamp(0.96rem, 2.1vh, 1.55rem);
-  font-weight: 900;
-  color: #6f4b1e;
-  text-align: center;
-  line-height: 1.28;
-  white-space: pre-line;
-  text-wrap: balance;
-  word-break: keep-all;
-  overflow-wrap: normal;
-  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.9);
-}
-.q-text-card .audio {
-  position: absolute;
-  top: 50%;
-  right: clamp(10px, 1vw, 18px);
-  transform: translateY(-50%);
-  width: clamp(38px, 6vh, 58px);
-  height: clamp(38px, 6vh, 58px);
-  border: clamp(2px, 0.4vh, 3px) solid rgba(132, 89, 34, 0.72);
-  border-radius: 50%;
-  background: linear-gradient(180deg, var(--quiz-wood-light), var(--quiz-wood-mid));
-  color: #fffaf0;
-  font-size: clamp(1rem, 2.2vh, 1.4rem);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.4),
-    0 6px 14px rgba(196, 122, 14, 0.26);
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Board (問題内容を載せる紙ボード) */
-.board {
-  flex: 1 1 auto;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  padding: clamp(10px, 1.4vh, 22px);
-  background:
-    linear-gradient(180deg, rgba(255, 244, 211, 0.92), rgba(255, 236, 185, 0.82)) padding-box,
-    repeating-linear-gradient(
-      90deg,
-      var(--quiz-wood-dark) 0 22px,
-      var(--quiz-wood-mid) 22px 48px,
-      var(--quiz-wood-light) 48px 62px,
-      var(--quiz-wood-mid) 62px 88px
-    ) border-box;
-  border: clamp(5px, 0.7vw, 9px) solid transparent;
-  border-radius: clamp(16px, 1.8vw, 28px);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.52),
-    0 8px 16px rgba(120, 83, 20, 0.16);
-  overflow: hidden;
-}
-.board #stage-area {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: clamp(10px, 1.2vw, 22px);
-  min-height: 0;
-}
-
-/* Answer tray (4チップを囲う木枠) */
-.answer-tray {
-  flex: 0 0 auto;
-  background: #b07a3a;
-  border: clamp(4px, 0.6vw, 7px) solid var(--quiz-wood-dark);
-  border-radius: clamp(14px, 1.8vw, 22px);
-  padding: clamp(8px, 1.2vh, 16px);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.32),
-    0 8px 16px rgba(120, 83, 20, 0.18);
-}
-/* 旧 .choices の wood-frame border は answer-tray に持たせたので、
-   tray 内側の choices は枠なし・背景透明にする */
-.answer-tray .choices {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(8px, 1vw, 14px);
-  width: 100%;
-  height: 100%;
-  align-content: stretch;
-  min-height: 0;
-}
-
-/* Bottom-right: hint (ふきだし) + character (フクロウ博士) */
-.bottom-right {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: clamp(6px, 1vw, 12px);
-  margin-top: 0;
-  flex: 0 0 auto;
-  min-height: 0;
-}
-.bottom-right .char-hint {
-  flex: 0 1 auto;
-  position: relative;
-  align-self: center;
-  padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.6vw, 20px);
-  background: linear-gradient(180deg, #fff8d4, var(--quiz-paper-bottom, #FBE1A6));
-  border: clamp(2px, 0.4vh, 3px) solid #b89a3a;
-  border-radius: clamp(12px, 1.6vw, 18px);
-  font-size: clamp(0.78rem, 1.5vh, 1.05rem);
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  box-shadow: 0 4px 0 #b89a3a, 0 6px 12px var(--quiz-frame-shadow);
-}
-.bottom-right .character {
-  flex: 0 0 auto;
-  position: relative;
-  width: clamp(72px, 12vw, 160px);
-  height: clamp(72px, 12vw, 160px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.22));
-}
-.bottom-right .character img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  color: var(--success);
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+.feedback.show { transform: translate(-50%, -50%) scale(1); }
+
+/* ===== Confetti ===== */
+.confetti {
+  position: fixed;
+  top: -20px;
+  width: 10px; height: 14px;
+  z-index: 90;
+  pointer-events: none;
+  animation: confFall 2.5s linear forwards;
+}
+@keyframes confFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* ── 横画面でのちょっと小さい (高さ 500px 未満) 時、 character を非表示にして
-     bottom-right が問題ボードに被らないようにする ── */
-@media (orientation: landscape) and (max-height: 520px) {
-  .bottom-right .character { display: none; }
-  .bottom-right .char-hint { font-size: clamp(0.68rem, 2.6vh, 0.85rem); }
-  .hdr-left .title-card small { display: none; }
-}
-@media (orientation: landscape) and (max-height: 420px) {
-  .bottom-right { display: none; }
+/* ===== Detail popup (正解後の解説) ===== */
+#detail-popup {
+  position: fixed;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30,58,95,0.95);
+  color: #FDE68A;
+  padding: 12px 22px;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  max-width: 80vw;
+  text-align: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  line-height: 1.5;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-/* (旧 .header / .hud などの CSS は markup から消えたので何にもバインド
-   しない。 そのまま残置。 ) */
+/* Common menu (右上隅) ─ ポノメニュー位置調整 */
+.pono-menu-toggle {
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.pono-dropdown {
+  left: auto !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+  top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
+}
 </style>
 </head>
-<body>
+<body class="sheet-on">
 
-<!-- ===== Start Screen (タイトル画像 + タップしてスタート) ===== -->
+<!-- ===== Start Screen ===== -->
 <div class="start-screen" id="start-screen" role="button" aria-label="タップしてスタート">
   <div class="start-content">
     <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウはかせのなぞなぞ">
@@ -1825,13 +839,13 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   </div>
 </div>
 
-<!-- 縦持ち時の警告オーバーレイ (4 ゲーム共通パターン) -->
+<!-- 縦持ち警告 -->
 <div class="landscape-notice" aria-hidden="true">
   <div class="rotate-icon">📱</div>
   <p>よこむきに<br>してね</p>
 </div>
 
-<!-- ===== Mode Select Screen (やさしい / ものしり) ===== -->
+<!-- ===== Mode Select ===== -->
 <div class="mode-screen hidden" id="mode-screen">
   <div class="mode-screen-title">どっちで あそぶ？</div>
   <div class="mode-screen-row">
@@ -1846,93 +860,82 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   </div>
 </div>
 
-<!-- ===== Category Screen ===== -->
-<div class="category-screen hidden" id="category-screen">
-  <div class="cat-title">🎯 しゅるいを えらんでね！</div>
-  <div class="cat-subtitle">すきなものを えらんでね！</div>
-  <button class="cat-all-btn" id="cat-all-btn">ぜんぶえらぶ / ぜんぶはずす</button>
-  <div class="cat-grid" id="cat-grid"></div>
-  <div style="width:100%;max-width:400px;">
-    <div style="font-size:0.8rem;font-weight:900;color:#fff;margin-bottom:6px;text-align:center;">むずかしさ</div>
-    <div style="display:flex;gap:8px;justify-content:center;" id="diff-btns">
-      <button class="diff-btn selected" data-diff="easy">☆ やさしい</button>
-      <button class="diff-btn" data-diff="normal">★ ふつう</button>
-      <button class="diff-btn" data-diff="hard">★★ むずかしい</button>
-    </div>
-  </div>
-  <button class="cat-start-btn" id="cat-start-btn">スタート！ ▶</button>
-</div>
+<!-- ===== Game stage (preview/full のフレームをそのまま) ===== -->
+<div class="stage-wrap" id="stage-wrap">
+  <div class="stage" id="stage">
+    <div class="safe-area" id="safe-area">
 
-<!-- ===== Game UI (new layout: hdr-pill + q-col + a-col) =====
-     Visual structure ported from quizland/preview/full/index.html (sandbox).
-     既存ゲームロジックの ID (#question-text, #stage-area, #choices, #hud-progress,
-     #q-num, #q-total, #hud-back-btn, #question-speaker, #pono-avatar) はそのまま
-     新レイアウト内に配置している。 -->
-<div class="game-shell">
-  <div class="safe-area">
-    <!-- Top header row: 左に hdr-pill (owl + title + progress)、 右に ctrl-btn 群 -->
-    <div class="hdr">
-      <div class="hdr-left hdr-pill">
-        <div class="owl-icon">
-          <img src="../assets/images/quizland/owl_professor_guide.png" alt="" aria-hidden="true">
+      <!-- Header row: hdr-pill (左) + ctrl-btn 群 (右) -->
+      <div class="hdr">
+        <div class="hdr-left hdr-pill">
+          <div class="owl-icon">
+            <img src="../assets/images/quizland/owl_professor_guide.png" alt="" aria-hidden="true">
+          </div>
+          <div class="title-card">
+            <small>フクロウはかせの</small>
+            <span>なぞなぞ</span>
+          </div>
+          <div class="progress-num"><span id="q-num">1</span> / <span id="q-total">5</span></div>
+          <div class="dots" id="hud-progress">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
         </div>
-        <div class="title-card">
-          <small>フクロウはかせの</small>
-          <span>なぞなぞ</span>
-        </div>
-        <div class="progress-num"><span id="q-num">1</span> / <span id="q-total">5</span></div>
-        <div class="dots hud-progress" id="hud-progress"></div>
-      </div>
 
-      <div class="hdr-right">
-        <button id="hud-back-btn" type="button" class="ctrl-btn" aria-label="タイトルへ もどる">
-          <span class="icon" aria-hidden="true">🏠</span>
-          <span class="ctrl-label">タイトル</span>
-        </button>
-        <button id="hud-settings-btn" type="button" class="ctrl-btn" aria-label="せってい">
-          <span class="icon" aria-hidden="true">⚙️</span>
-          <span class="ctrl-label">せってい</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Body: 左に q-col (問題カード + ボード)、 右に a-col (答えトレイ + 吹き出し+ owl) -->
-    <div class="body">
-      <div class="q-col">
-        <div class="q-text-card">
-          <span id="question-text">よういちゅう…</span>
-          <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ" style="display:none;">🔊</button>
-        </div>
-        <div class="board" id="board">
-          <div id="stage-area"></div>
+        <div class="hdr-right">
+          <button id="hud-back-btn" type="button" class="ctrl-btn" aria-label="タイトルへ もどる">
+            <span class="icon" aria-hidden="true">🔔</span>
+            <span class="ctrl-label">おしらせ</span>
+          </button>
+          <button id="hud-settings-btn" type="button" class="ctrl-btn" aria-label="せってい">
+            <span class="icon" aria-hidden="true">⚙️</span>
+            <span class="ctrl-label">せってい</span>
+          </button>
         </div>
       </div>
 
-      <div class="a-col">
-        <div class="answer-tray">
-          <div class="choices" id="choices"></div>
+      <!-- Body: 左 q-col (q-text-card + board) / 右 a-col (answer-tray + bottom-right) -->
+      <div class="body">
+        <div class="q-col">
+          <div class="q-text-card">
+            <span id="q-text">よういちゅう…</span>
+            <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ" style="display:none;">🔊</button>
+          </div>
+          <div class="board" id="board">
+            <div id="stage-area"></div>
+          </div>
         </div>
-        <div class="bottom-right">
-          <div class="char-hint" id="char-hint">ヒント！</div>
-          <div class="character" id="pono-avatar">
-            <img src="../assets/images/quizland/owl_professor_guide.png" alt="フクロウ博士">
+
+        <div class="a-col">
+          <div class="answer-tray">
+            <div class="answer-panel" id="answer-panel"></div>
+          </div>
+          <div class="bottom-right">
+            <div class="char-hint" id="char-hint">ヒント！</div>
+            <div class="character" id="pono-avatar">
+              <img src="../assets/images/quizland/owl_professor_guide.png" alt="フクロウ博士">
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
-<!-- ===== Feedback bubble ===== -->
+
+<!-- Feedback / Result / Detail popup -->
 <div class="feedback" id="feedback">やったー！</div>
 
-<!-- ===== Result modal ===== -->
 <div class="overlay hidden" id="result-overlay">
   <div class="modal">
     <div class="modal-icon" id="result-icon">🎉</div>
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
     <button class="modal-btn" id="result-btn">もう一回 ▶</button>
-    <button class="modal-btn modal-btn-cat" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
+    <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
 </div>
@@ -1951,11 +954,6 @@ let correctCount = 0;
 let currentQ = null;
 let locked = false;
 
-// ═══════════════════════════════════════════════════════════
-// (Garden / Seeds / Flower encyclopedia は MVP 対象外のため削除済み。
-//  acorns / stickers / flowers の wiring も無し)
-// ═══════════════════════════════════════════════════════════
-
 // 選択中カテゴリー（デフォルト: 全部ON）
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
 let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
@@ -1963,9 +961,37 @@ let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
 let selectedDifficulty = 'easy'; // 'easy'|'normal'|'hard'
 const DIFF_MAX_LEVEL = { easy: 1, normal: 2, hard: 3 };
 const DIFF_MIN_LEVEL = { easy: 1, normal: 1, hard: 3 };
+// やさしい(inspire) = 文字読めない3-4歳でも遊べる: 色・数・形 (絵中心)
+// ものしり(know)    = 5-6 歳〜: トリビア・天気・体・反対語 (文字読み必須)
+const MODE_TO_CATEGORIES = {
+  inspire: ['order_color', 'count_total', 'shape_name'],
+  know:    ['trivia', 'weather', 'body', 'opposite']
+};
+let selectedMode = 'inspire';
 
 // ═══════════════════════════════════════════════════════════
-// Audio (wordmatch から流用)
+// Stage auto-fit (preview/full の preview-mode と同じ計算)
+// ═══════════════════════════════════════════════════════════
+const stageEl = document.getElementById('stage');
+function fitStage() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const stageW = parseFloat(getComputedStyle(stageEl).width);
+  const stageH = parseFloat(getComputedStyle(stageEl).height);
+  if (!stageW || !stageH) return;
+  const scale = Math.min(w / stageW, h / stageH);
+  const scaledW = stageW * scale;
+  const scaledH = stageH * scale;
+  const offsetX = (w - scaledW) / 2;
+  const offsetY = (h - scaledH) / 2;
+  stageEl.style.transformOrigin = '0 0';
+  stageEl.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
+}
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', function () { setTimeout(fitStage, 100); });
+fitStage();
+
+// ═══════════════════════════════════════════════════════════
+// Audio (BGM + 効果音)
 // ═══════════════════════════════════════════════════════════
 window._imgCacheBust = Date.now();
 let audioCtx = null;
@@ -1976,7 +1002,6 @@ function ensureAudio() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-// ── BGM ──
 let bgmAudio = null;
 let bgmSource = null;
 let bgmGain = null;
@@ -1990,25 +1015,26 @@ function initBGM() {
   bgmAudio.crossOrigin = 'anonymous';
   bgmAudio.preload = 'auto';
   if (audioCtx) {
-    bgmSource = audioCtx.createMediaElementSource(bgmAudio);
-    bgmGain = audioCtx.createGain();
-    bgmGain.gain.value = BGM_VOLUME;
-    bgmSource.connect(bgmGain).connect(audioCtx.destination);
+    try {
+      bgmSource = audioCtx.createMediaElementSource(bgmAudio);
+      bgmGain = audioCtx.createGain();
+      bgmGain.gain.value = BGM_VOLUME;
+      bgmSource.connect(bgmGain).connect(audioCtx.destination);
+    } catch (e) {
+      // createMediaElementSource は同じ要素で 2 回呼べないのでガード
+    }
   }
 }
-
 function startBGM() {
   if (!bgmEnabled) return;
   ensureAudio();
   if (!bgmAudio) initBGM();
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  bgmAudio.play().catch(function() {});
+  if (bgmAudio) bgmAudio.play().catch(function() {});
 }
-
 function stopBGM() {
   if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; }
 }
-
 function toggleBGM() {
   bgmEnabled = !bgmEnabled;
   localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
@@ -2016,8 +1042,6 @@ function toggleBGM() {
   else stopBGM();
 }
 
-// タブ非アクティブ・iOS の画面ロック / アプリ切替で BGM を止める
-// (他ゲーム maze/oto/puzzle/bento と同じ挙動)。
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) {
     if (bgmAudio) bgmAudio.pause();
@@ -2028,6 +1052,7 @@ document.addEventListener('visibilitychange', function () {
 window.addEventListener('pagehide', function () {
   if (bgmAudio) bgmAudio.pause();
 });
+
 function playCorrect() {
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
@@ -2118,7 +1143,11 @@ function buildPlaylist() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Rendering
+// Render functions — preview/full の見た目に合わせて
+//   ・color-chip / count-item は board 内の dotted-slot 風
+//   ・shape は board 中央に大きく
+//   ・emoji は紙ボードの上に画像/絵文字
+//   ・opposite/trivia は preview/full にはないが board 内に収める
 // ═══════════════════════════════════════════════════════════
 function renderOrderColor(stage, q) {
   const row = document.createElement('div');
@@ -2131,7 +1160,6 @@ function renderOrderColor(stage, q) {
   });
   stage.appendChild(row);
 }
-
 function renderCountTotal(stage, q) {
   const row = document.createElement('div');
   row.className = 'item-row';
@@ -2144,13 +1172,12 @@ function renderCountTotal(stage, q) {
   }
   stage.appendChild(row);
 }
-
 function renderShapeName(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'shape-display';
-  if (q.shape === 'circle')   wrap.innerHTML = '<div class="shape-circle"></div>';
-  if (q.shape === 'square')   wrap.innerHTML = '<div class="shape-square"></div>';
-  if (q.shape === 'triangle') wrap.innerHTML = '<div class="shape-triangle"></div>';
+  if (q.shape === 'circle')    wrap.innerHTML = '<div class="shape-circle"></div>';
+  if (q.shape === 'square')    wrap.innerHTML = '<div class="shape-square"></div>';
+  if (q.shape === 'triangle')  wrap.innerHTML = '<div class="shape-triangle"></div>';
   if (q.shape === 'star')      wrap.innerHTML = '<div class="shape-star">★</div>';
   if (q.shape === 'heart')     wrap.innerHTML = '<div class="shape-heart">♥</div>';
   if (q.shape === 'rectangle') wrap.innerHTML = '<div class="shape-rectangle"></div>';
@@ -2158,7 +1185,6 @@ function renderShapeName(stage, q) {
   if (q.shape === 'oval')      wrap.innerHTML = '<div class="shape-oval"></div>';
   stage.appendChild(wrap);
 }
-
 function renderEmojiName(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display';
@@ -2175,7 +1201,6 @@ function renderEmojiName(stage, q) {
     wrap.appendChild(emojiEl);
   }
   if (q.hint && q.img) {
-    // 画像問題のヒント: 3秒後にフェードイン
     const hint = document.createElement('div');
     hint.className = 'emoji-hint';
     hint.textContent = '💡 ' + q.hint;
@@ -2184,24 +1209,19 @@ function renderEmojiName(stage, q) {
     wrap.appendChild(hint);
     setTimeout(() => { hint.style.opacity = '1'; }, 3000);
   }
-  // trivia問題のhintは表示しない（正解後にdetailと一緒に表示）
   stage.appendChild(wrap);
 }
-
 function renderOpposite(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'opposite-display';
   wrap.textContent = q.word;
   stage.appendChild(wrap);
 }
-
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
-  wrap.style.position = 'relative';
 
-  // ThinkingPono動画
-  var video = document.createElement('video');
+  const video = document.createElement('video');
   video.src = '../assets/videos/ThinkingPono.mp4';
   video.autoplay = true;
   video.loop = true;
@@ -2213,44 +1233,43 @@ function renderTrivia(stage, q) {
   video.play().catch(function() {});
   wrap.appendChild(video);
 
-  // ?吹き出し（点滅）
-  var bubble = document.createElement('div');
+  const bubble = document.createElement('div');
   bubble.className = 'trivia-bubble';
-  bubble.textContent = '❓';
+  bubble.textContent = '?';
   wrap.appendChild(bubble);
-
-  // 吹き出し点滅アニメーション（CSSがなければ追加）
-  if (!document.getElementById('quizBubbleBlinkStyle')) {
-    var st = document.createElement('style');
-    st.id = 'quizBubbleBlinkStyle';
-    st.textContent = '@keyframes quizBubbleBlink { 0%,70%,100% { opacity:1; transform:scale(1); } 80% { opacity:0.3; transform:scale(0.85); } 90% { opacity:1; transform:scale(1.1); } }';
-    document.head.appendChild(st);
-  }
 
   stage.appendChild(wrap);
 }
 
+// ═══════════════════════════════════════════════════════════
+// Choices: preview/full の chip スタイル (4個固定 grid 2x2)
+//   - order_color → chip[data-color] + circle + ラベル
+//   - count_total → chip-count (大きい数字)
+//   - その他       → chip + テキスト
+// ═══════════════════════════════════════════════════════════
 function renderChoices(q) {
-  const tray = document.getElementById('choices');
+  const tray = document.getElementById('answer-panel');
   tray.innerHTML = '';
   q.choices.forEach((choice, i) => {
     const btn = document.createElement('button');
-    btn.className = 'choice-btn';
+    btn.className = 'chip';
     btn.dataset.idx = i;
+    btn.type = 'button';
     if (q.type === 'order_color') {
-      // 色チップ + 色名
-      const chip = document.createElement('div');
-      chip.className = 'choice-color';
-      chip.style.background = QUIZLAND_COLORS[choice].code;
-      btn.appendChild(chip);
+      btn.dataset.color = choice;
+      const c = document.createElement('div');
+      c.className = 'circle';
+      btn.appendChild(c);
       const label = document.createElement('span');
       label.textContent = QUIZLAND_COLORS[choice].name;
       btn.appendChild(label);
     } else if (q.type === 'count_total') {
+      btn.classList.add('chip-count');
       btn.textContent = String(choice);
-      btn.classList.add('choice-btn--count');
     } else {
-      btn.textContent = choice;
+      const label = document.createElement('span');
+      label.textContent = choice;
+      btn.appendChild(label);
     }
     btn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
@@ -2264,7 +1283,7 @@ function renderChoices(q) {
 function loadQuestion(q) {
   currentQ = q;
   locked = false;
-  document.getElementById('question-text').textContent = q.q;
+  document.getElementById('q-text').textContent = q.q;
   const stage = document.getElementById('stage-area');
   stage.dataset.qtype = q.type;
   stage.innerHTML = '';
@@ -2281,7 +1300,7 @@ function loadQuestion(q) {
   setupNarration(q);
 }
 
-// 音声ナレーション: 自動再生 or 🔊ボタンで問題文を読み上げ
+// ── Narration: 自動再生 or 🔊ボタンで問題文を読み上げ
 function narrationKey(q, field) {
   if (!q || q._cat == null || q._idx == null) return null;
   return 'quizland:' + q._cat + ':' + q._idx + ':' + (field || 'q');
@@ -2298,9 +1317,7 @@ function setupNarration(q) {
       e.preventDefault();
       Narration.play(key);
     };
-    // 自動再生モードでは問題表示と同時に鳴らす
     if (has) Narration.playIfAuto(key);
-    // 次の2問を先読み
     const prefetchKeys = [];
     for (let i = 1; i <= 2; i++) {
       const nq = playlist[questionIdx + i];
@@ -2320,7 +1337,7 @@ function updateHUD() {
   prog.innerHTML = '';
   for (let i = 0; i < TOTAL_Q; i++) {
     const dot = document.createElement('span');
-    dot.className = 'dot hud-dot';
+    dot.className = 'dot';
     if (i < questionIdx) dot.classList.add('done');
     if (i === questionIdx) dot.classList.add('current');
     prog.appendChild(dot);
@@ -2377,7 +1394,6 @@ function showDetail(text) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'detail-popup';
-    el.style.cssText = 'position:fixed;bottom:20%;left:50%;transform:translateX(-50%);background:rgba(30,58,95,0.95);color:#FDE68A;padding:12px 20px;border-radius:16px;font-size:0.95rem;font-weight:700;max-width:80vw;text-align:center;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
     document.body.appendChild(el);
   }
   el.textContent = '💡 ' + text;
@@ -2396,6 +1412,7 @@ function showFeedback(text, wrong) {
 
 function ponoJump() {
   const av = document.getElementById('pono-avatar');
+  if (!av) return;
   av.classList.remove('jump');
   void av.offsetWidth; // reflow
   av.classList.add('jump');
@@ -2418,82 +1435,40 @@ function showResult() {
   document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
   document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
   document.getElementById('result-msg').textContent = cleared
-    ? `${TOTAL_Q}もんちゅう ${correctCount}もん せいかい！`
-    : `${TOTAL_Q}もんちゅう ${correctCount}もん せいかい。\nもういちど やってみよう！`;
+    ? TOTAL_Q + 'もんちゅう ' + correctCount + 'もん せいかい！'
+    : TOTAL_Q + 'もんちゅう ' + correctCount + 'もん せいかい。\nもういちど やってみよう！';
   document.getElementById('result-overlay').classList.remove('hidden');
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
     playFanfare();
     launchConfetti();
     setTimeout(launchConfetti, 400);
+    // First-clear 報酬 (PONO_MVP_NO_REWARDS=true 中は no-op)
+    if (typeof window.triggerFirstClearReward === 'function') {
+      try { window.triggerFirstClearReward('quizland'); } catch (e) {}
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
-// 注: 旧 upgradeGameLayoutV2() は HTML 直接構造化により不要になり削除済み。
-//     新レイアウト (preview/full ベース: hdr-pill + q-text-card + board + answer-tray)
-//     は body 内に直接書いている。
-
 function initGame() {
   playlist = buildPlaylist();
   questionIdx = 0;
   correctCount = 0;
   document.getElementById('result-overlay').classList.add('hidden');
+  if (playlist.length === 0) {
+    // 何らかの理由で問題が組めなかった場合 (基本的に来ない) はモード選択へ
+    document.getElementById('mode-screen').classList.remove('hidden');
+    return;
+  }
   loadQuestion(playlist[0]);
 }
 
 // ═══════════════════════════════════════════════════════════
-// Category screen
+// Wiring
 // ═══════════════════════════════════════════════════════════
-function buildCategoryScreen() {
-  const grid = document.getElementById('cat-grid');
-  grid.innerHTML = '';
-  const minLv = DIFF_MIN_LEVEL[selectedDifficulty];
-  const maxLv = DIFF_MAX_LEVEL[selectedDifficulty];
-  // モードに該当するカテゴリだけ表示する。
-  const allowedCats = MODE_TO_CATEGORIES[selectedMode] || ALL_CATS;
-  allowedCats.forEach(cat => {
-    const meta = QUIZLAND_CATEGORIES[cat];
-    const pool = (QUIZLAND_QUESTIONS[cat] || []).filter(q => q.level >= minLv && q.level <= maxLv);
-    const available = pool.length > 0;
-    const btn = document.createElement('button');
-    btn.className = 'cat-btn' + (selectedCategories[cat] && available ? ' selected' : '');
-    btn.dataset.cat = cat;
-    if (available) {
-      btn.innerHTML = `<span class="cat-emoji">${meta.emoji}</span><span class="cat-label">${meta.label}</span>`;
-      btn.addEventListener('click', function() {
-        selectedCategories[cat] = !selectedCategories[cat];
-        btn.classList.toggle('selected', selectedCategories[cat]);
-        updateCatStartBtn();
-      });
-    } else {
-      btn.innerHTML = `<span class="cat-emoji" style="opacity:0.3">${meta.emoji}</span><span class="cat-label" style="opacity:0.4">${meta.label}</span><span style="font-size:0.55rem;color:#999;display:block;">ふつう いじょうから</span>`;
-      btn.style.opacity = '0.5';
-      btn.style.cursor = 'not-allowed';
-      selectedCategories[cat] = false;
-    }
-    grid.appendChild(btn);
-  });
-  updateCatStartBtn();
-}
-
-function updateCatStartBtn() {
-  const anySelected = ALL_CATS.some(c => selectedCategories[c]);
-  document.getElementById('cat-start-btn').disabled = !anySelected;
-}
-
-// ── ひらめき / ものしり モード選択 ─────────────────
-let selectedMode = 'inspire'; // 'inspire' | 'know'
-
-// やさしい(inspire) = 文字読めない3-4歳でも遊べる: 色・数・形 (絵中心)
-// ものしり(know)    = 5-6 歳〜: トリビア・天気・体・反対語 (文字読み必須)
-const MODE_TO_CATEGORIES = {
-  inspire: ['order_color', 'count_total', 'shape_name'],
-  know:    ['trivia', 'weather', 'body', 'opposite']
-};
-
 // タイトル画面タップ → モード選択画面へ (BGM もここで起動)
 document.getElementById('start-screen').addEventListener('click', function() {
   ensureAudio();
@@ -2520,50 +1495,24 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
   });
 });
 
-// Difficulty buttons
-document.querySelectorAll('.diff-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    selectedDifficulty = btn.dataset.diff;
-    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    buildCategoryScreen(); // 難易度に応じてカテゴリの有効/無効を更新
-  });
-});
-
-// All toggle button (現在のモードのカテゴリだけ対象)
-document.getElementById('cat-all-btn').addEventListener('click', function() {
-  const cats = MODE_TO_CATEGORIES[selectedMode] || ALL_CATS;
-  const allOn = cats.every(c => selectedCategories[c]);
-  cats.forEach(c => { selectedCategories[c] = !allOn; });
-  buildCategoryScreen();
-});
-
-// Category start button → begin game
-document.getElementById('cat-start-btn').addEventListener('click', function() {
-  document.getElementById('category-screen').classList.add('hidden');
-  initGame();
-});
-
-// HUD back button → モード選択画面へ (タイトル画面まで戻らない)
+// HUD 左ボタン (おしらせ → モード選択画面へ戻る)
 document.getElementById('hud-back-btn').addEventListener('click', function() {
   document.getElementById('result-overlay').classList.add('hidden');
-  document.getElementById('category-screen').classList.add('hidden');
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 
-// Result retry button (same categories)
+// Result retry (same categories)
 document.getElementById('result-btn').addEventListener('click', function() {
   initGame();
 });
 
-// Result "change mode" button → モード選択画面へ (タイトル画面まで戻らない)
+// Result "change mode" → モード選択画面へ
 document.getElementById('result-cat-btn').addEventListener('click', function() {
   document.getElementById('result-overlay').classList.add('hidden');
-  document.getElementById('category-screen').classList.add('hidden');
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 
-// HUD settings button → 共通メニューを開く (旧 upgradeGameLayoutV2 と同等)
+// HUD settings button → 共通メニューを開く
 (function() {
   var settingsBtn = document.getElementById('hud-settings-btn');
   if (!settingsBtn) return;
@@ -2578,6 +1527,9 @@ document.getElementById('result-cat-btn').addEventListener('click', function() {
     }
   });
 })();
+
+// 安全策: 起動時に dot を 5 個レンダリング (loadQuestion でも更新される)
+updateHUD();
 
 })();
 </script>
