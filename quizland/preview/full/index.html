@@ -893,13 +893,22 @@ body.sheet-on .slot {
   box-shadow: none !important;
 }
 /* progress-num はシート画像に枠が無い前提で、 別 PNG (progress-num.png) を
-   オーバーレイとして残す。 中の "1 / 5" テキストはこの上に表示される。
-   sheet-on でも box-shadow / border-color だけ消して、 background-image は残す */
+   オーバーレイとして残す。 中の "1 / 5" テキストはこの枠の上に確実に表示する */
 body.sheet-on .hdr-left .progress-num {
   background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
   /* background-image は親ルール (line 707 付近) の !important が効いたまま残る */
+  /* テキストを確実に枠の中央に表示 (枠 PNG の凹み部分にハマる) */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center;
+  color: #4a2d0a !important;
+  font-weight: 900;
+  font-size: 22px;
+  position: relative;
+  z-index: 7;   /* sheet (z-index 5) + hdr (z-index 6) の上 */
 }
 /* sheet-on でも slot は薄い破線で残す (シート画像にはスロットが描かれていないので
    完全透明にすると編集できなくなる)。 違和感を出さないため非常に薄い色で */
