@@ -936,13 +936,9 @@ body.sheet-on .slot {
   border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
   border-radius: 12px;
 }
-/* シート画像の board アートは上のスペースが狭め (ページが上に開く構図) なので、
-   .board の内容を上方向に詰めて視覚的に中央へ。 padding-bottom を増やすと
-   align-items:center の対象になる content area が上にシフトする (現在
-   100px → ~50px 上シフト) */
-body.sheet-on .board {
-  padding: 0 16px 100px 16px !important;
-}
+/* (board の padding override は user 要望で撤去。 デフォルト 16px 全周 +
+   align-items: center で素直に中央配置に戻す。 もし下寄り / 上寄りが残ったら
+   .board の tx/ty で調整するか、 ここを再有効化して微調整する) */
 /* sheet-on で .dot の背景色 / border を消す。 dot.png は透明部分のある丸画像
    なので、 box の四角い背景色 + 茶色 border が透けて見えていた (= 1 個目だけ
    四角く見える原因の 1 つ。 .dot.done を削除しても残っていた) */
