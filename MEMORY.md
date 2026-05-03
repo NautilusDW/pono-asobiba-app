@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-03T07:57:33Z - common/page-nav.js floating navigation widget + legacy page wiring + sw bump 684→685
+- **タスク**: common/page-nav.js floating navigation widget + legacy page wiring + sw bump 684→685
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 170
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 32, "Grep": 7, "Bash": 63, "Agent": 54, "ToolSearch": 2, "Write": 6, "Edit": 4, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-03T07:46:54Z - layout editor: add 🌐 ページ navigation dropdown + pages config option (sw bump 683→684)
 - **タスク**: layout editor: add 🌐 ページ navigation dropdown + pages config option (sw bump 683→684)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 1, "Read": 18, "Grep": 2, "Bash": 31, "Agent": 32, "ToolSearch": 1, "Write": 4, "Edit": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-03T03:47:50Z - Difficulty picker redesign Review 2 (Functional): data-diff/localStorage/refreshDiffActive/buildPlaylist/CACHE_VERSION/inline JS syntax/collateral changes 全項目検証、リグレッションなしで採用可と判定
-- **タスク**: Difficulty picker redesign Review 2 (Functional): data-diff/localStorage/refreshDiffActive/buildPlaylist/CACHE_VERSION/inline JS syntax/collateral changes 全項目検証、リグレッションなしで採用可と判定
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 88
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 18, "Grep": 2, "Bash": 28, "Agent": 30, "ToolSearch": 1, "Write": 4, "Edit": 4}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
