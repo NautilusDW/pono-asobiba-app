@@ -215,6 +215,32 @@ body.layout-editor-on .numeric-panel .np-align {
 body.layout-editor-on .numeric-panel .np-hint {
   color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3;
 }
+/* Aspect-ratio lock toggle (FEATURE: Yankee) — sits in the W row, links W/H. */
+body.layout-editor-on .numeric-panel .np-row.np-row-aspect {
+  position: relative;
+}
+body.layout-editor-on .numeric-panel .le-aspect-lock {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 0 6px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+body.layout-editor-on .numeric-panel .le-aspect-lock:hover {
+  background: rgba(255,255,255,0.06);
+}
+body.layout-editor-on .numeric-panel .le-aspect-lock[data-aspect-locked="true"] {
+  background: rgba(255,138,61,0.3);
+  border-color: rgba(255,138,61,0.6);
+  color: #fff;
+}
 
 /* === Element list panel (NEW: FEATURE 21) === */
 body.layout-editor-on .le-list-panel {
@@ -825,6 +851,23 @@ body.layout-editor-on .le-toolbar .le-align-tb button:disabled {
   body.layout-editor-on .resize-size-label { font-size: 13px; }
   body.layout-editor-on .le-row-btn { width: 28px; height: 28px; font-size: 16px; }
   body.layout-editor-on .numeric-panel .np-spin { width: 28px; height: 28px; font-size: 15px; }
+  body.layout-editor-on .numeric-panel .le-aspect-lock { height: 28px; font-size: 16px; padding: 0 8px; }
+}
+
+/* === Image drag-and-drop (Team Uniform) === */
+/* Active drop zone — visible only while OS files are dragged over the canvas. */
+body.layout-editor-on .le-dropzone-active {
+  outline: 4px dashed #ff8800;
+  outline-offset: -8px;
+  background-color: rgba(255, 136, 0, 0.05);
+}
+/* Dropped image layer — placed via drag&drop, kept positioned absolute. */
+body.layout-editor-on .le-dropped-img {
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  max-width: none;
+  max-height: none;
 }
 
 /* === 🌐 Page navigation dropdown === */
@@ -882,4 +925,28 @@ body.layout-editor-on .le-pages-list li.le-pages-current > span {
   background: rgba(106, 78, 212, 0.15);
   cursor: default;
   font-weight: 600;
+}
+
+/* === Team Victor: Marquee (rubber-band) selection + Alt drill-down ===
+   Marquee overlay is positioned in viewport (fixed), since we capture
+   clientX/clientY directly. Pointer events are passed through so the
+   underlying mouseup still resolves on whatever element is below. */
+body.layout-editor-on .le-marquee {
+  position: fixed;
+  z-index: 99999;
+  background: rgba(0, 150, 255, 0.15);
+  outline: 2px dashed #0096ff;
+  outline-offset: -1px;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+/* While a marquee is active, freeze accidental text-selection on the page. */
+body.layout-editor-on.le-marquee-active {
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Visual hint: holding Alt over the canvas signals stack-pierce mode.
+   We use :where() to keep specificity low so editor toolbar etc. keep their cursor. */
+body.layout-editor-on.le-alt-down :where(.resizable, #stage, #safe-area) {
+  cursor: crosshair !important;
 }

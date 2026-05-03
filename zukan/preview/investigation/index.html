@@ -116,6 +116,27 @@ body.show-safe .safe-area::after {
   border-radius: 3px;
   pointer-events: none;
 }
+/* セーフエリア中心のクロスヘア (マゼンタ) ─ safe-area 境界の cyan と区別。
+   show-safe ON でのみ表示。 zukan/preview/full と同パターン。 */
+body.show-safe .safe-area {
+  background-image:
+    linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+body.show-safe .safe-area > .center-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #ff50c8;
+  border-radius: 50%;
+  background: rgba(255, 80, 200, 0.25);
+  pointer-events: none;
+  z-index: 3;
+}
+body:not(.show-safe) .center-dot { display: none; }
 
 /* ───── Layer 3a: Field background (picture content) ───────────────
  * 旧 .window-wrap は削除し、 .field-bg と .window-frame を兄弟として
@@ -436,7 +457,10 @@ body:not(.layout-editor-on) .help-note {
     </div>
 
     <!-- Layer 2: 16:9 safe area (display-only guide) -->
-    <div class="safe-area" id="safe-area"></div>
+    <div class="safe-area" id="safe-area">
+      <!-- センター位置の見える化 (show-safe で表示) -->
+      <div class="center-dot" aria-hidden="true"></div>
+    </div>
 
     <!-- Layer 3a: field background (picture content) — 隠れパーツ /
          ホットスポットの親。 picture に追従させたいので field-bg の子。 -->

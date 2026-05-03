@@ -109,6 +109,7 @@
     toolbarEl: null,
     numericPanelEl: null,
     listPanelEl: null,
+    lastClickedListKey: null,  // Last clicked row key in element list (for Shift+Click range select)
     helpModalEl: null,
     rulerH: null, rulerV: null,
     annoLayer: null,
@@ -122,6 +123,8 @@
     previewExitBtn: null,      // R2: exit affordance during preview
     pagesDropdownEl: null,     // 🌐 page navigation dropdown
     pagesDocClickHandler: null,// outside-click handler for the dropdown
+    aspectLocked: false,       // Yankee: numeric-panel 縦横比ロックトグル
+    aspectRatios: null,        // WeakMap<el, ratio> — capture時の W/H 比率
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -1009,6 +1012,209 @@
     refreshSelectionUI();
   }
   function clearSelection() { state.selectedElements.clear(); refreshSelectionUI(); }
+  function addToSelection(el) {
+    if (!el) return;
+    state.selectedElements.add(el);
+    refreshSelectionUI();
+  }
+  function selectMultiple(els) {
+    state.selectedElements.clear();
+    (els || []).forEach(function (el) { if (el) state.selectedElements.add(el); });
+    refreshSelectionUI();
+  }
+
+  // ====================================================================
+  //  Team Victor — Stack-pierce (Alt+Click) + Marquee (Shift+Drag)
+  //
+  //  Goal: when layers are stacked (e.g. a frame on top of a picture), the
+  //  user must be able to select the layer below the topmost one. Standard
+  //  click only hits the top-most element; Alt+Click cycles through the
+  //  stack at the cursor, and Shift+Drag on empty canvas draws a rubber-band
+  //  selection rectangle that selects every editable element it intersects.
+  // ====================================================================
+
+  // Return all .resizable elements whose bounding rect contains (clientX, clientY),
+  // sorted top-most first (DOM later = visually higher in CSS stacking when no
+  // explicit z-index, so we reverse DOM order; if z-index is set it wins).
+  function getEditableElementsAtPoint(clientX, clientY) {
+    var all = $$('.resizable');
+    var hits = [];
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      // Skip hidden / disabled
+      if (el.classList.contains('user-hidden')) continue;
+      var cs = window.getComputedStyle ? getComputedStyle(el) : null;
+      if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      if (clientX < r.left || clientX > r.right) continue;
+      if (clientY < r.top || clientY > r.bottom) continue;
+      hits.push({ el: el, dom: i, z: zIndexOf(el) });
+    }
+    // Sort: higher z-index first; on ties, later DOM order = higher.
+    hits.sort(function (a, b) {
+      if (b.z !== a.z) return b.z - a.z;
+      return b.dom - a.dom;
+    });
+    return hits.map(function (h) { return h.el; });
+  }
+  function zIndexOf(el) {
+    // Walk up the chain so a child of a positioned z-index parent inherits effective stacking.
+    var z = 0;
+    var cur = el;
+    while (cur && cur !== document.body) {
+      var cs = window.getComputedStyle ? getComputedStyle(cur) : null;
+      if (cs) {
+        var v = parseInt(cs.zIndex, 10);
+        if (!isNaN(v)) { z = v; break; }
+      }
+      cur = cur.parentElement;
+    }
+    return z;
+  }
+  function rectsIntersect(a, b) {
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  }
+
+  // Document-level capture-phase mousedown handler that runs BEFORE per-element
+  // handlers (which call e.stopPropagation). It implements two new behaviors:
+  //   1. Alt+Click           — drill-down through stacked editable elements
+  //   2. Shift+Drag on bg    — rubber-band marquee selection
+  // Other modifier combinations fall through to the existing handlers.
+  function attachStackPierceAndMarquee() {
+    var handler = function (e) {
+      if (!state.enabled) return;
+      if (e.button !== undefined && e.button !== 0) return;
+      // Skip clicks on editor chrome (toolbar, panels, handles, overlays, etc.)
+      if (e.target.closest && e.target.closest(
+        '.le-toolbar, .numeric-panel, .le-list-panel, .le-help-modal, ' +
+        '.le-comparison-picker, .le-context-menu, .le-pages-dropdown, ' +
+        '.le-ruler, .le-guide, .resize-handle, .resize-size-label, ' +
+        '.le-anno-layer, .userbox-badge, .userbox-del, .le-lock-badge, ' +
+        '.le-marquee'
+      )) return;
+      // Skip while drawing (userbox add) or while in annotation mode
+      if (state.drawModeOn) return;
+      if (state.annoMode && state.annoTool && state.annoTool !== 'select') return;
+      // Skip when editing text inline
+      if (e.target.isContentEditable || (e.target.closest && e.target.closest('[contenteditable="true"]') && document.activeElement === e.target)) return;
+
+      // --- Feature A: Alt+Click stack-pierce -------------------------------
+      if (e.altKey) {
+        var stack = getEditableElementsAtPoint(e.clientX, e.clientY);
+        if (!stack.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+
+        if (e.shiftKey) {
+          // Alt+Shift+Click: add the next un-selected layer in the stack to the selection.
+          var added = false;
+          for (var i = 0; i < stack.length; i++) {
+            if (!state.selectedElements.has(stack[i])) {
+              addToSelection(stack[i]);
+              added = true;
+              break;
+            }
+          }
+          if (!added) {
+            // All in-stack already selected — toggle the topmost off as feedback.
+            toggleSelect(stack[0]);
+          }
+        } else {
+          // Alt+Click: cycle through the stack. If the currently-selected element
+          // is in the stack, advance to the next layer below it; else pick top.
+          var cur = (state.selectedElements && state.selectedElements.size === 1)
+            ? state.selectedElements.values().next().value : null;
+          var idx = cur ? stack.indexOf(cur) : -1;
+          var nextIdx = idx === -1 ? 0 : (idx + 1) % stack.length;
+          selectOnly(stack[nextIdx]);
+          showToast('レイヤー ' + (nextIdx + 1) + ' / ' + stack.length);
+        }
+        return;
+      }
+
+      // --- Feature B: Shift+Drag marquee ----------------------------------
+      // Only start marquee on empty canvas (NOT on an existing .resizable),
+      // so that Shift+Click on an element keeps its existing additive-toggle behavior.
+      if (e.shiftKey && !(e.target.closest && e.target.closest('.resizable'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        startMarquee(e.clientX, e.clientY, e.shiftKey);
+        return;
+      }
+    };
+    addManagedListener(document, 'mousedown', handler, true /* capture */);
+
+    // Visual hint: while Alt is held, signal stack-pierce mode via body class.
+    var keyDown = function (ev) {
+      if (ev.altKey) document.body.classList.add('le-alt-down');
+    };
+    var keyUp = function (ev) {
+      if (!ev.altKey) document.body.classList.remove('le-alt-down');
+    };
+    var blur = function () { document.body.classList.remove('le-alt-down'); };
+    addManagedListener(window, 'keydown', keyDown);
+    addManagedListener(window, 'keyup', keyUp);
+    addManagedListener(window, 'blur', blur);
+    registerCleanup(function () { document.body.classList.remove('le-alt-down', 'le-marquee-active'); });
+  }
+
+  function startMarquee(originX, originY, additive) {
+    var overlay = document.createElement('div');
+    overlay.className = 'le-marquee';
+    overlay.style.left = originX + 'px';
+    overlay.style.top = originY + 'px';
+    overlay.style.width = '0px';
+    overlay.style.height = '0px';
+    document.body.appendChild(overlay);
+    document.body.classList.add('le-marquee-active');
+
+    var moved = false;
+    var lastRect = { left: originX, top: originY, right: originX, bottom: originY };
+
+    var onMove = function (ev) {
+      var x = ev.clientX, y = ev.clientY;
+      var l = Math.min(originX, x), t = Math.min(originY, y);
+      var w = Math.abs(x - originX), h = Math.abs(y - originY);
+      overlay.style.left = l + 'px';
+      overlay.style.top = t + 'px';
+      overlay.style.width = w + 'px';
+      overlay.style.height = h + 'px';
+      lastRect = { left: l, top: t, right: l + w, bottom: t + h };
+      if (w >= 3 || h >= 3) moved = true;
+    };
+    var onUp = function () {
+      window.removeEventListener('mousemove', onMove, true);
+      window.removeEventListener('mouseup', onUp, true);
+      overlay.remove();
+      document.body.classList.remove('le-marquee-active');
+      if (!moved) {
+        // Treat as a plain shift-click on background → preserve old "clear selection"
+        // behavior only if not additive (additive shift-click on bg = no-op).
+        if (!additive && state.selectedElements.size > 0) clearSelection();
+        return;
+      }
+      var hits = $$('.resizable').filter(function (el) {
+        if (el.classList.contains('user-hidden')) return false;
+        var cs = window.getComputedStyle ? getComputedStyle(el) : null;
+        if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) return false;
+        var r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) return false;
+        return rectsIntersect(r, lastRect);
+      });
+      if (additive) {
+        hits.forEach(function (el) { state.selectedElements.add(el); });
+        refreshSelectionUI();
+      } else {
+        selectMultiple(hits);
+      }
+      if (hits.length) showToast(hits.length + ' 個を選択');
+    };
+    window.addEventListener('mousemove', onMove, true);
+    window.addEventListener('mouseup', onUp, true);
+  }
 
   function elementShortLabel(el) {
     var cls = (Array.from(el.classList).filter(function (c) {
@@ -1039,7 +1245,7 @@
       '</div>' +
       '<div class="np-section-title">整列</div>' +
       buildAlignmentToolbarHtml() +
-      '<div class="np-hint">Shift+クリックで複数選択 / 値変更で全選択へ反映 / Shift+Arrow ±10 / Alt+click ±0.5</div>';
+      '<div class="np-hint">Shift+クリック=追加選択 / Shift+ドラッグ=範囲選択 / Alt+クリック=下のレイヤー / Alt+Shift+クリック=下のレイヤー追加 / Shift+Arrow ±10</div>';
     document.body.appendChild(panel);
     state.numericPanelEl = panel;
     wireSpinners(panel);
@@ -1326,6 +1532,10 @@
           '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
           '<span class="le-row-label">' + label + '</span>' +
           '<span class="le-row-key">' + key + '</span>';
+        // Prevent text selection caused by Shift+Click across list rows
+        row.addEventListener('mousedown', function (e) {
+          if (e.shiftKey || e.ctrlKey || e.metaKey) e.preventDefault();
+        });
         row.addEventListener('click', function (e) {
           if (e.target.classList.contains('le-vis')) {
             if (hidden) {
@@ -1340,12 +1550,57 @@
             toggleLock(el);
             refreshElementList();
           } else {
-            selectOnly(el);
+            // Multi-select support in element list panel
+            // - Shift+Click: range select between last clicked and current row
+            // - Ctrl/Meta+Click: toggle current row in selection
+            // - Plain click: single-select (existing behaviour)
+            if (e.shiftKey && state.lastClickedListKey) {
+              var rows = state.listPanelEl
+                ? Array.prototype.slice.call(state.listPanelEl.querySelectorAll('.le-list-row'))
+                : [];
+              var startIdx = -1, endIdx = -1;
+              for (var ri = 0; ri < rows.length; ri++) {
+                if (rows[ri].dataset.key === state.lastClickedListKey) startIdx = ri;
+                if (rows[ri] === row) endIdx = ri;
+              }
+              if (startIdx === -1 || endIdx === -1) {
+                selectOnly(el);
+              } else {
+                var from = Math.min(startIdx, endIdx);
+                var to = Math.max(startIdx, endIdx);
+                var targets = [];
+                for (var rj = from; rj <= to; rj++) {
+                  var r = rows[rj];
+                  var rk = r.dataset.key;
+                  var rm = rk && rk.match(/^(.+)\|(\d+)$/);
+                  if (!rm) continue;
+                  var rall = $$(rm[1]);
+                  var rel = rall[parseInt(rm[2], 10)];
+                  if (rel) targets.push(rel);
+                }
+                if (targets.length) selectMultiple(targets);
+                else selectOnly(el);
+              }
+              // Do NOT update lastClickedListKey on shift-click, anchor stays put
+            } else if (e.ctrlKey || e.metaKey) {
+              toggleSelect(el);
+              state.lastClickedListKey = key;
+            } else {
+              selectOnly(el);
+              state.lastClickedListKey = key;
+            }
           }
         });
         body.appendChild(row);
       });
     });
+    // Defensive: if anchor row no longer exists (element deleted), drop the anchor
+    if (state.lastClickedListKey) {
+      var still = state.listPanelEl.querySelector(
+        '.le-list-row[data-key="' + state.lastClickedListKey.replace(/"/g, '\\"') + '"]'
+      );
+      if (!still) state.lastClickedListKey = null;
+    }
   }
 
   function refreshElementListSelection() {
@@ -2747,6 +3002,394 @@
   }
 
   // ====================================================================
+  //  Image drag-and-drop (Team Uniform: drop OS image files into editor)
+  // ====================================================================
+
+  var DROP_MAX_BYTES = 10 * 1024 * 1024; // 10MB hard cap before data-URL conversion
+  // Max long-side after resize (matches scripts/auto_optimize_image.py).
+  // 4K-class drops get auto-shrunk so localStorage doesn't blow its 5–10MB quota.
+  var MAX_DIMENSION = 1600;
+
+  function droppedImagesStorageKey() {
+    return 'le-dropped-images:' + (location.pathname || '/');
+  }
+
+  function readAsDataURL(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function (err) { reject(err); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function (err) { reject(err); };
+      img.src = src;
+    });
+  }
+
+  // Read a file and resize it to MAX_DIMENSION on the long side, preserving
+  // aspect ratio and (where possible) original format/transparency.
+  // Returns { dataUrl, width, height, resized }. Falls back to the raw data URL
+  // if anything goes wrong (e.g. decode failure on a corrupt file).
+  function readAndResizeImage(file) {
+    return readAsDataURL(file).then(function (dataUrl) {
+      return loadImage(dataUrl).then(function (img) {
+        var nw = img.naturalWidth || img.width;
+        var nh = img.naturalHeight || img.height;
+        var longSide = Math.max(nw, nh);
+        if (!longSide || longSide <= MAX_DIMENSION) {
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false };
+        }
+        var scale = MAX_DIMENSION / longSide;
+        var targetW = Math.max(1, Math.round(nw * scale));
+        var targetH = Math.max(1, Math.round(nh * scale));
+        var canvasEl = document.createElement('canvas');
+        canvasEl.width = targetW;
+        canvasEl.height = targetH;
+        var ctx = canvasEl.getContext('2d');
+        if (!ctx) {
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false };
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        var mime = (file && file.type) || '';
+        var outputDataUrl;
+        try {
+          if (mime === 'image/png' || mime === 'image/webp') {
+            // Preserve transparency / lossless formats. quality arg is ignored for PNG.
+            outputDataUrl = canvasEl.toDataURL(mime);
+          } else {
+            // JPEG (default) and any unknown raster type → JPEG @ 0.9.
+            outputDataUrl = canvasEl.toDataURL('image/jpeg', 0.9);
+          }
+        } catch (err) {
+          console.warn('[LayoutEditor] canvas.toDataURL failed; using original', err);
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false };
+        }
+        // Size delta log (base64 → bytes is ~3/4)
+        try {
+          var beforeKB = Math.round(file.size / 1024);
+          var afterKB = Math.round(outputDataUrl.length * 0.75 / 1024);
+          var saved = beforeKB > 0 ? Math.round(100 - (afterKB / beforeKB) * 100) : 0;
+          console.log('[LayoutEditor] Drop image: ' + nw + 'x' + nh +
+            ' (' + beforeKB + 'KB) -> ' + targetW + 'x' + targetH +
+            ' (' + afterKB + 'KB, ' + saved + '% reduction)');
+        } catch (e) {}
+        return { dataUrl: outputDataUrl, width: targetW, height: targetH, resized: true };
+      }).catch(function (err) {
+        console.warn('[LayoutEditor] image decode failed; using original data URL', err);
+        return { dataUrl: dataUrl, width: 0, height: 0, resized: false };
+      });
+    });
+  }
+
+  function isImageElement(el) {
+    if (!el) return false;
+    if (el.tagName === 'IMG') return true;
+    try { return !!el.querySelector('img'); } catch (e) { return false; }
+  }
+
+  function replaceImageSrc(element, dataUrl) {
+    if (!element) return false;
+    var changed = false;
+    if (element.tagName === 'IMG') {
+      element.src = dataUrl;
+      changed = true;
+    } else {
+      var img = element.querySelector('img');
+      if (img) { img.src = dataUrl; changed = true; }
+    }
+    if (changed && element.classList && element.classList.contains('le-dropped-img')) {
+      saveDroppedImages();
+    }
+    return changed;
+  }
+
+  function nextDropId() {
+    return 'drop_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function buildDroppedWrapper(dataUrl, fileName) {
+    // <img> is a void element and cannot contain resize handles. Wrap it in a
+    // <div> so attachHandle can appendChild() handles safely.
+    var wrap = document.createElement('div');
+    wrap.className = 'le-dropped-img';
+    wrap.dataset.dropId = nextDropId();
+    if (fileName) wrap.dataset.dropName = fileName;
+    wrap.setAttribute('data-le-keep-position', '1');
+    var img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = fileName || 'dropped image';
+    img.draggable = false;
+    img.style.cssText = 'width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none;user-select:none;';
+    wrap.appendChild(img);
+    return wrap;
+  }
+
+  function insertNewImageLayer(canvas, clientX, clientY, dataUrl, fileName) {
+    if (!canvas) return null;
+    var info = getStageRectInfo();
+    var rect = info.stageRect;
+    var scale = info.scale || 1;
+    // Default size 200x200; replaced with natural size on load (clamped).
+    var defaultW = 200, defaultH = 200;
+    var localX = (clientX - rect.left) / scale - defaultW / 2;
+    var localY = (clientY - rect.top) / scale - defaultH / 2;
+
+    var wrap = buildDroppedWrapper(dataUrl, fileName);
+    wrap.style.position = 'absolute';
+    wrap.style.left = Math.max(0, Math.round(localX)) + 'px';
+    wrap.style.top  = Math.max(0, Math.round(localY)) + 'px';
+    wrap.style.width  = defaultW + 'px';
+    wrap.style.height = defaultH + 'px';
+    wrap.style.zIndex = '40';
+
+    canvas.appendChild(wrap);
+    try { attachHandle(wrap, 'wh'); } catch (e) { console.warn('[LayoutEditor] attachHandle on dropped image failed', e); }
+
+    var innerImg = wrap.querySelector('img');
+    if (innerImg) {
+      innerImg.addEventListener('load', function () {
+        if (wrap.dataset.dropFitted === '1') return;
+        wrap.dataset.dropFitted = '1';
+        var nw = innerImg.naturalWidth || defaultW;
+        var nh = innerImg.naturalHeight || defaultH;
+        if (nw > 0 && nh > 0) {
+          var maxDim = 600;
+          var k = Math.min(1, maxDim / Math.max(nw, nh));
+          var w = Math.round(nw * k);
+          var h = Math.round(nh * k);
+          wrap.style.width = w + 'px';
+          wrap.style.height = h + 'px';
+          if (wrap._resizeUpdateLabel) try { wrap._resizeUpdateLabel(); } catch (e) {}
+        }
+        saveDroppedImages();
+      }, { once: true });
+    }
+
+    selectOnly(wrap);
+    saveDroppedImages();
+    scheduleDirtyUpdate();
+    return wrap;
+  }
+
+  function saveDroppedImages() {
+    try {
+      var list = $$('.le-dropped-img').map(function (el) {
+        var src = '';
+        if (el.tagName === 'IMG') src = el.src || '';
+        else { var inner = el.querySelector('img'); src = inner ? inner.src : ''; }
+        return {
+          id: el.dataset.dropId || '',
+          name: el.dataset.dropName || '',
+          src: src,
+          left: el.style.left || '',
+          top: el.style.top || '',
+          width: el.style.width || '',
+          height: el.style.height || '',
+          tx: el._tx || 0,
+          ty: el._ty || 0,
+          z: el.style.zIndex || ''
+        };
+      });
+      localStorage.setItem(droppedImagesStorageKey(), JSON.stringify(list));
+    } catch (e) {
+      // Quota exceeded or other error — log and continue (in-memory state remains).
+      console.warn('[LayoutEditor] saveDroppedImages failed', e);
+    }
+  }
+
+  function restoreDroppedImages(canvas) {
+    if (!canvas) return;
+    var list = [];
+    try {
+      var raw = localStorage.getItem(droppedImagesStorageKey());
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) { list = []; }
+    if (!Array.isArray(list) || list.length === 0) {
+      // Still attach handles to any pre-existing .le-dropped-img elements
+      // (e.g. inserted by other means) so they remain editable.
+      $$('.le-dropped-img').forEach(function (el) {
+        if (!el.classList.contains('resizable')) {
+          el.setAttribute('data-le-keep-position', '1');
+          try { attachHandle(el, 'wh'); } catch (e) {}
+        }
+      });
+      return;
+    }
+    list.forEach(function (item) {
+      if (!item || !item.src) return;
+      // Skip if an element with the same dropId already exists (e.g. SSR / re-enable)
+      if (item.id) {
+        var existing = canvas.querySelector('.le-dropped-img[data-drop-id="' + item.id + '"]');
+        if (existing) {
+          if (!existing.classList.contains('resizable')) {
+            existing.setAttribute('data-le-keep-position', '1');
+            try { attachHandle(existing, 'wh'); } catch (e) {}
+          }
+          return;
+        }
+      }
+      var wrap = buildDroppedWrapper(item.src, item.name);
+      wrap.dataset.dropId = item.id || wrap.dataset.dropId;
+      wrap.style.position = 'absolute';
+      if (item.left)   wrap.style.left   = item.left;
+      if (item.top)    wrap.style.top    = item.top;
+      if (item.width)  wrap.style.width  = item.width;
+      if (item.height) wrap.style.height = item.height;
+      if (item.z)      wrap.style.zIndex = item.z;
+      var tx = parseFloat(item.tx) || 0, ty = parseFloat(item.ty) || 0;
+      if (tx || ty) {
+        wrap._tx = tx; wrap._ty = ty;
+        wrap.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      }
+      canvas.appendChild(wrap);
+      try { attachHandle(wrap, 'wh'); } catch (e) {}
+    });
+    // Already-present .le-dropped-img elements without dropId metadata also need handles.
+    $$('.le-dropped-img').forEach(function (el) {
+      if (!el.classList.contains('resizable')) {
+        el.setAttribute('data-le-keep-position', '1');
+        try { attachHandle(el, 'wh'); } catch (e) {}
+      }
+    });
+  }
+
+  function enableImageDragDrop(canvas) {
+    if (!canvas) return;
+    var dragover = function (e) {
+      // Only react when the OS is dragging files (not internal text drags etc.)
+      var types = e.dataTransfer && e.dataTransfer.types;
+      var isFiles = false;
+      if (types) {
+        if (types.indexOf) isFiles = types.indexOf('Files') >= 0;
+        else if (types.contains) isFiles = types.contains('Files');
+      }
+      if (!isFiles) return;
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
+      canvas.classList.add('le-dropzone-active');
+    };
+    var dragleave = function (e) {
+      // Only clear when leaving the canvas entirely (relatedTarget outside canvas)
+      var rt = e.relatedTarget;
+      if (rt && canvas.contains(rt)) return;
+      canvas.classList.remove('le-dropzone-active');
+    };
+    var dragend = function () {
+      canvas.classList.remove('le-dropzone-active');
+    };
+    var drop = function (e) {
+      var types = e.dataTransfer && e.dataTransfer.types;
+      var isFiles = false;
+      if (types) {
+        if (types.indexOf) isFiles = types.indexOf('Files') >= 0;
+        else if (types.contains) isFiles = types.contains('Files');
+      }
+      if (!isFiles) return;
+      e.preventDefault();
+      e.stopPropagation();
+      canvas.classList.remove('le-dropzone-active');
+
+      var rawFiles = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
+      var images = rawFiles.filter(function (f) { return f && f.type && f.type.indexOf('image/') === 0; });
+      if (images.length === 0) {
+        showToast('画像ファイルではありません', 'error');
+        return;
+      }
+      // SVG XSS risk → exclude
+      var svgCount = 0;
+      var safe = images.filter(function (f) {
+        if (f.type.indexOf('svg') >= 0) { svgCount++; return false; }
+        return true;
+      });
+      if (svgCount > 0) {
+        console.warn('[LayoutEditor] SVG はセキュリティ上スキップされます (' + svgCount + ' 件)');
+        showToast('SVG は安全のため除外しました', 'error');
+      }
+      // Size cap — warn but allow up to MAX. Skip ones over.
+      var oversize = 0;
+      safe = safe.filter(function (f) {
+        if (f.size > DROP_MAX_BYTES) { oversize++; return false; }
+        return true;
+      });
+      if (oversize > 0) {
+        showToast('10MB 超の画像はスキップ (' + oversize + ' 件)', 'error');
+      }
+      if (safe.length === 0) return;
+
+      // Capture coords up-front (event becomes stale after async)
+      var dropX = e.clientX, dropY = e.clientY;
+      var firstSelected = (state.selectedElements && state.selectedElements.size === 1)
+        ? state.selectedElements.values().next().value
+        : null;
+
+      safe.reduce(function (chain, file, i) {
+        return chain.then(function () {
+          return readAndResizeImage(file).then(function (result) {
+            var dataUrl = result.dataUrl;
+            if (result.resized) {
+              showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
+            }
+            if (i === 0 && firstSelected && isImageElement(firstSelected)) {
+              // Case 2: replace src of selected image
+              var ok = replaceImageSrc(firstSelected, dataUrl);
+              if (ok) {
+                if (!result.resized) showToast('画像を差し替えました');
+                // image-swap is not yet undoable (no inverse handler); just mark dirty.
+                scheduleDirtyUpdate();
+              } else {
+                // Couldn't swap → fall back to insert
+                insertNewImageLayer(canvas, dropX, dropY, dataUrl, file.name);
+                if (!result.resized) showToast('画像を挿入しました');
+              }
+            } else {
+              // Case 1 (or subsequent files in case 2): new layer.
+              // Stagger position slightly so multiples don't stack exactly.
+              var ox = dropX + i * 18;
+              var oy = dropY + i * 18;
+              insertNewImageLayer(canvas, ox, oy, dataUrl, file.name);
+              if (i === 0 && !result.resized) showToast('画像を挿入しました');
+            }
+          }).catch(function (err) {
+            console.warn('[LayoutEditor] readAndResizeImage failed', err);
+            showToast('画像の読み込みに失敗', 'error');
+          });
+        });
+      }, Promise.resolve());
+    };
+
+    addManagedListener(canvas, 'dragover', dragover);
+    addManagedListener(canvas, 'dragleave', dragleave);
+    addManagedListener(canvas, 'dragend', dragend);
+    addManagedListener(canvas, 'drop', drop);
+
+    // Persist position/size changes on dropped images (debounced) so reload
+    // restores the latest geometry. Uses the editor's own event bus.
+    var debouncedSave = debounce(saveDroppedImages, 200);
+    var onTransform = function () {
+      // Only save if at least one selected/edited element is a dropped image.
+      var hit = false;
+      try {
+        if (state.selectedElements && state.selectedElements.size) {
+          state.selectedElements.forEach(function (el) {
+            if (el && el.classList && el.classList.contains('le-dropped-img')) hit = true;
+          });
+        }
+      } catch (e) {}
+      if (hit) debouncedSave();
+    };
+    on('transform', onTransform);
+    registerCleanup(function () { off('transform', onTransform); });
+  }
+
+  // ====================================================================
   //  Public API: enable / disable
   // ====================================================================
 
@@ -2776,6 +3419,7 @@
     attachUserboxDraw();
     attachKeyboard();
     attachZoomShortcuts();
+    attachStackPierceAndMarquee();
     attachBackgroundClickClear();
     wireEditableTexts();
 
@@ -2784,6 +3428,11 @@
       var sel = entry[0], axes = entry[1];
       $$(sel).forEach(function (el) { attachHandle(el, axes); });
     });
+
+    // Restore previously-dropped images (data URLs persisted in localStorage)
+    // and enable OS file drag&drop onto the canvas.
+    try { restoreDroppedImages(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] restoreDroppedImages failed', e); }
+    try { enableImageDragDrop(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] enableImageDragDrop failed', e); }
 
     // Pull saved data + restore extras
     var serverData = window._currentLayoutData || null;
