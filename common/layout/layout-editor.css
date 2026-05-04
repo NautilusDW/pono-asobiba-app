@@ -312,6 +312,22 @@ body.layout-editor-on .numeric-panel .np-reset-100:hover {
   border-color: #ff8a3d;
   color: #fff;
 }
+/* Romeo-2: 画像のアスペクト比に合わせるボタン (img / le-dropped-img / bg-image) */
+body.layout-editor-on .numeric-panel .np-aspect-fit {
+  display: none;
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: rgba(80, 160, 220, 0.2);
+  border: 1px solid rgba(80, 160, 220, 0.5);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+body.layout-editor-on .numeric-panel .np-aspect-fit:hover {
+  background: rgba(80, 160, 220, 0.35);
+}
 /* Aspect-ratio lock toggle (FEATURE: Yankee) — sits in the W row, links W/H. */
 body.layout-editor-on .numeric-panel .np-row.np-row-aspect {
   position: relative;

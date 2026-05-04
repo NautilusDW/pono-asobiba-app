@@ -1618,6 +1618,8 @@
       // Foxtrot-2: 単一画像選択時に natural size とパーセントを表示
       '<div class="np-natural-info" id="np-natural-info" style="display:none"></div>' +
       '<button class="np-reset-100" id="np-reset-100" type="button" style="display:none" title="自然サイズ (100%) に戻す">100% に戻す</button>' +
+      // Romeo-2: 画像のアスペクト比に合わせて H を再計算するボタン (img / .le-dropped-img / bg-image)
+      '<button class="np-aspect-fit" id="np-aspect-fit" type="button" style="display:none" title="画像のアスペクト比に合わせて高さを再計算">📐 画像の比率に合わせる</button>' +
       '<div class="np-section-title">表示</div>' +
       '<div class="np-align-row">' +
       '  <button class="np-align" id="np-hide" title="選択中の要素を非表示">🗑 隠す</button>' +
@@ -1634,7 +1636,130 @@
     panel.querySelector('#np-show-all').addEventListener('click', showAllHiddenElements);
     var resetBtn = panel.querySelector('#np-reset-100');
     if (resetBtn) resetBtn.addEventListener('click', resetImageTo100Pct);
+    // Romeo-2: 「📐 画像の比率に合わせる」ボタン
+    var aspectFitBtn = panel.querySelector('#np-aspect-fit');
+    if (aspectFitBtn) aspectFitBtn.addEventListener('click', fitElementToImageAspect);
     syncAspectLockButton();
+  }
+
+  // ====================================================================
+  //  Romeo-2: 画像のアスペクト比に合わせる (Quebec-2 で削除した bg-image
+  //    natural-size probe ロジックを部分的に復活。用途は aspect ratio 取得のみ。
+  //    img / .le-dropped-img / 任意 bg-image 要素に対応。)
+  // ====================================================================
+  var bgImageNaturalCache = new Map(); // url → { status, w, h, callbacks }
+
+  function getBgImageUrl(el) {
+    if (!el || !el.nodeType || el.nodeType !== 1) return null;
+    var bg;
+    try {
+      bg = (el.style && el.style.backgroundImage) || '';
+      if (!bg || bg === 'none') bg = getComputedStyle(el).backgroundImage || '';
+    } catch (e) { return null; }
+    if (!bg || bg === 'none') return null;
+    var m = bg.match(/url\(["']?([^"')]+)["']?\)/);
+    return m ? m[1] : null;
+  }
+
+  function probeBgImageNaturalSize(url, onLoad) {
+    if (!url) return null;
+    var cached = bgImageNaturalCache.get(url);
+    if (cached && cached.status === 'loaded') return { w: cached.w, h: cached.h };
+    if (cached && cached.status === 'error') return null;
+    if (cached && cached.status === 'loading') {
+      if (onLoad) cached.callbacks.push(onLoad);
+      return null;
+    }
+    var entry = { status: 'loading', callbacks: onLoad ? [onLoad] : [] };
+    bgImageNaturalCache.set(url, entry);
+    var probe = new Image();
+    probe.onload = function () {
+      var cbs = (bgImageNaturalCache.get(url) || {}).callbacks || [];
+      bgImageNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
+      cbs.forEach(function (cb) { try { cb && cb(); } catch (e) {} });
+    };
+    probe.onerror = function () {
+      bgImageNaturalCache.set(url, { status: 'error' });
+    };
+    probe.src = url;
+    return null;
+  }
+
+  // Romeo-2: 要素から画像のアスペクト比 (w/h) を取得。
+  //   - <img> 直接: img.naturalWidth / naturalHeight
+  //   - .le-dropped-img wrapper: 内側 img の natural
+  //   - bg-image を持つ要素: URL を probe して natural を取得 (キャッシュ)
+  // 取得不能な場合は null を返す。bg-image probe 中の場合は updateNumericPanel
+  // を onLoad として渡しておくと load 完了後に再描画される。
+  function getImageAspectRatio(el, onLoad) {
+    if (!el) return null;
+    if (el.tagName === 'IMG') {
+      if (el.naturalWidth > 0 && el.naturalHeight > 0) {
+        return el.naturalWidth / el.naturalHeight;
+      }
+      return null;
+    }
+    if (el.classList && el.classList.contains('le-dropped-img')) {
+      var innerImg = el.querySelector('img');
+      if (innerImg && innerImg.naturalWidth > 0 && innerImg.naturalHeight > 0) {
+        return innerImg.naturalWidth / innerImg.naturalHeight;
+      }
+      // wrapper だが natural 未確定 → load 完了で再描画させる
+      if (innerImg && innerImg.naturalWidth === 0 && onLoad && !innerImg._romeo2NaturalListen) {
+        innerImg._romeo2NaturalListen = true;
+        innerImg.addEventListener('load', function () {
+          innerImg._romeo2NaturalListen = false;
+          try { onLoad(); } catch (e) {}
+        }, { once: true });
+      }
+      return null;
+    }
+    // 任意要素の bg-image
+    var url = getBgImageUrl(el);
+    if (url) {
+      var bg = probeBgImageNaturalSize(url, onLoad);
+      if (bg && bg.w > 0 && bg.h > 0) return bg.w / bg.h;
+      return null;
+    }
+    return null;
+  }
+
+  // Romeo-2: アスペクト比取得対象になりうるか (UI の表示条件判定用)。
+  //   実際のアスペクト比が取れるかは別 (probe 中など) — UI はボタンを表示し、
+  //   クリック時にアスペクト比が取れなければトーストで通知する。
+  function elementHasAspectSource(el) {
+    if (!el) return false;
+    if (el.tagName === 'IMG') return true;
+    if (el.classList && el.classList.contains('le-dropped-img')) return true;
+    if (getBgImageUrl(el)) return true;
+    return false;
+  }
+
+  function fitElementToImageAspect() {
+    if (!state.selectedElements || state.selectedElements.size !== 1) return;
+    var sel = Array.from(state.selectedElements)[0];
+    if (!sel) return;
+    var aspect = getImageAspectRatio(sel, function () { updateNumericPanel(); });
+    if (!aspect || !isFinite(aspect) || aspect <= 0) {
+      showToast('画像のアスペクト比を取得できません (画像読込中の可能性があります)', 'warn');
+      return;
+    }
+    // 現在の W を維持し、H を W / aspect で再計算 (aspect = w/h)
+    var currentW = parseFloat(sel.style.width) || sel.offsetWidth;
+    if (!currentW || currentW <= 0) {
+      showToast('現在の幅が取得できません', 'warn');
+      return;
+    }
+    var newH = Math.max(1, Math.round(currentW / aspect));
+    var before = getResizeState(sel);
+    applyOnePropToEl(sel, 'h', newH);
+    var after = getResizeState(sel);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el: sel, before: before, after: after });
+    }
+    if (state.aspectLocked) captureAspectRatios();
+    updateNumericPanel();
+    showToast('画像の比率 ' + aspect.toFixed(2) + ' に合わせました (Ctrl+Z で戻せます)', 'success');
   }
 
   // Golf-2: 「100% に戻す」と自然サイズ表示を、選択要素そのものが <img> の場合
@@ -1984,6 +2109,15 @@
         infoEl.style.display = 'none';
         resetBtn.style.display = 'none';
       }
+    }
+
+    // Romeo-2: 「📐 画像の比率に合わせる」ボタンの表示制御。
+    //   単一選択 & img / .le-dropped-img / bg-image 要素のいずれかなら表示。
+    //   100% リセットと違い bg-image 経路も対象に含める (panel/frame の比率合わせ用途)。
+    var aspectBtn = panel.querySelector('#np-aspect-fit');
+    if (aspectBtn) {
+      var showAspectBtn = (sel.length === 1) && elementHasAspectSource(sel[0]);
+      aspectBtn.style.display = showAspectBtn ? '' : 'none';
     }
   }
 
