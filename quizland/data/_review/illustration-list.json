@@ -48,6 +48,75 @@
         { "id": "weather_snowflake",     "save_path": "assets/images/quizland/illust/weather/weather_snowflake.png",     "bbox": [0, 512, 768, 512] },
         { "id": "weather_typhoon",       "save_path": "assets/images/quizland/illust/weather/weather_typhoon.png",       "bbox": [768, 512, 768, 512] }
       ]
+    },
+    {
+      "sheet_id": "sheet_count_total",
+      "purpose": "5 fruits/objects, 5x1 grid (count_total set)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_count_total.png",
+      "size": "2560x512",
+      "prompt": "A 5 columns × 1 row grid (total 2560x512) of 5 simple kid-friendly food/object illustrations for children's quiz, each cell 512x512 transparent. Left-to-right: a single red apple (りんご) with green leaf, a single red strawberry (いちご) with green stem and seed dots, a single pink-and-white flower (おはな) with yellow center, a single yellow 5-pointed twinkle star (ほし), a single orange tangerine/mikan (みかん) with green stem. Each item solid filled with hand-drawn watercolor style, subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow. White space between cells. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "ringo",  "save_path": "assets/images/word/ringo.png",  "bbox": [0, 0, 512, 512] },
+        { "id": "ichigo", "save_path": "assets/images/word/ichigo.png", "bbox": [512, 0, 512, 512] },
+        { "id": "hana",   "save_path": "assets/images/word/hana.png",   "bbox": [1024, 0, 512, 512] },
+        { "id": "hoshi",  "save_path": "assets/images/word/hoshi.png",  "bbox": [1536, 0, 512, 512] },
+        { "id": "mikan",  "save_path": "assets/images/word/mikan.png",  "bbox": [2048, 0, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_weather_emoji",
+      "purpose": "10 weather/element icons, 5x2 grid (ocean weather set)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_weather_emoji.png",
+      "size": "2560x1024",
+      "prompt": "A 5 columns × 2 rows grid (total 2560x1024) of 10 simple kid-friendly weather/element icons, each cell 512x512 transparent. Top row left-to-right: bright yellow sun with friendly face (はれ), blue raindrops falling (あめ), soft grey-white clouds (くもり), white snowflake (ゆき), 7-color rainbow arch (にじ). Bottom row left-to-right: yellow lightning bolt with cloud (かみなり), blue swirling wind lines (かぜ), grey tornado funnel (たつまき), red typhoon hurricane spiral (たいふう), red mercury thermometer (おんどけい). All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow, transparent PNG. White space between cells. No text, no labels.",
+      "crops": [
+        { "id": "Sun",         "save_path": "assets/images/ocean/Sun/Sun_normal_1.png",                 "bbox": [0, 0, 512, 512] },
+        { "id": "Rain",        "save_path": "assets/images/ocean/Rain/Rain_normal_1.png",               "bbox": [512, 0, 512, 512] },
+        { "id": "Cloud",       "save_path": "assets/images/ocean/Cloud/Cloud_normal_1.png",             "bbox": [1024, 0, 512, 512] },
+        { "id": "Snow",        "save_path": "assets/images/ocean/Snow/Snow_normal_1.png",               "bbox": [1536, 0, 512, 512] },
+        { "id": "Rainbow",     "save_path": "assets/images/ocean/Rainbow/Rainbow_normal_1.png",         "bbox": [2048, 0, 512, 512] },
+        { "id": "Thunder",     "save_path": "assets/images/ocean/Thunder/Thunder_normal_1.png",         "bbox": [0, 512, 512, 512] },
+        { "id": "Wind",        "save_path": "assets/images/ocean/Wind/Wind_normal_1.png",               "bbox": [512, 512, 512, 512] },
+        { "id": "Tornado",     "save_path": "assets/images/ocean/Tornado/Tornado_normal_1.png",         "bbox": [1024, 512, 512, 512] },
+        { "id": "Hurricane",   "save_path": "assets/images/ocean/Hurricane/Hurricane_normal_1.png",     "bbox": [1536, 512, 512, 512] },
+        { "id": "Thermometer", "save_path": "assets/images/ocean/Thermometer/Thermometer_normal_1.png", "bbox": [2048, 512, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_body_emoji",
+      "purpose": "9 body part icons, 3x3 grid (ocean body set)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_body_emoji.png",
+      "size": "1536x1536",
+      "prompt": "A 3 columns × 3 rows grid (total 1536x1536) of 9 simple kid-friendly body part illustrations, each cell 512x512 transparent. Top row left-to-right: a pair of friendly cartoon eyes (め), a smiling kid mouth showing teeth (くち), an open palm hand (て). Middle row left-to-right: a barefoot foot (あし), a bent forearm with hand (うで), a small button nose (はな). Bottom row left-to-right: 5 white teeth in a smile (は), a pink tongue sticking out (した), a cartoon ear (みみ). All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow, transparent PNG. White space between cells. No text, no labels. Friendly and cute, not medical/scientific.",
+      "crops": [
+        { "id": "Eyes",       "save_path": "assets/images/ocean/Eyes/Eyes_normal_1.png",             "bbox": [0, 0, 512, 512] },
+        { "id": "Mouth_part", "save_path": "assets/images/ocean/Mouth_part/Mouth_part_normal_1.png", "bbox": [512, 0, 512, 512] },
+        { "id": "Palm",       "save_path": "assets/images/ocean/Palm/Palm_normal_1.png",             "bbox": [1024, 0, 512, 512] },
+        { "id": "Foot_part",  "save_path": "assets/images/ocean/Foot_part/Foot_part_normal_1.png",   "bbox": [0, 512, 512, 512] },
+        { "id": "Forearm",    "save_path": "assets/images/ocean/Forearm/Forearm_normal_1.png",       "bbox": [512, 512, 512, 512] },
+        { "id": "Nose_part",  "save_path": "assets/images/ocean/Nose_part/Nose_part_normal_1.png",   "bbox": [1024, 512, 512, 512] },
+        { "id": "Teeth",      "save_path": "assets/images/ocean/Teeth/Teeth_normal_1.png",           "bbox": [0, 1024, 512, 512] },
+        { "id": "Tongue",     "save_path": "assets/images/ocean/Tongue/Tongue_normal_1.png",         "bbox": [512, 1024, 512, 512] },
+        { "id": "Ear_part",   "save_path": "assets/images/ocean/Ear_part/Ear_part_normal_1.png",     "bbox": [1024, 1024, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_animal_extras",
+      "purpose": "9 animals/objects, 3x3 grid (word/ extras)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_animal_extras.png",
+      "size": "1536x1536",
+      "prompt": "A 3 columns × 3 rows grid (total 1536x1536) of 9 simple kid-friendly cute animal/object illustrations, each cell 512x512 transparent. Top row left-to-right: a friendly grey elephant with long curved trunk (ぞう), an orange tabby cat with smile (ねこ), a fluffy white rabbit with long ears (うさぎ). Middle row left-to-right: a brown bear sitting peacefully (クマ), a tall yellow giraffe with brown spots (キリン), a golden lion with full mane (ライオン). Bottom row left-to-right: a friendly grey-blue dolphin (イルカ), a large blue whale with friendly eye (クジラ), a yellow banana fruit with brown stem (バナナ). All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow, transparent PNG. White space between cells. No text, no labels.",
+      "crops": [
+        { "id": "zou",    "save_path": "assets/images/word/zou.png",    "bbox": [0, 0, 512, 512] },
+        { "id": "neko",   "save_path": "assets/images/word/neko.png",   "bbox": [512, 0, 512, 512] },
+        { "id": "usagi",  "save_path": "assets/images/word/usagi.png",  "bbox": [1024, 0, 512, 512] },
+        { "id": "kuma",   "save_path": "assets/images/word/kuma.png",   "bbox": [0, 512, 512, 512] },
+        { "id": "kirin",  "save_path": "assets/images/word/kirin.png",  "bbox": [512, 512, 512, 512] },
+        { "id": "lion",   "save_path": "assets/images/word/lion.png",   "bbox": [1024, 512, 512, 512] },
+        { "id": "iruka",  "save_path": "assets/images/word/iruka.png",  "bbox": [0, 1024, 512, 512] },
+        { "id": "kujira", "save_path": "assets/images/word/kujira.png", "bbox": [512, 1024, 512, 512] },
+        { "id": "banana", "save_path": "assets/images/word/banana.png", "bbox": [1024, 1024, 512, 512] }
+      ]
     }
   ],
   "items": [

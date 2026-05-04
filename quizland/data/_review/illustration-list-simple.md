@@ -26,11 +26,15 @@
 | `_sheets/sheet_colors.png` | 8色のチップを 4×2 グリッド | 2048×1024 | 1枚 → 8切り出し |
 | `_sheets/sheet_shapes.png` | 8形を 4×2 グリッド | 2048×1024 | 1枚 → 8切り出し |
 | `_sheets/sheet_weather.png` | 4天気を 2×2 グリッド | 1536×1024 | 1枚 → 4切り出し |
+| `_sheets/sheet_count_total.png` | 5フルーツ/物 5×1 グリッド | 2560×512 | 1枚 → 5切り出し |
+| `_sheets/sheet_weather_emoji.png` | 10天気アイコン 5×2 グリッド | 2560×1024 | 1枚 → 10切り出し |
+| `_sheets/sheet_body_emoji.png` | 9体パーツ 3×3 グリッド | 1536×1536 | 1枚 → 9切り出し |
+| `_sheets/sheet_animal_extras.png` | 9動物 3×3 グリッド | 1536×1536 | 1枚 → 9切り出し |
 
 シート生成後、各 cell を bbox 通りに切り出して個別 PNG として保存。
 
-色チップ + 形 + 天気 = **3シート (= 20切り出し)**。
-動物11 + 体7 = 18個別 と合わせて 合計 **21枚生成 → 38ファイル** 出力。
+色チップ + 形 + 天気 + count_total + weather_emoji + body_emoji + animal_extras = **7シート (= 53切り出し)**。
+動物11 + 体7 = 18個別 と合わせて 合計 **7 sheets + 18 individual = 25 generations → 71 total files** 出力。
 
 詳細は `illustration-list.json` の `sheets[]` 参照。
 

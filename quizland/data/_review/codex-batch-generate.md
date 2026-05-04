@@ -8,11 +8,11 @@ JSON には2種類のエントリがあります:
 
 | 種別 | 配列 | 件数 | 備考 |
 |---|---|---|---|
-| シート (複数まとめ) | `sheets[]` | 3 | 1枚生成 → ローカルで切り出し |
-| 個別 (1枚ずつ) | `items[]` | 18 | そのまま生成 |
+| シート (複数まとめ) | `sheets[]` | 7 | 1枚生成 → ローカルで切り出し (color×8 + shape×8 + weather×4 + count_total×5 + weather_emoji×10 + body_emoji×9 + animal_extras×9 = 53 crops) |
+| 個別 (1枚ずつ) | `items[]` | 18 | そのまま生成 (animal×11 + body×7) |
 
-→ **生成画像数: 3 シート + 18 個別 = 21枚**
-→ **最終ファイル数: 20 (切り出し) + 18 (個別) = 38 PNG**
+→ **生成画像数: 7 シート + 18 個別 = 25枚**
+→ **最終ファイル数: 53 (切り出し) + 18 (個別) = 71 PNG**
 
 ## シート方式の処理フロー (`sheets[]`)
 
@@ -63,6 +63,10 @@ d:/AppDevelopment/pono-asobiba-app/<save_path>
 | 色チップ (sheet) | `illust/color/` | 8 |
 | 形 (sheet) | `illust/shape/` | 8 |
 | 天気シーン (sheet) | `illust/weather/` | 4 |
+| count_total (sheet) | `assets/images/word/` | 5 |
+| weather_emoji (sheet) | `assets/images/ocean/<Weather>/` | 10 |
+| body_emoji (sheet) | `assets/images/ocean/<Body>/` | 9 |
+| animal_extras (sheet) | `assets/images/word/` | 9 |
 | 動物 (個別) | `illust/animal/` | 11 |
 | 体図解 (個別) | `illust/body/` | 7 |
-| **合計** | | **38** |
+| **合計** | | **71** |
