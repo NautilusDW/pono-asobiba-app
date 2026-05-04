@@ -1642,49 +1642,11 @@
   // を返していたが、ユーザー視点では「ラッパ (例: .hint-panel) を選択したのに
   // 中の silhouette img の natural にラッパごとリサイズされる」誤誘導になるため
   // 廃止。wrapper を 100% に戻したい場合はその wrapper 内の img を直接選択する。
-  // Hotel-2: CSS background-image 要素 (例: .discovery-popup) も natural size を
-  //   非同期取得して 100% リセットを可能にする。url を Image() で probe してキャッシュ。
-  var bgImageNaturalCache = new Map(); // url → { status, w, h, callbacks }
-  function getBgImageUrl(el) {
-    if (!el || !el.nodeType || el.nodeType !== 1) return null;
-    var bg;
-    try {
-      bg = (el.style && el.style.backgroundImage) || '';
-      if (!bg || bg === 'none') bg = getComputedStyle(el).backgroundImage || '';
-    } catch (e) { return null; }
-    if (!bg || bg === 'none') return null;
-    // 'url("...")' or 'url(\'...\')' or 'url(...)' を抽出 (multi-bg は先頭のみ採用)
-    var m = bg.match(/url\(["']?([^"')]+)["']?\)/);
-    return m ? m[1] : null;
-  }
-  function getBgImageNaturalSize(el, onLoad) {
-    var url = getBgImageUrl(el);
-    if (!url) return null;
-    var cached = bgImageNaturalCache.get(url);
-    if (cached && cached.status === 'loaded') return { w: cached.w, h: cached.h };
-    if (cached && cached.status === 'error') return null;
-    if (cached && cached.status === 'loading') {
-      if (onLoad) cached.callbacks.push(onLoad);
-      return null;
-    }
-    // 新規 probe
-    var entry = { status: 'loading', callbacks: onLoad ? [onLoad] : [] };
-    bgImageNaturalCache.set(url, entry);
-    var probe = new Image();
-    probe.onload = function () {
-      var cbs = (bgImageNaturalCache.get(url) || {}).callbacks || [];
-      bgImageNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
-      cbs.forEach(function (cb) { try { cb && cb(); } catch (e) {} });
-    };
-    probe.onerror = function () {
-      bgImageNaturalCache.set(url, { status: 'error' });
-    };
-    probe.src = url;
-    return null;
-  }
-  // Hotel-2: el が <img> なら従来通り naturalWidth/Height、そうでなければ
-  //   CSS background-image を probe して natural size を取得。bg の場合は
-  //   isBg:true をマークして UI 側でラベルを切り替えられるようにする。
+  // Quebec-2: 100% 表示対象を img / le-dropped-img wrapper に限定。
+  //   Hotel-2 で追加した CSS background-image 経路 (panel/frame の natural) は
+  //   `.pono-bubble` 等 (cover/contain で fit する装飾枠) で natural サイズに
+  //   リサイズすると枠が壊れるため削除。bg 差し替え機能は replaceImageSrc 側で
+  //   独立に維持される (elementHasBackgroundImage / swapBackgroundImageUndoable)。
   // Papa-2 修正1: target フィールドを追加。リサイズすべき要素は
   //   wrapper (.le-dropped-img) なら wrapper、それ以外は el 自身。
   //   getImageNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
@@ -1728,8 +1690,8 @@
       }
       return null;
     }
-    var bg = getBgImageNaturalSize(el, onLoad);
-    if (bg) return { w: bg.w, h: bg.h, isBg: true, target: el };
+    // Quebec-2: bg-image / その他要素は 100% 対象外 (panel/frame の natural は
+    //   表示意味を持たないため UI 側で row 自体を非表示にする)。
     return null;
   }
 
@@ -1976,8 +1938,8 @@
 
     // Foxtrot-2: 単一選択かつ画像ならば、自然サイズと現在の表示比率 (%) を表示。
     // 非画像 / 複数選択 / 画像未ロード時は非表示。
-    // Hotel-2: <img> だけでなく background-image を持つ要素にも対応 (probe を非同期で
-    //   ロードして load 完了時に panel を再描画)。
+    // Quebec-2: 対象は <img> と .le-dropped-img wrapper のみ (panel/frame の
+    //   bg-image は自然サイズに意味が無いため row 自体を非表示にする)。
     var infoEl = panel.querySelector('#np-natural-info');
     var resetBtn = panel.querySelector('#np-reset-100');
     var ns = null;
@@ -2012,10 +1974,9 @@
           // 整数なら小数なし、それ以外は小数1桁
           return (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
         };
-        // Hotel-2: bg-image 要素には「自然 (背景)」と明示
-        var label = ns.isBg ? '自然 (背景)' : '自然';
+        // Quebec-2: bg-image 経路は廃止したのでラベルは常に「自然」
         infoEl.innerHTML =
-          label + ': ' + ns.w + '×' + ns.h +
+          '自然: ' + ns.w + '×' + ns.h +
           ' &nbsp;<b>' + fmt(pctW) + '% × ' + fmt(pctH) + '%</b>';
         infoEl.style.display = '';
         resetBtn.style.display = '';
