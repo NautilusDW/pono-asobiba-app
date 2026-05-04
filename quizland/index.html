@@ -1557,10 +1557,12 @@ function showProblemDialogue(question) {
 function showHint1() {
   _hintLevel = 1;
   setHakaseDialogue(pickRandom(HAKASE_DIALOGUE.hint1));
+  playHintSe();
 }
 
 function showHint2(question) {
   _hintLevel = 2;
+  playHintSe();
   if (question && question.hint) {
     setHakaseDialogue(question.hint);
     return;
@@ -1756,50 +1758,30 @@ window.addEventListener('pagehide', function () {
   if (bgmAudio) bgmAudio.pause();
 });
 
-function playCorrect() {
-  if (!audioCtx) return;
-  const t = audioCtx.currentTime;
-  [523.25, 783.99].forEach((f, i) => {
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.frequency.value = f;
-    o.type = 'sine';
-    g.gain.setValueAtTime(0.18, t + i * 0.08);
-    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.28);
-    o.connect(g).connect(audioCtx.destination);
-    o.start(t + i * 0.08);
-    o.stop(t + i * 0.08 + 0.3);
-  });
+// SE (mp3) — d:/ポノのおへや/AUDIO/SE/ から日本語名ファイルを採用
+const SE_PATHS = {
+  correct: '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
+  wrong:   '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
+  clear:   '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
+  hint:    '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
+};
+const SE_VOLUME = 0.6;
+const _seCache = {};
+function playSe(name) {
+  const src = SE_PATHS[name];
+  if (!src) return;
+  let a = _seCache[name];
+  if (!a) {
+    try { a = new Audio(src); a.preload = 'auto'; a.volume = SE_VOLUME; _seCache[name] = a; }
+    catch (e) { return; }
+  }
+  try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
 }
-function playWrong() {
-  if (!audioCtx) return;
-  const t = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(220, t);
-  o.frequency.exponentialRampToValueAtTime(110, t + 0.2);
-  g.gain.setValueAtTime(0.12, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-  o.connect(g).connect(audioCtx.destination);
-  o.start(t);
-  o.stop(t + 0.22);
-}
-function playFanfare() {
-  if (!audioCtx) return;
-  const t = audioCtx.currentTime;
-  [523, 659, 784, 1047].forEach((f, i) => {
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'sine';
-    o.frequency.value = f;
-    g.gain.setValueAtTime(0.15, t + i * 0.15);
-    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.4);
-    o.connect(g).connect(audioCtx.destination);
-    o.start(t + i * 0.15);
-    o.stop(t + i * 0.15 + 0.4);
-  });
-}
+
+function playCorrect() { playSe('correct'); }
+function playWrong()   { playSe('wrong'); }
+function playFanfare() { playSe('clear'); }
+function playHintSe()  { playSe('hint'); }
 
 // ═══════════════════════════════════════════════════════════
 // Confetti

@@ -1274,18 +1274,24 @@ function playApple() {
     o.start(s); o.stop(s + 0.2);
   });
 }
-function playStageClearMz() {
-  var ac = _mzGetAC(); if (!ac) return;
-  var t = ac.currentTime;
-  [523, 659, 784, 1047].forEach(function(f, i) {
-    var o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sine'; o.frequency.value = f;
-    var s = t + i * 0.1;
-    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.22, s + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, s + 0.4);
-    o.start(s); o.stop(s + 0.4);
-  });
+function playStageClearMz() { playMzSe('mazeClear'); }
+
+// SE (mp3) — おじゃま虫クイズ + ステージクリア用
+const _MZ_SE_PATHS = {
+  correct:   '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
+  wrong:     '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
+  mazeClear: '../assets/audio/sfx/quiz/' + encodeURIComponent('迷路クリア') + '.mp3',
+};
+const _MZ_SE_VOLUME = 0.6;
+const _mzSeCache = {};
+function playMzSe(name) {
+  var src = _MZ_SE_PATHS[name]; if (!src) return;
+  var a = _mzSeCache[name];
+  if (!a) {
+    try { a = new Audio(src); a.preload = 'auto'; a.volume = _MZ_SE_VOLUME; _mzSeCache[name] = a; }
+    catch (e) { return; }
+  }
+  try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
 }
 
 // ── Charm system (りんごでアンロックするおまもり) ──

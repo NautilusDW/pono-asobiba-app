@@ -127,6 +127,7 @@
     aspectRatios: null,        // WeakMap<el, ratio> — capture時の W/H 比率
     preferredTarget: null,     // Charlie-2: 要素一覧から選択した要素を canvas 操作の優先ターゲットに
     textToolOn: false,         // India-2: テキスト追加ツール ON/OFF
+    unlinkedChildren: null,    // Papa-2 修正2: 一時リンク解除中の子要素 (Set<element>)
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -537,6 +538,11 @@
     else if (op.type === 'text') op.el.textContent = op.after;
     else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
+    // Papa-2 修正3: z-index 並び替え
+    else if (op.type === 'z-index') {
+      if (op.after === '' || op.after == null) op.el.style.removeProperty('z-index');
+      else op.el.style.zIndex = String(op.after);
+    }
     // Mike-2 修正B: rename (要素一覧ラベル)
     else if (op.type === 'rename') {
       if (op.mode === 'spec') {
@@ -570,7 +576,8 @@
       if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
     } catch (e) {}
     // Juliet-2 修正B: add/remove 系の op 後は要素一覧も再描画 (動的要素の出現/消滅を反映)
-    if (op.type === 'add' || op.type === 'remove') {
+    // Papa-2 修正3: z-index 変更後も並び順が変わるので再描画
+    if (op.type === 'add' || op.type === 'remove' || op.type === 'z-index') {
       try { refreshElementList(); } catch (e) {}
     }
     refreshLockBadges();
@@ -592,6 +599,11 @@
     else if (op.type === 'text') op.el.textContent = op.before;
     else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
+    // Papa-2 修正3: z-index 並び替え inverse
+    else if (op.type === 'z-index') {
+      if (op.before === '' || op.before == null) op.el.style.removeProperty('z-index');
+      else op.el.style.zIndex = String(op.before);
+    }
     // Mike-2 修正B: rename の inverse — 旧ラベルへ戻す
     else if (op.type === 'rename') {
       if (op.mode === 'spec') {
@@ -1098,6 +1110,27 @@
       var startStates = targets.map(function (t) {
         return { el: t, tx: t._tx || 0, ty: t._ty || 0, before: getResizeState(t) };
       });
+      // Papa-2 修正2: ドラッグ対象 (parent) の unlinked 子孫を集めて counter-transform 用
+      //   start state を保存。ドラッグ対象自身に既に含まれる要素は除外して二重適用を防ぐ。
+      var movedSet = new Set(targets);
+      var unlinkedStates = []; // {el, parent, tx, ty, before}
+      if (state.unlinkedChildren && state.unlinkedChildren.size) {
+        targets.forEach(function (parent) {
+          state.unlinkedChildren.forEach(function (child) {
+            if (movedSet.has(child)) return;
+            if (parent === child) return;
+            if (parent.contains(child)) {
+              unlinkedStates.push({
+                el: child,
+                parent: parent,
+                tx: child._tx || 0,
+                ty: child._ty || 0,
+                before: getResizeState(child)
+              });
+            }
+          });
+        });
+      }
 
       var onMove = function (e2) {
         if (e2.touches && e2.touches[0]) e2 = touchToMouse(e2);
@@ -1113,6 +1146,14 @@
           s.el._ty = ny;
           s.el.style.transform = 'translate(' + nx + 'px, ' + ny + 'px)';
         });
+        // Papa-2 修正2: unlinked 子に counter-transform を当て、視覚的に動かないようにする
+        unlinkedStates.forEach(function (u) {
+          var nx = u.tx - dx;
+          var ny = u.ty - dy;
+          u.el._tx = nx;
+          u.el._ty = ny;
+          u.el.style.transform = 'translate(' + nx + 'px, ' + ny + 'px)';
+        });
         emit('transform', { kind: 'move' });
       };
       var onUp = function () {
@@ -1126,6 +1167,13 @@
           var after = getResizeState(s.el);
           if (JSON.stringify(after) !== JSON.stringify(s.before)) {
             ops.push({ type: 'resize', el: s.el, before: s.before, after: after });
+          }
+        });
+        // Papa-2 修正2: unlinked 子の counter-transform も同じ batch で undo できるよう積む
+        unlinkedStates.forEach(function (u) {
+          var after = getResizeState(u.el);
+          if (JSON.stringify(after) !== JSON.stringify(u.before)) {
+            ops.push({ type: 'resize', el: u.el, before: u.before, after: after });
           }
         });
         pushHistoryBatch(ops);
@@ -1637,36 +1685,72 @@
   // Hotel-2: el が <img> なら従来通り naturalWidth/Height、そうでなければ
   //   CSS background-image を probe して natural size を取得。bg の場合は
   //   isBg:true をマークして UI 側でラベルを切り替えられるようにする。
+  // Papa-2 修正1: target フィールドを追加。リサイズすべき要素は
+  //   wrapper (.le-dropped-img) なら wrapper、それ以外は el 自身。
+  //   getImageNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
+  //   なら target = wrapper を返す (内側 img だけリサイズして wrapper と不一致に
+  //   なる問題を解消)。逆に wrapper を渡されたときは内側 img の natural を返す。
   function getImageNaturalSize(el, onLoad) {
     if (!el) return null;
     if (el.tagName === 'IMG') {
       if (el.naturalWidth > 0 && el.naturalHeight > 0) {
-        return { w: el.naturalWidth, h: el.naturalHeight, img: el };
+        // Papa-2 修正1: 親が .le-dropped-img なら wrapper を target にする
+        var parentWrap = el.parentNode;
+        var isInDropWrap = parentWrap && parentWrap.classList &&
+          parentWrap.classList.contains('le-dropped-img');
+        return {
+          w: el.naturalWidth,
+          h: el.naturalHeight,
+          img: el,
+          target: isInDropWrap ? parentWrap : el
+        };
+      }
+      return null;
+    }
+    // Papa-2 修正1: wrapper を渡されたら内側 img の natural を返す
+    if (el.classList && el.classList.contains('le-dropped-img')) {
+      var innerImg = el.querySelector('img');
+      if (innerImg && innerImg.naturalWidth > 0 && innerImg.naturalHeight > 0) {
+        return {
+          w: innerImg.naturalWidth,
+          h: innerImg.naturalHeight,
+          img: innerImg,
+          target: el
+        };
+      }
+      // wrapper だが natural 未確定 → load 完了で再描画させる
+      if (innerImg && innerImg.naturalWidth === 0 && onLoad && !innerImg._papa2NaturalListen) {
+        innerImg._papa2NaturalListen = true;
+        innerImg.addEventListener('load', function () {
+          innerImg._papa2NaturalListen = false;
+          try { onLoad(); } catch (e) {}
+        }, { once: true });
       }
       return null;
     }
     var bg = getBgImageNaturalSize(el, onLoad);
-    if (bg) return { w: bg.w, h: bg.h, isBg: true };
+    if (bg) return { w: bg.w, h: bg.h, isBg: true, target: el };
     return null;
   }
 
   // Foxtrot-2: 「100% に戻す」ボタン — 単一画像選択時に natural size を W/H に流し込む
+  // Papa-2 修正1: ns.target を使って wrapper / 内側 img どちらが選択されていても
+  //   wrapper のサイズが新画像の natural size になるようにする。
   function resetImageTo100Pct() {
     if (!state.selectedElements || state.selectedElements.size !== 1) return;
     var sel = Array.from(state.selectedElements)[0];
     var ns = getImageNaturalSize(sel);
     if (!sel || !ns) return;
+    // Papa-2 修正1: wrapper があれば wrapper をリサイズ対象にする (差し替え後の
+    //   内側 img の naturalSize に wrapper を追従させ、はみ出し/ずれを解消)
+    var target = ns.target || sel;
     // 縦横比ロックの有無に関わらず natural の正確な W,H を直接流し込む。
-    // applyNumericInput は内部で aspect-link を呼ぶが、片方ずつ書き込めば
-    // 最終値は natural と一致する (W → linkedH を 100% に置換 → H で確定)。
-    // ロック中の互換性のため明示的に両軸を applyOnePropToEl で書き込み、
-    // 履歴に 1 個の resize として積む。
-    var before = getResizeState(sel);
-    applyOnePropToEl(sel, 'w', ns.w);
-    applyOnePropToEl(sel, 'h', ns.h);
-    var after = getResizeState(sel);
+    var before = getResizeState(target);
+    applyOnePropToEl(target, 'w', ns.w);
+    applyOnePropToEl(target, 'h', ns.h);
+    var after = getResizeState(target);
     if (JSON.stringify(after) !== JSON.stringify(before)) {
-      pushHistory({ type: 'resize', el: sel, before: before, after: after });
+      pushHistory({ type: 'resize', el: target, before: before, after: after });
     }
     // ロック中なら新サイズで比率をキャプチャし直す (1:1 リセット後の意図に揃える)
     if (state.aspectLocked) captureAspectRatios();
@@ -1916,10 +2000,12 @@
     }
     if (infoEl && resetBtn) {
       if (ns) {
-        var single = sel[0];
-        // style に明示の値が無ければ offsetWidth/Height にフォールバック (= getVal と同じ)
-        var realW = parseFloat(single.style.width) || single.offsetWidth || 0;
-        var realH = parseFloat(single.style.height) || single.offsetHeight || 0;
+        // Papa-2 修正1: % 計算は ns.target (wrapper 優先) のサイズに基づく。
+        //   内側 img を選んだ場合 single.style.width は "100%" で誤計算になるため、
+        //   target を使って wrapper の実寸を見る。
+        var measureEl = ns.target || sel[0];
+        var realW = parseFloat(measureEl.style.width) || measureEl.offsetWidth || 0;
+        var realH = parseFloat(measureEl.style.height) || measureEl.offsetHeight || 0;
         var pctW = (realW / ns.w * 100);
         var pctH = (realH / ns.h * 100);
         var fmt = function (n) {
@@ -2266,11 +2352,26 @@
       }
       var rowTitle = (parentEntry ? '親: ' + parentEntry.label + ' / ' : '') + 'セレクタ: ' + sel;
       row.title = rowTitle;
+      // Papa-2 修正2: 子要素のみ 🔗 トグルを表示。OFF (⛓️‍💥) で親移動から独立
+      var unlinked = (el.dataset && el.dataset.leUnlinked === '1');
+      var linkBtnHtml = '';
+      if (depth > 0) {
+        linkBtnHtml = '<button class="le-row-btn le-link-toggle" title="' +
+          (unlinked ? '親と独立中（クリックで再リンク）' : '親と連動中（クリックで一時独立）') + '">' +
+          (unlinked ? '⛓️‍💥' : '🔗') + '</button>';
+      }
       row.innerHTML =
         '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
         '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
+        linkBtnHtml +
         '<span class="le-row-label" title="ダブルクリックで名前変更"></span>' +
         '<span class="le-row-key"></span>';
+      // Papa-2 修正4: ドラッグで並び替え/再親子化 (詳細は下のリスナで設定)
+      row.draggable = true;
+      row.dataset.rowEl = ''; // marker
+      // hold reference for D&D
+      row._leTargetEl = el;
+      row._leDepth = depth;
       // Mike-2 修正B: textContent で安全に流し込む (XSS 防御)
       var labelSpan = row.querySelector('.le-row-label');
       var keySpan = row.querySelector('.le-row-key');
@@ -2305,6 +2406,10 @@
           } else if (e.target.classList.contains('le-lock')) {
             toggleLock(el);
             refreshElementList();
+          } else if (e.target.classList.contains('le-link-toggle')) {
+            // Papa-2 修正2: 親子リンクの一時解除トグル
+            e.stopPropagation();
+            toggleChildLink(el);
           } else {
             // Multi-select support in element list panel
             // - Shift+Click: range select between last clicked and current row
@@ -2353,6 +2458,8 @@
             }
           }
         });
+      // Papa-2 修正3/4: 行ドラッグ — 並び替え (z-index) と再親子化 (DOM 移動)
+      attachListRowDragHandlers(row, el, key);
       body.appendChild(row);
     });
     // Defensive: if anchor row no longer exists (element deleted), drop the anchor
@@ -2362,6 +2469,207 @@
       );
       if (!still) state.lastClickedListKey = null;
     }
+  }
+
+  // ====================================================================
+  //  Papa-2 修正3/4: 要素一覧ドラッグ (並び替え + 再親子化)
+  // ====================================================================
+  // - top 25%   → before (兄弟挿入: 視覚的に手前 = z-index 上昇)
+  // - middle 50% → into (DOM 親子化: target.appendChild(source))
+  // - bottom 25% → after (兄弟挿入: 視覚的に奥 = z-index 低下)
+  // 並び替えは z-index を 100 刻みで再番号して安定化させる。
+  function clearListDropMarkers(root) {
+    if (!root) return;
+    root.querySelectorAll('.le-drop-before, .le-drop-after, .le-drop-into').forEach(function (r) {
+      r.classList.remove('le-drop-before', 'le-drop-after', 'le-drop-into');
+    });
+  }
+  function attachListRowDragHandlers(row, el, key) {
+    if (!row) return;
+    row.addEventListener('dragstart', function (e) {
+      try {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/x-le-row-key', key || '');
+        // Some browsers need any data to start a drag
+        e.dataTransfer.setData('text/plain', key || '');
+      } catch (err) {}
+      row.classList.add('le-dragging');
+      // Use a closure-shared marker so dragover knows the source element
+      state._listDragSourceEl = el;
+      state._listDragSourceKey = key;
+    });
+    row.addEventListener('dragend', function () {
+      row.classList.remove('le-dragging');
+      if (state.listPanelEl) clearListDropMarkers(state.listPanelEl);
+      state._listDragSourceEl = null;
+      state._listDragSourceKey = null;
+    });
+    row.addEventListener('dragover', function (e) {
+      // Self-drop / 子孫への drop は禁止 (循環防止)
+      var src = state._listDragSourceEl;
+      if (!src) return;
+      if (src === el) return;
+      try { if (src.contains && src.contains(el)) return; } catch (err) {}
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+      var rect = row.getBoundingClientRect();
+      var y = e.clientY - rect.top;
+      var ratio = y / rect.height;
+      if (state.listPanelEl) clearListDropMarkers(state.listPanelEl);
+      if (ratio < 0.25) row.classList.add('le-drop-before');
+      else if (ratio > 0.75) row.classList.add('le-drop-after');
+      else row.classList.add('le-drop-into');
+    });
+    row.addEventListener('dragleave', function (e) {
+      row.classList.remove('le-drop-before', 'le-drop-after', 'le-drop-into');
+    });
+    row.addEventListener('drop', function (e) {
+      e.preventDefault();
+      var src = state._listDragSourceEl;
+      if (!src || src === el) return;
+      try { if (src.contains && src.contains(el)) return; } catch (err) {}
+      var rect = row.getBoundingClientRect();
+      var y = e.clientY - rect.top;
+      var ratio = y / rect.height;
+      var mode = (ratio < 0.25) ? 'before' : ((ratio > 0.75) ? 'after' : 'into');
+      row.classList.remove('le-drop-before', 'le-drop-after', 'le-drop-into');
+      if (mode === 'into') {
+        reparentListItem(src, el);
+      } else {
+        reorderListItem(src, el, mode);
+      }
+    });
+  }
+
+  // 兄弟並び替え: source の z-index を target の隣 (上または下) に挿入する。
+  // source と target の親が異なる場合は、まず source を target の親に DOM 移動してから
+  // z-index を調整する (= 「兄弟として挿入」を実現)。
+  function reorderListItem(source, target, mode) {
+    if (!source || !target || source === target) return;
+    var ops = [];
+    var srcOldParent = source.parentNode;
+    var srcOldNext = source.nextSibling;
+    var srcOldStyles = {
+      position: source.style.position || '',
+      left: source.style.left || '',
+      top: source.style.top || '',
+      width: source.style.width || '',
+      height: source.style.height || ''
+    };
+    var srcOldKeep = (source.dataset && source.dataset.leKeepPosition) || '';
+    var targetParent = target.parentNode;
+    var movedDom = false;
+    if (srcOldParent !== targetParent && targetParent) {
+      // 親揃え: target の親にぶら下げる
+      targetParent.insertBefore(source, target);
+      if (source.dataset) source.dataset.leKeepPosition = '1';
+      movedDom = true;
+    }
+    // z-index 計算: target の現在 z を参照し、before なら +1、after なら -1
+    // ただし兄弟全体を 10 刻みで再採番して安定化する
+    var siblings = Array.prototype.slice.call(targetParent ? targetParent.children : []);
+    // 既存 z をベースに、対象 source/target の前後関係を決める
+    var orderedSibs = siblings.filter(function (n) {
+      return n.nodeType === 1 && n !== source;
+    });
+    // target を基準に、before/after で source を挿入
+    var insertIdx = orderedSibs.indexOf(target);
+    if (insertIdx < 0) return;
+    if (mode === 'before') orderedSibs.splice(insertIdx, 0, source);
+    else orderedSibs.splice(insertIdx + 1, 0, source);
+    // sibling を視覚的順序で並べ替え (現状の z-index 降順を保ちつつ source を挿入)
+    // 「視覚的に手前 = z-index 大」になるように、配列の先頭ほど z 大の順序にする。
+    // ここで配列順序は「先頭=手前」を採用する。Photoshop と同じ感覚。
+    // しかし requirements は要素一覧で「上=手前」なので、要素一覧の DOM 配置とは独立して z を割り当てる。
+    // siblings の orderedSibs は現状 DOM 順 (= 後ろほど DOM 後ろ)。
+    // ⇒ 要素一覧では DOM ベースで render しているわけではなく、z-index 降順の DFS で
+    //    並んでいる。ここでは「target の隣に source が並ぶ」ことを保証するため、
+    //    target と source の z-index が逆転していないようにスタックする。
+    // 簡潔策: siblings の 配列 index に応じて zIndex を高い→低い に振り直す
+    //   (先頭ほど高い)。ただし現状の相対順序は DOM 配置で復元される一覧順序と一致する
+    //   ように、target.zIndex を中心に配列順を再構成する。
+    var baseZ = parseInt(target.style.zIndex, 10);
+    if (isNaN(baseZ)) {
+      var cs = window.getComputedStyle ? getComputedStyle(target) : null;
+      baseZ = (cs && parseInt(cs.zIndex, 10)) || 100;
+    }
+    // 再採番: orderedSibs を先頭 (= 手前 = 高 z) から baseZ + N*10 ... 降順で割り当てる
+    // target の z を保ちつつ source をその直前/直後に置く
+    var targetIdx = orderedSibs.indexOf(target);
+    orderedSibs.forEach(function (n, i) {
+      var newZ = baseZ + (targetIdx - i) * 10;
+      var oldZ = n.style.zIndex || '';
+      n.style.zIndex = String(newZ);
+      // 専用 'z-index' op (applyForward/applyInverse で対応)
+      ops.push({ type: 'z-index', el: n, before: oldZ, after: String(newZ) });
+    });
+    if (movedDom) {
+      ops.push({
+        type: 'reparent',
+        el: source,
+        oldParent: srcOldParent,
+        oldNext: srcOldNext,
+        oldStyles: srcOldStyles,
+        oldKeepPosition: srcOldKeep,
+        newParent: targetParent,
+        newStyles: { /* 並び替えのみは位置上書きしない */ }
+      });
+    }
+    pushHistoryBatch(ops);
+    try { refreshElementList(); } catch (e) {}
+    showToast('順序を変更しました');
+  }
+
+  // 再親子化: source を target の子にする。座標は新親基準に変換する。
+  function reparentListItem(source, target) {
+    if (!source || !target || source === target) return;
+    try { if (source.contains && source.contains(target)) return; } catch (e) {}
+    var oldParent = source.parentNode;
+    var oldNext = source.nextSibling;
+    var oldStyles = {
+      position: source.style.position || '',
+      left: source.style.left || '',
+      top: source.style.top || '',
+      width: source.style.width || '',
+      height: source.style.height || ''
+    };
+    var oldKeep = (source.dataset && source.dataset.leKeepPosition) || '';
+    // 視覚位置を維持するため、ドロップ前後で client 座標が変わらないよう left/top を補正する
+    var srcRect = null, tgtRect = null;
+    try { srcRect = source.getBoundingClientRect(); } catch (e) {}
+    target.appendChild(source);
+    try { tgtRect = target.getBoundingClientRect(); } catch (e) {}
+    var newStyles = {};
+    if (srcRect && tgtRect) {
+      // 親が position:static の場合は relative にしないと left/top が効かない
+      var tgtCs = window.getComputedStyle ? getComputedStyle(target) : null;
+      if (tgtCs && tgtCs.position === 'static') {
+        target.style.position = 'relative';
+      }
+      var newLeft = Math.round(srcRect.left - tgtRect.left);
+      var newTop = Math.round(srcRect.top - tgtRect.top);
+      // _tx/_ty で動かしている分はそのまま残し、left/top のみ親基準に書き換える
+      var tx = source._tx || 0, ty = source._ty || 0;
+      source.style.position = 'absolute';
+      source.style.left = (newLeft - tx) + 'px';
+      source.style.top = (newTop - ty) + 'px';
+      newStyles.position = 'absolute';
+      newStyles.left = source.style.left;
+      newStyles.top = source.style.top;
+    }
+    if (source.dataset) source.dataset.leKeepPosition = '1';
+    pushHistory({
+      type: 'reparent',
+      el: source,
+      oldParent: oldParent,
+      oldNext: oldNext,
+      oldStyles: oldStyles,
+      oldKeepPosition: oldKeep,
+      newParent: target,
+      newStyles: newStyles
+    });
+    try { refreshElementList(); } catch (e) {}
+    showToast('「' + (target.dataset && target.dataset.leLabel ? target.dataset.leLabel : 'レイヤー') + '」の子にしました');
   }
 
   function refreshElementListSelection() {
@@ -2405,6 +2713,10 @@
     labelEl.setAttribute('contenteditable', 'true');
     // Plain-text 編集に強制 (リッチテキストペーストを抑止)
     labelEl.spellcheck = false;
+    // Papa-2 修正3/4: rename 中は親 row の draggable を一時 OFF
+    var ownerRow = labelEl.closest && labelEl.closest('.le-list-row');
+    var prevDraggable = ownerRow ? ownerRow.draggable : null;
+    if (ownerRow) ownerRow.draggable = false;
     // 視覚的に編集中であることを示すため、表示中のテキストはそのまま (新規/spec の prefix 含む)
     // ただし Drop/Text 系で先頭に絵文字 prefix が付いているので、それを取り除いた純粋ラベルだけ編集対象にする
     var prefix = '';
@@ -2427,6 +2739,10 @@
       if (done) return;
       done = true;
       labelEl.removeAttribute('contenteditable');
+      // Papa-2 修正3/4: rename 終了時に row.draggable を元に戻す
+      if (ownerRow && prevDraggable !== null) {
+        try { ownerRow.draggable = prevDraggable; } catch (e) {}
+      }
       var typed = (labelEl.textContent || '').trim();
       if (!commit || !typed) {
         // キャンセル: 元の表示テキストに戻す
@@ -2542,6 +2858,45 @@
         existing.remove();
       }
     });
+  }
+
+  // ====================================================================
+  //  Papa-2 修正2: 一時リンク解除トグル (Photoshop 風: 親子関係を一時的に切る)
+  // ====================================================================
+  // 親をドラッグしても子を visual に動かさない (counter-transform で打ち消す)。
+  // 永続的な切り離し (取り出す) と異なり DOM 階層は維持し、見た目だけ独立させる。
+  function isChildOfEditableParent(el) {
+    if (!el || !el.parentNode) return false;
+    // canvas 直下、または body/document に直結する root レベルなら親なし扱い
+    if (el.parentNode === state.canvasEl) return false;
+    // 親が編集対象 ('.resizable' class が付与されている、または .le-dropped-img / .le-added-text wrapper、
+    //   または canvas より子側のいずれかの spec 一致要素) であるかをゆるく判定
+    var p = el.parentNode;
+    while (p && p !== state.canvasEl && p.nodeType === 1) {
+      if (p.classList && (p.classList.contains('resizable') ||
+          p.classList.contains('le-dropped-img') ||
+          p.classList.contains('le-added-text'))) {
+        return true;
+      }
+      // spec 一致もチェック
+      for (var i = 0; i < state.spec.length; i++) {
+        try { if (p.matches && p.matches(state.spec[i][0])) return true; } catch (e) {}
+      }
+      p = p.parentNode;
+    }
+    return false;
+  }
+  function toggleChildLink(el) {
+    if (!el) return;
+    if (!state.unlinkedChildren) state.unlinkedChildren = new Set();
+    if (el.dataset.leUnlinked === '1') {
+      delete el.dataset.leUnlinked;
+      state.unlinkedChildren.delete(el);
+    } else {
+      el.dataset.leUnlinked = '1';
+      state.unlinkedChildren.add(el);
+    }
+    try { refreshElementList(); } catch (e) {}
   }
 
   // ====================================================================
@@ -4868,6 +5223,7 @@
     state.spec = normalizeSpec(config.editableSelectors || []);
     state.selectedElements = new Set();
     state.locked = new Set();
+    state.unlinkedChildren = new Set(); // Papa-2 修正2
     state.history = [];
     state.future = [];
     state.cleanupFns = [];          // C1: reset cleanup registry per session
