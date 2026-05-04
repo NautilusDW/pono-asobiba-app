@@ -665,6 +665,13 @@
     if (el.matches('.hdr-left') && st.h) {
       document.documentElement.style.setProperty('--header-h', st.h);
     }
+    // Tango-2: flex 親要素配下では width/height だけでは flex-basis: 0% が
+    //   勝ってしまうので、適用時に flex を inline で上書きする。空値時は除去
+    //   して原状復帰させる (undo/redo 整合)。
+    if (st.w) overrideFlexIfChild(el, 'w', parseFloat(st.w));
+    else clearFlexOverrideIfChild(el, 'w');
+    if (st.h) overrideFlexIfChild(el, 'h', parseFloat(st.h));
+    else clearFlexOverrideIfChild(el, 'h');
     el._resizeUpdateLabel && el._resizeUpdateLabel();
   }
   function getResizeState(el) {
@@ -1731,18 +1738,33 @@
   // Romeo-2: アスペクト比取得対象になりうるか (UI の表示条件判定用)。
   //   実際のアスペクト比が取れるかは別 (probe 中など) — UI はボタンを表示し、
   //   クリック時にアスペクト比が取れなければトーストで通知する。
+  // Tango-2 修正B: ボタン表示条件を「単一選択ならとりあえず表示」に緩和。
+  //   .pono-bubble などで bg-image が computed で取れず非表示になるケースを
+  //   救う。クリック時にアスペクト取得失敗ならトーストで具体的な理由を出す。
   function elementHasAspectSource(el) {
     if (!el) return false;
-    if (el.tagName === 'IMG') return true;
-    if (el.classList && el.classList.contains('le-dropped-img')) return true;
-    if (getBgImageUrl(el)) return true;
-    return false;
+    return true;
   }
 
   function fitElementToImageAspect() {
-    if (!state.selectedElements || state.selectedElements.size !== 1) return;
+    if (!state.selectedElements || state.selectedElements.size !== 1) {
+      showToast('単一選択時のみ使用できます', 'warn');
+      return;
+    }
     var sel = Array.from(state.selectedElements)[0];
     if (!sel) return;
+    // Tango-2 修正B: 詳細デバッグログ。ユーザーが console を見て原因特定できるように。
+    try {
+      var bgUrlDbg = getBgImageUrl(sel);
+      var natW = (sel.tagName === 'IMG') ? sel.naturalWidth : null;
+      console.log('[layout-editor][aspect-fit] selected:', sel,
+        'tag=', sel.tagName,
+        'class=', sel.className,
+        'bg-image-url=', bgUrlDbg,
+        'naturalWidth=', natW,
+        'inner-img=', (sel.querySelector && sel.querySelector('img')) || null
+      );
+    } catch (e) {}
     // Sierra-2 修正: probe 中なら load 完了で fitElementToImageAspect を自動再試行する。
     // これで .pono-bubble のような bg-image 要素を初回クリックしたときに probe が
     // 開始され、完了次第そのまま比率合わせが実行される。
@@ -1755,7 +1777,26 @@
       }
     });
     if (aspect == null) {
-      showToast('画像情報を取得中です。読込が完了したら自動で適用します', 'warn');
+      // Tango-2 修正B: 失敗理由を具体的に出す
+      var reasonParts = [];
+      if (sel.tagName === 'IMG') {
+        reasonParts.push('img naturalWidth=' + sel.naturalWidth);
+      } else if (sel.classList && sel.classList.contains('le-dropped-img')) {
+        var iimg = sel.querySelector('img');
+        reasonParts.push('le-dropped-img inner=' + (iimg ? ('naturalWidth=' + iimg.naturalWidth) : 'none'));
+      } else {
+        var bgUrl = getBgImageUrl(sel);
+        if (!bgUrl) {
+          reasonParts.push('bg-image: 検出なし');
+        } else {
+          var cached = bgImageNaturalCache.get(bgUrl);
+          if (!cached) reasonParts.push('bg-image probe 開始 (load 完了で再試行します)');
+          else if (cached.status === 'loading') reasonParts.push('bg-image probe 中');
+          else if (cached.status === 'error') reasonParts.push('bg-image 読込エラー: ' + bgUrl);
+          else reasonParts.push('bg-image: ' + bgUrl);
+        }
+      }
+      showToast('比率取得待ち / ' + reasonParts.join(' / '), 'warn');
       return;
     }
     if (!isFinite(aspect) || aspect <= 0) {
@@ -2015,10 +2056,15 @@
     // Sierra-2 修正: width/height は !important で設定し、CSS の !important
     // 付き制約 (メディアクエリの width / flex 等) を inline style で確実に
     // 上書きできるようにする。これは編集モードでの明示操作なので副作用は許容。
-    if (prop === 'w') el.style.setProperty('width', value + 'px', 'important');
-    else if (prop === 'h') {
+    if (prop === 'w') {
+      el.style.setProperty('width', value + 'px', 'important');
+      // Tango-2 修正A: flex 親配下では flex-basis 0% が勝つので flex 自体を上書き
+      overrideFlexIfChild(el, 'w', value);
+    } else if (prop === 'h') {
       el.style.setProperty('height', value + 'px', 'important');
       if (el.matches('.hdr-left')) document.documentElement.style.setProperty('--header-h', value + 'px');
+      // Tango-2 修正A: 同上 (column flex の cross axis 含む)
+      overrideFlexIfChild(el, 'h', value);
     } else if (prop === 'tx') {
       el._tx = value;
       el.style.transform = 'translate(' + el._tx + 'px, ' + (el._ty || 0) + 'px)';
@@ -2027,6 +2073,63 @@
       el.style.transform = 'translate(' + (el._tx || 0) + 'px, ' + el._ty + 'px)';
     }
     el._resizeUpdateLabel && el._resizeUpdateLabel();
+  }
+
+  // Tango-2 修正A: flex container の child では `flex: 1` (= flex-basis 0%) が
+  //   width/height !important より優先されてしまうので、inline で `flex: 0 0 Xpx`
+  //   を設定して flex-basis を明示固定する。cross axis 側は align-self で stretch
+  //   を切る必要があるので flex-start にする。親が flex でない場合は何もしない。
+  function overrideFlexIfChild(el, axis, val) {
+    if (!el || el.nodeType !== 1) return;
+    var parent = el.parentNode;
+    if (!parent || parent.nodeType !== 1) return;
+    var parentDisplay;
+    try { parentDisplay = getComputedStyle(parent).display || ''; }
+    catch (e) { return; }
+    if (parentDisplay.indexOf('flex') < 0) return;
+    var flexDir;
+    try { flexDir = getComputedStyle(parent).flexDirection || 'row'; }
+    catch (e) { flexDir = 'row'; }
+    var isMainAxis =
+      ((flexDir === 'row' || flexDir === 'row-reverse') && axis === 'w') ||
+      ((flexDir === 'column' || flexDir === 'column-reverse') && axis === 'h');
+    if (isMainAxis) {
+      // main axis: flex-grow=0, flex-shrink=0, flex-basis=Xpx
+      el.style.setProperty('flex', '0 0 ' + Math.round(val) + 'px', 'important');
+    } else {
+      // cross axis: stretch を切る (固定 width/height を活かすため)
+      el.style.setProperty('align-self', 'flex-start', 'important');
+    }
+  }
+
+  // Tango-2 修正A: undo/redo で空値に戻すときは flex/align-self も除去して
+  //   原状復帰させる。親が flex container でない場合は無害なので常時呼んで良い。
+  function clearFlexOverrideIfChild(el, axis) {
+    if (!el || el.nodeType !== 1) return;
+    var parent = el.parentNode;
+    if (!parent || parent.nodeType !== 1) return;
+    var parentDisplay;
+    try { parentDisplay = getComputedStyle(parent).display || ''; }
+    catch (e) { return; }
+    if (parentDisplay.indexOf('flex') < 0) return;
+    var flexDir;
+    try { flexDir = getComputedStyle(parent).flexDirection || 'row'; }
+    catch (e) { flexDir = 'row'; }
+    var isMainAxis =
+      ((flexDir === 'row' || flexDir === 'row-reverse') && axis === 'w') ||
+      ((flexDir === 'column' || flexDir === 'column-reverse') && axis === 'h');
+    // 反対軸 (w↔h) がまだ inline で設定されているなら、その軸の override は維持。
+    // axis 'w' の解除時、この el が main axis (row) なら flex を消すが、
+    // 同時にもう一方の軸 (h, cross) で align-self を残しておくべきか判断する。
+    if (isMainAxis) {
+      el.style.removeProperty('flex');
+    } else {
+      // cross axis: もう一方の軸の inline 値が残っている場合はまだ stretch を切っておきたい
+      var otherInline = (axis === 'w') ? el.style.height : el.style.width;
+      if (!otherInline) {
+        el.style.removeProperty('align-self');
+      }
+    }
   }
 
   function applyNumericInput(prop, valueStr) {
