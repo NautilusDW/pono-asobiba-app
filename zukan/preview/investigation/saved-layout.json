@@ -18,12 +18,6 @@
     "tx": 173,
     "ty": -70
   },
-  ".hidden-part|0": {
-    "w": "",
-    "h": "",
-    "tx": 0,
-    "ty": 0
-  },
   ".hotspot-debug|0": {
     "w": "",
     "h": "",
@@ -54,18 +48,12 @@
     "tx": -90,
     "ty": 0
   },
-  ".pono-bubble|0": {
-    "w": "",
-    "h": "",
-    "tx": 0,
-    "ty": 0
-  },
   "__guides": [],
   "__headerH": "",
-  "__texts": {},
-  "__hidden": [
-    ".pono-bubble|0"
-  ],
+  "__texts": {
+    "div#stage>div.le-added-text:nth-of-type(7)": "ヒント200×50"
+  },
+  "__hidden": [],
   "__userboxes": [],
   "__locked": []
 }
