@@ -112,7 +112,7 @@ html, body {
   height: var(--canvas-h);
   margin: 0 auto;
   position: relative;
-  background: url('../../../assets/preview-placeholders/stage-bg.png') center / cover no-repeat;
+  background: url('../../../assets/_legacy/preview-placeholders/stage-bg.png') center / cover no-repeat;
   border: 1px dashed #555;
   overflow: hidden;
 }
@@ -484,7 +484,7 @@ body.show-board-frame .board::before { opacity: 1; }
   position: relative;
   width: 235px;
   height: 63px;
-  background-image: url('../../../assets/preview-placeholders/hint-60.png');
+  background-image: url('../../../assets/_legacy/preview-placeholders/hint-60.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -695,11 +695,11 @@ body.preview-mode .stage {
   box-shadow: none !important;
   text-shadow: none !important;
 }
-.hdr-pill { background-image: url('../../../assets/preview-placeholders/hdr-pill.png') !important; }
-.hdr-left .owl-icon { background-image: url('../../../assets/preview-placeholders/owl-icon.png') !important; }
-.hdr-left .title-card { background-image: url('../../../assets/preview-placeholders/title-card.png') !important; }
-.hdr-left .progress-num { background-image: url('../../../assets/preview-placeholders/progress-num.png') !important; }
-.hdr-left .dot { background-image: url('../../../assets/preview-placeholders/dot.png') !important; }
+.hdr-pill { background-image: url('../../../assets/_legacy/preview-placeholders/hdr-pill.png') !important; }
+.hdr-left .owl-icon { background-image: url('../../../assets/_legacy/preview-placeholders/owl-icon.png') !important; }
+.hdr-left .title-card { background-image: url('../../../assets/_legacy/preview-placeholders/title-card.png') !important; }
+.hdr-left .progress-num { background-image: url('../../../assets/_legacy/preview-placeholders/progress-num.png') !important; }
+.hdr-left .dot { background-image: url('../../../assets/_legacy/preview-placeholders/dot.png') !important; }
 /* progress-mark.png は 1991x790 の縦長アートなので、 dots (デフォルト 28px 高さ) に
    直接 background-image すると縦に潰れて見えなくなる。 ::before の絶対配置で
    dots より大きな領域を確保 (上下に padding 拡張) して描画する */
@@ -711,7 +711,7 @@ body.preview-mode .stage {
   right: -16px;
   top: -22px;
   bottom: -22px;
-  background-image: url('../../../assets/preview-placeholders/progress-mark.png');
+  background-image: url('../../../assets/_legacy/preview-placeholders/progress-mark.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
@@ -720,35 +720,35 @@ body.preview-mode .stage {
 }
 /* dot 自体は ::before の上に重ねる */
 .hdr-left .dot { position: relative; z-index: 1; }
-.hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-news.png') !important; }
-.hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-settings.png') !important; }
-.q-text-card { background-image: url('../../../assets/preview-placeholders/q-text-card.png') !important; }
-.q-text-card .audio { background-image: url('../../../assets/preview-placeholders/audio.png') !important; }
-.board { background-image: url('../../../assets/preview-placeholders/board.png') !important; }
-.answer-tray { background-image: url('../../../assets/preview-placeholders/answer-tray.png') !important; }
-.chip { background-image: url('../../../assets/preview-placeholders/chip.png') !important; }
-.chip .circle { background-image: url('../../../assets/preview-placeholders/circle.png') !important; }
-.hint { background-image: url('../../../assets/preview-placeholders/hint.png') !important; }
-.character { background-image: url('../../../assets/preview-placeholders/character.png') !important; }
-.slot { background-image: url('../../../assets/preview-placeholders/item-slot.png') !important; }
+.hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-news.png') !important; }
+.hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') !important; }
+.q-text-card { background-image: url('../../../assets/_legacy/preview-placeholders/q-text-card.png') !important; }
+.q-text-card .audio { background-image: url('../../../assets/_legacy/preview-placeholders/audio.png') !important; }
+.board { background-image: url('../../../assets/_legacy/preview-placeholders/board.png') !important; }
+.answer-tray { background-image: url('../../../assets/_legacy/preview-placeholders/answer-tray.png') !important; }
+.chip { background-image: url('../../../assets/_legacy/preview-placeholders/chip.png') !important; }
+.chip .circle { background-image: url('../../../assets/_legacy/preview-placeholders/circle.png') !important; }
+.hint { background-image: url('../../../assets/_legacy/preview-placeholders/hint.png') !important; }
+.character { background-image: url('../../../assets/_legacy/preview-placeholders/character.png') !important; }
+.slot { background-image: url('../../../assets/_legacy/preview-placeholders/item-slot.png') !important; }
 
 /* グリッド比較モード: 同じ要素を旧 grid placeholder に差し替え。 body.grid-mode で具体性を高めて勝つ */
-body.grid-mode .hdr-pill { background-image: url('../../../assets/preview-placeholders/grid/hdr-pill.png') !important; }
-body.grid-mode .hdr-left .owl-icon { background-image: url('../../../assets/preview-placeholders/grid/owl-icon.png') !important; }
-body.grid-mode .hdr-left .title-card { background-image: url('../../../assets/preview-placeholders/grid/title-card.png') !important; }
-body.grid-mode .hdr-left .progress-num { background-image: url('../../../assets/preview-placeholders/grid/progress-num.png') !important; }
-body.grid-mode .hdr-left .dot { background-image: url('../../../assets/preview-placeholders/grid/dot.png') !important; }
-body.grid-mode .hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/preview-placeholders/grid/ctrl-btn-news.png') !important; }
-body.grid-mode .hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/preview-placeholders/grid/ctrl-btn-settings.png') !important; }
-body.grid-mode .q-text-card { background-image: url('../../../assets/preview-placeholders/grid/q-text-card.png') !important; }
-body.grid-mode .q-text-card .audio { background-image: url('../../../assets/preview-placeholders/grid/audio.png') !important; }
-body.grid-mode .board { background-image: url('../../../assets/preview-placeholders/grid/board.png') !important; }
-body.grid-mode .answer-tray { background-image: url('../../../assets/preview-placeholders/grid/answer-tray.png') !important; }
-body.grid-mode .chip { background-image: url('../../../assets/preview-placeholders/grid/chip.png') !important; }
-body.grid-mode .chip .circle { background-image: url('../../../assets/preview-placeholders/grid/circle.png') !important; }
-body.grid-mode .hint { background-image: url('../../../assets/preview-placeholders/grid/hint.png') !important; }
-body.grid-mode .character { background-image: url('../../../assets/preview-placeholders/grid/character.png') !important; }
-body.grid-mode .slot { background-image: url('../../../assets/preview-placeholders/grid/item-slot.png') !important; }
+body.grid-mode .hdr-pill { background-image: url('../../../assets/_legacy/preview-placeholders-grid/hdr-pill.png') !important; }
+body.grid-mode .hdr-left .owl-icon { background-image: url('../../../assets/_legacy/preview-placeholders-grid/owl-icon.png') !important; }
+body.grid-mode .hdr-left .title-card { background-image: url('../../../assets/_legacy/preview-placeholders-grid/title-card.png') !important; }
+body.grid-mode .hdr-left .progress-num { background-image: url('../../../assets/_legacy/preview-placeholders-grid/progress-num.png') !important; }
+body.grid-mode .hdr-left .dot { background-image: url('../../../assets/_legacy/preview-placeholders-grid/dot.png') !important; }
+body.grid-mode .hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/_legacy/preview-placeholders-grid/ctrl-btn-news.png') !important; }
+body.grid-mode .hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/_legacy/preview-placeholders-grid/ctrl-btn-settings.png') !important; }
+body.grid-mode .q-text-card { background-image: url('../../../assets/_legacy/preview-placeholders-grid/q-text-card.png') !important; }
+body.grid-mode .q-text-card .audio { background-image: url('../../../assets/_legacy/preview-placeholders-grid/audio.png') !important; }
+body.grid-mode .board { background-image: url('../../../assets/_legacy/preview-placeholders-grid/board.png') !important; }
+body.grid-mode .answer-tray { background-image: url('../../../assets/_legacy/preview-placeholders-grid/answer-tray.png') !important; }
+body.grid-mode .chip { background-image: url('../../../assets/_legacy/preview-placeholders-grid/chip.png') !important; }
+body.grid-mode .chip .circle { background-image: url('../../../assets/_legacy/preview-placeholders-grid/circle.png') !important; }
+body.grid-mode .hint { background-image: url('../../../assets/_legacy/preview-placeholders-grid/hint.png') !important; }
+body.grid-mode .character { background-image: url('../../../assets/_legacy/preview-placeholders-grid/character.png') !important; }
+body.grid-mode .slot { background-image: url('../../../assets/_legacy/preview-placeholders-grid/item-slot.png') !important; }
 
 .hdr-left .title-card small,
 .hdr-left .title-card span,
@@ -886,7 +886,7 @@ body.draw-mode .resize-handle, body.draw-mode .userbox-badge, body.draw-mode .us
 }
 
 /* === シート画像オーバーレイモード ===
-   ユーザー手描きの 1 枚画像 (assets/preview-placeholders/quizland-sheet-v1.png) を
+   ユーザー手描きの 1 枚画像 (assets/_legacy/preview-placeholders/quizland-sheet-v1.png) を
    ステージに被せる。 個別の placeholder bg-image は非表示にして、 CSS-positioned な
    テキスト/チップ円/ドット/ボタン中身などはそのまま上に重なって表示される。
    bbox 位置との完全一致は不要 (ユーザー指示) — ざっくり載せるだけ。 */
@@ -894,7 +894,7 @@ body.sheet-on .stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../../../assets/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
+  background: url('../../../assets/_legacy/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
   pointer-events: none;
   z-index: 5;  /* 背景の上、 CSS-positioned テキストより下 */
 }
