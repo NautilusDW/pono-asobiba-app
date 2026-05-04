@@ -49,9 +49,9 @@
     "ty": 0
   },
   ".pono-portrait|0": {
-    "w": "",
-    "h": "",
-    "tx": 0,
+    "w": "220px",
+    "h": "210px",
+    "tx": -90,
     "ty": 0
   },
   ".pono-bubble|0": {
@@ -69,7 +69,10 @@
   "__guides": [],
   "__headerH": "",
   "__texts": {},
-  "__hidden": [],
+  "__hidden": [
+    ".pono-bubble|0",
+    ".discovery-popup|0"
+  ],
   "__userboxes": [],
   "__locked": []
 }
