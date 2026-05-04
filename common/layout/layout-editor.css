@@ -415,15 +415,26 @@ body.layout-editor-on .le-row-key {
   color: #888;
   font-size: 9px;
 }
-/* Kilo-2 修正D: 親子関係をインデントで可視化 — depth>=1 にツリーマーカーを表示 */
-body.layout-editor-on .le-list-row[data-depth] .le-row-label::before {
+/* Kilo-2 修正D / November-2 修正: 親子関係をインデントで可視化 —
+   depth>=1 にだけツリーマーカーを表示 (data-depth=0 は除外) */
+body.layout-editor-on .le-list-row[data-depth]:not([data-depth="0"]) .le-row-label::before {
   content: "└ ";
   color: #888;
   margin-right: 2px;
 }
-body.layout-editor-on .le-list-row[data-depth].preferred .le-row-label::before {
+body.layout-editor-on .le-list-row[data-depth]:not([data-depth="0"]).preferred .le-row-label::before {
   content: "★ ";
   color: #ffd000;
+}
+/* November-2 修正: 親要素 (depth=0) には控えめな上線を入れて
+   グルーピングの境界を視覚化する。 */
+body.layout-editor-on .le-list-row[data-depth="0"] {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 2px;
+}
+body.layout-editor-on .le-list-body > .le-list-row[data-depth="0"]:first-child {
+  border-top: 0;
+  margin-top: 0;
 }
 
 /* === Alignment toolbar (NEW: FEATURE 20) === */

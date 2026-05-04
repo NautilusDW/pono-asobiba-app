@@ -2165,19 +2165,12 @@
       });
     } catch (e) {}
     rowEntries = rowEntries.concat(dynList);
-    rowEntries.sort(function (a, b) {
-      var zA = zIndexOf(a.el);
-      var zB = zIndexOf(b.el);
-      if (zB !== zA) return zB - zA; // z-index 降順 (手前が上)
-      // 同 z-index は CSS painting order 通り「DOM 後ろ = 視覚的に手前」なので上位へ
-      var pos = a.el.compareDocumentPosition(b.el);
-      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return 1;
-      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return -1;
-      return 0;
-    });
-    // Kilo-2 修正D: DOM 階層に応じてインデント表示する。 z-index 降順ソートは
-    // 維持しつつ、各 row の DOM ネスト深さを padding-left に反映する。
-    // 完璧な木構造ソートは行わず「インデントだけ」で親子関係を可視化する。
+    // November-2 修正: 親要素の直後に子要素を連続配置する木構造順 (DFS) に並べる。
+    //   旧: flat z-index 降順ソート → "└" 付き子要素が直前の任意 row の子に見える誤解を生む
+    //       (例: シルエット枠が hint-panel の子なのに、ポノ案内 (.pono-guide) の直後に描画されると
+    //        "ポノ案内の子" に見えてしまう)
+    //   新: 親 → その子 (z-index 降順) → 次の親 の DFS 順。これで indent depth が
+    //       「直前の親の子」と必ず対応する。サイブリング間順序は z-index 降順を維持する。
     var allEditableSet = new Set(rowEntries.map(function (re) { return re.el; }));
     function getEditableDepth(el) {
       var depth = 0;
@@ -2188,6 +2181,59 @@
       }
       return depth;
     }
+    function findEditableAncestor(el) {
+      var p = el && el.parentNode;
+      while (p && p !== state.canvasEl && p.nodeType === 1) {
+        if (allEditableSet.has(p)) return p;
+        p = p.parentNode;
+      }
+      return null;
+    }
+    function buildTreeOrder(entries) {
+      var entryByEl = new Map();
+      entries.forEach(function (e) { entryByEl.set(e.el, e); });
+      var childrenMap = new Map(); // parentEl -> [entries]
+      var roots = [];
+      entries.forEach(function (e) {
+        var par = findEditableAncestor(e.el);
+        if (!par) {
+          roots.push(e);
+        } else {
+          if (!childrenMap.has(par)) childrenMap.set(par, []);
+          childrenMap.get(par).push(e);
+        }
+      });
+      function sortByZ(arr) {
+        return arr.slice().sort(function (a, b) {
+          var zA = zIndexOf(a.el);
+          var zB = zIndexOf(b.el);
+          if (zB !== zA) return zB - zA;
+          // 同 z-index 内は DOM 後ろ = 視覚的に手前 → 上位
+          var pos = a.el.compareDocumentPosition(b.el);
+          if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return 1;
+          if (pos & Node.DOCUMENT_POSITION_PRECEDING) return -1;
+          return 0;
+        });
+      }
+      roots = sortByZ(roots);
+      childrenMap.forEach(function (kids, par) {
+        childrenMap.set(par, sortByZ(kids));
+      });
+      var result = [];
+      function visit(entry) {
+        result.push(entry);
+        var kids = childrenMap.get(entry.el) || [];
+        kids.forEach(visit);
+      }
+      roots.forEach(visit);
+      // 安全網: なんらかの理由で取りこぼしが出たら末尾に追加 (data 損失防止)
+      if (result.length < entries.length) {
+        var seenEl = new Set(result.map(function (r) { return r.el; }));
+        entries.forEach(function (e) { if (!seenEl.has(e.el)) result.push(e); });
+      }
+      return result;
+    }
+    rowEntries = buildTreeOrder(rowEntries);
     rowEntries.forEach(function (re) {
       var el = re.el, sel = re.sel, idx = re.idx, label = re.label;
       // Juliet-2 修正B: 動的要素は専用 key、それ以外は従来の sel|idx
@@ -2199,10 +2245,23 @@
       row.dataset.key = key;
       // Kilo-2 修正D: 深さ * 16px だけ左パディングを追加 (CSS 既定 8px はそのまま)
       var depth = getEditableDepth(el);
+      // November-2 修正: depth=0 でも data-depth を設定し、CSS で親 row の境界線を強調できるようにする
+      row.dataset.depth = String(depth);
       if (depth > 0) {
         row.style.paddingLeft = (8 + 16 * depth) + 'px';
-        row.dataset.depth = String(depth);
       }
+      // November-2 修正: 親要素ラベルを ツールチップに含める (子のホバーで親が分かる)
+      var parentEntry = null;
+      if (depth > 0) {
+        var parEl = findEditableAncestor(el);
+        if (parEl) {
+          for (var __i = 0; __i < rowEntries.length; __i++) {
+            if (rowEntries[__i].el === parEl) { parentEntry = rowEntries[__i]; break; }
+          }
+        }
+      }
+      var rowTitle = (parentEntry ? '親: ' + parentEntry.label + ' / ' : '') + 'セレクタ: ' + sel;
+      row.title = rowTitle;
       row.innerHTML =
         '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
         '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
