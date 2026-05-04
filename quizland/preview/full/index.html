@@ -1260,8 +1260,8 @@ body.resize-mode .ruler { display: block; }
   <div>
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
-    <button id="sheet-toggle" title="ユーザー手描きの 1 枚シート画像をステージ全体に重ねる (個別 placeholder は非表示)">🪟 シート画像 OFF</button>
-    <button id="frame-sheet-toggle" title="統合フレーム画像 (.stage::after = quizland-sheet-v1.png) だけを非表示にする (placeholder の見た目はそのまま)">📄 シート ON</button>
+    <button id="sheet-toggle" title="本番フレーム (シート画像 quizland-sheet-v1.png) を表示。 OFF にするとデバッグ用に素のレイアウトが見える (legacy v1 frame は削除済のため、 各要素は frame なし)。">🪟 シート画像 OFF</button>
+    <button id="frame-sheet-toggle" title="🔍 素のレイアウト確認 (デバッグ用): 本番フレームのシート画像を非表示。 各要素は frame なしの素のバウンディングボックスとして見える。 legacy v1 frame は削除済。">📄 シート ON</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -1277,7 +1277,7 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="preview-mode" title="ツールバー非表示 + 画面に合わせてスケール">📱 端末サイズで見る</button>
-    <button id="grid-mode-toggle" title="旧グリッド placeholder と本物画像を切り替え">🔁 グリッド比較 OFF</button>
+    <button id="grid-mode-toggle" title="(legacy) 旧グリッド placeholder への切替モード。 Wave 46 で legacy v1 frame backgrounds を削除済のため、 現在は body.grid-mode class を付けるだけで見た目は変化しない (将来再利用に備えて UI のみ残置)。">🔁 グリッド比較 OFF</button>
   </div>
 
   <div style="margin-left:auto;color:#666;">
