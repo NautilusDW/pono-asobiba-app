@@ -649,8 +649,12 @@
   }
 
   function setResize(el, st) {
-    el.style.width = st.w || '';
-    el.style.height = st.h || '';
+    // Sierra-2: applyOnePropToEl と整合させ、undo/redo/apply 経路でも
+    // width/height を !important で復元する (空文字列なら removeProperty)。
+    if (st.w) el.style.setProperty('width', st.w, 'important');
+    else el.style.removeProperty('width');
+    if (st.h) el.style.setProperty('height', st.h, 'important');
+    else el.style.removeProperty('height');
     el._tx = st.tx || 0;
     el._ty = st.ty || 0;
     if (el._tx || el._ty) {
@@ -1739,9 +1743,23 @@
     if (!state.selectedElements || state.selectedElements.size !== 1) return;
     var sel = Array.from(state.selectedElements)[0];
     if (!sel) return;
-    var aspect = getImageAspectRatio(sel, function () { updateNumericPanel(); });
-    if (!aspect || !isFinite(aspect) || aspect <= 0) {
-      showToast('画像のアスペクト比を取得できません (画像読込中の可能性があります)', 'warn');
+    // Sierra-2 修正: probe 中なら load 完了で fitElementToImageAspect を自動再試行する。
+    // これで .pono-bubble のような bg-image 要素を初回クリックしたときに probe が
+    // 開始され、完了次第そのまま比率合わせが実行される。
+    var aspect = getImageAspectRatio(sel, function () {
+      // 再試行時、選択が同じ要素のままなら自動で実行する
+      if (state.selectedElements && state.selectedElements.has(sel)) {
+        try { fitElementToImageAspect(); } catch (e) {}
+      } else {
+        updateNumericPanel();
+      }
+    });
+    if (aspect == null) {
+      showToast('画像情報を取得中です。読込が完了したら自動で適用します', 'warn');
+      return;
+    }
+    if (!isFinite(aspect) || aspect <= 0) {
+      showToast('画像のアスペクト比を取得できません (画像の読込に失敗した可能性があります)', 'warn');
       return;
     }
     // 現在の W を維持し、H を W / aspect で再計算 (aspect = w/h)
@@ -1994,9 +2012,12 @@
 
   function applyOnePropToEl(el, prop, value) {
     if (state.gridOn) value = snapValue(value);
-    if (prop === 'w') el.style.width = value + 'px';
+    // Sierra-2 修正: width/height は !important で設定し、CSS の !important
+    // 付き制約 (メディアクエリの width / flex 等) を inline style で確実に
+    // 上書きできるようにする。これは編集モードでの明示操作なので副作用は許容。
+    if (prop === 'w') el.style.setProperty('width', value + 'px', 'important');
     else if (prop === 'h') {
-      el.style.height = value + 'px';
+      el.style.setProperty('height', value + 'px', 'important');
       if (el.matches('.hdr-left')) document.documentElement.style.setProperty('--header-h', value + 'px');
     } else if (prop === 'tx') {
       el._tx = value;
