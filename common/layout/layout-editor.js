@@ -533,6 +533,19 @@
     else if (op.type === 'text') op.el.textContent = op.after;
     else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
+    // Mike-2 修正B: rename (要素一覧ラベル)
+    else if (op.type === 'rename') {
+      if (op.mode === 'spec') {
+        setSpecLabelOverride(op.key, op.newLabel || '');
+      } else if (op.mode === 'dataset' && op.el) {
+        op.el.dataset.leLabel = op.newLabel || '';
+        try {
+          if (op.el.classList && op.el.classList.contains('le-dropped-img')) saveDroppedImages();
+          else if (op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+        } catch (e) {}
+      }
+      try { refreshElementList(); } catch (e) {}
+    }
     // Kilo-2 修正C: 親から取り出し (forward = stage 直下に移動 + 新位置適用)
     else if (op.type === 'reparent') {
       var newParent = op.newParent || state.canvasEl;
@@ -575,6 +588,19 @@
     else if (op.type === 'text') op.el.textContent = op.before;
     else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
+    // Mike-2 修正B: rename の inverse — 旧ラベルへ戻す
+    else if (op.type === 'rename') {
+      if (op.mode === 'spec') {
+        setSpecLabelOverride(op.key, op.oldLabel || '');
+      } else if (op.mode === 'dataset' && op.el) {
+        op.el.dataset.leLabel = op.oldLabel || '';
+        try {
+          if (op.el.classList && op.el.classList.contains('le-dropped-img')) saveDroppedImages();
+          else if (op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+        } catch (e) {}
+      }
+      try { refreshElementList(); } catch (e) {}
+    }
     // Kilo-2 修正C: 親から取り出しの逆 (inverse = 元の親に戻す + 旧位置/旧スタイル復元)
     else if (op.type === 'reparent') {
       if (op.oldParent) {
@@ -1147,7 +1173,49 @@
     refreshPreferredTargetUI();
     refreshElementListSelection();
     refreshTopToolbarAlign();
+    // Lima-2 修正B/C: src 差し替え / 取り出すボタンの enable 状態を選択に応じて更新
+    refreshSelectionDependentButtons();
     emit('select', Array.from(state.selectedElements));
+  }
+
+  // Lima-2: toolbar の選択依存ボタン (📥 src 差し替え / 🔓 取り出す) の
+  //   disabled 状態と tooltip を選択状況に応じて更新する。
+  function refreshSelectionDependentButtons() {
+    if (!state.toolbarEl) return;
+    var n = state.selectedElements ? state.selectedElements.size : 0;
+    var sel = (n === 1) ? state.selectedElements.values().next().value : null;
+
+    var replaceBtn = state.toolbarEl.querySelector('#le-replace-src');
+    if (replaceBtn) {
+      if (n !== 1) {
+        replaceBtn.disabled = true;
+        replaceBtn.title = '差し替えるには要素を1つ選択してください';
+      } else {
+        // 画像差し替え可能な要素か簡易チェック (img / bg / 単一内側 img)
+        var canReplace = false;
+        try { canReplace = !!(sel && isImageElement(sel)); } catch (e) { canReplace = false; }
+        replaceBtn.disabled = !canReplace;
+        replaceBtn.title = canReplace
+          ? '選択した要素の画像を差し替え（ファイル選択ダイアログ）'
+          : '差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）';
+      }
+    }
+
+    var detachBtn = state.toolbarEl.querySelector('#le-detach');
+    if (detachBtn) {
+      if (n !== 1) {
+        detachBtn.disabled = true;
+        detachBtn.title = '単一選択時のみ取り出せます';
+      } else {
+        var stage = state.canvasEl;
+        var parent = sel ? sel.parentNode : null;
+        var atTop = !parent || parent === stage;
+        detachBtn.disabled = atTop;
+        detachBtn.title = atTop
+          ? '既に独立しています'
+          : '選択中のレイヤーを親グループから取り出して独立編集可能にします';
+      }
+    }
   }
   // Charlie-2: preferredTarget が selection 外になったら自動解除し、
   // 視覚フィードバック (.le-preferred) を描画する。
@@ -2002,7 +2070,40 @@
 
   // ====================================================================
   //  Element list panel (FEATURE 21)
+  //   Mike-2 修正B: 要素一覧 row を dblclick → インライン rename。
+  //   - 動的要素 (.le-dropped-img / .le-added-text) は dataset.leLabel に直接書く
+  //   - spec 要素 (.pono-guide 等) は spec の元ラベルを破壊しないように
+  //     localStorage の override マップに保存
   // ====================================================================
+
+  function specLabelOverridesStorageKey() {
+    return 'le-spec-labels:' + (location.pathname || '/');
+  }
+  function loadSpecLabelOverrides() {
+    try {
+      var raw = localStorage.getItem(specLabelOverridesStorageKey());
+      var obj = raw ? JSON.parse(raw) : null;
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function saveSpecLabelOverrides(map) {
+    try {
+      localStorage.setItem(specLabelOverridesStorageKey(), JSON.stringify(map || {}));
+    } catch (e) { console.warn('[LayoutEditor] saveSpecLabelOverrides failed', e); }
+  }
+  // spec 要素の表示ラベルを解決 (override → spec の素のラベル)
+  function getSpecLabelOverride(key) {
+    if (!key) return '';
+    var map = loadSpecLabelOverrides();
+    return (map && typeof map[key] === 'string') ? map[key] : '';
+  }
+  function setSpecLabelOverride(key, label) {
+    if (!key) return;
+    var map = loadSpecLabelOverrides();
+    if (label && label.length) map[key] = label;
+    else delete map[key];
+    saveSpecLabelOverrides(map);
+  }
 
   function buildElementListPanel() {
     var panel = document.createElement('div');
@@ -2024,9 +2125,15 @@
     // z-index 降順でソートして描画する。
     var rowEntries = [];
     var seen = new Set();
+    // Mike-2 修正B: spec 要素の rename override を一括ロード
+    var specOverrides = loadSpecLabelOverrides();
     state.spec.forEach(function (entry) {
-      var sel = entry[0], label = entry[2] || sel;
+      var sel = entry[0], baseLabel = entry[2] || sel;
       $$(sel).forEach(function (el, idx) {
+        var key = sel + '|' + idx;
+        var label = (specOverrides && typeof specOverrides[key] === 'string' && specOverrides[key])
+          ? specOverrides[key]
+          : baseLabel;
         rowEntries.push({ el: el, sel: sel, idx: idx, label: label, dynamic: false });
         seen.add(el);
       });
@@ -2040,7 +2147,9 @@
         if (seen.has(el)) return;
         var did = el.dataset && el.dataset.dropId ? el.dataset.dropId : '';
         var nm = el.dataset && el.dataset.dropName ? el.dataset.dropName : '';
-        var label = '🖼 ' + (nm || did || '画像');
+        // Mike-2 修正B: dataset.leLabel (rename / 自動連番) を最優先で表示
+        var lbl = el.dataset && el.dataset.leLabel ? el.dataset.leLabel : '';
+        var label = '🖼 ' + (lbl || nm || did || '画像');
         dynList.push({ el: el, sel: '.le-dropped-img', idx: did || dynList.length, label: label, dynamic: true, dynKey: 'dynamic-img|' + (did || dynList.length) });
       });
     } catch (e) {}
@@ -2049,8 +2158,9 @@
         if (seen.has(el)) return;
         var tid = el.dataset && el.dataset.textId ? el.dataset.textId : '';
         var lbl = el.dataset && el.dataset.leLabel ? el.dataset.leLabel : '';
+        // Mike-2 修正B: rename 済みなら leLabel を優先、未 rename なら本文スニペットにフォールバック
         var snippet = (el.textContent || '').trim().slice(0, 12);
-        var label = '📝 ' + (snippet || lbl || tid || 'テキスト');
+        var label = '📝 ' + (lbl || snippet || tid || 'テキスト');
         dynList.push({ el: el, sel: '.le-added-text', idx: tid || dynList.length, label: label, dynamic: true, dynKey: 'dynamic-text|' + (tid || dynList.length) });
       });
     } catch (e) {}
@@ -2096,13 +2206,30 @@
       row.innerHTML =
         '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
         '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
-        '<span class="le-row-label">' + label + '</span>' +
-        '<span class="le-row-key">' + key + '</span>';
+        '<span class="le-row-label" title="ダブルクリックで名前変更"></span>' +
+        '<span class="le-row-key"></span>';
+      // Mike-2 修正B: textContent で安全に流し込む (XSS 防御)
+      var labelSpan = row.querySelector('.le-row-label');
+      var keySpan = row.querySelector('.le-row-key');
+      if (labelSpan) labelSpan.textContent = label;
+      if (keySpan) keySpan.textContent = key;
+      // Mike-2 修正B: dblclick → インライン rename
+      if (labelSpan) {
+        labelSpan.addEventListener('dblclick', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          startInlineRename(labelSpan, el, re);
+        });
+      }
         // Prevent text selection caused by Shift+Click across list rows
         row.addEventListener('mousedown', function (e) {
+          // Mike-2 修正B: rename 中は mousedown を素通しさせる (テキスト選択を許可)
+          if (e.target && e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true') return;
           if (e.shiftKey || e.ctrlKey || e.metaKey) e.preventDefault();
         });
         row.addEventListener('click', function (e) {
+          // Mike-2 修正B: rename 編集中の label への click は無視 (select に流さない)
+          if (e.target && e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true') return;
           if (e.target.classList.contains('le-vis')) {
             if (hidden) {
               el.classList.remove('user-hidden');
@@ -2184,6 +2311,115 @@
       // Charlie-2: 優先ターゲットに行マーカー
       row.classList.toggle('preferred', !!(el && el === state.preferredTarget));
     });
+  }
+
+  // Mike-2 修正B: 要素一覧 row のラベルをインライン編集する。
+  //   - 動的要素 (.le-dropped-img / .le-added-text) は dataset.leLabel を直接書き換え、
+  //     localStorage (saveDroppedImages / saveAddedTexts) で永続化。
+  //   - spec 要素 (.pono-guide 等) は spec の元ラベルを破壊しないよう、
+  //     localStorage の override マップ (le-spec-labels:<path>) に保存。
+  //   - undo: 'rename' op で巻き戻し。
+  //   - 確定: Enter / blur,  キャンセル: Esc。
+  function startInlineRename(labelEl, targetEl, rowEntry) {
+    if (!labelEl || !targetEl) return;
+    if (labelEl.getAttribute('contenteditable') === 'true') return; // 二重起動防止
+
+    var isDroppedImg = !!(targetEl.classList && targetEl.classList.contains('le-dropped-img'));
+    var isAddedText  = !!(targetEl.classList && targetEl.classList.contains('le-added-text'));
+
+    // 旧ラベル (rename 前)
+    var oldLabel;
+    if (isDroppedImg || isAddedText) {
+      oldLabel = (targetEl.dataset && targetEl.dataset.leLabel) || (labelEl.textContent || '');
+    } else if (rowEntry && !rowEntry.dynamic) {
+      var rk = (rowEntry.sel + '|' + rowEntry.idx);
+      oldLabel = getSpecLabelOverride(rk) || (labelEl.textContent || '');
+    } else {
+      oldLabel = labelEl.textContent || '';
+    }
+    var oldText = labelEl.textContent || '';
+
+    labelEl.setAttribute('contenteditable', 'true');
+    // Plain-text 編集に強制 (リッチテキストペーストを抑止)
+    labelEl.spellcheck = false;
+    // 視覚的に編集中であることを示すため、表示中のテキストはそのまま (新規/spec の prefix 含む)
+    // ただし Drop/Text 系で先頭に絵文字 prefix が付いているので、それを取り除いた純粋ラベルだけ編集対象にする
+    var prefix = '';
+    var editableText = oldText;
+    if (isDroppedImg && oldText.indexOf('🖼 ') === 0) { prefix = '🖼 '; editableText = oldText.slice(prefix.length); }
+    else if (isAddedText && oldText.indexOf('📝 ') === 0) { prefix = '📝 '; editableText = oldText.slice(prefix.length); }
+    labelEl.textContent = editableText;
+    labelEl.focus();
+
+    // 全選択
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(labelEl);
+      var selObj = window.getSelection();
+      if (selObj) { selObj.removeAllRanges(); selObj.addRange(range); }
+    } catch (e) {}
+
+    var done = false;
+    function finish(commit) {
+      if (done) return;
+      done = true;
+      labelEl.removeAttribute('contenteditable');
+      var typed = (labelEl.textContent || '').trim();
+      if (!commit || !typed) {
+        // キャンセル: 元の表示テキストに戻す
+        labelEl.textContent = oldText;
+        return;
+      }
+      // commit
+      var newLabel = typed;
+      // 表示テキスト (prefix 付き) を確定
+      labelEl.textContent = prefix + newLabel;
+
+      if (isDroppedImg) {
+        targetEl.dataset.leLabel = newLabel;
+        try { saveDroppedImages(); } catch (e) {}
+        pushHistory({
+          type: 'rename', el: targetEl, mode: 'dataset',
+          oldLabel: oldLabel || '', newLabel: newLabel
+        });
+      } else if (isAddedText) {
+        targetEl.dataset.leLabel = newLabel;
+        try { saveAddedTexts(); } catch (e) {}
+        pushHistory({
+          type: 'rename', el: targetEl, mode: 'dataset',
+          oldLabel: oldLabel || '', newLabel: newLabel
+        });
+      } else if (rowEntry && !rowEntry.dynamic) {
+        var rk = (rowEntry.sel + '|' + rowEntry.idx);
+        setSpecLabelOverride(rk, newLabel);
+        pushHistory({
+          type: 'rename', el: targetEl, mode: 'spec',
+          key: rk, oldLabel: oldLabel || '', newLabel: newLabel
+        });
+      }
+      // 一覧を再描画してソート/インデント/絵文字 prefix を反映
+      try { refreshElementList(); } catch (e) {}
+    }
+
+    function onKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        labelEl.removeEventListener('keydown', onKey);
+        labelEl.blur(); // → blur ハンドラで finish(true)
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        labelEl.removeEventListener('keydown', onKey);
+        finish(false);
+        labelEl.blur();
+      }
+    }
+    function onBlur() {
+      labelEl.removeEventListener('blur', onBlur);
+      labelEl.removeEventListener('keydown', onKey);
+      finish(true);
+    }
+    labelEl.addEventListener('keydown', onKey);
+    labelEl.addEventListener('blur', onBlur);
   }
 
   // Juliet-2 修正B: 要素一覧の data-key から要素を解決する。
@@ -2355,7 +2591,35 @@
     refreshSelectionUI();
     refreshElementList();
     applyPreferredPointerSuppression();
-    showToast('親レイヤーから取り出しました');
+    // Lima-2 修正C: 視覚フィードバック — ゴールドフラッシュで「何が独立したか」を強調
+    try {
+      sel.classList.add('le-detach-flash');
+      setTimeout(function () {
+        try { sel.classList.remove('le-detach-flash'); } catch (e) {}
+      }, 600);
+    } catch (e) {}
+    // 要素一覧の該当行も一瞬ハイライト
+    try {
+      if (state.listPanelEl) {
+        var rows = state.listPanelEl.querySelectorAll('.le-list-row');
+        for (var r = 0; r < rows.length; r++) {
+          var key = rows[r].dataset.key;
+          var m = key && key.match(/^(.+)\|(\d+)$/);
+          if (!m) continue;
+          var all = $$(m[1]);
+          if (all[parseInt(m[2], 10)] === sel) {
+            (function (row) {
+              row.classList.add('le-detach-flash-row');
+              setTimeout(function () {
+                try { row.classList.remove('le-detach-flash-row'); } catch (e) {}
+              }, 600);
+            })(rows[r]);
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+    showToast('親グループから独立しました（Ctrl+Z で戻せます）');
   }
 
   // ====================================================================
@@ -3123,6 +3387,8 @@
         return {
           id: el.dataset.textId || '',
           html: el.innerHTML,
+          // Mike-2 修正B: 要素一覧ラベルを永続化
+          label: (el.dataset && el.dataset.leLabel) || '',
           left: el.style.left || '',
           top: el.style.top || '',
           width: el.style.width || '',
@@ -3166,7 +3432,7 @@
           return;
         }
       }
-      var div = buildAddedText(item.html, { id: item.id });
+      var div = buildAddedText(item.html, { id: item.id, label: item.label || '' });
       div.style.position = 'absolute';
       if (item.left)   div.style.left = item.left;
       if (item.top)    div.style.top = item.top;
@@ -3211,7 +3477,8 @@
     var localX = (clientX - rect.left) / scale - defaultW / 2;
     var localY = (clientY - rect.top) / scale - defaultH / 2;
 
-    var div = buildAddedText('テキスト');
+    // Mike-2 修正B: 新規テキストに「テキストN」連番ラベルを付与
+    var div = buildAddedText('テキスト', { label: getNextTextLabel() });
     div.style.position = 'absolute';
     div.style.left = Math.max(0, Math.round(localX)) + 'px';
     div.style.top  = Math.max(0, Math.round(localY)) + 'px';
@@ -3312,8 +3579,11 @@
       '<button id="le-undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>' +
       '<button id="le-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>' +
       '<button id="le-duplicate" title="複製 (Ctrl+D)" aria-label="複製">⧉ 複製</button>' +
-      // Kilo-2 修正C: 選択要素を親レイヤーから取り出して stage 直下に配置する
-      '<button id="le-detach" title="親レイヤーから取り出す" aria-label="親レイヤーから取り出す">🔓 取り出す</button>' +
+      // Lima-2 修正B: 選択した要素の画像 (img / 背景画像 / 単一内側 img) を
+      //   ファイル選択ダイアログで差し替える明示ボタン。単一選択時のみ有効。
+      '<button id="le-replace-src" title="選択した要素の画像を差し替え（ファイル選択ダイアログ）" aria-label="画像を差し替え" disabled>📥 src 差し替え</button>' +
+      // Kilo-2 修正C → Lima-2 修正C: 選択要素を親レイヤーから取り出して stage 直下に配置する
+      '<button id="le-detach" title="選択中のレイヤーを親グループから取り出して独立編集可能にします" aria-label="親レイヤーから取り出す" disabled>🔓 取り出す</button>' +
       '<button id="le-multi-select" title="マルチセレクト ON/OFF (タッチ用)" aria-label="マルチセレクト切替">👆+ 複数選択</button>' +
       '</div>' +
       // U4: alignment toolbar promoted to top toolbar (always discoverable).
@@ -3374,6 +3644,10 @@
     tb.querySelector('#le-undo').addEventListener('click', undo);
     tb.querySelector('#le-redo').addEventListener('click', redo);
     tb.querySelector('#le-duplicate').addEventListener('click', duplicateSelected);
+    // Lima-2 修正B: 「📥 src 差し替え」ボタン — 選択要素にファイルダイアログ経由で
+    //   画像を差し替える明示操作。drag&drop の偶発的差し替えを廃止した代替経路。
+    var replaceBtn = tb.querySelector('#le-replace-src');
+    if (replaceBtn) replaceBtn.addEventListener('click', openReplaceDialog);
     // Kilo-2 修正C: 親から取り出すボタン
     var detachBtn = tb.querySelector('#le-detach');
     if (detachBtn) detachBtn.addEventListener('click', detachSelectedFromParent);
@@ -4004,28 +4278,69 @@
     } catch (e) { return false; }
   }
 
-  // Kilo-2 修正B: 編集対象の子を 2 個以上含む要素は「親レイアウト」とみなす。
-  // たとえば .pono-guide は .pono-portrait と .pono-bubble を内包しているので、
-  // ここに画像をドロップしても (どっちを差し替えるか曖昧で) ユーザーは新規挿入を
-  // 期待している場合がほとんど。これを true 判定して replace ではなく insert に倒す。
-  function isParentLayoutElement(el) {
-    if (!el || !state.spec || !state.spec.length) return false;
-    var editableCount = 0;
-    for (var i = 0; i < state.spec.length; i++) {
-      var sel = state.spec[i] && state.spec[i][0];
-      if (!sel) continue;
-      try {
-        var matches = el.querySelectorAll(sel);
-        for (var j = 0; j < matches.length; j++) {
-          if (matches[j] !== el) {
-            editableCount++;
-            if (editableCount >= 2) return true;
-          }
-        }
-      } catch (e) {}
+  // Lima-2 修正A: isParentLayoutElement / decideDropAction は廃止。
+  //   ドロップは常に新規挿入をデフォルトとする方針に変更したため、
+  //   親レイアウト判定や条件分岐は不要 (Kilo-2 / Juliet-2 で導入したロジックを撤去)。
+
+  // Lima-2 修正B: 「📥 src 差し替え」ボタンのクリックハンドラ。
+  //   <input type="file"> ダイアログを動的生成して選択要素の画像を差し替える。
+  //   drag&drop の暗黙差し替えを廃止した代替経路 (明示的・誤動作なし)。
+  function openReplaceDialog() {
+    var sel = (state.selectedElements && state.selectedElements.size === 1)
+      ? Array.from(state.selectedElements)[0] : null;
+    if (!sel) {
+      showToast('差し替えるには要素を1つ選択してください', 'error');
+      return;
     }
-    return false;
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) { input.remove(); return; }
+      // Validate type/size (mirror drop-handler safety rails)
+      if (!file.type || file.type.indexOf('image/') !== 0) {
+        showToast('画像ファイルではありません', 'error');
+        input.remove();
+        return;
+      }
+      if (file.type.indexOf('svg') >= 0) {
+        showToast('SVG は安全のため除外しました', 'error');
+        input.remove();
+        return;
+      }
+      if (file.size > DROP_MAX_BYTES) {
+        showToast('10MB 超の画像はスキップ', 'error');
+        input.remove();
+        return;
+      }
+      readAndResizeImage(file).then(function (result) {
+        if (result.resized) {
+          showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
+        }
+        var swapResult = replaceImageSrc(sel, result.dataUrl);
+        if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
+          if (!result.resized) {
+            if (swapResult === 'bg') {
+              showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
+            } else {
+              showToast('画像を差し替えました (Ctrl+Z で戻せます)');
+            }
+          }
+          scheduleDirtyUpdate();
+        } else {
+          showToast('差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）', 'error');
+        }
+      }).catch(function (err) {
+        console.warn('[LayoutEditor] readAndResizeImage failed', err);
+        showToast('画像の読み込みに失敗', 'error');
+      }).then(function () { input.remove(); });
+    });
+    document.body.appendChild(input);
+    input.click();
   }
+
 
   function swapImgSrcUndoable(img, newSrc, opts) {
     var oldSrc = img.src;
@@ -4078,13 +4393,35 @@
     return 'drop_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
   }
 
-  function buildDroppedWrapper(dataUrl, fileName) {
+  // Mike-2 修正B: 新規画像/テキスト用の自動連番ラベル。
+  //   既存 dataset.leLabel を集めて未使用の最小番号を採用 (削除耐性)。
+  function getNextImageLabel() {
+    var existing = $$('.le-dropped-img').map(function (el) {
+      return (el.dataset && el.dataset.leLabel) || '';
+    });
+    var n = 1;
+    while (existing.indexOf('新規画像' + n) >= 0) n++;
+    return '新規画像' + n;
+  }
+  function getNextTextLabel() {
+    var existing = $$('.le-added-text').map(function (el) {
+      return (el.dataset && el.dataset.leLabel) || '';
+    });
+    var n = 1;
+    while (existing.indexOf('テキスト' + n) >= 0) n++;
+    return 'テキスト' + n;
+  }
+
+  function buildDroppedWrapper(dataUrl, fileName, opts) {
     // <img> is a void element and cannot contain resize handles. Wrap it in a
     // <div> so attachHandle can appendChild() handles safely.
+    opts = opts || {};
     var wrap = document.createElement('div');
     wrap.className = 'le-dropped-img';
     wrap.dataset.dropId = nextDropId();
     if (fileName) wrap.dataset.dropName = fileName;
+    // Mike-2 修正B: 自動連番ラベルを付与 (要素一覧で識別しやすく + rename 起点)
+    if (opts.label) wrap.dataset.leLabel = opts.label;
     wrap.setAttribute('data-le-keep-position', '1');
     var img = document.createElement('img');
     img.src = dataUrl;
@@ -4105,7 +4442,8 @@
     var localX = (clientX - rect.left) / scale - defaultW / 2;
     var localY = (clientY - rect.top) / scale - defaultH / 2;
 
-    var wrap = buildDroppedWrapper(dataUrl, fileName);
+    // Mike-2 修正B: 新規画像に「新規画像N」連番ラベルを付与
+    var wrap = buildDroppedWrapper(dataUrl, fileName, { label: getNextImageLabel() });
     wrap.style.position = 'absolute';
     wrap.style.left = Math.max(0, Math.round(localX)) + 'px';
     wrap.style.top  = Math.max(0, Math.round(localY)) + 'px';
@@ -4157,6 +4495,8 @@
         return {
           id: el.dataset.dropId || '',
           name: el.dataset.dropName || '',
+          // Mike-2 修正B: rename した要素一覧ラベルを永続化
+          label: (el.dataset && el.dataset.leLabel) || '',
           src: src,
           left: el.style.left || '',
           top: el.style.top || '',
@@ -4205,8 +4545,10 @@
           return;
         }
       }
-      var wrap = buildDroppedWrapper(item.src, item.name);
+      var wrap = buildDroppedWrapper(item.src, item.name, { label: item.label || '' });
       wrap.dataset.dropId = item.id || wrap.dataset.dropId;
+      // Mike-2 修正B: 永続化された rename ラベルを復元
+      if (item.label) wrap.dataset.leLabel = item.label;
       wrap.style.position = 'absolute';
       if (item.left)   wrap.style.left   = item.left;
       if (item.top)    wrap.style.top    = item.top;
@@ -4232,38 +4574,59 @@
 
   function enableImageDragDrop(canvas) {
     if (!canvas) return;
+
+    // Mike-2 修正A: ドロップ受付を「stage の外側 (黒背景)」に限定する。
+    //   - stage 内 (canvas 上) への素のドロップは無視 + 警告トースト
+    //   - stage 外 (.stage-wrap / body の余白) へのドロップ → 新規画像を canvas 中央に挿入
+    //   - Shift+ドロップ は stage 内/外どちらでも有効 (Lima-2 の差し替え経路を維持)
+    function isInStage(clientX, clientY) {
+      if (!canvas) return false;
+      var r = canvas.getBoundingClientRect();
+      return clientX >= r.left && clientX <= r.right
+          && clientY >= r.top && clientY <= r.bottom;
+    }
+    function dataTransferHasFiles(dt) {
+      if (!dt) return false;
+      var types = dt.types;
+      if (!types) return false;
+      if (types.indexOf) return types.indexOf('Files') >= 0;
+      if (types.contains) return types.contains('Files');
+      return false;
+    }
+
     var dragover = function (e) {
-      // Only react when the OS is dragging files (not internal text drags etc.)
-      var types = e.dataTransfer && e.dataTransfer.types;
-      var isFiles = false;
-      if (types) {
-        if (types.indexOf) isFiles = types.indexOf('Files') >= 0;
-        else if (types.contains) isFiles = types.contains('Files');
-      }
-      if (!isFiles) return;
+      if (!dataTransferHasFiles(e.dataTransfer)) return;
       e.preventDefault();
       try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
-      canvas.classList.add('le-dropzone-active');
+      // stage 内 + Shift なし → ドロップゾーン非表示 (drop は弾く)
+      // stage 外 or Shift あり → ドロップゾーン点灯
+      var inStage = isInStage(e.clientX, e.clientY);
+      if (inStage && !e.shiftKey) {
+        document.body.classList.remove('le-dropzone-active');
+        canvas.classList.remove('le-dropzone-active');
+      } else {
+        document.body.classList.add('le-dropzone-active');
+        // canvas 側のリングは Shift+drop 時 (差し替え) のみ点灯させる
+        if (inStage && e.shiftKey) canvas.classList.add('le-dropzone-active');
+        else canvas.classList.remove('le-dropzone-active');
+      }
     };
     var dragleave = function (e) {
-      // Only clear when leaving the canvas entirely (relatedTarget outside canvas)
+      // ウィンドウ外に抜けた時に消す。要素間の遷移では消さない。
       var rt = e.relatedTarget;
-      if (rt && canvas.contains(rt)) return;
+      if (rt) return;
+      document.body.classList.remove('le-dropzone-active');
       canvas.classList.remove('le-dropzone-active');
     };
     var dragend = function () {
+      document.body.classList.remove('le-dropzone-active');
       canvas.classList.remove('le-dropzone-active');
     };
     var drop = function (e) {
-      var types = e.dataTransfer && e.dataTransfer.types;
-      var isFiles = false;
-      if (types) {
-        if (types.indexOf) isFiles = types.indexOf('Files') >= 0;
-        else if (types.contains) isFiles = types.contains('Files');
-      }
-      if (!isFiles) return;
+      if (!dataTransferHasFiles(e.dataTransfer)) return;
       e.preventDefault();
       e.stopPropagation();
+      document.body.classList.remove('le-dropzone-active');
       canvas.classList.remove('le-dropzone-active');
 
       var rawFiles = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
@@ -4293,33 +4656,26 @@
       }
       if (safe.length === 0) return;
 
-      // Capture coords up-front (event becomes stale after async)
-      var dropX = e.clientX, dropY = e.clientY;
-      // Juliet-2 修正C: Alt キー押下時は強制的に新規挿入 (差し替え試行をスキップ)
-      var forceInsert = !!(e.altKey);
+      // Mike-2 修正A: stage 内 + Shift なし → 新規挿入を弾く (誤動作防止)
+      var inStage = isInStage(e.clientX, e.clientY);
+      var explicitReplace = !!(e.shiftKey);
+      if (inStage && !explicitReplace) {
+        showToast('画像を新規追加するには、ステージの外（黒い背景）にドロップしてください', 'error');
+        return;
+      }
+
+      // Mike-2 修正A: 新規挿入は canvas (stage) 中央に配置する。
+      //   Shift+ドロップ (差し替え) は元のクリック位置を維持。
+      var cr = canvas.getBoundingClientRect();
+      var centerX = cr.left + cr.width / 2;
+      var centerY = cr.top + cr.height / 2;
+      var dropX = explicitReplace ? e.clientX : centerX;
+      var dropY = explicitReplace ? e.clientY : centerY;
+      // Lima-2 修正A: ドロップは「常に新規挿入」がデフォルト。
+      //   差し替えは Shift+ドロップ という明示操作のみで発火させる。
       var firstSelected = (state.selectedElements && state.selectedElements.size === 1)
         ? state.selectedElements.values().next().value
         : null;
-      // Juliet-2 修正C: ドロップ位置が選択要素の bbox 外なら差し替えではなく新規挿入。
-      // 選択中の outer-bg 等の全面要素が常に差し替えになる UX 問題を解消する。
-      var dropInsideSelection = false;
-      if (firstSelected) {
-        try {
-          var selRect = firstSelected.getBoundingClientRect();
-          if (selRect && selRect.width > 0 && selRect.height > 0) {
-            dropInsideSelection = (
-              dropX >= selRect.left && dropX <= selRect.right &&
-              dropY >= selRect.top && dropY <= selRect.bottom
-            );
-          }
-        } catch (err) { dropInsideSelection = false; }
-      }
-      // Kilo-2 修正B: 親レイアウト要素 (子に複数の編集対象を持つ要素、例 .pono-guide)
-      // への差し替えはユーザーが意図しないことがほとんど。差し替えを禁じて
-      // 強制的に新規挿入に倒す。.field-bg のような単純な leaf だけが従来通り replace 可能。
-      var isParentLayout = firstSelected ? isParentLayoutElement(firstSelected) : false;
-      // 差し替え許可の総合判定: 選択あり & 画像要素 & ドロップ位置が内側 & Alt 未押下 & 親レイアウトでない
-      var allowSwap = !forceInsert && !!firstSelected && dropInsideSelection && !isParentLayout;
 
       safe.reduce(function (chain, file, i) {
         return chain.then(function () {
@@ -4328,13 +4684,10 @@
             if (result.resized) {
               showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
             }
-            if (i === 0 && allowSwap && isImageElement(firstSelected)) {
-              // Case 2: try strict swap on selected element (img / bg-image / single inner img only).
-              // Hotel-2: replaceImageSrc は 'img' | 'bg' | 'inner-img' | null を返す。
-              //   bg / img のどちらに差し替わったかをトーストで明示し、同じ画像を
-              //   ドロップした際に「差し替わってない?」と感じる UX を解消する。
-              // India-2: 戻り値は文字列 (truthy) なので明示的に !== null で判定し、
-              //   「=== true」など型比較ミスによる差し替え失敗の再発を防ぐ。
+            // Lima-2 修正A: Shift+ドロップ = 明示的な src 差し替え (1 ファイル目のみ)。
+            //   選択要素が img/bg-image/単一内側 img でない場合は差し替え不能 →
+            //   新規挿入にフォールバックしてトーストで通知。
+            if (i === 0 && explicitReplace && firstSelected) {
               var swapResult = replaceImageSrc(firstSelected, dataUrl);
               if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
                 if (!result.resized) {
@@ -4344,20 +4697,20 @@
                     showToast('画像を差し替えました (Ctrl+Z で戻せます)');
                   }
                 }
-                // swap is undoable via pushHistory inside swapImg/BgUndoable.
                 scheduleDirtyUpdate();
-              } else {
-                // Ambiguous (e.g. multiple inner imgs) → insert new layer at drop point.
-                insertNewImageLayer(canvas, dropX, dropY, dataUrl, file.name);
-                if (!result.resized) showToast('画像を新規挿入しました (Ctrl+Z で戻せます)');
+                return;
               }
-            } else {
-              // Case 1 (or subsequent files in case 2): new layer.
-              // Stagger position slightly so multiples don't stack exactly.
-              var ox = dropX + i * 18;
-              var oy = dropY + i * 18;
-              insertNewImageLayer(canvas, ox, oy, dataUrl, file.name);
-              if (i === 0 && !result.resized) showToast('画像を新規挿入しました (Ctrl+Z で戻せます)');
+              // 差し替え不能 → 新規挿入にフォールバック (canvas 中央に配置)
+              showToast('差し替え対象が見つからないため新規挿入します');
+              dropX = centerX;
+              dropY = centerY;
+            }
+            // デフォルト: 新規レイヤー挿入。複数枚は少しずらしてスタックしないように。
+            var ox = dropX + i * 18;
+            var oy = dropY + i * 18;
+            insertNewImageLayer(canvas, ox, oy, dataUrl, file.name);
+            if (i === 0 && !result.resized && !explicitReplace) {
+              showToast('画像を新規挿入しました (Ctrl+Z で戻せます)');
             }
           }).catch(function (err) {
             console.warn('[LayoutEditor] readAndResizeImage failed', err);
@@ -4367,10 +4720,11 @@
       }, Promise.resolve());
     };
 
-    addManagedListener(canvas, 'dragover', dragover);
-    addManagedListener(canvas, 'dragleave', dragleave);
-    addManagedListener(canvas, 'dragend', dragend);
-    addManagedListener(canvas, 'drop', drop);
+    // Mike-2 修正A: dragover/drop は document に張る。stage 内ガードは isInStage で判定。
+    addManagedListener(document, 'dragover', dragover);
+    addManagedListener(document, 'dragleave', dragleave);
+    addManagedListener(document, 'dragend', dragend);
+    addManagedListener(document, 'drop', drop);
 
     // Persist position/size changes on dropped images (debounced) so reload
     // restores the latest geometry. Uses the editor's own event bus.

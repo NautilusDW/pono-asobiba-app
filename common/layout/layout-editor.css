@@ -397,6 +397,19 @@ body.layout-editor-on .le-row-label {
   font-weight: 600;
   color: #eee;
 }
+/* Mike-2 修正B: ダブルクリックでインライン rename。 */
+body.layout-editor-on .le-row-label[contenteditable="true"] {
+  background: #1a1a1a;
+  outline: 1px solid #ffba6b;
+  border-radius: 3px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
 body.layout-editor-on .le-row-key {
   font-family: ui-monospace, monospace;
   color: #888;
@@ -919,6 +932,35 @@ body.layout-editor-on .le-toolbar .le-align-tb button:disabled {
   background: #1f1f1f;
 }
 
+/* Lima-2: 全 toolbar ボタンに統一の disabled スタイルを適用 (新規 #le-replace-src
+   や #le-detach の disabled 表示が選択状況によって明確に伝わるように) */
+body.layout-editor-on .le-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #1f1f1f;
+}
+body.layout-editor-on .le-toolbar button:disabled:hover {
+  background: #1f1f1f;
+}
+
+/* Lima-2 修正C: 「🔓 取り出す」直後のゴールドフラッシュ。
+   独立化した要素を 0.6s 強調して「何が動いたか」をユーザーに伝える。
+   要素一覧の該当行も同時にフラッシュ。 */
+@keyframes le-detach-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 208, 0, 0); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 208, 0, 0.6); }
+}
+body.layout-editor-on .le-detach-flash {
+  animation: le-detach-flash 0.6s ease-out;
+}
+@keyframes le-detach-flash-row {
+  0%, 100% { background-color: transparent; }
+  50%      { background-color: rgba(255, 208, 0, 0.35); }
+}
+body.layout-editor-on .le-detach-flash-row {
+  animation: le-detach-flash-row 0.6s ease-out;
+}
+
 /* === Touch handles (media query) (NEW: FEATURE 18) ===
    On coarse-pointer devices (touch), enlarge handles for fingertip ergonomics. */
 @media (pointer: coarse) {
@@ -957,8 +999,33 @@ body.layout-editor-on .le-toolbar .le-align-tb button:disabled {
   body.layout-editor-on .numeric-panel .le-aspect-lock { height: 28px; font-size: 16px; padding: 0 8px; }
 }
 
-/* === Image drag-and-drop (Team Uniform) === */
-/* Active drop zone — visible only while OS files are dragged over the canvas. */
+/* === Image drag-and-drop (Team Uniform / Mike-2) === */
+/* Active drop zone — visible only while OS files are dragged.
+   Mike-2 修正A: ドロップ受付は stage の外側 (黒背景) に限定。
+   - body.le-dropzone-active : stage 外 (or Shift+drop) でリングが点灯
+   - canvas/stage 側の .le-dropzone-active は Shift+drop (差し替え) のとき
+     のみ点灯し、誤って stage 内ドロップを誘導しない。 */
+body.layout-editor-on.le-dropzone-active {
+  outline: 4px dashed #ff8800;
+  outline-offset: -8px;
+}
+body.layout-editor-on.le-dropzone-active::before {
+  content: '画像をここにドロップして新規追加 (Shift+ドロップで差し替え)';
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 136, 0, 0.95);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 99999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
 body.layout-editor-on .le-dropzone-active {
   outline: 4px dashed #ff8800;
   outline-offset: -8px;
