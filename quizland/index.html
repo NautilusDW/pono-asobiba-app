@@ -137,9 +137,10 @@ body.sheet-on .stage::after {
      .q-text-card -> Fukuro_frame_004.png (細長帯 + 葉)
      .board       -> Fukuro_frame_001.png (大型 papyrus)
      .answer-tray -> Fukuro_frame_002.png (2x2 木枠)
-     .hdr-pill / .title-card / .hdr-left .title-card -> Fukuro_frame_004.png
-     .progress-num -> progress-num.png (細長小ピル)
-     .dots         -> progress-mark.png (5 ドット帯)
+     .hdr-pill                  -> Fukuro_frame_004.png (ヘッダー全体の papyrus + 葉飾り)
+     .hdr-left .title-card      -> title_logo.png (フクロウ + 木の看板 一体絵 / owl-icon は display:none)
+     .progress-num              -> progress-num.png (細長小ピル)
+     .dots                      -> progress-mark.png (5 ドット帯)
      .char-hint    -> balloons/balloon_temp.png (吹き出し暫定)
 
    契約:
@@ -150,18 +151,12 @@ body.sheet-on .stage::after {
        --sheet-overlay-opacity: 0.3 で薄く重ねて世界観を残す (上の :root 参照)
    ============================================================ */
 
-/* hdr-pill: ヘッダー左の丸ピル枠 (title_logo.png に役割を移譲したため透明化) */
+/* hdr-pill: ヘッダー全体を覆う横長ピル枠 (papyrus + 葉飾り)
+   .hdr-pill は .hdr-left と同一要素 (HTML: <div class="hdr-left hdr-pill">) のため、
+   ここで Fukuro_frame_004.png を貼ると、ヘッダー全体の papyrus 背景になる。
+   その上に owl-icon + title-card (title_logo.png) / progress-num / dots の各子要素が乗る。 */
 body.sheet-on .hdr-pill {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* hdr-left: フクロウ + 木の看板 + 葉/どんぐりが一体化した本物ヘッダー絵 (title_logo.png)
-   フクロウアイコン・タイトルテキスト・装飾はすべてこの 1 枚絵に焼き込まれているため、
-   .owl-icon と .title-card は CSS で透明化し、ここに 1 枚絵だけを表示する。 */
-body.sheet-on .hdr-left {
-  background-image: url('../assets/images/quizland/title_logo.png') !important;
+  background-image: url('../assets/images/quizland/Fukuro_frame_004.png') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -212,28 +207,32 @@ body.sheet-on .char-hint {
   box-shadow: none;
 }
 
-/* hdr-left .owl-icon: title_logo.png にフクロウが焼き込まれているため非表示 (レイアウトは保持) */
-body.sheet-on .hdr-left .owl-icon {
-  background: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  visibility: hidden;
-}
+/* hdr-left .owl-icon: title_logo.png にフクロウ部分が焼き込まれており、隣の .title-card に
+   title_logo.png を貼って owl 領域まで覆う構成にしたため、owl-icon は display:none で
+   レイアウトから外す (visibility: hidden だと 64px 分の空白が残ってしまう)。 */
+body.sheet-on .hdr-left .owl-icon,
 body.sheet-on .hdr-left .owl-icon img {
-  visibility: hidden;
-  opacity: 0;
+  display: none !important;
 }
 
-/* hdr-left .title-card: タイトル木札
-   title_logo.png に「フクロウはかせのなぞなぞ」がフルに焼き込まれているため、
-   この要素は完全に透明化し、テキストもレイアウトのために残しつつ非表示にする。 */
+/* hdr-left .title-card: フクロウ + 木の看板の一体絵 (title_logo.png)
+   元 owl-icon (display:none で消えた) の領域も含めて左の看板領域全体を覆うため、
+   min-width で 240px まで拡張 (owl 64px + gap 16px + title-card 元幅 ~160px 相当)。
+   title_logo.png は 1779x625 (約 2.85:1) なので幅 240px なら高さ ~84px 相当で headerh
+   (98px) に収まる。 */
 body.sheet-on .hdr-left .title-card {
-  background-image: none !important;
+  background-image: url('../assets/images/quizland/title_logo.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
   color: transparent !important;
   text-shadow: none !important;
+  min-width: 240px;
+  height: calc(var(--header-h) - 18px);
+  margin-left: 8px;
 }
 body.sheet-on .hdr-left .title-card small,
 body.sheet-on .hdr-left .title-card span {
