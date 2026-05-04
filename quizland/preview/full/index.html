@@ -1216,6 +1216,17 @@ body.resize-mode .ruler { display: block; }
       ['.hint',                    'wh', 'ヒント'],
       ['.character',               'wh', 'キャラクター'],
       ['.char-hint',               'wh', 'キャラ吹き出し'],
+      // ─── 背景・統合フレーム・大枠コンテナ (Wave Yankee-2 追加) ───
+      ['.stage',                   'wh', '外側背景 (21:9 ステージ全体・stage-bg)'],
+      ['.safe-area',               'wh', '16:9 セーフエリア (統合フレーム)'],
+      ['.hdr',                     'wh', 'ヘッダー全体グリッド'],
+      ['.hdr-right',               'wh', '右ヘッダーグループ'],
+      ['.body',                    'wh', '本文グリッド (問題+回答)'],
+      ['.q-col',                   'wh', '問題カラム (左)'],
+      ['.a-col',                   'wh', '回答カラム (右)'],
+      ['.answer-panel',            'wh', '回答パネル (チップ4枠)'],
+      ['.bottom-right',            'wh', 'ヒント+キャラ枠'],
+      ['.slot',                    'wh', 'ボードスロット (画像枠)'],
     ],
     ghPath: 'quizland/preview/full/saved-layout.json',
     // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
