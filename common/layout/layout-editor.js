@@ -126,6 +126,7 @@
     aspectLocked: false,       // Yankee: numeric-panel 縦横比ロックトグル
     aspectRatios: null,        // WeakMap<el, ratio> — capture時の W/H 比率
     preferredTarget: null,     // Charlie-2: 要素一覧から選択した要素を canvas 操作の優先ターゲットに
+    textToolOn: false,         // India-2: テキスト追加ツール ON/OFF
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -519,6 +520,10 @@
     else if (op.type === 'text') op.el.textContent = op.after;
     else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
+    // India-2: le-added-text の add/remove 後は localStorage を再同期
+    try {
+      if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+    } catch (e) {}
     refreshLockBadges();
   }
   function applyInverse(op) {
@@ -533,6 +538,10 @@
     else if (op.type === 'text') op.el.textContent = op.before;
     else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
+    // India-2: le-added-text の undo 後にも save
+    try {
+      if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+    } catch (e) {}
     refreshLockBadges();
   }
 
@@ -2826,6 +2835,211 @@
   }
 
   // ====================================================================
+  //  Text-add tool (India-2)
+  // ====================================================================
+  // ユーザがツールを ON にして canvas をクリックすると、その位置に
+  //   <div class="le-added-text resizable" contenteditable="true">テキスト</div>
+  // を absolute 配置で挿入。直後にフォーカスして即編集可。Esc またはツール
+  // ボタン再クリックで OFF。永続化はドロップ画像と同パターン (localStorage)。
+
+  function addedTextStorageKey() {
+    return 'le-added-texts:' + (location.pathname || '/');
+  }
+
+  function nextTextId() {
+    return 'text_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function buildAddedText(html, opts) {
+    opts = opts || {};
+    var div = document.createElement('div');
+    // editable-text クラスを併用して既存の text-undo インフラに乗せる
+    div.className = 'le-added-text editable-text';
+    div.dataset.textId = opts.id || nextTextId();
+    div.setAttribute('data-le-keep-position', '1');
+    div.setAttribute('contenteditable', 'true');
+    div.setAttribute('data-le-label', opts.label || 'テキスト');
+    div.spellcheck = false;
+    div.innerHTML = (typeof html === 'string' && html !== '') ? html : 'テキスト';
+    return div;
+  }
+
+  function saveAddedTexts() {
+    try {
+      var list = $$('.le-added-text').map(function (el) {
+        return {
+          id: el.dataset.textId || '',
+          html: el.innerHTML,
+          left: el.style.left || '',
+          top: el.style.top || '',
+          width: el.style.width || '',
+          height: el.style.height || '',
+          tx: el._tx || 0,
+          ty: el._ty || 0,
+          z: el.style.zIndex || ''
+        };
+      });
+      localStorage.setItem(addedTextStorageKey(), JSON.stringify(list));
+    } catch (e) {
+      console.warn('[LayoutEditor] saveAddedTexts failed', e);
+    }
+  }
+
+  function restoreAddedTexts(canvas) {
+    if (!canvas) return;
+    var list = [];
+    try {
+      var raw = localStorage.getItem(addedTextStorageKey());
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) { list = []; }
+    if (!Array.isArray(list) || list.length === 0) {
+      $$('.le-added-text').forEach(function (el) {
+        if (!el.classList.contains('resizable')) {
+          el.setAttribute('data-le-keep-position', '1');
+          try { attachHandle(el, 'wh'); } catch (e) {}
+        }
+      });
+      return;
+    }
+    list.forEach(function (item) {
+      if (!item) return;
+      if (item.id) {
+        var existing = canvas.querySelector('.le-added-text[data-text-id="' + item.id + '"]');
+        if (existing) {
+          if (!existing.classList.contains('resizable')) {
+            existing.setAttribute('data-le-keep-position', '1');
+            try { attachHandle(existing, 'wh'); } catch (e) {}
+          }
+          return;
+        }
+      }
+      var div = buildAddedText(item.html, { id: item.id });
+      div.style.position = 'absolute';
+      if (item.left)   div.style.left = item.left;
+      if (item.top)    div.style.top = item.top;
+      if (item.width)  div.style.width = item.width;
+      if (item.height) div.style.height = item.height;
+      if (item.z)      div.style.zIndex = item.z;
+      var tx = parseFloat(item.tx) || 0, ty = parseFloat(item.ty) || 0;
+      if (tx || ty) {
+        div._tx = tx; div._ty = ty;
+        div.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      }
+      canvas.appendChild(div);
+      try { attachHandle(div, 'wh'); } catch (e) {}
+    });
+    $$('.le-added-text').forEach(function (el) {
+      if (!el.classList.contains('resizable')) {
+        el.setAttribute('data-le-keep-position', '1');
+        try { attachHandle(el, 'wh'); } catch (e) {}
+      }
+    });
+  }
+
+  function setTextToolMode(on) {
+    state.textToolOn = !!on;
+    document.body.classList.toggle('le-text-tool-active', state.textToolOn);
+    var btn = $('#le-text-add');
+    if (btn) {
+      btn.classList.toggle('active', state.textToolOn);
+      btn.textContent = state.textToolOn ? '📝 テキスト ON' : '📝 テキスト OFF';
+    }
+    if (state.textToolOn) {
+      showToast('テキスト追加モード ON — canvas をクリックで挿入');
+    }
+  }
+
+  function insertNewTextAt(canvas, clientX, clientY) {
+    if (!canvas) return null;
+    var info = getStageRectInfo();
+    var rect = info.stageRect;
+    var scale = info.scale || 1;
+    var defaultW = 200, defaultH = 48;
+    var localX = (clientX - rect.left) / scale - defaultW / 2;
+    var localY = (clientY - rect.top) / scale - defaultH / 2;
+
+    var div = buildAddedText('テキスト');
+    div.style.position = 'absolute';
+    div.style.left = Math.max(0, Math.round(localX)) + 'px';
+    div.style.top  = Math.max(0, Math.round(localY)) + 'px';
+    div.style.width  = defaultW + 'px';
+    div.style.minHeight = defaultH + 'px';
+    div.style.zIndex = '50';
+
+    canvas.appendChild(div);
+    try { attachHandle(div, 'wh'); } catch (e) { console.warn('[LayoutEditor] attachHandle on added-text failed', e); }
+
+    pushHistory({ type: 'add', el: div, parent: canvas, next: null });
+
+    // Persist on edit / blur
+    div.addEventListener('input', debouncedSaveAddedTexts);
+    div.addEventListener('blur', saveAddedTexts);
+
+    selectOnly(div);
+    saveAddedTexts();
+    scheduleDirtyUpdate();
+
+    // 直後にフォーカス & 全選択して即タイプ可能に
+    try {
+      div.focus();
+      var range = document.createRange();
+      range.selectNodeContents(div);
+      var selObj = window.getSelection();
+      if (selObj) { selObj.removeAllRanges(); selObj.addRange(range); }
+    } catch (e) {}
+
+    return div;
+  }
+
+  var debouncedSaveAddedTexts;
+
+  function attachTextTool(canvas) {
+    if (!canvas) return;
+    debouncedSaveAddedTexts = debounce(saveAddedTexts, 200);
+
+    // canvas クリックでテキスト挿入 (テキストツール ON 時のみ)
+    var onClick = function (e) {
+      if (!state.enabled || !state.textToolOn) return;
+      // ツールバー / パネル / 既存リサイザブル要素・ハンドル上では発火しない
+      if (e.target.closest(
+        '.le-toolbar, .le-ruler, .le-guide, .numeric-panel, .le-list-panel, ' +
+        '.le-help-modal, .le-comparison-picker, .le-pages-dropdown, ' +
+        '.resize-handle, .userbox-badge, .userbox-del, .le-anno-layer, ' +
+        '.le-added-text'
+      )) return;
+      e.preventDefault();
+      e.stopPropagation();
+      insertNewTextAt(canvas, e.clientX, e.clientY);
+      // 1回挿入したらモードを抜ける (Photoshop 等の慣習)
+      setTextToolMode(false);
+    };
+    addManagedListener(canvas, 'click', onClick, true /* capture */);
+
+    // Esc でモード OFF (キャプチャ phase で先取り)
+    var onKey = function (e) {
+      if (e.key === 'Escape' && state.textToolOn) {
+        setTextToolMode(false);
+      }
+    };
+    addManagedListener(window, 'keydown', onKey);
+
+    // Persist on transform of any added-text
+    var onTransform = function () {
+      var hit = false;
+      try {
+        if (state.selectedElements && state.selectedElements.size) {
+          state.selectedElements.forEach(function (el) {
+            if (el && el.classList && el.classList.contains('le-added-text')) hit = true;
+          });
+        }
+      } catch (e) {}
+      if (hit) debouncedSaveAddedTexts();
+    };
+    on('transform', onTransform);
+    registerCleanup(function () { off('transform', onTransform); });
+  }
+
+  // ====================================================================
   //  Toolbar
   // ====================================================================
 
@@ -2858,6 +3072,8 @@
       '</div>' +
       '<div class="le-tb-group">' +
       '<button id="le-userbox-add" title="矩形追加" aria-label="矩形追加">🆕 矩形追加 OFF</button>' +
+      // India-2: テキスト追加ツール — クリック → モード ON → canvas クリックで挿入
+      '<button id="le-text-add" title="テキスト追加 (クリックでモード ON、再度クリックまたは Esc で OFF)" aria-label="テキスト追加">📝 テキスト OFF</button>' +
       '<button id="le-anno-toggle" title="注釈モード" aria-label="注釈モード切替">📝 注釈 OFF</button>' +
       '<span id="le-anno-tools" class="le-anno-tools" style="display:none;">' +
       '<button class="le-tool-btn" data-tool="select" title="選択 (V)" aria-label="選択ツール">👆</button>' +
@@ -2912,6 +3128,9 @@
       });
     }
     tb.querySelector('#le-userbox-add').addEventListener('click', function () { setDrawMode(!state.drawModeOn); });
+    // India-2: text-add tool
+    var textAddBtn = tb.querySelector('#le-text-add');
+    if (textAddBtn) textAddBtn.addEventListener('click', function () { setTextToolMode(!state.textToolOn); });
     tb.querySelector('#le-anno-toggle').addEventListener('click', function () { setAnnoMode(!state.annoMode); });
     tb.querySelectorAll('.le-tool-btn').forEach(function (b) {
       b.addEventListener('click', function () { setAnnoTool(b.dataset.tool); });
@@ -3804,8 +4023,10 @@
               // Hotel-2: replaceImageSrc は 'img' | 'bg' | 'inner-img' | null を返す。
               //   bg / img のどちらに差し替わったかをトーストで明示し、同じ画像を
               //   ドロップした際に「差し替わってない?」と感じる UX を解消する。
+              // India-2: 戻り値は文字列 (truthy) なので明示的に !== null で判定し、
+              //   「=== true」など型比較ミスによる差し替え失敗の再発を防ぐ。
               var swapResult = replaceImageSrc(firstSelected, dataUrl);
-              if (swapResult) {
+              if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
                 if (!result.resized) {
                   if (swapResult === 'bg') {
                     showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
@@ -3904,6 +4125,9 @@
     // and enable OS file drag&drop onto the canvas.
     try { restoreDroppedImages(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] restoreDroppedImages failed', e); }
     try { enableImageDragDrop(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] enableImageDragDrop failed', e); }
+    // India-2: テキスト追加ツール — 永続化済みテキストを復元 + tool を canvas にアタッチ
+    try { restoreAddedTexts(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] restoreAddedTexts failed', e); }
+    try { attachTextTool(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] attachTextTool failed', e); }
 
     // Pull saved data + restore extras
     var serverData = window._currentLayoutData || null;
@@ -4021,6 +4245,9 @@
     document.querySelectorAll('.le-pointer-suppressed').forEach(function (e) {
       e.classList.remove('le-pointer-suppressed');
     });
+    // India-2: テキスト追加ツールも cleanup
+    state.textToolOn = false;
+    document.body.classList.remove('le-text-tool-active');
     emit('mode', 'play');
   }
 

@@ -341,48 +341,10 @@ body:not(.show-safe) .center-dot { display: none; }
   font-weight: 700;
 }
 
-/* ───── Layer 8: discovery popup (visible while editing) ─────────
- * プレビュー時 (?edit=1 なし) は非表示、編集モードでのみ表示。
- */
-.discovery-popup {
-  position: absolute;
-  left: 1660px;
-  top: 690px;
-  width: 380px;
-  height: 180px;
-  z-index: 6;
-  background-image: url('../../../assets/zukan/ui/discovery_popup_empty.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  padding: 24px 28px 18px;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: var(--brown);
-  pointer-events: auto;
-}
-body.layout-editor-on .discovery-popup,
-body.editor-mode .discovery-popup {
-  display: flex;
-}
-.discovery-popup .dp-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #c64b1f;
-  margin: 0;
-}
-.discovery-popup .dp-name {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0;
-}
-.discovery-popup .dp-sub {
-  font-size: 12px;
-  color: var(--brown-light);
-  margin: 0;
-}
+/* India-2: Layer 8 (discovery-popup) はエディタから削除。
+ * テキストツールで作り直すため、CSS とDOM・editableSelectors から外した。
+ * 本番 zukan/index.html の discovery-popup は実プレイで動作するロジックなので
+ * 触らない。 */
 
 /* 要素にホバー時のヒント (編集モード時のみ目立つ) */
 body:not(.layout-editor-on) .hotspot-debug { opacity: 0.55; }
@@ -402,8 +364,7 @@ body.layout-editor-on .window-frame,
 body.layout-editor-on .hidden-part,
 body.layout-editor-on .hotspot-debug,
 body.layout-editor-on .hint-panel,
-body.layout-editor-on .pono-guide,
-body.layout-editor-on .discovery-popup {
+body.layout-editor-on .pono-guide {
   position: absolute !important;
 }
 
@@ -512,12 +473,9 @@ body:not(.layout-editor-on) .help-note {
       </div>
     </div>
 
-    <!-- Layer 8: discovery popup (placed bottom-right while editing) -->
-    <div class="discovery-popup" data-le-label="発見ポップアップ">
-      <p class="dp-title">みつけた！</p>
-      <p class="dp-name">うさぎ</p>
-      <p class="dp-sub">ずかんに とうろく！</p>
-    </div>
+    <!-- India-2: Layer 8 (discovery-popup) はエディタから削除。
+         テキストツールで新規に作り直すため。本番 zukan/index.html の
+         発見ポップアップ機能は触らずに保持される。 -->
 
   </div>
 </div>
@@ -554,7 +512,7 @@ const ZK_INV_RESIZABLE_SELECTORS = [
   ['.pono-guide',        'wh', 'ポノ案内 (まとめ)'],
   ['.pono-portrait',     'wh', 'ポノ画像'],
   ['.pono-bubble',       'wh', 'ポノ吹き出し'],
-  ['.discovery-popup',   'wh', '発見ポップアップ'],
+  // India-2: .discovery-popup はエディタから削除 (テキストツールで作り直す)
 ];
 
 /* ============================================================
