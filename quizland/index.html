@@ -1635,23 +1635,111 @@ if (document.readyState === 'loading') {
 // 内に収まる)。
 // ═══════════════════════════════════════════════════════════
 const stageEl = document.getElementById('stage');
+
+// fit-mode 判定 (URL ?fit=contain または localStorage.pono_fit_mode === 'contain' で
+// contain (Math.min, 黒帯あり) に切替。 デフォルトは cover (Math.max, 現状維持)。
+// 判定はマウント時 1 回のみ確定する (resize で揺れないように)。
+const _qzUrlParams = (function () {
+  try { return new URLSearchParams(window.location.search); } catch (_) { return null; }
+})();
+const _qzFitFromUrl = _qzUrlParams && _qzUrlParams.get('fit');
+const _qzFitFromLS = (function () {
+  try { return localStorage.getItem('pono_fit_mode'); } catch (_) { return null; }
+})();
+const QZ_FIT_MODE = (_qzFitFromUrl === 'contain' || _qzFitFromLS === 'contain') ? 'contain' : 'cover';
+
 function fitStage() {
   const w = window.innerWidth, h = window.innerHeight;
   const stageW = parseFloat(getComputedStyle(stageEl).width);
   const stageH = parseFloat(getComputedStyle(stageEl).height);
   if (!stageW || !stageH) return;
-  // cover-fit: 大きい方のスケールを採用して片方の軸が viewport 端に
-  // ぴったり収まり、もう片方は overflow + clip させる
-  const scale = Math.max(w / stageW, h / stageH);
+  // aspect class toggle: viewport 比率に応じて body にクラスを付け、
+  // Team-1/2 のメディアクエリより細かい上書きを将来できる保険ルートを提供。
+  // 1.55 を境に narrow (< 1.55, 4:3～5:4 寄り) / wide (>= 1.55, 16:9 寄り) を分ける。
+  const aspect = h > 0 ? (w / h) : 0;
+  const _body = document.body;
+  if (_body) {
+    if (aspect > 0 && aspect < 1.55) {
+      _body.classList.add('aspect-narrow');
+      _body.classList.remove('aspect-wide');
+    } else {
+      _body.classList.add('aspect-wide');
+      _body.classList.remove('aspect-narrow');
+    }
+  }
+  // fit-mode: cover (Math.max, デフォルト) は片軸ぴったりでもう片方を clip。
+  //           contain (Math.min) は両軸が viewport 内に収まり、余白に黒帯が出る。
+  const scale = (QZ_FIT_MODE === 'contain')
+    ? Math.min(w / stageW, h / stageH)
+    : Math.max(w / stageW, h / stageH);
   const scaledW = stageW * scale;
   const scaledH = stageH * scale;
   const offsetX = (w - scaledW) / 2;  // 横はみ出しは中央寄せで両側均等にクリップ
   const offsetY = (h - scaledH) / 2;  // 縦も同様 (普通は 0 か正、片方軸はぴったり)
   stageEl.style.transformOrigin = '0 0';
   stageEl.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
+  // diag ハーネス用ラベル更新 (?diag=1 のときのみ DOM が存在する)。
+  if (typeof _qzUpdateDiagLabel === 'function') _qzUpdateDiagLabel(w, h, aspect);
 }
 window.addEventListener('resize', fitStage);
 window.addEventListener('orientationchange', function () { setTimeout(fitStage, 100); });
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) fitStage();
+});
+
+// ══════════════════════════════════════════════════════════
+// 検証ハーネス (?diag=1)
+// --------------------------------------------------------------
+// URL に ?diag=1 が付いているときのみ、 visible slice (赤 outline) と
+// safe-area (青 outline) を可視化し、左上に viewport / aspect / safe-w を表示。
+// パラメータが無い本番ロードでは <style> も DOM も一切 inject されない。
+// ══════════════════════════════════════════════════════════
+let _qzUpdateDiagLabel = null;
+(function _qzInitDiag() {
+  const diagOn = !!(_qzUrlParams && _qzUrlParams.get('diag') === '1');
+  if (!diagOn) return; // production noise ゼロ
+  document.body.classList.add('diag-on');
+  // 動的 <style> 注入: visible slice と safe-area の outline。
+  const style = document.createElement('style');
+  style.setAttribute('data-qz-diag', '1');
+  style.textContent = [
+    'body.diag-on .stage { position: relative; }',
+    'body.diag-on .stage::before {',
+    '  content: ""; position: absolute; inset: 0; pointer-events: none;',
+    '  outline: 1px solid rgba(255,32,32,0.9); outline-offset: -1px; z-index: 99998;',
+    '}',
+    'body.diag-on .safe-area { position: relative; }',
+    'body.diag-on .safe-area::before {',
+    '  content: ""; position: absolute; inset: 0; pointer-events: none;',
+    '  outline: 1px solid rgba(32,128,255,0.9); outline-offset: -1px; z-index: 99998;',
+    '}',
+    'body.diag-on .qz-diag-label {',
+    '  position: fixed; top: 6px; left: 6px; z-index: 99999;',
+    '  font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;',
+    '  color: #fff; background: rgba(0,0,0,0.72); padding: 4px 8px;',
+    '  border-radius: 4px; pointer-events: none; white-space: pre;',
+    '}'
+  ].join('\n');
+  document.head.appendChild(style);
+  // 左上の固定ラベル
+  const label = document.createElement('div');
+  label.className = 'qz-diag-label';
+  label.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(label);
+  _qzUpdateDiagLabel = function (w, h, aspect) {
+    let safeW = '?';
+    try {
+      const safeEl = document.getElementById('safe-area');
+      if (safeEl) safeW = Math.round(parseFloat(getComputedStyle(safeEl).width)) + '';
+    } catch (_) { /* noop */ }
+    label.textContent =
+      'viewport: ' + w + '×' + h + '\n' +
+      'aspect:   ' + (aspect ? aspect.toFixed(3) : '?') + '\n' +
+      'safe-w:   ' + safeW + '\n' +
+      'fit-mode: ' + QZ_FIT_MODE;
+  };
+})();
+
 fitStage();
 
 // ═══════════════════════════════════════════════════════════
@@ -1693,6 +1781,9 @@ window.EditorBootstrapConfig = {
   editableSelectors: QZ_RESIZABLE_SELECTORS,
   ghPath: 'quizland/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
+  // Future (Phase 2): aspect-aware layout fork
+  // beforeApply: (data) => matchMedia('(max-aspect-ratio: 4/3)').matches
+  //   ? mergeLayout(data, fourThreeOverrides) : data
 };
 
 // ═══════════════════════════════════════════════════════════
