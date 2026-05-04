@@ -172,11 +172,29 @@ body.sheet-on .q-text-card {
   box-shadow: none;
 }
 
-/* board: 右カラムの解答スロット盤 */
+/* board: 右カラムの解答スロット盤
+   素材 Fukuro_frame_001.png は左右に葉っぱの透明余白があるため、要素ぴったりに
+   100% 100% で貼ると見た目の木枠幅が hdr / q-text-card より細く見える。
+   ::before で要素より少しはみ出して貼り、視覚上の枠幅を揃える。 */
 body.sheet-on .board {
-  background: url('../assets/images/quizland/Fukuro_frame_001.png') center / 100% 100% no-repeat;
+  background: none !important;
   border-color: transparent;
   box-shadow: none;
+  position: relative;
+  overflow: visible;
+}
+body.sheet-on .board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: -4px -14px;
+  background: url('../assets/images/quizland/Fukuro_frame_001.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+body.sheet-on .board > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* answer-tray: チップが並ぶ下段トレイ */
@@ -407,12 +425,18 @@ body.sheet-on .hdr-left .title-card span {
   margin-left: auto;
 }
 /* preview/full から移植: progress-num.png を背景に被せ、 sheet-on では枠だけ消す
-   テキスト "1/5" は dynamic content なので CSS テキストはそのまま表示する */
+   テキスト "1/5" は dynamic content なので CSS テキストはそのまま表示する。
+   100% 100% にして枠とテキストの中央をきっちり合わせる (contain だと枠の余白で
+   テキストがずれて見える問題への対処)。 */
 .hdr-left .progress-num {
   background-image: url('../assets/images/quizland/progress-num.png');
-  background-size: contain;
+  background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .hdr-left .dots {
   display: flex;
@@ -712,14 +736,19 @@ body.sheet-on .hdr-right .ctrl-btn {
   display: flex; flex-direction: column;
   gap: 18px;
   height: 100%;
-  justify-content: center;
+  /* board の縦ラインと揃えるため center → flex-start で answer-tray を上端に貼り付け */
+  justify-content: flex-start;
 }
 .answer-tray {
   background: #b07a3a;
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
   padding: 18px;
-  flex: 0 0 auto;
+  /* board と縦範囲を揃える: a-col の余りを全部使う */
+  flex: 1 1 auto;
+  /* 博士キャラ (.character z-index:5) より背面に出して、博士の頭がチップに被らないように */
+  position: relative;
+  z-index: 3;
 }
 .answer-panel {
   display: grid;
@@ -853,6 +882,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   width: 200px; height: 220px;
   display: flex; align-items: center; justify-content: center;
   position: relative;
+  /* 博士は answer-tray より前面 (z-index:3) よりも上に */
+  z-index: 5;
   margin-bottom: -8px;
 }
 .character img {
