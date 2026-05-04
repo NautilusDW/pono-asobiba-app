@@ -101,7 +101,7 @@ html, body {
   top: 0; left: 0;
   width: var(--canvas-w);
   height: var(--canvas-h);
-  background: url('../assets/preview-placeholders/stage-bg.png') center / cover no-repeat;
+  background: url('../assets/_legacy/preview-placeholders/stage-bg.png') center / cover no-repeat;
   overflow: hidden;
   transform-origin: 0 0;  /* JS が translate + scale を当てる */
 }
@@ -199,7 +199,7 @@ body.sheet-on .chip:not(.pressed):not(.correct):not(.wrong) {
 
 /* circle: chip 内の円アイコン枠 (チップの内訳要素) */
 body.sheet-on .chip .circle {
-  background: url('../assets/preview-placeholders/circle.png') center / 100% 100% no-repeat;
+  background: url('../assets/_legacy/preview-placeholders/circle.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
@@ -272,7 +272,7 @@ body.sheet-on .hdr-left .progress-num {
    個別プロパティで上書き (P3-Medium 対応)。.icon / .ctrl-label の color: transparent は
    base ルールで適用済。 */
 body.sheet-on .hdr-right .ctrl-btn:nth-child(1) {
-  background-image: url('../assets/preview-placeholders/ctrl-btn-news.png') !important;
+  background-image: url('../assets/_legacy/preview-placeholders/ctrl-btn-news.png') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -281,7 +281,7 @@ body.sheet-on .hdr-right .ctrl-btn:nth-child(1) {
   box-shadow: none;
 }
 body.sheet-on .hdr-right .ctrl-btn:nth-child(2) {
-  background-image: url('../assets/preview-placeholders/ctrl-btn-settings.png') !important;
+  background-image: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -444,7 +444,7 @@ body.sheet-on .hdr-left .title-card span {
 /* Done dot: dot.png をそのまま (色tint無し、元画像のオレンジ) */
 .hdr-left .dot.done {
   background-color: transparent;
-  background-image: url('../assets/preview-placeholders/dot.png');
+  background-image: url('../assets/_legacy/preview-placeholders/dot.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -453,7 +453,7 @@ body.sheet-on .hdr-left .title-card span {
 /* Current dot: 同 dot.png + わずかに大きく */
 .hdr-left .dot.current {
   background-color: transparent;
-  background-image: url('../assets/preview-placeholders/dot.png');
+  background-image: url('../assets/_legacy/preview-placeholders/dot.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -494,13 +494,13 @@ body.sheet-on .hdr-left .dots {
 
 /* preview/full から移植: 🔔 / ⚙️ の emoji を消し、 PNG を背景に被せる */
 .hdr-right .ctrl-btn:nth-child(1) {
-  background-image: url('../assets/preview-placeholders/ctrl-btn-news.png');
+  background-image: url('../assets/_legacy/preview-placeholders/ctrl-btn-news.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
 .hdr-right .ctrl-btn:nth-child(2) {
-  background-image: url('../assets/preview-placeholders/ctrl-btn-settings.png');
+  background-image: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
