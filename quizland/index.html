@@ -187,6 +187,19 @@ body.sheet-on .slot {
 body.sheet-on .safe-area > .hdr,
 body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
 
+/* sheet-on .char-hint: 暫定吹き出し素材 balloon_temp.png を貼付 (Phase 3 で正式素材に差替予定)
+   base CSS の hint-60.png を上書き。base には !important が無いので specificity (body.sheet-on) で勝つが
+   将来の base 変更耐性のため !important を付与。 background-size: 100% 100% は既存 hint-60.png と同じ振る舞い。 */
+body.sheet-on .char-hint {
+  background-image: url('../assets/images/quizland/balloons/balloon_temp.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
 /* ===== Safe area (16:9 inner, preview/full と同じ) ===== */
 .safe-area {
   position: absolute;
