@@ -156,11 +156,15 @@ body.layout-editor-on .resize-handle {
    Golf-2: preferredTarget であってもこの青を上書きしない。
    preferredTarget はハンドル色を奪わず、outline (.le-preferred) と
    要素一覧の ★ で識別する。要素一覧から選択した要素 (selected かつ preferred)
-   が「選択中なのに青ハンドルが見えない」状態を解消する。 */
-body.layout-editor-on .resizable.selected > .resize-handle {
-  background: #00d4ff;
-  opacity: 1;
-  z-index: 62;
+   が「選択中なのに青ハンドルが見えない」状態を解消する。
+   Juliet-2 修正A: 子孫セレクタ + ハンドル直接クラス (.le-handle-selected) の
+   二重ガードで、stacking context や specificity 競合に依らず確実に青化する。 */
+body.layout-editor-on .resizable.selected > .resize-handle,
+body.layout-editor-on .resizable.selected .resize-handle,
+body.layout-editor-on .resize-handle.le-handle-selected {
+  background: #00d4ff !important;
+  opacity: 1 !important;
+  z-index: 62 !important;
 }
 body.layout-editor-on .resize-handle.edge-n,
 body.layout-editor-on .resize-handle.edge-s {

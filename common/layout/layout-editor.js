@@ -524,6 +524,10 @@
     try {
       if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
     } catch (e) {}
+    // Juliet-2 修正B: add/remove 系の op 後は要素一覧も再描画 (動的要素の出現/消滅を反映)
+    if (op.type === 'add' || op.type === 'remove') {
+      try { refreshElementList(); } catch (e) {}
+    }
     refreshLockBadges();
   }
   function applyInverse(op) {
@@ -542,6 +546,10 @@
     try {
       if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
     } catch (e) {}
+    // Juliet-2 修正B: add/remove 系の op 後は要素一覧も再描画
+    if (op.type === 'add' || op.type === 'remove') {
+      try { refreshElementList(); } catch (e) {}
+    }
     refreshLockBadges();
   }
 
@@ -835,6 +843,10 @@
     var primarySides = sidesFromHandlePos(pos);
     var info = getStageRectInfo();
     var startX = e.clientX, startY = e.clientY;
+    // Juliet-2 修正D: Photoshop 風 — 角ハンドルはデフォルトで縦横比固定、
+    //   Shift 押下中は解除。辺ハンドルは逆 (Shift 押下中のみ縦横比固定)。
+    //   Yankee の永続トグル state.aspectLocked が true ならこの判定に関わらず常に固定。
+    var isCornerHandle = (pos && pos.indexOf('corner-') === 0);
     var captureTarget = function (target) {
       target.startW = target.el.offsetWidth;
       target.startH = target.el.offsetHeight;
@@ -913,7 +925,15 @@
         return;
       }
 
-      var aspectLock = !!state.aspectLocked;
+      // Juliet-2 修正D: aspectLock 判定 (毎フレーム e2.shiftKey をサンプル)
+      //   - state.aspectLocked が true (Yankee 永続トグル) → 常に固定
+      //   - 角ハンドル + Shift OFF → 固定 (Photoshop 既定)
+      //   - 辺ハンドル + Shift ON  → 固定
+      //   - それ以外 → 自由
+      var shiftHeld = !!e2.shiftKey;
+      var aspectLock = !!state.aspectLocked
+        || (isCornerHandle && !shiftHeld)
+        || (!isCornerHandle && shiftHeld);
       performResize(primaryTarget, primarySides, dx, dy, sym, axes, info.stageRect, info.scale, aspectLock);
       linkedTargets.forEach(function (t) {
         performResize(t, t.sides, dx, dy, false, 'wh', info.stageRect, info.scale, false);
@@ -1046,7 +1066,19 @@
   // ====================================================================
 
   function refreshSelectionUI() {
-    $$('.resizable').forEach(function (e) { e.classList.toggle('selected', state.selectedElements.has(e)); });
+    $$('.resizable').forEach(function (e) {
+      var sel = state.selectedElements.has(e);
+      e.classList.toggle('selected', sel);
+      // Juliet-2 修正A: ハンドル個別にもクラスを付与し、子孫/specificity 競合に
+      // 依らず確実に青化する。CSS 子孫セレクタが効かないケース(stacking context・
+      // 別ルールの specificity 上書き等) のフォールバック。
+      try {
+        var handles = e.querySelectorAll('.resize-handle');
+        for (var i = 0; i < handles.length; i++) {
+          handles[i].classList.toggle('le-handle-selected', sel);
+        }
+      } catch (err) {}
+    });
     document.body.classList.toggle('has-selection', state.selectedElements.size > 0);
     // Yankee: when aspect-lock is on, re-capture ratios for the new selection so
     // editing W/H from this point forward respects each element's current ratio.
@@ -1917,12 +1949,38 @@
     // (z-index 高い) を上位に出す。spec 全件分の row 情報をいったん集めてから
     // z-index 降順でソートして描画する。
     var rowEntries = [];
+    var seen = new Set();
     state.spec.forEach(function (entry) {
       var sel = entry[0], label = entry[2] || sel;
       $$(sel).forEach(function (el, idx) {
-        rowEntries.push({ el: el, sel: sel, idx: idx, label: label });
+        rowEntries.push({ el: el, sel: sel, idx: idx, label: label, dynamic: false });
+        seen.add(el);
       });
     });
+    // Juliet-2 修正B: 動的に追加された要素 (.le-dropped-img / .le-added-text) を
+    // 要素一覧に列挙する。spec ベースでは追跡されないため明示的に集める。
+    // key は "dynamic|<dropId>" / "dynamic|<textId>" の専用名前空間で衝突を避ける。
+    var dynList = [];
+    try {
+      $$('.le-dropped-img').forEach(function (el) {
+        if (seen.has(el)) return;
+        var did = el.dataset && el.dataset.dropId ? el.dataset.dropId : '';
+        var nm = el.dataset && el.dataset.dropName ? el.dataset.dropName : '';
+        var label = '🖼 ' + (nm || did || '画像');
+        dynList.push({ el: el, sel: '.le-dropped-img', idx: did || dynList.length, label: label, dynamic: true, dynKey: 'dynamic-img|' + (did || dynList.length) });
+      });
+    } catch (e) {}
+    try {
+      $$('.le-added-text').forEach(function (el) {
+        if (seen.has(el)) return;
+        var tid = el.dataset && el.dataset.textId ? el.dataset.textId : '';
+        var lbl = el.dataset && el.dataset.leLabel ? el.dataset.leLabel : '';
+        var snippet = (el.textContent || '').trim().slice(0, 12);
+        var label = '📝 ' + (snippet || lbl || tid || 'テキスト');
+        dynList.push({ el: el, sel: '.le-added-text', idx: tid || dynList.length, label: label, dynamic: true, dynKey: 'dynamic-text|' + (tid || dynList.length) });
+      });
+    } catch (e) {}
+    rowEntries = rowEntries.concat(dynList);
     rowEntries.sort(function (a, b) {
       var zA = zIndexOf(a.el);
       var zB = zIndexOf(b.el);
@@ -1935,7 +1993,8 @@
     });
     rowEntries.forEach(function (re) {
       var el = re.el, sel = re.sel, idx = re.idx, label = re.label;
-      var key = sel + '|' + idx;
+      // Juliet-2 修正B: 動的要素は専用 key、それ以外は従来の sel|idx
+      var key = re.dynamic ? re.dynKey : (sel + '|' + idx);
       var hidden = el.classList.contains('user-hidden');
       var locked = state.locked.has(key);
       var row = document.createElement('div');
@@ -1986,10 +2045,7 @@
                 for (var rj = from; rj <= to; rj++) {
                   var r = rows[rj];
                   var rk = r.dataset.key;
-                  var rm = rk && rk.match(/^(.+)\|(\d+)$/);
-                  if (!rm) continue;
-                  var rall = $$(rm[1]);
-                  var rel = rall[parseInt(rm[2], 10)];
+                  var rel = resolveListKeyToElement(rk);
                   if (rel) targets.push(rel);
                 }
                 if (targets.length) selectMultiple(targets);
@@ -2030,14 +2086,40 @@
     var rows = state.listPanelEl.querySelectorAll('.le-list-row');
     rows.forEach(function (row) {
       var key = row.dataset.key;
-      var m = key.match(/^(.+)\|(\d+)$/);
-      if (!m) return;
-      var all = $$(m[1]);
-      var el = all[parseInt(m[2], 10)];
-      row.classList.toggle('selected', el && state.selectedElements.has(el));
+      var el = resolveListKeyToElement(key);
+      row.classList.toggle('selected', !!(el && state.selectedElements.has(el)));
       // Charlie-2: 優先ターゲットに行マーカー
-      row.classList.toggle('preferred', el && el === state.preferredTarget);
+      row.classList.toggle('preferred', !!(el && el === state.preferredTarget));
     });
+  }
+
+  // Juliet-2 修正B: 要素一覧の data-key から要素を解決する。
+  // - "<selector>|<idx>" : spec ベース (従来)
+  // - "dynamic-img|<dropId>" : ドロップ画像
+  // - "dynamic-text|<textId>" : 追加テキスト
+  function resolveListKeyToElement(key) {
+    if (!key) return null;
+    if (key.indexOf('dynamic-img|') === 0) {
+      var did = key.slice('dynamic-img|'.length);
+      try {
+        // CSS.escape が無い古いブラウザ向けに簡易エスケープ
+        var safeDid = did.replace(/"/g, '\\"');
+        return document.querySelector('.le-dropped-img[data-drop-id="' + safeDid + '"]');
+      } catch (e) { return null; }
+    }
+    if (key.indexOf('dynamic-text|') === 0) {
+      var tid = key.slice('dynamic-text|'.length);
+      try {
+        var safeTid = tid.replace(/"/g, '\\"');
+        return document.querySelector('.le-added-text[data-text-id="' + safeTid + '"]');
+      } catch (e) { return null; }
+    }
+    var m = key.match(/^(.+)\|(\d+)$/);
+    if (!m) return null;
+    try {
+      var all = $$(m[1]);
+      return all[parseInt(m[2], 10)] || null;
+    } catch (e) { return null; }
   }
 
   // ====================================================================
@@ -2978,6 +3060,8 @@
     selectOnly(div);
     saveAddedTexts();
     scheduleDirtyUpdate();
+    // Juliet-2 修正B: 要素一覧を最新化
+    try { refreshElementList(); } catch (e) {}
 
     // 直後にフォーカス & 全選択して即タイプ可能に
     try {
@@ -3857,6 +3941,8 @@
     selectOnly(wrap);
     saveDroppedImages();
     scheduleDirtyUpdate();
+    // Juliet-2 修正B: 要素一覧を最新化
+    try { refreshElementList(); } catch (e) {}
     return wrap;
   }
 
@@ -4007,9 +4093,27 @@
 
       // Capture coords up-front (event becomes stale after async)
       var dropX = e.clientX, dropY = e.clientY;
+      // Juliet-2 修正C: Alt キー押下時は強制的に新規挿入 (差し替え試行をスキップ)
+      var forceInsert = !!(e.altKey);
       var firstSelected = (state.selectedElements && state.selectedElements.size === 1)
         ? state.selectedElements.values().next().value
         : null;
+      // Juliet-2 修正C: ドロップ位置が選択要素の bbox 外なら差し替えではなく新規挿入。
+      // 選択中の outer-bg 等の全面要素が常に差し替えになる UX 問題を解消する。
+      var dropInsideSelection = false;
+      if (firstSelected) {
+        try {
+          var selRect = firstSelected.getBoundingClientRect();
+          if (selRect && selRect.width > 0 && selRect.height > 0) {
+            dropInsideSelection = (
+              dropX >= selRect.left && dropX <= selRect.right &&
+              dropY >= selRect.top && dropY <= selRect.bottom
+            );
+          }
+        } catch (err) { dropInsideSelection = false; }
+      }
+      // 差し替え許可の総合判定: 選択あり & 画像要素 & ドロップ位置が内側 & Alt 未押下
+      var allowSwap = !forceInsert && !!firstSelected && dropInsideSelection;
 
       safe.reduce(function (chain, file, i) {
         return chain.then(function () {
@@ -4018,7 +4122,7 @@
             if (result.resized) {
               showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
             }
-            if (i === 0 && firstSelected && isImageElement(firstSelected)) {
+            if (i === 0 && allowSwap && isImageElement(firstSelected)) {
               // Case 2: try strict swap on selected element (img / bg-image / single inner img only).
               // Hotel-2: replaceImageSrc は 'img' | 'bg' | 'inner-img' | null を返す。
               //   bg / img のどちらに差し替わったかをトーストで明示し、同じ画像を
