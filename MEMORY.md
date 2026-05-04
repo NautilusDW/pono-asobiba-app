@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T15:25:28Z - Wave 46 Bravo-3: quizland/preview/full/index.html から legacy v1 frame backgrounds (preview-placeholders/*.png 一式) を全削除。シート画像 (.stage::after) と背景 (.stage) のみ残置。
+- **タスク**: Wave 46 Bravo-3: quizland/preview/full/index.html から legacy v1 frame backgrounds (preview-placeholders/*.png 一式) を全削除。シート画像 (.stage::after) と背景 (.stage) のみ残置。
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 347
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Read": 50, "Grep": 14, "Bash": 162, "Agent": 77, "ToolSearch": 2, "Write": 9, "Edit": 31, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T15:22:49Z - codex_assignment.md/json 更新: B-02 ハンドアクション差替 + B-O4 表情差替 + B/C role明示 + 全80エントリに subject_detailed 付与
 - **タスク**: codex_assignment.md/json 更新: B-02 ハンドアクション差替 + B-O4 表情差替 + B/C role明示 + 全80エントリに subject_detailed 付与
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 28, "Read": 18, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 40, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T13:43:59Z - quizland header fix: restore Fukuro_frame_004 on .hdr-pill, move title_logo.png to .title-card only (hide owl-icon)
-- **タスク**: quizland header fix: restore Fukuro_frame_004 on .hdr-pill, move title_logo.png to .title-card only (hide owl-icon)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 102
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 27, "Read": 18, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 40, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
