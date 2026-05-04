@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T11:25:01Z - Phase 2.1 修正: ui_header_frame.png 焼き込み実態 (空タイトル枠 + 固定ドット) に合わせて sheet-on の title color: transparent を撤回し #fff7d0 に、.dots の visibility: hidden を削除、重複した .dots background-image ルールを統合 (Reviewer-A クロスレビュー指摘対応)
+- **タスク**: Phase 2.1 修正: ui_header_frame.png 焼き込み実態 (空タイトル枠 + 固定ドット) に合わせて sheet-on の title color: transparent を撤回し #fff7d0 に、.dots の visibility: hidden を削除、重複した .dots background-image ルールを統合 (Reviewer-A クロスレビュー指摘対応)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 76
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 22, "Read": 15, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 23}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-04T11:20:46Z - Phase2 Reviewer-A デザイン整合性クロスレビュー (ui_*_frame.png + balloon_temp.png 視覚評価)
 - **タスク**: Phase2 Reviewer-A デザイン整合性クロスレビュー (ui_*_frame.png + balloon_temp.png 視覚評価)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 96, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 18, "Bash": 23, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T03:49:32Z - Team Tango-2: layout-editor flex親配下のW/H上書き(overrideFlexIfChild) + アスペクト比ボタン表示条件を単一選択に緩和+デバッグログ
-- **タスク**: Team Tango-2: layout-editor flex親配下のW/H上書き(overrideFlexIfChild) + アスペクト比ボタン表示条件を単一選択に緩和+デバッグログ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 147
-- **エラー数**: 19
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 95, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 17, "Bash": 22, "Glob": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
