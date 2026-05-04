@@ -898,6 +898,12 @@ body.sheet-on .stage::after {
   pointer-events: none;
   z-index: 5;  /* 背景の上、 CSS-positioned テキストより下 */
 }
+/* Wave Zulu-2: 統合フレーム画像 (.stage::after) だけを非表示にするトグル。
+   sheet-on / sheet-off は body class で排他制御し、 sheet-off の方を強制優先する。
+   将来は別々のフレーム画像 (進捗バー/タイトル札 等) に分割する予定なので、 その間だけの過渡期トグル。 */
+body.sheet-off .stage::after {
+  display: none !important;
+}
 /* シートが下にあるので、 *枠系* placeholder の背景画像だけ消す (二重写しを避ける)。
    フクロウ博士・タイトル札・1/5 札・ドット・ボタン・音声丸・色丸・吹き出しなどの
    *装飾系* はシートに含まれないので、 既存の placeholder PNG を残して上に重ねる */
@@ -1195,39 +1201,44 @@ body.resize-mode .ruler { display: block; }
   // pages 省略時は window.PONO_PAGES (DEFAULT_PAGES) を自動採用する。
   // 選択リストは PageNavConfig (legacy widget) と同等の 4 件。
   // ────────────────────────────────────────────────────────────
+  // ─── 単一ソース: bootstrap (新エディタ) と legacy RESIZABLE_SPEC (line ~2251)
+  //     の両方が参照する。 重複防止 + Wave Zulu-2 追加分が要素一覧に確実に出るように、
+  //     window スコープに定義してから後段の <script> でも import する。
+  window.QUIZLAND_RESIZE_SPEC = [
+    ['.userbox',                 'wh', 'カスタム枠'],
+    ['.hdr-left',                'wh', 'ヘッダーピル'],
+    ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
+    ['.hdr-left .title-card',    'wh', 'タイトル札'],
+    ['.hdr-left .progress-num',  'wh', '1/5 札'],
+    ['.hdr-left .dots',          'wh', '進捗ドット5個'],
+    ['.hdr-right .ctrl-btn',     'wh', '右コントロールボタン'],
+    ['.q-text-card',             'wh', '問題文カード'],
+    ['#q-text',                  'wh', '問題文テキスト'],
+    ['.q-text-card .audio',      'wh', '音声ボタン'],
+    ['.board',                   'wh', '問題ボード'],
+    ['.answer-tray',             'wh', '回答トレイ'],
+    ['.chip',                    'wh', '回答チップ'],
+    ['.chip .circle',            'wh', 'チップ丸'],
+    ['.hint',                    'wh', 'ヒント'],
+    ['.character',               'wh', 'キャラクター'],
+    ['.char-hint',               'wh', 'キャラ吹き出し'],
+    // ─── 背景・統合フレーム・大枠コンテナ (Wave Yankee-2 / Zulu-2) ───
+    ['.stage',                   'wh', '外側背景 (21:9 ステージ全体・stage-bg)'],
+    ['.safe-area',               'wh', '16:9 セーフエリア (統合フレーム土台)'],
+    ['.hdr',                     'wh', 'ヘッダー全体グリッド'],
+    ['.hdr-right',               'wh', '右ヘッダーグループ'],
+    ['.body',                    'wh', '本文グリッド (問題+回答)'],
+    ['.q-col',                   'wh', '問題カラム (左)'],
+    ['.a-col',                   'wh', '回答カラム (右)'],
+    ['.answer-panel',            'wh', '回答パネル (チップ4枠)'],
+    ['.bottom-right',            'wh', 'ヒント+キャラ枠'],
+    ['.slot',                    'wh', 'ボードスロット (画像枠)'],
+  ];
   window.EditorBootstrapConfig = {
     layoutUrl: './saved-layout.json',
     canvas: '#stage',
-    editableSelectors: [
-      ['.userbox',                 'wh', 'カスタム枠'],
-      ['.hdr-left',                'wh', 'ヘッダーピル'],
-      ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
-      ['.hdr-left .title-card',    'wh', 'タイトル札'],
-      ['.hdr-left .progress-num',  'wh', '1/5 札'],
-      ['.hdr-left .dots',          'wh', '進捗ドット5個'],
-      ['.hdr-right .ctrl-btn',     'wh', '右コントロールボタン'],
-      ['.q-text-card',             'wh', '問題文カード'],
-      ['#q-text',                  'wh', '問題文テキスト'],
-      ['.q-text-card .audio',      'wh', '音声ボタン'],
-      ['.board',                   'wh', '問題ボード'],
-      ['.answer-tray',             'wh', '回答トレイ'],
-      ['.chip',                    'wh', '回答チップ'],
-      ['.chip .circle',            'wh', 'チップ丸'],
-      ['.hint',                    'wh', 'ヒント'],
-      ['.character',               'wh', 'キャラクター'],
-      ['.char-hint',               'wh', 'キャラ吹き出し'],
-      // ─── 背景・統合フレーム・大枠コンテナ (Wave Yankee-2 追加) ───
-      ['.stage',                   'wh', '外側背景 (21:9 ステージ全体・stage-bg)'],
-      ['.safe-area',               'wh', '16:9 セーフエリア (統合フレーム)'],
-      ['.hdr',                     'wh', 'ヘッダー全体グリッド'],
-      ['.hdr-right',               'wh', '右ヘッダーグループ'],
-      ['.body',                    'wh', '本文グリッド (問題+回答)'],
-      ['.q-col',                   'wh', '問題カラム (左)'],
-      ['.a-col',                   'wh', '回答カラム (右)'],
-      ['.answer-panel',            'wh', '回答パネル (チップ4枠)'],
-      ['.bottom-right',            'wh', 'ヒント+キャラ枠'],
-      ['.slot',                    'wh', 'ボードスロット (画像枠)'],
-    ],
+    // bootstrap (LayoutEditor) はこの配列を state.spec に流し込み、要素一覧に出す
+    editableSelectors: window.QUIZLAND_RESIZE_SPEC.slice(),
     ghPath: 'quizland/preview/full/saved-layout.json',
     // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   };
@@ -1301,6 +1312,7 @@ body.resize-mode .ruler { display: block; }
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <button id="sheet-toggle" title="ユーザー手描きの 1 枚シート画像をステージ全体に重ねる (個別 placeholder は非表示)">🪟 シート画像 OFF</button>
+    <button id="frame-sheet-toggle" title="統合フレーム画像 (.stage::after = quizland-sheet-v1.png) だけを非表示にする (placeholder の見た目はそのまま)">📄 シート ON</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -2248,26 +2260,12 @@ window.addEventListener('load', resizeSvg);
 window.addEventListener('resize', updateBboxLabels);
 
 // ───── Resize mode (各バウンディングボックスを辺別ハンドルで伸縮 + 移動 + ルーラー/ガイド) ─────
-const RESIZABLE_SPEC = [
-  // selector, axes (w,h,wh), label - 全要素 wh で 4 辺 + 4 角ハンドル
-  ['.userbox',                 'wh', 'カスタム枠'],  // ユーザー追加 (zukan からポート)
-  ['.hdr-left',                'wh', 'ヘッダーピル'],
-  ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
-  ['.hdr-left .title-card',    'wh', 'タイトル札'],
-  ['.hdr-left .progress-num',  'wh', '1/5'],
-  ['.hdr-left .dots',          'wh', '進捗ドット5個'],
-  ['.hdr-right .ctrl-btn',     'wh', '右ボタン'],
-  ['.q-text-card',             'wh', '問題文カード'],
-  ['#q-text',                  'wh', '問題文 (まんなかは…)'],
-  ['.q-text-card .audio',      'wh', '音声ボタン'],
-  ['.board',                   'wh', '問題ボード'],
-  ['.answer-tray',             'wh', 'トレイ'],
-  ['.chip',                    'wh', '選択肢'],
-  ['.chip .circle',            'wh', '色マル'],
-  ['.hint',                    'wh', 'ヒント'],
-  ['.character',               'wh', 'キャラ'],
-  ['.char-hint',               'wh', 'フクロウのひとこと吹き出し'],
-];
+// Wave Zulu-2: 単一ソース化。 bootstrap (新エディタ) と legacy が同じ配列を参照
+// するように window.QUIZLAND_RESIZE_SPEC から derive。 これがないと「要素一覧に
+// 背景/統合フレーム土台/.slot 等が出ない」事故が再発する。
+const RESIZABLE_SPEC = (window.QUIZLAND_RESIZE_SPEC && Array.isArray(window.QUIZLAND_RESIZE_SPEC))
+  ? window.QUIZLAND_RESIZE_SPEC.slice()
+  : [];
 const RESIZE_KEY = 'quizland_preview_sizes_v1';
 
 // 編集可能テキストの収集 / 復元
@@ -3116,6 +3114,44 @@ try {
   const saved = localStorage.getItem('quizland_sheet_mode');
   if (saved === '0') setSheetMode(false);
   else setSheetMode(true);  // ON でボタンラベル / classList を整える
+} catch(_) {}
+
+// ───── Wave Zulu-2: 統合フレーム画像 (.stage::after) 専用トグル ─────
+//   ユーザー要望: 「統合フレーム画像を非表示にしたい (最終的には別々に分かれた
+//   フレームを当てるから、 今は下書きとして必要だけど、 最終的には削除したい)」
+//   sheet-off クラスを body に付ける CSS-only 制御。 既存の sheet-on (placeholder
+//   一括非表示モード) とは独立した過渡期トグル。 localStorage は user 指定の
+//   キー名 'quizland-sheet-on' を使用。
+const frameSheetBtn = document.getElementById('frame-sheet-toggle');
+function setFrameSheetMode(on) {
+  document.body.classList.toggle('sheet-on', on);
+  document.body.classList.toggle('sheet-off', !on);
+  if (frameSheetBtn) {
+    frameSheetBtn.textContent = on ? '📄 シート ON' : '📄 シート OFF';
+    frameSheetBtn.classList.toggle('active', !on);  // 非表示中 (= OFF) を強調
+  }
+  // 既存の 🪟 シート画像 トグルとも label / class を同期 (両者は sheet-on を共有)
+  if (typeof sheetBtn !== 'undefined' && sheetBtn) {
+    sheetBtn.textContent = on ? '🪟 シート画像 ON' : '🪟 シート画像 OFF';
+    sheetBtn.classList.toggle('active', on);
+  }
+  try { localStorage.setItem('quizland-sheet-on', on ? '1' : '0'); } catch(_) {}
+  // 旧キーも一応シンクさせて、 リロード時に二つの toggle が乖離しないように。
+  try { localStorage.setItem('quizland_sheet_mode', on ? '1' : '0'); } catch(_) {}
+}
+frameSheetBtn && frameSheetBtn.addEventListener('click', () => {
+  setFrameSheetMode(!document.body.classList.contains('sheet-on'));
+});
+// 復元: localStorage 'quizland-sheet-on' === '0' なら OFF にする (sheet-off クラス付与)。
+// それ以外 (未設定 / '1') は ON のまま (デフォルト = body.sheet-on)。
+try {
+  const stored = localStorage.getItem('quizland-sheet-on');
+  if (stored === '0') {
+    setFrameSheetMode(false);
+  } else {
+    // ボタンラベルだけ ON 状態に揃える (body class は HTML 既定値で既に sheet-on)
+    setFrameSheetMode(true);
+  }
 } catch(_) {}
 
 // ───── ワイヤーフレーム表示 + PNG 書き出し ─────

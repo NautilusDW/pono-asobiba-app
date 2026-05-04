@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T15:01:06Z - quizland/preview/full: editableSelectors 単一ソース化 (Approach C) + 統合フレーム画像 .stage::after 専用 sheet-off トグル追加
+- **タスク**: quizland/preview/full: editableSelectors 単一ソース化 (Approach C) + 統合フレーム画像 .stage::after 専用 sheet-off トグル追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 158
+- **エラー数**: 19
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 101, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 21, "Bash": 23, "Glob": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T14:49:44Z - quizland/preview/full editableSelectors に背景・統合フレーム等10セレクタ追加 (Yankee-2)
 - **タスク**: quizland/preview/full editableSelectors に背景・統合フレーム等10セレクタ追加 (Yankee-2)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 22, "Read": 15, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 23}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-04T11:20:46Z - Phase2 Reviewer-A デザイン整合性クロスレビュー (ui_*_frame.png + balloon_temp.png 視覚評価)
-- **タスク**: Phase2 Reviewer-A デザイン整合性クロスレビュー (ui_*_frame.png + balloon_temp.png 視覚評価)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 75
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 21, "Read": 15, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 23}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
