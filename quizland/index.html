@@ -186,9 +186,13 @@ body.sheet-on .answer-tray {
   box-shadow: none;
 }
 
-/* chip: 各回答チップ (個々の小さな枠) */
-body.sheet-on .chip {
-  background: url('../assets/preview-placeholders/chip.png') center / 100% 100% no-repeat;
+/* chip: 各回答チップの個別フレームは表示しない。
+   .answer-tray (Fukuro_frame_002.png) に 2x2 セル枠が焼き込まれているので、
+   そのグリッドのみが見え、内側に円アイコン + テキストだけが乗る形にする。
+   タップフィードバック (.pressed / .correct / .wrong) は :not(...) で除外して保護。 */
+body.sheet-on .chip:not(.pressed):not(.correct):not(.wrong) {
+  background: none;
+  background-color: transparent;
   border-color: transparent;
   box-shadow: none;
 }
