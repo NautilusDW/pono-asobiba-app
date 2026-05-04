@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T13:43:59Z - quizland header fix: restore Fukuro_frame_004 on .hdr-pill, move title_logo.png to .title-card only (hide owl-icon)
+- **タスク**: quizland header fix: restore Fukuro_frame_004 on .hdr-pill, move title_logo.png to .title-card only (hide owl-icon)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 102
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 27, "Read": 18, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 40, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T12:58:58Z - quizland 本番素材 (main folder Fukuro_frame_001-004 + main_frame + progress + balloon_temp) を取り込んで CSS を切り替え、--sheet-overlay-opacity を 0.3 に下げ、main_frame.png をテクスチャ層化、Fukuro_frame_xxx を各 UI 要素に個別貼付 (パーツ方式 + テクスチャハイブリッド)
 - **タスク**: quizland 本番素材 (main folder Fukuro_frame_001-004 + main_frame + progress + balloon_temp) を取り込んで CSS を切り替え、--sheet-overlay-opacity を 0.3 に下げ、main_frame.png をテクスチャ層化、Fukuro_frame_xxx を各 UI 要素に個別貼付 (パーツ方式 + テクスチャハイブリッド)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 98, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 20, "Bash": 23, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T04:32:35Z - Team Victor-2: layout-editor に削除機能追加 (toolbar 🗑️ ボタン + 行 🗑 アイコン + Delete/Backspace キー削除化、Ctrl+Z で復活、contenteditable は通常文字削除)
-- **タスク**: Team Victor-2: layout-editor に削除機能追加 (toolbar 🗑️ ボタン + 行 🗑 アイコン + Delete/Backspace キー削除化、Ctrl+Z で復活、contenteditable は通常文字削除)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 153
-- **エラー数**: 19
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 97, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 20, "Bash": 23, "Glob": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
