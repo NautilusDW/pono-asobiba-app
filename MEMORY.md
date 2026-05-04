@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T11:12:53Z - quizland Phase 2: ui_*_frame.png 本番素材へ切替 (sheet-v1.png 廃止 / .hdr/.q-text-card/.answer-tray に個別 background)
+- **タスク**: quizland Phase 2: ui_*_frame.png 本番素材へ切替 (sheet-v1.png 廃止 / .hdr/.q-text-card/.answer-tray に個別 background)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 72
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 18, "Read": 15, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 23}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-04T05:32:37Z - Team-1 quizland fix: 12 grid/* placeholder stubs を root の本物 PNG に差し替え + sheet-overlay opacity 0->0.4 + 4 P3-Medium rules を background shorthand から個別プロパティに分解 + 8 P3-Low rules から !important 削減
 - **タスク**: Team-1 quizland fix: 12 grid/* placeholder stubs を root の本物 PNG に差し替え + sheet-overlay opacity 0->0.4 + 4 P3-Medium rules を background shorthand から個別プロパティに分解 + 8 P3-Low rules から !important 削減
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 94, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 17, "Bash": 21, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T03:20:09Z - Team Romeo-2: layout-editor に「📐 画像の比率に合わせる」ボタン追加 (img/.le-dropped-img/bg-image 対応, Quebec-2 で削除した bg-image probe を aspect 専用で部分復活)
-- **タスク**: Team Romeo-2: layout-editor に「📐 画像の比率に合わせる」ボタン追加 (img/.le-dropped-img/bg-image 対応, Quebec-2 で削除した bg-image probe を aspect 専用で部分復活)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 137
-- **エラー数**: 19
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 93, "ToolSearch": 1, "Read": 5, "Write": 4, "Edit": 15, "Bash": 18, "Glob": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
