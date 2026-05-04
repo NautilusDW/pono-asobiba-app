@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T15:33:00Z - Wave 47 Charlie-3: quizland preview の content/icon background-image を復活、木枠フレームのみ削除維持
+- **タスク**: Wave 47 Charlie-3: quizland preview の content/icon background-image を復活、木枠フレームのみ削除維持
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 163
+- **エラー数**: 19
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 104, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 22, "Bash": 24, "Glob": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T15:25:28Z - Wave 46 Bravo-3: quizland/preview/full/index.html から legacy v1 frame backgrounds (preview-placeholders/*.png 一式) を全削除。シート画像 (.stage::after) と背景 (.stage) のみ残置。
 - **タスク**: Wave 46 Bravo-3: quizland/preview/full/index.html から legacy v1 frame backgrounds (preview-placeholders/*.png 一式) を全削除。シート画像 (.stage::after) と背景 (.stage) のみ残置。
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 30, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 45, "Grep": 4}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T13:46:44Z - .chip 個別フレーム削除 (chip.png 背景を sheet-on 下で透明化、Fukuro_frame_002 のグリッドのみ見せる)
-- **タスク**: .chip 個別フレーム削除 (chip.png 背景を sheet-on 下で透明化、Fukuro_frame_002 のグリッドのみ見せる)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 103
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 28, "Read": 18, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 40, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

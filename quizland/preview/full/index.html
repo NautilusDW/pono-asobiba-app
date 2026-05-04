@@ -478,13 +478,17 @@ body.show-board-frame .board::before { opacity: 1; }
   position: relative;
   margin-bottom: -8px;
 }
-/* Wave 46 (Bravo-3): legacy v1 frame (hint-60.png) を削除。
-   シート画像 (.stage::after / quizland-sheet-v1.png) が本番フレーム。 */
+/* Charlie-3 復活: char-hint はコンテンツ吹き出し (キャラのひとこと) なので
+   placeholder PNG を復活。 シート画像にはこの吹き出しは含まれていない。 */
 .char-hint {
   flex: 0 0 auto;
   position: relative;
   width: 235px;
   height: 63px;
+  background-image: url('../../../assets/_legacy/preview-placeholders/hint-60.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -665,18 +669,18 @@ body.preview-mode .stage {
   font-size: 56px;
 }
 
-/* ───── Wave 46 (Bravo-3): Legacy v1 frame backgrounds は完全削除 ─────
- * 旧仕様では各 placeholder PNG を要素ごとの background-image で当てていたが、
- * 本番フレームは シート画像 (quizland-sheet-v1.png, .stage::after) に一本化。
- * 各要素の background-image (frame 画像) は永久不要なので削除した。
- * シート OFF の状態では、各要素は frame なしの素のバウンディングボックスとして
- * 見える (背景の stage-bg.png は維持)。 新フレームを当てる場合は HTML/CSS で
- * 個別追加すること。
+/* ───── Wave 47 (Charlie-3): コンテンツ画像は復活 / 木枠フレームのみ削除 ─────
+ * Wave 46 (Bravo-3) は frame と content の区別なく一括削除してしまったため、
+ * フクロウアバター・タイトル・進捗ドット・ボタンなどのコンテンツ画像まで消えた。
+ * Charlie-3 ではこれらコンテンツ系 PNG を復活させ、 シート画像 と重なって出現する
+ * 木枠系フレーム (.q-text-card, .board, .chip 外枠, .hint, .answer-tray, .slot,
+ * .hdr-pill) のみを削除維持する。
  *
- * ・KEEP: .stage (background = stage-bg.png), .stage::after (sheet = quizland-sheet-v1.png)
- * ・DELETE 済み: hdr-pill, owl-icon, title-card, progress-num, dot, progress-mark,
- *   ctrl-btn, q-text-card, audio, board, answer-tray, chip, circle, hint, character,
- *   slot, hint-60 (char-hint), および body.grid-mode の grid placeholder 一式。 */
+ * ・KEEP: .stage (stage-bg.png), .stage::after (quizland-sheet-v1.png 本番フレーム)
+ * ・KEEP (コンテンツ復活): owl-icon, title-card, progress-num, dot, progress-mark,
+ *   ctrl-btn (news/settings), audio, character, char-hint (hint-60), chip .circle
+ * ・DELETE 維持 (legacy 木枠フレーム): hdr-pill, q-text-card, board, answer-tray,
+ *   chip 外枠, hint, slot (← シート画像が同等のフレームを提供する) */
 .hdr-pill,
 .hdr-left .owl-icon,
 .hdr-left .title-card,
@@ -692,16 +696,46 @@ body.preview-mode .stage {
 .hint,
 .character,
 .slot {
+  background-position: center !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
 }
-/* dot は元々 ::before (progress-mark.png) を上に重ねていたが、 ::before も legacy frame
-   の一部だったため削除。 z-index だけ残す必要は無いが、 既存の sheet-on レイヤーと
-   competing しないよう position を維持。 */
+/* === コンテンツ/アイコン系 (復活): シート画像にも残るので個別 PNG を必ず描画 === */
+.hdr-left .owl-icon { background-image: url('../../../assets/_legacy/preview-placeholders/owl-icon.png') !important; }
+.hdr-left .title-card { background-image: url('../../../assets/_legacy/preview-placeholders/title-card.png') !important; }
+.hdr-left .progress-num { background-image: url('../../../assets/_legacy/preview-placeholders/progress-num.png') !important; }
+.hdr-left .dot { background-image: url('../../../assets/_legacy/preview-placeholders/dot.png') !important; }
+.hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-news.png') !important; }
+.hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') !important; }
+.q-text-card .audio { background-image: url('../../../assets/_legacy/preview-placeholders/audio.png') !important; }
+.chip .circle { background-image: url('../../../assets/_legacy/preview-placeholders/circle.png') !important; }
+.character { background-image: url('../../../assets/_legacy/preview-placeholders/character.png') !important; }
+/* progress-mark.png は 1991x790 の縦長アートなので、 dots (デフォルト 28px 高さ) に
+   直接 background-image すると縦に潰れて見えなくなる。 ::before の絶対配置で
+   dots より大きな領域を確保 (上下に padding 拡張) して描画する */
 .hdr-left .dots { position: relative; }
+.hdr-left .dots::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  top: -22px;
+  bottom: -22px;
+  background-image: url('../../../assets/_legacy/preview-placeholders/progress-mark.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+/* dot 自体は ::before の上に重ねる */
 .hdr-left .dot { position: relative; z-index: 1; }
+/* === 木枠フレーム系 (削除維持): .hdr-pill, .q-text-card, .board, .answer-tray,
+   .chip 外枠, .hint, .slot は シート画像が提供するため個別 background-image なし === */
 
 .hdr-left .title-card small,
 .hdr-left .title-card span,
