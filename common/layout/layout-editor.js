@@ -492,6 +492,14 @@
     state.future.length = 0;
     scheduleDirtyUpdate();
   }
+  // Kilo-2 修正A: 複数要素のバッチ操作を 1 つの history op に束ねるヘルパー。
+  //   ops が空 → push せず、1個 → そのまま、2個以上 → { type: 'batch', ops } で
+  //   束ねる。これで複数選択ドラッグなどが Ctrl+Z 1 回で全部 revert できる。
+  function pushHistoryBatch(ops) {
+    if (!ops || !ops.length) return;
+    if (ops.length === 1) pushHistory(ops[0]);
+    else pushHistory({ type: 'batch', ops: ops });
+  }
   function undo() {
     if (!state.history.length) return;
     var op = state.history.pop();
@@ -509,6 +517,11 @@
     scheduleDirtyUpdate();
   }
   function applyForward(op) {
+    // Kilo-2 修正A: バッチ op は内部 ops を順方向に再適用
+    if (op.type === 'batch') {
+      (op.ops || []).forEach(function (sub) { applyForward(sub); });
+      return;
+    }
     if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
     else if (op.type === 'remove') op.el.remove();
     else if (op.type === 'resize') setResize(op.el, op.after);
@@ -520,6 +533,21 @@
     else if (op.type === 'text') op.el.textContent = op.after;
     else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
+    // Kilo-2 修正C: 親から取り出し (forward = stage 直下に移動 + 新位置適用)
+    else if (op.type === 'reparent') {
+      var newParent = op.newParent || state.canvasEl;
+      newParent.appendChild(op.el);
+      if (op.newStyles) {
+        var ns = op.newStyles;
+        if (ns.position !== undefined) op.el.style.position = ns.position;
+        if (ns.left !== undefined) op.el.style.left = ns.left;
+        if (ns.top !== undefined) op.el.style.top = ns.top;
+        if (ns.width !== undefined) op.el.style.width = ns.width;
+        if (ns.height !== undefined) op.el.style.height = ns.height;
+      }
+      if (op.el.dataset) op.el.dataset.leKeepPosition = '1';
+      try { refreshElementList(); } catch (e) {}
+    }
     // India-2: le-added-text の add/remove 後は localStorage を再同期
     try {
       if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
@@ -531,6 +559,11 @@
     refreshLockBadges();
   }
   function applyInverse(op) {
+    // Kilo-2 修正A: バッチ op は ops を逆順に逆適用
+    if (op.type === 'batch') {
+      (op.ops || []).slice().reverse().forEach(function (sub) { applyInverse(sub); });
+      return;
+    }
     if (op.type === 'add') op.el.remove();
     else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
     else if (op.type === 'resize') setResize(op.el, op.before);
@@ -542,6 +575,26 @@
     else if (op.type === 'text') op.el.textContent = op.before;
     else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
+    // Kilo-2 修正C: 親から取り出しの逆 (inverse = 元の親に戻す + 旧位置/旧スタイル復元)
+    else if (op.type === 'reparent') {
+      if (op.oldParent) {
+        op.oldParent.insertBefore(op.el, op.oldNext || null);
+      }
+      if (op.oldStyles) {
+        var os = op.oldStyles;
+        op.el.style.position = os.position || '';
+        op.el.style.left = os.left || '';
+        op.el.style.top = os.top || '';
+        op.el.style.width = os.width || '';
+        op.el.style.height = os.height || '';
+      }
+      if (op.oldKeepPosition) {
+        if (op.el.dataset) op.el.dataset.leKeepPosition = op.oldKeepPosition;
+      } else {
+        if (op.el.dataset) delete op.el.dataset.leKeepPosition;
+      }
+      try { refreshElementList(); } catch (e) {}
+    }
     // India-2: le-added-text の undo 後にも save
     try {
       if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();

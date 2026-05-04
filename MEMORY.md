@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T01:26:28Z - Codex 用統合発注書 (codex_assignment.md + .json) 作成: 既存4シート + 新規choice 34シート + stage 42単体 = 211最終ファイル
+- **タスク**: Codex 用統合発注書 (codex_assignment.md + .json) 作成: 既存4シート + 新規choice 34シート + stage 42単体 = 211最終ファイル
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 118
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 86, "ToolSearch": 1, "Read": 3, "Write": 4, "Edit": 9, "Bash": 14, "Glob": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T00:34:46Z - quizland イラストJSON に再生成用4シート追加 (count_total/weather_emoji/body_emoji/animal_extras)
 - **タスク**: quizland イラストJSON に再生成用4シート追加 (count_total/weather_emoji/body_emoji/animal_extras)
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 1, "Read": 48, "Grep": 14, "Bash": 154, "Agent": 72, "ToolSearch": 2, "Write": 7, "Edit": 30, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-03T23:19:23Z - Team Delta-2: layout-editor.js 画像差し替え厳格化(img/bg-image/単一innerImg)+image-swap/bg-image-swap/insertのundo対応
-- **タスク**: Team Delta-2: layout-editor.js 画像差し替え厳格化(img/bg-image/単一innerImg)+image-swap/bg-image-swap/insertのundo対応
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 103
-- **エラー数**: 12
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 78, "ToolSearch": 1, "Read": 3, "Write": 3, "Edit": 8, "Bash": 9, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
