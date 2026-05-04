@@ -27,11 +27,17 @@ def fit_crop(crop: Image.Image, inner_max: int) -> Image.Image:
     )
 
 
-def find_band_bboxes(alpha: Image.Image, band_count: int = 4, threshold: int = 8) -> list[tuple[int, int, int, int] | None]:
+def find_band_bboxes(
+    alpha: Image.Image,
+    band_count: int = 4,
+    threshold: int = 8,
+    min_component_area: int = 200,
+) -> list[tuple[int, int, int, int] | None]:
     w, h = alpha.size
     px = alpha.load()
     visited = bytearray(w * h)
     unions: list[tuple[int, int, int, int] | None] = [None] * band_count
+    band_width = w / band_count
 
     def idx(x: int, y: int) -> int:
         return y * w + x
@@ -46,8 +52,10 @@ def find_band_bboxes(alpha: Image.Image, band_count: int = 4, threshold: int = 8
             visited[flat] = 1
             left = right = x
             top = bottom = y
+            area = 0
             while stack:
                 cx, cy = stack.pop()
+                area += 1
                 if cx < left:
                     left = cx
                 if cx > right:
@@ -63,9 +71,18 @@ def find_band_bboxes(alpha: Image.Image, band_count: int = 4, threshold: int = 8
                             visited[nflat] = 1
                             if px[nx, ny] > threshold:
                                 stack.append((nx, ny))
+            if area < min_component_area:
+                continue
             cx = (left + right) / 2
             band = min(band_count - 1, int(cx * band_count / w))
-            bbox = (left, top, right + 1, bottom + 1)
+            band_left = int(round(band * band_width))
+            band_right = int(round((band + 1) * band_width))
+            bbox = (
+                max(left, band_left),
+                top,
+                min(right + 1, band_right),
+                bottom + 1,
+            )
             current = unions[band]
             if current is None:
                 unions[band] = bbox
