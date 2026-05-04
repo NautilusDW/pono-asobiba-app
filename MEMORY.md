@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T14:29:58Z - .hdr-pill / .q-text-card の枠絵を Fukuro_frame_004 (葉あり) から Fukuro_frame_003 (葉なし) に差替
+- **タスク**: .hdr-pill / .q-text-card の枠絵を Fukuro_frame_004 (葉あり) から Fukuro_frame_003 (葉なし) に差替
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 117
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 31, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 46, "Grep": 4}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T14:20:42Z - quizland: preview/full の saved-layout.json を本番に移植し、saved-layout を上書きしていた title-card の min-width/height/margin と owl-icon の display:none を撤廃
 - **タスク**: quizland: preview/full の saved-layout.json を本番に移植し、saved-layout を上書きしていた title-card の min-width/height/margin と owl-icon の display:none を撤廃
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 15, "Read": 6, "Glob": 2, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 3}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-04T05:28:57Z - Team-2 chip overflow blocker fix: 14/9 220->216, 4/3 200->196, comment buffer clarification, 16:10 object-position
-- **タスク**: Team-2 chip overflow blocker fix: 14/9 220->216, 4/3 200->196, comment buffer clarification, 16:10 object-position
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 30
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 14, "Read": 6, "Glob": 2, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 3}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
