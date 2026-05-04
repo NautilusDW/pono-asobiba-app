@@ -69,10 +69,11 @@
   --success: #10B981;
   --danger: #EF4444;
 
-  /* Team-1 (16:9 / 4:3 両対応): シート 1 枚絵 (quizland-sheet-v1.png) を実質オフ。
-     0 = sheet 全面オーバーレイを非表示 (パーツ画像化が主役)。
-     0.3〜0.5 にすると手描きテクスチャを残す保険モードとして使える。 */
-  --sheet-overlay-opacity: 0;
+  /* Team-1 (16:9 / 4:3 両対応): 本物 quizland-sheet-v1.png を薄く重ねる保険レイヤ。
+     0.4 = 枠と枠の間の蔦・葉・影など 1 枚絵にしか描けない世界観装飾を残す。
+     パーツ別 PNG だけでは「枠間装飾」を再現できないため本物素材を 0.4 で重ねる。
+     0 にすると蔦/葉が完全消失し雰囲気が壊れる。0.5 以上だと枠絵が二重に主張するので NG。 */
+  --sheet-overlay-opacity: 0.4;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -112,8 +113,8 @@ body.sheet-on .stage::after {
   background: url('../assets/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
   pointer-events: none;
   z-index: 5;
-  /* Team-1: シート 1 枚絵を CSS 変数で制御。デフォルト 0 = 非表示。
-     パーツ画像化 (各要素 background) が主役なので、ここはテクスチャの保険レイヤ。 */
+  /* Team-1: シート 1 枚絵を CSS 変数で制御。デフォルト 0.4 = 蔦/葉など枠間装飾を残す。
+     パーツ画像化 (各要素 background) が枠と中身を担い、ここは枠と枠の間の世界観を担う。 */
   opacity: var(--sheet-overlay-opacity, 0);
 }
 /* ============================================================
@@ -124,89 +125,102 @@ body.sheet-on .stage::after {
    しかし 1 枚絵は 21:9 キャンバス全面に 100% 100% で焼き込まれるため、
    4:3 で safe-w を縮めると枠絵だけが横方向に伸縮し、grid セル中身と乖離する。
 
-   解決: 各 UI 要素に grid/*.png を個別貼付 (background-size: 100% 100%)。
-   要素サイズに background が追従するので、メディアクエリで safe-w や grid を
-   変えても枠と中身がずれない。素材は assets/preview-placeholders/grid/ の
-   既存 16 枚 PNG をそのまま流用 (素材コスト 0)。
+   解決: 各 UI 要素に本物パーツ PNG を個別貼付 (background-size: 100% 100%)。
+   素材は assets/preview-placeholders/ 直下の本番手描き PNG (root) を使う。
+   `grid/` サブフォルダは寸法デバッグ用 placeholder (gingham + ファイル名ラベル) で、
+   preview/full の body.grid-mode 比較トグル専用なのでここでは参照しない。
+   要素サイズに background が追従するので、メディアクエリで safe-w を変えても
+   枠と中身がずれない。
 
    契約 (Team-1/2/3 間):
      - background-size は 100% 100% で固定 (Team-2 が幅高を変えても歪まない)
      - body.sheet-off 経路 (元 CSS の border/bg/shadow) は破壊しない
-     - .slot は grid/item-slot.png 粒度が合わないので現行ドット枠を温存
+     - .slot は item-slot.png 粒度が合わないので現行ドット枠を温存
+     - 枠と枠の間 (蔦/葉/影) はパーツ別 PNG では再現不能 → 本物 sheet-v1.png を
+       --sheet-overlay-opacity: 0.4 で薄く重ねて世界観を残す (上の :root 参照)
    ============================================================ */
 
 /* hdr-pill: ヘッダー左の丸ピル枠 */
 body.sheet-on .hdr-pill {
-  background: url('../assets/preview-placeholders/grid/hdr-pill.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/hdr-pill.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* q-text-card: 左カラムの問題文カード (4:3 で最も影響を受ける枠) */
 body.sheet-on .q-text-card {
-  background: url('../assets/preview-placeholders/grid/q-text-card.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/q-text-card.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* board: 右カラムの解答スロット盤 */
 body.sheet-on .board {
-  background: url('../assets/preview-placeholders/grid/board.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/board.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* answer-tray: チップが並ぶ下段トレイ */
 body.sheet-on .answer-tray {
-  background: url('../assets/preview-placeholders/grid/answer-tray.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/answer-tray.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* chip: 各回答チップ (個々の小さな枠) */
 body.sheet-on .chip {
-  background: url('../assets/preview-placeholders/grid/chip.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/chip.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* circle: chip 内の円アイコン枠 (チップの内訳要素) */
 body.sheet-on .chip .circle {
-  background: url('../assets/preview-placeholders/grid/circle.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/circle.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* char-hint: ヒント吹き出し (画面右下キャラの隣) */
 body.sheet-on .char-hint {
-  background: url('../assets/preview-placeholders/grid/hint.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/hint.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* hdr-left .owl-icon: フクロウアイコンの円枠 (中の <img> はそのまま重ねる) */
 body.sheet-on .hdr-left .owl-icon {
-  background: url('../assets/preview-placeholders/grid/owl-icon.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background: url('../assets/preview-placeholders/owl-icon.png') center / 100% 100% no-repeat;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* hdr-left .title-card: タイトル木札
-   既存の base CSS (200-220 行) で title-card.png は contain で貼ってあるが、
-   sheet-on では 100% 100% でセル追従させ、テキスト透明化の既存ルールはそのまま温存。 */
+   base CSS が title-card.png を contain で !important なしで貼っているので、
+   shorthand `background:` だと base 側の position/repeat/origin/clip まで暗黙リセットされ
+   二重計算になる。個別プロパティで上書きする (P3-Medium 対応)。 */
 body.sheet-on .hdr-left .title-card {
-  background: url('../assets/preview-placeholders/grid/title-card.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background-image: url('../assets/preview-placeholders/title-card.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* hdr-left .progress-num: "1/5" の進捗表示枠
    テキスト "1/5" は dynamic content なので、文字色は base のまま読めるよう保つ。
-   旧ルールが flex/中央寄せ/font/color を !important で塗っていたため挙動を保持する。 */
+   base が progress-num.png を contain で貼っているため、shorthand を避け個別プロパティで上書き。 */
 body.sheet-on .hdr-left .progress-num {
-  background: url('../assets/preview-placeholders/grid/progress-num.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background-image: url('../assets/preview-placeholders/progress-num.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent;
+  box-shadow: none;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -218,19 +232,28 @@ body.sheet-on .hdr-left .progress-num {
   z-index: 7;
 }
 
-/* hdr-right .ctrl-btn: ベル/歯車 (既存の base CSS で nth-child(1)/(2) に
-   ctrl-btn-news.png / ctrl-btn-settings.png が contain で貼ってある)。
-   sheet-on では grid/ 配下の同名 PNG を 100% 100% で上書き → 4:3 で歪まない。
-   .icon / .ctrl-label の color: transparent は base ルール (343-346 行) で適用済。 */
+/* hdr-right .ctrl-btn: ベル/歯車 (base CSS が nth-child(1)/(2) に
+   ctrl-btn-news.png / ctrl-btn-settings.png を contain で貼ってある)。
+   shorthand を使うと base の position/repeat/origin/clip も暗黙リセットされるので、
+   個別プロパティで上書き (P3-Medium 対応)。.icon / .ctrl-label の color: transparent は
+   base ルールで適用済。 */
 body.sheet-on .hdr-right .ctrl-btn:nth-child(1) {
-  background: url('../assets/preview-placeholders/grid/ctrl-btn-news.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background-image: url('../assets/preview-placeholders/ctrl-btn-news.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent;
+  box-shadow: none;
 }
 body.sheet-on .hdr-right .ctrl-btn:nth-child(2) {
-  background: url('../assets/preview-placeholders/grid/ctrl-btn-settings.png') center / 100% 100% no-repeat;
-  border-color: transparent !important;
-  box-shadow: none !important;
+  background-image: url('../assets/preview-placeholders/ctrl-btn-settings.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* slot (item-slot): grid/item-slot.png は粒度が合わないので、現行のドット枠 CSS を温存。
