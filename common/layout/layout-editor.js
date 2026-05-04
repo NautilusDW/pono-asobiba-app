@@ -1622,6 +1622,12 @@
     panel.className = 'numeric-panel';
     panel.id = 'numeric-panel';
     panel.innerHTML =
+      // Uniform-2: ドラッグ用ヘッダー (≡ アイコン + タイトル)。
+      //   h4 (選択数表示) は body 側に残し、ヘッダーのみをドラッグハンドルにする。
+      '<div class="numeric-head" title="ドラッグで移動 / ダブルクリックで初期位置に戻す">' +
+        '<span class="le-panel-drag-handle">&#x2261;</span>' +
+        '<span class="le-panel-title-text">数値パネル</span>' +
+      '</div>' +
       '<h4>選択中: <span id="np-count">0</span> 個</h4>' +
       '<div class="np-targets" id="np-targets">(なし)</div>' +
       makeSpinnerRow('w', 'W', { aspect: true }) + makeSpinnerRow('h', 'H') +
@@ -1651,6 +1657,9 @@
     var aspectFitBtn = panel.querySelector('#np-aspect-fit');
     if (aspectFitBtn) aspectFitBtn.addEventListener('click', fitElementToImageAspect);
     syncAspectLockButton();
+    // Uniform-2: パネル位置をドラッグ可能にし、保存位置を復元
+    makePanelDraggable(panel, 'numeric');
+    restorePanelPosition('numeric', panel);
   }
 
   // ====================================================================
@@ -2075,10 +2084,13 @@
     el._resizeUpdateLabel && el._resizeUpdateLabel();
   }
 
-  // Tango-2 修正A: flex container の child では `flex: 1` (= flex-basis 0%) が
-  //   width/height !important より優先されてしまうので、inline で `flex: 0 0 Xpx`
-  //   を設定して flex-basis を明示固定する。cross axis 側は align-self で stretch
-  //   を切る必要があるので flex-start にする。親が flex でない場合は何もしない。
+  // Uniform-2 修正: flex 制約を main/cross 区別なく **常に解除**する強制対応。
+  //   .pono-bubble の W が変わらない症状 (Wave 37/38 で未解決) は、
+  //   flex-direction の判定が間違っているケースがあると思われる (column 親で
+  //   W=cross axis になってしまい、cross 軸処理だけでは flex-shrink/grow/basis が
+  //   そのまま残って効かない)。
+  //   そこで axis に関わらず flex / align-self / flex-shrink / flex-grow / flex-basis
+  //   を全て inline !important で固定する。これで main/cross 両方カバーできる。
   function overrideFlexIfChild(el, axis, val) {
     if (!el || el.nodeType !== 1) return;
     var parent = el.parentNode;
@@ -2087,23 +2099,17 @@
     try { parentDisplay = getComputedStyle(parent).display || ''; }
     catch (e) { return; }
     if (parentDisplay.indexOf('flex') < 0) return;
-    var flexDir;
-    try { flexDir = getComputedStyle(parent).flexDirection || 'row'; }
-    catch (e) { flexDir = 'row'; }
-    var isMainAxis =
-      ((flexDir === 'row' || flexDir === 'row-reverse') && axis === 'w') ||
-      ((flexDir === 'column' || flexDir === 'column-reverse') && axis === 'h');
-    if (isMainAxis) {
-      // main axis: flex-grow=0, flex-shrink=0, flex-basis=Xpx
-      el.style.setProperty('flex', '0 0 ' + Math.round(val) + 'px', 'important');
-    } else {
-      // cross axis: stretch を切る (固定 width/height を活かすため)
-      el.style.setProperty('align-self', 'flex-start', 'important');
-    }
+    // axis に関わらず両方解除 (手堅い)
+    el.style.setProperty('flex', '0 0 auto', 'important');
+    el.style.setProperty('align-self', 'flex-start', 'important');
+    el.style.setProperty('flex-shrink', '0', 'important');
+    el.style.setProperty('flex-grow', '0', 'important');
+    el.style.setProperty('flex-basis', 'auto', 'important');
+    // width/height 自体は applyOnePropToEl 側で setProperty 済み
   }
 
-  // Tango-2 修正A: undo/redo で空値に戻すときは flex/align-self も除去して
-  //   原状復帰させる。親が flex container でない場合は無害なので常時呼んで良い。
+  // Uniform-2 修正: undo/redo で空値に戻すときは flex 系プロパティを全て除去して
+  //   原状復帰させる。axis に関わらず両軸の inline 値が空になった時のみ削除する。
   function clearFlexOverrideIfChild(el, axis) {
     if (!el || el.nodeType !== 1) return;
     var parent = el.parentNode;
@@ -2112,24 +2118,107 @@
     try { parentDisplay = getComputedStyle(parent).display || ''; }
     catch (e) { return; }
     if (parentDisplay.indexOf('flex') < 0) return;
-    var flexDir;
-    try { flexDir = getComputedStyle(parent).flexDirection || 'row'; }
-    catch (e) { flexDir = 'row'; }
-    var isMainAxis =
-      ((flexDir === 'row' || flexDir === 'row-reverse') && axis === 'w') ||
-      ((flexDir === 'column' || flexDir === 'column-reverse') && axis === 'h');
-    // 反対軸 (w↔h) がまだ inline で設定されているなら、その軸の override は維持。
-    // axis 'w' の解除時、この el が main axis (row) なら flex を消すが、
-    // 同時にもう一方の軸 (h, cross) で align-self を残しておくべきか判断する。
-    if (isMainAxis) {
-      el.style.removeProperty('flex');
-    } else {
-      // cross axis: もう一方の軸の inline 値が残っている場合はまだ stretch を切っておきたい
-      var otherInline = (axis === 'w') ? el.style.height : el.style.width;
-      if (!otherInline) {
-        el.style.removeProperty('align-self');
-      }
+    // 反対軸 (w↔h) がまだ inline で width/height を持っている場合は override 維持。
+    // 両方とも空になって初めて flex 系を全て removeProperty する。
+    var otherInline = (axis === 'w') ? el.style.height : el.style.width;
+    if (otherInline) return;
+    el.style.removeProperty('flex');
+    el.style.removeProperty('align-self');
+    el.style.removeProperty('flex-shrink');
+    el.style.removeProperty('flex-grow');
+    el.style.removeProperty('flex-basis');
+  }
+
+  // ====================================================================
+  //  Uniform-2: 数値パネル / 要素一覧パネルをヘッダーでドラッグ移動
+  //    - localStorage に位置を保存 (キー: le-panel-position:<pathname>:<id>)
+  //    - 画面外に出ないよう clamp (最低 50px は viewport 内)
+  //    - ヘッダーをダブルクリックで初期位置に戻す
+  //    - ドラッグハンドラ重複登録防止のため _leDragWired フラグでガード
+  // ====================================================================
+  function panelPositionKey(panelId) {
+    var path = '';
+    try { path = location.pathname || ''; } catch (e) { path = ''; }
+    return 'le-panel-position:' + path + ':' + panelId;
+  }
+
+  function savePanelPosition(panelId, panel) {
+    try {
+      var r = panel.getBoundingClientRect();
+      localStorage.setItem(panelPositionKey(panelId), JSON.stringify({ left: r.left, top: r.top }));
+    } catch (e) {}
+  }
+
+  function restorePanelPosition(panelId, panel) {
+    try {
+      var json = localStorage.getItem(panelPositionKey(panelId));
+      if (!json) return;
+      var data = JSON.parse(json);
+      if (typeof data.left !== 'number' || typeof data.top !== 'number') return;
+      // 復元時も画面外には出さない (リロード後にウィンドウ縮小されたケース対策)
+      var left = clamp(data.left, -200, window.innerWidth - 50);
+      var top = clamp(data.top, 0, window.innerHeight - 50);
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    } catch (e) {}
+  }
+
+  function makePanelDraggable(panel, panelId) {
+    if (!panel || panel._leDragWired) return;
+    panel._leDragWired = true;
+    var header = panel.querySelector('.le-list-head, .numeric-head');
+    if (!header) return;
+
+    var dragStart = null;
+    var panelStart = null;
+
+    function onMove(e) {
+      if (!dragStart) return;
+      var dx = e.clientX - dragStart.x;
+      var dy = e.clientY - dragStart.y;
+      var w = panel.offsetWidth || 200;
+      var newLeft = clamp(panelStart.left + dx, -w + 50, window.innerWidth - 50);
+      var newTop = clamp(panelStart.top + dy, 0, window.innerHeight - 50);
+      panel.style.position = 'fixed';
+      panel.style.left = newLeft + 'px';
+      panel.style.top = newTop + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
     }
+
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      var wasDragging = !!dragStart;
+      dragStart = null;
+      panelStart = null;
+      if (wasDragging) savePanelPosition(panelId, panel);
+    }
+
+    header.addEventListener('pointerdown', function (e) {
+      // ボタン / input / contenteditable の上ではドラッグしない
+      if (e.target.closest('button, input, select, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+      dragStart = { x: e.clientX, y: e.clientY };
+      var r = panel.getBoundingClientRect();
+      panelStart = { left: r.left, top: r.top };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+      document.addEventListener('pointercancel', onUp, { once: true });
+    });
+
+    // ダブルクリックで初期位置 (CSS デフォルト) に戻す
+    header.addEventListener('dblclick', function (e) {
+      if (e.target.closest('button, input, select, textarea, [contenteditable="true"]')) return;
+      panel.style.left = '';
+      panel.style.top = '';
+      panel.style.right = '';
+      panel.style.bottom = '';
+      panel.style.position = '';
+      try { localStorage.removeItem(panelPositionKey(panelId)); } catch (err) {}
+    });
   }
 
   function applyNumericInput(prop, valueStr) {
@@ -2418,9 +2507,18 @@
     var panel = document.createElement('div');
     panel.className = 'le-list-panel';
     panel.id = 'le-list-panel';
-    panel.innerHTML = '<div class="le-list-head">📋 要素一覧</div><div class="le-list-body"></div>';
+    // Uniform-2: ヘッダーに drag handle (≡) を追加。
+    panel.innerHTML =
+      '<div class="le-list-head" title="ドラッグで移動 / ダブルクリックで初期位置に戻す">' +
+        '<span class="le-panel-drag-handle">&#x2261;</span>' +
+        '<span class="le-panel-title-text">📋 要素一覧</span>' +
+      '</div>' +
+      '<div class="le-list-body"></div>';
     document.body.appendChild(panel);
     state.listPanelEl = panel;
+    // Uniform-2: パネル位置をドラッグ可能にし、保存位置を復元
+    makePanelDraggable(panel, 'list');
+    restorePanelPosition('list', panel);
     refreshElementList();
   }
 
