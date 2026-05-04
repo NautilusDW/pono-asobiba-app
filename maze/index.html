@@ -2853,6 +2853,7 @@ function _onSimonTap(e) {
 // ── 共通: クイズ系の正解判定後の結果表示 → 次へ進むボタン ──
 function _resolveQuiz(correct) {
   _simonCancelled = true; // 進行中の simon タイマーがあれば停止
+  playMzSe(correct ? 'correct' : 'wrong');
   encStageEl.innerHTML =
     '<div class="enc-result ' + (correct ? 'win' : 'lose') + '">' +
       (correct ? 'せいかい！' : 'ざんねん…') +
