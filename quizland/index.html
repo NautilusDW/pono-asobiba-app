@@ -74,7 +74,7 @@
      パーツ別 PNG (Fukuro_frame_001-004) は各 UI 要素の枠を担い、
      ここでは 1 枚絵全体レイアウト由来のテクスチャ感のみ残す。
      0 にすると蔦/葉が完全消失し雰囲気が壊れる。0.5 以上だと枠絵が二重に主張するので NG。 */
-  --sheet-overlay-opacity: 0.3;
+  --sheet-overlay-opacity: 0;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -111,12 +111,12 @@ body.sheet-on .stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../assets/images/quizland/main_frame.png') center / 100% 100% no-repeat;
+  /* main_frame.png のテクスチャ層は完全撤去 (ユーザーには「邪魔な層」として認識されていた)。
+     世界観装飾は今後パーツ別 PNG (Fukuro_frame_001-004) と title_logo.png に集約する。 */
+  background-image: none;
   pointer-events: none;
   z-index: 5;
-  /* Team-1: シート 1 枚絵を CSS 変数で制御。デフォルト 0.4 = 蔦/葉など枠間装飾を残す。
-     パーツ画像化 (各要素 background) が枠と中身を担い、ここは枠と枠の間の世界観を担う。 */
-  opacity: var(--sheet-overlay-opacity, 0);
+  opacity: 0;
 }
 /* ============================================================
    本番素材切替 (Dr.owl'quiz/main フォルダ): パーツ画像分割 + テクスチャ層
@@ -150,11 +150,24 @@ body.sheet-on .stage::after {
        --sheet-overlay-opacity: 0.3 で薄く重ねて世界観を残す (上の :root 参照)
    ============================================================ */
 
-/* hdr-pill: ヘッダー左の丸ピル枠 */
+/* hdr-pill: ヘッダー左の丸ピル枠 (title_logo.png に役割を移譲したため透明化) */
 body.sheet-on .hdr-pill {
-  background: url('../assets/images/quizland/Fukuro_frame_004.png') center / 100% 100% no-repeat;
-  border-color: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* hdr-left: フクロウ + 木の看板 + 葉/どんぐりが一体化した本物ヘッダー絵 (title_logo.png)
+   フクロウアイコン・タイトルテキスト・装飾はすべてこの 1 枚絵に焼き込まれているため、
+   .owl-icon と .title-card は CSS で透明化し、ここに 1 枚絵だけを表示する。 */
+body.sheet-on .hdr-left {
+  background-image: url('../assets/images/quizland/title_logo.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* q-text-card: 左カラムの問題文カード (4:3 で最も影響を受ける枠) */
@@ -199,25 +212,33 @@ body.sheet-on .char-hint {
   box-shadow: none;
 }
 
-/* hdr-left .owl-icon: フクロウアイコンの円枠 (中の <img> はそのまま重ねる) */
+/* hdr-left .owl-icon: title_logo.png にフクロウが焼き込まれているため非表示 (レイアウトは保持) */
 body.sheet-on .hdr-left .owl-icon {
-  background: url('../assets/preview-placeholders/owl-icon.png') center / 100% 100% no-repeat;
-  border-color: transparent;
-  box-shadow: none;
+  background: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  visibility: hidden;
+}
+body.sheet-on .hdr-left .owl-icon img {
+  visibility: hidden;
+  opacity: 0;
 }
 
 /* hdr-left .title-card: タイトル木札
-   base CSS が title-card.png を contain で !important なしで貼っているので、
-   shorthand `background:` だと base 側の position/repeat/origin/clip まで暗黙リセットされ
-   二重計算になる。個別プロパティで上書きする (P3-Medium 対応)。 */
+   title_logo.png に「フクロウはかせのなぞなぞ」がフルに焼き込まれているため、
+   この要素は完全に透明化し、テキストもレイアウトのために残しつつ非表示にする。 */
 body.sheet-on .hdr-left .title-card {
-  background-image: url('../assets/images/quizland/Fukuro_frame_004.png') !important;
-  background-size: 100% 100% !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
+  background-image: none !important;
   background-color: transparent !important;
-  border-color: transparent;
-  box-shadow: none;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  text-shadow: none !important;
+}
+body.sheet-on .hdr-left .title-card small,
+body.sheet-on .hdr-left .title-card span {
+  color: transparent !important;
+  text-shadow: none !important;
 }
 
 /* hdr-left .progress-num: "1/5" の進捗表示枠
