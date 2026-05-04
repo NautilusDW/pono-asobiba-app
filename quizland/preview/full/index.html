@@ -478,16 +478,13 @@ body.show-board-frame .board::before { opacity: 1; }
   position: relative;
   margin-bottom: -8px;
 }
-/* フクロウ博士の左にひとこと吹き出し (hint-60.png placeholder、 235×63) */
+/* Wave 46 (Bravo-3): legacy v1 frame (hint-60.png) を削除。
+   シート画像 (.stage::after / quizland-sheet-v1.png) が本番フレーム。 */
 .char-hint {
   flex: 0 0 auto;
   position: relative;
   width: 235px;
   height: 63px;
-  background-image: url('../../../assets/_legacy/preview-placeholders/hint-60.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -668,9 +665,18 @@ body.preview-mode .stage {
   font-size: 56px;
 }
 
-/* ───── Placeholder image verification mode ─────
-   本番用ではなく、指定解像度の画像が各バウンディングボックスに
-   100% 100% で正しく入るかを確認するための検証素材。 */
+/* ───── Wave 46 (Bravo-3): Legacy v1 frame backgrounds は完全削除 ─────
+ * 旧仕様では各 placeholder PNG を要素ごとの background-image で当てていたが、
+ * 本番フレームは シート画像 (quizland-sheet-v1.png, .stage::after) に一本化。
+ * 各要素の background-image (frame 画像) は永久不要なので削除した。
+ * シート OFF の状態では、各要素は frame なしの素のバウンディングボックスとして
+ * 見える (背景の stage-bg.png は維持)。 新フレームを当てる場合は HTML/CSS で
+ * 個別追加すること。
+ *
+ * ・KEEP: .stage (background = stage-bg.png), .stage::after (sheet = quizland-sheet-v1.png)
+ * ・DELETE 済み: hdr-pill, owl-icon, title-card, progress-num, dot, progress-mark,
+ *   ctrl-btn, q-text-card, audio, board, answer-tray, chip, circle, hint, character,
+ *   slot, hint-60 (char-hint), および body.grid-mode の grid placeholder 一式。 */
 .hdr-pill,
 .hdr-left .owl-icon,
 .hdr-left .title-card,
@@ -686,69 +692,16 @@ body.preview-mode .stage {
 .hint,
 .character,
 .slot {
-  background-position: center !important;
-  /* contain でアスペクト比保持。 box が image より大きければ余白で寸法ミスマッチが見える */
-  background-size: contain !important;
-  background-repeat: no-repeat !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
 }
-.hdr-pill { background-image: url('../../../assets/_legacy/preview-placeholders/hdr-pill.png') !important; }
-.hdr-left .owl-icon { background-image: url('../../../assets/_legacy/preview-placeholders/owl-icon.png') !important; }
-.hdr-left .title-card { background-image: url('../../../assets/_legacy/preview-placeholders/title-card.png') !important; }
-.hdr-left .progress-num { background-image: url('../../../assets/_legacy/preview-placeholders/progress-num.png') !important; }
-.hdr-left .dot { background-image: url('../../../assets/_legacy/preview-placeholders/dot.png') !important; }
-/* progress-mark.png は 1991x790 の縦長アートなので、 dots (デフォルト 28px 高さ) に
-   直接 background-image すると縦に潰れて見えなくなる。 ::before の絶対配置で
-   dots より大きな領域を確保 (上下に padding 拡張) して描画する */
+/* dot は元々 ::before (progress-mark.png) を上に重ねていたが、 ::before も legacy frame
+   の一部だったため削除。 z-index だけ残す必要は無いが、 既存の sheet-on レイヤーと
+   competing しないよう position を維持。 */
 .hdr-left .dots { position: relative; }
-.hdr-left .dots::before {
-  content: "";
-  position: absolute;
-  left: -16px;
-  right: -16px;
-  top: -22px;
-  bottom: -22px;
-  background-image: url('../../../assets/_legacy/preview-placeholders/progress-mark.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 0;
-  pointer-events: none;
-}
-/* dot 自体は ::before の上に重ねる */
 .hdr-left .dot { position: relative; z-index: 1; }
-.hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-news.png') !important; }
-.hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') !important; }
-.q-text-card { background-image: url('../../../assets/_legacy/preview-placeholders/q-text-card.png') !important; }
-.q-text-card .audio { background-image: url('../../../assets/_legacy/preview-placeholders/audio.png') !important; }
-.board { background-image: url('../../../assets/_legacy/preview-placeholders/board.png') !important; }
-.answer-tray { background-image: url('../../../assets/_legacy/preview-placeholders/answer-tray.png') !important; }
-.chip { background-image: url('../../../assets/_legacy/preview-placeholders/chip.png') !important; }
-.chip .circle { background-image: url('../../../assets/_legacy/preview-placeholders/circle.png') !important; }
-.hint { background-image: url('../../../assets/_legacy/preview-placeholders/hint.png') !important; }
-.character { background-image: url('../../../assets/_legacy/preview-placeholders/character.png') !important; }
-.slot { background-image: url('../../../assets/_legacy/preview-placeholders/item-slot.png') !important; }
-
-/* グリッド比較モード: 同じ要素を旧 grid placeholder に差し替え。 body.grid-mode で具体性を高めて勝つ */
-body.grid-mode .hdr-pill { background-image: url('../../../assets/_legacy/preview-placeholders-grid/hdr-pill.png') !important; }
-body.grid-mode .hdr-left .owl-icon { background-image: url('../../../assets/_legacy/preview-placeholders-grid/owl-icon.png') !important; }
-body.grid-mode .hdr-left .title-card { background-image: url('../../../assets/_legacy/preview-placeholders-grid/title-card.png') !important; }
-body.grid-mode .hdr-left .progress-num { background-image: url('../../../assets/_legacy/preview-placeholders-grid/progress-num.png') !important; }
-body.grid-mode .hdr-left .dot { background-image: url('../../../assets/_legacy/preview-placeholders-grid/dot.png') !important; }
-body.grid-mode .hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/_legacy/preview-placeholders-grid/ctrl-btn-news.png') !important; }
-body.grid-mode .hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/_legacy/preview-placeholders-grid/ctrl-btn-settings.png') !important; }
-body.grid-mode .q-text-card { background-image: url('../../../assets/_legacy/preview-placeholders-grid/q-text-card.png') !important; }
-body.grid-mode .q-text-card .audio { background-image: url('../../../assets/_legacy/preview-placeholders-grid/audio.png') !important; }
-body.grid-mode .board { background-image: url('../../../assets/_legacy/preview-placeholders-grid/board.png') !important; }
-body.grid-mode .answer-tray { background-image: url('../../../assets/_legacy/preview-placeholders-grid/answer-tray.png') !important; }
-body.grid-mode .chip { background-image: url('../../../assets/_legacy/preview-placeholders-grid/chip.png') !important; }
-body.grid-mode .chip .circle { background-image: url('../../../assets/_legacy/preview-placeholders-grid/circle.png') !important; }
-body.grid-mode .hint { background-image: url('../../../assets/_legacy/preview-placeholders-grid/hint.png') !important; }
-body.grid-mode .character { background-image: url('../../../assets/_legacy/preview-placeholders-grid/character.png') !important; }
-body.grid-mode .slot { background-image: url('../../../assets/_legacy/preview-placeholders-grid/item-slot.png') !important; }
 
 .hdr-left .title-card small,
 .hdr-left .title-card span,
@@ -904,28 +857,26 @@ body.sheet-on .stage::after {
 body.sheet-off .stage::after {
   display: none !important;
 }
-/* シートが下にあるので、 *枠系* placeholder の背景画像だけ消す (二重写しを避ける)。
-   フクロウ博士・タイトル札・1/5 札・ドット・ボタン・音声丸・色丸・吹き出しなどの
-   *装飾系* はシートに含まれないので、 既存の placeholder PNG を残して上に重ねる */
+/* Wave 46 (Bravo-3): legacy frame backgrounds は削除済のため background-image 上書きは
+   不要になったが、 box の color / border / shadow を sheet 画像と被らないように
+   透明化する処理は残す (将来の defensive cleanup として安全側)。 */
 body.sheet-on .hdr-pill,
 body.sheet-on .q-text-card,
 body.sheet-on .board,
 body.sheet-on .answer-tray,
 body.sheet-on .chip,
 body.sheet-on .slot {
-  background-image: none !important;
   background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
-/* progress-num はシート画像に枠が無い前提で、 別 PNG (progress-num.png) を
-   オーバーレイとして残す。 中の "1 / 5" テキストはこの枠の上に確実に表示する */
+/* progress-num の "1 / 5" テキストは sheet 画像の上に確実に表示する。
+   Wave 46 (Bravo-3): 旧 progress-num.png オーバーレイは削除済 (シート画像に統合)。 */
 body.sheet-on .hdr-left .progress-num {
   background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
-  /* background-image は親ルール (line 707 付近) の !important が効いたまま残る */
-  /* テキストを確実に枠の中央に表示 (枠 PNG の凹み部分にハマる) */
+  /* テキストを確実に枠の中央に表示 (シート画像の凹み部分にハマる) */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -987,10 +938,8 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
 body.wireframe-only .stage {
   background: #ffffff !important;
 }
-/* resize-mode かどうかに依らず、 quizland の主要パーツの background-image を全部消す。
-   各パーツは個別に `.X { background-image: url(...) !important; }` で指定されてて
-   それぞれ specificity (0,1,0) + !important で効いてるので、 こちらは
-   `body.wireframe-only .X` (0,2,1) + !important で確実に上書きする。 */
+/* Wave 46 (Bravo-3) 後: legacy frame backgrounds は削除済だが、
+   ワイヤー表示時は念のため background / 装飾を全消去して bbox 線だけ残す。 */
 body.wireframe-only .hdr-pill,
 body.wireframe-only .hdr-left,
 body.wireframe-only .hdr-left .owl-icon,
