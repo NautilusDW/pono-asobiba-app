@@ -99,25 +99,68 @@ html, body {
   transform-origin: 0 0;  /* JS が translate + scale を当てる */
 }
 
-/* ===== シート画像オーバーレイ (preview/full のシート手描き 1 枚絵) ===== */
+/* ===== Phase 2: ui_*_frame.png 本番素材を各UI要素に貼付 =====
+   sheet-v1.png (一枚絵) は opacity 0 で無効化 (DOM/ルールはロールバック容易性のため残す)
+   .hdr / .q-text-card / .answer-tray それぞれに ui_*_frame.png を background:100% 100% で貼り、
+   grid セル幅変動 (4:3 / 5:4 メディアクエリ) に追従させる。 */
 body.sheet-on .stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../assets/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
+  background-image: none;
   pointer-events: none;
   z-index: 5;
+  opacity: 0;
 }
+/* .hdr-pill / .board / .chip / .slot はベースCSSの枠を消す (ui_*_frame に枠が焼き込まれているため二重防止) */
 body.sheet-on .hdr-pill,
-body.sheet-on .q-text-card,
 body.sheet-on .board,
-body.sheet-on .answer-tray,
 body.sheet-on .chip,
 body.sheet-on .slot {
   background-image: none !important;
   background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
+}
+/* .hdr に ui_header_frame.png を貼付 (タイトル枠 + 進捗ピル + ドット5個 + ctrl-btn 2個 が焼き込み済) */
+body.sheet-on .hdr {
+  background-image: url('../assets/images/quizland/ui_header_frame.png');
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+/* .q-text-card に ui_question_frame.png を貼付 (蔦+どんぐり+花のリッチ papyrus) */
+body.sheet-on .q-text-card {
+  background-image: url('../assets/images/quizland/ui_question_frame.png');
+  background-color: transparent !important;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* .answer-tray に ui_answers_frame.png を貼付 (chip 2x2 グリッドが焼き込み済) */
+body.sheet-on .answer-tray {
+  background-image: url('../assets/images/quizland/ui_answers_frame.png');
+  background-color: transparent !important;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* ヘッダー子要素のベース背景PNG (title-card.png, progress-num.png, progress-mark.png,
+   dot.png, ctrl-btn-news.png, ctrl-btn-settings.png) を非表示
+   (ui_header_frame.png に焼き込み済のため二重表示を避ける) */
+body.sheet-on .hdr-left .title-card,
+body.sheet-on .hdr-left .progress-num,
+body.sheet-on .hdr-left .dots,
+body.sheet-on .hdr-left .dot,
+body.sheet-on .hdr-left .dot.done,
+body.sheet-on .hdr-left .dot.current,
+body.sheet-on .hdr-right .ctrl-btn:nth-child(1),
+body.sheet-on .hdr-right .ctrl-btn:nth-child(2) {
+  background-image: none !important;
 }
 body.sheet-on .hdr-left .progress-num {
   background-color: transparent !important;
@@ -139,6 +182,19 @@ body.sheet-on .slot {
 }
 body.sheet-on .safe-area > .hdr,
 body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
+
+/* sheet-on .char-hint: 暫定吹き出し素材 balloon_temp.png を貼付 (Phase 3 で正式素材に差替予定)
+   base CSS の hint-60.png を上書き。base には !important が無いので specificity (body.sheet-on) で勝つが
+   将来の base 変更耐性のため !important を付与。 background-size: 100% 100% は既存 hint-60.png と同じ振る舞い。 */
+body.sheet-on .char-hint {
+  background-image: url('../assets/images/quizland/balloons/balloon_temp.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
 
 /* ===== Safe area (16:9 inner, preview/full と同じ) ===== */
 .safe-area {
@@ -223,12 +279,12 @@ body.sheet-on .hdr-left .title-card {
   border-color: transparent !important;
   box-shadow: none !important;
 }
-/* PNG にテキストが描画されているので CSS テキストは透明化 (二重防止) */
+/* Phase 2.1: ui_header_frame.png のタイトル枠は空 papyrus でテキストは焼き込まれていないため、
+   CSS テキスト「フクロウはかせのなぞなぞ」を可視化する (base CSS の #fff7d0 と整合) */
 body.sheet-on .hdr-left .title-card,
 body.sheet-on .hdr-left .title-card small,
 body.sheet-on .hdr-left .title-card span {
-  color: transparent !important;
-  text-shadow: none !important;
+  color: #fff7d0;
 }
 .hdr-left .progress-num {
   background: linear-gradient(180deg, #fff8e0, #f0dfa6);
@@ -295,11 +351,6 @@ body.sheet-on .hdr-left .title-card span {
   border: none;
   transform: scale(1.18);
 }
-/* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
-body.sheet-on .hdr-left .dots {
-  background-image: url('../assets/preview-placeholders/progress-mark.png') !important;
-}
-
 .hdr-right {
   display: inline-flex;
   align-items: center;
