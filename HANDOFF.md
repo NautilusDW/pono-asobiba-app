@@ -14,6 +14,9 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Section C stage generation completed. Saved Trivia Lv2-Lv3 stages `stage_trivia_four_birds_silhouette`, `stage_trivia_running_cheetah`, `stage_trivia_sleeping_bear_cave`, `stage_trivia_earthworm_after_rain`, `stage_trivia_koala_eucalyptus`, `stage_trivia_ocean_silhouettes_4`, `stage_trivia_dolphin`, `stage_trivia_huge_creatures_compare`, `stage_trivia_spider_eyes`, `stage_trivia_flamingo`, and `stage_trivia_male_lion`, then saved all Body stages `stage_body_skin_wrap`, `stage_body_heart_pump`, `stage_body_chewing_teeth`, `stage_body_lungs_breath`, and `stage_body_teeth_bone_compare`. Redraws were needed for `stage_trivia_spider_eyes` to remove an overly anthropomorphic smile. All section C `stage_*` assets are now present under `assets/images/quizland/illust/stage/`.
+
+
 - 2026-05-04 - sw.js CACHE_VERSION bump needed (by Codex): Section C stage generation resumed. Saved all remaining `stage_opposite_*` assets under `assets/images/quizland/illust/stage/` (`standing`, `open_door`, `night_sky`, `high_low`, `thick_thin`, `hard_soft`, `strong_weak`, `cry_smile`, `many_few`, `light_heavy`, `bright_dark`, `new_old`, `praise`). Then saved Trivia Lv1 stages `stage_trivia_ripe_banana`, `stage_trivia_meowing_cat`, `stage_trivia_long_nose_elephant`, `stage_trivia_snowy_landscape`, `stage_trivia_hatching_egg`, `stage_trivia_red_apple`, and `stage_trivia_rabbit`. `stage_trivia_rabbit` needed one redraw because the first result was too chibi. Remaining unsaved section C assets are Trivia Lv2-Lv3 (11 files) and Body (5 files).
 
 
