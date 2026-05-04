@@ -445,6 +445,44 @@ body.layout-editor-on .le-panel-drag-handle {
 body.layout-editor-on .le-panel-title-text {
   flex: 1;
 }
+/* === Whiskey-2: パネル右下リサイズハンドル === */
+body.layout-editor-on .le-panel-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 100;
+  touch-action: none;
+  background: linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 50%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.4) 60%,
+    transparent 60%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.4) 70%,
+    rgba(255, 255, 255, 0.4) 80%,
+    transparent 80%
+  );
+}
+body.layout-editor-on .le-panel-resize:hover {
+  background: linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 50%,
+    rgba(255, 200, 100, 0.85) 50%,
+    rgba(255, 200, 100, 0.85) 60%,
+    transparent 60%,
+    transparent 70%,
+    rgba(255, 200, 100, 0.85) 70%,
+    rgba(255, 200, 100, 0.85) 80%,
+    transparent 80%
+  );
+}
+/* le-list-panel は既に display: flex; overflow: hidden で .le-list-body が flex:1 + overflow-y:auto なので追加不要 */
 body.layout-editor-on .le-list-body {
   flex: 1;
   overflow-y: auto;

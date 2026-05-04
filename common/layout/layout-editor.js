@@ -1674,6 +1674,9 @@
     // Uniform-2: パネル位置をドラッグ可能にし、保存位置を復元
     makePanelDraggable(panel, 'numeric');
     restorePanelPosition('numeric', panel);
+    // Whiskey-2: パネルサイズも変更可能 + 保存サイズ復元
+    makePanelResizable(panel, 'numeric');
+    restorePanelSize(panel, 'numeric');
   }
 
   // ====================================================================
@@ -2235,6 +2238,89 @@
     });
   }
 
+  // ====================================================================
+  //  Whiskey-2: パネルリサイズ機能
+  //    - 右下角のハンドル (.le-panel-resize) をドラッグで W/H 更新
+  //    - 制約: W [200, min(600, vw*0.8)], H [200, vh*0.9]
+  //    - localStorage キー: le-panel-size:<pathname>:<panelId>
+  //    - 重複登録防止のため _leResizeWired フラグでガード
+  // ====================================================================
+  function panelSizeKey(panelId) {
+    var path = '';
+    try { path = location.pathname || ''; } catch (e) { path = ''; }
+    return 'le-panel-size:' + path + ':' + panelId;
+  }
+
+  function makePanelResizable(panel, panelId) {
+    if (!panel || panel._leResizeWired) return;
+    panel._leResizeWired = true;
+    var handle = document.createElement('div');
+    handle.className = 'le-panel-resize';
+    handle.title = 'ドラッグでパネルサイズ変更 / ダブルクリックで初期サイズに戻す';
+    panel.appendChild(handle);
+
+    var start = null;
+
+    function maxW() { return Math.min(600, Math.floor(window.innerWidth * 0.8)); }
+    function maxH() { return Math.floor(window.innerHeight * 0.9); }
+
+    function onMove(e) {
+      if (!start) return;
+      var newW = clamp(start.w + (e.clientX - start.x), 200, maxW());
+      var newH = clamp(start.h + (e.clientY - start.y), 200, maxH());
+      panel.style.width = newW + 'px';
+      panel.style.height = newH + 'px';
+      // numeric-panel には max-height が無いので明示的に維持
+      panel.style.maxHeight = 'none';
+    }
+
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      var wasResizing = !!start;
+      start = null;
+      if (wasResizing) {
+        try {
+          var r = panel.getBoundingClientRect();
+          localStorage.setItem(panelSizeKey(panelId), JSON.stringify({ width: r.width, height: r.height }));
+        } catch (err) {}
+      }
+    }
+
+    handle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var r = panel.getBoundingClientRect();
+      start = { x: e.clientX, y: e.clientY, w: r.width, h: r.height };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+      document.addEventListener('pointercancel', onUp, { once: true });
+    });
+
+    // ダブルクリックで初期サイズに戻す
+    handle.addEventListener('dblclick', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      panel.style.width = '';
+      panel.style.height = '';
+      panel.style.maxHeight = '';
+      try { localStorage.removeItem(panelSizeKey(panelId)); } catch (err) {}
+    });
+  }
+
+  function restorePanelSize(panel, panelId) {
+    try {
+      var json = localStorage.getItem(panelSizeKey(panelId));
+      if (!json) return;
+      var data = JSON.parse(json);
+      if (typeof data.width !== 'number' || typeof data.height !== 'number') return;
+      var w = clamp(data.width, 200, Math.min(600, Math.floor(window.innerWidth * 0.8)));
+      var h = clamp(data.height, 200, Math.floor(window.innerHeight * 0.9));
+      panel.style.width = w + 'px';
+      panel.style.height = h + 'px';
+      panel.style.maxHeight = 'none';
+    } catch (e) {}
+  }
+
   function applyNumericInput(prop, valueStr) {
     var value = parseFloat(valueStr);
     if (Number.isNaN(value)) return;
@@ -2581,6 +2667,9 @@
     // Uniform-2: パネル位置をドラッグ可能にし、保存位置を復元
     makePanelDraggable(panel, 'list');
     restorePanelPosition('list', panel);
+    // Whiskey-2: パネルサイズも変更可能 + 保存サイズ復元
+    makePanelResizable(panel, 'list');
+    restorePanelSize(panel, 'list');
     refreshElementList();
   }
 
@@ -2756,7 +2845,12 @@
       // Mike-2 修正B: textContent で安全に流し込む (XSS 防御)
       var labelSpan = row.querySelector('.le-row-label');
       var keySpan = row.querySelector('.le-row-key');
-      if (labelSpan) labelSpan.textContent = label;
+      if (labelSpan) {
+        labelSpan.textContent = label;
+        // Whiskey-2: ellipsis で切れた時のために、ラベルの title にフルテキストを入れる
+        // (ダブルクリック説明と併記)
+        labelSpan.title = label + ' (ダブルクリックで名前変更)';
+      }
       if (keySpan) keySpan.textContent = key;
       // Mike-2 修正B: dblclick → インライン rename
       if (labelSpan) {
