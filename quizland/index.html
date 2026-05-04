@@ -1074,14 +1074,19 @@ body.game-started .quiz-back-to-menu {
      1400 の 50% で広すぎるので 600px に詰めて q-col に余裕を残す */
   .hdr { grid-template-columns: 1fr 600px; }
   .body { grid-template-columns: 1fr 600px; }
+  /* 16:10 帯でも .character img が center center だと顔が下に寄るので
+     14/9・4/3・5/4 と統一して center top で頭を視線レベルに固定 */
+  .character img { object-position: center top; }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 14/9) {
   /* aspect ≤ 14/9 (1.555) の帯。1366×900 (≈1.518) や 14/9 直下のディスプレイなど。
      iPad Pro 11" (1668×1194 ≈ 1.397) も 4/3 (1.333) より広いのでこのブランチに入る。
      (1599/900 ブランチを抜けて来るので実質 1.333 < ratio ≦ 1.555 の帯)
-     visible slice の最小値は 14/9 ジャストで ≈ 1098 canvas-px、iPad Pro 11" では
-     1668×900/1194 ≈ 1257 canvas-px とむしろ余裕がある。
-     safe-w は最も狭いケース (1098) に合わせて 1080 で固定 (-18 buffer)。
+     typical viewport (例: 1366×900 / iPad Pro 11") では visible slice ≈ 1098-1257
+     canvas-px で safe-w 1080 は -18 〜 -177 buffer。ただし max-aspect-ratio:14/9
+     カスケードの実効最狭ケース (ratio = 14/9 ジャスト、例: 1400×900) では
+     visible slice = 1400×900/900 ≈ 1200 canvas-px なので safe-w 1080 は -120 buffer
+     確保される (cover-fit 後の canvas slice 計算: vw * 900/vh)。
      iPad Pro 11" / Air 11" など 1.39 ≤ ratio < 1.45 帯では結果として 177px の
      余白が出るが、レイアウト上は中央寄せで違和感なく追加 min-aspect-ratio 分岐は
      導入しない (デザイン後退リスク回避)。 */
@@ -1123,14 +1128,18 @@ body.game-started .quiz-back-to-menu {
   .q-text-card .audio { width: 70px !important; height: 70px !important; transform: translateY(-50%) !important; }
   .board { width: auto !important; transform: translate(0, 0) !important; }
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .chip { width: 220px !important; transform: translate(0, 0) !important; }
+  /* セル幅 = (480 track - 2*5 border - 2*12 pad - 12 gap) / 2 = 217px → chip 216 で +1 buffer */
+  .chip { width: 216px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
   .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
   .char-hint { width: auto !important; height: auto !important; max-width: 280px !important; transform: translate(0, 0) !important; }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
   /* iPad 1024×768、iPad Pro 12.9 2048×1536 など真正 4:3
-     visible slice ≈ 1097 canvas-px → safe-w 1020 で -77 buffer */
+     typical viewport (例: 1024×768) では visible slice ≈ 1097 canvas-px
+     で safe-w 1020 は -77 buffer。 max-aspect-ratio:4/3 カスケードの実効
+     最狭ケース (ratio = 4/3 ジャスト、例: 1200×900) では visible slice
+     = 1200×900/900 = 1125 canvas-px なので safe-w 1020 は -105 buffer 確保。 */
   :root {
     --safe-w: 1020px;
   }
@@ -1183,13 +1192,18 @@ body.game-started .quiz-back-to-menu {
   .q-text-card .audio { width: 64px !important; height: 64px !important; transform: translateY(-50%) !important; right: 14px !important; }
   .board { width: auto !important; height: 440px !important; transform: translate(0, 0) !important; }
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .chip { width: 200px !important; transform: translate(0, 0) !important; }
+  /* セル幅 = (440 track - 2*5 border - 2*12 pad - 10 gap) / 2 = 198px → chip 196 で +2 buffer */
+  .chip { width: 196px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
   .character { width: 140px !important; height: 158px !important; transform: translate(0, 0) !important; }
   .char-hint { width: auto !important; height: auto !important; max-width: 240px !important; transform: translate(0, 0) !important; }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
-  /* 1280×1024 等、超 4:3。visible slice ≈ 1029 → safe-w 980 で -49 buffer */
+  /* 1280×1024 等、超 4:3。
+     typical viewport (例: 1280×1024) では visible slice ≈ 1125 canvas-px (1280×900/1024)
+     で safe-w 980 は -145 buffer。 max-aspect-ratio:5/4 カスケードの実効最狭ケース
+     (ratio = 5/4 ジャスト、例: 1125×900) でも visible slice = 1125 canvas-px なので
+     safe-w 980 は同じく -145 buffer 確保。 */
   :root {
     --safe-w: 980px;
   }
