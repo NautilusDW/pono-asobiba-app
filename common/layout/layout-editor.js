@@ -167,7 +167,11 @@
 
   function showToast(msg, kind) {
     var t = document.createElement('div');
-    t.className = 'le-toast' + (kind === 'error' ? ' le-toast-error' : '');
+    var cls = 'le-toast';
+    if (kind === 'error') cls += ' le-toast-error';
+    else if (kind === 'warn') cls += ' le-toast-warn';
+    else if (kind === 'success') cls += ' le-toast-success';
+    t.className = cls;
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(function () { t.remove(); }, 1700);
@@ -4634,15 +4638,37 @@
   function enableImageDragDrop(canvas) {
     if (!canvas) return;
 
-    // Mike-2 修正A: ドロップ受付を「stage の外側 (黒背景)」に限定する。
-    //   - stage 内 (canvas 上) への素のドロップは無視 + 警告トースト
-    //   - stage 外 (.stage-wrap / body の余白) へのドロップ → 新規画像を canvas 中央に挿入
-    //   - Shift+ドロップ は stage 内/外どちらでも有効 (Lima-2 の差し替え経路を維持)
+    // Oscar-2: ドロップロジックを直感的に再構築。
+    //   - stage 外 (黒背景)        → 新規画像を canvas 中央に挿入
+    //   - stage 内 / 選択要素 bbox 内 → 選択要素を差し替え
+    //   - stage 内 / 選択要素 bbox 外 → 警告トースト「選択した画像の上にドロップ」
+    //   - stage 内 / 選択なし        → 警告トースト「黒背景に新規 or 要素選択して差し替え」
+    //   preferredTarget (要素一覧から選択した要素) も同じく bbox 判定の対象に含める
+    //   (z-index 関係なく list 選択を優先)。Shift+drop の特別ロジックは廃止。
     function isInStage(clientX, clientY) {
       if (!canvas) return false;
       var r = canvas.getBoundingClientRect();
       return clientX >= r.left && clientX <= r.right
           && clientY >= r.top && clientY <= r.bottom;
+    }
+    // 差し替えターゲット候補の取得: preferredTarget を最優先、その後 単一選択要素。
+    function getReplaceCandidate() {
+      if (state.preferredTarget) return state.preferredTarget;
+      if (state.selectedElements && state.selectedElements.size === 1) {
+        return state.selectedElements.values().next().value;
+      }
+      return null;
+    }
+    // 候補要素の bbox 内に座標があれば候補を返す。なければ null。
+    function isInsideSelection(clientX, clientY) {
+      var cand = getReplaceCandidate();
+      if (!cand || typeof cand.getBoundingClientRect !== 'function') return null;
+      var r = cand.getBoundingClientRect();
+      if (clientX >= r.left && clientX <= r.right
+          && clientY >= r.top && clientY <= r.bottom) {
+        return cand;
+      }
+      return null;
     }
     function dataTransferHasFiles(dt) {
       if (!dt) return false;
@@ -4652,41 +4678,52 @@
       if (types.contains) return types.contains('Files');
       return false;
     }
+    function clearDropzoneClasses() {
+      document.body.classList.remove('le-dropzone-active');
+      document.body.classList.remove('le-dropzone-replace');
+      canvas.classList.remove('le-dropzone-active');
+      canvas.classList.remove('le-dropzone-replace');
+    }
 
     var dragover = function (e) {
       if (!dataTransferHasFiles(e.dataTransfer)) return;
       e.preventDefault();
       try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
-      // stage 内 + Shift なし → ドロップゾーン非表示 (drop は弾く)
-      // stage 外 or Shift あり → ドロップゾーン点灯
       var inStage = isInStage(e.clientX, e.clientY);
-      if (inStage && !e.shiftKey) {
-        document.body.classList.remove('le-dropzone-active');
-        canvas.classList.remove('le-dropzone-active');
-      } else {
+      if (!inStage) {
+        // 黒背景 → 新規挿入ゾーン
         document.body.classList.add('le-dropzone-active');
-        // canvas 側のリングは Shift+drop 時 (差し替え) のみ点灯させる
-        if (inStage && e.shiftKey) canvas.classList.add('le-dropzone-active');
-        else canvas.classList.remove('le-dropzone-active');
+        document.body.classList.remove('le-dropzone-replace');
+        canvas.classList.remove('le-dropzone-active');
+        canvas.classList.remove('le-dropzone-replace');
+      } else {
+        var target = isInsideSelection(e.clientX, e.clientY);
+        if (target) {
+          // 選択要素の bbox 内 → 差し替えゾーン
+          document.body.classList.remove('le-dropzone-active');
+          document.body.classList.add('le-dropzone-replace');
+          canvas.classList.add('le-dropzone-replace');
+          canvas.classList.remove('le-dropzone-active');
+        } else {
+          // stage 内かつ bbox 外 → 何もしない（drop 時に警告）
+          clearDropzoneClasses();
+        }
       }
     };
     var dragleave = function (e) {
       // ウィンドウ外に抜けた時に消す。要素間の遷移では消さない。
       var rt = e.relatedTarget;
       if (rt) return;
-      document.body.classList.remove('le-dropzone-active');
-      canvas.classList.remove('le-dropzone-active');
+      clearDropzoneClasses();
     };
     var dragend = function () {
-      document.body.classList.remove('le-dropzone-active');
-      canvas.classList.remove('le-dropzone-active');
+      clearDropzoneClasses();
     };
     var drop = function (e) {
       if (!dataTransferHasFiles(e.dataTransfer)) return;
       e.preventDefault();
       e.stopPropagation();
-      document.body.classList.remove('le-dropzone-active');
-      canvas.classList.remove('le-dropzone-active');
+      clearDropzoneClasses();
 
       var rawFiles = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
       var images = rawFiles.filter(function (f) { return f && f.type && f.type.indexOf('image/') === 0; });
@@ -4715,27 +4752,47 @@
       }
       if (safe.length === 0) return;
 
-      // Mike-2 修正A: stage 内 + Shift なし → 新規挿入を弾く (誤動作防止)
       var inStage = isInStage(e.clientX, e.clientY);
-      var explicitReplace = !!(e.shiftKey);
-      if (inStage && !explicitReplace) {
-        showToast('画像を新規追加するには、ステージの外（黒い背景）にドロップしてください', 'error');
-        return;
-      }
-
-      // Mike-2 修正A: 新規挿入は canvas (stage) 中央に配置する。
-      //   Shift+ドロップ (差し替え) は元のクリック位置を維持。
       var cr = canvas.getBoundingClientRect();
       var centerX = cr.left + cr.width / 2;
       var centerY = cr.top + cr.height / 2;
-      var dropX = explicitReplace ? e.clientX : centerX;
-      var dropY = explicitReplace ? e.clientY : centerY;
-      // Lima-2 修正A: ドロップは「常に新規挿入」がデフォルト。
-      //   差し替えは Shift+ドロップ という明示操作のみで発火させる。
-      var firstSelected = (state.selectedElements && state.selectedElements.size === 1)
-        ? state.selectedElements.values().next().value
-        : null;
 
+      // ---- ケース1: 黒背景 (stage 外) → 新規挿入 (canvas 中央, 複数は少しずらす) ----
+      if (!inStage) {
+        safe.reduce(function (chain, file, i) {
+          return chain.then(function () {
+            return readAndResizeImage(file).then(function (result) {
+              if (result.resized) {
+                showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
+              }
+              var ox = centerX + i * 18;
+              var oy = centerY + i * 18;
+              insertNewImageLayer(canvas, ox, oy, result.dataUrl, file.name);
+              if (i === safe.length - 1 && !result.resized) {
+                showToast('画像を ' + safe.length + '枚 新規挿入しました（Ctrl+Z で戻せます）', 'success');
+              }
+            }).catch(function (err) {
+              console.warn('[LayoutEditor] readAndResizeImage failed', err);
+              showToast('画像の読み込みに失敗', 'error');
+            });
+          });
+        }, Promise.resolve());
+        return;
+      }
+
+      // ---- ケース2: stage 内 ----
+      var target = isInsideSelection(e.clientX, e.clientY);
+      if (!target) {
+        var cand = getReplaceCandidate();
+        if (cand) {
+          showToast('差し替える場合は、選択した画像の上にドロップしてください', 'warn');
+        } else {
+          showToast('新規追加は黒い背景にドロップ、差し替えは要素を選択してから', 'warn');
+        }
+        return;
+      }
+
+      // ---- ケース3: 選択要素の bbox 内 → 差し替え (1 ファイル目のみ) ----
       safe.reduce(function (chain, file, i) {
         return chain.then(function () {
           return readAndResizeImage(file).then(function (result) {
@@ -4743,33 +4800,26 @@
             if (result.resized) {
               showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
             }
-            // Lima-2 修正A: Shift+ドロップ = 明示的な src 差し替え (1 ファイル目のみ)。
-            //   選択要素が img/bg-image/単一内側 img でない場合は差し替え不能 →
-            //   新規挿入にフォールバックしてトーストで通知。
-            if (i === 0 && explicitReplace && firstSelected) {
-              var swapResult = replaceImageSrc(firstSelected, dataUrl);
+            if (i === 0) {
+              var swapResult = replaceImageSrc(target, dataUrl);
               if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
                 if (!result.resized) {
                   if (swapResult === 'bg') {
-                    showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
+                    showToast('背景画像を差し替えました（Ctrl+Z で戻せます）', 'success');
                   } else {
-                    showToast('画像を差し替えました (Ctrl+Z で戻せます)');
+                    showToast('画像を差し替えました（Ctrl+Z で戻せます）', 'success');
                   }
                 }
                 scheduleDirtyUpdate();
                 return;
               }
-              // 差し替え不能 → 新規挿入にフォールバック (canvas 中央に配置)
-              showToast('差し替え対象が見つからないため新規挿入します');
-              dropX = centerX;
-              dropY = centerY;
+              // 差し替え不能 → 警告のみ (新規にはフォールバックせず、ユーザー意図を尊重)
+              showToast('差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）', 'warn');
+              return;
             }
-            // デフォルト: 新規レイヤー挿入。複数枚は少しずらしてスタックしないように。
-            var ox = dropX + i * 18;
-            var oy = dropY + i * 18;
-            insertNewImageLayer(canvas, ox, oy, dataUrl, file.name);
-            if (i === 0 && !result.resized && !explicitReplace) {
-              showToast('画像を新規挿入しました (Ctrl+Z で戻せます)');
+            // 2 枚目以降: 差し替えは 1 枚目のみなので、追加分は警告のみ
+            if (i === 1) {
+              showToast('差し替えは 1 枚目のみ。追加分はスキップしました', 'warn');
             }
           }).catch(function (err) {
             console.warn('[LayoutEditor] readAndResizeImage failed', err);
@@ -4779,7 +4829,7 @@
       }, Promise.resolve());
     };
 
-    // Mike-2 修正A: dragover/drop は document に張る。stage 内ガードは isInStage で判定。
+    // dragover/drop は document に張る。stage 内ガードは isInStage で判定。
     addManagedListener(document, 'dragover', dragover);
     addManagedListener(document, 'dragleave', dragleave);
     addManagedListener(document, 'dragend', dragend);
