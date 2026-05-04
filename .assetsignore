@@ -33,3 +33,7 @@ assets/_orig_image_backup/
 # 診断・一時ファイル（staging への混入防止）
 _tmp*
 _tmp_*
+*.diff
+le-*.diff
+_scratch*
+_debug*

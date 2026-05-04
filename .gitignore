@@ -34,3 +34,7 @@ assets/**/*.opt.tmp
 # 診断・一時ファイル（auto-commit でリポジトリに混入するのを防ぐ）
 _tmp*
 _tmp_*
+*.diff
+le-*.diff
+_scratch*
+_debug*
