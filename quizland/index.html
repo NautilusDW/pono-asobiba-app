@@ -212,18 +212,21 @@ body.sheet-on .char-hint {
 }
 
 /* hdr-left .owl-icon: title_logo.png にフクロウ部分が焼き込まれており、隣の .title-card に
-   title_logo.png を貼って owl 領域まで覆う構成にしたため、owl-icon は display:none で
-   レイアウトから外す (visibility: hidden だと 64px 分の空白が残ってしまう)。 */
+   title_logo.png を貼って owl 領域まで覆う構成 (旧: display:none でレイアウトから外していた)。
+   display:none だと saved-layout.json の w/h/tx/ty が当たらず flex 寸法が壊れるため、
+   要素は残し visibility/opacity/pointer-events で視覚のみ無効化する。 */
 body.sheet-on .hdr-left .owl-icon,
 body.sheet-on .hdr-left .owl-icon img {
-  display: none !important;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* hdr-left .title-card: フクロウ + 木の看板の一体絵 (title_logo.png)
-   元 owl-icon (display:none で消えた) の領域も含めて左の看板領域全体を覆うため、
-   min-width で 240px まで拡張 (owl 64px + gap 16px + title-card 元幅 ~160px 相当)。
-   title_logo.png は 1779x625 (約 2.85:1) なので幅 240px なら高さ ~84px 相当で headerh
-   (98px) に収まる。 */
+   位置・寸法は saved-layout.json (.hdr-left .title-card|0) を正とする。
+   旧来は min-width / height / margin-left で領域拡張していたが、
+   それらは saved-layout の inline style と二重指定になり editor で決めた配置を歪めるため削除。
+   貼付ルール (background-image/size/position/repeat/color) と二重表示防止 (color/text-shadow) のみ残す。 */
 body.sheet-on .hdr-left .title-card {
   background-image: url('../assets/images/quizland/title_logo.png') !important;
   background-size: 100% 100% !important;
@@ -234,9 +237,6 @@ body.sheet-on .hdr-left .title-card {
   box-shadow: none !important;
   color: transparent !important;
   text-shadow: none !important;
-  min-width: 240px;
-  height: calc(var(--header-h) - 18px);
-  margin-left: 8px;
 }
 body.sheet-on .hdr-left .title-card small,
 body.sheet-on .hdr-left .title-card span {

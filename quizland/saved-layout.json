@@ -1,5 +1,4 @@
 {
-  "__version": 2,
   ".hdr-left|0": {
     "w": "979px",
     "h": "142px",
@@ -15,7 +14,7 @@
   ".hdr-left .title-card|0": {
     "w": "296px",
     "h": "128px",
-    "tx": -38.847558554982136,
+    "tx": -3,
     "ty": 3
   },
   ".hdr-left .progress-num|0": {
@@ -46,12 +45,12 @@
     "w": "971px",
     "h": "151px",
     "tx": 23,
-    "ty": -39.34259626836046
+    "ty": -16
   },
   "#q-text|0": {
     "w": "",
     "h": "",
-    "tx": 15.005954743946011,
+    "tx": 0,
     "ty": 0
   },
   ".q-text-card .audio|0": {
@@ -64,13 +63,13 @@
     "w": "999px",
     "h": "503px",
     "tx": 7,
-    "ty": -47.5168717745137
+    "ty": -5
   },
   ".answer-tray|0": {
     "w": "540px",
     "h": "495px",
-    "tx": 18.166335847558557,
-    "ty": 169.16435093290988
+    "tx": 19,
+    "ty": 175
   },
   ".chip|0": {
     "w": "310px",
@@ -98,7 +97,7 @@
   },
   ".chip .circle|0": {
     "w": "",
-    "h": "",
+    "h": "110px",
     "tx": 0,
     "ty": 0
   },
@@ -120,17 +119,23 @@
     "tx": 0,
     "ty": 0
   },
+  ".hint|0": {
+    "w": "442px",
+    "h": "83px",
+    "tx": 0,
+    "ty": 1
+  },
   ".character|0": {
-    "w": "260px",
-    "h": "258.7px",
+    "w": "200px",
+    "h": "199px",
     "tx": -138,
-    "ty": -566.5019849146487
+    "ty": -561.5
   },
   ".char-hint|0": {
     "w": "326px",
     "h": "133px",
-    "tx": -80.81579992060341,
-    "ty": -588.8416038110362
+    "tx": -125,
+    "ty": -568
   },
   "__guides": [
     {
@@ -147,8 +152,22 @@
     }
   ],
   "__headerH": "142px",
-  "__texts": {},
-  "__hidden": [],
-  "__userboxes": [],
-  "__locked": []
+  "__texts": {
+    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.title-card:nth-of-type(2)>small": "フクロウはかせの",
+    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.title-card:nth-of-type(2)>span": "なぞなぞ",
+    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.progress-num:nth-of-type(3)": "1 / 5",
+    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-right:nth-of-type(2)>div.ctrl-btn:nth-of-type(1)>span:nth-of-type(2)": "おしらせ",
+    "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-right:nth-of-type(2)>div.ctrl-btn:nth-of-type(2)>span:nth-of-type(2)": "せってい",
+    "span#q-text": "まんなかは なにいろ？",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(1)>span": "あか",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(2)>span": "あお",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(3)>span": "きいろ",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(4)>span": "みどり",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.hint.user-hidden:nth-of-type(1)": "💡 よく見て かんがえてみよう！",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.char-hint:nth-of-type(2)": "ヒント！"
+  },
+  "__hidden": [
+    ".hint|0"
+  ],
+  "__userboxes": []
 }
