@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-04T13:46:44Z - .chip 個別フレーム削除 (chip.png 背景を sheet-on 下で透明化、Fukuro_frame_002 のグリッドのみ見せる)
+- **タスク**: .chip 個別フレーム削除 (chip.png 背景を sheet-on 下で透明化、Fukuro_frame_002 のグリッドのみ見せる)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 103
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 28, "Read": 18, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 40, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T13:43:59Z - quizland header fix: restore Fukuro_frame_004 on .hdr-pill, move title_logo.png to .title-card only (hide owl-icon)
 - **タスク**: quizland header fix: restore Fukuro_frame_004 on .hdr-pill, move title_logo.png to .title-card only (hide owl-icon)
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 8, "Read": 6, "Glob": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1, "Bash": 3}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-04T04:39:45Z - Team Whiskey-2: layout-editor の要素一覧/数値パネルにリサイズハンドル追加 (右下角ドラッグ、200<=W<=min(600,80vw)、200<=H<=90vh、localStorage永続化、ラベル title にフルテキスト付与)
-- **タスク**: Team Whiskey-2: layout-editor の要素一覧/数値パネルにリサイズハンドル追加 (右下角ドラッグ、200<=W<=min(600,80vw)、200<=H<=90vh、localStorage永続化、ラベル title にフルテキスト付与)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 154
-- **エラー数**: 19
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 98, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 20, "Bash": 23, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
