@@ -69,11 +69,12 @@
   --success: #10B981;
   --danger: #EF4444;
 
-  /* Team-1 (16:9 / 4:3 両対応): 本物 quizland-sheet-v1.png を薄く重ねる保険レイヤ。
-     0.4 = 枠と枠の間の蔦・葉・影など 1 枚絵にしか描けない世界観装飾を残す。
-     パーツ別 PNG だけでは「枠間装飾」を再現できないため本物素材を 0.4 で重ねる。
+  /* 本物 main_frame.png (Dr.owl'quiz/main の 1 枚絵) を薄く重ねるテクスチャ層。
+     0.3 = 枠と枠の間の蔦・葉・影など 1 枚絵にしか描けない世界観装飾を残す。
+     パーツ別 PNG (Fukuro_frame_001-004) は各 UI 要素の枠を担い、
+     ここでは 1 枚絵全体レイアウト由来のテクスチャ感のみ残す。
      0 にすると蔦/葉が完全消失し雰囲気が壊れる。0.5 以上だと枠絵が二重に主張するので NG。 */
-  --sheet-overlay-opacity: 0.4;
+  --sheet-overlay-opacity: 0.3;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -110,7 +111,7 @@ body.sheet-on .stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../assets/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/main_frame.png') center / 100% 100% no-repeat;
   pointer-events: none;
   z-index: 5;
   /* Team-1: シート 1 枚絵を CSS 変数で制御。デフォルト 0.4 = 蔦/葉など枠間装飾を残す。
@@ -118,52 +119,61 @@ body.sheet-on .stage::after {
   opacity: var(--sheet-overlay-opacity, 0);
 }
 /* ============================================================
-   Team-1 (16:9 / 4:3 両対応 / パーツ画像分割 案C):
+   本番素材切替 (Dr.owl'quiz/main フォルダ): パーツ画像分割 + テクスチャ層
 
    旧来は body.sheet-on で全要素の background/border/shadow を一括透明化し、
-   .stage::after の 1 枚絵 (quizland-sheet-v1.png 2688x1152) に枠を任せていた。
+   .stage::after の 1 枚絵 (quizland-sheet-v1.png) に枠を任せていた。
    しかし 1 枚絵は 21:9 キャンバス全面に 100% 100% で焼き込まれるため、
    4:3 で safe-w を縮めると枠絵だけが横方向に伸縮し、grid セル中身と乖離する。
 
    解決: 各 UI 要素に本物パーツ PNG を個別貼付 (background-size: 100% 100%)。
-   素材は assets/preview-placeholders/ 直下の本番手描き PNG (root) を使う。
-   `grid/` サブフォルダは寸法デバッグ用 placeholder (gingham + ファイル名ラベル) で、
-   preview/full の body.grid-mode 比較トグル専用なのでここでは参照しない。
+   素材は assets/images/quizland/Fukuro_frame_001-004.png (本番手描き) を使う。
    要素サイズに background が追従するので、メディアクエリで safe-w を変えても
    枠と中身がずれない。
+   ctrl-btn-news / ctrl-btn-settings / chip / circle / owl-icon / dot / stage-bg
+   は本番素材未提供のため preview-placeholders/ を据え置き (Phase 5 で対応)。
 
-   契約 (Team-1/2/3 間):
-     - background-size は 100% 100% で固定 (Team-2 が幅高を変えても歪まない)
+   マッピング:
+     .q-text-card -> Fukuro_frame_004.png (細長帯 + 葉)
+     .board       -> Fukuro_frame_001.png (大型 papyrus)
+     .answer-tray -> Fukuro_frame_002.png (2x2 木枠)
+     .hdr-pill / .title-card / .hdr-left .title-card -> Fukuro_frame_004.png
+     .progress-num -> progress-num.png (細長小ピル)
+     .dots         -> progress-mark.png (5 ドット帯)
+     .char-hint    -> balloons/balloon_temp.png (吹き出し暫定)
+
+   契約:
+     - background-size は 100% 100% で固定 (幅高を変えても歪まない)
      - body.sheet-off 経路 (元 CSS の border/bg/shadow) は破壊しない
      - .slot は item-slot.png 粒度が合わないので現行ドット枠を温存
-     - 枠と枠の間 (蔦/葉/影) はパーツ別 PNG では再現不能 → 本物 sheet-v1.png を
-       --sheet-overlay-opacity: 0.4 で薄く重ねて世界観を残す (上の :root 参照)
+     - 枠と枠の間 (蔦/葉/影) はパーツ別 PNG では再現不能 → 本物 main_frame.png を
+       --sheet-overlay-opacity: 0.3 で薄く重ねて世界観を残す (上の :root 参照)
    ============================================================ */
 
 /* hdr-pill: ヘッダー左の丸ピル枠 */
 body.sheet-on .hdr-pill {
-  background: url('../assets/preview-placeholders/hdr-pill.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_004.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
 
 /* q-text-card: 左カラムの問題文カード (4:3 で最も影響を受ける枠) */
 body.sheet-on .q-text-card {
-  background: url('../assets/preview-placeholders/q-text-card.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_004.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
 
 /* board: 右カラムの解答スロット盤 */
 body.sheet-on .board {
-  background: url('../assets/preview-placeholders/board.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_001.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
 
 /* answer-tray: チップが並ぶ下段トレイ */
 body.sheet-on .answer-tray {
-  background: url('../assets/preview-placeholders/answer-tray.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_002.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
@@ -184,7 +194,7 @@ body.sheet-on .chip .circle {
 
 /* char-hint: ヒント吹き出し (画面右下キャラの隣) */
 body.sheet-on .char-hint {
-  background: url('../assets/preview-placeholders/hint.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/balloons/balloon_temp.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
@@ -201,7 +211,7 @@ body.sheet-on .hdr-left .owl-icon {
    shorthand `background:` だと base 側の position/repeat/origin/clip まで暗黙リセットされ
    二重計算になる。個別プロパティで上書きする (P3-Medium 対応)。 */
 body.sheet-on .hdr-left .title-card {
-  background-image: url('../assets/preview-placeholders/title-card.png') !important;
+  background-image: url('../assets/images/quizland/Fukuro_frame_004.png') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -214,7 +224,7 @@ body.sheet-on .hdr-left .title-card {
    テキスト "1/5" は dynamic content なので、文字色は base のまま読めるよう保つ。
    base が progress-num.png を contain で貼っているため、shorthand を避け個別プロパティで上書き。 */
 body.sheet-on .hdr-left .progress-num {
-  background-image: url('../assets/preview-placeholders/progress-num.png') !important;
+  background-image: url('../assets/images/quizland/progress-num.png') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -344,7 +354,7 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
 .hdr-left .title-card small { font-size: 11px; display: block; }
 /* preview/full から移植: title-card.png を背景に被せ、 sheet-on では CSS テキストを透明化 */
 .hdr-left .title-card {
-  background-image: url('../assets/preview-placeholders/title-card.png');
+  background-image: url('../assets/images/quizland/Fukuro_frame_004.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -375,7 +385,7 @@ body.sheet-on .hdr-left .title-card span {
 /* preview/full から移植: progress-num.png を背景に被せ、 sheet-on では枠だけ消す
    テキスト "1/5" は dynamic content なので CSS テキストはそのまま表示する */
 .hdr-left .progress-num {
-  background-image: url('../assets/preview-placeholders/progress-num.png');
+  background-image: url('../assets/images/quizland/progress-num.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -388,7 +398,7 @@ body.sheet-on .hdr-left .title-card span {
   align-items: center;
   justify-content: space-between;
   /* preview/full から移植: progress-mark.png を装飾ピルとして背景に */
-  background-image: url('../assets/preview-placeholders/progress-mark.png');
+  background-image: url('../assets/images/quizland/progress-mark.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
@@ -428,7 +438,7 @@ body.sheet-on .hdr-left .title-card span {
 }
 /* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
 body.sheet-on .hdr-left .dots {
-  background-image: url('../assets/preview-placeholders/progress-mark.png') !important;
+  background-image: url('../assets/images/quizland/progress-mark.png') !important;
 }
 
 .hdr-right {
@@ -796,7 +806,7 @@ body.sheet-on .hdr-right .ctrl-btn {
   min-width: 235px;
   min-height: 63px;
   height: auto !important;
-  background-image: url('../assets/preview-placeholders/hint-60.png');
+  background-image: url('../assets/images/quizland/balloons/balloon_temp.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
