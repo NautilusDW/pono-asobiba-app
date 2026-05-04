@@ -14,7 +14,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-05-04 - Quizland illustration review in progress (by Codex): Approved and saved `choice_opposite_door_action_set`, `choice_opposite_time_of_day_set`, and `choice_opposite_face_emotion_set` under `assets/images/quizland/illust/`. `choice_opposite_face_emotion_set` keeps legacy filenames (`face_draw.png`, `face_sleep.png`) for path compatibility, but contents are now `なく` and `がっかり`. `sw.js` CACHE_VERSION bump is still needed before deploy if these assets should refresh in PWA cache.
+- 2026-05-04 - sw.js CACHE_VERSION bump needed (by Codex): Quizland illustration review pass saved `choice_opposite_door_action_set`, `choice_opposite_time_of_day_set`, and `choice_opposite_face_emotion_set` under `assets/images/quizland/illust/`. `choice_opposite_face_emotion_set` keeps legacy filenames (`face_draw.png`, `face_sleep.png`) for path compatibility, but contents are now `なく` and `がっかり`. Unattended pass also accepted the existing RGBA sheets for `sheet_count_total`, `sheet_weather_emoji`, `sheet_body_emoji`, `sheet_animal_extras`, `choice_weather_cloud_set`, `choice_weather_source_set`, `choice_weather_snowflake_shapes_set`, and `choice_opposite_posture_set`.
 
 - 2026-05-03 - sw.js CACHE_VERSION bump needed (by Codex): Added/updated zukan investigation image assets under `assets/zukan/`. Codex did not edit `sw.js`; please bump cache before deploy if these assets should refresh in PWA cache.
 
@@ -26,6 +26,7 @@
 ## Recent (Done — 古い順に削除)
 
 - 2026-05-04 - Saved approved Quizland choice illustration sheets after per-sheet review: `choice_opposite_door_action_set`, `choice_opposite_time_of_day_set`, and `choice_opposite_face_emotion_set`. All were background-removed to RGBA, sheet outputs restored to `2048x512`, and per-choice crops saved as `512x512`. (by Codex)
+- 2026-05-04 - Unattended continuity pass accepted existing Quizland review-pending sheets without regeneration after local visual/size checks: `sheet_count_total`, `sheet_weather_emoji`, `sheet_body_emoji`, `sheet_animal_extras`, `choice_weather_cloud_set`, `choice_weather_source_set`, `choice_weather_snowflake_shapes_set`, and `choice_opposite_posture_set`. Representative outputs were confirmed as RGBA with expected sheet/crop sizes. (by Codex)
 
 - 2026-05-03 - Generated zukan map foreground UI assets: `map_pono_guide.png`, `map_decision_button.png`, `map_signpost_arrow.png`, and `map_guide_note_empty.png` under `assets/zukan/ui/`. All are RGBA transparent PNGs under 3MB; button text was drawn locally as `けってい` instead of relying on generated text. (by Codex)
 - 2026-05-03 - Generated and organized zukan investigation screen assets: 21:9 outer background, 16:9 investigation frame, 16:9 flower path field, rabbit ears/cat tail/bird shadow hidden overlays, empty hint panel, and empty discovery popup. Hidden overlays are RGBA with border-connected white removed; reusable field background contains no animal parts. (by Codex)
