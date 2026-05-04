@@ -39,6 +39,26 @@ body.layout-editor-on .le-toolbar button:hover { background: #3a3a3a; }
 body.layout-editor-on .le-toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
 body.layout-editor-on .le-toolbar button.dirty { background: #d4824e; border-color: #f0ae5e; }
 body.layout-editor-on .le-toolbar button.dirty::after { content: " *"; color: #fff8d4; }
+
+/* Victor-2: 削除ボタン (toolbar) — 赤系のアクセントで destructive を示す */
+body.layout-editor-on .le-toolbar button.le-delete-btn {
+  background: rgba(220, 60, 60, 0.18);
+  border: 1px solid rgba(220, 60, 60, 0.5);
+  color: #fff;
+}
+body.layout-editor-on .le-toolbar button.le-delete-btn:hover {
+  background: rgba(220, 60, 60, 0.35);
+  border-color: rgba(255, 90, 90, 0.7);
+}
+body.layout-editor-on .le-toolbar button.le-delete-btn:disabled {
+  background: #1f1f1f;
+  border-color: #444;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+body.layout-editor-on .le-toolbar button.le-delete-btn:disabled:hover {
+  background: #1f1f1f;
+}
 body.layout-editor-on .le-toolbar input[type="color"] {
   width: 32px; height: 24px; padding: 0; border: 1px solid #444; cursor: pointer;
 }
@@ -459,6 +479,16 @@ body.layout-editor-on .le-row-btn {
   border-radius: 3px;
 }
 body.layout-editor-on .le-row-btn:hover { background: rgba(255, 255, 255, 0.1); }
+/* Victor-2: 行末 🗑 削除アイコン — 赤系で destructive を伝える */
+body.layout-editor-on .le-row-btn.le-row-delete {
+  color: #c66;
+  margin-left: auto;
+  font-size: 13px;
+}
+body.layout-editor-on .le-row-btn.le-row-delete:hover {
+  color: #f66;
+  background: rgba(220, 60, 60, 0.20);
+}
 body.layout-editor-on .le-row-label {
   flex: 1;
   white-space: nowrap;

@@ -1279,6 +1279,20 @@
           : '選択中のレイヤーを親グループから取り出して独立編集可能にします';
       }
     }
+
+    // Victor-2: 🗑️ 削除ボタン — 単一/複数選択中のみ enabled
+    var deleteBtn = state.toolbarEl.querySelector('#le-delete');
+    if (deleteBtn) {
+      if (n === 0) {
+        deleteBtn.disabled = true;
+        deleteBtn.title = '削除するには要素を選択してください';
+      } else {
+        deleteBtn.disabled = false;
+        deleteBtn.title = (n === 1
+          ? '選択中の要素を削除'
+          : ('選択中の ' + n + ' 個を削除')) + ' (Delete / Backspace、Ctrl+Z で復活)';
+      }
+    }
   }
   // Charlie-2: preferredTarget が selection 外になったら自動解除し、
   // 視覚フィードバック (.le-preferred) を描画する。
@@ -2368,6 +2382,54 @@
   }
 
   // ====================================================================
+  //  Victor-2: 削除 (Delete)
+  //    隠す (hide) と異なり DOM から完全に取り除く。
+  //    既存の 'remove' op (Wave 29 で複数 op に追加済み) を使って Ctrl+Z で復活可能。
+  //    spec 由来要素を削除した場合、saved-layout.json には残るので reload で復活する。
+  //    動的要素 (.le-dropped-img / .le-added-text) は localStorage を再同期する。
+  // ====================================================================
+  function deleteSelected() {
+    if (!state.selectedElements || state.selectedElements.size === 0) {
+      showToast('削除する対象を選択してください', 'error');
+      return;
+    }
+    var els = Array.from(state.selectedElements);
+    var ops = els.map(function (el) {
+      return {
+        type: 'remove',
+        el: el,
+        parent: el.parentNode,
+        next: el.nextSibling
+      };
+    });
+    // 削除実行 (DOM から取り除く)
+    els.forEach(function (el) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+    // 選択 / 優先ターゲット解除
+    state.selectedElements.clear();
+    state.preferredTarget = null;
+    // history に積む (1個 → 単独 op、複数 → batch)
+    pushHistoryBatch(ops);
+    // 動的要素の永続化を更新 (削除を localStorage に反映)
+    try { saveDroppedImages(); } catch (e) {}
+    try { saveAddedTexts(); } catch (e) {}
+    refreshElementList();
+    refreshSelectionUI();
+    showToast(els.length + ' 個を削除しました（Ctrl+Z で復活）', 'success');
+  }
+  // 単一要素を削除する補助 (要素一覧の行 🗑 ボタン用)。
+  // 選択状態を上書きしてから deleteSelected を呼び、結果として
+  // batch / 単独 op どちらも自然に history に乗るようにする。
+  function deleteOne(el) {
+    if (!el || !el.parentNode) return;
+    state.selectedElements.clear();
+    state.selectedElements.add(el);
+    state.preferredTarget = el;
+    deleteSelected();
+  }
+
+  // ====================================================================
   //  Alignment toolbar (FEATURE 20)
   // ====================================================================
 
@@ -2682,7 +2744,9 @@
         '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
         linkBtnHtml +
         '<span class="le-row-label" title="ダブルクリックで名前変更"></span>' +
-        '<span class="le-row-key"></span>';
+        '<span class="le-row-key"></span>' +
+        // Victor-2: 行末の 🗑 削除アイコン (この行の要素のみ削除)
+        '<button class="le-row-btn le-row-delete" title="この要素を削除 (Ctrl+Z で復活)">🗑</button>';
       // Papa-2 修正4: ドラッグで並び替え/再親子化 (詳細は下のリスナで設定)
       row.draggable = true;
       row.dataset.rowEl = ''; // marker
@@ -2727,6 +2791,10 @@
             // Papa-2 修正2: 親子リンクの一時解除トグル
             e.stopPropagation();
             toggleChildLink(el);
+          } else if (e.target.classList.contains('le-row-delete')) {
+            // Victor-2: 行末 🗑 — この行の要素のみ削除
+            e.stopPropagation();
+            deleteOne(el);
           } else {
             // Multi-select support in element list panel
             // - Shift+Click: range select between last clicked and current row
@@ -4319,6 +4387,8 @@
       '<button id="le-replace-src" title="選択した要素の画像を差し替え（ファイル選択ダイアログ）" aria-label="画像を差し替え" disabled>📥 src 差し替え</button>' +
       // Kilo-2 修正C → Lima-2 修正C: 選択要素を親レイヤーから取り出して stage 直下に配置する
       '<button id="le-detach" title="選択中のレイヤーを親グループから取り出して独立編集可能にします" aria-label="親レイヤーから取り出す" disabled>🔓 取り出す</button>' +
+      // Victor-2: 削除ボタン。選択中のみ enabled。Ctrl+Z で復活可能なので確認なし。
+      '<button id="le-delete" class="le-delete-btn" title="選択中の要素を削除 (Delete / Backspace、Ctrl+Z で復活)" aria-label="選択中を削除" disabled>🗑️ 削除</button>' +
       '<button id="le-multi-select" title="マルチセレクト ON/OFF (タッチ用)" aria-label="マルチセレクト切替">👆+ 複数選択</button>' +
       '</div>' +
       // U4: alignment toolbar promoted to top toolbar (always discoverable).
@@ -4386,6 +4456,9 @@
     // Kilo-2 修正C: 親から取り出すボタン
     var detachBtn = tb.querySelector('#le-detach');
     if (detachBtn) detachBtn.addEventListener('click', detachSelectedFromParent);
+    // Victor-2: 🗑️ 削除ボタン
+    var deleteBtn = tb.querySelector('#le-delete');
+    if (deleteBtn) deleteBtn.addEventListener('click', deleteSelected);
     // U10: iPad-friendly multi-select toggle
     var msBtn = tb.querySelector('#le-multi-select');
     if (msBtn) {
@@ -4731,7 +4804,7 @@
       '<tr><td>Arrow ↑↓ / Shift+Arrow</td><td>±1 / ±10</td></tr>' +
       '<tr><td>Alt+クリック</td><td>±0.5 ステップ</td></tr>' +
       '<tr><td>Shift+クリック</td><td>複数選択 (toggle)</td></tr>' +
-      '<tr><td>Delete / Backspace</td><td>選択中を隠す (注釈モードでは削除)</td></tr>' +
+      '<tr><td>Delete / Backspace</td><td>選択中を削除 (Ctrl+Z で復活 / 注釈モードでは注釈削除)</td></tr>' +
       '<tr><td>Esc</td><td>選択解除</td></tr>' +
       '<tr><td>?</td><td>ヘルプ表示</td></tr>' +
       '</table>' +
@@ -4826,9 +4899,12 @@
           annoSelectEl(null);
           return;
         }
+        // Victor-2: contenteditable / INPUT / TEXTAREA は上の inField guard で
+        // 既に return 済み。ここに来るのは canvas focus / body focus 時のみ。
+        // 「隠す (hide)」ではなく「削除 (delete)」に切り替え (Ctrl+Z で復活可能)。
         if (state.selectedElements.size > 0) {
           e.preventDefault();
-          hideSelectedElements();
+          deleteSelected();
         }
       }
       // Arrow keys nudge selected elements
