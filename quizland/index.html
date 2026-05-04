@@ -162,10 +162,6 @@ body.sheet-on .hdr-right .ctrl-btn:nth-child(1),
 body.sheet-on .hdr-right .ctrl-btn:nth-child(2) {
   background-image: none !important;
 }
-/* CSS で描画している進捗ドット (5個) は ui_header_frame.png に焼き込み済なので非表示 */
-body.sheet-on .hdr-left .dots {
-  visibility: hidden;
-}
 body.sheet-on .hdr-left .progress-num {
   background-color: transparent !important;
   border-color: transparent !important;
@@ -283,12 +279,12 @@ body.sheet-on .hdr-left .title-card {
   border-color: transparent !important;
   box-shadow: none !important;
 }
-/* PNG にテキストが描画されているので CSS テキストは透明化 (二重防止) */
+/* Phase 2.1: ui_header_frame.png のタイトル枠は空 papyrus でテキストは焼き込まれていないため、
+   CSS テキスト「フクロウはかせのなぞなぞ」を可視化する (base CSS の #fff7d0 と整合) */
 body.sheet-on .hdr-left .title-card,
 body.sheet-on .hdr-left .title-card small,
 body.sheet-on .hdr-left .title-card span {
-  color: transparent !important;
-  text-shadow: none !important;
+  color: #fff7d0;
 }
 .hdr-left .progress-num {
   background: linear-gradient(180deg, #fff8e0, #f0dfa6);
@@ -355,11 +351,6 @@ body.sheet-on .hdr-left .title-card span {
   border: none;
   transform: scale(1.18);
 }
-/* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
-body.sheet-on .hdr-left .dots {
-  background-image: none !important;
-}
-
 .hdr-right {
   display: inline-flex;
   align-items: center;
