@@ -1000,12 +1000,15 @@
       window.removeEventListener('touchend', onUp);
       linkedTargets.forEach(function (t) { t.el.classList.remove('edge-linked'); });
       var allTargets = groupScale ? groupScale.targets : [primaryTarget].concat(linkedTargets);
+      // Kilo-2 修正A: グループ/エッジリンクの同時リサイズも 1 op にまとめて undo 一括化
+      var ops = [];
       allTargets.forEach(function (t) {
         var after = getResizeState(t.el);
         if (JSON.stringify(after) !== JSON.stringify(t.before)) {
-          pushHistory({ type: 'resize', el: t.el, before: t.before, after: after });
+          ops.push({ type: 'resize', el: t.el, before: t.before, after: after });
         }
       });
+      pushHistoryBatch(ops);
       updateNumericPanel();
       // Echo-2: リサイズ後にも bbox 重なり再評価
       applyPreferredPointerSuppression();
@@ -1087,12 +1090,15 @@
         window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove);
         window.removeEventListener('touchend', onUp);
+        // Kilo-2 修正A: 複数要素の同時ドラッグは 1 op (batch) にまとめる
+        var ops = [];
         startStates.forEach(function (s) {
           var after = getResizeState(s.el);
           if (JSON.stringify(after) !== JSON.stringify(s.before)) {
-            pushHistory({ type: 'resize', el: s.el, before: s.before, after: after });
+            ops.push({ type: 'resize', el: s.el, before: s.before, after: after });
           }
         });
+        pushHistoryBatch(ops);
         updateNumericPanel();
         // Echo-2: 移動後に preferredTarget 周辺の bbox 関係が変わるので再評価
         applyPreferredPointerSuppression();
@@ -1714,13 +1720,16 @@
       applyOnePropToEl(el, prop, nv);
       applyAspectLinkedProp(el, prop, nv);
     });
+    // Kilo-2 修正A: 数値スピナーの一括変更も batch 化
+    var ops = [];
     sel.forEach(function (el) {
       var after = getResizeState(el);
       var before = beforeMap.get(el);
       if (JSON.stringify(after) !== JSON.stringify(before)) {
-        pushHistory({ type: 'resize', el: el, before: before, after: after });
+        ops.push({ type: 'resize', el: el, before: before, after: after });
       }
     });
+    pushHistoryBatch(ops);
     updateNumericPanel();
   }
 
@@ -1769,13 +1778,16 @@
       applyOnePropToEl(el, prop, value);
       applyAspectLinkedProp(el, prop, value);
     });
+    // Kilo-2 修正A: 数値直接入力の一括反映も batch 化
+    var ops = [];
     sel.forEach(function (el) {
       var after = getResizeState(el);
       var before = beforeMap.get(el);
       if (JSON.stringify(after) !== JSON.stringify(before)) {
-        pushHistory({ type: 'resize', el: el, before: before, after: after });
+        ops.push({ type: 'resize', el: el, before: before, after: after });
       }
     });
+    pushHistoryBatch(ops);
     if (hadLocked) showToast('ロック中の要素にも数値入力を反映しました');
     updateNumericPanel();
   }
@@ -1863,10 +1875,13 @@
   function hideSelectedElements() {
     var sel = Array.from(state.selectedElements);
     if (!sel.length) { showToast('隠す対象を選択してください', 'error'); return; }
+    // Kilo-2 修正A: 複数同時 hide も batch にまとめる
+    var ops = [];
     sel.forEach(function (el) {
       el.classList.add('user-hidden');
-      pushHistory({ type: 'hide', el: el });
+      ops.push({ type: 'hide', el: el });
     });
+    pushHistoryBatch(ops);
     state.selectedElements.clear();
     refreshSelectionUI();
     refreshElementList();
@@ -1875,10 +1890,13 @@
   function showAllHiddenElements() {
     var hidden = $$('.user-hidden');
     if (!hidden.length) { showToast('隠してる枠はありません', 'error'); return; }
+    // Kilo-2 修正A: 複数同時 show も batch にまとめる
+    var ops = [];
     hidden.forEach(function (el) {
       el.classList.remove('user-hidden');
-      pushHistory({ type: 'show', el: el });
+      ops.push({ type: 'show', el: el });
     });
+    pushHistoryBatch(ops);
     refreshElementList();
     showToast(hidden.length + ' 個を再表示');
   }
@@ -1968,14 +1986,17 @@
       });
     }
 
+    // Kilo-2 修正A: 整列/分布も全要素を 1 つの batch にまとめる
+    var ops = [];
     sel.forEach(function (el) {
       var after = getResizeState(el);
       var before = beforeMap.get(el);
       if (JSON.stringify(after) !== JSON.stringify(before)) {
-        pushHistory({ type: 'resize', el: el, before: before, after: after });
+        ops.push({ type: 'resize', el: el, before: before, after: after });
       }
       el._resizeUpdateLabel && el._resizeUpdateLabel();
     });
+    pushHistoryBatch(ops);
     updateNumericPanel();
   }
 
@@ -2044,6 +2065,19 @@
       if (pos & Node.DOCUMENT_POSITION_PRECEDING) return -1;
       return 0;
     });
+    // Kilo-2 修正D: DOM 階層に応じてインデント表示する。 z-index 降順ソートは
+    // 維持しつつ、各 row の DOM ネスト深さを padding-left に反映する。
+    // 完璧な木構造ソートは行わず「インデントだけ」で親子関係を可視化する。
+    var allEditableSet = new Set(rowEntries.map(function (re) { return re.el; }));
+    function getEditableDepth(el) {
+      var depth = 0;
+      var p = el && el.parentNode;
+      while (p && p !== state.canvasEl && p.nodeType === 1) {
+        if (allEditableSet.has(p)) depth++;
+        p = p.parentNode;
+      }
+      return depth;
+    }
     rowEntries.forEach(function (re) {
       var el = re.el, sel = re.sel, idx = re.idx, label = re.label;
       // Juliet-2 修正B: 動的要素は専用 key、それ以外は従来の sel|idx
@@ -2053,6 +2087,12 @@
       var row = document.createElement('div');
       row.className = 'le-list-row';
       row.dataset.key = key;
+      // Kilo-2 修正D: 深さ * 16px だけ左パディングを追加 (CSS 既定 8px はそのまま)
+      var depth = getEditableDepth(el);
+      if (depth > 0) {
+        row.style.paddingLeft = (8 + 16 * depth) + 'px';
+        row.dataset.depth = String(depth);
+      }
       row.innerHTML =
         '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
         '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
@@ -2213,6 +2253,8 @@
     var sel = Array.from(state.selectedElements);
     if (!sel.length) { showToast('複製する要素を選択', 'error'); return; }
     var newOnes = [];
+    // Kilo-2 修正A: 複数複製も 1 batch op にまとめて undo 一発で全部消えるように
+    var ops = [];
     sel.forEach(function (el) {
       var clone = el.cloneNode(true);
       // Strip editor-only chrome
@@ -2223,8 +2265,9 @@
       clone.style.transform = 'translate(' + clone._tx + 'px, ' + clone._ty + 'px)';
       el.parentNode.insertBefore(clone, el.nextSibling);
       newOnes.push(clone);
-      pushHistory({ type: 'add', el: clone, parent: el.parentNode, next: el.nextSibling });
+      ops.push({ type: 'add', el: clone, parent: el.parentNode, next: el.nextSibling });
     });
+    pushHistoryBatch(ops);
     // re-attach handles for new clones
     var spec = state.spec;
     newOnes.forEach(function (clone) {
@@ -2238,6 +2281,81 @@
     refreshSelectionUI();
     refreshElementList();
     showToast(newOnes.length + ' 個複製');
+  }
+
+  // ====================================================================
+  //  Kilo-2 修正C: Detach from parent (親レイヤーから取り出して stage 直下へ)
+  // ====================================================================
+
+  function detachSelectedFromParent() {
+    if (!state.selectedElements || state.selectedElements.size !== 1) {
+      showToast('1 個だけ選択してから取り出してください', 'error');
+      return;
+    }
+    var sel = Array.from(state.selectedElements)[0];
+    var stage = state.canvasEl;
+    if (!sel || !stage) return;
+    var parent = sel.parentNode;
+    if (!parent || parent === stage) {
+      showToast('既に最上位レイヤーです', 'error');
+      return;
+    }
+
+    // 視覚位置を維持するため、移動前に stage 相対座標を計算しておく
+    var beforeRect = sel.getBoundingClientRect();
+    var info = getStageRectInfo();
+    var stageRect = info.stageRect;
+    var scale = info.scale || 1;
+
+    var oldParent = parent;
+    var oldNext = sel.nextSibling;
+    var oldStyles = {
+      position: sel.style.position || '',
+      left: sel.style.left || '',
+      top: sel.style.top || '',
+      width: sel.style.width || '',
+      height: sel.style.height || ''
+    };
+    var oldKeepPosition = (sel.dataset && sel.dataset.leKeepPosition) ? sel.dataset.leKeepPosition : '';
+
+    // 移動: stage 直下へ
+    stage.appendChild(sel);
+    // transform は temp に解いて、純粋な左上を新位置として固定する
+    sel.style.position = 'absolute';
+    sel.style.left = ((beforeRect.left - stageRect.left) / scale) + 'px';
+    sel.style.top  = ((beforeRect.top  - stageRect.top)  / scale) + 'px';
+    sel.style.width  = (beforeRect.width  / scale) + 'px';
+    sel.style.height = (beforeRect.height / scale) + 'px';
+    // 取り出し後は独立配置 — applier で位置を上書きされないように
+    if (sel.dataset) sel.dataset.leKeepPosition = '1';
+    // 取り出し後は累積 translate もリセットする (left/top で位置を確定したため)
+    sel._tx = 0;
+    sel._ty = 0;
+    sel.style.transform = '';
+    if (sel._resizeUpdateLabel) try { sel._resizeUpdateLabel(); } catch (e) {}
+
+    var newStyles = {
+      position: 'absolute',
+      left: sel.style.left,
+      top: sel.style.top,
+      width: sel.style.width,
+      height: sel.style.height
+    };
+
+    pushHistory({
+      type: 'reparent',
+      el: sel,
+      oldParent: oldParent,
+      oldNext: oldNext,
+      oldStyles: oldStyles,
+      oldKeepPosition: oldKeepPosition,
+      newParent: stage,
+      newStyles: newStyles
+    });
+    refreshSelectionUI();
+    refreshElementList();
+    applyPreferredPointerSuppression();
+    showToast('親レイヤーから取り出しました');
   }
 
   // ====================================================================
@@ -3194,6 +3312,8 @@
       '<button id="le-undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>' +
       '<button id="le-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>' +
       '<button id="le-duplicate" title="複製 (Ctrl+D)" aria-label="複製">⧉ 複製</button>' +
+      // Kilo-2 修正C: 選択要素を親レイヤーから取り出して stage 直下に配置する
+      '<button id="le-detach" title="親レイヤーから取り出す" aria-label="親レイヤーから取り出す">🔓 取り出す</button>' +
       '<button id="le-multi-select" title="マルチセレクト ON/OFF (タッチ用)" aria-label="マルチセレクト切替">👆+ 複数選択</button>' +
       '</div>' +
       // U4: alignment toolbar promoted to top toolbar (always discoverable).
@@ -3254,6 +3374,9 @@
     tb.querySelector('#le-undo').addEventListener('click', undo);
     tb.querySelector('#le-redo').addEventListener('click', redo);
     tb.querySelector('#le-duplicate').addEventListener('click', duplicateSelected);
+    // Kilo-2 修正C: 親から取り出すボタン
+    var detachBtn = tb.querySelector('#le-detach');
+    if (detachBtn) detachBtn.addEventListener('click', detachSelectedFromParent);
     // U10: iPad-friendly multi-select toggle
     var msBtn = tb.querySelector('#le-multi-select');
     if (msBtn) {
@@ -3713,12 +3836,15 @@
           el._ty = (el._ty || 0) + dy;
           el.style.transform = 'translate(' + el._tx + 'px, ' + el._ty + 'px)';
         });
+        // Kilo-2 修正A: Arrow / Shift+Arrow nudge も batch にまとめる
+        var ops = [];
         beforeMap.forEach(function (before, el) {
           var after = getResizeState(el);
           if (JSON.stringify(after) !== JSON.stringify(before)) {
-            pushHistory({ type: 'resize', el: el, before: before, after: after });
+            ops.push({ type: 'resize', el: el, before: before, after: after });
           }
         });
+        pushHistoryBatch(ops);
         updateNumericPanel();
       }
     };
@@ -3876,6 +4002,29 @@
       var inner = el.querySelectorAll('img');
       return inner && inner.length === 1;
     } catch (e) { return false; }
+  }
+
+  // Kilo-2 修正B: 編集対象の子を 2 個以上含む要素は「親レイアウト」とみなす。
+  // たとえば .pono-guide は .pono-portrait と .pono-bubble を内包しているので、
+  // ここに画像をドロップしても (どっちを差し替えるか曖昧で) ユーザーは新規挿入を
+  // 期待している場合がほとんど。これを true 判定して replace ではなく insert に倒す。
+  function isParentLayoutElement(el) {
+    if (!el || !state.spec || !state.spec.length) return false;
+    var editableCount = 0;
+    for (var i = 0; i < state.spec.length; i++) {
+      var sel = state.spec[i] && state.spec[i][0];
+      if (!sel) continue;
+      try {
+        var matches = el.querySelectorAll(sel);
+        for (var j = 0; j < matches.length; j++) {
+          if (matches[j] !== el) {
+            editableCount++;
+            if (editableCount >= 2) return true;
+          }
+        }
+      } catch (e) {}
+    }
+    return false;
   }
 
   function swapImgSrcUndoable(img, newSrc, opts) {
@@ -4165,8 +4314,12 @@
           }
         } catch (err) { dropInsideSelection = false; }
       }
-      // 差し替え許可の総合判定: 選択あり & 画像要素 & ドロップ位置が内側 & Alt 未押下
-      var allowSwap = !forceInsert && !!firstSelected && dropInsideSelection;
+      // Kilo-2 修正B: 親レイアウト要素 (子に複数の編集対象を持つ要素、例 .pono-guide)
+      // への差し替えはユーザーが意図しないことがほとんど。差し替えを禁じて
+      // 強制的に新規挿入に倒す。.field-bg のような単純な leaf だけが従来通り replace 可能。
+      var isParentLayout = firstSelected ? isParentLayoutElement(firstSelected) : false;
+      // 差し替え許可の総合判定: 選択あり & 画像要素 & ドロップ位置が内側 & Alt 未押下 & 親レイアウトでない
+      var allowSwap = !forceInsert && !!firstSelected && dropInsideSelection && !isParentLayout;
 
       safe.reduce(function (chain, file, i) {
         return chain.then(function () {

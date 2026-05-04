@@ -402,6 +402,16 @@ body.layout-editor-on .le-row-key {
   color: #888;
   font-size: 9px;
 }
+/* Kilo-2 修正D: 親子関係をインデントで可視化 — depth>=1 にツリーマーカーを表示 */
+body.layout-editor-on .le-list-row[data-depth] .le-row-label::before {
+  content: "└ ";
+  color: #888;
+  margin-right: 2px;
+}
+body.layout-editor-on .le-list-row[data-depth].preferred .le-row-label::before {
+  content: "★ ";
+  color: #ffd000;
+}
 
 /* === Alignment toolbar (NEW: FEATURE 20) === */
 body.layout-editor-on .le-align-bar {
