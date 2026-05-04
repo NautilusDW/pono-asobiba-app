@@ -1180,8 +1180,49 @@ body.resize-mode .ruler { display: block; }
       { name: 'ずかん (調査画面)', url: '/zukan/preview/investigation/?edit=1' },
     ],
   };
+
+  // ────────────────────────────────────────────────────────────
+  // editor-bootstrap.js / LayoutSystem 連携 (Wave: D&D 画像対応)
+  // --------------------------------------------------------------
+  // 旧サンドボックスの自前エディタはそのまま温存しつつ、 ?edit=1 が付いた
+  // ときだけ LayoutSystem の WYSIWYG エディタ (D&D 画像取り込み・要素一覧・
+  // 取り出し・整列・比較表示 等) を遅延ロードする。
+  //
+  //   - layout-shared.css   : 編集モード/再生モード共通の見た目
+  //   - editor-bootstrap.js : layout-applier → layout-system → page-nav を
+  //                            直列ロードし、 EditorBootstrapConfig で起動
+  //
+  // pages 省略時は window.PONO_PAGES (DEFAULT_PAGES) を自動採用する。
+  // 選択リストは PageNavConfig (legacy widget) と同等の 4 件。
+  // ────────────────────────────────────────────────────────────
+  window.EditorBootstrapConfig = {
+    layoutUrl: './saved-layout.json',
+    canvas: '#stage',
+    editableSelectors: [
+      ['.userbox',                 'wh', 'カスタム枠'],
+      ['.hdr-left',                'wh', 'ヘッダーピル'],
+      ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
+      ['.hdr-left .title-card',    'wh', 'タイトル札'],
+      ['.hdr-left .progress-num',  'wh', '1/5 札'],
+      ['.hdr-left .dots',          'wh', '進捗ドット5個'],
+      ['.hdr-right .ctrl-btn',     'wh', '右コントロールボタン'],
+      ['.q-text-card',             'wh', '問題文カード'],
+      ['#q-text',                  'wh', '問題文テキスト'],
+      ['.q-text-card .audio',      'wh', '音声ボタン'],
+      ['.board',                   'wh', '問題ボード'],
+      ['.answer-tray',             'wh', '回答トレイ'],
+      ['.chip',                    'wh', '回答チップ'],
+      ['.chip .circle',            'wh', 'チップ丸'],
+      ['.hint',                    'wh', 'ヒント'],
+      ['.character',               'wh', 'キャラクター'],
+      ['.char-hint',               'wh', 'キャラ吹き出し'],
+    ],
+    ghPath: 'quizland/preview/full/saved-layout.json',
+    // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
+  };
 </script>
-<script src="../../common/page-nav.js" defer></script>
+<link rel="stylesheet" href="../../../common/layout/layout-shared.css">
+<script src="../../../common/layout/editor-bootstrap.js" defer></script>
 </head>
 <body class="show-safe sheet-on">
 
