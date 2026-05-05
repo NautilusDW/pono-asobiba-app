@@ -3,8 +3,10 @@ split_sprites.py
 アルファチャンネル付きPNGから、繋がっていないオブジェクトを
 自動検出して個別PNGに分割保存するスクリプト。
 
-注意: コアロジックは sprite_splitter.extract_sprites() に移動しました。
-このファイルは CLI 後方互換のための薄いラッパーです。
+このファイルは Photoshop の Scripts フォルダに単独で置けば動くよう
+sprite_splitter.py のロジックを内包した自己完結版になっている。
+リポジトリ canonical は scripts/Photoshop_script/sprite_splitter.py
+で、変更時は両方を同期すること。
 
 使い方:
   pip install Pillow
@@ -19,16 +21,131 @@ split_sprites.py
 
 import os
 import sys
-from pathlib import Path
+from collections import deque
+from dataclasses import dataclass
+from typing import List, Tuple
 
 from PIL import Image
 
-# Same-directory import
-_HERE = Path(__file__).resolve().parent
-if str(_HERE) not in sys.path:
-    sys.path.insert(0, str(_HERE))
 
-from sprite_splitter import extract_sprites, make_flipped_pair  # noqa: E402
+# ── sprite_splitter.py から取り込んだコア (canonical = sprite_splitter.py) ──
+
+@dataclass
+class SpriteInfo:
+    index: int
+    image: Image.Image
+    bbox: Tuple[int, int, int, int]
+    area: int
+
+
+_NEIGHBORS_8 = ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1))
+
+
+def extract_sprites(
+    img: Image.Image,
+    min_size: int = 20,
+    padding: int = 4,
+    alpha_threshold: int = 10,
+) -> List[SpriteInfo]:
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+
+    w, h = img.size
+    if w == 0 or h == 0:
+        return []
+
+    alpha_band = img.split()[3]
+    alpha_bytes = alpha_band.tobytes()
+    visited = bytearray(w * h)
+
+    sprites_raw: List[Tuple[int, int, int, int, List[int]]] = []
+
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            idx = row + x
+            if visited[idx]:
+                continue
+            if alpha_bytes[idx] <= alpha_threshold:
+                visited[idx] = 1
+                continue
+
+            queue = deque()
+            queue.append(idx)
+            visited[idx] = 1
+            component: List[int] = [idx]
+            min_x = max_x = x
+            min_y = max_y = y
+
+            while queue:
+                cur = queue.popleft()
+                cy, cx = divmod(cur, w)
+                for dx, dy in _NEIGHBORS_8:
+                    nx = cx + dx
+                    ny = cy + dy
+                    if 0 <= nx < w and 0 <= ny < h:
+                        nidx = ny * w + nx
+                        if not visited[nidx] and alpha_bytes[nidx] > alpha_threshold:
+                            visited[nidx] = 1
+                            queue.append(nidx)
+                            component.append(nidx)
+                            if nx < min_x:
+                                min_x = nx
+                            elif nx > max_x:
+                                max_x = nx
+                            if ny < min_y:
+                                min_y = ny
+                            elif ny > max_y:
+                                max_y = ny
+
+            if (max_x - min_x + 1) < min_size or (max_y - min_y + 1) < min_size:
+                continue
+
+            sprites_raw.append((min_x, min_y, max_x, max_y, component))
+
+    sprites_raw.sort(key=lambda s: len(s[4]), reverse=True)
+
+    source_rgba = img.tobytes()
+    results: List[SpriteInfo] = []
+
+    for order, (min_x, min_y, max_x, max_y, component) in enumerate(sprites_raw):
+        left = max(0, min_x - padding)
+        top = max(0, min_y - padding)
+        right = min(w, max_x + padding + 1)
+        bottom = min(h, max_y + padding + 1)
+        cw = right - left
+        ch = bottom - top
+
+        buf = bytearray(cw * ch * 4)
+        for pidx in component:
+            py, px = divmod(pidx, w)
+            dst_x = px - left
+            dst_y = py - top
+            dst = (dst_y * cw + dst_x) * 4
+            src = pidx * 4
+            buf[dst]     = source_rgba[src]
+            buf[dst + 1] = source_rgba[src + 1]
+            buf[dst + 2] = source_rgba[src + 2]
+            buf[dst + 3] = source_rgba[src + 3]
+
+        sprite_img = Image.frombytes("RGBA", (cw, ch), bytes(buf))
+        results.append(
+            SpriteInfo(
+                index=order + 1,
+                image=sprite_img,
+                bbox=(left, top, right, bottom),
+                area=len(component),
+            )
+        )
+
+    return results
+
+
+def make_flipped_pair(sprite_img: Image.Image) -> Tuple[Image.Image, Image.Image]:
+    return sprite_img, sprite_img.transpose(Image.FLIP_LEFT_RIGHT)
+
+
+# ── Photoshop / CLI ラッパー ──
 
 
 def _to_square(img: Image.Image) -> Image.Image:
