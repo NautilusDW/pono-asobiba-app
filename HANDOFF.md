@@ -14,6 +14,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-05 - Quizland manifest v1.1 follow-up in progress (by Codex): Added helper scripts `tmp/manifest_followup/generate_manifest_v11.py`, `tmp/imagegen/finalize_choice_asset.py`, and `tmp/imagegen/process_latest_choice_asset.py`. Reuse/need-generation aware v1.1 manifest draft is regenerated at `tmp/manifest_followup/out/image_manifest.json`. Newly saved choice assets so far: `moyou`, `sakura`, `kusa`, `take`, `matsu_no_ki`, `cloudy_time`, `sunny_time`, `sleepy_reason`, `eating_action`, `running_action`, `resting_action`, `dont_know`, `temon`, `sound_kokekokko`, `sound_momo`, `sound_wanwan`, `heavy_rain`, `belly_part`, `shoulder_part`, `hair_part`, `earthquake`, `tsunami`, `wave`, `clock`, `ruler`, `cup`. Remaining need-generation items: `kiri`, `mt_fuji`, `mt_kirishima`, `mt_koya`, `mt_norikura`, `snow_mountain`, `snow_country`, `winter_country`, `ice_country`, `snowy_time`, `night_only`.
+
 - 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Section C stage generation completed. Saved Trivia Lv2-Lv3 stages `stage_trivia_four_birds_silhouette`, `stage_trivia_running_cheetah`, `stage_trivia_sleeping_bear_cave`, `stage_trivia_earthworm_after_rain`, `stage_trivia_koala_eucalyptus`, `stage_trivia_ocean_silhouettes_4`, `stage_trivia_dolphin`, `stage_trivia_huge_creatures_compare`, `stage_trivia_spider_eyes`, `stage_trivia_flamingo`, and `stage_trivia_male_lion`, then saved all Body stages `stage_body_skin_wrap`, `stage_body_heart_pump`, `stage_body_chewing_teeth`, `stage_body_lungs_breath`, and `stage_body_teeth_bone_compare`. Redraws were needed for `stage_trivia_spider_eyes` to remove an overly anthropomorphic smile. All section C `stage_*` assets are now present under `assets/images/quizland/illust/stage/`.
 
 
