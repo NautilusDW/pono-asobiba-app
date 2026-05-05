@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-05T02:33:32Z - quizland 個別 chip ドラッグ修正 (動的要素 MutationObserver) + 画像入り選択肢 1問試作
+- **タスク**: quizland 個別 chip ドラッグ修正 (動的要素 MutationObserver) + 画像入り選択肢 1問試作
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 218
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 85, "Read": 36, "Glob": 3, "Grep": 15, "Edit": 70, "Write": 6, "ToolSearch": 2, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-04T15:33:00Z - Wave 47 Charlie-3: quizland preview の content/icon background-image を復活、木枠フレームのみ削除維持
 - **タスク**: Wave 47 Charlie-3: quizland preview の content/icon background-image を復活、木枠フレームのみ削除維持
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 31, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 46, "Grep": 4}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T14:20:42Z - quizland: preview/full の saved-layout.json を本番に移植し、saved-layout を上書きしていた title-card の min-width/height/margin と owl-icon の display:none を撤廃
-- **タスク**: quizland: preview/full の saved-layout.json を本番に移植し、saved-layout を上書きしていた title-card の min-width/height/margin と owl-icon の display:none を撤廃
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 115
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 30, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 45, "Grep": 4}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
