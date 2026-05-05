@@ -282,5 +282,114 @@ python scripts/validate_image_manifest.py
 
 ---
 
-**契約バージョン**: 1.0 (2026-05-05)
+**契約バージョン**: 1.1 (2026-05-05)
 **問い合わせ**: 不明点があれば生成前に確認してください。生成後の修正は手戻りが大きいです。
+
+---
+
+## v1.1 改訂内容 (2026-05-05)
+
+v1.0 で運用開始した後、以下の問題が判明しました:
+- 同じ jp_label が異なる文脈で別画像を指すケース (例: 「まる」が「shape_circle」(基本図形) と「snowflake_round」(雪の結晶) 両方にマッピング)
+- 既存資産 (ocean/, word/) の reuse 提案が不徹底 (101 unique label のうち少なくとも 6 件は ocean/ に既存)
+
+### 1. `context_tags` フィールドの追加 (必須)
+
+各 image エントリに `context_tags` を必須追加します。これは画像が属する **意味的文脈** で、quizland の question type / カテゴリに対応します。
+
+```jsonc
+{
+  "id": "shape_circle",
+  "save_path": "assets/images/quizland/illust/shape/shape_circle.png",
+  "jp_labels": ["まる"],
+  "context_tags": ["shape"],     // ← 必須追加
+  "usage": ["choice", "stage"],
+  ...
+}
+
+{
+  "id": "snowflake_round",
+  "save_path": "assets/images/quizland/illust/choice/snowflake_round.png",
+  "jp_labels": ["まる"],
+  "context_tags": ["snowflake", "weather"],   // ← 同じ "まる" でも別文脈
+  "usage": ["choice"],
+  ...
+}
+```
+
+#### context_tags の値 (語彙)
+
+questions.js の type / category に対応:
+- `shape` (= shape_name 問題用)
+- `color` (= order_color 用)
+- `weather` (= weather 問題用、雪/雨/天気概念)
+- `snowflake` (weather のサブ: 雪の結晶パターン)
+- `body` (= body 問題用、人体パーツ)
+- `face` (body のサブ: 顔パーツ)
+- `animal` (= trivia 動物系)
+- `bug` (trivia 虫系)
+- `fish` (trivia 魚系)
+- `bird` (trivia 鳥系)
+- `food` (trivia 食べ物)
+- `plant` (trivia 植物)
+- `nature` (trivia 自然現象)
+- `emotion` (opposite 感情系: face_cry, face_smile 等)
+- `posture` (opposite 姿勢: pose_walk, pose_sit 等)
+- `door` (opposite ドア)
+- `prop` (opposite 物の状態)
+- `time_of_day` (opposite 時間帯)
+
+汎用的に使える画像 (例: cloud は weather にも nature にも使える) は配列で複数登録: `["weather", "nature"]`。
+
+### 2. 既存資産優先ルールの強化 (必須)
+
+新規生成依頼を受けたら、以下を **必ず順番にスキャン** し、ヒットしたら新規生成しないこと:
+
+1. 現行 `image_manifest.json` 全エントリ
+2. `assets/images/ocean/<Folder>/<Folder>_normal_1.png` (大量の英語フォルダ名形式)
+   - 例: 「うで」依頼 → `assets/images/ocean/Arm/Arm_normal_1.png` 既存
+   - 例: 「はれ」依頼 → `assets/images/ocean/Sun/Sun_normal_1.png` 既存
+3. `assets/images/word/<id>.png` (romaji 形式)
+4. `assets/images/quizland/illust/{choice,stage,shape,color,weather,animal}/<id>.png`
+
+reuse する場合:
+- `image_manifest.json` に既存パスを `save_path` で登録 (新規エントリ追加)
+- `usage` を実際の用途に合わせて設定
+- `alternatives` に他のクロスドメイン候補を列挙
+
+### 3. v1.0 → v1.1 マイグレーション
+
+既存 manifest (v1.0) は context_tags が空 (= 全エントリ未付与) なので、Codex は再棚卸し時に **全エントリに context_tags を埋める** こと。Codex は save_path のフォルダ位置と subject_detailed の意味から推論できる:
+- `illust/shape/*.png` → `["shape"]`
+- `illust/color/*.png` → `["color"]`
+- `illust/weather/*.png` → `["weather"]`
+- `illust/animal/*.png` → `["animal"]`
+- `illust/choice/snowflake_*.png` → `["snowflake", "weather"]`
+- `illust/choice/face_*.png` → `["face", "emotion"]` (face_smile/cry/angry 等)、または `["face", "body"]` (face_eye/mouth/nose 等)
+- `illust/choice/pose_*.png` → `["posture"]`
+- `illust/choice/door_*.png` → `["door"]`
+- `illust/choice/prop_*.png` → `["prop"]`
+- 以下同様
+
+### 4. プロジェクト側の audit.html v1.1 対応
+
+`audit.html` は `context_tags` を読んで、質問 type に応じて優先 tag を選んで lookup します。例:
+- shape_name → 優先 `shape` tag
+- weather → 優先 `snowflake` > `weather`
+- body → 優先 `face` > `body`
+
+これにより v1.0 の folder-name ベースの workaround が不要になります。
+
+### 5. ホワイトリスト: 画像不要な選択肢 (新規)
+
+questions.js の choice 中、以下は意図的に画像化しない方針です。Codex は manifest に登録不要、gaps.json にも入れないでください:
+
+- 数字選択肢 (count_total): `1つ`, `3こ`, `5ほん` 等
+- 数値時間 (trivia): `1じかんくらい`, `3しょく`, `5ほん` 等
+- 抽象概念 (opposite): `おおきい`, `ちいさい`, `はやい`, `おそい` 等の対比形容詞
+- 抽象概念 (trivia): `うごけない`, `こわいから`, `おなじ`, `しずむ`, `こおる` 等
+- 季節名: `はる`, `なつ`, `あき`, `ふゆ` (テキストで成立)
+- 方向: `うえ`, `した`, `まえ`, `うしろ`, `ひだり`, `みぎ`
+
+これらは `quizland/data/_review/missing_labels_categorized.json` の `abstract` カテゴリに 58 件リストアップ済。
+

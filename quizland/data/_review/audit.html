@@ -180,25 +180,41 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
   ]);
   // imageManifest がある場合は jp_label → save_path の高速マップを優先生成。
   // 無ければ legacy auto + overrides を使う。
-  // ★ 同じ jp_label が複数フォルダに存在する (例: "まる" は shape/shape_circle と weather/snowflake_round 両方に持ってる) ため、
-  //   フォルダ別にマップを作って、質問 type に応じて優先順を切り替える。
-  const manifestByFolder = {};   // folder ('shape', 'weather', 'choice'等) → {jp_label → save_path}
-  const manifestJpToPath = {};   // 全体フォールバック (folder不問の jp_label → save_path)
-  const manifestIdToSheet = {};  // id → sheet
+  //
+  // 戦略 (manifest schema 別):
+  // - v1.1 (context_tags 持ち): question type → 優先 context_tags を選んで lookup (推奨)
+  // - v1.0 (context_tags 無し): folder 名から推測する fallback (legacy)
+  // - 両方に該当しない場合: jp_label first-match-wins
+  const manifestByContext = {}; // context_tag → {jp_label → save_path}
+  const manifestByFolder = {};  // folder → {jp_label → save_path} (v1.0 互換)
+  const manifestJpToPath = {};  // 全体フォールバック
+  const manifestIdToSheet = {}; // id → sheet
   function entryFolder(p) {
     if (!p) return '(unknown)';
     const m = p.match(/illust\/([^/]+)\//);
     return m ? m[1] : '(other)';
   }
+  let manifestSchemaVersion = '1.0';
   if (imageManifest && Array.isArray(imageManifest.images)) {
-    // 第1パス: 個別 crop (= _sheets/ 以外) を folder 別にマップ
+    // 第1パス: 個別 crop を context_tags 別 + folder 別にマップ
     imageManifest.images.forEach(entry => {
       if (!entry.save_path || entry.save_path.includes('/_sheets/')) return;
       const folder = entryFolder(entry.save_path);
+      const ctxTags = Array.isArray(entry.context_tags) ? entry.context_tags : [];
+      if (ctxTags.length > 0) manifestSchemaVersion = '1.1';
       if (!manifestByFolder[folder]) manifestByFolder[folder] = {};
+      ctxTags.forEach(tag => {
+        if (!manifestByContext[tag]) manifestByContext[tag] = {};
+      });
       (entry.jp_labels || []).forEach(label => {
-        if (!manifestByFolder[folder][label]) manifestByFolder[folder][label] = entry.save_path;
-        if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
+        // jp_labels can be string or {label, context} (future-proofing)
+        const labelStr = typeof label === 'string' ? label : (label && label.label);
+        if (!labelStr) return;
+        if (!manifestByFolder[folder][labelStr]) manifestByFolder[folder][labelStr] = entry.save_path;
+        ctxTags.forEach(tag => {
+          if (!manifestByContext[tag][labelStr]) manifestByContext[tag][labelStr] = entry.save_path;
+        });
+        if (!manifestJpToPath[labelStr]) manifestJpToPath[labelStr] = entry.save_path;
       });
       if (entry.source_sheet) manifestIdToSheet[entry.id] = entry.source_sheet;
     });
@@ -206,12 +222,24 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     imageManifest.images.forEach(entry => {
       if (!entry.save_path || !entry.save_path.includes('/_sheets/')) return;
       (entry.jp_labels || []).forEach(label => {
-        if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
+        const labelStr = typeof label === 'string' ? label : (label && label.label);
+        if (labelStr && !manifestJpToPath[labelStr]) manifestJpToPath[labelStr] = entry.save_path;
       });
     });
-    console.info('[audit] image_manifest.json loaded: ' + imageManifest.images.length + ' entries, ' + Object.keys(manifestJpToPath).length + ' jp_labels mapped, folders=' + Object.keys(manifestByFolder).join(','));
+    console.info('[audit] image_manifest.json loaded: schema=v' + manifestSchemaVersion + ', ' + imageManifest.images.length + ' entries, ' + Object.keys(manifestJpToPath).length + ' jp_labels, contexts=[' + Object.keys(manifestByContext).join(',') + ']');
   }
-  // 質問 type ごとのフォルダ優先順位 (上から順に検索、ヒットしたものを使う)
+  // v1.1: 質問 type ごとの context_tags 優先順位
+  const TYPE_CONTEXT_PREFERENCE = {
+    shape_name:  ['shape'],
+    order_color: ['color'],
+    count_total: [],
+    emoji_name:  ['nature', 'weather', 'body', 'object', 'animal', 'plant'],
+    body:        ['body', 'face'],
+    weather:     ['snowflake', 'weather', 'nature'],
+    trivia:      ['animal', 'bird', 'fish', 'bug', 'food', 'plant', 'nature', 'body', 'face'],
+    opposite:    ['emotion', 'face', 'posture', 'door', 'prop', 'time_of_day'],
+  };
+  // v1.0 互換: folder 優先順位
   const TYPE_FOLDER_PREFERENCE = {
     shape_name:  ['shape', 'choice'],
     order_color: ['color', 'choice'],
@@ -222,13 +250,21 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     trivia:      ['choice', 'animal', 'stage'],
     opposite:    ['choice', 'stage'],
   };
-  // type-aware lookup: type に応じて適切なフォルダから優先的に拾う
+  // type-aware lookup: v1.1 context → v1.0 folder → fallback の順に試す
   function lookupByTypeAware(label, qType) {
-    const prefs = TYPE_FOLDER_PREFERENCE[qType] || [];
-    for (const f of prefs) {
+    // v1.1 context-based (preferred)
+    const ctxPrefs = TYPE_CONTEXT_PREFERENCE[qType] || [];
+    for (const tag of ctxPrefs) {
+      if (manifestByContext[tag] && manifestByContext[tag][label]) {
+        return manifestByContext[tag][label];
+      }
+    }
+    // v1.0 folder-based (legacy)
+    const folderPrefs = TYPE_FOLDER_PREFERENCE[qType] || [];
+    for (const f of folderPrefs) {
       if (manifestByFolder[f] && manifestByFolder[f][label]) return manifestByFolder[f][label];
     }
-    // フォールバック: フォルダ不問
+    // 全体フォールバック
     return manifestJpToPath[label] || null;
   }
   // overrides は最優先 (auto抽出を上書きできる)。manifest があれば legacy は補助扱い。
@@ -655,7 +691,7 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     : '';
 
   const sourceLabel = imageManifest
-    ? '<span class="stat-pill ok" title="image_manifest.json from Codex audit">📦 manifest: ' + imageManifest.images.length + ' entries</span>'
+    ? '<span class="stat-pill ok" title="image_manifest.json from Codex audit">📦 manifest v' + manifestSchemaVersion + ': ' + imageManifest.images.length + ' entries</span>'
     : '<span class="stat-pill" style="color:#888;">manifest 未配置 (legacy mode)</span>';
   document.getElementById('stats').innerHTML =
     '<span class="stat-pill">問題数: ' + totalQ + '</span>' +
