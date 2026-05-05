@@ -1384,48 +1384,6 @@ body.layout-editor-on .character img {
   top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
 }
 
-/* ===== Quick "back to menu" pill (本編プレイ中の保険動線) =====
-   お知らせ / せってい の右隣に並べる小さな丸ボタン。play.html へ戻る。
-   .stage 内 (transform: scale 配下) ではなく viewport 直下に置くことで、
-   どの aspect-ratio でも一貫した押しやすいサイズで表示される。
-   タイトル/モード選択画面 (body に .game-started が付いていない状態) では
-   非表示にし、誤タップで play.html に戻されるのを防ぐ。
-   start-screen は z-index:50、mode-screen も先頭画面なので、
-   .game-started フラグでゲートするのが確実 (z-index 競合を回避)。 */
-.quiz-back-to-menu {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  right: calc(max(16px, env(safe-area-inset-right)) + 56px);
-  z-index: 60;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: rgba(255, 248, 224, 0.92);
-  border: 2px solid var(--wood-dark);
-  border-radius: 999px;
-  color: var(--text);
-  font-family: inherit;
-  font-weight: 800;
-  font-size: 14px;
-  text-decoration: none;
-  box-shadow: 0 2px 0 var(--wood-dark), 0 4px 10px rgba(0,0,0,0.25);
-  -webkit-tap-highlight-color: transparent;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-body.game-started .quiz-back-to-menu {
-  opacity: 1;
-  pointer-events: auto;
-}
-.quiz-back-to-menu:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 0 var(--wood-dark), 0 2px 6px rgba(0,0,0,0.25);
-}
-.quiz-back-to-menu .back-icon { font-size: 16px; line-height: 1; }
-.quiz-back-to-menu .back-label { font-size: 13px; letter-spacing: 0.04em; }
-
 /* ===== Aspect-ratio defensive rules (iPad 4:3 / iPhone 19.5:9 etc.) =====
    fitStage が Math.max (cover-fit) で stage を viewport 全体に広げるため、
    16:9 より縦長の viewport では canvas の左右が画面外にクリップされる。
@@ -1926,15 +1884,6 @@ body.debug-mode:not(.layout-editor-on) #qz-debug-nav { bottom: 8px; }
     </div>
   </div>
 </div>
-
-<!-- ===== 仮: メニューに戻るボタン (お知らせ/せってい の隣あたり) =====
-     ユーザーが本編からタイトル/モード選択に直接戻れる導線が無いため、
-     play.html (メニュー) へ確実に戻れる丸ピルを画面右上隅に常設する。
-     スタート画面 (z-index: 50) は前面に出るのでタイトル中は被って見えない。 -->
-<a href="../play.html" class="quiz-back-to-menu" id="quiz-back-to-menu" aria-label="メニューに戻る">
-  <span class="back-icon" aria-hidden="true">🏠</span>
-  <span class="back-label">メニュー</span>
-</a>
 
 <!-- Feedback / Result / Detail popup -->
 <div class="feedback" id="feedback">やったー！</div>
@@ -3171,8 +3120,6 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
       selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
     });
     document.getElementById('mode-screen').classList.add('hidden');
-    // 「本当に遊んでいる」状態フラグ。 .quiz-back-to-menu はこのクラスでゲートされる
-    document.body.classList.add('game-started');
     initGame();
     if (typeof initMenu === 'function') {
       initMenu({
@@ -3692,7 +3639,6 @@ function _qzPtBuildPanel() {
   var modeScr  = document.getElementById('mode-screen');
   if (startScr) startScr.classList.add('hidden');
   if (modeScr)  modeScr.classList.add('hidden');
-  document.body.classList.add('game-started');
 
   // 全カテゴリを ON にしておく (debug playlist は ALL_CATS から組むので念のため)
   ALL_CATS.forEach(function (c) { selectedCategories[c] = true; });
