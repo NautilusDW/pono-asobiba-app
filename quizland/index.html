@@ -671,31 +671,45 @@ body.sheet-on .hdr-right .ctrl-btn {
 
 /* item-row (color/count) — preview/full の slot 配列に近い見た目
    stage-area が flex-wrap+align-content:center で row 全体を中央に寄せる前提。
-   row 自身の縦伸長を防ぐため align-self:center + flex:0 0 auto を明示。 */
+   row 自身の縦伸長を防ぐため align-self:center を明示。
+   max-width:100% で row が parent (#stage-area / .board 内) を超えないようにし、
+   内側 flex-wrap で 9 個並べても (count_total L3) ちゃんと 2 段に折り返す。
+   旧 flex: 0 0 auto では row が content 幅 (1362px) のまま親を突き抜けて
+   board overflow:hidden に切られていた。 */
 .item-row {
   display: flex;
   gap: 24px;
   justify-content: center;
   align-items: center;
   align-self: center;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   flex-wrap: wrap;
+  max-width: 100%;
 }
 
 /* color-chip: dotted-slot 風の枠 + 色面 */
 .color-chip {
   width: var(--slot-size);
   height: var(--slot-size);
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
   border-radius: var(--slot-radius);
   border: 4px solid rgba(255,255,255,0.85);
   box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16),
               inset 0 0 0 2px rgba(0,0,0,0.06);
 }
 
-/* count-item: scratchy paper-card 風 */
+/* count-item: scratchy paper-card 風
+   flex 子要素のデフォルト flex-shrink:1 + min-width:auto により、 たくさん
+   並べると幅だけ縮んで縦横比が崩れて「いちご潰れ」状態になっていた。
+   flex:0 0 auto + aspect-ratio:1/1 で 1:1 の正方形を強制し、 縮む前に
+   parent の flex-wrap で折り返すよう保証する。 */
 .count-item {
   width: var(--slot-size);
   height: var(--slot-size);
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(120, 83, 20, 0.18));
 }
@@ -1509,6 +1523,80 @@ body.game-started .quiz-back-to-menu {
   .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
   .char-hint { width: auto !important; height: auto !important; min-width: 170px !important; max-width: 220px !important; font-size: 15px !important; transform: translate(0, 0) !important; }
 }
+
+/* ===== デバッグ全問プレイモード (?debug=all) =====
+   通常ユーザーには絶対見えない。 body.debug-mode が付いたときのみ表示。
+   layout-editor (?edit=1) と同時指定された場合は body.layout-editor-on が付くので
+   :not(.layout-editor-on) で debug ナビを非表示にする (layout 編集を妨げないため)。 */
+#qz-debug-nav {
+  display: none;
+  position: fixed;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: rgba(20, 20, 30, 0.88);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.3;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  max-width: 95vw;
+}
+body.debug-mode:not(.layout-editor-on) #qz-debug-nav { display: flex; }
+#qz-debug-nav button {
+  background: #4a4f6a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#qz-debug-nav button:hover { background: #5a6080; }
+#qz-debug-nav button:active { transform: scale(0.96); }
+#qz-debug-nav .qz-dbg-meta {
+  min-width: 180px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#qz-debug-nav select {
+  background: #2a2d3e;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 12px;
+}
+/* 画面右下の薄い "DEBUG MODE" バッジ */
+body.debug-mode::after {
+  content: 'DEBUG MODE';
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  z-index: 9998;
+  background: rgba(220, 80, 60, 0.85);
+  color: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+body.debug-mode.layout-editor-on::after { display: none; }
 </style>
 </head>
 <body class="sheet-on show-safe">
@@ -1655,12 +1743,28 @@ body.game-started .quiz-back-to-menu {
 // ═══════════════════════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════════════════════
-const TOTAL_Q = 5;
+// 通常モードは 5 問構成。 ?debug=all 時は全問を 1 度ずつ通すために
+// totalQuestions を動的に書き換える (initGame の中で設定)。
+const DEFAULT_TOTAL_Q = 5;
+let totalQuestions = DEFAULT_TOTAL_Q;
 let playlist = [];
 let questionIdx = 0;
 let correctCount = 0;
 let currentQ = null;
 let locked = false;
+
+// ─── デバッグ全問プレイモード判定 ─────────────────────
+//   ?debug=all : 全 169 問を固定順で 1 度ずつ通すモード。
+//                タイトル/モード選択をスキップし、 result も 169 問完走後に出る。
+//   ?edit=1 (layout-editor-on) と同時指定された場合は layout-editor を優先し、
+//   debug ナビは無効化する (DOM は付くが操作は通常通り、進行はそのまま 169 を回す)。
+//   通常ユーザー (?debug=all なし) では一切挙動が変わらないこと。
+const QZ_DEBUG_ALL = (function () {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('debug') === 'all';
+  } catch (_) { return false; }
+})();
 
 // 選択中カテゴリー（デフォルト: 全部ON）
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
@@ -2212,7 +2316,7 @@ function buildPlaylist() {
   if (cats.length === 0) return [];
   const minLv = DIFF_MIN_LEVEL[selectedDifficulty];
   const maxLv = DIFF_MAX_LEVEL[selectedDifficulty];
-  const perCat = Math.max(1, Math.ceil(TOTAL_Q / cats.length));
+  const perCat = Math.max(1, Math.ceil(DEFAULT_TOTAL_Q / cats.length));
   const list = [];
   cats.forEach(cat => {
     const pool = (QUIZLAND_QUESTIONS[cat] || [])
@@ -2220,7 +2324,27 @@ function buildPlaylist() {
       .filter(q => q.level >= minLv && q.level <= maxLv);
     if (pool.length > 0) list.push(...shuffle(pool).slice(0, perCat));
   });
-  return shuffle(list).slice(0, TOTAL_Q);
+  return shuffle(list).slice(0, DEFAULT_TOTAL_Q);
+}
+
+// ─── デバッグ全問プレイ用: 全カテゴリを固定順で 1 度ずつ並べる ──────
+//   カテゴリ順は QUIZLAND_QUESTIONS の宣言順 (= ALL_CATS と同じ順)。
+//   各カテゴリ内は level 昇順 → 元配列の idx 昇順。 シャッフル無し。
+//   合計 169 問 (order_color 24 + count_total 24 + shape_name 24 + weather 24
+//                + opposite 24 + trivia 25 + body 24)。
+function buildDebugPlaylist() {
+  const list = [];
+  ALL_CATS.forEach(cat => {
+    const pool = (QUIZLAND_QUESTIONS[cat] || [])
+      .map((q, idx) => Object.assign({ _cat: cat, _idx: idx }, q));
+    pool.sort((a, b) => {
+      const lvDiff = (a.level || 0) - (b.level || 0);
+      if (lvDiff !== 0) return lvDiff;
+      return a._idx - b._idx;
+    });
+    list.push(...pool);
+  });
+  return list;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2526,16 +2650,24 @@ function setupNarration(q) {
 
 function updateHUD() {
   document.getElementById('q-num').textContent = (questionIdx + 1);
-  document.getElementById('q-total').textContent = TOTAL_Q;
+  document.getElementById('q-total').textContent = totalQuestions;
   const prog = document.getElementById('hud-progress');
   prog.innerHTML = '';
-  for (let i = 0; i < TOTAL_Q; i++) {
+  // デバッグ全問モードは 169 個ドットを並べると HUD が破綻するので、
+  // 5 個に圧縮した擬似プログレスを表示する (現在位置を 0..4 にマッピング)。
+  const dotCount = QZ_DEBUG_ALL ? DEFAULT_TOTAL_Q : totalQuestions;
+  const currentDotIdx = QZ_DEBUG_ALL && totalQuestions > 0
+    ? Math.min(dotCount - 1, Math.floor(questionIdx * dotCount / totalQuestions))
+    : questionIdx;
+  for (let i = 0; i < dotCount; i++) {
     const dot = document.createElement('span');
     dot.className = 'dot';
-    if (i < questionIdx) dot.classList.add('done');
-    if (i === questionIdx) dot.classList.add('current');
+    if (i < currentDotIdx) dot.classList.add('done');
+    if (i === currentDotIdx) dot.classList.add('current');
     prog.appendChild(dot);
   }
+  // デバッグナビ更新 (DOM があれば)
+  if (typeof updateDebugNav === 'function') updateDebugNav();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2613,7 +2745,7 @@ function nextQuestion() {
   clearTimeout(_autoHintTimer);
   stopTriviaPoseAnimation(); // 前の質問のポーズ循環を必ず止める (interval リーク防止)
   questionIdx++;
-  if (questionIdx >= TOTAL_Q) {
+  if (questionIdx >= totalQuestions) {
     showResult();
     return;
   }
@@ -2626,13 +2758,13 @@ function nextQuestion() {
 function showResult() {
   clearTimeout(_autoHintTimer);
   stopTriviaPoseAnimation(); // 結果画面ではアニメーションを止める
-  showClearDialogue(correctCount, TOTAL_Q);
-  const cleared = correctCount >= Math.ceil(TOTAL_Q * 0.7); // 70% 以上で clear
+  showClearDialogue(correctCount, totalQuestions);
+  const cleared = correctCount >= Math.ceil(totalQuestions * 0.7); // 70% 以上で clear
   document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
   document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
   document.getElementById('result-msg').textContent = cleared
-    ? TOTAL_Q + 'もんちゅう ' + correctCount + 'もん せいかい！'
-    : TOTAL_Q + 'もんちゅう ' + correctCount + 'もん せいかい。\nもういちど やってみよう！';
+    ? totalQuestions + 'もんちゅう ' + correctCount + 'もん せいかい！'
+    : totalQuestions + 'もんちゅう ' + correctCount + 'もん せいかい。\nもういちど やってみよう！';
   document.getElementById('result-overlay').classList.remove('hidden');
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
@@ -2650,7 +2782,14 @@ function showResult() {
 // Init
 // ═══════════════════════════════════════════════════════════
 function initGame() {
-  playlist = buildPlaylist();
+  if (QZ_DEBUG_ALL) {
+    // デバッグ全問プレイ: シャッフル無し / 全問固定順 / 169 問完走で result 画面へ
+    playlist = buildDebugPlaylist();
+    totalQuestions = playlist.length;
+  } else {
+    playlist = buildPlaylist();
+    totalQuestions = DEFAULT_TOTAL_Q;
+  }
   questionIdx = 0;
   correctCount = 0;
   document.getElementById('result-overlay').classList.add('hidden');
@@ -2755,6 +2894,124 @@ document.getElementById('result-cat-btn').addEventListener('click', function(e) 
       menuToggle.dispatchEvent(evt);
     }
   });
+})();
+
+// ═══════════════════════════════════════════════════════════
+// デバッグ全問プレイモード (?debug=all) ─ ナビ + 自動起動
+// ─ 通常ユーザー (?debug=all なし) では何も実行されない。
+// ─ ?edit=1 (layout-editor) と同時指定時は debug ナビ DOM は付与するが、
+//   body.layout-editor-on があるので CSS で非表示。 進行操作も無効。
+// ═══════════════════════════════════════════════════════════
+function _qzCatLabel(cat) {
+  return cat || '?';
+}
+function updateDebugNav() {
+  if (!QZ_DEBUG_ALL) return;
+  var meta = document.getElementById('qz-debug-meta');
+  if (!meta) return;
+  if (currentQ) {
+    meta.textContent =
+      'カテゴリ:' + _qzCatLabel(currentQ._cat) +
+      ' Lv:' + (currentQ.level || '?') +
+      ' #' + (currentQ._idx != null ? currentQ._idx : '?') +
+      ' (type:' + (currentQ.type || '?') + ')';
+  } else {
+    meta.textContent = '(no question)';
+  }
+  // ジャンプ select の現在位置同期
+  var sel = document.getElementById('qz-debug-jump');
+  if (sel) sel.value = String(questionIdx);
+}
+function _qzDebugGoto(targetIdx) {
+  if (!QZ_DEBUG_ALL) return;
+  if (_isEditMode()) return;
+  if (!playlist || playlist.length === 0) return;
+  var idx = Math.max(0, Math.min(playlist.length - 1, targetIdx));
+  // 進行中の自動ヒント / pose interval / lock を全部リセット
+  clearTimeout(_autoHintTimer);
+  if (typeof stopTriviaPoseAnimation === 'function') stopTriviaPoseAnimation();
+  questionIdx = idx;
+  locked = false;
+  loadQuestion(playlist[questionIdx]);
+}
+(function _qzDebugInit() {
+  if (!QZ_DEBUG_ALL) return;
+  // body にクラス付与 → CSS でナビ表示
+  document.body.classList.add('debug-mode');
+
+  // タイトル / モード選択をスキップしてゲーム開始状態へ
+  var startScr = document.getElementById('start-screen');
+  var modeScr  = document.getElementById('mode-screen');
+  if (startScr) startScr.classList.add('hidden');
+  if (modeScr)  modeScr.classList.add('hidden');
+  document.body.classList.add('game-started');
+
+  // 全カテゴリを ON にしておく (debug playlist は ALL_CATS から組むので念のため)
+  ALL_CATS.forEach(function (c) { selectedCategories[c] = true; });
+
+  // デバッグナビ DOM を組み立て
+  var nav = document.createElement('div');
+  nav.id = 'qz-debug-nav';
+  nav.innerHTML =
+    '<button type="button" id="qz-debug-prev" title="前の問題へ">← 前へ</button>' +
+    '<span class="qz-dbg-meta" id="qz-debug-meta">(loading)</span>' +
+    '<select id="qz-debug-jump" title="ジャンプ"></select>' +
+    '<button type="button" id="qz-debug-next" title="次の問題へ">次へ →</button>';
+  document.body.appendChild(nav);
+
+  // ゲーム初期化 → playlist が組まれる
+  initGame();
+  if (typeof initMenu === 'function') {
+    try {
+      initMenu({
+        bgmToggle: function () { toggleBGM(); },
+        tutorial: function () { alert('DEBUG: 全問プレイモード'); }
+      });
+    } catch (_) {}
+  }
+
+  // ジャンプ select に全問の項目を入れる (playlist が出揃った後)
+  var sel = document.getElementById('qz-debug-jump');
+  if (sel && playlist) {
+    var frag = document.createDocumentFragment();
+    playlist.forEach(function (q, i) {
+      var opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent =
+        (i + 1) + '/' + playlist.length + ' ' + _qzCatLabel(q._cat) +
+        ' Lv' + (q.level || '?') + ' #' + (q._idx != null ? q._idx : '?');
+      frag.appendChild(opt);
+    });
+    sel.appendChild(frag);
+    sel.addEventListener('change', function () {
+      if (_isEditMode()) return;
+      _qzDebugGoto(parseInt(sel.value, 10) || 0);
+    });
+  }
+
+  document.getElementById('qz-debug-prev').addEventListener('click', function (e) {
+    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+    _qzDebugGoto(questionIdx - 1);
+  });
+  document.getElementById('qz-debug-next').addEventListener('click', function (e) {
+    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+    _qzDebugGoto(questionIdx + 1);
+  });
+
+  // メタ情報を初期同期
+  updateDebugNav();
+
+  // BGM は通常導線では start-screen クリック時に走るが、
+  // debug 起動はそれをスキップするので、 ユーザー操作なしでは音は出ない (autoplay 制約)。
+  // ステージタップで ensureAudio + startBGM を 1 回だけ起動するブートストラップを仕込む。
+  var stageEl = document.getElementById('stage');
+  if (stageEl) {
+    var _qzBgmKick = function () {
+      try { ensureAudio(); startBGM(); } catch (_) {}
+      stageEl.removeEventListener('pointerdown', _qzBgmKick, true);
+    };
+    stageEl.addEventListener('pointerdown', _qzBgmKick, true);
+  }
 })();
 
 // 安全策: 起動時に dot を 5 個レンダリング (loadQuestion でも更新される)
