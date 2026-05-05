@@ -1894,6 +1894,8 @@ function _bindHakaseBubbleClick() {
   if (!bubble) return;
   bubble.style.cursor = 'pointer';
   bubble.addEventListener('click', () => {
+    // layout-editor 中は吹き出しクリックでヒント2を出さない (要素移動を妨げないため)
+    if (document.body.classList.contains('layout-editor-on')) return;
     if (currentQ) showHint2(currentQ);
   });
 }
@@ -2384,6 +2386,9 @@ function renderChoices(q) {
       if (sizeCls) btn.classList.add(sizeCls);
     }
     btn.addEventListener('pointerdown', function(e) {
+      // layout-editor (?edit=1) 中は chip クリックで quiz を進行させない
+      // (チップを掴んで動かしたいのに「答えた」と判定されて困る対策)
+      if (document.body.classList.contains('layout-editor-on')) return;
       e.preventDefault();
       if (locked) return;
       onChoice(i, btn);
@@ -2437,6 +2442,7 @@ function setupNarration(q) {
     const has = Narration.hasEntry(key);
     btn.style.display = (has && Narration.getMode() !== 'off') ? '' : 'none';
     btn.onclick = function(e) {
+      if (document.body.classList.contains('layout-editor-on')) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
       Narration.play(key);
     };
@@ -2645,19 +2651,26 @@ document.querySelectorAll('.diff-btn').forEach(function(btn) {
 });
 refreshDiffActive();
 
+// 共通: layout-editor 中は game progression handler を全部無効化
+//   (要素を掴んで動かしたいのに、ボタンが反応してモード/結果画面が開いてしまうのを防ぐ)
+function _isEditMode() { return document.body.classList.contains('layout-editor-on'); }
+
 // HUD 左ボタン (おしらせ → モード選択画面へ戻る)
-document.getElementById('hud-back-btn').addEventListener('click', function() {
+document.getElementById('hud-back-btn').addEventListener('click', function(e) {
+  if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
   document.getElementById('result-overlay').classList.add('hidden');
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 
 // Result retry (same categories)
-document.getElementById('result-btn').addEventListener('click', function() {
+document.getElementById('result-btn').addEventListener('click', function(e) {
+  if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
   initGame();
 });
 
 // Result "change mode" → モード選択画面へ
-document.getElementById('result-cat-btn').addEventListener('click', function() {
+document.getElementById('result-cat-btn').addEventListener('click', function(e) {
+  if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
   document.getElementById('result-overlay').classList.add('hidden');
   document.getElementById('mode-screen').classList.remove('hidden');
 });
@@ -2667,6 +2680,7 @@ document.getElementById('result-cat-btn').addEventListener('click', function() {
   var settingsBtn = document.getElementById('hud-settings-btn');
   if (!settingsBtn) return;
   settingsBtn.addEventListener('pointerdown', function(e) {
+    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault();
     var menuToggle = document.querySelector('.pono-menu-toggle');
     if (menuToggle) {
