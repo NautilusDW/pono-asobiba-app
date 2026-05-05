@@ -47,6 +47,7 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .choice-img { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 6px; background: #fff; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .choice-img img { width: 100%; height: 100%; object-fit: contain; }
 .choice-img.none { border: 2px dashed var(--miss); background: #FEF2F2; color: var(--miss); font-size: 9px; font-weight: 700; line-height: 1.1; text-align: center; padding: 4px; }
+.choice-img.unneeded { border: 1.5px dashed #aaa; background: #f5f5f5; color: #888; font-size: 9px; font-weight: 600; line-height: 1.1; text-align: center; padding: 4px; }
 .sheet-link { display: inline-block; font-size: 10px; color: #888; cursor: pointer; padding: 1px 5px; border: 1px solid #ddd; border-radius: 4px; margin-top: 2px; user-select: none; }
 .sheet-link:hover { background: #fffbeb; color: #b45309; border-color: #f59e0b; }
 .q-stage-img { display: flex; align-items: flex-start; justify-content: center; }
@@ -109,6 +110,12 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 </div>
 
 <main>
+  <!-- 未生成リスト (Codex 次回依頼用) -->
+  <details id="missing-section" style="margin-bottom: 16px; background: #FEF2F2; border: 2px solid var(--miss); border-radius: 12px; padding: 12px 16px;">
+    <summary style="font-weight: 800; cursor: pointer; color: var(--miss);">📝 Codex 追加生成が必要な選択肢 <span id="missing-count">…</span> 件 — クリックで一覧 (画像不要な数字/長文は除外)</summary>
+    <div id="missing-list" style="margin-top: 10px; font-size: 13px;"></div>
+  </details>
+
   <!-- 重複生成リスト (collapsible) -->
   <details id="dup-section" style="margin-bottom: 24px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 12px 16px;">
     <summary style="font-weight: 800; cursor: pointer; color: #b45309;">⚠ 重複生成 <span id="dup-count">…</span> 件 (Codex が同じ画像を複数シートで再生成してる) — クリックで一覧</summary>
@@ -311,12 +318,23 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
       function updateMissBadge() {
         if (choiceMissCount > 0) {
           missBadge.style.display = '';
-          missBadge.textContent = '🖼 選択肢未紐付け ' + choiceMissCount + '/' + totalChoices;
+          missBadge.textContent = '🖼 未生成 ' + choiceMissCount + '/' + totalChoices;
           card.dataset.imgMissing = '1';
         } else {
           missBadge.style.display = 'none';
           delete card.dataset.imgMissing;
         }
+      }
+      // 画像不要かどうかの判定 (count_total数字 / 長文 / 短い和名)
+      function classifyChoice(choiceText, qType) {
+        const s = String(choiceText);
+        if (qType === 'count_total') return 'numeric';
+        // 数字+助数詞 (1つ, 3こ, 5ほん 等)
+        if (/^\d+[つ個本枚匹羽コこほん]/.test(s)) return 'numeric';
+        // 長文 (空白含むかつ長い、または長すぎる)
+        if (s.length >= 8) return 'longtext';
+        if (s.length >= 5 && /[ 　、]/.test(s)) return 'longtext';
+        return 'short'; // 本来 image があるべき短い和名
       }
       (q.choices || []).forEach((c, ci) => {
         const li = document.createElement('li');
@@ -334,10 +352,19 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
         function setMissing() {
           slot.innerHTML = '';
-          slot.classList.add('none');
-          slot.textContent = '画像なし';
-          choiceMissCount++;
-          updateMissBadge();
+          const cls = classifyChoice(c, cat);
+          if (cls === 'numeric') {
+            slot.classList.add('unneeded');
+            slot.textContent = '数字';
+          } else if (cls === 'longtext') {
+            slot.classList.add('unneeded');
+            slot.textContent = '長文';
+          } else {
+            slot.classList.add('none');
+            slot.textContent = '未生成';
+            choiceMissCount++;  // 真に Codex 生成が必要なものだけカウント
+            updateMissBadge();
+          }
         }
         function setLoaded(path) {
           resolvedPath = path;
@@ -493,6 +520,42 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     sec.appendChild(grid);
     gallery.appendChild(sec);
   });
+
+  // 6.4) missing list rendering (defer until questions rendered, scan card data)
+  setTimeout(() => {
+    const missingByType = {};
+    document.querySelectorAll('.q-card').forEach(card => {
+      card.querySelectorAll('.choice-img.none').forEach(slot => {
+        const li = slot.closest('.choice');
+        if (!li) return;
+        const txt = li.querySelector('.c-text');
+        if (!txt) return;
+        // extract choice text (strip ★ mark and filename divs)
+        const cleanTxt = (txt.cloneNode(true));
+        cleanTxt.querySelectorAll('.ans-mark, .c-fname, .sheet-link').forEach(n => n.remove());
+        const choice = cleanTxt.textContent.trim();
+        const type = card.dataset.cat || '?';
+        if (!missingByType[type]) missingByType[type] = new Set();
+        missingByType[type].add(choice);
+      });
+    });
+    const totalMissing = Object.values(missingByType).reduce((a, s) => a + s.size, 0);
+    document.getElementById('missing-count').textContent = totalMissing;
+    const ml = document.getElementById('missing-list');
+    if (totalMissing > 0) {
+      Object.entries(missingByType).sort().forEach(([type, set]) => {
+        const block = document.createElement('div');
+        block.style.marginBottom = '8px';
+        const arr = Array.from(set).sort();
+        block.innerHTML = '<strong style="color:#7f1d1d;">' + type + '</strong> (' + arr.length + '): <span style="font-family: ui-monospace, monospace; font-size: 12px;">' + arr.map(x => '"' + x + '"').join(', ') + '</span>';
+        ml.appendChild(block);
+      });
+      const help = document.createElement('p');
+      help.style.cssText = 'margin-top:10px; padding:8px 10px; background:#fff; border-radius:6px; font-size:12px; color:#7f1d1d;';
+      help.innerHTML = '次回 Codex 依頼時はカテゴリ単位で choice set を追加してください。例: <code>choice_trivia_morning_mist_set: [あめ, きり, ゆき, くもり]</code>';
+      ml.appendChild(help);
+    }
+  }, 0);
 
   // 6.5) duplicate list rendering
   const dupCountEl = document.getElementById('dup-count');
