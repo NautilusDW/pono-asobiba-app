@@ -5782,6 +5782,43 @@
       } catch (e) {}
     }
 
+    // Whiskey-1: 動的に挿入される spec-matched 要素 (例: quizland の renderChoices で
+    // 後から作られる .chip) にも自動でハンドルを付け直す。
+    // enable() 時には DOM 上に存在しなかった要素もエディタで掴めるようにする。
+    if (window.MutationObserver) {
+      try {
+        var moRoot = state.canvasEl || document.body;
+        var rescan = debounce(function () {
+          try {
+            state.spec.forEach(function (entry) {
+              var sel = entry[0], axes = entry[1];
+              $$(sel).forEach(function (el) {
+                if (!el.classList.contains('resizable')) {
+                  try { attachHandle(el, axes); } catch (e) {}
+                }
+              });
+            });
+            // 新しく要素が増えた場合、要素一覧 / saved-layout の再適用も追従させる
+            try { refreshElementList(); } catch (e) {}
+            try {
+              if (window._currentLayoutData && window.LayoutApplier) {
+                window.LayoutApplier.apply(window._currentLayoutData, moRoot, {
+                  selectors: state.spec.map(function (e) { return e[0]; })
+                });
+              }
+            } catch (e) {}
+          } catch (e) {}
+        }, 80);
+        var dynMo = new MutationObserver(function (muts) {
+          for (var i = 0; i < muts.length; i++) {
+            if (muts[i].addedNodes && muts[i].addedNodes.length) { rescan(); return; }
+          }
+        });
+        dynMo.observe(moRoot, { childList: true, subtree: true });
+        registerCleanup(function () { try { dynMo.disconnect(); } catch (e) {} });
+      } catch (e) { console.warn('[LayoutEditor] dynamic MutationObserver failed', e); }
+    }
+
     showToast('編集モード ON');
     emit('ready');
     emit('mode', 'edit');

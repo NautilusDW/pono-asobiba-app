@@ -841,6 +841,28 @@ body.sheet-on .hdr-right .ctrl-btn {
 .chip.txt-medium { font-size: 28px; }
 .chip.txt-long   { font-size: 22px; }
 .chip.has-image  { font-size: 24px; }
+
+/* 画像入り選択肢: choice = {text, image} 形式の chip */
+.chip.chip-with-image {
+  padding: 12px 8px;
+  gap: 6px;
+}
+.chip-illust {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.chip.chip-with-image .chip-illust-label {
+  font-size: 26px;
+  line-height: 1.1;
+}
+.chip.chip-with-image.txt-medium .chip-illust-label { font-size: 22px; }
+.chip.chip-with-image.txt-long   .chip-illust-label { font-size: 18px; }
+
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
 .chip:active,
 .chip.pressed {
@@ -2378,11 +2400,30 @@ function renderChoices(q) {
       num.className = 'chip-count-num';
       num.textContent = String(choice);
       btn.appendChild(num);
+    } else if (choice && typeof choice === 'object' && choice.image) {
+      // 画像入り選択肢: { text: '...', image: '...png' }
+      // 既存の choices: string[] と backward-compatible (object 形式のみ画像扱い)
+      btn.classList.add('chip-with-image');
+      const img = document.createElement('img');
+      img.className = 'chip-illust';
+      img.src = '../assets/images/quizland/illust/choice/' + choice.image;
+      img.alt = '';
+      img.draggable = false;
+      btn.appendChild(img);
+      if (choice.text) {
+        const label = document.createElement('span');
+        label.className = 'chip-illust-label';
+        label.textContent = choice.text;
+        btn.appendChild(label);
+        const sizeCls = chipSizeClass(choice.text);
+        if (sizeCls) btn.classList.add(sizeCls);
+      }
     } else {
+      const text = (choice && typeof choice === 'object') ? choice.text : choice;
       const label = document.createElement('span');
-      label.textContent = choice;
+      label.textContent = text;
       btn.appendChild(label);
-      const sizeCls = chipSizeClass(choice);
+      const sizeCls = chipSizeClass(text);
       if (sizeCls) btn.classList.add(sizeCls);
     }
     btn.addEventListener('pointerdown', function(e) {

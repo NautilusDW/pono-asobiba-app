@@ -287,6 +287,18 @@ const QUIZLAND_QUESTIONS = {
       detail:'うさぎは ながい みみで とおくの おとを よく きけるんだ！'},
 
     // Level 2
+    // 画像入り選択肢サンプル: choices に { text, image } 形式の object を混在可。
+    // 画像は assets/images/quizland/illust/choice/ から名前指定で読み込む。
+    { level:2, type:'trivia', category:'trivia',
+      q:'あしが 8ぽん あるのは どれ？',
+      answer:0,
+      choices:[
+        { text:'クモ',      image:'kumo.png' },
+        { text:'カブトムシ', image:'kabutomushi.png' },
+        { text:'チョウチョ', image:'chocho.png' },
+        { text:'バッタ',    image:'batta.png' }
+      ],
+      detail:'クモは あしが 8ぽん あるよ。 こんちゅうの なかまの カブトムシ・チョウチョ・バッタは 6ぽん だよ！'},
     { level:2, type:'trivia', category:'trivia',
       q:'そらを とべない とりは どれ？',
       answer:1, choices:['タカ','ペンギン','ハト','ツバメ'] ,
