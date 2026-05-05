@@ -742,7 +742,7 @@ body {
         <input type="range" id="ablur" min="0" max="5" step="0.1" value="0">
       </div>
       <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:4px;cursor:pointer">
-        <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171"> 自動リアルタイム更新
+        <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171" checked> 自動リアルタイム更新
       </label>
     </div>
 
@@ -2320,6 +2320,32 @@ function runProcess(showUI) {
   processedRaw.width = processedCanvas.width;
   processedRaw.height = processedCanvas.height;
   processedRaw.getContext('2d').drawImage(processedCanvas, 0, 0);
+  // 透明化されたピクセルが見えるように、 比較表示の背景が画像 bg と
+  // 同色 (例: 白画像 + 白表示背景) なら自動的にチェッカー柄に切替える。
+  // これがないと「背景除去したのに何も変わらない」とユーザーに誤解される。
+  try {
+    const sel = document.getElementById('bg-mode-select');
+    if (sel) {
+      const od = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height).data;
+      const [sr, sg, sb] = sampleBgColor(od, originalCanvas.width, originalCanvas.height);
+      const isSampledNearWhite   = sr > 235 && sg > 235 && sb > 235;
+      const isSampledNearBlack   = sr <  20 && sg <  20 && sb <  20;
+      const isSampledNearMagenta = sr > 220 && sg <  40 && sb > 220;
+      const isSampledNearGreen   = sr <  60 && sg > 200 && sb <  60;
+      const isSampledNearCyan    = sr <  60 && sg > 200 && sb > 200;
+      const conflict =
+        (sel.value === 'white'   && isSampledNearWhite)   ||
+        (sel.value === 'black'   && isSampledNearBlack)   ||
+        (sel.value === 'magenta' && isSampledNearMagenta) ||
+        (sel.value === 'green'   && isSampledNearGreen)   ||
+        (sel.value === 'cyan'    && isSampledNearCyan);
+      if (conflict) {
+        sel.value = 'checker';
+        bgMode = 'checker';
+        showToast('表示背景を「チェッカー」に切替えました（透過部分を見やすくするため）', true);
+      }
+    }
+  } catch (e) { /* non-fatal */ }
   redrawCompare();
   document.getElementById('btn-split').disabled = false;
   document.getElementById('btn-finish').disabled = false;
