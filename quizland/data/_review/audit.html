@@ -180,16 +180,27 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
   ]);
   // imageManifest がある場合は jp_label → save_path の高速マップを優先生成。
   // 無ければ legacy auto + overrides を使う。
+  // ★ 注意: sheet エントリ (_sheets/*.png) と個別 crop が同じ jp_label を持つことがある。
+  //   個別 crop 優先で解決する (sheet は最後の手段)。
   const manifestJpToPath = {};   // jp_label → save_path (image_manifest.json 由来、最優先)
   const manifestIdToSheet = {};  // id → sheet (image_manifest.json 由来)
   if (imageManifest && Array.isArray(imageManifest.images)) {
+    // 第1パス: 個別 crop (= _sheets/ 以外) のみ登録
     imageManifest.images.forEach(entry => {
+      if (entry.save_path && entry.save_path.includes('/_sheets/')) return;
       (entry.jp_labels || []).forEach(label => {
         if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
       });
       if (entry.source_sheet) manifestIdToSheet[entry.id] = entry.source_sheet;
     });
-    console.info('[audit] image_manifest.json loaded: ' + imageManifest.images.length + ' entries');
+    // 第2パス: シートのみ (個別 crop で解決できなかった label のフォールバック)
+    imageManifest.images.forEach(entry => {
+      if (!entry.save_path || !entry.save_path.includes('/_sheets/')) return;
+      (entry.jp_labels || []).forEach(label => {
+        if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
+      });
+    });
+    console.info('[audit] image_manifest.json loaded: ' + imageManifest.images.length + ' entries, ' + Object.keys(manifestJpToPath).length + ' jp_labels mapped');
   }
   // overrides は最優先 (auto抽出を上書きできる)。manifest があれば legacy は補助扱い。
   const externalJpMap = Object.assign(
