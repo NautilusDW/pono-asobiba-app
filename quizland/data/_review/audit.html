@@ -61,6 +61,15 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .gallery-item img { width: 100%; height: 80px; object-fit: contain; }
 .gallery-item .filename { font-size: 10px; word-break: break-all; margin-top: 4px; color: #555; }
 .gallery-item.miss .filename { color: var(--miss); }
+
+/* ===== Lightbox: クリックで画像拡大 ===== */
+.choice-img img, .q-stage-img img, .gallery-item img { cursor: zoom-in; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 40px; cursor: zoom-out; }
+.lightbox.show { display: flex; }
+.lightbox-content { max-width: 100%; max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.lightbox img { max-width: 90vw; max-height: 80vh; object-fit: contain; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.lightbox-caption { color: #fff; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 6px; }
+.lightbox-close { position: fixed; top: 16px; right: 20px; color: #fff; font-size: 32px; background: rgba(0,0,0,0.5); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; }
 </style>
 </head>
 <body>
@@ -76,6 +85,15 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
   </div>
 </header>
 
+<!-- Lightbox (クリックで拡大表示) -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lightbox-close" id="lightbox-close" aria-label="閉じる">×</div>
+  <div class="lightbox-content">
+    <img id="lightbox-img" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+</div>
+
 <main>
   <div id="questions"></div>
 
@@ -88,6 +106,36 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
 <script src="../questions.js"></script>
 <script>
+// ===== Lightbox: グローバルなクリック委譲で choice-img / stage / gallery 全部を拡大 =====
+(function() {
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbCap = document.getElementById('lightbox-caption');
+  document.addEventListener('click', function(e) {
+    const target = e.target;
+    if (target.tagName === 'IMG' && target.closest('.choice-img, .q-stage-img, .gallery-item')) {
+      e.stopPropagation();
+      lbImg.src = target.src;
+      lbImg.alt = target.alt || '';
+      // caption: try to derive a useful path/id
+      let caption = target.alt || '';
+      const galleryItem = target.closest('.gallery-item');
+      if (galleryItem) {
+        const fn = galleryItem.querySelector('.filename');
+        if (fn) caption = fn.textContent;
+      } else {
+        // strip leading ../../../ for readability
+        caption = target.getAttribute('src').replace(/^\.\.\//g, '').replace(/^\.\//,'');
+      }
+      lbCap.textContent = caption;
+      lb.classList.add('show');
+    }
+  });
+  function close() { lb.classList.remove('show'); lbImg.src = ''; }
+  lb.addEventListener('click', function(e) { if (e.target === lb || e.target.id === 'lightbox-close') close(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
+})();
+
 (async function() {
   const ASSET_BASE = '../../../';
 
