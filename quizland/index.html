@@ -215,9 +215,11 @@ body.sheet-on .chip:not(.pressed):not(.correct):not(.wrong) {
   box-shadow: none;
 }
 
-/* circle: chip 内の円アイコン枠 (チップの内訳要素) */
+/* circle: chip 内の円アイコン枠 (チップの内訳要素)
+   order_color 問題では .chip[data-color="..."] .circle の per-color background を活かすため、
+   ここでは background を上書きしない。 border / shadow のみ sheet モードに合わせて消す。
+   (旧: preview-placeholders/circle.png を全 chip に当てて全部オレンジ円になっていたバグを修正) */
 body.sheet-on .chip .circle {
-  background: url('../assets/_legacy/preview-placeholders/circle.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
