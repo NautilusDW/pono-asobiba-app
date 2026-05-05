@@ -38,10 +38,15 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .q-text { font-size: 17px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
 .q-hint { font-size: 13px; color: #8A6A42; margin-bottom: 4px; }
 .q-detail { font-size: 12px; color: #888; margin-top: 4px; font-style: italic; }
-.choices { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
-.choice { font-size: 14px; padding: 4px 8px; border-radius: 6px; background: #fafafa; }
+.choices { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.choice { font-size: 14px; padding: 4px 8px; border-radius: 6px; background: #fafafa; display: flex; align-items: center; gap: 8px; }
 .choice.answer { background: #DCFCE7; font-weight: 700; }
-.choice .ans-mark { color: var(--ok); margin-right: 4px; }
+.choice .ans-mark { color: var(--ok); }
+.choice .c-text { flex: 1; min-width: 0; }
+.choice .c-fname { font-size: 10px; color: #888; }
+.choice-img { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 6px; background: #fff; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.choice-img img { width: 100%; height: 100%; object-fit: contain; }
+.choice-img.none { border: 2px dashed var(--miss); background: #FEF2F2; color: var(--miss); font-size: 9px; font-weight: 700; line-height: 1.1; text-align: center; padding: 4px; }
 .q-stage-img { display: flex; align-items: flex-start; justify-content: center; }
 .q-stage-img img { max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
 .q-stage-img .nostage { color: #aaa; font-size: 12px; padding: 24px 0; }
@@ -181,16 +186,54 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
       const ul = document.createElement('ul');
       ul.className = 'choices';
+      let choiceMissCount = 0;
       (q.choices || []).forEach((c, ci) => {
         const li = document.createElement('li');
         li.className = 'choice' + (ci === q.answer ? ' answer' : '');
-        const mark = ci === q.answer ? '<span class="ans-mark">★</span>' : '';
-        const img = findChoiceImage(c, cat);
-        const imgTag = img ? ' <span style="font-size:10px;color:#888;">[' + img.split('/').pop() + ']</span>' : '';
-        li.innerHTML = mark + escapeHtml(String(c)) + imgTag;
+
+        // image slot (always present)
+        const slot = document.createElement('div');
+        slot.className = 'choice-img';
+        const matchedPath = findChoiceImage(c, cat);
+        if (matchedPath) {
+          const img = document.createElement('img');
+          img.src = ASSET_BASE + matchedPath;
+          img.alt = String(c);
+          img.onerror = () => {
+            // file 404 → fallback to "画像なし" slot
+            slot.classList.add('none');
+            slot.innerHTML = '画像<br>404';
+            choiceMissCount++;
+          };
+          slot.appendChild(img);
+        } else {
+          slot.classList.add('none');
+          slot.textContent = '画像なし';
+          choiceMissCount++;
+        }
+        li.appendChild(slot);
+
+        // text + answer mark + filename
+        const wrap = document.createElement('div');
+        wrap.className = 'c-text';
+        const mark = ci === q.answer ? '<span class="ans-mark">★ </span>' : '';
+        const fname = matchedPath ? '<div class="c-fname">' + matchedPath.split('/').pop() + '</div>' : '';
+        wrap.innerHTML = mark + escapeHtml(String(c)) + fname;
+        li.appendChild(wrap);
+
         ul.appendChild(li);
       });
       left.appendChild(ul);
+
+      // mark card as missing-img if any choice or stage is unmapped
+      if (choiceMissCount > 0) {
+        const tag = document.createElement('span');
+        tag.className = 'q-img-flag miss';
+        tag.style.marginLeft = '4px';
+        tag.textContent = '🖼 選択肢未紐付け ' + choiceMissCount + '/' + (q.choices || []).length;
+        meta.appendChild(tag);
+        card.dataset.imgMissing = '1';
+      }
 
       if (q.detail) {
         const det = document.createElement('div');
