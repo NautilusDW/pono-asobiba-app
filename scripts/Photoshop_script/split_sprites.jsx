@@ -49,34 +49,49 @@
   var outFolder = Folder.selectDialog('分割PNGの保存先フォルダを選んでください');
   if (!outFolder) { tmpPng.remove(); return; }
 
-  // ── B画像（左右反転版）も出力するか確認（ScriptUI ダイアログ）
-  var exportFlipB = (function() {
-    var dlg = new Window('dialog', 'B画像も出力しますか？');
+  // ── 出力オプション (チェックボックス) を一括で確認
+  var exportOptions = (function() {
+    var dlg = new Window('dialog', '出力オプション');
     dlg.orientation = 'column';
     dlg.alignChildren = 'fill';
     dlg.margins = 20;
     dlg.spacing = 12;
 
     var msg = dlg.add('statictext', undefined,
-      'B画像（左右反転版）も出力しますか？\n\n' +
-      '「はい」 → {name}_NNN_A.png と {name}_NNN_B.png の両方\n' +
-      '「いいえ」 → {name}_NNN.png のみ（従来通り）',
+      '分割PNGの出力オプションを選んでください。',
       { multiline: true });
-    msg.preferredSize = [380, 80];
+    msg.preferredSize = [380, 24];
+
+    var cbFlip = dlg.add('checkbox', undefined,
+      'B画像（左右反転版）も出力する  → {name}_NNN_A.png と _B.png');
+    cbFlip.value = false;
+
+    var cbSquare = dlg.add('checkbox', undefined,
+      '全出力を 1:1 の正方形にする（長辺に合わせて透明パディング）');
+    cbSquare.value = true;
 
     var btns = dlg.add('group');
     btns.alignment = 'center';
     btns.spacing = 10;
-    var yesBtn = btns.add('button', undefined, 'はい (A+B)', { name: 'ok' });
-    var noBtn  = btns.add('button', undefined, 'いいえ (Aのみ)', { name: 'cancel' });
+    var okBtn     = btns.add('button', undefined, 'OK', { name: 'ok' });
+    var cancelBtn = btns.add('button', undefined, 'キャンセル', { name: 'cancel' });
 
-    var result = false;
-    yesBtn.onClick = function() { result = true;  dlg.close(1); };
-    noBtn.onClick  = function() { result = false; dlg.close(2); };
+    var result = { ok: false, flipB: false, square: false };
+    okBtn.onClick     = function() {
+      result.ok = true;
+      result.flipB  = cbFlip.value;
+      result.square = cbSquare.value;
+      dlg.close(1);
+    };
+    cancelBtn.onClick = function() { dlg.close(2); };
 
     dlg.show();
     return result;
   })();
+
+  if (!exportOptions.ok) { tmpPng.remove(); return; }
+  var exportFlipB   = exportOptions.flipB;
+  var exportSquare  = exportOptions.square;
 
   // ── Python 呼び出し（Windows: VBScript 経由、Mac: shell script 経由）
   var pyPath   = pyScript.fsName;
@@ -84,7 +99,10 @@
   var outPath  = outFolder.fsName;
   // レイヤー名をベース名として使用（ファイル名に使えない文字は_に置換）
   var baseName = doc.activeLayer.name.replace(/[\\\/:\*\?"<>\|]/g, '_');
-  var modeLabel = exportFlipB ? '（A+B両方）' : '（通常）';
+  var modeParts = [];
+  if (exportFlipB)  modeParts.push('A+B両方');
+  if (exportSquare) modeParts.push('1:1正方形');
+  var modeLabel = modeParts.length ? '（' + modeParts.join(' / ') + '）' : '（通常）';
 
   if ($.os.indexOf('Windows') !== -1) {
     // Windows: VBScript で Python をサイレント実行
@@ -101,6 +119,9 @@
     if (exportFlipB) {
       vbs.writeln('cmd = cmd & " --flip-b"');
     }
+    if (exportSquare) {
+      vbs.writeln('cmd = cmd & " --square"');
+    }
     vbs.writeln('sh.Run cmd, 0, True');
     // Python完了後に一時ファイルを削除してからダイアログ
     vbs.writeln('Set fso = CreateObject("Scripting.FileSystemObject")');
@@ -110,11 +131,12 @@
     vbs.execute();
   } else {
     // Mac: bash スクリプトで実行
-    var flipFlag = exportFlipB ? ' --flip-b' : '';
+    var flipFlag   = exportFlipB  ? ' --flip-b' : '';
+    var squareFlag = exportSquare ? ' --square' : '';
     var sh = new File(Folder.temp + '/run_split.sh');
     sh.open('w');
     sh.writeln('#!/bin/bash');
-    sh.writeln('python3 "' + pyPath + '" "' + inPath + '" "' + outPath + '" "' + baseName + '"' + flipFlag);
+    sh.writeln('python3 "' + pyPath + '" "' + inPath + '" "' + outPath + '" "' + baseName + '"' + flipFlag + squareFlag);
     sh.writeln('open "' + outPath + '"');
     sh.close();
     sh.changePath(Folder.temp + '/run_split.sh');
