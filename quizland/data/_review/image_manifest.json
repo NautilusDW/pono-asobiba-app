@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "generated_at": "2026-05-05T00:00:00+09:00",
+  "version": "1.1",
+  "generated_at": "2026-05-05T14:27:07+09:00",
   "images": [
     {
       "id": "choice_body_breath_set",
@@ -18,7 +18,10 @@
       "source_sheet": null,
       "subject_detailed": "はい / い / こころ / ゆび の4臓器/パーツを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_chew_set",
@@ -33,7 +36,10 @@
       "source_sheet": null,
       "subject_detailed": "は / みみ / め / かみのけ の4体パーツを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_hardest_set",
@@ -50,7 +56,10 @@
       "source_sheet": null,
       "subject_detailed": "ほね / つめ / は / かみのけ の4体パーツを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_hear_face_set",
@@ -65,7 +74,10 @@
       "source_sheet": null,
       "subject_detailed": "め / くち / みみ / はな の4顔パーツを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_pump_set",
@@ -80,7 +92,10 @@
       "source_sheet": null,
       "subject_detailed": "しんぞう / のう / ひふ / い の4臓器アイコンを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_see_face_set",
@@ -95,7 +110,10 @@
       "source_sheet": null,
       "subject_detailed": "くち / め / ほほ / ひたい の4顔パーツを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_smell_face_set",
@@ -109,7 +127,10 @@
       "source_sheet": null,
       "subject_detailed": "はな / くち / め / ほほ の4顔パーツを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_body_wrap_set",
@@ -124,7 +145,10 @@
       "source_sheet": null,
       "subject_detailed": "ふく / ひふ / ほね / け の4要素を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_opposite_door_action_set",
@@ -141,7 +165,10 @@
       "source_sheet": null,
       "subject_detailed": "おす / ひく / しめる / まわす の4ハンドアクションを手のクローズアップで表現 (door 動作 → 普遍的な手アクションに刷新)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "door"
+      ]
     },
     {
       "id": "choice_opposite_face_emotion_set",
@@ -158,7 +185,10 @@
       "source_sheet": null,
       "subject_detailed": "なく / おこる / わらう / がっかり の4表情を同じ子供の顔のクローズアップで表現 (v2.1 で表情ラインアップを刷新: えがく/ねる → なく/がっかり)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "emotion"
+      ]
     },
     {
       "id": "choice_opposite_old_new_set",
@@ -175,7 +205,10 @@
       "source_sheet": null,
       "subject_detailed": "やすい / おもい / ふるい / かるい の4性質を象徴する物アイコンで表現",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "choice_opposite_posture_set",
@@ -192,7 +225,10 @@
       "source_sheet": null,
       "subject_detailed": "あるく / すわる / ねる / とぶ の4ポーズを同じ子供キャラの全身で表現",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "posture"
+      ]
     },
     {
       "id": "choice_opposite_scold_set",
@@ -209,7 +245,10 @@
       "source_sheet": null,
       "subject_detailed": "しかる / おこる / いう / にらむ の4表情を大人の顔のクローズアップで表現",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "emotion"
+      ]
     },
     {
       "id": "choice_opposite_time_of_day_set",
@@ -226,7 +265,10 @@
       "source_sheet": null,
       "subject_detailed": "ゆうがた / あさ / ひる / まよなか の4時間帯シーンを同じ風景の空色で表現",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "time_of_day"
+      ]
     },
     {
       "id": "choice_trivia_animal_sound_set",
@@ -240,7 +282,10 @@
       "source_sheet": null,
       "subject_detailed": "いぬ / うし / ねこ / にわとり の4動物を顔アップで横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "choice_trivia_apple_color_set",
@@ -257,7 +302,10 @@
       "source_sheet": null,
       "subject_detailed": "あか / あお / くろ / しろ の4色丸を同サイズで横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "choice_trivia_banana_color_set",
@@ -272,7 +320,10 @@
       "source_sheet": null,
       "subject_detailed": "あか / きいろ / あお / むらさき の4色丸を同サイズで横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "choice_trivia_big_fish_set",
@@ -286,7 +337,10 @@
       "source_sheet": null,
       "subject_detailed": "マグロ / クジラ / ジンベイザメ / サメ の4海生物を全身横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "choice_trivia_biggest_creature_set",
@@ -303,7 +357,11 @@
       "source_sheet": null,
       "subject_detailed": "ゾウ / ジンベイザメ / シロナガスクジラ / ダイオウイカ の4生き物を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal",
+        "fish"
+      ]
     },
     {
       "id": "choice_trivia_birds_set",
@@ -320,7 +378,10 @@
       "source_sheet": null,
       "subject_detailed": "タカ / ペンギン / ハト / ツバメ の4鳥を全身横並列で表現",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "choice_trivia_dolphin_friend_set",
@@ -337,7 +398,10 @@
       "source_sheet": null,
       "subject_detailed": "さかな / サメ / クジラ / タコ の4海生物を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "choice_trivia_egg_animal_set",
@@ -354,7 +418,10 @@
       "source_sheet": null,
       "subject_detailed": "いぬ / にわとり / うし / ぶた の4動物を顔アップで横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "choice_trivia_eight_eyes_bug_set",
@@ -371,7 +438,10 @@
       "source_sheet": null,
       "subject_detailed": "カブトムシ / クモ / チョウ / バッタ の4虫を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "choice_trivia_elephant_body_part_set",
@@ -387,7 +457,10 @@
       "source_sheet": null,
       "subject_detailed": "はな / しっぽ / みみ / あし の4動物パーツを拡大図で横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "choice_trivia_fast_animal_set",
@@ -402,7 +475,10 @@
       "source_sheet": null,
       "subject_detailed": "ライオン / シマウマ / チーター / キリン の4動物を全身横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "choice_trivia_hibernate_animal_set",
@@ -418,7 +494,10 @@
       "source_sheet": null,
       "subject_detailed": "ゾウ / ライオン / クマ / キリン の4動物を全身横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "choice_trivia_koala_food_set",
@@ -435,7 +514,11 @@
       "source_sheet": null,
       "subject_detailed": "バナナ / たけのこ / ユーカリの葉 / りんご の4食材を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food",
+        "plant"
+      ]
     },
     {
       "id": "choice_trivia_lion_feature_set",
@@ -452,7 +535,11 @@
       "source_sheet": null,
       "subject_detailed": "たてがみ / しっぽ / つの / はね の4特徴アイコンを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body",
+        "animal"
+      ]
     },
     {
       "id": "choice_trivia_rabbit_ear_set",
@@ -469,7 +556,10 @@
       "source_sheet": null,
       "subject_detailed": "まるくて短い耳 / 長くて立った耳 / 丸い小さい耳 / とがって小さい耳 の4種の耳形を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "choice_trivia_rain_bug_set",
@@ -484,7 +574,10 @@
       "source_sheet": null,
       "subject_detailed": "チョウ / ミミズ / カブトムシ / セミ の4虫を横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "choice_trivia_winter_sky_set",
@@ -501,7 +594,11 @@
       "source_sheet": null,
       "subject_detailed": "あめ / ゆき / すな / こおり の4落下物アイコンを横並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather",
+        "nature"
+      ]
     },
     {
       "id": "choice_weather_cloud_set",
@@ -518,7 +615,10 @@
       "source_sheet": null,
       "subject_detailed": "くも / けむり / わた / ほし の4枚アイコンを横一列、同サイズで識別性優先",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "choice_weather_snowflake_shapes_set",
@@ -535,7 +635,10 @@
       "source_sheet": null,
       "subject_detailed": "まる / ほし / 六角形 / しかく の4形を雪の結晶として並列",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "choice_weather_source_set",
@@ -551,7 +654,10 @@
       "source_sheet": null,
       "subject_detailed": "くも / そら / やま / うみ の4枚アイコンを横一列、ソース候補の風景アイコン",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "sheet_animal_extras",
@@ -565,7 +671,10 @@
       "source_sheet": null,
       "subject_detailed": "9アイテム (8動物+バナナ) を 3×3 グリッドで等間隔配置、動物は全身を斜め前から",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "sheet_body_emoji",
@@ -579,7 +688,10 @@
       "source_sheet": null,
       "subject_detailed": "9パーツを 3×3 グリッドで等間隔配置、絵本調のかわいいデフォルメ",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "sheet_colors",
@@ -600,7 +712,10 @@
       "source_sheet": null,
       "subject_detailed": "8色の色チップを4x2で並べたシート。赤・青・黄・緑・ピンク・オレンジ・紫・みずいろ。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "sheet_count_total",
@@ -614,7 +729,11 @@
       "source_sheet": null,
       "subject_detailed": "りんご / いちご / おはな / ほし / みかん の5アイテムを横一列に同サイズで等間隔配置",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food",
+        "nature"
+      ]
     },
     {
       "id": "sheet_shapes",
@@ -635,7 +754,10 @@
       "source_sheet": null,
       "subject_detailed": "8つの基本図形を4x2で並べたシート。まる・しかく・さんかく・ほし・ハート・ながしかく・ダイヤのかたち・たまごがた。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "sheet_weather",
@@ -654,7 +776,10 @@
       "source_sheet": null,
       "subject_detailed": "4つの天気情景を2x2で並べたシート。にじ、みずたまり、雪の結晶、台風の渦。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "sheet_weather_emoji",
@@ -668,7 +793,10 @@
       "source_sheet": null,
       "subject_detailed": "10種の天気アイコンを 5×2 グリッドで等間隔配置、各セル中央",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "animal_penguin",
@@ -685,7 +813,10 @@
         "assets/images/quizland/illust/choice/penguin.png",
         "assets/images/quizland/illust/stage/stage_trivia_four_birds_silhouette.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "banana",
@@ -703,7 +834,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_ripe_banana.png",
         "assets/images/word/banana.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food"
+      ]
     },
     {
       "id": "batta",
@@ -721,7 +855,10 @@
         "assets/images/ocean/Grasshopper/Grasshopper_normal_1.png",
         "assets/images/ocean/Grasshopper_bug/Grasshopper_bug_normal_1.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "bluewhale",
@@ -737,7 +874,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "bone",
@@ -753,7 +893,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_body_teeth_bone_compare.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "brain",
@@ -767,7 +910,10 @@
       "source_sheet": "choice_body_pump_set",
       "subject_detailed": "絵本調の脳、ピンク〜紫、しわが少しある丸い形",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "buta",
@@ -781,7 +927,10 @@
       "source_sheet": "choice_trivia_egg_animal_set",
       "subject_detailed": "ぶたの顔のアップ、ピンク色、丸い鼻、たれ耳",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "cheetah",
@@ -797,7 +946,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_running_cheetah.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "chocho",
@@ -814,7 +966,10 @@
         "assets/images/ocean/Butterfly/Butterfly_normal_1.png",
         "assets/images/ocean/Swallowtail_butterfly/Swallowtail_butterfly_normal_1.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "clothes",
@@ -828,7 +983,10 @@
       "source_sheet": "choice_body_wrap_set",
       "subject_detailed": "たたまれたシャツ1枚、青系、絵本調",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "cloud",
@@ -851,7 +1009,11 @@
         "assets/images/word/kumo_s1.png",
         "assets/images/word/kumo_s2.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather",
+        "nature"
+      ]
     },
     {
       "id": "color_dot_black",
@@ -865,7 +1027,10 @@
       "source_sheet": "choice_trivia_apple_color_set",
       "subject_detailed": "黒の丸1個 (#222 程度)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_dot_blue",
@@ -879,7 +1044,10 @@
       "source_sheet": "choice_trivia_apple_color_set",
       "subject_detailed": "青の丸 (B-T1 と共有)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_dot_purple",
@@ -893,7 +1061,10 @@
       "source_sheet": "choice_trivia_banana_color_set",
       "subject_detailed": "紫の丸1個 (#9B59B6 程度)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_dot_red",
@@ -907,7 +1078,10 @@
       "source_sheet": "choice_trivia_apple_color_set",
       "subject_detailed": "赤の丸 (B-T1 と共有) (正解)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_dot_white",
@@ -921,7 +1095,10 @@
       "source_sheet": "choice_trivia_apple_color_set",
       "subject_detailed": "白の丸1個 (細い灰色アウトライン付きで見える)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_dot_yellow",
@@ -935,7 +1112,10 @@
       "source_sheet": "choice_trivia_banana_color_set",
       "subject_detailed": "黄色の丸1個 (#FFD93D 程度) (正解)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "cotton",
@@ -949,7 +1129,10 @@
       "source_sheet": "choice_weather_cloud_set",
       "subject_detailed": "白い綿のかたまり1個、より粒だった質感、雲とは違うふくふく感",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "daiouika",
@@ -966,7 +1149,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png",
         "assets/images/word/ika.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "door_close",
@@ -980,7 +1166,10 @@
       "source_sheet": "choice_opposite_door_action_set",
       "subject_detailed": "開いている箱のふたを閉めている手。ふたが半分閉じかけ、矢印で下向きに閉まる方向",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "door"
+      ]
     },
     {
       "id": "door_pull",
@@ -994,7 +1183,10 @@
       "source_sheet": "choice_opposite_door_action_set",
       "subject_detailed": "引き出しを手前に引いている手。取っ手+動き線、引き出しが少し開いている",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "door"
+      ]
     },
     {
       "id": "door_push",
@@ -1008,7 +1200,10 @@
       "source_sheet": "choice_opposite_door_action_set",
       "subject_detailed": "赤くない大きな丸ボタンを上から押している手。ボタンが少しへこんでいる押下感、矢印 or 動き線で『押す』が分かる",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "door"
+      ]
     },
     {
       "id": "door_turn",
@@ -1022,7 +1217,10 @@
       "source_sheet": "choice_opposite_door_action_set",
       "subject_detailed": "丸いつまみ (ハンドル/水道の蛇口ハンドル) を回している手。回転矢印あり",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "door"
+      ]
     },
     {
       "id": "ear_long_up",
@@ -1036,7 +1234,10 @@
       "source_sheet": "choice_trivia_rabbit_ear_set",
       "subject_detailed": "長くて立った耳 (うさぎの正解形)、縦長で上向き (正解)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "ear_pointed_small",
@@ -1050,7 +1251,10 @@
       "source_sheet": "choice_trivia_rabbit_ear_set",
       "subject_detailed": "とがって小さい耳 (きつねっぽい)、三角",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "ear_round_short",
@@ -1064,7 +1268,10 @@
       "source_sheet": "choice_trivia_rabbit_ear_set",
       "subject_detailed": "丸くて短い耳 (くまっぽい)、左右対称1ペアで配置可",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "ear_round_small",
@@ -1078,7 +1285,10 @@
       "source_sheet": "choice_trivia_rabbit_ear_set",
       "subject_detailed": "丸くて小さい耳 (ねこっぽい)、低い位置",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "eucalyptus_leaf",
@@ -1094,7 +1304,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_koala_eucalyptus.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "plant"
+      ]
     },
     {
       "id": "face_angry",
@@ -1110,7 +1323,11 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/face_angry2.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_angry2",
@@ -1126,7 +1343,11 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/face_angry.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_cheek",
@@ -1140,7 +1361,11 @@
       "source_sheet": "choice_body_see_face_set",
       "subject_detailed": "ほっぺクローズアップ (共有)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "body"
+      ]
     },
     {
       "id": "face_draw",
@@ -1156,7 +1381,11 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_opposite_cry_smile.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_ear",
@@ -1174,7 +1403,11 @@
         "assets/images/ocean/Ear_part/Ear_part_normal_1.png",
         "assets/images/quizland/illust/choice/part_ear.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "body"
+      ]
     },
     {
       "id": "face_eye",
@@ -1192,7 +1425,11 @@
         "assets/images/ocean/Eyes/Eyes_normal_1.png",
         "assets/images/quizland/illust/stage/stage_trivia_spider_eyes.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "body"
+      ]
     },
     {
       "id": "face_forehead",
@@ -1206,7 +1443,11 @@
       "source_sheet": "choice_body_see_face_set",
       "subject_detailed": "ひたいのクローズアップ、髪の生え際まで含む",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "body"
+      ]
     },
     {
       "id": "face_glare",
@@ -1220,7 +1461,11 @@
       "source_sheet": "choice_opposite_scold_set",
       "subject_detailed": "にらむ顔 (目を細めて鋭い視線)、口は閉じる、無表情に近い怖さ",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_mouth",
@@ -1239,7 +1484,11 @@
         "assets/images/ocean/Thought_the_user_wants_a_single_english_word_in_snake_case_for_the_japanese_character_means_mouth_or_opening_the_most_direct_translation_for_mouth_is_mouth_snake_case_for_mouth_is_mouth/Thought_the_user_wants_a_single_english_word_in_snake_case_for_the_japanese_character_means_mouth_or_opening_the_most_direct_translation_for_mouth_is_mouth_snake_case_for_mouth_is_mouth_normal_1.png",
         "assets/images/quizland/illust/stage/stage_body_chewing_teeth.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "body"
+      ]
     },
     {
       "id": "face_nose",
@@ -1258,7 +1507,11 @@
         "assets/images/quizland/illust/choice/part_nose.png",
         "assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "body"
+      ]
     },
     {
       "id": "face_scold",
@@ -1272,7 +1525,11 @@
       "source_sheet": "choice_opposite_scold_set",
       "subject_detailed": "しかる顔 (眉をひそめて指をピッと立てた風)、眉間にしわ、口は注意している形",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_sleep",
@@ -1286,7 +1543,11 @@
       "source_sheet": "choice_opposite_face_emotion_set",
       "subject_detailed": "推測: 旧ファイル名だが内容はがっかりしている子どもの顔。目と眉が下がり、涙なしのしょんぼり顔。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_smile",
@@ -1302,7 +1563,11 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_opposite_cry_smile.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "face_speak",
@@ -1316,7 +1581,11 @@
       "source_sheet": "choice_opposite_scold_set",
       "subject_detailed": "ふつうに話している顔 (口が開いて、表情はニュートラル)、目線まっすぐ",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "face",
+        "emotion"
+      ]
     },
     {
       "id": "finger",
@@ -1330,7 +1599,10 @@
       "source_sheet": "choice_body_breath_set",
       "subject_detailed": "人差し指1本のクローズアップ、肌色、爪あり",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "hair",
@@ -1346,7 +1618,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/kaminoke.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "hato",
@@ -1363,7 +1638,10 @@
         "assets/images/ocean/Pigeon/Pigeon_normal_1.png",
         "assets/images/quizland/illust/stage/stage_trivia_four_birds_silhouette.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "heart_organ",
@@ -1380,7 +1658,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_body_heart_pump.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "horn",
@@ -1394,7 +1675,10 @@
       "source_sheet": "choice_trivia_lion_feature_set",
       "subject_detailed": "角単体 (羊・牛風の渦巻き角、もしくは鹿風の枝角)、灰白色",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "ice",
@@ -1408,7 +1692,10 @@
       "source_sheet": "choice_trivia_winter_sky_set",
       "subject_detailed": "透明〜水色の角ばった氷の塊1個、キラキラ反射",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "inu",
@@ -1425,7 +1712,10 @@
         "assets/images/ocean/Dog/Dog_normal_1.png",
         "assets/images/word/inu.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "jinbeizame",
@@ -1442,7 +1732,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png",
         "assets/images/quizland/illust/stage/stage_trivia_ocean_silhouettes_4.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "kabutomushi",
@@ -1461,7 +1754,10 @@
         "assets/images/ocean/Rhinoceros_beetle/Rhinoceros_beetle_normal_1.png",
         "assets/images/ocean/Stag_beetle/Stag_beetle_normal_1.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "kaminoke",
@@ -1477,7 +1773,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/hair.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "kirin",
@@ -1494,7 +1793,10 @@
         "assets/images/ocean/Giraffe/Giraffe_normal_1.png",
         "assets/images/word/kirin.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "kujira",
@@ -1512,7 +1814,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_ocean_silhouettes_4.png",
         "assets/images/word/kujira.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "kuma",
@@ -1530,7 +1835,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_sleeping_bear_cave.png",
         "assets/images/word/kuma.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "kumo",
@@ -1552,7 +1860,10 @@
         "assets/images/word/kumo_s1.png",
         "assets/images/word/kumo_s2.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "lion",
@@ -1571,7 +1882,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_male_lion.png",
         "assets/images/word/lion.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "lungs",
@@ -1587,7 +1901,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_body_lungs_breath.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "maguro",
@@ -1603,7 +1920,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_ocean_silhouettes_4.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "mane",
@@ -1617,7 +1937,10 @@
       "source_sheet": "choice_trivia_lion_feature_set",
       "subject_detailed": "たてがみ単体 (ふさふさの毛のかたまり、茶色〜オレンジ) (正解)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "mimizu",
@@ -1633,7 +1956,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_earthworm_after_rain.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "mountain",
@@ -1649,7 +1975,10 @@
       "alternatives": [
         "assets/images/word/yama.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "neko",
@@ -1667,7 +1996,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_meowing_cat.png",
         "assets/images/word/neko.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "niwatori",
@@ -1685,7 +2017,10 @@
         "assets/images/ocean/Chicken/Chicken_normal_1.png",
         "assets/images/quizland/illust/stage/stage_trivia_hatching_egg.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "ocean",
@@ -1973,7 +2308,10 @@
         "assets/images/ocean/octpus/octpus_003.png",
         "assets/images/word/umi.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "part_ear",
@@ -1991,7 +2329,11 @@
         "assets/images/ocean/Ear_part/Ear_part_normal_1.png",
         "assets/images/quizland/illust/choice/face_ear.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body",
+        "animal"
+      ]
     },
     {
       "id": "part_leg",
@@ -2005,7 +2347,11 @@
       "source_sheet": "choice_trivia_elephant_body_part_set",
       "subject_detailed": "動物の足1本 (太い柱状のゾウ足、爪あり、灰色)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body",
+        "animal"
+      ]
     },
     {
       "id": "part_nose",
@@ -2024,7 +2370,11 @@
         "assets/images/quizland/illust/choice/face_nose.png",
         "assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body",
+        "animal"
+      ]
     },
     {
       "id": "part_tail",
@@ -2038,7 +2388,11 @@
       "source_sheet": "choice_trivia_lion_feature_set",
       "subject_detailed": "しっぽ単体 (共有)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body",
+        "animal"
+      ]
     },
     {
       "id": "penguin",
@@ -2055,7 +2409,10 @@
         "assets/images/quizland/illust/animal/animal_penguin.png",
         "assets/images/quizland/illust/stage/stage_trivia_four_birds_silhouette.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "pose_jump",
@@ -2069,7 +2426,10 @@
       "source_sheet": "choice_opposite_posture_set",
       "subject_detailed": "子供が両手両足を広げて宙にとんでいる全身、正面向き、影あり",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "posture"
+      ]
     },
     {
       "id": "pose_sit",
@@ -2083,7 +2443,10 @@
       "source_sheet": "choice_opposite_posture_set",
       "subject_detailed": "子供が床に正座 or 椅子に座っている全身、正面向き",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "posture"
+      ]
     },
     {
       "id": "pose_sleep",
@@ -2097,7 +2460,10 @@
       "source_sheet": "choice_opposite_posture_set",
       "subject_detailed": "子供が横たわって寝ている全身、目を閉じて横向き、布団なしでよい",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "posture"
+      ]
     },
     {
       "id": "pose_walk",
@@ -2111,7 +2477,10 @@
       "source_sheet": "choice_opposite_posture_set",
       "subject_detailed": "子供が横向きに歩いている全身、片足前へ、腕も振る",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "posture"
+      ]
     },
     {
       "id": "prop_cheap",
@@ -2125,7 +2494,10 @@
       "source_sheet": "choice_opposite_old_new_set",
       "subject_detailed": "値札に『¥』マークが小さく書かれた商品 (例: 小さい袋+値札)、安そうな雰囲気",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "prop_heavy",
@@ -2139,7 +2511,10 @@
       "source_sheet": "choice_opposite_old_new_set",
       "subject_detailed": "大きな灰色の岩、重そうにずっしり、地面に沈むような影",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "prop_light",
@@ -2153,7 +2528,10 @@
       "source_sheet": "choice_opposite_old_new_set",
       "subject_detailed": "赤い風船1個+ふわっと浮いている感じ、ひも下に垂れる",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "prop_old",
@@ -2167,7 +2545,10 @@
       "source_sheet": "choice_opposite_old_new_set",
       "subject_detailed": "古びた本や古い時計、すり減って色あせた感じ、ほこりっぽい",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "rain_drop",
@@ -2185,7 +2566,10 @@
         "assets/images/ocean/Rain_cloud/Rain_cloud_normal_1.png",
         "assets/images/quizland/illust/stage/stage_weather_rain_from_cloud.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "ringo",
@@ -2203,7 +2587,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_red_apple.png",
         "assets/images/word/ringo.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food"
+      ]
     },
     {
       "id": "sakana",
@@ -2217,7 +2604,10 @@
       "source_sheet": "choice_trivia_dolphin_friend_set",
       "subject_detailed": "一般的な小魚1匹、横向き、青〜銀",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "same",
@@ -2235,7 +2625,10 @@
         "assets/images/ocean/Shark/Shark_002.png",
         "assets/images/quizland/illust/stage/stage_trivia_ocean_silhouettes_4.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "sand",
@@ -2249,7 +2642,10 @@
       "source_sheet": "choice_trivia_winter_sky_set",
       "subject_detailed": "茶色い砂の粒の集まり、小さな粒つぶつぶ",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "semi",
@@ -2265,7 +2661,10 @@
       "alternatives": [
         "assets/images/ocean/Cicada/Cicada_normal_1.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "shimauma",
@@ -2279,7 +2678,10 @@
       "source_sheet": "choice_trivia_fast_animal_set",
       "subject_detailed": "シマウマの全身横向き、白黒の縞模様",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "skin",
@@ -2295,7 +2697,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_body_skin_wrap.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "sky",
@@ -2309,7 +2714,10 @@
       "source_sheet": "choice_weather_source_set",
       "subject_detailed": "青空1枚 (薄い水色のグラデーション+白い小さな雲ぽつぽつ)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "sky_evening",
@@ -2323,7 +2731,10 @@
       "source_sheet": "choice_opposite_time_of_day_set",
       "subject_detailed": "夕方の空 (オレンジ〜紫のグラデ)、太陽が沈みかけ、地平線が見える",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "time_of_day"
+      ]
     },
     {
       "id": "sky_midnight",
@@ -2337,7 +2748,10 @@
       "source_sheet": "choice_opposite_time_of_day_set",
       "subject_detailed": "真夜中の空 (濃紺〜黒)、月+星",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "time_of_day"
+      ]
     },
     {
       "id": "sky_morning",
@@ -2351,7 +2765,10 @@
       "source_sheet": "choice_opposite_time_of_day_set",
       "subject_detailed": "朝の空 (薄ピンク〜水色)、太陽が昇りかけ、明るい",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "time_of_day"
+      ]
     },
     {
       "id": "sky_noon",
@@ -2365,7 +2782,10 @@
       "source_sheet": "choice_opposite_time_of_day_set",
       "subject_detailed": "昼の空 (青空+太陽が高い位置)、白い雲ぽつぽつ",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "time_of_day"
+      ]
     },
     {
       "id": "smoke",
@@ -2379,7 +2799,10 @@
       "source_sheet": "choice_weather_cloud_set",
       "subject_detailed": "灰色がかった煙1まとまり、下から立ちのぼる形、雲よりも縦長",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "snow_flake",
@@ -2403,7 +2826,11 @@
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather",
+        "nature"
+      ]
     },
     {
       "id": "snowflake_hex",
@@ -2427,7 +2854,11 @@
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "snowflake",
+        "weather"
+      ]
     },
     {
       "id": "snowflake_round",
@@ -2451,7 +2882,11 @@
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "snowflake",
+        "weather"
+      ]
     },
     {
       "id": "snowflake_square",
@@ -2475,7 +2910,11 @@
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "snowflake",
+        "weather"
+      ]
     },
     {
       "id": "snowflake_star",
@@ -2499,7 +2938,11 @@
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "snowflake",
+        "weather"
+      ]
     },
     {
       "id": "star",
@@ -2516,7 +2959,10 @@
         "assets/images/quizland/illust/shape/shape_star.png",
         "assets/images/word/hoshi.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "stomach",
@@ -2530,7 +2976,10 @@
       "source_sheet": "choice_body_breath_set",
       "subject_detailed": "胃 (共有)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "taka",
@@ -2547,7 +2996,10 @@
         "assets/images/ocean/Eagle/Eagle_normal_1.png",
         "assets/images/quizland/illust/stage/stage_trivia_four_birds_silhouette.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "takenoko",
@@ -2561,7 +3013,10 @@
       "source_sheet": "choice_trivia_koala_food_set",
       "subject_detailed": "茶色いたけのこ1本、皮の三角模様、上が尖る",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food"
+      ]
     },
     {
       "id": "tako",
@@ -2580,7 +3035,10 @@
         "assets/images/ocean/octpus/octpus_003.png",
         "assets/images/word/ika.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "teeth",
@@ -2598,7 +3056,10 @@
         "assets/images/quizland/illust/stage/stage_body_chewing_teeth.png",
         "assets/images/quizland/illust/stage/stage_body_teeth_bone_compare.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "tsubame",
@@ -2614,7 +3075,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_four_birds_silhouette.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "tsume",
@@ -2628,7 +3092,10 @@
       "source_sheet": "choice_body_hardest_set",
       "subject_detailed": "爪のクローズアップ、指先の爪1枚、ピンクの肌色+白い爪",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "ushi",
@@ -2644,7 +3111,10 @@
       "alternatives": [
         "assets/images/ocean/Cow/Cow_normal_1.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "nature"
+      ]
     },
     {
       "id": "wing",
@@ -2658,7 +3128,10 @@
       "source_sheet": "choice_trivia_lion_feature_set",
       "subject_detailed": "翼単体 (鳥の翼1枚、茶色か白)",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "zou",
@@ -2677,7 +3150,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png",
         "assets/images/word/zou.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "color_blue",
@@ -2691,7 +3167,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_blue",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_cyan",
@@ -2705,7 +3184,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_cyan",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_green",
@@ -2719,7 +3201,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_green",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_orange",
@@ -2733,7 +3218,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_orange",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_pink",
@@ -2747,7 +3235,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_pink",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_purple",
@@ -2761,7 +3252,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_purple",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_red",
@@ -2777,7 +3271,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_trivia_red_apple.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "color_yellow",
@@ -2791,7 +3288,10 @@
       "source_sheet": "sheet_colors",
       "subject_detailed": "color_yellow",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "color"
+      ]
     },
     {
       "id": "shape_circle",
@@ -2805,7 +3305,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_circle",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_diamond",
@@ -2819,7 +3322,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_diamond",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_heart",
@@ -2833,7 +3339,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_heart",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_oval",
@@ -2847,7 +3356,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_oval",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_rectangle",
@@ -2861,7 +3373,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_rectangle",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_square",
@@ -2875,7 +3390,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_square",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_star",
@@ -2892,7 +3410,10 @@
         "assets/images/quizland/illust/choice/star.png",
         "assets/images/word/hoshi.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "shape_triangle",
@@ -2906,7 +3427,10 @@
       "source_sheet": "sheet_shapes",
       "subject_detailed": "shape_triangle",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "shape"
+      ]
     },
     {
       "id": "stage_body_chewing_teeth",
@@ -2928,7 +3452,10 @@
         "assets/images/quizland/illust/choice/teeth.png",
         "assets/images/quizland/illust/stage/stage_body_teeth_bone_compare.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "stage_body_heart_pump",
@@ -2944,7 +3471,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/heart_organ.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "stage_body_lungs_breath",
@@ -2960,7 +3490,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/lungs.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "stage_body_skin_wrap",
@@ -2976,7 +3509,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/skin.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "stage_body_teeth_bone_compare",
@@ -2996,7 +3532,10 @@
         "assets/images/quizland/illust/choice/teeth.png",
         "assets/images/quizland/illust/stage/stage_body_chewing_teeth.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
     },
     {
       "id": "stage_opposite_bright_dark",
@@ -3011,7 +3550,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_bright_dark のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_cry_smile",
@@ -3029,7 +3571,10 @@
         "assets/images/quizland/illust/choice/face_draw.png",
         "assets/images/quizland/illust/choice/face_smile.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "emotion"
+      ]
     },
     {
       "id": "stage_opposite_hard_soft",
@@ -3044,7 +3589,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_hard_soft のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_high_low",
@@ -3059,7 +3607,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_high_low のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_light_heavy",
@@ -3074,7 +3625,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_light_heavy のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_many_few",
@@ -3091,7 +3645,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_many_few のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_new_old",
@@ -3106,7 +3663,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_new_old のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_night_sky",
@@ -3122,7 +3682,10 @@
       "source_sheet": null,
       "subject_detailed": "推測: jp_labels には問題文側の語を含む。 stage_opposite_night_sky のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "time_of_day"
+      ]
     },
     {
       "id": "stage_opposite_open_door",
@@ -3137,7 +3700,10 @@
       "source_sheet": null,
       "subject_detailed": "推測: jp_labels には問題文側の語を含む。 stage_opposite_open_door のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "door"
+      ]
     },
     {
       "id": "stage_opposite_praise",
@@ -3152,7 +3718,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_praise のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "emotion"
+      ]
     },
     {
       "id": "stage_opposite_standing",
@@ -3167,7 +3736,10 @@
       "source_sheet": null,
       "subject_detailed": "推測: jp_labels には問題文側の語を含む。 stage_opposite_standing のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "posture"
+      ]
     },
     {
       "id": "stage_opposite_strong_weak",
@@ -3182,7 +3754,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_strong_weak のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_opposite_thick_thin",
@@ -3197,7 +3772,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_opposite_thick_thin のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "prop"
+      ]
     },
     {
       "id": "stage_trivia_dolphin",
@@ -3217,7 +3795,10 @@
         "assets/images/word/iruka.png",
         "assets/images/word/kujira.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "stage_trivia_earthworm_after_rain",
@@ -3233,7 +3814,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/mimizu.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "stage_trivia_flamingo",
@@ -3248,7 +3832,10 @@
       "source_sheet": null,
       "subject_detailed": "stage_trivia_flamingo のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "stage_trivia_four_birds_silhouette",
@@ -3273,7 +3860,10 @@
         "assets/images/quizland/illust/choice/taka.png",
         "assets/images/quizland/illust/choice/tsubame.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bird"
+      ]
     },
     {
       "id": "stage_trivia_hatching_egg",
@@ -3292,7 +3882,11 @@
         "assets/images/ocean/Chicken/Chicken_normal_1.png",
         "assets/images/quizland/illust/choice/niwatori.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal",
+        "bird"
+      ]
     },
     {
       "id": "stage_trivia_huge_creatures_compare",
@@ -3319,7 +3913,11 @@
         "assets/images/word/ika.png",
         "assets/images/word/zou.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal",
+        "fish"
+      ]
     },
     {
       "id": "stage_trivia_koala_eucalyptus",
@@ -3336,7 +3934,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/eucalyptus_leaf.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_long_nose_elephant",
@@ -3360,7 +3961,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png",
         "assets/images/word/zou.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_male_lion",
@@ -3380,7 +3984,10 @@
         "assets/images/quizland/illust/choice/lion.png",
         "assets/images/word/lion.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_meowing_cat",
@@ -3399,7 +4006,10 @@
         "assets/images/quizland/illust/choice/neko.png",
         "assets/images/word/neko.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_ocean_silhouettes_4",
@@ -3426,7 +4036,10 @@
         "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png",
         "assets/images/word/kujira.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "fish"
+      ]
     },
     {
       "id": "stage_trivia_rabbit",
@@ -3444,7 +4057,10 @@
         "assets/images/ocean/Rabbit/Rabbit_normal_1.png",
         "assets/images/word/usagi.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_red_apple",
@@ -3464,7 +4080,10 @@
         "assets/images/quizland/illust/color/color_red.png",
         "assets/images/word/ringo.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food"
+      ]
     },
     {
       "id": "stage_trivia_ripe_banana",
@@ -3483,7 +4102,10 @@
         "assets/images/quizland/illust/choice/banana.png",
         "assets/images/word/banana.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "food"
+      ]
     },
     {
       "id": "stage_trivia_running_cheetah",
@@ -3499,7 +4121,10 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/cheetah.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_sleeping_bear_cave",
@@ -3517,7 +4142,10 @@
         "assets/images/quizland/illust/choice/kuma.png",
         "assets/images/word/kuma.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "animal"
+      ]
     },
     {
       "id": "stage_trivia_snowy_landscape",
@@ -3541,7 +4169,11 @@
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather",
+        "nature"
+      ]
     },
     {
       "id": "stage_trivia_spider_eyes",
@@ -3566,7 +4198,10 @@
         "assets/images/word/kumo_s1.png",
         "assets/images/word/kumo_s2.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "bug"
+      ]
     },
     {
       "id": "stage_weather_cloud_sky",
@@ -3590,7 +4225,10 @@
         "assets/images/word/kumo_s1.png",
         "assets/images/word/kumo_s2.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "stage_weather_puddle",
@@ -3607,7 +4245,10 @@
       "alternatives": [
         "assets/images/quizland/illust/weather/weather_puddle.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "stage_weather_rain_from_cloud",
@@ -3626,7 +4267,10 @@
         "assets/images/ocean/Rain_cloud/Rain_cloud_normal_1.png",
         "assets/images/quizland/illust/choice/rain_drop.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "stage_weather_rainbow_arc",
@@ -3644,7 +4288,10 @@
         "assets/images/quizland/illust/weather/weather_rainbow_count.png",
         "assets/images/word/niji.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "stage_weather_snowflake_big",
@@ -3669,7 +4316,11 @@
         "assets/images/quizland/illust/stage/stage_trivia_snowy_landscape.png",
         "assets/images/quizland/illust/weather/weather_snowflake.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "snowflake",
+        "weather"
+      ]
     },
     {
       "id": "stage_weather_thunder",
@@ -3686,7 +4337,10 @@
         "assets/images/ocean/Thunder/Thunder_normal_1.png",
         "assets/images/ocean/Thunder_cloud/Thunder_cloud_normal_1.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "weather_puddle",
@@ -3703,7 +4357,10 @@
       "alternatives": [
         "assets/images/quizland/illust/stage/stage_weather_puddle.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "weather_rainbow_count",
@@ -3721,7 +4378,10 @@
         "assets/images/quizland/illust/stage/stage_weather_rainbow_arc.png",
         "assets/images/word/niji.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
     },
     {
       "id": "weather_snowflake",
@@ -3746,7 +4406,11 @@
         "assets/images/quizland/illust/stage/stage_trivia_snowy_landscape.png",
         "assets/images/quizland/illust/stage/stage_weather_snowflake_big.png"
       ],
-      "status": "generated"
+      "status": "generated",
+      "context_tags": [
+        "snowflake",
+        "weather"
+      ]
     },
     {
       "id": "weather_typhoon",
@@ -3762,6 +4426,774 @@
       "alternatives": [
         "assets/images/ocean/Hurricane/Hurricane_normal_1.png"
       ],
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
+    },
+    {
+      "id": "ude",
+      "save_path": "assets/images/quizland/illust/choice/ude.png",
+      "jp_labels": [
+        "うで"
+      ],
+      "context_tags": [
+        "body"
+      ],
+      "usage": [
+        "stage",
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ocean の既存アセット `Arm_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Arm/Arm_normal_1.png"
+      ],
+      "status": "generated"
+    },
+    {
+      "id": "ondokei",
+      "save_path": "assets/images/quizland/illust/choice/ondokei.png",
+      "jp_labels": [
+        "おんどけい"
+      ],
+      "context_tags": [
+        "weather",
+        "prop"
+      ],
+      "usage": [
+        "stage",
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ocean の既存アセット `Thermometer_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Thermometer/Thermometer_normal_1.png"
+      ],
+      "status": "generated"
+    },
+    {
+      "id": "kaze",
+      "save_path": "assets/images/quizland/illust/choice/kaze.png",
+      "jp_labels": [
+        "かぜ"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "stage",
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ocean の既存アセット `Wind_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Wind/Wind_normal_1.png"
+      ],
+      "status": "generated"
+    },
+    {
+      "id": "tatsumaki",
+      "save_path": "assets/images/quizland/illust/choice/tatsumaki.png",
+      "jp_labels": [
+        "たつまき"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "stage",
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ocean の既存アセット `Tornado_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Tornado/Tornado_normal_1.png"
+      ],
+      "status": "generated"
+    },
+    {
+      "id": "te",
+      "save_path": "assets/images/quizland/illust/choice/te.png",
+      "jp_labels": [
+        "て"
+      ],
+      "context_tags": [
+        "body"
+      ],
+      "usage": [
+        "stage",
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ocean の既存アセット `Palm_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Palm/Palm_normal_1.png"
+      ],
+      "status": "generated"
+    },
+    {
+      "id": "hare",
+      "save_path": "assets/images/quizland/illust/choice/hare.png",
+      "jp_labels": [
+        "はれ"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "stage",
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ocean の既存アセット `Sun_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Sun/Sun_normal_1.png"
+      ],
+      "status": "generated"
+    },
+    {
+      "id": "kiri",
+      "save_path": "assets/images/quizland/illust/choice/kiri.png",
+      "jp_labels": [
+        "きり"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "朝に出る白い霧。小さな水の粒が空気にふわっと浮かぶ、やさしいもやの情景。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "moyou",
+      "save_path": "assets/images/quizland/illust/choice/moyou.png",
+      "jp_labels": [
+        "もよう"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "指もんではない一般的な模様。葉ではなく、布や紙にあるような単純なくり返し模様として見分けやすく描く。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "sakura",
+      "save_path": "assets/images/quizland/illust/choice/sakura.png",
+      "jp_labels": [
+        "さくら"
+      ],
+      "context_tags": [
+        "plant",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "ピンクの花びらがついた桜の花。子どもでも一目で桜と分かる花つきの枝。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "kusa",
+      "save_path": "assets/images/quizland/illust/choice/kusa.png",
+      "jp_labels": [
+        "くさ"
+      ],
+      "context_tags": [
+        "plant",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "地面から生えた若草の束。低く広がる草むらで、木や竹に見えない形。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "take",
+      "save_path": "assets/images/quizland/illust/choice/take.png",
+      "jp_labels": [
+        "たけ"
+      ],
+      "context_tags": [
+        "plant"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "節のある竹の茎と細長い笹の葉。緑の竹だとすぐ分かる構図。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "matsu_no_ki",
+      "save_path": "assets/images/quizland/illust/choice/matsu_no_ki.png",
+      "jp_labels": [
+        "まつのき"
+      ],
+      "context_tags": [
+        "plant"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "針葉がついた松の木。丸い広葉樹に見えない、松らしい枝ぶりを優先する。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "mt_fuji",
+      "save_path": "assets/images/quizland/illust/choice/mt_fuji.png",
+      "jp_labels": [
+        "ふじさん"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "雪をかぶった富士山。左右対称に近い高い山の形で、日本一高い山として分かりやすく描く。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "mt_kirishima",
+      "save_path": "assets/images/quizland/illust/choice/mt_kirishima.png",
+      "jp_labels": [
+        "きりしまやま"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "霧島山を表す山並み。火山らしい起伏を持つ複数の峰が見える構図。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "mt_koya",
+      "save_path": "assets/images/quizland/illust/choice/mt_koya.png",
+      "jp_labels": [
+        "こうやさん"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "高野山を表すやさしい山の景色。低めの山並みと木々で、富士山型と区別する。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "mt_norikura",
+      "save_path": "assets/images/quizland/illust/choice/mt_norikura.png",
+      "jp_labels": [
+        "のりくらさん"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "乗鞍山を表すなだらかな山。広めの稜線で落ち着いた山容。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "snow_mountain",
+      "save_path": "assets/images/quizland/illust/choice/snow_mountain.png",
+      "jp_labels": [
+        "ゆきやま"
+      ],
+      "context_tags": [
+        "nature",
+        "weather"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "山全体に雪が積もった雪山。山の地形が見えるまま白く覆われている。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "snow_country",
+      "save_path": "assets/images/quizland/illust/choice/snow_country.png",
+      "jp_labels": [
+        "ゆきぐに"
+      ],
+      "context_tags": [
+        "nature",
+        "weather"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "雪がたくさん積もった町や村の景色。『雪国』と分かる家や道のある冬景色。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "winter_country",
+      "save_path": "assets/images/quizland/illust/choice/winter_country.png",
+      "jp_labels": [
+        "ふゆのくに"
+      ],
+      "context_tags": [
+        "nature",
+        "weather"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "寒い季節の国や地域の景色。雪国ほど真っ白ではなく、冬らしい木や空気感を見せる。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "ice_country",
+      "save_path": "assets/images/quizland/illust/choice/ice_country.png",
+      "jp_labels": [
+        "こおりのくに"
+      ],
+      "context_tags": [
+        "nature",
+        "weather"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "氷におおわれた国の景色。氷原や氷の山が目立つ冷たい世界。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "cloudy_time",
+      "save_path": "assets/images/quizland/illust/choice/cloudy_time.png",
+      "jp_labels": [
+        "くもりのとき"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "空一面に雲が広がるくもりの天気。雨や晴れに見えない曇天。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "sunny_time",
+      "save_path": "assets/images/quizland/illust/choice/sunny_time.png",
+      "jp_labels": [
+        "はれのとき"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "太陽が出て明るい晴れの天気。青空と光で分かりやすく描く。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "snowy_time",
+      "save_path": "assets/images/quizland/illust/choice/snowy_time.png",
+      "jp_labels": [
+        "ゆきのとき"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "雪が降っている天気。空から雪が舞う冬の情景。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "night_only",
+      "save_path": "assets/images/quizland/illust/choice/night_only.png",
+      "jp_labels": [
+        "よるだけ"
+      ],
+      "context_tags": [
+        "time_of_day"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "夜だけに見える星空や月夜の情景。昼や夕方と誤解されない夜の表現。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "sleepy_reason",
+      "save_path": "assets/images/quizland/illust/choice/sleepy_reason.png",
+      "jp_labels": [
+        "ねむいから"
+      ],
+      "context_tags": [
+        "emotion"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "眠くてあくびやとろんとした表情になっている子どもの様子。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "eating_action",
+      "save_path": "assets/images/quizland/illust/choice/eating_action.png",
+      "jp_labels": [
+        "たべている"
+      ],
+      "context_tags": [
+        "posture"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "食べ物を口にはこんで食べている動作。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "running_action",
+      "save_path": "assets/images/quizland/illust/choice/running_action.png",
+      "jp_labels": [
+        "はしっている"
+      ],
+      "context_tags": [
+        "posture"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "元気に走っている動作。足が前後に開き、走る姿勢がはっきり分かる。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "resting_action",
+      "save_path": "assets/images/quizland/illust/choice/resting_action.png",
+      "jp_labels": [
+        "やすんでいる"
+      ],
+      "context_tags": [
+        "posture"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "座る・横になるなど、休んでいる状態のやさしい動作。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "dont_know",
+      "save_path": "assets/images/quizland/illust/choice/dont_know.png",
+      "jp_labels": [
+        "わからない"
+      ],
+      "context_tags": [
+        "emotion"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "首をかしげて困っている『わからない』の表情。推測で、感情寄りの表現として扱う。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "temon",
+      "save_path": "assets/images/quizland/illust/choice/temon.png",
+      "jp_labels": [
+        "てもん"
+      ],
+      "context_tags": [
+        "body"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "手のひらや手の甲にある線やしわを示したイメージ。実在語ではなく、誤答用の体パーツ文脈。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "sound_kokekokko",
+      "save_path": "assets/images/quizland/illust/choice/sound_kokekokko.png",
+      "jp_labels": [
+        "コケコッコー"
+      ],
+      "context_tags": [
+        "bird"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "にわとりの鳴き声を表すイメージ。鳥の文脈で見分けやすくする。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "sound_momo",
+      "save_path": "assets/images/quizland/illust/choice/sound_momo.png",
+      "jp_labels": [
+        "モーモー"
+      ],
+      "context_tags": [
+        "animal"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "うしの鳴き声を表すイメージ。動物の鳴き声として分かりやすく描く。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "sound_wanwan",
+      "save_path": "assets/images/quizland/illust/choice/sound_wanwan.png",
+      "jp_labels": [
+        "ワンワン"
+      ],
+      "context_tags": [
+        "animal"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "いぬの鳴き声を表すイメージ。動物の鳴き声として分かりやすく描く。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "heavy_rain",
+      "save_path": "assets/images/quizland/illust/choice/heavy_rain.png",
+      "jp_labels": [
+        "おおあめ"
+      ],
+      "context_tags": [
+        "weather",
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "雨が強くたくさん降っている大雨の情景。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "belly_part",
+      "save_path": "assets/images/quizland/illust/choice/belly_part.png",
+      "jp_labels": [
+        "おなか"
+      ],
+      "context_tags": [
+        "body"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "おなかの前面。丸みのある胴体の中央を示す。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "shoulder_part",
+      "save_path": "assets/images/quizland/illust/choice/shoulder_part.png",
+      "jp_labels": [
+        "かた"
+      ],
+      "context_tags": [
+        "body"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "肩の部分のクローズアップ。首の付け根から腕のつながりが分かる。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "hair_part",
+      "save_path": "assets/images/quizland/illust/choice/hair_part.png",
+      "jp_labels": [
+        "かみ"
+      ],
+      "context_tags": [
+        "body"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "頭の髪の毛を示すクローズアップ。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "earthquake",
+      "save_path": "assets/images/quizland/illust/choice/earthquake.png",
+      "jp_labels": [
+        "じしん"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "地面がゆれている様子。家や物がガタガタする地震の表現。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "tsunami",
+      "save_path": "assets/images/quizland/illust/choice/tsunami.png",
+      "jp_labels": [
+        "つなみ"
+      ],
+      "context_tags": [
+        "nature",
+        "weather"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "大きな波が押しよせる津波。普通の波より強い災害表現。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "wave",
+      "save_path": "assets/images/quizland/illust/choice/wave.png",
+      "jp_labels": [
+        "なみ"
+      ],
+      "context_tags": [
+        "nature"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "海のなみ。ふつうの波として見えるやさしい海の表現。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "clock",
+      "save_path": "assets/images/quizland/illust/choice/clock.png",
+      "jp_labels": [
+        "とけい"
+      ],
+      "context_tags": [
+        "prop"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "丸いアナログ時計。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "ruler",
+      "save_path": "assets/images/quizland/illust/choice/ruler.png",
+      "jp_labels": [
+        "ものさし"
+      ],
+      "context_tags": [
+        "prop"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "まっすぐなものさし。目盛りが分かる文房具。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "cup",
+      "save_path": "assets/images/quizland/illust/choice/cup.png",
+      "jp_labels": [
+        "コップ"
+      ],
+      "context_tags": [
+        "prop"
+      ],
+      "usage": [
+        "choice"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "シンプルなコップ一つ。",
+      "alternatives": [],
       "status": "generated"
     }
   ]
