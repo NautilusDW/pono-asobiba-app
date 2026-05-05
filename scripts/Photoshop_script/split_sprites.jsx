@@ -76,17 +76,34 @@
       '全出力を 1:1 の正方形にする（長辺に合わせて透明パディング）');
     cbSquare.value = true;
 
+    var cbMergeAll = dlg.add('checkbox', undefined,
+      '全部 1 つにまとめる（離れていても 1 ファイルに統合）');
+    cbMergeAll.value = false;
+
+    var gapGroup = dlg.add('group');
+    gapGroup.orientation = 'row';
+    gapGroup.alignChildren = 'center';
+    gapGroup.add('statictext', undefined, '結合距離 (px):');
+    var etGap = gapGroup.add('edittext', undefined, '0');
+    etGap.characters = 6;
+    gapGroup.add('statictext', undefined, '0=現状動作 / 1-100 = この距離以内なら同じ sprite');
+
     var btns = dlg.add('group');
     btns.alignment = 'center';
     btns.spacing = 10;
     var okBtn     = btns.add('button', undefined, 'OK', { name: 'ok' });
     var cancelBtn = btns.add('button', undefined, 'キャンセル', { name: 'cancel' });
 
-    var result = { ok: false, flipB: false, square: false };
+    var result = { ok: false, flipB: false, square: false, mergeAll: false, mergeGap: 0 };
     okBtn.onClick     = function() {
       result.ok = true;
-      result.flipB  = cbFlip.value;
-      result.square = cbSquare.value;
+      result.flipB    = cbFlip.value;
+      result.square   = cbSquare.value;
+      result.mergeAll = cbMergeAll.value;
+      var gapNum = parseInt(etGap.text, 10);
+      if (isNaN(gapNum) || gapNum < 0) gapNum = 0;
+      if (gapNum > 100) gapNum = 100;
+      result.mergeGap = gapNum;
       dlg.close(1);
     };
     cancelBtn.onClick = function() { dlg.close(2); };
@@ -96,8 +113,10 @@
   })();
 
   if (!exportOptions.ok) { tmpPng.remove(); return; }
-  var exportFlipB   = exportOptions.flipB;
-  var exportSquare  = exportOptions.square;
+  var exportFlipB    = exportOptions.flipB;
+  var exportSquare   = exportOptions.square;
+  var exportMergeAll = exportOptions.mergeAll;
+  var exportMergeGap = exportOptions.mergeGap;
 
   // ── Python 呼び出し（Windows: VBScript 経由、Mac: shell script 経由）
   var pyPath   = pyScript.fsName;
@@ -106,8 +125,10 @@
   // レイヤー名をベース名として使用（ファイル名に使えない文字は_に置換）
   var baseName = doc.activeLayer.name.replace(/[\\\/:\*\?"<>\|]/g, '_');
   var modeParts = [];
-  if (exportFlipB)  modeParts.push('A+B両方');
-  if (exportSquare) modeParts.push('1:1正方形');
+  if (exportFlipB)        modeParts.push('A+B両方');
+  if (exportSquare)       modeParts.push('1:1正方形');
+  if (exportMergeAll)     modeParts.push('全部1つ');
+  else if (exportMergeGap > 0) modeParts.push('結合距離 ' + exportMergeGap + 'px');
   var modeLabel = modeParts.length ? '（' + modeParts.join(' / ') + '）' : '（通常）';
 
   if ($.os.indexOf('Windows') !== -1) {
@@ -141,8 +162,10 @@
     batFile.writeln('echo Using interpreter: %PYCMD% > "' + logFile.fsName + '"');
     var pyArgs =
       '"' + pyPath + '" "' + inPath + '" "' + outPath + '" "' + baseName + '"';
-    if (exportFlipB)  pyArgs += ' --flip-b';
-    if (exportSquare) pyArgs += ' --square';
+    if (exportFlipB)            pyArgs += ' --flip-b';
+    if (exportSquare)           pyArgs += ' --square';
+    if (exportMergeAll)         pyArgs += ' --merge-all';
+    else if (exportMergeGap > 0) pyArgs += ' --merge-gap ' + exportMergeGap;
     batFile.writeln('%PYCMD% ' + pyArgs + ' >> "' + logFile.fsName + '" 2>&1');
     batFile.writeln('exit /b %errorlevel%');
     batFile.close();
@@ -177,6 +200,9 @@
     // Mac: bash スクリプトで実行 (ログ捕捉付き)
     var flipFlag   = exportFlipB  ? ' --flip-b' : '';
     var squareFlag = exportSquare ? ' --square' : '';
+    var mergeFlag  = '';
+    if (exportMergeAll)              mergeFlag = ' --merge-all';
+    else if (exportMergeGap > 0)     mergeFlag = ' --merge-gap ' + exportMergeGap;
     var macLog = new File(Folder.temp + '/split_sprites_run.log');
     if (macLog.exists) macLog.remove();
 
@@ -185,7 +211,7 @@
     sh.writeln('#!/bin/bash');
     sh.writeln(
       'python3 "' + pyPath + '" "' + inPath + '" "' + outPath + '" "' + baseName + '"' +
-      flipFlag + squareFlag + ' > "' + macLog.fsName + '" 2>&1'
+      flipFlag + squareFlag + mergeFlag + ' > "' + macLog.fsName + '" 2>&1'
     );
     sh.writeln('echo $? > "' + macLog.fsName + '.exit"');
     sh.close();
