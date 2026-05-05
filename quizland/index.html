@@ -842,7 +842,11 @@ body.sheet-on .hdr-right .ctrl-btn {
   bottom: 20px;
   width: 130px;
   height: 130px;
-  z-index: 4;            /* board (z:3) より前、 .character (z:5) より背面 */
+  /* body.sheet-on で .safe-area > .body が z-index:6 に持ち上がるため、
+     左下ポノはそれよりさらに前面 (z:7) にしないと .body の grid セル裏に
+     隠れて画面に出ない。 .character (z:5) は .a-col 内なので left:60px の
+     左下領域では衝突しない。 */
+  z-index: 7;
   pointer-events: none;  /* chip クリックを妨害しない */
   filter: var(--stage-shadow);
 }
