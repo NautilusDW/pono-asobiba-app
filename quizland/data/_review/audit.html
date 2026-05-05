@@ -166,15 +166,21 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 (async function() {
   const ASSET_BASE = '../../../';
 
-  // 1) load illustration manifest + handoff audit + disk inventory + JP-to-ID map + sheets index
-  const [manifest, handoffAudit, diskInventory, jpToIdData, sheetsIndex] = await Promise.all([
+  // 1) load illustration manifest + handoff audit + disk inventory + JP-to-ID map + sheets index + overrides
+  const [manifest, handoffAudit, diskInventory, jpToIdData, sheetsIndex, jpOverrides] = await Promise.all([
     fetch('./illustration-list.json').then(r => r.json()).catch(e => { console.error('manifest load failed', e); return { sheets: [], items: [] }; }),
     fetch('./_handoff_audit.json').then(r => r.json()).catch(e => { console.warn('handoff audit not available'); return null; }),
     fetch('./_disk_inventory.json').then(r => r.json()).catch(e => { console.warn('disk inventory not available'); return null; }),
     fetch('./_choice_jp_to_id.json').then(r => r.json()).catch(e => { console.warn('JP-to-ID map not available'); return null; }),
     fetch('./_sheets_index.json').then(r => r.json()).catch(e => { console.warn('sheets index not available'); return null; }),
+    fetch('./_choice_jp_to_id_overrides.json').then(r => r.json()).catch(e => { console.warn('JP overrides not available'); return null; }),
   ]);
-  const externalJpMap = (jpToIdData && jpToIdData.jp_to_id) || {};
+  // overrides は最優先 (auto抽出を上書きできる)
+  const externalJpMap = Object.assign(
+    {},
+    (jpToIdData && jpToIdData.jp_to_id) || {},
+    (jpOverrides && jpOverrides.jp_to_id) || {}
+  );
   const sheetPaths = (sheetsIndex && sheetsIndex.sheet_paths) || {};
   const idToSheets = (sheetsIndex && sheetsIndex.id_to_sheets) || {};
   const duplicates = (sheetsIndex && sheetsIndex.duplicates) || {};
