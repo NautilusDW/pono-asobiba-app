@@ -117,18 +117,51 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
   const catSel = document.getElementById('q-cat');
   cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
 
-  // 4) try to map a choice text to an image (best-effort: search idToPath for any id that matches choice as substring after lowercase)
-  function findChoiceImage(choiceText, qCat) {
-    if (!choiceText) return null;
-    const t = String(choiceText).toLowerCase();
-    // direct id match
+  // 4) try to map a choice text to an image
+  // 戦略:
+  //   1. 直接 id 一致 (choice="zou" → idToPath["zou"])
+  //   2. type 別プレフィクス試行 (order_color の "red" → "color_red")
+  //   3. ファイル名 (basename) 一致
+  //   4. 既知 Japanese→romaji マッピング (色, 数字 など)
+  //   5. assets/images/quizland/illust/choice/<choice>.png 直接プローブ (img onerror fallback)
+  const JP_TO_ID = {
+    // 色 (順番系・色問題の和名)
+    'あか': 'color_red', 'あお': 'color_blue', 'きいろ': 'color_yellow', 'みどり': 'color_green',
+    'ピンク': 'color_pink', 'オレンジ': 'color_orange', 'むらさき': 'color_purple', 'みずいろ': 'color_cyan',
+    // 形 (shape_name 和名)
+    'まる': 'shape_circle', 'しかく': 'shape_square', 'さんかく': 'shape_triangle', 'ほし': 'shape_star',
+    'ハート': 'shape_heart', 'ながしかく': 'shape_rectangle', 'ひしがた': 'shape_diamond', 'たまご': 'shape_oval',
+  };
+  function findChoiceImage(choiceText, qType) {
+    if (choiceText == null) return null;
+    const raw = String(choiceText);
+    const t = raw.toLowerCase();
+    // 1. 直接 id 一致
     if (idToPath[t]) return idToPath[t];
-    // prefix match (e.g. "Sun" id → choice "はれ" won't match — limited)
+    if (idToPath[raw]) return idToPath[raw];
+    // 2. type 別プレフィクス試行
+    const prefixes = [];
+    if (qType === 'order_color') prefixes.push('color_');
+    else if (qType === 'shape_name') prefixes.push('shape_');
+    else if (qType === 'weather') prefixes.push('weather_');
+    for (const p of prefixes) {
+      if (idToPath[p + t]) return idToPath[p + t];
+    }
+    // 3. basename 一致
     for (const [id, path] of Object.entries(idToPath)) {
       const fname = path.split('/').pop().replace('.png','').toLowerCase();
       if (fname === t) return path;
     }
-    return null;
+    // 4. JP→ID テーブル
+    const mapped = JP_TO_ID[raw];
+    if (mapped && idToPath[mapped]) return idToPath[mapped];
+    // 5. illust/choice/ にある画像を直接プローブ (manifest 外)
+    //    返り値は path で、img onerror で 404 fallback 表示
+    const candidates = [
+      'assets/images/quizland/illust/choice/' + t + '.png',
+      'assets/images/quizland/illust/choice/' + raw + '.png',
+    ];
+    return { probe: candidates };
   }
 
   // stage image path (for emoji_name etc)
@@ -184,9 +217,27 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
         left.appendChild(hint);
       }
 
+      // miss badge placeholder (updated async as images resolve)
+      const missBadge = document.createElement('span');
+      missBadge.className = 'q-img-flag miss';
+      missBadge.style.marginLeft = '4px';
+      missBadge.style.display = 'none'; // shown only when missCount > 0
+      meta.appendChild(missBadge);
+
       const ul = document.createElement('ul');
       ul.className = 'choices';
       let choiceMissCount = 0;
+      const totalChoices = (q.choices || []).length;
+      function updateMissBadge() {
+        if (choiceMissCount > 0) {
+          missBadge.style.display = '';
+          missBadge.textContent = '🖼 選択肢未紐付け ' + choiceMissCount + '/' + totalChoices;
+          card.dataset.imgMissing = '1';
+        } else {
+          missBadge.style.display = 'none';
+          delete card.dataset.imgMissing;
+        }
+      }
       (q.choices || []).forEach((c, ci) => {
         const li = document.createElement('li');
         li.className = 'choice' + (ci === q.answer ? ' answer' : '');
@@ -194,46 +245,60 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
         // image slot (always present)
         const slot = document.createElement('div');
         slot.className = 'choice-img';
-        const matchedPath = findChoiceImage(c, cat);
-        if (matchedPath) {
-          const img = document.createElement('img');
-          img.src = ASSET_BASE + matchedPath;
-          img.alt = String(c);
-          img.onerror = () => {
-            // file 404 → fallback to "画像なし" slot
-            slot.classList.add('none');
-            slot.innerHTML = '画像<br>404';
-            choiceMissCount++;
-          };
-          slot.appendChild(img);
-        } else {
-          slot.classList.add('none');
-          slot.textContent = '画像なし';
-          choiceMissCount++;
-        }
-        li.appendChild(slot);
-
-        // text + answer mark + filename
+        const matched = findChoiceImage(c, cat);
+        let resolvedPath = null;
         const wrap = document.createElement('div');
         wrap.className = 'c-text';
         const mark = ci === q.answer ? '<span class="ans-mark">★ </span>' : '';
-        const fname = matchedPath ? '<div class="c-fname">' + matchedPath.split('/').pop() + '</div>' : '';
-        wrap.innerHTML = mark + escapeHtml(String(c)) + fname;
+        wrap.innerHTML = mark + escapeHtml(String(c));
+
+        function setMissing() {
+          slot.innerHTML = '';
+          slot.classList.add('none');
+          slot.textContent = '画像なし';
+          choiceMissCount++;
+          updateMissBadge();
+        }
+        function setLoaded(path) {
+          resolvedPath = path;
+          // append filename below text
+          const fn = document.createElement('div');
+          fn.className = 'c-fname';
+          fn.textContent = path.split('/').pop();
+          wrap.appendChild(fn);
+        }
+
+        if (matched && typeof matched === 'string') {
+          // confident match (manifest hit)
+          const img = document.createElement('img');
+          img.src = ASSET_BASE + matched;
+          img.alt = String(c);
+          img.onload = () => setLoaded(matched);
+          img.onerror = () => setMissing();
+          slot.appendChild(img);
+        } else if (matched && matched.probe) {
+          // try candidates one by one until one loads
+          let i = 0;
+          const tryNext = () => {
+            if (i >= matched.probe.length) { setMissing(); return; }
+            const p = matched.probe[i++];
+            const img = document.createElement('img');
+            img.src = ASSET_BASE + p;
+            img.alt = String(c);
+            img.onload = () => { slot.innerHTML = ''; slot.appendChild(img); setLoaded(p); };
+            img.onerror = tryNext;
+          };
+          tryNext();
+        } else {
+          setMissing();
+        }
+        li.appendChild(slot);
         li.appendChild(wrap);
 
         ul.appendChild(li);
       });
       left.appendChild(ul);
-
-      // mark card as missing-img if any choice or stage is unmapped
-      if (choiceMissCount > 0) {
-        const tag = document.createElement('span');
-        tag.className = 'q-img-flag miss';
-        tag.style.marginLeft = '4px';
-        tag.textContent = '🖼 選択肢未紐付け ' + choiceMissCount + '/' + (q.choices || []).length;
-        meta.appendChild(tag);
-        card.dataset.imgMissing = '1';
-      }
+      // (miss badge は updateMissBadge() で async 更新)
 
       if (q.detail) {
         const det = document.createElement('div');
