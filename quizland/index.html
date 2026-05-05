@@ -854,8 +854,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   position: absolute;
   left: 30px;            /* safe-area 左端から内側、 装飾どんぐりを避ける */
   bottom: 20px;
-  width: 390px;
-  height: 390px;
+  width: 273px;          /* 390px の 70% */
+  height: 273px;
   /* body.sheet-on で .safe-area > .body が z-index:6 に持ち上がるため、
      左下ポノはそれよりさらに前面 (z:7) にしないと .body の grid セル裏に
      隠れて画面に出ない。 .character (z:5) は .a-col 内なので left:30px の
@@ -872,9 +872,10 @@ body.sheet-on .hdr-right .ctrl-btn {
 }
 .stage-pono-bubble {
   position: absolute;
-  bottom: 95%;            /* ポノの上に出す */
-  left: 50%;
-  transform: translateX(-50%);
+  /* ポノの右横、 少し下目に配置 (頭の高さ ≒ 30% より下、 顔の横) */
+  top: 35%;
+  left: 95%;              /* ポノ右端に少し被せる */
+  transform: none;
   width: 320px;            /* PNG 比率 (元素材は ~1983×793 ≒ 2.5:1) */
   height: 130px;
   opacity: 0;
@@ -1461,7 +1462,7 @@ body.layout-editor-on .character img {
   .emoji-main-img { max-width: 320px !important; max-height: 320px !important; }
   .opposite-display { font-size: 72px !important; padding: 20px 40px !important; }
   /* 14:9 帯では board が縮むので stage-pono も小さく (3 倍化) */
-  .stage-pono { width: 320px !important; height: 320px !important; left: 24px !important; bottom: 14px !important; }
+  .stage-pono { width: 224px !important; height: 224px !important; left: 24px !important; bottom: 14px !important; }
   .stage-pono-bubble { width: 270px !important; height: 108px !important; }
   /* saved-layout.json の inline width/height/transform を打ち消し、
      visible slice (1098 canvas-px) を超える要素を grid に従わせる。
@@ -1520,7 +1521,7 @@ body.layout-editor-on .character img {
   .emoji-main-img { max-width: 280px !important; max-height: 280px !important; }
   .opposite-display { font-size: 64px !important; padding: 18px 36px !important; }
   /* 4:3 帯では更に控えめサイズで (3 倍化) */
-  .stage-pono { width: 280px !important; height: 280px !important; left: 20px !important; bottom: 12px !important; }
+  .stage-pono { width: 196px !important; height: 196px !important; left: 20px !important; bottom: 12px !important; }
   .stage-pono-bubble { width: 240px !important; height: 96px !important; }
   /* ─────────────────────────────────────────────────────────
      saved-layout.json は 16:9 (1600 canvas-px) 想定で width/height と
@@ -1574,7 +1575,7 @@ body.layout-editor-on .character img {
   .emoji-main-img { max-width: 240px !important; max-height: 240px !important; }
   .opposite-display { font-size: 56px !important; padding: 14px 28px !important; }
   /* 5:4 帯は最も狭い、 stage-pono を最小サイズに (3 倍化) */
-  .stage-pono { width: 240px !important; height: 240px !important; left: 16px !important; bottom: 10px !important; }
+  .stage-pono { width: 168px !important; height: 168px !important; left: 16px !important; bottom: 10px !important; }
   .stage-pono-bubble { width: 200px !important; height: 80px !important; }
   /* 5:4 は 4:3 より更に狭いので 4:3 と同じ inline 打ち消しを継承する */
   .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
