@@ -23,6 +23,7 @@ import os
 import sys
 from collections import deque
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List, Tuple
 
 from PIL import Image
@@ -188,6 +189,7 @@ def split_sprites(
     )
 
     base = base_name or os.path.splitext(os.path.basename(input_path))[0]
+    ts = datetime.now().strftime('%Y%m%d-%H%M%S')
 
     def _finalize(im):
         return _to_square(im) if square else im
@@ -197,15 +199,15 @@ def split_sprites(
             a_img, b_img = make_flipped_pair(s.image)
             a_img = _finalize(a_img)
             b_img = _finalize(b_img)
-            out_a = os.path.join(output_dir, f"{base}_{s.index:03d}_A.png")
+            out_a = os.path.join(output_dir, f"{base}_{ts}_{s.index:03d}_A.png")
             a_img.save(out_a)
             print(f"  saved: {out_a}  ({a_img.size[0]}x{a_img.size[1]})")
-            out_b = os.path.join(output_dir, f"{base}_{s.index:03d}_B.png")
+            out_b = os.path.join(output_dir, f"{base}_{ts}_{s.index:03d}_B.png")
             b_img.save(out_b)
             print(f"  saved: {out_b}  ({b_img.size[0]}x{b_img.size[1]})")
         else:
             out_img = _finalize(s.image)
-            out_path = os.path.join(output_dir, f"{base}_{s.index:03d}.png")
+            out_path = os.path.join(output_dir, f"{base}_{ts}_{s.index:03d}.png")
             out_img.save(out_path)
             print(f"  saved: {out_path}  ({out_img.size[0]}x{out_img.size[1]})")
 
