@@ -771,6 +771,20 @@ body {
         <label>結合距離 (px) <input type="number" class="val-input" id="merge-gap-val" value="0" min="0" max="100" step="1"></label>
         <input type="range" id="merge-gap" min="0" max="100" value="0" title="この距離以内のパーツを1つのスプライトとして結合（くっつけたいときはリンクツールを使用）">
       </div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:6px;cursor:pointer">
+        <input type="checkbox" id="force-square" style="accent-color:#f87171"> 縦横比を 1:1 (正方形) に揃える
+      </label>
+      <div id="force-square-help" style="display:none;font-size:0.62rem;color:#6b7280;margin-top:2px;line-height:1.4">被写体の bbox を含む正方形に拡張し、余白は透過で埋めます。</div>
+      <div class="form-row" id="force-square-size-row" style="display:none">
+        <label>出力サイズ
+          <select id="force-square-size" style="padding:2px 6px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#9ca3af;font-size:0.7rem;font-family:inherit;width:100%">
+            <option value="0">そのまま (bbox 拡張サイズ)</option>
+            <option value="256">256 × 256</option>
+            <option value="512">512 × 512</option>
+            <option value="1024">1024 × 1024</option>
+          </select>
+        </label>
+      </div>
     </div>
 
     <!-- 4. 色変換 -->
@@ -1845,6 +1859,21 @@ bgCustomInput.addEventListener('input', () => {
   valEl.addEventListener('input',  () => { slider.value = valEl.value; });
 });
 
+// 1:1 正方形強制チェックボックス: ON で説明 + 出力サイズ select を表示
+(function() {
+  const cb = document.getElementById('force-square');
+  const help = document.getElementById('force-square-help');
+  const row = document.getElementById('force-square-size-row');
+  if (!cb || !help || !row) return;
+  const sync = () => {
+    const on = cb.checked;
+    help.style.display = on ? '' : 'none';
+    row.style.display  = on ? '' : 'none';
+  };
+  cb.addEventListener('change', sync);
+  sync();
+})();
+
 // ════════════════════════════════════════════════════════════
 // プリセット: 背景除去 / スプライト分割 別々
 // ════════════════════════════════════════════════════════════
@@ -1940,6 +1969,8 @@ function _getSplitSettings() {
     padding:    document.getElementById('padding').value,
     alphaThresh:document.getElementById('alpha-thresh').value,
     mergeGap:   document.getElementById('merge-gap').value,
+    forceSquare:    !!document.getElementById('force-square')?.checked,
+    forceSquareSize:document.getElementById('force-square-size')?.value || '0',
   };
 }
 function _applySplitSettings(s) {
@@ -1952,6 +1983,14 @@ function _applySplitSettings(s) {
   set('padding',     s.padding,     'padding-val');
   set('alpha-thresh',s.alphaThresh, 'alpha-thresh-val');
   set('merge-gap',   s.mergeGap,    'merge-gap-val');
+  if (s.forceSquare !== undefined) {
+    const cb = document.getElementById('force-square');
+    if (cb) { cb.checked = !!s.forceSquare; cb.dispatchEvent(new Event('change')); }
+  }
+  if (s.forceSquareSize !== undefined) {
+    const sel = document.getElementById('force-square-size');
+    if (sel) sel.value = s.forceSquareSize;
+  }
 }
 document.getElementById('btn-split-preset-save').addEventListener('click', () => {
   const name = prompt('スプライト分割プリセット名:');
@@ -3062,7 +3101,22 @@ function _cleanSpriteEdges(canvas, tolerance, bgColor) {
   if (changed) ctx.putImageData(imgData, 0, 0);
 }
 
-function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap, keepBg) {
+// bbox を中心とする max(w,h) サイズの正方形に拡張する
+// 元画像をはみ出す場合は (x,y) が負/超過のままになるが、出力 canvas は side×side で
+// drawImage が範囲外を勝手に塗らないので透過 padding がそのまま残る。
+function expandToSquare(bbox, srcW, srcH) {
+  const side = Math.max(bbox.w, bbox.h);
+  const cx = bbox.x + bbox.w / 2;
+  const cy = bbox.y + bbox.h / 2;
+  const x = Math.round(cx - side / 2);
+  const y = Math.round(cy - side / 2);
+  return { x, y, w: side, h: side };
+}
+
+function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap, keepBg, opts) {
+  opts = opts || {};
+  const forceSquare = !!opts.forceSquare;
+  const outputSize  = opts.outputSize | 0; // 0 = そのまま
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
 
@@ -3331,7 +3385,31 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       try { _keepLargestComponent(sc); } catch (e) {}
     }
 
-    result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
+    // ── 1:1 正方形強制 (オプション) ──
+    // 既存の tight crop (sc) はそのままに、 中心を保ったまま正方形 canvas へ再配置。
+    // はみ出し部分は透過のまま (drawImage は範囲外を塗らない)。
+    let outCanvas = sc;
+    let outSrcX = sx, outSrcY = sy, outW = sw2, outH = sh2;
+    if (forceSquare) {
+      const sq = expandToSquare({ x: sx, y: sy, w: sw2, h: sh2 }, w, h);
+      const finalSide = (outputSize > 0) ? outputSize : sq.w;
+      const sqCanvas = document.createElement('canvas');
+      sqCanvas.width = finalSide; sqCanvas.height = finalSide;
+      const sqCtx = sqCanvas.getContext('2d');
+      // tight crop (sc) を sq 内のオフセット位置に描画 (透過 padding は default で残る)
+      const offX = sx - sq.x;
+      const offY = sy - sq.y;
+      const scale = finalSide / sq.w;
+      sqCtx.imageSmoothingEnabled = true;
+      sqCtx.imageSmoothingQuality = 'high';
+      sqCtx.drawImage(sc, 0, 0, sw2, sh2,
+                          offX * scale, offY * scale,
+                          sw2 * scale, sh2 * scale);
+      outCanvas = sqCanvas;
+      outSrcX = sq.x; outSrcY = sq.y; outW = finalSide; outH = finalSide;
+    }
+
+    result.push({ canvas: outCanvas, srcX: outSrcX, srcY: outSrcY, w: outW, h: outH,
                   name: '', id: '', icon: '🐠', expr: 'normal',
                   facing: 'right', sizePx: 70, count: 3,
                   pattern: 'swim', reaction: 'jump',
@@ -3370,6 +3448,9 @@ document.getElementById('btn-split').addEventListener('click', async () => {
     const alphaThr  = parseInt(document.getElementById('alpha-thresh').value) || 10;
     const bgTol     = parseFloat(document.getElementById('tolerance').value) || 35;
     const mergeGap  = parseInt(document.getElementById('merge-gap').value) || 0;
+    const forceSquare = !!document.getElementById('force-square')?.checked;
+    const outputSize  = parseInt(document.getElementById('force-square-size')?.value || '0') || 0;
+    const splitOpts = { forceSquare, outputSize };
 
     sprites = [];
     const savedOrig = originalCanvas;
@@ -3387,7 +3468,7 @@ document.getElementById('btn-split').addEventListener('click', async () => {
       originalCanvas = pImg.canvas;
       let found = [];
       try {
-        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground);
+        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground, splitOpts);
       } catch (e) { console.warn('split failed for picker image:', e); }
 
       // 選択矩形があれば bbox 中心が選択内にある sprite だけ残す。なければ全部採用。
@@ -3421,8 +3502,10 @@ document.getElementById('btn-split').addEventListener('click', async () => {
   const alphaThr = parseInt(document.getElementById('alpha-thresh').value) || 10;
   const bgTol    = parseFloat(document.getElementById('tolerance').value) || 35;
   const mergeGap = parseInt(document.getElementById('merge-gap').value) || 0;
+  const forceSquare = !!document.getElementById('force-square')?.checked;
+  const outputSize  = parseInt(document.getElementById('force-square-size')?.value || '0') || 0;
 
-  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground);
+  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground, { forceSquare, outputSize });
   renderSpritesGrid();
 
   hideLoading();

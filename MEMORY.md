@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-05T07:52:07Z - creature_studio.html: 1:1 正方形強制クロップオプション追加 (UI checkbox + 出力サイズ select + expandToSquare + プリセット永続化)
+- **タスク**: creature_studio.html: 1:1 正方形強制クロップオプション追加 (UI checkbox + 出力サイズ select + expandToSquare + プリセット永続化)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 354
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 143, "Read": 68, "Glob": 3, "Grep": 17, "Edit": 90, "Write": 11, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 18}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-05T07:27:13Z - quizland debug mode で正解→setTimeout(nextQuestion)経路でコメント/スクショが保存されないバグ修正: nextQuestionをラップして必ず_qzPtSaveCurrentNoteを先行させる
 - **タスク**: quizland debug mode で正解→setTimeout(nextQuestion)経路でコメント/スクショが保存されないバグ修正: nextQuestionをラップして必ず_qzPtSaveCurrentNoteを先行させる
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 85, "Read": 36, "Glob": 3, "Grep": 15, "Edit": 70, "Write": 6, "ToolSearch": 2, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T15:33:00Z - Wave 47 Charlie-3: quizland preview の content/icon background-image を復活、木枠フレームのみ削除維持
-- **タスク**: Wave 47 Charlie-3: quizland preview の content/icon background-image を復活、木枠フレームのみ削除維持
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 163
-- **エラー数**: 19
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 104, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 22, "Bash": 24, "Glob": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
