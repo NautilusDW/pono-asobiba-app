@@ -204,6 +204,14 @@ body.sheet-on .answer-tray {
   box-shadow: none;
 }
 
+/* color-chip: order_color の stage 用 PNG (img) は watercolor 風のため、
+   ベースの白枠 + box-shadow を sheet-on モードでは消して画像を素のまま見せる。
+   PNG にエッジ装飾が入っているので二重縁になるのを防ぐ。 */
+body.sheet-on .color-chip {
+  border-color: transparent;
+  box-shadow: none;
+}
+
 /* chip: 各回答チップの個別フレームは表示しない。
    .answer-tray (Fukuro_frame_002.png) に 2x2 セル枠が焼き込まれているので、
    そのグリッドのみが見え、内側に円アイコン + テキストだけが乗る形にする。
@@ -689,7 +697,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   max-width: 100%;
 }
 
-/* color-chip: dotted-slot 風の枠 + 色面 */
+/* color-chip: dotted-slot 風の枠 + 色面
+   div でも img でも同じ見た目になるように object-fit / display を指定。 */
 .color-chip {
   width: var(--slot-size);
   height: var(--slot-size);
@@ -699,6 +708,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   border: 4px solid rgba(255,255,255,0.85);
   box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16),
               inset 0 0 0 2px rgba(0,0,0,0.06);
+  display: block;
+  object-fit: contain;
 }
 
 /* count-item: scratchy paper-card 風
@@ -2466,10 +2477,20 @@ function renderOrderColor(stage, q) {
   const row = document.createElement('div');
   row.className = 'item-row';
   q.items.forEach(colorKey => {
-    const chip = document.createElement('div');
-    chip.className = 'color-chip';
-    chip.style.background = QUIZLAND_COLORS[colorKey].code;
-    row.appendChild(chip);
+    const img = document.createElement('img');
+    img.className = 'color-chip';
+    img.src = '../assets/images/quizland/illust/color/color_' + colorKey + '.png';
+    img.alt = (QUIZLAND_COLORS[colorKey] && QUIZLAND_COLORS[colorKey].name) || '';
+    // 失敗時は CSS color にフォールバック (既存資産が壊れた場合の保険)
+    img.onerror = function() {
+      const fallback = document.createElement('div');
+      fallback.className = 'color-chip';
+      if (QUIZLAND_COLORS[colorKey]) {
+        fallback.style.background = QUIZLAND_COLORS[colorKey].code;
+      }
+      img.replaceWith(fallback);
+    };
+    row.appendChild(img);
   });
   stage.appendChild(row);
 }
