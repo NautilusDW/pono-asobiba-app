@@ -930,10 +930,14 @@ body.sheet-on .hdr-right .ctrl-btn {
   75% { transform: translateX(4px); }
 }
 
-/* チップ内の手描きスクリブル円 (色問題用) */
+/* チップ内の手描きスクリブル円 (色問題用)
+   img (color_dot_<color>.png) があれば前面に被せ、無ければ CSS gradient が透ける fallback。
+   overflow:hidden で PNG を円形にクリップ。 */
 .chip .circle {
+  position: relative;
   width: 110px; height: 110px;
   border-radius: 50%;
+  overflow: hidden;
   background:
     repeating-linear-gradient(135deg,
       rgba(255,255,255,0.04) 0 4px,
@@ -941,6 +945,10 @@ body.sheet-on .hdr-right .ctrl-btn {
     var(--slot-color);
   border: 3px solid rgba(0,0,0,0.1);
 }
+/* watercolor PNG は自前で縁を持っているので、 img が中にある時は枠と gradient を消す。
+   img が onerror で .remove() された時は :has(img) が外れ、 base の border + per-color gradient に戻る (=fallback)。
+   per-color rule (.chip[data-color="..."] .circle) より勝つように [data-color] を入れて specificity を稼ぐ。 */
+.chip[data-color] .circle:has(img) { border-color: transparent !important; background: transparent !important; }
 .chip[data-color="red"]    .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #d23f3f; }
 .chip[data-color="blue"]   .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #3d6dc7; }
 .chip[data-color="yellow"] .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #e8c43a; }
@@ -2665,9 +2673,24 @@ function renderChoices(q) {
     if (q.type === 'order_color') {
       btn.dataset.color = choice;
       btn.classList.add('has-image'); // 丸 + ラベル のレイアウト
-      const c = document.createElement('div');
-      c.className = 'circle';
-      btn.appendChild(c);
+      // CSS gradient circle → watercolor PNG に切替 (あれば)
+      // wrap (.circle) には base CSS で per-color gradient が当たっているので、
+      // PNG が読めなければそのまま gradient が見える (= 自動 fallback)
+      const wrap = document.createElement('div');
+      wrap.className = 'circle';
+      const img = document.createElement('img');
+      img.src = '../assets/images/quizland/illust/choice/color_dot_' + choice + '.png';
+      img.alt = '';
+      img.draggable = false;
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'contain';
+      img.style.borderRadius = '50%';
+      img.style.display = 'block';
+      // PNG 不存在 (404) 時は img を消して、 wrap の CSS gradient を露出させる
+      img.onerror = function() { img.remove(); };
+      wrap.appendChild(img);
+      btn.appendChild(wrap);
       const label = document.createElement('span');
       label.textContent = QUIZLAND_COLORS[choice].name;
       btn.appendChild(label);
