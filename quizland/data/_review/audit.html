@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Quizland イラスト監査 - 問題と選択肢の生成画像リスト</title>
+<style>
+:root {
+  --paper: #f5e9c4;
+  --paper-2: #e8d293;
+  --wood: #6e4520;
+  --wood-light: #b07a3a;
+  --text: #4a2d0a;
+  --ok: #10B981;
+  --miss: #EF4444;
+  --warn: #F59E0B;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; color: var(--text); background: #faf6e8; }
+header { position: sticky; top: 0; background: var(--paper); border-bottom: 3px solid var(--wood); padding: 12px 20px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h1 { margin: 0 0 8px; font-size: 18px; }
+.stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.stat-pill { background: #fff; border: 2px solid var(--wood); border-radius: 14px; padding: 4px 12px; font-weight: 700; }
+.stat-pill.ok { color: var(--ok); border-color: var(--ok); }
+.stat-pill.miss { color: var(--miss); border-color: var(--miss); }
+.controls { margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+.controls input[type="search"], .controls select { padding: 4px 8px; border: 1.5px solid var(--wood); border-radius: 8px; font-family: inherit; font-size: 13px; }
+.controls label { font-weight: 700; }
+main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.cat-section { margin-bottom: 32px; }
+.cat-title { font-size: 16px; font-weight: 800; padding: 8px 14px; background: var(--wood-light); color: #fff; border-radius: 10px; margin-bottom: 12px; }
+.q-card { background: #fff; border: 2px solid var(--wood); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 240px; gap: 16px; box-shadow: 0 2px 6px rgba(120,80,20,0.12); }
+.q-card.hide { display: none; }
+.q-meta { display: flex; gap: 8px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+.q-lv { background: var(--wood); color: #fff; padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+.q-type { background: #fff3c4; border: 1px solid var(--wood-light); padding: 2px 8px; border-radius: 6px; }
+.q-img-flag { background: #DCFCE7; border: 1px solid var(--ok); color: var(--ok); padding: 2px 8px; border-radius: 6px; }
+.q-img-flag.miss { background: #FEE2E2; border-color: var(--miss); color: var(--miss); }
+.q-text { font-size: 17px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+.q-hint { font-size: 13px; color: #8A6A42; margin-bottom: 4px; }
+.q-detail { font-size: 12px; color: #888; margin-top: 4px; font-style: italic; }
+.choices { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.choice { font-size: 14px; padding: 4px 8px; border-radius: 6px; background: #fafafa; }
+.choice.answer { background: #DCFCE7; font-weight: 700; }
+.choice .ans-mark { color: var(--ok); margin-right: 4px; }
+.q-stage-img { display: flex; align-items: flex-start; justify-content: center; }
+.q-stage-img img { max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+.q-stage-img .nostage { color: #aaa; font-size: 12px; padding: 24px 0; }
+.gallery-section { margin-top: 40px; padding-top: 20px; border-top: 3px dashed var(--wood); }
+.gallery-section h2 { font-size: 16px; }
+.gallery-folder { margin-bottom: 24px; }
+.gallery-folder h3 { font-size: 14px; background: var(--paper); padding: 6px 10px; border-radius: 6px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.gallery-item { background: #fff; border: 1.5px solid #ddd; border-radius: 6px; padding: 6px; text-align: center; cursor: pointer; transition: transform 0.1s; }
+.gallery-item:hover { transform: scale(1.05); border-color: var(--wood-light); }
+.gallery-item.miss { opacity: 0.4; border-style: dashed; border-color: var(--miss); }
+.gallery-item img { width: 100%; height: 80px; object-fit: contain; }
+.gallery-item .filename { font-size: 10px; word-break: break-all; margin-top: 4px; color: #555; }
+.gallery-item.miss .filename { color: var(--miss); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quizland イラスト監査 — 問題・選択肢と生成画像のリスト</h1>
+  <div class="stats" id="stats">読み込み中…</div>
+  <div class="controls">
+    <label>検索: <input type="search" id="q-search" placeholder="問題文・選択肢を検索"></label>
+    <label>カテゴリ: <select id="q-cat"><option value="">すべて</option></select></label>
+    <label>レベル: <select id="q-lv"><option value="">すべて</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option></select></label>
+    <label><input type="checkbox" id="q-only-img-missing"> 画像未紐付けのみ</label>
+  </div>
+</header>
+
+<main>
+  <div id="questions"></div>
+
+  <section class="gallery-section">
+    <h2>📦 全生成画像 (illustration-list.json マニフェスト基準)</h2>
+    <p style="font-size:13px; color:#666;">マゼンタ点線 = ファイル不在 (まだ生成されてない or pathミスマッチ)。クリックでファイル名コピー。</p>
+    <div id="gallery"></div>
+  </section>
+</main>
+
+<script src="../questions.js"></script>
+<script>
+(async function() {
+  const ASSET_BASE = '../../../';
+
+  // 1) load illustration manifest
+  const manifest = await fetch('./illustration-list.json').then(r => r.json()).catch(e => {
+    console.error('manifest load failed', e);
+    return { sheets: [], items: [] };
+  });
+
+  // build id -> save_path
+  const idToPath = {};
+  (manifest.sheets || []).forEach(s => (s.crops || []).forEach(c => { idToPath[c.id] = c.save_path; }));
+  (manifest.items || []).forEach(i => { idToPath[i.id] = i.save_path; });
+
+  // 2) test which paths exist on disk (HEAD probe)
+  // browser-only: we'll display all and rely on img onerror fallback for visualization
+  // (no node fs here)
+
+  // 3) flatten questions
+  const allQ = [];
+  Object.entries(QUIZLAND_QUESTIONS).forEach(([cat, arr]) => {
+    arr.forEach((q, i) => allQ.push({ ...q, _cat: cat, _idx: i }));
+  });
+
+  // category dropdown
+  const cats = Object.keys(QUIZLAND_QUESTIONS);
+  const catSel = document.getElementById('q-cat');
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
+
+  // 4) try to map a choice text to an image (best-effort: search idToPath for any id that matches choice as substring after lowercase)
+  function findChoiceImage(choiceText, qCat) {
+    if (!choiceText) return null;
+    const t = String(choiceText).toLowerCase();
+    // direct id match
+    if (idToPath[t]) return idToPath[t];
+    // prefix match (e.g. "Sun" id → choice "はれ" won't match — limited)
+    for (const [id, path] of Object.entries(idToPath)) {
+      const fname = path.split('/').pop().replace('.png','').toLowerCase();
+      if (fname === t) return path;
+    }
+    return null;
+  }
+
+  // stage image path (for emoji_name etc)
+  function stageImagePath(q) {
+    if (q.img) return ASSET_BASE + 'assets/images/ocean/' + q.img;
+    if (q.type === 'count_total' && q.item) return ASSET_BASE + 'assets/images/word/' + q.item + '.png';
+    return null;
+  }
+
+  // 5) render questions grouped by category
+  const root = document.getElementById('questions');
+  let totalQ = 0, qWithStage = 0, qMissingImg = 0;
+  cats.forEach(cat => {
+    const sec = document.createElement('section');
+    sec.className = 'cat-section';
+    sec.dataset.cat = cat;
+    const title = document.createElement('div');
+    title.className = 'cat-title';
+    title.textContent = cat + ' (' + QUIZLAND_QUESTIONS[cat].length + ' 問)';
+    sec.appendChild(title);
+    QUIZLAND_QUESTIONS[cat].forEach((q, i) => {
+      totalQ++;
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      card.dataset.searchText = (q.q + ' ' + (q.choices || []).join(' ') + ' ' + (q.hint || '') + ' ' + (q.detail || '')).toLowerCase();
+      card.dataset.cat = cat;
+      card.dataset.lv = q.level;
+
+      const left = document.createElement('div');
+      const meta = document.createElement('div');
+      meta.className = 'q-meta';
+      meta.innerHTML = '<span class="q-lv">Lv' + q.level + '</span><span class="q-type">' + q.type + '</span><span class="q-idx">#' + i + '</span>';
+      const stagePath = stageImagePath(q);
+      if (stagePath) {
+        meta.innerHTML += '<span class="q-img-flag">🖼 stage</span>';
+        qWithStage++;
+      } else if (q.type === 'emoji_name' || q.type === 'count_total') {
+        meta.innerHTML += '<span class="q-img-flag miss">🖼 stage 未指定</span>';
+        qMissingImg++;
+        card.dataset.imgMissing = '1';
+      }
+      left.appendChild(meta);
+
+      const text = document.createElement('div');
+      text.className = 'q-text';
+      text.textContent = q.q;
+      left.appendChild(text);
+
+      if (q.hint) {
+        const hint = document.createElement('div');
+        hint.className = 'q-hint';
+        hint.textContent = '💡 ' + q.hint;
+        left.appendChild(hint);
+      }
+
+      const ul = document.createElement('ul');
+      ul.className = 'choices';
+      (q.choices || []).forEach((c, ci) => {
+        const li = document.createElement('li');
+        li.className = 'choice' + (ci === q.answer ? ' answer' : '');
+        const mark = ci === q.answer ? '<span class="ans-mark">★</span>' : '';
+        const img = findChoiceImage(c, cat);
+        const imgTag = img ? ' <span style="font-size:10px;color:#888;">[' + img.split('/').pop() + ']</span>' : '';
+        li.innerHTML = mark + escapeHtml(String(c)) + imgTag;
+        ul.appendChild(li);
+      });
+      left.appendChild(ul);
+
+      if (q.detail) {
+        const det = document.createElement('div');
+        det.className = 'q-detail';
+        det.textContent = '→ ' + q.detail;
+        left.appendChild(det);
+      }
+      card.appendChild(left);
+
+      // right column: stage image preview
+      const right = document.createElement('div');
+      right.className = 'q-stage-img';
+      if (stagePath) {
+        const img = document.createElement('img');
+        img.src = stagePath;
+        img.alt = q.q;
+        img.onerror = () => { img.replaceWith(Object.assign(document.createElement('div'), { className: 'nostage', textContent: '⚠ 画像 404\n' + stagePath.replace(ASSET_BASE,'') })); };
+        right.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'nostage';
+        ph.textContent = '(stage 画像なし)';
+        right.appendChild(ph);
+      }
+      card.appendChild(right);
+
+      sec.appendChild(card);
+    });
+    root.appendChild(sec);
+  });
+
+  // 6) gallery (manifest-based)
+  const gallery = document.getElementById('gallery');
+  const byFolder = {};
+  Object.entries(idToPath).forEach(([id, path]) => {
+    const folder = path.replace(/^assets\/images\/quizland\/illust\//,'').split('/').slice(0,-1).join('/') || '(root)';
+    if (!byFolder[folder]) byFolder[folder] = [];
+    byFolder[folder].push({ id, path });
+  });
+  Object.keys(byFolder).sort().forEach(folder => {
+    const sec = document.createElement('div');
+    sec.className = 'gallery-folder';
+    sec.innerHTML = '<h3>' + folder + ' (' + byFolder[folder].length + ')</h3>';
+    const grid = document.createElement('div');
+    grid.className = 'gallery-grid';
+    byFolder[folder].forEach(({ id, path }) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      const img = document.createElement('img');
+      img.src = ASSET_BASE + path;
+      img.alt = id;
+      img.onerror = () => { item.classList.add('miss'); };
+      item.appendChild(img);
+      const fn = document.createElement('div');
+      fn.className = 'filename';
+      fn.textContent = id;
+      item.appendChild(fn);
+      item.title = path + ' (クリックでパスをコピー)';
+      item.addEventListener('click', () => {
+        navigator.clipboard.writeText(path).then(() => {
+          const orig = fn.textContent;
+          fn.textContent = '✓ コピー';
+          setTimeout(() => { fn.textContent = orig; }, 800);
+        });
+      });
+      grid.appendChild(item);
+    });
+    sec.appendChild(grid);
+    gallery.appendChild(sec);
+  });
+
+  // 7) stats + filters
+  document.getElementById('stats').innerHTML =
+    '<span class="stat-pill">問題数: ' + totalQ + '</span>' +
+    '<span class="stat-pill ok">stage 画像有: ' + qWithStage + '</span>' +
+    '<span class="stat-pill miss">stage 画像未指定: ' + qMissingImg + '</span>' +
+    '<span class="stat-pill">マニフェスト ID 数: ' + Object.keys(idToPath).length + '</span>';
+
+  function applyFilters() {
+    const term = document.getElementById('q-search').value.toLowerCase().trim();
+    const cat = document.getElementById('q-cat').value;
+    const lv = document.getElementById('q-lv').value;
+    const onlyMiss = document.getElementById('q-only-img-missing').checked;
+    document.querySelectorAll('.q-card').forEach(c => {
+      let show = true;
+      if (term && !c.dataset.searchText.includes(term)) show = false;
+      if (cat && c.dataset.cat !== cat) show = false;
+      if (lv && c.dataset.lv !== lv) show = false;
+      if (onlyMiss && !c.dataset.imgMissing) show = false;
+      c.classList.toggle('hide', !show);
+    });
+  }
+  ['q-search','q-cat','q-lv','q-only-img-missing'].forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+})();
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+</body>
+</html>
