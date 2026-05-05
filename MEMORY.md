@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-05T09:39:57Z - quizland stage 全画像にソフトシャドウ統一適用 (--stage-shadow CSS 変数導入)
+- **タスク**: quizland stage 全画像にソフトシャドウ統一適用 (--stage-shadow CSS 変数導入)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 423
+- **エラー数**: 22
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 177, "Read": 92, "Glob": 3, "Grep": 17, "Edit": 95, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 23}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-05T09:34:28Z - quizland order_color の .chip .circle を CSS gradient から color_dot PNG (watercolor 風) に切替、 PNG 不存在時は CSS gradient へ自動 fallback
 - **タスク**: quizland order_color の .chip .circle を CSS gradient から color_dot PNG (watercolor 風) に切替、 PNG 不存在時は CSS gradient へ自動 fallback
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 136, "Read": 59, "Glob": 3, "Grep": 17, "Edit": 88, "Write": 11, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 17}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-05T07:15:03Z - quizland debug mode に問題ごとコメント+スクショ添付機能を追加 (?debug=all 時のみ): textarea/自動キャプチャ/添付/ペースト/サムネ削除、次へ押下で playtest_notes.json + 個別スクショを GitHub commit、サイズ上限/localStorage backup/PUT 失敗時 b64 fallback
-- **タスク**: quizland debug mode に問題ごとコメント+スクショ添付機能を追加 (?debug=all 時のみ): textarea/自動キャプチャ/添付/ペースト/サムネ削除、次へ押下で playtest_notes.json + 個別スクショを GitHub commit、サイズ上限/localStorage backup/PUT 失敗時 b64 fallback
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 328
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 135, "Read": 57, "Glob": 3, "Grep": 17, "Edit": 86, "Write": 10, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 16}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

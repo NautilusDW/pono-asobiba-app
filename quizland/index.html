@@ -75,6 +75,12 @@
      ここでは 1 枚絵全体レイアウト由来のテクスチャ感のみ残す。
      0 にすると蔦/葉が完全消失し雰囲気が壊れる。0.5 以上だと枠絵が二重に主張するので NG。 */
   --sheet-overlay-opacity: 0;
+
+  /* stage (board 内) で表示される画像/図形/アイコンに統一でかける soft drop-shadow。
+     warm tone で watercolor アートと相性の良い茶色系。 distance 6px / blur 10px / opacity 22%。
+     対象は .color-chip / .count-item / .shape-* / .emoji-main(-img) / .trivia-pono / .trivia-balloon。
+     4 択チップ側 (.chip / .chip .circle) には適用しない (今回は stage 限定)。 */
+  --stage-shadow: drop-shadow(0 6px 10px rgba(120, 83, 20, 0.22));
 }
 * { box-sizing: border-box; }
 html, body {
@@ -710,6 +716,9 @@ body.sheet-on .hdr-right .ctrl-btn {
               inset 0 0 0 2px rgba(0,0,0,0.06);
   display: block;
   object-fit: contain;
+  /* stage 統一ソフトシャドウ。 sheet-on モードでは枠/box-shadow が消されるが、
+     PNG (透過) には drop-shadow が乗るので watercolor の輪郭にだけ影が出る。 */
+  filter: var(--stage-shadow);
 }
 
 /* count-item: scratchy paper-card 風
@@ -724,7 +733,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   aspect-ratio: 1 / 1;
   min-width: 0;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(120, 83, 20, 0.18));
+  /* stage 統一ソフトシャドウ (旧: drop-shadow(0 4px 8px ...) を共通変数に統一)。 */
+  filter: var(--stage-shadow);
 }
 
 /* ===== Shapes ===== */
@@ -732,14 +742,17 @@ body.sheet-on .hdr-right .ctrl-btn {
   width: 100%; height: 100%;
   display: flex; justify-content: center; align-items: center;
 }
-.shape-circle    { width: 230px; height: 230px; border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-square    { width: 230px; height: 230px; border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-triangle  { width: 0; height: 0; border-left: 120px solid transparent; border-right: 120px solid transparent; border-bottom: 210px solid #10B981; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
-.shape-star      { font-size: 280px; line-height: 1; color: #F97316; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
-.shape-heart     { font-size: 280px; line-height: 1; color: #EC4899; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
-.shape-rectangle { width: 320px; height: 170px; border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-diamond   { width: 220px; height: 220px; background: #EF4444; transform: rotate(45deg); border-radius: 20px; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-oval      { width: 320px; height: 170px; border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+/* stage 統一ソフトシャドウ: shape-* は不透明 CSS shape のため filter: drop-shadow と
+   box-shadow は実質等価だが、 全 stage 要素で見た目を揃えるため filter に統一する
+   (旧: 各 shape ごとに distance/blur/opacity がバラバラ、 黒系シャドウで暗かった)。 */
+.shape-circle    { width: 230px; height: 230px; border-radius: 50%; background: #FBBF24; filter: var(--stage-shadow); }
+.shape-square    { width: 230px; height: 230px; border-radius: 24px; background: #60A5FA; filter: var(--stage-shadow); }
+.shape-triangle  { width: 0; height: 0; border-left: 120px solid transparent; border-right: 120px solid transparent; border-bottom: 210px solid #10B981; filter: var(--stage-shadow); }
+.shape-star      { font-size: 280px; line-height: 1; color: #F97316; filter: var(--stage-shadow); }
+.shape-heart     { font-size: 280px; line-height: 1; color: #EC4899; filter: var(--stage-shadow); }
+.shape-rectangle { width: 320px; height: 170px; border-radius: 24px; background: #8B5CF6; filter: var(--stage-shadow); }
+.shape-diamond   { width: 220px; height: 220px; background: #EF4444; transform: rotate(45deg); border-radius: 20px; filter: var(--stage-shadow); }
+.shape-oval      { width: 320px; height: 170px; border-radius: 50%; background: #10B981; filter: var(--stage-shadow); }
 
 /* ===== Emoji / Trivia / Opposite ===== */
 .emoji-display {
@@ -753,12 +766,15 @@ body.sheet-on .hdr-right .ctrl-btn {
 .emoji-main {
   font-size: 220px;
   line-height: 1;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
+  /* stage 統一ソフトシャドウ (旧: 黒系 drop-shadow を warm tone の共通変数に統一)。 */
+  filter: var(--stage-shadow);
 }
 .emoji-main-img {
   max-width: 360px;
   max-height: 360px;
   object-fit: contain;
+  /* stage 統一ソフトシャドウ (新規追加: PNG 画像版 emoji にも影を載せる)。 */
+  filter: var(--stage-shadow);
 }
 .emoji-hint {
   font-size: 18px;
@@ -795,7 +811,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   object-fit: contain;
   object-position: top;  /* anchor to top so wrapper crops the legs */
   display: block;
-  filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
+  /* stage 統一ソフトシャドウ (旧: distance/blur/opacity がそれぞれバラついていたものを共通変数に統一)。 */
+  filter: var(--stage-shadow);
 }
 .trivia-balloon {
   position: absolute;
@@ -806,7 +823,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   object-fit: contain;
   pointer-events: none;
   z-index: 2;
-  filter: drop-shadow(0 6px 12px rgba(120, 83, 20, 0.18));
+  /* stage 統一ソフトシャドウ (旧: distance/blur/opacity がそれぞれバラついていたものを共通変数に統一)。 */
+  filter: var(--stage-shadow);
 }
 
 /* ===== Answer column (right) ===== */
