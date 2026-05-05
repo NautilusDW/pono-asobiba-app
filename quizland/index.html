@@ -747,7 +747,21 @@ body.sheet-on .hdr-right .ctrl-btn {
   width: 100%; height: 100%;
   display: flex; justify-content: center; align-items: center;
 }
-/* stage 統一ソフトシャドウ: shape-* は不透明 CSS shape のため filter: drop-shadow と
+/* shape_name 問題の図形は PNG (sharp-cornered) を表示する。
+   board 内に収まるよう max-width/height で抑え、 縦横比は object-fit:contain で維持。
+   stage 統一ソフトシャドウ (--stage-shadow) を共通で適用。 */
+.shape-img {
+  display: block;
+  max-width: 240px;       /* board 内に収まるサイズ */
+  max-height: 240px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: var(--stage-shadow);
+}
+/* 旧 CSS 描画 shape-* は素材欠損時のフォールバック保険として残置。
+   将来的には削除予定 (HTML から CSS 描画は呼び出さない方針)。
+   stage 統一ソフトシャドウ: shape-* は不透明 CSS shape のため filter: drop-shadow と
    box-shadow は実質等価だが、 全 stage 要素で見た目を揃えるため filter に統一する
    (旧: 各 shape ごとに distance/blur/opacity がバラバラ、 黒系シャドウで暗かった)。 */
 .shape-circle    { width: 230px; height: 230px; border-radius: 50%; background: #FBBF24; filter: var(--stage-shadow); }
@@ -2557,14 +2571,21 @@ function renderCountTotal(stage, q) {
 function renderShapeName(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'shape-display';
-  if (q.shape === 'circle')    wrap.innerHTML = '<div class="shape-circle"></div>';
-  if (q.shape === 'square')    wrap.innerHTML = '<div class="shape-square"></div>';
-  if (q.shape === 'triangle')  wrap.innerHTML = '<div class="shape-triangle"></div>';
-  if (q.shape === 'star')      wrap.innerHTML = '<div class="shape-star">★</div>';
-  if (q.shape === 'heart')     wrap.innerHTML = '<div class="shape-heart">♥</div>';
-  if (q.shape === 'rectangle') wrap.innerHTML = '<div class="shape-rectangle"></div>';
-  if (q.shape === 'diamond')   wrap.innerHTML = '<div class="shape-diamond"></div>';
-  if (q.shape === 'oval')      wrap.innerHTML = '<div class="shape-oval"></div>';
+  // PNG (sharp-cornered) を表示。 旧 CSS 描画 (.shape-square 等は border-radius:24px の角丸)
+  // と「角はいくつ?」の問題が矛盾していたため、 sharp-cornered PNG に切替。
+  const img = document.createElement('img');
+  img.className = 'shape-img';
+  img.src = '../assets/images/quizland/illust/shape/shape_' + q.shape + '.png';
+  img.alt = '';
+  // 素材欠損時は CSS 描画にフォールバック (保険)。 ★/♥ は文字を入れる。
+  img.onerror = function() {
+    const fallback = document.createElement('div');
+    fallback.className = 'shape-' + q.shape;
+    if (q.shape === 'star')  fallback.textContent = '★';
+    if (q.shape === 'heart') fallback.textContent = '♥';
+    img.replaceWith(fallback);
+  };
+  wrap.appendChild(img);
   stage.appendChild(wrap);
 }
 function renderEmojiName(stage, q) {
