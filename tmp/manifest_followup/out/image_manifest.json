@@ -1,6 +1,6 @@
 {
   "version": "1.1",
-  "generated_at": "2026-05-05T13:46:16+09:00",
+  "generated_at": "2026-05-05T14:27:07+09:00",
   "images": [
     {
       "id": "choice_body_breath_set",
@@ -167,7 +167,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "door"
       ]
     },
     {
@@ -187,7 +187,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "emotion"
       ]
     },
     {
@@ -207,7 +207,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "prop"
       ]
     },
     {
@@ -227,7 +227,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "posture"
       ]
     },
     {
@@ -247,7 +247,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "emotion"
       ]
     },
     {
@@ -267,7 +267,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "time_of_day"
       ]
     },
     {
@@ -339,7 +339,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "fish"
       ]
     },
     {
@@ -359,7 +359,8 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "animal",
+        "fish"
       ]
     },
     {
@@ -379,7 +380,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "bird"
       ]
     },
     {
@@ -399,7 +400,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "fish"
       ]
     },
     {
@@ -439,7 +440,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "bug"
       ]
     },
     {
@@ -515,7 +516,8 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "food",
+        "plant"
       ]
     },
     {
@@ -535,7 +537,8 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "body",
+        "animal"
       ]
     },
     {
@@ -555,7 +558,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "animal"
       ]
     },
     {
@@ -573,7 +576,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "bug"
       ]
     },
     {
@@ -593,7 +596,8 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "weather",
+        "nature"
       ]
     },
     {
@@ -633,7 +637,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "weather"
+        "shape"
       ]
     },
     {
@@ -727,7 +731,8 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "food",
+        "nature"
       ]
     },
     {
@@ -943,7 +948,7 @@
       ],
       "status": "generated",
       "context_tags": [
-        "other"
+        "nature"
       ]
     },
     {
@@ -2675,7 +2680,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "other"
+        "nature"
       ]
     },
     {
@@ -3108,7 +3113,7 @@
       ],
       "status": "generated",
       "context_tags": [
-        "other"
+        "nature"
       ]
     },
     {
@@ -3715,7 +3720,7 @@
       "alternatives": [],
       "status": "generated",
       "context_tags": [
-        "prop"
+        "emotion"
       ]
     },
     {
@@ -3879,7 +3884,8 @@
       ],
       "status": "generated",
       "context_tags": [
-        "other"
+        "animal",
+        "bird"
       ]
     },
     {
@@ -3909,7 +3915,8 @@
       ],
       "status": "generated",
       "context_tags": [
-        "other"
+        "animal",
+        "fish"
       ]
     },
     {
@@ -4311,6 +4318,7 @@
       ],
       "status": "generated",
       "context_tags": [
+        "snowflake",
         "weather"
       ]
     },
@@ -4400,6 +4408,7 @@
       ],
       "status": "generated",
       "context_tags": [
+        "snowflake",
         "weather"
       ]
     },
@@ -4423,8 +4432,8 @@
       ]
     },
     {
-      "id": "arm_emoji",
-      "save_path": "assets/images/ocean/Arm/Arm_normal_1.png",
+      "id": "ude",
+      "save_path": "assets/images/quizland/illust/choice/ude.png",
       "jp_labels": [
         "うで"
       ],
@@ -4436,32 +4445,36 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "腕のクローズアップ。既存 ocean/ から reuse",
-      "alternatives": [],
+      "subject_detailed": "ocean の既存アセット `Arm_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Arm/Arm_normal_1.png"
+      ],
       "status": "generated"
     },
     {
-      "id": "thermometer_emoji",
-      "save_path": "assets/images/ocean/Thermometer/Thermometer_normal_1.png",
+      "id": "ondokei",
+      "save_path": "assets/images/quizland/illust/choice/ondokei.png",
       "jp_labels": [
         "おんどけい"
       ],
       "context_tags": [
-        "nature",
-        "weather"
+        "weather",
+        "prop"
       ],
       "usage": [
         "stage",
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "温度計のシンプルな既存アイコン。既存 ocean/ から reuse",
-      "alternatives": [],
+      "subject_detailed": "ocean の既存アセット `Thermometer_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Thermometer/Thermometer_normal_1.png"
+      ],
       "status": "generated"
     },
     {
-      "id": "wind_emoji",
-      "save_path": "assets/images/ocean/Wind/Wind_normal_1.png",
+      "id": "kaze",
+      "save_path": "assets/images/quizland/illust/choice/kaze.png",
       "jp_labels": [
         "かぜ"
       ],
@@ -4474,13 +4487,15 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "風を表す渦線の既存アイコン。既存 ocean/ から reuse",
-      "alternatives": [],
+      "subject_detailed": "ocean の既存アセット `Wind_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Wind/Wind_normal_1.png"
+      ],
       "status": "generated"
     },
     {
-      "id": "tornado_emoji",
-      "save_path": "assets/images/ocean/Tornado/Tornado_normal_1.png",
+      "id": "tatsumaki",
+      "save_path": "assets/images/quizland/illust/choice/tatsumaki.png",
       "jp_labels": [
         "たつまき"
       ],
@@ -4493,13 +4508,15 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "たつまきの既存アイコン。既存 ocean/ から reuse",
-      "alternatives": [],
+      "subject_detailed": "ocean の既存アセット `Tornado_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Tornado/Tornado_normal_1.png"
+      ],
       "status": "generated"
     },
     {
-      "id": "hand_emoji",
-      "save_path": "assets/images/ocean/Palm/Palm_normal_1.png",
+      "id": "te",
+      "save_path": "assets/images/quizland/illust/choice/te.png",
       "jp_labels": [
         "て"
       ],
@@ -4511,13 +4528,15 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "手のひらの既存アイコン。既存 ocean/ から reuse",
-      "alternatives": [],
+      "subject_detailed": "ocean の既存アセット `Palm_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Palm/Palm_normal_1.png"
+      ],
       "status": "generated"
     },
     {
-      "id": "sunny_emoji",
-      "save_path": "assets/images/ocean/Sun/Sun_normal_1.png",
+      "id": "hare",
+      "save_path": "assets/images/quizland/illust/choice/hare.png",
       "jp_labels": [
         "はれ"
       ],
@@ -4530,8 +4549,10 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "晴れを表す太陽アイコン。既存 ocean/ から reuse",
-      "alternatives": [],
+      "subject_detailed": "ocean の既存アセット `Sun_normal_1.png` を quizland 用の romaji slug 名で再配置した reuse 画像。",
+      "alternatives": [
+        "assets/images/ocean/Sun/Sun_normal_1.png"
+      ],
       "status": "generated"
     },
     {
@@ -4548,9 +4569,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "朝の白い霧。ふわっとした白いもやが低く漂う。",
+      "subject_detailed": "朝に出る白い霧。小さな水の粒が空気にふわっと浮かぶ、やさしいもやの情景。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "moyou",
@@ -4565,7 +4586,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "自然物の表面にある模様。葉脈や斑点のような繰り返しパターン。",
+      "subject_detailed": "指もんではない一般的な模様。葉ではなく、布や紙にあるような単純なくり返し模様として見分けやすく描く。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4583,7 +4604,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "淡いピンクのさくらの花びらと小さな花房。",
+      "subject_detailed": "ピンクの花びらがついた桜の花。子どもでも一目で桜と分かる花つきの枝。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4601,7 +4622,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "やわらかい緑の草むら。数本の葉が上に伸びる。",
+      "subject_detailed": "地面から生えた若草の束。低く広がる草むらで、木や竹に見えない形。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4618,7 +4639,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "まっすぐ伸びた竹の茎。節が見える緑の竹。",
+      "subject_detailed": "節のある竹の茎と細長い笹の葉。緑の竹だとすぐ分かる構図。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4635,7 +4656,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "丸みのある松の木。濃い緑の葉と茶色い幹。",
+      "subject_detailed": "針葉がついた松の木。丸い広葉樹に見えない、松らしい枝ぶりを優先する。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4646,16 +4667,15 @@
         "ふじさん"
       ],
       "context_tags": [
-        "nature",
-        "place"
+        "nature"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "雪をかぶった左右対称の富士山。",
+      "subject_detailed": "雪をかぶった富士山。左右対称に近い高い山の形で、日本一高い山として分かりやすく描く。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "mt_kirishima",
@@ -4664,16 +4684,15 @@
         "きりしまやま"
       ],
       "context_tags": [
-        "nature",
-        "place"
+        "nature"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "火山らしい稜線のある山。噴火口を連想できる形。",
+      "subject_detailed": "霧島山を表す山並み。火山らしい起伏を持つ複数の峰が見える構図。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "mt_koya",
@@ -4682,16 +4701,15 @@
         "こうやさん"
       ],
       "context_tags": [
-        "nature",
-        "place"
+        "nature"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "高野山をイメージした穏やかな山並みと杉の木。",
+      "subject_detailed": "高野山を表すやさしい山の景色。低めの山並みと木々で、富士山型と区別する。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "mt_norikura",
@@ -4700,16 +4718,15 @@
         "のりくらさん"
       ],
       "context_tags": [
-        "nature",
-        "place"
+        "nature"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "高原の広がる山。なだらかな頂き。",
+      "subject_detailed": "乗鞍山を表すなだらかな山。広めの稜線で落ち着いた山容。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "snow_mountain",
@@ -4725,9 +4742,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "山全体に雪が積もった寒い山。",
+      "subject_detailed": "山全体に雪が積もった雪山。山の地形が見えるまま白く覆われている。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "snow_country",
@@ -4743,9 +4760,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "雪に包まれた町や家。",
+      "subject_detailed": "雪がたくさん積もった町や村の景色。『雪国』と分かる家や道のある冬景色。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "winter_country",
@@ -4761,9 +4778,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "冬の寒い国の景色。雪と裸の木。",
+      "subject_detailed": "寒い季節の国や地域の景色。雪国ほど真っ白ではなく、冬らしい木や空気感を見せる。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "ice_country",
@@ -4779,9 +4796,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "氷の地面や氷山がある冷たい国。",
+      "subject_detailed": "氷におおわれた国の景色。氷原や氷の山が目立つ冷たい世界。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "cloudy_time",
@@ -4797,7 +4814,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "空が雲でおおわれたくもりの天気。",
+      "subject_detailed": "空一面に雲が広がるくもりの天気。雨や晴れに見えない曇天。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4815,7 +4832,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "太陽が出ているはれの天気。",
+      "subject_detailed": "太陽が出て明るい晴れの天気。青空と光で分かりやすく描く。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4833,9 +4850,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "空から雪がふっている天気。",
+      "subject_detailed": "雪が降っている天気。空から雪が舞う冬の情景。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "night_only",
@@ -4850,9 +4867,9 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "夜の暗い空に月と星だけが見える。",
+      "subject_detailed": "夜だけに見える星空や月夜の情景。昼や夕方と誤解されない夜の表現。",
       "alternatives": [],
-      "status": "planned"
+      "status": "generated"
     },
     {
       "id": "sleepy_reason",
@@ -4867,7 +4884,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "眠そうな子ども。まぶたが重くあくびしている。",
+      "subject_detailed": "眠くてあくびやとろんとした表情になっている子どもの様子。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4878,13 +4895,13 @@
         "たべている"
       ],
       "context_tags": [
-        "action"
+        "posture"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "食べ物を口に運んで食べている動作。",
+      "subject_detailed": "食べ物を口にはこんで食べている動作。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4895,13 +4912,13 @@
         "はしっている"
       ],
       "context_tags": [
-        "action"
+        "posture"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "元気に走っている動作。",
+      "subject_detailed": "元気に走っている動作。足が前後に開き、走る姿勢がはっきり分かる。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4912,13 +4929,13 @@
         "やすんでいる"
       ],
       "context_tags": [
-        "action"
+        "posture"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "座るか横になって休んでいる動作。",
+      "subject_detailed": "座る・横になるなど、休んでいる状態のやさしい動作。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4929,13 +4946,13 @@
         "わからない"
       ],
       "context_tags": [
-        "abstract"
+        "emotion"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "困って首をかしげる子ども。わからない様子。",
+      "subject_detailed": "首をかしげて困っている『わからない』の表情。推測で、感情寄りの表現として扱う。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4952,7 +4969,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "手のひらの線や手の紋のイメージ。開いた手のクローズアップ。",
+      "subject_detailed": "手のひらや手の甲にある線やしわを示したイメージ。実在語ではなく、誤答用の体パーツ文脈。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4963,13 +4980,13 @@
         "コケコッコー"
       ],
       "context_tags": [
-        "sound"
+        "bird"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "にわとりが元気に鳴いている様子。",
+      "subject_detailed": "にわとりの鳴き声を表すイメージ。鳥の文脈で見分けやすくする。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4980,13 +4997,13 @@
         "モーモー"
       ],
       "context_tags": [
-        "sound"
+        "animal"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "うしが鳴いている様子。",
+      "subject_detailed": "うしの鳴き声を表すイメージ。動物の鳴き声として分かりやすく描く。",
       "alternatives": [],
       "status": "generated"
     },
@@ -4997,13 +5014,13 @@
         "ワンワン"
       ],
       "context_tags": [
-        "sound"
+        "animal"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "いぬが鳴いている様子。",
+      "subject_detailed": "いぬの鳴き声を表すイメージ。動物の鳴き声として分かりやすく描く。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5021,7 +5038,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "雨が強くふっている様子。",
+      "subject_detailed": "雨が強くたくさん降っている大雨の情景。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5038,7 +5055,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "おなかのクローズアップ。丸いおへそつき。",
+      "subject_detailed": "おなかの前面。丸みのある胴体の中央を示す。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5055,7 +5072,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "肩のクローズアップ。首から肩にかけた上半身。",
+      "subject_detailed": "肩の部分のクローズアップ。首の付け根から腕のつながりが分かる。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5072,7 +5089,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "頭のかみの毛のクローズアップ。",
+      "subject_detailed": "頭の髪の毛を示すクローズアップ。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5089,7 +5106,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "地面がゆれている様子。家や地面がガタガタ。",
+      "subject_detailed": "地面がゆれている様子。家や物がガタガタする地震の表現。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5107,7 +5124,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "大きな海の波が押し寄せる様子。",
+      "subject_detailed": "大きな波が押しよせる津波。普通の波より強い災害表現。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5124,7 +5141,7 @@
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "海の青い波がひとつ大きく立っている。",
+      "subject_detailed": "海のなみ。ふつうの波として見えるやさしい海の表現。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5135,7 +5152,7 @@
         "とけい"
       ],
       "context_tags": [
-        "object"
+        "prop"
       ],
       "usage": [
         "choice"
@@ -5152,13 +5169,13 @@
         "ものさし"
       ],
       "context_tags": [
-        "object"
+        "prop"
       ],
       "usage": [
         "choice"
       ],
       "source_sheet": null,
-      "subject_detailed": "まっすぐなものさし。木か黄色の定規。",
+      "subject_detailed": "まっすぐなものさし。目盛りが分かる文房具。",
       "alternatives": [],
       "status": "generated"
     },
@@ -5169,7 +5186,7 @@
         "コップ"
       ],
       "context_tags": [
-        "object"
+        "prop"
       ],
       "usage": [
         "choice"
