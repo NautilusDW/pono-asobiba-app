@@ -90,19 +90,22 @@
 
 ### Task 3: 真の新規生成 (Phase A の (b) 37 件)
 
-以下を生成して、`assets/images/quizland/illust/choice/<id>.png` に配置 + manifest に登録:
+以下を生成して、`assets/images/quizland/illust/choice/<id>.png` に配置 + manifest に登録。
+**この 37 件は `missing_labels_categorized.json` の `categories.need_generation` と完全一致** します。
+
+> **補足**: 旧 v1.0 で言及されていた face_cry / face_disappointed の 2 件は、opposite 問題の
+> `word:` フィールド (問題文の上に表示される単語) として登場するもので、choices: には含まれません。
+> 現状ゲームはテキスト表示のみで成立するため、本タスクのスコープ外とします。
+> 必要なら別途依頼しますが、今回は **choices: に出てくる 37 件だけ** に集中してください。
 
 | jp_label | 提案 id | context_tags | 用途 |
 |---|---|---|---|
-| なく | `face_cry` | `["face", "emotion"]` | opposite (なく⇄わらう) |
-| がっかり | `face_disappointed` | `["face", "emotion"]` | opposite |
 | きり | `kiri` | `["weather", "nature"]` | trivia (朝の白いもや) |
 | もよう | `moyou` | `["nature"]` | trivia |
 | さくら | `sakura` | `["plant", "nature"]` | trivia |
 | くさ | `kusa` | `["plant", "nature"]` | trivia |
 | たけ | `take` | `["plant"]` | trivia |
 | まつのき | `matsu_no_ki` | `["plant"]` | trivia |
-| ばら | `bara` | `["plant", "nature"]` | trivia (もし無ければ) |
 | ふじさん | `mt_fuji` | `["nature", "place"]` | trivia (日本一高い山) |
 | きりしまやま | `mt_kirishima` | `["nature", "place"]` | trivia |
 | こうやさん | `mt_koya` | `["nature", "place"]` | trivia |
