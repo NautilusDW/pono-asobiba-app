@@ -91,11 +91,11 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 (async function() {
   const ASSET_BASE = '../../../';
 
-  // 1) load illustration manifest
-  const manifest = await fetch('./illustration-list.json').then(r => r.json()).catch(e => {
-    console.error('manifest load failed', e);
-    return { sheets: [], items: [] };
-  });
+  // 1) load illustration manifest + handoff audit
+  const [manifest, handoffAudit] = await Promise.all([
+    fetch('./illustration-list.json').then(r => r.json()).catch(e => { console.error('manifest load failed', e); return { sheets: [], items: [] }; }),
+    fetch('./_handoff_audit.json').then(r => r.json()).catch(e => { console.warn('handoff audit not available'); return null; }),
+  ]);
 
   // build id -> save_path
   const idToPath = {};
@@ -306,11 +306,19 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
   });
 
   // 7) stats + filters
+  // truly_missing = ディスク上に無い画像 (handoff_audit ベース)
+  const trulyMissingCount = handoffAudit ? (handoffAudit.truly_missing || []).length : null;
+  const trulyMissingDetail = handoffAudit && handoffAudit.truly_missing
+    ? handoffAudit.truly_missing.map(x => x.id).join(', ')
+    : '';
+
   document.getElementById('stats').innerHTML =
     '<span class="stat-pill">問題数: ' + totalQ + '</span>' +
     '<span class="stat-pill ok">stage 画像有: ' + qWithStage + '</span>' +
-    '<span class="stat-pill miss">stage 画像未指定: ' + qMissingImg + '</span>' +
-    '<span class="stat-pill">マニフェスト ID 数: ' + Object.keys(idToPath).length + '</span>';
+    '<span class="stat-pill">マニフェスト ID 数: ' + Object.keys(idToPath).length + '</span>' +
+    (trulyMissingCount === null
+      ? '<span class="stat-pill">未生成 (handoff): 不明 (audit JSON 未配置)</span>'
+      : '<span class="stat-pill ' + (trulyMissingCount === 0 ? 'ok' : 'miss') + '" title="' + trulyMissingDetail + '">未生成 (handoff): ' + trulyMissingCount + '</span>');
 
   function applyFilters() {
     const term = document.getElementById('q-search').value.toLowerCase().trim();
