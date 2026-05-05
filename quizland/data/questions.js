@@ -397,6 +397,7 @@ const QUIZLAND_QUESTIONS = {
       detail:'ひふは からだぜんたいを つつんで まもっている ぶぶんだよ！'},
     { level:2, type:'trivia', category:'body',
       q:'ちを からだじゅうに おくる ぽんぷは？',
+      hint:'むねの なかで どきどき している ところだよ！',
       answer:0, choices:['しんぞう','のう','ひふ','い'] ,
       detail:'しんぞうは どきどき と うごいて ち を おくっているよ！'},
     { level:2, type:'trivia', category:'body',
