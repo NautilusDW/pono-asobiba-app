@@ -337,6 +337,57 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
   padding: 14px;
 }
 
+/* ===== show-safe 可視化 (preview/full から移植 / ?edit=1 時の補助線)
+   body.layout-editor-on AND body.show-safe が両方ついてる時だけ表示:
+     - safe-area 境界 (cyan dashed) と "16:9 safe area" ラベル
+     - 中心マゼンタクロスヘア (background-image の grad で十字)
+     - .center-dot (中央の円)
+   body には show-safe をデフォルト付与してあるが、layout-editor-on は ?edit=1 で
+   editor-bootstrap が追加するため、ゲーム本編プレイ中は overlay が出ない。
+   すべて装飾レイヤー (::before/::after/center-dot) で閉じ、.safe-area の grid
+   レイアウトには触らない。 ===== */
+body.layout-editor-on.show-safe .safe-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(34, 211, 238, 0.65);
+  pointer-events: none;
+  z-index: 9990;
+}
+body.layout-editor-on.show-safe .safe-area::after {
+  content: "16:9 safe area (1600×900)";
+  position: absolute;
+  top: 4px; left: 8px;
+  font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  color: #fff;
+  background: rgba(0, 80, 100, 0.72);
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 9991;
+}
+body.layout-editor-on.show-safe .safe-area {
+  background-image:
+    linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+body.layout-editor-on.show-safe .safe-area > .center-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 14px; height: 14px;
+  margin-left: -7px;
+  margin-top: -7px;
+  background: rgba(255, 80, 200, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9992;
+}
+body:not(.layout-editor-on) .center-dot,
+body.layout-editor-on:not(.show-safe) .center-dot { display: none; }
+
 /* ===== Header (top, hdr-pill 左 + ctrl-btn 群 右) ===== */
 .hdr {
   display: grid;
@@ -1438,7 +1489,7 @@ body.game-started .quiz-back-to-menu {
 }
 </style>
 </head>
-<body class="sheet-on">
+<body class="sheet-on show-safe">
 
 <!-- ===== Start Screen ===== -->
 <div class="start-screen" id="start-screen" role="button" aria-label="タップしてスタート">
@@ -1488,6 +1539,8 @@ body.game-started .quiz-back-to-menu {
 <div class="stage-wrap" id="stage-wrap">
   <div class="stage" id="stage">
     <div class="safe-area" id="safe-area">
+      <!-- センター位置の見える化 (body.show-safe で表示, ?edit=1 補助) -->
+      <div class="center-dot" aria-hidden="true"></div>
 
       <!-- Header row: hdr-pill (左) + ctrl-btn 群 (右) -->
       <div class="hdr">
