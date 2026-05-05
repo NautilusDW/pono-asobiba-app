@@ -1599,6 +1599,112 @@ body.debug-mode::after {
   pointer-events: none;
 }
 body.debug-mode.layout-editor-on::after { display: none; }
+
+/* ===== Playtest note panel (?debug=all 専用) =====
+   問題ごとにコメント + スクショを残して GitHub に commit する開発者向けUI。 */
+#qz-playtest-panel {
+  display: none;
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: 56px; /* qz-debug-nav の上に重ねる */
+  z-index: 9997;
+  background: rgba(20, 20, 30, 0.92);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  max-width: 720px;
+  margin: 0 auto;
+}
+body.debug-mode:not(.layout-editor-on) #qz-playtest-panel { display: block; }
+#qz-playtest-panel .qz-pt-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+#qz-playtest-panel .qz-pt-label {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #aab;
+  text-transform: uppercase;
+}
+#qz-playtest-panel textarea {
+  width: 100%;
+  min-height: 36px;
+  max-height: 90px;
+  resize: vertical;
+  background: #2a2d3e;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+#qz-playtest-panel button.qz-pt-btn {
+  background: #4a4f6a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#qz-playtest-panel button.qz-pt-btn:hover { background: #5a6080; }
+#qz-playtest-panel input[type="file"] { display: none; }
+#qz-playtest-panel .qz-pt-thumbs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+#qz-playtest-panel .qz-pt-thumb {
+  position: relative;
+  width: 56px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #1a1d2a;
+}
+#qz-playtest-panel .qz-pt-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+#qz-playtest-panel .qz-pt-thumb .qz-pt-rm {
+  position: absolute;
+  top: 0; right: 0;
+  width: 16px; height: 16px;
+  background: rgba(220, 80, 60, 0.9);
+  color: #fff;
+  border: 0;
+  border-bottom-left-radius: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  cursor: pointer;
+  padding: 0;
+  text-align: center;
+}
+#qz-playtest-panel .qz-pt-count { color: #cce; font-size: 11px; }
+#qz-playtest-panel .qz-pt-toast {
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: none;
+}
+#qz-playtest-panel .qz-pt-toast.ok    { background: rgba(70, 160, 90, 0.85); display: block; }
+#qz-playtest-panel .qz-pt-toast.err   { background: rgba(220, 80, 60, 0.9);  display: block; }
+#qz-playtest-panel .qz-pt-toast.info  { background: rgba(80, 100, 160, 0.85); display: block; }
+/* debug ナビを少し下げて playtest panel と被らないようにする */
+body.debug-mode:not(.layout-editor-on) #qz-debug-nav { bottom: 8px; }
 </style>
 </head>
 <body class="sheet-on show-safe">
@@ -2936,6 +3042,403 @@ function _qzDebugGoto(targetIdx) {
   locked = false;
   loadQuestion(playlist[questionIdx]);
 }
+// ═══════════════════════════════════════════════════════════
+// Playtest note system (?debug=all 専用)
+// 各問題に対してコメント+スクショを残し、 GitHub commit する。
+// 通常ユーザーには露出しない (CSS は body.debug-mode のみ表示)。
+// ═══════════════════════════════════════════════════════════
+var QZ_PT = {
+  GH_OWNER: 'NautilusDW',
+  GH_REPO:  'pono-asobiba-app',
+  GH_BRANCH: 'develop',
+  NOTES_PATH: 'quizland/data/_review/playtest_notes.json',
+  SHOTS_DIR:  'quizland/data/_review/playtest_screenshots',
+  LS_BACKUP_KEY: 'pono_quizland_playtest_backup',
+  MAX_PER_FILE: 500 * 1024,    // 500KB
+  MAX_TOTAL:    2 * 1024 * 1024, // 2MB
+  MAX_LONG_EDGE: 1200,
+  JPEG_QUALITY: 0.7,
+  shots: [],            // [{name, blob, dataUrl, b64, size, source}]
+  saving: false,
+  sessionStarted: null, // ISO timestamp
+  html2canvasReady: null,
+  binaryFallback: false, // true if a binary PUT failed → b64 in JSON
+};
+
+function _qzPtUtf8Btoa(s) { return btoa(unescape(encodeURIComponent(s))); }
+function _qzPtAtouUtf8(b64) {
+  try { return decodeURIComponent(escape(atob(b64))); } catch (_) { return ''; }
+}
+function _qzPtToast(msg, kind) {
+  var el = document.getElementById('qz-pt-toast');
+  if (!el) return;
+  el.className = 'qz-pt-toast ' + (kind || 'info');
+  el.textContent = msg;
+  if (kind !== 'err') {
+    setTimeout(function () {
+      if (el.textContent === msg) { el.className = 'qz-pt-toast'; el.textContent = ''; }
+    }, 3500);
+  }
+}
+
+function _qzPtLoadHtml2canvas() {
+  if (QZ_PT.html2canvasReady) return QZ_PT.html2canvasReady;
+  if (typeof html2canvas !== 'undefined') {
+    QZ_PT.html2canvasReady = Promise.resolve();
+    return QZ_PT.html2canvasReady;
+  }
+  QZ_PT.html2canvasReady = new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = '../assets/lib/html2canvas.min.js';
+    s.onload = function () { resolve(); };
+    s.onerror = function () { reject(new Error('html2canvas load failed')); };
+    document.head.appendChild(s);
+  });
+  return QZ_PT.html2canvasReady;
+}
+
+// 任意の canvas/blob を JPEG に再エンコード + 長辺リサイズ
+function _qzPtCanvasToCompressedJpeg(canvas) {
+  var w = canvas.width, h = canvas.height;
+  var max = QZ_PT.MAX_LONG_EDGE;
+  var scale = Math.min(1, max / Math.max(w, h));
+  var tw = Math.max(1, Math.round(w * scale));
+  var th = Math.max(1, Math.round(h * scale));
+  var out = document.createElement('canvas');
+  out.width = tw; out.height = th;
+  var ctx = out.getContext('2d');
+  // JPEG は透明をサポートしないので白背景を敷く
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, tw, th);
+  ctx.drawImage(canvas, 0, 0, tw, th);
+  return new Promise(function (resolve) {
+    out.toBlob(function (blob) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        var dataUrl = fr.result;
+        var b64 = String(dataUrl).split(',')[1] || '';
+        resolve({ blob: blob, dataUrl: dataUrl, b64: b64, size: blob.size });
+      };
+      fr.readAsDataURL(blob);
+    }, 'image/jpeg', QZ_PT.JPEG_QUALITY);
+  });
+}
+
+function _qzPtImageFileToCompressedJpeg(file) {
+  return new Promise(function (resolve, reject) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas');
+        c.width = img.naturalWidth || img.width;
+        c.height = img.naturalHeight || img.height;
+        c.getContext('2d').drawImage(img, 0, 0);
+        _qzPtCanvasToCompressedJpeg(c).then(resolve, reject);
+      };
+      img.onerror = function () { reject(new Error('image decode failed')); };
+      img.src = fr.result;
+    };
+    fr.onerror = function () { reject(new Error('file read failed')); };
+    fr.readAsDataURL(file);
+  });
+}
+
+function _qzPtTotalBytes() {
+  return QZ_PT.shots.reduce(function (a, s) { return a + (s.size || 0); }, 0);
+}
+
+function _qzPtAddShot(meta, source) {
+  if (meta.size > QZ_PT.MAX_PER_FILE) {
+    _qzPtToast('スクショ ' + Math.round(meta.size / 1024) + 'KB は1枚上限(500KB)を超えています', 'err');
+    return false;
+  }
+  if (_qzPtTotalBytes() + meta.size > QZ_PT.MAX_TOTAL) {
+    _qzPtToast('合計サイズ上限(2MB)を超えるため追加できません', 'err');
+    return false;
+  }
+  var ts = Date.now();
+  var idx = (currentQ && currentQ._idx != null) ? currentQ._idx : 'x';
+  var name = idx + '_' + ts + '_' + (QZ_PT.shots.length + 1) + '.jpg';
+  QZ_PT.shots.push({
+    name: name, blob: meta.blob, dataUrl: meta.dataUrl, b64: meta.b64, size: meta.size, source: source || 'capture',
+  });
+  _qzPtRenderThumbs();
+  return true;
+}
+
+function _qzPtRenderThumbs() {
+  var wrap = document.getElementById('qz-pt-thumbs');
+  var count = document.getElementById('qz-pt-count');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  QZ_PT.shots.forEach(function (s, i) {
+    var t = document.createElement('div');
+    t.className = 'qz-pt-thumb';
+    var img = document.createElement('img');
+    img.src = s.dataUrl;
+    img.alt = s.name;
+    var rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'qz-pt-rm';
+    rm.textContent = '×';
+    rm.title = '削除';
+    rm.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      QZ_PT.shots.splice(i, 1);
+      _qzPtRenderThumbs();
+    });
+    t.appendChild(img);
+    t.appendChild(rm);
+    wrap.appendChild(t);
+  });
+  if (count) {
+    var bytes = _qzPtTotalBytes();
+    count.textContent = '添付: ' + QZ_PT.shots.length +
+      (QZ_PT.shots.length ? ' (' + Math.round(bytes / 1024) + 'KB)' : '');
+  }
+}
+
+function _qzPtCaptureStage() {
+  _qzPtToast('キャプチャ中…', 'info');
+  return _qzPtLoadHtml2canvas().then(function () {
+    var target = document.querySelector('.stage-wrap') || document.querySelector('.stage') || document.body;
+    return html2canvas(target, {
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      scale: Math.min(2, window.devicePixelRatio || 1),
+    });
+  }).then(function (canvas) {
+    return _qzPtCanvasToCompressedJpeg(canvas);
+  }).then(function (meta) {
+    if (_qzPtAddShot(meta, 'auto')) {
+      _qzPtToast('キャプチャ追加: ' + Math.round(meta.size / 1024) + 'KB', 'ok');
+    }
+  }).catch(function (err) {
+    console.warn('[playtest] capture failed', err);
+    _qzPtToast('キャプチャ失敗: ' + (err && err.message || err), 'err');
+  });
+}
+
+function _qzPtAttachFiles(fileList) {
+  var files = Array.prototype.slice.call(fileList || []);
+  files = files.filter(function (f) { return /^image\//.test(f.type); });
+  if (!files.length) return;
+  Promise.all(files.map(function (f) {
+    return _qzPtImageFileToCompressedJpeg(f).then(function (meta) {
+      return _qzPtAddShot(meta, 'attach');
+    }).catch(function (err) {
+      console.warn('[playtest] file decode failed', err);
+      _qzPtToast('画像読み込み失敗: ' + (err && err.message || err), 'err');
+    });
+  })).then(function () {
+    _qzPtToast('添付しました', 'ok');
+  });
+}
+
+// ── GitHub PUT helpers ─────────────────────────────────────
+function _qzPtGhGet(path) {
+  var url = '/api/gh/repos/' + QZ_PT.GH_OWNER + '/' + QZ_PT.GH_REPO +
+            '/contents/' + encodeURI(path) + '?ref=' + QZ_PT.GH_BRANCH;
+  return fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  }).then(function (r) {
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+    return r.json();
+  });
+}
+function _qzPtGhPut(path, contentB64, message, sha) {
+  var url = '/api/gh/repos/' + QZ_PT.GH_OWNER + '/' + QZ_PT.GH_REPO +
+            '/contents/' + encodeURI(path);
+  var body = { message: message, content: contentB64, branch: QZ_PT.GH_BRANCH };
+  if (sha) body.sha = sha;
+  return fetch(url, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  }).then(function (r) {
+    if (!r.ok) {
+      return r.text().then(function (txt) {
+        var err = new Error('GH PUT ' + path + ' → ' + r.status + ' ' + txt.slice(0, 200));
+        err.status = r.status;
+        throw err;
+      });
+    }
+    return r.json();
+  });
+}
+
+// ── localStorage backup ─────────────────────────────────────
+function _qzPtBackupAppend(noteEntry) {
+  try {
+    var raw = localStorage.getItem(QZ_PT.LS_BACKUP_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr)) arr = [];
+    // Strip Blobs (cannot serialize) — keep b64 only for shots
+    var lite = {
+      idx: noteEntry.idx, category: noteEntry.category, level: noteEntry.level,
+      type: noteEntry.type, q: noteEntry.q, comment: noteEntry.comment,
+      noted_at: noteEntry.noted_at,
+      screenshot_b64: (noteEntry._shotsMeta || []).map(function (s) {
+        return { name: s.name, b64: s.b64.slice(0, 200000) };
+      }),
+    };
+    arr.push(lite);
+    localStorage.setItem(QZ_PT.LS_BACKUP_KEY, JSON.stringify(arr));
+  } catch (e) { console.warn('[playtest] backup failed', e); }
+}
+
+// ── Save flow: 「次へ」押下時に呼ばれる ───────────────────
+// 戻り値: Promise<bool>  (進行可なら resolve(true); ユーザー警告中なら false)
+function _qzPtSaveCurrentNote() {
+  if (!QZ_DEBUG_ALL) return Promise.resolve(true);
+  if (QZ_PT.saving) return Promise.resolve(false);
+  var ta = document.getElementById('qz-pt-comment');
+  var comment = (ta && ta.value || '').trim();
+  var hasShots = QZ_PT.shots.length > 0;
+  if (!comment && !hasShots) return Promise.resolve(true);
+
+  if (!QZ_PT.sessionStarted) QZ_PT.sessionStarted = new Date().toISOString();
+  QZ_PT.saving = true;
+  _qzPtToast('保存中…', 'info');
+
+  var noteEntry = {
+    idx: currentQ && currentQ._idx != null ? currentQ._idx : null,
+    category: currentQ && (currentQ.category || currentQ._cat) || null,
+    level: currentQ && currentQ.level != null ? currentQ.level : null,
+    type: currentQ && currentQ.type || null,
+    q: currentQ && currentQ.q || null,
+    comment: comment,
+    screenshots: [],
+    noted_at: new Date().toISOString(),
+    _shotsMeta: QZ_PT.shots.slice(), // backup helper only
+  };
+
+  // 1. screenshot を個別 PUT。 失敗したら b64 fallback
+  var shotsToUpload = QZ_PT.shots.slice();
+  var uploadedPaths = [];
+  var uploadChain = Promise.resolve();
+  shotsToUpload.forEach(function (s) {
+    uploadChain = uploadChain.then(function () {
+      var path = QZ_PT.SHOTS_DIR + '/' + s.name;
+      return _qzPtGhPut(path, s.b64, 'chore(playtest): screenshot ' + s.name)
+        .then(function () { uploadedPaths.push(path); })
+        .catch(function (err) {
+          console.warn('[playtest] screenshot PUT failed → b64 fallback', err);
+          QZ_PT.binaryFallback = true;
+          uploadedPaths.push({ fallback_b64: s.b64, name: s.name, size: s.size });
+        });
+    });
+  });
+
+  return uploadChain.then(function () {
+    noteEntry.screenshots = uploadedPaths;
+    delete noteEntry._shotsMeta;
+
+    // 2. notes JSON を読んで append → PUT
+    return _qzPtGhGet(QZ_PT.NOTES_PATH).then(function (existing) {
+      var doc = { session_started: QZ_PT.sessionStarted, notes: [] };
+      var sha = null;
+      if (existing) {
+        sha = existing.sha;
+        try {
+          var parsed = JSON.parse(_qzPtAtouUtf8(existing.content.replace(/\s/g, '')));
+          if (parsed && Array.isArray(parsed.notes)) doc = parsed;
+          if (!doc.session_started) doc.session_started = QZ_PT.sessionStarted;
+        } catch (_) { /* corrupt JSON → start fresh */ }
+      }
+      doc.notes.push({
+        idx: noteEntry.idx,
+        category: noteEntry.category,
+        level: noteEntry.level,
+        type: noteEntry.type,
+        q: noteEntry.q,
+        comment: noteEntry.comment,
+        screenshots: noteEntry.screenshots,
+        noted_at: noteEntry.noted_at,
+      });
+      var pretty = JSON.stringify(doc, null, 2);
+      return _qzPtGhPut(QZ_PT.NOTES_PATH, _qzPtUtf8Btoa(pretty),
+        'chore(playtest): note for #' + (noteEntry.idx != null ? noteEntry.idx : '?'), sha);
+    });
+  }).then(function () {
+    _qzPtToast('保存しました ✓', 'ok');
+    if (ta) ta.value = '';
+    QZ_PT.shots = [];
+    _qzPtRenderThumbs();
+    QZ_PT.saving = false;
+    return true;
+  }).catch(function (err) {
+    console.warn('[playtest] save failed', err);
+    _qzPtBackupAppend(noteEntry);
+    _qzPtToast('保存失敗 (localStorageにバックアップ): ' + (err && err.message || err), 'err');
+    QZ_PT.saving = false;
+    // 失敗時もユーザーは進めるが、 UI はクリアしない (再試行余地)
+    return true;
+  });
+}
+
+function _qzPtBuildPanel() {
+  var panel = document.createElement('div');
+  panel.id = 'qz-playtest-panel';
+  panel.innerHTML =
+    '<div class="qz-pt-label">コメント (任意)</div>' +
+    '<textarea id="qz-pt-comment" placeholder="このイチゴの絵が潰れて見える..." rows="2"></textarea>' +
+    '<div class="qz-pt-row">' +
+      '<button type="button" class="qz-pt-btn" id="qz-pt-capture">📸 自動キャプチャ</button>' +
+      '<button type="button" class="qz-pt-btn" id="qz-pt-attach-btn">📎 添付</button>' +
+      '<input type="file" id="qz-pt-attach-input" accept="image/*" multiple>' +
+      '<span class="qz-pt-count" id="qz-pt-count">添付: 0</span>' +
+    '</div>' +
+    '<div class="qz-pt-thumbs" id="qz-pt-thumbs"></div>' +
+    '<div class="qz-pt-toast" id="qz-pt-toast"></div>';
+  document.body.appendChild(panel);
+
+  var ta = document.getElementById('qz-pt-comment');
+  ta.addEventListener('paste', function (e) {
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    var found = false;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.kind === 'file' && /^image\//.test(it.type)) {
+        var f = it.getAsFile();
+        if (f) {
+          found = true;
+          _qzPtImageFileToCompressedJpeg(f).then(function (meta) {
+            if (_qzPtAddShot(meta, 'paste')) _qzPtToast('クリップボードから追加', 'ok');
+          }).catch(function (err) {
+            _qzPtToast('画像ペースト失敗: ' + (err && err.message || err), 'err');
+          });
+        }
+      }
+    }
+    if (found) e.preventDefault();
+  });
+
+  document.getElementById('qz-pt-capture').addEventListener('click', function (e) {
+    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault();
+    _qzPtCaptureStage();
+  });
+  var fileInput = document.getElementById('qz-pt-attach-input');
+  document.getElementById('qz-pt-attach-btn').addEventListener('click', function (e) {
+    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault();
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', function () {
+    _qzPtAttachFiles(fileInput.files);
+    fileInput.value = '';
+  });
+}
+
 (function _qzDebugInit() {
   if (!QZ_DEBUG_ALL) return;
   // body にクラス付与 → CSS でナビ表示
@@ -2958,8 +3461,11 @@ function _qzDebugGoto(targetIdx) {
     '<button type="button" id="qz-debug-prev" title="前の問題へ">← 前へ</button>' +
     '<span class="qz-dbg-meta" id="qz-debug-meta">(loading)</span>' +
     '<select id="qz-debug-jump" title="ジャンプ"></select>' +
-    '<button type="button" id="qz-debug-next" title="次の問題へ">次へ →</button>';
+    '<button type="button" id="qz-debug-next" title="次へ (コメント保存)">次へ →</button>';
   document.body.appendChild(nav);
+
+  // playtest panel DOM
+  _qzPtBuildPanel();
 
   // ゲーム初期化 → playlist が組まれる
   initGame();
@@ -2987,17 +3493,23 @@ function _qzDebugGoto(targetIdx) {
     sel.appendChild(frag);
     sel.addEventListener('change', function () {
       if (_isEditMode()) return;
-      _qzDebugGoto(parseInt(sel.value, 10) || 0);
+      _qzPtSaveCurrentNote().then(function () {
+        _qzDebugGoto(parseInt(sel.value, 10) || 0);
+      });
     });
   }
 
   document.getElementById('qz-debug-prev').addEventListener('click', function (e) {
     if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
-    _qzDebugGoto(questionIdx - 1);
+    _qzPtSaveCurrentNote().then(function () {
+      _qzDebugGoto(questionIdx - 1);
+    });
   });
   document.getElementById('qz-debug-next').addEventListener('click', function (e) {
     if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
-    _qzDebugGoto(questionIdx + 1);
+    _qzPtSaveCurrentNote().then(function () {
+      _qzDebugGoto(questionIdx + 1);
+    });
   });
 
   // メタ情報を初期同期
