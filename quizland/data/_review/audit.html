@@ -180,27 +180,56 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
   ]);
   // imageManifest がある場合は jp_label → save_path の高速マップを優先生成。
   // 無ければ legacy auto + overrides を使う。
-  // ★ 注意: sheet エントリ (_sheets/*.png) と個別 crop が同じ jp_label を持つことがある。
-  //   個別 crop 優先で解決する (sheet は最後の手段)。
-  const manifestJpToPath = {};   // jp_label → save_path (image_manifest.json 由来、最優先)
-  const manifestIdToSheet = {};  // id → sheet (image_manifest.json 由来)
+  // ★ 同じ jp_label が複数フォルダに存在する (例: "まる" は shape/shape_circle と weather/snowflake_round 両方に持ってる) ため、
+  //   フォルダ別にマップを作って、質問 type に応じて優先順を切り替える。
+  const manifestByFolder = {};   // folder ('shape', 'weather', 'choice'等) → {jp_label → save_path}
+  const manifestJpToPath = {};   // 全体フォールバック (folder不問の jp_label → save_path)
+  const manifestIdToSheet = {};  // id → sheet
+  function entryFolder(p) {
+    if (!p) return '(unknown)';
+    const m = p.match(/illust\/([^/]+)\//);
+    return m ? m[1] : '(other)';
+  }
   if (imageManifest && Array.isArray(imageManifest.images)) {
-    // 第1パス: 個別 crop (= _sheets/ 以外) のみ登録
+    // 第1パス: 個別 crop (= _sheets/ 以外) を folder 別にマップ
     imageManifest.images.forEach(entry => {
-      if (entry.save_path && entry.save_path.includes('/_sheets/')) return;
+      if (!entry.save_path || entry.save_path.includes('/_sheets/')) return;
+      const folder = entryFolder(entry.save_path);
+      if (!manifestByFolder[folder]) manifestByFolder[folder] = {};
       (entry.jp_labels || []).forEach(label => {
+        if (!manifestByFolder[folder][label]) manifestByFolder[folder][label] = entry.save_path;
         if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
       });
       if (entry.source_sheet) manifestIdToSheet[entry.id] = entry.source_sheet;
     });
-    // 第2パス: シートのみ (個別 crop で解決できなかった label のフォールバック)
+    // 第2パス: シート (フォールバック)
     imageManifest.images.forEach(entry => {
       if (!entry.save_path || !entry.save_path.includes('/_sheets/')) return;
       (entry.jp_labels || []).forEach(label => {
         if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
       });
     });
-    console.info('[audit] image_manifest.json loaded: ' + imageManifest.images.length + ' entries, ' + Object.keys(manifestJpToPath).length + ' jp_labels mapped');
+    console.info('[audit] image_manifest.json loaded: ' + imageManifest.images.length + ' entries, ' + Object.keys(manifestJpToPath).length + ' jp_labels mapped, folders=' + Object.keys(manifestByFolder).join(','));
+  }
+  // 質問 type ごとのフォルダ優先順位 (上から順に検索、ヒットしたものを使う)
+  const TYPE_FOLDER_PREFERENCE = {
+    shape_name:  ['shape', 'choice'],
+    order_color: ['color', 'choice'],
+    count_total: ['choice'],
+    emoji_name:  ['stage', 'choice'],
+    body:        ['choice', 'stage'],
+    weather:     ['weather', 'stage', 'choice'],
+    trivia:      ['choice', 'animal', 'stage'],
+    opposite:    ['choice', 'stage'],
+  };
+  // type-aware lookup: type に応じて適切なフォルダから優先的に拾う
+  function lookupByTypeAware(label, qType) {
+    const prefs = TYPE_FOLDER_PREFERENCE[qType] || [];
+    for (const f of prefs) {
+      if (manifestByFolder[f] && manifestByFolder[f][label]) return manifestByFolder[f][label];
+    }
+    // フォールバック: フォルダ不問
+    return manifestJpToPath[label] || null;
   }
   // overrides は最優先 (auto抽出を上書きできる)。manifest があれば legacy は補助扱い。
   const externalJpMap = Object.assign(
@@ -251,8 +280,10 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     if (choiceText == null) return null;
     const raw = String(choiceText);
     const t = raw.toLowerCase();
-    // 0. image_manifest.json (Codex 棚卸し正本) が最優先
-    if (manifestJpToPath[raw]) return manifestJpToPath[raw];
+    // 0. image_manifest.json (Codex 棚卸し正本) を質問 type 別優先で参照
+    //    (例: shape_name の "まる" → shape/shape_circle、weather の "まる" → weather/snowflake_round)
+    const typeAware = lookupByTypeAware(raw, qType);
+    if (typeAware) return typeAware;
     // 1. 直接 id 一致
     if (idToPath[t]) return idToPath[t];
     if (idToPath[raw]) return idToPath[raw];
