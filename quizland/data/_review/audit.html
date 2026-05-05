@@ -50,7 +50,17 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .sheet-link { display: inline-block; font-size: 10px; color: #888; cursor: pointer; padding: 1px 5px; border: 1px solid #ddd; border-radius: 4px; margin-top: 2px; user-select: none; }
 .sheet-link:hover { background: #fffbeb; color: #b45309; border-color: #f59e0b; }
 .q-stage-img { display: flex; align-items: flex-start; justify-content: center; }
-.q-stage-img img { max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+.q-stage-img img {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1;            /* 縦横比固定: 中身のアスペクトは object-fit: contain で維持しつつ、コンテナは正方形 */
+  height: auto;
+  object-fit: contain;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
 .q-stage-img .nostage { color: #aaa; font-size: 12px; padding: 24px 0; }
 .gallery-section { margin-top: 40px; padding-top: 20px; border-top: 3px dashed var(--wood); }
 .gallery-section h2 { font-size: 16px; }
