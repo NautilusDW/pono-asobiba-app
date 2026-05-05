@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-05T07:27:13Z - quizland debug mode で正解→setTimeout(nextQuestion)経路でコメント/スクショが保存されないバグ修正: nextQuestionをラップして必ず_qzPtSaveCurrentNoteを先行させる
+- **タスク**: quizland debug mode で正解→setTimeout(nextQuestion)経路でコメント/スクショが保存されないバグ修正: nextQuestionをラップして必ず_qzPtSaveCurrentNoteを先行させる
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 335
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 136, "Read": 59, "Glob": 3, "Grep": 17, "Edit": 88, "Write": 11, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 17}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-05T07:15:03Z - quizland debug mode に問題ごとコメント+スクショ添付機能を追加 (?debug=all 時のみ): textarea/自動キャプチャ/添付/ペースト/サムネ削除、次へ押下で playtest_notes.json + 個別スクショを GitHub commit、サイズ上限/localStorage backup/PUT 失敗時 b64 fallback
 - **タスク**: quizland debug mode に問題ごとコメント+スクショ添付機能を追加 (?debug=all 時のみ): textarea/自動キャプチャ/添付/ペースト/サムネ削除、次へ押下で playtest_notes.json + 個別スクショを GitHub commit、サイズ上限/localStorage backup/PUT 失敗時 b64 fallback
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 104, "ToolSearch": 1, "Read": 7, "Write": 4, "Edit": 22, "Bash": 24, "Glob": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-04T15:25:28Z - Wave 46 Bravo-3: quizland/preview/full/index.html から legacy v1 frame backgrounds (preview-placeholders/*.png 一式) を全削除。シート画像 (.stage::after) と背景 (.stage) のみ残置。
-- **タスク**: Wave 46 Bravo-3: quizland/preview/full/index.html から legacy v1 frame backgrounds (preview-placeholders/*.png 一式) を全削除。シート画像 (.stage::after) と背景 (.stage) のみ残置。
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 347
-- **エラー数**: 27
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Read": 50, "Grep": 14, "Bash": 162, "Agent": 77, "ToolSearch": 2, "Write": 9, "Edit": 31, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -2850,6 +2850,24 @@ function ponoJump() {
 }
 
 function nextQuestion() {
+  // debug mode: 未保存のコメント/スクショがあれば先に保存してから次へ進む。
+  // _qzPtSaveCurrentNote は QZ_DEBUG_ALL=false / コメント空 + 添付なし / saving 中なら
+  // 即 resolve するので、 通常モードでは透過 (オーバーヘッドほぼゼロ)。
+  // 失敗時は localStorage に backup される & resolve するので遷移は止まらない。
+  if (typeof QZ_DEBUG_ALL !== 'undefined' && QZ_DEBUG_ALL &&
+      typeof _qzPtSaveCurrentNote === 'function') {
+    try {
+      var p = _qzPtSaveCurrentNote();
+      if (p && typeof p.then === 'function') {
+        p.then(_doNextQuestion, _doNextQuestion);
+        return;
+      }
+    } catch (_) { /* fall through to immediate transition */ }
+  }
+  _doNextQuestion();
+}
+
+function _doNextQuestion() {
   clearTimeout(_autoHintTimer);
   stopTriviaPoseAnimation(); // 前の質問のポーズ循環を必ず止める (interval リーク防止)
   questionIdx++;
