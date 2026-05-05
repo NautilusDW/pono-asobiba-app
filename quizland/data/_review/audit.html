@@ -166,16 +166,32 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 (async function() {
   const ASSET_BASE = '../../../';
 
-  // 1) load illustration manifest + handoff audit + disk inventory + JP-to-ID map + sheets index + overrides
-  const [manifest, handoffAudit, diskInventory, jpToIdData, sheetsIndex, jpOverrides] = await Promise.all([
+  // 1) load all data sources
+  //   image_manifest.json (Codex 棚卸し後の正本) があれば最優先で使う。
+  //   無ければ legacy (_choice_jp_to_id + overrides + manifest sheets) にフォールバック。
+  const [manifest, handoffAudit, diskInventory, jpToIdData, sheetsIndex, jpOverrides, imageManifest] = await Promise.all([
     fetch('./illustration-list.json').then(r => r.json()).catch(e => { console.error('manifest load failed', e); return { sheets: [], items: [] }; }),
     fetch('./_handoff_audit.json').then(r => r.json()).catch(e => { console.warn('handoff audit not available'); return null; }),
     fetch('./_disk_inventory.json').then(r => r.json()).catch(e => { console.warn('disk inventory not available'); return null; }),
     fetch('./_choice_jp_to_id.json').then(r => r.json()).catch(e => { console.warn('JP-to-ID map not available'); return null; }),
     fetch('./_sheets_index.json').then(r => r.json()).catch(e => { console.warn('sheets index not available'); return null; }),
     fetch('./_choice_jp_to_id_overrides.json').then(r => r.json()).catch(e => { console.warn('JP overrides not available'); return null; }),
+    fetch('./image_manifest.json').then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
-  // overrides は最優先 (auto抽出を上書きできる)
+  // imageManifest がある場合は jp_label → save_path の高速マップを優先生成。
+  // 無ければ legacy auto + overrides を使う。
+  const manifestJpToPath = {};   // jp_label → save_path (image_manifest.json 由来、最優先)
+  const manifestIdToSheet = {};  // id → sheet (image_manifest.json 由来)
+  if (imageManifest && Array.isArray(imageManifest.images)) {
+    imageManifest.images.forEach(entry => {
+      (entry.jp_labels || []).forEach(label => {
+        if (!manifestJpToPath[label]) manifestJpToPath[label] = entry.save_path;
+      });
+      if (entry.source_sheet) manifestIdToSheet[entry.id] = entry.source_sheet;
+    });
+    console.info('[audit] image_manifest.json loaded: ' + imageManifest.images.length + ' entries');
+  }
+  // overrides は最優先 (auto抽出を上書きできる)。manifest があれば legacy は補助扱い。
   const externalJpMap = Object.assign(
     {},
     (jpToIdData && jpToIdData.jp_to_id) || {},
@@ -224,6 +240,8 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     if (choiceText == null) return null;
     const raw = String(choiceText);
     const t = raw.toLowerCase();
+    // 0. image_manifest.json (Codex 棚卸し正本) が最優先
+    if (manifestJpToPath[raw]) return manifestJpToPath[raw];
     // 1. 直接 id 一致
     if (idToPath[t]) return idToPath[t];
     if (idToPath[raw]) return idToPath[raw];
@@ -594,10 +612,13 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     ? handoffAudit.truly_missing.map(x => x.id).join(', ')
     : '';
 
+  const sourceLabel = imageManifest
+    ? '<span class="stat-pill ok" title="image_manifest.json from Codex audit">📦 manifest: ' + imageManifest.images.length + ' entries</span>'
+    : '<span class="stat-pill" style="color:#888;">manifest 未配置 (legacy mode)</span>';
   document.getElementById('stats').innerHTML =
     '<span class="stat-pill">問題数: ' + totalQ + '</span>' +
     '<span class="stat-pill ok">stage 画像有: ' + qWithStage + '</span>' +
-    '<span class="stat-pill">マニフェスト ID 数: ' + Object.keys(idToPath).length + '</span>' +
+    sourceLabel +
     (trulyMissingCount === null
       ? '<span class="stat-pill">未生成 (handoff): 不明 (audit JSON 未配置)</span>'
       : '<span class="stat-pill ' + (trulyMissingCount === 0 ? 'ok' : 'miss') + '" title="' + trulyMissingDetail + '">未生成 (handoff): ' + trulyMissingCount + '</span>');
