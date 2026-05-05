@@ -76,11 +76,16 @@
      0 にすると蔦/葉が完全消失し雰囲気が壊れる。0.5 以上だと枠絵が二重に主張するので NG。 */
   --sheet-overlay-opacity: 0;
 
-  /* stage (board 内) で表示される画像/図形/アイコンに統一でかける soft drop-shadow。
-     warm tone で watercolor アートと相性の良い茶色系。 distance 6px / blur 10px / opacity 22%。
-     対象は .color-chip / .count-item / .shape-* / .emoji-main(-img) / .trivia-pono / .trivia-balloon。
-     4 択チップ側 (.chip / .chip .circle) には適用しない (今回は stage 限定)。 */
-  --stage-shadow: drop-shadow(0 6px 10px rgba(120, 83, 20, 0.22));
+  /* stage (board 内) で表示される画像/図形/アイコンに統一でかける 2-stop drop-shadow。
+     1) 内側 halo: offset 0 / blur 3px / アイボリー 95% → 画像の alpha 縁を白く焼き飛ばし、
+        color_dot_yellow など PNG に残る薄マゼンタ縁を視覚的に消す効果。
+     2) 主影: offset 0/8px / blur 14px / 茶 40% → 立体感を強調 (旧 22% → 40% に増し)。
+     対象は .color-chip / .count-item / .shape-* / .emoji-main(-img) / .trivia-pono / .trivia-balloon / .stage-pono。
+     4 択チップ側 (.chip / .chip .circle) には適用しない (今回は stage 限定)。
+     halo が強すぎる場合は 0.95 → 0.7 / 0.6 に、主影が強すぎる場合は 0.40 → 0.32 に下げて調整可。 */
+  --stage-shadow:
+    drop-shadow(0 0 3px rgba(255, 248, 232, 0.95))
+    drop-shadow(0 8px 14px rgba(120, 83, 20, 0.40));
 }
 * { box-sizing: border-box; }
 html, body {
