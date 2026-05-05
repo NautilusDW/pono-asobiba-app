@@ -827,6 +827,56 @@ body.sheet-on .hdr-right .ctrl-btn {
   filter: var(--stage-shadow);
 }
 
+/* ===== Stage Pono (左下常駐 / 全問題タイプ共通) =====
+   safe-area の左下端、 装飾どんぐりの右側付近に固定。 board や chip と
+   重ならない控えめサイズ。 trivia 中央ポノとは body.has-trivia-pono 経由で
+   自動排他し、 layout-editor (?edit=1) 中も非表示にして編集を邪魔しない。 */
+.stage-pono {
+  position: absolute;
+  left: 60px;            /* safe-area 左端から内側、 装飾どんぐりを避ける */
+  bottom: 20px;
+  width: 130px;
+  height: 130px;
+  z-index: 4;            /* board (z:3) より前、 .character (z:5) より背面 */
+  pointer-events: none;  /* chip クリックを妨害しない */
+  filter: var(--stage-shadow);
+}
+.stage-pono-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.stage-pono-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-image: url('../assets/images/quizland/balloons/balloon_temp.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  min-width: 140px;
+  min-height: 50px;
+  padding: 8px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #4a3a1a;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.stage-pono-bubble.show { opacity: 1; }
+/* trivia 出題で中央ポノが居る間は左下ポノを隠す (重複回避) */
+body.has-trivia-pono .stage-pono { display: none; }
+/* layout-editor (?edit=1) 中はハンドル衝突回避のため非表示 */
+body.layout-editor-on .stage-pono { display: none; }
+
 /* ===== Answer column (right) ===== */
 .a-col {
   display: flex; flex-direction: column;
@@ -1436,6 +1486,9 @@ body.game-started .quiz-back-to-menu {
   .trivia-balloon { width: 150px !important; }
   .emoji-main-img { max-width: 320px !important; max-height: 320px !important; }
   .opposite-display { font-size: 72px !important; padding: 20px 40px !important; }
+  /* 14:9 帯では board が縮むので stage-pono も小さく */
+  .stage-pono { width: 110px !important; height: 110px !important; left: 40px !important; bottom: 14px !important; }
+  .stage-pono-bubble { min-width: 120px !important; font-size: 14px !important; }
   /* saved-layout.json の inline width/height/transform を打ち消し、
      visible slice (1098 canvas-px) を超える要素を grid に従わせる。
      transform は 0,0 にリセットして 16:9 想定の絶対オフセットを除去。 */
@@ -1492,6 +1545,9 @@ body.game-started .quiz-back-to-menu {
   .trivia-balloon { width: 130px !important; top: -6px !important; right: 6% !important; }
   .emoji-main-img { max-width: 280px !important; max-height: 280px !important; }
   .opposite-display { font-size: 64px !important; padding: 18px 36px !important; }
+  /* 4:3 帯では更に控えめサイズで */
+  .stage-pono { width: 100px !important; height: 100px !important; left: 32px !important; bottom: 12px !important; }
+  .stage-pono-bubble { min-width: 110px !important; font-size: 13px !important; padding: 6px 10px !important; }
   /* ─────────────────────────────────────────────────────────
      saved-layout.json は 16:9 (1600 canvas-px) 想定で width/height と
      transform: translate(tx, ty) を inline で書き込んでいる。
@@ -1543,6 +1599,9 @@ body.game-started .quiz-back-to-menu {
   .trivia-balloon { width: 116px !important; top: -4px !important; right: 4% !important; }
   .emoji-main-img { max-width: 240px !important; max-height: 240px !important; }
   .opposite-display { font-size: 56px !important; padding: 14px 28px !important; }
+  /* 5:4 帯は最も狭い、 stage-pono を最小サイズに */
+  .stage-pono { width: 88px !important; height: 88px !important; left: 24px !important; bottom: 10px !important; }
+  .stage-pono-bubble { min-width: 100px !important; font-size: 12px !important; padding: 5px 8px !important; }
   /* 5:4 は 4:3 より更に狭いので 4:3 と同じ inline 打ち消しを継承する */
   .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .hdr-left .owl-icon { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
@@ -1852,6 +1911,16 @@ body.debug-mode:not(.layout-editor-on) #qz-debug-nav { bottom: 8px; }
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ===== Stage Pono (左下常駐 / 全問題タイプ共通) =====
+           safe-area の左下に小さくポノ (考え中ポーズ flip-book) を常駐し、
+           ランダム間隔で短いセリフ吹き出しを出す。 trivia 出題時は中央
+           ポノが居るため body.has-trivia-pono クラスで自動非表示。
+           pointer-events: none で chip クリックを邪魔しない。 -->
+      <div class="stage-pono" id="stage-pono" aria-hidden="true">
+        <img class="stage-pono-img" id="stage-pono-img" alt="">
+        <div class="stage-pono-bubble" id="stage-pono-bubble"></div>
       </div>
 
     </div>
@@ -2619,6 +2688,92 @@ function stopTriviaPoseAnimation() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// Stage Pono (左下常駐): TRIVIA_POSES を流用した flip-book +
+//   ランダム間隔の短いセリフ吹き出しサイクル。
+//   loadQuestion で trivia 出題時は body.has-trivia-pono を付けて
+//   CSS で自動非表示 (中央ポノとの重複回避)。
+// ═══════════════════════════════════════════════════════════
+const STAGE_PONO_LINES = [
+  'むずかしいな〜',
+  'うーん...',
+  'ふむふむ',
+  'わかるかな？',
+  'がんばって！',
+  'もうちょっと...',
+  'あ、これかな？',
+  'うんうん',
+  'ぼくも かんがえる',
+  'どれかなー',
+  'こたえは どれ？',
+  'なるほど〜',
+  'いっしょに かんがえよう',
+  'ピンと きた？',
+];
+const STAGE_PONO_POSE_INTERVAL_MS = 3000; // 3秒/枚 (やや穏やか)
+const STAGE_PONO_BUBBLE_SHOW_MS = 4000;   // 4秒表示
+const STAGE_PONO_BUBBLE_MIN_GAP_MS = 10000; // 次の吹き出しまで 10〜25 秒
+const STAGE_PONO_BUBBLE_MAX_GAP_MS = 25000;
+
+let _stagePonoPoseInterval = null;
+let _stagePonoPoseIdx = 0;
+let _stagePonoBubbleTimer = null;
+let _stagePonoBubbleHideTimer = null;
+let _stagePonoLastLineIdx = -1;
+let _stagePonoStarted = false;
+
+function _stagePonoPickLine() {
+  if (STAGE_PONO_LINES.length <= 1) return STAGE_PONO_LINES[0] || '';
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * STAGE_PONO_LINES.length);
+  } while (idx === _stagePonoLastLineIdx);
+  _stagePonoLastLineIdx = idx;
+  return STAGE_PONO_LINES[idx];
+}
+
+function _stagePonoScheduleBubble() {
+  clearTimeout(_stagePonoBubbleTimer);
+  const gap = STAGE_PONO_BUBBLE_MIN_GAP_MS
+    + Math.random() * (STAGE_PONO_BUBBLE_MAX_GAP_MS - STAGE_PONO_BUBBLE_MIN_GAP_MS);
+  _stagePonoBubbleTimer = setTimeout(function() {
+    const bubble = document.getElementById('stage-pono-bubble');
+    if (!bubble) return;
+    bubble.textContent = _stagePonoPickLine();
+    bubble.classList.add('show');
+    clearTimeout(_stagePonoBubbleHideTimer);
+    _stagePonoBubbleHideTimer = setTimeout(function() {
+      bubble.classList.remove('show');
+      _stagePonoScheduleBubble();
+    }, STAGE_PONO_BUBBLE_SHOW_MS);
+  }, gap);
+}
+
+function startStagePono() {
+  if (_stagePonoStarted) return;
+  const imgEl = document.getElementById('stage-pono-img');
+  if (!imgEl) return;
+  _stagePonoStarted = true;
+  // flip-book: TRIVIA_POSES を流用
+  _stagePonoPoseIdx = Math.floor(Math.random() * TRIVIA_POSES.length);
+  imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_stagePonoPoseIdx];
+  if (_stagePonoPoseInterval) clearInterval(_stagePonoPoseInterval);
+  _stagePonoPoseInterval = setInterval(function() {
+    _stagePonoPoseIdx = (_stagePonoPoseIdx + 1) % TRIVIA_POSES.length;
+    imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_stagePonoPoseIdx];
+  }, STAGE_PONO_POSE_INTERVAL_MS);
+  _stagePonoScheduleBubble();
+}
+
+function stopStagePono() {
+  _stagePonoStarted = false;
+  if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
+  clearTimeout(_stagePonoBubbleTimer); _stagePonoBubbleTimer = null;
+  clearTimeout(_stagePonoBubbleHideTimer); _stagePonoBubbleHideTimer = null;
+  const bubble = document.getElementById('stage-pono-bubble');
+  if (bubble) { bubble.classList.remove('show'); bubble.textContent = ''; }
+}
+
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
@@ -2780,6 +2935,13 @@ function loadQuestion(q) {
     case 'emoji_name':  renderEmojiName(stage, q); break;
     case 'opposite':    renderOpposite(stage, q); break;
     case 'trivia':      renderTrivia(stage, q); break;
+  }
+  // trivia 中央ポノが居る間は左下ポノを CSS で隠す。 それ以外は左下ポノを起動。
+  if (q.type === 'trivia') {
+    document.body.classList.add('has-trivia-pono');
+  } else {
+    document.body.classList.remove('has-trivia-pono');
+    startStagePono();
   }
   renderChoices(q);
   updateHUD();
@@ -2946,6 +3108,7 @@ function _doNextQuestion() {
 function showResult() {
   clearTimeout(_autoHintTimer);
   stopTriviaPoseAnimation(); // 結果画面ではアニメーションを止める
+  stopStagePono();           // 左下ポノも結果画面では停止
   showClearDialogue(correctCount, totalQuestions);
   const cleared = correctCount >= Math.ceil(totalQuestions * 0.7); // 70% 以上で clear
   document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
