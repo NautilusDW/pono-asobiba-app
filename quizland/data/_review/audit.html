@@ -47,6 +47,8 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 .choice-img { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 6px; background: #fff; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .choice-img img { width: 100%; height: 100%; object-fit: contain; }
 .choice-img.none { border: 2px dashed var(--miss); background: #FEF2F2; color: var(--miss); font-size: 9px; font-weight: 700; line-height: 1.1; text-align: center; padding: 4px; }
+.sheet-link { display: inline-block; font-size: 10px; color: #888; cursor: pointer; padding: 1px 5px; border: 1px solid #ddd; border-radius: 4px; margin-top: 2px; user-select: none; }
+.sheet-link:hover { background: #fffbeb; color: #b45309; border-color: #f59e0b; }
 .q-stage-img { display: flex; align-items: flex-start; justify-content: center; }
 .q-stage-img img { max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
 .q-stage-img .nostage { color: #aaa; font-size: 12px; padding: 24px 0; }
@@ -97,6 +99,12 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 </div>
 
 <main>
+  <!-- 重複生成リスト (collapsible) -->
+  <details id="dup-section" style="margin-bottom: 24px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 12px 16px;">
+    <summary style="font-weight: 800; cursor: pointer; color: #b45309;">⚠ 重複生成 <span id="dup-count">…</span> 件 (Codex が同じ画像を複数シートで再生成してる) — クリックで一覧</summary>
+    <div id="dup-list" style="margin-top: 10px; font-size: 13px;"></div>
+  </details>
+
   <div id="questions"></div>
 
   <section class="gallery-section">
@@ -141,15 +149,18 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 (async function() {
   const ASSET_BASE = '../../../';
 
-  // 1) load illustration manifest + handoff audit + disk inventory + JP-to-ID map
-  const [manifest, handoffAudit, diskInventory, jpToIdData] = await Promise.all([
+  // 1) load illustration manifest + handoff audit + disk inventory + JP-to-ID map + sheets index
+  const [manifest, handoffAudit, diskInventory, jpToIdData, sheetsIndex] = await Promise.all([
     fetch('./illustration-list.json').then(r => r.json()).catch(e => { console.error('manifest load failed', e); return { sheets: [], items: [] }; }),
     fetch('./_handoff_audit.json').then(r => r.json()).catch(e => { console.warn('handoff audit not available'); return null; }),
     fetch('./_disk_inventory.json').then(r => r.json()).catch(e => { console.warn('disk inventory not available'); return null; }),
     fetch('./_choice_jp_to_id.json').then(r => r.json()).catch(e => { console.warn('JP-to-ID map not available'); return null; }),
+    fetch('./_sheets_index.json').then(r => r.json()).catch(e => { console.warn('sheets index not available'); return null; }),
   ]);
-  // merge external JP→ID map into base table (preserves the inline color/shape entries)
   const externalJpMap = (jpToIdData && jpToIdData.jp_to_id) || {};
+  const sheetPaths = (sheetsIndex && sheetsIndex.sheet_paths) || {};
+  const idToSheets = (sheetsIndex && sheetsIndex.id_to_sheets) || {};
+  const duplicates = (sheetsIndex && sheetsIndex.duplicates) || {};
 
   // build id -> save_path
   const idToPath = {};
@@ -206,9 +217,14 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
       const fname = path.split('/').pop().replace('.png','').toLowerCase();
       if (fname === t) return path;
     }
-    // 4. JP→ID テーブル
-    const mapped = JP_TO_ID[raw];
-    if (mapped && idToPath[mapped]) return idToPath[mapped];
+    // 4. JP→ID テーブル (内部 + assignment.json から抽出した拡張マップ)
+    const mapped = JP_TO_ID[raw] || externalJpMap[raw];
+    if (mapped) {
+      // try idToPath first; if not in manifest, build path heuristically
+      if (idToPath[mapped]) return idToPath[mapped];
+      // fallback: assume choice/ folder
+      return 'assets/images/quizland/illust/choice/' + mapped + '.png';
+    }
     // 5. illust/choice/ にある画像を直接プローブ (manifest 外)
     //    返り値は path で、img onerror で 404 fallback 表示
     const candidates = [
@@ -320,6 +336,29 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
           fn.className = 'c-fname';
           fn.textContent = path.split('/').pop();
           wrap.appendChild(fn);
+          // sheet link: if this image is in a sheet, add a button
+          const id = path.split('/').pop().replace('.png','');
+          const sheetIds = idToSheets[id] || [];
+          sheetIds.forEach(sid => {
+            const link = document.createElement('span');
+            link.className = 'sheet-link';
+            link.textContent = '🗂 ' + sid;
+            link.title = 'シート画像を表示: ' + (sheetPaths[sid] || '?');
+            link.dataset.sheetSrc = sheetPaths[sid] || '';
+            link.dataset.sheetCaption = sid;
+            link.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const sheetSrc = link.dataset.sheetSrc;
+              if (!sheetSrc) return;
+              const lb = document.getElementById('lightbox');
+              const lbImg = document.getElementById('lightbox-img');
+              const lbCap = document.getElementById('lightbox-caption');
+              lbImg.src = ASSET_BASE + sheetSrc;
+              lbCap.textContent = sid + ' — ' + sheetSrc;
+              lb.classList.add('show');
+            });
+            wrap.appendChild(link);
+          });
         }
 
         if (matched && typeof matched === 'string') {
@@ -444,6 +483,30 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     sec.appendChild(grid);
     gallery.appendChild(sec);
   });
+
+  // 6.5) duplicate list rendering
+  const dupCountEl = document.getElementById('dup-count');
+  const dupListEl = document.getElementById('dup-list');
+  const dupEntries = Object.entries(duplicates);
+  dupCountEl.textContent = dupEntries.length;
+  if (dupEntries.length > 0) {
+    const tbl = document.createElement('table');
+    tbl.style.borderCollapse = 'collapse';
+    tbl.style.width = '100%';
+    tbl.innerHTML = '<thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #f59e0b;">ID</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #f59e0b;">回数</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #f59e0b;">含まれるシート</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    dupEntries.sort((a, b) => b[1].length - a[1].length).forEach(([id, shts]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td style="padding:3px 8px; font-family: ui-monospace, monospace;">' + id + '</td><td style="padding:3px 8px; font-weight:700;">' + shts.length + '×</td><td style="padding:3px 8px; font-size:11px; color:#666;">' + shts.join(', ') + '</td>';
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    dupListEl.appendChild(tbl);
+    const note = document.createElement('p');
+    note.style.cssText = 'margin-top:10px; font-size:12px; color:#92400e;';
+    note.textContent = '次回 Codex 依頼時には、これら ID は 1 シートだけで生成 → 他シートでは "reference: <sheet>" で参照させると無駄が無くなります。';
+    dupListEl.appendChild(note);
+  }
 
   // 7) stats + filters
   // truly_missing = ディスク上に無い画像 (handoff_audit ベース)
