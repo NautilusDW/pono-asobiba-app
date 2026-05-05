@@ -2344,6 +2344,30 @@ function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
 
+  // q.img が指定されている場合は stage 画像を出す (ポノ代用は使わない)
+  // パス解決: stage/ → choice/ の順でフォールバック (onerror で 1回だけ swap)
+  if (q.img) {
+    const imgEl = document.createElement('img');
+    imgEl.className = 'emoji-main-img';
+    imgEl.alt = '';
+    const v = (window._imgCacheBust || '');
+    const stagePath = '../assets/images/quizland/illust/stage/' + q.img + (v ? '?v=' + v : '');
+    const choicePath = '../assets/images/quizland/illust/choice/' + q.img + (v ? '?v=' + v : '');
+    imgEl.src = stagePath;
+    imgEl.dataset.fallback = choicePath;
+    imgEl.addEventListener('error', function once() {
+      if (imgEl.dataset.fallback && imgEl.src !== imgEl.dataset.fallback) {
+        const fb = imgEl.dataset.fallback;
+        imgEl.dataset.fallback = '';
+        imgEl.src = fb;
+      }
+    });
+    wrap.appendChild(imgEl);
+    stage.appendChild(wrap);
+    return;
+  }
+
+  // フォールバック: img 未指定の trivia は従来どおりポノ + バルーン
   const ponoWrap = document.createElement('div');
   ponoWrap.className = 'trivia-pono-wrap';
   const pono = document.createElement('img');
