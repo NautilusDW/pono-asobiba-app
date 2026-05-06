@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T12:35:11Z - chip preset から chip.tx/ty を除外、 他 chip が飛ぶアーキテクチャ的バグを根治 (preset = 子要素配置 + chip.w/h のみ、 chip 自体の cell 配置は個別 entry に分離)
+- **タスク**: chip preset から chip.tx/ty を除外、 他 chip が飛ぶアーキテクチャ的バグを根治 (preset = 子要素配置 + chip.w/h のみ、 chip 自体の cell 配置は個別 entry に分離)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 36
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 164, "Edit": 144, "Read": 145, "Write": 8, "Grep": 25, "Agent": 11, "ToolSearch": 2, "Glob": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-06T11:29:27Z - batch:05-opposite-alpha-supp: dekakeru 訂正 + kaeru/tasukeru/mae 新規配置 (mae=tatsu byte-identical per user spec 「たつと共通」)
 - **タスク**: batch:05-opposite-alpha-supp: dekakeru 訂正 + kaeru/tasukeru/mae 新規配置 (mae=tatsu byte-identical per user spec 「たつと共通」)
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 154, "Edit": 123, "Write": 8, "Agent": 15, "Read": 178, "Grep": 19, "ToolSearch": 2, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-05T10:34:43Z - shape_name 問題の図形描画を CSS 角丸 div から sharp-cornered PNG に切替 (renderShapeName を img 化、 .shape-img CSS 追加、 旧 .shape-* はフォールバック保険として残置)
-- **タスク**: shape_name 問題の図形描画を CSS 角丸 div から sharp-cornered PNG に切替 (renderShapeName を img 化、 .shape-img CSS 追加、 旧 .shape-* はフォールバック保険として残置)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 476
-- **エラー数**: 24
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 201, "Read": 109, "Glob": 3, "Grep": 17, "Edit": 101, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 29}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
