@@ -431,9 +431,11 @@
     if (textEl) {
       preset.text = _readElLayout(textEl);
       preset.text.w = ''; // text 量で auto-size
-      // 互換: 旧 reader (label/countNum 個別読み) も同じ値を読めるようにしておく
-      preset.label = preset.text;
-      preset.countNum = preset.text;
+      // 互換: 旧 reader (label/countNum 個別読み) も同じ値を読めるようにしておく。
+      // 2026-05-07 (HIGH fix): shallow copy で参照共有を解消。 将来の preset.label.w =
+      //   ... のような書き換えで 3 者全員が変わるのを防ぐ。
+      preset.label = Object.assign({}, preset.text);
+      preset.countNum = Object.assign({}, preset.text);
     }
     return preset;
   }
