@@ -96,29 +96,53 @@
     "tx": -101.49364669183349,
     "ty": -41.00074469007843
   },
-  ".chip .chip-count-num|0": {
+  ".chip .circle|0": {
     "w": "",
     "h": "",
-    "tx": 0,
-    "ty": 0
+    "tx": 6.0492081514258365,
+    "ty": 2.7587251030884
   },
-  ".chip .chip-count-num|1": {
+  ".chip .circle|1": {
     "w": "",
     "h": "",
-    "tx": -6.721433555750562,
-    "ty": 0
+    "tx": -3.3607988266249507,
+    "ty": 2.7587251030884
   },
-  ".chip .chip-count-num|2": {
+  ".chip .circle|2": {
     "w": "",
     "h": "",
-    "tx": 0,
-    "ty": -13.442867111501124
+    "tx": 6.0492081514258365,
+    "ty": -13.37271543071295
   },
-  ".chip .chip-count-num|3": {
+  ".chip .circle|3": {
     "w": "",
     "h": "",
-    "tx": -6.721433555750562,
-    "ty": -13.442867111501124
+    "tx": -3.3607988266249507,
+    "ty": -13.37271543071295
+  },
+  ".chip .chip-label|0": {
+    "w": "",
+    "h": "",
+    "tx": 6.688573422300226,
+    "ty": 9.03286013345034
+  },
+  ".chip .chip-label|1": {
+    "w": "",
+    "h": "",
+    "tx": -2.7214335557505613,
+    "ty": 9.03286013345034
+  },
+  ".chip .chip-label|2": {
+    "w": "",
+    "h": "",
+    "tx": 6.688573422300226,
+    "ty": -7.098580400351009
+  },
+  ".chip .chip-label|3": {
+    "w": "",
+    "h": "",
+    "tx": -2.7214335557505613,
+    "ty": -7.098580400351009
   },
   ".character|0": {
     "w": "320px",
@@ -275,6 +299,14 @@
     ".chip .chip-count-num|1",
     ".chip .chip-count-num|3",
     ".chip .chip-count-num|0",
-    ".chip .chip-count-num|2"
+    ".chip .chip-count-num|2",
+    ".chip .circle|3",
+    ".chip .circle|2",
+    ".chip .chip-label|2",
+    ".chip .chip-label|3",
+    ".chip .chip-label|1",
+    ".chip .circle|1",
+    ".chip .circle|0",
+    ".chip .chip-label|0"
   ]
 }
