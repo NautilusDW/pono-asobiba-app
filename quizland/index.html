@@ -3040,6 +3040,17 @@ function renderTrivia(stage, q) {
 //   - count_total → chip-count (大きい数字)
 //   - その他       → chip + テキスト
 // ═══════════════════════════════════════════════════════════
+// 半角 ASCII 印字可能文字 (! 〜 ~) を全角 (FF01〜FF5E) に変換する render-time ヘルパー。
+// data layer (questions.js) は半角のまま保持し、 表示時のみ全角化することで
+// 「みぎから 2ばんめは…」の数字が日本語フォントの全角グリフで描画され、
+// 周囲の かな/漢字 と字幅・字形が揃う。 半角 SPACE (0x20) は触らない
+// (全角空白に変えるとレイアウト崩れの恐れがあるため)。
+function toFullWidth(s) {
+  if (typeof s !== 'string') return s;
+  return s.replace(/[!-~]/g, function(ch) {
+    return String.fromCharCode(ch.charCodeAt(0) + 0xFEE0);
+  });
+}
 function chipSizeClass(text) {
   if (!text) return '';
   const len = String(text).length;
@@ -3086,13 +3097,13 @@ function renderChoices(q) {
       btn.appendChild(wrap);
       const label = document.createElement('span');
       label.className = 'chip-label';
-      label.textContent = QUIZLAND_COLORS[choice].name;
+      label.textContent = toFullWidth(QUIZLAND_COLORS[choice].name);
       btn.appendChild(label);
     } else if (q.type === 'count_total') {
       btn.classList.add('chip-count');
       const num = document.createElement('span');
       num.className = 'chip-count-num';
-      num.textContent = String(choice);
+      num.textContent = toFullWidth(String(choice));
       btn.appendChild(num);
     } else if (choice && typeof choice === 'object' && choice.image) {
       // 画像入り選択肢: { text: '...', image: '...png' }
@@ -3107,7 +3118,7 @@ function renderChoices(q) {
       if (choice.text) {
         const label = document.createElement('span');
         label.className = 'chip-illust-label chip-label';
-        label.textContent = choice.text;
+        label.textContent = toFullWidth(choice.text);
         btn.appendChild(label);
         const sizeCls = chipSizeClass(choice.text);
         if (sizeCls) btn.classList.add(sizeCls);
@@ -3116,7 +3127,7 @@ function renderChoices(q) {
       const text = (choice && typeof choice === 'object') ? choice.text : choice;
       const label = document.createElement('span');
       label.className = 'chip-label';
-      label.textContent = text;
+      label.textContent = toFullWidth(text);
       btn.appendChild(label);
       const sizeCls = chipSizeClass(text);
       if (sizeCls) btn.classList.add(sizeCls);
@@ -3146,7 +3157,7 @@ function renderChoices(q) {
 function loadQuestion(q) {
   currentQ = q;
   locked = false;
-  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-text').textContent = toFullWidth(q.q);
   const stage = document.getElementById('stage-area');
   stage.dataset.qtype = q.type;
   stage.innerHTML = '';
