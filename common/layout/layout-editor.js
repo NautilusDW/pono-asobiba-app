@@ -422,6 +422,19 @@
     }
     var n = chip.querySelector('.chip-count-num');
     if (n) preset.countNum = _readElLayout(n);
+    // 2026-05-07 v786: chip-label と chip-count-num を共通キー `text` で alias 化。
+    //   両者は同じ chip-type-text-only 内で排他に出現する (count_total なら
+    //   chip-count-num のみ、 plain text なら chip-label のみ) ため、 ユーザーが
+    //   一方の chip で位置を整えても他方は default のまま、という非対称が起きていた。
+    //   共通キーに保存しておけば applier 側で「存在する方」へ apply できる。
+    var textEl = chip.querySelector('.chip-label, .chip-count-num');
+    if (textEl) {
+      preset.text = _readElLayout(textEl);
+      preset.text.w = ''; // text 量で auto-size
+      // 互換: 旧 reader (label/countNum 個別読み) も同じ値を読めるようにしておく
+      preset.label = preset.text;
+      preset.countNum = preset.text;
+    }
     return preset;
   }
 
@@ -500,12 +513,26 @@
       illust:   '.chip .chip-illust|',
       label:    '.chip .chip-label|',
       countNum: '.chip .chip-count-num|',
+      // text は chip-label / chip-count-num の alias key (v786 追加)。
+      // 個別 prefix を持たないので、 削除ループ側で両方 (label + countNum) を消す。
+      text:     null,
     };
     // 保存対象 chip の個別 entry を data + state.individualOverrides から削除 (type 別 part 限定)
     saved.forEach(function (s) {
       var slotPreset = data.__chip_presets[s.type] && data.__chip_presets[s.type][String(s.slot)];
       if (!slotPreset) return;
       Object.keys(slotPreset).forEach(function (part) {
+        if (part === 'text') {
+          // text alias: chip-label と chip-count-num の個別 entry を両方消す。
+          // どちらか片方の chip 種別で保存しても、 もう一方の chip 種別の個別 entry が
+          // 残っていると preset.text が上書きされて非対称が再発するので両方一掃する。
+          ['.chip .chip-label|', '.chip .chip-count-num|'].forEach(function (pfx) {
+            var key = pfx + s.slot;
+            if (data.hasOwnProperty(key)) delete data[key];
+            if (state.individualOverrides) state.individualOverrides.delete(key);
+          });
+          return;
+        }
         var prefix = PART_TO_KEY_PREFIX[part];
         if (!prefix) return;
         var key = prefix + s.slot;

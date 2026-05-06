@@ -152,6 +152,14 @@
         var n = chip.querySelector('.chip-count-num');
         if (n) applyOne(n, slotPreset.countNum);
       }
+      // 2026-05-07 v786: text alias — chip-label / chip-count-num の共通キー。
+      //   chip-type-text-only chip では両者が排他出現するので、 存在する方に
+      //   共通の tx/ty を適用することで count_total と plain text が同じ位置に揃う。
+      //   既存 label/countNum 個別キーは旧 saved-layout.json 互換のため残す。
+      if (slotPreset.text) {
+        var textEl = chip.querySelector('.chip-label, .chip-count-num');
+        if (textEl) applyOne(textEl, slotPreset.text);
+      }
     }
   }
 
