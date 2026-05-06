@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T13:59:02Z - batch:07 Codex followup md を user レビュー反映で 14 件確定 (#1 chewing_teeth → tongue 修正、 #4 普段着、 #8 大型動物のみ、 #15 削除) → push 済
+- **タスク**: batch:07 Codex followup md を user レビュー反映で 14 件確定 (#1 chewing_teeth → tongue 修正、 #4 普段着、 #8 大型動物のみ、 #15 削除) → push 済
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 32
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 179, "Read": 132, "Edit": 135, "Grep": 25, "Write": 8, "Agent": 13, "ToolSearch": 2, "Glob": 4, "ExitPlanMode": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-06T12:56:37Z - code review HIGH 指摘 (clearChipOverridesForType で .chip|N を削除する prefixCoverage バグ) を即座に追修正、 sw v778 で push
 - **タスク**: code review HIGH 指摘 (clearChipOverridesForType で .chip|N を削除する prefixCoverage バグ) を即座に追修正、 sw v778 で push
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 20, "Bash": 7, "Glob": 2, "ToolSearch": 1, "Agent": 8}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-06T08:17:49Z - batch:06-trivia-reveal Implementation Agent B: questions.js 4問にimg_word/img_answer追加 + Q411をimage-chip choicesに変換
-- **タスク**: batch:06-trivia-reveal Implementation Agent B: questions.js 4問にimg_word/img_answer追加 + Q411をimage-chip choicesに変換
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 31
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 151, "Read": 167, "Bash": 143, "Write": 8, "Agent": 11, "Grep": 19, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
