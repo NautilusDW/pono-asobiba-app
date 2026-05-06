@@ -3349,6 +3349,15 @@ function _doNextQuestion() {
   stopTriviaPoseAnimation(); // 前の質問のポーズ循環を必ず止める (interval リーク防止)
   questionIdx++;
   if (questionIdx >= totalQuestions) {
+    // editor mode (?edit=1): リザルトモーダルは閉じる手段が無く編集を阻害するので
+    // 表示せず先頭へループバックする (既存の editor ガード方針 chip pointerdown /
+    // 吹き出しクリック / HUD ボタン等と同じパターン)。
+    if (document.body.classList.contains('layout-editor-on')) {
+      questionIdx = 0;
+      loadQuestion(playlist[0]);
+      try { console.log('[quizland editor] 全問完走 — 先頭に戻ります'); } catch (_) {}
+      return;
+    }
     showResult();
     return;
   }
