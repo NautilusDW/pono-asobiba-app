@@ -3214,8 +3214,8 @@ function setupNarration(q) {
 }
 
 function updateHUD() {
-  document.getElementById('q-num').textContent = toFullWidth(String(questionIdx + 1));
-  document.getElementById('q-total').textContent = toFullWidth(String(totalQuestions));
+  document.getElementById('q-num').textContent = (questionIdx + 1);
+  document.getElementById('q-total').textContent = totalQuestions;
   const prog = document.getElementById('hud-progress');
   prog.innerHTML = '';
   // デバッグ全問モードは 169 個ドットを並べると HUD が破綻するので、
