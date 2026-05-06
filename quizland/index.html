@@ -1059,6 +1059,12 @@ body.layout-editor-on .stage-pono { display: none; }
   -webkit-tap-highlight-color: transparent;
   text-align: center;
   line-height: 1.2;
+  /* 2026-05-07 修正(v798): chip 内テキストのトラッキングを若干詰めて、
+     2行目に折り返しがちな長文 (例「いきの なかの みずが ひえて つぶになるから」)
+     が 1 行に収まりやすくする。 chip 全体に適用するので chip-label /
+     chip-illust-label / chip-count-num 全てに効く (1 文字の chip-count-num には
+     視覚的影響なし)。 メディアクエリ 14:9 / 4:3 / 5:4 でも上書きしない方針。 */
+  letter-spacing: -0.04em;
 }
 /* 文字数に応じてフォントサイズを自動調整 (renderChoices で付与)
    2026-05-07 修正(v792): chip 間で font-size が不揃いになり「長文だけ字が小さい」

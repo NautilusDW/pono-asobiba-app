@@ -218,7 +218,7 @@ const QUIZLAND_QUESTIONS = {
       detail:'おひさまに あたためられた みずが くうきに なって のぼり、くもに なるよ！'},
     { level:3, type:'trivia', category:'weather',
       q:'ふゆに いきが しろく みえるのは なぜ？',
-      answer:0, choices:['いきの なかの みずが ひえて つぶに なるから','くちの なかが しろいから','ゆきが ふっているから','さむくて こおっているから'] ,
+      answer:0, choices:['いきの なかの みずが ひえて つぶになるから','くちの なかが しろいから','ゆきが ふっているから','さむくて こおっているから'] ,
       detail:'あったかい いきが つめたい くうきで ひえて、ちいさな みずの つぶに なるよ！'},
     { level:3, type:'trivia', category:'weather',
       img:'stage_weather_snowflake_big.png',
@@ -488,7 +488,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'trivia', category:'body',
       img:'finger.png',
       q:'かたての ゆびは なんぼん？',
-      answer:1, choices:['4ほん','5ほん','6ほん','3ほん'] ,
+      answer:1, choices:['4ほん','5ほん','6ぽん','3ぼん'] ,
       detail:'おやゆび・ひとさしゆび・なかゆび・くすりゆび・こゆびの 5ほんだよ！'},
 
     // Level 2
@@ -544,7 +544,7 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'trivia', category:'body',
       img:'stomach.png',
       q:'おなかが すいたとき「グー」と なるのは なぜ？',
-      answer:0, choices:['おなかの なかで くうきが うごくから','ほねが なるから','きんにくが うごくから','ちが ながれるから'] ,
+      answer:0, choices:['おなかのなかで くうきが うごくから','ほねが なるから','きんにくが うごくから','ちが ながれるから'] ,
       detail:'たべものが ないと いが くうきを おしだして「グー」と なるよ！'},
     { level:3, type:'trivia', category:'body',
       img:'moyou.png',
@@ -555,11 +555,11 @@ const QUIZLAND_QUESTIONS = {
       img:'face_eye.png',
       q:'まばたきは なんのために する？',
       hint:'めを まもるため！',
-      answer:0, choices:['めを まもる','あそびの ため','こわい ため','ねむくなる ため'] ,
+      answer:0, choices:['めを まもる','あそびの ため','こわい ため','ねむくなるため'] ,
       detail:'まばたきで めに なみだを ながして、ほこりや ごみを ながしているよ！'},
     { level:3, type:'trivia', category:'body',
       q:'けがを すると かさぶたが できるのは なぜ？',
-      answer:0, choices:['きずを まもって なおすため','いろを かえるため','かゆくする ため','いろを つけるため'] ,
+      answer:0, choices:['きずを まもって なおすため','いろを かえるため','かゆくするため','いろを つけるため'] ,
       detail:'ちが かたまって フタの ように なって、きずを まもりながら なおしているよ！'}
   ]
 };
