@@ -2493,8 +2493,10 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.board',                   'wh', '盤面'],
   ['.answer-tray',             'wh', '回答トレイ'],
   ['.chip',                    'wh', '回答チップ'],
-  ['.chip .circle',            'wh', 'チップ丸'],
-  ['.chip .chip-label',        'wh', 'チップ ラベル'],
+  ['.chip .circle',            'wh', 'チップ丸 (色問題)'],
+  ['.chip .chip-illust',       'wh', 'チップ イラスト (画像選択肢)'],
+  ['.chip .chip-count-num',    'wh', 'チップ 数字 (count_total)'],
+  ['.chip .chip-label',        'wh', 'チップ ラベル (テキスト)'],
   ['.hint',                    'wh', 'ヒント'],
   ['.character',               'wh', 'キャラクター'],
   ['.char-hint',               'wh', 'キャラ吹き出し'],
@@ -3023,6 +3025,9 @@ function renderChoices(q) {
     btn.className = 'chip';
     btn.dataset.idx = i;
     btn.type = 'button';
+    // chip 内の各要素 (circle / illust / label / count-num) はそれぞれ
+    // 独立 resizable に登録 (QZ_RESIZABLE_SELECTORS) → editor で個別に
+    // 位置・サイズ調整できる。 chip 外枠は別レイヤー。
     if (q.type === 'order_color') {
       btn.dataset.color = choice;
       btn.classList.add('has-image'); // 丸 + ラベル のレイアウト
