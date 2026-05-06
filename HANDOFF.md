@@ -14,6 +14,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-06 - [batch:05-opposite-new-pairs] Codex: opposite 新規 23 枚 (raw, white BG OK) を tmp/alpha_pending/alpha/05/ に納品完了。 後処理はユーザー側で実施。 (by Codex)
+
 - 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Revised opposite posture/door pair assets under `assets/images/quizland/illust/stage/opposite/` after QA feedback. `tatsu.png` now has both hands visible outside the pockets, `suwaru.png` was regenerated so the two feet/shoes read separately, and `akeru.png` / `shimeru.png` were redrawn as a directional pair with corrected camera-facing motion (`akeru`: front-facing child entering from beyond the doorway with left hand on knob; `shimeru`: back-facing child exiting away with right hand on knob). All four remain transparent RGBA `1024x1024`.
 
 - 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Second review fix on opposite assets. `suwaru.png` was redrawn again so the crossed-leg center no longer forms a single connected skin shape between both cuffs, and `shimeru.png` was redrawn with a narrower almost-closed door angle plus the child clearly positioned on the near side pushing the door shut rather than appearing to exit.
