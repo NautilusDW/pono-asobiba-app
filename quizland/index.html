@@ -245,27 +245,29 @@ body.sheet-on .chip.wrong:not([data-idx]) {
   background-color: transparent !important;
 }
 /* 押下中だけでなく、 正解/不正解後も「どこを押したか」を示すため
-   .correct / .wrong 状態でも同じ pressed 画像を維持 (次の問題で chip は再生成されるので
-   永続させても OK)。 */
+   .correct / .wrong 状態でも同じ pressed 画像を維持。
+   ★ background-size: contain で AR 1.087 (元画像) を保持。 chip 本体の AR (1.41 横長)
+   に引きずられて画像がひしゃげるのを防ぐ。 chip > 画像の余白部分は透過 → 下の
+   answer-tray の Fukuro_frame_002 が見えるので違和感なし。 */
 body.sheet-on .chip.pressed[data-idx="0"],
 body.sheet-on .chip.correct[data-idx="0"],
 body.sheet-on .chip.wrong[data-idx="0"] {
-  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png') center / 100% 100% no-repeat !important;
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png') center / contain no-repeat !important;
 }
 body.sheet-on .chip.pressed[data-idx="1"],
 body.sheet-on .chip.correct[data-idx="1"],
 body.sheet-on .chip.wrong[data-idx="1"] {
-  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TR.png') center / 100% 100% no-repeat !important;
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TR.png') center / contain no-repeat !important;
 }
 body.sheet-on .chip.pressed[data-idx="2"],
 body.sheet-on .chip.correct[data-idx="2"],
 body.sheet-on .chip.wrong[data-idx="2"] {
-  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BL.png') center / 100% 100% no-repeat !important;
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BL.png') center / contain no-repeat !important;
 }
 body.sheet-on .chip.pressed[data-idx="3"],
 body.sheet-on .chip.correct[data-idx="3"],
 body.sheet-on .chip.wrong[data-idx="3"] {
-  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BR.png') center / 100% 100% no-repeat !important;
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BR.png') center / contain no-repeat !important;
 }
 
 /* color-chip: order_color の stage 用 PNG (img) は watercolor 風のため、
