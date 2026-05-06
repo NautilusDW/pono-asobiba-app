@@ -15,6 +15,8 @@
 ## Active (進行中 / 未着手)
 
 - 2026-05-06 - [batch:05-opposite-new-pairs] Codex: opposite 新規 23 枚 (raw, white BG OK) を tmp/alpha_pending/alpha/05/ に納品完了。 後処理はユーザー側で実施。 (by Codex)
+- 2026-05-06 - [batch:05-opposite-new-pairs] Codex: Q140 `ue.png` / `shita.png` を GPT Image 2 生成経路で再生成。 R4 クロスレビューで Q140 構図・ペア整合・Quizland 水彩絵本調 style/model consistency PASS。 (by Codex)
+- 2026-05-06 - [batch:05-opposite-new-pairs] Codex: `suwaru.png` を添付の立ち姿男の子参照から椅子座り raw 画像として tmp/alpha_pending/alpha/05/ に生成。 R5 クロスレビューで同一人物感・椅子座り・非あぐら・両脚/靴分離 PASS。 (by Codex)
 
 - 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Revised opposite posture/door pair assets under `assets/images/quizland/illust/stage/opposite/` after QA feedback. `tatsu.png` now has both hands visible outside the pockets, `suwaru.png` was regenerated so the two feet/shoes read separately, and `akeru.png` / `shimeru.png` were redrawn as a directional pair with corrected camera-facing motion (`akeru`: front-facing child entering from beyond the doorway with left hand on knob; `shimeru`: back-facing child exiting away with right hand on knob). All four remain transparent RGBA `1024x1024`.
 
@@ -42,6 +44,12 @@
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-06 - Refined `Fukuro_frame_002_pressed.png` again to match a clearer pressed-button read. The button faces are now uniformly darkened without center sculpting, the old outer drop shadow is reduced, and the pushed-in feel is expressed mainly at the wood-contact edge with a subtle inset seam shadow. Final file remains `699x643` RGBA at `D:\ポノのおへや\Dr.owl'quiz\main\Fukuro_frame_002_pressed.png`. (by Codex)
+
+- 2026-05-06 - Refined `Fukuro_frame_002_pressed.png` after visual feedback. Replaced the first subtle version with a clearer UI-style pressed state using only local image compositing: smoother rounded-rectangle masks, stronger paper-panel tint, and cleaner inset shadows without the previous dotted-edge artifacts. Final file remains `699x643` RGBA at `D:\ポノのおへや\Dr.owl'quiz\main\Fukuro_frame_002_pressed.png`. (by Codex)
+
+- 2026-05-06 - Created a pressed-state variant `Fukuro_frame_002_pressed.png` from `assets/images/quizland/Fukuro_frame_002.png` by local pixel editing only. The export keeps the original `699x643` canvas, button positions, and outer frame unchanged while darkening only the four paper panels with a subtle inset shadow. Final file saved to `D:\ポノのおへや\Dr.owl'quiz\main\Fukuro_frame_002_pressed.png`. (by Codex)
 
 - 2026-05-06 - Follow-up redraw pass on opposite assets after review feedback. Replaced `tatsu.png`, `suwaru.png`, `akeru.png`, and `shimeru.png` so the standing/sitting boy pair keeps hands visible and separate shoes, and the door pair now reads with the intended front-entry/back-exit motion. Outputs were re-keyed to transparent RGBA PNGs and normalized to `1024x1024`. (by Codex)
 
