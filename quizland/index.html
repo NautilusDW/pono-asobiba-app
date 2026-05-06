@@ -1679,8 +1679,11 @@ body.layout-editor-on .character img {
   .answer-tray { padding: 12px; }
   .answer-panel { gap: 10px; }
   .chip { height: 180px; font-size: 30px; }
-  .chip.txt-medium { font-size: 22px; }
-  .chip.txt-long { font-size: 18px; }
+  /* 2026-05-07 修正(v793): iPad 4:3 メディアクエリ内の size class 縮小も無効化。
+     グローバルで v792 に同じく無効化済みのため、 ここも揃える。
+     全 chip で 30px 統一、 折り返しで長文を吸収。 */
+  /* .chip.txt-medium { font-size: 22px; } */
+  /* .chip.txt-long { font-size: 18px; } */
   .chip.chip-count { font-size: 48px; }
   /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(max 240) = 394px → 46px buffer
      (元 260 から 240 に詰めて board/answer-tray の hit area との干渉を予防) */
