@@ -236,7 +236,8 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'opposite', category:'opposite', word:'たつ',     q:'「たつ」の はんたいは？',     answer:1, choices:['あるく','すわる','ねる','とぶ'] },
     { level:1, type:'opposite', category:'opposite', word:'あける',   q:'「あける」の はんたいは？',   answer:2, choices:['おす','ひく','しめる','まわす'] },
     { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','いい','わるい','おもしろい'] },
-    { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の はんたいは？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'] },
+    { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の はんたいは？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
+      img_word:'opposite/yoru.png', img_answer:'opposite/asa.png' },
     { level:1, type:'opposite', category:'opposite', word:'たくさん', q:'「たくさん」の はんたいは？', answer:3, choices:['おおきい','おおい','はやい','すこし'] },
 
     // Level 2
@@ -244,9 +245,11 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'opposite', category:'opposite', word:'たかい',   q:'「たかい」の はんたいは？',   answer:3, choices:['おもい','かたい','くらい','ひくい'] },
     { level:2, type:'opposite', category:'opposite', word:'ながい',   q:'「ながい」の はんたいは？',   answer:1, choices:['かわいい','みじかい','やわらかい','かるい'] },
     { level:2, type:'opposite', category:'opposite', word:'ふとい',   q:'「ふとい」の はんたいは？',   answer:2, choices:['おもい','ちいさい','ほそい','みじかい'] },
-    { level:2, type:'opposite', category:'opposite', word:'かたい',   q:'「かたい」の はんたいは？',   answer:1, choices:['かるい','やわらかい','やさしい','つよい'] },
+    { level:2, type:'opposite', category:'opposite', word:'かたい',   q:'「かたい」の はんたいは？',   answer:1, choices:['かるい','やわらかい','やさしい','つよい'],
+      img_word:'opposite/katai.png', img_answer:'opposite/yawarakai.png' },
     { level:2, type:'opposite', category:'opposite', word:'つよい',   q:'「つよい」の はんたいは？',   answer:0, choices:['よわい','おもい','ちいさい','おそい'] },
-    { level:2, type:'opposite', category:'opposite', word:'なく',     q:'「なく」の はんたいは？',     answer:2, choices:['えがく','おこる','わらう','ねる'] },
+    { level:2, type:'opposite', category:'opposite', word:'なく',     q:'「なく」の はんたいは？',     answer:2, choices:['えがく','おこる','わらう','ねる'],
+      img_word:'opposite/naku.png', img_answer:'opposite/warau.png' },
     { level:2, type:'opposite', category:'opposite', word:'おおい',   q:'「おおい」の はんたいは？',   answer:1, choices:['おおきい','すくない','ちいさい','よわい'] },
 
     // Level 3

@@ -816,6 +816,44 @@ body.sheet-on .hdr-right .ctrl-btn {
   border: 3px solid rgba(231, 203, 149, 0.92);
   box-shadow: 0 10px 22px rgba(120, 83, 20, 0.12);
 }
+/* img_word 付き opposite では word テキストを少し小さめ + 絵との間に余白 */
+.opposite-with-img .opposite-display {
+  font-size: 60px;
+  padding: 16px 36px;
+}
+.opposite-with-img { gap: 14px; }
+
+/* 「つぎへ」ボタン (opposite reveal 中に answer-panel に出現) */
+.next-q-btn {
+  font-family: inherit;
+  font-size: 32px;
+  font-weight: 800;
+  color: #FFF7E5;
+  background: linear-gradient(180deg, #F2A93B, #D36B12);
+  border: 3px solid #B85708;
+  border-radius: 22px;
+  padding: 18px 56px;
+  min-width: 240px;
+  min-height: 80px;
+  box-shadow: 0 8px 0 rgba(120, 83, 20, 0.32), 0 12px 24px rgba(120, 83, 20, 0.18);
+  cursor: pointer;
+  margin: 0 auto;
+  display: block;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgba(120, 83, 20, 0.45);
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.next-q-btn.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.next-q-btn:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 4px 0 rgba(120, 83, 20, 0.32), 0 6px 12px rgba(120, 83, 20, 0.18);
+}
+.next-q-btn:disabled { opacity: 0.65; cursor: default; }
 .trivia-display { position: relative; display: flex; justify-content: center; align-items: flex-start; }
 .trivia-pono-wrap {
   width: 380px;
@@ -2617,11 +2655,89 @@ function renderEmojiName(stage, q) {
   stage.appendChild(wrap);
 }
 function renderOpposite(stage, q) {
+  // q.img_word があれば、 質問語の絵を上、 word テキストを下の構成。
+  // 正解後に onChoice 側から img.src と word.textContent を差し替えて
+  // 反対語の絵をリビールするため、 個別 ID で参照可能にしておく。
+  const container = document.createElement('div');
+  container.className = 'emoji-display opposite-with-img';
+  if (q.img_word) {
+    const imgEl = document.createElement('img');
+    imgEl.id = 'opposite-stage-img';
+    imgEl.className = 'emoji-main-img';
+    imgEl.alt = '';
+    const v = (window._imgCacheBust || '');
+    const stagePath = '../assets/images/quizland/illust/stage/' + q.img_word + (v ? '?v=' + v : '');
+    const choicePath = '../assets/images/quizland/illust/choice/' + q.img_word + (v ? '?v=' + v : '');
+    imgEl.src = stagePath;
+    imgEl.dataset.fallback = choicePath;
+    imgEl.addEventListener('error', function once() {
+      if (imgEl.dataset.fallback && imgEl.src !== imgEl.dataset.fallback) {
+        const fb = imgEl.dataset.fallback;
+        imgEl.dataset.fallback = '';
+        imgEl.src = fb;
+      }
+    });
+    container.appendChild(imgEl);
+  }
   const wrap = document.createElement('div');
+  wrap.id = 'opposite-word-text';
   wrap.className = 'opposite-display';
   wrap.textContent = q.word;
-  stage.appendChild(wrap);
+  container.appendChild(wrap);
+  stage.appendChild(container);
 }
+
+// opposite 正解時: 質問絵 → 正解絵にリビール + word を正解語に書き換え。
+// renderOpposite で付与した ID を辿って差し替えるだけ。
+function revealOppositeAnswer(q) {
+  const imgEl = document.getElementById('opposite-stage-img');
+  const txtEl = document.getElementById('opposite-word-text');
+  if (imgEl && q.img_answer) {
+    const v = (window._imgCacheBust || '');
+    const stagePath = '../assets/images/quizland/illust/stage/' + q.img_answer + (v ? '?v=' + v : '');
+    const choicePath = '../assets/images/quizland/illust/choice/' + q.img_answer + (v ? '?v=' + v : '');
+    imgEl.src = stagePath;
+    imgEl.dataset.fallback = choicePath;
+    // alpha-removed reveal animation: 一瞬フェード
+    imgEl.style.transition = 'opacity 0.3s';
+    imgEl.style.opacity = '0';
+    setTimeout(() => { imgEl.style.opacity = '1'; }, 60);
+  }
+  if (txtEl) {
+    const ansText = (typeof q.choices[q.answer] === 'object')
+      ? q.choices[q.answer].text
+      : q.choices[q.answer];
+    txtEl.textContent = ansText;
+  }
+}
+
+// reveal 中の「つぎへ」ボタン。 #answer-panel を空にしてその位置に大きいボタンを置く。
+// 次問題へ遷移するときに loadQuestion → renderChoices が答えパネルを再生成するので、
+// hideNextButton は不要 (loadQuestion 側で innerHTML='' される)。 ただし API として用意。
+function showNextButton(onClick) {
+  const tray = document.getElementById('answer-panel');
+  if (!tray) return;
+  tray.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.id = 'next-q-btn';
+  btn.className = 'next-q-btn';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'つぎの もんだいへ');
+  btn.textContent = 'つぎへ ▶';
+  btn.addEventListener('click', function once() {
+    btn.disabled = true;
+    onClick();
+  });
+  tray.appendChild(btn);
+  // フェードイン
+  requestAnimationFrame(() => btn.classList.add('show'));
+}
+
+function hideNextButton() {
+  const btn = document.getElementById('next-q-btn');
+  if (btn) btn.remove();
+}
+
 // バルーンランダム選択 (連続で同じ画像を出さない)
 let _lastBalloonIdx = -1;
 function pickBalloonSrc() {
@@ -2987,7 +3103,13 @@ function onChoice(idx, btn) {
       var a = JSON.parse(localStorage.getItem(k) || '[]');
       if (a.indexOf('quizland') === -1) { a.push('quizland'); localStorage.setItem(k, JSON.stringify(a)); }
     })();
-    if (currentQ.detail) {
+    // opposite + img_answer のとき: 正解絵リビール + 「つぎへ」ボタン (自動遷移しない)
+    if (currentQ.type === 'opposite' && currentQ.img_answer) {
+      setTimeout(() => {
+        revealOppositeAnswer(currentQ);
+        showNextButton(nextQuestion);
+      }, 900);
+    } else if (currentQ.detail) {
       setTimeout(() => {
         showDetailDialogue(currentQ.detail);
         if (typeof Narration !== 'undefined') {
