@@ -4960,6 +4960,10 @@
       '<button id="le-chip-individual-save" title="選択中の chip 関連要素 (chip 自体 / circle / illust / label / countNum) を個別設定 (override) として保存。 個別設定された要素は preset を上書きする" aria-label="個別保存">💾 個別保存</button>' +
       '<button id="le-chip-preset-clear-overrides" title="選択 chip と同種別の個別設定エントリを削除し、 preset 値を全 chip に強制反映 (preset 未定義のパーツはスキップ)" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
       '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
+      // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
+      //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
+      //   他ページでは非表示。
+      '<button id="le-playtest-toggle" title="Playtest モード ON/OFF (debug UI を editor 内で表示)" aria-label="Playtest toggle" style="display:none;">🧪 Playtest OFF</button>' +
       '</div>' +
       '<div class="le-tb-group">' +
       '<button id="le-userbox-add" title="矩形追加" aria-label="矩形追加">🆕 矩形追加 OFF</button>' +
@@ -5042,6 +5046,59 @@
         showToast('nextQuestion() がこのページで定義されていません', 'warn');
       }
     });
+
+    // 🧪 Playtest toggle: editor 内 playtest UI (debug=all モードと同じ playtest UI:
+    //   コメント / 自動キャプチャ / 添付 / 前へ次へ / ジャンプ select) の ON/OFF。
+    //   quizland のみ機能 — window._qzPtBuildPanel が定義されていれば quizland とみなして
+    //   ボタンを表示し、 そうでなければ非表示にする。 状態は localStorage 保存
+    //   (キー: 'qz-playtest-in-editor', 値: '0' / '1') し、 リロード後も維持される。
+    var playtestBtn = tb.querySelector('#le-playtest-toggle');
+    if (playtestBtn) {
+      var isQuizland = (typeof window._qzPtBuildPanel === 'function' &&
+                        typeof window._qzBuildDebugNavDOM === 'function');
+      if (!isQuizland) {
+        playtestBtn.style.display = 'none';
+      } else {
+        playtestBtn.style.display = '';
+        var initOn = (function () {
+          try { return localStorage.getItem('qz-playtest-in-editor') === '1'; }
+          catch (_) { return false; }
+        })();
+        playtestBtn.textContent = initOn ? '🧪 Playtest ON' : '🧪 Playtest OFF';
+        playtestBtn.classList.toggle('active', initOn);
+
+        playtestBtn.addEventListener('click', function () {
+          var cur = (function () {
+            try { return localStorage.getItem('qz-playtest-in-editor') === '1'; }
+            catch (_) { return false; }
+          })();
+          var next = !cur;
+          try { localStorage.setItem('qz-playtest-in-editor', next ? '1' : '0'); } catch (_) {}
+          playtestBtn.textContent = next ? '🧪 Playtest ON' : '🧪 Playtest OFF';
+          playtestBtn.classList.toggle('active', next);
+
+          // 即時反映: window フラグ更新 + body.debug-mode 切替 + 必要なら DOM 構築
+          try { window.QZ_PLAYTEST_IN_EDITOR = next; } catch (_) {}
+          var hasDebugAll = !!window.QZ_DEBUG_ALL;
+          if (next || hasDebugAll) {
+            document.body.classList.add('debug-mode');
+          } else {
+            document.body.classList.remove('debug-mode');
+          }
+          if (next) {
+            try {
+              if (typeof window._qzBuildDebugNavDOM === 'function') window._qzBuildDebugNavDOM();
+              if (typeof window._qzPtBuildPanel === 'function' &&
+                  !document.getElementById('qz-playtest-panel')) {
+                window._qzPtBuildPanel();
+              }
+              if (typeof window.updateDebugNav === 'function') window.updateDebugNav();
+            } catch (e) { console.warn('[playtest] build failed', e); }
+          }
+          showToast(next ? '🧪 Playtest UI ON' : '🧪 Playtest UI OFF', 'success');
+        });
+      }
+    }
 
     // U10: iPad-friendly multi-select toggle
     var msBtn = tb.querySelector('#le-multi-select');
