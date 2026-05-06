@@ -533,10 +533,12 @@ const QUIZLAND_QUESTIONS = {
       answer:0, choices:['やすんでいる','たべている','はしっている','うごけない'] ,
       detail:'ねている あいだに からだは げんきを ためなおして、おおきく なっていくよ！'},
     { level:3, type:'trivia', category:'body',
+      // TODO(2026-05-07): 画像 stage_body_baby_teeth.png 発注中 (codex-followup-baby-teeth.md)。
+      // 配置完了後に img を 'stage_body_baby_teeth.png' に差し替える。 暫定で旧画像を流用 (broken image 回避)。
       img:'stage_body_teeth_bone_compare.png',
-      q:'からだで いちばん かたい ぶぶんは？',
-      answer:2, choices:['ほね','つめ','は','かみのけ'] ,
-      detail:'はの いちばん そとがわは からだの なかで いちばん かたいよ！'},
+      q:'うまれた ばかりの あかちゃんに、 はは ある？',
+      answer:1, choices:['まえばだけ ある','ない','ぜんぶ ある','したのほうだけ ある'],
+      detail:'あかちゃんは はが ない じょうたいで うまれて、 6か月ぐらいで はえはじめるよ。 さいしょは したの まえばから！'},
     { level:3, type:'trivia', category:'body',
       img:'stage_body_baby_adult_bones.png',
       q:'あかちゃんの ほねは おとなより おおい？ すくない？',
