@@ -766,6 +766,17 @@ body.sheet-on .hdr-right .ctrl-btn {
   flex-wrap: wrap;
   max-width: 100%;
 }
+/* count_total が 6 個以上のとき 2 段に折り返す用の縦コンテナ。
+   .item-row を 2 つ縦並びにして、 各行は flex で水平配置・中央寄せ。 */
+.count-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  align-self: center;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
 
 /* color-chip: dotted-slot 風の枠 + 色面
    div でも img でも同じ見た目になるように object-fit / display を指定。 */
@@ -2707,16 +2718,28 @@ function renderOrderColor(stage, q) {
   stage.appendChild(row);
 }
 function renderCountTotal(stage, q) {
-  const row = document.createElement('div');
-  row.className = 'item-row';
-  for (let i = 0; i < q.count; i++) {
-    const img = document.createElement('img');
-    img.className = 'count-item';
-    img.src = QUIZLAND_WORD_IMG + q.item + '.png';
-    img.alt = '';
-    row.appendChild(img);
+  // 順番系の問題 (order_color) は最大 5 個まで横 1 列必須 (左から N 番目を判別する都合)。
+  // count_total は順番関係なし、 6 個以上なら 2 段に折り返して見やすく。
+  // 2026-05-06 設計: count<=5 → 1 段、 count>=6 → 2 段 (上段に ceil(count/2) 個、 下段に残り)。
+  const totalRows = q.count >= 6 ? 2 : 1;
+  const itemsPerRow = Math.ceil(q.count / totalRows);
+  const container = document.createElement('div');
+  container.className = 'count-stack';
+  for (let r = 0; r < totalRows; r++) {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    const start = r * itemsPerRow;
+    const end = Math.min(start + itemsPerRow, q.count);
+    for (let i = start; i < end; i++) {
+      const img = document.createElement('img');
+      img.className = 'count-item';
+      img.src = QUIZLAND_WORD_IMG + q.item + '.png';
+      img.alt = '';
+      row.appendChild(img);
+    }
+    container.appendChild(row);
   }
-  stage.appendChild(row);
+  stage.appendChild(container);
 }
 function renderShapeName(stage, q) {
   const wrap = document.createElement('div');
@@ -3301,6 +3324,8 @@ function ponoJump() {
   av.classList.add('jump');
 }
 
+// editor の「次の問題へ」ボタン (common/layout/layout-editor.js) から呼べるよう window 公開
+window.nextQuestion = nextQuestion;
 function nextQuestion() {
   // debug mode: 未保存のコメント/スクショがあれば先に保存してから次へ進む。
   // _qzPtSaveCurrentNote は QZ_DEBUG_ALL=false / コメント空 + 添付なし / saving 中なら

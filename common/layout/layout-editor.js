@@ -4605,6 +4605,7 @@
       '<div class="le-tb-group">' +
       '<button id="le-chip-preset-save" title="選択中の chip を chip 種別 (with-image / text-only) の preset として保存し、 同種別の他 chip にも自動適用させる" aria-label="chip preset 保存">📌 chip preset 保存</button>' +
       '<button id="le-chip-preset-clear-overrides" title="同種別 chip の個別設定 (chip|N エントリ) を全削除し、 preset 値を全 chip に強制反映" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
+      '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
       '</div>' +
       '<div class="le-tb-group">' +
       '<button id="le-userbox-add" title="矩形追加" aria-label="矩形追加">🆕 矩形追加 OFF</button>' +
@@ -4672,6 +4673,17 @@
     //   値を強制反映。 chip|N が「保存した preset と異なる値」を持ってる場合の救済操作。
     var presetClearBtn = tb.querySelector('#le-chip-preset-clear-overrides');
     if (presetClearBtn) presetClearBtn.addEventListener('click', clearChipOverridesForType);
+    // ⏭ 次の問題へ: editor 中でも quizland の nextQuestion() を呼んで問題切替。
+    //   chip 種別 (with-image / text-only) を切り替えて preset を 2 種類保存可能に。
+    var nextQBtn = tb.querySelector('#le-next-question');
+    if (nextQBtn) nextQBtn.addEventListener('click', function () {
+      if (typeof window.nextQuestion === 'function') {
+        try { window.nextQuestion(); showToast('次の問題へ', 'success'); }
+        catch (e) { showToast('次の問題に進めませんでした: ' + e.message, 'warn'); }
+      } else {
+        showToast('nextQuestion() がこのページで定義されていません', 'warn');
+      }
+    });
 
     // U10: iPad-friendly multi-select toggle
     var msBtn = tb.querySelector('#le-multi-select');
