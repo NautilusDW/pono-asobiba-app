@@ -53,6 +53,46 @@
     }).filter(Boolean);
   }
 
+  /**
+   * chip preset を適用。 saved-layout.json の __chip_presets:
+   *   { withImage: { chip:{w,h,tx,ty}, circle:{...}, illust:{...}, label:{...} },
+   *     textOnly:  { chip:{...}, label:{...}, countNum:{...} } }
+   *
+   * chip の class (.chip-type-with-image / .chip-type-text-only) で種別判定し、
+   * preset の各キーを対応する子要素に applyOne する。
+   * 個別 chip|N エントリは後段の selectors loop で同要素に再適用され上書き勝ち。
+   */
+  function applyChipPresets(presets, root) {
+    if (!presets || typeof presets !== 'object') return;
+    var doc = root || document;
+    var chips = safeQueryAll(doc, '.chip');
+    for (var i = 0; i < chips.length; i++) {
+      var chip = chips[i];
+      var type = chip.classList.contains('chip-type-with-image') ? 'withImage' :
+                 chip.classList.contains('chip-type-text-only')  ? 'textOnly'  : null;
+      if (!type) continue;
+      var preset = presets[type];
+      if (!preset) continue;
+      if (preset.chip)     applyOne(chip, preset.chip);
+      if (preset.circle) {
+        var c = chip.querySelector('.circle');
+        if (c) applyOne(c, preset.circle);
+      }
+      if (preset.illust) {
+        var im = chip.querySelector('.chip-illust');
+        if (im) applyOne(im, preset.illust);
+      }
+      if (preset.label) {
+        var lb = chip.querySelector('.chip-label');
+        if (lb) applyOne(lb, preset.label);
+      }
+      if (preset.countNum) {
+        var n = chip.querySelector('.chip-count-num');
+        if (n) applyOne(n, preset.countNum);
+      }
+    }
+  }
+
   // ---- public API -----------------------------------------------------
 
   /**
@@ -84,7 +124,14 @@
     var selectors = normalizeSelectors(cfg.selectors || cfg.editableSelectors || []);
     var root = scopeRoot || document;
 
-    // 1) per-element w/h/tx/ty
+    // 1a) chip preset 適用 — chip 種別 (.chip-type-with-image / .chip-type-text-only)
+    //     ごとにデフォルト位置・サイズを当てる。 個別 chip|N エントリは後段で上書き。
+    //     2026-05-06 追加: テキストのみ chip と画像付き chip で 2 種類のテンプレート保存。
+    if (data.__chip_presets) {
+      applyChipPresets(data.__chip_presets, root);
+    }
+
+    // 1b) per-element w/h/tx/ty (個別エントリは preset を上書きする)
     selectors.forEach(function (sel) {
       var list = safeQueryAll(root, sel);
       for (var i = 0; i < list.length; i++) {

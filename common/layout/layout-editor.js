@@ -277,6 +277,10 @@
     if (state.zoom !== 1) data.__zoom = state.zoom;
     if (state.gridOn) data.__grid = { size: state.gridSize, on: true };
     if (state.comparison) data.__comparison = state.comparison;
+    // chip preset: window._currentLayoutData.__chip_presets を保全 (saveChipPreset で書き込まれる)
+    if (window._currentLayoutData && window._currentLayoutData.__chip_presets) {
+      data.__chip_presets = window._currentLayoutData.__chip_presets;
+    }
     return data;
   }
 
@@ -330,6 +334,108 @@
         bgImage: el.dataset.bgImage || '',
       };
     });
+  }
+
+  // ====================================================================
+  //  Chip preset (chip-type-with-image / chip-type-text-only)
+  //  Helper for `📌 chip preset 保存` / `🧹 個別設定クリア` toolbar buttons.
+  //  schema: data.__chip_presets = {
+  //    withImage: { chip:{w,h,tx,ty}, circle:{...}, illust:{...}, label:{...}, countNum:{...} },
+  //    textOnly:  { chip:{...}, label:{...}, countNum:{...} }
+  //  }
+  //  layout-applier の applyChipPresets が page render 時に同種別 chip にも適用する。
+  // ====================================================================
+
+  function _readElLayout(el) {
+    if (!el) return null;
+    return {
+      w: el.style.width || '',
+      h: el.style.height || '',
+      tx: el._tx || 0,
+      ty: el._ty || 0,
+    };
+  }
+  function _findSelectedChip() {
+    var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
+    if (sel.length !== 1) return null;
+    var first = sel[0];
+    if (first.classList && first.classList.contains('chip')) return first;
+    // 子要素を選んでた場合は親 .chip に遡る
+    return first.closest ? first.closest('.chip') : null;
+  }
+  function _chipType(chip) {
+    if (!chip || !chip.classList) return null;
+    return chip.classList.contains('chip-type-with-image') ? 'withImage' :
+           chip.classList.contains('chip-type-text-only')  ? 'textOnly'  : null;
+  }
+
+  function saveChipPreset() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var type = _chipType(chip);
+    if (!type) {
+      showToast('chip 種別が判定できません (chip-type-* class なし)', 'warn');
+      return;
+    }
+    var preset = { chip: _readElLayout(chip) };
+    var c = chip.querySelector('.circle');
+    if (c) preset.circle = _readElLayout(c);
+    var im = chip.querySelector('.chip-illust');
+    if (im) preset.illust = _readElLayout(im);
+    var lb = chip.querySelector('.chip-label');
+    if (lb) preset.label = _readElLayout(lb);
+    var n = chip.querySelector('.chip-count-num');
+    if (n) preset.countNum = _readElLayout(n);
+
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    if (!window._currentLayoutData.__chip_presets) window._currentLayoutData.__chip_presets = {};
+    window._currentLayoutData.__chip_presets[type] = preset;
+
+    showToast('chip preset (' + type + ') 保存。 同種別 chip に自動適用されます', 'success');
+    save();
+  }
+
+  function clearChipOverridesForType() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('対象 chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var type = _chipType(chip);
+    if (!type) {
+      showToast('chip 種別が判定できません', 'warn');
+      return;
+    }
+    if (!window._currentLayoutData) {
+      showToast('layout データが読み込まれていません', 'warn');
+      return;
+    }
+    var allChips = Array.from(document.querySelectorAll('.chip'));
+    var indices = [];
+    allChips.forEach(function (ch, i) {
+      if (_chipType(ch) === type) indices.push(i);
+    });
+    var prefixes = ['.chip|', '.chip .circle|', '.chip .chip-illust|', '.chip .chip-label|', '.chip .chip-count-num|'];
+    var deleted = 0;
+    indices.forEach(function (i) {
+      prefixes.forEach(function (p) {
+        var key = p + i;
+        if (window._currentLayoutData.hasOwnProperty(key)) {
+          delete window._currentLayoutData[key];
+          deleted++;
+        }
+      });
+    });
+    if (window.LayoutApplier && state.config) {
+      window.LayoutApplier.apply(window._currentLayoutData, document, {
+        selectors: state.config.editableSelectors || state.config.selectors,
+      });
+    }
+    showToast(type + ' chip の個別設定 ' + deleted + ' 件を削除、 preset 適用', 'success');
+    save();
   }
 
   // ====================================================================
@@ -4497,6 +4603,10 @@
       '<button class="le-align-tb-btn" data-align="dist-v"   title="垂直等間隔" aria-label="垂直等間隔" disabled>⇌</button>' +
       '</div>' +
       '<div class="le-tb-group">' +
+      '<button id="le-chip-preset-save" title="選択中の chip を chip 種別 (with-image / text-only) の preset として保存し、 同種別の他 chip にも自動適用させる" aria-label="chip preset 保存">📌 chip preset 保存</button>' +
+      '<button id="le-chip-preset-clear-overrides" title="同種別 chip の個別設定 (chip|N エントリ) を全削除し、 preset 値を全 chip に強制反映" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
       '<button id="le-userbox-add" title="矩形追加" aria-label="矩形追加">🆕 矩形追加 OFF</button>' +
       // India-2: テキスト追加ツール — クリック → モード ON → canvas クリックで挿入
       '<button id="le-text-add" title="テキスト追加 (クリックでモード ON、再度クリックまたは Esc で OFF)" aria-label="テキスト追加">📝 テキスト OFF</button>' +
@@ -4553,6 +4663,16 @@
     // Victor-2: 🗑️ 削除ボタン
     var deleteBtn = tb.querySelector('#le-delete');
     if (deleteBtn) deleteBtn.addEventListener('click', deleteSelected);
+    // 📌 chip preset 保存: 選択中の chip の現在のレイアウト (chip + 子要素 circle/illust/label/countNum)
+    //   を data.__chip_presets[type] に保存。 type は chip 自体の class (chip-type-with-image /
+    //   chip-type-text-only) で自動判定。 LayoutApplier が次回 render 時に同種別 chip にも適用。
+    var presetSaveBtn = tb.querySelector('#le-chip-preset-save');
+    if (presetSaveBtn) presetSaveBtn.addEventListener('click', saveChipPreset);
+    // 🧹 個別設定クリア: 選択 chip と同種別の他 chip の個別 chip|N エントリを全削除して preset
+    //   値を強制反映。 chip|N が「保存した preset と異なる値」を持ってる場合の救済操作。
+    var presetClearBtn = tb.querySelector('#le-chip-preset-clear-overrides');
+    if (presetClearBtn) presetClearBtn.addEventListener('click', clearChipOverridesForType);
+
     // U10: iPad-friendly multi-select toggle
     var msBtn = tb.querySelector('#le-multi-select');
     if (msBtn) {

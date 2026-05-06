@@ -3028,6 +3028,11 @@ function renderChoices(q) {
     // chip 内の各要素 (circle / illust / label / count-num) はそれぞれ
     // 独立 resizable に登録 (QZ_RESIZABLE_SELECTORS) → editor で個別に
     // 位置・サイズ調整できる。 chip 外枠は別レイヤー。
+    // 種別 class (chip-type-with-image / chip-type-text-only) は LayoutApplier の
+    // __chip_presets 解決で使う (preset → 個別 chip|N の順で適用)。
+    const hasImage = (q.type === 'order_color') ||
+                     (choice && typeof choice === 'object' && choice.image);
+    btn.classList.add(hasImage ? 'chip-type-with-image' : 'chip-type-text-only');
     if (q.type === 'order_color') {
       btn.dataset.color = choice;
       btn.classList.add('has-image'); // 丸 + ラベル のレイアウト
