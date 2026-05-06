@@ -1366,13 +1366,15 @@ body.layout-editor-on .character img {
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(120, 83, 20, 0.25));
 }
-/* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に) */
+/* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に、 320→960 に拡大 2026-05-06) */
 .seikai-stamp {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 320px;
-  height: 320px;
+  width: 960px;
+  height: 960px;
+  max-width: 90vw;
+  max-height: 90vh;
   transform: translate(-50%, -50%) scale(0.4) rotate(-12deg);
   opacity: 0;
   pointer-events: none;
@@ -1390,7 +1392,7 @@ body.layout-editor-on .character img {
   opacity: 1;
 }
 @media (max-width: 768px) {
-  .seikai-stamp { width: 240px; height: 240px; }
+  .seikai-stamp { width: 720px; height: 720px; }
   .result-stamp-img { width: 180px; height: 180px; }
 }
 .modal-title {
@@ -3139,7 +3141,7 @@ function onChoice(idx, btn) {
   if (correct) {
     btn.classList.add('correct');
     playCorrect();
-    showFeedback('やったー！');
+    // 「やったー！」の feedback は seikai スタンプで代替するので削除済 (2026-05-06)
     showCorrectDialogue();
     showSeikaiStamp();
     ponoJump();
