@@ -390,6 +390,9 @@
 
   // 1 chip から chip preset (chip + 全子パーツ) を抽出。
   // illust/countNum/circle/label は要素が存在すれば必ず保存 (バグ修正B)。
+  // ラベルは width を保存しない (= 各ラベルの text content に応じて auto-size、
+  // 「あか」(2 chars) で保存した width を「オレンジ」(4 chars) のラベルに当てると
+  // クリップする問題への対策、 2026-05-06)。
   function _buildPresetFromChip(chip) {
     var preset = { chip: _readElLayout(chip) };
     var c = chip.querySelector('.circle');
@@ -397,7 +400,10 @@
     var im = chip.querySelector('.chip-illust');
     if (im) preset.illust = _readElLayout(im);
     var lb = chip.querySelector('.chip-label');
-    if (lb) preset.label = _readElLayout(lb);
+    if (lb) {
+      preset.label = _readElLayout(lb);
+      preset.label.w = ''; // text 量で auto-size、 固定幅にしない
+    }
     var n = chip.querySelector('.chip-count-num');
     if (n) preset.countNum = _readElLayout(n);
     return preset;
@@ -434,13 +440,28 @@
     types.forEach(function (t) {
       window._currentLayoutData.__chip_presets[t] = _buildPresetFromChip(typeMap[t]);
     });
-    // 即時反映: 個別 override 持ち chip は preset 適用後に上書き勝ちで変わらない (= 個別を保護)。
+    // 保存元 chip 自身の個別 entry は削除 → preset が visual の真実になる。
+    // これをしないと、 preset 適用後に chip 自身の legacy 個別 entry が上書きして
+    // 元位置に戻るバグが発生する (2026-05-06 修正)。
+    var allChips = Array.from(document.querySelectorAll('.chip'));
+    var prefixes = ['.chip|', '.chip .circle|', '.chip .chip-illust|', '.chip .chip-label|', '.chip .chip-count-num|'];
+    types.forEach(function (t) {
+      var chip = typeMap[t];
+      var idx = allChips.indexOf(chip);
+      if (idx < 0) return;
+      prefixes.forEach(function (p) {
+        var key = p + idx;
+        if (window._currentLayoutData.hasOwnProperty(key)) delete window._currentLayoutData[key];
+        if (state.individualOverrides) state.individualOverrides.delete(key);
+      });
+    });
+    // 即時反映: 個別 override 持ち他 chip は preset 適用後に上書き勝ちで変わらない (= 個別を保護)。
     if (window.LayoutApplier && state.config) {
       window.LayoutApplier.apply(window._currentLayoutData, document, {
         selectors: state.config.editableSelectors || state.config.selectors,
       });
     }
-    showToast('preset 保存: ' + types.join(', ') + ' (個別設定済 chip は 🧹 で全反映)', 'success');
+    showToast('preset 保存: ' + types.join(', ') + ' (保存元 chip の個別エントリは削除、 他は 🧹 で全反映)', 'success');
     save();
     refreshSelectionUI();
     updateNumericPanel();
