@@ -1072,6 +1072,13 @@ body.layout-editor-on .stage-pono { display: none; }
 }
 .chip.chip-with-image.txt-medium .chip-illust-label { font-size: 22px; }
 .chip.chip-with-image.txt-long   .chip-illust-label { font-size: 18px; }
+/* chip-label を block 化して getBoundingClientRect が正確な box を返すように。
+   デフォルト inline span だと transform 適用時に境界がブレる + alignment 計算ズレ。
+   2026-05-06 修正: layout editor で label 整列が変な位置に飛ぶバグへの対策。 */
+.chip .chip-label {
+  display: inline-block;
+  text-align: center;
+}
 
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
 .chip:active,
