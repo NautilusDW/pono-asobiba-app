@@ -105,7 +105,10 @@
    * data-idx (0..3) と一致する slot 内の preset を子要素に applyOne する。
    * 2026-05-07: 4 slot 別に拡張。 各 chip ごとに別位置を保存できる。
    * 旧フラット形式は _normalizeChipPresets が読込時に 4 slot 全部に deep clone する。
-   * preset.chip は **w/h のみ** (tx/ty なし)。 chip 自体の cell 配置は .chip|N 個別 entry の責任。
+   * preset.chip は w/h に加え tx/ty を持てる (2026-05-07 v784 拡張)。
+   *   - 旧形式 (w/h のみ) との互換: tx/ty が undefined の場合は適用しない (既存 transform 維持)。
+   *   - 新形式 (tx/ty あり) では preset.chip が chip の絶対位置の真実となり、
+   *     editor 側で対応する .chip|N 個別 entry が削除される (saveChipPreset)。
    */
   function applyChipPresets(presets, root) {
     if (!presets || typeof presets !== 'object') return;
@@ -123,8 +126,15 @@
       var slotPreset = preset[String(slot)];
       if (!slotPreset) continue;
       if (slotPreset.chip) {
-        // preset.chip は w/h のみ適用。 tx/ty は無視 (chip の cell 配置は .chip|N 個別 entry の責任)。
-        applyOne(chip, { w: slotPreset.chip.w || '', h: slotPreset.chip.h || '' });
+        // preset.chip は w/h に加え tx/ty も適用 (新形式)。
+        // 旧形式 (tx/ty 無し) では 'tx'/'ty' キーを s に含めないことで applyOne の
+        // 既存 transform 維持分岐に入る (= 急に位置が飛ばない)。
+        var chipStyle = { w: slotPreset.chip.w || '', h: slotPreset.chip.h || '' };
+        if ('tx' in slotPreset.chip || 'ty' in slotPreset.chip) {
+          chipStyle.tx = slotPreset.chip.tx || 0;
+          chipStyle.ty = slotPreset.chip.ty || 0;
+        }
+        applyOne(chip, chipStyle);
       }
       if (slotPreset.circle) {
         var c = chip.querySelector('.circle');

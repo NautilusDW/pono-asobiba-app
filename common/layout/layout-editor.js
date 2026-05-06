@@ -395,15 +395,21 @@
   }
 
   // 1 chip から chip preset (chip.w/h + 全子パーツ) を抽出。
-  // 2026-05-06 改: preset.chip は w/h のみ。 tx/ty は含めない (= 各 chip の cell 配置は
-  //   .chip|N 個別 entry の責任)。 これにより 📌 押下で他 chip の絶対位置が変わるバグを根治。
+  // 2026-05-07 改 (v784): preset.chip に tx/ty も含める。 saveChipPreset で
+  //   対応する .chip|N 個別 entry を削除することで、 preset 値が「そのチップの真実」
+  //   になる (= 個別 entry が preset を上書きする問題を根治)。
   // illust/countNum/circle/label は要素が存在すれば必ず保存。
   // ラベルは width を保存しない (= 各ラベルの text content に応じて auto-size、
   // 「あか」(2 chars) で保存した width を「オレンジ」(4 chars) のラベルに当てると
   // クリップする問題への対策)。
   function _buildPresetFromChip(chip) {
     var preset = {
-      chip: { w: chip.style.width || '', h: chip.style.height || '' },
+      chip: {
+        w: chip.style.width || '',
+        h: chip.style.height || '',
+        tx: chip._tx || 0,
+        ty: chip._ty || 0,
+      },
     };
     var c = chip.querySelector('.circle');
     if (c) preset.circle = _readElLayout(c);
@@ -476,12 +482,37 @@
       showToast('chip 種別/slot が判定できません (chip-type-* class なし or DOM 順 4 個超過)', 'warn');
       return;
     }
-    // 2026-05-07: 「同種別の他 chip の子要素 individual entry を剥がす」処理は廃止。
-    //   preset と individual の共存を許す方針へ (4-slot 化で不要に)。
-    // 2026-05-06 fix (維持): ドラッグで更新された chip 位置を _currentLayoutData に同期。
-    //   これをしないと apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
-    //   ユーザーのドラッグが消える。
+    // 2026-05-07 v784: 📌 で preset 保存した chip の個別 entry を削除する。
+    //   個別 entry (= .chip|N および .chip .circle|N 等) は preset を上書きするため、
+    //   残ったままだと「保存しても他問題に反映しない」「同じ問題に戻ったら元に戻る」
+    //   状態になる (preset → 個別 entry の順で apply され後勝ち)。
+    //   削除対象は「📌 押下で保存した chip の slot」のみ。 他 chip は触らない
+    //   (= ユーザーが意図しない preset 化の副作用を防ぐ)。
+    var savedSlots = {}; // { N: true } — 保存した chip の slot index 集合
+    saved.forEach(function (s) { savedSlots[s.slot] = true; });
+    var INDIVIDUAL_KEYS_FOR_SLOT = function (n) {
+      return [
+        '.chip|' + n,
+        '.chip .circle|' + n,
+        '.chip .chip-illust|' + n,
+        '.chip .chip-label|' + n,
+        '.chip .chip-count-num|' + n,
+      ];
+    };
+    // 保存対象 chip の個別 entry を data + state.individualOverrides から削除
+    Object.keys(savedSlots).forEach(function (slotKey) {
+      var n = Number(slotKey);
+      INDIVIDUAL_KEYS_FOR_SLOT(n).forEach(function (key) {
+        if (data.hasOwnProperty(key)) delete data[key];
+        if (state.individualOverrides) state.individualOverrides.delete(key);
+      });
+    });
+    // 2026-05-06 fix (維持): 保存対象**外**の chip については、 ドラッグで更新された
+    //   位置を _currentLayoutData に同期する (個別 entry を維持)。 これをしないと
+    //   apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
+    //   その chip のドラッグが消える。
     Array.from(document.querySelectorAll('.chip')).forEach(function (chip, idx) {
+      if (savedSlots[idx]) return; // 保存対象 chip は個別 entry を作らない
       var key = '.chip|' + idx;
       data[key] = {
         w: chip.style.width || '',
