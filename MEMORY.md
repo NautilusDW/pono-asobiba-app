@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T17:29:02Z - quizland HUD進捗カウンターを半角に戻す (toFullWidthラップ除去, CACHE_VERSION 789→790)
+- **タスク**: quizland HUD進捗カウンターを半角に戻す (toFullWidthラップ除去, CACHE_VERSION 789→790)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 50
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 5, "Agent": 20, "ToolSearch": 1, "Bash": 20, "Edit": 4}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-06T17:05:16Z - quizland: ヒント/結果メッセージ/HUD/q.word/answer reveal の半角文字を全角化 (sw v789)
 - **タスク**: quizland: ヒント/結果メッセージ/HUD/q.word/answer reveal の半角文字を全角化 (sw v789)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Read": 2, "Agent": 5, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-06T15:48:19Z - quizland chip preset を 4-slot (0/1/2/3) 構造に拡張: applier に _normalizeChipPresets 追加(deep clone)、 editor で saveChipPreset/clearChipOverridesForType を slot 単位で動作化、 数値パネルの preset 表示も slot 別ネスト + max-height/scroll、 sw v781
-- **タスク**: quizland chip preset を 4-slot (0/1/2/3) 構造に拡張: applier に _normalizeChipPresets 追加(deep clone)、 editor で saveChipPreset/clearChipOverridesForType を slot 単位で動作化、 数値パネルの preset 表示も slot 別ネスト + max-height/scroll、 sw v781
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 4
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Read": 2, "Agent": 2}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
