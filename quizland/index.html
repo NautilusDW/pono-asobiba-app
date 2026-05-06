@@ -2494,6 +2494,7 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.answer-tray',             'wh', '回答トレイ'],
   ['.chip',                    'wh', '回答チップ'],
   ['.chip .circle',            'wh', 'チップ丸'],
+  ['.chip .chip-label',        'wh', 'チップ ラベル'],
   ['.hint',                    'wh', 'ヒント'],
   ['.character',               'wh', 'キャラクター'],
   ['.char-hint',               'wh', 'キャラ吹き出し'],
@@ -3044,6 +3045,7 @@ function renderChoices(q) {
       wrap.appendChild(img);
       btn.appendChild(wrap);
       const label = document.createElement('span');
+      label.className = 'chip-label';
       label.textContent = QUIZLAND_COLORS[choice].name;
       btn.appendChild(label);
     } else if (q.type === 'count_total') {
@@ -3064,7 +3066,7 @@ function renderChoices(q) {
       btn.appendChild(img);
       if (choice.text) {
         const label = document.createElement('span');
-        label.className = 'chip-illust-label';
+        label.className = 'chip-illust-label chip-label';
         label.textContent = choice.text;
         btn.appendChild(label);
         const sizeCls = chipSizeClass(choice.text);
@@ -3073,6 +3075,7 @@ function renderChoices(q) {
     } else {
       const text = (choice && typeof choice === 'object') ? choice.text : choice;
       const label = document.createElement('span');
+      label.className = 'chip-label';
       label.textContent = text;
       btn.appendChild(label);
       const sizeCls = chipSizeClass(text);
