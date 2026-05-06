@@ -216,7 +216,16 @@ body.sheet-on .answer-tray {
 }
 
 /* 押下状態: チップごとに対応する四分割の pressed 画像を当てる。
-   chip の data-idx (0=TL, 1=TR, 2=BL, 3=BR) で 4 種を出し分け。 */
+   chip の data-idx (0=TL, 1=TR, 2=BL, 3=BR) で 4 種を出し分け。
+   sheet-on モードでは chip 自体の border / box-shadow / transform / 黄色グラデ
+   (.chip.pressed の base ルール) を全部消して、 ピュアに pressed 画像だけを
+   元の位置・スケールで重ねる (元の Fukuro_frame_002 と同じ位置)。 */
+body.sheet-on .chip.pressed,
+body.sheet-on .chip:active {
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
 body.sheet-on .chip.pressed[data-idx="0"] {
   background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png') center / 100% 100% no-repeat !important;
 }
