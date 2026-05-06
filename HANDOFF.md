@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-06 - [batch:08-playtest-replacements] Claude: playtest コメント由来の画像差し替え/新規生成 14 件の followup md を `quizland/data/_review/codex-followup-playtest-replacements.md` に確定 (commit 3fe9d70 / sw v779)。 alpha 系 9 件は別スレッド対応済として除外、 #15 opposite/tsuyoi は既存画像を使うため除外。 内訳: body 6 件 (tongue / skin_wrap / baby_adult_bones / shivering / thumbprint / eye_closed) / trivia 3 件 (earthworm 地面 / huge_creatures シルエット多数 / fish_silhouette) / weather 5 件 (snow_landscape / distant_mist / river_steam / winter_breath / falling_snow)。 注意ポイント: `body_shivering.png` は答え (寒い) のネタバレ防止で**普段着指定・冬服/雪/白息禁止**、 `trivia_huge_creatures` は**大型動物のみ**で小型 (キツネ/ペンギン/カピバラ) 不可、 `tongue` は他の emoji_name 体パーツと構図統一 (口元クローズアップのみ)。 納品先 `tmp/alpha_pending/alpha/08/` で user 手作業 alpha 後配置 → Claude 側で配線。 (by Claude)
 - 2026-05-06 - [batch:06-trivia-reveal] Codex: trivia 4 問のリビール UX 用 5 シート / 11 個別 PNG 生成に着手。仕様読了、参照画像確認、生成担当分割とクロスレビューを開始。 (by Codex)
 - 2026-05-06 - [batch:06-trivia-reveal] Codex: trivia 4 問のリビール UX 用画像 11 個別 PNG を tmp/alpha_pending/alpha/06/ に納品完了。 配置・コード反映 (questions.js 4 問編集 + image-chip スキーマ変更 + sw bump) は Claude 側で対応予定。 (by Codex)
 - 2026-05-06 - [batch:06-trivia-reveal] Codex: follow-up 修正として `tako_q.png` / `tako_3hearts.png` のタコを 8 本足がより明確に読める版へ差し替え。 納品先は同じ tmp/alpha_pending/alpha/06/。 (by Codex)
