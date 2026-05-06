@@ -96,6 +96,30 @@
     "tx": -101.49364669183349,
     "ty": -41.00074469007843
   },
+  ".chip .chip-count-num|0": {
+    "w": "",
+    "h": "",
+    "tx": 0,
+    "ty": 0
+  },
+  ".chip .chip-count-num|1": {
+    "w": "",
+    "h": "",
+    "tx": -6.721433555750562,
+    "ty": 0
+  },
+  ".chip .chip-count-num|2": {
+    "w": "",
+    "h": "",
+    "tx": 0,
+    "ty": -13.442867111501124
+  },
+  ".chip .chip-count-num|3": {
+    "w": "",
+    "h": "",
+    "tx": -6.721433555750562,
+    "ty": -13.442867111501124
+  },
   ".character|0": {
     "w": "320px",
     "h": "319px",
@@ -247,6 +271,10 @@
   },
   "__individual_chip_overrides": [
     ".chip|0",
-    ".chip|2"
+    ".chip|2",
+    ".chip .chip-count-num|1",
+    ".chip .chip-count-num|3",
+    ".chip .chip-count-num|0",
+    ".chip .chip-count-num|2"
   ]
 }
