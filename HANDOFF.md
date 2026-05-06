@@ -48,6 +48,7 @@
 - 2026-05-02 - Quizland imagegen workflow note (by Codex): 次回以降、ユーザー明示がない限り画像生成は GPT Image 2 を使う。メイン土台フレームは個別生成せず、16:9 または 21:9 のベタ塗り背景シートで一括生成し、背景/alpha を抜いて各 bbox に切り出す。上に載るフレーム・装飾・アイコン類は後段で生成する。目的はフレーム太さとデザインの不一致を避けること。
 - 2026-05-03 - sw.js CACHE_VERSION bump needed (by Codex): `assets/preview-placeholders/hint.png` の右上フクロウ用空吹き出し差し替えに加えて、`assets/preview-placeholders/board.png` の左右内側紙面を補修したため、Claude 側で `sw.js` のバンプ確認をお願いします。
 - 2026-05-06 - [batch:05-opposite-alpha] Claude: opposite カテゴリ 23 PNG をアルファ抜き済み版で差し替え (assets/images/quizland/illust/stage/opposite/)、tasukeru/mae/kaeru は alpha 版未納のためスキップ、karui_omoi は前回処理済。sw.js CACHE_VERSION 776。クロスレビュー2エージェント PASS。 (by Claude)
+- 2026-05-06 - [batch:05-opposite-alpha-supp] Claude: 補助配置 4 PNG (dekakeru 訂正 ← 131123、新規 kaeru ← 131704、新規 tasukeru ← 201942、新規 mae ← 140417 = tatsu と byte-identical)。previously-blocked 3 件 (mae/kaeru/tasukeru) すべて解消。sw.js CACHE_VERSION 777。クロスレビュー PASS。 (by Claude)
 
 ---
 
