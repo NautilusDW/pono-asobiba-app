@@ -12,6 +12,8 @@
 
 ---
 
+- 2026-05-06 - [batch:07-zukan-search-backgrounds] Codex: zukan search backgrounds 3 scene generation started (`leaf_glow_forest_field_16x9.png`, `dew_pond_field_16x9.png`, `mushroom_forest_field_16x9.png`). Will keep background-only rules, save under `assets/zukan/search/`, and request `sw.js` CACHE_VERSION bump from Claude after delivery. (by Codex)
+
 ## Active (進行中 / 未着手)
 
 - 2026-05-06 - [batch:06-trivia-reveal] Codex: trivia 4 問のリビール UX 用 5 シート / 11 個別 PNG 生成に着手。仕様読了、参照画像確認、生成担当分割とクロスレビューを開始。 (by Codex)
