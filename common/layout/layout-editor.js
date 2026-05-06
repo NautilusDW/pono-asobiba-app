@@ -5092,6 +5092,13 @@
                   !document.getElementById('qz-playtest-panel')) {
                 window._qzPtBuildPanel();
               }
+              // editor の通常セッションは 5 問 playlist のままなので、 全 169 問に
+              // 構築し直す。 _qzInitFullPlaylist は現在の問題の index を新 playlist
+              // 内で再特定して滑らかに切替える (画面のチラつき防止)。
+              if (typeof window._qzInitFullPlaylist === 'function' &&
+                  !window.QZ_DEBUG_ALL) {
+                window._qzInitFullPlaylist();
+              }
               if (typeof window.updateDebugNav === 'function') window.updateDebugNav();
             } catch (e) { console.warn('[playtest] build failed', e); }
           }

@@ -4114,6 +4114,47 @@ try {
   window.updateDebugNav = updateDebugNav;
 } catch (_) {}
 
+// editor 内 🧪 Playtest ON のときに、 全 169 問の playlist を構築し直す。
+// ?debug=all で起動したときと同等の playlist 状態にするための共通関数。
+// 現在表示中の問題と同じ問題が新 playlist に含まれていれば、 questionIdx を
+// その index に更新するだけで再 loadQuestion せず滑らかに切替える (画面のチラつき防止)。
+// 含まれていなければ idx=0 にリセットして先頭問題を loadQuestion する。
+function _qzInitFullPlaylist() {
+  // 全カテゴリを ON
+  ALL_CATS.forEach(function (c) { selectedCategories[c] = true; });
+  // 現在の問題の jump key (cat + level + idx) を控えておく
+  var prevKey = null;
+  if (currentQ) {
+    prevKey = (currentQ._cat || '') + '|' + (currentQ.level || '?') + '|' +
+              (currentQ._idx != null ? currentQ._idx : '?');
+  }
+  // 全問固定順 playlist を構築
+  playlist = buildDebugPlaylist();
+  totalQuestions = playlist.length;
+  correctCount = 0;
+  // 現在問題の new index を探す
+  var newIdx = -1;
+  if (prevKey) {
+    for (var i = 0; i < playlist.length; i++) {
+      var q = playlist[i];
+      var key = (q._cat || '') + '|' + (q.level || '?') + '|' +
+                (q._idx != null ? q._idx : '?');
+      if (key === prevKey) { newIdx = i; break; }
+    }
+  }
+  if (newIdx >= 0) {
+    // 滑らか切替: 同じ問題なので loadQuestion せず index だけ更新
+    questionIdx = newIdx;
+  } else {
+    // 一致なし: 先頭にリセットして loadQuestion
+    questionIdx = 0;
+    if (playlist.length > 0) {
+      try { loadQuestion(playlist[0]); } catch (_) {}
+    }
+  }
+}
+try { window._qzInitFullPlaylist = _qzInitFullPlaylist; } catch (_) {}
+
 (function _qzDebugInit() {
   if (!QZ_DEBUG_ALL) return;
   // body にクラス付与 → CSS でナビ表示
