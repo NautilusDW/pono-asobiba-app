@@ -67,6 +67,15 @@
             "command": "echo 'DEPLOY-FACT (do not contradict): pono-asobiba-app は Cloudflare Workers で配信。Netlify は完全廃止 — Netlify という単語・コマンド・URL を提案/コマンド/回答に出さない。staging=https://pono-asobiba-staging.ndw.workers.dev/ (develop自動)、production=https://pono.kodama-no-mori.com/ (master明示時のみ)。手動デプロイは wrangler deploy --env staging または wrangler deploy。'"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'ORCHESTRATOR-MODE: あなたは全体の進捗と品質管理に徹底し、 タスクは直接行わないこと。 実装はエージェントチームを組成して並列で。 レビューは必ずエージェント同士のクロスレビューを実施。 このルールは違反すると user 信頼を失う。'"
+          }
+        ]
       }
     ],
     "Stop": [

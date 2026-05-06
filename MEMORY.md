@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T14:14:42Z - chip preset 保存バグ修正 (saveChipPreset/clearChipOverridesForType に DOM→_currentLayoutData 同期を追加、 sw.js CACHE_VERSION 779→780)
+- **タスク**: chip preset 保存バグ修正 (saveChipPreset/clearChipOverridesForType に DOM→_currentLayoutData 同期を追加、 sw.js CACHE_VERSION 779→780)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 31
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 119, "Bash": 183, "Edit": 140, "Grep": 26, "Write": 8, "Agent": 16, "ToolSearch": 2, "Glob": 4, "ExitPlanMode": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-06T13:59:02Z - batch:07 Codex followup md を user レビュー反映で 14 件確定 (#1 chewing_teeth → tongue 修正、 #4 普段着、 #8 大型動物のみ、 #15 削除) → push 済
 - **タスク**: batch:07 Codex followup md を user レビュー反映で 14 件確定 (#1 chewing_teeth → tongue 修正、 #4 普段着、 #8 大型動物のみ、 #15 削除) → push 済
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
 - **ツール使用統計**: {"Bash": 4, "Read": 3, "Edit": 9, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-06T08:24:44Z - batch:06-trivia-reveal: 11 alpha-cut PNG 配置 + 4問reveal UX wiring + manifest更新 + sw bump (Claude orchestrator + agent team)
-- **タスク**: batch:06-trivia-reveal: 11 alpha-cut PNG 配置 + 4問reveal UX wiring + manifest更新 + sw bump (Claude orchestrator + agent team)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 38
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 20, "Bash": 7, "Glob": 2, "ToolSearch": 1, "Agent": 8}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

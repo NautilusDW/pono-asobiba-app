@@ -461,6 +461,18 @@
         });
       });
     });
+    // 2026-05-06 fix: ドラッグで更新された chip 位置を _currentLayoutData に同期。
+    //   これをしないと apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
+    //   ユーザーのドラッグが消える。
+    Array.from(document.querySelectorAll('.chip')).forEach(function (chip, idx) {
+      var key = '.chip|' + idx;
+      window._currentLayoutData[key] = {
+        w: chip.style.width || '',
+        h: chip.style.height || '',
+        tx: chip._tx || 0,
+        ty: chip._ty || 0,
+      };
+    });
     // 即時反映: chip 自体の絶対位置は個別 entry で保護されているので、 他 chip が動かない。
     if (window.LayoutApplier && state.config) {
       window.LayoutApplier.apply(window._currentLayoutData, document, {
@@ -525,6 +537,18 @@
           }
         }
       });
+    });
+    // 2026-05-06 fix: ドラッグで更新された chip 位置を _currentLayoutData に同期。
+    //   これをしないと apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
+    //   ユーザーのドラッグが消える。
+    Array.from(document.querySelectorAll('.chip')).forEach(function (chip, idx) {
+      var key = '.chip|' + idx;
+      window._currentLayoutData[key] = {
+        w: chip.style.width || '',
+        h: chip.style.height || '',
+        tx: chip._tx || 0,
+        ty: chip._ty || 0,
+      };
     });
     if (window.LayoutApplier && state.config) {
       window.LayoutApplier.apply(window._currentLayoutData, document, {
