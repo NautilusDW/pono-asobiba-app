@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T10:31:39Z - layout-editor: chip preset 機能拡張 + 個別保存能動化 (clearChipOverridesForType バグ修正、マルチセレクト対応、絶対位置/preset 表示、個別 override 赤枠、sw v775)
+- **タスク**: layout-editor: chip preset 機能拡張 + 個別保存能動化 (clearChipOverridesForType バグ修正、マルチセレクト対応、絶対位置/preset 表示、個別 override 赤枠、sw v775)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 87
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 23, "Read": 24, "Edit": 22, "ToolSearch": 1, "Grep": 17}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-06T09:38:09Z - AGENTS.md 拡充: GPT Image 2 only / HANDOFF 文字化け / 重複チェック義務 / DoD / コミット規約 / エラー報告 / 仕様確認 / プロジェクト構造 / データファイル権限分界、+memory cost ルールを Codex 限定にスコープ訂正
 - **タスク**: AGENTS.md 拡充: GPT Image 2 only / HANDOFF 文字化け / 重複チェック義務 / DoD / コミット規約 / エラー報告 / 仕様確認 / プロジェクト構造 / データファイル権限分界、+memory cost ルールを Codex 限定にスコープ訂正
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 177, "Read": 92, "Glob": 3, "Grep": 17, "Edit": 95, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 23}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-05T09:34:28Z - quizland order_color の .chip .circle を CSS gradient から color_dot PNG (watercolor 風) に切替、 PNG 不存在時は CSS gradient へ自動 fallback
-- **タスク**: quizland order_color の .chip .circle を CSS gradient から color_dot PNG (watercolor 風) に切替、 PNG 不存在時は CSS gradient へ自動 fallback
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 421
-- **エラー数**: 21
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 176, "Read": 92, "Glob": 3, "Grep": 17, "Edit": 95, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 22}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
