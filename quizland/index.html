@@ -2779,7 +2779,7 @@ function renderEmojiName(stage, q) {
   if (q.hint && q.img) {
     const hint = document.createElement('div');
     hint.className = 'emoji-hint';
-    hint.textContent = '💡 ' + q.hint;
+    hint.textContent = '💡 ' + toFullWidth(q.hint);
     hint.style.opacity = '0';
     hint.style.transition = 'opacity 0.5s';
     wrap.appendChild(hint);
@@ -2816,7 +2816,7 @@ function renderOpposite(stage, q) {
     const wrap = document.createElement('div');
     wrap.id = 'opposite-word-text';
     wrap.className = 'opposite-display';
-    wrap.textContent = q.word;
+    wrap.textContent = toFullWidth(q.word);
     container.appendChild(wrap);
   }
   stage.appendChild(container);
@@ -2847,7 +2847,7 @@ function revealAnswer(q) {
     const ansText = (typeof q.choices[q.answer] === 'object')
       ? q.choices[q.answer].text
       : q.choices[q.answer];
-    txtEl.textContent = ansText;
+    txtEl.textContent = toFullWidth(ansText);
   }
 }
 
@@ -3214,8 +3214,8 @@ function setupNarration(q) {
 }
 
 function updateHUD() {
-  document.getElementById('q-num').textContent = (questionIdx + 1);
-  document.getElementById('q-total').textContent = totalQuestions;
+  document.getElementById('q-num').textContent = toFullWidth(String(questionIdx + 1));
+  document.getElementById('q-total').textContent = toFullWidth(String(totalQuestions));
   const prog = document.getElementById('hud-progress');
   prog.innerHTML = '';
   // デバッグ全問モードは 169 個ドットを並べると HUD が破綻するので、
@@ -3390,8 +3390,8 @@ function showResult() {
     '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
   document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
   document.getElementById('result-msg').textContent = cleared
-    ? totalQuestions + 'もんちゅう ' + correctCount + 'もん せいかい！'
-    : totalQuestions + 'もんちゅう ' + correctCount + 'もん せいかい。\nもういちど やってみよう！';
+    ? toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい！'
+    : toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい。\nもういちど やってみよう！';
   document.getElementById('result-overlay').classList.remove('hidden');
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
