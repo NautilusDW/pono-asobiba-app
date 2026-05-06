@@ -220,22 +220,28 @@ body.sheet-on .answer-tray {
    sheet-on モードでは chip 自体の border / box-shadow / transform / 黄色グラデ
    (.chip.pressed の base ルール) を全部消して、 ピュアに pressed 画像だけを
    元の位置・スケールで重ねる (元の Fukuro_frame_002 と同じ位置)。 */
+/* sheet-on モードでは全状態で chip 自体の transform / transition / animation を完全停止。
+   テキストや子要素が押下時にチップごと移動する元の動き (translateY+scale, popIn, shake) を抑止し、
+   wood frame と pressed 画像をピクセル単位で揃ったまま維持する。 */
+body.sheet-on .chip,
 body.sheet-on .chip.pressed,
-body.sheet-on .chip:active {
-  border-color: transparent !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-/* 正解 / 不正解 の chip 自体の色付き背景 (緑 / ピンク+赤) も削除。
-   フィードバックは効果音 + 博士のセリフ + 中央のスタンプ画像で十分。 */
+body.sheet-on .chip:active,
 body.sheet-on .chip.correct,
 body.sheet-on .chip.wrong {
-  background: none !important;
-  background-color: transparent !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
   border-color: transparent !important;
   box-shadow: none !important;
-  transform: none !important;
-  animation: none !important;
+}
+/* 正解 / 不正解 の chip 自体の色付き背景 (緑 / ピンク+赤) は削除 (フィードバックは
+   効果音 + 博士セリフ + 中央 seikai スタンプ + pressed 画像維持で十分)。
+   ただし pressed 画像 [data-idx] は別ルールで上書きされるので、 ここで background を
+   none にしておく — pressed 画像ルールの specificity が高いので問題なし。 */
+body.sheet-on .chip.correct:not([data-idx]),
+body.sheet-on .chip.wrong:not([data-idx]) {
+  background: none !important;
+  background-color: transparent !important;
 }
 /* 押下中だけでなく、 正解/不正解後も「どこを押したか」を示すため
    .correct / .wrong 状態でも同じ pressed 画像を維持 (次の問題で chip は再生成されるので
