@@ -215,6 +215,21 @@ body.sheet-on .answer-tray {
   box-shadow: none;
 }
 
+/* 押下状態: チップごとに対応する四分割の pressed 画像を当てる。
+   chip の data-idx (0=TL, 1=TR, 2=BL, 3=BR) で 4 種を出し分け。 */
+body.sheet-on .chip.pressed[data-idx="0"] {
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png') center / 100% 100% no-repeat !important;
+}
+body.sheet-on .chip.pressed[data-idx="1"] {
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TR.png') center / 100% 100% no-repeat !important;
+}
+body.sheet-on .chip.pressed[data-idx="2"] {
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BL.png') center / 100% 100% no-repeat !important;
+}
+body.sheet-on .chip.pressed[data-idx="3"] {
+  background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BR.png') center / 100% 100% no-repeat !important;
+}
+
 /* color-chip: order_color の stage 用 PNG (img) は watercolor 風のため、
    ベースの白枠 + box-shadow を sheet-on モードでは消して画像を素のまま見せる。
    PNG にエッジ装飾が入っているので二重縁になるのを防ぐ。 */
