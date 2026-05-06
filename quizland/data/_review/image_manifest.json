@@ -3548,6 +3548,26 @@
       ]
     },
     {
+      "id": "stage_body_eye_closed",
+      "save_path": "assets/images/quizland/illust/stage/stage_body_eye_closed.png",
+      "jp_labels": [
+        "まばたき",
+        "め"
+      ],
+      "usage": [
+        "stage"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "stage_body_eye_closed のステージ用情景イラスト。両目をぎゅっと閉じた子どもの顔のクローズアップ (まばたき問題用)。",
+      "alternatives": [
+        "assets/images/quizland/illust/choice/face_eye.png"
+      ],
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
+    },
+    {
       "id": "stage_body_heart_pump",
       "save_path": "assets/images/quizland/illust/stage/stage_body_heart_pump.png",
       "jp_labels": [
@@ -3561,6 +3581,25 @@
       "alternatives": [
         "assets/images/quizland/illust/choice/heart_organ.png"
       ],
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
+    },
+    {
+      "id": "stage_body_kasabuta",
+      "save_path": "assets/images/quizland/illust/stage/stage_body_kasabuta.png",
+      "jp_labels": [
+        "かさぶた",
+        "ひざ",
+        "けが"
+      ],
+      "usage": [
+        "stage"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "stage_body_kasabuta のステージ用情景イラスト。膝に擦り傷 (薄茶色のかさぶた) がある男の子が座っている (かさぶた問題用)。",
+      "alternatives": [],
       "status": "generated",
       "context_tags": [
         "body"
@@ -3605,6 +3644,24 @@
       ]
     },
     {
+      "id": "stage_body_shivering",
+      "save_path": "assets/images/quizland/illust/stage/stage_body_shivering.png",
+      "jp_labels": [
+        "ふるえ",
+        "さむい"
+      ],
+      "usage": [
+        "stage"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "stage_body_shivering のステージ用情景イラスト。普段着の男の子がガクガクと震えている (さむさで震える問題用、 冬服/雪/白息は答えのネタバレ防止で禁止)。",
+      "alternatives": [],
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
+    },
+    {
       "id": "stage_body_teeth_bone_compare",
       "save_path": "assets/images/quizland/illust/stage/stage_body_teeth_bone_compare.png",
       "jp_labels": [
@@ -3621,6 +3678,26 @@
         "assets/images/quizland/illust/choice/bone.png",
         "assets/images/quizland/illust/choice/teeth.png",
         "assets/images/quizland/illust/stage/stage_body_chewing_teeth.png"
+      ],
+      "status": "generated",
+      "context_tags": [
+        "body"
+      ]
+    },
+    {
+      "id": "stage_body_thumbprint",
+      "save_path": "assets/images/quizland/illust/stage/stage_body_thumbprint.png",
+      "jp_labels": [
+        "しもん",
+        "ゆび"
+      ],
+      "usage": [
+        "stage"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "stage_body_thumbprint のステージ用情景イラスト。親指のクローズアップで指紋の渦巻き模様がはっきり見える (しもん問題用)。",
+      "alternatives": [
+        "assets/images/quizland/illust/choice/moyou.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -3907,6 +3984,26 @@
       "status": "generated",
       "context_tags": [
         "bug"
+      ]
+    },
+    {
+      "id": "stage_trivia_fish_silhouette",
+      "save_path": "assets/images/quizland/illust/stage/stage_trivia_fish_silhouette.png",
+      "jp_labels": [
+        "さかな",
+        "シルエット"
+      ],
+      "usage": [
+        "stage"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "stage_trivia_fish_silhouette のステージ用情景イラスト。一般的な魚 1 匹の灰色シルエット (世界一おおきい魚問題用、 答えのネタバレ防止)。",
+      "alternatives": [
+        "assets/images/quizland/illust/stage/stage_trivia_ocean_silhouettes_4.png"
+      ],
+      "status": "generated",
+      "context_tags": [
+        "trivia"
       ]
     },
     {
@@ -4466,6 +4563,24 @@
         "assets/images/ocean/Thunder/Thunder_normal_1.png",
         "assets/images/ocean/Thunder_cloud/Thunder_cloud_normal_1.png"
       ],
+      "status": "generated",
+      "context_tags": [
+        "weather"
+      ]
+    },
+    {
+      "id": "stage_weather_winter_breath",
+      "save_path": "assets/images/quizland/illust/stage/stage_weather_winter_breath.png",
+      "jp_labels": [
+        "ふゆ",
+        "しろい いき"
+      ],
+      "usage": [
+        "stage"
+      ],
+      "source_sheet": null,
+      "subject_detailed": "stage_weather_winter_breath のステージ用情景イラスト。冬の街 (家・街灯・雪) で子どもが白い息を吐いている (冬に息が白く見える問題用)。",
+      "alternatives": [],
       "status": "generated",
       "context_tags": [
         "weather"
