@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T16:34:26Z - quizland editor: textOnly preset 保存が withImage chip illust 個別 entry を消すクロス汚染を修正、 result modal 経路調査
+- **タスク**: quizland editor: textOnly preset 保存が withImage chip illust 個別 entry を消すクロス汚染を修正、 result modal 経路調査
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 30
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 5, "Agent": 11, "ToolSearch": 1, "Bash": 12, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-06T16:10:41Z - quizland editor mode で完走時リザルトモーダルを抑止し先頭ループに変更 (sw v783)
 - **タスク**: quizland editor mode で完走時リザルトモーダルを抑止し先頭ループに変更 (sw v783)
 - **結果**: 成功
@@ -196,18 +209,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 164, "Edit": 144, "Read": 145, "Write": 8, "Grep": 25, "Agent": 11, "ToolSearch": 2, "Glob": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-06T11:29:27Z - batch:05-opposite-alpha-supp: dekakeru 訂正 + kaeru/tasukeru/mae 新規配置 (mae=tatsu byte-identical per user spec 「たつと共通」)
-- **タスク**: batch:05-opposite-alpha-supp: dekakeru 訂正 + kaeru/tasukeru/mae 新規配置 (mae=tatsu byte-identical per user spec 「たつと共通」)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 35
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Write": 8, "Read": 147, "Grep": 23, "Edit": 148, "Bash": 161, "Agent": 12, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
