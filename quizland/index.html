@@ -3258,14 +3258,10 @@ function showResult() {
   stopStagePono();           // 左下ポノも結果画面では停止
   showClearDialogue(correctCount, totalQuestions);
   const cleared = correctCount >= Math.ceil(totalQuestions * 0.7); // 70% 以上で clear
-  const isPerfect = correctCount === totalQuestions && totalQuestions > 0;
-  // 全問正解 (Perfect) のときは「ぜんぶ できたね！」スタンプ画像を出す。 それ以外は emoji。
-  const iconEl = document.getElementById('result-icon');
-  if (isPerfect) {
-    iconEl.innerHTML = '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
-  } else {
-    iconEl.textContent = cleared ? '🎉' : '💪';
-  }
+  // セッション完走 (5 問サイクル完了) を祝福する「ぜんぶ できたね！」スタンプ。
+  // 正解率に関わらず常に表示 (= 完走の証)。 cleared/not の差は title テキストで表現。
+  document.getElementById('result-icon').innerHTML =
+    '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
   document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
   document.getElementById('result-msg').textContent = cleared
     ? totalQuestions + 'もんちゅう ' + correctCount + 'もん せいかい！'
