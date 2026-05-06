@@ -332,6 +332,11 @@ const QUIZLAND_QUESTIONS = {
       q:'うさぎの みみは どんな かたち？',
       answer:1, choices:['まるくて みじかい','ながくて たっている','まるい ちいさい','とがって ちいさい'] ,
       detail:'うさぎは ながい みみで とおくの おとを よく きけるんだ！'},
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_seed_germinate.png',
+      q:'たねを つちに うめると、 さいしょに なにが でてくる？',
+      answer:1, choices:['はな','め','みず','いし'] ,
+      detail:'たねから ちいさな みどりの めが でて、 だんだん おおきく そだっていくよ！'},
 
     // Level 2
     // 画像入り選択肢サンプル: choices に { text, image } 形式の object を混在可。
