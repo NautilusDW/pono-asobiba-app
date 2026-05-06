@@ -108,7 +108,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'shape_name', shape:'triangle',  q:'これは どんな かたち？', answer:2, choices:['まる','しかく','さんかく','ほし'] },
     { level:1, type:'shape_name', shape:'heart',     q:'これは どんな かたち？', answer:0, choices:['ハート','まる','しかく','さんかく'] },
     { level:1, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:2, choices:['まる','しかく','ほし','さんかく'] },
-    { level:1, type:'shape_name', shape:'rectangle', q:'これは どんな かたち？', answer:0, choices:['ながしかく','まる','さんかく','ほし'] },
+    /* Q111 rectangle: 「ながしかく」「ダイヤ」「しかく」全て他問題と重複 or 不適切のため削除 (2026-05-06 ユーザー判断) */
     { level:1, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:0, choices:['たまごがた','まる','しかく','ハート'] },
     { level:1, type:'shape_name', shape:'heart',     q:'これは なんの かたち？', answer:1, choices:['まる','ハート','ほし','しかく'] },
 
