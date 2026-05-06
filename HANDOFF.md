@@ -16,6 +16,7 @@
 
 - 2026-05-06 - [batch:06-trivia-reveal] Codex: trivia 4 問のリビール UX 用 5 シート / 11 個別 PNG 生成に着手。仕様読了、参照画像確認、生成担当分割とクロスレビューを開始。 (by Codex)
 - 2026-05-06 - [batch:06-trivia-reveal] Codex: trivia 4 問のリビール UX 用画像 11 個別 PNG を tmp/alpha_pending/alpha/06/ に納品完了。 配置・コード反映 (questions.js 4 問編集 + image-chip スキーマ変更 + sw bump) は Claude 側で対応予定。 (by Codex)
+- 2026-05-06 - [batch:06-trivia-reveal] Codex: follow-up 修正として `tako_q.png` / `tako_3hearts.png` のタコを 8 本足がより明確に読める版へ差し替え。 納品先は同じ tmp/alpha_pending/alpha/06/。 (by Codex)
 - 2026-05-06 - [batch:05-opposite-new-pairs] Codex: opposite 新規 23 枚 (raw, white BG OK) を tmp/alpha_pending/alpha/05/ に納品完了。 後処理はユーザー側で実施。 (by Codex)
 - 2026-05-06 - [batch:05-opposite-new-pairs] Codex: Q140 `ue.png` / `shita.png` を GPT Image 2 生成経路で再生成。 R4 クロスレビューで Q140 構図・ペア整合・Quizland 水彩絵本調 style/model consistency PASS。 (by Codex)
 - 2026-05-06 - [batch:05-opposite-new-pairs] Codex: `suwaru.png` を添付の立ち姿男の子参照から椅子座り raw 画像として tmp/alpha_pending/alpha/05/ に生成。 R5 クロスレビューで同一人物感・椅子座り・非あぐら・両脚/靴分離 PASS。 (by Codex)
