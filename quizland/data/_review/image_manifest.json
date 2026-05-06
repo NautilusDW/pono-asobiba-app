@@ -5263,6 +5263,127 @@
       "subject_detailed": "シンプルなコップ一つ。",
       "alternatives": [],
       "status": "generated"
+    },
+    {
+      "id": "bear_winter_cave_entrance",
+      "save_path": "assets/images/quizland/illust/stage/bear_winter_cave_entrance.png",
+      "jp_labels": ["クマ", "とうみん", "洞窟", "雪"],
+      "context_tags": ["animal", "trivia", "winter"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "雪の森にぽっかり開いた洞窟入口、雪に小さな足跡が点々と中へ続く。動物本体は描かない (img_word)。stage_trivia_sleeping_bear_cave とカメラアングル整合。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "tategami",
+      "save_path": "assets/images/quizland/illust/choice/tategami.png",
+      "jp_labels": ["たてがみ"],
+      "context_tags": ["body", "animal_part", "trivia"],
+      "usage": ["choice"],
+      "source_sheet": null,
+      "subject_detailed": "ライオンのたてがみ単体 (もこもこ素材、顔輪郭なし)、褐色〜黄褐色。Q411 image-chip 用。",
+      "alternatives": ["assets/images/quizland/illust/choice/mane.png"],
+      "status": "generated"
+    },
+    {
+      "id": "hane",
+      "save_path": "assets/images/quizland/illust/choice/hane.png",
+      "jp_labels": ["はね"],
+      "context_tags": ["body", "animal_part", "trivia"],
+      "usage": ["choice"],
+      "source_sheet": null,
+      "subject_detailed": "鳥の羽単体、茶〜白。Q411 image-chip 用。",
+      "alternatives": ["assets/images/quizland/illust/choice/wing.png"],
+      "status": "generated"
+    },
+    {
+      "id": "tsuno",
+      "save_path": "assets/images/quizland/illust/choice/tsuno.png",
+      "jp_labels": ["つの"],
+      "context_tags": ["body", "animal_part", "trivia"],
+      "usage": ["choice"],
+      "source_sheet": null,
+      "subject_detailed": "角単体 (鹿風の枝分かれ角 or 牛風の単純な角)、白〜クリーム。Q411 image-chip 用。",
+      "alternatives": ["assets/images/quizland/illust/choice/horn.png"],
+      "status": "generated"
+    },
+    {
+      "id": "shippo",
+      "save_path": "assets/images/quizland/illust/choice/shippo.png",
+      "jp_labels": ["しっぽ"],
+      "context_tags": ["body", "animal_part", "trivia"],
+      "usage": ["choice"],
+      "source_sheet": null,
+      "subject_detailed": "動物のしっぽ単体、細長く先端に房毛。Q411 image-chip 用。",
+      "alternatives": ["assets/images/quizland/illust/choice/part_tail.png"],
+      "status": "generated"
+    },
+    {
+      "id": "banana_tree_solo",
+      "save_path": "assets/images/quizland/illust/stage/banana_tree_solo.png",
+      "jp_labels": ["バナナ", "き"],
+      "context_tags": ["plant", "trivia"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "立派なバナナの木 単体、土から生えて葉と実が見える。Q406 img_word。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "lion_osu",
+      "save_path": "assets/images/quizland/illust/stage/lion_osu.png",
+      "jp_labels": ["ライオン", "オス", "たてがみ"],
+      "context_tags": ["animal", "trivia"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "オスライオン (たてがみあり) サバンナで立つ、子供向け優しい表情。Q411 img_answer。lion_mesu とペア構図。",
+      "alternatives": ["assets/images/quizland/illust/stage/stage_trivia_male_lion.png"],
+      "status": "generated"
+    },
+    {
+      "id": "lion_mesu",
+      "save_path": "assets/images/quizland/illust/stage/lion_mesu.png",
+      "jp_labels": ["ライオン", "メス"],
+      "context_tags": ["animal", "trivia"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "メスライオン (たてがみなし) サバンナで立つ。Q411 img_word。lion_osu とペア構図。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "tako_3hearts",
+      "save_path": "assets/images/quizland/illust/stage/tako_3hearts.png",
+      "jp_labels": ["タコ", "しんぞう", "3つ"],
+      "context_tags": ["animal", "trivia"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "正面向きタコ + 立体ハート3つ (中央=大ローズ、左右=小サーモン)。Q399 img_answer。tako_q とペア構図。",
+      "alternatives": [],
+      "status": "generated"
+    },
+    {
+      "id": "tako_q",
+      "save_path": "assets/images/quizland/illust/stage/tako_q.png",
+      "jp_labels": ["タコ"],
+      "context_tags": ["animal", "trivia"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "正面向きタコ単体 (ハートなし、頭ドーム中央と左右下に余白)。Q399 img_word。tako_3hearts とペア構図。",
+      "alternatives": ["assets/images/quizland/illust/choice/tako.png"],
+      "status": "generated"
+    },
+    {
+      "id": "banana_kusa_compare",
+      "save_path": "assets/images/quizland/illust/stage/banana_kusa_compare.png",
+      "jp_labels": ["バナナ", "くさ", "なかま"],
+      "context_tags": ["plant", "trivia"],
+      "usage": ["stage"],
+      "source_sheet": null,
+      "subject_detailed": "バナナの木 (左) + 草本植物 (右、ススキ/シロツメクサ等) を並列、繊維質感の共通性で「草の仲間」を視覚化。Q406 img_answer。banana_tree_solo とペア構図。",
+      "alternatives": [],
+      "status": "generated"
     }
   ]
 }
