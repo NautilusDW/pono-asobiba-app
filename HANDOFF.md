@@ -14,6 +14,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Generated the missing opposite `img_answer` assets `suwaru.png`, `shimeru.png`, `asa.png`, and `shikaru.png` under `assets/images/quizland/illust/stage/opposite/`. All four are transparent RGBA PNGs resized to `1024x1024`. Reference-vs-answer comparison sheets were also saved under `tmp/imagegen/opposite_answers/review/` for quick visual QA.
+
 - 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Added Quizland manifest v1.1 follow-up choice assets under `assets/images/quizland/illust/choice/`, including the final 11 (`kiri`, `mt_fuji`, `mt_kirishima`, `mt_koya`, `mt_norikura`, `snow_mountain`, `snow_country`, `winter_country`, `ice_country`, `snowy_time`, `night_only`), redrew `moyou` and `matsu_no_ki`, and copied the 6 romaji-named reuse aliases `ude`, `te`, `hare`, `kaze`, `tatsumaki`, `ondokei`. Regenerated `tmp/manifest_followup/out/image_manifest.json`, `gaps.json`, and `dedupe_proposal.json` with normalized v1.1 `context_tags`.
 
 - 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Section C stage generation completed. Saved Trivia Lv2-Lv3 stages `stage_trivia_four_birds_silhouette`, `stage_trivia_running_cheetah`, `stage_trivia_sleeping_bear_cave`, `stage_trivia_earthworm_after_rain`, `stage_trivia_koala_eucalyptus`, `stage_trivia_ocean_silhouettes_4`, `stage_trivia_dolphin`, `stage_trivia_huge_creatures_compare`, `stage_trivia_spider_eyes`, `stage_trivia_flamingo`, and `stage_trivia_male_lion`, then saved all Body stages `stage_body_skin_wrap`, `stage_body_heart_pump`, `stage_body_chewing_teeth`, `stage_body_lungs_breath`, and `stage_body_teeth_bone_compare`. Redraws were needed for `stage_trivia_spider_eyes` to remove an overly anthropomorphic smile. All section C `stage_*` assets are now present under `assets/images/quizland/illust/stage/`.
@@ -32,6 +34,8 @@
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-06 - Generated the 4 missing Quizland opposite-category `img_answer` illustrations requested in `quizland/data/_review/codex-followup-opposite-img_answer.md`: `suwaru.png`, `shimeru.png`, `asa.png`, and `shikaru.png`. Outputs were chroma-keyed from built-in image generation, converted to transparent RGBA PNGs, resized to `1024x1024`, and optimized in place. Review comparison sheets live in `tmp/imagegen/opposite_answers/review/`. (by Codex)
 
 - 2026-05-05 - Completed the Quizland manifest v1.1 follow-up generation pass. Added helper scripts `tmp/manifest_followup/generate_manifest_v11.py`, `tmp/imagegen/finalize_choice_asset.py`, and `tmp/imagegen/process_latest_choice_asset.py`; saved all 37 `need_generation` choice assets; corrected `moyou` from the mistaken 16-leaf sheet to a real pattern swatch; redrew `matsu_no_ki` with visible pine needles; and created the 6 romaji reuse copies `ude`, `te`, `hare`, `kaze`, `tatsumaki`, `ondokei` from existing `ocean` assets. The regenerated manifest output lives in `tmp/manifest_followup/out/` and has no remaining `planned` choice entries. (by Codex)
 - 2026-05-04 - Saved approved Quizland choice illustration sheets after per-sheet review: `choice_opposite_door_action_set`, `choice_opposite_time_of_day_set`, and `choice_opposite_face_emotion_set`. All were background-removed to RGBA, sheet outputs restored to `2048x512`, and per-choice crops saved as `512x512`. (by Codex)
