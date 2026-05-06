@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T17:41:47Z - quizland chip 内長文 text の枠突き抜け + CJK 語中改行 修正 (word-break: keep-all + overflow-wrap: break-word)
+- **タスク**: quizland chip 内長文 text の枠突き抜け + CJK 語中改行 修正 (word-break: keep-all + overflow-wrap: break-word)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 54
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 5, "Agent": 21, "ToolSearch": 1, "Bash": 22, "Edit": 5}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-06T17:29:02Z - quizland HUD進捗カウンターを半角に戻す (toFullWidthラップ除去, CACHE_VERSION 789→790)
 - **タスク**: quizland HUD進捗カウンターを半角に戻す (toFullWidthラップ除去, CACHE_VERSION 789→790)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Read": 2, "Agent": 5, "ToolSearch": 1, "Bash": 2}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-06T15:55:03Z - code review HIGH 2件修正: _normalizeChipPresets を純粋関数化 + _findChipSlot を answer-panel スコープに限定、 sw v782
-- **タスク**: code review HIGH 2件修正: _normalizeChipPresets を純粋関数化 + _findChipSlot を answer-panel スコープに限定、 sw v782
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 8
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Read": 2, "Agent": 5, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
