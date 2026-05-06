@@ -419,12 +419,15 @@
     return preset;
   }
 
-  // 選択された chip の DOM index (querySelectorAll('.chip') の順) = data-idx = slot index。
+  // 選択された chip の DOM index (#answer-panel スコープ内の `.chip` 順) = data-idx = slot index。
   // 0..3 以外 (DOM に居ない / 5 個目以降) なら null。
+  // 2026-05-07 修正 (HIGH): document 全体ではなく chip の最寄りの answer-panel をスコープにする。
+  //   将来 quizland 外で `.chip` クラスが使われても slot index がズレないようにする。
   function _findChipSlot(chip) {
-    if (!chip) return null;
-    var all = Array.from(document.querySelectorAll('.chip'));
-    var idx = all.indexOf(chip);
+    if (!chip || !chip.closest) return null;
+    var scope = chip.closest('#answer-panel, .answer-panel') || chip.parentElement;
+    if (!scope) return null;
+    var idx = Array.from(scope.querySelectorAll('.chip')).indexOf(chip);
     if (idx < 0 || idx > 3) return null;
     return idx;
   }

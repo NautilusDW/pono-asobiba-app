@@ -59,35 +59,38 @@
   /**
    * chip preset を 4 slot 別に正規化。
    *   入力: { withImage: {...}, textOnly: {...} }
-   *   - 各 type について "0" キーが既に有れば 4-slot 形式とみなしそのまま
+   *   - 各 type について "0" キーが既に有れば 4-slot 形式とみなしそのまま (参照を共有)
    *   - "0" キーが無く chip|circle|illust|label|countNum のいずれかがトップに直接ある
    *     → フラット形式とみなし JSON.parse(JSON.stringify(typeObj)) で 4 slot 分 deep clone
    *   2026-05-07 追加: フラット形式 saved-layout.json との後方互換。
-   *   必ず deep clone を使い参照共有を避ける。
+   *   2026-05-07 修正 (HIGH): **常に新しいオブジェクトを返し、 入力 `presets` は mutate しない**
+   *   純粋関数化。 表示パス (updateNumericPanel) で in-memory データが書き換わるバグを回避。
+   *   呼び出し側は戻り値を再代入することで反映される。
    */
   function _normalizeChipPresets(presets) {
     if (!presets || typeof presets !== 'object') return presets || {};
     var FLAT_KEYS = ['chip', 'circle', 'illust', 'label', 'countNum'];
     var SLOTS = ['0', '1', '2', '3'];
+    var out = {};
     Object.keys(presets).forEach(function (type) {
       var typeObj = presets[type];
-      if (!typeObj || typeof typeObj !== 'object') return;
-      // 既に 4-slot 形式 ("0" キー有り) なら触らない
-      if (typeObj.hasOwnProperty('0')) return;
+      if (!typeObj || typeof typeObj !== 'object') { out[type] = typeObj; return; }
+      // 既に 4-slot 形式 ("0" キー有り) なら参照そのまま (中身は触らない)
+      if (typeObj.hasOwnProperty('0')) { out[type] = typeObj; return; }
       // フラット形式かどうか判定 (FLAT_KEYS のいずれかをトップに直接持つ)
       var isFlat = false;
       for (var i = 0; i < FLAT_KEYS.length; i++) {
         if (typeObj.hasOwnProperty(FLAT_KEYS[i])) { isFlat = true; break; }
       }
-      if (!isFlat) return;
+      if (!isFlat) { out[type] = typeObj; return; }
       // フラット → 4 slot に展開 (deep clone)
       var newObj = {};
       SLOTS.forEach(function (s) {
         newObj[s] = JSON.parse(JSON.stringify(typeObj));
       });
-      presets[type] = newObj;
+      out[type] = newObj;
     });
-    return presets;
+    return out;
   }
 
   /**
