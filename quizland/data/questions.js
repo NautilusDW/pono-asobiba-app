@@ -234,12 +234,12 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'opposite', category:'opposite', word:'あつい',   q:'「あつい」の はんたいは？',   answer:1, choices:['やわらかい','つめたい','はやい','くらい'] },
     { level:1, type:'opposite', category:'opposite', word:'まえ',     q:'「まえ」の はんたいは？',     answer:3, choices:['みぎ','ひだり','うえ','うしろ'] },
     { level:1, type:'opposite', category:'opposite', word:'たつ',     q:'「たつ」の はんたいは？',     answer:1, choices:['あるく','すわる','ねる','とぶ'],
-      img_word:'opposite/tatsu.png' /* img_answer (suwaru.png) は未生成 */ },
+      img_word:'opposite/tatsu.png', img_answer:'opposite/suwaru.png' },
     { level:1, type:'opposite', category:'opposite', word:'あける',   q:'「あける」の はんたいは？',   answer:2, choices:['おす','ひく','しめる','まわす'],
-      img_word:'opposite/akeru.png' },
+      img_word:'opposite/akeru.png', img_answer:'opposite/shimeru.png' },
     { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','いい','わるい','おもしろい'] },
     { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の はんたいは？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
-      img_word:'opposite/yoru.png' /* img_answer (asa.png 朝空) は未生成 — Codex 後追い */ },
+      img_word:'opposite/yoru.png', img_answer:'opposite/asa.png' },
     { level:1, type:'opposite', category:'opposite', word:'たくさん', q:'「たくさん」の はんたいは？', answer:3, choices:['おおきい','おおい','はやい','すこし'] },
 
     // Level 2
@@ -267,7 +267,7 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'opposite', category:'opposite', word:'たすける',   q:'「たすける」の はんたいは？',   answer:1, choices:['いっしょに あそぶ','じゃまを する','なかよく する','なにも しない'] },
     { level:3, type:'opposite', category:'opposite', word:'でかける',   q:'「でかける」の はんたいは？',   answer:3, choices:['あそぶ','たべる','ねる','かえる'] },
     { level:3, type:'opposite', category:'opposite', word:'ほめる',     q:'「ほめる」の はんたいは？',     answer:0, choices:['しかる','おこる','いう','にらむ'],
-      img_word:'opposite/homeru.png' },
+      img_word:'opposite/homeru.png', img_answer:'opposite/shikaru.png' },
     { level:3, type:'opposite', category:'opposite', word:'おしえる',   q:'「おしえる」の はんたいは？',   answer:2, choices:['はなす','きく','ならう','よむ'] }
   ],
 

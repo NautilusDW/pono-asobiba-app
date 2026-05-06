@@ -16,6 +16,8 @@
 
 - 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Revised opposite posture/door pair assets under `assets/images/quizland/illust/stage/opposite/` after QA feedback. `tatsu.png` now has both hands visible outside the pockets, `suwaru.png` was regenerated so the two feet/shoes read separately, and `akeru.png` / `shimeru.png` were redrawn as a directional pair with corrected camera-facing motion (`akeru`: front-facing child entering from beyond the doorway with left hand on knob; `shimeru`: back-facing child exiting away with right hand on knob). All four remain transparent RGBA `1024x1024`.
 
+- 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Second review fix on opposite assets. `suwaru.png` was redrawn again so the crossed-leg center no longer forms a single connected skin shape between both cuffs, and `shimeru.png` was redrawn with a narrower almost-closed door angle plus the child clearly positioned on the near side pushing the door shut rather than appearing to exit.
+
 - 2026-05-06 - sw.js CACHE_VERSION bump needed (by Codex): Generated the missing opposite `img_answer` assets `suwaru.png`, `shimeru.png`, `asa.png`, and `shikaru.png` under `assets/images/quizland/illust/stage/opposite/`. All four are transparent RGBA PNGs resized to `1024x1024`. Reference-vs-answer comparison sheets were also saved under `tmp/imagegen/opposite_answers/review/` for quick visual QA.
 
 - 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Added Quizland manifest v1.1 follow-up choice assets under `assets/images/quizland/illust/choice/`, including the final 11 (`kiri`, `mt_fuji`, `mt_kirishima`, `mt_koya`, `mt_norikura`, `snow_mountain`, `snow_country`, `winter_country`, `ice_country`, `snowy_time`, `night_only`), redrew `moyou` and `matsu_no_ki`, and copied the 6 romaji-named reuse aliases `ude`, `te`, `hare`, `kaze`, `tatsumaki`, `ondokei`. Regenerated `tmp/manifest_followup/out/image_manifest.json`, `gaps.json`, and `dedupe_proposal.json` with normalized v1.1 `context_tags`.
@@ -38,6 +40,8 @@
 ## Recent (Done — 古い順に削除)
 
 - 2026-05-06 - Follow-up redraw pass on opposite assets after review feedback. Replaced `tatsu.png`, `suwaru.png`, `akeru.png`, and `shimeru.png` so the standing/sitting boy pair keeps hands visible and separate shoes, and the door pair now reads with the intended front-entry/back-exit motion. Outputs were re-keyed to transparent RGBA PNGs and normalized to `1024x1024`. (by Codex)
+
+- 2026-05-06 - Second correction pass on opposite assets after close visual review. Replaced `suwaru.png` to clarify the crossed legs with a visible center separation, and replaced `shimeru.png` so the child stands in front of a nearly closed door and reads as pushing it shut rather than walking out. Both outputs remain transparent RGBA `1024x1024`. (by Codex)
 
 - 2026-05-06 - Generated the 4 missing Quizland opposite-category `img_answer` illustrations requested in `quizland/data/_review/codex-followup-opposite-img_answer.md`: `suwaru.png`, `shimeru.png`, `asa.png`, and `shikaru.png`. Outputs were chroma-keyed from built-in image generation, converted to transparent RGBA PNGs, resized to `1024x1024`, and optimized in place. Review comparison sheets live in `tmp/imagegen/opposite_answers/review/`. (by Codex)
 
