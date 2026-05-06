@@ -1048,7 +1048,9 @@ body.layout-editor-on .stage-pono { display: none; }
   gap: 12px;
   color: var(--text);
   font-weight: 800;
-  font-size: 36px;
+  /* 2026-05-07 修正(v795): chip-label の font-size を問題文 #q-text と同じ 32px に統一
+     (元 36px)。 #q-text base = .q-text-card 32px の継承値。 */
+  font-size: 32px;
   box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
   position: relative;
   height: 220px;
@@ -1068,7 +1070,8 @@ body.layout-editor-on .stage-pono { display: none; }
    レイアウト固有の size 指定なので維持。 */
 /* .chip.txt-medium { font-size: 28px; } */
 /* .chip.txt-long   { font-size: 22px; } */
-.chip.has-image  { font-size: 24px; }
+/* 2026-05-07 修正(v795): has-image (色問題: 丸+ラベル) も #q-text と同じ 32px に揃える (元 24px) */
+.chip.has-image  { font-size: 32px; }
 
 /* 画像入り選択肢: choice = {text, image} 形式の chip */
 .chip.chip-with-image {
@@ -1085,7 +1088,8 @@ body.layout-editor-on .stage-pono { display: none; }
   -webkit-user-drag: none;
 }
 .chip.chip-with-image .chip-illust-label {
-  font-size: 26px;
+  /* 2026-05-07 修正(v795): chip-illust-label を #q-text と同じ 32px に統一 (元 26px) */
+  font-size: 32px;
   line-height: 1.1;
 }
 /* 2026-05-07 修正(v792): illust-label の文字数ベース縮小も同様に無効化。
@@ -1632,6 +1636,9 @@ body.layout-editor-on .character img {
   /* 14:9 用: 解説/結果まわりの「詳細画面」も grid 準拠に縮める */
   .q-text-card { font-size: 28px; padding: 18px 70px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
   #q-text { font-size: 26px; }
+  /* 2026-05-07 修正(v795): chip / chip-illust-label を #q-text と同じ 26px に統一 */
+  .chip, .chip.has-image { font-size: 26px; }
+  .chip.chip-with-image .chip-illust-label { font-size: 26px; }
   .trivia-pono-wrap { width: 320px !important; height: 200px !important; margin-top: 50px !important; }
   .trivia-pono { width: 320px !important; height: 320px !important; }
   .trivia-balloon { width: 150px !important; }
@@ -1678,10 +1685,13 @@ body.layout-editor-on .character img {
   #q-text { font-size: 24px; }
   .answer-tray { padding: 12px; }
   .answer-panel { gap: 10px; }
-  .chip { height: 180px; font-size: 30px; }
+  /* 2026-05-07 修正(v795): #q-text 24px と揃えるため chip を 30→24px に変更
+     (このブランチでは #q-text=24px、 .q-text-card=26px)。 */
+  .chip, .chip.has-image { height: 180px; font-size: 24px; }
+  .chip.chip-with-image .chip-illust-label { font-size: 24px; }
   /* 2026-05-07 修正(v793): iPad 4:3 メディアクエリ内の size class 縮小も無効化。
      グローバルで v792 に同じく無効化済みのため、 ここも揃える。
-     全 chip で 30px 統一、 折り返しで長文を吸収。 */
+     全 chip で base 統一、 折り返しで長文を吸収。 */
   /* .chip.txt-medium { font-size: 22px; } */
   /* .chip.txt-long { font-size: 18px; } */
   .chip.chip-count { font-size: 48px; }
@@ -1769,7 +1779,9 @@ body.layout-editor-on .character img {
   .board { width: auto !important; height: 420px !important; transform: translate(0, 0) !important; }
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; padding: 10px !important; }
   .answer-panel { gap: 8px !important; }
-  .chip { width: 190px !important; height: 170px !important; font-size: 28px !important; transform: translate(0, 0) !important; }
+  /* 2026-05-07 修正(v795): #q-text 24px (継承) と揃えるため 28→24px に変更 */
+  .chip, .chip.has-image { width: 190px !important; height: 170px !important; font-size: 24px !important; transform: translate(0, 0) !important; }
+  .chip.chip-with-image .chip-illust-label { font-size: 24px !important; }
   .chip.chip-count { font-size: 44px !important; }
   .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
   .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
