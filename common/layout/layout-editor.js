@@ -496,8 +496,10 @@
     // 2026-05-06 バグ修正A: preset に該当パーツがある prefix のみ削除する。
     //   illust が preset に無いのに個別 .chip .chip-illust|N を削除すると、
     //   illust が preset でも個別でも位置情報を失って画面外に飛ぶ事故が発生していた。
+    // 2026-05-06 改: .chip|N (chip 自体の cell 配置) は **絶対に削除しない**。
+    //   preset.chip は w/h のみで tx/ty を持たないので、 .chip|N を消すと cell 配置が
+    //   失われて chip が flex 自然位置 (重なる等) に飛ぶ。
     var prefixCoverage = {
-      '.chip|':                !!preset.chip,
       '.chip .circle|':        !!preset.circle,
       '.chip .chip-illust|':   !!preset.illust,
       '.chip .chip-label|':    !!preset.label,

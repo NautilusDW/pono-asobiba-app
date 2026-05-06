@@ -58,12 +58,14 @@
 
   /**
    * chip preset を適用。 saved-layout.json の __chip_presets:
-   *   { withImage: { chip:{w,h,tx,ty}, circle:{...}, illust:{...}, label:{...} },
-   *     textOnly:  { chip:{...}, label:{...}, countNum:{...} } }
+   *   { withImage: { chip:{w,h}, circle:{w,h,tx,ty}, illust:{...}, label:{...} },
+   *     textOnly:  { chip:{w,h}, label:{...}, countNum:{...} } }
    *
    * chip の class (.chip-type-with-image / .chip-type-text-only) で種別判定し、
    * preset の各キーを対応する子要素に applyOne する。
-   * 個別 chip|N エントリは後段の selectors loop で同要素に再適用され上書き勝ち。
+   * 2026-05-06 改: preset.chip は **w/h のみ** (tx/ty なし)。 chip 自体の cell 配置は
+   *   .chip|N 個別 entry が責任を持つ。 legacy preset.chip.tx/ty はここで strip して
+   *   後方互換を保つ。 個別 chip|N エントリは後段の selectors loop で再適用される。
    */
   function applyChipPresets(presets, root) {
     if (!presets || typeof presets !== 'object') return;
