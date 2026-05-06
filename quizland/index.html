@@ -226,6 +226,17 @@ body.sheet-on .chip:active {
   box-shadow: none !important;
   transform: none !important;
 }
+/* 正解 / 不正解 の chip 自体の色付き背景 (緑 / ピンク+赤) も削除。
+   フィードバックは効果音 + 博士のセリフ + 中央のスタンプ画像で十分。 */
+body.sheet-on .chip.correct,
+body.sheet-on .chip.wrong {
+  background: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  animation: none !important;
+}
 body.sheet-on .chip.pressed[data-idx="0"] {
   background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png') center / 100% 100% no-repeat !important;
 }
