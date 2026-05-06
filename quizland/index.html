@@ -898,6 +898,43 @@ body.sheet-on .hdr-right .ctrl-btn {
   /* stage 統一ソフトシャドウ (新規追加: PNG 画像版 emoji にも影を載せる)。 */
   filter: var(--stage-shadow);
 }
+/* ─────────────────────────────────────────────────────────
+   v808 fix: editor で wrapper を resize したとき、 内部の img/中身が
+   wrapper のサイズに連動するようにする。
+   QZ_RESIZABLE_SELECTORS に登録された wrapper (.emoji-display /
+   .shape-display) は drag/resize で inline style="width: Xpx;
+   height: Ypx" が直接書かれる。 ところが内部の .emoji-main-img や
+   .shape-img には max-width: 360px (など) のハードコード値があるため、
+   wrapper を大きくしても画像本体は最大 360px のまま動かず、 ハンドル
+   (= wrapper 枠) と画像が乖離してしまう。
+   解決: wrapper に inline width or height が付いている場合のみ
+   ([style*="width"] / [style*="height"] attribute selector) 内部の
+   img を 100% 化して wrapper に追従させる。 saved-layout.json に
+   サイズが書かれていない初期状態 (= 空文字列, applyOne で skip される)
+   では既存挙動 (max-width 360px 等) が維持される。
+   editor 中のドラッグ中にも inline width が即時に書かれる
+   (layout-editor.js: el.style.width = newW + 'px') ので、 editor /
+   通常プレイのどちらでも自然に動作する。
+   max-width / max-height は !important で打ち消す必要があるが、
+   レスポンシブ層 (@media max-aspect-ratio:14/9 等) の !important
+   max-width も同じく打ち消したい意図なので問題なし。
+   ───────────────────────────────────────────────────────── */
+.emoji-display[style*="width"] .emoji-main-img:not([style*="width"]):not([style*="height"]),
+.emoji-display[style*="height"] .emoji-main-img:not([style*="width"]):not([style*="height"]),
+.shape-display[style*="width"] .shape-img:not([style*="width"]):not([style*="height"]),
+.shape-display[style*="height"] .shape-img:not([style*="width"]):not([style*="height"]) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  /* flex column 親で hint 等 sibling が居る場合に img が overflow しないよう、
+     flex shrink + min-height:0 で適切に縮む。 hint 不在 (大半のケース) は
+     width/height 100% でそのまま wrapper サイズに追従。 */
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  object-fit: contain;
+}
 .emoji-hint {
   font-size: 18px;
   font-weight: 700;
