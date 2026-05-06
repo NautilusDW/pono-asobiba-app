@@ -128,6 +128,11 @@
     preferredTarget: null,     // Charlie-2: 要素一覧から選択した要素を canvas 操作の優先ターゲットに
     textToolOn: false,         // India-2: テキスト追加ツール ON/OFF
     unlinkedChildren: null,    // Papa-2 修正2: 一時リンク解除中の子要素 (Set<element>)
+    individualOverrides: new Set(),  // 2026-05-06: chip 関連の個別 override キー集合
+                                     // (".chip|0", ".chip .chip-illust|2" 等)。
+                                     // この Set に入ってる key だけ snapshot() で書き出す。
+                                     // ドラッグや preset 適用では追加しない (= 暗黙個別化を防ぐ)。
+                                     // 💾 個別保存ボタンで明示的に追加、 🧹 個別設定クリアで削除。
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -254,13 +259,23 @@
   //  Snapshot / takeLayoutSnapshot
   // ====================================================================
 
+  // 2026-05-06: chip 関連 selector か判定。 .chip 自体 + .chip 内の子要素 (.chip .circle 等)。
+  function _isChipScopedSelector(sel) {
+    return /^\.chip(\s|$)/.test(sel);
+  }
+
   function snapshot() {
     var data = { __version: SAVED_LAYOUT_VERSION };
     state.spec.forEach(function (entry) {
       var sel = entry[0];
       if (sel === '.userbox') return; // userbox saved in __userboxes
+      var isChipScoped = _isChipScopedSelector(sel);
       $$(sel).forEach(function (el, i) {
-        data[sel + '|' + i] = {
+        var key = sel + '|' + i;
+        // 2026-05-06: chip 関連 key は明示的に individualOverrides に入ってる場合のみ保存。
+        //   drag/resize で勝手に個別化しない (= preset との関係を能動的に管理)。
+        if (isChipScoped && !state.individualOverrides.has(key)) return;
+        data[key] = {
           w: el.style.width || '',
           h: el.style.height || '',
           tx: el._tx || 0,
@@ -280,6 +295,10 @@
     // chip preset: window._currentLayoutData.__chip_presets を保全 (saveChipPreset で書き込まれる)
     if (window._currentLayoutData && window._currentLayoutData.__chip_presets) {
       data.__chip_presets = window._currentLayoutData.__chip_presets;
+    }
+    // 2026-05-06: 個別 override の明示リストを保存 (再ロード時の復元用)
+    if (state.individualOverrides && state.individualOverrides.size > 0) {
+      data.__individual_chip_overrides = Array.from(state.individualOverrides);
     }
     return data;
   }
@@ -369,17 +388,9 @@
            chip.classList.contains('chip-type-text-only')  ? 'textOnly'  : null;
   }
 
-  function saveChipPreset() {
-    var chip = _findSelectedChip();
-    if (!chip) {
-      showToast('chip を 1 つ選択してください', 'warn');
-      return;
-    }
-    var type = _chipType(chip);
-    if (!type) {
-      showToast('chip 種別が判定できません (chip-type-* class なし)', 'warn');
-      return;
-    }
+  // 1 chip から chip preset (chip + 全子パーツ) を抽出。
+  // illust/countNum/circle/label は要素が存在すれば必ず保存 (バグ修正B)。
+  function _buildPresetFromChip(chip) {
     var preset = { chip: _readElLayout(chip) };
     var c = chip.querySelector('.circle');
     if (c) preset.circle = _readElLayout(c);
@@ -389,21 +400,50 @@
     if (lb) preset.label = _readElLayout(lb);
     var n = chip.querySelector('.chip-count-num');
     if (n) preset.countNum = _readElLayout(n);
+    return preset;
+  }
 
+  function saveChipPreset() {
+    // 2026-05-06: マルチセレクト対応。 選択された chip を種別ごとにグルーピングし、
+    //   各種別の最初の 1 個を preset に登録。 選択されてない種別の preset は触らない。
+    var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
+    var chips = sel.map(function (el) {
+      if (el.classList && el.classList.contains('chip')) return el;
+      return el.closest ? el.closest('.chip') : null;
+    }).filter(Boolean);
+    // dedupe (子要素を選んだら親 chip に遡るので重複しうる)
+    var seen = new Set();
+    chips = chips.filter(function (c) { if (seen.has(c)) return false; seen.add(c); return true; });
+    if (!chips.length) {
+      showToast('chip (または chip 内子要素) を 1 つ以上選択してください', 'warn');
+      return;
+    }
+    // 種別ごとに最初の 1 個を採用
+    var typeMap = {};
+    chips.forEach(function (chip) {
+      var t = _chipType(chip);
+      if (t && !typeMap[t]) typeMap[t] = chip;
+    });
+    var types = Object.keys(typeMap);
+    if (!types.length) {
+      showToast('chip 種別が判定できません (chip-type-* class なし)', 'warn');
+      return;
+    }
     if (!window._currentLayoutData) window._currentLayoutData = {};
     if (!window._currentLayoutData.__chip_presets) window._currentLayoutData.__chip_presets = {};
-    window._currentLayoutData.__chip_presets[type] = preset;
-
-    // 即時反映: 個別 chip|N entry が無い chip は preset 値で表示更新される。
-    // 既に個別エントリ持ち chip は preset 適用後に上書き勝ちで変わらない (= 個別を保護)。
-    // 個別を捨てて preset 強制反映したい場合は 🧹 個別設定クリア ボタン。
+    types.forEach(function (t) {
+      window._currentLayoutData.__chip_presets[t] = _buildPresetFromChip(typeMap[t]);
+    });
+    // 即時反映: 個別 override 持ち chip は preset 適用後に上書き勝ちで変わらない (= 個別を保護)。
     if (window.LayoutApplier && state.config) {
       window.LayoutApplier.apply(window._currentLayoutData, document, {
         selectors: state.config.editableSelectors || state.config.selectors,
       });
     }
-    showToast('preset (' + type + ') 保存・即適用。 個別設定済 chip は変わりません (🧹 で全反映)', 'success');
+    showToast('preset 保存: ' + types.join(', ') + ' (個別設定済 chip は 🧹 で全反映)', 'success');
     save();
+    refreshSelectionUI();
+    updateNumericPanel();
   }
 
   function clearChipOverridesForType() {
@@ -421,19 +461,39 @@
       showToast('layout データが読み込まれていません', 'warn');
       return;
     }
+    var preset = window._currentLayoutData.__chip_presets && window._currentLayoutData.__chip_presets[type];
+    if (!preset) {
+      showToast(type + ' preset が未定義です。 まず 📌 で preset 保存してください', 'warn');
+      return;
+    }
+    // 2026-05-06 バグ修正A: preset に該当パーツがある prefix のみ削除する。
+    //   illust が preset に無いのに個別 .chip .chip-illust|N を削除すると、
+    //   illust が preset でも個別でも位置情報を失って画面外に飛ぶ事故が発生していた。
+    var prefixCoverage = {
+      '.chip|':                !!preset.chip,
+      '.chip .circle|':        !!preset.circle,
+      '.chip .chip-illust|':   !!preset.illust,
+      '.chip .chip-label|':    !!preset.label,
+      '.chip .chip-count-num|':!!preset.countNum,
+    };
     var allChips = Array.from(document.querySelectorAll('.chip'));
     var indices = [];
     allChips.forEach(function (ch, i) {
       if (_chipType(ch) === type) indices.push(i);
     });
-    var prefixes = ['.chip|', '.chip .circle|', '.chip .chip-illust|', '.chip .chip-label|', '.chip .chip-count-num|'];
     var deleted = 0;
+    var skipped = 0;
     indices.forEach(function (i) {
-      prefixes.forEach(function (p) {
+      Object.keys(prefixCoverage).forEach(function (p) {
         var key = p + i;
         if (window._currentLayoutData.hasOwnProperty(key)) {
-          delete window._currentLayoutData[key];
-          deleted++;
+          if (prefixCoverage[p]) {
+            delete window._currentLayoutData[key];
+            state.individualOverrides.delete(key);
+            deleted++;
+          } else {
+            skipped++;
+          }
         }
       });
     });
@@ -442,8 +502,46 @@
         selectors: state.config.editableSelectors || state.config.selectors,
       });
     }
-    showToast(type + ' chip の個別設定 ' + deleted + ' 件を削除、 preset 適用', 'success');
+    var msg = type + ' chip の個別設定 ' + deleted + ' 件を削除、 preset 適用';
+    if (skipped) msg += ' (' + skipped + ' 件は preset 未定義のため保留: 📌 で preset を完備すれば次回クリアできます)';
+    showToast(msg, 'success');
     save();
+    refreshSelectionUI();
+    updateNumericPanel();
+  }
+
+  // 2026-05-06 新規: 「💾 個別保存」 ボタン。
+  //   選択された chip 関連要素 (chip 自体 or chip 内子要素) を個別 override として登録。
+  //   ドラッグ時の自動個別保存を廃止した代替経路 (能動的な個別化)。
+  function saveIndividualOverrides() {
+    var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
+    if (!sel.length) {
+      showToast('対象を選択してください (chip または chip 内子要素)', 'warn');
+      return;
+    }
+    var added = [];
+    var skipped = 0;
+    sel.forEach(function (el) {
+      var key = getElKey(el);
+      if (!key) { skipped++; return; }
+      var m = key.match(/^(.+)\|\d+$/);
+      if (!m || !_isChipScopedSelector(m[1])) { skipped++; return; }
+      if (!state.individualOverrides.has(key)) {
+        state.individualOverrides.add(key);
+        added.push(key);
+      }
+    });
+    if (!added.length) {
+      var msg = (skipped > 0)
+        ? '対象に chip 関連要素がありません (chip / .circle / .chip-illust / .chip-label / .chip-count-num のみ)'
+        : '選択中の chip は既に個別保存済みです';
+      showToast(msg, 'warn');
+      return;
+    }
+    showToast(added.length + ' 件を個別保存に追加', 'success');
+    save();
+    refreshSelectionUI();
+    updateNumericPanel();
   }
 
   // ====================================================================
@@ -573,6 +671,18 @@
     // Restore locked
     state.locked.clear();
     if (Array.isArray(data.__locked)) data.__locked.forEach(function (k) { state.locked.add(k); });
+    // 2026-05-06: chip 関連の個別 override 集合を復元。
+    //   __individual_chip_overrides が明示されていればそれを使う。
+    //   未定義 (= レガシー saved-layout.json) は data 内の chip 関連 key 全部を override 扱いに。
+    state.individualOverrides.clear();
+    if (Array.isArray(data.__individual_chip_overrides)) {
+      data.__individual_chip_overrides.forEach(function (k) { state.individualOverrides.add(k); });
+    } else {
+      Object.keys(data).forEach(function (k) {
+        var m = k.match(/^(.+)\|\d+$/);
+        if (m && _isChipScopedSelector(m[1])) state.individualOverrides.add(k);
+      });
+    }
     // Restore zoom
     if (typeof data.__zoom === 'number') setZoom(data.__zoom);
     // Restore grid
@@ -1331,6 +1441,11 @@
     $$('.resizable').forEach(function (e) {
       var sel = state.selectedElements.has(e);
       e.classList.toggle('selected', sel);
+      // 2026-05-06: chip 関連要素で個別 override 持ちなら .le-individual-override を付与
+      //   (CSS で選択枠を赤に変える)。 preset 通りの状態なら通常のオレンジ枠。
+      var key = getElKey(e);
+      var isOverridden = !!(key && state.individualOverrides && state.individualOverrides.has(key));
+      e.classList.toggle('le-individual-override', isOverridden);
       // Juliet-2 修正A: ハンドル個別にもクラスを付与し、子孫/specificity 競合に
       // 依らず確実に青化する。CSS 子孫セレクタが効かないケース(stacking context・
       // 別ルールの specificity 上書き等) のフォールバック。
@@ -1772,7 +1887,14 @@
       '</div>' +
       '<div class="np-section-title">整列</div>' +
       buildAlignmentToolbarHtml() +
-      '<div class="np-hint">Shift+クリック=追加選択 / Shift+ドラッグ=範囲選択 / Alt+クリック=下のレイヤー / Alt+Shift+クリック=下のレイヤー追加 / Shift+Arrow ±10</div>';
+      '<div class="np-hint">Shift+クリック=追加選択 / Shift+ドラッグ=範囲選択 / Alt+クリック=下のレイヤー / Alt+Shift+クリック=下のレイヤー追加 / Shift+Arrow ±10</div>' +
+      // 2026-05-06: 絶対位置 + chip preset 値の常時表示エリア (パネル最下部)
+      '<div class="np-info-section" id="np-info-section">' +
+        '<div class="np-section-title">絶対位置 (viewport)</div>' +
+        '<div class="np-abs-pos" id="np-abs-pos">(選択なし)</div>' +
+        '<div class="np-section-title">chip preset 現値</div>' +
+        '<div class="np-preset-vals" id="np-preset-vals">(なし)</div>' +
+      '</div>';
     document.body.appendChild(panel);
     state.numericPanelEl = panel;
     wireSpinners(panel);
@@ -2545,6 +2667,58 @@
     if (aspectBtn) {
       var showAspectBtn = (sel.length === 1) && elementHasAspectSource(sel[0]);
       aspectBtn.style.display = showAspectBtn ? '' : 'none';
+    }
+    // 2026-05-06: 絶対位置 (viewport) 表示 — getBoundingClientRect ベース。
+    //   選択中 chip と preset 値を比較できるように常時表示。
+    var absPosEl = panel.querySelector('#np-abs-pos');
+    if (absPosEl) {
+      if (sel.length === 0) {
+        absPosEl.textContent = '(選択なし)';
+      } else if (sel.length === 1) {
+        var rect = sel[0].getBoundingClientRect();
+        absPosEl.textContent = 'x=' + Math.round(rect.x) + 'px  y=' + Math.round(rect.y) +
+                               'px  (W=' + Math.round(rect.width) + ' H=' + Math.round(rect.height) + ')';
+      } else {
+        var xs = sel.map(function (e) { return Math.round(e.getBoundingClientRect().x); });
+        var ys = sel.map(function (e) { return Math.round(e.getBoundingClientRect().y); });
+        absPosEl.textContent = sel.length + ' 個選択 — x:' +
+                               Math.min.apply(null, xs) + '〜' + Math.max.apply(null, xs) +
+                               '  y:' + Math.min.apply(null, ys) + '〜' + Math.max.apply(null, ys);
+      }
+    }
+    // 2026-05-06: chip preset 現値の常時表示。
+    //   __chip_presets を読み出して各種別の値を一覧。 未設定パーツは ⚠ で警告。
+    var presetEl = panel.querySelector('#np-preset-vals');
+    if (presetEl) {
+      var presets = window._currentLayoutData && window._currentLayoutData.__chip_presets;
+      if (!presets || (!presets.withImage && !presets.textOnly)) {
+        presetEl.innerHTML = '<span class="np-preset-empty">(未保存) 📌 で保存してください</span>';
+      } else {
+        var lines = [];
+        ['withImage', 'textOnly'].forEach(function (type) {
+          if (!presets[type]) return;
+          lines.push('<div class="np-preset-type">' + type + ':</div>');
+          var p = presets[type];
+          var parts = ['chip', 'circle', 'illust', 'label', 'countNum'];
+          parts.forEach(function (k) {
+            if (p[k]) {
+              lines.push('<div class="np-preset-row"><span class="np-preset-key">' + k + '</span>' +
+                         '<span class="np-preset-num">tx=' + Math.round(p[k].tx || 0) +
+                         ' ty=' + Math.round(p[k].ty || 0) +
+                         (p[k].w ? ' W=' + parseInt(p[k].w, 10) : '') +
+                         (p[k].h ? ' H=' + parseInt(p[k].h, 10) : '') +
+                         '</span></div>');
+            } else if (k === 'illust' && type === 'withImage') {
+              lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
+                         '<span class="np-preset-num">⚠ 未設定</span></div>');
+            } else if (k === 'countNum') {
+              lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
+                         '<span class="np-preset-num">⚠ 未設定</span></div>');
+            }
+          });
+        });
+        presetEl.innerHTML = lines.join('');
+      }
     }
   }
 
@@ -4611,8 +4785,9 @@
       '<button class="le-align-tb-btn" data-align="dist-v"   title="垂直等間隔" aria-label="垂直等間隔" disabled>⇌</button>' +
       '</div>' +
       '<div class="le-tb-group">' +
-      '<button id="le-chip-preset-save" title="選択中の chip を chip 種別 (with-image / text-only) の preset として保存し、 同種別の他 chip にも自動適用させる" aria-label="chip preset 保存">📌 chip preset 保存</button>' +
-      '<button id="le-chip-preset-clear-overrides" title="同種別 chip の個別設定 (chip|N エントリ) を全削除し、 preset 値を全 chip に強制反映" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
+      '<button id="le-chip-preset-save" title="選択中 chip を chip 種別ごとの preset (デフォルト) として保存。 マルチセレクト時は種別ごとに最初の 1 個を採用。 同種別で個別設定の無い他 chip に自動適用される" aria-label="chip preset 保存">📌 chip preset 保存</button>' +
+      '<button id="le-chip-individual-save" title="選択中の chip 関連要素 (chip 自体 / circle / illust / label / countNum) を個別設定 (override) として保存。 個別設定された要素は preset を上書きする" aria-label="個別保存">💾 個別保存</button>' +
+      '<button id="le-chip-preset-clear-overrides" title="選択 chip と同種別の個別設定エントリを削除し、 preset 値を全 chip に強制反映 (preset 未定義のパーツはスキップ)" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
       '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
       '</div>' +
       '<div class="le-tb-group">' +
@@ -4677,6 +4852,10 @@
     //   chip-type-text-only) で自動判定。 LayoutApplier が次回 render 時に同種別 chip にも適用。
     var presetSaveBtn = tb.querySelector('#le-chip-preset-save');
     if (presetSaveBtn) presetSaveBtn.addEventListener('click', saveChipPreset);
+    // 💾 個別保存: 選択 chip 関連要素を個別 override に明示登録。 ドラッグでは個別化せず、
+    //   このボタンを押した時のみ snapshot() で書き出される (= 保存先を能動的に選ぶ設計)。
+    var indivSaveBtn = tb.querySelector('#le-chip-individual-save');
+    if (indivSaveBtn) indivSaveBtn.addEventListener('click', saveIndividualOverrides);
     // 🧹 個別設定クリア: 選択 chip と同種別の他 chip の個別 chip|N エントリを全削除して preset
     //   値を強制反映。 chip|N が「保存した preset と異なる値」を持ってる場合の救済操作。
     var presetClearBtn = tb.querySelector('#le-chip-preset-clear-overrides');

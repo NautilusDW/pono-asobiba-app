@@ -127,6 +127,11 @@ body.layout-editor-on .resizable.selected {
   outline: 3px solid #ff8a3d !important;
   outline-offset: 3px;
 }
+/* 2026-05-06: chip 関連要素が個別 override 持ちなら選択枠を赤に変える。
+   オレンジ (preset 通り) と区別して 「この chip は個別保存されてる」 を一目で分かる。 */
+body.layout-editor-on .resizable.selected.le-individual-override {
+  outline-color: #ff2a3d !important;
+}
 /* India-2: 選択中要素を一時的に最前面へ。
    重なったレイヤーで親 stacking context が異なる場合、ハンドル単独の
    z-index 上書きでは別の親 (より高い z-index) のハンドル背面に隠れる。
@@ -301,6 +306,46 @@ body.layout-editor-on .numeric-panel .np-align {
 }
 body.layout-editor-on .numeric-panel .np-hint {
   color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3;
+}
+/* 2026-05-06: 絶対位置 + chip preset 値の常時表示エリア */
+body.layout-editor-on .numeric-panel .np-info-section {
+  margin-top: 8px;
+}
+body.layout-editor-on .numeric-panel .np-abs-pos {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: #cfe;
+  padding: 4px 6px;
+  background: rgba(0, 80, 60, 0.25);
+  border-radius: 3px;
+  margin-top: 4px;
+}
+body.layout-editor-on .numeric-panel .np-preset-vals {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: #ddd;
+  padding: 4px 6px;
+  background: rgba(255, 138, 61, 0.08);
+  border-radius: 3px;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+body.layout-editor-on .numeric-panel .np-preset-empty {
+  color: #888; font-style: italic;
+}
+body.layout-editor-on .numeric-panel .np-preset-type {
+  color: #ffba6b; font-weight: 700; margin-top: 4px;
+}
+body.layout-editor-on .numeric-panel .np-preset-row {
+  display: flex; gap: 6px; padding: 1px 0 1px 8px;
+}
+body.layout-editor-on .numeric-panel .np-preset-row.np-preset-warn { color: #ff8a8a; }
+body.layout-editor-on .numeric-panel .np-preset-key {
+  color: #aaa; min-width: 56px;
+}
+body.layout-editor-on .numeric-panel .np-preset-num {
+  color: #cfe; font-size: 10px;
 }
 /* Foxtrot-2: 画像要素選択時の Natural サイズ + パーセント表示 */
 body.layout-editor-on .numeric-panel .np-natural-info {
