@@ -1796,8 +1796,11 @@ body.layout-editor-on .character img {
 
 /* ===== デバッグ全問プレイモード (?debug=all) =====
    通常ユーザーには絶対見えない。 body.debug-mode が付いたときのみ表示。
-   layout-editor (?edit=1) と同時指定された場合は body.layout-editor-on が付くので
-   :not(.layout-editor-on) で debug ナビを非表示にする (layout 編集を妨げないため)。 */
+   debug-mode class は QZ_DEBUG_ALL=true (URL ?debug=all) または
+   QZ_PLAYTEST_IN_EDITOR=true (editor toolbar の 🧪 Playtest ON 切替) のときだけ付く。
+   = 通常モード/通常 editor 開きでは body に何も付かないため、 UI が露出することはない。
+   editor mode と debug=all を併用した URL の場合は QZ_DEBUG_ALL 経由で debug-mode が
+   付き、 ナビ/パネルともに表示される (旧仕様の :not(.layout-editor-on) 抑止は撤廃)。 */
 #qz-debug-nav {
   display: none;
   position: fixed;
@@ -1821,7 +1824,7 @@ body.layout-editor-on .character img {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   max-width: 95vw;
 }
-body.debug-mode:not(.layout-editor-on) #qz-debug-nav { display: flex; }
+body.debug-mode #qz-debug-nav { display: flex; }
 #qz-debug-nav button {
   background: #4a4f6a;
   color: #fff;
@@ -1866,7 +1869,9 @@ body.debug-mode::after {
   border-radius: 4px;
   pointer-events: none;
 }
-body.debug-mode.layout-editor-on::after { display: none; }
+/* (旧仕様: editor mode では DEBUG MODE バッジを隠していたが、 editor 内 playtest mode が
+   ON のときは badge を出してフラグ状態を可視化したい。 layout-editor toolbar が存在する
+   ので右下に少し被るが運用上問題なし。) */
 
 /* ===== Playtest note panel (?debug=all 専用) =====
    問題ごとにコメント + スクショを残して GitHub に commit する開発者向けUI。 */
@@ -1889,7 +1894,7 @@ body.debug-mode.layout-editor-on::after { display: none; }
   max-width: 720px;
   margin: 0 auto;
 }
-body.debug-mode:not(.layout-editor-on) #qz-playtest-panel { display: block; }
+body.debug-mode #qz-playtest-panel { display: block; }
 #qz-playtest-panel .qz-pt-row {
   display: flex;
   gap: 6px;
@@ -1972,7 +1977,7 @@ body.debug-mode:not(.layout-editor-on) #qz-playtest-panel { display: block; }
 #qz-playtest-panel .qz-pt-toast.err   { background: rgba(220, 80, 60, 0.9);  display: block; }
 #qz-playtest-panel .qz-pt-toast.info  { background: rgba(80, 100, 160, 0.85); display: block; }
 /* debug ナビを少し下げて playtest panel と被らないようにする */
-body.debug-mode:not(.layout-editor-on) #qz-debug-nav { bottom: 8px; }
+body.debug-mode #qz-debug-nav { bottom: 8px; }
 </style>
 </head>
 <body class="sheet-on show-safe">
@@ -2149,6 +2154,30 @@ const QZ_DEBUG_ALL = (function () {
     return sp.get('debug') === 'all';
   } catch (_) { return false; }
 })();
+
+// ─── editor 内 playtest UI 表示フラグ ────────────────────
+//   ?edit=1 (layout-editor) で開いた状態で、 layout-editor の toolbar に追加した
+//   🧪 Playtest トグルボタンで ON/OFF 切替。 ON の時は debug=all モードで使われている
+//   playtest UI (コメント入力 / 自動キャプチャ / 添付 / 前へ次へ / カテゴリ・Lv ジャンプ)
+//   を editor mode でも利用できるようにする。 通常モード (?edit=1 なし) には影響しない。
+//   localStorage キー: 'qz-playtest-in-editor' (値: '0' / '1')
+//
+//   ★実装メモ: layout-editor の toggle ハンドラから即時に状態を切り替えたいので、
+//   IIFE 内の local binding ではなく window.QZ_PLAYTEST_IN_EDITOR (boolean) を
+//   「single source of truth」とする。 IIFE 内の guard はすべて getter 関数
+//   isPlaytestInEditor() 経由で参照する (関数呼び出しで毎回 window 経由の最新値を読む)。
+//   ※ getter 名を window プロパティ名と分けるのは、 同名にすると hoisting 順次第で
+//   「IIFE が throw → getter が自分自身 (function 値) を !! で評価して常に true」と
+//   いう silent failure trap が発生するため。
+try {
+  window.QZ_PLAYTEST_IN_EDITOR = (function () {
+    try { return localStorage.getItem('qz-playtest-in-editor') === '1'; }
+    catch (_) { return false; }
+  })();
+} catch (_) {}
+function isPlaytestInEditor() {
+  try { return !!window.QZ_PLAYTEST_IN_EDITOR; } catch (_) { return false; }
+}
 
 // 選択中カテゴリー（デフォルト: 全部ON）
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
@@ -2404,8 +2433,10 @@ function _bindHakaseBubbleClick() {
   if (!bubble) return;
   bubble.style.cursor = 'pointer';
   bubble.addEventListener('click', () => {
-    // layout-editor 中は吹き出しクリックでヒント2を出さない (要素移動を妨げないため)
-    if (document.body.classList.contains('layout-editor-on')) return;
+    // layout-editor 中は吹き出しクリックでヒント2を出さない (要素移動を妨げないため)。
+    // ただし playtest mode (🧪 Playtest ON) のときは編集中でも実際にヒントを見られる
+    // ようにガードを通す。
+    if (document.body.classList.contains('layout-editor-on') && !isPlaytestInEditor()) return;
     if (currentQ) showHint2(currentQ);
   });
 }
@@ -3179,8 +3210,10 @@ function renderChoices(q) {
     }
     btn.addEventListener('pointerdown', function(e) {
       // layout-editor (?edit=1) 中は chip クリックで quiz を進行させない
-      // (チップを掴んで動かしたいのに「答えた」と判定されて困る対策)
-      if (document.body.classList.contains('layout-editor-on')) return;
+      // (チップを掴んで動かしたいのに「答えた」と判定されて困る対策)。
+      // ただし playtest mode (🧪 Playtest ON) のときは編集中でも実際にクイズを
+      // 解けるようにするため、 ガードを通す。
+      if (document.body.classList.contains('layout-editor-on') && !isPlaytestInEditor()) return;
       e.preventDefault();
       if (locked) return;
       onChoice(i, btn);
@@ -3387,8 +3420,8 @@ function nextQuestion() {
   // _qzPtSaveCurrentNote は QZ_DEBUG_ALL=false / コメント空 + 添付なし / saving 中なら
   // 即 resolve するので、 通常モードでは透過 (オーバーヘッドほぼゼロ)。
   // 失敗時は localStorage に backup される & resolve するので遷移は止まらない。
-  if (typeof QZ_DEBUG_ALL !== 'undefined' && QZ_DEBUG_ALL &&
-      typeof _qzPtSaveCurrentNote === 'function') {
+  if (typeof _qzPtSaveCurrentNote === 'function' &&
+      (QZ_DEBUG_ALL || isPlaytestInEditor())) {
     try {
       var p = _qzPtSaveCurrentNote();
       if (p && typeof p.then === 'function') {
@@ -3576,7 +3609,8 @@ function _qzCatLabel(cat) {
   return cat || '?';
 }
 function updateDebugNav() {
-  if (!QZ_DEBUG_ALL) return;
+  // QZ_DEBUG_ALL (?debug=all) または QZ_PLAYTEST_IN_EDITOR (editor toolbar 切替) で許可
+  if (!QZ_DEBUG_ALL && !isPlaytestInEditor()) return;
   var meta = document.getElementById('qz-debug-meta');
   if (!meta) return;
   if (currentQ) {
@@ -3588,13 +3622,20 @@ function updateDebugNav() {
   } else {
     meta.textContent = '(no question)';
   }
+  // ジャンプ select: editor 内 playtest mode で後から playlist が組まれた場合も
+  // 最新化できるよう毎回再構築をチェック
+  if (typeof _qzRefreshDebugJumpSelect === 'function') _qzRefreshDebugJumpSelect();
   // ジャンプ select の現在位置同期
   var sel = document.getElementById('qz-debug-jump');
   if (sel) sel.value = String(questionIdx);
 }
 function _qzDebugGoto(targetIdx) {
-  if (!QZ_DEBUG_ALL) return;
-  if (_isEditMode()) return;
+  // QZ_DEBUG_ALL もしくは QZ_PLAYTEST_IN_EDITOR で許可。
+  // editor mode のとき、 旧仕様では `_isEditMode()` で全停止していたが
+  // playtest mode 中は editor mode でも正常に動かしたいので、 editor mode + playtest OFF
+  // のときだけ抑止する。
+  if (!QZ_DEBUG_ALL && !isPlaytestInEditor()) return;
+  if (_isEditMode() && !isPlaytestInEditor()) return;
   if (!playlist || playlist.length === 0) return;
   var idx = Math.max(0, Math.min(playlist.length - 1, targetIdx));
   // 進行中の自動ヒント / pose interval / lock を全部リセット
@@ -3860,7 +3901,8 @@ function _qzPtBackupAppend(noteEntry) {
 // ── Save flow: 「次へ」押下時に呼ばれる ───────────────────
 // 戻り値: Promise<bool>  (進行可なら resolve(true); ユーザー警告中なら false)
 function _qzPtSaveCurrentNote() {
-  if (!QZ_DEBUG_ALL) return Promise.resolve(true);
+  // editor 内 playtest mode (QZ_PLAYTEST_IN_EDITOR) からも GitHub へ保存できるようにする
+  if (!QZ_DEBUG_ALL && !isPlaytestInEditor()) return Promise.resolve(true);
   if (QZ_PT.saving) return Promise.resolve(false);
   var ta = document.getElementById('qz-pt-comment');
   var comment = (ta && ta.value || '').trim();
@@ -3985,13 +4027,14 @@ function _qzPtBuildPanel() {
   });
 
   document.getElementById('qz-pt-capture').addEventListener('click', function (e) {
-    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+    // editor mode 中でも playtest mode が ON なら通常通り動かす
+    if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault();
     _qzPtCaptureStage();
   });
   var fileInput = document.getElementById('qz-pt-attach-input');
   document.getElementById('qz-pt-attach-btn').addEventListener('click', function (e) {
-    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+    if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault();
     fileInput.click();
   });
@@ -4000,6 +4043,76 @@ function _qzPtBuildPanel() {
     fileInput.value = '';
   });
 }
+
+// debug nav (前へ / メタ / ジャンプ select / 次へ) DOM を組み立てて handler を配線。
+// QZ_DEBUG_ALL モードと editor 内 playtest mode の両方から呼ばれる共通関数。
+// 二重構築を防ぐため、 既に存在していれば早期 return する。
+function _qzBuildDebugNavDOM() {
+  if (document.getElementById('qz-debug-nav')) return;
+  var nav = document.createElement('div');
+  nav.id = 'qz-debug-nav';
+  nav.innerHTML =
+    '<button type="button" id="qz-debug-prev" title="前の問題へ">← 前へ</button>' +
+    '<span class="qz-dbg-meta" id="qz-debug-meta">(loading)</span>' +
+    '<select id="qz-debug-jump" title="ジャンプ"></select>' +
+    '<button type="button" id="qz-debug-next" title="次へ (コメント保存)">次へ →</button>';
+  document.body.appendChild(nav);
+
+  // ジャンプ select 項目: playlist が既に組まれているなら入れる、 まだなら空のまま。
+  // editor 内 playtest mode で playtest UI を ON にしたタイミングではまだ playlist が
+  // 空のことがあるため、 select は updateDebugNav 経由で必要に応じて再構築する。
+  _qzRefreshDebugJumpSelect();
+
+  document.getElementById('qz-debug-prev').addEventListener('click', function (e) {
+    if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
+    _qzPtSaveCurrentNote().then(function () {
+      _qzDebugGoto(questionIdx - 1);
+    });
+  });
+  document.getElementById('qz-debug-next').addEventListener('click', function (e) {
+    if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
+    _qzPtSaveCurrentNote().then(function () {
+      _qzDebugGoto(questionIdx + 1);
+    });
+  });
+}
+
+function _qzRefreshDebugJumpSelect() {
+  var sel = document.getElementById('qz-debug-jump');
+  if (!sel || !playlist) return;
+  // 既に options が入っていて項目数が一致していれば再構築不要
+  if (sel.options && sel.options.length === playlist.length) return;
+  // 一旦クリアして詰め直し
+  while (sel.firstChild) sel.removeChild(sel.firstChild);
+  var frag = document.createDocumentFragment();
+  playlist.forEach(function (q, i) {
+    var opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent =
+      (i + 1) + '/' + playlist.length + ' ' + _qzCatLabel(q._cat) +
+      ' Lv' + (q.level || '?') + ' #' + (q._idx != null ? q._idx : '?');
+    frag.appendChild(opt);
+  });
+  sel.appendChild(frag);
+  // change handler は重複登録を避けるためフラグで 1 回のみ
+  if (!sel._qzWired) {
+    sel._qzWired = true;
+    sel.addEventListener('change', function () {
+      if (_isEditMode() && !isPlaytestInEditor()) return;
+      _qzPtSaveCurrentNote().then(function () {
+        _qzDebugGoto(parseInt(sel.value, 10) || 0);
+      });
+    });
+  }
+}
+
+// editor toolbar の toggle ハンドラから呼べるよう window 公開
+try {
+  window._qzPtBuildPanel = _qzPtBuildPanel;
+  window._qzBuildDebugNavDOM = _qzBuildDebugNavDOM;
+  window._qzRefreshDebugJumpSelect = _qzRefreshDebugJumpSelect;
+  window.updateDebugNav = updateDebugNav;
+} catch (_) {}
 
 (function _qzDebugInit() {
   if (!QZ_DEBUG_ALL) return;
@@ -4015,17 +4128,8 @@ function _qzPtBuildPanel() {
   // 全カテゴリを ON にしておく (debug playlist は ALL_CATS から組むので念のため)
   ALL_CATS.forEach(function (c) { selectedCategories[c] = true; });
 
-  // デバッグナビ DOM を組み立て
-  var nav = document.createElement('div');
-  nav.id = 'qz-debug-nav';
-  nav.innerHTML =
-    '<button type="button" id="qz-debug-prev" title="前の問題へ">← 前へ</button>' +
-    '<span class="qz-dbg-meta" id="qz-debug-meta">(loading)</span>' +
-    '<select id="qz-debug-jump" title="ジャンプ"></select>' +
-    '<button type="button" id="qz-debug-next" title="次へ (コメント保存)">次へ →</button>';
-  document.body.appendChild(nav);
-
-  // playtest panel DOM
+  // デバッグナビ + playtest panel DOM
+  _qzBuildDebugNavDOM();
   _qzPtBuildPanel();
 
   // ゲーム初期化 → playlist が組まれる
@@ -4039,39 +4143,8 @@ function _qzPtBuildPanel() {
     } catch (_) {}
   }
 
-  // ジャンプ select に全問の項目を入れる (playlist が出揃った後)
-  var sel = document.getElementById('qz-debug-jump');
-  if (sel && playlist) {
-    var frag = document.createDocumentFragment();
-    playlist.forEach(function (q, i) {
-      var opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent =
-        (i + 1) + '/' + playlist.length + ' ' + _qzCatLabel(q._cat) +
-        ' Lv' + (q.level || '?') + ' #' + (q._idx != null ? q._idx : '?');
-      frag.appendChild(opt);
-    });
-    sel.appendChild(frag);
-    sel.addEventListener('change', function () {
-      if (_isEditMode()) return;
-      _qzPtSaveCurrentNote().then(function () {
-        _qzDebugGoto(parseInt(sel.value, 10) || 0);
-      });
-    });
-  }
-
-  document.getElementById('qz-debug-prev').addEventListener('click', function (e) {
-    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
-    _qzPtSaveCurrentNote().then(function () {
-      _qzDebugGoto(questionIdx - 1);
-    });
-  });
-  document.getElementById('qz-debug-next').addEventListener('click', function (e) {
-    if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
-    _qzPtSaveCurrentNote().then(function () {
-      _qzDebugGoto(questionIdx + 1);
-    });
-  });
+  // 初期化後に playlist が出揃ったので select を埋める
+  _qzRefreshDebugJumpSelect();
 
   // メタ情報を初期同期
   updateDebugNav();
