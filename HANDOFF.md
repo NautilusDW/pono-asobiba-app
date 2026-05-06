@@ -45,6 +45,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-06 - Refined `Fukuro_frame_002_pressed.png` toward the user's paintover reference. Removed the pronounced rim read, darkened each button face with a warmer beige-brown blend instead of a gray cast, and kept only a broad inner shadow so the whole tile reads as pressed inward. Final file remains `699x643` RGBA at `D:\ポノのおへや\Dr.owl'quiz\main\Fukuro_frame_002_pressed.png`. (by Codex)
+
 - 2026-05-06 - Refined `Fukuro_frame_002_pressed.png` again to match a clearer pressed-button read. The button faces are now uniformly darkened without center sculpting, the old outer drop shadow is reduced, and the pushed-in feel is expressed mainly at the wood-contact edge with a subtle inset seam shadow. Final file remains `699x643` RGBA at `D:\ポノのおへや\Dr.owl'quiz\main\Fukuro_frame_002_pressed.png`. (by Codex)
 
 - 2026-05-06 - Refined `Fukuro_frame_002_pressed.png` after visual feedback. Replaced the first subtle version with a clearer UI-style pressed state using only local image compositing: smoother rounded-rectangle masks, stronger paper-panel tint, and cleaner inset shadows without the previous dotted-edge artifacts. Final file remains `699x643` RGBA at `D:\ポノのおへや\Dr.owl'quiz\main\Fukuro_frame_002_pressed.png`. (by Codex)
