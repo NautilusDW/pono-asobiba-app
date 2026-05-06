@@ -33,8 +33,11 @@
     if (!el || !s) return;
     if (s.w) el.style.width = s.w;
     if (s.h) el.style.height = s.h;
-    var tx = s.tx || 0, ty = s.ty || 0;
-    if (tx || ty) {
+    // 'tx'/'ty' が s に含まれていれば必ず書く (= リセット tx=0,ty=0 でも前回の transform を消す)。
+    // 含まれていなければ transform は touch しない (caller が w/h だけ渡すケースに配慮)。
+    // 2026-05-06: chip preset のリセット時に古い transform が残るバグを修正。
+    if (('tx' in s) || ('ty' in s)) {
+      var tx = s.tx || 0, ty = s.ty || 0;
       el._tx = tx;
       el._ty = ty;
       el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
