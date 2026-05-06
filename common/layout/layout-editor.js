@@ -270,11 +270,12 @@
       var sel = entry[0];
       if (sel === '.userbox') return; // userbox saved in __userboxes
       var isChipScoped = _isChipScopedSelector(sel);
+      var isChipSelfSel = (sel === '.chip'); // chip 自体 (子要素 .chip .X は含まない)
       $$(sel).forEach(function (el, i) {
         var key = sel + '|' + i;
-        // 2026-05-06: chip 関連 key は明示的に individualOverrides に入ってる場合のみ保存。
-        //   drag/resize で勝手に個別化しない (= preset との関係を能動的に管理)。
-        if (isChipScoped && !state.individualOverrides.has(key)) return;
+        // 2026-05-06 改: chip 自体 (.chip|N) は cell 配置として常に保存。
+        //   子要素 (.chip .X|N) は明示的に individualOverrides に入ってる場合のみ保存。
+        if (isChipScoped && !isChipSelfSel && !state.individualOverrides.has(key)) return;
         data[key] = {
           w: el.style.width || '',
           h: el.style.height || '',
@@ -388,13 +389,17 @@
            chip.classList.contains('chip-type-text-only')  ? 'textOnly'  : null;
   }
 
-  // 1 chip から chip preset (chip + 全子パーツ) を抽出。
-  // illust/countNum/circle/label は要素が存在すれば必ず保存 (バグ修正B)。
+  // 1 chip から chip preset (chip.w/h + 全子パーツ) を抽出。
+  // 2026-05-06 改: preset.chip は w/h のみ。 tx/ty は含めない (= 各 chip の cell 配置は
+  //   .chip|N 個別 entry の責任)。 これにより 📌 押下で他 chip の絶対位置が変わるバグを根治。
+  // illust/countNum/circle/label は要素が存在すれば必ず保存。
   // ラベルは width を保存しない (= 各ラベルの text content に応じて auto-size、
   // 「あか」(2 chars) で保存した width を「オレンジ」(4 chars) のラベルに当てると
-  // クリップする問題への対策、 2026-05-06)。
+  // クリップする問題への対策)。
   function _buildPresetFromChip(chip) {
-    var preset = { chip: _readElLayout(chip) };
+    var preset = {
+      chip: { w: chip.style.width || '', h: chip.style.height || '' },
+    };
     var c = chip.querySelector('.circle');
     if (c) preset.circle = _readElLayout(c);
     var im = chip.querySelector('.chip-illust');
@@ -440,28 +445,29 @@
     types.forEach(function (t) {
       window._currentLayoutData.__chip_presets[t] = _buildPresetFromChip(typeMap[t]);
     });
-    // 保存元 chip 自身の個別 entry は削除 → preset が visual の真実になる。
-    // これをしないと、 preset 適用後に chip 自身の legacy 個別 entry が上書きして
-    // 元位置に戻るバグが発生する (2026-05-06 修正)。
+    // 2026-05-06 改: chip 自体 (.chip|N) の個別 entry は **触らない** — 各 chip が
+    //   異なる cell に居る現実 (chip|0=TL / chip|1=TR / ...) を保護するため必須。
+    // 一方、 子要素 (.chip .circle|N 等) は preset で全 chip に統一したいので、
+    //   同種 chip 全ての子要素個別 entry を剥がす (= preset が真実になる)。
     var allChips = Array.from(document.querySelectorAll('.chip'));
-    var prefixes = ['.chip|', '.chip .circle|', '.chip .chip-illust|', '.chip .chip-label|', '.chip .chip-count-num|'];
+    var childPrefixes = ['.chip .circle|', '.chip .chip-illust|', '.chip .chip-label|', '.chip .chip-count-num|'];
     types.forEach(function (t) {
-      var chip = typeMap[t];
-      var idx = allChips.indexOf(chip);
-      if (idx < 0) return;
-      prefixes.forEach(function (p) {
-        var key = p + idx;
-        if (window._currentLayoutData.hasOwnProperty(key)) delete window._currentLayoutData[key];
-        if (state.individualOverrides) state.individualOverrides.delete(key);
+      allChips.forEach(function (chip, idx) {
+        if (_chipType(chip) !== t) return;
+        childPrefixes.forEach(function (p) {
+          var key = p + idx;
+          if (window._currentLayoutData.hasOwnProperty(key)) delete window._currentLayoutData[key];
+          if (state.individualOverrides) state.individualOverrides.delete(key);
+        });
       });
     });
-    // 即時反映: 個別 override 持ち他 chip は preset 適用後に上書き勝ちで変わらない (= 個別を保護)。
+    // 即時反映: chip 自体の絶対位置は個別 entry で保護されているので、 他 chip が動かない。
     if (window.LayoutApplier && state.config) {
       window.LayoutApplier.apply(window._currentLayoutData, document, {
         selectors: state.config.editableSelectors || state.config.selectors,
       });
     }
-    showToast('preset 保存: ' + types.join(', ') + ' (保存元 chip の個別エントリは削除、 他は 🧹 で全反映)', 'success');
+    showToast('preset 保存: ' + types.join(', ') + ' (子要素配置を統一、 chip 自体の cell 位置は個別保護)', 'success');
     save();
     refreshSelectionUI();
     updateNumericPanel();

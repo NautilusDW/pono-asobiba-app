@@ -76,7 +76,13 @@
       if (!type) continue;
       var preset = presets[type];
       if (!preset) continue;
-      if (preset.chip)     applyOne(chip, preset.chip);
+      if (preset.chip) {
+        // 2026-05-06 改: preset.chip は w/h のみ適用。 tx/ty は無視する。
+        // 各 chip の cell 配置 (tx/ty) は .chip|N 個別 entry が責任を持つ。
+        // legacy saved-layout.json (preset.chip.tx/ty を含む) との後方互換のため、
+        // 適用時に strip する (= JSON は触らないがコード側で吸収)。
+        applyOne(chip, { w: preset.chip.w || '', h: preset.chip.h || '' });
+      }
       if (preset.circle) {
         var c = chip.querySelector('.circle');
         if (c) applyOne(c, preset.circle);
