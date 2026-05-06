@@ -1085,10 +1085,19 @@ body.layout-editor-on .stage-pono { display: none; }
 .chip.chip-with-image.txt-long   .chip-illust-label { font-size: 18px; }
 /* chip-label を block 化して getBoundingClientRect が正確な box を返すように。
    デフォルト inline span だと transform 適用時に境界がブレる + alignment 計算ズレ。
-   2026-05-06 修正: layout editor で label 整列が変な位置に飛ぶバグへの対策。 */
+   2026-05-06 修正: layout editor で label 整列が変な位置に飛ぶバグへの対策。
+   2026-05-07 修正: 長文 chip text が枠を突き抜ける + CJK 文字途中で改行 (例: 「うごくから」が「う」で改行) する不具合への対策。
+   - word-break: keep-all で CJK 文字を語中で割らない
+   - overflow-wrap: break-word でやむを得ない時のみ break (半角空白優先で wrap)
+   - max-width: 100% で chip 内に収める
+   - line-height は chip 全体の 1.2 を継承するが、 illust-label は別途 1.1 を維持 */
 .chip .chip-label {
   display: inline-block;
   text-align: center;
+  max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
