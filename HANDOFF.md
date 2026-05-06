@@ -14,6 +14,14 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-06 - **opposite img_answer 4 枚 生成依頼** (by Claude → for Codex): opposite カテゴリで img_word (質問絵) はあるが img_answer (正解絵) が無い 4 問について、 既存ペアと**同じキャラクター/同じアートスタイル**で正解絵を 4 枚生成してほしい。 詳細プロンプト + リファレンス画像パス + 視覚特徴 + 変更点 + 子供配慮ガイドラインは [`quizland/data/_review/codex-followup-opposite-img_answer.md`](quizland/data/_review/codex-followup-opposite-img_answer.md) に全部書いてある (この markdown を Codex に貼り付け、 リファレンス 4 枚を画像添付して 1 往復で発注する想定)。 必要なファイル:
+  1. `suwaru.png` (Q125, ref: `assets/images/quizland/illust/stage/opposite/tatsu.png` — 同じ男の子で座り姿)
+  2. `shimeru.png` (Q126, ref: `.../akeru.png` — 同じ男の子+ドアでドアを閉めてる絵)
+  3. `asa.png` (Q128, ref: `.../yoru.png` — 同じ雲もくもく輪郭で朝空 / 太陽 + 朝焼け)
+  4. `shikaru.png` (Q144, ref: `.../homeru.png` — ★同じお母さん+男の子のキャラ完全一致、 諭す表情。 怒鳴り顔/涙/おびえ NG)
+
+  納品: `tmp/alpha_pending/alpha/04/` 配下に透過 PNG 4 枚で。 配置・questions.js への img_answer 追記・sw.js bump・デプロイは Claude 側で対応。 デザイン整合性確保のため**4 枚まとめて 1 回で**発注する。
+
 - 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Added Quizland manifest v1.1 follow-up choice assets under `assets/images/quizland/illust/choice/`, including the final 11 (`kiri`, `mt_fuji`, `mt_kirishima`, `mt_koya`, `mt_norikura`, `snow_mountain`, `snow_country`, `winter_country`, `ice_country`, `snowy_time`, `night_only`), redrew `moyou` and `matsu_no_ki`, and copied the 6 romaji-named reuse aliases `ude`, `te`, `hare`, `kaze`, `tatsumaki`, `ondokei`. Regenerated `tmp/manifest_followup/out/image_manifest.json`, `gaps.json`, and `dedupe_proposal.json` with normalized v1.1 `context_tags`.
 
 - 2026-05-05 - sw.js CACHE_VERSION bump needed (by Codex): Section C stage generation completed. Saved Trivia Lv2-Lv3 stages `stage_trivia_four_birds_silhouette`, `stage_trivia_running_cheetah`, `stage_trivia_sleeping_bear_cave`, `stage_trivia_earthworm_after_rain`, `stage_trivia_koala_eucalyptus`, `stage_trivia_ocean_silhouettes_4`, `stage_trivia_dolphin`, `stage_trivia_huge_creatures_compare`, `stage_trivia_spider_eyes`, `stage_trivia_flamingo`, and `stage_trivia_male_lion`, then saved all Body stages `stage_body_skin_wrap`, `stage_body_heart_pump`, `stage_body_chewing_teeth`, `stage_body_lungs_breath`, and `stage_body_teeth_bone_compare`. Redraws were needed for `stage_trivia_spider_eyes` to remove an overly anthropomorphic smile. All section C `stage_*` assets are now present under `assets/images/quizland/illust/stage/`.
