@@ -1058,9 +1058,16 @@ body.layout-editor-on .stage-pono { display: none; }
   text-align: center;
   line-height: 1.2;
 }
-/* 文字数に応じてフォントサイズを自動調整 (renderChoices で付与) */
-.chip.txt-medium { font-size: 28px; }
-.chip.txt-long   { font-size: 22px; }
+/* 文字数に応じてフォントサイズを自動調整 (renderChoices で付与)
+   2026-05-07 修正(v792): chip 間で font-size が不揃いになり「長文だけ字が小さい」
+   現象が発生していたため、 文字数ベースの縮小ルール (txt-medium / txt-long) を
+   全面的に無効化。 全 chip で base font-size に統一し、 wrap (word-break + 折り返し)
+   で長文を吸収する方針に変更。 size class 自体は chipSizeClass() が引き続き付与
+   するが、 CSS 側で効かせない (副作用無し)。
+   .chip.has-image (色チップ: 丸+ラベル レイアウト用) は文字数縮小ではなく
+   レイアウト固有の size 指定なので維持。 */
+/* .chip.txt-medium { font-size: 28px; } */
+/* .chip.txt-long   { font-size: 22px; } */
 .chip.has-image  { font-size: 24px; }
 
 /* 画像入り選択肢: choice = {text, image} 形式の chip */
@@ -1081,20 +1088,28 @@ body.layout-editor-on .stage-pono { display: none; }
   font-size: 26px;
   line-height: 1.1;
 }
-.chip.chip-with-image.txt-medium .chip-illust-label { font-size: 22px; }
-.chip.chip-with-image.txt-long   .chip-illust-label { font-size: 18px; }
+/* 2026-05-07 修正(v792): illust-label の文字数ベース縮小も同様に無効化。
+   全 chip で 26px 統一、 折り返しで長文を吸収。 */
+/* .chip.chip-with-image.txt-medium .chip-illust-label { font-size: 22px; } */
+/* .chip.chip-with-image.txt-long   .chip-illust-label { font-size: 18px; } */
 /* chip-label を block 化して getBoundingClientRect が正確な box を返すように。
    デフォルト inline span だと transform 適用時に境界がブレる + alignment 計算ズレ。
    2026-05-06 修正: layout editor で label 整列が変な位置に飛ぶバグへの対策。
    2026-05-07 修正: 長文 chip text が枠を突き抜ける + CJK 文字途中で改行 (例: 「うごくから」が「う」で改行) する不具合への対策。
+   2026-05-07 修正(v792): font-size 統一に合わせて wrap を強化:
+   - display: block で chip 幅にきっちり収める (inline-block だと overflow 余地)
+   - padding: 0 6% で chip 端に貼り付かない (左右の枠はみ出し防止)
+   - box-sizing: border-box で padding 込み 100% 幅
    - word-break: keep-all で CJK 文字を語中で割らない
    - overflow-wrap: break-word でやむを得ない時のみ break (半角空白優先で wrap)
-   - max-width: 100% で chip 内に収める
    - line-height は chip 全体の 1.2 を継承するが、 illust-label は別途 1.1 を維持 */
 .chip .chip-label {
-  display: inline-block;
-  text-align: center;
+  display: block;
+  width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 6%;
+  text-align: center;
   word-break: keep-all;
   overflow-wrap: break-word;
   white-space: normal;
