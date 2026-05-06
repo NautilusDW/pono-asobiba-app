@@ -2655,9 +2655,10 @@ function renderEmojiName(stage, q) {
   stage.appendChild(wrap);
 }
 function renderOpposite(stage, q) {
-  // q.img_word があれば、 質問語の絵を上、 word テキストを下の構成。
-  // 正解後に onChoice 側から img.src と word.textContent を差し替えて
-  // 反対語の絵をリビールするため、 個別 ID で参照可能にしておく。
+  // q.img_word があれば絵だけを表示 (word テキストは冗長なので省略)。
+  // 正解後は onChoice → revealAnswer で img.src を img_answer に差し替えてリビール。
+  // word テキスト要素が存在しないので revealAnswer の txt 書き換えは自動 skip される。
+  // img_word なし (=従来の opposite) はテキストのみで表示 (現行どおり)。
   const container = document.createElement('div');
   container.className = 'emoji-display opposite-with-img';
   if (q.img_word) {
@@ -2678,12 +2679,13 @@ function renderOpposite(stage, q) {
       }
     });
     container.appendChild(imgEl);
+  } else {
+    const wrap = document.createElement('div');
+    wrap.id = 'opposite-word-text';
+    wrap.className = 'opposite-display';
+    wrap.textContent = q.word;
+    container.appendChild(wrap);
   }
-  const wrap = document.createElement('div');
-  wrap.id = 'opposite-word-text';
-  wrap.className = 'opposite-display';
-  wrap.textContent = q.word;
-  container.appendChild(wrap);
   stage.appendChild(container);
 }
 
