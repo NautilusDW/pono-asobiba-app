@@ -482,31 +482,39 @@
       showToast('chip 種別/slot が判定できません (chip-type-* class なし or DOM 順 4 個超過)', 'warn');
       return;
     }
-    // 2026-05-07 v784: 📌 で preset 保存した chip の個別 entry を削除する。
+    // 2026-05-07 v785: 📌 で preset 保存した chip の個別 entry を削除する。
     //   個別 entry (= .chip|N および .chip .circle|N 等) は preset を上書きするため、
     //   残ったままだと「保存しても他問題に反映しない」「同じ問題に戻ったら元に戻る」
     //   状態になる (preset → 個別 entry の順で apply され後勝ち)。
-    //   削除対象は「📌 押下で保存した chip の slot」のみ。 他 chip は触らない
-    //   (= ユーザーが意図しない preset 化の副作用を防ぐ)。
-    var savedSlots = {}; // { N: true } — 保存した chip の slot index 集合
-    saved.forEach(function (s) { savedSlots[s.slot] = true; });
-    var INDIVIDUAL_KEYS_FOR_SLOT = function (n) {
-      return [
-        '.chip|' + n,
-        '.chip .circle|' + n,
-        '.chip .chip-illust|' + n,
-        '.chip .chip-label|' + n,
-        '.chip .chip-count-num|' + n,
-      ];
+    //
+    //   2026-05-07 v785 fix: 削除対象を「今回保存した preset に含まれる part のみ」
+    //   に限定する。 textOnly (count_total) chip 保存時に image+text 専用の
+    //   `.chip .chip-illust|N` を消してしまうと、 同じ slot を共有する withImage
+    //   問題に戻ったときに illust の個別位置が失われ、 chip が右下にずれる
+    //   (= preset 旧値や CSS default が顔を出す) クロス汚染が起きていた。
+    //   slotPreset には _buildPresetFromChip でその chip type に存在する part だけ
+    //   が含まれるので、 part → key prefix を引いて該当 entry のみ削除する。
+    var PART_TO_KEY_PREFIX = {
+      chip:     '.chip|',
+      circle:   '.chip .circle|',
+      illust:   '.chip .chip-illust|',
+      label:    '.chip .chip-label|',
+      countNum: '.chip .chip-count-num|',
     };
-    // 保存対象 chip の個別 entry を data + state.individualOverrides から削除
-    Object.keys(savedSlots).forEach(function (slotKey) {
-      var n = Number(slotKey);
-      INDIVIDUAL_KEYS_FOR_SLOT(n).forEach(function (key) {
+    // 保存対象 chip の個別 entry を data + state.individualOverrides から削除 (type 別 part 限定)
+    saved.forEach(function (s) {
+      var slotPreset = data.__chip_presets[s.type] && data.__chip_presets[s.type][String(s.slot)];
+      if (!slotPreset) return;
+      Object.keys(slotPreset).forEach(function (part) {
+        var prefix = PART_TO_KEY_PREFIX[part];
+        if (!prefix) return;
+        var key = prefix + s.slot;
         if (data.hasOwnProperty(key)) delete data[key];
         if (state.individualOverrides) state.individualOverrides.delete(key);
       });
     });
+    var savedSlots = {}; // { N: true } — 保存した chip の slot index 集合 (後段の他 chip 同期用)
+    saved.forEach(function (s) { savedSlots[s.slot] = true; });
     // 2026-05-06 fix (維持): 保存対象**外**の chip については、 ドラッグで更新された
     //   位置を _currentLayoutData に同期する (個別 entry を維持)。 これをしないと
     //   apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
