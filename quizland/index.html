@@ -2687,23 +2687,28 @@ function renderOpposite(stage, q) {
   stage.appendChild(container);
 }
 
-// opposite 正解時: 質問絵 → 正解絵にリビール + word を正解語に書き換え。
-// renderOpposite で付与した ID を辿って差し替えるだけ。
-function revealOppositeAnswer(q) {
-  const imgEl = document.getElementById('opposite-stage-img');
-  const txtEl = document.getElementById('opposite-word-text');
+// 正解時の画像リビール (opposite + trivia 共通)。
+// renderOpposite / renderTrivia で付与した ID を辿って img.src を差し替える。
+// opposite の場合は word テキストも正解語に書き換える (trivia は word なし)。
+function revealAnswer(q) {
+  const imgEl = document.getElementById('opposite-stage-img')
+             || document.getElementById('trivia-stage-img');
   if (imgEl && q.img_answer) {
     const v = (window._imgCacheBust || '');
     const stagePath = '../assets/images/quizland/illust/stage/' + q.img_answer + (v ? '?v=' + v : '');
     const choicePath = '../assets/images/quizland/illust/choice/' + q.img_answer + (v ? '?v=' + v : '');
-    imgEl.src = stagePath;
     imgEl.dataset.fallback = choicePath;
     // alpha-removed reveal animation: 一瞬フェード
     imgEl.style.transition = 'opacity 0.3s';
     imgEl.style.opacity = '0';
-    setTimeout(() => { imgEl.style.opacity = '1'; }, 60);
+    setTimeout(() => {
+      imgEl.src = stagePath;
+      imgEl.style.opacity = '1';
+    }, 60);
   }
-  if (txtEl) {
+  // opposite のみ: word テキストを正解語に書き換え
+  const txtEl = document.getElementById('opposite-word-text');
+  if (txtEl && q.type === 'opposite') {
     const ansText = (typeof q.choices[q.answer] === 'object')
       ? q.choices[q.answer].text
       : q.choices[q.answer];
@@ -2848,15 +2853,17 @@ function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display trivia-display';
 
-  // q.img が指定されている場合は stage 画像を出す (ポノ代用は使わない)
-  // パス解決: stage/ → choice/ の順でフォールバック (onerror で 1回だけ swap)
-  if (q.img) {
+  // 質問時の画像。 img_word があればそれを優先 (正解後に img_answer にリビールするため
+  // revealAnswer から #trivia-stage-img の src を差し替える)。 なければ既存の q.img。
+  const initialImg = q.img_word || q.img;
+  if (initialImg) {
     const imgEl = document.createElement('img');
+    imgEl.id = 'trivia-stage-img';
     imgEl.className = 'emoji-main-img';
     imgEl.alt = '';
     const v = (window._imgCacheBust || '');
-    const stagePath = '../assets/images/quizland/illust/stage/' + q.img + (v ? '?v=' + v : '');
-    const choicePath = '../assets/images/quizland/illust/choice/' + q.img + (v ? '?v=' + v : '');
+    const stagePath = '../assets/images/quizland/illust/stage/' + initialImg + (v ? '?v=' + v : '');
+    const choicePath = '../assets/images/quizland/illust/choice/' + initialImg + (v ? '?v=' + v : '');
     imgEl.src = stagePath;
     imgEl.dataset.fallback = choicePath;
     imgEl.addEventListener('error', function once() {
@@ -3103,12 +3110,21 @@ function onChoice(idx, btn) {
       var a = JSON.parse(localStorage.getItem(k) || '[]');
       if (a.indexOf('quizland') === -1) { a.push('quizland'); localStorage.setItem(k, JSON.stringify(a)); }
     })();
-    // opposite + img_answer のとき: 正解絵リビール + 「つぎへ」ボタン (自動遷移しない)
-    if (currentQ.type === 'opposite' && currentQ.img_answer) {
-      setTimeout(() => {
-        revealOppositeAnswer(currentQ);
-        showNextButton(nextQuestion);
-      }, 900);
+    // img_answer のとき: 正解絵リビール + 「つぎへ」ボタン (自動遷移しない)。
+    // opposite は word テキストも反対語に切替。 trivia は detail があれば一緒に表示。
+    if (currentQ.img_answer) {
+      setTimeout(() => { revealAnswer(currentQ); }, 900);
+      if (currentQ.detail) {
+        setTimeout(() => {
+          showDetailDialogue(currentQ.detail);
+          if (typeof Narration !== 'undefined') {
+            var dKey = narrationKey(currentQ, 'detail');
+            if (dKey && Narration.hasEntry(dKey)) Narration.play(dKey);
+          }
+        }, 1500);
+      }
+      // 「つぎへ」は reveal + detail 表示完了後に出す
+      setTimeout(() => { showNextButton(nextQuestion); }, currentQ.detail ? 2200 : 1500);
     } else if (currentQ.detail) {
       setTimeout(() => {
         showDetailDialogue(currentQ.detail);
