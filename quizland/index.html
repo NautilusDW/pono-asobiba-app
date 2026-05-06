@@ -468,6 +468,39 @@ body.layout-editor-on.show-safe .safe-area > .center-dot {
 body:not(.layout-editor-on) .center-dot,
 body.layout-editor-on:not(.show-safe) .center-dot { display: none; }
 
+/* ===== フレーム別 センターマーカー (?edit=1 + show-safe 時のみ)
+   各フレーム (.chip / .emoji-display / #answer-panel / .q-text-card) の中心位置を
+   オレンジ系ドットで可視化。 既存の safe-area 中心マーカー (マゼンタ) とは
+   色を変えて見分けやすくする。
+   - .chip / .emoji-display は QZ_RESIZABLE_SELECTORS で .resizable が付くため
+     layout-editor.css 側で position: relative が当たる (起点 OK)。
+   - #answer-panel は resizable 未登録なので、 ここで明示的に position: relative。
+   - .q-text-card は元から position: relative。
+   - z-index は resize handle (60-100) より低めの 50 にして、 ハンドル操作を邪魔しない。
+   - pointer-events: none で クリックを通す。
+   ===== */
+body.layout-editor-on.show-safe #answer-panel {
+  position: relative;
+}
+body.layout-editor-on.show-safe .chip::after,
+body.layout-editor-on.show-safe .emoji-display::after,
+body.layout-editor-on.show-safe #answer-panel::after,
+body.layout-editor-on.show-safe .q-text-card::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  background: rgba(255, 140, 0, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 50;
+}
+
 /* ===== Header (top, hdr-pill 左 + ctrl-btn 群 右) ===== */
 .hdr {
   display: grid;
