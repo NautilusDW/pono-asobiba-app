@@ -238,7 +238,7 @@ const QUIZLAND_QUESTIONS = {
       img_word:'opposite/akeru.png' },
     { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','いい','わるい','おもしろい'] },
     { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の はんたいは？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
-      img_word:'opposite/yoru.png' },
+      img_word:'opposite/yoru.png' /* img_answer (asa.png 朝空) は未生成 — Codex 後追い */ },
     { level:1, type:'opposite', category:'opposite', word:'たくさん', q:'「たくさん」の はんたいは？', answer:3, choices:['おおきい','おおい','はやい','すこし'] },
 
     // Level 2
