@@ -237,16 +237,27 @@ body.sheet-on .chip.wrong {
   transform: none !important;
   animation: none !important;
 }
-body.sheet-on .chip.pressed[data-idx="0"] {
+/* 押下中だけでなく、 正解/不正解後も「どこを押したか」を示すため
+   .correct / .wrong 状態でも同じ pressed 画像を維持 (次の問題で chip は再生成されるので
+   永続させても OK)。 */
+body.sheet-on .chip.pressed[data-idx="0"],
+body.sheet-on .chip.correct[data-idx="0"],
+body.sheet-on .chip.wrong[data-idx="0"] {
   background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png') center / 100% 100% no-repeat !important;
 }
-body.sheet-on .chip.pressed[data-idx="1"] {
+body.sheet-on .chip.pressed[data-idx="1"],
+body.sheet-on .chip.correct[data-idx="1"],
+body.sheet-on .chip.wrong[data-idx="1"] {
   background: url('../assets/images/quizland/Fukuro_frame_002_pressed_TR.png') center / 100% 100% no-repeat !important;
 }
-body.sheet-on .chip.pressed[data-idx="2"] {
+body.sheet-on .chip.pressed[data-idx="2"],
+body.sheet-on .chip.correct[data-idx="2"],
+body.sheet-on .chip.wrong[data-idx="2"] {
   background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BL.png') center / 100% 100% no-repeat !important;
 }
-body.sheet-on .chip.pressed[data-idx="3"] {
+body.sheet-on .chip.pressed[data-idx="3"],
+body.sheet-on .chip.correct[data-idx="3"],
+body.sheet-on .chip.wrong[data-idx="3"] {
   background: url('../assets/images/quizland/Fukuro_frame_002_pressed_BR.png') center / 100% 100% no-repeat !important;
 }
 
