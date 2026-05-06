@@ -1359,6 +1359,40 @@ body.layout-editor-on .character img {
   color: var(--text);
 }
 .modal-icon { font-size: 3rem; line-height: 1; }
+/* 全問正解時の「ぜんぶ できたね！」スタンプ画像 (modal-icon の中身が img になる) */
+.result-stamp-img {
+  width: 240px;
+  height: 240px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(120, 83, 20, 0.25));
+}
+/* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に) */
+.seikai-stamp {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  transform: translate(-50%, -50%) scale(0.4) rotate(-12deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+}
+.seikai-stamp img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(120, 83, 20, 0.35));
+}
+.seikai-stamp.show {
+  transform: translate(-50%, -50%) scale(1) rotate(-8deg);
+  opacity: 1;
+}
+@media (max-width: 768px) {
+  .seikai-stamp { width: 240px; height: 240px; }
+  .result-stamp-img { width: 180px; height: 180px; }
+}
 .modal-title {
   font-size: 1.4rem;
   font-weight: 900;
@@ -1945,6 +1979,11 @@ body.debug-mode:not(.layout-editor-on) #qz-debug-nav { bottom: 8px; }
 
 <!-- Feedback / Result / Detail popup -->
 <div class="feedback" id="feedback">やったー！</div>
+
+<!-- 正解スタンプ (correct answer transient overlay)。 onChoice が show class を付けて 1.5 秒後に外す。 -->
+<div class="seikai-stamp" id="seikai-stamp" aria-hidden="true">
+  <img src="../assets/images/quizland/stamps/seikai.png" alt="">
+</div>
 
 <div class="overlay hidden" id="result-overlay">
   <div class="modal">
@@ -3102,6 +3141,7 @@ function onChoice(idx, btn) {
     playCorrect();
     showFeedback('やったー！');
     showCorrectDialogue();
+    showSeikaiStamp();
     ponoJump();
     launchConfetti();
     correctCount++;
@@ -3148,6 +3188,19 @@ function onChoice(idx, btn) {
     // もう1回チャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
     locked = false;
   }
+}
+
+// 正解時の「せいかい！」スタンプを画面中央に一瞬出す。
+//   onChoice の correct 分岐から呼ぶ。 1.5 秒後に自動で消える。
+//   再表示 (連続正解) では reflow でアニメーションをリスタート。
+function showSeikaiStamp() {
+  const el = document.getElementById('seikai-stamp');
+  if (!el) return;
+  el.classList.remove('show');
+  void el.offsetWidth; // force reflow to restart CSS transition
+  el.classList.add('show');
+  clearTimeout(showSeikaiStamp._timer);
+  showSeikaiStamp._timer = setTimeout(() => el.classList.remove('show'), 1500);
 }
 
 function showFeedback(text, wrong) {
@@ -3205,7 +3258,14 @@ function showResult() {
   stopStagePono();           // 左下ポノも結果画面では停止
   showClearDialogue(correctCount, totalQuestions);
   const cleared = correctCount >= Math.ceil(totalQuestions * 0.7); // 70% 以上で clear
-  document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
+  const isPerfect = correctCount === totalQuestions && totalQuestions > 0;
+  // 全問正解 (Perfect) のときは「ぜんぶ できたね！」スタンプ画像を出す。 それ以外は emoji。
+  const iconEl = document.getElementById('result-icon');
+  if (isPerfect) {
+    iconEl.innerHTML = '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
+  } else {
+    iconEl.textContent = cleared ? '🎉' : '💪';
+  }
   document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
   document.getElementById('result-msg').textContent = cleared
     ? totalQuestions + 'もんちゅう ' + correctCount + 'もん せいかい！'
