@@ -359,11 +359,16 @@
   // ====================================================================
   //  Chip preset (chip-type-with-image / chip-type-text-only)
   //  Helper for `📌 chip preset 保存` / `🧹 個別設定クリア` toolbar buttons.
-  //  schema: data.__chip_presets = {
-  //    withImage: { chip:{w,h,tx,ty}, circle:{...}, illust:{...}, label:{...}, countNum:{...} },
-  //    textOnly:  { chip:{...}, label:{...}, countNum:{...} }
-  //  }
-  //  layout-applier の applyChipPresets が page render 時に同種別 chip にも適用する。
+  //  schema (2026-05-07: 4-slot 構造):
+  //    data.__chip_presets = {
+  //      withImage: { "0": { chip:{w,h}, circle:{...}, illust:{...}, label:{...} },
+  //                   "1": {...}, "2": {...}, "3": {...} },
+  //      textOnly:  { "0": { chip:{w,h}, label:{...}, countNum:{...} },
+  //                   "1": {...}, "2": {...}, "3": {...} }
+  //    }
+  //  各 chip の現在位置を slot 別に保存・適用。 slot index = querySelectorAll('.chip')
+  //  の順 = data-idx (0=TL, 1=TR, 2=BL, 3=BR)。
+  //  layout-applier の applyChipPresets が page render 時に slot 単位で適用する。
   // ====================================================================
 
   function _readElLayout(el) {
@@ -414,9 +419,19 @@
     return preset;
   }
 
+  // 選択された chip の DOM index (querySelectorAll('.chip') の順) = data-idx = slot index。
+  // 0..3 以外 (DOM に居ない / 5 個目以降) なら null。
+  function _findChipSlot(chip) {
+    if (!chip) return null;
+    var all = Array.from(document.querySelectorAll('.chip'));
+    var idx = all.indexOf(chip);
+    if (idx < 0 || idx > 3) return null;
+    return idx;
+  }
+
   function saveChipPreset() {
-    // 2026-05-06: マルチセレクト対応。 選択された chip を種別ごとにグルーピングし、
-    //   各種別の最初の 1 個を preset に登録。 選択されてない種別の preset は触らない。
+    // 2026-05-07: 4-slot 構造に拡張。 選択された chip それぞれの現在位置を、
+    //   (type, slot) ごとに別々の preset として保存。
     var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
     var chips = sel.map(function (el) {
       if (el.classList && el.classList.contains('chip')) return el;
@@ -429,44 +444,43 @@
       showToast('chip (または chip 内子要素) を 1 つ以上選択してください', 'warn');
       return;
     }
-    // 種別ごとに最初の 1 個を採用
-    var typeMap = {};
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    // 既存フラット形式を 4-slot 形式に in-memory 正規化
+    if (window.LayoutApplier && window.LayoutApplier._normalizeChipPresets) {
+      window._currentLayoutData.__chip_presets = window.LayoutApplier._normalizeChipPresets(
+        window._currentLayoutData.__chip_presets || {}
+      );
+    } else if (!window._currentLayoutData.__chip_presets) {
+      window._currentLayoutData.__chip_presets = {};
+    }
+    var data = window._currentLayoutData;
+    // 各 chip を (type, slot) でグルーピング
+    var saved = []; // [{ type, slot }]
+    var skipped = 0;
     chips.forEach(function (chip) {
       var t = _chipType(chip);
-      if (t && !typeMap[t]) typeMap[t] = chip;
+      var slot = _findChipSlot(chip);
+      if (!t || slot == null) {
+        skipped++;
+        console.warn('[layout-editor] chip preset 保存: type/slot 不明', chip, 'type=', t, 'slot=', slot);
+        return;
+      }
+      if (!data.__chip_presets[t]) data.__chip_presets[t] = {};
+      data.__chip_presets[t][String(slot)] = _buildPresetFromChip(chip);
+      saved.push({ type: t, slot: slot });
     });
-    var types = Object.keys(typeMap);
-    if (!types.length) {
-      showToast('chip 種別が判定できません (chip-type-* class なし)', 'warn');
+    if (!saved.length) {
+      showToast('chip 種別/slot が判定できません (chip-type-* class なし or DOM 順 4 個超過)', 'warn');
       return;
     }
-    if (!window._currentLayoutData) window._currentLayoutData = {};
-    if (!window._currentLayoutData.__chip_presets) window._currentLayoutData.__chip_presets = {};
-    types.forEach(function (t) {
-      window._currentLayoutData.__chip_presets[t] = _buildPresetFromChip(typeMap[t]);
-    });
-    // 2026-05-06 改: chip 自体 (.chip|N) の個別 entry は **触らない** — 各 chip が
-    //   異なる cell に居る現実 (chip|0=TL / chip|1=TR / ...) を保護するため必須。
-    // 一方、 子要素 (.chip .circle|N 等) は preset で全 chip に統一したいので、
-    //   同種 chip 全ての子要素個別 entry を剥がす (= preset が真実になる)。
-    var allChips = Array.from(document.querySelectorAll('.chip'));
-    var childPrefixes = ['.chip .circle|', '.chip .chip-illust|', '.chip .chip-label|', '.chip .chip-count-num|'];
-    types.forEach(function (t) {
-      allChips.forEach(function (chip, idx) {
-        if (_chipType(chip) !== t) return;
-        childPrefixes.forEach(function (p) {
-          var key = p + idx;
-          if (window._currentLayoutData.hasOwnProperty(key)) delete window._currentLayoutData[key];
-          if (state.individualOverrides) state.individualOverrides.delete(key);
-        });
-      });
-    });
-    // 2026-05-06 fix: ドラッグで更新された chip 位置を _currentLayoutData に同期。
+    // 2026-05-07: 「同種別の他 chip の子要素 individual entry を剥がす」処理は廃止。
+    //   preset と individual の共存を許す方針へ (4-slot 化で不要に)。
+    // 2026-05-06 fix (維持): ドラッグで更新された chip 位置を _currentLayoutData に同期。
     //   これをしないと apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
     //   ユーザーのドラッグが消える。
     Array.from(document.querySelectorAll('.chip')).forEach(function (chip, idx) {
       var key = '.chip|' + idx;
-      window._currentLayoutData[key] = {
+      data[key] = {
         w: chip.style.width || '',
         h: chip.style.height || '',
         tx: chip._tx || 0,
@@ -479,7 +493,20 @@
         selectors: state.config.editableSelectors || state.config.selectors,
       });
     }
-    showToast('preset 保存: ' + types.join(', ') + ' (子要素配置を統一、 chip 自体の cell 位置は個別保護)', 'success');
+    // toast: 保存した (type, slot) を一覧表示
+    var SLOT_LABELS = ['TL', 'TR', 'BL', 'BR'];
+    var byType = {};
+    saved.forEach(function (s) {
+      if (!byType[s.type]) byType[s.type] = [];
+      byType[s.type].push(s.slot);
+    });
+    var msg = 'preset 保存: ' + Object.keys(byType).map(function (t) {
+      return t + ' slot ' + byType[t].sort().map(function (sl) {
+        return sl + '(' + SLOT_LABELS[sl] + ')';
+      }).join(',');
+    }).join(' / ');
+    if (skipped) msg += ' (' + skipped + ' 件 skip)';
+    showToast(msg, 'success');
     save();
     refreshSelectionUI();
     updateNumericPanel();
@@ -500,31 +527,38 @@
       showToast('layout データが読み込まれていません', 'warn');
       return;
     }
-    var preset = window._currentLayoutData.__chip_presets && window._currentLayoutData.__chip_presets[type];
-    if (!preset) {
+    // 2026-05-07: 4-slot 形式に in-memory 正規化してから参照
+    if (window.LayoutApplier && window.LayoutApplier._normalizeChipPresets) {
+      window._currentLayoutData.__chip_presets = window.LayoutApplier._normalizeChipPresets(
+        window._currentLayoutData.__chip_presets || {}
+      );
+    }
+    var presets = window._currentLayoutData.__chip_presets;
+    if (!presets || !presets[type]) {
       showToast(type + ' preset が未定義です。 まず 📌 で preset 保存してください', 'warn');
       return;
     }
-    // 2026-05-06 バグ修正A: preset に該当パーツがある prefix のみ削除する。
-    //   illust が preset に無いのに個別 .chip .chip-illust|N を削除すると、
-    //   illust が preset でも個別でも位置情報を失って画面外に飛ぶ事故が発生していた。
-    // 2026-05-06 改: .chip|N (chip 自体の cell 配置) は **絶対に削除しない**。
+    // 2026-05-07 改: 4-slot 化に伴い、 chip ごとに「自分の slot の preset」が
+    //   どの parts (circle/illust/label/countNum) を持つかで個別 entry の削除可否を判定。
+    //   slot に preset が無い chip はスキップ。
+    // 2026-05-06 維持: .chip|N (chip 自体の cell 配置) は **絶対に削除しない**。
     //   preset.chip は w/h のみで tx/ty を持たないので、 .chip|N を消すと cell 配置が
     //   失われて chip が flex 自然位置 (重なる等) に飛ぶ。
-    var prefixCoverage = {
-      '.chip .circle|':        !!preset.circle,
-      '.chip .chip-illust|':   !!preset.illust,
-      '.chip .chip-label|':    !!preset.label,
-      '.chip .chip-count-num|':!!preset.countNum,
-    };
     var allChips = Array.from(document.querySelectorAll('.chip'));
-    var indices = [];
-    allChips.forEach(function (ch, i) {
-      if (_chipType(ch) === type) indices.push(i);
-    });
     var deleted = 0;
     var skipped = 0;
-    indices.forEach(function (i) {
+    allChips.forEach(function (ch, i) {
+      if (_chipType(ch) !== type) return;
+      var slot = _findChipSlot(ch);
+      if (slot == null) return;
+      var slotPreset = presets[type][String(slot)];
+      if (!slotPreset) return; // この slot は未保存 → 何も削除しない
+      var prefixCoverage = {
+        '.chip .circle|':        !!slotPreset.circle,
+        '.chip .chip-illust|':   !!slotPreset.illust,
+        '.chip .chip-label|':    !!slotPreset.label,
+        '.chip .chip-count-num|':!!slotPreset.countNum,
+      };
       Object.keys(prefixCoverage).forEach(function (p) {
         var key = p + i;
         if (window._currentLayoutData.hasOwnProperty(key)) {
@@ -2739,35 +2773,48 @@
                                '  y:' + Math.min.apply(null, ys) + '〜' + Math.max.apply(null, ys);
       }
     }
-    // 2026-05-06: chip preset 現値の常時表示。
-    //   __chip_presets を読み出して各種別の値を一覧。 未設定パーツは ⚠ で警告。
+    // 2026-05-07: chip preset 現値の常時表示 (4-slot 構造対応)。
+    //   __chip_presets を type × slot のネストで一覧表示。
     var presetEl = panel.querySelector('#np-preset-vals');
     if (presetEl) {
+      // 表示時に in-memory を 4-slot 形式に正規化 (read-only normalize)
       var presets = window._currentLayoutData && window._currentLayoutData.__chip_presets;
+      if (presets && window.LayoutApplier && window.LayoutApplier._normalizeChipPresets) {
+        presets = window.LayoutApplier._normalizeChipPresets(presets);
+      }
       if (!presets || (!presets.withImage && !presets.textOnly)) {
         presetEl.innerHTML = '<span class="np-preset-empty">(未保存) 📌 で保存してください</span>';
       } else {
+        var SLOT_LABELS = ['TL', 'TR', 'BL', 'BR'];
         var lines = [];
         ['withImage', 'textOnly'].forEach(function (type) {
           if (!presets[type]) return;
-          lines.push('<div class="np-preset-type">' + type + ':</div>');
-          var p = presets[type];
-          var parts = ['chip', 'circle', 'illust', 'label', 'countNum'];
-          parts.forEach(function (k) {
-            if (p[k]) {
-              lines.push('<div class="np-preset-row"><span class="np-preset-key">' + k + '</span>' +
-                         '<span class="np-preset-num">tx=' + Math.round(p[k].tx || 0) +
-                         ' ty=' + Math.round(p[k].ty || 0) +
-                         (p[k].w ? ' W=' + parseInt(p[k].w, 10) : '') +
-                         (p[k].h ? ' H=' + parseInt(p[k].h, 10) : '') +
-                         '</span></div>');
-            } else if (k === 'illust' && type === 'withImage') {
-              lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
-                         '<span class="np-preset-num">⚠ 未設定</span></div>');
-            } else if (k === 'countNum') {
-              lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
-                         '<span class="np-preset-num">⚠ 未設定</span></div>');
+          [0, 1, 2, 3].forEach(function (slot) {
+            var slotPreset = presets[type][String(slot)];
+            if (!slotPreset) {
+              lines.push('<div class="np-preset-type np-preset-empty">' + type +
+                         ' / slot ' + slot + ' (' + SLOT_LABELS[slot] + '): 未保存</div>');
+              return;
             }
+            lines.push('<div class="np-preset-type">' + type +
+                       ' / slot ' + slot + ' (' + SLOT_LABELS[slot] + '):</div>');
+            var parts = ['chip', 'circle', 'illust', 'label', 'countNum'];
+            parts.forEach(function (k) {
+              if (slotPreset[k]) {
+                lines.push('<div class="np-preset-row"><span class="np-preset-key">' + k + '</span>' +
+                           '<span class="np-preset-num">tx=' + Math.round(slotPreset[k].tx || 0) +
+                           ' ty=' + Math.round(slotPreset[k].ty || 0) +
+                           (slotPreset[k].w ? ' W=' + parseInt(slotPreset[k].w, 10) : '') +
+                           (slotPreset[k].h ? ' H=' + parseInt(slotPreset[k].h, 10) : '') +
+                           '</span></div>');
+              } else if (k === 'illust' && type === 'withImage') {
+                lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
+                           '<span class="np-preset-num">⚠ 未設定</span></div>');
+              } else if (k === 'countNum') {
+                lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
+                           '<span class="np-preset-num">⚠ 未設定</span></div>');
+              }
+            });
           });
         });
         presetEl.innerHTML = lines.join('');

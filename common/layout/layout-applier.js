@@ -57,18 +57,56 @@
   }
 
   /**
-   * chip preset を適用。 saved-layout.json の __chip_presets:
-   *   { withImage: { chip:{w,h}, circle:{w,h,tx,ty}, illust:{...}, label:{...} },
-   *     textOnly:  { chip:{w,h}, label:{...}, countNum:{...} } }
+   * chip preset を 4 slot 別に正規化。
+   *   入力: { withImage: {...}, textOnly: {...} }
+   *   - 各 type について "0" キーが既に有れば 4-slot 形式とみなしそのまま
+   *   - "0" キーが無く chip|circle|illust|label|countNum のいずれかがトップに直接ある
+   *     → フラット形式とみなし JSON.parse(JSON.stringify(typeObj)) で 4 slot 分 deep clone
+   *   2026-05-07 追加: フラット形式 saved-layout.json との後方互換。
+   *   必ず deep clone を使い参照共有を避ける。
+   */
+  function _normalizeChipPresets(presets) {
+    if (!presets || typeof presets !== 'object') return presets || {};
+    var FLAT_KEYS = ['chip', 'circle', 'illust', 'label', 'countNum'];
+    var SLOTS = ['0', '1', '2', '3'];
+    Object.keys(presets).forEach(function (type) {
+      var typeObj = presets[type];
+      if (!typeObj || typeof typeObj !== 'object') return;
+      // 既に 4-slot 形式 ("0" キー有り) なら触らない
+      if (typeObj.hasOwnProperty('0')) return;
+      // フラット形式かどうか判定 (FLAT_KEYS のいずれかをトップに直接持つ)
+      var isFlat = false;
+      for (var i = 0; i < FLAT_KEYS.length; i++) {
+        if (typeObj.hasOwnProperty(FLAT_KEYS[i])) { isFlat = true; break; }
+      }
+      if (!isFlat) return;
+      // フラット → 4 slot に展開 (deep clone)
+      var newObj = {};
+      SLOTS.forEach(function (s) {
+        newObj[s] = JSON.parse(JSON.stringify(typeObj));
+      });
+      presets[type] = newObj;
+    });
+    return presets;
+  }
+
+  /**
+   * chip preset を適用。 saved-layout.json の __chip_presets (4-slot 形式):
+   *   { withImage: {
+   *       "0": { chip:{w,h}, circle:{w,h,tx,ty}, illust:{...}, label:{...} },
+   *       "1": {...}, "2": {...}, "3": {...}
+   *     },
+   *     textOnly:  { "0": {...}, "1": {...}, "2": {...}, "3": {...} } }
    *
    * chip の class (.chip-type-with-image / .chip-type-text-only) で種別判定し、
-   * preset の各キーを対応する子要素に applyOne する。
-   * 2026-05-06 改: preset.chip は **w/h のみ** (tx/ty なし)。 chip 自体の cell 配置は
-   *   .chip|N 個別 entry が責任を持つ。 legacy preset.chip.tx/ty はここで strip して
-   *   後方互換を保つ。 個別 chip|N エントリは後段の selectors loop で再適用される。
+   * data-idx (0..3) と一致する slot 内の preset を子要素に applyOne する。
+   * 2026-05-07: 4 slot 別に拡張。 各 chip ごとに別位置を保存できる。
+   * 旧フラット形式は _normalizeChipPresets が読込時に 4 slot 全部に deep clone する。
+   * preset.chip は **w/h のみ** (tx/ty なし)。 chip 自体の cell 配置は .chip|N 個別 entry の責任。
    */
   function applyChipPresets(presets, root) {
     if (!presets || typeof presets !== 'object') return;
+    presets = _normalizeChipPresets(presets);
     var doc = root || document;
     var chips = safeQueryAll(doc, '.chip');
     for (var i = 0; i < chips.length; i++) {
@@ -78,28 +116,28 @@
       if (!type) continue;
       var preset = presets[type];
       if (!preset) continue;
-      if (preset.chip) {
-        // 2026-05-06 改: preset.chip は w/h のみ適用。 tx/ty は無視する。
-        // 各 chip の cell 配置 (tx/ty) は .chip|N 個別 entry が責任を持つ。
-        // legacy saved-layout.json (preset.chip.tx/ty を含む) との後方互換のため、
-        // 適用時に strip する (= JSON は触らないがコード側で吸収)。
-        applyOne(chip, { w: preset.chip.w || '', h: preset.chip.h || '' });
+      var slot = i; // querySelectorAll('.chip') の取得順 = data-idx = slot index (0..3)
+      var slotPreset = preset[String(slot)];
+      if (!slotPreset) continue;
+      if (slotPreset.chip) {
+        // preset.chip は w/h のみ適用。 tx/ty は無視 (chip の cell 配置は .chip|N 個別 entry の責任)。
+        applyOne(chip, { w: slotPreset.chip.w || '', h: slotPreset.chip.h || '' });
       }
-      if (preset.circle) {
+      if (slotPreset.circle) {
         var c = chip.querySelector('.circle');
-        if (c) applyOne(c, preset.circle);
+        if (c) applyOne(c, slotPreset.circle);
       }
-      if (preset.illust) {
+      if (slotPreset.illust) {
         var im = chip.querySelector('.chip-illust');
-        if (im) applyOne(im, preset.illust);
+        if (im) applyOne(im, slotPreset.illust);
       }
-      if (preset.label) {
+      if (slotPreset.label) {
         var lb = chip.querySelector('.chip-label');
-        if (lb) applyOne(lb, preset.label);
+        if (lb) applyOne(lb, slotPreset.label);
       }
-      if (preset.countNum) {
+      if (slotPreset.countNum) {
         var n = chip.querySelector('.chip-count-num');
-        if (n) applyOne(n, preset.countNum);
+        if (n) applyOne(n, slotPreset.countNum);
       }
     }
   }
@@ -328,6 +366,7 @@
     applyUserboxes: applyUserboxes,
     injectSharedStyles: injectSharedStyles,
     _resolveSiblingScriptBase: resolveSiblingScriptBase,
+    _normalizeChipPresets: _normalizeChipPresets,
     version: '1.0.0',
   };
 })();
