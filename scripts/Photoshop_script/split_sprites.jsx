@@ -23,6 +23,37 @@
     return;
   }
 
+  // ── 前回チェック値の永続保存先 (OS 適切な userData = Win: %APPDATA%, Mac: ~/Library/Preferences)
+  var prefFile = new File(Folder.userData + '/split_sprites_prefs.json');
+  function loadPrefs() {
+    if (!prefFile.exists) return null;
+    try {
+      prefFile.encoding = 'UTF-8';
+      prefFile.open('r');
+      var raw = prefFile.read();
+      prefFile.close();
+      // ExtendScript の eval で JSON-ish を読む (信頼ソースのみなので OK)
+      var p = eval('(' + raw + ')');
+      if (typeof p !== 'object' || p === null) return null;
+      return p;
+    } catch (e) { return null; }
+  }
+  function savePrefs(p) {
+    try {
+      prefFile.encoding = 'UTF-8';
+      prefFile.open('w');
+      prefFile.writeln(
+        '{"flipB":' + (p.flipB ? 'true' : 'false') +
+        ',"square":' + (p.square ? 'true' : 'false') +
+        ',"mergeAll":' + (p.mergeAll ? 'true' : 'false') +
+        ',"mergeGap":' + (p.mergeGap || 0) +
+        ',"lastFolder":"' + (p.lastFolder || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"}'
+      );
+      prefFile.close();
+    } catch (e) { /* ignore — pref 保存失敗してもメイン処理は継続 */ }
+  }
+  var savedPrefs = loadPrefs() || { flipB: false, square: true, mergeAll: false, mergeGap: 0, lastFolder: '' };
+
   var doc = app.activeDocument;
 
   // ── アクティブレイヤーを一時PNGとして書き出し
@@ -51,8 +82,13 @@
     return;
   }
 
-  // ── 出力フォルダを選択
-  var outFolder = Folder.selectDialog('分割PNGの保存先フォルダを選んでください');
+  // ── 出力フォルダを選択 (前回フォルダを初期値に)
+  var initialFolder = null;
+  if (savedPrefs.lastFolder) {
+    var lastF = new Folder(savedPrefs.lastFolder);
+    if (lastF.exists) initialFolder = lastF;
+  }
+  var outFolder = (initialFolder || Folder.desktop).selectDlg('分割PNGの保存先フォルダを選んでください');
   if (!outFolder) { tmpPng.remove(); return; }
 
   // ── 出力オプション (チェックボックス) を一括で確認
@@ -70,21 +106,21 @@
 
     var cbFlip = dlg.add('checkbox', undefined,
       'B画像（左右反転版）も出力する  → {name}_NNN_A.png と _B.png');
-    cbFlip.value = false;
+    cbFlip.value = !!savedPrefs.flipB;
 
     var cbSquare = dlg.add('checkbox', undefined,
       '全出力を 1:1 の正方形にする（長辺に合わせて透明パディング）');
-    cbSquare.value = true;
+    cbSquare.value = (savedPrefs.square !== false);
 
     var cbMergeAll = dlg.add('checkbox', undefined,
       '全部 1 つにまとめる（離れていても 1 ファイルに統合）');
-    cbMergeAll.value = false;
+    cbMergeAll.value = !!savedPrefs.mergeAll;
 
     var gapGroup = dlg.add('group');
     gapGroup.orientation = 'row';
     gapGroup.alignChildren = 'center';
     gapGroup.add('statictext', undefined, '結合距離 (px):');
-    var etGap = gapGroup.add('edittext', undefined, '0');
+    var etGap = gapGroup.add('edittext', undefined, String(savedPrefs.mergeGap || 0));
     etGap.characters = 6;
     gapGroup.add('statictext', undefined, '0=現状動作 / 1-100 = この距離以内なら同じ sprite');
 
@@ -104,6 +140,14 @@
       if (isNaN(gapNum) || gapNum < 0) gapNum = 0;
       if (gapNum > 100) gapNum = 100;
       result.mergeGap = gapNum;
+      // チェック値 + 保存先フォルダを次回に引き継ぐ
+      savePrefs({
+        flipB: result.flipB,
+        square: result.square,
+        mergeAll: result.mergeAll,
+        mergeGap: result.mergeGap,
+        lastFolder: outFolder.fsName
+      });
       dlg.close(1);
     };
     cancelBtn.onClick = function() { dlg.close(2); };
@@ -185,9 +229,8 @@
     if (tmpPng.exists) tmpPng.remove();
 
     if (exitCode === 0) {
-      alert('分割完了！' + modeLabel + '\n保存先: ' + outPath + '\n\n--- 実行ログ ---\n' + logText);
-      // エクスプローラで保存先を開く
-      app.system('explorer "' + outPath + '"');
+      // 成功時: アラートを出さず explorer も開かない (連続作業の邪魔にならないように)
+      // ログは 失敗時に Folder.temp/split_sprites_run.log に残るのでデバッグ可
     } else {
       alert(
         'Python実行に失敗しました (exit code ' + exitCode + ')\n\n' +
@@ -233,8 +276,7 @@
     }
 
     if (exitCode2 === 0) {
-      alert('分割完了！' + modeLabel + '\n保存先: ' + outPath + '\n\n--- 実行ログ ---\n' + logText2);
-      app.system('open "' + outPath + '"');
+      // 成功時: アラート/Finder 自動オープンなし (連続作業の邪魔にならないように)
     } else {
       alert('Python実行に失敗しました (exit code ' + exitCode2 + ')\n\n--- ログ ---\n' + logText2);
     }
