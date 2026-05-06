@@ -394,7 +394,15 @@
     if (!window._currentLayoutData.__chip_presets) window._currentLayoutData.__chip_presets = {};
     window._currentLayoutData.__chip_presets[type] = preset;
 
-    showToast('chip preset (' + type + ') 保存。 同種別 chip に自動適用されます', 'success');
+    // 即時反映: 個別 chip|N entry が無い chip は preset 値で表示更新される。
+    // 既に個別エントリ持ち chip は preset 適用後に上書き勝ちで変わらない (= 個別を保護)。
+    // 個別を捨てて preset 強制反映したい場合は 🧹 個別設定クリア ボタン。
+    if (window.LayoutApplier && state.config) {
+      window.LayoutApplier.apply(window._currentLayoutData, document, {
+        selectors: state.config.editableSelectors || state.config.selectors,
+      });
+    }
+    showToast('preset (' + type + ') 保存・即適用。 個別設定済 chip は変わりません (🧹 で全反映)', 'success');
     save();
   }
 

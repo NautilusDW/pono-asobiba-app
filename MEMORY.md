@@ -94,6 +94,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-06T09:38:09Z - AGENTS.md 拡充: GPT Image 2 only / HANDOFF 文字化け / 重複チェック義務 / DoD / コミット規約 / エラー報告 / 仕様確認 / プロジェクト構造 / データファイル権限分界、+memory cost ルールを Codex 限定にスコープ訂正
+- **タスク**: AGENTS.md 拡充: GPT Image 2 only / HANDOFF 文字化け / 重複チェック義務 / DoD / コミット規約 / エラー報告 / 仕様確認 / プロジェクト構造 / データファイル権限分界、+memory cost ルールを Codex 限定にスコープ訂正
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 17
+- **エラー数**: 0
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
+- **ツール使用統計**: {"Bash": 4, "Read": 3, "Edit": 9, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-06T08:24:44Z - batch:06-trivia-reveal: 11 alpha-cut PNG 配置 + 4問reveal UX wiring + manifest更新 + sw bump (Claude orchestrator + agent team)
 - **タスク**: batch:06-trivia-reveal: 11 alpha-cut PNG 配置 + 4問reveal UX wiring + manifest更新 + sw bump (Claude orchestrator + agent team)
 - **結果**: 成功
@@ -195,19 +208,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 176, "Read": 92, "Glob": 3, "Grep": 17, "Edit": 95, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 22}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-05T08:53:18Z - renderOrderColor を <img> 化して watercolor PNG 表示に切替 + .color-chip CSS を img 対応
-- **タスク**: renderOrderColor を <img> 化して watercolor PNG 表示に切替 + .color-chip CSS を img 対応
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 381
-- **エラー数**: 18
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 151, "Read": 83, "Glob": 3, "Grep": 17, "Edit": 91, "Write": 11, "ToolSearch": 2, "ExitPlanMode": 2, "Agent": 21}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
