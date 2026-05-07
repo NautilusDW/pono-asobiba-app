@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T06:58:36Z - quizland OP cinematic 4-fix: narration switch >=11s+timeout12s / 2s post-narr hold / vertical side stack (char+dialog waist-shot) / blur 10→5px
+- **タスク**: quizland OP cinematic 4-fix: narration switch >=11s+timeout12s / 2s post-narr hold / vertical side stack (char+dialog waist-shot) / blur 10→5px
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 63
+- **エラー数**: 1
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 15, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 26}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T06:43:21Z - quizland: モード選択→オープニング遷移ちらつき修正 (mode-screen hide を playOpeningCinematic 内へ移動 / .op-cinematic 全体フェード廃止 / .op-bg 単独フェード化、黒ハードカット+BG OL)、sw 826→827。並列 impl + cross-review SHIP判定
 - **タスク**: quizland: モード選択→オープニング遷移ちらつき修正 (mode-screen hide を playOpeningCinematic 内へ移動 / .op-cinematic 全体フェード廃止 / .op-bg 単独フェード化、黒ハードカット+BG OL)、sw 826→827。並列 impl + cross-review SHIP判定
 - **結果**: 成功
@@ -199,18 +212,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 26, "Read": 10, "Grep": 3, "ToolSearch": 1, "Agent": 10, "Write": 1, "Edit": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-07T02:46:22Z - quizland なぞなぞオープニング 6 パネル導入演出を追加 (Ken Burns ドリー + OP_NA ナレーション + 博士⇄ポノ babble 会話 + スキップ可)。並列エージェント実装→クロスレビュー→MAJOR 5件即修正→commit auto-push でstaging
-- **タスク**: quizland なぞなぞオープニング 6 パネル導入演出を追加 (Ken Burns ドリー + OP_NA ナレーション + 博士⇄ポノ babble 会話 + スキップ可)。並列エージェント実装→クロスレビュー→MAJOR 5件即修正→commit auto-push でstaging
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 42
-- **エラー数**: 6
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 20, "Read": 9, "Grep": 3, "ToolSearch": 1, "Agent": 6, "Write": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

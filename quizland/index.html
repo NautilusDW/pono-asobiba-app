@@ -2302,16 +2302,22 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   outline: none;
 }
 @media (max-width: 540px) {
-  .op-char-pono { height: min(42vh, 60%); max-height: 240px; margin-left: 2vw; }
-  .op-char-hakase { height: min(42vh, 65%); max-height: 280px; margin-right: 2vw; }
-  .op-characters { padding-bottom: 22%; }
-  /* clamp() の下限は 20px。狭幅でも 18-20px を維持 (Fix 3 の方針に合わせる) */
   .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
-  /* Fix 2: モバイルでもバブルを大きくする (15 → clamp 16-22, gap 8 → 14) */
-  .op-dialogue-text { font-size: clamp(16px, 4vw, 22px); }
-  .op-dialogue { padding: 26px 18px 16px; min-height: 92px; border-radius: 20px; }
+  .op-char-frame img.op-char {
+    width: 80%;
+    max-width: 220px;
+    transform: translateY(15%);
+  }
+  .op-side > .op-dialogue {
+    padding: 20px 14px 16px;
+    min-height: 90px;
+    border-radius: 20px;
+  }
+  .op-side > .op-dialogue .op-dialogue-text {
+    font-size: clamp(15px, 4vw, 21px);
+  }
   .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
-  .op-dialogues { gap: 14px; width: min(98%, 720px); }
+  .op-sides { gap: 2%; padding: 2% 2% 4%; }
 }
 
 /* ===== Quiz Start Title Card (cinematic → card → initGame) ===== */
@@ -2502,20 +2508,26 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   <div class="op-bg" id="op-bg"></div>
   <!-- 4:3 safe area for characters/narration/dialogues so 4:3 端末でも収まる (Fix 5a) -->
   <div class="op-content" id="op-content">
-    <div class="op-characters hidden" id="op-characters">
-      <img class="op-char op-char-pono" id="op-char-pono" alt="">
-      <img class="op-char op-char-hakase" id="op-char-hakase"
-           src="../assets/images/quizland/owl_professor_guide.webp" alt="">
-    </div>
     <div class="op-narration hidden" id="op-narration"></div>
-    <div class="op-dialogues hidden" id="op-dialogues">
-      <div class="op-dialogue op-dialogue-pono">
-        <div class="op-dialogue-label">ポノ</div>
-        <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
+    <div class="op-sides hidden" id="op-sides">
+      <div class="op-side op-side-pono">
+        <div class="op-char-frame">
+          <img class="op-char op-char-pono" id="op-char-pono" alt="">
+        </div>
+        <div class="op-dialogue op-dialogue-pono">
+          <div class="op-dialogue-label">ポノ</div>
+          <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
+        </div>
       </div>
-      <div class="op-dialogue op-dialogue-hakase">
-        <div class="op-dialogue-label">はかせ</div>
-        <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
+      <div class="op-side op-side-hakase">
+        <div class="op-char-frame">
+          <img class="op-char op-char-hakase" id="op-char-hakase"
+               src="../assets/images/quizland/owl_professor_guide.webp" alt="">
+        </div>
+        <div class="op-dialogue op-dialogue-hakase">
+          <div class="op-dialogue-label">はかせ</div>
+          <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -4111,10 +4123,10 @@ async function playOpeningCinematic() {
   try { if (skipBtn) skipBtn.focus(); } catch (e) {}
 
   // Hoist DOM lookups out of the loop (Fix 2)
+  // Fix 3: 旧 .op-characters / .op-dialogues 廃止。新 .op-sides がキャラ+ダイアログを内包
   const bg         = document.getElementById('op-bg');
-  const characters = document.getElementById('op-characters');
+  const sides      = document.getElementById('op-sides');
   const narration  = document.getElementById('op-narration');
-  const dialogues  = document.getElementById('op-dialogues');
   const hakaseEl   = document.getElementById('op-dialogue-text-hakase');
   const ponoEl     = document.getElementById('op-dialogue-text-pono');
   const ponoImgEl  = document.getElementById('op-char-pono');
@@ -4139,7 +4151,7 @@ async function playOpeningCinematic() {
   } catch (e) {}
 
   try {
-    if (!bg || !characters || !narration || !dialogues || !hakaseEl || !ponoEl) {
+    if (!bg || !sides || !narration || !hakaseEl || !ponoEl) {
       // Element missing — bail without entering the loop. Finally still runs.
       return;
     }
@@ -4165,8 +4177,7 @@ async function playOpeningCinematic() {
       }
 
       if (panel.kind === 'narration') {
-        characters.classList.add('hidden');
-        dialogues.classList.add('hidden');
+        sides.classList.add('hidden');
         // Fix 2: フェードイン後、音声と本文を出すまでの 1500ms の沈黙
         for (var __t = 0; __t < 15 && !_opCancelled; __t++) {
           await new Promise(function(r) { setTimeout(r, 100); });
@@ -4242,10 +4253,12 @@ async function playOpeningCinematic() {
               if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
               resolve();
             }
-            timeoutId = setTimeout(finish, 6500);
+            // Fix 1: セグメント 1 を「ふくろうの はかせが すんでいます。」が終わるまで保持。
+            // 17.45s 音源で約 11s。 duration*0.62 と 11s の遅い方を採用。フォールバック 12s。
+            timeoutId = setTimeout(finish, 12000);
             pollId = setInterval(function() {
               if (_opCancelled) { finish(); return; }
-              if (audio && audio.duration && audio.currentTime >= audio.duration / 2) finish();
+              if (audio && audio.duration && audio.currentTime >= Math.max(audio.duration * 0.62, 11.0)) finish();
             }, 100);
           });
 
@@ -4306,10 +4319,13 @@ async function playOpeningCinematic() {
             await new Promise(function(r) { setTimeout(r, 200); });
           }
         }
+        // Fix 2: ナレーション後の 2 秒の余韻 (Panel 2 のはかせ発話前に呼吸を入れる)
+        for (let __t = 0; __t < 20 && !_opCancelled; __t++) {
+          await new Promise(function(r) { setTimeout(r, 100); });
+        }
       } else if (panel.kind === 'dialogue') {
         narration.classList.add('hidden');
-        characters.classList.remove('hidden');
-        dialogues.classList.remove('hidden');
+        sides.classList.remove('hidden');
         // Clear bubbles
         hakaseEl.textContent = '';
         ponoEl.textContent = '';
@@ -4319,8 +4335,8 @@ async function playOpeningCinematic() {
           ponoImgEl.src = panel.ponoImg;
         }
         // Hoist dialogue bubble queries once before the inner loop (Fix 2)
-        const hakBubble = dialogues.querySelector('.op-dialogue-hakase');
-        const ponBubble = dialogues.querySelector('.op-dialogue-pono');
+        const hakBubble = sides.querySelector('.op-dialogue-hakase');
+        const ponBubble = sides.querySelector('.op-dialogue-pono');
         // Sequential dialogues
         for (let di = 0; di < panel.dialogues.length; di++) {
           if (_opCancelled) break;
