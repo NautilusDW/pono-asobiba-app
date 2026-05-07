@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T07:39:29Z - quizland 次へ/前へで保存レイアウトが巻き戻るバグ修正: LayoutEditor に refreshCurrentFromLocal を追加し、renderChoices で apply 前に localStorage 最新値で _currentLayoutData を更新
+- **タスク**: quizland 次へ/前へで保存レイアウトが巻き戻るバグ修正: LayoutEditor に refreshCurrentFromLocal を追加し、renderChoices で apply 前に localStorage 最新値で _currentLayoutData を更新
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 69
+- **エラー数**: 1
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 15, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 32}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T07:33:12Z - quizland: 会話パネルのキャラサイズ調整 - width基準→height基準で per-character override (Pono 180/175%, 博士 120/118%)、博士の指示棒を温存、object-fit:contain dead code 除去、sw 829→830
 - **タスク**: quizland: 会話パネルのキャラサイズ調整 - width基準→height基準で per-character override (Pono 180/175%, 博士 120/118%)、博士の指示棒を温存、object-fit:contain dead code 除去、sw 829→830
 - **結果**: 成功
@@ -198,19 +211,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 49, "Read": 13, "Grep": 3, "ToolSearch": 1, "Agent": 25, "Write": 2, "Edit": 14}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-07T04:02:30Z - アプリ全体の音楽ボリュームバランス統一: BGM 全 15 ゲーム 0.25 統一 (0.06-0.45→0.25)、SFX 0.6→0.45、シネマナレ 0.65 + BGM ダック (finally で全パス restore + Web Audio ノード disconnect)、sw 824→825。並列 discovery+impl A/B+review+fix-up エージェント運用
-- **タスク**: アプリ全体の音楽ボリュームバランス統一: BGM 全 15 ゲーム 0.25 統一 (0.06-0.45→0.25)、SFX 0.6→0.45、シネマナレ 0.65 + BGM ダック (finally で全パス restore + Web Audio ノード disconnect)、sw 824→825。並列 discovery+impl A/B+review+fix-up エージェント運用
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 93
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 43, "Read": 11, "Grep": 3, "ToolSearch": 1, "Agent": 23, "Write": 1, "Edit": 11}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

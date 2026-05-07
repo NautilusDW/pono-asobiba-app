@@ -1784,7 +1784,10 @@ body.layout-editor-on .character img {
   .answer-panel { gap: 10px; }
   /* 2026-05-07 修正(v795): #q-text 24px と揃えるため chip を 30→24px に変更
      (このブランチでは #q-text=24px、 .q-text-card=26px)。 */
-  .chip, .chip.has-image { height: 180px; font-size: 24px; }
+  /* 2026-05-07 修正(C案): 4:3 で博士キャラ (180×200) と選択肢グリッドが圧迫し合う
+     問題を構造側で解消。 chip を 180→160 に縮小、 .answer-tray に max-height、
+     .bottom-right に min-height を入れて博士に専用エリアを確保。 */
+  .chip, .chip.has-image { height: 160px; font-size: 24px; }
   .chip.chip-with-image .chip-illust-label { font-size: 24px; }
   /* 2026-05-07 修正(v793): iPad 4:3 メディアクエリ内の size class 縮小も無効化。
      グローバルで v792 に同じく無効化済みのため、 ここも揃える。
@@ -1849,11 +1852,16 @@ body.layout-editor-on .character img {
   #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .q-text-card .audio { width: 64px !important; height: 64px !important; transform: translateY(-50%) !important; right: 14px !important; }
   .board { width: auto !important; height: 440px !important; transform: translate(0, 0) !important; }
-  .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
+  /* C案: max-height でトレイの伸びを抑え、 余白を .bottom-right (博士) に回す。
+     計算: chip 160×2 + gap 10 + pad 12×2 + border 5×2 = 354px → 340 で snug 抑制 */
+  .answer-tray { width: auto !important; height: auto !important; max-height: 340px !important; transform: translate(0, 0) !important; }
   /* セル幅 = (440 track - 2*5 border - 2*12 pad - 10 gap) / 2 = 198px → chip 196 で +2 buffer */
   .chip { width: 196px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
   .character { width: 180px !important; height: 200px !important; transform: translate(0, 0) !important; }
+  /* 博士 (180×200) の専用エリア。 character flex:0 0 auto で 200px は確保されるが、
+     min-height で視覚的にも明確な領域を与えて上の tray と分離する */
+  .bottom-right { min-height: 100px !important; }
   /* フクロウの吹き出しは元画像 AR (5:2) で固定。 4:3 帯の上書きは上の .char-hint
      ルールで既に適用済みだが、 inline transform 解除のため width/height を再宣言 */
   .char-hint {
@@ -3668,6 +3676,16 @@ function renderChoices(q) {
   // 保存済みレイアウト (.chip|0..3, .chip .circle|0..3) を動的に再適用。
   // fetch がまだなら window._currentLayoutData が null で何も起きず、
   // LayoutSystem 初回 fetch 完了 → MutationObserver 経由で自動再適用される。
+  // 2026-05-08 fix: 問題切替時に直前 save の値が GitHub fetch (stale) で
+  //   上書きされている可能性があるので、localStorage の最新値で
+  //   _currentLayoutData を refresh してから apply する。
+  //   (enable() 経路を通らない playtest mode 等で「次へ/前へ」した際に、
+  //    古い fetched JSON のままだとユーザー直前 save が巻き戻る症状の対策)
+  try {
+    if (window.LayoutEditor && typeof window.LayoutEditor.refreshCurrentFromLocal === 'function') {
+      window.LayoutEditor.refreshCurrentFromLocal();
+    }
+  } catch (e) { /* noop */ }
   if (window.LayoutApplier && window._currentLayoutData) {
     window.LayoutApplier.apply(
       window._currentLayoutData,

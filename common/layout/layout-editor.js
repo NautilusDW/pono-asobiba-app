@@ -6564,6 +6564,23 @@
 
   function setTool(tool) { state.activeTool = tool; emit('tool', tool); }
 
+  // 2026-05-08 fix: SPA 問題切替 (renderChoices 等) で apply を呼ぶ直前に
+  //   _currentLayoutData を localStorage の最新値で refresh する公開 API。
+  //   enable() が再度呼ばれない経路で server (stale) data が残り続け、
+  //   直前 save が巻き戻る症状を防ぐ。
+  function refreshCurrentFromLocal() {
+    try {
+      var server = window._currentLayoutData || null;
+      var local = localLoad();
+      var fresh = pickFreshestData(server, local);
+      if (fresh && fresh !== server) {
+        var cleaned = Object.assign({}, fresh);
+        delete cleaned.__savedAt;
+        window._currentLayoutData = cleaned;
+      }
+    } catch (e) { /* noop */ }
+  }
+
   // ====================================================================
   //  Export
   // ====================================================================
@@ -6585,6 +6602,7 @@
     setZoom: setZoom,
     toggleComparison: toggleComparison,
     toggleGrid: toggleGrid,
+    refreshCurrentFromLocal: refreshCurrentFromLocal,
     // Test/diagnostic accessors
     _state: state,
     _spec: function () { return state.spec.slice(); },
