@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-07 - [batch:11-quizland-forest-house-21x9] Codex: 添付の森の家背景を GPT Image 2 で高さ約 1K・21:9 に左右拡張する作業に着手。HANDOFF / git log / tmp 検索で同一 21:9 拡張成果物無しと確認済。raw を `tmp/alpha_pending/11/` に納品予定。 (by Codex)
 - 2026-05-07 - [batch:10-quizland-start-card] Codex: 博士のなぞなぞ 1問目直前用の「スタート！！」合成カード画像を生成開始。HANDOFF / git log / tmp / assets 検索で既存成果物無しと確認済 → 着手します。raw 白背景で納品し、alpha抜き・切り抜きは行わない。 (by Codex)
 - 2026-05-07 - [batch:10-quizland-start-card] Codex: user 指示により、添付の横長紙+木枠フレームを参考に `2048px` 幅想定で高さ `1.5x / 2x / 2.5x` の raw バリエーション生成へ切替。既存 `クイズスタート タイトルカード` commit は確認済だが、今回は追加フレーム案として上書きしない。 (by Codex)
 - 2026-05-07 - [batch:10-quizland-start-card] Codex: 横長フレーム 3 正寸 PNG を `tmp/alpha_pending/10/` に納品 (`quizland_start_frame_h1_5x_raw.png` = 2048x434 / `quizland_start_frame_h2x_raw.png` = 2048x579 / `quizland_start_frame_h2_5x_raw.png` = 2048x724)。 image_gen 版は寸法不一致のため `*_ai_raw.png` として比較用退避。alpha 抜き・切り抜きは未実施。 (by Codex)
