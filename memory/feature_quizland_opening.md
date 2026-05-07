@@ -42,14 +42,14 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
 
 | # | kind | bg | 内容 |
 |---|------|-----|------|
-| 1 | narration | `OP_BG.png` | Ken Burns 12s + `OP_NA.wav` ナレーション + 5行テキスト（最後の2行は `.emphasis` 赤） |
-| 2 | dialogue  | `OP_panel_2.png`†| 「ほっほっほ…ポノか。よくきたのう」「はかせ、あそびに きたよ！」 |
-| 3 | dialogue  | `OP_panel_3.png`†| 「きょうも なぞなぞを するかの？」「うん！やりたい！」 |
-| 4 | dialogue  | `OP_panel_4.png`†| 「ふむふむ… じしんは あるかな？」「うーん…でも がんばる！」 |
-| 5 | dialogue  | `OP_panel_5.png`†| 「ほっほっほ、それでよい。まちがえても よいのじゃ。…」「うん！」 |
-| 6 | dialogue  | `OP_panel_6.png`†| 「では、いくぞ…」「うん！」 |
+| 1 | narration | `OP_BG.png` (Ken Burns 12s ドリー) | `OP_NA.wav` ナレーション + 5行テキスト（最後の2行は `.emphasis` 赤） |
+| 2 | dialogue  | `OP_BG.png` (scenic-blur: scale 1.18 + blur 6px) | Pono = `dance_hi.png`、博士 = `owl_professor_guide.png`、台詞「ほっほっほ…ポノか。よくきたのう」「はかせ、あそびに きたよ！」 |
+| 3 | dialogue  | 同上 | Pono = `dance_hooray.png`、台詞「きょうも なぞなぞを するかの？」「うん！やりたい！」 |
+| 4 | dialogue  | 同上 | Pono = `think_arms_crossed_side.png`、台詞「ふむふむ… じしんは あるかな？」「うーん…でも がんばる！」 |
+| 5 | dialogue  | 同上 | Pono = `dance_smile.png`、台詞「ほっほっほ、それでよい。まちがえても よいのじゃ。…」「うん！」 |
+| 6 | dialogue  | 同上 | Pono = `think_chin_clasp.png`、台詞「では、いくぞ…」「うん！」 |
 
-† 仮素材として現在は全パネルが `OP_BG.png` を使用。Codex 生成完了後に差し替え。
+Pono は `assets/images/characters/pono/dance/` 配下の透過 PNG を panel ごとに表情/身振り別で切替。事前にナレーション中に `new Image()` で 5 枚プリロード済み（コールドキャッシュでも切替時 pop しない）。
 
 ## Implementation Files
 

@@ -2142,29 +2142,41 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-bg.dollying {
   animation: opDolly 12s linear forwards;
 }
+.op-bg.scenic-blur {
+  animation: none;                       /* override the dolly keyframes */
+  transform: scale(1.18);                /* telephoto crop-in */
+  filter: blur(6px) saturate(0.92);      /* soft DoF, slightly muted */
+  transition: transform 0.6s ease-out, filter 0.6s ease-out;
+}
 .op-characters {
   position: absolute; inset: 0;
   pointer-events: none;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 18%;
+  box-sizing: border-box;
 }
 .op-characters.hidden { display: none; }
 .op-char {
-  position: absolute;
-  bottom: 18%;
+  /* layout handled by .op-characters flex; per-character sizing below */
 }
 .op-char-pono {
-  left: 8%;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fde7c2, #f5b27a);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 64px;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.35), 0 0 0 4px rgba(255,255,255,0.5) inset;
+  height: 50vh;
+  max-height: 320px;
+  width: auto;
+  object-fit: contain;
+  align-self: flex-end;          /* same baseline as hakase */
+  margin-left: 4vw;
 }
 .op-char-hakase {
-  right: 6%;
   height: 50vh;
+  max-height: 360px;
   width: auto;
+  object-fit: contain;
+  align-self: flex-end;
+  margin-right: 4vw;
   filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
 }
 .op-narration {
@@ -2251,8 +2263,9 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   outline: none;
 }
 @media (max-width: 540px) {
-  .op-char-pono { width: 88px; height: 88px; font-size: 52px; left: 4%; bottom: 22%; }
-  .op-char-hakase { height: 42vh; right: 2%; bottom: 22%; }
+  .op-char-pono { height: 42vh; margin-left: 2vw; }
+  .op-char-hakase { height: 42vh; margin-right: 2vw; }
+  .op-characters { padding-bottom: 22%; }
   .op-narration { font-size: 16px; padding: 14px 16px; }
   .op-dialogue-text { font-size: 15px; }
   .op-dialogues { gap: 8px; }
@@ -2408,19 +2421,19 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 <div id="op-cinematic" class="op-cinematic hidden" aria-hidden="true">
   <div class="op-bg" id="op-bg"></div>
   <div class="op-characters hidden" id="op-characters">
-    <div class="op-char op-char-pono" id="op-char-pono">🧸</div>
+    <img class="op-char op-char-pono" id="op-char-pono" alt="">
     <img class="op-char op-char-hakase" id="op-char-hakase"
          src="../assets/images/quizland/owl_professor_guide.png" alt="">
   </div>
   <div class="op-narration hidden" id="op-narration"></div>
   <div class="op-dialogues hidden" id="op-dialogues">
-    <div class="op-dialogue op-dialogue-hakase">
-      <div class="op-dialogue-label">はかせ</div>
-      <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
-    </div>
     <div class="op-dialogue op-dialogue-pono">
       <div class="op-dialogue-label">ポノ</div>
       <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
+    </div>
+    <div class="op-dialogue op-dialogue-hakase">
+      <div class="op-dialogue-label">はかせ</div>
+      <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
     </div>
   </div>
   <button type="button" class="op-skip" id="op-skip">スキップ ▶︎</button>
@@ -3877,26 +3890,31 @@ const OP_PANELS = [
     ]
   },
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    ponoImg: '../assets/images/characters/pono/dance/dance_hi.png',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
       { speaker: 'pono',   text: 'はかせ、あそびに きたよ！' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    ponoImg: '../assets/images/characters/pono/dance/dance_hooray.png',
     dialogues: [
       { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
       { speaker: 'pono',   text: 'うん！やりたい！' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.png',
     dialogues: [
       { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
       { speaker: 'pono',   text: 'うーん…でも がんばる！' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    ponoImg: '../assets/images/characters/pono/dance/dance_smile.png',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
       { speaker: 'pono',   text: 'うん！' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.png',
     dialogues: [
       { speaker: 'hakase', text: 'では、いくぞ…' },
       { speaker: 'pono',   text: 'うん！' }
@@ -3973,6 +3991,19 @@ async function playOpeningCinematic() {
   const dialogues  = document.getElementById('op-dialogues');
   const hakaseEl   = document.getElementById('op-dialogue-text-hakase');
   const ponoEl     = document.getElementById('op-dialogue-text-pono');
+  const ponoImgEl  = document.getElementById('op-char-pono');
+
+  // Warm all per-panel pono images during the narration panel so dialogue
+  // panels can swap src without a visible network fetch.
+  try {
+    for (var __i = 0; __i < OP_PANELS.length; __i++) {
+      var __p = OP_PANELS[__i];
+      if (__p && __p.ponoImg) {
+        var __img = new Image();
+        __img.src = __p.ponoImg;
+      }
+    }
+  } catch (e) {}
 
   try {
     if (!bg || !characters || !narration || !dialogues || !hakaseEl || !ponoEl) {
@@ -3985,6 +4016,7 @@ async function playOpeningCinematic() {
       // Set bg
       bg.style.backgroundImage = "url('" + panel.bg + "')";
       bg.classList.remove('dollying');
+      bg.classList.remove('scenic-blur');
       // Force reflow then re-add class to restart animation
       void bg.offsetWidth;
 
@@ -4052,8 +4084,12 @@ async function playOpeningCinematic() {
         // Clear bubbles
         hakaseEl.textContent = '';
         ponoEl.textContent = '';
-        // Hold bg with subtle dolly between panels too
-        bg.classList.add('dollying');
+        // Background: held still + telephoto crop-in + soft DoF blur (Fix 2)
+        bg.classList.add('scenic-blur');
+        // Set Pono image for this panel (Fix 1)
+        if (ponoImgEl && panel.ponoImg) {
+          ponoImgEl.src = panel.ponoImg;
+        }
         // Hoist dialogue bubble queries once before the inner loop (Fix 2)
         const hakBubble = dialogues.querySelector('.op-dialogue-hakase');
         const ponBubble = dialogues.querySelector('.op-dialogue-pono');
@@ -4072,8 +4108,8 @@ async function playOpeningCinematic() {
             ponoEl.textContent = '';
             await _opTypeInto('op-dialogue-text-pono', d.text, 'pono');
           }
-          // Hold for ~700ms after each line (skip-aware)
-          for (let t = 0; t < 7 && !_opCancelled; t++) {
+          // Hold for ~2000ms after each line (skip-aware, 100ms cancel granularity) (Fix 3)
+          for (let t = 0; t < 20 && !_opCancelled; t++) {
             await new Promise(function(r) { setTimeout(r, 100); });
           }
         }
