@@ -704,6 +704,7 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 
 
 
+
 ## Current Difficulty Level
 
 - **レベル**: 5 - 抽象指示 (Abstract)
@@ -718,8 +719,8 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 
 以下のルールは過去のタスク実績から自動抽出されたベストプラクティスです。
 
-1. **エラー発生後に別のアプローチに切り替えた** (検出回数: 627, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
-2. **小さな単位で検証しながら進めた** (検出回数: 618, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
-3. **編集前にファイルを読んで理解した** (検出回数: 616, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
-4. **実装前にコードベースを探索した** (検出回数: 285, 例: めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消, めいろ修正: draw loop の例外停止を try/catch で根本対応、チュートリアル + ステージ1 を新規追加 (コの字+石ブロック)、🪨 STONE タイル追加、リテラル \n 修正)
+1. **エラー発生後に別のアプローチに切り替えた** (検出回数: 628, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
+2. **小さな単位で検証しながら進めた** (検出回数: 619, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
+3. **編集前にファイルを読んで理解した** (検出回数: 617, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
+4. **実装前にコードベースを探索した** (検出回数: 286, 例: めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消, めいろ修正: draw loop の例外停止を try/catch で根本対応、チュートリアル + ステージ1 を新規追加 (コの字+石ブロック)、🪨 STONE タイル追加、リテラル \n 修正)
 5. **テストを先に書いてから実装した (TDD)** (検出回数: 13, 例: 未作成カードの非表示機能と下書き取消、恐竜L2問題追加, 魔法攻撃を「手前→奥へ飛ぶ光球+着弾破裂」に置換 (色味は行属性連動 fire/ice/thunder/light/...)、Unity ハイブリッド方針(案②) を project memory に保存 (v229), battle v230: バトル導入モーダル刷新 + ポノ/ハリネズミを戦闘中は非表示 + 攻撃プランを通常3魔法2に固定 + 炎属性ハードコード)
