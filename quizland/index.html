@@ -12,6 +12,7 @@
 <script src="../common/first-clear.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/narration.js"></script>
+<script src="../js/quizland-babble.js"></script>
 <script src="./data/questions.js"></script>
 <!-- Layout system (Phase A+B): saved-layout.json applier (always loaded).
      Editor (drag/resize/save) は ?edit=1 のときだけ自動で遅延ロード。 -->
@@ -2087,6 +2088,23 @@ body.debug-mode #qz-playtest-panel { display: block; }
   text-align: center;
 }
 #qz-playtest-panel .qz-pt-count { color: #cce; font-size: 11px; }
+#qz-playtest-panel .qz-pt-cropmiss {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #fcc;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+#qz-playtest-panel .qz-pt-cropmiss input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #e55;
+}
 #qz-playtest-panel .qz-pt-toast {
   margin-top: 4px;
   font-size: 11px;
@@ -2476,9 +2494,50 @@ let _consecutiveMisses = 0;
 let _hintLevel = 0;  // 0 = 問題表示時, 1 = ヒント1, 2 = ヒント2
 let _autoHintTimer = null;
 
+// 文字流し (typewriter) + babble ボイス用
+// _typingToken はタイピング進行中のキャンセル用。setHakaseDialogue が呼ばれるたびに
+// インクリメントし、各 setTimeout コールバックは自分が起動された時点の token と
+// 一致しなければ即停止する (古いタイピングが新しいテキストを上書きしないように)。
+let _typingToken = 0;
+const HAKASE_TYPING_DELAY_MS = 60;
+
 function setHakaseDialogue(text) {
   const el = document.getElementById('char-hint-text');
-  if (el) el.textContent = text;
+  if (!el) return;
+
+  // 1) 進行中のタイピング/babble を即キャンセル
+  _typingToken++;
+  const myToken = _typingToken;
+  try { if (window.PonoBabble && typeof window.PonoBabble.cancelAll === 'function') window.PonoBabble.cancelAll(); } catch (e) {}
+
+  // 2) AudioContext を babble に共有 (init は idempotent)。audioCtx が未作成でも
+  //    エラーにしない (init は falsy をスキップする実装)。
+  try {
+    if (window.PonoBabble && typeof window.PonoBabble.init === 'function'
+        && typeof audioCtx !== 'undefined' && audioCtx) {
+      window.PonoBabble.init(audioCtx);
+    }
+  } catch (e) {}
+
+  // 3) 既存の挙動 (吹き出し表示制御等) を壊さないため、textContent は最初に空にして
+  //    1 文字ずつ追加する。 text が空文字でも el を空にするだけで終わる。
+  const str = (text == null) ? '' : String(text);
+  el.textContent = '';
+  let i = 0;
+
+  function tick() {
+    if (myToken !== _typingToken) return;  // 別のセリフが始まったので中断
+    if (i >= str.length) return;
+    const c = str.charAt(i++);
+    el.textContent += c;
+    try {
+      if (window.PonoBabble && typeof window.PonoBabble.playChar === 'function') {
+        window.PonoBabble.playChar(c, 'owl');
+      }
+    } catch (e) {}
+    if (i < str.length) setTimeout(tick, HAKASE_TYPING_DELAY_MS);
+  }
+  tick();
 }
 
 function showProblemDialogue(question) {
@@ -4048,7 +4107,9 @@ function _qzPtSaveCurrentNote() {
   var ta = document.getElementById('qz-pt-comment');
   var comment = (ta && ta.value || '').trim();
   var hasShots = QZ_PT.shots.length > 0;
-  if (!comment && !hasShots) return Promise.resolve(true);
+  var cropMissEl = document.getElementById('qz-pt-cropmiss');
+  var cropMiss = !!(cropMissEl && cropMissEl.checked);
+  if (!comment && !hasShots && !cropMiss) return Promise.resolve(true);
 
   if (!QZ_PT.sessionStarted) QZ_PT.sessionStarted = new Date().toISOString();
   QZ_PT.saving = true;
@@ -4061,6 +4122,7 @@ function _qzPtSaveCurrentNote() {
     type: currentQ && currentQ.type || null,
     q: currentQ && currentQ.q || null,
     comment: comment,
+    cropMiss: cropMiss,
     screenshots: [],
     noted_at: new Date().toISOString(),
     _shotsMeta: QZ_PT.shots.slice(), // backup helper only
@@ -4106,6 +4168,7 @@ function _qzPtSaveCurrentNote() {
         type: noteEntry.type,
         q: noteEntry.q,
         comment: noteEntry.comment,
+        cropMiss: noteEntry.cropMiss,
         screenshots: noteEntry.screenshots,
         noted_at: noteEntry.noted_at,
       });
@@ -4116,6 +4179,7 @@ function _qzPtSaveCurrentNote() {
   }).then(function () {
     _qzPtToast('保存しました ✓', 'ok');
     if (ta) ta.value = '';
+    if (cropMissEl) cropMissEl.checked = false;
     QZ_PT.shots = [];
     _qzPtRenderThumbs();
     QZ_PT.saving = false;
@@ -4141,6 +4205,10 @@ function _qzPtBuildPanel() {
       '<button type="button" class="qz-pt-btn" id="qz-pt-attach-btn">📎 添付</button>' +
       '<input type="file" id="qz-pt-attach-input" accept="image/*" multiple>' +
       '<span class="qz-pt-count" id="qz-pt-count">添付: 0</span>' +
+      '<label class="qz-pt-cropmiss" id="qz-pt-cropmiss-label" title="この問題の絵にクロップミスがある">' +
+        '<input type="checkbox" id="qz-pt-cropmiss">' +
+        '<span>✅ クロップミス</span>' +
+      '</label>' +
     '</div>' +
     '<div class="qz-pt-thumbs" id="qz-pt-thumbs"></div>' +
     '<div class="qz-pt-toast" id="qz-pt-toast"></div>';
