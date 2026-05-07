@@ -2240,9 +2240,9 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   left: 50%;
   bottom: 6%;
   transform: translateX(-50%);
-  width: min(94%, 880px);                /* 親 4:3 内に収まるよう % 基準に */
+  width: min(96%, 1100px);               /* Fix 2: 倍化したバブルに合わせ少し広げる */
   display: flex;
-  gap: 14px;
+  gap: 24px;                             /* Fix 2: 14 → 24 */
   align-items: flex-end;
   justify-content: space-between;
 }
@@ -2250,10 +2250,10 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-dialogue {
   flex: 1 1 0;
   position: relative;
-  border-radius: 16px;
-  padding: 28px 18px 16px;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.32);
-  min-height: 88px;
+  border-radius: 24px;                   /* Fix 2: 16 → 24 */
+  padding: 44px 32px 28px;               /* Fix 2: 28/18/16 → 44/32/28 */
+  box-shadow: 0 12px 26px rgba(0,0,0,0.34);
+  min-height: 160px;                     /* Fix 2: 88 → 160 */
   opacity: 0.4;
   transition: opacity 0.18s ease;
   color: #3a2a14;
@@ -2263,19 +2263,19 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-dialogue-pono   { background: #d8efcf; }
 .op-dialogue-label {
   position: absolute;
-  top: -14px; left: 16px;
-  font-size: 13px;
+  top: -22px; left: 22px;                /* Fix 2: -14/16 → -22/22 */
+  font-size: 22px;                       /* Fix 2: 13 → 22 */
   font-weight: 700;
   color: #fff;
-  padding: 4px 12px;
+  padding: 8px 20px;                     /* Fix 2: 4 12 → 8 20 */
   border-radius: 999px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.28);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.30);
   letter-spacing: 0.04em;
 }
 .op-dialogue-hakase .op-dialogue-label { background: #e08a3c; }
 .op-dialogue-pono   .op-dialogue-label { background: #5fa05a; }
 .op-dialogue-text {
-  font-size: 17px;
+  font-size: clamp(20px, 3.6vw, 32px);   /* Fix 2: 17px → ~2x */
   line-height: 1.6;
   min-height: 1.6em;
   word-break: break-word;
@@ -2302,11 +2302,14 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 @media (max-width: 540px) {
   .op-char-pono { height: min(42vh, 60%); max-height: 240px; margin-left: 2vw; }
   .op-char-hakase { height: min(42vh, 65%); max-height: 280px; margin-right: 2vw; }
-  .op-characters { padding-bottom: 26%; }
+  .op-characters { padding-bottom: 22%; }
   /* clamp() の下限は 20px。狭幅でも 18-20px を維持 (Fix 3 の方針に合わせる) */
   .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
-  .op-dialogue-text { font-size: 15px; }
-  .op-dialogues { gap: 8px; }
+  /* Fix 2: モバイルでもバブルを大きくする (15 → clamp 16-22, gap 8 → 14) */
+  .op-dialogue-text { font-size: clamp(16px, 4vw, 22px); }
+  .op-dialogue { padding: 26px 18px 16px; min-height: 92px; border-radius: 20px; }
+  .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
+  .op-dialogues { gap: 14px; width: min(98%, 720px); }
 }
 </style>
 </head>
@@ -3939,31 +3942,31 @@ const OP_PANELS = [
       }
     ]
   },
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
       { speaker: 'pono',   text: 'はかせ、あそびに きたよ！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp',
     dialogues: [
       { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
       { speaker: 'pono',   text: 'うん！やりたい！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
       { speaker: 'pono',   text: 'うーん…でも がんばる！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
       { speaker: 'pono',   text: 'うん！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp',
     dialogues: [
       { speaker: 'hakase', text: 'では、いくぞ…' },
@@ -4053,13 +4056,11 @@ async function playOpeningCinematic() {
   const ponoEl     = document.getElementById('op-dialogue-text-pono');
   const ponoImgEl  = document.getElementById('op-char-pono');
 
-  // Fix 4: 背景は最初に 1 回だけセットし、固定の強めぼかしを適用。
-  // 以降パネル切替で背景画像 / クラスは変更しない (zoom-in や per-cut blur を廃止)。
+  // Fix 1: 背景はパネル毎に切り替える (panel 1 sharp / panel 2-6 blurred)。
+  // ここでは旧来のアニメ系クラスだけクリアしておく。
   if (bg) {
-    bg.style.backgroundImage = "url('../assets/images/quizland/OP/OP_BG.webp')";
     bg.classList.remove('dollying');
     bg.classList.remove('scenic-blur');
-    bg.classList.add('is-static-blur');
   }
 
   // Warm all per-panel pono images during the narration panel so dialogue
@@ -4082,7 +4083,19 @@ async function playOpeningCinematic() {
     for (let i = 0; i < OP_PANELS.length; i++) {
       if (_opCancelled) break;
       const panel = OP_PANELS[i];
-      // Fix 4: 背景は再設定しない (静的ぼかしを保持)。panel.bg は将来の柔軟性のため残す。
+      // Fix 1: パネル毎に背景画像とぼかしを切り替え。
+      // Panel 1 (narration) は sharp、 dialogue パネルはぼかし。
+      if (bg && panel.bg) {
+        bg.style.backgroundImage = "url('" + panel.bg + "')";
+        if (panel.kind === 'narration') {
+          bg.classList.remove('is-static-blur');
+        } else {
+          bg.classList.add('is-static-blur');
+        }
+        // Force the filter into the same composite frame as the new bg image —
+        // prevents a 1-frame sharp flash on slow Android renderers.
+        void bg.offsetWidth;
+      }
 
       if (panel.kind === 'narration') {
         characters.classList.add('hidden');
@@ -4262,6 +4275,7 @@ document.getElementById('start-screen').addEventListener('click', function() {
   try {
     var __preloadList = [
       '../assets/images/quizland/OP/OP_BG.webp',
+      '../assets/images/quizland/OP/OP_BG02.webp',
       '../assets/images/characters/pono/dance/dance_hi.webp',
       '../assets/images/characters/pono/dance/dance_hooray.webp',
       '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
