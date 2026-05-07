@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T07:03:38Z - quizland: シネマ refine 4点 (ナレ切替 11s タイミング, 後処理 2s hold, 会話レイアウト sides 縦積み waist-shot, blur 5px) + クイズ本編 setHakaseDialogue を一括表示に戻す (babble + typewriter は OP 専用化)、null guard 追加、sw 828→829
+- **タスク**: quizland: シネマ refine 4点 (ナレ切替 11s タイミング, 後処理 2s hold, 会話レイアウト sides 縦積み waist-shot, blur 5px) + クイズ本編 setHakaseDialogue を一括表示に戻す (babble + typewriter は OP 専用化)、null guard 追加、sw 828→829
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 128
+- **エラー数**: 20
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 59, "Read": 13, "Grep": 3, "ToolSearch": 1, "Agent": 32, "Write": 2, "Edit": 18}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-07T06:58:36Z - quizland OP cinematic 4-fix: narration switch >=11s+timeout12s / 2s post-narr hold / vertical side stack (char+dialog waist-shot) / blur 10→5px
 - **タスク**: quizland OP cinematic 4-fix: narration switch >=11s+timeout12s / 2s post-narr hold / vertical side stack (char+dialog waist-shot) / blur 10→5px
 - **結果**: 成功
@@ -198,19 +211,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 32, "Read": 10, "Grep": 3, "ToolSearch": 1, "Agent": 14, "Write": 1, "Edit": 8}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-07T03:10:13Z - quizland オープニング フィードバック反映: Pono 実アセット 5 枚切替+プリロード, パネル 2-6 背景 scenic-blur (scale 1.18 + blur 6px), 会話テンポ 700→2000ms, 吹き出し左右スワップ (Pono 左/博士 右), img width:auto, sw 821→822
-- **タスク**: quizland オープニング フィードバック反映: Pono 実アセット 5 枚切替+プリロード, パネル 2-6 背景 scenic-blur (scale 1.18 + blur 6px), 会話テンポ 700→2000ms, 吹き出し左右スワップ (Pono 左/博士 右), img width:auto, sw 821→822
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 56
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 26, "Read": 10, "Grep": 3, "ToolSearch": 1, "Agent": 10, "Write": 1, "Edit": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
