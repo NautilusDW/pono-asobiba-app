@@ -1833,7 +1833,15 @@ body.layout-editor-on .character img {
      ───────────────────────────────────────────────────────── */
   .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .hdr-left .owl-icon { width: 88px !important; height: 88px !important; transform: translate(0, 0) !important; }
-  .hdr-left .title-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 16px !important; }
+  .hdr-left .title-card {
+    width: auto !important;
+    height: auto !important;
+    transform: translate(0, 0) !important;
+    /* 2026-05-08 fix: 4:3 で saved-layout の width が打ち消されて自然幅で小さく見える問題 */
+    font-size: 22px !important;
+    min-width: 320px !important;
+    padding: 8px 18px !important;
+  }
   .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 18px !important; padding: 4px 14px !important; }
   .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
@@ -2212,12 +2220,21 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   pointer-events: none;
 }
 .op-char-frame img.op-char {
-  height: auto;
-  width: 78%;                /* 腰の位置がフレーム底に合うように調整 */
-  max-width: 320px;
+  /* HEIGHT-based sizing + top-anchor: vertical extent is identical regardless of source aspect ratio.
+     overflow:hidden on .op-char-frame clips legs/feet (and owl wings on sides). */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
   object-fit: contain;
-  /* translateY で下方向にずらして足元をフレーム外へ押し出す */
-  transform: translateY(18%);
+  pointer-events: none;
+}
+.op-char-frame img.op-char-pono {
+  height: 180%;              /* 1.8x frame height; top ~56% visible → waist-shot */
+}
+.op-char-frame img.op-char-hakase {
+  height: 145%;              /* squatter aspect → smaller % balances perceived size */
 }
 .op-side-hakase .op-char-frame img.op-char {
   filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
@@ -2303,11 +2320,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 }
 @media (max-width: 540px) {
   .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
-  .op-char-frame img.op-char {
-    width: 80%;
-    max-width: 220px;
-    transform: translateY(15%);
-  }
+  .op-char-frame img.op-char-pono   { height: 175%; }
+  .op-char-frame img.op-char-hakase { height: 140%; }
   .op-side > .op-dialogue {
     padding: 20px 14px 16px;
     min-height: 90px;
