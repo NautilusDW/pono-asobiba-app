@@ -96,6 +96,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T02:46:22Z - quizland なぞなぞオープニング 6 パネル導入演出を追加 (Ken Burns ドリー + OP_NA ナレーション + 博士⇄ポノ babble 会話 + スキップ可)。並列エージェント実装→クロスレビュー→MAJOR 5件即修正→commit auto-push でstaging
+- **タスク**: quizland なぞなぞオープニング 6 パネル導入演出を追加 (Ken Burns ドリー + OP_NA ナレーション + 博士⇄ポノ babble 会話 + スキップ可)。並列エージェント実装→クロスレビュー→MAJOR 5件即修正→commit auto-push でstaging
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 42
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 20, "Read": 9, "Grep": 3, "ToolSearch": 1, "Agent": 6, "Write": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T02:43:06Z - quizland OP cinematic 5 review fixes (re-entry guard, hoist DOM lookups, iOS audio via audioCtx, idempotent finish() cleanup, skipBtn focus)
 - **タスク**: quizland OP cinematic 5 review fixes (re-entry guard, hoist DOM lookups, iOS audio via audioCtx, idempotent finish() cleanup, skipBtn focus)
 - **結果**: 成功
@@ -197,19 +210,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 8, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 12}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T01:43:11Z - quizland editor: Playtest ON 時も chip/吹き出しクリックを editor 選択優先に戻す (v801 リグレッション修正)、 sw v815→816、 reference_layout_editor_features.md 追記
-- **タスク**: quizland editor: Playtest ON 時も chip/吹き出しクリックを editor 選択優先に戻す (v801 リグレッション修正)、 sw v815→816、 reference_layout_editor_features.md 追記
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 32
-- **エラー数**: 0
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 7, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 8}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

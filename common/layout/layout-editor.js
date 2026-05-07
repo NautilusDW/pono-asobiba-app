@@ -255,6 +255,20 @@
     } catch (e) { return null; }
   }
 
+  // 2026-05-08: server (assets バンドル) と local の新旧を判定。
+  //   - local が __savedAt を持ち、5 分以内なら local 優先（deploy ラグ想定）
+  //   - それ以外は server 優先（別端末更新の伝播を尊重）
+  //   - 一方しか無ければ存在する方
+  function pickFreshestData(server, local) {
+    if (!local) return server || null;
+    if (!server) return local;
+    if (typeof local.__savedAt !== 'number') return server;
+    var DEPLOY_LAG_WINDOW_MS = 5 * 60 * 1000;
+    var ageMs = Date.now() - local.__savedAt;
+    if (ageMs > DEPLOY_LAG_WINDOW_MS) return server;
+    return local;
+  }
+
   // ====================================================================
   //  Snapshot / takeLayoutSnapshot
   // ====================================================================
@@ -711,7 +725,11 @@
     var data = snapshot();
     var pretty = JSON.stringify(data, null, 2);
     var compact = JSON.stringify(data);
-    localSave(data);
+    // 2026-05-08 fix: localStorage 保存時に savedAt を埋め込む。
+    // reload 後 enable() で server (deploy ラグで stale) と local どちらが新しいか判定する根拠。
+    // GitHub PUT 用 pretty/compact には混ぜない (差分を最小にし、余計な chore commit を防ぐ)。
+    var localData = Object.assign({}, data, { __savedAt: Date.now() });
+    localSave(localData);
     // 2026-05-07 fix: 保存した data で window._currentLayoutData を即時に上書きする。
     //   これをしないと、 save() 後の何らかの DOM 再適用 (MutationObserver 経由 / 次問題
     //   遷移時の renderChoices 直後 apply 等) が **古い** _currentLayoutData を使って
@@ -6314,10 +6332,21 @@
     // Pull saved data + restore extras
     var serverData = window._currentLayoutData || null;
     var local = localLoad();
-    var initialData = serverData || local;
+    // 2026-05-08 fix: server (Cloudflare [assets] バンドル) は GitHub PUT 後の deploy 完了 (~30-90s) まで stale。
+    //   直前 save の正解値は localStorage に __savedAt 付きで持っているので、5 分以内の local を優先。
+    var initialData = pickFreshestData(serverData, local);
     if (initialData) {
       // Re-apply (applier already did basic apply, but we want extras like __locked, __zoom, etc.)
       try { applySavedData(initialData); } catch (e) { console.warn('[LayoutEditor] applySavedData failed', e); }
+    }
+    // 2026-05-08 fix: 後続 Mutation/renderChoices 経由 apply が server stale 値で
+    //   ユーザー直前 save をまた巻き戻すのを防ぐため、_currentLayoutData も local 優先で揃える。
+    if (initialData && window._currentLayoutData !== initialData) {
+      // 2026-05-08: __savedAt は localStorage 専用メタ。_currentLayoutData に残ると
+      // applier や saveChipPreset がキー列挙時に余計なキーとして拾うため除去。
+      var cleaned = Object.assign({}, initialData);
+      delete cleaned.__savedAt;
+      window._currentLayoutData = cleaned;
     }
     state.lastSavedJson = JSON.stringify(snapshot());
 

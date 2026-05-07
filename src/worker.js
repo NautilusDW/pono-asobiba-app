@@ -90,7 +90,8 @@ function applyCacheHeaders(request, response) {
     || path === '/maze/imageStages/_index.json'
     || (path.startsWith('/maze/imageStages/') && path.endsWith('.json'))
     // preview の保存レイアウトは PC で書いたら即スマホで見えるように毎回フレッシュ
-    || path === '/quizland/preview/full/saved-layout.json';
+    || path === '/quizland/preview/full/saved-layout.json'
+    || path === '/quizland/saved-layout.json';
 
   if (isHTML || isFreshData) {
     const headers = new Headers(response.headers);
