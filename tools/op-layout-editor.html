@@ -207,6 +207,56 @@
     word-break: break-word;
   }
 
+  /* 16:9 safe-area overlay (editor-only, NOT exported in buildCSS) */
+  /* D viewport (2560x1080, 21:9) only — shows where 16:9 (1920x1080) sits in the center.
+     Left/right 320px shaded red = areas visible only on 21:9. Editor visual aid only. */
+  .safe-area-16-9 {
+    display: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    color: #fde047;
+    background: linear-gradient(
+      to right,
+      rgba(220, 38, 38, 0.18) 0,
+      rgba(220, 38, 38, 0.18) 320px,
+      transparent 320px,
+      transparent calc(100% - 320px),
+      rgba(220, 38, 38, 0.18) calc(100% - 320px),
+      rgba(220, 38, 38, 0.18) 100%
+    );
+  }
+  .stage[data-vc="D"] .safe-area-16-9 { display: block; }
+  .safe-area-16-9::before,
+  .safe-area-16-9::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: repeating-linear-gradient(
+      to bottom,
+      currentColor 0 8px,
+      transparent 8px 16px
+    );
+  }
+  .safe-area-16-9::before { left: 320px; }
+  .safe-area-16-9::after  { right: 320px; }
+  .safe-area-label {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.65);
+    color: #fde047;
+    font-size: 18px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
   /* Right pane: tabs + scroll body */
   .tab-bar {
     display: flex;
@@ -375,6 +425,9 @@
               <div class="op-dialogue-text" id="text-hakase"></div>
             </div>
           </div>
+        </div>
+        <div class="safe-area-16-9" aria-hidden="true">
+          <span class="safe-area-label">16:9 セーフエリア</span>
         </div>
       </div>
     </div>
@@ -828,8 +881,8 @@ function buildRightPane() {
     slotGroup.appendChild(makeSelect('Pono画像', 'variant', sideKey,
       PONO_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
   }
-  slotGroup.appendChild(makeRange('幅 (px)', 100, 600, 1, 'slotW', sideKey));
-  slotGroup.appendChild(makeRange('高さ (px)', 100, 800, 1, 'slotH', sideKey));
+  slotGroup.appendChild(makeRange('幅 (px)', 100, 1600, 1, 'slotW', sideKey));
+  slotGroup.appendChild(makeRange('高さ (px)', 100, 1200, 1, 'slotH', sideKey));
   slotGroup.appendChild(makeRadio('aspect', 'slotAspect', sideKey, [
     { value: 'free', text: '自由' },
     { value: 'fixed_0.75', text: '0.75' },
@@ -841,8 +894,8 @@ function buildRightPane() {
     { value: 'center', text: '中' },
     { value: 'bottom', text: '下' }
   ]));
-  slotGroup.appendChild(makeRange('オフセットX', -200, 200, 1, 'slotOffsetX', sideKey));
-  slotGroup.appendChild(makeRange('オフセットY', -200, 200, 1, 'slotOffsetY', sideKey));
+  slotGroup.appendChild(makeRange('オフセットX', -500, 1000, 1, 'slotOffsetX', sideKey));
+  slotGroup.appendChild(makeRange('オフセットY', -500, 1000, 1, 'slotOffsetY', sideKey));
   body.appendChild(slotGroup);
 
   const boxGroup = document.createElement('div');
@@ -858,13 +911,13 @@ function buildRightPane() {
     boxGroup.appendChild(makeSelect('フレーム画像', 'boxImage', sideKey,
       FRAME_IMAGES.map(f => ({ value: f.id, text: f.label }))));
   }
-  boxGroup.appendChild(makeRange('幅 (px)', 200, 800, 1, 'boxW', sideKey));
-  boxGroup.appendChild(makeRange('高さ (px)', 80, 300, 1, 'boxH', sideKey));
-  boxGroup.appendChild(makeRange('X', -200, 400, 1, 'boxX', sideKey));
-  boxGroup.appendChild(makeRange('Y', -200, 400, 1, 'boxY', sideKey));
-  boxGroup.appendChild(makeRange('padding', 8, 80, 1, 'boxPadding', sideKey));
+  boxGroup.appendChild(makeRange('幅 (px)', 200, 2000, 1, 'boxW', sideKey));
+  boxGroup.appendChild(makeRange('高さ (px)', 80, 800, 1, 'boxH', sideKey));
+  boxGroup.appendChild(makeRange('X', -500, 1000, 1, 'boxX', sideKey));
+  boxGroup.appendChild(makeRange('Y', -500, 1000, 1, 'boxY', sideKey));
+  boxGroup.appendChild(makeRange('padding', 8, 200, 1, 'boxPadding', sideKey));
   if (s.boxMode === 'css') {
-    boxGroup.appendChild(makeRange('角丸', 0, 40, 1, 'boxRadius', sideKey));
+    boxGroup.appendChild(makeRange('角丸', 0, 80, 1, 'boxRadius', sideKey));
     boxGroup.appendChild(makeColor('背景色', 'boxColor', sideKey));
   }
   boxGroup.appendChild(makeTextarea('サンプル文', 'sampleText', sideKey));
