@@ -48,6 +48,28 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
 - JS: `_qscRunning` 再入ガード、`{ once: true }` タップリスナー + `finally` で removeEventListener、22×100ms ホールドループで `cancelled` ポーリング
 - preload: タイトルタップ時の `__preloadList` に追加 (ウォーミング ~17s 余裕あり)
 
+## ナレーション 2 セグメント切替タイミング (2026-05-07 調整)
+
+panel 1 のナレーション (`OP_NA.wav`、17.45s) を 2 セグメントに分けて表示している:
+
+- **seg1** (3 行 通常): もりの おくに… ふくろうの はかせが すんでいます。
+- **seg2** (2 行 赤強調): ポノは、なかよしの はかせと、いつもの なぞなぞで あそぶために やってきました。
+
+切替トリガは `audio.currentTime >= Math.max(audio.duration * 0.62, 11.0)` — 「はかせが すんでいます」の発話終了 (≈11s) 以降に切替。fallback timeout は 12s。旧 `audio.duration / 2` (≈8.7s) では「なんでも しっている」直後で seg1 が早く切れすぎていたため修正。
+
+ナレ全文の audio.ended 後にさらに **2 秒の hold** を入れてから panel 2 (博士の発話) に遷移。博士の発話開始がナレ余韻と重ならないようにするため。
+
+## 会話レイアウト (2026-05-07 リデザイン)
+
+panel 2-6 の会話は `.op-content > .op-narration + .op-sides > .op-side-pono / .op-side-hakase` の構成。
+
+- 各 `op-side` = 縦積みの **`.op-char-frame` (上) + `.op-dialogue` (下)** で 50% 幅固定
+- キャラは waist-shot: `.op-char-frame { overflow: hidden }` + `<img>.op-char { transform: translateY(18%) }` で下半身を frame の下に隠す → 「ボックスから上半身が出ている」見た目
+- 両方の `.op-dialogue` は常時表示・固定幅。発話側 opacity 1.0、非発話側 opacity 0.55 の dim で発話者を明示
+- 旧 `.op-characters` (キャラ行) + `.op-dialogues` (吹き出し行) の 2 行レイアウトは廃止、`.op-side` 縦積みに統一
+
+背景ブラーは `.op-bg.is-static-blur { filter: blur(5px) saturate(0.9) brightness(0.94) }` (旧 `blur(10px) saturate(0.85) brightness(0.92)` の半分強度)。
+
 ## Panel Spec
 
 | # | kind | bg | 内容 |

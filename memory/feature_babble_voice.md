@@ -1,37 +1,49 @@
 # Babble Voice System (Quizland)
 
-**Status:** Implemented (2026-05-07)  
-**Last Updated:** 2026-05-07  
-**Type:** Feature — Sound & UX  
+**Status:** Implemented (2026-05-07), scope narrowed to OP cinematic only (2026-05-07)
+**Last Updated:** 2026-05-07
+**Type:** Feature — Sound & UX
 
 ---
 
 ## Overview
 
-Quizland's "フクロウ博士" (HAKASE) character speaks with character-driven pseudo-voice "babble" — Animal Crossing style.  
-Two features unified:
-1. **Character-by-character typing** (typewriter effect, 105ms/char)
+Quizland uses programmatic "babble" pseudo-voice (Animal Crossing style) **only during the opening cinematic** for narrative dialogue between Pono and the owl professor. **In-game quiz dialogue (problem text, hints, correct/wrong feedback, etc.) is silent and instant** — the owl does NOT chat character-by-character during gameplay.
+
+Why the scope split: in the main quiz body the kid is reading the problem, considering hints, and parsing feedback — having the owl "speaking" each character is intrusive and slows their thinking. The babble + typewriter combo is reserved for the cinematic moments where character voice IS the content (introductions, story beats).
+
+Two features still bundled (cinematic only):
+1. **Character-by-character typing** (typewriter effect, ~95ms/char in cinematic)
 2. **Programmatic Web Audio synthesis** (no pre-recorded assets) with vowel formant variation
 
 ---
 
 ## Implementation Files
 
-### Core Babble Engine
+### Core Babble Engine (unchanged scope)
 - **`js/quizland-babble.js`** (IIFE, ~150 lines)
   - Public API: `window.PonoBabble = { init(audioCtx), playChar(char, presetName), cancelAll(), presets }`
   - SKIP_RE: Whitespace, punctuation, zero-width joiners produce no sound
-  - Preset system: `owl` (implemented), `pono` (stub), `hedgehog` (stub), `default` (fallback)
+  - Preset system: `owl` (implemented), `pono` (simple chirp), `hedgehog` (simple chirp), `default` (fallback)
 
-### Integration Point
-- **`quizland/index.html`** → `setHakaseDialogue(text)`
-  - Line ~2500: `_typingToken` race-prevention counter
-  - Line ~2502: `const HAKASE_TYPING_DELAY_MS = 105` (tunable parameter)
-  - Line ~2504: Character-by-character typewriter loop + `PonoBabble.playChar()` hook
-  - Calls to `setHakaseDialogue()`: problem, hints, correct, wrong, detail, clear states
+### Integration Points
+
+#### Opening Cinematic (uses babble + typewriter)
+- **`quizland/index.html`** → `_opTypeInto(elId, text, presetName)` inside `playOpeningCinematic`
+  - Separate from in-game dialogue — uses its own race-prevention counter `_opTypingToken`
+  - ~95ms/char tick, calls `PonoBabble.playChar(c, 'owl' | 'pono')` per character
+  - Active during dialogue panels (panels 2-6) of the opening cinematic only
+
+#### In-Game Quiz Dialogue (instant, no babble)
+- **`quizland/index.html`** → `setHakaseDialogue(text)` (around line 2777)
+  - **Reverted to instant `el.textContent = text`** as of 2026-05-07
+  - No typewriter, no `PonoBabble.playChar()` call
+  - Calls `PonoBabble.cancelAll()` defensively to silence any leaked babble from the cinematic
+  - Removed: `_typingToken` counter and `HAKASE_TYPING_DELAY_MS` constant (no longer needed)
+  - Used by 9 call sites: problem display, hints, correct, wrong, detail, clear states, etc.
 
 ### Cache Invalidation
-- **`sw.js`** — CACHE_VERSION bumped (e.g., 815 → 817 in deployment commit)
+- **`sw.js`** — CACHE_VERSION bumped on each deployment touching cinematic or babble code
 
 ---
 
