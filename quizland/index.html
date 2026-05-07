@@ -1263,15 +1263,22 @@ body.layout-editor-on .stage-pono { display: none; }
 .chip[data-color="purple"] .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #8B5CF6; }
 .chip[data-color="cyan"]   .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #06B6D4; }
 
-/* ===== char-hint (吹き出し) + character (フクロウ博士) ===== */
+/* ===== char-hint (吹き出し) + character (フクロウ博士) =====
+   ユーザー要望: フクロウの吹き出しは「行ごとに大きさを変えず、 常に縦横比 1:1 の
+   正方形で固定」。 saved-layout.json の inline width/height (例: 326×133) や
+   旧仕様の min-height + height:auto による縦伸びを !important で打ち消し、
+   width=height の正方形に強制する。 height: auto + aspect-ratio: 1/1 を主とし、
+   aspect-ratio 未対応の古い browser 用に明示的な height fallback も付ける。 */
 .char-hint {
   flex: 0 0 auto;
   position: relative;
-  /* saved-layout が width/height を inline 指定するが、長文は縦に伸ばしたいので
-     height は !important で auto 扱いに上書きする (min-height で下限を保つ) */
-  min-width: 235px;
-  min-height: 63px;
-  height: auto !important;
+  width: 200px !important;
+  height: 200px !important; /* aspect-ratio 未対応 browser 用 fallback */
+  aspect-ratio: 1 / 1 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 200px !important;
+  max-height: 200px !important;
   background-image: url('../assets/images/quizland/balloons/balloon_temp.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1280,16 +1287,18 @@ body.layout-editor-on .stage-pono { display: none; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 12px 18px;
+  padding: 14px 16px;
   box-sizing: border-box;
-  font-size: 22px;
+  /* 長文時は font-size を縮めて 1:1 の中に収める。 base 22px → clamp で 16〜22px */
+  font-size: clamp(16px, 4.2vmin, 22px);
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.3;
   color: #4a3a1a;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   white-space: normal;
   word-break: keep-all;
   overflow-wrap: break-word;
+  overflow: hidden; /* 万一テキストが溢れても箱の外に出さない */
 }
 .character {
   width: 200px; height: 220px;
@@ -1707,8 +1716,9 @@ body.layout-editor-on .character img {
      縦長になった時 (160×180 → アスペクト 0.89) 顔が中央より下に寄ると
      吹き出しと目線がずれるので center top 寄せで頭を視線レベルに固定 */
   .character img { object-position: center top; }
-  /* 14:9 right pane 480px = character(160) + gap(14) + char-hint(max 280) = 454px → 26px buffer */
-  .char-hint { min-width: 200px; max-width: 280px; font-size: 18px; }
+  /* 14:9 right pane 480px。 フクロウの吹き出しは下の .char-hint ルールで
+     1:1 (180px) に固定済み。 ここでは font-size のみ明示。 */
+  .char-hint { font-size: 18px; }
   /* 14:9 用: 解説/結果まわりの「詳細画面」も grid 準拠に縮める */
   .q-text-card { font-size: 28px; padding: 18px 70px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
   #q-text { font-size: 26px; }
@@ -1741,7 +1751,15 @@ body.layout-editor-on .character img {
   .chip { width: 216px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
   .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
-  .char-hint { width: auto !important; height: auto !important; max-width: 280px !important; transform: translate(0, 0) !important; }
+  /* フクロウの吹き出しは常に 1:1 固定 (14:9 帯では 180px) */
+  .char-hint {
+    width: 180px !important;
+    height: 180px !important;
+    aspect-ratio: 1 / 1 !important;
+    max-width: 180px !important;
+    max-height: 180px !important;
+    transform: translate(0, 0) !important;
+  }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
   /* iPad 1024×768、iPad Pro 12.9 2048×1536 など真正 4:3
@@ -1771,9 +1789,20 @@ body.layout-editor-on .character img {
   /* .chip.txt-medium { font-size: 22px; } */
   /* .chip.txt-long { font-size: 18px; } */
   .chip.chip-count { font-size: 48px; }
-  /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(max 240) = 394px → 46px buffer
-     (元 260 から 240 に詰めて board/answer-tray の hit area との干渉を予防) */
-  .char-hint { min-width: 180px; max-width: 240px; font-size: 16px; padding: 10px 14px; box-sizing: border-box; }
+  /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(160 1:1) = 314px → 余裕あり
+     フクロウの吹き出しは 1:1 正方形で固定 (4:3 帯では 160px) */
+  .char-hint {
+    width: 160px !important;
+    height: 160px !important;
+    aspect-ratio: 1 / 1 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 160px !important;
+    max-height: 160px !important;
+    font-size: 16px;
+    padding: 10px 14px;
+    box-sizing: border-box;
+  }
   /* base .character img は object-fit:contain なのでクロップは起きないが、
      140×158 (アスペクト 0.886) で顔位置を上寄せに固定し吹き出しと目線を揃える */
   .character img { object-position: center top; }
@@ -1814,7 +1843,16 @@ body.layout-editor-on .character img {
   .chip { width: 196px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
   .character { width: 140px !important; height: 158px !important; transform: translate(0, 0) !important; }
-  .char-hint { width: auto !important; height: auto !important; max-width: 240px !important; transform: translate(0, 0) !important; }
+  /* フクロウの吹き出しは 1:1 正方形で固定。 4:3 帯の上書きは上の .char-hint
+     ルールで既に適用済みだが、 inline transform 解除のため width/height を再宣言 */
+  .char-hint {
+    width: 160px !important;
+    height: 160px !important;
+    aspect-ratio: 1 / 1 !important;
+    max-width: 160px !important;
+    max-height: 160px !important;
+    transform: translate(0, 0) !important;
+  }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
   /* 1280×1024 等、超 4:3。
@@ -1861,7 +1899,18 @@ body.layout-editor-on .character img {
   .chip.chip-count { font-size: 44px !important; }
   .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
   .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
-  .char-hint { width: auto !important; height: auto !important; min-width: 170px !important; max-width: 220px !important; font-size: 15px !important; transform: translate(0, 0) !important; }
+  /* フクロウの吹き出しは 1:1 正方形で固定 (5:4 帯では 150px) */
+  .char-hint {
+    width: 150px !important;
+    height: 150px !important;
+    aspect-ratio: 1 / 1 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 150px !important;
+    max-height: 150px !important;
+    font-size: 15px !important;
+    transform: translate(0, 0) !important;
+  }
 }
 
 /* ===== デバッグ全問プレイモード (?debug=all) =====
@@ -3640,11 +3689,13 @@ refreshDiffActive();
 //   (要素を掴んで動かしたいのに、ボタンが反応してモード/結果画面が開いてしまうのを防ぐ)
 function _isEditMode() { return document.body.classList.contains('layout-editor-on'); }
 
-// HUD 左ボタン (おしらせ → モード選択画面へ戻る)
+// HUD 左ボタン (おしらせ): 簡易おしらせを表示する
+//   旧仕様ではモード選択画面へ戻していたが、 ボタンラベルの「おしらせ」 と
+//   挙動 (タイトル/モード戻り) が一致せず混乱していたため、 おしらせモーダル相当の
+//   alert に差し替えた。
 document.getElementById('hud-back-btn').addEventListener('click', function(e) {
   if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
-  document.getElementById('result-overlay').classList.add('hidden');
-  document.getElementById('mode-screen').classList.remove('hidden');
+  alert('おしらせ\n\nフクロウ博士の クイズランドへ ようこそ！\nあたらしい もんだいを どんどん ふやしていくよ。');
 });
 
 // Result retry (same categories)
@@ -3661,12 +3712,19 @@ document.getElementById('result-cat-btn').addEventListener('click', function(e) 
 });
 
 // HUD settings button → 共通メニューを開く
+//   注意: 本ボタンの pointerdown を stopPropagation せずに dispatch すると、
+//   元イベントが document の close-on-outside-tap リスナー (common/menu.js)
+//   まで到達して、 開いたばかりのメニューを即閉じてしまう。 settings-btn は
+//   menuToggle/dropdown の外にあるため target チェックで弾けない。 そのため
+//   stopPropagation で元イベントの bubble を止める。 dispatch するイベントは
+//   menuToggle 自身を target とする別物なので close-handler に弾かれない。
 (function() {
   var settingsBtn = document.getElementById('hud-settings-btn');
   if (!settingsBtn) return;
   settingsBtn.addEventListener('pointerdown', function(e) {
     if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault();
+    e.stopPropagation();
     var menuToggle = document.querySelector('.pono-menu-toggle');
     if (menuToggle) {
       var evt = typeof PointerEvent === 'function'
