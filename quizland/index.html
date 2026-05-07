@@ -2193,64 +2193,91 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-content > * {
   pointer-events: auto;
 }
-/* Fix 3: 左右それぞれ "キャラ画像 + ダイアログ" の縦スタック。腰から上 (waist-shot)。
-   両キャラ常時表示、ダイアログボックスは幅固定で広い。 */
+/* Single Box モード採用 (2026-05-07): per-side Box (.op-dialogue-pono / -hakase) は
+   廃止し、画面下部に単一の `.op-dialogue-single` を置く。キャラは絶対配置 slot で
+   エディタの transform 出力 (`.op-char-slot`) をそのまま受け取る。 */
 .op-sides {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 4%;
-  padding: 2% 4% 4%;
-  box-sizing: border-box;
+  /* Single Box モード: キャラ slot は absolute 配置になるので flex は不要。
+     ただし旧ブラウザ向けに block 等価の挙動でレイアウトを潰さないよう display は維持。 */
+  display: block;
   pointer-events: none;
 }
 .op-sides.hidden { display: none; }
 .op-sides > .op-side {
-  flex: 1 1 50%;            /* 等幅・固定 (発話で resize しない) */
-  max-width: 540px;          /* ワイド画面でも各 side が伸び切らないようキャップ */
+  /* Single Box モード: side コンテナ自体を 100% にして、内部 slot を中央基点で配置 */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* slot は Single Box モードで使用するキャラ配置の基本 box。エディタ出力の
+   transform (translate(calc(-50% + Xpx), calc(-50% + Ypx))) で上から覆う。 */
+.op-char-slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;          /* slot の四角でクリップ (キャラの底を切る目的でも使われる) */
+}
+.op-char-slot img.op-char {
+  width: 100%;
   height: 100%;
-  position: relative;
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: none;
+}
+.op-side-hakase .op-char-slot img.op-char {
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
+}
+/* Single Box モード時は per-side Box は DOM 上削除済みだが、念のため非表示。 */
+.op-side > .op-dialogue.op-dialogue-pono,
+.op-side > .op-dialogue.op-dialogue-hakase {
+  display: none;
+}
+/* Single Box: 画面中央寄せ + 背景画像枠。エディタが書き出す width/height/top/font-size を
+   各 @media ブロックで上書きする。 */
+.single-box-wrapper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.op-dialogue-single {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  color: #3a2a14;
+  box-sizing: border-box;
+  overflow-y: auto;
   pointer-events: auto;
 }
-.op-char-frame {
-  position: relative;
-  width: 100%;
-  flex: 1 1 auto;            /* ダイアログの上のスペースを取る */
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  pointer-events: none;
-  /* overflow:hidden は使わない (横切れの原因になる)。代わりに img の clip-path で腰下をカット */
+.op-dialogue-single .op-dialogue-label {
+  position: absolute;
+  top: -22px;
+  left: 22px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.30);
+  letter-spacing: 0.04em;
+  background: #5fa05a; /* default: pono — JS で speaker 切替時に上書き */
 }
-.op-char-frame img.op-char {
-  /* WIDTH-based sizing で横が絶対切れないようにする。腰下クロップは clip-path で行う。 */
-  position: relative;
-  width: 75%;
-  max-width: 280px;
-  height: auto;
-  clip-path: inset(0 0 35% 0);
-  pointer-events: none;
-}
-.op-char-frame img.op-char-pono {
-  width: 75%;
-  max-width: 280px;
-  /* Pono の素材アスペクト比 0.55-0.81 全てに対応 (35% bottom crop) */
-  clip-path: inset(0 0 35% 0);
-}
-.op-char-frame img.op-char-hakase {
-  width: 95%;                /* フクロウは横長なので少し広めに */
-  max-width: 320px;
-  clip-path: inset(0 0 25% 0);  /* フクロウは縦が短いので bottom crop も控えめ */
-}
-.op-side-hakase .op-char-frame img.op-char {
-  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
+.op-dialogue-single.is-hakase .op-dialogue-label { background: #e08a3c; }
+.op-dialogue-single.is-pono   .op-dialogue-label { background: #5fa05a; }
+.op-dialogue-single .op-dialogue-text {
+  font-size: 22px;
+  line-height: 1.5;
+  min-height: 1.6em;
+  word-break: break-word;
 }
 .op-narration {
   position: absolute;
@@ -2277,47 +2304,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-narration p.emphasis { color: #c0392b; font-weight: 700; }
 .op-narration.seg-show { opacity: 1; }
 .op-narration.seg-hide { opacity: 0; }
-/* Fix 3: 各 side 内のダイアログ。幅は固定 (max-width で cap)、下に貼り付く。
-   ビューポートで stretch しないようサイズ固定気味にする。 */
-.op-side > .op-dialogue {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  border-radius: 22px;
-  padding: 28px 24px 22px;
-  box-shadow: 0 12px 26px rgba(0,0,0,0.34);
-  min-height: 120px;
-  max-height: 200px;
-  box-sizing: border-box;
-  overflow-y: auto;          /* 長文は内側でスクロール (外形が伸びない) */
-  color: #3a2a14;
-  /* 両方常時表示。発話側は不透明、非発話側は薄め。 */
-  opacity: 0.55;
-  transition: opacity 0.3s ease-out;
-}
-.op-side > .op-dialogue.is-speaking { opacity: 1.0; }
-.op-dialogue-hakase { background: #fff3d6; }
-.op-dialogue-pono   { background: #d8efcf; }
-.op-dialogue-label {
-  position: absolute;
-  top: -22px; left: 22px;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-  padding: 8px 20px;
-  border-radius: 999px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.30);
-  letter-spacing: 0.04em;
-}
-.op-dialogue-hakase .op-dialogue-label { background: #e08a3c; }
-.op-dialogue-pono   .op-dialogue-label { background: #5fa05a; }
-.op-side > .op-dialogue .op-dialogue-text {
-  font-size: 22px;
-  line-height: 1.5;
-  min-height: 1.6em;
-  word-break: break-word;
-}
+/* per-side Box の旧ルールは Single Box モード採用に伴い廃止 (DOM からも削除済み)。
+   .op-dialogue-single の本体は上の Single Box ブロック + 各 @media のエディタ出力で定義。 */
 .op-skip {
   position: absolute;
   top: 16px; right: 20px;
@@ -2337,18 +2325,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: rgba(0,0,0,0.55);
   outline: none;
 }
-/* ワイドビューポート (16:10 以上): キャラ少し小さめ、ダイアログは横長、ナレーションは横長バナー */
+/* ワイドビューポート (16:10 以上): ナレーションは横長バナー (Single Box モード時はエディタ出力が支配)。 */
 @media (min-aspect-ratio: 16/10) {
-  .op-char-frame img.op-char-pono   { max-width: 240px; }
-  .op-char-frame img.op-char-hakase { max-width: 280px; }
-  .op-side > .op-dialogue {
-    max-width: 540px;
-    min-height: 100px;
-    max-height: 180px;
-  }
-  .op-side > .op-dialogue .op-dialogue-text {
-    font-size: 20px;
-  }
   .op-narration {
     max-width: 900px;        /* ワイドでは横長矩形に */
     padding-top: 18px;
@@ -2357,19 +2335,122 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 }
 @media (max-width: 540px) {
   .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
-  .op-char-frame img.op-char-pono   { width: 80%; max-width: 200px; }
-  .op-char-frame img.op-char-hakase { width: 95%; max-width: 230px; }
-  .op-side > .op-dialogue {
-    max-width: 100%;
-    padding: 18px 14px 14px;
-    min-height: 88px;
-    border-radius: 20px;
+  .op-dialogue-single .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
+}
+
+/* ===== Single Box layout — エディタ書き出し (op-layout-2026-05-07_23-32-45.css) ===== */
+/* viewport class B (1024x768) */
+@media (min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10) {
+  .op-side-pono .op-char-slot {
+    width: 1021px;
+    height: 492px;
+    aspect-ratio: 0.75;
+    transform: translate(calc(-50% + 0px), calc(-50% + -69px));
   }
-  .op-side > .op-dialogue .op-dialogue-text {
-    font-size: 16px;
+  .op-side-pono .op-char-slot img {
+    object-position: bottom center;
   }
-  .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
-  .op-sides { gap: 2%; padding: 2% 2% 4%; }
+  .op-side-hakase .op-char-slot {
+    width: 843px;
+    height: 470px;
+    aspect-ratio: 1.23;
+    transform: translate(calc(-50% + -40px), calc(-50% + -99px));
+  }
+  .op-side-hakase .op-char-slot img {
+    object-position: bottom center;
+  }
+  .op-dialogue-single {
+    width: 984px;
+    height: 316px;
+    left: 50%;
+    top: 411px;
+    transform: translateX(-50%);
+    padding: 32px;
+    background-image: url("../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260507-173812_001.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border-radius: 0;
+  }
+  .op-dialogue-single .op-dialogue-text {
+    font-size: 37px;
+  }
+}
+
+/* viewport class C (1920x1080) */
+@media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10) {
+  .op-side-pono .op-char-slot {
+    width: 1481px;
+    height: 775px;
+    aspect-ratio: 0.75;
+    transform: translate(calc(-50% + 46px), calc(-50% + -80px));
+  }
+  .op-side-pono .op-char-slot img {
+    object-position: bottom center;
+  }
+  .op-side-hakase .op-char-slot {
+    width: 947px;
+    height: 655px;
+    aspect-ratio: 1.23;
+    transform: translate(calc(-50% + 0px), calc(-50% + -158px));
+  }
+  .op-side-hakase .op-char-slot img {
+    object-position: bottom center;
+  }
+  .op-dialogue-single {
+    width: 1719px;
+    height: 487px;
+    left: 50%;
+    top: 545px;
+    transform: translateX(-50%);
+    padding: 32px;
+    background-image: url("../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260508-081922_001.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border-radius: 0;
+  }
+  .op-dialogue-single .op-dialogue-text {
+    font-size: 48px;
+  }
+}
+
+/* viewport class D (2560x1080) */
+@media (min-aspect-ratio: 19/10) {
+  .op-side-pono .op-char-slot {
+    width: 560px;
+    height: 800px;
+    aspect-ratio: 0.75;
+    transform: translate(calc(-50% + 168px), calc(-50% + -173px));
+  }
+  .op-side-pono .op-char-slot img {
+    object-position: bottom center;
+  }
+  .op-side-hakase .op-char-slot {
+    width: 828px;
+    height: 800px;
+    aspect-ratio: 1.23;
+    transform: translate(calc(-50% + -203px), calc(-50% + -200px));
+  }
+  .op-side-hakase .op-char-slot img {
+    object-position: bottom center;
+  }
+  .op-dialogue-single {
+    width: 1906px;
+    height: 539px;
+    left: 50%;
+    top: 503px;
+    transform: translateX(-50%);
+    padding: 32px;
+    background-image: url("../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260508-081922_001.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border-radius: 0;
+  }
+  .op-dialogue-single .op-dialogue-text {
+    font-size: 48px;
+  }
 }
 
 /* ===== Quiz Start Title Card (cinematic → card → initGame) ===== */
@@ -2563,22 +2644,20 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     <div class="op-narration hidden" id="op-narration"></div>
     <div class="op-sides hidden" id="op-sides">
       <div class="op-side op-side-pono">
-        <div class="op-char-frame">
+        <div class="op-char-slot">
           <img class="op-char op-char-pono" id="op-char-pono" alt="">
-        </div>
-        <div class="op-dialogue op-dialogue-pono">
-          <div class="op-dialogue-label">ポノ</div>
-          <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
         </div>
       </div>
       <div class="op-side op-side-hakase">
-        <div class="op-char-frame">
+        <div class="op-char-slot">
           <img class="op-char op-char-hakase" id="op-char-hakase"
                src="../assets/images/quizland/owl_professor_guide.webp" alt="">
         </div>
-        <div class="op-dialogue op-dialogue-hakase">
-          <div class="op-dialogue-label">はかせ</div>
-          <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
+      </div>
+      <div class="single-box-wrapper">
+        <div class="op-dialogue op-dialogue-single is-pono" id="op-dialogue-single">
+          <div class="op-dialogue-label" id="op-dialogue-label-single">ポノ</div>
+          <div class="op-dialogue-text" id="op-dialogue-text-single"></div>
         </div>
       </div>
     </div>
@@ -4203,12 +4282,13 @@ async function playOpeningCinematic() {
 
   // Hoist DOM lookups out of the loop (Fix 2)
   // Fix 3: 旧 .op-characters / .op-dialogues 廃止。新 .op-sides がキャラ+ダイアログを内包
-  const bg         = document.getElementById('op-bg');
-  const sides      = document.getElementById('op-sides');
-  const narration  = document.getElementById('op-narration');
-  const hakaseEl   = document.getElementById('op-dialogue-text-hakase');
-  const ponoEl     = document.getElementById('op-dialogue-text-pono');
-  const ponoImgEl  = document.getElementById('op-char-pono');
+  const bg          = document.getElementById('op-bg');
+  const sides       = document.getElementById('op-sides');
+  const narration   = document.getElementById('op-narration');
+  const dialogueBox = document.getElementById('op-dialogue-single');
+  const dialogueLab = document.getElementById('op-dialogue-label-single');
+  const dialogueEl  = document.getElementById('op-dialogue-text-single');
+  const ponoImgEl   = document.getElementById('op-char-pono');
 
   // Fix 1: 背景はパネル毎に切り替える (panel 1 sharp / panel 2-6 blurred)。
   // ここでは旧来のアニメ系クラスだけクリアしておく。
@@ -4230,7 +4310,7 @@ async function playOpeningCinematic() {
   } catch (e) {}
 
   try {
-    if (!bg || !sides || !narration || !hakaseEl || !ponoEl) {
+    if (!bg || !sides || !narration || !dialogueEl) {
       // Element missing — bail without entering the loop. Finally still runs.
       return;
     }
@@ -4405,32 +4485,27 @@ async function playOpeningCinematic() {
       } else if (panel.kind === 'dialogue') {
         narration.classList.add('hidden');
         sides.classList.remove('hidden');
-        // Clear bubbles
-        hakaseEl.textContent = '';
-        ponoEl.textContent = '';
+        // Clear single dialogue box
+        if (dialogueEl) dialogueEl.textContent = '';
         // Fix 4: per-cut の zoom/blur 切替は廃止 (背景は静的ぼかしで固定)
         // Set Pono image for this panel (Fix 1)
         if (ponoImgEl && panel.ponoImg) {
           ponoImgEl.src = panel.ponoImg;
         }
-        // Hoist dialogue bubble queries once before the inner loop (Fix 2)
-        const hakBubble = sides.querySelector('.op-dialogue-hakase');
-        const ponBubble = sides.querySelector('.op-dialogue-pono');
-        // Sequential dialogues
+        // Sequential dialogues — Single Box モード: 同じ box の label / text を speaker 切替時に書き換える。
         for (let di = 0; di < panel.dialogues.length; di++) {
           if (_opCancelled) break;
           const d = panel.dialogues[di];
-          if (d.speaker === 'hakase') {
-            if (hakBubble) hakBubble.classList.add('is-speaking');
-            if (ponBubble) ponBubble.classList.remove('is-speaking');
-            hakaseEl.textContent = '';
-            await _opTypeInto('op-dialogue-text-hakase', d.text, 'owl');
-          } else {
-            if (ponBubble) ponBubble.classList.add('is-speaking');
-            if (hakBubble) hakBubble.classList.remove('is-speaking');
-            ponoEl.textContent = '';
-            await _opTypeInto('op-dialogue-text-pono', d.text, 'pono');
+          const isHakase = (d.speaker === 'hakase');
+          if (dialogueBox) {
+            dialogueBox.classList.toggle('is-hakase', isHakase);
+            dialogueBox.classList.toggle('is-pono', !isHakase);
           }
+          if (dialogueLab) {
+            dialogueLab.textContent = isHakase ? 'はかせ' : 'ポノ';
+          }
+          if (dialogueEl) dialogueEl.textContent = '';
+          await _opTypeInto('op-dialogue-text-single', d.text, isHakase ? 'owl' : 'pono');
           // Hold for ~2000ms after each line (skip-aware, 100ms cancel granularity) (Fix 3)
           for (let t = 0; t < 20 && !_opCancelled; t++) {
             await new Promise(function(r) { setTimeout(r, 100); });
