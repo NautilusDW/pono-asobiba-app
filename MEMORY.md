@@ -100,6 +100,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T12:52:03Z - Quizland OP フレーム画像5種を git blob (99cf466) から復旧 + 1000px幅 / 256色palette PNG化で全て<600KBに収める。scripts/restore_frame_images.py として保存
+- **タスク**: Quizland OP フレーム画像5種を git blob (99cf466) から復旧 + 1000px幅 / 256色palette PNG化で全て<600KBに収める。scripts/restore_frame_images.py として保存
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 69
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 12, "Agent": 30, "Bash": 16, "ToolSearch": 1, "Write": 3, "Edit": 2, "Grep": 3, "Glob": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T12:48:39Z - Quizland 9問修正のDATA-PATCH.md草案作成（質問データ変更前/後・renderShapeName拡張・CACHE_VERSIONバンプ手順）
 - **タスク**: Quizland 9問修正のDATA-PATCH.md草案作成（質問データ変更前/後・renderShapeName拡張・CACHE_VERSIONバンプ手順）
 - **結果**: 成功
@@ -202,18 +215,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 68, "Read": 15, "Grep": 3, "ToolSearch": 1, "Agent": 38, "Write": 2, "Edit": 25}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-07T07:39:29Z - quizland 次へ/前へで保存レイアウトが巻き戻るバグ修正: LayoutEditor に refreshCurrentFromLocal を追加し、renderChoices で apply 前に localStorage 最新値で _currentLayoutData を更新
-- **タスク**: quizland 次へ/前へで保存レイアウトが巻き戻るバグ修正: LayoutEditor に refreshCurrentFromLocal を追加し、renderChoices で apply 前に localStorage 最新値で _currentLayoutData を更新
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 69
-- **エラー数**: 1
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 15, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 32}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

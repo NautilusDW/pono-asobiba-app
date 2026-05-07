@@ -67,6 +67,14 @@ def _save_png(im: Image.Image, path: Path) -> int:
     return path.stat().st_size
 
 
+def _save_png_quantized(im: Image.Image, path: Path, colors: int = 256) -> int:
+    """256 色 palette 化して PNG 保存。alpha も保持される (P + tRNS)。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pal = im.quantize(colors=colors, method=2)  # 2=median cut, RGBA OK
+    pal.save(path, format="PNG", optimize=True, compress_level=9)
+    return path.stat().st_size
+
+
 def restore_one(rel_path: str) -> dict:
     blob = fetch_blob(rel_path)
     orig_kb = len(blob) / 1024
@@ -74,18 +82,25 @@ def restore_one(rel_path: str) -> dict:
     orig_size = im.size
 
     out_path = REPO_ROOT / rel_path
-
-    # Step 1: MAX_WIDTH まで縮小して通常 PNG で保存
     candidate = _resize_to_width(im, MAX_WIDTH)
-    bytes_used = _save_png(candidate, out_path)
     final_size = candidate.size
+    mode_used = "RGBA"
 
-    # Step 2: まだ TARGET_BYTES 超なら段階的に幅を縮める
+    # Step 1: 通常 RGBA PNG で保存
+    bytes_used = _save_png(candidate, out_path)
+
+    # Step 2: TARGET_BYTES 超なら 256 色 palette 化 (画質はほぼ維持)
+    if bytes_used > TARGET_BYTES:
+        bytes_used = _save_png_quantized(candidate, out_path, colors=256)
+        mode_used = "P256"
+
+    # Step 3: それでも超える場合のみ幅を段階的に縮める (palette 維持)
     if bytes_used > TARGET_BYTES:
         for w_try in RETRY_WIDTHS:
             cand = _resize_to_width(im, w_try)
-            bytes_used = _save_png(cand, out_path)
+            bytes_used = _save_png_quantized(cand, out_path, colors=256)
             final_size = cand.size
+            mode_used = f"P256@{w_try}"
             if bytes_used <= TARGET_BYTES:
                 break
 
@@ -96,7 +111,7 @@ def restore_one(rel_path: str) -> dict:
         "new_size": final_size,
         "orig_kb": orig_kb,
         "new_kb": new_kb,
-        "mode": im.mode,
+        "mode": mode_used,
     }
 
 
