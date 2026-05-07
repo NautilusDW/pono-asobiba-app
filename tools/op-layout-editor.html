@@ -790,6 +790,45 @@ function applySideToDom(sideKey) {
   txt.textContent = s.sampleText;
 }
 
+function renderHeightGuides() {
+  const guides = document.getElementById('height-guides');
+  if (!guides) return;
+  guides.classList.toggle('is-on', !!showHeightGuides);
+  guides.textContent = '';
+  if (!showHeightGuides) return;
+  const stage = document.getElementById('stage');
+  if (!stage) return;
+  const stageRect = stage.getBoundingClientRect();
+  // Note: rect dims are post-CSS-scale; convert by inverse of scale.
+  const wrap = document.getElementById('stage-wrap');
+  const m = wrap && wrap.style.transform ? /scale\(([0-9.]+)\)/.exec(wrap.style.transform) : null;
+  const sc = m ? Number(m[1]) : 1;
+  const inv = sc > 0 ? 1 / sc : 1;
+
+  function buildLine(klass, topPx, labelText) {
+    const line = document.createElement('div');
+    line.className = 'hg-line ' + klass;
+    line.style.top = topPx + 'px';
+    const lbl = document.createElement('span');
+    lbl.className = 'hg-label';
+    lbl.textContent = labelText;
+    line.appendChild(lbl);
+    guides.appendChild(line);
+  }
+
+  ['pono', 'hakase'].forEach(sideKey => {
+    const slot = document.getElementById('slot-' + sideKey);
+    if (!slot) return;
+    const r = slot.getBoundingClientRect();
+    const topY = (r.top - stageRect.top) * inv;
+    const botY = (r.bottom - stageRect.top) * inv;
+    const tag = sideKey === 'pono' ? 'P' : 'H';
+    const cls = sideKey === 'pono' ? 'hg-pono' : 'hg-hakase';
+    buildLine(cls + ' hg-top', Math.round(topY), tag + ' 上 (y=' + Math.round(topY) + ')');
+    buildLine(cls + ' hg-bot', Math.round(botY), tag + ' 下 (y=' + Math.round(botY) + ')');
+  });
+}
+
 function render() {
   const stage = document.getElementById('stage');
   stage.dataset.vc = currentVC;
@@ -819,6 +858,7 @@ function render() {
   });
 
   rescaleStage();
+  renderHeightGuides();
 }
 
 function rescaleStage() {
@@ -879,6 +919,7 @@ function makeRange(label, min, max, step, key, sideKey) {
     }
     save(currentVC);
     applySideToDom(sideKey);
+    if (showHeightGuides) renderHeightGuides();
   };
   range.addEventListener('input', () => apply(range.value));
   num.addEventListener('input', () => apply(num.value));
@@ -894,6 +935,7 @@ function makeRange(label, min, max, step, key, sideKey) {
     }
     save(currentVC);
     applySideToDom(sideKey);
+    if (showHeightGuides) renderHeightGuides();
   });
   row.appendChild(lab);
   row.appendChild(range);
@@ -995,6 +1037,24 @@ function makeRadio(label, key, sideKey, options, opts) {
     inp.addEventListener('change', () => {
       if (!inp.checked) return;
       state[currentVC][sideKey][key] = opt.value;
+      // Side-effect: when boxMode flips, refresh the aspect-lock ratio source.
+      if (key === 'boxMode') {
+        const ss = state[currentVC][sideKey];
+        if (ss.aspectLock) {
+          if (opt.value === 'image') {
+            const a = FRAME_NATURAL_ASPECT[ss.boxImage];
+            if (a && a > 0) {
+              ss.aspectLockRatio = a;
+              let h = Math.round(ss.boxW / a);
+              h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+              ss.boxH = h;
+            }
+          } else {
+            // switched to CSS: snapshot current ratio
+            if (ss.boxH > 0) ss.aspectLockRatio = ss.boxW / ss.boxH;
+          }
+        }
+      }
       save(currentVC);
       // Update checked styling among siblings without rebuilding
       rr.querySelectorAll('label').forEach(l => {
@@ -1186,6 +1246,7 @@ function buildRightPane() {
     { value: 'image', text: '画像' },
     { value: 'css', text: 'CSS' }
   ], { rebuild: true }));
+  boxGroup.appendChild(makeAspectLockRow(sideKey));
   if (s.boxMode === 'image') {
     boxGroup.appendChild(makeFrameImageSelect(sideKey));
   }
@@ -1218,6 +1279,21 @@ function buildHeader() {
   document.getElementById('btn-export-json').addEventListener('click', () => download('json'));
   document.getElementById('btn-reset').addEventListener('click', resetCurrent);
   document.getElementById('btn-undo-reset').addEventListener('click', undoReset);
+
+  const hgBtn = document.getElementById('btn-toggle-height-guides');
+  if (hgBtn) {
+    const refresh = () => {
+      hgBtn.classList.toggle('toggle-on', !!showHeightGuides);
+      hgBtn.setAttribute('aria-pressed', showHeightGuides ? 'true' : 'false');
+    };
+    refresh();
+    hgBtn.addEventListener('click', () => {
+      showHeightGuides = !showHeightGuides;
+      saveHeightGuidesPref();
+      refresh();
+      renderHeightGuides();
+    });
+  }
 
   document.querySelectorAll('#tab-bar button').forEach(b => {
     b.addEventListener('click', () => {
@@ -1321,7 +1397,25 @@ function buildCSS() {
 }
 
 function buildJSON() {
-  return JSON.stringify({ B: state.B, C: state.C, D: state.D }, null, 2);
+  // Strip editor-internal-only keys (aspectLock / aspectLockRatio) from export.
+  const sanitize = (vc) => {
+    const out = {};
+    Object.keys(state[vc]).forEach(k => {
+      const v = state[vc][k];
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        const cleaned = {};
+        Object.keys(v).forEach(kk => {
+          if (kk === 'aspectLock' || kk === 'aspectLockRatio') return;
+          cleaned[kk] = v[kk];
+        });
+        out[k] = cleaned;
+      } else {
+        out[k] = v;
+      }
+    });
+    return out;
+  };
+  return JSON.stringify({ B: sanitize('B'), C: sanitize('C'), D: sanitize('D') }, null, 2);
 }
 
 function exportCopy() {
@@ -1376,22 +1470,24 @@ function migrateLegacyStorage() {
 
 function init() {
   migrateLegacyStorage();
+  loadHeightGuidesPref();
   // Re-load state in case migration produced new values (state was initialized at module load)
   state = {
     B: load('B') || defaultsFor('B'),
     C: load('C') || defaultsFor('C'),
     D: load('D') || defaultsFor('D')
   };
+  preloadFrameAspects();
   buildPresetGrid();
   buildHeader();
   buildRightPane();
   render();
 
   if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => rescaleStage());
+    const ro = new ResizeObserver(() => { rescaleStage(); renderHeightGuides(); });
     ro.observe(document.getElementById('center'));
   }
-  window.addEventListener('resize', rescaleStage);
+  window.addEventListener('resize', () => { rescaleStage(); renderHeightGuides(); });
 }
 
 document.addEventListener('DOMContentLoaded', init);
