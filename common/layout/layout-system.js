@@ -14,7 +14,7 @@
   if (typeof window === 'undefined') return;
   if (window.LayoutSystem) return;
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.0.1';
   var DEFAULT_DEBOUNCE_MS = 250;
 
   // Built-in default page list for the editor's "🌐 ページ" navigation menu.
@@ -184,10 +184,28 @@
   function setupObserver(root, cb) {
     if (!root || !window.MutationObserver) return;
     var debounced = debounce(cb, DEFAULT_DEBOUNCE_MS);
+    // 2026-05-07 fix: editor 内部要素 (resize-size-label の textContent 更新で
+    //   発生する text node 追加 / numeric panel / element list の DOM 更新等) を
+    //   トリガから除外する。 これらをトリガに残すと、 chip ドラッグ中に発火する
+    //   resize-size-label の text 更新で debounced() がデバウンスされ、 mouseup 後に
+    //   applier.apply(_currentLayoutData) が走って ユーザーのドラッグを stale な
+    //   saved-layout で巻き戻す致命バグになる
+    //   (再現: ?edit=1 で chip を resize → mouseup でサイズが元に戻る)。
+    //   通常コンテンツの addedNodes (renderChoices で作られる .chip 等) は
+    //   引き続き re-apply を発火する。
+    var EDITOR_CHROME_SEL = '.resize-handle, .resize-size-label, .le-toolbar, .le-list-panel, .le-anno-layer, .le-context-menu, .le-pages-dropdown, .le-help-modal, .le-comparison-picker, .le-marquee, .le-guide, .le-ruler, .numeric-panel, .userbox-badge, .userbox-del, .le-lock-badge';
+    var isEditorChrome = function (mut) {
+      var t = mut.target;
+      if (!t || !t.closest) return false;
+      try { return !!t.closest(EDITOR_CHROME_SEL); } catch (e) { return false; }
+    };
     var mo = new MutationObserver(function (muts) {
       // Only react to actual structural changes, not style-only mutations we caused
       for (var i = 0; i < muts.length; i++) {
-        if (muts[i].addedNodes && muts[i].addedNodes.length) { debounced(); return; }
+        if (muts[i].addedNodes && muts[i].addedNodes.length) {
+          if (isEditorChrome(muts[i])) continue;
+          debounced(); return;
+        }
       }
     });
     mo.observe(root === document ? document.body : root, { childList: true, subtree: true });

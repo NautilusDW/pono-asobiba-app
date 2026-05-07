@@ -6363,9 +6363,28 @@
             } catch (e) {}
           } catch (e) {}
         }, 80);
+        // 2026-05-07 fix: editor 内部要素 (resize-size-label の textContent 更新で
+        //   発生する text node 追加 / numeric panel / element list の DOM 更新等) を
+        //   トリガから除外する。 これらをトリガに残すと、 chip ドラッグ中に発火する
+        //   resize-size-label の text 更新で rescan() がデバウンスされ、 mouseup 後に
+        //   LayoutApplier.apply(_currentLayoutData) が走って ユーザーのドラッグを
+        //   stale な saved-layout で巻き戻す致命バグになる
+        //   (再現: ?edit=1 で chip を resize → mouseup でサイズが元に戻る)。
+        // 判定: target が editor-chrome (.resize-handle, .resize-size-label,
+        //   .le-* 系, .numeric-panel, .np-*) の中なら無視。 通常コンテンツの
+        //   addedNodes (renderChoices で作られる .chip 等) は引き続き rescan を発火する。
+        var EDITOR_CHROME_SEL = '.resize-handle, .resize-size-label, .le-toolbar, .le-list-panel, .le-anno-layer, .le-context-menu, .le-pages-dropdown, .le-help-modal, .le-comparison-picker, .le-marquee, .le-guide, .le-ruler, .numeric-panel, .userbox-badge, .userbox-del, .le-lock-badge';
+        var isEditorChromeMutation = function (mut) {
+          var t = mut.target;
+          if (!t || !t.closest) return false;
+          try { return !!t.closest(EDITOR_CHROME_SEL); } catch (e) { return false; }
+        };
         var dynMo = new MutationObserver(function (muts) {
           for (var i = 0; i < muts.length; i++) {
-            if (muts[i].addedNodes && muts[i].addedNodes.length) { rescan(); return; }
+            if (muts[i].addedNodes && muts[i].addedNodes.length) {
+              if (isEditorChromeMutation(muts[i])) continue;
+              rescan(); return;
+            }
           }
         });
         dynMo.observe(moRoot, { childList: true, subtree: true });
