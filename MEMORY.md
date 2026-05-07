@@ -17,6 +17,7 @@
 - **クリーンエッジスタジオ タイムライン再生**: [memory/feature_timeline_player.md](memory/feature_timeline_player.md) — 分割スプライトをID連番順に並べてFPS+各コマフレーム数で即時再生。スプライトカードはサムネドラッグで並び替え可、🎯ボタンで比較タブの元矩形にジャンプ
 - **Layout System (`common/layout/`)**: [memory/reference_layout_system.md](memory/reference_layout_system.md) — WYSIWYG レイアウトエディタ + applier 共通モジュール。`LayoutSystem.init()` 4 行で opt-in、`?edit=1` でエディタ遅延ロード。ページ author docs は `common/layout/README.md`
 - **Babble Voice System (Quizland)**: [memory/feature_babble_voice.md](memory/feature_babble_voice.md) — フクロウ博士のしゃべり声 (タイピング + Web Audio 合成)。owl preset = 年配おじいさん風、5母音フォルマント切替、6.2Hz ビブラート。`js/quizland-babble.js` + `quizland/index.html` の `setHakaseDialogue` 改修。キャラ別 preset 拡張ポイント (pono / hedgehog 将来用)
+- **Quizland Opening Cinematic**: [memory/feature_quizland_opening.md](memory/feature_quizland_opening.md) — 6 パネル導入演出 (Ken Burns ドリー + ナレーション + 博士⇄ポノ会話 + babble + スキップ)。mode-btn → `playOpeningCinematic()` → `initGame()` の async 経路。仮素材は `OP_BG.png` 共有、本素材は `tmp/quizland-op-cinematic/CODEX-PROMPT.md` 経由で Codex に依頼
 
 ---
 
@@ -95,6 +96,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T02:43:06Z - quizland OP cinematic 5 review fixes (re-entry guard, hoist DOM lookups, iOS audio via audioCtx, idempotent finish() cleanup, skipBtn focus)
+- **タスク**: quizland OP cinematic 5 review fixes (re-entry guard, hoist DOM lookups, iOS audio via audioCtx, idempotent finish() cleanup, skipBtn focus)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 27
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 9, "Read": 8, "Grep": 3, "ToolSearch": 1, "Agent": 6}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-07T02:36:06Z - layout-editor.js enable() の _currentLayoutData に __savedAt が残るランドマイン修正
+- **タスク**: layout-editor.js enable() の _currentLayoutData に __savedAt が残るランドマイン修正
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 56
+- **エラー数**: 1
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 13, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 21}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-07T02:27:41Z - babble owl voice 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw v819->820 を staging にデプロイ。並行作業 (quizland/index.html cropMiss + 絵文字除去) は stash/pop で保持、rebase 後 push、GH Actions deploy success
+- **タスク**: babble owl voice 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw v819->820 を staging にデプロイ。並行作業 (quizland/index.html cropMiss + 絵文字除去) は stash/pop で保持、rebase 後 push、GH Actions deploy success
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 7
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 3, "Read": 3, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T02:21:47Z - quizland-babble.js owl preset 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw.js 819->820
 - **タスク**: quizland-babble.js owl preset 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw.js 819->820
 - **結果**: 成功
@@ -170,45 +210,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 7, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 8}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T01:43:03Z - quizland: playtest panel に クロップミス checkbox を追加 (右端 margin-left:auto、 noteEntry/doc.notes.push に cropMiss、 保存後 false に戻す、 cropMiss-only entry も保存可)
-- **タスク**: quizland: playtest panel に クロップミス checkbox を追加 (右端 margin-left:auto、 noteEntry/doc.notes.push に cropMiss、 保存後 false に戻す、 cropMiss-only entry も保存可)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 32
-- **エラー数**: 0
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 7, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 8}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T01:32:59Z - quizland: setHakaseDialogue を文字流し+どうぶつの森風 babble ボイス対応に改修 (PonoBabble.init/playChar('owl')/cancelAll をフック、_typingToken でレース防止、HAKASE_TYPING_DELAY_MS=60ms)、quizland-babble.js を head 末尾の既存スクリプト群と並べてロード、sw.js CACHE_VERSION 815→816
-- **タスク**: quizland: setHakaseDialogue を文字流し+どうぶつの森風 babble ボイス対応に改修 (PonoBabble.init/playChar('owl')/cancelAll をフック、_typingToken でレース防止、HAKASE_TYPING_DELAY_MS=60ms)、quizland-babble.js を head 末尾の既存スクリプト群と並べてロード、sw.js CACHE_VERSION 815→816
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 18
-- **エラー数**: 0
-- **検出された良いパターン**: 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 6, "Glob": 7, "Read": 3, "ToolSearch": 1, "Write": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T01:30:21Z - quizland .char-hint を元画像 (balloon_temp.png 1983x793 ≒ 5:2) のアスペクト比に修正、 v811 の 1:1 強制を撤回、 全 4 ルール (base/14:9/4:3/5:4) で aspect-ratio: 1983/793 + width 固定、 sw v814->815
-- **タスク**: quizland .char-hint を元画像 (balloon_temp.png 1983x793 ≒ 5:2) のアスペクト比に修正、 v811 の 1:1 強制を撤回、 全 4 ルール (base/14:9/4:3/5:4) で aspect-ratio: 1983/793 + width 固定、 sw v814->815
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 33
-- **エラー数**: 0
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
-- **ツール使用統計**: {"Bash": 21, "Read": 9, "Grep": 2, "Edit": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -2117,6 +2117,146 @@ body.debug-mode #qz-playtest-panel { display: block; }
 #qz-playtest-panel .qz-pt-toast.info  { background: rgba(80, 100, 160, 0.85); display: block; }
 /* debug ナビを少し下げて playtest panel と被らないようにする */
 body.debug-mode #qz-debug-nav { bottom: 8px; }
+
+/* ===== Opening Cinematic (op-*) ===== */
+.op-cinematic {
+  position: fixed; inset: 0; z-index: 300;
+  background: #000;
+  overflow: hidden;
+  display: flex;
+}
+.op-cinematic.hidden { display: none; }
+.op-bg {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.0);
+  transform-origin: center;
+  will-change: transform;
+}
+@keyframes opDolly {
+  from { transform: scale(1.0); }
+  to   { transform: scale(1.12); }
+}
+.op-bg.dollying {
+  animation: opDolly 12s linear forwards;
+}
+.op-characters {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.op-characters.hidden { display: none; }
+.op-char {
+  position: absolute;
+  bottom: 18%;
+}
+.op-char-pono {
+  left: 8%;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fde7c2, #f5b27a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35), 0 0 0 4px rgba(255,255,255,0.5) inset;
+}
+.op-char-hakase {
+  right: 6%;
+  height: 50vh;
+  width: auto;
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
+}
+.op-narration {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  width: min(86vw, 760px);
+  background: #fff8e7;
+  border-radius: 18px;
+  padding: 18px 22px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;
+  color: #3a2a14;
+  font-size: 18px;
+  line-height: 1.7;
+  text-align: center;
+}
+.op-narration.hidden { display: none; }
+.op-narration p { margin: 0 0 4px 0; }
+.op-narration p:last-child { margin-bottom: 0; }
+.op-narration p.emphasis { color: #c0392b; font-weight: 700; }
+.op-dialogues {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  width: min(94vw, 880px);
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.op-dialogues.hidden { display: none; }
+.op-dialogue {
+  flex: 1 1 0;
+  position: relative;
+  border-radius: 16px;
+  padding: 28px 18px 16px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.32);
+  min-height: 88px;
+  opacity: 0.4;
+  transition: opacity 0.18s ease;
+  color: #3a2a14;
+}
+.op-dialogue.is-speaking { opacity: 1; }
+.op-dialogue-hakase { background: #fff3d6; }
+.op-dialogue-pono   { background: #d8efcf; }
+.op-dialogue-label {
+  position: absolute;
+  top: -14px; left: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.28);
+  letter-spacing: 0.04em;
+}
+.op-dialogue-hakase .op-dialogue-label { background: #e08a3c; }
+.op-dialogue-pono   .op-dialogue-label { background: #5fa05a; }
+.op-dialogue-text {
+  font-size: 17px;
+  line-height: 1.6;
+  min-height: 1.6em;
+  word-break: break-word;
+}
+.op-skip {
+  position: absolute;
+  top: 16px; right: 20px;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+.op-skip:hover, .op-skip:focus {
+  background: rgba(0,0,0,0.55);
+  outline: none;
+}
+@media (max-width: 540px) {
+  .op-char-pono { width: 88px; height: 88px; font-size: 52px; left: 4%; bottom: 22%; }
+  .op-char-hakase { height: 42vh; right: 2%; bottom: 22%; }
+  .op-narration { font-size: 16px; padding: 14px 16px; }
+  .op-dialogue-text { font-size: 15px; }
+  .op-dialogues { gap: 8px; }
+}
 </style>
 </head>
 <body class="sheet-on show-safe">
@@ -2262,6 +2402,28 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
+</div>
+
+<!-- ===== Opening Cinematic (mode-btn → playOpeningCinematic → initGame) ===== -->
+<div id="op-cinematic" class="op-cinematic hidden" aria-hidden="true">
+  <div class="op-bg" id="op-bg"></div>
+  <div class="op-characters hidden" id="op-characters">
+    <div class="op-char op-char-pono" id="op-char-pono">🧸</div>
+    <img class="op-char op-char-hakase" id="op-char-hakase"
+         src="../assets/images/quizland/owl_professor_guide.png" alt="">
+  </div>
+  <div class="op-narration hidden" id="op-narration"></div>
+  <div class="op-dialogues hidden" id="op-dialogues">
+    <div class="op-dialogue op-dialogue-hakase">
+      <div class="op-dialogue-label">はかせ</div>
+      <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
+    </div>
+    <div class="op-dialogue op-dialogue-pono">
+      <div class="op-dialogue-label">ポノ</div>
+      <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
+    </div>
+  </div>
+  <button type="button" class="op-skip" id="op-skip">スキップ ▶︎</button>
 </div>
 
 <script>
@@ -3698,6 +3860,237 @@ function initGame() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Opening Cinematic (mode-btn → playOpeningCinematic → initGame)
+// ═══════════════════════════════════════════════════════════
+const OP_PANELS = [
+  // Panel 1 — narration with Ken Burns dolly
+  {
+    kind: 'narration',
+    bg: '../assets/images/quizland/OP/OP_BG.png',
+    audio: '../assets/images/quizland/OP/OP_NA.wav',
+    lines: [
+      { text: 'もりの おくに、ふしぎな いえがあります。', emphasis: false },
+      { text: 'そこには、なんでも しっている', emphasis: false },
+      { text: 'ふくろうの はかせが すんでいます。', emphasis: false },
+      { text: 'ポノは、なかよしの はかせと', emphasis: true },
+      { text: 'なぞなぞで あそびに きました。', emphasis: true }
+    ]
+  },
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    dialogues: [
+      { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
+      { speaker: 'pono',   text: 'はかせ、あそびに きたよ！' }
+    ]},
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    dialogues: [
+      { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
+      { speaker: 'pono',   text: 'うん！やりたい！' }
+    ]},
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    dialogues: [
+      { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
+      { speaker: 'pono',   text: 'うーん…でも がんばる！' }
+    ]},
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    dialogues: [
+      { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
+      { speaker: 'pono',   text: 'うん！' }
+    ]},
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
+    dialogues: [
+      { speaker: 'hakase', text: 'では、いくぞ…' },
+      { speaker: 'pono',   text: 'うん！' }
+    ]}
+];
+
+let _opCancelled = false;
+let _opActiveAudio = null;
+let _opTypingToken = 0;
+let _opRunning = false;
+
+function _opTypeInto(elId, text, presetName) {
+  return new Promise(function(resolve) {
+    const el = document.getElementById(elId);
+    if (!el) { resolve(); return; }
+    el.textContent = '';
+    if (!text) { resolve(); return; }
+    _opTypingToken++;
+    const myToken = _opTypingToken;
+    let i = 0;
+    function tick() {
+      if (_opCancelled) { resolve(); return; }
+      if (myToken !== _opTypingToken) { resolve(); return; }
+      if (i >= text.length) { resolve(); return; }
+      const c = text.charAt(i++);
+      el.textContent += c;
+      try {
+        if (window.PonoBabble && typeof window.PonoBabble.playChar === 'function') {
+          window.PonoBabble.playChar(c, presetName);
+        }
+      } catch (e) {}
+      setTimeout(tick, 95);
+    }
+    tick();
+  });
+}
+
+async function playOpeningCinematic() {
+  const root = document.getElementById('op-cinematic');
+  if (!root) return;
+  if (_opRunning) return;          // re-entry guard
+  _opRunning = true;
+
+  _opCancelled = false;
+
+  // Init babble audio context once (idempotent)
+  try {
+    if (window.PonoBabble && typeof window.PonoBabble.init === 'function'
+        && typeof audioCtx !== 'undefined' && audioCtx) {
+      window.PonoBabble.init(audioCtx);
+    }
+  } catch (e) {}
+
+  // Show overlay
+  root.classList.remove('hidden');
+  root.setAttribute('aria-hidden', 'false');
+
+  // Wire skip
+  const skipBtn = document.getElementById('op-skip');
+  function onSkip() {
+    _opCancelled = true;
+    _opTypingToken++;
+    try { if (_opActiveAudio) { _opActiveAudio.pause(); _opActiveAudio.currentTime = 0; } } catch (e) {}
+    try { if (window.PonoBabble && window.PonoBabble.cancelAll) window.PonoBabble.cancelAll(); } catch (e) {}
+  }
+  if (skipBtn) skipBtn.addEventListener('click', onSkip);
+  // Move keyboard focus to skip so kbd/switch users can bail out
+  try { if (skipBtn) skipBtn.focus(); } catch (e) {}
+
+  // Hoist DOM lookups out of the loop (Fix 2)
+  const bg         = document.getElementById('op-bg');
+  const characters = document.getElementById('op-characters');
+  const narration  = document.getElementById('op-narration');
+  const dialogues  = document.getElementById('op-dialogues');
+  const hakaseEl   = document.getElementById('op-dialogue-text-hakase');
+  const ponoEl     = document.getElementById('op-dialogue-text-pono');
+
+  try {
+    if (!bg || !characters || !narration || !dialogues || !hakaseEl || !ponoEl) {
+      // Element missing — bail without entering the loop. Finally still runs.
+      return;
+    }
+    for (let i = 0; i < OP_PANELS.length; i++) {
+      if (_opCancelled) break;
+      const panel = OP_PANELS[i];
+      // Set bg
+      bg.style.backgroundImage = "url('" + panel.bg + "')";
+      bg.classList.remove('dollying');
+      // Force reflow then re-add class to restart animation
+      void bg.offsetWidth;
+
+      if (panel.kind === 'narration') {
+        bg.classList.add('dollying');
+        characters.classList.add('hidden');
+        dialogues.classList.add('hidden');
+        narration.classList.remove('hidden');
+        narration.innerHTML = '';
+        for (let li = 0; li < panel.lines.length; li++) {
+          const line = panel.lines[li];
+          const p = document.createElement('p');
+          if (line.emphasis) p.classList.add('emphasis');
+          p.textContent = line.text;
+          narration.appendChild(p);
+        }
+        // Play narration audio
+        let audio;
+        try {
+          audio = new Audio(panel.audio);
+          audio.preload = 'auto';
+          audio.crossOrigin = 'anonymous';
+          // Route through existing audioCtx so iOS recognizes the already-unlocked context
+          // (BGM has already activated audioCtx synchronously on title-tap).
+          if (typeof audioCtx !== 'undefined' && audioCtx) {
+            try {
+              const src = audioCtx.createMediaElementSource(audio);
+              src.connect(audioCtx.destination);
+            } catch (e) { /* same audio element re-routed twice would throw — ignore */ }
+          }
+          _opActiveAudio = audio;
+          // Best-effort autoplay (audio context already unlocked by title tap).
+          await audio.play().catch(function(){});
+          await new Promise(function(resolve) {
+            let done = false;
+            let timeoutId = null;
+            let pollId = null;
+            function finish() {
+              if (done) return;
+              done = true;
+              if (pollId)    { clearInterval(pollId); pollId = null; }
+              if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+              resolve();
+            }
+            audio.addEventListener('ended', finish, { once: true });
+            // Safety timeout — cap at 20s
+            timeoutId = setTimeout(finish, 20000);
+            // Skip-poll: re-check every 200ms
+            pollId = setInterval(function() {
+              if (_opCancelled) finish();
+            }, 200);
+          });
+          _opActiveAudio = null;
+        } catch (e) {
+          _opActiveAudio = null;
+          // If audio fails, hold for ~10s so the dolly text is readable
+          for (let t = 0; t < 50 && !_opCancelled; t++) {
+            await new Promise(function(r) { setTimeout(r, 200); });
+          }
+        }
+      } else if (panel.kind === 'dialogue') {
+        narration.classList.add('hidden');
+        characters.classList.remove('hidden');
+        dialogues.classList.remove('hidden');
+        // Clear bubbles
+        hakaseEl.textContent = '';
+        ponoEl.textContent = '';
+        // Hold bg with subtle dolly between panels too
+        bg.classList.add('dollying');
+        // Hoist dialogue bubble queries once before the inner loop (Fix 2)
+        const hakBubble = dialogues.querySelector('.op-dialogue-hakase');
+        const ponBubble = dialogues.querySelector('.op-dialogue-pono');
+        // Sequential dialogues
+        for (let di = 0; di < panel.dialogues.length; di++) {
+          if (_opCancelled) break;
+          const d = panel.dialogues[di];
+          if (d.speaker === 'hakase') {
+            hakBubble.classList.add('is-speaking');
+            ponBubble.classList.remove('is-speaking');
+            hakaseEl.textContent = '';
+            await _opTypeInto('op-dialogue-text-hakase', d.text, 'owl');
+          } else {
+            ponBubble.classList.add('is-speaking');
+            hakBubble.classList.remove('is-speaking');
+            ponoEl.textContent = '';
+            await _opTypeInto('op-dialogue-text-pono', d.text, 'pono');
+          }
+          // Hold for ~700ms after each line (skip-aware)
+          for (let t = 0; t < 7 && !_opCancelled; t++) {
+            await new Promise(function(r) { setTimeout(r, 100); });
+          }
+        }
+      }
+    }
+  } finally {
+    if (skipBtn) skipBtn.removeEventListener('click', onSkip);
+    try { if (_opActiveAudio) { _opActiveAudio.pause(); } } catch (e) {}
+    _opActiveAudio = null;
+    try { if (window.PonoBabble && window.PonoBabble.cancelAll) window.PonoBabble.cancelAll(); } catch (e) {}
+    root.classList.add('hidden');
+    root.setAttribute('aria-hidden', 'true');
+    _opRunning = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Wiring
 // ═══════════════════════════════════════════════════════════
 // タイトル画面タップ → モード選択画面へ (BGM もここで起動)
@@ -3709,13 +4102,15 @@ document.getElementById('start-screen').addEventListener('click', function() {
 });
 
 // モードボタンタップ = 即ゲーム開始 (やさしい/ものしりに応じて出題カテゴリ切替)
+// 6 パネルのオープニング・シネマティックを再生してから initGame() を呼ぶ。
 document.querySelectorAll('.mode-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
+  btn.addEventListener('click', async function() {
     selectedMode = btn.dataset.mode;
     ALL_CATS.forEach(function(c) {
       selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
     });
     document.getElementById('mode-screen').classList.add('hidden');
+    try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
     initGame();
     if (typeof initMenu === 'function') {
       initMenu({
@@ -4088,6 +4483,7 @@ function _qzPtBackupAppend(noteEntry) {
     var lite = {
       idx: noteEntry.idx, category: noteEntry.category, level: noteEntry.level,
       type: noteEntry.type, q: noteEntry.q, comment: noteEntry.comment,
+      cropMiss: noteEntry.cropMiss,
       noted_at: noteEntry.noted_at,
       screenshot_b64: (noteEntry._shotsMeta || []).map(function (s) {
         return { name: s.name, b64: s.b64.slice(0, 200000) };
@@ -4207,7 +4603,7 @@ function _qzPtBuildPanel() {
       '<span class="qz-pt-count" id="qz-pt-count">添付: 0</span>' +
       '<label class="qz-pt-cropmiss" id="qz-pt-cropmiss-label" title="この問題の絵にクロップミスがある">' +
         '<input type="checkbox" id="qz-pt-cropmiss">' +
-        '<span>✅ クロップミス</span>' +
+        '<span>クロップミス</span>' +
       '</label>' +
     '</div>' +
     '<div class="qz-pt-thumbs" id="qz-pt-thumbs"></div>' +
