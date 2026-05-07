@@ -2179,7 +2179,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   transform: scale(1.08);
   filter: blur(5px) saturate(0.9) brightness(0.94);
 }
-/* Fix 5b: 4:3 セーフ領域。背景は overlay 全面、内側コンテンツだけ 4:3 内に収める */
+/* Fix 5b: 4:3 セーフ領域。背景は overlay 全面、内側コンテンツだけ 4:3 内に収める。
+   16:9 / 21:9 などワイドビューポートではレターボックスとして左右に黒帯が入る。 */
 .op-content {
   position: absolute;
   inset: 0;
@@ -2200,18 +2201,19 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   display: flex;
   flex-direction: row;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 2%;
-  padding: 2% 2% 4%;
+  justify-content: center;
+  gap: 4%;
+  padding: 2% 4% 4%;
   box-sizing: border-box;
   pointer-events: none;
 }
 .op-sides.hidden { display: none; }
 .op-sides > .op-side {
   flex: 1 1 50%;            /* 等幅・固定 (発話で resize しない) */
+  max-width: 540px;          /* ワイド画面でも各 side が伸び切らないようキャップ */
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   justify-content: flex-end;
   height: 100%;
   position: relative;
@@ -2221,27 +2223,31 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   position: relative;
   width: 100%;
   flex: 1 1 auto;            /* ダイアログの上のスペースを取る */
-  overflow: hidden;          /* キャラの足元をクリップ */
   display: flex;
   justify-content: center;
   align-items: flex-end;
   pointer-events: none;
+  /* overflow:hidden は使わない (横切れの原因になる)。代わりに img の clip-path で腰下をカット */
 }
 .op-char-frame img.op-char {
-  /* HEIGHT-based sizing + top-anchor: vertical extent is identical regardless of source aspect ratio.
-     overflow:hidden on .op-char-frame clips legs/feet (and owl wings on sides). */
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: auto;
+  /* WIDTH-based sizing で横が絶対切れないようにする。腰下クロップは clip-path で行う。 */
+  position: relative;
+  width: 75%;
+  max-width: 280px;
+  height: auto;
+  clip-path: inset(0 0 35% 0);
   pointer-events: none;
 }
 .op-char-frame img.op-char-pono {
-  height: 180%;              /* 1.8x frame height; top ~56% visible → waist-shot */
+  width: 75%;
+  max-width: 280px;
+  /* Pono の素材アスペクト比 0.55-0.81 全てに対応 (35% bottom crop) */
+  clip-path: inset(0 0 35% 0);
 }
 .op-char-frame img.op-char-hakase {
-  height: 120%;              /* preserve wand/tassel: 1.23 * 120% ≈ 148% width, ~24% side clip */
+  width: 95%;                /* フクロウは横長なので少し広めに */
+  max-width: 320px;
+  clip-path: inset(0 0 25% 0);  /* フクロウは縦が短いので bottom crop も控えめ */
 }
 .op-side-hakase .op-char-frame img.op-char {
   filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
@@ -2251,7 +2257,9 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   left: 50%;
   bottom: 8%;
   transform: translateX(-50%);
-  width: min(86%, 760px);                /* 親が 4:3 の op-content なので % 基準 */
+  width: 86%;
+  max-width: 720px;                      /* デフォは控えめに (4:3 想定) */
+  margin: 0 auto;
   background: #fff8e7;
   border-radius: 18px;
   padding: 18px 22px;
@@ -2269,16 +2277,20 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-narration p.emphasis { color: #c0392b; font-weight: 700; }
 .op-narration.seg-show { opacity: 1; }
 .op-narration.seg-hide { opacity: 0; }
-/* Fix 3: 各 side 内のダイアログ。幅は side 幅いっぱい (固定)、下に貼り付く */
+/* Fix 3: 各 side 内のダイアログ。幅は固定 (max-width で cap)、下に貼り付く。
+   ビューポートで stretch しないようサイズ固定気味にする。 */
 .op-side > .op-dialogue {
   position: relative;
   width: 100%;
-  margin: 0;
-  border-radius: 24px;
-  padding: clamp(20px, 3vw, 40px) clamp(18px, 2.4vw, 32px) clamp(16px, 2vw, 28px);
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 22px;
+  padding: 28px 24px 22px;
   box-shadow: 0 12px 26px rgba(0,0,0,0.34);
-  min-height: clamp(120px, 22vh, 200px);
+  min-height: 120px;
+  max-height: 200px;
   box-sizing: border-box;
+  overflow-y: auto;          /* 長文は内側でスクロール (外形が伸びない) */
   color: #3a2a14;
   /* 両方常時表示。発話側は不透明、非発話側は薄め。 */
   opacity: 0.55;
@@ -2301,7 +2313,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-dialogue-hakase .op-dialogue-label { background: #e08a3c; }
 .op-dialogue-pono   .op-dialogue-label { background: #5fa05a; }
 .op-side > .op-dialogue .op-dialogue-text {
-  font-size: clamp(20px, 3.6vw, 32px);
+  font-size: 22px;
   line-height: 1.5;
   min-height: 1.6em;
   word-break: break-word;
@@ -2325,17 +2337,36 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: rgba(0,0,0,0.55);
   outline: none;
 }
+/* ワイドビューポート (16:10 以上): キャラ少し小さめ、ダイアログは横長、ナレーションは横長バナー */
+@media (min-aspect-ratio: 16/10) {
+  .op-char-frame img.op-char-pono   { max-width: 240px; }
+  .op-char-frame img.op-char-hakase { max-width: 280px; }
+  .op-side > .op-dialogue {
+    max-width: 540px;
+    min-height: 100px;
+    max-height: 180px;
+  }
+  .op-side > .op-dialogue .op-dialogue-text {
+    font-size: 20px;
+  }
+  .op-narration {
+    max-width: 900px;        /* ワイドでは横長矩形に */
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+}
 @media (max-width: 540px) {
   .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
-  .op-char-frame img.op-char-pono   { height: 175%; }
-  .op-char-frame img.op-char-hakase { height: 118%; }
+  .op-char-frame img.op-char-pono   { width: 80%; max-width: 200px; }
+  .op-char-frame img.op-char-hakase { width: 95%; max-width: 230px; }
   .op-side > .op-dialogue {
-    padding: 20px 14px 16px;
-    min-height: 90px;
+    max-width: 100%;
+    padding: 18px 14px 14px;
+    min-height: 88px;
     border-radius: 20px;
   }
   .op-side > .op-dialogue .op-dialogue-text {
-    font-size: clamp(15px, 4vw, 21px);
+    font-size: 16px;
   }
   .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
   .op-sides { gap: 2%; padding: 2% 2% 4%; }
@@ -4047,6 +4078,12 @@ function _opTypeInto(elId, text, presetName) {
       if (i >= text.length) { resolve(); return; }
       const c = text.charAt(i++);
       el.textContent += c;
+      // Auto-scroll the dialogue container to keep the latest character visible
+      // (the box has max-height + overflow-y: auto, so long lines would otherwise truncate).
+      try {
+        const box = el.closest('.op-dialogue');
+        if (box) box.scrollTop = box.scrollHeight;
+      } catch (e) {}
       try {
         if (window.PonoBabble && typeof window.PonoBabble.playChar === 'function') {
           window.PonoBabble.playChar(c, presetName);
