@@ -96,6 +96,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T03:10:13Z - quizland オープニング フィードバック反映: Pono 実アセット 5 枚切替+プリロード, パネル 2-6 背景 scenic-blur (scale 1.18 + blur 6px), 会話テンポ 700→2000ms, 吹き出し左右スワップ (Pono 左/博士 右), img width:auto, sw 821→822
+- **タスク**: quizland オープニング フィードバック反映: Pono 実アセット 5 枚切替+プリロード, パネル 2-6 背景 scenic-blur (scale 1.18 + blur 6px), 会話テンポ 700→2000ms, 吹き出し左右スワップ (Pono 左/博士 右), img width:auto, sw 821→822
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 56
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 26, "Read": 10, "Grep": 3, "ToolSearch": 1, "Agent": 10, "Write": 1, "Edit": 5}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-07T02:46:22Z - quizland なぞなぞオープニング 6 パネル導入演出を追加 (Ken Burns ドリー + OP_NA ナレーション + 博士⇄ポノ babble 会話 + スキップ可)。並列エージェント実装→クロスレビュー→MAJOR 5件即修正→commit auto-push でstaging
 - **タスク**: quizland なぞなぞオープニング 6 パネル導入演出を追加 (Ken Burns ドリー + OP_NA ナレーション + 博士⇄ポノ babble 会話 + スキップ可)。並列エージェント実装→クロスレビュー→MAJOR 5件即修正→commit auto-push でstaging
 - **結果**: 成功
@@ -198,18 +211,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 9, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T01:46:34Z - quizland babble 音声機能を staging にデプロイ (commit 7a156b9, post-commit auto-push 経由で GH Actions 成功、 _smoke.js は 0 byte で commit 除外、 OP assets と センサス.zip も unstaged のまま)
-- **タスク**: quizland babble 音声機能を staging にデプロイ (commit 7a156b9, post-commit auto-push 経由で GH Actions 成功、 _smoke.js は 0 byte で commit 除外、 OP assets と センサス.zip も unstaged のまま)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 37
-- **エラー数**: 0
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 8, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 12}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
