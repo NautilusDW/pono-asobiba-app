@@ -25,7 +25,7 @@ type: project
 
 ## Trigger Point
 
-`quizland/index.html` の mode-btn ハンドラ（line ~4085-4094）で `await playOpeningCinematic()` を `initGame()` の直前に挟んでいる。タイトルタップ → モード選択 → **オープニング** → 出題開始 のフロー。
+`quizland/index.html` の mode-btn ハンドラで `playOpeningCinematic()` → `playQuizStartCard()` → `initGame()` の async チェーン。タイトルタップ → モード選択 → **オープニング (6 パネル)** → **タイトルカード (~2.2s)** → 出題開始 のフロー。
 
 ```js
 document.querySelectorAll('.mode-btn').forEach(function(btn) {
@@ -33,10 +33,20 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     selectedMode = btn.dataset.mode;
     document.getElementById('mode-screen').classList.add('hidden');
     try { await playOpeningCinematic(); } catch (e) { console.warn(e); }
+    try { await playQuizStartCard();   } catch (e) { console.warn(e); }
     initGame();
   });
 });
 ```
+
+### Quiz Start Title Card (`playQuizStartCard`)
+
+シネマ終了後 `initGame()` 直前に挿入する静止画タイトルカード。`assets/images/quizland/OP/quiz_start_card.webp` (フクロウ博士 + 「ふくろう博士の なぞなぞスタート!!」、410KB / 元 2711KB から 84.9% 削減) を 2.2s 表示してフェードアウト。タップで即スキップ可。
+
+- HTML: `#quiz-start-card` overlay (z-index 310、シネマ z-index 300 より上)
+- CSS: opacity フェードイン (0.35s) + transform: scale(0.92→1.0) のポップ
+- JS: `_qscRunning` 再入ガード、`{ once: true }` タップリスナー + `finally` で removeEventListener、22×100ms ホールドループで `cancelled` ポーリング
+- preload: タイトルタップ時の `__preloadList` に追加 (ウォーミング ~17s 余裕あり)
 
 ## Panel Spec
 

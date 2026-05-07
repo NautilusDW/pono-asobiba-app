@@ -2311,6 +2311,43 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
   .op-dialogues { gap: 14px; width: min(98%, 720px); }
 }
+
+/* ===== Quiz Start Title Card (cinematic → card → initGame) ===== */
+.quiz-start-card {
+  position: fixed;
+  inset: 0;
+  z-index: 310;                                  /* above cinematic (300) */
+  background: radial-gradient(ellipse at center, #2a1f10 0%, #050200 75%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  cursor: pointer;
+}
+.quiz-start-card.hidden { display: none; }
+.quiz-start-card.is-revealed { opacity: 1; }
+.quiz-start-card-img {
+  /* The card is 1024x1536 (2:3 portrait) — fit comfortably without clipping */
+  width: auto;
+  height: 86vh;
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 32px rgba(255, 230, 100, 0.25));
+  /* Subtle "pop in" scale animation reveals the card */
+  transform: scale(0.92);
+  transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+.quiz-start-card.is-revealed .quiz-start-card-img {
+  transform: scale(1.0);
+}
+@media (max-width: 540px) {
+  .quiz-start-card-img {
+    height: 78vh;
+    max-width: 96vw;
+  }
+}
 </style>
 </head>
 <body class="sheet-on show-safe">
@@ -2481,6 +2518,12 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     </div>
   </div>
   <button type="button" class="op-skip" id="op-skip">スキップ ▶︎</button>
+</div>
+
+<!-- ===== Quiz Start Title Card (cinematic → start card → initGame) ===== -->
+<div id="quiz-start-card" class="quiz-start-card hidden" aria-hidden="true">
+  <img class="quiz-start-card-img" id="quiz-start-card-img"
+       src="../assets/images/quizland/OP/quiz_start_card.webp" alt="ふくろう博士の なぞなぞスタート">
 </div>
 
 <script>
@@ -4310,6 +4353,44 @@ async function playOpeningCinematic() {
   }
 }
 
+// ---- Quiz Start Title Card ----
+let _qscRunning = false;
+async function playQuizStartCard() {
+  const root = document.getElementById('quiz-start-card');
+  if (!root) return;
+  if (_qscRunning) return;
+  _qscRunning = true;
+
+  let cancelled = false;
+  function onTap() { cancelled = true; }
+  root.addEventListener('click', onTap, { once: true });
+
+  // Show
+  root.classList.remove('hidden');
+  root.setAttribute('aria-hidden', 'false');
+  void root.offsetWidth;            // force initial state into compositor
+  root.classList.add('is-revealed');
+
+  try {
+    // Hold ~2 seconds (or until tap)
+    const holdMs = 2200;
+    const stepMs = 100;
+    const steps = Math.ceil(holdMs / stepMs);
+    for (let t = 0; t < steps; t++) {
+      if (cancelled) break;
+      await new Promise(r => setTimeout(r, stepMs));
+    }
+    // Fade out (0.35s matches the CSS transition)
+    root.classList.remove('is-revealed');
+    await new Promise(r => setTimeout(r, 360));
+  } finally {
+    root.classList.add('hidden');
+    root.setAttribute('aria-hidden', 'true');
+    root.removeEventListener('click', onTap);
+    _qscRunning = false;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // Wiring
 // ═══════════════════════════════════════════════════════════
@@ -4322,6 +4403,7 @@ document.getElementById('start-screen').addEventListener('click', function() {
     var __preloadList = [
       '../assets/images/quizland/OP/OP_BG.webp',
       '../assets/images/quizland/OP/OP_BG02.webp',
+      '../assets/images/quizland/OP/quiz_start_card.webp',
       '../assets/images/characters/pono/dance/dance_hi.webp',
       '../assets/images/characters/pono/dance/dance_hooray.webp',
       '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
@@ -4353,6 +4435,7 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     });
     document.getElementById('mode-screen').classList.add('hidden');
     try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
+    try { await playQuizStartCard();   } catch (e) { console.warn('quiz start card error', e); }
     initGame();
     if (typeof initMenu === 'function') {
       initMenu({
