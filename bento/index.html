@@ -1976,7 +1976,7 @@ document.addEventListener('pointerdown', () => getAC().resume(), { once: true, p
 // ── BGM ──
 const bgmEl = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
-if (bgmEl) bgmEl.volume = 0.3;
+if (bgmEl) bgmEl.volume = 0.25;
 function tryPlayBgm() {
   if (!bgmEl || !bgmEnabled) return;
   var p = bgmEl.play();

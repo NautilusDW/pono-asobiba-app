@@ -1951,7 +1951,7 @@
     const toggle = document.getElementById('music-toggle');
     const label  = document.getElementById('music-label');
     const bgm    = document.getElementById('play-bgm');
-    if (bgm) bgm.volume = 0.35;
+    if (bgm) bgm.volume = 0.25;
     const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
     toggle.checked = enabled;
     label.textContent = enabled ? 'おとがでるよ' : 'おとがでないよ';

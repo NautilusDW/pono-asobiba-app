@@ -3036,7 +3036,7 @@ function ensureAudio() {
 let bgmAudio = null;
 let bgmSource = null;
 let bgmGain = null;
-const BGM_VOLUME = 0.07;
+const BGM_VOLUME = 0.25;
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
 function initBGM() {
@@ -3091,7 +3091,7 @@ const SE_PATHS = {
   clear:   '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
   hint:    '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
 };
-const SE_VOLUME = 0.6;
+const SE_VOLUME = 0.45;
 const _seCache = {};
 function playSe(name) {
   const src = SE_PATHS[name];
@@ -4013,6 +4013,11 @@ async function playOpeningCinematic() {
 
   _opCancelled = false;
 
+  // Hoist BGM duck state so start, finish, and skip paths can reach it.
+  let __opOrigBgm = null;
+  let __opNarrSrc = null;
+  let __opNarrGain = null;
+
   // Init babble audio context once (idempotent)
   try {
     if (window.PonoBabble && typeof window.PonoBabble.init === 'function'
@@ -4042,6 +4047,12 @@ async function playOpeningCinematic() {
     _opTypingToken++;
     try { if (_opActiveAudio) { _opActiveAudio.pause(); _opActiveAudio.currentTime = 0; } } catch (e) {}
     try { if (window.PonoBabble && window.PonoBabble.cancelAll) window.PonoBabble.cancelAll(); } catch (e) {}
+    // Restore BGM if it was ducked for narration.
+    try {
+      if (typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain && __opOrigBgm != null) {
+        bgmGain.gain.setTargetAtTime(__opOrigBgm, audioCtx.currentTime, 0.2);
+      }
+    } catch (e) {}
   }
   if (skipBtn) skipBtn.addEventListener('click', onSkip);
   // Move keyboard focus to skip so kbd/switch users can bail out
@@ -4136,11 +4147,28 @@ async function playOpeningCinematic() {
           // (BGM has already activated audioCtx synchronously on title-tap).
           if (typeof audioCtx !== 'undefined' && audioCtx) {
             try {
-              const src = audioCtx.createMediaElementSource(audio);
-              src.connect(audioCtx.destination);
-            } catch (e) { /* same audio element re-routed twice would throw — ignore */ }
+              __opNarrSrc = audioCtx.createMediaElementSource(audio);
+              __opNarrGain = audioCtx.createGain();
+              __opNarrGain.gain.value = 0.65;
+              __opNarrSrc.connect(__opNarrGain);
+              __opNarrGain.connect(audioCtx.destination);
+            } catch (e) {
+              __opNarrSrc = null;
+              __opNarrGain = null;
+              /* same audio element re-routed twice would throw — fallback below */
+            }
           }
+          // HTMLAudio fallback level (also covers the catch path above).
+          // Web Audio gain is already 0.65; if routing failed, HTMLAudio.volume is the only level control.
+          try { audio.volume = 0.65; } catch (e) {}
           _opActiveAudio = audio;
+          // Duck BGM during narration to keep voice intelligible.
+          try {
+            if (typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain) {
+              __opOrigBgm = bgmGain.gain.value;
+              bgmGain.gain.setTargetAtTime(__opOrigBgm * 0.3, audioCtx.currentTime, 0.18);
+            }
+          } catch (e) {}
           await audio.play().catch(function(){});
         } catch (e) {
           audio = null;
@@ -4210,6 +4238,12 @@ async function playOpeningCinematic() {
             }
           });
           _opActiveAudio = null;
+          // Restore BGM after narration.
+          try {
+            if (typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain && __opOrigBgm != null) {
+              bgmGain.gain.setTargetAtTime(__opOrigBgm, audioCtx.currentTime, 0.35);
+            }
+          } catch (e) {}
         } else {
           // 音声が取れなかった場合は ~10s 確保
           for (let t = 0; t < 50 && !_opCancelled; t++) {
@@ -4254,6 +4288,18 @@ async function playOpeningCinematic() {
       }
     }
   } finally {
+    // Always restore BGM (covers all exit paths: ended/skip/timeout/error/throw).
+    try {
+      if (typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain && __opOrigBgm != null && typeof audioCtx !== 'undefined' && audioCtx) {
+        bgmGain.gain.setTargetAtTime(__opOrigBgm, audioCtx.currentTime, 0.15);
+      }
+    } catch (e) {}
+    __opOrigBgm = null;
+    // Disconnect Web Audio nodes to prevent leak on replay.
+    try { if (__opNarrSrc)  __opNarrSrc.disconnect(); }  catch (e) {}
+    try { if (__opNarrGain) __opNarrGain.disconnect(); } catch (e) {}
+    __opNarrSrc = null;
+    __opNarrGain = null;
     if (skipBtn) skipBtn.removeEventListener('click', onSkip);
     try { if (_opActiveAudio) { _opActiveAudio.pause(); } } catch (e) {}
     _opActiveAudio = null;

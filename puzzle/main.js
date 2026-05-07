@@ -608,7 +608,7 @@ if (btnPlayAgain) btnPlayAgain.addEventListener('click', () => {
 const bgm    = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
-bgm.volume = 0.2;
+bgm.volume = 0.25;
 
 let bgmStarted = false;
 

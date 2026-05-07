@@ -1284,7 +1284,7 @@ const bgm    = document.getElementById('bgm');
 const btnBgm = document.getElementById('btn-bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
-bgm.volume = 0.2;
+bgm.volume = 0.25;
 
 function updateBgmBtn() { btnBgm.classList.toggle('bgm-off', !bgmEnabled); }
 

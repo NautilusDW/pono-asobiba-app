@@ -234,7 +234,7 @@ function initAudio() {
 // ── BGM ──
 const bgmEl = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
-bgmEl.volume = 0.2;
+bgmEl.volume = 0.25;
 let bgmStarted = false;
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;

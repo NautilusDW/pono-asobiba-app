@@ -1214,7 +1214,7 @@ let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
 // ── Audio: BGM + 効果音（WebAudio合成）──
 const bgmEl = document.getElementById('bgm');
-if (bgmEl) bgmEl.volume = 0.35;
+if (bgmEl) bgmEl.volume = 0.25;
 function tryPlayBgm() {
   if (!bgmEl || !bgmEnabled) return;
   var p = bgmEl.play();
@@ -1282,7 +1282,7 @@ const _MZ_SE_PATHS = {
   wrong:     '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
   mazeClear: '../assets/audio/sfx/quiz/' + encodeURIComponent('迷路クリア') + '.mp3',
 };
-const _MZ_SE_VOLUME = 0.6;
+const _MZ_SE_VOLUME = 0.45;
 const _mzSeCache = {};
 function playMzSe(name) {
   var src = _MZ_SE_PATHS[name]; if (!src) return;

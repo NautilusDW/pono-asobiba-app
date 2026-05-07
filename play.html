@@ -1770,7 +1770,7 @@
       const bgm = document.getElementById('play-bgm');
       const intro = document.getElementById('tapIntro');
       if (!bgm) return;
-      bgm.volume = 0.35;
+      bgm.volume = 0.25;
 
       function isMuted() {
         try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }

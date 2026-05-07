@@ -516,7 +516,7 @@
     let bgmEnabled = true, bgmStarted = false;
     const bgm = new Audio('../assets/audio/Bubble Hop Playground.mp3');
     bgm.loop = true;
-    bgm.volume = 0.45;
+    bgm.volume = 0.25;
     function tryStartBgm() {
       if (!bgmStarted && bgmEnabled) {
         bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
