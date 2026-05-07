@@ -934,6 +934,52 @@ function migrateFrameIds(parsed) {
       side.fontSize = (Number(side.boxW) >= 480) ? 18 : 16;
     }
   });
+  // Backfill singleBox (機能 5) if missing on legacy state. Use heuristic based on
+  // box width/height of the existing pono side to guess B/C/D. Then apply VC-style defaults.
+  if (!parsed.singleBox || typeof parsed.singleBox !== 'object') {
+    // Heuristic VC inference: pono.boxW >= 520 → wide (C/D), >= 1200 → D-ish.
+    const pw = Number(parsed.pono && parsed.pono.boxW) || 0;
+    let inferredVC = 'B';
+    if (pw >= 1200) inferredVC = 'D';
+    else if (pw >= 520) inferredVC = 'C';
+    const sb = (() => {
+      if (inferredVC === 'B') return { boxW: 800, boxH: 180, boxY: 540, fontSize: 16 };
+      if (inferredVC === 'C') return { boxW: 1200, boxH: 220, boxY: 820, fontSize: 18 };
+      return { boxW: 1400, boxH: 240, boxY: 820, fontSize: 18 };
+    })();
+    parsed.singleBox = {
+      boxW: sb.boxW,
+      boxH: sb.boxH,
+      boxY: sb.boxY,
+      boxPadding: 32,
+      boxRadius: 16,
+      boxMode: 'image',
+      boxImage: DEFAULT_FRAME_ID,
+      boxColor: '#fef3c7',
+      aspectLock: false,
+      aspectLockRatio: 0,
+      fontSize: sb.fontSize,
+      speakerSrc: 'pono'
+    };
+  } else {
+    const sb = parsed.singleBox;
+    if (typeof sb.boxW !== 'number' || !Number.isFinite(sb.boxW) || sb.boxW <= 0) sb.boxW = 1200;
+    if (typeof sb.boxH !== 'number' || !Number.isFinite(sb.boxH) || sb.boxH <= 0) sb.boxH = 220;
+    if (typeof sb.boxY !== 'number' || !Number.isFinite(sb.boxY)) sb.boxY = 820;
+    if (typeof sb.boxPadding !== 'number' || !Number.isFinite(sb.boxPadding)) sb.boxPadding = 32;
+    if (typeof sb.boxRadius !== 'number' || !Number.isFinite(sb.boxRadius)) sb.boxRadius = 16;
+    if (sb.boxMode !== 'image' && sb.boxMode !== 'css') sb.boxMode = 'image';
+    if (!FRAME_IDS.includes(sb.boxImage)) sb.boxImage = DEFAULT_FRAME_ID;
+    if (typeof sb.boxColor !== 'string') sb.boxColor = '#fef3c7';
+    if (typeof sb.aspectLock !== 'boolean') sb.aspectLock = false;
+    if (typeof sb.aspectLockRatio !== 'number' || !Number.isFinite(sb.aspectLockRatio)) {
+      sb.aspectLockRatio = 0;
+    }
+    if (typeof sb.fontSize !== 'number' || !Number.isFinite(sb.fontSize) || sb.fontSize <= 0) {
+      sb.fontSize = sb.boxW >= 1000 ? 18 : 16;
+    }
+    if (sb.speakerSrc !== 'pono' && sb.speakerSrc !== 'hakase') sb.speakerSrc = 'pono';
+  }
   return parsed;
 }
 
@@ -1069,6 +1115,37 @@ function applySideToDom(sideKey) {
   }
 }
 
+function applySingleBoxToDom() {
+  const sb = state[currentVC] && state[currentVC].singleBox;
+  const box = document.getElementById('box-single');
+  const txt = document.getElementById('text-single');
+  if (!sb || !box || !txt) return;
+  box.style.width = sb.boxW + 'px';
+  box.style.height = sb.boxH + 'px';
+  box.style.top = sb.boxY + 'px';
+  box.style.padding = sb.boxPadding + 'px';
+  if (sb.boxMode === 'image') {
+    box.classList.remove('mode-css');
+    box.style.backgroundImage = `url('${framePathById(sb.boxImage)}')`;
+    box.style.backgroundColor = '';
+    box.style.borderRadius = '';
+  } else {
+    box.classList.add('mode-css');
+    box.style.backgroundImage = 'none';
+    box.style.backgroundColor = sb.boxColor;
+    box.style.borderRadius = sb.boxRadius + 'px';
+  }
+  // Pull sample text from the chosen speaker source.
+  const srcSide = sb.speakerSrc === 'hakase' ? 'hakase' : 'pono';
+  const srcText = (state[currentVC][srcSide] && state[currentVC][srcSide].sampleText) || '';
+  txt.textContent = srcText;
+  if (typeof sb.fontSize === 'number' && Number.isFinite(sb.fontSize) && sb.fontSize > 0) {
+    txt.style.fontSize = sb.fontSize + 'px';
+  } else {
+    txt.style.fontSize = '';
+  }
+}
+
 function renderHeightGuides() {
   const guides = document.getElementById('height-guides');
   if (!guides) return;
@@ -1133,6 +1210,18 @@ function renderBoxGuides() {
     guides.appendChild(line);
   }
 
+  if (singleBoxMode) {
+    // 機能 5: only the Single Box top/bottom, neutral white dashed.
+    const box = document.getElementById('box-single');
+    if (!box) return;
+    const r = box.getBoundingClientRect();
+    const topY = (r.top - stageRect.top) * inv;
+    const botY = (r.bottom - stageRect.top) * inv;
+    buildLine('bg-single bg-top', Math.round(topY), 'Single Box 上 (y=' + Math.round(topY) + ')');
+    buildLine('bg-single bg-bot', Math.round(botY), 'Single Box 下 (y=' + Math.round(botY) + ')');
+    return;
+  }
+
   ['pono', 'hakase'].forEach(sideKey => {
     const box = document.getElementById('box-' + sideKey);
     if (!box) return;
@@ -1149,8 +1238,10 @@ function renderBoxGuides() {
 function render() {
   const stage = document.getElementById('stage');
   stage.dataset.vc = currentVC;
+  stage.dataset.singleBox = singleBoxMode ? 'on' : 'off';
   applySideToDom('pono');
   applySideToDom('hakase');
+  applySingleBoxToDom();
 
   const sp = state[currentVC].speaker;
   document.getElementById('side-pono').classList.toggle('is-speaking', sp === 'pono');
@@ -1540,11 +1631,287 @@ function makeAspectLockRow(sideKey) {
   return wrap;
 }
 
+// Build Single Box (機能 5) controls. Returned section is appended at top of tab-body
+// when singleBoxMode is ON. Mutates state[currentVC].singleBox.
+function makeSingleBoxRange(label, min, max, step, key) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const range = document.createElement('input');
+  range.type = 'range';
+  range.min = min; range.max = max; range.step = step;
+  const num = document.createElement('input');
+  num.type = 'number';
+  num.min = min; num.max = max; num.step = step;
+  const cur = state[currentVC].singleBox[key];
+  range.value = cur;
+  num.value = cur;
+  const apply = (v) => {
+    let n = Number(v);
+    if (!Number.isFinite(n)) return;
+    n = Math.min(Math.max(n, Number(min)), Number(max));
+    state[currentVC].singleBox[key] = n;
+    if (document.activeElement !== range) range.value = n;
+    if (document.activeElement !== num) num.value = n;
+    save(currentVC);
+    applySingleBoxToDom();
+    if (showBoxGuides) renderBoxGuides();
+  };
+  range.addEventListener('input', () => apply(range.value));
+  num.addEventListener('input', () => apply(num.value));
+  num.addEventListener('change', () => {
+    let n = Number(num.value);
+    if (!Number.isFinite(n)) n = state[currentVC].singleBox[key];
+    n = Math.min(Math.max(n, Number(min)), Number(max));
+    state[currentVC].singleBox[key] = n;
+    num.value = n;
+    range.value = n;
+    save(currentVC);
+    applySingleBoxToDom();
+    if (showBoxGuides) renderBoxGuides();
+  });
+  row.appendChild(lab);
+  row.appendChild(range);
+  row.appendChild(num);
+  return row;
+}
+
+function makeSingleBoxRadio(label, key, options, opts) {
+  const rebuild = !!(opts && opts.rebuild);
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const rr = document.createElement('div');
+  rr.className = 'radio-row';
+  const groupName = 'single-' + key + '-' + (++_radioUid);
+  options.forEach(opt => {
+    const lbl = document.createElement('label');
+    lbl.dataset.val = opt.value;
+    if (state[currentVC].singleBox[key] === opt.value) lbl.classList.add('checked');
+    const inp = document.createElement('input');
+    inp.type = 'radio';
+    inp.name = groupName;
+    inp.value = opt.value;
+    const inputId = groupName + '-' + opt.value;
+    inp.id = inputId;
+    lbl.htmlFor = inputId;
+    if (state[currentVC].singleBox[key] === opt.value) inp.checked = true;
+    const txt = document.createTextNode(opt.text);
+    lbl.appendChild(inp);
+    lbl.appendChild(txt);
+    inp.addEventListener('change', () => {
+      if (!inp.checked) return;
+      state[currentVC].singleBox[key] = opt.value;
+      // boxMode flip: refresh aspect-lock snapshot
+      if (key === 'boxMode') {
+        const sb = state[currentVC].singleBox;
+        if (sb.aspectLock) {
+          if (opt.value === 'image') {
+            const a = FRAME_NATURAL_ASPECT[sb.boxImage];
+            if (a && a > 0) {
+              sb.aspectLockRatio = a;
+              let h = Math.round(sb.boxW / a);
+              h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+              sb.boxH = h;
+            }
+          } else {
+            if (sb.boxH > 0) sb.aspectLockRatio = sb.boxW / sb.boxH;
+          }
+        }
+      }
+      save(currentVC);
+      rr.querySelectorAll('label').forEach(l => {
+        l.classList.toggle('checked', l.dataset.val === opt.value);
+      });
+      if (rebuild) {
+        buildRightPane();
+      } else {
+        applySingleBoxToDom();
+      }
+      if (showBoxGuides) renderBoxGuides();
+    });
+    rr.appendChild(lbl);
+  });
+  row.appendChild(lab);
+  row.appendChild(rr);
+  return row;
+}
+
+function makeSingleBoxColor(label, key) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.value = state[currentVC].singleBox[key];
+  inp.addEventListener('input', () => {
+    state[currentVC].singleBox[key] = inp.value;
+    save(currentVC);
+    applySingleBoxToDom();
+  });
+  row.appendChild(lab);
+  row.appendChild(inp);
+  return row;
+}
+
+function makeSingleBoxFrameSelect() {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = 'フレーム画像';
+  const sel = document.createElement('select');
+  FRAME_IMAGES.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id;
+    o.textContent = f.label;
+    if (state[currentVC].singleBox.boxImage === f.id) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    const sb = state[currentVC].singleBox;
+    sb.boxImage = sel.value;
+    if (sb.aspectLock && sb.boxMode === 'image') {
+      const a = FRAME_NATURAL_ASPECT[sb.boxImage];
+      if (a && a > 0) {
+        sb.aspectLockRatio = a;
+        let h = Math.round(sb.boxW / a);
+        h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+        sb.boxH = h;
+      }
+    }
+    save(currentVC);
+    applySingleBoxToDom();
+    if (showBoxGuides) renderBoxGuides();
+  });
+  row.appendChild(lab);
+  row.appendChild(sel);
+  return row;
+}
+
+function makeSingleBoxAspectLockRow() {
+  const sb = state[currentVC].singleBox;
+  const wrap = document.createElement('label');
+  wrap.className = 'lock-row';
+  if (sb.aspectLock) wrap.classList.add('is-on');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = !!sb.aspectLock;
+  const txt = document.createElement('span');
+  txt.className = 'lock-text';
+  txt.textContent = '🔒 縦横比をロック';
+  cb.addEventListener('change', () => {
+    const ss = state[currentVC].singleBox;
+    ss.aspectLock = !!cb.checked;
+    if (ss.aspectLock) {
+      if (ss.boxMode === 'image') {
+        const a = FRAME_NATURAL_ASPECT[ss.boxImage];
+        if (a && a > 0) {
+          ss.aspectLockRatio = a;
+          let h = Math.round(ss.boxW / a);
+          h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+          ss.boxH = h;
+        } else {
+          if (ss.boxH > 0) ss.aspectLockRatio = ss.boxW / ss.boxH;
+        }
+      } else {
+        if (ss.boxH > 0) ss.aspectLockRatio = ss.boxW / ss.boxH;
+      }
+      wrap.classList.add('is-on');
+    } else {
+      wrap.classList.remove('is-on');
+    }
+    save(currentVC);
+    applySingleBoxToDom();
+    // No clean ranger sync here — user can adjust manually. For simplicity, rebuild.
+    buildRightPane();
+  });
+  wrap.appendChild(cb);
+  wrap.appendChild(txt);
+  return wrap;
+}
+
+function makeSingleBoxSpeakerRow() {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = 'スピーカー文';
+  const rr = document.createElement('div');
+  rr.className = 'radio-row';
+  const groupName = 'single-speakerSrc-' + (++_radioUid);
+  const cur = state[currentVC].singleBox.speakerSrc;
+  [
+    { value: 'pono', text: 'ポノ' },
+    { value: 'hakase', text: 'はかせ' }
+  ].forEach(opt => {
+    const lbl = document.createElement('label');
+    lbl.dataset.val = opt.value;
+    if (cur === opt.value) lbl.classList.add('checked');
+    const inp = document.createElement('input');
+    inp.type = 'radio';
+    inp.name = groupName;
+    inp.value = opt.value;
+    inp.id = groupName + '-' + opt.value;
+    lbl.htmlFor = inp.id;
+    if (cur === opt.value) inp.checked = true;
+    lbl.appendChild(inp);
+    lbl.appendChild(document.createTextNode(opt.text));
+    inp.addEventListener('change', () => {
+      if (!inp.checked) return;
+      state[currentVC].singleBox.speakerSrc = opt.value;
+      save(currentVC);
+      rr.querySelectorAll('label').forEach(l => {
+        l.classList.toggle('checked', l.dataset.val === opt.value);
+      });
+      applySingleBoxToDom();
+    });
+    rr.appendChild(lbl);
+  });
+  row.appendChild(lab);
+  row.appendChild(rr);
+  return row;
+}
+
+function buildSingleBoxSection() {
+  const sb = state[currentVC].singleBox;
+  const sec = document.createElement('div');
+  sec.className = 'single-box-section';
+  const h = document.createElement('h4');
+  h.textContent = '📦 Single Box 設定 (1 個モード)';
+  sec.appendChild(h);
+  sec.appendChild(makeSingleBoxRadio('モード', 'boxMode', [
+    { value: 'image', text: '画像' },
+    { value: 'css', text: 'CSS' }
+  ], { rebuild: true }));
+  sec.appendChild(makeSingleBoxAspectLockRow());
+  if (sb.boxMode === 'image') {
+    sec.appendChild(makeSingleBoxFrameSelect());
+  }
+  sec.appendChild(makeSingleBoxRange('幅 (px)', 200, 2560, 1, 'boxW'));
+  sec.appendChild(makeSingleBoxRange('高さ (px)', 80, 800, 1, 'boxH'));
+  sec.appendChild(makeSingleBoxRange('Y', 0, 1080, 1, 'boxY'));
+  sec.appendChild(makeSingleBoxRange('padding', 8, 200, 1, 'boxPadding'));
+  if (sb.boxMode === 'css') {
+    sec.appendChild(makeSingleBoxRange('角丸', 0, 80, 1, 'boxRadius'));
+    sec.appendChild(makeSingleBoxColor('背景色', 'boxColor'));
+  }
+  sec.appendChild(makeSingleBoxRange('フォントサイズ', 12, 48, 1, 'fontSize'));
+  sec.appendChild(makeSingleBoxSpeakerRow());
+  return sec;
+}
+
 function buildRightPane() {
   const body = document.getElementById('tab-body');
   body.textContent = '';
   const sideKey = currentTab;
   const s = state[currentVC][sideKey];
+
+  // 機能 5: when single-box mode is ON, prepend the Single Box section.
+  if (singleBoxMode) {
+    body.appendChild(buildSingleBoxSection());
+  }
 
   const slotGroup = document.createElement('div');
   slotGroup.className = 'group';
@@ -1574,6 +1941,8 @@ function buildRightPane() {
 
   const boxGroup = document.createElement('div');
   boxGroup.className = 'group';
+  // 機能 5: dim per-side box group when single-box mode is ON.
+  if (singleBoxMode) boxGroup.classList.add('is-single-mode');
   const boxH = document.createElement('h4');
   boxH.textContent = 'Box（ダイアログ）';
   boxGroup.appendChild(boxH);
@@ -1650,11 +2019,18 @@ function buildHeader() {
   const mirrorCb = document.getElementById('mirror-checkbox');
   if (mirrorRow && mirrorCb) {
     const refreshMirror = () => {
-      mirrorRow.classList.toggle('is-on', !!mirrorMode);
-      mirrorCb.checked = !!mirrorMode;
+      // 機能 5: when single-box mode is ON, disable the mirror toggle.
+      const disabled = !!singleBoxMode;
+      mirrorRow.classList.toggle('is-disabled', disabled);
+      mirrorCb.disabled = disabled;
+      mirrorRow.classList.toggle('is-on', !!mirrorMode && !disabled);
+      mirrorCb.checked = !!mirrorMode && !disabled;
     };
     refreshMirror();
+    // Expose for the single-box toggle handler to call after toggling.
+    window.__refreshMirrorRow = refreshMirror;
     mirrorCb.addEventListener('change', () => {
+      if (singleBoxMode) { mirrorCb.checked = false; return; }
       mirrorMode = !!mirrorCb.checked;
       saveMirrorModePref();
       refreshMirror();
@@ -1666,6 +2042,23 @@ function buildHeader() {
         render();
         buildRightPane();
       }
+    });
+  }
+
+  const sbBtn = document.getElementById('btn-toggle-single-box');
+  if (sbBtn) {
+    const refreshSb = () => {
+      sbBtn.classList.toggle('toggle-on', !!singleBoxMode);
+      sbBtn.setAttribute('aria-pressed', singleBoxMode ? 'true' : 'false');
+    };
+    refreshSb();
+    sbBtn.addEventListener('click', () => {
+      singleBoxMode = !singleBoxMode;
+      saveSingleBoxModePref();
+      refreshSb();
+      if (typeof window.__refreshMirrorRow === 'function') window.__refreshMirrorRow();
+      render();
+      buildRightPane();
     });
   }
 
