@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T06:43:21Z - quizland: モード選択→オープニング遷移ちらつき修正 (mode-screen hide を playOpeningCinematic 内へ移動 / .op-cinematic 全体フェード廃止 / .op-bg 単独フェード化、黒ハードカット+BG OL)、sw 826→827。並列 impl + cross-review SHIP判定
+- **タスク**: quizland: モード選択→オープニング遷移ちらつき修正 (mode-screen hide を playOpeningCinematic 内へ移動 / .op-cinematic 全体フェード廃止 / .op-bg 単独フェード化、黒ハードカット+BG OL)、sw 826→827。並列 impl + cross-review SHIP判定
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 58
+- **エラー数**: 1
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 14, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 22}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T06:31:04Z - quizland: クイズスタート タイトルカード追加 (フクロウ博士+「なぞなぞスタート!!」、シネマ後 initGame 直前に 2.2s 表示、tap-to-skip)。並列 asset(WebP 84.9%削減) + impl エージェント、cross-review SHIP判定、sw 825→826
 - **タスク**: quizland: クイズスタート タイトルカード追加 (フクロウ博士+「なぞなぞスタート!!」、シネマ後 initGame 直前に 2.2s 表示、tap-to-skip)。並列 asset(WebP 84.9%削減) + impl エージェント、cross-review SHIP判定、sw 825→826
 - **結果**: 成功
@@ -199,18 +212,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 20, "Read": 9, "Grep": 3, "ToolSearch": 1, "Agent": 6, "Write": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T02:43:06Z - quizland OP cinematic 5 review fixes (re-entry guard, hoist DOM lookups, iOS audio via audioCtx, idempotent finish() cleanup, skipBtn focus)
-- **タスク**: quizland OP cinematic 5 review fixes (re-entry guard, hoist DOM lookups, iOS audio via audioCtx, idempotent finish() cleanup, skipBtn focus)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 27
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 9, "Read": 8, "Grep": 3, "ToolSearch": 1, "Agent": 6}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
