@@ -2554,10 +2554,11 @@ function _bindHakaseBubbleClick() {
   if (!bubble) return;
   bubble.style.cursor = 'pointer';
   bubble.addEventListener('click', () => {
-    // layout-editor 中は吹き出しクリックでヒント2を出さない (要素移動を妨げないため)。
-    // ただし playtest mode (🧪 Playtest ON) のときは編集中でも実際にヒントを見られる
-    // ようにガードを通す。
-    if (document.body.classList.contains('layout-editor-on') && !isPlaytestInEditor()) return;
+    // layout-editor (?edit=1) 中は吹き出しクリックを常に抑止 (要素移動・編集選択を妨げないため)。
+    // v816 で Playtest ON 時も抑止するように戻した: editor mode + Playtest ON は
+    // 「全問巡回 + コメント残し」 が主目的であり、 答え判定は通常プレイで行う設計に
+    // 揃えた (chip pointerdown と同じガード)。
+    if (document.body.classList.contains('layout-editor-on')) return;
     if (currentQ) showHint2(currentQ);
   });
 }
@@ -3340,9 +3341,11 @@ function renderChoices(q) {
     btn.addEventListener('pointerdown', function(e) {
       // layout-editor (?edit=1) 中は chip クリックで quiz を進行させない
       // (チップを掴んで動かしたいのに「答えた」と判定されて困る対策)。
-      // ただし playtest mode (🧪 Playtest ON) のときは編集中でも実際にクイズを
-      // 解けるようにするため、 ガードを通す。
-      if (document.body.classList.contains('layout-editor-on') && !isPlaytestInEditor()) return;
+      // v816: Playtest ON 時もエディタ選択を最優先にするため抑止に戻した。
+      // editor + Playtest ON は「全問巡回 + コメント残し」が目的で、 答え判定は
+      // 通常プレイ (?edit=1 を外して) で確認する運用に揃える。 問題遷移は
+      // toolbar の ⏭ 次へ / debug nav (前へ・次へ・ジャンプ) で行う。
+      if (document.body.classList.contains('layout-editor-on')) return;
       e.preventDefault();
       if (locked) return;
       onChoice(i, btn);
