@@ -32,8 +32,13 @@
        blank for a frame on slow networks / bfcache restore.
        (Cloudflare Workers serves these fine; local preview environments
        that 404 preload requests just ignore the hint — no functional cost.) -->
-  <link rel="preload" as="image" href="assets/ui/thumb_quizland.png">
+  <!-- NOTE: assets/ui/thumb_maze.png は中身が ずかん風 (本+きのこ) で
+       めいろの絵ではないため、 maze カードでは使っていない (zukan に流用)。
+       maze カードは本物のめいろ絵 (ランタン+小道) が入っている
+       assets/ui/thumb_quiz-sound.png を流用している。 -->
+  <link rel="preload" as="image" href="assets/images/quizland/owl_professor_guide.png">
   <link rel="preload" as="image" href="assets/ui/thumb_wordmatch.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.png">
   <link rel="preload" as="image" href="assets/ui/thumb_maze.png">
   <link rel="preload" as="image" href="assets/ui/thumb_oto.png">
   <link rel="preload" as="image" href="assets/ui/thumb_bento.png">
@@ -1307,7 +1312,9 @@
         bg: 'assets/images/quizland/title_back.png',
         href: 'quizland/index.html',
         panel: 'assets/ui/menu_card_base_01.png',
-        thumb: 'assets/ui/thumb_quizland.png',
+        // owl_professor_guide.png はフクロウ博士の単体立ち絵 (透過)。
+        // 旧 thumb_quizland.png (教室シーン) はテーマと合わないため不使用。
+        thumb: 'assets/images/quizland/owl_professor_guide.png',
         thumbPos: '50% 50%',
         peekPos: '67% 55%'
       },
@@ -1339,7 +1346,10 @@
         bg: 'assets/images/maze/title_back.jpg',
         href: 'maze/index.html',
         panel: 'assets/ui/menu_card_base_04.png',
-        thumb: 'assets/ui/thumb_maze.png'
+        // 本物の迷路絵 (ランタン+夜の小道) は thumb_quiz-sound.png 側に
+        // 入っているのでこちらを流用。 thumb_maze.png は中身が
+        // ずかん風 (本+きのこ) なので zukan カードで使用する。
+        thumb: 'assets/ui/thumb_quiz-sound.png'
       },
       // ----- Newly promoted from coming-soon → real games -----
       {
@@ -1386,7 +1396,9 @@
         bg: 'assets/zukan/bg/zukan_outer_bg_21x9.png',
         href: 'zukan/index.html',
         panel: 'assets/ui/menu_card_base_04.png',
-        thumb: 'assets/zukan/bg/zukan_outer_bg_21x9.png'
+        // thumb_maze.png は実際は ずかん風 (本+葉+きのこ+まつぼっくり)
+        // の絵なので、 ずかんカードで正しく使う。
+        thumb: 'assets/ui/thumb_maze.png'
       }
     ];
     const MENU_GAMES = GAMES.filter((game) => game.id !== 'quiz-sound');
