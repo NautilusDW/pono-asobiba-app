@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T08:13:04Z - quizland: 多解像度対応 - 4:3 letterbox 厳格化 + 会話/ナレボックス固定化 + キャラを width 基準 + clip-path inset(N% bottom) で waist-shot (横切り禁止) + (min-aspect-ratio 16/10) と max-width 540 のメディアクエリ + _opTypeInto 自動スクロール、sw 830→832
+- **タスク**: quizland: 多解像度対応 - 4:3 letterbox 厳格化 + 会話/ナレボックス固定化 + キャラを width 基準 + clip-path inset(N% bottom) で waist-shot (横切り禁止) + (min-aspect-ratio 16/10) と max-width 540 のメディアクエリ + _opTypeInto 自動スクロール、sw 830→832
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 152
+- **エラー数**: 25
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 68, "Read": 15, "Grep": 3, "ToolSearch": 1, "Agent": 38, "Write": 2, "Edit": 25}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-07T07:39:29Z - quizland 次へ/前へで保存レイアウトが巻き戻るバグ修正: LayoutEditor に refreshCurrentFromLocal を追加し、renderChoices で apply 前に localStorage 最新値で _currentLayoutData を更新
 - **タスク**: quizland 次へ/前へで保存レイアウトが巻き戻るバグ修正: LayoutEditor に refreshCurrentFromLocal を追加し、renderChoices で apply 前に localStorage 最新値で _currentLayoutData を更新
 - **結果**: 成功
@@ -198,19 +211,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 52, "Read": 13, "Grep": 3, "ToolSearch": 1, "Agent": 26, "Write": 2, "Edit": 16}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-07T06:28:21Z - Quizland: Quiz Start title card overlay (HTML/CSS/JS/preload/hook) between cinematic and initGame, tap-to-skip
-- **タスク**: Quizland: Quiz Start title card overlay (HTML/CSS/JS/preload/hook) between cinematic and initGame, tap-to-skip
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 107
-- **エラー数**: 15
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 49, "Read": 13, "Grep": 3, "ToolSearch": 1, "Agent": 25, "Write": 2, "Edit": 14}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
