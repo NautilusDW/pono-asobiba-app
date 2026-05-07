@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T09:48:57Z - quizland: ステージ絵 per-question 化 (whitelist + qid suffix + GH 404 リトライ + lastSavedQid で dirty 誤検知防止)、Phase 1-4 並列エージェント+クロスレビューで2回 fix → SHIP、sw 833、staging自動デプロイ済
+- **タスク**: quizland: ステージ絵 per-question 化 (whitelist + qid suffix + GH 404 リトライ + lastSavedQid で dirty 誤検知防止)、Phase 1-4 並列エージェント+クロスレビューで2回 fix → SHIP、sw 833、staging自動デプロイ済
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 25
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 2, "Agent": 14, "Bash": 8, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T09:43:12Z - layout-editor.js Phase 3.5 impl-A クロスレビュー修正 (Fix1 GH 404 リトライ+localStorage フォールバック / Fix2 lastSavedQid で dirty 誤判定回避 / Fix3 PUT 後 _currentLayoutData を mergedRemote 同期)
 - **タスク**: layout-editor.js Phase 3.5 impl-A クロスレビュー修正 (Fix1 GH 404 リトライ+localStorage フォールバック / Fix2 lastSavedQid で dirty 誤判定回避 / Fix3 PUT 後 _currentLayoutData を mergedRemote 同期)
 - **結果**: 成功
@@ -199,18 +212,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 15, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 28}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T07:03:38Z - quizland: シネマ refine 4点 (ナレ切替 11s タイミング, 後処理 2s hold, 会話レイアウト sides 縦積み waist-shot, blur 5px) + クイズ本編 setHakaseDialogue を一括表示に戻す (babble + typewriter は OP 専用化)、null guard 追加、sw 828→829
-- **タスク**: quizland: シネマ refine 4点 (ナレ切替 11s タイミング, 後処理 2s hold, 会話レイアウト sides 縦積み waist-shot, blur 5px) + クイズ本編 setHakaseDialogue を一括表示に戻す (babble + typewriter は OP 専用化)、null guard 追加、sw 828→829
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 128
-- **エラー数**: 20
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 59, "Read": 13, "Grep": 3, "ToolSearch": 1, "Agent": 32, "Write": 2, "Edit": 18}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
