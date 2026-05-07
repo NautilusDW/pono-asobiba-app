@@ -96,6 +96,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T04:02:30Z - アプリ全体の音楽ボリュームバランス統一: BGM 全 15 ゲーム 0.25 統一 (0.06-0.45→0.25)、SFX 0.6→0.45、シネマナレ 0.65 + BGM ダック (finally で全パス restore + Web Audio ノード disconnect)、sw 824→825。並列 discovery+impl A/B+review+fix-up エージェント運用
+- **タスク**: アプリ全体の音楽ボリュームバランス統一: BGM 全 15 ゲーム 0.25 統一 (0.06-0.45→0.25)、SFX 0.6→0.45、シネマナレ 0.65 + BGM ダック (finally で全パス restore + Web Audio ノード disconnect)、sw 824→825。並列 discovery+impl A/B+review+fix-up エージェント運用
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 93
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 43, "Read": 11, "Grep": 3, "ToolSearch": 1, "Agent": 23, "Write": 1, "Edit": 11}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-07T03:56:41Z - audio polish: SFX 0.6→0.45 (quizland+maze), narration gain 0.65 + BGM duck (quizland OP cinematic)
+- **タスク**: audio polish: SFX 0.6→0.45 (quizland+maze), narration gain 0.65 + BGM duck (quizland OP cinematic)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 85
+- **エラー数**: 12
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 38, "Read": 11, "Grep": 3, "ToolSearch": 1, "Agent": 21, "Write": 1, "Edit": 10}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-07T03:43:38Z - quizland オープニング 3回目フィードバック: Panel 1 シャープ化 (ブラー除去), Panel 2-6 を新規屋内画 OP_BG02.webp (97.7%削減) に切替+ブラー継続, 会話UI 2x (font/padding/min-height), per-panel bg+blur 切替時 1frame flash 防止 (offsetWidth flush), モバイル overlap 防止調整, sw 823→824
 - **タスク**: quizland オープニング 3回目フィードバック: Panel 1 シャープ化 (ブラー除去), Panel 2-6 を新規屋内画 OP_BG02.webp (97.7%削減) に切替+ブラー継続, 会話UI 2x (font/padding/min-height), per-panel bg+blur 切替時 1frame flash 防止 (offsetWidth flush), モバイル overlap 防止調整, sw 823→824
 - **結果**: 成功
@@ -184,32 +210,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 3, "Read": 3, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T02:21:47Z - quizland-babble.js owl preset 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw.js 819->820
-- **タスク**: quizland-babble.js owl preset 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw.js 819->820
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 16
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 15, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T02:08:34Z - quizland babble v2 (年配フクロウ声) を staging にデプロイ: 並行エージェント作業 (cropMiss + 絵文字除去 + sw.js 817->819) を stash で退避し、自分の commit には babble v2 (js/quizland-babble.js + HAKASE_TYPING_DELAY_MS 60->105 + sw.js 816->817) のみを含めた。stash pop の sw.js コンフリクトは 819 (上位値) で解決して並行作業を保持。rebase 後 push 成功、GH Actions deploy success
-- **タスク**: quizland babble v2 (年配フクロウ声) を staging にデプロイ: 並行エージェント作業 (cropMiss + 絵文字除去 + sw.js 817->819) を stash で退避し、自分の commit には babble v2 (js/quizland-babble.js + HAKASE_TYPING_DELAY_MS 60->105 + sw.js 816->817) のみを含めた。stash pop の sw.js コンフリクトは 819 (上位値) で解決して並行作業を保持。rebase 後 push 成功、GH Actions deploy success
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 46
-- **エラー数**: 0
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 11, "Glob": 7, "Read": 6, "ToolSearch": 1, "Write": 6, "Agent": 15}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
