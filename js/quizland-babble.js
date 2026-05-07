@@ -32,17 +32,17 @@
       wave: 'sawtooth',            // richer harmonic content for filter to shape
       wave2: 'triangle',           // softens the saw, adds chest resonance
       osc2Detune: -1200,           // sub-octave shadow for "old man chest"
-      osc2Mix: 0.35,               // sub-octave blend
+      osc2Mix: 0.5,                // sub-octave blend (thicker low-end body)
       baseFreq: 160,               // low — settled, depth
       glide: -50,                  // strong downward inflection (語尾下降)
       duration: 0.120,             // slower, weightier
       attack: 0.016,               // softer onset (vocal cord ramp-up)
       release: 0.090,              // longer tail
-      peakGain: 0.10,              // post-filter level
+      peakGain: 0.5,               // post-filter level (compensate BPF loss)
       pitchSpread: 26,             // Hz (relative to base)
       formants: OWL_FORMANTS,      // BPF center freq table
       formantSpread: 180,          // ± random jitter on chosen formant
-      bpfQ: 8,                     // resonant but not self-oscillating
+      bpfQ: 3.5,                   // wider passband so fundamental/sub-harmonics survive
       vibratoRate: 6.2,            // Hz — elderly tremor band
       vibratoDepth: 5.5            // Hz — subtle but audible within 1 cycle
     },

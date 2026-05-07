@@ -16,6 +16,7 @@
 - **迷路ラフ作成ツール**: [memory/feature_maze_rough_maker.md](memory/feature_maze_rough_maker.md) — `tools/maze-rough.html` で 32×18 タイルラフを描いて PNG 出力 → 生成 AI に「道の形を守って絵本風に」と一緒に渡すワークフロー
 - **クリーンエッジスタジオ タイムライン再生**: [memory/feature_timeline_player.md](memory/feature_timeline_player.md) — 分割スプライトをID連番順に並べてFPS+各コマフレーム数で即時再生。スプライトカードはサムネドラッグで並び替え可、🎯ボタンで比較タブの元矩形にジャンプ
 - **Layout System (`common/layout/`)**: [memory/reference_layout_system.md](memory/reference_layout_system.md) — WYSIWYG レイアウトエディタ + applier 共通モジュール。`LayoutSystem.init()` 4 行で opt-in、`?edit=1` でエディタ遅延ロード。ページ author docs は `common/layout/README.md`
+- **Babble Voice System (Quizland)**: [memory/feature_babble_voice.md](memory/feature_babble_voice.md) — フクロウ博士のしゃべり声 (タイピング + Web Audio 合成)。owl preset = 年配おじいさん風、5母音フォルマント切替、6.2Hz ビブラート。`js/quizland-babble.js` + `quizland/index.html` の `setHakaseDialogue` 改修。キャラ別 preset 拡張ポイント (pono / hedgehog 将来用)
 
 ---
 
@@ -94,120 +95,120 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
-### 2026-05-06T23:25:13Z - quizland Q128+ ステージ画像 editor 不具合調査と修正 (Q1-Q71 系の wrapper/img selector 追加 + sw v806→807)
-- **タスク**: quizland Q128+ ステージ画像 editor 不具合調査と修正 (Q1-Q71 系の wrapper/img selector 追加 + sw v806→807)
+### 2026-05-07T02:21:47Z - quizland-babble.js owl preset 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw.js 819->820
+- **タスク**: quizland-babble.js owl preset 無音バグ修正 (peakGain 0.10->0.5, bpfQ 8->3.5, osc2Mix 0.35->0.5) + sw.js 819->820
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 130
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 17, "Agent": 45, "ToolSearch": 1, "Bash": 53, "Edit": 14}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 16
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 15, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T22:49:24Z - quizland editor でステージ画像 (.emoji-main-img) をリサイズ・移動可能に追加 + .emoji-display 登録、 sw v804→805
-- **タスク**: quizland editor でステージ画像 (.emoji-main-img) をリサイズ・移動可能に追加 + .emoji-display 登録、 sw v804→805
+### 2026-05-07T02:08:34Z - quizland babble v2 (年配フクロウ声) を staging にデプロイ: 並行エージェント作業 (cropMiss + 絵文字除去 + sw.js 817->819) を stash で退避し、自分の commit には babble v2 (js/quizland-babble.js + HAKASE_TYPING_DELAY_MS 60->105 + sw.js 816->817) のみを含めた。stash pop の sw.js コンフリクトは 819 (上位値) で解決して並行作業を保持。rebase 後 push 成功、GH Actions deploy success
+- **タスク**: quizland babble v2 (年配フクロウ声) を staging にデプロイ: 並行エージェント作業 (cropMiss + 絵文字除去 + sw.js 817->819) を stash で退避し、自分の commit には babble v2 (js/quizland-babble.js + HAKASE_TYPING_DELAY_MS 60->105 + sw.js 816->817) のみを含めた。stash pop の sw.js コンフリクトは 819 (上位値) で解決して並行作業を保持。rebase 後 push 成功、GH Actions deploy success
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 121
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 17, "Agent": 42, "ToolSearch": 1, "Bash": 48, "Edit": 13}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 46
+- **エラー数**: 0
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 11, "Glob": 7, "Read": 6, "ToolSearch": 1, "Write": 6, "Agent": 15}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T22:45:59Z - Q17 を赤ちゃんの歯テーマに刷新 + stage_body_baby_teeth.png 発注文作成 + manifest placeholder + sw bump 803->804
-- **タスク**: Q17 を赤ちゃんの歯テーマに刷新 + stage_body_baby_teeth.png 発注文作成 + manifest placeholder + sw bump 803->804
+### 2026-05-07T01:58:27Z - quizland-babble.js owl preset を声っぽい年配フクロウ風に刷新 (2osc+BPF+LFO、5母音フォルマント切替、index ベース決定論、cancelAll/onended で全ノード解放)
+- **タスク**: quizland-babble.js owl preset を声っぽい年配フクロウ風に刷新 (2osc+BPF+LFO、5母音フォルマント切替、index ベース決定論、cancelAll/onended で全ノード解放)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 120
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 17, "Agent": 41, "ToolSearch": 1, "Bash": 48, "Edit": 13}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 10
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 9, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T22:39:43Z - quizland editor の Playtest ON 時に 5 問のままになっていた playlist を全 169 問に構築するよう _qzInitFullPlaylist() 抽出して toggle ハンドラから呼び、 sw v802->803
-- **タスク**: quizland editor の Playtest ON 時に 5 問のままになっていた playlist を全 169 問に構築するよう _qzInitFullPlaylist() 抽出して toggle ハンドラから呼び、 sw v802->803
+### 2026-05-07T01:57:40Z - quizland: HAKASE_TYPING_DELAY_MS 60->105 + sw.js CACHE_VERSION 818->819
+- **タスク**: quizland: HAKASE_TYPING_DELAY_MS 60->105 + sw.js CACHE_VERSION 818->819
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 117
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 17, "Agent": 39, "ToolSearch": 1, "Bash": 47, "Edit": 13}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 10
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 9, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T22:29:35Z - batch:07c alpha 画像 1 枚 (土と芽) を stage_trivia_seed_germinate に配置 + 新規 trivia Lv1 問題追加 + 過去 batch の raw 11 枚を alpha/07/ に戻し raw 保持ポリシーへ変更 (sw v801->802)
-- **タスク**: batch:07c alpha 画像 1 枚 (土と芽) を stage_trivia_seed_germinate に配置 + 新規 trivia Lv1 問題追加 + 過去 batch の raw 11 枚を alpha/07/ に戻し raw 保持ポリシーへ変更 (sw v801->802)
+### 2026-05-07T01:46:34Z - quizland babble 音声機能を staging にデプロイ (commit 7a156b9, post-commit auto-push 経由で GH Actions 成功、 _smoke.js は 0 byte で commit 除外、 OP assets と センサス.zip も unstaged のまま)
+- **タスク**: quizland babble 音声機能を staging にデプロイ (commit 7a156b9, post-commit auto-push 経由で GH Actions 成功、 _smoke.js は 0 byte で commit 除外、 OP assets と センサス.zip も unstaged のまま)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 113
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 17, "Agent": 38, "ToolSearch": 1, "Bash": 46, "Edit": 11}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 37
+- **エラー数**: 0
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 8, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 12}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T19:19:50Z - quizland editor playtest-in-editor 名前衝突修正と chip/吹き出しガード抜け対応
-- **タスク**: quizland editor playtest-in-editor 名前衝突修正と chip/吹き出しガード抜け対応
+### 2026-05-07T01:43:11Z - quizland editor: Playtest ON 時も chip/吹き出しクリックを editor 選択優先に戻す (v801 リグレッション修正)、 sw v815→816、 reference_layout_editor_features.md 追記
+- **タスク**: quizland editor: Playtest ON 時も chip/吹き出しクリックを editor 選択優先に戻す (v801 リグレッション修正)、 sw v815→816、 reference_layout_editor_features.md 追記
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 104
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 16, "Agent": 37, "ToolSearch": 1, "Bash": 41, "Edit": 9}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 32
+- **エラー数**: 0
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 7, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 8}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T19:13:54Z - quizland editor (?edit=1) に debug=all UI を toggle ボタンで使えるようにする (toolbar Playtest button + QZ_PLAYTEST_IN_EDITOR getter, sw v799->800)
-- **タスク**: quizland editor (?edit=1) に debug=all UI を toggle ボタンで使えるようにする (toolbar Playtest button + QZ_PLAYTEST_IN_EDITOR getter, sw v799->800)
+### 2026-05-07T01:43:03Z - quizland: playtest panel に クロップミス checkbox を追加 (右端 margin-left:auto、 noteEntry/doc.notes.push に cropMiss、 保存後 false に戻す、 cropMiss-only entry も保存可)
+- **タスク**: quizland: playtest panel に クロップミス checkbox を追加 (右端 margin-left:auto、 noteEntry/doc.notes.push に cropMiss、 保存後 false に戻す、 cropMiss-only entry も保存可)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 102
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 16, "Agent": 35, "ToolSearch": 1, "Bash": 41, "Edit": 9}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 32
+- **エラー数**: 0
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 7, "Glob": 7, "Read": 4, "ToolSearch": 1, "Write": 5, "Agent": 8}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T19:03:18Z - batch:07b alpha 画像 7 枚を quizland 本配置 (Tongue 上書き + body 4 新規 + weather 1 新規 + trivia 1 新規、 questions.js 6 img 参照更新、 image_manifest +6 entry、 sw v798->799)
-- **タスク**: batch:07b alpha 画像 7 枚を quizland 本配置 (Tongue 上書き + body 4 新規 + weather 1 新規 + trivia 1 新規、 questions.js 6 img 参照更新、 image_manifest +6 entry、 sw v798->799)
+### 2026-05-07T01:32:59Z - quizland: setHakaseDialogue を文字流し+どうぶつの森風 babble ボイス対応に改修 (PonoBabble.init/playChar('owl')/cancelAll をフック、_typingToken でレース防止、HAKASE_TYPING_DELAY_MS=60ms)、quizland-babble.js を head 末尾の既存スクリプト群と並べてロード、sw.js CACHE_VERSION 815→816
+- **タスク**: quizland: setHakaseDialogue を文字流し+どうぶつの森風 babble ボイス対応に改修 (PonoBabble.init/playChar('owl')/cancelAll をフック、_typingToken でレース防止、HAKASE_TYPING_DELAY_MS=60ms)、quizland-babble.js を head 末尾の既存スクリプト群と並べてロード、sw.js CACHE_VERSION 815→816
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 99
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 16, "Agent": 33, "ToolSearch": 1, "Bash": 40, "Edit": 9}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 18
+- **エラー数**: 0
+- **検出された良いパターン**: 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 6, "Glob": 7, "Read": 3, "ToolSearch": 1, "Write": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-05-06T18:47:45Z - quizland chip letter-spacing -0.04em + 4箇所スペース除去 + 助数詞 6ぽん/3ぼん 修正 (sw v797→798)
-- **タスク**: quizland chip letter-spacing -0.04em + 4箇所スペース除去 + 助数詞 6ぽん/3ぼん 修正 (sw v797→798)
+### 2026-05-07T01:30:21Z - quizland .char-hint を元画像 (balloon_temp.png 1983x793 ≒ 5:2) のアスペクト比に修正、 v811 の 1:1 強制を撤回、 全 4 ルール (base/14:9/4:3/5:4) で aspect-ratio: 1983/793 + width 固定、 sw v814->815
+- **タスク**: quizland .char-hint を元画像 (balloon_temp.png 1983x793 ≒ 5:2) のアスペクト比に修正、 v811 の 1:1 強制を撤回、 全 4 ルール (base/14:9/4:3/5:4) で aspect-ratio: 1983/793 + width 固定、 sw v814->815
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 86
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 31, "ToolSearch": 1, "Bash": 37, "Edit": 8}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **総アクション数**: 33
+- **エラー数**: 0
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
+- **ツール使用統計**: {"Bash": 21, "Read": 9, "Grep": 2, "Edit": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
