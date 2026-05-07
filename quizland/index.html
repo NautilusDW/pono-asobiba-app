@@ -2770,50 +2770,15 @@ let _consecutiveMisses = 0;
 let _hintLevel = 0;  // 0 = 問題表示時, 1 = ヒント1, 2 = ヒント2
 let _autoHintTimer = null;
 
-// 文字流し (typewriter) + babble ボイス用
-// _typingToken はタイピング進行中のキャンセル用。setHakaseDialogue が呼ばれるたびに
-// インクリメントし、各 setTimeout コールバックは自分が起動された時点の token と
-// 一致しなければ即停止する (古いタイピングが新しいテキストを上書きしないように)。
-let _typingToken = 0;
-const HAKASE_TYPING_DELAY_MS = 105;
-
+// ゲーム中のフクロウ博士のセリフ (問題文 / ヒント / 正解・不正解の感想等) は
+// 即時表示する。タイプライタ + babble ボイスはオープニング・シネマティック専用
+// (_opTypeInto / _opTypingToken 経由) として残す。ここで cancelAll を呼ぶのは、
+// 直前のシネマティックから残ったままの babble があれば確実に止めるため。
 function setHakaseDialogue(text) {
   const el = document.getElementById('char-hint-text');
   if (!el) return;
-
-  // 1) 進行中のタイピング/babble を即キャンセル
-  _typingToken++;
-  const myToken = _typingToken;
   try { if (window.PonoBabble && typeof window.PonoBabble.cancelAll === 'function') window.PonoBabble.cancelAll(); } catch (e) {}
-
-  // 2) AudioContext を babble に共有 (init は idempotent)。audioCtx が未作成でも
-  //    エラーにしない (init は falsy をスキップする実装)。
-  try {
-    if (window.PonoBabble && typeof window.PonoBabble.init === 'function'
-        && typeof audioCtx !== 'undefined' && audioCtx) {
-      window.PonoBabble.init(audioCtx);
-    }
-  } catch (e) {}
-
-  // 3) 既存の挙動 (吹き出し表示制御等) を壊さないため、textContent は最初に空にして
-  //    1 文字ずつ追加する。 text が空文字でも el を空にするだけで終わる。
-  const str = (text == null) ? '' : String(text);
-  el.textContent = '';
-  let i = 0;
-
-  function tick() {
-    if (myToken !== _typingToken) return;  // 別のセリフが始まったので中断
-    if (i >= str.length) return;
-    const c = str.charAt(i++);
-    el.textContent += c;
-    try {
-      if (window.PonoBabble && typeof window.PonoBabble.playChar === 'function') {
-        window.PonoBabble.playChar(c, 'owl');
-      }
-    } catch (e) {}
-    if (i < str.length) setTimeout(tick, HAKASE_TYPING_DELAY_MS);
-  }
-  tick();
+  el.textContent = (text == null) ? '' : String(text);
 }
 
 function showProblemDialogue(question) {
@@ -4342,13 +4307,13 @@ async function playOpeningCinematic() {
           if (_opCancelled) break;
           const d = panel.dialogues[di];
           if (d.speaker === 'hakase') {
-            hakBubble.classList.add('is-speaking');
-            ponBubble.classList.remove('is-speaking');
+            if (hakBubble) hakBubble.classList.add('is-speaking');
+            if (ponBubble) ponBubble.classList.remove('is-speaking');
             hakaseEl.textContent = '';
             await _opTypeInto('op-dialogue-text-hakase', d.text, 'owl');
           } else {
-            ponBubble.classList.add('is-speaking');
-            hakBubble.classList.remove('is-speaking');
+            if (ponBubble) ponBubble.classList.add('is-speaking');
+            if (hakBubble) hakBubble.classList.remove('is-speaking');
             ponoEl.textContent = '';
             await _opTypeInto('op-dialogue-text-pono', d.text, 'pono');
           }
