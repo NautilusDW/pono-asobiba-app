@@ -149,6 +149,10 @@
     _dirty: false,                   // 2026-05-07: 編集モードでの未保存変更フラグ。
                                      // pushHistory / scheduleDirtyUpdate で更新。 save 成功で false。
                                      // confirmDiscardIfDirty() の判定に使用 (impl-B から呼ばれる)。
+    lastSavedQid: null,              // 2026-05-07 (Phase 3.5 Fix 2): save 成功時の qid を記録。
+                                     // updateDirtyUI で「現在 qid != lastSavedQid」 の遷移直後を
+                                     // 検知し、 baseline (lastSavedJson) を新 qid で再計算して
+                                     // false-positive dirty (= confirm 誤発火) を防ぐ。
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -230,6 +234,37 @@
       if (r.status === 404) return null;
       if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
       return r.json();
+    });
+  }
+
+  // 2026-05-07 (Phase 3.5 Fix 1): 404 の中には「ファイル本当に無い (=初回作成)」と
+  //   「一時エラー (Cloudflare miss / レートリミット / プロキシ etc.)」 があり、
+  //   後者の null を merge ベースに使うと既存の他問題 per-Q キーが全消失する。
+  //   path が saved-layout.json のような既存想定パスの場合は、500ms 待ってもう 1 度
+  //   GET して二度連続 404 のときだけ「真の 404」とみなす。
+  //   戻り値: { contents: object|null, transient: boolean }
+  //     - contents: 1 度目 or リトライで取れた値 (取れなければ null)
+  //     - transient: 2 度連続 404 で「真の初回作成」とみなせる場合 false、
+  //                  それ以外 (= 一時エラーの可能性が消せない) は true
+  function ghGetContentsWithRetry(path) {
+    return ghGetContents(path).then(function (first) {
+      if (first) return { contents: first, transient: false };
+      // 1 回目 null (= 404)。 一時エラーかもしれないので 500ms 待って再試行。
+      return new Promise(function (resolve) { setTimeout(resolve, 500); }).then(function () {
+        return ghGetContents(path).then(function (second) {
+          if (second) {
+            // 1 回目の 404 は一時エラーだった。
+            return { contents: second, transient: false };
+          }
+          // 2 度連続 404。 真の「ファイル無し」とみなして初回作成扱い。
+          // ただし transient フラグは true のまま立てておき、 呼び出し側で
+          // 念のため localStorage フォールバックを使う判断に利用する。
+          return { contents: null, transient: true };
+        }).catch(function () {
+          // リトライ中に他のエラー (5xx 等) が出た場合は一時エラー扱い。
+          return { contents: null, transient: true };
+        });
+      });
     });
   }
   function ghPutContents(path, contentB64, message, sha) {
@@ -836,6 +871,9 @@
   function save() {
     emit('save:start');
     var data = snapshot();
+    // 2026-05-07 (Phase 3.5 Fix 2): snapshot 開始時の qid を保持。
+    //   save 成功時に state.lastSavedQid に書き込み、 dirty baseline と qid をペアで管理する。
+    var frozenQid = getCurrentQid();
     // 2026-05-07 (Phase 2 / impl-A): per-Q キー導入により snapshot は「現在問題分のみ」を
     //   含む。 既存 JSON (localStorage / GitHub) を盲目的に上書きすると別問題の per-Q キーが
     //   消失するため、 save 時は GET → merge → PUT する。
@@ -867,27 +905,53 @@
     if (!path) {
       // No GH path → local is the source of truth, mark as saved.
       state.lastSavedJson = compact;
+      state.lastSavedQid = frozenQid; // Phase 3.5 Fix 2
       state._dirty = false;
       updateDirtyUI();
       showToast('ローカルに保存しました (GH path 未設定)', 'error');
       emit('save:success', { local: true, remote: false });
       return Promise.resolve({ local: true, remote: false });
     }
-    return ghGetContents(path).then(function (existing) {
+    // 2026-05-07 (Phase 3.5 Fix 1): 単発 ghGetContents の 404 を盲信せず、
+    //   ghGetContentsWithRetry で「真の初回作成」と「一時エラー」を区別する。
+    //   transient (= 2 度連続 404) の場合は localStorage の最新値を merge ベースに使い、
+    //   既存 per-Q キーがクライアント側に残っていればそれを保護する。
+    var putResultMergedRemote = null; // Fix 3: PUT 成功後に _currentLayoutData を再同期するため保持
+    return ghGetContentsWithRetry(path).then(function (result) {
+      var existing = result.contents;
+      var transient = result.transient;
       var sha = existing ? existing.sha : null;
+      var existingRemote = _decodeGhJson(existing);
+      // 2026-05-07 (Phase 3.5 Fix 1): existingRemote が null かつ transient のとき、
+      //   localStorage の最新値 (existingLocal) を merge ベースとして使う。
+      //   これによりサーバが一時 404 を返しても、 クライアントが知る per-Q キーは保持される。
+      if (!existingRemote && transient && existingLocal) {
+        var localFallback = Object.assign({}, existingLocal);
+        delete localFallback.__savedAt;
+        existingRemote = localFallback;
+        console.warn('[LayoutEditor] GH GET returned 404 twice; using localStorage fallback as merge base to protect per-Q keys');
+      }
       // 2026-05-07: 既存 JSON と snapshot を merge してから PUT (他問題の per-Q キーを保持)。
       //   __savedAt は GitHub 用 payload には書き込まない (差分最小化のため)。
-      var existingRemote = _decodeGhJson(existing);
       var mergedRemote = mergeSnapshotOver(existingRemote, data);
       if (mergedRemote && Object.prototype.hasOwnProperty.call(mergedRemote, '__savedAt')) {
         delete mergedRemote.__savedAt;
       }
+      putResultMergedRemote = mergedRemote;
       var pretty = JSON.stringify(mergedRemote, null, 2);
       return ghPutContents(path, utf8Btoa(pretty), 'chore(layout): update saved layout', sha);
     }).then(function () {
       // C2: only clear dirty after remote write succeeds
       state.lastSavedJson = compact;
+      state.lastSavedQid = frozenQid; // Phase 3.5 Fix 2
       state._dirty = false;
+      // 2026-05-07 (Phase 3.5 Fix 3): PUT 成功後、 window._currentLayoutData を
+      //   remote merge 結果で再同期する。 ローカル merge と remote merge は
+      //   存在キー集合が divergent しうるため (= localStorage には無いが remote にはある別タブ
+      //   の per-Q キー等) 、 真実値である mergedRemote に揃える。
+      if (window._currentLayoutData !== undefined && putResultMergedRemote) {
+        window._currentLayoutData = putResultMergedRemote;
+      }
       updateDirtyUI();
       showToast('保存しました');
       emit('save:success', { local: true, remote: true });
@@ -1018,6 +1082,25 @@
   // ====================================================================
 
   function updateDirtyUI() {
+    // 2026-05-07 (Phase 3.5 Fix 2): 問題遷移で qid が変わると snapshot のキー名 (`...|i@qid`)
+    //   が変わるので、 lastSavedJson との比較は必ず false になり _dirty が false-positive で
+    //   true に上がってしまっていた。 結果、 confirmDiscardIfDirty が問題遷移ごとに confirm を
+    //   出してしまい UX が破壊されていた (impl-B が next/prev 4 箇所で呼ぶため特に深刻)。
+    //   修正: 「現在 qid != lastSavedQid」 = 操作なしで qid だけ変わったケースを検知し、
+    //         baseline を新 qid 基準で再計算して _dirty を false 維持する。
+    //         同 qid 内での編集 (= ユーザー操作) は従来通り snapshotDirty で true 化される。
+    var currentQid = getCurrentQid();
+    if (state.lastSavedQid !== null && state.lastSavedQid !== currentQid && !state._dirty) {
+      // qid だけ変わったケース: baseline を再ベース化して dirty 誤発火を防ぐ。
+      try {
+        state.lastSavedJson = JSON.stringify(snapshot());
+        state.lastSavedQid = currentQid;
+      } catch (e) { /* noop */ }
+      var btn0 = $('#le-save');
+      if (btn0) btn0.classList.toggle('dirty', state._dirty);
+      emit('dirty', state._dirty);
+      return;
+    }
     var cur = JSON.stringify(snapshot());
     var snapshotDirty = cur !== state.lastSavedJson;
     // 2026-05-07: state._dirty は「ユーザー操作起点の未保存変更」を表す。
@@ -6520,6 +6603,7 @@
       window._currentLayoutData = cleaned;
     }
     state.lastSavedJson = JSON.stringify(snapshot());
+    state.lastSavedQid = getCurrentQid(); // Phase 3.5 Fix 2: baseline qid
 
     state.enabled = true;
     adjustRulerPos();
@@ -6700,6 +6784,7 @@
     }
     state.enabled = false;
     state._dirty = false;            // 2026-05-07: edit セッション終了時はクリア
+    state.lastSavedQid = null;       // Phase 3.5 Fix 2: 次回 enable で取り直す
     state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
     state.toolbarEl = null;
     state.numericPanelEl = null;
@@ -6758,7 +6843,10 @@
       }
       if (state.enabled && !state._dirty) {
         // clean なら新 qid 基準で lastSavedJson を取り直し、 dirty 誤判定を防ぐ。
-        try { state.lastSavedJson = JSON.stringify(snapshot()); } catch (e2) {}
+        try {
+          state.lastSavedJson = JSON.stringify(snapshot());
+          state.lastSavedQid = getCurrentQid(); // Phase 3.5 Fix 2: baseline と qid をペアで更新
+        } catch (e2) {}
       }
     } catch (e) { /* noop */ }
   }
