@@ -245,7 +245,10 @@
   //   戻り値: { contents: object|null, transient: boolean }
   //     - contents: 1 度目 or リトライで取れた値 (取れなければ null)
   //     - transient: 2 度連続 404 で「真の初回作成」とみなせる場合 false、
-  //                  それ以外 (= 一時エラーの可能性が消せない) は true
+  //                  それ以外 (= 5xx / 例外 / ネットワーク失敗 等の一時エラーの可能性) は true
+  //   呼び出し側 (callsite line ~928) は transient===true のときだけ localStorage
+  //   フォールバックを merge ベースに使う。 真の初回作成では transient:false を返し、
+  //   localStorage 由来の他問題 per-Q キーが意図せず remote に書き戻されないようにする。
   function ghGetContentsWithRetry(path) {
     return ghGetContents(path).then(function (first) {
       if (first) return { contents: first, transient: false };
@@ -256,15 +259,18 @@
             // 1 回目の 404 は一時エラーだった。
             return { contents: second, transient: false };
           }
-          // 2 度連続 404。 真の「ファイル無し」とみなして初回作成扱い。
-          // ただし transient フラグは true のまま立てておき、 呼び出し側で
-          // 念のため localStorage フォールバックを使う判断に利用する。
-          return { contents: null, transient: true };
+          // 2 度連続 404 = 真の「ファイル無し」(初回作成扱い)。
+          // transient:false を返し、 localStorage フォールバックは使わせない。
+          return { contents: null, transient: false };
         }).catch(function () {
-          // リトライ中に他のエラー (5xx 等) が出た場合は一時エラー扱い。
+          // リトライ中に他のエラー (5xx / ネットワーク失敗 等) が出た場合は一時エラー扱い。
+          // 1 回目は 404 だったが 2 回目で例外 → 一時障害の疑いが残るので transient:true。
           return { contents: null, transient: true };
         });
       });
+    }).catch(function () {
+      // 1 回目の GET 自体が 5xx / ネットワーク例外で落ちた場合も一時エラー扱い。
+      return { contents: null, transient: true };
     });
   }
   function ghPutContents(path, contentB64, message, sha) {
