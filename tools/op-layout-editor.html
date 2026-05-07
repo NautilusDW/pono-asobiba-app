@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+<title>Quizland OP レイアウトエディタ</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1c1f26; color: #e5e7eb; overflow: hidden; }
+
+  #app {
+    display: grid;
+    grid-template-columns: 240px 1fr 320px;
+    grid-template-rows: 48px 1fr;
+    grid-template-areas:
+      "header header header"
+      "left   center right";
+    height: 100vh;
+    width: 100vw;
+  }
+
+  header {
+    grid-area: header;
+    background: #14161c;
+    border-bottom: 1px solid #2a2e3a;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    z-index: 10;
+  }
+  header h1 { font-size: 14px; margin: 0; color: #f3f4f6; font-weight: 600; }
+  header .vp-group {
+    display: flex;
+    gap: 4px;
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    padding: 2px;
+  }
+  header .vp-group label {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    color: #cbd5e1;
+  }
+  header .vp-group input { display: none; }
+  header .vp-group input:checked + span {
+    background: #2563eb;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+  header .vp-group span { padding: 4px 10px; border-radius: 3px; }
+  header button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  header button:hover { background: #1d4ed8; }
+  header button.ghost { background: transparent; border: 1px solid #3a4050; color: #cbd5e1; }
+  header button.ghost:hover { background: #20242e; }
+  header .spacer { flex: 1; }
+
+  .panel {
+    background: #181b22;
+    border-right: 1px solid #2a2e3a;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 12px;
+  }
+  #left  { grid-area: left; }
+  #right { grid-area: right; border-right: none; border-left: 1px solid #2a2e3a; padding: 0; }
+
+  .section { margin-bottom: 18px; }
+  .section h3 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .preset-thumb {
+    background: #0f1218;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    cursor: pointer;
+    overflow: hidden;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: border-color 0.15s;
+  }
+  .preset-thumb:hover { border-color: #3a4050; }
+  .preset-thumb.selected { border-color: #10b981; box-shadow: 0 0 0 2px #10b98144; }
+  .preset-thumb img {
+    max-width: 100%;
+    max-height: 70%;
+    object-fit: contain;
+  }
+  .preset-thumb .pname {
+    font-size: 9px;
+    color: #94a3b8;
+    margin-top: 4px;
+    text-align: center;
+    line-height: 1.1;
+    word-break: break-all;
+  }
+
+  /* Center preview */
+  #center {
+    grid-area: center;
+    background: #0a0c10;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #stage-wrap {
+    position: relative;
+    transform-origin: center center;
+  }
+  .stage {
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 0 1px #2a2e3a, 0 8px 24px rgba(0,0,0,0.6);
+  }
+  .stage[data-vc="B"] { width: 1024px; height: 768px; }
+  .stage[data-vc="C"] { width: 1920px; height: 1080px; }
+  .stage[data-vc="D"] { width: 2560px; height: 1080px; }
+
+  .op-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('../assets/images/quizland/OP/OP_BG02.webp');
+    background-size: cover;
+    background-position: center;
+    filter: blur(5px) saturate(0.9) brightness(0.94);
+    transform: scale(1.08);
+  }
+  .op-sides {
+    position: absolute;
+    inset: 0;
+    display: flex;
+  }
+  .op-side {
+    flex: 1;
+    position: relative;
+    transition: opacity 0.25s;
+    opacity: 0.55;
+  }
+  .op-side.is-speaking { opacity: 1.0; }
+
+  .op-char-slot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .op-char-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    display: block;
+  }
+
+  .op-dialogue {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+  .op-dialogue.mode-css {
+    background-image: none;
+  }
+  .op-dialogue-text {
+    color: #2a2424;
+    font-size: 22px;
+    line-height: 1.5;
+    text-align: center;
+    overflow: auto;
+    max-width: 100%;
+    max-height: 100%;
+    word-break: break-word;
+  }
+
+  /* Right pane: tabs + scroll body */
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid #2a2e3a;
+    background: #14161c;
+  }
+  .tab-bar button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 10px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-bar button.active {
+    color: #f3f4f6;
+    border-bottom-color: #2563eb;
+    background: #181b22;
+  }
+  .tab-body {
+    overflow-y: auto;
+    height: calc(100% - 41px);
+    padding: 12px;
+  }
+
+  .prop-row { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
+  .prop-row label { width: 80px; font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+  .prop-row input[type="range"] { flex: 1; min-width: 0; }
+  .prop-row input[type="number"], .prop-row input[type="text"], .prop-row select {
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    color: #e5e7eb;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    min-width: 0;
+  }
+  .prop-row input[type="number"] { width: 56px; flex-shrink: 0; }
+  .prop-row select { flex: 1; }
+  .prop-row input[type="color"] {
+    width: 36px; height: 22px; padding: 0; border: 1px solid #2a2e3a; border-radius: 3px;
+    background: #20242e; cursor: pointer;
+  }
+  .prop-row textarea {
+    flex: 1; background: #20242e; border: 1px solid #2a2e3a; color: #e5e7eb;
+    padding: 6px; border-radius: 3px; font-size: 11px; font-family: inherit;
+    resize: vertical; min-height: 56px;
+  }
+  .radio-row { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+  .radio-row label {
+    flex: 1; min-width: 0; text-align: center; background: #20242e; border: 1px solid #2a2e3a;
+    border-radius: 3px; cursor: pointer; padding: 4px 6px; font-size: 11px; color: #cbd5e1;
+    width: auto;
+  }
+  .radio-row input {
+    position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;
+  }
+  .radio-row label:focus-within { outline: 2px solid #2563eb; outline-offset: 2px; }
+  .radio-row label.checked { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+  .speaker-row {
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .speaker-row .label-text {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .group {
+    background: #14161c;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .group h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid #2a2e3a;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    font-size: 12px;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok { border-color: #10b981; }
+  #toast.err { border-color: #ef4444; }
+
+  .info { font-size: 10px; color: #6b7280; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>Quizland OP レイアウトエディタ</h1>
+    <div class="vp-group" id="vp-group">
+      <label><input type="radio" name="vp" value="B" checked><span>B (1024×768)</span></label>
+      <label><input type="radio" name="vp" value="C"><span>C (1920×1080)</span></label>
+      <label><input type="radio" name="vp" value="D"><span>D (2560×1080)</span></label>
+    </div>
+    <span id="scale-info" style="font-size:11px;color:#94a3b8;"></span>
+    <span class="spacer"></span>
+    <button id="btn-export">エクスポート（コピー）</button>
+    <button id="btn-export-css" class="ghost">CSS DL</button>
+    <button id="btn-export-json" class="ghost">JSON DL</button>
+    <button id="btn-undo-reset" class="ghost" disabled>元に戻す</button>
+    <button id="btn-reset" class="ghost">リセット</button>
+  </header>
+
+  <aside id="left" class="panel">
+    <div class="section">
+      <h3>Pono バリエーション</h3>
+      <div id="pono-grid" class="preset-grid"></div>
+    </div>
+
+    <div class="section">
+      <h3>フレーム</h3>
+      <div id="frame-grid" class="preset-grid"></div>
+      <div class="info">画像モード時に選択中の側に適用</div>
+    </div>
+  </aside>
+
+  <main id="center">
+    <div id="stage-wrap">
+      <div class="stage" id="stage" data-vc="B">
+        <div class="op-bg"></div>
+        <div class="op-sides">
+          <div class="op-side op-side-pono" id="side-pono">
+            <div class="op-char-slot" id="slot-pono">
+              <img id="img-pono" alt="">
+            </div>
+            <div class="op-dialogue op-dialogue-pono" id="box-pono">
+              <div class="op-dialogue-text" id="text-pono"></div>
+            </div>
+          </div>
+          <div class="op-side op-side-hakase is-speaking" id="side-hakase">
+            <div class="op-char-slot" id="slot-hakase">
+              <img id="img-hakase" src="../assets/images/quizland/owl_professor_guide.webp" alt="">
+            </div>
+            <div class="op-dialogue op-dialogue-hakase" id="box-hakase">
+              <div class="op-dialogue-text" id="text-hakase"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside id="right">
+    <div class="speaker-row">
+      <div class="label-text">スピーカー</div>
+      <div class="radio-row" id="speaker-row">
+        <label data-val="hakase"><input type="radio" name="speaker" value="hakase" checked>はかせが話す</label>
+        <label data-val="pono"><input type="radio" name="speaker" value="pono">ポノが話す</label>
+      </div>
+    </div>
+
+    <div class="tab-bar" id="tab-bar">
+      <button class="active" data-tab="pono">ポノ側</button>
+      <button data-tab="hakase">はかせ側</button>
+    </div>
+
+    <div class="tab-body" id="tab-body"></div>
+  </aside>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+const PONO_VARIANTS = [
+  { name: 'dance_hi', path: '../assets/images/characters/pono/dance/dance_hi.webp' },
+  { name: 'dance_hooray', path: '../assets/images/characters/pono/dance/dance_hooray.webp' },
+  { name: 'dance_smile', path: '../assets/images/characters/pono/dance/dance_smile.webp' },
+  { name: 'think_arms_crossed_side', path: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp' },
+  { name: 'think_chin_clasp', path: '../assets/images/characters/pono/dance/think_chin_clasp.webp' }
+];
+
+const FRAME_IMAGES = [
+  { id: 'frame_wide_a', label: '横長フレーム A', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173812_001.png') },
+  { id: 'frame_wide_b', label: '横長フレーム B', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173858_001.png') },
+  { id: 'frame_wide_c', label: '横長フレーム C', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173923_001.png') },
+  { id: 'frame_4_3',    label: '4:3 フレーム',    path: encodeURI('../assets/images/quizland/OP/frame4_3.png') },
+  { id: 'frame_1_1',    label: '1:1 フレーム',    path: encodeURI('../assets/images/quizland/OP/frame_1_1.png') }
+];
+const FRAME_IDS = FRAME_IMAGES.map(f => f.id);
+const DEFAULT_FRAME_ID = 'frame_wide_a';
+
+const VP_DIMS = { B: [1024, 768], C: [1920, 1080], D: [2560, 1080] };
+const STORAGE_PREFIX = 'pono.opLayoutEditor.v1.';
+const LEGACY_STORAGE_PREFIX = 'opLayoutEditor.';
+
+function defaultsFor(vc) {
+  const isB = vc === 'B';
+  const isWide = vc === 'C' || vc === 'D';
+  return {
+    pono: {
+      variant: 'dance_hi',
+      slotW: isWide ? 360 : 300,
+      slotH: isWide ? 480 : 400,
+      slotAspect: 'fixed_0.75',
+      objectPosition: 'bottom',
+      slotOffsetX: 0,
+      slotOffsetY: isWide ? -80 : -60,
+      boxMode: 'image',
+      boxImage: DEFAULT_FRAME_ID,
+      boxW: isWide ? 480 : 400,
+      boxH: isWide ? 180 : 200,
+      boxX: 0,
+      boxY: isWide ? 240 : 200,
+      boxPadding: 32,
+      boxRadius: 16,
+      boxColor: '#d8efcf',
+      sampleText: 'はかせ、あそびに きたよ！'
+    },
+    hakase: {
+      variant: 'hakase',
+      slotW: isWide ? 440 : 360,
+      slotH: isWide ? 480 : 400,
+      slotAspect: 'fixed_1.23',
+      objectPosition: 'bottom',
+      slotOffsetX: 0,
+      slotOffsetY: isWide ? -80 : -60,
+      boxMode: 'image',
+      boxImage: DEFAULT_FRAME_ID,
+      boxW: isWide ? 520 : 420,
+      boxH: isWide ? 180 : 200,
+      boxX: 0,
+      boxY: isWide ? 240 : 200,
+      boxPadding: 32,
+      boxRadius: 16,
+      boxColor: '#fff3d6',
+      sampleText: 'ほっほっほ…ポノか。よくきたのう'
+    },
+    speaker: 'hakase'
+  };
+}
+
+let currentVC = 'B';
+let currentTab = 'pono';
+let state = {
+  B: load('B') || defaultsFor('B'),
+  C: load('C') || defaultsFor('C'),
+  D: load('D') || defaultsFor('D')
+};
+
+function migrateFrameIds(parsed) {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  ['pono', 'hakase'].forEach(sideKey => {
+    const side = parsed[sideKey];
+    if (!side || typeof side !== 'object') return;
+    if (!FRAME_IDS.includes(side.boxImage)) {
+      side.boxImage = DEFAULT_FRAME_ID;
+    }
+  });
+  return parsed;
+}
+
+function load(vc) {
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + vc);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return migrateFrameIds(parsed);
+  } catch (e) { return null; }
+}
+function save(vc) {
+  try { localStorage.setItem(STORAGE_PREFIX + vc, JSON.stringify(state[vc])); } catch (e) {}
+}
+let _saveTimer = null;
+function saveDebounced(vc) {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => save(vc), 200);
+}
+
+function toast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (kind || 'ok');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.className = ''; }, 1800);
+}
+
+function buildPresetGrid() {
+  const ponoGrid = document.getElementById('pono-grid');
+  PONO_VARIANTS.forEach(v => {
+    const div = document.createElement('div');
+    div.className = 'preset-thumb';
+    div.dataset.variant = v.name;
+    const img = document.createElement('img');
+    img.src = v.path;
+    img.alt = v.name;
+    const lbl = document.createElement('div');
+    lbl.className = 'pname';
+    lbl.textContent = v.name;
+    div.appendChild(img);
+    div.appendChild(lbl);
+    div.addEventListener('click', () => {
+      state[currentVC].pono.variant = v.name;
+      save(currentVC);
+      render();
+      buildRightPane();
+    });
+    ponoGrid.appendChild(div);
+  });
+
+  const frameGrid = document.getElementById('frame-grid');
+  FRAME_IMAGES.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'preset-thumb';
+    div.dataset.frame = f.id;
+    const img = document.createElement('img');
+    img.src = f.path;
+    img.alt = f.label;
+    const lbl = document.createElement('div');
+    lbl.className = 'pname';
+    lbl.textContent = f.label;
+    div.appendChild(img);
+    div.appendChild(lbl);
+    div.addEventListener('click', () => {
+      const side = state[currentVC][currentTab];
+      side.boxImage = f.id;
+      if (side.boxMode !== 'image') side.boxMode = 'image';
+      save(currentVC);
+      render();
+      buildRightPane();
+    });
+    frameGrid.appendChild(div);
+  });
+}
+
+function aspectFromSlot(s) {
+  if (s.slotAspect === 'free') return null;
+  if (s.slotAspect === 'fixed_0.75') return 0.75;
+  if (s.slotAspect === 'fixed_1.0') return 1.0;
+  if (s.slotAspect === 'fixed_1.23') return 1.23;
+  return null;
+}
+
+function ponoPathByName(name) {
+  const v = PONO_VARIANTS.find(x => x.name === name);
+  return v ? v.path : PONO_VARIANTS[0].path;
+}
+function framePathById(id) {
+  const f = FRAME_IMAGES.find(x => x.id === id);
+  return f ? f.path : FRAME_IMAGES[0].path;
+}
+
+function applySideToDom(sideKey) {
+  const s = state[currentVC][sideKey];
+  const slot = document.getElementById('slot-' + sideKey);
+  const img = document.getElementById('img-' + sideKey);
+  const box = document.getElementById('box-' + sideKey);
+  const txt = document.getElementById('text-' + sideKey);
+
+  slot.style.width = s.slotW + 'px';
+  slot.style.height = s.slotH + 'px';
+  const ar = aspectFromSlot(s);
+  slot.style.aspectRatio = ar ? String(ar) : '';
+  slot.style.transform = `translate(calc(-50% + ${s.slotOffsetX}px), calc(-50% + ${s.slotOffsetY}px))`;
+  img.style.objectPosition = `${s.objectPosition === 'top' ? 'top' : s.objectPosition === 'center' ? 'center' : 'bottom'} center`;
+
+  if (sideKey === 'pono') {
+    img.src = ponoPathByName(s.variant);
+  }
+
+  box.style.width = s.boxW + 'px';
+  box.style.height = s.boxH + 'px';
+  box.style.transform = `translate(calc(-50% + ${s.boxX}px), calc(-50% + ${s.boxY}px))`;
+  box.style.padding = s.boxPadding + 'px';
+  if (s.boxMode === 'image') {
+    box.classList.remove('mode-css');
+    box.style.backgroundImage = `url('${framePathById(s.boxImage)}')`;
+    box.style.backgroundColor = '';
+    box.style.borderRadius = '';
+  } else {
+    box.classList.add('mode-css');
+    box.style.backgroundImage = 'none';
+    box.style.backgroundColor = s.boxColor;
+    box.style.borderRadius = s.boxRadius + 'px';
+  }
+  txt.textContent = s.sampleText;
+}
+
+function render() {
+  const stage = document.getElementById('stage');
+  stage.dataset.vc = currentVC;
+  applySideToDom('pono');
+  applySideToDom('hakase');
+
+  const sp = state[currentVC].speaker;
+  document.getElementById('side-pono').classList.toggle('is-speaking', sp === 'pono');
+  document.getElementById('side-hakase').classList.toggle('is-speaking', sp === 'hakase');
+
+  document.querySelectorAll('#pono-grid .preset-thumb').forEach(el => {
+    el.classList.toggle('selected', el.dataset.variant === state[currentVC].pono.variant);
+  });
+  document.querySelectorAll('#frame-grid .preset-thumb').forEach(el => {
+    const sideFrame = state[currentVC][currentTab].boxImage;
+    el.classList.toggle('selected', el.dataset.frame === sideFrame);
+  });
+
+  document.querySelectorAll('#vp-group input').forEach(r => { r.checked = (r.value === currentVC); });
+  document.querySelectorAll('#speaker-row label').forEach(lb => {
+    lb.classList.toggle('checked', lb.dataset.val === sp);
+    const inp = lb.querySelector('input');
+    if (inp) inp.checked = (lb.dataset.val === sp);
+  });
+  document.querySelectorAll('#tab-bar button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === currentTab);
+  });
+
+  rescaleStage();
+}
+
+function rescaleStage() {
+  const wrap = document.getElementById('stage-wrap');
+  const center = document.getElementById('center');
+  const [w, h] = VP_DIMS[currentVC];
+  const padding = 40;
+  const availW = Math.max(100, center.clientWidth - padding);
+  const availH = Math.max(100, center.clientHeight - padding);
+  const scale = Math.min(availW / w, availH / h, 1);
+  wrap.style.transform = `scale(${scale})`;
+  wrap.style.width = w + 'px';
+  wrap.style.height = h + 'px';
+  const info = document.getElementById('scale-info');
+  if (info) {
+    info.textContent = (scale * 100).toFixed(0) + '% (実寸 ' + w + '×' + h + ')';
+  }
+}
+
+function makeRange(label, min, max, step, key, sideKey) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const range = document.createElement('input');
+  range.type = 'range';
+  range.min = min; range.max = max; range.step = step;
+  const num = document.createElement('input');
+  num.type = 'number';
+  num.min = min; num.max = max; num.step = step;
+  const cur = state[currentVC][sideKey][key];
+  range.value = cur;
+  num.value = cur;
+  const apply = (v) => {
+    let n = Number(v);
+    if (!Number.isFinite(n)) return;
+    n = Math.min(Math.max(n, Number(min)), Number(max));
+    state[currentVC][sideKey][key] = n;
+    if (document.activeElement !== range) range.value = n;
+    if (document.activeElement !== num) num.value = n;
+    save(currentVC);
+    applySideToDom(sideKey);
+  };
+  range.addEventListener('input', () => apply(range.value));
+  num.addEventListener('input', () => apply(num.value));
+  num.addEventListener('change', () => {
+    let n = Number(num.value);
+    if (!Number.isFinite(n)) n = state[currentVC][sideKey][key];
+    n = Math.min(Math.max(n, Number(min)), Number(max));
+    state[currentVC][sideKey][key] = n;
+    num.value = n;
+    range.value = n;
+    save(currentVC);
+    applySideToDom(sideKey);
+  });
+  row.appendChild(lab);
+  row.appendChild(range);
+  row.appendChild(num);
+  return row;
+}
+
+let _radioUid = 0;
+function makeRadio(label, key, sideKey, options, opts) {
+  const rebuild = !!(opts && opts.rebuild);
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const rr = document.createElement('div');
+  rr.className = 'radio-row';
+  const groupName = sideKey + '-' + key + '-' + (++_radioUid);
+  options.forEach(opt => {
+    const lbl = document.createElement('label');
+    lbl.dataset.val = opt.value;
+    if (state[currentVC][sideKey][key] === opt.value) lbl.classList.add('checked');
+    const inp = document.createElement('input');
+    inp.type = 'radio';
+    inp.name = groupName;
+    inp.value = opt.value;
+    const inputId = groupName + '-' + opt.value;
+    inp.id = inputId;
+    lbl.htmlFor = inputId;
+    if (state[currentVC][sideKey][key] === opt.value) inp.checked = true;
+    const txt = document.createTextNode(opt.text);
+    lbl.appendChild(inp);
+    lbl.appendChild(txt);
+    inp.addEventListener('change', () => {
+      if (!inp.checked) return;
+      state[currentVC][sideKey][key] = opt.value;
+      save(currentVC);
+      // Update checked styling among siblings without rebuilding
+      rr.querySelectorAll('label').forEach(l => {
+        l.classList.toggle('checked', l.dataset.val === opt.value);
+      });
+      if (rebuild) {
+        buildRightPane();
+      } else {
+        applySideToDom(sideKey);
+      }
+    });
+    rr.appendChild(lbl);
+  });
+  row.appendChild(lab);
+  row.appendChild(rr);
+  return row;
+}
+
+function makeSelect(label, key, sideKey, options) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const sel = document.createElement('select');
+  options.forEach(opt => {
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.text;
+    if (state[currentVC][sideKey][key] === opt.value) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    state[currentVC][sideKey][key] = sel.value;
+    save(currentVC);
+    render();
+  });
+  row.appendChild(lab);
+  row.appendChild(sel);
+  return row;
+}
+
+function makeColor(label, key, sideKey) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.value = state[currentVC][sideKey][key];
+  inp.addEventListener('input', () => {
+    state[currentVC][sideKey][key] = inp.value;
+    save(currentVC);
+    applySideToDom(sideKey);
+  });
+  row.appendChild(lab);
+  row.appendChild(inp);
+  return row;
+}
+
+function makeTextarea(label, key, sideKey) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  row.style.alignItems = 'flex-start';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const ta = document.createElement('textarea');
+  ta.value = state[currentVC][sideKey][key];
+  ta.rows = 3;
+  ta.addEventListener('input', () => {
+    state[currentVC][sideKey][key] = ta.value;
+    saveDebounced(currentVC);
+    applySideToDom(sideKey);
+  });
+  row.appendChild(lab);
+  row.appendChild(ta);
+  return row;
+}
+
+function buildRightPane() {
+  const body = document.getElementById('tab-body');
+  body.textContent = '';
+  const sideKey = currentTab;
+  const s = state[currentVC][sideKey];
+
+  const slotGroup = document.createElement('div');
+  slotGroup.className = 'group';
+  const slotH = document.createElement('h4');
+  slotH.textContent = 'Slot（キャラスロット）';
+  slotGroup.appendChild(slotH);
+  if (sideKey === 'pono') {
+    slotGroup.appendChild(makeSelect('Pono画像', 'variant', sideKey,
+      PONO_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
+  }
+  slotGroup.appendChild(makeRange('幅 (px)', 100, 600, 1, 'slotW', sideKey));
+  slotGroup.appendChild(makeRange('高さ (px)', 100, 800, 1, 'slotH', sideKey));
+  slotGroup.appendChild(makeRadio('aspect', 'slotAspect', sideKey, [
+    { value: 'free', text: '自由' },
+    { value: 'fixed_0.75', text: '0.75' },
+    { value: 'fixed_1.0', text: '1.0' },
+    { value: 'fixed_1.23', text: '1.23' }
+  ]));
+  slotGroup.appendChild(makeRadio('object-pos', 'objectPosition', sideKey, [
+    { value: 'top', text: '上' },
+    { value: 'center', text: '中' },
+    { value: 'bottom', text: '下' }
+  ]));
+  slotGroup.appendChild(makeRange('オフセットX', -200, 200, 1, 'slotOffsetX', sideKey));
+  slotGroup.appendChild(makeRange('オフセットY', -200, 200, 1, 'slotOffsetY', sideKey));
+  body.appendChild(slotGroup);
+
+  const boxGroup = document.createElement('div');
+  boxGroup.className = 'group';
+  const boxH = document.createElement('h4');
+  boxH.textContent = 'Box（ダイアログ）';
+  boxGroup.appendChild(boxH);
+  boxGroup.appendChild(makeRadio('モード', 'boxMode', sideKey, [
+    { value: 'image', text: '画像' },
+    { value: 'css', text: 'CSS' }
+  ], { rebuild: true }));
+  if (s.boxMode === 'image') {
+    boxGroup.appendChild(makeSelect('フレーム画像', 'boxImage', sideKey,
+      FRAME_IMAGES.map(f => ({ value: f.id, text: f.label }))));
+  }
+  boxGroup.appendChild(makeRange('幅 (px)', 200, 800, 1, 'boxW', sideKey));
+  boxGroup.appendChild(makeRange('高さ (px)', 80, 300, 1, 'boxH', sideKey));
+  boxGroup.appendChild(makeRange('X', -200, 400, 1, 'boxX', sideKey));
+  boxGroup.appendChild(makeRange('Y', -200, 400, 1, 'boxY', sideKey));
+  boxGroup.appendChild(makeRange('padding', 8, 80, 1, 'boxPadding', sideKey));
+  if (s.boxMode === 'css') {
+    boxGroup.appendChild(makeRange('角丸', 0, 40, 1, 'boxRadius', sideKey));
+    boxGroup.appendChild(makeColor('背景色', 'boxColor', sideKey));
+  }
+  boxGroup.appendChild(makeTextarea('サンプル文', 'sampleText', sideKey));
+  body.appendChild(boxGroup);
+}
+
+function buildHeader() {
+  document.querySelectorAll('#vp-group input').forEach(r => {
+    r.addEventListener('change', () => {
+      if (r.checked) {
+        currentVC = r.value;
+        render();
+        buildRightPane();
+      }
+    });
+  });
+
+  document.getElementById('btn-export').addEventListener('click', exportCopy);
+  document.getElementById('btn-export-css').addEventListener('click', () => download('css'));
+  document.getElementById('btn-export-json').addEventListener('click', () => download('json'));
+  document.getElementById('btn-reset').addEventListener('click', resetCurrent);
+  document.getElementById('btn-undo-reset').addEventListener('click', undoReset);
+
+  document.querySelectorAll('#tab-bar button').forEach(b => {
+    b.addEventListener('click', () => {
+      currentTab = b.dataset.tab;
+      buildRightPane();
+      render();
+    });
+  });
+
+  document.querySelectorAll('#speaker-row label').forEach(lb => {
+    lb.addEventListener('click', (e) => {
+      e.preventDefault();
+      state[currentVC].speaker = lb.dataset.val;
+      save(currentVC);
+      render();
+    });
+  });
+}
+
+let _lastResetSnapshot = null;
+function resetCurrent() {
+  if (!confirm('現在のビューポート(' + currentVC + ')の設定をリセットします。よろしいですか？')) {
+    return;
+  }
+  _lastResetSnapshot = { vc: currentVC, snap: JSON.parse(JSON.stringify(state[currentVC])) };
+  state[currentVC] = defaultsFor(currentVC);
+  save(currentVC);
+  render();
+  buildRightPane();
+  const undoBtn = document.getElementById('btn-undo-reset');
+  if (undoBtn) undoBtn.disabled = false;
+  toast('現在のビューポートをリセットしました', 'ok');
+}
+
+function undoReset() {
+  if (!_lastResetSnapshot) return;
+  const { vc, snap } = _lastResetSnapshot;
+  state[vc] = snap;
+  save(vc);
+  _lastResetSnapshot = null;
+  const undoBtn = document.getElementById('btn-undo-reset');
+  if (undoBtn) undoBtn.disabled = true;
+  // If we are currently on the snapshot's vc, refresh; otherwise just save quietly
+  if (currentVC === vc) {
+    render();
+    buildRightPane();
+  }
+  toast('元に戻しました', 'ok');
+}
+
+function cssEscapeUrl(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function buildCSS() {
+  const lines = [];
+  lines.push('/* Quizland OP layout — generated ' + new Date().toISOString() + ' */');
+  const mediaFor = {
+    B: '@media (min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10)',
+    C: '@media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10)',
+    D: '@media (min-aspect-ratio: 19/10)'
+  };
+  ['B', 'C', 'D'].forEach(vc => {
+    const s = state[vc];
+    lines.push('');
+    lines.push('/* viewport class ' + vc + ' (' + VP_DIMS[vc][0] + 'x' + VP_DIMS[vc][1] + ') */');
+    lines.push(mediaFor[vc] + ' {');
+    ['pono', 'hakase'].forEach(sideKey => {
+      const ss = s[sideKey];
+      const ar = aspectFromSlot(ss);
+      lines.push('  .op-side-' + sideKey + ' .op-char-slot {');
+      lines.push('    width: ' + ss.slotW + 'px;');
+      lines.push('    height: ' + ss.slotH + 'px;');
+      if (ar) lines.push('    aspect-ratio: ' + ar + ';');
+      lines.push('    transform: translate(calc(-50% + ' + ss.slotOffsetX + 'px), calc(-50% + ' + ss.slotOffsetY + 'px));');
+      lines.push('  }');
+      lines.push('  .op-side-' + sideKey + ' .op-char-slot img {');
+      lines.push('    object-position: ' + ss.objectPosition + ' center;');
+      lines.push('  }');
+      lines.push('  .op-side-' + sideKey + ' .op-dialogue {');
+      lines.push('    width: ' + ss.boxW + 'px;');
+      lines.push('    height: ' + ss.boxH + 'px;');
+      lines.push('    transform: translate(calc(-50% + ' + ss.boxX + 'px), calc(-50% + ' + ss.boxY + 'px));');
+      lines.push('    padding: ' + ss.boxPadding + 'px;');
+      if (ss.boxMode === 'image') {
+        lines.push('    background-image: url("' + cssEscapeUrl(framePathById(ss.boxImage)) + '");');
+        lines.push('    background-size: 100% 100%;');
+        lines.push('    background-repeat: no-repeat;');
+        lines.push('    background-color: transparent;');
+        lines.push('    border-radius: 0;');
+      } else {
+        lines.push('    background-image: none;');
+        lines.push('    background-color: ' + ss.boxColor + ';');
+        lines.push('    border-radius: ' + ss.boxRadius + 'px;');
+      }
+      lines.push('  }');
+    });
+    lines.push('}');
+  });
+  return lines.join('\n');
+}
+
+function buildJSON() {
+  return JSON.stringify({ B: state.B, C: state.C, D: state.D }, null, 2);
+}
+
+function exportCopy() {
+  const text = buildCSS() + '\n\n/* JSON */\n' + buildJSON();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => toast('CSS + JSON をコピーしました', 'ok'),
+      () => toast('クリップボードコピーに失敗', 'err')
+    );
+  } else {
+    toast('clipboard 利用不可', 'err');
+  }
+}
+
+function download(kind) {
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').replace(/T/, '_').slice(0, 19);
+  let blob, fname;
+  if (kind === 'css') {
+    blob = new Blob([buildCSS()], { type: 'text/css' });
+    fname = 'op-layout-' + ts + '.css';
+  } else {
+    blob = new Blob([buildJSON()], { type: 'application/json' });
+    fname = 'op-layout-' + ts + '.json';
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+  toast(fname + ' をダウンロード', 'ok');
+}
+
+function migrateLegacyStorage() {
+  try {
+    ['B', 'C', 'D'].forEach(vc => {
+      const legacyKey = LEGACY_STORAGE_PREFIX + vc;
+      const newKey = STORAGE_PREFIX + vc;
+      const legacyVal = localStorage.getItem(legacyKey);
+      const newVal = localStorage.getItem(newKey);
+      if (legacyVal && !newVal) {
+        try { localStorage.setItem(newKey, legacyVal); } catch (e) {}
+        try { localStorage.removeItem(legacyKey); } catch (e) {}
+      } else if (legacyVal && newVal) {
+        // Best-effort cleanup if both exist
+        try { localStorage.removeItem(legacyKey); } catch (e) {}
+      }
+    });
+  } catch (e) {}
+}
+
+function init() {
+  migrateLegacyStorage();
+  // Re-load state in case migration produced new values (state was initialized at module load)
+  state = {
+    B: load('B') || defaultsFor('B'),
+    C: load('C') || defaultsFor('C'),
+    D: load('D') || defaultsFor('D')
+  };
+  buildPresetGrid();
+  buildHeader();
+  buildRightPane();
+  render();
+
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => rescaleStage());
+    ro.observe(document.getElementById('center'));
+  }
+  window.addEventListener('resize', rescaleStage);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
