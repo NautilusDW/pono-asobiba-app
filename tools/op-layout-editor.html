@@ -385,6 +385,153 @@
   .height-guides .hg-line.hg-pono { color: #fde047; }
   .height-guides .hg-line.hg-hakase { color: #67e8f9; }
 
+  /* Box guides (Box 上下端の可視化). Editor-only, NOT exported.
+     Distinguished from height-guides by dotted line style + slightly thicker. */
+  .box-guides {
+    display: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+  }
+  .box-guides.is-on { display: block; }
+  .box-guides .bg-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px dotted #fde047;
+    pointer-events: none;
+  }
+  .box-guides .bg-line.bg-pono { border-top-color: #fde047; color: #fde047; }
+  .box-guides .bg-line.bg-pono.bg-bot { border-top-color: #fde04788; }
+  .box-guides .bg-line.bg-hakase { border-top-color: #67e8f9; color: #67e8f9; }
+  .box-guides .bg-line.bg-hakase.bg-bot { border-top-color: #67e8f988; }
+  .box-guides .bg-label {
+    position: absolute;
+    left: 6px;
+    top: -12px;
+    background: rgba(0, 0, 0, 0.65);
+    color: inherit;
+    font-size: 14px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Center vertical line (常時表示の中央指標). Editor-only, NOT exported.
+     z-index: 40 — below safe-area-16-9 (50) and box/height guides (60). */
+  .center-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.18);
+    z-index: 40;
+    pointer-events: none;
+  }
+
+  /* Single Box 1 個モード (機能 5).
+     Editor-only DOM; default hidden. Activated by .stage[data-single-box="on"]. */
+  .single-box-wrapper {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .stage[data-single-box="on"] .single-box-wrapper { display: block; }
+  /* When Single Box mode is ON, hide per-side dialogues but keep characters visible. */
+  .stage[data-single-box="on"] .op-sides .op-dialogue { display: none; }
+
+  .op-dialogue-single {
+    position: absolute;
+    /* width / height / top set via inline style from applySingleBoxToDom */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    pointer-events: auto;
+  }
+  .op-dialogue-single.mode-css {
+    background-image: none;
+  }
+  .op-dialogue-single .op-dialogue-text {
+    color: #2a2424;
+    font-size: 22px;
+    line-height: 1.5;
+    text-align: center;
+    overflow: auto;
+    max-width: 100%;
+    max-height: 100%;
+    word-break: break-word;
+  }
+
+  /* Single-box guide line variant (dashdot, neutral white). */
+  .box-guides .bg-line.bg-single {
+    border-top: 2px dashed #e5e7eb;
+    color: #e5e7eb;
+  }
+  .box-guides .bg-line.bg-single.bg-bot { border-top-color: #e5e7eb88; }
+
+  /* Right pane: when single-box mode is ON, dim the per-side Box group. */
+  .group.is-single-mode {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* Single Box dedicated section (visible only when single-box mode is ON). */
+  .single-box-section {
+    background: #14161c;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .single-box-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #d1fae5;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Disabled mirror row state */
+  .mirror-row.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+
+  /* Mirror toggle in tab area */
+  .mirror-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    border-radius: 3px;
+    padding: 6px 8px;
+    margin: 0 12px 8px 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mirror-row input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+  }
+  .mirror-row .mirror-text {
+    font-size: 11px;
+    color: #cbd5e1;
+  }
+  .mirror-row.is-on { border-color: #10b981; background: #14322a; }
+  .mirror-row.is-on .mirror-text { color: #d1fae5; }
+
   /* Aspect-lock checkbox row */
   .lock-row {
     display: flex;
@@ -450,6 +597,8 @@
     <span id="scale-info" style="font-size:11px;color:#94a3b8;"></span>
     <span class="spacer"></span>
     <button id="btn-toggle-height-guides" class="ghost" type="button">📏 高さガイド</button>
+    <button id="btn-toggle-box-guides" class="ghost" type="button">📐 Box ガイド</button>
+    <button id="btn-toggle-single-box" class="ghost" type="button">📦 Box 1 個</button>
     <button id="btn-export">エクスポート（コピー）</button>
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
@@ -492,10 +641,17 @@
             </div>
           </div>
         </div>
+        <div class="single-box-wrapper" id="single-box-wrapper">
+          <div class="op-dialogue op-dialogue-single" id="box-single">
+            <div class="op-dialogue-text" id="text-single"></div>
+          </div>
+        </div>
         <div class="safe-area-16-9" aria-hidden="true">
           <span class="safe-area-label">16:9 セーフエリア</span>
         </div>
         <div class="height-guides" id="height-guides" aria-hidden="true"></div>
+        <div class="box-guides" id="box-guides" aria-hidden="true"></div>
+        <div class="center-line" aria-hidden="true"></div>
       </div>
     </div>
   </main>
@@ -508,6 +664,11 @@
         <label data-val="pono"><input type="radio" name="speaker" value="pono">ポノが話す</label>
       </div>
     </div>
+
+    <label class="mirror-row" id="mirror-row">
+      <input type="checkbox" id="mirror-checkbox">
+      <span class="mirror-text">🪞 左右ミラー（編集を対称コピー）</span>
+    </label>
 
     <div class="tab-bar" id="tab-bar">
       <button class="active" data-tab="pono">ポノ側</button>
@@ -545,6 +706,9 @@ const VP_DIMS = { B: [1024, 768], C: [1920, 1080], D: [2560, 1080] };
 const STORAGE_PREFIX = 'pono.opLayoutEditor.v1.';
 const LEGACY_STORAGE_PREFIX = 'opLayoutEditor.';
 const HEIGHT_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showHeightGuides';
+const BOX_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showBoxGuides';
+const MIRROR_MODE_STORAGE_KEY = STORAGE_PREFIX + 'mirrorMode';
+const SINGLE_BOX_MODE_STORAGE_KEY = STORAGE_PREFIX + 'singleBoxMode';
 
 // Frame natural aspect cache: id -> naturalW / naturalH (number) or undefined while loading.
 const FRAME_NATURAL_ASPECT = {};
@@ -589,9 +753,96 @@ function saveHeightGuidesPref() {
   try { localStorage.setItem(HEIGHT_GUIDES_STORAGE_KEY, showHeightGuides ? 'true' : 'false'); } catch (e) {}
 }
 
+let showBoxGuides = false;
+function loadBoxGuidesPref() {
+  try {
+    const v = localStorage.getItem(BOX_GUIDES_STORAGE_KEY);
+    showBoxGuides = v === 'true';
+  } catch (e) { showBoxGuides = false; }
+}
+function saveBoxGuidesPref() {
+  try { localStorage.setItem(BOX_GUIDES_STORAGE_KEY, showBoxGuides ? 'true' : 'false'); } catch (e) {}
+}
+
+let mirrorMode = false;
+// Re-entrancy guard so mirror propagation does not recurse.
+let _mirroring = false;
+function loadMirrorModePref() {
+  try {
+    const v = localStorage.getItem(MIRROR_MODE_STORAGE_KEY);
+    mirrorMode = v === 'true';
+  } catch (e) { mirrorMode = false; }
+}
+function saveMirrorModePref() {
+  try { localStorage.setItem(MIRROR_MODE_STORAGE_KEY, mirrorMode ? 'true' : 'false'); } catch (e) {}
+}
+
+let singleBoxMode = false;
+function loadSingleBoxModePref() {
+  try {
+    const v = localStorage.getItem(SINGLE_BOX_MODE_STORAGE_KEY);
+    singleBoxMode = v === 'true';
+  } catch (e) { singleBoxMode = false; }
+}
+function saveSingleBoxModePref() {
+  try { localStorage.setItem(SINGLE_BOX_MODE_STORAGE_KEY, singleBoxMode ? 'true' : 'false'); } catch (e) {}
+}
+
+// Keys that get mirror-copied (with sign reversal for X-axis offsets)
+const MIRROR_COPY_KEYS = [
+  'boxW', 'boxH', 'boxY', 'boxPadding', 'boxRadius',
+  'boxImage', 'boxMode', 'boxColor',
+  'aspectLock', 'aspectLockRatio',
+  'slotW', 'slotH', 'slotOffsetY', 'slotAspect', 'objectPosition',
+  'fontSize'
+];
+const MIRROR_FLIP_KEYS = ['boxX', 'slotOffsetX'];
+// Keys that are NEVER mirrored:
+//   variant (Pono image) — Hakase has no variant
+//   sampleText            — each character has unique words
+//   speaker               — global state, not per-side
+
+function propagateMirror(sideKey, key) {
+  if (!mirrorMode || _mirroring) return;
+  if (key && key !== '__all__' && !MIRROR_COPY_KEYS.includes(key) && !MIRROR_FLIP_KEYS.includes(key)) {
+    return;
+  }
+  const otherSide = sideKey === 'pono' ? 'hakase' : 'pono';
+  const src = state[currentVC][sideKey];
+  const dst = state[currentVC][otherSide];
+  if (!src || !dst) return;
+  _mirroring = true;
+  try {
+    if (key === '__all__' || !key) {
+      // Bulk sync: copy every relevant key
+      MIRROR_COPY_KEYS.forEach(k => { if (k in src) dst[k] = src[k]; });
+      MIRROR_FLIP_KEYS.forEach(k => { if (typeof src[k] === 'number') dst[k] = -src[k]; });
+    } else if (MIRROR_FLIP_KEYS.includes(key)) {
+      if (typeof src[key] === 'number') dst[key] = -src[key];
+    } else {
+      dst[key] = src[key];
+    }
+    save(currentVC);
+    applySideToDom(otherSide);
+  } finally {
+    _mirroring = false;
+  }
+}
+
 function defaultsFor(vc) {
   const isB = vc === 'B';
   const isWide = vc === 'C' || vc === 'D';
+  // Per-VC defaults for the Single Box (機能 5 — Box 1 個モード).
+  // boxX is removed (always horizontally centered); other keys mirror per-side schema.
+  const singleBoxDefaults = (() => {
+    if (vc === 'B') {
+      return { boxW: 800,  boxH: 180, boxY: 540 };
+    } else if (vc === 'C') {
+      return { boxW: 1200, boxH: 220, boxY: 820 };
+    } else { // D
+      return { boxW: 1400, boxH: 240, boxY: 820 };
+    }
+  })();
   return {
     pono: {
       variant: 'dance_hi',
@@ -610,6 +861,7 @@ function defaultsFor(vc) {
       boxPadding: 32,
       boxRadius: 16,
       boxColor: '#d8efcf',
+      fontSize: isB ? 16 : 18,
       aspectLock: false,
       aspectLockRatio: 0,
       sampleText: 'はかせ、あそびに きたよ！'
@@ -631,11 +883,26 @@ function defaultsFor(vc) {
       boxPadding: 32,
       boxRadius: 16,
       boxColor: '#fff3d6',
+      fontSize: isB ? 16 : 18,
       aspectLock: false,
       aspectLockRatio: 0,
       sampleText: 'ほっほっほ…ポノか。よくきたのう'
     },
-    speaker: 'hakase'
+    speaker: 'hakase',
+    singleBox: {
+      boxW: singleBoxDefaults.boxW,
+      boxH: singleBoxDefaults.boxH,
+      boxY: singleBoxDefaults.boxY,
+      boxPadding: 32,
+      boxRadius: 16,
+      boxMode: 'image',
+      boxImage: DEFAULT_FRAME_ID,
+      boxColor: '#fef3c7',
+      aspectLock: false,
+      aspectLockRatio: 0,
+      fontSize: isB ? 16 : 18,
+      speakerSrc: 'pono'
+    }
   };
 }
 
@@ -649,6 +916,9 @@ let state = {
 
 function migrateFrameIds(parsed) {
   if (!parsed || typeof parsed !== 'object') return parsed;
+  // Detect VC from data shape (used to pick correct fontSize default).
+  // We can't know vc from `parsed` alone, so caller may be migrating any of B/C/D.
+  // We default to C/D-ish 18 if both slot/box dims are large, else 16. As fallback, 16.
   ['pono', 'hakase'].forEach(sideKey => {
     const side = parsed[sideKey];
     if (!side || typeof side !== 'object') return;
@@ -658,6 +928,10 @@ function migrateFrameIds(parsed) {
     if (typeof side.aspectLock !== 'boolean') side.aspectLock = false;
     if (typeof side.aspectLockRatio !== 'number' || !Number.isFinite(side.aspectLockRatio)) {
       side.aspectLockRatio = 0;
+    }
+    if (typeof side.fontSize !== 'number' || !Number.isFinite(side.fontSize) || side.fontSize <= 0) {
+      // Heuristic: wider boxes (>= 480) get 18, smaller (B-class) get 16.
+      side.fontSize = (Number(side.boxW) >= 480) ? 18 : 16;
     }
   });
   return parsed;
@@ -788,6 +1062,11 @@ function applySideToDom(sideKey) {
     box.style.borderRadius = s.boxRadius + 'px';
   }
   txt.textContent = s.sampleText;
+  if (typeof s.fontSize === 'number' && Number.isFinite(s.fontSize) && s.fontSize > 0) {
+    txt.style.fontSize = s.fontSize + 'px';
+  } else {
+    txt.style.fontSize = '';
+  }
 }
 
 function renderHeightGuides() {
@@ -829,6 +1108,44 @@ function renderHeightGuides() {
   });
 }
 
+function renderBoxGuides() {
+  const guides = document.getElementById('box-guides');
+  if (!guides) return;
+  guides.classList.toggle('is-on', !!showBoxGuides);
+  guides.textContent = '';
+  if (!showBoxGuides) return;
+  const stage = document.getElementById('stage');
+  if (!stage) return;
+  const stageRect = stage.getBoundingClientRect();
+  const wrap = document.getElementById('stage-wrap');
+  const m = wrap && wrap.style.transform ? /scale\(([0-9.]+)\)/.exec(wrap.style.transform) : null;
+  const sc = m ? Number(m[1]) : 1;
+  const inv = sc > 0 ? 1 / sc : 1;
+
+  function buildLine(klass, topPx, labelText) {
+    const line = document.createElement('div');
+    line.className = 'bg-line ' + klass;
+    line.style.top = topPx + 'px';
+    const lbl = document.createElement('span');
+    lbl.className = 'bg-label';
+    lbl.textContent = labelText;
+    line.appendChild(lbl);
+    guides.appendChild(line);
+  }
+
+  ['pono', 'hakase'].forEach(sideKey => {
+    const box = document.getElementById('box-' + sideKey);
+    if (!box) return;
+    const r = box.getBoundingClientRect();
+    const topY = (r.top - stageRect.top) * inv;
+    const botY = (r.bottom - stageRect.top) * inv;
+    const tag = sideKey === 'pono' ? 'P' : 'H';
+    const cls = sideKey === 'pono' ? 'bg-pono' : 'bg-hakase';
+    buildLine(cls + ' bg-top', Math.round(topY), tag + ' Box 上 (y=' + Math.round(topY) + ')');
+    buildLine(cls + ' bg-bot', Math.round(botY), tag + ' Box 下 (y=' + Math.round(botY) + ')');
+  });
+}
+
 function render() {
   const stage = document.getElementById('stage');
   stage.dataset.vc = currentVC;
@@ -859,6 +1176,7 @@ function render() {
 
   rescaleStage();
   renderHeightGuides();
+  renderBoxGuides();
 }
 
 function rescaleStage() {
@@ -919,7 +1237,10 @@ function makeRange(label, min, max, step, key, sideKey) {
     }
     save(currentVC);
     applySideToDom(sideKey);
+    // Mirror propagation (functions 3/4)
+    propagateMirror(sideKey, key);
     if (showHeightGuides) renderHeightGuides();
+    if (showBoxGuides) renderBoxGuides();
   };
   range.addEventListener('input', () => apply(range.value));
   num.addEventListener('input', () => apply(num.value));
@@ -935,7 +1256,9 @@ function makeRange(label, min, max, step, key, sideKey) {
     }
     save(currentVC);
     applySideToDom(sideKey);
+    propagateMirror(sideKey, key);
     if (showHeightGuides) renderHeightGuides();
+    if (showBoxGuides) renderBoxGuides();
   });
   row.appendChild(lab);
   row.appendChild(range);
@@ -1065,6 +1388,9 @@ function makeRadio(label, key, sideKey, options, opts) {
       } else {
         applySideToDom(sideKey);
       }
+      // Mirror propagation after applying / rebuilding.
+      propagateMirror(sideKey, key);
+      if (showBoxGuides) renderBoxGuides();
     });
     rr.appendChild(lbl);
   });
@@ -1089,6 +1415,7 @@ function makeSelect(label, key, sideKey, options) {
   sel.addEventListener('change', () => {
     state[currentVC][sideKey][key] = sel.value;
     save(currentVC);
+    propagateMirror(sideKey, key);
     render();
   });
   row.appendChild(lab);
@@ -1108,6 +1435,7 @@ function makeColor(label, key, sideKey) {
     state[currentVC][sideKey][key] = inp.value;
     save(currentVC);
     applySideToDom(sideKey);
+    propagateMirror(sideKey, key);
   });
   row.appendChild(lab);
   row.appendChild(inp);
@@ -1152,6 +1480,9 @@ function makeFrameImageSelect(sideKey) {
     reapplyAspectLockAfterFrameChange(sideKey);
     save(currentVC);
     syncRangeUi(sideKey, 'boxH');
+    propagateMirror(sideKey, 'boxImage');
+    // boxH may have changed via aspect-lock recomputation
+    propagateMirror(sideKey, 'boxH');
     render();
   });
   row.appendChild(lab);
@@ -1199,6 +1530,10 @@ function makeAspectLockRow(sideKey) {
     syncRangeUi(sideKey, 'boxH');
     syncRangeUi(sideKey, 'boxW');
     applySideToDom(sideKey);
+    propagateMirror(sideKey, 'aspectLock');
+    propagateMirror(sideKey, 'aspectLockRatio');
+    propagateMirror(sideKey, 'boxH');
+    propagateMirror(sideKey, 'boxW');
   });
   wrap.appendChild(cb);
   wrap.appendChild(txt);
@@ -1259,6 +1594,7 @@ function buildRightPane() {
     boxGroup.appendChild(makeRange('角丸', 0, 80, 1, 'boxRadius', sideKey));
     boxGroup.appendChild(makeColor('背景色', 'boxColor', sideKey));
   }
+  boxGroup.appendChild(makeRange('フォントサイズ', 12, 48, 1, 'fontSize', sideKey));
   boxGroup.appendChild(makeTextarea('サンプル文', 'sampleText', sideKey));
   body.appendChild(boxGroup);
 }
@@ -1292,6 +1628,44 @@ function buildHeader() {
       saveHeightGuidesPref();
       refresh();
       renderHeightGuides();
+    });
+  }
+
+  const bgBtn = document.getElementById('btn-toggle-box-guides');
+  if (bgBtn) {
+    const refreshBg = () => {
+      bgBtn.classList.toggle('toggle-on', !!showBoxGuides);
+      bgBtn.setAttribute('aria-pressed', showBoxGuides ? 'true' : 'false');
+    };
+    refreshBg();
+    bgBtn.addEventListener('click', () => {
+      showBoxGuides = !showBoxGuides;
+      saveBoxGuidesPref();
+      refreshBg();
+      renderBoxGuides();
+    });
+  }
+
+  const mirrorRow = document.getElementById('mirror-row');
+  const mirrorCb = document.getElementById('mirror-checkbox');
+  if (mirrorRow && mirrorCb) {
+    const refreshMirror = () => {
+      mirrorRow.classList.toggle('is-on', !!mirrorMode);
+      mirrorCb.checked = !!mirrorMode;
+    };
+    refreshMirror();
+    mirrorCb.addEventListener('change', () => {
+      mirrorMode = !!mirrorCb.checked;
+      saveMirrorModePref();
+      refreshMirror();
+      // When turning ON, immediately sync from currentTab side to the other side
+      // so they become symmetric.
+      if (mirrorMode) {
+        propagateMirror(currentTab, '__all__');
+        // Refresh UI to reflect mirrored values on the other tab.
+        render();
+        buildRightPane();
+      }
     });
   }
 
@@ -1390,6 +1764,12 @@ function buildCSS() {
         lines.push('    border-radius: ' + ss.boxRadius + 'px;');
       }
       lines.push('  }');
+      // Font size on inner text — exported (per spec)
+      if (typeof ss.fontSize === 'number' && Number.isFinite(ss.fontSize) && ss.fontSize > 0) {
+        lines.push('  .op-side-' + sideKey + ' .op-dialogue-text {');
+        lines.push('    font-size: ' + ss.fontSize + 'px;');
+        lines.push('  }');
+      }
     });
     lines.push('}');
   });
@@ -1471,6 +1851,8 @@ function migrateLegacyStorage() {
 function init() {
   migrateLegacyStorage();
   loadHeightGuidesPref();
+  loadBoxGuidesPref();
+  loadMirrorModePref();
   // Re-load state in case migration produced new values (state was initialized at module load)
   state = {
     B: load('B') || defaultsFor('B'),
@@ -1484,10 +1866,10 @@ function init() {
   render();
 
   if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => { rescaleStage(); renderHeightGuides(); });
+    const ro = new ResizeObserver(() => { rescaleStage(); renderHeightGuides(); renderBoxGuides(); });
     ro.observe(document.getElementById('center'));
   }
-  window.addEventListener('resize', () => { rescaleStage(); renderHeightGuides(); });
+  window.addEventListener('resize', () => { rescaleStage(); renderHeightGuides(); renderBoxGuides(); });
 }
 
 document.addEventListener('DOMContentLoaded', init);
