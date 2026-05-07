@@ -1421,6 +1421,28 @@ function onFrameAspectLoaded(frameId) {
       }
     });
   });
+  // Fix B-2: also reconcile Single Box (機能 5) aspect-lock once the natural
+  // aspect of its boxImage finishes loading. Mirrors the per-side branch above.
+  ['B', 'C', 'D'].forEach(vc => {
+    const sb = state[vc] && state[vc].singleBox;
+    if (!sb) return;
+    if (!sb.aspectLock) return;
+    if (sb.boxMode !== 'image') return;
+    if (sb.boxImage !== frameId) return;
+    const ratio = FRAME_NATURAL_ASPECT[frameId];
+    if (!ratio || ratio <= 0) return;
+    sb.aspectLockRatio = ratio;
+    let h = Math.round(sb.boxW / ratio);
+    h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+    sb.boxH = h;
+    save(vc);
+    if (vc === currentVC && singleBoxMode) {
+      // Rebuild the right pane so the Single Box boxH range/number inputs
+      // pick up the new value (no per-key sync map for singleBox today).
+      buildRightPane();
+      applySingleBoxToDom();
+    }
+  });
 }
 
 let _radioUid = 0;
@@ -1891,7 +1913,10 @@ function buildSingleBoxSection() {
   }
   sec.appendChild(makeSingleBoxRange('幅 (px)', 200, 2560, 1, 'boxW'));
   sec.appendChild(makeSingleBoxRange('高さ (px)', 80, 800, 1, 'boxH'));
-  sec.appendChild(makeSingleBoxRange('Y', 0, 1080, 1, 'boxY'));
+  // Fix B-1: Y slider upper bound depends on the current VC's stage height
+  // (B=768, C=1080, D=1080) so the editor can't overshoot the canvas.
+  const [, vcH] = VP_DIMS[currentVC];
+  sec.appendChild(makeSingleBoxRange('Y', 0, vcH, 1, 'boxY'));
   sec.appendChild(makeSingleBoxRange('padding', 8, 200, 1, 'boxPadding'));
   if (sb.boxMode === 'css') {
     sec.appendChild(makeSingleBoxRange('角丸', 0, 80, 1, 'boxRadius'));
@@ -2131,6 +2156,8 @@ function buildCSS() {
     ['pono', 'hakase'].forEach(sideKey => {
       const ss = s[sideKey];
       const ar = aspectFromSlot(ss);
+      // Always emit slot (character) + object-position. These are independent of
+      // single-box mode (機能 5).
       lines.push('  .op-side-' + sideKey + ' .op-char-slot {');
       lines.push('    width: ' + ss.slotW + 'px;');
       lines.push('    height: ' + ss.slotH + 'px;');
@@ -2140,6 +2167,12 @@ function buildCSS() {
       lines.push('  .op-side-' + sideKey + ' .op-char-slot img {');
       lines.push('    object-position: ' + ss.objectPosition + ' center;');
       lines.push('  }');
+      // 機能 5: when singleBoxMode is ON, omit the per-side dialogue box CSS entirely.
+      // NOTE (Fix A-1): Export reflects the editor's current UI mode (singleBoxMode).
+      // ON => no per-side dialogue CSS is emitted; only .op-dialogue-single is emitted below.
+      // If you ever need both modes' CSS in one export, parameterize this branch
+      // (e.g. add a `mode` argument to buildCSS) instead of removing the gate.
+      if (singleBoxMode) return;
       lines.push('  .op-side-' + sideKey + ' .op-dialogue {');
       lines.push('    width: ' + ss.boxW + 'px;');
       lines.push('    height: ' + ss.boxH + 'px;');
@@ -2164,6 +2197,37 @@ function buildCSS() {
         lines.push('  }');
       }
     });
+    // 機能 5: when singleBoxMode is ON, emit the .op-dialogue-single CSS block
+    // (single shared dialog rendered at center, per VC).
+    // NOTE (Fix A-1): Same caveat as above — the gate is the editor's runtime
+    // singleBoxMode. Switch the editor mode and re-export to get the other shape.
+    if (singleBoxMode && s.singleBox) {
+      const sb = s.singleBox;
+      lines.push('  .op-dialogue-single {');
+      lines.push('    width: ' + sb.boxW + 'px;');
+      lines.push('    height: ' + sb.boxH + 'px;');
+      lines.push('    left: 50%;');
+      lines.push('    top: ' + sb.boxY + 'px;');
+      lines.push('    transform: translateX(-50%);');
+      lines.push('    padding: ' + sb.boxPadding + 'px;');
+      if (sb.boxMode === 'image') {
+        lines.push('    background-image: url("' + cssEscapeUrl(framePathById(sb.boxImage)) + '");');
+        lines.push('    background-size: 100% 100%;');
+        lines.push('    background-repeat: no-repeat;');
+        lines.push('    background-color: transparent;');
+        lines.push('    border-radius: 0;');
+      } else {
+        lines.push('    background-image: none;');
+        lines.push('    background-color: ' + sb.boxColor + ';');
+        lines.push('    border-radius: ' + sb.boxRadius + 'px;');
+      }
+      lines.push('  }');
+      if (typeof sb.fontSize === 'number' && Number.isFinite(sb.fontSize) && sb.fontSize > 0) {
+        lines.push('  .op-dialogue-single .op-dialogue-text {');
+        lines.push('    font-size: ' + sb.fontSize + 'px;');
+        lines.push('  }');
+      }
+    }
     lines.push('}');
   });
   return lines.join('\n');
@@ -2246,6 +2310,7 @@ function init() {
   loadHeightGuidesPref();
   loadBoxGuidesPref();
   loadMirrorModePref();
+  loadSingleBoxModePref();
   // Re-load state in case migration produced new values (state was initialized at module load)
   state = {
     B: load('B') || defaultsFor('B'),
