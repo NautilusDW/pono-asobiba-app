@@ -2124,20 +2124,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: #000;
   overflow: hidden;
   display: flex;
-  /* Fade-in from black (Fix 1b). Default = visible. */
+  /* Hard cut from mode-screen: overlay is always fully opaque black.
+     Only the inner .op-bg fades in (see below). */
   opacity: 1;
-  transition: opacity 0.7s ease-out;
 }
 .op-cinematic.hidden { display: none; }
-/* fade-in 起動前の瞬時スナップ用 (Fix 1b) */
-.op-cinematic.is-fading-in {
-  opacity: 0;
-  transition: none;
-}
-.op-cinematic.is-revealed {
-  opacity: 1;
-  transition: opacity 0.7s ease-out;
-}
 .op-bg {
   position: absolute; inset: 0;
   background-size: cover;
@@ -2146,6 +2137,12 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   transform: scale(1.0);
   transform-origin: center;
   will-change: transform;
+  /* Cross-fade from black: bg starts invisible, fades in once .is-revealed is added. */
+  opacity: 0;
+  transition: opacity 0.7s ease-out;
+}
+.op-bg.is-revealed {
+  opacity: 1;
 }
 @keyframes opDolly {
   from { transform: scale(1.0); }
@@ -4069,18 +4066,25 @@ async function playOpeningCinematic() {
     }
   } catch (e) {}
 
-  // Show overlay
+  // Show cinematic INSTANTLY at opacity 1 with black bg.
+  // This is a HARD CUT from the mode-screen — no fade on the overlay itself.
   root.classList.remove('hidden');
   root.setAttribute('aria-hidden', 'false');
 
-  // Fix 1b: 黒からのフェードイン。プログレッシブな描画パチつきを 700ms かけて隠す。
-  root.classList.add('is-fading-in');
-  root.classList.remove('is-revealed');
-  // 強制リフロー: 次のクラス変更で transition が確実に発火するように
-  void root.offsetWidth;
-  root.classList.remove('is-fading-in');
-  root.classList.add('is-revealed');
-  // フェードイン完了まで待機
+  // Now that the black overlay is on top of everything, hide the mode-screen.
+  // Order matters: black covers first, then mode-screen disappears, so the
+  // underlying game UI never has a chance to flash on screen.
+  const __modeScreen = document.getElementById('mode-screen');
+  if (__modeScreen) __modeScreen.classList.add('hidden');
+
+  // Reset bg to invisible state, then force reflow so the opacity transition
+  // fires the first time .is-revealed is added (in the panel loop below).
+  const __bgInit = document.getElementById('op-bg');
+  if (__bgInit) {
+    __bgInit.classList.remove('is-revealed');
+    void __bgInit.offsetWidth;
+  }
+  // フェードイン完了まで待機 (黒 → BG 画像のクロスフェード 700ms)
   await new Promise(function(r) { setTimeout(r, 700); });
 
   // Wire skip
@@ -4149,6 +4153,10 @@ async function playOpeningCinematic() {
         // Force the filter into the same composite frame as the new bg image —
         // prevents a 1-frame sharp flash on slow Android renderers.
         void bg.offsetWidth;
+        // Trigger the black → bg cross-fade. First call kicks the 0.7s opacity
+        // transition; subsequent panels are no-ops (class already present),
+        // so per-panel image swaps remain instant.
+        bg.classList.add('is-revealed');
       }
 
       if (panel.kind === 'narration') {
@@ -4433,7 +4441,8 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     ALL_CATS.forEach(function(c) {
       selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
     });
-    document.getElementById('mode-screen').classList.add('hidden');
+    // mode-screen hide is deferred to playOpeningCinematic so the black
+    // overlay shows BEFORE the underlying game UI is exposed.
     try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
     try { await playQuizStartCard();   } catch (e) { console.warn('quiz start card error', e); }
     initGame();
