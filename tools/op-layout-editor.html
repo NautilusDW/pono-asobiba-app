@@ -582,6 +582,60 @@
   #toast.err { border-color: #ef4444; }
 
   .info { font-size: 10px; color: #6b7280; margin-top: 4px; }
+
+  /* Drop zone — visual feedback for drag-and-drop image add. */
+  .section.is-drop-target {
+    position: relative;
+  }
+  .section.is-drop-target::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px dashed #2563eb;
+    border-radius: 6px;
+    background: rgba(37, 99, 235, 0.10);
+    pointer-events: none;
+    z-index: 5;
+  }
+  .section.is-drop-target .preset-grid::before {
+    content: 'ここに画像をドロップ';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(37, 99, 235, 0.92);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 6;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .section .preset-grid { position: relative; }
+
+  /* Per-thumb delete (×) button shown only on user-added thumbs. */
+  .preset-thumb { position: relative; }
+  .preset-thumb .thumb-del {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    border: 1px solid #ef4444;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 4;
+  }
+  .preset-thumb .thumb-del:hover { background: #ef4444; }
 </style>
 </head>
 <body>
@@ -607,15 +661,16 @@
   </header>
 
   <aside id="left" class="panel">
-    <div class="section">
+    <div class="section" id="pono-section" data-drop="pono">
       <h3>Pono バリエーション</h3>
       <div id="pono-grid" class="preset-grid"></div>
+      <div class="info">画像をここにドロップで追加（リロードで消えます）</div>
     </div>
 
-    <div class="section">
+    <div class="section" id="frame-section" data-drop="frame">
       <h3>フレーム</h3>
       <div id="frame-grid" class="preset-grid"></div>
-      <div class="info">画像モード時に選択中の側に適用</div>
+      <div class="info">画像モード時に選択中の側に適用 ／ ドロップで追加（リロードで消えます）</div>
     </div>
   </aside>
 
@@ -1008,54 +1063,308 @@ function toast(msg, kind) {
   toast._t = setTimeout(() => { el.className = ''; }, 1800);
 }
 
+function makePonoThumb(v) {
+  const div = document.createElement('div');
+  div.className = 'preset-thumb';
+  div.dataset.variant = v.name;
+  const img = document.createElement('img');
+  img.src = v.path;
+  img.alt = v.name;
+  const lbl = document.createElement('div');
+  lbl.className = 'pname';
+  lbl.textContent = v.name;
+  div.appendChild(img);
+  div.appendChild(lbl);
+  div.addEventListener('click', () => {
+    state[currentVC].pono.variant = v.name;
+    save(currentVC);
+    render();
+    buildRightPane();
+  });
+  if (v.userAdded) {
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'thumb-del';
+    del.title = 'この画像を削除';
+    del.textContent = '×';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeUserPonoVariant(v.name);
+    });
+    div.appendChild(del);
+  }
+  return div;
+}
+
+function makeFrameThumb(f) {
+  const div = document.createElement('div');
+  div.className = 'preset-thumb';
+  div.dataset.frame = f.id;
+  const img = document.createElement('img');
+  img.src = f.path;
+  img.alt = f.label;
+  const lbl = document.createElement('div');
+  lbl.className = 'pname';
+  lbl.textContent = f.label;
+  div.appendChild(img);
+  div.appendChild(lbl);
+  div.addEventListener('click', () => {
+    const side = state[currentVC][currentTab];
+    side.boxImage = f.id;
+    if (side.boxMode !== 'image') side.boxMode = 'image';
+    reapplyAspectLockAfterFrameChange(currentTab);
+    save(currentVC);
+    render();
+    buildRightPane();
+  });
+  if (f.userAdded) {
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'thumb-del';
+    del.title = 'この画像を削除';
+    del.textContent = '×';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeUserFrameImage(f.id);
+    });
+    div.appendChild(del);
+  }
+  return div;
+}
+
 function buildPresetGrid() {
   const ponoGrid = document.getElementById('pono-grid');
-  PONO_VARIANTS.forEach(v => {
-    const div = document.createElement('div');
-    div.className = 'preset-thumb';
-    div.dataset.variant = v.name;
-    const img = document.createElement('img');
-    img.src = v.path;
-    img.alt = v.name;
-    const lbl = document.createElement('div');
-    lbl.className = 'pname';
-    lbl.textContent = v.name;
-    div.appendChild(img);
-    div.appendChild(lbl);
-    div.addEventListener('click', () => {
-      state[currentVC].pono.variant = v.name;
-      save(currentVC);
-      render();
-      buildRightPane();
-    });
-    ponoGrid.appendChild(div);
-  });
-
+  PONO_VARIANTS.forEach(v => ponoGrid.appendChild(makePonoThumb(v)));
   const frameGrid = document.getElementById('frame-grid');
-  FRAME_IMAGES.forEach(f => {
-    const div = document.createElement('div');
-    div.className = 'preset-thumb';
-    div.dataset.frame = f.id;
-    const img = document.createElement('img');
-    img.src = f.path;
-    img.alt = f.label;
-    const lbl = document.createElement('div');
-    lbl.className = 'pname';
-    lbl.textContent = f.label;
-    div.appendChild(img);
-    div.appendChild(lbl);
-    div.addEventListener('click', () => {
-      const side = state[currentVC][currentTab];
-      side.boxImage = f.id;
-      if (side.boxMode !== 'image') side.boxMode = 'image';
-      reapplyAspectLockAfterFrameChange(currentTab);
-      save(currentVC);
-      render();
-      buildRightPane();
-    });
-    frameGrid.appendChild(div);
+  FRAME_IMAGES.forEach(f => frameGrid.appendChild(makeFrameThumb(f)));
+}
+
+// === Drag & Drop: image add ============================================
+const DROP_ACCEPT_TYPES = ['image/png', 'image/webp', 'image/jpeg', 'image/gif'];
+
+function sanitizeIdBase(name) {
+  // Strip extension, normalize to ASCII-safe slug. Empty -> 'image'.
+  const base = String(name || '').replace(/\.[^./\\]+$/, '');
+  let s = base
+    .normalize('NFKD')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .replace(/_+/g, '_');
+  if (!s) s = 'image';
+  // Avoid leading digits for safer use as variant key.
+  if (/^\d/.test(s)) s = 'img_' + s;
+  return s.slice(0, 64);
+}
+
+function uniquePonoName(seed) {
+  const taken = new Set(PONO_VARIANTS.map(v => v.name));
+  if (!taken.has(seed)) return seed;
+  let i = 2;
+  while (taken.has(seed + '_' + i)) i++;
+  return seed + '_' + i;
+}
+
+function uniqueFrameId(seed) {
+  const taken = new Set(FRAME_IMAGES.map(f => f.id));
+  if (!taken.has(seed)) return seed;
+  let i = 2;
+  while (taken.has(seed + '_' + i)) i++;
+  return seed + '_' + i;
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result || ''));
+    fr.onerror = () => reject(fr.error || new Error('FileReader error'));
+    fr.readAsDataURL(file);
   });
 }
+
+// Fix B-5: cap dropped image size to keep localStorage and DOM responsive.
+const DROP_FILE_MAX_BYTES = 10 * 1024 * 1024;
+
+function addDroppedPonoFile(file) {
+  if (file && file.size > DROP_FILE_MAX_BYTES) {
+    toast(`${file.name} は 10MB を超えるため受け付けられません`, 'err');
+    return Promise.resolve(null);
+  }
+  return readFileAsDataURL(file).then(dataUrl => {
+    const baseLabel = String(file.name || 'pono').replace(/\.[^./\\]+$/, '') || 'pono';
+    const id = uniquePonoName(sanitizeIdBase(file.name));
+    const variant = { name: id, path: dataUrl, userAdded: true, label: baseLabel };
+    PONO_VARIANTS.push(variant);
+    const grid = document.getElementById('pono-grid');
+    if (grid) grid.appendChild(makePonoThumb(variant));
+    return variant;
+  });
+}
+
+function addDroppedFrameFile(file) {
+  if (file && file.size > DROP_FILE_MAX_BYTES) {
+    toast(`${file.name} は 10MB を超えるため受け付けられません`, 'err');
+    return Promise.resolve(null);
+  }
+  return readFileAsDataURL(file).then(dataUrl => {
+    const baseLabel = String(file.name || 'frame').replace(/\.[^./\\]+$/, '') || 'frame';
+    const id = uniqueFrameId(sanitizeIdBase(file.name));
+    const frame = { id: id, label: baseLabel, path: dataUrl, userAdded: true };
+    FRAME_IMAGES.push(frame);
+    FRAME_IDS.push(id);
+    // Compute natural aspect for aspect-lock support.
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+        FRAME_NATURAL_ASPECT[id] = im.naturalWidth / im.naturalHeight;
+        try { onFrameAspectLoaded(id); } catch (e) {}
+      }
+    };
+    im.src = dataUrl;
+    const grid = document.getElementById('frame-grid');
+    if (grid) grid.appendChild(makeFrameThumb(frame));
+    return frame;
+  });
+}
+
+function removeUserPonoVariant(name) {
+  const idx = PONO_VARIANTS.findIndex(v => v.name === name);
+  if (idx < 0) return;
+  if (!PONO_VARIANTS[idx].userAdded) return; // safety: never delete originals
+  PONO_VARIANTS.splice(idx, 1);
+  // If any side currently uses this variant, fall back to the first available.
+  const fallback = (PONO_VARIANTS[0] && PONO_VARIANTS[0].name) || 'dance_hi';
+  ['B', 'C', 'D'].forEach(vc => {
+    const p = state[vc] && state[vc].pono;
+    if (p && p.variant === name) {
+      p.variant = fallback;
+      save(vc);
+    }
+  });
+  // Rebuild the pono grid (simpler than removing a single element while
+  // preserving selection styling).
+  const grid = document.getElementById('pono-grid');
+  if (grid) {
+    grid.textContent = '';
+    PONO_VARIANTS.forEach(v => grid.appendChild(makePonoThumb(v)));
+  }
+  render();
+  buildRightPane();
+  toast('Pono画像を削除しました', 'ok');
+}
+
+function removeUserFrameImage(id) {
+  const idx = FRAME_IMAGES.findIndex(f => f.id === id);
+  if (idx < 0) return;
+  if (!FRAME_IMAGES[idx].userAdded) return; // safety
+  FRAME_IMAGES.splice(idx, 1);
+  const idIdx = FRAME_IDS.indexOf(id);
+  if (idIdx >= 0) FRAME_IDS.splice(idIdx, 1);
+  delete FRAME_NATURAL_ASPECT[id];
+  const fallback = DEFAULT_FRAME_ID;
+  ['B', 'C', 'D'].forEach(vc => {
+    if (!state[vc]) return;
+    ['pono', 'hakase'].forEach(sk => {
+      const sd = state[vc][sk];
+      if (sd && sd.boxImage === id) {
+        sd.boxImage = fallback;
+      }
+    });
+    if (state[vc].singleBox && state[vc].singleBox.boxImage === id) {
+      state[vc].singleBox.boxImage = fallback;
+    }
+    save(vc);
+  });
+  const grid = document.getElementById('frame-grid');
+  if (grid) {
+    grid.textContent = '';
+    FRAME_IMAGES.forEach(f => grid.appendChild(makeFrameThumb(f)));
+  }
+  render();
+  buildRightPane();
+  toast('フレーム画像を削除しました', 'ok');
+}
+
+function handleDroppedFiles(target, fileList) {
+  const files = Array.from(fileList || []);
+  if (files.length === 0) return;
+  const accepted = files.filter(f => DOM_FILE_LOOKS_LIKE_IMAGE(f));
+  const rejected = files.length - accepted.length;
+  if (accepted.length === 0) {
+    toast('対応していないファイル形式です (PNG/WebP/JPEG/GIF)', 'err');
+    return;
+  }
+  const adder = target === 'pono' ? addDroppedPonoFile : addDroppedFrameFile;
+  Promise.all(accepted.map(f => adder(f).catch(err => {
+    console.warn('drop add failed', err);
+    return null;
+  }))).then(results => {
+    const ok = results.filter(Boolean).length;
+    if (ok > 0) {
+      const label = target === 'pono' ? 'Pono画像' : 'フレーム画像';
+      const suffix = rejected > 0 ? `（${rejected}件は形式不一致でスキップ）` : '';
+      toast(`${label}を ${ok} 件追加しました${suffix}`, 'ok');
+    } else if (rejected > 0) {
+      toast('対応していないファイル形式です', 'err');
+    }
+  });
+}
+
+function DOM_FILE_LOOKS_LIKE_IMAGE(file) {
+  if (!file) return false;
+  if (file.type && DROP_ACCEPT_TYPES.includes(file.type)) return true;
+  // Some browsers may not set type for certain drops; fall back to extension sniff.
+  const name = String(file.name || '').toLowerCase();
+  return /\.(png|webp|jpe?g|gif)$/.test(name);
+}
+
+function bindDropZones() {
+  const zones = [
+    { el: document.getElementById('pono-section'),  target: 'pono' },
+    { el: document.getElementById('frame-section'), target: 'frame' }
+  ];
+  // Block default drop behavior on the document so files aren't navigated to.
+  ['dragenter', 'dragover', 'drop'].forEach(evt => {
+    document.addEventListener(evt, (e) => {
+      // Only swallow if it's a file drag; allow normal text/dom drag elsewhere.
+      const dt = e.dataTransfer;
+      if (dt && Array.from(dt.types || []).includes('Files')) {
+        e.preventDefault();
+      }
+    });
+  });
+  zones.forEach(({ el, target }) => {
+    if (!el) return;
+    let depth = 0;
+    el.addEventListener('dragenter', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !Array.from(dt.types || []).includes('Files')) return;
+      e.preventDefault();
+      depth++;
+      el.classList.add('is-drop-target');
+    });
+    el.addEventListener('dragover', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !Array.from(dt.types || []).includes('Files')) return;
+      e.preventDefault();
+      try { dt.dropEffect = 'copy'; } catch (_) {}
+    });
+    el.addEventListener('dragleave', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !Array.from(dt.types || []).includes('Files')) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) el.classList.remove('is-drop-target');
+    });
+    el.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      e.preventDefault();
+      depth = 0;
+      el.classList.remove('is-drop-target');
+      handleDroppedFiles(target, dt.files);
+    });
+  });
+}
+// === end Drag & Drop ===================================================
 
 function aspectFromSlot(s) {
   if (s.slotAspect === 'free') return null;
@@ -1295,6 +1604,13 @@ function syncRangeUi(sideKey, key) {
   if (typeof fn === 'function') fn();
 }
 
+// Single-box analog (key: 'boxW' / 'boxH' / 'boxY' / 'boxPadding' / 'fontSize' / etc.).
+const _singleBoxRangeSyncMap = {};
+function syncSingleBoxRangeUi(key) {
+  const fn = _singleBoxRangeSyncMap[key];
+  if (typeof fn === 'function') fn();
+}
+
 function makeRange(label, min, max, step, key, sideKey) {
   const row = document.createElement('div');
   row.className = 'prop-row';
@@ -1362,11 +1678,31 @@ function makeRange(label, min, max, step, key, sideKey) {
 const BOX_W_MIN = 200, BOX_W_MAX = 2000;
 const BOX_H_MIN = 80,  BOX_H_MAX = 800;
 
+// Single Box uses wider slider ranges (per-VC: boxW up to 2560, boxH up to 1200)
+// so its aspect-lock companion clamp must NOT reuse the per-side BOX_*_MAX above.
+// Fix HIGH A-5: clamping with the per-side max would clip e.g. boxW=2400 down to 2000.
+const SB_BOX_W_MIN = 200, SB_BOX_W_MAX = 2560;
+const SB_BOX_H_MIN = 80,  SB_BOX_H_MAX = 1200;
+
 function maybeApplyAspectLockOnBoxChange(sideKey, changedKey) {
   const s = state[currentVC][sideKey];
   if (!s.aspectLock) return;
-  const ratio = getEffectiveAspectRatio(s);
-  if (!ratio || ratio <= 0) return;
+  let ratio = getEffectiveAspectRatio(s);
+  // Bug-fix fallback: ratio may be 0 if the lock was just turned ON before the
+  // frame's natural aspect finished loading (or before a fresh init). Recompute
+  // a reasonable ratio so the *first* boxW/boxH change after lock-on links them.
+  if (!ratio || ratio <= 0) {
+    if (s.boxMode === 'image' && FRAME_NATURAL_ASPECT[s.boxImage] && FRAME_NATURAL_ASPECT[s.boxImage] > 0) {
+      ratio = FRAME_NATURAL_ASPECT[s.boxImage];
+    } else if (s.boxH > 0 && s.boxW > 0) {
+      ratio = s.boxW / s.boxH;
+    }
+    if (ratio && ratio > 0) {
+      s.aspectLockRatio = ratio;
+    } else {
+      return;
+    }
+  }
   if (changedKey === 'boxW') {
     let h = Math.round(s.boxW / ratio);
     h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
@@ -1380,6 +1716,44 @@ function maybeApplyAspectLockOnBoxChange(sideKey, changedKey) {
     if (w !== s.boxW) {
       s.boxW = w;
       syncRangeUi(sideKey, 'boxW');
+    }
+  }
+}
+
+// Single Box aspect-lock companion. Mirrors maybeApplyAspectLockOnBoxChange but
+// targets state[currentVC].singleBox. Includes the same defensive ratio fallback
+// so the very first change after lock-on links boxW/boxH.
+function maybeApplySingleBoxAspectLockOnBoxChange(changedKey) {
+  const sb = state[currentVC] && state[currentVC].singleBox;
+  if (!sb || !sb.aspectLock) return;
+  let ratio = (sb.boxMode === 'image')
+    ? (FRAME_NATURAL_ASPECT[sb.boxImage] && FRAME_NATURAL_ASPECT[sb.boxImage] > 0
+        ? FRAME_NATURAL_ASPECT[sb.boxImage]
+        : (sb.aspectLockRatio && sb.aspectLockRatio > 0 ? sb.aspectLockRatio : 0))
+    : (sb.aspectLockRatio && sb.aspectLockRatio > 0 ? sb.aspectLockRatio : 0);
+  if (!ratio || ratio <= 0) {
+    // Defensive fallback (mirrors per-side fix above): if lock was just ON-ed
+    // and ratio is still 0, recompute from current dims.
+    if (sb.boxH > 0 && sb.boxW > 0) {
+      ratio = sb.boxW / sb.boxH;
+      sb.aspectLockRatio = ratio;
+    } else {
+      return;
+    }
+  }
+  if (changedKey === 'boxW') {
+    let h = Math.round(sb.boxW / ratio);
+    h = Math.min(Math.max(h, SB_BOX_H_MIN), SB_BOX_H_MAX);
+    if (h !== sb.boxH) {
+      sb.boxH = h;
+      syncSingleBoxRangeUi('boxH');
+    }
+  } else if (changedKey === 'boxH') {
+    let w = Math.round(sb.boxH * ratio);
+    w = Math.min(Math.max(w, SB_BOX_W_MIN), SB_BOX_W_MAX);
+    if (w !== sb.boxW) {
+      sb.boxW = w;
+      syncSingleBoxRangeUi('boxW');
     }
   }
 }
@@ -1669,6 +2043,12 @@ function makeSingleBoxRange(label, min, max, step, key) {
   const cur = state[currentVC].singleBox[key];
   range.value = cur;
   num.value = cur;
+  // Register UI-sync so aspect-lock companion (boxW <-> boxH) can update sibling.
+  _singleBoxRangeSyncMap[key] = () => {
+    const v = state[currentVC].singleBox[key];
+    if (document.activeElement !== range) range.value = v;
+    if (document.activeElement !== num) num.value = v;
+  };
   const apply = (v) => {
     let n = Number(v);
     if (!Number.isFinite(n)) return;
@@ -1676,6 +2056,10 @@ function makeSingleBoxRange(label, min, max, step, key) {
     state[currentVC].singleBox[key] = n;
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
+    // Aspect-lock coupling for box dims (single-box mode).
+    if (key === 'boxW' || key === 'boxH') {
+      maybeApplySingleBoxAspectLockOnBoxChange(key);
+    }
     save(currentVC);
     applySingleBoxToDom();
     if (showBoxGuides) renderBoxGuides();
@@ -1689,6 +2073,9 @@ function makeSingleBoxRange(label, min, max, step, key) {
     state[currentVC].singleBox[key] = n;
     num.value = n;
     range.value = n;
+    if (key === 'boxW' || key === 'boxH') {
+      maybeApplySingleBoxAspectLockOnBoxChange(key);
+    }
     save(currentVC);
     applySingleBoxToDom();
     if (showBoxGuides) renderBoxGuides();
@@ -1930,6 +2317,9 @@ function buildSingleBoxSection() {
 function buildRightPane() {
   const body = document.getElementById('tab-body');
   body.textContent = '';
+  // Clear the single-box sync map so detached closures don't fire.
+  // (Per-side _rangeSyncMap is intentionally left to be overwritten on re-create.)
+  Object.keys(_singleBoxRangeSyncMap).forEach(k => delete _singleBoxRangeSyncMap[k]);
   const sideKey = currentTab;
   const s = state[currentVC][sideKey];
 
@@ -2140,14 +2530,44 @@ function cssEscapeUrl(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+// Track whether the most recent buildCSS() encountered a dropped (data:) frame.
+// exportCopy / download read this to surface a warning toast.
+let _exportContainedDroppedFrame = false;
+function isFrameUserAdded(id) {
+  const f = FRAME_IMAGES.find(x => x.id === id);
+  return !!(f && f.userAdded);
+}
+
 function buildCSS() {
   const lines = [];
+  _exportContainedDroppedFrame = false;
   lines.push('/* Quizland OP layout — generated ' + new Date().toISOString() + ' */');
   const mediaFor = {
     B: '@media (min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10)',
     C: '@media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10)',
     D: '@media (min-aspect-ratio: 19/10)'
   };
+  // Helper: emit background-image lines for a frame id, OR a placeholder comment
+  // when the frame is a user-dropped (data: URL) image which we intentionally
+  // do NOT bake into exported CSS (would be huge / not portable).
+  function emitFrameBackground(frameId) {
+    if (isFrameUserAdded(frameId)) {
+      _exportContainedDroppedFrame = true;
+      lines.push('    /* NOTE: ドロップ画像 (' + frameId + ') は Export に含まれません。'
+        + ' 本番資産に追加してから再 Export してください。 */');
+      lines.push('    background-image: none;');
+      lines.push('    background-size: 100% 100%;');
+      lines.push('    background-repeat: no-repeat;');
+      lines.push('    background-color: transparent;');
+      lines.push('    border-radius: 0;');
+      return;
+    }
+    lines.push('    background-image: url("' + cssEscapeUrl(framePathById(frameId)) + '");');
+    lines.push('    background-size: 100% 100%;');
+    lines.push('    background-repeat: no-repeat;');
+    lines.push('    background-color: transparent;');
+    lines.push('    border-radius: 0;');
+  }
   ['B', 'C', 'D'].forEach(vc => {
     const s = state[vc];
     lines.push('');
@@ -2179,11 +2599,7 @@ function buildCSS() {
       lines.push('    transform: translate(calc(-50% + ' + ss.boxX + 'px), calc(-50% + ' + ss.boxY + 'px));');
       lines.push('    padding: ' + ss.boxPadding + 'px;');
       if (ss.boxMode === 'image') {
-        lines.push('    background-image: url("' + cssEscapeUrl(framePathById(ss.boxImage)) + '");');
-        lines.push('    background-size: 100% 100%;');
-        lines.push('    background-repeat: no-repeat;');
-        lines.push('    background-color: transparent;');
-        lines.push('    border-radius: 0;');
+        emitFrameBackground(ss.boxImage);
       } else {
         lines.push('    background-image: none;');
         lines.push('    background-color: ' + ss.boxColor + ';');
@@ -2211,11 +2627,7 @@ function buildCSS() {
       lines.push('    transform: translateX(-50%);');
       lines.push('    padding: ' + sb.boxPadding + 'px;');
       if (sb.boxMode === 'image') {
-        lines.push('    background-image: url("' + cssEscapeUrl(framePathById(sb.boxImage)) + '");');
-        lines.push('    background-size: 100% 100%;');
-        lines.push('    background-repeat: no-repeat;');
-        lines.push('    background-color: transparent;');
-        lines.push('    border-radius: 0;');
+        emitFrameBackground(sb.boxImage);
       } else {
         lines.push('    background-image: none;');
         lines.push('    background-color: ' + sb.boxColor + ';');
@@ -2256,10 +2668,14 @@ function buildJSON() {
 }
 
 function exportCopy() {
-  const text = buildCSS() + '\n\n/* JSON */\n' + buildJSON();
+  const css = buildCSS();
+  const droppedWarn = _exportContainedDroppedFrame;
+  const text = css + '\n\n/* JSON */\n' + buildJSON();
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(
-      () => toast('CSS + JSON をコピーしました', 'ok'),
+      () => toast(droppedWarn
+        ? '警告: ドロップ画像は Export に含まれません'
+        : 'CSS + JSON をコピーしました', droppedWarn ? 'err' : 'ok'),
       () => toast('クリップボードコピーに失敗', 'err')
     );
   } else {
@@ -2271,12 +2687,15 @@ function download(kind) {
   const ts = new Date().toISOString().replace(/[:.]/g, '-').replace(/T/, '_').slice(0, 19);
   let blob, fname;
   if (kind === 'css') {
-    blob = new Blob([buildCSS()], { type: 'text/css' });
+    const css = buildCSS();
+    blob = new Blob([css], { type: 'text/css' });
     fname = 'op-layout-' + ts + '.css';
   } else {
-    blob = new Blob([buildJSON()], { type: 'application/json' });
+    const json = buildJSON();
+    blob = new Blob([json], { type: 'application/json' });
     fname = 'op-layout-' + ts + '.json';
   }
+  const droppedWarn = _exportContainedDroppedFrame && kind === 'css';
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -2284,7 +2703,11 @@ function download(kind) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
-  toast(fname + ' をダウンロード', 'ok');
+  if (droppedWarn) {
+    toast('警告: ドロップ画像は Export に含まれません', 'err');
+  } else {
+    toast(fname + ' をダウンロード', 'ok');
+  }
 }
 
 function migrateLegacyStorage() {
@@ -2319,6 +2742,7 @@ function init() {
   };
   preloadFrameAspects();
   buildPresetGrid();
+  bindDropZones();
   buildHeader();
   buildRightPane();
   render();
