@@ -2227,14 +2227,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   left: 50%;
   transform: translateX(-50%);
   width: auto;
-  object-fit: contain;
   pointer-events: none;
 }
 .op-char-frame img.op-char-pono {
   height: 180%;              /* 1.8x frame height; top ~56% visible → waist-shot */
 }
 .op-char-frame img.op-char-hakase {
-  height: 145%;              /* squatter aspect → smaller % balances perceived size */
+  height: 120%;              /* preserve wand/tassel: 1.23 * 120% ≈ 148% width, ~24% side clip */
 }
 .op-side-hakase .op-char-frame img.op-char {
   filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
@@ -2321,7 +2320,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 @media (max-width: 540px) {
   .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
   .op-char-frame img.op-char-pono   { height: 175%; }
-  .op-char-frame img.op-char-hakase { height: 140%; }
+  .op-char-frame img.op-char-hakase { height: 118%; }
   .op-side > .op-dialogue {
     padding: 20px 14px 16px;
     min-height: 90px;
