@@ -2499,7 +2499,7 @@ let _autoHintTimer = null;
 // インクリメントし、各 setTimeout コールバックは自分が起動された時点の token と
 // 一致しなければ即停止する (古いタイピングが新しいテキストを上書きしないように)。
 let _typingToken = 0;
-const HAKASE_TYPING_DELAY_MS = 60;
+const HAKASE_TYPING_DELAY_MS = 105;
 
 function setHakaseDialogue(text) {
   const el = document.getElementById('char-hint-text');
