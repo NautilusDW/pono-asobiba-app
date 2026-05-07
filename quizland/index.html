@@ -1264,21 +1264,23 @@ body.layout-editor-on .stage-pono { display: none; }
 .chip[data-color="cyan"]   .circle { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #06B6D4; }
 
 /* ===== char-hint (吹き出し) + character (フクロウ博士) =====
-   ユーザー要望: フクロウの吹き出しは「行ごとに大きさを変えず、 常に縦横比 1:1 の
-   正方形で固定」。 saved-layout.json の inline width/height (例: 326×133) や
-   旧仕様の min-height + height:auto による縦伸びを !important で打ち消し、
-   width=height の正方形に強制する。 height: auto + aspect-ratio: 1/1 を主とし、
-   aspect-ratio 未対応の古い browser 用に明示的な height fallback も付ける。 */
+   ユーザー要望: フクロウの吹き出しは「行ごとに大きさを変えず、 元画像の縦横比
+   (balloon_temp.png は 1983×793 ≈ 5:2 の横長吹き出し) を保って固定」。
+   v811 で 1:1 (正方形) に強制したのは誤りで、元画像が歪んで見えていた。
+   saved-layout.json の inline width/height (例: 326×133) や旧仕様の min-height +
+   height:auto による縦伸びを !important で打ち消し、 元画像 AR を保った width
+   固定 + aspect-ratio で height を自動計算する。 fallback の height は AR から
+   逆算した px 値を併記。 */
 .char-hint {
   flex: 0 0 auto;
   position: relative;
-  width: 200px !important;
-  height: 200px !important; /* aspect-ratio 未対応 browser 用 fallback */
-  aspect-ratio: 1 / 1 !important;
+  width: 280px !important;
+  height: 112px !important; /* aspect-ratio 未対応 browser 用 fallback (280 * 793/1983 ≈ 112) */
+  aspect-ratio: 1983 / 793 !important; /* balloon_temp.png 元画像比 */
   min-width: 0 !important;
   min-height: 0 !important;
-  max-width: 200px !important;
-  max-height: 200px !important;
+  max-width: 280px !important;
+  max-height: 112px !important;
   background-image: url('../assets/images/quizland/balloons/balloon_temp.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1287,12 +1289,12 @@ body.layout-editor-on .stage-pono { display: none; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 14px 16px;
+  padding: 10px 18px;
   box-sizing: border-box;
-  /* 長文時は font-size を縮めて 1:1 の中に収める。 base 22px → clamp で 16〜22px */
-  font-size: clamp(16px, 4.2vmin, 22px);
+  /* 長文時は font-size を縮めて 5:2 の中に収める。 base 18px → clamp で 13〜18px */
+  font-size: clamp(13px, 3.2vmin, 18px);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
   color: #4a3a1a;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   white-space: normal;
@@ -1717,8 +1719,8 @@ body.layout-editor-on .character img {
      吹き出しと目線がずれるので center top 寄せで頭を視線レベルに固定 */
   .character img { object-position: center top; }
   /* 14:9 right pane 480px。 フクロウの吹き出しは下の .char-hint ルールで
-     1:1 (180px) に固定済み。 ここでは font-size のみ明示。 */
-  .char-hint { font-size: 18px; }
+     元画像 AR (5:2) で固定済み。 ここでは font-size のみ明示。 */
+  .char-hint { font-size: 16px; }
   /* 14:9 用: 解説/結果まわりの「詳細画面」も grid 準拠に縮める */
   .q-text-card { font-size: 28px; padding: 18px 70px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
   #q-text { font-size: 26px; }
@@ -1751,13 +1753,13 @@ body.layout-editor-on .character img {
   .chip { width: 216px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
   .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは常に 1:1 固定 (14:9 帯では 180px) */
+  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (14:9 帯では 260×104) */
   .char-hint {
-    width: 180px !important;
-    height: 180px !important;
-    aspect-ratio: 1 / 1 !important;
-    max-width: 180px !important;
-    max-height: 180px !important;
+    width: 260px !important;
+    height: 104px !important; /* 260 * 793/1983 ≈ 104 */
+    aspect-ratio: 1983 / 793 !important;
+    max-width: 260px !important;
+    max-height: 104px !important;
     transform: translate(0, 0) !important;
   }
 }
@@ -1789,18 +1791,18 @@ body.layout-editor-on .character img {
   /* .chip.txt-medium { font-size: 22px; } */
   /* .chip.txt-long { font-size: 18px; } */
   .chip.chip-count { font-size: 48px; }
-  /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(160 1:1) = 314px → 余裕あり
-     フクロウの吹き出しは 1:1 正方形で固定 (4:3 帯では 160px) */
+  /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(240×96 5:2) = 394px → 余裕あり
+     フクロウの吹き出しは元画像 AR (5:2) で固定 (4:3 帯では 240×96) */
   .char-hint {
-    width: 160px !important;
-    height: 160px !important;
-    aspect-ratio: 1 / 1 !important;
+    width: 240px !important;
+    height: 96px !important; /* 240 * 793/1983 ≈ 96 */
+    aspect-ratio: 1983 / 793 !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: 160px !important;
-    max-height: 160px !important;
-    font-size: 16px;
-    padding: 10px 14px;
+    max-width: 240px !important;
+    max-height: 96px !important;
+    font-size: 14px;
+    padding: 8px 14px;
     box-sizing: border-box;
   }
   /* base .character img は object-fit:contain なのでクロップは起きないが、
@@ -1843,14 +1845,14 @@ body.layout-editor-on .character img {
   .chip { width: 196px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
   .character { width: 140px !important; height: 158px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは 1:1 正方形で固定。 4:3 帯の上書きは上の .char-hint
+  /* フクロウの吹き出しは元画像 AR (5:2) で固定。 4:3 帯の上書きは上の .char-hint
      ルールで既に適用済みだが、 inline transform 解除のため width/height を再宣言 */
   .char-hint {
-    width: 160px !important;
-    height: 160px !important;
-    aspect-ratio: 1 / 1 !important;
-    max-width: 160px !important;
-    max-height: 160px !important;
+    width: 240px !important;
+    height: 96px !important;
+    aspect-ratio: 1983 / 793 !important;
+    max-width: 240px !important;
+    max-height: 96px !important;
     transform: translate(0, 0) !important;
   }
 }
@@ -1899,16 +1901,16 @@ body.layout-editor-on .character img {
   .chip.chip-count { font-size: 44px !important; }
   .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
   .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは 1:1 正方形で固定 (5:4 帯では 150px) */
+  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (5:4 帯では 220×88) */
   .char-hint {
-    width: 150px !important;
-    height: 150px !important;
-    aspect-ratio: 1 / 1 !important;
+    width: 220px !important;
+    height: 88px !important; /* 220 * 793/1983 ≈ 88 */
+    aspect-ratio: 1983 / 793 !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: 150px !important;
-    max-height: 150px !important;
-    font-size: 15px !important;
+    max-width: 220px !important;
+    max-height: 88px !important;
+    font-size: 13px !important;
     transform: translate(0, 0) !important;
   }
 }
