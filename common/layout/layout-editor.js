@@ -8,6 +8,15 @@
 //   - Persist via localStorage (per-page key) + GitHub PUT through /api/gh/.
 //   - Generate saved-layout.json schema (additive __version, __locked, __zoom, __comparison, __grid).
 //
+// @version 1.1.0 (2026-05-07): Phase 2 / impl-A — per-question layout key support.
+//   - cfg.perQuestionSelectors whitelist: matched selectors save as `${sel}|${i}@${qid}`.
+//   - qid sourced from window.QUIZLAND_GET_CURRENT_QID(). Frozen at snapshot()
+//     start to avoid mid-save races.
+//   - save() merges with existing local + remote JSON so other questions'
+//     per-Q keys survive when the current question is saved alone.
+//   - Public confirmDiscardIfDirty() for impl-B (quizland index.html) to
+//     prompt before discarding unsaved per-question edits on next/prev nav.
+//
 // Source patterns extracted from quizland/preview/full/index.html (3468 lines).
 // All editor-specific styles must be scoped under body.layout-editor-on (see layout-editor.css).
 //
@@ -262,6 +271,23 @@
     } catch (e) { return null; }
   }
 
+  // 2026-05-07 (Phase 2 / impl-A): 既存 JSON の上に snapshot をマージする。
+  //   per-Q キー (`${sel}|${i}@${qid}`) を含む snapshot で save する際、
+  //   他問題で書かれた per-Q キーを温存するためのユーティリティ。
+  //
+  //   挙動:
+  //     - existing が null/undefined のときは snap をそのまま返す。
+  //     - existing 側のキーをすべて拾い、 snap のキーで上書き (snap が真値)。
+  //     - 結果として「snap には無く existing にあるキー」は保持される
+  //       → 別問題の per-Q キーや、 別タブで先に書いたキーも消えない。
+  //     - __savedAt は呼び出し側で付け替える前提なのでここでは触らない。
+  function mergeSnapshotOver(existing, snap) {
+    if (!existing || typeof existing !== 'object') return snap;
+    var out = Object.assign({}, existing);
+    Object.keys(snap).forEach(function (k) { out[k] = snap[k]; });
+    return out;
+  }
+
   // 2026-05-08: server (assets バンドル) と local の新旧を判定。
   //   - local が __savedAt を持ち、5 分以内なら local 優先（deploy ラグ想定）
   //   - それ以外は server 優先（別端末更新の伝播を尊重）
@@ -302,6 +328,22 @@
   function _isPerQSelector(sel) {
     var list = state._perQuestionSelectors;
     return !!(list && list.length && list.indexOf(sel) !== -1);
+  }
+
+  // 2026-05-07: LayoutApplier.apply に渡す共通 cfg を構築 (Phase 2 / impl-A)。
+  //   editor 内の apply 呼び出しは selectors / qid / perQuestionSelectors を毎回揃える。
+  //   extra はマージ対象 (selectors を上書きしたいとき等)。
+  function _applierCfg(extra) {
+    var cfg = state.config || {};
+    var base = {
+      selectors: cfg.editableSelectors || cfg.selectors,
+      qid: getCurrentQid(),
+      perQuestionSelectors: state._perQuestionSelectors,
+    };
+    if (extra) {
+      Object.keys(extra).forEach(function (k) { base[k] = extra[k]; });
+    }
+    return base;
   }
 
   // 2026-05-07: (sel, i) と任意の qid から保存キーを生成する。
@@ -630,9 +672,7 @@
     });
     // 即時反映: chip 自体の絶対位置は個別 entry で保護されているので、 他 chip が動かない。
     if (window.LayoutApplier && state.config) {
-      window.LayoutApplier.apply(window._currentLayoutData, document, {
-        selectors: state.config.editableSelectors || state.config.selectors,
-      });
+      window.LayoutApplier.apply(window._currentLayoutData, document, _applierCfg());
     }
     // toast: 保存した (type, slot) を一覧表示
     var SLOT_LABELS = ['TL', 'TR', 'BL', 'BR'];
@@ -726,9 +766,7 @@
       };
     });
     if (window.LayoutApplier && state.config) {
-      window.LayoutApplier.apply(window._currentLayoutData, document, {
-        selectors: state.config.editableSelectors || state.config.selectors,
-      });
+      window.LayoutApplier.apply(window._currentLayoutData, document, _applierCfg());
     }
     var msg = type + ' chip の個別設定 ' + deleted + ' 件を削除、 preset 適用';
     if (skipped) msg += ' (' + skipped + ' 件は preset 未定義のため保留: 📌 で preset を完備すれば次回クリアできます)';
@@ -778,28 +816,50 @@
   //  Save / revert / reset
   // ====================================================================
 
+  // 2026-05-07 (Phase 2 / impl-A): GitHub から取得した contents.content (base64) を
+  //   JSON.parse して返す。 失敗時は null。 save() のマージで使用。
+  function _decodeGhJson(existing) {
+    if (!existing || !existing.content) return null;
+    try {
+      // GitHub content は改行入り base64。 atob は改行を許容するブラウザ多いが
+      // 念のため除去。 utf8 復号は decodeURIComponent(escape(...)) パターン。
+      var b64 = String(existing.content).replace(/\s+/g, '');
+      var bin = atob(b64);
+      var json = decodeURIComponent(escape(bin));
+      return JSON.parse(json);
+    } catch (e) {
+      console.warn('[LayoutEditor] failed to decode existing GH layout JSON', e);
+      return null;
+    }
+  }
+
   function save() {
     emit('save:start');
     var data = snapshot();
-    var pretty = JSON.stringify(data, null, 2);
-    var compact = JSON.stringify(data);
-    // 2026-05-08 fix: localStorage 保存時に savedAt を埋め込む。
-    // reload 後 enable() で server (deploy ラグで stale) と local どちらが新しいか判定する根拠。
-    // GitHub PUT 用 pretty/compact には混ぜない (差分を最小にし、余計な chore commit を防ぐ)。
-    var localData = Object.assign({}, data, { __savedAt: Date.now() });
+    // 2026-05-07 (Phase 2 / impl-A): per-Q キー導入により snapshot は「現在問題分のみ」を
+    //   含む。 既存 JSON (localStorage / GitHub) を盲目的に上書きすると別問題の per-Q キーが
+    //   消失するため、 save 時は GET → merge → PUT する。
+    //   - localStorage 側はここで先に merge して書く (GH へは別経路で merge 済みを送る)。
+    //   - GitHub 側は ghGetContents で取得した内容を decode してから merge → PUT。
+    var existingLocal = localLoad();
+    // __savedAt は merge 後に上書きするのでここでは existingLocal から落としておく
+    var existingLocalForMerge = existingLocal ? Object.assign({}, existingLocal) : null;
+    if (existingLocalForMerge) delete existingLocalForMerge.__savedAt;
+    var mergedLocal = mergeSnapshotOver(existingLocalForMerge, data);
+    var localData = Object.assign({}, mergedLocal, { __savedAt: Date.now() });
     localSave(localData);
     // 2026-05-07 fix: 保存した data で window._currentLayoutData を即時に上書きする。
-    //   これをしないと、 save() 後の何らかの DOM 再適用 (MutationObserver 経由 / 次問題
-    //   遷移時の renderChoices 直後 apply 等) が **古い** _currentLayoutData を使って
-    //   ユーザーの直前ドラッグを巻き戻してしまう。
+    //   per-Q マージ後の merged 値を使う (= 他問題の per-Q キーも保持して MutationObserver
+    //   経由 apply で問題遷移後に他問題の per-Q が消えないようにする)。
     //   症状: ?edit=1 で ステージ画像 (.emoji-display / .emoji-main-img) を移動・拡大 →
     //         💾 を押す → 次の MutationObserver 発火で位置が元に戻り、 続く save() で
     //         戻った位置が GitHub に書かれる (= ユーザーの操作が消える)。
-    //   (snapshot() が DOM の inline 値から構築した data はそのまま現状の真値なので、
-    //    _currentLayoutData にそのまま代入すればよい。)
     if (window._currentLayoutData !== undefined) {
-      window._currentLayoutData = data;
+      window._currentLayoutData = mergedLocal;
     }
+    // dirty 判定の lastSavedJson 比較は 「現在問題分の snapshot」 ベースに揃える
+    // (mergedLocal を使うと他問題分の差分でも常に dirty 検知してしまう)。
+    var compact = JSON.stringify(data);
     // C2: do NOT clear dirty flag yet — wait for remote success.
     showToast('保存中…');
 
@@ -807,6 +867,7 @@
     if (!path) {
       // No GH path → local is the source of truth, mark as saved.
       state.lastSavedJson = compact;
+      state._dirty = false;
       updateDirtyUI();
       showToast('ローカルに保存しました (GH path 未設定)', 'error');
       emit('save:success', { local: true, remote: false });
@@ -814,10 +875,19 @@
     }
     return ghGetContents(path).then(function (existing) {
       var sha = existing ? existing.sha : null;
+      // 2026-05-07: 既存 JSON と snapshot を merge してから PUT (他問題の per-Q キーを保持)。
+      //   __savedAt は GitHub 用 payload には書き込まない (差分最小化のため)。
+      var existingRemote = _decodeGhJson(existing);
+      var mergedRemote = mergeSnapshotOver(existingRemote, data);
+      if (mergedRemote && Object.prototype.hasOwnProperty.call(mergedRemote, '__savedAt')) {
+        delete mergedRemote.__savedAt;
+      }
+      var pretty = JSON.stringify(mergedRemote, null, 2);
       return ghPutContents(path, utf8Btoa(pretty), 'chore(layout): update saved layout', sha);
     }).then(function () {
       // C2: only clear dirty after remote write succeeds
       state.lastSavedJson = compact;
+      state._dirty = false;
       updateDirtyUI();
       showToast('保存しました');
       emit('save:success', { local: true, remote: true });
@@ -895,7 +965,7 @@
   function applySavedData(data) {
     if (!data) return;
     if (window.LayoutApplier && state.config) {
-      try { window.LayoutApplier.apply(data, null, { selectors: state.spec }); }
+      try { window.LayoutApplier.apply(data, null, _applierCfg({ selectors: state.spec })); }
       catch (e) { console.warn('[LayoutEditor] applier.apply failed', e); }
     } else {
       // Fallback: minimal apply
@@ -948,14 +1018,38 @@
   // ====================================================================
 
   function updateDirtyUI() {
-    var btn = $('#le-save');
-    if (!btn) return;
     var cur = JSON.stringify(snapshot());
-    var dirty = cur !== state.lastSavedJson;
-    btn.classList.toggle('dirty', dirty);
-    emit('dirty', dirty);
+    var snapshotDirty = cur !== state.lastSavedJson;
+    // 2026-05-07: state._dirty は「ユーザー操作起点の未保存変更」を表す。
+    //   - snapshot 比較 (snapshotDirty) は問題遷移で qid が変わっただけでも true になりうるため
+    //     **dirty を false から true に上げる根拠**としてのみ使い、 false に下げる権限は持たせない。
+    //   - false への遷移は save 成功 / disable / 明示クリアでのみ行う。
+    if (snapshotDirty) state._dirty = true;
+    var btn = $('#le-save');
+    if (btn) btn.classList.toggle('dirty', state._dirty);
+    emit('dirty', state._dirty);
   }
   var scheduleDirtyUpdate = debounce(updateDirtyUI, 100);
+
+  // 2026-05-07 (Phase 2 / impl-A): 公開 API。
+  //   impl-B (quizland/index.html の前へ/次へボタン) から呼ばれて
+  //   未保存の編集があれば confirm を出す。
+  //   戻り値:
+  //     true  — 続行 OK (clean か、ユーザーが破棄を承認した)
+  //     false — キャンセル (ユーザーが続行を取り止めた)
+  //   編集モード OFF や enable 前は常に true (= 何も妨げない)。
+  function confirmDiscardIfDirty() {
+    if (!state.enabled) return true;
+    if (!state._dirty) return true;
+    var msg = '未保存の変更があります。 破棄して移動しますか？\n\n' +
+              '(キャンセルしてから 💾 で保存できます)';
+    try {
+      return !!window.confirm(msg);
+    } catch (e) {
+      // confirm が使えない環境では安全側 (移動を許可しない)。
+      return false;
+    }
+  }
 
   // ====================================================================
   //  Undo / redo
@@ -2101,7 +2195,17 @@
     })[0]) || el.tagName.toLowerCase();
     var sibs = el.parentElement ? Array.from(el.parentElement.children).filter(function (c) { return c.classList.contains(cls); }) : [el];
     var idx = sibs.indexOf(el);
-    return '.' + cls + (sibs.length > 1 ? '[' + idx + ']' : '');
+    var label = '.' + cls + (sibs.length > 1 ? '[' + idx + ']' : '');
+    // 2026-05-07 (Phase 2 / impl-A): per-Q 化対象の要素なら現在 qid をラベルに併記。
+    //   例: ".emoji-display [body_lv1_002]". 共通要素 (.character 等) は付かない。
+    try {
+      var key = getElKey(el);
+      if (key && key.indexOf('@') !== -1) {
+        var qid = key.split('@').pop();
+        if (qid) label += ' [' + qid + ']';
+      }
+    } catch (e) { /* noop */ }
+    return label;
   }
 
   // ====================================================================
@@ -6464,9 +6568,9 @@
             try { refreshElementList(); } catch (e) {}
             try {
               if (window._currentLayoutData && window.LayoutApplier) {
-                window.LayoutApplier.apply(window._currentLayoutData, moRoot, {
+                window.LayoutApplier.apply(window._currentLayoutData, moRoot, _applierCfg({
                   selectors: state.spec.map(function (e) { return e[0]; })
-                });
+                }));
               }
             } catch (e) {}
           } catch (e) {}
@@ -6595,6 +6699,8 @@
       state.resizeObserver = null;
     }
     state.enabled = false;
+    state._dirty = false;            // 2026-05-07: edit セッション終了時はクリア
+    state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
     state.toolbarEl = null;
     state.numericPanelEl = null;
     state.listPanelEl = null;
@@ -6635,6 +6741,11 @@
   //   _currentLayoutData を localStorage の最新値で refresh する公開 API。
   //   enable() が再度呼ばれない経路で server (stale) data が残り続け、
   //   直前 save が巻き戻る症状を防ぐ。
+  // 2026-05-07 (Phase 2 / impl-A): per-Q キー導入後は問題遷移で snapshot 内容が
+  //   変わるので、 state.lastSavedJson を「新しい問題に揃えた snapshot」 で取り直す。
+  //   _dirty が clean (= ユーザー操作なし) のときに限ってリセットする。
+  //   未保存編集中 (= _dirty true) は遷移しても dirty を維持する (impl-B 側で
+  //   confirmDiscardIfDirty を呼ぶ前提)。
   function refreshCurrentFromLocal() {
     try {
       var server = window._currentLayoutData || null;
@@ -6644,6 +6755,10 @@
         var cleaned = Object.assign({}, fresh);
         delete cleaned.__savedAt;
         window._currentLayoutData = cleaned;
+      }
+      if (state.enabled && !state._dirty) {
+        // clean なら新 qid 基準で lastSavedJson を取り直し、 dirty 誤判定を防ぐ。
+        try { state.lastSavedJson = JSON.stringify(snapshot()); } catch (e2) {}
       }
     } catch (e) { /* noop */ }
   }
@@ -6658,6 +6773,7 @@
     enable: enable,
     disable: disable,
     get isEnabled() { return state.enabled; },
+    get isDirty() { return !!state._dirty; },
     on: on, off: off, emit: emit,
     save: save,
     revert: revert,
@@ -6670,6 +6786,9 @@
     toggleComparison: toggleComparison,
     toggleGrid: toggleGrid,
     refreshCurrentFromLocal: refreshCurrentFromLocal,
+    // 2026-05-07 (Phase 2 / impl-A): per-Q layout API
+    confirmDiscardIfDirty: confirmDiscardIfDirty,
+    getCurrentQid: getCurrentQid,
     // Test/diagnostic accessors
     _state: state,
     _spec: function () { return state.spec.slice(); },
