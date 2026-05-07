@@ -59,34 +59,68 @@ panel 1 のナレーション (`OP_NA.wav`、17.45s) を 2 セグメントに分
 
 ナレ全文の audio.ended 後にさらに **2 秒の hold** を入れてから panel 2 (博士の発話) に遷移。博士の発話開始がナレ余韻と重ならないようにするため。
 
-## 会話レイアウト (2026-05-07 リデザイン)
+## 会話レイアウト (2026-05-07 リデザイン、複数アスペクト対応)
 
 panel 2-6 の会話は `.op-content > .op-narration + .op-sides > .op-side-pono / .op-side-hakase` の構成。
 
-- 各 `op-side` = 縦積みの **`.op-char-frame` (上) + `.op-dialogue` (下)** で 50% 幅固定
-- キャラは waist-shot: `.op-char-frame { position: relative; overflow: hidden }` + 子 `<img>.op-char { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: auto }` で top-anchor、`height: N%` で frame をはみ出させて下半身を overflow:hidden で切る
-- 両方の `.op-dialogue` は常時表示・固定幅。発話側 opacity 1.0、非発話側 opacity 0.55 の dim で発話者を明示
+- 各 `op-side` = 縦積みの **`.op-char-frame` (上) + `.op-dialogue` (下)** で 50% 幅、`max-width: 540px` キャップで横伸縮を抑制
+- キャラは waist-shot: `<img>.op-char { width: N%; clip-path: inset(0 0 N% 0) }` で底辺を画像自体からカット、横方向は素のまま (横切り禁止)
+- 両方の `.op-dialogue` は常時表示・固定サイズ (`max-width: 480px`, `min-height: 120px`, `max-height: 200px`, `overflow-y: auto`)。発話側 opacity 1.0、非発話側 opacity 0.55 の dim で発話者を明示
 - 旧 `.op-characters` (キャラ行) + `.op-dialogues` (吹き出し行) の 2 行レイアウトは廃止、`.op-side` 縦積みに統一
 
-背景ブラーは `.op-bg.is-static-blur { filter: blur(5px) saturate(0.9) brightness(0.94) }` (旧 `blur(10px) saturate(0.85) brightness(0.92)` の半分強度)。
+背景ブラーは `.op-bg.is-static-blur { filter: blur(5px) saturate(0.9) brightness(0.94) }` (旧 `blur(10px) saturate(0.85) brightness(0.92)` の半分強度)。`.op-bg` は letterbox 外まで全画面で延長 (`.op-cinematic` ルートに対する `position: absolute; inset: 0`)。
 
-### Per-character height 基準 (重要設計指針)
+### アスペクト戦略: 4:3 letterbox + 解像度別調整
 
-旧 `width: 78%` 一律基準では、画像のアスペクト比に応じて縦サイズが変わってしまい、Pono の縦長画像 (`think_arms_crossed_side.webp` 358×652, aspect 0.55) は巨大、博士 (`owl_professor_guide.webp` 700×569, aspect 1.23) は小さく見える「巨人対小人」状態だった。
+cinematic stage は `.op-content` で **4:3 を最大アスペクト** として letterbox する:
 
-→ **per-character `height` 基準** に切替。各キャラの最適値は画像内容（特に props や手足の広がり）で決まる:
+```css
+.op-content {
+  width: min(100vw, calc(100vh * 4 / 3));
+  height: min(100vh, calc(100vw * 3 / 4));
+  aspect-ratio: 4 / 3;
+}
+```
 
-| キャラ | desktop height | mobile height | 根拠 |
-|---|---|---|---|
-| ポノ全 5 枚 | 180% | 175% | アスペクト 0.55-0.81 を吸収して縦サイズ一定。下 ~44% は frame 下に隠す |
-| 博士 (`owl_professor_guide.webp`) | 120% | 118% | 指示棒が画像左端まで突き出ているので side clip 量を抑える必要あり。指示棒・本・卒業帽タッセルを温存 |
+- 4:3 viewport (1024×768): 100vw × 100vh で full
+- 16:9 viewport (1920×1080): 1440 × 1080 (左右に 240px の letterbox bar)
+- 21:9 viewport (1920×800): 1067 × 800 (左右に 426px の letterbox bar)
+
+これにより内部レイアウトは **4:3 1 つだけ**を考慮すればよくなる。背景ブラー画像は letterbox 外も覆うため画面全体は埋まる (黒帯にならない)。
+
+解像度別の追加調整:
+- `(min-aspect-ratio: 16/10)` ワイド画面: ナレーション max-width 720→900px (横長矩形化)、会話ボックス max-width 480→540px、文字 22→20px
+- `(max-width: 540px)` モバイル: キャラ・ボックス共に縮小、ボックス max-width: 100%
+
+### キャラサイズ: width 基準 + clip-path inset (重要設計指針)
+
+過去に試した height 基準 (height 180%/120% で frame をはみ出させ overflow:hidden) は、横長アセット (例: 博士の指示棒が画像左端まで突き出ている) で **横が切れる**問題があった。ユーザ要件「キャラクターの横が切れるのはダメ」に基づき、設計を **width 基準 + clip-path** に転換:
+
+```css
+.op-char-frame { position: relative; /* overflow:hidden は不要 */ }
+.op-char-pono   { width: 75%; max-width: 280px; clip-path: inset(0 0 35% 0); }
+.op-char-hakase { width: 95%; max-width: 320px; clip-path: inset(0 0 25% 0); }
+```
+
+- 横方向は元画像の natural aspect で表示 (横切れゼロ)
+- 縦方向の waist-shot は **画像自体の下 N% を clip-path: inset() でカット**
+- frame の `overflow: hidden` は不要 (むしろあると label 等の絶対配置子が clip される弊害があるため撤去)
+
+| キャラ | desktop | wide (≥16/10) | mobile | clip-path bottom |
+|---|---|---|---|---|
+| ポノ全 5 枚 | 75% / max 280px | max 240px | 80% / max 200px | **35%** カット |
+| 博士 (`owl_professor_guide.webp`) | 95% / max 320px | max 280px | 95% / max 230px | **25%** カット (squat な体型なので少なめ) |
 
 **新キャラ追加時の決め方**:
-1. 画像のアスペクトと特徴 (画像の端に重要な要素が無いか) を視覚確認する
-2. 縦長 (aspect < 0.7) で props も中央寄りなら 170-180%
-3. 横長 (aspect > 1.0) または props が画像端まで広がっているなら 110-130%
-4. 結果が「他キャラと縦サイズが揃う」かつ「重要な props が side clip で消えない」を両立できる値を選ぶ
-5. 必ず実機 (staging) で複数アスペクトの組み合わせを目視確認する
+1. 画像のアスペクトと **底辺に何があるか** を視覚確認 (足先・尻尾・台座など、隠してよい要素か)
+2. width % は他キャラと並べた時に頭サイズが揃うように調整 (Pono 75%, 博士 95% は経験値)
+3. clip-path bottom % は visible top portion で **頭 + 胸 + 腰**が映るように設定。縦長キャラ (Pono) は 30-40%、横長キャラ (博士) は 20-25%
+4. 横方向の clip は使わない (横切れ禁止)
+5. 必ず実機 (staging) で 4:3, 16:9, 21:9, モバイル縦の組み合わせを目視確認
+
+### 補足: 長セリフの auto-scroll
+
+`_opTypeInto` の典型タイピング loop で `el.textContent += c` の直後に `el.closest('.op-dialogue').scrollTop = scrollHeight` を呼ぶ。`max-height: 200px + overflow-y: auto` のボックスで長セリフ (例: panel 5 「ほっほっほ、それでよい。…」) の末尾が下に隠れないようにするため。
 
 ## Panel Spec
 
