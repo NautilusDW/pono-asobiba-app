@@ -349,6 +349,71 @@
     letter-spacing: 0.5px;
   }
 
+  /* Height guides (Photoshop-like horizontal rulers). Editor-only, NOT exported. */
+  .height-guides {
+    display: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+  }
+  .height-guides.is-on { display: block; }
+  .height-guides .hg-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px dashed #fde047;
+    pointer-events: none;
+  }
+  .height-guides .hg-line.hg-pono { border-top-color: #fde047; }
+  .height-guides .hg-line.hg-pono.hg-bot { border-top-color: #fde04788; }
+  .height-guides .hg-line.hg-hakase { border-top-color: #67e8f9; }
+  .height-guides .hg-line.hg-hakase.hg-bot { border-top-color: #67e8f988; }
+  .height-guides .hg-label {
+    position: absolute;
+    right: 6px;
+    top: -12px;
+    background: rgba(0, 0, 0, 0.65);
+    color: inherit;
+    font-size: 14px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .height-guides .hg-line.hg-pono { color: #fde047; }
+  .height-guides .hg-line.hg-hakase { color: #67e8f9; }
+
+  /* Aspect-lock checkbox row */
+  .lock-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    border-radius: 3px;
+    padding: 6px 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .lock-row input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+  }
+  .lock-row .lock-text {
+    font-size: 11px;
+    color: #cbd5e1;
+  }
+  .lock-row.is-on { border-color: #10b981; background: #14322a; }
+  .lock-row.is-on .lock-text { color: #d1fae5; }
+
+  header button.toggle-on {
+    background: #10b981;
+  }
+  header button.toggle-on:hover { background: #059669; }
+
   /* Toast */
   #toast {
     position: fixed;
@@ -384,6 +449,7 @@
     </div>
     <span id="scale-info" style="font-size:11px;color:#94a3b8;"></span>
     <span class="spacer"></span>
+    <button id="btn-toggle-height-guides" class="ghost" type="button">📏 高さガイド</button>
     <button id="btn-export">エクスポート（コピー）</button>
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
@@ -429,6 +495,7 @@
         <div class="safe-area-16-9" aria-hidden="true">
           <span class="safe-area-label">16:9 セーフエリア</span>
         </div>
+        <div class="height-guides" id="height-guides" aria-hidden="true"></div>
       </div>
     </div>
   </main>
@@ -477,6 +544,50 @@ const DEFAULT_FRAME_ID = 'frame_wide_a';
 const VP_DIMS = { B: [1024, 768], C: [1920, 1080], D: [2560, 1080] };
 const STORAGE_PREFIX = 'pono.opLayoutEditor.v1.';
 const LEGACY_STORAGE_PREFIX = 'opLayoutEditor.';
+const HEIGHT_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showHeightGuides';
+
+// Frame natural aspect cache: id -> naturalW / naturalH (number) or undefined while loading.
+const FRAME_NATURAL_ASPECT = {};
+function preloadFrameAspects() {
+  FRAME_IMAGES.forEach(f => {
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+        FRAME_NATURAL_ASPECT[f.id] = im.naturalWidth / im.naturalHeight;
+        // After load, refresh aspect-lock-driven dims for any side currently using this frame
+        // with image-mode aspectLock = ON.
+        try { onFrameAspectLoaded(f.id); } catch (e) {}
+      }
+    };
+    im.src = f.path;
+  });
+}
+
+function getEffectiveAspectRatio(s) {
+  // Returns the ratio to apply for aspectLock. Image mode uses frame's natural;
+  // CSS mode uses the snapshot stored at lock-on (aspectLockRatio).
+  if (s.boxMode === 'image') {
+    const a = FRAME_NATURAL_ASPECT[s.boxImage];
+    if (a && Number.isFinite(a) && a > 0) return a;
+    // fall back to stored ratio if available
+    if (s.aspectLockRatio && s.aspectLockRatio > 0) return s.aspectLockRatio;
+    return null;
+  } else {
+    if (s.aspectLockRatio && s.aspectLockRatio > 0) return s.aspectLockRatio;
+    return null;
+  }
+}
+
+let showHeightGuides = false;
+function loadHeightGuidesPref() {
+  try {
+    const v = localStorage.getItem(HEIGHT_GUIDES_STORAGE_KEY);
+    showHeightGuides = v === 'true';
+  } catch (e) { showHeightGuides = false; }
+}
+function saveHeightGuidesPref() {
+  try { localStorage.setItem(HEIGHT_GUIDES_STORAGE_KEY, showHeightGuides ? 'true' : 'false'); } catch (e) {}
+}
 
 function defaultsFor(vc) {
   const isB = vc === 'B';
@@ -499,6 +610,8 @@ function defaultsFor(vc) {
       boxPadding: 32,
       boxRadius: 16,
       boxColor: '#d8efcf',
+      aspectLock: false,
+      aspectLockRatio: 0,
       sampleText: 'はかせ、あそびに きたよ！'
     },
     hakase: {
@@ -518,6 +631,8 @@ function defaultsFor(vc) {
       boxPadding: 32,
       boxRadius: 16,
       boxColor: '#fff3d6',
+      aspectLock: false,
+      aspectLockRatio: 0,
       sampleText: 'ほっほっほ…ポノか。よくきたのう'
     },
     speaker: 'hakase'
@@ -539,6 +654,10 @@ function migrateFrameIds(parsed) {
     if (!side || typeof side !== 'object') return;
     if (!FRAME_IDS.includes(side.boxImage)) {
       side.boxImage = DEFAULT_FRAME_ID;
+    }
+    if (typeof side.aspectLock !== 'boolean') side.aspectLock = false;
+    if (typeof side.aspectLockRatio !== 'number' || !Number.isFinite(side.aspectLockRatio)) {
+      side.aspectLockRatio = 0;
     }
   });
   return parsed;
@@ -609,6 +728,7 @@ function buildPresetGrid() {
       const side = state[currentVC][currentTab];
       side.boxImage = f.id;
       if (side.boxMode !== 'image') side.boxMode = 'image';
+      reapplyAspectLockAfterFrameChange(currentTab);
       save(currentVC);
       render();
       buildRightPane();
@@ -718,6 +838,14 @@ function rescaleStage() {
   }
 }
 
+// Per-control re-sync hooks so aspect-lock can update a sibling control's UI
+// without rebuilding the whole pane. key is e.g. 'boxW' / 'boxH' / 'slotW' etc.
+const _rangeSyncMap = { pono: {}, hakase: {} };
+function syncRangeUi(sideKey, key) {
+  const fn = _rangeSyncMap[sideKey] && _rangeSyncMap[sideKey][key];
+  if (typeof fn === 'function') fn();
+}
+
 function makeRange(label, min, max, step, key, sideKey) {
   const row = document.createElement('div');
   row.className = 'prop-row';
@@ -732,6 +860,12 @@ function makeRange(label, min, max, step, key, sideKey) {
   const cur = state[currentVC][sideKey][key];
   range.value = cur;
   num.value = cur;
+  // Register UI-sync so external mutations (e.g. aspect-lock companion) can refresh display
+  _rangeSyncMap[sideKey][key] = () => {
+    const v = state[currentVC][sideKey][key];
+    if (document.activeElement !== range) range.value = v;
+    if (document.activeElement !== num) num.value = v;
+  };
   const apply = (v) => {
     let n = Number(v);
     if (!Number.isFinite(n)) return;
@@ -739,6 +873,10 @@ function makeRange(label, min, max, step, key, sideKey) {
     state[currentVC][sideKey][key] = n;
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
+    // Aspect-lock coupling for box dims
+    if (key === 'boxW' || key === 'boxH') {
+      maybeApplyAspectLockOnBoxChange(sideKey, key);
+    }
     save(currentVC);
     applySideToDom(sideKey);
   };
@@ -751,6 +889,9 @@ function makeRange(label, min, max, step, key, sideKey) {
     state[currentVC][sideKey][key] = n;
     num.value = n;
     range.value = n;
+    if (key === 'boxW' || key === 'boxH') {
+      maybeApplyAspectLockOnBoxChange(sideKey, key);
+    }
     save(currentVC);
     applySideToDom(sideKey);
   });
@@ -758,6 +899,72 @@ function makeRange(label, min, max, step, key, sideKey) {
   row.appendChild(range);
   row.appendChild(num);
   return row;
+}
+
+// boxW / boxH constants used for clipping companion updates (must mirror the makeRange args
+// in buildRightPane below).
+const BOX_W_MIN = 200, BOX_W_MAX = 2000;
+const BOX_H_MIN = 80,  BOX_H_MAX = 800;
+
+function maybeApplyAspectLockOnBoxChange(sideKey, changedKey) {
+  const s = state[currentVC][sideKey];
+  if (!s.aspectLock) return;
+  const ratio = getEffectiveAspectRatio(s);
+  if (!ratio || ratio <= 0) return;
+  if (changedKey === 'boxW') {
+    let h = Math.round(s.boxW / ratio);
+    h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+    if (h !== s.boxH) {
+      s.boxH = h;
+      syncRangeUi(sideKey, 'boxH');
+    }
+  } else if (changedKey === 'boxH') {
+    let w = Math.round(s.boxH * ratio);
+    w = Math.min(Math.max(w, BOX_W_MIN), BOX_W_MAX);
+    if (w !== s.boxW) {
+      s.boxW = w;
+      syncRangeUi(sideKey, 'boxW');
+    }
+  }
+}
+
+// When the frame image (image-mode) changes while aspectLock is ON, update lock ratio
+// to the new image's natural aspect and re-derive boxH from current boxW.
+function reapplyAspectLockAfterFrameChange(sideKey) {
+  const s = state[currentVC][sideKey];
+  if (!s.aspectLock) return;
+  if (s.boxMode !== 'image') return;
+  const ratio = FRAME_NATURAL_ASPECT[s.boxImage];
+  if (!ratio || ratio <= 0) return; // will pick up later via onFrameAspectLoaded
+  s.aspectLockRatio = ratio;
+  let h = Math.round(s.boxW / ratio);
+  h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+  s.boxH = h;
+}
+
+// Called from preloadFrameAspects when an image's natural aspect is finally known.
+function onFrameAspectLoaded(frameId) {
+  ['pono', 'hakase'].forEach(sideKey => {
+    ['B', 'C', 'D'].forEach(vc => {
+      const s = state[vc] && state[vc][sideKey];
+      if (!s) return;
+      if (!s.aspectLock) return;
+      if (s.boxMode !== 'image') return;
+      if (s.boxImage !== frameId) return;
+      const ratio = FRAME_NATURAL_ASPECT[frameId];
+      if (!ratio || ratio <= 0) return;
+      s.aspectLockRatio = ratio;
+      // recompute boxH from boxW
+      let h = Math.round(s.boxW / ratio);
+      h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+      s.boxH = h;
+      save(vc);
+      if (vc === currentVC) {
+        syncRangeUi(sideKey, 'boxH');
+        applySideToDom(sideKey);
+      }
+    });
+  });
 }
 
 let _radioUid = 0;
@@ -866,6 +1073,78 @@ function makeTextarea(label, key, sideKey) {
   return row;
 }
 
+function makeFrameImageSelect(sideKey) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = 'フレーム画像';
+  const sel = document.createElement('select');
+  FRAME_IMAGES.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id;
+    o.textContent = f.label;
+    if (state[currentVC][sideKey].boxImage === f.id) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    const s = state[currentVC][sideKey];
+    s.boxImage = sel.value;
+    reapplyAspectLockAfterFrameChange(sideKey);
+    save(currentVC);
+    syncRangeUi(sideKey, 'boxH');
+    render();
+  });
+  row.appendChild(lab);
+  row.appendChild(sel);
+  return row;
+}
+
+function makeAspectLockRow(sideKey) {
+  const s = state[currentVC][sideKey];
+  const wrap = document.createElement('label');
+  wrap.className = 'lock-row';
+  if (s.aspectLock) wrap.classList.add('is-on');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = !!s.aspectLock;
+  const txt = document.createElement('span');
+  txt.className = 'lock-text';
+  txt.textContent = '🔒 縦横比をロック (フレーム画像に合わせる)';
+  cb.addEventListener('change', () => {
+    const ss = state[currentVC][sideKey];
+    ss.aspectLock = !!cb.checked;
+    if (ss.aspectLock) {
+      // Snapshot the lock ratio source.
+      if (ss.boxMode === 'image') {
+        const a = FRAME_NATURAL_ASPECT[ss.boxImage];
+        if (a && a > 0) {
+          ss.aspectLockRatio = a;
+          // Re-derive boxH from current boxW so DOM matches lock immediately.
+          let h = Math.round(ss.boxW / a);
+          h = Math.min(Math.max(h, BOX_H_MIN), BOX_H_MAX);
+          ss.boxH = h;
+        } else {
+          // image not loaded yet — keep current H for now; onFrameAspectLoaded will fix it.
+          if (ss.boxH > 0) ss.aspectLockRatio = ss.boxW / ss.boxH;
+        }
+      } else {
+        // CSS mode: snapshot current boxW/boxH ratio.
+        if (ss.boxH > 0) ss.aspectLockRatio = ss.boxW / ss.boxH;
+      }
+      wrap.classList.add('is-on');
+    } else {
+      wrap.classList.remove('is-on');
+    }
+    save(currentVC);
+    syncRangeUi(sideKey, 'boxH');
+    syncRangeUi(sideKey, 'boxW');
+    applySideToDom(sideKey);
+  });
+  wrap.appendChild(cb);
+  wrap.appendChild(txt);
+  return wrap;
+}
+
 function buildRightPane() {
   const body = document.getElementById('tab-body');
   body.textContent = '';
@@ -908,8 +1187,7 @@ function buildRightPane() {
     { value: 'css', text: 'CSS' }
   ], { rebuild: true }));
   if (s.boxMode === 'image') {
-    boxGroup.appendChild(makeSelect('フレーム画像', 'boxImage', sideKey,
-      FRAME_IMAGES.map(f => ({ value: f.id, text: f.label }))));
+    boxGroup.appendChild(makeFrameImageSelect(sideKey));
   }
   boxGroup.appendChild(makeRange('幅 (px)', 200, 2000, 1, 'boxW', sideKey));
   boxGroup.appendChild(makeRange('高さ (px)', 80, 800, 1, 'boxH', sideKey));
