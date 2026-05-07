@@ -2124,8 +2124,20 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: #000;
   overflow: hidden;
   display: flex;
+  /* Fade-in from black (Fix 1b). Default = visible. */
+  opacity: 1;
+  transition: opacity 0.7s ease-out;
 }
 .op-cinematic.hidden { display: none; }
+/* fade-in 起動前の瞬時スナップ用 (Fix 1b) */
+.op-cinematic.is-fading-in {
+  opacity: 0;
+  transition: none;
+}
+.op-cinematic.is-revealed {
+  opacity: 1;
+  transition: opacity 0.7s ease-out;
+}
 .op-bg {
   position: absolute; inset: 0;
   background-size: cover;
@@ -2148,14 +2160,35 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   filter: blur(6px) saturate(0.92);      /* soft DoF, slightly muted */
   transition: transform 0.6s ease-out, filter 0.6s ease-out;
 }
+/* Fix 4: シネマティック全体で固定の強めぼかしを 1 枚だけ適用する */
+.op-bg.is-static-blur {
+  animation: none;
+  transform: scale(1.08);
+  filter: blur(10px) saturate(0.85) brightness(0.92);
+}
+/* Fix 5b: 4:3 セーフ領域。背景は overlay 全面、内側コンテンツだけ 4:3 内に収める */
+.op-content {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  aspect-ratio: 4 / 3;
+  width: min(100vw, calc(100vh * 4 / 3));
+  height: min(100vh, calc(100vw * 3 / 4));
+  pointer-events: none;     /* スキップボタンの裏側は素通しにし、子要素だけ受ける */
+}
+.op-content > * {
+  pointer-events: auto;
+}
 .op-characters {
-  position: absolute; inset: 0;
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  top: 0;
   pointer-events: none;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 18%;
+  padding-bottom: 22%;
   box-sizing: border-box;
 }
 .op-characters.hidden { display: none; }
@@ -2163,7 +2196,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   /* layout handled by .op-characters flex; per-character sizing below */
 }
 .op-char-pono {
-  height: 50vh;
+  height: min(50vh, 65%);        /* % refers to .op-content (4:3 stage) height */
   max-height: 320px;
   width: auto;
   object-fit: contain;
@@ -2171,7 +2204,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   margin-left: 4vw;
 }
 .op-char-hakase {
-  height: 50vh;
+  height: min(50vh, 70%);        /* % refers to .op-content (4:3 stage) height */
   max-height: 360px;
   width: auto;
   object-fit: contain;
@@ -2184,26 +2217,30 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   left: 50%;
   bottom: 8%;
   transform: translateX(-50%);
-  width: min(86vw, 760px);
+  width: min(86%, 760px);                /* 親が 4:3 の op-content なので % 基準 */
   background: #fff8e7;
   border-radius: 18px;
   padding: 18px 22px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;
   color: #3a2a14;
-  font-size: 18px;
-  line-height: 1.7;
+  /* Fix 3: フォントサイズを大きく & セグメント切替用に opacity transition を持たせる */
+  font-size: clamp(20px, 3.0vw, 30px);
+  line-height: 1.55;
   text-align: center;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
 }
 .op-narration.hidden { display: none; }
-.op-narration p { margin: 0 0 4px 0; }
-.op-narration p:last-child { margin-bottom: 0; }
+.op-narration p { margin: 0.25em 0; }
 .op-narration p.emphasis { color: #c0392b; font-weight: 700; }
+.op-narration.seg-show { opacity: 1; }
+.op-narration.seg-hide { opacity: 0; }
 .op-dialogues {
   position: absolute;
   left: 50%;
   bottom: 6%;
   transform: translateX(-50%);
-  width: min(94vw, 880px);
+  width: min(94%, 880px);                /* 親 4:3 内に収まるよう % 基準に */
   display: flex;
   gap: 14px;
   align-items: flex-end;
@@ -2263,10 +2300,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   outline: none;
 }
 @media (max-width: 540px) {
-  .op-char-pono { height: 42vh; margin-left: 2vw; }
-  .op-char-hakase { height: 42vh; margin-right: 2vw; }
-  .op-characters { padding-bottom: 22%; }
-  .op-narration { font-size: 16px; padding: 14px 16px; }
+  .op-char-pono { height: min(42vh, 60%); max-height: 240px; margin-left: 2vw; }
+  .op-char-hakase { height: min(42vh, 65%); max-height: 280px; margin-right: 2vw; }
+  .op-characters { padding-bottom: 26%; }
+  /* clamp() の下限は 20px。狭幅でも 18-20px を維持 (Fix 3 の方針に合わせる) */
+  .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
   .op-dialogue-text { font-size: 15px; }
   .op-dialogues { gap: 8px; }
 }
@@ -2420,20 +2458,23 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 <!-- ===== Opening Cinematic (mode-btn → playOpeningCinematic → initGame) ===== -->
 <div id="op-cinematic" class="op-cinematic hidden" aria-hidden="true">
   <div class="op-bg" id="op-bg"></div>
-  <div class="op-characters hidden" id="op-characters">
-    <img class="op-char op-char-pono" id="op-char-pono" alt="">
-    <img class="op-char op-char-hakase" id="op-char-hakase"
-         src="../assets/images/quizland/owl_professor_guide.png" alt="">
-  </div>
-  <div class="op-narration hidden" id="op-narration"></div>
-  <div class="op-dialogues hidden" id="op-dialogues">
-    <div class="op-dialogue op-dialogue-pono">
-      <div class="op-dialogue-label">ポノ</div>
-      <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
+  <!-- 4:3 safe area for characters/narration/dialogues so 4:3 端末でも収まる (Fix 5a) -->
+  <div class="op-content" id="op-content">
+    <div class="op-characters hidden" id="op-characters">
+      <img class="op-char op-char-pono" id="op-char-pono" alt="">
+      <img class="op-char op-char-hakase" id="op-char-hakase"
+           src="../assets/images/quizland/owl_professor_guide.webp" alt="">
     </div>
-    <div class="op-dialogue op-dialogue-hakase">
-      <div class="op-dialogue-label">はかせ</div>
-      <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
+    <div class="op-narration hidden" id="op-narration"></div>
+    <div class="op-dialogues hidden" id="op-dialogues">
+      <div class="op-dialogue op-dialogue-pono">
+        <div class="op-dialogue-label">ポノ</div>
+        <div class="op-dialogue-text" id="op-dialogue-text-pono"></div>
+      </div>
+      <div class="op-dialogue op-dialogue-hakase">
+        <div class="op-dialogue-label">はかせ</div>
+        <div class="op-dialogue-text" id="op-dialogue-text-hakase"></div>
+      </div>
     </div>
   </div>
   <button type="button" class="op-skip" id="op-skip">スキップ ▶︎</button>
@@ -3876,45 +3917,54 @@ function initGame() {
 // Opening Cinematic (mode-btn → playOpeningCinematic → initGame)
 // ═══════════════════════════════════════════════════════════
 const OP_PANELS = [
-  // Panel 1 — narration with Ken Burns dolly
+  // Panel 1 — narration. Fix 3: 5 行一括表示 → 2 セグメントに分割し順次クロスフェード
   {
     kind: 'narration',
-    bg: '../assets/images/quizland/OP/OP_BG.png',
+    bg: '../assets/images/quizland/OP/OP_BG.webp',
     audio: '../assets/images/quizland/OP/OP_NA.wav',
-    lines: [
-      { text: 'もりの おくに、ふしぎな いえがあります。', emphasis: false },
-      { text: 'そこには、なんでも しっている', emphasis: false },
-      { text: 'ふくろうの はかせが すんでいます。', emphasis: false },
-      { text: 'ポノは、なかよしの はかせと', emphasis: true },
-      { text: 'なぞなぞで あそびに きました。', emphasis: true }
+    segments: [
+      {
+        lines: [
+          { text: 'もりの おくに、ふしぎな いえがあります。', emphasis: false },
+          { text: 'そこには、なんでも しっている', emphasis: false },
+          { text: 'ふくろうの はかせが すんでいます。', emphasis: false }
+        ]
+      },
+      {
+        // Fix 3: 文言変更「あそびに きました」→「いつもの なぞなぞで あそぶために やってきました」
+        lines: [
+          { text: 'ポノは、なかよしの はかせと、', emphasis: true },
+          { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: true }
+        ]
+      }
     ]
   },
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
-    ponoImg: '../assets/images/characters/pono/dance/dance_hi.png',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+    ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
       { speaker: 'pono',   text: 'はかせ、あそびに きたよ！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
-    ponoImg: '../assets/images/characters/pono/dance/dance_hooray.png',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+    ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp',
     dialogues: [
       { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
       { speaker: 'pono',   text: 'うん！やりたい！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
-    ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.png',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+    ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
       { speaker: 'pono',   text: 'うーん…でも がんばる！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
-    ponoImg: '../assets/images/characters/pono/dance/dance_smile.png',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+    ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
       { speaker: 'pono',   text: 'うん！' }
     ]},
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.png',
-    ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.png',
+  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG.webp',
+    ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp',
     dialogues: [
       { speaker: 'hakase', text: 'では、いくぞ…' },
       { speaker: 'pono',   text: 'うん！' }
@@ -3972,6 +4022,16 @@ async function playOpeningCinematic() {
   root.classList.remove('hidden');
   root.setAttribute('aria-hidden', 'false');
 
+  // Fix 1b: 黒からのフェードイン。プログレッシブな描画パチつきを 700ms かけて隠す。
+  root.classList.add('is-fading-in');
+  root.classList.remove('is-revealed');
+  // 強制リフロー: 次のクラス変更で transition が確実に発火するように
+  void root.offsetWidth;
+  root.classList.remove('is-fading-in');
+  root.classList.add('is-revealed');
+  // フェードイン完了まで待機
+  await new Promise(function(r) { setTimeout(r, 700); });
+
   // Wire skip
   const skipBtn = document.getElementById('op-skip');
   function onSkip() {
@@ -3993,6 +4053,15 @@ async function playOpeningCinematic() {
   const ponoEl     = document.getElementById('op-dialogue-text-pono');
   const ponoImgEl  = document.getElementById('op-char-pono');
 
+  // Fix 4: 背景は最初に 1 回だけセットし、固定の強めぼかしを適用。
+  // 以降パネル切替で背景画像 / クラスは変更しない (zoom-in や per-cut blur を廃止)。
+  if (bg) {
+    bg.style.backgroundImage = "url('../assets/images/quizland/OP/OP_BG.webp')";
+    bg.classList.remove('dollying');
+    bg.classList.remove('scenic-blur');
+    bg.classList.add('is-static-blur');
+  }
+
   // Warm all per-panel pono images during the narration panel so dialogue
   // panels can swap src without a visible network fetch.
   try {
@@ -4013,28 +4082,39 @@ async function playOpeningCinematic() {
     for (let i = 0; i < OP_PANELS.length; i++) {
       if (_opCancelled) break;
       const panel = OP_PANELS[i];
-      // Set bg
-      bg.style.backgroundImage = "url('" + panel.bg + "')";
-      bg.classList.remove('dollying');
-      bg.classList.remove('scenic-blur');
-      // Force reflow then re-add class to restart animation
-      void bg.offsetWidth;
+      // Fix 4: 背景は再設定しない (静的ぼかしを保持)。panel.bg は将来の柔軟性のため残す。
 
       if (panel.kind === 'narration') {
-        bg.classList.add('dollying');
         characters.classList.add('hidden');
         dialogues.classList.add('hidden');
-        narration.classList.remove('hidden');
-        narration.innerHTML = '';
-        for (let li = 0; li < panel.lines.length; li++) {
-          const line = panel.lines[li];
-          const p = document.createElement('p');
-          if (line.emphasis) p.classList.add('emphasis');
-          p.textContent = line.text;
-          narration.appendChild(p);
+        // Fix 2: フェードイン後、音声と本文を出すまでの 1500ms の沈黙
+        for (var __t = 0; __t < 15 && !_opCancelled; __t++) {
+          await new Promise(function(r) { setTimeout(r, 100); });
         }
-        // Play narration audio
-        let audio;
+        if (_opCancelled) break;
+
+        // Fix 3: 2 セグメント順次表示。segments があれば優先、無ければ旧 lines にフォールバック
+        const segs = (panel.segments && panel.segments.length)
+          ? panel.segments
+          : (panel.lines ? [{ lines: panel.lines }] : []);
+
+        // セグメント 1 を構築 (visible)
+        narration.classList.remove('hidden');
+        narration.classList.remove('seg-hide');
+        narration.classList.add('seg-show');
+        narration.innerHTML = '';
+        if (segs[0]) {
+          for (let li = 0; li < segs[0].lines.length; li++) {
+            const line = segs[0].lines[li];
+            const p = document.createElement('p');
+            if (line.emphasis) p.classList.add('emphasis');
+            p.textContent = line.text;
+            narration.appendChild(p);
+          }
+        }
+
+        // 音声再生 (セグメント 1 表示中に並行で開始)
+        let audio = null;
         try {
           audio = new Audio(panel.audio);
           audio.preload = 'auto';
@@ -4048,31 +4128,77 @@ async function playOpeningCinematic() {
             } catch (e) { /* same audio element re-routed twice would throw — ignore */ }
           }
           _opActiveAudio = audio;
-          // Best-effort autoplay (audio context already unlocked by title tap).
           await audio.play().catch(function(){});
+        } catch (e) {
+          audio = null;
+          _opActiveAudio = null;
+        }
+
+        // セグメントが 2 つ以上ある場合、音声中盤 (or 6.5s フォールバック) でクロスフェード
+        if (segs.length >= 2) {
           await new Promise(function(resolve) {
-            let done = false;
-            let timeoutId = null;
-            let pollId = null;
+            let done = false; let timeoutId = null; let pollId = null;
             function finish() {
               if (done) return;
               done = true;
-              if (pollId)    { clearInterval(pollId); pollId = null; }
+              if (pollId) { clearInterval(pollId); pollId = null; }
               if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
               resolve();
             }
-            audio.addEventListener('ended', finish, { once: true });
-            // Safety timeout — cap at 20s
-            timeoutId = setTimeout(finish, 20000);
-            // Skip-poll: re-check every 200ms
+            timeoutId = setTimeout(finish, 6500);
             pollId = setInterval(function() {
-              if (_opCancelled) finish();
-            }, 200);
+              if (_opCancelled) { finish(); return; }
+              if (audio && audio.duration && audio.currentTime >= audio.duration / 2) finish();
+            }, 100);
+          });
+
+          if (!_opCancelled) {
+            // セグメント 1 をフェードアウト
+            narration.classList.remove('seg-show');
+            narration.classList.add('seg-hide');
+            await new Promise(function(r) { setTimeout(r, 500); });
+
+            if (!_opCancelled) {
+              // セグメント 2 を構築してフェードイン
+              narration.innerHTML = '';
+              for (let li = 0; li < segs[1].lines.length; li++) {
+                const line = segs[1].lines[li];
+                const p = document.createElement('p');
+                if (line.emphasis) p.classList.add('emphasis');
+                p.textContent = line.text;
+                narration.appendChild(p);
+              }
+              narration.classList.remove('seg-hide');
+              narration.classList.add('seg-show');
+            }
+          }
+        }
+
+        // 音声 ended まで (or 安全上限) 待機
+        if (audio) {
+          await new Promise(function(resolve) {
+            let done = false; let timeoutId = null; let pollId = null;
+            function finish() {
+              if (done) return;
+              done = true;
+              if (pollId) { clearInterval(pollId); pollId = null; }
+              if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+              resolve();
+            }
+            // Guard: audio may already have ended (e.g. clip shorter than seg-1 wait window).
+            if (!audio || audio.ended) {
+              finish();
+            } else {
+              audio.addEventListener('ended', finish, { once: true });
+              timeoutId = setTimeout(finish, 16000);
+              pollId = setInterval(function() {
+                if (_opCancelled) finish();
+              }, 200);
+            }
           });
           _opActiveAudio = null;
-        } catch (e) {
-          _opActiveAudio = null;
-          // If audio fails, hold for ~10s so the dolly text is readable
+        } else {
+          // 音声が取れなかった場合は ~10s 確保
           for (let t = 0; t < 50 && !_opCancelled; t++) {
             await new Promise(function(r) { setTimeout(r, 200); });
           }
@@ -4084,8 +4210,7 @@ async function playOpeningCinematic() {
         // Clear bubbles
         hakaseEl.textContent = '';
         ponoEl.textContent = '';
-        // Background: held still + telephoto crop-in + soft DoF blur (Fix 2)
-        bg.classList.add('scenic-blur');
+        // Fix 4: per-cut の zoom/blur 切替は廃止 (背景は静的ぼかしで固定)
         // Set Pono image for this panel (Fix 1)
         if (ponoImgEl && panel.ponoImg) {
           ponoImgEl.src = panel.ponoImg;
@@ -4132,6 +4257,27 @@ async function playOpeningCinematic() {
 // タイトル画面タップ → モード選択画面へ (BGM もここで起動)
 document.getElementById('start-screen').addEventListener('click', function() {
   ensureAudio();
+  // Fix 1a: シネマティック資産をタイトルタップ時点で温める。 mode-btn を押した時には
+  // 画像/音声がキャッシュ済みになっており、進行中のプログレッシブ描画ガタつきを避ける。
+  try {
+    var __preloadList = [
+      '../assets/images/quizland/OP/OP_BG.webp',
+      '../assets/images/characters/pono/dance/dance_hi.webp',
+      '../assets/images/characters/pono/dance/dance_hooray.webp',
+      '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
+      '../assets/images/characters/pono/dance/dance_smile.webp',
+      '../assets/images/characters/pono/dance/think_chin_clasp.webp',
+      '../assets/images/quizland/owl_professor_guide.webp'
+    ];
+    for (var __pi = 0; __pi < __preloadList.length; __pi++) {
+      var __pim = new Image(); __pim.src = __preloadList[__pi];
+    }
+    // 音声もプリロード
+    try {
+      var __naud = new Audio('../assets/images/quizland/OP/OP_NA.wav');
+      __naud.preload = 'auto'; __naud.load();
+    } catch (e) {}
+  } catch (e) {}
   startBGM();
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('mode-screen').classList.remove('hidden');
