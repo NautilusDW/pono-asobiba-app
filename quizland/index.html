@@ -1664,8 +1664,8 @@ body.layout-editor-on .character img {
   pointer-events: none !important;
 }
 .pono-dropdown {
-  left: auto !important;
-  right: max(16px, env(safe-area-inset-right)) !important;
+  left: max(16px, env(safe-area-inset-left)) !important;
+  right: auto !important;
   top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
 }
 
@@ -2157,11 +2157,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   filter: blur(6px) saturate(0.92);      /* soft DoF, slightly muted */
   transition: transform 0.6s ease-out, filter 0.6s ease-out;
 }
-/* Fix 4: シネマティック全体で固定の強めぼかしを 1 枚だけ適用する */
+/* Fix 4: シネマティック全体で固定のぼかしを 1 枚だけ適用する (10px → 5px に緩和) */
 .op-bg.is-static-blur {
   animation: none;
   transform: scale(1.08);
-  filter: blur(10px) saturate(0.85) brightness(0.92);
+  filter: blur(5px) saturate(0.9) brightness(0.94);
 }
 /* Fix 5b: 4:3 セーフ領域。背景は overlay 全面、内側コンテンツだけ 4:3 内に収める */
 .op-content {
@@ -2176,37 +2176,50 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-content > * {
   pointer-events: auto;
 }
-.op-characters {
+/* Fix 3: 左右それぞれ "キャラ画像 + ダイアログ" の縦スタック。腰から上 (waist-shot)。
+   両キャラ常時表示、ダイアログボックスは幅固定で広い。 */
+.op-sides {
   position: absolute;
-  left: 0; right: 0; bottom: 0;
-  top: 0;
-  pointer-events: none;
+  inset: 0;
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 22%;
+  justify-content: space-between;
+  gap: 2%;
+  padding: 2% 2% 4%;
   box-sizing: border-box;
+  pointer-events: none;
 }
-.op-characters.hidden { display: none; }
-.op-char {
-  /* layout handled by .op-characters flex; per-character sizing below */
+.op-sides.hidden { display: none; }
+.op-sides > .op-side {
+  flex: 1 1 50%;            /* 等幅・固定 (発話で resize しない) */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+  pointer-events: auto;
 }
-.op-char-pono {
-  height: min(50vh, 65%);        /* % refers to .op-content (4:3 stage) height */
-  max-height: 320px;
-  width: auto;
+.op-char-frame {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;            /* ダイアログの上のスペースを取る */
+  overflow: hidden;          /* キャラの足元をクリップ */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.op-char-frame img.op-char {
+  height: auto;
+  width: 78%;                /* 腰の位置がフレーム底に合うように調整 */
+  max-width: 320px;
   object-fit: contain;
-  align-self: flex-end;          /* same baseline as hakase */
-  margin-left: 4vw;
+  /* translateY で下方向にずらして足元をフレーム外へ押し出す */
+  transform: translateY(18%);
 }
-.op-char-hakase {
-  height: min(50vh, 70%);        /* % refers to .op-content (4:3 stage) height */
-  max-height: 360px;
-  width: auto;
-  object-fit: contain;
-  align-self: flex-end;
-  margin-right: 4vw;
+.op-side-hakase .op-char-frame img.op-char {
   filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
 }
 .op-narration {
@@ -2232,48 +2245,40 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-narration p.emphasis { color: #c0392b; font-weight: 700; }
 .op-narration.seg-show { opacity: 1; }
 .op-narration.seg-hide { opacity: 0; }
-.op-dialogues {
-  position: absolute;
-  left: 50%;
-  bottom: 6%;
-  transform: translateX(-50%);
-  width: min(96%, 1100px);               /* Fix 2: 倍化したバブルに合わせ少し広げる */
-  display: flex;
-  gap: 24px;                             /* Fix 2: 14 → 24 */
-  align-items: flex-end;
-  justify-content: space-between;
-}
-.op-dialogues.hidden { display: none; }
-.op-dialogue {
-  flex: 1 1 0;
+/* Fix 3: 各 side 内のダイアログ。幅は side 幅いっぱい (固定)、下に貼り付く */
+.op-side > .op-dialogue {
   position: relative;
-  border-radius: 24px;                   /* Fix 2: 16 → 24 */
-  padding: 44px 32px 28px;               /* Fix 2: 28/18/16 → 44/32/28 */
+  width: 100%;
+  margin: 0;
+  border-radius: 24px;
+  padding: clamp(20px, 3vw, 40px) clamp(18px, 2.4vw, 32px) clamp(16px, 2vw, 28px);
   box-shadow: 0 12px 26px rgba(0,0,0,0.34);
-  min-height: 160px;                     /* Fix 2: 88 → 160 */
-  opacity: 0.4;
-  transition: opacity 0.18s ease;
+  min-height: clamp(120px, 22vh, 200px);
+  box-sizing: border-box;
   color: #3a2a14;
+  /* 両方常時表示。発話側は不透明、非発話側は薄め。 */
+  opacity: 0.55;
+  transition: opacity 0.3s ease-out;
 }
-.op-dialogue.is-speaking { opacity: 1; }
+.op-side > .op-dialogue.is-speaking { opacity: 1.0; }
 .op-dialogue-hakase { background: #fff3d6; }
 .op-dialogue-pono   { background: #d8efcf; }
 .op-dialogue-label {
   position: absolute;
-  top: -22px; left: 22px;                /* Fix 2: -14/16 → -22/22 */
-  font-size: 22px;                       /* Fix 2: 13 → 22 */
+  top: -22px; left: 22px;
+  font-size: 22px;
   font-weight: 700;
   color: #fff;
-  padding: 8px 20px;                     /* Fix 2: 4 12 → 8 20 */
+  padding: 8px 20px;
   border-radius: 999px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.30);
   letter-spacing: 0.04em;
 }
 .op-dialogue-hakase .op-dialogue-label { background: #e08a3c; }
 .op-dialogue-pono   .op-dialogue-label { background: #5fa05a; }
-.op-dialogue-text {
-  font-size: clamp(20px, 3.6vw, 32px);   /* Fix 2: 17px → ~2x */
-  line-height: 1.6;
+.op-side > .op-dialogue .op-dialogue-text {
+  font-size: clamp(20px, 3.6vw, 32px);
+  line-height: 1.5;
   min-height: 1.6em;
   word-break: break-word;
 }
