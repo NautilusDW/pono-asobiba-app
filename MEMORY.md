@@ -97,6 +97,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-07T09:31:32Z - Quizland per-Q layout Phase 2 / impl-B (formatQuizQid + LayoutApplier per-Q key + LayoutSystem qid injection + nav dirty hooks + CACHE_VERSION 832→833)
+- **タスク**: Quizland per-Q layout Phase 2 / impl-B (formatQuizQid + LayoutApplier per-Q key + LayoutSystem qid injection + nav dirty hooks + CACHE_VERSION 832→833)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 9
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 2, "Agent": 7}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-07T08:13:04Z - quizland: 多解像度対応 - 4:3 letterbox 厳格化 + 会話/ナレボックス固定化 + キャラを width 基準 + clip-path inset(N% bottom) で waist-shot (横切り禁止) + (min-aspect-ratio 16/10) と max-width 540 のメディアクエリ + _opTypeInto 自動スクロール、sw 830→832
 - **タスク**: quizland: 多解像度対応 - 4:3 letterbox 厳格化 + 会話/ナレボックス固定化 + キャラを width 基準 + clip-path inset(N% bottom) で waist-shot (横切り禁止) + (min-aspect-ratio 16/10) と max-width 540 のメディアクエリ + _opTypeInto 自動スクロール、sw 830→832
 - **結果**: 成功
@@ -199,18 +212,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 14, "Glob": 7, "Read": 7, "ToolSearch": 1, "Write": 7, "Agent": 22}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-07T06:31:04Z - quizland: クイズスタート タイトルカード追加 (フクロウ博士+「なぞなぞスタート!!」、シネマ後 initGame 直前に 2.2s 表示、tap-to-skip)。並列 asset(WebP 84.9%削減) + impl エージェント、cross-review SHIP判定、sw 825→826
-- **タスク**: quizland: クイズスタート タイトルカード追加 (フクロウ博士+「なぞなぞスタート!!」、シネマ後 initGame 直前に 2.2s 表示、tap-to-skip)。並列 asset(WebP 84.9%削減) + impl エージェント、cross-review SHIP判定、sw 825→826
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 113
-- **エラー数**: 17
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 52, "Read": 13, "Grep": 3, "ToolSearch": 1, "Agent": 26, "Write": 2, "Edit": 16}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

@@ -23,7 +23,7 @@
   //  Constants & helpers
   // ====================================================================
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0'; // 2026-05-07: per-Q layout key support (Phase 2 / impl-A)
   var SAVED_LAYOUT_VERSION = 2; // __version field in saved-layout.json
   var HISTORY_LIMIT = 100;
   var TRANSIENT_CLASSES = {
@@ -133,6 +133,13 @@
                                      // この Set に入ってる key だけ snapshot() で書き出す。
                                      // ドラッグや preset 適用では追加しない (= 暗黙個別化を防ぐ)。
                                      // 💾 個別保存ボタンで明示的に追加、 🧹 個別設定クリアで削除。
+    _perQuestionSelectors: [],       // 2026-05-07: per-Q 化対象セレクタ whitelist。
+                                     // enable(cfg.perQuestionSelectors) で受け取る。
+                                     // 含まれるセレクタは保存キーが `${sel}|${i}@${qid}` になる。
+                                     // フクロウ (.character) のような「全問共通」要素は含めない。
+    _dirty: false,                   // 2026-05-07: 編集モードでの未保存変更フラグ。
+                                     // pushHistory / scheduleDirtyUpdate で更新。 save 成功で false。
+                                     // confirmDiscardIfDirty() の判定に使用 (impl-B から呼ばれる)。
   };
 
   // C1 helper: register a teardown that runs on disable()
@@ -278,18 +285,55 @@
     return /^\.chip(\s|$)/.test(sel);
   }
 
+  // 2026-05-07: 現在の問題 ID を取得するヘルパー (Phase 2 / impl-A)。
+  //   Quizland 側が window.QUIZLAND_GET_CURRENT_QID を提供する想定。
+  //   未定義 / 戻り値が null/空文字 のときは null を返し、 per-Q キー化はしない (= base key のまま)。
+  function getCurrentQid() {
+    try {
+      if (typeof window.QUIZLAND_GET_CURRENT_QID === 'function') {
+        var q = window.QUIZLAND_GET_CURRENT_QID();
+        if (q && typeof q === 'string') return q;
+      }
+    } catch (e) { /* noop */ }
+    return null;
+  }
+
+  // 2026-05-07: per-Q whitelist 判定。 sel が perQuestionSelectors に含まれていれば true。
+  function _isPerQSelector(sel) {
+    var list = state._perQuestionSelectors;
+    return !!(list && list.length && list.indexOf(sel) !== -1);
+  }
+
+  // 2026-05-07: (sel, i) と任意の qid から保存キーを生成する。
+  //   - perQuestionSelectors に含まれかつ qid が文字列のとき: `${sel}|${i}@${qid}`
+  //   - それ以外: `${sel}|${i}` (従来通り)
+  //   opts.qid を渡せば snapshot 時 freeze などの用途でも使える。
+  function makeElKey(sel, i, opts) {
+    var base = sel + '|' + i;
+    var q = (opts && Object.prototype.hasOwnProperty.call(opts, 'qid')) ? opts.qid : getCurrentQid();
+    if (_isPerQSelector(sel) && q) return base + '@' + q;
+    return base;
+  }
+
   function snapshot() {
     var data = { __version: SAVED_LAYOUT_VERSION };
+    // 2026-05-07: snapshot 開始時に qid を 1 度だけ固定 (race 対策)。
+    //   snapshot 構築中に Quizland 側で問題遷移が起きても、 ここで読んだ qid を
+    //   全エントリ生成に使うので key の不整合が起きない。
+    var frozenQid = getCurrentQid();
     state.spec.forEach(function (entry) {
       var sel = entry[0];
       if (sel === '.userbox') return; // userbox saved in __userboxes
       var isChipScoped = _isChipScopedSelector(sel);
       var isChipSelfSel = (sel === '.chip'); // chip 自体 (子要素 .chip .X は含まない)
       $$(sel).forEach(function (el, i) {
-        var key = sel + '|' + i;
         // 2026-05-06 改: chip 自体 (.chip|N) は cell 配置として常に保存。
         //   子要素 (.chip .X|N) は明示的に individualOverrides に入ってる場合のみ保存。
-        if (isChipScoped && !isChipSelfSel && !state.individualOverrides.has(key)) return;
+        // override 判定は base key (qid 無し) で行う — chip preset は per-Q 化対象外なので
+        // 通常 frozenQid と無関係に base key になる。
+        var baseKey = sel + '|' + i;
+        if (isChipScoped && !isChipSelfSel && !state.individualOverrides.has(baseKey)) return;
+        var key = makeElKey(sel, i, { qid: frozenQid });
         data[key] = {
           w: el.style.width || '',
           h: el.style.height || '',
@@ -326,21 +370,33 @@
     return data;
   }
   function collectHiddenKeys() {
-    return $$('.user-hidden').map(getElKey).filter(Boolean);
+    // 2026-05-07: __hidden は applier 側が base key で参照する設計のため
+    //   per-Q 化せず base key で書き出す (Phase 2 impl-A スコープ外)。
+    return $$('.user-hidden').map(function (el) {
+      return getElKey(el, { baseOnly: true });
+    }).filter(Boolean);
   }
   function collectLockedKeys() {
     var arr = [];
     state.locked.forEach(function (k) { arr.push(k); });
     return arr;
   }
-  function getElKey(el) {
+  // 2026-05-07: per-Q キー対応 (Phase 2 / impl-A)。
+  //   - el を spec 順で matches し、 該当した sel の index を求める。
+  //   - sel が perQuestionSelectors に含まれかつ qid が取れれば `${sel}|${i}@${qid}` を返す。
+  //   - それ以外は従来通り `${sel}|${i}` を返す (後方互換)。
+  //   - opts.baseOnly === true で per-Q 化を無効化 (override 判定など base key 必須の用途)。
+  //   - opts.qid を渡せば外部から qid を固定して問い合わせできる (snapshot frozen qid 等)。
+  function getElKey(el, opts) {
     for (var i = 0; i < state.spec.length; i++) {
       var sel = state.spec[i][0];
       try {
         if (el.matches(sel)) {
           var all = $$(sel);
           var idx = all.indexOf(el);
-          if (idx >= 0) return sel + '|' + idx;
+          if (idx < 0) continue;
+          if (opts && opts.baseOnly) return sel + '|' + idx;
+          return makeElKey(sel, idx, opts);
         }
       } catch (e) { /* invalid selector — skip */ }
     }
@@ -694,7 +750,9 @@
     var added = [];
     var skipped = 0;
     sel.forEach(function (el) {
-      var key = getElKey(el);
+      // 2026-05-07: individualOverrides は base key で管理 (chip 系は per-Q 化対象外なので
+      //   通常 baseOnly 不要だが、 安全側に明示)。
+      var key = getElKey(el, { baseOnly: true });
       if (!key) { skipped++; return; }
       var m = key.match(/^(.+)\|\d+$/);
       if (!m || !_isChipScopedSelector(m[1])) { skipped++; return; }
@@ -1617,7 +1675,8 @@
   }
 
   function isLocked(el) {
-    var k = getElKey(el);
+    // 2026-05-07: lock 集合は base key で管理 (per-Q 化対象外)。
+    var k = getElKey(el, { baseOnly: true });
     return k && state.locked.has(k);
   }
 
@@ -1631,7 +1690,8 @@
       e.classList.toggle('selected', sel);
       // 2026-05-06: chip 関連要素で個別 override 持ちなら .le-individual-override を付与
       //   (CSS で選択枠を赤に変える)。 preset 通りの状態なら通常のオレンジ枠。
-      var key = getElKey(e);
+      // 2026-05-07: individualOverrides は base key で管理されているので baseOnly で問い合わせる。
+      var key = getElKey(e, { baseOnly: true });
       var isOverridden = !!(key && state.individualOverrides && state.individualOverrides.has(key));
       e.classList.toggle('le-individual-override', isOverridden);
       // Juliet-2 修正A: ハンドル個別にもクラスを付与し、子孫/specificity 競合に
@@ -3803,7 +3863,8 @@
   // ====================================================================
 
   function toggleLock(el) {
-    var key = getElKey(el);
+    // 2026-05-07: lock は base key で管理 (per-Q 化対象外)。
+    var key = getElKey(el, { baseOnly: true });
     if (!key) return;
     var was = state.locked.has(key);
     if (was) state.locked.delete(key);
@@ -3813,7 +3874,7 @@
   }
   function refreshLockBadges() {
     $$('.resizable').forEach(function (el) {
-      var k = getElKey(el);
+      var k = getElKey(el, { baseOnly: true });
       var locked = k && state.locked.has(k);
       el.classList.toggle('le-locked', !!locked);
       var existing = el.querySelector(':scope > .le-lock-badge');
@@ -6292,6 +6353,11 @@
       ? document.querySelector(config.canvas)
       : (config.canvas || $('#stage') || document.body);
     state.spec = normalizeSpec(config.editableSelectors || []);
+    // 2026-05-07: per-Q 化対象セレクタ whitelist (Phase 2 / impl-A)。
+    //   Quizland 側からは ['.emoji-display', '.emoji-main-img'] 等を想定。
+    //   ここに無いセレクタは従来通り `${sel}|${i}` で base 保存される (フクロウ等)。
+    state._perQuestionSelectors = Array.isArray(config.perQuestionSelectors)
+      ? config.perQuestionSelectors.slice() : [];
     state.selectedElements = new Set();
     state.locked = new Set();
     state.unlinkedChildren = new Set(); // Papa-2 修正2
@@ -6300,6 +6366,7 @@
     state.cleanupFns = [];          // C1: reset cleanup registry per session
     state.originalCanvasWidth = null;
     state.multiSelectMode = false;
+    state._dirty = false;            // 2026-05-07: 編集セッション開始時は clean
 
     document.body.classList.add(EDIT_MODE_BODY_CLASS, 'resize-mode');
 

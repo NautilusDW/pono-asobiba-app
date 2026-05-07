@@ -3078,6 +3078,30 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.char-hint',               'wh', 'キャラ吹き出し'],
 ];
 
+/* per-Q layout (Phase 2 / impl-B) ─────────────────────────────────────
+   問題ごとにステージ絵 (.emoji-display / .emoji-main-img) のレイアウトを
+   独立保存するためのキー生成。 saved-layout.json の per-Q キー命名は
+   `${sel}|${i}@${qid}` (例 `.emoji-display|0@body_lv1_002`)。
+   qid 形式は `${cat}_lv${level}_${pad3(idx)}`。
+   q._cat / q._idx / q.level のいずれかが欠損していれば null を返す
+   (= per-Q キー lookup を skip し base key のみ参照)。 */
+function formatQuizQid(q) {
+  if (!q) return null;
+  var cat = q._cat;
+  var lv  = q.level;
+  var idx = q._idx;
+  if (cat == null || lv == null || idx == null) return null;
+  var n = parseInt(idx, 10);
+  if (isNaN(n) || n < 0) return null;
+  var padded = ('00' + n).slice(-3);
+  return cat + '_lv' + lv + '_' + padded;
+}
+// LayoutSystem / LayoutApplier から毎回呼ばれる qid getter。
+// MutationObserver 内でも常にこの関数経由で qid を再評価することで、
+// 問題切替後 (loadQuestion / _qzDebugGoto / nextQuestion / prevQuestion)
+// にも追従する (クロージャでキャプチャしない)。
+window.QUIZLAND_GET_CURRENT_QID = function () { return formatQuizQid(currentQ); };
+
 /* Layout editor: append ?edit=1 to URL for visual layout editing.
    Saves to quizland/saved-layout.json via /api/gh/ proxy.
    preview/full/ remains as legacy sandbox (untouched).
@@ -3088,6 +3112,11 @@ window.EditorBootstrapConfig = {
   layoutUrl: './saved-layout.json',
   canvas: '#stage',
   editableSelectors: QZ_RESIZABLE_SELECTORS,
+  // per-Q 化対象セレクタの whitelist (Phase 2 / impl-B)。
+  // ここに含まれるセレクタだけが `${sel}|${i}@${qid}` キーで保存・参照される。
+  // フクロウ (.character) 等の常駐要素は **絶対に含めない**
+  // (= per-Q 化すると問題ごとに位置が飛んでしまう)。
+  perQuestionSelectors: ['.emoji-display', '.emoji-main-img'],
   ghPath: 'quizland/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   // Future (Phase 2): aspect-aware layout fork
@@ -3718,10 +3747,19 @@ function renderChoices(q) {
     }
   } catch (e) { /* noop */ }
   if (window.LayoutApplier && window._currentLayoutData) {
+    // Phase 2 / impl-B: per-Q キー対応。 qid と whitelist (perQuestionSelectors)
+    // を毎回渡し、 .emoji-display / .emoji-main-img だけ問題別位置で復元させる。
+    // qid は呼び出し時点で formatQuizQid(currentQ) を解決 (クロージャ避け)。
+    var _qid = (typeof window.QUIZLAND_GET_CURRENT_QID === 'function')
+      ? window.QUIZLAND_GET_CURRENT_QID() : null;
     window.LayoutApplier.apply(
       window._currentLayoutData,
       document.getElementById('answer-panel'),
-      { selectors: QZ_RESIZABLE_SELECTORS }
+      {
+        selectors: QZ_RESIZABLE_SELECTORS,
+        perQuestionSelectors: ['.emoji-display', '.emoji-main-img'],
+        qid: _qid,
+      }
     );
   }
 }
@@ -3910,6 +3948,14 @@ function ponoJump() {
 // editor の「次の問題へ」ボタン (common/layout/layout-editor.js) から呼べるよう window 公開
 window.nextQuestion = nextQuestion;
 function nextQuestion() {
+  // Phase 2 / impl-B hook: editor mode で per-Q レイアウト編集中の dirty 確認。
+  // impl-A が LayoutEditor.confirmDiscardIfDirty() を公開する想定で呼び出す。
+  // 未公開でも null guard で素通り (= 通常プレイは影響なし)。
+  // false 返却で「破棄せず留まる」= 遷移キャンセル。
+  try {
+    if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
+        && !window.LayoutEditor.confirmDiscardIfDirty()) return;
+  } catch (_) { /* ignore — never block navigation on hook failure */ }
   // debug mode: 未保存のコメント/スクショがあれば先に保存してから次へ進む。
   // _qzPtSaveCurrentNote は QZ_DEBUG_ALL=false / コメント空 + 添付なし / saving 中なら
   // 即 resolve するので、 通常モードでは透過 (オーバーヘッドほぼゼロ)。
@@ -5058,12 +5104,22 @@ function _qzBuildDebugNavDOM() {
 
   document.getElementById('qz-debug-prev').addEventListener('click', function (e) {
     if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
+    // Phase 2 / impl-B: 未保存 per-Q レイアウト変更があれば確認 (impl-A 公開 API)
+    try {
+      if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
+          && !window.LayoutEditor.confirmDiscardIfDirty()) return;
+    } catch (_) { /* ignore */ }
     _qzPtSaveCurrentNote().then(function () {
       _qzDebugGoto(questionIdx - 1);
     });
   });
   document.getElementById('qz-debug-next').addEventListener('click', function (e) {
     if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
+    // Phase 2 / impl-B: 未保存 per-Q レイアウト変更があれば確認 (impl-A 公開 API)
+    try {
+      if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
+          && !window.LayoutEditor.confirmDiscardIfDirty()) return;
+    } catch (_) { /* ignore */ }
     _qzPtSaveCurrentNote().then(function () {
       _qzDebugGoto(questionIdx + 1);
     });
@@ -5092,6 +5148,15 @@ function _qzRefreshDebugJumpSelect() {
     sel._qzWired = true;
     sel.addEventListener('change', function () {
       if (_isEditMode() && !isPlaytestInEditor()) return;
+      // Phase 2 / impl-B: 未保存 per-Q レイアウト変更があれば確認 (impl-A 公開 API)
+      try {
+        if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
+            && !window.LayoutEditor.confirmDiscardIfDirty()) {
+          // ユーザーが「留まる」を選んだ場合、 select は元の位置に戻す
+          sel.value = String(questionIdx);
+          return;
+        }
+      } catch (_) { /* ignore */ }
       _qzPtSaveCurrentNote().then(function () {
         _qzDebugGoto(parseInt(sel.value, 10) || 0);
       });

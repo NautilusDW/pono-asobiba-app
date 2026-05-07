@@ -184,7 +184,11 @@
 
   /**
    * apply(data, scopeRoot, cfg) — idempotent.
-   * cfg: { selectors: Array<string|tuple>, hideClass?: string, headerHVar?: string }
+   * cfg: { selectors, hideClass?, headerHVar?, qid?, perQuestionSelectors? }
+   *   - qid: 現在問題 ID。 perQuestionSelectors に含まれるセレクタは
+   *     `${sel}|${i}@${qid}` キーを優先参照し、 無ければ `${sel}|${i}` に fallback。
+   *   - perQuestionSelectors: per-Q 化対象セレクタの whitelist (Quizland では
+   *     ['.emoji-display', '.emoji-main-img'] を想定)。 フクロウ等は含めない。
    * Calling multiple times produces same result.
    * scopeRoot can be a sub-tree (used by renderChoices to re-apply chip layout).
    */
@@ -193,6 +197,9 @@
     cfg = cfg || {};
     var selectors = normalizeSelectors(cfg.selectors || cfg.editableSelectors || []);
     var root = scopeRoot || document;
+    var perQList = (cfg.perQuestionSelectors && Array.isArray(cfg.perQuestionSelectors))
+      ? cfg.perQuestionSelectors : null;
+    var qid = cfg.qid || null;
 
     // 1a) chip preset 適用 — chip 種別 (.chip-type-with-image / .chip-type-text-only)
     //     ごとにデフォルト位置・サイズを当てる。 個別 chip|N エントリは後段で上書き。
@@ -202,11 +209,26 @@
     }
 
     // 1b) per-element w/h/tx/ty (個別エントリは preset を上書きする)
+    //     2026-05-07 拡張: per-Q キー対応 (Phase 2 / impl-B)
+    //       - perQuestionSelectors に列挙されたセレクタかつ qid 有りのとき
+    //         まず `${sel}|${i}@${qid}` を参照、 無ければ `${sel}|${i}` に fallback。
+    //       - per-Q キーが存在する qid では fallback で再上書きしない
+    //         (= per-Q 値が「存在しない問題」だけ baseKey が機能する)。
     selectors.forEach(function (sel) {
       var list = safeQueryAll(root, sel);
+      var isPerQ = !!(qid && perQList && perQList.indexOf(sel) !== -1);
       for (var i = 0; i < list.length; i++) {
-        var key = sel + '|' + i;
-        var s = data[key];
+        var baseKey = sel + '|' + i;
+        var s;
+        if (isPerQ) {
+          var perQKey = baseKey + '@' + qid;
+          // per-Q キーがあればそれを使う。 無ければ baseKey に fallback。
+          // ※ per-Q キー存在時は baseKey で「再上書き」しない
+          //   (= 旧 saved-layout の baseKey が全問共通で当たって per-Q を潰す挙動を防ぐ)。
+          s = (data[perQKey] !== undefined) ? data[perQKey] : data[baseKey];
+        } else {
+          s = data[baseKey];
+        }
         if (s) applyOne(list[i], s);
       }
     });

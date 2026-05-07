@@ -132,11 +132,41 @@
 
     var canvasEl = resolveCanvas(config.canvas);
     var editableSelectors = config.editableSelectors || [];
+    // per-Q 対象セレクタ (Quizland Phase 2 / impl-B)。 init 呼び出し側で
+    // 明示列挙する (例 quizland: ['.emoji-display', '.emoji-main-img'])。
+    // ここに含まれるセレクタは applier 内で `${sel}|${i}@${qid}` キーが優先される。
+    var perQuestionSelectors = (config.perQuestionSelectors && Array.isArray(config.perQuestionSelectors))
+      ? config.perQuestionSelectors.slice() : [];
     var applyCfg = {
       selectors: editableSelectors,
       hideClass: config.hideClass,
       headerHVar: config.headerHVar,
     };
+
+    // qid をその場で取得するヘルパ。 クロージャでキャプチャせず **毎回呼び直す**
+    // ことで、 MutationObserver / setupObserver 経路で問題切替後の qid が
+    // 反映される。 ホストページ側が window.QUIZLAND_GET_CURRENT_QID を
+    // 公開していなければ null を返す (= 通常通り baseKey のみ参照)。
+    function getQidNow() {
+      try {
+        if (typeof window.QUIZLAND_GET_CURRENT_QID === 'function') {
+          return window.QUIZLAND_GET_CURRENT_QID();
+        }
+      } catch (e) { /* ignore */ }
+      return null;
+    }
+    function buildApplyCfg() {
+      var c = {
+        selectors: applyCfg.selectors,
+        hideClass: applyCfg.hideClass,
+        headerHVar: applyCfg.headerHVar,
+      };
+      if (perQuestionSelectors.length) {
+        c.perQuestionSelectors = perQuestionSelectors;
+        c.qid = getQidNow();
+      }
+      return c;
+    }
 
     // 2) Fetch + apply
     var fetchP = applier
@@ -150,12 +180,13 @@
       // Cache layout data on a public global for re-apply (e.g., after dynamic insert).
       window._currentLayoutData = data;
       if (data && applier) {
-        try { applier.apply(data, null, applyCfg); } catch (e) { console.warn('[LayoutSystem] apply failed', e); }
+        try { applier.apply(data, null, buildApplyCfg()); } catch (e) { console.warn('[LayoutSystem] apply failed', e); }
       }
       // 3) MutationObserver (optional, default ON)
       if (config.applyOnDynamic !== false && data && applier) {
         setupObserver(canvasEl, function () {
-          try { applier.apply(window._currentLayoutData, canvasEl, applyCfg); }
+          // qid は呼び出し時点で再評価する (問題切替後に正しい per-Q キーが当たる)
+          try { applier.apply(window._currentLayoutData, canvasEl, buildApplyCfg()); }
           catch (e) { /* ignore */ }
         });
       }
