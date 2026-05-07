@@ -64,11 +64,29 @@ panel 1 のナレーション (`OP_NA.wav`、17.45s) を 2 セグメントに分
 panel 2-6 の会話は `.op-content > .op-narration + .op-sides > .op-side-pono / .op-side-hakase` の構成。
 
 - 各 `op-side` = 縦積みの **`.op-char-frame` (上) + `.op-dialogue` (下)** で 50% 幅固定
-- キャラは waist-shot: `.op-char-frame { overflow: hidden }` + `<img>.op-char { transform: translateY(18%) }` で下半身を frame の下に隠す → 「ボックスから上半身が出ている」見た目
+- キャラは waist-shot: `.op-char-frame { position: relative; overflow: hidden }` + 子 `<img>.op-char { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: auto }` で top-anchor、`height: N%` で frame をはみ出させて下半身を overflow:hidden で切る
 - 両方の `.op-dialogue` は常時表示・固定幅。発話側 opacity 1.0、非発話側 opacity 0.55 の dim で発話者を明示
 - 旧 `.op-characters` (キャラ行) + `.op-dialogues` (吹き出し行) の 2 行レイアウトは廃止、`.op-side` 縦積みに統一
 
 背景ブラーは `.op-bg.is-static-blur { filter: blur(5px) saturate(0.9) brightness(0.94) }` (旧 `blur(10px) saturate(0.85) brightness(0.92)` の半分強度)。
+
+### Per-character height 基準 (重要設計指針)
+
+旧 `width: 78%` 一律基準では、画像のアスペクト比に応じて縦サイズが変わってしまい、Pono の縦長画像 (`think_arms_crossed_side.webp` 358×652, aspect 0.55) は巨大、博士 (`owl_professor_guide.webp` 700×569, aspect 1.23) は小さく見える「巨人対小人」状態だった。
+
+→ **per-character `height` 基準** に切替。各キャラの最適値は画像内容（特に props や手足の広がり）で決まる:
+
+| キャラ | desktop height | mobile height | 根拠 |
+|---|---|---|---|
+| ポノ全 5 枚 | 180% | 175% | アスペクト 0.55-0.81 を吸収して縦サイズ一定。下 ~44% は frame 下に隠す |
+| 博士 (`owl_professor_guide.webp`) | 120% | 118% | 指示棒が画像左端まで突き出ているので side clip 量を抑える必要あり。指示棒・本・卒業帽タッセルを温存 |
+
+**新キャラ追加時の決め方**:
+1. 画像のアスペクトと特徴 (画像の端に重要な要素が無いか) を視覚確認する
+2. 縦長 (aspect < 0.7) で props も中央寄りなら 170-180%
+3. 横長 (aspect > 1.0) または props が画像端まで広がっているなら 110-130%
+4. 結果が「他キャラと縦サイズが揃う」かつ「重要な props が side clip で消えない」を両立できる値を選ぶ
+5. 必ず実機 (staging) で複数アスペクトの組み合わせを目視確認する
 
 ## Panel Spec
 
