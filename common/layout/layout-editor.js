@@ -712,6 +712,18 @@
     var pretty = JSON.stringify(data, null, 2);
     var compact = JSON.stringify(data);
     localSave(data);
+    // 2026-05-07 fix: 保存した data で window._currentLayoutData を即時に上書きする。
+    //   これをしないと、 save() 後の何らかの DOM 再適用 (MutationObserver 経由 / 次問題
+    //   遷移時の renderChoices 直後 apply 等) が **古い** _currentLayoutData を使って
+    //   ユーザーの直前ドラッグを巻き戻してしまう。
+    //   症状: ?edit=1 で ステージ画像 (.emoji-display / .emoji-main-img) を移動・拡大 →
+    //         💾 を押す → 次の MutationObserver 発火で位置が元に戻り、 続く save() で
+    //         戻った位置が GitHub に書かれる (= ユーザーの操作が消える)。
+    //   (snapshot() が DOM の inline 値から構築した data はそのまま現状の真値なので、
+    //    _currentLayoutData にそのまま代入すればよい。)
+    if (window._currentLayoutData !== undefined) {
+      window._currentLayoutData = data;
+    }
     // C2: do NOT clear dirty flag yet — wait for remote success.
     showToast('保存中…');
 
@@ -6370,14 +6382,44 @@
         //   LayoutApplier.apply(_currentLayoutData) が走って ユーザーのドラッグを
         //   stale な saved-layout で巻き戻す致命バグになる
         //   (再現: ?edit=1 で chip を resize → mouseup でサイズが元に戻る)。
-        // 判定: target が editor-chrome (.resize-handle, .resize-size-label,
-        //   .le-* 系, .numeric-panel, .np-*) の中なら無視。 通常コンテンツの
-        //   addedNodes (renderChoices で作られる .chip 等) は引き続き rescan を発火する。
+        // 判定: 以下の **どちらか** の場合は無視:
+        //   (a) mut.target が editor-chrome (.resize-handle/.resize-size-label/.le-*/...)
+        //       の内部 — 例: lbl.textContent='WxH' 更新時の lbl=mut.target ケース
+        //   (b) mut.addedNodes の **全て** が editor-chrome (resize-handle, resize-size-label
+        //       など) — 例: attachHandle が `.emoji-main-img` (img は void element) や
+        //       `.emoji-display` 等のコンテンツ要素に handle div を append したケース。
+        //       (a) だけでは target = コンテンツ要素となり skip されず、 続く apply() が
+        //       _currentLayoutData の古い tx/ty で element を巻き戻す致命バグになる
+        //       (= 2026-05-07 の「保存しても位置やスケールが戻る」報告の根本原因)。
+        // 通常コンテンツの addedNodes (renderChoices で作られる .chip 等) は (b) を満たさない
+        //   ので引き続き rescan を発火する。
         var EDITOR_CHROME_SEL = '.resize-handle, .resize-size-label, .le-toolbar, .le-list-panel, .le-anno-layer, .le-context-menu, .le-pages-dropdown, .le-help-modal, .le-comparison-picker, .le-marquee, .le-guide, .le-ruler, .numeric-panel, .userbox-badge, .userbox-del, .le-lock-badge';
+        var isChromeNode = function (n) {
+          if (!n) return false;
+          // Text node — chrome の textContent 更新で生じる text node も無視
+          if (n.nodeType === 3) {
+            var p = n.parentNode;
+            return !!(p && p.nodeType === 1 && p.closest && p.closest(EDITOR_CHROME_SEL));
+          }
+          if (n.nodeType !== 1) return false;
+          try { return !!(n.matches && (n.matches(EDITOR_CHROME_SEL) || (n.closest && n.closest(EDITOR_CHROME_SEL)))); }
+          catch (e) { return false; }
+        };
         var isEditorChromeMutation = function (mut) {
+          // (a) mut.target が editor-chrome の中
           var t = mut.target;
-          if (!t || !t.closest) return false;
-          try { return !!t.closest(EDITOR_CHROME_SEL); } catch (e) { return false; }
+          if (t && t.closest) {
+            try { if (t.closest(EDITOR_CHROME_SEL)) return true; } catch (e) {}
+          }
+          // (b) addedNodes が全部 editor-chrome (handle / size label 等)
+          var added = mut.addedNodes;
+          if (added && added.length) {
+            for (var k = 0; k < added.length; k++) {
+              if (!isChromeNode(added[k])) return false;
+            }
+            return true;
+          }
+          return false;
         };
         var dynMo = new MutationObserver(function (muts) {
           for (var i = 0; i < muts.length; i++) {

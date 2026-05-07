@@ -14,7 +14,7 @@
   if (typeof window === 'undefined') return;
   if (window.LayoutSystem) return;
 
-  var VERSION = '1.0.1';
+  var VERSION = '1.0.2';
   var DEFAULT_DEBOUNCE_MS = 250;
 
   // Built-in default page list for the editor's "🌐 ページ" navigation menu.
@@ -193,11 +193,37 @@
     //   (再現: ?edit=1 で chip を resize → mouseup でサイズが元に戻る)。
     //   通常コンテンツの addedNodes (renderChoices で作られる .chip 等) は
     //   引き続き re-apply を発火する。
+    // 判定: 以下の **どちらか** の場合は無視:
+    //   (a) mut.target が editor-chrome の中
+    //   (b) mut.addedNodes の **全て** が editor-chrome (resize-handle / resize-size-label 等)
+    //       — attachHandle がコンテンツ要素 (.emoji-main-img / .emoji-display 等) に
+    //       handle div を append したケース。 これを skip しないと続く apply() が
+    //       _currentLayoutData の古い値で element 位置を巻き戻す
+    //       (= 2026-05-07 「保存しても位置やスケールが戻る」報告の根本原因)。
     var EDITOR_CHROME_SEL = '.resize-handle, .resize-size-label, .le-toolbar, .le-list-panel, .le-anno-layer, .le-context-menu, .le-pages-dropdown, .le-help-modal, .le-comparison-picker, .le-marquee, .le-guide, .le-ruler, .numeric-panel, .userbox-badge, .userbox-del, .le-lock-badge';
+    var isChromeNode = function (n) {
+      if (!n) return false;
+      if (n.nodeType === 3) {
+        var p = n.parentNode;
+        return !!(p && p.nodeType === 1 && p.closest && p.closest(EDITOR_CHROME_SEL));
+      }
+      if (n.nodeType !== 1) return false;
+      try { return !!(n.matches && (n.matches(EDITOR_CHROME_SEL) || (n.closest && n.closest(EDITOR_CHROME_SEL)))); }
+      catch (e) { return false; }
+    };
     var isEditorChrome = function (mut) {
       var t = mut.target;
-      if (!t || !t.closest) return false;
-      try { return !!t.closest(EDITOR_CHROME_SEL); } catch (e) { return false; }
+      if (t && t.closest) {
+        try { if (t.closest(EDITOR_CHROME_SEL)) return true; } catch (e) {}
+      }
+      var added = mut.addedNodes;
+      if (added && added.length) {
+        for (var k = 0; k < added.length; k++) {
+          if (!isChromeNode(added[k])) return false;
+        }
+        return true;
+      }
+      return false;
     };
     var mo = new MutationObserver(function (muts) {
       // Only react to actual structural changes, not style-only mutations we caused
