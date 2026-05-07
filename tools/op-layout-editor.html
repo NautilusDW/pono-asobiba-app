@@ -664,13 +664,13 @@
     <div class="section" id="pono-section" data-drop="pono">
       <h3>Pono バリエーション</h3>
       <div id="pono-grid" class="preset-grid"></div>
-      <div class="info">画像をここにドロップで追加（リロードで消えます）</div>
+      <div class="info">画像をここにドロップで追加（ストレージに保存・合計 ~4MB まで推奨）</div>
     </div>
 
     <div class="section" id="frame-section" data-drop="frame">
       <h3>フレーム</h3>
       <div id="frame-grid" class="preset-grid"></div>
-      <div class="info">画像モード時に選択中の側に適用 ／ ドロップで追加（リロードで消えます）</div>
+      <div class="info">画像モード時に選択中の側に適用 ／ ドロップで追加（ストレージに保存・合計 ~4MB まで推奨）</div>
     </div>
   </aside>
 
@@ -764,6 +764,11 @@ const HEIGHT_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showHeightGuides';
 const BOX_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showBoxGuides';
 const MIRROR_MODE_STORAGE_KEY = STORAGE_PREFIX + 'mirrorMode';
 const SINGLE_BOX_MODE_STORAGE_KEY = STORAGE_PREFIX + 'singleBoxMode';
+// Persistent storage for drag-and-dropped images (Pono variants and frames).
+// Stored as { pono: [{name,path,label?}], frame: [{id,label,path,naturalAspect?}] }.
+const DROPPED_ASSETS_STORAGE_KEY = STORAGE_PREFIX + 'droppedAssets';
+// Soft warning threshold for combined dropped-asset storage size (bytes).
+const DROPPED_ASSETS_WARN_BYTES = 4 * 1024 * 1024;
 
 // Frame natural aspect cache: id -> naturalW / naturalH (number) or undefined while loading.
 const FRAME_NATURAL_ASPECT = {};
@@ -842,6 +847,130 @@ function loadSingleBoxModePref() {
 function saveSingleBoxModePref() {
   try { localStorage.setItem(SINGLE_BOX_MODE_STORAGE_KEY, singleBoxMode ? 'true' : 'false'); } catch (e) {}
 }
+
+// === Dropped assets persistence =========================================
+// Builds the JSON-serializable payload of currently dropped Pono / frame images
+// from the in-memory PONO_VARIANTS / FRAME_IMAGES arrays.
+function buildDroppedAssetsPayload() {
+  const pono = PONO_VARIANTS.filter(v => v && v.userAdded).map(v => ({
+    name: v.name,
+    path: v.path,
+    label: v.label || v.name
+  }));
+  const frame = FRAME_IMAGES.filter(f => f && f.userAdded).map(f => {
+    const out = { id: f.id, label: f.label, path: f.path };
+    const a = FRAME_NATURAL_ASPECT[f.id];
+    if (a && Number.isFinite(a) && a > 0) out.naturalAspect = a;
+    return out;
+  });
+  return { pono: pono, frame: frame };
+}
+
+// Returns true on success, false on QuotaExceededError, null when localStorage unavailable.
+function writeDroppedAssetsToStorage(payload) {
+  let json;
+  try {
+    json = JSON.stringify(payload);
+  } catch (e) {
+    return false;
+  }
+  // Soft warning when approaching capacity (does not block save).
+  try {
+    if (json.length >= DROPPED_ASSETS_WARN_BYTES) {
+      toast('保存容量に近づいています', 'err');
+    }
+  } catch (_) {}
+  try {
+    localStorage.setItem(DROPPED_ASSETS_STORAGE_KEY, json);
+    return true;
+  } catch (e) {
+    // Detect QuotaExceededError across browsers.
+    const isQuota = e && (
+      e.name === 'QuotaExceededError' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code === 22 || e.code === 1014
+    );
+    if (isQuota) return false;
+    // Other errors (e.g., localStorage disabled) -> swallow, treat as no-op.
+    return null;
+  }
+}
+
+// Persist current dropped assets. Returns true on success, false on quota,
+// null when storage is unavailable. Caller should rollback on false.
+function saveDroppedAssets() {
+  return writeDroppedAssetsToStorage(buildDroppedAssetsPayload());
+}
+
+// Load persisted dropped assets and merge into PONO_VARIANTS / FRAME_IMAGES.
+// Must run before state load() so that migrateFrameIds() recognizes user-added
+// frame ids as valid. Also restores FRAME_NATURAL_ASPECT from saved values to
+// minimize FOUC; any missing entries are filled later by an Image() preload.
+function loadDroppedAssets() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(DROPPED_ASSETS_STORAGE_KEY);
+  } catch (e) {
+    return; // localStorage unavailable -> silently skip
+  }
+  if (!raw) return;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    try { toast('保存された追加画像の読込に失敗しました', 'err'); } catch (_) {}
+    parsed = {};
+  }
+  if (!parsed || typeof parsed !== 'object') parsed = {};
+  const ponoList = Array.isArray(parsed.pono) ? parsed.pono : [];
+  const frameList = Array.isArray(parsed.frame) ? parsed.frame : [];
+
+  ponoList.forEach(item => {
+    if (!item || typeof item !== 'object') return;
+    const name = String(item.name || '').trim();
+    const path = String(item.path || '');
+    if (!name || !path) return;
+    // Reject paths that aren't data:image/ URIs. Prevents CSS-syntax-breaking
+    // payloads from being injected via background-image: url(...) on restore.
+    if (!path.startsWith('data:image/')) return;
+    if (PONO_VARIANTS.some(v => v.name === name)) return; // dedupe vs originals
+    PONO_VARIANTS.push({
+      name: name,
+      path: path,
+      userAdded: true,
+      label: item.label ? String(item.label) : name
+    });
+  });
+
+  frameList.forEach(item => {
+    if (!item || typeof item !== 'object') return;
+    const id = String(item.id || '').trim();
+    const path = String(item.path || '');
+    const label = item.label ? String(item.label) : id;
+    if (!id || !path) return;
+    // Reject paths that aren't data:image/ URIs. Prevents CSS-syntax-breaking
+    // payloads from being injected via background-image: url(...) on restore.
+    if (!path.startsWith('data:image/')) return;
+    if (FRAME_IMAGES.some(f => f.id === id)) return; // dedupe vs originals
+    FRAME_IMAGES.push({ id: id, label: label, path: path, userAdded: true });
+    if (FRAME_IDS.indexOf(id) < 0) FRAME_IDS.push(id);
+    const a = Number(item.naturalAspect);
+    if (Number.isFinite(a) && a > 0) {
+      FRAME_NATURAL_ASPECT[id] = a;
+    } else {
+      // No cached aspect: compute lazily via Image preload.
+      const im = new Image();
+      im.onload = () => {
+        if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+          FRAME_NATURAL_ASPECT[id] = im.naturalWidth / im.naturalHeight;
+          try { onFrameAspectLoaded(id); } catch (_) {}
+        }
+      };
+      im.src = path;
+    }
+  });
+}
+// === end Dropped assets persistence ====================================
 
 // Keys that get mirror-copied (with sign reversal for X-axis offsets)
 const MIRROR_COPY_KEYS = [
@@ -963,11 +1092,11 @@ function defaultsFor(vc) {
 
 let currentVC = 'B';
 let currentTab = 'pono';
-let state = {
-  B: load('B') || defaultsFor('B'),
-  C: load('C') || defaultsFor('C'),
-  D: load('D') || defaultsFor('D')
-};
+// state is initialized in init() AFTER loadDroppedAssets(), so that
+// migrateFrameIds() recognizes user-added frame ids as valid. Initializing here
+// would call load() before dropped assets are merged, causing user-added frame
+// ids to be replaced with DEFAULT_FRAME_ID.
+let state = null;
 
 function migrateFrameIds(parsed) {
   if (!parsed || typeof parsed !== 'object') return parsed;
@@ -1194,6 +1323,15 @@ function addDroppedPonoFile(file) {
     const id = uniquePonoName(sanitizeIdBase(file.name));
     const variant = { name: id, path: dataUrl, userAdded: true, label: baseLabel };
     PONO_VARIANTS.push(variant);
+    // Persist; on QuotaExceededError, rollback the push so the in-memory state
+    // matches what is on disk.
+    const ok = saveDroppedAssets();
+    if (ok === false) {
+      const idx = PONO_VARIANTS.lastIndexOf(variant);
+      if (idx >= 0) PONO_VARIANTS.splice(idx, 1);
+      toast('ストレージ容量を超えました。既存の追加画像を削除してください', 'err');
+      return null;
+    }
     const grid = document.getElementById('pono-grid');
     if (grid) grid.appendChild(makePonoThumb(variant));
     return variant;
@@ -1211,11 +1349,23 @@ function addDroppedFrameFile(file) {
     const frame = { id: id, label: baseLabel, path: dataUrl, userAdded: true };
     FRAME_IMAGES.push(frame);
     FRAME_IDS.push(id);
-    // Compute natural aspect for aspect-lock support.
+    // Persist; on QuotaExceededError, rollback the push.
+    const ok = saveDroppedAssets();
+    if (ok === false) {
+      const fi = FRAME_IMAGES.lastIndexOf(frame);
+      if (fi >= 0) FRAME_IMAGES.splice(fi, 1);
+      const idi = FRAME_IDS.lastIndexOf(id);
+      if (idi >= 0) FRAME_IDS.splice(idi, 1);
+      toast('ストレージ容量を超えました。既存の追加画像を削除してください', 'err');
+      return null;
+    }
+    // Compute natural aspect for aspect-lock support; persist again once known.
     const im = new Image();
     im.onload = () => {
       if (im.naturalWidth > 0 && im.naturalHeight > 0) {
         FRAME_NATURAL_ASPECT[id] = im.naturalWidth / im.naturalHeight;
+        // Best-effort persist of the cached aspect; failure here is non-fatal.
+        try { saveDroppedAssets(); } catch (_) {}
         try { onFrameAspectLoaded(id); } catch (e) {}
       }
     };
@@ -1231,6 +1381,8 @@ function removeUserPonoVariant(name) {
   if (idx < 0) return;
   if (!PONO_VARIANTS[idx].userAdded) return; // safety: never delete originals
   PONO_VARIANTS.splice(idx, 1);
+  // Persist removal (a remove can never trip Quota; ignore result).
+  try { saveDroppedAssets(); } catch (_) {}
   // If any side currently uses this variant, fall back to the first available.
   const fallback = (PONO_VARIANTS[0] && PONO_VARIANTS[0].name) || 'dance_hi';
   ['B', 'C', 'D'].forEach(vc => {
@@ -1260,6 +1412,8 @@ function removeUserFrameImage(id) {
   const idIdx = FRAME_IDS.indexOf(id);
   if (idIdx >= 0) FRAME_IDS.splice(idIdx, 1);
   delete FRAME_NATURAL_ASPECT[id];
+  // Persist removal (a remove can never trip Quota; ignore result).
+  try { saveDroppedAssets(); } catch (_) {}
   const fallback = DEFAULT_FRAME_ID;
   ['B', 'C', 'D'].forEach(vc => {
     if (!state[vc]) return;
@@ -2533,6 +2687,9 @@ function cssEscapeUrl(s) {
 // Track whether the most recent buildCSS() encountered a dropped (data:) frame.
 // exportCopy / download read this to surface a warning toast.
 let _exportContainedDroppedFrame = false;
+// Same flag, but for buildJSON(): detect user-added frame ids in the JSON
+// output so we can warn before they get pasted into production game code.
+let _jsonExportContainedDroppedFrame = false;
 function isFrameUserAdded(id) {
   const f = FRAME_IMAGES.find(x => x.id === id);
   return !!(f && f.userAdded);
@@ -2646,6 +2803,21 @@ function buildCSS() {
 }
 
 function buildJSON() {
+  _jsonExportContainedDroppedFrame = false;
+  // Scan all VCs for user-added frame ids on pono/hakase/singleBox. If any
+  // exist, the exported JSON will reference frame ids the production game
+  // code does not know about — surface a warning toast in the caller.
+  ['B', 'C', 'D'].forEach(vc => {
+    const s = state[vc];
+    if (!s) return;
+    ['pono', 'hakase', 'singleBox'].forEach(slot => {
+      const node = s[slot];
+      if (!node || typeof node !== 'object') return;
+      if (isFrameUserAdded(node.boxImage)) {
+        _jsonExportContainedDroppedFrame = true;
+      }
+    });
+  });
   // Strip editor-internal-only keys (aspectLock / aspectLockRatio) from export.
   const sanitize = (vc) => {
     const out = {};
@@ -2669,8 +2841,9 @@ function buildJSON() {
 
 function exportCopy() {
   const css = buildCSS();
-  const droppedWarn = _exportContainedDroppedFrame;
   const text = css + '\n\n/* JSON */\n' + buildJSON();
+  // Note: buildJSON() must run before reading _jsonExportContainedDroppedFrame.
+  const droppedWarn = _exportContainedDroppedFrame || _jsonExportContainedDroppedFrame;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(
       () => toast(droppedWarn
@@ -2685,17 +2858,19 @@ function exportCopy() {
 
 function download(kind) {
   const ts = new Date().toISOString().replace(/[:.]/g, '-').replace(/T/, '_').slice(0, 19);
-  let blob, fname;
+  let blob, fname, droppedWarn;
   if (kind === 'css') {
     const css = buildCSS();
     blob = new Blob([css], { type: 'text/css' });
     fname = 'op-layout-' + ts + '.css';
+    droppedWarn = _exportContainedDroppedFrame;
   } else {
     const json = buildJSON();
     blob = new Blob([json], { type: 'application/json' });
     fname = 'op-layout-' + ts + '.json';
+    // JSON download: warn if user-added frame ids leak into the output.
+    droppedWarn = _jsonExportContainedDroppedFrame;
   }
-  const droppedWarn = _exportContainedDroppedFrame && kind === 'css';
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -2734,7 +2909,11 @@ function init() {
   loadBoxGuidesPref();
   loadMirrorModePref();
   loadSingleBoxModePref();
-  // Re-load state in case migration produced new values (state was initialized at module load)
+  // Restore dropped images BEFORE state load so migrateFrameIds() recognizes
+  // user-added frame ids as valid (otherwise they'd be reset to DEFAULT_FRAME_ID).
+  loadDroppedAssets();
+  // Initialize state ONLY after loadDroppedAssets() so user-added frame ids
+  // survive migrateFrameIds() instead of being reset to DEFAULT_FRAME_ID.
   state = {
     B: load('B') || defaultsFor('B'),
     C: load('C') || defaultsFor('C'),
