@@ -100,6 +100,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T06:06:24Z - op-layout-editor: 画像追加/削除の pushUndoSnapshot 4件削除 (state外PONO_VARIANTS/FRAME_IMAGES巻き戻し不可のため) + 追加toastに削除案内追記 + sw.js CACHE_VERSION 847→848
+- **タスク**: op-layout-editor: 画像追加/削除の pushUndoSnapshot 4件削除 (state外PONO_VARIANTS/FRAME_IMAGES巻き戻し不可のため) + 追加toastに削除案内追記 + sw.js CACHE_VERSION 847→848
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 225
+- **エラー数**: 15
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 72, "Bash": 93, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-08T06:00:21Z - op-layout-editor: Pono variant ごとに slot 位置/サイズを独立保持 (perVariant 追加 + migrate + makePonoThumb/Select で flat 再同期 + slot range/radio で perVariant 反映 + Mirror で perVariant 反映 + removeUserPonoVariant で perVariant cleanup + 右ペイン現在編集中表示)
+- **タスク**: op-layout-editor: Pono variant ごとに slot 位置/サイズを独立保持 (perVariant 追加 + migrate + makePonoThumb/Select で flat 再同期 + slot range/radio で perVariant 反映 + Mirror で perVariant 反映 + removeUserPonoVariant で perVariant cleanup + 右ペイン現在編集中表示)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 223
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 70, "Bash": 93, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T05:53:54Z - op-layout-editor: bgMode rebuild branch で applyNarrationToDom を呼び出す修正 + sw.js CACHE_VERSION 846→847
 - **タスク**: op-layout-editor: bgMode rebuild branch で applyNarrationToDom を呼び出す修正 + sw.js CACHE_VERSION 846→847
 - **結果**: 成功
@@ -188,32 +214,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 29, "Agent": 56, "Bash": 73, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T04:10:37Z - op-layout-editor.html: Single Box / per-side ダイアログ排他トグル修正
-- **タスク**: op-layout-editor.html: Single Box / per-side ダイアログ排他トグル修正
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 173
-- **エラー数**: 12
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 29, "Agent": 55, "Bash": 71, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T03:57:10Z - Quizland OP回帰修正: C/D の slot/dialogue/text/bg を元の C/D 用値に戻し、label は B 値維持。CACHE_VERSION 843 to 844
-- **タスク**: Quizland OP回帰修正: C/D の slot/dialogue/text/bg を元の C/D 用値に戻し、label は B 値維持。CACHE_VERSION 843 to 844
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 168
-- **エラー数**: 12
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 29, "Agent": 53, "Bash": 68, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

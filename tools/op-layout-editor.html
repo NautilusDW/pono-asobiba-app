@@ -1132,6 +1132,15 @@ function propagateMirror(sideKey, key) {
     } else {
       dst[key] = src[key];
     }
+    // Mirror が pono 側に書き込んだ slot 値は perVariant[currentVariant] にも反映。
+    // (flat だけ更新されると variant 切替時に上書きされてしまう)
+    if (otherSide === 'pono') {
+      if (key === '__all__' || !key) {
+        PONO_PER_VARIANT_KEYS.forEach(k => syncVariantFromFlat(dst, k));
+      } else if (PONO_PER_VARIANT_KEYS.includes(key)) {
+        syncVariantFromFlat(dst, key);
+      }
+    }
     save(currentVC);
     applySideToDom(otherSide);
   } finally {
@@ -1205,6 +1214,23 @@ function defaultsFor(vc) {
       return { width: 2000, height: 0, padding: 32, paddingX: 40, fontSize: 52, bottom: 90 };
     }
   })();
+  // Per-variant slot defaults: 全 variant に同じ slot 値を入れる (legacy 互換)。
+  // ユーザーが variant ごとに調整するとここで divergence していく。
+  const ponoPerVariantDefaults = (() => {
+    const base = {
+      slotW: ponoDefaults.slotW,
+      slotH: ponoDefaults.slotH,
+      slotOffsetX: ponoDefaults.slotOffsetX,
+      slotOffsetY: ponoDefaults.slotOffsetY,
+      slotAspect: 'fixed_0.75',
+      objectPosition: 'bottom'
+    };
+    const out = {};
+    ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp'].forEach(v => {
+      out[v] = Object.assign({}, base);
+    });
+    return out;
+  })();
   return {
     pono: {
       variant: 'dance_hi',
@@ -1214,6 +1240,7 @@ function defaultsFor(vc) {
       objectPosition: 'bottom',
       slotOffsetX: ponoDefaults.slotOffsetX,
       slotOffsetY: ponoDefaults.slotOffsetY,
+      perVariant: ponoPerVariantDefaults,
       boxMode: 'image',
       boxImage: DEFAULT_FRAME_ID,
       boxW: isWide ? 480 : 400,
@@ -1331,6 +1358,49 @@ function migrateFrameIds(parsed) {
     if (!side || typeof side !== 'object') return;
     if (!FRAME_IDS.includes(side.boxImage)) {
       side.boxImage = DEFAULT_FRAME_ID;
+    }
+    // Pono per-variant slot 値: legacy state に perVariant が無ければ flat 値から生成。
+    // 全 variant に同じ slot 値をコピー → ユーザーが variant ごとに変えれば divergence。
+    if (sideKey === 'pono') {
+      if (!side.perVariant || typeof side.perVariant !== 'object') side.perVariant = {};
+      const baseSlot = {
+        slotW: (typeof side.slotW === 'number' && Number.isFinite(side.slotW)) ? side.slotW : 300,
+        slotH: (typeof side.slotH === 'number' && Number.isFinite(side.slotH)) ? side.slotH : 400,
+        slotOffsetX: (typeof side.slotOffsetX === 'number' && Number.isFinite(side.slotOffsetX)) ? side.slotOffsetX : 0,
+        slotOffsetY: (typeof side.slotOffsetY === 'number' && Number.isFinite(side.slotOffsetY)) ? side.slotOffsetY : -60,
+        slotAspect: (typeof side.slotAspect === 'string') ? side.slotAspect : 'fixed_0.75',
+        objectPosition: (typeof side.objectPosition === 'string') ? side.objectPosition : 'bottom'
+      };
+      ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp'].forEach(v => {
+        if (!side.perVariant[v] || typeof side.perVariant[v] !== 'object') {
+          side.perVariant[v] = Object.assign({}, baseSlot);
+        } else {
+          // ensure all keys exist on each entry
+          PONO_PER_VARIANT_KEYS.forEach(k => {
+            if (side.perVariant[v][k] === undefined) side.perVariant[v][k] = baseSlot[k];
+          });
+        }
+      });
+      // userAdded variants (drag&drop) は load 時にここで遭遇しないが、保存済 state に
+      // 残っている可能性があるので、未知 key は型チェックして残す。
+      Object.keys(side.perVariant).forEach(k => {
+        const ent = side.perVariant[k];
+        if (!ent || typeof ent !== 'object') {
+          delete side.perVariant[k];
+          return;
+        }
+        PONO_PER_VARIANT_KEYS.forEach(pk => {
+          if (ent[pk] === undefined) ent[pk] = baseSlot[pk];
+        });
+      });
+      // Active variant の値を flat フィールドにキャッシュ。
+      const activeVariant = side.variant || 'dance_hi';
+      if (side.perVariant[activeVariant]) {
+        const ent = side.perVariant[activeVariant];
+        PONO_PER_VARIANT_KEYS.forEach(k => {
+          if (ent[k] !== undefined) side[k] = ent[k];
+        });
+      }
     }
     if (typeof side.aspectLock !== 'boolean') side.aspectLock = false;
     if (typeof side.aspectLockRatio !== 'number' || !Number.isFinite(side.aspectLockRatio)) {
@@ -1530,7 +1600,11 @@ function makePonoThumb(v) {
   div.appendChild(lbl);
   div.addEventListener('click', () => {
     pushUndoSnapshot('Pono画像選択');
-    state[currentVC].pono.variant = v.name;
+    const ponoState = state[currentVC].pono;
+    ponoState.variant = v.name;
+    // 新しい variant の perVariant 値を flat フィールドにキャッシュ
+    // (entry が無ければ現 flat 値で lazy 作成)。
+    syncFlatFromVariant(ponoState);
     save(currentVC);
     render();
     buildRightPane();
@@ -1643,7 +1717,6 @@ function addDroppedPonoFile(file) {
     toast(`${file.name} は 10MB を超えるため受け付けられません`, 'err');
     return Promise.resolve(null);
   }
-  pushUndoSnapshot('画像追加 (Pono)');
   return readFileAsDataURL(file).then(dataUrl => {
     const baseLabel = String(file.name || 'pono').replace(/\.[^./\\]+$/, '') || 'pono';
     const id = uniquePonoName(sanitizeIdBase(file.name));
@@ -1669,7 +1742,6 @@ function addDroppedFrameFile(file) {
     toast(`${file.name} は 10MB を超えるため受け付けられません`, 'err');
     return Promise.resolve(null);
   }
-  pushUndoSnapshot('画像追加 (フレーム)');
   return readFileAsDataURL(file).then(dataUrl => {
     const baseLabel = String(file.name || 'frame').replace(/\.[^./\\]+$/, '') || 'frame';
     const id = uniqueFrameId(sanitizeIdBase(file.name));
@@ -1707,7 +1779,6 @@ function removeUserPonoVariant(name) {
   const idx = PONO_VARIANTS.findIndex(v => v.name === name);
   if (idx < 0) return;
   if (!PONO_VARIANTS[idx].userAdded) return; // safety: never delete originals
-  pushUndoSnapshot('画像削除 (Pono)');
   PONO_VARIANTS.splice(idx, 1);
   // Persist removal (a remove can never trip Quota; ignore result).
   try { saveDroppedAssets(); } catch (_) {}
@@ -1715,10 +1786,17 @@ function removeUserPonoVariant(name) {
   const fallback = (PONO_VARIANTS[0] && PONO_VARIANTS[0].name) || 'dance_hi';
   ['B', 'C', 'D'].forEach(vc => {
     const p = state[vc] && state[vc].pono;
-    if (p && p.variant === name) {
+    if (!p) return;
+    if (p.variant === name) {
       p.variant = fallback;
-      save(vc);
+      // 新 variant の perVariant 値を flat にキャッシュ
+      try { syncFlatFromVariant(p); } catch (_) {}
     }
+    // perVariant エントリを削除
+    if (p.perVariant && p.perVariant[name]) {
+      delete p.perVariant[name];
+    }
+    save(vc);
   });
   // Rebuild the pono grid (simpler than removing a single element while
   // preserving selection styling).
@@ -1736,7 +1814,6 @@ function removeUserFrameImage(id) {
   const idx = FRAME_IMAGES.findIndex(f => f.id === id);
   if (idx < 0) return;
   if (!FRAME_IMAGES[idx].userAdded) return; // safety
-  pushUndoSnapshot('画像削除 (フレーム)');
   FRAME_IMAGES.splice(idx, 1);
   const idIdx = FRAME_IDS.indexOf(id);
   if (idIdx >= 0) FRAME_IDS.splice(idIdx, 1);
@@ -1785,7 +1862,7 @@ function handleDroppedFiles(target, fileList) {
     if (ok > 0) {
       const label = target === 'pono' ? 'Pono画像' : 'フレーム画像';
       const suffix = rejected > 0 ? `（${rejected}件は形式不一致でスキップ）` : '';
-      toast(`${label}を ${ok} 件追加しました${suffix}`, 'ok');
+      toast(`${label}を ${ok} 件追加しました${suffix}（削除は × ボタンで）`, 'ok');
     } else if (rejected > 0) {
       toast('対応していないファイル形式です', 'err');
     }
@@ -1856,6 +1933,64 @@ function aspectFromSlot(s) {
   if (s.slotAspect === 'fixed_1.23') return 1.23;
   return null;
 }
+
+// === Pono per-variant slot storage ====================================
+// 表情/ポーズによって素材アスペクトが 0.55〜0.81 と違うので、同じ slot 寸法だと
+// 見た目の体高が揃わない。variant ごとに専用 slot 値を保持し、variant 切替時に
+// flat フィールド (pono.slotW etc.) を再同期する。flat フィールドは
+// perVariant[currentVariant] の "キャッシュ" として機能 (applySideToDom や
+// buildCSS など下流コードは flat 値しか読まない)。
+const PONO_PER_VARIANT_KEYS = ['slotW', 'slotH', 'slotOffsetX', 'slotOffsetY', 'slotAspect', 'objectPosition'];
+
+function ensurePerVariantBag(ponoState) {
+  if (!ponoState) return null;
+  if (!ponoState.perVariant || typeof ponoState.perVariant !== 'object') {
+    ponoState.perVariant = {};
+  }
+  return ponoState.perVariant;
+}
+
+// Lazy-create the entry for `variantName` from current flat values, then return it.
+function getOrCreateVariantSlot(ponoState, variantName) {
+  const bag = ensurePerVariantBag(ponoState);
+  if (!bag) return null;
+  const v = variantName || ponoState.variant || 'dance_hi';
+  let entry = bag[v];
+  if (!entry || typeof entry !== 'object') {
+    entry = {
+      slotW: ponoState.slotW,
+      slotH: ponoState.slotH,
+      slotOffsetX: ponoState.slotOffsetX,
+      slotOffsetY: ponoState.slotOffsetY,
+      slotAspect: ponoState.slotAspect,
+      objectPosition: ponoState.objectPosition
+    };
+    bag[v] = entry;
+  }
+  return entry;
+}
+
+// Copy flat slot fields <- perVariant[currentVariant]. Used after variant change
+// or after migration to make sure flat values reflect the active variant.
+function syncFlatFromVariant(ponoState) {
+  if (!ponoState) return;
+  const entry = getOrCreateVariantSlot(ponoState, ponoState.variant);
+  if (!entry) return;
+  PONO_PER_VARIANT_KEYS.forEach(k => {
+    if (entry[k] !== undefined) ponoState[k] = entry[k];
+  });
+}
+
+// Mirror a flat slot field write into perVariant[currentVariant].
+// Called from any control that mutates pono slot fields.
+function syncVariantFromFlat(ponoState, key) {
+  if (!ponoState) return;
+  if (!PONO_PER_VARIANT_KEYS.includes(key)) return;
+  const entry = getOrCreateVariantSlot(ponoState, ponoState.variant);
+  if (!entry) return;
+  entry[key] = ponoState[key];
+}
+// === end Pono per-variant slot storage ================================
 
 function ponoPathByName(name) {
   const v = PONO_VARIANTS.find(x => x.name === name);
@@ -2291,6 +2426,8 @@ function makeRange(label, min, max, step, key, sideKey) {
     // ドラッグ中に大量 push されない。
     pushUndoSnapshot('スライダ変更');
     state[currentVC][sideKey][key] = n;
+    // Pono variant 別 slot 保持: flat 書き込み後 perVariant[currentVariant] にも反映。
+    if (sideKey === 'pono') syncVariantFromFlat(state[currentVC].pono, key);
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
     // Aspect-lock coupling for box dims
@@ -2312,6 +2449,7 @@ function makeRange(label, min, max, step, key, sideKey) {
     n = Math.min(Math.max(n, Number(min)), Number(max));
     pushUndoSnapshot('スライダ変更');
     state[currentVC][sideKey][key] = n;
+    if (sideKey === 'pono') syncVariantFromFlat(state[currentVC].pono, key);
     num.value = n;
     range.value = n;
     if (key === 'boxW' || key === 'boxH') {
@@ -2570,6 +2708,8 @@ function makeRadio(label, key, sideKey, options, opts) {
       if (!inp.checked) return;
       pushUndoSnapshot('ラジオ変更');
       state[currentVC][sideKey][key] = opt.value;
+      // Pono variant 別 slot: slotAspect / objectPosition を perVariant にも反映。
+      if (sideKey === 'pono') syncVariantFromFlat(state[currentVC].pono, key);
       // Side-effect: when boxMode flips, refresh the aspect-lock ratio source.
       if (key === 'boxMode') {
         const ss = state[currentVC][sideKey];
@@ -2625,9 +2765,16 @@ function makeSelect(label, key, sideKey, options) {
   sel.addEventListener('change', () => {
     pushUndoSnapshot('ドロップダウン変更');
     state[currentVC][sideKey][key] = sel.value;
+    // Pono variant 切替: 新 variant の slot 値を flat にキャッシュ + 右ペイン再構築
+    if (sideKey === 'pono' && key === 'variant') {
+      syncFlatFromVariant(state[currentVC].pono);
+    }
     save(currentVC);
     propagateMirror(sideKey, key);
     render();
+    if (sideKey === 'pono' && key === 'variant') {
+      buildRightPane();
+    }
   });
   row.appendChild(lab);
   row.appendChild(sel);
@@ -3462,6 +3609,18 @@ function buildRightPane() {
   if (sideKey === 'pono') {
     slotGroup.appendChild(makeSelect('Pono画像', 'variant', sideKey,
       PONO_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
+    // 現在編集中の variant を明示。slot 値は variant ごとに独立保持される。
+    const variantNote = document.createElement('div');
+    variantNote.className = 'prop-row';
+    variantNote.style.opacity = '0.85';
+    variantNote.style.fontSize = '12px';
+    const noteLab = document.createElement('label');
+    noteLab.textContent = '現在編集中';
+    const noteVal = document.createElement('span');
+    noteVal.textContent = state[currentVC].pono.variant + '（slot 値は variant ごとに保存）';
+    variantNote.appendChild(noteLab);
+    variantNote.appendChild(noteVal);
+    slotGroup.appendChild(variantNote);
   }
   slotGroup.appendChild(makeRange('幅 (px)', 100, 1600, 1, 'slotW', sideKey));
   slotGroup.appendChild(makeRange('高さ (px)', 100, 1200, 1, 'slotH', sideKey));
