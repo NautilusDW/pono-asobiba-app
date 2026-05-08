@@ -102,6 +102,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T03:57:10Z - Quizland OP回帰修正: C/D の slot/dialogue/text/bg を元の C/D 用値に戻し、label は B 値維持。CACHE_VERSION 843 to 844
+- **タスク**: Quizland OP回帰修正: C/D の slot/dialogue/text/bg を元の C/D 用値に戻し、label は B 値維持。CACHE_VERSION 843 to 844
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 168
+- **エラー数**: 12
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 29, "Agent": 53, "Bash": 68, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T03:32:59Z - Quizland OP Export CSS統合: B/C/D 全VCを同設定 (1021x492 / 843x470 / 984x316@411 / label top:65 left:156 / fs 37px label 34px) に置換、CACHE_VERSION 842 to 843
 - **タスク**: Quizland OP Export CSS統合: B/C/D 全VCを同設定 (1021x492 / 843x470 / 984x316@411 / label top:65 left:156 / fs 37px label 34px) に置換、CACHE_VERSION 842 to 843
 - **結果**: 成功
@@ -203,19 +216,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 25, "Agent": 41, "Bash": 51, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T02:21:31Z - op-layout-editor.html: 右ペイン縦スクロール不能を修正 (#right を flex column 化、tab-body を flex:1 + min-height:0、.panel に min-height:0 追加)
-- **タスク**: op-layout-editor.html: 右ペイン縦スクロール不能を修正 (#right を flex column 化、tab-body を flex:1 + min-height:0、.panel に min-height:0 追加)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 130
-- **エラー数**: 9
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 25, "Agent": 40, "Bash": 51, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 5}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
