@@ -899,6 +899,11 @@ body.sheet-on .hdr-right .ctrl-btn {
   /* stage 統一ソフトシャドウ (新規追加: PNG 画像版 emoji にも影を載せる)。 */
   filter: var(--stage-shadow);
 }
+/* 長方形の背景フレーム入り画像 (rainbow_arc / 風景シーン等) は画像自体に
+   紙風の枠が焼き込まれているため、 共通 drop-shadow が浮いて見える。
+   q.framed: true / q.framed_answer: true の問題には .is-framed を付け、
+   filter を打ち消す (描画は render 関数 + revealAnswer で切替)。 */
+.emoji-main-img.is-framed { filter: none; }
 /* ─────────────────────────────────────────────────────────
    v808 fix: editor で wrapper を resize したとき、 内部の img/中身が
    wrapper のサイズに連動するようにする。
@@ -3738,6 +3743,7 @@ function renderEmojiName(stage, q) {
   if (q.img) {
     const imgEl = document.createElement('img');
     imgEl.className = 'emoji-main-img';
+    if (q.framed) imgEl.classList.add('is-framed');
     imgEl.src = '../assets/images/ocean/' + q.img + '?v=' + (window._imgCacheBust || '');
     imgEl.alt = '';
     wrap.appendChild(imgEl);
@@ -3770,6 +3776,7 @@ function renderOpposite(stage, q) {
     const imgEl = document.createElement('img');
     imgEl.id = 'opposite-stage-img';
     imgEl.className = 'emoji-main-img';
+    if (q.framed) imgEl.classList.add('is-framed');
     imgEl.alt = '';
     const v = (window._imgCacheBust || '');
     const stagePath = '../assets/images/quizland/illust/stage/' + q.img_word + (v ? '?v=' + v : '');
@@ -3810,6 +3817,9 @@ function revealAnswer(q) {
     imgEl.style.opacity = '0';
     setTimeout(() => {
       imgEl.src = stagePath;
+      // リビール後の画像も枠付きなら drop-shadow を消す (questions.js の framed_answer)。
+      if (q.framed_answer) imgEl.classList.add('is-framed');
+      else if (!q.framed) imgEl.classList.remove('is-framed');
       imgEl.style.opacity = '1';
     }, 60);
   }
@@ -4001,6 +4011,7 @@ function renderTrivia(stage, q) {
     const imgEl = document.createElement('img');
     imgEl.id = 'trivia-stage-img';
     imgEl.className = 'emoji-main-img';
+    if (q.framed) imgEl.classList.add('is-framed');
     imgEl.alt = '';
     const v = (window._imgCacheBust || '');
     const stagePath = '../assets/images/quizland/illust/stage/' + initialImg + (v ? '?v=' + v : '');
