@@ -100,6 +100,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T09:02:10Z - 虫シルエット画像配置 + #81/#93 reveal pair 結線 (sprint-14)
+- **タスク**: 虫シルエット画像配置 + #81/#93 reveal pair 結線 (sprint-14)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 261
+- **エラー数**: 21
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 38, "Agent": 80, "Bash": 113, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 4}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T09:01:03Z - quizland index.html OP_PANELS を新シナリオに完全置換 (Panel 2 pono ponoImg を dance_hi→dance_smile に変更、コメント整理) + sw.js CACHE_VERSION 853→854
 - **タスク**: quizland index.html OP_PANELS を新シナリオに完全置換 (Panel 2 pono ponoImg を dance_hi→dance_smile に変更、コメント整理) + sw.js CACHE_VERSION 853→854
 - **結果**: 成功
@@ -201,19 +214,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 34, "Agent": 72, "Bash": 93, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T06:00:21Z - op-layout-editor: Pono variant ごとに slot 位置/サイズを独立保持 (perVariant 追加 + migrate + makePonoThumb/Select で flat 再同期 + slot range/radio で perVariant 反映 + Mirror で perVariant 反映 + removeUserPonoVariant で perVariant cleanup + 右ペイン現在編集中表示)
-- **タスク**: op-layout-editor: Pono variant ごとに slot 位置/サイズを独立保持 (perVariant 追加 + migrate + makePonoThumb/Select で flat 再同期 + slot range/radio で perVariant 反映 + Mirror で perVariant 反映 + removeUserPonoVariant で perVariant cleanup + 右ペイン現在編集中表示)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 223
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 34, "Agent": 70, "Bash": 93, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

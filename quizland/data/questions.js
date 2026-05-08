@@ -230,12 +230,18 @@ const QUIZLAND_QUESTIONS = {
       q:'ふゆに いきが しろく みえるのは なぜ？',
       answer:0, choices:['いきの なかの みずが ひえて つぶになるから','くちの なかが しろいから','ゆきが ふっているから','さむくて こおっているから'] ,
       detail:'あったかい いきが つめたい くうきで ひえて、ちいさな みずの つぶに なるよ！'},
-    // TODO(sprint-14): img を 'stage_weather_snowflake_compare.png' (4 形状シルエット比較) に切替 (Codex 納品後の reveal pair 化)。設計を「単一ぼかし粒」→「4 形状比較」に変更 (2026-05-08)
+    // sprint-14 結線済み (2026-05-08): 既存 _sheets/choice_weather_snowflake_shapes_set.png を切り出した 4 タイルで image-based 選択肢化 (Codex 発注不要)
     { level:3, type:'trivia', category:'weather',
       img:'stage_weather_snowflake_big.png',
       q:'ゆきの けっしょうは どんな かたち？',
       hint:'とても ちいさい こおりの かたち！',
-      answer:2, choices:['まる','ほし','つの が 6つ ある かたち','しかく'] ,
+      answer:2,
+      choices:[
+        { text:'まる',                  image:'snowflake_oval.png'      },
+        { text:'ほし',                  image:'snowflake_star.png'      },
+        { text:'つの が 6つ ある かたち', image:'snowflake_hexagon.png'   },
+        { text:'しかく',                image:'snowflake_rectangle.png' }
+      ],
       detail:'ゆきの つぶは とても ちいさい けど 6つの かどが ある かたちを しているよ！'}
   ],
 
@@ -364,9 +370,10 @@ const QUIZLAND_QUESTIONS = {
     // Level 2
     // 画像入り選択肢サンプル: choices に { text, image } 形式の object を混在可。
     // 画像は assets/images/quizland/illust/choice/ から名前指定で読み込む。
-    // TODO(sprint-14): img を 'stage_trivia_bug_silhouettes.png' に切替 + img_answer に 'stage_trivia_spider_eyes.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=虫シルエット集合 → 正解後=蜘蛛アップ
     { level:2, type:'trivia', category:'trivia',
-      img:'stage_trivia_spider_eyes.png',
+      img:'stage_trivia_bug_silhouettes.png',
+      img_answer:'stage_trivia_spider_eyes.png',
       q:'あしが 8ぽん あるのは どれ？',
       answer:0,
       choices:[
@@ -455,9 +462,10 @@ const QUIZLAND_QUESTIONS = {
         { text:'ダイオウイカ',  image:'daiouika.png' }
       ],
       detail:'シロナガスクジラは ながさ 30メートルにも なるよ！'},
-    // TODO(sprint-14): img を 'stage_trivia_bug_silhouettes.png' に切替 (共用 OR 別カット) + img_answer に 'stage_trivia_spider_eyes.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): #81 と画像共用 (reveal pair: 虫シルエット集合 → 蜘蛛)
     { level:3, type:'trivia', category:'trivia',
-      img:'stage_trivia_spider_eyes.png',
+      img:'stage_trivia_bug_silhouettes.png',
+      img_answer:'stage_trivia_spider_eyes.png',
       q:'めが 8つある いきものは？',
       hint:'あしも 8ぽん あるよ！こんちゅう（むし）の なかまじゃないよ！',
       answer:1, choices:['カブトムシ','クモ','チョウチョ','バッタ'] ,
