@@ -101,6 +101,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T12:00:21Z - Quizland OP narration padding 非対称化(視覚中央補正) + editor display:flex→block + sw.js bump
+- **タスク**: Quizland OP narration padding 非対称化(視覚中央補正) + editor display:flex→block + sw.js bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 352
+- **エラー数**: 32
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 50, "Agent": 103, "Bash": 156, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 10, "Edit": 15}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T11:47:37Z - Quizland OP Panel 1 segment 2 を黒文字に戻す (emphasis: true→false), sw.js CACHE_VERSION 865→866
 - **タスク**: Quizland OP Panel 1 segment 2 を黒文字に戻す (emphasis: true→false), sw.js CACHE_VERSION 865→866
 - **結果**: 成功
@@ -202,19 +215,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 160, "Read": 62, "Grep": 3, "ToolSearch": 1, "Agent": 76, "Write": 3, "Edit": 40}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T10:01:04Z - quizland staged reveal: typewriter 50% 挿絵 fade-in + typewriter 完了で 4択 fade-in
-- **タスク**: quizland staged reveal: typewriter 50% 挿絵 fade-in + typewriter 完了で 4択 fade-in
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 338
-- **エラー数**: 37
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 156, "Read": 61, "Grep": 3, "ToolSearch": 1, "Agent": 76, "Write": 3, "Edit": 38}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
