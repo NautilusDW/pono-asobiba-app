@@ -27,6 +27,6 @@ type: feedback
 **Why:** 過去に何度も古いメモリの「Netlify」記述に引きずられ、ユーザーに `netlify deploy` を提案・コマンド表示してしまうミスを繰り返した。デプロイ手段は **常に Cloudflare Workers via wrangler** が正解。
 **How to apply:**
 - デプロイ・反映関連の発言で `netlify` という単語を使わない
-- 古い ハンドオフドキュメント (room-isometric-handoff 等) に Netlify 記述があっても無視し、現在の真実 (Cloudflare) を優先
+- 古い ハンドオフドキュメントに Netlify 記述があっても無視し、現在の真実 (Cloudflare) を優先
 - 手動デプロイ提案も `wrangler deploy --env staging` (staging) または `wrangler deploy` (prod)
 - staging URL は `pono-asobiba-staging.ndw.workers.dev`、prod URL は `pono.kodama-no-mori.com`
