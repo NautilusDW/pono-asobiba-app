@@ -1726,7 +1726,10 @@ function applySideToDom(sideKey) {
   box.style.transform = `translate(calc(-50% + ${s.boxX}px), calc(-50% + ${s.boxY}px))`;
   box.style.padding = s.boxPadding + 'px';
   // 機能 1: テキスト整列 (flex)
-  box.style.display = 'flex';
+  // 機能 5: Single Box モード ON のときは per-side dialog を確実に隠す。
+  // CSS rule (.stage[data-single-box="on"] .op-sides .op-dialogue) はインライン
+  // display を上書きできないため、JS 側で明示的に切り替える。
+  box.style.display = singleBoxMode ? 'none' : 'flex';
   box.style.alignItems = mapTextAlignV(s.textAlignV);
   box.style.justifyContent = mapTextAlignH(s.textAlignH);
   if (s.boxMode === 'image') {
@@ -1766,7 +1769,9 @@ function applySingleBoxToDom() {
   box.style.top = sb.boxY + 'px';
   box.style.padding = sb.boxPadding + 'px';
   // 機能 1: テキスト整列 (flex)
-  box.style.display = 'flex';
+  // 機能 5: 親 .single-box-wrapper は CSS で OFF 時 display:none になるが、
+  // 子の box-single の display を OFF 時に明示クリアして整合させておく。
+  box.style.display = singleBoxMode ? 'flex' : 'none';
   box.style.alignItems = mapTextAlignV(sb.textAlignV);
   box.style.justifyContent = mapTextAlignH(sb.textAlignH);
   if (sb.boxMode === 'image') {
