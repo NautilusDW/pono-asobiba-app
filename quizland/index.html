@@ -3646,10 +3646,11 @@ window.addEventListener('pagehide', function () {
 
 // SE (mp3) — d:/ポノのおへや/AUDIO/SE/ から日本語名ファイルを採用
 const SE_PATHS = {
-  correct: '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
-  wrong:   '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
-  clear:   '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
-  hint:    '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
+  correct:      '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
+  wrong:        '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
+  clear:        '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
+  hint:         '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
+  nextQuestion: '../assets/audio/sfx/quiz/' + encodeURIComponent('don') + '.mp3',
 };
 const SE_VOLUME = 0.45;
 const _seCache = {};
@@ -4336,6 +4337,9 @@ function loadQuestion(q) {
   updateHUD();
   setupNarration(q);
   showProblemDialogue(q);
+  // 「第 N 問目」SE: 問題ロード時 (= mode-btn タップ後 = user gesture 後) のみ鳴らす
+  // updateHUD() は起動時 IIFE 末尾でも呼ばれるため、SE 発火は loadQuestion 末尾に限定する
+  playSe('nextQuestion');
 }
 
 // ── Narration: 自動再生 or 🔊ボタンで問題文を読み上げ
