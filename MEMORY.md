@@ -102,6 +102,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T13:48:27Z - Quizland: 第N問目SE (don.mp3) を SE_PATHS に追加 + updateHUD() で playSe('nextQuestion') 起動
+- **タスク**: Quizland: 第N問目SE (don.mp3) を SE_PATHS に追加 + updateHUD() で playSe('nextQuestion') 起動
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 466
+- **エラー数**: 50
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 179, "Read": 108, "Grep": 14, "ToolSearch": 2, "Agent": 91, "Write": 6, "Edit": 54, "Glob": 12}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-08T13:46:58Z - quizland next button overlay rework + CACHE_VERSION 874->875
+- **タスク**: quizland next button overlay rework + CACHE_VERSION 874->875
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 123
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 35, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 48, "Grep": 4}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T13:45:32Z - Quizland OP cinematic に tap-to-advance + auto-advance hybrid 進行を追加 (Panel 1 narration seg1/seg2 + Panel 2-6 dialogue 全 line) + .op-tap-hint UI + sw.js CACHE_VERSION 873→874
 - **タスク**: Quizland OP cinematic に tap-to-advance + auto-advance hybrid 進行を追加 (Panel 1 narration seg1/seg2 + Panel 2-6 dialogue 全 line) + .op-tap-hint UI + sw.js CACHE_VERSION 873→874
 - **結果**: 成功
@@ -191,31 +217,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 173, "Read": 83, "Grep": 6, "ToolSearch": 2, "Agent": 80, "Write": 4, "Edit": 45}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T12:00:21Z - Quizland OP narration padding 非対称化(視覚中央補正) + editor display:flex→block + sw.js bump
-- **タスク**: Quizland OP narration padding 非対称化(視覚中央補正) + editor display:flex→block + sw.js bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 352
-- **エラー数**: 32
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 50, "Agent": 103, "Bash": 156, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 10, "Edit": 15}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T11:47:37Z - Quizland OP Panel 1 segment 2 を黒文字に戻す (emphasis: true→false), sw.js CACHE_VERSION 865→866
-- **タスク**: Quizland OP Panel 1 segment 2 を黒文字に戻す (emphasis: true→false), sw.js CACHE_VERSION 865→866
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 350
-- **エラー数**: 32
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 50, "Agent": 101, "Bash": 156, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 10, "Edit": 15}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
