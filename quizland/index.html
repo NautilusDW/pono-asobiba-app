@@ -2211,15 +2211,22 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   /* Fix 5d: `.op-cinematic` を flex centering コンテナにしたので、
      `.op-content` は flex item として配置されるだけで自動的に中央に来る。
      position は relative、flex: none で flex 軸の伸縮を抑止し、
-     transform は scale (縮小フィット) のみ。translate は使わない。 */
+     transform は scale (縮小フィット) のみ。translate は使わない。
+     Fix 5e (2026-05-07, transform: scale 構文無効化バグ修正):
+     `transform: scale(min(calc(100vw/W), calc(100vh/H)))` は
+     `min(<length>, <length>)` が length を返すため scale() の number 期待と
+     一致せず、CSS パーサが transform 全体を invalid と判定して scale=1 が
+     適用されていた。4:3 では .op-content の固定実寸 (1024×768) が viewport
+     と偶然一致するので scale 不要で動いていたが、16:9 / 21:9 では .op-content
+     (1920×1080 / 2560×1080) が viewport を超えて中央切り抜きしか見えなかった。
+     対策: CSS から transform: scale の calc を撤去し、JS (rescaleOpContent)
+     で width/height/transform を動的計算・適用する。CSS の @media にあった
+     .op-content の width/height/transform 行も削除して、すべて JS 一本化。
+     ここではフォールバック値のみ scale(1) で残す (JS が無効でも要素は出る)。 */
   position: relative;
   flex: none;
   transform-origin: center center;
-  /* width / height / transform は VC ごとに @media で上書き。
-     ここではフォールバック (16:9 1920×1080) として計算しておく。 */
-  width: 1920px;
-  height: 1080px;
-  transform: scale(min(calc(100vw / 1920), calc(100vh / 1080)));
+  transform: scale(1);
   pointer-events: none;     /* スキップボタンの裏側は素通しにし、子要素だけ受ける */
 }
 .op-content > * {
@@ -2400,16 +2407,9 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
    Box top) が editor preview と本番で同じスケールになる。 */
 /* viewport class B (1024x768 / 4:3) */
 @media (min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10) {
-  .op-content {
-    /* Fix 5c: editor `.stage[data-vc="B"]` 実寸 1024×768 を本番でも採用し、
-       `#stage-wrap` 同等の scale(min(availW/w, availH/h)) を CSS calc で再現。
-       これで内部絶対 px (slot 1021px / box 984px 等) が viewport に収まる。
-       Fix 5d: 親 `.op-cinematic` の flex centering で中央寄せ → translate 不要、
-       transform は scale のみ。 */
-    width: 1024px;
-    height: 768px;
-    transform: scale(min(calc(100vw / 1024), calc(100vh / 768)));
-  }
+  /* Fix 5e: .op-content の width/height/transform は JS (rescaleOpContent) が
+     動的に設定するため、CSS @media からは削除。slot / dialogue / narration の
+     per-VC 値は editor 出力をそのまま維持。 */
   .op-side-pono .op-char-slot {
     width: 1021px;
     height: 492px;
@@ -2455,13 +2455,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 
 /* viewport class C (1920x1080 / 16:9) */
 @media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10) {
-  .op-content {
-    /* Fix 5c: editor `.stage[data-vc="C"]` 実寸 1920×1080 を採用。
-       Fix 5d: flex centering により translate 不要。 */
-    width: 1920px;
-    height: 1080px;
-    transform: scale(min(calc(100vw / 1920), calc(100vh / 1080)));
-  }
+  /* Fix 5e: .op-content は JS (rescaleOpContent) で動的設定 (削除)。 */
   .op-side-pono .op-char-slot {
     width: 1481px;
     height: 775px;
@@ -2507,13 +2501,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 
 /* viewport class D (2560x1080 / 64:27 ≒ 21:9) */
 @media (min-aspect-ratio: 19/10) {
-  .op-content {
-    /* Fix 5c: editor `.stage[data-vc="D"]` 実寸 2560×1080 を採用。
-       Fix 5d: flex centering により translate 不要。 */
-    width: 2560px;
-    height: 1080px;
-    transform: scale(min(calc(100vw / 2560), calc(100vh / 1080)));
-  }
+  /* Fix 5e: .op-content は JS (rescaleOpContent) で動的設定 (削除)。 */
   .op-side-pono .op-char-slot {
     width: 560px;
     height: 800px;
@@ -4292,6 +4280,34 @@ let _opActiveAudio = null;
 let _opTypingToken = 0;
 let _opRunning = false;
 
+// Fix 5e (2026-05-07): CSS の transform: scale(min(calc(100vw/W), calc(100vh/H)))
+// は length を返すため scale() の number 期待と合わず無効化されていた。
+// editor (tools/op-layout-editor.html の rescaleStage) と同じ計算を JS で実施し、
+// .op-content の width/height/transform を動的に設定して全 VC で正しく fit させる。
+function rescaleOpContent() {
+  const opContent = document.getElementById('op-content');
+  if (!opContent) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (!vw || !vh) return;
+  const aspect = vw / vh;
+  let stageW, stageH;
+  if (aspect <= 1.4) {
+    // viewport class B (4:3)
+    stageW = 1024; stageH = 768;
+  } else if (aspect <= 1.9) {
+    // viewport class C (16:9)
+    stageW = 1920; stageH = 1080;
+  } else {
+    // viewport class D (21:9)
+    stageW = 2560; stageH = 1080;
+  }
+  const scale = Math.min(vw / stageW, vh / stageH);
+  opContent.style.width = stageW + 'px';
+  opContent.style.height = stageH + 'px';
+  opContent.style.transform = 'scale(' + scale + ')';
+}
+
 function _opTypeInto(elId, text, presetName) {
   return new Promise(function(resolve) {
     const el = document.getElementById(elId);
@@ -4331,6 +4347,11 @@ async function playOpeningCinematic() {
   _opRunning = true;
 
   _opCancelled = false;
+
+  // Fix 5e: CSS の transform: scale が無効化されるため、JS で動的に scale を計算・適用。
+  // 起動時に 1 回 + cinematic 中の resize にも追従。終了時 (finally) で removeEventListener。
+  rescaleOpContent();
+  window.addEventListener('resize', rescaleOpContent);
 
   // Hoist BGM duck state so start, finish, and skip paths can reach it.
   let __opOrigBgm = null;
@@ -4631,6 +4652,7 @@ async function playOpeningCinematic() {
     __opNarrSrc = null;
     __opNarrGain = null;
     if (skipBtn) skipBtn.removeEventListener('click', onSkip);
+    try { window.removeEventListener('resize', rescaleOpContent); } catch (e) {}
     try { if (_opActiveAudio) { _opActiveAudio.pause(); } } catch (e) {}
     _opActiveAudio = null;
     try { if (window.PonoBabble && window.PonoBabble.cancelAll) window.PonoBabble.cancelAll(); } catch (e) {}
