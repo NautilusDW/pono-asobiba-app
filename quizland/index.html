@@ -2035,27 +2035,78 @@ body.debug-mode::after {
    ので右下に少し被るが運用上問題なし。) */
 
 /* ===== Playtest note panel (?debug=all 専用) =====
-   問題ごとにコメント + スクショを残して GitHub に commit する開発者向けUI。 */
+   問題ごとにコメント + スクショを残して GitHub に commit する開発者向けUI。
+   2026-05-08: drag/minimize 対応。 left/right/bottom は default 用 (JS が
+   localStorage から復元した位置を style.* で上書きする)。 */
 #qz-playtest-panel {
   display: none;
   position: fixed;
-  left: 8px;
+  /* default: 画面右上にコンパクト配置 (中央のクイズ UI を塞がない) */
+  top: 8px;
   right: 8px;
-  bottom: 56px; /* qz-debug-nav の上に重ねる */
+  left: auto;
+  bottom: auto;
   z-index: 9997;
   background: rgba(20, 20, 30, 0.92);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 6px 10px 8px;
   font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
   font-size: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
-  max-width: 720px;
-  margin: 0 auto;
+  max-width: 460px;
+  width: min(460px, calc(100vw - 16px));
+  user-select: none;
+  transition: opacity 0.15s ease-out;
 }
 body.debug-mode #qz-playtest-panel { display: block; }
+#qz-playtest-panel.is-dragging { opacity: 0.85; }
+#qz-playtest-panel.is-minimized .qz-pt-extra { display: none; }
+#qz-playtest-panel .qz-pt-handle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: -2px -4px 4px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  cursor: move;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #aab;
+  text-transform: uppercase;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+#qz-playtest-panel .qz-pt-handle-title {
+  flex: 1;
+  pointer-events: none;
+}
+#qz-playtest-panel .qz-pt-handle-btns {
+  display: inline-flex;
+  gap: 4px;
+}
+#qz-playtest-panel .qz-pt-handle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  width: 22px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+#qz-playtest-panel .qz-pt-handle-btn:hover { background: rgba(255, 255, 255, 0.18); }
 #qz-playtest-panel .qz-pt-row {
   display: flex;
   gap: 6px;
@@ -2154,7 +2205,7 @@ body.debug-mode #qz-playtest-panel { display: block; }
 #qz-playtest-panel .qz-pt-toast.ok    { background: rgba(70, 160, 90, 0.85); display: block; }
 #qz-playtest-panel .qz-pt-toast.err   { background: rgba(220, 80, 60, 0.9);  display: block; }
 #qz-playtest-panel .qz-pt-toast.info  { background: rgba(80, 100, 160, 0.85); display: block; }
-/* debug ナビを少し下げて playtest panel と被らないようにする */
+/* debug ナビは画面下に固定 (playtest panel は drag 可能になったので衝突しない) */
 body.debug-mode #qz-debug-nav { bottom: 8px; }
 
 /* ===== Opening Cinematic (op-*) ===== */
@@ -2193,7 +2244,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   will-change: transform;
   /* Cross-fade from black: bg starts invisible, fades in once .is-revealed is added. */
   opacity: 0;
-  transition: opacity 0.7s ease-out;
+  /* Panel 2 入室演出 (2026-05-07): 部屋に入った最初のカットは sharp 表示 → 2s 後に
+     blur をフェードイン。 .is-static-blur 追加時に filter / transform が滑らかに
+     遷移するよう、base 側で filter / transform にも transition を効かせる。
+     opacity の 0.7s は既存の cross-fade 用 (is-revealed) のまま維持。 */
+  transition: opacity 0.7s ease-out, filter 0.6s ease-out, transform 0.6s ease-out;
 }
 .op-bg.is-revealed {
   opacity: 1;
@@ -4792,11 +4847,20 @@ async function playOpeningCinematic() {
     for (let i = 0; i < OP_PANELS.length; i++) {
       if (_opCancelled) break;
       const panel = OP_PANELS[i];
+      // Panel 2 入室演出 (2026-05-07): narration → 最初の dialogue panel は
+      // 「部屋に入った瞬間」なので、 BG を sharp で 2s 表示してから blur をフェードインし、
+      // それと同時にキャラ + Single Box ダイアログをフェードインさせる。
+      // 2 回目以降の連続 dialogue panel (Panel 3-6) は通常通り即 blur のまま。
+      const isFirstDialogue = (panel.kind === 'dialogue'
+                                && i > 0
+                                && OP_PANELS[i - 1].kind === 'narration');
       // Fix 1: パネル毎に背景画像とぼかしを切り替え。
       // Panel 1 (narration) は sharp、 dialogue パネルはぼかし。
+      // ただし入室演出 (isFirstDialogue) のときは一旦 sharp のまま BG だけ切替え、
+      // 後段で 2s 待機してから .is-static-blur を追加する。
       if (bg && panel.bg) {
         bg.style.backgroundImage = "url('" + panel.bg + "')";
-        if (panel.kind === 'narration') {
+        if (panel.kind === 'narration' || isFirstDialogue) {
           bg.classList.remove('is-static-blur');
         } else {
           bg.classList.add('is-static-blur');
@@ -4968,6 +5032,61 @@ async function playOpeningCinematic() {
         if (ponoImgEl && panel.ponoImg) {
           ponoImgEl.src = panel.ponoImg;
         }
+
+        // Panel 2 入室演出 (2026-05-07): narration 直後の最初の dialogue panel では、
+        // BG (部屋の中) を sharp で 2s 表示してから blur をフェードイン、
+        // それと同時にキャラ + Single Box をフェードインさせる。
+        // 2 回目以降の連続 dialogue panel では通常通り即表示なので、 inline style は
+        // クリア (= '') してデフォルトの可視状態に戻す。
+        if (isFirstDialogue) {
+          // キャラ / Single Box を非表示 (opacity 0) で開始。 sides は display:flex を
+          // 維持しつつ opacity だけ落とす。 transition も付与してフェードインさせる。
+          try {
+            sides.style.transition = 'opacity 0.5s ease-out';
+            sides.style.opacity = '0';
+          } catch (e) {}
+          if (dialogueBox) {
+            try {
+              dialogueBox.style.transition = 'opacity 0.5s ease-out';
+              dialogueBox.style.opacity = '0';
+            } catch (e) {}
+          }
+
+          // 2s 待機 (skip / cancel に追従するため 100ms 粒度でループ)。
+          for (let __wt = 0; __wt < 20 && !_opCancelled; __wt++) {
+            await new Promise(function(r) { setTimeout(r, 100); });
+          }
+          if (_opCancelled) break;
+
+          // BG に blur をフェードイン (CSS の filter / transform transition で 0.6s)
+          if (bg) bg.classList.add('is-static-blur');
+          // キャラ / Single Box をフェードイン
+          try { sides.style.opacity = '1'; } catch (e) {}
+          if (dialogueBox) {
+            try { dialogueBox.style.opacity = '1'; } catch (e) {}
+          }
+          // フェードイン完了待ち (0.6s; 100ms 粒度で skip 対応)
+          // Fix HIGH-2 (review 2026-05-08): 0.5s ぴったりだと CSS transition の
+          // 末尾と typing 開始が同時になる端末で 1 文字目が薄く見えるため 0.6s に。
+          for (let __ft = 0; __ft < 6 && !_opCancelled; __ft++) {
+            await new Promise(function(r) { setTimeout(r, 100); });
+          }
+          if (_opCancelled) break;
+        } else {
+          // 2 回目以降の dialogue panel では入室演出は不要。
+          // 前パネルで残った inline opacity / transition があればクリアして
+          // CSS デフォルト (= 完全可視) に戻す。
+          try {
+            sides.style.opacity = '';
+            sides.style.transition = '';
+          } catch (e) {}
+          if (dialogueBox) {
+            try {
+              dialogueBox.style.opacity = '';
+              dialogueBox.style.transition = '';
+            } catch (e) {}
+          }
+        }
         // Sequential dialogues — Single Box モード: 同じ box の label / text を speaker 切替時に書き換える。
         // per-line ponoImg 対応: 各 line 開始時に line.ponoImg を最優先、なければ panel.ponoImg
         // (fallback / 互換)。 hakase 発話 line でも明示指定があれば反映する (例: 直前のポノ表情で
@@ -5025,6 +5144,22 @@ async function playOpeningCinematic() {
     try { if (_opActiveAudio) { _opActiveAudio.pause(); } } catch (e) {}
     _opActiveAudio = null;
     try { if (window.PonoBabble && window.PonoBabble.cancelAll) window.PonoBabble.cancelAll(); } catch (e) {}
+    // Panel 2 入室演出で付与した inline style (opacity / transition) をクリア。
+    // 次回 cinematic 再生 (replay / skip 後) のために CSS デフォルトへ戻しておく。
+    try {
+      const __sides = document.getElementById('op-sides');
+      if (__sides) { __sides.style.opacity = ''; __sides.style.transition = ''; }
+    } catch (e) {}
+    try {
+      const __dbox = document.getElementById('op-dialogue-single');
+      if (__dbox) { __dbox.style.opacity = ''; __dbox.style.transition = ''; }
+    } catch (e) {}
+    // Fix HIGH-1 (review 2026-05-08): is-static-blur が skip 中に残ったまま replay
+    // すると次回の narration BG にも blur がかかってしまう。finally で確実に外す。
+    try {
+      const __bg = document.getElementById('op-bg');
+      if (__bg) __bg.classList.remove('is-static-blur');
+    } catch (e) {}
     root.classList.add('hidden');
     root.setAttribute('aria-hidden', 'true');
     _opRunning = false;
@@ -5649,21 +5784,142 @@ function _qzPtBuildPanel() {
   var panel = document.createElement('div');
   panel.id = 'qz-playtest-panel';
   panel.innerHTML =
-    '<div class="qz-pt-label">コメント (任意)</div>' +
-    '<textarea id="qz-pt-comment" placeholder="このイチゴの絵が潰れて見える..." rows="2"></textarea>' +
-    '<div class="qz-pt-row">' +
-      '<button type="button" class="qz-pt-btn" id="qz-pt-capture">📸 自動キャプチャ</button>' +
-      '<button type="button" class="qz-pt-btn" id="qz-pt-attach-btn">📎 添付</button>' +
-      '<input type="file" id="qz-pt-attach-input" accept="image/*" multiple>' +
-      '<span class="qz-pt-count" id="qz-pt-count">添付: 0</span>' +
-      '<label class="qz-pt-cropmiss" id="qz-pt-cropmiss-label" title="この問題の絵にクロップミスがある">' +
-        '<input type="checkbox" id="qz-pt-cropmiss">' +
-        '<span>クロップミス</span>' +
-      '</label>' +
+    '<div class="qz-pt-handle" id="qz-pt-handle">' +
+      '<span class="qz-pt-handle-title">📝 Playtest</span>' +
+      '<span class="qz-pt-handle-btns">' +
+        '<button type="button" class="qz-pt-handle-btn" id="qz-pt-reset" title="位置リセット">⟲</button>' +
+        '<button type="button" class="qz-pt-handle-btn" id="qz-pt-toggle" title="最小化/展開">−</button>' +
+      '</span>' +
     '</div>' +
-    '<div class="qz-pt-thumbs" id="qz-pt-thumbs"></div>' +
-    '<div class="qz-pt-toast" id="qz-pt-toast"></div>';
+    '<div class="qz-pt-extra">' +
+      '<div class="qz-pt-label">コメント (任意)</div>' +
+      '<textarea id="qz-pt-comment" placeholder="このイチゴの絵が潰れて見える..." rows="2"></textarea>' +
+      '<div class="qz-pt-row">' +
+        '<button type="button" class="qz-pt-btn" id="qz-pt-capture">📸 自動キャプチャ</button>' +
+        '<button type="button" class="qz-pt-btn" id="qz-pt-attach-btn">📎 添付</button>' +
+        '<input type="file" id="qz-pt-attach-input" accept="image/*" multiple>' +
+        '<span class="qz-pt-count" id="qz-pt-count">添付: 0</span>' +
+        '<label class="qz-pt-cropmiss" id="qz-pt-cropmiss-label" title="この問題の絵にクロップミスがある">' +
+          '<input type="checkbox" id="qz-pt-cropmiss">' +
+          '<span>クロップミス</span>' +
+        '</label>' +
+      '</div>' +
+      '<div class="qz-pt-thumbs" id="qz-pt-thumbs"></div>' +
+      '<div class="qz-pt-toast" id="qz-pt-toast"></div>' +
+    '</div>';
   document.body.appendChild(panel);
+
+  // ─── drag / minimize / restore wiring ────────────────────────────────────
+  var handleEl = document.getElementById('qz-pt-handle');
+  var toggleBtn = document.getElementById('qz-pt-toggle');
+  var resetBtn = document.getElementById('qz-pt-reset');
+
+  // drag state
+  (function initPanelDrag() {
+    var dragging = false, offX = 0, offY = 0, moved = false;
+    var clamp = function (v, lo, hi) { return Math.max(lo, Math.min(hi, v)); };
+    var setPos = function (x, y) {
+      var maxX = Math.max(0, window.innerWidth  - panel.offsetWidth);
+      var maxY = Math.max(0, window.innerHeight - 40);
+      x = clamp(x, 0, maxX);
+      y = clamp(y, 0, maxY);
+      panel.style.left = x + 'px';
+      panel.style.top  = y + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    };
+    var pointFrom = function (e) {
+      if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    };
+    var onDown = function (e) {
+      // ボタンや input の上では drag しない
+      if (e.target && e.target.closest && e.target.closest('button, input, select, textarea')) return;
+      var p = pointFrom(e);
+      var rect = panel.getBoundingClientRect();
+      offX = p.x - rect.left;
+      offY = p.y - rect.top;
+      dragging = true;
+      moved = false;
+      panel.classList.add('is-dragging');
+      if (e.cancelable) e.preventDefault();
+    };
+    var onMove = function (e) {
+      if (!dragging) return;
+      var p = pointFrom(e);
+      moved = true;
+      setPos(p.x - offX, p.y - offY);
+      if (e.cancelable) e.preventDefault();
+    };
+    var onUp = function () {
+      if (!dragging) return;
+      dragging = false;
+      panel.classList.remove('is-dragging');
+      if (moved) {
+        try {
+          localStorage.setItem('qz_pt_panel_pos', JSON.stringify({
+            x: panel.offsetLeft, y: panel.offsetTop
+          }));
+        } catch (_) {}
+      }
+    };
+    handleEl.addEventListener('mousedown', onDown);
+    handleEl.addEventListener('touchstart', onDown, { passive: false });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+    document.addEventListener('touchcancel', onUp);
+  })();
+
+  // minimize toggle
+  toggleBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+    var collapsed = panel.classList.toggle('is-minimized');
+    toggleBtn.textContent = collapsed ? '▲' : '−';
+    toggleBtn.title = collapsed ? '展開' : '最小化';
+    try { localStorage.setItem('qz_pt_panel_collapsed', collapsed ? '1' : '0'); } catch (_) {}
+  });
+
+  // reset position (デフォルト: 画面右上)
+  resetBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+    panel.style.left = '';
+    panel.style.top = '';
+    panel.style.right = '';
+    panel.style.bottom = '';
+    try { localStorage.removeItem('qz_pt_panel_pos'); } catch (_) {}
+  });
+
+  // restore saved position / minimized state
+  (function restorePanelState() {
+    try {
+      var raw = localStorage.getItem('qz_pt_panel_pos');
+      if (raw) {
+        var pos = JSON.parse(raw);
+        if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+          // viewport 外に保存されていた場合に救済
+          var maxX = Math.max(0, window.innerWidth  - 80);
+          var maxY = Math.max(0, window.innerHeight - 40);
+          var x = Math.max(0, Math.min(maxX, pos.x));
+          var y = Math.max(0, Math.min(maxY, pos.y));
+          panel.style.left = x + 'px';
+          panel.style.top  = y + 'px';
+          panel.style.right = 'auto';
+          panel.style.bottom = 'auto';
+        }
+      }
+    } catch (_) {}
+    try {
+      if (localStorage.getItem('qz_pt_panel_collapsed') === '1') {
+        panel.classList.add('is-minimized');
+        toggleBtn.textContent = '▲';
+        toggleBtn.title = '展開';
+      }
+    } catch (_) {}
+  })();
 
   var ta = document.getElementById('qz-pt-comment');
   ta.addEventListener('paste', function (e) {
