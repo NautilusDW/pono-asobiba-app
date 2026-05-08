@@ -1261,12 +1261,10 @@ function migrateScenario(parsed) {
           else {
             if (d.speaker !== 'pono' && d.speaker !== 'hakase') d.speaker = 'hakase';
             if (typeof d.text !== 'string') d.text = '';
-            if (d.speaker === 'pono') {
-              if (typeof d.ponoImg !== 'string' || !d.ponoImg) d.ponoImg = p.ponoImgFallback;
-            } else {
-              // hakase は ponoImg を持たない (はかせは固定画像)
-              if ('ponoImg' in d) delete d.ponoImg;
-            }
+            // line.ponoImg は speaker に関係なく optional (Pono は dialogue panel 全体で常時表示
+            // されているため、はかせ発話中も Pono の表情/ポーズを line 単位で切り替えたい)。
+            // 未設定の line には panel.ponoImgFallback を初期値として割り当てる。
+            if (typeof d.ponoImg !== 'string' || !d.ponoImg) d.ponoImg = p.ponoImgFallback;
           }
         });
       }
@@ -4275,13 +4273,10 @@ function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
       if (!inp.checked) return;
       pushUndoSnapshot('シナリオ speaker 変更');
       line.speaker = sp;
-      if (sp === 'pono') {
-        // pono ライン: ponoImg を fallback で初期化 (既存値があれば保持)。
-        if (!line.ponoImg) line.ponoImg = panel.ponoImgFallback || 'dance_hi';
-      } else {
-        // hakase ライン: ponoImg は不要 (はかせは固定画像)。
-        if ('ponoImg' in line) delete line.ponoImg;
-      }
+      // ponoImg は speaker に関係なく保持/初期化する。
+      // (Pono は dialogue panel 全体で常時表示されているため、はかせ発話中も
+      //  Pono の表情/ポーズを line 単位で切り替えたい。)
+      if (!line.ponoImg) line.ponoImg = panel.ponoImgFallback || 'dance_hi';
       saveScenario();
       buildRightPane();
       render();
@@ -4292,10 +4287,12 @@ function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
     meta.appendChild(lbl);
   });
 
-  // ponoImg select (only when speaker = pono).
-  if (line.speaker === 'pono') {
+  // ponoImg select — speaker に関係なく全 dialogue line で表示する。
+  // (Pono は dialogue panel 全体で常時表示されているため、はかせ発話中も
+  //  Pono の表情/ポーズを line 単位で切り替えたい。)
+  {
     const imgLab = document.createElement('label');
-    imgLab.textContent = 'ponoImg';
+    imgLab.textContent = 'ポノの表情/ポーズ';
     meta.appendChild(imgLab);
     const sel = document.createElement('select');
     PONO_VARIANTS.forEach(v => {
@@ -4399,10 +4396,10 @@ function applyScenarioPreview() {
     if (sidePono) sidePono.classList.toggle('is-speaking', speakerSide === 'pono');
     if (sideHak)  sideHak.classList.toggle('is-speaking', speakerSide === 'hakase');
 
-    // Pono image swap (panel-level fallback or per-line).
+    // Pono image swap (per-line ponoImg を speaker に関係なく優先、なければ panel-level fallback)。
     const ponoImgEl = document.getElementById('img-pono');
     if (ponoImgEl) {
-      const variantName = (line.speaker === 'pono' && line.ponoImg)
+      const variantName = line.ponoImg
         ? line.ponoImg
         : (panel.ponoImgFallback || 'dance_hi');
       ponoImgEl.src = ponoPathByName(variantName);
@@ -5141,8 +5138,9 @@ function buildScenarioPanelsLiteral() {
         const speaker = jsString(d.speaker === 'pono' ? 'pono' : 'hakase');
         const text = jsString(d.text || '');
         let row = indent6 + '{ speaker: ' + speaker + ', text: ' + text;
-        // pono ライン: ponoImg をフルパスで出す (per-line override)。
-        if (d.speaker === 'pono' && d.ponoImg) {
+        // line.ponoImg をフルパスで出す (per-line override)。speaker に関係なく
+        // (はかせ発話 line でも) line.ponoImg があればシリアライズする。
+        if (d.ponoImg) {
           row += ', ponoImg: ' + jsString(ponoFullPath(d.ponoImg));
         }
         row += ' }' + (lLast ? '' : ',');
