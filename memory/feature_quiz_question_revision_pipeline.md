@@ -156,7 +156,7 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 | 10 | quizland-start-card フレーム (4:3 / 1:1 / 横長 raw) | tmp/10/ に納品済、配置は別途 |
 | 11 | quizland-forest-house-21x9 (OP_BG.webp の 21:9 高解像度版) | 配置済 (2026-05-07) |
 | 12 | quizland-trivia-stage 6 枚 (soccerball / unripe_banana / rabbit_no_ears / speed_dust / notebook / munching) + 2 variant (_face_crop / _side_pass) | 配置済 (2026-05-08)、questions.js 結線済 (2026-05-08) |
-| 13 (sprint-13) | キリン全身 + 首骨 / 虹再生成 / 葉っぱ / ピザ4切れ / 赤ちゃん歯生え変わり / ライオンオスシルエット + オス・メス比較 + きば + ひげタイル | `tmp/quizland-trivia-audit/CODEX-ORDER-2.md` に発注書、未納品 |
+| 13 (sprint-13) | キリン全身+首骨 / 虹7色再生成 / 葉っぱ / ピザ4切れ / ライオンoshilhouette+osu_mesu_compare / きば+ひげ choice tiles | **12/13 配置済 + questions.js 結線済 (2026-05-08)**。残: 赤ちゃん歯 reveal (`stage_body_teeth_replacement.png`) Codex 未納品 |
 | 14 (sprint-14) | spoiler 修正用ステージ絵 15-19 枚 (HARD spoiler 18 問対応) | **15 枚配置済 + questions.js 結線済 (2026-05-08)**。残: A6 虫シルエット集合 (#81/#93 待ち) + B4 ぼかし雪粒 (#121 未届) |
 
 ## リビールペア (img / img_word / img_answer) 設計パターン
@@ -177,7 +177,29 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 - 「正解後に絵が切り替わる」演出で、子供は答えを聞いた後にビジュアルでも納得できる
 - レンダラ側は `quizland/index.html` line 4053 付近で `q.img_answer` の有無を見て切替
 
-### 採用済みリビールペア (2026-05-08 時点、計 20 ペア)
+### ハイブリッド image-based 選択肢 (text-only distractor 混在)
+
+ピザ問題 (#131 shape_name L3) で採用した新パターン: **正解と一部 distractor のみ image-based、残りは text-only** で混在 OK。
+
+**理由**:
+- 4 つの distractor すべてに image を付けようとすると、text-image mismatch (例: しかく ≠ pizza_eighth.png は thin slice) が発生する場合がある
+- 無理に紐付けるより、text-only で「明らかな誤答」として置くほうが教育的にクリーン
+
+**例 (#131 ピザ問題)**:
+```js
+choices: [
+  { text:'はんぶんの まる', image:'pizza_half.png' },   // 正解 (image)
+  { text:'まんまるい',     image:'pizza_whole.png' },   // distractor (image)
+  { text:'さんかく' },                                  // distractor (text-only)
+  { text:'しかく' }                                     // distractor (text-only)
+]
+```
+
+**いつ使うか**:
+- 正解+1 程度の distractor だけ強い視覚根拠が必要で、残りは「明らかにそうじゃない」概念 distractor の場合
+- 全 4 つを image-based にすると text-image 不整合が生じる場合
+
+### 採用済みリビールペア (2026-05-08 時点、計 23 ペア)
 
 #### batch:12 由来 (4 ペア)
 | 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
@@ -187,10 +209,16 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 | trivia L2 速い動物 (cheetah) | speed_dust_side_pass (砂煙のみ) | running_cheetah (チーター本体) |
 | body L2 噛む (chewing) | munching (子供がりんごを食べる) | chewing_teeth (歯のアップ) |
 
-#### batch:13 由来 (1 ペア、画像未納品)
+#### batch:13 由来 (4 ペア、2026-05-08 配置 + 結線完了)
 | 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
 |---|---|---|
-| trivia L3 ライオン (オスにあるもの) | lion_osu_silhouette (オス影絵) | lion_osu_mesu_compare (オス+メス並列) |
+| trivia L2 キリン首骨 | giraffe_full (普通の長首キリン) | giraffe_neck_bones (首アップ + 7 番号付き骨が透ける) |
+| trivia L3 ライオン (オスにあるもの) | lion_osu_silhouette (オス影絵) | lion_osu_mesu_compare (オス+メス並列カラー) |
+| weather L2 虹 (なんしょく) | rainbow_arc (7色版に再生成・上書き) | (同上、出題=正解で同一画像) |
+| shape_name L3 ピザ (はんぶんに切ると) | (image-based 選択肢化) | (text-only distractor + image-based 正解 hybrid) |
+
+Note: ライオン choices に `kiba.png` / `hige.png` choice tile も配置済 (画像付き 4 択完成)。
+Note: 葉っぱ問題 (#122) も `stage_shape_leaf.png` 単独画像として image 紐付け完了 (reveal pair 不使用、出題のみ)。
 
 #### batch:14 由来 (15 ペア、2026-05-08 配置 + 結線完了)
 | # | 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
