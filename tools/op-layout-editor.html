@@ -74,9 +74,24 @@
     overflow-y: auto;
     padding: 12px;
     font-size: 12px;
+    /* grid item の overflow:auto を効かせるための min-height:0 トリック */
+    min-height: 0;
+    height: 100%;
   }
   #left  { grid-area: left; }
-  #right { grid-area: right; border-right: none; border-left: 1px solid #2a2e3a; padding: 0; }
+  #right {
+    grid-area: right;
+    border-right: none;
+    border-left: 1px solid #2a2e3a;
+    padding: 0;
+    /* 右ペインは内部 (speaker-row / mirror-row / tab-bar / tab-body) を縦に並べ、
+       tab-body のみが余剰スペースを取りつつ独立スクロールするレイアウトに統一する。 */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
 
   .section { margin-bottom: 18px; }
   .section h3 {
@@ -296,7 +311,10 @@
   }
   .tab-body {
     overflow-y: auto;
-    height: calc(100% - 41px);
+    /* #right を flex column 化したので、tab-body は残りの高さを取りつつ縦スクロール。
+       min-height:0 を入れないと flex item は内容分まで伸びて scroll が効かなくなる。 */
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 12px;
   }
 
@@ -2638,8 +2656,8 @@ function buildSingleBoxSection() {
     { value: true, text: '内側' },
     { value: false, text: '外側' }
   ]));
-  sec.appendChild(makeSingleBoxRange('ラベルX', -50, 50, 1, 'labelOffsetX'));
-  sec.appendChild(makeSingleBoxRange('ラベルY', -50, 50, 1, 'labelOffsetY'));
+  sec.appendChild(makeSingleBoxRange('ラベルX', -500, 500, 1, 'labelOffsetX'));
+  sec.appendChild(makeSingleBoxRange('ラベルY', -300, 300, 1, 'labelOffsetY'));
   sec.appendChild(makeSingleBoxSpeakerRow());
   return sec;
 }
@@ -2731,8 +2749,8 @@ function buildRightPane() {
     { value: true, text: '内側' },
     { value: false, text: '外側' }
   ]));
-  boxGroup.appendChild(makeRange('ラベルX', -50, 50, 1, 'labelOffsetX', sideKey));
-  boxGroup.appendChild(makeRange('ラベルY', -50, 50, 1, 'labelOffsetY', sideKey));
+  boxGroup.appendChild(makeRange('ラベルX', -500, 500, 1, 'labelOffsetX', sideKey));
+  boxGroup.appendChild(makeRange('ラベルY', -300, 300, 1, 'labelOffsetY', sideKey));
   boxGroup.appendChild(makeTextarea('サンプル文', 'sampleText', sideKey));
   body.appendChild(boxGroup);
 }
