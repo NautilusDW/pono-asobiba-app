@@ -2639,6 +2639,45 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     max-width: 96vw;
   }
 }
+
+/* ===== Question Number Plate (shows at start of Q1-Q5) ===== */
+.qno-plate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 305;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: transparent;
+}
+.qno-plate-overlay.hidden { display: none; }
+.qno-plate-overlay.is-tap-skip { pointer-events: auto; cursor: pointer; }
+.qno-plate-img {
+  max-width: 70vw;
+  max-height: 50vh;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.25));
+  transform: scale(0);
+  opacity: 0;
+}
+.qno-plate-overlay.is-impact .qno-plate-img {
+  animation: qnoImpact 1.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+@keyframes qnoImpact {
+  0%   { transform: scale(0);    opacity: 0; }
+  16%  { transform: scale(1.15); opacity: 1; }       /* 0.25s point overshoot */
+  28%  { transform: scale(1.0);  opacity: 1; }       /* 0.45s settle */
+  82%  { transform: scale(1.0);  opacity: 1; }       /* hold */
+  100% { transform: scale(1.0);  opacity: 0; }       /* fade out 0.3s */
+}
+@media (max-width: 540px) {
+  .qno-plate-img {
+    max-width: 86vw;
+    max-height: 38vh;
+  }
+}
 </style>
 </head>
 <body class="sheet-on show-safe">
@@ -2819,6 +2858,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 <div id="quiz-start-card" class="quiz-start-card hidden" aria-hidden="true">
   <img class="quiz-start-card-img" id="quiz-start-card-img"
        src="../assets/images/quizland/OP/quiz_start_card.webp" alt="ふくろう博士の なぞなぞスタート">
+</div>
+
+<!-- ===== Question Number Plate (shows at start of Q1-Q5) ===== -->
+<div id="qno-plate-overlay" class="qno-plate-overlay hidden" aria-hidden="true">
+  <img class="qno-plate-img" id="qno-plate-img" src="" alt="">
 </div>
 
 <script>
@@ -4259,6 +4303,7 @@ function _doNextQuestion() {
     if (document.body.classList.contains('layout-editor-on')) {
       questionIdx = 0;
       loadQuestion(playlist[0]);
+      try { playQuestionNumberPlate(0); } catch (e) {}
       try { console.log('[quizland editor] 全問完走 — 先頭に戻ります'); } catch (_) {}
       return;
     }
@@ -4266,6 +4311,7 @@ function _doNextQuestion() {
     return;
   }
   loadQuestion(playlist[questionIdx]);
+  try { playQuestionNumberPlate(questionIdx); } catch (e) {}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4319,6 +4365,7 @@ function initGame() {
     return;
   }
   loadQuestion(playlist[0]);
+  try { playQuestionNumberPlate(0); } catch (e) {}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4350,7 +4397,8 @@ const OP_PANELS = [
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp',
     dialogues: [
-      { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
+      { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう',
+        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
       { speaker: 'pono',   text: 'はかせ、あそびに きたよ！',
         ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
     ]},
@@ -4358,7 +4406,8 @@ const OP_PANELS = [
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp',
     dialogues: [
-      { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
+      { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？',
+        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
       { speaker: 'pono',   text: 'うん！やりたい！',
         ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp' }
     ]},
@@ -4366,7 +4415,8 @@ const OP_PANELS = [
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
     dialogues: [
-      { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
+      { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？',
+        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
       { speaker: 'pono',   text: 'うーん…でも がんばる！',
         ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp' }
     ]},
@@ -4374,7 +4424,8 @@ const OP_PANELS = [
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp',
     dialogues: [
-      { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
+      { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。',
+        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
       { speaker: 'pono',   text: 'うん！',
         ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
     ]},
@@ -4382,7 +4433,8 @@ const OP_PANELS = [
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp',
     dialogues: [
-      { speaker: 'hakase', text: 'では、いくぞ…' },
+      { speaker: 'hakase', text: 'では、いくぞ…',
+        ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp' },
       { speaker: 'pono',   text: 'うん！',
         ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp' }
     ]}
@@ -4844,6 +4896,51 @@ async function playQuizStartCard() {
   }
 }
 
+// ---- Question Number Plate (Q1-Q5 startup) ----
+let _qnoRunning = false;
+async function playQuestionNumberPlate(qIdx) {
+  // qIdx is 0-indexed; show plate only for first 5 questions
+  if (qIdx < 0 || qIdx >= 5) return;
+  if (_qnoRunning) return;
+  _qnoRunning = true;
+
+  const root = document.getElementById('qno-plate-overlay');
+  const img = document.getElementById('qno-plate-img');
+  if (!root || !img) { _qnoRunning = false; return; }
+
+  // Q1=index 0 → plate 1.png, etc.
+  const plateNum = qIdx + 1;
+  img.src = '../assets/images/quizland/qno_plate_' + plateNum + '.png';
+
+  let cancelled = false;
+  function onTap() { cancelled = true; }
+  root.addEventListener('click', onTap, { once: true });
+
+  // Show overlay
+  root.classList.remove('hidden');
+  root.setAttribute('aria-hidden', 'false');
+  void root.offsetWidth;     // reflow to commit initial state
+  root.classList.add('is-impact', 'is-tap-skip');
+
+  try {
+    // Animation total ~1.6s. Poll cancellation in 100ms ticks.
+    const totalMs = 1700;
+    const stepMs = 100;
+    const steps = Math.ceil(totalMs / stepMs);
+    for (let t = 0; t < steps; t++) {
+      if (cancelled) break;
+      await new Promise(r => setTimeout(r, stepMs));
+    }
+  } finally {
+    root.classList.remove('is-impact', 'is-tap-skip');
+    root.classList.add('hidden');
+    root.setAttribute('aria-hidden', 'true');
+    img.src = '';
+    root.removeEventListener('click', onTap);
+    _qnoRunning = false;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // Wiring
 // ═══════════════════════════════════════════════════════════
@@ -4862,7 +4959,12 @@ document.getElementById('start-screen').addEventListener('click', function() {
       '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
       '../assets/images/characters/pono/dance/dance_smile.webp',
       '../assets/images/characters/pono/dance/think_chin_clasp.webp',
-      '../assets/images/quizland/owl_professor_guide.webp'
+      '../assets/images/quizland/owl_professor_guide.webp',
+      '../assets/images/quizland/qno_plate_1.png',
+      '../assets/images/quizland/qno_plate_2.png',
+      '../assets/images/quizland/qno_plate_3.png',
+      '../assets/images/quizland/qno_plate_4.png',
+      '../assets/images/quizland/qno_plate_5.png'
     ];
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
@@ -5018,6 +5120,7 @@ function _qzDebugGoto(targetIdx) {
   questionIdx = idx;
   locked = false;
   loadQuestion(playlist[questionIdx]);
+  try { playQuestionNumberPlate(questionIdx); } catch (e) {}
 }
 // ═══════════════════════════════════════════════════════════
 // Playtest note system (?debug=all 専用)
