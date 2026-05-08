@@ -690,6 +690,13 @@
     <button id="btn-export">エクスポート（コピー）</button>
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
+    <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
+      <option value="">他 VC へコピー ▾</option>
+      <option value="B">現在の VC を B にコピー</option>
+      <option value="C">現在の VC を C にコピー</option>
+      <option value="D">現在の VC を D にコピー</option>
+      <option value="all">現在の VC を全 VC にコピー</option>
+    </select>
     <button id="btn-undo-reset" class="ghost" disabled>元に戻す</button>
     <button id="btn-reset" class="ghost">リセット</button>
   </header>
@@ -2794,7 +2801,19 @@ function buildHeader() {
   document.getElementById('btn-export-css').addEventListener('click', () => download('css'));
   document.getElementById('btn-export-json').addEventListener('click', () => download('json'));
   document.getElementById('btn-reset').addEventListener('click', resetCurrent);
-  document.getElementById('btn-undo-reset').addEventListener('click', undoReset);
+  document.getElementById('btn-undo-reset').addEventListener('click', undoLastOp);
+
+  // VC コピー: <select> change で発火し、即 placeholder に戻して再選択可能に。
+  const selCopyVc = document.getElementById('sel-copy-vc');
+  if (selCopyVc) {
+    selCopyVc.addEventListener('change', () => {
+      const v = selCopyVc.value;
+      // Reset the dropdown to its placeholder so picking the same option again
+      // re-fires "change" (otherwise consecutive same-target copies would no-op).
+      selCopyVc.value = '';
+      if (v) copyCurrentToVc(v);
+    });
+  }
 
   const hgBtn = document.getElementById('btn-toggle-height-guides');
   if (hgBtn) {
@@ -2892,17 +2911,29 @@ function buildHeader() {
 }
 
 let _lastResetSnapshot = null;
+// Tracks "the most recent operation that the unified Undo button should reverse".
+// One of: null | 'reset' | 'vccopy'
+let _lastUndoOperation = null;
+
+function _refreshUndoBtn() {
+  const undoBtn = document.getElementById('btn-undo-reset');
+  if (!undoBtn) return;
+  undoBtn.disabled = !_lastUndoOperation;
+}
+
 function resetCurrent() {
   if (!confirm('現在のビューポート(' + currentVC + ')の設定をリセットします。よろしいですか？')) {
     return;
   }
   _lastResetSnapshot = { vc: currentVC, snap: JSON.parse(JSON.stringify(state[currentVC])) };
+  // Reset trumps any pending VC-copy undo (only the most recent op is undoable).
+  _lastVcCopySnapshot = null;
+  _lastUndoOperation = 'reset';
   state[currentVC] = defaultsFor(currentVC);
   save(currentVC);
   render();
   buildRightPane();
-  const undoBtn = document.getElementById('btn-undo-reset');
-  if (undoBtn) undoBtn.disabled = false;
+  _refreshUndoBtn();
   toast('現在のビューポートをリセットしました', 'ok');
 }
 
@@ -2912,14 +2943,85 @@ function undoReset() {
   state[vc] = snap;
   save(vc);
   _lastResetSnapshot = null;
-  const undoBtn = document.getElementById('btn-undo-reset');
-  if (undoBtn) undoBtn.disabled = true;
   // If we are currently on the snapshot's vc, refresh; otherwise just save quietly
   if (currentVC === vc) {
     render();
     buildRightPane();
   }
   toast('元に戻しました', 'ok');
+}
+
+// === VC コピー (B/C/D 間の state 全体コピー) =================================
+// Copies state[currentVC] (deep clone) into one or more target VCs (B/C/D).
+// Saves a 1-step undo snapshot of each target's previous state so the unified
+// "元に戻す" header button can roll the operation back. Same VC self-copy is
+// rejected. The operation is no-op (and toasted) if no valid targets remain.
+let _lastVcCopySnapshot = null;
+
+function copyCurrentToVc(targetVc) {
+  if (!targetVc) return;
+  if (targetVc === currentVC) {
+    toast('同じ VC は選べません', 'err');
+    return;
+  }
+  const targets = (targetVc === 'all') ? ['B', 'C', 'D'] : [targetVc];
+  // Filter out the source VC (relevant only when targetVc === 'all').
+  const realTargets = targets.filter(t => t !== currentVC);
+  if (realTargets.length === 0) {
+    toast('コピー先がありません', 'err');
+    return;
+  }
+  const promptMsg = (realTargets.length === 1)
+    ? '現在の VC (' + currentVC + ') の設定を ' + realTargets[0] + ' にコピーします。' + realTargets[0] + ' の現在の設定は上書きされます。よろしいですか？'
+    : '現在の VC (' + currentVC + ') の設定を全 VC (B/C/D) にコピーします。各 VC の設定は上書きされます。よろしいですか？';
+  if (!confirm(promptMsg)) return;
+
+  // Snapshot for undo (deep-clone each target's previous state).
+  _lastVcCopySnapshot = {
+    targets: realTargets.map(t => ({ vc: t, snap: JSON.parse(JSON.stringify(state[t])) }))
+  };
+  // VC copy trumps any pending reset undo (only the most recent op is undoable).
+  _lastResetSnapshot = null;
+  _lastUndoOperation = 'vccopy';
+
+  // Apply: deep-clone source for each target so they don't share refs.
+  realTargets.forEach(t => {
+    state[t] = JSON.parse(JSON.stringify(state[currentVC]));
+    save(t);
+  });
+
+  // Refresh: editor view is the current VC (unchanged), but rebuild for safety
+  // so any cross-VC UI (none today, but defensive) stays consistent.
+  render();
+  buildRightPane();
+  _refreshUndoBtn();
+  toast('現在の設定を ' + realTargets.join(', ') + ' にコピーしました', 'ok');
+}
+
+function undoVcCopy() {
+  if (!_lastVcCopySnapshot) return;
+  _lastVcCopySnapshot.targets.forEach(({ vc, snap }) => {
+    state[vc] = snap;
+    save(vc);
+  });
+  _lastVcCopySnapshot = null;
+  // If currentVC happens to be one of the rolled-back targets we need a refresh;
+  // otherwise the rollback is invisible (other VCs' state changed silently).
+  render();
+  buildRightPane();
+  toast('VC コピーを元に戻しました', 'ok');
+}
+
+// Unified undo dispatcher: the header "元に戻す" button replays whichever
+// op (reset or vccopy) was the most recent.
+function undoLastOp() {
+  if (_lastUndoOperation === 'reset') {
+    undoReset();
+  } else if (_lastUndoOperation === 'vccopy') {
+    undoVcCopy();
+  }
+  _lastUndoOperation = null;
+  _refreshUndoBtn();
 }
 
 function cssEscapeUrl(s) {
