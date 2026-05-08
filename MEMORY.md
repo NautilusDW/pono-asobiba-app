@@ -100,6 +100,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T06:45:17Z - op-layout-editor.html: シナリオモード追加 (state.scenario / OP_PANELS 編集 UI / Panel 切替トグル 3 択 / シナリオ Export JS リテラル / migration / scenario プレビュー連動)
+- **タスク**: op-layout-editor.html: シナリオモード追加 (state.scenario / OP_PANELS 編集 UI / Panel 切替トグル 3 択 / シナリオ Export JS リテラル / migration / scenario プレビュー連動)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 231
+- **エラー数**: 16
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 74, "Bash": 97, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-08T06:40:19Z - quizland OP_PANELS per-line ponoImg 対応 (各 dialogue line に line.ponoImg を追加 + playOpeningCinematic で line 単位切替 + プリロード拡張 + sw.js 848→849)
+- **タスク**: quizland OP_PANELS per-line ponoImg 対応 (各 dialogue line に line.ponoImg を追加 + playOpeningCinematic で line 単位切替 + プリロード拡張 + sw.js 848→849)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 231
+- **エラー数**: 16
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 74, "Bash": 97, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T06:06:24Z - op-layout-editor: 画像追加/削除の pushUndoSnapshot 4件削除 (state外PONO_VARIANTS/FRAME_IMAGES巻き戻し不可のため) + 追加toastに削除案内追記 + sw.js CACHE_VERSION 847→848
 - **タスク**: op-layout-editor: 画像追加/削除の pushUndoSnapshot 4件削除 (state外PONO_VARIANTS/FRAME_IMAGES巻き戻し不可のため) + 追加toastに削除案内追記 + sw.js CACHE_VERSION 847→848
 - **結果**: 成功
@@ -189,31 +215,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 34, "Agent": 62, "Bash": 85, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T04:36:06Z - Quizland OP本番.op-dialogue-label base CSSをエディタ準拠に修正 + .is-pono/.is-hakase color rule削除 + CACHE_VERSION 844 to 845
-- **タスク**: Quizland OP本番.op-dialogue-label base CSSをエディタ準拠に修正 + .is-pono/.is-hakase color rule削除 + CACHE_VERSION 844 to 845
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 201
-- **エラー数**: 13
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 33, "Agent": 60, "Bash": 83, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T04:20:56Z - CODEX-ORDER-3.md の Group C/D body-character スペック厳格化 (共通絶対ルール追加 + C1-C4/D1-D4 各仕様 + コピペブロック強化)
-- **タスク**: CODEX-ORDER-3.md の Group C/D body-character スペック厳格化 (共通絶対ルール追加 + C1-C4/D1-D4 各仕様 + コピペブロック強化)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 176
-- **エラー数**: 12
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 29, "Agent": 56, "Bash": 73, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

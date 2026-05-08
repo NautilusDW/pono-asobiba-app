@@ -4276,34 +4276,40 @@ const OP_PANELS = [
     ]
   },
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
+    // panel-level ponoImg は fallback (line.ponoImg 未指定時に使用)
     ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
-      { speaker: 'pono',   text: 'はかせ、あそびに きたよ！' }
+      { speaker: 'pono',   text: 'はかせ、あそびに きたよ！',
+        ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp',
     dialogues: [
       { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
-      { speaker: 'pono',   text: 'うん！やりたい！' }
+      { speaker: 'pono',   text: 'うん！やりたい！',
+        ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
-      { speaker: 'pono',   text: 'うーん…でも がんばる！' }
+      { speaker: 'pono',   text: 'うーん…でも がんばる！',
+        ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
-      { speaker: 'pono',   text: 'うん！' }
+      { speaker: 'pono',   text: 'うん！',
+        ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
     ]},
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp',
     dialogues: [
       { speaker: 'hakase', text: 'では、いくぞ…' },
-      { speaker: 'pono',   text: 'うん！' }
+      { speaker: 'pono',   text: 'うん！',
+        ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp' }
     ]}
 ];
 
@@ -4454,14 +4460,26 @@ async function playOpeningCinematic() {
     bg.classList.remove('scenic-blur');
   }
 
-  // Warm all per-panel pono images during the narration panel so dialogue
-  // panels can swap src without a visible network fetch.
+  // Warm all per-panel and per-line pono images during the narration panel so
+  // dialogue panels can swap src without a visible network fetch.
+  // per-line ponoImg (line 単位) は新方式 / panel.ponoImg は fallback。両方プリロード。
   try {
+    var __seen = {};
+    function __warmImg(url) {
+      if (!url || __seen[url]) return;
+      __seen[url] = 1;
+      var __im = new Image();
+      __im.src = url;
+    }
     for (var __i = 0; __i < OP_PANELS.length; __i++) {
       var __p = OP_PANELS[__i];
-      if (__p && __p.ponoImg) {
-        var __img = new Image();
-        __img.src = __p.ponoImg;
+      if (!__p) continue;
+      __warmImg(__p.ponoImg);
+      if (__p.dialogues && __p.dialogues.length) {
+        for (var __di = 0; __di < __p.dialogues.length; __di++) {
+          var __d = __p.dialogues[__di];
+          if (__d) __warmImg(__d.ponoImg);
+        }
       }
     }
   } catch (e) {}
@@ -4645,15 +4663,34 @@ async function playOpeningCinematic() {
         // Clear single dialogue box
         if (dialogueEl) dialogueEl.textContent = '';
         // Fix 4: per-cut の zoom/blur 切替は廃止 (背景は静的ぼかしで固定)
-        // Set Pono image for this panel (Fix 1)
+        // Set Pono image for this panel (panel-level fallback / 互換用)。
+        // 個々の line で line.ponoImg があればそちらが優先される (下のループ参照)。
         if (ponoImgEl && panel.ponoImg) {
           ponoImgEl.src = panel.ponoImg;
         }
         // Sequential dialogues — Single Box モード: 同じ box の label / text を speaker 切替時に書き換える。
+        // per-line ponoImg 対応: 各 line 開始時に line.ponoImg を最優先、なければ panel.ponoImg
+        // (fallback / 互換)。 hakase 発話 line でも明示指定があれば反映する (例: 直前のポノ表情で
+        // リアクションを残したいケースなど)。
         for (let di = 0; di < panel.dialogues.length; di++) {
           if (_opCancelled) break;
           const d = panel.dialogues[di];
           const isHakase = (d.speaker === 'hakase');
+          // line 単位の ponoImg 切替。line.ponoImg があれば優先、なければ panel.ponoImg (fallback)。
+          // 既存データ (line.ponoImg 無し) でも panel.ponoImg にフォールバックするので互換。
+          if (ponoImgEl) {
+            const lineImg = (d && d.ponoImg) ? d.ponoImg : (panel.ponoImg || null);
+            if (lineImg && ponoImgEl.src !== lineImg) {
+              // 完全 URL 比較 (ponoImgEl.src は absolute) — endsWith で相対パス末尾照合
+              try {
+                if (!ponoImgEl.src || ponoImgEl.src.indexOf(lineImg) === -1) {
+                  ponoImgEl.src = lineImg;
+                }
+              } catch (e) {
+                ponoImgEl.src = lineImg;
+              }
+            }
+          }
           if (dialogueBox) {
             dialogueBox.classList.toggle('is-hakase', isHakase);
             dialogueBox.classList.toggle('is-pono', !isHakase);

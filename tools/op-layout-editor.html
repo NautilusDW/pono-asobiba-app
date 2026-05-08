@@ -548,6 +548,176 @@
   #right.is-narration .mirror-row,
   #right.is-narration .tab-bar { display: none; }
 
+  /* When right pane is in scenario edit mode, hide dialog-only rows
+     (シナリオモードではプレビューは選択中の行に追従、編集 UI は scenario セクション主体)。 */
+  #right.is-scenario .speaker-row,
+  #right.is-scenario .mirror-row,
+  #right.is-scenario .tab-bar { display: none; }
+
+  /* Scenario dedicated section (right pane). */
+  .scenario-section {
+    background: #14161c;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .scenario-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .scenario-panel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .scenario-panel-card {
+    background: #1c2030;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .scenario-panel-card.is-selected {
+    border-color: #fbbf24;
+    box-shadow: 0 0 0 2px #fbbf2433;
+  }
+  .scenario-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: #20242e;
+    cursor: pointer;
+    font-size: 11px;
+    color: #e5e7eb;
+    user-select: none;
+  }
+  .scenario-panel-head .sp-num {
+    background: #fbbf24;
+    color: #1c1f26;
+    font-weight: 700;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+  .scenario-panel-head .sp-kind {
+    color: #94a3b8;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .scenario-panel-head .sp-summary {
+    flex: 1;
+    color: #cbd5e1;
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .scenario-panel-body {
+    padding: 8px;
+    border-top: 1px solid #2a2e3a;
+    display: none;
+  }
+  .scenario-panel-card.is-selected .scenario-panel-body { display: block; }
+
+  .scenario-line-row {
+    background: #0f1218;
+    border: 1px solid #2a2e3a;
+    border-radius: 3px;
+    padding: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .scenario-line-row.is-selected {
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px #10b98144;
+  }
+  .scenario-line-row textarea {
+    width: 100%;
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    color: #e5e7eb;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 40px;
+  }
+  .scenario-line-row .scenario-line-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .scenario-line-row .scenario-line-meta label {
+    font-size: 10px;
+    color: #94a3b8;
+    width: auto;
+  }
+  .scenario-line-row .scenario-line-meta select,
+  .scenario-line-row .scenario-line-meta input[type="text"] {
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    color: #e5e7eb;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .scenario-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .scenario-actions button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .scenario-actions button.ghost {
+    background: transparent;
+    border: 1px solid #3a4050;
+    color: #cbd5e1;
+  }
+  .scenario-actions button.danger {
+    background: #ef4444;
+    color: #fff;
+  }
+  .scenario-segment {
+    background: #14161c;
+    border: 1px dashed #3a4050;
+    border-radius: 3px;
+    padding: 6px;
+    margin-bottom: 6px;
+  }
+  .scenario-segment-head {
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .scenario-emphasis-chk {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #94a3b8;
+  }
+
   /* Narration dedicated section (right pane). */
   .narration-section {
     background: #14161c;
@@ -738,6 +908,7 @@
     <div class="vp-group" id="panel-group" title="編集対象パネル切替" style="margin-left:8px;">
       <label><input type="radio" name="panelMode" value="dialog" checked><span>対話 (P2-6)</span></label>
       <label><input type="radio" name="panelMode" value="narration"><span>ナレーション (P1)</span></label>
+      <label><input type="radio" name="panelMode" value="scenario"><span>シナリオ</span></label>
     </div>
     <button id="btn-toggle-height-guides" class="ghost" type="button">📏 高さガイド</button>
     <button id="btn-toggle-box-guides" class="ghost" type="button">📐 Box ガイド</button>
@@ -745,6 +916,7 @@
     <button id="btn-export">エクスポート（コピー）</button>
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
+    <button id="btn-export-scenario" class="ghost" title="OP_PANELS の JS リテラルをコピー">📜 シナリオ Export</button>
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
       <option value="" disabled selected hidden>他 VC へコピー ▾</option>
       <option value="B">現在の VC を B にコピー</option>
@@ -950,15 +1122,184 @@ function saveSingleBoxModePref() {
 }
 
 // Panel mode: 'dialog' = Panel 2-6 編集 (既存挙動) / 'narration' = Panel 1 編集
+//             / 'scenario' = OP_PANELS シナリオ編集 (テキスト・ponoImg・narration segments)
 let panelMode = 'dialog';
 function loadPanelModePref() {
   try {
     const v = localStorage.getItem(PANEL_MODE_STORAGE_KEY);
-    panelMode = (v === 'narration') ? 'narration' : 'dialog';
+    if (v === 'narration' || v === 'scenario' || v === 'dialog') {
+      panelMode = v;
+    } else {
+      panelMode = 'dialog';
+    }
   } catch (e) { panelMode = 'dialog'; }
 }
 function savePanelModePref() {
   try { localStorage.setItem(PANEL_MODE_STORAGE_KEY, panelMode); } catch (e) {}
+}
+
+// === Scenario (OP_PANELS) editor model =================================
+// state.scenario は VC 非依存 (top-level)。 panels 配列は本番 quizland/index.html
+// の OP_PANELS と 1:1 対応:
+//   - narration panel: { kind:'narration', segments: [{ lines: [{text, emphasis}, ...] }, ...] }
+//   - dialogue panel:  { kind:'dialogue', ponoImgFallback: 'dance_hi',
+//                        dialogues: [{ speaker:'hakase', text:'...' },
+//                                    { speaker:'pono',   text:'...', ponoImg:'dance_hi' }] }
+// currentPanelIdx / currentLineIdx / currentSegmentIdx は編集中ハイライト用。
+// 本番からのコピーなので migration 時に欠けたフィールドは defaults に倒す。
+const SCENARIO_STORAGE_KEY = STORAGE_PREFIX + 'scenario';
+
+function defaultScenario() {
+  return {
+    panels: [
+      // Panel 1 — narration
+      {
+        kind: 'narration',
+        segments: [
+          {
+            lines: [
+              { text: 'もりの おくに、ふしぎな いえがあります。', emphasis: false },
+              { text: 'そこには、なんでも しっている', emphasis: false },
+              { text: 'ふくろうの はかせが すんでいます。', emphasis: false }
+            ]
+          },
+          {
+            lines: [
+              { text: 'ポノは、なかよしの はかせと、', emphasis: true },
+              { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: true }
+            ]
+          }
+        ]
+      },
+      // Panel 2 — dialogue (dance_hi)
+      {
+        kind: 'dialogue',
+        ponoImgFallback: 'dance_hi',
+        dialogues: [
+          { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
+          { speaker: 'pono',   text: 'はかせ、あそびに きたよ！', ponoImg: 'dance_hi' }
+        ]
+      },
+      // Panel 3 — dialogue (dance_hooray)
+      {
+        kind: 'dialogue',
+        ponoImgFallback: 'dance_hooray',
+        dialogues: [
+          { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
+          { speaker: 'pono',   text: 'うん！やりたい！', ponoImg: 'dance_hooray' }
+        ]
+      },
+      // Panel 4 — dialogue (think_arms_crossed_side)
+      {
+        kind: 'dialogue',
+        ponoImgFallback: 'think_arms_crossed_side',
+        dialogues: [
+          { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
+          { speaker: 'pono',   text: 'うーん…でも がんばる！', ponoImg: 'think_arms_crossed_side' }
+        ]
+      },
+      // Panel 5 — dialogue (dance_smile)
+      {
+        kind: 'dialogue',
+        ponoImgFallback: 'dance_smile',
+        dialogues: [
+          { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
+          { speaker: 'pono',   text: 'うん！', ponoImg: 'dance_smile' }
+        ]
+      },
+      // Panel 6 — dialogue (think_chin_clasp)
+      {
+        kind: 'dialogue',
+        ponoImgFallback: 'think_chin_clasp',
+        dialogues: [
+          { speaker: 'hakase', text: 'では、いくぞ…' },
+          { speaker: 'pono',   text: 'うん！', ponoImg: 'think_chin_clasp' }
+        ]
+      }
+    ],
+    currentPanelIdx: 0,
+    currentLineIdx: 0,
+    currentSegmentIdx: 0
+  };
+}
+
+function migrateScenario(parsed) {
+  // 不正/欠落フィールドの backfill。スキーマは defaultScenario() に倣う。
+  const def = defaultScenario();
+  if (!parsed || typeof parsed !== 'object') return def;
+  if (!Array.isArray(parsed.panels) || parsed.panels.length === 0) {
+    parsed.panels = def.panels;
+  } else {
+    parsed.panels.forEach((p, i) => {
+      if (!p || typeof p !== 'object') {
+        parsed.panels[i] = def.panels[i] || def.panels[0];
+        return;
+      }
+      if (p.kind !== 'narration' && p.kind !== 'dialogue') p.kind = 'dialogue';
+      if (p.kind === 'narration') {
+        if (!Array.isArray(p.segments)) p.segments = [{ lines: [] }];
+        p.segments.forEach((seg, si) => {
+          if (!seg || typeof seg !== 'object') p.segments[si] = { lines: [] };
+          else if (!Array.isArray(seg.lines)) seg.lines = [];
+          else {
+            seg.lines.forEach((ln, li) => {
+              if (!ln || typeof ln !== 'object') seg.lines[li] = { text: '', emphasis: false };
+              else {
+                if (typeof ln.text !== 'string') ln.text = '';
+                if (typeof ln.emphasis !== 'boolean') ln.emphasis = false;
+              }
+            });
+          }
+        });
+      } else { // dialogue
+        if (typeof p.ponoImgFallback !== 'string' || !p.ponoImgFallback) {
+          p.ponoImgFallback = 'dance_hi';
+        }
+        if (!Array.isArray(p.dialogues)) p.dialogues = [];
+        p.dialogues.forEach((d, di) => {
+          if (!d || typeof d !== 'object') p.dialogues[di] = { speaker: 'hakase', text: '' };
+          else {
+            if (d.speaker !== 'pono' && d.speaker !== 'hakase') d.speaker = 'hakase';
+            if (typeof d.text !== 'string') d.text = '';
+            if (d.speaker === 'pono') {
+              if (typeof d.ponoImg !== 'string' || !d.ponoImg) d.ponoImg = p.ponoImgFallback;
+            } else {
+              // hakase は ponoImg を持たない (はかせは固定画像)
+              if ('ponoImg' in d) delete d.ponoImg;
+            }
+          }
+        });
+      }
+    });
+  }
+  if (typeof parsed.currentPanelIdx !== 'number' || parsed.currentPanelIdx < 0
+      || parsed.currentPanelIdx >= parsed.panels.length) {
+    parsed.currentPanelIdx = 0;
+  }
+  if (typeof parsed.currentLineIdx !== 'number' || parsed.currentLineIdx < 0) {
+    parsed.currentLineIdx = 0;
+  }
+  if (typeof parsed.currentSegmentIdx !== 'number' || parsed.currentSegmentIdx < 0) {
+    parsed.currentSegmentIdx = 0;
+  }
+  return parsed;
+}
+
+function loadScenario() {
+  try {
+    const raw = localStorage.getItem(SCENARIO_STORAGE_KEY);
+    if (!raw) return defaultScenario();
+    const parsed = JSON.parse(raw);
+    return migrateScenario(parsed);
+  } catch (e) { return defaultScenario(); }
+}
+
+function saveScenario() {
+  try {
+    if (state && state.scenario) {
+      localStorage.setItem(SCENARIO_STORAGE_KEY, JSON.stringify(state.scenario));
+    }
+  } catch (e) {}
 }
 
 // Sample narration text for Panel 1 preview. textContent insertion only (no innerHTML).
@@ -2324,11 +2665,22 @@ function render() {
   const stage = document.getElementById('stage');
   stage.dataset.vc = currentVC;
   stage.dataset.singleBox = singleBoxMode ? 'on' : 'off';
-  stage.dataset.panel = (panelMode === 'narration') ? 'narration' : 'dialog';
+  // dataset.panel: scenario モードでは選択中パネルの kind に追従する (applyScenarioPreview 内)。
+  // narration/dialog モードはこれまで通り。
+  if (panelMode === 'scenario') {
+    // 一旦 dialog で初期化 → applyScenarioPreview() が選択 panel に応じて narration/dialog 書き換え。
+    stage.dataset.panel = 'dialog';
+  } else {
+    stage.dataset.panel = (panelMode === 'narration') ? 'narration' : 'dialog';
+  }
   applySideToDom('pono');
   applySideToDom('hakase');
   applySingleBoxToDom();
   applyNarrationToDom();
+  // シナリオモードのときだけ、選択中の line/panel をプレビューに上書き反映。
+  if (panelMode === 'scenario') {
+    applyScenarioPreview();
+  }
 
   const sp = state[currentVC].speaker;
   document.getElementById('side-pono').classList.toggle('is-speaking', sp === 'pono');
@@ -3578,6 +3930,504 @@ function buildNarrationSection() {
 }
 // === end Narration ====================================================
 
+// === Scenario (OP_PANELS) right-pane controls ==========================
+// state.scenario の panel リスト + 行詳細編集 UI。プレビューは applyScenarioPreview()
+// で中央ステージに直接反映 (state[VC].* は変更しない)。
+function buildScenarioSection() {
+  const sec = document.createElement('div');
+  sec.className = 'scenario-section';
+  const h = document.createElement('h4');
+  h.textContent = '📜 Scenario 編集 (OP_PANELS)';
+  sec.appendChild(h);
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  info.textContent = '各パネルをクリックして展開→ 行をクリックでプレビュー反映。シナリオは VC 共通 (B/C/D で同一)。';
+  info.style.marginBottom = '8px';
+  sec.appendChild(info);
+
+  const list = document.createElement('div');
+  list.className = 'scenario-panel-list';
+
+  state.scenario.panels.forEach((panel, pIdx) => {
+    list.appendChild(buildScenarioPanelCard(panel, pIdx));
+  });
+
+  sec.appendChild(list);
+  return sec;
+}
+
+function buildScenarioPanelCard(panel, pIdx) {
+  const card = document.createElement('div');
+  card.className = 'scenario-panel-card';
+  if (state.scenario.currentPanelIdx === pIdx) card.classList.add('is-selected');
+
+  // Head row (clickable to expand/collapse + select).
+  const head = document.createElement('div');
+  head.className = 'scenario-panel-head';
+  const num = document.createElement('span');
+  num.className = 'sp-num';
+  num.textContent = 'P' + (pIdx + 1);
+  head.appendChild(num);
+  const kind = document.createElement('span');
+  kind.className = 'sp-kind';
+  kind.textContent = panel.kind === 'narration' ? 'ナレーション' : '対話';
+  head.appendChild(kind);
+  const summary = document.createElement('span');
+  summary.className = 'sp-summary';
+  summary.textContent = scenarioPanelSummary(panel);
+  head.appendChild(summary);
+  head.addEventListener('click', () => {
+    pushUndoSnapshot('シナリオ パネル選択');
+    state.scenario.currentPanelIdx = pIdx;
+    state.scenario.currentLineIdx = 0;
+    state.scenario.currentSegmentIdx = 0;
+    saveScenario();
+    buildRightPane();
+    render();
+  });
+  card.appendChild(head);
+
+  // Body — only meaningful when this panel is selected (CSS shows when .is-selected).
+  const body = document.createElement('div');
+  body.className = 'scenario-panel-body';
+  if (panel.kind === 'narration') {
+    body.appendChild(buildScenarioNarrationBody(panel, pIdx));
+  } else {
+    body.appendChild(buildScenarioDialogueBody(panel, pIdx));
+  }
+  card.appendChild(body);
+  return card;
+}
+
+function scenarioPanelSummary(panel) {
+  if (panel.kind === 'narration') {
+    let firstText = '';
+    for (const seg of (panel.segments || [])) {
+      if (Array.isArray(seg.lines)) {
+        for (const ln of seg.lines) {
+          if (ln && ln.text) { firstText = ln.text; break; }
+        }
+      }
+      if (firstText) break;
+    }
+    return firstText || '(empty)';
+  } else {
+    const d = (panel.dialogues || [])[0];
+    if (!d) return '(empty)';
+    const sp = d.speaker === 'pono' ? 'ポノ' : 'はかせ';
+    return sp + ': ' + (d.text || '');
+  }
+}
+
+function buildScenarioNarrationBody(panel, pIdx) {
+  const wrap = document.createElement('div');
+
+  panel.segments.forEach((seg, segIdx) => {
+    const segEl = document.createElement('div');
+    segEl.className = 'scenario-segment';
+
+    const segHead = document.createElement('div');
+    segHead.className = 'scenario-segment-head';
+    const segLab = document.createElement('span');
+    segLab.textContent = 'Segment ' + (segIdx + 1);
+    segHead.appendChild(segLab);
+    const delSegBtn = document.createElement('button');
+    delSegBtn.type = 'button';
+    delSegBtn.className = 'ghost';
+    delSegBtn.style.cssText = 'background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:2px 6px;border-radius:3px;cursor:pointer;font-size:10px;margin-left:auto;';
+    delSegBtn.textContent = '× セグメント削除';
+    delSegBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (panel.segments.length <= 1) {
+        toast('最後のセグメントは削除できません', 'err');
+        return;
+      }
+      pushUndoSnapshot('シナリオ セグメント削除');
+      panel.segments.splice(segIdx, 1);
+      saveScenario();
+      buildRightPane();
+      render();
+    });
+    segHead.appendChild(delSegBtn);
+    segEl.appendChild(segHead);
+
+    seg.lines.forEach((line, lIdx) => {
+      segEl.appendChild(buildScenarioNarrationLineRow(panel, pIdx, segIdx, lIdx));
+    });
+
+    // Per-segment add line.
+    const segActions = document.createElement('div');
+    segActions.className = 'scenario-actions';
+    const addLineBtn = document.createElement('button');
+    addLineBtn.type = 'button';
+    addLineBtn.className = 'ghost';
+    addLineBtn.textContent = '+ 行追加';
+    addLineBtn.addEventListener('click', () => {
+      pushUndoSnapshot('シナリオ 行追加');
+      seg.lines.push({ text: '', emphasis: false });
+      saveScenario();
+      buildRightPane();
+      render();
+    });
+    segActions.appendChild(addLineBtn);
+    segEl.appendChild(segActions);
+
+    wrap.appendChild(segEl);
+  });
+
+  // Add segment button.
+  const actions = document.createElement('div');
+  actions.className = 'scenario-actions';
+  const addSegBtn = document.createElement('button');
+  addSegBtn.type = 'button';
+  addSegBtn.textContent = '+ セグメント追加';
+  addSegBtn.addEventListener('click', () => {
+    pushUndoSnapshot('シナリオ セグメント追加');
+    panel.segments.push({ lines: [{ text: '', emphasis: false }] });
+    saveScenario();
+    buildRightPane();
+    render();
+  });
+  actions.appendChild(addSegBtn);
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
+function buildScenarioNarrationLineRow(panel, pIdx, segIdx, lIdx) {
+  const line = panel.segments[segIdx].lines[lIdx];
+  const row = document.createElement('div');
+  row.className = 'scenario-line-row';
+  if (state.scenario.currentPanelIdx === pIdx
+      && state.scenario.currentSegmentIdx === segIdx
+      && state.scenario.currentLineIdx === lIdx) {
+    row.classList.add('is-selected');
+  }
+  row.addEventListener('click', () => {
+    state.scenario.currentSegmentIdx = segIdx;
+    state.scenario.currentLineIdx = lIdx;
+    saveScenario();
+    // Only refresh selection highlight + preview — no full rebuild
+    document.querySelectorAll('.scenario-line-row').forEach(el => el.classList.remove('is-selected'));
+    row.classList.add('is-selected');
+    render();
+  });
+
+  const meta = document.createElement('div');
+  meta.className = 'scenario-line-meta';
+  const numLab = document.createElement('label');
+  numLab.textContent = '行 ' + (lIdx + 1);
+  meta.appendChild(numLab);
+  const empWrap = document.createElement('label');
+  empWrap.className = 'scenario-emphasis-chk';
+  const empCb = document.createElement('input');
+  empCb.type = 'checkbox';
+  empCb.checked = !!line.emphasis;
+  empCb.addEventListener('change', (e) => {
+    e.stopPropagation();
+    pushUndoSnapshot('シナリオ emphasis 変更');
+    line.emphasis = !!empCb.checked;
+    saveScenario();
+  });
+  empWrap.appendChild(empCb);
+  empWrap.appendChild(document.createTextNode('emphasis'));
+  meta.appendChild(empWrap);
+  row.appendChild(meta);
+
+  const ta = document.createElement('textarea');
+  ta.value = line.text || '';
+  ta.addEventListener('input', () => {
+    pushUndoSnapshot('シナリオ テキスト変更');
+    line.text = ta.value;
+    saveScenario();
+    // Update summary + preview if this is current line.
+    if (state.scenario.currentPanelIdx === pIdx
+        && state.scenario.currentSegmentIdx === segIdx
+        && state.scenario.currentLineIdx === lIdx) {
+      render();
+    }
+  });
+  ta.addEventListener('click', (e) => e.stopPropagation());
+  row.appendChild(ta);
+
+  // Delete line.
+  const actions = document.createElement('div');
+  actions.className = 'scenario-actions';
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'danger';
+  delBtn.textContent = '- 行削除';
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (panel.segments[segIdx].lines.length <= 1) {
+      toast('最後の行は削除できません', 'err');
+      return;
+    }
+    pushUndoSnapshot('シナリオ 行削除');
+    panel.segments[segIdx].lines.splice(lIdx, 1);
+    saveScenario();
+    buildRightPane();
+    render();
+  });
+  actions.appendChild(delBtn);
+  row.appendChild(actions);
+
+  return row;
+}
+
+function buildScenarioDialogueBody(panel, pIdx) {
+  const wrap = document.createElement('div');
+
+  // Panel-level pono image fallback (適用先: per-line ponoImg を持たない pono ライン)。
+  const fbRow = document.createElement('div');
+  fbRow.className = 'prop-row';
+  const fbLab = document.createElement('label');
+  fbLab.textContent = '既定 ponoImg';
+  const fbSel = document.createElement('select');
+  // Variants (originals + userAdded). variant 名 = ID。
+  PONO_VARIANTS.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.name;
+    o.textContent = v.name;
+    if (panel.ponoImgFallback === v.name) o.selected = true;
+    fbSel.appendChild(o);
+  });
+  fbSel.addEventListener('change', () => {
+    pushUndoSnapshot('シナリオ ponoImgFallback 変更');
+    panel.ponoImgFallback = fbSel.value;
+    // 既存 pono ライン で ponoImg 未設定 (= fallback 適用) のものは fallback と同じ値で同期。
+    // ※明示的に別 variant を選んでいるラインは触らない (= fbSel と異なる値はそのまま)。
+    panel.dialogues.forEach(d => {
+      if (d.speaker === 'pono' && !d.ponoImg) d.ponoImg = panel.ponoImgFallback;
+    });
+    saveScenario();
+    buildRightPane();
+    render();
+  });
+  fbRow.appendChild(fbLab);
+  fbRow.appendChild(fbSel);
+  wrap.appendChild(fbRow);
+
+  panel.dialogues.forEach((line, lIdx) => {
+    wrap.appendChild(buildScenarioDialogueLineRow(panel, pIdx, lIdx));
+  });
+
+  // Add line.
+  const actions = document.createElement('div');
+  actions.className = 'scenario-actions';
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.textContent = '+ 行追加';
+  addBtn.addEventListener('click', () => {
+    pushUndoSnapshot('シナリオ 行追加');
+    panel.dialogues.push({ speaker: 'hakase', text: '' });
+    saveScenario();
+    buildRightPane();
+    render();
+  });
+  actions.appendChild(addBtn);
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
+function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
+  const line = panel.dialogues[lIdx];
+  const row = document.createElement('div');
+  row.className = 'scenario-line-row';
+  if (state.scenario.currentPanelIdx === pIdx
+      && state.scenario.currentLineIdx === lIdx) {
+    row.classList.add('is-selected');
+  }
+  row.addEventListener('click', () => {
+    state.scenario.currentLineIdx = lIdx;
+    saveScenario();
+    document.querySelectorAll('.scenario-line-row').forEach(el => el.classList.remove('is-selected'));
+    row.classList.add('is-selected');
+    render();
+  });
+
+  const meta = document.createElement('div');
+  meta.className = 'scenario-line-meta';
+  const numLab = document.createElement('label');
+  numLab.textContent = '行 ' + (lIdx + 1);
+  meta.appendChild(numLab);
+
+  // Speaker radio.
+  const spkGroupName = 'scn-spk-' + pIdx + '-' + lIdx + '-' + (++_radioUid);
+  ['hakase', 'pono'].forEach(sp => {
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'background:#20242e;border:1px solid #2a2e3a;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:11px;color:#cbd5e1;';
+    if (line.speaker === sp) {
+      lbl.style.background = '#2563eb';
+      lbl.style.color = '#fff';
+      lbl.style.borderColor = '#2563eb';
+    }
+    const inp = document.createElement('input');
+    inp.type = 'radio';
+    inp.name = spkGroupName;
+    inp.value = sp;
+    inp.checked = (line.speaker === sp);
+    inp.style.cssText = 'position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;';
+    inp.addEventListener('change', (e) => {
+      e.stopPropagation();
+      if (!inp.checked) return;
+      pushUndoSnapshot('シナリオ speaker 変更');
+      line.speaker = sp;
+      if (sp === 'pono') {
+        // pono ライン: ponoImg を fallback で初期化 (既存値があれば保持)。
+        if (!line.ponoImg) line.ponoImg = panel.ponoImgFallback || 'dance_hi';
+      } else {
+        // hakase ライン: ponoImg は不要 (はかせは固定画像)。
+        if ('ponoImg' in line) delete line.ponoImg;
+      }
+      saveScenario();
+      buildRightPane();
+      render();
+    });
+    lbl.appendChild(inp);
+    lbl.appendChild(document.createTextNode(sp === 'pono' ? 'ポノ' : 'はかせ'));
+    lbl.addEventListener('click', (e) => e.stopPropagation());
+    meta.appendChild(lbl);
+  });
+
+  // ponoImg select (only when speaker = pono).
+  if (line.speaker === 'pono') {
+    const imgLab = document.createElement('label');
+    imgLab.textContent = 'ponoImg';
+    meta.appendChild(imgLab);
+    const sel = document.createElement('select');
+    PONO_VARIANTS.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = v.name;
+      if (line.ponoImg === v.name) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', (e) => {
+      e.stopPropagation();
+      pushUndoSnapshot('シナリオ ponoImg 変更');
+      line.ponoImg = sel.value;
+      saveScenario();
+      // Update preview if this is current line.
+      if (state.scenario.currentPanelIdx === pIdx
+          && state.scenario.currentLineIdx === lIdx) {
+        render();
+      }
+    });
+    sel.addEventListener('click', (e) => e.stopPropagation());
+    meta.appendChild(sel);
+  }
+  row.appendChild(meta);
+
+  const ta = document.createElement('textarea');
+  ta.value = line.text || '';
+  ta.addEventListener('input', () => {
+    pushUndoSnapshot('シナリオ テキスト変更');
+    line.text = ta.value;
+    saveScenario();
+    if (state.scenario.currentPanelIdx === pIdx
+        && state.scenario.currentLineIdx === lIdx) {
+      render();
+    }
+  });
+  ta.addEventListener('click', (e) => e.stopPropagation());
+  row.appendChild(ta);
+
+  // Delete line.
+  const actions = document.createElement('div');
+  actions.className = 'scenario-actions';
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'danger';
+  delBtn.textContent = '- 行削除';
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (panel.dialogues.length <= 1) {
+      toast('最後の行は削除できません', 'err');
+      return;
+    }
+    pushUndoSnapshot('シナリオ 行削除');
+    panel.dialogues.splice(lIdx, 1);
+    if (state.scenario.currentLineIdx >= panel.dialogues.length) {
+      state.scenario.currentLineIdx = panel.dialogues.length - 1;
+    }
+    saveScenario();
+    buildRightPane();
+    render();
+  });
+  actions.appendChild(delBtn);
+  row.appendChild(actions);
+
+  return row;
+}
+
+// Apply the currently-selected scenario line/panel to the central preview.
+// Does NOT mutate state[VC].* — only sets DOM directly so VC layout settings
+// remain intact when leaving scenario mode. Called from render() when
+// panelMode === 'scenario'.
+function applyScenarioPreview() {
+  const sc = state && state.scenario;
+  if (!sc) return;
+  const panel = sc.panels[sc.currentPanelIdx];
+  if (!panel) return;
+  const stage = document.getElementById('stage');
+
+  if (panel.kind === 'narration') {
+    // Narration プレビュー: 現在 segment の全 lines を改行連結して表示。
+    if (stage) stage.dataset.panel = 'narration';
+    const seg = panel.segments[sc.currentSegmentIdx] || panel.segments[0];
+    const text = (seg && Array.isArray(seg.lines))
+      ? seg.lines.map(l => l ? (l.text || '') : '').join('\n')
+      : '';
+    const el = document.getElementById('op-narration-preview');
+    if (el) {
+      // applyNarrationToDom() 実行後に textContent を上書き (NARRATION_SAMPLE_TEXT を置換)。
+      el.textContent = text;
+      el.style.display = 'flex';
+    }
+  } else {
+    // Dialogue プレビュー: 現在 line を per-side / single-box に直接書き込む。
+    if (stage) stage.dataset.panel = 'dialog';
+    const line = panel.dialogues[sc.currentLineIdx];
+    if (!line) return;
+    const speakerSide = line.speaker === 'pono' ? 'pono' : 'hakase';
+    // is-speaking の切替 (現在の話者だけ強調)。
+    const sidePono = document.getElementById('side-pono');
+    const sideHak  = document.getElementById('side-hakase');
+    if (sidePono) sidePono.classList.toggle('is-speaking', speakerSide === 'pono');
+    if (sideHak)  sideHak.classList.toggle('is-speaking', speakerSide === 'hakase');
+
+    // Pono image swap (panel-level fallback or per-line).
+    const ponoImgEl = document.getElementById('img-pono');
+    if (ponoImgEl) {
+      const variantName = (line.speaker === 'pono' && line.ponoImg)
+        ? line.ponoImg
+        : (panel.ponoImgFallback || 'dance_hi');
+      ponoImgEl.src = ponoPathByName(variantName);
+    }
+    // Per-side dialogue text & label override.
+    if (singleBoxMode) {
+      const txt = document.getElementById('text-single');
+      const lbl = document.getElementById('label-single');
+      if (txt) txt.textContent = line.text || '';
+      if (lbl) lbl.textContent = speakerSide === 'pono' ? 'ポノ' : 'はかせ';
+    } else {
+      // Speaking side 側のみ実テキスト、反対側は空でクリア。
+      ['pono', 'hakase'].forEach(side => {
+        const t = document.getElementById('text-' + side);
+        if (!t) return;
+        if (side === speakerSide) t.textContent = line.text || '';
+        else t.textContent = '';
+      });
+    }
+    // Narration プレビューは強制非表示 (dialog パネルでは出さない)。
+    const nEl = document.getElementById('op-narration-preview');
+    if (nEl) nEl.style.display = 'none';
+  }
+}
+
 function buildRightPane() {
   const body = document.getElementById('tab-body');
   body.textContent = '';
@@ -3590,6 +4440,11 @@ function buildRightPane() {
   // Panel mode: ナレーション編集時は対話用 UI を一切出さず、Narration セクションだけ表示。
   if (panelMode === 'narration') {
     body.appendChild(buildNarrationSection());
+    return;
+  }
+  // Panel mode: シナリオ編集時は OP_PANELS 編集 UI を表示。
+  if (panelMode === 'scenario') {
+    body.appendChild(buildScenarioSection());
     return;
   }
 
@@ -3708,6 +4563,8 @@ function buildHeader() {
   document.getElementById('btn-export').addEventListener('click', exportCopy);
   document.getElementById('btn-export-css').addEventListener('click', () => download('css'));
   document.getElementById('btn-export-json').addEventListener('click', () => download('json'));
+  const btnScn = document.getElementById('btn-export-scenario');
+  if (btnScn) btnScn.addEventListener('click', exportScenario);
   document.getElementById('btn-reset').addEventListener('click', resetCurrent);
   document.getElementById('btn-undo-reset').addEventListener('click', undoLastOp);
 
@@ -3786,15 +4643,22 @@ function buildHeader() {
     });
   }
 
-  // Panel mode toggle (対話 / ナレーション)
+  // Panel mode toggle (対話 / ナレーション / シナリオ)
   document.querySelectorAll('#panel-group input').forEach(r => {
     r.checked = (r.value === panelMode);
     r.addEventListener('change', () => {
       if (!r.checked) return;
-      panelMode = (r.value === 'narration') ? 'narration' : 'dialog';
+      if (r.value === 'narration' || r.value === 'scenario' || r.value === 'dialog') {
+        panelMode = r.value;
+      } else {
+        panelMode = 'dialog';
+      }
       savePanelModePref();
       const right = document.getElementById('right');
-      if (right) right.classList.toggle('is-narration', panelMode === 'narration');
+      if (right) {
+        right.classList.toggle('is-narration', panelMode === 'narration');
+        right.classList.toggle('is-scenario',  panelMode === 'scenario');
+      }
       render();
       buildRightPane();
     });
@@ -3802,7 +4666,10 @@ function buildHeader() {
   // Initial right pane class sync.
   {
     const right = document.getElementById('right');
-    if (right) right.classList.toggle('is-narration', panelMode === 'narration');
+    if (right) {
+      right.classList.toggle('is-narration', panelMode === 'narration');
+      right.classList.toggle('is-scenario',  panelMode === 'scenario');
+    }
   }
 
   const sbBtn = document.getElementById('btn-toggle-single-box');
@@ -3938,6 +4805,8 @@ function undoLastOp() {
   }
   // 全 VC を save (state 全体の置換なので個別 VC 検出より安全)。
   ['B', 'C', 'D'].forEach(vc => save(vc));
+  // scenario は VC 非依存だが state 全体置換で巻き戻されるので別途 save。
+  saveScenario();
   render();
   buildRightPane();
   // 連続 Undo 中の debounce が暴発しないようタイムスタンプを巻き戻す。
@@ -4204,6 +5073,110 @@ function buildJSON() {
   return JSON.stringify({ B: sanitize('B'), C: sanitize('C'), D: sanitize('D') }, null, 2);
 }
 
+// Build OP_PANELS JS-literal source for scenario export.
+// Output mirrors quizland/index.html の OP_PANELS 構造。ponoImg は variant 名から
+// 本番フルパス (PONO_VARIANTS[name].path) に変換。userAdded variant が混じっている
+// と本番で 404 になるので警告。bg / audio はパネル位置 (Panel 1 vs 2-6) で固定値。
+function buildScenarioPanelsLiteral() {
+  let warnUserAdded = false;
+  const sc = state && state.scenario;
+  if (!sc || !Array.isArray(sc.panels)) return '';
+
+  const indent2 = '  ';
+  const indent4 = '    ';
+  const indent6 = '      ';
+  const lines = [];
+  lines.push('const OP_PANELS = [');
+
+  function jsString(s) {
+    // テキストは JSON.stringify でエスケープ済み JS string リテラルに。
+    return JSON.stringify(String(s == null ? '' : s));
+  }
+  function ponoFullPath(variantName) {
+    const v = PONO_VARIANTS.find(x => x.name === variantName);
+    if (!v) return '../assets/images/characters/pono/dance/dance_hi.webp';
+    if (v.userAdded) {
+      warnUserAdded = true;
+      // userAdded は data: URL なのでフォールバック。本番資産に追加した上で再 Export 推奨。
+      return '../assets/images/characters/pono/dance/' + variantName + '.webp';
+    }
+    return v.path;
+  }
+
+  sc.panels.forEach((panel, i) => {
+    const isLast = (i === sc.panels.length - 1);
+    if (panel.kind === 'narration') {
+      lines.push(indent2 + '// Panel ' + (i + 1) + ' — narration');
+      lines.push(indent2 + '{');
+      lines.push(indent4 + 'kind: ' + jsString('narration') + ',');
+      lines.push(indent4 + 'bg: ' + jsString('../assets/images/quizland/OP/OP_BG.webp') + ',');
+      lines.push(indent4 + 'audio: ' + jsString('../assets/images/quizland/OP/OP_NA.wav') + ',');
+      lines.push(indent4 + 'segments: [');
+      (panel.segments || []).forEach((seg, segIdx) => {
+        const segLast = (segIdx === panel.segments.length - 1);
+        lines.push(indent6 + '{');
+        lines.push(indent6 + '  lines: [');
+        (seg.lines || []).forEach((ln, lIdx) => {
+          const lLast = (lIdx === seg.lines.length - 1);
+          const t = jsString(ln.text || '');
+          const e = ln.emphasis ? 'true' : 'false';
+          lines.push(indent6 + '    { text: ' + t + ', emphasis: ' + e + ' }' + (lLast ? '' : ','));
+        });
+        lines.push(indent6 + '  ]');
+        lines.push(indent6 + '}' + (segLast ? '' : ','));
+      });
+      lines.push(indent4 + ']');
+      lines.push(indent2 + '}' + (isLast ? '' : ','));
+    } else {
+      // Dialogue.
+      lines.push(indent2 + '// Panel ' + (i + 1) + ' — dialogue');
+      // Panel-level ponoImg = ponoImgFallback の本番パス (per-line ponoImg は line 内で出す)。
+      const fallbackPath = ponoFullPath(panel.ponoImgFallback || 'dance_hi');
+      lines.push(indent2 + '{ kind: ' + jsString('dialogue')
+        + ', bg: ' + jsString('../assets/images/quizland/OP/OP_BG02.webp') + ',');
+      lines.push(indent4 + 'ponoImg: ' + jsString(fallbackPath) + ',');
+      lines.push(indent4 + 'dialogues: [');
+      (panel.dialogues || []).forEach((d, lIdx) => {
+        const lLast = (lIdx === panel.dialogues.length - 1);
+        const speaker = jsString(d.speaker === 'pono' ? 'pono' : 'hakase');
+        const text = jsString(d.text || '');
+        let row = indent6 + '{ speaker: ' + speaker + ', text: ' + text;
+        // pono ライン: ponoImg をフルパスで出す (per-line override)。
+        if (d.speaker === 'pono' && d.ponoImg) {
+          row += ', ponoImg: ' + jsString(ponoFullPath(d.ponoImg));
+        }
+        row += ' }' + (lLast ? '' : ',');
+        lines.push(row);
+      });
+      lines.push(indent4 + ']');
+      lines.push(indent2 + '}' + (isLast ? '' : ','));
+    }
+  });
+  lines.push('];');
+
+  // 末尾警告コメント (userAdded variant 検出時)。
+  if (warnUserAdded) {
+    lines.unshift('// WARN: userAdded ponoImg variant が混入しています。本番資産 (../assets/images/characters/pono/dance/) に追加してから再 Export してください。');
+  }
+  return lines.join('\n');
+}
+
+function exportScenario() {
+  const text = buildScenarioPanelsLiteral();
+  if (!text) {
+    toast('シナリオが空です', 'err');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => toast('OP_PANELS をコピーしました', 'ok'),
+      () => toast('クリップボードコピーに失敗', 'err')
+    );
+  } else {
+    toast('clipboard 利用不可', 'err');
+  }
+}
+
 function exportCopy() {
   const css = buildCSS();
   const text = css + '\n\n/* JSON */\n' + buildJSON();
@@ -4283,7 +5256,9 @@ function init() {
   state = {
     B: load('B') || defaultsFor('B'),
     C: load('C') || defaultsFor('C'),
-    D: load('D') || defaultsFor('D')
+    D: load('D') || defaultsFor('D'),
+    // シナリオ (OP_PANELS データ) は VC 非依存 (top-level)。
+    scenario: loadScenario()
   };
   preloadFrameAspects();
   buildPresetGrid();
