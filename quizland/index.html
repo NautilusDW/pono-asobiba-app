@@ -2074,7 +2074,7 @@ const SE_PATHS = {
   wrong:        '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
   clear:        '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
   hint:         '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
-  nextQuestion: '../assets/audio/sfx/quiz/don.mp3',
+  nextQuestion: '../assets/audio/sfx/quiz/' + encodeURIComponent('don') + '.mp3',
 };
 const SE_VOLUME = 0.6;
 const _seCache = {};
@@ -2379,6 +2379,9 @@ function loadQuestion(q) {
   updateHUD();
   setupNarration(q);
   showProblemDialogue(q);
+  // 「第 N 問目」SE: 問題ロード時 (= mode-btn タップ後 = user gesture 後) のみ鳴らす
+  // updateHUD() は起動時 IIFE 末尾でも呼ばれるため、SE 発火は loadQuestion 末尾に限定する
+  playSe('nextQuestion');
 }
 
 // ── Narration: 自動再生 or 🔊ボタンで問題文を読み上げ
@@ -2423,9 +2426,6 @@ function updateHUD() {
     if (i === questionIdx) dot.classList.add('current');
     prog.appendChild(dot);
   }
-  // 「第 N 問目」SE: 進捗番号とドットが揃った直後に再生 (1問目から鳴らす)
-  // 起動時の safety 呼び出しはユーザー gesture 前なので Audio.play().catch で silent fail する
-  playSe('nextQuestion');
 }
 
 // ═══════════════════════════════════════════════════════════
