@@ -100,6 +100,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T09:01:03Z - quizland index.html OP_PANELS を新シナリオに完全置換 (Panel 2 pono ponoImg を dance_hi→dance_smile に変更、コメント整理) + sw.js CACHE_VERSION 853→854
+- **タスク**: quizland index.html OP_PANELS を新シナリオに完全置換 (Panel 2 pono ponoImg を dance_hi→dance_smile に変更、コメント整理) + sw.js CACHE_VERSION 853→854
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 315
+- **エラー数**: 35
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 147, "Read": 56, "Grep": 3, "ToolSearch": 1, "Agent": 67, "Write": 3, "Edit": 38}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-08T08:41:53Z - Quizland OP Export CSS 統合 (B/C/D narration フレーム背景化 + Pono/Hakase/Single Box/Label 数値調整 + sw.js 852→853)
 - **タスク**: Quizland OP Export CSS 統合 (B/C/D narration フレーム背景化 + Pono/Hakase/Single Box/Label 数値調整 + sw.js 852→853)
 - **結果**: 成功
@@ -201,19 +214,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 34, "Agent": 70, "Bash": 93, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T05:53:54Z - op-layout-editor: bgMode rebuild branch で applyNarrationToDom を呼び出す修正 + sw.js CACHE_VERSION 846→847
-- **タスク**: op-layout-editor: bgMode rebuild branch で applyNarrationToDom を呼び出す修正 + sw.js CACHE_VERSION 846→847
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 220
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 34, "Agent": 69, "Bash": 91, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

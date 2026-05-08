@@ -4325,7 +4325,7 @@ function initGame() {
 // Opening Cinematic (mode-btn → playOpeningCinematic → initGame)
 // ═══════════════════════════════════════════════════════════
 const OP_PANELS = [
-  // Panel 1 — narration. Fix 3: 5 行一括表示 → 2 セグメントに分割し順次クロスフェード
+  // Panel 1 — narration
   {
     kind: 'narration',
     bg: '../assets/images/quizland/OP/OP_BG.webp',
@@ -4339,7 +4339,6 @@ const OP_PANELS = [
         ]
       },
       {
-        // Fix 3: 文言変更「あそびに きました」→「いつもの なぞなぞで あそぶために やってきました」
         lines: [
           { text: 'ポノは、なかよしの はかせと、', emphasis: true },
           { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: true }
@@ -4347,14 +4346,15 @@ const OP_PANELS = [
       }
     ]
   },
+  // Panel 2 — dialogue
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
-    // panel-level ponoImg は fallback (line.ponoImg 未指定時に使用)
     ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp',
     dialogues: [
       { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
       { speaker: 'pono',   text: 'はかせ、あそびに きたよ！',
-        ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp' }
+        ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
     ]},
+  // Panel 3 — dialogue
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp',
     dialogues: [
@@ -4362,6 +4362,7 @@ const OP_PANELS = [
       { speaker: 'pono',   text: 'うん！やりたい！',
         ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp' }
     ]},
+  // Panel 4 — dialogue
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
     dialogues: [
@@ -4369,6 +4370,7 @@ const OP_PANELS = [
       { speaker: 'pono',   text: 'うーん…でも がんばる！',
         ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp' }
     ]},
+  // Panel 5 — dialogue
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp',
     dialogues: [
@@ -4376,6 +4378,7 @@ const OP_PANELS = [
       { speaker: 'pono',   text: 'うん！',
         ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
     ]},
+  // Panel 6 — dialogue
   { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
     ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp',
     dialogues: [
