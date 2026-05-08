@@ -691,7 +691,7 @@
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
-      <option value="">他 VC へコピー ▾</option>
+      <option value="" disabled selected hidden>他 VC へコピー ▾</option>
       <option value="B">現在の VC を B にコピー</option>
       <option value="C">現在の VC を C にコピー</option>
       <option value="D">現在の VC を D にコピー</option>
@@ -2804,13 +2804,16 @@ function buildHeader() {
   document.getElementById('btn-undo-reset').addEventListener('click', undoLastOp);
 
   // VC コピー: <select> change で発火し、即 placeholder に戻して再選択可能に。
+  // Placeholder option は disabled selected hidden なので、selectedIndex=0 で
+  // 視覚的にも選択不可状態に戻り、同一項目の連続選択でも change が再発火する。
   const selCopyVc = document.getElementById('sel-copy-vc');
   if (selCopyVc) {
     selCopyVc.addEventListener('change', () => {
       const v = selCopyVc.value;
       // Reset the dropdown to its placeholder so picking the same option again
       // re-fires "change" (otherwise consecutive same-target copies would no-op).
-      selCopyVc.value = '';
+      // selectedIndex=0 で disabled placeholder に強制的に戻す (value='' より確実)。
+      selCopyVc.selectedIndex = 0;
       if (v) copyCurrentToVc(v);
     });
   }
