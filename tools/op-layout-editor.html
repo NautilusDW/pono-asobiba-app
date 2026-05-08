@@ -3,9 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1280">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
 <title>Quizland OP レイアウトエディタ</title>
 <style>
+  /* Added (2026-05-08): 本番 (quizland/index.html line 22) と同じく Zen Maru Gothic
+     を読み込み、プレビュー (.op-narration-preview / .op-dialogue-text) のフォントを
+     本番表示と完全一致させる。UI (header/sidebar) は引き続き OS 標準 sans-serif。 */
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1c1f26; color: #e5e7eb; overflow: hidden; }
 
@@ -223,6 +227,11 @@
     /* Added (2026-05-08): textarea の \n をプレビューでそのまま改行として反映。
        本番側 (.op-dialogue-single .op-dialogue-text) と挙動を揃える。 */
     white-space: pre-wrap;
+    /* Added (2026-05-08): 本番 (.op-dialogue-single .op-dialogue-text) と
+       同じ font-family / font-weight を強制。エディタプレビューと本番表示の
+       wrap 位置・字幅・グリフを完全一致させる。 */
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+    font-weight: bold;
   }
 
   /* Speaker label (話者名チップ). 絶対配置で box の四隅に anchor。
@@ -509,6 +518,11 @@
     word-break: break-word;
     /* Added (2026-05-08): textarea \n を改行表示。本番と揃える。 */
     white-space: pre-wrap;
+    /* Added (2026-05-08): 本番 (.op-dialogue-single .op-dialogue-text) と
+       同じ font-family / font-weight を強制。プレビュー = 本番表示の
+       完全一致用 (会話文 bold)。 */
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+    font-weight: bold;
   }
 
   /* Single-box guide line variant (dashdot, neutral white). */
@@ -532,11 +546,16 @@
        字幅が広いため、同じ width でも wrap 位置が後ろにズレる。
        エディタプレビューを本番と一致させるため bold を追加。 */
     font-weight: bold;
+    /* Added (2026-05-08): 本番 (.op-narration) と同じ font-family を強制。
+       本番側は body から Zen Maru Gothic を継承するが、エディタの body は
+       UI 用 sans-serif スタックなので、ここで明示して揃える。 */
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
     line-height: 1.55;
     z-index: 35;
     pointer-events: auto;
     white-space: pre-wrap;
-    word-break: break-word;
+    /* Removed (2026-05-08): 本番 `.op-narration` は word-break 未指定 (=normal)。
+       エディタも揃えて wrap 位置の差分を消す。 */
     transform: translateX(-50%);
   }
   .stage[data-panel="narration"] .op-narration-preview { display: block; }
@@ -2603,7 +2622,9 @@ function applyNarrationToDom() {
   el.style.left = '50%';
   el.style.right = '';
   el.style.width = nr.width + 'px';
-  el.style.maxWidth = 'calc(100% - 32px)';
+  // Fix (2026-05-08): 本番 `.op-narration` の max-width は calc(100% - 64px)。
+  // エディタも揃えて wrap 位置 (改行する横幅余裕) を完全一致させる。
+  el.style.maxWidth = 'calc(100% - 64px)';
   if (nr.heightAuto || !nr.height || nr.height <= 0) {
     el.style.height = '';
   } else {

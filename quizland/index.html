@@ -2418,6 +2418,9 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
      反映。 _opTypeInto の `el.textContent += c` で \n が入った時点で
      `pre-wrap` が改行 + 折り返しを両立してくれる。 */
   white-space: pre-wrap;
+  /* Added (2026-05-08): ユーザー要望「会話文。そっちも太字にしてほしい」に対応。
+     ナレーション (.op-narration) と同じく bold で表示する。 */
+  font-weight: bold;
 }
 .op-narration {
   /* Fix (2026-05-07, narration not visible on non-4:3): font-size を `vw` ベース
