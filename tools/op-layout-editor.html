@@ -559,6 +559,12 @@
     transform: translateX(-50%);
   }
   .stage[data-panel="narration"] .op-narration-preview { display: block; }
+  /* Mirror 本番 (quizland/index.html L2456-L2457): `.op-narration p` reset margin,
+     `.op-narration p.emphasis` を赤太字でレンダリングする。
+     scenario モードの applyScenarioPreview() が <p class="emphasis"> を生成するため、
+     エディタプレビューでも本番と同じ見た目になる。 */
+  .op-narration-preview p { margin: 0.25em 0; }
+  .op-narration-preview p.emphasis { color: #c0392b; font-weight: 700; }
 
   /* When panel mode is "narration": switch BG to OP_BG.webp (forest house) and
      hide all dialogue / character / single-box layers. */
@@ -4539,16 +4545,23 @@ function applyScenarioPreview() {
   const stage = document.getElementById('stage');
 
   if (panel.kind === 'narration') {
-    // Narration プレビュー: 現在 segment の全 lines を改行連結して表示。
+    // Narration プレビュー: 現在 segment の全 lines を <p> で構築 (本番 quizland/index.html
+    // L4907-L4914 の typing engine と同一構造)。emphasis: true の行は <p class="emphasis">
+    // にして CSS (.op-narration-preview p.emphasis) で赤太字に描画。
     if (stage) stage.dataset.panel = 'narration';
     const seg = panel.segments[sc.currentSegmentIdx] || panel.segments[0];
-    const text = (seg && Array.isArray(seg.lines))
-      ? seg.lines.map(l => l ? (l.text || '') : '').join('\n')
-      : '';
     const el = document.getElementById('op-narration-preview');
     if (el) {
-      // applyNarrationToDom() 実行後に textContent を上書き (NARRATION_SAMPLE_TEXT を置換)。
-      el.textContent = text;
+      // applyNarrationToDom() 実行後に内容を上書き (NARRATION_SAMPLE_TEXT を置換)。
+      el.textContent = '';
+      if (seg && Array.isArray(seg.lines)) {
+        seg.lines.forEach(line => {
+          const p = document.createElement('p');
+          if (line && line.emphasis) p.classList.add('emphasis');
+          p.textContent = (line && line.text) ? line.text : '';
+          el.appendChild(p);
+        });
+      }
       el.style.display = 'flex';
     }
   } else {
