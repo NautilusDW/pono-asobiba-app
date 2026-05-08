@@ -2302,9 +2302,15 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   pointer-events: auto;
 }
 .op-dialogue-single .op-dialogue-label {
+  /* Fix (2026-05-07): ラベルを箱の内側下端に配置。旧 `top:-22px` ではラベルが
+     箱の上端から飛び出し、上の余白で見切れて読めなかった。Single Box の中身は
+     `display:flex; align-items:center; justify-content:center;` で中央寄せ
+     されているため、ラベルを `position:absolute` + `bottom/left` で
+     貼り付けてもテキストの中央配置には干渉しない。z-index でテキストの上に
+     確実に重ねる。 */
   position: absolute;
-  top: -22px;
-  left: 22px;
+  bottom: 16px;
+  left: 24px;
   font-size: 22px;
   font-weight: 700;
   color: #fff;
@@ -2313,6 +2319,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   box-shadow: 0 4px 10px rgba(0,0,0,0.30);
   letter-spacing: 0.04em;
   background: #5fa05a; /* default: pono — JS で speaker 切替時に上書き */
+  z-index: 2;
 }
 .op-dialogue-single.is-hakase .op-dialogue-label { background: #e08a3c; }
 .op-dialogue-single.is-pono   .op-dialogue-label { background: #5fa05a; }
@@ -2325,24 +2332,33 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   text-align: center;
 }
 .op-narration {
+  /* Fix (2026-05-07, narration not visible on non-4:3): font-size を `vw` ベース
+     にしていたせいで、`.op-content` が `transform: scale(...)` で縮小される非 4:3
+     ビューポート (例: 915×412 / aspect 2.22 → D block で scale ≒ 0.36) では、
+     viewport 基準の vw 値が再度 0.36 倍されて実効 9〜10px まで縮み、テキストが
+     読めない / 見えない状態だった。
+     `.op-content` 自身が VC ごとの実寸 (B 1024×768 / C 1920×1080 / D 2560×1080)
+     に固定されており scale でフィットさせるため、内側の font-size / width も
+     vw ではなく「論理 px」(pre-scale px) で書く必要がある。
+     ここではフォールバック値のみ置き、各 @media VC ブロックで上書きする。 */
   position: absolute;
   left: 50%;
-  bottom: 8%;
+  bottom: 80px;
   transform: translateX(-50%);
-  width: 86%;
-  max-width: 720px;                      /* デフォは控えめに (4:3 想定) */
+  width: 1200px;
+  max-width: calc(100% - 64px);
   margin: 0 auto;
   background: #fff8e7;
   border-radius: 18px;
-  padding: 18px 22px;
+  padding: 24px 32px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;
   color: #3a2a14;
-  /* Fix 3: フォントサイズを大きく & セグメント切替用に opacity transition を持たせる */
-  font-size: clamp(20px, 3.0vw, 30px);
+  font-size: 36px;
   line-height: 1.55;
   text-align: center;
   opacity: 1;
   transition: opacity 0.5s ease-out;
+  box-sizing: border-box;
 }
 .op-narration.hidden { display: none; }
 .op-narration p { margin: 0.25em 0; }
@@ -2370,17 +2386,12 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: rgba(0,0,0,0.55);
   outline: none;
 }
-/* ワイドビューポート (16:10 以上): ナレーションは横長バナー (Single Box モード時はエディタ出力が支配)。 */
-@media (min-aspect-ratio: 16/10) {
-  .op-narration {
-    max-width: 900px;        /* ワイドでは横長矩形に */
-    padding-top: 18px;
-    padding-bottom: 18px;
-  }
-}
+/* Fix (2026-05-07): 旧 `(min-aspect-ratio: 16/10)` / `(max-width: 540px)` 用の
+   `.op-narration` 上書きは vw / viewport-px 単位だったが、`.op-content` が
+   `transform: scale()` で縮小される構造下では正しくフィットしないため廃止。
+   narration の論理 px は VC ごと (B/C/D) の @media ブロックで上書きする。 */
 @media (max-width: 540px) {
-  .op-narration { font-size: clamp(18px, 4.4vw, 22px); padding: 14px 16px; }
-  .op-dialogue-single .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
+  .op-dialogue-single .op-dialogue-label { font-size: 14px; padding: 4px 12px; bottom: 12px; left: 16px; }
 }
 
 /* ===== Single Box layout — エディタ書き出し (op-layout-2026-05-07_23-32-45.css) =====
@@ -2433,6 +2444,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-single .op-dialogue-text {
     font-size: 37px;
   }
+  /* narration: B (1024×768) 用、論理 px。 */
+  .op-narration {
+    width: 880px;
+    bottom: 60px;
+    font-size: 30px;
+    padding: 22px 28px;
+  }
 }
 
 /* viewport class C (1920x1080 / 16:9) */
@@ -2478,6 +2496,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-single .op-dialogue-text {
     font-size: 48px;
   }
+  /* narration: C (1920×1080) 用、論理 px。 */
+  .op-narration {
+    width: 1500px;
+    bottom: 90px;
+    font-size: 44px;
+    padding: 28px 36px;
+  }
 }
 
 /* viewport class D (2560x1080 / 64:27 ≒ 21:9) */
@@ -2522,6 +2547,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   }
   .op-dialogue-single .op-dialogue-text {
     font-size: 48px;
+  }
+  /* narration: D (2560×1080) 用、論理 px。横長 stage なので幅広に。 */
+  .op-narration {
+    width: 2000px;
+    bottom: 90px;
+    font-size: 52px;
+    padding: 32px 40px;
   }
 }
 
