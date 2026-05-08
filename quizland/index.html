@@ -4499,70 +4499,66 @@ function initGame() {
 const OP_PANELS = [
   // Panel 1 — narration
   {
-    kind: 'narration',
-    bg: '../assets/images/quizland/OP/OP_BG.webp',
-    audio: '../assets/images/quizland/OP/OP_NA.wav',
+    kind: "narration",
+    bg: "../assets/images/quizland/OP/OP_BG.webp",
+    audio: "../assets/images/quizland/OP/OP_NA.wav",
     segments: [
       {
         lines: [
-          { text: 'もりの おくに、ふしぎな いえがあります。', emphasis: false },
-          { text: 'そこには、なんでも しっている', emphasis: false },
-          { text: 'ふくろうの はかせが すんでいます。', emphasis: false }
+          { text: "もりの おくに、ふしぎな いえがあります。", emphasis: false },
+          { text: "そこには、なんでも しっている", emphasis: false },
+          { text: "ふくろうの はかせが すんでいます。", emphasis: false }
         ]
       },
       {
         lines: [
-          { text: 'ポノは、なかよしの はかせと、', emphasis: false },
-          { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: false }
+          { text: "ポノは、なかよしの はかせと、", emphasis: true },
+          { text: "いつもの なぞなぞで", emphasis: true },
+          { text: "あそぶために やってきました。", emphasis: true }
         ]
       }
     ]
   },
   // Panel 2 — dialogue
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
-    ponoImg: '../assets/images/characters/pono/dance/dance_hi.webp',
+  { kind: "dialogue", bg: "../assets/images/quizland/OP/OP_BG02.webp",
+    ponoImg: "../assets/images/characters/pono/dance/dance_hi.webp",
     dialogues: [
-      { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう',
-        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
-      { speaker: 'pono',   text: 'はかせ、あそびに きたよ！',
-        ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
-    ]},
+      { speaker: "hakase", text: "ほっほっほ…ポノか。よくきたのう", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
+      { speaker: "pono", text: "はかせ、あそびに きたよ！", ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp" }
+    ]
+  },
   // Panel 3 — dialogue
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
-    ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp',
+  { kind: "dialogue", bg: "../assets/images/quizland/OP/OP_BG02.webp",
+    ponoImg: "../assets/images/characters/pono/dance/dance_hooray.webp",
     dialogues: [
-      { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？',
-        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
-      { speaker: 'pono',   text: 'うん！やりたい！',
-        ponoImg: '../assets/images/characters/pono/dance/dance_hooray.webp' }
-    ]},
+      { speaker: "hakase", text: "きょうも なぞなぞを するかの？", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
+      { speaker: "pono", text: "うん！やりたい！", ponoImg: "../assets/images/characters/pono/dance/dance_hooray.webp" }
+    ]
+  },
   // Panel 4 — dialogue
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
-    ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp',
+  { kind: "dialogue", bg: "../assets/images/quizland/OP/OP_BG02.webp",
+    ponoImg: "../assets/images/characters/pono/dance/think_arms_crossed_side.webp",
     dialogues: [
-      { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？',
-        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
-      { speaker: 'pono',   text: 'うーん…でも がんばる！',
-        ponoImg: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp' }
-    ]},
+      { speaker: "hakase", text: "ふむふむ… じしんは あるかな？", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
+      { speaker: "pono", text: "うーん…でも がんばる！", ponoImg: "../assets/images/characters/pono/dance/think_arms_crossed_side.webp" }
+    ]
+  },
   // Panel 5 — dialogue
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
-    ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp',
+  { kind: "dialogue", bg: "../assets/images/quizland/OP/OP_BG02.webp",
+    ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp",
     dialogues: [
-      { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。',
-        ponoImg: '../assets/images/characters/pono/dance/pono_001.webp' },
-      { speaker: 'pono',   text: 'うん！',
-        ponoImg: '../assets/images/characters/pono/dance/dance_smile.webp' }
-    ]},
+      { speaker: "hakase", text: "ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
+      { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp" }
+    ]
+  },
   // Panel 6 — dialogue
-  { kind: 'dialogue', bg: '../assets/images/quizland/OP/OP_BG02.webp',
-    ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp',
+  { kind: "dialogue", bg: "../assets/images/quizland/OP/OP_BG02.webp",
+    ponoImg: "../assets/images/characters/pono/dance/think_chin_clasp.webp",
     dialogues: [
-      { speaker: 'hakase', text: 'では、いくぞ…',
-        ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp' },
-      { speaker: 'pono',   text: 'うん！',
-        ponoImg: '../assets/images/characters/pono/dance/think_chin_clasp.webp' }
-    ]}
+      { speaker: "hakase", text: "では、いくぞ…", ponoImg: "../assets/images/characters/pono/dance/think_chin_clasp.webp" },
+      { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/think_chin_clasp.webp" }
+    ]
+  }
 ];
 
 let _opCancelled = false;
