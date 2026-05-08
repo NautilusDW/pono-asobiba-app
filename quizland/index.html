@@ -903,7 +903,8 @@ body.sheet-on .hdr-right .ctrl-btn {
    紙風の枠が焼き込まれているため、 共通 drop-shadow が浮いて見える。
    q.framed: true / q.framed_answer: true の問題には .is-framed を付け、
    filter を打ち消す (描画は render 関数 + revealAnswer で切替)。 */
-.emoji-main-img.is-framed { filter: none; }
+.emoji-main-img.is-framed,
+.shape-img.is-framed { filter: none; }
 /* ─────────────────────────────────────────────────────────
    v808 fix: editor で wrapper を resize したとき、 内部の img/中身が
    wrapper のサイズに連動するようにする。
@@ -3719,9 +3720,16 @@ function renderShapeName(stage, q) {
   wrap.className = 'shape-display';
   // PNG (sharp-cornered) を表示。 旧 CSS 描画 (.shape-square 等は border-radius:24px の角丸)
   // と「角はいくつ?」の問題が矛盾していたため、 sharp-cornered PNG に切替。
+  // q.img が指定されている問題 (例: notebook / soccerball / leaf) は、 抽象 shape ではなく
+  // 実物の絵を見せたい意図なので stage/ 配下の q.img を優先して読み込む。
   const img = document.createElement('img');
   img.className = 'shape-img';
-  img.src = '../assets/images/quizland/illust/shape/shape_' + q.shape + '.png';
+  if (q.framed) img.classList.add('is-framed');
+  if (q.img) {
+    img.src = '../assets/images/quizland/illust/stage/' + q.img + '?v=' + (window._imgCacheBust || '');
+  } else {
+    img.src = '../assets/images/quizland/illust/shape/shape_' + q.shape + '.png';
+  }
   img.alt = '';
   // 素材欠損時は CSS 描画にフォールバック (保険)。 ★/♥ は文字を入れる。
   img.onerror = function() {

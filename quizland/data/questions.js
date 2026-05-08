@@ -136,7 +136,7 @@ const QUIZLAND_QUESTIONS = {
         { text:'さんかく' },
         { text:'しかく' }
       ], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
-    { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', q:'ノートの かたちは？', answer:0, choices:['しかく','まる','さんかく','ほし'], detail:'ノートは しかくい かたち！' },
+    { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', framed:true, q:'ノートの かたちは？', answer:0, choices:['しかく','まる','さんかく','ほし'], detail:'ノートは しかくい かたち！' },
     { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
   ],
 
@@ -316,7 +316,7 @@ const QUIZLAND_QUESTIONS = {
   trivia: [
     // Level 1
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_unripe_banana.png',
+      img:'stage_trivia_unripe_banana.png', framed:true,
       img_answer:'stage_trivia_ripe_banana.png',
       q:'うれた バナナは なにいろ？',
       answer:1, choices:['あか','きいろ','あお','むらさき'] ,
@@ -360,7 +360,7 @@ const QUIZLAND_QUESTIONS = {
       answer:0, choices:['あさ','よる','まよなか','ゆうがた'] ,
       detail:'あさに おひさまが のぼって、よるは おつきさまが でてくるよ！'},
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_rabbit_no_ears_face_crop.png',
+      img:'stage_trivia_rabbit_no_ears_face_crop.png', framed:true,
       img_answer:'stage_trivia_rabbit.png',
       q:'うさぎの みみは どんな かたち？',
       answer:1, choices:['まるくて みじかい','ながくて たっている','まるい ちいさい','とがって ちいさい'] ,
@@ -591,10 +591,10 @@ const QUIZLAND_QUESTIONS = {
       q:'ねむっているとき からだは どうなっている？',
       answer:0, choices:['やすんでいる','たべている','はしっている','うごけない'] ,
       detail:'ねている あいだに からだは げんきを ためなおして、おおきく なっていくよ！'},
-    // TODO(sprint-13): img を 'stage_body_teeth_replacement.png' に追加 (Codex 納品後、生え変わり場面)
+    // sprint-13 結線済み (2026-05-08): stage_body_teeth_replacement.png 配置済み (子供の前歯が抜けた笑顔)
+    // framed: 紙風の長方形フレームが画像に焼き込まれているため共通 drop-shadow を抑止
     { level:3, type:'trivia', category:'body',
-      // TODO(2026-05-07): 画像 stage_body_teeth_replacement.png 発注中。
-      // 配置完了後に img を 'stage_body_teeth_replacement.png' に差し替える。
+      img:'stage_body_teeth_replacement.png', framed:true,
       q:'ぬけた はの あとには あたらしい はが はえる？',
       answer:0,
       choices:['はえる','はえない','ときどき はえる','わからない'],
