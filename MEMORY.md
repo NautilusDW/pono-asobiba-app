@@ -102,6 +102,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T04:20:56Z - CODEX-ORDER-3.md の Group C/D body-character スペック厳格化 (共通絶対ルール追加 + C1-C4/D1-D4 各仕様 + コピペブロック強化)
+- **タスク**: CODEX-ORDER-3.md の Group C/D body-character スペック厳格化 (共通絶対ルール追加 + C1-C4/D1-D4 各仕様 + コピペブロック強化)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 176
+- **エラー数**: 12
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 29, "Agent": 56, "Bash": 73, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T04:10:37Z - op-layout-editor.html: Single Box / per-side ダイアログ排他トグル修正
 - **タスク**: op-layout-editor.html: Single Box / per-side ダイアログ排他トグル修正
 - **結果**: 成功
@@ -204,18 +217,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 26, "Agent": 45, "Bash": 55, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 5}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T02:38:29Z - op-layout-editor: ラベル文字サイズ調整機能 (labelFontSize) を追加 (per-side / Single Box, range 12-60, default 22, mirror copy, migration, export CSS)
-- **タスク**: op-layout-editor: ラベル文字サイズ調整機能 (labelFontSize) を追加 (per-side / Single Box, range 12-60, default 22, mirror copy, migration, export CSS)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 261
-- **エラー数**: 32
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 133, "Read": 33, "Grep": 3, "ToolSearch": 1, "Agent": 55, "Write": 3, "Edit": 33}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
