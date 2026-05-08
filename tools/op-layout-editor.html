@@ -513,6 +513,57 @@
   }
   .box-guides .bg-line.bg-single.bg-bot { border-top-color: #e5e7eb88; }
 
+  /* Narration preview (Panel 1, ナレーション). Editor-only DOM; hidden by default.
+     Activated by .stage[data-panel="narration"]. Style values are set inline by
+     applyNarrationToDom() using state[VC].narration. */
+  .op-narration-preview {
+    display: none;
+    position: absolute;
+    /* width / height / top / bottom / left / padding / font-size / background /
+       border-radius / box-shadow set inline from state[VC].narration. */
+    box-sizing: border-box;
+    color: #3a2a14;
+    line-height: 1.55;
+    z-index: 35;
+    pointer-events: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    transform: translateX(-50%);
+  }
+  .stage[data-panel="narration"] .op-narration-preview { display: block; }
+
+  /* When panel mode is "narration": switch BG to OP_BG.webp (forest house) and
+     hide all dialogue / character / single-box layers. */
+  .stage[data-panel="narration"] .op-bg {
+    background-image: url('../assets/images/quizland/OP/OP_BG.webp');
+    /* Panel 1 は本番では blur 無し (シャープ表示)。 */
+    filter: none;
+    transform: none;
+  }
+  .stage[data-panel="narration"] .op-sides { display: none; }
+  .stage[data-panel="narration"] .single-box-wrapper { display: none; }
+
+  /* When right pane is in narration edit mode, hide dialog-only rows. */
+  #right.is-narration .speaker-row,
+  #right.is-narration .mirror-row,
+  #right.is-narration .tab-bar { display: none; }
+
+  /* Narration dedicated section (right pane). */
+  .narration-section {
+    background: #14161c;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .narration-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #fcd34d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
   /* Right pane: when single-box mode is ON, dim the per-side Box group. */
   .group.is-single-mode {
     opacity: 0.4;
@@ -684,6 +735,10 @@
     </div>
     <span id="scale-info" style="font-size:11px;color:#94a3b8;"></span>
     <span class="spacer"></span>
+    <div class="vp-group" id="panel-group" title="編集対象パネル切替" style="margin-left:8px;">
+      <label><input type="radio" name="panelMode" value="dialog" checked><span>対話 (P2-6)</span></label>
+      <label><input type="radio" name="panelMode" value="narration"><span>ナレーション (P1)</span></label>
+    </div>
     <button id="btn-toggle-height-guides" class="ghost" type="button">📏 高さガイド</button>
     <button id="btn-toggle-box-guides" class="ghost" type="button">📐 Box ガイド</button>
     <button id="btn-toggle-single-box" class="ghost" type="button">📦 Box 1 個</button>
@@ -745,6 +800,7 @@
             <div class="op-dialogue-text" id="text-single"></div>
           </div>
         </div>
+        <div class="op-narration-preview" id="op-narration-preview"></div>
         <div class="safe-area-16-9" aria-hidden="true">
           <span class="safe-area-label">16:9 セーフエリア</span>
         </div>
@@ -808,6 +864,7 @@ const HEIGHT_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showHeightGuides';
 const BOX_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showBoxGuides';
 const MIRROR_MODE_STORAGE_KEY = STORAGE_PREFIX + 'mirrorMode';
 const SINGLE_BOX_MODE_STORAGE_KEY = STORAGE_PREFIX + 'singleBoxMode';
+const PANEL_MODE_STORAGE_KEY = STORAGE_PREFIX + 'panelMode';
 // Persistent storage for drag-and-dropped images (Pono variants and frames).
 // Stored as { pono: [{name,path,label?}], frame: [{id,label,path,naturalAspect?}] }.
 const DROPPED_ASSETS_STORAGE_KEY = STORAGE_PREFIX + 'droppedAssets';
@@ -891,6 +948,25 @@ function loadSingleBoxModePref() {
 function saveSingleBoxModePref() {
   try { localStorage.setItem(SINGLE_BOX_MODE_STORAGE_KEY, singleBoxMode ? 'true' : 'false'); } catch (e) {}
 }
+
+// Panel mode: 'dialog' = Panel 2-6 編集 (既存挙動) / 'narration' = Panel 1 編集
+let panelMode = 'dialog';
+function loadPanelModePref() {
+  try {
+    const v = localStorage.getItem(PANEL_MODE_STORAGE_KEY);
+    panelMode = (v === 'narration') ? 'narration' : 'dialog';
+  } catch (e) { panelMode = 'dialog'; }
+}
+function savePanelModePref() {
+  try { localStorage.setItem(PANEL_MODE_STORAGE_KEY, panelMode); } catch (e) {}
+}
+
+// Sample narration text for Panel 1 preview. textContent insertion only (no innerHTML).
+// 改行で 3 行 (panel 1 既存テキスト)。
+const NARRATION_SAMPLE_TEXT =
+  'もりの おくに、ふしぎな いえがあります。\n' +
+  'そこには、なんでも しっている\n' +
+  'ふくろうの はかせが すんでいます。';
 
 // === Dropped assets persistence =========================================
 // Builds the JSON-serializable payload of currently dropped Pono / frame images
@@ -1114,6 +1190,21 @@ function defaultsFor(vc) {
     }
     return { labelAnchor: 'bl', labelInside: true, labelOffsetX: 0, labelOffsetY: 0, labelFontSize: 22 };
   })();
+  // Per-VC defaults for the Narration box (Panel 1).
+  // 本番 quizland/index.html の `.op-narration` per-VC @media を参照:
+  //   B: width 880,  bottom 60, font-size 30, padding 22 28
+  //   C: width 1500, bottom 90, font-size 44, padding 28 36
+  //   D: width 2000, bottom 90, font-size 52, padding 32 40
+  // 共通: bg rgba(255,253,244,0.92) 相当、border-radius 24, box-shadow on
+  const narrationDefaults = (() => {
+    if (isB) {
+      return { width: 880, height: 0, padding: 22, paddingX: 28, fontSize: 30, bottom: 60 };
+    } else if (isC) {
+      return { width: 1500, height: 0, padding: 28, paddingX: 36, fontSize: 44, bottom: 90 };
+    } else { // D
+      return { width: 2000, height: 0, padding: 32, paddingX: 40, fontSize: 52, bottom: 90 };
+    }
+  })();
   return {
     pono: {
       variant: 'dance_hi',
@@ -1194,6 +1285,26 @@ function defaultsFor(vc) {
       labelOffsetY: labelDefaults.labelOffsetY,
       labelFontSize: labelDefaults.labelFontSize,
       speakerSrc: 'pono'
+    },
+    narration: {
+      width: narrationDefaults.width,
+      height: 0, // 0 = auto (natural height); >0 = explicit px
+      heightAuto: true,
+      posMode: 'bottom', // 'top' | 'bottom' | 'free'
+      bottom: narrationDefaults.bottom,
+      top: 80,
+      // left は 50% center 固定 (transform: translateX(-50%) でセンタリング)。
+      // 数値は 'free' 時のみ意味を持つ予備フィールド。
+      left: 0,
+      paddingY: narrationDefaults.padding,
+      paddingX: narrationDefaults.paddingX,
+      fontSize: narrationDefaults.fontSize,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      bgColor: '#fffdf4',
+      bgOpacity: 0.92,
+      borderRadius: 24,
+      showShadow: true
     }
   };
 }
@@ -1312,6 +1423,57 @@ function migrateFrameIds(parsed) {
     if (typeof sb.labelFontSize !== 'number' || !Number.isFinite(sb.labelFontSize) || sb.labelFontSize <= 0) {
       sb.labelFontSize = 22;
     }
+  }
+  // Panel 1 (narration) — backfill defaults if absent on legacy state.
+  // VC 推測ロジックは singleBox と同じく pono.boxW から行う。
+  if (!parsed.narration || typeof parsed.narration !== 'object') {
+    const pw = Number(parsed.pono && parsed.pono.boxW) || 0;
+    let inferredVC = 'B';
+    if (pw >= 1200) inferredVC = 'D';
+    else if (pw >= 520) inferredVC = 'C';
+    const nd = (() => {
+      if (inferredVC === 'B') return { width: 880,  bottom: 60, fontSize: 30, paddingY: 22, paddingX: 28 };
+      if (inferredVC === 'C') return { width: 1500, bottom: 90, fontSize: 44, paddingY: 28, paddingX: 36 };
+      return { width: 2000, bottom: 90, fontSize: 52, paddingY: 32, paddingX: 40 };
+    })();
+    parsed.narration = {
+      width: nd.width,
+      height: 0,
+      heightAuto: true,
+      posMode: 'bottom',
+      bottom: nd.bottom,
+      top: 80,
+      left: 0,
+      paddingY: nd.paddingY,
+      paddingX: nd.paddingX,
+      fontSize: nd.fontSize,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      bgColor: '#fffdf4',
+      bgOpacity: 0.92,
+      borderRadius: 24,
+      showShadow: true
+    };
+  } else {
+    const nr = parsed.narration;
+    if (typeof nr.width !== 'number' || !Number.isFinite(nr.width) || nr.width <= 0) nr.width = 1200;
+    if (typeof nr.height !== 'number' || !Number.isFinite(nr.height) || nr.height < 0) nr.height = 0;
+    if (typeof nr.heightAuto !== 'boolean') nr.heightAuto = (nr.height <= 0);
+    if (nr.posMode !== 'top' && nr.posMode !== 'bottom' && nr.posMode !== 'free') nr.posMode = 'bottom';
+    if (typeof nr.bottom !== 'number' || !Number.isFinite(nr.bottom)) nr.bottom = 80;
+    if (typeof nr.top !== 'number' || !Number.isFinite(nr.top)) nr.top = 80;
+    if (typeof nr.left !== 'number' || !Number.isFinite(nr.left)) nr.left = 0;
+    if (typeof nr.paddingY !== 'number' || !Number.isFinite(nr.paddingY) || nr.paddingY < 0) nr.paddingY = 24;
+    if (typeof nr.paddingX !== 'number' || !Number.isFinite(nr.paddingX) || nr.paddingX < 0) nr.paddingX = 32;
+    if (typeof nr.fontSize !== 'number' || !Number.isFinite(nr.fontSize) || nr.fontSize <= 0) nr.fontSize = 36;
+    if (nr.textAlignH !== 'left' && nr.textAlignH !== 'center' && nr.textAlignH !== 'right') nr.textAlignH = 'center';
+    if (nr.textAlignV !== 'top' && nr.textAlignV !== 'center' && nr.textAlignV !== 'bottom') nr.textAlignV = 'center';
+    if (typeof nr.bgColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(nr.bgColor)) nr.bgColor = '#fffdf4';
+    if (typeof nr.bgOpacity !== 'number' || !Number.isFinite(nr.bgOpacity)) nr.bgOpacity = 0.92;
+    if (nr.bgOpacity < 0) nr.bgOpacity = 0;
+    if (nr.bgOpacity > 1) nr.bgOpacity = 1;
+    if (typeof nr.borderRadius !== 'number' || !Number.isFinite(nr.borderRadius) || nr.borderRadius < 0) nr.borderRadius = 24;
+    if (typeof nr.showShadow !== 'boolean') nr.showShadow = true;
   }
   return parsed;
 }
@@ -1795,6 +1957,63 @@ function applySideToDom(sideKey) {
   }
 }
 
+// Convert #rrggbb + alpha (0..1) to "rgba(r, g, b, a)" string.
+// Falls back to the input hex when parsing fails (no alpha applied).
+function hexToRgba(hex, alpha) {
+  const s = String(hex || '').trim();
+  const m = /^#([0-9a-fA-F]{6})$/.exec(s);
+  if (!m) return s || 'rgba(255,253,244,0.92)';
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  let a = Number(alpha);
+  if (!Number.isFinite(a)) a = 1;
+  if (a < 0) a = 0;
+  if (a > 1) a = 1;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function applyNarrationToDom() {
+  const el = document.getElementById('op-narration-preview');
+  if (!el) return;
+  const nr = state[currentVC] && state[currentVC].narration;
+  if (!nr) return;
+  // Clear all positional props first to avoid leftover values when posMode flips.
+  el.style.top = '';
+  el.style.bottom = '';
+  el.style.left = '50%';
+  el.style.right = '';
+  el.style.width = nr.width + 'px';
+  el.style.maxWidth = 'calc(100% - 32px)';
+  if (nr.heightAuto || !nr.height || nr.height <= 0) {
+    el.style.height = '';
+  } else {
+    el.style.height = nr.height + 'px';
+  }
+  if (nr.posMode === 'top') {
+    el.style.top = (Number(nr.top) || 0) + 'px';
+  } else if (nr.posMode === 'bottom') {
+    el.style.bottom = (Number(nr.bottom) || 0) + 'px';
+  } else { // 'free' — use top from the same field but allow free pos
+    el.style.top = (Number(nr.top) || 0) + 'px';
+  }
+  el.style.padding = (Number(nr.paddingY) || 0) + 'px ' + (Number(nr.paddingX) || 0) + 'px';
+  el.style.fontSize = (Number(nr.fontSize) || 36) + 'px';
+  el.style.textAlign = nr.textAlignH || 'center';
+  el.style.display = (panelMode === 'narration') ? 'flex' : 'none';
+  el.style.alignItems = mapTextAlignV(nr.textAlignV);
+  el.style.justifyContent = mapTextAlignH(nr.textAlignH);
+  el.style.flexDirection = 'column';
+  el.style.background = hexToRgba(nr.bgColor, nr.bgOpacity);
+  el.style.borderRadius = (Number(nr.borderRadius) || 0) + 'px';
+  el.style.boxShadow = nr.showShadow
+    ? '0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset'
+    : 'none';
+  // Sample text — textContent insertion only (no innerHTML), preserves \n via white-space:pre-wrap.
+  el.textContent = NARRATION_SAMPLE_TEXT;
+}
+
 function applySingleBoxToDom() {
   const sb = state[currentVC] && state[currentVC].singleBox;
   const box = document.getElementById('box-single');
@@ -1933,9 +2152,11 @@ function render() {
   const stage = document.getElementById('stage');
   stage.dataset.vc = currentVC;
   stage.dataset.singleBox = singleBoxMode ? 'on' : 'off';
+  stage.dataset.panel = (panelMode === 'narration') ? 'narration' : 'dialog';
   applySideToDom('pono');
   applySideToDom('hakase');
   applySingleBoxToDom();
+  applyNarrationToDom();
 
   const sp = state[currentVC].speaker;
   document.getElementById('side-pono').classList.toggle('is-speaking', sp === 'pono');
@@ -2733,12 +2954,239 @@ function buildSingleBoxSection() {
   return sec;
 }
 
+// === Narration (Panel 1) right-pane controls ===========================
+// Narration uses its own minimal makers (state[currentVC].narration is a flat
+// object, not nested per-side).
+function makeNarrRange(label, min, max, step, key) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const range = document.createElement('input');
+  range.type = 'range';
+  range.min = min; range.max = max; range.step = step;
+  const num = document.createElement('input');
+  num.type = 'number';
+  num.min = min; num.max = max; num.step = step;
+  const cur = state[currentVC].narration[key];
+  range.value = cur;
+  num.value = cur;
+  const apply = (v) => {
+    let n = Number(v);
+    if (!Number.isFinite(n)) return;
+    n = Math.min(Math.max(n, Number(min)), Number(max));
+    state[currentVC].narration[key] = n;
+    if (document.activeElement !== range) range.value = n;
+    if (document.activeElement !== num) num.value = n;
+    save(currentVC);
+    applyNarrationToDom();
+  };
+  range.addEventListener('input', () => apply(range.value));
+  num.addEventListener('input', () => apply(num.value));
+  num.addEventListener('change', () => apply(num.value));
+  row.appendChild(lab);
+  row.appendChild(range);
+  row.appendChild(num);
+  return row;
+}
+
+function makeNarrRangeFloat(label, min, max, step, key) {
+  // Same as makeNarrRange but does not coerce to int (for opacity 0..1).
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const range = document.createElement('input');
+  range.type = 'range';
+  range.min = min; range.max = max; range.step = step;
+  const num = document.createElement('input');
+  num.type = 'number';
+  num.min = min; num.max = max; num.step = step;
+  const cur = state[currentVC].narration[key];
+  range.value = cur;
+  num.value = cur;
+  const apply = (v) => {
+    let n = Number(v);
+    if (!Number.isFinite(n)) return;
+    n = Math.min(Math.max(n, Number(min)), Number(max));
+    state[currentVC].narration[key] = n;
+    if (document.activeElement !== range) range.value = n;
+    if (document.activeElement !== num) num.value = n;
+    save(currentVC);
+    applyNarrationToDom();
+  };
+  range.addEventListener('input', () => apply(range.value));
+  num.addEventListener('input', () => apply(num.value));
+  num.addEventListener('change', () => apply(num.value));
+  row.appendChild(lab);
+  row.appendChild(range);
+  row.appendChild(num);
+  return row;
+}
+
+function makeNarrRadio(label, key, options, opts) {
+  const rebuild = !!(opts && opts.rebuild);
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const rr = document.createElement('div');
+  rr.className = 'radio-row';
+  const groupName = 'narr-' + key + '-' + (++_radioUid);
+  options.forEach(opt => {
+    const valStr = String(opt.value);
+    const lbl = document.createElement('label');
+    lbl.dataset.val = valStr;
+    if (state[currentVC].narration[key] === opt.value) lbl.classList.add('checked');
+    const inp = document.createElement('input');
+    inp.type = 'radio';
+    inp.name = groupName;
+    inp.value = valStr;
+    inp.id = groupName + '-' + valStr;
+    lbl.htmlFor = inp.id;
+    if (state[currentVC].narration[key] === opt.value) inp.checked = true;
+    lbl.appendChild(inp);
+    lbl.appendChild(document.createTextNode(opt.text));
+    inp.addEventListener('change', () => {
+      if (!inp.checked) return;
+      state[currentVC].narration[key] = opt.value;
+      save(currentVC);
+      rr.querySelectorAll('label').forEach(l => {
+        l.classList.toggle('checked', l.dataset.val === valStr);
+      });
+      if (rebuild) {
+        buildRightPane();
+      } else {
+        applyNarrationToDom();
+      }
+    });
+    rr.appendChild(lbl);
+  });
+  row.appendChild(lab);
+  row.appendChild(rr);
+  return row;
+}
+
+function makeNarrColor(label, key) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.value = state[currentVC].narration[key] || '#fffdf4';
+  inp.addEventListener('input', () => {
+    state[currentVC].narration[key] = inp.value;
+    save(currentVC);
+    applyNarrationToDom();
+  });
+  row.appendChild(lab);
+  row.appendChild(inp);
+  return row;
+}
+
+function makeNarrCheckbox(label, key) {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const wrap = document.createElement('div');
+  wrap.style.flex = '1';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'center';
+  wrap.style.gap = '6px';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = !!state[currentVC].narration[key];
+  cb.addEventListener('change', () => {
+    state[currentVC].narration[key] = !!cb.checked;
+    save(currentVC);
+    if (key === 'heightAuto') {
+      // height auto toggle: rebuild to show/hide height slider.
+      buildRightPane();
+    } else {
+      applyNarrationToDom();
+    }
+  });
+  wrap.appendChild(cb);
+  row.appendChild(lab);
+  row.appendChild(wrap);
+  return row;
+}
+
+function buildNarrationSection() {
+  const nr = state[currentVC].narration;
+  const sec = document.createElement('div');
+  sec.className = 'narration-section';
+  const h = document.createElement('h4');
+  h.textContent = '📖 Narration 設定 (Panel 1)';
+  sec.appendChild(h);
+
+  // 位置モード
+  sec.appendChild(makeNarrRadio('位置モード', 'posMode', [
+    { value: 'top',    text: '上基準' },
+    { value: 'bottom', text: '下基準' },
+    { value: 'free',   text: '自由' }
+  ], { rebuild: true }));
+
+  // 位置: posMode に応じて top / bottom スライダを切り替え
+  const [, vcH] = VP_DIMS[currentVC];
+  if (nr.posMode === 'bottom') {
+    sec.appendChild(makeNarrRange('bottom (px)', 0, vcH, 1, 'bottom'));
+  } else if (nr.posMode === 'top') {
+    sec.appendChild(makeNarrRange('top (px)', 0, vcH, 1, 'top'));
+  } else {
+    // free: top のみ提供 (left は中央固定方針)
+    sec.appendChild(makeNarrRange('top (px)', 0, vcH, 1, 'top'));
+  }
+
+  // サイズ
+  sec.appendChild(makeNarrRange('幅 (px)', 200, 2560, 1, 'width'));
+  sec.appendChild(makeNarrCheckbox('高さ auto', 'heightAuto'));
+  if (!nr.heightAuto) {
+    sec.appendChild(makeNarrRange('高さ (px)', 40, 800, 1, 'height'));
+  }
+
+  // パディング
+  sec.appendChild(makeNarrRange('padding 縦', 0, 120, 1, 'paddingY'));
+  sec.appendChild(makeNarrRange('padding 横', 0, 120, 1, 'paddingX'));
+  sec.appendChild(makeNarrRange('角丸 (px)', 0, 120, 1, 'borderRadius'));
+
+  // フォント
+  sec.appendChild(makeNarrRange('フォントサイズ', 16, 80, 1, 'fontSize'));
+  sec.appendChild(makeNarrRadio('テキスト横', 'textAlignH', [
+    { value: 'left', text: '左' },
+    { value: 'center', text: '中' },
+    { value: 'right', text: '右' }
+  ]));
+  sec.appendChild(makeNarrRadio('テキスト縦', 'textAlignV', [
+    { value: 'top', text: '上' },
+    { value: 'center', text: '中' },
+    { value: 'bottom', text: '下' }
+  ]));
+
+  // 背景
+  sec.appendChild(makeNarrColor('背景色', 'bgColor'));
+  sec.appendChild(makeNarrRangeFloat('背景透過度', 0, 1, 0.01, 'bgOpacity'));
+  sec.appendChild(makeNarrCheckbox('影 (box-shadow)', 'showShadow'));
+
+  return sec;
+}
+// === end Narration ====================================================
+
 function buildRightPane() {
   const body = document.getElementById('tab-body');
   body.textContent = '';
   // Clear the single-box sync map so detached closures don't fire.
   // (Per-side _rangeSyncMap is intentionally left to be overwritten on re-create.)
   Object.keys(_singleBoxRangeSyncMap).forEach(k => delete _singleBoxRangeSyncMap[k]);
+
+  // Panel mode: ナレーション編集時は対話用 UI を一切出さず、Narration セクションだけ表示。
+  if (panelMode === 'narration') {
+    body.appendChild(buildNarrationSection());
+    return;
+  }
+
   const sideKey = currentTab;
   const s = state[currentVC][sideKey];
 
@@ -2918,6 +3366,25 @@ function buildHeader() {
         buildRightPane();
       }
     });
+  }
+
+  // Panel mode toggle (対話 / ナレーション)
+  document.querySelectorAll('#panel-group input').forEach(r => {
+    r.checked = (r.value === panelMode);
+    r.addEventListener('change', () => {
+      if (!r.checked) return;
+      panelMode = (r.value === 'narration') ? 'narration' : 'dialog';
+      savePanelModePref();
+      const right = document.getElementById('right');
+      if (right) right.classList.toggle('is-narration', panelMode === 'narration');
+      render();
+      buildRightPane();
+    });
+  });
+  // Initial right pane class sync.
+  {
+    const right = document.getElementById('right');
+    if (right) right.classList.toggle('is-narration', panelMode === 'narration');
   }
 
   const sbBtn = document.getElementById('btn-toggle-single-box');
@@ -3226,6 +3693,36 @@ function buildCSS() {
       }
       lines.push('  }');
     }
+    // Panel 1 (.op-narration) per-VC export. Always emitted (independent of singleBoxMode).
+    if (s.narration) {
+      const nr = s.narration;
+      lines.push('  .op-narration {');
+      lines.push('    width: ' + (Number(nr.width) || 0) + 'px;');
+      if (!nr.heightAuto && nr.height && nr.height > 0) {
+        lines.push('    height: ' + nr.height + 'px;');
+      }
+      if (nr.posMode === 'top') {
+        lines.push('    top: ' + (Number(nr.top) || 0) + 'px;');
+        lines.push('    bottom: auto;');
+      } else if (nr.posMode === 'bottom') {
+        lines.push('    bottom: ' + (Number(nr.bottom) || 0) + 'px;');
+        lines.push('    top: auto;');
+      } else { // free
+        lines.push('    top: ' + (Number(nr.top) || 0) + 'px;');
+        lines.push('    bottom: auto;');
+      }
+      lines.push('    padding: ' + (Number(nr.paddingY) || 0) + 'px ' + (Number(nr.paddingX) || 0) + 'px;');
+      lines.push('    font-size: ' + (Number(nr.fontSize) || 36) + 'px;');
+      lines.push('    text-align: ' + (nr.textAlignH || 'center') + ';');
+      lines.push('    background: ' + hexToRgba(nr.bgColor, nr.bgOpacity) + ';');
+      lines.push('    border-radius: ' + (Number(nr.borderRadius) || 0) + 'px;');
+      if (nr.showShadow) {
+        lines.push('    box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;');
+      } else {
+        lines.push('    box-shadow: none;');
+      }
+      lines.push('  }');
+    }
     lines.push('}');
   });
   return lines.join('\n');
@@ -3338,6 +3835,7 @@ function init() {
   loadBoxGuidesPref();
   loadMirrorModePref();
   loadSingleBoxModePref();
+  loadPanelModePref();
   // Restore dropped images BEFORE state load so migrateFrameIds() recognizes
   // user-added frame ids as valid (otherwise they'd be reset to DEFAULT_FRAME_ID).
   loadDroppedAssets();
