@@ -2948,6 +2948,8 @@ function undoReset() {
     render();
     buildRightPane();
   }
+  _lastUndoOperation = null;
+  _refreshUndoBtn();
   toast('元に戻しました', 'ok');
 }
 
@@ -2971,9 +2973,7 @@ function copyCurrentToVc(targetVc) {
     toast('コピー先がありません', 'err');
     return;
   }
-  const promptMsg = (realTargets.length === 1)
-    ? '現在の VC (' + currentVC + ') の設定を ' + realTargets[0] + ' にコピーします。' + realTargets[0] + ' の現在の設定は上書きされます。よろしいですか？'
-    : '現在の VC (' + currentVC + ') の設定を全 VC (B/C/D) にコピーします。各 VC の設定は上書きされます。よろしいですか？';
+  const promptMsg = '現在の VC (' + currentVC + ') の設定を ' + realTargets.join(', ') + ' にコピーします。各 VC の設定は上書きされます。よろしいですか？';
   if (!confirm(promptMsg)) return;
 
   // Snapshot for undo (deep-clone each target's previous state).
@@ -3009,6 +3009,8 @@ function undoVcCopy() {
   // otherwise the rollback is invisible (other VCs' state changed silently).
   render();
   buildRightPane();
+  _lastUndoOperation = null;
+  _refreshUndoBtn();
   toast('VC コピーを元に戻しました', 'ok');
 }
 
