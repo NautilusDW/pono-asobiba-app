@@ -220,6 +220,9 @@
     max-width: 100%;
     max-height: 100%;
     word-break: break-word;
+    /* Added (2026-05-08): textarea の \n をプレビューでそのまま改行として反映。
+       本番側 (.op-dialogue-single .op-dialogue-text) と挙動を揃える。 */
+    white-space: pre-wrap;
   }
 
   /* Speaker label (話者名チップ). 絶対配置で box の四隅に anchor。
@@ -504,6 +507,8 @@
     max-width: 100%;
     max-height: 100%;
     word-break: break-word;
+    /* Added (2026-05-08): textarea \n を改行表示。本番と揃える。 */
+    white-space: pre-wrap;
   }
 
   /* Single-box guide line variant (dashdot, neutral white). */
@@ -1590,6 +1595,8 @@ function defaultsFor(vc) {
       boxRadius: 16,
       boxColor: '#d8efcf',
       fontSize: isB ? 16 : 18,
+      // 機能 7 (2026-05-08): 行間 (line-height, unitless 1.0〜3.0)。
+      lineHeight: 1.5,
       aspectLock: false,
       aspectLockRatio: 0,
       textAlignH: 'center',
@@ -1619,6 +1626,8 @@ function defaultsFor(vc) {
       boxRadius: 16,
       boxColor: '#fff3d6',
       fontSize: isB ? 16 : 18,
+      // 機能 7 (2026-05-08): 行間 (line-height, unitless 1.0〜3.0)。
+      lineHeight: 1.5,
       aspectLock: false,
       aspectLockRatio: 0,
       textAlignH: 'center',
@@ -1643,6 +1652,8 @@ function defaultsFor(vc) {
       aspectLock: false,
       aspectLockRatio: 0,
       fontSize: singleBoxDefaults.fontSize,
+      // 機能 7 (2026-05-08): 行間 (line-height)。
+      lineHeight: 1.5,
       textAlignH: 'center',
       textAlignV: 'center',
       labelAnchor: labelDefaults.labelAnchor,
@@ -1665,6 +1676,8 @@ function defaultsFor(vc) {
       paddingY: narrationDefaults.padding,
       paddingX: narrationDefaults.paddingX,
       fontSize: narrationDefaults.fontSize,
+      // 機能 7 (2026-05-08): 行間 (line-height)。本番 .op-narration の既定 1.55 に揃える。
+      lineHeight: 1.55,
       textAlignH: 'center',
       textAlignV: 'center',
       bgMode: 'css', // 'css' | 'image'
@@ -1749,6 +1762,15 @@ function migrateFrameIds(parsed) {
       // Heuristic: wider boxes (>= 480) get 18, smaller (B-class) get 16.
       side.fontSize = (Number(side.boxW) >= 480) ? 18 : 16;
     }
+    // 機能 7 (2026-05-08): 行間 (line-height) — legacy state では欠如する。
+    // 範囲 1.0〜3.0 にクランプ。既定 1.5。
+    if (typeof side.lineHeight !== 'number' || !Number.isFinite(side.lineHeight) || side.lineHeight <= 0) {
+      side.lineHeight = 1.5;
+    } else if (side.lineHeight < 1.0) {
+      side.lineHeight = 1.0;
+    } else if (side.lineHeight > 3.0) {
+      side.lineHeight = 3.0;
+    }
     // 機能 1/2: テキスト整列 + ラベル位置 既定値 (legacy state では欠如する)
     if (side.textAlignH !== 'left' && side.textAlignH !== 'center' && side.textAlignH !== 'right') {
       side.textAlignH = 'center';
@@ -1792,6 +1814,8 @@ function migrateFrameIds(parsed) {
       aspectLock: false,
       aspectLockRatio: 0,
       fontSize: sb.fontSize,
+      // 機能 7 (2026-05-08): 行間 既定。
+      lineHeight: 1.5,
       textAlignH: 'center',
       textAlignV: 'center',
       labelAnchor: 'bl',
@@ -1817,6 +1841,14 @@ function migrateFrameIds(parsed) {
     }
     if (typeof sb.fontSize !== 'number' || !Number.isFinite(sb.fontSize) || sb.fontSize <= 0) {
       sb.fontSize = sb.boxW >= 1000 ? 18 : 16;
+    }
+    // 機能 7 (2026-05-08): 行間 (line-height) — legacy state では欠如する。
+    if (typeof sb.lineHeight !== 'number' || !Number.isFinite(sb.lineHeight) || sb.lineHeight <= 0) {
+      sb.lineHeight = 1.5;
+    } else if (sb.lineHeight < 1.0) {
+      sb.lineHeight = 1.0;
+    } else if (sb.lineHeight > 3.0) {
+      sb.lineHeight = 3.0;
     }
     if (sb.speakerSrc !== 'pono' && sb.speakerSrc !== 'hakase') sb.speakerSrc = 'pono';
     // 機能 1/2: テキスト整列 + ラベル位置 既定値 (legacy state では欠如する)
@@ -1860,6 +1892,8 @@ function migrateFrameIds(parsed) {
       paddingY: nd.paddingY,
       paddingX: nd.paddingX,
       fontSize: nd.fontSize,
+      // 機能 7 (2026-05-08): 行間 既定 (本番 .op-narration の 1.55 と揃える)。
+      lineHeight: 1.55,
       textAlignH: 'center',
       textAlignV: 'center',
       bgMode: 'css',
@@ -1883,6 +1917,14 @@ function migrateFrameIds(parsed) {
     if (typeof nr.paddingY !== 'number' || !Number.isFinite(nr.paddingY) || nr.paddingY < 0) nr.paddingY = 24;
     if (typeof nr.paddingX !== 'number' || !Number.isFinite(nr.paddingX) || nr.paddingX < 0) nr.paddingX = 32;
     if (typeof nr.fontSize !== 'number' || !Number.isFinite(nr.fontSize) || nr.fontSize <= 0) nr.fontSize = 36;
+    // 機能 7 (2026-05-08): 行間 (line-height) — legacy state では欠如する。
+    if (typeof nr.lineHeight !== 'number' || !Number.isFinite(nr.lineHeight) || nr.lineHeight <= 0) {
+      nr.lineHeight = 1.55;
+    } else if (nr.lineHeight < 1.0) {
+      nr.lineHeight = 1.0;
+    } else if (nr.lineHeight > 3.0) {
+      nr.lineHeight = 3.0;
+    }
     if (nr.textAlignH !== 'left' && nr.textAlignH !== 'center' && nr.textAlignH !== 'right') nr.textAlignH = 'center';
     if (nr.textAlignV !== 'top' && nr.textAlignV !== 'center' && nr.textAlignV !== 'bottom') nr.textAlignV = 'center';
     if (typeof nr.bgColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(nr.bgColor)) nr.bgColor = '#fffdf4';
@@ -2512,6 +2554,16 @@ function applySideToDom(sideKey) {
   } else {
     txt.style.fontSize = '';
   }
+  // 機能 7 (2026-05-08): 行間 (line-height) + textarea \n をそのまま改行表示。
+  // unitless (例: '1.5') で書き込み、CSS 側ベースルールに上書きを当てる。
+  if (typeof s.lineHeight === 'number' && Number.isFinite(s.lineHeight) && s.lineHeight > 0) {
+    txt.style.lineHeight = String(s.lineHeight);
+  } else {
+    txt.style.lineHeight = '';
+  }
+  // 保険: ベース CSS で pre-wrap を入れているが、インライン書き込みを上書きされた
+  // 場合のフォールバック (例えば過去の DOM 操作で white-space が消えたケース)。
+  txt.style.whiteSpace = 'pre-wrap';
   // 機能 2: ラベル位置 + 表示テキスト
   if (lbl) {
     lbl.textContent = sideKey === 'pono' ? 'ポノ' : 'はかせ';
@@ -2562,6 +2614,14 @@ function applyNarrationToDom() {
   }
   el.style.padding = (Number(nr.paddingY) || 0) + 'px ' + (Number(nr.paddingX) || 0) + 'px';
   el.style.fontSize = (Number(nr.fontSize) || 36) + 'px';
+  // 機能 7 (2026-05-08): 行間 (line-height)。
+  if (typeof nr.lineHeight === 'number' && Number.isFinite(nr.lineHeight) && nr.lineHeight > 0) {
+    el.style.lineHeight = String(nr.lineHeight);
+  } else {
+    el.style.lineHeight = '';
+  }
+  // 保険: 既存ルールでベース pre-wrap が入っているが、インライン保証も入れる。
+  el.style.whiteSpace = 'pre-wrap';
   el.style.textAlign = nr.textAlignH || 'center';
   el.style.display = (panelMode === 'narration') ? 'flex' : 'none';
   el.style.alignItems = mapTextAlignV(nr.textAlignV);
@@ -2633,6 +2693,13 @@ function applySingleBoxToDom() {
   } else {
     txt.style.fontSize = '';
   }
+  // 機能 7 (2026-05-08): 行間 (line-height) + textarea \n をそのまま改行表示。
+  if (typeof sb.lineHeight === 'number' && Number.isFinite(sb.lineHeight) && sb.lineHeight > 0) {
+    txt.style.lineHeight = String(sb.lineHeight);
+  } else {
+    txt.style.lineHeight = '';
+  }
+  txt.style.whiteSpace = 'pre-wrap';
   // 機能 2: ラベル位置 + 表示テキスト (speakerSrc に応じて切替)
   if (lbl) {
     lbl.textContent = srcSide === 'hakase' ? 'はかせ' : 'ポノ';
@@ -3616,6 +3683,8 @@ function buildSingleBoxSection() {
     sec.appendChild(makeSingleBoxColor('背景色', 'boxColor'));
   }
   sec.appendChild(makeSingleBoxRange('フォントサイズ', 12, 96, 1, 'fontSize'));
+  // 機能 7 (2026-05-08): 行間 (line-height) range。範囲 1.0〜3.0 step 0.1。
+  sec.appendChild(makeSingleBoxRange('行間 (line-height)', 1.0, 3.0, 0.1, 'lineHeight'));
   // 機能 1: テキスト整列 (横 + 縦)
   sec.appendChild(makeSingleBoxRadio('テキスト横', 'textAlignH', [
     { value: 'left', text: '左' },
@@ -3969,6 +4038,9 @@ function buildNarrationSection() {
 
   // フォント
   sec.appendChild(makeNarrRange('フォントサイズ', 16, 80, 1, 'fontSize'));
+  // 機能 7 (2026-05-08): 行間 (line-height) range。範囲 1.0〜3.0 step 0.1。
+  // makeNarrRangeFloat は値を整数化しない (paddingY/X 等の int 系ではなく opacity 系を踏襲)。
+  sec.appendChild(makeNarrRangeFloat('行間 (line-height)', 1.0, 3.0, 0.1, 'lineHeight'));
   sec.appendChild(makeNarrRadio('テキスト横', 'textAlignH', [
     { value: 'left', text: '左' },
     { value: 'center', text: '中' },
@@ -4586,6 +4658,8 @@ function buildRightPane() {
     boxGroup.appendChild(makeColor('背景色', 'boxColor', sideKey));
   }
   boxGroup.appendChild(makeRange('フォントサイズ', 12, 96, 1, 'fontSize', sideKey));
+  // 機能 7 (2026-05-08): 行間 (line-height) range。範囲 1.0〜3.0 step 0.1。
+  boxGroup.appendChild(makeRange('行間 (line-height)', 1.0, 3.0, 0.1, 'lineHeight', sideKey));
   // 機能 1: テキスト整列 (横 + 縦)
   boxGroup.appendChild(makeRadio('テキスト横', 'textAlignH', sideKey, [
     { value: 'left', text: '左' },
@@ -4983,11 +5057,16 @@ function buildCSS() {
       }
       lines.push('  }');
       // 機能 1: 複数行時の各行整列 + フォントサイズ
+      // 機能 7 (2026-05-08): 行間 (line-height, unitless) + textarea \n をそのまま改行表示。
       lines.push('  .op-side-' + sideKey + ' .op-dialogue-text {');
       lines.push('    text-align: ' + (ss.textAlignH || 'center') + ';');
       if (typeof ss.fontSize === 'number' && Number.isFinite(ss.fontSize) && ss.fontSize > 0) {
         lines.push('    font-size: ' + ss.fontSize + 'px;');
       }
+      if (typeof ss.lineHeight === 'number' && Number.isFinite(ss.lineHeight) && ss.lineHeight > 0) {
+        lines.push('    line-height: ' + ss.lineHeight + ';');
+      }
+      lines.push('    white-space: pre-wrap;');
       lines.push('  }');
       // 機能 2: ラベル位置
       lines.push('  .op-side-' + sideKey + ' .op-dialogue-label {');
@@ -5022,11 +5101,16 @@ function buildCSS() {
       }
       lines.push('  }');
       // 機能 1: 複数行時の各行整列 + フォントサイズ
+      // 機能 7 (2026-05-08): 行間 (line-height, unitless) + textarea \n をそのまま改行表示。
       lines.push('  .op-dialogue-single .op-dialogue-text {');
       lines.push('    text-align: ' + (sb.textAlignH || 'center') + ';');
       if (typeof sb.fontSize === 'number' && Number.isFinite(sb.fontSize) && sb.fontSize > 0) {
         lines.push('    font-size: ' + sb.fontSize + 'px;');
       }
+      if (typeof sb.lineHeight === 'number' && Number.isFinite(sb.lineHeight) && sb.lineHeight > 0) {
+        lines.push('    line-height: ' + sb.lineHeight + ';');
+      }
+      lines.push('    white-space: pre-wrap;');
       lines.push('  }');
       // 機能 2: ラベル位置
       lines.push('  .op-dialogue-single .op-dialogue-label {');
@@ -5060,6 +5144,11 @@ function buildCSS() {
       }
       lines.push('    padding: ' + (Number(nr.paddingY) || 0) + 'px ' + (Number(nr.paddingX) || 0) + 'px;');
       lines.push('    font-size: ' + (Number(nr.fontSize) || 36) + 'px;');
+      // 機能 7 (2026-05-08): 行間 (line-height, unitless) + textarea \n をそのまま改行表示。
+      if (typeof nr.lineHeight === 'number' && Number.isFinite(nr.lineHeight) && nr.lineHeight > 0) {
+        lines.push('    line-height: ' + nr.lineHeight + ';');
+      }
+      lines.push('    white-space: pre-wrap;');
       lines.push('    text-align: ' + (nr.textAlignH || 'center') + ';');
       // 背景: bgMode によって 画像フレーム or CSS 単色 を出力。
       // ドロップ画像 (data: URL) は対話 box と同じく background-image: none + 警告コメント。
