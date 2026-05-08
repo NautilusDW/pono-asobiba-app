@@ -995,6 +995,29 @@ body.sheet-on .hdr-right .ctrl-btn {
   box-shadow: 0 4px 0 rgba(120, 83, 20, 0.32), 0 6px 12px rgba(120, 83, 20, 0.18);
 }
 .next-q-btn:disabled { opacity: 0.65; cursor: default; }
+
+/* ─────────────────────────────────────────────────────────
+   Staged reveal (typewriter -> illustration -> choices)
+   loadQuestion で .q-stage-pending を付け、 _runPlateAndType が
+   tape の進行に合わせて .q-stage-revealed へ切替える。
+   - 挿絵 (.emoji-display / .emoji-main-img) … typewriter 50% で fade-in
+   - 4 択 (#answer-panel) … typewriter 完了後に fade-in
+   ───────────────────────────────────────────────────────── */
+.emoji-display.q-stage-pending,
+.emoji-main-img.q-stage-pending,
+#answer-panel.q-stage-pending {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease-out;
+}
+.emoji-display.q-stage-revealed,
+.emoji-main-img.q-stage-revealed,
+#answer-panel.q-stage-revealed {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.4s ease-out;
+}
+
 .trivia-display { position: relative; display: flex; justify-content: center; align-items: flex-start; }
 .trivia-pono-wrap {
   width: 380px;
@@ -2336,6 +2359,10 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   word-break: break-word;
   /* Fix 5c-2: エディタ側 (line 464-473) と同じく複数行テキストも中央寄せ。 */
   text-align: center;
+  /* Added (2026-05-08): シナリオ textarea で入力した \n をそのまま改行として
+     反映。 _opTypeInto の `el.textContent += c` で \n が入った時点で
+     `pre-wrap` が改行 + 折り返しを両立してくれる。 */
+  white-space: pre-wrap;
 }
 .op-narration {
   /* Fix (2026-05-07, narration not visible on non-4:3): font-size を `vw` ベース
@@ -2369,6 +2396,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-narration.hidden { display: none; }
 .op-narration p { margin: 0.25em 0; }
 .op-narration p.emphasis { color: #c0392b; font-weight: 700; }
+/* Added (2026-05-08): ナレーションも textarea \n をそのまま改行として反映。 */
+.op-narration { white-space: pre-wrap; }
 .op-narration.seg-show { opacity: 1; }
 .op-narration.seg-hide { opacity: 0; }
 /* per-side Box の旧ルールは Single Box モード採用に伴い廃止 (DOM からも削除済み)。
@@ -4086,7 +4115,23 @@ function renderChoices(q) {
 function loadQuestion(q) {
   currentQ = q;
   locked = false;
-  document.getElementById('q-text').textContent = toFullWidth(q.q);
+  // 前問題から残っている staged-reveal クラスを掃除する (illust / 答えパネル)。
+  // 直後に renderChoices / stage 描画が新規ノードを作るので revealed は付け直し。
+  document.querySelectorAll('.q-stage-revealed, .q-stage-pending').forEach(function(el) {
+    el.classList.remove('q-stage-revealed');
+    el.classList.remove('q-stage-pending');
+  });
+  // 問題文は typewriter (typeQuestionText) で後から流し込む。
+  // ここでは pending として stash しておき、 まずは空文字で描画する。
+  // 呼び出し側 (initGame / _doNextQuestion / _qzDebugGoto) が plate 後に
+  // typeQuestionText を呼ぶ。 何らかの理由で typewriter が走らなかった場合の
+  // 救済として、 数フレーム後に pending が残っていれば即時表示する。
+  const _qTextEl = document.getElementById('q-text');
+  if (_qTextEl) {
+    const _fullText = toFullWidth(q.q || '');
+    _qTextEl.dataset.pendingText = _fullText;
+    _qTextEl.textContent = '';
+  }
   const stage = document.getElementById('stage-area');
   stage.dataset.qtype = q.type;
   stage.innerHTML = '';
@@ -4106,6 +4151,15 @@ function loadQuestion(q) {
     startStagePono();
   }
   renderChoices(q);
+  // Staged reveal: 挿絵 (.emoji-display) と 4択 (#answer-panel) を pending に
+  // 落としておき、 _runPlateAndType が typewriter の進行に合わせて revealed
+  // へ切替える。 typewriter が走らないケースの救済として、 短い fallback で
+  // pending が残っていれば自動 reveal する (下の setTimeout)。
+  document.querySelectorAll('#stage-area .emoji-display').forEach(function(el) {
+    el.classList.add('q-stage-pending');
+  });
+  const _ansPanel = document.getElementById('answer-panel');
+  if (_ansPanel) _ansPanel.classList.add('q-stage-pending');
   updateHUD();
   setupNarration(q);
   showProblemDialogue(q);
@@ -4303,7 +4357,7 @@ function _doNextQuestion() {
     if (document.body.classList.contains('layout-editor-on')) {
       questionIdx = 0;
       loadQuestion(playlist[0]);
-      try { playQuestionNumberPlate(0); } catch (e) {}
+      try { _runPlateAndType(0); } catch (e) {}
       try { console.log('[quizland editor] 全問完走 — 先頭に戻ります'); } catch (_) {}
       return;
     }
@@ -4311,7 +4365,7 @@ function _doNextQuestion() {
     return;
   }
   loadQuestion(playlist[questionIdx]);
-  try { playQuestionNumberPlate(questionIdx); } catch (e) {}
+  try { _runPlateAndType(questionIdx); } catch (e) {}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4365,7 +4419,7 @@ function initGame() {
     return;
   }
   loadQuestion(playlist[0]);
-  try { playQuestionNumberPlate(0); } catch (e) {}
+  try { _runPlateAndType(0); } catch (e) {}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4503,6 +4557,125 @@ function _opTypeInto(elId, text, presetName) {
     }
     tick();
   });
+}
+
+// ---- Question-text typewriter (in-game, silent / no babble) ----
+// 問題文を 1 文字ずつ流し込む。 OP cinematic の _opTypeInto と独立した
+// token (_qTypingToken) を持つ。 タップでスキップすると即時最後まで埋める。
+let _qTypingToken = 0;
+function typeQuestionText(el, text) {
+  return new Promise(function(resolve) {
+    if (!el) { resolve(); return; }
+    el.textContent = '';
+    if (!text) { resolve(); return; }
+    _qTypingToken++;
+    const myToken = _qTypingToken;
+    let i = 0;
+    function tick() {
+      // 別の問題に切り替わった / タップでスキップされた場合は中断
+      if (myToken !== _qTypingToken) { resolve(); return; }
+      if (i >= text.length) { resolve(); return; }
+      el.textContent += text.charAt(i++);
+      setTimeout(tick, 70);
+    }
+    tick();
+  });
+}
+
+// 文字送り中に画面のどこかをタップしたら最後まで一気に埋める。
+// 一度だけ wire すれば済むので idempotent guard を付ける。
+// staged reveal (挿絵 / 4択) も同時に即時 revealed へ昇格させる。
+let _qTypingSkipWired = false;
+function _revealAllPendingStages() {
+  document.querySelectorAll('.q-stage-pending').forEach(function(el) {
+    el.classList.remove('q-stage-pending');
+    el.classList.add('q-stage-revealed');
+  });
+}
+function _wireQuestionTypingSkip() {
+  if (_qTypingSkipWired) return;
+  _qTypingSkipWired = true;
+  document.addEventListener('click', function() {
+    const el = document.getElementById('q-text');
+    if (!el) return;
+    const pending = el.dataset.pendingText;
+    if (pending == null) return;          // 文字送り中ではない
+    if (el.textContent !== pending) {
+      _qTypingToken++;                    // 進行中の tick を無効化
+      el.textContent = pending;           // 残り文字を即時補完
+    }
+    // 挿絵 / 4択 も同時に reveal (タップでスキップ → 全部見せる)
+    _revealAllPendingStages();
+  }, true); // capture: 他リスナより先に拾う
+}
+
+// Plate (Q1-5) 完了後に typewriter を起動する共通ヘルパ。
+// initGame / _doNextQuestion / _qzDebugGoto から fire-and-forget で呼ぶ。
+//
+// staged reveal の流れ:
+//   1. plate (Q1-5 のみ) → fade out
+//   2. typewriter 開始 (70ms / 文字)
+//   3. ~50% で 挿絵 (.emoji-display) を fade in
+//   4. typewriter 完了
+//   5. 4択 (#answer-panel) を fade in
+// タップでスキップされた場合は _wireQuestionTypingSkip 内で全 stage を即時 reveal。
+async function _runPlateAndType(qIdx) {
+  _wireQuestionTypingSkip();
+  try {
+    await playQuestionNumberPlate(qIdx);   // Q1-5 のみ ~1.6s 待機 / Q6+ は即 return
+  } catch (e) {}
+  // Q6+ で plate 無し時に問題 UI が描画完了する余裕を少しだけ作る
+  if (qIdx >= 5) {
+    await new Promise(function(r) { setTimeout(r, 200); });
+  }
+  const el = document.getElementById('q-text');
+  if (!el) return;
+  const text = el.dataset.pendingText;
+  if (text == null) return;
+
+  // 挿絵 / 4択 ハンドル (staged reveal 用)
+  const _illustEls = Array.prototype.slice.call(
+    document.querySelectorAll('#stage-area .emoji-display.q-stage-pending')
+  );
+  const _ansPanel = document.getElementById('answer-panel');
+
+  // typewriter ~50% のタイミングで挿絵を fade in (タップ skip 済みなら no-op)
+  let _illustTimer = 0;
+  if (_illustEls.length) {
+    const halfwayMs = Math.max(0, Math.floor((text.length / 2) * 70));
+    _illustTimer = setTimeout(function() {
+      _illustEls.forEach(function(elIll) {
+        if (elIll.classList.contains('q-stage-pending')) {
+          elIll.classList.remove('q-stage-pending');
+          elIll.classList.add('q-stage-revealed');
+        }
+      });
+    }, halfwayMs);
+  }
+
+  try {
+    // plate 中のタップで既に skip handler が pending を全部埋めていたら
+    // 再度先頭から打ち直すのは見栄えが悪いので skip。
+    if (el.textContent === text) return;
+    await typeQuestionText(el, text);
+  } finally {
+    // 完了マーカーとして pending を消す (tap-skip 判定にも使う)
+    delete el.dataset.pendingText;
+    // 念のため: 挿絵がまだ pending なら reveal (短い問題文で halfway timer が
+    // 既に発火済みのはずだが、 タップ skip 経路と整合させる)
+    if (_illustTimer) clearTimeout(_illustTimer);
+    _illustEls.forEach(function(elIll) {
+      if (elIll.classList.contains('q-stage-pending')) {
+        elIll.classList.remove('q-stage-pending');
+        elIll.classList.add('q-stage-revealed');
+      }
+    });
+    // 4択 fade in (typewriter 完了後)
+    if (_ansPanel && _ansPanel.classList.contains('q-stage-pending')) {
+      _ansPanel.classList.remove('q-stage-pending');
+      _ansPanel.classList.add('q-stage-revealed');
+    }
+  }
 }
 
 async function playOpeningCinematic() {
@@ -5120,7 +5293,7 @@ function _qzDebugGoto(targetIdx) {
   questionIdx = idx;
   locked = false;
   loadQuestion(playlist[questionIdx]);
-  try { playQuestionNumberPlate(questionIdx); } catch (e) {}
+  try { _runPlateAndType(questionIdx); } catch (e) {}
 }
 // ═══════════════════════════════════════════════════════════
 // Playtest note system (?debug=all 専用)
@@ -5656,6 +5829,7 @@ function _qzInitFullPlaylist() {
     questionIdx = 0;
     if (playlist.length > 0) {
       try { loadQuestion(playlist[0]); } catch (_) {}
+      try { _runPlateAndType(0); } catch (_) {}
     }
   }
 }
