@@ -119,7 +119,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','たまごがた'] },
     { level:2, type:'shape_name', shape:'triangle',  q:'このかたちの かどは なんこ？', answer:1, choices:['2こ','3こ','4こ','5こ'] },
     { level:2, type:'shape_name', shape:'square',    q:'このかたちの かどは なんこ？', answer:2, choices:['3こ','5こ','4こ','2こ'] },
-    { level:2, type:'shape_name', shape:'heart',     q:'ハートの かどは いくつ？', answer:0, choices:['1こ','2こ','3こ','4こ'] },
+    { level:2, type:'shape_name', shape:'leaf', q:'これは なんの かたち？', answer:0, choices:['はっぱ','まる','ほし','ハート'], detail:'はっぱの かたち！' },
     { level:2, type:'shape_name', shape:'star',      q:'ほしと まるでは どちらが かどが おおい？', answer:0, choices:['ほし','まる','おなじ','どちらも かどが ない'] },
 
     // Level 3 (性質・知識問題)
@@ -128,9 +128,9 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
     { level:3, type:'shape_name', shape:'diamond',   q:'ひしがたの かどは ぜんぶで いくつ？', answer:1, choices:['3こ','4こ','5こ','6こ'] },
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
-    { level:3, type:'shape_name', shape:'circle',    q:'ピザを はんぶんに きると どんな かたちに なる？', answer:0, choices:['さんかく','まる','しかく','たまごがた'] },
-    { level:3, type:'shape_name', shape:'circle',    q:'とけいの かたちは ふつう なに？', answer:0, choices:['まる','しかく','さんかく','ほし'] },
-    { level:3, type:'shape_name', shape:'circle',    q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
+    { level:3, type:'shape_name', shape:'circle', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:['はんぶんの まる','まんまるい','さんかく','しかく'], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
+    { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', q:'ノートの かたちは？', answer:0, choices:['しかく','まる','さんかく','ほし'], detail:'ノートは しかくい かたち！' },
+    { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
   ],
 
   // ── たべもの / のりもの は「ずかん (wordmatch)」へ移管済み (2026-04-28) ──
@@ -244,8 +244,9 @@ const QUIZLAND_QUESTIONS = {
       img_word:'opposite/akeru.png', img_answer:'opposite/shimeru.png' },
     { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','いい','わるい','おもしろい'],
       img_word:'opposite/suki.png', img_answer:'opposite/kirai.png' },
-    { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の はんたいは？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
-      img_word:'opposite/yoru.png', img_answer:'opposite/asa.png' },
+    { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の つぎは どれ？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
+      img_word:'opposite/yoru.png', img_answer:'opposite/asa.png',
+      detail:'よるの つぎに あさが くるよ！' },
     { level:1, type:'opposite', category:'opposite', word:'たくさん', q:'「たくさん」の はんたいは？', answer:3, choices:['おおきい','おおい','はやい','すこし'],
       img_word:'opposite/takusan.png', img_answer:'opposite/sukoshi.png' },
 
@@ -293,7 +294,8 @@ const QUIZLAND_QUESTIONS = {
   trivia: [
     // Level 1
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_ripe_banana.png',
+      img:'stage_trivia_unripe_banana.png',
+      img_answer:'stage_trivia_ripe_banana.png',
       q:'うれた バナナは なにいろ？',
       answer:1, choices:['あか','きいろ','あお','むらさき'] ,
       detail:'バナナは みどりから きいろに なって、あまく おいしく なるよ！'},
@@ -328,7 +330,8 @@ const QUIZLAND_QUESTIONS = {
       answer:0, choices:['あさ','よる','まよなか','ゆうがた'] ,
       detail:'あさに おひさまが のぼって、よるは おつきさまが でてくるよ！'},
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_rabbit.png',
+      img:'stage_trivia_rabbit_no_ears_face_crop.png',
+      img_answer:'stage_trivia_rabbit.png',
       q:'うさぎの みみは どんな かたち？',
       answer:1, choices:['まるくて みじかい','ながくて たっている','まるい ちいさい','とがって ちいさい'] ,
       detail:'うさぎは ながい みみで とおくの おとを よく きけるんだ！'},
@@ -369,7 +372,8 @@ const QUIZLAND_QUESTIONS = {
       answer:1, choices:['6ぽん','8ぽん','10ぽん','4ほん'] ,
       detail:'8ぼんの うでで えものを つかまえたり あるいたりするよ！'},
     { level:2, type:'trivia', category:'trivia',
-      img:'stage_trivia_running_cheetah.png',
+      img:'stage_trivia_speed_dust_side_pass.png',
+      img_answer:'stage_trivia_running_cheetah.png',
       q:'せかいで いちばん はやい りくの どうぶつは？',
       answer:2, choices:['ライオン','シマウマ','チーター','キリン'] ,
       detail:'チーターは じそく 100キロ いじょうで はしれるよ！'},
@@ -396,11 +400,11 @@ const QUIZLAND_QUESTIONS = {
       answer:2, choices:['バナナ','たけのこ','ユーカリの は','りんご'] ,
       detail:'ユーカリの はは どくが あるけど、コアラだけ たべられるよ！'},
     { level:2, type:'trivia', category:'trivia',
-      img:'kirin.png',
-      q:'キリンが 1日に ねむる じかんは？',
-      hint:'とても みじかいよ！',
-      answer:1, choices:['1じかんくらい','3じかんくらい','5じかんくらい','12じかんくらい'] ,
-      detail:'やせいの キリンは てきに おそわれないよう みじかく ねるよ！'},
+      q:'キリンの くびの ほねは いくつ？',
+      answer:0,
+      choices:['7こ','15こ','20こ','5こ'],
+      hint:'にんげんと おなじ かずだよ！',
+      detail:'キリンも にんげんも、くびの ほねは 7こ。 にんげんの ほねを ながくしたのが キリンの くび！'},
 
     // Level 3
     { level:3, type:'trivia', category:'trivia',
@@ -516,7 +520,8 @@ const QUIZLAND_QUESTIONS = {
       answer:0, choices:['しんぞう','のう','ひふ','い'] ,
       detail:'しんぞうは どきどき と うごいて ち を おくっているよ！'},
     { level:2, type:'trivia', category:'body',
-      img:'stage_body_chewing_teeth.png',
+      img:'stage_body_munching.png',
+      img_answer:'stage_body_chewing_teeth.png',
       q:'たべものを かんで こなごなに するのは どこ？',
       answer:0, choices:['は','みみ','め','かみのけ'] ,
       detail:'は で たべものを かんでから のみこむと、おなかで しょうかしやすいよ！'},
@@ -533,12 +538,13 @@ const QUIZLAND_QUESTIONS = {
       answer:0, choices:['やすんでいる','たべている','はしっている','うごけない'] ,
       detail:'ねている あいだに からだは げんきを ためなおして、おおきく なっていくよ！'},
     { level:3, type:'trivia', category:'body',
-      // TODO(2026-05-07): 画像 stage_body_baby_teeth.png 発注中 (codex-followup-baby-teeth.md)。
-      // 配置完了後に img を 'stage_body_baby_teeth.png' に差し替える。 暫定で旧画像を流用 (broken image 回避)。
-      img:'stage_body_teeth_bone_compare.png',
-      q:'うまれた ばかりの あかちゃんに、 はは ある？',
-      answer:1, choices:['まえばだけ ある','ない','ぜんぶ ある','したのほうだけ ある'],
-      detail:'あかちゃんは はが ない じょうたいで うまれて、 6か月ぐらいで はえはじめるよ。 さいしょは したの まえばから！'},
+      // TODO(2026-05-07): 画像 stage_body_teeth_replacement.png 発注中。
+      // 配置完了後に img を 'stage_body_teeth_replacement.png' に差し替える。
+      q:'ぬけた はの あとには あたらしい はが はえる？',
+      answer:0,
+      choices:['はえる','はえない','ときどき はえる','わからない'],
+      hint:'こどもの はは おとなの はに かわるよ！',
+      detail:'こどもの はが ぬけても、あたらしい おとなの はが はえてくるよ！ しょうがっこうの あいだに ぜんぶ かわるよ。'},
     { level:3, type:'trivia', category:'body',
       img:'stage_body_baby_adult_bones.png',
       q:'あかちゃんの ほねは おとなより おおい？ すくない？',
