@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-08 - [batch:14-quizland-hard-spoiler-raw] Codex: `tmp/quizland-trivia-audit/CODEX-ORDER-3.md` を受領。Quizland HARD spoiler-fix 用 stage raw 19 枚の生成に着手。HANDOFF / git log / assets / tmp 検索で同名成果物無しと確認済。AGENTS 現行方針により本配置ではなく `tmp/alpha_pending/14/` に raw 納品する。 (by Codex)
 - 2026-05-07 - [batch:12-quizland-trivia-stage-raw] Codex: `tmp/quizland-trivia-audit/CODEX-ORDER.md` を受領。追加ステージ絵 6 枚 (`stage_shape_soccerball` / `stage_trivia_unripe_banana` / `stage_trivia_rabbit_no_ears` / `stage_trivia_speed_dust` / `stage_shape_notebook` / `stage_body_munching`) の raw 生成に着手。HANDOFF / git log / assets / tmp 検索で同名成果物無しと確認済。AGENTS 現行方針により本配置ではなく `tmp/alpha_pending/12/` に raw 納品する。 (by Codex)
 - 2026-05-07 - [batch:12-quizland-trivia-stage-raw] Codex: user 追加指示を反映。最終的に縮小してフレーム内へ収めるため、画面端まできれいに描く full-bleed 背景は禁止。白背景上の水彩ビネットとして、外周を淡く不規則・ぼんやりさせ、白削除マスクを作りやすい raw にする。旧プロンプトで走った可能性がある soccerball は納品対象外にして新方針で再生成する。 (by Codex)
 - 2026-05-07 - [batch:12-quizland-trivia-stage-raw] Codex: GPT Image 2 で追加ステージ絵 6 枚を `tmp/alpha_pending/12/` に raw 納品完了。全て 1672x941 PNG / alpha なし / 3MB 未満。納品: `stage_shape_soccerball.png`, `stage_trivia_unripe_banana.png`, `stage_trivia_rabbit_no_ears.png`, `stage_trivia_speed_dust.png`, `stage_shape_notebook.png`, `stage_body_munching.png`。白背景マスク前提のぼんやり外周ビネットに修正済。目視QA: 緑バナナのみ / うさぎ耳なし / 砂煙に動物なし / munching は口閉じ・歯なし PASS。 (by Codex)

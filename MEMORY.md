@@ -102,6 +102,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T02:47:03Z - Quizland OP layout: 新Export CSS統合 (B/C/D の @media 各 .op-dialogue-single に display:flex centering + .op-dialogue-text に text-align:center/font-size、.op-dialogue-label に top/bottom/left/right + font-size を追加。C/D の background-image を実画像 URL レイヤー 0_20260508-081922_001 に置換、注釈コメント削除)、CACHE_VERSION 841→842
+- **タスク**: Quizland OP layout: 新Export CSS統合 (B/C/D の @media 各 .op-dialogue-single に display:flex centering + .op-dialogue-text に text-align:center/font-size、.op-dialogue-label に top/bottom/left/right + font-size を追加。C/D の background-image を実画像 URL レイヤー 0_20260508-081922_001 に置換、注釈コメント削除)、CACHE_VERSION 841→842
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 140
+- **エラー数**: 9
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 26, "Agent": 45, "Bash": 55, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 5}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-08T02:38:29Z - op-layout-editor: ラベル文字サイズ調整機能 (labelFontSize) を追加 (per-side / Single Box, range 12-60, default 22, mirror copy, migration, export CSS)
 - **タスク**: op-layout-editor: ラベル文字サイズ調整機能 (labelFontSize) を追加 (per-side / Single Box, range 12-60, default 22, mirror copy, migration, export CSS)
 - **結果**: 成功
@@ -203,19 +216,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 22, "Agent": 30, "Bash": 33, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 4}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T00:21:20Z - Quizland OP本番統合の致命的レイアウト不整合修正: .op-content aspect-ratio 4/3固定→VC別(B 4/3 / C 16/9 / D 64/27)、.op-sides display:block→flex、.op-side inset:0→flex:1で左右50/50分割、.op-char-slot余分プロパティ削除、CACHE_VERSION 836→837
-- **タスク**: Quizland OP本番統合の致命的レイアウト不整合修正: .op-content aspect-ratio 4/3固定→VC別(B 4/3 / C 16/9 / D 64/27)、.op-sides display:block→flex、.op-side inset:0→flex:1で左右50/50分割、.op-char-slot余分プロパティ削除、CACHE_VERSION 836→837
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 96
-- **エラー数**: 7
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 22, "Agent": 29, "Bash": 32, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 4}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
