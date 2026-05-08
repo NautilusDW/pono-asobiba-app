@@ -207,6 +207,22 @@
     word-break: break-word;
   }
 
+  /* Speaker label (話者名チップ). 絶対配置で box の四隅に anchor。
+     position プロパティ (top/bottom/left/right) は applySideToDom /
+     applySingleBoxToDom でインラインスタイルとして設定する。 */
+  .op-dialogue-label {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.2;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2;
+  }
+
   /* 16:9 safe-area overlay (editor-only, NOT exported in buildCSS) */
   /* D viewport (2560x1080, 21:9) only — shows where 16:9 (1920x1080) sits in the center.
      Left/right 320px shaded red = areas visible only on 21:9. Editor visual aid only. */
@@ -684,6 +700,7 @@
               <img id="img-pono" alt="">
             </div>
             <div class="op-dialogue op-dialogue-pono" id="box-pono">
+              <div class="op-dialogue-label" id="label-pono">ポノ</div>
               <div class="op-dialogue-text" id="text-pono"></div>
             </div>
           </div>
@@ -692,12 +709,14 @@
               <img id="img-hakase" src="../assets/images/quizland/owl_professor_guide.webp" alt="">
             </div>
             <div class="op-dialogue op-dialogue-hakase" id="box-hakase">
+              <div class="op-dialogue-label" id="label-hakase">はかせ</div>
               <div class="op-dialogue-text" id="text-hakase"></div>
             </div>
           </div>
         </div>
         <div class="single-box-wrapper" id="single-box-wrapper">
           <div class="op-dialogue op-dialogue-single" id="box-single">
+            <div class="op-dialogue-label" id="label-single">ポノ</div>
             <div class="op-dialogue-text" id="text-single"></div>
           </div>
         </div>
@@ -978,9 +997,13 @@ const MIRROR_COPY_KEYS = [
   'boxImage', 'boxMode', 'boxColor',
   'aspectLock', 'aspectLockRatio',
   'slotW', 'slotH', 'slotOffsetY', 'slotAspect', 'objectPosition',
-  'fontSize'
+  'fontSize',
+  // 機能 1/2: テキスト整列 + ラベル位置
+  'textAlignH', 'textAlignV',
+  'labelAnchor', 'labelInside', 'labelOffsetY'
 ];
-const MIRROR_FLIP_KEYS = ['boxX', 'slotOffsetX'];
+// X-axis 系 (左右ミラー時に符号反転)
+const MIRROR_FLIP_KEYS = ['boxX', 'slotOffsetX', 'labelOffsetX'];
 // Keys that are NEVER mirrored:
 //   variant (Pono image) — Hakase has no variant
 //   sampleText            — each character has unique words
@@ -1048,6 +1071,12 @@ function defaultsFor(vc) {
       fontSize: isB ? 16 : 18,
       aspectLock: false,
       aspectLockRatio: 0,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      labelAnchor: 'bl',
+      labelInside: true,
+      labelOffsetX: 0,
+      labelOffsetY: 0,
       sampleText: 'はかせ、あそびに きたよ！'
     },
     hakase: {
@@ -1070,6 +1099,12 @@ function defaultsFor(vc) {
       fontSize: isB ? 16 : 18,
       aspectLock: false,
       aspectLockRatio: 0,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      labelAnchor: 'bl',
+      labelInside: true,
+      labelOffsetX: 0,
+      labelOffsetY: 0,
       sampleText: 'ほっほっほ…ポノか。よくきたのう'
     },
     speaker: 'hakase',
@@ -1085,6 +1120,12 @@ function defaultsFor(vc) {
       aspectLock: false,
       aspectLockRatio: 0,
       fontSize: isB ? 16 : 18,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      labelAnchor: 'bl',
+      labelInside: true,
+      labelOffsetX: 0,
+      labelOffsetY: 0,
       speakerSrc: 'pono'
     }
   };
@@ -1117,6 +1158,19 @@ function migrateFrameIds(parsed) {
       // Heuristic: wider boxes (>= 480) get 18, smaller (B-class) get 16.
       side.fontSize = (Number(side.boxW) >= 480) ? 18 : 16;
     }
+    // 機能 1/2: テキスト整列 + ラベル位置 既定値 (legacy state では欠如する)
+    if (side.textAlignH !== 'left' && side.textAlignH !== 'center' && side.textAlignH !== 'right') {
+      side.textAlignH = 'center';
+    }
+    if (side.textAlignV !== 'top' && side.textAlignV !== 'center' && side.textAlignV !== 'bottom') {
+      side.textAlignV = 'center';
+    }
+    if (side.labelAnchor !== 'tl' && side.labelAnchor !== 'tr' && side.labelAnchor !== 'bl' && side.labelAnchor !== 'br') {
+      side.labelAnchor = 'bl';
+    }
+    if (typeof side.labelInside !== 'boolean') side.labelInside = true;
+    if (typeof side.labelOffsetX !== 'number' || !Number.isFinite(side.labelOffsetX)) side.labelOffsetX = 0;
+    if (typeof side.labelOffsetY !== 'number' || !Number.isFinite(side.labelOffsetY)) side.labelOffsetY = 0;
   });
   // Backfill singleBox (機能 5) if missing on legacy state. Use heuristic based on
   // box width/height of the existing pono side to guess B/C/D. Then apply VC-style defaults.
@@ -1143,6 +1197,12 @@ function migrateFrameIds(parsed) {
       aspectLock: false,
       aspectLockRatio: 0,
       fontSize: sb.fontSize,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      labelAnchor: 'bl',
+      labelInside: true,
+      labelOffsetX: 0,
+      labelOffsetY: 0,
       speakerSrc: 'pono'
     };
   } else {
@@ -1163,6 +1223,19 @@ function migrateFrameIds(parsed) {
       sb.fontSize = sb.boxW >= 1000 ? 18 : 16;
     }
     if (sb.speakerSrc !== 'pono' && sb.speakerSrc !== 'hakase') sb.speakerSrc = 'pono';
+    // 機能 1/2: テキスト整列 + ラベル位置 既定値 (legacy state では欠如する)
+    if (sb.textAlignH !== 'left' && sb.textAlignH !== 'center' && sb.textAlignH !== 'right') {
+      sb.textAlignH = 'center';
+    }
+    if (sb.textAlignV !== 'top' && sb.textAlignV !== 'center' && sb.textAlignV !== 'bottom') {
+      sb.textAlignV = 'center';
+    }
+    if (sb.labelAnchor !== 'tl' && sb.labelAnchor !== 'tr' && sb.labelAnchor !== 'bl' && sb.labelAnchor !== 'br') {
+      sb.labelAnchor = 'bl';
+    }
+    if (typeof sb.labelInside !== 'boolean') sb.labelInside = true;
+    if (typeof sb.labelOffsetX !== 'number' || !Number.isFinite(sb.labelOffsetX)) sb.labelOffsetX = 0;
+    if (typeof sb.labelOffsetY !== 'number' || !Number.isFinite(sb.labelOffsetY)) sb.labelOffsetY = 0;
   }
   return parsed;
 }
@@ -1537,12 +1610,60 @@ function framePathById(id) {
   return f ? f.path : FRAME_IMAGES[0].path;
 }
 
+// 機能 1: テキスト整列マッピング
+function mapTextAlignH(h) {
+  if (h === 'left') return 'flex-start';
+  if (h === 'right') return 'flex-end';
+  return 'center';
+}
+function mapTextAlignV(v) {
+  if (v === 'top') return 'flex-start';
+  if (v === 'bottom') return 'flex-end';
+  return 'center';
+}
+
+// 機能 2: ラベルの 4 隅 anchor + inside/outside + offset から
+// position プロパティ (top/bottom/left/right) を計算する。
+// 反対側のプロパティは '' でクリアして前回値の残留を防ぐ。
+function labelPositionStyle(anchor, inside, offX, offY) {
+  const insideMargin = 16;
+  const outsideMargin = -22;
+  const margin = inside ? insideMargin : outsideMargin;
+  const ox = Number(offX) || 0;
+  const oy = Number(offY) || 0;
+  const out = { top: '', bottom: '', left: '', right: '' };
+  if (anchor === 'tl') {
+    out.top = (margin + oy) + 'px';
+    out.left = (insideMargin + ox) + 'px';
+  } else if (anchor === 'tr') {
+    out.top = (margin + oy) + 'px';
+    out.right = (insideMargin - ox) + 'px';
+  } else if (anchor === 'bl') {
+    out.bottom = (margin - oy) + 'px';
+    out.left = (insideMargin + ox) + 'px';
+  } else { // 'br'
+    out.bottom = (margin - oy) + 'px';
+    out.right = (insideMargin - ox) + 'px';
+  }
+  return out;
+}
+
+function applyLabelPosition(labelEl, anchor, inside, offX, offY) {
+  if (!labelEl) return;
+  const p = labelPositionStyle(anchor, inside, offX, offY);
+  labelEl.style.top = p.top;
+  labelEl.style.bottom = p.bottom;
+  labelEl.style.left = p.left;
+  labelEl.style.right = p.right;
+}
+
 function applySideToDom(sideKey) {
   const s = state[currentVC][sideKey];
   const slot = document.getElementById('slot-' + sideKey);
   const img = document.getElementById('img-' + sideKey);
   const box = document.getElementById('box-' + sideKey);
   const txt = document.getElementById('text-' + sideKey);
+  const lbl = document.getElementById('label-' + sideKey);
 
   slot.style.width = s.slotW + 'px';
   slot.style.height = s.slotH + 'px';
@@ -1559,6 +1680,10 @@ function applySideToDom(sideKey) {
   box.style.height = s.boxH + 'px';
   box.style.transform = `translate(calc(-50% + ${s.boxX}px), calc(-50% + ${s.boxY}px))`;
   box.style.padding = s.boxPadding + 'px';
+  // 機能 1: テキスト整列 (flex)
+  box.style.display = 'flex';
+  box.style.alignItems = mapTextAlignV(s.textAlignV);
+  box.style.justifyContent = mapTextAlignH(s.textAlignH);
   if (s.boxMode === 'image') {
     box.classList.remove('mode-css');
     box.style.backgroundImage = `url('${framePathById(s.boxImage)}')`;
@@ -1571,10 +1696,17 @@ function applySideToDom(sideKey) {
     box.style.borderRadius = s.boxRadius + 'px';
   }
   txt.textContent = s.sampleText;
+  // 機能 1: 複数行時の各行整列
+  txt.style.textAlign = s.textAlignH || 'center';
   if (typeof s.fontSize === 'number' && Number.isFinite(s.fontSize) && s.fontSize > 0) {
     txt.style.fontSize = s.fontSize + 'px';
   } else {
     txt.style.fontSize = '';
+  }
+  // 機能 2: ラベル位置 + 表示テキスト
+  if (lbl) {
+    lbl.textContent = sideKey === 'pono' ? 'ポノ' : 'はかせ';
+    applyLabelPosition(lbl, s.labelAnchor, s.labelInside, s.labelOffsetX, s.labelOffsetY);
   }
 }
 
@@ -1582,11 +1714,16 @@ function applySingleBoxToDom() {
   const sb = state[currentVC] && state[currentVC].singleBox;
   const box = document.getElementById('box-single');
   const txt = document.getElementById('text-single');
+  const lbl = document.getElementById('label-single');
   if (!sb || !box || !txt) return;
   box.style.width = sb.boxW + 'px';
   box.style.height = sb.boxH + 'px';
   box.style.top = sb.boxY + 'px';
   box.style.padding = sb.boxPadding + 'px';
+  // 機能 1: テキスト整列 (flex)
+  box.style.display = 'flex';
+  box.style.alignItems = mapTextAlignV(sb.textAlignV);
+  box.style.justifyContent = mapTextAlignH(sb.textAlignH);
   if (sb.boxMode === 'image') {
     box.classList.remove('mode-css');
     box.style.backgroundImage = `url('${framePathById(sb.boxImage)}')`;
@@ -1602,10 +1739,17 @@ function applySingleBoxToDom() {
   const srcSide = sb.speakerSrc === 'hakase' ? 'hakase' : 'pono';
   const srcText = (state[currentVC][srcSide] && state[currentVC][srcSide].sampleText) || '';
   txt.textContent = srcText;
+  // 機能 1: 複数行時の各行整列
+  txt.style.textAlign = sb.textAlignH || 'center';
   if (typeof sb.fontSize === 'number' && Number.isFinite(sb.fontSize) && sb.fontSize > 0) {
     txt.style.fontSize = sb.fontSize + 'px';
   } else {
     txt.style.fontSize = '';
+  }
+  // 機能 2: ラベル位置 + 表示テキスト (speakerSrc に応じて切替)
+  if (lbl) {
+    lbl.textContent = srcSide === 'hakase' ? 'はかせ' : 'ポノ';
+    applyLabelPosition(lbl, sb.labelAnchor, sb.labelInside, sb.labelOffsetX, sb.labelOffsetY);
   }
 }
 
@@ -1984,14 +2128,18 @@ function makeRadio(label, key, sideKey, options, opts) {
   rr.className = 'radio-row';
   const groupName = sideKey + '-' + key + '-' + (++_radioUid);
   options.forEach(opt => {
+    // dataset values are coerced to string by the DOM; for non-string opt.value
+    // (e.g. boolean for labelInside) we keep the JS value separate and compare
+    // via String() in dataset-driven UI updates.
+    const valStr = String(opt.value);
     const lbl = document.createElement('label');
-    lbl.dataset.val = opt.value;
+    lbl.dataset.val = valStr;
     if (state[currentVC][sideKey][key] === opt.value) lbl.classList.add('checked');
     const inp = document.createElement('input');
     inp.type = 'radio';
     inp.name = groupName;
-    inp.value = opt.value;
-    const inputId = groupName + '-' + opt.value;
+    inp.value = valStr;
+    const inputId = groupName + '-' + valStr;
     inp.id = inputId;
     lbl.htmlFor = inputId;
     if (state[currentVC][sideKey][key] === opt.value) inp.checked = true;
@@ -2022,7 +2170,7 @@ function makeRadio(label, key, sideKey, options, opts) {
       save(currentVC);
       // Update checked styling among siblings without rebuilding
       rr.querySelectorAll('label').forEach(l => {
-        l.classList.toggle('checked', l.dataset.val === opt.value);
+        l.classList.toggle('checked', l.dataset.val === valStr);
       });
       if (rebuild) {
         buildRightPane();
@@ -2250,14 +2398,18 @@ function makeSingleBoxRadio(label, key, options, opts) {
   rr.className = 'radio-row';
   const groupName = 'single-' + key + '-' + (++_radioUid);
   options.forEach(opt => {
+    // dataset values are coerced to string by the DOM; for non-string opt.value
+    // (e.g. boolean for labelInside) we keep the JS value separate and compare
+    // via String() in dataset-driven UI updates.
+    const valStr = String(opt.value);
     const lbl = document.createElement('label');
-    lbl.dataset.val = opt.value;
+    lbl.dataset.val = valStr;
     if (state[currentVC].singleBox[key] === opt.value) lbl.classList.add('checked');
     const inp = document.createElement('input');
     inp.type = 'radio';
     inp.name = groupName;
-    inp.value = opt.value;
-    const inputId = groupName + '-' + opt.value;
+    inp.value = valStr;
+    const inputId = groupName + '-' + valStr;
     inp.id = inputId;
     lbl.htmlFor = inputId;
     if (state[currentVC].singleBox[key] === opt.value) inp.checked = true;
@@ -2286,7 +2438,7 @@ function makeSingleBoxRadio(label, key, options, opts) {
       }
       save(currentVC);
       rr.querySelectorAll('label').forEach(l => {
-        l.classList.toggle('checked', l.dataset.val === opt.value);
+        l.classList.toggle('checked', l.dataset.val === valStr);
       });
       if (rebuild) {
         buildRightPane();
@@ -2463,7 +2615,31 @@ function buildSingleBoxSection() {
     sec.appendChild(makeSingleBoxRange('角丸', 0, 80, 1, 'boxRadius'));
     sec.appendChild(makeSingleBoxColor('背景色', 'boxColor'));
   }
-  sec.appendChild(makeSingleBoxRange('フォントサイズ', 12, 48, 1, 'fontSize'));
+  sec.appendChild(makeSingleBoxRange('フォントサイズ', 12, 96, 1, 'fontSize'));
+  // 機能 1: テキスト整列 (横 + 縦)
+  sec.appendChild(makeSingleBoxRadio('テキスト横', 'textAlignH', [
+    { value: 'left', text: '左' },
+    { value: 'center', text: '中' },
+    { value: 'right', text: '右' }
+  ]));
+  sec.appendChild(makeSingleBoxRadio('テキスト縦', 'textAlignV', [
+    { value: 'top', text: '上' },
+    { value: 'center', text: '中' },
+    { value: 'bottom', text: '下' }
+  ]));
+  // 機能 2: ラベル位置 (4 隅 + 内外 + offset X/Y)
+  sec.appendChild(makeSingleBoxRadio('ラベル隅', 'labelAnchor', [
+    { value: 'tl', text: '左上' },
+    { value: 'tr', text: '右上' },
+    { value: 'bl', text: '左下' },
+    { value: 'br', text: '右下' }
+  ]));
+  sec.appendChild(makeSingleBoxRadio('ラベル内外', 'labelInside', [
+    { value: true, text: '内側' },
+    { value: false, text: '外側' }
+  ]));
+  sec.appendChild(makeSingleBoxRange('ラベルX', -50, 50, 1, 'labelOffsetX'));
+  sec.appendChild(makeSingleBoxRange('ラベルY', -50, 50, 1, 'labelOffsetY'));
   sec.appendChild(makeSingleBoxSpeakerRow());
   return sec;
 }
@@ -2532,7 +2708,31 @@ function buildRightPane() {
     boxGroup.appendChild(makeRange('角丸', 0, 80, 1, 'boxRadius', sideKey));
     boxGroup.appendChild(makeColor('背景色', 'boxColor', sideKey));
   }
-  boxGroup.appendChild(makeRange('フォントサイズ', 12, 48, 1, 'fontSize', sideKey));
+  boxGroup.appendChild(makeRange('フォントサイズ', 12, 96, 1, 'fontSize', sideKey));
+  // 機能 1: テキスト整列 (横 + 縦)
+  boxGroup.appendChild(makeRadio('テキスト横', 'textAlignH', sideKey, [
+    { value: 'left', text: '左' },
+    { value: 'center', text: '中' },
+    { value: 'right', text: '右' }
+  ]));
+  boxGroup.appendChild(makeRadio('テキスト縦', 'textAlignV', sideKey, [
+    { value: 'top', text: '上' },
+    { value: 'center', text: '中' },
+    { value: 'bottom', text: '下' }
+  ]));
+  // 機能 2: ラベル位置 (4 隅 + 内外 + offset X/Y)
+  boxGroup.appendChild(makeRadio('ラベル隅', 'labelAnchor', sideKey, [
+    { value: 'tl', text: '左上' },
+    { value: 'tr', text: '右上' },
+    { value: 'bl', text: '左下' },
+    { value: 'br', text: '右下' }
+  ]));
+  boxGroup.appendChild(makeRadio('ラベル内外', 'labelInside', sideKey, [
+    { value: true, text: '内側' },
+    { value: false, text: '外側' }
+  ]));
+  boxGroup.appendChild(makeRange('ラベルX', -50, 50, 1, 'labelOffsetX', sideKey));
+  boxGroup.appendChild(makeRange('ラベルY', -50, 50, 1, 'labelOffsetY', sideKey));
   boxGroup.appendChild(makeTextarea('サンプル文', 'sampleText', sideKey));
   body.appendChild(boxGroup);
 }
@@ -2725,6 +2925,21 @@ function buildCSS() {
     lines.push('    background-color: transparent;');
     lines.push('    border-radius: 0;');
   }
+  // 機能 1: テキスト整列 (flex) を CSS 行として出力
+  function emitTextAlignFlex(node) {
+    lines.push('    display: flex;');
+    lines.push('    align-items: ' + mapTextAlignV(node.textAlignV) + ';');
+    lines.push('    justify-content: ' + mapTextAlignH(node.textAlignH) + ';');
+  }
+  // 機能 2: ラベル位置 (top/bottom/left/right) を CSS 行として出力
+  function emitLabelPosition(node, indent) {
+    const ind = indent || '    ';
+    const p = labelPositionStyle(node.labelAnchor, node.labelInside, node.labelOffsetX, node.labelOffsetY);
+    if (p.top)    lines.push(ind + 'top: ' + p.top + ';');     else lines.push(ind + 'top: auto;');
+    if (p.bottom) lines.push(ind + 'bottom: ' + p.bottom + ';'); else lines.push(ind + 'bottom: auto;');
+    if (p.left)   lines.push(ind + 'left: ' + p.left + ';');   else lines.push(ind + 'left: auto;');
+    if (p.right)  lines.push(ind + 'right: ' + p.right + ';'); else lines.push(ind + 'right: auto;');
+  }
   ['B', 'C', 'D'].forEach(vc => {
     const s = state[vc];
     lines.push('');
@@ -2755,6 +2970,8 @@ function buildCSS() {
       lines.push('    height: ' + ss.boxH + 'px;');
       lines.push('    transform: translate(calc(-50% + ' + ss.boxX + 'px), calc(-50% + ' + ss.boxY + 'px));');
       lines.push('    padding: ' + ss.boxPadding + 'px;');
+      // 機能 1: テキスト整列 (flex)
+      emitTextAlignFlex(ss);
       if (ss.boxMode === 'image') {
         emitFrameBackground(ss.boxImage);
       } else {
@@ -2763,12 +2980,17 @@ function buildCSS() {
         lines.push('    border-radius: ' + ss.boxRadius + 'px;');
       }
       lines.push('  }');
-      // Font size on inner text — exported (per spec)
+      // 機能 1: 複数行時の各行整列 + フォントサイズ
+      lines.push('  .op-side-' + sideKey + ' .op-dialogue-text {');
+      lines.push('    text-align: ' + (ss.textAlignH || 'center') + ';');
       if (typeof ss.fontSize === 'number' && Number.isFinite(ss.fontSize) && ss.fontSize > 0) {
-        lines.push('  .op-side-' + sideKey + ' .op-dialogue-text {');
         lines.push('    font-size: ' + ss.fontSize + 'px;');
-        lines.push('  }');
       }
+      lines.push('  }');
+      // 機能 2: ラベル位置
+      lines.push('  .op-side-' + sideKey + ' .op-dialogue-label {');
+      emitLabelPosition(ss);
+      lines.push('  }');
     });
     // 機能 5: when singleBoxMode is ON, emit the .op-dialogue-single CSS block
     // (single shared dialog rendered at center, per VC).
@@ -2783,6 +3005,8 @@ function buildCSS() {
       lines.push('    top: ' + sb.boxY + 'px;');
       lines.push('    transform: translateX(-50%);');
       lines.push('    padding: ' + sb.boxPadding + 'px;');
+      // 機能 1: テキスト整列 (flex)
+      emitTextAlignFlex(sb);
       if (sb.boxMode === 'image') {
         emitFrameBackground(sb.boxImage);
       } else {
@@ -2791,11 +3015,17 @@ function buildCSS() {
         lines.push('    border-radius: ' + sb.boxRadius + 'px;');
       }
       lines.push('  }');
+      // 機能 1: 複数行時の各行整列 + フォントサイズ
+      lines.push('  .op-dialogue-single .op-dialogue-text {');
+      lines.push('    text-align: ' + (sb.textAlignH || 'center') + ';');
       if (typeof sb.fontSize === 'number' && Number.isFinite(sb.fontSize) && sb.fontSize > 0) {
-        lines.push('  .op-dialogue-single .op-dialogue-text {');
         lines.push('    font-size: ' + sb.fontSize + 'px;');
-        lines.push('  }');
       }
+      lines.push('  }');
+      // 機能 2: ラベル位置
+      lines.push('  .op-dialogue-single .op-dialogue-label {');
+      emitLabelPosition(sb);
+      lines.push('  }');
     }
     lines.push('}');
   });
