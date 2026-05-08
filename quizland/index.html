@@ -2309,25 +2309,26 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   pointer-events: auto;
 }
 .op-dialogue-single .op-dialogue-label {
-  /* Fix (2026-05-08): editor (tools/op-layout-editor.html `.op-dialogue-label` line 228-239)
-     の base 値に 1:1 で揃える。半透明黒 chip + 小さめ padding/radius/font。
-     位置 (top/bottom/left/right) と font-size は per-VC @media が上書きするので
-     ここでは触らない (フォールバックとして bottom/left のみ残す)。
-     キャラ別 background override (.is-pono / .is-hakase) は editor に存在しない
-     ため削除。 */
+  /* Restored (2026-05-08): ユーザー判断「ラベルは色が違った方がわかりやすい」を反映。
+     直前のコミット (editor 準拠の半透明黒 chip) ではなく、その前のキャラ別 chip
+     (緑=ポノ / オレンジ=博士) に戻す。位置 (top/bottom/left/right) と font-size は
+     per-VC @media が上書きするので、ここはフォールバックのみ。
+     speaker 切替時には JS が `.is-pono` / `.is-hakase` を toggle して背景を上書きする。 */
   position: absolute;
   bottom: 16px;
   left: 24px;
   z-index: 2;
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 22px;
+  font-weight: 700;
   color: #fff;
-  padding: 2px 8px;
-  border-radius: 10px;
-  letter-spacing: normal;
-  white-space: nowrap;
-  background: rgba(0, 0, 0, 0.55);
+  padding: 8px 20px;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.30);
+  letter-spacing: 0.04em;
+  background: #5fa05a; /* default: pono — JS で speaker 切替時に上書き */
 }
+.op-dialogue-single.is-hakase .op-dialogue-label { background: #e08a3c; }
+.op-dialogue-single.is-pono   .op-dialogue-label { background: #5fa05a; }
 .op-dialogue-single .op-dialogue-text {
   font-size: 22px;
   line-height: 1.5;

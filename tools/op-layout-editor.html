@@ -793,7 +793,7 @@ const PONO_VARIANTS = [
 
 const FRAME_IMAGES = [
   { id: 'frame_wide_a', label: '横長フレーム A', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173812_001.png') },
-  { id: 'frame_wide_b', label: '横長フレーム B', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173858_001.png') },
+  { id: 'frame_wide_b', label: '横長フレーム B', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260508-081922_001.png') },
   { id: 'frame_wide_c', label: '横長フレーム C', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173923_001.png') },
   { id: 'frame_4_3',    label: '4:3 フレーム',    path: encodeURI('../assets/images/quizland/OP/frame4_3.png') },
   { id: 'frame_1_1',    label: '1:1 フレーム',    path: encodeURI('../assets/images/quizland/OP/frame_1_1.png') }
@@ -1065,27 +1065,64 @@ function propagateMirror(sideKey, key) {
 
 function defaultsFor(vc) {
   const isB = vc === 'B';
-  const isWide = vc === 'C' || vc === 'D';
+  const isC = vc === 'C';
+  const isD = vc === 'D';
+  const isWide = isC || isD;
   // Per-VC defaults for the Single Box (機能 5 — Box 1 個モード).
   // boxX is removed (always horizontally centered); other keys mirror per-side schema.
+  // Restored (2026-05-08): C/D の値を本番 quizland/index.html (line 2486-2519 / 2543-2577)
+  // の restore 値に揃える。ユーザー報告「エディタの 16:9 / 21:9 はテキストボックスが
+  // ど真ん中になってる」の根因は、過去の VC コピーが C/D 用 defaultsFor を B 値で
+  // 上書きしていたこと。Reset 押下時に本番準拠の値が出るようにする。
   const singleBoxDefaults = (() => {
-    if (vc === 'B') {
-      return { boxW: 800,  boxH: 180, boxY: 540 };
-    } else if (vc === 'C') {
-      return { boxW: 1200, boxH: 220, boxY: 820 };
+    if (isB) {
+      return { boxW: 800,  boxH: 180, boxY: 540, boxImage: DEFAULT_FRAME_ID, fontSize: 16 };
+    } else if (isC) {
+      // 本番 C @media: width 1719 / height 487 / top 545 / bg 081922 / font 48
+      return { boxW: 1719, boxH: 487, boxY: 545, boxImage: 'frame_wide_b', fontSize: 48 };
     } else { // D
-      return { boxW: 1400, boxH: 240, boxY: 820 };
+      // 本番 D @media: width 1906 / height 539 / top 503 / bg 081922 / font 48
+      return { boxW: 1906, boxH: 539, boxY: 503, boxImage: 'frame_wide_b', fontSize: 48 };
     }
+  })();
+  // Per-VC pono slot/offset defaults (本番 .op-side-pono .op-char-slot に準拠)。
+  // C: slotW 1481 / slotH 775 / X 46 / Y -80
+  // D: slotW 560  / slotH 800 / X 168 / Y -173
+  const ponoDefaults = (() => {
+    if (isC) return { slotW: 1481, slotH: 775, slotOffsetX: 46,  slotOffsetY: -80  };
+    if (isD) return { slotW: 560,  slotH: 800, slotOffsetX: 168, slotOffsetY: -173 };
+    return { slotW: 300, slotH: 400, slotOffsetX: 0, slotOffsetY: -60 };
+  })();
+  // Per-VC hakase slot/offset defaults (本番 .op-side-hakase .op-char-slot に準拠)。
+  // C: slotW 947 / slotH 655 / X 0    / Y -158
+  // D: slotW 828 / slotH 800 / X -203 / Y -200
+  const hakaseDefaults = (() => {
+    if (isC) return { slotW: 947, slotH: 655, slotOffsetX: 0,    slotOffsetY: -158 };
+    if (isD) return { slotW: 828, slotH: 800, slotOffsetX: -203, slotOffsetY: -200 };
+    return { slotW: 360, slotH: 400, slotOffsetX: 0, slotOffsetY: -60 };
+  })();
+  // 機能 2: 本番 .op-dialogue-single .op-dialogue-label の per-VC @media は
+  //   top: 65px; left: 156px; (B/C/D 共通)
+  // labelPositionStyle('tl', inside=true, ox, oy) は
+  //   top  = 16 (insideMargin) + oy
+  //   left = 16 (insideMargin) + ox
+  // を返す。65 = 16+49, 156 = 16+140 → labelOffsetX=140, labelOffsetY=49 で一致。
+  // C/D は本番値に揃え、B は従来既定 (左下隅 inside, offset 0/0) を維持。
+  const labelDefaults = (() => {
+    if (isWide) {
+      return { labelAnchor: 'tl', labelInside: true, labelOffsetX: 140, labelOffsetY: 49, labelFontSize: 34 };
+    }
+    return { labelAnchor: 'bl', labelInside: true, labelOffsetX: 0, labelOffsetY: 0, labelFontSize: 22 };
   })();
   return {
     pono: {
       variant: 'dance_hi',
-      slotW: isWide ? 360 : 300,
-      slotH: isWide ? 480 : 400,
+      slotW: ponoDefaults.slotW,
+      slotH: ponoDefaults.slotH,
       slotAspect: 'fixed_0.75',
       objectPosition: 'bottom',
-      slotOffsetX: 0,
-      slotOffsetY: isWide ? -80 : -60,
+      slotOffsetX: ponoDefaults.slotOffsetX,
+      slotOffsetY: ponoDefaults.slotOffsetY,
       boxMode: 'image',
       boxImage: DEFAULT_FRAME_ID,
       boxW: isWide ? 480 : 400,
@@ -1109,12 +1146,12 @@ function defaultsFor(vc) {
     },
     hakase: {
       variant: 'hakase',
-      slotW: isWide ? 440 : 360,
-      slotH: isWide ? 480 : 400,
+      slotW: hakaseDefaults.slotW,
+      slotH: hakaseDefaults.slotH,
       slotAspect: 'fixed_1.23',
       objectPosition: 'bottom',
-      slotOffsetX: 0,
-      slotOffsetY: isWide ? -80 : -60,
+      slotOffsetX: hakaseDefaults.slotOffsetX,
+      slotOffsetY: hakaseDefaults.slotOffsetY,
       boxMode: 'image',
       boxImage: DEFAULT_FRAME_ID,
       boxW: isWide ? 520 : 420,
@@ -1144,18 +1181,18 @@ function defaultsFor(vc) {
       boxPadding: 32,
       boxRadius: 16,
       boxMode: 'image',
-      boxImage: DEFAULT_FRAME_ID,
+      boxImage: singleBoxDefaults.boxImage,
       boxColor: '#fef3c7',
       aspectLock: false,
       aspectLockRatio: 0,
-      fontSize: isB ? 16 : 18,
+      fontSize: singleBoxDefaults.fontSize,
       textAlignH: 'center',
       textAlignV: 'center',
-      labelAnchor: 'bl',
-      labelInside: true,
-      labelOffsetX: 0,
-      labelOffsetY: 0,
-      labelFontSize: 22,
+      labelAnchor: labelDefaults.labelAnchor,
+      labelInside: labelDefaults.labelInside,
+      labelOffsetX: labelDefaults.labelOffsetX,
+      labelOffsetY: labelDefaults.labelOffsetY,
+      labelFontSize: labelDefaults.labelFontSize,
       speakerSrc: 'pono'
     }
   };
