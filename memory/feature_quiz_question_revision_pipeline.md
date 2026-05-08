@@ -136,7 +136,7 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 | 11 | quizland-forest-house-21x9 (OP_BG.webp の 21:9 高解像度版) | 配置済 (2026-05-07) |
 | 12 | quizland-trivia-stage 6 枚 (soccerball / unripe_banana / rabbit_no_ears / speed_dust / notebook / munching) + 2 variant (_face_crop / _side_pass) | 配置済 (2026-05-08)、questions.js 結線済 (2026-05-08) |
 | 13 (sprint-13) | キリン全身 + 首骨 / 虹再生成 / 葉っぱ / ピザ4切れ / 赤ちゃん歯生え変わり / ライオンオスシルエット + オス・メス比較 + きば + ひげタイル | `tmp/quizland-trivia-audit/CODEX-ORDER-2.md` に発注書、未納品 |
-| 14 (sprint-14) | spoiler 修正用ステージ絵 15-19 枚 (HARD spoiler 18 問対応) | `tmp/quizland-trivia-audit/CODEX-ORDER-3.md` 作成中、未発注 |
+| 14 (sprint-14) | spoiler 修正用ステージ絵 15-19 枚 (HARD spoiler 18 問対応) | **15 枚配置済 + questions.js 結線済 (2026-05-08)**。残: A6 虫シルエット集合 (#81/#93 待ち) + B4 ぼかし雪粒 (#121 未届) |
 
 ## リビールペア (img / img_word / img_answer) 設計パターン
 
@@ -156,20 +156,51 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 - 「正解後に絵が切り替わる」演出で、子供は答えを聞いた後にビジュアルでも納得できる
 - レンダラ側は `quizland/index.html` line 4053 付近で `q.img_answer` の有無を見て切替
 
-### 採用済みリビールペア (2026-05-08 時点)
+### 採用済みリビールペア (2026-05-08 時点、計 20 ペア)
 
+#### batch:12 由来 (4 ペア)
 | 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
 |---|---|---|
 | Q125 trivia L1 バナナ色 | unripe (緑) | ripe (黄) |
 | Q123 trivia L1 うさぎの耳 | face_crop (耳画角外) | rabbit (耳ピン全身) |
 | trivia L2 速い動物 (cheetah) | speed_dust_side_pass (砂煙のみ) | running_cheetah (チーター本体) |
 | body L2 噛む (chewing) | munching (子供がりんごを食べる) | chewing_teeth (歯のアップ) |
+
+#### batch:13 由来 (1 ペア、画像未納品)
+| 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
+|---|---|---|
 | trivia L3 ライオン (オスにあるもの) | lion_osu_silhouette (オス影絵) | lion_osu_mesu_compare (オス+メス並列) |
+
+#### batch:14 由来 (15 ペア、2026-05-08 配置 + 結線完了)
+| # | 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
+|---|---|---|---|
+| 74 | trivia L1 ぞう | elephant_silhouette (正面シルエット) | long_nose_elephant (既存) |
+| 75 | trivia L1 ふゆそらから | winter_sky_only (灰色冬空のみ) | snowy_landscape (既存) |
+| 76 | trivia L1 たまごから | egg_unhatched (巣の白卵) | hatching_egg (既存) |
+| 77 | trivia L1 りんご色 | apple_silhouette (暗茶ベタ塗り) | red_apple (既存) |
+| 80 | trivia L1 たねを土に | seed_in_dirt (土+タネ、芽なし) | seed_germinate (既存) |
+| 87 | trivia L2 ミミズ | earthworm_dirt_only (雨上がりの泥) | earthworm_after_rain (既存) |
+| 105 | weather L1 ふわふわ雲 | sky_question (空+?マーク) | cloud_sky (既存) |
+| 107 | weather L2 きり | morning_clear (霧なし朝景) | distant_mist (既存) |
+| 111 | weather L2 雨どこから | rain_ground (雨の地面のみ) | rain_from_cloud (既存) |
+| 150 | body L1 におい | boy_silhouette_question (共通) | boy_face_nose (鼻に光輪) |
+| 151 | body L1 みる | boy_silhouette_question (共通) | boy_face_eye (目に光輪) |
+| 152 | body L1 きく | boy_silhouette_question (共通) | boy_face_ear (耳に光輪) |
+| 158 | body L2 ひふ | boy_silhouette_question (共通) | skin_wrap (既存) |
+| 159 | body L2 しんぞう | chest_clutch (胸押さえシルエット) | heart_pump (既存) |
+| 161 | body L2 はい | deep_breath (深呼吸シルエット) | lungs_breath (既存) |
+
+→ body L1 #150-152 + body L2 #158 は `stage_body_boy_silhouette_question.png` を**共通の出題画像として 4 問で再利用**。reveal だけ各問題で個別。これで 1 枚の画像が複数問題で機能する効率設計。
 
 ### Code-Q&A 表で見るべき場所
 
-- `quizland/data/questions.js` 行 295-298, 330-336, 372-376, 519-523, 463-477 がリビールペア実例
+- `quizland/data/questions.js`: trivia L1 行 295-348, trivia L2 行 347-412, weather 行 139-232, body 行 484-587 にリビールペア実例多数
 - レンダラ: `quizland/index.html` `loadQuestion` 周辺と `revealAnswer` 関数
+
+### 残課題 (画像納品待ちで未結線)
+
+- #81 trivia L2 8足クモ + #93 trivia L3 8目クモ (A6 虫シルエット集合 待ち)
+- #121 weather L3 雪結晶 (B4 ぼかし雪粒 未届)
 
 ## ネタバレ監査の枠組み (Spoiler taxonomy)
 
