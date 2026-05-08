@@ -2179,56 +2179,68 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   transform: scale(1.08);
   filter: blur(5px) saturate(0.9) brightness(0.94);
 }
-/* Fix 5b: 4:3 セーフ領域。背景は overlay 全面、内側コンテンツだけ 4:3 内に収める。
-   16:9 / 21:9 などワイドビューポートではレターボックスとして左右に黒帯が入る。 */
+/* Fix 5b (rev 2026-05-07): エディタ (`tools/op-layout-editor.html`) の stage と
+   挙動を 1:1 で揃える。エディタ側は VC ごとに `.stage` の固定実寸 (B 1024×768 /
+   C 1920×1080 / D 2560×1080) を用意し、`#stage-wrap` を transform: scale() で
+   ビューポートに収めている。
+   本番では JS スケーリングを避けるため、各 VC のアスペクト比を維持しつつ
+   viewport に最大化する形で `.op-content` を配置する (4:3 letterbox は撤廃)。
+   editor 出力の絶対 px 座標は VC 実寸に対するもので、本番フィット時の比率と
+   ほぼ一致する (僅かな viewport 差は許容)。各 VC の aspect-ratio / 寸法は
+   @media ブロックで上書きする (下方)。 */
 .op-content {
   position: absolute;
   inset: 0;
   margin: auto;
-  aspect-ratio: 4 / 3;
-  width: min(100vw, calc(100vh * 4 / 3));
-  height: min(100vh, calc(100vw * 3 / 4));
+  /* デフォルト (媒体クエリにマッチしない極端な比率向けフォールバック): 16:9 */
+  aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
   pointer-events: none;     /* スキップボタンの裏側は素通しにし、子要素だけ受ける */
 }
 .op-content > * {
   pointer-events: auto;
 }
 /* Single Box モード採用 (2026-05-07): per-side Box (.op-dialogue-pono / -hakase) は
-   廃止し、画面下部に単一の `.op-dialogue-single` を置く。キャラは絶対配置 slot で
-   エディタの transform 出力 (`.op-char-slot`) をそのまま受け取る。 */
+   廃止し、画面下部に単一の `.op-dialogue-single` を置く。
+   左右の `.op-side` は editor と同じ flex 1:1 で 50% ずつ占有させ、
+   `.op-char-slot` の `top:50%/left:50%` がそれぞれの side 中央を起点になるようにする。 */
 .op-sides {
   position: absolute;
   inset: 0;
-  /* Single Box モード: キャラ slot は absolute 配置になるので flex は不要。
-     ただし旧ブラウザ向けに block 等価の挙動でレイアウトを潰さないよう display は維持。 */
-  display: block;
+  /* editor (tools/op-layout-editor.html) と同じ display: flex を採用。
+     これにより .op-side-pono / .op-side-hakase が左右 50% ずつに分かれ、
+     .op-char-slot の中央基点 (top:50%/left:50%) が「side の中央」=
+     「stage 左 25% / 右 75%」 になる。block では両 side が stage 全面に
+     重なり、両キャラとも stage 中央に重なってしまう。 */
+  display: flex;
   pointer-events: none;
 }
 .op-sides.hidden { display: none; }
 .op-sides > .op-side {
-  /* Single Box モード: side コンテナ自体を 100% にして、内部 slot を中央基点で配置 */
-  position: absolute;
-  inset: 0;
+  /* editor 側と同じ flex: 1 + position: relative。inset:0 全画面にすると
+     editor の絶対 px 座標が片側ぶんではなく全画面起点になり破綻する。 */
+  flex: 1;
+  position: relative;
   pointer-events: none;
 }
-/* slot は Single Box モードで使用するキャラ配置の基本 box。エディタ出力の
-   transform (translate(calc(-50% + Xpx), calc(-50% + Ypx))) で上から覆う。 */
+/* slot は Single Box モードで使用するキャラ配置の基本 box。editor 出力の
+   transform (translate(calc(-50% + Xpx), calc(-50% + Ypx))) で上から覆う。
+   editor の `.op-char-slot` には display:flex / overflow:hidden は無く、
+   img 側の object-fit: contain だけで内側にハマる設計なので production も合わせる。 */
 .op-char-slot {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   pointer-events: none;
-  overflow: hidden;          /* slot の四角でクリップ (キャラの底を切る目的でも使われる) */
 }
 .op-char-slot img.op-char {
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: bottom center;
+  display: block;
   pointer-events: none;
 }
 .op-side-hakase .op-char-slot img.op-char {
@@ -2338,9 +2350,17 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-single .op-dialogue-label { font-size: 14px; padding: 4px 12px; top: -14px; left: 18px; }
 }
 
-/* ===== Single Box layout — エディタ書き出し (op-layout-2026-05-07_23-32-45.css) ===== */
-/* viewport class B (1024x768) */
+/* ===== Single Box layout — エディタ書き出し (op-layout-2026-05-07_23-32-45.css) =====
+   各 VC の .op-content アスペクト比を editor の `.stage` (B 1024×768 / C 1920×1080
+   / D 2560×1080) に合わせる。これで absolute px 座標系 (slot transform / Single
+   Box top) が editor preview と本番で同じスケールになる。 */
+/* viewport class B (1024x768 / 4:3) */
 @media (min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10) {
+  .op-content {
+    aspect-ratio: 4 / 3;
+    width: min(100vw, calc(100vh * 4 / 3));
+    height: min(100vh, calc(100vw * 3 / 4));
+  }
   .op-side-pono .op-char-slot {
     width: 1021px;
     height: 492px;
@@ -2377,8 +2397,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   }
 }
 
-/* viewport class C (1920x1080) */
+/* viewport class C (1920x1080 / 16:9) */
 @media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10) {
+  .op-content {
+    aspect-ratio: 16 / 9;
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+  }
   .op-side-pono .op-char-slot {
     width: 1481px;
     height: 775px;
@@ -2415,8 +2440,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   }
 }
 
-/* viewport class D (2560x1080) */
+/* viewport class D (2560x1080 / 64:27 ≒ 21:9) */
 @media (min-aspect-ratio: 19/10) {
+  .op-content {
+    aspect-ratio: 64 / 27;
+    width: min(100vw, calc(100vh * 64 / 27));
+    height: min(100vh, calc(100vw * 27 / 64));
+  }
   .op-side-pono .op-char-slot {
     width: 560px;
     height: 800px;
