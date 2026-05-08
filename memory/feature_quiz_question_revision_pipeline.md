@@ -99,6 +99,7 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 | 11 | quizland-forest-house-21x9 (OP_BG.webp の 21:9 高解像度版) | 配置済 (2026-05-07) |
 | 12 | quizland-trivia-stage 6 枚 (soccerball / unripe_banana / rabbit_no_ears / speed_dust / notebook / munching) + 2 variant (_face_crop / _side_pass) | 配置済 (2026-05-08)、questions.js 結線済 (2026-05-08) |
 | 13 (sprint-13) | キリン全身 + 首骨 / 虹再生成 / 葉っぱ / ピザ4切れ / 赤ちゃん歯生え変わり / ライオンオスシルエット + オス・メス比較 + きば + ひげタイル | `tmp/quizland-trivia-audit/CODEX-ORDER-2.md` に発注書、未納品 |
+| 14 (sprint-14) | spoiler 修正用ステージ絵 15-19 枚 (HARD spoiler 18 問対応) | `tmp/quizland-trivia-audit/CODEX-ORDER-3.md` 作成中、未発注 |
 
 ## リビールペア (img / img_word / img_answer) 設計パターン
 
@@ -153,6 +154,49 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 
 ### SAFE 例 (well-designed reveal pair)
 - bear, cheetah, rabbit, lion, octopus, banana_tree, chewing_teeth, flamingo
+
+### Spoiler 修正方針 (2026-05-08 ユーザ判断)
+
+3 並列エージェント監査で抽出した HARD spoiler 候補を、ユーザと一問ずつレビューした結果の判断記録。
+
+#### Drops (HARD spoiler 認定だが、結局そのままで OK となったもの)
+
+| 全体# | 質問 | なぜ OK |
+|---|---|---|
+| #88 (trivia Lv2#8) | コアラが たべるものは？ | 子供は「ユーカリ」という植物名を知らないので、絵に映っていても答えのバレにならない |
+| #122 (opposite Lv1#1) | 「おおきい」の はんたいは？ | 比較絵で両方見えるが、子供向けには「ヒント」としてむしろ望ましい |
+| #131 (opposite Lv2#2) | 「たかい」の はんたいは？ | 同上 |
+
+→ **教訓**: 比較絵の opposite 系・専門用語が答えの命名問題は、絵がそのまま映っていても spoiler とみなさない。
+
+#### Adopted patterns
+
+##### "多シルエット集合" 手法 (新パターン)
+- 答えを 12-13 種類の中から探させる
+- 既存例: `stage_trivia_ocean_silhouettes_4.png` (海の生き物比較)
+- 新規適用: クモ問題 (#81 あし8本、#93 め8つ) → `stage_trivia_bug_silhouettes.png` (1 枚で共用 OR 別カット 2 枚)
+- 雲問題 (#105) は別解法 (空+?マーク) を採用
+
+##### "男の子キャラ統一" 手法 (体パーツ問題群)
+- 体パーツを問う問題 (鼻・目・耳・皮膚・心臓・肺) は全て**同じ男の子キャラ**で統一
+- 出題: 男の子シルエット + 該当部位に ? マーク
+- reveal: 同じ男の子のクローズアップ + 該当部位ハイライト
+- これにより「答え=見たことある体のパーツ」が直接見えなくなる + キャラの愛着で学習意欲↑
+- 既存 `stage_body_skin_wrap.png` の男の子キャラを基準に他の reveal を生成
+
+##### "同構図の隠し版" 手法
+- 既存 reveal 画像と同じ構図で、答えになる要素だけ隠した「出題用」を生成
+- 例: 霧 (#107) → 同じ風景で霧なしの朝バージョン
+- 例: 雨どこから (#111) → 既存「雲+雨」から「雲は画面外、雨の地面のみ」
+- 例: ぞう (#74) → 既存「鼻長強調」から「鼻を折り曲げた正面シルエット」
+
+#### Sprint-14 (CODEX-ORDER-3.md) 発注対象
+
+`tmp/quizland-trivia-audit/CODEX-ORDER-3.md` (作成予定) で以下を発注:
+- Trivia 系: ぞうシルエット / りんごシルエット / 冬空 / 卵 / タネ / 虫シルエット集合 / 雨の土
+- Weather 系: 空+? / 朝のクッキリ / 雨の地面 / ぼやけ雪粒
+- Body 系: 男の子シルエット + 顔/目/耳/皮膚クローズアップ / 胸押さえ / 深呼吸
+- 計 15-19 枚
 
 ## ピットフォール
 
