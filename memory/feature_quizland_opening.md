@@ -126,7 +126,7 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 
 | # | kind | bg | 内容 |
 |---|------|-----|------|
-| 1 | narration | `OP_BG.webp` (森の家・外観、**シャープ／ブラー無し**) | seg1 (3行): もりの おくに… すんでいます。 / seg2 (2行 赤強調、新文言): ポノは、なかよしの はかせと、いつもの なぞなぞで あそぶために やってきました。 |
+| 1 | narration | `OP_BG.webp` (森の家・外観、**シャープ／ブラー無し**) | **ナレーションは全文 Bold** (font-weight: bold @ `.op-narration` base)。seg1 (3行 黒): もりの おくに… すんでいます。 / seg2 (2行): **1行目「ポノは、なかよしの はかせと、」赤強調 (emphasis: true)**、**2行目「いつもの なぞなぞで あそぶために やってきました。」黒 (emphasis: false、2026-05-08 修正で 1行目だけ赤に絞った)**。前半→後半でメリハリを作る。 |
 | 2 | dialogue  | `OP_BG02.webp` (**博士の家の屋内**、is-static-blur: scale 1.08 + blur 5px) | **入室演出 (2026-05-08 追加)**: 最初の 2 秒は **BG を sharp で表示** (blur 無し / キャラ・Box 非表示) → 2 秒経過時に `is-static-blur` 追加 (filter フェード 0.6s) + sides / dialogueBox を opacity 0→1 で 0.5s フェードイン → 600ms マージン後に typing 開始。Pono panel 既定 = `dance_hi.webp`、**hakase line で `pono_001.webp` (neutral 立ち姿、聞き役)、pono line で `dance_smile.webp` に override**、博士 = `owl_professor_guide.webp`、台詞「ほっほっほ…ポノか。よくきたのう」「はかせ、あそびに きたよ！」 |
 | 3 | dialogue  | 同上 | Pono panel 既定 = `dance_hooray.webp`、**hakase line で `pono_001.webp` (聞き役)、pono line で `dance_hooray.webp`**、台詞「きょうも なぞなぞを するかの？」「うん！やりたい！」 |
 | 4 | dialogue  | 同上 | Pono panel 既定 = `think_arms_crossed_side.webp`、**hakase line で `pono_001.webp` (聞き役)、pono line で `think_arms_crossed_side.webp`**、台詞「ふむふむ… じしんは あるかな？」「うーん…でも がんばる！」 |
