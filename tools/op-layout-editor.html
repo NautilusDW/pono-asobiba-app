@@ -1018,7 +1018,9 @@ const MIRROR_COPY_KEYS = [
   'fontSize',
   // 機能 1/2: テキスト整列 + ラベル位置
   'textAlignH', 'textAlignV',
-  'labelAnchor', 'labelInside', 'labelOffsetY'
+  'labelAnchor', 'labelInside', 'labelOffsetY',
+  // 機能 6: ラベル文字サイズ
+  'labelFontSize'
 ];
 // X-axis 系 (左右ミラー時に符号反転)
 const MIRROR_FLIP_KEYS = ['boxX', 'slotOffsetX', 'labelOffsetX'];
@@ -1095,6 +1097,7 @@ function defaultsFor(vc) {
       labelInside: true,
       labelOffsetX: 0,
       labelOffsetY: 0,
+      labelFontSize: 22,
       sampleText: 'はかせ、あそびに きたよ！'
     },
     hakase: {
@@ -1123,6 +1126,7 @@ function defaultsFor(vc) {
       labelInside: true,
       labelOffsetX: 0,
       labelOffsetY: 0,
+      labelFontSize: 22,
       sampleText: 'ほっほっほ…ポノか。よくきたのう'
     },
     speaker: 'hakase',
@@ -1144,6 +1148,7 @@ function defaultsFor(vc) {
       labelInside: true,
       labelOffsetX: 0,
       labelOffsetY: 0,
+      labelFontSize: 22,
       speakerSrc: 'pono'
     }
   };
@@ -1189,6 +1194,10 @@ function migrateFrameIds(parsed) {
     if (typeof side.labelInside !== 'boolean') side.labelInside = true;
     if (typeof side.labelOffsetX !== 'number' || !Number.isFinite(side.labelOffsetX)) side.labelOffsetX = 0;
     if (typeof side.labelOffsetY !== 'number' || !Number.isFinite(side.labelOffsetY)) side.labelOffsetY = 0;
+    // 機能 6: ラベル文字サイズ (legacy state では欠如する)
+    if (typeof side.labelFontSize !== 'number' || !Number.isFinite(side.labelFontSize) || side.labelFontSize <= 0) {
+      side.labelFontSize = 22;
+    }
   });
   // Backfill singleBox (機能 5) if missing on legacy state. Use heuristic based on
   // box width/height of the existing pono side to guess B/C/D. Then apply VC-style defaults.
@@ -1221,6 +1230,7 @@ function migrateFrameIds(parsed) {
       labelInside: true,
       labelOffsetX: 0,
       labelOffsetY: 0,
+      labelFontSize: 22,
       speakerSrc: 'pono'
     };
   } else {
@@ -1254,6 +1264,10 @@ function migrateFrameIds(parsed) {
     if (typeof sb.labelInside !== 'boolean') sb.labelInside = true;
     if (typeof sb.labelOffsetX !== 'number' || !Number.isFinite(sb.labelOffsetX)) sb.labelOffsetX = 0;
     if (typeof sb.labelOffsetY !== 'number' || !Number.isFinite(sb.labelOffsetY)) sb.labelOffsetY = 0;
+    // 機能 6: ラベル文字サイズ (legacy state では欠如する)
+    if (typeof sb.labelFontSize !== 'number' || !Number.isFinite(sb.labelFontSize) || sb.labelFontSize <= 0) {
+      sb.labelFontSize = 22;
+    }
   }
   return parsed;
 }
@@ -1666,13 +1680,19 @@ function labelPositionStyle(anchor, inside, offX, offY) {
   return out;
 }
 
-function applyLabelPosition(labelEl, anchor, inside, offX, offY) {
+function applyLabelPosition(labelEl, anchor, inside, offX, offY, fontSize) {
   if (!labelEl) return;
   const p = labelPositionStyle(anchor, inside, offX, offY);
   labelEl.style.top = p.top;
   labelEl.style.bottom = p.bottom;
   labelEl.style.left = p.left;
   labelEl.style.right = p.right;
+  // 機能 6: ラベル文字サイズ (px). 不正値はクリアして CSS 既定にフォールバック。
+  if (typeof fontSize === 'number' && Number.isFinite(fontSize) && fontSize > 0) {
+    labelEl.style.fontSize = fontSize + 'px';
+  } else {
+    labelEl.style.fontSize = '';
+  }
 }
 
 function applySideToDom(sideKey) {
@@ -1724,7 +1744,7 @@ function applySideToDom(sideKey) {
   // 機能 2: ラベル位置 + 表示テキスト
   if (lbl) {
     lbl.textContent = sideKey === 'pono' ? 'ポノ' : 'はかせ';
-    applyLabelPosition(lbl, s.labelAnchor, s.labelInside, s.labelOffsetX, s.labelOffsetY);
+    applyLabelPosition(lbl, s.labelAnchor, s.labelInside, s.labelOffsetX, s.labelOffsetY, s.labelFontSize);
   }
 }
 
@@ -1767,7 +1787,7 @@ function applySingleBoxToDom() {
   // 機能 2: ラベル位置 + 表示テキスト (speakerSrc に応じて切替)
   if (lbl) {
     lbl.textContent = srcSide === 'hakase' ? 'はかせ' : 'ポノ';
-    applyLabelPosition(lbl, sb.labelAnchor, sb.labelInside, sb.labelOffsetX, sb.labelOffsetY);
+    applyLabelPosition(lbl, sb.labelAnchor, sb.labelInside, sb.labelOffsetX, sb.labelOffsetY, sb.labelFontSize);
   }
 }
 
@@ -2658,6 +2678,8 @@ function buildSingleBoxSection() {
   ]));
   sec.appendChild(makeSingleBoxRange('ラベルX', -500, 500, 1, 'labelOffsetX'));
   sec.appendChild(makeSingleBoxRange('ラベルY', -300, 300, 1, 'labelOffsetY'));
+  // 機能 6: ラベル文字サイズ
+  sec.appendChild(makeSingleBoxRange('ラベル文字サイズ', 12, 60, 1, 'labelFontSize'));
   sec.appendChild(makeSingleBoxSpeakerRow());
   return sec;
 }
@@ -2751,6 +2773,8 @@ function buildRightPane() {
   ]));
   boxGroup.appendChild(makeRange('ラベルX', -500, 500, 1, 'labelOffsetX', sideKey));
   boxGroup.appendChild(makeRange('ラベルY', -300, 300, 1, 'labelOffsetY', sideKey));
+  // 機能 6: ラベル文字サイズ
+  boxGroup.appendChild(makeRange('ラベル文字サイズ', 12, 60, 1, 'labelFontSize', sideKey));
   boxGroup.appendChild(makeTextarea('サンプル文', 'sampleText', sideKey));
   body.appendChild(boxGroup);
 }
@@ -3008,6 +3032,10 @@ function buildCSS() {
       // 機能 2: ラベル位置
       lines.push('  .op-side-' + sideKey + ' .op-dialogue-label {');
       emitLabelPosition(ss);
+      // 機能 6: ラベル文字サイズ
+      if (typeof ss.labelFontSize === 'number' && Number.isFinite(ss.labelFontSize) && ss.labelFontSize > 0) {
+        lines.push('    font-size: ' + ss.labelFontSize + 'px;');
+      }
       lines.push('  }');
     });
     // 機能 5: when singleBoxMode is ON, emit the .op-dialogue-single CSS block
@@ -3043,6 +3071,10 @@ function buildCSS() {
       // 機能 2: ラベル位置
       lines.push('  .op-dialogue-single .op-dialogue-label {');
       emitLabelPosition(sb);
+      // 機能 6: ラベル文字サイズ
+      if (typeof sb.labelFontSize === 'number' && Number.isFinite(sb.labelFontSize) && sb.labelFontSize > 0) {
+        lines.push('    font-size: ' + sb.labelFontSize + 'px;');
+      }
       lines.push('  }');
     }
     lines.push('}');
