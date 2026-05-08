@@ -127,13 +127,15 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 | # | kind | bg | 内容 |
 |---|------|-----|------|
 | 1 | narration | `OP_BG.webp` (森の家・外観、**シャープ／ブラー無し**) | seg1 (3行): もりの おくに… すんでいます。 / seg2 (2行 赤強調、新文言): ポノは、なかよしの はかせと、いつもの なぞなぞで あそぶために やってきました。 |
-| 2 | dialogue  | `OP_BG02.webp` (**博士の家の屋内**、is-static-blur: scale 1.08 + blur 10px) | Pono panel 既定 = `dance_hi.webp`、**pono line で `dance_smile.webp` に override** (per-line ponoImg)、博士 = `owl_professor_guide.webp`、台詞「ほっほっほ…ポノか。よくきたのう」「はかせ、あそびに きたよ！」 |
-| 3 | dialogue  | 同上 | Pono = `dance_hooray.webp` (panel + line とも同値)、台詞「きょうも なぞなぞを するかの？」「うん！やりたい！」 |
-| 4 | dialogue  | 同上 | Pono = `think_arms_crossed_side.webp`、台詞「ふむふむ… じしんは あるかな？」「うーん…でも がんばる！」 |
-| 5 | dialogue  | 同上 | Pono = `dance_smile.webp`、台詞「ほっほっほ、それでよい。まちがえても よいのじゃ。**かんがえることが たいせつじゃからの。**」「うん！」 (2026-05-08 拡張) |
-| 6 | dialogue  | 同上 | Pono = `think_chin_clasp.webp`、台詞「では、いくぞ…」「うん！」 |
+| 2 | dialogue  | `OP_BG02.webp` (**博士の家の屋内**、is-static-blur: scale 1.08 + blur 10px) | Pono panel 既定 = `dance_hi.webp`、**hakase line で `pono_001.webp` (neutral 立ち姿、聞き役)、pono line で `dance_smile.webp` に override**、博士 = `owl_professor_guide.webp`、台詞「ほっほっほ…ポノか。よくきたのう」「はかせ、あそびに きたよ！」 |
+| 3 | dialogue  | 同上 | Pono panel 既定 = `dance_hooray.webp`、**hakase line で `pono_001.webp` (聞き役)、pono line で `dance_hooray.webp`**、台詞「きょうも なぞなぞを するかの？」「うん！やりたい！」 |
+| 4 | dialogue  | 同上 | Pono panel 既定 = `think_arms_crossed_side.webp`、**hakase line で `pono_001.webp` (聞き役)、pono line で `think_arms_crossed_side.webp`**、台詞「ふむふむ… じしんは あるかな？」「うーん…でも がんばる！」 |
+| 5 | dialogue  | 同上 | Pono panel 既定 = `dance_smile.webp`、**hakase line で `pono_001.webp` (聞き役)、pono line で `dance_smile.webp`**、台詞「ほっほっほ、それでよい。まちがえても よいのじゃ。**かんがえることが たいせつじゃからの。**」「うん！」 (2026-05-08 拡張) |
+| 6 | dialogue  | 同上 | Pono panel 既定 = `think_chin_clasp.webp`、**hakase line / pono line とも `think_chin_clasp.webp`** (両者真剣な構え)、台詞「では、いくぞ…」「うん！」 |
 
-Pono は `assets/images/characters/pono/dance/` 配下の透過 PNG を panel ごとに表情/身振り別で切替。**2026-05-08 から per-line `ponoImg` 対応**: 各 dialogue line に optional `ponoImg` を持たせ、playOpeningCinematic が line 開始時に `d.ponoImg ?? panel.ponoImg` で `op-char-pono` の src を切替える (panel-level は fallback として残置 = 互換性維持)。事前にナレーション中に `new Image()` で全 panel + per-line ponoImg をプリロード済み（コールドキャッシュでも切替時 pop しない）。
+Pono は `assets/images/characters/pono/dance/` 配下の透過 PNG を panel ごとに表情/身振り別で切替。**2026-05-08 から per-line `ponoImg` 対応** (speaker 関係なく全 line で指定可能): 各 dialogue line に optional `ponoImg` を持たせ、playOpeningCinematic が line 開始時に `d.ponoImg ?? panel.ponoImg` で `op-char-pono` の src を切替える (panel-level は fallback として残置 = 互換性維持)。**hakase 発話中も Pono は表示されているので、聞いている/驚いている等のリアクションを per-line ponoImg で表現できる。Panel 2-5 は `pono_001.webp` (neutral 立ち姿)、Panel 6 は `think_chin_clasp.webp` を使用**。事前にナレーション中に `new Image()` で全 panel + per-line ponoImg をプリロード済み（コールドキャッシュでも切替時 pop しない）。
+
+**新規アセット (2026-05-08)**: `assets/images/characters/pono/dance/pono_001.webp` (399×569 RGBA, 46.5KB) — 元 `assets/images/characters/pono/pono_001.png` (303KB, 立ち姿 neutral) を WebP q85 で 85% 削減。元 PNG はそのまま残置 (他参照保護)。
 
 ## Implementation Files
 
