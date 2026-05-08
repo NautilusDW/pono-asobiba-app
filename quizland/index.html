@@ -970,36 +970,45 @@ body.sheet-on .hdr-right .ctrl-btn {
 }
 .opposite-with-img { gap: 14px; }
 
-/* 「つぎへ」ボタン (opposite reveal 中に answer-panel に出現) */
+/* 「つぎへ」ボタン: stage 中央下のオーバーレイ。 progress-num.png を背景に
+   置き、 答え選択 (img_answer / 通常両方) 後に全 169 問で表示する。
+   コンテナ (#next-btn-area) は safe-area 直下に固定配置 (CSS 制御)。 */
+.next-btn-area {
+  position: absolute;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: 50;
+  pointer-events: none; /* 空の枠はクリックを邪魔しない。 ボタンだけ pointer-events:auto */
+}
 .next-q-btn {
+  pointer-events: auto;
+  display: none;
+  background: url('../assets/images/quizland/progress-num.png') center / 100% 100% no-repeat;
+  border: none;
+  padding: 0;
+  width: 240px;
+  height: 96px;
+  color: #6B3F12; /* progress-num のクリーム中央に乗せて読みやすい暖色ダークブラウン */
   font-family: inherit;
-  font-size: 32px;
-  font-weight: 800;
-  color: #FFF7E5;
-  background: linear-gradient(180deg, #F2A93B, #D36B12);
-  border: 3px solid #B85708;
-  border-radius: 22px;
-  padding: 18px 56px;
-  min-width: 240px;
-  min-height: 80px;
-  box-shadow: 0 8px 0 rgba(120, 83, 20, 0.32), 0 12px 24px rgba(120, 83, 20, 0.18);
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 0 rgba(255, 248, 232, 0.6);
   cursor: pointer;
-  margin: 0 auto;
-  display: block;
-  letter-spacing: 0.04em;
-  text-shadow: 0 2px 0 rgba(120, 83, 20, 0.45);
   opacity: 0;
   transform: translateY(8px) scale(0.96);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  box-shadow: 0 8px 20px rgba(120, 83, 20, 0.25);
+  border-radius: 22px;
 }
 .next-q-btn.show {
+  display: inline-block;
   opacity: 1;
   transform: translateY(0) scale(1);
 }
-.next-q-btn:active {
-  transform: translateY(2px) scale(0.98);
-  box-shadow: 0 4px 0 rgba(120, 83, 20, 0.32), 0 6px 12px rgba(120, 83, 20, 0.18);
-}
+.next-q-btn:active { transform: translateY(2px) scale(0.98); }
+.next-q-btn[disabled],
 .next-q-btn:disabled { opacity: 0.65; cursor: default; }
 
 /* ─────────────────────────────────────────────────────────
@@ -2486,6 +2495,58 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: rgba(0,0,0,0.55);
   outline: none;
 }
+
+/* ===== Tap-to-advance hint (2026-05-08) =====
+   typing 完了後に「タップしてつづける ▶」を画面下中央付近にフェードイン。
+   - 全パネル共通の単一要素 (#op-tap-hint) として運用する。
+   - .op-content の transform: scale で縮小される論理 px 系に乗せる
+     (narration / dialogue 系と同じく pre-scale 値で書く)。
+   - 矢印 (▶) を控えめに点滅させて視認性を上げる (1.5s 周期)。
+   - pointer-events は auto にして、タップを直接拾えるようにする
+     (実際の進行ロジックは #op-cinematic の親リスナで処理)。 */
+.op-tap-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff8e7;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.65), 0 0 12px rgba(0,0,0,0.45);
+  letter-spacing: 0.08em;
+  padding: 10px 22px;
+  background: rgba(0,0,0,0.32);
+  border-radius: 999px;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+  white-space: nowrap;
+  user-select: none;
+}
+.op-tap-hint.is-visible { opacity: 1; }
+.op-tap-hint.hidden { display: none; }
+.op-tap-hint .op-tap-hint-arrow {
+  display: inline-block;
+  margin-left: 0.25em;
+  animation: opTapHintBlink 1.5s ease-in-out infinite;
+}
+@keyframes opTapHintBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+/* per-VC font-size 微調整 (画面幅に応じて読みやすく) */
+@media (min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10) {
+  .op-tap-hint { font-size: 26px; bottom: 20px; }
+}
+@media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10) {
+  .op-tap-hint { font-size: 36px; bottom: 28px; }
+}
+@media (min-aspect-ratio: 19/10) {
+  .op-tap-hint { font-size: 38px; bottom: 28px; }
+}
+
 /* Fix (2026-05-07): 旧 `(min-aspect-ratio: 16/10)` / `(max-width: 540px)` 用の
    `.op-narration` 上書きは vw / viewport-px 単位だったが、`.op-content` が
    `transform: scale()` で縮小される構造下では正しくフィットしないため廃止。
@@ -2908,6 +2969,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
         </div>
       </div>
 
+      <!-- 「つぎへ」ボタン用オーバーレイコンテナ (safe-area 中央下に固定配置)。
+           showNextButton() がこの中に <button> を append する。
+           layout-applier の saved-layout には登録しないので、 純粋に CSS で位置を制御。 -->
+      <div id="next-btn-area" class="next-btn-area" aria-hidden="false"></div>
+
     </div>
   </div>
 </div>
@@ -2955,6 +3021,10 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
           <div class="op-dialogue-text" id="op-dialogue-text-single"></div>
         </div>
       </div>
+    </div>
+    <!-- Tap-to-advance hint (typing 完了後にフェードイン / 進行で fade out) -->
+    <div class="op-tap-hint hidden" id="op-tap-hint" aria-hidden="true">
+      <span class="op-tap-hint-label">タップしてつづける</span><span class="op-tap-hint-arrow">▶</span>
     </div>
   </div>
   <button type="button" class="op-skip" id="op-skip">スキップ ▶︎</button>
@@ -3874,31 +3944,44 @@ function setPhase(phase) {
   }
 }
 
-// reveal 中の「つぎへ」ボタン。 #answer-panel を空にしてその位置に大きいボタンを置く。
-// 次問題へ遷移するときに loadQuestion → renderChoices が答えパネルを再生成するので、
-// hideNextButton は不要 (loadQuestion 側で innerHTML='' される)。 ただし API として用意。
+// reveal/正解後の「つぎへ」ボタン。 stage 中央下の #next-btn-area に
+// 大きいボタンを置く (進行ピル progress-num.png 背景)。 既存のチップは
+// answer-panel に残したままなので、 ボタンが浮かぶオーバーレイになる。
+// nextQuestion が loadQuestion → hideNextButton を呼んで掃除する。
 function showNextButton(onClick) {
-  const tray = document.getElementById('answer-panel');
-  if (!tray) return;
-  tray.innerHTML = '';
+  // 静的コンテナを優先。 万一 (古い HTML 等) 無ければ safe-area 末尾に作る。
+  let area = document.getElementById('next-btn-area');
+  if (!area) {
+    const safe = document.getElementById('safe-area') || document.getElementById('stage');
+    if (!safe) return;
+    area = document.createElement('div');
+    area.id = 'next-btn-area';
+    area.className = 'next-btn-area';
+    safe.appendChild(area);
+  }
+  // 念のため既存ボタンを撤去 (重複防止)
+  area.innerHTML = '';
   const btn = document.createElement('button');
   btn.id = 'next-q-btn';
   btn.className = 'next-q-btn';
   btn.type = 'button';
   btn.setAttribute('aria-label', 'つぎの もんだいへ');
-  btn.textContent = 'つぎへ ▶';
+  btn.textContent = 'つぎへ';
   btn.addEventListener('click', function once() {
     btn.disabled = true;
     onClick();
   });
-  tray.appendChild(btn);
+  area.appendChild(btn);
   // フェードイン
   requestAnimationFrame(() => btn.classList.add('show'));
 }
 
 function hideNextButton() {
-  const btn = document.getElementById('next-q-btn');
-  if (btn) btn.remove();
+  const area = document.getElementById('next-btn-area');
+  if (area) area.innerHTML = '';
+  // フォールバック: 過去に answer-panel 内に挿入されていた場合の掃除
+  const stray = document.getElementById('next-q-btn');
+  if (stray) stray.remove();
 }
 
 // バルーンランダム選択 (連続で同じ画像を出さない)
@@ -4363,9 +4446,11 @@ function onChoice(idx, btn) {
           if (dKey && Narration.hasEntry(dKey)) Narration.play(dKey);
         }
       }, 1500);
-      setTimeout(nextQuestion, 4500);
+      // detail 表示後に「つぎへ」を表示 (自動遷移しない)
+      setTimeout(() => { showNextButton(nextQuestion); }, 2500);
     } else {
-      setTimeout(nextQuestion, 2000);
+      // 正解フィードバック / ジングル後に「つぎへ」を表示 (自動遷移しない)
+      setTimeout(() => { showNextButton(nextQuestion); }, 1200);
     }
   } else {
     btn.classList.add('wrong');
@@ -4439,6 +4524,7 @@ function nextQuestion() {
 function _doNextQuestion() {
   clearTimeout(_autoHintTimer);
   stopTriviaPoseAnimation(); // 前の質問のポーズ循環を必ず止める (interval リーク防止)
+  hideNextButton();           // 「つぎへ」を必ず片付ける (オーバーレイで残らないように)
   questionIdx++;
   if (questionIdx >= totalQuestions) {
     // editor mode (?edit=1): リザルトモーダルは閉じる手段が無く編集を阻害するので
@@ -4645,6 +4731,128 @@ function _opTypeInto(elId, text, presetName) {
   });
 }
 
+// ─── Tap-to-advance hint + waitForAdvance helpers (2026-05-08) ───────────────
+// 子供 (3-6 歳) の読書速度に対応するため、auto-only の wait を「タップでも進められる」
+// hybrid 方式に変える。 minHold (誤タップ防止) を必ず待った上で、その後は
+// 「user tap」 or 「auto-advance タイマー (or 音声完了)」 の早い方を解決する。
+//
+// state 変数:
+//   _opAdvanceResolve : 現在 arm 中の advance 用 resolver (null = 未 arm)
+//   _opAdvanceArmedAt : arm された時刻 (Date.now()), minHold 計算用
+//   _opAdvanceMinHold : 現在の arm に紐付く minHold ms
+let _opAdvanceResolve = null;
+let _opAdvanceArmedAt = 0;
+let _opAdvanceMinHold = 0;
+
+// 親 (#op-cinematic) に張る full-screen タップリスナー。
+// スキップボタン (#op-skip) と #op-tap-hint 自体は通すが、 advance 解決のトリガに
+// なる。 minHold 経過前のタップは無視する (typing 完了直後に親指が残っていても
+// 暴発しない)。
+function _opOnRootTap(e) {
+  // スキップボタンは通常通りの click で別ハンドラが処理する。
+  // (event.target が #op-skip またはその子孫の場合は advance を発火させない)
+  try {
+    if (e && e.target && typeof e.target.closest === 'function') {
+      if (e.target.closest('#op-skip')) return;
+    }
+  } catch (_) {}
+  if (!_opAdvanceResolve) return;       // 未 arm = まだ advance を待っていない
+  const elapsed = Date.now() - _opAdvanceArmedAt;
+  if (elapsed < _opAdvanceMinHold) return; // 誤タップ抑止
+  const r = _opAdvanceResolve;
+  _opAdvanceResolve = null;
+  try { r(); } catch (_) {}
+}
+
+function _opShowTapHint() {
+  const el = document.getElementById('op-tap-hint');
+  if (!el) return;
+  el.classList.remove('hidden');
+  // 1 frame 確保してから .is-visible を付け、opacity 0 → 1 の transition を発火させる。
+  void el.offsetWidth;
+  el.classList.add('is-visible');
+}
+
+function _opHideTapHint() {
+  const el = document.getElementById('op-tap-hint');
+  if (!el) return;
+  el.classList.remove('is-visible');
+  // 0.4s フェードアウト後に hidden を付ける (display:none で完全に剥がす)。
+  setTimeout(function() {
+    if (!el.classList.contains('is-visible')) el.classList.add('hidden');
+  }, 420);
+}
+
+// waitForAdvance:
+//   minHold ms は必ず待つ → その後 (a) ユーザータップ or (b) auto-advance タイマー
+//   の早い方で resolve。
+//   options:
+//     - minHold (default 800): 誤タップ防止のため必ず待つ ms
+//     - maxWait : auto-advance タイマー ms。 null 指定時は textLen ベースで自動計算。
+//     - textLen : auto 計算用の文字数 (maxWait 未指定時)
+//     - hasAudio: true なら audio 完了に応じて maxWait をかなり長めに取る指示
+//                 (実際の audio 待ちは外側で別途行うので、ここは単に extended fallback)
+//     - showHint (default true): typing 完了直後に hint を出すか
+// Cancellation:
+//   _opCancelled が true になったら 100ms 粒度で abort する。
+async function _opWaitForAdvance(options) {
+  const opts = options || {};
+  const minHold = (opts.minHold != null) ? opts.minHold : 800;
+  const textLen = opts.textLen || 0;
+  const hasAudio = !!opts.hasAudio;
+  const showHint = (opts.showHint !== false);
+  let autoMs;
+  if (opts.maxWait != null) {
+    autoMs = opts.maxWait;
+  } else if (hasAudio) {
+    // 音声がある場合は外で音声完了を別途待つ前提なので、ここのフォールバックは長め。
+    autoMs = Math.max(textLen * 150 + 4000, 8000);
+  } else {
+    autoMs = Math.max(textLen * 150 + 2000, 3000);
+  }
+
+  // 1. minHold は必ず待つ (キャンセル可)
+  const minStart = Date.now();
+  while (Date.now() - minStart < minHold) {
+    if (_opCancelled) return;
+    await new Promise(function(r) { setTimeout(r, 50); });
+  }
+  if (_opCancelled) return;
+
+  // 2. hint をフェードイン
+  if (showHint) _opShowTapHint();
+
+  // 3. tap or auto-advance timer の race
+  await new Promise(function(resolve) {
+    let resolved = false;
+    function done() {
+      if (resolved) return;
+      resolved = true;
+      _opAdvanceResolve = null;
+      resolve();
+    }
+    _opAdvanceArmedAt = Date.now();
+    _opAdvanceMinHold = 0; // ここではすでに minHold 経過済みなので 0
+    _opAdvanceResolve = done;
+    // auto-advance timer
+    const timeoutId = setTimeout(done, autoMs);
+    // cancellation poller (100ms 粒度) — _opCancelled で即時抜ける
+    const pollId = setInterval(function() {
+      if (_opCancelled) {
+        clearTimeout(timeoutId);
+        clearInterval(pollId);
+        done();
+      } else if (resolved) {
+        clearTimeout(timeoutId);
+        clearInterval(pollId);
+      }
+    }, 100);
+  });
+
+  // 4. hint を fade out
+  if (showHint) _opHideTapHint();
+}
+
 // ---- Question-text typewriter (in-game, silent / no babble) ----
 // 問題文を 1 文字ずつ流し込む。 OP cinematic の _opTypeInto と独立した
 // token (_qTypingToken) を持つ。 タップでスキップすると即時最後まで埋める。
@@ -4829,6 +5037,29 @@ async function playOpeningCinematic() {
   // Move keyboard focus to skip so kbd/switch users can bail out
   try { if (skipBtn) skipBtn.focus(); } catch (e) {}
 
+  // Tap-to-advance: #op-cinematic 親に full-screen click を張り、
+  // _opWaitForAdvance() の race を解決する。 #op-skip 上のタップは
+  // _opOnRootTap 側で early-return するので干渉しない。
+  // skip ボタンは別 click ハンドラ (onSkip) で全 OP skip を担当する役割分担。
+  try {
+    if (root) {
+      root.addEventListener('click', _opOnRootTap, true); // capture: hint 等の子要素より先に拾う
+    }
+  } catch (e) {}
+
+  // Reset advance state (前回 cinematic の残骸が万一あった場合に備える)
+  _opAdvanceResolve = null;
+  _opAdvanceArmedAt = 0;
+  _opAdvanceMinHold = 0;
+  // hint を hidden 初期状態に確実に戻しておく
+  try {
+    const __hintInit = document.getElementById('op-tap-hint');
+    if (__hintInit) {
+      __hintInit.classList.remove('is-visible');
+      __hintInit.classList.add('hidden');
+    }
+  } catch (e) {}
+
   // Hoist DOM lookups out of the loop (Fix 2)
   // Fix 3: 旧 .op-characters / .op-dialogues 廃止。新 .op-sides がキャラ+ダイアログを内包
   const bg          = document.getElementById('op-bg');
@@ -4971,8 +5202,25 @@ async function playOpeningCinematic() {
           _opActiveAudio = null;
         }
 
-        // セグメントが 2 つ以上ある場合、音声中盤 (or 6.5s フォールバック) でクロスフェード
+        // セグメントが 2 つ以上ある場合、音声中盤 (or 12s フォールバック or タップ) でクロスフェード
         if (segs.length >= 2) {
+          // Tap-to-advance も並行 arm する。
+          // tap でも進めるが、誤タップ抑止のため minHold 1200ms (子供がうっかり画面に触れただけで
+          // segment 1 を読み終わる前に飛ばすのを防ぐ)。
+          // hint は出さない (narration 序盤はナレーションが流れていて視覚誘導は不要)。
+          let __tapResolve = null;
+          let __tapPromise = new Promise(function(rr) {
+            const armedAt = Date.now();
+            const minHold = 1200;
+            _opAdvanceArmedAt = armedAt;
+            _opAdvanceMinHold = minHold;
+            _opAdvanceResolve = function() {
+              _opAdvanceResolve = null;
+              rr();
+            };
+            __tapResolve = _opAdvanceResolve;
+          });
+
           await new Promise(function(resolve) {
             let done = false; let timeoutId = null; let pollId = null;
             function finish() {
@@ -4980,6 +5228,8 @@ async function playOpeningCinematic() {
               done = true;
               if (pollId) { clearInterval(pollId); pollId = null; }
               if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+              // Tap arm を解除 (もし未解決なら release)
+              if (_opAdvanceResolve === __tapResolve) _opAdvanceResolve = null;
               resolve();
             }
             // Fix 1: セグメント 1 を「ふくろうの はかせが すんでいます。」が終わるまで保持。
@@ -4989,7 +5239,19 @@ async function playOpeningCinematic() {
               if (_opCancelled) { finish(); return; }
               if (audio && audio.duration && audio.currentTime >= Math.max(audio.duration * 0.62, 11.0)) finish();
             }, 100);
+            // Tap が来たらその時点で finish (ただし minHold は _opOnRootTap 内で守られる)
+            __tapPromise.then(finish);
           });
+          // 念のため: 音声を skip (音声完了を待たず seg2 へ進むのでタップ時はナレ音声を停止)
+          // ただし audio が ended 近傍だと不要なので、currentTime <= duration*0.62 のときのみ。
+          try {
+            if (audio && audio.duration && audio.currentTime < audio.duration * 0.62) {
+              // ユーザがタップで進んだ → 音声も止める (重ね再生回避)
+              audio.pause();
+              audio.currentTime = audio.duration; // ended 状態にして次の audio.ended 待ちを即抜けさせる
+              try { audio.dispatchEvent(new Event('ended')); } catch (_) {}
+            }
+          } catch (_) {}
 
           if (!_opCancelled) {
             // セグメント 1 をフェードアウト
@@ -5013,7 +5275,22 @@ async function playOpeningCinematic() {
           }
         }
 
-        // 音声 ended まで (or 安全上限) 待機
+        // 音声 ended まで (or 安全上限 or タップ) 待機。
+        // ここで tap-advance も並行 arm する。 tap が来たら音声を pause して即抜ける。
+        // segment 2 の表示はすでに完了しているのでタップ進行 hint も出す (子供向け)。
+        let __seg2TapResolve = null;
+        const __seg2TapPromise = new Promise(function(rr) {
+          _opAdvanceArmedAt = Date.now();
+          _opAdvanceMinHold = 1000;       // segment 2 表示直後の誤タップ抑止 1s
+          _opAdvanceResolve = function() {
+            _opAdvanceResolve = null;
+            rr();
+          };
+          __seg2TapResolve = _opAdvanceResolve;
+        });
+        // hint をフェードイン (segment 2 のテキストと同時、画面下中央)
+        _opShowTapHint();
+
         if (audio) {
           await new Promise(function(resolve) {
             let done = false; let timeoutId = null; let pollId = null;
@@ -5034,6 +5311,11 @@ async function playOpeningCinematic() {
                 if (_opCancelled) finish();
               }, 200);
             }
+            // Tap arm: tap が来たら finish (= 音声完了扱いで抜ける)
+            __seg2TapPromise.then(function() {
+              try { if (audio && !audio.ended) { audio.pause(); } } catch (_) {}
+              finish();
+            });
           });
           _opActiveAudio = null;
           // Restore BGM after narration.
@@ -5043,12 +5325,18 @@ async function playOpeningCinematic() {
             }
           } catch (e) {}
         } else {
-          // 音声が取れなかった場合は ~10s 確保
-          for (let t = 0; t < 50 && !_opCancelled; t++) {
+          // 音声が取れなかった場合は ~10s 確保 (タップでも抜ける)
+          let __tappedNoAudio = false;
+          __seg2TapPromise.then(function() { __tappedNoAudio = true; });
+          for (let t = 0; t < 50 && !_opCancelled && !__tappedNoAudio; t++) {
             await new Promise(function(r) { setTimeout(r, 200); });
           }
         }
+        // Tap arm を解除 (まだ tap が来ていない場合)
+        if (_opAdvanceResolve === __seg2TapResolve) _opAdvanceResolve = null;
+        _opHideTapHint();
         // Fix 2: ナレーション後の 2 秒の余韻 (Panel 2 のはかせ発話前に呼吸を入れる)
+        // ここはタップ干渉なしで短く保つ (画面遷移演出のための「呼吸」)
         for (let __t = 0; __t < 20 && !_opCancelled; __t++) {
           await new Promise(function(r) { setTimeout(r, 100); });
         }
@@ -5150,10 +5438,18 @@ async function playOpeningCinematic() {
           }
           if (dialogueEl) dialogueEl.textContent = '';
           await _opTypeInto('op-dialogue-text-single', d.text, isHakase ? 'owl' : 'pono');
-          // Hold for ~2000ms after each line (skip-aware, 100ms cancel granularity) (Fix 3)
-          for (let t = 0; t < 20 && !_opCancelled; t++) {
-            await new Promise(function(r) { setTimeout(r, 100); });
-          }
+          if (_opCancelled) break;
+          // Tap-to-advance + auto-advance hybrid:
+          // typing 完了直後に minHold 800ms (誤タップ抑止) → hint をフェードイン →
+          // 「タップ」 or 「textLen × 150 + 2000ms (最低 3s)」のどちらか早い方で次へ。
+          // 子供 (3-6 歳) の読書速度に対応するため auto は textLen ベースで余裕を持たせる。
+          const __dlen = (d && d.text) ? d.text.length : 0;
+          await _opWaitForAdvance({
+            minHold: 800,
+            textLen: __dlen,
+            // maxWait は明示しない → textLen ベース自動計算 (textLen*150 + 2000, 最低 3000)
+            showHint: true
+          });
         }
       }
     }
@@ -5171,6 +5467,22 @@ async function playOpeningCinematic() {
     __opNarrSrc = null;
     __opNarrGain = null;
     if (skipBtn) skipBtn.removeEventListener('click', onSkip);
+    try { if (root) root.removeEventListener('click', _opOnRootTap, true); } catch (e) {}
+    // Tap-advance state を全クリア (replay 時のリーク防止)
+    if (_opAdvanceResolve) {
+      try { _opAdvanceResolve(); } catch (e) {}
+    }
+    _opAdvanceResolve = null;
+    _opAdvanceArmedAt = 0;
+    _opAdvanceMinHold = 0;
+    // hint を hidden に戻す
+    try {
+      const __hintEnd = document.getElementById('op-tap-hint');
+      if (__hintEnd) {
+        __hintEnd.classList.remove('is-visible');
+        __hintEnd.classList.add('hidden');
+      }
+    } catch (e) {}
     try { window.removeEventListener('resize', rescaleOpContent); } catch (e) {}
     try { if (_opActiveAudio) { _opActiveAudio.pause(); } } catch (e) {}
     _opActiveAudio = null;

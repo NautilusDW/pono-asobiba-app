@@ -102,6 +102,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T13:45:32Z - Quizland OP cinematic に tap-to-advance + auto-advance hybrid 進行を追加 (Panel 1 narration seg1/seg2 + Panel 2-6 dialogue 全 line) + .op-tap-hint UI + sw.js CACHE_VERSION 873→874
+- **タスク**: Quizland OP cinematic に tap-to-advance + auto-advance hybrid 進行を追加 (Panel 1 narration seg1/seg2 + Panel 2-6 dialogue 全 line) + .op-tap-hint UI + sw.js CACHE_VERSION 873→874
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 122
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 34, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 48, "Grep": 4}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T12:42:37Z - alpha/11 6枚配置 + renderShapeName.q.img対応 + framed:true 全問適用 (21問新規 + 既存6問) + CACHE 873
 - **タスク**: alpha/11 6枚配置 + renderShapeName.q.img対応 + framed:true 全問適用 (21問新規 + 既存6問) + CACHE 873
 - **結果**: 成功
@@ -204,18 +217,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 50, "Agent": 101, "Bash": 156, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 10, "Edit": 15}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T11:41:44Z - Quizland OP cinematic update: emphasis true on Panel 1 segment 2, line breaks in Panel 5 dialogue, cache bump 864->865
-- **タスク**: Quizland OP cinematic update: emphasis true on Panel 1 segment 2, line breaks in Panel 5 dialogue, cache bump 864->865
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 371
-- **エラー数**: 41
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 167, "Read": 75, "Grep": 3, "ToolSearch": 1, "Agent": 79, "Write": 4, "Edit": 42}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
