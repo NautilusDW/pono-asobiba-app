@@ -2500,6 +2500,9 @@ function applyNarrationToDom() {
   el.style.justifyContent = mapTextAlignH(nr.textAlignH);
   el.style.flexDirection = 'column';
   // 背景: bgMode によって CSS 単色 or 画像フレームを切り替える。
+  // 重要: el.style.background = '' を最後に書くと shorthand が全 longhand を
+  //       リセットしてしまうため、各分岐の **先頭** で 1 回だけリセットする。
+  el.style.background = '';
   if (nr.bgMode === 'image') {
     el.style.backgroundImage = 'url("' + framePathById(nr.bgImage) + '")';
     el.style.backgroundSize = '100% 100%';
@@ -2509,11 +2512,8 @@ function applyNarrationToDom() {
     // (フレーム画像の枠デザインを優先し、二重枠を避ける)。
     el.style.borderRadius = '0';
     el.style.boxShadow = 'none';
-    // 'background' shorthand を使うと individual properties を上書きしてしまうので未使用。
-    el.style.background = '';
   } else {
     // CSS モード (既存挙動): 単色 + opacity + 角丸 + shadow。
-    el.style.background = '';
     el.style.backgroundImage = 'none';
     el.style.backgroundSize = '';
     el.style.backgroundRepeat = '';
