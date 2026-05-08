@@ -4743,6 +4743,7 @@ function _opTypeInto(elId, text, presetName) {
 let _opAdvanceResolve = null;
 let _opAdvanceArmedAt = 0;
 let _opAdvanceMinHold = 0;
+let _opHideTapHintTid = null;
 
 // 親 (#op-cinematic) に張る full-screen タップリスナー。
 // スキップボタン (#op-skip) と #op-tap-hint 自体は通すが、 advance 解決のトリガに
@@ -4778,7 +4779,10 @@ function _opHideTapHint() {
   if (!el) return;
   el.classList.remove('is-visible');
   // 0.4s フェードアウト後に hidden を付ける (display:none で完全に剥がす)。
-  setTimeout(function() {
+  // 二重起動防止: 直前のタイマーが残っていればクリアしてから arm し直す。
+  if (_opHideTapHintTid) { try { clearTimeout(_opHideTapHintTid); } catch (e) {} _opHideTapHintTid = null; }
+  _opHideTapHintTid = setTimeout(function() {
+    _opHideTapHintTid = null;
     if (!el.classList.contains('is-visible')) el.classList.add('hidden');
   }, 420);
 }
@@ -5041,11 +5045,8 @@ async function playOpeningCinematic() {
   // _opWaitForAdvance() の race を解決する。 #op-skip 上のタップは
   // _opOnRootTap 側で early-return するので干渉しない。
   // skip ボタンは別 click ハンドラ (onSkip) で全 OP skip を担当する役割分担。
-  try {
-    if (root) {
-      root.addEventListener('click', _opOnRootTap, true); // capture: hint 等の子要素より先に拾う
-    }
-  } catch (e) {}
+  try { if (root) root.removeEventListener('click', _opOnRootTap, true); } catch (e) {}
+  try { if (root) root.addEventListener('click', _opOnRootTap, true); } catch (e) {}
 
   // Reset advance state (前回 cinematic の残骸が万一あった場合に備える)
   _opAdvanceResolve = null;
