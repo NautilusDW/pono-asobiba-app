@@ -399,6 +399,7 @@ const QUIZLAND_QUESTIONS = {
       q:'コアラが たべるものは？',
       answer:2, choices:['バナナ','たけのこ','ユーカリの は','りんご'] ,
       detail:'ユーカリの はは どくが あるけど、コアラだけ たべられるよ！'},
+    // TODO(sprint-13): img を 'stage_trivia_giraffe_full.png' に、img_answer に 'stage_trivia_giraffe_neck_bones.png' を設定 (Codex 納品後)
     { level:2, type:'trivia', category:'trivia',
       img:'kirin.png',
       q:'キリンの くびの ほねは いくつ？',
