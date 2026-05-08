@@ -2139,7 +2139,22 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   position: fixed; inset: 0; z-index: 300;
   background: #000;
   overflow: hidden;
+  /* Fix 5d (rev 2026-05-07, character/dialogue 完全消失バグ修正):
+     `.op-content` を `position: absolute + top/left:50% + translate(-50%,-50%) + scale(...)`
+     で中央寄せしようとした旧実装は、複雑な複合 transform の解釈が一部環境
+     (特にモバイル DevTools の狭ビューポート) で破綻し、キャラ slot とダイアログ
+     box が viewport 外にレンダリングされて完全消失していた。
+     エディタ (`tools/op-layout-editor.html`) は `#stage-wrap` を flex 中央寄せ
+     コンテナにし、`.stage` を flex item として `transform: scale(...)` のみで
+     縮小している (line 1736-1744 `rescaleStage()` 同等の構造)。
+     本番もこの構造に揃え、`.op-cinematic` を flex centering コンテナにし、
+     `.op-content` は `position:relative; flex:none; transform: scale(...)` のみで
+     中央配置 + 縮小を行うシンプルな経路に切り替える。
+     `.op-bg` / `.op-skip` は `position:absolute` で flex フローから独立しており、
+     flex の中央寄せには干渉しない。 */
   display: flex;
+  align-items: center;
+  justify-content: center;
   /* Hard cut from mode-screen: overlay is always fully opaque black.
      Only the inner .op-bg fades in (see below). */
   opacity: 1;
@@ -2193,15 +2208,18 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
    ビューポートに収める。各 VC ごとの実寸 / scale 計算は下方の @media ブロックで
    定義する (B/C/D)。 */
 .op-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  /* Fix 5d: `.op-cinematic` を flex centering コンテナにしたので、
+     `.op-content` は flex item として配置されるだけで自動的に中央に来る。
+     position は relative、flex: none で flex 軸の伸縮を抑止し、
+     transform は scale (縮小フィット) のみ。translate は使わない。 */
+  position: relative;
+  flex: none;
   transform-origin: center center;
   /* width / height / transform は VC ごとに @media で上書き。
      ここではフォールバック (16:9 1920×1080) として計算しておく。 */
   width: 1920px;
   height: 1080px;
-  transform: translate(-50%, -50%) scale(min(calc(100vw / 1920), calc(100vh / 1080)));
+  transform: scale(min(calc(100vw / 1920), calc(100vh / 1080)));
   pointer-events: none;     /* スキップボタンの裏側は素通しにし、子要素だけ受ける */
 }
 .op-content > * {
@@ -2374,10 +2392,12 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-content {
     /* Fix 5c: editor `.stage[data-vc="B"]` 実寸 1024×768 を本番でも採用し、
        `#stage-wrap` 同等の scale(min(availW/w, availH/h)) を CSS calc で再現。
-       これで内部絶対 px (slot 1021px / box 984px 等) が viewport に収まる。 */
+       これで内部絶対 px (slot 1021px / box 984px 等) が viewport に収まる。
+       Fix 5d: 親 `.op-cinematic` の flex centering で中央寄せ → translate 不要、
+       transform は scale のみ。 */
     width: 1024px;
     height: 768px;
-    transform: translate(-50%, -50%) scale(min(calc(100vw / 1024), calc(100vh / 768)));
+    transform: scale(min(calc(100vw / 1024), calc(100vh / 768)));
   }
   .op-side-pono .op-char-slot {
     width: 1021px;
@@ -2418,10 +2438,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 /* viewport class C (1920x1080 / 16:9) */
 @media (min-aspect-ratio: 14/10) and (max-aspect-ratio: 19/10) {
   .op-content {
-    /* Fix 5c: editor `.stage[data-vc="C"]` 実寸 1920×1080 を採用。 */
+    /* Fix 5c: editor `.stage[data-vc="C"]` 実寸 1920×1080 を採用。
+       Fix 5d: flex centering により translate 不要。 */
     width: 1920px;
     height: 1080px;
-    transform: translate(-50%, -50%) scale(min(calc(100vw / 1920), calc(100vh / 1080)));
+    transform: scale(min(calc(100vw / 1920), calc(100vh / 1080)));
   }
   .op-side-pono .op-char-slot {
     width: 1481px;
@@ -2462,10 +2483,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 /* viewport class D (2560x1080 / 64:27 ≒ 21:9) */
 @media (min-aspect-ratio: 19/10) {
   .op-content {
-    /* Fix 5c: editor `.stage[data-vc="D"]` 実寸 2560×1080 を採用。 */
+    /* Fix 5c: editor `.stage[data-vc="D"]` 実寸 2560×1080 を採用。
+       Fix 5d: flex centering により translate 不要。 */
     width: 2560px;
     height: 1080px;
-    transform: translate(-50%, -50%) scale(min(calc(100vw / 2560), calc(100vh / 1080)));
+    transform: scale(min(calc(100vw / 2560), calc(100vh / 1080)));
   }
   .op-side-pono .op-char-slot {
     width: 560px;
