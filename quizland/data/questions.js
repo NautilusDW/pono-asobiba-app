@@ -230,7 +230,7 @@ const QUIZLAND_QUESTIONS = {
       q:'ふゆに いきが しろく みえるのは なぜ？',
       answer:0, choices:['いきの なかの みずが ひえて つぶになるから','くちの なかが しろいから','ゆきが ふっているから','さむくて こおっているから'] ,
       detail:'あったかい いきが つめたい くうきで ひえて、ちいさな みずの つぶに なるよ！'},
-    // TODO(sprint-14): img を 'stage_weather_snow_fuzzy_particle.png' に切替 + img_answer に 'stage_weather_snowflake_big.png' を追加 (Codex 納品後の reveal pair 化)
+    // TODO(sprint-14): img を 'stage_weather_snowflake_compare.png' (4 形状シルエット比較) に切替 (Codex 納品後の reveal pair 化)。設計を「単一ぼかし粒」→「4 形状比較」に変更 (2026-05-08)
     { level:3, type:'trivia', category:'weather',
       img:'stage_weather_snowflake_big.png',
       q:'ゆきの けっしょうは どんな かたち？',
