@@ -24,6 +24,7 @@
 - **Codex 画像 外周ぼかしルール**: [memory/feedback_codex_canvas_safe_margin.md](memory/feedback_codex_canvas_safe_margin.md) — シーン絵は外周をぼかして発注（後でフレーム差し替え時に切れないように）。オブジェクト単体絵は例外（上下左右切れない構図必須）。**全 Codex 発注で必須**
 - **Quiz Question Reveal Sequence**: [memory/feature_quiz_question_reveal_sequence.md](memory/feature_quiz_question_reveal_sequence.md) — 問題開始時の段階リビール (プレート → typewriter 問題文 → イラスト fade in → 4 択 fade in)。Q1-5 のみプレート、Q6+ は typewriter から開始、tap-to-skip で全 stage 即 revealed
 - **Quiz Framed Image Flag**: [memory/feature_quiz_framed_image_flag.md](memory/feature_quiz_framed_image_flag.md) — 背景シーン入り画像 (風景/紙風枠/草地ヴィネット等、計 32 種) は questions.js の `framed:true` / `framed_answer:true` でスロット単位に `.is-framed` を付与し共通 drop-shadow を抑止。`renderShapeName` も q.img 指定時は実物画像優先 + framed 対応済
+- **Quiz Next Button**: [memory/feature_quiz_next_button.md](memory/feature_quiz_next_button.md) — 回答後のつぎへボタン仕様。center-bottom 固定オーバーレイ + progress-num.png ピル背景 + 全 169 問で表示 (旧: 自動進行 + img_answer 限定)。`#next-btn-area` は layout-applier 非対象
 
 ---
 
@@ -101,6 +102,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-08T13:51:53Z - quizland OP scenario verify (no-op match) + tap-listener dedup guard + _opHideTapHint timer leak fix + CACHE_VERSION 875->876
+- **タスク**: quizland OP scenario verify (no-op match) + tap-listener dedup guard + _opHideTapHint timer leak fix + CACHE_VERSION 875->876
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 157
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 19, "Agent": 53, "ToolSearch": 1, "Bash": 63, "Edit": 18, "Grep": 1, "Glob": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
 
 ### 2026-05-08T13:50:54Z - Reviewer A (Audio) cross-review of quizland SE commit a967263 (don.mp3 nextQuestion)
 - **タスク**: Reviewer A (Audio) cross-review of quizland SE commit a967263 (don.mp3 nextQuestion)
@@ -203,19 +217,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 178, "Read": 100, "Grep": 11, "ToolSearch": 2, "Agent": 86, "Write": 5, "Edit": 52, "Glob": 7}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T12:20:27Z - 子供の歯画像 (stage_body_teeth_replacement.png) を sprint-13 body L3 に差し替え + framed:true + CACHE_VERSION 870
-- **タスク**: 子供の歯画像 (stage_body_teeth_replacement.png) を sprint-13 body L3 に差し替え + framed:true + CACHE_VERSION 870
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 409
-- **エラー数**: 44
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 175, "Read": 86, "Grep": 7, "ToolSearch": 2, "Agent": 82, "Write": 5, "Edit": 52}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
