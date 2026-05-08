@@ -752,7 +752,7 @@
       <option value="D">現在の VC を D にコピー</option>
       <option value="all">現在の VC を全 VC にコピー</option>
     </select>
-    <button id="btn-undo-reset" class="ghost" disabled>元に戻す</button>
+    <button id="btn-undo-reset" class="ghost" title="直前の操作を取り消します (最大 50 件)" disabled>元に戻す</button>
     <button id="btn-reset" class="ghost">リセット</button>
   </header>
 
@@ -1301,10 +1301,14 @@ function defaultsFor(vc) {
       fontSize: narrationDefaults.fontSize,
       textAlignH: 'center',
       textAlignV: 'center',
+      bgMode: 'css', // 'css' | 'image'
+      bgImage: DEFAULT_FRAME_ID,
       bgColor: '#fffdf4',
       bgOpacity: 0.92,
       borderRadius: 24,
-      showShadow: true
+      showShadow: true,
+      aspectLock: false,
+      aspectLockRatio: 0
     }
   };
 }
@@ -1449,10 +1453,14 @@ function migrateFrameIds(parsed) {
       fontSize: nd.fontSize,
       textAlignH: 'center',
       textAlignV: 'center',
+      bgMode: 'css',
+      bgImage: DEFAULT_FRAME_ID,
       bgColor: '#fffdf4',
       bgOpacity: 0.92,
       borderRadius: 24,
-      showShadow: true
+      showShadow: true,
+      aspectLock: false,
+      aspectLockRatio: 0
     };
   } else {
     const nr = parsed.narration;
@@ -1474,6 +1482,11 @@ function migrateFrameIds(parsed) {
     if (nr.bgOpacity > 1) nr.bgOpacity = 1;
     if (typeof nr.borderRadius !== 'number' || !Number.isFinite(nr.borderRadius) || nr.borderRadius < 0) nr.borderRadius = 24;
     if (typeof nr.showShadow !== 'boolean') nr.showShadow = true;
+    // Image frame mode (画像フレーム機能) — backfill defaults if absent on legacy state.
+    if (nr.bgMode !== 'css' && nr.bgMode !== 'image') nr.bgMode = 'css';
+    if (typeof nr.bgImage !== 'string' || !FRAME_IDS.includes(nr.bgImage)) nr.bgImage = DEFAULT_FRAME_ID;
+    if (typeof nr.aspectLock !== 'boolean') nr.aspectLock = false;
+    if (typeof nr.aspectLockRatio !== 'number' || !Number.isFinite(nr.aspectLockRatio)) nr.aspectLockRatio = 0;
   }
   return parsed;
 }
@@ -1516,6 +1529,7 @@ function makePonoThumb(v) {
   div.appendChild(img);
   div.appendChild(lbl);
   div.addEventListener('click', () => {
+    pushUndoSnapshot('Pono画像選択');
     state[currentVC].pono.variant = v.name;
     save(currentVC);
     render();
@@ -1629,6 +1643,7 @@ function addDroppedPonoFile(file) {
     toast(`${file.name} は 10MB を超えるため受け付けられません`, 'err');
     return Promise.resolve(null);
   }
+  pushUndoSnapshot('画像追加 (Pono)');
   return readFileAsDataURL(file).then(dataUrl => {
     const baseLabel = String(file.name || 'pono').replace(/\.[^./\\]+$/, '') || 'pono';
     const id = uniquePonoName(sanitizeIdBase(file.name));
@@ -1654,6 +1669,7 @@ function addDroppedFrameFile(file) {
     toast(`${file.name} は 10MB を超えるため受け付けられません`, 'err');
     return Promise.resolve(null);
   }
+  pushUndoSnapshot('画像追加 (フレーム)');
   return readFileAsDataURL(file).then(dataUrl => {
     const baseLabel = String(file.name || 'frame').replace(/\.[^./\\]+$/, '') || 'frame';
     const id = uniqueFrameId(sanitizeIdBase(file.name));
@@ -1691,6 +1707,7 @@ function removeUserPonoVariant(name) {
   const idx = PONO_VARIANTS.findIndex(v => v.name === name);
   if (idx < 0) return;
   if (!PONO_VARIANTS[idx].userAdded) return; // safety: never delete originals
+  pushUndoSnapshot('画像削除 (Pono)');
   PONO_VARIANTS.splice(idx, 1);
   // Persist removal (a remove can never trip Quota; ignore result).
   try { saveDroppedAssets(); } catch (_) {}
@@ -1719,6 +1736,7 @@ function removeUserFrameImage(id) {
   const idx = FRAME_IMAGES.findIndex(f => f.id === id);
   if (idx < 0) return;
   if (!FRAME_IMAGES[idx].userAdded) return; // safety
+  pushUndoSnapshot('画像削除 (フレーム)');
   FRAME_IMAGES.splice(idx, 1);
   const idIdx = FRAME_IDS.indexOf(id);
   if (idIdx >= 0) FRAME_IDS.splice(idIdx, 1);
@@ -2005,11 +2023,30 @@ function applyNarrationToDom() {
   el.style.alignItems = mapTextAlignV(nr.textAlignV);
   el.style.justifyContent = mapTextAlignH(nr.textAlignH);
   el.style.flexDirection = 'column';
-  el.style.background = hexToRgba(nr.bgColor, nr.bgOpacity);
-  el.style.borderRadius = (Number(nr.borderRadius) || 0) + 'px';
-  el.style.boxShadow = nr.showShadow
-    ? '0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset'
-    : 'none';
+  // 背景: bgMode によって CSS 単色 or 画像フレームを切り替える。
+  if (nr.bgMode === 'image') {
+    el.style.backgroundImage = 'url("' + framePathById(nr.bgImage) + '")';
+    el.style.backgroundSize = '100% 100%';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundColor = 'transparent';
+    // 画像フレーム時は border-radius / box-shadow を打ち消す
+    // (フレーム画像の枠デザインを優先し、二重枠を避ける)。
+    el.style.borderRadius = '0';
+    el.style.boxShadow = 'none';
+    // 'background' shorthand を使うと individual properties を上書きしてしまうので未使用。
+    el.style.background = '';
+  } else {
+    // CSS モード (既存挙動): 単色 + opacity + 角丸 + shadow。
+    el.style.background = '';
+    el.style.backgroundImage = 'none';
+    el.style.backgroundSize = '';
+    el.style.backgroundRepeat = '';
+    el.style.backgroundColor = hexToRgba(nr.bgColor, nr.bgOpacity);
+    el.style.borderRadius = (Number(nr.borderRadius) || 0) + 'px';
+    el.style.boxShadow = nr.showShadow
+      ? '0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset'
+      : 'none';
+  }
   // Sample text — textContent insertion only (no innerHTML), preserves \n via white-space:pre-wrap.
   el.textContent = NARRATION_SAMPLE_TEXT;
 }
@@ -2217,6 +2254,15 @@ function syncSingleBoxRangeUi(key) {
   if (typeof fn === 'function') fn();
 }
 
+// Narration analog (key: 'width' / 'height' / 'paddingY' / etc.).
+// Used by narration aspect-lock so width <-> height changes refresh sibling UI
+// without a full pane rebuild.
+const _narrRangeSyncMap = {};
+function syncNarrRangeUi(key) {
+  const fn = _narrRangeSyncMap[key];
+  if (typeof fn === 'function') fn();
+}
+
 function makeRange(label, min, max, step, key, sideKey) {
   const row = document.createElement('div');
   row.className = 'prop-row';
@@ -2241,6 +2287,9 @@ function makeRange(label, min, max, step, key, sideKey) {
     let n = Number(v);
     if (!Number.isFinite(n)) return;
     n = Math.min(Math.max(n, Number(min)), Number(max));
+    // Undo: 同じ description で 500ms 以内なら debounce されるためスライダ
+    // ドラッグ中に大量 push されない。
+    pushUndoSnapshot('スライダ変更');
     state[currentVC][sideKey][key] = n;
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
@@ -2261,6 +2310,7 @@ function makeRange(label, min, max, step, key, sideKey) {
     let n = Number(num.value);
     if (!Number.isFinite(n)) n = state[currentVC][sideKey][key];
     n = Math.min(Math.max(n, Number(min)), Number(max));
+    pushUndoSnapshot('スライダ変更');
     state[currentVC][sideKey][key] = n;
     num.value = n;
     range.value = n;
@@ -2364,6 +2414,46 @@ function maybeApplySingleBoxAspectLockOnBoxChange(changedKey) {
   }
 }
 
+// Narration (Panel 1) aspect-lock companion. Only meaningful in image-mode:
+// links state[currentVC].narration.width <-> .height to the chosen frame's
+// natural aspect. heightAuto is force-cleared when aspect-lock is ON so the
+// derived height value actually applies.
+const NARR_W_MIN = 200, NARR_W_MAX = 2560;
+const NARR_H_MIN = 40,  NARR_H_MAX = 800;
+function maybeApplyNarrAspectLockOnSizeChange(changedKey) {
+  const nr = state[currentVC] && state[currentVC].narration;
+  if (!nr || !nr.aspectLock) return;
+  // Only image-mode is meaningful for narration aspect-lock (CSS-mode height
+  // is typically auto'd anyway). Bail otherwise.
+  if (nr.bgMode !== 'image') return;
+  let ratio = FRAME_NATURAL_ASPECT[nr.bgImage];
+  if (!ratio || ratio <= 0) {
+    if (nr.aspectLockRatio && nr.aspectLockRatio > 0) {
+      ratio = nr.aspectLockRatio;
+    } else if (nr.height > 0 && nr.width > 0) {
+      ratio = nr.width / nr.height;
+      nr.aspectLockRatio = ratio;
+    } else {
+      return;
+    }
+  }
+  if (changedKey === 'width') {
+    let h = Math.round(nr.width / ratio);
+    h = Math.min(Math.max(h, NARR_H_MIN), NARR_H_MAX);
+    if (h !== nr.height) {
+      nr.height = h;
+      syncNarrRangeUi('height');
+    }
+  } else if (changedKey === 'height') {
+    let w = Math.round(nr.height * ratio);
+    w = Math.min(Math.max(w, NARR_W_MIN), NARR_W_MAX);
+    if (w !== nr.width) {
+      nr.width = w;
+      syncNarrRangeUi('width');
+    }
+  }
+}
+
 // When the frame image (image-mode) changes while aspectLock is ON, update lock ratio
 // to the new image's natural aspect and re-derive boxH from current boxW.
 function reapplyAspectLockAfterFrameChange(sideKey) {
@@ -2423,6 +2513,28 @@ function onFrameAspectLoaded(frameId) {
       applySingleBoxToDom();
     }
   });
+  // Narration (Panel 1) aspect-lock reconciliation. Same shape as the
+  // singleBox branch above: when the locked frame's natural aspect finally
+  // loads, recompute narration.height from current width.
+  ['B', 'C', 'D'].forEach(vc => {
+    const nr = state[vc] && state[vc].narration;
+    if (!nr) return;
+    if (!nr.aspectLock) return;
+    if (nr.bgMode !== 'image') return;
+    if (nr.bgImage !== frameId) return;
+    const ratio = FRAME_NATURAL_ASPECT[frameId];
+    if (!ratio || ratio <= 0) return;
+    nr.aspectLockRatio = ratio;
+    let h = Math.round(nr.width / ratio);
+    h = Math.min(Math.max(h, NARR_H_MIN), NARR_H_MAX);
+    nr.height = h;
+    nr.heightAuto = false;
+    save(vc);
+    if (vc === currentVC && panelMode === 'narration') {
+      buildRightPane();
+      applyNarrationToDom();
+    }
+  });
 }
 
 let _radioUid = 0;
@@ -2456,6 +2568,7 @@ function makeRadio(label, key, sideKey, options, opts) {
     lbl.appendChild(txt);
     inp.addEventListener('change', () => {
       if (!inp.checked) return;
+      pushUndoSnapshot('ラジオ変更');
       state[currentVC][sideKey][key] = opt.value;
       // Side-effect: when boxMode flips, refresh the aspect-lock ratio source.
       if (key === 'boxMode') {
@@ -2510,6 +2623,7 @@ function makeSelect(label, key, sideKey, options) {
     sel.appendChild(o);
   });
   sel.addEventListener('change', () => {
+    pushUndoSnapshot('ドロップダウン変更');
     state[currentVC][sideKey][key] = sel.value;
     save(currentVC);
     propagateMirror(sideKey, key);
@@ -2529,6 +2643,7 @@ function makeColor(label, key, sideKey) {
   inp.type = 'color';
   inp.value = state[currentVC][sideKey][key];
   inp.addEventListener('input', () => {
+    pushUndoSnapshot('色変更');
     state[currentVC][sideKey][key] = inp.value;
     save(currentVC);
     applySideToDom(sideKey);
@@ -2549,6 +2664,7 @@ function makeTextarea(label, key, sideKey) {
   ta.value = state[currentVC][sideKey][key];
   ta.rows = 3;
   ta.addEventListener('input', () => {
+    pushUndoSnapshot('テキスト変更');
     state[currentVC][sideKey][key] = ta.value;
     saveDebounced(currentVC);
     applySideToDom(sideKey);
@@ -2572,6 +2688,7 @@ function makeFrameImageSelect(sideKey) {
     sel.appendChild(o);
   });
   sel.addEventListener('change', () => {
+    pushUndoSnapshot('フレーム画像変更');
     const s = state[currentVC][sideKey];
     s.boxImage = sel.value;
     reapplyAspectLockAfterFrameChange(sideKey);
@@ -2599,6 +2716,7 @@ function makeAspectLockRow(sideKey) {
   txt.className = 'lock-text';
   txt.textContent = '🔒 縦横比をロック (フレーム画像に合わせる)';
   cb.addEventListener('change', () => {
+    pushUndoSnapshot('縦横比ロック切替');
     const ss = state[currentVC][sideKey];
     ss.aspectLock = !!cb.checked;
     if (ss.aspectLock) {
@@ -2663,6 +2781,7 @@ function makeSingleBoxRange(label, min, max, step, key) {
     let n = Number(v);
     if (!Number.isFinite(n)) return;
     n = Math.min(Math.max(n, Number(min)), Number(max));
+    pushUndoSnapshot('スライダ変更');
     state[currentVC].singleBox[key] = n;
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
@@ -2680,6 +2799,7 @@ function makeSingleBoxRange(label, min, max, step, key) {
     let n = Number(num.value);
     if (!Number.isFinite(n)) n = state[currentVC].singleBox[key];
     n = Math.min(Math.max(n, Number(min)), Number(max));
+    pushUndoSnapshot('スライダ変更');
     state[currentVC].singleBox[key] = n;
     num.value = n;
     range.value = n;
@@ -2726,6 +2846,7 @@ function makeSingleBoxRadio(label, key, options, opts) {
     lbl.appendChild(txt);
     inp.addEventListener('change', () => {
       if (!inp.checked) return;
+      pushUndoSnapshot('ラジオ変更');
       state[currentVC].singleBox[key] = opt.value;
       // boxMode flip: refresh aspect-lock snapshot
       if (key === 'boxMode') {
@@ -2771,6 +2892,7 @@ function makeSingleBoxColor(label, key) {
   inp.type = 'color';
   inp.value = state[currentVC].singleBox[key];
   inp.addEventListener('input', () => {
+    pushUndoSnapshot('色変更');
     state[currentVC].singleBox[key] = inp.value;
     save(currentVC);
     applySingleBoxToDom();
@@ -2794,6 +2916,7 @@ function makeSingleBoxFrameSelect() {
     sel.appendChild(o);
   });
   sel.addEventListener('change', () => {
+    pushUndoSnapshot('フレーム画像変更');
     const sb = state[currentVC].singleBox;
     sb.boxImage = sel.value;
     if (sb.aspectLock && sb.boxMode === 'image') {
@@ -2826,6 +2949,7 @@ function makeSingleBoxAspectLockRow() {
   txt.className = 'lock-text';
   txt.textContent = '🔒 縦横比をロック';
   cb.addEventListener('change', () => {
+    pushUndoSnapshot('縦横比ロック切替');
     const ss = state[currentVC].singleBox;
     ss.aspectLock = !!cb.checked;
     if (ss.aspectLock) {
@@ -2883,6 +3007,7 @@ function makeSingleBoxSpeakerRow() {
     lbl.appendChild(document.createTextNode(opt.text));
     inp.addEventListener('change', () => {
       if (!inp.checked) return;
+      pushUndoSnapshot('ラジオ変更');
       state[currentVC].singleBox.speakerSrc = opt.value;
       save(currentVC);
       rr.querySelectorAll('label').forEach(l => {
@@ -2971,13 +3096,24 @@ function makeNarrRange(label, min, max, step, key) {
   const cur = state[currentVC].narration[key];
   range.value = cur;
   num.value = cur;
+  // Register UI-sync so narration aspect-lock can refresh sibling control.
+  _narrRangeSyncMap[key] = () => {
+    const v = state[currentVC].narration[key];
+    if (document.activeElement !== range) range.value = v;
+    if (document.activeElement !== num) num.value = v;
+  };
   const apply = (v) => {
     let n = Number(v);
     if (!Number.isFinite(n)) return;
     n = Math.min(Math.max(n, Number(min)), Number(max));
+    pushUndoSnapshot('スライダ変更');
     state[currentVC].narration[key] = n;
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
+    // Aspect-lock coupling for size dims (image mode only — gated inside helper).
+    if (key === 'width' || key === 'height') {
+      maybeApplyNarrAspectLockOnSizeChange(key);
+    }
     save(currentVC);
     applyNarrationToDom();
   };
@@ -3009,6 +3145,7 @@ function makeNarrRangeFloat(label, min, max, step, key) {
     let n = Number(v);
     if (!Number.isFinite(n)) return;
     n = Math.min(Math.max(n, Number(min)), Number(max));
+    pushUndoSnapshot('スライダ変更');
     state[currentVC].narration[key] = n;
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
@@ -3049,16 +3186,35 @@ function makeNarrRadio(label, key, options, opts) {
     lbl.appendChild(document.createTextNode(opt.text));
     inp.addEventListener('change', () => {
       if (!inp.checked) return;
+      pushUndoSnapshot('ラジオ変更');
       state[currentVC].narration[key] = opt.value;
+      // bgMode flip: if aspectLock is ON, refresh the lock ratio snapshot so the
+      // newly-active mode's natural aspect (or current dims) drives subsequent
+      // width/height coupling. Mirrors the singleBox pattern.
+      if (key === 'bgMode') {
+        const nn = state[currentVC].narration;
+        if (nn.aspectLock) {
+          if (opt.value === 'image') {
+            const a = FRAME_NATURAL_ASPECT[nn.bgImage];
+            if (a && a > 0) {
+              nn.aspectLockRatio = a;
+              let h = Math.round(nn.width / a);
+              h = Math.min(Math.max(h, NARR_H_MIN), NARR_H_MAX);
+              nn.height = h;
+              nn.heightAuto = false;
+            }
+          } else {
+            // CSS mode: snapshot current width/height ratio (best-effort).
+            if (nn.height > 0) nn.aspectLockRatio = nn.width / nn.height;
+          }
+        }
+      }
       save(currentVC);
       rr.querySelectorAll('label').forEach(l => {
         l.classList.toggle('checked', l.dataset.val === valStr);
       });
-      if (rebuild) {
-        buildRightPane();
-      } else {
-        applyNarrationToDom();
-      }
+      if (rebuild) buildRightPane();
+      applyNarrationToDom();
     });
     rr.appendChild(lbl);
   });
@@ -3076,6 +3232,7 @@ function makeNarrColor(label, key) {
   inp.type = 'color';
   inp.value = state[currentVC].narration[key] || '#fffdf4';
   inp.addEventListener('input', () => {
+    pushUndoSnapshot('色変更');
     state[currentVC].narration[key] = inp.value;
     save(currentVC);
     applyNarrationToDom();
@@ -3099,6 +3256,7 @@ function makeNarrCheckbox(label, key) {
   cb.type = 'checkbox';
   cb.checked = !!state[currentVC].narration[key];
   cb.addEventListener('change', () => {
+    pushUndoSnapshot('チェックボックス変更');
     state[currentVC].narration[key] = !!cb.checked;
     save(currentVC);
     if (key === 'heightAuto') {
@@ -3112,6 +3270,93 @@ function makeNarrCheckbox(label, key) {
   row.appendChild(lab);
   row.appendChild(wrap);
   return row;
+}
+
+function makeNarrFrameSelect() {
+  const row = document.createElement('div');
+  row.className = 'prop-row';
+  const lab = document.createElement('label');
+  lab.textContent = 'フレーム画像';
+  const sel = document.createElement('select');
+  FRAME_IMAGES.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id;
+    o.textContent = f.label;
+    if (state[currentVC].narration.bgImage === f.id) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    pushUndoSnapshot('フレーム画像変更');
+    const nr = state[currentVC].narration;
+    nr.bgImage = sel.value;
+    // If aspect-lock is ON & image-mode, snap to the new frame's natural aspect.
+    if (nr.aspectLock && nr.bgMode === 'image') {
+      const a = FRAME_NATURAL_ASPECT[nr.bgImage];
+      if (a && a > 0) {
+        nr.aspectLockRatio = a;
+        let h = Math.round(nr.width / a);
+        h = Math.min(Math.max(h, NARR_H_MIN), NARR_H_MAX);
+        nr.height = h;
+        nr.heightAuto = false;
+        syncNarrRangeUi('height');
+      }
+      // else: image not loaded yet — onFrameAspectLoaded will fix it later.
+    }
+    save(currentVC);
+    applyNarrationToDom();
+  });
+  row.appendChild(lab);
+  row.appendChild(sel);
+  return row;
+}
+
+function makeNarrAspectLockRow() {
+  const nr = state[currentVC].narration;
+  const wrap = document.createElement('label');
+  wrap.className = 'lock-row';
+  if (nr.aspectLock) wrap.classList.add('is-on');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = !!nr.aspectLock;
+  const txt = document.createElement('span');
+  txt.className = 'lock-text';
+  txt.textContent = '🔒 縦横比をロック (フレーム画像に合わせる)';
+  cb.addEventListener('change', () => {
+    pushUndoSnapshot('縦横比ロック切替');
+    const nn = state[currentVC].narration;
+    nn.aspectLock = !!cb.checked;
+    if (nn.aspectLock) {
+      // Aspect-lock only applies meaningfully in image-mode; snapshot ratio.
+      if (nn.bgMode === 'image') {
+        const a = FRAME_NATURAL_ASPECT[nn.bgImage];
+        if (a && a > 0) {
+          nn.aspectLockRatio = a;
+          // Lock implies an explicit height — turn off heightAuto and re-derive.
+          nn.heightAuto = false;
+          let h = Math.round(nn.width / a);
+          h = Math.min(Math.max(h, NARR_H_MIN), NARR_H_MAX);
+          nn.height = h;
+        } else {
+          // image not loaded yet — onFrameAspectLoaded will fix it.
+          nn.heightAuto = false;
+          if (nn.height > 0) nn.aspectLockRatio = nn.width / nn.height;
+        }
+      } else {
+        // CSS mode: snapshot current width/height ratio (best-effort).
+        if (nn.height > 0) nn.aspectLockRatio = nn.width / nn.height;
+      }
+      wrap.classList.add('is-on');
+    } else {
+      wrap.classList.remove('is-on');
+    }
+    save(currentVC);
+    // Rebuild so heightAuto / height slider visibility updates correctly.
+    buildRightPane();
+    applyNarrationToDom();
+  });
+  wrap.appendChild(cb);
+  wrap.appendChild(txt);
+  return wrap;
 }
 
 function buildNarrationSection() {
@@ -3142,8 +3387,11 @@ function buildNarrationSection() {
 
   // サイズ
   sec.appendChild(makeNarrRange('幅 (px)', 200, 2560, 1, 'width'));
-  sec.appendChild(makeNarrCheckbox('高さ auto', 'heightAuto'));
-  if (!nr.heightAuto) {
+  // 高さ auto は aspectLock ON 時は意味を持たない (アスペクト比から導出されるため)。
+  if (!nr.aspectLock) {
+    sec.appendChild(makeNarrCheckbox('高さ auto', 'heightAuto'));
+  }
+  if (!nr.heightAuto || nr.aspectLock) {
     sec.appendChild(makeNarrRange('高さ (px)', 40, 800, 1, 'height'));
   }
 
@@ -3165,10 +3413,19 @@ function buildNarrationSection() {
     { value: 'bottom', text: '下' }
   ]));
 
-  // 背景
-  sec.appendChild(makeNarrColor('背景色', 'bgColor'));
-  sec.appendChild(makeNarrRangeFloat('背景透過度', 0, 1, 0.01, 'bgOpacity'));
-  sec.appendChild(makeNarrCheckbox('影 (box-shadow)', 'showShadow'));
+  // 背景: モード切替 (CSS / 画像) + サブ設定。bgMode は rebuild=true で UI 出し分け。
+  sec.appendChild(makeNarrRadio('背景モード', 'bgMode', [
+    { value: 'css',   text: 'CSS' },
+    { value: 'image', text: '画像' }
+  ], { rebuild: true }));
+  if (nr.bgMode === 'image') {
+    sec.appendChild(makeNarrFrameSelect());
+    sec.appendChild(makeNarrAspectLockRow());
+  } else {
+    sec.appendChild(makeNarrColor('背景色', 'bgColor'));
+    sec.appendChild(makeNarrRangeFloat('背景透過度', 0, 1, 0.01, 'bgOpacity'));
+    sec.appendChild(makeNarrCheckbox('影 (box-shadow)', 'showShadow'));
+  }
 
   return sec;
 }
@@ -3180,6 +3437,8 @@ function buildRightPane() {
   // Clear the single-box sync map so detached closures don't fire.
   // (Per-side _rangeSyncMap is intentionally left to be overwritten on re-create.)
   Object.keys(_singleBoxRangeSyncMap).forEach(k => delete _singleBoxRangeSyncMap[k]);
+  // Same for narration sync map.
+  Object.keys(_narrRangeSyncMap).forEach(k => delete _narrRangeSyncMap[k]);
 
   // Panel mode: ナレーション編集時は対話用 UI を一切出さず、Narration セクションだけ表示。
   if (panelMode === 'narration') {
@@ -3415,6 +3674,7 @@ function buildHeader() {
   document.querySelectorAll('#speaker-row label').forEach(lb => {
     lb.addEventListener('click', (e) => {
       e.preventDefault();
+      pushUndoSnapshot('スピーカー変更');
       state[currentVC].speaker = lb.dataset.val;
       save(currentVC);
       render();
@@ -3422,56 +3682,62 @@ function buildHeader() {
   });
 }
 
-let _lastResetSnapshot = null;
-// Tracks "the most recent operation that the unified Undo button should reverse".
-// One of: null | 'reset' | 'vccopy'
-let _lastUndoOperation = null;
+// === 一般 Undo スタック =====================================================
+// 任意の state 変更を巻き戻せる汎用 Undo。スライダ・ラジオ・ドロップダウン・
+// テキスト・色・フレーム選択・アスペクトロック・ドロップ画像追加/削除・
+// VC コピー・Reset などすべての変更前 state をスタックに push する。
+//
+// 各エントリ: { snapshot: deepClone(state全体), description: 'スライダ変更' 等 }
+// 上限 50 件。同種の連続変更 (同じ description) が 500ms 以内なら新規 push を
+// スキップして直前のスナップで代用 (連続スライダ・連続テキスト入力対策)。
+const _UNDO_STACK_LIMIT = 50;
+let _undoStack = [];
+let _lastUndoPushTime = 0;
+
+function pushUndoSnapshot(description) {
+  // 直前 500ms 以内に同種の操作があれば新規 push をスキップ (連続入力 debounce)。
+  const now = Date.now();
+  if (_undoStack.length && _lastUndoPushTime && now - _lastUndoPushTime < 500
+      && _undoStack[_undoStack.length - 1].description === description) {
+    return; // 直近のスナップで十分
+  }
+  try {
+    _undoStack.push({
+      snapshot: JSON.parse(JSON.stringify(state)),
+      description: description || '変更',
+    });
+  } catch (e) {
+    // 万一 deep clone に失敗してもエディタ本体は止めない。
+    return;
+  }
+  if (_undoStack.length > _UNDO_STACK_LIMIT) _undoStack.shift();
+  _lastUndoPushTime = now;
+  _refreshUndoBtn();
+}
 
 function _refreshUndoBtn() {
   const undoBtn = document.getElementById('btn-undo-reset');
   if (!undoBtn) return;
-  undoBtn.disabled = !_lastUndoOperation;
+  undoBtn.disabled = _undoStack.length === 0;
 }
 
+// 既存 Reset: 現在 VC の設定をデフォルトに戻す。直前 state をスタックへ push
+// しておけば一般 Undo で巻き戻せる。
 function resetCurrent() {
   if (!confirm('現在のビューポート(' + currentVC + ')の設定をリセットします。よろしいですか？')) {
     return;
   }
-  _lastResetSnapshot = { vc: currentVC, snap: JSON.parse(JSON.stringify(state[currentVC])) };
-  // Reset trumps any pending VC-copy undo (only the most recent op is undoable).
-  _lastVcCopySnapshot = null;
-  _lastUndoOperation = 'reset';
+  pushUndoSnapshot('リセット');
   state[currentVC] = defaultsFor(currentVC);
   save(currentVC);
   render();
   buildRightPane();
-  _refreshUndoBtn();
   toast('現在のビューポートをリセットしました', 'ok');
 }
 
-function undoReset() {
-  if (!_lastResetSnapshot) return;
-  const { vc, snap } = _lastResetSnapshot;
-  state[vc] = snap;
-  save(vc);
-  _lastResetSnapshot = null;
-  // If we are currently on the snapshot's vc, refresh; otherwise just save quietly
-  if (currentVC === vc) {
-    render();
-    buildRightPane();
-  }
-  _lastUndoOperation = null;
-  _refreshUndoBtn();
-  toast('元に戻しました', 'ok');
-}
-
 // === VC コピー (B/C/D 間の state 全体コピー) =================================
-// Copies state[currentVC] (deep clone) into one or more target VCs (B/C/D).
-// Saves a 1-step undo snapshot of each target's previous state so the unified
-// "元に戻す" header button can roll the operation back. Same VC self-copy is
-// rejected. The operation is no-op (and toasted) if no valid targets remain.
-let _lastVcCopySnapshot = null;
-
+// state[currentVC] を deep clone で 1 つ以上の target VC にコピー。直前 state
+// 全体をスタックへ push しているので一般 Undo で巻き戻せる。
 function copyCurrentToVc(targetVc) {
   if (!targetVc) return;
   if (targetVc === currentVC) {
@@ -3479,7 +3745,6 @@ function copyCurrentToVc(targetVc) {
     return;
   }
   const targets = (targetVc === 'all') ? ['B', 'C', 'D'] : [targetVc];
-  // Filter out the source VC (relevant only when targetVc === 'all').
   const realTargets = targets.filter(t => t !== currentVC);
   if (realTargets.length === 0) {
     toast('コピー先がありません', 'err');
@@ -3488,13 +3753,7 @@ function copyCurrentToVc(targetVc) {
   const promptMsg = '現在の VC (' + currentVC + ') の設定を ' + realTargets.join(', ') + ' にコピーします。各 VC の設定は上書きされます。よろしいですか？';
   if (!confirm(promptMsg)) return;
 
-  // Snapshot for undo (deep-clone each target's previous state).
-  _lastVcCopySnapshot = {
-    targets: realTargets.map(t => ({ vc: t, snap: JSON.parse(JSON.stringify(state[t])) }))
-  };
-  // VC copy trumps any pending reset undo (only the most recent op is undoable).
-  _lastResetSnapshot = null;
-  _lastUndoOperation = 'vccopy';
+  pushUndoSnapshot('VC コピー');
 
   // Apply: deep-clone source for each target so they don't share refs.
   realTargets.forEach(t => {
@@ -3502,40 +3761,30 @@ function copyCurrentToVc(targetVc) {
     save(t);
   });
 
-  // Refresh: editor view is the current VC (unchanged), but rebuild for safety
-  // so any cross-VC UI (none today, but defensive) stays consistent.
   render();
   buildRightPane();
-  _refreshUndoBtn();
   toast('現在の設定を ' + realTargets.join(', ') + ' にコピーしました', 'ok');
 }
 
-function undoVcCopy() {
-  if (!_lastVcCopySnapshot) return;
-  _lastVcCopySnapshot.targets.forEach(({ vc, snap }) => {
-    state[vc] = snap;
-    save(vc);
-  });
-  _lastVcCopySnapshot = null;
-  // If currentVC happens to be one of the rolled-back targets we need a refresh;
-  // otherwise the rollback is invisible (other VCs' state changed silently).
+// 一般 Undo: スタック最上段のスナップショットを state に書き戻し、全 VC を
+// localStorage に save、UI 全体をリビルド。説明文を toast で告知する。
+function undoLastOp() {
+  if (_undoStack.length === 0) return;
+  const entry = _undoStack.pop();
+  try {
+    state = entry.snapshot;
+  } catch (e) {
+    _refreshUndoBtn();
+    return;
+  }
+  // 全 VC を save (state 全体の置換なので個別 VC 検出より安全)。
+  ['B', 'C', 'D'].forEach(vc => save(vc));
   render();
   buildRightPane();
-  _lastUndoOperation = null;
+  // 連続 Undo 中の debounce が暴発しないようタイムスタンプを巻き戻す。
+  _lastUndoPushTime = 0;
   _refreshUndoBtn();
-  toast('VC コピーを元に戻しました', 'ok');
-}
-
-// Unified undo dispatcher: the header "元に戻す" button replays whichever
-// op (reset or vccopy) was the most recent.
-function undoLastOp() {
-  if (_lastUndoOperation === 'reset') {
-    undoReset();
-  } else if (_lastUndoOperation === 'vccopy') {
-    undoVcCopy();
-  }
-  _lastUndoOperation = null;
-  _refreshUndoBtn();
+  toast('元に戻しました: ' + (entry.description || '変更'), 'ok');
 }
 
 function cssEscapeUrl(s) {
@@ -3698,7 +3947,10 @@ function buildCSS() {
       const nr = s.narration;
       lines.push('  .op-narration {');
       lines.push('    width: ' + (Number(nr.width) || 0) + 'px;');
-      if (!nr.heightAuto && nr.height && nr.height > 0) {
+      // 画像モードかつ aspectLock ON の時は heightAuto 設定に関わらず固定 height を出力。
+      const emitHeight = (!nr.heightAuto && nr.height && nr.height > 0)
+        || (nr.bgMode === 'image' && nr.aspectLock && nr.height && nr.height > 0);
+      if (emitHeight) {
         lines.push('    height: ' + nr.height + 'px;');
       }
       if (nr.posMode === 'top') {
@@ -3714,12 +3966,36 @@ function buildCSS() {
       lines.push('    padding: ' + (Number(nr.paddingY) || 0) + 'px ' + (Number(nr.paddingX) || 0) + 'px;');
       lines.push('    font-size: ' + (Number(nr.fontSize) || 36) + 'px;');
       lines.push('    text-align: ' + (nr.textAlignH || 'center') + ';');
-      lines.push('    background: ' + hexToRgba(nr.bgColor, nr.bgOpacity) + ';');
-      lines.push('    border-radius: ' + (Number(nr.borderRadius) || 0) + 'px;');
-      if (nr.showShadow) {
-        lines.push('    box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;');
-      } else {
+      // 背景: bgMode によって 画像フレーム or CSS 単色 を出力。
+      // ドロップ画像 (data: URL) は対話 box と同じく background-image: none + 警告コメント。
+      if (nr.bgMode === 'image') {
+        if (isFrameUserAdded(nr.bgImage)) {
+          _exportContainedDroppedFrame = true;
+          lines.push('    /* NOTE: ドロップ画像 (' + nr.bgImage + ') は Export に含まれません。'
+            + ' 本番資産に追加してから再 Export してください。 */');
+          lines.push('    background-image: none;');
+          lines.push('    background-size: 100% 100%;');
+          lines.push('    background-repeat: no-repeat;');
+          lines.push('    background-color: transparent;');
+        } else {
+          lines.push('    background-image: url("' + cssEscapeUrl(framePathById(nr.bgImage)) + '");');
+          lines.push('    background-size: 100% 100%;');
+          lines.push('    background-repeat: no-repeat;');
+          lines.push('    background-color: transparent;');
+        }
+        // 画像フレーム時は border-radius / box-shadow を打ち消す
+        // (フレーム画像の枠デザインを優先し、二重枠を避ける)。
+        lines.push('    border-radius: 0;');
         lines.push('    box-shadow: none;');
+      } else {
+        lines.push('    background-image: none;');
+        lines.push('    background: ' + hexToRgba(nr.bgColor, nr.bgOpacity) + ';');
+        lines.push('    border-radius: ' + (Number(nr.borderRadius) || 0) + 'px;');
+        if (nr.showShadow) {
+          lines.push('    box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;');
+        } else {
+          lines.push('    box-shadow: none;');
+        }
       }
       lines.push('  }');
     }
@@ -3743,6 +4019,10 @@ function buildJSON() {
         _jsonExportContainedDroppedFrame = true;
       }
     });
+    // narration uses bgImage instead of boxImage; mode must also be 'image'.
+    if (s.narration && s.narration.bgMode === 'image' && isFrameUserAdded(s.narration.bgImage)) {
+      _jsonExportContainedDroppedFrame = true;
+    }
   });
   // Strip editor-internal-only keys (aspectLock / aspectLockRatio) from export.
   const sanitize = (vc) => {

@@ -100,6 +100,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T05:53:54Z - op-layout-editor: bgMode rebuild branch で applyNarrationToDom を呼び出す修正 + sw.js CACHE_VERSION 846→847
+- **タスク**: op-layout-editor: bgMode rebuild branch で applyNarrationToDom を呼び出す修正 + sw.js CACHE_VERSION 846→847
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 220
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 69, "Bash": 91, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-08T05:51:46Z - op-layout-editor.html: 一般 Undo 機能の追加 (50段スタック・500ms debounce・全 state 変更を記録)
+- **タスク**: op-layout-editor.html: 一般 Undo 機能の追加 (50段スタック・500ms debounce・全 state 変更を記録)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 219
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 68, "Bash": 91, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-08T05:43:30Z - op-layout-editor.html ナレーションパネル 画像フレーム機能追加 (bgMode/bgImage/aspectLock/aspectLockRatio + UI + DOM apply + Export CSS 分岐 + Migration + onFrameAspectLoaded narration 連動)
+- **タスク**: op-layout-editor.html ナレーションパネル 画像フレーム機能追加 (bgMode/bgImage/aspectLock/aspectLockRatio + UI + DOM apply + Export CSS 分岐 + Migration + onFrameAspectLoaded narration 連動)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 217
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Agent": 66, "Bash": 91, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T05:27:54Z - op-layout-editor.html: Panel 1 (ナレーション) 編集機能追加 - panelMode toggle / state[VC].narration / op-narration-preview / Narration 設定セクション / .op-narration per-VC CSS export / migration / defaults
 - **タスク**: op-layout-editor.html: Panel 1 (ナレーション) 編集機能追加 - panelMode toggle / state[VC].narration / op-narration-preview / Narration 設定セクション / .op-narration per-VC CSS export / migration / defaults
 - **結果**: 成功
@@ -176,44 +215,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 29, "Agent": 53, "Bash": 68, "Glob": 5, "Write": 2, "ToolSearch": 3, "ExitPlanMode": 2, "Grep": 6}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T03:32:59Z - Quizland OP Export CSS統合: B/C/D 全VCを同設定 (1021x492 / 843x470 / 984x316@411 / label top:65 left:156 / fs 37px label 34px) に置換、CACHE_VERSION 842 to 843
-- **タスク**: Quizland OP Export CSS統合: B/C/D 全VCを同設定 (1021x492 / 843x470 / 984x316@411 / label top:65 left:156 / fs 37px label 34px) に置換、CACHE_VERSION 842 to 843
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 267
-- **エラー数**: 32
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 135, "Read": 33, "Grep": 3, "ToolSearch": 1, "Agent": 59, "Write": 3, "Edit": 33}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T03:23:06Z - op-layout-editor 他VCへコピーdropdown修正 (placeholder option を disabled selected hidden に + selectedIndex=0 でリセット)
-- **タスク**: op-layout-editor 他VCへコピーdropdown修正 (placeholder option を disabled selected hidden に + selectedIndex=0 でリセット)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 151
-- **エラー数**: 10
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 26, "Agent": 50, "Bash": 61, "Glob": 5, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Grep": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-08T03:15:06Z - op-layout-editor.html: confirmメッセージ統一(realTargets.join) + undoReset/undoVcCopyの_lastUndoOperationクリア追加
-- **タスク**: op-layout-editor.html: confirmメッセージ統一(realTargets.join) + undoReset/undoVcCopyの_lastUndoOperationクリア追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 262
-- **エラー数**: 32
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 133, "Read": 33, "Grep": 3, "ToolSearch": 1, "Agent": 56, "Write": 3, "Edit": 33}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
