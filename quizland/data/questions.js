@@ -434,9 +434,10 @@ const QUIZLAND_QUESTIONS = {
       q:'コアラが たべるものは？',
       answer:2, choices:['バナナ','たけのこ','ユーカリの は','りんご'] ,
       detail:'ユーカリの はは どくが あるけど、コアラだけ たべられるよ！'},
-    // TODO(sprint-13): img を 'stage_trivia_giraffe_full.png' に、img_answer に 'stage_trivia_giraffe_neck_bones.png' を設定 (Codex 納品後)
+    // sprint-13 結線済み (2026-05-08): reveal pair (giraffe_full → neck_bones)
     { level:2, type:'trivia', category:'trivia',
-      img:'kirin.png',
+      img:'stage_trivia_giraffe_full.png',
+      img_answer:'stage_trivia_giraffe_neck_bones.png',
       q:'キリンの くびの ほねは いくつ？',
       answer:0,
       choices:['7こ','15こ','20こ','5こ'],
@@ -499,21 +500,19 @@ const QUIZLAND_QUESTIONS = {
       hint:'たべものの いろが からだに うつるよ！',
       answer:1, choices:['そらの いろを すいこむ','あかい たべものを たべる','ペンキを ぬる','にっこうで やける'] ,
       detail:'フラミンゴは あかい エビや ミジンコを たべるから ピンクに なるんだよ！'},
+    // sprint-13 結線済み (2026-05-08): silhouette → compare reveal pair + kiba/hige choice tiles 配置済
     { level:3, type:'trivia', category:'trivia',
-      // Per-question images (renewed 2026-05-08, pending Codex sprint-13 illustrations):
-      // - img / img_word: 出題時はオスライオンのシルエット
-      // - img_answer: 正解後はオスとメスを並べて比較表示
-      img:'stage_trivia_lion_osu_silhouette.png',          // TODO: 発注中 (sprint-13)、暫定で旧画像流用なら 'stage_trivia_male_lion.png'
-      img_word:'stage_trivia_lion_osu_silhouette.png',     // 同上
-      img_answer:'stage_trivia_lion_osu_mesu_compare.png', // TODO: 発注中 (sprint-13)、暫定で旧画像流用なら 'lion_osu.png'
+      img:'stage_trivia_lion_osu_silhouette.png',
+      img_word:'stage_trivia_lion_osu_silhouette.png',
+      img_answer:'stage_trivia_lion_osu_mesu_compare.png',
       q:'ライオンの オスにだけ ある ものは？',
       hint:'かおの まわりに もこもこ！',
       answer:0,
       choices:[
-        { text:'たてがみ', image:'tategami.png' },     // 既存
-        { text:'きば',     image:'kiba.png'     },     // TODO: 発注中 (sprint-13)
-        { text:'ひげ',     image:'hige.png'     },     // TODO: 発注中 (sprint-13)
-        { text:'つの',     image:'tsuno.png'    }      // 既存 (明らかに無いもの — 1個だけ残す)
+        { text:'たてがみ', image:'tategami.png' },
+        { text:'きば',     image:'kiba.png'     },
+        { text:'ひげ',     image:'hige.png'     },
+        { text:'つの',     image:'tsuno.png'    }
       ],
       detail:'オスの ライオンには かおの まわりに たてがみが あるよ！メスには ないんだ！'}
   ],
