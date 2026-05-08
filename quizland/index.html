@@ -2442,6 +2442,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset;
   color: #3a2a14;
   font-size: 36px;
+  font-weight: bold;
   line-height: 1.55;
   text-align: center;
   opacity: 1;
@@ -2530,11 +2531,13 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-single .op-dialogue-text {
     text-align: center;
     font-size: 37px;
+    line-height: 1.5;
+    white-space: pre-wrap;
   }
   .op-dialogue-single .op-dialogue-label {
     top: 65px;
     bottom: auto;
-    left: 156px;
+    left: 86px;
     right: auto;
     font-size: 34px;
   }
@@ -2545,6 +2548,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     top: auto;
     padding: 40px 28px;
     font-size: 30px;
+    line-height: 1.55;
+    white-space: pre-wrap;
     text-align: center;
     background-image: url("../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260507-173812_001.png");
     background-size: 100% 100%;
@@ -2562,7 +2567,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     width: 1481px;
     height: 740px;
     aspect-ratio: 0.75;
-    transform: translate(calc(-50% + 46px), calc(-50% + -29px));
+    transform: translate(calc(-50% + 46px), calc(-50% + -81px));
   }
   .op-side-pono .op-char-slot img {
     object-position: bottom center;
@@ -2595,6 +2600,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-single .op-dialogue-text {
     text-align: center;
     font-size: 48px;
+    line-height: 1.5;
+    white-space: pre-wrap;
   }
   .op-dialogue-single .op-dialogue-label {
     top: 100px;
@@ -2611,6 +2618,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     top: auto;
     padding: 42px 36px;
     font-size: 44px;
+    line-height: 1.55;
+    white-space: pre-wrap;
     text-align: center;
     background-image: url("../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260508-081922_001.png");
     background-size: 100% 100%;
@@ -2661,6 +2670,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   .op-dialogue-single .op-dialogue-text {
     text-align: center;
     font-size: 48px;
+    line-height: 1.5;
+    white-space: pre-wrap;
   }
   .op-dialogue-single .op-dialogue-label {
     top: 114px;
@@ -2677,6 +2688,8 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
     top: auto;
     padding: 32px 40px;
     font-size: 52px;
+    line-height: 1.55;
+    white-space: pre-wrap;
     text-align: center;
     background-image: url("../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260508-081922_001.png");
     background-size: 100% 100%;
@@ -4497,7 +4510,7 @@ const OP_PANELS = [
       {
         lines: [
           { text: 'ポノは、なかよしの はかせと、', emphasis: true },
-          { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: true }
+          { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: false }
         ]
       }
     ]

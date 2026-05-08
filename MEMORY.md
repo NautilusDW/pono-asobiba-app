@@ -101,6 +101,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T10:37:19Z - Quizland OP: 新CSS Export 統合 (B label left/narration line-height/dialogue line-height, C pono Y -81, D line-height) + .op-narration font-weight: bold + Panel 1 segment 2 line2 emphasis:false + sw.js CACHE_VERSION 861→862
+- **タスク**: Quizland OP: 新CSS Export 統合 (B label left/narration line-height/dialogue line-height, C pono Y -81, D line-height) + .op-narration font-weight: bold + Panel 1 segment 2 line2 emphasis:false + sw.js CACHE_VERSION 861→862
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 319
+- **エラー数**: 31
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 45, "Agent": 94, "Bash": 143, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 10}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T10:12:40Z - quizland editor playtest panel: drag/minimize/reset (localStorage 永続化, default 右上), CACHE_VERSION 860→861
 - **タスク**: quizland editor playtest panel: drag/minimize/reset (localStorage 永続化, default 右上), CACHE_VERSION 860→861
 - **結果**: 成功
@@ -202,19 +215,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 39, "Agent": 88, "Bash": 126, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 5}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T09:35:33Z - op-layout-editor の optimizeDroppedImage に decompression bomb 対策 (16MP cap) を追加 + sw.js CACHE_VERSION 856→857
-- **タスク**: op-layout-editor の optimizeDroppedImage に decompression bomb 対策 (16MP cap) を追加 + sw.js CACHE_VERSION 856→857
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 281
-- **エラー数**: 26
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 39, "Agent": 88, "Bash": 122, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
