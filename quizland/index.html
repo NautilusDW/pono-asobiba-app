@@ -2070,10 +2070,11 @@ window.addEventListener('pagehide', function () {
 
 // SE (mp3) — d:/ポノのおへや/AUDIO/SE/ から日本語名ファイルを採用
 const SE_PATHS = {
-  correct: '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
-  wrong:   '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
-  clear:   '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
-  hint:    '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
+  correct:      '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
+  wrong:        '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
+  clear:        '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
+  hint:         '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
+  nextQuestion: '../assets/audio/sfx/quiz/don.mp3',
 };
 const SE_VOLUME = 0.6;
 const _seCache = {};
@@ -2422,6 +2423,9 @@ function updateHUD() {
     if (i === questionIdx) dot.classList.add('current');
     prog.appendChild(dot);
   }
+  // 「第 N 問目」SE: 進捗番号とドットが揃った直後に再生 (1問目から鳴らす)
+  // 起動時の safety 呼び出しはユーザー gesture 前なので Audio.play().catch で silent fail する
+  playSe('nextQuestion');
 }
 
 // ═══════════════════════════════════════════════════════════
