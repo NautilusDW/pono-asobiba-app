@@ -119,8 +119,8 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','たまごがた'] },
     { level:2, type:'shape_name', shape:'triangle',  q:'このかたちの かどは なんこ？', answer:1, choices:['2こ','3こ','4こ','5こ'] },
     { level:2, type:'shape_name', shape:'square',    q:'このかたちの かどは なんこ？', answer:2, choices:['3こ','5こ','4こ','2こ'] },
-    // TODO(sprint-13): img を 'stage_shape_leaf.png' に追加 (Codex 納品後)
-    { level:2, type:'shape_name', shape:'leaf', q:'これは なんの かたち？', answer:0, choices:['はっぱ','まる','ほし','ハート'], detail:'はっぱの かたち！' },
+    // sprint-13 結線済み (2026-05-08): img=stage_shape_leaf.png
+    { level:2, type:'shape_name', shape:'leaf', img:'stage_shape_leaf.png', q:'これは なんの かたち？', answer:0, choices:['はっぱ','まる','ほし','ハート'], detail:'はっぱの かたち！' },
     { level:2, type:'shape_name', shape:'star',      q:'ほしと まるでは どちらが かどが おおい？', answer:0, choices:['ほし','まる','おなじ','どちらも かどが ない'] },
 
     // Level 3 (性質・知識問題)
@@ -129,8 +129,13 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
     { level:3, type:'shape_name', shape:'diamond',   q:'ひしがたの かどは ぜんぶで いくつ？', answer:1, choices:['3こ','4こ','5こ','6こ'] },
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
-    // TODO(sprint-13): choices を画像選択肢化 (pizza_whole/half/quarter/eighth.png) (Codex 納品後)
-    { level:3, type:'shape_name', shape:'circle', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:['はんぶんの まる','まんまるい','さんかく','しかく'], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
+    // sprint-13 結線済み (2026-05-08): pizza_whole/half を image-based に、quarter/eighth は text-image mismatch のため text-only 据え置き
+    { level:3, type:'shape_name', shape:'circle', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:[
+        { text:'はんぶんの まる', image:'pizza_half.png' },
+        { text:'まんまるい',     image:'pizza_whole.png' },
+        { text:'さんかく' },
+        { text:'しかく' }
+      ], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
     { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', q:'ノートの かたちは？', answer:0, choices:['しかく','まる','さんかく','ほし'], detail:'ノートは しかくい かたち！' },
     { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
   ],
@@ -163,7 +168,7 @@ const QUIZLAND_QUESTIONS = {
       img_answer:'stage_weather_distant_mist.png',
       q:'あさ、しろい もやが でる てんきを なんという？', answer:1, choices:['あめ','きり','ゆき','くもり'] ,
       detail:'きりは ちいさな みずの つぶが くうきに うかんでいる じょうたいだよ！'},
-    // TODO(sprint-13): stage_weather_rainbow_arc.png は7色版に再生成中 (同名上書きで自動差替)
+    // sprint-13 結線済み (2026-05-08): stage_weather_rainbow_arc.png 7色版に再生成・差替済み
     { level:2, type:'trivia', category:'weather',
       img:'stage_weather_rainbow_arc.png',
       q:'にじは なんしょく？',
