@@ -97,11 +97,68 @@ Claude ⇄ Codex の共有メモ。`## Active (進行中 / 未着手)` セクシ
 | 07 | zukan search backgrounds (`leaf_glow_forest_field_16x9.png` 等) | 配置済 |
 | 10 | quizland-start-card フレーム (4:3 / 1:1 / 横長 raw) | tmp/10/ に納品済、配置は別途 |
 | 11 | quizland-forest-house-21x9 (OP_BG.webp の 21:9 高解像度版) | 配置済 (2026-05-07) |
-| 12 | quizland-trivia-stage 6 枚 (soccerball / unripe_banana / rabbit_no_ears / speed_dust / notebook / munching) + 2 variant (_face_crop / _side_pass) | 配置済 (2026-05-08) |
+| 12 | quizland-trivia-stage 6 枚 (soccerball / unripe_banana / rabbit_no_ears / speed_dust / notebook / munching) + 2 variant (_face_crop / _side_pass) | 配置済 (2026-05-08)、questions.js 結線済 (2026-05-08) |
+| 13 (sprint-13) | キリン全身 + 首骨 / 虹再生成 / 葉っぱ / ピザ4切れ / 赤ちゃん歯生え変わり / ライオンオスシルエット + オス・メス比較 + きば + ひげタイル | `tmp/quizland-trivia-audit/CODEX-ORDER-2.md` に発注書、未納品 |
+
+## リビールペア (img / img_word / img_answer) 設計パターン
+
+ネタバレ防止のために 2 段階画像切替えを使う問題が増えた。スキーマ:
+
+```js
+{
+  img:        '<出題時の画像、答えがバレない>',     // 必須
+  img_word:   '<同上、img の別名>',                  // 互換のため設定推奨
+  img_answer: '<正解後の画像、答えを明示>',         // optional、無ければ img のまま
+  q: '...', answer: N, choices: [...]
+}
+```
+
+- **`img` (出題時)**: 答えを示唆しない伏せ画像。例: 「うれた バナナは なにいろ？」の出題は **緑バナナ**、「速い動物」は **砂煙のみ**
+- **`img_answer` (正解後)**: 答えを明示する画像。例: 黄色バナナ、走るチーター
+- 「正解後に絵が切り替わる」演出で、子供は答えを聞いた後にビジュアルでも納得できる
+- レンダラ側は `quizland/index.html` line 4053 付近で `q.img_answer` の有無を見て切替
+
+### 採用済みリビールペア (2026-05-08 時点)
+
+| 問題 | 出題画像 (img) | 正解後画像 (img_answer) |
+|---|---|---|
+| Q125 trivia L1 バナナ色 | unripe (緑) | ripe (黄) |
+| Q123 trivia L1 うさぎの耳 | face_crop (耳画角外) | rabbit (耳ピン全身) |
+| trivia L2 速い動物 (cheetah) | speed_dust_side_pass (砂煙のみ) | running_cheetah (チーター本体) |
+| body L2 噛む (chewing) | munching (子供がりんごを食べる) | chewing_teeth (歯のアップ) |
+| trivia L3 ライオン (オスにあるもの) | lion_osu_silhouette (オス影絵) | lion_osu_mesu_compare (オス+メス並列) |
+
+### Code-Q&A 表で見るべき場所
+
+- `quizland/data/questions.js` 行 295-298, 330-336, 372-376, 519-523, 463-477 がリビールペア実例
+- レンダラ: `quizland/index.html` `loadQuestion` 周辺と `revealAnswer` 関数
+
+## ネタバレ監査の枠組み (Spoiler taxonomy)
+
+3 並列エージェント監査 (2026-05-08) で抽出した分類:
+
+### HARD spoiler (即対応必要、計 20 件)
+- 出題画像で答えが完全に視覚化されているもの
+- 例: 「ぞうのからだで一番ながいのは？」(答え=はな) で **鼻が画面中央で大きく強調**された絵
+- 修正方針: リビールペア化 (出題=隠れた構図、正解後=既存絵)
+- 計 20 件のリスト + 個別 reveal pair 案は本ファイル下記または `tmp/quizland-trivia-audit/REPORT.md` に記録 (作成予定)
+
+### SOFT spoiler (検討対象、計 10 件)
+- 答えが示唆されているが許容範囲のもの
+- サブカテゴリ:
+  - **count 系** (虹の色数、タコの足数): 数えてもらう前提なので OK
+  - **比較系** (一番大きい生物): シルエット並列で考えさせる構造
+  - **命名問題** (ゆきぐに、じょうはつ、しもん): 絵をそのまま名付ける問題は構造上ネタバレ込みなので、質問文を「これはなに？」型から「どんな働き？」型に書き直すと spoiler 解消
+  - **メカニズム視覚化** (雷、夏): 答えそのものではなく雰囲気/原理を絵で見せる、許容範囲
+
+### SAFE 例 (well-designed reveal pair)
+- bear, cheetah, rabbit, lion, octopus, banana_tree, chewing_teeth, flamingo
 
 ## ピットフォール
 
 - ❌ 画像ファイル名 (`レイヤー 0_*_001.png`) から中身を推測しない — タイムスタンプ順で並んでいるだけで意味的順序ではない場合がある (実際は CODEX-ORDER 順と一致するが視覚で確認必須)
 - ❌ 既存 `stage/*.png` への上書きを焦らない — variant 採用 (`_face_crop`, `_side_pass`) で別ファイル名にすることが多い
+- ❌ **画像配置と questions.js 結線は別の作業**: ファイルを `assets/.../stage/` に置いただけではゲームから読まれない。`questions.js` の `img` / `img_word` / `img_answer` を新ファイル名に書き換える必要あり
 - ✅ 必ず CODEX-ORDER.md の保存先パスをそのまま使う
 - ✅ `HANDOFF.md` の往復ログで variant 採否を確認してから書き出す
+- ✅ リビールペア対象問題は **必ず 2 枚セット**で発注: 出題用 (隠し) + 正解後用 (明示)
