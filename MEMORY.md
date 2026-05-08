@@ -100,6 +100,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T09:15:07Z - CODEX-ORDER-2.md sprint-13 全エントリに背景:行追加(spec section + paste block)
+- **タスク**: CODEX-ORDER-2.md sprint-13 全エントリに背景:行追加(spec section + paste block)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 272
+- **エラー数**: 22
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 39, "Agent": 81, "Bash": 121, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 5}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T09:10:19Z - op-layout-editor.html シナリオモード dialogue line に speaker 関係なく ponoImg dropdown 表示 + Export ロジックを hakase line にも対応 + sw.js 854→855
 - **タスク**: op-layout-editor.html シナリオモード dialogue line に speaker 関係なく ponoImg dropdown 表示 + Export ロジックを hakase line にも対応 + sw.js 854→855
 - **結果**: 成功
@@ -201,19 +214,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 37, "Agent": 78, "Bash": 104, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T06:45:17Z - op-layout-editor.html: シナリオモード追加 (state.scenario / OP_PANELS 編集 UI / Panel 切替トグル 3 択 / シナリオ Export JS リテラル / migration / scenario プレビュー連動)
-- **タスク**: op-layout-editor.html: シナリオモード追加 (state.scenario / OP_PANELS 編集 UI / Panel 切替トグル 3 択 / シナリオ Export JS リテラル / migration / scenario プレビュー連動)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 231
-- **エラー数**: 16
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 34, "Agent": 74, "Bash": 97, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
