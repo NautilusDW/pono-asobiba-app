@@ -147,18 +147,20 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'weather', img:'Rainbow/Rainbow_normal_1.png', q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
     { level:1, type:'emoji_name', category:'weather', img:'Thunder/Thunder_normal_1.png', q:'これは なに？', answer:0, choices:['かみなり','はれ','くもり','にじ'] },
     { level:1, type:'emoji_name', category:'weather', img:'Wind/Wind_normal_1.png', q:'これは なに？', answer:2, choices:['あめ','くもり','かぜ','ゆき'] },
-    // TODO(sprint-14): img を 'stage_weather_sky_question.png' に切替 + img_answer に 'stage_weather_cloud_sky.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'weather',
-      img:'stage_weather_cloud_sky.png',
+      img:'stage_weather_sky_question.png',
+      img_answer:'stage_weather_cloud_sky.png',
       q:'そらに ある しろい ふわふわは なに？',
       answer:0, choices:['くも','けむり','わた','ほし'] ,
       detail:'くもは とっても ちいさな みずの つぶの あつまりだよ！'},
 
     // Level 2
     { level:2, type:'emoji_name', category:'weather', img:'Tornado/Tornado_normal_1.png', q:'これは なに？', answer:0, choices:['たつまき','つなみ','じしん','かみなり'] },
-    // TODO(sprint-14): img を 'stage_weather_morning_clear.png' に切替 + img_answer に 'stage_weather_distant_mist.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:2, type:'trivia', category:'weather',
-      img:'stage_weather_distant_mist.png',
+      img:'stage_weather_morning_clear.png',
+      img_answer:'stage_weather_distant_mist.png',
       q:'あさ、しろい もやが でる てんきを なんという？', answer:1, choices:['あめ','きり','ゆき','くもり'] ,
       detail:'きりは ちいさな みずの つぶが くうきに うかんでいる じょうたいだよ！'},
     // TODO(sprint-13): stage_weather_rainbow_arc.png は7色版に再生成中 (同名上書きで自動差替)
@@ -178,9 +180,10 @@ const QUIZLAND_QUESTIONS = {
       hint:'くもの なかで でんきが ピカッと！',
       answer:0, choices:['くもの なかで でんきが たまるから','かみなりさまが たいこを たたくから','かわが かわくから','かぜが つよいから'] ,
       detail:'くもの なかで こおりの つぶが ぶつかりあって でんきが たまるよ！'},
-    // TODO(sprint-14): img を 'stage_weather_rain_ground.png' に切替 + img_answer に 'stage_weather_rain_from_cloud.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:2, type:'trivia', category:'weather',
-      img:'stage_weather_rain_from_cloud.png',
+      img:'stage_weather_rain_ground.png',
+      img_answer:'stage_weather_rain_from_cloud.png',
       q:'あめは どこから ふってくる？',
       answer:0, choices:['くも','そら','やま','うみ'] ,
       detail:'うみや かわの みずが くもになって、また あめになるよ！'},
@@ -311,27 +314,31 @@ const QUIZLAND_QUESTIONS = {
       q:'ねこは なんて なく？',
       answer:2, choices:['ワンワン','モーモー','ニャーニャー','コケコッコー'] ,
       detail:'ねこは「ニャー」と なくよ。きげんが いいと「ゴロゴロ」も するよ！'},
-    // TODO(sprint-14): img を 'stage_trivia_elephant_silhouette.png' に切替 + img_answer に 'stage_trivia_long_nose_elephant.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_long_nose_elephant.png',
+      img:'stage_trivia_elephant_silhouette.png',
+      img_answer:'stage_trivia_long_nose_elephant.png',
       q:'ぞうの からだで いちばん ながいのは どこ？',
       answer:0, choices:['はな','しっぽ','みみ','あし'] ,
       detail:'ぞうの ながい はなは「もの」を つかんだり、みずを のんだり できるよ！'},
-    // TODO(sprint-14): img を 'stage_trivia_winter_sky_only.png' に切替 + img_answer に 'stage_trivia_snowy_landscape.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_snowy_landscape.png',
+      img:'stage_trivia_winter_sky_only.png',
+      img_answer:'stage_trivia_snowy_landscape.png',
       q:'ふゆに そらから ふってくる しろい ものは？',
       answer:1, choices:['あめ','ゆき','すな','こおり'] ,
       detail:'ゆきは くもの なかで みずが こおって おちてくるよ！'},
-    // TODO(sprint-14): img を 'stage_trivia_egg_unhatched.png' に切替 + img_answer に 'stage_trivia_hatching_egg.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_hatching_egg.png',
+      img:'stage_trivia_egg_unhatched.png',
+      img_answer:'stage_trivia_hatching_egg.png',
       q:'たまごから うまれる いきものは どれ？',
       answer:1, choices:['いぬ','にわとり','うし','ぶた'] ,
       detail:'にわとりは たまごを うんで、その たまごから ひよこが うまれるよ！'},
-    // TODO(sprint-14): img を 'stage_trivia_apple_silhouette.png' に切替 + img_answer に 'stage_trivia_red_apple.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_red_apple.png',
+      img:'stage_trivia_apple_silhouette.png',
+      img_answer:'stage_trivia_red_apple.png',
       q:'ふつうの りんごは なにいろ？',
       answer:0, choices:['あか','あお','くろ','しろ'] ,
       detail:'りんごは あかい いろが おおいよ。みどりの りんごも あるんだ！'},
@@ -346,9 +353,10 @@ const QUIZLAND_QUESTIONS = {
       q:'うさぎの みみは どんな かたち？',
       answer:1, choices:['まるくて みじかい','ながくて たっている','まるい ちいさい','とがって ちいさい'] ,
       detail:'うさぎは ながい みみで とおくの おとを よく きけるんだ！'},
-    // TODO(sprint-14): img を 'stage_trivia_seed_in_dirt.png' に切替 + img_answer に 'stage_trivia_seed_germinate.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'trivia',
-      img:'stage_trivia_seed_germinate.png',
+      img:'stage_trivia_seed_in_dirt.png',
+      img_answer:'stage_trivia_seed_germinate.png',
       q:'たねを つちに うめると、 さいしょに なにが でてくる？',
       answer:1, choices:['はな','め','みず','いし'] ,
       detail:'たねから ちいさな みどりの めが でて、 だんだん おおきく そだっていくよ！'},
@@ -402,9 +410,10 @@ const QUIZLAND_QUESTIONS = {
       q:'ふゆに ねむる（とうみん）どうぶつは どれ？',
       answer:2, choices:['ゾウ','ライオン','クマ','キリン'] ,
       detail:'クマは ふゆの あいだ たべものを さがさず ねむって すごすよ！'},
-    // TODO(sprint-14): img を 'stage_trivia_earthworm_dirt_only.png' に切替 + img_answer に 'stage_trivia_earthworm_after_rain.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:2, type:'trivia', category:'trivia',
-      img:'stage_trivia_earthworm_after_rain.png',
+      img:'stage_trivia_earthworm_dirt_only.png',
+      img_answer:'stage_trivia_earthworm_after_rain.png',
       q:'あめが ふると つちから でてくる いきものは？',
       answer:1, choices:['チョウチョ','ミミズ','カブトムシ','セミ'] ,
       detail:'ミミズは みずが にがてで、あめが ふると じめんに でてくるよ！'},
@@ -503,19 +512,22 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'body', img:'Mouth_part/Mouth_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','みみ','くち','はな'] },
     { level:1, type:'emoji_name', category:'body', img:'Palm/Palm_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['あし','かた','て','うで'] },
     { level:1, type:'emoji_name', category:'body', img:'Foot_part/Foot_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['あし','て','かた','おなか'] },
-    // TODO(sprint-14): 共通出題 stage_body_boy_silhouette_question.png + 個別 reveal (stage_body_boy_face_nose|eye|ear.png) (Codex 納品後)
+    // sprint-14 結線済み (2026-05-08): 共通出題シルエット + 個別 reveal (face_nose|eye|ear)
     { level:1, type:'trivia', category:'body',
-      img:'face_nose.png',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_boy_face_nose.png',
       q:'においを かぐのは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] ,
       detail:'はなの おくに においを かんじる ばしょが あるよ！'},
-    // TODO(sprint-14): 共通出題 stage_body_boy_silhouette_question.png + 個別 reveal (stage_body_boy_face_nose|eye|ear.png) (Codex 納品後)
+    // sprint-14 結線済み (2026-05-08): 共通出題シルエット + 個別 reveal (face_nose|eye|ear)
     { level:1, type:'trivia', category:'body',
-      img:'face_eye.png',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_boy_face_eye.png',
       q:'ものを みるのは からだの どこ？', answer:1, choices:['くち','め','ほほ','ひたい'] ,
       detail:'めに はいった ひかりを のうが かたちに かえるよ！'},
-    // TODO(sprint-14): 共通出題 stage_body_boy_silhouette_question.png + 個別 reveal (stage_body_boy_face_nose|eye|ear.png) (Codex 納品後)
+    // sprint-14 結線済み (2026-05-08): 共通出題シルエット + 個別 reveal (face_nose|eye|ear)
     { level:1, type:'trivia', category:'body',
-      img:'face_ear.png',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_boy_face_ear.png',
       q:'ものを きくのは からだの どこ？', answer:2, choices:['め','くち','みみ','はな'] ,
       detail:'みみの なかの ちいさな ほねが おとを つたえるよ！'},
     { level:1, type:'trivia', category:'body',
@@ -530,16 +542,18 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'body', img:'Tongue/Tongue_normal_1.png', q:'これは からだの なに？', answer:1, choices:['ゆび','した','みみ','おなか'] ,
       detail:'したで あじを かんじているよ！'},
     { level:2, type:'emoji_name', category:'body', img:'Ear_part/Ear_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','はな','みみ','くち'] },
-    // TODO(sprint-14): img 'stage_body_boy_belly_question.png' (体ど真ん中?) + img_answer 'stage_body_boy_skin_glow.png' (新規 reveal) (Codex 納品後)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=ひふ
     { level:2, type:'trivia', category:'body',
-      img:'stage_body_skin_wrap.png',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_skin_wrap.png',
       q:'からだぜんたいを つつんで まもっているのは？',
       hint:'からだの そとを おおっている ぶぶんだよ！',
       answer:1, choices:['ふく','ひふ','ほね','け'] ,
       detail:'ひふは からだぜんたいを つつんで まもっている ぶぶんだよ！'},
-    // TODO(sprint-14): img を 'stage_body_chest_clutch.png' に切替 + img_answer に 'stage_body_heart_pump.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=胸クラッチ → 正解後=しんぞう
     { level:2, type:'trivia', category:'body',
-      img:'stage_body_heart_pump.png',
+      img:'stage_body_chest_clutch.png',
+      img_answer:'stage_body_heart_pump.png',
       q:'ちを からだじゅうに おくる ぽんぷは？',
       hint:'むねの なかで どきどき している ところだよ！',
       answer:0, choices:['しんぞう','のう','ひふ','い'] ,
@@ -550,9 +564,10 @@ const QUIZLAND_QUESTIONS = {
       q:'たべものを かんで こなごなに するのは どこ？',
       answer:0, choices:['は','みみ','め','かみのけ'] ,
       detail:'は で たべものを かんでから のみこむと、おなかで しょうかしやすいよ！'},
-    // TODO(sprint-14): img を 'stage_body_deep_breath.png' に切替 + img_answer に 'stage_body_lungs_breath.png' を追加 (Codex 納品後の reveal pair 化)
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=深呼吸 → 正解後=はい
     { level:2, type:'trivia', category:'body',
-      img:'stage_body_lungs_breath.png',
+      img:'stage_body_deep_breath.png',
+      img_answer:'stage_body_lungs_breath.png',
       q:'いきを すうのは からだの どこ？',
       answer:0, choices:['はい','い','こころ','ゆび'] ,
       detail:'はいで くうきを とりこんで、からだに さんそを おくるよ！'},
