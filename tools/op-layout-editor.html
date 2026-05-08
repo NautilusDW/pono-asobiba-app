@@ -528,6 +528,10 @@
        border-radius / box-shadow set inline from state[VC].narration. */
     box-sizing: border-box;
     color: #3a2a14;
+    /* Fix (2026-05-08): 本番 `.op-narration` は font-weight: bold で
+       字幅が広いため、同じ width でも wrap 位置が後ろにズレる。
+       エディタプレビューを本番と一致させるため bold を追加。 */
+    font-weight: bold;
     line-height: 1.55;
     z-index: 35;
     pointer-events: auto;
