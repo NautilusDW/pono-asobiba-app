@@ -214,22 +214,75 @@
     //         まず `${sel}|${i}@${qid}` を参照、 無ければ `${sel}|${i}` に fallback。
     //       - per-Q キーが存在する qid では fallback で再上書きしない
     //         (= per-Q 値が「存在しない問題」だけ baseKey が機能する)。
+    //     2026-05-08 拡張: phase 別キー対応 (Quizland 問題フェーズ / 答えフェーズ)
+    //       - sel が `.X.phase-question` / `.X.phase-answer` のとき、 対応する base sel
+    //         (= phase 修飾なし) も lookup chain に入れる。
+    //       - 答えフェーズの優先順位:
+    //           perQ-phase-A → shared-phase-A → perQ-phase-Q → shared-phase-Q
+    //           → perQ-base → shared-base
+    //         (連動: phase-A に何も無ければ phase-Q の値、 さらに無ければ legacy)
+    //       - 問題フェーズ:
+    //           perQ-phase-Q → shared-phase-Q → perQ-base → shared-base
+    //       - 旧 saved-layout の `.emoji-display|N[@qid]` は base sel の lookup で
+    //         自動的に fallback として機能 (後方互換)。
+    //       - 逆に plain base sel iteration では phase-* class を持つ要素をスキップ
+    //         (= phase 別 iteration で既に処理済 + 旧 base 値で再上書きされる現象を防ぐ)。
+    function _phaseInfo(sel) {
+      // sel から base sel と phase 種別を抽出。 phase 修飾子が無ければ {base: sel, phase: null}。
+      var m = sel.match(/^(.*?)\.phase-(question|answer)$/);
+      if (!m) return { base: sel, phase: null };
+      return { base: m[1], phase: m[2] };
+    }
+    function _hasAnyPhaseClass(el) {
+      try { return !!(el && el.classList && (el.classList.contains('phase-question') || el.classList.contains('phase-answer'))); }
+      catch (e) { return false; }
+    }
+    function _lookupChain(sel, i) {
+      // sel + i に対する saved-layout キーの優先 chain を返す (上 = 高優先度)。
+      var info = _phaseInfo(sel);
+      var keys = [];
+      var pushPair = function (s) {
+        if (qid && perQList && perQList.indexOf(s) !== -1) {
+          keys.push(s + '|' + i + '@' + qid); // perQ
+        }
+        keys.push(s + '|' + i); // shared
+      };
+      if (info.phase === 'answer') {
+        pushPair(info.base + '.phase-answer');
+        pushPair(info.base + '.phase-question');
+        pushPair(info.base);
+      } else if (info.phase === 'question') {
+        pushPair(info.base + '.phase-question');
+        pushPair(info.base);
+      } else {
+        // base sel そのもの: 通常通り perQ → shared (旧挙動)。
+        pushPair(info.base);
+      }
+      return keys;
+    }
     selectors.forEach(function (sel) {
       var list = safeQueryAll(root, sel);
-      var isPerQ = !!(qid && perQList && perQList.indexOf(sel) !== -1);
-      for (var i = 0; i < list.length; i++) {
-        var baseKey = sel + '|' + i;
-        var s;
-        if (isPerQ) {
-          var perQKey = baseKey + '@' + qid;
-          // per-Q キーがあればそれを使う。 無ければ baseKey に fallback。
-          // ※ per-Q キー存在時は baseKey で「再上書き」しない
-          //   (= 旧 saved-layout の baseKey が全問共通で当たって per-Q を潰す挙動を防ぐ)。
-          s = (data[perQKey] !== undefined) ? data[perQKey] : data[baseKey];
-        } else {
-          s = data[baseKey];
+      var info = _phaseInfo(sel);
+      var isBaseWithPhaseSiblings = false;
+      if (info.phase === null) {
+        // base sel に対する iteration: spec 内に同じ base + phase- 修飾の selector が
+        // 1 つでもあれば、 phase-* class を持つ要素はスキップ (重複適用防止)。
+        for (var sj = 0; sj < selectors.length; sj++) {
+          var other = selectors[sj];
+          if (other === sel) continue;
+          var oi = _phaseInfo(other);
+          if (oi.base === info.base && oi.phase) { isBaseWithPhaseSiblings = true; break; }
         }
-        if (s) applyOne(list[i], s);
+      }
+      for (var i = 0; i < list.length; i++) {
+        var el = list[i];
+        if (isBaseWithPhaseSiblings && _hasAnyPhaseClass(el)) continue;
+        var chain = _lookupChain(sel, i);
+        var s = null;
+        for (var ki = 0; ki < chain.length; ki++) {
+          if (data[chain[ki]] !== undefined) { s = data[chain[ki]]; break; }
+        }
+        if (s) applyOne(el, s);
       }
     });
 

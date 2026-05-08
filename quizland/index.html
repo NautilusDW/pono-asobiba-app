@@ -3261,7 +3261,12 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.q-text-card',             'wh', '問題カード'],
   ['#q-text',                  'wh', '問題テキスト'],
   ['.q-text-card .audio',      'wh', '音声ボタン'],
-  ['.emoji-display',           'wh', 'ステージ枠 (位置調整用)'],
+  // phase-question / phase-answer 別キーで保存 (legacy `.emoji-display|0[@qid]` は
+  // fallback として読み取り時のみ使われる)。 plain `.emoji-display` を spec から外す
+  // ことで snapshot が新規に legacy キーを書き出さない (= 既存 legacy データは保全しつつ
+  // 今後の編集は全部 phase 別キーへ)。
+  ['.emoji-display.phase-question', 'wh', 'ステージ枠 [問題]'],
+  ['.emoji-display.phase-answer',   'wh', 'ステージ枠 [答え]'],
   ['.emoji-main-img',          'wh', 'ステージ画像 (挿絵)'],
   ['.shape-display',           'wh', 'ステージ枠 (かたち)'],
   ['.shape-img',               'wh', 'ステージ画像 (かたち)'],
@@ -3319,7 +3324,10 @@ window.EditorBootstrapConfig = {
   // ここに含まれるセレクタだけが `${sel}|${i}@${qid}` キーで保存・参照される。
   // フクロウ (.character) 等の常駐要素は **絶対に含めない**
   // (= per-Q 化すると問題ごとに位置が飛んでしまう)。
-  perQuestionSelectors: ['.emoji-display', '.emoji-main-img'],
+  // phase-question / phase-answer は .emoji-display の状態クラスで、 問題出題中・
+  // 答え合わせ中にそれぞれ別の位置・スケールを保存できるようにする (連動: 答えフェーズで
+  // 何も保存されていなければ問題フェーズの値が使われる、 fallback chain は applier 側で実装)。
+  perQuestionSelectors: ['.emoji-display.phase-question', '.emoji-display.phase-answer', '.emoji-display', '.emoji-main-img'],
   ghPath: 'quizland/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   // Future (Phase 2): aspect-aware layout fork
@@ -3553,7 +3561,10 @@ function renderShapeName(stage, q) {
 }
 function renderEmojiName(stage, q) {
   const wrap = document.createElement('div');
-  wrap.className = 'emoji-display';
+  // phase-question: 問題出題中の状態クラス。 revealAnswer で phase-answer に切替。
+  // saved-layout.json 側で `.emoji-display.phase-question|0[@qid]` キーを優先参照する
+  // (legacy `.emoji-display|0[@qid]` は fallback として残る)。
+  wrap.className = 'emoji-display phase-question';
   if (q.img) {
     const imgEl = document.createElement('img');
     imgEl.className = 'emoji-main-img';
@@ -3583,7 +3594,8 @@ function renderOpposite(stage, q) {
   // word テキスト要素が存在しないので revealAnswer の txt 書き換えは自動 skip される。
   // img_word なし (=従来の opposite) はテキストのみで表示 (現行どおり)。
   const container = document.createElement('div');
-  container.className = 'emoji-display opposite-with-img';
+  // phase-question: 問題出題中の状態クラス。 revealAnswer で phase-answer に切替。
+  container.className = 'emoji-display opposite-with-img phase-question';
   if (q.img_word) {
     const imgEl = document.createElement('img');
     imgEl.id = 'opposite-stage-img';
@@ -3638,6 +3650,39 @@ function revealAnswer(q) {
       ? q.choices[q.answer].text
       : q.choices[q.answer];
     txtEl.textContent = toFullWidth(ansText);
+  }
+  // phase-answer 切替: `.emoji-display` の状態クラスを phase-question → phase-answer に
+  // 切り替え、 答えフェーズ専用のレイアウト (位置・スケール) を適用する。
+  // 何も保存されていなければ applier の fallback で問題フェーズの値が使われる (= 連動)。
+  setPhase('answer');
+}
+
+// `.emoji-display` の phase クラス (`phase-question` / `phase-answer`) を切替し、
+// LayoutApplier に再 apply を促すヘルパー。 `.emoji-display` ステージを持たない
+// q.type (order_color / count_total / shape_name) では .emoji-display が存在しない
+// ので no-op に近いが、 安全のため毎回呼んでよい (applier 側の selector 不一致で skip)。
+function setPhase(phase) {
+  const stageWrap = document.querySelector('#stage-area .emoji-display');
+  if (stageWrap) {
+    stageWrap.classList.remove('phase-question', 'phase-answer');
+    stageWrap.classList.add(phase === 'answer' ? 'phase-answer' : 'phase-question');
+  }
+  // LayoutApplier 再 apply: phase 切替で別 key の値を読みに行かせる。
+  // _currentLayoutData が無い (= ?edit=1 でもない・layout JSON 未配信) なら no-op。
+  if (window.LayoutApplier && window._currentLayoutData) {
+    var _qid = (typeof window.QUIZLAND_GET_CURRENT_QID === 'function')
+      ? window.QUIZLAND_GET_CURRENT_QID() : null;
+    try {
+      window.LayoutApplier.apply(
+        window._currentLayoutData,
+        document.getElementById('stage-area') || null,
+        {
+          selectors: QZ_RESIZABLE_SELECTORS,
+          perQuestionSelectors: ['.emoji-display', '.emoji-display.phase-question', '.emoji-display.phase-answer', '.emoji-main-img'],
+          qid: _qid,
+        }
+      );
+    } catch (e) { /* noop */ }
   }
 }
 
@@ -3776,7 +3821,8 @@ function stopStagePono() {
 
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
-  wrap.className = 'emoji-display trivia-display';
+  // phase-question: 問題出題中の状態クラス。 revealAnswer で phase-answer に切替。
+  wrap.className = 'emoji-display trivia-display phase-question';
 
   // 質問時の画像。 img_word があればそれを優先 (正解後に img_answer にリビールするため
   // revealAnswer から #trivia-stage-img の src を差し替える)。 なければ既存の q.img。
@@ -3960,7 +4006,7 @@ function renderChoices(q) {
       document.getElementById('answer-panel'),
       {
         selectors: QZ_RESIZABLE_SELECTORS,
-        perQuestionSelectors: ['.emoji-display', '.emoji-main-img'],
+        perQuestionSelectors: ['.emoji-display.phase-question', '.emoji-display.phase-answer', '.emoji-display', '.emoji-main-img'],
         qid: _qid,
       }
     );
