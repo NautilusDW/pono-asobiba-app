@@ -400,6 +400,7 @@ const QUIZLAND_QUESTIONS = {
       answer:2, choices:['バナナ','たけのこ','ユーカリの は','りんご'] ,
       detail:'ユーカリの はは どくが あるけど、コアラだけ たべられるよ！'},
     { level:2, type:'trivia', category:'trivia',
+      img:'kirin.png',
       q:'キリンの くびの ほねは いくつ？',
       answer:0,
       choices:['7こ','15こ','20こ','5こ'],
