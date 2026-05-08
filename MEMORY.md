@@ -100,6 +100,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-08T08:41:53Z - Quizland OP Export CSS 統合 (B/C/D narration フレーム背景化 + Pono/Hakase/Single Box/Label 数値調整 + sw.js 852→853)
+- **タスク**: Quizland OP Export CSS 統合 (B/C/D narration フレーム背景化 + Pono/Hakase/Single Box/Label 数値調整 + sw.js 852→853)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 255
+- **エラー数**: 20
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 38, "Agent": 79, "Bash": 108, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 4}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-08T08:18:41Z - questions.js #121 weather L3 yukinokesshou TODO comment update to stage_weather_snowflake_compare.png (4-shape compare)
 - **タスク**: questions.js #121 weather L3 yukinokesshou TODO comment update to stage_weather_snowflake_compare.png (4-shape compare)
 - **結果**: 成功
@@ -201,19 +214,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 34, "Agent": 69, "Bash": 91, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T05:51:46Z - op-layout-editor.html: 一般 Undo 機能の追加 (50段スタック・500ms debounce・全 state 変更を記録)
-- **タスク**: op-layout-editor.html: 一般 Undo 機能の追加 (50段スタック・500ms debounce・全 state 変更を記録)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 219
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 34, "Agent": 68, "Bash": 91, "Glob": 5, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 8, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
