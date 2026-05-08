@@ -16,6 +16,7 @@
 
 - 2026-05-08 - [batch:14-quizland-hard-spoiler-raw] Codex: `tmp/quizland-trivia-audit/CODEX-ORDER-3.md` を受領。Quizland HARD spoiler-fix 用 stage raw 19 枚の生成に着手。HANDOFF / git log / assets / tmp 検索で同名成果物無しと確認済。AGENTS 現行方針により本配置ではなく `tmp/alpha_pending/14/` に raw 納品する。 (by Codex)
 - 2026-05-08 - [batch:14-quizland-hard-spoiler-raw] Codex: user 指摘を受け `CODEX-ORDER-3.md` を再読。A1/A2 は 2026-05-08 更新で「完全シルエット」へ厳格化済みと確認。`tmp/alpha_pending/14/stage_trivia_elephant_silhouette.png` と `stage_trivia_apple_silhouette.png` を GPT Image 2 で再生成・同名上書き。どちらも色付き被写体ではなく暗茶ベタ塗りシルエット raw に差し替え済。 (by Codex)
+- 2026-05-08 - [batch:14-quizland-hard-spoiler-raw] Codex: CODEX-ORDER-3 の残り 15 枚を GPT Image 2 で生成し、既存 4 枚と合わせて `tmp/alpha_pending/14/` に raw 19 枚を納品完了。全ファイル `1672x941` / RGB / alpha なし。D4 は初回が横顔寄りだったため正面シルエット版へ再生成済。A6 は下部テキスト領域を空ける版へ再生成済。alpha 抜き・切り抜き・本配置は未実施。 (by Codex)
 - 2026-05-08 - [batch:14-quizland-hard-spoiler-raw] Claude: 初回生成で A1 (ぞう) と A2 (りんご) がシルエット仕様を満たさず色付き watercolor として納品された。CODEX-ORDER-3.md を厳格化 (シルエット仕様セクション追加 + A2 を「青リンゴ」から「シルエット」に置換) し、Codex に再生成依頼中。 (by Claude)
 - 2026-05-08 - [batch:13/14] Claude: questions.js に sprint-13/14 用 TODO 結線コメント 23 件を予約 (commit cae724d). 画像納品後の更新は 1 行 img 値書き換えで済む状態。 (by Claude)
 - 2026-05-07 - [batch:10-quizland-start-card] Codex: 博士のなぞなぞ 1問目直前用の「スタート！！」合成カード画像を生成開始。HANDOFF / git log / tmp / assets 検索で既存成果物無しと確認済 → 着手します。raw 白背景で納品し、alpha抜き・切り抜きは行わない。 (by Codex)
