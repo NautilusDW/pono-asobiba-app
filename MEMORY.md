@@ -23,6 +23,7 @@
 - **Quiz Question Revision & Illustration Delivery Pipeline**: [memory/feature_quiz_question_revision_pipeline.md](memory/feature_quiz_question_revision_pipeline.md) — クイズ問題改訂→Codex 画像発注→納品→配置の真実の源マップ。**【新規 2026-05-08】画像発注前は必ず (1) 参照画像の有無確認、(2) 既存類似画像の有無確認、(3) 背景仕様をエントリごとに明示 (Codex に判断委譲 NG) を最優先で実施**。リビールペア / spoiler 監査 / 既知バッチ一覧収録
 - **Codex 画像 外周ぼかしルール**: [memory/feedback_codex_canvas_safe_margin.md](memory/feedback_codex_canvas_safe_margin.md) — シーン絵は外周をぼかして発注（後でフレーム差し替え時に切れないように）。オブジェクト単体絵は例外（上下左右切れない構図必須）。**全 Codex 発注で必須**
 - **Quiz Question Reveal Sequence**: [memory/feature_quiz_question_reveal_sequence.md](memory/feature_quiz_question_reveal_sequence.md) — 問題開始時の段階リビール (プレート → typewriter 問題文 → イラスト fade in → 4 択 fade in)。Q1-5 のみプレート、Q6+ は typewriter から開始、tap-to-skip で全 stage 即 revealed
+- **Quiz Framed Image Flag**: [memory/feature_quiz_framed_image_flag.md](memory/feature_quiz_framed_image_flag.md) — 紙風/水彩フレーム焼き込み画像 (rainbow_arc 等) は questions.js の `framed:true` / `framed_answer:true` で `.is-framed` を付与し共通 drop-shadow を抑止
 
 ---
 
@@ -100,6 +101,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-08T12:07:36Z - 長方形フレーム入り画像の drop-shadow 抑止 (framed フラグ実装)
+- **タスク**: 長方形フレーム入り画像の drop-shadow 抑止 (framed フラグ実装)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 403
+- **エラー数**: 43
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 174, "Read": 84, "Grep": 6, "ToolSearch": 2, "Agent": 80, "Write": 5, "Edit": 52}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
 
 ### 2026-05-08T12:05:45Z - Quizland Opening memory更新: emphasis全行黒確定 + editor parity修正 + asymmetric padding + TODO追記
 - **タスク**: Quizland Opening memory更新: emphasis全行黒確定 + editor parity修正 + asymmetric padding + TODO追記
@@ -203,18 +217,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 45, "Agent": 93, "Bash": 139, "Glob": 6, "Write": 3, "ToolSearch": 5, "ExitPlanMode": 4, "Grep": 9, "Edit": 9}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T10:08:01Z - Quizland OP Panel 2 入室演出: BG sharp 2s → blur+キャラ/Box フェードイン (CACHE_VERSION 859→860)
-- **タスク**: Quizland OP Panel 2 入室演出: BG sharp 2s → blur+キャラ/Box フェードイン (CACHE_VERSION 859→860)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 351
-- **エラー数**: 40
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 162, "Read": 63, "Grep": 3, "ToolSearch": 1, "Agent": 76, "Write": 4, "Edit": 42}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

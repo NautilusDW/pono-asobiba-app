@@ -169,8 +169,9 @@ const QUIZLAND_QUESTIONS = {
       q:'あさ、しろい もやが でる てんきを なんという？', answer:1, choices:['あめ','きり','ゆき','くもり'] ,
       detail:'きりは ちいさな みずの つぶが くうきに うかんでいる じょうたいだよ！'},
     // sprint-13 結線済み (2026-05-08): stage_weather_rainbow_arc.png 7色版に再生成・差替済み
+    // framed: 画像自体に紙風の長方形フレームが焼き込まれているため共通 drop-shadow を抑止。
     { level:2, type:'trivia', category:'weather',
-      img:'stage_weather_rainbow_arc.png',
+      img:'stage_weather_rainbow_arc.png', framed:true,
       q:'にじは なんしょく？',
       answer:1, choices:['5しょく','7しょく','3しょく','10しょく'] ,
       detail:'あか・だいだい・きいろ・みどり・あお・あいいろ・むらさきの 7しょくだよ！'},
@@ -204,7 +205,7 @@ const QUIZLAND_QUESTIONS = {
     // Level 3
     { level:3, type:'emoji_name', category:'weather', img:'Hurricane/Hurricane_normal_1.png', q:'これは なに？', answer:2, choices:['おおあめ','たつまき','たいふう','なみ'] },
     { level:3, type:'trivia', category:'weather',
-      img:'stage_weather_rainbow_arc.png',
+      img:'stage_weather_rainbow_arc.png', framed:true,
       q:'にじは いつ でる？',
       answer:1, choices:['あめの まえ','あめの あと はれたとき','くもりのとき','ゆきのとき'] ,
       detail:'たいようの ひかりが あめつぶに あたると にじが できるよ！'},
