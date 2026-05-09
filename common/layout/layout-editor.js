@@ -6098,6 +6098,136 @@
     return false;
   }
 
+  // 2026-05-10: ステージ画像 (= GitHub に画像バイナリを PUT して恒久化する対象) を判定。
+  //   対象: <img class="emoji-main-img | shape-img | color-chip | chip-illust">
+  //   非対象: 動的に追加された .le-dropped-img (= localStorage で永続化済み)
+  //           キャラ等の共通画像 (.character / pono-img 等は今回スコープ外)
+  var STAGE_IMG_CLASSES = ['emoji-main-img', 'shape-img', 'color-chip', 'chip-illust'];
+  function _isStageImg(el) {
+    if (!el || el.tagName !== 'IMG' || !el.classList) return false;
+    for (var i = 0; i < STAGE_IMG_CLASSES.length; i++) {
+      if (el.classList.contains(STAGE_IMG_CLASSES[i])) return true;
+    }
+    return false;
+  }
+  // replaceImageSrc が返した swap 種別と sel から、 実際に src が変更された <img> を取得。
+  function _getSwappedImgEl(sel, swapResult) {
+    if (!sel) return null;
+    if (swapResult === 'img') return sel.tagName === 'IMG' ? sel : null;
+    if (swapResult === 'inner-img') {
+      try {
+        var inner = sel.querySelectorAll('img');
+        return (inner && inner.length === 1) ? inner[0] : null;
+      } catch (e) { return null; }
+    }
+    return null;
+  }
+  // data URL から base64 部分のみを抽出 (ghPutContents が要求する形式)。
+  function _dataUrlToBase64(dataUrl) {
+    if (!dataUrl || typeof dataUrl !== 'string') return null;
+    var i = dataUrl.indexOf(',');
+    if (i < 0) return null;
+    return dataUrl.slice(i + 1);
+  }
+  // <img src="../assets/images/.../foo.png?v=..."> から repo 内パスを逆引き。
+  // 失敗時は null。
+  function _extractRepoPathFromSrc(src) {
+    if (!src) return null;
+    // クエリ文字列を落としてから match
+    var clean = String(src).split('?')[0].split('#')[0];
+    var m = clean.match(/assets\/images\/[^\s'"]+?\.(png|jpe?g|webp)$/i);
+    return m ? m[0] : null;
+  }
+
+  // 2026-05-10: ステージ画像の GitHub 永続化。
+  //   - imgEl: 差し替え後の <img> (src は data URL になっている)
+  //   - dataUrl: 差し替えに使った data URL (base64 抽出元)
+  //   - originalSrc: 差し替え前の src (repo パス逆引き用)
+  //   既存ファイルがあれば SHA を取って overwrite、 無ければ新規作成。
+  //   PUT 成功後は ?v=<timestamp> 付きの本来の repo パスに img.src を書き戻して
+  //   ブラウザキャッシュをバイパス、 GitHub 由来の本物の画像が読み込まれることを確認させる。
+  //   注意: PWA の sw キャッシュには古い画像が残っている可能性があるので、
+  //         CACHE_VERSION バンプ後 reload するよう toast で案内する。
+  function persistStageImage(imgEl, dataUrl, originalSrc) {
+    var repoPath = _extractRepoPathFromSrc(originalSrc);
+    if (!repoPath) {
+      showToast('画像パスが特定できませんでした (assets/images/.../*.png 形式が必要)', 'error');
+      return Promise.resolve(false);
+    }
+    var b64 = _dataUrlToBase64(dataUrl);
+    if (!b64) {
+      showToast('画像データの base64 変換に失敗', 'error');
+      return Promise.resolve(false);
+    }
+    showToast('GitHub に保存中… ' + repoPath);
+    // SHA 取得 (既存ファイル overwrite には必須、 無ければ新規)。
+    // 2026-05-10 LOW 修正: 一時的な 404 (Cloudflare miss / レートリミット) で sha=null
+    //   と誤判定して新規作成扱いになり、 既存ファイルを SHA なしで PUT して 422 になるのを避けるため
+    //   ghGetContentsWithRetry を使う (2 連続 404 のときだけ「真の新規」とみなす)。
+    return ghGetContentsWithRetry(repoPath).then(function (res) {
+      var existing = res && res.contents;
+      var sha = existing ? existing.sha : null;
+      var msg = 'chore(stage-image): editor から ' + repoPath + ' を差し替え';
+      return ghPutContents(repoPath, b64, msg, sha);
+    }).then(function () {
+      // 成功: src を本来の repo パス + cache-bust に書き戻し、 GH 由来の画像で表示確認
+      try {
+        var bust = Date.now();
+        // 元 src と同じ相対形式 (例: ../assets/images/...) を維持。
+        // _extractRepoPathFromSrc は repo パス (assets/images/...) を返すので、
+        // originalSrc から prefix を切り出して再構成する。
+        var clean = String(originalSrc).split('?')[0].split('#')[0];
+        var repoIdx = clean.indexOf(repoPath);
+        var prefix = repoIdx >= 0 ? clean.slice(0, repoIdx) : '../';
+        imgEl.src = prefix + repoPath + '?v=' + bust;
+      } catch (e) { /* 表示確認は best-effort */ }
+      showToast('画像を ' + repoPath + ' に保存しました (staging に数分で反映 / 完全反映は SW 更新後に reload)', 'success');
+      return true;
+    }).catch(function (err) {
+      console.warn('[LayoutEditor] persistStageImage failed', err);
+      var msg = (err && err.status === 401) ? '認証エラー: ログインし直してください'
+              : (err && err.status === 409) ? 'GitHub 上で別の更新があります。 reload してから再試行してください'
+              : 'GitHub PUT 失敗: ' + ((err && err.message) || 'unknown');
+      showToast(msg, 'error');
+      return false;
+    });
+  }
+
+  // ステージ画像差し替え時の confirm + PUT 共通処理。
+  //   sel: ユーザーが選択した要素 (img かそのラッパ)
+  //   swapResult: replaceImageSrc の戻り値 ('img' / 'bg' / 'inner-img')
+  //   dataUrl: 差し替えに使った data URL
+  //   originalSrc: 差し替え前の元 src (repo パス逆引き用)
+  // 2026-05-10: 戻り値を Promise<boolean> に統一 (HIGH 1 修正)。
+  //   - true (resolved): persist 開始 (= confirm OK + 実際に PUT 走った)
+  //   - false (resolved): stage 対象外 / confirm キャンセル
+  //   - persistStageImage 内のエラーは catch して false を返す (toast は中で出る)
+  //   caller (= openReplaceDialog 等) は await できる。
+  function maybePersistStageImageAfterSwap(sel, swapResult, dataUrl, originalSrc) {
+    var imgEl = _getSwappedImgEl(sel, swapResult);
+    if (!imgEl || !_isStageImg(imgEl)) return Promise.resolve(false);
+    // 2026-05-10 (MEDIUM): confirm に repoPath を表示し、 ユーザーが想定外の画像で
+    //   commit を進めないようにする。 path が取れなければ「保留」して preview-only に倒す。
+    var repoPath = _extractRepoPathFromSrc(originalSrc);
+    if (!repoPath) {
+      showToast('画像パスが特定できませんでした (preview のみで保留します)', 'warn');
+      return Promise.resolve(false);
+    }
+    var confirmMsg = 'この画像をリポジトリに恒久的に保存しますか？\n\n'
+      + '対象ファイル: ' + repoPath + '\n\n'
+      + '・GitHub の develop ブランチに新しい commit が作られます (元に戻すには git revert が必要です)\n'
+      + '・staging に数十秒〜数分で反映されます\n'
+      + '・他端末/PWA キャッシュは sw 更新まで古い画像を表示する可能性があります\n'
+      + '・キャンセルするとプレビューのみ (再読み込みで消えます)';
+    var ok;
+    try { ok = window.confirm(confirmMsg); } catch (e) { ok = false; }
+    if (!ok) {
+      showToast('プレビューのみで保留しました (再読み込みで消えます)', 'warn');
+      return Promise.resolve(false);
+    }
+    return persistStageImage(imgEl, dataUrl, originalSrc);
+  }
+
   function openReplaceDialog() {
     var sel = (state.selectedElements && state.selectedElements.size === 1)
       ? Array.from(state.selectedElements)[0] : null;
@@ -6141,25 +6271,41 @@
           var overKB = Math.round(result.finalBytes / 1024);
           showToast('警告: 圧縮後も ' + overKB + 'KB (上限 3MB 超過)。表示は可能ですが推奨範囲外です', 'warn');
         }
+        // 2026-05-10: 差し替え前に元 <img> の src を捕捉 (repo パス逆引き用)。
+        //   replaceImageSrc は img.src を data URL で上書きするため、 後からは取れない。
+        var preSwapImg = (sel.tagName === 'IMG') ? sel
+          : (function () { try { var ii = sel.querySelectorAll('img'); return ii && ii.length === 1 ? ii[0] : null; } catch (e) { return null; } })();
+        var preSwapSrc = preSwapImg ? (preSwapImg.getAttribute('src') || preSwapImg.src || '') : '';
         var swapResult = replaceImageSrc(sel, result.dataUrl);
-        if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
-          if (!result.resized && !result.requantized) {
-            if (swapResult === 'bg') {
-              showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
-            } else {
-              showToast('画像を差し替えました (Ctrl+Z で戻せます)');
-            }
-          }
-          // 永続化対応外 (例: ステージ画像 .emoji-main-img) の場合は preview-only である旨を案内
-          if (!_isPersistedReplaceTarget(sel)) {
-            showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは画像ファイル自体を assets/images/ に commit してください', 'warn');
-          }
-          scheduleDirtyUpdate();
-        } else {
+        if (swapResult === null || swapResult === undefined || swapResult === false) {
           showToast('差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）', 'error');
+          return null;
         }
+        if (!result.resized && !result.requantized) {
+          if (swapResult === 'bg') {
+            showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
+          } else {
+            showToast('画像を差し替えました (Ctrl+Z で戻せます)');
+          }
+        }
+        // 2026-05-10: ステージ画像 (.emoji-main-img 等) は GitHub PUT で恒久化を提案。
+        //   confirm でユーザーが OK したら commit。 キャンセルなら preview のみ。
+        //   HIGH 1 修正: maybePersistStageImageAfterSwap は Promise を返すので
+        //   Promise chain に乗せて、 PUT エラーが unhandled rejection にならないようにする。
+        var swappedImg = _getSwappedImgEl(sel, swapResult);
+        var isStage = swappedImg && _isStageImg(swappedImg);
+        var persistP = null;
+        if (isStage) {
+          // chain の末尾で待つ (input.remove() より先に解決)。
+          persistP = maybePersistStageImageAfterSwap(sel, swapResult, result.dataUrl, preSwapSrc);
+        } else if (!_isPersistedReplaceTarget(sel)) {
+          // 永続化対応外 (= stage でも dropped でもない) は従来通り preview-only である旨を案内
+          showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは画像ファイル自体を assets/images/ に commit してください', 'warn');
+        }
+        scheduleDirtyUpdate();
+        return persistP; // Promise をチェーンに返す
       }).catch(function (err) {
-        console.warn('[LayoutEditor] readAndResizeImage failed', err);
+        console.warn('[LayoutEditor] readAndResizeImage / persist failed', err);
         showToast('画像の読み込みに失敗', 'error');
       }).then(function () { input.remove(); });
     });
@@ -6572,6 +6718,10 @@
               showToast('警告: 圧縮後も ' + overKB + 'KB (上限 3MB 超過)', 'warn');
             }
             if (i === 0) {
+              // 2026-05-10: 差し替え前に元 <img> の src を捕捉 (repo パス逆引き用)。
+              var preSwapImg = (target.tagName === 'IMG') ? target
+                : (function () { try { var ii = target.querySelectorAll('img'); return ii && ii.length === 1 ? ii[0] : null; } catch (e) { return null; } })();
+              var preSwapSrc = preSwapImg ? (preSwapImg.getAttribute('src') || preSwapImg.src || '') : '';
               var swapResult = replaceImageSrc(target, dataUrl);
               if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
                 if (!result.resized && !result.requantized) {
@@ -6581,11 +6731,19 @@
                     showToast('画像を差し替えました（Ctrl+Z で戻せます）', 'success');
                   }
                 }
-                if (!_isPersistedReplaceTarget(target)) {
+                // 2026-05-10: ステージ画像なら GitHub PUT で恒久化を提案。
+                //   HIGH 1 修正: maybePersistStageImageAfterSwap の Promise を chain に乗せて
+                //   PUT エラーが unhandled rejection にならないようにする。
+                var swappedImg = _getSwappedImgEl(target, swapResult);
+                var isStage = swappedImg && _isStageImg(swappedImg);
+                var persistP = null;
+                if (isStage) {
+                  persistP = maybePersistStageImageAfterSwap(target, swapResult, dataUrl, preSwapSrc);
+                } else if (!_isPersistedReplaceTarget(target)) {
                   showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは assets/images/ に画像ファイル自体を commit してください', 'warn');
                 }
                 scheduleDirtyUpdate();
-                return;
+                return persistP; // chain に Promise を返す (null の場合は即解決扱い)
               }
               // 差し替え不能 → 警告のみ (新規にはフォールバックせず、ユーザー意図を尊重)
               showToast('差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）', 'warn');

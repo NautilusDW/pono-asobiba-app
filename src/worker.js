@@ -405,10 +405,106 @@ async function handleAiTts(request, env) {
   }
 }
 
+// 2026-05-10: handleGhProxy はもともと /api/gh/* を完全透過プロキシだったため、
+// 認証済 user (Basic Auth pass を知る人) が GitHub の任意エンドポイント
+// (refs/heads/main の force-push、 actions/secrets/* の書込、 user 情報取得 等)
+// を叩けてしまっていた。 path allowlist でアプリが実際に必要とする範囲に限定する。
+//
+// 既存ユースケース (= allowlist で必ずカバーが必要) ─────────────────────────
+//   layout-system (saved-layout.json):
+//     quizland/saved-layout.json
+//     quizland/preview/full/saved-layout.json
+//     zukan/preview/full/saved-layout.json
+//     zukan/preview/investigation/saved-layout.json
+//   quizland editor playtest:
+//     quizland/data/_review/playtest_notes.json
+//     quizland/data/_review/playtest_screenshots/<file>
+//   layout-editor stage image (今回追加):
+//     assets/images/<...>/<file>.{png,jpe?g,webp}
+//   admin/index.html / creature_studio:
+//     assets/data/{rewards,creatures,staging,quiz-sound-animals}.json
+//     assets/tts/manifest.json + assets/tts/<file>
+//     assets/images/{Bento_parts,Rooms/walls,Rooms/floors,Rooms/furnitures_final,
+//                    quiz-sound,staging,ocean,word,ai-generated,...}/<...>
+//     room/items.js + room/index.html
+//     quizland/data/questions.js
+//   maze-editor / maze-rough:
+//     maze/imageStages/_index.json + maze/imageStages/<name>.{json,jpg,png}
+//   admin connection test:
+//     /repos/<owner>/<repo>            (repo info; GET only)
+//     /repos/<owner>/<repo>/contents/<dir>  (folder listing)
+// 書込許可パターン (PUT / DELETE / POST 用)。 GET と書込で同一範囲。
+const ALLOWED_GH_PATTERNS = [
+  // saved-layout.json (LayoutSystem 配下、 quizland/zukan 等)
+  /^\/repos\/[^/]+\/[^/]+\/contents\/(?:[A-Za-z0-9_./-]+\/)?saved-layout\.json$/,
+  // quizland 関連 (questions.js / _review / playtest_screenshots 等)
+  /^\/repos\/[^/]+\/[^/]+\/contents\/quizland\/[A-Za-z0-9_./-]+$/,
+  // maze image stages (_index.json + 各ステージの json/jpg/png)
+  /^\/repos\/[^/]+\/[^/]+\/contents\/maze\/imageStages(?:\/[A-Za-z0-9_./-]+)?$/,
+  // assets 配下: data (JSON) / tts / images / sounds
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/data\/[A-Za-z0-9_.-]+\.json$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/tts(?:\/[A-Za-z0-9_./-]+)?$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/images\/[A-Za-z0-9_./-]+$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/sounds\/[A-Za-z0-9_./-]+$/,
+  // room/ (items.js / index.html / 配下)
+  /^\/repos\/[^/]+\/[^/]+\/contents\/room\/[A-Za-z0-9_./-]+$/,
+];
+
+// 接続テスト等の GET 専用エンドポイント。 admin/index.html の「PAT 接続テスト」が
+// /repos/<owner>/<repo> を直接叩くので、 GET (および HEAD) のみ許可する。
+const ALLOWED_GH_GET_ONLY_PATTERNS = [
+  /^\/repos\/[^/]+\/[^/]+$/,
+];
+
+// 2026-05-10: HIGH 2 修正 — `*` で許す代わりに既知 origin のみ反射。
+// `credentials: 'include'` 経路はブラウザが `*` をブロックするので
+// 主に curl / 非ブラウザによる濫用対策 (二重防御)。
+const ALLOWED_GH_ORIGINS = [
+  'https://pono-asobiba-staging.ndw.workers.dev',
+  'https://pono-asobiba-app.ndw.workers.dev',
+  'https://pono.kodama-no-mori.com',
+  'http://localhost:8788',
+  'http://127.0.0.1:8788',
+];
+
+function corsAllowedOrigin(request) {
+  const origin = request.headers.get('Origin') || '';
+  return ALLOWED_GH_ORIGINS.indexOf(origin) >= 0 ? origin : 'null';
+}
+
 async function handleGhProxy(request, env) {
   const url = new URL(request.url);
   const ghPath = url.pathname.replace(/^\/api\/gh/, '');
   if (!env.GITHUB_TOKEN) return json(500, { error: 'GITHUB_TOKEN not configured on server' });
+
+  // Path traversal guard — `..` を URL に通すと assets/images/../../foo を叩ける。
+  // 念のため normalize して比較する。
+  if (ghPath.indexOf('..') >= 0) {
+    return new Response(JSON.stringify({ error: 'Path traversal blocked', path: ghPath }), {
+      status: 403,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': corsAllowedOrigin(request),
+      },
+    });
+  }
+
+  // Allowlist 検査 — 既存機能 (saved-layout / playtest / 画像 PUT / admin / maze) を
+  // カバーしつつ、 refs/heads/* や actions/secrets/* 等の危険エンドポイントを弾く。
+  const method = request.method;
+  const isReadOnly = method === 'GET' || method === 'HEAD';
+  const isAllowedWrite = ALLOWED_GH_PATTERNS.some(p => p.test(ghPath));
+  const isAllowedReadOnly = isReadOnly
+    && ALLOWED_GH_GET_ONLY_PATTERNS.some(p => p.test(ghPath));
+  if (!isAllowedWrite && !isAllowedReadOnly) {
+    return new Response(JSON.stringify({ error: 'Path not allowed by gh proxy', path: ghPath, method }), {
+      status: 403,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': corsAllowedOrigin(request),
+      },
+    });
+  }
 
   const ghUrl = 'https://api.github.com' + ghPath + url.search;
   const headers = {
@@ -429,7 +525,8 @@ async function handleGhProxy(request, env) {
     const respBody = await resp.arrayBuffer();
     const respHeaders = {
       'Content-Type': resp.headers.get('Content-Type') || 'application/json',
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Origin': corsAllowedOrigin(request),
+      'Vary': 'Origin'
     };
     return new Response(respBody, { status: resp.status, headers: respHeaders });
   } catch (e) {

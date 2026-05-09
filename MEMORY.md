@@ -103,6 +103,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-09T10:07:55Z - quizland editor: stage画像 (.emoji-main-img 等) の D&D 差し替えを GitHub PUT で恒久化 + sw 878→879
+- **タスク**: quizland editor: stage画像 (.emoji-main-img 等) の D&D 差し替えを GitHub PUT で恒久化 + sw 878→879
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 175
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 20, "Agent": 56, "ToolSearch": 1, "Bash": 74, "Edit": 19, "Grep": 3, "Glob": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-09T09:57:40Z - quizland editor: stage画像差し替えのレギュレーション表示 + 容量超過時の自動再圧縮 + プレビュー専用警告 + sw 877→878
 - **タスク**: quizland editor: stage画像差し替えのレギュレーション表示 + 容量超過時の自動再圧縮 + プレビュー専用警告 + sw 877→878
 - **結果**: 成功
@@ -204,19 +217,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 35, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 48, "Grep": 4}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T13:45:32Z - Quizland OP cinematic に tap-to-advance + auto-advance hybrid 進行を追加 (Panel 1 narration seg1/seg2 + Panel 2-6 dialogue 全 line) + .op-tap-hint UI + sw.js CACHE_VERSION 873→874
-- **タスク**: Quizland OP cinematic に tap-to-advance + auto-advance hybrid 進行を追加 (Panel 1 narration seg1/seg2 + Panel 2-6 dialogue 全 line) + .op-tap-hint UI + sw.js CACHE_VERSION 873→874
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 122
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 34, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 48, "Grep": 4}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
