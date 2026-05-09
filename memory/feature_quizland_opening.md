@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA_02.mp3) で per-seg 分割再生 (sw v893+)。
 type: project
 ---
 
@@ -47,6 +47,38 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
 - CSS: opacity フェードイン (0.35s) + transform: scale(0.92→1.0) のポップ
 - JS: `_qscRunning` 再入ガード、`{ once: true }` タップリスナー + `finally` で removeEventListener、22×100ms ホールドループで `cancelled` ポーリング
 - preload: タイトルタップ時の `__preloadList` に追加 (ウォーミング ~17s 余裕あり)
+
+## ナレーション音声 per-seg 分割 (sw v893+)
+
+panel 1 のナレーション音声を **seg1 / seg2 で別ファイル化**して per-seg 再生する設計に切替えた (2026-05-09)。
+
+### Why
+
+旧: 単一 `OP_NA.wav` (17.45s, seg1+seg2 連結) を panel-level `audio` で再生。タップ待ちで seg1 が止まっていてもナレ音声だけは seg2 まで言い切ってしまい、テキストと音声がズレるバグがあった。
+
+新: `OP_NA01.mp3` (seg1) + `OP_NA_02.mp3` (seg2) を `OP_PANELS[0].segments[i].audio` で **per-seg に格納**し、cinematic loop で seg を進めた瞬間に対応する Audio を強制停止する。タップで進めれば「読み終わるところまで」音声がきっちり止まる。
+
+### 実装
+
+- `OP_PANELS[0]` の panel-level `audio` を撤去、`segments[i].audio` を新設
+- 新ヘルパ `__opStartSegAudio(segIdx)` / `__opStopSegAudio(a)` を `playOpeningCinematic` 内に追加し、 per-seg の Audio 生成・破棄を統一管理
+  - `__opStartSegAudio` は前回の Audio / Web Audio routing を必ず disconnect してから新規 Audio を生成 (リーク防止)
+  - URL は `segs[i].audio` 優先、 fallback で `panel.audio` (後方互換)
+  - Web Audio routing は `audioCtx.createMediaElementSource(a)` → `__opNarrGain (0.65)` → destination
+- BGM ducking は **seg1 起動時 1 回のみ**:`__opOrigBgm == null` の時のみ保存 + `setTargetAtTime(orig*0.3, ..., 0.18)`。 seg2 起動時は `__opOrigBgm` が既に保持済みなので **二重 duck をスキップ**
+- BGM 復帰は seg2 終了 (or seg なし時の単一 seg 終了) で 1 回だけ `__opOrigBgm` を `setTargetAtTime` で復帰、`__opOrigBgm = null` にリセット
+- preload も per-seg に汎用化: タイトルタップ時に `__preloadList` の隣で `OP_PANELS` を走査して `segments[i].audio` (+ panel.audio fallback) の URL を `__audSeen` 重複防止 dict 経由で全部 `new Audio().load()`
+- 旧 `OP_NA.wav` ファイル自体は **削除しない** (rollback 用に残置)。コード参照のみ撤去
+
+### Skip / cancel 経路
+
+- `onSkip` (skip ボタン) は `_opActiveAudio.pause()` + BGM restore のみ呼ぶ。 Web Audio の `disconnect` は **`finally` ブロックの cleanup に依存** (single-run なら最終的に `__opStopSegAudio` で確実に切れるため安全)。 replay 時もこの `finally` が走るので routing リークはしない
+- `_opCancelled = true` になると `_opWaitForAdvance` が即解除され、cinematic loop の `finally` で `__opStopSegAudio` が走って disconnect されるフロー
+
+### 既知の保守性懸念 (cross-review MEDIUM 由来)
+
+1. **`__opStopSegAudio(a)` の引数 `a` と module-level `__opNarrSrc` / `__opNarrGain` の implicit 結合**: 現状は seg 単一 caller なので問題ないが、 将来 `_opActiveAudio` を 2 つ並行で持つ設計に拡張する時はバインディングを明示化する必要あり (例: Audio 生成時に source/gain を return して closure に閉じ込める)
+2. **`onSkip` の partial cleanup**: skip 直後は `pause` のみで `disconnect` しない。 即時に新 Audio を作って routing する経路が増えると、 古い routing が dangling する可能性あり。 現状の単一 cinematic 設計では `finally` 経由で必ず回収される
 
 ## ナレーション 2 セグメント切替タイミング (2026-05-07 調整)
 

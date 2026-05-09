@@ -4717,12 +4717,14 @@ function initGame() {
 // ═══════════════════════════════════════════════════════════
 const OP_PANELS = [
   // Panel 1 — narration
+  // 2026-05-09: per-seg audio (OP_NA01.mp3 / OP_NA_02.mp3) に分離。
+  // 旧 panel-level audio (OP_NA.wav) は削除 (rollback 用にファイルは残置)。
   {
     kind: "narration",
     bg: "../assets/images/quizland/OP/OP_BG.webp",
-    audio: "../assets/images/quizland/OP/OP_NA.wav",
     segments: [
       {
+        audio: "../assets/images/quizland/OP/OP_NA01.mp3",
         lines: [
           { text: "もりの おくに、ふしぎな いえがあります。", emphasis: false },
           { text: "そこには、なんでも しっている", emphasis: false },
@@ -4730,6 +4732,7 @@ const OP_PANELS = [
         ]
       },
       {
+        audio: "../assets/images/quizland/OP/OP_NA_02.mp3",
         lines: [
           { text: "ポノは、なかよしの はかせと、", emphasis: false },
           { text: "いつもの なぞなぞで", emphasis: false },
@@ -5434,6 +5437,66 @@ async function playOpeningCinematic() {
           ? panel.segments
           : (panel.lines ? [{ lines: panel.lines }] : []);
 
+        // 2026-05-09: per-seg audio に対応。 segments[i].audio があれば seg ごとに
+        // 個別 Audio を生成・再生。 ユーザがタップで seg を進めた時に強制停止
+        // (= 「最後まで言い切らない」設計)。 panel-level panel.audio は後方互換 fallback。
+        // seg を作るたびに既存の Web Audio routing を破棄するヘルパ。
+        function __opStartSegAudio(segIdx) {
+          // 既存の seg audio / routing を片付け (リーク防止)
+          try { if (_opActiveAudio) { _opActiveAudio.pause(); _opActiveAudio.currentTime = 0; } } catch (_) {}
+          _opActiveAudio = null;
+          try { if (__opNarrSrc)  __opNarrSrc.disconnect(); }  catch (_) {}
+          try { if (__opNarrGain) __opNarrGain.disconnect(); } catch (_) {}
+          __opNarrSrc = null;
+          __opNarrGain = null;
+          // 該当 seg の音源 URL を決定。 segs[i].audio 優先、無ければ panel.audio fallback。
+          const segObj = segs[segIdx] || null;
+          const audioUrl = (segObj && segObj.audio) ? segObj.audio : (panel.audio || null);
+          if (!audioUrl) return null;
+          let a = null;
+          try {
+            a = new Audio(audioUrl);
+            a.preload = 'auto';
+            a.crossOrigin = 'anonymous';
+            if (typeof audioCtx !== 'undefined' && audioCtx) {
+              try {
+                __opNarrSrc = audioCtx.createMediaElementSource(a);
+                __opNarrGain = audioCtx.createGain();
+                __opNarrGain.gain.value = 0.65;
+                __opNarrSrc.connect(__opNarrGain);
+                __opNarrGain.connect(audioCtx.destination);
+              } catch (_) {
+                __opNarrSrc = null;
+                __opNarrGain = null;
+              }
+            }
+            try { a.volume = 0.65; } catch (_) {}
+            _opActiveAudio = a;
+            // BGM ducking は seg1 の最初の起動時に 1 度だけ。 __opOrigBgm が null の時のみ保存。
+            try {
+              if (__opOrigBgm == null && typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain) {
+                __opOrigBgm = bgmGain.gain.value;
+                bgmGain.gain.setTargetAtTime(__opOrigBgm * 0.3, audioCtx.currentTime, 0.18);
+              }
+            } catch (_) {}
+            a.play().catch(function(){});
+          } catch (_) {
+            a = null;
+            _opActiveAudio = null;
+          }
+          return a;
+        }
+
+        // タップ等で seg を進めた時に audio を即停止 + routing を破棄するヘルパ。
+        function __opStopSegAudio(a) {
+          try { if (a && !a.ended) { a.pause(); a.currentTime = a.duration || 0; } } catch (_) {}
+          if (_opActiveAudio === a) _opActiveAudio = null;
+          try { if (__opNarrSrc)  __opNarrSrc.disconnect(); }  catch (_) {}
+          try { if (__opNarrGain) __opNarrGain.disconnect(); } catch (_) {}
+          __opNarrSrc = null;
+          __opNarrGain = null;
+        }
+
         // セグメント 1 を構築 (visible)
         // 2026-05-09: editor (tools/op-layout-editor.html) の per-VC narration
         // 設定 (lineHeight / padding / fontSize / width / height / 位置 / bg) を
@@ -5455,60 +5518,22 @@ async function playOpeningCinematic() {
         }
 
         // 音声再生 (セグメント 1 表示中に並行で開始)
-        let audio = null;
-        try {
-          audio = new Audio(panel.audio);
-          audio.preload = 'auto';
-          audio.crossOrigin = 'anonymous';
-          // Route through existing audioCtx so iOS recognizes the already-unlocked context
-          // (BGM has already activated audioCtx synchronously on title-tap).
-          if (typeof audioCtx !== 'undefined' && audioCtx) {
-            try {
-              __opNarrSrc = audioCtx.createMediaElementSource(audio);
-              __opNarrGain = audioCtx.createGain();
-              __opNarrGain.gain.value = 0.65;
-              __opNarrSrc.connect(__opNarrGain);
-              __opNarrGain.connect(audioCtx.destination);
-            } catch (e) {
-              __opNarrSrc = null;
-              __opNarrGain = null;
-              /* same audio element re-routed twice would throw — fallback below */
-            }
-          }
-          // HTMLAudio fallback level (also covers the catch path above).
-          // Web Audio gain is already 0.65; if routing failed, HTMLAudio.volume is the only level control.
-          try { audio.volume = 0.65; } catch (e) {}
-          _opActiveAudio = audio;
-          // Duck BGM during narration to keep voice intelligible.
-          try {
-            if (typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain) {
-              __opOrigBgm = bgmGain.gain.value;
-              bgmGain.gain.setTargetAtTime(__opOrigBgm * 0.3, audioCtx.currentTime, 0.18);
-            }
-          } catch (e) {}
-          await audio.play().catch(function(){});
-        } catch (e) {
-          audio = null;
-          _opActiveAudio = null;
-        }
+        let audio = __opStartSegAudio(0);
 
         // セグメントが 2 つ以上ある場合、 ユーザータップ (or キャンセル) でのみクロスフェード。
         // 2026-05-07 仕様変更 (v885): auto-advance (12s タイマー / audio.duration*0.62) を撤去。
         // 2026-05-07 追加修正 (v889): bespoke タイマーやポーリングを排し、共通ヘルパ
         // _opWaitForAdvance() に統一。 setTimeout/setInterval ベースの auto-advance は
         // この経路に一切残らない (minHold 完走 → hint 表示 → タップ受信のみ)。
-        // ナレ音声は流れ続けるが、ユーザが「タップしてつづける ▶」を押すまで seg1 を保持。
+        // 2026-05-09: per-seg audio 化に伴い、 タップ受信時に seg1 audio を即停止
+        // (最後まで言い切らせない設計)。 続けて seg2 用の Audio を新規生成。
         if (segs.length >= 2) {
           // minHold 1200ms (誤タップ抑止) → タップ待ち。 hint は helper 内で
           // minHold 経過後に showHint:true で出す。
           await _opWaitForAdvance({ minHold: 1200, showHint: true });
-          // ナレ音声がまだ流れていれば停止 (重ね再生・残響回避)
-          try {
-            if (audio && !audio.ended) {
-              audio.pause();
-              audio.currentTime = audio.duration || 0;
-            }
-          } catch (_) {}
+          // seg1 audio を強制停止 (再生中でも cleanup)
+          __opStopSegAudio(audio);
+          audio = null;
 
           if (!_opCancelled) {
             // セグメント 1 をフェードアウト
@@ -5528,6 +5553,8 @@ async function playOpeningCinematic() {
               }
               narration.classList.remove('seg-hide');
               narration.classList.add('seg-show');
+              // seg2 用の audio を新規生成して再生開始
+              audio = __opStartSegAudio(1);
               // 2026-05-09: seg2 は seg1 と異なる高さ/位置になり得るので tap-hint を即時追従。
               // (まだ可視中の hint があれば inline top を再計算して被り回避)
               try {
@@ -5547,10 +5574,10 @@ async function playOpeningCinematic() {
         if (!_opCancelled) {
           await _opWaitForAdvance({ minHold: 1000, showHint: true });
         }
-        // ナレ音声を停止 (次パネルへ持ち越さない)
-        try { if (audio && !audio.ended) { audio.pause(); } } catch (_) {}
+        // ナレ音声 (seg2 or 単一 seg) を停止 (次パネルへ持ち越さない)
         if (audio) {
-          _opActiveAudio = null;
+          __opStopSegAudio(audio);
+          audio = null;
           // Restore BGM after narration.
           try {
             if (typeof bgmGain !== 'undefined' && bgmGain && bgmGain.gain && __opOrigBgm != null) {
@@ -5860,10 +5887,28 @@ document.getElementById('start-screen').addEventListener('click', function() {
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
     }
-    // 音声もプリロード
+    // 音声もプリロード (2026-05-09: per-seg audio 化に伴い OP_PANELS から実際に
+    // 参照される URL を全部温める。 segments[i].audio 優先、 panel.audio fallback。)
     try {
-      var __naud = new Audio('../assets/images/quizland/OP/OP_NA.wav');
-      __naud.preload = 'auto'; __naud.load();
+      var __audSeen = {};
+      function __warmAud(u) {
+        if (!u || __audSeen[u]) return;
+        __audSeen[u] = 1;
+        try { var __a = new Audio(u); __a.preload = 'auto'; __a.load(); } catch (_) {}
+      }
+      for (var __pj = 0; __pj < OP_PANELS.length; __pj++) {
+        var __pp = OP_PANELS[__pj];
+        if (!__pp) continue;
+        if (__pp.segments && __pp.segments.length) {
+          for (var __sj = 0; __sj < __pp.segments.length; __sj++) {
+            var __sg = __pp.segments[__sj];
+            if (__sg && __sg.audio) __warmAud(__sg.audio);
+            else if (__pp.audio) __warmAud(__pp.audio);
+          }
+        } else if (__pp.audio) {
+          __warmAud(__pp.audio);
+        }
+      }
     } catch (e) {}
   } catch (e) {}
   startBGM();
