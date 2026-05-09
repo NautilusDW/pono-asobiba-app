@@ -103,6 +103,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-09T11:46:43Z - quizland v881 シアン overlay マーカー (.board::after / .answer-tray::after) 削除 + sw.js CACHE_VERSION 883->884 バンプ
+- **タスク**: quizland v881 シアン overlay マーカー (.board::after / .answer-tray::after) 削除 + sw.js CACHE_VERSION 883->884 バンプ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 199
+- **エラー数**: 9
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 24, "Agent": 63, "ToolSearch": 1, "Bash": 84, "Edit": 22, "Grep": 3, "Glob": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-09T11:43:14Z - quizland Fukuro_frame_001/002 をユーザー手動マーク付き画像に仮置き換え (バックアップ + sw v883)
 - **タスク**: quizland Fukuro_frame_001/002 をユーザー手動マーク付き画像に仮置き換え (バックアップ + sw v883)
 - **結果**: 成功
@@ -205,18 +218,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 38, "Read": 20, "Glob": 9, "ToolSearch": 5, "Write": 1, "ExitPlanMode": 1, "Bash": 49, "Grep": 4}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-08T13:51:53Z - quizland OP scenario verify (no-op match) + tap-listener dedup guard + _opHideTapHint timer leak fix + CACHE_VERSION 875->876
-- **タスク**: quizland OP scenario verify (no-op match) + tap-listener dedup guard + _opHideTapHint timer leak fix + CACHE_VERSION 875->876
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 157
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 19, "Agent": 53, "ToolSearch": 1, "Bash": 63, "Edit": 18, "Grep": 1, "Glob": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
