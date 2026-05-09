@@ -103,6 +103,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-09T11:13:20Z - quizland editor: BG フレーム基準 (Fukuro_frame_001/002) の中心点マーカーを overlay 追加 + sw 880->881
+- **タスク**: quizland editor: BG フレーム基準 (Fukuro_frame_001/002) の中心点マーカーを overlay 追加 + sw 880->881
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 184
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 22, "Agent": 60, "ToolSearch": 1, "Bash": 76, "Edit": 20, "Grep": 3, "Glob": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-09T10:17:51Z - GitHub proxy path traversal 対策 + 画像 PUT 堅牢化 (allowlist + Promise return + CORS origin 限定 + repoPath confirm + retry)
 - **タスク**: GitHub proxy path traversal 対策 + 画像 PUT 堅牢化 (allowlist + Promise return + CORS origin 限定 + repoPath confirm + retry)
 - **結果**: 成功
@@ -205,18 +218,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {}
 - **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-05-08T13:48:27Z - Quizland: 第N問目SE (don.mp3) を SE_PATHS に追加 + updateHUD() で playSe('nextQuestion') 起動
-- **タスク**: Quizland: 第N問目SE (don.mp3) を SE_PATHS に追加 + updateHUD() で playSe('nextQuestion') 起動
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 466
-- **エラー数**: 50
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 179, "Read": 108, "Grep": 14, "ToolSearch": 2, "Agent": 91, "Write": 6, "Edit": 54, "Glob": 12}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
