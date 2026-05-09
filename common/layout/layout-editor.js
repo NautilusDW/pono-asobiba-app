@@ -908,6 +908,12 @@
     el.classList.add('chip-text-editing');
     el.focus();
 
+    // dblclick 時点の qKey をクロージャにキャプチャ。
+    //   blur が発火する頃には「⏭ 次の問題」 等で currentQ が次の問題に
+    //   切り替わっている可能性があり、 _getCurrentQKey() 経由だと別問題に
+    //   override が保存される (MEDIUM 1 修正)。
+    var capturedQKey = _getCurrentQKey();
+
     // 全選択
     try {
       var range = document.createRange();
@@ -917,13 +923,25 @@
       sel.addRange(range);
     } catch (err) { /* noop */ }
 
+    // paste をサニタイズ (HIGH 1): rich HTML 貼り付けを plain text に強制し、
+    //   contenteditable DOM に外部 HTML が残るのを防ぐ。
+    function onPaste(ev) {
+      ev.preventDefault();
+      var cd = ev.clipboardData || window.clipboardData;
+      var plain = cd ? cd.getData('text') : '';
+      if (typeof plain !== 'string') plain = '';
+      try { document.execCommand('insertText', false, plain); }
+      catch (err) { /* legacy fallback: 大半のブラウザで動く */ }
+    }
+
     function commit() {
       el.contentEditable = 'false';
       el.classList.remove('chip-text-editing');
       delete el.dataset.originalHtml;
       el.removeEventListener('blur', commit);
       el.removeEventListener('keydown', onKey);
-      _saveChipTextOverride(el);
+      el.removeEventListener('paste', onPaste);
+      _saveChipTextOverride(el, capturedQKey);
     }
     function cancel() {
       // 編集破棄: 元の HTML に戻して contenteditable を解除 (保存はしない)
@@ -933,6 +951,7 @@
       delete el.dataset.originalHtml;
       el.removeEventListener('blur', commit);
       el.removeEventListener('keydown', onKey);
+      el.removeEventListener('paste', onPaste);
     }
     function onKey(ev) {
       if (ev.key === 'Escape') {
@@ -952,11 +971,15 @@
     }
     el.addEventListener('blur', commit);
     el.addEventListener('keydown', onKey);
+    el.addEventListener('paste', onPaste);
   }
 
   // contenteditable で編集された innerHTML を plain text + \n に変換し、
   // window._currentLayoutData.__chip_text_overrides[qKey][slot] に保存。
-  function _saveChipTextOverride(el) {
+  // qKey 引数省略時は _getCurrentQKey() で fallback (後方互換)。
+  // 通常は dblclick 時点で capture した qKey を渡す (MEDIUM 1: blur 時点では
+  // currentQ が次の問題に進んでしまっている可能性があるため)。
+  function _saveChipTextOverride(el, qKey) {
     var chip = el.closest ? el.closest('.chip') : null;
     if (!chip) {
       showToast('chip 親要素が見つかりません', 'warn');
@@ -967,7 +990,8 @@
       showToast('slot index が判定できません (DOM 順 4 個超過 or scope 外)', 'warn');
       return;
     }
-    var qKey = _getCurrentQKey();
+    // qKey 省略時は現在値で fallback (後方互換)。
+    if (qKey == null) qKey = _getCurrentQKey();
     if (!qKey) {
       showToast('現在の問題 ID (qKey) が取得できません。 Quizland 以外では無効です', 'warn');
       // 編集前値に戻す
@@ -977,8 +1001,11 @@
       return;
     }
     // innerHTML → plain text + \n 変換
+    // MEDIUM 2: Chrome の空行は <div><br></div> 形式。 順序が後だと <br> → \n + </div> → \n
+    // で 2 個の改行になり空行が増殖する。 先に <div><br></div> 全体を 1 個の \n に潰す。
     var html = el.innerHTML;
     var text = html
+      .replace(/<div>\s*<br\s*\/?>\s*<\/div>/gi, '\n')
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<\/(div|p)>/gi, '\n')
       .replace(/<[^>]+>/g, '')

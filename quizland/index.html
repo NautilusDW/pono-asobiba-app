@@ -3612,7 +3612,9 @@ function _qzGetChipTextWithOverride(originalText, qKey, slot) {
 function _qzApplyChipText(el, originalText, qKey, slot) {
   var resolved = _qzGetChipTextWithOverride(originalText, qKey, slot);
   var hasOverride = (resolved !== originalText);
-  var fullWidthText = (typeof toFullWidth === 'function') ? toFullWidth(resolved) : String(resolved);
+  // MEDIUM 3: resolved が null / undefined の場合に "null" / "undefined" を描画してしまうのを防ぐ。
+  var safeText = (resolved == null) ? '' : String(resolved);
+  var fullWidthText = (typeof toFullWidth === 'function') ? toFullWidth(safeText) : safeText;
   el.innerHTML = _qzEscapeHtml(fullWidthText).replace(/\n/g, '<br>');
   if (hasOverride) {
     el.setAttribute('data-chip-text-override', '1');
