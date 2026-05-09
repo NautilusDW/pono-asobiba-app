@@ -6170,18 +6170,15 @@
       var msg = 'chore(stage-image): editor から ' + repoPath + ' を差し替え';
       return ghPutContents(repoPath, b64, msg, sha);
     }).then(function () {
-      // 成功: src を本来の repo パス + cache-bust に書き戻し、 GH 由来の画像で表示確認
-      try {
-        var bust = Date.now();
-        // 元 src と同じ相対形式 (例: ../assets/images/...) を維持。
-        // _extractRepoPathFromSrc は repo パス (assets/images/...) を返すので、
-        // originalSrc から prefix を切り出して再構成する。
-        var clean = String(originalSrc).split('?')[0].split('#')[0];
-        var repoIdx = clean.indexOf(repoPath);
-        var prefix = repoIdx >= 0 ? clean.slice(0, repoIdx) : '../';
-        imgEl.src = prefix + repoPath + '?v=' + bust;
-      } catch (e) { /* 表示確認は best-effort */ }
-      showToast('画像を ' + repoPath + ' に保存しました (staging に数分で反映 / 完全反映は SW 更新後に reload)', 'success');
+      // 2026-05-10 (v882) BUGFIX: PUT 成功後に src を ../assets/images/... へ書き戻すと、
+      //   Cloudflare Workers の [assets] バンドルが GH Actions の `wrangler deploy --env staging`
+      //   完了 (~30-90s) まで stale なため、 古い画像バイトが返ってきて
+      //   「OK 押した瞬間に元画像へ戻った」 という現象になる。
+      //   修正方針: editor session 中は data URL のまま残して preview を維持する。
+      //   reload 後 (= deploy 完了 + SW 更新後) には repo パスから本物の新画像が読まれる。
+      //   data URL は imgEl.src に既に入っている (replaceImageSrc 直後に上書き済み) ので
+      //   ここでは触らない。
+      showToast('画像を ' + repoPath + ' に保存しました (staging へは数十秒〜数分で反映。 完全反映は SW 更新後に reload)', 'success');
       return true;
     }).catch(function (err) {
       console.warn('[LayoutEditor] persistStageImage failed', err);
