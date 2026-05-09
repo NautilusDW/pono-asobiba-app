@@ -502,6 +502,66 @@ body.layout-editor-on.show-safe .q-text-card::after {
   z-index: 50;
 }
 
+/* ===== BG フレーム画像 基準の中心マーカー (?edit=1 + show-safe 時のみ)
+   オレンジ系の DOM 幾何中心マーカーとは別に、 実際に貼られている
+   フレーム PNG (Fukuro_frame_001 / 002) の中身の中心位置を シアン系ドットで
+   表示する。 これにより 「DOM の幾何中心」 と 「絵柄として狙うべき中心」
+   の差分 (例: 葉飾りで下が圧迫されて y=46% 寄りに見える) を視覚化できる。
+
+   素材実測値 (前タスク visual read 確定):
+   - Fukuro_frame_001 (.board の papyrus, 1287x653): 紙コンテンツ中心 (50%, 46%)
+   - Fukuro_frame_002 (.answer-tray の 2x2 木枠, 699x643):
+     TL (27%, 27%) / TR (73%, 27%) / BL (27%, 73%) / BR (73%, 73%)
+
+   実装: 単一 ::after に複数 radial-gradient を重ねて N 個のドットを描画。
+   DOM 注入なしの純 CSS で editor disable 時 (= layout-editor-on クラスが
+   外れた時) は自動的にルールごと無効になり、 残置の心配なし。
+   既存 v806 のオレンジマーカーとは
+     - 色 (シアン rgba(0, 200, 255, 0.85) vs オレンジ rgba(255, 140, 0, 0.75))
+     - selector (.board / .answer-tray vs .chip / .emoji-display / 等)
+   の二点で衝突せず併存する。 z-index 51 で v806 (50) よりわずかに前面。
+   ===== */
+body.layout-editor-on.show-safe .board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* 紙コンテンツ中心は 葉飾りで下が圧迫される分 y=46% に上寄り */
+  background-image:
+    radial-gradient(circle at 50% 46%,
+      rgba(0, 200, 255, 0.85) 0 5px,
+      rgba(255, 255, 255, 0.95) 5px 6.5px,
+      transparent 6.5px 100%);
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 51;
+}
+body.layout-editor-on.show-safe .answer-tray::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* 2x2 木枠の各 box 中心 (TL/TR/BL/BR) を radial-gradient 4 重で表示 */
+  background-image:
+    radial-gradient(circle at 27% 27%,
+      rgba(0, 200, 255, 0.85) 0 5px,
+      rgba(255, 255, 255, 0.95) 5px 6.5px,
+      transparent 6.5px 100%),
+    radial-gradient(circle at 73% 27%,
+      rgba(0, 200, 255, 0.85) 0 5px,
+      rgba(255, 255, 255, 0.95) 5px 6.5px,
+      transparent 6.5px 100%),
+    radial-gradient(circle at 27% 73%,
+      rgba(0, 200, 255, 0.85) 0 5px,
+      rgba(255, 255, 255, 0.95) 5px 6.5px,
+      transparent 6.5px 100%),
+    radial-gradient(circle at 73% 73%,
+      rgba(0, 200, 255, 0.85) 0 5px,
+      rgba(255, 255, 255, 0.95) 5px 6.5px,
+      transparent 6.5px 100%);
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 51;
+}
+
 /* ===== Header (top, hdr-pill 左 + ctrl-btn 群 右) ===== */
 .hdr {
   display: grid;
