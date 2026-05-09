@@ -5301,55 +5301,21 @@ async function playOpeningCinematic() {
           _opActiveAudio = null;
         }
 
-        // セグメントが 2 つ以上ある場合、 ユーザータップ (or キャンセル) でクロスフェード。
-        // 2026-05-07 仕様変更: auto-advance (12s タイマー / audio.duration*0.62) は廃止。
-        // ナレ音声は流れたままだが、ユーザが「タップしてつづける ▶」を押すまで seg1 を保持。
+        // セグメントが 2 つ以上ある場合、 ユーザータップ (or キャンセル) でのみクロスフェード。
+        // 2026-05-07 仕様変更 (v885): auto-advance (12s タイマー / audio.duration*0.62) を撤去。
+        // 2026-05-07 追加修正 (v889): bespoke タイマーやポーリングを排し、共通ヘルパ
+        // _opWaitForAdvance() に統一。 setTimeout/setInterval ベースの auto-advance は
+        // この経路に一切残らない (minHold 完走 → hint 表示 → タップ受信のみ)。
+        // ナレ音声は流れ続けるが、ユーザが「タップしてつづける ▶」を押すまで seg1 を保持。
         if (segs.length >= 2) {
-          // 誤タップ抑止 minHold 1200ms。 hint は minHold 経過後に出す
-          // (子供向けに視覚誘導が必要 + 音声と同時並行で混乱を避けるため初手は隠す)。
-          let __tapResolve = null;
-          let __tapPromise = new Promise(function(rr) {
-            const armedAt = Date.now();
-            const minHold = 1200;
-            _opAdvanceArmedAt = armedAt;
-            _opAdvanceMinHold = minHold;
-            _opAdvanceResolve = function() {
-              _opAdvanceResolve = null;
-              rr();
-            };
-            __tapResolve = _opAdvanceResolve;
-          });
-
-          // minHold 経過後に hint を出す (タップで進められることを視覚提示)
-          let __hintTimerId = setTimeout(function() {
-            if (!_opCancelled) _opShowTapHint();
-          }, 1200);
-
-          await new Promise(function(resolve) {
-            let done = false; let pollId = null;
-            function finish() {
-              if (done) return;
-              done = true;
-              if (pollId) { clearInterval(pollId); pollId = null; }
-              if (__hintTimerId) { try { clearTimeout(__hintTimerId); } catch (_) {} __hintTimerId = null; }
-              // Tap arm を解除 (もし未解決なら release)
-              if (_opAdvanceResolve === __tapResolve) _opAdvanceResolve = null;
-              resolve();
-            }
-            // cancellation poller (タップ or skip ボタンで _opCancelled = true)
-            pollId = setInterval(function() {
-              if (_opCancelled) { finish(); return; }
-            }, 100);
-            // Tap が来たら finish (ただし minHold は _opOnRootTap 内で守られる)
-            __tapPromise.then(finish);
-          });
-          _opHideTapHint();
+          // minHold 1200ms (誤タップ抑止) → タップ待ち。 hint は helper 内で
+          // minHold 経過後に showHint:true で出す。
+          await _opWaitForAdvance({ minHold: 1200, showHint: true });
           // ナレ音声がまだ流れていれば停止 (重ね再生・残響回避)
           try {
             if (audio && !audio.ended) {
               audio.pause();
               audio.currentTime = audio.duration || 0;
-              try { audio.dispatchEvent(new Event('ended')); } catch (_) {}
             }
           } catch (_) {}
 
@@ -5376,38 +5342,14 @@ async function playOpeningCinematic() {
         }
 
         // segment 2 表示中はユーザータップ (or キャンセル) でのみ次パネルへ進む。
-        // 2026-05-07 仕様変更: auto-advance (audio.ended / 16s タイムアウト) は廃止。
-        // 音声は流れたまま (ended でも放置) ユーザの読了タップを待つ。
-        let __seg2TapResolve = null;
-        const __seg2TapPromise = new Promise(function(rr) {
-          _opAdvanceArmedAt = Date.now();
-          _opAdvanceMinHold = 1000;       // segment 2 表示直後の誤タップ抑止 1s
-          _opAdvanceResolve = function() {
-            _opAdvanceResolve = null;
-            rr();
-          };
-          __seg2TapResolve = _opAdvanceResolve;
-        });
-        // hint をフェードイン (segment 2 のテキストと同時、画面下中央)
-        _opShowTapHint();
-
-        await new Promise(function(resolve) {
-          let done = false; let pollId = null;
-          function finish() {
-            if (done) return;
-            done = true;
-            if (pollId) { clearInterval(pollId); pollId = null; }
-            resolve();
-          }
-          pollId = setInterval(function() {
-            if (_opCancelled) finish();
-          }, 100);
-          // Tap が来たら finish (ナレ音声を止めて次パネルへ)
-          __seg2TapPromise.then(function() {
-            try { if (audio && !audio.ended) { audio.pause(); } } catch (_) {}
-            finish();
-          });
-        });
+        // 2026-05-07 仕様変更 (v885): auto-advance (audio.ended / 16s タイムアウト) を撤去。
+        // 2026-05-07 追加修正 (v889): seg1 と同じく _opWaitForAdvance() に統一して
+        // bespoke タイマー・ポーリング・audio event を排除。
+        if (!_opCancelled) {
+          await _opWaitForAdvance({ minHold: 1000, showHint: true });
+        }
+        // ナレ音声を停止 (次パネルへ持ち越さない)
+        try { if (audio && !audio.ended) { audio.pause(); } } catch (_) {}
         if (audio) {
           _opActiveAudio = null;
           // Restore BGM after narration.
@@ -5417,9 +5359,6 @@ async function playOpeningCinematic() {
             }
           } catch (e) {}
         }
-        // Tap arm を解除 (まだ tap が来ていない場合)
-        if (_opAdvanceResolve === __seg2TapResolve) _opAdvanceResolve = null;
-        _opHideTapHint();
         // Fix 2: ナレーション後の 0.4 秒の短い余韻 (Panel 2 のはかせ発話前の呼吸)
         // タップで進めた直後なので長すぎると体感が悪い → 旧 2s から短縮。
         for (let __t = 0; __t < 4 && !_opCancelled; __t++) {
