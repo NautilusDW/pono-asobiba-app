@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+).
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。
 type: project
 ---
 
@@ -178,11 +178,19 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 
 設計指針: tap-hint は本来 narration の動線の一部 (「読み終わったらタップ」) なので、視覚的に narration に張り付く位置が正解。CSS だけで `narration の bottom + 12px` を表現する方法 (sibling selector / margin) は、 narration 自体が absolute / fixed 系のレイアウトに切替わった場合に破綻するため、JS で offsetTop ベースに再計算する方針を採用。
 
-## Editor → runtime narration override 配線 (sw v890+)
+## Editor → runtime narration override 配線 (sw v890+ で localStorage 経路、sw v892+ で saved-layout.json 経路追加)
 
-`tools/op-layout-editor.html` で編集した narration の `lineHeight` / `padding` / `fontSize` / `width` / `height` / 位置 / `bg` / `border` を、エディタを開いた本人のブラウザ runtime にもそのまま反映する経路を新設した (従来は CSS Export 経由でしか反映できず、本番 CSS をいじらないと runtime に出ない仕様だった)。
+`tools/op-layout-editor.html` で編集した narration の `lineHeight` / `padding` / `fontSize` / `width` / `height` / 位置 / `bg` / `border` を runtime に反映する経路。**localStorage (A 経路、自端末のみ)** と **saved-layout.json 経由の GitHub 配信 (B 経路、全端末配信)** の 2 系統を併用し、runtime は 3 段優先で適用する:
 
-### 保存側 (editor)
+```
+優先度: window._currentLayoutData.__op_narration[vc]   (B 経路、全端末配信)
+      > localStorage[NARRATION_RUNTIME_PREFIX+vc]     (A 経路、dev 用 fallback)
+      > null                                          (CSS デフォルト温存)
+```
+
+`buildRuntimeNarration(vc)` ヘルパで両経路の snapshot 形 (フィールド名) を統一しているので、 runtime 側はソースを意識せず `_opApplyNarrationOverride(narrEl)` 内で同じロジックで処理できる。
+
+### 保存側 (editor) — A 経路 (localStorage、自端末確認用)
 
 `tools/op-layout-editor.html` の `save(vc)` で、既存の STORAGE_PREFIX (per-question layout snapshot) を**温存したまま**、 別キー `localStorage['pono.opNarration.runtime.<VC>']` に runtime 用 snapshot を JSON で書き出す。フィールド:
 
@@ -198,12 +206,35 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 | `borderRadius` | px |
 | `showShadow` | bool |
 
+### 保存側 (editor) — B 経路 (saved-layout.json 経由、sw v892+、全端末配信)
+
+エディタに新規「📡 GitHub 配信」ボタン (`publishNarrationToSavedLayout()`) を追加。挙動:
+
+1. `/api/gh/repos/NautilusDW/pono-asobiba-app/contents/quizland/saved-layout.json` を **GET** → `_ghGetSavedLayout()` で base64 decode + JSON parse
+2. parse 後の object の **top-level に `__op_narration`** キーを merge (`{ B: {...}, C: {...}, D: {...}}` の VC 別 dict、`buildRuntimeNarration(vc)` で生成した snapshot)
+3. **PUT** 時には GET で取得した `sha` を引継ぎ。 既存 per-question keys (`q72`, `q83`, `__chip_text_overrides`, ...) は **`__op_narration` 以外を完全温存**
+4. 409 conflict (他者が同時編集) はユーザに通知して中断
+
+#### HIGH fix: `_ghGetSavedLayout` の parse 失敗時のデータロス防止
+
+実装初期、`_ghGetSavedLayout` が **parse 失敗を黙って `{}` で返してしまう**バグがあった。これは「base64 が空 (= 新規ファイル)」と「base64 は中身あるが壊れている」を区別できず、後者の場合に **`{}` を merge → PUT で全 keys 喪失**という致命リスクがあった。
+
+修正後は:
+- base64 が空 (= ファイル未作成) なら `{}` を返す (正常系)
+- base64 が非空かつ parse 失敗 → **throw** してエディタ UI に「saved-layout.json が壊れています、配信を中止」と通知
+- エディタ側は throw を catch して `alert` + return、PUT には**進まない**
+
+これにより saved-layout.json の他キー全消去リスクは封じられた。
+
 ### 反映側 (runtime / `quizland/index.html`)
 
-新ヘルパ 4 つを追加:
+新ヘルパ群:
 
 - `_opGetCurrentVC()`: `matchMedia('(min-aspect-ratio: 19/10)')` → **'D'**, `(min-aspect-ratio: 14/10)` → **'C'**, `(min-aspect-ratio: 85/100)` → **'B'**, **どれにもマッチしないなら `null`**。CSS の `@media` ブレークポイント (D/C/B + 縦長端末) と完全一致するように上から順に評価。null の場合は inline style を**一切注入しない** (CSS デフォルトを尊重)。
-- `_opLoadNarrationOverride(vc)`: `localStorage['pono.opNarration.runtime.<vc>']` から JSON を try/catch で読み出し。未保存 / parse 失敗時は null。
+- `_opLoadNarrationOverride(vc)`: **3 段優先で snapshot を返す**。
+  1. `window._currentLayoutData?.__op_narration?.[vc]` が object なら採用 (B 経路、saved-layout.json から fetch されたもの)
+  2. 無ければ `localStorage[NARRATION_RUNTIME_PREFIX + vc]` を JSON.parse (A 経路、dev 用 fallback)
+  3. どちらも無ければ null
 - `_opHexToRgba(hex, opacity)`: `bgColor` (#rrggbb) + `bgOpacity` (0-1) → rgba 文字列。# 抜き / 3 桁 hex / 不正値も受ける (正規化、不正は null 返却)。
 - `_opApplyNarrationOverride(narrEl)`: 上記 3 つを束ねて、**有効な値のみ** narrEl に inline style を注入。
 
@@ -217,9 +248,10 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 
 ### 設計トレードオフ
 
-- localStorage は **同一 origin / 同一ブラウザ間でのみ共有**。エディタで設定した値を別端末・別ユーザに配信するには CSS Export → 本番 CSS への手動マージが必要 (現状仕様)。global 共有が必要になったら `tools/saved-layout.json` 経路で `fetch` する拡張が考えられる (今回スコープ外)。
-- per-question layout (`__chip_text_overrides` など) とは**完全に別 storage キー**で衝突なし。
-- editor の CSS Export ボタンを使う既存ワークフロー (asymmetric padding を本番に焼き込む等) は無傷。今回の経路は「自分のブラウザで動作確認するための速い経路」という位置付け。
+- **A 経路 (localStorage)**: 同一 origin / 同一ブラウザ間でのみ共有。dev 中に「自分の手元でだけ確認」したい時に高速。
+- **B 経路 (saved-layout.json)**: GitHub 経由で全端末・全ユーザに配信。 staging / production 共通の挙動を作るための本命。HIGH fix で parse 失敗時のロスを封じた上で、**`__op_narration` は top-level の独立キー**として置くため、 per-question layout (`__chip_text_overrides` など) や qNN のキーとは**完全に非衝突**。
+- editor の CSS Export ボタンを使う既存ワークフロー (asymmetric padding を本番に焼き込む等) は無傷。CSS Export は **全ユーザ向けの恒久的な見た目変更**、 saved-layout.json 経路は **データ駆動の上書き** (CSS には書き出さず、 runtime が JSON を読んで inline style として反映) という棲み分け。
+- **横展開予定**: 同じ「saved-layout.json の `__xxx` キーに JSON snapshot を merge → runtime が読んで inline 反映」という配信パターンは、他ゲームの layout 配信にも応用できる (例: zukan / character-builder / maze の layout エディタ)。
 
 ## Panel Spec
 

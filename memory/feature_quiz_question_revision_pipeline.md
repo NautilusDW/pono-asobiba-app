@@ -315,6 +315,21 @@ Note: 葉っぱ問題 (#122) も `stage_shape_leaf.png` 単独画像として im
 - Body 系: 男の子シルエット + 顔/目/耳/皮膚クローズアップ / 胸押さえ / 深呼吸
 - 計 15-19 枚
 
+## 個別問題の差し替え記録
+
+### Q82 つばめ choice 画像 差し替え (2026-05-09、sw v892)
+
+Q82 (「ペンギン / ハト / ツバメ」3 択の 3 番目) の `assets/images/quizland/illust/choice/tsubame.png` を、 **飛行中の構図 (旧、93KB)** から **枝にとまった静止姿 (新、684KB、Codex 第 2 版納品)** に差し替えた。
+
+- 差し替え理由: 旧画像は飛行中で速度感が強く、3 択 (ペンギン地上 / ハト地上 / ツバメ) の中で 1 枚だけ画角が違って子供が判断しにくかった。3 種類とも「とまっている／立っている」静止姿で揃えるほうが識別しやすい
+- 旧画像のバックアップ: `assets/images/quizland/illust/choice/_backup/tsubame.20260509.bak.png` (rollback 用に commit に含める)
+- typo パス `assets/images/quizland/illust/spallow.png` (元の Codex 納品ファイル名、`sparrow` の typo) は削除済 — `git status` で deleted として出る
+- 発注書の元: `tmp/quizland-trivia-audit/CODEX-ORDER-...md` (前セッションで作成済、第 2 版発注分はこの中)
+
+#### 教訓
+- choice 画像 (3-4 択の各 tile) は**画角・スケール・状態 (動 / 静) を 4 枚で揃える**のが原則。 1 枚だけ動的構図だと「動きで答えがバレる」or「画風が浮いて判断しにくい」副作用がある
+- 旧画像は **必ず `_backup/<name>.<YYYYMMDD>.bak.png` として同じ commit に保存**: 配信後に「やっぱり旧の方がよかった」となった時の rollback を 1 commit revert でできるようにするため
+
 ## ピットフォール
 
 - ❌ 画像ファイル名 (`レイヤー 0_*_001.png`) から中身を推測しない — タイムスタンプ順で並んでいるだけで意味的順序ではない場合がある (実際は CODEX-ORDER 順と一致するが視覚で確認必須)

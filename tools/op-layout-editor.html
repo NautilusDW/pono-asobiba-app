@@ -951,6 +951,7 @@
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
     <button id="btn-export-scenario" class="ghost" title="OP_PANELS の JS リテラルをコピー">📜 シナリオ Export</button>
+    <button id="btn-publish-narration" class="ghost" title="現在の narration 設定 (B/C/D) を quizland/saved-layout.json の __op_narration に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
       <option value="" disabled selected hidden>他 VC へコピー ▾</option>
       <option value="B">現在の VC を B にコピー</option>
@@ -1987,34 +1988,48 @@ function load(vc) {
     return migrateFrameIds(parsed);
   } catch (e) { return null; }
 }
+// 2026-05-09: 抽出された runtime 用 narration snapshot を返す。
+//   - state[vc].narration の中で runtime (quizland/index.html) が解釈する
+//     フィールドだけを抜き出した plain object を返す。
+//   - localStorage 即時反映 (save(vc) 経由) と GitHub 配信 (publishNarrationToSavedLayout)
+//     の両方で同じ shape を使うための共有ヘルパ。
+//   - 値が無ければ null。
+// 値の sanitize はせず、apply 側 (_opApplyNarrationOverride) の isFiniteNum + 範囲チェックを
+// 防衛線とする設計。GH 履歴に汚染値が残るリスクは、apply 側が CSS デフォルトに fallback
+// するため UI 崩壊には至らない (= 許容範囲)。
+function buildRuntimeNarration(vc) {
+  const nr = state[vc] && state[vc].narration;
+  if (!nr || typeof nr !== 'object') return null;
+  return {
+    lineHeight:   nr.lineHeight,
+    paddingX:     nr.paddingX,
+    paddingY:     nr.paddingY,
+    fontSize:     nr.fontSize,
+    width:        nr.width,
+    height:       nr.height,
+    heightAuto:   nr.heightAuto,
+    posMode:      nr.posMode,
+    top:          nr.top,
+    bottom:       nr.bottom,
+    textAlignH:   nr.textAlignH,
+    bgMode:       nr.bgMode,
+    bgColor:      nr.bgColor,
+    bgOpacity:    nr.bgOpacity,
+    borderRadius: nr.borderRadius,
+    showShadow:   nr.showShadow
+  };
+}
 function save(vc) {
   try { localStorage.setItem(STORAGE_PREFIX + vc, JSON.stringify(state[vc])); } catch (e) {}
   // 2026-05-09: Also persist a minimal narration snapshot for the runtime
   // (quizland/index.html) so editor changes (lineHeight / padding / fontSize /
   // width / height / position / bg) are reflected when playing on the same
   // origin. Only the runtime-relevant fields are written; full editor state
-  // remains in STORAGE_PREFIX.
+  // remains in STORAGE_PREFIX. Dev-local override path; saved-layout.json
+  // (publish via 📡 button) is the canonical multi-device source.
   try {
-    const nr = state[vc] && state[vc].narration;
-    if (nr && typeof nr === 'object') {
-      const runtime = {
-        lineHeight:   nr.lineHeight,
-        paddingX:     nr.paddingX,
-        paddingY:     nr.paddingY,
-        fontSize:     nr.fontSize,
-        width:        nr.width,
-        height:       nr.height,
-        heightAuto:   nr.heightAuto,
-        posMode:      nr.posMode,
-        top:          nr.top,
-        bottom:       nr.bottom,
-        textAlignH:   nr.textAlignH,
-        bgMode:       nr.bgMode,
-        bgColor:      nr.bgColor,
-        bgOpacity:    nr.bgOpacity,
-        borderRadius: nr.borderRadius,
-        showShadow:   nr.showShadow
-      };
+    const runtime = buildRuntimeNarration(vc);
+    if (runtime) {
       localStorage.setItem(NARRATION_RUNTIME_PREFIX + vc, JSON.stringify(runtime));
     }
   } catch (e) {}
@@ -2023,6 +2038,124 @@ let _saveTimer = null;
 function saveDebounced(vc) {
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => save(vc), 200);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// GitHub 配信 (2026-05-09): editor の per-VC narration 設定を quizland/
+// saved-layout.json の `__op_narration` キーに書き込み、 全端末・全ユーザに
+// 配信する経路。 既存 chip/emoji-display の per-question layout 経路
+// (common/layout/layout-editor.js → /api/gh/ proxy) と同じ HTTP API を使う。
+//
+// 既存 saved-layout.json の他キー (.hdr-left|0, __chip_text_overrides 等)
+// は GET → merge → PUT で温存。 sha mismatch (409) のときはユーザに通知。
+//
+// 並行調整中は localStorage[NARRATION_RUNTIME_PREFIX+vc] が dev fallback
+// として常時更新され続けるので、 明示的に 📡 ボタンを押したときだけ
+// saved-layout.json に永続化される運用 (= 不要な commit を避ける)。
+// ──────────────────────────────────────────────────────────────────────
+const GH_OWNER  = 'NautilusDW';
+const GH_REPO   = 'pono-asobiba-app';
+const GH_BRANCH = 'develop';
+const SAVED_LAYOUT_PATH = 'quizland/saved-layout.json';
+const OP_NARRATION_KEY  = '__op_narration';
+
+function _ghContentsUrl(path) {
+  return '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + encodeURI(path);
+}
+async function _ghGetSavedLayout() {
+  const url = _ghContentsUrl(SAVED_LAYOUT_PATH) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return { contents: null, sha: null };
+  if (!r.ok) throw new Error('GH GET ' + SAVED_LAYOUT_PATH + ' → ' + r.status);
+  const j = await r.json();
+  let parsed = null;
+  const b64Raw = (j.content || '').replace(/\n/g, '');
+  try {
+    const bin = atob(b64Raw);
+    // utf8 decode (multi-byte safe)
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const text = new TextDecoder('utf-8').decode(bytes);
+    parsed = JSON.parse(text);
+  } catch (e) { parsed = null; }
+  // Fix HIGH (review 2026-05-09): CDN 障害 / truncate 等で 200 OK だが base64/JSON
+  // decode に失敗した場合、 parsed=null のまま resolve すると呼び出し側 (publish*)
+  // で base={} 扱いになり、 saved-layout.json の既存キー全消去 PUT が走る。
+  // content が非空なのに parse 失敗 = 異常系として throw し、 PUT 経路を遮断する。
+  if (!parsed && b64Raw.length > 0) {
+    throw new Error('GH GET: base64/JSON parse failed (content non-empty but parse failed)');
+  }
+  return { contents: parsed, sha: j.sha || null };
+}
+async function _ghPutSavedLayout(jsonObj, sha) {
+  const text = JSON.stringify(jsonObj, null, 2);
+  // utf8 → base64 (multi-byte safe)
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  const b64 = btoa(bin);
+  const body = {
+    message: 'chore(quizland-op): update narration runtime override',
+    content: b64,
+    branch: GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(SAVED_LAYOUT_PATH), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    const e = new Error('GH PUT failed ' + r.status + ' ' + txt.slice(0, 200));
+    e.status = r.status; throw e;
+  }
+  return true;
+}
+
+let _publishing = false;
+async function publishNarrationToSavedLayout() {
+  if (_publishing) return;
+  _publishing = true;
+  const btn = document.getElementById('btn-publish-narration');
+  if (btn) { btn.disabled = true; btn.classList.add('busy'); }
+  try {
+    toast('GitHub に配信中…');
+    const got = await _ghGetSavedLayout();
+    const base = (got.contents && typeof got.contents === 'object') ? got.contents : {};
+    // VC 別 narration を全 3 件まとめて書き込む (一部だけ未設定なら省略)。
+    const opNar = {};
+    ['B', 'C', 'D'].forEach(vc => {
+      const r = buildRuntimeNarration(vc);
+      if (r) opNar[vc] = r;
+    });
+    if (Object.keys(opNar).length === 0) {
+      toast('narration 設定が空です', 'err');
+      return;
+    }
+    base[OP_NARRATION_KEY] = opNar;
+    await _ghPutSavedLayout(base, got.sha);
+    toast('GitHub 配信完了 (全端末に反映)');
+  } catch (e) {
+    console.warn('[op-layout-editor] publish failed', e);
+    if (e && e.status === 409) {
+      toast('別エディタが先に保存しました。再試行してください', 'err');
+    } else {
+      toast('GitHub 配信失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+  } finally {
+    _publishing = false;
+    if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
+  }
 }
 
 function toast(msg, kind) {
@@ -4781,6 +4914,8 @@ function buildHeader() {
   document.getElementById('btn-export-json').addEventListener('click', () => download('json'));
   const btnScn = document.getElementById('btn-export-scenario');
   if (btnScn) btnScn.addEventListener('click', exportScenario);
+  const btnPub = document.getElementById('btn-publish-narration');
+  if (btnPub) btnPub.addEventListener('click', publishNarrationToSavedLayout);
   document.getElementById('btn-reset').addEventListener('click', resetCurrent);
   document.getElementById('btn-undo-reset').addEventListener('click', undoLastOp);
 
