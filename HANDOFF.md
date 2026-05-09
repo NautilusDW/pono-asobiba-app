@@ -14,6 +14,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-09 - [batch:15-tsubame-still] Codex: Q82 tsubame choice raw was generated and saved at `tmp/alpha_pending/raw/15/tsubame.png` (1254x1254 RGB, white background). It is a still/perched swallow with folded wings and a readable forked tail. Alpha removal, final placement to `assets/images/quizland/illust/choice/tsubame.png`, manifest update, and sw.js bump remain for user/Claude. (by Codex)
+
 - 2026-05-09 - [Q82-tsubame-still-redesign] Q82 (debug ナンバー、 trivia Lv2「そらを とべない とりは どれ？」) の選択肢 `tsubame.png` を「飛んでいる動的ポーズ」 → 「地面/枝に止まっている静止ポーズ」に再生成発注。 発注文 `quizland/data/_review/codex-followup-tsubame-still.md` 作成済 (batch:15)。 image_manifest.json の `tsubame` entry を `subject_detailed` 更新 + `status: redo-pending` に変更済。 questions.js は配置完了まで触らない (img 参照は `tsubame.png` のまま、 broken image 回避)。 sw.js CACHE_VERSION は配置時にバンプ (発注文段階では不要)。 (by Claude)
 - 2026-05-08 - [batch:13-quizland-sprint13-raw] Codex: `memory/feature_quiz_question_revision_pipeline.md` と `tmp/quizland-trivia-audit/CODEX-ORDER-2.md` を確認。HANDOFF / git log / assets / tmp 検索で batch 13 raw は未納品、対象既存配置は `stage_weather_rainbow_arc.png` 旧版のみと確認済。AGENTS 現行方針により本配置・alpha 抜き・切り抜きはせず `tmp/alpha_pending/13/` に raw 納品する。 (by Codex)
 - 2026-05-08 - [batch:13-quizland-sprint13-raw] Codex: CODEX-ORDER-2 の 10 点を GPT Image 2 で生成し、`tmp/alpha_pending/13/` に raw 納品完了。内訳: stage 7 枚 (`stage_trivia_giraffe_neck_bones.png`, `stage_trivia_giraffe_full.png`, `stage_weather_rainbow_arc.png`, `stage_shape_leaf.png`, `stage_body_teeth_replacement.png`, `stage_trivia_lion_osu_silhouette.png`, `stage_trivia_lion_osu_mesu_compare.png`) + sheet 1 枚 (`sheet_pizza_pieces.png`) + choice raw 2 枚 (`kiba.png`, `hige.png`)。alpha 抜き・切り抜き・本配置は未実施。 (by Codex)
