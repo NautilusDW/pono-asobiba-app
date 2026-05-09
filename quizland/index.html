@@ -3570,6 +3570,57 @@ function formatQuizQid(q) {
 // にも追従する (クロージャでキャプチャしない)。
 window.QUIZLAND_GET_CURRENT_QID = function () { return formatQuizQid(currentQ); };
 
+/* 4 択 chip テキストの per-question override 用キー (Phase 2: __chip_text_overrides)。
+   debug nav と揃えた `${_cat}|${level}|${_idx}` 形式。 buildPlaylist /
+   buildDebugPlaylist が両方 _cat / _idx を Object.assign で付与するので、
+   どちらの経路でも欠損しない前提。 万一欠けたら null を返して override を諦める。 */
+function formatQuizQKey(q) {
+  if (!q) return null;
+  if (q._cat == null || q.level == null || q._idx == null) return null;
+  return q._cat + '|' + q.level + '|' + q._idx;
+}
+window.QUIZLAND_GET_CURRENT_QKEY = function () { return formatQuizQKey(currentQ); };
+// chip エディタ (layout-editor.js) から「いま開いてる問題の currentQ」を読むための公開窓。
+window.QUIZLAND_GET_CURRENT_Q = function () { return currentQ; };
+
+/* HTML エスケープ (chip-label の innerHTML 化に伴う XSS 対策)。
+   override テキストを <br> 改行付きで描画するために innerHTML を使うので、
+   それ以外の `<` `>` `&` `"` は必ずエスケープする。 改行 (\n) のみ <br> に置換。 */
+function _qzEscapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+/* chip テキスト override 解決: __chip_text_overrides[qKey][slot] が存在し
+   非空文字列なら override を返す。 それ以外は元テキストを返す。 */
+function _qzGetChipTextWithOverride(originalText, qKey, slot) {
+  if (!qKey) return originalText;
+  var data = window._currentLayoutData;
+  if (!data || !data.__chip_text_overrides) return originalText;
+  var byQ = data.__chip_text_overrides[qKey];
+  if (!byQ) return originalText;
+  var ov = byQ[String(slot)];
+  return (typeof ov === 'string' && ov.length > 0) ? ov : originalText;
+}
+/* chip ラベル要素に override 適用済みテキストを innerHTML で書き込む。
+   - originalText を toFullWidth に通してから escape → \n を <br> に変換。
+   - override 適用時のみ data-chip-text-override="1" を付け、 editor が
+     視覚マーク (.chip-text-override-mark) で枠を変えるためのフックにする。 */
+function _qzApplyChipText(el, originalText, qKey, slot) {
+  var resolved = _qzGetChipTextWithOverride(originalText, qKey, slot);
+  var hasOverride = (resolved !== originalText);
+  var fullWidthText = (typeof toFullWidth === 'function') ? toFullWidth(resolved) : String(resolved);
+  el.innerHTML = _qzEscapeHtml(fullWidthText).replace(/\n/g, '<br>');
+  if (hasOverride) {
+    el.setAttribute('data-chip-text-override', '1');
+  } else {
+    el.removeAttribute('data-chip-text-override');
+  }
+}
+
 /* Layout editor: append ?edit=1 to URL for visual layout editing.
    Saves to quizland/saved-layout.json via /api/gh/ proxy.
    preview/full/ remains as legacy sandbox (untouched).
@@ -4184,6 +4235,10 @@ function chipSizeClass(text) {
 function renderChoices(q) {
   const tray = document.getElementById('answer-panel');
   tray.innerHTML = '';
+  // editor で chip-label / chip-illust-label / chip-count-num を直接編集
+  // (dblclick → contenteditable) → __chip_text_overrides[qKey][slot] に保存。
+  // qKey は debug nav と同じ pipe 区切り。 currentQ に _cat / _idx が無ければ null。
+  const qKey = formatQuizQKey(q);
   q.choices.forEach((choice, i) => {
     const btn = document.createElement('button');
     btn.className = 'chip';
@@ -4220,13 +4275,13 @@ function renderChoices(q) {
       btn.appendChild(wrap);
       const label = document.createElement('span');
       label.className = 'chip-label';
-      label.textContent = toFullWidth(QUIZLAND_COLORS[choice].name);
+      _qzApplyChipText(label, QUIZLAND_COLORS[choice].name, qKey, i);
       btn.appendChild(label);
     } else if (q.type === 'count_total') {
       btn.classList.add('chip-count');
       const num = document.createElement('span');
       num.className = 'chip-count-num';
-      num.textContent = toFullWidth(String(choice));
+      _qzApplyChipText(num, String(choice), qKey, i);
       btn.appendChild(num);
     } else if (choice && typeof choice === 'object' && choice.image) {
       // 画像入り選択肢: { text: '...', image: '...png' }
@@ -4241,7 +4296,7 @@ function renderChoices(q) {
       if (choice.text) {
         const label = document.createElement('span');
         label.className = 'chip-illust-label chip-label';
-        label.textContent = toFullWidth(choice.text);
+        _qzApplyChipText(label, choice.text, qKey, i);
         btn.appendChild(label);
         const sizeCls = chipSizeClass(choice.text);
         if (sizeCls) btn.classList.add(sizeCls);
@@ -4250,7 +4305,7 @@ function renderChoices(q) {
       const text = (choice && typeof choice === 'object') ? choice.text : choice;
       const label = document.createElement('span');
       label.className = 'chip-label';
-      label.textContent = toFullWidth(text);
+      _qzApplyChipText(label, text, qKey, i);
       btn.appendChild(label);
       const sizeCls = chipSizeClass(text);
       if (sizeCls) btn.classList.add(sizeCls);
@@ -4280,6 +4335,45 @@ function renderChoices(q) {
   try {
     if (window.LayoutEditor && typeof window.LayoutEditor.refreshCurrentFromLocal === 'function') {
       window.LayoutEditor.refreshCurrentFromLocal();
+    }
+  } catch (e) { /* noop */ }
+  // chip text override (`__chip_text_overrides`) を再適用。
+  // ループ内 _qzApplyChipText の時点では _currentLayoutData が null/未取得で
+  // override が読めないケースがあるので、 refreshCurrentFromLocal の後に
+  // 確定した _currentLayoutData を見て改めて当てる。
+  // 同時に visual mark (data-chip-text-override) も最新化する。
+  try {
+    var _ovKey = formatQuizQKey(q);
+    if (_ovKey) {
+      var _chips = tray.querySelectorAll('.chip');
+      _chips.forEach(function (chip, i) {
+        var labels = chip.querySelectorAll('.chip-label, .chip-illust-label, .chip-count-num');
+        if (!labels.length) return;
+        // 元テキスト (override 適用前) は q.choices から再取得。
+        // chip-with-image / count_total / order_color の各形態を吸収。
+        var choice = q.choices[i];
+        var orig;
+        if (q.type === 'order_color') {
+          orig = (window.QUIZLAND_COLORS && window.QUIZLAND_COLORS[choice] && window.QUIZLAND_COLORS[choice].name) || String(choice);
+        } else if (q.type === 'count_total') {
+          orig = String(choice);
+        } else if (choice && typeof choice === 'object' && choice.image) {
+          orig = (choice.text != null) ? choice.text : '';
+        } else {
+          orig = (choice && typeof choice === 'object') ? choice.text : choice;
+        }
+        // 1 chip 内に複数のテキスト要素があっても全て同じ override を当てる。
+        // count_total なら chip-count-num のみ、 通常 chip なら chip-label のみのため重複には
+        // ならない。 chip-with-image は chip-illust-label = chip-label を兼ねる span 1 個。
+        labels.forEach(function (lbl) {
+          _qzApplyChipText(lbl, orig, _ovKey, i);
+        });
+      });
+    }
+    // editor on のとき visual mark をリフレッシュ
+    if (document.body.classList.contains('layout-editor-on') &&
+        window.LayoutEditor && typeof window.LayoutEditor._refreshChipTextOverrideMarks === 'function') {
+      window.LayoutEditor._refreshChipTextOverrideMarks();
     }
   } catch (e) { /* noop */ }
   if (window.LayoutApplier && window._currentLayoutData) {

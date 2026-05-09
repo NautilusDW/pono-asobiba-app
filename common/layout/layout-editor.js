@@ -438,6 +438,12 @@
     if (window._currentLayoutData && window._currentLayoutData.__chip_presets) {
       data.__chip_presets = window._currentLayoutData.__chip_presets;
     }
+    // chip text override (Phase 2 / Quizland 4 択 chip 内テキスト編集): window._currentLayoutData
+    // .__chip_text_overrides を保全。 dblclick で contenteditable 化 → blur で保存される。
+    // schema: { "<qKey>": { "<slot>": "テキスト\n改行" } } / qKey = `${cat}|${level}|${idx}`
+    if (window._currentLayoutData && window._currentLayoutData.__chip_text_overrides) {
+      data.__chip_text_overrides = window._currentLayoutData.__chip_text_overrides;
+    }
     // 2026-05-06: 個別 override の明示リストを保存 (再ロード時の復元用)
     if (state.individualOverrides && state.individualOverrides.size > 0) {
       data.__individual_chip_overrides = Array.from(state.individualOverrides);
@@ -851,6 +857,227 @@
     save();
     refreshSelectionUI();
     updateNumericPanel();
+  }
+
+  // ====================================================================
+  //  Chip text override (per-question 4 択テキスト直接編集)
+  //  - dblclick で chip-label / chip-illust-label / chip-count-num を
+  //    contenteditable 化 → blur で saved-layout.__chip_text_overrides に保存。
+  //  - Enter = 改行 (<br> 挿入) / Shift+Enter = デフォルト改行 / Ctrl+Enter = 確定 / Esc = 破棄。
+  //  - 保存キー = window.QUIZLAND_GET_CURRENT_QKEY() (`${cat}|${level}|${idx}`)。
+  //  - quizland index.html 側の renderChoices が _qzApplyChipText で override を読んで
+  //    innerHTML 描画 (XSS 対策で escape 済み、 \n のみ <br> に変換)。
+  // ====================================================================
+
+  // 編集対象判定: chip-label / chip-illust-label (chip-label を兼ねる) / chip-count-num
+  function _isChipTextEditTarget(el) {
+    if (!el || !el.classList) return false;
+    return el.classList.contains('chip-label') ||
+           el.classList.contains('chip-illust-label') ||
+           el.classList.contains('chip-count-num');
+  }
+
+  // 現在の qKey を取得 (= __chip_text_overrides の最上位キー)
+  function _getCurrentQKey() {
+    try {
+      if (typeof window.QUIZLAND_GET_CURRENT_QKEY === 'function') {
+        var k = window.QUIZLAND_GET_CURRENT_QKEY();
+        if (k && typeof k === 'string') return k;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  // dblclick → contenteditable 起動 / blur で保存 / Esc で破棄
+  function _onChipTextDblclick(e) {
+    if (!document.body.classList.contains(EDIT_MODE_BODY_CLASS)) return;
+    var el = e.target;
+    // chip-label の中にある span 等を dblclick した場合に親 chip-label に遡る
+    while (el && el !== document.body && !_isChipTextEditTarget(el)) {
+      el = el.parentElement;
+    }
+    if (!el || !_isChipTextEditTarget(el)) return;
+    if (el.isContentEditable) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 編集前の値を data-original-html に保存 (Esc で復元)
+    el.dataset.originalHtml = el.innerHTML;
+    el.contentEditable = 'true';
+    el.classList.add('chip-text-editing');
+    el.focus();
+
+    // 全選択
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (err) { /* noop */ }
+
+    function commit() {
+      el.contentEditable = 'false';
+      el.classList.remove('chip-text-editing');
+      delete el.dataset.originalHtml;
+      el.removeEventListener('blur', commit);
+      el.removeEventListener('keydown', onKey);
+      _saveChipTextOverride(el);
+    }
+    function cancel() {
+      // 編集破棄: 元の HTML に戻して contenteditable を解除 (保存はしない)
+      el.innerHTML = el.dataset.originalHtml || '';
+      el.contentEditable = 'false';
+      el.classList.remove('chip-text-editing');
+      delete el.dataset.originalHtml;
+      el.removeEventListener('blur', commit);
+      el.removeEventListener('keydown', onKey);
+    }
+    function onKey(ev) {
+      if (ev.key === 'Escape') {
+        ev.preventDefault();
+        cancel();
+      } else if (ev.key === 'Enter' && ev.ctrlKey) {
+        // Ctrl+Enter = 確定
+        ev.preventDefault();
+        el.blur();
+      } else if (ev.key === 'Enter' && !ev.shiftKey) {
+        // Enter = 改行 (<br> 挿入)。 contenteditable のデフォルト (<div>/<p> 増殖) を抑止。
+        ev.preventDefault();
+        try { document.execCommand('insertHTML', false, '<br>'); }
+        catch (err) { /* legacy 経路、 大半のブラウザで動く */ }
+      }
+      // Shift+Enter は browser default (= <br> 等) に任せる
+    }
+    el.addEventListener('blur', commit);
+    el.addEventListener('keydown', onKey);
+  }
+
+  // contenteditable で編集された innerHTML を plain text + \n に変換し、
+  // window._currentLayoutData.__chip_text_overrides[qKey][slot] に保存。
+  function _saveChipTextOverride(el) {
+    var chip = el.closest ? el.closest('.chip') : null;
+    if (!chip) {
+      showToast('chip 親要素が見つかりません', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    if (slot == null) {
+      showToast('slot index が判定できません (DOM 順 4 個超過 or scope 外)', 'warn');
+      return;
+    }
+    var qKey = _getCurrentQKey();
+    if (!qKey) {
+      showToast('現在の問題 ID (qKey) が取得できません。 Quizland 以外では無効です', 'warn');
+      // 編集前値に戻す
+      if (typeof el.dataset !== 'undefined' && el.dataset.originalHtml != null) {
+        el.innerHTML = el.dataset.originalHtml;
+      }
+      return;
+    }
+    // innerHTML → plain text + \n 変換
+    var html = el.innerHTML;
+    var text = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(div|p)>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, '\'')
+      .replace(/\n+$/g, ''); // 末尾改行は除去
+    // 空文字 = override 削除扱い
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    if (!window._currentLayoutData.__chip_text_overrides) {
+      window._currentLayoutData.__chip_text_overrides = {};
+    }
+    var bucket = window._currentLayoutData.__chip_text_overrides;
+    if (!bucket[qKey]) bucket[qKey] = {};
+    if (text.length === 0) {
+      delete bucket[qKey][String(slot)];
+      if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    } else {
+      bucket[qKey][String(slot)] = text;
+    }
+    // 視覚マークと表示を即時更新するため renderChoices をやり直す代わりに
+    // この el だけ data-attr 更新 + 改行入りで innerHTML 上書き (renderChoices と同等)。
+    if (text.length > 0) {
+      el.setAttribute('data-chip-text-override', '1');
+    } else {
+      el.removeAttribute('data-chip-text-override');
+    }
+    // editor 中なら全 chip マーク refresh
+    _refreshChipTextOverrideMarks();
+    // save() で localStorage + GitHub に永続化
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text edit failed', e); }
+    }
+    showToast('テキスト保存: slot ' + slot + (text.length === 0 ? ' (クリア)' : ' (Enter=改行 / Ctrl+Enter=確定)'), 'success');
+  }
+
+  // 選択中の chip の override を削除 → 元テキストに復元するため renderChoices を再実行。
+  function clearChipTextOverrideForSelected() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('対象 chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    if (slot == null) {
+      showToast('slot index が判定できません', 'warn');
+      return;
+    }
+    var qKey = _getCurrentQKey();
+    if (!qKey) {
+      showToast('現在の問題 ID が取得できません', 'warn');
+      return;
+    }
+    var bucket = window._currentLayoutData && window._currentLayoutData.__chip_text_overrides;
+    if (!bucket || !bucket[qKey] || !Object.prototype.hasOwnProperty.call(bucket[qKey], String(slot))) {
+      showToast('この chip には override が設定されていません', 'warn');
+      return;
+    }
+    delete bucket[qKey][String(slot)];
+    if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    // 元テキストを取り戻すため renderChoices を再実行 (currentQ 経由)。
+    try {
+      var currentQ = (typeof window.QUIZLAND_GET_CURRENT_Q === 'function')
+        ? window.QUIZLAND_GET_CURRENT_Q() : null;
+      if (currentQ && typeof window.renderChoices === 'function') {
+        window.renderChoices(currentQ);
+      }
+    } catch (e) { console.warn('[LayoutEditor] renderChoices after clear failed', e); }
+    _refreshChipTextOverrideMarks();
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text clear failed', e); }
+    }
+    showToast('テキスト override クリア: slot ' + slot, 'success');
+  }
+
+  // 全 chip を walk して、 override を持つラベルに data-chip-text-override="1" を付ける。
+  // CSS 側で body.layout-editor-on .chip [data-chip-text-override="1"] に外枠を当てる。
+  function _refreshChipTextOverrideMarks() {
+    var qKey = _getCurrentQKey();
+    var bucket = (window._currentLayoutData && window._currentLayoutData.__chip_text_overrides) || null;
+    var byQ = (qKey && bucket) ? bucket[qKey] : null;
+    Array.from(document.querySelectorAll('.chip')).forEach(function (chip, i) {
+      var has = !!(byQ && Object.prototype.hasOwnProperty.call(byQ, String(i)));
+      // chip 内のテキスト要素 (label / illust-label / count-num) を全て対象に
+      var els = chip.querySelectorAll('.chip-label, .chip-illust-label, .chip-count-num');
+      els.forEach(function (el) {
+        if (has) el.setAttribute('data-chip-text-override', '1');
+        else el.removeAttribute('data-chip-text-override');
+      });
+    });
+  }
+
+  // editor enable 時に dblclick リスナーを 1 回だけアタッチ。
+  // addManagedListener で disable 時に自動 remove される。
+  function _enableChipTextEditOnDblclick() {
+    addManagedListener(document, 'dblclick', _onChipTextDblclick, true);
   }
 
   // ====================================================================
@@ -5244,6 +5471,7 @@
       '<button id="le-chip-preset-save" title="選択中 chip を chip 種別ごとの preset (デフォルト) として保存。 マルチセレクト時は種別ごとに最初の 1 個を採用。 同種別で個別設定の無い他 chip に自動適用される" aria-label="chip preset 保存">📌 chip preset 保存</button>' +
       '<button id="le-chip-individual-save" title="選択中の chip 関連要素 (chip 自体 / circle / illust / label / countNum) を個別設定 (override) として保存。 個別設定された要素は preset を上書きする" aria-label="個別保存">💾 個別保存</button>' +
       '<button id="le-chip-preset-clear-overrides" title="選択 chip と同種別の個別設定エントリを削除し、 preset 値を全 chip に強制反映 (preset 未定義のパーツはスキップ)" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
+      '<button id="le-chip-text-clear" title="選択 chip のテキスト override (__chip_text_overrides) を削除し、 元テキストに戻す。 chip-label / chip-illust-label / chip-count-num の dblclick で編集された改行入りテキストをリセット" aria-label="テキスト初期化">🔡 テキスト初期化</button>' +
       '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
       // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
       //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
@@ -5320,6 +5548,10 @@
     //   値を強制反映。 chip|N が「保存した preset と異なる値」を持ってる場合の救済操作。
     var presetClearBtn = tb.querySelector('#le-chip-preset-clear-overrides');
     if (presetClearBtn) presetClearBtn.addEventListener('click', clearChipOverridesForType);
+    // 🔡 テキスト初期化: 選択 chip の __chip_text_overrides[qKey][slot] を削除して
+    //   元テキスト (questions.js) に戻す (renderChoices 再実行)。
+    var chipTextClearBtn = tb.querySelector('#le-chip-text-clear');
+    if (chipTextClearBtn) chipTextClearBtn.addEventListener('click', clearChipTextOverrideForSelected);
     // ⏭ 次の問題へ: editor 中でも quizland の nextQuestion() を呼んで問題切替。
     //   chip 種別 (with-image / text-only) を切り替えて preset を 2 種類保存可能に。
     var nextQBtn = tb.querySelector('#le-next-question');
@@ -6823,6 +7055,9 @@
     attachStackPierceAndMarquee();
     attachBackgroundClickClear();
     wireEditableTexts();
+    // 4 択 chip テキストの dblclick → contenteditable → blur 保存ハンドラ。
+    // disable() 時に addManagedListener 経由で自動 remove される。
+    _enableChipTextEditOnDblclick();
 
     // Attach handles to all spec-matched elements
     state.spec.forEach(function (entry) {
@@ -6861,6 +7096,9 @@
     state.lastSavedQid = getCurrentQid(); // Phase 3.5 Fix 2: baseline qid
 
     state.enabled = true;
+    // chip text override の視覚マークを初回反映 (data-chip-text-override 属性は
+    // renderChoices 経由でも付くが、 enable 時に既に DOM に居る chip にも当てる)。
+    try { _refreshChipTextOverrideMarks(); } catch (e) {}
     adjustRulerPos();
     refreshLockBadges();
     refreshElementList();
@@ -7129,6 +7367,9 @@
     toggleComparison: toggleComparison,
     toggleGrid: toggleGrid,
     refreshCurrentFromLocal: refreshCurrentFromLocal,
+    // chip text override (Phase 2 / __chip_text_overrides)。
+    // quizland renderChoices から呼ばれて、 編集モード中の visual mark を最新化。
+    _refreshChipTextOverrideMarks: _refreshChipTextOverrideMarks,
     // 2026-05-07 (Phase 2 / impl-A): per-Q layout API
     confirmDiscardIfDirty: confirmDiscardIfDirty,
     getCurrentQid: getCurrentQid,

@@ -1418,3 +1418,35 @@ body.layout-editor-on .le-added-text.resizable.selected {
 body.layout-editor-on .le-added-text:focus {
   background: rgba(255, 255, 255, 0.98);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   4 択 chip テキスト編集 (Phase 2 / __chip_text_overrides)
+   - dblclick で contenteditable 化された label に .chip-text-editing。
+   - override を持つ label には data-chip-text-override="1" が付き、
+     編集モード中のみ青系の点線枠で「カスタムテキストあり」を可視化。
+   ───────────────────────────────────────────────────────────────────────── */
+body.layout-editor-on .chip [data-chip-text-override="1"] {
+  outline: 2px dashed rgba(0, 200, 255, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+body.layout-editor-on .chip-text-editing {
+  outline: 2px dashed #00d4ff !important;
+  outline-offset: 3px;
+  background: rgba(0, 212, 255, 0.08);
+  cursor: text !important;
+  caret-color: #00d4ff;
+  white-space: pre-wrap;
+  min-width: 1em;
+  min-height: 1em;
+}
+/* 編集中の chip-label 内に resize-handle が居ると視覚的に邪魔なので隠す。
+   edit が終われば contenteditable=false に戻り、 hide も解除される。 */
+body.layout-editor-on .chip-text-editing .resize-handle,
+body.layout-editor-on .chip-text-editing .resize-size-label {
+  display: none !important;
+}
+body.layout-editor-on .chip-text-editing:focus {
+  outline-color: #00d4ff !important;
+}
+
