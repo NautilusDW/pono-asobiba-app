@@ -1066,6 +1066,14 @@ const DEFAULT_FRAME_ID = 'frame_wide_a';
 const VP_DIMS = { B: [1024, 768], C: [1920, 1080], D: [2560, 1080] };
 const STORAGE_PREFIX = 'pono.opLayoutEditor.v1.';
 const LEGACY_STORAGE_PREFIX = 'opLayoutEditor.';
+// 2026-05-09: Runtime narration override key (consumed by quizland/index.html
+// _opApplyNarrationOverride() during playOpeningCinematic). Editor writes a
+// minimal subset of state[VC].narration so the runtime can override the
+// hardcoded `.op-narration` per-VC @media CSS values with inline styles.
+// Per VC (B|C|D) value is JSON of { lineHeight, paddingX, paddingY, fontSize,
+// width, height, heightAuto, top, bottom, posMode, textAlignH, bgMode, bgColor,
+// bgOpacity, borderRadius, showShadow }.
+const NARRATION_RUNTIME_PREFIX = 'pono.opNarration.runtime.';
 const HEIGHT_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showHeightGuides';
 const BOX_GUIDES_STORAGE_KEY = STORAGE_PREFIX + 'showBoxGuides';
 const MIRROR_MODE_STORAGE_KEY = STORAGE_PREFIX + 'mirrorMode';
@@ -1981,6 +1989,35 @@ function load(vc) {
 }
 function save(vc) {
   try { localStorage.setItem(STORAGE_PREFIX + vc, JSON.stringify(state[vc])); } catch (e) {}
+  // 2026-05-09: Also persist a minimal narration snapshot for the runtime
+  // (quizland/index.html) so editor changes (lineHeight / padding / fontSize /
+  // width / height / position / bg) are reflected when playing on the same
+  // origin. Only the runtime-relevant fields are written; full editor state
+  // remains in STORAGE_PREFIX.
+  try {
+    const nr = state[vc] && state[vc].narration;
+    if (nr && typeof nr === 'object') {
+      const runtime = {
+        lineHeight:   nr.lineHeight,
+        paddingX:     nr.paddingX,
+        paddingY:     nr.paddingY,
+        fontSize:     nr.fontSize,
+        width:        nr.width,
+        height:       nr.height,
+        heightAuto:   nr.heightAuto,
+        posMode:      nr.posMode,
+        top:          nr.top,
+        bottom:       nr.bottom,
+        textAlignH:   nr.textAlignH,
+        bgMode:       nr.bgMode,
+        bgColor:      nr.bgColor,
+        bgOpacity:    nr.bgOpacity,
+        borderRadius: nr.borderRadius,
+        showShadow:   nr.showShadow
+      };
+      localStorage.setItem(NARRATION_RUNTIME_PREFIX + vc, JSON.stringify(runtime));
+    }
+  } catch (e) {}
 }
 let _saveTimer = null;
 function saveDebounced(vc) {

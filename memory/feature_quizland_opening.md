@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/.
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+).
 type: project
 ---
 
@@ -164,6 +164,62 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 
 恒久対応 TODO:
 - エディタ narration セクションに `padding-top` / `padding-bottom` を独立スライダーとして追加し、state にも `paddingTop` / `paddingBottom` フィールドを持たせ、`applyNarrationToDom()` と CSS Export を 4 値分離型に書き換える。
+
+## タップしてつづける の動的位置追従 (sw v890+)
+
+`.op-tap-hint` (タップしてつづける) は、Panel 1 の `.op-narration` プレートの**高さ・位置に追従して直下に動的配置**される。固定 `bottom: 24-28px` (per-VC) のままだと、エディタで narration の `top` / `height` / `padding` を変更した瞬間に**プレートと tap-hint が物理的に重なる**バグがあったため。
+
+実装ポイント (`quizland/index.html`):
+
+- `_opPositionTapHintRelativeToNarration()` ヘルパを追加。`.op-content` を基準に `narration.offsetTop + offsetHeight` を計算し、 tap-hint をその直下 (gap **12px**) に inline `top: <px>px; bottom: auto` で配置。画面下方向の余白が tap-hint の高さ + 12px に満たない場合は narration の**直上**にフォールバック (`top: <narrTop - hintH - 12>px`)。
+- `_opShowTapHint(showTextEl)` 内、tap-hint を表示する直前に上記ヘルパを呼ぶ。seg2 swap (narration テキスト差し替え) のタイミングでも再計算。
+- `_opHideTapHint()` および `playOpeningCinematic()` の `finally` で tap-hint の inline `top` / `bottom` をクリア (replay 時の前回値持ち越し防止)。
+- CSS の `.op-tap-hint { bottom: 24-28px }` (per-VC) は、**narration が非表示のシーン (panel 2-6 等) でのフォールバック値**としてそのまま温存。
+
+設計指針: tap-hint は本来 narration の動線の一部 (「読み終わったらタップ」) なので、視覚的に narration に張り付く位置が正解。CSS だけで `narration の bottom + 12px` を表現する方法 (sibling selector / margin) は、 narration 自体が absolute / fixed 系のレイアウトに切替わった場合に破綻するため、JS で offsetTop ベースに再計算する方針を採用。
+
+## Editor → runtime narration override 配線 (sw v890+)
+
+`tools/op-layout-editor.html` で編集した narration の `lineHeight` / `padding` / `fontSize` / `width` / `height` / 位置 / `bg` / `border` を、エディタを開いた本人のブラウザ runtime にもそのまま反映する経路を新設した (従来は CSS Export 経由でしか反映できず、本番 CSS をいじらないと runtime に出ない仕様だった)。
+
+### 保存側 (editor)
+
+`tools/op-layout-editor.html` の `save(vc)` で、既存の STORAGE_PREFIX (per-question layout snapshot) を**温存したまま**、 別キー `localStorage['pono.opNarration.runtime.<VC>']` に runtime 用 snapshot を JSON で書き出す。フィールド:
+
+| field | 用途 |
+|---|---|
+| `lineHeight` | 行間 |
+| `paddingX` / `paddingY` | 左右 / 上下 padding (px) |
+| `fontSize` | px |
+| `width` / `height` / `heightAuto` | サイズ (heightAuto=true なら height は注入しない) |
+| `posMode` ('top' \| 'bottom') / `top` / `bottom` | 配置 (px) |
+| `textAlignH` | 'left' \| 'center' \| 'right' |
+| `bgMode` ('css' \| 'image' \| 'none') / `bgColor` (#hex) / `bgOpacity` | 背景 (image は本機能では未注入、css 時のみ rgba 合成) |
+| `borderRadius` | px |
+| `showShadow` | bool |
+
+### 反映側 (runtime / `quizland/index.html`)
+
+新ヘルパ 4 つを追加:
+
+- `_opGetCurrentVC()`: `matchMedia('(min-aspect-ratio: 19/10)')` → **'D'**, `(min-aspect-ratio: 14/10)` → **'C'**, `(min-aspect-ratio: 85/100)` → **'B'**, **どれにもマッチしないなら `null`**。CSS の `@media` ブレークポイント (D/C/B + 縦長端末) と完全一致するように上から順に評価。null の場合は inline style を**一切注入しない** (CSS デフォルトを尊重)。
+- `_opLoadNarrationOverride(vc)`: `localStorage['pono.opNarration.runtime.<vc>']` から JSON を try/catch で読み出し。未保存 / parse 失敗時は null。
+- `_opHexToRgba(hex, opacity)`: `bgColor` (#rrggbb) + `bgOpacity` (0-1) → rgba 文字列。# 抜き / 3 桁 hex / 不正値も受ける (正規化、不正は null 返却)。
+- `_opApplyNarrationOverride(narrEl)`: 上記 3 つを束ねて、**有効な値のみ** narrEl に inline style を注入。
+
+  - `contentH === 0` (= レイアウト未確定) 時は早期 return (heightAuto=false 時に 0 を入れて潰すのを防ぐ)。
+  - `value === undefined` / `NaN` / 空文字のフィールドは**注入スキップ** (CSS デフォルトを温存)。これは per-question layout の whitelist + opt-in 哲学を踏襲。
+  - `bgMode === 'css'` で `bgColor` が不正値の場合、 `backgroundColor` は設定しないが `backgroundImage = 'none'` だけは確実に上書き (BG image override の残骸が漏れるのを防ぐ)。
+
+呼び出しタイミング:
+- seg1 表示直前 ( narration 要素を visible にする直前) で `_opApplyNarrationOverride(narration)` を 1 回呼ぶ。
+- `playOpeningCinematic` の `finally` で narration の inline style を**全クリア** (replay 時に前回 override を持ち越さないため)。
+
+### 設計トレードオフ
+
+- localStorage は **同一 origin / 同一ブラウザ間でのみ共有**。エディタで設定した値を別端末・別ユーザに配信するには CSS Export → 本番 CSS への手動マージが必要 (現状仕様)。global 共有が必要になったら `tools/saved-layout.json` 経路で `fetch` する拡張が考えられる (今回スコープ外)。
+- per-question layout (`__chip_text_overrides` など) とは**完全に別 storage キー**で衝突なし。
+- editor の CSS Export ボタンを使う既存ワークフロー (asymmetric padding を本番に焼き込む等) は無傷。今回の経路は「自分のブラウザで動作確認するための速い経路」という位置付け。
 
 ## Panel Spec
 

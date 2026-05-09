@@ -4879,10 +4879,71 @@ function _opOnRootTap(e) {
   try { r(); } catch (_) {}
 }
 
+// 2026-05-09: narration テキストボックスとの被り回避ロジック。
+// レイアウトエディタで narration を任意位置に動かせるようになり、デフォルトの
+// `bottom: 24-28px` 固定だと narration の内側に tap-hint が入り込むことがある。
+// narration が可視の場合だけ inline style.top で narration 直下 (もしくは余白
+// 不足時は narration 直上) に動的追従させ、 narration 不可視時は CSS デフォルト
+// に戻す (style.top / style.bottom を空文字でクリア)。
+function _opPositionTapHintRelativeToNarration(el) {
+  if (!el) return;
+  try {
+    const opContent = document.getElementById('op-content');
+    const narration = document.getElementById('op-narration');
+    // narration が不在 / 非表示なら inline 解除 → CSS デフォルト (.op-tap-hint { bottom: ... })
+    const narrHidden = !narration
+      || narration.classList.contains('hidden')
+      || narration.classList.contains('seg-hide')
+      || (narration.offsetParent === null && getComputedStyle(narration).display === 'none');
+    if (!opContent || narrHidden) {
+      el.style.top = '';
+      el.style.bottom = '';
+      return;
+    }
+    // .op-content は relative / absolute どちらでも offsetParent ベースで計算可能。
+    const contentH = opContent.clientHeight || opContent.offsetHeight || 0;
+    // Fix HIGH (review 2026-05-09): cinematic 開始直後など op-content が未レイアウト
+    // のタイミングで contentH===0 となり、直上フォールバック (4px) に張り付く。
+    // 0 のときは inline style を解除して CSS デフォルト位置に戻して早期リターン。
+    if (contentH === 0) {
+      el.style.top = '';
+      el.style.bottom = '';
+      return;
+    }
+    const narrTop  = narration.offsetTop;
+    const narrH    = narration.offsetHeight;
+    // tap-hint 自体の高さを測るため一旦 hidden を外して可視にしておく
+    // (.is-visible はまだだが display:none は剥がす)。
+    const wasHidden = el.classList.contains('hidden');
+    if (wasHidden) el.classList.remove('hidden');
+    const hintH = el.offsetHeight || 44; // 推定 fallback
+    if (wasHidden && !el.classList.contains('is-visible')) {
+      // 元に戻すのは後段で is-visible を付けるためここでは hidden を付け直さない
+    }
+    const gap = 12;
+    const belowSpace = contentH - (narrTop + narrH);
+    if (belowSpace >= hintH + gap + 4) {
+      // narration 直下に配置
+      el.style.top    = (narrTop + narrH + gap) + 'px';
+      el.style.bottom = 'auto';
+    } else {
+      // 余白不足 → narration 直上にフォールバック
+      const topPos = Math.max(4, narrTop - hintH - gap);
+      el.style.top    = topPos + 'px';
+      el.style.bottom = 'auto';
+    }
+  } catch (e) {
+    // 失敗時は inline をクリアして CSS デフォルトへ
+    try { el.style.top = ''; el.style.bottom = ''; } catch (_) {}
+  }
+}
+
 function _opShowTapHint() {
   const el = document.getElementById('op-tap-hint');
   if (!el) return;
   el.classList.remove('hidden');
+  // narration の現在位置を反映 (inline style.top で追従)
+  _opPositionTapHintRelativeToNarration(el);
   // 1 frame 確保してから .is-visible を付け、opacity 0 → 1 の transition を発火させる。
   void el.offsetWidth;
   el.classList.add('is-visible');
@@ -4897,7 +4958,11 @@ function _opHideTapHint() {
   if (_opHideTapHintTid) { try { clearTimeout(_opHideTapHintTid); } catch (e) {} _opHideTapHintTid = null; }
   _opHideTapHintTid = setTimeout(function() {
     _opHideTapHintTid = null;
-    if (!el.classList.contains('is-visible')) el.classList.add('hidden');
+    if (!el.classList.contains('is-visible')) {
+      el.classList.add('hidden');
+      // inline 解除 → 次回表示で再計算 / CSS デフォルトに戻す
+      try { el.style.top = ''; el.style.bottom = ''; } catch (_) {}
+    }
   }, 420);
 }
 
@@ -5070,6 +5135,110 @@ async function _runPlateAndType(qIdx) {
     if (_ansPanel && _ansPanel.classList.contains('q-stage-pending')) {
       _ansPanel.classList.remove('q-stage-pending');
       _ansPanel.classList.add('q-stage-revealed');
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Narration runtime override (2026-05-09)
+// tools/op-layout-editor.html writes a per-VC narration snapshot to
+// localStorage under `pono.opNarration.runtime.{B|C|D}`. We honor it here by
+// applying inline styles to `.op-narration` so editor changes (line-height /
+// padding / font-size / width / height / position / bg) override the
+// hardcoded per-VC `@media` CSS values without touching the stylesheet.
+//
+// VC 判定は本番 CSS と同じ aspect-ratio breakpoint (B: <14/10, C: 14/10〜19/10,
+// D: ≥19/10) を matchMedia で評価。値が未保存 / 不正な時は inline style を
+// 触らず CSS デフォルトのまま (= 既存挙動維持)。
+// ─────────────────────────────────────────────────────────────────────────
+const NARRATION_RUNTIME_PREFIX = 'pono.opNarration.runtime.';
+function _opGetCurrentVC() {
+  // Fix HIGH (review 2026-05-09): VC-B の CSS @media は
+  // `(min-aspect-ratio: 85/100) and (max-aspect-ratio: 14/10)` が下限なので、
+  // 縦長端末 (aspect < 85/100) では editor-B 値を適用すべきでない。null を返して
+  // override 適用パスを skip させる (CSS デフォルトに任せる)。
+  try {
+    if (window.matchMedia('(min-aspect-ratio: 19/10)').matches) return 'D';
+    if (window.matchMedia('(min-aspect-ratio: 14/10)').matches) return 'C';
+    if (window.matchMedia('(min-aspect-ratio: 85/100)').matches) return 'B';
+    return null;
+  } catch (e) { return null; }
+}
+function _opLoadNarrationOverride(vc) {
+  // Fix HIGH (review 2026-05-09): _opGetCurrentVC が null を返すケース
+  // (縦長端末 / matchMedia 例外) では localStorage キーを引かずに早期 return。
+  if (!vc) return null;
+  try {
+    const raw = localStorage.getItem(NARRATION_RUNTIME_PREFIX + vc);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object') ? obj : null;
+  } catch (e) { return null; }
+}
+function _opHexToRgba(hex, opacity) {
+  // best-effort #rrggbb / #rgb → rgba(...)
+  if (typeof hex !== 'string') return '';
+  let h = hex.replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return '';
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  let a = (typeof opacity === 'number' && Number.isFinite(opacity)) ? opacity : 1;
+  if (a < 0) a = 0; if (a > 1) a = 1;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+function _opApplyNarrationOverride(narrEl) {
+  if (!narrEl) return;
+  const vc = _opGetCurrentVC();
+  const nr = _opLoadNarrationOverride(vc);
+  if (!nr) return; // no override; CSS default 適用
+  const isFiniteNum = (v) => typeof v === 'number' && Number.isFinite(v);
+  // 位置 (top / bottom / posMode)。posMode に応じて片方をセットしもう片方を解除。
+  if (nr.posMode === 'top') {
+    if (isFiniteNum(nr.top))    { narrEl.style.top    = nr.top + 'px'; narrEl.style.bottom = 'auto'; }
+  } else if (nr.posMode === 'bottom') {
+    if (isFiniteNum(nr.bottom)) { narrEl.style.bottom = nr.bottom + 'px'; narrEl.style.top = 'auto'; }
+  } else if (nr.posMode === 'free') {
+    if (isFiniteNum(nr.top))    { narrEl.style.top    = nr.top + 'px'; narrEl.style.bottom = 'auto'; }
+  }
+  // サイズ
+  if (isFiniteNum(nr.width) && nr.width > 0) narrEl.style.width = nr.width + 'px';
+  if (nr.heightAuto === false && isFiniteNum(nr.height) && nr.height > 0) {
+    narrEl.style.height = nr.height + 'px';
+  } else if (nr.heightAuto === true) {
+    narrEl.style.height = 'auto';
+  }
+  // padding (Y X) — CSS の asymmetric 3 値は editor が未対応 (= 対称化される)。
+  // 既知の TODO (memory: feature_quizland_opening.md → エディタ asymmetric padding)。
+  if (isFiniteNum(nr.paddingY) && isFiniteNum(nr.paddingX)) {
+    narrEl.style.padding = nr.paddingY + 'px ' + nr.paddingX + 'px';
+  }
+  if (isFiniteNum(nr.fontSize) && nr.fontSize > 0) {
+    narrEl.style.fontSize = nr.fontSize + 'px';
+  }
+  // line-height は unitless (本タスクの主目的)
+  if (isFiniteNum(nr.lineHeight) && nr.lineHeight > 0) {
+    narrEl.style.lineHeight = String(nr.lineHeight);
+  }
+  if (typeof nr.textAlignH === 'string' && nr.textAlignH) {
+    narrEl.style.textAlign = nr.textAlignH;
+  }
+  // 背景 (bgMode === 'css' のときのみ単色 + 角丸 + 影を更新。 'image' はフレーム
+  //  画像参照が editor 専用パスなので runtime では触らない = CSS の現状維持)。
+  if (nr.bgMode === 'css') {
+    // Fix MEDIUM (review 2026-05-09): bgColor 不正値で bgc==='' のとき、CSS の frame
+    // 画像 background が残ってしまい editor 上の「CSS 単色」設定と食い違う。
+    // bgMode==='css' に入った時点で backgroundImage を消し、bgc が取れた場合のみ
+    // backgroundColor を上書きする。
+    narrEl.style.backgroundImage = 'none';
+    const bgc = _opHexToRgba(nr.bgColor, isFiniteNum(nr.bgOpacity) ? nr.bgOpacity : 1);
+    if (bgc) narrEl.style.backgroundColor = bgc;
+    if (isFiniteNum(nr.borderRadius)) narrEl.style.borderRadius = nr.borderRadius + 'px';
+    if (typeof nr.showShadow === 'boolean') {
+      narrEl.style.boxShadow = nr.showShadow
+        ? '0 10px 24px rgba(0,0,0,0.35), 0 0 0 2px rgba(120,80,30,0.18) inset'
+        : 'none';
     }
   }
 }
@@ -5249,6 +5418,11 @@ async function playOpeningCinematic() {
           : (panel.lines ? [{ lines: panel.lines }] : []);
 
         // セグメント 1 を構築 (visible)
+        // 2026-05-09: editor (tools/op-layout-editor.html) の per-VC narration
+        // 設定 (lineHeight / padding / fontSize / width / height / 位置 / bg) を
+        // localStorage 経由で inline style 注入。可視化前に適用して初期描画を
+        // editor の見た目と一致させる。値が無ければ no-op で CSS デフォルト維持。
+        try { _opApplyNarrationOverride(narration); } catch (_) {}
         narration.classList.remove('hidden');
         narration.classList.remove('seg-hide');
         narration.classList.add('seg-show');
@@ -5337,6 +5511,14 @@ async function playOpeningCinematic() {
               }
               narration.classList.remove('seg-hide');
               narration.classList.add('seg-show');
+              // 2026-05-09: seg2 は seg1 と異なる高さ/位置になり得るので tap-hint を即時追従。
+              // (まだ可視中の hint があれば inline top を再計算して被り回避)
+              try {
+                const __hintReposition = document.getElementById('op-tap-hint');
+                if (__hintReposition && __hintReposition.classList.contains('is-visible')) {
+                  _opPositionTapHintRelativeToNarration(__hintReposition);
+                }
+              } catch (_) {}
             }
           }
         }
@@ -5503,6 +5685,25 @@ async function playOpeningCinematic() {
       if (__hintEnd) {
         __hintEnd.classList.remove('is-visible');
         __hintEnd.classList.add('hidden');
+      }
+    } catch (e) {}
+    // Fix HIGH (review 2026-05-09): replay 時 (将来の OP リプレイ機能 / 開発リロード無し
+    // 再実行) に前回 cinematic で書き込んだ inline style が残留して新規設定を上書き
+    // できなくなる。tap-hint の top/bottom と narration の _opApplyNarrationOverride
+    // で書き込み得る全プロパティを finally で全クリアする。
+    try {
+      const __hintEnd2 = document.getElementById('op-tap-hint');
+      if (__hintEnd2) {
+        __hintEnd2.style.top = '';
+        __hintEnd2.style.bottom = '';
+      }
+    } catch (e) {}
+    try {
+      const __narrEnd = document.getElementById('op-narration');
+      if (__narrEnd) {
+        ['top','bottom','width','height','lineHeight','fontSize','padding',
+         'backgroundColor','backgroundImage','boxShadow','borderRadius','textAlign']
+          .forEach(k => { try { __narrEnd.style[k] = ''; } catch(_e){} });
       }
     } catch (e) {}
     try { window.removeEventListener('resize', rescaleOpContent); } catch (e) {}
