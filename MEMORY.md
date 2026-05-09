@@ -103,6 +103,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-09T23:40:35Z - quizland OP ナレーション音声を seg1/seg2 per-seg 分割再生 (OP_NA01.mp3 + OP_NA_02.mp3、__opStartSegAudio/__opStopSegAudio ヘルパ、BGM ducking 単一管理、Web Audio リーク防止、preload 汎用化) — cross-review APPROVE (sw v893)
+- **タスク**: quizland OP ナレーション音声を seg1/seg2 per-seg 分割再生 (OP_NA01.mp3 + OP_NA_02.mp3、__opStartSegAudio/__opStopSegAudio ヘルパ、BGM ducking 単一管理、Web Audio リーク防止、preload 汎用化) — cross-review APPROVE (sw v893)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 40
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 19, "Bash": 14}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-09T23:40:17Z - quizland OP per-seg ナレーション音声分割 (sw v893): OP_NA01.mp3/OP_NA_02.mp3 + memory更新 + commit
+- **タスク**: quizland OP per-seg ナレーション音声分割 (sw v893): OP_NA01.mp3/OP_NA_02.mp3 + memory更新 + commit
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 39
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 19, "Bash": 13}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-09T23:35:23Z - quizland OP narration を per-seg audio (OP_NA01.mp3 / OP_NA_02.mp3) に分離。タップで seg を進めた瞬間に audio を強制停止する設計。preload も per-seg 化
+- **タスク**: quizland OP narration を per-seg audio (OP_NA01.mp3 / OP_NA_02.mp3) に分離。タップで seg を進めた瞬間に audio を強制停止する設計。preload も per-seg 化
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 45
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 1, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-09T23:22:56Z - saved-layout.json 経由 narration 配信 (B 経路) 実装 + クロスレビュー HIGH fix (_ghGetSavedLayout parse 失敗時のデータロス防止) + Q82 つばめ choice 画像差し替え (静止姿) (sw v892)
 - **タスク**: saved-layout.json 経由 narration 配信 (B 経路) 実装 + クロスレビュー HIGH fix (_ghGetSavedLayout parse 失敗時のデータロス防止) + Q82 つばめ choice 画像差し替え (静止姿) (sw v892)
 - **結果**: 成功
@@ -179,44 +218,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 2, "Agent": 4, "Bash": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T13:38:45Z - quizland OP narration の auto-advance 完全撤去 (seg1/seg2 を _opWaitForAdvance に統一)
-- **タスク**: quizland OP narration の auto-advance 完全撤去 (seg1/seg2 を _opWaitForAdvance に統一)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 214
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 25, "Agent": 70, "ToolSearch": 1, "Bash": 88, "Edit": 25, "Grep": 3, "Glob": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-09T12:34:57Z - quizland chip text editor cross-review fixes (HIGH paste sanitization + MEDIUM 1-3: qKey capture / 空行増殖 / null描画) + sw v888
-- **タスク**: quizland chip text editor cross-review fixes (HIGH paste sanitization + MEDIUM 1-3: qKey capture / 空行増殖 / null描画) + sw v888
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 210
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 24, "Agent": 69, "ToolSearch": 1, "Bash": 87, "Edit": 24, "Grep": 3, "Glob": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-09T12:29:37Z - quizland editor: 4択chipテキスト直接編集 + 改行対応 + per-question override (__chip_text_overrides) + sw v887
-- **タスク**: quizland editor: 4択chipテキスト直接編集 + 改行対応 + per-question override (__chip_text_overrides) + sw v887
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 208
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 24, "Agent": 67, "ToolSearch": 1, "Bash": 87, "Edit": 24, "Grep": 3, "Glob": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
