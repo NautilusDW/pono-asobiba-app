@@ -103,6 +103,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-09T23:47:45Z - OP narration seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、quizland/index.html + memory + sw v894)
+- **タスク**: OP narration seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、quizland/index.html + memory + sw v894)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 42
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 20, "Bash": 15}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-09T23:47:26Z - quizland OP seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、sw v894)
+- **タスク**: quizland OP seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、sw v894)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 41
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 20, "Bash": 14}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-09T23:40:35Z - quizland OP ナレーション音声を seg1/seg2 per-seg 分割再生 (OP_NA01.mp3 + OP_NA_02.mp3、__opStartSegAudio/__opStopSegAudio ヘルパ、BGM ducking 単一管理、Web Audio リーク防止、preload 汎用化) — cross-review APPROVE (sw v893)
 - **タスク**: quizland OP ナレーション音声を seg1/seg2 per-seg 分割再生 (OP_NA01.mp3 + OP_NA_02.mp3、__opStartSegAudio/__opStopSegAudio ヘルパ、BGM ducking 単一管理、Web Audio リーク防止、preload 汎用化) — cross-review APPROVE (sw v893)
 - **結果**: 成功
@@ -191,32 +217,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 2, "Agent": 7, "Bash": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T13:55:34Z - quizland OP narration editor → runtime 反映: localStorage 経由で editor の lineHeight/padding/fontSize/width/height/位置/bg を runtime .op-narration に inline 注入
-- **タスク**: quizland OP narration editor → runtime 反映: localStorage 経由で editor の lineHeight/padding/fontSize/width/height/位置/bg を runtime .op-narration に inline 注入
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 7
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 4, "Bash": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T13:51:20Z - quizland OP tap-hint を narration 直下に動的追従させて被りバグ修正
-- **タスク**: quizland OP tap-hint を narration 直下に動的追従させて被りバグ修正
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 7
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 4, "Bash": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
