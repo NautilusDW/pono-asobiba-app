@@ -5221,7 +5221,8 @@
       '<button id="le-duplicate" title="複製 (Ctrl+D)" aria-label="複製">⧉ 複製</button>' +
       // Lima-2 修正B: 選択した要素の画像 (img / 背景画像 / 単一内側 img) を
       //   ファイル選択ダイアログで差し替える明示ボタン。単一選択時のみ有効。
-      '<button id="le-replace-src" title="選択した要素の画像を差し替え（ファイル選択ダイアログ）" aria-label="画像を差し替え" disabled>📥 src 差し替え</button>' +
+      //   2026-05-09: regulation を tooltip に明示 (PNG/JPEG/WebP, 長辺 1600px, 推奨 1MB / 上限 3MB)
+      '<button id="le-replace-src" title="選択した要素の画像を差し替え（ファイル選択ダイアログ）&#10;形式: PNG / JPEG / WebP（SVG 不可）&#10;解像度: 長辺 1600px 以下を推奨（超えても自動縮小）&#10;容量: 推奨 1MB / 上限 3MB（超過分は再圧縮）&#10;※ ステージ画像 (.emoji-main-img) はプレビュー差し替えのみで保存非対応。本差し替えは assets/images/quizland/illust/stage/ に画像ファイルを直接 commit してください。" aria-label="画像を差し替え" disabled>📥 src 差し替え</button>' +
       // Kilo-2 修正C → Lima-2 修正C: 選択要素を親レイヤーから取り出して stage 直下に配置する
       '<button id="le-detach" title="選択中のレイヤーを親グループから取り出して独立編集可能にします" aria-label="親レイヤーから取り出す" disabled>🔓 取り出す</button>' +
       // Victor-2: 削除ボタン。選択中のみ enabled。Ctrl+Z で復活可能なので確認なし。
@@ -5948,57 +5949,115 @@
 
   // Read a file and resize it to MAX_DIMENSION on the long side, preserving
   // aspect ratio and (where possible) original format/transparency.
-  // Returns { dataUrl, width, height, resized }. Falls back to the raw data URL
-  // if anything goes wrong (e.g. decode failure on a corrupt file).
+  // Returns { dataUrl, width, height, resized, requantized, finalBytes }.
+  // Falls back to the raw data URL if anything goes wrong (e.g. decode failure
+  // on a corrupt file).
+  //
+  // 2026-05-09 規制: 推奨 1MB (RECOMMEND_BYTES) / 上限 3MB (HARD_BYTES)。
+  //   1MB を超えた場合は JPEG 化 + quality を段階的に下げて再圧縮 (q=0.85, 0.7, 0.55)。
+  //   PNG / WebP も透過維持できないと判断したら最終手段で JPEG にフォールバック。
+  function _approxBytesFromDataUrl(u) {
+    if (!u) return 0;
+    var i = u.indexOf(',');
+    var b64 = i >= 0 ? u.slice(i + 1) : u;
+    return Math.round(b64.length * 0.75); // base64 → bytes
+  }
+  var RECOMMEND_BYTES = 1 * 1024 * 1024;  // 1MB 推奨ライン
+  var HARD_BYTES = 3 * 1024 * 1024;       // 3MB 上限
   function readAndResizeImage(file) {
     return readAsDataURL(file).then(function (dataUrl) {
       return loadImage(dataUrl).then(function (img) {
         var nw = img.naturalWidth || img.width;
         var nh = img.naturalHeight || img.height;
         var longSide = Math.max(nw, nh);
-        if (!longSide || longSide <= MAX_DIMENSION) {
-          return { dataUrl: dataUrl, width: nw, height: nh, resized: false };
+        var needsResize = longSide > MAX_DIMENSION;
+        var targetW = nw, targetH = nh;
+        if (needsResize) {
+          var scale = MAX_DIMENSION / longSide;
+          targetW = Math.max(1, Math.round(nw * scale));
+          targetH = Math.max(1, Math.round(nh * scale));
         }
-        var scale = MAX_DIMENSION / longSide;
-        var targetW = Math.max(1, Math.round(nw * scale));
-        var targetH = Math.max(1, Math.round(nh * scale));
+
+        // Decide whether we even need to re-encode.
+        // - Resize required → must re-encode.
+        // - Original > RECOMMEND_BYTES → re-encode to try to fit regulation.
+        // - Otherwise → pass through.
+        var rawBytes = file ? file.size : _approxBytesFromDataUrl(dataUrl);
+        if (!needsResize && rawBytes <= RECOMMEND_BYTES) {
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false, requantized: false, finalBytes: rawBytes };
+        }
+
         var canvasEl = document.createElement('canvas');
         canvasEl.width = targetW;
         canvasEl.height = targetH;
         var ctx = canvasEl.getContext('2d');
         if (!ctx) {
-          return { dataUrl: dataUrl, width: nw, height: nh, resized: false };
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false, requantized: false, finalBytes: rawBytes };
         }
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, targetW, targetH);
         var mime = (file && file.type) || '';
         var outputDataUrl;
+        var requantized = false;
         try {
           if (mime === 'image/png' || mime === 'image/webp') {
-            // Preserve transparency / lossless formats. quality arg is ignored for PNG.
+            // Preserve transparency / lossless formats first.
             outputDataUrl = canvasEl.toDataURL(mime);
+            // Size guard: if the lossless output is over RECOMMEND_BYTES, retry as
+            // WebP @ q=0.9 → 0.8 → 0.7. WebP keeps alpha, so it's preferable to
+            // JPEG fallback for transparent assets.
+            if (_approxBytesFromDataUrl(outputDataUrl) > RECOMMEND_BYTES) {
+              var webpQs = [0.9, 0.8, 0.7];
+              for (var wi = 0; wi < webpQs.length; wi++) {
+                try {
+                  var attempt = canvasEl.toDataURL('image/webp', webpQs[wi]);
+                  if (attempt && attempt.indexOf('data:image/webp') === 0) {
+                    if (_approxBytesFromDataUrl(attempt) < _approxBytesFromDataUrl(outputDataUrl)) {
+                      outputDataUrl = attempt;
+                      requantized = true;
+                    }
+                    if (_approxBytesFromDataUrl(outputDataUrl) <= RECOMMEND_BYTES) break;
+                  }
+                } catch (e) { /* WebP not supported in this browser, skip */ }
+              }
+            }
           } else {
             // JPEG (default) and any unknown raster type → JPEG @ 0.9.
             outputDataUrl = canvasEl.toDataURL('image/jpeg', 0.9);
+            // Size guard: walk down the quality ladder until under RECOMMEND_BYTES
+            // (or we run out of steps).
+            if (_approxBytesFromDataUrl(outputDataUrl) > RECOMMEND_BYTES) {
+              var qLadder = [0.85, 0.7, 0.55];
+              for (var qi = 0; qi < qLadder.length; qi++) {
+                var attempt2 = canvasEl.toDataURL('image/jpeg', qLadder[qi]);
+                if (_approxBytesFromDataUrl(attempt2) < _approxBytesFromDataUrl(outputDataUrl)) {
+                  outputDataUrl = attempt2;
+                  requantized = true;
+                }
+                if (_approxBytesFromDataUrl(outputDataUrl) <= RECOMMEND_BYTES) break;
+              }
+            }
           }
         } catch (err) {
           console.warn('[LayoutEditor] canvas.toDataURL failed; using original', err);
-          return { dataUrl: dataUrl, width: nw, height: nh, resized: false };
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false, requantized: false, finalBytes: rawBytes };
         }
+        var finalBytes = _approxBytesFromDataUrl(outputDataUrl);
         // Size delta log (base64 → bytes is ~3/4)
         try {
-          var beforeKB = Math.round(file.size / 1024);
-          var afterKB = Math.round(outputDataUrl.length * 0.75 / 1024);
+          var beforeKB = Math.round(rawBytes / 1024);
+          var afterKB = Math.round(finalBytes / 1024);
           var saved = beforeKB > 0 ? Math.round(100 - (afterKB / beforeKB) * 100) : 0;
           console.log('[LayoutEditor] Drop image: ' + nw + 'x' + nh +
             ' (' + beforeKB + 'KB) -> ' + targetW + 'x' + targetH +
-            ' (' + afterKB + 'KB, ' + saved + '% reduction)');
+            ' (' + afterKB + 'KB, ' + saved + '% reduction' +
+            (requantized ? ', requantized' : '') + ')');
         } catch (e) {}
-        return { dataUrl: outputDataUrl, width: targetW, height: targetH, resized: true };
+        return { dataUrl: outputDataUrl, width: targetW, height: targetH, resized: needsResize, requantized: requantized, finalBytes: finalBytes };
       }).catch(function (err) {
         console.warn('[LayoutEditor] image decode failed; using original data URL', err);
-        return { dataUrl: dataUrl, width: 0, height: 0, resized: false };
+        return { dataUrl: dataUrl, width: 0, height: 0, resized: false, requantized: false, finalBytes: _approxBytesFromDataUrl(dataUrl) };
       });
     });
   }
@@ -6028,6 +6087,17 @@
   // Lima-2 修正B: 「📥 src 差し替え」ボタンのクリックハンドラ。
   //   <input type="file"> ダイアログを動的生成して選択要素の画像を差し替える。
   //   drag&drop の暗黙差し替えを廃止した代替経路 (明示的・誤動作なし)。
+  // 2026-05-09: 「保存対応の差し替え」 (= .le-dropped-img 配下) かどうかを判定。
+  //   true ならファイル選択ダイアログ後の swap が localStorage に永続化される。
+  //   false (例: .emoji-main-img) は in-session preview のみ。
+  function _isPersistedReplaceTarget(el) {
+    if (!el) return false;
+    if (el.classList && el.classList.contains('le-dropped-img')) return true;
+    var p = el.parentNode;
+    if (p && p.classList && p.classList.contains('le-dropped-img')) return true;
+    return false;
+  }
+
   function openReplaceDialog() {
     var sel = (state.selectedElements && state.selectedElements.size === 1)
       ? Array.from(state.selectedElements)[0] : null;
@@ -6037,7 +6107,7 @@
     }
     var input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/png,image/jpeg,image/webp';
     input.style.display = 'none';
     input.addEventListener('change', function () {
       var file = input.files && input.files[0];
@@ -6059,17 +6129,30 @@
         return;
       }
       readAndResizeImage(file).then(function (result) {
+        // 1MB 推奨ライン超で再圧縮を案内 / 3MB 超は警告
         if (result.resized) {
           showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
         }
+        if (result.requantized) {
+          var afterKB = Math.round((result.finalBytes || 0) / 1024);
+          showToast('1MB 超のため画質を下げて再圧縮しました (' + afterKB + 'KB)', 'warn');
+        }
+        if (result.finalBytes && result.finalBytes > HARD_BYTES) {
+          var overKB = Math.round(result.finalBytes / 1024);
+          showToast('警告: 圧縮後も ' + overKB + 'KB (上限 3MB 超過)。表示は可能ですが推奨範囲外です', 'warn');
+        }
         var swapResult = replaceImageSrc(sel, result.dataUrl);
         if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
-          if (!result.resized) {
+          if (!result.resized && !result.requantized) {
             if (swapResult === 'bg') {
               showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
             } else {
               showToast('画像を差し替えました (Ctrl+Z で戻せます)');
             }
+          }
+          // 永続化対応外 (例: ステージ画像 .emoji-main-img) の場合は preview-only である旨を案内
+          if (!_isPersistedReplaceTarget(sel)) {
+            showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは画像ファイル自体を assets/images/ に commit してください', 'warn');
           }
           scheduleDirtyUpdate();
         } else {
@@ -6480,15 +6563,26 @@
             if (result.resized) {
               showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
             }
+            if (result.requantized) {
+              var afterKB = Math.round((result.finalBytes || 0) / 1024);
+              showToast('1MB 超のため画質を下げて再圧縮しました (' + afterKB + 'KB)', 'warn');
+            }
+            if (result.finalBytes && result.finalBytes > HARD_BYTES) {
+              var overKB = Math.round(result.finalBytes / 1024);
+              showToast('警告: 圧縮後も ' + overKB + 'KB (上限 3MB 超過)', 'warn');
+            }
             if (i === 0) {
               var swapResult = replaceImageSrc(target, dataUrl);
               if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
-                if (!result.resized) {
+                if (!result.resized && !result.requantized) {
                   if (swapResult === 'bg') {
                     showToast('背景画像を差し替えました（Ctrl+Z で戻せます）', 'success');
                   } else {
                     showToast('画像を差し替えました（Ctrl+Z で戻せます）', 'success');
                   }
+                }
+                if (!_isPersistedReplaceTarget(target)) {
+                  showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは assets/images/ に画像ファイル自体を commit してください', 'warn');
                 }
                 scheduleDirtyUpdate();
                 return;
