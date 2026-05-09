@@ -103,6 +103,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-09T13:38:45Z - quizland OP narration の auto-advance 完全撤去 (seg1/seg2 を _opWaitForAdvance に統一)
+- **タスク**: quizland OP narration の auto-advance 完全撤去 (seg1/seg2 を _opWaitForAdvance に統一)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 214
+- **エラー数**: 9
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 25, "Agent": 70, "ToolSearch": 1, "Bash": 88, "Edit": 25, "Grep": 3, "Glob": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-09T12:34:57Z - quizland chip text editor cross-review fixes (HIGH paste sanitization + MEDIUM 1-3: qKey capture / 空行増殖 / null描画) + sw v888
 - **タスク**: quizland chip text editor cross-review fixes (HIGH paste sanitization + MEDIUM 1-3: qKey capture / 空行増殖 / null描画) + sw v888
 - **結果**: 成功
@@ -204,19 +217,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 22, "Agent": 60, "ToolSearch": 1, "Bash": 76, "Edit": 20, "Grep": 3, "Glob": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-09T10:17:51Z - GitHub proxy path traversal 対策 + 画像 PUT 堅牢化 (allowlist + Promise return + CORS origin 限定 + repoPath confirm + retry)
-- **タスク**: GitHub proxy path traversal 対策 + 画像 PUT 堅牢化 (allowlist + Promise return + CORS origin 限定 + repoPath confirm + retry)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 177
-- **エラー数**: 6
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 20, "Agent": 58, "ToolSearch": 1, "Bash": 74, "Edit": 19, "Grep": 3, "Glob": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
