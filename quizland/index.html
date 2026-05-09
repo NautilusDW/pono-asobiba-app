@@ -2495,6 +2495,22 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
   background: rgba(0,0,0,0.55);
   outline: none;
 }
+/* layout-editor (?edit=1) 中も OP スキップボタンを必ずタップできるようにする。
+   `.le-toolbar` (z-index: 1000) や `.le-list-panel` 等が右上に居座って
+   `.op-skip` (`.op-cinematic` z-index: 300 配下) を覆うため、
+   editor mode のときだけ z-index を toolbar 群より上に引き上げ、
+   pointer-events と表示も強制 visible に固定する。
+   位置は `top` を少し下げて toolbar (高さ ~36-40px) との被りを避ける。 */
+body.layout-editor-on .op-skip {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+  display: block !important;
+  visibility: visible !important;
+  top: 56px !important;       /* toolbar 高 + 余白で確実に下に逃がす */
+  right: 20px !important;
+  background: rgba(220, 60, 60, 0.85) !important;
+  border-color: rgba(255, 200, 200, 0.85) !important;
+}
 
 /* ===== Tap-to-advance hint (2026-05-08) =====
    typing 完了後に「タップしてつづける ▶」を画面下中央付近にフェードイン。
@@ -4792,32 +4808,20 @@ function _opHideTapHint() {
 }
 
 // waitForAdvance:
-//   minHold ms は必ず待つ → その後 (a) ユーザータップ or (b) auto-advance タイマー
-//   の早い方で resolve。
+//   minHold ms は必ず待つ → その後ユーザータップ (or キャンセル) で resolve。
+//   2026-05-07 仕様変更: auto-advance タイマーは廃止。 OP は明示タップ/スキップが
+//   無い限り次セグメントへ進まない (子供が読み終わる前に勝手に進まない安全策)。
 //   options:
 //     - minHold (default 800): 誤タップ防止のため必ず待つ ms
-//     - maxWait : auto-advance タイマー ms。 null 指定時は textLen ベースで自動計算。
-//     - textLen : auto 計算用の文字数 (maxWait 未指定時)
-//     - hasAudio: true なら audio 完了に応じて maxWait をかなり長めに取る指示
-//                 (実際の audio 待ちは外側で別途行うので、ここは単に extended fallback)
-//     - showHint (default true): typing 完了直後に hint を出すか
+//     - showHint (default true): minHold 経過後に「タップしてつづける ▶」を出す
+//   旧 maxWait / textLen / hasAudio パラメータは互換のため受け取るが、
+//   進行ロジックには使わない (タップ待ちのみ)。
 // Cancellation:
 //   _opCancelled が true になったら 100ms 粒度で abort する。
 async function _opWaitForAdvance(options) {
   const opts = options || {};
   const minHold = (opts.minHold != null) ? opts.minHold : 800;
-  const textLen = opts.textLen || 0;
-  const hasAudio = !!opts.hasAudio;
   const showHint = (opts.showHint !== false);
-  let autoMs;
-  if (opts.maxWait != null) {
-    autoMs = opts.maxWait;
-  } else if (hasAudio) {
-    // 音声がある場合は外で音声完了を別途待つ前提なので、ここのフォールバックは長め。
-    autoMs = Math.max(textLen * 150 + 4000, 8000);
-  } else {
-    autoMs = Math.max(textLen * 150 + 2000, 3000);
-  }
 
   // 1. minHold は必ず待つ (キャンセル可)
   const minStart = Date.now();
@@ -4830,7 +4834,7 @@ async function _opWaitForAdvance(options) {
   // 2. hint をフェードイン
   if (showHint) _opShowTapHint();
 
-  // 3. tap or auto-advance timer の race
+  // 3. tap (or cancel) を待つ — auto-advance timer は廃止
   await new Promise(function(resolve) {
     let resolved = false;
     function done() {
@@ -4842,16 +4846,12 @@ async function _opWaitForAdvance(options) {
     _opAdvanceArmedAt = Date.now();
     _opAdvanceMinHold = 0; // ここではすでに minHold 経過済みなので 0
     _opAdvanceResolve = done;
-    // auto-advance timer
-    const timeoutId = setTimeout(done, autoMs);
     // cancellation poller (100ms 粒度) — _opCancelled で即時抜ける
     const pollId = setInterval(function() {
       if (_opCancelled) {
-        clearTimeout(timeoutId);
         clearInterval(pollId);
         done();
       } else if (resolved) {
-        clearTimeout(timeoutId);
         clearInterval(pollId);
       }
     }, 100);
@@ -5207,12 +5207,12 @@ async function playOpeningCinematic() {
           _opActiveAudio = null;
         }
 
-        // セグメントが 2 つ以上ある場合、音声中盤 (or 12s フォールバック or タップ) でクロスフェード
+        // セグメントが 2 つ以上ある場合、 ユーザータップ (or キャンセル) でクロスフェード。
+        // 2026-05-07 仕様変更: auto-advance (12s タイマー / audio.duration*0.62) は廃止。
+        // ナレ音声は流れたままだが、ユーザが「タップしてつづける ▶」を押すまで seg1 を保持。
         if (segs.length >= 2) {
-          // Tap-to-advance も並行 arm する。
-          // tap でも進めるが、誤タップ抑止のため minHold 1200ms (子供がうっかり画面に触れただけで
-          // segment 1 を読み終わる前に飛ばすのを防ぐ)。
-          // hint は出さない (narration 序盤はナレーションが流れていて視覚誘導は不要)。
+          // 誤タップ抑止 minHold 1200ms。 hint は minHold 経過後に出す
+          // (子供向けに視覚誘導が必要 + 音声と同時並行で混乱を避けるため初手は隠す)。
           let __tapResolve = null;
           let __tapPromise = new Promise(function(rr) {
             const armedAt = Date.now();
@@ -5226,34 +5226,35 @@ async function playOpeningCinematic() {
             __tapResolve = _opAdvanceResolve;
           });
 
+          // minHold 経過後に hint を出す (タップで進められることを視覚提示)
+          let __hintTimerId = setTimeout(function() {
+            if (!_opCancelled) _opShowTapHint();
+          }, 1200);
+
           await new Promise(function(resolve) {
-            let done = false; let timeoutId = null; let pollId = null;
+            let done = false; let pollId = null;
             function finish() {
               if (done) return;
               done = true;
               if (pollId) { clearInterval(pollId); pollId = null; }
-              if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+              if (__hintTimerId) { try { clearTimeout(__hintTimerId); } catch (_) {} __hintTimerId = null; }
               // Tap arm を解除 (もし未解決なら release)
               if (_opAdvanceResolve === __tapResolve) _opAdvanceResolve = null;
               resolve();
             }
-            // Fix 1: セグメント 1 を「ふくろうの はかせが すんでいます。」が終わるまで保持。
-            // 17.45s 音源で約 11s。 duration*0.62 と 11s の遅い方を採用。フォールバック 12s。
-            timeoutId = setTimeout(finish, 12000);
+            // cancellation poller (タップ or skip ボタンで _opCancelled = true)
             pollId = setInterval(function() {
               if (_opCancelled) { finish(); return; }
-              if (audio && audio.duration && audio.currentTime >= Math.max(audio.duration * 0.62, 11.0)) finish();
             }, 100);
-            // Tap が来たらその時点で finish (ただし minHold は _opOnRootTap 内で守られる)
+            // Tap が来たら finish (ただし minHold は _opOnRootTap 内で守られる)
             __tapPromise.then(finish);
           });
-          // 念のため: 音声を skip (音声完了を待たず seg2 へ進むのでタップ時はナレ音声を停止)
-          // ただし audio が ended 近傍だと不要なので、currentTime <= duration*0.62 のときのみ。
+          _opHideTapHint();
+          // ナレ音声がまだ流れていれば停止 (重ね再生・残響回避)
           try {
-            if (audio && audio.duration && audio.currentTime < audio.duration * 0.62) {
-              // ユーザがタップで進んだ → 音声も止める (重ね再生回避)
+            if (audio && !audio.ended) {
               audio.pause();
-              audio.currentTime = audio.duration; // ended 状態にして次の audio.ended 待ちを即抜けさせる
+              audio.currentTime = audio.duration || 0;
               try { audio.dispatchEvent(new Event('ended')); } catch (_) {}
             }
           } catch (_) {}
@@ -5280,9 +5281,9 @@ async function playOpeningCinematic() {
           }
         }
 
-        // 音声 ended まで (or 安全上限 or タップ) 待機。
-        // ここで tap-advance も並行 arm する。 tap が来たら音声を pause して即抜ける。
-        // segment 2 の表示はすでに完了しているのでタップ進行 hint も出す (子供向け)。
+        // segment 2 表示中はユーザータップ (or キャンセル) でのみ次パネルへ進む。
+        // 2026-05-07 仕様変更: auto-advance (audio.ended / 16s タイムアウト) は廃止。
+        // 音声は流れたまま (ended でも放置) ユーザの読了タップを待つ。
         let __seg2TapResolve = null;
         const __seg2TapPromise = new Promise(function(rr) {
           _opAdvanceArmedAt = Date.now();
@@ -5296,32 +5297,24 @@ async function playOpeningCinematic() {
         // hint をフェードイン (segment 2 のテキストと同時、画面下中央)
         _opShowTapHint();
 
-        if (audio) {
-          await new Promise(function(resolve) {
-            let done = false; let timeoutId = null; let pollId = null;
-            function finish() {
-              if (done) return;
-              done = true;
-              if (pollId) { clearInterval(pollId); pollId = null; }
-              if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
-              resolve();
-            }
-            // Guard: audio may already have ended (e.g. clip shorter than seg-1 wait window).
-            if (!audio || audio.ended) {
-              finish();
-            } else {
-              audio.addEventListener('ended', finish, { once: true });
-              timeoutId = setTimeout(finish, 16000);
-              pollId = setInterval(function() {
-                if (_opCancelled) finish();
-              }, 200);
-            }
-            // Tap arm: tap が来たら finish (= 音声完了扱いで抜ける)
-            __seg2TapPromise.then(function() {
-              try { if (audio && !audio.ended) { audio.pause(); } } catch (_) {}
-              finish();
-            });
+        await new Promise(function(resolve) {
+          let done = false; let pollId = null;
+          function finish() {
+            if (done) return;
+            done = true;
+            if (pollId) { clearInterval(pollId); pollId = null; }
+            resolve();
+          }
+          pollId = setInterval(function() {
+            if (_opCancelled) finish();
+          }, 100);
+          // Tap が来たら finish (ナレ音声を止めて次パネルへ)
+          __seg2TapPromise.then(function() {
+            try { if (audio && !audio.ended) { audio.pause(); } } catch (_) {}
+            finish();
           });
+        });
+        if (audio) {
           _opActiveAudio = null;
           // Restore BGM after narration.
           try {
@@ -5329,20 +5322,13 @@ async function playOpeningCinematic() {
               bgmGain.gain.setTargetAtTime(__opOrigBgm, audioCtx.currentTime, 0.35);
             }
           } catch (e) {}
-        } else {
-          // 音声が取れなかった場合は ~10s 確保 (タップでも抜ける)
-          let __tappedNoAudio = false;
-          __seg2TapPromise.then(function() { __tappedNoAudio = true; });
-          for (let t = 0; t < 50 && !_opCancelled && !__tappedNoAudio; t++) {
-            await new Promise(function(r) { setTimeout(r, 200); });
-          }
         }
         // Tap arm を解除 (まだ tap が来ていない場合)
         if (_opAdvanceResolve === __seg2TapResolve) _opAdvanceResolve = null;
         _opHideTapHint();
-        // Fix 2: ナレーション後の 2 秒の余韻 (Panel 2 のはかせ発話前に呼吸を入れる)
-        // ここはタップ干渉なしで短く保つ (画面遷移演出のための「呼吸」)
-        for (let __t = 0; __t < 20 && !_opCancelled; __t++) {
+        // Fix 2: ナレーション後の 0.4 秒の短い余韻 (Panel 2 のはかせ発話前の呼吸)
+        // タップで進めた直後なので長すぎると体感が悪い → 旧 2s から短縮。
+        for (let __t = 0; __t < 4 && !_opCancelled; __t++) {
           await new Promise(function(r) { setTimeout(r, 100); });
         }
       } else if (panel.kind === 'dialogue') {
@@ -5444,15 +5430,13 @@ async function playOpeningCinematic() {
           if (dialogueEl) dialogueEl.textContent = '';
           await _opTypeInto('op-dialogue-text-single', d.text, isHakase ? 'owl' : 'pono');
           if (_opCancelled) break;
-          // Tap-to-advance + auto-advance hybrid:
+          // Tap-to-advance only (2026-05-07 仕様変更: auto-advance 廃止):
           // typing 完了直後に minHold 800ms (誤タップ抑止) → hint をフェードイン →
-          // 「タップ」 or 「textLen × 150 + 2000ms (最低 3s)」のどちらか早い方で次へ。
-          // 子供 (3-6 歳) の読書速度に対応するため auto は textLen ベースで余裕を持たせる。
-          const __dlen = (d && d.text) ? d.text.length : 0;
+          // ユーザータップ (or 全体スキップ) でのみ次の line / panel へ進む。
+          // 旧 textLen × 150ms ベースの auto fallback は撤去。 子供が読み終わる前に
+          // 勝手に進まない (= 「読まないと進めない」) 安全側の挙動に統一。
           await _opWaitForAdvance({
             minHold: 800,
-            textLen: __dlen,
-            // maxWait は明示しない → textLen ベース自動計算 (textLen*150 + 2000, 最低 3000)
             showHint: true
           });
         }
