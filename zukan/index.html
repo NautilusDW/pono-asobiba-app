@@ -1346,7 +1346,12 @@ SCREEN_HOOKS.mapselect = {
     msUpdateAreaInfo();
     msUpdateDecideBtn();
   },
-  onLeave() {}
+  onLeave() {
+    // defensive: hide sign / silhouettes panel on screen change so
+    // residual state never leaks into the next screen reactivation.
+    msSelectedAreaId = null;
+    msUpdateAreaInfo();
+  }
 };
 function msRenderHotspots() {
   const wrap = document.getElementById('msMapWrap');
@@ -1378,9 +1383,6 @@ function msRenderHotspots() {
     pctRect(btn, area.worldHotspot);
     btn.addEventListener('click', function () {
       msSelectedAreaId = area.id;
-      // refresh selected styles
-      wrap.querySelectorAll('.ms-hotspot').forEach(b =>
-        b.classList.toggle('selected', b.dataset.areaId === area.id));
       // sync overlay highlight (only areas with worldHighlight have overlays)
       wrap.querySelectorAll('.ms-area-overlay').forEach(o =>
         o.classList.toggle('is-active', o.dataset.areaId === area.id));
