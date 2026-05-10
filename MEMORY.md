@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T09:12:22Z - ローカル editor Export JSON (op-layout-2026-05-10-04-35-54.json) を saved-layout.json __op_layout (B/C/D) に反映 (218 keys 完全温存) + sw v907 バンプ
+- **タスク**: ローカル editor Export JSON (op-layout-2026-05-10-04-35-54.json) を saved-layout.json __op_layout (B/C/D) に反映 (218 keys 完全温存) + sw v907 バンプ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 92
+- **エラー数**: 8
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 46, "Bash": 28, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T09:08:31Z - editor ヘッダ整理: 17 ボタン → 3 ドロップダウン化 (📥 Export / 📤 Import / 📡 配信) + isStagingOrigin allowlist 化 (staging URL 限定、 production / ローカル非表示) + cross-review HIGH/MEDIUM 3 件解消 (sw v906)
 - **タスク**: editor ヘッダ整理: 17 ボタン → 3 ドロップダウン化 (📥 Export / 📤 Import / 📡 配信) + isStagingOrigin allowlist 化 (staging URL 限定、 production / ローカル非表示) + cross-review HIGH/MEDIUM 3 件解消 (sw v906)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 35, "Bash": 20, "Grep": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T03:04:48Z - quizland-op (Q 案): saved-layout.json __op_layout 新キー追加 (立ち絵+対話+ナレ全部 per-VC) + editor 4 ボタン拡張 (📡/⟳/💾/📂、新旧 schema 両対応) + runtime _opApplyLayoutOverride 追加 (panel 切替時 inline style 注入 + finally 全クリア、後方互換 __op_narration 温存)
-- **タスク**: quizland-op (Q 案): saved-layout.json __op_layout 新キー追加 (立ち絵+対話+ナレ全部 per-VC) + editor 4 ボタン拡張 (📡/⟳/💾/📂、新旧 schema 両対応) + runtime _opApplyLayoutOverride 追加 (panel 切替時 inline style 注入 + finally 全クリア、後方互換 __op_narration 温存)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 66
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 32, "Bash": 20, "Grep": 6}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
