@@ -24,6 +24,10 @@ type: feature
 | search | 既存 Layer 1〜8 (`outer-bg`, `safe-area`, `field-bg`, `window-frame`, `progress-badge`, `hint-panel`, `pono-guide`, `discovery-overlay`) | データ駆動 (zukan-data.js) + 30s キラキラ + スタンプ演出 + owl コメント |
 | collection | `assets/zukan/collection/book_open.png` + 4 タブ + 3×3 グリッド | localStorage 永続化、シルエット/カラー切替、全 36 匹で「すべて あつめたよ！」バッジ |
 
+## screen-mapselect 補足
+
+- **エリアハイライト**: world_map と同サイズの透過 PNG (`assets/zukan/map/highlight/<area>.png`) を `worldHighlight` フィールドで指定し、選択時に `<img class="ms-area-overlay">` を全画面オーバーレイ + brightness/drop-shadow パルスで発光。**現在は花の小道のみ素材ありで実装、他 3 エリアは透過素材待ち**。
+
 ## データ層
 
 `zukan/data/zukan-data.js` (window.ZUKAN_DATA + ヘルパ):

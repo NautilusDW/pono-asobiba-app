@@ -230,6 +230,33 @@ body[data-screen="collection"] #screen-collection {
   background: #cfe7d4;
   box-shadow: var(--soft-shadow);
 }
+#screen-mapselect .ms-overlay-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+#screen-mapselect .ms-area-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+#screen-mapselect .ms-area-overlay.is-active {
+  opacity: 1;
+  filter: brightness(1.25) drop-shadow(0 0 18px rgba(255, 220, 120, 0.85));
+  animation: msAreaPulse 1.6s ease-in-out infinite;
+}
+@keyframes msAreaPulse {
+  0%, 100% { filter: brightness(1.20) drop-shadow(0 0 12px rgba(255, 220, 120, 0.70)); }
+  50%      { filter: brightness(1.40) drop-shadow(0 0 28px rgba(255, 235, 150, 1.00)); }
+}
 #screen-mapselect .ms-hotspot {
   position: absolute;
   background: transparent;
@@ -238,6 +265,7 @@ body[data-screen="collection"] #screen-collection {
   cursor: pointer;
   border-radius: 16px;
   transition: box-shadow 0.2s ease;
+  z-index: 2;
 }
 #screen-mapselect .ms-hotspot.selected {
   box-shadow:
@@ -1050,6 +1078,7 @@ body[data-screen="collection"] #screen-collection {
     <div class="ms-map-wrap" id="msMapWrap">
       <img class="ms-map-img" src="../assets/zukan/map/world_map.png" alt=""
            onerror="this.style.display='none';">
+      <div class="ms-overlay-layer" id="msOverlayLayer" aria-hidden="true"></div>
       <!-- hotspots are injected -->
     </div>
 
@@ -1291,6 +1320,22 @@ function msRenderHotspots() {
   const wrap = document.getElementById('msMapWrap');
   // remove existing hotspots
   wrap.querySelectorAll('.ms-hotspot').forEach(n => n.remove());
+  // refresh overlay images (only for areas that have a worldHighlight asset)
+  const overlayLayer = document.getElementById('msOverlayLayer');
+  if (overlayLayer) {
+    overlayLayer.replaceChildren();
+    (DATA.areas || []).forEach(function (area) {
+      if (!area.worldHighlight) return;
+      const ov = document.createElement('img');
+      ov.className = 'ms-area-overlay';
+      ov.dataset.areaId = area.id;
+      ov.src = area.worldHighlight;
+      ov.alt = '';
+      ov.draggable = false;
+      ov.onerror = function () { this.style.display = 'none'; };
+      overlayLayer.appendChild(ov);
+    });
+  }
   for (const area of DATA.areas) {
     if (!area.worldHotspot) continue;
     const btn = document.createElement('button');
@@ -1304,6 +1349,9 @@ function msRenderHotspots() {
       // refresh selected styles
       wrap.querySelectorAll('.ms-hotspot').forEach(b =>
         b.classList.toggle('selected', b.dataset.areaId === area.id));
+      // sync overlay highlight (only areas with worldHighlight have overlays)
+      wrap.querySelectorAll('.ms-area-overlay').forEach(o =>
+        o.classList.toggle('is-active', o.dataset.areaId === area.id));
       msUpdateMemo();
       msUpdateDecideBtn();
     });

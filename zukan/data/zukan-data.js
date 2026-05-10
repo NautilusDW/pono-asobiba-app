@@ -12,6 +12,10 @@ window.ZUKAN_DATA = {
       innerSpotImg: "../assets/zukan/innermap/spot_flower_path.png",
       // world_map.png 内での hotspot 比率 (右上エリア)。実装エディタ調整前の暫定値
       worldHotspot: { x: 0.55, y: 0.10, w: 0.40, h: 0.40 },
+      // world_map.png と同じ寸法 (1463x897) の透過 PNG。
+      // 花の小道部分のみ絵柄、他は完全透明。 全画面オーバーレイで世界地図の上に
+      // ぴったり重ねて発光させる。
+      worldHighlight: "../assets/zukan/map/highlight/flower_path.png",
       silhouettes: [
         "../assets/zukan/map/silhouettes/flower_path_1.png",
         "../assets/zukan/map/silhouettes/flower_path_2.png",
