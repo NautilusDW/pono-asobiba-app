@@ -55,6 +55,8 @@ window.ZUKAN_DATA = {
       innerSpotImg: "../assets/zukan/innermap/spot_mushroom_forest.png",
       // 右下
       worldHotspot: { x: 0.55, y: 0.50, w: 0.40, h: 0.45 },
+      // world_map.png と同寸 (1463x897) の透過 PNG。きのこの森のみ絵柄。
+      worldHighlight: "../assets/zukan/map/highlight/mushroom_forest.png",
       silhouettes: [
         "../assets/zukan/map/silhouettes/mushroom_forest_1.png",
         "../assets/zukan/map/silhouettes/mushroom_forest_2.png",
@@ -94,6 +96,8 @@ window.ZUKAN_DATA = {
       innerSpotImg: "../assets/zukan/innermap/spot_sunlit_forest.png",
       // 左上
       worldHotspot: { x: 0.05, y: 0.10, w: 0.45, h: 0.40 },
+      // world_map.png と同寸 (1463x897) の透過 PNG。こもれびの森のみ絵柄。
+      worldHighlight: "../assets/zukan/map/highlight/sunlit_forest.png",
       silhouettes: [
         "../assets/zukan/map/silhouettes/sunlit_forest_1.png",
         "../assets/zukan/map/silhouettes/sunlit_forest_2.png",
@@ -133,6 +137,8 @@ window.ZUKAN_DATA = {
       innerSpotImg: "../assets/zukan/innermap/spot_dew_pond.png",
       // 左下
       worldHotspot: { x: 0.05, y: 0.50, w: 0.45, h: 0.45 },
+      // world_map.png と同寸 (1463x897) の透過 PNG。しずくの池のみ絵柄。
+      worldHighlight: "../assets/zukan/map/highlight/dew_pond.png",
       silhouettes: [
         "../assets/zukan/map/silhouettes/dew_pond_1.png",
         "../assets/zukan/map/silhouettes/dew_pond_2.png",

@@ -226,9 +226,6 @@ body[data-screen="collection"] #screen-collection {
   height: 100%;
   object-fit: contain;
   display: block;
-  border-radius: 12px;
-  background: #cfe7d4;
-  box-shadow: var(--soft-shadow);
 }
 #screen-mapselect .ms-overlay-layer {
   position: absolute;
@@ -263,21 +260,49 @@ body[data-screen="collection"] #screen-collection {
   border: none;
   padding: 0;
   cursor: pointer;
-  border-radius: 16px;
-  transition: box-shadow 0.2s ease;
   z-index: 2;
 }
-#screen-mapselect .ms-hotspot.selected {
-  box-shadow:
-    0 0 0 4px rgba(255, 220, 120, 0.85),
-    0 0 24px 8px rgba(255, 200, 60, 0.55);
-  animation: msHalo 1.4s ease-in-out infinite;
+/* hotspot は overlay 発光 (.ms-area-overlay.is-active) で「選択中」を表現するため、
+   selected 時の box-shadow ハロー (旧: 薄い金色矩形) は削除。 */
+
+/* ---- 選択時の sign + silhouettes パネル (world_map 真下中央) ---- */
+#screen-mapselect .ms-area-info {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 7;
 }
-@keyframes msHalo {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(255,220,120,0.85),
-                          0 0 24px 8px rgba(255,200,60,0.55); }
-  50%      { box-shadow: 0 0 0 6px rgba(255,235,160,1),
-                          0 0 36px 14px rgba(255,200,60,0.85); }
+#screen-mapselect .ms-area-info.is-shown {
+  opacity: 1;
+}
+#screen-mapselect .ms-area-info-sign {
+  width: clamp(220px, 28vw, 360px);
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+}
+#screen-mapselect .ms-area-info-silhouettes {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+#screen-mapselect .ms-area-info-silhouettes img {
+  height: clamp(40px, 5vw, 64px);
+  width: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
 }
 
 #screen-mapselect .ms-pono {
@@ -1092,6 +1117,12 @@ body[data-screen="collection"] #screen-collection {
       </div>
     </div>
 
+    <div class="ms-area-info" id="msAreaInfo" aria-hidden="true">
+      <img class="ms-area-info-sign" id="msAreaInfoSign" alt=""
+           onerror="this.style.display='none';">
+      <div class="ms-area-info-silhouettes" id="msAreaInfoSilhouettes"></div>
+    </div>
+
     <button class="ms-decide" type="button" id="msDecideBtn" disabled>
       <img src="../assets/zukan/ui/map_decision_button.png" alt="けってい"
            onerror="this.style.display='none';
@@ -1312,6 +1343,7 @@ SCREEN_HOOKS.mapselect = {
     msSelectedAreaId = null;
     msRenderHotspots();
     msUpdateMemo();
+    msUpdateAreaInfo();
     msUpdateDecideBtn();
   },
   onLeave() {}
@@ -1353,6 +1385,7 @@ function msRenderHotspots() {
       wrap.querySelectorAll('.ms-area-overlay').forEach(o =>
         o.classList.toggle('is-active', o.dataset.areaId === area.id));
       msUpdateMemo();
+      msUpdateAreaInfo();
       msUpdateDecideBtn();
     });
     // iOS Safari: <button> 内 click 合成は問題なく届く。 親で preventDefault しない。
@@ -1373,6 +1406,38 @@ function msUpdateMemo() {
 function msUpdateDecideBtn() {
   const btn = document.getElementById('msDecideBtn');
   btn.disabled = !msSelectedAreaId;
+}
+function msUpdateAreaInfo() {
+  const info = document.getElementById('msAreaInfo');
+  const signImg = document.getElementById('msAreaInfoSign');
+  const silWrap = document.getElementById('msAreaInfoSilhouettes');
+  if (!info || !signImg || !silWrap) return;
+  const area = msSelectedAreaId ? findArea(msSelectedAreaId) : null;
+  if (!area) {
+    info.classList.remove('is-shown');
+    info.setAttribute('aria-hidden', 'true');
+    silWrap.replaceChildren();
+    signImg.removeAttribute('src');
+    signImg.style.display = 'none';
+    return;
+  }
+  if (area.sign) {
+    signImg.src = area.sign;
+    signImg.style.display = '';
+  } else {
+    signImg.style.display = 'none';
+  }
+  silWrap.replaceChildren();
+  (area.silhouettes || []).forEach(function (src) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    img.draggable = false;
+    img.onerror = function () { this.style.display = 'none'; };
+    silWrap.appendChild(img);
+  });
+  info.classList.add('is-shown');
+  info.setAttribute('aria-hidden', 'false');
 }
 
 /* ====================================================================
