@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。 **v906+ で editor ヘッダの 17 散在ボタンを 3 ドロップダウン (📥 Export ▾ / 📤 Import ▾ / 📡 配信 ▾) に集約、 配信ドロップダウンは staging origin (`pono-asobiba-staging.ndw.workers.dev`) のみ表示する allowlist 方式で、 ローカル開発 (file:// / localhost / 私有 IP / ::1) と production (`pono.kodama-no-mori.com`) では非表示** — production は GH_BRANCH='develop' hardcode の誤配信防止。 **v908+ で 4 つの即時バグ (赤文字 / 改行崩れ / 立ち絵消失 / race) を一括修正、 inline style を 「reset → set」 の対称パターンに統一 + 起動時に saved-layout.json を `cache: 'no-store'` で同期 fetch して LayoutSystem race を guard、 ハードリロードでも結果が安定**。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。 **v906+ で editor ヘッダの 17 散在ボタンを 3 ドロップダウン (📥 Export ▾ / 📤 Import ▾ / 📡 配信 ▾) に集約、 配信ドロップダウンは staging origin (`pono-asobiba-staging.ndw.workers.dev`) のみ表示する allowlist 方式で、 ローカル開発 (file:// / localhost / 私有 IP / ::1) と production (`pono.kodama-no-mori.com`) では非表示** — production は GH_BRANCH='develop' hardcode の誤配信防止。 **v908+ で 4 つの即時バグ (赤文字 / 改行崩れ / 立ち絵消失 / race) を一括修正、 inline style を 「reset → set」 の対称パターンに統一 + 起動時に saved-layout.json を `cache: 'no-store'` で同期 fetch して LayoutSystem race を guard、 ハードリロードでも結果が安定**。 **v909+ でローカル editor を「編集 + Export 専用」に純化: ローカル origin (file:// / localhost / 私有 IP) で 📂 Import ドロップダウンを物理 DOM 非表示 (isServerOrigin allowlist) + 新ボタン 📋 「JSON のみクリップボード」 で `pono-op-layout-v1` schema を 1 クリックコピー、 ローカル編集 → AI チャット貼付け → orchestrator が saved-layout.json マージ + commit + auto push → staging 反映の片道フローを確立、 ローカル localStorage を外部 JSON で破壊する経路を物理消滅**。
 type: project
 ---
 
@@ -651,6 +651,67 @@ if (!isStagingOrigin()) {
 
 - **inline style は CSS デフォルトに対する追加** ではなく、 **独立した上書きレイヤー** として扱うべき。 「set した側が責任を持って reset する」 を関数境界で徹底
 - **async init の race は同期 fetch + cache: 'no-store' で潰す**。 `await` を 1 行追加するだけで一貫性が出る (今回は 50ms 程度の追加遅延、 子供向け PWA で許容範囲)
+
+## ローカル editor 純化 + クリップボード Export 追加 (sw v909+)
+
+ローカル editor を「**編集 + Export 専用**」に純化し、 saved-layout.json への書き込みは
+**orchestrator (AI) 経由に統一**する設計。 ローカル localStorage が外部 JSON で踏み潰される
+経路を物理消滅させ、 ローカル → staging を完全片道に。
+
+### Phase 1: ローカル origin で 📂 Import ドロップダウンを物理 DOM 非表示
+
+- `isServerOrigin()` を新設 (allowlist 方式、 アロー関数で `isStagingOrigin` と style 統一):
+  - `staging` (`pono-asobiba-staging.ndw.workers.dev`)
+  - `production` (`pono.kodama-no-mori.com`)
+  - 上記 2 つだけ true、 他 (= ローカル: `file://` / `localhost` / `127.x` / RFC1918 私有 IP / `::1`) は false
+- `!isServerOrigin()` のとき `#dd-import` を `display: none` で隠す
+- 物理 DOM 非表示 = ローカル localStorage への外部 JSON 注入 UI を完全に塞ぐ
+- DevTools console から `document.getElementById('dd-import').style.display=''` で復活可
+  (コードコメントで明示、 デバッグ余地は残す)
+
+### Phase 2: 📋 JSON のみクリップボードコピーを Export に追加
+
+- 新ボタン `#dd-export-json-clip` を `#dd-export` ドロップダウン内に追加
+  ラベル: 「📋 JSON のみクリップボード (チャット貼付け用)」
+- 新関数 `exportLayoutJsonToClipboard()`:
+  - `pono-op-layout-v1` schema (Import 側と完全一致)
+  - `layout.{B,C,D}` に `buildRuntimeOpLayout(vc)` を入れる (= 立ち絵 + 対話 + ナレ全 variant)
+  - `JSON.stringify(payload, null, 2)` を `navigator.clipboard.writeText` でコピー
+  - 成功時 toast に文字数表示、 失敗時 err toast (clipboard API 不可環境対策)
+
+### Cross-review fix (HIGH-1)
+
+- `isServerOrigin` を `function` 宣言ではなくアロー関数 (`const isServerOrigin = () => { ... }`)
+  に統一 → 直前で定義済の `isStagingOrigin` (アロー) と style 整合、 strict mode で hoist
+  順序を意識せずに済む
+
+### ワークフロー (新)
+
+```
+ローカル editor で編集
+  ↓ 📋 (or 📄 JSON ファイル) で 1 クリック
+クリップボード or ダウンロード JSON
+  ↓ チャット貼付け or ファイルパス共有
+orchestrator (AI) が saved-layout.json マージ
+  ↓ commit + post-commit hook で auto push
+develop ブランチ → staging に自動反映
+  ↓ ユーザー明示「本番に反映して」
+master merge (二段階確認後) → production
+```
+
+### 設計上の不変条件
+
+- **ローカル → サーバへの逆同期経路は無し**: orchestrator は `saved-layout.json` だけを
+  触り、 ローカル端末の localStorage には**触れない** (= 触りようが無い)
+- **ローカル localStorage は editor のテンポラリ作業領域のみ**: Export して AI に渡すまでの
+  下書き
+- **本番反映は二段階確認**: orchestrator が勝手に master merge することは絶対に無い
+
+### 効果
+
+- ローカル localStorage が外部 JSON で破壊される経路が物理消滅
+- editor を試しにいじりたい新人にも安全 (Import で誤って他人の作業を上書きできない)
+- AI 経由のアップロードフローが「コピー → 貼付け → 任せる」 の 3 ステップに圧縮
 
 ## Skip / Cancel semantics
 

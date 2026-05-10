@@ -1004,6 +1004,10 @@
       <summary title="エクスポート操作">📥 Export ▾</summary>
       <div class="hdr-dd-menu">
         <button type="button" id="dd-export-clipboard" title="現在の編集内容を CSS + JSON テキストとしてクリップボードへコピー">📋 クリップボードへ全部 (CSS + JSON)</button>
+        <button type="button" id="dd-export-json-clip"
+          title="現在の B/C/D OP layout (立ち絵+対話+ナレ含む全 variant) を JSON 文字列としてクリップボードにコピー (チャット貼付け用)">
+          📋 JSON のみクリップボード (チャット貼付け用)
+        </button>
         <button type="button" id="dd-export-css-file" title="CSS ファイルをダウンロード">📄 CSS ファイル (.css)</button>
         <button type="button" id="dd-export-json-file" title="現在の B/C/D OP layout (立ち絵+対話+ナレ含む全 variant) を JSON ファイルにダウンロード (origin 跨ぎでの移植用)">📄 JSON ファイル (.json)</button>
         <button type="button" id="dd-export-scenario" title="OP_PANELS の JS リテラルをクリップボードへコピー">📜 シナリオ (OP_PANELS) をクリップボード</button>
@@ -2351,6 +2355,29 @@ function exportNarrationJson() {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast('OP layout JSON エクスポート');
+}
+
+// JSON のみクリップボードコピー (チャット貼付け用)。
+// exportNarrationJson とほぼ同じ payload を生成するが、 ファイル DL ではなく
+// navigator.clipboard.writeText で直接コピーする。
+async function exportLayoutJsonToClipboard() {
+  const payload = {
+    schema: 'pono-op-layout-v1',
+    exportedAt: new Date().toISOString(),
+    layout: {
+      B: buildRuntimeOpLayout('B'),
+      C: buildRuntimeOpLayout('C'),
+      D: buildRuntimeOpLayout('D'),
+    }
+  };
+  const text = JSON.stringify(payload, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('OP layout JSON をクリップボードにコピー (' + text.length + ' chars)');
+  } catch (e) {
+    console.warn('[op-layout-editor] clipboard write failed:', e);
+    toast('クリップボードコピー失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+  }
 }
 
 // 2026-05-10 (Q 案): 新旧 schema 両対応で立ち絵+対話+ナレ全部を import する。
@@ -5196,6 +5223,7 @@ function buildHeader() {
   _bindDd('dd-export-css-file', () => download('css'));
   // JSON ファイル: 旧 btn-export-narration-json (origin 跨ぎでの全 variant 移植用) を採用
   _bindDd('dd-export-json-file', exportNarrationJson);
+  _bindDd('dd-export-json-clip', exportLayoutJsonToClipboard);
   _bindDd('dd-export-scenario', exportScenario);
   // 📤 Import ドロップダウン
   const ddImpFile = document.getElementById('dd-import-json-file');
@@ -5230,6 +5258,26 @@ function buildHeader() {
   if (!isStagingOrigin()) {
     const ddPub = document.getElementById('dd-publish');
     if (ddPub) ddPub.style.display = 'none';
+  }
+  // ローカル origin (file:// / localhost / LAN IP) では 📂 Import ドロップダウンも隠す。
+  // Import 機能はサーバ origin (staging / production) でのみ意味があり、 ローカルでは
+  // editor 単体で動作確認する用途のため、 不要 UI を消してすっきりさせる。
+  // staging / production のみ true。 それ以外 (= ローカル) は false。
+  const isServerOrigin = () => {
+    try {
+      const h = window.location.hostname;
+      return h === 'pono-asobiba-staging.ndw.workers.dev' ||
+             h === 'pono.kodama-no-mori.com';
+    } catch (e) {
+      return false;
+    }
+  };
+  // ローカルで意図的に Import を使いたい場合は DevTools console から
+  //   document.getElementById('dd-import').style.display=''
+  // で復活させられる。
+  if (!isServerOrigin()) {
+    const ddImp = document.getElementById('dd-import');
+    if (ddImp) ddImp.style.display = 'none';
   }
   // ドロップダウンの相互排他: 1 つ開いたら他は閉じる + 外クリックで閉じる
   const allDd = Array.from(document.querySelectorAll('header details.hdr-dd'));
