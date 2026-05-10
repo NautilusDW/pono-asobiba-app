@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に narration seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」ボタンで現 origin の編集値を破棄して seed から再構築できる。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v901+ で saved-layout.json 配信 (B 経路) は撤去、 ローカル editor + localStorage 即時 preview のみ + 本番表示は per-VC `@media` hardcoded CSS が真の値 (CSS export を開発者が手動反映するワークフロー、 commit a70ec33 のフロー)。
 type: project
 ---
 
@@ -210,7 +210,45 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 
 設計指針: tap-hint は本来 narration の動線の一部 (「読み終わったらタップ」) なので、視覚的に narration に張り付く位置が正解。CSS だけで `narration の bottom + 12px` を表現する方法 (sibling selector / margin) は、 narration 自体が absolute / fixed 系のレイアウトに切替わった場合に破綻するため、JS で offsetTop ベースに再計算する方針を採用。
 
-## Editor → runtime narration override 配線 (sw v890+ で localStorage 経路、sw v892+ で saved-layout.json 経路追加、sw v900+ で seed 起動 fallback + 復元ボタン)
+## 運用方針 (sw v901+ で B 経路撤去)
+
+**現在の正規ワークフロー (2026-05-10〜)**:
+
+1. ローカルで `tools/op-layout-editor.html` を開いて narration の lineHeight / padding / fontSize / width / height / 位置 / bg / border を調整。 編集値は同 origin の `localStorage[STORAGE_PREFIX+vc]` および `localStorage[NARRATION_RUNTIME_PREFIX+vc]` に即時保存 (debounce 200ms)。
+2. **同 origin で `quizland/index.html` を開いて OP を再生 → preview 確認**。 `_opLoadNarrationOverride(vc)` が `localStorage[NARRATION_RUNTIME_PREFIX+vc]` から snapshot を読み、 `_opApplyNarrationOverride` が inline style として注入する。
+3. 値が確定したら editor の **`CSS DL` ボタン** (`btn-export-css`、`buildCSS()`) で `.op-narration` per-VC `@media` CSS を出力。
+4. **開発者が手動で `quizland/index.html` の per-VC `@media` セクション (~L2552 / L2622 / L2692 周辺) に反映** → commit (commit a70ec33 のフロー)。
+5. 全端末・全ユーザへの反映は CSS hardcoded の deploy によってのみ実現。 `.op-narration` の値はソースコードに 1 箇所しかない (= 真の値が明確)。
+
+### Editor 経路 (localStorage、同 origin 内 preview 専用)
+
+- editor の `save(vc)` が STORAGE_PREFIX 全 state と `NARRATION_RUNTIME_PREFIX+vc` の runtime snapshot の **2 つを書き込む** (後者は `buildRuntimeNarration(vc)` で抽出した最小フィールド)。
+- 別 origin (例: ローカルで編集 → staging で開く) で開いた場合は `localStorage[NARRATION_RUNTIME_PREFIX+vc]` が空なので `_opLoadNarrationOverride` は null を返し、 CSS デフォルト (= per-VC `@media` hardcoded、 = 本番表示の真の値) にフォールバックする。 これは仕様 (= 別 origin で別の編集値を見たいなら editor で再調整するか、 CSS export → 手動反映 → deploy のサイクルを回す)。
+- 異 origin に編集値を共有する自動経路は無い (旧 B 経路 = saved-layout.json `__op_narration` は撤去済み)。
+
+### 反映側 (runtime / `quizland/index.html`、 sw v901+ の挙動)
+
+- `_opGetCurrentVC()`: `matchMedia` で 'D' / 'C' / 'B' / null を返す (旧来通り)。
+- `_opLoadNarrationOverride(vc)`: **2 段優先で snapshot を返す** (sw v900 までの 3 段から簡素化):
+  1. `localStorage[NARRATION_RUNTIME_PREFIX + vc]` を JSON.parse (同 origin 内 preview)
+  2. 無ければ null (CSS デフォルト温存)
+- `_opApplyNarrationOverride(narrEl)`: 旧来通り (snapshot のソースが localStorage のみに変わるだけ)。
+- `_opGetCurrentVC` / `_opApplyNarrationOverride` / `playOpeningCinematic` の `finally` での inline style クリアは温存。
+
+## (廃止) Editor → runtime narration override 配線 (sw v890+ で localStorage 経路、sw v892+ で saved-layout.json 経路追加、sw v900+ で seed 起動 fallback + 復元ボタン) — sw v901 で B 経路を撤去
+
+> **【廃止】 sw v901 (2026-05-10) で saved-layout.json 経由の B 経路は完全撤去**。
+> 撤去理由: localStorage が origin スコープのため「ローカルで作った値を staging で見せる」「別端末で同じ値で開く」の整合性が破綻し、 ユーザー UX が混乱。 加えて publish ボタンは GitHub auth が必要で常用に向かず、 「⟳ 復元」と publish の操作順を間違えるとデータロスの危険があった。 → CSS hardcoded 1 本にして「真の値はソースコードに 1 箇所」に統一する方針に再変更。
+>
+> 撤去された API:
+> - `_ghContentsUrl` / `_ghGetSavedLayout` / `_ghPutSavedLayout`
+> - `publishNarrationToSavedLayout` (📡 GitHub 配信 ボタン)
+> - `restoreNarrationFromSavedLayout` (⟳ 復元 ボタン)
+> - `_seedOpNarration` キャッシュ + `fetchSeedOpNarration` + `applySeedToNarration`
+> - `quizland/saved-layout.json` の top-level `__op_narration` キー (218 keys 温存、 1 key 削除)
+> - `quizland/index.html` `_opLoadNarrationOverride` の `window._currentLayoutData.__op_narration[vc]` 参照
+>
+> 以下の説明は当時の記録として残置 (history)。
 
 `tools/op-layout-editor.html` で編集した narration の `lineHeight` / `padding` / `fontSize` / `width` / `height` / 位置 / `bg` / `border` を runtime に反映する経路。**localStorage (A 経路、自端末のみ)** と **saved-layout.json 経由の GitHub 配信 (B 経路、全端末配信)** の 2 系統を併用し、runtime は 3 段優先で適用する:
 
