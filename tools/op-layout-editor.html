@@ -1130,7 +1130,10 @@ const PONO_VARIANTS = [
   // 2026-05-10: pono_001 (中立立ち姿) — はかせ発話中の聞き役ポノ。OP_PANELS の
   // hakase line 側で使用される (Panel 2-5 の pono_001.webp 参照)。 editor 上でも
   // per-variant 位置設定の対象にする (5 ポーズと同じ slot 設定スキーマ)。
-  { name: 'pono_001', path: '../assets/images/characters/pono/dance/pono_001.webp' }
+  { name: 'pono_001', path: '../assets/images/characters/pono/dance/pono_001.webp' },
+  // 2026-05-09: dance_wave — 本番資産 (commit b76d92b) として追加済。 editor 側でも
+  // 標準 variant として認識させ、 Export 時の userAdded 警告を防ぐ。
+  { name: 'dance_wave', path: '../assets/images/characters/pono/dance/dance_wave.webp' }
 ];
 
 const FRAME_IMAGES = [
@@ -1847,7 +1850,7 @@ function migrateFrameIds(parsed) {
       // 2026-05-10: pono_001 (中立立ち姿) も backfill 対象に追加。 既存 user の state に
       // pono_001 が無くても baseSlot 値で補完される (= 既存 5 variant への影響なし、
       // 一方向マイグレーション)。
-      ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp', 'pono_001'].forEach(v => {
+      ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp', 'pono_001', 'dance_wave'].forEach(v => {
         if (!side.perVariant[v] || typeof side.perVariant[v] !== 'object') {
           side.perVariant[v] = Object.assign({}, baseSlot);
         } else {
