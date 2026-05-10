@@ -1762,31 +1762,31 @@
     },
     "D": {
       "pono": {
-        "slotW": 380,
-        "slotH": 816,
-        "slotOffsetX": 154,
-        "slotOffsetY": -116,
+        "slotW": 728,
+        "slotH": 800,
+        "slotOffsetX": 168,
+        "slotOffsetY": -29,
         "slotAspect": "fixed_0.75",
         "objectPosition": "bottom",
         "perVariant": {
           "dance_hi": {
-            "slotW": 560,
-            "slotH": 800,
+            "slotW": 602,
+            "slotH": 816,
             "slotOffsetX": 168,
-            "slotOffsetY": -116,
+            "slotOffsetY": -81,
             "slotAspect": "fixed_0.75",
             "objectPosition": "bottom"
           },
           "dance_hooray": {
-            "slotW": 560,
+            "slotW": 728,
             "slotH": 800,
             "slotOffsetX": 168,
-            "slotOffsetY": -151,
+            "slotOffsetY": -29,
             "slotAspect": "fixed_0.75",
             "objectPosition": "bottom"
           },
           "dance_smile": {
-            "slotW": 560,
+            "slotW": 552,
             "slotH": 800,
             "slotOffsetX": 168,
             "slotOffsetY": -151,
@@ -1802,15 +1802,23 @@
             "objectPosition": "bottom"
           },
           "think_chin_clasp": {
-            "slotW": 380,
-            "slotH": 816,
+            "slotW": 461,
+            "slotH": 740,
             "slotOffsetX": 154,
-            "slotOffsetY": -116,
+            "slotOffsetY": -12,
             "slotAspect": "fixed_0.75",
             "objectPosition": "bottom"
           },
           "pono_001": {
-            "slotW": 380,
+            "slotW": 532,
+            "slotH": 816,
+            "slotOffsetX": 154,
+            "slotOffsetY": -47,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "dance_wave": {
+            "slotW": 519,
             "slotH": 816,
             "slotOffsetX": 154,
             "slotOffsetY": -116,
@@ -1843,7 +1851,7 @@
         "textAlignV": "center",
         "labelAnchor": "tl",
         "labelInside": true,
-        "labelOffsetX": 140,
+        "labelOffsetX": 105,
         "labelOffsetY": 98,
         "labelFontSize": 48
       },
