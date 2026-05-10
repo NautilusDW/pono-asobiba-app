@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ポノのもりのずかん 内側マップ ─ 位置調整エディター</title>
+
+<!-- ────────────────────────────────────────────────────────────────
+     共通レイアウトシステム
+     - layout-shared.css   : 編集モード/再生モード共通の見た目
+     - editor-bootstrap.js : layout-applier → layout-system → page-nav を
+                              直列ロードし、 EditorBootstrapConfig で起動
+     パスは zukan/preview/innermap/ から root まで 3 階層上。
+     ──────────────────────────────────────────────────────────────── -->
+<link rel="stylesheet" href="../../../common/layout/layout-shared.css">
+<script src="../../../common/layout/editor-bootstrap.js" defer></script>
+
+<style>
+:root {
+  /* キャンバス比率: 21:9 outer / 16:9 safe area inner */
+  --canvas-w: 2100px;
+  --canvas-h: 900px;
+  --safe-w: 1600px;
+  --safe-h: 900px;
+  --safe-left: 250px;   /* (canvas-w - safe-w) / 2 */
+
+  --paper: #f9efd0;
+  --paper-2: #f5e9c4;
+  --brown: #6b4423;
+  --brown-light: #8a5a2a;
+  --green: #4a7c59;
+  --green-light: #6fa67d;
+  --cream: #fdf6e3;
+  --paper-shadow: rgba(80, 50, 10, 0.25);
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  --safe-border: rgba(0, 212, 255, 0.4);
+  --window-debug: rgba(255, 200, 80, 0.8);
+
+  --jp-font: 'Hiragino Maru Gothic ProN', 'M PLUS Rounded 1c',
+             'ヒラギノ丸ゴ ProN W4', 'Yu Gothic', 'メイリオ', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #0c0c0c;
+  color: #f0f0f0;
+  font-family: var(--jp-font);
+  font-size: 14px;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ───── Stage (21:9 outer) ─────────────────────────────────────── */
+.stage-wrap {
+  padding: 24px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stage {
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  margin: 0 auto;
+  position: relative;
+  background: #1a2a1a;
+  border: 1px dashed #555;
+  overflow: hidden;
+}
+
+/* ───── Layer 1: 21:9 outer background ─────────────────────────── */
+.outer-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  z-index: 0;
+  pointer-events: none;
+}
+.outer-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ───── Layer 2: 16:9 safe area (visible guide) ────────────────── */
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: var(--safe-left);
+  width: var(--safe-w);
+  height: var(--safe-h);
+  z-index: 1;
+  pointer-events: none;       /* リサイズハンドルが内側要素を覆わないように */
+}
+body.show-safe .safe-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--safe-border);
+  pointer-events: none;
+}
+body.show-safe .safe-area::after {
+  content: "16:9 safe area (1600×900)";
+  position: absolute;
+  top: 4px; left: 8px;
+  font-size: 11px;
+  color: var(--safe-border);
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+/* セーフエリア中心のクロスヘア (マゼンタ) ─ safe-area 境界の cyan と区別。
+   show-safe ON でのみ表示。 zukan/preview/full と同パターン。 */
+body.show-safe .safe-area {
+  background-image:
+    linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+body.show-safe .safe-area > .center-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #ff50c8;
+  border-radius: 50%;
+  background: rgba(255, 80, 200, 0.25);
+  pointer-events: none;
+  z-index: 3;
+}
+body:not(.show-safe) .center-dot { display: none; }
+
+/* ───── Layer 3: area sign (上中央) ────────────────────────────── */
+.area-sign {
+  position: absolute;
+  left: 720px;
+  top: 80px;
+  width: 360px;
+  height: 100px;
+  z-index: 4;
+  pointer-events: auto;
+}
+.area-sign img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ───── Layer 4: spot image (中央のスポット画像) ───────────────── */
+.spot-img {
+  position: absolute;
+  left: 580px;
+  top: 220px;
+  width: 720px;
+  height: 500px;
+  z-index: 3;
+  pointer-events: auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #cfe7d4;
+  box-shadow: var(--soft-shadow);
+}
+.spot-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ───── Layer 5: spot pin (スポット 1 個目のピン) ─────────────────
+ * .spot-img の子要素として配置 (画像に追従)。
+ * spot-img 720×500 基準の絶対 px 配置。
+ * 例) {x: 0.444, y: 0.44} → 320px / 220px
+ * ──────────────────────────────────────────────────────────────── */
+.spot-pin {
+  position: absolute;
+  left: 320px;
+  top: 220px;
+  width: 80px;
+  height: 80px;
+  z-index: 4;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,200,80,0.85) 0%, rgba(255,180,60,0.4) 50%, transparent 70%);
+  border: 3px solid rgba(255,255,255,0.85);
+  box-shadow: 0 0 18px rgba(255,200,80,0.65);
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #6b4423;
+  text-shadow: 0 1px 0 #fff;
+  user-select: none;
+}
+.spot-pin::after {
+  content: ""; position: absolute; inset: -8px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255,200,80,0.7);
+  animation: pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes pulse {
+  0%,100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.15); }
+}
+
+/* ───── Layer 6: back button (もどる) ──────────────────────────── */
+.back-btn {
+  position: absolute;
+  left: 280px;
+  top: 50px;
+  width: 140px;
+  height: 60px;
+  z-index: 5;
+  background: #fdf6e3; color: #6b4423;
+  border: 3px solid rgba(110,70,32,0.4); border-radius: 16px;
+  font-family: var(--jp-font); font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer; user-select: none;
+}
+
+/* ───── 編集モード時の position 上書き ─────────────────────────────
+ * layout-editor.css は `body.layout-editor-on .resizable { position: relative; }`
+ * を当てるが、本ページの内側レイヤーは絶対配置 (left/top px) で
+ * 描いているので、 そのまま relative 化されると正常な配置が崩壊する。
+ * したがって編集対象セレクタの中で「絶対配置を維持したい」要素は
+ * !important で明示的に absolute を保つ。
+ * ──────────────────────────────────────────────────────────────── */
+body.layout-editor-on .outer-bg,
+body.layout-editor-on .area-sign,
+body.layout-editor-on .spot-img,
+body.layout-editor-on .spot-pin,
+body.layout-editor-on .back-btn {
+  position: absolute !important;
+}
+
+/* ヘルプノート (編集モードのみ目立つ) */
+.help-note {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  max-width: 360px;
+  background: rgba(20, 20, 20, 0.92);
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 50;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+.help-note h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #ffd66f;
+}
+.help-note code {
+  background: #2a2a2a;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+body:not(.layout-editor-on) .help-note {
+  opacity: 0.7;
+}
+</style>
+</head>
+<body class="show-safe">
+
+<!-- 21:9 ステージ。 LayoutSystem.init 時 canvas: '#stage' で指定する。 -->
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+
+    <!-- Layer 1: 21:9 outer background -->
+    <div class="outer-bg" data-le-label="外側背景">
+      <img src="../../../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+           onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
+    </div>
+
+    <!-- Layer 2: 16:9 safe area (display-only guide) -->
+    <div class="safe-area" id="safe-area">
+      <!-- センター位置の見える化 (show-safe で表示) -->
+      <div class="center-dot" aria-hidden="true"></div>
+    </div>
+
+    <!-- Layer 3: area sign (該当エリアの看板) -->
+    <div class="area-sign" data-le-label="エリア看板">
+      <img id="area-sign-img" src="" alt=""
+           onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
+    </div>
+
+    <!-- Layer 4: spot image (エリア内スポット画像) ─ spot-pin の親 -->
+    <div class="spot-img" data-le-label="スポット画像">
+      <img id="spot-img-el" src="" alt=""
+           onerror="this.style.outline='3px dashed crimson'; this.dataset.broken='1';">
+
+      <!-- Layer 5: spot pin (スポット 1 個目のピン) -->
+      <div class="spot-pin" data-le-label="スポットピン">
+        1
+      </div>
+    </div>
+
+    <!-- Layer 6: back button (もどる) -->
+    <div class="back-btn" data-le-label="もどるボタン">
+      ← もどる
+    </div>
+
+  </div>
+</div>
+
+<!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
+<div class="help-note">
+  <h4>内側マップ 位置調整エディター</h4>
+  URL に <code>?edit=1</code> を付けると編集モード。<br>
+  URL に <code>?area=flower_path|mushroom_forest|sunlit_forest|dew_pond</code> でエリア切替 (既定 <code>flower_path</code>)。<br>
+  ドラッグでレイヤー移動、四隅でリサイズ、
+  <code>💾</code> で <code>saved-layout.json</code> に保存。<br>
+  <br>
+  <strong>本番 zukan/index.html への反映ルール:</strong><br>
+  比率 = 子要素の CSS px ÷ <code>.spot-img</code> の width / height<br>
+  ・<code>.spot-pin</code> の <code>{x, y}</code> = (px ÷ spot-img.width, ÷ spot-img.height)<br>
+  ※ <code>.spot-img</code> の寸法 (既定 720×500) を変更した場合は、寸法を再確認すること。
+</div>
+
+<script>
+/* ============================================================
+ * URL クエリ ?area=... に応じて sign / spot 画像 src を切替。
+ * 既定: flower_path
+ * ============================================================ */
+const AREA_ASSETS = {
+  flower_path: {
+    sign: '../../../assets/zukan/map/sign_flower_path.png',
+    inner: '../../../assets/zukan/innermap/spot_flower_path.png'
+  },
+  mushroom_forest: {
+    sign: '../../../assets/zukan/map/sign_mushroom_forest.png',
+    inner: '../../../assets/zukan/innermap/spot_mushroom_forest.png'
+  },
+  sunlit_forest: {
+    sign: '../../../assets/zukan/map/sign_sunlit_forest.png',
+    inner: '../../../assets/zukan/innermap/spot_sunlit_forest.png'
+  },
+  dew_pond: {
+    sign: '../../../assets/zukan/map/sign_dew_pond.png',
+    inner: '../../../assets/zukan/innermap/spot_dew_pond.png'
+  }
+};
+
+(function applyAreaAssets() {
+  const params = new URLSearchParams(window.location.search);
+  const areaKey = params.get('area') || 'flower_path';
+  const cfg = AREA_ASSETS[areaKey] || AREA_ASSETS.flower_path;
+
+  function setSrc() {
+    const signImg = document.getElementById('area-sign-img');
+    const spotImg = document.getElementById('spot-img-el');
+    if (signImg) signImg.src = cfg.sign;
+    if (spotImg) spotImg.src = cfg.inner;
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setSrc);
+  } else {
+    setSrc();
+  }
+})();
+
+/* ============================================================
+ * 編集対象セレクタ。 zukan/preview/full/ の Bezier 編集ではなく、
+ * common/layout/ の WYSIWYG (drag/resize/snap/save) を使う。
+ * ============================================================ */
+const ZK_INMAP_RESIZABLE_SELECTORS = [
+  ['.outer-bg',   'wh', '外側背景 (21:9)'],
+  ['.area-sign',  'wh', 'エリア看板'],
+  ['.spot-img',   'wh', 'スポット画像'],
+  ['.spot-pin',   'wh', 'スポットピン'],
+  ['.back-btn',   'wh', 'もどるボタン']
+];
+
+/* ============================================================
+ * editor-bootstrap.js が defer で 3 スクリプトを直列ロード後、
+ * この config を使って LayoutSystem.init を呼ぶ。 pages 省略時は
+ * page-nav.js が公開する window.PONO_PAGES が自動採用される。
+ * ============================================================ */
+window.EditorBootstrapConfig = {
+  layoutUrl: './saved-layout.json',
+  canvas: '#stage',
+  editableSelectors: ZK_INMAP_RESIZABLE_SELECTORS,
+  ghPath: 'zukan/preview/innermap/saved-layout.json',
+  // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
+};
+</script>
+</body>
+</html>

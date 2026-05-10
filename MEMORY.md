@@ -25,6 +25,7 @@
 - **Quiz Question Reveal Sequence**: [memory/feature_quiz_question_reveal_sequence.md](memory/feature_quiz_question_reveal_sequence.md) — 問題開始時の段階リビール (プレート → typewriter 問題文 → イラスト fade in → 4 択 fade in)。Q1-5 のみプレート、Q6+ は typewriter から開始、tap-to-skip で全 stage 即 revealed
 - **Quiz Framed Image Flag**: [memory/feature_quiz_framed_image_flag.md](memory/feature_quiz_framed_image_flag.md) — 背景シーン入り画像 (風景/紙風枠/草地ヴィネット等、計 32 種) は questions.js の `framed:true` / `framed_answer:true` でスロット単位に `.is-framed` を付与し共通 drop-shadow を抑止。`renderShapeName` も q.img 指定時は実物画像優先 + framed 対応済
 - **Quiz Next Button**: [memory/feature_quiz_next_button.md](memory/feature_quiz_next_button.md) — 回答後のつぎへボタン仕様。center-bottom 固定オーバーレイ + progress-num.png ピル背景 + 全 169 問で表示 (旧: 自動進行 + img_answer 限定)。`#next-btn-area` は layout-applier 非対象
+- **ポノのもりのずかん 全画面フロー (SPA)**: [memory/feature_zukan_full_flow.md](memory/feature_zukan_full_flow.md) — `zukan/index.html` を 5-screen SPA 化 (タイトル→マップ選択→エリア内マップ→探索→図鑑コレクション)。データ層 `zukan/data/zukan-data.js` (4 エリア × 1 spot × 1 animal の seed + 36 匹 collectionRoster)。素材は `assets/zukan/{title,map,innermap,collection,ui}/`。表示名/内部 ID 不一致表 + エディタパス (`zukan/preview/{investigation,innermap,full}/?edit=1`) 収録 (sw v895)
 
 ---
 
@@ -103,6 +104,58 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T00:04:52Z - agent-G review-fixer: HIGH4+MEDIUM1 (zukan誤字/touch二重発火/innerHTML脱却/stale closure/im-pinヒットエリア拡大) を修正
+- **タスク**: agent-G review-fixer: HIGH4+MEDIUM1 (zukan誤字/touch二重発火/innerHTML脱却/stale closure/im-pinヒットエリア拡大) を修正
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 62
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 30, "Glob": 4, "Bash": 10, "Agent": 10, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-09T23:56:39Z - sw.js CACHE_VERSION 894 -> 895 bump (zukan SPA + 30+ assets cache invalidation)
+- **タスク**: sw.js CACHE_VERSION 894 -> 895 bump (zukan SPA + 30+ assets cache invalidation)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 55
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 7, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-09T23:53:42Z - zukan SPA: 既存1問のしらべるロジックを5-screen SPA (title/mapselect/innermap/search/collection) に拡張、データ駆動化、キラキラ + スタンプ演出、localStorage連携
+- **タスク**: zukan SPA: 既存1問のしらべるロジックを5-screen SPA (title/mapselect/innermap/search/collection) に拡張、データ駆動化、キラキラ + スタンプ演出、localStorage連携
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 51
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 4, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-09T23:50:45Z - agent-A asset-migrator: ポノのおへや図鑑素材30件をassets/zukan/配下にsnake_caseで取り込み (silhouettesは目視確認で再マッピング)
+- **タスク**: agent-A asset-migrator: ポノのおへや図鑑素材30件をassets/zukan/配下にsnake_caseで取り込み (silhouettesは目視確認で再マッピング)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 51
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 4, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-09T23:47:45Z - OP narration seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、quizland/index.html + memory + sw v894)
 - **タスク**: OP narration seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、quizland/index.html + memory + sw v894)
 - **結果**: 成功
@@ -166,57 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 1, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T23:22:56Z - saved-layout.json 経由 narration 配信 (B 経路) 実装 + クロスレビュー HIGH fix (_ghGetSavedLayout parse 失敗時のデータロス防止) + Q82 つばめ choice 画像差し替え (静止姿) (sw v892)
-- **タスク**: saved-layout.json 経由 narration 配信 (B 経路) 実装 + クロスレビュー HIGH fix (_ghGetSavedLayout parse 失敗時のデータロス防止) + Q82 つばめ choice 画像差し替え (静止姿) (sw v892)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 35
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 16, "Bash": 12}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T23:22:35Z - B経路実装(saved-layout.json narration 配信) + Q82つばめ画像差し替え + sw v892 + memory更新 + commit
-- **タスク**: B経路実装(saved-layout.json narration 配信) + Q82つばめ画像差し替え + sw v892 + memory更新 + commit
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 34
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 16, "Bash": 11}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T14:04:54Z - quizland OP: tap-hint を narration 直下に動的追従 + editor (op-layout-editor) で設定した narration の lineHeight/padding/位置/bg を runtime に反映 (localStorage 経由) + cross-review 5 件反映 (sw v890)
-- **タスク**: quizland OP: tap-hint を narration 直下に動的追従 + editor (op-layout-editor) で設定した narration の lineHeight/padding/位置/bg を runtime に反映 (localStorage 経由) + cross-review 5 件反映 (sw v890)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 15
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 8, "Bash": 5}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T14:00:55Z - quizland index.html cross-review 5 fixes (HIGH 4 + MEDIUM 1)
-- **タスク**: quizland index.html cross-review 5 fixes (HIGH 4 + MEDIUM 1)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 10
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 7, "Bash": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

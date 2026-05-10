@@ -3,19 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ポノのもりのずかん - しらべる</title>
+<title>ポノのもりのずかん</title>
+<script src="data/zukan-data.js"></script>
 <style>
 /* ====================================================================
- * ポノのもりのずかん 調査画面
- *  Layer 1: 21:9 outer background (fixed, full viewport)
- *  Layer 2: 16:9 safe area (centered, max-fit)
- *  Layer 3a: .field-bg  (picture content + 隠れパーツ + hotspot を含む)
- *  Layer 3b: .window-frame (装飾木枠、独立した兄弟レイヤー)
- *  Layer 4: hidden animal part (.field-bg の子, positioned by ratio)
- *  Layer 5: hotspot (.field-bg の子, transparent button, ratio-based)
- *  Layer 6: hint panel (right side)
- *  Layer 7: pono guide (bottom-left)
- *  Layer 8: discovery popup (overlay, hidden by default)
+ * ポノのもりのずかん SPA
+ *  Screens:
+ *    - screen-title       タイトル画面
+ *    - screen-mapselect   ワールドマップでエリア選択
+ *    - screen-innermap    エリア内スポット選択
+ *    - screen-search      しらべる画面 (旧 1 画面ロジック移植)
+ *    - screen-collection  ずかん本 (3x3 グリッド)
+ *
+ *  原則:
+ *    - body[data-screen] で画面切替 (display: none / block)
+ *    - 21:9 outer-bg (Layer 1) + 16:9 safe-area (Layer 2) パターンを共有
+ *    - iOS Safari 対策: backdrop-filter 不使用、 hotspot は <button> 直登録
  * ==================================================================== */
 
 :root {
@@ -43,11 +46,36 @@ html, body {
   color: var(--brown);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  background: #2a3b2f;
 }
 
-/* ---------- Layer 1: 21:9 outer background --------------------------- */
-.outer-bg {
+/* ---------- Screen visibility (router) ------------------------------- */
+.screen {
+  display: none;
   position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+body[data-screen="title"]      #screen-title,
+body[data-screen="mapselect"]  #screen-mapselect,
+body[data-screen="innermap"]   #screen-innermap,
+body[data-screen="search"]     #screen-search,
+body[data-screen="collection"] #screen-collection {
+  display: block;
+}
+.screen.fade-in {
+  opacity: 0;
+}
+.screen.fade-in.shown {
+  opacity: 1;
+}
+
+/* ---------- Layer 1: outer bg (shared 21:9) -------------------------- */
+.outer-bg {
+  position: absolute;
   inset: 0;
   z-index: 0;
   background: linear-gradient(180deg, #6fa67d 0%, #4a7c59 60%, #355e44 100%);
@@ -62,14 +90,9 @@ html, body {
   display: block;
 }
 
-/* ---------- Layer 2: 16:9 safe area ----------------------------------
- * iPad など 4:3 ビューポートでも safe-area は 16:9 に収める計算。
- * overflow: hidden は浮動小数点誤差や iOS Safari の aspect-ratio 計算
- * タイミングずれで子要素が viewport 端から微小はみ出すのを物理的に
- * クリップして「横が切れる」症状を防ぐ防御策。
- * ------------------------------------------------------------------- */
+/* ---------- Layer 2: 16:9 safe area ---------------------------------- */
 .safe-area {
-  position: fixed;
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -79,26 +102,336 @@ html, body {
   overflow: hidden;
 }
 
-/* ---------- Layer 3a: field background (picture content) -------------
- * 旧 .window-wrap を廃止し、 .field-bg を picture content の本体とする。
- * 隠れパーツ / hotspot はこの中に注入され、 picture に追従する。
- * overflow: hidden で picture からはみ出した hotspot を隠す。
- * ------------------------------------------------------------------- */
-.field-bg {
+/* ---------- Common back button --------------------------------------- */
+.back-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--cream);
+  color: var(--brown);
+  border: none;
+  border-radius: 14px;
+  padding: 6px 14px;
+  font-family: var(--jp-font);
+  font-size: clamp(11px, 1.2vw, 15px);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--soft-shadow);
+  z-index: 50;
+}
+.back-btn:active { transform: translateY(1px); }
+
+/* ====================================================================
+ * screen-title
+ * ==================================================================== */
+#screen-title .title-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #ffd49a 0%, #f5b27a 100%);
+  overflow: hidden;
+}
+#screen-title .title-bg img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+#screen-title .title-logo {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 60vw;
+  max-height: 38vh;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.35));
+  z-index: 2;
+}
+#screen-title .title-start {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #c98e4f 0%, #8a5a2a 100%);
+  color: #fff8e7;
+  border: 4px solid #f4dab0;
+  border-radius: 999px;
+  padding: 18px 56px;
+  font-family: var(--jp-font);
+  font-size: clamp(20px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: 0 8px 0 #5a3a1a, 0 12px 24px rgba(0,0,0,0.35);
+  z-index: 3;
+  -webkit-tap-highlight-color: transparent;
+}
+#screen-title .title-start:active {
+  transform: translate(-50%, 4px);
+  box-shadow: 0 4px 0 #5a3a1a, 0 6px 12px rgba(0,0,0,0.35);
+}
+#screen-title .title-collection-link {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  background: var(--cream);
+  color: var(--brown);
+  border: 2px solid #d6b97a;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: var(--jp-font);
+  font-size: clamp(11px, 1.3vw, 16px);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--soft-shadow);
+  z-index: 3;
+}
+#screen-title .title-collection-link:active { transform: translateY(1px); }
+
+/* ====================================================================
+ * screen-mapselect
+ * ==================================================================== */
+#screen-mapselect .ms-banner {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38%;
+  max-width: 480px;
+  z-index: 5;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+}
+#screen-mapselect .ms-banner img {
+  width: 100%;
+  display: block;
+}
+#screen-mapselect .ms-banner-fallback {
+  background: var(--paper);
+  color: var(--brown);
+  font-weight: 800;
+  text-align: center;
+  padding: 10px 24px;
+  border-radius: 14px;
+  font-size: clamp(14px, 1.8vw, 22px);
+  box-shadow: var(--soft-shadow);
+}
+#screen-mapselect .ms-map-wrap {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  aspect-ratio: 16 / 9;
+  z-index: 3;
+}
+#screen-mapselect .ms-map-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  background: #cfe7d4;
+  box-shadow: var(--soft-shadow);
+}
+#screen-mapselect .ms-hotspot {
+  position: absolute;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: box-shadow 0.2s ease;
+}
+#screen-mapselect .ms-hotspot.selected {
+  box-shadow:
+    0 0 0 4px rgba(255, 220, 120, 0.85),
+    0 0 24px 8px rgba(255, 200, 60, 0.55);
+  animation: msHalo 1.4s ease-in-out infinite;
+}
+@keyframes msHalo {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255,220,120,0.85),
+                          0 0 24px 8px rgba(255,200,60,0.55); }
+  50%      { box-shadow: 0 0 0 6px rgba(255,235,160,1),
+                          0 0 36px 14px rgba(255,200,60,0.85); }
+}
+
+#screen-mapselect .ms-pono {
+  position: absolute;
+  left: 1%;
+  bottom: 2%;
+  width: 25%;
+  max-width: 280px;
+  z-index: 6;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+#screen-mapselect .ms-pono-img {
+  width: 45%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+#screen-mapselect .ms-memo {
+  position: relative;
+  flex: 1;
+  aspect-ratio: 4 / 3;
+}
+#screen-mapselect .ms-memo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+#screen-mapselect .ms-memo-text {
+  position: absolute;
+  inset: 12% 14% 16% 14%;
+  font-size: clamp(9px, 1vw, 13px);
+  line-height: 1.4;
+  white-space: pre-line;
+  color: var(--brown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+#screen-mapselect .ms-memo-text.empty {
+  color: var(--brown-light);
+  opacity: 0.6;
+}
+
+#screen-mapselect .ms-decide {
+  position: absolute;
+  right: 2%;
+  bottom: 4%;
+  width: 18%;
+  max-width: 220px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 6;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+#screen-mapselect .ms-decide img {
+  width: 100%;
+  display: block;
+}
+#screen-mapselect .ms-decide.fallback {
+  background: var(--green);
+  color: #fff;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 12px 28px;
+  font-family: var(--jp-font);
+  font-size: clamp(13px, 1.5vw, 18px);
+}
+#screen-mapselect .ms-decide:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#screen-mapselect .ms-decide:not(:disabled):active {
+  transform: translateY(2px);
+}
+
+/* ====================================================================
+ * screen-innermap
+ * ==================================================================== */
+#screen-innermap .im-sign {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22%;
+  max-width: 280px;
+  z-index: 5;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+}
+#screen-innermap .im-sign img {
+  width: 100%;
+  display: block;
+}
+#screen-innermap .im-spot-wrap {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  aspect-ratio: 16 / 9;
+  z-index: 3;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--soft-shadow);
+  background: #cfe7d4;
+}
+#screen-innermap .im-spot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#screen-innermap .im-spot-name {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  color: var(--brown);
+  font-weight: 800;
+  font-size: clamp(14px, 1.8vw, 22px);
+  padding: 8px 22px;
+  border-radius: 14px;
+  box-shadow: var(--soft-shadow);
+  z-index: 5;
+  white-space: nowrap;
+}
+#screen-innermap .im-pin {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,200,80,0.85) 0%,
+                                       rgba(255,200,80,0.4) 50%,
+                                       rgba(255,200,80,0) 75%);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  animation: imPulse 1.4s ease-in-out infinite;
+  z-index: 4;
+}
+/* 子供の指でも押しやすいよう、可視サイズは維持して
+   透明な大きいヒットエリアを ::before で追加 (約 50x50) */
+#screen-innermap .im-pin::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  /* 装飾はせず、タップ判定のみ拡張 */
+  background: transparent;
+  pointer-events: auto;
+}
+@keyframes imPulse {
+  0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  50%      { transform: translate(-50%,-50%) scale(1.4); opacity: 0.7; }
+}
+
+/* ====================================================================
+ * screen-search (旧ロジック移植)
+ * ==================================================================== */
+#screen-search .field-bg {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  /* 16:9 window centred in safe area; leave room for hint panel + pono */
   width: 70%;
   aspect-ratio: 16 / 9;
   border-radius: 18px;
   overflow: hidden;
-  background: #cfe7d4; /* fallback green field */
+  background: #cfe7d4;
   box-shadow: var(--soft-shadow);
   z-index: 2;
 }
-.window-bg {
+#screen-search .window-bg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -106,13 +439,7 @@ html, body {
   object-fit: cover;
   display: block;
 }
-
-/* ---------- Layer 3b: window frame (装飾レイヤー、独立兄弟) ---------
- * .field-bg と独立して配置される。 中央透明な木枠 PNG なので
- * pointer-events: none を維持し、 picture content への hotspot タップを
- * 遮らない。 既定では .field-bg と同じ位置・寸法に重ねて表示する。
- * ------------------------------------------------------------------- */
-.window-frame {
+#screen-search .window-frame {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -124,22 +451,14 @@ html, body {
   object-fit: fill;
   z-index: 5;
 }
-
-/* ---------- Layer 4: hidden animal part ------------------------------ */
-.hidden-part {
+#screen-search .hidden-part {
   position: absolute;
-  pointer-events: none; /* hotspot handles taps */
+  pointer-events: none;
   display: block;
   user-select: none;
   -webkit-user-drag: none;
 }
-.hidden-part-debug {
-  outline: 2px dashed red;
-  background: rgba(255, 0, 0, 0.15);
-}
-
-/* ---------- Layer 5: hotspot (tap target) ---------------------------- */
-.hotspot {
+#screen-search .hotspot {
   position: absolute;
   background: transparent;
   border: none;
@@ -148,13 +467,35 @@ html, body {
   cursor: pointer;
   border-radius: 12px;
 }
-.hotspot.debug {
-  outline: 2px dashed red;
-  background: rgba(255, 0, 0, 0.15);
+/* Hint twinkle (30s 後に発動するキラキラ) */
+#screen-search .hotspot.hint-twinkle::after {
+  content: '';
+  position: absolute;
+  inset: -8%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(255, 240, 160, 0.85) 0%,
+    rgba(255, 230, 140, 0.45) 30%,
+    rgba(255, 220, 120, 0) 70%);
+  animation: twinkle 1.6s ease-in-out infinite;
+  opacity: 0.55;
+}
+#screen-search .hotspot.hint-twinkle[data-hint-level="2"]::after {
+  opacity: 0.78;
+  inset: -14%;
+}
+#screen-search .hotspot.hint-twinkle[data-hint-level="3"]::after {
+  opacity: 1;
+  inset: -22%;
+  animation-duration: 1.0s;
+}
+@keyframes twinkle {
+  0%, 100% { transform: scale(1); opacity: var(--tw-opacity, 0.55); }
+  50%      { transform: scale(1.2); opacity: 1; }
 }
 
-/* ---------- Progress badge (top of window) --------------------------- */
-.progress-badge {
+#screen-search .progress-badge {
   position: absolute;
   top: 14px;
   left: 50%;
@@ -171,8 +512,7 @@ html, body {
   white-space: nowrap;
 }
 
-/* ---------- Layer 6: hint panel (right side) ------------------------- */
-.hint-panel {
+#screen-search .hint-panel {
   position: absolute;
   top: 4%;
   right: 1%;
@@ -189,15 +529,16 @@ html, body {
   background-image: url('../assets/zukan/ui/hint_panel_empty.png');
   background-size: cover;
   background-position: center;
+  z-index: 4;
 }
-.hint-title {
+#screen-search .hint-title {
   font-size: clamp(10px, 1.1vw, 15px);
   font-weight: 700;
   color: var(--brown);
   text-align: center;
   margin: 0;
 }
-.hint-silhouette {
+#screen-search .hint-silhouette {
   width: 80%;
   margin: 0 auto;
   aspect-ratio: 1 / 1;
@@ -209,7 +550,7 @@ html, body {
   overflow: hidden;
   flex-shrink: 0;
 }
-.hint-silhouette img {
+#screen-search .hint-silhouette img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -217,7 +558,7 @@ html, body {
   filter: brightness(0);
   opacity: 0.7;
 }
-.hint-list {
+#screen-search .hint-list {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -227,14 +568,14 @@ html, body {
   line-height: 1.4;
   color: var(--brown);
 }
-.hint-item {
+#screen-search .hint-item {
   background: rgba(255, 255, 255, 0.7);
   border-radius: 10px;
   padding: 6px 8px;
   white-space: pre-line;
   border-left: 3px solid var(--green);
 }
-.hint-button {
+#screen-search .hint-button {
   background: var(--green);
   color: #fff;
   border: none;
@@ -247,17 +588,14 @@ html, body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
   flex-shrink: 0;
 }
-.hint-button:disabled {
+#screen-search .hint-button:disabled {
   background: #b0b0b0;
   cursor: not-allowed;
   opacity: 0.6;
 }
-.hint-button:not(:disabled):active {
-  transform: translateY(1px);
-}
+#screen-search .hint-button:not(:disabled):active { transform: translateY(1px); }
 
-/* ---------- Layer 7: pono guide (bottom-left) ------------------------ */
-.pono-guide {
+#screen-search .pono-guide {
   position: absolute;
   left: 1%;
   bottom: 3%;
@@ -267,7 +605,7 @@ html, body {
   width: 28%;
   z-index: 4;
 }
-.pono-portrait {
+#screen-search .pono-portrait {
   width: 22%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
@@ -283,7 +621,7 @@ html, body {
   color: #fff;
   font-weight: 700;
 }
-.pono-bubble {
+#screen-search .pono-bubble {
   flex: 1;
   background: var(--cream);
   border-radius: 16px;
@@ -295,7 +633,7 @@ html, body {
   color: var(--brown);
   position: relative;
 }
-.pono-bubble::before {
+#screen-search .pono-bubble::before {
   content: '';
   position: absolute;
   left: -10px;
@@ -307,7 +645,7 @@ html, body {
   border-color: transparent var(--cream) transparent transparent;
 }
 
-/* ---------- Layer 8: discovery popup --------------------------------- */
+/* Discovery overlay --------------------------------------------------- */
 .discovery-overlay {
   position: fixed;
   inset: 0;
@@ -317,9 +655,7 @@ html, body {
   justify-content: center;
   z-index: 1000;
 }
-.discovery-overlay.show {
-  display: flex;
-}
+.discovery-overlay.show { display: flex; }
 .discovery-card {
   background: var(--paper);
   background-image:
@@ -335,7 +671,7 @@ html, body {
   color: var(--brown);
   font-family: var(--jp-font);
   position: relative;
-  overflow: auto;
+  overflow: visible;
 }
 .discovery-title {
   font-size: clamp(20px, 2.4vw, 30px);
@@ -370,6 +706,13 @@ html, body {
   margin: 0 0 16px;
   color: var(--brown-light);
 }
+.discovery-owl {
+  font-size: clamp(11px, 1.2vw, 15px);
+  color: var(--green);
+  margin: 0 0 12px;
+  display: none;
+}
+.discovery-owl.show { display: block; }
 .discovery-btn {
   background: var(--green);
   color: #fff;
@@ -382,14 +725,8 @@ html, body {
   cursor: pointer;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
 }
-.discovery-btn:disabled {
-  background: #b0b0b0;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-.discovery-btn:not(:disabled):active {
-  transform: translateY(1px);
-}
+.discovery-btn:disabled { background: #b0b0b0; cursor: not-allowed; opacity: 0.7; }
+.discovery-btn:not(:disabled):active { transform: translateY(1px); }
 .discovery-done {
   margin-top: 12px;
   font-size: clamp(12px, 1.3vw, 16px);
@@ -397,8 +734,256 @@ html, body {
   font-weight: 700;
   display: none;
 }
-.discovery-done.show {
+.discovery-done.show { display: block; }
+.discovery-close {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  color: var(--brown);
+  cursor: pointer;
+  font-family: var(--jp-font);
+  line-height: 1;
+  font-weight: 700;
+}
+
+/* Stamp overlay (mitsuketa / touroku) -------------------------------- */
+.stamp-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  width: 60%;
+  max-width: 320px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4) rotate(-25deg);
+  z-index: 1100;
+}
+.stamp-overlay.play {
+  animation: stampIn 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes stampIn {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.4) rotate(-25deg); }
+  40%  { opacity: 1; transform: translate(-50%,-50%) scale(1.4) rotate(8deg); }
+  70%  { opacity: 1; transform: translate(-50%,-50%) scale(1.0) rotate(-3deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.0) rotate(0deg); }
+}
+
+/* ====================================================================
+ * screen-collection (ずかん本)
+ * ==================================================================== */
+#screen-collection .col-book {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  aspect-ratio: 16 / 10;
+  z-index: 2;
+}
+#screen-collection .col-book-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
+}
+#screen-collection .col-book-fallback {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  border-radius: 14px;
+  box-shadow: var(--soft-shadow);
+}
+
+#screen-collection .col-page {
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  z-index: 3;
+}
+#screen-collection .col-left-page {
+  left: 6%;
+  width: 38%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#screen-collection .col-right-page {
+  right: 6%;
+  width: 38%;
+}
+
+#screen-collection .col-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+#screen-collection .col-tab {
+  background: rgba(255, 255, 255, 0.55);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--jp-font);
+  font-size: clamp(10px, 1.1vw, 13px);
+  font-weight: 700;
+  color: var(--brown);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+#screen-collection .col-tab img {
+  width: 70%;
+  max-height: 40px;
+  object-fit: contain;
+}
+#screen-collection .col-tab.active {
+  border-color: #c98e4f;
+  background: rgba(255, 255, 255, 0.85);
+  transform: scale(1.04);
+}
+#screen-collection .col-progress {
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(13px, 1.6vw, 20px);
+  color: var(--brown);
+  background: var(--cream);
+  border-radius: 12px;
+  padding: 6px 8px;
+  margin-top: 6px;
+}
+#screen-collection .col-progress-bar {
+  height: 10px;
+  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+#screen-collection .col-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6fa67d, #4a7c59);
+  transition: width 0.4s ease;
+}
+#screen-collection .col-allbadge {
+  position: absolute;
+  left: 6%;
+  bottom: 4%;
+  background: linear-gradient(180deg, #ffd166, #ef9c12);
+  color: #5a3a0a;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: clamp(13px, 1.4vw, 18px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  display: none;
+  z-index: 5;
+}
+#screen-collection .col-allbadge.show { display: block; }
+
+#screen-collection .col-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  height: 100%;
+}
+#screen-collection .col-cell {
+  background: rgba(255,255,255,0.4);
+  border: 2px solid rgba(110,70,32,0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+#screen-collection .col-cell img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  display: block;
+}
+#screen-collection .col-cell.locked img {
+  filter: brightness(0);
+  opacity: 0.45;
+}
+#screen-collection .col-cell-name {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(8px, 0.9vw, 11px);
+  font-weight: 700;
+  color: var(--brown);
+  background: rgba(253,246,227,0.8);
+  border-radius: 6px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+#screen-collection .col-cell.locked .col-cell-name {
+  color: var(--brown-light);
+}
+
+/* Collection animal modal */
+#colAnimalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1500;
+}
+#colAnimalOverlay.show { display: flex; }
+#colAnimalOverlay .col-modal {
+  background: var(--paper);
+  border-radius: 22px;
+  padding: 24px 30px;
+  width: min(360px, 80vw);
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5),
+              inset 0 0 0 4px rgba(110,70,32,0.25);
+  color: var(--brown);
+  position: relative;
+}
+#colAnimalOverlay .col-modal img {
+  width: 60%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  margin: 0 auto 10px;
+  display: block;
+}
+#colAnimalOverlay .col-modal-name {
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 800;
+  margin: 4px 0 10px;
+}
+#colAnimalOverlay .col-modal-owl {
+  font-size: clamp(12px, 1.3vw, 16px);
+  color: var(--green);
+  white-space: pre-line;
+  line-height: 1.5;
+}
+#colAnimalOverlay .col-modal-close {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  color: var(--brown);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--jp-font);
+  line-height: 1;
 }
 
 /* ---------- Portrait orientation hint -------------------------------- */
@@ -416,136 +1001,211 @@ html, body {
   font-size: 18px;
   line-height: 1.6;
 }
-/* ---------- 4:3 寄りビューポート (iPad 等) 用の保険 -------------------
- * 16:9 safe-area は計算上 viewport に収まるが、 iOS Safari の浮動小数点
- * 誤差や aspect-ratio 計算タイミングのずれで微小はみ出しが起きうる。
- * hint-panel / pono-guide の幅と端マージンを少し詰めて余裕を確保する。
- * 閾値 15/9 (≈1.667) は 16:9 PC (1.778) を確実に除外しつつ、
- * iPad 4:3 (1.333) や 3:2 (1.5) など縦長寄りの端末で発火する。
- * ------------------------------------------------------------------- */
-@media (max-aspect-ratio: 15/9) {
-  .hint-panel {
-    width: 12%;
-    right: 1.2%;
-  }
-  .pono-guide {
-    width: 26%;
-    left: 1.2%;
-  }
-}
-
 @media (max-aspect-ratio: 1/1) and (max-width: 600px) {
   .rotate-hint { display: flex; }
 }
+
+/* iPad 4:3 寄りでの保険 ----------------------------------------------- */
+@media (max-aspect-ratio: 15/9) {
+  #screen-search .hint-panel { width: 12%; right: 1.2%; }
+  #screen-search .pono-guide { width: 26%; left: 1.2%; }
+}
 </style>
 </head>
-<body>
-  <!-- Layer 1: 21:9 outer background -->
-  <div class="outer-bg" id="outerBg">
-    <img id="outerBgImg" alt=""
+<body data-screen="title">
+
+<!-- ====================================================================
+     screen-title
+     ==================================================================== -->
+<section class="screen" id="screen-title">
+  <div class="title-bg">
+    <img id="titleBgImg" src="../assets/zukan/title/title_bg.png" alt=""
          onerror="this.style.display='none';">
   </div>
+  <img class="title-logo" id="titleLogoImg"
+       src="../assets/zukan/title/title_logo.png" alt="ポノのもりのずかん"
+       onerror="this.style.display='none';">
+  <button class="title-start" type="button" id="titleStartBtn">はじめる</button>
+  <button class="title-collection-link" type="button" id="titleCollectionLink">
+    ずかんを みる
+  </button>
+</section>
 
-  <!-- Layer 2: 16:9 safe area -->
-  <div class="safe-area" id="safeArea">
+<!-- ====================================================================
+     screen-mapselect
+     ==================================================================== -->
+<section class="screen" id="screen-mapselect">
+  <div class="outer-bg">
+    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+         onerror="this.style.display='none';">
+  </div>
+  <div class="safe-area">
+    <button class="back-btn" type="button" id="msBackBtn">← もどる</button>
 
-    <!-- Layer 3a: field background (picture content). 隠れパーツ /
-         hotspot もここに JS で注入され、 picture に追従する。 -->
-    <div class="field-bg" id="fieldBg">
-      <img class="window-bg" id="windowBg" alt=""
+    <div class="ms-banner">
+      <img id="msBannerImg" src="../assets/zukan/map/banner_dokoni.png" alt=""
+           onerror="this.style.display='none'; var fb = document.createElement('div'); fb.className = 'ms-banner-fallback'; fb.textContent = 'どこに しらべに いく？'; this.parentNode.appendChild(fb);">
+    </div>
+
+    <div class="ms-map-wrap" id="msMapWrap">
+      <img class="ms-map-img" src="../assets/zukan/map/world_map.png" alt=""
            onerror="this.style.display='none';">
+      <!-- hotspots are injected -->
+    </div>
 
-      <!-- Progress badge (picture content 内に表示) -->
+    <div class="ms-pono">
+      <img class="ms-pono-img" src="../assets/zukan/map/pono_full.png" alt=""
+           onerror="this.style.display='none';">
+      <div class="ms-memo">
+        <img class="ms-memo-img" src="../assets/zukan/map/pono_memo.png" alt=""
+             onerror="this.style.display='none';">
+        <div class="ms-memo-text empty" id="msMemoText">エリアを えらんでね</div>
+      </div>
+    </div>
+
+    <button class="ms-decide" type="button" id="msDecideBtn" disabled>
+      <img src="../assets/zukan/ui/map_decision_button.png" alt="けってい"
+           onerror="this.style.display='none';
+                    this.parentNode.classList.add('fallback');
+                    this.parentNode.textContent='けってい';">
+    </button>
+  </div>
+</section>
+
+<!-- ====================================================================
+     screen-innermap
+     ==================================================================== -->
+<section class="screen" id="screen-innermap">
+  <div class="outer-bg">
+    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+         onerror="this.style.display='none';">
+  </div>
+  <div class="safe-area">
+    <button class="back-btn" type="button" id="imBackBtn">← もどる</button>
+
+    <div class="im-sign">
+      <img id="imSignImg" alt="" onerror="this.style.display='none';">
+    </div>
+
+    <div class="im-spot-wrap" id="imSpotWrap">
+      <img class="im-spot-img" id="imSpotImg" alt=""
+           onerror="this.style.display='none';">
+      <!-- pin buttons injected -->
+    </div>
+
+    <div class="im-spot-name" id="imSpotName"></div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     screen-search (旧画面ロジック移植)
+     ==================================================================== -->
+<section class="screen" id="screen-search">
+  <div class="outer-bg" id="searchOuterBg">
+    <img id="outerBgImg" alt="" onerror="this.style.display='none';">
+  </div>
+  <div class="safe-area">
+    <button class="back-btn" type="button" id="searchBackBtn">← もどる</button>
+
+    <div class="field-bg" id="fieldBg">
+      <img class="window-bg" id="windowBg" alt="" onerror="this.style.display='none';">
       <div class="progress-badge" id="progressBadge"></div>
-
       <!-- Layer 4: hidden animal part (inserted by JS) -->
       <!-- Layer 5: hotspot button (inserted by JS) -->
     </div>
 
-    <!-- Layer 3b: window frame (装飾レイヤー、独立兄弟) -->
     <img class="window-frame" id="windowFrame" alt=""
          onerror="this.style.display='none';">
 
-    <!-- Layer 6: hint panel -->
     <aside class="hint-panel" id="hintPanel">
       <h2 class="hint-title">みつけたい<br>なかま</h2>
       <div class="hint-silhouette" id="hintSilhouette">
-        <img id="hintSilhouetteImg" alt=""
-             onerror="this.style.display='none';">
+        <img id="hintSilhouetteImg" alt="" onerror="this.style.display='none';">
       </div>
       <div class="hint-list" id="hintList"></div>
       <button class="hint-button" id="hintButton" type="button">つぎのヒント</button>
     </aside>
 
-    <!-- Layer 7: pono guide -->
     <div class="pono-guide" id="ponoGuide">
       <div class="pono-portrait" id="ponoPortrait">ポノ</div>
       <div class="pono-bubble" id="ponoBubble"></div>
     </div>
   </div>
 
-  <!-- Layer 8: discovery popup -->
   <div class="discovery-overlay" id="discoveryOverlay" role="dialog"
        aria-modal="true" aria-labelledby="discoveryTitle">
     <div class="discovery-card">
+      <button class="discovery-close" type="button" id="discoveryCloseBtn"
+              aria-label="とじる">×</button>
       <h3 class="discovery-title" id="discoveryTitle">みつけた！</h3>
       <div class="discovery-img" id="discoveryImg">
-        <img id="discoveryImgEl" alt=""
-             onerror="this.style.display='none';">
+        <img id="discoveryImgEl" alt="" onerror="this.style.display='none';">
       </div>
       <p class="discovery-name" id="discoveryName"></p>
       <p class="discovery-sub">ずかんに とうろく！</p>
+      <p class="discovery-owl" id="discoveryOwl"></p>
       <button class="discovery-btn" id="discoveryBtn" type="button">ずかんに とうろく</button>
       <p class="discovery-done" id="discoveryDone">とうろくしました！</p>
+      <img class="stamp-overlay" id="stampOverlay" alt="" />
     </div>
   </div>
+</section>
 
-  <!-- Portrait rotate hint -->
-  <div class="rotate-hint">
-    がめんを よこむきに してね！
+<!-- ====================================================================
+     screen-collection (ずかん本)
+     ==================================================================== -->
+<section class="screen" id="screen-collection">
+  <div class="outer-bg">
+    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+         onerror="this.style.display='none';">
   </div>
+  <div class="safe-area">
+    <button class="back-btn" type="button" id="colBackBtn">← もどる</button>
+
+    <div class="col-book">
+      <img class="col-book-img" src="../assets/zukan/collection/book_open.png"
+           alt="" onerror="this.style.display='none';
+                          this.nextElementSibling.style.display='block';">
+      <div class="col-book-fallback" style="display:none;"></div>
+    </div>
+
+    <div class="col-page col-left-page">
+      <div class="col-tabs" id="colTabs"></div>
+      <div class="col-progress" id="colProgress">0 / 9</div>
+      <div class="col-progress-bar"><span id="colProgressBar" style="width:0%"></span></div>
+    </div>
+
+    <div class="col-page col-right-page">
+      <div class="col-grid" id="colGrid"></div>
+    </div>
+
+    <div class="col-allbadge" id="colAllBadge">すべて あつめたよ！</div>
+  </div>
+</section>
+
+<!-- Collection animal detail modal -->
+<div id="colAnimalOverlay" role="dialog" aria-modal="true">
+  <div class="col-modal">
+    <button class="col-modal-close" type="button" id="colModalClose"
+            aria-label="とじる">×</button>
+    <img id="colModalImg" alt="" onerror="this.style.display='none';">
+    <div class="col-modal-name" id="colModalName"></div>
+    <div class="col-modal-owl" id="colModalOwl"></div>
+  </div>
+</div>
+
+<!-- Portrait rotate hint -->
+<div class="rotate-hint">がめんを よこむきに してね！</div>
 
 <script>
 /* ====================================================================
- * Data
+ * Constants / data hookup
  * ==================================================================== */
-const zukanQuestions = [
-  {
-    id: "flower_rabbit_001",
-    areaId: "flowerPath",
-    areaName: "花の小道",
-    progressText: "花の小道 1/6",
-    type: "appearance",
-    animalId: "rabbit",
-    animalName: "うさぎ",
-    fieldBg: "../assets/zukan/search/flower_path_field_16x9.png",
-    wideBg: "../assets/zukan/bg/zukan_outer_bg_21x9.png",
-    windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
-    hiddenPart: "../assets/zukan/hidden_parts/rabbit_ears_hidden.png",
-    hiddenPartStyle: { x: 0.64, y: 0.38, w: 0.08 },
-    animalImage: "../assets/zukan/animals/flower_path/rabbit.png",
-    animalSilhouette: "../assets/zukan/animals/flower_path/rabbit.png",
-    guideText: "おはなに まぎれて\nかくれているよ！\nよーく みてみよう！",
-    hints: [
-      "おはなの かげで\nなにかが うごいたよ",
-      "ながい おみみが\nみえるかも？",
-      "ぴょんぴょん はねる\nどうぶつだよ"
-    ],
-    hotspot: { x: 0.62, y: 0.34, w: 0.14, h: 0.18 }
-  }
-];
-
-const DEBUG_HOTSPOT = true;
+const DATA = window.ZUKAN_DATA || { areas: [], collectionRoster: {} };
+const SHARED_OUTER_BG = "../assets/zukan/bg/zukan_outer_bg_21x9.png";
 
 /* ====================================================================
- * State
- * ==================================================================== */
-let currentQuestion = zukanQuestions[0];
-let revealedHints = 1; // start with 1 hint visible
-let registered = false;
-
-/* ====================================================================
- * Helpers
+ * Shared helpers
  * ==================================================================== */
 function setImg(el, src) {
   if (!el) return;
@@ -554,45 +1214,207 @@ function setImg(el, src) {
   el.src = src;
   el.alt = '';
 }
-
 function pctRect(target, rect) {
-  // rect: { x, y, w, h? } in 0..1 ratio relative to parent
   target.style.left = (rect.x * 100) + '%';
-  target.style.top = (rect.y * 100) + '%';
+  target.style.top  = (rect.y * 100) + '%';
   target.style.width = (rect.w * 100) + '%';
   if (typeof rect.h === 'number') {
     target.style.height = (rect.h * 100) + '%';
   }
 }
+function findArea(areaId) {
+  return DATA.areas.find(a => a.id === areaId) || null;
+}
+function totalCollected() {
+  const s = window.loadZukanState ? window.loadZukanState() : { collected: {} };
+  return Object.keys(s.collected || {}).length;
+}
+function isCollected(animalId) {
+  const s = window.loadZukanState ? window.loadZukanState() : { collected: {} };
+  return !!(s.collected && s.collected[animalId]);
+}
 
 /* ====================================================================
- * Render
+ * Router
  * ==================================================================== */
-function renderQuestion(q) {
-  // Layer 1: outer background
-  const outerImg = document.getElementById('outerBgImg');
-  setImg(outerImg, q.wideBg);
+const SCREEN_HOOKS = {};
+let currentScreen = null;
+let currentPayload = {};
 
-  // Layer 3a/3b: picture content + 独立兄弟の装飾木枠
+function setScreen(name, payload) {
+  const prevName = currentScreen;
+  // call onLeave for previous screen
+  if (prevName && SCREEN_HOOKS[prevName] && SCREEN_HOOKS[prevName].onLeave) {
+    try { SCREEN_HOOKS[prevName].onLeave(); } catch (e) { console.warn(e); }
+  }
+  currentScreen = name;
+  currentPayload = payload || {};
+  document.body.setAttribute('data-screen', name);
+  // fade-in only for title (per spec)
+  const el = document.getElementById('screen-' + name);
+  if (el && name === 'title') {
+    el.classList.add('fade-in');
+    el.classList.remove('shown');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => el.classList.add('shown'));
+    });
+  } else if (el) {
+    el.classList.remove('fade-in', 'shown');
+  }
+  if (SCREEN_HOOKS[name] && SCREEN_HOOKS[name].onEnter) {
+    try { SCREEN_HOOKS[name].onEnter(currentPayload); } catch (e) { console.warn(e); }
+  }
+}
+
+/* ====================================================================
+ * Screen: title
+ * ==================================================================== */
+SCREEN_HOOKS.title = {
+  onEnter() { /* no-op */ },
+  onLeave() { /* no-op */ }
+};
+
+/* ====================================================================
+ * Screen: mapselect
+ * ==================================================================== */
+let msSelectedAreaId = null;
+SCREEN_HOOKS.mapselect = {
+  onEnter() {
+    msSelectedAreaId = null;
+    msRenderHotspots();
+    msUpdateMemo();
+    msUpdateDecideBtn();
+  },
+  onLeave() {}
+};
+function msRenderHotspots() {
+  const wrap = document.getElementById('msMapWrap');
+  // remove existing hotspots
+  wrap.querySelectorAll('.ms-hotspot').forEach(n => n.remove());
+  for (const area of DATA.areas) {
+    if (!area.worldHotspot) continue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ms-hotspot';
+    btn.dataset.areaId = area.id;
+    btn.setAttribute('aria-label', area.displayName + 'を えらぶ');
+    pctRect(btn, area.worldHotspot);
+    btn.addEventListener('click', function () {
+      msSelectedAreaId = area.id;
+      // refresh selected styles
+      wrap.querySelectorAll('.ms-hotspot').forEach(b =>
+        b.classList.toggle('selected', b.dataset.areaId === area.id));
+      msUpdateMemo();
+      msUpdateDecideBtn();
+    });
+    // iOS Safari: <button> 内 click 合成は問題なく届く。 親で preventDefault しない。
+    wrap.appendChild(btn);
+  }
+}
+function msUpdateMemo() {
+  const memoEl = document.getElementById('msMemoText');
+  if (!msSelectedAreaId) {
+    memoEl.textContent = 'エリアを えらんでね';
+    memoEl.classList.add('empty');
+    return;
+  }
+  const area = findArea(msSelectedAreaId);
+  memoEl.textContent = (area && area.ponoMemo) || '';
+  memoEl.classList.remove('empty');
+}
+function msUpdateDecideBtn() {
+  const btn = document.getElementById('msDecideBtn');
+  btn.disabled = !msSelectedAreaId;
+}
+
+/* ====================================================================
+ * Screen: innermap
+ * ==================================================================== */
+SCREEN_HOOKS.innermap = {
+  onEnter(payload) {
+    const areaId = payload && payload.areaId;
+    const area = findArea(areaId);
+    if (!area) { setScreen('mapselect'); return; }
+    setImg(document.getElementById('imSignImg'), area.sign);
+    setImg(document.getElementById('imSpotImg'), area.innerSpotImg);
+    const spot = (area.spots && area.spots[0]) || null;
+    document.getElementById('imSpotName').textContent = spot ? spot.name : '';
+    // pins
+    const wrap = document.getElementById('imSpotWrap');
+    wrap.querySelectorAll('.im-pin').forEach(n => n.remove());
+    (area.spots || []).forEach((sp, idx) => {
+      if (!sp.mapPin) return;
+      const pin = document.createElement('button');
+      pin.type = 'button';
+      pin.className = 'im-pin';
+      pin.style.left = (sp.mapPin.x * 100) + '%';
+      pin.style.top  = (sp.mapPin.y * 100) + '%';
+      pin.setAttribute('aria-label', sp.name + 'を しらべる');
+      pin.addEventListener('click', function () {
+        setScreen('search', { areaId: area.id, spotIdx: idx, animalIdx: 0 });
+      });
+      wrap.appendChild(pin);
+    });
+  },
+  onLeave() {}
+};
+
+/* ====================================================================
+ * Screen: search (旧ロジック移植 + キラキラ + スタンプ)
+ * ==================================================================== */
+const DEBUG_HOTSPOT = false;
+let currentSpot = null;
+let currentArea = null;
+let currentAnimalIdx = 0;
+let currentAnimal = null;
+let revealedHints = 1;
+let registered = false;
+let twinkleTimer = null;
+
+SCREEN_HOOKS.search = {
+  onEnter(payload) {
+    const area = findArea(payload && payload.areaId);
+    if (!area) { setScreen('mapselect'); return; }
+    const spotIdx = (payload && payload.spotIdx) || 0;
+    const spot = area.spots && area.spots[spotIdx];
+    if (!spot) { setScreen('innermap', { areaId: area.id }); return; }
+    currentArea = area;
+    currentSpot = spot;
+    currentAnimalIdx = (payload && payload.animalIdx) || 0;
+    currentAnimal = spot.animals[currentAnimalIdx];
+    if (!currentAnimal) { setScreen('innermap', { areaId: area.id }); return; }
+    revealedHints = 1;
+    registered = false;
+    renderQuestion();
+    closeDiscovery();
+    armTwinkleTimer();
+  },
+  onLeave() {
+    clearTwinkleTimer();
+    closeDiscovery();
+  }
+};
+
+function renderQuestion() {
+  setImg(document.getElementById('outerBgImg'), SHARED_OUTER_BG);
   const fieldBg = document.getElementById('fieldBg');
-  setImg(document.getElementById('windowBg'), q.fieldBg);
-  setImg(document.getElementById('windowFrame'), q.windowFrame);
+  setImg(document.getElementById('windowBg'), currentSpot.fieldBg);
+  setImg(document.getElementById('windowFrame'), currentSpot.windowFrame);
 
-  // Progress badge
-  document.getElementById('progressBadge').textContent = q.progressText || '';
+  const totalSpots = (currentArea.spots || []).length;
+  const progressIdx = (currentAnimalIdx + 1);
+  document.getElementById('progressBadge').textContent =
+    currentArea.displayName + ' ' + progressIdx + '/' + totalSpots;
 
-  // Clear previously injected hidden part / hotspot (.field-bg 内に注入)
   fieldBg.querySelectorAll('.hidden-part, .hotspot').forEach(n => n.remove());
 
-  // Layer 4: hidden animal part (.field-bg の子。 picture に追従)
-  if (q.hiddenPart && q.hiddenPartStyle) {
+  if (currentAnimal.hiddenPart && currentAnimal.hiddenPartStyle) {
     const hp = document.createElement('img');
     hp.className = 'hidden-part' + (DEBUG_HOTSPOT ? ' hidden-part-debug' : '');
-    hp.src = q.hiddenPart;
+    hp.src = currentAnimal.hiddenPart;
     hp.alt = '';
     hp.draggable = false;
     hp.onerror = function () {
-      // Replace with a coloured div so layout stays
       const fb = document.createElement('div');
       fb.className = hp.className;
       fb.style.cssText = hp.style.cssText;
@@ -601,40 +1423,58 @@ function renderQuestion(q) {
       fb.style.aspectRatio = '1 / 1';
       hp.replaceWith(fb);
     };
-    pctRect(hp, q.hiddenPartStyle);
-    // height: keep proportional via auto, but enforce min via aspect-ratio
+    pctRect(hp, currentAnimal.hiddenPartStyle);
     hp.style.height = 'auto';
     fieldBg.appendChild(hp);
   }
 
-  // Layer 5: hotspot (.field-bg の子。 picture に追従)
-  if (q.hotspot) {
+  if (currentAnimal.hotspot) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'hotspot' + (DEBUG_HOTSPOT ? ' debug' : '');
-    btn.setAttribute('aria-label', q.animalName + 'を みつける');
-    pctRect(btn, q.hotspot);
+    btn.setAttribute('aria-label', currentAnimal.animalName + 'を みつける');
+    pctRect(btn, currentAnimal.hotspot);
+    // iOS Safari touch fix: touchstart をボタンに直登録
+    // touchstart 内で preventDefault して click 合成を抑止し、二重発火を防ぐ
+    btn.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+      onHotspotTap();
+    }, { passive: false });
+    // desktop / pen-input フォールバック (touchstart が発火しない場合)
     btn.addEventListener('click', onHotspotTap);
     fieldBg.appendChild(btn);
   }
 
-  // Layer 6: hint panel
+  // hint panel
   const sil = document.getElementById('hintSilhouetteImg');
-  setImg(sil, q.animalSilhouette);
+  setImg(sil, getAnimalImage(currentAnimal.animalId, currentArea.id));
   renderHints();
 
-  // Layer 7: pono guide
-  document.getElementById('ponoBubble').textContent = q.guideText || '';
+  // pono guide
+  const guideText = '「' + currentAnimal.animalName + '」を\nさがしてみよう！';
+  document.getElementById('ponoBubble').textContent = guideText;
 
-  // Layer 8: discovery popup content (hidden until tapped)
-  setImg(document.getElementById('discoveryImgEl'), q.animalImage);
-  document.getElementById('discoveryName').textContent = q.animalName || '';
+  // discovery popup base content
+  setImg(document.getElementById('discoveryImgEl'),
+    getAnimalImage(currentAnimal.animalId, currentArea.id));
+  document.getElementById('discoveryName').textContent =
+    currentAnimal.animalName || '';
+  document.getElementById('discoveryOwl').textContent =
+    currentAnimal.owlComment || '';
+  document.getElementById('discoveryOwl').classList.remove('show');
+}
+
+function getAnimalImage(animalId, areaId) {
+  const roster = DATA.collectionRoster && DATA.collectionRoster[areaId];
+  if (!roster) return '';
+  const entry = roster.find(r => r.animalId === animalId);
+  return entry ? entry.image : '';
 }
 
 function renderHints() {
   const list = document.getElementById('hintList');
   const btn = document.getElementById('hintButton');
-  const hints = currentQuestion.hints || [];
+  const hints = (currentAnimal && currentAnimal.hints) || [];
   list.replaceChildren();
   for (let i = 0; i < revealedHints && i < hints.length; i++) {
     const div = document.createElement('div');
@@ -649,11 +1489,11 @@ function renderHints() {
     btn.disabled = false;
     btn.textContent = 'つぎのヒント';
   }
+  // hint level でキラキラ強度
+  const hot = document.querySelector('#screen-search .hotspot');
+  if (hot) hot.dataset.hintLevel = String(Math.min(3, revealedHints));
 }
 
-/* ====================================================================
- * Interaction
- * ==================================================================== */
 function onHotspotTap() {
   openDiscovery();
 }
@@ -667,42 +1507,235 @@ function openDiscovery() {
   btn.style.display = '';
   done.classList.remove('show');
   overlay.classList.add('show');
+  document.getElementById('discoveryOwl').classList.add('show');
+  // stamp: みつけた
+  playStamp('../assets/zukan/ui/stamp_mitsuketa.png');
+  clearTwinkleTimer();
 }
 
 function closeDiscovery() {
-  document.getElementById('discoveryOverlay').classList.remove('show');
+  const overlay = document.getElementById('discoveryOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('show');
 }
 
 function onRegister() {
-  if (registered) return;
+  if (registered || !currentAnimal) return;
   registered = true;
-  console.log('登録: ' + currentQuestion.animalId);
+  if (window.markZukanCollected) {
+    window.markZukanCollected(currentAnimal.animalId, currentArea.id);
+  }
   const btn = document.getElementById('discoveryBtn');
   btn.disabled = true;
   document.getElementById('discoveryDone').classList.add('show');
+  // stamp: とうろく
+  playStamp('../assets/zukan/ui/stamp_touroku.png');
 }
 
 function onNextHint() {
-  const total = (currentQuestion.hints || []).length;
+  const total = ((currentAnimal && currentAnimal.hints) || []).length;
   if (revealedHints < total) {
     revealedHints += 1;
     renderHints();
   }
 }
 
+function playStamp(src) {
+  const stamp = document.getElementById('stampOverlay');
+  if (!stamp) return;
+  stamp.src = src;
+  stamp.classList.remove('play');
+  // restart animation
+  void stamp.offsetWidth;
+  stamp.classList.add('play');
+}
+
+function armTwinkleTimer() {
+  clearTwinkleTimer();
+  twinkleTimer = setTimeout(() => {
+    const hot = document.querySelector('#screen-search .hotspot');
+    if (hot) {
+      hot.classList.add('hint-twinkle');
+      hot.dataset.hintLevel = String(Math.min(3, revealedHints));
+    }
+  }, 30000);
+}
+function clearTwinkleTimer() {
+  if (twinkleTimer) { clearTimeout(twinkleTimer); twinkleTimer = null; }
+  const hot = document.querySelector('#screen-search .hotspot');
+  if (hot) hot.classList.remove('hint-twinkle');
+}
+
 /* ====================================================================
- * Init
+ * Screen: collection
+ * ==================================================================== */
+let colCurrentArea = null;
+SCREEN_HOOKS.collection = {
+  onEnter() {
+    if (!colCurrentArea && DATA.areas.length) {
+      colCurrentArea = DATA.areas[0].id;
+    }
+    colRenderTabs();
+    colRenderGrid();
+    colUpdateAllBadge();
+  },
+  onLeave() {}
+};
+function colRenderTabs() {
+  const tabs = document.getElementById('colTabs');
+  tabs.replaceChildren();
+  for (const area of DATA.areas) {
+    const t = document.createElement('button');
+    t.type = 'button';
+    t.className = 'col-tab' + (area.id === colCurrentArea ? ' active' : '');
+    t.dataset.areaId = area.id;
+    const img = document.createElement('img');
+    img.src = area.sign;
+    img.alt = '';
+    img.onerror = function () { this.style.display = 'none'; };
+    const label = document.createElement('div');
+    label.textContent = area.displayName;
+    t.appendChild(img);
+    t.appendChild(label);
+    t.addEventListener('click', function () {
+      colCurrentArea = area.id;
+      colRenderTabs();
+      colRenderGrid();
+    });
+    tabs.appendChild(t);
+  }
+}
+function colRenderGrid() {
+  const grid = document.getElementById('colGrid');
+  grid.replaceChildren();
+  const roster = (DATA.collectionRoster && DATA.collectionRoster[colCurrentArea]) || [];
+  let collectedCount = 0;
+  for (let i = 0; i < 9; i++) {
+    const entry = roster[i];
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'col-cell';
+    if (!entry) {
+      cell.classList.add('locked');
+      grid.appendChild(cell);
+      continue;
+    }
+    const collected = isCollected(entry.animalId);
+    if (collected) collectedCount++;
+    if (!collected) cell.classList.add('locked');
+    const img = document.createElement('img');
+    img.src = entry.image;
+    img.alt = '';
+    img.onerror = function () { this.style.display = 'none'; };
+    cell.appendChild(img);
+    if (collected) {
+      const name = document.createElement('div');
+      name.className = 'col-cell-name';
+      name.textContent = entry.animalName;
+      cell.appendChild(name);
+    }
+    cell.addEventListener('click', function () {
+      // collected はクロージャでキャプチャせず、modal 側で都度 isCollected() し直す
+      colOpenAnimalModal(entry);
+    });
+    grid.appendChild(cell);
+  }
+  // progress
+  document.getElementById('colProgress').textContent = collectedCount + ' / 9';
+  document.getElementById('colProgressBar').style.width =
+    (collectedCount / 9 * 100) + '%';
+}
+function colUpdateAllBadge() {
+  // 4 area * 9 = 36
+  const total = totalCollected();
+  document.getElementById('colAllBadge')
+    .classList.toggle('show', total >= 36);
+}
+function colOpenAnimalModal(entry) {
+  // 呼び出しタイミングの最新状態で再評価 (stale closure 対策)
+  const collected = isCollected(entry.animalId);
+  const overlay = document.getElementById('colAnimalOverlay');
+  setImg(document.getElementById('colModalImg'), entry.image);
+  document.getElementById('colModalName').textContent =
+    collected ? (entry.animalName || '') : '？？？';
+  // owl comment lookup: search current area spots' animals
+  let owl = '';
+  if (collected) {
+    const area = findArea(colCurrentArea);
+    if (area) {
+      for (const sp of (area.spots || [])) {
+        for (const a of (sp.animals || [])) {
+          if (a.animalId === entry.animalId) { owl = a.owlComment; break; }
+        }
+        if (owl) break;
+      }
+    }
+    if (!owl) owl = 'まだ ひみつ じゃ！';
+  } else {
+    owl = 'まだ ひみつ じゃ！';
+  }
+  document.getElementById('colModalOwl').textContent = owl;
+  overlay.classList.add('show');
+}
+function colCloseAnimalModal() {
+  document.getElementById('colAnimalOverlay').classList.remove('show');
+}
+
+/* ====================================================================
+ * Init / event wiring
  * ==================================================================== */
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('hintButton').addEventListener('click', onNextHint);
-  document.getElementById('discoveryBtn').addEventListener('click', onRegister);
-
-  // Allow tapping outside the card to dismiss the popup
-  document.getElementById('discoveryOverlay').addEventListener('click', function (e) {
-    if (e.target === this) closeDiscovery();
+  // title
+  document.getElementById('titleStartBtn').addEventListener('click', () => {
+    setScreen('mapselect');
+  });
+  document.getElementById('titleCollectionLink').addEventListener('click', () => {
+    setScreen('collection');
   });
 
-  renderQuestion(currentQuestion);
+  // mapselect
+  document.getElementById('msBackBtn').addEventListener('click', () => {
+    setScreen('title');
+  });
+  document.getElementById('msDecideBtn').addEventListener('click', () => {
+    if (!msSelectedAreaId) return;
+    setScreen('innermap', { areaId: msSelectedAreaId });
+  });
+
+  // innermap
+  document.getElementById('imBackBtn').addEventListener('click', () => {
+    setScreen('mapselect');
+  });
+
+  // search
+  document.getElementById('searchBackBtn').addEventListener('click', () => {
+    if (currentArea) setScreen('innermap', { areaId: currentArea.id });
+    else setScreen('mapselect');
+  });
+  document.getElementById('hintButton').addEventListener('click', onNextHint);
+  document.getElementById('discoveryBtn').addEventListener('click', onRegister);
+  document.getElementById('discoveryCloseBtn').addEventListener('click', () => {
+    closeDiscovery();
+    if (currentArea) setScreen('innermap', { areaId: currentArea.id });
+  });
+  document.getElementById('discoveryOverlay').addEventListener('click', function (e) {
+    if (e.target === this) {
+      closeDiscovery();
+      if (currentArea) setScreen('innermap', { areaId: currentArea.id });
+    }
+  });
+
+  // collection
+  document.getElementById('colBackBtn').addEventListener('click', () => {
+    setScreen('title');
+  });
+  document.getElementById('colModalClose').addEventListener('click', colCloseAnimalModal);
+  document.getElementById('colAnimalOverlay').addEventListener('click', function (e) {
+    if (e.target === this) colCloseAnimalModal();
+  });
+
+  // initial screen
+  setScreen('title');
 });
 </script>
 </body>
