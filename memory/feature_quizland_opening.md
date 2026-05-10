@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。
 type: project
 ---
 
@@ -480,6 +480,60 @@ sw v902-v903 までの B 経路は **narration のみ** 配信していた。 sw
 - **HIGH-2**: `fetchSeedOpNarration` の early-return 条件を **`_seedOpNarration && _seedOpLayout && !forceRefresh`** に厳密化。 旧来は `_seedOpNarration` だけ見ていたので、 `_seedOpLayout` (新キー) のキャッシュが空のまま 2 回目以降の fetch がスキップされる race があった
 - **HIGH-3**: editor の `buildRuntimeOpLayout()` で `bgImagePath` / `boxImagePath` を frame ID から URL を resolve した値で seed に補完。 frame ID 直書きだと runtime 側で resolve できず BG が効かないバグ防止
 - **LOW-1**: editor のコメント文言を実 DOM ラベルに最新化 (「NA Export/Import」 → 「Export/Import」)
+
+## ポノ ポーズ別位置 (per-variant) 配信完成 (sw v905+)
+
+sw v904 までの `__op_layout[VC].pono` は **flat フィールドのみ** (= 全 variant 共通の slot 位置) を配信していた。 sw v905+ で `state.pono.perVariant` を **そのまま publish payload に含める**よう拡張し、 runtime 側で **dialogue line ごとに variant 名を抽出して `perVariant[variantName]` を flat より優先で適用**できるようにした。 これでエディタで「Panel 4 で `think_arms_crossed_side` を画面右に寄せる」のような **variant 別の slot 位置編集** を全端末配信できる。
+
+### Editor 側 (`tools/op-layout-editor.html`)
+
+- 既存の `sideSnap(side)` を **`sideSnap(side, includePerVariant)`** に拡張 (~L2051-L2080)
+  - `includePerVariant=true` のときに `side.perVariant` (object of `{variantName: slotEntry}`) を whitelist された 6 フィールド (`left`, `top`, `width`, `height`, `aspectLockRatio`, `clipBottomPct`) でフィルタして `out.perVariant` に格納
+  - hakase は `sideSnap(s.hakase, false)` のまま (perVariant 概念が無い、 ポーズによる位置変化が無い前提)
+- `buildRuntimeOpLayout()` の呼び出し箇所 (~L2104) で `pono: sideSnap(s.pono, true)`、 `hakase: sideSnap(s.hakase, false)` と分岐
+
+### 6 variants (publish 対象)
+
+```
+dance_hi, dance_hooray, dance_smile,
+think_arms_crossed_side, think_chin_clasp,
+pono_001 (中立立ち姿、 はかせ発話時の聞き役ポノ)
+```
+
+`pono_001` は `OP_PANELS` の hakase line 側で参照される neutral 立ち姿 (Panel 2-5 で使用)。 v905 で `PONO_VARIANTS` / `defaultsFor` の `ponoPerVariantDefaults` 初期化 / `migrateFrameIds` の backfill リストに追加され、 editor 上でも 6 番目の variant として編集可能になった (cross-review HIGH-1 fix)。
+
+### Runtime 側 (`quizland/index.html`)
+
+新ヘルパ + 拡張:
+
+- `_opCurrentPonoVariant(panel, line)` (~L5244): 現在ポノの variant 名を導出
+  - 第 1 優先: `line.ponoImg` (line に optional でセットされるパス) の basename から拡張子除去
+  - 第 2 優先: `panel.ponoImg` から同様に basename 抽出
+  - パス末尾と variant 名の **命名乖離に両対応** (フルパス `.../dance_hi.webp` でも variant 名 `dance_hi` 単体でも basename 抽出で `dance_hi` に正規化)
+  - 該当無しなら `null` 返却 (= flat にフォールバック)
+- `_opApplyLayoutOverride(panel, line)` (~L5276) — **引数 `(panel, line)` を追加**
+  - 内部の `applySide(sideKey, side, variantName)` も第 3 引数 `variantName` を追加 (~L5290)
+  - `variantName` が指定されていて `side.perVariant[variantName]` が存在すれば、 **flat スロット値の上にマージしてから DOM 適用** (variant 値が flat より優先)
+  - `variantName` が無い / `side.perVariant[variantName]` が空 → flat のみ適用 (後方互換)
+  - hakase 側は variant 引数を常に `null` で呼ぶ (perVariant 概念無し)
+
+呼び出し箇所 (~L5584 / L5698 / L5795 / L5886):
+- 初回 (panel ループ前): `_opApplyLayoutOverride(null, null)` — variant 未確定なので明示 null (cross-review MEDIUM-1 fix)
+- narration セグメント表示前: `_opApplyLayoutOverride(panel, null)` — narration panel は dialogue line 無し
+- dialogue panel 切替直後: `_opApplyLayoutOverride(panel, null)` — panel 単位の variant (panel.ponoImg)
+- **dialogue line ループ内: `_opApplyLayoutOverride(panel, d)`** — line ごとに line.ponoImg で variant が変わるので、 ポーズ切替に追従
+
+### 効果
+
+- editor で 「Panel 4 の `think_arms_crossed_side` だけ右下に詰める」 のような **variant 別 slot 編集** → 「📡 GitHub 配信」 → 全端末で line 切替時に slot 位置・サイズが追従
+- hakase 側は flat のみ (perVariant 無し) — hakase はポーズによる位置変化が無い前提
+- editor 内部 state は `panel.ponoImgFallback` (variant 名)、 export 時に runtime 用 `panel.ponoImg` (フルパス) に変換される命名乖離があるが、 runtime 側 `_opCurrentPonoVariant` がパスでも variant 名でも両対応するので吸収
+
+### 既知の制約
+
+- pono_001 は legacy editor state (commit `c119c78` 時点) では `perVariant` キーに存在しなかった。 v905 の `migrateFrameIds` に backfill ロジックを追加したので、 既存ユーザの editor を開けば `baseSlot` から自動補完される (= 既存 5 variant への影響なし、 新規 user は defaults で初期化、 既存 user は migrate 経由で 6 variant 揃う)
+- editor の各立ち絵編集 UI には現状 `clip-path` の編集 UI が無い (CSS 側 hardcoded)
+- 立ち絵 / 対話の bg を **「ユーザー追加フレーム (data: URL)」** にすると `boxImagePath: null` で publish される (data: URL は GitHub に publish しない仕様)
 
 ### 既知のリスク / TODO
 

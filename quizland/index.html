@@ -5232,6 +5232,34 @@ function _opLoadLayoutOverride(vc) {
   return null;
 }
 
+// 2026-05-10 (perVariant 修正): OP cinematic 中の現在ポノ variant 名を導出する。
+// 入力は panel.ponoImg / line.ponoImg のフルパス (例:
+// "../assets/images/characters/pono/dance/dance_hi.webp") で、 出力は editor の
+// perVariant キー (basename without extension、 例: "dance_hi")。 line 優先、
+// 無ければ panel フォールバック、 どちらも無ければ null (= flat fallback で apply)。
+// editor の OP_PANELS state では variant 名のみ ('dance_hi'), runtime export 時は
+// fullPath ('../assets/.../dance_hi.webp') に変換される命名差異あり。
+// basename + 拡張子除去で両対応 (variant 名のままの場合は no-op)。
+// 命名統一は将来課題 (editor: ponoImgFallback / runtime: ponoImg).
+function _opCurrentPonoVariant(panel, line) {
+  try {
+    let src = null;
+    if (line && typeof line.ponoImg === 'string' && line.ponoImg) {
+      src = line.ponoImg;
+    } else if (panel && typeof panel.ponoImg === 'string' && panel.ponoImg) {
+      src = panel.ponoImg;
+    }
+    if (!src) return null;
+    // パスの最後のセグメントから拡張子を落として variant 名にする。
+    const slash = src.lastIndexOf('/');
+    const tail = (slash >= 0) ? src.slice(slash + 1) : src;
+    const dot  = tail.lastIndexOf('.');
+    const name = (dot > 0) ? tail.slice(0, dot) : tail;
+    return name || null;
+  } catch (_) {}
+  return null;
+}
+
 // 2026-05-10 (Q 案): editor の per-VC snapshot から runtime DOM に inline style を
 // 注入。 立ち絵 (.op-side-pono / .op-side-hakase の .op-char-slot) + 対話
 // (.op-dialogue-single 本体 + .op-dialogue-text + .op-dialogue-label) + ナレ
@@ -5240,7 +5268,12 @@ function _opLoadLayoutOverride(vc) {
 // __op_layout が無い VC は narration のみ既存パスにフォールバック (旧 __op_narration
 // または localStorage)。 これにより saved-layout.json に __op_narration だけある状態
 // でも narration は正しく適用される (= 後方互換)。
-function _opApplyLayoutOverride() {
+//
+// 2026-05-10 (perVariant 修正): 引数 (panel, line) を追加。 panel/line から導出した
+// ポノ variant 名 ("dance_hi" 等) があれば applySide('pono', ...) で perVariant 値を
+// flat より優先で適用する。 引数省略時は flat fallback (= 旧挙動)。 hakase は
+// perVariant 概念が無いので variant 引数は常に null。
+function _opApplyLayoutOverride(panel, line) {
   const vc = _opGetCurrentVC();
   const layout = _opLoadLayoutOverride(vc);
   // ナレは __op_layout の有無に関わらず既存パスで適用 (内部で __op_narration を見る)。
@@ -5252,30 +5285,39 @@ function _opApplyLayoutOverride() {
   const isFiniteNum = (v) => typeof v === 'number' && Number.isFinite(v);
   // Slot (立ち絵) 適用ヘルパ。 .op-side-{key} .op-char-slot に対して
   // width/height/aspect-ratio/transform を inline で書く。
-  function applySide(sideKey, side) {
+  // variantName が指定されていて side.perVariant[variantName] が存在すれば、
+  // その entry の値を flat より優先で使う (= ポーズ別位置)。
+  function applySide(sideKey, side, variantName) {
     if (!side || typeof side !== 'object') return;
     const slot = document.querySelector('.op-side-' + sideKey + ' .op-char-slot');
     if (!slot) return;
-    if (isFiniteNum(side.slotW) && side.slotW > 0) slot.style.width  = side.slotW + 'px';
-    if (isFiniteNum(side.slotH) && side.slotH > 0) slot.style.height = side.slotH + 'px';
+    // variant 値を優先、 無ければ flat (side そのもの) を使う。
+    let src = side;
+    if (variantName && side.perVariant && typeof side.perVariant === 'object') {
+      const pv = side.perVariant[variantName];
+      if (pv && typeof pv === 'object') src = pv;
+    }
+    if (isFiniteNum(src.slotW) && src.slotW > 0) slot.style.width  = src.slotW + 'px';
+    if (isFiniteNum(src.slotH) && src.slotH > 0) slot.style.height = src.slotH + 'px';
     // slotAspect: 'fixed_0.75' → '0.75', 'fixed_1.23' → '1.23', 'fixed_1.0' → '1.0', 'free' → ''
-    if (typeof side.slotAspect === 'string' && side.slotAspect.startsWith('fixed_')) {
-      const ar = side.slotAspect.slice(6);
+    if (typeof src.slotAspect === 'string' && src.slotAspect.startsWith('fixed_')) {
+      const ar = src.slotAspect.slice(6);
       if (ar) slot.style.aspectRatio = ar;
-    } else if (side.slotAspect === 'free') {
+    } else if (src.slotAspect === 'free') {
       slot.style.aspectRatio = '';
     }
-    const ox = isFiniteNum(side.slotOffsetX) ? side.slotOffsetX : 0;
-    const oy = isFiniteNum(side.slotOffsetY) ? side.slotOffsetY : 0;
+    const ox = isFiniteNum(src.slotOffsetX) ? src.slotOffsetX : 0;
+    const oy = isFiniteNum(src.slotOffsetY) ? src.slotOffsetY : 0;
     slot.style.transform = 'translate(calc(-50% + ' + ox + 'px), calc(-50% + ' + oy + 'px))';
     // object-position は img に設定。
     const img = slot.querySelector('img');
-    if (img && typeof side.objectPosition === 'string' && side.objectPosition) {
-      img.style.objectPosition = side.objectPosition + ' center';
+    if (img && typeof src.objectPosition === 'string' && src.objectPosition) {
+      img.style.objectPosition = src.objectPosition + ' center';
     }
   }
-  applySide('pono',   layout.pono);
-  applySide('hakase', layout.hakase);
+  const ponoVariant = _opCurrentPonoVariant(panel, line);
+  applySide('pono',   layout.pono,   ponoVariant);
+  applySide('hakase', layout.hakase, null);
   // 対話 (singleBox) 適用。 .op-dialogue-single 本体 + 内部 .op-dialogue-text +
   // .op-dialogue-label の 3 要素に inline style を書く。
   const sb = layout.singleBox;
@@ -5538,7 +5580,8 @@ async function playOpeningCinematic() {
     // panel ループ前に 1 回呼ぶことで、 panel kind の切替前に DOM が editor 設定で
     // 整っている状態を保証 (panel 1 narration → panel 2 dialogue で初回ダイアログが
     // 出る瞬間に CSS デフォルトで一瞬チラつくのを防ぐ)。
-    try { _opApplyLayoutOverride(); } catch (_) {}
+    // 初回 apply: panel/line がまだ確定していないので flat fallback で OK
+    try { _opApplyLayoutOverride(null, null); } catch (_) {}
     for (let i = 0; i < OP_PANELS.length; i++) {
       if (_opCancelled) break;
       const panel = OP_PANELS[i];
@@ -5649,7 +5692,10 @@ async function playOpeningCinematic() {
         // editor の見た目と一致させる。値が無ければ no-op で CSS デフォルト維持。
         // 2026-05-10 (Q 案): _opApplyLayoutOverride() に統合。 立ち絵+対話+ナレ
         // 全部を再適用 (panel 切替時のレイアウト破綻防止)。
-        try { _opApplyLayoutOverride(); } catch (_) {}
+        // 2026-05-10 (perVariant 修正): narration panel は dialogue を表示しないが、
+        // panel.ponoImg があれば prewarm 段階で対応する slot サイズを反映しておく
+        // (= 次の dialogue panel に渡るときの一瞬のチラつきを防ぐ)。
+        try { _opApplyLayoutOverride(panel, null); } catch (_) {}
         narration.classList.remove('hidden');
         narration.classList.remove('seg-hide');
         narration.classList.add('seg-show');
@@ -5744,7 +5790,9 @@ async function playOpeningCinematic() {
         // style を再適用 (panel 切替時のレイアウト破綻防止)。 narration から
         // dialogue へ切り替わるタイミングで .op-dialogue-single の表示が始まるので、
         // editor 設定の box 寸法 / フォント / ラベル位置がここで初めて見えるようになる。
-        try { _opApplyLayoutOverride(); } catch (_) {}
+        // 2026-05-10 (perVariant 修正): panel.ponoImg → variant 名でポノ slot を初回
+        // 適用。 dialogue ループ内の line 切替時に line.ponoImg があれば再適用する。
+        try { _opApplyLayoutOverride(panel, null); } catch (_) {}
         // Clear single dialogue box
         if (dialogueEl) dialogueEl.textContent = '';
         // Fix 4: per-cut の zoom/blur 切替は廃止 (背景は静的ぼかしで固定)
@@ -5831,6 +5879,11 @@ async function playOpeningCinematic() {
               }
             }
           }
+          // 2026-05-10 (perVariant 修正): line ごとに variant が変わるので、 ポノの
+          // slot サイズ/オフセット/aspect/object-position を再適用。 d.ponoImg が
+          // 無くても panel.ponoImg fallback は _opCurrentPonoVariant 側で吸収。
+          // perVariant 値が無い variant 名のときは flat にフォールバックされる。
+          try { _opApplyLayoutOverride(panel, d); } catch (_) {}
           if (dialogueBox) {
             dialogueBox.classList.toggle('is-hakase', isHakase);
             dialogueBox.classList.toggle('is-pono', !isHakase);

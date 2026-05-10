@@ -1055,7 +1055,11 @@ const PONO_VARIANTS = [
   { name: 'dance_hooray', path: '../assets/images/characters/pono/dance/dance_hooray.webp' },
   { name: 'dance_smile', path: '../assets/images/characters/pono/dance/dance_smile.webp' },
   { name: 'think_arms_crossed_side', path: '../assets/images/characters/pono/dance/think_arms_crossed_side.webp' },
-  { name: 'think_chin_clasp', path: '../assets/images/characters/pono/dance/think_chin_clasp.webp' }
+  { name: 'think_chin_clasp', path: '../assets/images/characters/pono/dance/think_chin_clasp.webp' },
+  // 2026-05-10: pono_001 (中立立ち姿) — はかせ発話中の聞き役ポノ。OP_PANELS の
+  // hakase line 側で使用される (Panel 2-5 の pono_001.webp 参照)。 editor 上でも
+  // per-variant 位置設定の対象にする (5 ポーズと同じ slot 設定スキーマ)。
+  { name: 'pono_001', path: '../assets/images/characters/pono/dance/pono_001.webp' }
 ];
 
 const FRAME_IMAGES = [
@@ -1612,7 +1616,7 @@ function defaultsFor(vc) {
       objectPosition: 'bottom'
     };
     const out = {};
-    ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp'].forEach(v => {
+    ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp', 'pono_001'].forEach(v => {
       out[v] = Object.assign({}, base);
     });
     return out;
@@ -1765,7 +1769,10 @@ function migrateFrameIds(parsed) {
         slotAspect: (typeof side.slotAspect === 'string') ? side.slotAspect : 'fixed_0.75',
         objectPosition: (typeof side.objectPosition === 'string') ? side.objectPosition : 'bottom'
       };
-      ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp'].forEach(v => {
+      // 2026-05-10: pono_001 (中立立ち姿) も backfill 対象に追加。 既存 user の state に
+      // pono_001 が無くても baseSlot 値で補完される (= 既存 5 variant への影響なし、
+      // 一方向マイグレーション)。
+      ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp', 'pono_001'].forEach(v => {
         if (!side.perVariant[v] || typeof side.perVariant[v] !== 'object') {
           side.perVariant[v] = Object.assign({}, baseSlot);
         } else {
@@ -2036,9 +2043,14 @@ function buildRuntimeNarration(vc) {
 function buildRuntimeOpLayout(vc) {
   const s = state[vc];
   if (!s || typeof s !== 'object') return null;
-  const sideSnap = (side) => {
+  // 2026-05-10 (perVariant publish 修正): ポノ側は perVariant (5 ポーズ × 6 slot
+  // フィールド) をそのまま runtime に渡す。 hakase は perVariant 概念が無いので
+  // includePerVariant=false で flat のみ snapshot する。 perVariant 各エントリは
+  // 旧 flat snapshot と同じ 6 フィールドだけホワイトリスト copy (将来不要キーが
+  // ぶら下がるのを防ぐ)。
+  const sideSnap = (side, includePerVariant) => {
     if (!side || typeof side !== 'object') return null;
-    return {
+    const out = {
       slotW:           side.slotW,
       slotH:           side.slotH,
       slotOffsetX:     side.slotOffsetX,
@@ -2046,6 +2058,24 @@ function buildRuntimeOpLayout(vc) {
       slotAspect:      side.slotAspect,
       objectPosition:  side.objectPosition
     };
+    if (includePerVariant && side.perVariant && typeof side.perVariant === 'object') {
+      const pv = {};
+      Object.keys(side.perVariant).forEach(k => {
+        const v = side.perVariant[k];
+        if (v && typeof v === 'object') {
+          pv[k] = {
+            slotW:          v.slotW,
+            slotH:          v.slotH,
+            slotOffsetX:    v.slotOffsetX,
+            slotOffsetY:    v.slotOffsetY,
+            slotAspect:     v.slotAspect,
+            objectPosition: v.objectPosition
+          };
+        }
+      });
+      out.perVariant = pv;
+    }
+    return out;
   };
   const sbSnap = (sb) => {
     if (!sb || typeof sb !== 'object') return null;
@@ -2071,8 +2101,8 @@ function buildRuntimeOpLayout(vc) {
     };
   };
   return {
-    pono:      sideSnap(s.pono),
-    hakase:    sideSnap(s.hakase),
+    pono:      sideSnap(s.pono, true),    // ポノは perVariant 含む (ポーズ別位置)
+    hakase:    sideSnap(s.hakase, false), // hakase は flat のみ
     singleBox: sbSnap(s.singleBox),
     narration: buildRuntimeNarration(vc)
   };
