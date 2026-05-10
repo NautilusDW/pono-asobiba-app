@@ -26,7 +26,9 @@ type: feature
 
 ## screen-mapselect 補足
 
-- **エリアハイライト**: world_map と同サイズの透過 PNG (`assets/zukan/map/highlight/<area>.png`) を `worldHighlight` フィールドで指定し、選択時に `<img class="ms-area-overlay">` を全画面オーバーレイ + brightness/drop-shadow パルスで発光。**現在は花の小道のみ素材ありで実装、他 3 エリアは透過素材待ち**。
+- **エリアハイライト**: world_map と同サイズの透過 PNG (`assets/zukan/map/highlight/<area>.png`) を `worldHighlight` フィールドで指定し、選択時に `<img class="ms-area-overlay">` を全画面オーバーレイ + brightness/drop-shadow パルスで発光。**4 エリア揃って実装済** (flower_path / mushroom_forest / sunlit_forest / dew_pond)。
+- **撤去済の装飾**: ① 旧 hotspot 選択ハロー (`.ms-hotspot.selected` の `box-shadow` + `@keyframes msHalo`)、② `.ms-map-img` の `background: #cfe7d4` (water-blue 枠) — どちらも overlay 発光で表現が代替されたため不要に。
+- **エリア情報パネル**: 選択中エリアの `<img class="ms-area-info-sign">` (sign プレート) と `<div class="ms-area-info-silhouettes">` (シルエット 3 体) を画像下中央 (`bottom: 6%`) に表示。`msUpdateAreaInfo()` が hotspot click と onEnter で同期更新。`pointer-events: none` で hotspot タップを遮らない。
 
 ## データ層
 
