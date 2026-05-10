@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T10:50:59Z - quizland VOICEVOX サンプル発注書 (21問×5=105ファイル) を SAMPLE-PREVIEW.md として作成
+- **タスク**: quizland VOICEVOX サンプル発注書 (21問×5=105ファイル) を SAMPLE-PREVIEW.md として作成
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 110
+- **エラー数**: 9
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 12, "Agent": 51, "Bash": 35, "Grep": 12}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T09:53:57Z - OP cinematic 4 バグ即時修正: 赤文字 (color reset) / 改行崩れ (whiteSpace inline) / 立ち絵消失 (applySide リセット → 新値) / race (playOpeningCinematic 開始時 saved-layout.json 同期 fetch) + cross-review minor fix (sw v908)
 - **タスク**: OP cinematic 4 バグ即時修正: 赤文字 (color reset) / 改行崩れ (whiteSpace inline) / 立ち絵消失 (applySide リセット → 新値) / race (playOpeningCinematic 開始時 saved-layout.json 同期 fetch) + cross-review minor fix (sw v908)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 9, "Agent": 41, "Bash": 25, "Grep": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T05:10:04Z - pono-asobiba-app cross-review HIGH 3 + MEDIUM 1 fix: pono_001 を PONO_VARIANTS / defaultsFor / migrateFrameIds に追加 (editor で per-variant 編集対象化) + _opCurrentPonoVariant に命名乖離コメント追加 + 初回 _opApplyLayoutOverride 呼び出しを (null, null) で明示
-- **タスク**: pono-asobiba-app cross-review HIGH 3 + MEDIUM 1 fix: pono_001 を PONO_VARIANTS / defaultsFor / migrateFrameIds に追加 (editor で per-variant 編集対象化) + _opCurrentPonoVariant に命名乖離コメント追加 + 初回 _opApplyLayoutOverride 呼び出しを (null, null) で明示
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 83
-- **エラー数**: 7
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 40, "Bash": 25, "Grep": 9}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
