@@ -953,6 +953,9 @@
     <button id="btn-export-scenario" class="ghost" title="OP_PANELS の JS リテラルをコピー">📜 シナリオ Export</button>
     <button id="btn-publish-narration" class="ghost" title="現在の narration 設定 (B/C/D) を quizland/saved-layout.json の __op_narration に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
     <button id="btn-restore-narration" class="ghost" title="現在の VC の narration を quizland/saved-layout.json から復元する (このオリジンの localStorage を破棄して再初期化)。 別オリジンで編集した値が反映されないときに使用。">⟳ 復元</button>
+    <button id="btn-export-narration-json" class="ghost" title="現在の B/C/D narration 設定を JSON ファイルにダウンロード (origin 跨ぎでの移植用)">💾 NA Export</button>
+    <button id="btn-import-narration-json" class="ghost" title="ダウンロードした JSON ファイルを読み込んで B/C/D narration 設定を上書き (origin 跨ぎでの取り込み用)">📂 NA Import</button>
+    <input type="file" id="input-narration-json" accept=".json,application/json" style="display:none">
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
       <option value="" disabled selected hidden>他 VC へコピー ▾</option>
       <option value="B">現在の VC を B にコピー</option>
@@ -2156,6 +2159,68 @@ async function publishNarrationToSavedLayout() {
   } finally {
     _publishing = false;
     if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
+  }
+}
+
+// JSON Export / Import (2026-05-09): origin 跨ぎでの narration 値移植用。
+// localStorage が origin スコープなため、ローカル file:// → staging origin のような
+// 異なる origin 間で編集値を直接共有できない問題を、 JSON ファイル経由で解決する。
+// 想定ワークフロー:
+//   1. ローカル editor で編集 → 「💾 NA Export」 で JSON ダウンロード
+//   2. staging editor で 「📂 NA Import」 → 「📡 GitHub 配信」
+//   3. saved-layout.json 経由で全端末・全ユーザに反映
+function exportNarrationJson() {
+  const payload = {
+    schema: 'pono-op-narration-v1',
+    exportedAt: new Date().toISOString(),
+    narration: {
+      B: state.B && state.B.narration ? state.B.narration : null,
+      C: state.C && state.C.narration ? state.C.narration : null,
+      D: state.D && state.D.narration ? state.D.narration : null,
+    }
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const ts   = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  a.href     = url;
+  a.download = 'op-narration-' + ts + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('NA JSON エクスポート');
+}
+
+async function importNarrationJsonFromFile(file) {
+  if (!file) return;
+  if (!confirm('読み込んだ JSON で B/C/D の narration 設定を上書きします。よろしいですか？')) return;
+  try {
+    const text = await file.text();
+    const obj  = JSON.parse(text);
+    if (!obj || typeof obj !== 'object' || !obj.narration) {
+      throw new Error('JSON 形式不正: narration キーがありません');
+    }
+    const VCS = ['B', 'C', 'D'];
+    let applied = 0;
+    for (const vc of VCS) {
+      const nr = obj.narration[vc];
+      if (!nr || typeof nr !== 'object') continue;
+      if (state[vc]) {
+        try { pushUndoSnapshot('NA Import ' + vc); } catch (_) {}
+        // 既存 narration を完全上書き (但し migrate / sanitize 通過させる)
+        state[vc].narration = Object.assign({}, state[vc].narration || {}, nr);
+        try { migrateFrameIds && migrateFrameIds(state[vc]); } catch (_) {}
+        try { save(vc); } catch (_) {}
+        applied++;
+      }
+    }
+    // 現 VC の preview を再描画
+    try { render(); } catch (_) {}
+    toast('NA JSON インポート完了 (' + applied + '/3 VC 適用)');
+  } catch (e) {
+    console.warn('[op-layout-editor] import failed', e);
+    toast('NA JSON インポート失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
   }
 }
 
@@ -4917,6 +4982,19 @@ function buildHeader() {
   if (btnScn) btnScn.addEventListener('click', exportScenario);
   const btnPub = document.getElementById('btn-publish-narration');
   if (btnPub) btnPub.addEventListener('click', publishNarrationToSavedLayout);
+  // NA JSON Export / Import (origin 跨ぎでの narration 移植用)
+  const btnExpNa = document.getElementById('btn-export-narration-json');
+  if (btnExpNa) btnExpNa.addEventListener('click', exportNarrationJson);
+  const btnImpNa = document.getElementById('btn-import-narration-json');
+  const inputNa  = document.getElementById('input-narration-json');
+  if (btnImpNa && inputNa) {
+    btnImpNa.addEventListener('click', () => inputNa.click());
+    inputNa.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      importNarrationJsonFromFile(f);
+      e.target.value = ''; // 同じファイル再選択を許可
+    });
+  }
   document.getElementById('btn-reset').addEventListener('click', resetCurrent);
   document.getElementById('btn-undo-reset').addEventListener('click', undoLastOp);
 

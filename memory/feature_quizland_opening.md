@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に narration seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」ボタンで現 origin の編集値を破棄して seed から再構築できる。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime narration override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に narration seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」ボタンで現 origin の編集値を破棄して seed から再構築できる。 v902+ で 「💾 NA Export」 / 「📂 NA Import」 を追加し、 origin 跨ぎ (ローカル ↔ staging) でも JSON ファイル経由で narration 値を移植できる X 案ワークフローを実装。
 type: project
 ---
 
@@ -315,6 +315,56 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 - localStorage は origin 跨ぎで共有されないため、 ローカルで「lineHeight 1.7」 staging で「lineHeight 1.5」 のように **同じ origin 内では** 各々の編集値が保持される (これは仕様)。 「ローカルで作業 → そのまま staging で続き」をやりたい場合は publish → staging で「⟳ 復元」を踏む。
 - ただし seed 値が `quizland/index.html` の CSS hardcoded と一致しているので、 publish していなくても**大幅な崩れは起きない** (= seed の defaults 化により、 別 origin から開いても CSS と同じ値で initialize される)。
 - `_seedOpNarration` は **process 内グローバルキャッシュ**。 publish 直後は「⟳ 復元」ボタンで `forceRefresh=true` 経由で再 fetch しないと古い値が残る (実装で考慮済 — `fetchSeedOpNarration(forceRefresh=true)` 時に `cache: 'no-store'`)。
+
+### JSON Export / Import (X 案、 sw v902+) — origin 跨ぎ移植
+
+`localStorage` が origin スコープのため、 ローカル `file://` で編集した値を staging origin に直接持っていけない問題があった (B 経路復活後も「ローカル編集 → 即 staging 配信」を成立させたい)。 これを解消するため、 editor に **「💾 NA Export」** / **「📂 NA Import」** ボタンと隠し `<input type="file">` を追加 (sw v902 で導入)。
+
+#### 確定ワークフロー (X 案)
+
+```
+1. ローカル editor (file:// or localhost) で B/C/D narration を編集 → preview 確認
+2. 「💾 NA Export」 → op-narration-<timestamp>.json をダウンロード
+3. staging editor (本番 origin) を開いて 「📂 NA Import」 → JSON ファイル選択
+4. 「📡 GitHub 配信」 → quizland/saved-layout.json の __op_narration を更新
+5. 全端末・全ユーザに反映 (B 経路で fetch される)
+```
+
+ローカル ↔ staging のどちら方向にも双方向に移植可能。 「⟳ 復元」 (saved-layout.json から再 fetch) と組み合わせれば「staging で publish した値をローカルに持ち帰る」運用も可能。
+
+#### JSON 形式
+
+```json
+{
+  "schema": "pono-op-narration-v1",
+  "exportedAt": "2026-05-09T10:30:45.123Z",
+  "narration": {
+    "B": { "lineHeight": 1.6, "paddingX": 28, "paddingY": 25, ... },
+    "C": { ... },
+    "D": { ... }
+  }
+}
+```
+
+- `narration[vc]` は `state[vc].narration` をそのままダンプ (フィールドはエディタが扱える narration スキーマと完全互換)
+- 一部 VC が `null` でもエラーにならず該当 VC は import 時にスキップされる
+- スキーマ名は `pono-op-narration-v1` (将来形式変更時はバージョンを bump)
+
+#### 実装ポイント (`tools/op-layout-editor.html`)
+
+- `exportNarrationJson()`: `state.B/C/D.narration` を JSON 化 → `Blob` → `<a download>` クリックで保存。 ファイル名は `op-narration-<ISO timestamp>.json`
+- `importNarrationJsonFromFile(file)`:
+  - `confirm()` で誤操作対策 (HIGH-1: 既存 narration を完全上書きするため必須)
+  - 各 VC について `pushUndoSnapshot('NA Import ' + vc)` を積む (HIGH-2: 万一 OK 押下後でも巻き戻せる)
+  - `state[vc].narration = Object.assign({}, state[vc].narration || {}, nr)` でフィールド単位の merge (= JSON 側に書かれているフィールドだけ上書き、 JSON 側に無いフィールドは現値維持)
+  - `migrateFrameIds(state[vc])` で sanitize、 `save(vc)` で localStorage に永続化
+  - 最後に `render()` で現 VC の preview を再描画
+- イベント wire: `<button>` クリック → `<input type="file">` の `.click()` を呼んで file picker を開き、 `change` イベントで `importNarrationJsonFromFile(f)` 呼び出し。 `e.target.value = ''` で同じファイル再選択を許可
+
+#### B 経路 / 既存ボタンとの併用
+
+- 「📡 GitHub 配信」「⟳ 復元」「CSS Export」「JSON DL (= 全 layout snapshot)」の既存ボタンは**全て温存**。 NA Export/Import は narration の **3 VC 分のみ**を抜き出すコンパクトな移植経路で、 既存経路を一切壊さない
+- `localStorage` も触らずに済むため、 ローカルで作業中の per-question layout (q72, q83 など) は import 時に**完全に無傷**
 
 ## Panel Spec
 
