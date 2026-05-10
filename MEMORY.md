@@ -104,6 +104,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T05:14:09Z - ポノ per-variant 位置を全端末配信 (sideSnap に perVariant 追加 + _opCurrentPonoVariant + applySide variant-aware + dialogue line 切替時の再 apply) + pono_001 を PONO_VARIANTS / defaults / migrateFrameIds に追加 + cross-review HIGH/MEDIUM fix (sw v905)
+- **タスク**: ポノ per-variant 位置を全端末配信 (sideSnap に perVariant 追加 + _opCurrentPonoVariant + applySide variant-aware + dialogue line 切替時の再 apply) + pono_001 を PONO_VARIANTS / defaults / migrateFrameIds に追加 + cross-review HIGH/MEDIUM fix (sw v905)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 85
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 41, "Bash": 26, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T05:13:42Z - quizland-op per-variant publish + pono_001 追加: sw v904→905 バンプ + memory feature_quizland_opening.md に per-variant 配線詳細追記 + 4 ファイル commit a48c23a
+- **タスク**: quizland-op per-variant publish + pono_001 追加: sw v904→905 バンプ + memory feature_quizland_opening.md に per-variant 配線詳細追記 + 4 ファイル commit a48c23a
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 84
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 41, "Bash": 25, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T05:10:04Z - pono-asobiba-app cross-review HIGH 3 + MEDIUM 1 fix: pono_001 を PONO_VARIANTS / defaultsFor / migrateFrameIds に追加 (editor で per-variant 編集対象化) + _opCurrentPonoVariant に命名乖離コメント追加 + 初回 _opApplyLayoutOverride 呼び出しを (null, null) で明示
+- **タスク**: pono-asobiba-app cross-review HIGH 3 + MEDIUM 1 fix: pono_001 を PONO_VARIANTS / defaultsFor / migrateFrameIds に追加 (editor で per-variant 編集対象化) + _opCurrentPonoVariant に命名乖離コメント追加 + 初回 _opApplyLayoutOverride 呼び出しを (null, null) で明示
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 83
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 40, "Bash": 25, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T03:17:51Z - OP cinematic (Q) 案完成: 立ち絵+対話+ナレ全部を 1 ボタンで全端末配信 (saved-layout.json __op_layout 新キー、editor 4 ボタン拡張、runtime _opLoadLayoutOverride/_opApplyLayoutOverride 新設、後方互換 __op_narration 温存) + cross-review HIGH-1/2/3 + LOW-1 fix (sw v904)
 - **タスク**: OP cinematic (Q) 案完成: 立ち絵+対話+ナレ全部を 1 ボタンで全端末配信 (saved-layout.json __op_layout 新キー、editor 4 ボタン拡張、runtime _opLoadLayoutOverride/_opApplyLayoutOverride 新設、後方互換 __op_narration 温存) + cross-review HIGH-1/2/3 + LOW-1 fix (sw v904)
 - **結果**: 成功
@@ -180,44 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 30, "Bash": 19, "Grep": 6}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T02:30:17Z - quizland-op: B 経路 revert + JSON Export/Import 追加 (X 案、 sw v902)
-- **タスク**: quizland-op: B 経路 revert + JSON Export/Import 追加 (X 案、 sw v902)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 88
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 34, "Glob": 4, "Bash": 16, "Agent": 25, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T02:14:19Z - quizland-op: saved-layout.json 配信 (B 経路) 撤去、ローカル localStorage + CSS export ワークフローに戻す (sw v901、commit 2f68389)
-- **タスク**: quizland-op: saved-layout.json 配信 (B 経路) 撤去、ローカル localStorage + CSS export ワークフローに戻す (sw v901、commit 2f68389)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 58
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 26, "Bash": 18, "Grep": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-10T02:05:06Z - OP narration レイアウト復元: saved-layout.json に __op_narration seed 挿入 + editor 起動時 load フォールバック (localStorage > seed > defaults) + 「⟳ 復元」ボタン (confirm + undo) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (sw v900)
-- **タスク**: OP narration レイアウト復元: saved-layout.json に __op_narration seed 挿入 + editor 起動時 load フォールバック (localStorage > seed > defaults) + 「⟳ 復元」ボタン (confirm + undo) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (sw v900)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 57
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 25, "Bash": 18, "Grep": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
