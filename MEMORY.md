@@ -104,6 +104,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T02:05:06Z - OP narration レイアウト復元: saved-layout.json に __op_narration seed 挿入 + editor 起動時 load フォールバック (localStorage > seed > defaults) + 「⟳ 復元」ボタン (confirm + undo) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (sw v900)
+- **タスク**: OP narration レイアウト復元: saved-layout.json に __op_narration seed 挿入 + editor 起動時 load フォールバック (localStorage > seed > defaults) + 「⟳ 復元」ボタン (confirm + undo) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (sw v900)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 57
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Agent": 25, "Bash": 18, "Grep": 6}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-10T02:04:27Z - quizland-op: saved-layout.json narration seed + editor 起動 load フォールバック + ⟳ 復元ボタン の memory 更新と commit (sw v900)
+- **タスク**: quizland-op: saved-layout.json narration seed + editor 起動 load フォールバック + ⟳ 復元ボタン の memory 更新と commit (sw v900)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 88
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 34, "Glob": 4, "Bash": 16, "Agent": 25, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 3}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T02:00:35Z - agent-8 innermap-rpg-postfix: review-5 MEDIUM 3件 (SVG createElementNS化 / legacy coming-soon リセット / transformOrigin px明示) + sw v900 + memory追記
 - **タスク**: agent-8 innermap-rpg-postfix: review-5 MEDIUM 3件 (SVG createElementNS化 / legacy coming-soon リセット / transformOrigin px明示) + sw v900 + memory追記
 - **結果**: 成功
@@ -193,31 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 30, "Glob": 4, "Bash": 11, "Agent": 11, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T00:04:52Z - agent-G review-fixer: HIGH4+MEDIUM1 (zukan誤字/touch二重発火/innerHTML脱却/stale closure/im-pinヒットエリア拡大) を修正
-- **タスク**: agent-G review-fixer: HIGH4+MEDIUM1 (zukan誤字/touch二重発火/innerHTML脱却/stale closure/im-pinヒットエリア拡大) を修正
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 62
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 30, "Glob": 4, "Bash": 10, "Agent": 10, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-09T23:56:39Z - sw.js CACHE_VERSION 894 -> 895 bump (zukan SPA + 30+ assets cache invalidation)
-- **タスク**: sw.js CACHE_VERSION 894 -> 895 bump (zukan SPA + 30+ assets cache invalidation)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 55
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 7, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
