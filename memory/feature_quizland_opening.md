@@ -285,6 +285,37 @@ cinematic stage は `.op-content` で **4:3 を最大アスペクト** として
 - editor の CSS Export ボタンを使う既存ワークフロー (asymmetric padding を本番に焼き込む等) は無傷。CSS Export は **全ユーザ向けの恒久的な見た目変更**、 saved-layout.json 経路は **データ駆動の上書き** (CSS には書き出さず、 runtime が JSON を読んで inline style として反映) という棲み分け。
 - **横展開予定**: 同じ「saved-layout.json の `__xxx` キーに JSON snapshot を merge → runtime が読んで inline 反映」という配信パターンは、他ゲームの layout 配信にも応用できる (例: zukan / character-builder / maze の layout エディタ)。
 
+### Editor 起動時 seed fallback + 「⟳ 復元」ボタン (sw v900+)
+
+`tools/op-layout-editor.html` を **別 origin** (例: ローカルで作業した値を staging で開く、 staging で作業した値をローカルで開く) で開いた際、 localStorage が origin スコープのため**編集値がまったく見えない**問題があった。 旧実装は `state[VC] = load(VC) || defaultsFor(VC)` で defaults に fallback してしまい、 既存の `quizland/saved-layout.json` (📡 GitHub 配信 で publish 済の正規値) が**まったく使われずデフォルト崩れ**を起こしていた。
+
+これを解消するため:
+
+1. **`quizland/saved-layout.json` の top-level に `__op_narration: { B, C, D }` を seed として直接書き込み** (commit a70ec33 で `quizland/index.html` の per-VC `@media` に hardcoded した CSS 値と完全一致)。 既存 219 keys (`q72`, `q83`, `__chip_text_overrides`, ...) は完全温存。
+2. **editor 起動時に `init()` を async 化**し `await fetchSeedOpNarration()` で seed を fetch → `_seedOpNarration` にキャッシュ。
+3. **`initVc(vc)` ヘルパで `localStorage > seed > defaults` の 3 段優先**で state を初期化:
+   - localStorage 値があればそれを採用 (= 同 origin で過去に編集した値を尊重)
+   - localStorage 空なら `defaultsFor(vc)` の上に `applySeedToNarration(vc)` で seed を merge → `migrateFrameIds` で sanitize
+   - seed も無ければ defaults のまま
+4. **「⟳ 復元」ボタン** (`📡 GitHub 配信` の隣) を追加。 `restoreNarrationFromSavedLayout()` で:
+   - `confirm()` で誤クリック防止 (HIGH-1 fix)
+   - `pushUndoSnapshot('⟳ 復元 ' + vc)` で復元前の状態を Undo スタックに積む (HIGH-1 fix、 万一 OK 押下後でも巻き戻せる)
+   - 現 VC の `localStorage[STORAGE_PREFIX+vc]` と `localStorage[NARRATION_RUNTIME_PREFIX+vc]` を removeItem
+   - `fetchSeedOpNarration(true)` で `cache: 'no-store'` 強制再 fetch (HIGH-2 fix、起動時のみ `cache: 'default'` でブラウザ HTTP キャッシュを利用し network round-trip を削る)
+   - `defaults + seed merge → migrateFrameIds → state` 書き戻し → `save(vc)` → `render() / buildRightPane()`
+5. seed の省略キー (例: `left=0`, `aspectLockRatio=0`) は `migrateFrameIds()` の narration backfill ロジックで 0 にフォールバックする。 将来 narration スキーマにフィールドが追加されたら seed 構造も合わせること (MEDIUM-3 fix で説明コメント追記済)。
+
+#### 運用ガイダンス
+
+- **ローカル → staging で編集値を移植したい場合**: 旧来は **手動 export/import が必須**だったが、 staging origin で「⟳ 復元」を押すか、 publish (📡 GitHub 配信) → そのまま staging を開けば seed として読み込まれる。
+- **staging を「本物」にする運用**: 大きな変更は staging で編集 → publish → そのまま production / ローカル / 他端末も**自動で同じ値**で初期化される (= 1 回 publish で全 origin の defaults を正規値に揃えられる)。
+
+#### 既知の制約
+
+- localStorage は origin 跨ぎで共有されないため、 ローカルで「lineHeight 1.7」 staging で「lineHeight 1.5」 のように **同じ origin 内では** 各々の編集値が保持される (これは仕様)。 「ローカルで作業 → そのまま staging で続き」をやりたい場合は publish → staging で「⟳ 復元」を踏む。
+- ただし seed 値が `quizland/index.html` の CSS hardcoded と一致しているので、 publish していなくても**大幅な崩れは起きない** (= seed の defaults 化により、 別 origin から開いても CSS と同じ値で initialize される)。
+- `_seedOpNarration` は **process 内グローバルキャッシュ**。 publish 直後は「⟳ 復元」ボタンで `forceRefresh=true` 経由で再 fetch しないと古い値が残る (実装で考慮済 — `fetchSeedOpNarration(forceRefresh=true)` 時に `cache: 'no-store'`)。
+
 ## Panel Spec
 
 | # | kind | bg | 内容 |
