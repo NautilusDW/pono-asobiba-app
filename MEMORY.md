@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T02:14:19Z - quizland-op: saved-layout.json 配信 (B 経路) 撤去、ローカル localStorage + CSS export ワークフローに戻す (sw v901、commit 2f68389)
+- **タスク**: quizland-op: saved-layout.json 配信 (B 経路) 撤去、ローカル localStorage + CSS export ワークフローに戻す (sw v901、commit 2f68389)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 58
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Agent": 26, "Bash": 18, "Grep": 6}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T02:05:06Z - OP narration レイアウト復元: saved-layout.json に __op_narration seed 挿入 + editor 起動時 load フォールバック (localStorage > seed > defaults) + 「⟳ 復元」ボタン (confirm + undo) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (sw v900)
 - **タスク**: OP narration レイアウト復元: saved-layout.json に __op_narration seed 挿入 + editor 起動時 load フォールバック (localStorage > seed > defaults) + 「⟳ 復元」ボタン (confirm + undo) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (sw v900)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 30, "Glob": 4, "Bash": 11, "Agent": 13, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T00:11:55Z - ずかん 5-screen SPA 化 (タイトル→マップ選択→エリア内マップ→探索→図鑑コレクション) + 素材30件取り込み + クロスレビュー HIGH4+MED1 反映 + commit b505ffd (sw v895)
-- **タスク**: ずかん 5-screen SPA 化 (タイトル→マップ選択→エリア内マップ→探索→図鑑コレクション) + 素材30件取り込み + クロスレビュー HIGH4+MED1 反映 + commit b505ffd (sw v895)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 64
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 30, "Glob": 4, "Bash": 11, "Agent": 11, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
