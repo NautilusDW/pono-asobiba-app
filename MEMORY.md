@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T01:07:13Z - zukan mapselect 花の小道ハイライト overlay (透過 PNG 全画面重ね + 発光パルス) を develop に commit (sw v896)
+- **タスク**: zukan mapselect 花の小道ハイライト overlay (透過 PNG 全画面重ね + 発光パルス) を develop に commit (sw v896)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 74
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 33, "Glob": 4, "Bash": 13, "Agent": 16, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T00:47:53Z - agent-1 mapselect-highlight: Step 1 目視判定でMap_scenes画像がworld_mapとぴったり重ならないことを確認しケース2(コード未編集で保留報告)
 - **タスク**: agent-1 mapselect-highlight: Step 1 目視判定でMap_scenes画像がworld_mapとぴったり重ならないことを確認しケース2(コード未編集で保留報告)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 20, "Bash": 14}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T23:40:35Z - quizland OP ナレーション音声を seg1/seg2 per-seg 分割再生 (OP_NA01.mp3 + OP_NA_02.mp3、__opStartSegAudio/__opStopSegAudio ヘルパ、BGM ducking 単一管理、Web Audio リーク防止、preload 汎用化) — cross-review APPROVE (sw v893)
-- **タスク**: quizland OP ナレーション音声を seg1/seg2 per-seg 分割再生 (OP_NA01.mp3 + OP_NA_02.mp3、__opStartSegAudio/__opStopSegAudio ヘルパ、BGM ducking 単一管理、Web Audio リーク防止、preload 汎用化) — cross-review APPROVE (sw v893)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 40
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 19, "Bash": 14}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
