@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T12:27:35Z - Quizland VOICEVOX 全180問発注書フル版作成 (902ファイル)
+- **タスク**: Quizland VOICEVOX 全180問発注書フル版作成 (902ファイル)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 130
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 13, "Agent": 57, "Bash": 42, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T12:19:21Z - quizland: number_sequence カテゴリのクロスレビュー指摘 3 件を修正 (M1: .number-display を QZ_RESIZABLE_SELECTORS に登録 / L1: number-display-sep の二重 padding 解消 と / L2: hint2Fallback 3要素目を汎用文言化)
 - **タスク**: quizland: number_sequence カテゴリのクロスレビュー指摘 3 件を修正 (M1: .number-display を QZ_RESIZABLE_SELECTORS に登録 / L1: number-display-sep の二重 padding 解消 と / L2: hint2Fallback 3要素目を汎用文言化)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 12, "Agent": 51, "Bash": 35, "Grep": 12}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T09:53:57Z - OP cinematic 4 バグ即時修正: 赤文字 (color reset) / 改行崩れ (whiteSpace inline) / 立ち絵消失 (applySide リセット → 新値) / race (playOpeningCinematic 開始時 saved-layout.json 同期 fetch) + cross-review minor fix (sw v908)
-- **タスク**: OP cinematic 4 バグ即時修正: 赤文字 (color reset) / 改行崩れ (whiteSpace inline) / 立ち絵消失 (applySide リセット → 新値) / race (playOpeningCinematic 開始時 saved-layout.json 同期 fetch) + cross-review minor fix (sw v908)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 109
-- **エラー数**: 9
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 12, "Agent": 50, "Bash": 35, "Grep": 12}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
