@@ -5183,6 +5183,14 @@ function _opLoadNarrationOverride(vc) {
   // 用の localStorage[NARRATION_RUNTIME_PREFIX+vc] にフォールバック。 両方無ければ null。
   try {
     const data = window._currentLayoutData;
+    // 2026-05-10 (Q 案): __op_layout[vc].narration (新キー) を最優先で見る。
+    // 無ければ __op_narration[vc] (旧キー) にフォールバック。
+    if (data && data.__op_layout && typeof data.__op_layout === 'object') {
+      const ent = data.__op_layout[vc];
+      if (ent && typeof ent === 'object' && ent.narration && typeof ent.narration === 'object') {
+        return ent.narration;
+      }
+    }
     if (data && data.__op_narration && typeof data.__op_narration === 'object') {
       const remote = data.__op_narration[vc];
       if (remote && typeof remote === 'object') return remote;
@@ -5208,6 +5216,127 @@ function _opHexToRgba(hex, opacity) {
   if (a < 0) a = 0; if (a > 1) a = 1;
   return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 }
+// 2026-05-10 (Q 案): saved-layout.json の `__op_layout[vc]` から立ち絵+対話+ナレ
+// 全部の runtime 用 snapshot を読み込む。 LayoutSystem.init が defer ロード時点で
+// window._currentLayoutData に展開済 (mode-btn タップまで通常数秒のラグがあるので
+// race は実用上ない)。 未 fetch / __op_layout 未設定 / 当該 VC キー無し なら null。
+function _opLoadLayoutOverride(vc) {
+  if (!vc) return null;
+  try {
+    const data = window._currentLayoutData;
+    if (data && data.__op_layout && typeof data.__op_layout === 'object') {
+      const remote = data.__op_layout[vc];
+      if (remote && typeof remote === 'object') return remote;
+    }
+  } catch (e) { /* fall through */ }
+  return null;
+}
+
+// 2026-05-10 (Q 案): editor の per-VC snapshot から runtime DOM に inline style を
+// 注入。 立ち絵 (.op-side-pono / .op-side-hakase の .op-char-slot) + 対話
+// (.op-dialogue-single 本体 + .op-dialogue-text + .op-dialogue-label) + ナレ
+// (.op-narration; 既存 _opApplyNarrationOverride に委譲) の 4 つ全部を扱う。
+//
+// __op_layout が無い VC は narration のみ既存パスにフォールバック (旧 __op_narration
+// または localStorage)。 これにより saved-layout.json に __op_narration だけある状態
+// でも narration は正しく適用される (= 後方互換)。
+function _opApplyLayoutOverride() {
+  const vc = _opGetCurrentVC();
+  const layout = _opLoadLayoutOverride(vc);
+  // ナレは __op_layout の有無に関わらず既存パスで適用 (内部で __op_narration を見る)。
+  try {
+    const narrEl = document.getElementById('op-narration');
+    if (narrEl) _opApplyNarrationOverride(narrEl);
+  } catch (_) {}
+  if (!layout) return; // 立ち絵/対話 override 無し → CSS デフォルトに任せる。
+  const isFiniteNum = (v) => typeof v === 'number' && Number.isFinite(v);
+  // Slot (立ち絵) 適用ヘルパ。 .op-side-{key} .op-char-slot に対して
+  // width/height/aspect-ratio/transform を inline で書く。
+  function applySide(sideKey, side) {
+    if (!side || typeof side !== 'object') return;
+    const slot = document.querySelector('.op-side-' + sideKey + ' .op-char-slot');
+    if (!slot) return;
+    if (isFiniteNum(side.slotW) && side.slotW > 0) slot.style.width  = side.slotW + 'px';
+    if (isFiniteNum(side.slotH) && side.slotH > 0) slot.style.height = side.slotH + 'px';
+    // slotAspect: 'fixed_0.75' → '0.75', 'fixed_1.23' → '1.23', 'fixed_1.0' → '1.0', 'free' → ''
+    if (typeof side.slotAspect === 'string' && side.slotAspect.startsWith('fixed_')) {
+      const ar = side.slotAspect.slice(6);
+      if (ar) slot.style.aspectRatio = ar;
+    } else if (side.slotAspect === 'free') {
+      slot.style.aspectRatio = '';
+    }
+    const ox = isFiniteNum(side.slotOffsetX) ? side.slotOffsetX : 0;
+    const oy = isFiniteNum(side.slotOffsetY) ? side.slotOffsetY : 0;
+    slot.style.transform = 'translate(calc(-50% + ' + ox + 'px), calc(-50% + ' + oy + 'px))';
+    // object-position は img に設定。
+    const img = slot.querySelector('img');
+    if (img && typeof side.objectPosition === 'string' && side.objectPosition) {
+      img.style.objectPosition = side.objectPosition + ' center';
+    }
+  }
+  applySide('pono',   layout.pono);
+  applySide('hakase', layout.hakase);
+  // 対話 (singleBox) 適用。 .op-dialogue-single 本体 + 内部 .op-dialogue-text +
+  // .op-dialogue-label の 3 要素に inline style を書く。
+  const sb = layout.singleBox;
+  const dlg = document.getElementById('op-dialogue-single');
+  if (sb && dlg) {
+    if (isFiniteNum(sb.boxW) && sb.boxW > 0) dlg.style.width  = sb.boxW + 'px';
+    if (isFiniteNum(sb.boxH) && sb.boxH > 0) dlg.style.height = sb.boxH + 'px';
+    if (isFiniteNum(sb.boxY))                dlg.style.top    = sb.boxY + 'px';
+    if (isFiniteNum(sb.boxPadding))          dlg.style.padding = sb.boxPadding + 'px';
+    // 背景: image モード優先 (boxImagePath があれば)、 css モードなら boxColor + boxRadius。
+    if (sb.boxMode === 'image' && typeof sb.boxImagePath === 'string' && sb.boxImagePath) {
+      dlg.style.backgroundImage = "url('" + sb.boxImagePath + "')";
+      dlg.style.backgroundSize = '100% 100%';
+      dlg.style.backgroundRepeat = 'no-repeat';
+      dlg.style.backgroundColor = 'transparent';
+      dlg.style.borderRadius = '0';
+    } else if (sb.boxMode === 'css') {
+      dlg.style.backgroundImage = 'none';
+      if (typeof sb.boxColor === 'string' && sb.boxColor) dlg.style.backgroundColor = sb.boxColor;
+      if (isFiniteNum(sb.boxRadius)) dlg.style.borderRadius = sb.boxRadius + 'px';
+    }
+    // textAlign / 中央寄せ flex は既存 CSS で出ているが、 念のため text-align だけ
+    // 上書き (line-height / font-size は内側 .op-dialogue-text へ)。
+    const textEl  = document.getElementById('op-dialogue-text-single');
+    const labelEl = document.getElementById('op-dialogue-label-single');
+    if (textEl) {
+      if (isFiniteNum(sb.fontSize)   && sb.fontSize   > 0) textEl.style.fontSize   = sb.fontSize + 'px';
+      if (isFiniteNum(sb.lineHeight) && sb.lineHeight > 0) textEl.style.lineHeight = String(sb.lineHeight);
+      if (typeof sb.textAlignH === 'string' && sb.textAlignH) textEl.style.textAlign = sb.textAlignH;
+    }
+    // ラベル: editor の labelPositionStyle と同じ計算で top/left を決める。
+    // anchor='tl' inside=true: top = 16+oy, left = 16+ox
+    // anchor='tr' inside=true: top = 16+oy, right = 16-ox
+    // anchor='bl' inside=true: bottom = 16-oy, left = 16+ox
+    // anchor='br' inside=true: bottom = 16-oy, right = 16-ox
+    // outside (inside=false) は margin = -22。
+    if (labelEl) {
+      const insideMargin = 16, outsideMargin = -22;
+      const margin = (sb.labelInside === false) ? outsideMargin : insideMargin;
+      const ox = isFiniteNum(sb.labelOffsetX) ? sb.labelOffsetX : 0;
+      const oy = isFiniteNum(sb.labelOffsetY) ? sb.labelOffsetY : 0;
+      // 反対側プロパティを必ず auto にしてリセット (前回値の残留防止)。
+      labelEl.style.top = labelEl.style.bottom = labelEl.style.left = labelEl.style.right = 'auto';
+      const anchor = (sb.labelAnchor === 'tr' || sb.labelAnchor === 'tl' ||
+                      sb.labelAnchor === 'br' || sb.labelAnchor === 'bl')
+                       ? sb.labelAnchor : 'bl';
+      if (anchor === 'tl')      { labelEl.style.top    = (margin + oy) + 'px'; labelEl.style.left  = (insideMargin + ox) + 'px'; }
+      else if (anchor === 'tr') { labelEl.style.top    = (margin + oy) + 'px'; labelEl.style.right = (insideMargin - ox) + 'px'; }
+      else if (anchor === 'bl') { labelEl.style.bottom = (margin - oy) + 'px'; labelEl.style.left  = (insideMargin + ox) + 'px'; }
+      else                      { labelEl.style.bottom = (margin - oy) + 'px'; labelEl.style.right = (insideMargin - ox) + 'px'; }
+      if (isFiniteNum(sb.labelFontSize) && sb.labelFontSize > 0) {
+        labelEl.style.fontSize = sb.labelFontSize + 'px';
+      }
+    }
+  }
+  // 対話 boxImage が image モードのとき、 narration も同じ image を使う設計だが、
+  // narration の bgImagePath は __op_layout[vc].narration.bgImagePath に
+  // 分離されており、 適用は _opApplyNarrationOverride に統合済み (二重適用防止)。
+  // ここでは singleBox しか触らない。
+}
+
 function _opApplyNarrationOverride(narrEl) {
   if (!narrEl) return;
   const vc = _opGetCurrentVC();
@@ -5244,9 +5373,19 @@ function _opApplyNarrationOverride(narrEl) {
   if (typeof nr.textAlignH === 'string' && nr.textAlignH) {
     narrEl.style.textAlign = nr.textAlignH;
   }
-  // 背景 (bgMode === 'css' のときのみ単色 + 角丸 + 影を更新。 'image' はフレーム
-  //  画像参照が editor 専用パスなので runtime では触らない = CSS の現状維持)。
-  if (nr.bgMode === 'css') {
+  // 背景: 'image' モードで bgImagePath があればフレーム画像を inline 注入。
+  // 'css' モードのときのみ単色 + 角丸 + 影を更新。
+  // (旧: image モードは runtime で触らず CSS デフォルトに任せていたが、
+  //  __op_layout[vc].narration.bgImagePath を導入したため runtime 側で適用する。
+  //  二重適用防止のため _opApplyLayoutOverride 末尾の narration 背景処理は撤去済み。)
+  if (nr.bgMode === 'image' && typeof nr.bgImagePath === 'string' && nr.bgImagePath) {
+    narrEl.style.backgroundImage  = "url('" + nr.bgImagePath + "')";
+    narrEl.style.backgroundSize   = '100% 100%';
+    narrEl.style.backgroundRepeat = 'no-repeat';
+    narrEl.style.backgroundColor  = 'transparent';
+    narrEl.style.borderRadius     = '0';
+    narrEl.style.boxShadow        = 'none';
+  } else if (nr.bgMode === 'css') {
     // Fix MEDIUM (review 2026-05-09): bgColor 不正値で bgc==='' のとき、CSS の frame
     // 画像 background が残ってしまい editor 上の「CSS 単色」設定と食い違う。
     // bgMode==='css' に入った時点で backgroundImage を消し、bgc が取れた場合のみ
@@ -5394,6 +5533,12 @@ async function playOpeningCinematic() {
       // Element missing — bail without entering the loop. Finally still runs.
       return;
     }
+    // 2026-05-10 (Q 案): 立ち絵 (.op-side-pono / .op-side-hakase の slot) + 対話
+    // (.op-dialogue-single) + ナレ (.op-narration) の inline style を一括適用。
+    // panel ループ前に 1 回呼ぶことで、 panel kind の切替前に DOM が editor 設定で
+    // 整っている状態を保証 (panel 1 narration → panel 2 dialogue で初回ダイアログが
+    // 出る瞬間に CSS デフォルトで一瞬チラつくのを防ぐ)。
+    try { _opApplyLayoutOverride(); } catch (_) {}
     for (let i = 0; i < OP_PANELS.length; i++) {
       if (_opCancelled) break;
       const panel = OP_PANELS[i];
@@ -5502,7 +5647,9 @@ async function playOpeningCinematic() {
         // 設定 (lineHeight / padding / fontSize / width / height / 位置 / bg) を
         // localStorage 経由で inline style 注入。可視化前に適用して初期描画を
         // editor の見た目と一致させる。値が無ければ no-op で CSS デフォルト維持。
-        try { _opApplyNarrationOverride(narration); } catch (_) {}
+        // 2026-05-10 (Q 案): _opApplyLayoutOverride() に統合。 立ち絵+対話+ナレ
+        // 全部を再適用 (panel 切替時のレイアウト破綻防止)。
+        try { _opApplyLayoutOverride(); } catch (_) {}
         narration.classList.remove('hidden');
         narration.classList.remove('seg-hide');
         narration.classList.add('seg-show');
@@ -5593,6 +5740,11 @@ async function playOpeningCinematic() {
       } else if (panel.kind === 'dialogue') {
         narration.classList.add('hidden');
         sides.classList.remove('hidden');
+        // 2026-05-10 (Q 案): dialogue panel が DOM に出る直前に立ち絵+対話 inline
+        // style を再適用 (panel 切替時のレイアウト破綻防止)。 narration から
+        // dialogue へ切り替わるタイミングで .op-dialogue-single の表示が始まるので、
+        // editor 設定の box 寸法 / フォント / ラベル位置がここで初めて見えるようになる。
+        try { _opApplyLayoutOverride(); } catch (_) {}
         // Clear single dialogue box
         if (dialogueEl) dialogueEl.textContent = '';
         // Fix 4: per-cut の zoom/blur 切替は廃止 (背景は静的ぼかしで固定)
@@ -5746,8 +5898,39 @@ async function playOpeningCinematic() {
       const __narrEnd = document.getElementById('op-narration');
       if (__narrEnd) {
         ['top','bottom','width','height','lineHeight','fontSize','padding',
-         'backgroundColor','backgroundImage','boxShadow','borderRadius','textAlign']
+         'backgroundColor','backgroundImage','backgroundSize','backgroundRepeat',
+         'boxShadow','borderRadius','textAlign']
           .forEach(k => { try { __narrEnd.style[k] = ''; } catch(_e){} });
+      }
+    } catch (e) {}
+    // 2026-05-10 (Q 案): 立ち絵 (.op-side-pono / .op-side-hakase の slot + img) +
+    // 対話 (.op-dialogue-single 本体 + 内部 .op-dialogue-text + .op-dialogue-label)
+    // の inline style を replay 時のリーク防止のため全クリア。
+    try {
+      ['pono', 'hakase'].forEach(sideKey => {
+        const slot = document.querySelector('.op-side-' + sideKey + ' .op-char-slot');
+        if (slot) {
+          ['width','height','aspectRatio','transform']
+            .forEach(k => { try { slot.style[k] = ''; } catch(_e){} });
+          const img = slot.querySelector('img');
+          if (img) { try { img.style.objectPosition = ''; } catch(_e){} }
+        }
+      });
+      const __dlg = document.getElementById('op-dialogue-single');
+      if (__dlg) {
+        ['width','height','top','padding','backgroundImage','backgroundSize',
+         'backgroundRepeat','backgroundColor','borderRadius']
+          .forEach(k => { try { __dlg.style[k] = ''; } catch(_e){} });
+      }
+      const __txt = document.getElementById('op-dialogue-text-single');
+      if (__txt) {
+        ['fontSize','lineHeight','textAlign']
+          .forEach(k => { try { __txt.style[k] = ''; } catch(_e){} });
+      }
+      const __lbl = document.getElementById('op-dialogue-label-single');
+      if (__lbl) {
+        ['top','bottom','left','right','fontSize']
+          .forEach(k => { try { __lbl.style[k] = ''; } catch(_e){} });
       }
     } catch (e) {}
     try { window.removeEventListener('resize', rescaleOpContent); } catch (e) {}

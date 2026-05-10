@@ -951,10 +951,10 @@
     <button id="btn-export-css" class="ghost">CSS DL</button>
     <button id="btn-export-json" class="ghost">JSON DL</button>
     <button id="btn-export-scenario" class="ghost" title="OP_PANELS の JS リテラルをコピー">📜 シナリオ Export</button>
-    <button id="btn-publish-narration" class="ghost" title="現在の narration 設定 (B/C/D) を quizland/saved-layout.json の __op_narration に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
-    <button id="btn-restore-narration" class="ghost" title="現在の VC の narration を quizland/saved-layout.json から復元する (このオリジンの localStorage を破棄して再初期化)。 別オリジンで編集した値が反映されないときに使用。">⟳ 復元</button>
-    <button id="btn-export-narration-json" class="ghost" title="現在の B/C/D narration 設定を JSON ファイルにダウンロード (origin 跨ぎでの移植用)">💾 NA Export</button>
-    <button id="btn-import-narration-json" class="ghost" title="ダウンロードした JSON ファイルを読み込んで B/C/D narration 設定を上書き (origin 跨ぎでの取り込み用)">📂 NA Import</button>
+    <button id="btn-publish-narration" class="ghost" title="現在の OP layout (立ち絵+対話+ナレ、 B/C/D 全部) を quizland/saved-layout.json の __op_layout に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
+    <button id="btn-restore-narration" class="ghost" title="現在の VC の OP layout (立ち絵+対話+ナレ) を quizland/saved-layout.json から復元する (このオリジンの localStorage を破棄して再初期化)。 別オリジンで編集した値が反映されないときに使用。">⟳ 復元</button>
+    <button id="btn-export-narration-json" class="ghost" title="現在の B/C/D OP layout (立ち絵+対話+ナレ) を JSON ファイルにダウンロード (origin 跨ぎでの移植用)">💾 Export</button>
+    <button id="btn-import-narration-json" class="ghost" title="ダウンロードした JSON ファイルを読み込んで B/C/D OP layout (立ち絵+対話+ナレ) を上書き (origin 跨ぎでの取り込み用、 旧 narration-only 形式も読み込み可)">📂 Import</button>
     <input type="file" id="input-narration-json" accept=".json,application/json" style="display:none">
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
       <option value="" disabled selected hidden>他 VC へコピー ▾</option>
@@ -2017,10 +2017,64 @@ function buildRuntimeNarration(vc) {
     bottom:       nr.bottom,
     textAlignH:   nr.textAlignH,
     bgMode:       nr.bgMode,
+    bgImage:      nr.bgImage,
+    bgImagePath:  (nr.bgImage && !isFrameUserAdded(nr.bgImage)) ? framePathById(nr.bgImage) : null,
     bgColor:      nr.bgColor,
     bgOpacity:    nr.bgOpacity,
     borderRadius: nr.borderRadius,
     showShadow:   nr.showShadow
+  };
+}
+
+// 2026-05-10 (Q 案): editor の per-VC state[vc] から runtime に必要な
+// 立ち絵 (pono/hakase) + 対話 (singleBox) + ナレーション (narration) のサブセットを抽出。
+// runtime (quizland/index.html) は _opApplyLayoutOverride() でこれを読んで inline style に
+// 注入する。 ボックス画像は frame id (boxImage) と解決後の URL (boxImagePath) を両方
+// 含めることで、 runtime が FRAME_IMAGES マップを持たなくても直接 background-image を
+// 適用できるようにする。 ユーザー追加 (data: URL) frame は path を null にして runtime
+// 側で no-op (= CSS デフォルト維持) にさせる。
+function buildRuntimeOpLayout(vc) {
+  const s = state[vc];
+  if (!s || typeof s !== 'object') return null;
+  const sideSnap = (side) => {
+    if (!side || typeof side !== 'object') return null;
+    return {
+      slotW:           side.slotW,
+      slotH:           side.slotH,
+      slotOffsetX:     side.slotOffsetX,
+      slotOffsetY:     side.slotOffsetY,
+      slotAspect:      side.slotAspect,
+      objectPosition:  side.objectPosition
+    };
+  };
+  const sbSnap = (sb) => {
+    if (!sb || typeof sb !== 'object') return null;
+    return {
+      boxW:           sb.boxW,
+      boxH:           sb.boxH,
+      boxY:           sb.boxY,
+      boxPadding:     sb.boxPadding,
+      boxRadius:      sb.boxRadius,
+      boxMode:        sb.boxMode,
+      boxImage:       sb.boxImage,
+      boxImagePath:   (sb.boxImage && !isFrameUserAdded(sb.boxImage)) ? framePathById(sb.boxImage) : null,
+      boxColor:       sb.boxColor,
+      fontSize:       sb.fontSize,
+      lineHeight:     sb.lineHeight,
+      textAlignH:     sb.textAlignH,
+      textAlignV:     sb.textAlignV,
+      labelAnchor:    sb.labelAnchor,
+      labelInside:    sb.labelInside,
+      labelOffsetX:   sb.labelOffsetX,
+      labelOffsetY:   sb.labelOffsetY,
+      labelFontSize:  sb.labelFontSize
+    };
+  };
+  return {
+    pono:      sideSnap(s.pono),
+    hakase:    sideSnap(s.hakase),
+    singleBox: sbSnap(s.singleBox),
+    narration: buildRuntimeNarration(vc)
   };
 }
 function save(vc) {
@@ -2062,6 +2116,7 @@ const GH_REPO   = 'pono-asobiba-app';
 const GH_BRANCH = 'develop';
 const SAVED_LAYOUT_PATH = 'quizland/saved-layout.json';
 const OP_NARRATION_KEY  = '__op_narration';
+const OP_LAYOUT_KEY     = '__op_layout';
 
 function _ghContentsUrl(path) {
   return '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + encodeURI(path);
@@ -2104,7 +2159,7 @@ async function _ghPutSavedLayout(jsonObj, sha) {
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   const b64 = btoa(bin);
   const body = {
-    message: 'chore(quizland-op): update narration runtime override',
+    message: 'chore(quizland-op): update OP layout runtime override (pono/hakase/singleBox/narration)',
     content: b64,
     branch: GH_BRANCH,
   };
@@ -2136,19 +2191,24 @@ async function publishNarrationToSavedLayout() {
     toast('GitHub に配信中…');
     const got = await _ghGetSavedLayout();
     const base = (got.contents && typeof got.contents === 'object') ? got.contents : {};
-    // VC 別 narration を全 3 件まとめて書き込む (一部だけ未設定なら省略)。
+    // 2026-05-10 (Q 案): __op_layout (立ち絵+対話+ナレ全部) を新キーとして書き込む。
+    // 既存 __op_narration は後方互換のため温存 (旧 runtime / 旧 saved-layout を読む経路)。
+    const opLayout = {};
     const opNar = {};
     ['B', 'C', 'D'].forEach(vc => {
+      const layout = buildRuntimeOpLayout(vc);
+      if (layout) opLayout[vc] = layout;
       const r = buildRuntimeNarration(vc);
       if (r) opNar[vc] = r;
     });
-    if (Object.keys(opNar).length === 0) {
-      toast('narration 設定が空です', 'err');
+    if (Object.keys(opLayout).length === 0 && Object.keys(opNar).length === 0) {
+      toast('OP layout 設定が空です', 'err');
       return;
     }
-    base[OP_NARRATION_KEY] = opNar;
+    if (Object.keys(opLayout).length > 0) base[OP_LAYOUT_KEY] = opLayout;
+    if (Object.keys(opNar).length > 0)    base[OP_NARRATION_KEY] = opNar;
     await _ghPutSavedLayout(base, got.sha);
-    toast('GitHub 配信完了 (全端末に反映)');
+    toast('GitHub 配信完了 (立ち絵+対話+ナレ全端末反映)');
   } catch (e) {
     console.warn('[op-layout-editor] publish failed', e);
     if (e && e.status === 409) {
@@ -2166,17 +2226,21 @@ async function publishNarrationToSavedLayout() {
 // localStorage が origin スコープなため、ローカル file:// → staging origin のような
 // 異なる origin 間で編集値を直接共有できない問題を、 JSON ファイル経由で解決する。
 // 想定ワークフロー:
-//   1. ローカル editor で編集 → 「💾 NA Export」 で JSON ダウンロード
-//   2. staging editor で 「📂 NA Import」 → 「📡 GitHub 配信」
+//   1. ローカル editor で編集 → 「💾 Export」 で JSON ダウンロード
+//   2. staging editor で 「📂 Import」 → 「📡 GitHub 配信」
 //   3. saved-layout.json 経由で全端末・全ユーザに反映
+// 2026-05-10 (Q 案): 立ち絵+対話+ナレーション全部を 1 つの JSON にエクスポート。
+// 旧 schema (`pono-op-narration-v1`) は廃止し、新 schema (`pono-op-layout-v1`) のみ
+// 出力する。 import 側は両 schema を受け入れるので、 古い JSON ファイルも引き続き
+// 読み込み可能 (narration だけが復元される)。
 function exportNarrationJson() {
   const payload = {
-    schema: 'pono-op-narration-v1',
+    schema: 'pono-op-layout-v1',
     exportedAt: new Date().toISOString(),
-    narration: {
-      B: state.B && state.B.narration ? state.B.narration : null,
-      C: state.C && state.C.narration ? state.C.narration : null,
-      D: state.D && state.D.narration ? state.D.narration : null,
+    layout: {
+      B: buildRuntimeOpLayout('B'),
+      C: buildRuntimeOpLayout('C'),
+      D: buildRuntimeOpLayout('D'),
     }
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2184,34 +2248,76 @@ function exportNarrationJson() {
   const a    = document.createElement('a');
   const ts   = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
   a.href     = url;
-  a.download = 'op-narration-' + ts + '.json';
+  a.download = 'op-layout-' + ts + '.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast('NA JSON エクスポート');
+  toast('OP layout JSON エクスポート');
 }
 
+// 2026-05-10 (Q 案): 新旧 schema 両対応で立ち絵+対話+ナレ全部を import する。
+//   - `pono-op-layout-v1` (新): obj.layout[vc].{pono, hakase, singleBox, narration} を
+//     state[vc] に Object.assign で上書きマージ。
+//   - `pono-op-narration-v1` (旧): obj.narration[vc] のみ state[vc].narration に
+//     上書き (現状動作)。
+//   - schema が `pono-op-` で始まらない場合は throw (誤検出防止)。
 async function importNarrationJsonFromFile(file) {
   if (!file) return;
-  if (!confirm('読み込んだ JSON で B/C/D の narration 設定を上書きします。よろしいですか？')) return;
+  if (!confirm('読み込んだ JSON で B/C/D の OP layout 設定 (立ち絵+対話+ナレ) を上書きします。よろしいですか？')) return;
   try {
     const text = await file.text();
     const obj  = JSON.parse(text);
-    if (!obj || typeof obj !== 'object' || !obj.narration) {
-      throw new Error('JSON 形式不正: narration キーがありません');
+    if (!obj || typeof obj !== 'object') {
+      throw new Error('JSON 形式不正: ルートが object ではありません');
     }
-    if (!obj.schema || typeof obj.schema !== 'string' || !obj.schema.startsWith('pono-op-narration-')) {
+    if (!obj.schema || typeof obj.schema !== 'string' || !obj.schema.startsWith('pono-op-')) {
       throw new Error('未対応ファイル形式: schema=' + (obj.schema || 'なし'));
     }
-    try { pushUndoSnapshot('NA Import'); } catch (_) {}
+    const isLayoutSchema    = obj.schema.startsWith('pono-op-layout-');
+    const isNarrationSchema = obj.schema.startsWith('pono-op-narration-');
+    if (!isLayoutSchema && !isNarrationSchema) {
+      throw new Error('未対応 schema: ' + obj.schema);
+    }
+    if (isLayoutSchema && (!obj.layout || typeof obj.layout !== 'object')) {
+      throw new Error('JSON 形式不正: layout キーがありません');
+    }
+    if (isNarrationSchema && (!obj.narration || typeof obj.narration !== 'object')) {
+      throw new Error('JSON 形式不正: narration キーがありません');
+    }
+    try { pushUndoSnapshot(isLayoutSchema ? 'OP Layout Import' : 'NA Import'); } catch (_) {}
     const VCS = ['B', 'C', 'D'];
     let applied = 0;
     for (const vc of VCS) {
-      const nr = obj.narration[vc];
-      if (!nr || typeof nr !== 'object') continue;
-      if (state[vc]) {
-        // 既存 narration を完全上書き (但し migrate / sanitize 通過させる)
+      if (!state[vc]) continue;
+      if (isLayoutSchema) {
+        const ent = obj.layout[vc];
+        if (!ent || typeof ent !== 'object') continue;
+        let touched = false;
+        if (ent.pono && typeof ent.pono === 'object') {
+          state[vc].pono = Object.assign({}, state[vc].pono || {}, ent.pono);
+          touched = true;
+        }
+        if (ent.hakase && typeof ent.hakase === 'object') {
+          state[vc].hakase = Object.assign({}, state[vc].hakase || {}, ent.hakase);
+          touched = true;
+        }
+        if (ent.singleBox && typeof ent.singleBox === 'object') {
+          state[vc].singleBox = Object.assign({}, state[vc].singleBox || {}, ent.singleBox);
+          touched = true;
+        }
+        if (ent.narration && typeof ent.narration === 'object') {
+          state[vc].narration = Object.assign({}, state[vc].narration || {}, ent.narration);
+          touched = true;
+        }
+        if (touched) {
+          try { migrateFrameIds && migrateFrameIds(state[vc]); } catch (_) {}
+          try { save(vc); } catch (_) {}
+          applied++;
+        }
+      } else { // narration-only schema (legacy)
+        const nr = obj.narration[vc];
+        if (!nr || typeof nr !== 'object') continue;
         state[vc].narration = Object.assign({}, state[vc].narration || {}, nr);
         try { migrateFrameIds && migrateFrameIds(state[vc]); } catch (_) {}
         try { save(vc); } catch (_) {}
@@ -2221,10 +2327,10 @@ async function importNarrationJsonFromFile(file) {
     // 現 VC の preview を再描画
     try { render(); } catch (_) {}
     try { buildRightPane(); } catch (_) {}
-    toast('NA JSON インポート完了 (' + applied + '/3 VC 適用)');
+    toast((isLayoutSchema ? 'OP Layout' : 'Narration') + ' JSON インポート完了 (' + applied + '/3 VC 適用)');
   } catch (e) {
     console.warn('[op-layout-editor] import failed', e);
-    toast('NA JSON インポート失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    toast('JSON インポート失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
   }
 }
 
@@ -5702,19 +5808,34 @@ function migrateLegacyStorage() {
 // 「⟳ 復元」ボタンで再利用される。 fetch 失敗 (404 / network error) はサイレントに
 // 無視 (= editor デフォルトに fallback)。
 let _seedOpNarration = null;
+let _seedOpLayout    = null;
 // forceRefresh=true のとき (= 「⟳ 復元」ボタン経由) は cache: 'no-store' で
 // stale 回避し最新値を引く。 デフォルト (= init/initVc 起動時 fetch) は
 // cache: 'default' でブラウザ HTTP キャッシュを利用し、 起動時の network
 // round-trip を削る。 既に _seedOpNarration がある場合 (forceRefresh=false) は
 // 再 fetch せずキャッシュ済みの値を返す。
+//
+// 2026-05-10 (Q 案): 同じ saved-layout.json fetch から __op_layout (新キー: 立ち絵+
+// 対話+ナレ全部) と __op_narration (旧キー: ナレのみ、後方互換) の両方を抽出して
+// それぞれキャッシュする。 1 回の fetch で 2 経路をカバー。
 async function fetchSeedOpNarration(forceRefresh) {
-  if (_seedOpNarration && !forceRefresh) return _seedOpNarration;
+  // 2026-05-09 fix: 旧条件 `if (_seedOpNarration && !forceRefresh)` では、
+  // _seedOpLayout が null のまま (= 同じ fetch で取得されるはずの片割れが欠落) でも
+  // _seedOpNarration だけ設定済みなら early-return してしまう論理矛盾があった。
+  // 両方が設定済みのときのみ早期返却し、 どちらか一方でも null なら再 fetch して
+  // キャッシュを揃える。
+  if (_seedOpNarration && _seedOpLayout && !forceRefresh) return _seedOpNarration;
   const cacheMode = forceRefresh ? 'no-store' : 'default';
   try {
     // editor は tools/ 配下なので saved-layout.json は ../quizland/ にある。
     const r = await fetch('../quizland/saved-layout.json', { cache: cacheMode });
-    if (!r.ok) { _seedOpNarration = null; return null; }
+    if (!r.ok) { _seedOpNarration = null; _seedOpLayout = null; return null; }
     const j = await r.json();
+    if (j && j.__op_layout && typeof j.__op_layout === 'object') {
+      _seedOpLayout = j.__op_layout;
+    } else {
+      _seedOpLayout = null;
+    }
     if (j && j.__op_narration && typeof j.__op_narration === 'object') {
       _seedOpNarration = j.__op_narration;
       return _seedOpNarration;
@@ -5737,33 +5858,64 @@ function applySeedToNarration(vc, narration) {
   // Object.assign は seed 値を優先 (上書き)。 defaults は欠落キーの fallback。
   return Object.assign({}, narration, seed);
 }
+// 2026-05-10 (Q 案): __op_layout[vc] seed を defaultsFor(vc) (= fresh) の
+// pono / hakase / singleBox / narration に上書きマージ。 narration は
+// applySeedToNarration とほぼ二重処理になるが、 __op_layout 配下の narration を
+// 優先 (新キー優先 / 旧キー fallback) する設計。 seed が無い VC は何もしない。
+function applySeedToOpLayout(vc, fresh) {
+  if (!_seedOpLayout || !fresh || typeof fresh !== 'object') return fresh;
+  const ent = _seedOpLayout[vc];
+  if (!ent || typeof ent !== 'object') return fresh;
+  if (ent.pono && typeof ent.pono === 'object') {
+    fresh.pono = Object.assign({}, fresh.pono || {}, ent.pono);
+  }
+  if (ent.hakase && typeof ent.hakase === 'object') {
+    fresh.hakase = Object.assign({}, fresh.hakase || {}, ent.hakase);
+  }
+  if (ent.singleBox && typeof ent.singleBox === 'object') {
+    fresh.singleBox = Object.assign({}, fresh.singleBox || {}, ent.singleBox);
+  }
+  if (ent.narration && typeof ent.narration === 'object') {
+    fresh.narration = Object.assign({}, fresh.narration || {}, ent.narration);
+  }
+  return fresh;
+}
 // 「⟳ 復元」ボタンのハンドラ: 現在 VC の localStorage[STORAGE_PREFIX+vc] を破棄し、
 // saved-layout.json から再 fetch した seed を適用してプレビュー再描画。
+//
+// 2026-05-10 (Q 案): 旧 narration のみ復元から、 立ち絵 (pono/hakase) + 対話 (singleBox)
+// + ナレ (narration) 全部を復元する形に拡張。 __op_layout[vc] が無ければ
+// __op_narration[vc] (旧キー) で narration だけ復元する後方互換動作。
 async function restoreNarrationFromSavedLayout() {
   const vc = currentVC;
   // 誤クリックでデータロスを防ぐため confirm() で明示的に同意を取る。
   // また pushUndoSnapshot を呼んでおくことで、 万一 OK 後でも Undo で
   // 元に戻せるようにする (= Undo スタックに復元前の状態を積む)。
-  if (!confirm('現在のオリジンの ' + vc + ' VC narration 設定を破棄して saved-layout.json の値で上書きします。よろしいですか？')) return;
+  if (!confirm('現在のオリジンの ' + vc + ' VC OP layout (立ち絵+対話+ナレ) を破棄して saved-layout.json の値で上書きします。よろしいですか？')) return;
   try { pushUndoSnapshot('⟳ 復元 ' + vc); } catch (e) {}
   toast('saved-layout.json から復元中…');
   await fetchSeedOpNarration(true);
-  if (!_seedOpNarration || !_seedOpNarration[vc]) {
-    toast('saved-layout.json に __op_narration[' + vc + '] が見つかりません', 'err');
+  const hasLayout    = !!(_seedOpLayout && _seedOpLayout[vc]);
+  const hasNarration = !!(_seedOpNarration && _seedOpNarration[vc]);
+  if (!hasLayout && !hasNarration) {
+    toast('saved-layout.json に __op_layout[' + vc + '] / __op_narration[' + vc + '] が見つかりません', 'err');
     return;
   }
   // localStorage の現 origin の編集値を破棄 (= seed 優先で再初期化させる)。
   try { localStorage.removeItem(STORAGE_PREFIX + vc); } catch (e) {}
   try { localStorage.removeItem(NARRATION_RUNTIME_PREFIX + vc); } catch (e) {}
-  // defaults + seed merge を migrateFrameIds で sanitize → state に書き戻し。
-  const fresh = defaultsFor(vc);
+  // defaults + 両 seed の merge を migrateFrameIds で sanitize → state に書き戻し。
+  // 優先順: __op_layout (新) > __op_narration (旧、 narration のみ) > defaults。
+  let fresh = defaultsFor(vc);
+  // 旧 seed (narration のみ) を先に適用、 その後 新 seed で上書き (新 > 旧)。
   fresh.narration = applySeedToNarration(vc, fresh.narration);
+  fresh = applySeedToOpLayout(vc, fresh);
   state[vc] = migrateFrameIds(fresh);
   // localStorage に書き戻す (次回起動時にもこの状態で開く)。
   save(vc);
   render();
   buildRightPane();
-  toast('復元しました (' + vc + ')', 'ok');
+  toast('復元しました (' + vc + (hasLayout ? ', layout+narration' : ', narration のみ') + ')', 'ok');
 }
 
 async function init() {
@@ -5786,8 +5938,10 @@ async function init() {
   const initVc = (vc) => {
     const fromLocal = load(vc);
     if (fromLocal) return fromLocal;
-    const fresh = defaultsFor(vc);
+    let fresh = defaultsFor(vc);
+    // 旧 narration seed を先に適用、 その後 新 layout seed (立ち絵+対話+ナレ) で上書き。
     fresh.narration = applySeedToNarration(vc, fresh.narration);
+    fresh = applySeedToOpLayout(vc, fresh);
     return migrateFrameIds(fresh);
   };
   state = {
