@@ -24,6 +24,12 @@ type: feature
 | search | 既存 Layer 1〜8 (`outer-bg`, `safe-area`, `field-bg`, `window-frame`, `progress-badge`, `hint-panel`, `pono-guide`, `discovery-overlay`) | データ駆動 (zukan-data.js) + 30s キラキラ + スタンプ演出 + owl コメント |
 | collection | `assets/zukan/collection/book_open.png` + 4 タブ + 3×3 グリッド | localStorage 永続化、シルエット/カラー切替、全 36 匹で「すべて あつめたよ！」バッジ |
 
+## screen-innermap 補足 (Phase 1 RPG ミニマップ)
+
+- **Phase 1 (花の小道のみ実装済)**: 旧「Map_scenes 1 枚 + パルスピン 1 個」描画から、 SVG ベースの RPG ミニマップ風に刷新。 `area.innerMap` フィールド (baseColor / pathColor / pathSvg / pathStroke / ponoPos / hotspots[5]) を持つエリアは新描画 (`renderRpgInnermap`)、 持たないエリアは legacy 描画 (`renderLegacyInnermap`、 旧 `.im-*` 要素を温存) にフォールバック。
+- **5 ピン構成**: 中央の main (spotIdx=0、 探索画面に遷移) + 上下左右の placeholder 4 個 (`spotIdx: null`、 タップで `そのうち あそべるように なるよ！` モーダル `.imrpg-comingsoon` を表示)。
+- **Phase 2 残**: 残り 3 エリア (mushroom_forest / sunlit_forest / dew_pond) の `innerMap` 追加、 装飾アイコン (花/木/きのこ) SVG ビルダー、 ポノ顔の頭部クロップ (`pono_full.png` + clipPath circle)。 Phase 3 残: ポノ移動アニメ + 位置調整エディタ。
+
 ## screen-mapselect 補足
 
 - **エリアハイライト**: world_map と同サイズの透過 PNG (`assets/zukan/map/highlight/<area>.png`) を `worldHighlight` フィールドで指定し、選択時に `<img class="ms-area-overlay">` を全画面オーバーレイ + brightness/drop-shadow パルスで発光。**4 エリア揃って実装済** (flower_path / mushroom_forest / sunlit_forest / dew_pond)。
