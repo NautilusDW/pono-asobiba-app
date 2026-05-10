@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T22:54:55Z - editor 2 バグ修正: シナリオ Export per-seg audio 保持 (migrateScenario + buildScenarioPanelsLiteral) + preview slot variant 追従 (applyScenarioPreview で perVariant slot 値 inline 適用、 #slot-pono) + cross-review HIGH-1 (aspectRatio リセット保証) (sw v913)
+- **タスク**: editor 2 バグ修正: シナリオ Export per-seg audio 保持 (migrateScenario + buildScenarioPanelsLiteral) + preview slot variant 追従 (applyScenarioPreview で perVariant slot 値 inline 適用、 #slot-pono) + cross-review HIGH-1 (aspectRatio リセット保証) (sw v913)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 141
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 14, "Agent": 62, "Bash": 46, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T22:40:33Z - 新音声分割反映 (OP_NA01/02.mp3、サイズ違うので本当に分かれた) + dance_wave.webp 生成 (Pillow q80) + OP_PANELS Panel 2 ponoImg を dance_smile → dance_wave (per-seg audio フィールドは絶対温存) (sw v912)
 - **タスク**: 新音声分割反映 (OP_NA01/02.mp3、サイズ違うので本当に分かれた) + dance_wave.webp 生成 (Pillow q80) + OP_PANELS Panel 2 ponoImg を dance_smile → dance_wave (per-seg audio フィールドは絶対温存) (sw v912)
 - **結果**: 成功
@@ -206,18 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 5, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-10T11:59:01Z - ローカル editor 純化 + 📋 JSON クリップボード Export 追加 (Phase 1: isServerOrigin allowlist で #dd-import 隠蔽 / Phase 2: exportLayoutJsonToClipboard 新規 / cross-review fix: アロー関数統一) — ローカル → orchestrator 経由 → staging アップロードフロー成立 (sw v909)
-- **タスク**: ローカル editor 純化 + 📋 JSON クリップボード Export 追加 (Phase 1: isServerOrigin allowlist で #dd-import 隠蔽 / Phase 2: exportLayoutJsonToClipboard 新規 / cross-review fix: アロー関数統一) — ローカル → orchestrator 経由 → staging アップロードフロー成立 (sw v909)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 120
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 13, "Agent": 55, "Bash": 36, "Grep": 12, "Write": 1, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
