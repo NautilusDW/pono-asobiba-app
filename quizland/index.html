@@ -3206,7 +3206,7 @@ const HAKASE_DIALOGUE = {
     number_sequence: [
       '1, 2, 3... って じゅんに かぞえてみよう',
       'すうじの じゅんばんを おもいだしてね',
-      'あいだの すうじは ひとつだけだよ',
+      'ひとつ となりの すうじを かんがえてみよう',
     ],
     opposite: [
       'はんたいの いみの ことばを さがすのじゃ',
@@ -3561,6 +3561,7 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.shape-display',           'wh', 'ステージ枠 (かたち)'],
   ['.shape-img',               'wh', 'ステージ画像 (かたち)'],
   ['.count-stack',             'wh', 'ステージ枠 (かず)'],
+  ['.number-display',          'wh', 'ステージ枠 (かずのじゅん)'],
   ['.count-item',              'wh', 'ステージ画像 (かず item)'],
   ['.item-row',                'wh', 'ステージ枠 (色順 / かず行)'],
   ['.color-chip',              'wh', 'ステージ画像 (いろチップ)'],
@@ -3921,7 +3922,7 @@ function renderNumberSequence(stage, q) {
     a.textContent = String(q.nums[0]);
     const sep = document.createElement('span');
     sep.className = 'number-display-sep';
-    sep.textContent = ' と ';
+    sep.textContent = 'と';
     const b = document.createElement('span');
     b.className = 'number-display-num';
     b.textContent = String(q.nums[1]);

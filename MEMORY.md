@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T12:19:21Z - quizland: number_sequence カテゴリのクロスレビュー指摘 3 件を修正 (M1: .number-display を QZ_RESIZABLE_SELECTORS に登録 / L1: number-display-sep の二重 padding 解消 と / L2: hint2Fallback 3要素目を汎用文言化)
+- **タスク**: quizland: number_sequence カテゴリのクロスレビュー指摘 3 件を修正 (M1: .number-display を QZ_RESIZABLE_SELECTORS に登録 / L1: number-display-sep の二重 padding 解消 と / L2: hint2Fallback 3要素目を汎用文言化)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 15
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Agent": 9, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T12:13:13Z - quizland: count_total 24 問の choices を助数詞付き文字列化 + 新カテゴリ number_sequence (12 問、 つぎ/まえ/あいだ) を inspire モードに追加 (sw v911、 全 answer index 自動検証 OK、 プラン記載 Q10 answer:2 → 1 に補正)
 - **タスク**: quizland: count_total 24 問の choices を助数詞付き文字列化 + 新カテゴリ number_sequence (12 問、 つぎ/まえ/あいだ) を inspire モードに追加 (sw v911、 全 answer index 自動検証 OK、 プラン記載 Q10 answer:2 → 1 に補正)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 12, "Agent": 50, "Bash": 35, "Grep": 12}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T09:53:34Z - OP cinematic 4バグ即時修正 (赤文字/改行/立ち絵/race) + minor fix-up + sw v908 + memory更新
-- **タスク**: OP cinematic 4バグ即時修正 (赤文字/改行/立ち絵/race) + minor fix-up + sw v908 + memory更新
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 108
-- **エラー数**: 9
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 12, "Agent": 50, "Bash": 34, "Grep": 12}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
