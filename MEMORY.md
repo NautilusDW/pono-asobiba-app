@@ -104,6 +104,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T23:09:14Z - editor の ponoImg ドロップダウン変更で preview 即反映バグ修正: 条件付き render を撤廃、 currentPanelIdx/currentLineIdx を強制更新 → 無条件 render (sw v914)
+- **タスク**: editor の ponoImg ドロップダウン変更で preview 即反映バグ修正: 条件付き render を撤廃、 currentPanelIdx/currentLineIdx を強制更新 → 無条件 render (sw v914)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 146
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 15, "Agent": 64, "Bash": 48, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T23:08:55Z - op-layout-editor: ponoImg ドロップダウン変更で preview 即反映バグ修正を commit (sw v914)
+- **タスク**: op-layout-editor: ponoImg ドロップダウン変更で preview 即反映バグ修正を commit (sw v914)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 145
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 15, "Agent": 64, "Bash": 47, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T22:54:55Z - editor 2 バグ修正: シナリオ Export per-seg audio 保持 (migrateScenario + buildScenarioPanelsLiteral) + preview slot variant 追従 (applyScenarioPreview で perVariant slot 値 inline 適用、 #slot-pono) + cross-review HIGH-1 (aspectRatio リセット保証) (sw v913)
 - **タスク**: editor 2 バグ修正: シナリオ Export per-seg audio 保持 (migrateScenario + buildScenarioPanelsLiteral) + preview slot variant 追従 (applyScenarioPreview で perVariant slot 値 inline 適用、 #slot-pono) + cross-review HIGH-1 (aspectRatio リセット保証) (sw v913)
 - **結果**: 成功
@@ -193,31 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 13, "Agent": 57, "Bash": 40, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T12:05:20Z - ローカル editor 調整値 (op-layout-2026-05-10-09-32-13.json) を saved-layout.json __op_layout に反映 (B/C/D × per-variant 全部、 D.pono.perVariant の 7 ポーズ別 slot 値含む) — 220 keys 温存、5/5 代表値検証パス (sw v910)
-- **タスク**: ローカル editor 調整値 (op-layout-2026-05-10-09-32-13.json) を saved-layout.json __op_layout に反映 (B/C/D × per-variant 全部、 D.pono.perVariant の 7 ポーズ別 slot 値含む) — 220 keys 温存、5/5 代表値検証パス (sw v910)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 123
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 13, "Agent": 56, "Bash": 37, "Grep": 12, "Write": 2, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T12:04:56Z - OP layout JSON (B/C/D + D.perVariant ポーズ別) を saved-layout.json に反映、220 keys 完全温存、sw v910 bump
-- **タスク**: OP layout JSON (B/C/D + D.perVariant ポーズ別) を saved-layout.json に反映、220 keys 完全温存、sw v910 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 7
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 5, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
