@@ -4954,11 +4954,11 @@ function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
       pushUndoSnapshot('シナリオ ponoImg 変更');
       line.ponoImg = sel.value;
       saveScenario();
-      // Update preview if this is current line.
-      if (state.scenario.currentPanelIdx === pIdx
-          && state.scenario.currentLineIdx === lIdx) {
-        render();
-      }
+      // 変更した line を current にして preview を強制更新
+      // (line クリックと同じ動作: その行の ponoImg / slot 値が preview に反映される)
+      state.scenario.currentPanelIdx = pIdx;
+      state.scenario.currentLineIdx  = lIdx;
+      render();
     });
     sel.addEventListener('click', (e) => e.stopPropagation());
     meta.appendChild(sel);
