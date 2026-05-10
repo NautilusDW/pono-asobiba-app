@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T02:35:25Z - OP narration JSON Export/Import 実装 (X 案): B 経路 revert 復活 (6c27168) + 「💾 NA Export」「📂 NA Import」ボタン追加 (ca1cb68) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (c191465、buildRightPane / undo 集約 / schema 検証) (sw v903)
+- **タスク**: OP narration JSON Export/Import 実装 (X 案): B 経路 revert 復活 (6c27168) + 「💾 NA Export」「📂 NA Import」ボタン追加 (ca1cb68) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (c191465、buildRightPane / undo 集約 / schema 検証) (sw v903)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 63
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Agent": 30, "Bash": 19, "Grep": 6}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T02:30:17Z - quizland-op: B 経路 revert + JSON Export/Import 追加 (X 案、 sw v902)
 - **タスク**: quizland-op: B 経路 revert + JSON Export/Import 追加 (X 案、 sw v902)
 - **結果**: 成功
@@ -206,18 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 21, "Bash": 15}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-10T01:07:13Z - zukan mapselect 花の小道ハイライト overlay (透過 PNG 全画面重ね + 発光パルス) を develop に commit (sw v896)
-- **タスク**: zukan mapselect 花の小道ハイライト overlay (透過 PNG 全画面重ね + 発光パルス) を develop に commit (sw v896)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 74
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 33, "Glob": 4, "Bash": 13, "Agent": 16, "ToolSearch": 3, "Write": 2, "ExitPlanMode": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
