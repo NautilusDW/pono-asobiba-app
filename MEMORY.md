@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T01:41:32Z - agent-5 committer-part1b: zukan MEDIUM 2件 (selectedクラス除去 + onLeave防御リセット) 修正 + sw v898 を develop に commit (ab093a2)
+- **タスク**: agent-5 committer-part1b: zukan MEDIUM 2件 (selectedクラス除去 + onLeave防御リセット) 修正 + sw v898 を develop に commit (ab093a2)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 44
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 21, "Bash": 16}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T01:32:00Z - agent-4 mapselect-finalize: 残り3エリアhighlight取り込み + zukan-data worldHighlight追加 + 水色背景/hotspotハロー削除 + sign+silhouettesパネル追加 (sw v897)
 - **タスク**: agent-4 mapselect-finalize: 残り3エリアhighlight取り込み + zukan-data worldHighlight追加 + 水色背景/hotspotハロー削除 + sign+silhouettesパネル追加 (sw v897)
 - **結果**: 成功
@@ -206,18 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 29, "Glob": 4, "Bash": 10, "Agent": 4, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-09T23:47:45Z - OP narration seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、quizland/index.html + memory + sw v894)
-- **タスク**: OP narration seg2 音声ファイル名のアンダースコア統一 (OP_NA_02.mp3 → OP_NA02.mp3、quizland/index.html + memory + sw v894)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 42
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 20, "Bash": 15}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
