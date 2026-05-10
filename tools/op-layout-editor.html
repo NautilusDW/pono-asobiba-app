@@ -952,6 +952,7 @@
     <button id="btn-export-json" class="ghost">JSON DL</button>
     <button id="btn-export-scenario" class="ghost" title="OP_PANELS の JS リテラルをコピー">📜 シナリオ Export</button>
     <button id="btn-publish-narration" class="ghost" title="現在の narration 設定 (B/C/D) を quizland/saved-layout.json の __op_narration に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
+    <button id="btn-restore-narration" class="ghost" title="現在の VC の narration を quizland/saved-layout.json から復元する (このオリジンの localStorage を破棄して再初期化)。 別オリジンで編集した値が反映されないときに使用。">⟳ 復元</button>
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
       <option value="" disabled selected hidden>他 VC へコピー ▾</option>
       <option value="B">現在の VC を B にコピー</option>
@@ -5608,7 +5609,68 @@ function migrateLegacyStorage() {
   } catch (e) {}
 }
 
-function init() {
+// 2026-05-09: Cross-origin seed fallback.
+// localStorage は origin スコープなので、 ユーザーがローカル (file:// or localhost) で
+// 調整した narration 値は staging URL でエディタを開いたときには参照できず、
+// state[VC].narration がデフォルト値で初期化されてしまう (= プレビュー崩れ)。
+// → quizland/saved-layout.json の __op_narration[VC] (📡 GitHub 配信 で publish される
+//    正規ソース、 すべての origin で同一値) を seed として参照する。
+//
+// 取得した seed は _seedOpNarration にキャッシュされ、 load() からの fallback と
+// 「⟳ 復元」ボタンで再利用される。 fetch 失敗 (404 / network error) はサイレントに
+// 無視 (= editor デフォルトに fallback)。
+let _seedOpNarration = null;
+async function fetchSeedOpNarration() {
+  try {
+    // editor は tools/ 配下なので saved-layout.json は ../quizland/ にある。
+    // cache: 'no-store' で stale 回避 (publish 直後の復元でも最新を引く)。
+    const r = await fetch('../quizland/saved-layout.json', { cache: 'no-store' });
+    if (!r.ok) { _seedOpNarration = null; return null; }
+    const j = await r.json();
+    if (j && j.__op_narration && typeof j.__op_narration === 'object') {
+      _seedOpNarration = j.__op_narration;
+      return _seedOpNarration;
+    }
+  } catch (e) { /* ignore — fall back to editor defaults */ }
+  _seedOpNarration = null;
+  return null;
+}
+// seed 値を defaultsFor(vc).narration の上に上書き merge した narration オブジェクトを
+// 返す (seed が無い / 当該 VC キーが無いときは defaults をそのまま返す)。
+// migrateFrameIds() の narration backfill ロジックで sanitize されるため、 seed の
+// 一部キーが欠落していても安全。
+function applySeedToNarration(vc, narration) {
+  if (!_seedOpNarration || !narration || typeof narration !== 'object') return narration;
+  const seed = _seedOpNarration[vc];
+  if (!seed || typeof seed !== 'object') return narration;
+  // Object.assign は seed 値を優先 (上書き)。 defaults は欠落キーの fallback。
+  return Object.assign({}, narration, seed);
+}
+// 「⟳ 復元」ボタンのハンドラ: 現在 VC の localStorage[STORAGE_PREFIX+vc] を破棄し、
+// saved-layout.json から再 fetch した seed を適用してプレビュー再描画。
+async function restoreNarrationFromSavedLayout() {
+  const vc = currentVC;
+  toast('saved-layout.json から復元中…');
+  await fetchSeedOpNarration();
+  if (!_seedOpNarration || !_seedOpNarration[vc]) {
+    toast('saved-layout.json に __op_narration[' + vc + '] が見つかりません', 'err');
+    return;
+  }
+  // localStorage の現 origin の編集値を破棄 (= seed 優先で再初期化させる)。
+  try { localStorage.removeItem(STORAGE_PREFIX + vc); } catch (e) {}
+  try { localStorage.removeItem(NARRATION_RUNTIME_PREFIX + vc); } catch (e) {}
+  // defaults + seed merge を migrateFrameIds で sanitize → state に書き戻し。
+  const fresh = defaultsFor(vc);
+  fresh.narration = applySeedToNarration(vc, fresh.narration);
+  state[vc] = migrateFrameIds(fresh);
+  // localStorage に書き戻す (次回起動時にもこの状態で開く)。
+  save(vc);
+  render();
+  buildRightPane();
+  toast('復元しました (' + vc + ')', 'ok');
+}
+
+async function init() {
   migrateLegacyStorage();
   loadHeightGuidesPref();
   loadBoxGuidesPref();
@@ -5618,12 +5680,24 @@ function init() {
   // Restore dropped images BEFORE state load so migrateFrameIds() recognizes
   // user-added frame ids as valid (otherwise they'd be reset to DEFAULT_FRAME_ID).
   loadDroppedAssets();
+  // 2026-05-09: 起動時に saved-layout.json から __op_narration seed を fetch。
+  // localStorage が空のときの narration fallback として使う (cross-origin で
+  // 編集した値も反映できる)。 fetch 失敗時は seed=null で defaults に fallback。
+  await fetchSeedOpNarration();
   // Initialize state ONLY after loadDroppedAssets() so user-added frame ids
   // survive migrateFrameIds() instead of being reset to DEFAULT_FRAME_ID.
+  // load(vc) が null (= localStorage 未保存) のときは defaults + seed merge を採用。
+  const initVc = (vc) => {
+    const fromLocal = load(vc);
+    if (fromLocal) return fromLocal;
+    const fresh = defaultsFor(vc);
+    fresh.narration = applySeedToNarration(vc, fresh.narration);
+    return migrateFrameIds(fresh);
+  };
   state = {
-    B: load('B') || defaultsFor('B'),
-    C: load('C') || defaultsFor('C'),
-    D: load('D') || defaultsFor('D'),
+    B: initVc('B'),
+    C: initVc('C'),
+    D: initVc('D'),
     // シナリオ (OP_PANELS データ) は VC 非依存 (top-level)。
     scenario: loadScenario()
   };
@@ -5633,6 +5707,10 @@ function init() {
   buildHeader();
   buildRightPane();
   render();
+
+  // ⟳ 復元 ボタン: buildHeader 後に wire (DOM 挿入順を間違えないため)。
+  const btnRestore = document.getElementById('btn-restore-narration');
+  if (btnRestore) btnRestore.addEventListener('click', restoreNarrationFromSavedLayout);
 
   if (window.ResizeObserver) {
     const ro = new ResizeObserver(() => { rescaleStage(); renderHeightGuides(); renderBoxGuides(); });
