@@ -1362,15 +1362,19 @@ function migrateScenario(parsed) {
         if (!Array.isArray(p.segments)) p.segments = [{ lines: [] }];
         p.segments.forEach((seg, si) => {
           if (!seg || typeof seg !== 'object') p.segments[si] = { lines: [] };
-          else if (!Array.isArray(seg.lines)) seg.lines = [];
           else {
-            seg.lines.forEach((ln, li) => {
-              if (!ln || typeof ln !== 'object') seg.lines[li] = { text: '', emphasis: false };
-              else {
-                if (typeof ln.text !== 'string') ln.text = '';
-                if (typeof ln.emphasis !== 'boolean') ln.emphasis = false;
-              }
-            });
+            if (!Array.isArray(seg.lines)) seg.lines = [];
+            else {
+              seg.lines.forEach((ln, li) => {
+                if (!ln || typeof ln !== 'object') seg.lines[li] = { text: '', emphasis: false };
+                else {
+                  if (typeof ln.text !== 'string') ln.text = '';
+                  if (typeof ln.emphasis !== 'boolean') ln.emphasis = false;
+                }
+              });
+            }
+            // per-seg audio (任意): 文字列なら保持。それ以外は削除。
+            if (typeof seg.audio !== 'string' || !seg.audio) delete seg.audio;
           }
         });
       } else { // dialogue
@@ -5048,11 +5052,44 @@ function applyScenarioPreview() {
 
     // Pono image swap (per-line ponoImg を speaker に関係なく優先、なければ panel-level fallback)。
     const ponoImgEl = document.getElementById('img-pono');
+    const variantName = line.ponoImg
+      ? line.ponoImg
+      : (panel.ponoImgFallback || 'dance_hi');
     if (ponoImgEl) {
-      const variantName = line.ponoImg
-        ? line.ponoImg
-        : (panel.ponoImgFallback || 'dance_hi');
       ponoImgEl.src = ponoPathByName(variantName);
+    }
+    // 追加: variant ごとに保存されている slot 値 (perVariant[variantName]) を
+    // slot DOM (#slot-pono) に inline 反映する。これをやらないと、 line を
+    // 切り替えた瞬間に画像 src だけ更新されて slot 寸法 / オフセット /
+    // aspect-ratio が前 variant のままになり、 ポノが上下にズレたりサイズが
+    // 変わったように見えてしまう (applySideToDom は variant 切替時にしか
+    // 呼ばれないため、ここでも同じ処理を再実行する)。
+    const ponoSlotEl = document.getElementById('slot-pono');
+    if (ponoSlotEl && variantName) {
+      const ponoSide = state[currentVC] && state[currentVC].pono;
+      const pv = ponoSide && ponoSide.perVariant && ponoSide.perVariant[variantName];
+      const src = (pv && typeof pv === 'object') ? pv : ponoSide;
+      if (src) {
+        if (typeof src.slotW === 'number' && src.slotW > 0) ponoSlotEl.style.width = src.slotW + 'px';
+        if (typeof src.slotH === 'number' && src.slotH > 0) ponoSlotEl.style.height = src.slotH + 'px';
+        if (typeof src.slotAspect === 'string' && src.slotAspect.indexOf('fixed_') === 0) {
+          ponoSlotEl.style.aspectRatio = src.slotAspect.slice(6);
+        } else {
+          // 'free' / undefined / null: applySideToDom と整合させて必ずリセット
+          // (前回 inline aspectRatio の残留を防ぐ)
+          ponoSlotEl.style.aspectRatio = '';
+        }
+        const ox = (typeof src.slotOffsetX === 'number') ? src.slotOffsetX : 0;
+        const oy = (typeof src.slotOffsetY === 'number') ? src.slotOffsetY : 0;
+        ponoSlotEl.style.transform =
+          'translate(calc(-50% + ' + ox + 'px), calc(-50% + ' + oy + 'px))';
+        if (ponoImgEl && typeof src.objectPosition === 'string') {
+          const op = src.objectPosition === 'top' ? 'top'
+            : src.objectPosition === 'center' ? 'center'
+            : 'bottom';
+          ponoImgEl.style.objectPosition = op + ' center';
+        }
+      }
     }
     // Per-side dialogue text & label override.
     if (singleBoxMode) {
@@ -5856,6 +5893,9 @@ function buildScenarioPanelsLiteral() {
       (panel.segments || []).forEach((seg, segIdx) => {
         const segLast = (segIdx === panel.segments.length - 1);
         lines.push(indent6 + '{');
+        if (typeof seg.audio === 'string' && seg.audio) {
+          lines.push(indent6 + '  audio: ' + jsString(seg.audio) + ',');
+        }
         lines.push(indent6 + '  lines: [');
         (seg.lines || []).forEach((ln, lIdx) => {
           const lLast = (lIdx === seg.lines.length - 1);
