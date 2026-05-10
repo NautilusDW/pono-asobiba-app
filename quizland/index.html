@@ -5171,12 +5171,23 @@ function _opLoadNarrationOverride(vc) {
   // Fix HIGH (review 2026-05-09): _opGetCurrentVC が null を返すケース
   // (縦長端末 / matchMedia 例外) では localStorage キーを引かずに早期 return。
   if (!vc) return null;
-  // 2026-05-10: saved-layout.json 配信 (B 経路) は撤去。本番表示の真の値は
-  // per-VC `@media` の hardcoded CSS で確定し、 editor で出した CSS export を
-  // 開発者が手動で反映する運用に戻した (commit a70ec33 のフロー)。
-  // 同 origin の preview 用 localStorage 経路 (= editor で値を弄った直後に
-  // 同 origin で OP を再生して確認するワークフロー) のみ温存。 別 origin で
-  // 開いた場合は CSS デフォルトのまま (= 本番表示の真の値) でフォールバック。
+  // 2026-05-09 (multi-device): saved-layout.json (`__op_narration`) を最優先で参照する。
+  // これは tools/op-layout-editor.html → 📡 GitHub 配信 で書き込まれ、 全端末・
+  // 全ユーザに同じ値が配信される正規ソース。 LayoutSystem.init が defer ロード
+  // 時点で window._currentLayoutData に展開するので、 OP cinematic 開始時には
+  // 通常 fetch 完了済 (mode-btn タップまで数秒のラグがあるため race は実用上ない)。
+  // ただし低速回線での初回ロードや、ユーザーが mode-btn を即タップした場合は
+  // LayoutSystem fetch が間に合わず、まれに localStorage フォールバックや CSS
+  // デフォルトに落ちることがある (= 許容範囲: 次回タップ以降は正規値で上書きされる)。
+  // 未 fetch / __op_narration 未設定 / 当該 VC キー無し のいずれかなら、 dev override
+  // 用の localStorage[NARRATION_RUNTIME_PREFIX+vc] にフォールバック。 両方無ければ null。
+  try {
+    const data = window._currentLayoutData;
+    if (data && data.__op_narration && typeof data.__op_narration === 'object') {
+      const remote = data.__op_narration[vc];
+      if (remote && typeof remote === 'object') return remote;
+    }
+  } catch (e) { /* fall through to localStorage */ }
   try {
     const raw = localStorage.getItem(NARRATION_RUNTIME_PREFIX + vc);
     if (!raw) return null;
