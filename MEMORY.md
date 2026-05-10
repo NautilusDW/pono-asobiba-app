@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T23:23:34Z - editor の dance_wave をデフォルト PONO_VARIANTS に昇格 (本番資産 b76d92b で追加済の dance_wave.webp に対応、 migrateFrameIds backfill も 7 variants 化)。 これで Export 警告が出なくなる (sw v916)
+- **タスク**: editor の dance_wave をデフォルト PONO_VARIANTS に昇格 (本番資産 b76d92b で追加済の dance_wave.webp に対応、 migrateFrameIds backfill も 7 variants 化)。 これで Export 警告が出なくなる (sw v916)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 151
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 15, "Agent": 66, "Bash": 51, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T23:15:20Z - Panel 6 はかせ ponoImg を think_chin_clasp → pono_001 に更新 (1 行 diff、 segments.audio 温存、 他 panel 不変) (sw v915)
 - **タスク**: Panel 6 はかせ ponoImg を think_chin_clasp → pono_001 に更新 (1 行 diff、 segments.audio 温存、 他 panel 不変) (sw v915)
 - **結果**: 成功
@@ -206,18 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 13, "Agent": 57, "Bash": 42, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T12:19:21Z - quizland: number_sequence カテゴリのクロスレビュー指摘 3 件を修正 (M1: .number-display を QZ_RESIZABLE_SELECTORS に登録 / L1: number-display-sep の二重 padding 解消 と / L2: hint2Fallback 3要素目を汎用文言化)
-- **タスク**: quizland: number_sequence カテゴリのクロスレビュー指摘 3 件を修正 (M1: .number-display を QZ_RESIZABLE_SELECTORS に登録 / L1: number-display-sep の二重 padding 解消 と / L2: hint2Fallback 3要素目を汎用文言化)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 15
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 9, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
