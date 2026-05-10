@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T23:26:56Z - quizland order_color の選択肢ボタン英語表記バグ修正 (window.QUIZLAND_COLORS 参照を直接参照に変更, sw.js v916→917)
+- **タスク**: quizland order_color の選択肢ボタン英語表記バグ修正 (window.QUIZLAND_COLORS 参照を直接参照に変更, sw.js v916→917)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 20
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Agent": 14, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T23:23:34Z - editor の dance_wave をデフォルト PONO_VARIANTS に昇格 (本番資産 b76d92b で追加済の dance_wave.webp に対応、 migrateFrameIds backfill も 7 variants 化)。 これで Export 警告が出なくなる (sw v916)
 - **タスク**: editor の dance_wave をデフォルト PONO_VARIANTS に昇格 (本番資産 b76d92b で追加済の dance_wave.webp に対応、 migrateFrameIds backfill も 7 variants 化)。 これで Export 警告が出なくなる (sw v916)
 - **結果**: 成功
@@ -206,18 +219,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 12, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-10T12:27:35Z - Quizland VOICEVOX 全180問発注書フル版作成 (902ファイル)
-- **タスク**: Quizland VOICEVOX 全180問発注書フル版作成 (902ファイル)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 130
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 13, "Agent": 57, "Bash": 42, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

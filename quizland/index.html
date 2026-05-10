@@ -4414,7 +4414,7 @@ function renderChoices(q) {
         var choice = q.choices[i];
         var orig;
         if (q.type === 'order_color') {
-          orig = (window.QUIZLAND_COLORS && window.QUIZLAND_COLORS[choice] && window.QUIZLAND_COLORS[choice].name) || String(choice);
+          orig = (QUIZLAND_COLORS && QUIZLAND_COLORS[choice] && QUIZLAND_COLORS[choice].name) || String(choice);
         } else if (q.type === 'count_total') {
           orig = String(choice);
         } else if (choice && typeof choice === 'object' && choice.image) {
