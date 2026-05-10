@@ -2201,13 +2201,16 @@ async function importNarrationJsonFromFile(file) {
     if (!obj || typeof obj !== 'object' || !obj.narration) {
       throw new Error('JSON 形式不正: narration キーがありません');
     }
+    if (!obj.schema || typeof obj.schema !== 'string' || !obj.schema.startsWith('pono-op-narration-')) {
+      throw new Error('未対応ファイル形式: schema=' + (obj.schema || 'なし'));
+    }
+    try { pushUndoSnapshot('NA Import'); } catch (_) {}
     const VCS = ['B', 'C', 'D'];
     let applied = 0;
     for (const vc of VCS) {
       const nr = obj.narration[vc];
       if (!nr || typeof nr !== 'object') continue;
       if (state[vc]) {
-        try { pushUndoSnapshot('NA Import ' + vc); } catch (_) {}
         // 既存 narration を完全上書き (但し migrate / sanitize 通過させる)
         state[vc].narration = Object.assign({}, state[vc].narration || {}, nr);
         try { migrateFrameIds && migrateFrameIds(state[vc]); } catch (_) {}
@@ -2217,6 +2220,7 @@ async function importNarrationJsonFromFile(file) {
     }
     // 現 VC の preview を再描画
     try { render(); } catch (_) {}
+    try { buildRightPane(); } catch (_) {}
     toast('NA JSON インポート完了 (' + applied + '/3 VC 適用)');
   } catch (e) {
     console.warn('[op-layout-editor] import failed', e);
