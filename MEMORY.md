@@ -104,6 +104,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T12:05:20Z - ローカル editor 調整値 (op-layout-2026-05-10-09-32-13.json) を saved-layout.json __op_layout に反映 (B/C/D × per-variant 全部、 D.pono.perVariant の 7 ポーズ別 slot 値含む) — 220 keys 温存、5/5 代表値検証パス (sw v910)
+- **タスク**: ローカル editor 調整値 (op-layout-2026-05-10-09-32-13.json) を saved-layout.json __op_layout に反映 (B/C/D × per-variant 全部、 D.pono.perVariant の 7 ポーズ別 slot 値含む) — 220 keys 温存、5/5 代表値検証パス (sw v910)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 123
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 13, "Agent": 56, "Bash": 37, "Grep": 12, "Write": 2, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T12:04:56Z - OP layout JSON (B/C/D + D.perVariant ポーズ別) を saved-layout.json に反映、220 keys 完全温存、sw v910 bump
+- **タスク**: OP layout JSON (B/C/D + D.perVariant ポーズ別) を saved-layout.json に反映、220 keys 完全温存、sw v910 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 7
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Agent": 5, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T11:59:01Z - ローカル editor 純化 + 📋 JSON クリップボード Export 追加 (Phase 1: isServerOrigin allowlist で #dd-import 隠蔽 / Phase 2: exportLayoutJsonToClipboard 新規 / cross-review fix: アロー関数統一) — ローカル → orchestrator 経由 → staging アップロードフロー成立 (sw v909)
 - **タスク**: ローカル editor 純化 + 📋 JSON クリップボード Export 追加 (Phase 1: isServerOrigin allowlist で #dd-import 隠蔽 / Phase 2: exportLayoutJsonToClipboard 新規 / cross-review fix: アロー関数統一) — ローカル → orchestrator 経由 → staging アップロードフロー成立 (sw v909)
 - **結果**: 成功
@@ -192,32 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 9, "Agent": 45, "Bash": 27, "Grep": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T09:08:11Z - quizland-op editor ヘッダ 3 ドロップダウン化 + staging-only 配信 (sw v906)
-- **タスク**: quizland-op editor ヘッダ 3 ドロップダウン化 + staging-only 配信 (sw v906)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 89
-- **エラー数**: 8
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 45, "Bash": 26, "Grep": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T09:00:36Z - op-layout-editor ヘッダボタン群を 3 ドロップダウン (Export/Import/配信) に再編成 + ローカル origin で配信を非表示
-- **タスク**: op-layout-editor ヘッダボタン群を 3 ドロップダウン (Export/Import/配信) に再編成 + ローカル origin で配信を非表示
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 86
-- **エラー数**: 7
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 42, "Bash": 26, "Grep": 9}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
