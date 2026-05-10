@@ -104,6 +104,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T09:08:31Z - editor ヘッダ整理: 17 ボタン → 3 ドロップダウン化 (📥 Export / 📤 Import / 📡 配信) + isStagingOrigin allowlist 化 (staging URL 限定、 production / ローカル非表示) + cross-review HIGH/MEDIUM 3 件解消 (sw v906)
+- **タスク**: editor ヘッダ整理: 17 ボタン → 3 ドロップダウン化 (📥 Export / 📤 Import / 📡 配信) + isStagingOrigin allowlist 化 (staging URL 限定、 production / ローカル非表示) + cross-review HIGH/MEDIUM 3 件解消 (sw v906)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 90
+- **エラー数**: 8
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 45, "Bash": 27, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T09:08:11Z - quizland-op editor ヘッダ 3 ドロップダウン化 + staging-only 配信 (sw v906)
+- **タスク**: quizland-op editor ヘッダ 3 ドロップダウン化 + staging-only 配信 (sw v906)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 89
+- **エラー数**: 8
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 45, "Bash": 26, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T09:00:36Z - op-layout-editor ヘッダボタン群を 3 ドロップダウン (Export/Import/配信) に再編成 + ローカル origin で配信を非表示
+- **タスク**: op-layout-editor ヘッダボタン群を 3 ドロップダウン (Export/Import/配信) に再編成 + ローカル origin で配信を非表示
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 86
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 42, "Bash": 26, "Grep": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T05:14:09Z - ポノ per-variant 位置を全端末配信 (sideSnap に perVariant 追加 + _opCurrentPonoVariant + applySide variant-aware + dialogue line 切替時の再 apply) + pono_001 を PONO_VARIANTS / defaults / migrateFrameIds に追加 + cross-review HIGH/MEDIUM fix (sw v905)
 - **タスク**: ポノ per-variant 位置を全端末配信 (sideSnap に perVariant 追加 + _opCurrentPonoVariant + applySide variant-aware + dialogue line 切替時の再 apply) + pono_001 を PONO_VARIANTS / defaults / migrateFrameIds に追加 + cross-review HIGH/MEDIUM fix (sw v905)
 - **結果**: 成功
@@ -179,45 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 32, "Bash": 20, "Grep": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T02:40:30Z - agent-11 committer-handoff-fix: Codex 文字化け対策 (案A+B) commit 状態確認
-- **タスク**: agent-11 committer-handoff-fix: Codex 文字化け対策 (案A+B) commit 状態確認
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 64
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 30, "Bash": 20, "Grep": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T02:38:11Z - agent-10 handoff-mojibake-fix: .editorconfig に md/json/html/css/js/py/sh の charset=utf-8+lf セクション明示追加 + AGENTS.md §4 ルール 7 に文字化け検知ヘッダ規約追加 + 既存ハンドオフ md 7 件 (HANDOFF.md / CODEX-PROMPT.md x2 / CODEX-ORDER.md x3 / codex-report.md) 冒頭に blockquote 警告挿入
-- **タスク**: agent-10 handoff-mojibake-fix: .editorconfig に md/json/html/css/js/py/sh の charset=utf-8+lf セクション明示追加 + AGENTS.md §4 ルール 7 に文字化け検知ヘッダ規約追加 + 既存ハンドオフ md 7 件 (HANDOFF.md / CODEX-PROMPT.md x2 / CODEX-ORDER.md x3 / codex-report.md) 冒頭に blockquote 警告挿入
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 64
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 30, "Bash": 20, "Grep": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T02:35:25Z - OP narration JSON Export/Import 実装 (X 案): B 経路 revert 復活 (6c27168) + 「💾 NA Export」「📂 NA Import」ボタン追加 (ca1cb68) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (c191465、buildRightPane / undo 集約 / schema 検証) (sw v903)
-- **タスク**: OP narration JSON Export/Import 実装 (X 案): B 経路 revert 復活 (6c27168) + 「💾 NA Export」「📂 NA Import」ボタン追加 (ca1cb68) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (c191465、buildRightPane / undo 集約 / schema 検証) (sw v903)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 63
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 30, "Bash": 19, "Grep": 6}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
