@@ -5620,11 +5620,17 @@ function migrateLegacyStorage() {
 // 「⟳ 復元」ボタンで再利用される。 fetch 失敗 (404 / network error) はサイレントに
 // 無視 (= editor デフォルトに fallback)。
 let _seedOpNarration = null;
-async function fetchSeedOpNarration() {
+// forceRefresh=true のとき (= 「⟳ 復元」ボタン経由) は cache: 'no-store' で
+// stale 回避し最新値を引く。 デフォルト (= init/initVc 起動時 fetch) は
+// cache: 'default' でブラウザ HTTP キャッシュを利用し、 起動時の network
+// round-trip を削る。 既に _seedOpNarration がある場合 (forceRefresh=false) は
+// 再 fetch せずキャッシュ済みの値を返す。
+async function fetchSeedOpNarration(forceRefresh) {
+  if (_seedOpNarration && !forceRefresh) return _seedOpNarration;
+  const cacheMode = forceRefresh ? 'no-store' : 'default';
   try {
     // editor は tools/ 配下なので saved-layout.json は ../quizland/ にある。
-    // cache: 'no-store' で stale 回避 (publish 直後の復元でも最新を引く)。
-    const r = await fetch('../quizland/saved-layout.json', { cache: 'no-store' });
+    const r = await fetch('../quizland/saved-layout.json', { cache: cacheMode });
     if (!r.ok) { _seedOpNarration = null; return null; }
     const j = await r.json();
     if (j && j.__op_narration && typeof j.__op_narration === 'object') {
@@ -5639,6 +5645,9 @@ async function fetchSeedOpNarration() {
 // 返す (seed が無い / 当該 VC キーが無いときは defaults をそのまま返す)。
 // migrateFrameIds() の narration backfill ロジックで sanitize されるため、 seed の
 // 一部キーが欠落していても安全。
+// 現在省略中のキー: left=0, aspectLockRatio=0
+//   → migrateFrameIds() のデフォルト補完で 0 にフォールバックする想定。
+//   将来 narration スキーマにフィールドが追加されたら seed 構造も合わせること。
 function applySeedToNarration(vc, narration) {
   if (!_seedOpNarration || !narration || typeof narration !== 'object') return narration;
   const seed = _seedOpNarration[vc];
@@ -5650,8 +5659,13 @@ function applySeedToNarration(vc, narration) {
 // saved-layout.json から再 fetch した seed を適用してプレビュー再描画。
 async function restoreNarrationFromSavedLayout() {
   const vc = currentVC;
+  // 誤クリックでデータロスを防ぐため confirm() で明示的に同意を取る。
+  // また pushUndoSnapshot を呼んでおくことで、 万一 OK 後でも Undo で
+  // 元に戻せるようにする (= Undo スタックに復元前の状態を積む)。
+  if (!confirm('現在のオリジンの ' + vc + ' VC narration 設定を破棄して saved-layout.json の値で上書きします。よろしいですか？')) return;
+  try { pushUndoSnapshot('⟳ 復元 ' + vc); } catch (e) {}
   toast('saved-layout.json から復元中…');
-  await fetchSeedOpNarration();
+  await fetchSeedOpNarration(true);
   if (!_seedOpNarration || !_seedOpNarration[vc]) {
     toast('saved-layout.json に __op_narration[' + vc + '] が見つかりません', 'err');
     return;
