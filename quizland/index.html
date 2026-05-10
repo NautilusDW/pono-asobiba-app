@@ -875,6 +875,30 @@ body.sheet-on .hdr-right .ctrl-btn {
 .shape-diamond   { width: 220px; height: 220px; background: #EF4444; transform: rotate(45deg); border-radius: 20px; filter: var(--stage-shadow); }
 .shape-oval      { width: 320px; height: 170px; border-radius: 50%; background: #10B981; filter: var(--stage-shadow); }
 
+/* ===== Number Sequence ===== */
+/* 「○の つぎ」「○の まえ」「○と ○の あいだ」用の大きな数字表示。
+   stage 内中央に大きく見せ、 親 board に収まるよう clamp で適応サイズ。 */
+.number-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2em;
+  font-size: clamp(120px, 28vmin, 320px);
+  font-weight: 800;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  color: #2a3a5a;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  user-select: none;
+}
+.number-display-num {
+  display: inline-block;
+}
+.number-display-sep {
+  font-size: 0.55em;
+  color: #6b7280;
+  font-weight: 600;
+}
+
 /* ===== Emoji / Trivia / Opposite ===== */
 .emoji-display {
   display: flex;
@@ -3149,6 +3173,7 @@ const HAKASE_DIALOGUE = {
       order_color: 'なにいろに みえるかな？',
       count_total: 'かぞえて みようか',
       shape_name:  'どんな かたちに みえるかな？',
+      number_sequence: 'かずの じゅんばん、わかるかな？',
       opposite:    'はんたいの ことば、わかるかな？',
       trivia:      'ふむふむ、これは ものしりクイズじゃ！',
       weather:     'ふむふむ、これは ものしりクイズじゃ！',
@@ -3177,6 +3202,11 @@ const HAKASE_DIALOGUE = {
       'かどの かずを かぞえてみるのじゃ',
       'まる、しかく、さんかく、どれに にとるかな？',
       'よく しっている かたちじゃぞ',
+    ],
+    number_sequence: [
+      '1, 2, 3... って じゅんに かぞえてみよう',
+      'すうじの じゅんばんを おもいだしてね',
+      'あいだの すうじは ひとつだけだよ',
     ],
     opposite: [
       'はんたいの いみの ことばを さがすのじゃ',
@@ -3880,6 +3910,33 @@ function renderShapeName(stage, q) {
   wrap.appendChild(img);
   stage.appendChild(wrap);
 }
+function renderNumberSequence(stage, q) {
+  // 「○の つぎ」「○の まえ」「○と ○の あいだ」用。 大きな数字を中央に表示。
+  const wrap = document.createElement('div');
+  wrap.className = 'number-display';
+  if (Array.isArray(q.nums)) {
+    // 「○と ○の あいだ」問題
+    const a = document.createElement('span');
+    a.className = 'number-display-num';
+    a.textContent = String(q.nums[0]);
+    const sep = document.createElement('span');
+    sep.className = 'number-display-sep';
+    sep.textContent = ' と ';
+    const b = document.createElement('span');
+    b.className = 'number-display-num';
+    b.textContent = String(q.nums[1]);
+    wrap.appendChild(a);
+    wrap.appendChild(sep);
+    wrap.appendChild(b);
+  } else {
+    // 「○の つぎ」「○の まえ」問題
+    const n = document.createElement('span');
+    n.className = 'number-display-num';
+    n.textContent = String(q.num);
+    wrap.appendChild(n);
+  }
+  stage.appendChild(wrap);
+}
 function renderEmojiName(stage, q) {
   const wrap = document.createElement('div');
   // phase-question: 問題出題中の状態クラス。 revealAnswer で phase-answer に切替。
@@ -4423,6 +4480,7 @@ function loadQuestion(q) {
     case 'order_color': renderOrderColor(stage, q); break;
     case 'count_total': renderCountTotal(stage, q); break;
     case 'shape_name':  renderShapeName(stage, q); break;
+    case 'number_sequence': renderNumberSequence(stage, q); break;
     case 'emoji_name':  renderEmojiName(stage, q); break;
     case 'opposite':    renderOpposite(stage, q); break;
     case 'trivia':      renderTrivia(stage, q); break;
