@@ -104,6 +104,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T11:59:01Z - ローカル editor 純化 + 📋 JSON クリップボード Export 追加 (Phase 1: isServerOrigin allowlist で #dd-import 隠蔽 / Phase 2: exportLayoutJsonToClipboard 新規 / cross-review fix: アロー関数統一) — ローカル → orchestrator 経由 → staging アップロードフロー成立 (sw v909)
+- **タスク**: ローカル editor 純化 + 📋 JSON クリップボード Export 追加 (Phase 1: isServerOrigin allowlist で #dd-import 隠蔽 / Phase 2: exportLayoutJsonToClipboard 新規 / cross-review fix: アロー関数統一) — ローカル → orchestrator 経由 → staging アップロードフロー成立 (sw v909)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 120
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 13, "Agent": 55, "Bash": 36, "Grep": 12, "Write": 1, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-10T11:58:35Z - quizland-op editor ローカル純化 (📂 Import 隠蔽) + 📋 JSON クリップボード Export 追加 (sw v909)
+- **タスク**: quizland-op editor ローカル純化 (📂 Import 隠蔽) + 📋 JSON クリップボード Export 追加 (sw v909)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 6
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Agent": 5}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T10:50:59Z - quizland VOICEVOX サンプル発注書 (21問×5=105ファイル) を SAMPLE-PREVIEW.md として作成
 - **タスク**: quizland VOICEVOX サンプル発注書 (21問×5=105ファイル) を SAMPLE-PREVIEW.md として作成
 - **結果**: 成功
@@ -192,32 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 9, "Agent": 42, "Bash": 26, "Grep": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T05:14:09Z - ポノ per-variant 位置を全端末配信 (sideSnap に perVariant 追加 + _opCurrentPonoVariant + applySide variant-aware + dialogue line 切替時の再 apply) + pono_001 を PONO_VARIANTS / defaults / migrateFrameIds に追加 + cross-review HIGH/MEDIUM fix (sw v905)
-- **タスク**: ポノ per-variant 位置を全端末配信 (sideSnap に perVariant 追加 + _opCurrentPonoVariant + applySide variant-aware + dialogue line 切替時の再 apply) + pono_001 を PONO_VARIANTS / defaults / migrateFrameIds に追加 + cross-review HIGH/MEDIUM fix (sw v905)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 85
-- **エラー数**: 7
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 41, "Bash": 26, "Grep": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T05:13:42Z - quizland-op per-variant publish + pono_001 追加: sw v904→905 バンプ + memory feature_quizland_opening.md に per-variant 配線詳細追記 + 4 ファイル commit a48c23a
-- **タスク**: quizland-op per-variant publish + pono_001 追加: sw v904→905 バンプ + memory feature_quizland_opening.md に per-variant 配線詳細追記 + 4 ファイル commit a48c23a
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 84
-- **エラー数**: 7
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 41, "Bash": 25, "Grep": 9}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
