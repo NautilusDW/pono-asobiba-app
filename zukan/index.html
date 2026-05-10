@@ -1538,6 +1538,9 @@ function msUpdateAreaInfo() {
 
 // 旧描画 (Phase 1 時点でも 3 エリアはこちらで動く)
 function renderLegacyInnermap(area) {
+  // (M-2) 万が一 coming-soon モーダルが残留していたら確実に閉じる (legacy エリアでは出番が無いため防御的にリセット)
+  const cs = document.getElementById('imrpgComingSoon');
+  if (cs) cs.classList.remove('show');
   // RPG 側を非表示、旧側を表示
   const svg = document.getElementById('imrpgSvg');
   const sn  = document.getElementById('imrpgSpotName');
@@ -1570,6 +1573,14 @@ function renderLegacyInnermap(area) {
     });
     wrap.appendChild(pin);
   });
+}
+
+// SVG ヘルパ (Firefox の名前空間問題回避: innerHTML ではなく createElementNS を使う)
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function makeSvgCircle(attrs) {
+  const el = document.createElementNS(SVG_NS, 'circle');
+  Object.keys(attrs).forEach(function (k) { el.setAttribute(k, String(attrs[k])); });
+  return el;
 }
 
 // RPG ミニマップ描画 (Phase 1)
@@ -1615,11 +1626,23 @@ function renderRpgInnermap(area) {
     group.style.cursor = 'pointer';
     const plazaFill = hs.placeholder ? '#a89a78' : '#d9b88a';
     const pinFill   = hs.placeholder ? '#9a9a9a' : '#ffd966';
-    group.innerHTML =
-      '<circle cx="' + cx + '" cy="' + cy + '" r="55" fill="' + plazaFill + '" opacity="0.85"/>' +
-      '<circle class="imrpg-pin-pulse" cx="' + cx + '" cy="' + cy + '" r="20" ' +
-      'fill="' + pinFill + '" stroke="#fff" stroke-width="3"/>' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="80" fill="transparent" pointer-events="all"/>';
+    // (M-1) Firefox 等の SVG 名前空間互換のため innerHTML ではなく createElementNS で組み立てる
+    const plaza = makeSvgCircle({ cx: cx, cy: cy, r: 55, fill: plazaFill, opacity: 0.85 });
+    const pulsePin = makeSvgCircle({
+      cx: cx, cy: cy, r: 20,
+      fill: pinFill, stroke: '#fff', 'stroke-width': 3
+    });
+    pulsePin.setAttribute('class', 'imrpg-pin-pulse');
+    // (M-3) iOS 15 以下では transform-box: fill-box が効かないため、
+    // パルス scale の原点を JS から px 値で明示しておく (新 iOS では CSS 側が優先)
+    pulsePin.style.transformOrigin = cx + 'px ' + cy + 'px';
+    const hit = makeSvgCircle({
+      cx: cx, cy: cy, r: 80,
+      fill: 'transparent', 'pointer-events': 'all'
+    });
+    group.appendChild(plaza);
+    group.appendChild(pulsePin);
+    group.appendChild(hit);
     group.addEventListener('click', function () { onRpgHotspotTap(area, hs); });
     group.addEventListener('touchstart', function (e) {
       e.preventDefault();

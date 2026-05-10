@@ -29,6 +29,7 @@ type: feature
 - **Phase 1 (花の小道のみ実装済)**: 旧「Map_scenes 1 枚 + パルスピン 1 個」描画から、 SVG ベースの RPG ミニマップ風に刷新。 `area.innerMap` フィールド (baseColor / pathColor / pathSvg / pathStroke / ponoPos / hotspots[5]) を持つエリアは新描画 (`renderRpgInnermap`)、 持たないエリアは legacy 描画 (`renderLegacyInnermap`、 旧 `.im-*` 要素を温存) にフォールバック。
 - **5 ピン構成**: 中央の main (spotIdx=0、 探索画面に遷移) + 上下左右の placeholder 4 個 (`spotIdx: null`、 タップで `そのうち あそべるように なるよ！` モーダル `.imrpg-comingsoon` を表示)。
 - **Phase 2 残**: 残り 3 エリア (mushroom_forest / sunlit_forest / dew_pond) の `innerMap` 追加、 装飾アイコン (花/木/きのこ) SVG ビルダー、 ポノ顔の頭部クロップ (`pono_full.png` + clipPath circle)。 Phase 3 残: ポノ移動アニメ + 位置調整エディタ。
+- **post-fix (2026-05-10 sw v900)**: SVG hotspot 生成を `innerHTML` から `createElementNS` 化 (Firefox 名前空間互換)、 `transformOrigin` を JS 側で px 値明示 (iOS 15 以下のパルス animation 原点ズレ対策)、 legacy 描画時の coming-soon モーダル防御リセット。
 
 ## screen-mapselect 補足
 
