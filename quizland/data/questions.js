@@ -70,34 +70,34 @@ const QUIZLAND_QUESTIONS = {
   // ── 数をかぞえよう ────────────────────────────────
   count_total: [
     // Level 1 (count 1-3)
-    { level:1, type:'count_total', item:'ringo',  count:2, q:'りんごは いくつ？',     answer:0, choices:[2,3,4,5] },
-    { level:1, type:'count_total', item:'ichigo', count:3, q:'いちごは いくつ？',     answer:1, choices:[2,3,4,5] },
-    { level:1, type:'count_total', item:'hana',   count:1, q:'おはなは いくつ？',     answer:0, choices:[1,2,3,4] },
-    { level:1, type:'count_total', item:'hoshi',  count:2, q:'おほしさまは いくつ？', answer:1, choices:[1,2,3,4] },
-    { level:1, type:'count_total', item:'mikan',  count:3, q:'みかんは いくつ？',     answer:1, choices:[2,3,4,5] },
-    { level:1, type:'count_total', item:'ringo',  count:1, q:'りんごは いくつ？',     answer:0, choices:[1,2,3,4] },
-    { level:1, type:'count_total', item:'ichigo', count:2, q:'いちごは いくつ？',     answer:1, choices:[1,2,3,4] },
-    { level:1, type:'count_total', item:'hana',   count:3, q:'おはなは いくつ？',     answer:1, choices:[2,3,4,5] },
+    { level:1, type:'count_total', item:'ringo',  count:2, q:'りんごは いくつ？',     answer:0, choices:['2つ','3つ','4つ','5つ'] },
+    { level:1, type:'count_total', item:'ichigo', count:3, q:'いちごは いくつ？',     answer:1, choices:['2つ','3つ','4つ','5つ'] },
+    { level:1, type:'count_total', item:'hana',   count:1, q:'おはなは いくつ？',     answer:0, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'hoshi',  count:2, q:'おほしさまは いくつ？', answer:1, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'mikan',  count:3, q:'みかんは いくつ？',     answer:1, choices:['2つ','3つ','4つ','5つ'] },
+    { level:1, type:'count_total', item:'ringo',  count:1, q:'りんごは いくつ？',     answer:0, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'ichigo', count:2, q:'いちごは いくつ？',     answer:1, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'hana',   count:3, q:'おはなは いくつ？',     answer:1, choices:['2つ','3つ','4つ','5つ'] },
 
     // Level 2 (count 4-6)
-    { level:2, type:'count_total', item:'hoshi',  count:4, q:'おほしさまは いくつ？', answer:1, choices:[3,4,5,6] },
-    { level:2, type:'count_total', item:'hana',   count:5, q:'おはなは いくつ？',     answer:2, choices:[3,4,5,6] },
-    { level:2, type:'count_total', item:'ringo',  count:4, q:'りんごは いくつ？',     answer:1, choices:[3,4,5,6] },
-    { level:2, type:'count_total', item:'ichigo', count:4, q:'いちごは いくつ？',     answer:1, choices:[3,4,5,6] },
-    { level:2, type:'count_total', item:'mikan',  count:5, q:'みかんは いくつ？',     answer:1, choices:[4,5,6,7] },
-    { level:2, type:'count_total', item:'hoshi',  count:6, q:'おほしさまは いくつ？', answer:2, choices:[4,5,6,7] },
-    { level:2, type:'count_total', item:'ringo',  count:5, q:'りんごは いくつ？',     answer:1, choices:[4,5,6,7] },
-    { level:2, type:'count_total', item:'ichigo', count:6, q:'いちごは いくつ？',     answer:2, choices:[4,5,6,7] },
+    { level:2, type:'count_total', item:'hoshi',  count:4, q:'おほしさまは いくつ？', answer:1, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'hana',   count:5, q:'おはなは いくつ？',     answer:2, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'ringo',  count:4, q:'りんごは いくつ？',     answer:1, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'ichigo', count:4, q:'いちごは いくつ？',     answer:1, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'mikan',  count:5, q:'みかんは いくつ？',     answer:1, choices:['4つ','5つ','6つ','7つ'] },
+    { level:2, type:'count_total', item:'hoshi',  count:6, q:'おほしさまは いくつ？', answer:2, choices:['4つ','5つ','6つ','7つ'] },
+    { level:2, type:'count_total', item:'ringo',  count:5, q:'りんごは いくつ？',     answer:1, choices:['4つ','5つ','6つ','7つ'] },
+    { level:2, type:'count_total', item:'ichigo', count:6, q:'いちごは いくつ？',     answer:2, choices:['4つ','5つ','6つ','7つ'] },
 
     // Level 3 (count 6-9)
-    { level:3, type:'count_total', item:'mikan',  count:7, q:'みかんは いくつ？',     answer:1, choices:[6,7,8,9] },
-    { level:3, type:'count_total', item:'hoshi',  count:7, q:'おほしさまは いくつ？', answer:1, choices:[6,7,8,9] },
-    { level:3, type:'count_total', item:'ringo',  count:8, q:'りんごは いくつ？',     answer:2, choices:[6,7,8,9] },
-    { level:3, type:'count_total', item:'hana',   count:6, q:'おはなは いくつ？',     answer:1, choices:[5,6,7,8] },
-    { level:3, type:'count_total', item:'ichigo', count:8, q:'いちごは いくつ？',     answer:1, choices:[7,8,9,10] },
-    { level:3, type:'count_total', item:'mikan',  count:9, q:'みかんは いくつ？',     answer:2, choices:[7,8,9,10] },
-    { level:3, type:'count_total', item:'ringo',  count:6, q:'りんごは いくつ？',     answer:1, choices:[5,6,7,8] },
-    { level:3, type:'count_total', item:'hoshi',  count:8, q:'おほしさまは いくつ？', answer:2, choices:[6,7,8,9] }
+    { level:3, type:'count_total', item:'mikan',  count:7, q:'みかんは いくつ？',     answer:1, choices:['6つ','7つ','8つ','9つ'] },
+    { level:3, type:'count_total', item:'hoshi',  count:7, q:'おほしさまは いくつ？', answer:1, choices:['6つ','7つ','8つ','9つ'] },
+    { level:3, type:'count_total', item:'ringo',  count:8, q:'りんごは いくつ？',     answer:2, choices:['6つ','7つ','8つ','9つ'] },
+    { level:3, type:'count_total', item:'hana',   count:6, q:'おはなは いくつ？',     answer:1, choices:['5つ','6つ','7つ','8つ'] },
+    { level:3, type:'count_total', item:'ichigo', count:8, q:'いちごは いくつ？',     answer:1, choices:['7つ','8つ','9つ','10こ'] },
+    { level:3, type:'count_total', item:'mikan',  count:9, q:'みかんは いくつ？',     answer:2, choices:['7つ','8つ','9つ','10こ'] },
+    { level:3, type:'count_total', item:'ringo',  count:6, q:'りんごは いくつ？',     answer:1, choices:['5つ','6つ','7つ','8つ'] },
+    { level:3, type:'count_total', item:'hoshi',  count:8, q:'おほしさまは いくつ？', answer:2, choices:['6つ','7つ','8つ','9つ'] }
   ],
 
   // ── かたち ────────────────────────────────────────
@@ -632,6 +632,25 @@ const QUIZLAND_QUESTIONS = {
       q:'けがを すると かさぶたが できるのは なぜ？',
       answer:0, choices:['きずを まもって なおすため','いろを かえるため','かゆくするため','いろを つけるため'] ,
       detail:'ちが かたまって フタの ように なって、きずを まもりながら なおしているよ！'}
+  ],
+
+  // ── かずのじゅん (3歳児向け / 1〜10 の前後・あいだ) ────────────────
+  number_sequence: [
+    // Level 1: 「つぎ」(6問)
+    { level:1, type:'number_sequence', num:1, q:'1の つぎは？', answer:1, choices:['1','2','3','4'] },
+    { level:1, type:'number_sequence', num:2, q:'2の つぎは？', answer:1, choices:['2','3','4','5'] },
+    { level:1, type:'number_sequence', num:4, q:'4の つぎは？', answer:1, choices:['4','5','6','7'] },
+    { level:1, type:'number_sequence', num:6, q:'6の つぎは？', answer:1, choices:['6','7','8','9'] },
+    { level:1, type:'number_sequence', num:7, q:'7の つぎは？', answer:1, choices:['7','8','9','10'] },
+    { level:1, type:'number_sequence', num:9, q:'9の つぎは？', answer:2, choices:['8','9','10','7'] },
+    // Level 2: 「まえ」(4問)
+    { level:2, type:'number_sequence', num:3, q:'3の まえは？', answer:1, choices:['1','2','3','4'] },
+    { level:2, type:'number_sequence', num:5, q:'5の まえは？', answer:1, choices:['3','4','5','6'] },
+    { level:2, type:'number_sequence', num:8, q:'8の まえは？', answer:1, choices:['6','7','8','9'] },
+    { level:2, type:'number_sequence', num:10, q:'10の まえは？', answer:1, choices:['8','9','10','7'] },
+    // Level 3: 「あいだ」(2問)
+    { level:3, type:'number_sequence', nums:[2,4], q:'2と 4の あいだは？', answer:2, choices:['1','2','3','4'] },
+    { level:3, type:'number_sequence', nums:[6,8], q:'6と 8の あいだは？', answer:2, choices:['5','6','7','8'] }
   ]
 };
 
@@ -640,6 +659,7 @@ const QUIZLAND_CATEGORIES = {
   order_color: { label: 'いろのじゅんばん', emoji: '🎨' },
   count_total:  { label: 'かずをかぞえよう', emoji: '🔢' },
   shape_name:   { label: 'かたち',           emoji: '⬛' },
+  number_sequence: { label: 'かずのじゅん',  emoji: '🔢' },
   trivia:       { label: 'びっくり豆知識',   emoji: '💡' },
   weather:      { label: 'てんき',           emoji: '☀️' },
   opposite:     { label: 'はんたいことば',   emoji: '🔄' },
