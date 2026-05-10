@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。 **v906+ で editor ヘッダの 17 散在ボタンを 3 ドロップダウン (📥 Export ▾ / 📤 Import ▾ / 📡 配信 ▾) に集約、 配信ドロップダウンは staging origin (`pono-asobiba-staging.ndw.workers.dev`) のみ表示する allowlist 方式で、 ローカル開発 (file:// / localhost / 私有 IP / ::1) と production (`pono.kodama-no-mori.com`) では非表示** — production は GH_BRANCH='develop' hardcode の誤配信防止。
 type: project
 ---
 
@@ -540,6 +540,75 @@ pono_001 (中立立ち姿、 はかせ発話時の聞き役ポノ)
 - editor で立ち絵 / 対話の bg を **「ユーザー追加フレーム (data: URL)」** にすると、 `boxImagePath: null` で publish されてしまい、 runtime で背景なしになる (CSS デフォルトに fallback)。 現状は user-frame は localStorage 内のみで使う運用 (data: URL は GitHub に publish されない仕様)
 - 「⟳ 復元」 / 「📂 Import」 / 「📡 GitHub 配信」 で `__op_layout` と `__op_narration` の **整合性が崩れた状態** (例: layout だけ古い / narration だけ古い) は今のところチェックなし。 publish 時に両方同時更新される実装に依存している
 - editor の各立ち絵編集 UI には現状 **width / height / 位置 / opacity** はあるが、 `clip-path` の編集 UI が無い (CSS 側で per-VC hardcoded のまま)
+
+## editor ヘッダ整理 (sw v906+): 3 ドロップダウン化 + ローカル/production で配信非表示
+
+editor ヘッダに散在していた **17 個のボタン** (Export/Import/配信系で命名揺れ・並び順がバラバラ) を **HTML5 `<details>` ベースの 3 ドロップダウン** に集約 (2026-05-09)。 旧ボタン群は削除し、 関数本体は変更せず **wire のみ新 ID (`dd-*`) に再 bind** することでリスクを最小化。
+
+### ドロップダウン構造
+
+| ドロップダウン | 内訳 | 旧 ID → 新 ID |
+|---|---|---|
+| 📥 **Export ▾** | クリップボードへ全部 (CSS+JSON) / CSS ファイル (.css) / JSON ファイル (.json、 立ち絵+対話+ナレ全 variant) / シナリオ (OP_PANELS) クリップボード | `btn-export` 系 4 個 + `btn-export-narration-json` を統合 |
+| 📤 **Import ▾** | JSON ファイルから取り込み (旧 narration-only 形式も読込可) | `btn-import-narration-json` を統合 |
+| 📡 **配信 ▾** | GitHub 配信 / GitHub から復元 | `btn-publish-narration` + `btn-restore-narration` を統合 |
+
+### 削除した旧ボタン (計 8 個)
+
+- `btn-export-clipboard` (📋 クリップボードへ全部)
+- `btn-export-css` (📄 CSS ファイル)
+- `btn-export-json` (📄 全 layout JSON)
+- `btn-export-scenario` (📜 シナリオ)
+- `btn-export-narration-json` (💾 NA Export)
+- `btn-import-narration-json` (📂 NA Import)
+- `btn-publish-narration` (📡 GitHub 配信)
+- `btn-restore-narration` (⟳ 復元)
+
+### ドロップダウン挙動
+
+- HTML5 `<details>` + `<summary>` ベース (= JS 不要で開閉)
+- `header details.hdr-dd` を全部集めて `toggle` イベントで **相互排他** (1 つ開いたら他は close)
+- `document.click` で外クリック検出 → 開いている dropdown を close (`details.contains(e.target)` で内側クリックは除外)
+
+### `isStagingOrigin()`: 配信ドロップダウンを staging 限定で表示
+
+旧実装は **denylist 方式** (`hostname === 'localhost'` 等を弾く) だったため、 production (`pono.kodama-no-mori.com`) で配信ボタンが見えてしまい、 押すと `GH_BRANCH='develop'` hardcode で develop ブランチに書き込まれて **意図しない反映** が起きる事故リスクがあった。 また `172.*` の startsWith over-exclusion (172.16-31 のみ RFC1918 だが全 172.x が拒否) や `::1` IPv6 loopback の漏れもあった。
+
+これらをまとめて解消するため **allowlist 方式** に転換:
+
+```js
+const isStagingOrigin = () => {
+  try {
+    return window.location.hostname === 'pono-asobiba-staging.ndw.workers.dev';
+  } catch (e) {
+    return false;
+  }
+};
+if (!isStagingOrigin()) {
+  document.getElementById('dd-publish').style.display = 'none';
+}
+```
+
+これで配信ドロップダウンが見えるのは staging origin **1 つだけ**。 ローカル開発 (file:// / localhost / 127.x / 192.168.x / 10.x / 172.x / ::1) も production も全て非表示で、 誤配信ガードが完成した。
+
+#### Cross-review HIGH/MEDIUM fixes (allowlist 化で同時解消)
+
+- **HIGH-1**: production で配信ボタンが見える → 非表示
+- **HIGH-2**: `172.*` startsWith over-exclusion (172.0-15 / 172.32-255 を誤って拒否) → allowlist で無効化
+- **MEDIUM-1**: `::1` IPv6 loopback 漏れ (旧 denylist で取りこぼし) → allowlist で無効化
+
+### 設計指針
+
+- **関数本体は無変更**: `exportCopy` / `download('css')` / `exportNarrationJson` / `exportScenario` / `importNarrationJsonFromFile` / `publishNarrationToSavedLayout` / `restoreNarrationFromSavedLayout` などは旧コードのまま。 `_bindDd(id, fn)` ヘルパで新 ID にだけ wire し直す。 これでリスクを「ボタン整理」のみに局所化
+- **`<details>` 採用理由**: ライブラリレス (純 JS / 純 HTML) で aria 対応もブラウザ任せ。 子供向け教育 PWA でランタイム JS を増やさないポリシーに合致
+- **production 非表示の運用**: 配信は **staging editor からのみ**。 staging で publish → develop ブランチに書き込み → Cloudflare Workers が develop を配信 → 全端末反映。 production からは「見たいだけ」 (= 編集 UI は使うが配信は禁止) という棲み分け
+- **横展開予定**: 同じ「3 ドロップダウン + allowlist で staging 限定」 パターンは他ゲーム editor (zukan / character-builder / maze) にも適用可能
+
+### 効果
+
+- 旧来の **17 ボタン横並びで命名揺れ** (📋 / 📄 / 📜 / 💾 / 📂 / 📡 / ⟳ が混在) を解消、 視覚的に階層化されて UI 把握が早い
+- production 誤配信ガード (HIGH-1) が allowlist 化で副作用ゼロで解消
+- ローカル editor で「存在意義が無い」配信ボタン (どうせ /api/gh/ proxy が届かない) を排除して UX 統一
 
 ## Skip / Cancel semantics
 

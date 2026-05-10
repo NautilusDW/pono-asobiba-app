@@ -72,6 +72,59 @@
   header button.ghost:hover { background: #20242e; }
   header .spacer { flex: 1; }
 
+  /* Header dropdown (Export / Import / 配信) */
+  header details.hdr-dd {
+    position: relative;
+    display: inline-block;
+  }
+  header details.hdr-dd > summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    background: transparent;
+    border: 1px solid #3a4050;
+    color: #cbd5e1;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  header details.hdr-dd > summary::-webkit-details-marker { display: none; }
+  header details.hdr-dd > summary:hover { background: #20242e; }
+  header details.hdr-dd[open] > summary { background: #20242e; border-color: #4a5060; }
+  header details.hdr-dd > .hdr-dd-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 260px;
+    max-width: 360px;
+    background: #1a1d24;
+    border: 1px solid #3a4050;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    padding: 4px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  header details.hdr-dd > .hdr-dd-menu > button {
+    background: transparent;
+    color: #e2e8f0;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    text-align: left;
+    white-space: nowrap;
+    width: 100%;
+  }
+  header details.hdr-dd > .hdr-dd-menu > button:hover { background: #2a3040; }
+
   .panel {
     background: #181b22;
     border-right: 1px solid #2a2e3a;
@@ -947,14 +1000,28 @@
     <button id="btn-toggle-height-guides" class="ghost" type="button">📏 高さガイド</button>
     <button id="btn-toggle-box-guides" class="ghost" type="button">📐 Box ガイド</button>
     <button id="btn-toggle-single-box" class="ghost" type="button">📦 Box 1 個</button>
-    <button id="btn-export">エクスポート（コピー）</button>
-    <button id="btn-export-css" class="ghost">CSS DL</button>
-    <button id="btn-export-json" class="ghost">JSON DL</button>
-    <button id="btn-export-scenario" class="ghost" title="OP_PANELS の JS リテラルをコピー">📜 シナリオ Export</button>
-    <button id="btn-publish-narration" class="ghost" title="現在の OP layout (立ち絵+対話+ナレ、 B/C/D 全部) を quizland/saved-layout.json の __op_layout に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
-    <button id="btn-restore-narration" class="ghost" title="現在の VC の OP layout (立ち絵+対話+ナレ) を quizland/saved-layout.json から復元する (このオリジンの localStorage を破棄して再初期化)。 別オリジンで編集した値が反映されないときに使用。">⟳ 復元</button>
-    <button id="btn-export-narration-json" class="ghost" title="現在の B/C/D OP layout (立ち絵+対話+ナレ) を JSON ファイルにダウンロード (origin 跨ぎでの移植用)">💾 Export</button>
-    <button id="btn-import-narration-json" class="ghost" title="ダウンロードした JSON ファイルを読み込んで B/C/D OP layout (立ち絵+対話+ナレ) を上書き (origin 跨ぎでの取り込み用、 旧 narration-only 形式も読み込み可)">📂 Import</button>
+    <details class="hdr-dd" id="dd-export">
+      <summary title="エクスポート操作">📥 Export ▾</summary>
+      <div class="hdr-dd-menu">
+        <button type="button" id="dd-export-clipboard" title="現在の編集内容を CSS + JSON テキストとしてクリップボードへコピー">📋 クリップボードへ全部 (CSS + JSON)</button>
+        <button type="button" id="dd-export-css-file" title="CSS ファイルをダウンロード">📄 CSS ファイル (.css)</button>
+        <button type="button" id="dd-export-json-file" title="現在の B/C/D OP layout (立ち絵+対話+ナレ含む全 variant) を JSON ファイルにダウンロード (origin 跨ぎでの移植用)">📄 JSON ファイル (.json)</button>
+        <button type="button" id="dd-export-scenario" title="OP_PANELS の JS リテラルをクリップボードへコピー">📜 シナリオ (OP_PANELS) をクリップボード</button>
+      </div>
+    </details>
+    <details class="hdr-dd" id="dd-import">
+      <summary title="インポート操作">📤 Import ▾</summary>
+      <div class="hdr-dd-menu">
+        <button type="button" id="dd-import-json-file" title="ダウンロードした JSON ファイルを読み込んで B/C/D OP layout (立ち絵+対話+ナレ) を上書き (origin 跨ぎでの取り込み用、 旧 narration-only 形式も読み込み可)">📂 JSON ファイルから取り込み</button>
+      </div>
+    </details>
+    <details class="hdr-dd" id="dd-publish">
+      <summary title="GitHub 配信操作">📡 配信 ▾</summary>
+      <div class="hdr-dd-menu">
+        <button type="button" id="dd-publish-github" title="現在の OP layout (立ち絵+対話+ナレ、 B/C/D 全部) を quizland/saved-layout.json の __op_layout に書き込み、 全端末・全ユーザに配信する (要 GitHub auth)">📡 GitHub 配信</button>
+        <button type="button" id="dd-restore-github" title="現在の VC の OP layout (立ち絵+対話+ナレ) を quizland/saved-layout.json から復元する (このオリジンの localStorage を破棄して再初期化)。 別オリジンで編集した値が反映されないときに使用。">⟳ GitHub から復元</button>
+      </div>
+    </details>
     <input type="file" id="input-narration-json" accept=".json,application/json" style="display:none">
     <select id="sel-copy-vc" class="ghost" title="現在の VC の設定を他の VC にコピー" style="background:transparent;border:1px solid #3a4050;color:#cbd5e1;padding:6px 8px;border-radius:4px;font-size:12px;cursor:pointer;">
       <option value="" disabled selected hidden>他 VC へコピー ▾</option>
@@ -2215,7 +2282,7 @@ let _publishing = false;
 async function publishNarrationToSavedLayout() {
   if (_publishing) return;
   _publishing = true;
-  const btn = document.getElementById('btn-publish-narration');
+  const btn = document.getElementById('dd-publish-github');
   if (btn) { btn.disabled = true; btn.classList.add('busy'); }
   try {
     toast('GitHub に配信中…');
@@ -5115,26 +5182,67 @@ function buildHeader() {
     });
   });
 
-  document.getElementById('btn-export').addEventListener('click', exportCopy);
-  document.getElementById('btn-export-css').addEventListener('click', () => download('css'));
-  document.getElementById('btn-export-json').addEventListener('click', () => download('json'));
-  const btnScn = document.getElementById('btn-export-scenario');
-  if (btnScn) btnScn.addEventListener('click', exportScenario);
-  const btnPub = document.getElementById('btn-publish-narration');
-  if (btnPub) btnPub.addEventListener('click', publishNarrationToSavedLayout);
-  // NA JSON Export / Import (origin 跨ぎでの narration 移植用)
-  const btnExpNa = document.getElementById('btn-export-narration-json');
-  if (btnExpNa) btnExpNa.addEventListener('click', exportNarrationJson);
-  const btnImpNa = document.getElementById('btn-import-narration-json');
-  const inputNa  = document.getElementById('input-narration-json');
-  if (btnImpNa && inputNa) {
-    btnImpNa.addEventListener('click', () => inputNa.click());
+  // === Header dropdown wiring (Export / Import / 配信) ===
+  // 旧ボタン (btn-export / btn-export-css / btn-export-json / btn-export-scenario /
+  // btn-export-narration-json / btn-import-narration-json / btn-publish-narration /
+  // btn-restore-narration) は 3 ドロップダウン (📥 Export / 📤 Import / 📡 配信) に
+  // 再編成された。 関数本体は変更せず、新 ID (dd-*) に再 wire するだけ。
+  const _bindDd = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', fn);
+  };
+  // 📥 Export ドロップダウン
+  _bindDd('dd-export-clipboard', exportCopy);
+  _bindDd('dd-export-css-file', () => download('css'));
+  // JSON ファイル: 旧 btn-export-narration-json (origin 跨ぎでの全 variant 移植用) を採用
+  _bindDd('dd-export-json-file', exportNarrationJson);
+  _bindDd('dd-export-scenario', exportScenario);
+  // 📤 Import ドロップダウン
+  const ddImpFile = document.getElementById('dd-import-json-file');
+  const inputNa   = document.getElementById('input-narration-json');
+  if (ddImpFile && inputNa) {
+    ddImpFile.addEventListener('click', () => inputNa.click());
     inputNa.addEventListener('change', (e) => {
       const f = e.target.files && e.target.files[0];
       importNarrationJsonFromFile(f);
       e.target.value = ''; // 同じファイル再選択を許可
     });
   }
+  // 📡 配信 ドロップダウン
+  _bindDd('dd-publish-github', publishNarrationToSavedLayout);
+  // dd-restore-github は buildHeader 後の DOMContentLoaded 末尾で wire (既存挙動を踏襲)
+  // ローカル origin (file:// / localhost / LAN IP) では配信ドロップダウンを丸ごと隠す
+  // (GitHub 配信 API は staging origin / 本番 origin でしか auth が通らない)。
+  const isStagingOrigin = () => {
+    try {
+      const h = window.location.hostname;
+      // 配信機能を許可する origin の allowlist。
+      // production (pono.kodama-no-mori.com) は意図的に含めない:
+      //   GH_BRANCH='develop' が hardcode されているため、 production から配信を
+      //   押すと develop ブランチに書き込まれて意図しない反映になる。
+      // ローカル (file:// / localhost / 127.x / 192.168.x / 10.x / RFC1918 172.x / ::1)
+      // も含めない: /api/gh/ proxy が同一 origin 制約で届かない。
+      return h === 'pono-asobiba-staging.ndw.workers.dev';
+    } catch (e) {
+      return false;
+    }
+  };
+  if (!isStagingOrigin()) {
+    const ddPub = document.getElementById('dd-publish');
+    if (ddPub) ddPub.style.display = 'none';
+  }
+  // ドロップダウンの相互排他: 1 つ開いたら他は閉じる + 外クリックで閉じる
+  const allDd = Array.from(document.querySelectorAll('header details.hdr-dd'));
+  allDd.forEach(d => {
+    d.addEventListener('toggle', () => {
+      if (d.open) allDd.forEach(o => { if (o !== d) o.open = false; });
+    });
+  });
+  document.addEventListener('click', (e) => {
+    allDd.forEach(d => {
+      if (d.open && !d.contains(e.target)) d.open = false;
+    });
+  });
   document.getElementById('btn-reset').addEventListener('click', resetCurrent);
   document.getElementById('btn-undo-reset').addEventListener('click', undoLastOp);
 
@@ -5988,8 +6096,9 @@ async function init() {
   buildRightPane();
   render();
 
-  // ⟳ 復元 ボタン: buildHeader 後に wire (DOM 挿入順を間違えないため)。
-  const btnRestore = document.getElementById('btn-restore-narration');
+  // ⟳ GitHub から復元 メニュー項目: buildHeader 後に wire (DOM 挿入順を間違えないため)。
+  // 旧 btn-restore-narration → 配信ドロップダウン内 dd-restore-github に置換。
+  const btnRestore = document.getElementById('dd-restore-github');
   if (btnRestore) btnRestore.addEventListener('click', restoreNarrationFromSavedLayout);
 
   if (window.ResizeObserver) {
