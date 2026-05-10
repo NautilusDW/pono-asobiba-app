@@ -5291,6 +5291,19 @@ function _opApplyLayoutOverride(panel, line) {
     if (!side || typeof side !== 'object') return;
     const slot = document.querySelector('.op-side-' + sideKey + ' .op-char-slot');
     if (!slot) return;
+    // Fix 3 (2026-05-10): 前 panel / 前 line で書かれた inline 値が新 src に対応するキーを
+    // 持たないと残留してしまい、 立ち絵が 0×0 や画面外に飛ぶ事故が起きる。
+    // 新値を当てる前に必ず空文字でクリアして CSS @media デフォルトから当て直す。
+    // 無効値 / 未定義値の場合は下の if ガードで何も書かないので、 結果として CSS デフォルトに任せる
+    // (= 既存挙動の温存)。
+    try {
+      slot.style.width = '';
+      slot.style.height = '';
+      slot.style.aspectRatio = '';
+      slot.style.transform = '';
+    } catch (_) {}
+    const __img0 = slot.querySelector('img');
+    if (__img0) { try { __img0.style.objectPosition = ''; } catch (_) {} }
     // variant 値を優先、 無ければ flat (side そのもの) を使う。
     let src = side;
     if (variantName && side.perVariant && typeof side.perVariant === 'object') {
@@ -5306,6 +5319,9 @@ function _opApplyLayoutOverride(panel, line) {
     } else if (src.slotAspect === 'free') {
       slot.style.aspectRatio = '';
     }
+    // 'fixed_*' / 'free' 以外の sentinel 値 (例: 'auto' や undefined / null / 想定外文字列) は、
+    // 上の冒頭リセット (slot.style.aspectRatio = '') によって inline 解除済みのまま残るので
+    // CSS @media デフォルト (≈ 4:5) が当たる。 = 既存挙動と整合。
     const ox = isFiniteNum(src.slotOffsetX) ? src.slotOffsetX : 0;
     const oy = isFiniteNum(src.slotOffsetY) ? src.slotOffsetY : 0;
     slot.style.transform = 'translate(calc(-50% + ' + ox + 'px), calc(-50% + ' + oy + 'px))';
@@ -5381,6 +5397,15 @@ function _opApplyLayoutOverride(panel, line) {
 
 function _opApplyNarrationOverride(narrEl) {
   if (!narrEl) return;
+  // Fix 1 (2026-05-10): inline color の残留 (前回 cinematic / 拡張機能 / theme スクリプト等)
+  // で文字色が赤や別色になる事故を防ぐため、 必ず冒頭で空文字リセットする。
+  // 空文字 = inline 解除 → CSS デフォルト (.op-narration の color: #3a2a14 = ダークブラウン) が当たる。
+  // emphasis 行のみ <p class="emphasis"> で個別に上書きされるので、 親 narrEl の color を
+  // クリアしても per-line 強調は壊れない。
+  // Fix 2 (2026-05-10): white-space も同様に inline で 'pre-wrap' を確定して、 CSS race
+  // (per-VC @media が当たる前のフレームで textContent の \n が無視される問題) を解消する。
+  try { narrEl.style.color = ''; } catch (_) {}
+  try { narrEl.style.whiteSpace = 'pre-wrap'; } catch (_) {}
   const vc = _opGetCurrentVC();
   const nr = _opLoadNarrationOverride(vc);
   if (!nr) return; // no override; CSS default 適用
@@ -5451,6 +5476,30 @@ async function playOpeningCinematic() {
   _opRunning = true;
 
   _opCancelled = false;
+
+  // Fix 4 (2026-05-10): ハードリロード直後に LayoutSystem.init の async fetch がまだ
+  // 解決していないと、 OP cinematic 開始時点で window._currentLayoutData が null となり
+  // _opLoadLayoutOverride / _opLoadNarrationOverride が saved-layout.json の値を見ずに
+  // 「CSS デフォルト」 にフォールバックしてしまう (= リロードのたびに結果が揺れる race)。
+  // ここで __op_layout の存在を確認し、 未ロードなら同期 fetch (cache: 'no-store' +
+  // timestamp で CDN/browser cache を bust) してから panel ループに入る。
+  // 失敗時は何もしない (= CSS デフォルト fallback で既存挙動を維持)。
+  try {
+    if (!window._currentLayoutData ||
+        !window._currentLayoutData.__op_layout) {
+      const r = await fetch('./saved-layout.json?_=' + Date.now(), { cache: 'no-store' });
+      if (r && r.ok) {
+        const j = await r.json();
+        if (j && typeof j === 'object') window._currentLayoutData = j;
+      }
+    }
+  } catch (e) {
+    // Fix 4 minor (2026-05-10): catch にも debug 用の console.warn を仕込む。
+    // 本番環境で saved-layout.json が CDN 障害等で取得失敗した際、 silent fallback
+    // のままだと「なぜ CSS デフォルトに落ちたのか」が分からず原因切り分けに時間がかかる。
+    // ここで warn を出しても fallback 動作 (= CSS デフォルト) は変わらない。
+    try { console.warn('[OP cinematic] saved-layout.json fetch failed:', e); } catch (_) {}
+  }
 
   // Fix 5e: CSS の transform: scale が無効化されるため、JS で動的に scale を計算・適用。
   // 起動時に 1 回 + cinematic 中の resize にも追従。終了時 (finally) で removeEventListener。
@@ -5950,9 +5999,12 @@ async function playOpeningCinematic() {
     try {
       const __narrEnd = document.getElementById('op-narration');
       if (__narrEnd) {
+        // Fix 1+2 (2026-05-10): 'color' と 'whiteSpace' を cleanup 対象に追加。
+        // _opApplyNarrationOverride 冒頭で inline 設定するようになったため、 終了時も
+        // 必ず inline 解除して次回 cinematic 開始時に CSS デフォルトから始められるようにする。
         ['top','bottom','width','height','lineHeight','fontSize','padding',
          'backgroundColor','backgroundImage','backgroundSize','backgroundRepeat',
-         'boxShadow','borderRadius','textAlign']
+         'boxShadow','borderRadius','textAlign','color','whiteSpace']
           .forEach(k => { try { __narrEnd.style[k] = ''; } catch(_e){} });
       }
     } catch (e) {}

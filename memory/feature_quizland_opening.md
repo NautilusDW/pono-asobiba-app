@@ -1,6 +1,6 @@
 ---
 name: Quizland Opening Cinematic
-description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。 **v906+ で editor ヘッダの 17 散在ボタンを 3 ドロップダウン (📥 Export ▾ / 📤 Import ▾ / 📡 配信 ▾) に集約、 配信ドロップダウンは staging origin (`pono-asobiba-staging.ndw.workers.dev`) のみ表示する allowlist 方式で、 ローカル開発 (file:// / localhost / 私有 IP / ::1) と production (`pono.kodama-no-mori.com`) では非表示** — production は GH_BRANCH='develop' hardcode の誤配信防止。
+description: 6-panel intro that plays after mode-select (before initGame). Ken Burns dolly + narration + babble dialog + skip. Codex prompt for missing panel art at tmp/quizland-op-cinematic/. tap-hint dynamic-follow + editor→runtime override (sw v890+) + saved-layout.json 経由の全端末配信 (B 経路、sw v892+)。 ナレーション音声を seg1 (OP_NA01.mp3) / seg2 (OP_NA02.mp3) で per-seg 分割再生 (sw v893+、v894+ で seg2 ファイル名のアンダースコアを撤去)。 v900+ で saved-layout.json に seed を直接書き込み、 editor 起動時に localStorage > seed > defaults の 3 段優先で初期化 + 「⟳ 復元」 + v902+ で 「💾 Export」 / 「📂 Import」 で origin 跨ぎ (ローカル ↔ staging) JSON 移植。 **v904+ (Q 案完成) で saved-layout.json の主キーを `__op_layout: { B, C, D }` (新) に拡張、 各 VC で `pono / hakase / singleBox / narration` 4 オブジェクトを per-VC で配信** — 旧 `__op_narration` は後方互換のため温存され、立ち絵+対話+ナレ全部を「📡 GitHub 配信」 1 操作で全端末反映できる。 **v905+ でポノ立ち絵に `perVariant` (6 ポーズ × 6 slot フィールド、 hakase 発話用 `pono_001` 含む) を配信、 dialogue line ごとに variant 名 (line.ponoImg → panel.ponoImg basename) を抽出して `perVariant[variantName]` を flat より優先で適用** — ポーズ切替時に slot 位置・サイズが追従。 **v906+ で editor ヘッダの 17 散在ボタンを 3 ドロップダウン (📥 Export ▾ / 📤 Import ▾ / 📡 配信 ▾) に集約、 配信ドロップダウンは staging origin (`pono-asobiba-staging.ndw.workers.dev`) のみ表示する allowlist 方式で、 ローカル開発 (file:// / localhost / 私有 IP / ::1) と production (`pono.kodama-no-mori.com`) では非表示** — production は GH_BRANCH='develop' hardcode の誤配信防止。 **v908+ で 4 つの即時バグ (赤文字 / 改行崩れ / 立ち絵消失 / race) を一括修正、 inline style を 「reset → set」 の対称パターンに統一 + 起動時に saved-layout.json を `cache: 'no-store'` で同期 fetch して LayoutSystem race を guard、 ハードリロードでも結果が安定**。
 type: project
 ---
 
@@ -609,6 +609,48 @@ if (!isStagingOrigin()) {
 - 旧来の **17 ボタン横並びで命名揺れ** (📋 / 📄 / 📜 / 💾 / 📂 / 📡 / ⟳ が混在) を解消、 視覚的に階層化されて UI 把握が早い
 - production 誤配信ガード (HIGH-1) が allowlist 化で副作用ゼロで解消
 - ローカル editor で「存在意義が無い」配信ボタン (どうせ /api/gh/ proxy が届かない) を排除して UX 統一
+
+## 4 バグ即時修正 (sw v908+): 赤文字 / 改行崩れ / 立ち絵消失 / race
+
+ユーザーが staging editor + 本番 OP cinematic で再現報告した 4 つの異常を一気に潰した修正セット。 全て 「ハードリロード or panel 切替で結果が揺れる」 という症状で共通原因は **inline style の race + 前 panel 残留値**。
+
+### 症状 (それぞれ独立に再現)
+
+1. **ナレーション赤文字**: 起動条件によって narration の文字色がたまに赤や別色になる (= 正しくは CSS デフォルト `#3a2a14` ダークブラウン)
+2. **改行崩れ**: ナレーション本文の `\n` が無視されて 1 行で詰まる panel がある (= 正しくは `pre-wrap` で改行保持)
+3. **立ち絵消失**: panel/line 切替時にポノ or 博士の立ち絵が一瞬 0×0 や画面外に飛ぶ (= 前 panel が書いた `width/height/aspectRatio/transform/objectPosition` が新 src のキー欠損で残留)
+4. **race による不安定性**: ハードリロード直後に OP cinematic が走ると `window._currentLayoutData` が未ロードのまま `_opLoadLayoutOverride` が呼ばれて全 override が CSS フォールバックする (= リロードのたびに違う見た目)
+
+### 原因
+
+既存実装は **「対称な reset → set」 ではなく 「set だけ」 で済ませていた**。 結果:
+
+- `narrEl.style.color` / `whiteSpace` は inline 解除をしないため、 別 script (拡張機能 / theme / 旧コード) が一度書き込むと CSS の `.op-narration { color: #3a2a14 }` が打ち負ける
+- `applySide` は新 src の slotW/slotH/slotAspect/transform が `undefined` だと前 panel の値を残す (= 「変更しない = 引き継ぐ」 になっていた)
+- `playOpeningCinematic` 開始時に `LayoutSystem.init` の async fetch 完了を待つ仕組みが無く、 「先に走った OP が saved-layout を見られない」 シナリオが race で発生
+
+### 修正 (Fix 1〜4 + minor)
+
+- **Fix 1 (赤文字解消)**: `_opApplyNarrationOverride` 冒頭で `narrEl.style.color = ''` リセット → CSS デフォルト確定。 cleanup の finally 配列にも `'color'` 追加で replay 時もリーク無し
+- **Fix 2 (改行崩れ解消)**: `narrEl.style.whiteSpace = 'pre-wrap'` を inline で確定 (CSS race を受けない) + cleanup に `'whiteSpace'` 追加
+- **Fix 3 (立ち絵消失解消)**: `applySide` の **冒頭で必ず** `slot.style.width/height/aspectRatio/transform = ''` + `img.style.objectPosition = ''` をリセットしてから新値を当てる。 新 src がキーを持たない場合は `''` のまま CSS デフォルト (`@media` で 4:5 等) に着地。 slotAspect が `'fixed_*'` / `'free'` 以外の sentinel 値の場合も同じく CSS デフォルト fallback (コードコメント明示)
+- **Fix 4 (race 解消)**: `playOpeningCinematic` 冒頭で `window._currentLayoutData?.__op_layout` 未ロードを検出したら `fetch('./saved-layout.json?_=' + Date.now(), { cache: 'no-store' })` で**同期取得**してから panel ループへ。 `cache: 'no-store'` + timestamp で CDN/browser cache 両方を bust。 取得失敗時は `console.warn` で debug 容易性を確保しつつ silent fallback (= CSS デフォルト) で既存挙動を維持
+
+### Cross-review note (HIGH 2 件残存、 実害最小)
+
+- Fix 3 の slotAspect: `'fixed_*'` / `'free'` 以外の文字列 (例: `'auto'` や想定外値) が来たときは inline 解除のまま **CSS デフォルト fallback**。 実態として saved-layout.json は 2 値しか書かないので onset 確率ゼロだが、 将来 sentinel 増やすときに気付けるようコードコメント追記
+- Fix 4 の二重 fetch: LayoutSystem 側でも `saved-layout.json` を取りに行くため、 起動時に最大 2 回 fetch される可能性。 `cache: 'no-store'` だが 2KB 程度なので帯域影響限定 → 許容
+
+### 副次効果
+
+- **ハードリロードしても挙動が安定**: race を guard した結果、 「リロードのたびに違う」 を再現不能化
+- **全シナリオで同じ結果**: editor staging / 本番 cinematic / replay (将来追加予定) が同じ override で再現
+- **inline style の対称パターン化**: 「reset → set」 が `_opApplyNarrationOverride` / `applySide` / cleanup の 3 経路で揃ったため、 今後の override フィールド追加がパターン適用だけで済む
+
+### 教訓
+
+- **inline style は CSS デフォルトに対する追加** ではなく、 **独立した上書きレイヤー** として扱うべき。 「set した側が責任を持って reset する」 を関数境界で徹底
+- **async init の race は同期 fetch + cache: 'no-store' で潰す**。 `await` を 1 行追加するだけで一貫性が出る (今回は 50ms 程度の追加遅延、 子供向け PWA で許容範囲)
 
 ## Skip / Cancel semantics
 
