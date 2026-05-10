@@ -138,6 +138,16 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
    - **掃除タイム**: 過去のバッチで全行 done になったものは、 1 つの「[batch:NN] DONE — 1 行サマリ」エントリに集約して Recent に移動して良い (同期のために必ず**そのバッチに関わった全エージェントの作業が done 済**であることを git log と working tree で確認すること)。
    - **競合検出**: git push が rejected された場合は、 fetch + rebase してから再 push。 自分のエントリと衝突しているなら、 競合を解決する際に**他バッチのエントリは絶対変更しない** (rebase で他バッチの変更が混ざっても、 自分のバッチ部分だけ追記する)。
 
+   **★文字化け検知ヘッダ (2026-05-10 追加)**: 新規ハンドオフ md (`CODEX-*.md` / `HANDOFF.md` / `codex指示*.md` / `tmp/**/CODEX-*.md` など、 AI 同士が読み書きするすべての md) は **冒頭に以下の検知ヘッダを必ず入れる**:
+
+   ```
+   > ⚠️ **文字化けチェック**: この行が読めない (例: 「・・」「ヒメ」のような化け文字) の場合、 ファイルが UTF-8 で開かれていません。 VS Code で「Reopen with Encoding」→「UTF-8」を選択して開き直してください。 詳細: AGENTS.md §0 / §4 ルール 7
+   ```
+
+   これは Markdown blockquote として可視化される (HTML コメント `<!-- -->` だとレンダリング時に消えてしまうため不可)。 化けていればこの行自体が壊れて即気付ける、 という早期検知の仕組み。 既存ハンドオフ md にも順次同じヘッダを差し込んでいく。
+
+   加えて、 プロジェクト root の `.editorconfig` (`charset = utf-8`, `end_of_line = lf`) に従って Codex 側でも EditorConfig 拡張 (`EditorConfig.EditorConfig`) を有効化することを推奨。 EditorConfig が効いていれば Codex VS Code 拡張の Shift_JIS 誤判定 → 上書き化けを防げる。
+
 ---
 
 ## 5. 画像追加・差し替え手順

@@ -18,7 +18,21 @@ indent_size = 2
 
 # Markdown: trailing two spaces is a meaningful "line break", do not strip.
 [*.{md,markdown}]
+charset = utf-8
+end_of_line = lf
 trim_trailing_whitespace = false
+
+# Web / data files: explicitly UTF-8 + LF (defensive, in case an editor
+# overrides the [*] block by file type).
+[*.{json,html,htm,css,js,mjs,cjs,ts,jsx,tsx}]
+charset = utf-8
+end_of_line = lf
+
+# Python / shell scripts: UTF-8 + LF, conventional 4-space indent.
+[*.{py,sh}]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
 
 # Makefiles require literal tabs.
 [Makefile]

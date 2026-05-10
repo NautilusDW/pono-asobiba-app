@@ -104,6 +104,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-10T02:38:11Z - agent-10 handoff-mojibake-fix: .editorconfig に md/json/html/css/js/py/sh の charset=utf-8+lf セクション明示追加 + AGENTS.md §4 ルール 7 に文字化け検知ヘッダ規約追加 + 既存ハンドオフ md 7 件 (HANDOFF.md / CODEX-PROMPT.md x2 / CODEX-ORDER.md x3 / codex-report.md) 冒頭に blockquote 警告挿入
+- **タスク**: agent-10 handoff-mojibake-fix: .editorconfig に md/json/html/css/js/py/sh の charset=utf-8+lf セクション明示追加 + AGENTS.md §4 ルール 7 に文字化け検知ヘッダ規約追加 + 既存ハンドオフ md 7 件 (HANDOFF.md / CODEX-PROMPT.md x2 / CODEX-ORDER.md x3 / codex-report.md) 冒頭に blockquote 警告挿入
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 64
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Agent": 30, "Bash": 20, "Grep": 6}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-10T02:35:25Z - OP narration JSON Export/Import 実装 (X 案): B 経路 revert 復活 (6c27168) + 「💾 NA Export」「📂 NA Import」ボタン追加 (ca1cb68) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (c191465、buildRightPane / undo 集約 / schema 検証) (sw v903)
 - **タスク**: OP narration JSON Export/Import 実装 (X 案): B 経路 revert 復活 (6c27168) + 「💾 NA Export」「📂 NA Import」ボタン追加 (ca1cb68) + cross-review HIGH-1/HIGH-2/MEDIUM-3 fix (c191465、buildRightPane / undo 集約 / schema 検証) (sw v903)
 - **結果**: 成功
@@ -205,19 +218,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 21, "Bash": 16}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-10T01:32:00Z - agent-4 mapselect-finalize: 残り3エリアhighlight取り込み + zukan-data worldHighlight追加 + 水色背景/hotspotハロー削除 + sign+silhouettesパネル追加 (sw v897)
-- **タスク**: agent-4 mapselect-finalize: 残り3エリアhighlight取り込み + zukan-data worldHighlight追加 + 水色背景/hotspotハロー削除 + sign+silhouettesパネル追加 (sw v897)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 43
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 21, "Bash": 15}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

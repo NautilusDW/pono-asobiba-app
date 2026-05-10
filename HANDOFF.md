@@ -1,3 +1,5 @@
+> ⚠️ **文字化けチェック**: この行が読めない場合、UTF-8 で開き直してください (VS Code: コマンドパレット → "Reopen with Encoding" → "UTF-8")。 詳細: AGENTS.md §0 / §4 ルール 7
+
 # HANDOFF — Claude ⇄ Codex 申し送りノート
 
 > このファイルは Claude Code と OpenAI Codex の **共有メモ帳** です。
