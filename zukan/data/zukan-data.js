@@ -16,6 +16,24 @@ window.ZUKAN_DATA = {
       // 花の小道部分のみ絵柄、他は完全透明。 全画面オーバーレイで世界地図の上に
       // ぴったり重ねて発光させる。
       worldHighlight: "../assets/zukan/map/highlight/flower_path.png",
+      // RPG ミニマップ風 innerMap (Phase 1)。 SVG viewBox 0..1600 0..900
+      // hotspots[0] が機能 (spotIdx=0)、 hotspots[1..4] は placeholder (Phase 2 以降)
+      innerMap: {
+        baseColor: "#b6d99a",       // 明るい黄緑
+        pathColor: "#d9b88a",       // 砂色
+        // 中央広場 cx=800, cy=450 から 上下左右に枝
+        pathSvg: "M 800 450 L 800 100 M 800 450 L 800 800 M 800 450 L 200 450 M 800 450 L 1400 450",
+        pathStroke: 90,
+        // ポノ初期位置 (Phase 2 で表示)
+        ponoPos: { x: 0.50, y: 0.50 },
+        hotspots: [
+          { id: "main",  spotIdx: 0,    x: 0.50, y: 0.50, label: "おはなの ひろば" },
+          { id: "north", spotIdx: null, x: 0.50, y: 0.11, label: "もりの いりぐち", placeholder: true },
+          { id: "south", spotIdx: null, x: 0.50, y: 0.89, label: "ちいさな いけ",   placeholder: true },
+          { id: "west",  spotIdx: null, x: 0.13, y: 0.50, label: "おおきな き",     placeholder: true },
+          { id: "east",  spotIdx: null, x: 0.88, y: 0.50, label: "はなの ベンチ",   placeholder: true }
+        ]
+      },
       silhouettes: [
         "../assets/zukan/map/silhouettes/flower_path_1.png",
         "../assets/zukan/map/silhouettes/flower_path_2.png",

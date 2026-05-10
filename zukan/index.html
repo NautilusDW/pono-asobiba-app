@@ -469,6 +469,76 @@ body[data-screen="collection"] #screen-collection {
 }
 
 /* ====================================================================
+ * screen-innermap (RPG ミニマップ Phase 1) — `.imrpg-*` 名前空間
+ * 既存 `.im-*` ルールは legacy fallback 用に残してある
+ * ==================================================================== */
+#screen-innermap .imrpg-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#screen-innermap .imrpg-pin-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: imrpgPulse 1.4s ease-in-out infinite;
+}
+@keyframes imrpgPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.7; }
+}
+#screen-innermap .imrpg-spot-name {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper, #f9efd0);
+  color: var(--brown, #6b4423);
+  font-weight: 800;
+  font-size: clamp(14px, 1.8vw, 22px);
+  padding: 8px 22px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#screen-innermap .imrpg-comingsoon {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 10;
+}
+#screen-innermap .imrpg-comingsoon.show { display: flex; }
+#screen-innermap .imrpg-cs-card {
+  background: var(--cream, #fdf6e3);
+  border-radius: 18px;
+  padding: 24px 36px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  font-family: var(--jp-font);
+  color: var(--brown, #6b4423);
+  max-width: 320px;
+}
+#screen-innermap .imrpg-cs-card p {
+  margin: 0 0 18px;
+  font-size: clamp(14px, 1.8vw, 20px);
+  font-weight: 700;
+}
+#screen-innermap .imrpg-cs-card button {
+  background: var(--green, #4a7c59);
+  color: #fff; border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-family: var(--jp-font);
+  font-size: clamp(13px, 1.4vw, 17px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ====================================================================
  * screen-search (旧ロジック移植)
  * ==================================================================== */
 #screen-search .field-bg {
@@ -1154,6 +1224,24 @@ body[data-screen="collection"] #screen-collection {
     </div>
 
     <div class="im-spot-name" id="imSpotName"></div>
+
+    <!-- ==== RPG ミニマップ Phase 1 (area.innerMap がある時のみ表示) ==== -->
+    <svg class="imrpg-svg" id="imrpgSvg" viewBox="0 0 1600 900"
+         preserveAspectRatio="xMidYMid meet" style="display:none">
+      <defs></defs>
+      <rect id="imrpgBase" width="1600" height="900" fill="#b6d99a"/>
+      <g id="imrpgPaths"></g>
+      <g id="imrpgDecorations"></g>
+      <g id="imrpgHotspots"></g>
+      <g id="imrpgPono"></g>
+    </svg>
+    <div class="imrpg-spot-name" id="imrpgSpotName" style="display:none"></div>
+    <div class="imrpg-comingsoon" id="imrpgComingSoon" role="dialog" aria-modal="true">
+      <div class="imrpg-cs-card">
+        <p>そのうち あそべるように なるよ！</p>
+        <button id="imrpgCsCloseBtn" type="button">とじる</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1444,34 +1532,132 @@ function msUpdateAreaInfo() {
 
 /* ====================================================================
  * Screen: innermap
+ *  - area.innerMap があれば RPG ミニマップ (Phase 1: 花の小道のみ)
+ *  - 無ければ旧描画 (legacy fallback)
  * ==================================================================== */
+
+// 旧描画 (Phase 1 時点でも 3 エリアはこちらで動く)
+function renderLegacyInnermap(area) {
+  // RPG 側を非表示、旧側を表示
+  const svg = document.getElementById('imrpgSvg');
+  const sn  = document.getElementById('imrpgSpotName');
+  if (svg) svg.style.display = 'none';
+  if (sn)  sn.style.display = 'none';
+  const oldSign = document.querySelector('#screen-innermap .im-sign');
+  const oldWrap = document.getElementById('imSpotWrap');
+  const oldName = document.getElementById('imSpotName');
+  if (oldSign) oldSign.style.display = '';
+  if (oldWrap) oldWrap.style.display = '';
+  if (oldName) oldName.style.display = '';
+
+  setImg(document.getElementById('imSignImg'), area.sign);
+  setImg(document.getElementById('imSpotImg'), area.innerSpotImg);
+  const spot = (area.spots && area.spots[0]) || null;
+  document.getElementById('imSpotName').textContent = spot ? spot.name : '';
+  // pins
+  const wrap = document.getElementById('imSpotWrap');
+  wrap.querySelectorAll('.im-pin').forEach(n => n.remove());
+  (area.spots || []).forEach((sp, idx) => {
+    if (!sp.mapPin) return;
+    const pin = document.createElement('button');
+    pin.type = 'button';
+    pin.className = 'im-pin';
+    pin.style.left = (sp.mapPin.x * 100) + '%';
+    pin.style.top  = (sp.mapPin.y * 100) + '%';
+    pin.setAttribute('aria-label', sp.name + 'を しらべる');
+    pin.addEventListener('click', function () {
+      setScreen('search', { areaId: area.id, spotIdx: idx, animalIdx: 0 });
+    });
+    wrap.appendChild(pin);
+  });
+}
+
+// RPG ミニマップ描画 (Phase 1)
+function renderRpgInnermap(area) {
+  const im = area.innerMap;
+  // 旧要素は隠す
+  const oldSign = document.querySelector('#screen-innermap .im-sign');
+  const oldWrap = document.getElementById('imSpotWrap');
+  const oldName = document.getElementById('imSpotName');
+  if (oldSign) oldSign.style.display = 'none';
+  if (oldWrap) oldWrap.style.display = 'none';
+  if (oldName) oldName.style.display = 'none';
+
+  const svg = document.getElementById('imrpgSvg');
+  const sn  = document.getElementById('imrpgSpotName');
+  svg.style.display = '';
+  sn.style.display = '';
+
+  // base
+  document.getElementById('imrpgBase').setAttribute('fill', im.baseColor);
+
+  // paths
+  const pathsG = document.getElementById('imrpgPaths');
+  pathsG.replaceChildren();
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', im.pathSvg);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', im.pathColor);
+  path.setAttribute('stroke-width', String(im.pathStroke || 80));
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  pathsG.appendChild(path);
+
+  // hotspots: 広場円 + パルスピン + 透明 hit circle
+  const hsG = document.getElementById('imrpgHotspots');
+  hsG.replaceChildren();
+  (im.hotspots || []).forEach(function (hs) {
+    const cx = hs.x * 1600;
+    const cy = hs.y * 900;
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'imrpg-hotspot');
+    group.dataset.spotIdx = hs.spotIdx === null ? '' : String(hs.spotIdx);
+    group.style.cursor = 'pointer';
+    const plazaFill = hs.placeholder ? '#a89a78' : '#d9b88a';
+    const pinFill   = hs.placeholder ? '#9a9a9a' : '#ffd966';
+    group.innerHTML =
+      '<circle cx="' + cx + '" cy="' + cy + '" r="55" fill="' + plazaFill + '" opacity="0.85"/>' +
+      '<circle class="imrpg-pin-pulse" cx="' + cx + '" cy="' + cy + '" r="20" ' +
+      'fill="' + pinFill + '" stroke="#fff" stroke-width="3"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="80" fill="transparent" pointer-events="all"/>';
+    group.addEventListener('click', function () { onRpgHotspotTap(area, hs); });
+    group.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+      onRpgHotspotTap(area, hs);
+    }, { passive: false });
+    hsG.appendChild(group);
+  });
+
+  // spot name (主スポットを既定表示)
+  sn.textContent = (im.hotspots && im.hotspots[0] && im.hotspots[0].label) || area.displayName;
+}
+
+function onRpgHotspotTap(area, hs) {
+  const sn = document.getElementById('imrpgSpotName');
+  if (sn) sn.textContent = hs.label || area.displayName;
+
+  if (hs.spotIdx !== null && hs.spotIdx !== undefined &&
+      area.spots && area.spots[hs.spotIdx]) {
+    setScreen('search', { areaId: area.id, spotIdx: hs.spotIdx, animalIdx: 0 });
+  } else {
+    document.getElementById('imrpgComingSoon').classList.add('show');
+  }
+}
+
 SCREEN_HOOKS.innermap = {
   onEnter(payload) {
-    const areaId = payload && payload.areaId;
-    const area = findArea(areaId);
+    const area = findArea(payload && payload.areaId);
     if (!area) { setScreen('mapselect'); return; }
-    setImg(document.getElementById('imSignImg'), area.sign);
-    setImg(document.getElementById('imSpotImg'), area.innerSpotImg);
-    const spot = (area.spots && area.spots[0]) || null;
-    document.getElementById('imSpotName').textContent = spot ? spot.name : '';
-    // pins
-    const wrap = document.getElementById('imSpotWrap');
-    wrap.querySelectorAll('.im-pin').forEach(n => n.remove());
-    (area.spots || []).forEach((sp, idx) => {
-      if (!sp.mapPin) return;
-      const pin = document.createElement('button');
-      pin.type = 'button';
-      pin.className = 'im-pin';
-      pin.style.left = (sp.mapPin.x * 100) + '%';
-      pin.style.top  = (sp.mapPin.y * 100) + '%';
-      pin.setAttribute('aria-label', sp.name + 'を しらべる');
-      pin.addEventListener('click', function () {
-        setScreen('search', { areaId: area.id, spotIdx: idx, animalIdx: 0 });
-      });
-      wrap.appendChild(pin);
-    });
+    if (area.innerMap) {
+      renderRpgInnermap(area);
+    } else {
+      renderLegacyInnermap(area);
+    }
   },
-  onLeave() {}
+  onLeave() {
+    const cs = document.getElementById('imrpgComingSoon');
+    if (cs) cs.classList.remove('show');
+  }
 };
 
 /* ====================================================================
@@ -1821,6 +2007,19 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('imBackBtn').addEventListener('click', () => {
     setScreen('mapselect');
   });
+  // imrpg coming-soon close
+  const imrpgCsBtn = document.getElementById('imrpgCsCloseBtn');
+  if (imrpgCsBtn) {
+    imrpgCsBtn.addEventListener('click', function () {
+      document.getElementById('imrpgComingSoon').classList.remove('show');
+    });
+  }
+  const imrpgCsBg = document.getElementById('imrpgComingSoon');
+  if (imrpgCsBg) {
+    imrpgCsBg.addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('show');
+    });
+  }
 
   // search
   document.getElementById('searchBackBtn').addEventListener('click', () => {
