@@ -106,6 +106,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T00:10:27Z - Quizland VOICEVOX テスト発注書 (5問27ファイル) を新規作成。読み方ルール5種を網羅 (英→日変換/和語数詞/カギ括弧除去/同音異義補足/音読み)
+- **タスク**: Quizland VOICEVOX テスト発注書 (5問27ファイル) を新規作成。読み方ルール5種を網羅 (英→日変換/和語数詞/カギ括弧除去/同音異義補足/音読み)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 12
+- **エラー数**: 0
+- **検出された良いパターン**: 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 2, "Read": 3, "Grep": 6, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-10T23:42:12Z - OP cinematic Panel 2 はかせ発話開始時の「ポノ」ラベル一瞬チラつきを解消 (#op-dialogue-label-single の HTML 初期テキスト hardcoded を空に変更、 line[0].speaker 反映で正しく上書き) (sw v918)
 - **タスク**: OP cinematic Panel 2 はかせ発話開始時の「ポノ」ラベル一瞬チラつきを解消 (#op-dialogue-label-single の HTML 初期テキスト hardcoded を空に変更、 line[0].speaker 反映で正しく上書き) (sw v918)
 - **結果**: 成功
@@ -207,19 +220,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 15, "Agent": 64, "Bash": 47, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T22:54:55Z - editor 2 バグ修正: シナリオ Export per-seg audio 保持 (migrateScenario + buildScenarioPanelsLiteral) + preview slot variant 追従 (applyScenarioPreview で perVariant slot 値 inline 適用、 #slot-pono) + cross-review HIGH-1 (aspectRatio リセット保証) (sw v913)
-- **タスク**: editor 2 バグ修正: シナリオ Export per-seg audio 保持 (migrateScenario + buildScenarioPanelsLiteral) + preview slot variant 追従 (applyScenarioPreview で perVariant slot 値 inline 適用、 #slot-pono) + cross-review HIGH-1 (aspectRatio リセット保証) (sw v913)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 141
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 14, "Agent": 62, "Bash": 46, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
