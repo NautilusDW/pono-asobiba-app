@@ -1247,7 +1247,10 @@ const DROPPED_ASSETS_STORAGE_KEY = STORAGE_PREFIX + 'droppedAssets';
 // v930: 各 dialogue line に「はかせの表情/ポーズ」「くるみの表情/ポーズ」
 // dropdown を追加 (line.hakaseImg / line.kurumiImg も dropdown から編集可能に)。
 // 既存 saved scenario はリセットして 3 dropdown UI が反映された defaults に。
-const SCENARIO_DATA_VERSION = 'v937';
+// v938: kurumi 立ち絵が line 切替時に消えるバグの完全修正。 Panel 2 line 3 (pono)、
+// Panel 5 line 1/2/3 (hakase/pono/hakase) に kurumiImg を追加し、 kurumi 初登場
+// (Panel 2 line 2) 以降 Panel 6 末尾までの全 line で kurumi 立ち絵を継続表示。
+const SCENARIO_DATA_VERSION = 'v938';
 // Soft warning threshold for combined dropped-asset storage size (bytes).
 const DROPPED_ASSETS_WARN_BYTES = 4 * 1024 * 1024;
 
@@ -1397,7 +1400,7 @@ function defaultScenario() {
         dialogues: [
           { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう', ponoImg: 'pono_001' },
           { speaker: 'kurumi', text: 'こんにちは、ポノさん！', ponoImg: 'pono_001', kurumiImg: 'kurumi_hi' },
-          { speaker: 'pono',   text: 'はかせ、くるみちゃん、あそびに きたよ！', ponoImg: 'dance_wave' }
+          { speaker: 'pono',   text: 'はかせ、くるみちゃん、あそびに きたよ！', ponoImg: 'dance_wave', kurumiImg: 'kurumi_hi' }
         ]
       },
       // Panel 3 — dialogue (dance_hooray)
@@ -1423,9 +1426,9 @@ function defaultScenario() {
         kind: 'dialogue',
         ponoImgFallback: 'dance_smile',
         dialogues: [
-          { speaker: 'hakase', text: 'ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。', ponoImg: 'pono_001' },
-          { speaker: 'pono',   text: 'うん！', ponoImg: 'dance_smile' },
-          { speaker: 'hakase', text: 'くるみよ、いつもどおり なぞなぞを おねがいするぞ', ponoImg: 'pono_001' },
+          { speaker: 'hakase', text: 'ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。', ponoImg: 'pono_001', kurumiImg: 'kurumi_clasp' },
+          { speaker: 'pono',   text: 'うん！', ponoImg: 'dance_smile', kurumiImg: 'kurumi_clasp' },
+          { speaker: 'hakase', text: 'くるみよ、いつもどおり なぞなぞを おねがいするぞ', ponoImg: 'pono_001', kurumiImg: 'kurumi_clasp' },
           { speaker: 'kurumi', text: 'はーい、まかせて！', ponoImg: 'pono_001', kurumiImg: 'kurumi_wink' }
         ]
       },

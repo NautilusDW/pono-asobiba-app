@@ -109,6 +109,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T07:45:12Z - quizland OP kurumi 立ち絵を line 切替時にも継続表示 (Panel 2 line 3 + Panel 5 line 1/2/3 に kurumiImg 注入、 quizland/index.html OP_PANELS と op-layout-editor.html defaultScenario を同期、 SCENARIO_DATA_VERSION v937→v938、 sw v937→v938)
+- **タスク**: quizland OP kurumi 立ち絵を line 切替時にも継続表示 (Panel 2 line 3 + Panel 5 line 1/2/3 に kurumiImg 注入、 quizland/index.html OP_PANELS と op-layout-editor.html defaultScenario を同期、 SCENARIO_DATA_VERSION v937→v938、 sw v937→v938)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 81
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 60, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T07:35:08Z - memory 本文書き換え: kurumi/opening の v936 反映 (07-22-05 Export, 全ポーズ反映 70 entries) + 配信フロー固定 (Export→Claude 反映) + 📡 配信廃止方針明記 + 新規 reference_op_layout_publish_workflow.md 作成 + MEMORY.md インデックス更新
 - **タスク**: memory 本文書き換え: kurumi/opening の v936 反映 (07-22-05 Export, 全ポーズ反映 70 entries) + 配信フロー固定 (Export→Claude 反映) + 📡 配信廃止方針明記 + 新規 reference_op_layout_publish_workflow.md 作成 + MEMORY.md インデックス更新
 - **結果**: 成功
@@ -211,18 +224,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 14, "Read": 22, "Grep": 21, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 8, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-11T05:36:04Z - op-layout-editor: scenario の version 付き auto migration を実装 (SCENARIO_DATA_VERSION='v927' / loadScenario で version 不一致なら defaults 強制 / saveScenario で version 確実埋め込み + sw v929)
-- **タスク**: op-layout-editor: scenario の version 付き auto migration を実装 (SCENARIO_DATA_VERSION='v927' / loadScenario で version 不一致なら defaults 強制 / saveScenario で version 確実埋め込み + sw v929)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 55
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 42, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
