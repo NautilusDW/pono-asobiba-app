@@ -1472,7 +1472,9 @@ body.resize-mode .ruler { display: block; }
       <option value="text-underline">テキスト下線</option>
     </select>
   </div>
-  <button id="zk-frame-auto-btn" type="button" title="全 userbox に自動でフレーム種別を割当 (サイズで推測)">🎯 自動割当</button>
+  <div>
+    <button id="zk-frame-auto-btn" type="button" title="全 userbox に自動でフレーム種別を割当 (サイズで推測)">🎯 自動割当</button>
+  </div>
 
   <div>
     <label>スロット</label>
@@ -4883,7 +4885,9 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
   // 6.6) toast helper: 2 秒表示 → fade out → remove
   function showToast(msg) {
     try {
+      document.querySelectorAll('.zk-auto-toast').forEach(el => el.remove());
       const t = document.createElement('div');
+      t.className = 'zk-auto-toast';
       t.textContent = msg;
       t.style.cssText = [
         'position: fixed',
@@ -4937,27 +4941,28 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
   //    押し出されていたため)。 options は HTML 側で定義済み。
   function attachFrameUI() {
     const sel = document.getElementById('zk-frame-kind');
-    if (!sel || sel.dataset.zkBound === '1') return;
-    sel.dataset.zkBound = '1';
-    sel.addEventListener('change', () => {
-      const kind = sel.value;
-      // selectedElements は外側スコープ。 window.selectedElements で参照
-      const sels = (window.selectedElements && window.selectedElements.size)
-        ? [...window.selectedElements]
-        : (function () {
-            const a = document.querySelector('.userbox.selected, .resizable.selected');
-            return a ? [a] : [];
-          })();
-      if (!sels.length) {
-        alert('先に枠を選択してください (resize-mode で枠をクリック)');
-        sel.value = '';
-        return;
-      }
-      sels.forEach(el => {
-        if (el && el.classList.contains('userbox')) applyFrame(el, kind);
+    if (sel && sel.dataset.zkBound !== '1') {
+      sel.dataset.zkBound = '1';
+      sel.addEventListener('change', () => {
+        const kind = sel.value;
+        // selectedElements は外側スコープ。 window.selectedElements で参照
+        const sels = (window.selectedElements && window.selectedElements.size)
+          ? [...window.selectedElements]
+          : (function () {
+              const a = document.querySelector('.userbox.selected, .resizable.selected');
+              return a ? [a] : [];
+            })();
+        if (!sels.length) {
+          alert('先に枠を選択してください (resize-mode で枠をクリック)');
+          sel.value = '';
+          return;
+        }
+        sels.forEach(el => {
+          if (el && el.classList.contains('userbox')) applyFrame(el, kind);
+        });
+        if (typeof window.saveResizeState === 'function') window.saveResizeState();
       });
-      if (typeof window.saveResizeState === 'function') window.saveResizeState();
-    });
+    }
 
     // 🎯 自動割当ボタンの bind (重複 bind 防止)
     const autoBtn = document.getElementById('zk-frame-auto-btn');
