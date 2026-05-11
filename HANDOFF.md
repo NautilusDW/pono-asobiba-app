@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-11 - [batch:16-zukan-frames] Codex: `tmp/zukan-frames-codex-order/CODEX-ORDER.md` を受領。HANDOFF / git log / `tmp/zukan-frames-codex-order/` / `tmp/alpha_pending/` を確認し、zukan frame 4種の既存納品は無しと確認済。reference は `tmp/zukan-frames-codex-order/reference/referenceImage.png`。納品先は `tmp/alpha_pending/16/` として着手。 (by Codex)
+
 - 2026-05-11 - [batch:kurumi-pose-redo-v2] Codex: `tmp/quizland-kurumi-pose-redo/KURUMI-POSE-REGEN-ORDER.md` と添付3面図 + `assets/images/characters/kurumi/dance/kurumi_001.webp` を参照して、くるみポーズ raw 10 枚を `tmp/quizland-kurumi-pose-redo/raw-white-v2/` に生成。検収用 contact sheet は `tmp/quizland-kurumi-pose-redo/raw-white-v2-contact.png`。AGENTS 現行方針により alpha 抜き・切り抜き・webp 変換・assets 反映・sw.js bump は未実施。 (by Codex)
 
 - 2026-05-09 - [batch:15-tsubame-still] Codex: Q82 tsubame choice raw was generated and saved at `tmp/alpha_pending/raw/15/tsubame.png` (1254x1254 RGB, white background). It is a still/perched swallow with folded wings and a readable forked tail. Alpha removal, final placement to `assets/images/quizland/illust/choice/tsubame.png`, manifest update, and sw.js bump remain for user/Claude. (by Codex)

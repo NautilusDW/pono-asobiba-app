@@ -15,7 +15,7 @@
 - **クリーンエッジスタジオ タイムライン再生**: [memory/feature_timeline_player.md](memory/feature_timeline_player.md) — 分割スプライトをID連番順に並べてFPS+各コマフレーム数で即時再生。スプライトカードはサムネドラッグで並び替え可、🎯ボタンで比較タブの元矩形にジャンプ
 - **Layout System (`common/layout/`)**: [memory/reference_layout_system.md](memory/reference_layout_system.md) — WYSIWYG レイアウトエディタ + applier 共通モジュール。`LayoutSystem.init()` 4 行で opt-in、`?edit=1` でエディタ遅延ロード。ページ author docs は `common/layout/README.md`
 - **Babble Voice System (Quizland)**: [memory/feature_babble_voice.md](memory/feature_babble_voice.md) — フクロウ博士・ポノ・くるみちゃんのしゃべり声 (タイピング + Web Audio 合成)。owl preset = 年配おじいさん風 (5母音フォルマント切替、6.2Hz ビブラート)、pono = bright triangle chirp、**kurumi = baseFreq 450Hz の優しいお姉さん声 chirp (2026-05-11 追加)**。`js/quizland-babble.js` + `quizland/index.html` の OP cinematic で `presetForLine = isHakase ? 'owl' : (isKurumi ? 'kurumi' : 'pono')` の 3 way 切替。hedgehog preset は stub のみ
-- **Quizland Opening Cinematic**: [memory/feature_quizland_opening.md](memory/feature_quizland_opening.md) — 6 パネル導入演出 (Ken Burns ドリー + ナレーション + **博士・ポノ・くるみ 3 キャラ会話** + babble + スキップ)。**くるみちゃんは Panel 2 で初登場 → Panel 5 で博士から依頼受け → Panel 6 でも立ち絵維持**で本編へ遷移 (sw v921+ / クロスレビュー反映 v922+)。mode-btn → `playOpeningCinematic()` → `initGame()` の async 経路。仮素材は `OP_BG.png` 共有、本素材は `tmp/quizland-op-cinematic/CODEX-PROMPT.md` 経由で Codex に依頼
+- **Quizland Opening Cinematic**: [memory/feature_quizland_opening.md](memory/feature_quizland_opening.md) — 6 パネル導入演出 (Ken Burns ドリー + ナレーション + **博士・ポノ・くるみ 3 キャラ会話** + babble + スキップ)。**くるみちゃんは Panel 2 で `kurumi_hi` (左手挨拶) 初登場 → Panel 5 で `kurumi_wink` (ウインク+こぶし) で依頼受け → Panel 6 で `kurumi_clasp` (両手胸前) 立ち絵維持**で本編へ遷移 (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 variants 管理機能)。mode-btn → `playOpeningCinematic()` → `initGame()` の async 経路。仮素材は `OP_BG.png` 共有、本素材は `tmp/quizland-op-cinematic/CODEX-PROMPT.md` 経由で Codex に依頼
 - **Audio Volume Balance (app-wide)**: [memory/feature_audio_balance.md](memory/feature_audio_balance.md) — 全ゲーム共通の音量基準 (BGM 0.25 / SFX 0.45 / シネマナレ 0.65 + BGM ダック / babble・TTS 据え置き)。新ゲーム追加・改修時はこの値に合わせる。`createMediaElementSource` リーク防止と `finally` 一括復帰の実装パターン記載
 - **Quizland per-question layout**: [memory/feature_quizland_per_question_layout.md](memory/feature_quizland_per_question_layout.md) — `.emoji-display` / `.emoji-main-img` を問題ごと別座標で保存 (whitelist + `@${qid}` suffix + 旧 `|0` fallback、自動 migrate 無し、フクロウ共通維持)。GH 一時 404 + dirty 誤検知 + frozenQid race 防止の多重防御
 - **「保存できない」系主訴の分解**: [memory/feedback_user_complaint_decompose.md](memory/feedback_user_complaint_decompose.md) — ユーザの表面症状をそのまま仮説化せず、最初に実機で「実際何が起きているか」を切り分ける。前任が見逃した本質を発見した経験から
@@ -28,7 +28,7 @@
 - **ポノのもりのずかん 全画面フロー (SPA)**: [memory/feature_zukan_full_flow.md](memory/feature_zukan_full_flow.md) — `zukan/index.html` を 5-screen SPA 化 (タイトル→マップ選択→エリア内マップ→探索→図鑑コレクション)。データ層 `zukan/data/zukan-data.js` (4 エリア × 1 spot × 1 animal の seed + 36 匹 collectionRoster)。素材は `assets/zukan/{title,map,innermap,collection,ui}/`。表示名/内部 ID 不一致表 + エディタパス (`zukan/preview/{investigation,innermap,full}/?edit=1`) 収録 (sw v895)
 - **Quizland number_sequence カテゴリ**: [memory/feature_quizland_number_sequence.md](memory/feature_quizland_number_sequence.md) — 3歳児向け新カテゴリ「かずのじゅん」(12問)。1〜10 の前後関係 (つぎ/まえ/あいだ)、inspire モードに統合
 - **Quizland VOICEVOX 発注書**: [memory/feature_quizland_voicevox_order.md](memory/feature_quizland_voicevox_order.md) — 全181問×5音声+Q160補足2=907ファイルの音声発注。読み方ルール・命名規則・Q160同音異義両案運用
-- **Quizland リスのくるみちゃん**: [memory/feature_quizland_kurumi.md](memory/feature_quizland_kurumi.md) — クイズアシスタントキャラ、リスの女の子、元気で優しいお姉さん感、VOICEVOX 女声話者で問題文を読み上げ。**OP シネマティック組み込み済 (Panel 2 / 5 で発話、Panel 6 で立ち絵維持)、babble preset `kurumi` (baseFreq 450)、立ち絵 `assets/images/characters/kurumi/dance/kurumi_001.webp`、saved-layout.json `__op_layout.{B,C,D}.kurumi` 配信、speaker は `'kurumi'` または `d.kurumiImg` がある line で立ち絵 visible (OR 条件)** (sw v921+ / v922+ クロスレビュー反映)
+- **Quizland リスのくるみちゃん**: [memory/feature_quizland_kurumi.md](memory/feature_quizland_kurumi.md) — クイズアシスタントキャラ、リスの女の子、元気で優しいお姉さん感、VOICEVOX 女声話者で問題文を読み上げ。**立ち絵 13 variants (`kurumi_001` 基準正面 + `hi`/`wave`/`hooray`/`wink`/`clasp`/`idea`/`point`/`calm`/`pray`/`book`/`cheer`/`greet`、 全 variant 同一スタイル統一済 @ `assets/images/characters/kurumi/dance/`)、 OP シネマティック組み込み済 (Panel 2: `kurumi_hi` 発話、 Panel 5: `kurumi_wink` 発話、 Panel 6: `kurumi_clasp` 立ち絵維持)、 op-layout-editor に「くるみ側」タブ追加 + 13 variants × 3 VC で perVariant slot 配信、 babble preset `kurumi` (baseFreq 450)、 saved-layout.json `__op_layout.{B,C,D}.kurumi.perVariant` 13 entries 配信、 speaker は `'kurumi'` または `d.kurumiImg` がある line で立ち絵 visible (OR 条件)** (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 variants 管理機能)
 - **画像生成ルート方針 (2026-05-11 更新)**: 一次経路は **Codex 経由の GPT-Image 2 (OpenAI `gpt-image-1` 系)** か **Higgsfield の Nano Banana Pro** の二択。被写体・用途で使い分ける (キャラ・人物系 → Nano Banana Pro / 抽象・UI 素材・テキスト含む系 → GPT-Image 2、運用知見が貯まり次第追記)。Claude Code セッションは生成タスクを直接抱えない — 生成は Codex / Higgsfield 側で行い、生成物は `tmp/alpha_pending/<NN>/` 経由で投入され、Claude は最終配置・最適化 (`assets/` への移動、ファイル名整備、軽量化、`sw.js` バンプ、commit) のみ担当。**以前の「GPT Image 2 単一・他モデル禁止」方針は撤回**、現方針は GPT-Image 2 / Nano Banana Pro の使い分け。解像度・SAFE エリア・外周ぼかし等の既存ガイドライン ([memory/feedback_codex_canvas_safe_margin.md](memory/feedback_codex_canvas_safe_margin.md)) はそのまま有効
 
 ---
@@ -107,6 +107,32 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-11T04:34:55Z - op-layout-editor くるみ拡張クロスレビュー指摘 7件修正 (HIGH-1 mirror gard / HIGH-2 .op-side-overlay HTML+CSS / HIGH-3 import kurumi 分岐 / MED-1 scenario text+label / MED-2 scenario kurumiImg→画像/slot / MED-4 onFrameAspectLoaded+frame removal cleanup / MED-5 height/box guides + sw v924)
+- **タスク**: op-layout-editor くるみ拡張クロスレビュー指摘 7件修正 (HIGH-1 mirror gard / HIGH-2 .op-side-overlay HTML+CSS / HIGH-3 import kurumi 分岐 / MED-1 scenario text+label / MED-2 scenario kurumiImg→画像/slot / MED-4 onFrameAspectLoaded+frame removal cleanup / MED-5 height/box guides + sw v924)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 47
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 35, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-11T04:29:25Z - kurumi 13 variants 実装に合わせて memory ドキュメント (feature_quizland_kurumi.md / feature_quizland_opening.md / MEMORY.md) を本文書き換え更新 (sw v923, OP Panel 2/5/6 variant 確定値 hi/wink/clasp 反映, op-layout-editor 拡張 + saved-layout.json perVariant 13 entries の説明追加)
+- **タスク**: kurumi 13 variants 実装に合わせて memory ドキュメント (feature_quizland_kurumi.md / feature_quizland_opening.md / MEMORY.md) を本文書き換え更新 (sw v923, OP Panel 2/5/6 variant 確定値 hi/wink/clasp 反映, op-layout-editor 拡張 + saved-layout.json perVariant 13 entries の説明追加)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 46
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 34, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
 
 ### 2026-05-11T04:18:27Z - quizland OP に kurumi 13 ポーズ管理機能 (op-layout-editor 拡張 + saved-layout.json kurumi.perVariant 13ポーズ × 3VC + OP_PANELS panel2/5/6 variant 割当 + sw v923)
 - **タスク**: quizland OP に kurumi 13 ポーズ管理機能 (op-layout-editor 拡張 + saved-layout.json kurumi.perVariant 13ポーズ × 3VC + OP_PANELS panel2/5/6 variant 割当 + sw v923)
@@ -196,32 +222,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 2, "Agent": 21, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T02:32:56Z - quizland 新キャラ「リスのくるみちゃん」の正面立ち絵を assets/images/characters/kurumi/dance/kurumi_001.webp に追加 (3枚から visual 確認で正面=002 を選定、ffmpeg で webp 変換、透過維持、47KB)
-- **タスク**: quizland 新キャラ「リスのくるみちゃん」の正面立ち絵を assets/images/characters/kurumi/dance/kurumi_001.webp に追加 (3枚から visual 確認で正面=002 を選定、ffmpeg で webp 変換、透過維持、47KB)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 27
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 20, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T01:49:12Z - quizland 新キャラ「リスのくるみちゃん」追加 + VOICEVOX 発注書話者方針を博士→くるみちゃん（女声）に変更 (新memory file + COWORK-TEST/ORDER-FULL/voicevox_order memo/MEMORY index 全更新)
-- **タスク**: quizland 新キャラ「リスのくるみちゃん」追加 + VOICEVOX 発注書話者方針を博士→くるみちゃん（女声）に変更 (新memory file + COWORK-TEST/ORDER-FULL/voicevox_order memo/MEMORY index 全更新)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 24
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 18, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
