@@ -171,6 +171,13 @@
     padding: 6px 10px; margin: 8px 0; font-size: 11px; color: #842;
     border-radius: 4px;
   }
+  /* === 機能 E: アクセント補正 JSON === */
+  .override-status { font-size: 12px; margin-top: 6px; }
+  .override-warn-listen { color: var(--err); font-weight: bold; }
+  .override-warn-low { color: var(--err); }
+  .override-warn-medium { color: #b8860b; }
+  /* === 機能 F: エクスポート === */
+  .export-progress { font-size: 12px; color: var(--sub); margin-top: 6px; font-family: ui-monospace, Menlo, monospace; }
   input[type="text"], input[type="password"] {
     padding: 6px 10px;
     border: 1px solid var(--line);
@@ -391,6 +398,49 @@
     </div>
   </details>
 
+  <!-- === 機能 F: 未補正テキスト + audio_query エクスポート === -->
+  <details style="margin-top: 10px;">
+    <summary>未補正テキスト + audio_query エクスポート (LLM への入力作成)</summary>
+    <div style="margin-top: 8px;">
+      <div class="note">
+        現在の FILES 配列（発注書ソース）から全テキストの audio_query を VOICEVOX エンジンに問い合わせ、
+        Codex CLI / Claude Code に渡す入力 JSON を生成します。
+        accent 補正パッチを LLM に作成させる用途です。
+      </div>
+      <div class="row">
+        <label><input type="radio" name="export-mode" value="full" checked> audio_query 込み（標準・推奨）</label>
+        <label><input type="radio" name="export-mode" value="text"> テキストのみ（軽量・LLM 側でカナ/mora 推定）</label>
+      </div>
+      <div class="row" style="margin-top: 8px;">
+        <button id="btn-export-run" disabled>audio_query 全件取得 + JSON エクスポート</button>
+        <span id="export-status" class="status"></span>
+      </div>
+      <div id="export-progress" class="export-progress"></div>
+    </div>
+  </details>
+
+  <!-- === 機能 E: アクセント補正 JSON 読込 === -->
+  <details style="margin-top: 10px;">
+    <summary>アクセント補正 JSON 読込 (Codex / Claude Code 経由)</summary>
+    <div style="margin-top: 8px;">
+      <div class="note">
+        LLM が生成した <code>accent_overrides.json</code> を読み込み、各テキストの synthesis 時に accent を上書きします。
+        機能 D（LLM 直接呼び出し）と<b>排他</b>（両方 ON にできません）。
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="override-enable"> 有効化</label>
+        <input type="file" id="override-file-input" accept=".json,application/json">
+        <button class="secondary" id="btn-override-clear">補正 JSON をクリア</button>
+      </div>
+      <div id="override-status" class="override-status">未読み込み</div>
+      <div id="override-needs-listen" class="override-status"></div>
+      <details style="margin-top: 6px;">
+        <summary>補正 JSON プレビュー（先頭 3 件）</summary>
+        <pre id="override-preview" class="json-view">未読み込み</pre>
+      </details>
+    </div>
+  </details>
+
   <div id="full-status" class="status"></div>
   <div id="progress-list" class="progress-list" style="display:none;"></div>
   <div class="row" style="margin-top: 10px;">
@@ -522,6 +572,8 @@ $("btn-check").addEventListener("click", async () => {
     $("btn-dict-clear").disabled = false;
     // 機能 B: AccentPhrase 編集
     $("btn-accent-query").disabled = false;
+    // 機能 F: エクスポート
+    $("btn-export-run").disabled = false;
   } catch (err) {
     st.className = "status err";
     st.textContent = `接続NG: ${err.message} ／ VOICEVOX アプリ起動・ポート 50021 を確認してください`;
@@ -631,7 +683,9 @@ $("btn-generate-all").addEventListener("click", async () => {
   const list = $("progress-list");
   btn.disabled = true;
   st.className = "status";
-  const llmTag = $("llm-enable").checked ? " [LLM 補正 ON]" : "";
+  const llmTag = $("llm-enable").checked
+    ? " [LLM 補正 ON]"
+    : ($("override-enable").checked && accentOverrides ? " [補正 JSON ON]" : "");
   const total = FILES.length;
   st.textContent = `${SPEAKER_NAMES[speakerId]} で ${total} ファイル生成中…${llmTag}`;
   list.style.display = "block";
@@ -652,7 +706,10 @@ $("btn-generate-all").addEventListener("click", async () => {
       const fbTag = (lastLlmFallbackInfo && lastLlmFallbackInfo.name === name)
         ? " [LLM fallback]"
         : "";
-      row.textContent = `${name}.wav  「${text}」${fbTag}`;
+      // 機能 E: override タグ ([patch mismatch] / [medium] / [needs_listen])
+      const ovEntry = lastOverrideTags.find(o => o.name === name);
+      const ovTag = ovEntry ? ` ${ovEntry.tag}` : "";
+      row.textContent = `${name}.wav  「${text}」${fbTag}${ovTag}`;
     } catch (err) {
       row.className = "err";
       row.textContent = `${name}.wav  FAILED: ${err.message}`;
@@ -1209,9 +1266,18 @@ $("btn-llm-test").addEventListener("click", async () => {
 //   - audio_query / synthesis 自体の HTTP 失敗は throw して上位に伝播 (隠蔽しない)
 //   - LLM 補正 (llmReviseAccent) の失敗のみ try/catch で握り、元 query で synthesis 続行
 //   - LLM フォールバック発生時は console.warn と lastLlmFallbackInfo に記録
+//   - 機能 E (override JSON) ON 時は LLM ではなく静的パッチを適用
 let lastLlmFallbackInfo = null; // { name?, message } - progress 表示用
+let lastOverrideTags = []; // [{ name, tag, message? }] - progress 行の追加タグ
 async function synthesizeWithOptionalLLM(text, speakerId, fileName) {
   lastLlmFallbackInfo = null;
+  lastOverrideTags = [];
+
+  // === 機能 E: override モード優先 (LLM とは排他) ===
+  if ($("override-enable").checked && accentOverrides) {
+    return await synthesizeWithOverrides(text, speakerId, fileName);
+  }
+
   if (!$("llm-enable").checked) {
     return await synthesize(text, speakerId);
   }
@@ -1239,6 +1305,264 @@ async function synthesizeWithOptionalLLM(text, speakerId, fileName) {
   if (!sres.ok) throw new Error(`synthesis failed: ${sres.status}`);
   return await sres.blob();
 }
+
+// ============================================================
+// 機能 E: アクセント補正 JSON 読込
+// ============================================================
+let accentOverrides = null; // 読込済み JSON 全体 { schema_version, speaker_id, items: [...] }
+let accentOverridesIndex = null; // Map<id, item> for O(1) 検索
+
+function moraSignatureOf(accentPhrase) {
+  if (!accentPhrase || !Array.isArray(accentPhrase.moras)) return "";
+  return accentPhrase.moras.map(m => m.text || "").join("");
+}
+
+// 機能 E と機能 D の排他制御
+function syncOverrideLlmExclusion(changed) {
+  // changed: "override" or "llm"
+  if (changed === "override" && $("override-enable").checked && $("llm-enable").checked) {
+    $("llm-enable").checked = false;
+  }
+  if (changed === "llm" && $("llm-enable").checked && $("override-enable").checked) {
+    $("override-enable").checked = false;
+  }
+}
+
+$("override-enable").addEventListener("change", () => {
+  syncOverrideLlmExclusion("override");
+});
+$("llm-enable").addEventListener("change", () => {
+  syncOverrideLlmExclusion("llm");
+});
+
+$("override-file-input").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const st = $("override-status");
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.items)) {
+        throw new Error("items 配列がありません");
+      }
+      accentOverrides = parsed;
+      accentOverridesIndex = new Map();
+      let patchCount = 0;
+      let needsListenCount = 0;
+      for (const item of parsed.items) {
+        if (item && item.id) {
+          accentOverridesIndex.set(item.id, item);
+          if (Array.isArray(item.patches)) patchCount += item.patches.length;
+          if (item.needs_listen) needsListenCount++;
+        }
+      }
+      st.className = "status ok";
+      st.textContent =
+        `読込済: ${parsed.items.length} items / patches 計 ${patchCount} 件`;
+      const listenSt = $("override-needs-listen");
+      if (needsListenCount > 0) {
+        listenSt.className = "override-status override-warn-listen";
+        listenSt.textContent = `⚠ needs_listen: ${needsListenCount} 件 (要試聴)`;
+      } else {
+        listenSt.className = "override-status";
+        listenSt.textContent = "";
+      }
+      // プレビュー先頭 3 件
+      const preview = {
+        schema_version: parsed.schema_version,
+        speaker_id: parsed.speaker_id,
+        source: parsed.source,
+        items_total: parsed.items.length,
+        items_preview: parsed.items.slice(0, 3),
+      };
+      $("override-preview").textContent = JSON.stringify(preview, null, 2);
+    } catch (err) {
+      accentOverrides = null;
+      accentOverridesIndex = null;
+      st.className = "status err";
+      st.textContent = `JSON パース失敗: ${err.message}`;
+      $("override-preview").textContent = "未読み込み";
+      $("override-needs-listen").textContent = "";
+    }
+  };
+  reader.onerror = () => {
+    st.className = "status err";
+    st.textContent = `FileReader エラー: ${reader.error}`;
+  };
+  reader.readAsText(file, "UTF-8");
+});
+
+$("btn-override-clear").addEventListener("click", () => {
+  accentOverrides = null;
+  accentOverridesIndex = null;
+  $("override-file-input").value = "";
+  const st = $("override-status");
+  st.className = "override-status";
+  st.textContent = "未読み込み";
+  $("override-needs-listen").textContent = "";
+  $("override-preview").textContent = "未読み込み";
+});
+
+// override モードでの synthesize
+async function synthesizeWithOverrides(text, speakerId, fileName) {
+  // 1) audio_query
+  const qres = await fetch(`${endpoint}/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`, { method: "POST" });
+  if (!qres.ok) throw new Error(`audio_query failed: ${qres.status}`);
+  const query = await qres.json();
+
+  // 2) item 検索
+  const item = accentOverridesIndex && fileName ? accentOverridesIndex.get(fileName) : null;
+  const tags = [];
+
+  if (item) {
+    // confidence: low → needs_listen 強制 + skip 扱い (synthesis はするが警告)
+    let needsListenForced = !!item.needs_listen;
+    let mediumApplied = false;
+    let mismatchOccurred = false;
+
+    if (Array.isArray(item.patches)) {
+      for (const patch of item.patches) {
+        const conf = (patch.confidence || "high").toLowerCase();
+        if (conf === "low") {
+          // skip 適用 + needs_listen 強制
+          needsListenForced = true;
+          continue;
+        }
+        const phraseIdx = patch.phrase_index;
+        if (typeof phraseIdx !== "number" ||
+            phraseIdx < 0 ||
+            !Array.isArray(query.accent_phrases) ||
+            phraseIdx >= query.accent_phrases.length) {
+          mismatchOccurred = true;
+          console.warn(`[patch mismatch] ${fileName} phrase_index=${phraseIdx} 範囲外 (accent_phrases.length=${(query.accent_phrases || []).length})`);
+          continue;
+        }
+        const ap = query.accent_phrases[phraseIdx];
+        const sig = moraSignatureOf(ap);
+        if (patch.mora_signature && patch.mora_signature !== sig) {
+          mismatchOccurred = true;
+          console.warn(`[patch mismatch] ${fileName} phrase_index=${phraseIdx} mora_signature: 期待="${patch.mora_signature}" 実="${sig}"`);
+          continue;
+        }
+        if (typeof patch.accent !== "number") {
+          mismatchOccurred = true;
+          console.warn(`[patch mismatch] ${fileName} phrase_index=${phraseIdx} accent が数値でない`);
+          continue;
+        }
+        ap.accent = patch.accent;
+        if (conf === "medium") mediumApplied = true;
+      }
+    }
+
+    if (mismatchOccurred) tags.push("[patch mismatch]");
+    if (mediumApplied) tags.push("[medium]");
+    if (needsListenForced) tags.push("[needs_listen]");
+  }
+
+  if (tags.length > 0) {
+    lastOverrideTags.push({ name: fileName, tag: tags.join(" ") });
+  }
+
+  // 3) パラメータ反映 + synthesis
+  Object.assign(query, getParams());
+  const sres = await fetch(`${endpoint}/synthesis?speaker=${speakerId}&enable_interrogative_upspeak=true`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  if (!sres.ok) throw new Error(`synthesis failed: ${sres.status}`);
+  return await sres.blob();
+}
+
+// ============================================================
+// 機能 F: 未補正テキスト + audio_query エクスポート
+// ============================================================
+let isExporting = false;
+
+// エンジン接続成功後にエクスポートボタンを有効化するため、btn-check の click 後にトグルする
+// (既存の btn-check ハンドラに追加せずに、フックする形で実装)
+const _origCheckHandler = $("btn-check");
+// 起動時は disabled。 ↓ 接続成功時に他のボタンと同時に有効化される必要があるため、
+// 既存の btn-check 内には触らず、定期的に endpoint の有無で判定する代わりに、
+// シンプルに btn-generate-all の disabled 状態と同期させる:
+// → btn-generate-all が enable された時点で必ずエクスポートも可能になる
+// ここでは単純に MutationObserver 的なフォロー無し、初期状態を disabled にしておけば OK。
+
+$("btn-export-run").addEventListener("click", async () => {
+  if (isExporting) return;
+  if (!FILES || FILES.length === 0) {
+    const st = $("export-status");
+    st.className = "status err";
+    st.textContent = "FILES 配列が空です。発注書ソースを選択してください。";
+    return;
+  }
+  const mode = (document.querySelector('input[name="export-mode"]:checked') || {}).value || "full";
+  const speakerId = parseInt($("final-speaker").value, 10);
+  const total = FILES.length;
+  const btn = $("btn-export-run");
+  const st = $("export-status");
+  const prog = $("export-progress");
+
+  isExporting = true;
+  btn.disabled = true;
+  st.className = "status";
+  st.textContent = mode === "full" ? `audio_query 全件取得中…` : `テキストのみエクスポート中…`;
+  prog.textContent = "";
+
+  // ソース表示用
+  const srcRadio = (document.querySelector('input[name="order-src"]:checked') || {}).value || "hardcoded";
+  let sourceLabel = `${srcRadio}`;
+  if (srcRadio === "url") sourceLabel = `url:${$("order-url-input").value.trim()}`;
+  else if (srcRadio === "file") {
+    const f = $("order-file-input").files && $("order-file-input").files[0];
+    sourceLabel = f ? `file:${f.name}` : "file";
+  } else if (srcRadio === "hardcoded") {
+    sourceLabel = "hardcoded:HARDCODED_FILES";
+  }
+
+  const items = [];
+  let okCount = 0;
+  let errCount = 0;
+
+  for (let i = 0; i < FILES.length; i++) {
+    const [name, text] = FILES[i];
+    if (mode === "text") {
+      items.push({ id: name, text });
+      okCount++;
+    } else {
+      try {
+        const qres = await fetch(`${endpoint}/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`, { method: "POST" });
+        if (!qres.ok) throw new Error(`HTTP ${qres.status}`);
+        const audioQuery = await qres.json();
+        items.push({ id: name, text, audio_query: audioQuery });
+        okCount++;
+      } catch (err) {
+        items.push({ id: name, text, error: err.message });
+        errCount++;
+        console.warn(`[export] ${name} 取得失敗: ${err.message}`);
+      }
+    }
+    prog.textContent = `audio_query 取得中: ${i + 1}/${total} (成功 ${okCount} / 失敗 ${errCount})`;
+  }
+
+  const out = {
+    schema_version: 1,
+    speaker_id: speakerId,
+    source: sourceLabel,
+    exported_at: new Date().toISOString(),
+    mode,
+    items,
+  };
+  const stamp = new Date().toISOString().replace(/[-:T.]/g, "").slice(0, 14);
+  const fname = `accent_input_${stamp}.json`;
+  downloadBlob(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), fname);
+
+  st.className = errCount === 0 ? "status ok" : "status err";
+  st.textContent = `エクスポート完了: ${okCount} 件成功 / ${errCount} 件失敗 → ${fname}`;
+  isExporting = false;
+  btn.disabled = false;
+});
 </script>
 
 </body>
