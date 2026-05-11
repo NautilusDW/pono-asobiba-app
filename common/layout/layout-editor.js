@@ -134,6 +134,10 @@
     pagesDocClickHandler: null,// outside-click handler for the dropdown
     aspectLocked: false,       // Yankee: numeric-panel 縦横比ロックトグル
     aspectRatios: null,        // WeakMap<el, ratio> — capture時の W/H 比率
+    cornerHandleFreeMode: false, // [zk-inv] 角ハンドル既定動作を「自由」に切替 (Photoshop 既定の逆)。
+                                 // OFF (既定): 角=自動ロック / Shift で解除 (従来挙動)
+                                 // ON       : 角=自由 / Shift で逆にロック
+                                 // state.aspectLocked が true なら本フラグに関わらず常にロック
     preferredTarget: null,     // Charlie-2: 要素一覧から選択した要素を canvas 操作の優先ターゲットに
     textToolOn: false,         // India-2: テキスト追加ツール ON/OFF
     unlinkedChildren: null,    // Papa-2 修正2: 一時リンク解除中の子要素 (Set<element>)
@@ -501,7 +505,7 @@
   }
   function collectUserboxes() {
     return $$('.userbox').map(function (el) {
-      return {
+      var entry = {
         id: el.dataset.userboxId || '',
         label: el.dataset.userboxLabel || '',
         left: el.style.left || '',
@@ -512,6 +516,12 @@
         ty: el._ty || 0,
         bgImage: el.dataset.bgImage || '',
       };
+      // [zk-inv] dataset.rotate (deg 単位 0/90/180/270) と dataset.aspectLock ('1' or 空)
+      //   を任意で保存。 未設定なら entry に含めない (旧 saved-layout.json と互換)。
+      var rot = parseFloat(el.dataset.rotate || '0');
+      if (rot && isFinite(rot)) entry.rotate = ((rot % 360) + 360) % 360;
+      if (el.dataset.aspectLock === '1') entry.aspectLock = '1';
+      return entry;
     });
   }
 
@@ -1943,9 +1953,15 @@
       //   - 角ハンドル + Shift OFF → 固定 (Photoshop 既定)
       //   - 辺ハンドル + Shift ON  → 固定
       //   - それ以外 → 自由
+      // [zk-inv] state.cornerHandleFreeMode が true なら角ハンドルの既定動作を「自由」に反転
+      //   (Shift で逆にロックする)。 永続トグル state.aspectLocked は本フラグより優先 (常にロック)。
       var shiftHeld = !!e2.shiftKey;
+      var cornerFree = !!state.cornerHandleFreeMode;
+      var cornerLockCondition = cornerFree
+        ? (isCornerHandle && shiftHeld)
+        : (isCornerHandle && !shiftHeld);
       var aspectLock = !!state.aspectLocked
-        || (isCornerHandle && !shiftHeld)
+        || cornerLockCondition
         || (!isCornerHandle && shiftHeld);
       performResize(primaryTarget, primarySides, dx, dy, sym, axes, info.stageRect, info.scale, aspectLock);
       linkedTargets.forEach(function (t) {
@@ -5183,6 +5199,15 @@
       div._tx = opts.tx || 0;
       div._ty = opts.ty || 0;
       div.style.transform = 'translate(' + div._tx + 'px, ' + div._ty + 'px)';
+    }
+    // [zk-inv] rotate / aspectLock の復元。 ページ側 ZK_INV ライブラリが
+    //   class="zk-rotated" の CSS rule で transform: rotate を内側 img に当てる。
+    if (opts.rotate && isFinite(opts.rotate)) {
+      div.dataset.rotate = String(((opts.rotate % 360) + 360) % 360);
+      if (window.__zk_inv_applyRotate) window.__zk_inv_applyRotate(div);
+    }
+    if (opts.aspectLock === '1' || opts.aspectLock === true) {
+      div.dataset.aspectLock = '1';
     }
     return div;
   }

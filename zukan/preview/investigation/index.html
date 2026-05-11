@@ -403,6 +403,96 @@ body.layout-editor-on .window-frame {
 body:not(.layout-editor-on) .help-note {
   opacity: 0.7;
 }
+
+/* ───── ZK-INV: 追加ツールバー (HTML 直書き、editor-on のみ可視) ─────────
+ *  layout-editor.js の動的ツールバーとは別の、ページ固有 fixed 浮動 toolbar。
+ *  3 ボタン: 100% / 90°回転 / 比率固定 ON-OFF。
+ *  位置: 右上 (layout-editor の上部 toolbar の下、ヘルプノートとは反対側)。
+ * ──────────────────────────────────────────────────────────────────── */
+.zk-inv-toolbar {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  z-index: 49;
+  display: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20, 20, 20, 0.92);
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+body.layout-editor-on .zk-inv-toolbar { display: flex; }
+.zk-inv-toolbar button {
+  font-family: var(--jp-font);
+  font-size: 12px;
+  background: #2a2a2a;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.zk-inv-toolbar button:hover { background: #383838; }
+.zk-inv-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.zk-inv-toolbar button[aria-pressed="true"] {
+  background: #5a3f1a;
+  border-color: #ffd66f;
+  color: #ffd66f;
+}
+.zk-inv-toolbar .zk-inv-label {
+  color: #999;
+  margin-right: 4px;
+  font-size: 11px;
+}
+
+/* ───── ZK-INV: rotate 適用 ─────────────────────────────────────────────
+ *  対象要素にインライン CSS 変数 --zk-rotate-deg を仕込んで、
+ *  内部 <img> または擬似要素を rotate する。
+ *  - <img> 子要素を持つ要素 (.outer-bg / .field-bg / .window-frame / .hidden-part /
+ *    .pono-portrait / .hint-silhouette) : 内側 img を回転
+ *  - background-image を持つ要素 (.hint-panel / .pono-bubble / .userbox bgImage) :
+ *    .zk-rotate-layer 子 div を JS で挿入してそこに bg を移し、その div を回転
+ *  どちらも親 (userbox / wrapper) の style.transform=translate() を壊さない。
+ * ─────────────────────────────────────────────────────────────────── */
+[data-rotate] > img {
+  transform: rotate(calc(var(--zk-rotate-deg, 0) * 1deg));
+  transform-origin: center center;
+  transition: transform 0.18s ease;
+}
+.zk-rotate-layer {
+  position: absolute;
+  inset: 0;
+  background-image: var(--zk-rotate-bg, none);
+  background-size: var(--zk-rotate-bg-size, contain);
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  transform: rotate(calc(var(--zk-rotate-deg, 0) * 1deg));
+  transform-origin: center center;
+  transition: transform 0.18s ease;
+}
+/* aspectLock=1 が当たっている要素は editor で薄く枠線を出して可視化 */
+body.layout-editor-on [data-aspect-lock="1"]::after {
+  content: "🔒";
+  position: absolute;
+  top: 2px; right: 2px;
+  font-size: 11px;
+  background: rgba(0,0,0,0.55);
+  color: #ffd66f;
+  border-radius: 3px;
+  padding: 0 3px;
+  pointer-events: none;
+  z-index: 10;
+}
 </style>
 </head>
 <body class="show-safe">
@@ -480,6 +570,17 @@ body:not(.layout-editor-on) .help-note {
   </div>
 </div>
 
+<!-- ZK-INV 追加ツールバー (HTML 直書き、編集モード時のみ可視) -->
+<div class="zk-inv-toolbar" id="zk-inv-toolbar" aria-label="ZK 調査画面 追加ツール">
+  <span class="zk-inv-label">ZK:</span>
+  <button id="zk-reset-natural" type="button" disabled
+          title="選択中の枠を画像の元アスペクト比 (naturalWidth/Height) にリセット">📐 100%</button>
+  <button id="zk-rotate-90" type="button" disabled
+          title="選択中の枠を 90° 回転 (0→90→180→270→0)">🔄 90°回転</button>
+  <button id="zk-aspect-lock" type="button" aria-pressed="false"
+          title="アスペクト比固定 ON/OFF (OFF = 角ハンドルでも自由に縦横変えられる)">🔒 比率固定 OFF</button>
+</div>
+
 <!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
 <div class="help-note">
   <h4>調査画面 位置調整エディター</h4>
@@ -527,6 +628,234 @@ window.EditorBootstrapConfig = {
   ghPath: 'zukan/preview/investigation/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
 };
+</script>
+
+<!-- ─────────────────────────────────────────────────────────────────────
+     ZK-INV ツールバー機能 (HTML 直書き / IIFE)
+     - 100% リセット: 選択要素の <img> または bg-image の natural サイズに W/H を戻す
+     - 90° 回転: dataset.rotate を 0→90→180→270→0 で循環、内側 img or bg-layer を回転
+     - 比率固定: state.cornerHandleFreeMode (layout-editor.js 側に追加) をトグル
+       + 選択中要素の dataset.aspectLock を更新 (永続化用、 collect/restore は
+         layout-editor.js / layout-applier.js 拡張済み)
+     ───────────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  // ─── ヘルパー: LayoutEditor 取得 (起動待ち) ────────────────────────────
+  function le() { return window.LayoutEditor && window.LayoutEditor._state ? window.LayoutEditor : null; }
+  function getSelected() {
+    var e = le(); if (!e) return [];
+    var s = e._state.selectedElements;
+    return s ? Array.from(s) : [];
+  }
+  function getSelectedSingle() {
+    var sel = getSelected();
+    return sel.length === 1 ? sel[0] : null;
+  }
+
+  // ─── rotate 適用 (内側 img or bg-layer) ────────────────────────────────
+  // window.__zk_inv_applyRotate(el) で createUserbox 側から呼ぶ。
+  function applyRotate(el) {
+    if (!el) return;
+    var deg = parseFloat(el.dataset.rotate || '0') || 0;
+    el.style.setProperty('--zk-rotate-deg', String(deg));
+    // 内側に <img> があればそれが [data-rotate] > img の CSS rule で回る。
+    // 無いが background-image を持つなら zk-rotate-layer を作って bg を移す。
+    var innerImg = el.querySelector(':scope > img');
+    if (!innerImg) {
+      var bg = el.dataset.bgImage ||
+        (el.style.backgroundImage && el.style.backgroundImage !== 'none' ? el.style.backgroundImage : '');
+      var layer = el.querySelector(':scope > .zk-rotate-layer');
+      if (deg) {
+        if (!layer && bg) {
+          layer = document.createElement('div');
+          layer.className = 'zk-rotate-layer';
+          // bg が `url("...")` 形式 or 生 URL 双方を受ける
+          var bgVal = /^url\(/.test(bg) ? bg : ('url("' + bg + '")');
+          layer.style.setProperty('--zk-rotate-bg', bgVal);
+          // 元 bg を hide してオーバーラップを避ける
+          el.dataset._zkBgHidden = '1';
+          el.style.backgroundImage = 'none';
+          el.appendChild(layer);
+        }
+        if (layer) layer.style.setProperty('--zk-rotate-deg', String(deg));
+      } else {
+        // deg=0 に戻したら layer を撤去して元の bg を復元
+        if (layer) layer.remove();
+        if (el.dataset._zkBgHidden === '1') {
+          delete el.dataset._zkBgHidden;
+          var orig = el.dataset.bgImage;
+          if (orig) el.style.backgroundImage = 'url("' + orig + '")';
+          else el.style.backgroundImage = '';
+        }
+      }
+    }
+  }
+  window.__zk_inv_applyRotate = applyRotate;
+
+  // ─── 100% リセット ────────────────────────────────────────────────────
+  function resetTo100() {
+    var sel = getSelectedSingle();
+    if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
+    // 1) <img> 子要素を最優先
+    var img = sel.tagName === 'IMG' ? sel : sel.querySelector(':scope > img, :scope img');
+    if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      applySize(sel.tagName === 'IMG' ? sel : sel, img.naturalWidth, img.naturalHeight);
+      return;
+    }
+    // 2) bg-image (userbox.dataset.bgImage or computed style)
+    var bgUrl = sel.dataset.bgImage || extractBgUrl(sel);
+    if (bgUrl) {
+      var probe = new Image();
+      probe.onload = function () {
+        if (probe.naturalWidth > 0) {
+          applySize(sel, probe.naturalWidth, probe.naturalHeight);
+        } else {
+          alert('画像の natural サイズを取得できませんでした: ' + bgUrl);
+        }
+      };
+      probe.onerror = function () { alert('画像読み込みエラー: ' + bgUrl); };
+      probe.src = bgUrl;
+      return;
+    }
+    alert('対象要素に画像が見当たりません (img も background-image も無し)');
+  }
+  function extractBgUrl(el) {
+    var s = el.style.backgroundImage;
+    if (!s || s === 'none') s = getComputedStyle(el).backgroundImage;
+    var m = s && s.match(/url\(["']?([^"')]+)["']?\)/);
+    return m ? m[1] : null;
+  }
+  function applySize(el, w, h) {
+    // applyOnePropToEl は private なので !important inline で代替。
+    el.style.setProperty('width', w + 'px', 'important');
+    el.style.setProperty('height', h + 'px', 'important');
+    // dirty 化トリガ — LayoutEditor が変更検知できるよう transform を再書き
+    var tx = el._tx || 0, ty = el._ty || 0;
+    el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+    if (el.dataset.rotate) applyRotate(el);
+    // 再描画 (numeric panel 等の値表示更新)
+    var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-reset-natural', el: el });
+    flashToast('100% リセット (' + Math.round(w) + '×' + Math.round(h) + ')');
+  }
+
+  // ─── 90° 回転 ──────────────────────────────────────────────────────────
+  function rotate90() {
+    var sel = getSelectedSingle();
+    if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
+    var cur = parseFloat(sel.dataset.rotate || '0') || 0;
+    var next = (cur + 90) % 360;
+    if (next === 0) {
+      delete sel.dataset.rotate;
+    } else {
+      sel.dataset.rotate = String(next);
+    }
+    applyRotate(sel);
+    var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-rotate', el: sel, deg: next });
+    flashToast('回転: ' + next + '°');
+  }
+
+  // ─── 比率固定トグル ────────────────────────────────────────────────────
+  // OFF (デフォルト) = 角ハンドルでも自由 / Shift で逆にロック
+  // ON               = 角ハンドルで自動ロック (Photoshop 既定)
+  // 加えて、選択中要素の dataset.aspectLock を同期 (永続化用)。
+  function toggleAspectLock() {
+    var e = le(); if (!e) { alert('LayoutEditor 未起動'); return; }
+    e._state.cornerHandleFreeMode = !e._state.cornerHandleFreeMode;
+    var freeMode = !!e._state.cornerHandleFreeMode;
+    // free=true → 比率固定 OFF (= 自由) , free=false → 比率固定 ON
+    var locked = !freeMode;
+    var btn = document.getElementById('zk-aspect-lock');
+    btn.textContent = locked ? '🔒 比率固定 ON' : '🔒 比率固定 OFF';
+    btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
+    // 選択要素 (1 個) の dataset.aspectLock を同期
+    var sel = getSelectedSingle();
+    if (sel) {
+      if (locked) sel.dataset.aspectLock = '1';
+      else delete sel.dataset.aspectLock;
+    }
+    flashToast(locked ? '比率固定 ON (角ハンドル=自動ロック)' : '比率固定 OFF (角ハンドル=自由)');
+  }
+
+  // ─── ボタン enable/disable 更新 (選択変更時) ───────────────────────────
+  function refreshButtons() {
+    var sel = getSelectedSingle();
+    var has = !!sel;
+    var resetBtn = document.getElementById('zk-reset-natural');
+    var rotBtn = document.getElementById('zk-rotate-90');
+    if (resetBtn) resetBtn.disabled = !has;
+    if (rotBtn) rotBtn.disabled = !has;
+    // 選択要素の dataset.aspectLock を読んで状態同期 (選択が変わったら反映)
+    var btn = document.getElementById('zk-aspect-lock');
+    if (sel && btn) {
+      if (sel.dataset.aspectLock === '1') {
+        var e = le();
+        if (e) e._state.cornerHandleFreeMode = false;
+        btn.textContent = '🔒 比率固定 ON';
+        btn.setAttribute('aria-pressed', 'true');
+      }
+    }
+  }
+
+  // ─── 簡易 toast (LayoutEditor 内の showToast は private なので独自実装) ─
+  function flashToast(msg) {
+    var t = document.getElementById('zk-inv-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'zk-inv-toast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);' +
+        'background:rgba(20,20,20,0.92);color:#ffd66f;padding:8px 16px;border-radius:6px;' +
+        'font-size:13px;z-index:1000;border:1px solid #555;pointer-events:none;' +
+        'opacity:0;transition:opacity 0.18s;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._zkTimer);
+    t._zkTimer = setTimeout(function () { t.style.opacity = '0'; }, 1600);
+  }
+
+  // ─── 初期化: LayoutEditor の起動を待ってバインド ──────────────────────
+  function bind() {
+    var ed = le();
+    if (!ed) return false;
+    document.getElementById('zk-reset-natural').addEventListener('click', resetTo100);
+    document.getElementById('zk-rotate-90').addEventListener('click', rotate90);
+    document.getElementById('zk-aspect-lock').addEventListener('click', toggleAspectLock);
+    // 選択変更イベントで button 状態を更新
+    try { ed.on('select', refreshButtons); } catch (e) {}
+    // ?edit=1 で起動した直後は cornerHandleFreeMode を OFF=true (自由) に初期化。
+    // 「現状 横幅が固定されていて自由に変えられない」 を解消するのが主目的。
+    ed._state.cornerHandleFreeMode = true;
+    var btn = document.getElementById('zk-aspect-lock');
+    btn.textContent = '🔒 比率固定 OFF';
+    btn.setAttribute('aria-pressed', 'false');
+    // 初期表示: button 状態
+    refreshButtons();
+    console.log('[zk-inv] handlers bound (reset / rotate90 / aspectLock)');
+    return true;
+  }
+
+  // LayoutEditor は editor-bootstrap.js が defer 経由でロード後に enable される。
+  // ポーリングで起動を待つ (最大 8 秒)。
+  var tries = 0, maxTries = 80;
+  var pollTimer = setInterval(function () {
+    tries += 1;
+    if (le() && le().isEnabled) {
+      clearInterval(pollTimer);
+      bind();
+      // userbox 復元後に rotate を再適用 (applier が dataset.rotate を焼くだけなので)
+      document.querySelectorAll('[data-rotate]').forEach(function (el) {
+        try { applyRotate(el); } catch (e) {}
+      });
+    } else if (tries >= maxTries) {
+      clearInterval(pollTimer);
+      // editor が立ち上がらない (?edit=1 無し) なら何もしない
+      console.log('[zk-inv] LayoutEditor not enabled (no ?edit=1?), skipping bind');
+    }
+  }, 100);
+})();
 </script>
 </body>
 </html>

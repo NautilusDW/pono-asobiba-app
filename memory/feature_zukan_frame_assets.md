@@ -139,3 +139,29 @@ aspect ratio {{ASPECT}}, resolution short side >= 1024px, output PNG with alpha.
 - プレースホルダー: `assets/zukan/frames/placeholder/*.svg`
 - 関連既存パターン: `quizland/assets/Fukuro_frame_*.png` (= layout-editor 系の参考)
 - 仕組み的に近い既存 feature: `memory/feature_quiz_framed_image_flag.md`
+
+---
+
+## 調査画面エディター 追加ツールバー (2026-05-11, sw v940)
+
+`zukan/preview/investigation/index.html` に **ページ固有 fixed 浮動ツールバー** (`.zk-inv-toolbar`) を直書きで追加。 layout-editor.js が動的注入する toolbar とは独立、 右上 fixed。 3 ボタン構成:
+
+| ボタン | 機能 | enable 条件 |
+|---|---|---|
+| `📐 100%` | 選択中 1 要素の `<img>` (or `dataset.bgImage` / computed `background-image`) を `naturalWidth × naturalHeight` で probe して、 親要素の `style.width / height` を `!important` で直書き | 単一選択時のみ |
+| `🔄 90°回転` | 選択中 1 要素の `dataset.rotate` を `0→90→180→270→0` 循環。 内側 `<img>` があれば CSS rule `[data-rotate] > img { transform: rotate(...) }` で回転、 無ければ `.zk-rotate-layer` 子 div を JS 注入して bg を移植して回転 (親 userbox の `style.transform=translate()` を壊さない) | 単一選択時のみ |
+| `🔒 比率固定 ON/OFF` | `LayoutEditor._state.cornerHandleFreeMode` をトグル。 OFF=自由 (デフォルト、 角ハンドルでも縦横自由)、 ON=Photoshop 既定 (角=自動ロック)。 選択要素があれば `dataset.aspectLock='1'` を同期 (永続化用) | 常時 |
+
+**横幅固定の根本原因** (= ユーザー主訴): `common/layout/layout-editor.js` 1947-1949 行の resize ハンドラで「角ハンドル + Shift OFF → aspectLock=true」 という Photoshop 既定挙動が組み込まれていた (`isCornerHandle && !shiftHeld`)。 投合のために `state.cornerHandleFreeMode` フラグを新設し、 true なら角の既定動作を「自由 / Shift で逆ロック」 に反転 できるよう改修。 `?edit=1` で起動時に free モード (=true) を初期セット、 ボタンで切替可能。 既存ページ (quizland 等) は flag デフォルト false のままなので挙動不変。
+
+### 永続化 (collect / restore)
+
+- `common/layout/layout-editor.js` の `collectUserboxes()` に `rotate` / `aspectLock` を任意追加 (旧 JSON と互換)
+- `common/layout/layout-applier.js` の `applyUserboxes()` で読み戻し → `dataset.rotate` / `dataset.aspectLock` を焼き、 ページ JS の `window.__zk_inv_applyRotate(div)` が CSS variable と layer 挿入で見た目に反映
+- 非 userbox (`.hint-panel` 等のページ既存要素) は per-selector `{w,h,tx,ty}` のみ保存される従来仕様のまま — rotate / aspectLock は「セッション内のみ」 有効 (永続化したい場合は対象要素を userbox 化する)
+
+### CSS 設計のポイント
+
+- 親 `.userbox` の `style.transform=translate(tx,ty)` は resize 中も毎フレーム上書きされるので、 そこに `rotate(deg)` を append すると失われる。 そこで「**内側 img の transform に rotate を持たせる**」 ことで親 transform と干渉せず、 リサイズ操作も維持される
+- bg-image only の要素 (ユーザーが drop-image した userbox 等) は `<img>` が無いので `.zk-rotate-layer` 子 div を JS で動的注入 (CSS var `--zk-rotate-bg` 経由) してそこに bg を写し、 layer を rotate する
+- `[data-aspect-lock="1"]::after` で右上に小さい 🔒 アイコンを出して「この要素は比率ロック対象」 を可視化

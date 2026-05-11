@@ -402,6 +402,17 @@
         div._tx = tx; div._ty = ty;
         div.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
       }
+      // [zk-inv] rotate / aspectLock の復元 (applier side / read-only render)。
+      //   rotate は dataset に焼くだけ。 ページ側 (例: zukan/preview/investigation)
+      //   が CSS rule で `[data-rotate="90"] img { transform: rotate(90deg); }` を
+      //   定義していれば自動的に適用される。 transform の translate と独立 (img に当てる)。
+      if (box.rotate != null && isFinite(box.rotate)) {
+        var rdeg = ((parseFloat(box.rotate) % 360) + 360) % 360;
+        if (rdeg) div.dataset.rotate = String(rdeg);
+      }
+      if (box.aspectLock === '1' || box.aspectLock === true) {
+        div.dataset.aspectLock = '1';
+      }
       // Optional badge (shown only when body.layout-editor-on; CSS handles hide)
       if (box.label) {
         var badge = document.createElement('div');
