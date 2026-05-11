@@ -2475,6 +2475,7 @@ function saveResizeState() {
   // 後方互換: 既存呼び出しは「dirty マーク更新」のみに変更 (自動保存はしない)
   markLayoutDirty();
 }
+window.saveResizeState = saveResizeState;
 // ── GitHub 同期 (PC で保存 → スマホでも見れる) ──
 const GH_REPO_OWNER = 'NautilusDW';
 const GH_REPO_NAME  = 'pono-asobiba-app';
@@ -2636,6 +2637,7 @@ function resetResizeState() {
 
 // ───── Multi-selection state + UI ─────
 const selectedElements = new Set();
+window.selectedElements = selectedElements;
 
 function refreshSelectionUI() {
   document.querySelectorAll('.resizable').forEach(e => e.classList.toggle('selected', selectedElements.has(e)));
@@ -4459,6 +4461,7 @@ function createUserbox(opts) {
   }
   return div;
 }
+window.createUserbox = createUserbox;
 
 function collectUserboxes() {
   return [...document.querySelectorAll('.userbox')].map(el => ({
@@ -4474,12 +4477,14 @@ function collectUserboxes() {
     bgImage: el.dataset.bgImage || '',
   }));
 }
+window.collectUserboxes = collectUserboxes;
 function restoreUserboxes(arr) {
   // 重複防止: 既存をクリアしてから再生成
   document.querySelectorAll('.userbox').forEach(el => el.remove());
   if (!Array.isArray(arr)) return;
   arr.forEach(box => createUserbox(box));
 }
+window.restoreUserboxes = restoreUserboxes;
 
 // ステージ mousedown でドラッグ開始
 //   通常: resize-mode ON + 既存枠の外、 で新規作成
@@ -4649,7 +4654,7 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
       const name = escHtml(p.name);
       const url  = p.url ? escHtml(p.url) : '';
       if (p.current) {
-        html += '<li><a class="zk-pages-link is-current" href="javascript:void(0)" onclick="return false;">📍 ' + name + '</a></li>';
+        html += '<li><a class="zk-pages-link is-current" href="#" onclick="return false;">📍 ' + name + '</a></li>';
       } else if (url) {
         html += '<li><a class="zk-pages-link" href="' + url + '">' + name + '</a></li>';
       } else {
@@ -4660,6 +4665,16 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     dropdown.innerHTML = html;
     document.body.appendChild(dropdown);
     btn.setAttribute('aria-expanded', 'true');
+
+    // 右端クリップ補正: 表示後に実幅を測り、viewport 右端 (-8px) を超えるなら左へずらす
+    try {
+      const dRect = dropdown.getBoundingClientRect();
+      const rightLimit = window.innerWidth - 8;
+      if (dRect.right > rightLimit) {
+        const w = dropdown.offsetWidth;
+        dropdown.style.left = Math.max(8, window.innerWidth - w - 8) + 'px';
+      }
+    } catch (_) { /* noop */ }
 
     // 外側クリックで閉じる (defer して同一クリックの捕捉を回避)
     docHandler = function (e) {
@@ -4761,13 +4776,18 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
   }
 
   // 4) collectUserboxes を wrap して frameKind を出力に含める
+  //    照合は dataset.userboxId による 1 対 1 マッチ (= 並び順非依存)
   if (typeof window.collectUserboxes === 'function') {
     const origCollect = window.collectUserboxes;
     window.collectUserboxes = function () {
       const arr = origCollect();
-      const boxes = [...document.querySelectorAll('.userbox')];
-      arr.forEach((row, i) => {
-        const el = boxes[i];
+      const byId = new Map();
+      document.querySelectorAll('.userbox').forEach(el => {
+        if (el.dataset.userboxId) byId.set(el.dataset.userboxId, el);
+      });
+      arr.forEach(row => {
+        if (!row || !row.id) return;
+        const el = byId.get(row.id);
         if (el && el.dataset.frameKind) row.frameKind = el.dataset.frameKind;
       });
       return arr;
@@ -4781,13 +4801,19 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     window.restoreUserboxes = function (arr) {
       // 元実装に createUserbox(box) を呼んでもらうが、 box.frameKind は元では
       // 使われない。 だから後段で全 userbox を走査して frameKind を当てる。
+      // 照合は dataset.userboxId による 1 対 1 マッチ (= 並び順非依存)
       origRestore(arr);
       if (Array.isArray(arr)) {
-        const boxes = [...document.querySelectorAll('.userbox')];
-        arr.forEach((row, i) => {
-          if (row && row.frameKind && boxes[i]) {
-            boxes[i].dataset.frameKind = row.frameKind;
-            applyFrame(boxes[i], row.frameKind);
+        const byId = new Map();
+        document.querySelectorAll('.userbox').forEach(el => {
+          if (el.dataset.userboxId) byId.set(el.dataset.userboxId, el);
+        });
+        arr.forEach(row => {
+          if (!row || !row.frameKind || !row.id) return;
+          const el = byId.get(row.id);
+          if (el) {
+            el.dataset.frameKind = row.frameKind;
+            applyFrame(el, row.frameKind);
           }
         });
       }

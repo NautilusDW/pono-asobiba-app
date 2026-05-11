@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Placeholder antique frame: card-square
+  Aspect ratio 1:1 (left-page small card cells, e.g. 200x200)
+  Replace with assets/zukan/frames/card-square.png once finalized.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" preserveAspectRatio="none">
+  <g stroke="#b07a3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- outer rect -->
+    <rect x="6" y="6" width="188" height="188" rx="6" ry="6" stroke-width="4"/>
+    <!-- inner dashed accent -->
+    <rect x="18" y="18" width="164" height="164" rx="3" ry="3" stroke-width="1.2" stroke-dasharray="3 4" opacity="0.55"/>
+    <!-- corner ornaments -->
+    <g stroke-width="2">
+      <g transform="translate(28,28)">
+        <line x1="-9" y1="0" x2="9" y2="0"/>
+        <line x1="0" y1="-9" x2="0" y2="9"/>
+        <line x1="-6" y1="-6" x2="6" y2="6"/>
+        <line x1="-6" y1="6" x2="6" y2="-6"/>
+      </g>
+      <g transform="translate(172,28)">
+        <line x1="-9" y1="0" x2="9" y2="0"/>
+        <line x1="0" y1="-9" x2="0" y2="9"/>
+        <line x1="-6" y1="-6" x2="6" y2="6"/>
+        <line x1="-6" y1="6" x2="6" y2="-6"/>
+      </g>
+      <g transform="translate(28,172)">
+        <line x1="-9" y1="0" x2="9" y2="0"/>
+        <line x1="0" y1="-9" x2="0" y2="9"/>
+        <line x1="-6" y1="-6" x2="6" y2="6"/>
+        <line x1="-6" y1="6" x2="6" y2="-6"/>
+      </g>
+      <g transform="translate(172,172)">
+        <line x1="-9" y1="0" x2="9" y2="0"/>
+        <line x1="0" y1="-9" x2="0" y2="9"/>
+        <line x1="-6" y1="-6" x2="6" y2="6"/>
+        <line x1="-6" y1="6" x2="6" y2="-6"/>
+      </g>
+    </g>
+  </g>
+</svg>
