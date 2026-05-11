@@ -47,6 +47,18 @@ python -m http.server 8080
 # → http://localhost:8080/voicevox-generator.html
 ```
 
+## ワンクリック起動 (Windows)
+
+`start.bat` をダブルクリックするだけ:
+- Python HTTP サーバーが自動起動 (port 8765)
+- ブラウザで `http://localhost:8765/voicevox-generator.html` が自動オープン
+- ウィンドウを閉じるとサーバー停止
+
+### 注意
+- Python 3 がインストールされていること (`python --version` で確認)
+- 既にポート 8765 が使われている場合は警告表示後に終了
+- 同じツールを別タブで開きたい時は、ブラウザのタブをハードリロード (Ctrl+Shift+R) で OK
+
 ## 使用フロー
 
 ### 1. エンジン接続確認
