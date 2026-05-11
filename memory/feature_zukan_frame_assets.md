@@ -6,7 +6,7 @@ type: feature
 
 # Zukan 装飾フレーム素材
 
-**Status:** Placeholder SVG 投入 (2026-05-11, sw v919) — 本番 PNG は未生成
+**Status:** 本番 PNG 投入完了 (2026-05-11, sw v926) — Codex GPT-Image 2 経由、 alpha_pending/16 から配置
 **Type:** Feature — Asset / Visual
 
 ---
@@ -41,10 +41,10 @@ assets/zukan/frames/
 │   ├── card-square.svg            ← 投入済
 │   ├── rabbit-portrait.svg        ← 投入済
 │   └── text-underline.svg         ← 投入済
-├── animal-banner.png              ← 未生成 (本番)
-├── card-square.png                ← 未生成 (本番)
-├── rabbit-portrait.png            ← 未生成 (本番)
-└── text-underline.png             ← 未生成 (本番)
+├── animal-banner.png              ← 投入済 (本番)
+├── card-square.png                ← 投入済 (本番)
+├── rabbit-portrait.png            ← 投入済 (本番)
+└── text-underline.png             ← 投入済 (本番)
 ```
 
 プレースホルダーは fill="none" の外枠 (薄茶 #b07a3a) + 角に小アスタリスク + 中央透過のシンプル構成。 「アンティーク風の輪郭を最小コードで」 表現したものなので、 本番素材で置き換える前提。

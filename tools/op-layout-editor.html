@@ -1337,6 +1337,15 @@ function savePanelModePref() {
 const SCENARIO_STORAGE_KEY = STORAGE_PREFIX + 'scenario';
 
 function defaultScenario() {
+  // 2026-05-10: 本番 quizland/index.html の OP_PANELS (sw v925) と完全一致させる。
+  //   - Panel 1: narration 2 segments, 全 lines emphasis:false (本番 L4847-L4868)
+  //   - Panel 2: 3 行構成 (kurumi 挨拶 line を追加, kurumiImg: kurumi_hi)
+  //   - Panel 3 / 4: hakase line にも ponoImg: pono_001 を明示 (本番に一致)
+  //   - Panel 5: 4 行構成 (くるみよ〜 + はーい、まかせて！ kurumi line を追加)
+  //   - Panel 6: 両 line に kurumiImg: kurumi_clasp を注入
+  // ※ migrateScenario() は line.speaker='kurumi' を 'hakase' に強制するバグ
+  //   (line 1453 付近) があるため、保存済み state を持つユーザーは reset 後に
+  //   この defaults が反映される。 migration は値修正の範囲外のため touch しない。
   return {
     panels: [
       // Panel 1 — narration
@@ -1352,19 +1361,21 @@ function defaultScenario() {
           },
           {
             lines: [
-              { text: 'ポノは、なかよしの はかせと、', emphasis: true },
-              { text: 'いつもの なぞなぞで あそぶために やってきました。', emphasis: true }
+              { text: 'ポノは、なかよしの はかせと、', emphasis: false },
+              { text: 'いつもの なぞなぞで', emphasis: false },
+              { text: 'あそぶために やってきました。', emphasis: false }
             ]
           }
         ]
       },
-      // Panel 2 — dialogue (dance_hi)
+      // Panel 2 — dialogue (dance_hi) — kurumi 挨拶 line 追加で 3 行構成
       {
         kind: 'dialogue',
         ponoImgFallback: 'dance_hi',
         dialogues: [
-          { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう' },
-          { speaker: 'pono',   text: 'はかせ、あそびに きたよ！', ponoImg: 'dance_hi' }
+          { speaker: 'hakase', text: 'ほっほっほ…ポノか。よくきたのう', ponoImg: 'pono_001' },
+          { speaker: 'kurumi', text: 'こんにちは、ポノさん！', ponoImg: 'pono_001', kurumiImg: 'kurumi_hi' },
+          { speaker: 'pono',   text: 'はかせ、くるみちゃん、あそびに きたよ！', ponoImg: 'dance_wave' }
         ]
       },
       // Panel 3 — dialogue (dance_hooray)
@@ -1372,7 +1383,7 @@ function defaultScenario() {
         kind: 'dialogue',
         ponoImgFallback: 'dance_hooray',
         dialogues: [
-          { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？' },
+          { speaker: 'hakase', text: 'きょうも なぞなぞを するかの？', ponoImg: 'pono_001' },
           { speaker: 'pono',   text: 'うん！やりたい！', ponoImg: 'dance_hooray' }
         ]
       },
@@ -1381,26 +1392,28 @@ function defaultScenario() {
         kind: 'dialogue',
         ponoImgFallback: 'think_arms_crossed_side',
         dialogues: [
-          { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？' },
+          { speaker: 'hakase', text: 'ふむふむ… じしんは あるかな？', ponoImg: 'pono_001' },
           { speaker: 'pono',   text: 'うーん…でも がんばる！', ponoImg: 'think_arms_crossed_side' }
         ]
       },
-      // Panel 5 — dialogue (dance_smile)
+      // Panel 5 — dialogue (dance_smile) — kurumi へのバトンタッチ 2 行を追加で 4 行構成
       {
         kind: 'dialogue',
         ponoImgFallback: 'dance_smile',
         dialogues: [
-          { speaker: 'hakase', text: 'ほっほっほ、それでよい。まちがえても よいのじゃ。かんがえることが たいせつじゃからの。' },
-          { speaker: 'pono',   text: 'うん！', ponoImg: 'dance_smile' }
+          { speaker: 'hakase', text: 'ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。', ponoImg: 'pono_001' },
+          { speaker: 'pono',   text: 'うん！', ponoImg: 'dance_smile' },
+          { speaker: 'hakase', text: 'くるみよ、いつもどおり なぞなぞを おねがいするぞ', ponoImg: 'pono_001' },
+          { speaker: 'kurumi', text: 'はーい、まかせて！', ponoImg: 'pono_001', kurumiImg: 'kurumi_wink' }
         ]
       },
-      // Panel 6 — dialogue (think_chin_clasp)
+      // Panel 6 — dialogue (think_chin_clasp) — 両 line に kurumiImg: kurumi_clasp 注入
       {
         kind: 'dialogue',
         ponoImgFallback: 'think_chin_clasp',
         dialogues: [
-          { speaker: 'hakase', text: 'では、いくぞ…' },
-          { speaker: 'pono',   text: 'うん！', ponoImg: 'think_chin_clasp' }
+          { speaker: 'hakase', text: 'では、いくぞ…', ponoImg: 'pono_001', kurumiImg: 'kurumi_clasp' },
+          { speaker: 'pono',   text: 'うん！', ponoImg: 'think_chin_clasp', kurumiImg: 'kurumi_clasp' }
         ]
       }
     ],
