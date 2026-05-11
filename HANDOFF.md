@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-12 - [batch:voicepeak-vdc2-dict] Codex: user が `tools/voicepeak/test/` に置いた `testword.vdc2` / `testword02.vdc2` を確認。`.vdc2` は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の形式と判明。`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1` を追加し、`tools/voicepeak/voicepeak_user_dict.csv` 65 語から `tools/voicepeak/voicepeak_user_dict.vdc2` を生成済。VOICEPEAK 実機インポート確認は未実施。 (by Codex)
+
 - 2026-05-11 - [batch:16-zukan-frames] Codex: `tmp/zukan-frames-codex-order/CODEX-ORDER.md` を受領。HANDOFF / git log / `tmp/zukan-frames-codex-order/` / `tmp/alpha_pending/` を確認し、zukan frame 4種の既存納品は無しと確認済。reference は `tmp/zukan-frames-codex-order/reference/referenceImage.png`。納品先は `tmp/alpha_pending/16/` として着手。 (by Codex)
 - 2026-05-11 - [batch:16-zukan-frames] Codex: zukan 装飾フレーム 4 種 RGBA PNG を `tmp/alpha_pending/16/` に納品完了 (`animal-banner.png` 4096x1024 / `card-square.png` 1024x1024 / `rabbit-portrait.png` 1024x1344 / `text-underline.png` 3000x400)。全ファイル中央 alpha=0 確認済。review sheet は `tmp/zukan-frames-codex-order/review/zukan-frames-contact.png`。本番配置・最適化・`FRAME_SRC` 差し替え・sw.js bump は Claude 側。 (by Codex)
 

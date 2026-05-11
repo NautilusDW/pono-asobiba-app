@@ -11,7 +11,9 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 | ファイル | 用途 | 行数 |
 |---|---|---|
 | `voicepeak_lines_test27.csv` | 27 行のセリフリスト (テスト用、Q01/Q24/Q95/Q160/Q170 + Q160 補足版) | 27 |
-| `voicepeak_user_dict.csv` | ユーザー辞書 65 語 (色・数詞・場所・体の部位など、平板/頭高/中高をすべて指定済) | 65 + ヘッダ 1 |
+| `voicepeak_user_dict.csv` | ユーザー辞書 65 語の編集元CSV (色・数詞・場所・体の部位など、平板/頭高/中高を指定) | 65 + ヘッダ 1 |
+| `voicepeak_user_dict.vdc2` | VOICEPEAK の辞書インポート用ファイル (`voicepeak_user_dict.csv` から生成) | 65 |
+| `Convert-VoicepeakUserDictCsvToVdc2.ps1` | 編集元CSVから `.vdc2` を生成するPowerShellスクリプト | - |
 | `sample.ssml` | SSML 動作確認用の最小サンプル (q001_q「真ん中はなにいろ？」を `<voice>` `<prosody>` `<break>` で記述) | - |
 | `README.md` | 本ファイル (VOICEPEAK GUI 操作手順 + 注意点) | - |
 
@@ -25,14 +27,16 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 
 1. VOICEPEAK を起動
 2. メニュー [辞書] → [ユーザー辞書] → [インポート] (バージョンによって表記差異あり)
-3. `voicepeak_user_dict.csv` を選択してインポート
+3. `voicepeak_user_dict.vdc2` を選択してインポート
 4. 65 語が登録されたことを確認 (特に「真ん中=マンナカ平板」「肺=ハイ頭高」「胃=イ頭高」が反映されているか)
 
-> **【重要・要ユーザー確認】** VOICEPEAK の辞書 CSV フォーマットは公式マニュアル未確認のため、本ファイルは **推測形式** で `単語,読み(カタカナ),アクセント核位置,品詞` の 4 カラムにしている。
-> もしインポートが弾かれた場合は:
-> 1. VOICEPEAK GUI で **試しに 1 語だけ手動登録** (例:「真ん中=マンナカ、核位置 0、名詞」)
-> 2. その状態で [エクスポート] → 出力された CSV のフォーマット (区切り文字・カラム順・ヘッダ有無) を確認
-> 3. そのフォーマットに合わせて `voicepeak_user_dict.csv` を再変換 (1 行 sed/awk で済むはず)
+> **辞書フォーマット確認済み**: VOICEPEAK のエクスポート結果 (`.vdc2`) は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` を持つ形式。編集元は `voicepeak_user_dict.csv`、インポート用は `voicepeak_user_dict.vdc2`。
+>
+> CSVを直した場合は以下で `.vdc2` を再生成:
+>
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File tools\voicepeak\Convert-VoicepeakUserDictCsvToVdc2.ps1
+> ```
 
 ### Step 2. ナレーター (話者) 選択
 
