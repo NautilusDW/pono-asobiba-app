@@ -108,6 +108,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T05:13:18Z - op-layout-editor: scenario の migrate と export を kurumi 対応に修正 (speaker='kurumi' 強制 hakase 化バグ + buildScenarioPanelsLiteral の kurumi 2way バグ + kurumiImg シリアライズ追加 + sw v927)
+- **タスク**: op-layout-editor: scenario の migrate と export を kurumi 対応に修正 (speaker='kurumi' 強制 hakase 化バグ + buildScenarioPanelsLiteral の kurumi 2way バグ + kurumiImg シリアライズ追加 + sw v927)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 52
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 40, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-11T05:08:44Z - op-layout-editor のシナリオ defaults を本番 OP_PANELS に同期 (Panel 2/5/6 のくるみセリフ追加, Panel 1/3/4 も runtime と一致)
+- **タスク**: op-layout-editor のシナリオ defaults を本番 OP_PANELS に同期 (Panel 2/5/6 のくるみセリフ追加, Panel 1/3/4 も runtime と一致)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 48
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 10, "Read": 14, "Grep": 12, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 6, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-11T04:48:52Z - op-layout-editor: 左ペインに Kurumi バリエーションサムネ追加 + シナリオ speaker に くるみ追加 + sw v925
 - **タスク**: op-layout-editor: 左ペインに Kurumi バリエーションサムネ追加 + シナリオ speaker に くるみ追加 + sw v925
 - **結果**: 成功
@@ -196,32 +222,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 2, "Agent": 28, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T02:54:18Z - quizland OP クロスレビュー指摘 4件修正 (Panel6 kurumi visible維持 + ポノ漢字→ひらがな + クイズ→なぞなぞ + .op-side-overlay specificity強化 + sw v922)
-- **タスク**: quizland OP クロスレビュー指摘 4件修正 (Panel6 kurumi visible維持 + ポノ漢字→ひらがな + クイズ→なぞなぞ + .op-side-overlay specificity強化 + sw v922)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 32
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 25, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T02:46:45Z - quizland OP シネマティックにくるみちゃん組み込み (Panel 2/5 セリフ追加+修正、HTML/CSS/JS/babble preset/saved-layout/memory/sw.js v921 一括対応)
-- **タスク**: quizland OP シネマティックにくるみちゃん組み込み (Panel 2/5 セリフ追加+修正、HTML/CSS/JS/babble preset/saved-layout/memory/sw.js v921 一括対応)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 29
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 22, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

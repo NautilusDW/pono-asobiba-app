@@ -1337,7 +1337,7 @@ function savePanelModePref() {
 const SCENARIO_STORAGE_KEY = STORAGE_PREFIX + 'scenario';
 
 function defaultScenario() {
-  // 2026-05-10: 本番 quizland/index.html の OP_PANELS (sw v925) と完全一致させる。
+  // 2026-05-10: 本番 quizland/index.html の OP_PANELS (sw v926) と完全一致させる。
   //   - Panel 1: narration 2 segments, 全 lines emphasis:false (本番 L4847-L4868)
   //   - Panel 2: 3 行構成 (kurumi 挨拶 line を追加, kurumiImg: kurumi_hi)
   //   - Panel 3 / 4: hakase line にも ponoImg: pono_001 を明示 (本番に一致)
@@ -1463,12 +1463,24 @@ function migrateScenario(parsed) {
         p.dialogues.forEach((d, di) => {
           if (!d || typeof d !== 'object') p.dialogues[di] = { speaker: 'hakase', text: '' };
           else {
-            if (d.speaker !== 'pono' && d.speaker !== 'hakase') d.speaker = 'hakase';
+            // 2026-05-11: kurumi も valid speaker。 過去版は 'kurumi' を 'hakase' に
+            // 強制変換していたため、 ユーザーが editor で speaker='kurumi' に切替えて
+            // 保存 → reload で speaker が化ける致命的バグがあった。 kurumi line も
+            // 保持する。
+            if (d.speaker !== 'pono' && d.speaker !== 'hakase' && d.speaker !== 'kurumi') {
+              d.speaker = 'hakase';
+            }
             if (typeof d.text !== 'string') d.text = '';
             // line.ponoImg は speaker に関係なく optional (Pono は dialogue panel 全体で常時表示
             // されているため、はかせ発話中も Pono の表情/ポーズを line 単位で切り替えたい)。
             // 未設定の line には panel.ponoImgFallback を初期値として割り当てる。
             if (typeof d.ponoImg !== 'string' || !d.ponoImg) d.ponoImg = p.ponoImgFallback;
+            // 2026-05-11: line.kurumiImg は optional。 文字列以外/空文字列は削除して
+            // フォーマットを揃える (renderer 側は line.kurumiImg の有無で kurumi 立ち絵
+            // visibility を判定するため、 空値が残ると意図せず立ち絵が出る恐れがある)。
+            if (d.kurumiImg != null && (typeof d.kurumiImg !== 'string' || !d.kurumiImg)) {
+              delete d.kurumiImg;
+            }
           }
         });
       }
@@ -6212,6 +6224,18 @@ function buildScenarioPanelsLiteral() {
     }
     return v.path;
   }
+  // 2026-05-11: kurumi の serialize も pono と同じ規約で。 入力が basename
+  // ('kurumi_xxx') / フルパス ('.../kurumi_xxx.webp') のいずれでも variant 名を
+  // 抽出して KURUMI_VARIANTS から path を引く。 未知名は kurumi_001 にフォール
+  // バックして 404 を回避。
+  function kurumiFullPath(input) {
+    if (!input) return KURUMI_VARIANTS[0].path;
+    let name = String(input);
+    const m = name.match(/([^/\\]+?)(?:\.webp)?$/);
+    if (m && m[1]) name = m[1];
+    const v = KURUMI_VARIANTS.find(x => x.name === name);
+    return v ? v.path : KURUMI_VARIANTS[0].path;
+  }
 
   sc.panels.forEach((panel, i) => {
     const isLast = (i === sc.panels.length - 1);
@@ -6251,13 +6275,25 @@ function buildScenarioPanelsLiteral() {
       lines.push(indent4 + 'dialogues: [');
       (panel.dialogues || []).forEach((d, lIdx) => {
         const lLast = (lIdx === panel.dialogues.length - 1);
-        const speaker = jsString(d.speaker === 'pono' ? 'pono' : 'hakase');
+        // 2026-05-11: speaker は 3 way (pono / hakase / kurumi)。 kurumi が
+        // 抜けていたため editor 側で speaker='kurumi' に切替えても export 結果が
+        // 'hakase' に化けていた致命的バグを修正。
+        const speakerVal = (d.speaker === 'pono' || d.speaker === 'kurumi')
+          ? d.speaker
+          : 'hakase';
+        const speaker = jsString(speakerVal);
         const text = jsString(d.text || '');
         let row = indent6 + '{ speaker: ' + speaker + ', text: ' + text;
         // line.ponoImg をフルパスで出す (per-line override)。speaker に関係なく
-        // (はかせ発話 line でも) line.ponoImg があればシリアライズする。
+        // (はかせ/くるみ発話 line でも) line.ponoImg があればシリアライズする。
         if (d.ponoImg) {
           row += ', ponoImg: ' + jsString(ponoFullPath(d.ponoImg));
+        }
+        // 2026-05-11: line.kurumiImg も同様にシリアライズ。 runtime の OP_PANELS
+        // と同じく basename → KURUMI_VARIANTS フルパスに変換。 ponoImg と
+        // kurumiImg は同一 line に共存可 (Panel 6 のように)。
+        if (d.kurumiImg) {
+          row += ', kurumiImg: ' + jsString(kurumiFullPath(d.kurumiImg));
         }
         row += ' }' + (lLast ? '' : ',');
         lines.push(row);
