@@ -1,14 +1,14 @@
 # Babble Voice System (Quizland)
 
-**Status:** Implemented (2026-05-07), scope narrowed to OP cinematic only (2026-05-07)
-**Last Updated:** 2026-05-07
+**Status:** Implemented (2026-05-07), scope narrowed to OP cinematic only (2026-05-07), kurumi preset added (2026-05-11)
+**Last Updated:** 2026-05-11
 **Type:** Feature — Sound & UX
 
 ---
 
 ## Overview
 
-Quizland uses programmatic "babble" pseudo-voice (Animal Crossing style) **only during the opening cinematic** for narrative dialogue between Pono and the owl professor. **In-game quiz dialogue (problem text, hints, correct/wrong feedback, etc.) is silent and instant** — the owl does NOT chat character-by-character during gameplay.
+Quizland uses programmatic "babble" pseudo-voice (Animal Crossing style) **only during the opening cinematic** for narrative dialogue between Pono, the owl professor, and the squirrel assistant Kurumi. **In-game quiz dialogue (problem text, hints, correct/wrong feedback, etc.) is silent and instant** — the owl does NOT chat character-by-character during gameplay.
 
 Why the scope split: in the main quiz body the kid is reading the problem, considering hints, and parsing feedback — having the owl "speaking" each character is intrusive and slows their thinking. The babble + typewriter combo is reserved for the cinematic moments where character voice IS the content (introductions, story beats).
 
@@ -24,15 +24,16 @@ Two features still bundled (cinematic only):
 - **`js/quizland-babble.js`** (IIFE, ~150 lines)
   - Public API: `window.PonoBabble = { init(audioCtx), playChar(char, presetName), cancelAll(), presets }`
   - SKIP_RE: Whitespace, punctuation, zero-width joiners produce no sound
-  - Preset system: `owl` (implemented), `pono` (simple chirp), `hedgehog` (simple chirp), `default` (fallback)
+  - Preset system: `owl` (full voice path), `pono` (simple chirp), `hedgehog` (simple chirp), **`kurumi` (お姉さん感のある女声 chirp)**, `default` (fallback)
 
 ### Integration Points
 
 #### Opening Cinematic (uses babble + typewriter)
 - **`quizland/index.html`** → `_opTypeInto(elId, text, presetName)` inside `playOpeningCinematic`
   - Separate from in-game dialogue — uses its own race-prevention counter `_opTypingToken`
-  - ~95ms/char tick, calls `PonoBabble.playChar(c, 'owl' | 'pono')` per character
+  - ~95ms/char tick, calls `PonoBabble.playChar(c, 'owl' | 'pono' | 'kurumi')` per character
   - Active during dialogue panels (panels 2-6) of the opening cinematic only
+  - Speaker → preset mapping (~L6139): `presetForLine = isHakase ? 'owl' : (isKurumi ? 'kurumi' : 'pono')`
 
 #### In-Game Quiz Dialogue (instant, no babble)
 - **`quizland/index.html`** → `setHakaseDialogue(text)` (around line 2777)
@@ -71,6 +72,23 @@ Two features still bundled (cinematic only):
 
 ---
 
+## Kurumi Preset Specification (added 2026-05-11)
+
+**Voice Profile:** Bright, gentle big-sister voice (お姉さん感) for the squirrel assistant Kurumi.
+
+**Synthesis:**
+- **Wave:** Triangle (柔らかいトーン)
+- **Base Pitch:** 450 Hz — sits between owl (160) and pono (520), giving a warm mid-female feel
+- **Glide:** +35 Hz (upward inflection, energetic)
+- **Duration:** 80 ms
+- **Envelope:** Attack 6ms / Release 48ms
+- **Gain:** 0.13 (peakGain)
+- **Pitch Spread:** ±30 Hz random jitter per character
+
+**Used by:** Panel 2 (こんにちは、ポノさん！) and Panel 5 (はーい、まかせて！) of the OP cinematic. See `memory/feature_quizland_kurumi.md` for the full character + dialogue spec.
+
+---
+
 ## API Contract
 
 ```javascript
@@ -89,7 +107,7 @@ PonoBabble.cancelAll();
 
 // Preset definitions (read-only)
 PonoBabble.presets
-// → keys: 'owl', 'pono', 'hedgehog', 'default'
+// → keys: 'owl', 'pono', 'hedgehog', 'kurumi', 'default'
 // → each value: { voice, wave, baseFreq, duration, formants, ... }
 ```
 
@@ -98,9 +116,11 @@ PonoBabble.presets
 ## Future Expansion
 
 ### Character-Specific Presets
-- **Pono:** Bright triangle, energetic (stub, not yet integrated)
-- **Hedgehog:** Mid-range (stub, future use)
-- Other NPCs can have unique voice colors by adding presets and calling `playChar(char, 'npc-name')`
+- **Owl (博士):** Full voice path (sawtooth + triangle + 5 母音フォルマント + LFO)、 OP cinematic で稼働中
+- **Pono:** Bright triangle chirp, OP cinematic で稼働中 (Panel 2-6 の pono speaker line)
+- **Kurumi (リスのくるみちゃん):** お姉さん感のある女声 chirp, OP cinematic で稼働中 (Panel 2 / 5 の kurumi speaker line)。詳細は上記「Kurumi Preset Specification」と `memory/feature_quizland_kurumi.md` を参照
+- **Hedgehog:** Mid-range chirp (stub、 quizland では未使用、 他ゲーム流用待ち)
+- 新 NPC を増やすときは preset を追加して `playChar(char, 'npc-name')` を呼ぶだけ。 owl のような voice path を使うかは音色要件次第 (現状 owl のみ voice:true)
 
 ### User Preferences
 - **Typing Speed:** Adjust `HAKASE_TYPING_DELAY_MS` (currently 105ms → smooth but readable)
