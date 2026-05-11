@@ -1,30 +1,24 @@
 {
   "schema_version": 1,
-  "speaker_id": 2,
-  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md",
+  "speaker_id": 10,
+  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md (漢字混じり版)",
   "generated_by": "Claude Code (Opus 4.7)",
-  "generated_at": "2026-05-11T10:04:39Z",
+  "generated_at": "2026-05-11T10:26:22Z",
   "items": [
     {
       "id": "q001_q",
-      "text": "まんなかは なにいろ？",
+      "text": "真ん中は何色？",
       "patches": [
         {
           "phrase_index": 0,
           "mora_signature": "マンナカワ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (子供向け、辞書 user_dict と整合)"
-        },
-        {
-          "phrase_index": 1,
-          "mora_signature": "ナニイロ",
-          "accent": 0,
-          "confidence": "high",
-          "note": "平板 (NHK 標準、デフォルト推定が頭高化しがち)"
+          "note": "平板 (まんなか NHK 平板、5モーラの「は」付きでも平板維持)"
         }
       ],
-      "needs_listen": false
+      "needs_listen": true,
+      "warning": "⚠ VOICEVOX が「何色」を「ナンショク」と推定。「ナニイロ」と読ませたい場合は user_dict に追加するか、発注書側を「なにいろ」表記に変更検討"
     },
     {
       "id": "q001_a",
@@ -84,14 +78,14 @@
     },
     {
       "id": "q024_q",
-      "text": "りんごは いくつ？",
+      "text": "りんごはいくつ？",
       "patches": [
         {
           "phrase_index": 0,
           "mora_signature": "リンゴワ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (りんご NHK 平板)"
+          "note": "平板 (りんご NHK 平板、4モーラの「は」付きでも平板)"
         }
       ],
       "needs_listen": false
@@ -130,10 +124,10 @@
     },
     {
       "id": "q095_q",
-      "text": "おおきい の はんたいは？",
+      "text": "大きいの反対は？",
       "patches": [
         {
-          "phrase_index": 2,
+          "phrase_index": 1,
           "mora_signature": "ハンタイワ",
           "accent": 0,
           "confidence": "high",
@@ -144,7 +138,7 @@
     },
     {
       "id": "q095_a",
-      "text": "あかい",
+      "text": "赤い",
       "patches": [
         {
           "phrase_index": 0,
@@ -158,7 +152,7 @@
     },
     {
       "id": "q095_b",
-      "text": "まるい",
+      "text": "丸い",
       "patches": [
         {
           "phrase_index": 0,
@@ -172,13 +166,13 @@
     },
     {
       "id": "q095_c",
-      "text": "ちいさい",
+      "text": "小さい",
       "patches": [],
       "needs_listen": false
     },
     {
       "id": "q095_d",
-      "text": "やさしい",
+      "text": "優しい",
       "patches": [
         {
           "phrase_index": 0,
@@ -192,14 +186,21 @@
     },
     {
       "id": "q160_q",
-      "text": "いきを すうのは からだの どこ？",
+      "text": "息を吸うのは体のどこ？",
       "patches": [
         {
           "phrase_index": 0,
           "mora_signature": "イキオ",
           "accent": 2,
           "confidence": "high",
-          "note": "中高 いき'を"
+          "note": "中高 いき'を (息を)"
+        },
+        {
+          "phrase_index": 1,
+          "mora_signature": "スウ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 す'う (動詞「吸う」)"
         },
         {
           "phrase_index": 3,
@@ -213,19 +214,27 @@
     },
     {
       "id": "q160_a",
-      "text": "はい",
-      "patches": [],
+      "text": "肺",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ハイ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 は'い (医学用語「肺」)"
+        }
+      ],
       "needs_listen": true
     },
     {
       "id": "q160_b",
-      "text": "い",
+      "text": "胃",
       "patches": [],
       "needs_listen": true
     },
     {
       "id": "q160_c",
-      "text": "こころ",
+      "text": "心",
       "patches": [
         {
           "phrase_index": 0,
@@ -235,76 +244,85 @@
           "note": "尾高 こころ' (NHK 2/3 併存、子供向けは 3 尾高優勢)"
         }
       ],
-      "needs_listen": false
+      "needs_listen": true
     },
     {
       "id": "q160_d",
-      "text": "ゆび",
-      "patches": [],
-      "needs_listen": false
-    },
-    {
-      "id": "q160_a_alt",
-      "text": "ぞうきの はい",
+      "text": "指",
       "patches": [],
       "needs_listen": true
     },
     {
+      "id": "q160_a_alt",
+      "text": "臓器の肺",
+      "patches": [
+        {
+          "phrase_index": 1,
+          "mora_signature": "ハイ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 は'い (肺)"
+        }
+      ],
+      "needs_listen": true
+    },
+    {
       "id": "q160_b_alt",
-      "text": "いぶくろの い",
+      "text": "胃袋の胃",
       "patches": [
         {
           "phrase_index": 0,
           "mora_signature": "イブクロノ",
           "accent": 0,
-          "confidence": "high",
-          "note": "平板 (いぶくろ NHK 平板 0)"
+          "confidence": "medium",
+          "note": "平板 (NHK 0/3 併存、子供向けは 0 平板優勢)"
         }
       ],
       "needs_listen": true
     },
     {
       "id": "q170_q",
-      "text": "にの つぎは？",
+      "text": "2の次は？",
       "patches": [
         {
-          "phrase_index": 0,
-          "mora_signature": "ニノ",
-          "accent": 1,
-          "confidence": "high",
-          "note": "頭高 に' + の"
-        },
-        {
           "phrase_index": 1,
-          "mora_signature": "ツギハ",
+          "mora_signature": "ツギワ",
           "accent": 1,
           "confidence": "high",
-          "note": "頭高 つ'ぎは"
+          "note": "頭高 つ'ぎは (次は)"
         }
       ],
       "needs_listen": false
     },
     {
       "id": "q170_a",
-      "text": "に",
+      "text": "2",
       "patches": [],
       "needs_listen": true
     },
     {
       "id": "q170_b",
-      "text": "さん",
-      "patches": [],
+      "text": "3",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "サン",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 さ'ん (3、撥音含む2モーラは頭高)"
+        }
+      ],
       "needs_listen": true
     },
     {
       "id": "q170_c",
-      "text": "よん",
+      "text": "4",
       "patches": [],
       "needs_listen": true
     },
     {
       "id": "q170_d",
-      "text": "ご",
+      "text": "5",
       "patches": [],
       "needs_listen": true
     }
