@@ -1,6 +1,6 @@
 ---
 name: Quizland リスのくるみちゃん（アシスタントキャラ）
-description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化)
+description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 + scenario state に version 付き auto migration を実装し既存ユーザーも editor リロードだけで新 defaults へ自動移行 (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化 / v929 SCENARIO_DATA_VERSION='v927' 導入で auto migration 実装、 DevTools 手動 reset 手順は不要に)
 type: feature
 ---
 
@@ -149,11 +149,11 @@ if (keepKurumiVisible) {
 - Panel 6 のように speaker は hakase/pono だが立ち絵は維持したい line は `kurumiImg: 'kurumi_clasp.webp'` のように **明示注入**
 - `playOpeningCinematic` の `finally` で `is-visible` / `hidden` を全部クリア (replay 時の前回状態を持ち越さない)
 
-## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正)
+## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正 / v929 scenario auto migration)
 
-`tools/op-layout-editor.html` を拡張し、 ポノ / 博士に並ぶ **「くるみ側」タブ** を追加。 13 variants × 3 VC (B / C / D) で slot 位置・サイズ・透過オフセット等を個別編集して saved-layout.json に publish できる。 v925 で **左ペインに Kurumi バリエーションサムネ一覧** + **シナリオ行 speaker に「くるみ」を追加** し、 ポノとほぼ同等の編集 UI を提供。 v926 で **scenario モードのデフォルトデータ (`defaultScenario()`) を本番 quizland/index.html の OP_PANELS (Panel 2/5 で kurumi line 追加 + Panel 6 で kurumiImg 注入) と完全一致**させた。 v927 で **migrateScenario / buildScenarioPanelsLiteral の kurumi 周り 3 件のバグ** (speaker='kurumi' を hakase に強制変換 / export 時に kurumiImg をシリアライズしない / kurumi line を 2-way 判定で hakase に化けさせる) を一括修正。
+`tools/op-layout-editor.html` を拡張し、 ポノ / 博士に並ぶ **「くるみ側」タブ** を追加。 13 variants × 3 VC (B / C / D) で slot 位置・サイズ・透過オフセット等を個別編集して saved-layout.json に publish できる。 v925 で **左ペインに Kurumi バリエーションサムネ一覧** + **シナリオ行 speaker に「くるみ」を追加** し、 ポノとほぼ同等の編集 UI を提供。 v926 で **scenario モードのデフォルトデータ (`defaultScenario()`) を本番 quizland/index.html の OP_PANELS (Panel 2/5 で kurumi line 追加 + Panel 6 で kurumiImg 注入) と完全一致**させた。 v927 で **migrateScenario / buildScenarioPanelsLiteral の kurumi 周り 3 件のバグ** (speaker='kurumi' を hakase に強制変換 / export 時に kurumiImg をシリアライズしない / kurumi line を 2-way 判定で hakase に化けさせる) を一括修正。 **v929 で `SCENARIO_DATA_VERSION` 定数を導入し scenario state を version 付き auto migration 化** — `loadScenario()` が saved state の version を見て不一致なら `defaultScenario()` を強制採用、 `saveScenario()` は保存時に最新 version を確実に埋め込むため、 既存ユーザーも editor をリロードするだけで自動的に新 defaults に移行する (DevTools コンソール手順は不要になった)。
 
-### 追加要素 (v923 → v927 累積)
+### 追加要素 (v923 → v929 累積)
 
 | 要素 | 内容 |
 |---|---|
@@ -173,6 +173,9 @@ if (keepKurumiVisible) {
 | **シナリオ行 speaker (v925 追加、 ~L5151)** | `buildScenarioDialogueLineRow` 内の speaker forEach を `['hakase', 'pono']` → **`['hakase', 'pono', 'kurumi']`** に拡張、 ラベル: ポノ / はかせ / くるみ の 3 way ラジオ |
 | `migrateFrameIds` | 既存 editor state に kurumi seed を backfill + perVariant 13 ポーズを backfill |
 | **mirror mode は kurumi 対象外** | mirror モード（左右反転して片方の編集を反映）は pono ⇄ hakase の 2 者間のみ。 くるみは独立 overlay なので対象外 (mirror 関数冒頭で `'kurumi'` の場合は無条件 skip、 ~L1649) |
+| **`SCENARIO_DATA_VERSION` 定数 (v929 追加、 ~L1238)** | `'v927'` (= 本番 OP_PANELS と同期した defaults のバージョンタグ)。 `defaultScenario()` の構造を変更したら bump する。 `loadScenario()` / `saveScenario()` / `defaultScenario()` の 3 箇所で参照される唯一の真実 |
+| **`loadScenario()` の version check (v929 追加、 ~L1512-L1533)** | `localStorage[SCENARIO_STORAGE_KEY]` から読んだ object の `version` フィールドが現行 `SCENARIO_DATA_VERSION` と不一致なら、 saved state を捨てて `defaultScenario()` を返す (= 自動 migration)。 不一致時は console.log で `'<old> → <new>'` 表示。 一致時のみ `migrateScenario(parsed)` を実行 |
+| **`saveScenario()` の version embed (v929 追加、 ~L1535-L1545)** | 保存時に `Object.assign({}, state.scenario, { version: SCENARIO_DATA_VERSION })` で必ず最新 version を上書きしてから JSON.stringify。 import 経由などで version 欠落の state が入っても保存後は揃う |
 
 ### v924 クロスレビュー C 修正 (HIGH 3 + MEDIUM 4)
 
@@ -270,7 +273,7 @@ editor の scenario モードで初期表示されるシナリオデータ (`def
 | Panel 5 (dialogue) | 2 行 (hakase / pono) | **4 行**: ① hakase「ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。」 / ② pono「うん！」 / ③ **★hakase**「くるみよ、いつもどおり なぞなぞを おねがいするぞ」 / ④ **★kurumi**「はーい、まかせて！」 ponoImg:`pono_001` + **kurumiImg:`kurumi_wink`** |
 | Panel 6 (dialogue) | 2 行、 kurumiImg 注入なし | 2 行は据置、 ただし **両 line に `kurumiImg: 'kurumi_clasp'` を注入** して立ち絵 visible 維持の本番挙動と一致させた |
 
-**注意**: defaultScenario() は editor の **新規ユーザー (= localStorage に scenario state が無いユーザー)** にのみ反映される。 既に編集経験のあるユーザーは `localStorage['pono.opLayoutEditor.v1.scenario']` に古い state が残っているため、 reload しても古いデータのまま見える。 → 次節 「既存ユーザーの reset 手順」 を参照
+**v929 以前の補足**: かつては defaultScenario() の更新が **新規ユーザー (= localStorage に scenario state が無いユーザー)** にしか反映されず、 既に編集経験のあるユーザーは古い saved state がそのまま読まれる問題があった。 v929 で **`SCENARIO_DATA_VERSION` 定数による version 付き auto migration** を導入したため、 既存ユーザーも editor をリロードした瞬間に新 defaults へ自動移行する。 詳細は次節「v929: scenario state の version 付き auto migration」を参照。
 
 ### v927: buildScenarioPanelsLiteral() の kurumi export 対応
 
@@ -281,23 +284,24 @@ editor の `📋 JSON のみクリップボード` (= `buildScenarioPanelsLitera
 
 これにより editor で編集した kurumi line + Panel 6 の立ち絵注入が **export → 本番 OP_PANELS への手動反映** で完全に保たれるようになった。
 
-### 既存ユーザーの reset 手順 (v926+ 投入後の運用 FAQ)
+### v929: scenario state の version 付き auto migration
 
-editor を再読み込みすると `defaultScenario()` の **新しい defaults が反映される** はずだが、 **既存の localStorage saved state があると古いデータがそのまま読まれる** ため、 v926+ で同期したデフォルト値を反映するには **手動で localStorage を clear する必要がある**。
+v926 で `defaultScenario()` を本番 OP_PANELS と同期して以降、 「**既存ユーザーは localStorage に古い saved state が残っているため、 editor をリロードしても新 defaults が反映されない**」 という運用課題があった。 v929 で **scenario state にスキーマ version を持たせて自動 migration する仕組み**を導入し、 この課題を恒久解消した。
 
-DevTools コンソールで以下を実行:
+実装は `tools/op-layout-editor.html` 内の以下 3 箇所:
 
-```js
-localStorage.removeItem('pono.opLayoutEditor.v1.scenario');
-location.reload();
-```
+1. **`SCENARIO_DATA_VERSION = 'v927'` 定数** (~L1238): `defaultScenario()` の構造が変わったら bump する単一の真実
+2. **`defaultScenario()`** (~L1348-L1424): 戻り値の object に `version: SCENARIO_DATA_VERSION` を埋め込む
+3. **`loadScenario()`** (~L1512-L1533): localStorage から読んだ state の `parsed.version !== SCENARIO_DATA_VERSION` なら、 saved state を **強制的に捨てて `defaultScenario()` を返す**。 不一致時は console.log で `'<old> → <new>'` を表示
+4. **`saveScenario()`** (~L1535-L1545): 保存時に `Object.assign({}, state.scenario, { version: SCENARIO_DATA_VERSION })` で必ず最新 version を上書きしてから JSON.stringify。 import 経由などで version 欠落のまま state が入った場合も、 1 回保存すれば次回 load で正しく一致判定される
 
-→ scenario state が初期化され、 reload で v926+ の `defaultScenario()` が読まれる。
+これにより、 **既存ユーザーは editor をリロードするだけで自動的に新 defaults へ移行**する (DevTools コンソールでの手動 `localStorage.removeItem(...)` は不要)。 影響範囲は **scenario state のみ** で、 layout state (slot 値、 frame 設定、 dropped assets 等) や narration state (`pono.opNarration.runtime.{B,C,D}`) は **別キー管理のため一切 touch されない**。
 
-**注意点**:
+**運用上の注意**:
 
-- v927 以前に保存した scenario state には、 過去の `migrateScenario` の **kurumi → hakase 強制変換バグ** によって `speaker: 'hakase'` に化けてしまっている line が含まれている可能性あり。 もし「以前 kurumi にしたのに reload で hakase になっている」 という症状を見たら、 上記 reset 手順で defaults に戻すか、 直接 localStorage の JSON を編集して speaker を 'kurumi' に書き戻す
-- localStorage clear は **scenario state のみ** を消す (`SCENARIO_STORAGE_KEY = 'pono.opLayoutEditor.v1.scenario'`)。 layout state (per-question 等) や narration state (`pono.opNarration.runtime.{B,C,D}`) は別キーで管理されているため影響なし
+- 個別カスタマイズ (= editor で手編集した scenario の line) は version 不一致時に消える。 現状 defaults のままが大半なので許容しているが、 **シナリオを手編集している場合は事前に「📋 シナリオ (OP_PANELS) クリップボード」 で export してバックアップを取る** こと
+- `SCENARIO_DATA_VERSION` を bump するタイミング: `defaultScenario()` の panel 構成 / line 順 / speaker 構成を変えたとき。 純粋にテキストだけ修正する場合は bump 不要 (saved state を温存したいケース)
+- v927 以前に保存した scenario state には、 過去の `migrateScenario` の **kurumi → hakase 強制変換バグ** によって `speaker: 'hakase'` に化けてしまっている line が含まれている可能性があった。 v929 の auto migration によりそうした state も `version` 不一致でリセットされ、 v927 のバグ修正後の defaults に揃う
 
 ## babble preset (確定値)
 
@@ -338,5 +342,7 @@ dialogue render ループでは `presetForLine = isHakase ? 'owl' : (isKurumi ? 
 - v923: kurumi 13 ポーズ管理機能 (op-layout-editor 「くるみ側」 タブ + 13 variants × 3 VC perVariant 配信 + Panel 2/5/6 の variant 確定割当 + ponoPerVariantDefaults `dance_wave` 漏れ修正)
 - v924: クロスレビュー C HIGH 3 + MEDIUM 4 修正 (HIGH-1 propagateMirror に kurumi ガード / HIGH-2 editor preview に op-side-overlay クラス + CSS で production と同位置 / HIGH-3 importNarrationJsonFromFile に ent.kurumi 分岐 / MED-1 scenario preview text + speaker label 3 way / MED-2 scenario line.kurumiImg → 画像/slot 反映 / MED-4 onFrameAspectLoaded を kurumi 対応 + frame removal cleanup / MED-5 height/box guides を kurumi 対応 #fb923c 橙)
 - v925: editor 左ペインに **Kurumi バリエーションサムネ一覧 (13 ポーズ、 makeKurumiThumb)** + **シナリオ行 speaker に「くるみ」追加 (ポノ / はかせ / くるみ の 3 way ラジオ)**。 kurumi user-added 画像のドラッグ&ドロップは未対応 (info 文で明示)。 editor の「くるみ側」タブは「対話 (P2-6)」モードでのみ表示される仕様 (CSS line 661/667 で `is-narration` / `is-scenario` 時に tab-bar 全体が `display: none`) を memory 文書に明文化
-- v926: editor `defaultScenario()` を本番 `OP_PANELS` (sw v926 時点) と完全同期。 Panel 1 seg2 を 3 行 emphasis:false / Panel 2 を 3 行 (kurumi `kurumi_hi` 挨拶追加, ポノ「はかせ、くるみちゃん、あそびに きたよ！」 + ponoImg `dance_wave`) / Panel 3-4 hakase line に `ponoImg: pono_001` 明示 / Panel 5 を 4 行 (kurumi `kurumi_wink` バトンタッチ追加) / Panel 6 両 line に `kurumiImg: kurumi_clasp` 注入。 既存 saved state を持つユーザーは reset 必要 (DevTools console で `localStorage.removeItem('pono.opLayoutEditor.v1.scenario')` → reload)
-- **v927 (現行)**: editor の **scenario migrate / export を kurumi 対応** に修正 — (a) `migrateScenario` の `speaker !== 'pono' && speaker !== 'hakase'` 強制 hakase 化判定を **3-way (kurumi も valid)** に修正、 kurumi line を save → reload で hakase 化する致命バグ解消 (~L1466-L1472); (b) **`kurumiImg` 空値正規化** を migrate に追加 (空文字 / 非文字列なら delete、 ~L1478-L1483); (c) `buildScenarioPanelsLiteral()` の speaker 判定を 2-way → **3-way** に修正 + **`kurumiFullPath()` ヘルパー新設** (basename/フルパス両対応 + 未知名は `kurumi_001` fallback) で **line.kurumiImg のシリアライズ対応**、 Panel 6 のように ponoImg と kurumiImg が共存する line も export 可能に (~L6231-L6238 / ~L6281-L6297)
+- v926: editor `defaultScenario()` を本番 `OP_PANELS` (sw v926 時点) と完全同期。 Panel 1 seg2 を 3 行 emphasis:false / Panel 2 を 3 行 (kurumi `kurumi_hi` 挨拶追加, ポノ「はかせ、くるみちゃん、あそびに きたよ！」 + ponoImg `dance_wave`) / Panel 3-4 hakase line に `ponoImg: pono_001` 明示 / Panel 5 を 4 行 (kurumi `kurumi_wink` バトンタッチ追加) / Panel 6 両 line に `kurumiImg: kurumi_clasp` 注入。 当初は既存 saved state を持つユーザーへの反映が手動 reset 必須だったが、 v929 で auto migration 化されて解消
+- v927: editor の **scenario migrate / export を kurumi 対応** に修正 — (a) `migrateScenario` の `speaker !== 'pono' && speaker !== 'hakase'` 強制 hakase 化判定を **3-way (kurumi も valid)** に修正、 kurumi line を save → reload で hakase 化する致命バグ解消 (~L1466-L1472); (b) **`kurumiImg` 空値正規化** を migrate に追加 (空文字 / 非文字列なら delete、 ~L1478-L1483); (c) `buildScenarioPanelsLiteral()` の speaker 判定を 2-way → **3-way** に修正 + **`kurumiFullPath()` ヘルパー新設** (basename/フルパス両対応 + 未知名は `kurumi_001` fallback) で **line.kurumiImg のシリアライズ対応**、 Panel 6 のように ponoImg と kurumiImg が共存する line も export 可能に (~L6231-L6238 / ~L6281-L6297)
+- v928: auto-commit (post-commit hook 由来の自動上昇)
+- **v929 (現行)**: editor の **scenario state に version 付き auto migration を実装** — `SCENARIO_DATA_VERSION = 'v927'` 定数を新設 (~L1238)、 `defaultScenario()` の戻り値に `version` フィールドを埋め込み (~L1359)、 `loadScenario()` で saved state の `version` が現行値と不一致なら **defaults を強制使用** (~L1512-L1533)、 `saveScenario()` で保存時に `version` を確実に上書き (~L1535-L1545)。 これにより **既存ユーザーも editor リロードだけで自動的に新 defaults へ移行**、 過去の DevTools コンソール手順 (`localStorage.removeItem('pono.opLayoutEditor.v1.scenario')`) は不要に。 影響範囲は scenario state のみで layout / narration state は touch しない

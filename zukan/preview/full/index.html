@@ -1658,6 +1658,14 @@ function buildLayout(value) {
   const [type, n] = value.split('-');
   const count = parseInt(n, 10);
   const board = document.getElementById('board');
+  // zukan/preview/full/ では #board 要素は HTML に存在しない (旧 quizland 由来の
+  // dead code)。 null のまま board.innerHTML を触ると TypeError で IIFE 含む
+  // 後続スクリプトが全滅するため、 ここで早期 return する。
+  // applyVariantSize は board の有無に関わらず実行 (slot-size/gap input の同期は維持)。
+  if (!board) {
+    try { applyVariantSize(value); } catch (e) {}
+    return;
+  }
   board.innerHTML = '';
 
   function slot() {
@@ -4753,6 +4761,10 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
 //  monkey-patch でラップする (元コードのリスク最小化)。
 // ─────────────────────────────────────────────────────────────────────
 (function initZkFrameOverlay() {
+  // [zk] 装飾フレーム IIFE の起動を必ずログに残す (起動していなければ後段の
+  // attachFrameUI / autoBtn の bind も走っていない = 完全空振りの典型)
+  try { console.log('[zk] initZkFrameOverlay() boot'); } catch (e) {}
+
   const PLACEHOLDER_DIR = '../../../assets/zukan/frames/placeholder/';
   const FRAME_SRC = {
     'animal-banner':   '../../../assets/zukan/frames/animal-banner.png',
@@ -4767,23 +4779,43 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     'rabbit-portrait': 'うさぎポートレート (縦長)',
     'text-underline':  'テキスト下線',
   };
-  // 1) .zk-frame img の付け外し
-  function applyFrame(userboxEl, kind) {
-    if (!userboxEl) return;
-    const existing = userboxEl.querySelector(':scope > img.zk-frame');
+  // 装飾フレーム適用対象セレクタ:
+  //   - .userbox          : ユーザーがドラッグで作る矩形 (zukan の主要対象。 15個)
+  //   - .slot             : 旧 quizland 由来のレイアウト slot (zukan モードでは
+  //                         #board が無いので生成されないが、 将来 / 他 preview と
+  //                         共有するため明示)
+  //   - [data-zk-framable]: 任意の DOM へオプトインで装飾フレームを当てる拡張穴
+  const FRAMABLE_SELECTOR = '.userbox, .slot, [data-zk-framable]';
+  // 1) .zk-frame img の付け外し — .userbox 以外 (.slot 等) にも適用できるよう拡張
+  function applyFrame(targetEl, kind) {
+    if (!targetEl) return;
+    try { console.log('[zk] applyFrame', kind, targetEl); } catch (e) {}
+    const existing = targetEl.querySelector(':scope > img.zk-frame');
     if (existing) existing.remove();
     if (kind && FRAME_SRC[kind]) {
+      // .zk-frame は CSS で position:absolute + inset:0 なので、 親が
+      // position:static (= .slot のデフォルト等) だと意図しない位置に出る。
+      // 念のため computed position が static なら relative を inline で当てる。
+      try {
+        const cs = getComputedStyle(targetEl);
+        if (cs && cs.position === 'static') {
+          targetEl.style.position = 'relative';
+        }
+      } catch (e) {}
       const img = document.createElement('img');
       img.className = 'zk-frame';
       img.dataset.frameKind = kind;
       img.alt = '';
       img.draggable = false;
       img.src = FRAME_SRC[kind];
+      img.addEventListener('error', () => {
+        try { console.warn('[zk] frame image failed to load:', img.src); } catch (e) {}
+      });
       // badge と del の前 (= DOM 下層 / overlay 用) に挿入
-      userboxEl.insertBefore(img, userboxEl.firstChild);
-      userboxEl.dataset.frameKind = kind;
+      targetEl.insertBefore(img, targetEl.firstChild);
+      targetEl.dataset.frameKind = kind;
     } else {
-      delete userboxEl.dataset.frameKind;
+      delete targetEl.dataset.frameKind;
     }
   }
   window.__zkApplyFrame = applyFrame;
@@ -4911,27 +4943,36 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     } catch (e) {}
   }
 
-  // 6.7) 全 userbox にサイズから推測した frameKind を一括適用
+  // 6.7) 全 framable 要素にサイズから推測した frameKind を一括適用
   function autoAssignAllFrames() {
-    const boxes = [...document.querySelectorAll('.userbox')];
+    // FRAMABLE_SELECTOR で .userbox / .slot / [data-zk-framable] を一括取得
+    const boxes = [...document.querySelectorAll(FRAMABLE_SELECTOR)];
+    try { console.log('[zk] auto click, boxes=', boxes.length, 'selector=', FRAMABLE_SELECTOR, boxes); } catch (e) {}
     if (!boxes.length) {
-      alert('userbox がありません。 先に矩形を追加してください。');
+      const msg = `対象矩形が見つかりません: セレクタ '${FRAMABLE_SELECTOR}' で検索しました。 実際の要素クラスを ブラウザ devtools で確認してください。`;
+      try { console.warn('[zk] auto click: no boxes', FRAMABLE_SELECTOR); } catch (e) {}
+      try { alert(msg); } catch (e) {}
+      showToast(msg);
       return;
     }
     let count = 0;
+    let skipped = 0;
     boxes.forEach(el => {
       const rect = el.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
-      if (w < 2 || h < 2) return; // 非表示や極小はスキップ
+      if (w < 2 || h < 2) { skipped++; return; } // 非表示や極小はスキップ
       const kind = guessFrameKind(w, h);
+      try { console.log('[zk] applying', kind, 'to', el, 'w=', w, 'h=', h); } catch (e) {}
       applyFrame(el, kind);  // 既存 applyFrame を呼ぶ (dataset.frameKind も更新)
       count++;
     });
     if (typeof window.saveResizeState === 'function') window.saveResizeState();
-    try { console.log('[zk-frame-auto] applied', count, 'frames'); } catch (e) {}
+    try { console.log('[zk] auto done, applied=', count, 'skipped=', skipped, 'total=', boxes.length); } catch (e) {}
     if (count > 0) {
-      showToast(`${count} 個の userbox にフレームを自動割当しました`);
+      showToast(`${count} 個の矩形にフレームを自動割当しました (skip=${skipped})`);
+    } else {
+      showToast(`0 個に適用 (全 ${boxes.length} 個が非表示/極小): ${FRAMABLE_SELECTOR}`);
     }
   }
 
@@ -4941,34 +4982,54 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
   //    押し出されていたため)。 options は HTML 側で定義済み。
   function attachFrameUI() {
     const sel = document.getElementById('zk-frame-kind');
+    const autoBtn = document.getElementById('zk-frame-auto-btn');
+    try { console.log('[zk] attachFrameUI: sel=', sel, 'autoBtn=', autoBtn); } catch (e) {}
     if (sel && sel.dataset.zkBound !== '1') {
       sel.dataset.zkBound = '1';
       sel.addEventListener('change', () => {
         const kind = sel.value;
-        // selectedElements は外側スコープ。 window.selectedElements で参照
+        // selectedElements は外側スコープ。 window.selectedElements で参照。
+        // fallback の document.querySelector も .slot.selected / [data-zk-framable].selected
+        // まで広げる (現状 zukan モードでは .slot は無いが、 将来の page でも動くように)。
         const sels = (window.selectedElements && window.selectedElements.size)
           ? [...window.selectedElements]
           : (function () {
-              const a = document.querySelector('.userbox.selected, .resizable.selected');
+              const a = document.querySelector(
+                '.userbox.selected, .slot.selected, [data-zk-framable].selected, .resizable.selected'
+              );
               return a ? [a] : [];
             })();
+        try { console.log('[zk] dropdown change kind=', kind, 'selected=', sels.length, sels); } catch (e) {}
         if (!sels.length) {
           alert('先に枠を選択してください (resize-mode で枠をクリック)');
           sel.value = '';
           return;
         }
+        let appliedCount = 0;
         sels.forEach(el => {
-          if (el && el.classList.contains('userbox')) applyFrame(el, kind);
+          // .userbox / .slot / [data-zk-framable] のいずれかなら適用 (= FRAMABLE_SELECTOR)
+          if (el && el.matches && el.matches(FRAMABLE_SELECTOR)) {
+            applyFrame(el, kind);
+            appliedCount++;
+          } else {
+            try { console.log('[zk] skip (not framable):', el); } catch (e) {}
+          }
         });
+        try { console.log('[zk] dropdown applied=', appliedCount, '/', sels.length); } catch (e) {}
+        if (appliedCount === 0) {
+          showToast(`選択中の要素は装飾フレーム対象外です (対象: ${FRAMABLE_SELECTOR})`);
+        }
         if (typeof window.saveResizeState === 'function') window.saveResizeState();
       });
     }
 
     // 🎯 自動割当ボタンの bind (重複 bind 防止)
-    const autoBtn = document.getElementById('zk-frame-auto-btn');
     if (autoBtn && autoBtn.dataset.zkBound !== '1') {
       autoBtn.dataset.zkBound = '1';
       autoBtn.addEventListener('click', autoAssignAllFrames);
+      try { console.log('[zk] auto-btn bound'); } catch (e) {}
+    } else if (!autoBtn) {
+      try { console.warn('[zk] #zk-frame-auto-btn not found in DOM'); } catch (e) {}
     }
   }
   if (document.readyState === 'loading') {
