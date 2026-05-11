@@ -2394,8 +2394,11 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 }
 /* くるみちゃん (2026-05-11): pono/hakase 2 サイド分割を壊さないよう
    absolute オーバーレイで右側に重ねる。 既定で .hidden、JS が is-visible で表示。
-   slot 中央基点 (top:50%/left:50%) は per-VC @media で個別調整。 */
-.op-side-overlay {
+   slot 中央基点 (top:50%/left:50%) は per-VC @media で個別調整。
+   2026-05-11 (Reviewer A MEDIUM-1): `.op-sides > .op-side { flex: 1 }` (specificity 0,2,0)
+   に確実に勝つよう、 `.op-sides > .op-side.op-side-overlay` セレクタで宣言する
+   (specificity 0,3,0)。 */
+.op-sides > .op-side.op-side-overlay {
   position: absolute;
   inset: 0;
   flex: none;
@@ -4869,7 +4872,7 @@ const OP_PANELS = [
     dialogues: [
       { speaker: "hakase", text: "ほっほっほ…ポノか。よくきたのう", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
       { speaker: "kurumi", text: "こんにちは、ポノさん！", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp", kurumiImg: "../assets/images/characters/kurumi/dance/kurumi_001.webp" },
-      { speaker: "pono", text: "博士、くるみちゃん、あそびに きたよ！", ponoImg: "../assets/images/characters/pono/dance/dance_wave.webp" }
+      { speaker: "pono", text: "はかせ、くるみちゃん、あそびに きたよ！", ponoImg: "../assets/images/characters/pono/dance/dance_wave.webp" }
     ]
   },
   // Panel 3 — dialogue
@@ -4894,7 +4897,7 @@ const OP_PANELS = [
     dialogues: [
       { speaker: "hakase", text: "ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
       { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp" },
-      { speaker: "hakase", text: "くるみよ、いつもどおり クイズを おねがいするぞ", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
+      { speaker: "hakase", text: "くるみよ、いつもどおり なぞなぞを おねがいするぞ", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
       { speaker: "kurumi", text: "はーい、まかせて！", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp", kurumiImg: "../assets/images/characters/kurumi/dance/kurumi_001.webp" }
     ]
   },
@@ -4902,8 +4905,8 @@ const OP_PANELS = [
   { kind: "dialogue", bg: "../assets/images/quizland/OP/OP_BG02.webp",
     ponoImg: "../assets/images/characters/pono/dance/think_chin_clasp.webp",
     dialogues: [
-      { speaker: "hakase", text: "では、いくぞ…", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
-      { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/think_chin_clasp.webp" }
+      { speaker: "hakase", text: "では、いくぞ…", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp", kurumiImg: "../assets/images/characters/kurumi/dance/kurumi_001.webp" },
+      { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/think_chin_clasp.webp", kurumiImg: "../assets/images/characters/kurumi/dance/kurumi_001.webp" }
     ]
   }
 ];
@@ -6101,7 +6104,11 @@ async function playOpeningCinematic() {
             }
           }
           if (kurumiSide) {
-            if (isKurumi) {
+            // 2026-05-11 (Reviewer B HIGH-1): speaker=kurumi 以外でも、 line.kurumiImg が
+            // 明示指定されていれば立ち絵を visible 維持する。 例: Panel 6 の博士/ポノ発話中も
+            // くるみが画面内に立ち続けて、 クイズ本編へ自然に繋ぐ用途。
+            const keepKurumiVisible = isKurumi || !!(d && d.kurumiImg);
+            if (keepKurumiVisible) {
               kurumiSide.classList.remove('hidden');
               kurumiSide.classList.add('is-visible');
             } else {

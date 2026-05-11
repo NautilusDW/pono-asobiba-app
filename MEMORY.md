@@ -108,6 +108,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T02:54:18Z - quizland OP クロスレビュー指摘 4件修正 (Panel6 kurumi visible維持 + ポノ漢字→ひらがな + クイズ→なぞなぞ + .op-side-overlay specificity強化 + sw v922)
+- **タスク**: quizland OP クロスレビュー指摘 4件修正 (Panel6 kurumi visible維持 + ポノ漢字→ひらがな + クイズ→なぞなぞ + .op-side-overlay specificity強化 + sw v922)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 32
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 2, "Agent": 25, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T02:46:45Z - quizland OP シネマティックにくるみちゃん組み込み (Panel 2/5 セリフ追加+修正、HTML/CSS/JS/babble preset/saved-layout/memory/sw.js v921 一括対応)
 - **タスク**: quizland OP シネマティックにくるみちゃん組み込み (Panel 2/5 セリフ追加+修正、HTML/CSS/JS/babble preset/saved-layout/memory/sw.js v921 一括対応)
 - **結果**: 成功
@@ -209,19 +222,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 4, "Bash": 2, "Grep": 1, "Agent": 4, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T00:22:06Z - AGENTS.md / HANDOFF.md / CODEX-ORDER*.md に PowerShell素のGet-Content文字化けはfalse positiveとする2段階判定ルールを追加 (§0.1新設・§4ルール7改訂・検知ヘッダ2行化)
-- **タスク**: AGENTS.md / HANDOFF.md / CODEX-ORDER*.md に PowerShell素のGet-Content文字化けはfalse positiveとする2段階判定ルールを追加 (§0.1新設・§4ルール7改訂・検知ヘッダ2行化)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 20
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 6, "Read": 3, "Grep": 6, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
