@@ -1,6 +1,6 @@
 ---
 name: Quizland リスのくるみちゃん（アシスタントキャラ）
-description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張)
+description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化)
 type: feature
 ---
 
@@ -149,11 +149,11 @@ if (keepKurumiVisible) {
 - Panel 6 のように speaker は hakase/pono だが立ち絵は維持したい line は `kurumiImg: 'kurumi_clasp.webp'` のように **明示注入**
 - `playOpeningCinematic` の `finally` で `is-visible` / `hidden` を全部クリア (replay 時の前回状態を持ち越さない)
 
-## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker)
+## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正)
 
-`tools/op-layout-editor.html` を拡張し、 ポノ / 博士に並ぶ **「くるみ側」タブ** を追加。 13 variants × 3 VC (B / C / D) で slot 位置・サイズ・透過オフセット等を個別編集して saved-layout.json に publish できる。 v925 で **左ペインに Kurumi バリエーションサムネ一覧** + **シナリオ行 speaker に「くるみ」を追加** し、 ポノとほぼ同等の編集 UI を提供。
+`tools/op-layout-editor.html` を拡張し、 ポノ / 博士に並ぶ **「くるみ側」タブ** を追加。 13 variants × 3 VC (B / C / D) で slot 位置・サイズ・透過オフセット等を個別編集して saved-layout.json に publish できる。 v925 で **左ペインに Kurumi バリエーションサムネ一覧** + **シナリオ行 speaker に「くるみ」を追加** し、 ポノとほぼ同等の編集 UI を提供。 v926 で **scenario モードのデフォルトデータ (`defaultScenario()`) を本番 quizland/index.html の OP_PANELS (Panel 2/5 で kurumi line 追加 + Panel 6 で kurumiImg 注入) と完全一致**させた。 v927 で **migrateScenario / buildScenarioPanelsLiteral の kurumi 周り 3 件のバグ** (speaker='kurumi' を hakase に強制変換 / export 時に kurumiImg をシリアライズしない / kurumi line を 2-way 判定で hakase に化けさせる) を一括修正。
 
-### 追加要素 (v923 → v925 累積)
+### 追加要素 (v923 → v927 累積)
 
 | 要素 | 内容 |
 |---|---|
