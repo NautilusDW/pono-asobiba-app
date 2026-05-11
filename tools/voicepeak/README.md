@@ -176,7 +176,7 @@ Get-ChildItem *.wav | ForEach-Object {
 
 ## ユーザー確認が必要なポイント (まとめ)
 
-1. **辞書 CSV フォーマット**: VOICEPEAK の正しいフォーマットを、GUI で 1 語登録 → エクスポートで確認してほしい。違ったら教えてもらえれば再変換する
+1. **辞書フォーマット**: ~~VOICEPEAK の正しいフォーマットを GUI で 1 語登録 → エクスポートで確認~~ → **2026-05-12 解明済**: `.vdc2` は UTF-8 JSON 配列 (`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の 6 フィールド)。`Convert-VoicepeakUserDictCsvToVdc2.ps1` で CSV → VDC2 変換可能、VOICEPEAK で VDC2 インポートして登録
 2. **ナレーター名**: `Japanese Female Child` は仮置き。所有しているナレーターから女声を選んで CSV を一括置換してほしい
 3. **SSML サポート**: VOICEPEAK のバージョンで SSML インポートメニューが存在するか確認 (なければ SSML 案は破棄)
 4. **試聴判断**: テスト 27 ファイル生成後、VOICEVOX 雨晴はう版と聴き比べてどちらをメインにするか決定してほしい
@@ -185,7 +185,7 @@ Get-ChildItem *.wav | ForEach-Object {
 
 ## 気になった点
 
-- **辞書フォーマット未確定**: 公式マニュアルが手元になかったので推測形式。もし完全に違う場合は、ユーザーが GUI でエクスポートしたサンプルを 1 つ送ってもらえれば、本ファイルを正しい形に再変換する
-- **アクセント核位置の表記**: 本ファイルは「核位置の数字 (0 = 平板, 1 = 頭高, 2/3 = 中高)」で書いているが、VOICEPEAK によっては「H/L パターン文字列」(例: `LHHHL`) を要求するケースもある。要確認
+- ~~**辞書フォーマット未確定**~~ → **解明済 (2026-05-12 by Codex)**: `.vdc2` は UTF-8 JSON 配列、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の 6 フィールド。`Convert-VoicepeakUserDictCsvToVdc2.ps1` で CSV から自動生成可能。詳細は [memory/reference_voicepeak_vdc2_format.md](../../memory/reference_voicepeak_vdc2_format.md)
+- **アクセント核位置の表記**: 本ファイルは「核位置の数字 (0 = 平板, 1 = 頭高, 2/3 = 中高)」で書いている。VDC2 の `accentType` も同じ整数値方式 (0=平板)。CSV と VDC2 で互換
 - **SSML の `<voice name="...">` の name 引数**: VOICEPEAK が認識する name はナレーター名そのものなのか、別 ID なのかが未確認。動かない場合は `<voice>` を外して `<speak>` 直下にテキストを置くだけの形を試すと良い
 - **フルセット 907 ファイルの speech 列**: 現時点では `docs/quizland-voicevox-order/COWORK-TEST-ORDER.md` 内のテスト 27 ファイル分しか speech が定義されていない。フル発注版の発注書を作成する際、本ディレクトリにも `voicepeak_lines_full907.csv` を追加する想定
