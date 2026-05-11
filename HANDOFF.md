@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-05-11 - [batch:16-zukan-frames] Codex: `tmp/zukan-frames-codex-order/CODEX-ORDER.md` を受領。HANDOFF / git log / `tmp/zukan-frames-codex-order/` / `tmp/alpha_pending/` を確認し、zukan frame 4種の既存納品は無しと確認済。reference は `tmp/zukan-frames-codex-order/reference/referenceImage.png`。納品先は `tmp/alpha_pending/16/` として着手。 (by Codex)
+- 2026-05-11 - [batch:16-zukan-frames] Codex: zukan 装飾フレーム 4 種 RGBA PNG を `tmp/alpha_pending/16/` に納品完了 (`animal-banner.png` 4096x1024 / `card-square.png` 1024x1024 / `rabbit-portrait.png` 1024x1344 / `text-underline.png` 3000x400)。全ファイル中央 alpha=0 確認済。review sheet は `tmp/zukan-frames-codex-order/review/zukan-frames-contact.png`。本番配置・最適化・`FRAME_SRC` 差し替え・sw.js bump は Claude 側。 (by Codex)
 
 - 2026-05-11 - [batch:kurumi-pose-redo-v2] Codex: `tmp/quizland-kurumi-pose-redo/KURUMI-POSE-REGEN-ORDER.md` と添付3面図 + `assets/images/characters/kurumi/dance/kurumi_001.webp` を参照して、くるみポーズ raw 10 枚を `tmp/quizland-kurumi-pose-redo/raw-white-v2/` に生成。検収用 contact sheet は `tmp/quizland-kurumi-pose-redo/raw-white-v2-contact.png`。AGENTS 現行方針により alpha 抜き・切り抜き・webp 変換・assets 反映・sw.js bump は未実施。 (by Codex)
 

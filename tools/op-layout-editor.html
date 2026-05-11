@@ -1070,6 +1070,12 @@
       <div class="info">画像をここにドロップで追加（ストレージに保存・合計 ~4MB まで推奨）</div>
     </div>
 
+    <div class="section" id="kurumi-section" data-drop="kurumi">
+      <h3>Kurumi バリエーション</h3>
+      <div id="kurumi-grid" class="preset-grid"></div>
+      <div class="info">サムネクリックで現在 VC のくるみ立ち絵を切替（slot 値は variant ごとに保存）</div>
+    </div>
+
     <div class="section" id="frame-section" data-drop="frame">
       <h3>フレーム</h3>
       <div id="frame-grid" class="preset-grid"></div>
@@ -2688,6 +2694,39 @@ function makePonoThumb(v) {
   return div;
 }
 
+// 2026-05-11: Kurumi バリエーションサムネ。makePonoThumb と同一構造で、
+// クリックすると state[currentVC].kurumi.variant を切替 + perVariant slot を flat に
+// 同期 + buildRightPane + render する。highlight は render() 側で
+// '#kurumi-grid .preset-thumb' に対し 'selected' クラスを付与する。
+// 現状 KURUMI_VARIANTS は固定 13 ポーズのみで userAdded ドロップは非対応
+// (将来必要になれば pono と同じパターンで追加可)。
+function makeKurumiThumb(v) {
+  const div = document.createElement('div');
+  div.className = 'preset-thumb';
+  div.dataset.variant = v.name;
+  const img = document.createElement('img');
+  img.src = v.path;
+  img.alt = v.name;
+  const lbl = document.createElement('div');
+  lbl.className = 'pname';
+  lbl.textContent = v.name;
+  div.appendChild(img);
+  div.appendChild(lbl);
+  div.addEventListener('click', () => {
+    pushUndoSnapshot('くるみ画像選択');
+    const kurumiState = state[currentVC].kurumi;
+    if (!kurumiState) return;
+    kurumiState.variant = v.name;
+    // 新しい variant の perVariant 値を flat フィールドにキャッシュ
+    // (entry が無ければ現 flat 値で lazy 作成)。
+    syncFlatFromVariant(kurumiState);
+    save(currentVC);
+    render();
+    buildRightPane();
+  });
+  return div;
+}
+
 function makeFrameThumb(f) {
   const div = document.createElement('div');
   div.className = 'preset-thumb';
@@ -2727,6 +2766,10 @@ function makeFrameThumb(f) {
 function buildPresetGrid() {
   const ponoGrid = document.getElementById('pono-grid');
   PONO_VARIANTS.forEach(v => ponoGrid.appendChild(makePonoThumb(v)));
+  const kurumiGrid = document.getElementById('kurumi-grid');
+  if (kurumiGrid) {
+    KURUMI_VARIANTS.forEach(v => kurumiGrid.appendChild(makeKurumiThumb(v)));
+  }
   const frameGrid = document.getElementById('frame-grid');
   FRAME_IMAGES.forEach(f => frameGrid.appendChild(makeFrameThumb(f)));
 }
@@ -3526,6 +3569,10 @@ function render() {
 
   document.querySelectorAll('#pono-grid .preset-thumb').forEach(el => {
     el.classList.toggle('selected', el.dataset.variant === state[currentVC].pono.variant);
+  });
+  document.querySelectorAll('#kurumi-grid .preset-thumb').forEach(el => {
+    const kurumiVar = state[currentVC].kurumi && state[currentVC].kurumi.variant;
+    el.classList.toggle('selected', el.dataset.variant === kurumiVar);
   });
   document.querySelectorAll('#frame-grid .preset-thumb').forEach(el => {
     const sideFrame = state[currentVC][currentTab].boxImage;
@@ -5101,7 +5148,7 @@ function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
 
   // Speaker radio.
   const spkGroupName = 'scn-spk-' + pIdx + '-' + lIdx + '-' + (++_radioUid);
-  ['hakase', 'pono'].forEach(sp => {
+  ['hakase', 'pono', 'kurumi'].forEach(sp => {
     const lbl = document.createElement('label');
     lbl.style.cssText = 'background:#20242e;border:1px solid #2a2e3a;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:11px;color:#cbd5e1;';
     if (line.speaker === sp) {
@@ -5129,7 +5176,9 @@ function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
       render();
     });
     lbl.appendChild(inp);
-    lbl.appendChild(document.createTextNode(sp === 'pono' ? 'ポノ' : 'はかせ'));
+    lbl.appendChild(document.createTextNode(
+      sp === 'pono' ? 'ポノ' : (sp === 'kurumi' ? 'くるみ' : 'はかせ')
+    ));
     lbl.addEventListener('click', (e) => e.stopPropagation());
     meta.appendChild(lbl);
   });
