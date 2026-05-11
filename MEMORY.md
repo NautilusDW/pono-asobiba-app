@@ -108,6 +108,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T02:32:56Z - quizland 新キャラ「リスのくるみちゃん」の正面立ち絵を assets/images/characters/kurumi/dance/kurumi_001.webp に追加 (3枚から visual 確認で正面=002 を選定、ffmpeg で webp 変換、透過維持、47KB)
+- **タスク**: quizland 新キャラ「リスのくるみちゃん」の正面立ち絵を assets/images/characters/kurumi/dance/kurumi_001.webp に追加 (3枚から visual 確認で正面=002 を選定、ffmpeg で webp 変換、透過維持、47KB)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 27
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 2, "Agent": 20, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T01:49:12Z - quizland 新キャラ「リスのくるみちゃん」追加 + VOICEVOX 発注書話者方針を博士→くるみちゃん（女声）に変更 (新memory file + COWORK-TEST/ORDER-FULL/voicevox_order memo/MEMORY index 全更新)
 - **タスク**: quizland 新キャラ「リスのくるみちゃん」追加 + VOICEVOX 発注書話者方針を博士→くるみちゃん（女声）に変更 (新memory file + COWORK-TEST/ORDER-FULL/voicevox_order memo/MEMORY index 全更新)
 - **結果**: 成功
@@ -209,19 +222,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 15, "Agent": 67, "Bash": 52, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T23:41:51Z - quizland OP Panel 2 開始時のラベル「ポノ」チラつき修正 (HTML初期textContentを空に, sw v917→918)
-- **タスク**: quizland OP Panel 2 開始時のラベル「ポノ」チラつき修正 (HTML初期textContentを空に, sw v917→918)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 152
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 15, "Agent": 67, "Bash": 51, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
