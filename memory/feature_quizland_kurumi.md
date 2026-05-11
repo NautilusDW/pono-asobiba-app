@@ -43,3 +43,20 @@ type: feature
 - 発注書: `tmp/quizland-voicevox-order/COWORK-TEST-ORDER.md`, `tmp/quizland-voicevox-order/ORDER-FULL.md`
 - 既存博士 voice: `js/quizland-babble.js` (owl preset、shift キャラ別)
 - キャラ画像: 別途配置予定（`assets/quizland/characters/kurumi/` あたりが候補）
+
+## 役割設定 (2026-05-11 確定)
+- **博士の謎々を毎回出すアシスタント役**（毎回のルーチンとして定着している、初対面ではない）
+- ポノとは元から知り合い → 「初めまして」系のセリフは入れない
+- ポノの呼び方: **「ポノさん」**
+- 博士の呼び方: 「博士」
+- セリフトーン: 元気で優しい、お姉さん感
+
+## OP シネマティック組み込み (Panel 2 / Panel 5)
+- Panel 2 で初挨拶: 「こんにちは、ポノさん！」
+- Panel 5 で博士から依頼受ける + 「はーい、まかせて！」
+- ポノのセリフも修正: 「あそびに きたよ！」→ 「博士、くるみちゃん、あそびに きたよ！」
+- babble preset: `kurumi` (baseFreq 450、ポノと博士の中間)
+- 立ち絵 slot: `__op_layout[B/C/D].kurumi` (saved-layout.json)
+- 立ち絵画像: `assets/images/characters/kurumi/dance/kurumi_001.webp` (439×602, 47KB, 透過)
+- HTML 構造: `.op-side-kurumi.op-side-overlay` (absolute オーバーレイ、 pono/hakase の flex 1:1 を壊さない)
+- speaker 切替: `is-pono` / `is-hakase` / `is-kurumi` の 3 way、 ラベル色は茶色寄りオレンジ #c46a4a

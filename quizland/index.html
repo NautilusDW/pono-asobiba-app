@@ -2392,6 +2392,21 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 .op-side-hakase .op-char-slot img.op-char {
   filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
 }
+/* くるみちゃん (2026-05-11): pono/hakase 2 サイド分割を壊さないよう
+   absolute オーバーレイで右側に重ねる。 既定で .hidden、JS が is-visible で表示。
+   slot 中央基点 (top:50%/left:50%) は per-VC @media で個別調整。 */
+.op-side-overlay {
+  position: absolute;
+  inset: 0;
+  flex: none;
+  pointer-events: none;
+}
+.op-side-kurumi.hidden { display: none; }
+.op-side-kurumi { opacity: 0; transition: opacity 0.25s ease-out; }
+.op-side-kurumi.is-visible { opacity: 1; }
+.op-side-kurumi .op-char-slot img.op-char {
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.40));
+}
 /* Single Box モード時は per-side Box は DOM 上削除済みだが、念のため非表示。 */
 .op-side > .op-dialogue.op-dialogue-pono,
 .op-side > .op-dialogue.op-dialogue-hakase {
@@ -2444,6 +2459,7 @@ body.debug-mode #qz-debug-nav { bottom: 8px; }
 }
 .op-dialogue-single.is-hakase .op-dialogue-label { background: #e08a3c; }
 .op-dialogue-single.is-pono   .op-dialogue-label { background: #5fa05a; }
+.op-dialogue-single.is-kurumi .op-dialogue-label { background: #c46a4a; } /* リスのくるみ: 茶色寄りオレンジ */
 .op-dialogue-single .op-dialogue-text {
   font-size: 22px;
   line-height: 1.5;
@@ -2620,6 +2636,19 @@ body.layout-editor-on .op-skip {
   .op-side-hakase .op-char-slot img {
     object-position: bottom center;
   }
+  /* kurumi デフォルト (B 1024×768): 右寄せ。saved-layout.json の __op_layout で上書き可能。 */
+  .op-side-kurumi .op-char-slot {
+    width: 280px;
+    height: 380px;
+    aspect-ratio: 0.73;
+    top: 50%;
+    left: auto;
+    right: 0;
+    transform: translate(calc(0% + -40px), calc(-50% + -40px));
+  }
+  .op-side-kurumi .op-char-slot img {
+    object-position: bottom center;
+  }
   .op-dialogue-single {
     width: 984px;
     height: 316px;
@@ -2687,6 +2716,19 @@ body.layout-editor-on .op-skip {
     transform: translate(calc(-50% + 0px), calc(-50% + -99px));
   }
   .op-side-hakase .op-char-slot img {
+    object-position: bottom center;
+  }
+  /* kurumi デフォルト (C 1920×1080): 右寄せ。saved-layout.json の __op_layout で上書き可能。 */
+  .op-side-kurumi .op-char-slot {
+    width: 380px;
+    height: 520px;
+    aspect-ratio: 0.73;
+    top: 50%;
+    left: auto;
+    right: 0;
+    transform: translate(calc(0% + -60px), calc(-50% + -60px));
+  }
+  .op-side-kurumi .op-char-slot img {
     object-position: bottom center;
   }
   .op-dialogue-single {
@@ -2757,6 +2799,19 @@ body.layout-editor-on .op-skip {
     transform: translate(calc(-50% + -203px), calc(-50% + -134px));
   }
   .op-side-hakase .op-char-slot img {
+    object-position: bottom center;
+  }
+  /* kurumi デフォルト (D 2560×1080): 右寄せ。saved-layout.json の __op_layout で上書き可能。 */
+  .op-side-kurumi .op-char-slot {
+    width: 460px;
+    height: 630px;
+    aspect-ratio: 0.73;
+    top: 50%;
+    left: auto;
+    right: 0;
+    transform: translate(calc(0% + -120px), calc(-50% + -60px));
+  }
+  .op-side-kurumi .op-char-slot img {
     object-position: bottom center;
   }
   .op-dialogue-single {
@@ -3051,6 +3106,14 @@ body.layout-editor-on .op-skip {
         <div class="op-char-slot">
           <img class="op-char op-char-hakase" id="op-char-hakase"
                src="../assets/images/quizland/owl_professor_guide.webp" alt="">
+        </div>
+      </div>
+      <!-- くるみちゃん (2026-05-11): pono/hakase の 2 サイド分割を壊さないよう
+           absolute オーバーレイで右側に重ね描きする。 通常時は hidden、
+           くるみセリフ時に JS が is-visible を付与して表示。 -->
+      <div class="op-side op-side-kurumi op-side-overlay hidden">
+        <div class="op-char-slot">
+          <img class="op-char op-char-kurumi op-char-kurumi-img" id="op-char-kurumi" alt="">
         </div>
       </div>
       <div class="single-box-wrapper">
@@ -4805,7 +4868,8 @@ const OP_PANELS = [
     ponoImg: "../assets/images/characters/pono/dance/dance_hi.webp",
     dialogues: [
       { speaker: "hakase", text: "ほっほっほ…ポノか。よくきたのう", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
-      { speaker: "pono", text: "はかせ、あそびに きたよ！", ponoImg: "../assets/images/characters/pono/dance/dance_wave.webp" }
+      { speaker: "kurumi", text: "こんにちは、ポノさん！", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp", kurumiImg: "../assets/images/characters/kurumi/dance/kurumi_001.webp" },
+      { speaker: "pono", text: "博士、くるみちゃん、あそびに きたよ！", ponoImg: "../assets/images/characters/pono/dance/dance_wave.webp" }
     ]
   },
   // Panel 3 — dialogue
@@ -4829,7 +4893,9 @@ const OP_PANELS = [
     ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp",
     dialogues: [
       { speaker: "hakase", text: "ほっほっほ、それでよい。\nまちがえても よいのじゃ。\nかんがえることが たいせつじゃからの。", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
-      { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp" }
+      { speaker: "pono", text: "うん！", ponoImg: "../assets/images/characters/pono/dance/dance_smile.webp" },
+      { speaker: "hakase", text: "くるみよ、いつもどおり クイズを おねがいするぞ", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp" },
+      { speaker: "kurumi", text: "はーい、まかせて！", ponoImg: "../assets/images/characters/pono/dance/pono_001.webp", kurumiImg: "../assets/images/characters/kurumi/dance/kurumi_001.webp" }
     ]
   },
   // Panel 6 — dialogue
@@ -5319,6 +5385,27 @@ function _opCurrentPonoVariant(panel, line) {
   return null;
 }
 
+// くるみちゃん用 variant 名解決 (2026-05-11)。 _opCurrentPonoVariant と同じ
+// パス→basename 変換ロジック。 line.kurumiImg が無ければ panel.kurumiImg fallback、
+// どちらも無ければ null (= flat fallback で apply)。
+function _opCurrentKurumiVariant(panel, line) {
+  try {
+    let src = null;
+    if (line && typeof line.kurumiImg === 'string' && line.kurumiImg) {
+      src = line.kurumiImg;
+    } else if (panel && typeof panel.kurumiImg === 'string' && panel.kurumiImg) {
+      src = panel.kurumiImg;
+    }
+    if (!src) return null;
+    const slash = src.lastIndexOf('/');
+    const tail = (slash >= 0) ? src.slice(slash + 1) : src;
+    const dot  = tail.lastIndexOf('.');
+    const name = (dot > 0) ? tail.slice(0, dot) : tail;
+    return name || null;
+  } catch (_) {}
+  return null;
+}
+
 // 2026-05-10 (Q 案): editor の per-VC snapshot から runtime DOM に inline style を
 // 注入。 立ち絵 (.op-side-pono / .op-side-hakase の .op-char-slot) + 対話
 // (.op-dialogue-single 本体 + .op-dialogue-text + .op-dialogue-label) + ナレ
@@ -5393,6 +5480,10 @@ function _opApplyLayoutOverride(panel, line) {
   const ponoVariant = _opCurrentPonoVariant(panel, line);
   applySide('pono',   layout.pono,   ponoVariant);
   applySide('hakase', layout.hakase, null);
+  // くるみちゃん (2026-05-11): line/panel の kurumiImg から variant 名解決。
+  // layout.kurumi が saved-layout.json に無い VC では no-op (CSS @media デフォルトに任せる)。
+  const kurumiVariant = _opCurrentKurumiVariant(panel, line);
+  applySide('kurumi', layout.kurumi, kurumiVariant);
   // 対話 (singleBox) 適用。 .op-dialogue-single 本体 + 内部 .op-dialogue-text +
   // .op-dialogue-label の 3 要素に inline style を書く。
   const sb = layout.singleBox;
@@ -5646,6 +5737,8 @@ async function playOpeningCinematic() {
   const dialogueLab = document.getElementById('op-dialogue-label-single');
   const dialogueEl  = document.getElementById('op-dialogue-text-single');
   const ponoImgEl   = document.getElementById('op-char-pono');
+  const kurumiImgEl = document.getElementById('op-char-kurumi');
+  const kurumiSide  = document.querySelector('.op-side-kurumi');
 
   // Fix 1: 背景はパネル毎に切り替える (panel 1 sharp / panel 2-6 blurred)。
   // ここでは旧来のアニメ系クラスだけクリアしておく。
@@ -5669,10 +5762,14 @@ async function playOpeningCinematic() {
       var __p = OP_PANELS[__i];
       if (!__p) continue;
       __warmImg(__p.ponoImg);
+      __warmImg(__p.kurumiImg);
       if (__p.dialogues && __p.dialogues.length) {
         for (var __di = 0; __di < __p.dialogues.length; __di++) {
           var __d = __p.dialogues[__di];
-          if (__d) __warmImg(__d.ponoImg);
+          if (__d) {
+            __warmImg(__d.ponoImg);
+            __warmImg(__d.kurumiImg);
+          }
         }
       }
     }
@@ -5972,6 +6069,8 @@ async function playOpeningCinematic() {
           if (_opCancelled) break;
           const d = panel.dialogues[di];
           const isHakase = (d.speaker === 'hakase');
+          const isKurumi = (d.speaker === 'kurumi');
+          const isPono   = !isHakase && !isKurumi;
           // line 単位の ponoImg 切替。line.ponoImg があれば優先、なければ panel.ponoImg (fallback)。
           // 既存データ (line.ponoImg 無し) でも panel.ponoImg にフォールバックするので互換。
           if (ponoImgEl) {
@@ -5987,20 +6086,51 @@ async function playOpeningCinematic() {
               }
             }
           }
+          // くるみちゃん (2026-05-11): line.kurumiImg or panel.kurumiImg があれば src を反映、
+          // 当該 line で speaker=kurumi なら is-visible でフェードイン、 それ以外は無表示維持。
+          if (kurumiImgEl) {
+            const kImg = (d && d.kurumiImg) ? d.kurumiImg : (panel.kurumiImg || null);
+            if (kImg) {
+              try {
+                if (!kurumiImgEl.src || kurumiImgEl.src.indexOf(kImg) === -1) {
+                  kurumiImgEl.src = kImg;
+                }
+              } catch (e) {
+                kurumiImgEl.src = kImg;
+              }
+            }
+          }
+          if (kurumiSide) {
+            if (isKurumi) {
+              kurumiSide.classList.remove('hidden');
+              kurumiSide.classList.add('is-visible');
+            } else {
+              kurumiSide.classList.remove('is-visible');
+              // hidden は付けず opacity:0 で消す (フェード演出を活かす)。
+              // ただし kurumiImg src が無い line ばかりの panel では DOM 上 visible
+              // にするとフィルタ等が走るので、 src 未設定なら hidden に戻す。
+              if (!kurumiImgEl || !kurumiImgEl.getAttribute('src')) {
+                kurumiSide.classList.add('hidden');
+              }
+            }
+          }
           // 2026-05-10 (perVariant 修正): line ごとに variant が変わるので、 ポノの
           // slot サイズ/オフセット/aspect/object-position を再適用。 d.ponoImg が
           // 無くても panel.ponoImg fallback は _opCurrentPonoVariant 側で吸収。
           // perVariant 値が無い variant 名のときは flat にフォールバックされる。
+          // 2026-05-11: kurumi も同経路で再適用 (_opApplyLayoutOverride 内で applySide('kurumi'))。
           try { _opApplyLayoutOverride(panel, d); } catch (_) {}
           if (dialogueBox) {
             dialogueBox.classList.toggle('is-hakase', isHakase);
-            dialogueBox.classList.toggle('is-pono', !isHakase);
+            dialogueBox.classList.toggle('is-kurumi', isKurumi);
+            dialogueBox.classList.toggle('is-pono',   isPono);
           }
           if (dialogueLab) {
-            dialogueLab.textContent = isHakase ? 'はかせ' : 'ポノ';
+            dialogueLab.textContent = isHakase ? 'はかせ' : (isKurumi ? 'くるみ' : 'ポノ');
           }
           if (dialogueEl) dialogueEl.textContent = '';
-          await _opTypeInto('op-dialogue-text-single', d.text, isHakase ? 'owl' : 'pono');
+          const presetForLine = isHakase ? 'owl' : (isKurumi ? 'kurumi' : 'pono');
+          await _opTypeInto('op-dialogue-text-single', d.text, presetForLine);
           if (_opCancelled) break;
           // Tap-to-advance only (2026-05-07 仕様変更: auto-advance 廃止):
           // typing 完了直後に minHold 800ms (誤タップ抑止) → hint をフェードイン →
@@ -6071,7 +6201,7 @@ async function playOpeningCinematic() {
     // 対話 (.op-dialogue-single 本体 + 内部 .op-dialogue-text + .op-dialogue-label)
     // の inline style を replay 時のリーク防止のため全クリア。
     try {
-      ['pono', 'hakase'].forEach(sideKey => {
+      ['pono', 'hakase', 'kurumi'].forEach(sideKey => {
         const slot = document.querySelector('.op-side-' + sideKey + ' .op-char-slot');
         if (slot) {
           ['width','height','aspectRatio','transform']
@@ -6080,6 +6210,14 @@ async function playOpeningCinematic() {
           if (img) { try { img.style.objectPosition = ''; } catch(_e){} }
         }
       });
+      // くるみ side 自体の表示状態を初期化 (replay/skip 時)
+      try {
+        const __kside = document.querySelector('.op-side-kurumi');
+        if (__kside) {
+          __kside.classList.remove('is-visible');
+          __kside.classList.add('hidden');
+        }
+      } catch (_) {}
       const __dlg = document.getElementById('op-dialogue-single');
       if (__dlg) {
         ['width','height','top','padding','backgroundImage','backgroundSize',

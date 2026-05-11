@@ -68,6 +68,19 @@
       peakGain: 0.11,
       pitchSpread: 22
     },
+    // Kurumi (リスのくるみちゃん): お姉さん感のある明るめ女声。
+    // baseFreq 450 = ポノ(520)より低くオウル(160)より高い、優しいお姉さん帯域。
+    // glide 上向き (元気)、 triangle で柔らかいトーン。
+    kurumi: {
+      wave: 'triangle',
+      baseFreq: 450,
+      glide: 35,
+      duration: 0.08,
+      attack: 0.006,
+      release: 0.048,
+      peakGain: 0.13,
+      pitchSpread: 30
+    },
     // Default: between pono and hedgehog.
     default: {
       wave: 'triangle',
