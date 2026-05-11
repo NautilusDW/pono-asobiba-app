@@ -73,3 +73,4 @@ type: reference
 - [feature_quizland_kurumi.md](feature_quizland_kurumi.md) — kurumi 13 variants の slot 配信状態
 - [feature_quizland_opening.md](feature_quizland_opening.md) — OP cinematic 全体と saved-layout.json 連携
 - [feedback_auto_push.md](feedback_auto_push.md) — develop 自動 push + Cloudflare Workers staging 自動反映
+- [feature_quizland_voicevox_order.md](feature_quizland_voicevox_order.md) — **VOICEVOX 関連も含めた発注書ワークフロー**: 同じ「発注書 = git 管理 (Claude エージェント整備) / 実行物 = ローカルツール」の役割分担パターン (発注書 `docs/quizland-voicevox-order/` ↔ 生成ツール `tools/voicevox-generator/voicevox-generator.html`) を OP layout (saved-layout.json ↔ tools/op-layout-editor.html) と並列に運用

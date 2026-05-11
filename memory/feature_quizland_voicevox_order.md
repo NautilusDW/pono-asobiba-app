@@ -67,3 +67,82 @@ type: feature
 - order_color の Q181 は当初の発注書から漏れていたが追加済 (末尾に「補足」セクション)
 - 既存バグ (window.QUIZLAND_COLORS undefined) は同日に修正、order_color の画面表示も日本語に戻った
 - **話者はアシスタントキャラ「リスのくるみちゃん」（女声）で統一、第一候補「雨晴はう」 (2026-05-11 更新)**: 元々は博士キャラ (owl preset = 年配おじいさん風) で発注予定だったが、VOICEVOX におじいさん風候補が乏しく断念。代わりに新アシスタント「くるみちゃん」（リスの女の子、元気で優しいお姉さん感）を追加し、VOICEVOX 読み上げを担当させる。**ユーザーが VOICEVOX 公式話者を一通り試聴して「雨晴はう」（あめはれ はう、看護師さん風、温かい優しさ）を第一候補として確定**。比較用候補は「春日部つむぎ」「冥鳴ひまり」「九州そら あまあま」「WhiteCUL ふつう」「もち子さん」。全 907 ファイル同一話者で生成、選択肢ごとの話者切り替え禁止。テスト発注 (`COWORK-TEST-ORDER.md`) で「雨晴はう」で `q001_q.wav` のみ生成 → ユーザー＋Cowork 試聴で OK ならそのまま 27 ファイル → フル発注 (`ORDER-FULL.md`) も同話者で全 907 ファイル。「合わない」と判断された場合のみ比較用候補から再選定。フクロウ博士キャラは babble voice (owl preset) として OPシネマティック・ヒント等で温存。詳細は [memory/feature_quizland_kurumi.md](feature_quizland_kurumi.md)
+
+---
+
+## (B) VOICEVOX 生成ツール
+
+### 場所
+- 本体: `tools/voicevox-generator/voicevox-generator.html` (1166 行、Cowork ベースから派生)
+- 辞書: `tools/voicevox-generator/voicevox_user_dict.csv` (52 語、子供向けクイズ頻出語アクセント、NHK ベース)
+- ガイド: `tools/voicevox-generator/README.md` (189 行)
+
+### 由来
+Cowork オリジナル (484 行) をベースに、子供向けクイズ用途に **4 機能を追加** + **クロスレビュー指摘 (X 技術 / Y UX) 13 件 (HIGH 6 + MED 7)** を反映した派生版。
+
+### 4 機能拡張
+
+#### A. ユーザー辞書管理セクション
+- `voicevox_user_dict.csv` を fetch して **VOICEVOX エンジンに一括登録**
+- 重複語ガード (既登録ならスキップ)
+- 「辞書クリア」ボタンで全削除
+- 52 語: クイズ頻出固有名詞・動植物・体パーツ・色・数詞などのアクセント核を NHK 辞典準拠で固定
+
+#### B. AccentPhrase 詳細編集
+- 生成前のテキストを VOICEVOX `audio_query` で AccentPhrase 配列化
+- mora セルを **クリック** で核位置 ± 操作
+- 編集結果を **即試聴**
+- 編集後の読み・アクセントを **CSV 1 行 DL** (そのまま `voicevox_user_dict.csv` に追記できる形式)
+
+#### C. 発注書動的読み込み
+- 3 ラジオで切り替え:
+  - `hardcoded` — ツール内蔵のデフォルト
+  - `file` — ローカル MD を選択
+  - `url` — URL 指定 (例: GitHub raw)
+- MD パーサで `## Q### / Speech: ...` ブロックを抽出
+- ツールを git にコミットしないで発注書だけ更新するワークフローに対応
+
+#### D. LLM アクセント補正 (オプション)
+- Anthropic API キーを入力欄に貼り付け、各 speech の AccentPhrase を Claude に投げて校正
+- モデル ID 選択肢: **Opus 4.7 / Sonnet 4.6 / Haiku 4.5 / Custom** (HIGH-1 で最新世代に修正済)
+- フォールバック: LLM 失敗時のみ生 audio_query を使用 / HTTP エラーは throw (HIGH-2)
+- **推奨は Sonnet 4.6** (コスト・速度バランス、HIGH-5 で明記)
+
+### クロスレビュー反映 (HIGH 6 件)
+- HIGH-1: LLM モデル ID を Opus 4.7 / Sonnet 4.6 / Haiku 4.5 / Custom に修正 (旧モデル名は撤去)
+- HIGH-2: フォールバック明確化 (LLM 失敗のみ吸収、HTTP エラーは throw して握りつぶさない)
+- HIGH-3: 辞書未登録警告 (サンプル/フル生成前に辞書 0 件チェック → 警告ダイアログ)
+- HIGH-4: AccentPhrase → CSV DL 後の使い方 note 追加 (`voicevox_user_dict.csv` への追記手順)
+- HIGH-5: LLM コスト・速度・API キー入手方法を UI に明記
+- HIGH-6: zip ダウンロード忘れ防止 (生成完了時に confirm 自動 DL)
+
+### クロスレビュー反映 (MED 7 件)
+- MED-1: CSV パーサ堅牢化 (引用符・カンマ含むセル対応)
+- MED-2: MD パーサで空セル保持
+- MED-3: JSON 抽出 fallback (LLM が ```json ブロックなしで返した場合の救済)
+- MED-4: 進捗カウンタ N/M 表示
+- MED-5: 「2.5 (推奨)」を speedScale デフォルトに明示
+- MED-6: mora セルクリック説明を UI に追加
+- MED-7: LLM fallback タグ表示 (どのフレーズが LLM 経由 / 生 audio_query かを可視化)
+
+### スコープ外 (将来タスク)
+- Y-2 中断耐性 (IndexedDB / 中間 zip): HIGH-6 の「自動 DL confirm」だけ軽量対応済、フル中断耐性は未実装
+- LOW 指摘 (グローバル変数集約、CRLF 対応 等): 未対応
+
+### 運用フロー (音声生成)
+1. ローカルで VOICEVOX エンジンを起動 (port 50021)
+2. `tools/voicevox-generator/voicevox-generator.html` をブラウザで開く
+3. 「ユーザー辞書 一括登録」ボタンで `voicevox_user_dict.csv` を取り込み
+4. 発注書ソースを選択 (hardcoded / file / url)
+5. (任意) LLM 補正を ON にして API キーを入力 (Sonnet 4.6 推奨)
+6. サンプル数件で試聴 → アクセント OK なら全件生成
+7. 生成完了時に zip 自動 DL confirm
+8. 試聴で見つけた誤読語は `voicevox_user_dict.csv` に追記して git commit (履歴管理)
+
+### VOICEVOX 音声生成パイプライン (確定運用)
+1. 発注書 (`docs/quizland-voicevox-order/`) は git 管理、Claude エージェントが整備 (Export → Claude 反映)
+2. 音声生成は `tools/voicevox-generator/` をブラウザで開いて手元で実行
+3. アクセント精度は **52 語辞書 + LLM 補正 (オプション、Sonnet 4.6 推奨)** で向上
+4. 試聴で見つけた誤読語は `voicevox_user_dict.csv` に追記して git で履歴管理 (発注書修正は Claude / 辞書追記もユーザー → Claude チャット経由で OK)
+
+関連: [reference_op_layout_publish_workflow.md](reference_op_layout_publish_workflow.md) (発注書整備の Export → Claude 反映パターンの源流)
