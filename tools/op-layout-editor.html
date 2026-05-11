@@ -3238,6 +3238,29 @@ function syncVariantFromFlat(ponoState, key) {
   if (!entry) return;
   entry[key] = ponoState[key];
 }
+
+// 2026-05-10: 「全ポーズに適用」ボタン用ヘルパー。
+// 現在編集中の variant の slot 値 (指定 keys) を perVariant 全エントリに上書きコピー。
+// 対話モードで kurumi (または pono) の slot offset を動かしても、 シナリオモード
+// で表示される line.kurumiImg variant が別の perVariant エントリ (offsetX=0 等) を
+// 参照しているために位置がリセットされてしまう問題への対処。 ユーザーが明示的に
+// ボタンを押して propagate するため、 個別 variant ごとに微調整した値が暗黙に
+// 上書きされることはない (= 副作用ゼロ)。
+function propagateSlotFieldsToAllVariants(sideState, keys) {
+  if (!sideState) return 0;
+  const bag = ensurePerVariantBag(sideState);
+  if (!bag) return 0;
+  const validKeys = (keys || []).filter(k => PONO_PER_VARIANT_KEYS.includes(k));
+  if (!validKeys.length) return 0;
+  let count = 0;
+  Object.keys(bag).forEach(v => {
+    const entry = bag[v];
+    if (!entry || typeof entry !== 'object') return;
+    validKeys.forEach(k => { entry[k] = sideState[k]; });
+    count++;
+  });
+  return count;
+}
 // === end Pono per-variant slot storage ================================
 
 function ponoPathByName(name) {
@@ -5581,9 +5604,15 @@ function buildRightPane() {
   const slotH = document.createElement('h4');
   slotH.textContent = 'Slot（キャラスロット）';
   slotGroup.appendChild(slotH);
-  if (sideKey === 'pono') {
-    slotGroup.appendChild(makeSelect('Pono画像', 'variant', sideKey,
-      PONO_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
+  if (sideKey === 'pono' || sideKey === 'kurumi') {
+    const isPono = sideKey === 'pono';
+    if (isPono) {
+      slotGroup.appendChild(makeSelect('Pono画像', 'variant', sideKey,
+        PONO_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
+    } else {
+      slotGroup.appendChild(makeSelect('くるみ画像', 'variant', sideKey,
+        KURUMI_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
+    }
     // 現在編集中の variant を明示。slot 値は variant ごとに独立保持される。
     const variantNote = document.createElement('div');
     variantNote.className = 'prop-row';
@@ -5592,24 +5621,50 @@ function buildRightPane() {
     const noteLab = document.createElement('label');
     noteLab.textContent = '現在編集中';
     const noteVal = document.createElement('span');
-    noteVal.textContent = state[currentVC].pono.variant + '（slot 値は variant ごとに保存）';
+    noteVal.textContent = state[currentVC][sideKey].variant + '（slot 値は variant ごとに保存）';
     variantNote.appendChild(noteLab);
     variantNote.appendChild(noteVal);
     slotGroup.appendChild(variantNote);
-  } else if (sideKey === 'kurumi') {
-    slotGroup.appendChild(makeSelect('くるみ画像', 'variant', sideKey,
-      KURUMI_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
-    const variantNote = document.createElement('div');
-    variantNote.className = 'prop-row';
-    variantNote.style.opacity = '0.85';
-    variantNote.style.fontSize = '12px';
-    const noteLab = document.createElement('label');
-    noteLab.textContent = '現在編集中';
-    const noteVal = document.createElement('span');
-    noteVal.textContent = state[currentVC].kurumi.variant + '（slot 値は variant ごとに保存）';
-    variantNote.appendChild(noteLab);
-    variantNote.appendChild(noteVal);
-    slotGroup.appendChild(variantNote);
+    // 2026-05-10: シナリオモードで pose を切り替えても位置が維持されるように、
+    // 現 variant のオフセット (X/Y) を全ポーズに propagate するボタンを追加。
+    // W/H/aspect/objectPosition は pose ごとに素材アスペクトが違うので
+    // propagate 対象外 (offset のみ propagate)。
+    const propagateRow = document.createElement('div');
+    propagateRow.className = 'prop-row';
+    propagateRow.style.fontSize = '12px';
+    const propLab = document.createElement('label');
+    propLab.textContent = '全ポーズに反映';
+    const propBtnWrap = document.createElement('div');
+    propBtnWrap.style.display = 'flex';
+    propBtnWrap.style.gap = '6px';
+    propBtnWrap.style.flexWrap = 'wrap';
+    const mkPropBtn = (label, keys, undoLabel) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ghost';
+      b.style.fontSize = '12px';
+      b.style.padding = '4px 8px';
+      b.textContent = label;
+      b.title = '現在の ' + state[currentVC][sideKey].variant + ' の値を全 variant の perVariant エントリに上書き';
+      b.addEventListener('click', () => {
+        pushUndoSnapshot(undoLabel);
+        const n = propagateSlotFieldsToAllVariants(state[currentVC][sideKey], keys);
+        save(currentVC);
+        // シナリオモードで開いていれば applyScenarioPreview が再描画するように render。
+        render();
+        // 軽量フィードバック (ボタンラベルを一時変更)。
+        const orig = b.textContent;
+        b.textContent = '反映: ' + n + ' poses';
+        b.disabled = true;
+        setTimeout(() => { b.textContent = orig; b.disabled = false; }, 900);
+      });
+      return b;
+    };
+    propBtnWrap.appendChild(mkPropBtn('オフセットX/Y', ['slotOffsetX', 'slotOffsetY'], '全ポーズに offset 反映'));
+    propBtnWrap.appendChild(mkPropBtn('全 slot 値', PONO_PER_VARIANT_KEYS.slice(), '全ポーズに slot 反映'));
+    propagateRow.appendChild(propLab);
+    propagateRow.appendChild(propBtnWrap);
+    slotGroup.appendChild(propagateRow);
   }
   slotGroup.appendChild(makeRange('幅 (px)', 100, 1600, 1, 'slotW', sideKey));
   slotGroup.appendChild(makeRange('高さ (px)', 100, 1200, 1, 'slotH', sideKey));
