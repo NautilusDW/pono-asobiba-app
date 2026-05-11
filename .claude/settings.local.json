@@ -42,7 +42,8 @@
       "WebFetch(domain:www.figma.com)",
       "Bash(mkdir -p d:/AppDevelopment/pono-asobiba-app/.claude)",
       "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once)",
-      "Bash(git ls-remote *)"
+      "Bash(git ls-remote *)",
+      "WebFetch(domain:www.ah-soft.com)"
     ],
     "additionalDirectories": [
       "D:\\AppDevelopment\\pono-asobiba-app\\.claude"
