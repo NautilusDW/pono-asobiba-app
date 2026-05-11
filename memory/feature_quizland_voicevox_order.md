@@ -7,8 +7,8 @@ type: feature
 # Quizland VOICEVOX 発注書
 
 ## 場所
-- フル版: `tmp/quizland-voicevox-order/ORDER-FULL.md` (Q01〜Q181)
-- サンプル版: `tmp/quizland-voicevox-order/SAMPLE-PREVIEW.md` (Q01〜Q21、フォーマット確認用、命名規則は2桁)
+- フル版: `docs/quizland-voicevox-order/ORDER-FULL.md` (Q01〜Q181)
+- サンプル版: `docs/quizland-voicevox-order/SAMPLE-PREVIEW.md` (Q01〜Q21、フォーマット確認用、命名規則は2桁)
 
 ## 規模
 - 181問 × 5音声 (問題文+選択肢4) = 905ファイル

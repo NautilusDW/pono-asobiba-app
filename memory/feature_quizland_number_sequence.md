@@ -35,5 +35,5 @@ type: feature
 
 ## 関連ファイル
 - 実装: `quizland/data/questions.js`, `quizland/index.html`
-- 発注書: `tmp/quizland-voicevox-order/ORDER-FULL.md` Q169〜Q180
+- 発注書: `docs/quizland-voicevox-order/ORDER-FULL.md` Q169〜Q180
 - sw.js v912+ で配信
