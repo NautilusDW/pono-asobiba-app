@@ -271,6 +271,10 @@
         <button class="secondary" id="btn-accent-csv" disabled>辞書に追加（CSV 1 行 DL）</button>
         <audio id="accent-audio" controls style="flex:1; min-width:200px;"></audio>
       </div>
+      <div class="note">
+        <strong>使い方</strong>: ダウンロードした CSV を開き、内容を <code>tools/voicevox-generator/voicevox_user_dict.csv</code> の末尾に追記してください。次回ツール起動時の「辞書 CSV を読み込む」で反映されます。
+        <br><strong>制約</strong>: 複合語の場合、最初の AccentPhrase のアクセントのみ CSV に保存されます (簡易版)。
+      </div>
       <details style="margin-top: 6px;">
         <summary>raw audio_query JSON</summary>
         <pre id="accent-json" class="json-view"></pre>
@@ -281,7 +285,11 @@
 
 <!-- === 機能 A: ユーザー辞書管理 === -->
 <section>
-  <h2><span class="num">2.5</span>VOICEVOX ユーザー辞書（子供向け頻出語）</h2>
+  <h2><span class="num">2.5</span>ステップ 2.5 (推奨): VOICEVOX ユーザー辞書（子供向け頻出語）</h2>
+  <div class="note">
+    <strong>サンプル生成・全ファイル生成の前に登録すると、子供向け頻出語のアクセント精度が大幅に向上します。</strong>
+    特に「ふたつ / みっつ / よっつ / いつつ」などの促音語、Q160 の「ぞうきの はい」「いぶくろの い」などの同音異義語で効果が顕著です。
+  </div>
   <p style="margin: 0 0 10px; font-size: 13px;">
     <code>voicevox_user_dict.csv</code> を読み込んで VOICEVOX エンジンに一括登録します。
     エンジンの辞書はアプリ再起動後も永続化されるので、generation 前に 1 回登録しておけば OK です。
@@ -361,10 +369,19 @@
         <label><input type="checkbox" id="llm-enable"> 有効化</label>
         <input type="password" id="llm-key" placeholder="sk-ant-..." style="flex:1; min-width:200px;">
         <select id="llm-model">
-          <option value="claude-sonnet-4-7">claude-sonnet-4-7（デフォルト）</option>
-          <option value="claude-haiku-4-5">claude-haiku-4-5（安価）</option>
+          <option value="claude-opus-4-7">Opus 4.7 (最新最強・高コスト)</option>
+          <option value="claude-sonnet-4-6" selected>Sonnet 4.6 (バランス)</option>
+          <option value="claude-haiku-4-5">Haiku 4.5 (最速安価)</option>
+          <option value="custom">カスタム (下に入力)</option>
         </select>
+        <input type="text" id="llm-model-custom" placeholder="例: claude-opus-4-7 (custom 選択時のみ使用)" style="width:240px; display:none;">
         <button class="secondary" id="btn-llm-test">LLM 補正テスト</button>
+      </div>
+      <div class="note">
+        <strong>API キー入手</strong>: <a href="https://console.anthropic.com/" target="_blank">https://console.anthropic.com/</a> → API Keys から発行
+        <br><strong>コスト目安</strong>: Sonnet 4.6 で 27 ファイル ≒ ¥30〜80 / 907 ファイル ≒ ¥150〜400 (テキスト長依存)
+        <br><strong>速度</strong>: LLM 補正 ON で生成時間が約 2〜3 倍 (各ファイルごとに API 往復)
+        <br><strong>セキュリティ</strong>: ブラウザに API キーを直接入力します。<u>localhost 環境のみ</u>で使用してください。
       </div>
       <div id="llm-status" class="status"></div>
       <details style="margin-top: 6px;">
@@ -517,6 +534,8 @@ $("btn-check").addEventListener("click", async () => {
 const sampleBlobs = { hau: null, metan: null };
 
 $("btn-sample").addEventListener("click", async () => {
+  // HIGH-3: 辞書未登録時の警告
+  if (!(await confirmDictRegistered("サンプル生成"))) return;
   const btn = $("btn-sample");
   const st = $("sample-status");
   btn.disabled = true;
@@ -602,6 +621,9 @@ function buildReadme(speakerId, params) {
 }
 
 $("btn-generate-all").addEventListener("click", async () => {
+  // === HIGH-3: 辞書未登録時の警告 ===
+  if (!(await confirmDictRegistered("全ファイル生成"))) return;
+
   const speakerId = parseInt($("final-speaker").value, 10);
   lastSpeakerId = speakerId;
   const btn = $("btn-generate-all");
@@ -610,26 +632,36 @@ $("btn-generate-all").addEventListener("click", async () => {
   btn.disabled = true;
   st.className = "status";
   const llmTag = $("llm-enable").checked ? " [LLM 補正 ON]" : "";
-  st.textContent = `${SPEAKER_NAMES[speakerId]} で ${FILES.length} ファイル生成中…${llmTag}`;
+  const total = FILES.length;
+  st.textContent = `${SPEAKER_NAMES[speakerId]} で ${total} ファイル生成中…${llmTag}`;
   list.style.display = "block";
   list.innerHTML = FILES.map(([name]) => `<div id="row-${name}" class="pending">${name}.wav</div>`).join("");
 
   const zip = new JSZip();
   let failed = 0;
+  let done = 0;
   const params = getParams();
 
   for (const [name, text] of FILES) {
     const row = $(`row-${name}`);
     try {
-      const blob = await synthesizeWithOptionalLLM(text, speakerId);
+      const blob = await synthesizeWithOptionalLLM(text, speakerId, name);
       zip.file(`${name}.wav`, blob);
       row.className = "ok";
-      row.textContent = `${name}.wav  「${text}」`;
+      // MED-7: LLM 補正がフォールバックした行に [LLM fallback] タグ
+      const fbTag = (lastLlmFallbackInfo && lastLlmFallbackInfo.name === name)
+        ? " [LLM fallback]"
+        : "";
+      row.textContent = `${name}.wav  「${text}」${fbTag}`;
     } catch (err) {
       row.className = "err";
       row.textContent = `${name}.wav  FAILED: ${err.message}`;
       failed++;
     }
+    done++;
+    // MED-4: 進捗 N/M 表示
+    const pct = Math.floor((done / total) * 100);
+    st.textContent = `${SPEAKER_NAMES[speakerId]} で ${done}/${total} (${pct}%) ファイル生成中…${llmTag}`;
   }
 
   // README.txt 同梱
@@ -637,14 +669,21 @@ $("btn-generate-all").addEventListener("click", async () => {
 
   st.className = failed === 0 ? "status ok" : "status err";
   st.textContent = failed === 0
-    ? `全 ${FILES.length} ファイル生成完了。zip をダウンロードしてください。`
-    : `生成完了（${failed} 件失敗 / 全 ${FILES.length}）。zip 内容を確認してください。`;
+    ? `全 ${total} ファイル生成完了。zip をダウンロードしてください。`
+    : `生成完了（${failed} 件失敗 / 全 ${total}）。zip 内容を確認してください。`;
 
   $("zip-status").textContent = "zip 作成中…";
   lastZipBlob = await zip.generateAsync({ type: "blob" });
   $("zip-status").textContent = `zip 準備完了（${(lastZipBlob.size / 1024).toFixed(1)} KB）`;
   $("btn-download-zip").disabled = false;
   btn.disabled = false;
+
+  // HIGH-6: zip ダウンロード忘れ防止
+  if (failed === 0 && lastZipBlob) {
+    if (confirm("生成完了。zip を今すぐダウンロードしますか？\n（あとで「zip ダウンロード」ボタンからも DL 可能、ただしリロードすると消失します）")) {
+      $("btn-download-zip").click();
+    }
+  }
 });
 
 $("btn-download-zip").addEventListener("click", () => {
@@ -659,15 +698,44 @@ $("btn-download-zip").addEventListener("click", () => {
 // 機能 A: ユーザー辞書管理
 // ============================================================
 let dictRows = []; // [{surface,pronunciation,accent_type,priority,note,state}]
+let dictRegisteredCount = null; // VOICEVOX エンジンに現在登録されている辞書語数 (HIGH-3)
+
+// HIGH-3: サンプル / 全ファイル生成前に辞書登録状況を確認
+async function confirmDictRegistered(actionLabel) {
+  try {
+    const dict = await fetchUserDict();
+    dictRegisteredCount = Object.keys(dict).length;
+  } catch (err) {
+    console.warn("[辞書件数取得失敗]", err.message);
+    // 取得失敗時は警告のみで処理継続 (エンジン未起動などはこの後の synthesize でエラー表示される)
+    return true;
+  }
+  if (dictRegisteredCount === 0) {
+    return confirm(
+      "VOICEVOX に登録された辞書語が 0 件です。\n" +
+      "先にセクション 2.5 で辞書を登録することを強く推奨します。\n" +
+      "（「ふたつ」「みっつ」等の促音語が破調しやすくなります）\n\n" +
+      `このまま「${actionLabel}」を続行しますか？`
+    );
+  }
+  return true;
+}
 
 function parseCsv(text) {
   // 軽量 CSV パーサ (引用符含むセルなし前提、辞書 CSV はシンプル)
+  // MED-1: 5 列目以降 (note) はカンマを含むことがあるため join して 5 列に揃える
   const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter(l => l.trim().length > 0);
   if (lines.length === 0) return [];
   const header = lines[0].split(",").map(s => s.trim());
+  const headerLen = header.length;
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(",").map(s => s.trim());
+    let cols = lines[i].split(",").map(s => s.trim());
+    // 末尾列 (note 等) にカンマが含まれていた場合: 列数を超えた分を末尾列に join
+    if (cols.length > headerLen && headerLen > 0) {
+      const overflow = cols.slice(headerLen - 1).join(",");
+      cols = cols.slice(0, headerLen - 1).concat([overflow]);
+    }
     const r = {};
     header.forEach((h, idx) => { r[h] = cols[idx] !== undefined ? cols[idx] : ""; });
     rows.push(r);
@@ -827,7 +895,10 @@ let currentAccentQuery = null;
 function renderAccentPhrases(query) {
   const wrap = $("accent-phrases");
   if (!query || !query.accent_phrases) { wrap.innerHTML = ""; return; }
-  wrap.innerHTML = query.accent_phrases.map((ap, apIdx) => {
+  const hintHtml = `<div style="font-size:11px; color:var(--sub); margin-bottom:6px;">
+    💡 色付きセル (橙色) が現在のアクセント核位置。<u>セルをクリック or ± ボタン</u>で核位置を変更できます (0=平板)。
+  </div>`;
+  wrap.innerHTML = hintHtml + query.accent_phrases.map((ap, apIdx) => {
     const accent = ap.accent; // 1-indexed
     const moras = ap.moras.map((m, mIdx) => {
       const isAccent = (mIdx + 1) === accent;
@@ -946,7 +1017,11 @@ function parseOrderMarkdown(md) {
     if (!line.trim().startsWith("|")) continue;
     // セパレータ行 (---) は除外
     if (/^\|[\s\-:|]+\|?\s*$/.test(line)) continue;
-    const cols = line.split("|").map(s => s.trim()).filter(s => s.length > 0);
+    // MED-2: 空セルを保持したまま列を取得 (filter で潰すと display="" の場合に speech 列がずれる)
+    // `| a | b | c |` → split → ['', ' a ', ' b ', ' c ', ''] なので前後の囲み空文字のみ除外
+    let cols = line.split("|").map(s => s.trim());
+    if (cols.length >= 2 && cols[0] === "") cols.shift();
+    if (cols.length >= 1 && cols[cols.length - 1] === "") cols.pop();
     if (cols.length < 2) continue;
     // 最初の列に *.wav があるか
     const first = cols[0];
@@ -956,8 +1031,12 @@ function parseOrderMarkdown(md) {
     if (!FNAME_RE.test(name)) continue;
     if (seen.has(name)) continue;
     // テキストカラムは「最後の列 = speech」優先、無ければ 2 列目 = display
-    let speech = cols.length >= 3 ? cols[cols.length - 1] : cols[1];
-    speech = speech.replace(/\s+/g, " ").trim();
+    // MED-2: speech 列が空なら 1 つ手前の列、それも空なら 2 列目を fallback として走査
+    let speech = "";
+    for (let i = cols.length - 1; i >= 1; i--) {
+      const cand = cols[i].replace(/\s+/g, " ").trim();
+      if (cand) { speech = cand; break; }
+    }
     if (!speech) continue;
     out.push([name, speech]);
     seen.add(name);
@@ -1030,9 +1109,19 @@ $("btn-order-fetch").addEventListener("click", async () => {
 // ============================================================
 // 機能 D: LLM アクセント補正（Anthropic Messages API）
 // ============================================================
+function getLlmModel() {
+  const sel = $("llm-model").value;
+  if (sel === "custom") {
+    const custom = $("llm-model-custom").value.trim();
+    if (!custom) throw new Error("カスタムモデル ID が未入力です");
+    return custom;
+  }
+  return sel;
+}
+
 async function llmReviseAccent(text, query) {
   const apiKey = $("llm-key").value.trim();
-  const model = $("llm-model").value;
+  const model = getLlmModel();
   if (!apiKey) throw new Error("API キー未入力");
   const userPrompt =
     `以下のテキストの VOICEVOX audio_query JSON があります。子供向け（5-6歳）の標準語アクセントとして妥当か検証し、不適切なら修正版 JSON を返してください。\n\n` +
@@ -1068,8 +1157,16 @@ async function llmReviseAccent(text, query) {
   const m = reply.match(/```(?:json)?\s*([\s\S]*?)```/);
   const jsonStr = m ? m[1] : reply;
   try {
-    const newPhrases = JSON.parse(jsonStr);
-    if (!Array.isArray(newPhrases)) throw new Error("配列ではない");
+    const parsed = JSON.parse(jsonStr);
+    // MED-3: 配列直接 or { accent_phrases: [...] } の両方を受容
+    let newPhrases = null;
+    if (Array.isArray(parsed)) {
+      newPhrases = parsed;
+    } else if (parsed && Array.isArray(parsed.accent_phrases)) {
+      newPhrases = parsed.accent_phrases;
+    } else {
+      throw new Error("配列でも accent_phrases フィールドでもない");
+    }
     const revised = JSON.parse(JSON.stringify(query));
     revised.accent_phrases = newPhrases;
     return revised;
@@ -1077,6 +1174,12 @@ async function llmReviseAccent(text, query) {
     throw new Error(`LLM レスポンス解析失敗: ${e.message}`);
   }
 }
+
+// custom モデル入力欄のトグル
+$("llm-model").addEventListener("change", () => {
+  const isCustom = $("llm-model").value === "custom";
+  $("llm-model-custom").style.display = isCustom ? "inline-block" : "none";
+});
 
 $("btn-llm-test").addEventListener("click", async () => {
   const st = $("llm-status");
@@ -1102,32 +1205,39 @@ $("btn-llm-test").addEventListener("click", async () => {
 });
 
 // 一括生成中も LLM 補正を挟む差し替え版 synthesize
-async function synthesizeWithOptionalLLM(text, speakerId) {
+// 設計方針 (X-2 修正後):
+//   - audio_query / synthesis 自体の HTTP 失敗は throw して上位に伝播 (隠蔽しない)
+//   - LLM 補正 (llmReviseAccent) の失敗のみ try/catch で握り、元 query で synthesis 続行
+//   - LLM フォールバック発生時は console.warn と lastLlmFallbackInfo に記録
+let lastLlmFallbackInfo = null; // { name?, message } - progress 表示用
+async function synthesizeWithOptionalLLM(text, speakerId, fileName) {
+  lastLlmFallbackInfo = null;
   if (!$("llm-enable").checked) {
     return await synthesize(text, speakerId);
   }
-  // LLM 経路: query → 補正 → synthesis
+  // 1) audio_query (失敗は throw)
+  const qres = await fetch(`${endpoint}/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`, { method: "POST" });
+  if (!qres.ok) throw new Error(`audio_query failed: ${qres.status}`);
+  let query = await qres.json();
+
+  // 2) LLM 補正 (失敗時のみ catch して元 query にフォールバック)
   try {
-    const qres = await fetch(`${endpoint}/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`, { method: "POST" });
-    if (!qres.ok) throw new Error(`audio_query failed: ${qres.status}`);
-    let query = await qres.json();
-    try {
-      query = await llmReviseAccent(text, query);
-    } catch (llmErr) {
-      console.warn("[LLM 補正失敗 / フォールバック]", llmErr.message);
-    }
-    Object.assign(query, getParams());
-    const sres = await fetch(`${endpoint}/synthesis?speaker=${speakerId}&enable_interrogative_upspeak=true`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(query),
-    });
-    if (!sres.ok) throw new Error(`synthesis failed: ${sres.status}`);
-    return await sres.blob();
-  } catch (err) {
-    // 完全フォールバック
-    return await synthesize(text, speakerId);
+    query = await llmReviseAccent(text, query);
+  } catch (llmErr) {
+    console.warn(`[LLM 補正フォールバック] ${fileName || text}: ${llmErr.message}`);
+    lastLlmFallbackInfo = { name: fileName, message: llmErr.message };
+    // query は元のまま使用
   }
+
+  // 3) パラメータ反映 + synthesis (失敗は throw)
+  Object.assign(query, getParams());
+  const sres = await fetch(`${endpoint}/synthesis?speaker=${speakerId}&enable_interrogative_upspeak=true`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  if (!sres.ok) throw new Error(`synthesis failed: ${sres.status}`);
+  return await sres.blob();
 }
 </script>
 
