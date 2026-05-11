@@ -109,6 +109,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T07:59:56Z - VOICEVOX発注書3ファイル(SAMPLE/FULL/TEST)をtmp/からdocs/quizland-voicevox-order/へ永続化移動 + memory 3ファイル(kurumi/voicevox_order/number_sequence)のパス参照をtmp/からdocs/に同期 + commit + 自動push成功
+- **タスク**: VOICEVOX発注書3ファイル(SAMPLE/FULL/TEST)をtmp/からdocs/quizland-voicevox-order/へ永続化移動 + memory 3ファイル(kurumi/voicevox_order/number_sequence)のパス参照をtmp/からdocs/に同期 + commit + 自動push成功
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 85
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 63, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 10}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T07:55:37Z - VOICEVOX 発注書 (COWORK-TEST-ORDER.md / ORDER-FULL.md / memory) を「雨晴はう」第一候補に更新 + Cowork 向けコピペお願い文セクション追加
 - **タスク**: VOICEVOX 発注書 (COWORK-TEST-ORDER.md / ORDER-FULL.md / memory) を「雨晴はう」第一候補に更新 + Cowork 向けコピペお願い文セクション追加
 - **結果**: 成功
@@ -210,19 +223,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 47, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T06:10:25Z - op-layout-editor: 各 dialogue line に はかせ + くるみ dropdown 追加 (3 キャラ独立切替), HAKASE_VARIANTS 定数 + hakasePathByName + hakaseFullPath helper, buildScenarioPanelsLiteral hakaseImg シリアライズ, migrateScenario 空値正規化, SCENARIO_DATA_VERSION v927→v930, sw v931
-- **タスク**: op-layout-editor: 各 dialogue line に はかせ + くるみ dropdown 追加 (3 キャラ独立切替), HAKASE_VARIANTS 定数 + hakasePathByName + hakaseFullPath helper, buildScenarioPanelsLiteral hakaseImg シリアライズ, migrateScenario 空値正規化, SCENARIO_DATA_VERSION v927→v930, sw v931
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 59
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 45, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 2}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
