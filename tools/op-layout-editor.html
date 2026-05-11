@@ -1198,6 +1198,15 @@ const KURUMI_VARIANTS = [
 ];
 const KURUMI_VARIANT_NAMES = KURUMI_VARIANTS.map(v => v.name);
 
+// 2026-05-11: フクロウはかせ ポーズ。 現状は owl_professor_guide 1 種のみだが、
+// 後続で owl_professor_explain / owl_professor_smile 等を追加していく前提で
+// PONO_VARIANTS / KURUMI_VARIANTS と同じ {name, path} 配列スキーマで管理する。
+// editor 側 dropdown は HAKASE_VARIANTS が増えれば自動的に選択肢が増える。
+const HAKASE_VARIANTS = [
+  { name: 'owl_professor_guide', path: '../assets/images/quizland/owl_professor_guide.webp' }
+];
+const HAKASE_VARIANT_NAMES = HAKASE_VARIANTS.map(v => v.name);
+
 const FRAME_IMAGES = [
   { id: 'frame_wide_a', label: '横長フレーム A', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173812_001.png') },
   { id: 'frame_wide_b', label: '横長フレーム B', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260508-081922_001.png') },
@@ -1235,7 +1244,10 @@ const DROPPED_ASSETS_STORAGE_KEY = STORAGE_PREFIX + 'droppedAssets';
 // v927: defaultScenario が本番 OP_PANELS と完全同期済 (Panel 2 3 行 / Panel 5
 // 4 行 / Panel 6 kurumiImg 注入)。 既存ユーザーで古い 2 行構成 saved scenario
 // を持つ場合、 この version 不一致で reset されて新 defaults が反映される。
-const SCENARIO_DATA_VERSION = 'v927';
+// v930: 各 dialogue line に「はかせの表情/ポーズ」「くるみの表情/ポーズ」
+// dropdown を追加 (line.hakaseImg / line.kurumiImg も dropdown から編集可能に)。
+// 既存 saved scenario はリセットして 3 dropdown UI が反映された defaults に。
+const SCENARIO_DATA_VERSION = 'v930';
 // Soft warning threshold for combined dropped-asset storage size (bytes).
 const DROPPED_ASSETS_WARN_BYTES = 4 * 1024 * 1024;
 
@@ -1490,6 +1502,10 @@ function migrateScenario(parsed) {
             // visibility を判定するため、 空値が残ると意図せず立ち絵が出る恐れがある)。
             if (d.kurumiImg != null && (typeof d.kurumiImg !== 'string' || !d.kurumiImg)) {
               delete d.kurumiImg;
+            }
+            // 2026-05-11: line.hakaseImg も optional。 空値正規化を kurumi と揃える。
+            if (d.hakaseImg != null && (typeof d.hakaseImg !== 'string' || !d.hakaseImg)) {
+              delete d.hakaseImg;
             }
           }
         });
@@ -3233,6 +3249,12 @@ function ponoPathByName(name) {
 function kurumiPathByName(name) {
   const v = KURUMI_VARIANTS.find(x => x.name === name);
   return v ? v.path : KURUMI_VARIANTS[0].path;
+}
+// 2026-05-11: はかせ用 path lookup。 HAKASE_VARIANTS から basename で検索、
+// 未知名は owl_professor_guide にフォールバック。
+function hakasePathByName(name) {
+  const v = HAKASE_VARIANTS.find(x => x.name === name);
+  return v ? v.path : HAKASE_VARIANTS[0].path;
 }
 function framePathById(id) {
   const f = FRAME_IMAGES.find(x => x.id === id);
@@ -5236,34 +5258,91 @@ function buildScenarioDialogueLineRow(panel, pIdx, lIdx) {
     meta.appendChild(lbl);
   });
 
-  // ponoImg select — speaker に関係なく全 dialogue line で表示する。
-  // (Pono は dialogue panel 全体で常時表示されているため、はかせ発話中も
-  //  Pono の表情/ポーズを line 単位で切り替えたい。)
-  {
+  // 2026-05-11: 3 キャラ (ポノ/はかせ/くるみ) の表情/ポーズ dropdown を speaker に
+  // 関係なく全 dialogue line で表示する。 dialogue panel では 3 キャラとも常時表示
+  // されているため、 各 line で誰が話していても 3 体それぞれの立ち絵を独立に
+  // 切り替えたい。
+  // - line.ponoImg / line.hakaseImg / line.kurumiImg は basename (拡張子なし) で保存
+  //   (例: 'dance_hi' / 'owl_professor_guide' / 'kurumi_hi')。 export 時に
+  //   buildScenarioPanelsLiteral がフルパスに変換する。
+  // - line.kurumiImg / line.hakaseImg は optional (basename だけ保存、 未指定時は
+  //   panel-level fallback または preview 側のデフォルトを利用)。
+  function appendCharImgSelect(opts) {
+    // opts: { labelText, variants, currentName, fallbackName, undoLabel, applyValue }
     const imgLab = document.createElement('label');
-    imgLab.textContent = 'ポノの表情/ポーズ';
+    imgLab.textContent = opts.labelText;
     meta.appendChild(imgLab);
     const sel = document.createElement('select');
-    PONO_VARIANTS.forEach(v => {
+    opts.variants.forEach(v => {
       const o = document.createElement('option');
       o.value = v.name;
       o.textContent = v.name;
-      if (line.ponoImg === v.name) o.selected = true;
+      if (opts.currentName === v.name) o.selected = true;
       sel.appendChild(o);
     });
+    // currentName が variants に無い (旧データ等) 場合は fallback を初期選択。
+    if (!opts.variants.some(v => v.name === opts.currentName)) {
+      sel.value = opts.fallbackName;
+    }
     sel.addEventListener('change', (e) => {
       e.stopPropagation();
-      pushUndoSnapshot('シナリオ ponoImg 変更');
-      line.ponoImg = sel.value;
+      pushUndoSnapshot(opts.undoLabel);
+      opts.applyValue(sel.value);
       saveScenario();
       // 変更した line を current にして preview を強制更新
-      // (line クリックと同じ動作: その行の ponoImg / slot 値が preview に反映される)
+      // (line クリックと同じ動作: その行の画像/slot 値が preview に反映される)
       state.scenario.currentPanelIdx = pIdx;
       state.scenario.currentLineIdx  = lIdx;
       render();
     });
     sel.addEventListener('click', (e) => e.stopPropagation());
     meta.appendChild(sel);
+  }
+
+  // ポノの表情/ポーズ
+  appendCharImgSelect({
+    labelText: 'ポノの表情/ポーズ',
+    variants: PONO_VARIANTS,
+    currentName: line.ponoImg || (panel.ponoImgFallback || 'dance_hi'),
+    fallbackName: panel.ponoImgFallback || 'dance_hi',
+    undoLabel: 'シナリオ ponoImg 変更',
+    applyValue: (name) => { line.ponoImg = name; }
+  });
+
+  // はかせの表情/ポーズ — 現状 1 種だが将来拡張前提で dropdown 化。
+  // 内部保存は basename ('owl_professor_guide')。 export 時にフルパスへ変換。
+  {
+    let hakaseCurrent = HAKASE_VARIANTS[0].name;
+    if (typeof line.hakaseImg === 'string' && line.hakaseImg) {
+      const m = line.hakaseImg.match(/([^/\\]+?)(?:\.webp)?$/);
+      if (m && m[1]) hakaseCurrent = m[1];
+    }
+    appendCharImgSelect({
+      labelText: 'はかせの表情/ポーズ',
+      variants: HAKASE_VARIANTS,
+      currentName: hakaseCurrent,
+      fallbackName: HAKASE_VARIANTS[0].name,
+      undoLabel: 'シナリオ hakaseImg 変更',
+      applyValue: (name) => { line.hakaseImg = name; }
+    });
+  }
+
+  // くるみの表情/ポーズ — 13 種。 内部保存は basename ('kurumi_xxx')。
+  // line.kurumiImg はフルパスでも basename でも来うるため basename 抽出。
+  {
+    let kurumiCurrent = KURUMI_VARIANTS[0].name;
+    if (typeof line.kurumiImg === 'string' && line.kurumiImg) {
+      const m = line.kurumiImg.match(/([^/\\]+?)(?:\.webp)?$/);
+      if (m && m[1]) kurumiCurrent = m[1];
+    }
+    appendCharImgSelect({
+      labelText: 'くるみの表情/ポーズ',
+      variants: KURUMI_VARIANTS,
+      currentName: kurumiCurrent,
+      fallbackName: KURUMI_VARIANTS[0].name,
+      undoLabel: 'シナリオ kurumiImg 変更',
+      applyValue: (name) => { line.kurumiImg = name; }
+    });
   }
   row.appendChild(meta);
 
@@ -6297,6 +6376,16 @@ function buildScenarioPanelsLiteral() {
     const v = KURUMI_VARIANTS.find(x => x.name === name);
     return v ? v.path : KURUMI_VARIANTS[0].path;
   }
+  // 2026-05-11: はかせ も同パターン。 現状 1 種 (owl_professor_guide) だが
+  // 将来拡張時もこの helper だけで basename → フルパス変換できるようにする。
+  function hakaseFullPath(input) {
+    if (!input) return HAKASE_VARIANTS[0].path;
+    let name = String(input);
+    const m = name.match(/([^/\\]+?)(?:\.webp)?$/);
+    if (m && m[1]) name = m[1];
+    const v = HAKASE_VARIANTS.find(x => x.name === name);
+    return v ? v.path : HAKASE_VARIANTS[0].path;
+  }
 
   sc.panels.forEach((panel, i) => {
     const isLast = (i === sc.panels.length - 1);
@@ -6355,6 +6444,14 @@ function buildScenarioPanelsLiteral() {
         // kurumiImg は同一 line に共存可 (Panel 6 のように)。
         if (d.kurumiImg) {
           row += ', kurumiImg: ' + jsString(kurumiFullPath(d.kurumiImg));
+        }
+        // 2026-05-11: line.hakaseImg もシリアライズ (editor で 3 キャラ独立 dropdown
+        // を追加した一環)。 runtime 側 (quizland/index.html) は現時点では
+        // hakaseImg を読まず固定 owl_professor_guide.webp を使うが、
+        // editor の export はスキーマを揃えて出力する (将来 runtime 拡張時に
+        // この値を読むだけで多バリアント化できる)。
+        if (d.hakaseImg) {
+          row += ', hakaseImg: ' + jsString(hakaseFullPath(d.hakaseImg));
         }
         row += ' }' + (lLast ? '' : ',');
         lines.push(row);

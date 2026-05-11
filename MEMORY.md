@@ -108,6 +108,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T06:10:25Z - op-layout-editor: 各 dialogue line に はかせ + くるみ dropdown 追加 (3 キャラ独立切替), HAKASE_VARIANTS 定数 + hakasePathByName + hakaseFullPath helper, buildScenarioPanelsLiteral hakaseImg シリアライズ, migrateScenario 空値正規化, SCENARIO_DATA_VERSION v927→v930, sw v931
+- **タスク**: op-layout-editor: 各 dialogue line に はかせ + くるみ dropdown 追加 (3 キャラ独立切替), HAKASE_VARIANTS 定数 + hakasePathByName + hakaseFullPath helper, buildScenarioPanelsLiteral hakaseImg シリアライズ, migrateScenario 空値正規化, SCENARIO_DATA_VERSION v927→v930, sw v931
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 59
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 45, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 2}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T06:02:25Z - op-layout-editor くるみ側タブ切替の defensive 強化 (active class 即時更新 + state.kurumi 欠落時の自動 seed + try/catch wrap、 sw v930)
 - **タスク**: op-layout-editor くるみ側タブ切替の defensive 強化 (active class 即時更新 + state.kurumi 欠落時の自動 seed + try/catch wrap、 sw v930)
 - **結果**: 成功
@@ -210,18 +223,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 34, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T04:18:27Z - quizland OP に kurumi 13 ポーズ管理機能 (op-layout-editor 拡張 + saved-layout.json kurumi.perVariant 13ポーズ × 3VC + OP_PANELS panel2/5/6 variant 割当 + sw v923)
-- **タスク**: quizland OP に kurumi 13 ポーズ管理機能 (op-layout-editor 拡張 + saved-layout.json kurumi.perVariant 13ポーズ × 3VC + OP_PANELS panel2/5/6 variant 割当 + sw v923)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 35
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 8, "Read": 9, "Grep": 10, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 2, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
