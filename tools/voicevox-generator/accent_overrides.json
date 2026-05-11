@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "speaker_id": 10,
-  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md (漢字混じり版、辞書 65 語強化版 v3)",
-  "generated_by": "Claude Code (3 サイクル目)",
-  "generated_at": "2026-05-11T11:09:35Z",
+  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md (漢字混じり、辞書 65 語、v4 辞書反映確認版)",
+  "generated_by": "Claude Code (4 サイクル目)",
+  "generated_at": "2026-05-11T11:19:48Z",
   "items": [
     {
       "id": "q001_q",
@@ -15,10 +15,17 @@
           "accent": 0,
           "confidence": "high",
           "note": "平板 (5モーラ「真ん中は」、辞書「真ん中」反映、平板維持)"
+        },
+        {
+          "phrase_index": 1,
+          "mora_signature": "ナンショク",
+          "accent": 0,
+          "confidence": "low",
+          "note": "⚠ 辞書「何色 → ナニイロ」未反映 (まだ「ナンショク」と推定中)。暫定で平板化のみ実施。本来は「ナニイロ accent=0」にしたい"
         }
       ],
       "needs_listen": false,
-      "warning": "⚠ 辞書「何色 → ナニイロ」が VOICEVOX に反映されていません (まだ「ナンショク」と推定中)。VOICEVOX エディタの 「設定→読み方&アクセント辞書」で user_dict 一括登録ボタンを押下、または辞書再インポート/再起動が必要"
+      "warning": "⚠ 辞書「何色 → ナニイロ」が VOICEVOX に反映されていません (4 サイクル目でも「ナンショク」と推定中)。VOICEVOX エディタの「設定→読み方&アクセント辞書」で「何色」の登録状態を確認、または辞書再インポート/エディタ完全再起動が必要"
     },
     {
       "id": "q001_a",
