@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "speaker_id": 10,
-  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md (漢字混じり版)",
-  "generated_by": "Claude Code (Opus 4.7)",
-  "generated_at": "2026-05-11T10:26:22Z",
+  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md (漢字混じり版、辞書 65 語強化版 v3)",
+  "generated_by": "Claude Code (3 サイクル目)",
+  "generated_at": "2026-05-11T11:09:35Z",
   "items": [
     {
       "id": "q001_q",
@@ -14,11 +14,11 @@
           "mora_signature": "マンナカワ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (まんなか NHK 平板、5モーラの「は」付きでも平板維持)"
+          "note": "平板 (5モーラ「真ん中は」、辞書「真ん中」反映、平板維持)"
         }
       ],
-      "needs_listen": true,
-      "warning": "⚠ VOICEVOX が「何色」を「ナンショク」と推定。「ナニイロ」と読ませたい場合は user_dict に追加するか、発注書側を「なにいろ」表記に変更検討"
+      "needs_listen": false,
+      "warning": "⚠ 辞書「何色 → ナニイロ」が VOICEVOX に反映されていません (まだ「ナンショク」と推定中)。VOICEVOX エディタの 「設定→読み方&アクセント辞書」で user_dict 一括登録ボタンを押下、または辞書再インポート/再起動が必要"
     },
     {
       "id": "q001_a",
@@ -57,7 +57,7 @@
           "mora_signature": "キイロ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (NHK)"
+          "note": "平板 (NHK 辞書整合)"
         }
       ],
       "needs_listen": false
@@ -71,7 +71,7 @@
           "mora_signature": "ミドリ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (NHK)"
+          "note": "平板 (NHK 辞書整合)"
         }
       ],
       "needs_listen": false
@@ -85,7 +85,7 @@
           "mora_signature": "リンゴワ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (りんご NHK 平板、4モーラの「は」付きでも平板)"
+          "note": "平板 (4モーラ「りんごは」、平板維持)"
         }
       ],
       "needs_listen": false
@@ -131,7 +131,7 @@
           "mora_signature": "ハンタイワ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (はんたい NHK 平板)"
+          "note": "平板 (5モーラ「反対は」、平板維持)"
         }
       ],
       "needs_listen": false
@@ -145,7 +145,7 @@
           "mora_signature": "アカイ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (子供向け; NHK は 0 / 2 併存)"
+          "note": "平板 (子供向け; NHK は 0 / 2 併存、平板を採用)"
         }
       ],
       "needs_listen": false
@@ -191,9 +191,9 @@
         {
           "phrase_index": 0,
           "mora_signature": "イキオ",
-          "accent": 2,
+          "accent": 0,
           "confidence": "high",
-          "note": "中高 いき'を (息を)"
+          "note": "平板 いきお (3モーラ「息を」、子供向け平板)"
         },
         {
           "phrase_index": 1,
@@ -207,7 +207,7 @@
           "mora_signature": "カラダノ",
           "accent": 0,
           "confidence": "high",
-          "note": "平板 (からだ NHK 平板 0)"
+          "note": "平板 (4モーラ「体の」、平板維持)"
         }
       ],
       "needs_listen": false
@@ -235,15 +235,7 @@
     {
       "id": "q160_c",
       "text": "心",
-      "patches": [
-        {
-          "phrase_index": 0,
-          "mora_signature": "ココロ",
-          "accent": 3,
-          "confidence": "medium",
-          "note": "尾高 こころ' (NHK 2/3 併存、子供向けは 3 尾高優勢)"
-        }
-      ],
+      "patches": [],
       "needs_listen": true
     },
     {
@@ -261,7 +253,7 @@
           "mora_signature": "ハイ",
           "accent": 1,
           "confidence": "high",
-          "note": "頭高 は'い (肺)"
+          "note": "頭高 は'い (医学用語「肺」)"
         }
       ],
       "needs_listen": true
@@ -275,7 +267,7 @@
           "mora_signature": "イブクロノ",
           "accent": 0,
           "confidence": "medium",
-          "note": "平板 (NHK 0/3 併存、子供向けは 0 平板優勢)"
+          "note": "平板 (5モーラ「胃袋の」、子供向けは平板優勢)"
         }
       ],
       "needs_listen": true
@@ -309,7 +301,7 @@
           "mora_signature": "サン",
           "accent": 1,
           "confidence": "high",
-          "note": "頭高 さ'ん (3、撥音含む2モーラは頭高)"
+          "note": "頭高 さ'ん (撥音含む2モーラは頭高)"
         }
       ],
       "needs_listen": true
