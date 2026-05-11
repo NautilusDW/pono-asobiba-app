@@ -1538,9 +1538,9 @@
   "__op_layout": {
     "B": {
       "pono": {
-        "slotW": 1021,
-        "slotH": 492,
-        "slotOffsetX": 0,
+        "slotW": 908,
+        "slotH": 506,
+        "slotOffsetX": -8,
         "slotOffsetY": -69,
         "slotAspect": "fixed_0.75",
         "objectPosition": "bottom",
@@ -1578,9 +1578,9 @@
             "objectPosition": "bottom"
           },
           "think_chin_clasp": {
-            "slotW": 1021,
-            "slotH": 492,
-            "slotOffsetX": 0,
+            "slotW": 908,
+            "slotH": 506,
+            "slotOffsetX": -8,
             "slotOffsetY": -69,
             "slotAspect": "fixed_0.75",
             "objectPosition": "bottom"
@@ -1607,6 +1607,236 @@
         "slotW": 843,
         "slotH": 470,
         "slotOffsetX": -40,
+        "slotOffsetY": -99,
+        "slotAspect": "fixed_1.23",
+        "objectPosition": "bottom"
+      },
+      "kurumi": {
+        "slotW": 280,
+        "slotH": 354,
+        "slotOffsetX": 77,
+        "slotOffsetY": 0,
+        "slotAspect": "fixed_0.73",
+        "objectPosition": "bottom",
+        "perVariant": {
+          "kurumi_001": {
+            "slotW": 280,
+            "slotH": 278,
+            "slotOffsetX": 58,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_hi": {
+            "slotW": 280,
+            "slotH": 303,
+            "slotOffsetX": 54,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_wave": {
+            "slotW": 280,
+            "slotH": 303,
+            "slotOffsetX": 59,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_hooray": {
+            "slotW": 280,
+            "slotH": 380,
+            "slotOffsetX": 77,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_wink": {
+            "slotW": 280,
+            "slotH": 295,
+            "slotOffsetX": 65,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_clasp": {
+            "slotW": 280,
+            "slotH": 354,
+            "slotOffsetX": 77,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_idea": {
+            "slotW": 280,
+            "slotH": 345,
+            "slotOffsetX": 77,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_point": {
+            "slotW": 280,
+            "slotH": 328,
+            "slotOffsetX": 65,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_calm": {
+            "slotW": 280,
+            "slotH": 328,
+            "slotOffsetX": 88,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_pray": {
+            "slotW": 280,
+            "slotH": 303,
+            "slotOffsetX": 65,
+            "slotOffsetY": -4,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_book": {
+            "slotW": 280,
+            "slotH": 320,
+            "slotOffsetX": 88,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_cheer": {
+            "slotW": 280,
+            "slotH": 328,
+            "slotOffsetX": 65,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          },
+          "kurumi_greet": {
+            "slotW": 280,
+            "slotH": 320,
+            "slotOffsetX": 65,
+            "slotOffsetY": 0,
+            "slotAspect": "fixed_0.73",
+            "objectPosition": "bottom"
+          }
+        }
+      },
+      "singleBox": {
+        "boxW": 984,
+        "boxH": 316,
+        "boxY": 411,
+        "boxPadding": 32,
+        "boxRadius": 16,
+        "boxMode": "image",
+        "boxImage": "frame_wide_a",
+        "boxImagePath": "../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260507-173812_001.png",
+        "boxColor": "#fef3c7",
+        "fontSize": 37,
+        "lineHeight": 1.5,
+        "textAlignH": "center",
+        "textAlignV": "center",
+        "labelAnchor": "tl",
+        "labelInside": true,
+        "labelOffsetX": 70,
+        "labelOffsetY": 49,
+        "labelFontSize": 34
+      },
+      "narration": {
+        "lineHeight": 1.6,
+        "paddingX": 28,
+        "paddingY": 40,
+        "fontSize": 30,
+        "width": 880,
+        "height": 0,
+        "heightAuto": true,
+        "posMode": "bottom",
+        "top": 80,
+        "bottom": 23,
+        "textAlignH": "center",
+        "bgMode": "image",
+        "bgImage": "frame_wide_a",
+        "bgImagePath": "../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260507-173812_001.png",
+        "bgColor": "#fffdf4",
+        "bgOpacity": 0.92,
+        "borderRadius": 24,
+        "showShadow": true
+      }
+    },
+    "C": {
+      "pono": {
+        "slotW": 1481,
+        "slotH": 740,
+        "slotOffsetX": 46,
+        "slotOffsetY": -81,
+        "slotAspect": "fixed_0.75",
+        "objectPosition": "bottom",
+        "perVariant": {
+          "dance_hi": {
+            "slotW": 1481,
+            "slotH": 740,
+            "slotOffsetX": 46,
+            "slotOffsetY": -81,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "dance_hooray": {
+            "slotW": 1481,
+            "slotH": 775,
+            "slotOffsetX": 46,
+            "slotOffsetY": -80,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "dance_smile": {
+            "slotW": 1481,
+            "slotH": 775,
+            "slotOffsetX": 46,
+            "slotOffsetY": -80,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "think_arms_crossed_side": {
+            "slotW": 1481,
+            "slotH": 775,
+            "slotOffsetX": 46,
+            "slotOffsetY": -80,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "think_chin_clasp": {
+            "slotW": 1481,
+            "slotH": 775,
+            "slotOffsetX": 46,
+            "slotOffsetY": -80,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "pono_001": {
+            "slotW": 1481,
+            "slotH": 740,
+            "slotOffsetX": 46,
+            "slotOffsetY": -81,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          },
+          "dance_wave": {
+            "slotW": 1481,
+            "slotH": 740,
+            "slotOffsetX": 46,
+            "slotOffsetY": -81,
+            "slotAspect": "fixed_0.75",
+            "objectPosition": "bottom"
+          }
+        }
+      },
+      "hakase": {
+        "slotW": 947,
+        "slotH": 655,
+        "slotOffsetX": 0,
         "slotOffsetY": -99,
         "slotAspect": "fixed_1.23",
         "objectPosition": "bottom"
@@ -1726,228 +1956,6 @@
         }
       },
       "singleBox": {
-        "boxW": 984,
-        "boxH": 316,
-        "boxY": 411,
-        "boxPadding": 32,
-        "boxRadius": 16,
-        "boxMode": "image",
-        "boxImage": "frame_wide_a",
-        "boxImagePath": "../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260507-173812_001.png",
-        "boxColor": "#fef3c7",
-        "fontSize": 37,
-        "lineHeight": 1.5,
-        "textAlignH": "center",
-        "textAlignV": "center",
-        "labelAnchor": "tl",
-        "labelInside": true,
-        "labelOffsetX": 70,
-        "labelOffsetY": 49,
-        "labelFontSize": 34
-      },
-      "narration": {
-        "lineHeight": 1.6,
-        "paddingX": 28,
-        "paddingY": 40,
-        "fontSize": 30,
-        "width": 880,
-        "height": 0,
-        "heightAuto": true,
-        "posMode": "bottom",
-        "top": 80,
-        "bottom": 23,
-        "textAlignH": "center",
-        "bgMode": "image",
-        "bgImage": "frame_wide_a",
-        "bgImagePath": "../assets/images/quizland/OP/%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%200_20260507-173812_001.png",
-        "bgColor": "#fffdf4",
-        "bgOpacity": 0.92,
-        "borderRadius": 24,
-        "showShadow": true
-      }
-    },
-    "C": {
-      "pono": {
-        "slotW": 1481,
-        "slotH": 740,
-        "slotOffsetX": 46,
-        "slotOffsetY": -81,
-        "slotAspect": "fixed_0.75",
-        "objectPosition": "bottom",
-        "perVariant": {
-          "dance_hi": {
-            "slotW": 1481,
-            "slotH": 740,
-            "slotOffsetX": 46,
-            "slotOffsetY": -81,
-            "slotAspect": "fixed_0.75",
-            "objectPosition": "bottom"
-          },
-          "dance_hooray": {
-            "slotW": 1481,
-            "slotH": 775,
-            "slotOffsetX": 46,
-            "slotOffsetY": -80,
-            "slotAspect": "fixed_0.75",
-            "objectPosition": "bottom"
-          },
-          "dance_smile": {
-            "slotW": 1481,
-            "slotH": 775,
-            "slotOffsetX": 46,
-            "slotOffsetY": -80,
-            "slotAspect": "fixed_0.75",
-            "objectPosition": "bottom"
-          },
-          "think_arms_crossed_side": {
-            "slotW": 1481,
-            "slotH": 775,
-            "slotOffsetX": 46,
-            "slotOffsetY": -80,
-            "slotAspect": "fixed_0.75",
-            "objectPosition": "bottom"
-          },
-          "think_chin_clasp": {
-            "slotW": 1481,
-            "slotH": 775,
-            "slotOffsetX": 46,
-            "slotOffsetY": -80,
-            "slotAspect": "fixed_0.75",
-            "objectPosition": "bottom"
-          },
-          "pono_001": {
-            "slotW": 1481,
-            "slotH": 740,
-            "slotOffsetX": 46,
-            "slotOffsetY": -81,
-            "slotAspect": "fixed_0.75",
-            "objectPosition": "bottom"
-          }
-        }
-      },
-      "hakase": {
-        "slotW": 947,
-        "slotH": 655,
-        "slotOffsetX": 0,
-        "slotOffsetY": -99,
-        "slotAspect": "fixed_1.23",
-        "objectPosition": "bottom"
-      },
-      "kurumi": {
-        "slotW": 380,
-        "slotH": 520,
-        "slotOffsetX": 0,
-        "slotOffsetY": 0,
-        "slotAspect": "fixed_0.73",
-        "objectPosition": "bottom",
-        "perVariant": {
-          "kurumi_001": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_hi": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_wave": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_hooray": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_wink": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_clasp": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_idea": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_point": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_calm": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_pray": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_book": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_cheer": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          },
-          "kurumi_greet": {
-            "slotW": 380,
-            "slotH": 520,
-            "slotOffsetX": 0,
-            "slotOffsetY": 0,
-            "slotAspect": "fixed_0.73",
-            "objectPosition": "bottom"
-          }
-        }
-      },
-      "singleBox": {
         "boxW": 1615,
         "boxH": 457,
         "boxY": 578,
@@ -1990,10 +1998,10 @@
     },
     "D": {
       "pono": {
-        "slotW": 560,
-        "slotH": 765,
+        "slotW": 602,
+        "slotH": 816,
         "slotOffsetX": 168,
-        "slotOffsetY": -29,
+        "slotOffsetY": -81,
         "slotAspect": "fixed_0.75",
         "objectPosition": "bottom",
         "perVariant": {
@@ -2058,118 +2066,118 @@
       "hakase": {
         "slotW": 828,
         "slotH": 800,
-        "slotOffsetX": -203,
+        "slotOffsetX": -362,
         "slotOffsetY": -134,
         "slotAspect": "fixed_1.23",
         "objectPosition": "bottom"
       },
       "kurumi": {
-        "slotW": 460,
-        "slotH": 630,
-        "slotOffsetX": 0,
+        "slotW": 550,
+        "slotH": 489,
+        "slotOffsetX": 654,
         "slotOffsetY": 0,
         "slotAspect": "fixed_0.73",
         "objectPosition": "bottom",
         "perVariant": {
           "kurumi_001": {
-            "slotW": 460,
-            "slotH": 630,
-            "slotOffsetX": 0,
+            "slotW": 550,
+            "slotH": 489,
+            "slotOffsetX": 654,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_hi": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_wave": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_hooray": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_wink": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_clasp": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_idea": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_point": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_calm": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_pray": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_book": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_cheer": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",
             "objectPosition": "bottom"
           },
           "kurumi_greet": {
-            "slotW": 460,
-            "slotH": 630,
+            "slotW": 280,
+            "slotH": 380,
             "slotOffsetX": 0,
             "slotOffsetY": 0,
             "slotAspect": "fixed_0.73",

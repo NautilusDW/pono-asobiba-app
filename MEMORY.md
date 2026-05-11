@@ -108,6 +108,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T06:22:40Z - ローカル editor Export JSON (op-layout-2026-05-11-06-18-47.json) を saved-layout.json __op_layout (B/C/D) に反映 (220 keys 完全温存, kurumi.perVariant 13 entries 全 VC 確認) + sw v932
+- **タスク**: ローカル editor Export JSON (op-layout-2026-05-11-06-18-47.json) を saved-layout.json __op_layout (B/C/D) に反映 (220 keys 完全温存, kurumi.perVariant 13 entries 全 VC 確認) + sw v932
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 62
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 47, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T06:10:25Z - op-layout-editor: 各 dialogue line に はかせ + くるみ dropdown 追加 (3 キャラ独立切替), HAKASE_VARIANTS 定数 + hakasePathByName + hakaseFullPath helper, buildScenarioPanelsLiteral hakaseImg シリアライズ, migrateScenario 空値正規化, SCENARIO_DATA_VERSION v927→v930, sw v931
 - **タスク**: op-layout-editor: 各 dialogue line に はかせ + くるみ dropdown 追加 (3 キャラ独立切替), HAKASE_VARIANTS 定数 + hakasePathByName + hakaseFullPath helper, buildScenarioPanelsLiteral hakaseImg シリアライズ, migrateScenario 空値正規化, SCENARIO_DATA_VERSION v927→v930, sw v931
 - **結果**: 成功
@@ -209,19 +222,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 35, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-11T04:29:25Z - kurumi 13 variants 実装に合わせて memory ドキュメント (feature_quizland_kurumi.md / feature_quizland_opening.md / MEMORY.md) を本文書き換え更新 (sw v923, OP Panel 2/5/6 variant 確定値 hi/wink/clasp 反映, op-layout-editor 拡張 + saved-layout.json perVariant 13 entries の説明追加)
-- **タスク**: kurumi 13 variants 実装に合わせて memory ドキュメント (feature_quizland_kurumi.md / feature_quizland_opening.md / MEMORY.md) を本文書き換え更新 (sw v923, OP Panel 2/5/6 variant 確定値 hi/wink/clasp 反映, op-layout-editor 拡張 + saved-layout.json perVariant 13 entries の説明追加)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 46
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 34, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
