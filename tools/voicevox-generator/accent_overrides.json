@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "speaker_id": 2,
+  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md",
+  "generated_by": "Claude Code (Opus 4.7)",
+  "generated_at": "2026-05-11T10:04:39Z",
+  "items": [
+    {
+      "id": "q001_q",
+      "text": "まんなかは なにいろ？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "マンナカワ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (子供向け、辞書 user_dict と整合)"
+        },
+        {
+          "phrase_index": 1,
+          "mora_signature": "ナニイロ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK 標準、デフォルト推定が頭高化しがち)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_a",
+      "text": "あか",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "アカ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_b",
+      "text": "あお",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "アオ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_c",
+      "text": "きいろ",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "キイロ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_d",
+      "text": "みどり",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ミドリ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_q",
+      "text": "りんごは いくつ？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "リンゴワ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (りんご NHK 平板)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_a",
+      "text": "ふたつ",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "フタツ",
+          "accent": 2,
+          "confidence": "high",
+          "note": "中高 ふた'つ"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_b",
+      "text": "みっつ",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_c",
+      "text": "よっつ",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_d",
+      "text": "いつつ",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_q",
+      "text": "おおきい の はんたいは？",
+      "patches": [
+        {
+          "phrase_index": 2,
+          "mora_signature": "ハンタイワ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (はんたい NHK 平板)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_a",
+      "text": "あかい",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "アカイ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (子供向け; NHK は 0 / 2 併存)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_b",
+      "text": "まるい",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "マルイ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_c",
+      "text": "ちいさい",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_d",
+      "text": "やさしい",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ヤサシイ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK 標準は 0)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q160_q",
+      "text": "いきを すうのは からだの どこ？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "イキオ",
+          "accent": 2,
+          "confidence": "high",
+          "note": "中高 いき'を"
+        },
+        {
+          "phrase_index": 3,
+          "mora_signature": "カラダノ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (からだ NHK 平板 0)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q160_a",
+      "text": "はい",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_b",
+      "text": "い",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_c",
+      "text": "こころ",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ココロ",
+          "accent": 3,
+          "confidence": "medium",
+          "note": "尾高 こころ' (NHK 2/3 併存、子供向けは 3 尾高優勢)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q160_d",
+      "text": "ゆび",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q160_a_alt",
+      "text": "ぞうきの はい",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_b_alt",
+      "text": "いぶくろの い",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "イブクロノ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (いぶくろ NHK 平板 0)"
+        }
+      ],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_q",
+      "text": "にの つぎは？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ニノ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 に' + の"
+        },
+        {
+          "phrase_index": 1,
+          "mora_signature": "ツギハ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 つ'ぎは"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q170_a",
+      "text": "に",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_b",
+      "text": "さん",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_c",
+      "text": "よん",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_d",
+      "text": "ご",
+      "patches": [],
+      "needs_listen": true
+    }
+  ]
+}
