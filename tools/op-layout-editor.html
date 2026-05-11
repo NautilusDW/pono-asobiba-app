@@ -1227,6 +1227,15 @@ const PANEL_MODE_STORAGE_KEY = STORAGE_PREFIX + 'panelMode';
 // Persistent storage for drag-and-dropped images (Pono variants and frames).
 // Stored as { pono: [{name,path,label?}], frame: [{id,label,path,naturalAspect?}] }.
 const DROPPED_ASSETS_STORAGE_KEY = STORAGE_PREFIX + 'droppedAssets';
+// 2026-05-11: Scenario state schema version. Bumped whenever defaultScenario()
+// は新しい line/panel 構造を持つようになったときに上げる。 ロード時に
+// localStorage 内の version と一致しない場合、 saved scenario を捨てて
+// defaultScenario() を採用する (auto-migration)。 layout state (slot 値、
+// frame 設定、 dropped assets 等) は別 key で管理されているため影響を受けない。
+// v927: defaultScenario が本番 OP_PANELS と完全同期済 (Panel 2 3 行 / Panel 5
+// 4 行 / Panel 6 kurumiImg 注入)。 既存ユーザーで古い 2 行構成 saved scenario
+// を持つ場合、 この version 不一致で reset されて新 defaults が反映される。
+const SCENARIO_DATA_VERSION = 'v927';
 // Soft warning threshold for combined dropped-asset storage size (bytes).
 const DROPPED_ASSETS_WARN_BYTES = 4 * 1024 * 1024;
 
@@ -1347,6 +1356,7 @@ function defaultScenario() {
   //   (line 1453 付近) があるため、保存済み state を持つユーザーは reset 後に
   //   この defaults が反映される。 migration は値修正の範囲外のため touch しない。
   return {
+    version: SCENARIO_DATA_VERSION,
     panels: [
       // Panel 1 — narration
       {
@@ -1504,6 +1514,20 @@ function loadScenario() {
     const raw = localStorage.getItem(SCENARIO_STORAGE_KEY);
     if (!raw) return defaultScenario();
     const parsed = JSON.parse(raw);
+    // 2026-05-11: version-based auto migration。 saved state の version が
+    // 現行 SCENARIO_DATA_VERSION と一致しない場合、 defaults を強制使用する
+    // (古い 2 行構成 Panel 2 / 2 行構成 Panel 5 / kurumiImg 無し Panel 6 等を
+    // 新しい本番同期版 defaults で置き換える)。 layout state (slot 値、 frame
+    // 設定等) は別 key 管理なので影響を受けない。 個別カスタマイズが消える
+    // リスクはあるが、 現状 defaults のままが大半なので許容する。
+    if (!parsed || typeof parsed !== 'object' || parsed.version !== SCENARIO_DATA_VERSION) {
+      try {
+        console.log('[op-layout-editor] scenario version mismatch (' +
+          (parsed && parsed.version ? parsed.version : 'none') + ' → ' +
+          SCENARIO_DATA_VERSION + '), using defaults');
+      } catch (_) {}
+      return defaultScenario();
+    }
     return migrateScenario(parsed);
   } catch (e) { return defaultScenario(); }
 }
@@ -1511,7 +1535,11 @@ function loadScenario() {
 function saveScenario() {
   try {
     if (state && state.scenario) {
-      localStorage.setItem(SCENARIO_STORAGE_KEY, JSON.stringify(state.scenario));
+      // 2026-05-11: 保存時に version を確実に埋め込む。 state.scenario が
+      // (例えば import 経由で) version 欠落のまま入った場合でも、 ここで
+      // 現行 SCENARIO_DATA_VERSION を上書きしてフォーマットを揃える。
+      const toSave = Object.assign({}, state.scenario, { version: SCENARIO_DATA_VERSION });
+      localStorage.setItem(SCENARIO_STORAGE_KEY, JSON.stringify(toSave));
     }
   } catch (e) {}
 }
