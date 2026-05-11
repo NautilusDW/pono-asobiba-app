@@ -25,18 +25,31 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 
 ### Step 1. 辞書インポート (初回のみ)
 
+> **辞書フォーマット (VDC2) 解明済 (2026-05-12 by Codex)**: VOICEPEAK のエクスポート結果 (`.vdc2`) は **バイナリではなく UTF-8 JSON 配列**。`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の 6 フィールドで構成される。テキストエディタで開ける。
+>
+> 詳細は [memory/reference_voicepeak_vdc2_format.md](../../memory/reference_voicepeak_vdc2_format.md) を参照。
+
+#### 1-a. CSV → VDC2 変換 (PowerShell スクリプト)
+
+`voicepeak_user_dict.csv` (65 語、5 列) を編集したら、以下で VDC2 を再生成する:
+
+```powershell
+cd d:\AppDevelopment\pono-asobiba-app\tools\voicepeak
+pwsh ./Convert-VoicepeakUserDictCsvToVdc2.ps1
+# あるいは
+powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictCsvToVdc2.ps1
+# → voicepeak_user_dict.vdc2 が生成される
+```
+
+スクリプトは CSV を読み込み、上記 6 フィールド形式の JSON 配列に変換して `voicepeak_user_dict.vdc2` (UTF-8) を出力する。
+
+#### 1-b. VOICEPEAK で VDC2 をインポート
+
 1. VOICEPEAK を起動
 2. メニュー [辞書] → [ユーザー辞書] → [インポート] (バージョンによって表記差異あり)
 3. `voicepeak_user_dict.vdc2` を選択してインポート
 4. 65 語が登録されたことを確認 (特に「真ん中=マンナカ平板」「肺=ハイ頭高」「胃=イ頭高」が反映されているか)
-
-> **辞書フォーマット確認済み**: VOICEPEAK のエクスポート結果 (`.vdc2`) は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` を持つ形式。編集元は `voicepeak_user_dict.csv`、インポート用は `voicepeak_user_dict.vdc2`。
->
-> CSVを直した場合は以下で `.vdc2` を再生成:
->
-> ```powershell
-> powershell -ExecutionPolicy Bypass -File tools\voicepeak\Convert-VoicepeakUserDictCsvToVdc2.ps1
-> ```
+5. 既存辞書がある場合は VOICEPEAK 側で「マージ」or「置換」を選択
 
 ### Step 2. ナレーター (話者) 選択
 
