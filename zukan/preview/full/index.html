@@ -1326,6 +1326,90 @@ body.resize-mode .ruler { display: block; }
   border-radius: 2px;
   pointer-events: none;
 }
+
+/* ───── ツールバー組込ナビゲーション (#zk-pages-btn / .zk-pages-dropdown) ─────
+   page-nav.js の右上 FAB はこのエディタの太いツールバーと重なって見えないため、
+   ツールバーの先頭にも 🌐 ページ ボタンを置く。 FAB はそのまま残す
+   (page-nav.js の docstring に「常駐 layout-editor の 🌐 ページ ボタンと併存可能」
+   と明記済み)。 配色は既存ツールバーのアクセントカラー (#ffba6b 金 / #1a1a1a 黒) を踏襲。 */
+#zk-pages-btn {
+  background: #1a1a1a;
+  color: #ffba6b;
+  border: 1px solid #ffba6b;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#zk-pages-btn:hover { background: #2a2a2a; }
+#zk-pages-btn[aria-expanded="true"] {
+  background: #6a4ed4;
+  border-color: #8a5ef0;
+  color: #fff;
+}
+.zk-pages-dropdown {
+  position: fixed;
+  z-index: 9100;
+  min-width: 240px;
+  max-width: 360px;
+  background: #1a1a1a;
+  color: #ffba6b;
+  border: 1px solid #ffba6b;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 6px 0;
+  font: 12px system-ui, -apple-system, sans-serif;
+}
+.zk-pages-dropdown-title {
+  font-size: 11px;
+  color: #ffba6b;
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid rgba(255,186,107,0.3);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.zk-pages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.zk-pages-list li { margin: 0; }
+.zk-pages-link,
+.zk-pages-list span {
+  display: block;
+  padding: 10px 14px;
+  color: #ffba6b;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,186,107,0.15);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.zk-pages-list li:last-child .zk-pages-link,
+.zk-pages-list li:last-child span { border-bottom: none; }
+.zk-pages-link:hover { background: rgba(255,186,107,0.1); }
+.zk-pages-link.is-current {
+  color: rgba(255,186,107,0.5);
+  cursor: default;
+  background: rgba(255,186,107,0.05);
+}
+
+/* ───── 装飾フレーム overlay (.zk-frame) ─────
+   userbox の上に重ねるアンティーク風フレーム PNG/SVG。 pointer-events:none で
+   下層の userbox 操作 (resize / select / drag) を邪魔しない。 z-index は
+   userbox-badge (= z-index: auto 系) より低く、 動物イラスト等の前景 img より低く
+   設定 — 中身を妨げず、 ただ枠だけ装飾する。 */
+.zk-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  z-index: 5;
+  user-select: none;
+}
+/* userbox 内の前景画像は frame より上 */
+.userbox > img:not(.zk-frame) { position: relative; z-index: 10; }
 </style>
 <script>
   // page-nav.js 用の編集ページ一覧 (全エディタで統一)
@@ -1343,6 +1427,10 @@ body.resize-mode .ruler { display: block; }
 <body class="show-safe">
 
 <div class="toolbar">
+  <div>
+    <button id="zk-pages-btn" type="button" title="他の編集ページへ" aria-haspopup="true" aria-expanded="false">🌐 ページ</button>
+  </div>
+
   <div>
     <label>レイアウト</label>
     <select id="layout-select">
@@ -4521,6 +4609,239 @@ if (!restored) {
 // ── Save before leaving ──
 window.addEventListener('beforeunload', saveState);
 window.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
+
+// ─────────────────────────────────────────────────────────────────────
+//  🌐 ツールバー組込ナビゲーション (Task A)
+//   page-nav.js (右上 FAB) はツールバーと重なって視認できないので、
+//   ツールバー先頭の #zk-pages-btn から同じ pages 一覧を開けるようにする。
+//   FAB は併存 (page-nav.js のドキュメント保証)。
+// ─────────────────────────────────────────────────────────────────────
+(function initZkPagesNav() {
+  const btn = document.getElementById('zk-pages-btn');
+  if (!btn) return;
+  let dropdown = null;
+  let docHandler = null;
+  let escHandler = null;
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' :
+      c === '"' ? '&quot;' : '&#39;');
+  }
+  function closeDropdown() {
+    if (dropdown) { dropdown.remove(); dropdown = null; }
+    if (docHandler) { document.removeEventListener('click', docHandler, true); docHandler = null; }
+    if (escHandler) { document.removeEventListener('keydown', escHandler, true); escHandler = null; }
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  function openDropdown() {
+    const pages = (window.PageNavConfig && Array.isArray(window.PageNavConfig.pages))
+      ? window.PageNavConfig.pages : [];
+    if (!pages.length) return;
+    dropdown = document.createElement('div');
+    dropdown.className = 'zk-pages-dropdown';
+    const rect = btn.getBoundingClientRect();
+    dropdown.style.top  = (rect.bottom + 4) + 'px';
+    dropdown.style.left = Math.max(8, rect.left) + 'px';
+    let html = '<div class="zk-pages-dropdown-title">編集可能なページ</div><ul class="zk-pages-list">';
+    pages.forEach(p => {
+      if (!p || !p.name) return;
+      const name = escHtml(p.name);
+      const url  = p.url ? escHtml(p.url) : '';
+      if (p.current) {
+        html += '<li><a class="zk-pages-link is-current" href="javascript:void(0)" onclick="return false;">📍 ' + name + '</a></li>';
+      } else if (url) {
+        html += '<li><a class="zk-pages-link" href="' + url + '">' + name + '</a></li>';
+      } else {
+        html += '<li><span>' + name + '</span></li>';
+      }
+    });
+    html += '</ul>';
+    dropdown.innerHTML = html;
+    document.body.appendChild(dropdown);
+    btn.setAttribute('aria-expanded', 'true');
+
+    // 外側クリックで閉じる (defer して同一クリックの捕捉を回避)
+    docHandler = function (e) {
+      if (!dropdown) return;
+      if (dropdown.contains(e.target)) return;
+      if (btn.contains(e.target)) return;
+      closeDropdown();
+    };
+    setTimeout(() => document.addEventListener('click', docHandler, true), 0);
+
+    // Esc で閉じる
+    escHandler = function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeDropdown(); }
+    };
+    document.addEventListener('keydown', escHandler, true);
+  }
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (dropdown) closeDropdown(); else openDropdown();
+  });
+})();
+
+// ─────────────────────────────────────────────────────────────────────
+//  🖼 装飾フレーム (Task B): userbox に .zk-frame オーバーレイを付ける
+//   - userbox.dataset.frameKind = 'animal-banner' | 'card-square' |
+//     'rabbit-portrait' | 'text-underline' でアサイン
+//   - createUserbox() で復元する経路と、 後付けの UI 経路の両方を吸収
+//   - collectUserboxes() / restoreUserboxes() に frameKind を載せて永続化
+//
+//  既存の createUserbox / collectUserboxes / restoreUserboxes には触らず、
+//  monkey-patch でラップする (元コードのリスク最小化)。
+// ─────────────────────────────────────────────────────────────────────
+(function initZkFrameOverlay() {
+  const PLACEHOLDER_DIR = '../../../assets/zukan/frames/placeholder/';
+  const FRAME_SRC = {
+    'animal-banner':   PLACEHOLDER_DIR + 'animal-banner.svg',
+    'card-square':     PLACEHOLDER_DIR + 'card-square.svg',
+    'rabbit-portrait': PLACEHOLDER_DIR + 'rabbit-portrait.svg',
+    'text-underline':  PLACEHOLDER_DIR + 'text-underline.svg',
+  };
+  const FRAME_LABEL = {
+    '':                 '（なし）',
+    'animal-banner':   '動物バナー (横長)',
+    'card-square':     'カードマス (正方形)',
+    'rabbit-portrait': 'うさぎポートレート (縦長)',
+    'text-underline':  'テキスト下線',
+  };
+  // 1) .zk-frame img の付け外し
+  function applyFrame(userboxEl, kind) {
+    if (!userboxEl) return;
+    const existing = userboxEl.querySelector(':scope > img.zk-frame');
+    if (existing) existing.remove();
+    if (kind && FRAME_SRC[kind]) {
+      const img = document.createElement('img');
+      img.className = 'zk-frame';
+      img.dataset.frameKind = kind;
+      img.alt = '';
+      img.draggable = false;
+      img.src = FRAME_SRC[kind];
+      // badge と del の前 (= DOM 下層 / overlay 用) に挿入
+      userboxEl.insertBefore(img, userboxEl.firstChild);
+      userboxEl.dataset.frameKind = kind;
+    } else {
+      delete userboxEl.dataset.frameKind;
+    }
+  }
+  window.__zkApplyFrame = applyFrame;
+
+  // 2) createUserbox を wrap して frameKind option を反映
+  if (typeof window.createUserbox === 'function') {
+    const orig = window.createUserbox;
+    window.createUserbox = function (opts) {
+      const el = orig(opts);
+      if (opts && opts.frameKind) applyFrame(el, opts.frameKind);
+      return el;
+    };
+  } else if (typeof createUserbox === 'function') {
+    // createUserbox は IIFE の外で宣言されているため、 直接の再代入は不可。
+    // 代わりに MutationObserver でフォローする (3 を参照)。
+  }
+
+  // 3) safe-area への userbox 追加を MutationObserver で監視し、
+  //    dataset.frameKind が付いていれば applyFrame を呼ぶ。 これで
+  //    createUserbox の closure 内呼び出し (= 上の wrap を経由しない) も
+  //    確実にフレームが付く。
+  const safeArea = document.querySelector('.zukan-safe') || document.getElementById('safe-area');
+  if (safeArea) {
+    const mo = new MutationObserver((records) => {
+      records.forEach(rec => {
+        rec.addedNodes && rec.addedNodes.forEach(node => {
+          if (node && node.nodeType === 1 && node.classList && node.classList.contains('userbox')) {
+            const kind = node.dataset.frameKind;
+            if (kind) applyFrame(node, kind);
+          }
+        });
+      });
+    });
+    mo.observe(safeArea, { childList: true });
+  }
+
+  // 4) collectUserboxes を wrap して frameKind を出力に含める
+  if (typeof window.collectUserboxes === 'function') {
+    const origCollect = window.collectUserboxes;
+    window.collectUserboxes = function () {
+      const arr = origCollect();
+      const boxes = [...document.querySelectorAll('.userbox')];
+      arr.forEach((row, i) => {
+        const el = boxes[i];
+        if (el && el.dataset.frameKind) row.frameKind = el.dataset.frameKind;
+      });
+      return arr;
+    };
+  }
+  // 5) restoreUserboxes はそのままで OK (createUserbox 経由 → MutationObserver
+  //    か wrap が反応する)。 ただし opts.frameKind の伝播のために
+  //    dataset を createUserbox 内で立てるルートを併走させる。
+  if (typeof window.restoreUserboxes === 'function') {
+    const origRestore = window.restoreUserboxes;
+    window.restoreUserboxes = function (arr) {
+      // 元実装に createUserbox(box) を呼んでもらうが、 box.frameKind は元では
+      // 使われない。 だから後段で全 userbox を走査して frameKind を当てる。
+      origRestore(arr);
+      if (Array.isArray(arr)) {
+        const boxes = [...document.querySelectorAll('.userbox')];
+        arr.forEach((row, i) => {
+          if (row && row.frameKind && boxes[i]) {
+            boxes[i].dataset.frameKind = row.frameKind;
+            applyFrame(boxes[i], row.frameKind);
+          }
+        });
+      }
+    };
+  }
+
+  // 6) ツールバー UI: 選択中 userbox にフレーム種を割り当てる select
+  function injectFrameUI() {
+    const toolbar = document.querySelector('.toolbar');
+    if (!toolbar || document.getElementById('zk-frame-kind')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'zk-frame-kind-wrap';
+    const label = document.createElement('label');
+    label.style.color = '#aaa';
+    label.textContent = '🖼 装飾フレーム';
+    const sel = document.createElement('select');
+    sel.id = 'zk-frame-kind';
+    sel.title = '選択中の枠 (.userbox) に装飾フレームを付与';
+    Object.keys(FRAME_LABEL).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = FRAME_LABEL[k];
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => {
+      const kind = sel.value;
+      // selectedElements は外側スコープ。 window.selectedElements で参照
+      const sels = (window.selectedElements && window.selectedElements.size)
+        ? [...window.selectedElements]
+        : (function () {
+            const a = document.querySelector('.userbox.selected, .resizable.selected');
+            return a ? [a] : [];
+          })();
+      if (!sels.length) {
+        alert('先に枠を選択してください (resize-mode で枠をクリック)');
+        sel.value = '';
+        return;
+      }
+      sels.forEach(el => {
+        if (el && el.classList.contains('userbox')) applyFrame(el, kind);
+      });
+      if (typeof window.saveResizeState === 'function') window.saveResizeState();
+    });
+    wrap.appendChild(label);
+    wrap.appendChild(sel);
+    // 「スロット差替画像」 div の直後に挿入したい — 簡単のため toolbar 末尾近くに append
+    toolbar.appendChild(wrap);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectFrameUI);
+  } else {
+    injectFrameUI();
+  }
+})();
 </script>
 </body>
 </html>
