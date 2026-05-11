@@ -1,6 +1,6 @@
 ---
 name: Quizland リスのくるみちゃん（アシスタントキャラ）
-description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 + scenario state に version 付き auto migration を実装し既存ユーザーも editor リロードだけで新 defaults へ自動移行 + シナリオ編集モードの dialogue 行に「ポノ」「はかせ」「くるみ」3 dropdown を追加 (各 line で 3 キャラの立ち絵 variant を独立に選択可能) + ローカル editor → クリップボード Export → orchestrator が saved-layout.json `__op_layout.{B,C,D}.kurumi.perVariant` にマージというワークフローが v932 で初めて 13 entries 全量で正式運用、 全 VC の kurumi.perVariant が初期値 (`kurumi_001` 値全コピー) から editor 編集後の個別調整値に更新 (B では variant ごとに slotH=278〜380, slotOffsetX=54〜88 が分散) + **v933 で runtime kurumi CSS の per-VC `.op-char-slot` を `right: 0` 右端アンカーから `left: 50% + transform: translate(-50%, -50%)` 中央アンカーへ統一 (B/C/D 全 VC、 pono/hakase と同じ式)、 これにより editor preview と runtime の transform 計算式が完全一致し、 editor で詰めた slotOffsetX/Y がそのまま runtime に反映される根本修正** (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化 / v929 SCENARIO_DATA_VERSION='v927' 導入で auto migration 実装、 DevTools 手動 reset 手順は不要に / v931 シナリオ dialogue line に「はかせ」「くるみ」 dropdown 追加 + HAKASE_VARIANTS 定数 + hakasePathByName/hakaseFullPath ヘルパ + buildScenarioPanelsLiteral に hakaseImg シリアライズ + migrateScenario に hakaseImg 空値正規化 + SCENARIO_DATA_VERSION v927→v930 / v932 ローカル editor 編集値を saved-layout.json `__op_layout` に反映、 kurumi.perVariant 13 entries 初の本格 publish、 220 keys 完全温存 / **v933 (現行) runtime CSS アンカーを editor preview と統一、 saved-layout.json の kurumi slot 値が runtime で初めて editor で見たとおりに再現される**)
+description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 + scenario state に version 付き auto migration を実装し既存ユーザーも editor リロードだけで新 defaults へ自動移行 + シナリオ編集モードの dialogue 行に「ポノ」「はかせ」「くるみ」3 dropdown を追加 (各 line で 3 キャラの立ち絵 variant を独立に選択可能) + ローカル editor → クリップボード Export → orchestrator が saved-layout.json `__op_layout.{B,C,D}.kurumi.perVariant` にマージというワークフローが v932 で初めて 13 entries 全量で正式運用、 全 VC の kurumi.perVariant が初期値 (`kurumi_001` 値全コピー) から editor 編集後の個別調整値に更新 (B では variant ごとに slotH=278〜380, slotOffsetX=54〜88 が分散) + **v933 で runtime kurumi CSS の per-VC `.op-char-slot` を `right: 0` 右端アンカーから `left: 50% + transform: translate(-50%, -50%)` 中央アンカーへ統一 (B/C/D 全 VC、 pono/hakase と同じ式)、 これにより editor preview と runtime の transform 計算式が完全一致し、 editor で詰めた slotOffsetX/Y がそのまま runtime に反映される根本修正** (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化 / v929 SCENARIO_DATA_VERSION='v927' 導入で auto migration 実装、 DevTools 手動 reset 手順は不要に / v931 シナリオ dialogue line に「はかせ」「くるみ」 dropdown 追加 + HAKASE_VARIANTS 定数 + hakasePathByName/hakaseFullPath ヘルパ + buildScenarioPanelsLiteral に hakaseImg シリアライズ + migrateScenario に hakaseImg 空値正規化 + SCENARIO_DATA_VERSION v927→v930 / v932 ローカル editor 編集値を saved-layout.json `__op_layout` に反映、 kurumi.perVariant 13 entries 初の本格 publish、 220 keys 完全温存 / v933 runtime CSS アンカーを editor preview と統一、 saved-layout.json の kurumi slot 値が runtime で初めて editor で見たとおりに再現される / v934 ユーザー誤指定で同値再 export の無変更 publish (sw だけバンプ) / **v935 (現行) 06-49-00 Export を merge し VC C / D 側にも初めて hakase + kurumi の実値を publish (12 entries diff、 B は kurumi_clasp の slotH/slotOffsetY 微調整、 C/D は hakase.slotOffsetX と kurumi.slotOffsetX/slotH を実値化)**)
 type: feature
 ---
 
@@ -64,7 +64,7 @@ type: feature
 
 | variant | ファイル | ポーズ説明 | 主な用途 |
 |---|---|---|---|
-| 001 | `kurumi_001.webp` | 基準正面立ち絵 | デフォルト立ち姿、 fallback (v932 時点の saved-layout では D で `slotW=550 / slotH=489 / slotOffsetX=654` と大きく上書き済) |
+| 001 | `kurumi_001.webp` | 基準正面立ち絵 | デフォルト立ち姿、 fallback (v935 時点の saved-layout では D で `slotW=550 / slotH=413 / slotOffsetX=158` と上書き済 (v932 → v935 で slotH 489→413 / slotOffsetX 654→158 に再配置)、 C でも `slotOffsetX=158` で右寄せ調整) |
 | hi | `kurumi_hi.webp` | **左手大きく挨拶** | 元気な挨拶、 OP Panel 2 で「こんにちは、ポノさん！」 |
 | wave | `kurumi_wave.webp` | 右手で控えめに振る | やわらかい挨拶、 軽い相槌 |
 | hooray | `kurumi_hooray.webp` | 両腕万歳・正面笑顔 | 強い喜び、 正解時のお祝い |
@@ -149,7 +149,7 @@ if (keepKurumiVisible) {
 - Panel 6 のように speaker は hakase/pono だが立ち絵は維持したい line は `kurumiImg: 'kurumi_clasp.webp'` のように **明示注入**
 - `playOpeningCinematic` の `finally` で `is-visible` / `hidden` を全部クリア (replay 時の前回状態を持ち越さない)
 
-## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正 / v929 scenario auto migration / v931 シナリオ行に hakase + kurumi dropdown 追加 / v932 ローカル editor → saved-layout.json マージで kurumi.perVariant 13 entries 初の本格 publish 成立 / **v933 runtime kurumi CSS アンカーを editor preview と統一 (B/C/D 全 VC を `left:50% + transform:translate(-50%,-50%)` 中央起点に揃え、 editor で詰めた slot 値が runtime にも正しく反映されるよう根本修正)**)
+## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正 / v929 scenario auto migration / v931 シナリオ行に hakase + kurumi dropdown 追加 / v932 ローカル editor → saved-layout.json マージで kurumi.perVariant 13 entries 初の本格 publish 成立 / v933 runtime kurumi CSS アンカーを editor preview と統一 (B/C/D 全 VC を `left:50% + transform:translate(-50%,-50%)` 中央起点に揃え、 editor で詰めた slot 値が runtime にも正しく反映されるよう根本修正) / v934 同値再 export の無変更 publish (sw だけバンプ) / **v935 (現行) 06-49-00 Export を merge し C/D 側にも hakase + kurumi の実値 publish が始まる (12 entries diff: B kurumi_clasp 微調整、 C/D は hakase.slotOffsetX + kurumi.slotOffsetX/slotH を実値化)**)
 
 `tools/op-layout-editor.html` を拡張し、 ポノ / 博士に並ぶ **「くるみ側」タブ** を追加。 13 variants × 3 VC (B / C / D) で slot 位置・サイズ・透過オフセット等を個別編集して saved-layout.json に publish できる。 v925 で **左ペインに Kurumi バリエーションサムネ一覧** + **シナリオ行 speaker に「くるみ」を追加** し、 ポノとほぼ同等の編集 UI を提供。 v926 で **scenario モードのデフォルトデータ (`defaultScenario()`) を本番 quizland/index.html の OP_PANELS (Panel 2/5 で kurumi line 追加 + Panel 6 で kurumiImg 注入) と完全一致**させた。 v927 で **migrateScenario / buildScenarioPanelsLiteral の kurumi 周り 3 件のバグ** (speaker='kurumi' を hakase に強制変換 / export 時に kurumiImg をシリアライズしない / kurumi line を 2-way 判定で hakase に化けさせる) を一括修正。 **v929 で `SCENARIO_DATA_VERSION` 定数を導入し scenario state を version 付き auto migration 化** — `loadScenario()` が saved state の version を見て不一致なら `defaultScenario()` を強制採用、 `saveScenario()` は保存時に最新 version を確実に埋め込むため、 既存ユーザーも editor をリロードするだけで自動的に新 defaults に移行する (DevTools コンソール手順は不要になった)。 **v931 で「シナリオ編集モード」 の各 dialogue 行に「ポノ」「はかせ」「くるみ」 の 3 dropdown を追加** し (`appendCharImgSelect()` 共通ヘルパで実装)、 各 line で `line.ponoImg` / `line.hakaseImg` / `line.kurumiImg` を speaker と独立に編集できるようにした。 同時に **`HAKASE_VARIANTS` 定数 + `hakasePathByName()` / `hakaseFullPath()` ヘルパを新設**、 `buildScenarioPanelsLiteral()` に `hakaseImg` シリアライズを追加、 `migrateScenario` で `line.hakaseImg` 空値正規化を追加、 `SCENARIO_DATA_VERSION` を `'v927'` → `'v930'` に bump (defaults 構造自体は未変更だが、 line に新フィールドが入る余地が広がったため auto migration を発火させて既存ユーザーも新 schema に揃える)。
 
@@ -216,43 +216,63 @@ editor の「くるみ側」タブ (および pono / hakase タブ) は **「対
 
 これは元からの仕様 (pono / hakase でも同じ)、 シナリオモードでは tab-bar 全体が隠れて各 line で speaker 選択する流れになるため。 kurumi も同パターンに従う。 「対話モード以外で『くるみ側』タブが見えない」 のはバグではなく仕様。 ナレ / シナリオモードで kurumi の slot 編集をしたい場合は一旦「対話 (P2-6)」モードに切替えて編集 → モードを戻す。
 
-### saved-layout.json `__op_layout` の kurumi 配信状態 (v933 時点の実態)
+### saved-layout.json `__op_layout` の kurumi / hakase 配信状態 (v935 時点の実態)
 
-`__op_layout.{B,C,D}.kurumi.perVariant` は **13 entries** で配信中。 v923 で 1 entry → 13 entries にスキーマ拡張、 v932 でローカル editor の位置調整 Export (`op-layout-2026-05-11-06-18-47.json`) を orchestrator 経由で merge し全 VC × 13 variants が初期値 (`kurumi_001` 値全コピー) から editor 編集後の個別調整値に更新済 (= editor 経由で初の本格 publish が成立)、 **v933 で runtime CSS アンカーが editor preview と統一されたため、 ここに格納した slotW/slotH/slotOffsetX/slotOffsetY 値はそのまま editor で見たままの位置で runtime に反映される (v932 までは runtime kurumi CSS が `right: 0` 右端アンカーだったため、 同じ JSON 値でも runtime では editor preview と最大 ~400px ずれていた)**。 `quizland/saved-layout.json` の top-level keys 220 件 (`q72`, `q83`, `__chip_text_overrides` 等の per-question overrides + `__op_layout` + `__op_narration` 等) は完全温存。
+`__op_layout.{B,C,D}.kurumi.perVariant` は **13 entries** で配信中。 v923 で 1 entry → 13 entries にスキーマ拡張、 v932 で **B のみ** ローカル editor の位置調整 Export (`op-layout-2026-05-11-06-18-47.json`) を orchestrator 経由で merge し B の 13 variants が初期値 (`kurumi_001` 値全コピー) から個別調整値に更新済 (C/D はこの時点で初期値のまま温存)、 **v933 で runtime kurumi CSS の per-VC `.op-char-slot` を中央アンカー (`left:50% + transform:translate(-50%,-50%)`) に統一**したことで、 ここに格納した slotW/slotH/slotOffsetX/slotOffsetY 値はそのまま editor で見たままの位置で runtime に反映されるようになった (v932 までは runtime kurumi CSS が `right: 0` 右端アンカーだったため、 同じ JSON 値でも runtime では editor preview と最大 ~400px ずれていた)。 v934 はユーザー誤指定で **同値再 Export を merge した実質的な無変更 publish** (sw だけバンプ)。 **v935 (06-49-00 Export、 現行) で初めて C / D 側にも実値編集を流し込み、 kurumi だけでなく hakase の slotOffsetX も C/D で publish 開始**。 `quizland/saved-layout.json` の top-level keys 220 件 (`q72`, `q83`, `__chip_text_overrides` 等の per-question overrides + `__op_layout` + `__op_narration` 等) は引き続き完全温存。
+
+#### v935 の実差分 (v932 → v935 deep diff、 kurumi flat + perVariant + hakase 含めて 12 entries)
+
+**B (kurumi の高さ縮小 + 縦オフセット下げ)**
+- `B.kurumi.slotH`: 354 → **320**
+- `B.kurumi.slotOffsetY`: 0 → **19**
+- `B.kurumi.perVariant.kurumi_clasp` も同期 (slotH 354→320, slotOffsetY 0→19)
+
+**C (hakase 左移動 + kurumi 右移動)**
+- `C.hakase.slotOffsetX`: 0 → **-27**
+- `C.kurumi.slotOffsetX`: 0 → **158**
+- `C.kurumi.perVariant.kurumi_001` も同期 (slotOffsetX 0→158)
+
+**D (hakase 大幅右移動 + kurumi 高さ縮小 + 大幅左移動)**
+- `D.hakase.slotOffsetX`: -362 → **-142**
+- `D.kurumi.slotH`: 489 → **413**
+- `D.kurumi.slotOffsetX`: 654 → **158**
+- `D.kurumi.perVariant.kurumi_001` も同期 (slotH 489→413, slotOffsetX 654→158)
 
 ```json
-"kurumi": {
-  "perVariant": {
-    "kurumi_001":   { "slotW": 280, "slotH": 278, "slotOffsetX": 58, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_hi":    { "slotW": 280, "slotH": 303, "slotOffsetX": 54, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_wave":  { "slotW": 280, "slotH": 303, "slotOffsetX": 59, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_hooray":{ "slotW": 280, "slotH": 380, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_wink":  { "slotW": 280, "slotH": 295, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_clasp": { "slotW": 280, "slotH": 354, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_idea":  { "slotW": 280, "slotH": 345, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_point": { "slotW": 280, "slotH": 328, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_calm":  { "slotW": 280, "slotH": 328, "slotOffsetX": 88, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_pray":  { "slotW": 280, "slotH": 303, "slotOffsetX": 65, "slotOffsetY": -4, "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_book":  { "slotW": 280, "slotH": 320, "slotOffsetX": 88, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_cheer": { "slotW": 280, "slotH": 328, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
-    "kurumi_greet": { "slotW": 280, "slotH": 320, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" }
+"B": {
+  "kurumi": {
+    "perVariant": {
+      "kurumi_001":   { "slotW": 280, "slotH": 278, "slotOffsetX": 58, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_hi":    { "slotW": 280, "slotH": 303, "slotOffsetX": 54, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_wave":  { "slotW": 280, "slotH": 303, "slotOffsetX": 59, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_hooray":{ "slotW": 280, "slotH": 380, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_wink":  { "slotW": 280, "slotH": 295, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_clasp": { "slotW": 280, "slotH": 320, "slotOffsetX": 77, "slotOffsetY": 19, "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_idea":  { "slotW": 280, "slotH": 345, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_point": { "slotW": 280, "slotH": 328, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_calm":  { "slotW": 280, "slotH": 328, "slotOffsetX": 88, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_pray":  { "slotW": 280, "slotH": 303, "slotOffsetX": 65, "slotOffsetY": -4, "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_book":  { "slotW": 280, "slotH": 320, "slotOffsetX": 88, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_cheer": { "slotW": 280, "slotH": 328, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+      "kurumi_greet": { "slotW": 280, "slotH": 320, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" }
+    }
   }
 }
 ```
 
-(上記は B の実値スナップショット、 v932 時点)
+(上記は B の実値スナップショット、 v935 時点。 `kurumi_clasp` の slotH=320 / slotOffsetY=19 が今回の更新点)
 
-#### VC 別の編集状況 (v932 時点)
+#### VC 別の編集状況 (v935 時点)
 
-| VC | kurumi.perVariant の編集状況 |
-|---|---|
-| **B** (1024×768) | 13 variants 全部が editor で個別調整済 (slotH 278〜380、 slotOffsetX 54〜88、 `kurumi_pray` だけ slotOffsetY=-4 と微調整、 ほかは 0)。 全 variant `slotW=280` / `slotAspect='fixed_0.73'` / `objectPosition='bottom'` で統一 |
-| **C** (1920×1080) | 13 variants 全部 `slotW=280 / slotH=380 / slotOffsetX=0 / slotOffsetY=0` の初期値 (= 今回の Export では C は触らずに送出された)。 今後 editor で個別調整可能 |
-| **D** (2560×1080) | `kurumi_001` のみ `slotW=550 / slotH=489 / slotOffsetX=654` で大きく上書き (= D 表示で `kurumi_001` を画面右寄せの大サイズに調整)。 他 12 variants は初期値のまま |
+| VC | kurumi.perVariant の編集状況 | hakase の編集状況 |
+|---|---|---|
+| **B** (1024×768) | 13 variants 全部が editor で個別調整済 (slotH 278〜380、 slotOffsetX 54〜88、 `kurumi_clasp` のみ slotOffsetY=19、 `kurumi_pray` のみ slotOffsetY=-4、 残りは 0)。 全 variant `slotW=280` / `slotAspect='fixed_0.73'` / `objectPosition='bottom'` で統一。 v935 で `kurumi_clasp` の slotH 354→320 / slotOffsetY 0→19 が追加調整 | 初期値のまま (v935 でも触らず) |
+| **C** (1920×1080) | `kurumi_001` のみ `slotOffsetX=158` で publish (v935 で 0→158 に右寄せ調整)。 他 12 variants は `slotW=280 / slotH=380 / slotOffsetX=0` の初期値温存 | **v935 で `slotOffsetX=-27` を初 publish** (左に少し寄せる調整) |
+| **D** (2560×1080) | `kurumi_001` を `slotW=550 / slotH=413 / slotOffsetX=158` で大きく上書き (v935 で slotH 489→413、 slotOffsetX 654→158 に調整、 「画面右端の大サイズ」 から 「中央寄りの中サイズ」 に再配置)。 他 12 variants は初期値のまま | **v935 で `slotOffsetX=-142` を初 publish** (-362 から大幅右移動) |
 
 CSS デフォルト (`.op-side-kurumi .op-char-slot` per-VC media query) は B 280×380 / C 380×520 / D 460×630 (aspect 0.73) で hardcode 済み。 saved-layout.json で配信されない VC / variant では CSS デフォルトに fallback。
 
-#### 配信ワークフロー (v932 で確立した実運用)
+#### 配信ワークフロー (v932 で確立 / v935 で C/D 側にも本格適用)
 
 1. ローカル editor (`tools/op-layout-editor.html?edit=1`) を「対話 (P2-6)」モードで開く
 2. 「くるみ側」タブ または 左ペインの Kurumi サムネで variant 選択 → slot ドラッグで位置・サイズ調整 (variant ごとに保存)
@@ -260,9 +280,11 @@ CSS デフォルト (`.op-side-kurumi .op-char-slot` per-VC media query) は B 2
 4. orchestrator (Claude) が `quizland/saved-layout.json` の `__op_layout` のみ merge (他 219 keys 完全温存) + commit + auto push
 5. develop → staging に GH Actions 経由で反映 → 全端末で kurumi.perVariant が新値で読まれる
 
-過去に `__op_narration` / pono.perVariant / singleBox / narration 等で実証されていたフローを、 kurumi の 13 variants 全量で初めて回し切ったのが v932。
+過去に `__op_narration` / pono.perVariant / singleBox / narration 等で実証されていたフローを、 kurumi の 13 variants 全量で初めて回し切ったのが v932 (B のみ)、 hakase 含めて C/D も実値 publish が始まったのが v935 (06-49-00 版)。
 
 **v933 補足 (重要)**: v932 までの runtime kurumi CSS は **`right: 0` 右端アンカー** で、 editor preview (`tools/op-layout-editor.html`、 元から `left: 50%` 中央アンカー) と **transform 計算式が完全に乖離**していた。 結果として saved-layout.json `__op_layout.{B,C,D}.kurumi.{slot,perVariant}` にいくら正しい値を書き込んでも、 runtime では editor preview と最大 ~400px ずれて再現される致命バグが残っていた (v932 publish の時点でも、 ユーザーが editor で詰めた値は実機では「正しい場所」に出ていなかった)。 v933 で **runtime per-VC `.op-char-slot` の CSS を中央アンカー (`left:50% + transform:translate(-50%,-50%)`) に統一**したことで、 v932 で焼き込んだ kurumi.perVariant の slot 値がここで初めて editor で見たままに runtime に反映されるようになった。 saved-layout.json は無変更、 直したのは「JSON 値の解釈側 (= runtime CSS)」だけ。
+
+**v934 / v935 補足**: v934 はユーザー誤指定で **v932 と同値の Export を再 merge した実質無変更 publish** (sw.js だけバンプ、 saved-layout.json `__op_layout` 中身は v933 と完全一致)。 v935 では改めて 06-49-00 版 Export を取り直し、 **B では `kurumi_clasp` の slotH 354→320 / slotOffsetY 0→19**、 **C では `hakase.slotOffsetX` 0→-27 / `kurumi.slotOffsetX` 0→158** (kurumi_001 perVariant も同期)、 **D では `hakase.slotOffsetX` -362→-142 / `kurumi.slotH` 489→413 / `kurumi.slotOffsetX` 654→158** (kurumi_001 perVariant も同期) を merge。 v932 の時点で C/D は kurumi.flat / hakase 含めて初期値温存だったが、 v935 で **C/D も hakase + kurumi の主要 slot を含めた実値 publish が始まった** (= 1024×768 だけでなく 1920×1080 / 2560×1080 でも editor で詰めた位置が runtime に届くようになった配信成熟マイルストーン)。
 
 > **教訓 (将来 hakase 等で複数 variants 対応する際の伏線)**: **runtime と editor preview の CSS アンカーが乖離していると、 saved-layout.json の値はいくら正しくても runtime で再現されない**。 publish 経路の正しさだけでは不十分で、 「editor preview の transform 計算式」と「runtime per-VC `@media` の CSS 計算式」が **同一アンカー (今回の場合は中央起点) で揃っていること** を確認する必要がある。 hakase に複数 variants を持たせる将来タスクでは、 kurumi の v933 修正と同等のアンカー統一を hakase 側でも行うこと (hakase は OP 内で 1 variant しか使わないため現状ではこの問題は顕在化しない)。
 
@@ -399,4 +421,6 @@ dialogue render ループでは `presetForLine = isHakase ? 'owl' : (isKurumi ? 
 - v930: editor の **「くるみ側」タブ切替 defensive 強化** (active class 即時更新 + state.kurumi 欠落時の自動 seed + try/catch wrap) — 以前タブ切替時に稀に kurumi state が undefined のまま render に進んで例外で UI が固まる事象があったため、 タブクリックハンドラで state を必ず seed してから active class を切替えるように修正
 - v931: editor の **シナリオ編集モードの各 dialogue 行に「ポノ」「はかせ」「くるみ」 の 3 dropdown を追加** — `HAKASE_VARIANTS` 定数 + `hakasePathByName()` / `hakaseFullPath()` ヘルパ + `appendCharImgSelect()` 共通ヘルパで 3 キャラ統一実装、 各 line で `line.ponoImg` / `line.hakaseImg` / `line.kurumiImg` を speaker と独立に編集可能に。 同時に `migrateScenario` で `line.hakaseImg` 空値正規化 + `buildScenarioPanelsLiteral` で `hakaseImg` シリアライズ追加 + `SCENARIO_DATA_VERSION` を `'v927'` → `'v930'` に bump (defaults 構造自体は未変更だが、 line に新フィールドが入る余地が広がったため auto migration を発火させて既存ユーザーも新 schema に揃える)。 runtime 側の hakaseImg 対応は未実装 (HAKASE_VARIANTS が 1 種のみのため実害なし、 2 種以上に増やす際の将来タスクとして本ドキュメントに明記)
 - v932: ローカル editor (`tools/op-layout-editor.html`) で kurumi 13 variants × 3 VC の slot 位置・サイズを微調整 → 「📋 JSON のみクリップボード」 で `pono-op-layout-v1` schema を export → orchestrator (Claude) が `quizland/saved-layout.json` の **`__op_layout` のみ merge** (top-level 220 keys 完全温存、 `__op_narration` / pono / hakase / singleBox / narration 等は touch せず) + commit + post-commit hook で develop へ auto push → GH Actions が staging へ自動反映、 という 「ローカル editor → AI 経由 publish → 全端末配信」 のワークフローが kurumi の 13 perVariant 全量で初めて回り切った。 結果: B (kurumi 13 variants 全部で個別調整 / `kurumi_pray` だけ slotOffsetY=-4)、 C (13 variants は今回 touch せず初期値温存)、 D (`kurumi_001` のみ大きく上書き、 他 12 は初期値) の状態で `__op_layout.{B,C,D}.kurumi.perVariant` が saved-layout.json に焼かれた。 editor 側のコード変更はなし (v931 までで完成済の Export 経路をそのまま使った publish イベント = 配信品質 milestone)
-- **v933 (現行)**: **runtime kurumi CSS の per-VC `.op-char-slot` を中央アンカーに統一** (`quizland/index.html` ~L2644-L2655 / ~L2727-L2738 / ~L2811-L2822 の 3 箇所、 B/C/D 全 VC 共通)。 旧: `top: 50%; left: auto; right: 0; transform: translate(calc(0% + -Xpx), calc(-50% + -Ypx))` の **右端起点** → 新: `top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%)` の **中央起点** (pono / hakase と完全同式)。 これにより editor preview (`tools/op-layout-editor.html`、 元から中央起点) と runtime の transform 計算式が完全一致し、 **editor で詰めた `slotOffsetX` / `slotOffsetY` が runtime にもそのまま反映**される (v932 までは同じ JSON 値でも runtime は editor preview と最大 ~400px 右にずれていた致命バグ)。 pono / hakase の CSS は無変更 (元から中央起点)、 editor 側 (`tools/op-layout-editor.html`) も無変更 (元から中央起点)、 saved-layout.json も無変更 (slot 値は v932 のまま、 解釈側だけが editor preview と一致するように直された)。 修正は CSS 3 箇所だけの最小局所変更だが配信品質に対する効果は大きい (kurumi の per-VC 微調整がここで初めて runtime に正しく届くようになった)
+- v933: **runtime kurumi CSS の per-VC `.op-char-slot` を中央アンカーに統一** (`quizland/index.html` ~L2644-L2655 / ~L2727-L2738 / ~L2811-L2822 の 3 箇所、 B/C/D 全 VC 共通)。 旧: `top: 50%; left: auto; right: 0; transform: translate(calc(0% + -Xpx), calc(-50% + -Ypx))` の **右端起点** → 新: `top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%)` の **中央起点** (pono / hakase と完全同式)。 これにより editor preview (`tools/op-layout-editor.html`、 元から中央起点) と runtime の transform 計算式が完全一致し、 **editor で詰めた `slotOffsetX` / `slotOffsetY` が runtime にもそのまま反映**される (v932 までは同じ JSON 値でも runtime は editor preview と最大 ~400px 右にずれていた致命バグ)。 pono / hakase の CSS は無変更 (元から中央起点)、 editor 側 (`tools/op-layout-editor.html`) も無変更 (元から中央起点)、 saved-layout.json も無変更 (slot 値は v932 のまま、 解釈側だけが editor preview と一致するように直された)。 修正は CSS 3 箇所だけの最小局所変更だが配信品質に対する効果は大きい (kurumi の per-VC 微調整がここで初めて runtime に正しく届くようになった)
+- v934: ユーザー誤指定で **`op-layout-2026-05-11-06-41-51.json` (v932 と同値の Export) を再 merge した実質的な無変更 publish**。 saved-layout.json の `__op_layout` 中身は v932 から差分なし、 sw.js だけがバンプされた (= キャッシュは新しくなったが配信内容は v933 と同じ)。 この種の同値再 export を merge してしまった経緯を将来のデバッグ用に明記
+- **v935 (現行)**: ローカル editor の **06-49-00 Export** (`op-layout-2026-05-11-06-49-00.json`) を merge、 v932 → v935 の deep diff は **12 entries** で、 初めて C / D 側にも実値が流し込まれた。 **B**: `kurumi_clasp` の slotH 354→320 / slotOffsetY 0→19 (両手胸前の立ち姿を少し低く詰める調整)、 flat の `B.kurumi.slotH` / `slotOffsetY` も同期。 **C**: `hakase.slotOffsetX` 0→-27 (はかせを少し左寄せ)、 `kurumi.slotOffsetX` 0→158 + `kurumi_001` perVariant も同期 (くるみを右寄せ)。 **D**: `hakase.slotOffsetX` -362→-142 (はかせを大幅に右寄せ)、 `kurumi.slotH` 489→413 + `kurumi.slotOffsetX` 654→158 + `kurumi_001` perVariant も同期 (くるみを 「画面右端の大サイズ」 から 「中央寄りの中サイズ」 に再配置)。 v932 までは VC C / D は kurumi.flat / hakase 含めて初期値温存だったが、 v935 で **C/D も hakase + kurumi の主要 slot を含めた実値 publish が始まった** = 配信成熟度が一段上がったマイルストーン。 saved-layout.json top-level 220 keys は引き続き完全温存、 editor 側のコード変更はなし (v931 完成済の Export 経路を再利用した publish イベント)
