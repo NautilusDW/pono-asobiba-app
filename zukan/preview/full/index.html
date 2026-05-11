@@ -1472,6 +1472,7 @@ body.resize-mode .ruler { display: block; }
       <option value="text-underline">テキスト下線</option>
     </select>
   </div>
+  <button id="zk-frame-auto-btn" type="button" title="全 userbox に自動でフレーム種別を割当 (サイズで推測)">🎯 自動割当</button>
 
   <div>
     <label>スロット</label>
@@ -4862,6 +4863,74 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     };
   }
 
+  // 6.5) サイズ自動推測ロジック (純粋関数)
+  //   userbox の幅と高さ (px) から frameKind を返す。
+  //   閾値は frame アスペクト比に基づく:
+  //     animal-banner   4:1   (ratio 4.0)
+  //     card-square     1:1   (ratio 1.0)
+  //     rabbit-portrait ~16:21 (ratio ~0.76)
+  //     text-underline  15:2  (ratio 7.5)
+  function guessFrameKind(width, height) {
+    if (!width || !height) return 'card-square';
+    const ratio = width / height;
+    if (ratio >= 5.0) return 'text-underline';     // 7.5:1 寄り
+    if (ratio >= 2.5) return 'animal-banner';      // 4:1 寄り
+    if (ratio < 0.85) return 'rabbit-portrait';    // 縦長
+    return 'card-square';                          // 1:1 寄り (デフォルト)
+  }
+  window.guessFrameKind = guessFrameKind;
+
+  // 6.6) toast helper: 2 秒表示 → fade out → remove
+  function showToast(msg) {
+    try {
+      const t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = [
+        'position: fixed',
+        'bottom: 20px',
+        'left: 50%',
+        'transform: translateX(-50%)',
+        'background: #1a1a1a',
+        'color: #ffba6b',
+        'padding: 10px 20px',
+        'border: 1px solid #ffba6b',
+        'border-radius: 6px',
+        'z-index: 99999',
+        'opacity: 1',
+        'transition: opacity 0.3s',
+        'font-size: 14px',
+        'pointer-events: none',
+      ].join(';');
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; }, 2000);
+      setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+    } catch (e) {}
+  }
+
+  // 6.7) 全 userbox にサイズから推測した frameKind を一括適用
+  function autoAssignAllFrames() {
+    const boxes = [...document.querySelectorAll('.userbox')];
+    if (!boxes.length) {
+      alert('userbox がありません。 先に矩形を追加してください。');
+      return;
+    }
+    let count = 0;
+    boxes.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (w < 2 || h < 2) return; // 非表示や極小はスキップ
+      const kind = guessFrameKind(w, h);
+      applyFrame(el, kind);  // 既存 applyFrame を呼ぶ (dataset.frameKind も更新)
+      count++;
+    });
+    if (typeof window.saveResizeState === 'function') window.saveResizeState();
+    try { console.log('[zk-frame-auto] applied', count, 'frames'); } catch (e) {}
+    if (count > 0) {
+      showToast(`${count} 個の userbox にフレームを自動割当しました`);
+    }
+  }
+
   // 6) ツールバー UI: 静的 HTML で書かれた #zk-frame-kind <select> に
   //    change ハンドラを取り付ける (動的 inject はやめた。 .toolbar 末尾の
   //    margin-left:auto 要素より後ろに append されていたせいで画面外に
@@ -4889,6 +4958,13 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
       });
       if (typeof window.saveResizeState === 'function') window.saveResizeState();
     });
+
+    // 🎯 自動割当ボタンの bind (重複 bind 防止)
+    const autoBtn = document.getElementById('zk-frame-auto-btn');
+    if (autoBtn && autoBtn.dataset.zkBound !== '1') {
+      autoBtn.dataset.zkBound = '1';
+      autoBtn.addEventListener('click', autoAssignAllFrames);
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachFrameUI, { once: true });

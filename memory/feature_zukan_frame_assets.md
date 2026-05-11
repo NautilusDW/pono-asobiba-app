@@ -68,6 +68,20 @@ assets/zukan/frames/
 - `うさぎポートレート (縦長)` → `rabbit-portrait.svg`
 - `テキスト下線` → `text-underline.svg`
 
+### 🎯 自動割当ボタン (sw v928 〜)
+
+`#zk-frame-auto-btn` (ツールバーの 装飾フレーム select 直後) を 1 回押すと、 **全 userbox にサイズ推測でフレームを一括適用** する。
+
+- 推測ロジック (`guessFrameKind(w, h)` 純粋関数): ratio = w/h で判定
+  - `ratio >= 5.0` → `text-underline`   (7.5:1 寄り)
+  - `ratio >= 2.5` → `animal-banner`    (4:1 寄り)
+  - `ratio < 0.85` → `rabbit-portrait`  (縦長)
+  - その他          → `card-square`     (1:1 寄り、デフォルト)
+- 使い方: 全 userbox 配置後にボタンを 1 回押すだけで一括適用。 個別調整は dropdown で上書き可能。
+- **既存の `dataset.frameKind` は上書きされる**ことに留意 (= 自動 → 後で一部だけ手動修正、 のフロー想定)。 ボタンを押さない限り自動推測は走らない。
+- 完了後は `saveResizeState()` を呼びつつ画面下に toast 表示 (2 秒)。
+- `window.guessFrameKind` として公開 (将来の他箇所からの利用に備える)。
+
 ---
 
 ## 「スロット差替画像」 input との関係
