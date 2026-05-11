@@ -319,12 +319,12 @@ editor の `📋 JSON のみクリップボード` (= `buildScenarioPanelsLitera
 
 v926 で `defaultScenario()` を本番 OP_PANELS と同期して以降、 「**既存ユーザーは localStorage に古い saved state が残っているため、 editor をリロードしても新 defaults が反映されない**」 という運用課題があった。 v929 で **scenario state にスキーマ version を持たせて自動 migration する仕組み**を導入し、 この課題を恒久解消した。
 
-実装は `tools/op-layout-editor.html` 内の以下 3 箇所:
+実装は `tools/op-layout-editor.html` 内の以下 4 箇所 (v931 時点の現行値で記載):
 
-1. **`SCENARIO_DATA_VERSION = 'v927'` 定数** (~L1238): `defaultScenario()` の構造が変わったら bump する単一の真実
-2. **`defaultScenario()`** (~L1348-L1424): 戻り値の object に `version: SCENARIO_DATA_VERSION` を埋め込む
-3. **`loadScenario()`** (~L1512-L1533): localStorage から読んだ state の `parsed.version !== SCENARIO_DATA_VERSION` なら、 saved state を **強制的に捨てて `defaultScenario()` を返す**。 不一致時は console.log で `'<old> → <new>'` を表示
-4. **`saveScenario()`** (~L1535-L1545): 保存時に `Object.assign({}, state.scenario, { version: SCENARIO_DATA_VERSION })` で必ず最新 version を上書きしてから JSON.stringify。 import 経由などで version 欠落のまま state が入った場合も、 1 回保存すれば次回 load で正しく一致判定される
+1. **`SCENARIO_DATA_VERSION` 定数** (~L1250): 現行値 **`'v930'`** (v931 で `'v927'` → `'v930'` に bump)。 `defaultScenario()` の構造または line に入る可能性のあるフィールド構成が変わったら bump する単一の真実
+2. **`defaultScenario()`** (~L1370 周辺): 戻り値の object に `version: SCENARIO_DATA_VERSION` を埋め込む
+3. **`loadScenario()`** (~L1534-L1546): localStorage から読んだ state の `parsed.version !== SCENARIO_DATA_VERSION` なら、 saved state を **強制的に捨てて `defaultScenario()` を返す**。 不一致時は console.log で `'<old> → <new>'` を表示
+4. **`saveScenario()`** (~L1554-L1564): 保存時に `Object.assign({}, state.scenario, { version: SCENARIO_DATA_VERSION })` で必ず最新 version を上書きしてから JSON.stringify。 import 経由などで version 欠落のまま state が入った場合も、 1 回保存すれば次回 load で正しく一致判定される
 
 これにより、 **既存ユーザーは editor をリロードするだけで自動的に新 defaults へ移行**する (DevTools コンソールでの手動 `localStorage.removeItem(...)` は不要)。 影響範囲は **scenario state のみ** で、 layout state (slot 値、 frame 設定、 dropped assets 等) や narration state (`pono.opNarration.runtime.{B,C,D}`) は **別キー管理のため一切 touch されない**。
 
