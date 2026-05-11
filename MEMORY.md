@@ -110,6 +110,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T12:56:06Z - VOICEPEAK 案 C ファイル一式生成 (test27 CSV / 辞書 65 語 / sample.ssml / README)
+- **タスク**: VOICEPEAK 案 C ファイル一式生成 (test27 CSV / 辞書 65 語 / sample.ssml / README)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 128
+- **エラー数**: 7
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 14, "Agent": 85, "ToolSearch": 6, "Write": 3, "ExitPlanMode": 2, "Bash": 15, "Glob": 2, "WebSearch": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-11T11:48:53Z - COWORK-TEST-ORDER.md q001_q speech をひらがな化 (真ん中は何色 -> 真ん中はなにいろ) で VOICEVOX ナンショク誤読を回避、ORDER-FULL.md は既にひらがな化済みで追加対応不要を確認
 - **タスク**: COWORK-TEST-ORDER.md q001_q speech をひらがな化 (真ん中は何色 -> 真ん中はなにいろ) で VOICEVOX ナンショク誤読を回避、ORDER-FULL.md は既にひらがな化済みで追加対応不要を確認
 - **結果**: 成功
@@ -211,19 +224,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 14, "Agent": 76, "ToolSearch": 5, "Write": 3, "ExitPlanMode": 2, "Bash": 12, "Glob": 2}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-11T10:04:58Z - VOICEVOX accent_input.json から子供向けクイズ用 accent_overrides.json を生成 (27 items / 18 patches / needs_listen 8 / medium 1)
-- **タスク**: VOICEVOX accent_input.json から子供向けクイズ用 accent_overrides.json を生成 (27 items / 18 patches / needs_listen 8 / medium 1)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 112
-- **エラー数**: 7
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 14, "Agent": 75, "ToolSearch": 5, "Write": 3, "ExitPlanMode": 2, "Bash": 11, "Glob": 2}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
