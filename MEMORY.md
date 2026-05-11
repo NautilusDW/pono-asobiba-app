@@ -108,6 +108,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T06:02:25Z - op-layout-editor くるみ側タブ切替の defensive 強化 (active class 即時更新 + state.kurumi 欠落時の自動 seed + try/catch wrap、 sw v930)
+- **タスク**: op-layout-editor くるみ側タブ切替の defensive 強化 (active class 即時更新 + state.kurumi 欠落時の自動 seed + try/catch wrap、 sw v930)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 71
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 14, "Read": 22, "Grep": 21, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 8, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-11T05:36:04Z - op-layout-editor: scenario の version 付き auto migration を実装 (SCENARIO_DATA_VERSION='v927' / loadScenario で version 不一致なら defaults 強制 / saveScenario で version 確実埋め込み + sw v929)
 - **タスク**: op-layout-editor: scenario の version 付き auto migration を実装 (SCENARIO_DATA_VERSION='v927' / loadScenario で version 不一致なら defaults 強制 / saveScenario で version 確実埋め込み + sw v929)
 - **結果**: 成功
@@ -210,18 +223,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 8, "Read": 9, "Grep": 10, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 2, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-11T04:06:10Z - リスのくるみちゃん再生成版ポーズ12枚をassetsへコピー（基準スタイル整合確認OK、新規2枚追加）
-- **タスク**: リスのくるみちゃん再生成版ポーズ12枚をassetsへコピー（基準スタイル整合確認OK、新規2枚追加）
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 6, "Agent": 30, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

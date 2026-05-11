@@ -5825,9 +5825,42 @@ function buildHeader() {
 
   document.querySelectorAll('#tab-bar button').forEach(b => {
     b.addEventListener('click', () => {
-      currentTab = b.dataset.tab;
-      buildRightPane();
-      render();
+      const newTab = b.dataset.tab;
+      if (!newTab) return;
+      currentTab = newTab;
+      // 2026-05-11 (sw v930): defensive — タブ active class を click 直後に明示更新する。
+      // 以前は render() 末尾の sync (3641-3643) に頼っていたが、 buildRightPane() が
+      // 想定外の例外で停止すると render() が呼ばれず、 active class が ポノ側 のまま
+      // 残ってしまう (報告された 「くるみ側 を押したのに ポノ側 active 状態」 症状)。
+      // ここで即座に切替えておけば、 後段が失敗しても少なくとも tab UI 上は反映される。
+      document.querySelectorAll('#tab-bar button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === currentTab);
+      });
+      // 2026-05-11 (sw v930): defensive — state[currentVC][currentTab] が万一 undefined
+      // (legacy save / 部分的な migration 漏れ) でも buildRightPane を crash させないよう、
+      // sideKey に対応するエントリを minimal default で埋め直してから build する。
+      try {
+        if (state && state[currentVC] && !state[currentVC][currentTab]) {
+          // defaultsFor() からそのサイドのテンプレを抜き取ってシード。
+          const tmpl = (typeof defaultsFor === 'function') ? defaultsFor(currentVC) : null;
+          if (tmpl && tmpl[currentTab]) {
+            state[currentVC][currentTab] = tmpl[currentTab];
+            // migrateFrameIds で perVariant 等を backfill。
+            if (typeof migrateFrameIds === 'function') {
+              state[currentVC] = migrateFrameIds(state[currentVC]);
+            }
+            try { save(currentVC); } catch (_) {}
+          }
+        }
+      } catch (e) {
+        try { console.error('[op-layout-editor] tab switch defensive seed failed:', e); } catch (_) {}
+      }
+      try { buildRightPane(); } catch (e) {
+        try { console.error('[op-layout-editor] buildRightPane failed on tab switch:', e); } catch (_) {}
+      }
+      try { render(); } catch (e) {
+        try { console.error('[op-layout-editor] render failed on tab switch:', e); } catch (_) {}
+      }
     });
   });
 
