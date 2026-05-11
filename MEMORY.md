@@ -28,6 +28,7 @@
 - **ポノのもりのずかん 全画面フロー (SPA)**: [memory/feature_zukan_full_flow.md](memory/feature_zukan_full_flow.md) — `zukan/index.html` を 5-screen SPA 化 (タイトル→マップ選択→エリア内マップ→探索→図鑑コレクション)。データ層 `zukan/data/zukan-data.js` (4 エリア × 1 spot × 1 animal の seed + 36 匹 collectionRoster)。素材は `assets/zukan/{title,map,innermap,collection,ui}/`。表示名/内部 ID 不一致表 + エディタパス (`zukan/preview/{investigation,innermap,full}/?edit=1`) 収録 (sw v895)
 - **Quizland number_sequence カテゴリ**: [memory/feature_quizland_number_sequence.md](memory/feature_quizland_number_sequence.md) — 3歳児向け新カテゴリ「かずのじゅん」(12問)。1〜10 の前後関係 (つぎ/まえ/あいだ)、inspire モードに統合
 - **Quizland VOICEVOX 発注書**: [memory/feature_quizland_voicevox_order.md](memory/feature_quizland_voicevox_order.md) — 全181問×5音声+Q160補足2=907ファイルの音声発注。読み方ルール・命名規則・Q160同音異義両案運用
+- **Quizland リスのくるみちゃん**: [memory/feature_quizland_kurumi.md](memory/feature_quizland_kurumi.md) — クイズアシスタントキャラ、リスの女の子、元気で優しいお姉さん感、VOICEVOX 女声話者で問題文を読み上げ
 - **画像生成ルート方針 (2026-05-11 更新)**: 一次経路は **Codex 経由の GPT-Image 2 (OpenAI `gpt-image-1` 系)** か **Higgsfield の Nano Banana Pro** の二択。被写体・用途で使い分ける (キャラ・人物系 → Nano Banana Pro / 抽象・UI 素材・テキスト含む系 → GPT-Image 2、運用知見が貯まり次第追記)。Claude Code セッションは生成タスクを直接抱えない — 生成は Codex / Higgsfield 側で行い、生成物は `tmp/alpha_pending/<NN>/` 経由で投入され、Claude は最終配置・最適化 (`assets/` への移動、ファイル名整備、軽量化、`sw.js` バンプ、commit) のみ担当。**以前の「GPT Image 2 単一・他モデル禁止」方針は撤回**、現方針は GPT-Image 2 / Nano Banana Pro の使い分け。解像度・SAFE エリア・外周ぼかし等の既存ガイドライン ([memory/feedback_codex_canvas_safe_margin.md](memory/feedback_codex_canvas_safe_margin.md)) はそのまま有効
 
 ---
@@ -106,6 +107,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-11T01:49:12Z - quizland 新キャラ「リスのくるみちゃん」追加 + VOICEVOX 発注書話者方針を博士→くるみちゃん（女声）に変更 (新memory file + COWORK-TEST/ORDER-FULL/voicevox_order memo/MEMORY index 全更新)
+- **タスク**: quizland 新キャラ「リスのくるみちゃん」追加 + VOICEVOX 発注書話者方針を博士→くるみちゃん（女声）に変更 (新memory file + COWORK-TEST/ORDER-FULL/voicevox_order memo/MEMORY index 全更新)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 24
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Agent": 18, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
 
 ### 2026-05-11T01:45:10Z - AGENTS.md 文字化け検知を 2 段階判定に改訂 + PS5.1 読み方を §0.1 に集約。Codex の Get-Content false positive で書込み拒否する罠を構造的に解消
 - **タスク**: AGENTS.md 文字化け検知を 2 段階判定に改訂 + PS5.1 読み方を §0.1 に集約。Codex の Get-Content false positive で書込み拒否する罠を構造的に解消
@@ -209,18 +223,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 15, "Agent": 67, "Bash": 51, "Grep": 12, "Write": 3, "ToolSearch": 1, "ExitPlanMode": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-10T23:26:56Z - quizland order_color の選択肢ボタン英語表記バグ修正 (window.QUIZLAND_COLORS 参照を直接参照に変更, sw.js v916→917)
-- **タスク**: quizland order_color の選択肢ボタン英語表記バグ修正 (window.QUIZLAND_COLORS 参照を直接参照に変更, sw.js v916→917)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 20
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 14, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
