@@ -1459,6 +1459,20 @@ body.resize-mode .ruler { display: block; }
     <button id="img-clear">クリア</button>
   </div>
 
+  <!-- 🖼 装飾フレーム: 選択中の userbox に装飾フレーム overlay を付与する select。
+       (JS で動的注入していたが、 .toolbar 末尾の margin-left:auto 要素より後ろに
+       追加されて視覚的に画面外へ押し出されていたため、 静的 HTML に直書きする) -->
+  <div id="zk-frame-kind-wrap">
+    <label>🖼 装飾フレーム</label>
+    <select id="zk-frame-kind" title="選択中の枠 (.userbox) に装飾フレームを付与">
+      <option value="">（なし）</option>
+      <option value="animal-banner">動物バナー (横長)</option>
+      <option value="card-square">カードマス (正方形)</option>
+      <option value="rabbit-portrait">うさぎポートレート (縦長)</option>
+      <option value="text-underline">テキスト下線</option>
+    </select>
+  </div>
+
   <div>
     <label>スロット</label>
     <input type="number" id="slot-size" value="130" min="40" max="300" step="2">px
@@ -4622,79 +4636,107 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
 //   FAB は併存 (page-nav.js のドキュメント保証)。
 // ─────────────────────────────────────────────────────────────────────
 (function initZkPagesNav() {
-  const btn = document.getElementById('zk-pages-btn');
-  if (!btn) return;
-  let dropdown = null;
-  let docHandler = null;
-  let escHandler = null;
+  // DOMContentLoaded 後に再実行しても二重 bind しないようガード
+  function setup() {
+    const btn = document.getElementById('zk-pages-btn');
+    if (!btn) {
+      console.warn('[zk-pages-nav] #zk-pages-btn not found in DOM');
+      return;
+    }
+    if (btn.dataset.zkBound === '1') return;
+    btn.dataset.zkBound = '1';
 
-  function escHtml(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-      c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' :
-      c === '"' ? '&quot;' : '&#39;');
-  }
-  function closeDropdown() {
-    if (dropdown) { dropdown.remove(); dropdown = null; }
-    if (docHandler) { document.removeEventListener('click', docHandler, true); docHandler = null; }
-    if (escHandler) { document.removeEventListener('keydown', escHandler, true); escHandler = null; }
-    btn.setAttribute('aria-expanded', 'false');
-  }
-  function openDropdown() {
-    const pages = (window.PageNavConfig && Array.isArray(window.PageNavConfig.pages))
-      ? window.PageNavConfig.pages : [];
-    if (!pages.length) return;
-    dropdown = document.createElement('div');
-    dropdown.className = 'zk-pages-dropdown';
-    const rect = btn.getBoundingClientRect();
-    dropdown.style.top  = (rect.bottom + 4) + 'px';
-    dropdown.style.left = Math.max(8, rect.left) + 'px';
-    let html = '<div class="zk-pages-dropdown-title">編集可能なページ</div><ul class="zk-pages-list">';
-    pages.forEach(p => {
-      if (!p || !p.name) return;
-      const name = escHtml(p.name);
-      const url  = p.url ? escHtml(p.url) : '';
-      if (p.current) {
-        html += '<li><a class="zk-pages-link is-current" href="#" onclick="return false;">📍 ' + name + '</a></li>';
-      } else if (url) {
-        html += '<li><a class="zk-pages-link" href="' + url + '">' + name + '</a></li>';
-      } else {
-        html += '<li><span>' + name + '</span></li>';
+    let dropdown = null;
+    let docHandler = null;
+    let escHandler = null;
+
+    function escHtml(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' :
+        c === '"' ? '&quot;' : '&#39;');
+    }
+    function closeDropdown() {
+      if (dropdown) { dropdown.remove(); dropdown = null; }
+      if (docHandler) { document.removeEventListener('click', docHandler, true); docHandler = null; }
+      if (escHandler) { document.removeEventListener('keydown', escHandler, true); escHandler = null; }
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function openDropdown() {
+      try {
+        const pages = (window.PageNavConfig && Array.isArray(window.PageNavConfig.pages))
+          ? window.PageNavConfig.pages : [];
+        if (!pages.length) {
+          console.warn('[zk-pages-nav] PageNavConfig.pages is empty');
+          return;
+        }
+        dropdown = document.createElement('div');
+        dropdown.className = 'zk-pages-dropdown';
+        // 明示的に display: block を指定 (将来 CSS で初期 display:none に
+        // しても確実に開くようにするための保険)
+        dropdown.style.display = 'block';
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.top  = (rect.bottom + 4) + 'px';
+        dropdown.style.left = Math.max(8, rect.left) + 'px';
+        let html = '<div class="zk-pages-dropdown-title">編集可能なページ</div><ul class="zk-pages-list">';
+        pages.forEach(p => {
+          if (!p || !p.name) return;
+          const name = escHtml(p.name);
+          const url  = p.url ? escHtml(p.url) : '';
+          if (p.current) {
+            html += '<li><a class="zk-pages-link is-current" href="#" onclick="return false;">📍 ' + name + '</a></li>';
+          } else if (url) {
+            html += '<li><a class="zk-pages-link" href="' + url + '">' + name + '</a></li>';
+          } else {
+            html += '<li><span>' + name + '</span></li>';
+          }
+        });
+        html += '</ul>';
+        dropdown.innerHTML = html;
+        document.body.appendChild(dropdown);
+        btn.setAttribute('aria-expanded', 'true');
+
+        // 右端クリップ補正: 表示後に実幅を測り、viewport 右端 (-8px) を超えるなら左へずらす
+        try {
+          const dRect = dropdown.getBoundingClientRect();
+          const rightLimit = window.innerWidth - 8;
+          if (dRect.right > rightLimit) {
+            const w = dropdown.offsetWidth;
+            dropdown.style.left = Math.max(8, window.innerWidth - w - 8) + 'px';
+          }
+        } catch (_) { /* noop */ }
+
+        // 外側クリックで閉じる (defer して同一クリックの捕捉を回避)
+        docHandler = function (e) {
+          if (!dropdown) return;
+          if (dropdown.contains(e.target)) return;
+          if (btn.contains(e.target)) return;
+          closeDropdown();
+        };
+        setTimeout(() => document.addEventListener('click', docHandler, true), 0);
+
+        // Esc で閉じる
+        escHandler = function (e) {
+          if (e.key === 'Escape') { e.preventDefault(); closeDropdown(); }
+        };
+        document.addEventListener('keydown', escHandler, true);
+      } catch (err) {
+        console.error('[zk-pages-nav] openDropdown failed:', err);
+        // 失敗時は state を巻き戻して 次回クリックで再試行できるようにする
+        if (dropdown) { dropdown.remove(); dropdown = null; }
+        btn.setAttribute('aria-expanded', 'false');
       }
+    }
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (dropdown) closeDropdown(); else openDropdown();
     });
-    html += '</ul>';
-    dropdown.innerHTML = html;
-    document.body.appendChild(dropdown);
-    btn.setAttribute('aria-expanded', 'true');
-
-    // 右端クリップ補正: 表示後に実幅を測り、viewport 右端 (-8px) を超えるなら左へずらす
-    try {
-      const dRect = dropdown.getBoundingClientRect();
-      const rightLimit = window.innerWidth - 8;
-      if (dRect.right > rightLimit) {
-        const w = dropdown.offsetWidth;
-        dropdown.style.left = Math.max(8, window.innerWidth - w - 8) + 'px';
-      }
-    } catch (_) { /* noop */ }
-
-    // 外側クリックで閉じる (defer して同一クリックの捕捉を回避)
-    docHandler = function (e) {
-      if (!dropdown) return;
-      if (dropdown.contains(e.target)) return;
-      if (btn.contains(e.target)) return;
-      closeDropdown();
-    };
-    setTimeout(() => document.addEventListener('click', docHandler, true), 0);
-
-    // Esc で閉じる
-    escHandler = function (e) {
-      if (e.key === 'Escape') { e.preventDefault(); closeDropdown(); }
-    };
-    document.addEventListener('keydown', escHandler, true);
   }
-  btn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    if (dropdown) closeDropdown(); else openDropdown();
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup, { once: true });
+  } else {
+    setup();
+  }
 })();
 
 // ─────────────────────────────────────────────────────────────────────
@@ -4820,24 +4862,14 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     };
   }
 
-  // 6) ツールバー UI: 選択中 userbox にフレーム種を割り当てる select
-  function injectFrameUI() {
-    const toolbar = document.querySelector('.toolbar');
-    if (!toolbar || document.getElementById('zk-frame-kind')) return;
-    const wrap = document.createElement('div');
-    wrap.id = 'zk-frame-kind-wrap';
-    const label = document.createElement('label');
-    label.style.color = '#aaa';
-    label.textContent = '🖼 装飾フレーム';
-    const sel = document.createElement('select');
-    sel.id = 'zk-frame-kind';
-    sel.title = '選択中の枠 (.userbox) に装飾フレームを付与';
-    Object.keys(FRAME_LABEL).forEach(k => {
-      const o = document.createElement('option');
-      o.value = k;
-      o.textContent = FRAME_LABEL[k];
-      sel.appendChild(o);
-    });
+  // 6) ツールバー UI: 静的 HTML で書かれた #zk-frame-kind <select> に
+  //    change ハンドラを取り付ける (動的 inject はやめた。 .toolbar 末尾の
+  //    margin-left:auto 要素より後ろに append されていたせいで画面外に
+  //    押し出されていたため)。 options は HTML 側で定義済み。
+  function attachFrameUI() {
+    const sel = document.getElementById('zk-frame-kind');
+    if (!sel || sel.dataset.zkBound === '1') return;
+    sel.dataset.zkBound = '1';
     sel.addEventListener('change', () => {
       const kind = sel.value;
       // selectedElements は外側スコープ。 window.selectedElements で参照
@@ -4857,15 +4889,11 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
       });
       if (typeof window.saveResizeState === 'function') window.saveResizeState();
     });
-    wrap.appendChild(label);
-    wrap.appendChild(sel);
-    // 「スロット差替画像」 div の直後に挿入したい — 簡単のため toolbar 末尾近くに append
-    toolbar.appendChild(wrap);
   }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectFrameUI);
+    document.addEventListener('DOMContentLoaded', attachFrameUI, { once: true });
   } else {
-    injectFrameUI();
+    attachFrameUI();
   }
 })();
 </script>
