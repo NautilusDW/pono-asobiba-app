@@ -668,16 +668,19 @@ window.EditorBootstrapConfig = {
         (el.style.backgroundImage && el.style.backgroundImage !== 'none' ? el.style.backgroundImage : '');
       var layer = el.querySelector(':scope > .zk-rotate-layer');
       if (deg) {
+        // bg が `url("...")` 形式 or 生 URL 双方を受ける
+        var bgVal = bg ? (/^url\(/.test(bg) ? bg : ('url("' + bg + '")')) : '';
         if (!layer && bg) {
           layer = document.createElement('div');
           layer.className = 'zk-rotate-layer';
-          // bg が `url("...")` 形式 or 生 URL 双方を受ける
-          var bgVal = /^url\(/.test(bg) ? bg : ('url("' + bg + '")');
           layer.style.setProperty('--zk-rotate-bg', bgVal);
           // 元 bg を hide してオーバーラップを避ける
           el.dataset._zkBgHidden = '1';
           el.style.backgroundImage = 'none';
           el.appendChild(layer);
+        } else if (layer && bgVal) {
+          // 既存 layer も最新の bg を反映 (bgImage が差し替わったケース対策)
+          layer.style.setProperty('--zk-rotate-bg', bgVal);
         }
         if (layer) layer.style.setProperty('--zk-rotate-deg', String(deg));
       } else {
@@ -728,9 +731,12 @@ window.EditorBootstrapConfig = {
     return m ? m[1] : null;
   }
   function applySize(el, w, h) {
-    // applyOnePropToEl は private なので !important inline で代替。
-    el.style.setProperty('width', w + 'px', 'important');
-    el.style.setProperty('height', h + 'px', 'important');
+    // 通常の inline style で設定 (!important を焼くと後続 resize ハンドラが
+    // CSS 優先度負けして無効化されるため避ける)。
+    // aspect-ratio ロックが残っていると width/height を上書きされうるので除去。
+    try { el.style.removeProperty('aspect-ratio'); } catch (e0) {}
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
     // dirty 化トリガ — LayoutEditor が変更検知できるよう transform を再書き
     var tx = el._tx || 0, ty = el._ty || 0;
     el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
@@ -787,14 +793,14 @@ window.EditorBootstrapConfig = {
     if (resetBtn) resetBtn.disabled = !has;
     if (rotBtn) rotBtn.disabled = !has;
     // 選択要素の dataset.aspectLock を読んで状態同期 (選択が変わったら反映)
+    // ON/OFF を双方向に同期: aspectLock='1' → locked, それ以外 → unlocked
     var btn = document.getElementById('zk-aspect-lock');
     if (sel && btn) {
-      if (sel.dataset.aspectLock === '1') {
-        var e = le();
-        if (e) e._state.cornerHandleFreeMode = false;
-        btn.textContent = '🔒 比率固定 ON';
-        btn.setAttribute('aria-pressed', 'true');
-      }
+      var locked = sel.dataset.aspectLock === '1';
+      var e = le();
+      if (e && e._state) e._state.cornerHandleFreeMode = !locked;
+      btn.textContent = locked ? '🔒 比率固定 ON' : '🔒 比率固定 OFF';
+      btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
     }
   }
 
