@@ -2639,15 +2639,16 @@ body.layout-editor-on .op-skip {
   .op-side-hakase .op-char-slot img {
     object-position: bottom center;
   }
-  /* kurumi デフォルト (B 1024×768): 右寄せ。saved-layout.json の __op_layout で上書き可能。 */
+  /* kurumi デフォルト (B 1024×768): 中央アンカー。 applySide が transform を上書きするまでのフラッシュ防止デフォルト。
+     pono/hakase と同じ中央起点 (left:50% + transform:translate(-50%,-50%)) に揃え、 editor preview と式を一致させる。 */
   .op-side-kurumi .op-char-slot {
     width: 280px;
     height: 380px;
     aspect-ratio: 0.73;
     top: 50%;
-    left: auto;
-    right: 0;
-    transform: translate(calc(0% + -40px), calc(-50% + -40px));
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
   }
   .op-side-kurumi .op-char-slot img {
     object-position: bottom center;
@@ -2721,15 +2722,16 @@ body.layout-editor-on .op-skip {
   .op-side-hakase .op-char-slot img {
     object-position: bottom center;
   }
-  /* kurumi デフォルト (C 1920×1080): 右寄せ。saved-layout.json の __op_layout で上書き可能。 */
+  /* kurumi デフォルト (C 1920×1080): 中央アンカー。 applySide が transform を上書きするまでのフラッシュ防止デフォルト。
+     pono/hakase と同じ中央起点 (left:50% + transform:translate(-50%,-50%)) に揃え、 editor preview と式を一致させる。 */
   .op-side-kurumi .op-char-slot {
     width: 380px;
     height: 520px;
     aspect-ratio: 0.73;
     top: 50%;
-    left: auto;
-    right: 0;
-    transform: translate(calc(0% + -60px), calc(-50% + -60px));
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
   }
   .op-side-kurumi .op-char-slot img {
     object-position: bottom center;
@@ -2804,15 +2806,16 @@ body.layout-editor-on .op-skip {
   .op-side-hakase .op-char-slot img {
     object-position: bottom center;
   }
-  /* kurumi デフォルト (D 2560×1080): 右寄せ。saved-layout.json の __op_layout で上書き可能。 */
+  /* kurumi デフォルト (D 2560×1080): 中央アンカー。 applySide が transform を上書きするまでのフラッシュ防止デフォルト。
+     pono/hakase と同じ中央起点 (left:50% + transform:translate(-50%,-50%)) に揃え、 editor preview と式を一致させる。 */
   .op-side-kurumi .op-char-slot {
     width: 460px;
     height: 630px;
     aspect-ratio: 0.73;
     top: 50%;
-    left: auto;
-    right: 0;
-    transform: translate(calc(0% + -120px), calc(-50% + -60px));
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
   }
   .op-side-kurumi .op-char-slot img {
     object-position: bottom center;

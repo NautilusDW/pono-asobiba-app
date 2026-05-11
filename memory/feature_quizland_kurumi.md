@@ -1,6 +1,6 @@
 ---
 name: Quizland リスのくるみちゃん（アシスタントキャラ）
-description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 + scenario state に version 付き auto migration を実装し既存ユーザーも editor リロードだけで新 defaults へ自動移行 + **シナリオ編集モードの dialogue 行に「ポノ」「はかせ」「くるみ」3 dropdown を追加** (各 line で 3 キャラの立ち絵 variant を独立に選択可能、 sw v931+) (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化 / v929 SCENARIO_DATA_VERSION='v927' 導入で auto migration 実装、 DevTools 手動 reset 手順は不要に / **v931 シナリオ dialogue line に「はかせ」「くるみ」 dropdown 追加 + HAKASE_VARIANTS 定数 + hakasePathByName/hakaseFullPath ヘルパ + buildScenarioPanelsLiteral に hakaseImg シリアライズ + migrateScenario に hakaseImg 空値正規化 + SCENARIO_DATA_VERSION v927→v930 (defaults 構造未変更だが 3 dropdown UI で line.hakaseImg / line.kurumiImg の入る余地が変わったため bump)**)
+description: フクロウ博士のクイズの新アシスタントキャラ。リスの女の子、元気で優しいお姉さん感、VOICEVOX 音声で問題文を読み上げる役。立ち絵は 13 ポーズ variants を assets に展開済、OP シネマティック (Panel 2 / 5 / 6) に組み込み済 + op-layout-editor で 13 ポーズ × 3 VC の slot 個別調整可能 + 左ペインに Kurumi バリエーションサムネ追加 + シナリオ行 speaker に「くるみ」追加 + scenario モードのデフォルトデータを本番 OP_PANELS と同期 + scenario state に version 付き auto migration を実装し既存ユーザーも editor リロードだけで新 defaults へ自動移行 + シナリオ編集モードの dialogue 行に「ポノ」「はかせ」「くるみ」3 dropdown を追加 (各 line で 3 キャラの立ち絵 variant を独立に選択可能) + **ローカル editor → クリップボード Export → orchestrator が saved-layout.json `__op_layout.{B,C,D}.kurumi.perVariant` にマージというワークフローが v932 で初めて 13 entries 全量で正式運用、 全 VC の kurumi.perVariant が初期値 (`kurumi_001` 値全コピー) から editor 編集後の個別調整値に更新 (B では variant ごとに slotH=278〜380, slotOffsetX=54〜88 が分散)** (sw v921 OP 初投入 / v922 クロスレビュー反映 / v923 13 ポーズ管理機能 / v924 クロスレビュー C HIGH3+MED4 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker 拡張 / v926 defaultScenario() を本番 OP_PANELS 同期 / v927 migrateScenario の kurumi 強制 hakase 化バグ修正 + buildScenarioPanelsLiteral の kurumi シリアライズ対応 + kurumiImg 空値正規化 / v929 SCENARIO_DATA_VERSION='v927' 導入で auto migration 実装、 DevTools 手動 reset 手順は不要に / v931 シナリオ dialogue line に「はかせ」「くるみ」 dropdown 追加 + HAKASE_VARIANTS 定数 + hakasePathByName/hakaseFullPath ヘルパ + buildScenarioPanelsLiteral に hakaseImg シリアライズ + migrateScenario に hakaseImg 空値正規化 + SCENARIO_DATA_VERSION v927→v930 / **v932 ローカル editor 編集値を saved-layout.json `__op_layout` に反映、 kurumi.perVariant 13 entries 初の本格 publish、 220 keys 完全温存**)
 type: feature
 ---
 
@@ -64,7 +64,7 @@ type: feature
 
 | variant | ファイル | ポーズ説明 | 主な用途 |
 |---|---|---|---|
-| 001 | `kurumi_001.webp` | 基準正面立ち絵 | デフォルト立ち姿、 fallback、 saved-layout 初期値 |
+| 001 | `kurumi_001.webp` | 基準正面立ち絵 | デフォルト立ち姿、 fallback (v932 時点の saved-layout では D で `slotW=550 / slotH=489 / slotOffsetX=654` と大きく上書き済) |
 | hi | `kurumi_hi.webp` | **左手大きく挨拶** | 元気な挨拶、 OP Panel 2 で「こんにちは、ポノさん！」 |
 | wave | `kurumi_wave.webp` | 右手で控えめに振る | やわらかい挨拶、 軽い相槌 |
 | hooray | `kurumi_hooray.webp` | 両腕万歳・正面笑顔 | 強い喜び、 正解時のお祝い |
@@ -149,7 +149,7 @@ if (keepKurumiVisible) {
 - Panel 6 のように speaker は hakase/pono だが立ち絵は維持したい line は `kurumiImg: 'kurumi_clasp.webp'` のように **明示注入**
 - `playOpeningCinematic` の `finally` で `is-visible` / `hidden` を全部クリア (replay 時の前回状態を持ち越さない)
 
-## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正 / v929 scenario auto migration / v931 シナリオ行に hakase + kurumi dropdown 追加)
+## op-layout-editor 拡張 (sw v923+ / v924 クロスレビュー C 修正 / v925 左ペイン Kurumi サムネ + シナリオ speaker / v926 defaultScenario 同期 / v927 migrate + export 修正 / v929 scenario auto migration / v931 シナリオ行に hakase + kurumi dropdown 追加 / **v932 ローカル editor → saved-layout.json マージで kurumi.perVariant 13 entries 初の本格 publish 成立**)
 
 `tools/op-layout-editor.html` を拡張し、 ポノ / 博士に並ぶ **「くるみ側」タブ** を追加。 13 variants × 3 VC (B / C / D) で slot 位置・サイズ・透過オフセット等を個別編集して saved-layout.json に publish できる。 v925 で **左ペインに Kurumi バリエーションサムネ一覧** + **シナリオ行 speaker に「くるみ」を追加** し、 ポノとほぼ同等の編集 UI を提供。 v926 で **scenario モードのデフォルトデータ (`defaultScenario()`) を本番 quizland/index.html の OP_PANELS (Panel 2/5 で kurumi line 追加 + Panel 6 で kurumiImg 注入) と完全一致**させた。 v927 で **migrateScenario / buildScenarioPanelsLiteral の kurumi 周り 3 件のバグ** (speaker='kurumi' を hakase に強制変換 / export 時に kurumiImg をシリアライズしない / kurumi line を 2-way 判定で hakase に化けさせる) を一括修正。 **v929 で `SCENARIO_DATA_VERSION` 定数を導入し scenario state を version 付き auto migration 化** — `loadScenario()` が saved state の version を見て不一致なら `defaultScenario()` を強制採用、 `saveScenario()` は保存時に最新 version を確実に埋め込むため、 既存ユーザーも editor をリロードするだけで自動的に新 defaults に移行する (DevTools コンソール手順は不要になった)。 **v931 で「シナリオ編集モード」 の各 dialogue 行に「ポノ」「はかせ」「くるみ」 の 3 dropdown を追加** し (`appendCharImgSelect()` 共通ヘルパで実装)、 各 line で `line.ponoImg` / `line.hakaseImg` / `line.kurumiImg` を speaker と独立に編集できるようにした。 同時に **`HAKASE_VARIANTS` 定数 + `hakasePathByName()` / `hakaseFullPath()` ヘルパを新設**、 `buildScenarioPanelsLiteral()` に `hakaseImg` シリアライズを追加、 `migrateScenario` で `line.hakaseImg` 空値正規化を追加、 `SCENARIO_DATA_VERSION` を `'v927'` → `'v930'` に bump (defaults 構造自体は未変更だが、 line に新フィールドが入る余地が広がったため auto migration を発火させて既存ユーザーも新 schema に揃える)。
 
@@ -216,37 +216,51 @@ editor の「くるみ側」タブ (および pono / hakase タブ) は **「対
 
 これは元からの仕様 (pono / hakase でも同じ)、 シナリオモードでは tab-bar 全体が隠れて各 line で speaker 選択する流れになるため。 kurumi も同パターンに従う。 「対話モード以外で『くるみ側』タブが見えない」 のはバグではなく仕様。 ナレ / シナリオモードで kurumi の slot 編集をしたい場合は一旦「対話 (P2-6)」モードに切替えて編集 → モードを戻す。
 
-### saved-layout.json `__op_layout` 拡張
+### saved-layout.json `__op_layout` の kurumi 配信状態 (v932 時点の実態)
 
-`__op_layout.{B,C,D}.kurumi.perVariant` を **1 entry (`kurumi_001` のみ) → 13 entries** に拡張済。 全 variant が `kurumi_001` と同じ初期値で開始（後で editor の variant ドロップダウンで個別に調整可能）。
+`__op_layout.{B,C,D}.kurumi.perVariant` は **13 entries** で配信中。 v923 で 1 entry → 13 entries にスキーマ拡張、 **v932 でローカル editor の位置調整 Export (`op-layout-2026-05-11-06-18-47.json`) を orchestrator 経由で merge し、 全 VC × 13 variants が初期値 (`kurumi_001` 値全コピー) から editor 編集後の個別調整値に更新済 (= editor 経由で初の本格 publish が成立)**。 `quizland/saved-layout.json` の top-level keys 220 件 (`q72`, `q83`, `__chip_text_overrides` 等の per-question overrides + `__op_layout` + `__op_narration` 等) は完全温存。
 
 ```json
 "kurumi": {
-  "slot": { "left": ..., "top": ..., "width": ..., "height": ..., "aspectLockRatio": ... },
   "perVariant": {
-    "kurumi_001": { ... },
-    "kurumi_hi":  { ... },
-    "kurumi_wave": { ... },
-    "kurumi_hooray": { ... },
-    "kurumi_wink": { ... },
-    "kurumi_clasp": { ... },
-    "kurumi_idea": { ... },
-    "kurumi_point": { ... },
-    "kurumi_calm": { ... },
-    "kurumi_pray": { ... },
-    "kurumi_book": { ... },
-    "kurumi_cheer": { ... },
-    "kurumi_greet": { ... }
+    "kurumi_001":   { "slotW": 280, "slotH": 278, "slotOffsetX": 58, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_hi":    { "slotW": 280, "slotH": 303, "slotOffsetX": 54, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_wave":  { "slotW": 280, "slotH": 303, "slotOffsetX": 59, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_hooray":{ "slotW": 280, "slotH": 380, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_wink":  { "slotW": 280, "slotH": 295, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_clasp": { "slotW": 280, "slotH": 354, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_idea":  { "slotW": 280, "slotH": 345, "slotOffsetX": 77, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_point": { "slotW": 280, "slotH": 328, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_calm":  { "slotW": 280, "slotH": 328, "slotOffsetX": 88, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_pray":  { "slotW": 280, "slotH": 303, "slotOffsetX": 65, "slotOffsetY": -4, "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_book":  { "slotW": 280, "slotH": 320, "slotOffsetX": 88, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_cheer": { "slotW": 280, "slotH": 328, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" },
+    "kurumi_greet": { "slotW": 280, "slotH": 320, "slotOffsetX": 65, "slotOffsetY": 0,  "slotAspect": "fixed_0.73", "objectPosition": "bottom" }
   }
 }
 ```
 
-初期値 (右寄せ配置、 後で op-layout-editor で位置調整可能):
-- B (1024×768): 280×380 程度、 aspect 0.73
-- C (1920×1080): 380×520 程度、 aspect 0.73
-- D (2560×1080): 460×630 程度、 aspect 0.73
+(上記は B の実値スナップショット、 v932 時点)
 
-CSS デフォルト (`.op-side-kurumi .op-char-slot` per-VC media query) も同じ値で hardcode 済み。 saved-layout.json で配信されない VC では CSS デフォルトに fallback。
+#### VC 別の編集状況 (v932 時点)
+
+| VC | kurumi.perVariant の編集状況 |
+|---|---|
+| **B** (1024×768) | 13 variants 全部が editor で個別調整済 (slotH 278〜380、 slotOffsetX 54〜88、 `kurumi_pray` だけ slotOffsetY=-4 と微調整、 ほかは 0)。 全 variant `slotW=280` / `slotAspect='fixed_0.73'` / `objectPosition='bottom'` で統一 |
+| **C** (1920×1080) | 13 variants 全部 `slotW=280 / slotH=380 / slotOffsetX=0 / slotOffsetY=0` の初期値 (= 今回の Export では C は触らずに送出された)。 今後 editor で個別調整可能 |
+| **D** (2560×1080) | `kurumi_001` のみ `slotW=550 / slotH=489 / slotOffsetX=654` で大きく上書き (= D 表示で `kurumi_001` を画面右寄せの大サイズに調整)。 他 12 variants は初期値のまま |
+
+CSS デフォルト (`.op-side-kurumi .op-char-slot` per-VC media query) は B 280×380 / C 380×520 / D 460×630 (aspect 0.73) で hardcode 済み。 saved-layout.json で配信されない VC / variant では CSS デフォルトに fallback。
+
+#### 配信ワークフロー (v932 で確立した実運用)
+
+1. ローカル editor (`tools/op-layout-editor.html?edit=1`) を「対話 (P2-6)」モードで開く
+2. 「くるみ側」タブ または 左ペインの Kurumi サムネで variant 選択 → slot ドラッグで位置・サイズ調整 (variant ごとに保存)
+3. 「📋 JSON のみクリップボード」 (= `pono-op-layout-v1` schema) でコピー → AI チャット貼付け
+4. orchestrator (Claude) が `quizland/saved-layout.json` の `__op_layout` のみ merge (他 219 keys 完全温存) + commit + auto push
+5. develop → staging に GH Actions 経由で反映 → 全端末で kurumi.perVariant が新値で読まれる
+
+過去に `__op_narration` / pono.perVariant / singleBox / narration 等で実証されていたフローを、 kurumi の 13 variants 全量で初めて回し切ったのが v932。
 
 ### 編集ワークフロー
 
@@ -378,4 +392,5 @@ dialogue render ループでは `presetForLine = isHakase ? 'owl' : (isKurumi ? 
 - v928: auto-commit (post-commit hook 由来の自動上昇)
 - v929: editor の **scenario state に version 付き auto migration を実装** — `SCENARIO_DATA_VERSION = 'v927'` 定数を新設、 `defaultScenario()` の戻り値に `version` フィールドを埋め込み、 `loadScenario()` で saved state の `version` が現行値と不一致なら **defaults を強制使用**、 `saveScenario()` で保存時に `version` を確実に上書き。 これにより **既存ユーザーも editor リロードだけで自動的に新 defaults へ移行**、 過去の DevTools コンソール手順 (`localStorage.removeItem('pono.opLayoutEditor.v1.scenario')`) は不要に。 影響範囲は scenario state のみで layout / narration state は touch しない
 - v930: editor の **「くるみ側」タブ切替 defensive 強化** (active class 即時更新 + state.kurumi 欠落時の自動 seed + try/catch wrap) — 以前タブ切替時に稀に kurumi state が undefined のまま render に進んで例外で UI が固まる事象があったため、 タブクリックハンドラで state を必ず seed してから active class を切替えるように修正
-- **v931 (現行)**: editor の **シナリオ編集モードの各 dialogue 行に「ポノ」「はかせ」「くるみ」 の 3 dropdown を追加** — `HAKASE_VARIANTS` 定数 + `hakasePathByName()` / `hakaseFullPath()` ヘルパ + `appendCharImgSelect()` 共通ヘルパで 3 キャラ統一実装、 各 line で `line.ponoImg` / `line.hakaseImg` / `line.kurumiImg` を speaker と独立に編集可能に。 同時に `migrateScenario` で `line.hakaseImg` 空値正規化 + `buildScenarioPanelsLiteral` で `hakaseImg` シリアライズ追加 + `SCENARIO_DATA_VERSION` を `'v927'` → `'v930'` に bump (defaults 構造自体は未変更だが、 line に新フィールドが入る余地が広がったため auto migration を発火させて既存ユーザーも新 schema に揃える)。 runtime 側の hakaseImg 対応は未実装 (HAKASE_VARIANTS が 1 種のみのため実害なし、 2 種以上に増やす際の将来タスクとして本ドキュメントに明記)
+- v931: editor の **シナリオ編集モードの各 dialogue 行に「ポノ」「はかせ」「くるみ」 の 3 dropdown を追加** — `HAKASE_VARIANTS` 定数 + `hakasePathByName()` / `hakaseFullPath()` ヘルパ + `appendCharImgSelect()` 共通ヘルパで 3 キャラ統一実装、 各 line で `line.ponoImg` / `line.hakaseImg` / `line.kurumiImg` を speaker と独立に編集可能に。 同時に `migrateScenario` で `line.hakaseImg` 空値正規化 + `buildScenarioPanelsLiteral` で `hakaseImg` シリアライズ追加 + `SCENARIO_DATA_VERSION` を `'v927'` → `'v930'` に bump (defaults 構造自体は未変更だが、 line に新フィールドが入る余地が広がったため auto migration を発火させて既存ユーザーも新 schema に揃える)。 runtime 側の hakaseImg 対応は未実装 (HAKASE_VARIANTS が 1 種のみのため実害なし、 2 種以上に増やす際の将来タスクとして本ドキュメントに明記)
+- **v932 (現行)**: ローカル editor (`tools/op-layout-editor.html`) で kurumi 13 variants × 3 VC の slot 位置・サイズを微調整 → **「📋 JSON のみクリップボード」** で `pono-op-layout-v1` schema を export → orchestrator (Claude) が `quizland/saved-layout.json` の **`__op_layout` のみ merge** (top-level 220 keys 完全温存、 `__op_narration` / pono / hakase / singleBox / narration 等は touch せず) + commit + post-commit hook で develop へ auto push → GH Actions が staging へ自動反映、 という **「ローカル editor → AI 経由 publish → 全端末配信」 のワークフローが kurumi の 13 perVariant 全量で初めて回り切った**。 結果: B (kurumi 13 variants 全部で個別調整 / `kurumi_pray` だけ slotOffsetY=-4)、 C (13 variants は今回 touch せず初期値温存)、 D (`kurumi_001` のみ大きく上書き、 他 12 は初期値) の状態で `__op_layout.{B,C,D}.kurumi.perVariant` が saved-layout.json に焼かれた。 editor 側のコード変更はなし (v931 までで完成済の Export 経路をそのまま使った publish イベント = 配信品質 milestone)
