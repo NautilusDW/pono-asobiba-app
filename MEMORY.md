@@ -108,6 +108,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-11T07:00:08Z - quizland saved-layout.json __op_layout 反映 (06-49-00 Export, sw.js 935)
+- **タスク**: quizland saved-layout.json __op_layout 反映 (06-49-00 Export, sw.js 935)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 72
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 53, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 7}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-11T06:33:17Z - quizland OP runtime kurumi CSS を中央アンカーに揃え editor preview と一致 (B/C/D 全 VC、 left:50% + transform:translate(-50%,-50%)、 sw v933)
 - **タスク**: quizland OP runtime kurumi CSS を中央アンカーに揃え editor preview と一致 (B/C/D 全 VC、 left:50% + transform:translate(-50%,-50%)、 sw v933)
 - **結果**: 成功
@@ -210,18 +223,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 10, "Read": 14, "Grep": 12, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 6, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-11T04:48:52Z - op-layout-editor: 左ペインに Kurumi バリエーションサムネ追加 + シナリオ speaker に くるみ追加 + sw v925
-- **タスク**: op-layout-editor: 左ペインに Kurumi バリエーションサムネ追加 + シナリオ speaker に くるみ追加 + sw v925
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 49
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 37, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
