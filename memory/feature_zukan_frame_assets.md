@@ -82,6 +82,15 @@ assets/zukan/frames/
 - 完了後は `saveResizeState()` を呼びつつ画面下に toast 表示 (2 秒)。
 - `window.guessFrameKind` として公開 (将来の他箇所からの利用に備える)。
 
+### 🖼 イラスト独立スケール (sw v939 〜)
+
+`.userbox-with-bg` (= bgImage 付き userbox) の **イラストだけ**を、 装飾フレーム (`.zk-frame`) のサイズはそのままに縮小できる。 「フレームから動物が食み出している」 ような時に有効。
+
+- CSS: `.userbox.userbox-with-bg { background-size: var(--zk-art-size, contain); }` — デフォルト `contain` で従来挙動を維持、 percentage 指定で縮小する。
+- 永続化: `el.dataset.artScale` (30〜100 の数字文字列) + `collectUserboxes` / `restoreUserboxes` wrap で saved-layout JSON に `artScale` を保存／復元。
+- ツールバー UI: `#zk-art-scale-input` (range 30-100, step 5) と `#zk-art-scale-val` (現在値) を `🎯 自動割当` ボタンの直後に静的 HTML で配置。 300ms ポーリングで選択中 userbox を追従し、 enable/disable + value を同期。 `input` イベントでリアルタイム反映、 `change` で `saveResizeState()`。
+- 🎯 自動割当 / dropdown 経由で `applyFrame(el, kind)` が走った時、 該当 userbox に `dataset.artScale` がまだ無くかつ `.userbox-with-bg` なら、 kind 別デフォルトを自動セット: `card-square` 70%、 `rabbit-portrait` 80%、 `animal-banner` 90% (`text-underline` はテキスト用なのでスキップ)。 既に手動設定済みなら尊重 (上書きしない)。
+
 ---
 
 ## 「スロット差替画像」 input との関係

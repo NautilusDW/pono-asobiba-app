@@ -926,6 +926,13 @@ body.resize-mode .zukan-safe .resizable {
 .userbox.userbox-with-bg {
   background-color: transparent !important;
   border-color: transparent;
+  /* イラスト独立スケール: --zk-art-size を userbox 単位で上書きすると
+     background-image の表示サイズだけが変わる (= .zk-frame の表示サイズは不変)。
+     デフォルトは contain で現行挙動を維持。 「70% auto」 のような percentage を
+     指定するとイラストだけが枠内で縮む。 */
+  background-size: var(--zk-art-size, contain);
+  background-position: center;
+  background-repeat: no-repeat;
 }
 body.resize-mode .userbox.userbox-with-bg {
   /* 編集モード中は薄い枠線で位置がわかるようにする */
@@ -1474,6 +1481,11 @@ body.resize-mode .ruler { display: block; }
   </div>
   <div>
     <button id="zk-frame-auto-btn" type="button" title="全 userbox に自動でフレーム種別を割当 (サイズで推測)">🎯 自動割当</button>
+  </div>
+  <div id="zk-art-scale-wrap" title="選択中の userbox の中身イラストのみを縮小 (枠サイズは変えない)">
+    <label>🖼 中身サイズ</label>
+    <input type="range" id="zk-art-scale-input" min="30" max="100" step="5" value="100" disabled />
+    <span id="zk-art-scale-val">100%</span>
   </div>
 
   <div>
@@ -4428,11 +4440,16 @@ function createUserbox(opts) {
   if (opts.bgImage) {
     div.dataset.bgImage = opts.bgImage;
     div.style.backgroundImage = `url("${opts.bgImage}")`;
-    div.style.backgroundSize = 'contain';
-    div.style.backgroundRepeat = 'no-repeat';
-    div.style.backgroundPosition = 'center';
+    // background-size / position / repeat は .userbox-with-bg の CSS 規則
+    // (background-size: var(--zk-art-size, contain) …) に委譲する。
+    // インラインで上書きすると CSS 変数が効かなくなるため、 明示しない。
     div.style.backgroundColor = 'transparent';
     div.classList.add('userbox-with-bg');
+    // opts.artScale (= "70" のような数字文字列) が指定されていれば適用
+    if (opts.artScale) {
+      div.dataset.artScale = String(opts.artScale);
+      div.style.setProperty('--zk-art-size', String(opts.artScale) + '% auto');
+    }
   }
   div.style.left = opts.left;
   div.style.top = opts.top;
@@ -4786,6 +4803,15 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
   //                         共有するため明示)
   //   - [data-zk-framable]: 任意の DOM へオプトインで装飾フレームを当てる拡張穴
   const FRAMABLE_SELECTOR = '.userbox, .slot, [data-zk-framable]';
+  // kind 別の推奨デフォルト artScale (%) — userbox-with-bg の中身イラストを
+  // 枠 PNG の透明余白に収まるよう少し縮める初期値。 ユーザーが既に手動で
+  // dataset.artScale を設定していたら上書きしない。
+  const FRAME_DEFAULT_ART_SCALE = {
+    'animal-banner':   90,
+    'card-square':     70,
+    'rabbit-portrait': 80,
+    // 'text-underline' はテキスト用なのでスキップ (= デフォルト適用なし)
+  };
   // 1) .zk-frame img の付け外し — .userbox 以外 (.slot 等) にも適用できるよう拡張
   function applyFrame(targetEl, kind) {
     if (!targetEl) return;
@@ -4814,8 +4840,23 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
       // badge と del の前 (= DOM 下層 / overlay 用) に挿入
       targetEl.insertBefore(img, targetEl.firstChild);
       targetEl.dataset.frameKind = kind;
+      // kind 別デフォルト artScale を適用 (背景イラスト付き userbox かつ未設定の時のみ)
+      try {
+        const defScale = FRAME_DEFAULT_ART_SCALE[kind];
+        if (
+          defScale != null &&
+          targetEl.classList && targetEl.classList.contains('userbox-with-bg') &&
+          !targetEl.dataset.artScale
+        ) {
+          targetEl.dataset.artScale = String(defScale);
+          targetEl.style.setProperty('--zk-art-size', defScale + '% auto');
+          try { console.log('[zk] applyFrame default artScale=', defScale, 'kind=', kind, 'el=', targetEl); } catch (e) {}
+        }
+      } catch (e) {}
     } else {
       delete targetEl.dataset.frameKind;
+      delete targetEl.dataset.artScale;
+      targetEl.style.removeProperty('--zk-art-size');
     }
   }
   window.__zkApplyFrame = applyFrame;
@@ -4866,6 +4907,8 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
         if (!row || !row.id) return;
         const el = byId.get(row.id);
         if (el && el.dataset.frameKind) row.frameKind = el.dataset.frameKind;
+        // イラスト独立スケール: dataset.artScale が立っていれば永続化
+        if (el && el.dataset.artScale) row.artScale = el.dataset.artScale;
       });
       return arr;
     };
@@ -4886,12 +4929,15 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
           if (el.dataset.userboxId) byId.set(el.dataset.userboxId, el);
         });
         arr.forEach(row => {
-          if (!row || !row.frameKind || !row.id) return;
+          if (!row || !row.id) return;
           const el = byId.get(row.id);
-          if (el) {
+          if (!el) return;
+          if (row.frameKind) {
             el.dataset.frameKind = row.frameKind;
             applyFrame(el, row.frameKind);
           }
+          // イラスト独立スケール: createUserbox(box) が opts.artScale を既に処理済みのため
+          // ここでの再書き込みは不要 (= 冗長 + 将来の改変リスク回避)。
         });
       }
     };
@@ -5031,6 +5077,83 @@ window.addEventListener('visibilitychange', () => { if (document.hidden) saveSta
     } else if (!autoBtn) {
       try { console.warn('[zk] #zk-frame-auto-btn not found in DOM'); } catch (e) {}
     }
+
+    // 🖼 中身サイズ スライダーの bind
+    attachArtScaleUI();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  🖼 中身サイズ (artScale) スライダー
+  //   userbox-with-bg の background-image を CSS 変数 --zk-art-size 経由で
+  //   独立スケールする。 枠 (.zk-frame img) のサイズは不変。
+  // ─────────────────────────────────────────────────────────
+  function getCurrentlySelectedUserbox() {
+    try {
+      if (window.selectedElements && window.selectedElements.size === 1) {
+        const el = [...window.selectedElements][0];
+        if (el && el.classList && el.classList.contains('userbox')) return el;
+      }
+    } catch (e) {}
+    const sel = document.querySelector('.userbox.selected');
+    return sel || null;
+  }
+
+  function attachArtScaleUI() {
+    const input = document.getElementById('zk-art-scale-input');
+    const valEl = document.getElementById('zk-art-scale-val');
+    if (!input || !valEl) {
+      try { console.warn('[zk] art-scale UI not found'); } catch (e) {}
+      return;
+    }
+    if (input.dataset.zkBound === '1') return;
+    input.dataset.zkBound = '1';
+
+    function applyToSelected(commit) {
+      const el = getCurrentlySelectedUserbox();
+      const val = String(input.value);
+      valEl.textContent = val + '%';
+      if (!el) return;
+      // bgImage を持つ userbox にしか意味がないため、 そうでなければスキップ
+      if (!el.classList.contains('userbox-with-bg')) return;
+      el.dataset.artScale = val;
+      el.style.setProperty('--zk-art-size', val + '% auto');
+      try { console.log('[zk] art-scale changed to', val, 'on', el, 'commit=', !!commit); } catch (e) {}
+      if (commit && typeof window.saveResizeState === 'function') {
+        window.saveResizeState();
+      }
+    }
+    // ドラッグ中リアルタイム反映
+    input.addEventListener('input', () => applyToSelected(false));
+    // 確定時に save
+    input.addEventListener('change', () => applyToSelected(true));
+
+    // 選択状態の変化を 300ms ポーリングで監視: スライダーの enable/disable と value を同期
+    let lastTargetKey = '__init__';
+    function syncSlider() {
+      const el = getCurrentlySelectedUserbox();
+      const key = el
+        ? (el.dataset.userboxId + '|' + (el.classList.contains('userbox-with-bg') ? 'bg' : 'nobg'))
+        : '';
+      if (key === lastTargetKey) return;
+      lastTargetKey = key;
+      try { console.log('[zk] selection changed, target userbox=', el); } catch (e) {}
+      if (el && el.classList.contains('userbox-with-bg')) {
+        input.disabled = false;
+        const cur = el.dataset.artScale ? parseInt(el.dataset.artScale, 10) : 100;
+        const clamped = isFinite(cur) ? Math.min(100, Math.max(30, cur)) : 100;
+        if (clamped !== cur) {
+          el.dataset.artScale = String(clamped);
+          el.style.setProperty('--zk-art-size', clamped + '% auto');
+        }
+        input.value = String(clamped);
+        valEl.textContent = clamped + '%';
+      } else {
+        input.disabled = true;
+        valEl.textContent = '—';
+      }
+    }
+    setInterval(syncSlider, 300);
+    syncSlider();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachFrameUI, { once: true });
