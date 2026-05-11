@@ -1075,6 +1075,15 @@
               <div class="op-dialogue-text" id="text-hakase"></div>
             </div>
           </div>
+          <div class="op-side op-side-kurumi" id="side-kurumi">
+            <div class="op-char-slot" id="slot-kurumi">
+              <img id="img-kurumi" alt="">
+            </div>
+            <div class="op-dialogue op-dialogue-kurumi" id="box-kurumi">
+              <div class="op-dialogue-label" id="label-kurumi">くるみ</div>
+              <div class="op-dialogue-text" id="text-kurumi"></div>
+            </div>
+          </div>
         </div>
         <div class="single-box-wrapper" id="single-box-wrapper">
           <div class="op-dialogue op-dialogue-single" id="box-single">
@@ -1099,6 +1108,7 @@
       <div class="radio-row" id="speaker-row">
         <label data-val="hakase"><input type="radio" name="speaker" value="hakase" checked>はかせが話す</label>
         <label data-val="pono"><input type="radio" name="speaker" value="pono">ポノが話す</label>
+        <label data-val="kurumi"><input type="radio" name="speaker" value="kurumi">くるみが話す</label>
       </div>
     </div>
 
@@ -1110,6 +1120,7 @@
     <div class="tab-bar" id="tab-bar">
       <button class="active" data-tab="pono">ポノ側</button>
       <button data-tab="hakase">はかせ側</button>
+      <button data-tab="kurumi">くるみ側</button>
     </div>
 
     <div class="tab-body" id="tab-body"></div>
@@ -1135,6 +1146,26 @@ const PONO_VARIANTS = [
   // 標準 variant として認識させ、 Export 時の userAdded 警告を防ぐ。
   { name: 'dance_wave', path: '../assets/images/characters/pono/dance/dance_wave.webp' }
 ];
+
+// 2026-05-11: リスのくるみちゃん 13 ポーズ。 OP_PANELS の line.kurumiImg /
+// panel.kurumiImg から basename で variant 名を解決する (= ponoImg と同じ規約)。
+// kurumi_001 が基準正面立ち絵。 他 12 ポーズはセリフごとに使い分け。
+const KURUMI_VARIANTS = [
+  { name: 'kurumi_001',    path: '../assets/images/characters/kurumi/dance/kurumi_001.webp' },
+  { name: 'kurumi_hi',     path: '../assets/images/characters/kurumi/dance/kurumi_hi.webp' },
+  { name: 'kurumi_wave',   path: '../assets/images/characters/kurumi/dance/kurumi_wave.webp' },
+  { name: 'kurumi_hooray', path: '../assets/images/characters/kurumi/dance/kurumi_hooray.webp' },
+  { name: 'kurumi_wink',   path: '../assets/images/characters/kurumi/dance/kurumi_wink.webp' },
+  { name: 'kurumi_clasp',  path: '../assets/images/characters/kurumi/dance/kurumi_clasp.webp' },
+  { name: 'kurumi_idea',   path: '../assets/images/characters/kurumi/dance/kurumi_idea.webp' },
+  { name: 'kurumi_point',  path: '../assets/images/characters/kurumi/dance/kurumi_point.webp' },
+  { name: 'kurumi_calm',   path: '../assets/images/characters/kurumi/dance/kurumi_calm.webp' },
+  { name: 'kurumi_pray',   path: '../assets/images/characters/kurumi/dance/kurumi_pray.webp' },
+  { name: 'kurumi_book',   path: '../assets/images/characters/kurumi/dance/kurumi_book.webp' },
+  { name: 'kurumi_cheer',  path: '../assets/images/characters/kurumi/dance/kurumi_cheer.webp' },
+  { name: 'kurumi_greet',  path: '../assets/images/characters/kurumi/dance/kurumi_greet.webp' }
+];
+const KURUMI_VARIANT_NAMES = KURUMI_VARIANTS.map(v => v.name);
 
 const FRAME_IMAGES = [
   { id: 'frame_wide_a', label: '横長フレーム A', path: encodeURI('../assets/images/quizland/OP/レイヤー 0_20260507-173812_001.png') },
@@ -1694,7 +1725,33 @@ function defaultsFor(vc) {
       objectPosition: 'bottom'
     };
     const out = {};
-    ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp', 'pono_001'].forEach(v => {
+    // 2026-05-11: dance_wave を default リストに追加 (line 1853 の migration には
+    // 既に含まれていたが defaultsFor 側で漏れていた)。
+    ['dance_hi', 'dance_hooray', 'dance_smile', 'think_arms_crossed_side', 'think_chin_clasp', 'pono_001', 'dance_wave'].forEach(v => {
+      out[v] = Object.assign({}, base);
+    });
+    return out;
+  })();
+  // Per-VC kurumi slot/offset defaults (本番 saved-layout.json `__op_layout.{B,C,D}.kurumi` に準拠)。
+  // B: slotW 280 / slotH 380, C: slotW 380 / slotH 520, D: slotW 460 / slotH 630
+  const kurumiDefaults = (() => {
+    if (isC) return { slotW: 380, slotH: 520, slotOffsetX: 0, slotOffsetY: 0 };
+    if (isD) return { slotW: 460, slotH: 630, slotOffsetX: 0, slotOffsetY: 0 };
+    return { slotW: 280, slotH: 380, slotOffsetX: 0, slotOffsetY: 0 };
+  })();
+  // 2026-05-11: くるみ用 perVariant defaults。 13 ポーズ全てを kurumi_001 と
+  // 同じ初期値で生成 (後で editor 上で個別調整可能、 divergence していく想定)。
+  const kurumiPerVariantDefaults = (() => {
+    const base = {
+      slotW: kurumiDefaults.slotW,
+      slotH: kurumiDefaults.slotH,
+      slotOffsetX: kurumiDefaults.slotOffsetX,
+      slotOffsetY: kurumiDefaults.slotOffsetY,
+      slotAspect: 'fixed_0.73',
+      objectPosition: 'bottom'
+    };
+    const out = {};
+    KURUMI_VARIANT_NAMES.forEach(v => {
       out[v] = Object.assign({}, base);
     });
     return out;
@@ -1763,6 +1820,37 @@ function defaultsFor(vc) {
       labelFontSize: 22,
       sampleText: 'ほっほっほ…ポノか。よくきたのう'
     },
+    kurumi: {
+      variant: 'kurumi_001',
+      slotW: kurumiDefaults.slotW,
+      slotH: kurumiDefaults.slotH,
+      slotAspect: 'fixed_0.73',
+      objectPosition: 'bottom',
+      slotOffsetX: kurumiDefaults.slotOffsetX,
+      slotOffsetY: kurumiDefaults.slotOffsetY,
+      perVariant: kurumiPerVariantDefaults,
+      boxMode: 'image',
+      boxImage: DEFAULT_FRAME_ID,
+      boxW: isWide ? 480 : 400,
+      boxH: isWide ? 180 : 200,
+      boxX: 0,
+      boxY: isWide ? 240 : 200,
+      boxPadding: 32,
+      boxRadius: 16,
+      boxColor: '#fde2e4',
+      fontSize: isB ? 16 : 18,
+      lineHeight: 1.5,
+      aspectLock: false,
+      aspectLockRatio: 0,
+      textAlignH: 'center',
+      textAlignV: 'center',
+      labelAnchor: 'bl',
+      labelInside: true,
+      labelOffsetX: 0,
+      labelOffsetY: 0,
+      labelFontSize: 22,
+      sampleText: 'はーい、まかせて！'
+    },
     speaker: 'hakase',
     singleBox: {
       boxW: singleBoxDefaults.boxW,
@@ -1826,14 +1914,62 @@ let state = null;
 
 function migrateFrameIds(parsed) {
   if (!parsed || typeof parsed !== 'object') return parsed;
+  // 2026-05-11: legacy state には kurumi 自体が無い場合がある (kurumi 追加前の保存データ)。
+  // 後続 migration が回るよう minimal な空 obj を seed しておく (migration 内で
+  // baseSlot fallback + perVariant 全 13 ポーズの backfill が走る)。
+  if (!parsed.kurumi || typeof parsed.kurumi !== 'object') {
+    parsed.kurumi = {};
+  }
   // Detect VC from data shape (used to pick correct fontSize default).
   // We can't know vc from `parsed` alone, so caller may be migrating any of B/C/D.
   // We default to C/D-ish 18 if both slot/box dims are large, else 16. As fallback, 16.
-  ['pono', 'hakase'].forEach(sideKey => {
+  ['pono', 'hakase', 'kurumi'].forEach(sideKey => {
     const side = parsed[sideKey];
     if (!side || typeof side !== 'object') return;
     if (!FRAME_IDS.includes(side.boxImage)) {
       side.boxImage = DEFAULT_FRAME_ID;
+    }
+    // 2026-05-11: くるみ用 perVariant migration (legacy state は kurumi_001 のみの場合あり)。
+    // ponoと同じパターンで 13 ポーズ全て backfill する。
+    if (sideKey === 'kurumi') {
+      if (!side.perVariant || typeof side.perVariant !== 'object') side.perVariant = {};
+      const baseSlot = {
+        slotW: (typeof side.slotW === 'number' && Number.isFinite(side.slotW)) ? side.slotW : 280,
+        slotH: (typeof side.slotH === 'number' && Number.isFinite(side.slotH)) ? side.slotH : 380,
+        slotOffsetX: (typeof side.slotOffsetX === 'number' && Number.isFinite(side.slotOffsetX)) ? side.slotOffsetX : 0,
+        slotOffsetY: (typeof side.slotOffsetY === 'number' && Number.isFinite(side.slotOffsetY)) ? side.slotOffsetY : 0,
+        slotAspect: (typeof side.slotAspect === 'string') ? side.slotAspect : 'fixed_0.73',
+        objectPosition: (typeof side.objectPosition === 'string') ? side.objectPosition : 'bottom'
+      };
+      KURUMI_VARIANT_NAMES.forEach(v => {
+        if (!side.perVariant[v] || typeof side.perVariant[v] !== 'object') {
+          side.perVariant[v] = Object.assign({}, baseSlot);
+        } else {
+          PONO_PER_VARIANT_KEYS.forEach(k => {
+            if (side.perVariant[v][k] === undefined) side.perVariant[v][k] = baseSlot[k];
+          });
+        }
+      });
+      Object.keys(side.perVariant).forEach(k => {
+        const ent = side.perVariant[k];
+        if (!ent || typeof ent !== 'object') {
+          delete side.perVariant[k];
+          return;
+        }
+        PONO_PER_VARIANT_KEYS.forEach(pk => {
+          if (ent[pk] === undefined) ent[pk] = baseSlot[pk];
+        });
+      });
+      const activeVariant = side.variant || 'kurumi_001';
+      if (side.perVariant[activeVariant]) {
+        const ent = side.perVariant[activeVariant];
+        PONO_PER_VARIANT_KEYS.forEach(k => {
+          if (ent[k] !== undefined) side[k] = ent[k];
+        });
+      }
+      // kurumi に sampleText が無ければ default を入れる (legacy state 救済)。
+      if (typeof side.sampleText !== 'string') side.sampleText = 'はーい、まかせて！';
+      if (typeof side.variant !== 'string') side.variant = 'kurumi_001';
     }
     // Pono per-variant slot 値: legacy state に perVariant が無ければ flat 値から生成。
     // 全 variant に同じ slot 値をコピー → ユーザーが variant ごとに変えれば divergence。
@@ -2181,6 +2317,9 @@ function buildRuntimeOpLayout(vc) {
   return {
     pono:      sideSnap(s.pono, true),    // ポノは perVariant 含む (ポーズ別位置)
     hakase:    sideSnap(s.hakase, false), // hakase は flat のみ
+    // 2026-05-11: くるみも 13 ポーズ × 6 slot フィールド perVariant を runtime に渡す
+    // (= line/panel.kurumiImg basename → variant 解決 → 該当 perVariant 適用)。
+    kurumi:    sideSnap(s.kurumi, true),
     singleBox: sbSnap(s.singleBox),
     narration: buildRuntimeNarration(vc)
   };
@@ -2953,6 +3092,12 @@ function ponoPathByName(name) {
   const v = PONO_VARIANTS.find(x => x.name === name);
   return v ? v.path : PONO_VARIANTS[0].path;
 }
+// 2026-05-11: くるみ用 path lookup。 KURUMI_VARIANTS から basename で検索、
+// 未知名は kurumi_001 (基準正面) にフォールバック。
+function kurumiPathByName(name) {
+  const v = KURUMI_VARIANTS.find(x => x.name === name);
+  return v ? v.path : KURUMI_VARIANTS[0].path;
+}
 function framePathById(id) {
   const f = FRAME_IMAGES.find(x => x.id === id);
   return f ? f.path : FRAME_IMAGES[0].path;
@@ -3028,6 +3173,8 @@ function applySideToDom(sideKey) {
 
   if (sideKey === 'pono') {
     img.src = ponoPathByName(s.variant);
+  } else if (sideKey === 'kurumi') {
+    img.src = kurumiPathByName(s.variant);
   }
 
   box.style.width = s.boxW + 'px';
@@ -3072,7 +3219,7 @@ function applySideToDom(sideKey) {
   txt.style.whiteSpace = 'pre-wrap';
   // 機能 2: ラベル位置 + 表示テキスト
   if (lbl) {
-    lbl.textContent = sideKey === 'pono' ? 'ポノ' : 'はかせ';
+    lbl.textContent = sideKey === 'pono' ? 'ポノ' : (sideKey === 'kurumi' ? 'くるみ' : 'はかせ');
     applyLabelPosition(lbl, s.labelAnchor, s.labelInside, s.labelOffsetX, s.labelOffsetY, s.labelFontSize);
   }
 }
@@ -3318,6 +3465,7 @@ function render() {
   }
   applySideToDom('pono');
   applySideToDom('hakase');
+  applySideToDom('kurumi');
   applySingleBoxToDom();
   applyNarrationToDom();
   // シナリオモードのときだけ、選択中の line/panel をプレビューに上書き反映。
@@ -3328,6 +3476,8 @@ function render() {
   const sp = state[currentVC].speaker;
   document.getElementById('side-pono').classList.toggle('is-speaking', sp === 'pono');
   document.getElementById('side-hakase').classList.toggle('is-speaking', sp === 'hakase');
+  const sideKurumiEl = document.getElementById('side-kurumi');
+  if (sideKurumiEl) sideKurumiEl.classList.toggle('is-speaking', sp === 'kurumi');
 
   document.querySelectorAll('#pono-grid .preset-thumb').forEach(el => {
     el.classList.toggle('selected', el.dataset.variant === state[currentVC].pono.variant);
@@ -3371,7 +3521,7 @@ function rescaleStage() {
 
 // Per-control re-sync hooks so aspect-lock can update a sibling control's UI
 // without rebuilding the whole pane. key is e.g. 'boxW' / 'boxH' / 'slotW' etc.
-const _rangeSyncMap = { pono: {}, hakase: {} };
+const _rangeSyncMap = { pono: {}, hakase: {}, kurumi: {} };
 function syncRangeUi(sideKey, key) {
   const fn = _rangeSyncMap[sideKey] && _rangeSyncMap[sideKey][key];
   if (typeof fn === 'function') fn();
@@ -3422,7 +3572,7 @@ function makeRange(label, min, max, step, key, sideKey) {
     pushUndoSnapshot('スライダ変更');
     state[currentVC][sideKey][key] = n;
     // Pono variant 別 slot 保持: flat 書き込み後 perVariant[currentVariant] にも反映。
-    if (sideKey === 'pono') syncVariantFromFlat(state[currentVC].pono, key);
+    if (sideKey === 'pono' || sideKey === 'kurumi') syncVariantFromFlat(state[currentVC][sideKey], key);
     if (document.activeElement !== range) range.value = n;
     if (document.activeElement !== num) num.value = n;
     // Aspect-lock coupling for box dims
@@ -3444,7 +3594,7 @@ function makeRange(label, min, max, step, key, sideKey) {
     n = Math.min(Math.max(n, Number(min)), Number(max));
     pushUndoSnapshot('スライダ変更');
     state[currentVC][sideKey][key] = n;
-    if (sideKey === 'pono') syncVariantFromFlat(state[currentVC].pono, key);
+    if (sideKey === 'pono' || sideKey === 'kurumi') syncVariantFromFlat(state[currentVC][sideKey], key);
     num.value = n;
     range.value = n;
     if (key === 'boxW' || key === 'boxH') {
@@ -3704,7 +3854,7 @@ function makeRadio(label, key, sideKey, options, opts) {
       pushUndoSnapshot('ラジオ変更');
       state[currentVC][sideKey][key] = opt.value;
       // Pono variant 別 slot: slotAspect / objectPosition を perVariant にも反映。
-      if (sideKey === 'pono') syncVariantFromFlat(state[currentVC].pono, key);
+      if (sideKey === 'pono' || sideKey === 'kurumi') syncVariantFromFlat(state[currentVC][sideKey], key);
       // Side-effect: when boxMode flips, refresh the aspect-lock ratio source.
       if (key === 'boxMode') {
         const ss = state[currentVC][sideKey];
@@ -3760,14 +3910,14 @@ function makeSelect(label, key, sideKey, options) {
   sel.addEventListener('change', () => {
     pushUndoSnapshot('ドロップダウン変更');
     state[currentVC][sideKey][key] = sel.value;
-    // Pono variant 切替: 新 variant の slot 値を flat にキャッシュ + 右ペイン再構築
-    if (sideKey === 'pono' && key === 'variant') {
-      syncFlatFromVariant(state[currentVC].pono);
+    // Pono / くるみ variant 切替: 新 variant の slot 値を flat にキャッシュ + 右ペイン再構築
+    if ((sideKey === 'pono' || sideKey === 'kurumi') && key === 'variant') {
+      syncFlatFromVariant(state[currentVC][sideKey]);
     }
     save(currentVC);
     propagateMirror(sideKey, key);
     render();
-    if (sideKey === 'pono' && key === 'variant') {
+    if ((sideKey === 'pono' || sideKey === 'kurumi') && key === 'variant') {
       buildRightPane();
     }
   });
@@ -5046,12 +5196,15 @@ function applyScenarioPreview() {
     if (stage) stage.dataset.panel = 'dialog';
     const line = panel.dialogues[sc.currentLineIdx];
     if (!line) return;
-    const speakerSide = line.speaker === 'pono' ? 'pono' : 'hakase';
+    const speakerSide = line.speaker === 'pono' ? 'pono'
+      : (line.speaker === 'kurumi' ? 'kurumi' : 'hakase');
     // is-speaking の切替 (現在の話者だけ強調)。
     const sidePono = document.getElementById('side-pono');
     const sideHak  = document.getElementById('side-hakase');
+    const sideKur  = document.getElementById('side-kurumi');
     if (sidePono) sidePono.classList.toggle('is-speaking', speakerSide === 'pono');
     if (sideHak)  sideHak.classList.toggle('is-speaking', speakerSide === 'hakase');
+    if (sideKur)  sideKur.classList.toggle('is-speaking', speakerSide === 'kurumi');
 
     // Pono image swap (per-line ponoImg を speaker に関係なく優先、なければ panel-level fallback)。
     const ponoImgEl = document.getElementById('img-pono');
@@ -5160,6 +5313,20 @@ function buildRightPane() {
     noteLab.textContent = '現在編集中';
     const noteVal = document.createElement('span');
     noteVal.textContent = state[currentVC].pono.variant + '（slot 値は variant ごとに保存）';
+    variantNote.appendChild(noteLab);
+    variantNote.appendChild(noteVal);
+    slotGroup.appendChild(variantNote);
+  } else if (sideKey === 'kurumi') {
+    slotGroup.appendChild(makeSelect('くるみ画像', 'variant', sideKey,
+      KURUMI_VARIANTS.map(v => ({ value: v.name, text: v.name }))));
+    const variantNote = document.createElement('div');
+    variantNote.className = 'prop-row';
+    variantNote.style.opacity = '0.85';
+    variantNote.style.fontSize = '12px';
+    const noteLab = document.createElement('label');
+    noteLab.textContent = '現在編集中';
+    const noteVal = document.createElement('span');
+    noteVal.textContent = state[currentVC].kurumi.variant + '（slot 値は variant ごとに保存）';
     variantNote.appendChild(noteLab);
     variantNote.appendChild(noteVal);
     slotGroup.appendChild(variantNote);
@@ -5646,8 +5813,9 @@ function buildCSS() {
     lines.push('');
     lines.push('/* viewport class ' + vc + ' (' + VP_DIMS[vc][0] + 'x' + VP_DIMS[vc][1] + ') */');
     lines.push(mediaFor[vc] + ' {');
-    ['pono', 'hakase'].forEach(sideKey => {
+    ['pono', 'hakase', 'kurumi'].forEach(sideKey => {
       const ss = s[sideKey];
+      if (!ss) return; // 2026-05-11: legacy state に kurumi が無い VC を gracefully skip
       const ar = aspectFromSlot(ss);
       // Always emit slot (character) + object-position. These are independent of
       // single-box mode (機能 5).
@@ -6100,6 +6268,10 @@ function applySeedToOpLayout(vc, fresh) {
   }
   if (ent.hakase && typeof ent.hakase === 'object') {
     fresh.hakase = Object.assign({}, fresh.hakase || {}, ent.hakase);
+  }
+  // 2026-05-11: kurumi seed (saved-layout.json `__op_layout.{vc}.kurumi`) も merge。
+  if (ent.kurumi && typeof ent.kurumi === 'object') {
+    fresh.kurumi = Object.assign({}, fresh.kurumi || {}, ent.kurumi);
   }
   if (ent.singleBox && typeof ent.singleBox === 'object') {
     fresh.singleBox = Object.assign({}, fresh.singleBox || {}, ent.singleBox);
