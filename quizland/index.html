@@ -1717,6 +1717,72 @@ body.layout-editor-on .character img {
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(120, 83, 20, 0.25));
 }
+/* ===== Perfect (5/5 全問正解) 専用 演出 (2026-05-12) =====
+   背景: 図書室で踊るポノとフクロウ博士+リス。
+   スタンプは「ドン！」と押されるような impact アニメーションで大きく出現。 */
+.overlay.is-perfect {
+  background:
+    linear-gradient(rgba(93,78,55,0.32), rgba(93,78,55,0.42)),
+    url('../assets/images/quizland/stamp-bg/stamp_bg.png') center/cover no-repeat;
+  backdrop-filter: blur(2px);
+}
+.overlay.is-perfect .modal {
+  background: rgba(255, 252, 240, 0.92);
+  box-shadow: 0 18px 50px rgba(80, 50, 10, 0.45),
+              0 0 0 6px rgba(255, 222, 120, 0.55);
+  position: relative;
+  overflow: visible;
+}
+/* Perfect 時はスタンプ画像をさらに大きく表示 */
+.overlay.is-perfect .result-stamp-img {
+  width: 320px;
+  height: 320px;
+  filter: drop-shadow(0 10px 22px rgba(120, 60, 20, 0.45));
+}
+/* スタンプ「押す」インパクトアニメーション (回転+スケール+わずかな揺れ) */
+@keyframes stampImpact {
+  0%   { transform: scale(0) rotate(-28deg); opacity: 0; }
+  55%  { transform: scale(1.35) rotate(8deg); opacity: 1; }
+  72%  { transform: scale(0.94) rotate(-4deg); }
+  86%  { transform: scale(1.06) rotate(2deg); }
+  100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+}
+/* インパクトに合わせて広がる「リング (押印の余韻)」 */
+@keyframes stampRingPulse {
+  0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  20%  { opacity: 0.55; }
+  100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+.overlay.is-perfect.is-animated .result-stamp-img {
+  animation: stampImpact 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: center center;
+}
+/* スタンプ周囲のリング (modal-icon を relative にして ::after で重ねる) */
+.overlay.is-perfect .modal-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.is-perfect .modal-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 320px;
+  height: 320px;
+  border: 6px solid rgba(220, 60, 50, 0.55);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+.overlay.is-perfect.is-animated .modal-icon::after {
+  animation: stampRingPulse 0.9s ease-out 0.12s both;
+}
+@media (max-width: 768px) {
+  .overlay.is-perfect .result-stamp-img { width: 240px; height: 240px; }
+  .overlay.is-perfect .modal-icon::after { width: 240px; height: 240px; }
+}
 /* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に、 320→960 に拡大 2026-05-06) */
 .seikai-stamp {
   position: fixed;
@@ -5065,7 +5131,19 @@ function showResult() {
   document.getElementById('result-msg').textContent = cleared
     ? toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい！'
     : toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい。\nもういちど やってみよう！';
-  document.getElementById('result-overlay').classList.remove('hidden');
+  // Perfect (5/5 全問正解) 時は背景画像 + 大きなスタンプ押印アニメーションを発動。
+  // is-perfect で背景画像とスタイル、 is-animated でアニメーションを起動 (reflow で確実に再生)。
+  const overlayEl = document.getElementById('result-overlay');
+  const isPerfect = (correctCount === totalQuestions && totalQuestions > 0);
+  overlayEl.classList.toggle('is-perfect', isPerfect);
+  overlayEl.classList.remove('is-animated');
+  overlayEl.classList.remove('hidden');
+  if (isPerfect) {
+    // 次フレームで is-animated を付け、 CSS animation を確実に再生
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => overlayEl.classList.add('is-animated'));
+    });
+  }
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
     playFanfare();
@@ -5092,7 +5170,10 @@ function initGame() {
   }
   questionIdx = 0;
   correctCount = 0;
-  document.getElementById('result-overlay').classList.add('hidden');
+  const _rov = document.getElementById('result-overlay');
+  _rov.classList.add('hidden');
+  // Perfect 演出用クラスをクリア (次の 5/5 で再発動できるように)
+  _rov.classList.remove('is-perfect', 'is-animated');
   if (playlist.length === 0) {
     // 何らかの理由で問題が組めなかった場合 (基本的に来ない) はモード選択へ
     document.getElementById('mode-screen').classList.remove('hidden');
@@ -6788,7 +6869,9 @@ document.getElementById('result-btn').addEventListener('click', function(e) {
 // Result "change mode" → モード選択画面へ
 document.getElementById('result-cat-btn').addEventListener('click', function(e) {
   if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
-  document.getElementById('result-overlay').classList.add('hidden');
+  const _rov2 = document.getElementById('result-overlay');
+  _rov2.classList.add('hidden');
+  _rov2.classList.remove('is-perfect', 'is-animated');
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 

@@ -124,6 +124,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T23:50:27Z - P2: ナンバー音声差し替え (tmp/quizland_NA/kurumi/number の NN-kurumi_number.wav 24件を q072-q083 形式で assets/tts/quiz/ に rename-copy)
+- **タスク**: P2: ナンバー音声差し替え (tmp/quizland_NA/kurumi/number の NN-kurumi_number.wav 24件を q072-q083 形式で assets/tts/quiz/ に rename-copy)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 143
+- **エラー数**: 11
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 14, "Bash": 23, "Agent": 104, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-12T23:45:56Z - O3: O1+O2 narration fixes (hakase bubble tx/ty + plate/SE RAF sync) commit + push
 - **タスク**: O3: O1+O2 narration fixes (hakase bubble tx/ty + plate/SE RAF sync) commit + push
 - **結果**: 成功
@@ -226,18 +239,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 27, "Bash": 36, "Edit": 7, "Write": 3, "Glob": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T14:11:37Z - quizland number_sequence あいだ系 stageDisplay を矢印なし 半角スペース区切り (案A) に変更 + renderNumberSequence の token 分割を hasArrow フラグ分岐に拡張 + sw v974→v975 bump
-- **タスク**: quizland number_sequence あいだ系 stageDisplay を矢印なし 半角スペース区切り (案A) に変更 + renderNumberSequence の token 分割を hasArrow フラグ分岐に拡張 + sw v974→v975 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 93
-- **エラー数**: 8
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 55, "ToolSearch": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
