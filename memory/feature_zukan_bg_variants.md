@@ -141,3 +141,4 @@ function buildVariantOptions(variants) {
 - 953 → 954: 🚨 リセットボタン追加 (選択中要素の ZK 状態を全部クリア)。 選択変更時に Console へ詳細ダンプ。 ユーザーが「変な挙動」 から脱出する手段と、 原因即時切り分けを提供。
 - 954 → 955: applyRotate を 「全要素統一: container ごと回転 + 90/270 で width/height swap」 にシンプル化。 旧 path A (内側 img CSS rotate) と path B (.zk-rotate-layer) を廃止。 これで userbox-with-bg やフレーム要素も「絵だけ回って bbox 残る」 不整合が解消、 視覚と DOM 寸法が常に一致する。
 - 955 → 958: rotate90 の width/height swap ロジックを撤去。 container 回転と swap の二重効果で 180°風の意図しない見た目になっていたため。 swap 無しで container 回転のみ → 視覚は正しく回り、 handle は元 bbox 配置で固定される (CSS rotate の自然な挙動)。
+- 959 → 960: layout-editor.js の drag を rotation-aware に。 ancestor の cumulative rotation を計算して delta を逆変換、 親が回転している子要素もマウスと一致した方向に動くようになる。 resize は変更なし (handle の自然な挙動を維持)。

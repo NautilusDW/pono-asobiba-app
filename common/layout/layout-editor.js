@@ -65,6 +65,38 @@
   }
   function nowIso() { return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19); }
 
+  // 2026-05-12: rotation-aware drag — ancestor の cumulative rotation を計算
+  //   親 (祖先) が CSS rotate されている時に子をドラッグすると、 画面上の delta と
+  //   DOM 上の translate 方向がズレる。 mouse delta (Δsx, Δsy) を逆回転すれば
+  //   ユーザーの視覚と一致する。
+  //   戻り値: degrees (0..360 に normalize)
+  function getCumulativeRotation(el) {
+    var total = 0;
+    var current = el;
+    // el 自身も含める (自分が rotate していてもこのヘルパーの戻り値で扱える)
+    while (current && current !== document.body) {
+      var r = (current.dataset && parseFloat(current.dataset.rotate || '0')) || 0;
+      total += r;
+      current = current.parentElement;
+    }
+    return ((total % 360) + 360) % 360; // normalize 0..360
+  }
+
+  // (Δsx, Δsy) を deg の逆回転で変換して (Δdx, Δdy) を返す。
+  // CSS rotate(θ deg) は時計回りなので、 mouse → DOM の逆変換は:
+  //   Δdx =  cos(θ)·Δsx + sin(θ)·Δsy
+  //   Δdy = -sin(θ)·Δsx + cos(θ)·Δsy
+  function rotateDeltaInverse(deg, dx, dy) {
+    if (!deg || deg === 0) return { dx: dx, dy: dy };
+    var rad = deg * Math.PI / 180;
+    var cos = Math.cos(rad);
+    var sin = Math.sin(rad);
+    return {
+      dx:  cos * dx + sin * dy,
+      dy: -sin * dx + cos * dy
+    };
+  }
+
   // getDomPath identical to layout-applier.js so __texts keys round-trip.
   function getDomPath(el) {
     var parts = [];
@@ -2087,17 +2119,27 @@
         if (e2.shiftKey) {
           if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0;
         }
+        // 2026-05-12: rotation-aware drag — ancestor (親側) が回転している場合、
+        //   mouse delta を逆回転して DOM translate に渡す。 これにより親 90° / 180°
+        //   / 270° 回転中でも子要素が「画面上のマウス方向」 と一致して動く。
+        //   要素ごとに親が異なり得るので per-target で算出 (rot===0 は早期 return)。
+        //   自身の rotate は drag delta に影響しない (translate の前段に出る) ので除外。
         startStates.forEach(function (s) {
-          var nx = snapValue(s.tx + dx);
-          var ny = snapValue(s.ty + dy);
+          var rotDeg = getCumulativeRotation(s.el.parentElement);
+          var corrected = rotateDeltaInverse(rotDeg, dx, dy);
+          var nx = snapValue(s.tx + corrected.dx);
+          var ny = snapValue(s.ty + corrected.dy);
           s.el._tx = nx;
           s.el._ty = ny;
           s.el.style.transform = 'translate(' + nx + 'px, ' + ny + 'px)';
         });
         // Papa-2 修正2: unlinked 子に counter-transform を当て、視覚的に動かないようにする
+        // 2026-05-12: 親が回転している場合は、 counter-transform 側も同じ rotation で補正する
         unlinkedStates.forEach(function (u) {
-          var nx = u.tx - dx;
-          var ny = u.ty - dy;
+          var rotDeg = getCumulativeRotation(u.el.parentElement);
+          var corrected = rotateDeltaInverse(rotDeg, dx, dy);
+          var nx = u.tx - corrected.dx;
+          var ny = u.ty - corrected.dy;
           u.el._tx = nx;
           u.el._ty = ny;
           u.el.style.transform = 'translate(' + nx + 'px, ' + ny + 'px)';
