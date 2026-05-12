@@ -903,8 +903,9 @@ body.sheet-on .hdr-right .ctrl-btn {
   font-size: clamp(80px, 20vmin, 220px);
   font-weight: 800;
   font-family: 'Zen Maru Gothic', sans-serif;
-  color: #2a3a5a;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  /* sw v976+: paper/wood テーマ整合のためブルー系 (#2a3a5a) を廃止し、 wood-dark (濃いブラウンオレンジ) に統一 */
+  color: var(--wood-dark);
+  text-shadow: 0 4px 12px rgba(80,50,10,0.18);
   user-select: none;
   white-space: nowrap;
 }
@@ -914,22 +915,34 @@ body.sheet-on .hdr-right .ctrl-btn {
 .number-display-sep {
   /* 旧 「あいだ」 fallback 用 ('と') */
   font-size: 0.55em;
-  color: #6b7280;
+  color: var(--wood-mid);
   font-weight: 600;
 }
 .number-display-arrow {
-  /* 「→」 矢印 (sw v974+) */
+  /* 「→」 矢印 (sw v974+) — v976 でブルー系を廃止しオレンジ系 (wood-light) に統一 */
   display: inline-block;
   font-size: 0.7em;
-  color: #8a96b8;
+  color: var(--wood-light);
   font-weight: 700;
   line-height: 1;
 }
 .number-display-blank {
-  /* 答えの位置を示す ◯ (sw v974+) */
-  display: inline-block;
-  color: #c0392b;
-  font-weight: 900;
+  /* 答えの位置を示す ◯ (sw v974+) — v976 で Unicode `◯` を SVG circle に置換、
+     dashed stroke + stroke-linecap:round でやさしい点線円に。 fill 色は SVG 内で指定するため
+     ここでは inline-flex でベースライン揃え + 1em 正方形のサイズ確保のみ。 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  line-height: 1;
+}
+.number-display-blank svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+  overflow: visible;
 }
 
 /* ===== Emoji / Trivia / Opposite ===== */
@@ -4127,8 +4140,15 @@ function renderNumberSequence(stage, q) {
       }
       const span = document.createElement('span');
       if (tok === '◯' || tok === '○') {
+        // sw v976+: ◯ は Unicode 文字ではなく SVG circle (点線 + stroke-linecap:round) で描画。
+        // paper/wood テーマ整合のオレンジ系 stroke (#c98443)。 viewBox は 100x100、 r=42 で stroke-width=10 まで
+        // 余裕がありクリップされない。 stroke-dasharray の 14 16 は「点線が短すぎず詰まりすぎない」 視認性で調整済。
         span.className = 'number-display-blank';
-        span.textContent = '◯';
+        span.setAttribute('aria-label', '答えの位置');
+        span.innerHTML = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+          + '<circle cx="50" cy="50" r="42" fill="none" stroke="#c98443" stroke-width="10" '
+          + 'stroke-dasharray="14 16" stroke-linecap="round" />'
+          + '</svg>';
       } else {
         span.className = 'number-display-num';
         span.textContent = tok;
