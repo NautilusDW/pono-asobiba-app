@@ -1,6 +1,6 @@
 ---
-name: VOICEVOX 雨晴はう廃案 + くるみ全件 VOICEPEAK 「女の子」 統一 (2026-05-12 主軸変更)
-description: 元々 VOICEVOX 雨晴はうで 907 件の問題本編を発注予定だったが、 試聴で雰囲気が合わず却下。 全 912 件 (907 + 5 + 余剰) を VOICEPEAK 「女の子」 プリセットに統一する方針転換
+name: VOICEVOX 雨晴はう廃案 + くるみ全件 VOICEPEAK 「女の子」 統一 + 博士=ナレーター おじいさん 確定 (2026-05-12 主軸変更)
+description: 元々 VOICEVOX 雨晴はうで 907 件の問題本編を発注予定だったが、 試聴で雰囲気が合わず却下。 全 912 件 (907 + 5 + 余剰) を VOICEPEAK 「女の子」 プリセットに統一する方針転換。 博士担当 (48 件) は VOICEPEAK 「ナレーター おじいさん」 (秦なおき声、 ¥5,980 ユーザー単体購入済 2026-05-12) に確定
 type: project
 ---
 
@@ -8,20 +8,36 @@ type: project
 
 ## 確定事項
 - くるみ全件 = VOICEPEAK 「女の子」 プリセット (912 件 = 907 + 5)
-- 博士担当 = VOICEPEAK 「男性3」 + パラメータ調整 (年配感を出す、 別 Agent で調査中)
+- **博士担当 = VOICEPEAK 「ナレーター おじいさん」 (秦なおき声、 2026-05-12 ユーザー購入確定)** (48 件)
 - ポノ = 音声化保留 (アイデンティティ確定までは babble のまま)
 - VOICEVOX 関連スクリプト・ツール・辞書は当面温存 (削除はユーザー判断待ち)
+
+### 博士 = 「ナレーター おじいさん」 確定の詳細 (2026-05-12)
+- 製品名: VOICEPEAK 商用可能 ナレーター おじいさん (秦なおき声、 2024-12 リリース)
+- 価格: ¥5,980 (6 ナレーターセット保有者向け優待版、 通常価格 ¥11,980)
+- 商用ライセンス追加費なし、 サブスクなし、 買い切り
+- VOICEPEAK 公式コンセプト: 「熟年男性の深みのある声、 モノローグや昔話のストーリーテラーに最適」
+- 微調整は「ナレーター おじいさん」 素のプリセットで試聴してから必要なら追い込む方針 (48 件は素のままで通す前提)
+- 購入履歴の正本は [reference_voicepeak_voices_purchased.md](reference_voicepeak_voices_purchased.md) を参照
+
+### Plan B (温存)
+- 「ナレーター おじいさん」 で違和感がある場合の代替: **VOICEPEAK 「男性3」 (柊一希) + パラメータ調整 (ピッチ/速度を下げて年配感)**
+- ¥0 (既存 6 ナレーターセットに同梱、 追加課金不要)
+- 当初検討案として温存。 「ナレーター おじいさん」 で問題なければ Plan B に戻す必要なし
 
 ## Why
 - VOICEVOX 雨晴はう試聴で「くるみちゃんの雰囲気と合わない」 とユーザー判断
 - VOICEPEAK 「女の子」 は試聴で違和感が少なく、 さらに博士・ナレと同じエンジンで音色統一できる利点
+- 博士は「男性3 + パラメータ調整」 で年配感を作る方針から、 **専用設計の「ナレーター おじいさん」 (秦なおき) を購入** に切替 (¥5,980 単体購入で済むため、 パラメータ調整の試行錯誤コストより安い)
 
 ## How to apply
 - 今後 「くるみ音声」 「VOICEVOX」 「雨晴はう」 のキーワードが出てきたら、 必ず本ファイルを参照して文脈確認
+- 「博士の声」 「ナレーター おじいさん」 「秦なおき」 のキーワードでも本ファイル参照
 - 既存 VOICEVOX 関連 memory (`feature_quizland_voicevox_order.md` 等) は「【廃案】 過去の検討経緯」 として履歴温存、 主軸は VOICEPEAK に一本化
-- 発注書 3 本 (COWORK-TEST-ORDER.md / ORDER-FULL.md / ORDER-EXTRA-NON-QUIZ.md) はすべて VOICEPEAK 想定で書き換え
+- 発注書 3 本 (COWORK-TEST-ORDER.md / ORDER-FULL.md / ORDER-EXTRA-NON-QUIZ.md) はすべて VOICEPEAK 想定で書き換え + 博士担当箇所は「ナレーター おじいさん」 で更新済
 
 ## 関連
+- [reference_voicepeak_voices_purchased.md]: ユーザー購入済 VOICEPEAK ボイス一覧 (用途マッピング)
 - [feature_quizland_voicepeak_workflow.md] (今後新規作成予定): VOICEPEAK ワークフローの詳細
 - [reference_voicepeak_vdc2_format.md]: VDC2 フォーマット仕様
 - [feature_quizland_hakase_dialogue_expansion.md]: 博士セリフプール拡張
