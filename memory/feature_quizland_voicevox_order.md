@@ -10,11 +10,11 @@ type: feature
 
 > **2026-05-12 ユーザー確定**: 試聴比較の結果、 VOICEVOX 雨晴はうは「くるみちゃんの雰囲気と合わない」 と判断され却下。 全 912 件 (= 問題本編 907 + 第1〜5問目 5) を **VOICEPEAK 「女の子」 プリセット** で統一録音する方針に変更。
 >
-> 博士担当 (48 件) は **VOICEPEAK 「男性3」 + パラメータ調整 (年配感)** で別 Agent が並列調査中。
+> 博士担当 (48 件) は **VOICEPEAK 「ナレーター おじいさん」 (秦なおき声、 2026-05-12 ユーザー単体購入確定 ¥5,980)** で確定。 微調整は素のプリセットで試聴して必要なら追い込む方針 (素のままで通す前提)。 Plan B は「男性3 (柊一希) + パラメータ調整 (¥0)」 として温存。
 >
 > 本ファイルの旧 VOICEVOX 関連記述は **削除せず「【廃案】 過去の検討経緯」 セクションへ移動** (将来戻す可能性のため履歴温存)。 現行ワークフローは「【現行】 VOICEPEAK ワークフロー」 セクションを参照。
 >
-> 方針転換の詳細は [feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) を参照。
+> 方針転換の詳細は [feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) を参照。 ユーザー購入済 VOICEPEAK ボイス一覧は [reference_voicepeak_voices_purchased.md](reference_voicepeak_voices_purchased.md) を参照。
 
 ---
 
@@ -25,7 +25,7 @@ type: feature
 | キャラ | エンジン / プリセット | 件数 | 備考 |
 |---|---|---|---|
 | **くるみ** | VOICEPEAK 「女の子」 | 912 (= 907 + 5) | 問題本編 + 第1〜5問目導入。 全件統一録音 |
-| **博士** | VOICEPEAK 「男性3」 + パラメータ調整 (年配感) | 48 | パラメータは別 Agent が並列調査中 |
+| **博士** | VOICEPEAK 「ナレーター おじいさん」 (秦なおき声) | 48 | 2026-05-12 ユーザー単体購入確定 (¥5,980)。 微調整は試聴で確定 (素のままで通す前提)。 Plan B = 「男性3 + パラメータ調整 (¥0)」 を温存 |
 | **ポノ** | (音声化保留) | — | アイデンティティ確定までは babble (`js/quizland-babble.js` pono preset) のまま |
 
 ## 発注書ファイル
