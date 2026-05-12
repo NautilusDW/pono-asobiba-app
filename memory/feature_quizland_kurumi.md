@@ -52,7 +52,7 @@ type: feature
 - 比較用候補だった「冥鳴ひまり」「春日部つむぎ」「九州そら / あまあま」「WhiteCUL / ふつう」「もち子さん」 もすべて廃案
 - VOICEVOX 関連スクリプト・ツール (`tools/voicevox-generator/`) は当面温存 (削除はユーザー判断待ち)、 主軸は VOICEPEAK に一本化
 
-## 「第N問」 音声 MVP 組み込み (2026-05-12 / sw v956)
+## 「第N問」 音声 MVP 組み込み (2026-05-12 / sw v957)
 
 - **目的**: 912 件の本格収録に先立ち、 まず 「第1〜5問」 の 5 件 (= `DEFAULT_TOTAL_Q = 5` ぶん) で動作確認
 - **配置**: `assets/audio/sfx/quiz/kurumi_dai{1-5}mon.wav` (元素材は `tmp/quizland_NA/kurumi_expanded/kurumi_dai{1-5}mon.wav` に温存)
@@ -61,7 +61,7 @@ type: feature
 - **questionIdx ガード**: `(questionIdx + 1) >= 1 && <= 5` で kurumi 再生、 6 問目以降は don.mp3 のみ (MVP 5 問固定で起きないが念のため)
 - **playSe 改修**: 戻り値を `<audio>` 要素 (or null) に変更、 既存呼び出し側 (`playCorrect` 等) は戻り値無視で互換
 - **SE_PATHS 追加**: `kurumi_dai1` 〜 `kurumi_dai5` の 5 keys、 wav はそのまま (mp3 化しない)
-- **sw.js**: CACHE_VERSION 955 → 956 (precache リストには quiz sfx 含まれないので追加不要)
+- **sw.js**: CACHE_VERSION 956 → 957 (precache リストには quiz sfx 含まれないので追加不要、 直前の 1a0079e で既に 956 にセット済だったため新規バンプは 957)
 
 ## 関連ファイル
 - 発注書: `docs/quizland-voicevox-order/COWORK-TEST-ORDER.md`, `docs/quizland-voicevox-order/ORDER-FULL.md`
