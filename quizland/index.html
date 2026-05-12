@@ -1223,14 +1223,32 @@ body.layout-editor-on .stage-pono { display: none; }
   padding: 12px 8px;
   gap: 6px;
 }
-.chip-illust {
+/* 2026-05-12 修正(v971): chip-illust を wrapper div でラップして個別 resize
+   可能化。 <img> は HTML replaced element で resize-handle 子 DOM が描画
+   されないため、 非-replaced な親 (.chip-illust-wrap) を挟む。 sizing は
+   wrap に移し、 内側 <img> は親領域を充填する。 通常 play では wrap が
+   pointer-events:none で chip タップが効くまま、 editor mode
+   (body.layout-editor-on) で wrap が pointer-events:auto となり掴める。 */
+.chip-illust-wrap {
   width: 110px;
   height: 110px;
-  object-fit: contain;
+  position: relative;
+  flex: 0 0 auto;
   display: block;
   pointer-events: none;
   user-select: none;
+}
+.chip-illust-wrap > .chip-illust {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
   -webkit-user-drag: none;
+}
+body.layout-editor-on .chip-illust-wrap {
+  pointer-events: auto;
 }
 .chip.chip-with-image .chip-illust-label {
   /* 2026-05-07 修正(v795): chip-illust-label を #q-text と同じ 32px に統一 (元 26px) */
@@ -3681,7 +3699,7 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.answer-tray',             'wh', '回答トレイ'],
   ['.chip',                    'wh', '回答チップ'],
   ['.chip .circle',            'wh', 'チップ丸 (色問題)'],
-  ['.chip .chip-illust',       'wh', 'チップ イラスト (画像選択肢)'],
+  ['.chip .chip-illust-wrap', 'wh', 'チップ イラスト (画像選択肢)'],
   ['.chip .chip-count-num',    'wh', 'チップ 数字 (count_total)'],
   ['.chip .chip-label',        'wh', 'チップ ラベル (テキスト)'],
   ['.hint',                    'wh', 'ヒント'],
@@ -4488,12 +4506,22 @@ function renderChoices(q) {
       // 画像入り選択肢: { text: '...', image: '...png' }
       // 既存の choices: string[] と backward-compatible (object 形式のみ画像扱い)
       btn.classList.add('chip-with-image');
+      // 2026-05-12 (v971): img を wrapper div でラップ。 <img> は HTML replaced
+      // element で resize-handle 子 DOM を描画できないため、 layout-editor で
+      // 個別 resize 可能にするには非-replaced な親 (.chip-illust-wrap) を挟む
+      // 必要がある。 wrapper には元の sizing (110×110) を移植し、 内側 <img>
+      // は width/height 100% で充填する。 saved-layout のキーは新セレクタ
+      // `.chip .chip-illust-wrap` で書き込む (旧 `.chip .chip-illust|N` は
+      // layout-applier 側で wrap セレクタへ alias される)。
+      const wrap = document.createElement('div');
+      wrap.className = 'chip-illust-wrap';
       const img = document.createElement('img');
       img.className = 'chip-illust';
       img.src = '../assets/images/quizland/illust/choice/' + choice.image;
       img.alt = '';
       img.draggable = false;
-      btn.appendChild(img);
+      wrap.appendChild(img);
+      btn.appendChild(wrap);
       if (choice.text) {
         const label = document.createElement('span');
         label.className = 'chip-illust-label chip-label';

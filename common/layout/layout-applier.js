@@ -141,7 +141,10 @@
         if (c) applyOne(c, slotPreset.circle);
       }
       if (slotPreset.illust) {
-        var im = chip.querySelector('.chip-illust');
+        // 2026-05-12 (v971): chip-illust が <div.chip-illust-wrap><img.chip-illust>
+        // 構造に変わったため、 wrap を優先 target に。 wrap が無い場合
+        // (古い DOM 上) は img に fallback。
+        var im = chip.querySelector('.chip-illust-wrap') || chip.querySelector('.chip-illust');
         if (im) applyOne(im, slotPreset.illust);
       }
       if (slotPreset.label) {
@@ -257,6 +260,13 @@
       } else {
         // base sel そのもの: 通常通り perQ → shared (旧挙動)。
         pushPair(info.base);
+      }
+      // 2026-05-12 (v971): legacy alias — `.chip .chip-illust-wrap` で
+      // lookup する際、 旧 `.chip .chip-illust` キーも fallback として
+      // 参照する。 新規保存は新キーへ書き込み、 既存 saved-layout
+      // データ (もしあれば) を壊さない。
+      if (info.base === '.chip .chip-illust-wrap') {
+        keys.push('.chip .chip-illust|' + i);
       }
       return keys;
     }

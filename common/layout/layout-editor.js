@@ -614,7 +614,9 @@
     };
     var c = chip.querySelector('.circle');
     if (c) preset.circle = _readElLayout(c);
-    var im = chip.querySelector('.chip-illust');
+    // 2026-05-12 (v971): wrap が新 resize target。 wrap 優先で読み、
+    // 旧 DOM (wrap 無し) は .chip-illust に fallback。
+    var im = chip.querySelector('.chip-illust-wrap') || chip.querySelector('.chip-illust');
     if (im) preset.illust = _readElLayout(im);
     var lb = chip.querySelector('.chip-label');
     if (lb) {
@@ -713,7 +715,7 @@
     var PART_TO_KEY_PREFIX = {
       chip:     '.chip|',
       circle:   '.chip .circle|',
-      illust:   '.chip .chip-illust|',
+      illust:   '.chip .chip-illust-wrap|',
       label:    '.chip .chip-label|',
       countNum: '.chip .chip-count-num|',
       // text は chip-label / chip-count-num の alias key (v786 追加)。
@@ -825,7 +827,7 @@
       if (!slotPreset) return; // この slot は未保存 → 何も削除しない
       var prefixCoverage = {
         '.chip .circle|':        !!slotPreset.circle,
-        '.chip .chip-illust|':   !!slotPreset.illust,
+        '.chip .chip-illust-wrap|': !!slotPreset.illust,
         '.chip .chip-label|':    !!slotPreset.label,
         '.chip .chip-count-num|':!!slotPreset.countNum,
       };

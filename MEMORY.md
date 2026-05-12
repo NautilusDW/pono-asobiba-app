@@ -121,6 +121,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T12:46:24Z - quizland chip-with-image の chip-illust を wrapper 化して個別 resize 可能に (v971)
+- **タスク**: quizland chip-with-image の chip-illust を wrapper 化して個別 resize 可能に (v971)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 73
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 35, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-12T12:27:09Z - quizland v970: chip-label 編集の overlay+改行混入を 5 段防御で完全根絶 (saved-layout.json merge marker 解決 + 4 entries sanitize + clone querySelectorAll('*') broad strip + <br> 除外 + 2-pass 全角対応 regex + load-time sanitizer + sw v968→v970)。 5 エージェント並列 (Explore + impl + reviewer REJECT + fix + verify)、 真因は前任が saved-layout.json の git merge marker (JSON invalid) を見逃していたこと + 旧 regex が半角のみで全角混入対応してなかったこと
 - **タスク**: quizland v970: chip-label 編集の overlay+改行混入を 5 段防御で完全根絶 (saved-layout.json merge marker 解決 + 4 entries sanitize + clone querySelectorAll('*') broad strip + <br> 除外 + 2-pass 全角対応 regex + load-time sanitizer + sw v968→v970)。 5 エージェント並列 (Explore + impl + reviewer REJECT + fix + verify)、 真因は前任が saved-layout.json の git merge marker (JSON invalid) を見逃していたこと + 旧 regex が半角のみで全角混入対応してなかったこと
 - **結果**: 成功
@@ -222,19 +235,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 8, "Bash": 7}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T08:51:33Z - quizland v967: 「第N問」 表示中の問題文/4択を案 C で隠蔽 (#q-text を q-stage-pending 化 + Q1-5 で typewriter 中 reveal 抑止 + hideQuestionNumberPlate で全 pending 一括 revealed 昇格) + chip-label 編集機能復活 (.chip-text-editing スコープで display:block + overflow:visible + min-height:1.2em で v964 flex/overflow を編集中だけ局所 override)
-- **タスク**: quizland v967: 「第N問」 表示中の問題文/4択を案 C で隠蔽 (#q-text を q-stage-pending 化 + Q1-5 で typewriter 中 reveal 抑止 + hideQuestionNumberPlate で全 pending 一括 revealed 昇格) + chip-label 編集機能復活 (.chip-text-editing スコープで display:block + overflow:visible + min-height:1.2em で v964 flex/overflow を編集中だけ局所 override)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 15
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 7, "Bash": 7}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
