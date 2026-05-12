@@ -140,3 +140,4 @@ function buildVariantOptions(variants) {
 - 952 → 953: バグ 2 件修正。 (1) path C 回転時に 90°/270° なら width/height を swap して bounding box を視覚に追随。 (2) 比率固定 OFF 時に state.aspectLocked (numeric panel 🔒) も解除して、 width ロックを確実に外す。
 - 953 → 954: 🚨 リセットボタン追加 (選択中要素の ZK 状態を全部クリア)。 選択変更時に Console へ詳細ダンプ。 ユーザーが「変な挙動」 から脱出する手段と、 原因即時切り分けを提供。
 - 954 → 955: applyRotate を 「全要素統一: container ごと回転 + 90/270 で width/height swap」 にシンプル化。 旧 path A (内側 img CSS rotate) と path B (.zk-rotate-layer) を廃止。 これで userbox-with-bg やフレーム要素も「絵だけ回って bbox 残る」 不整合が解消、 視覚と DOM 寸法が常に一致する。
+- 955 → 958: rotate90 の width/height swap ロジックを撤去。 container 回転と swap の二重効果で 180°風の意図しない見た目になっていたため。 swap 無しで container 回転のみ → 視覚は正しく回り、 handle は元 bbox 配置で固定される (CSS rotate の自然な挙動)。

@@ -838,72 +838,38 @@ window.EditorBootstrapConfig = {
     });
   }
 
-  // ─── 90° 回転 (sw v955: 全要素統一 = container ごと回転 + 寸法 swap) ──
+  // ─── 90° 回転 (sw v958: container 回転のみ、width/height swap は撤去) ─
+  // v955 の swap は container 回転と二重効果で 180°風の不整合を起こした
+  // ため撤去。 bbox は元のまま (CSS rotate の自然な挙動)、 視覚は container
+  // 回転で正しく回る。 handle が元 orientation 配置になるのは仕様。
   function rotate90() {
     var sel = getSelectedSingle();
-    console.log('[zk-inv] rotate90 called', {
-      selectedSingle: sel,
-      selectedTag: sel ? sel.tagName : null,
-      selectedClass: sel ? sel.className : null,
-      selectedDataLabel: sel ? sel.dataset.leLabel : null,
-      selectedSize: window.LayoutEditor && window.LayoutEditor._state && window.LayoutEditor._state.selectedElements ? window.LayoutEditor._state.selectedElements.size : 'n/a',
-    });
     if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
-    // undo/redo のため before 状態をキャプチャ
     var beforeRotate = sel.dataset.rotate || '';
     var beforeTransform = sel.style.transform || '';
-    var beforeWidth = sel.style.width;
-    var beforeHeight = sel.style.height;
     var cur = parseFloat(sel.dataset.rotate || '0') || 0;
     var next = (cur + 90) % 360;
-
-    // sw v955: 全要素統一で 90°/270° 遷移時は container の width/height を swap
-    // (旧 path A/B (内側 img / bg-layer) のように親 bbox を据え置きにする旧分岐
-    //  は廃止 — 「絵だけ回って frame は縦長」 不整合の根本原因)。
-    var was90Like = (cur === 90 || cur === 270);
-    var willBe90Like = (next === 90 || next === 270);
-    var didSwap = false;
-    if (was90Like !== willBe90Like) {
-      var w = sel.style.width || (sel.offsetWidth + 'px');
-      var h = sel.style.height || (sel.offsetHeight + 'px');
-      sel.style.width = h;
-      sel.style.height = w;
-      didSwap = true;
-    }
 
     if (next === 0) delete sel.dataset.rotate;
     else sel.dataset.rotate = String(next);
     applyRotate(sel);
-    var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-rotate', el: sel, deg: next });
-    flashToast('回転: ' + next + '°' + (didSwap ? ' (寸法 swap)' : ''));
 
-    // history へ登録 (full state 復元)
     var afterRotate = sel.dataset.rotate || '';
-    var afterWidth = sel.style.width;
-    var afterHeight = sel.style.height;
+    var afterTransform = sel.style.transform || '';
     pushZkHistory({
-      label: '90° 回転 → ' + next + '°' + (didSwap ? ' + 寸法 swap' : ''),
+      label: '90° 回転',
       undo: function () {
-        if (beforeRotate) sel.dataset.rotate = beforeRotate;
-        else delete sel.dataset.rotate;
-        if (beforeWidth) sel.style.width = beforeWidth;
-        else sel.style.removeProperty('width');
-        if (beforeHeight) sel.style.height = beforeHeight;
-        else sel.style.removeProperty('height');
+        if (beforeRotate) sel.dataset.rotate = beforeRotate; else delete sel.dataset.rotate;
         applyRotate(sel);
-        var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-rotate', el: sel, deg: parseFloat(beforeRotate || '0') || 0 });
       },
       redo: function () {
-        if (afterRotate) sel.dataset.rotate = afterRotate;
-        else delete sel.dataset.rotate;
-        if (afterWidth) sel.style.width = afterWidth;
-        else sel.style.removeProperty('width');
-        if (afterHeight) sel.style.height = afterHeight;
-        else sel.style.removeProperty('height');
+        if (afterRotate) sel.dataset.rotate = afterRotate; else delete sel.dataset.rotate;
         applyRotate(sel);
-        var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-rotate', el: sel, deg: parseFloat(afterRotate || '0') || 0 });
-      },
+      }
     });
+
+    var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-rotate', el: sel, deg: next });
+    flashToast('回転: ' + next + '°');
   }
 
   // ─── 比率固定トグル ────────────────────────────────────────────────────
