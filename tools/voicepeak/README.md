@@ -11,9 +11,10 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 | ファイル | 用途 | 行数 |
 |---|---|---|
 | `voicepeak_lines_test27.csv` | 27 行のセリフリスト (テスト用、Q01/Q24/Q95/Q160/Q170 + Q160 補足版) | 27 |
-| `voicepeak_user_dict.csv` | ユーザー辞書 65 語の編集元CSV (色・数詞・場所・体の部位など、平板/頭高/中高を指定) | 65 + ヘッダ 1 |
-| `voicepeak_user_dict.vdc2` | VOICEPEAK の辞書インポート用ファイル (`voicepeak_user_dict.csv` から生成) | 65 |
-| `Convert-VoicepeakUserDictCsvToVdc2.ps1` | 編集元CSVから `.vdc2` を生成するPowerShellスクリプト | - |
+| `voicepeak_user_dict.csv` | ユーザー辞書 65 語の編集元CSV (5 カラム: 単語/読み/アクセント核位置/品詞/モーラ音高、`モーラ音高` は `;` 区切りの整数リストで GUI 手動微調整値 (`overwriteAccents`) を保持。空なら未指定) | 65 + ヘッダ 1 |
+| `voicepeak_user_dict.vdc2` | VOICEPEAK の辞書インポート用ファイル (`voicepeak_user_dict.csv` から生成、`overwriteAccents` 完全対応) | 65 |
+| `Convert-VoicepeakUserDictCsvToVdc2.ps1` | 編集元CSV → `.vdc2` 順方向変換スクリプト (PowerShell、5 カラム + `overwriteAccents` 対応) | - |
+| `Convert-VoicepeakUserDictVdc2ToCsv.ps1` | `.vdc2` → 編集元CSV 逆変換スクリプト (PowerShell、`overwriteAccents` を `;` 区切りで CSV 5 列目に書き戻す。GUI で手動微調整した結果を CSV に取り込む経路) | - |
 | `sample.ssml` | SSML 動作確認用の最小サンプル (q001_q「真ん中はなにいろ？」を `<voice>` `<prosody>` `<break>` で記述) | - |
 | `README.md` | 本ファイル (VOICEPEAK GUI 操作手順 + 注意点) | - |
 
@@ -25,11 +26,13 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 
 ### Step 1. 辞書インポート (初回のみ)
 
-> **辞書フォーマット (VDC2) 解明済 (2026-05-12 by Codex)**: VOICEPEAK のエクスポート結果 (`.vdc2`) は **バイナリではなく UTF-8 JSON 配列**。`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の 6 フィールドで構成される。テキストエディタで開ける。
+> **辞書フォーマット (VDC2) 解明済 (2026-05-12)**: VOICEPEAK のエクスポート結果 (`.vdc2`) は **バイナリではなく UTF-8 JSON 配列**。`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` + 任意 `overwriteAccents` の 6+1 フィールドで構成される。テキストエディタで開ける。
+>
+> **2026-05-12 ラウンドトリップ完成**: CSV を 5 カラム化 (単語 / 読み / アクセント核位置 / 品詞 / モーラ音高) して `overwriteAccents` (GUI で手動微調整した モーラ単位の音高) も CSV 上に保持できるようになった。順方向 (CSV→VDC2) と逆方向 (VDC2→CSV) の両方向のスクリプトを用意し、 test.vdc2 (= ユーザーが GUI で編集して export した正本) との完全ラウンドトリップ (全 65 エントリ × 7 フィールドが一致) を確認済。
 >
 > 詳細は [memory/reference_voicepeak_vdc2_format.md](../../memory/reference_voicepeak_vdc2_format.md) を参照。
 
-#### 1-a. CSV → VDC2 変換 (PowerShell スクリプト)
+#### 1-a. CSV → VDC2 変換 (順方向: PowerShell スクリプト)
 
 `voicepeak_user_dict.csv` (65 語、5 列) を編集したら、以下で VDC2 を再生成する:
 
@@ -41,9 +44,28 @@ powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictCsvToVdc2.ps
 # → voicepeak_user_dict.vdc2 が生成される
 ```
 
-スクリプトは CSV を読み込み、上記 6 フィールド形式の JSON 配列に変換して `voicepeak_user_dict.vdc2` (UTF-8) を出力する。
+スクリプトは CSV を読み込み、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` (+ CSV 5 列目が空でないなら `overwriteAccents`) フィールドの JSON 配列に変換して `voicepeak_user_dict.vdc2` (UTF-8、BOM なし) を出力する。`pos` は CSV 4 列目の和名から VOICEPEAK 内部 ID にマッピング (`名詞 → Japanese_Futsuu_meishi`、`動詞 → Japanese_Doushi`、 他フォールバックは `Japanese_Futsuu_meishi`)。
 
-#### 1-b. VOICEPEAK で VDC2 をインポート
+#### 1-b. VDC2 → CSV 変換 (逆方向: PowerShell スクリプト)
+
+VOICEPEAK GUI で手動でアクセントを微調整 → ユーザー辞書を export して `.vdc2` を取得した後、その手動調整値 (`overwriteAccents` 含む) を CSV 側に取り込みたい場合:
+
+```powershell
+cd d:\AppDevelopment\pono-asobiba-app\tools\voicepeak
+powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictVdc2ToCsv.ps1
+# → voicepeak_user_dict.csv が生成される (5 カラム、`overwriteAccents` は ;-区切りで 5 列目に)
+```
+
+入出力パスを切り替える場合は `-InputVdc2` / `-OutputCsv` を指定。たとえばユーザーが新しく export した `test.vdc2` を取り込むなら:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictVdc2ToCsv.ps1 `
+  -InputVdc2 .\test\test.vdc2 -OutputCsv .\voicepeak_user_dict.csv
+```
+
+これにより GUI 微調整が CSV に蓄積され、次回 CSV → VDC2 順方向変換すれば `overwriteAccents` を保ったまま再配布できる (= 完全ラウンドトリップ)。
+
+#### 1-c. VOICEPEAK で VDC2 をインポート
 
 1. VOICEPEAK を起動
 2. メニュー [辞書] → [ユーザー辞書] → [インポート] (バージョンによって表記差異あり)
@@ -170,13 +192,13 @@ Get-ChildItem *.wav | ForEach-Object {
 - `tools/voicevox-generator/` (VOICEVOX 雨晴はう案) と本 `tools/voicepeak/` (VOICEPEAK 案) は **並行運用**
 - ユーザーが両方で q001_q.wav を試作 → 試聴比較 → くるみちゃんに合う方を **メイン採用**
 - 採用しなかった方は将来の他キャラ (フクロウ博士の追加ボイスなど) 用に残す
-- VOICEVOX 辞書 (`tools/voicevox-generator/voicevox_user_dict.csv` 65 語) と本辞書は **同じ語彙を別フォーマットに変換した姉妹ファイル**。読みは同期しているが、フォーマットは別物 (VOICEVOX は `surface,pronunciation,accent_type,priority,note` の 5 カラム、本ファイルは `単語,読み,アクセント核位置,品詞` の 4 カラム想定)
+- VOICEVOX 辞書 (`tools/voicevox-generator/voicevox_user_dict.csv` 65 語) と本辞書は **同じ語彙を別フォーマットに変換した姉妹ファイル**。読みは同期しているが、フォーマットは別物 (VOICEVOX は `surface,pronunciation,accent_type,priority,note` の 5 カラム、本ファイルは `単語,読み,アクセント核位置,品詞,モーラ音高` の 5 カラム。 5 列目はモーラ単位の音高微調整 (`overwriteAccents`、`;` 区切り整数リスト) を保持し、 GUI 手動微調整も CSV 上にキープできる完全ラウンドトリップ対応)
 
 ---
 
 ## ユーザー確認が必要なポイント (まとめ)
 
-1. **辞書フォーマット**: ~~VOICEPEAK の正しいフォーマットを GUI で 1 語登録 → エクスポートで確認~~ → **2026-05-12 解明済**: `.vdc2` は UTF-8 JSON 配列 (`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の 6 フィールド)。`Convert-VoicepeakUserDictCsvToVdc2.ps1` で CSV → VDC2 変換可能、VOICEPEAK で VDC2 インポートして登録
+1. **辞書フォーマット**: ~~VOICEPEAK の正しいフォーマットを GUI で 1 語登録 → エクスポートで確認~~ → **2026-05-12 解明済 + 完全ラウンドトリップ対応**: `.vdc2` は UTF-8 JSON 配列 (`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` + 任意 `overwriteAccents` の 6+1 フィールド)。順方向 (`Convert-VoicepeakUserDictCsvToVdc2.ps1`) と逆方向 (`Convert-VoicepeakUserDictVdc2ToCsv.ps1`) の両方を用意し、CSV を 5 カラム化してモーラ音高 (`overwriteAccents`) を `;` 区切りで保持。GUI 手動微調整値を CSV にキープ可能
 2. **ナレーター名**: `Japanese Female Child` は仮置き。所有しているナレーターから女声を選んで CSV を一括置換してほしい
 3. **SSML サポート**: VOICEPEAK のバージョンで SSML インポートメニューが存在するか確認 (なければ SSML 案は破棄)
 4. **試聴判断**: テスト 27 ファイル生成後、VOICEVOX 雨晴はう版と聴き比べてどちらをメインにするか決定してほしい
@@ -185,7 +207,7 @@ Get-ChildItem *.wav | ForEach-Object {
 
 ## 気になった点
 
-- ~~**辞書フォーマット未確定**~~ → **解明済 (2026-05-12 by Codex)**: `.vdc2` は UTF-8 JSON 配列、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の 6 フィールド。`Convert-VoicepeakUserDictCsvToVdc2.ps1` で CSV から自動生成可能。詳細は [memory/reference_voicepeak_vdc2_format.md](../../memory/reference_voicepeak_vdc2_format.md)
+- ~~**辞書フォーマット未確定**~~ → **解明済 + 完全ラウンドトリップ対応 (2026-05-12)**: `.vdc2` は UTF-8 JSON 配列、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` + 任意 `overwriteAccents` の 6+1 フィールド。順方向 `Convert-VoicepeakUserDictCsvToVdc2.ps1` + 逆方向 `Convert-VoicepeakUserDictVdc2ToCsv.ps1` で CSV ↔ VDC2 両方向変換可能 (CSV は 5 カラム化、5 列目「モーラ音高」が `overwriteAccents` を `;` 区切りで保持)。詳細は [memory/reference_voicepeak_vdc2_format.md](../../memory/reference_voicepeak_vdc2_format.md)
 - **アクセント核位置の表記**: 本ファイルは「核位置の数字 (0 = 平板, 1 = 頭高, 2/3 = 中高)」で書いている。VDC2 の `accentType` も同じ整数値方式 (0=平板)。CSV と VDC2 で互換
 - **SSML の `<voice name="...">` の name 引数**: VOICEPEAK が認識する name はナレーター名そのものなのか、別 ID なのかが未確認。動かない場合は `<voice>` を外して `<speak>` 直下にテキストを置くだけの形を試すと良い
 - **フルセット 907 ファイルの speech 列**: 現時点では `docs/quizland-voicevox-order/COWORK-TEST-ORDER.md` 内のテスト 27 ファイル分しか speech が定義されていない。フル発注版の発注書を作成する際、本ディレクトリにも `voicepeak_lines_full907.csv` を追加する想定
