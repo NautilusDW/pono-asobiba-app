@@ -919,7 +919,7 @@ body.layout-editor-on .le-ruler {
   position: fixed;
   background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
   z-index: 70;
-  pointer-events: auto;
+  pointer-events: none;
   color: #999;
   font-size: 10px;
   font-family: ui-monospace, Menlo, Consolas, monospace;

@@ -130,3 +130,4 @@ function buildVariantOptions(variants) {
 - 941 → 942: flower_path に v2〜v9 を 8 枚追加 + UI を動的 option 生成 (length 任意) に変更 (2026-05-11)
 - 942 → 943: `.zk-inv-toolbar` をメインツールバーと被らないよう右下端固定 (bottom:16px / z-index:9500 / flex-wrap) に変更 (2026-05-11)
 - 943 → 944: `.zk-inv-toolbar` を左上寄り (top:120px / left:16px) に移動。 右側は layout-editor の常駐パネル (.numeric-panel / .le-list-panel) と、 左下は help-note と競合するため。 一時的に金色 2px ボーダー + glow で視認性強化。 起動時 console.log で visibility 検証ロジック追加 (2026-05-11)
+- 944 → 945: `.le-ruler` に pointer-events: none を追加し、 ヘッダードラッグの妨害を解消
