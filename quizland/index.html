@@ -723,7 +723,7 @@ body.sheet-on .hdr-right .ctrl-btn {
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
-  padding: 22px 80px 22px 32px;
+  padding: 22px 112px 22px 32px;
   display: flex; align-items: center; justify-content: center; gap: 16px;
   color: var(--text);
   font-weight: 800;
@@ -739,13 +739,14 @@ body.sheet-on .hdr-right .ctrl-btn {
   text-align: center;
 }
 .q-text-card .audio {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
-  border: 3px solid var(--wood-dark);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  color: #fff;
+  width: 80px; height: 80px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0;
+  color: inherit;
   flex: 0 0 auto;
   font-family: inherit;
   cursor: pointer;
@@ -754,6 +755,21 @@ body.sheet-on .hdr-right .ctrl-btn {
   right: 18px;
   top: 50%;
   transform: translateY(-50%);
+  transition: transform 0.2s ease;
+  box-shadow: none;
+}
+.q-text-card .audio img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.q-text-card .audio:hover,
+.q-text-card .audio:focus-visible {
+  transform: translateY(-50%) scale(1.05);
+}
+.q-text-card .audio:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 /* ===== Board (問題コンテンツの紙ボード) ===== */
@@ -1783,7 +1799,11 @@ body.layout-editor-on .character img {
   to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* Common menu (右上隅) ─ ポノメニュー位置調整 */
+/* Common menu (右上隅) ─ ポノメニュー位置調整
+   .pono-menu-toggle は不可視化し、 HUD 右上の #hud-settings-btn をブリッジ起点として使う。
+   ドロップダウンは HUD 右上の歯車ボタン (#hud-settings-btn) 直下に出すため、
+   JS で BoundingClientRect から座標を毎回再計算する (下記 bridge 部参照)。
+   フォールバックとして CSS でも右上に寄せておく (= 動的計算が失敗した場合の保険)。 */
 .pono-menu-toggle {
   width: 1px !important;
   height: 1px !important;
@@ -1791,9 +1811,9 @@ body.layout-editor-on .character img {
   pointer-events: none !important;
 }
 .pono-dropdown {
-  left: max(16px, env(safe-area-inset-left)) !important;
-  right: auto !important;
-  top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
+  left: auto !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+  top: calc(max(12px, env(safe-area-inset-top)) + 140px) !important;
 }
 
 /* ===== Aspect-ratio defensive rules (iPad 4:3 / iPhone 19.5:9 etc.) =====
@@ -1850,7 +1870,7 @@ body.layout-editor-on .character img {
      元画像 AR (5:2) で固定済み。 ここでは font-size のみ明示。 */
   .char-hint { font-size: 16px; }
   /* 14:9 用: 解説/結果まわりの「詳細画面」も grid 準拠に縮める */
-  .q-text-card { font-size: 28px; padding: 18px 70px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
+  .q-text-card { font-size: 28px; padding: 18px 104px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
   #q-text { font-size: 26px; }
   /* 2026-05-07 修正(v795): chip / chip-illust-label を #q-text と同じ 26px に統一 */
   .chip, .chip.has-image { font-size: 26px; }
@@ -3107,7 +3127,7 @@ body.layout-editor-on .op-skip {
         <div class="q-col">
           <div class="q-text-card">
             <span id="q-text">よういちゅう…</span>
-            <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ">🔊</button>
+            <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ" title="もう一度 きく"><img src="../assets/ui/icon_speaker.png" alt="" width="80" height="80"></button>
           </div>
           <div class="board" id="board">
             <div id="stage-area"></div>
@@ -6712,10 +6732,31 @@ document.getElementById('result-cat-btn').addEventListener('click', function(e) 
 (function() {
   var settingsBtn = document.getElementById('hud-settings-btn');
   if (!settingsBtn) return;
+
+  // ドロップダウンを #hud-settings-btn の直下に位置決めする。
+  // 共通メニュー (common/menu.js) は .pono-menu-toggle を左上前提で書かれているため、
+  // quizland では BoundingClientRect から右上座標を毎回計算し inline style で上書きする。
+  // 開く直前 (= dispatch 前) と、開いた直後 (= 念のため) に走らせる。
+  function _ponoRepositionDropdown() {
+    var dd = document.querySelector('.pono-dropdown');
+    if (!dd) return;
+    var rect = settingsBtn.getBoundingClientRect();
+    // ボタン直下 8px、 右辺をボタンの右辺に揃える
+    var top = Math.round(rect.bottom + 8);
+    var rightEdge = window.innerWidth - rect.right;
+    // 画面端からのマージン (safe-area-inset-right の保険として 8px 確保)
+    if (rightEdge < 8) rightEdge = 8;
+    dd.style.top = top + 'px';
+    dd.style.right = rightEdge + 'px';
+    dd.style.left = 'auto';
+  }
+
   settingsBtn.addEventListener('pointerdown', function(e) {
     if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault();
     e.stopPropagation();
+    // 表示前に位置を再計算 (画面リサイズ・回転対応)
+    _ponoRepositionDropdown();
     var menuToggle = document.querySelector('.pono-menu-toggle');
     if (menuToggle) {
       var evt = typeof PointerEvent === 'function'
@@ -6723,6 +6764,15 @@ document.getElementById('result-cat-btn').addEventListener('click', function(e) 
         : new Event('pointerdown', { bubbles: true, cancelable: true });
       menuToggle.dispatchEvent(evt);
     }
+    // openMenu() 後の transform/translateY が走るので 1 frame 後にもう一度補正
+    requestAnimationFrame(_ponoRepositionDropdown);
+  });
+
+  // リサイズ・回転時にも追従 (メニューが開いていれば即時補正)
+  window.addEventListener('resize', _ponoRepositionDropdown);
+  window.addEventListener('orientationchange', function() {
+    setTimeout(_ponoRepositionDropdown, 200);
+    setTimeout(_ponoRepositionDropdown, 600);
   });
 })();
 
