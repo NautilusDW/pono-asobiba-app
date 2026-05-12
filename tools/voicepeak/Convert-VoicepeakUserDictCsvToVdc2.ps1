@@ -74,17 +74,14 @@ function Add-JsonPropertyLine {
 function Convert-PosLabelToVdc2 {
     param([string]$Label)
 
-    # Map Japanese CSV pos labels to VOICEPEAK VDC2 internal pos identifiers.
-    # VOICEPEAK uses underscore-separated romaji identifiers (e.g. Japanese_Futsuu_meishi).
-    # All entries currently observed in test.vdc2 are Futsuu_meishi; verb mapping is best-effort.
+    # VOICEPEAK GUI only exposes noun categories: 普通名詞 + 固有名詞:{一般,人名,姓,名,地域}.
+    # No 動詞/形容詞/副詞 dropdown exists, so those labels are not representable in VDC2.
+    # Only Japanese_Futsuu_meishi is empirically verified (all entries in test.vdc2).
     # Build Japanese label literals from char codes so the script stays ASCII-only
     # (Windows PowerShell 5.1 cannot parse UTF-8 source files without BOM if they
     # contain non-ASCII characters).
-    $labelMeishi      = ([char]0x540D) + ([char]0x8A5E)                                 # noun
+    $labelMeishi       = ([char]0x540D) + ([char]0x8A5E)                                 # noun
     $labelFutsuuMeishi = ([char]0x666E) + ([char]0x901A) + ([char]0x540D) + ([char]0x8A5E) # common noun
-    $labelDoushi      = ([char]0x52D5) + ([char]0x8A5E)                                 # verb
-    $labelKeiyoushi   = ([char]0x5F62) + ([char]0x5BB9) + ([char]0x8A5E)               # adjective
-    $labelFukushi     = ([char]0x526F) + ([char]0x8A5E)                                 # adverb
 
     if ([string]::IsNullOrWhiteSpace($Label)) {
         return "Japanese_Futsuu_meishi"
@@ -92,9 +89,6 @@ function Convert-PosLabelToVdc2 {
     $trimmed = $Label.Trim()
     if ($trimmed -eq $labelMeishi)        { return "Japanese_Futsuu_meishi" }
     if ($trimmed -eq $labelFutsuuMeishi)  { return "Japanese_Futsuu_meishi" }
-    if ($trimmed -eq $labelDoushi)        { return "Japanese_Doushi" }
-    if ($trimmed -eq $labelKeiyoushi)     { return "Japanese_Keiyoushi" }
-    if ($trimmed -eq $labelFukushi)       { return "Japanese_Fukushi" }
     return "Japanese_Futsuu_meishi"
 }
 

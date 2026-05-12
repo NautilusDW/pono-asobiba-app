@@ -31,7 +31,7 @@ type: reference
 |---|---|---|---|
 | `sur` | surface (単語) | `"あか"` | 必須 |
 | `pron` | pronunciation (カナ読み) | `"アカ"` | 必須 |
-| `pos` | part of speech (品詞、 内部 ID) | `"Japanese_Futsuu_meishi"` / `"Japanese_Doushi"` | 必須 |
+| `pos` | part of speech (品詞、 内部 ID) | `"Japanese_Futsuu_meishi"` (現状観測されているのはこれのみ) | 必須 |
 | `priority` | 優先度 | 1-10 (5 が標準) | 必須 |
 | `accentType` | アクセント核位置 (0=平板) | 0, 1, 2, ... | 必須 |
 | `overwriteAccents` | モーラ単位の音高微調整 (整数配列、 GUI で手動調整した結果) | `[8193, 8192]` | 任意 |
@@ -39,15 +39,23 @@ type: reference
 
 ### `pos` (品詞 ID) マッピング表
 
+**重要 (2026-05-12 ユーザー指摘で確定)**: VOICEPEAK GUI の品詞ドロップダウンには **名詞系のみ** しか存在しない。 `動詞` / `形容詞` / `副詞` は VOICEPEAK では選択肢が出ない (例: 「吸う」 を 動詞 として登録しようとしても GUI 上不可)。 GUI で選べる選択肢は以下のみ:
+
+- `普通名詞`
+- `固有名詞:一般`
+- `固有名詞:人名`
+- `固有名詞:姓`
+- `固有名詞:名`
+- `固有名詞:地域`
+
 VOICEPEAK 内部はアンダースコア区切りローマ字 ID で品詞を表現する。 CSV 4 列目に書く和名から以下のように相互変換する:
 
 | CSV 和名 | VDC2 内部 ID | 備考 |
 |---|---|---|
-| `名詞` (または `普通名詞`) | `Japanese_Futsuu_meishi` | 既存 64 件 + 6 件 (色含む) すべてこれ |
-| `動詞` | `Japanese_Doushi` | 「吸う」 など。 ただし test.vdc2 では「吸う」 も `Japanese_Futsuu_meishi` で登録されており、 GUI が動詞 pos を許容しない可能性あり (要確認) |
-| `形容詞` | `Japanese_Keiyoushi` | サンプル未確認、 推定マッピング |
-| `副詞` | `Japanese_Fukushi` | サンプル未確認、 推定マッピング |
+| `名詞` (または `普通名詞`) | `Japanese_Futsuu_meishi` | 現行 66 件すべてこれ。 test.vdc2 で実証済 |
 | 未知/空 | `Japanese_Futsuu_meishi` (フォールバック) | - |
+
+**固有名詞系 (`一般` / `人名` / `姓` / `名` / `地域`) の内部 ID は未確認。** 必要になったら GUI で 1 語登録 → export で実 ID を確認してからスクリプトに追記すること。 推測 ID をハードコードしない (誤った ID でインポートすると VOICEPEAK が無視 or エラーする恐れあり)。
 
 逆方向 (VDC2 → CSV) も上記表の逆引きで対応 (未知 ID は `名詞` にフォールバック)。
 

@@ -19,24 +19,19 @@ function Resolve-PathForWrite {
 function Convert-Vdc2PosToLabel {
     param([string]$PosId)
 
-    # Inverse of Convert-PosLabelToVdc2 in the forward script.
-    # Map VOICEPEAK internal pos identifiers back to the Japanese CSV labels.
+    # Inverse of Convert-PosLabelToVdc2. VOICEPEAK only exposes noun categories
+    # (普通名詞 + 固有名詞:{一般,人名,姓,名,地域}). Currently only Japanese_Futsuu_meishi
+    # is empirically observed; everything else falls back to 名詞.
     # Build Japanese labels from char codes to keep this script ASCII-only
     # (Windows PowerShell 5.1 cannot parse UTF-8 source without BOM that contains
     # non-ASCII characters).
-    $labelMeishi    = ([char]0x540D) + ([char]0x8A5E)                   # noun
-    $labelDoushi    = ([char]0x52D5) + ([char]0x8A5E)                   # verb
-    $labelKeiyoushi = ([char]0x5F62) + ([char]0x5BB9) + ([char]0x8A5E) # adjective
-    $labelFukushi   = ([char]0x526F) + ([char]0x8A5E)                   # adverb
+    $labelMeishi = ([char]0x540D) + ([char]0x8A5E) # noun
 
     if ([string]::IsNullOrWhiteSpace($PosId)) {
         return $labelMeishi
     }
     switch ($PosId.Trim()) {
         "Japanese_Futsuu_meishi" { return $labelMeishi }
-        "Japanese_Doushi"        { return $labelDoushi }
-        "Japanese_Keiyoushi"     { return $labelKeiyoushi }
-        "Japanese_Fukushi"       { return $labelFukushi }
         default                  { return $labelMeishi }
     }
 }

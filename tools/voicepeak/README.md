@@ -44,7 +44,7 @@ powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictCsvToVdc2.ps
 # → voicepeak_user_dict.vdc2 が生成される
 ```
 
-スクリプトは CSV を読み込み、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` (+ CSV 5 列目が空でないなら `overwriteAccents`) フィールドの JSON 配列に変換して `voicepeak_user_dict.vdc2` (UTF-8、BOM なし) を出力する。`pos` は CSV 4 列目の和名から VOICEPEAK 内部 ID にマッピング (`名詞 → Japanese_Futsuu_meishi`、`動詞 → Japanese_Doushi`、 他フォールバックは `Japanese_Futsuu_meishi`)。
+スクリプトは CSV を読み込み、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` (+ CSV 5 列目が空でないなら `overwriteAccents`) フィールドの JSON 配列に変換して `voicepeak_user_dict.vdc2` (UTF-8、BOM なし) を出力する。`pos` は CSV 4 列目の和名から VOICEPEAK 内部 ID にマッピング (`名詞 / 普通名詞 → Japanese_Futsuu_meishi`、未知/空も同じくフォールバック)。**VOICEPEAK GUI には 動詞 / 形容詞 / 副詞 のドロップダウンは存在しない** (名詞系のみ)。 全動詞・形容詞も `名詞` として登録する運用とし、 アクセント型でカバーする。 詳細と固有名詞系の内部 ID 未確認の件は [memory/reference_voicepeak_vdc2_format.md](../../memory/reference_voicepeak_vdc2_format.md) 参照。
 
 #### 1-b. VDC2 → CSV 変換 (逆方向: PowerShell スクリプト)
 
