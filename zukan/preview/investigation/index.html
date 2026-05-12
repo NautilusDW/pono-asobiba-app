@@ -681,7 +681,11 @@ window.EditorBootstrapConfig = {
   }
   function getSelectedSingle() {
     var sel = getSelected();
-    return sel.length === 1 ? sel[0] : null;
+    if (sel.length !== 1) {
+      console.warn('[zk-inv] getSelectedSingle: count=' + sel.length, sel);
+      return null;
+    }
+    return sel[0];
   }
 
   // ─── rotate 適用 (内側 img / bg-layer / 自身を回転) ──────────────────
