@@ -2927,63 +2927,25 @@ body.layout-editor-on .op-skip {
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.25));
   transform: scale(0);
   opacity: 0;
+  transition: opacity 0.35s ease;
 }
+/* v960: スケールイン (0.45s) → 表示維持 (kurumi 音声終了 +0.3s で fade out)
+   旧仕様 (1.6s 自動 fade out) を分割。 fade out は .is-fadeout で transition 発火。 */
 .qno-plate-overlay.is-impact .qno-plate-img {
-  animation: qnoImpact 1.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+  animation: qnoImpact 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+.qno-plate-overlay.is-fadeout .qno-plate-img {
+  opacity: 0;
 }
 @keyframes qnoImpact {
   0%   { transform: scale(0);    opacity: 0; }
-  16%  { transform: scale(1.15); opacity: 1; }       /* 0.25s point overshoot */
-  28%  { transform: scale(1.0);  opacity: 1; }       /* 0.45s settle */
-  82%  { transform: scale(1.0);  opacity: 1; }       /* hold */
-  100% { transform: scale(1.0);  opacity: 0; }       /* fade out 0.3s */
+  56%  { transform: scale(1.15); opacity: 1; }       /* 0.25s point overshoot */
+  100% { transform: scale(1.0);  opacity: 1; }       /* 0.45s settle (hold) */
 }
 @media (max-width: 540px) {
   .qno-plate-img {
     max-width: 86vw;
     max-height: 38vh;
-  }
-}
-
-/* ===== くるみ「第N問」 バナー (kurumi 音声と同期表示) =====
-   don.mp3 終了 → kurumi 音声開始のタイミングで visible 付与、
-   kurumi 音声 ended +0.3s で visible 外し → CSS transition でフェードアウト。
-   qno-plate-overlay (画像プレート) は別レイヤなので干渉しない。 */
-.kurumi-q-banner {
-  position: fixed;
-  left: 50%;
-  top: 22vh;
-  transform: translate(-50%, -8px);
-  z-index: 310;
-  pointer-events: none;
-  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-  font-weight: 900;
-  font-size: clamp(48px, 8vw, 96px);
-  letter-spacing: 0.08em;
-  color: #fff;
-  text-shadow:
-    0 2px 0 #6B3F12,
-    0 4px 0 #6B3F12,
-    0 6px 14px rgba(0, 0, 0, 0.35);
-  padding: 14px 36px;
-  background: linear-gradient(135deg, rgba(255, 200, 95, 0.92), rgba(255, 159, 64, 0.92));
-  border: 4px solid #fff;
-  border-radius: 28px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.kurumi-q-banner.is-visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-@media (max-width: 540px) {
-  .kurumi-q-banner {
-    top: 18vh;
-    padding: 10px 24px;
-    border-width: 3px;
-    border-radius: 20px;
   }
 }
 </style>
@@ -3185,15 +3147,13 @@ body.layout-editor-on .op-skip {
        src="../assets/images/quizland/OP/quiz_start_card.webp" alt="ふくろう博士の なぞなぞスタート">
 </div>
 
-<!-- ===== Question Number Plate (shows at start of Q1-Q5) ===== -->
+<!-- ===== Question Number Plate (shows at start of Q1-Q5) =====
+     plate 画像はくるみ音声 (kurumi_dai{N}mon) の ended +0.3s まで表示し続ける
+     (v960 仕様、 旧 1.6s 自動消去から延長)。 fallback: kurumi audio 取得失敗時
+     は 6 秒で強制 hide。 -->
 <div id="qno-plate-overlay" class="qno-plate-overlay hidden" aria-hidden="true">
   <img class="qno-plate-img" id="qno-plate-img" src="" alt="">
 </div>
-
-<!-- ===== くるみ「第N問」 バナー (Q1-Q5 / kurumi 音声と同期表示) =====
-     don.mp3 終了 (= kurumi 音声開始) でフェードイン、 kurumi 音声 ended +
-     0.3s でフェードアウト。 layout-applier 非対象 (動的 overlay)。 -->
-<div id="kurumi-q-banner" class="kurumi-q-banner" aria-hidden="true"></div>
 
 <script>
 (function() {
@@ -6452,6 +6412,10 @@ async function playQuizStartCard() {
 }
 
 // ---- Question Number Plate (Q1-Q5 startup) ----
+// v960: スケールイン (~0.45s) で表示開始 → 自動消去せず維持。
+// kurumi 音声 (kurumi_dai{N}mon) の ended +0.3s まで表示し続け、
+// hideQuestionNumberPlate() でフェードアウト + DOM hide。
+// fallback: kurumi audio 取得失敗時は loadQuestion 側の 6s タイマで強制 hide。
 let _qnoRunning = false;
 async function playQuestionNumberPlate(qIdx) {
   // qIdx is 0-indexed; show plate only for first 5 questions
@@ -6467,33 +6431,43 @@ async function playQuestionNumberPlate(qIdx) {
   const plateNum = qIdx + 1;
   img.src = '../assets/images/quizland/qno_plate_' + plateNum + '.png';
 
-  let cancelled = false;
-  function onTap() { cancelled = true; }
+  // タップで「即フェードアウト」させる (旧仕様: cancelled で即座に hide)
+  function onTap() {
+    root.removeEventListener('click', onTap);
+    hideQuestionNumberPlate();
+  }
   root.addEventListener('click', onTap, { once: true });
 
   // Show overlay
-  root.classList.remove('hidden');
+  root.classList.remove('hidden', 'is-fadeout');
   root.setAttribute('aria-hidden', 'false');
   void root.offsetWidth;     // reflow to commit initial state
   root.classList.add('is-impact', 'is-tap-skip');
 
-  try {
-    // Animation total ~1.6s. Poll cancellation in 100ms ticks.
-    const totalMs = 1700;
-    const stepMs = 100;
-    const steps = Math.ceil(totalMs / stepMs);
-    for (let t = 0; t < steps; t++) {
-      if (cancelled) break;
-      await new Promise(r => setTimeout(r, stepMs));
-    }
-  } finally {
-    root.classList.remove('is-impact', 'is-tap-skip');
+  // Wait only for scale-in animation (~0.45s) so typewriter can start.
+  // 表示維持は CSS animation forwards で確保、 hide は外部から呼ばれる。
+  await new Promise(function (r) { setTimeout(r, 480); });
+  // 注意: ここで _qnoRunning は false に戻さない (plate は visible 維持中)。
+  // hideQuestionNumberPlate() で hidden + _qnoRunning=false にリセットする。
+}
+
+// v960: kurumi 音声 ended (+0.3s) で plate をフェードアウト + DOM hide。
+// 重複呼び出し safe (既に hidden / running 中でない場合は no-op)。
+function hideQuestionNumberPlate() {
+  const root = document.getElementById('qno-plate-overlay');
+  const img = document.getElementById('qno-plate-img');
+  if (!root) return;
+  if (root.classList.contains('hidden')) return;
+  // フェードアウト用の transition を発火
+  root.classList.add('is-fadeout');
+  root.classList.remove('is-tap-skip');
+  setTimeout(function () {
+    root.classList.remove('is-impact', 'is-fadeout');
     root.classList.add('hidden');
     root.setAttribute('aria-hidden', 'true');
-    img.src = '';
-    root.removeEventListener('click', onTap);
+    if (img) img.src = '';
     _qnoRunning = false;
-  }
+  }, 360); // CSS transition (0.35s) と一致
 }
 
 // ═══════════════════════════════════════════════════════════
