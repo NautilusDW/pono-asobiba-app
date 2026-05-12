@@ -635,22 +635,27 @@ const QUIZLAND_QUESTIONS = {
   ],
 
   // ── かずのじゅん (3歳児向け / 1〜10 の前後・あいだ) ────────────────
+  // stageDisplay: ステージに表示する 「数字 + 矢印 + ◯ (答え位置)」 パターン (sw v974+)
+  //   - 「つぎ」: "N → ◯"   (◯ が答えの位置)
+  //   - 「まえ」: "◯ → N"   (◯ が答えの位置)
+  //   - 「あいだ」: "N → ◯ → M"
+  // renderNumberSequence が q.stageDisplay を優先参照 (なければ旧来の単一数字表示にフォールバック)
   number_sequence: [
     // Level 1: 「つぎ」(6問)
-    { level:1, type:'number_sequence', num:1, q:'1の つぎは？', answer:1, choices:['1','2','3','4'] },
-    { level:1, type:'number_sequence', num:2, q:'2の つぎは？', answer:1, choices:['2','3','4','5'] },
-    { level:1, type:'number_sequence', num:4, q:'4の つぎは？', answer:1, choices:['4','5','6','7'] },
-    { level:1, type:'number_sequence', num:6, q:'6の つぎは？', answer:1, choices:['6','7','8','9'] },
-    { level:1, type:'number_sequence', num:7, q:'7の つぎは？', answer:1, choices:['7','8','9','10'] },
-    { level:1, type:'number_sequence', num:9, q:'9の つぎは？', answer:2, choices:['8','9','10','7'] },
+    { level:1, type:'number_sequence', num:1, q:'1の つぎは？', stageDisplay:'1 → ◯', answer:1, choices:['1','2','3','4'] },
+    { level:1, type:'number_sequence', num:2, q:'2の つぎは？', stageDisplay:'2 → ◯', answer:1, choices:['2','3','4','5'] },
+    { level:1, type:'number_sequence', num:4, q:'4の つぎは？', stageDisplay:'4 → ◯', answer:1, choices:['4','5','6','7'] },
+    { level:1, type:'number_sequence', num:6, q:'6の つぎは？', stageDisplay:'6 → ◯', answer:1, choices:['6','7','8','9'] },
+    { level:1, type:'number_sequence', num:7, q:'7の つぎは？', stageDisplay:'7 → ◯', answer:1, choices:['7','8','9','10'] },
+    { level:1, type:'number_sequence', num:9, q:'9の つぎは？', stageDisplay:'9 → ◯', answer:2, choices:['8','9','10','7'] },
     // Level 2: 「まえ」(4問)
-    { level:2, type:'number_sequence', num:3, q:'3の まえは？', answer:1, choices:['1','2','3','4'] },
-    { level:2, type:'number_sequence', num:5, q:'5の まえは？', answer:1, choices:['3','4','5','6'] },
-    { level:2, type:'number_sequence', num:8, q:'8の まえは？', answer:1, choices:['6','7','8','9'] },
-    { level:2, type:'number_sequence', num:10, q:'10の まえは？', answer:1, choices:['8','9','10','7'] },
+    { level:2, type:'number_sequence', num:3, q:'3の まえは？', stageDisplay:'◯ → 3', answer:1, choices:['1','2','3','4'] },
+    { level:2, type:'number_sequence', num:5, q:'5の まえは？', stageDisplay:'◯ → 5', answer:1, choices:['3','4','5','6'] },
+    { level:2, type:'number_sequence', num:8, q:'8の まえは？', stageDisplay:'◯ → 8', answer:1, choices:['6','7','8','9'] },
+    { level:2, type:'number_sequence', num:10, q:'10の まえは？', stageDisplay:'◯ → 10', answer:1, choices:['8','9','10','7'] },
     // Level 3: 「あいだ」(2問)
-    { level:3, type:'number_sequence', nums:[2,4], q:'2と 4の あいだは？', answer:2, choices:['1','2','3','4'] },
-    { level:3, type:'number_sequence', nums:[6,8], q:'6と 8の あいだは？', answer:2, choices:['5','6','7','8'] }
+    { level:3, type:'number_sequence', nums:[2,4], q:'2と 4の あいだは？', stageDisplay:'2 → ◯ → 4', answer:2, choices:['1','2','3','4'] },
+    { level:3, type:'number_sequence', nums:[6,8], q:'6と 8の あいだは？', stageDisplay:'6 → ◯ → 8', answer:2, choices:['5','6','7','8'] }
   ]
 };
 

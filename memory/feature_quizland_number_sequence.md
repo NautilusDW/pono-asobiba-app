@@ -21,11 +21,30 @@ type: feature
 ## 実装ポイント
 - データ: `quizland/data/questions.js` の `QUIZLAND_QUESTIONS.number_sequence` に12問
 - レンダー関数: `quizland/index.html` の `renderNumberSequence(stage, q)` (renderShapeName 付近)
-  - `Array.isArray(q.nums)` で nums (あいだ) と num (つぎ/まえ) を分岐
-  - 中央に大きく数字表示 (`.number-display` クラス、font-size clamp(120px, 28vmin, 320px))
-  - 「あいだ」は「○ と ○」の3要素 (num/sep/num) で表示。区切りは CSS `gap: 0.2em` で制御 (textContent はスペース無し「と」)
+  - **sw v974+: `q.stageDisplay` (例: "1 → ◯", "◯ → 5", "2 → ◯ → 4") を優先参照**。 ステージに 「数字 + 矢印 + ◯ (答え位置)」 を表示してユーザーに位置関係を視覚化
+  - " → " (= U+2192 + 前後スペース) 区切りでトークン化し、 number / arrow / blank の各 span に分けて配置
+  - `.number-display-num` (大きな数字) / `.number-display-arrow` (矢印、 0.7em + 色 #8a96b8) / `.number-display-blank` (◯、 色 #c0392b) の 3 クラスで描画
+  - 旧データ fallback: `q.stageDisplay` 無しなら `Array.isArray(q.nums)` で nums (あいだ「N と M」3要素) / num (つぎ・まえ 単一数字) を分岐
+  - 中央に大きく数字表示 (`.number-display` クラス、font-size clamp(80px, 20vmin, 220px) = 5 トークン対応で v974 から上限縮小、 元は clamp(120px, 28vmin, 320px) で単一数字想定)
+  - `white-space: nowrap` で 1 行強制 (5 トークンが折り返さないように)
 - カテゴリ追加6箇所: QUIZLAND_QUESTIONS / QUIZLAND_CATEGORIES / MODE_TO_CATEGORIES.inspire / HAKASE_DIALOGUE.problem.byCategory / hint2FallbackByCategory / switch分岐
 - レイアウトエディタ統合: `.number-display` を `QZ_RESIZABLE_SELECTORS` に登録済（既存 `.shape-display` `.count-stack` 等と一貫）
+
+## 12 問 stageDisplay 値一覧 (sw v974+)
+| Q | level | 質問 | answer | stageDisplay |
+|---|-------|------|--------|--------------|
+| 1 | 1 | 1の つぎは？  | 2 | `1 → ◯` |
+| 2 | 1 | 2の つぎは？  | 3 | `2 → ◯` |
+| 3 | 1 | 4の つぎは？  | 5 | `4 → ◯` |
+| 4 | 1 | 6の つぎは？  | 7 | `6 → ◯` |
+| 5 | 1 | 7の つぎは？  | 8 | `7 → ◯` |
+| 6 | 1 | 9の つぎは？  | 10 | `9 → ◯` |
+| 7 | 2 | 3の まえは？  | 2 | `◯ → 3` |
+| 8 | 2 | 5の まえは？  | 4 | `◯ → 5` |
+| 9 | 2 | 8の まえは？  | 7 | `◯ → 8` |
+| 10 | 2 | 10の まえは？ | 9 | `◯ → 10` |
+| 11 | 3 | 2と 4の あいだは？ | 3 | `2 → ◯ → 4` |
+| 12 | 3 | 6と 8の あいだは？ | 7 | `6 → ◯ → 8` |
 
 ## 選択肢の読み方 (VOICEVOX)
 - 画面表示: 裸数字 「1」「2」… 「10」

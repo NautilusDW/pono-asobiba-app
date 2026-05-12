@@ -882,21 +882,38 @@ body.sheet-on .hdr-right .ctrl-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2em;
-  font-size: clamp(120px, 28vmin, 320px);
+  gap: 0.15em;
+  /* 矢印 + ◯ で最大 5 トークン (N → ◯ → M) になるため clamp 上限をやや控えめに */
+  font-size: clamp(80px, 20vmin, 220px);
   font-weight: 800;
   font-family: 'Zen Maru Gothic', sans-serif;
   color: #2a3a5a;
   text-shadow: 0 4px 12px rgba(0,0,0,0.15);
   user-select: none;
+  white-space: nowrap;
 }
 .number-display-num {
   display: inline-block;
 }
 .number-display-sep {
+  /* 旧 「あいだ」 fallback 用 ('と') */
   font-size: 0.55em;
   color: #6b7280;
   font-weight: 600;
+}
+.number-display-arrow {
+  /* 「→」 矢印 (sw v974+) */
+  display: inline-block;
+  font-size: 0.7em;
+  color: #8a96b8;
+  font-weight: 700;
+  line-height: 1;
+}
+.number-display-blank {
+  /* 答えの位置を示す ◯ (sw v974+) */
+  display: inline-block;
+  color: #c0392b;
+  font-weight: 900;
 }
 
 /* ===== Emoji / Trivia / Opposite ===== */
@@ -4071,11 +4088,32 @@ function renderShapeName(stage, q) {
   stage.appendChild(wrap);
 }
 function renderNumberSequence(stage, q) {
-  // 「○の つぎ」「○の まえ」「○と ○の あいだ」用。 大きな数字を中央に表示。
+  // 「○の つぎ」「○の まえ」「○と ○の あいだ」用。 大きな数字 + 矢印 + ◯ (答え位置) を中央に表示 (sw v974+)。
+  // q.stageDisplay (例: "1 → ◯", "◯ → 5", "2 → ◯ → 4") を優先参照。 旧データ (= 単一数字 q.num/q.nums) には fallback。
   const wrap = document.createElement('div');
   wrap.className = 'number-display';
-  if (Array.isArray(q.nums)) {
-    // 「○と ○の あいだ」問題
+  if (typeof q.stageDisplay === 'string' && q.stageDisplay.length > 0) {
+    // " → " (= U+2192 + 前後スペース) 区切りでトークン化。 トークン種別ごとに span class を分ける。
+    const tokens = q.stageDisplay.split(/\s*→\s*/);
+    tokens.forEach((tok, i) => {
+      if (i > 0) {
+        const arrow = document.createElement('span');
+        arrow.className = 'number-display-arrow';
+        arrow.textContent = '→';
+        wrap.appendChild(arrow);
+      }
+      const span = document.createElement('span');
+      if (tok === '◯' || tok === '○') {
+        span.className = 'number-display-blank';
+        span.textContent = '◯';
+      } else {
+        span.className = 'number-display-num';
+        span.textContent = tok;
+      }
+      wrap.appendChild(span);
+    });
+  } else if (Array.isArray(q.nums)) {
+    // 旧データ fallback: 「○と ○の あいだ」問題
     const a = document.createElement('span');
     a.className = 'number-display-num';
     a.textContent = String(q.nums[0]);
@@ -4089,7 +4127,7 @@ function renderNumberSequence(stage, q) {
     wrap.appendChild(sep);
     wrap.appendChild(b);
   } else {
-    // 「○の つぎ」「○の まえ」問題
+    // 旧データ fallback: 「○の つぎ」「○の まえ」問題
     const n = document.createElement('span');
     n.className = 'number-display-num';
     n.textContent = String(q.num);
