@@ -688,6 +688,32 @@ window.EditorBootstrapConfig = {
     return sel[0];
   }
 
+  // ─── ZK 独自操作を LayoutEditor の undo/redo に統合 (sw v952) ────────────
+  // spec = { label: string, undo: fn, redo: fn }
+  // LayoutEditor.pushHistory({ type: 'zk-custom', _undo, _redo, _label }) を
+  // 呼ぶことで、 取り消しボタン (LayoutEditor.undo) や Ctrl+Z で revert される。
+  // LayoutEditor.pushHistory が未公開の旧 build では skip (既存挙動温存)。
+  function pushZkHistory(spec) {
+    if (!spec || typeof spec.undo !== 'function' || typeof spec.redo !== 'function') {
+      console.warn('[zk-inv] pushZkHistory: invalid spec', spec);
+      return;
+    }
+    var e = le();
+    if (!e || typeof e.pushHistory !== 'function') {
+      console.warn('[zk-inv] pushHistory not available, skipping history record:', spec.label);
+      return;
+    }
+    e.pushHistory({
+      type: 'zk-custom',
+      _undo: spec.undo,
+      _redo: spec.redo,
+      _label: spec.label,
+    });
+    console.log('[zk-inv] history push:', spec.label);
+  }
+  // 後段 IIFE (背景バリアント切替) からも使えるよう window に露出 (sw v952)
+  window.__zk_inv_pushZkHistory = pushZkHistory;
+
   // ─── rotate 適用 (内側 img / bg-layer / 自身を回転) ──────────────────
   // window.__zk_inv_applyRotate(el) で createUserbox 側から呼ぶ。
   //
@@ -822,6 +848,11 @@ window.EditorBootstrapConfig = {
     // 通常の inline style で設定 (!important を焼くと後続 resize ハンドラが
     // CSS 優先度負けして無効化されるため避ける)。
     // aspect-ratio ロックが残っていると width/height を上書きされうるので除去。
+    // sw v952: undo/redo のため before 状態をキャプチャ
+    var beforeW = el.style.width;
+    var beforeH = el.style.height;
+    var beforeAR = el.style.aspectRatio;
+    var beforeTransform = el.style.transform;
     try { el.style.removeProperty('aspect-ratio'); } catch (e0) {}
     el.style.width = w + 'px';
     el.style.height = h + 'px';
@@ -832,6 +863,29 @@ window.EditorBootstrapConfig = {
     // 再描画 (numeric panel 等の値表示更新)
     var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-reset-natural', el: el });
     flashToast('100% リセット (' + Math.round(w) + '×' + Math.round(h) + ')');
+
+    // sw v952: history へ登録 (取り消しボタンで before 状態へ戻せるように)。
+    pushZkHistory({
+      label: '100% リセット (' + Math.round(w) + '×' + Math.round(h) + ')',
+      undo: function () {
+        if (beforeAR) el.style.aspectRatio = beforeAR;
+        else try { el.style.removeProperty('aspect-ratio'); } catch (e1) {}
+        el.style.width = beforeW || '';
+        el.style.height = beforeH || '';
+        el.style.transform = beforeTransform || '';
+        if (el.dataset.rotate) applyRotate(el);
+        var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-reset-natural', el: el });
+      },
+      redo: function () {
+        try { el.style.removeProperty('aspect-ratio'); } catch (e2) {}
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+        var tx2 = el._tx || 0, ty2 = el._ty || 0;
+        el.style.transform = 'translate(' + tx2 + 'px, ' + ty2 + 'px)';
+        if (el.dataset.rotate) applyRotate(el);
+        var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-reset-natural', el: el });
+      },
+    });
   }
 
   // ─── 90° 回転 ──────────────────────────────────────────────────────────
@@ -845,6 +899,10 @@ window.EditorBootstrapConfig = {
       selectedSize: window.LayoutEditor && window.LayoutEditor._state && window.LayoutEditor._state.selectedElements ? window.LayoutEditor._state.selectedElements.size : 'n/a',
     });
     if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
+    // sw v952: undo/redo のため before 状態をキャプチャ
+    var beforeRotate = sel.dataset.rotate || '';
+    var beforeTransform = sel.style.transform || '';
+    var beforeSelfRot = sel.dataset._zkSelfRot || '';
     var cur = parseFloat(sel.dataset.rotate || '0') || 0;
     var next = (cur + 90) % 360;
     if (next === 0) {
@@ -855,6 +913,34 @@ window.EditorBootstrapConfig = {
     applyRotate(sel);
     var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-rotate', el: sel, deg: next });
     flashToast('回転: ' + next + '°');
+
+    // sw v952: history へ登録。 dataset.rotate と transform / _zkSelfRot を
+    // before/after 双方で保存し、 undo/redo で互いに復元できるようにする。
+    var afterRotate = sel.dataset.rotate || '';
+    var afterTransform = sel.style.transform || '';
+    var afterSelfRot = sel.dataset._zkSelfRot || '';
+    pushZkHistory({
+      label: '90° 回転 → ' + next + '°',
+      undo: function () {
+        if (beforeRotate) sel.dataset.rotate = beforeRotate;
+        else delete sel.dataset.rotate;
+        // applyRotate を呼ぶ前に _zkSelfRot 状態も復元 (path C の挙動分岐用)
+        if (beforeSelfRot) sel.dataset._zkSelfRot = beforeSelfRot;
+        else delete sel.dataset._zkSelfRot;
+        sel.style.transform = beforeTransform;
+        applyRotate(sel);
+        var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-rotate', el: sel, deg: parseFloat(beforeRotate || '0') || 0 });
+      },
+      redo: function () {
+        if (afterRotate) sel.dataset.rotate = afterRotate;
+        else delete sel.dataset.rotate;
+        if (afterSelfRot) sel.dataset._zkSelfRot = afterSelfRot;
+        else delete sel.dataset._zkSelfRot;
+        sel.style.transform = afterTransform;
+        applyRotate(sel);
+        var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-rotate', el: sel, deg: parseFloat(afterRotate || '0') || 0 });
+      },
+    });
   }
 
   // ─── 比率固定トグル ────────────────────────────────────────────────────
@@ -863,6 +949,11 @@ window.EditorBootstrapConfig = {
   // 加えて、選択中要素の dataset.aspectLock を同期 (永続化用)。
   function toggleAspectLock() {
     var e = le(); if (!e) { alert('LayoutEditor 未起動'); return; }
+    // sw v952: undo/redo のため before 状態をキャプチャ
+    var beforeFree = !!e._state.cornerHandleFreeMode;
+    var sel = getSelectedSingle();
+    var beforeLock = sel ? (sel.dataset.aspectLock || '') : '';
+
     e._state.cornerHandleFreeMode = !e._state.cornerHandleFreeMode;
     var freeMode = !!e._state.cornerHandleFreeMode;
     // free=true → 比率固定 OFF (= 自由) , free=false → 比率固定 ON
@@ -871,12 +962,37 @@ window.EditorBootstrapConfig = {
     btn.textContent = locked ? '🔒 比率固定 ON' : '🔒 比率固定 OFF';
     btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
     // 選択要素 (1 個) の dataset.aspectLock を同期
-    var sel = getSelectedSingle();
     if (sel) {
       if (locked) sel.dataset.aspectLock = '1';
       else delete sel.dataset.aspectLock;
     }
     flashToast(locked ? '比率固定 ON (角ハンドル=自動ロック)' : '比率固定 OFF (角ハンドル=自由)');
+
+    // sw v952: history へ登録。 cornerHandleFreeMode と (もし sel があれば)
+    // dataset.aspectLock の双方を before/after で復元できるようにする。
+    var afterFree = freeMode;
+    var afterLock = sel ? (sel.dataset.aspectLock || '') : '';
+    pushZkHistory({
+      label: '比率固定 ' + (locked ? 'ON' : 'OFF'),
+      undo: function () {
+        var ed = le(); if (!ed) return;
+        ed._state.cornerHandleFreeMode = beforeFree;
+        if (sel) {
+          if (beforeLock) sel.dataset.aspectLock = beforeLock;
+          else delete sel.dataset.aspectLock;
+        }
+        refreshButtons();
+      },
+      redo: function () {
+        var ed = le(); if (!ed) return;
+        ed._state.cornerHandleFreeMode = afterFree;
+        if (sel) {
+          if (afterLock) sel.dataset.aspectLock = afterLock;
+          else delete sel.dataset.aspectLock;
+        }
+        refreshButtons();
+      },
+    });
   }
 
   // ─── ボタン enable/disable 更新 (選択変更時) ───────────────────────────
@@ -1193,13 +1309,42 @@ window.EditorBootstrapConfig = {
       probeVariant(j, variants[j]);
     }
     // change handler
+    //   sw v952: history へ登録 (取り消しで前 variant に戻せるように)。
+    //   change イベントは「実際に値が変わった瞬間」 にしか発火しないので、
+    //   before 値の追跡は previousIdx ローカル変数で行う。
+    var previousIdx = parseInt(sel.value, 10) || 0;
     sel.addEventListener('change', function () {
+      var beforeIdx = previousIdx;
+      var beforeSrc = fieldImg.src;
       var idx = parseInt(sel.value, 10) || 0;
       applyVariant(idx);
       refreshReplaceBtn();
+      var afterIdx = idx;
+      var afterSrc = fieldImg.src;
+      previousIdx = idx;
+      // 同じ index への遷移 (= no-op) は history を汚さない
+      if (beforeIdx === afterIdx) return;
+      if (typeof window.__zk_inv_pushZkHistory === 'function') {
+        window.__zk_inv_pushZkHistory({
+          label: '背景バリアント切替 v' + (beforeIdx + 1) + ' → v' + (afterIdx + 1),
+          undo: function () {
+            sel.value = String(beforeIdx);
+            fieldImg.src = beforeSrc;
+            previousIdx = beforeIdx;
+            refreshReplaceBtn();
+          },
+          redo: function () {
+            sel.value = String(afterIdx);
+            fieldImg.src = afterSrc;
+            previousIdx = afterIdx;
+            refreshReplaceBtn();
+          },
+        });
+      }
     });
     // 起動時のデフォルトは v1
     sel.value = '0';
+    previousIdx = 0;
 
     // 📥 差し替えボタン: 現在 sel が指す variant の repo パスを GH に PUT。
     if (replaceBtn) {
@@ -1235,9 +1380,22 @@ window.EditorBootstrapConfig = {
               var msg = 'chore(zukan-bg): editor から ' + repoPath + ' を差し替え';
               return ghPutContents(repoPath, b64, msg, sha);
             }).then(function () {
+              // sw v952: GitHub PUT 成功時、 ローカル DOM の fieldImg.src 差し替えを
+              // history に登録 (取り消しでプレビューを元 URL に戻せる)。 GitHub repo
+              // 側の commit 自体は revert 不可なので、 あくまで「プレビュー上の
+              // 視覚的取り消し」 にとどまる旨はラベルで明示。
+              var beforeSrc = fieldImg.src;
               replaceBtn.textContent = '✅ 保存完了 (リロードしてください)';
               // 同時に field-bg の src を data URL に書き換えてプレビュー反映
               fieldImg.src = dataUrl;
+              if (typeof window.__zk_inv_pushZkHistory === 'function') {
+                var afterSrc = dataUrl;
+                window.__zk_inv_pushZkHistory({
+                  label: '背景画像差し替え (プレビューのみ、 GH commit は revert 不可)',
+                  undo: function () { fieldImg.src = beforeSrc; },
+                  redo: function () { fieldImg.src = afterSrc; },
+                });
+              }
               setTimeout(function () {
                 replaceBtn.dataset._busy = '';
                 replaceBtn.textContent = '📥 差し替え';

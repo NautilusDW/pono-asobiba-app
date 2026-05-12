@@ -1455,6 +1455,14 @@
     else if (op.type === 'text') op.el.textContent = op.after;
     else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
+    // sw v952: 外部 (ZK 投資画面エディタ等) から登録された任意の undo/redo 可能 op。
+    //   { type: 'zk-custom', _undo: fn, _redo: fn, _label: string } 形式。
+    //   既存 op type には影響しない (zk-custom は pushHistory を外部から呼んだ時だけ流入)。
+    else if (op.type === 'zk-custom') {
+      if (typeof op._redo === 'function') {
+        try { op._redo(); } catch (e) { console.warn('[layout-editor] zk-custom redo failed:', op._label, e); }
+      }
+    }
     // Papa-2 修正3: z-index 並び替え
     else if (op.type === 'z-index') {
       if (op.after === '' || op.after == null) op.el.style.removeProperty('z-index');
@@ -1516,6 +1524,12 @@
     else if (op.type === 'text') op.el.textContent = op.before;
     else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
     else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
+    // sw v952: 外部 (ZK 投資画面エディタ等) から登録された任意の undo/redo 可能 op の inverse。
+    else if (op.type === 'zk-custom') {
+      if (typeof op._undo === 'function') {
+        try { op._undo(); } catch (e) { console.warn('[layout-editor] zk-custom undo failed:', op._label, e); }
+      }
+    }
     // Papa-2 修正3: z-index 並び替え inverse
     else if (op.type === 'z-index') {
       if (op.before === '' || op.before == null) op.el.style.removeProperty('z-index');
@@ -7414,6 +7428,9 @@
     snapshot: snapshot,
     undo: undo,
     redo: redo,
+    // sw v952: 外部 (ZK 投資画面エディタ等) が独自操作を undo/redo に統合できるよう公開。
+    // op = { type: 'zk-custom', _undo: fn, _redo: fn, _label?: string }
+    pushHistory: pushHistory,
     setTool: setTool,
     setZoom: setZoom,
     toggleComparison: toggleComparison,

@@ -136,3 +136,4 @@ function buildVariantOptions(variants) {
 - 948 → 949: applyRotate に「img も bg-image も無い要素は自身を translate+rotate 合成で回す」 第 3 分岐を追加。 .hint-panel 等の複合パネルが回転するように。 LayoutEditor の transform イベントで再適用。
 - 949 → 950: 90°回転バグ診断のため rotate90 / applyRotate / getSelectedSingle に verbose console.log 追加。 ユーザーが Console を見れば選択要素・実行パス・transform 適用結果が即可視化される。 原因特定後にログ削減予定。
 - 950 → 951: .zk-inv-toolbar の mousedown を capture-phase で stopPropagation。 layout-editor.js bgHandler が selection クリアするのを防止。 これで 90°回転・100% リセット・比率固定切替が選択中要素に対して動くようになる。
+- 951 → 952: ZK 操作 (100% リセット / 90°回転 / 比率固定切替 / 背景バリアント切替 / 画像差し替え) を layout-editor.js の undo/redo に統合。 LayoutEditor.pushHistory を公開、 zk-custom op type を applyForward/applyInverse に追加。 各操作前に before 状態をキャプチャ、 実行後に { type:'zk-custom', _undo, _redo, _label } を pushHistory。 Ctrl+Z / 取り消しボタンで revert 可能 (GitHub commit 自体は revert 不可なため画像差し替えはプレビュー src の視覚的 toggle にとどまる)。
