@@ -609,6 +609,9 @@ body.layout-editor-on [data-aspect-lock="1"]::after {
   </select>
   <button id="zk-bg-replace" type="button" disabled
           title="現在選択中の variant の画像を差し替え (GitHub に PUT)">📥 差し替え</button>
+  <button id="zk-emergency-reset" type="button"
+          title="選択中要素の ZK 状態 (rotate / aspectLock / artScale / 自己回転 transform / inline width/height / aspect-ratio) を全部クリア"
+          disabled>🚨 リセット</button>
 </div>
 
 <!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
@@ -1047,14 +1050,127 @@ window.EditorBootstrapConfig = {
     });
   }
 
+  // ─── 🚨 緊急脱出: 選択中要素の ZK 状態を全部クリア (sw v954) ─────────────
+  // 回転 / リサイズ / 比率固定 等で状態が絡まり、 ユーザーが意図しない挙動
+  // (小さくしても飛び出す、 etc.) から脱出できないケースの最終手段。
+  // history 経由なので undo で全状態復元可能。
+  function emergencyReset() {
+    var sel = getSelectedSingle();
+    if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
+
+    // before snapshot (全部)
+    var before = {
+      rotate: sel.dataset.rotate,
+      aspectLock: sel.dataset.aspectLock,
+      artScale: sel.dataset.artScale,
+      selfRot: sel.dataset._zkSelfRot,
+      bgHidden: sel.dataset._zkBgHidden,
+      transform: sel.style.transform,
+      width: sel.style.width,
+      height: sel.style.height,
+      aspectRatio: sel.style.aspectRatio,
+      bgImage: sel.style.backgroundImage,
+      rotateDeg: sel.style.getPropertyValue('--zk-rotate-deg'),
+      artSize: sel.style.getPropertyValue('--zk-art-size'),
+      rotateLayerHtml: (function () {
+        var l = sel.querySelector(':scope > .zk-rotate-layer');
+        return l ? l.outerHTML : null;
+      })(),
+    };
+
+    // クリア
+    delete sel.dataset.rotate;
+    delete sel.dataset.aspectLock;
+    delete sel.dataset.artScale;
+    delete sel.dataset._zkSelfRot;
+    // _zkBgHidden 復元のため bgImage も touch
+    if (sel.dataset._zkBgHidden === '1') {
+      delete sel.dataset._zkBgHidden;
+      if (sel.dataset.bgImage) {
+        sel.style.backgroundImage = 'url("' + sel.dataset.bgImage + '")';
+      } else {
+        sel.style.removeProperty('background-image');
+      }
+    }
+    var layer = sel.querySelector(':scope > .zk-rotate-layer');
+    if (layer) layer.remove();
+    sel.style.removeProperty('width');
+    sel.style.removeProperty('height');
+    sel.style.removeProperty('aspect-ratio');
+    sel.style.removeProperty('--zk-rotate-deg');
+    sel.style.removeProperty('--zk-art-size');
+    // transform は translate(tx, ty) のみ残す (位置は維持)
+    var tx = (typeof sel._tx === 'number') ? sel._tx : 0;
+    var ty = (typeof sel._ty === 'number') ? sel._ty : 0;
+    sel.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+    applyRotate(sel);
+
+    console.log('[zk-inv] emergency reset applied. before:', before);
+    flashToast('🚨 ZK 状態をクリアしました');
+
+    // history (undo で全復元)
+    pushZkHistory({
+      label: '🚨 リセット',
+      undo: function () {
+        if (before.rotate) sel.dataset.rotate = before.rotate; else delete sel.dataset.rotate;
+        if (before.aspectLock) sel.dataset.aspectLock = before.aspectLock; else delete sel.dataset.aspectLock;
+        if (before.artScale) sel.dataset.artScale = before.artScale; else delete sel.dataset.artScale;
+        if (before.selfRot) sel.dataset._zkSelfRot = before.selfRot; else delete sel.dataset._zkSelfRot;
+        if (before.bgHidden) sel.dataset._zkBgHidden = before.bgHidden; else delete sel.dataset._zkBgHidden;
+        sel.style.transform = before.transform || '';
+        if (before.width) sel.style.width = before.width; else sel.style.removeProperty('width');
+        if (before.height) sel.style.height = before.height; else sel.style.removeProperty('height');
+        if (before.aspectRatio) sel.style.aspectRatio = before.aspectRatio; else sel.style.removeProperty('aspect-ratio');
+        if (before.bgImage) sel.style.backgroundImage = before.bgImage; else sel.style.removeProperty('background-image');
+        if (before.rotateDeg) sel.style.setProperty('--zk-rotate-deg', before.rotateDeg);
+        if (before.artSize) sel.style.setProperty('--zk-art-size', before.artSize);
+        if (before.rotateLayerHtml) {
+          var div = document.createElement('div');
+          div.innerHTML = before.rotateLayerHtml;
+          if (div.firstChild) sel.appendChild(div.firstChild);
+        }
+        applyRotate(sel);
+      },
+      redo: function () { emergencyReset(); },  // 同じ動作を再実行
+    });
+  }
+
+  // ─── 選択変更時の詳細ダンプ (sw v954) ──────────────────────────────────
+  // ユーザーが「変な挙動」 を報告した時、 Console ログから即原因特定できる
+  // ように、 選択が 1 要素に絞られたタイミングで状態スナップショットを出力。
+  function logSelectionState() {
+    var sel = getSelectedSingle();
+    if (!sel) {
+      console.log('[zk-inv] selection: (none or multi)');
+      return;
+    }
+    console.log('[zk-inv] selection changed:', {
+      tag: sel.tagName,
+      class: sel.className,
+      label: sel.dataset.leLabel || '',
+      rotate: sel.dataset.rotate || '0',
+      aspectLock: sel.dataset.aspectLock || '0',
+      artScale: sel.dataset.artScale || '100',
+      selfRot: sel.dataset._zkSelfRot || '0',
+      inlineStyle_transform: sel.style.transform || '(none)',
+      inlineStyle_width: sel.style.width || '(none)',
+      inlineStyle_height: sel.style.height || '(none)',
+      inlineStyle_aspectRatio: sel.style.aspectRatio || '(none)',
+      computed_transform: getComputedStyle(sel).transform,
+      rect: sel.getBoundingClientRect(),
+    });
+  }
+
   // ─── ボタン enable/disable 更新 (選択変更時) ───────────────────────────
   function refreshButtons() {
     var sel = getSelectedSingle();
     var has = !!sel;
     var resetBtn = document.getElementById('zk-reset-natural');
     var rotBtn = document.getElementById('zk-rotate-90');
+    var emergencyBtn = document.getElementById('zk-emergency-reset');
     if (resetBtn) resetBtn.disabled = !has;
     if (rotBtn) rotBtn.disabled = !has;
+    if (emergencyBtn) emergencyBtn.disabled = !has;
     // 選択要素の dataset.aspectLock を読んで状態同期 (選択が変わったら反映)
     // ON/OFF を双方向に同期: aspectLock='1' → locked, それ以外 → unlocked
     var btn = document.getElementById('zk-aspect-lock');
@@ -1092,6 +1208,8 @@ window.EditorBootstrapConfig = {
     document.getElementById('zk-reset-natural').addEventListener('click', resetTo100);
     document.getElementById('zk-rotate-90').addEventListener('click', rotate90);
     document.getElementById('zk-aspect-lock').addEventListener('click', toggleAspectLock);
+    var emergencyBtn = document.getElementById('zk-emergency-reset');
+    if (emergencyBtn) emergencyBtn.addEventListener('click', emergencyReset);
     // === selection-clear 防止 (sw v951) ====================================
     // layout-editor.js の attachBackgroundClickClear() は document の mousedown を
     // listen し、 除外リスト (.resizable / .numeric-panel / .le-toolbar / etc.) 以外
@@ -1107,6 +1225,8 @@ window.EditorBootstrapConfig = {
     }
     // 選択変更イベントで button 状態を更新
     try { ed.on('select', refreshButtons); } catch (e) {}
+    // sw v954: 選択変更時に状態スナップショットを Console に出力 (原因切り分け用)
+    try { ed.on('select', logSelectionState); } catch (e) {}
     // === transform 再適用 hook (sw v949) ====================================
     // LayoutEditor の drag/resize は el.style.transform を 'translate(...)' で
     // 直書きするため、 (C) 分岐で自身に焼いた rotate(...) が剥がれる。

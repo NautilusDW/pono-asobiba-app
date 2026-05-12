@@ -138,3 +138,4 @@ function buildVariantOptions(variants) {
 - 950 → 951: .zk-inv-toolbar の mousedown を capture-phase で stopPropagation。 layout-editor.js bgHandler が selection クリアするのを防止。 これで 90°回転・100% リセット・比率固定切替が選択中要素に対して動くようになる。
 - 951 → 952: ZK 操作 (100% リセット / 90°回転 / 比率固定切替 / 背景バリアント切替 / 画像差し替え) を layout-editor.js の undo/redo に統合。 LayoutEditor.pushHistory を公開、 zk-custom op type を applyForward/applyInverse に追加。 各操作前に before 状態をキャプチャ、 実行後に { type:'zk-custom', _undo, _redo, _label } を pushHistory。 Ctrl+Z / 取り消しボタンで revert 可能 (GitHub commit 自体は revert 不可なため画像差し替えはプレビュー src の視覚的 toggle にとどまる)。
 - 952 → 953: バグ 2 件修正。 (1) path C 回転時に 90°/270° なら width/height を swap して bounding box を視覚に追随。 (2) 比率固定 OFF 時に state.aspectLocked (numeric panel 🔒) も解除して、 width ロックを確実に外す。
+- 953 → 954: 🚨 リセットボタン追加 (選択中要素の ZK 状態を全部クリア)。 選択変更時に Console へ詳細ダンプ。 ユーザーが「変な挙動」 から脱出する手段と、 原因即時切り分けを提供。
