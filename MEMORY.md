@@ -116,6 +116,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T03:52:19Z - VOICEPEAK 用 フル 912 件 CSV (voicepeak_lines_full912.csv) + filename map JSON 新規作成 (ORDER-FULL.md 907 + くるみ第1-5問目 5)
+- **タスク**: VOICEPEAK 用 フル 912 件 CSV (voicepeak_lines_full912.csv) + filename map JSON 新規作成 (ORDER-FULL.md 907 + くるみ第1-5問目 5)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 208
+- **エラー数**: 12
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 22, "Agent": 117, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 34, "Glob": 3, "WebSearch": 3, "Edit": 8, "WebFetch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T03:34:21Z - VOICEPEAK 移行整合 HIGH 4件: kurumi.md L37 博士=ナレーターおじいさん化 + ORDER-EXTRA関係表 VOICEPEAK化 + 辞書65/66→75語統一 + memory 3ファイル復元コピー
 - **タスク**: VOICEPEAK 移行整合 HIGH 4件: kurumi.md L37 博士=ナレーターおじいさん化 + ORDER-EXTRA関係表 VOICEPEAK化 + 辞書65/66→75語統一 + memory 3ファイル復元コピー
 - **結果**: 成功
@@ -218,18 +231,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 27, "Read": 39, "Grep": 21, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 11, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T00:07:08Z - test.vdc2 を正本にして voicepeak_user_dict.csv を最新化し VDC2 再生成 (8 entries 更新, overwriteAccents 5件は要注意)
-- **タスク**: test.vdc2 を正本にして voicepeak_user_dict.csv を最新化し VDC2 再生成 (8 entries 更新, overwriteAccents 5件は要注意)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 144
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 17, "Agent": 88, "ToolSearch": 7, "Write": 3, "ExitPlanMode": 2, "Bash": 19, "Glob": 3, "WebSearch": 3, "Edit": 1, "WebFetch": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
