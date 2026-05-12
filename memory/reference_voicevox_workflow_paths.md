@@ -1,10 +1,14 @@
 ---
-name: VOICEVOX 音声生成 作業フォルダパス (固定)
-description: ユーザーが accent_input.json/accent_overrides.json を置く場所。Claude は毎回このフォルダを確認すれば良い (パス再確認不要)
+name: VOICEVOX 音声生成 作業フォルダパス (固定) — 【廃案】 VOICEVOX 用作業フォルダ (主軸変更で当面不参照)
+description: 【廃案 2026-05-12】 VOICEVOX 用の作業領域。 主軸が VOICEPEAK に切り替わったため、 当面参照する必要なし。 履歴として温存
 type: reference
 ---
 
 # VOICEVOX 音声生成 作業フォルダ
+
+> **【廃案 2026-05-12】 このフォルダは VOICEVOX 用の作業領域。 主軸が VOICEPEAK に切り替わったため、 当面参照する必要なし。 VOICEPEAK 作業フォルダは別途定まる。**
+>
+> 本ファイル本体は履歴として温存 (削除しない)。 詳細な方針転換は [feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) を参照。
 
 ## デフォルト作業フォルダ
 **`D:\ポノのおへや\Dr.owl'quiz\NA\問題文\`**
