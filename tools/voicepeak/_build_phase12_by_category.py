@@ -209,13 +209,14 @@ def main():
         total_phase1 += len(p1)
         total_phase2 += len(p2)
 
-    # くるみ 第 1〜5 問目 (phase 1 only)
+    # くるみ 第 1〜5 問目 (phase 1 only) — speech は短縮 + 漢数字統一 (2026-05-12)
+    # ファイル名は kurumi_dai{N}mon (アラビア数字) のまま、 speech のみ漢数字 (第一問〜第五問) に変更。
     kurumi_calls = [
-        ("kurumi_dai1mon", "第1問目です"),
-        ("kurumi_dai2mon", "第2問目です"),
-        ("kurumi_dai3mon", "第3問目です"),
-        ("kurumi_dai4mon", "第4問目です"),
-        ("kurumi_dai5mon", "第5問目です"),
+        ("kurumi_dai1mon", "第一問"),
+        ("kurumi_dai2mon", "第二問"),
+        ("kurumi_dai3mon", "第三問"),
+        ("kurumi_dai4mon", "第四問"),
+        ("kurumi_dai5mon", "第五問"),
     ]
     write_csv(OUT_DIR / "voicepeak_lines_kurumi_dai1_5.csv", kurumi_calls)
     write_json_map(OUT_DIR / "voicepeak_filename_map_kurumi_dai1_5.json", kurumi_calls)
