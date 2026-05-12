@@ -3822,18 +3822,25 @@ const SE_PATHS = {
   clear:        '../assets/audio/sfx/quiz/' + encodeURIComponent('全問クリア') + '.mp3',
   hint:         '../assets/audio/sfx/quiz/' + encodeURIComponent('ヒント') + '.mp3',
   nextQuestion: '../assets/audio/sfx/quiz/' + encodeURIComponent('don') + '.mp3',
+  // くるみ「第N問」 問題番号読み上げ (VOICEPEAK 女性4、 2026-05-12 追加)
+  kurumi_dai1:  '../assets/audio/sfx/quiz/kurumi_dai1mon.wav',
+  kurumi_dai2:  '../assets/audio/sfx/quiz/kurumi_dai2mon.wav',
+  kurumi_dai3:  '../assets/audio/sfx/quiz/kurumi_dai3mon.wav',
+  kurumi_dai4:  '../assets/audio/sfx/quiz/kurumi_dai4mon.wav',
+  kurumi_dai5:  '../assets/audio/sfx/quiz/kurumi_dai5mon.wav',
 };
 const SE_VOLUME = 0.45;
 const _seCache = {};
 function playSe(name) {
   const src = SE_PATHS[name];
-  if (!src) return;
+  if (!src) return null;
   let a = _seCache[name];
   if (!a) {
     try { a = new Audio(src); a.preload = 'auto'; a.volume = SE_VOLUME; _seCache[name] = a; }
-    catch (e) { return; }
+    catch (e) { return null; }
   }
   try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
+  return a;
 }
 
 function playCorrect() { playSe('correct'); }
@@ -4581,7 +4588,22 @@ function loadQuestion(q) {
   showProblemDialogue(q);
   // 「第 N 問目」SE: 問題ロード時 (= mode-btn タップ後 = user gesture 後) のみ鳴らす
   // updateHUD() は起動時 IIFE 末尾でも呼ばれるため、SE 発火は loadQuestion 末尾に限定する
-  playSe('nextQuestion');
+  // don.mp3 → くるみ「第N問」 wav (VOICEPEAK 女性4) を順次再生 (重ね合わせ NG)
+  const _donAudio = playSe('nextQuestion');
+  const _monNum = questionIdx + 1; // 1 始まり
+  if (_monNum >= 1 && _monNum <= 5) {
+    const _kurumiKey = 'kurumi_dai' + _monNum;
+    if (_donAudio && typeof _donAudio.addEventListener === 'function') {
+      const _onDonEnded = function () {
+        _donAudio.removeEventListener('ended', _onDonEnded);
+        playSe(_kurumiKey);
+      };
+      _donAudio.addEventListener('ended', _onDonEnded, { once: true });
+    } else {
+      // don 取得失敗時のフォールバック (短遅延で kurumi のみ)
+      setTimeout(function () { playSe(_kurumiKey); }, 300);
+    }
+  }
 }
 
 // ── Narration: 自動再生 or 🔊ボタンで問題文を読み上げ
