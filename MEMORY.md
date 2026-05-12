@@ -118,6 +118,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T08:51:33Z - quizland v967: 「第N問」 表示中の問題文/4択を案 C で隠蔽 (#q-text を q-stage-pending 化 + Q1-5 で typewriter 中 reveal 抑止 + hideQuestionNumberPlate で全 pending 一括 revealed 昇格) + chip-label 編集機能復活 (.chip-text-editing スコープで display:block + overflow:visible + min-height:1.2em で v964 flex/overflow を編集中だけ局所 override)
+- **タスク**: quizland v967: 「第N問」 表示中の問題文/4択を案 C で隠蔽 (#q-text を q-stage-pending 化 + Q1-5 で typewriter 中 reveal 抑止 + hideQuestionNumberPlate で全 pending 一括 revealed 昇格) + chip-label 編集機能復活 (.chip-text-editing スコープで display:block + overflow:visible + min-height:1.2em で v964 flex/overflow を編集中だけ局所 override)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 15
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Agent": 7, "Bash": 7}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-12T08:46:59Z - Quizland v967: 第N問プレート表示中は問題文/挿絵/4択を隠蔽 (案C: #q-text を pending 化 + hideQuestionNumberPlate で全 reveal + Q1-5 では typewriter 完了時の reveal を抑止) + chip-label 編集復活 (案X: .chip-text-editing で display:flex→block / overflow:hidden→visible 切替) + sw v966→v967 bump
+- **タスク**: Quizland v967: 第N問プレート表示中は問題文/挿絵/4択を隠蔽 (案C: #q-text を pending 化 + hideQuestionNumberPlate で全 reveal + Q1-5 では typewriter 完了時の reveal を抑止) + chip-label 編集復活 (案X: .chip-text-editing で display:flex→block / overflow:hidden→visible 切替) + sw v966→v967 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 11
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 11}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T08:35:41Z - Quizland v966 緊急修正: don 二重発火問題解消 — loadQuestion から playSe('nextQuestion') 別再生 + don timeupdate/ended チェーンを完全削除し kurumi mp3 単独再生に簡素化、 sw v965→v966、 memory v966 セクション追加、 nextQuestion/preload IIFE/playQuestionNumberPlate は将来用に維持
 - **タスク**: Quizland v966 緊急修正: don 二重発火問題解消 — loadQuestion から playSe('nextQuestion') 別再生 + don timeupdate/ended チェーンを完全削除し kurumi mp3 単独再生に簡素化、 sw v965→v966、 memory v966 セクション追加、 nextQuestion/preload IIFE/playQuestionNumberPlate は将来用に維持
 - **結果**: 成功
@@ -207,31 +233,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T07:45:59Z - Quizland v962: don→kurumi ラグ短縮 第2弾 (timeupdate 早期 trigger + kurumi.wav 5本の冒頭無音 ffmpeg トリミング)
-- **タスク**: Quizland v962: don→kurumi ラグ短縮 第2弾 (timeupdate 早期 trigger + kurumi.wav 5本の冒頭無音 ffmpeg トリミング)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 230
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 24, "Agent": 127, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 39, "Glob": 5, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T07:40:55Z - Quizland v959 CSS バナー誤実装を完全削除 + 既存 qno_plate 画像表示を kurumi 音声 ended +0.3s まで延長 (sw v961)
-- **タスク**: Quizland v959 CSS バナー誤実装を完全削除 + 既存 qno_plate 画像表示を kurumi 音声 ended +0.3s まで延長 (sw v961)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 212
-- **エラー数**: 22
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 43, "Read": 60, "Grep": 44, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 59, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
