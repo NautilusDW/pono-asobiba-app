@@ -44,6 +44,8 @@
 - **【未対処懸案 2026-05-12】 chip-label v968 4 段防御で残るバグ + v969 attempt 破棄** (v970-v973 で完了): [memory/project_chip_label_v968_residual.md](memory/project_chip_label_v968_residual.md) — 288×240 + 改行混入が v968 で残存、 v969 attempt は rebase 混乱で broken 判定で全破棄。 **v970-v973 で完全解決** = [memory/feature_chip_label_editor_saga.md](memory/feature_chip_label_editor_saga.md) 参照
 - **Quizland chip-label / chip-illust レイアウトエディタ編集系の v964-v973 連続修正 (2026-05-12 完了)**: [memory/feature_chip_label_editor_saga.md](memory/feature_chip_label_editor_saga.md) — v964 (.chip-label flex grow 化で wrap 位置ズレ修正) → v967 (.chip-text-editing scope で編集時のみ display:block 復活 + 「第N問」中の問題文/4択 隠蔽 案 C) → v968 (4 段防御: detach/reattach + cloneNode strip + tail regex + idempotency guard) → v970 (saved-layout.json git merge marker 解決 + 全角 [0-9０-９] + 2-pass + 固定点反復 + load-time sanitizer) → v971 (chip-illust img を chip-illust-wrap div でラップして個別 resize 化、 replaced element 問題回避) → v972 (broad strip `<br>` 除外が `<div>line</div>` 中身ごと削除する regression を DOM walk テキスト抽出に置換) → v973 (block 要素 leading `\n` 補完で iOS Safari / Shift+Enter 経路の `<div>` 改行も保護)。 layout-editor の resize handle が target 要素直接子として append される設計 + contenteditable の browser 挙動差異 (Chrome の `<br>` vs Safari の `<div>` vs Firefox 実装依存) への対処パターンは今後の必読知見
 - **【恒久ルール 2026-05-12 大事故から導出】 auto-commit hook + 自動 pull --rebase が rebase paused 状態を巻き込む事故の防止策**: [memory/feedback_auto_commit_hook_rebase_risk.md](memory/feedback_auto_commit_hook_rebase_risk.md) — 重要 git 操作 (rebase / merge / cherry-pick / pull --rebase) 前のチェックリスト + 別チャット並走時の運用 + 根本治療オプション 3 案
+- **【設計変更 2026-05-12】 VOICEPEAK 全カテゴリ + Phase 1/2 横断ユニーク化案 (次バッチから採用)**: [memory/feature_voicepeak_cross_category_dedup.md](memory/feature_voicepeak_cross_category_dedup.md) — 同一単語 (= 「二」 「三」 「七」 等の数字単独や色名・体パーツ等) を全カテゴリ + Phase 1/2 で 1 wav に集約、 アクセント違いが必要なら後で個別追加。 number_sequence バッチ完了後 order_color 着手前に設計実装
+- **【恒久ルール 2026-05-12 大事故から導出】 questions.js の Q### 真値は QUIZLAND_CATEGORIES キー順、 ORDER-FULL.md の宣言順表記は信用しない**: [memory/feedback_questions_js_q_number_canonical_source.md](memory/feedback_questions_js_q_number_canonical_source.md) — Q### は CATEGORIES キー順 (= order_color Q1-24 / count_total Q25-48 / shape_name Q49-71 / **number_sequence Q72-83** / trivia Q84-109 / weather Q110-133 / opposite Q134-157 / body Q158-181) で決まる。 ORDER-FULL.md は宣言順表記で +1 以上ズレている可能性大、 必ず questions.js の CATEGORIES を真値として参照
 
 ---
 
@@ -121,6 +123,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-12T13:10:45Z - Z12b: voicepeak_unique_expand_number_sequence_phase1.json の q### キー -97 シフト (q169-q180 → q072-q083)
+- **タスク**: Z12b: voicepeak_unique_expand_number_sequence_phase1.json の q### キー -97 シフト (q169-q180 → q072-q083)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 80
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 42, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
 
 ### 2026-05-12T12:57:56Z - quizland v971-v973: chip-illust wrapper化で個別 resize 可能化 (img replaced element 問題回避) + chip-label 編集の text 抽出を DOM walk に置換 (改行 <div> 中身消失 regression を解消) + block 要素 leading \n 補完追加で iOS Safari/Shift+Enter 経路の改行保護完了
 - **タスク**: quizland v971-v973: chip-illust wrapper化で個別 resize 可能化 (img replaced element 問題回避) + chip-label 編集の text 抽出を DOM walk に置換 (改行 <div> 中身消失 regression を解消) + block 要素 leading \n 補完追加で iOS Safari/Shift+Enter 経路の改行保護完了
@@ -224,18 +239,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 4, "Agent": 15, "Bash": 28, "Edit": 5, "Write": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T11:59:52Z - Hybrid Stop hook (Option D: Sentinel + Debounce) を user-global settings.json に実装、PostToolUse で sentinel touch、Stop で commit + 600s debounce push、.gitignore に sentinel/last-push 追加
-- **タスク**: Hybrid Stop hook (Option D: Sentinel + Debounce) を user-global settings.json に実装、PostToolUse で sentinel touch、Stop で commit + 600s debounce push、.gitignore に sentinel/last-push 追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 67
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 29, "ToolSearch": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
