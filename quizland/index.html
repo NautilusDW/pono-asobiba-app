@@ -4618,67 +4618,72 @@ function loadQuestion(q) {
   // 「第 N 問目」SE: 問題ロード時 (= mode-btn タップ後 = user gesture 後) のみ鳴らす
   // updateHUD() は起動時 IIFE 末尾でも呼ばれるため、SE 発火は loadQuestion 末尾に限定する
   // don.mp3 → くるみ「第N問」 wav (VOICEPEAK 女性4) を順次再生 (重ね合わせ NG)
-  // バナー (#kurumi-q-banner) も kurumi 開始と同時に表示 → kurumi ended +0.3s でフェードアウト
+  // v960: kurumi 音声 ended +0.3s で qno_plate 画像をフェードアウト
+  // v962: don ended → timeupdate (残り 50ms) ベースの早期 trigger に変更。
+  //       ended イベント発火の固有遅延を回避し、 体感ラグを ~50ms 短縮する。
+  //       timeupdate と ended の両方を listen し、 早い方で kurumi 開始。
+  //       _kurumiTriggered フラグで二重発火を完全防止。
+  //       iOS Safari は timeupdate が ~250ms 間隔のことがあり残り 50ms 以下を見逃す
+  //       ことがあるため、 ended fallback を必ず併用する。
+  //       同時に kurumi.wav 側も冒頭無音 ~78-119ms をトリミング済 (v962、 ffmpeg)
+  //       なので「don 末尾無音 → 早期 trigger → wav 冒頭無音 0」 で更にラグ短縮。
+  // (旧 v959: 別 DOM の #kurumi-q-banner CSS バナーを表示していたが誤実装、 削除)
   const _donAudio = playSe('nextQuestion');
   const _monNum = questionIdx + 1; // 1 始まり
   if (_monNum >= 1 && _monNum <= 5) {
     const _kurumiKey = 'kurumi_dai' + _monNum;
-    const _startKurumiAndBanner = function () {
-      // setTimeout(0) で次マイクロタスクへ。 ended ハンドラ内で同期的に play()
-      // するよりブラウザ側のラグが体感的に短くなる (数十ms)。
-      setTimeout(function () {
-        var _kurumiAudio = playSe(_kurumiKey);
-        showKurumiQBanner(_monNum, _kurumiAudio);
-      }, 0);
+    let _kurumiTriggered = false; // 二重発火ガード (timeupdate と ended が両方発火する想定)
+    const _startKurumi = function () {
+      if (_kurumiTriggered) return;
+      _kurumiTriggered = true;
+      var _kurumiAudio = playSe(_kurumiKey);
+      // kurumi 音声 ended で plate を 0.3s 余韻フェードアウト。
+      // 取得失敗時 / ended 発火しない時に備えた 6 秒 fallback も合わせて発火。
+      if (_kurumiAudio && typeof _kurumiAudio.addEventListener === 'function') {
+        var _onKurumiEnded = function () {
+          _kurumiAudio.removeEventListener('ended', _onKurumiEnded);
+          setTimeout(hideQuestionNumberPlate, 300);
+        };
+        _kurumiAudio.addEventListener('ended', _onKurumiEnded, { once: true });
+        // fallback: ended が発火しなくても 6 秒で強制 hide
+        setTimeout(function () {
+          try { _kurumiAudio.removeEventListener('ended', _onKurumiEnded); } catch (e) {}
+          hideQuestionNumberPlate();
+        }, 6000);
+      } else {
+        // audio 取れず → wav 想定の短遅延で plate hide
+        setTimeout(hideQuestionNumberPlate, 1500);
+      }
     };
     if (_donAudio && typeof _donAudio.addEventListener === 'function') {
+      // timeupdate: 残り 50ms 以下になった時点で kurumi 開始 (ended より早い)
+      const _onDonTimeupdate = function () {
+        if (_kurumiTriggered) {
+          _donAudio.removeEventListener('timeupdate', _onDonTimeupdate);
+          return;
+        }
+        const _dur = _donAudio.duration || 0;
+        const _cur = _donAudio.currentTime || 0;
+        const _remaining = _dur - _cur;
+        if (_dur > 0 && _remaining > 0 && _remaining <= 0.05) {
+          _donAudio.removeEventListener('timeupdate', _onDonTimeupdate);
+          _startKurumi();
+        }
+      };
+      _donAudio.addEventListener('timeupdate', _onDonTimeupdate);
+      // fallback: timeupdate を見逃した場合に備えて ended でも trigger
       const _onDonEnded = function () {
         _donAudio.removeEventListener('ended', _onDonEnded);
-        _startKurumiAndBanner();
+        _donAudio.removeEventListener('timeupdate', _onDonTimeupdate);
+        _startKurumi();
       };
       _donAudio.addEventListener('ended', _onDonEnded, { once: true });
     } else {
       // don 取得失敗時のフォールバック (短遅延で kurumi のみ)
-      setTimeout(_startKurumiAndBanner, 300);
+      setTimeout(_startKurumi, 300);
     }
-  }
-}
-
-// くるみ「第N問」 バナーの表示/非表示。 kurumi audio が取れていれば ended で
-// 自動消去 (0.3s 余韻)、 取れない時は wav 想定の固定タイマで消去。
-const _KURUMI_Q_KANJI = ['一', '二', '三', '四', '五'];
-function showKurumiQBanner(monNum, audio) {
-  var banner = document.getElementById('kurumi-q-banner');
-  if (!banner) return;
-  if (monNum < 1 || monNum > 5) return;
-  banner.textContent = '第' + _KURUMI_Q_KANJI[monNum - 1] + '問';
-  banner.setAttribute('aria-hidden', 'false');
-  // 次フレームで is-visible を付けて transition を発火
-  requestAnimationFrame(function () { banner.classList.add('is-visible'); });
-
-  function _hide() {
-    setTimeout(function () {
-      banner.classList.remove('is-visible');
-      // transition (0.3s) 後に aria-hidden を戻す
-      setTimeout(function () { banner.setAttribute('aria-hidden', 'true'); }, 320);
-    }, 300); // 0.3s 余韻
-  }
-  if (audio && typeof audio.addEventListener === 'function') {
-    var _onKurumiEnded = function () {
-      audio.removeEventListener('ended', _onKurumiEnded);
-      _hide();
-    };
-    audio.addEventListener('ended', _onKurumiEnded, { once: true });
-    // ended が発火しないケースの fallback (最大 6 秒で強制消去)
-    setTimeout(function () {
-      if (banner.classList.contains('is-visible')) {
-        audio.removeEventListener('ended', _onKurumiEnded);
-        _hide();
-      }
-    }, 6000);
   } else {
-    // audio 取れず → 想定再生時間で消す (くるみ wav は概ね 1.2-1.6s)
-    setTimeout(_hide, 1500);
+    // Q6+ (kurumi 音声無し): plate も無いので何もしない
   }
 }
 
@@ -5319,7 +5324,7 @@ function _wireQuestionTypingSkip() {
 async function _runPlateAndType(qIdx) {
   _wireQuestionTypingSkip();
   try {
-    await playQuestionNumberPlate(qIdx);   // Q1-5 のみ ~1.6s 待機 / Q6+ は即 return
+    await playQuestionNumberPlate(qIdx);   // Q1-5 のみ ~0.48s scale-in 待機 / Q6+ は即 return / hide は kurumi ended +0.3s で別経路
   } catch (e) {}
   // Q6+ で plate 無し時に問題 UI が描画完了する余裕を少しだけ作る
   if (qIdx >= 5) {
