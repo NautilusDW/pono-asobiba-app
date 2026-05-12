@@ -1271,6 +1271,13 @@ body.layout-editor-on .stage-pono { display: none; }
   word-break: keep-all;
   overflow-wrap: break-word;
   white-space: normal;
+  /* 2026-05-12 修正(v964 + α): 長文 label が 4:3 / 5:4 等で chip 高さ 160-170px に
+     縮む環境で wrap 後にコンテンツが chip 枠外へはみ出す可能性をクリップ。
+     .chip 本体に overflow:hidden を置くと外側 box-shadow (0 4px 0 wood-dark +
+     0 6px 12px paper-shadow) が消えるため、 chip 内側の .chip-label 側で
+     overflow:hidden する方針。 .chip-illust-label も .chip-label クラスを継承する
+     ので画像入り選択肢にも同等に効く。 */
+  overflow: hidden;
 }
 
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
