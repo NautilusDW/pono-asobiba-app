@@ -121,6 +121,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T12:23:18Z - Agent Z1: VOICEPEAK wav expand for number_sequence (q169-q180)
+- **タスク**: Agent Z1: VOICEPEAK wav expand for number_sequence (q169-q180)
+- **結果**: 失敗
+- **理由**: Input wav count mismatch (29 found vs 20 unique CSV rows) AND CSV-vs-JSON encoding mismatch (CSV=kanji like 一の次は, JSON=hiragana like いちのつぎは). Halted at Step 2 per spec.
+- **総アクション数**: 69
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 31, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 失敗タスク: エラー7件。 失敗要因候補: 同じエラーを繰り返した, テストを一切実行しなかった
+
+
+### 2026-05-12T12:13:43Z - quizland chip-label 根本修正: saved-layout.json merge marker 解消 + __chip_text_overrides 5 entries sanitize + v969 attempt 2 JS cherry-pick + sw v968→v970
+- **タスク**: quizland chip-label 根本修正: saved-layout.json merge marker 解消 + __chip_text_overrides 5 entries sanitize + v969 attempt 2 JS cherry-pick + sw v968→v970
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 54
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 15, "Bash": 28, "Edit": 5, "Write": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T11:59:52Z - Hybrid Stop hook (Option D: Sentinel + Debounce) を user-global settings.json に実装、PostToolUse で sentinel touch、Stop で commit + 600s debounce push、.gitignore に sentinel/last-push 追加
 - **タスク**: Hybrid Stop hook (Option D: Sentinel + Debounce) を user-global settings.json に実装、PostToolUse で sentinel touch、Stop で commit + 600s debounce push、.gitignore に sentinel/last-push 追加
 - **結果**: 成功
@@ -209,32 +235,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 24, "Agent": 133, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 43, "Glob": 6, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T08:26:09Z - Quizland 問題本編 wav 配置 + manifest.json 自動生成スクリプト先回り準備 (Build-NarrationManifest.ps1 + _build_narration_manifest.py + Deploy-VoicepeakWavs.ps1 + DEPLOY-WORKFLOW.md)
-- **タスク**: Quizland 問題本編 wav 配置 + manifest.json 自動生成スクリプト先回り準備 (Build-NarrationManifest.ps1 + _build_narration_manifest.py + Deploy-VoicepeakWavs.ps1 + DEPLOY-WORKFLOW.md)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 239
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 24, "Agent": 132, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 42, "Glob": 6, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T08:25:08Z - Quizland v965: ユーザー手動編集 mp3 5 ファイルを kurumi_dai{1-5}mon に差し替え (wav→mp3)、 旧 wav 5 本削除 (tmp に温存)、 SE_PATHS 拡張子変更、 sw v964→965 bump、 memory v965 セクション追加、 timeupdate 閾値 150ms 温存
-- **タスク**: Quizland v965: ユーザー手動編集 mp3 5 ファイルを kurumi_dai{1-5}mon に差し替え (wav→mp3)、 旧 wav 5 本削除 (tmp に温存)、 SE_PATHS 拡張子変更、 sw v964→965 bump、 memory v965 セクション追加、 timeupdate 閾値 150ms 温存
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 239
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 24, "Agent": 132, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 42, "Glob": 6, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

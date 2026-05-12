@@ -1095,15 +1095,19 @@
     // MEDIUM 2: Chrome の空行は <div><br></div> 形式。 順序が後だと <br> → \n + </div> → \n
     // で 2 個の改行になり空行が増殖する。 先に <div><br></div> 全体を 1 個の \n に潰す。
     // v968 defense-in-depth: dblclick ハンドラで overlay (resize-handle / resize-size-label)
-    // は事前 detach 済みだが、 万一別経路で残った場合に備えて clone 上で `<div class="resize-...">`
-    // を物理削除してから html→text 変換する (重複保険、 通常は noop)。
+    // は事前 detach 済みだが、 万一別経路で残った場合に備えて clone 上で
+    // **全ての element 子要素**を物理削除してから html→text 変換する。
+    // v969: クラス指定 (.resize-handle 等) だと将来追加の新規 overlay class
+    // (例: .userbox-resize-handle / .chip-handle / etc) を取りこぼすため、
+    // .chip-label が本来 plain text のみ前提であることを利用し、 element child は
+    // 全部破棄して text node のみ残す方針に格上げ。 仮説 H3 を構造的に塞ぐ。
     var srcHtml;
     try {
       var clone = el.cloneNode(true);
-      Array.prototype.forEach.call(
-        clone.querySelectorAll('.resize-handle, .resize-size-label, .le-lock-badge, .userbox-badge, .userbox-del'),
-        function (c) { try { c.remove(); } catch (e) {} }
-      );
+      var kids = clone.querySelectorAll('*');
+      for (var ki = 0; ki < kids.length; ki++) {
+        try { kids[ki].remove(); } catch (eRem) {}
+      }
       srcHtml = clone.innerHTML;
     } catch (e) {
       srcHtml = el.innerHTML;
@@ -1118,13 +1122,28 @@
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, '\'')
-      // v968: 既に saved-layout.json に書き込まれてしまった
-      // 「テキスト + \n × N + 寸法ラベル」 形式の壊れた値を runtime save 経由で自己治癒。
-      // 行末の `\n+<W>×<H>` パターン (\n+288×240 等) を除去。
-      // v968 followup: 元の `\d+×\d+\d*` 末尾 `\d*` は冗長 (`\d+` が貪欲一致するため吸収済み)。簡略化。
-      .replace(/\n+\d+×\d+\s*$/g, '')
-      .replace(/\n+$/g, ''); // 末尾改行は除去
+      .replace(/&#39;/g, '\'');
+    // v968 / v969: 既に saved-layout.json に書き込まれてしまった
+    // 「テキスト + \n × N + 寸法ラベル」 形式の壊れた値を runtime save 経由で自己治癒。
+    // v969 強化:
+    //   (a) 半角 (288×240) だけでなく全角 (２８８×２４０) digit にも対応 [0-9０-９]
+    //   (b) `×` だけでなく `x` `X` `*` 区切りも吸収
+    //   (c) 2-pass: mid-string (\n+前置き) を全部消した後、 さらに末尾の
+    //       「数字×数字」 を tail-anchored で再走 (前段で `\n+` 全消費後の
+    //       「\n 無し + 288×240」 trailing case を救済 — 例:
+    //       「はえる\n×8 ２８８×２４０ \n×8 288×240」 が pass A 後
+    //       「はえる288×240」 となる現象を pass B で吸収して 「はえる」 に戻す)
+    //   (d) 固定点反復で連続出現にも対応
+    var DIM_RE_MID  = /\n+[\s]*[0-9０-９]+\s*[×xX*]\s*[0-9０-９]+\s*/g;
+    var DIM_RE_TAIL = /\s*[0-9０-９]+\s*[×xX*]\s*[0-9０-９]+\s*$/;
+    var prev;
+    do { prev = text; text = text.replace(DIM_RE_MID, ''); } while (text !== prev);
+    for (var ti = 0; ti < 5; ti++) {
+      var nxt = text.replace(DIM_RE_TAIL, '');
+      if (nxt === text) break;
+      text = nxt;
+    }
+    text = text.replace(/\n+$/g, '').replace(/[ \t]+$/g, ''); // 末尾改行・末尾空白最終トリム
     // 空文字 = override 削除扱い
     if (!window._currentLayoutData) window._currentLayoutData = {};
     if (!window._currentLayoutData.__chip_text_overrides) {

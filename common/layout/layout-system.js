@@ -177,6 +177,45 @@
       if (typeof config.beforeApply === 'function') {
         try { data = config.beforeApply(data) || data; } catch (e) { /* ignore */ }
       }
+      // v969: __chip_text_overrides の値に過去バージョンで混入した
+      //   「テキスト + \n×N + 寸法ラベル (288×240 / 全角２８８×２４０ 等)」 が残っていた
+      //   場合に備え、 in-memory で sanitize してから _currentLayoutData にキャッシュする。
+      //   こうすることで saved-layout.json のサーバ反映が遅れても runtime のチップ表示は
+      //   常に正しいテキストになる。 値が空文字に縮んだら entry を削除する。
+      try {
+        if (data && data.__chip_text_overrides) {
+          // 2-pass sanitizer:
+          //   Pass A (mid-string):  `\n+ <空白> 数字 ×/x/X/* 数字 <末尾空白>` を全部除去
+          //   Pass B (end-anchored): 末尾の「<空白>? 数字 ×/x/X/* 数字 <末尾空白>?」 を反復除去
+          //   Pass A だけでは「 \n×N + 全角２８８×２４０ + \n×N + 288×240」 の trailing が
+          //   先頭の `\n+` を全部消費した後に残るため、 tail-anchored 2 pass が必要。
+          var DIM_RE_MID  = /\n+[\s]*[0-9０-９]+\s*[×xX*]\s*[0-9０-９]+\s*/g;
+          var DIM_RE_TAIL = /\s*[0-9０-９]+\s*[×xX*]\s*[0-9０-９]+\s*$/;
+          var buckets = data.__chip_text_overrides;
+          Object.keys(buckets).forEach(function (qK) {
+            var bucket = buckets[qK];
+            if (!bucket || typeof bucket !== 'object') return;
+            Object.keys(bucket).forEach(function (slot) {
+              var v = bucket[slot];
+              if (typeof v !== 'string') return;
+              var cleaned = v, prev2;
+              do { prev2 = cleaned; cleaned = cleaned.replace(DIM_RE_MID, ''); }
+              while (cleaned !== prev2);
+              for (var ti = 0; ti < 5; ti++) {
+                var next = cleaned.replace(DIM_RE_TAIL, '');
+                if (next === cleaned) break;
+                cleaned = next;
+              }
+              cleaned = cleaned.replace(/\n+$/g, '').replace(/[ \t]+$/g, '');
+              if (cleaned !== v) {
+                if (cleaned.length === 0) { delete bucket[slot]; }
+                else { bucket[slot] = cleaned; }
+              }
+            });
+            if (Object.keys(bucket).length === 0) delete buckets[qK];
+          });
+        }
+      } catch (eSan) { /* sanitize failure is non-fatal */ }
       // Cache layout data on a public global for re-apply (e.g., after dynamic insert).
       window._currentLayoutData = data;
       if (data && applier) {
