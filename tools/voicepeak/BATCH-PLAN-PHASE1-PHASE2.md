@@ -110,3 +110,54 @@ Phase 2 は Phase 1 で確定したプリセット + 辞書をそのまま流用
 - `tools/voicepeak/BATCH-PLAN-PHASE1-PHASE2.md` (本ファイル)
 
 **合計**: 18 (Phase 1) + 16 (Phase 2) + 1 (計画 md) = **35 ファイル**
+
+## ユニーク化ワークフロー (2026-05-12 追加)
+
+912 件のうち 「あか / あお / きいろ / ふたつ / まる / ...」 など **同じ speech** が
+複数の問題で繰り返し登場する。 これを全件 VOICEPEAK で生成すると無駄なので、
+カテゴリ × フェーズ単位で重複排除した unique CSV を VOICEPEAK にかけ、
+出力 wav を **コピー展開** で全 q###_*.wav に増殖させる方式を導入する。
+
+- 採用方針: **(a) カテゴリ × フェーズ単位 独立 unique 化** (試聴フローを既存と同形に維持)
+- 実件数: 912 → **515** (43.5% 削減) ※詳細は `DUPLICATE-ANALYSIS.md` 参照
+- 参考: フル横断 unique 化なら 912 → 426 (53.3% 削減) だが試聴/振り分けが煩雑
+
+### 関連ファイル
+
+- `tools/voicepeak/_build_unique_csvs.py` (生成スクリプト)
+- `tools/voicepeak/DUPLICATE-ANALYSIS.md` (重複分析レポート)
+- `tools/voicepeak/voicepeak_lines_unique_phase{1,2}_<category>.csv` (17 個)
+- `tools/voicepeak/voicepeak_lines_unique_kurumi_dai1_5.csv` (1 個)
+- `tools/voicepeak/voicepeak_unique_expand_<category>_phase<N>.json` (17 個 + 1 kurumi)
+- `tools/voicepeak/Expand-VoicepeakUniqueWavs.ps1` (展開スクリプト, ASCII-only)
+
+### 1 バッチあたりの実行手順 (unique 版)
+
+```
+[1] CSV を VOICEPEAK GUI にインポート
+    - voicepeak_lines_unique_phase<N>_<category>.csv (重複排除済 = 件数最少)
+    - 1 行 = 1 セリフとして取り込み
+[2] 全行を一括書き出し
+    - 出力ファイル名は連番 (001.wav, 002.wav, ...) 推奨
+    - 順序は CSV の行順と一致させる (VOICEPEAK の標準動作)
+[3] 展開スクリプトで unique wav → 全 q###_*.wav にコピー展開
+    powershell.exe -ExecutionPolicy Bypass `
+        -File tools\voicepeak\Expand-VoicepeakUniqueWavs.ps1 `
+        -InputDir   <unique 出力フォルダ> `
+        -UniqueCsv  tools\voicepeak\voicepeak_lines_unique_phase1_<cat>.csv `
+        -ExpandJson tools\voicepeak\voicepeak_unique_expand_<cat>_phase1.json `
+        -OutputDir  <展開先フォルダ>
+[4] 展開後の q###_*.wav 群を試聴 (既存ワークフローと同じ感覚)
+[5] 読み崩れあり → ユーザー辞書 (voicepeak_user_dict.csv) を更新
+    - csv 編集 → Convert-VoicepeakUserDictCsvToVdc2.ps1 で .vdc2 化
+    - VOICEPEAK GUI でユーザー辞書を再インポート
+[6] 該当 unique CSV をもう一度 VOICEPEAK で書き出し → 展開スクリプト再実行
+    (= 1 wav 修正で複数 q### に自動反映、 試聴コスト * N → * 1)
+[7] OK なら次のカテゴリへ
+```
+
+### 注意
+
+- **既存 phase{1,2}_*.csv / kurumi_dai1_5.csv / 各 map JSON は温存** (一切触らない)
+- unique 化は並列配置 (新ファイル名) で、 既存ワークフローを壊さず併用可
+- speech 本文は無改変 (バイト一致での重複判定のみ)
