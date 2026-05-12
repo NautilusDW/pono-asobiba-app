@@ -1101,12 +1101,20 @@
     // (例: .userbox-resize-handle / .chip-handle / etc) を取りこぼすため、
     // .chip-label が本来 plain text のみ前提であることを利用し、 element child は
     // 全部破棄して text node のみ残す方針に格上げ。 仮説 H3 を構造的に塞ぐ。
+    // v970 cross-review fix: 旧版は <br> も含めて全 Element を strip していたため、
+    // contentEditable で挿入された <br> (= 改行) がサイレント削除され、
+    // 後続の `.replace(/<br\s*\/?>/gi, '\n')` が無効化されて
+    // 「ときどき\nはえる」 が 「ときどきはえる」 として保存される現象が発生。
+    // <br> だけ除外して他の overlay element は引き続き全 strip する。
+    // live NodeList は remove() による副作用に弱いので逆順ループにする。
     var srcHtml;
     try {
       var clone = el.cloneNode(true);
       var kids = clone.querySelectorAll('*');
-      for (var ki = 0; ki < kids.length; ki++) {
-        try { kids[ki].remove(); } catch (eRem) {}
+      for (var ki = kids.length - 1; ki >= 0; ki--) {
+        if (kids[ki].tagName !== 'BR') {
+          try { kids[ki].remove(); } catch (eRem) {}
+        }
       }
       srcHtml = clone.innerHTML;
     } catch (e) {
