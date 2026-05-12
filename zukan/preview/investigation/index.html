@@ -477,29 +477,20 @@ body.layout-editor-on .zk-inv-toolbar { display: flex; }
   color: #777;
 }
 
-/* ───── ZK-INV: rotate 適用 ─────────────────────────────────────────────
- *  対象要素にインライン CSS 変数 --zk-rotate-deg を仕込んで、
- *  内部 <img> または擬似要素を rotate する。
- *  - <img> 子要素を持つ要素 (.outer-bg / .field-bg / .window-frame / .hidden-part /
- *    .pono-portrait / .hint-silhouette) : 内側 img を回転
- *  - background-image を持つ要素 (.hint-panel / .pono-bubble / .userbox bgImage) :
- *    .zk-rotate-layer 子 div を JS で挿入してそこに bg を移し、その div を回転
- *  どちらも親 (userbox / wrapper) の style.transform=translate() を壊さない。
+/* ───── ZK-INV: rotate 適用 (sw v955 で全要素統一: container ごと回転) ──
+ *  方針:
+ *    - 旧 path A ([data-rotate] > img の CSS rotate) と
+ *      旧 path B (.zk-rotate-layer 子 div を JS で生成して bg を移す) は撤去
+ *    - 全ての要素は container 自身の inline style.transform に
+ *      translate(tx,ty) rotate(deg) を合成して回す (path C 方式に統一)
+ *    - 90°/270° 遷移時は container の width/height を swap して
+ *      bounding box (= 選択 bbox) を視覚に追随させる
+ *    - 旧 path B のように「絵だけ回って frame は縦長のまま」 不整合は解消
+ *
+ *  CSS rule は撤去しているが、 transform-origin の指定は inline で書かれた
+ *  rotate() に対しても効くため、 念のため [data-rotate] へ centering を残す。
  * ─────────────────────────────────────────────────────────────────── */
-[data-rotate] > img {
-  transform: rotate(calc(var(--zk-rotate-deg, 0) * 1deg));
-  transform-origin: center center;
-  transition: transform 0.18s ease;
-}
-.zk-rotate-layer {
-  position: absolute;
-  inset: 0;
-  background-image: var(--zk-rotate-bg, none);
-  background-size: var(--zk-rotate-bg-size, contain);
-  background-repeat: no-repeat;
-  background-position: center;
-  pointer-events: none;
-  transform: rotate(calc(var(--zk-rotate-deg, 0) * 1deg));
+[data-rotate] {
   transform-origin: center center;
   transition: transform 0.18s ease;
 }
@@ -717,84 +708,30 @@ window.EditorBootstrapConfig = {
   // 後段 IIFE (背景バリアント切替) からも使えるよう window に露出 (sw v952)
   window.__zk_inv_pushZkHistory = pushZkHistory;
 
-  // ─── rotate 適用 (内側 img / bg-layer / 自身を回転) ──────────────────
+  // ─── rotate 適用 (sw v955: 全要素統一 = container ごと回転) ──────────
   // window.__zk_inv_applyRotate(el) で createUserbox 側から呼ぶ。
   //
-  // 3 分岐:
-  //   (A) 直接の <img> 子要素がある (window-frame / pono-portrait 等)
-  //       → [data-rotate] > img CSS rule で内側 img を回す
-  //   (B) inline style or dataset の background-image がある (userbox-with-bg)
-  //       → .zk-rotate-layer を挿入して bg を移植・回転
-  //   (C) img も bg も無い複合要素 (.hint-panel / 任意の複数子持ち div 等)
-  //       → 要素自身を translate と合成して回転 (子要素まるごと回る)
+  // 旧版は (A) 内側 img / (B) bg-layer / (C) 自身回転 の 3 分岐だったが、
+  // path B (userbox-with-bg) で 「絵だけ回って frame は縦長のまま」 という
+  // 視覚と DOM 寸法の不整合が起きていた。
   //
-  // 注意: (C) のとき LayoutEditor の drag が `el.style.transform = 'translate(...)'`
-  // で transform を上書きするので、 LayoutEditor の 'transform' イベントで
-  // 再適用する hook を後段で登録する (le().on('transform', ...) を利用)。
+  // 新方針: 全要素について container 自身の inline style.transform に
+  // translate(tx,ty) rotate(deg) を合成 (= 旧 path C 方式に統一)。 内側 img
+  // や bg-image を持つ要素も親 container ごと回るので bbox と中身が常に一致。
+  //
+  // 注意: LayoutEditor の drag は `el.style.transform = 'translate(...)'` で
+  // transform を上書きするため、 LayoutEditor の 'transform' イベントで
+  // 再適用する hook を後段で登録する (le().on('transform', ...))。
   function applyRotate(el) {
     if (!el) return;
     var deg = parseFloat(el.dataset.rotate || '0') || 0;
     el.style.setProperty('--zk-rotate-deg', String(deg));
-    // ── (A) 内側 <img> 直接子: CSS rule に委譲 ─────────────────────────
-    var innerImg = el.querySelector(':scope > img');
-    if (innerImg) {
-      console.log('[zk-inv] applyRotate path A (inner img):', { el: el, deg: deg, innerImg: innerImg });
-      // 念のため (C) 由来の自己回転 inline transform が残っていたら剥がす
-      // (deg=0 戻しのケース等で 'rotate(0deg)' が残ると無害だが綺麗に保つ)
-      stripSelfRotateFromTransform(el);
-      console.log('[zk-inv] applyRotate done, el.style.transform=', el.style.transform, 'computed transform=', getComputedStyle(el).transform, 'matches el.matches=', el.matches('[data-rotate]'));
-      return;
-    }
-    // ── (B) inline / dataset bg-image を持つ: rotate-layer を生成 ──────
-    var bg = el.dataset.bgImage ||
-      (el.style.backgroundImage && el.style.backgroundImage !== 'none' ? el.style.backgroundImage : '');
-    if (bg) {
-      var layer = el.querySelector(':scope > .zk-rotate-layer');
-      console.log('[zk-inv] applyRotate path B (bg-layer):', { el: el, deg: deg, bg: bg, hasLayer: !!layer });
-      if (deg) {
-        // bg が `url("...")` 形式 or 生 URL 双方を受ける
-        var bgVal = bg ? (/^url\(/.test(bg) ? bg : ('url("' + bg + '")')) : '';
-        if (!layer && bg) {
-          layer = document.createElement('div');
-          layer.className = 'zk-rotate-layer';
-          layer.style.setProperty('--zk-rotate-bg', bgVal);
-          // 元 bg を hide してオーバーラップを避ける
-          el.dataset._zkBgHidden = '1';
-          el.style.backgroundImage = 'none';
-          el.appendChild(layer);
-        } else if (layer && bgVal) {
-          // 既存 layer も最新の bg を反映 (bgImage が差し替わったケース対策)
-          layer.style.setProperty('--zk-rotate-bg', bgVal);
-        }
-        if (layer) layer.style.setProperty('--zk-rotate-deg', String(deg));
-      } else {
-        // deg=0 に戻したら layer を撤去して元の bg を復元
-        if (layer) layer.remove();
-        if (el.dataset._zkBgHidden === '1') {
-          delete el.dataset._zkBgHidden;
-          var orig = el.dataset.bgImage;
-          if (orig) el.style.backgroundImage = 'url("' + orig + '")';
-          else el.style.backgroundImage = '';
-        }
-      }
-      stripSelfRotateFromTransform(el);
-      console.log('[zk-inv] applyRotate done, el.style.transform=', el.style.transform, 'computed transform=', getComputedStyle(el).transform, 'matches el.matches=', el.matches('[data-rotate]'));
-      return;
-    }
-    // ── (C) img も inline-bg も無い複合要素: 自身を translate+rotate で回す ─
-    // LayoutEditor は drag 中に `transform: translate(tx px, ty px)` を直書き
-    // するため、 ここでも translate 部分を保持しつつ rotate を合成する。
+
+    // container 自身を translate(tx, ty) + rotate(deg) で回す。
+    // _tx/_ty が undefined の要素 (= hardcoded HTML / drag されたことが無い要素)
+    // も 0 として扱う。
     var tx = (typeof el._tx === 'number') ? el._tx : 0;
     var ty = (typeof el._ty === 'number') ? el._ty : 0;
-    console.log('[zk-inv] path C inputs:', {
-      el_tx_type: typeof el._tx,
-      el_ty_type: typeof el._ty,
-      el_tx: el._tx,
-      el_ty: el._ty,
-      tx_final: tx,
-      ty_final: ty,
-    });
-    console.log('[zk-inv] applyRotate path C (self-rotate):', { el: el, deg: deg, tx: tx, ty: ty, currentTransform: el.style.transform });
     if (deg) {
       el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) rotate(' + deg + 'deg)';
       el.dataset._zkSelfRot = '1';
@@ -802,15 +739,25 @@ window.EditorBootstrapConfig = {
       el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
       delete el.dataset._zkSelfRot;
     }
-    console.log('[zk-inv] applyRotate done, el.style.transform=', el.style.transform, 'computed transform=', getComputedStyle(el).transform, 'matches el.matches=', el.matches('[data-rotate]'));
-  }
-  // (A)(B) 分岐で要素自身に rotate が残っていたら剥がす (transform を再構築)
-  function stripSelfRotateFromTransform(el) {
-    if (el.dataset._zkSelfRot !== '1') return;
-    delete el.dataset._zkSelfRot;
-    var tx = (typeof el._tx === 'number') ? el._tx : 0;
-    var ty = (typeof el._ty === 'number') ? el._ty : 0;
-    el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+
+    // ── 旧データ互換 ──────────────────────────────────────────────────
+    // 旧 path B が残した .zk-rotate-layer 子 div を撤去
+    var oldLayer = el.querySelector(':scope > .zk-rotate-layer');
+    if (oldLayer) oldLayer.remove();
+    // 旧 path B が hide していた bg を復元
+    if (el.dataset._zkBgHidden === '1') {
+      delete el.dataset._zkBgHidden;
+      if (el.dataset.bgImage) {
+        el.style.backgroundImage = 'url("' + el.dataset.bgImage + '")';
+      } else {
+        el.style.removeProperty('background-image');
+      }
+    }
+
+    console.log('[zk-inv] applyRotate (container-rotate unified):', {
+      el: el, deg: deg, tx: tx, ty: ty,
+      final_transform: el.style.transform,
+    });
   }
   window.__zk_inv_applyRotate = applyRotate;
 
@@ -891,7 +838,7 @@ window.EditorBootstrapConfig = {
     });
   }
 
-  // ─── 90° 回転 ──────────────────────────────────────────────────────────
+  // ─── 90° 回転 (sw v955: 全要素統一 = container ごと回転 + 寸法 swap) ──
   function rotate90() {
     var sel = getSelectedSingle();
     console.log('[zk-inv] rotate90 called', {
@@ -902,52 +849,36 @@ window.EditorBootstrapConfig = {
       selectedSize: window.LayoutEditor && window.LayoutEditor._state && window.LayoutEditor._state.selectedElements ? window.LayoutEditor._state.selectedElements.size : 'n/a',
     });
     if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
-    // sw v952: undo/redo のため before 状態をキャプチャ
+    // undo/redo のため before 状態をキャプチャ
     var beforeRotate = sel.dataset.rotate || '';
     var beforeTransform = sel.style.transform || '';
-    var beforeSelfRot = sel.dataset._zkSelfRot || '';
-    // sw v953: bug 1 — path C 要素で width/height swap した時の復元用
     var beforeWidth = sel.style.width;
     var beforeHeight = sel.style.height;
     var cur = parseFloat(sel.dataset.rotate || '0') || 0;
     var next = (cur + 90) % 360;
 
-    // sw v953: bug 1 — path C (innerImg も bg-image inline も無い要素) は
-    // transform: rotate(...) を当てても bounding box の width/height は変わらない
-    // ため、 90°/270° 状態の時は要素自体の width/height を swap して bbox を
-    // 視覚に追随させる。 path A/B は子要素 (img / bg-layer) が回るだけなので
-    // 親要素の bbox は不変で OK のため touch しない。
-    var isPathC = !sel.querySelector(':scope > img') &&
-                  !sel.dataset.bgImage &&
-                  !(sel.style.backgroundImage && sel.style.backgroundImage !== 'none');
+    // sw v955: 全要素統一で 90°/270° 遷移時は container の width/height を swap
+    // (旧 path A/B (内側 img / bg-layer) のように親 bbox を据え置きにする旧分岐
+    //  は廃止 — 「絵だけ回って frame は縦長」 不整合の根本原因)。
+    var was90Like = (cur === 90 || cur === 270);
+    var willBe90Like = (next === 90 || next === 270);
     var didSwap = false;
-    if (isPathC) {
-      var was90Like = (cur === 90 || cur === 270);
-      var willBe90Like = (next === 90 || next === 270);
-      if (was90Like !== willBe90Like) {
-        var w = sel.style.width || (sel.offsetWidth + 'px');
-        var h = sel.style.height || (sel.offsetHeight + 'px');
-        sel.style.width = h;
-        sel.style.height = w;
-        didSwap = true;
-      }
+    if (was90Like !== willBe90Like) {
+      var w = sel.style.width || (sel.offsetWidth + 'px');
+      var h = sel.style.height || (sel.offsetHeight + 'px');
+      sel.style.width = h;
+      sel.style.height = w;
+      didSwap = true;
     }
 
-    if (next === 0) {
-      delete sel.dataset.rotate;
-    } else {
-      sel.dataset.rotate = String(next);
-    }
+    if (next === 0) delete sel.dataset.rotate;
+    else sel.dataset.rotate = String(next);
     applyRotate(sel);
     var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-rotate', el: sel, deg: next });
     flashToast('回転: ' + next + '°' + (didSwap ? ' (寸法 swap)' : ''));
 
-    // sw v952: history へ登録。 dataset.rotate と transform / _zkSelfRot を
-    // before/after 双方で保存し、 undo/redo で互いに復元できるようにする。
-    // sw v953: width/height も before/after で記録 (path C swap の revert/redo)。
+    // history へ登録 (full state 復元)
     var afterRotate = sel.dataset.rotate || '';
-    var afterTransform = sel.style.transform || '';
-    var afterSelfRot = sel.dataset._zkSelfRot || '';
     var afterWidth = sel.style.width;
     var afterHeight = sel.style.height;
     pushZkHistory({
@@ -955,11 +886,6 @@ window.EditorBootstrapConfig = {
       undo: function () {
         if (beforeRotate) sel.dataset.rotate = beforeRotate;
         else delete sel.dataset.rotate;
-        // applyRotate を呼ぶ前に _zkSelfRot 状態も復元 (path C の挙動分岐用)
-        if (beforeSelfRot) sel.dataset._zkSelfRot = beforeSelfRot;
-        else delete sel.dataset._zkSelfRot;
-        sel.style.transform = beforeTransform;
-        // sw v953: width/height も復元
         if (beforeWidth) sel.style.width = beforeWidth;
         else sel.style.removeProperty('width');
         if (beforeHeight) sel.style.height = beforeHeight;
@@ -970,10 +896,6 @@ window.EditorBootstrapConfig = {
       redo: function () {
         if (afterRotate) sel.dataset.rotate = afterRotate;
         else delete sel.dataset.rotate;
-        if (afterSelfRot) sel.dataset._zkSelfRot = afterSelfRot;
-        else delete sel.dataset._zkSelfRot;
-        sel.style.transform = afterTransform;
-        // sw v953: width/height も redo
         if (afterWidth) sel.style.width = afterWidth;
         else sel.style.removeProperty('width');
         if (afterHeight) sel.style.height = afterHeight;
