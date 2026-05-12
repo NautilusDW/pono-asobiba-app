@@ -924,6 +924,19 @@ window.EditorBootstrapConfig = {
     document.getElementById('zk-reset-natural').addEventListener('click', resetTo100);
     document.getElementById('zk-rotate-90').addEventListener('click', rotate90);
     document.getElementById('zk-aspect-lock').addEventListener('click', toggleAspectLock);
+    // === selection-clear 防止 (sw v951) ====================================
+    // layout-editor.js の attachBackgroundClickClear() は document の mousedown を
+    // listen し、 除外リスト (.resizable / .numeric-panel / .le-toolbar / etc.) 以外
+    // をクリックすると clearSelection() を呼ぶ。 `.zk-inv-toolbar` は除外リストに
+    // 入っていないため、 ZK ボタンを押した瞬間に選択が空になり rotate90 等の
+    // getSelectedSingle が count=0 になる。 capture phase で確実に止める。
+    // (preventDefault は呼ばない — 内側 button の click は動かす必要がある)
+    var tb = document.getElementById('zk-inv-toolbar');
+    if (tb) {
+      tb.addEventListener('mousedown', function (e) {
+        e.stopPropagation();
+      }, true);
+    }
     // 選択変更イベントで button 状態を更新
     try { ed.on('select', refreshButtons); } catch (e) {}
     // === transform 再適用 hook (sw v949) ====================================

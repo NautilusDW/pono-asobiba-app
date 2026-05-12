@@ -135,3 +135,4 @@ function buildVariantOptions(variants) {
 - 946 → 947: 投資画面エディタに 📥 差し替えボタン追加。 現在選択中 variant の画像を GitHub API 経由で差し替え。
 - 948 → 949: applyRotate に「img も bg-image も無い要素は自身を translate+rotate 合成で回す」 第 3 分岐を追加。 .hint-panel 等の複合パネルが回転するように。 LayoutEditor の transform イベントで再適用。
 - 949 → 950: 90°回転バグ診断のため rotate90 / applyRotate / getSelectedSingle に verbose console.log 追加。 ユーザーが Console を見れば選択要素・実行パス・transform 適用結果が即可視化される。 原因特定後にログ削減予定。
+- 950 → 951: .zk-inv-toolbar の mousedown を capture-phase で stopPropagation。 layout-editor.js bgHandler が selection クリアするのを防止。 これで 90°回転・100% リセット・比率固定切替が選択中要素に対して動くようになる。
