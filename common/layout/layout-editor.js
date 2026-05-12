@@ -1094,45 +1094,64 @@
       return;
     }
     // innerHTML → plain text + \n 変換
-    // MEDIUM 2: Chrome の空行は <div><br></div> 形式。 順序が後だと <br> → \n + </div> → \n
-    // で 2 個の改行になり空行が増殖する。 先に <div><br></div> 全体を 1 個の \n に潰す。
-    // v968 defense-in-depth: dblclick ハンドラで overlay (resize-handle / resize-size-label)
-    // は事前 detach 済みだが、 万一別経路で残った場合に備えて clone 上で
-    // **全ての element 子要素**を物理削除してから html→text 変換する。
-    // v969: クラス指定 (.resize-handle 等) だと将来追加の新規 overlay class
-    // (例: .userbox-resize-handle / .chip-handle / etc) を取りこぼすため、
-    // .chip-label が本来 plain text のみ前提であることを利用し、 element child は
-    // 全部破棄して text node のみ残す方針に格上げ。 仮説 H3 を構造的に塞ぐ。
-    // v970 cross-review fix: 旧版は <br> も含めて全 Element を strip していたため、
-    // contentEditable で挿入された <br> (= 改行) がサイレント削除され、
-    // 後続の `.replace(/<br\s*\/?>/gi, '\n')` が無効化されて
-    // 「ときどき\nはえる」 が 「ときどきはえる」 として保存される現象が発生。
-    // <br> だけ除外して他の overlay element は引き続き全 strip する。
-    // live NodeList は remove() による副作用に弱いので逆順ループにする。
-    var srcHtml;
-    try {
-      var clone = el.cloneNode(true);
-      var kids = clone.querySelectorAll('*');
-      for (var ki = kids.length - 1; ki >= 0; ki--) {
-        if (kids[ki].tagName !== 'BR') {
-          try { kids[ki].remove(); } catch (eRem) {}
+    // v972 fix: contenteditable で Enter キーを押すと、 browser が `<div>line2</div>`
+    // を挿入する (Chrome 等の default 挙動)。 v970 までの broad strip
+    // (`<br>` 以外の全 element を remove → regex で </div> → \n) は、
+    // remove() が **要素の中身ごと削除** してしまうため、 `<div>` 内のテキスト + 改行が
+    // 両方とも消えるリグレッションを発生させていた (旧 v968 は </div> → \n 変換だったので OK)。
+    //
+    // 対策: regex chain を捨てて DOM walk による text 抽出に切り替える。
+    //   - BR / 既知 block element 末尾で \n を挿入
+    //   - 既知 overlay class (.resize-handle, .resize-size-label, .le-lock-badge,
+    //     .userbox-badge, .userbox-del) を持つ subtree は完全に skip
+    //   - text node の textContent はそのまま採用 (entity decode は browser がやる)
+    //   - 連続 3 つ以上の \n は 2 つに圧縮 (意図しない多重空行)、 末尾 \n は trim
+    // これにより `あ<div>い</div>` → `あ\nい`、 `あ<br>い` → `あ\nい` が両方とも保たれる。
+    // 後段の DIM_RE_MID / DIM_RE_TAIL sanitizer はそのまま適用 (寸法ラベル除去用)。
+    function _extractChipLabelText(rootClone) {
+      var SKIP_CLASSES = ['resize-handle', 'resize-size-label', 'le-lock-badge', 'userbox-badge', 'userbox-del'];
+      var BLOCK_TAGS = /^(DIV|P|H[1-6]|LI|UL|OL|BLOCKQUOTE)$/i;
+      var out = [];
+      function shouldSkip(el2) {
+        if (!el2 || !el2.classList) return false;
+        for (var ci = 0; ci < SKIP_CLASSES.length; ci++) {
+          if (el2.classList.contains(SKIP_CLASSES[ci])) return true;
+        }
+        return false;
+      }
+      function walk(node) {
+        if (node.nodeType === 3 /* TEXT_NODE */) {
+          out.push(node.nodeValue);
+          return;
+        }
+        if (node.nodeType !== 1 /* ELEMENT_NODE */) return;
+        if (shouldSkip(node)) return;
+        if (node.tagName === 'BR') {
+          out.push('\n');
+          return;
+        }
+        var isBlock = BLOCK_TAGS.test(node.tagName);
+        for (var ci = 0; ci < node.childNodes.length; ci++) {
+          walk(node.childNodes[ci]);
+        }
+        if (isBlock && out.length > 0 && out[out.length - 1] !== '\n') {
+          out.push('\n');
         }
       }
-      srcHtml = clone.innerHTML;
-    } catch (e) {
-      srcHtml = el.innerHTML;
+      walk(rootClone);
+      return out.join('').replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '');
     }
-    var text = srcHtml
-      .replace(/<div>\s*<br\s*\/?>\s*<\/div>/gi, '\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/(div|p)>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, '\'');
+    var text;
+    try {
+      var clone = el.cloneNode(true);
+      text = _extractChipLabelText(clone);
+    } catch (e) {
+      // fallback: 最低限の HTML 剥がし (DOM walk 失敗時)
+      text = String(el.innerHTML || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(div|p)>/gi, '\n')
+        .replace(/<[^>]+>/g, '');
+    }
     // v968 / v969: 既に saved-layout.json に書き込まれてしまった
     // 「テキスト + \n × N + 寸法ラベル」 形式の壊れた値を runtime save 経由で自己治癒。
     // v969 強化:

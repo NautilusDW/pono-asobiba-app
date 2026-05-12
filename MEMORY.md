@@ -121,6 +121,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T12:49:32Z - quizland chip-label 編集で改行が消えるバグ修正 (v970 broad strip → DOM walk 移行)
+- **タスク**: quizland chip-label 編集で改行が消えるバグ修正 (v970 broad strip → DOM walk 移行)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 74
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 36, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-12T12:46:24Z - quizland chip-with-image の chip-illust を wrapper 化して個別 resize 可能に (v971)
 - **タスク**: quizland chip-with-image の chip-illust を wrapper 化して個別 resize 可能に (v971)
 - **結果**: 成功
@@ -222,19 +235,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 10, "Bash": 7}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T09:02:57Z - quizland v968 chip-label 編集バグ根本修正 — .chip-label が QZ_RESIZABLE_SELECTORS 登録のため attachHandle で resize-handle×8 + resize-size-label が子要素として append されており、 contenteditable=true 時に innerHTML 抽出で 8つの \n + '288×240' 寸法ラベルがテキストに混入していた真因を特定。 dblclick 時に物理的に overlay 子要素を detach → commit/cancel で reattach する案 R 採用 + commit 時 clone-strip による defense-in-depth + 行末寸法ラベル regex sanitizer + saved-layout.json 3 件の corrupted entries を実テキストに復元 (あか / どちらも+かどが ない / はんぶんの まる)、 sw v967→v968 bump
-- **タスク**: quizland v968 chip-label 編集バグ根本修正 — .chip-label が QZ_RESIZABLE_SELECTORS 登録のため attachHandle で resize-handle×8 + resize-size-label が子要素として append されており、 contenteditable=true 時に innerHTML 抽出で 8つの \n + '288×240' 寸法ラベルがテキストに混入していた真因を特定。 dblclick 時に物理的に overlay 子要素を detach → commit/cancel で reattach する案 R 採用 + commit 時 clone-strip による defense-in-depth + 行末寸法ラベル regex sanitizer + saved-layout.json 3 件の corrupted entries を実テキストに復元 (あか / どちらも+かどが ない / はんぶんの まる)、 sw v967→v968 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 16
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 8, "Bash": 7}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
