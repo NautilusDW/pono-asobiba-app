@@ -101,6 +101,61 @@ type: feature
 2. クイズ第 1 問 〜 第 5 問で don.mp3 → kurumi 「第N問」 の遷移が更に短縮されているか体感確認
 3. 違和感 (don 末尾と kurumi 冒頭の重なり等) がないかも合わせて確認
 
+## don → kurumi ラグ短縮 第 3 弾 (2026-05-12 / sw v963)
+
+ユーザー再々フィードバック「SE から第 1 問のナレーションまでまだ空きすぎ、 テンポが乱れる」 を受けて、 v962 (timeupdate 50ms + kurumi 冒頭 -40dB cut) では不足だった分を **3 段** で更に短縮。 最大の効きは改善 A (don.mp3 末尾 silence の大幅カット)。
+
+### 改善 A: don.mp3 末尾の trailing silence カット (asset 編集、 ffmpeg)
+- 元 don.mp3 (1.999979s) は **末尾 -40dB 以下が 1.027s 〜 1.999s = 約 973ms にわたり無音** だった (don の太鼓音は ~1s で鳴り終わるが、 ファイル自体は 2 秒で作られていた)
+- ffmpeg `areverse + silenceremove(start_periods=1, start_duration=0.05, start_threshold=-50dB) + areverse` で末尾の無音をトリム
+  - 注: 単純な `silenceremove=stop_periods=-1:stop_duration=0.01:stop_threshold=-40dB` は decay 中の小さな谷も「内部 silence」 として刈り取って 0.77s まで縮めてしまうため不採用 (太鼓音の余韻も削れる)
+  - areverse 経由なら **末尾の連続 silence のみ** をトリムできる (内部 silence は触らない)
+  - 閾値 -50dB は -40dB より「より静かなところまで残す」 = decay tail を保護
+- **結果: 1.999979s → 1.195771s (804ms 短縮)** ← v963 で最も効いた改善
+- 元 don.mp3 は **`tmp/audio_backup/don_original.mp3`** にバックアップ済 (v963 タスクで初めて backup フォルダ作成)
+
+### 改善 B: kurumi.wav 冒頭を更に攻めてカット — **断念、 v962 baseline 維持**
+- v962 で `start_threshold=-40dB / start_duration=0.01` で 78〜119ms カット済
+- v963 当初指定の `-50dB / start_duration=0.005` を試すと、 silenceremove の挙動上 **-50dB は -40dB より cut が小さくなる** (より静かな閾値で「無音判定」しやすくなり、 voice の attack が早めに「無音じゃない」と判定されて keep 開始 = 結果として元音声が長く残る)
+  - dai1: -40dB 115ms cut → -50dB 108ms cut (= +7ms 戻る)
+  - dai4: -40dB 130ms cut → -50dB 79ms cut (= +51ms 戻る)
+- 逆方向 (-30dB / -25dB) を試しても voice attack が steep なので追加 cut は ±2-5ms 程度しか増えず、 voice 頭を切るリスクが上回る
+- **結論: v962 baseline (-40dB / 0.01) を維持** (= ファイル無変更)。 dai1=1.025828s / dai2=1.025420s / dai3=1.108277s / dai4=1.103175s / dai5=1.088934s
+- 元 wav は引き続き `tmp/quizland_NA/kurumi_expanded/` に温存
+
+### 改善 C: timeupdate trigger 閾値 50ms → 150ms 拡大 (コードのみ)
+- `quizland/index.html` `loadQuestion()` 末尾の `_onDonTimeupdate` の判定式
+  - 修正前: `if (_dur > 0 && _remaining > 0 && _remaining <= 0.05)`
+  - 修正後: `if (_dur > 0 && _remaining > 0 && _remaining <= 0.15)`
+- don 末尾と kurumi 冒頭が **約 100ms 重なる** (聴感上は自然な遷移、 テンポが詰まる)
+- iOS Safari の timeupdate ~250ms 間隔でも 150ms 閾値なら捕捉率が大幅に向上 (ended fallback も従来どおり併用、 _kurumiTriggered で二重発火防止)
+
+### 合計ラグ短縮見込み (v962 比)
+- 改善 A (don 末尾カット): **~800ms** (絶対時間短縮として最大、 ただし元々 don 末尾は無音でほぼ無音だったため聴感ラグへの寄与は ~200ms 体感)
+- 改善 B (kurumi 冒頭): 0ms (見送り)
+- 改善 C (timeupdate 拡大): **~100ms** (don 末尾 0.15s 時点で kurumi 開始 = don と 100ms オーバーラップ)
+- **合計: 体感ラグで ~200〜300ms 短縮 (v962 比)、 v957 比 ~400〜500ms 短縮**
+
+### sw.js
+- CACHE_VERSION 962 → 963
+- precache リストに quiz sfx は含まれないため追加不要 (HTTP cache でブラウザが取り直す)
+
+### コード参照
+- `quizland/index.html` `loadQuestion()` 末尾 (`_donAudio` まわり、 `// v963:` コメントブロック + `_remaining <= 0.15`)
+- ついでに同行のコメントの typo (`\` → `//`) も同時修正
+
+### 動作確認手順 (ユーザー向け)
+1. ハードリロード (Cmd/Ctrl + Shift + R) で sw v963 取得
+2. クイズ第 1 問 〜 第 5 問で don.mp3 → kurumi 「第N問」 の遷移が更にテンポよく繋がっているか
+3. don の末尾と kurumi の冒頭が **被って聞こえる** が違和感なく自然か (改善 C による 100ms オーバーラップ)
+4. 違和感が強い場合は改善 C の閾値を 0.10〜0.12 に下げる余地あり
+
+### 注意点 / 既知の制約
+- 改善 A の don.mp3 トリム結果 (1.196s) はファイル先頭の太鼓音 + 短い decay まで保持しており、 太鼓音そのものは欠けていない (ffmpeg `silencedetect` で再確認済 = -50dB 以下の trailing silence ゼロ)
+- 改善 B 見送りの理由は ffmpeg silenceremove の動作特性 (start_threshold が低いほど cut が控えめ) によるものであり、 v962 が既に voice attack 直前まで取り切っている
+- 改善 C は 150ms 重なるため、 ユーザー試聴で「重なりすぎ」 と感じた場合は段階的に 0.12 → 0.10 へ下げる方針
+- iOS Safari の HW デコーダーで mp3 末尾再生がうまくいかないケースに備え、 ended fallback は引き続き必須
+
 ## 関連ファイル
 - 発注書: `docs/quizland-voicevox-order/COWORK-TEST-ORDER.md`, `docs/quizland-voicevox-order/ORDER-FULL.md`
 - 既存博士 voice: `js/quizland-babble.js` (owl preset、shift キャラ別)

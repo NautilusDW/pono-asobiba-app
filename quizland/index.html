@@ -4627,6 +4627,17 @@ function loadQuestion(q) {
   //       ことがあるため、 ended fallback を必ず併用する。
   //       同時に kurumi.wav 側も冒頭無音 ~78-119ms をトリミング済 (v962、 ffmpeg)
   //       なので「don 末尾無音 → 早期 trigger → wav 冒頭無音 0」 で更にラグ短縮。
+  // v963: 更にテンポを詰める 3 段改善:
+  //       (A) don.mp3 末尾の trailing silence (~800ms) を ffmpeg silenceremove
+  //           (areverse + start_periods=1, start_duration=0.05, start_threshold=-50dB)
+  //           でカット。 ファイル duration 1.999s → 1.196s に短縮 (~803ms 削減)。
+  //       (B) kurumi.wav 5 本は v962 -40dB cut が voice attack の境界をほぼ取り切って
+  //           おり、 -50dB / -30dB / -25dB を試しても ±5ms 以内の差しか出ず、 voice
+  //           頭を切るリスクが上回るため v962 baseline を維持 (=無変更)。
+  //       (C) timeupdate trigger 閾値を 50ms → 150ms に拡大。
+  //           don 末尾と kurumi 冒頭が約 100ms 重なって聴感上テンポが詰まる。
+  //           iOS Safari の ~250ms timeupdate 間隔でも 150ms 閾値なら捕捉率が大幅に
+  //           向上 (ended fallback も従来どおり併用)。
   // (旧 v959: 別 DOM の #kurumi-q-banner CSS バナーを表示していたが誤実装、 削除)
   const _donAudio = playSe('nextQuestion');
   const _monNum = questionIdx + 1; // 1 始まり
@@ -4656,7 +4667,9 @@ function loadQuestion(q) {
       }
     };
     if (_donAudio && typeof _donAudio.addEventListener === 'function') {
-      // timeupdate: 残り 50ms 以下になった時点で kurumi 開始 (ended より早い)
+      // timeupdate: 残り 150ms 以下になった時点で kurumi 開始 (v963 で 50→150ms に拡大)
+      // don 末尾と kurumi 冒頭が約 100ms 重なって聴感上テンポが詰まる。
+      // iOS Safari の timeupdate 発火間隔 ~250ms でも 150ms 閾値なら捕捉率が高い。
       const _onDonTimeupdate = function () {
         if (_kurumiTriggered) {
           _donAudio.removeEventListener('timeupdate', _onDonTimeupdate);
@@ -4665,7 +4678,7 @@ function loadQuestion(q) {
         const _dur = _donAudio.duration || 0;
         const _cur = _donAudio.currentTime || 0;
         const _remaining = _dur - _cur;
-        if (_dur > 0 && _remaining > 0 && _remaining <= 0.05) {
+        if (_dur > 0 && _remaining > 0 && _remaining <= 0.15) {
           _donAudio.removeEventListener('timeupdate', _onDonTimeupdate);
           _startKurumi();
         }
