@@ -3140,7 +3140,7 @@ body.layout-editor-on .op-skip {
         <div class="q-col">
           <div class="q-text-card">
             <span id="q-text">よういちゅう…</span>
-            <button id="question-speaker" type="button" class="audio" aria-label="もんだいを よむ" title="もう一度 きく"><img src="../assets/ui/icon_speaker.png" alt="" width="80" height="80"></button>
+            <button id="question-speaker" type="button" class="audio" data-le-keep-position aria-label="もんだいを よむ" title="もう一度 きく"><img src="../assets/ui/icon_speaker.png" alt="" width="80" height="80"></button>
           </div>
           <div class="board" id="board">
             <div id="stage-area"></div>
@@ -4786,23 +4786,47 @@ function loadQuestion(q) {
       _narrFiredForThisQ = true;
       _playQuestionNarrationNow(q);
     };
+    // K3 (2026-05-12): kurumi mp3 ended 後にプレート画像を show → 1200ms 表示 →
+    //   fade out + narration 開始。 旧仕様 (kurumi 開始と同時に plate show、 ended で hide)
+    //   を撤廃し、 「だい N もん」 → plate → ナレーション の直列フローに統一。
+    var _plateShown = false;
     if (_kAudio && typeof _kAudio.addEventListener === 'function') {
       var _onKurumiEnded = function () {
         _kAudio.removeEventListener('ended', _onKurumiEnded);
-        setTimeout(hideQuestionNumberPlate, 300);
-        _fireQNarrOnce();
+        if (!_plateShown) {
+          _plateShown = true;
+          // 非同期だが await しない (plate show は scale-in 待機を含むため、
+          // narration スケジュールを別タイマで進めて UI ブロックを避ける)。
+          try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
+        }
+        setTimeout(function () {
+          hideQuestionNumberPlate();
+          _fireQNarrOnce();
+        }, 1200);
       };
       _kAudio.addEventListener('ended', _onKurumiEnded, { once: true });
       // fallback: ended が発火しなくても 6 秒で強制 hide + narration
       setTimeout(function () {
         try { _kAudio.removeEventListener('ended', _onKurumiEnded); } catch (e) {}
-        hideQuestionNumberPlate();
-        _fireQNarrOnce();
+        if (!_plateShown) {
+          _plateShown = true;
+          try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
+        }
+        setTimeout(function () {
+          hideQuestionNumberPlate();
+          _fireQNarrOnce();
+        }, 1200);
       }, 6000);
     } else {
-      // mp3 取得失敗時の fallback (kurumi 音声無し ≒ 即時 narration 発火でよい)
-      setTimeout(hideQuestionNumberPlate, 1500);
-      _fireQNarrOnce();
+      // mp3 取得失敗時の fallback (kurumi 音声無し)。 plate のみ表示してから narration。
+      if (!_plateShown) {
+        _plateShown = true;
+        try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
+      }
+      setTimeout(function () {
+        hideQuestionNumberPlate();
+        _fireQNarrOnce();
+      }, 1200);
     }
   } else {
     // Q6+ (kurumi 音声無し): setupNarration が既に即時自動再生済。 plate も無し。
@@ -5462,9 +5486,16 @@ function _wireQuestionTypingSkip() {
 // タップでスキップされた場合は _wireQuestionTypingSkip 内で全 stage を即時 reveal。
 async function _runPlateAndType(qIdx) {
   _wireQuestionTypingSkip();
-  try {
-    await playQuestionNumberPlate(qIdx);   // Q1-5 のみ ~0.48s scale-in 待機 / Q6+ は即 return / hide は kurumi ended +0.3s で別経路
-  } catch (e) {}
+  // K3 (2026-05-12): Q1-5 はプレート画像表示を kurumi mp3 ended に委譲
+  //   (= kurumi 「だい N もん」 発話が終わってから plate を出すフロー)。
+  //   Q6+ は plate 自体無し (playQuestionNumberPlate が早期 return) なので
+  //   呼んでも no-op。 ここでは Q1-5 のみ skip し、 Q6+ 互換のため await のみ省略。
+  if (qIdx < 0 || qIdx >= 5) {
+    try {
+      await playQuestionNumberPlate(qIdx);   // Q6+ は即 return (no-op)
+    } catch (e) {}
+  }
+  // Q1-5: plate は kurumi ended ハンドラ (loadQuestion 内) で show される。
   // Q6+ で plate 無し時に問題 UI が描画完了する余裕を少しだけ作る
   if (qIdx >= 5) {
     await new Promise(function(r) { setTimeout(r, 200); });
