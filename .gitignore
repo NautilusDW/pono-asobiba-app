@@ -39,3 +39,7 @@ tmp/
 le-*.diff
 _scratch*
 _debug*
+
+# Hybrid Stop hook (Option D) sentinel + debounce state
+.claude/.has-edits
+.claude/.last-push
