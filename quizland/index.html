@@ -5346,9 +5346,16 @@ async function _runPlateAndType(qIdx) {
   );
   const _ansPanel = document.getElementById('answer-panel');
 
+  // v967: Q1-5 (plate あり) では、 挿絵 / 4 択の reveal を typewriter ではなく
+  //   hideQuestionNumberPlate() (kurumi ended +300ms) に一元化する (案 C)。
+  //   plate 表示中に typewriter が完了しても、 ここで挿絵 / 4 択を露出させない。
+  //   tap-to-skip 経路 (_revealAllPendingStages / plate onTap) のみ早期 reveal 可。
+  const _qzPlateActive = (qIdx >= 0 && qIdx < 5);
+
   // typewriter ~50% のタイミングで挿絵を fade in (タップ skip 済みなら no-op)
+  // Q1-5 では plate 同期 reveal なのでこのタイマは起動しない (上記 _qzPlateActive)。
   let _illustTimer = 0;
-  if (_illustEls.length) {
+  if (!_qzPlateActive && _illustEls.length) {
     const halfwayMs = Math.max(0, Math.floor((text.length / 2) * 70));
     _illustTimer = setTimeout(function() {
       _illustEls.forEach(function(elIll) {
@@ -5368,19 +5375,24 @@ async function _runPlateAndType(qIdx) {
   } finally {
     // 完了マーカーとして pending を消す (tap-skip 判定にも使う)
     delete el.dataset.pendingText;
-    // 念のため: 挿絵がまだ pending なら reveal (短い問題文で halfway timer が
-    // 既に発火済みのはずだが、 タップ skip 経路と整合させる)
     if (_illustTimer) clearTimeout(_illustTimer);
-    _illustEls.forEach(function(elIll) {
-      if (elIll.classList.contains('q-stage-pending')) {
-        elIll.classList.remove('q-stage-pending');
-        elIll.classList.add('q-stage-revealed');
+    // v967: Q1-5 (plate あり) では typewriter 完了時に挿絵 / 4 択を reveal しない。
+    //   hideQuestionNumberPlate() が plate fade-out 同期で全 pending を reveal する。
+    //   Q6+ (plate 無し) は従来通り typewriter 完了時に挿絵 / 4 択を reveal。
+    if (!_qzPlateActive) {
+      // 念のため: 挿絵がまだ pending なら reveal (短い問題文で halfway timer が
+      // 既に発火済みのはずだが、 タップ skip 経路と整合させる)
+      _illustEls.forEach(function(elIll) {
+        if (elIll.classList.contains('q-stage-pending')) {
+          elIll.classList.remove('q-stage-pending');
+          elIll.classList.add('q-stage-revealed');
+        }
+      });
+      // 4択 fade in (typewriter 完了後)
+      if (_ansPanel && _ansPanel.classList.contains('q-stage-pending')) {
+        _ansPanel.classList.remove('q-stage-pending');
+        _ansPanel.classList.add('q-stage-revealed');
       }
-    });
-    // 4択 fade in (typewriter 完了後)
-    if (_ansPanel && _ansPanel.classList.contains('q-stage-pending')) {
-      _ansPanel.classList.remove('q-stage-pending');
-      _ansPanel.classList.add('q-stage-revealed');
     }
   }
 }
