@@ -1,6 +1,6 @@
 ---
-name: Quizland 音声発注書 + 生成ツール (【主軸変更 2026-05-12】 VOICEPEAK 一本化、 VOICEVOX 雨晴はう廃案)
-description: クイズ全181問の音声発注書 (ORDER-FULL.md / COWORK-TEST-ORDER.md / ORDER-EXTRA-NON-QUIZ.md) と、その音声を実際に生成するためのワークフロー。【主軸変更 2026-05-12】 VOICEVOX 雨晴はう案は廃案、 VOICEPEAK 「女の子」 プリセットに一本化。 VOICEVOX 関連ツール・記述は履歴として温存
+name: Quizland 音声発注書 + 生成ツール (【主軸変更 2026-05-12】 VOICEPEAK 一本化、 VOICEVOX 雨晴はう廃案、 くるみ話者は 「女の子」 → 「女性4」 に再差替)
+description: クイズ全181問の音声発注書 (ORDER-FULL.md / COWORK-TEST-ORDER.md / ORDER-EXTRA-NON-QUIZ.md) と、その音声を実際に生成するためのワークフロー。【主軸変更 2026-05-12】 VOICEVOX 雨晴はう案は廃案、 VOICEPEAK に一本化。 くるみ話者は同日内に 「女の子」 中継確定 → 27 ファイル試聴で却下 → 最終的に 「女性4」 プリセットに再差替で確定。 VOICEVOX 関連ツール・記述および 「女の子」 中継案は履歴として温存
 type: feature
 ---
 

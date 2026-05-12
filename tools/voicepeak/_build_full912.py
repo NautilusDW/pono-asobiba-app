@@ -76,13 +76,14 @@ def main():
             print(f"  余分: {sorted(extra)[:20]}", file=sys.stderr)
         sys.exit(1)
 
-    # くるみ第1〜5問目コール 5 件を末尾に追加
+    # くるみ第1〜5問目コール 5 件を末尾に追加 (speech は短縮 + 漢数字統一: 2026-05-12)
+    # ファイル名は kurumi_dai{N}mon (アラビア数字) のまま、 speech のみ漢数字 (第一問〜第五問) に変更。
     kurumi_calls = [
-        ("kurumi_dai1mon", "第1問目です"),
-        ("kurumi_dai2mon", "第2問目です"),
-        ("kurumi_dai3mon", "第3問目です"),
-        ("kurumi_dai4mon", "第4問目です"),
-        ("kurumi_dai5mon", "第5問目です"),
+        ("kurumi_dai1mon", "第一問"),
+        ("kurumi_dai2mon", "第二問"),
+        ("kurumi_dai3mon", "第三問"),
+        ("kurumi_dai4mon", "第四問"),
+        ("kurumi_dai5mon", "第五問"),
     ]
     entries.extend(kurumi_calls)
 
