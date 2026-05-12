@@ -932,6 +932,14 @@ window.EditorBootstrapConfig = {
   var fieldImg = document.querySelector('.field-bg > img');
   if (!fieldImg) return;
 
+  // zukan-data.js のパスは "../assets/..." (zukan/index.html 起点) 形式。
+  // この投資画面エディタは zukan/preview/investigation/ に居るので 3 階層上が必要。
+  // 先頭の ../ を全部剥がして / 始まりの絶対パスに変換する。
+  function toAbsolute(url) {
+    if (!url || typeof url !== 'string') return url;
+    return url.replace(/^(\.\.\/)+/, '/');
+  }
+
   function getVariants() {
     var data = window.ZUKAN_DATA;
     if (!data || !Array.isArray(data.areas)) return null;
@@ -979,7 +987,7 @@ window.EditorBootstrapConfig = {
       setOptionLabel(idx, 'v' + (idx + 1), false);
     };
     probe.onerror = function () {
-      console.warn('[zk-bg] v' + (idx + 1) + ' not found (404), marked as 未生成 — ' + url);
+      console.warn('[zk-bg] v' + (idx + 1) + ' not found (404), marked as 未生成 — ' + toAbsolute(url));
       setOptionLabel(idx, 'v' + (idx + 1) + ' (未生成)', true);
       // 現在選択中だった場合は v1 に戻す
       if (parseInt(sel.value, 10) === idx) {
@@ -987,7 +995,7 @@ window.EditorBootstrapConfig = {
         applyVariant(0);
       }
     };
-    probe.src = url;
+    probe.src = toAbsolute(url);
   }
 
   function applyVariant(idx) {
@@ -999,8 +1007,8 @@ window.EditorBootstrapConfig = {
       return;
     }
     // レイアウト (userbox 配置・回転・フレーム等) は触らず src のみ swap
-    fieldImg.src = url;
-    console.log('[zk-bg] switched to v' + (idx + 1) + ', src=' + url);
+    fieldImg.src = toAbsolute(url);
+    console.log('[zk-bg] switched to v' + (idx + 1) + ', src=' + toAbsolute(url));
   }
 
   function init() {

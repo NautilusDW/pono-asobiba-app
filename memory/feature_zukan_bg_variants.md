@@ -131,3 +131,4 @@ function buildVariantOptions(variants) {
 - 942 → 943: `.zk-inv-toolbar` をメインツールバーと被らないよう右下端固定 (bottom:16px / z-index:9500 / flex-wrap) に変更 (2026-05-11)
 - 943 → 944: `.zk-inv-toolbar` を左上寄り (top:120px / left:16px) に移動。 右側は layout-editor の常駐パネル (.numeric-panel / .le-list-panel) と、 左下は help-note と競合するため。 一時的に金色 2px ボーダー + glow で視認性強化。 起動時 console.log で visibility 検証ロジック追加 (2026-05-11)
 - 944 → 945: `.le-ruler` に pointer-events: none を追加し、 ヘッダードラッグの妨害を解消
+- 945 → 946: 投資画面エディタの variant probe/apply で path 解決バグ修正。 zukan-data.js は ../ (1階層) パスだが、 投資画面は 3 階層下にあるため toAbsolute() で / 起点に変換
