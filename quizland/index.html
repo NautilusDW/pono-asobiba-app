@@ -4778,13 +4778,17 @@ function loadQuestion(q) {
   // (旧 v959: 別 DOM の #kurumi-q-banner CSS バナーを表示していたが誤実装、 削除)
   const _monNum = questionIdx + 1; // 1 始まり
   if (_monNum >= 1 && _monNum <= 5) {
-    // L1 revert (2026-05-12): K3 を撤回。 バナー (= プレート画像) と SE
-    //   (= 「だい N もん」) を同期発火させる。 SE が先行しないよう、 plate を
-    //   先に dispatch してから playSe を呼ぶ (どちらも非同期、 同じ tick で開始)。
+    // O2 (2026-05-12): SE 先発 → 次フレームで plate scale-in。
+    //   plate scale-in は同期 (0.45s アニメ即時開始)、 playSe は Promise で
+    //   audio buffer fill に数十-数百 ms かかる。 同 tick で発火すると plate が
+    //   先に visible になり SE が遅れて聞こえる。 RAF 1 つ挟んで paint 分待たせ、
+    //   両者を体感同期させる (= 人間の聴覚優位を尊重)。
     //   _runPlateAndType でも playQuestionNumberPlate を再度呼ぶが、 _qnoRunning
     //   ガードにより no-op (idempotent)。
-    try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
     const _kAudio = playSe('kurumi_dai' + _monNum);
+    requestAnimationFrame(function () {
+      try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
+    });
     // F2 (2026-05-12): ナレーション (= 問題文読み上げ) は kurumi mp3 ended 後に
     // 一度だけ発火。 ended / fallback / 取得失敗いずれの経路でも確実に呼ばれるよう
     // ガードフラグで多重発火を防ぐ。
