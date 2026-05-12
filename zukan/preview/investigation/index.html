@@ -709,9 +709,11 @@ window.EditorBootstrapConfig = {
     // ── (A) 内側 <img> 直接子: CSS rule に委譲 ─────────────────────────
     var innerImg = el.querySelector(':scope > img');
     if (innerImg) {
+      console.log('[zk-inv] applyRotate path A (inner img):', { el: el, deg: deg, innerImg: innerImg });
       // 念のため (C) 由来の自己回転 inline transform が残っていたら剥がす
       // (deg=0 戻しのケース等で 'rotate(0deg)' が残ると無害だが綺麗に保つ)
       stripSelfRotateFromTransform(el);
+      console.log('[zk-inv] applyRotate done, el.style.transform=', el.style.transform, 'computed transform=', getComputedStyle(el).transform, 'matches el.matches=', el.matches('[data-rotate]'));
       return;
     }
     // ── (B) inline / dataset bg-image を持つ: rotate-layer を生成 ──────
@@ -719,6 +721,7 @@ window.EditorBootstrapConfig = {
       (el.style.backgroundImage && el.style.backgroundImage !== 'none' ? el.style.backgroundImage : '');
     if (bg) {
       var layer = el.querySelector(':scope > .zk-rotate-layer');
+      console.log('[zk-inv] applyRotate path B (bg-layer):', { el: el, deg: deg, bg: bg, hasLayer: !!layer });
       if (deg) {
         // bg が `url("...")` 形式 or 生 URL 双方を受ける
         var bgVal = bg ? (/^url\(/.test(bg) ? bg : ('url("' + bg + '")')) : '';
@@ -746,6 +749,7 @@ window.EditorBootstrapConfig = {
         }
       }
       stripSelfRotateFromTransform(el);
+      console.log('[zk-inv] applyRotate done, el.style.transform=', el.style.transform, 'computed transform=', getComputedStyle(el).transform, 'matches el.matches=', el.matches('[data-rotate]'));
       return;
     }
     // ── (C) img も inline-bg も無い複合要素: 自身を translate+rotate で回す ─
@@ -753,6 +757,15 @@ window.EditorBootstrapConfig = {
     // するため、 ここでも translate 部分を保持しつつ rotate を合成する。
     var tx = (typeof el._tx === 'number') ? el._tx : 0;
     var ty = (typeof el._ty === 'number') ? el._ty : 0;
+    console.log('[zk-inv] path C inputs:', {
+      el_tx_type: typeof el._tx,
+      el_ty_type: typeof el._ty,
+      el_tx: el._tx,
+      el_ty: el._ty,
+      tx_final: tx,
+      ty_final: ty,
+    });
+    console.log('[zk-inv] applyRotate path C (self-rotate):', { el: el, deg: deg, tx: tx, ty: ty, currentTransform: el.style.transform });
     if (deg) {
       el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) rotate(' + deg + 'deg)';
       el.dataset._zkSelfRot = '1';
@@ -760,6 +773,7 @@ window.EditorBootstrapConfig = {
       el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
       delete el.dataset._zkSelfRot;
     }
+    console.log('[zk-inv] applyRotate done, el.style.transform=', el.style.transform, 'computed transform=', getComputedStyle(el).transform, 'matches el.matches=', el.matches('[data-rotate]'));
   }
   // (A)(B) 分岐で要素自身に rotate が残っていたら剥がす (transform を再構築)
   function stripSelfRotateFromTransform(el) {
@@ -823,6 +837,13 @@ window.EditorBootstrapConfig = {
   // ─── 90° 回転 ──────────────────────────────────────────────────────────
   function rotate90() {
     var sel = getSelectedSingle();
+    console.log('[zk-inv] rotate90 called', {
+      selectedSingle: sel,
+      selectedTag: sel ? sel.tagName : null,
+      selectedClass: sel ? sel.className : null,
+      selectedDataLabel: sel ? sel.dataset.leLabel : null,
+      selectedSize: window.LayoutEditor && window.LayoutEditor._state && window.LayoutEditor._state.selectedElements ? window.LayoutEditor._state.selectedElements.size : 'n/a',
+    });
     if (!sel) { alert('要素を 1 つだけ選択してください'); return; }
     var cur = parseFloat(sel.dataset.rotate || '0') || 0;
     var next = (cur + 90) % 360;
