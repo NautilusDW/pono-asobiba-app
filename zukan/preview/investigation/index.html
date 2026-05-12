@@ -903,8 +903,33 @@ window.EditorBootstrapConfig = {
     var beforeRotate = sel.dataset.rotate || '';
     var beforeTransform = sel.style.transform || '';
     var beforeSelfRot = sel.dataset._zkSelfRot || '';
+    // sw v953: bug 1 — path C 要素で width/height swap した時の復元用
+    var beforeWidth = sel.style.width;
+    var beforeHeight = sel.style.height;
     var cur = parseFloat(sel.dataset.rotate || '0') || 0;
     var next = (cur + 90) % 360;
+
+    // sw v953: bug 1 — path C (innerImg も bg-image inline も無い要素) は
+    // transform: rotate(...) を当てても bounding box の width/height は変わらない
+    // ため、 90°/270° 状態の時は要素自体の width/height を swap して bbox を
+    // 視覚に追随させる。 path A/B は子要素 (img / bg-layer) が回るだけなので
+    // 親要素の bbox は不変で OK のため touch しない。
+    var isPathC = !sel.querySelector(':scope > img') &&
+                  !sel.dataset.bgImage &&
+                  !(sel.style.backgroundImage && sel.style.backgroundImage !== 'none');
+    var didSwap = false;
+    if (isPathC) {
+      var was90Like = (cur === 90 || cur === 270);
+      var willBe90Like = (next === 90 || next === 270);
+      if (was90Like !== willBe90Like) {
+        var w = sel.style.width || (sel.offsetWidth + 'px');
+        var h = sel.style.height || (sel.offsetHeight + 'px');
+        sel.style.width = h;
+        sel.style.height = w;
+        didSwap = true;
+      }
+    }
+
     if (next === 0) {
       delete sel.dataset.rotate;
     } else {
@@ -912,15 +937,18 @@ window.EditorBootstrapConfig = {
     }
     applyRotate(sel);
     var e = le(); if (e && e.emit) e.emit('transform', { kind: 'zk-rotate', el: sel, deg: next });
-    flashToast('回転: ' + next + '°');
+    flashToast('回転: ' + next + '°' + (didSwap ? ' (寸法 swap)' : ''));
 
     // sw v952: history へ登録。 dataset.rotate と transform / _zkSelfRot を
     // before/after 双方で保存し、 undo/redo で互いに復元できるようにする。
+    // sw v953: width/height も before/after で記録 (path C swap の revert/redo)。
     var afterRotate = sel.dataset.rotate || '';
     var afterTransform = sel.style.transform || '';
     var afterSelfRot = sel.dataset._zkSelfRot || '';
+    var afterWidth = sel.style.width;
+    var afterHeight = sel.style.height;
     pushZkHistory({
-      label: '90° 回転 → ' + next + '°',
+      label: '90° 回転 → ' + next + '°' + (didSwap ? ' + 寸法 swap' : ''),
       undo: function () {
         if (beforeRotate) sel.dataset.rotate = beforeRotate;
         else delete sel.dataset.rotate;
@@ -928,6 +956,11 @@ window.EditorBootstrapConfig = {
         if (beforeSelfRot) sel.dataset._zkSelfRot = beforeSelfRot;
         else delete sel.dataset._zkSelfRot;
         sel.style.transform = beforeTransform;
+        // sw v953: width/height も復元
+        if (beforeWidth) sel.style.width = beforeWidth;
+        else sel.style.removeProperty('width');
+        if (beforeHeight) sel.style.height = beforeHeight;
+        else sel.style.removeProperty('height');
         applyRotate(sel);
         var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-rotate', el: sel, deg: parseFloat(beforeRotate || '0') || 0 });
       },
@@ -937,6 +970,11 @@ window.EditorBootstrapConfig = {
         if (afterSelfRot) sel.dataset._zkSelfRot = afterSelfRot;
         else delete sel.dataset._zkSelfRot;
         sel.style.transform = afterTransform;
+        // sw v953: width/height も redo
+        if (afterWidth) sel.style.width = afterWidth;
+        else sel.style.removeProperty('width');
+        if (afterHeight) sel.style.height = afterHeight;
+        else sel.style.removeProperty('height');
         applyRotate(sel);
         var ed = le(); if (ed && ed.emit) ed.emit('transform', { kind: 'zk-rotate', el: sel, deg: parseFloat(afterRotate || '0') || 0 });
       },
@@ -951,6 +989,10 @@ window.EditorBootstrapConfig = {
     var e = le(); if (!e) { alert('LayoutEditor 未起動'); return; }
     // sw v952: undo/redo のため before 状態をキャプチャ
     var beforeFree = !!e._state.cornerHandleFreeMode;
+    // sw v953: bug 2 — numeric panel 🔒 の state.aspectLocked も同期するため
+    // before 値を保存。 OFF にした時はこれを false に倒し、 layout-editor.js
+    // 内 onMove の aspectLock 判定が numeric panel 由来で stuck しないようにする。
+    var beforeNumericLock = !!e._state.aspectLocked;
     var sel = getSelectedSingle();
     var beforeLock = sel ? (sel.dataset.aspectLock || '') : '';
 
@@ -958,6 +1000,12 @@ window.EditorBootstrapConfig = {
     var freeMode = !!e._state.cornerHandleFreeMode;
     // free=true → 比率固定 OFF (= 自由) , free=false → 比率固定 ON
     var locked = !freeMode;
+    // sw v953: bug 2 — 比率固定 OFF にする時は numeric panel 由来の
+    // state.aspectLocked も解除する (width ロックが外れず残るバグ対策)。
+    // 逆に ON にする時は state.aspectLocked は touch しない (numeric panel UX を尊重)。
+    if (freeMode) {
+      e._state.aspectLocked = false;
+    }
     var btn = document.getElementById('zk-aspect-lock');
     btn.textContent = locked ? '🔒 比率固定 ON' : '🔒 比率固定 OFF';
     btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
@@ -970,13 +1018,16 @@ window.EditorBootstrapConfig = {
 
     // sw v952: history へ登録。 cornerHandleFreeMode と (もし sel があれば)
     // dataset.aspectLock の双方を before/after で復元できるようにする。
+    // sw v953: state.aspectLocked (numeric panel 🔒) も undo/redo 対象に。
     var afterFree = freeMode;
+    var afterNumericLock = !!e._state.aspectLocked;
     var afterLock = sel ? (sel.dataset.aspectLock || '') : '';
     pushZkHistory({
       label: '比率固定 ' + (locked ? 'ON' : 'OFF'),
       undo: function () {
         var ed = le(); if (!ed) return;
         ed._state.cornerHandleFreeMode = beforeFree;
+        ed._state.aspectLocked = beforeNumericLock;
         if (sel) {
           if (beforeLock) sel.dataset.aspectLock = beforeLock;
           else delete sel.dataset.aspectLock;
@@ -986,6 +1037,7 @@ window.EditorBootstrapConfig = {
       redo: function () {
         var ed = le(); if (!ed) return;
         ed._state.cornerHandleFreeMode = afterFree;
+        ed._state.aspectLocked = afterNumericLock;
         if (sel) {
           if (afterLock) sel.dataset.aspectLock = afterLock;
           else delete sel.dataset.aspectLock;
