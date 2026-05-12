@@ -944,7 +944,39 @@
     e.preventDefault();
     e.stopPropagation();
 
-    // 編集前の値を data-original-html に保存 (Esc で復元)
+    // v968 critical fix: `.chip-label` は QZ_RESIZABLE_SELECTORS に登録されており
+    // attachHandle() で `.resize-handle` × 8 + `.resize-size-label` (`288×240` 等) が
+    // 子要素として append されている (layout-editor.js 内 1715-1717 行)。
+    // この状態で contenteditable=true にすると、 commit 時に innerHTML を取得すると
+    // resize 子要素の DOM (空 div × 8 + size label div) もテキストに混入し、
+    // 8 個の `\n` (空 div は </div> 変換) + size label の `288×240` テキストが
+    // override に保存される (= ユーザー報告の症状)。 CSS の display:none では
+    // textContent/innerHTML 抽出は防げないため、 編集開始時に物理的に DOM から
+    // 子の overlay 要素を退避し、 commit/cancel 後に元位置へ戻す。
+    var detachedOverlays = [];
+    Array.prototype.forEach.call(
+      el.querySelectorAll(':scope > .resize-handle, :scope > .resize-size-label'),
+      function (child) {
+        // 順序は復元せず単純 push のみ (handle は CSS の position:absolute で
+        // 配置されるため DOM 順は描画に影響しない。reattach 時は単純 appendChild)。
+        detachedOverlays.push({ node: child });
+        child.remove();
+      }
+    );
+    function reattachOverlays() {
+      detachedOverlays.forEach(function (item) {
+        try { el.appendChild(item.node); } catch (err) {}
+      });
+      detachedOverlays = [];
+      // size-label テキスト (288×240) を即時 refresh
+      if (typeof el._resizeUpdateLabel === 'function') {
+        try { el._resizeUpdateLabel(); } catch (err) {}
+      }
+    }
+
+    // 編集前の値を data-original-html に保存 (Esc で復元)。
+    //   ここで innerHTML を取る時点で overlay は既に detach 済みなので、
+    //   originalHtml にも overlay は含まれない (Esc で cancel しても残骸が出ない)。
     el.dataset.originalHtml = el.innerHTML;
     el.contentEditable = 'true';
     el.classList.add('chip-text-editing');
@@ -976,16 +1008,31 @@
       catch (err) { /* legacy fallback: 大半のブラウザで動く */ }
     }
 
+    // v968 followup (cross-reviewer HIGH): Escape → cancel() 内で
+    //   `el.contentEditable = 'false'` を set すると、多くのブラウザで
+    //   focused element からの contenteditable 解除が同期 blur を発火する。
+    //   その時点では removeEventListener('blur', commit) 未実行のため、
+    //   commit() が二重発火し、cancel したはずが override が save されてしまう
+    //   (= localStorage + GitHub 書き込み = データ汚染)。
+    //   idempotency guard で commit/cancel 双方の冒頭で no-op 化する。
+    var _done = false;
     function commit() {
+      if (_done) return;
+      _done = true;
       el.contentEditable = 'false';
       el.classList.remove('chip-text-editing');
       delete el.dataset.originalHtml;
       el.removeEventListener('blur', commit);
       el.removeEventListener('keydown', onKey);
       el.removeEventListener('paste', onPaste);
+      // v968: override 保存は overlay が detach されたピュアな innerHTML で行う。
       _saveChipTextOverride(el, capturedQKey);
+      // overlay を元位置へ戻す (resize ハンドル / size label を編集後も使えるように)
+      reattachOverlays();
     }
     function cancel() {
+      if (_done) return;
+      _done = true;
       // 編集破棄: 元の HTML に戻して contenteditable を解除 (保存はしない)
       el.innerHTML = el.dataset.originalHtml || '';
       el.contentEditable = 'false';
@@ -994,6 +1041,8 @@
       el.removeEventListener('blur', commit);
       el.removeEventListener('keydown', onKey);
       el.removeEventListener('paste', onPaste);
+      // v968: cancel 時も overlay を元に戻す
+      reattachOverlays();
     }
     function onKey(ev) {
       if (ev.key === 'Escape') {
@@ -1045,8 +1094,21 @@
     // innerHTML → plain text + \n 変換
     // MEDIUM 2: Chrome の空行は <div><br></div> 形式。 順序が後だと <br> → \n + </div> → \n
     // で 2 個の改行になり空行が増殖する。 先に <div><br></div> 全体を 1 個の \n に潰す。
-    var html = el.innerHTML;
-    var text = html
+    // v968 defense-in-depth: dblclick ハンドラで overlay (resize-handle / resize-size-label)
+    // は事前 detach 済みだが、 万一別経路で残った場合に備えて clone 上で `<div class="resize-...">`
+    // を物理削除してから html→text 変換する (重複保険、 通常は noop)。
+    var srcHtml;
+    try {
+      var clone = el.cloneNode(true);
+      Array.prototype.forEach.call(
+        clone.querySelectorAll('.resize-handle, .resize-size-label, .le-lock-badge, .userbox-badge, .userbox-del'),
+        function (c) { try { c.remove(); } catch (e) {} }
+      );
+      srcHtml = clone.innerHTML;
+    } catch (e) {
+      srcHtml = el.innerHTML;
+    }
+    var text = srcHtml
       .replace(/<div>\s*<br\s*\/?>\s*<\/div>/gi, '\n')
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<\/(div|p)>/gi, '\n')
@@ -1057,6 +1119,11 @@
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, '\'')
+      // v968: 既に saved-layout.json に書き込まれてしまった
+      // 「テキスト + \n × N + 寸法ラベル」 形式の壊れた値を runtime save 経由で自己治癒。
+      // 行末の `\n+<W>×<H>` パターン (\n+288×240 等) を除去。
+      // v968 followup: 元の `\d+×\d+\d*` 末尾 `\d*` は冗長 (`\d+` が貪欲一致するため吸収済み)。簡略化。
+      .replace(/\n+\d+×\d+\s*$/g, '')
       .replace(/\n+$/g, ''); // 末尾改行は除去
     // 空文字 = override 削除扱い
     if (!window._currentLayoutData) window._currentLayoutData = {};
