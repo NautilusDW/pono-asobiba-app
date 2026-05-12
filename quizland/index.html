@@ -4738,7 +4738,12 @@ function loadQuestion(q) {
   //   Q6+:  _runPlateAndType() で typewriter 開始時に reveal される (plate 無いため即時)
   if (_qTextEl) _qTextEl.classList.add('q-stage-pending');
   updateHUD();
-  setupNarration(q);
+  // F2 (2026-05-12): Q1-5 は kurumi_dai{N}mon mp3 (= 「だい N もん」) が鳴る間
+  // ナレーション (= 問題文読み上げ) を遅延させる。 mp3 ended 後に
+  // _playQuestionNarrationNow(q) で発火。 Q6+ は従来通り setupNarration が即時自動再生。
+  const _monNumForNarr = questionIdx + 1;
+  const _delayNarration = (_monNumForNarr >= 1 && _monNumForNarr <= 5);
+  setupNarration(q, { skipAutoPlay: _delayNarration });
   showProblemDialogue(q);
   // 「第 N 問目」SE: 問題ロード時 (= mode-btn タップ後 = user gesture 後) のみ鳴らす
   // updateHUD() は起動時 IIFE 末尾でも呼ばれるため、SE 発火は loadQuestion 末尾に限定する
@@ -4752,23 +4757,35 @@ function loadQuestion(q) {
   const _monNum = questionIdx + 1; // 1 始まり
   if (_monNum >= 1 && _monNum <= 5) {
     const _kAudio = playSe('kurumi_dai' + _monNum);
+    // F2 (2026-05-12): ナレーション (= 問題文読み上げ) は kurumi mp3 ended 後に
+    // 一度だけ発火。 ended / fallback / 取得失敗いずれの経路でも確実に呼ばれるよう
+    // ガードフラグで多重発火を防ぐ。
+    var _narrFiredForThisQ = false;
+    var _fireQNarrOnce = function () {
+      if (_narrFiredForThisQ) return;
+      _narrFiredForThisQ = true;
+      _playQuestionNarrationNow(q);
+    };
     if (_kAudio && typeof _kAudio.addEventListener === 'function') {
       var _onKurumiEnded = function () {
         _kAudio.removeEventListener('ended', _onKurumiEnded);
         setTimeout(hideQuestionNumberPlate, 300);
+        _fireQNarrOnce();
       };
       _kAudio.addEventListener('ended', _onKurumiEnded, { once: true });
-      // fallback: ended が発火しなくても 6 秒で強制 hide
+      // fallback: ended が発火しなくても 6 秒で強制 hide + narration
       setTimeout(function () {
         try { _kAudio.removeEventListener('ended', _onKurumiEnded); } catch (e) {}
         hideQuestionNumberPlate();
+        _fireQNarrOnce();
       }, 6000);
     } else {
-      // mp3 取得失敗時の fallback
+      // mp3 取得失敗時の fallback (kurumi 音声無し ≒ 即時 narration 発火でよい)
       setTimeout(hideQuestionNumberPlate, 1500);
+      _fireQNarrOnce();
     }
   } else {
-    // Q6+ (kurumi 音声無し): plate も無いので何もしない
+    // Q6+ (kurumi 音声無し): setupNarration が既に即時自動再生済。 plate も無し。
   }
 }
 
@@ -4777,11 +4794,12 @@ function narrationKey(q, field) {
   if (!q || q._cat == null || q._idx == null) return null;
   return 'quizland:' + q._cat + ':' + q._idx + ':' + (field || 'q');
 }
-function setupNarration(q) {
+function setupNarration(q, opts) {
   if (typeof Narration === 'undefined') return;
   const btn = document.getElementById('question-speaker');
   const key = narrationKey(q, 'q');
   if (!btn || !key) return;
+  const _skipAutoPlay = !!(opts && opts.skipAutoPlay);
   Narration.load().then(() => {
     const has = Narration.hasEntry(key);
     btn.style.display = (has && Narration.getMode() !== 'off') ? '' : 'none';
@@ -4790,7 +4808,10 @@ function setupNarration(q) {
       e.preventDefault();
       Narration.play(key);
     };
-    if (has) Narration.playIfAuto(key);
+    // F2 (2026-05-12): Q1-5 では kurumi_dai{N}mon mp3 と被るので、 自動再生を
+    // スキップし、 呼び出し側 (loadQuestion) が kurumi mp3 ended 後に playIfAuto
+    // を発火する。 Q6+ や opts 省略時は従来通り即時自動再生。
+    if (has && !_skipAutoPlay) Narration.playIfAuto(key);
     const prefetchKeys = [];
     for (let i = 1; i <= 2; i++) {
       const nq = playlist[questionIdx + i];
@@ -4800,6 +4821,19 @@ function setupNarration(q) {
       }
     }
     if (prefetchKeys.length) Narration.prefetch(prefetchKeys);
+  });
+}
+
+// F2: kurumi_dai{N}mon mp3 終了後に呼び出し、 ナレーション (= 問題文読み上げ)
+// を確実に発火させるためのヘルパ。 Narration.load() が解決した時点で
+// playIfAuto を一度だけ叩く。 ボタン表示など setup は setupNarration が既に
+// 済ませている前提。
+function _playQuestionNarrationNow(q) {
+  if (typeof Narration === 'undefined') return;
+  const key = narrationKey(q, 'q');
+  if (!key) return;
+  Narration.load().then(() => {
+    if (Narration.hasEntry(key)) Narration.playIfAuto(key);
   });
 }
 
