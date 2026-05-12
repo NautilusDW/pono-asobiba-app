@@ -1,12 +1,74 @@
 ---
-name: Quizland VOICEVOX 音声発注書 + 生成ツール
-description: クイズ全181問の音声発注書 (ORDER-FULL.md) と、その音声を実際に生成するためのローカル HTML ツール (tools/voicevox-generator/) のセット。発注書整備は git 管理 / 音声生成はツール実行という役割分担で運用
+name: Quizland 音声発注書 + 生成ツール (【主軸変更 2026-05-12】 VOICEPEAK 一本化、 VOICEVOX 雨晴はう廃案)
+description: クイズ全181問の音声発注書 (ORDER-FULL.md / COWORK-TEST-ORDER.md / ORDER-EXTRA-NON-QUIZ.md) と、その音声を実際に生成するためのワークフロー。【主軸変更 2026-05-12】 VOICEVOX 雨晴はう案は廃案、 VOICEPEAK 「女の子」 プリセットに一本化。 VOICEVOX 関連ツール・記述は履歴として温存
 type: feature
 ---
 
-# Quizland VOICEVOX 発注書 + 生成ツール
+# Quizland 音声発注書 + 生成ツール
 
-## 役割分担（確定運用）
+# 【主軸変更 2026-05-12】 VOICEVOX 雨晴はう案は廃案、 VOICEPEAK 「女の子」 プリセットに一本化
+
+> **2026-05-12 ユーザー確定**: 試聴比較の結果、 VOICEVOX 雨晴はうは「くるみちゃんの雰囲気と合わない」 と判断され却下。 全 912 件 (= 問題本編 907 + 第1〜5問目 5) を **VOICEPEAK 「女の子」 プリセット** で統一録音する方針に変更。
+>
+> 博士担当 (48 件) は **VOICEPEAK 「男性3」 + パラメータ調整 (年配感)** で別 Agent が並列調査中。
+>
+> 本ファイルの旧 VOICEVOX 関連記述は **削除せず「【廃案】 過去の検討経緯」 セクションへ移動** (将来戻す可能性のため履歴温存)。 現行ワークフローは「【現行】 VOICEPEAK ワークフロー」 セクションを参照。
+>
+> 方針転換の詳細は [feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) を参照。
+
+---
+
+# 【現行】 VOICEPEAK ワークフロー (2026-05-12〜)
+
+## 話者方針
+
+| キャラ | エンジン / プリセット | 件数 | 備考 |
+|---|---|---|---|
+| **くるみ** | VOICEPEAK 「女の子」 | 912 (= 907 + 5) | 問題本編 + 第1〜5問目導入。 全件統一録音 |
+| **博士** | VOICEPEAK 「男性3」 + パラメータ調整 (年配感) | 48 | パラメータは別 Agent が並列調査中 |
+| **ポノ** | (音声化保留) | — | アイデンティティ確定までは babble (`js/quizland-babble.js` pono preset) のまま |
+
+## 発注書ファイル
+
+| ファイル | 件数 | 用途 |
+|---|---|---|
+| `docs/quizland-voicevox-order/COWORK-TEST-ORDER.md` | 27 件 | 話者選定の最終確認用テスト発注 (VOICEPEAK 化書き換え済) |
+| `docs/quizland-voicevox-order/ORDER-FULL.md` | 907 件 | フル本体 (Q01〜Q181 × 5 音声 + Q160 補足 2、 VOICEPEAK 化書き換え済) |
+| `docs/quizland-voicevox-order/ORDER-EXTRA-NON-QUIZ.md` | 53 件 | クイズ本編以外 (第1〜5問目導入 + 博士セリフ等、 新規追加) |
+
+> **ファイルパスは `docs/quizland-voicevox-order/` のまま** (リネームすると参照が壊れるため、 中身で「VOICEPEAK 化済み」 を明示)
+
+## ツール
+
+- `tools/voicepeak/` 配下の Convert スクリプト + 辞書 CSV/VDC2
+- VDC2 フォーマットの詳細は [reference_voicepeak_vdc2_format.md](reference_voicepeak_vdc2_format.md) を参照
+
+## 規模 (現行)
+
+- 全 912 件 = 問題本編 907 + 第1〜5問目 5
+- 命名規則は VOICEVOX 時代と同じ `q{NNN}_{q|a|b|c|d}.wav` を踏襲
+- 全件 VOICEPEAK 「女の子」 単一話者で生成、 選択肢ごとの話者切り替え禁止 (くるみ統一)
+
+## 読み方ルール (VOICEPEAK でも継続適用)
+
+旧 VOICEVOX 用に整備した読み方ルール (order_color の英→日変換、 count_total の和語数詞、 number_sequence の音読み、 opposite のカギ括弧除去、 助数詞付き選択肢のカナ化、 Q160 同音異義の補足版等) は、 **エンジンが VOICEPEAK に変わっても speech 文字列上の表記ルールはそのまま適用**。 詳細は本ファイル下部の「【廃案】 過去の検討経緯」 → 「読み方ルール」 を参照 (内容は VOICEPEAK でも有効)。
+
+---
+
+# 【廃案ツール】 VOICEVOX-generator HTML ツール
+
+- **状態**: 主軸が VOICEPEAK に切り替わったため、 当面使用しない
+- **削除/アーカイブはユーザー判断待ち** (今は触らない、 履歴として温存)
+- 場所: `tools/voicevox-generator/voicevox-generator.html` (1570 行) + `voicevox_user_dict.csv` (52 語) + `README.md` (189 行)
+- 詳細仕様は本ファイル下部の「【廃案】 過去の検討経緯」 → 「(B) VOICEVOX 生成ツール」 を参照
+
+---
+
+# 【廃案】 過去の検討経緯 (VOICEVOX 主軸時代の記述、 履歴温存)
+
+> 以下は 2026-05-11 までの VOICEVOX 雨晴はう主軸時代の記述。 2026-05-12 に廃案となったが、 将来戻す可能性のため履歴として温存。 **現行運用は上記「【現行】 VOICEPEAK ワークフロー」 セクションを参照すること。**
+
+## 役割分担（VOICEVOX 時代の確定運用）
 
 このプロジェクトの VOICEVOX 音声化は **2 つの工程に明確に分離** されている。
 

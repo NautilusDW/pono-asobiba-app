@@ -42,10 +42,18 @@
 
 ### フクロウ博士設定 (新規)
 
-- VOICEPEAK 「男性3」 をベースに、 年配感が出るようピッチと速度を下げる
-- 具体的な数値設定 (ピッチ -X / 速度 -Y) は試聴サンプル後にユーザーが確定
-  → 「主要な判断 / D. ユーザー判断保留事項」 参照
+- VOICEPEAK 男性プリセット (男性1 / 男性2 / 男性3 / その他男性プリセット) のいずれかをベースに、 年配感が出るようパラメータ (ピッチ / 速度 / イントネーション) を調整する
+- 具体的なプリセット選定とパラメータ確定値は **ユーザー試聴後に確定** → 下記「博士パラメータ (確定方法)」参照
 - 笑い声 (「ほっほっほ」) と語尾 (「〜じゃ」「〜のう」) が老博士らしく自然に出るかが鍵
+
+## 博士パラメータ (確定方法)
+
+ユーザーが VOICEPEAK で複数のプリセット (男性1 / 男性2 / 男性3 / その他男性プリセット) + パラメータ (ピッチ / 速度 / イントネーション) を試聴比較して年配感を確定する。 確定値が決まったら本書に追記。
+
+試聴用サンプル (3 件):
+- `hakase_correct_05.wav` 「ふむふむ、 よくできたのう」 (通常正解、 のう語尾)
+- `hakase_rare_01.wav` 「ほっほっほ…わしも まけておれんな」 (笑い声入り、 ほっほっほ)
+- `hakase_clear_perfect_01.wav` 「ぜんもん せいかい！ きみは もう、 もりの なぞなぞマスターじゃな！」 (リザルト、 長尺)
 
 ## 命名規則
 
@@ -59,7 +67,7 @@
 | 博士・クリア (パーフェクト) | `hakase_clear_perfect_{NN}.wav` (NN = 01〜03) | `hakase_clear_perfect_01.wav` |
 | 博士・クリア (グッド) | `hakase_clear_good_{NN}.wav` (NN = 01〜03) | `hakase_clear_good_01.wav` |
 | 博士・クリア (オーケー) | `hakase_clear_okay_{NN}.wav` (NN = 01〜03) | `hakase_clear_okay_01.wav` |
-| 博士・クリア (トライアゲイン) | `hakase_clear_tryAgain_{NN}.wav` (NN = 01〜07) | `hakase_clear_tryAgain_01.wav` |
+| 博士・クリア (トライアゲイン) | `hakase_clear_tryagain_{NN}.wav` (NN = 01〜07) | `hakase_clear_tryagain_01.wav` |
 | 博士・ヒント 2 フォールバック | `hakase_hint2_generic_{NN}.wav` (NN = 01〜02) | `hakase_hint2_generic_01.wav` |
 
 ### 命名規則の選定理由
@@ -198,17 +206,22 @@
 
 ### B-5d. clear.tryAgain (0〜2/5 正解) — 7 件
 
-ファイル名規則: `hakase_clear_tryAgain_{NN}.wav` (NN = 01〜07)
+ファイル名規則: `hakase_clear_tryagain_{NN}.wav` (NN = 01〜07)
+
+> **tryAgain プール 7 件構成 (2026-05-12 ユーザー判断で拡張)**:
+> - 新規 1 件: `tryagain_01` 「むずかしかったのう。 また やってみるとよい」 (旧「また あそびに きてくれよな」 をユーザー NG で差し替え)
+> - 既存 2 件: `tryagain_02`, `tryagain_03` (そのまま音声化)
+> - 新規追加 4 件: `tryagain_04`, `tryagain_05`, `tryagain_06`, `tryagain_07` (バリエーション充実のため拡張)
 
 | ファイル名 | speech (原文ママ) |
 |---|---|
-| `hakase_clear_tryAgain_01.wav` | むずかしかったのう。 また やってみるとよい |
-| `hakase_clear_tryAgain_02.wav` | あわてず、ゆっくりで よいぞ |
-| `hakase_clear_tryAgain_03.wav` | つぎは もっと できるはずじゃ |
-| `hakase_clear_tryAgain_04.wav` | かんがえたのが えらいぞ |
-| `hakase_clear_tryAgain_05.wav` | わしも むかしは そうじゃった |
-| `hakase_clear_tryAgain_06.wav` | ひとやすみして また おいで |
-| `hakase_clear_tryAgain_07.wav` | ちょっと きゅうけいして また あそぼう |
+| `hakase_clear_tryagain_01.wav` | むずかしかったのう。 また やってみるとよい |
+| `hakase_clear_tryagain_02.wav` | あわてず、ゆっくりで よいぞ |
+| `hakase_clear_tryagain_03.wav` | つぎは もっと できるはずじゃ |
+| `hakase_clear_tryagain_04.wav` | かんがえたのが えらいぞ |
+| `hakase_clear_tryagain_05.wav` | わしも むかしは そうじゃった |
+| `hakase_clear_tryagain_06.wav` | ひとやすみして また おいで |
+| `hakase_clear_tryagain_07.wav` | ちょっと きゅうけいして また あそぼう |
 
 ### B-6. hint2FallbackGeneric (ヒント 2 段目共通フォールバック) — 2 件
 
