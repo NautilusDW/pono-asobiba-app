@@ -1916,11 +1916,11 @@ body.layout-editor-on .character img {
   .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
   /* フクロウの吹き出しは元画像 AR (5:2) で固定 (14:9 帯では 260×104) */
   .char-hint {
-    width: 260px !important;
-    height: 104px !important; /* 260 * 793/1983 ≈ 104 */
+    width: 260px;
+    height: 104px; /* 260 * 793/1983 ≈ 104 */
     aspect-ratio: 1983 / 793 !important;
-    max-width: 260px !important;
-    max-height: 104px !important;
+    max-width: 260px;
+    max-height: 104px;
     transform: translate(0, 0) !important;
   }
 }
@@ -1958,13 +1958,13 @@ body.layout-editor-on .character img {
   /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(240×96 5:2) = 394px → 余裕あり
      フクロウの吹き出しは元画像 AR (5:2) で固定 (4:3 帯では 240×96) */
   .char-hint {
-    width: 240px !important;
-    height: 96px !important; /* 240 * 793/1983 ≈ 96 */
+    width: 240px;
+    height: 96px; /* 240 * 793/1983 ≈ 96 */
     aspect-ratio: 1983 / 793 !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: 240px !important;
-    max-height: 96px !important;
+    max-width: 240px;
+    max-height: 96px;
     font-size: 14px;
     padding: 8px 14px;
     box-sizing: border-box;
@@ -2025,11 +2025,11 @@ body.layout-editor-on .character img {
   /* フクロウの吹き出しは元画像 AR (5:2) で固定。 4:3 帯の上書きは上の .char-hint
      ルールで既に適用済みだが、 inline transform 解除のため width/height を再宣言 */
   .char-hint {
-    width: 240px !important;
-    height: 96px !important;
+    width: 240px;
+    height: 96px;
     aspect-ratio: 1983 / 793 !important;
-    max-width: 240px !important;
-    max-height: 96px !important;
+    max-width: 240px;
+    max-height: 96px;
     transform: translate(0, 0) !important;
   }
 }
@@ -2080,13 +2080,13 @@ body.layout-editor-on .character img {
   .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
   /* フクロウの吹き出しは元画像 AR (5:2) で固定 (5:4 帯では 220×88) */
   .char-hint {
-    width: 220px !important;
-    height: 88px !important; /* 220 * 793/1983 ≈ 88 */
+    width: 220px;
+    height: 88px; /* 220 * 793/1983 ≈ 88 */
     aspect-ratio: 1983 / 793 !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: 220px !important;
-    max-height: 88px !important;
+    max-width: 220px;
+    max-height: 88px;
     font-size: 13px !important;
     transform: translate(0, 0) !important;
   }
