@@ -15,7 +15,7 @@
 - 発注先: ユーザー手元 (VOICEPEAK GUI)
 - 生成エンジン: **VOICEPEAK GUI + CSV インポート** (詳細は [tools/voicepeak/README.md](../../tools/voicepeak/README.md) 参照)
 - 話者: **VOICEPEAK 「女の子」 プリセット** で全 27 ファイル統一生成 (くるみちゃん担当、 全件同一プリセット、 途中での切り替え禁止)
-- 辞書: [tools/voicepeak/voicepeak_user_dict.csv](../../tools/voicepeak/voicepeak_user_dict.csv) (66 語、 NHK ベース、 5 カラム + `overwriteAccents` 対応) を `Convert-VoicepeakUserDictCsvToVdc2.ps1` で `.vdc2` に変換 → VOICEPEAK GUI からインポート
+- 辞書: [tools/voicepeak/voicepeak_user_dict.csv](../../tools/voicepeak/voicepeak_user_dict.csv) (75 語、 NHK ベース、 5 カラム + `overwriteAccents` 対応) を `Convert-VoicepeakUserDictCsvToVdc2.ps1` で `.vdc2` に変換 → VOICEPEAK GUI からインポート
 
 ## 話者: アシスタントキャラ「リスのくるみちゃん」で統一
 
@@ -239,7 +239,7 @@
   - `voicepeak_lines_test27.csv` をインポートした 27 行が、 GUI 上で意図した読み (「真ん中=マンナカ平板」「肺=ハイ頭高」「胃=イ頭高」 等) になっているか
   - 必要なら GUI 上で手動微調整 → ユーザー辞書 export → `Convert-VoicepeakUserDictVdc2ToCsv.ps1` で CSV に取り込み (完全ラウンドトリップ)
 - **V2. 辞書 (`voicepeak_user_dict.csv` → `.vdc2` 変換) が正しく適用されているか**
-  - 辞書インポート後、 GUI で 66 語が登録されたことを確認
+  - 辞書インポート後、 GUI で 75 語が登録されたことを確認
   - `Convert-VoicepeakUserDictCsvToVdc2.ps1` で生成した `.vdc2` を VOICEPEAK にインポートした際、 アクセント核位置 (`accentType`) と モーラ音高 (`overwriteAccents`) が両方反映されているか
 - **V3. ナレーター おじいさん (博士、 秦なおき声) と「女の子」 (くるみ) の音色キャラ間ギャップに違和感がないか**
   - 本発注書 27 ファイルはすべて くるみ (女の子) のみだが、 将来 博士 (ナレーター おじいさん) のセリフと並べて再生したときにキャラの落差・音量差が違和感にならないか念のため確認
@@ -288,7 +288,7 @@
    - q{NNN}_{q|a|b|c|d}.wav (連番 → q番号 のリネーム表は tools/voicepeak/README.md 参照)
    - Q160 補足版は q160_a_alt.wav / q160_b_alt.wav
 
-5. 辞書: tools/voicepeak/voicepeak_user_dict.csv (66 語) を
+5. 辞書: tools/voicepeak/voicepeak_user_dict.csv (75 語) を
    Convert-VoicepeakUserDictCsvToVdc2.ps1 で .vdc2 化 → GUI からインポート
 
 6. 納品: wav 27 ファイル zip + 使用 VOICEPEAK バージョン・プリセット・

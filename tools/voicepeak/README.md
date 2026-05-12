@@ -11,8 +11,8 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 | ファイル | 用途 | 行数 |
 |---|---|---|
 | `voicepeak_lines_test27.csv` | 27 行のセリフリスト (テスト用、Q01/Q24/Q95/Q160/Q170 + Q160 補足版) | 27 |
-| `voicepeak_user_dict.csv` | ユーザー辞書 65 語の編集元CSV (5 カラム: 単語/読み/アクセント核位置/品詞/モーラ音高、`モーラ音高` は `;` 区切りの整数リストで GUI 手動微調整値 (`overwriteAccents`) を保持。空なら未指定) | 65 + ヘッダ 1 |
-| `voicepeak_user_dict.vdc2` | VOICEPEAK の辞書インポート用ファイル (`voicepeak_user_dict.csv` から生成、`overwriteAccents` 完全対応) | 65 |
+| `voicepeak_user_dict.csv` | ユーザー辞書 75 語の編集元CSV (5 カラム: 単語/読み/アクセント核位置/品詞/モーラ音高、`モーラ音高` は `;` 区切りの整数リストで GUI 手動微調整値 (`overwriteAccents`) を保持。空なら未指定) | 75 + ヘッダ 1 |
+| `voicepeak_user_dict.vdc2` | VOICEPEAK の辞書インポート用ファイル (`voicepeak_user_dict.csv` から生成、`overwriteAccents` 完全対応) | 75 |
 | `Convert-VoicepeakUserDictCsvToVdc2.ps1` | 編集元CSV → `.vdc2` 順方向変換スクリプト (PowerShell、5 カラム + `overwriteAccents` 対応) | - |
 | `Convert-VoicepeakUserDictVdc2ToCsv.ps1` | `.vdc2` → 編集元CSV 逆変換スクリプト (PowerShell、`overwriteAccents` を `;` 区切りで CSV 5 列目に書き戻す。GUI で手動微調整した結果を CSV に取り込む経路) | - |
 | `sample.ssml` | SSML 動作確認用の最小サンプル (q001_q「真ん中はなにいろ？」を `<voice>` `<prosody>` `<break>` で記述) | - |
@@ -34,7 +34,7 @@ VOICEPEAK の **GUI 標準機能 (CSV インポート + 辞書インポート + 
 
 #### 1-a. CSV → VDC2 変換 (順方向: PowerShell スクリプト)
 
-`voicepeak_user_dict.csv` (65 語、5 列) を編集したら、以下で VDC2 を再生成する:
+`voicepeak_user_dict.csv` (75 語、5 列) を編集したら、以下で VDC2 を再生成する:
 
 ```powershell
 cd d:\AppDevelopment\pono-asobiba-app\tools\voicepeak
@@ -70,7 +70,7 @@ powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictVdc2ToCsv.ps
 1. VOICEPEAK を起動
 2. メニュー [辞書] → [ユーザー辞書] → [インポート] (バージョンによって表記差異あり)
 3. `voicepeak_user_dict.vdc2` を選択してインポート
-4. 65 語が登録されたことを確認 (特に「真ん中=マンナカ平板」「肺=ハイ頭高」「胃=イ頭高」が反映されているか)
+4. 75 語が登録されたことを確認 (特に「真ん中=マンナカ平板」「肺=ハイ頭高」「胃=イ頭高」が反映されているか)
 5. 既存辞書がある場合は VOICEPEAK 側で「マージ」or「置換」を選択
 
 ### Step 2. ナレーター (話者) 選択
@@ -181,7 +181,7 @@ Get-ChildItem *.wav | ForEach-Object {
 2. `voicepeak_lines_full907.csv` を生成 (1 行 1 セリフ、ナレーター名は同じ)
 3. VOICEPEAK で同じプロジェクト/プリセットを開き、CSV を差し替えてインポート → 一括生成
 4. 連番 → 発注書ファイル名のリネームスクリプトも 907 行版に拡張
-5. 辞書 (`voicepeak_user_dict.csv`) は 65 語のままで多くの行をカバーできるはず。フル展開時に「読み崩れた語」が見つかったら辞書に追記して再生成
+5. 辞書 (`voicepeak_user_dict.csv`) は 75 語のままで多くの行をカバーできるはず。フル展開時に「読み崩れた語」が見つかったら辞書に追記して再生成
 
 > **【拡張時の注意】** フル発注の前に「テスト 27 で確定したナレーター名 + プリセット (感情パラメータ)」を必ずプロジェクトファイル (.vpf 等) として保存しておくこと。話者を変えるとキャラ統一性が崩れる。
 
@@ -192,7 +192,7 @@ Get-ChildItem *.wav | ForEach-Object {
 - `tools/voicevox-generator/` (VOICEVOX 雨晴はう案) と本 `tools/voicepeak/` (VOICEPEAK 案) は **並行運用**
 - ユーザーが両方で q001_q.wav を試作 → 試聴比較 → くるみちゃんに合う方を **メイン採用**
 - 採用しなかった方は将来の他キャラ (フクロウ博士の追加ボイスなど) 用に残す
-- VOICEVOX 辞書 (`tools/voicevox-generator/voicevox_user_dict.csv` 65 語) と本辞書は **同じ語彙を別フォーマットに変換した姉妹ファイル**。読みは同期しているが、フォーマットは別物 (VOICEVOX は `surface,pronunciation,accent_type,priority,note` の 5 カラム、本ファイルは `単語,読み,アクセント核位置,品詞,モーラ音高` の 5 カラム。 5 列目はモーラ単位の音高微調整 (`overwriteAccents`、`;` 区切り整数リスト) を保持し、 GUI 手動微調整も CSV 上にキープできる完全ラウンドトリップ対応)
+- VOICEVOX 辞書 (`tools/voicevox-generator/voicevox_user_dict.csv` 65 語、 廃案) と本辞書は **同じ語彙を別フォーマットに変換した姉妹ファイル**。読みは同期しているが、フォーマットは別物 (VOICEVOX は `surface,pronunciation,accent_type,priority,note` の 5 カラム、本ファイルは `単語,読み,アクセント核位置,品詞,モーラ音高` の 5 カラム。 5 列目はモーラ単位の音高微調整 (`overwriteAccents`、`;` 区切り整数リスト) を保持し、 GUI 手動微調整も CSV 上にキープできる完全ラウンドトリップ対応)
 
 ---
 

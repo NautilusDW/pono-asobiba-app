@@ -52,7 +52,7 @@ VOICEPEAK 内部はアンダースコア区切りローマ字 ID で品詞を表
 
 | CSV 和名 | VDC2 内部 ID | 備考 |
 |---|---|---|
-| `名詞` (または `普通名詞`) | `Japanese_Futsuu_meishi` | 現行 66 件すべてこれ。 test.vdc2 で実証済 |
+| `名詞` (または `普通名詞`) | `Japanese_Futsuu_meishi` | 現行 75 件すべてこれ。 test.vdc2 で実証済 |
 | 未知/空 | `Japanese_Futsuu_meishi` (フォールバック) | - |
 
 **固有名詞系 (`一般` / `人名` / `姓` / `名` / `地域`) の内部 ID は未確認。** 必要になったら GUI で 1 語登録 → export で実 ID を確認してからスクリプトに追記すること。 推測 ID をハードコードしない (誤った ID でインポートすると VOICEPEAK が無視 or エラーする恐れあり)。
@@ -128,7 +128,7 @@ powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictVdc2ToCsv.ps
 
 順方向 (CSV → VDC2) + 逆方向 (VDC2 → CSV) の両スクリプトを Python json.load 比較で検証:
 
-> test.vdc2 (65 entries) → 逆変換 → 一時 CSV → 順変換 → 一時 VDC2 → 元 test.vdc2 と全 65 エントリ × 全 7 フィールド (`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` / `overwriteAccents`) が **完全一致**。
+> test.vdc2 (75 entries) → 逆変換 → 一時 CSV → 順変換 → 一時 VDC2 → 元 test.vdc2 と全 75 エントリ × 全 7 フィールド (`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` / `overwriteAccents`) が **完全一致**。
 
 これにより以下が安全に運用可能:
 - ユーザーが VOICEPEAK GUI でモーラ音高を微調整 → export → 逆変換で CSV に反映 → git commit (永続化)
@@ -137,13 +137,13 @@ powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictVdc2ToCsv.ps
 ## VOICEPEAK 操作 (辞書登録)
 1. ユーザー辞書管理画面を開く
 2. 「インポート」 → `voicepeak_user_dict.vdc2` を選択
-3. 65 語が一発で登録される
+3. 75 語が一発で登録される
 4. (微調整したい場合) GUI で個別に編集 → 「エクスポート」 で `.vdc2` 取得 → 逆変換スクリプトで CSV に取り込み
 
 ## 関連ファイル
 - 順方向スクリプト: `tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1`
 - 逆方向スクリプト: `tools/voicepeak/Convert-VoicepeakUserDictVdc2ToCsv.ps1` (2026-05-12 新規)
-- 入力/編集元 CSV: `tools/voicepeak/voicepeak_user_dict.csv` (65 語、 5 カラム化済、 5 件で `overwriteAccents` 値あり: あか / あお / みどり / オレンジ / 肺)
+- 入力/編集元 CSV: `tools/voicepeak/voicepeak_user_dict.csv` (75 語、 5 カラム化済、 5 件で `overwriteAccents` 値あり: あか / あお / みどり / オレンジ / 肺)
 - 出力 VDC2: `tools/voicepeak/voicepeak_user_dict.vdc2` (test.vdc2 と完全一致)
 - 正本サンプル (GUI 編集後 export): `tools/voicepeak/test/test.vdc2`
 - README: `tools/voicepeak/README.md` (本文セクションを 5 カラム + ラウンドトリップ対応に書き換え済)

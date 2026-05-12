@@ -249,7 +249,7 @@
 
 ## C. 辞書追加候補 (新出語)
 
-`tools/voicepeak/voicepeak_user_dict.csv` (66 語) と照合し、 本発注書に登場するセリフから抽出した未登録の主要語を以下に列挙する。 アクセント核位置は推定値。 試聴後に必要に応じて辞書追加 → VDC2 再生成 (`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1`) を実施する。
+`tools/voicepeak/voicepeak_user_dict.csv` (75 語) と照合し、 本発注書に登場するセリフから抽出した未登録の主要語を以下に列挙する。 アクセント核位置は推定値。 試聴後に必要に応じて辞書追加 → VDC2 再生成 (`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1`) を実施する。
 
 ### C-1. 番号コール関連 (高優先)
 
@@ -340,8 +340,8 @@
 
 | 発注書 | 件数 | 話者 | スコープ |
 |---|---|---|---|
-| `COWORK-TEST-ORDER.md` | 27 | くるみ (VOICEVOX) | 問題本編テスト 5 問分 |
-| `ORDER-FULL.md` | 907 | くるみ (VOICEVOX) | 問題本編フル 181 問分 |
+| `COWORK-TEST-ORDER.md` | 27 | くるみ (VOICEPEAK 「女の子」) | 問題本編テスト 5 問分 |
+| `ORDER-FULL.md` | 907 | くるみ (VOICEPEAK 「女の子」) | 問題本編フル 181 問分 |
 | **`ORDER-EXTRA-NON-QUIZ.md` (本書)** | **53** | **くるみ (VOICEPEAK) + 博士 (VOICEPEAK)** | **問題以外: リアクション/リザルト/問題コール** |
 
 - **くるみ全件 VOICEPEAK 「女の子」 統一 (2026-05-12 確定)、 二重話者化リスクなし**: くるみ全 912 件 (問題本編 907 + 第1〜5問目 5) を VOICEPEAK 「女の子」 プリセットで統一する方針が確定。 VOICEVOX 雨晴はうは廃案。 これにより問題本編と問題コールでエンジン違いによる音色差が発生する懸念は解消済

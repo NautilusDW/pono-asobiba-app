@@ -34,7 +34,7 @@ type: feature
 
 - **2026-05-12 ユーザー判断: VOICEVOX 雨晴はうは試聴で雰囲気が合わず却下、 VOICEPEAK 「女の子」 で統一決定**
 - くるみ全件 (912 件想定 = 問題本編 907 + 第1〜5問目 5) を **VOICEPEAK 「女の子」 プリセット** で統一録音
-- 博士担当 (48 件) は **VOICEPEAK 「男性3」 + パラメータ調整 (年配感)** で別 Agent が並列調査中
+- 博士担当 (48 件) は **VOICEPEAK 「ナレーター おじいさん」 (秦なおき声、 ¥5,980 単体購入確定 2026-05-12)** で確定。 詳細は [feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) 参照
 - 全件を同一エンジン (VOICEPEAK) で録ることで、 くるみ・博士・ナレ間の音色統一が成立する利点
 - 詳細な方針転換の経緯と原則は [feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) を参照
 
