@@ -607,6 +607,8 @@ body.layout-editor-on [data-aspect-lock="1"]::after {
           title="同じエリアの背景画像を v1〜vN で切替 (レイアウトは共有)。 option は fieldBgVariants.length から動的生成">
     <!-- option は IIFE 内 buildVariantOptions() で動的生成 (旧 v1〜v5 のハードコードは撤去) -->
   </select>
+  <button id="zk-bg-replace" type="button" disabled
+          title="現在選択中の variant の画像を差し替え (GitHub に PUT)">📥 差し替え</button>
 </div>
 
 <!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
@@ -931,6 +933,49 @@ window.EditorBootstrapConfig = {
   if (!sel) return;
   var fieldImg = document.querySelector('.field-bg > img');
   if (!fieldImg) return;
+  var replaceBtn = document.getElementById('zk-bg-replace');
+
+  // 各 variant idx ごとに probe 結果を保持 (true = 実在 / false = 404 or null)。
+  // probeVariant の onload/onerror から更新し、 replaceBtn の enable/disable と連動。
+  var variantExists = {};
+
+  // ─── GitHub API 直叩き (layout-editor.js の ghPutContents は window 経由で
+  //     公開されていないため、 同等の最小実装をここに持つ)。 ────────────────────
+  var GH_OWNER  = 'NautilusDW';
+  var GH_REPO   = 'pono-asobiba-app';
+  var GH_BRANCH = 'develop';
+  function ghGetContents(path) {
+    var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' +
+              encodeURI(path) + '?ref=' + GH_BRANCH;
+    return fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/vnd.github+json' },
+      cache: 'no-store',
+    }).then(function (r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+      return r.json();
+    });
+  }
+  function ghPutContents(path, contentB64, message, sha) {
+    var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + encodeURI(path);
+    var body = { message: message, content: contentB64, branch: GH_BRANCH };
+    if (sha) body.sha = sha;
+    return fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      if (!r.ok) return r.text().then(function (txt) {
+        var err = new Error('GH PUT ' + path + ' → ' + r.status + ' ' + txt.slice(0, 200));
+        err.status = r.status;
+        throw err;
+      });
+      return r.json();
+    });
+  }
 
   // zukan-data.js のパスは "../assets/..." (zukan/index.html 起点) 形式。
   // この投資画面エディタは zukan/preview/investigation/ に居るので 3 階層上が必要。
@@ -980,22 +1025,38 @@ window.EditorBootstrapConfig = {
   function probeVariant(idx, url) {
     if (!url) {
       setOptionLabel(idx, 'v' + (idx + 1) + ' (未生成)', true);
+      variantExists[idx] = false;
+      refreshReplaceBtn();
       return;
     }
     var probe = new Image();
     probe.onload = function () {
       setOptionLabel(idx, 'v' + (idx + 1), false);
+      variantExists[idx] = true;
+      refreshReplaceBtn();
     };
     probe.onerror = function () {
       console.warn('[zk-bg] v' + (idx + 1) + ' not found (404), marked as 未生成 — ' + toAbsolute(url));
       setOptionLabel(idx, 'v' + (idx + 1) + ' (未生成)', true);
+      variantExists[idx] = false;
       // 現在選択中だった場合は v1 に戻す
       if (parseInt(sel.value, 10) === idx) {
         sel.value = '0';
         applyVariant(0);
       }
+      refreshReplaceBtn();
     };
     probe.src = toAbsolute(url);
+  }
+
+  // 現在の sel.value が指す variant が実在するなら replaceBtn を enable に。
+  // probe 完了時 / variant 切替時に呼ぶ。
+  function refreshReplaceBtn() {
+    if (!replaceBtn) return;
+    // アップロード中 (テキストが変更されている) は触らない
+    if (replaceBtn.dataset._busy === '1') return;
+    var idx = parseInt(sel.value, 10) || 0;
+    replaceBtn.disabled = !variantExists[idx];
   }
 
   function applyVariant(idx) {
@@ -1027,9 +1088,66 @@ window.EditorBootstrapConfig = {
     sel.addEventListener('change', function () {
       var idx = parseInt(sel.value, 10) || 0;
       applyVariant(idx);
+      refreshReplaceBtn();
     });
     // 起動時のデフォルトは v1
     sel.value = '0';
+
+    // 📥 差し替えボタン: 現在 sel が指す variant の repo パスを GH に PUT。
+    if (replaceBtn) {
+      replaceBtn.addEventListener('click', function () {
+        var idx = parseInt(sel.value, 10) || 0;
+        var current = getVariants();
+        if (!current || !current[idx]) {
+          alert('現在選択中の variant に画像がありません');
+          return;
+        }
+        // zukan-data.js のパスは "../assets/..." 形式。 リポジトリパスは ../ を全部剥がす。
+        var repoPath = current[idx].replace(/^(\.\.\/)+/, '');
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/png,image/jpeg,image/webp';
+        fileInput.addEventListener('change', function (ev) {
+          var file = ev.target.files && ev.target.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function () {
+            var dataUrl = reader.result;
+            var commaIdx = dataUrl.indexOf(',');
+            if (commaIdx < 0) {
+              alert('data URL の変換に失敗');
+              return;
+            }
+            var b64 = dataUrl.slice(commaIdx + 1);
+            replaceBtn.dataset._busy = '1';
+            replaceBtn.disabled = true;
+            replaceBtn.textContent = '📤 アップロード中…';
+            ghGetContents(repoPath).then(function (existing) {
+              var sha = existing ? existing.sha : null;
+              var msg = 'chore(zukan-bg): editor から ' + repoPath + ' を差し替え';
+              return ghPutContents(repoPath, b64, msg, sha);
+            }).then(function () {
+              replaceBtn.textContent = '✅ 保存完了 (リロードしてください)';
+              // 同時に field-bg の src を data URL に書き換えてプレビュー反映
+              fieldImg.src = dataUrl;
+              setTimeout(function () {
+                replaceBtn.dataset._busy = '';
+                replaceBtn.textContent = '📥 差し替え';
+                refreshReplaceBtn();
+              }, 5000);
+            }).catch(function (err) {
+              console.error('[zk-bg] replace failed', err);
+              alert('差し替え失敗: ' + (err && err.message ? err.message : err));
+              replaceBtn.dataset._busy = '';
+              replaceBtn.textContent = '📥 差し替え';
+              refreshReplaceBtn();
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+        fileInput.click();
+      });
+    }
 
     var available = variants.filter(function (v) { return !!v; }).length;
     console.log('[zk-bg] variant UI bound, total=' + variants.length + ', available=' + available + ', default=v1');
