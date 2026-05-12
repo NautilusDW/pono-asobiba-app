@@ -411,24 +411,30 @@ body:not(.layout-editor-on) .help-note {
 /* ───── ZK-INV: 追加ツールバー (HTML 直書き、editor-on のみ可視) ─────────
  *  layout-editor.js の動的ツールバーとは別の、ページ固有 fixed 浮動 toolbar。
  *  3 ボタン: 100% / 90°回転 / 比率固定 ON-OFF。
- *  位置: 右上 (layout-editor の上部 toolbar の下、ヘルプノートとは反対側)。
+ *  位置: 左上寄り (top:120px / left:16px)。
+ *  - 右側は layout-editor の常駐パネル (.numeric-panel / .le-list-panel) と競合
+ *  - 左下は .help-note (left:16/bottom:16) が常駐するため避ける
+ *  - 上部 .le-toolbar (sticky top:0) の下に配置
+ *  視認性のため一時的に金色 2px ボーダー + glow を付与 (確認後に外す)。
  * ──────────────────────────────────────────────────────────────────── */
 .zk-inv-toolbar {
   position: fixed;
-  top: 60px;
-  right: 16px;
-  z-index: 49;
+  top: 120px;
+  left: 16px;
+  z-index: 9500;
   display: none;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  max-width: calc(100vw - 32px);
   background: rgba(20, 20, 20, 0.92);
   color: #f0f0f0;
-  border: 1px solid #444;
+  border: 2px solid #ffba6b;
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 0 3px rgba(255, 186, 107, 0.2);
 }
 body.layout-editor-on .zk-inv-toolbar { display: flex; }
 .zk-inv-toolbar button {
@@ -598,12 +604,8 @@ body.layout-editor-on [data-aspect-lock="1"]::after {
           title="アスペクト比固定 ON/OFF (OFF = 角ハンドルでも自由に縦横変えられる)">🔒 比率固定 OFF</button>
   <span class="zk-inv-label" style="margin-left:8px;">🌅 背景バリアント</span>
   <select id="zk-bg-variant"
-          title="同じエリアの背景画像を v1〜v5 で切替 (レイアウトは共有)">
-    <option value="0">v1 (現在のメイン)</option>
-    <option value="1">v2 (未生成)</option>
-    <option value="2">v3 (未生成)</option>
-    <option value="3">v4 (未生成)</option>
-    <option value="4">v5 (未生成)</option>
+          title="同じエリアの背景画像を v1〜vN で切替 (レイアウトは共有)。 option は fieldBgVariants.length から動的生成">
+    <!-- option は IIFE 内 buildVariantOptions() で動的生成 (旧 v1〜v5 のハードコードは撤去) -->
   </select>
 </div>
 
@@ -881,6 +883,25 @@ window.EditorBootstrapConfig = {
       document.querySelectorAll('[data-rotate]').forEach(function (el) {
         try { applyRotate(el); } catch (e) {}
       });
+      // === DEBUG: zk-inv-toolbar の可視性検証 (sw v944) ===
+      try {
+        var tb = document.getElementById('zk-inv-toolbar');
+        if (!tb) {
+          console.error('[zk-inv] toolbar element NOT IN DOM');
+        } else {
+          var cs = getComputedStyle(tb);
+          console.log('[zk-inv] toolbar found:', {
+            display: cs.display,
+            visibility: cs.visibility,
+            opacity: cs.opacity,
+            position: cs.position,
+            top: cs.top, right: cs.right, bottom: cs.bottom, left: cs.left,
+            zIndex: cs.zIndex,
+            rect: tb.getBoundingClientRect(),
+            bodyHasEditorOnClass: document.body.classList.contains('layout-editor-on')
+          });
+        }
+      } catch (e) { console.error('[zk-inv] visibility check failed', e); }
     } else if (tries >= maxTries) {
       clearInterval(pollTimer);
       // editor が立ち上がらない (?edit=1 無し) なら何もしない
@@ -917,9 +938,27 @@ window.EditorBootstrapConfig = {
     var area = data.areas.filter(function (a) { return a.id === AREA_ID; })[0];
     if (!area || !Array.isArray(area.spots) || !area.spots[0]) return null;
     var spot = area.spots[0];
-    // 後方互換: fieldBgVariants が無い場合は [fieldBg, null x4]
-    if (Array.isArray(spot.fieldBgVariants)) return spot.fieldBgVariants.slice(0, 5);
+    // 後方互換: fieldBgVariants が無い場合は [fieldBg, null x4] (length=5)
+    if (Array.isArray(spot.fieldBgVariants)) return spot.fieldBgVariants.slice();
     return [spot.fieldBg || null, null, null, null, null];
+  }
+
+  // option を fieldBgVariants.length 分だけ動的に構築。 ハードコード v1〜v5 を撤去し、
+  // データドリブンに任意の variant 数 (現状 flower_path=9, 他エリア=5) を扱えるようにする。
+  function buildVariantOptions(variants) {
+    if (!sel) return;
+    sel.innerHTML = '';
+    variants.forEach(function (url, idx) {
+      var opt = document.createElement('option');
+      opt.value = String(idx);
+      if (idx === 0) {
+        opt.textContent = url ? 'v1 (現在のメイン)' : 'v1 (未生成)';
+      } else {
+        opt.textContent = url ? ('v' + (idx + 1)) : ('v' + (idx + 1) + ' (未生成)');
+      }
+      if (!url) opt.disabled = true;
+      sel.appendChild(opt);
+    });
   }
 
   function setOptionLabel(idx, label, disabled) {
@@ -970,17 +1009,10 @@ window.EditorBootstrapConfig = {
       console.warn('[zk-bg] ZUKAN_DATA not loaded, variant UI inactive');
       return;
     }
-    // 「v1 (現在のメイン)」 はそのまま、 v2〜v5 は null かどうかで初期 disable 判定
-    setOptionLabel(0, variants[0] ? 'v1 (現在のメイン)' : 'v1 (未生成)', !variants[0]);
-    for (var i = 1; i < 5; i++) {
-      if (variants[i]) {
-        setOptionLabel(i, 'v' + (i + 1), false);
-      } else {
-        setOptionLabel(i, 'v' + (i + 1) + ' (未生成)', true);
-      }
-    }
-    // 実ファイル確認 (非同期、 404 なら disable 化)
-    for (var j = 0; j < 5; j++) {
+    // option を動的生成 (variants.length 分)
+    buildVariantOptions(variants);
+    // 実ファイル確認 (非同期、 404 なら disable 化)。 length に追従。
+    for (var j = 0; j < variants.length; j++) {
       probeVariant(j, variants[j]);
     }
     // change handler
@@ -992,7 +1024,7 @@ window.EditorBootstrapConfig = {
     sel.value = '0';
 
     var available = variants.filter(function (v) { return !!v; }).length;
-    console.log('[zk-bg] variant UI bound, available=' + available + ', default=v1');
+    console.log('[zk-bg] variant UI bound, total=' + variants.length + ', available=' + available + ', default=v1');
   }
 
   if (document.readyState === 'loading') {

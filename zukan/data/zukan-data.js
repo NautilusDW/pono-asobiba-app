@@ -45,11 +45,19 @@ window.ZUKAN_DATA = {
           id: "flower_path_main",
           name: "おはなの ひろば",
           fieldBg: "../assets/zukan/search/flower_path_field_16x9.png",
-          // v1 (= 既存 fieldBg) + v2〜v5 placeholder。null は「未生成」を示す。
-          // 命名規則: <area>_field_16x9_v<N>.png (v1 は既存ファイル名のまま、v2〜v5 が新規)
+          // v1 (= 既存 fieldBg) + v2〜v9 (2026-05-11 新規追加 8 枚)。
+          // 命名規則: <area>_field_16x9_v<N>.png (v1 は既存ファイル名のまま、v2 以降は連番)
+          // 元データは D:\ポノのおへや\Zukan\asset\BG\花の小道\ (16:9 のみ採用、 21:9 とスプライトシートは除外)
           fieldBgVariants: [
             "../assets/zukan/search/flower_path_field_16x9.png",
-            null, null, null, null
+            "../assets/zukan/search/flower_path_field_16x9_v2.png",
+            "../assets/zukan/search/flower_path_field_16x9_v3.png",
+            "../assets/zukan/search/flower_path_field_16x9_v4.png",
+            "../assets/zukan/search/flower_path_field_16x9_v5.png",
+            "../assets/zukan/search/flower_path_field_16x9_v6.png",
+            "../assets/zukan/search/flower_path_field_16x9_v7.png",
+            "../assets/zukan/search/flower_path_field_16x9_v8.png",
+            "../assets/zukan/search/flower_path_field_16x9_v9.png"
           ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
           // innermap 上のピン位置 (spot_flower_path.png 上の比率)
