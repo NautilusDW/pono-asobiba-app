@@ -1131,6 +1131,12 @@
           return;
         }
         var isBlock = BLOCK_TAGS.test(node.tagName);
+        // v973 fix: leading \n (HIGH cross-review): `あ<div>い</div>` 形式で改行が消失する
+        // バグを修正。 iOS Safari や Shift+Enter で挿入される <div> ブロック開始時にも
+        // 改行を補完 (重複防止は trailing と同じ条件で実施)。
+        if (isBlock && out.length > 0 && out[out.length - 1] !== '\n') {
+          out.push('\n');
+        }
         for (var ci = 0; ci < node.childNodes.length; ci++) {
           walk(node.childNodes[ci]);
         }

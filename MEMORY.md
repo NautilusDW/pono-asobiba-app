@@ -121,6 +121,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T12:56:00Z - layout-editor v973: _extractChipLabelText の DOM walk に leading \n 補完を追加し <div> ブロック開始時の改行消失 (HIGH cross-review バグ) を解消、 node 論理 5 ケース PASS、 sw v972→v973 bump
+- **タスク**: layout-editor v973: _extractChipLabelText の DOM walk に leading \n 補完を追加し <div> ブロック開始時の改行消失 (HIGH cross-review バグ) を解消、 node 論理 5 ケース PASS、 sw v972→v973 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 65
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 23, "Bash": 31, "Edit": 5, "Write": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T12:49:32Z - quizland chip-label 編集で改行が消えるバグ修正 (v970 broad strip → DOM walk 移行)
 - **タスク**: quizland chip-label 編集で改行が消えるバグ修正 (v970 broad strip → DOM walk 移行)
 - **結果**: 成功
@@ -222,19 +235,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 10, "Bash": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T09:11:53Z - layout-editor chip-label 編集 commit/cancel 二重発火を _done idempotency guard で防止 + 末尾寸法ラベル regex 簡略化
-- **タスク**: layout-editor chip-label 編集 commit/cancel 二重発火を _done idempotency guard で防止 + 末尾寸法ラベル regex 簡略化
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 18
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 10, "Bash": 7}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
