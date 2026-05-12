@@ -124,6 +124,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T13:35:04Z - K2: COWORK-TEST-ORDER.md + 15 expand JSON Q### normalization
+- **タスク**: K2: COWORK-TEST-ORDER.md + 15 expand JSON Q### normalization
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 85
+- **エラー数**: 7
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 47, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-12T13:10:45Z - Z12b: voicepeak_unique_expand_number_sequence_phase1.json の q### キー -97 シフト (q169-q180 → q072-q083)
 - **タスク**: Z12b: voicepeak_unique_expand_number_sequence_phase1.json の q### キー -97 シフト (q169-q180 → q072-q083)
 - **結果**: 成功
@@ -226,18 +239,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 31, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 失敗タスク: エラー7件。 失敗要因候補: 同じエラーを繰り返した, テストを一切実行しなかった
-
-
-### 2026-05-12T12:13:43Z - quizland chip-label 根本修正: saved-layout.json merge marker 解消 + __chip_text_overrides 5 entries sanitize + v969 attempt 2 JS cherry-pick + sw v968→v970
-- **タスク**: quizland chip-label 根本修正: saved-layout.json merge marker 解消 + __chip_text_overrides 5 entries sanitize + v969 attempt 2 JS cherry-pick + sw v968→v970
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 54
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Agent": 15, "Bash": 28, "Edit": 5, "Write": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
