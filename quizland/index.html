@@ -1098,7 +1098,8 @@ body.sheet-on .hdr-right .ctrl-btn {
 #answer-panel.q-stage-pending {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease-out;
+  transition: none;          /* 隠す方向は瞬時 — typewriter 中の一瞬表示を防ぐ */
+  visibility: hidden;         /* 念押し: paint しても不可視 */
 }
 #q-text.q-stage-revealed,
 .emoji-display.q-stage-revealed,
@@ -1106,6 +1107,7 @@ body.sheet-on .hdr-right .ctrl-btn {
 #answer-panel.q-stage-revealed {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
   transition: opacity 0.4s ease-out;
 }
 
@@ -4776,6 +4778,12 @@ function loadQuestion(q) {
   // (旧 v959: 別 DOM の #kurumi-q-banner CSS バナーを表示していたが誤実装、 削除)
   const _monNum = questionIdx + 1; // 1 始まり
   if (_monNum >= 1 && _monNum <= 5) {
+    // L1 revert (2026-05-12): K3 を撤回。 バナー (= プレート画像) と SE
+    //   (= 「だい N もん」) を同期発火させる。 SE が先行しないよう、 plate を
+    //   先に dispatch してから playSe を呼ぶ (どちらも非同期、 同じ tick で開始)。
+    //   _runPlateAndType でも playQuestionNumberPlate を再度呼ぶが、 _qnoRunning
+    //   ガードにより no-op (idempotent)。
+    try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
     const _kAudio = playSe('kurumi_dai' + _monNum);
     // F2 (2026-05-12): ナレーション (= 問題文読み上げ) は kurumi mp3 ended 後に
     // 一度だけ発火。 ended / fallback / 取得失敗いずれの経路でも確実に呼ばれるよう
@@ -4786,47 +4794,27 @@ function loadQuestion(q) {
       _narrFiredForThisQ = true;
       _playQuestionNarrationNow(q);
     };
-    // K3 (2026-05-12): kurumi mp3 ended 後にプレート画像を show → 1200ms 表示 →
-    //   fade out + narration 開始。 旧仕様 (kurumi 開始と同時に plate show、 ended で hide)
-    //   を撤廃し、 「だい N もん」 → plate → ナレーション の直列フローに統一。
-    var _plateShown = false;
     if (_kAudio && typeof _kAudio.addEventListener === 'function') {
       var _onKurumiEnded = function () {
         _kAudio.removeEventListener('ended', _onKurumiEnded);
-        if (!_plateShown) {
-          _plateShown = true;
-          // 非同期だが await しない (plate show は scale-in 待機を含むため、
-          // narration スケジュールを別タイマで進めて UI ブロックを避ける)。
-          try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
-        }
         setTimeout(function () {
           hideQuestionNumberPlate();
           _fireQNarrOnce();
-        }, 1200);
+        }, 300);
       };
       _kAudio.addEventListener('ended', _onKurumiEnded, { once: true });
       // fallback: ended が発火しなくても 6 秒で強制 hide + narration
       setTimeout(function () {
         try { _kAudio.removeEventListener('ended', _onKurumiEnded); } catch (e) {}
-        if (!_plateShown) {
-          _plateShown = true;
-          try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
-        }
-        setTimeout(function () {
-          hideQuestionNumberPlate();
-          _fireQNarrOnce();
-        }, 1200);
+        hideQuestionNumberPlate();
+        _fireQNarrOnce();
       }, 6000);
     } else {
-      // mp3 取得失敗時の fallback (kurumi 音声無し)。 plate のみ表示してから narration。
-      if (!_plateShown) {
-        _plateShown = true;
-        try { playQuestionNumberPlate(_monNum - 1); } catch (e) {}
-      }
+      // mp3 取得失敗時の fallback (kurumi 音声無し)。 plate 即時 hide + narration。
       setTimeout(function () {
         hideQuestionNumberPlate();
         _fireQNarrOnce();
-      }, 1200);
+      }, 300);
     }
   } else {
     // Q6+ (kurumi 音声無し): setupNarration が既に即時自動再生済。 plate も無し。
@@ -5486,20 +5474,13 @@ function _wireQuestionTypingSkip() {
 // タップでスキップされた場合は _wireQuestionTypingSkip 内で全 stage を即時 reveal。
 async function _runPlateAndType(qIdx) {
   _wireQuestionTypingSkip();
-  // K3 (2026-05-12): Q1-5 はプレート画像表示を kurumi mp3 ended に委譲
-  //   (= kurumi 「だい N もん」 発話が終わってから plate を出すフロー)。
-  //   Q6+ は plate 自体無し (playQuestionNumberPlate が早期 return) なので
-  //   呼んでも no-op。 ここでは Q1-5 のみ skip し、 Q6+ 互換のため await のみ省略。
-  if (qIdx < 0 || qIdx >= 5) {
-    try {
-      await playQuestionNumberPlate(qIdx);   // Q6+ は即 return (no-op)
-    } catch (e) {}
-  }
-  // Q1-5: plate は kurumi ended ハンドラ (loadQuestion 内) で show される。
-  // Q6+ で plate 無し時に問題 UI が描画完了する余裕を少しだけ作る
-  if (qIdx >= 5) {
-    await new Promise(function(r) { setTimeout(r, 200); });
-  }
+  // L1 revert (2026-05-12): K3 を撤回し F2 既存挙動に戻す。 plate 表示は SE と
+  //   同期発火 (loadQuestion 側でも先行 dispatch、 ここで await して scale-in
+  //   完了を待つ)。 _qnoRunning ガードにより二重 show は no-op。
+  //   Q6+ は plate 自体無し (playQuestionNumberPlate が早期 return = 即解決)。
+  try {
+    await playQuestionNumberPlate(qIdx);
+  } catch (e) {}
   const el = document.getElementById('q-text');
   if (!el) return;
   // v967: Q6+ は plate 無し = hideQuestionNumberPlate が走らないため、 typewriter
