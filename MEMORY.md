@@ -117,6 +117,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T08:16:58Z - VOICEPEAK number_sequence Phase 1 (20 件) 生成準備: CSV/展開 JSON 確認、 辞書に「ろく」 1 語追加 (79→80) + VDC2 再生成、 BATCH-RUN-number_sequence.md 新規作成、 BATCH-PLAN に参照追記
+- **タスク**: VOICEPEAK number_sequence Phase 1 (20 件) 生成準備: CSV/展開 JSON 確認、 辞書に「ろく」 1 語追加 (79→80) + VDC2 再生成、 BATCH-RUN-number_sequence.md 新規作成、 BATCH-PLAN に参照追記
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 235
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 24, "Agent": 130, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 41, "Glob": 5, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T08:04:26Z - Quizland v963: don.mp3 末尾 silence カット (1.999s→1.196s, ~803ms 短縮) + timeupdate 閾値 50ms→150ms 拡大 + kurumi.wav 再 cut は -50dB が逆効果のため断念し v962 baseline 維持 + sw v963 bump
 - **タスク**: Quizland v963: don.mp3 末尾 silence カット (1.999s→1.196s, ~803ms 短縮) + timeupdate 閾値 50ms→150ms 拡大 + kurumi.wav 再 cut は -50dB が逆効果のため断念し v962 baseline 維持 + sw v963 bump
 - **結果**: 成功
@@ -218,19 +231,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 39, "Read": 60, "Grep": 44, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 46, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T04:07:33Z - Quizland VOICEPEAK speech 重複検出 + ユニーク化 CSV/JSON + 展開スクリプト + DUPLICATE-ANALYSIS 生成
-- **タスク**: Quizland VOICEPEAK speech 重複検出 + ユニーク化 CSV/JSON + 展開スクリプト + DUPLICATE-ANALYSIS 生成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 192
-- **エラー数**: 22
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 38, "Read": 60, "Grep": 44, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 44, "Edit": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

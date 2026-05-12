@@ -1243,9 +1243,26 @@ body.layout-editor-on .stage-pono { display: none; }
    - box-sizing: border-box で padding 込み 100% 幅
    - word-break: keep-all で CJK 文字を語中で割らない
    - overflow-wrap: break-word でやむを得ない時のみ break (半角空白優先で wrap)
-   - line-height は chip 全体の 1.2 を継承するが、 illust-label は別途 1.1 を維持 */
+   - line-height は chip 全体の 1.2 を継承するが、 illust-label は別途 1.1 を維持
+   2026-05-12 修正(v964): 複数行 label (例: 「どちらも かどが ない」 が 2-3 行に
+   wrap される chip) で box top が伸びるたびに動的に動くことで、 同じ saved-layout
+   tx/ty を当てても他の 1 行 chip と「位置がズレて見える」 問題を fix。
+   - .chip-label 自身を flex container (column flex の子) として grow させ、
+     chip 内領域 (text-only chip では chip 全体、 with-image chip では illust 110px と
+     gap 6px を除いた残り) を box が常に占有する → box top/bottom が wrap 行数に
+     依存せず固定。
+   - box の中身 text は align-items: center / justify-content: center で常に
+     center vertically + horizontally に置く → 1 行でも 3 行でも中身は中央配置。
+   - dashed overlay (resize-size-label の getBoundingClientRect) の表示寸法も
+     wrap 行数によらず一定になる。
+   - 既存 padding / word-break / overflow-wrap / text-align は flex container 上で
+     も有効 (text content は anonymous flex item として中央配置される)。 */
 .chip .chip-label {
-  display: block;
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;

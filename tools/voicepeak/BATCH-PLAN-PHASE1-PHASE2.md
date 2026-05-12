@@ -108,6 +108,7 @@ Phase 2 は Phase 1 で確定したプリセット + 辞書をそのまま流用
 ### 計画ドキュメント
 
 - `tools/voicepeak/BATCH-PLAN-PHASE1-PHASE2.md` (本ファイル)
+- `tools/voicepeak/BATCH-RUN-number_sequence.md` (number_sequence Phase 1 の具体実行手順 + 辞書 v80 への +1 語 (「ろく」) 追加履歴 + 特有の試聴ポイント)
 
 **合計**: 18 (Phase 1) + 16 (Phase 2) + 1 (計画 md) = **35 ファイル**
 
