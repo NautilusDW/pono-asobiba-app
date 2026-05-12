@@ -4093,10 +4093,13 @@ function renderNumberSequence(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'number-display';
   if (typeof q.stageDisplay === 'string' && q.stageDisplay.length > 0) {
-    // " → " (= U+2192 + 前後スペース) 区切りでトークン化。 トークン種別ごとに span class を分ける。
-    const tokens = q.stageDisplay.split(/\s*→\s*/);
+    // 矢印モード判定: stageDisplay に `→` (U+2192) が含まれていれば arrow span 描画あり (つぎ/まえ系)、
+    // 含まれていなければ arrow なし (あいだ系の 「2 ◯ 4」 等、 sw v975+)。
+    // token 分割は arrow セパレータ または 1 文字以上の空白で行う (どちらも正規化)。
+    const hasArrow = q.stageDisplay.indexOf('→') !== -1;
+    const tokens = q.stageDisplay.split(/\s*→\s*|\s+/).filter(t => t.length > 0);
     tokens.forEach((tok, i) => {
-      if (i > 0) {
+      if (i > 0 && hasArrow) {
         const arrow = document.createElement('span');
         arrow.className = 'number-display-arrow';
         arrow.textContent = '→';

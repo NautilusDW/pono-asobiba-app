@@ -124,6 +124,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T14:13:32Z - quizland v974-v975: number_sequence カテゴリのステージ表示を 1 だけから '1 → ◯' / '◯ → 3' / '2 ◯ 4' に拡張 (data 駆動 stageDisplay + renderNumberSequence の token 分割拡張 + arrow span ガード)。 つぎ系・まえ系は矢印あり、 あいだ系はユーザー要望で矢印なしスペース区切り
+- **タスク**: quizland v974-v975: number_sequence カテゴリのステージ表示を 1 だけから '1 → ◯' / '◯ → 3' / '2 ◯ 4' に拡張 (data 駆動 stageDisplay + renderNumberSequence の token 分割拡張 + arrow span ガード)。 つぎ系・まえ系は矢印あり、 あいだ系はユーザー要望で矢印なしスペース区切り
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 82
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 7, "Agent": 27, "Bash": 36, "Edit": 7, "Write": 3, "Glob": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-12T14:11:37Z - quizland number_sequence あいだ系 stageDisplay を矢印なし 半角スペース区切り (案A) に変更 + renderNumberSequence の token 分割を hasArrow フラグ分岐に拡張 + sw v974→v975 bump
+- **タスク**: quizland number_sequence あいだ系 stageDisplay を矢印なし 半角スペース区切り (案A) に変更 + renderNumberSequence の token 分割を hasArrow フラグ分岐に拡張 + sw v974→v975 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 93
+- **エラー数**: 8
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 55, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-12T14:09:04Z - quizland number_sequence stage display: 数字 + 矢印 + 答え位置 marker パターン (data 駆動: 12 問に stageDisplay フィールド追加 + renderNumberSequence で token 分割描画 + CSS clamp 上限調整 + sw v973-v974)
 - **タスク**: quizland number_sequence stage display: 数字 + 矢印 + 答え位置 marker パターン (data 駆動: 12 問に stageDisplay フィールド追加 + renderNumberSequence で token 分割描画 + CSS clamp 上限調整 + sw v973-v974)
 - **結果**: 成功
@@ -213,31 +239,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 36, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T12:46:24Z - quizland chip-with-image の chip-illust を wrapper 化して個別 resize 可能に (v971)
-- **タスク**: quizland chip-with-image の chip-illust を wrapper 化して個別 resize 可能に (v971)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 73
-- **エラー数**: 7
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 35, "ToolSearch": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T12:27:09Z - quizland v970: chip-label 編集の overlay+改行混入を 5 段防御で完全根絶 (saved-layout.json merge marker 解決 + 4 entries sanitize + clone querySelectorAll('*') broad strip + <br> 除外 + 2-pass 全角対応 regex + load-time sanitizer + sw v968→v970)。 5 エージェント並列 (Explore + impl + reviewer REJECT + fix + verify)、 真因は前任が saved-layout.json の git merge marker (JSON invalid) を見逃していたこと + 旧 regex が半角のみで全角混入対応してなかったこと
-- **タスク**: quizland v970: chip-label 編集の overlay+改行混入を 5 段防御で完全根絶 (saved-layout.json merge marker 解決 + 4 entries sanitize + clone querySelectorAll('*') broad strip + <br> 除外 + 2-pass 全角対応 regex + load-time sanitizer + sw v968→v970)。 5 エージェント並列 (Explore + impl + reviewer REJECT + fix + verify)、 真因は前任が saved-layout.json の git merge marker (JSON invalid) を見逃していたこと + 旧 regex が半角のみで全角混入対応してなかったこと
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 59
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Agent": 17, "Bash": 31, "Edit": 5, "Write": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

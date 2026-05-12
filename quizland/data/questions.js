@@ -654,8 +654,10 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'number_sequence', num:8, q:'8の まえは？', stageDisplay:'◯ → 8', answer:1, choices:['6','7','8','9'] },
     { level:2, type:'number_sequence', num:10, q:'10の まえは？', stageDisplay:'◯ → 10', answer:1, choices:['8','9','10','7'] },
     // Level 3: 「あいだ」(2問)
-    { level:3, type:'number_sequence', nums:[2,4], q:'2と 4の あいだは？', stageDisplay:'2 → ◯ → 4', answer:2, choices:['1','2','3','4'] },
-    { level:3, type:'number_sequence', nums:[6,8], q:'6と 8の あいだは？', stageDisplay:'6 → ◯ → 8', answer:2, choices:['5','6','7','8'] }
+    // あいだ系は矢印なしの 「N ◯ M」 表記 (半角スペース区切り、 sw v975+)。
+    // renderNumberSequence は stageDisplay に `→` が含まれない場合は arrow span を出さず、 半角スペースで token 分割する。
+    { level:3, type:'number_sequence', nums:[2,4], q:'2と 4の あいだは？', stageDisplay:'2 ◯ 4', answer:2, choices:['1','2','3','4'] },
+    { level:3, type:'number_sequence', nums:[6,8], q:'6と 8の あいだは？', stageDisplay:'6 ◯ 8', answer:2, choices:['5','6','7','8'] }
   ]
 };
 
