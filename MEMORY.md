@@ -124,6 +124,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T22:42:28Z - I1: saved-layout.json から .q-text-card .audio|0 の tx/ty を削除 + .char-hint|0 全削除
+- **タスク**: I1: saved-layout.json から .q-text-card .audio|0 の tx/ty を削除 + .char-hint|0 全削除
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 120
+- **エラー数**: 11
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 14, "Bash": 23, "Agent": 81, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-12T22:16:00Z - quizland v975→v976: number_sequence stage display の配色をブルー系→オレンジ系 (wood-dark/wood-light) に統一 + ◯ を Unicode 文字から SVG dashed circle (stroke-linecap:round) に置換
 - **タスク**: quizland v975→v976: number_sequence stage display の配色をブルー系→オレンジ系 (wood-dark/wood-light) に統一 + ◯ を Unicode 文字から SVG dashed circle (stroke-linecap:round) に置換
 - **結果**: 成功
@@ -225,19 +238,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 47, "ToolSearch": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T13:10:45Z - Z12b: voicepeak_unique_expand_number_sequence_phase1.json の q### キー -97 シフト (q169-q180 → q072-q083)
-- **タスク**: Z12b: voicepeak_unique_expand_number_sequence_phase1.json の q### キー -97 シフト (q169-q180 → q072-q083)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 80
-- **エラー数**: 7
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 42, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
