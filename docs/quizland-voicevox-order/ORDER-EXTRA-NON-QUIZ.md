@@ -133,89 +133,89 @@
 
 ファイル名規則: `hakase_correct_{NN}.wav` (NN = 01〜10、 配列インデックスと 1:1 対応)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_correct_01.wav` | おお！ せいかいじゃ！ |
-| `hakase_correct_02.wav` | よいぞ よいぞ！ |
-| `hakase_correct_03.wav` | きみ、なかなか するどいのう |
-| `hakase_correct_04.wav` | その ひらめき、すばらしい！ |
-| `hakase_correct_05.wav` | ふむふむ、よくできたのう |
-| `hakase_correct_06.wav` | お見事じゃ！ |
-| `hakase_correct_07.wav` | そのとおり じゃ！ |
-| `hakase_correct_08.wav` | ばっちり じゃ！ |
-| `hakase_correct_09.wav` | やるのう！ |
-| `hakase_correct_10.wav` | かしこいのう！ |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_correct_01.wav` | おお！ 正解じゃ！ | おお！ せいかいじゃ！ |
+| `hakase_correct_02.wav` | よいぞ よいぞ！ | よいぞ よいぞ！ |
+| `hakase_correct_03.wav` | きみ、なかなか 鋭いのう | きみ、なかなか するどいのう |
+| `hakase_correct_04.wav` | その ひらめき、素晴らしい！ | その ひらめき、すばらしい！ |
+| `hakase_correct_05.wav` | ふむふむ、よく出来たのう | ふむふむ、よくできたのう |
+| `hakase_correct_06.wav` | お見事じゃ！ | お見事じゃ！ |
+| `hakase_correct_07.wav` | その通り じゃ！ | そのとおり じゃ！ |
+| `hakase_correct_08.wav` | ばっちり じゃ！ | ばっちり じゃ！ |
+| `hakase_correct_09.wav` | やるのう！ | やるのう！ |
+| `hakase_correct_10.wav` | 賢いのう！ | かしこいのう！ |
 
 ### B-2. rarePraise (レア正解、 10% 確率発動) — 6 件
 
 ファイル名規則: `hakase_rare_{NN}.wav` (NN = 01〜06)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_rare_01.wav` | ほっほっほ…わしも まけておれんな |
-| `hakase_rare_02.wav` | きみは もう はかせの なかまじゃな |
-| `hakase_rare_03.wav` | これは わしも おどろいたわい |
-| `hakase_rare_04.wav` | きみの あたまは すごいのう |
-| `hakase_rare_05.wav` | これは てんさいじゃな！ |
-| `hakase_rare_06.wav` | わしの まけじゃ、ほっほっほ |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_rare_01.wav` | ほっほっほ…わしも 負けておれんな | ほっほっほ…わしも まけておれんな |
+| `hakase_rare_02.wav` | きみは もう 博士の 仲間じゃな | きみは もう はかせの なかまじゃな |
+| `hakase_rare_03.wav` | これは わしも 驚いたわい | これは わしも おどろいたわい |
+| `hakase_rare_04.wav` | きみの 頭は すごいのう | きみの あたまは すごいのう |
+| `hakase_rare_05.wav` | これは 天才じゃな！ | これは てんさいじゃな！ |
+| `hakase_rare_06.wav` | わしの 負けじゃ、ほっほっほ | わしの まけじゃ、ほっほっほ |
 
 ### B-3. wrong (不正解) — 8 件
 
 ファイル名規則: `hakase_wrong_{NN}.wav` (NN = 01〜08)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_wrong_01.wav` | ふむ… ちがったようじゃな |
-| `hakase_wrong_02.wav` | だいじょうぶ、もういちど かんがえてみよう |
-| `hakase_wrong_03.wav` | あわてんで よいぞ |
-| `hakase_wrong_04.wav` | ふむふむ… おしいのう |
-| `hakase_wrong_05.wav` | そっか、ちがったか |
-| `hakase_wrong_06.wav` | まあ そんなときも あるさ |
-| `hakase_wrong_07.wav` | もういちど、よーく みてみよう |
-| `hakase_wrong_08.wav` | ゆっくりでよいぞ |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_wrong_01.wav` | ふむ… 違ったようじゃな | ふむ… ちがったようじゃな |
+| `hakase_wrong_02.wav` | 大丈夫、もう一度 考えてみよう | だいじょうぶ、もういちど かんがえてみよう |
+| `hakase_wrong_03.wav` | 慌てんで よいぞ | あわてんで よいぞ |
+| `hakase_wrong_04.wav` | ふむふむ… 惜しいのう | ふむふむ… おしいのう |
+| `hakase_wrong_05.wav` | そっか、違ったか | そっか、ちがったか |
+| `hakase_wrong_06.wav` | まあ そんな時も あるさ | まあ そんなときも あるさ |
+| `hakase_wrong_07.wav` | もう一度、よーく 見てみよう | もういちど、よーく みてみよう |
+| `hakase_wrong_08.wav` | ゆっくりでよいぞ | ゆっくりでよいぞ |
 
 ### B-4. consecutiveMiss (連続 2 回不正解) — 6 件
 
 ファイル名規則: `hakase_miss_{NN}.wav` (NN = 01〜06)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_miss_01.wav` | むずかしいかの？ |
-| `hakase_miss_02.wav` | ヒントを みてみるかい？ |
-| `hakase_miss_03.wav` | いっしょに かんがえてみよう |
-| `hakase_miss_04.wav` | ふむ… むずかしいのう |
-| `hakase_miss_05.wav` | ヒントが あるぞ、みてみる？ |
-| `hakase_miss_06.wav` | ゆっくり いこうか |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_miss_01.wav` | 難しいかの？ | むずかしいかの？ |
+| `hakase_miss_02.wav` | ヒントを 見てみるかい？ | ヒントを みてみるかい？ |
+| `hakase_miss_03.wav` | 一緒に 考えてみよう | いっしょに かんがえてみよう |
+| `hakase_miss_04.wav` | ふむ… 難しいのう | ふむ… むずかしいのう |
+| `hakase_miss_05.wav` | ヒントが あるぞ、見てみる？ | ヒントが あるぞ、みてみる？ |
+| `hakase_miss_06.wav` | ゆっくり いこうか | ゆっくり いこうか |
 
 ### B-5a. clear.perfect (5/5 正解) — 3 件
 
 ファイル名規則: `hakase_clear_perfect_{NN}.wav` (NN = 01〜03)
 
-| ファイル名 | speech (原文ママ) | 備考 |
-|---|---|---|
-| `hakase_clear_perfect_01.wav` | ぜんもん せいかい！ きみは もう、もりの なぞなぞマスターじゃな！ | |
-| `hakase_clear_perfect_02.wav` | ほっほっほ、わしも おどろいた！ | |
-| `hakase_clear_perfect_03.wav` | きみは もう、はかせを こえとるかも しれんのう | 将来「全カテゴリパーフェクト限定発火」 に格上げ予定 ([memory/feature_quizland_hakase_perfect_master_seal.md](../../memory/feature_quizland_hakase_perfect_master_seal.md))。 音声は通常通り収録 |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) | 備考 |
+|---|---|---|---|
+| `hakase_clear_perfect_01.wav` | 全問 正解！ きみは もう、森の なぞなぞマスターじゃな！ | ぜんもん せいかい！ きみは もう、もりの なぞなぞマスターじゃな！ | |
+| `hakase_clear_perfect_02.wav` | ほっほっほ、わしも 驚いた！ | ほっほっほ、わしも おどろいた！ | |
+| `hakase_clear_perfect_03.wav` | きみは もう、博士を 超えとるかも しれんのう | きみは もう、はかせを こえとるかも しれんのう | 将来「全カテゴリパーフェクト限定発火」 に格上げ予定 ([memory/feature_quizland_hakase_perfect_master_seal.md](../../memory/feature_quizland_hakase_perfect_master_seal.md))。 音声は通常通り収録 |
 
 ### B-5b. clear.good (4/5 正解) — 3 件
 
 ファイル名規則: `hakase_clear_good_{NN}.wav` (NN = 01〜03)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_clear_good_01.wav` | りっぱじゃ！ よくできた！ |
-| `hakase_clear_good_02.wav` | お見事 じゃった！ |
-| `hakase_clear_good_03.wav` | ふむふむ、たのしかったのう |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_clear_good_01.wav` | 立派じゃ！ よく出来た！ | りっぱじゃ！ よくできた！ |
+| `hakase_clear_good_02.wav` | お見事 じゃった！ | お見事 じゃった！ |
+| `hakase_clear_good_03.wav` | ふむふむ、楽しかったのう | ふむふむ、たのしかったのう |
 
 ### B-5c. clear.okay (3/5 正解) — 3 件
 
 ファイル名規則: `hakase_clear_okay_{NN}.wav` (NN = 01〜03)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_clear_okay_01.wav` | よくがんばったのう |
-| `hakase_clear_okay_02.wav` | ほっほっほ、いい かんじじゃ |
-| `hakase_clear_okay_03.wav` | また いっしょに あそぼうな |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_clear_okay_01.wav` | よく頑張ったのう | よくがんばったのう |
+| `hakase_clear_okay_02.wav` | ほっほっほ、いい 感じじゃ | ほっほっほ、いい かんじじゃ |
+| `hakase_clear_okay_03.wav` | また 一緒に 遊ぼうな | また いっしょに あそぼうな |
 
 ### B-5d. clear.tryAgain (0〜2/5 正解) — 7 件
 
@@ -226,24 +226,24 @@
 > - 既存 2 件: `tryagain_02`, `tryagain_03` (そのまま音声化)
 > - 新規追加 4 件: `tryagain_04`, `tryagain_05`, `tryagain_06`, `tryagain_07` (バリエーション充実のため拡張)
 
-| ファイル名 | speech (原文ママ) |
-|---|---|
-| `hakase_clear_tryagain_01.wav` | むずかしかったのう。 また やってみるとよい |
-| `hakase_clear_tryagain_02.wav` | あわてず、ゆっくりで よいぞ |
-| `hakase_clear_tryagain_03.wav` | つぎは もっと できるはずじゃ |
-| `hakase_clear_tryagain_04.wav` | かんがえたのが えらいぞ |
-| `hakase_clear_tryagain_05.wav` | わしも むかしは そうじゃった |
-| `hakase_clear_tryagain_06.wav` | ひとやすみして また おいで |
-| `hakase_clear_tryagain_07.wav` | ちょっと きゅうけいして また あそぼう |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) |
+|---|---|---|
+| `hakase_clear_tryagain_01.wav` | 難しかったのう。 また やってみるとよい | むずかしかったのう。 また やってみるとよい |
+| `hakase_clear_tryagain_02.wav` | 慌てず、ゆっくりで よいぞ | あわてず、ゆっくりで よいぞ |
+| `hakase_clear_tryagain_03.wav` | 次は もっと できるはずじゃ | つぎは もっと できるはずじゃ |
+| `hakase_clear_tryagain_04.wav` | 考えたのが えらいぞ | かんがえたのが えらいぞ |
+| `hakase_clear_tryagain_05.wav` | わしも 昔は そうじゃった | わしも むかしは そうじゃった |
+| `hakase_clear_tryagain_06.wav` | 一休みして また おいで | ひとやすみして また おいで |
+| `hakase_clear_tryagain_07.wav` | ちょっと 休憩して また 遊ぼう | ちょっと きゅうけいして また あそぼう |
 
 ### B-6. hint2FallbackGeneric (ヒント 2 段目共通フォールバック) — 2 件
 
 ファイル名規則: `hakase_hint2_generic_{NN}.wav` (NN = 01〜02)
 
-| ファイル名 | speech (原文ママ) | 備考 |
-|---|---|---|
-| `hakase_hint2_generic_01.wav` | ふむ… もうすこしじゃ | 旧「ほっほっほ、もうすこしじゃ」 から差し替え済 (笑い声の連続発火を抑制) |
-| `hakase_hint2_generic_02.wav` | じっくり えらんでみよう | |
+| ファイル名 | speech (VOICEPEAK 入力、 漢字混じり) | display (画面表示用、 ひらがな) | 備考 |
+|---|---|---|---|
+| `hakase_hint2_generic_01.wav` | ふむ… もう少しじゃ | ふむ… もうすこしじゃ | 旧「ほっほっほ、もうすこしじゃ」 から差し替え済 (笑い声の連続発火を抑制) |
+| `hakase_hint2_generic_02.wav` | じっくり 選んでみよう | じっくり えらんでみよう | |
 
 ---
 
