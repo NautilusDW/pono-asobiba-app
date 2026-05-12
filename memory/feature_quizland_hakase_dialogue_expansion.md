@@ -1,10 +1,10 @@
 ---
-name: Quizland 博士セリフプール拡張 (tryAgain 3→7 + hint2FallbackGeneric[0] 笑い声抜き) (2026-05-12)
-description: フクロウ博士の `clear.tryAgain` プールを 3→7 に拡張 (うち 1 件は差し替え、 4 件は新規追加) + `hint2FallbackGeneric[0]` を「ほっほっほ、 もうすこしじゃ」 から「ふむ… もうすこしじゃ」 に変更して笑い声の連続発火を抑制。 VOICEPEAK 男性3 で全 38 件の博士音声収録を見据えた変更
+name: 【MVP 後回し 2026-05-12】 Quizland 博士セリフプール拡張 (tryAgain 3→7 + hint2FallbackGeneric[0] 笑い声抜き) (2026-05-12)
+description: 【MVP 後回し 2026-05-12】 フクロウ博士の `clear.tryAgain` プールを 3→7 に拡張 (うち 1 件は差し替え、 4 件は新規追加) + `hint2FallbackGeneric[0]` を「ほっほっほ、 もうすこしじゃ」 から「ふむ… もうすこしじゃ」 に変更して笑い声の連続発火を抑制。 VOICEPEAK 男性3 で全 38 件の博士音声収録を見据えた変更。 **博士 48 件は MVP 後回し (くるみ 912 件のみ MVP 内)、 拡張プール内容は将来フェーズで使うため温存** ([feature_quizland_voicepeak_pivot.md](feature_quizland_voicepeak_pivot.md) 参照)
 type: project
 originSessionId: 66a166a1-c31b-4e7a-902a-59ab8150f7fb
 ---
-# 博士セリフプール拡張 (2026-05-12)
+# 博士セリフプール拡張 (2026-05-12) 【MVP 後回し】
 
 ## 変更ファイル
 - `quizland/index.html` の `HAKASE_DIALOGUE.clear.tryAgain` (3→7 件)
