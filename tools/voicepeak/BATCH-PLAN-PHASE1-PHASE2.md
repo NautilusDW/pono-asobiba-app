@@ -4,7 +4,7 @@
 >
 > 出典: `docs/quizland-voicevox-order/ORDER-FULL.md` (907 件) + くるみ第 1〜5 問目コール 5 件
 >
-> CSV フォーマット: 1 列目固定 `女の子`、 2 列目 speech、 ヘッダなし、 UTF-8 (BOM なし)、 CRLF。 既存 `voicepeak_lines_test27.csv` 準拠。
+> CSV フォーマット: 1 列目固定 `女性4` (2026-05-12 確定、 旧 「女の子」 中継案は試聴の結果却下 → 「女性4」 へ再差替、 詳細は [memory/feature_quizland_voicepeak_pivot_jyosei4.md](../../memory/feature_quizland_voicepeak_pivot_jyosei4.md))、 2 列目 speech、 ヘッダなし、 UTF-8 (BOM なし)、 CRLF。 既存 `voicepeak_lines_test27.csv` 準拠 (CSV 自体のナレーター名置換は別 Agent が並列実施中)。
 
 ## 方針サマリ (2026-05-12 ユーザー指示)
 

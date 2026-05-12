@@ -61,7 +61,7 @@ originSessionId: 66a166a1-c31b-4e7a-902a-59ab8150f7fb
 - clear.perfect 3 件 / good 3 件 / okay 3 件 / **tryAgain 7 件 (拡張済)**
 - hint2FallbackGeneric 2 件 (差し替え版含む)
 
-話者: VOICEPEAK 男性3 + ピッチ/速度を下げて年配感。 くるみは VOICEPEAK 「女の子」。
+話者: 博士 = VOICEPEAK 「ナレーター おじいさん」 (秦なおき声、 2026-05-12 確定、 ¥5,980 単体購入済、 ただし MVP 後回し)。 くるみ = VOICEPEAK 「女性4」 (2026-05-12 確定、 旧「女の子」 は試聴で却下 → 「女性4」 へ再差替)。
 
 ## ユーザー判断履歴 (2026-05-12)
 1. 「却下無し、 全部 OK」 → B1/B2/E1/E2 4 案すべて採用 (tryAgain[3-6])

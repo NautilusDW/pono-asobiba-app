@@ -75,14 +75,15 @@ powershell -ExecutionPolicy Bypass -File .\Convert-VoicepeakUserDictVdc2ToCsv.ps
 
 ### Step 2. ナレーター (話者) 選択
 
+> **【2026-05-12 確定】 ナレーター名 = `女性4`** (旧 「女の子」 中継案は同日内 27 ファイル試聴で却下、 「女性4」 へ再差替)。 詳細は [memory/feature_quizland_voicepeak_pivot_jyosei4.md](../../memory/feature_quizland_voicepeak_pivot_jyosei4.md) 参照。 「女性4」 が 6 ナレーターセット内 or 別売かは要ユーザー確認 ([memory/reference_voicepeak_voices_purchased.md](../../memory/reference_voicepeak_voices_purchased.md))。
+
 1. プロジェクト新規作成
-2. 画面上のナレーター選択メニューから、くるみちゃんに合いそうな話者を選ぶ
-3. `voicepeak_lines_test27.csv` の 1 カラム目には仮で **`Japanese Female Child`** と書いているが、これは VOICEPEAK の標準女性子供声プリセット名の **想定** であり、実際の話者名はバージョンや所有プリセットによって異なる
-4. ユーザーが所有しているナレーターから **女声 (元気で優しいお姉さん感)** を 1 つ選ぶ:
-   - `Japanese Female 1` / `Japanese Female 2` (VOICEPEAK 標準同梱)
-   - `フリモメン` `紲星あかり` `小春六花` 等の追加ナレーター
-5. CSV の 1 カラム目を選んだナレーター名に **一括置換** (例: VS Code でファイル内置換 `Japanese Female Child` → `Japanese Female 1`)
-6. ナレーター名を空欄にすれば「現在選択中のナレーターで読む」運用も可能 (VOICEPEAK バージョンによる)
+2. 画面上のナレーター選択メニューから **「女性4」** プリセットを選ぶ (くるみちゃん担当)
+3. `voicepeak_lines_test27.csv` 等の各 CSV の 1 カラム目はナレーター名 (現行確定値 `女性4`、 別 Agent が CSV ナレーター名置換を並列実施中) を保持
+4. CSV の 1 カラム目が古い値 (`女の子` / `Japanese Female Child` 等) になっている場合は VS Code でファイル内置換 (`女の子` → `女性4`)
+5. ナレーター名を空欄にすれば「現在選択中のナレーターで読む」運用も可能 (VOICEPEAK バージョンによる)
+
+> **【廃案 2026-05-12】 旧 「女の子」 中継案 (履歴温存)**: 同日内一段階目で VOICEPEAK 「女の子」 (おまけプリセット) で 27 ファイル統一する方針が一旦確定 → 試聴の結果で却下 → 「女性4」 へ再差替。 旧 CSV / Python スクリプト内の `女の子` 文字列は別 Agent が並列で 「女性4」 に置換中 (本 README は documentation のみ更新)。
 
 ### Step 3. CSV インポート → 一括生成
 
@@ -199,7 +200,7 @@ Get-ChildItem *.wav | ForEach-Object {
 ## ユーザー確認が必要なポイント (まとめ)
 
 1. **辞書フォーマット**: ~~VOICEPEAK の正しいフォーマットを GUI で 1 語登録 → エクスポートで確認~~ → **2026-05-12 解明済 + 完全ラウンドトリップ対応**: `.vdc2` は UTF-8 JSON 配列 (`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` + 任意 `overwriteAccents` の 6+1 フィールド)。順方向 (`Convert-VoicepeakUserDictCsvToVdc2.ps1`) と逆方向 (`Convert-VoicepeakUserDictVdc2ToCsv.ps1`) の両方を用意し、CSV を 5 カラム化してモーラ音高 (`overwriteAccents`) を `;` 区切りで保持。GUI 手動微調整値を CSV にキープ可能
-2. **ナレーター名**: `Japanese Female Child` は仮置き。所有しているナレーターから女声を選んで CSV を一括置換してほしい
+2. **ナレーター名**: **`女性4` で確定 (2026-05-12 再差替、 旧 「女の子」 試聴の結果却下)**。 旧 CSV 内の `女の子` (中継案) / `Japanese Female Child` (初期仮置き) はすべて `女性4` に置換 (CSV 置換は別 Agent が並列実施中)
 3. **SSML サポート**: VOICEPEAK のバージョンで SSML インポートメニューが存在するか確認 (なければ SSML 案は破棄)
 4. **試聴判断**: テスト 27 ファイル生成後、VOICEVOX 雨晴はう版と聴き比べてどちらをメインにするか決定してほしい
 
