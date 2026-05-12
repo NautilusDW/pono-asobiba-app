@@ -684,18 +684,36 @@ window.EditorBootstrapConfig = {
     return sel.length === 1 ? sel[0] : null;
   }
 
-  // ─── rotate 適用 (内側 img or bg-layer) ────────────────────────────────
+  // ─── rotate 適用 (内側 img / bg-layer / 自身を回転) ──────────────────
   // window.__zk_inv_applyRotate(el) で createUserbox 側から呼ぶ。
+  //
+  // 3 分岐:
+  //   (A) 直接の <img> 子要素がある (window-frame / pono-portrait 等)
+  //       → [data-rotate] > img CSS rule で内側 img を回す
+  //   (B) inline style or dataset の background-image がある (userbox-with-bg)
+  //       → .zk-rotate-layer を挿入して bg を移植・回転
+  //   (C) img も bg も無い複合要素 (.hint-panel / 任意の複数子持ち div 等)
+  //       → 要素自身を translate と合成して回転 (子要素まるごと回る)
+  //
+  // 注意: (C) のとき LayoutEditor の drag が `el.style.transform = 'translate(...)'`
+  // で transform を上書きするので、 LayoutEditor の 'transform' イベントで
+  // 再適用する hook を後段で登録する (le().on('transform', ...) を利用)。
   function applyRotate(el) {
     if (!el) return;
     var deg = parseFloat(el.dataset.rotate || '0') || 0;
     el.style.setProperty('--zk-rotate-deg', String(deg));
-    // 内側に <img> があればそれが [data-rotate] > img の CSS rule で回る。
-    // 無いが background-image を持つなら zk-rotate-layer を作って bg を移す。
+    // ── (A) 内側 <img> 直接子: CSS rule に委譲 ─────────────────────────
     var innerImg = el.querySelector(':scope > img');
-    if (!innerImg) {
-      var bg = el.dataset.bgImage ||
-        (el.style.backgroundImage && el.style.backgroundImage !== 'none' ? el.style.backgroundImage : '');
+    if (innerImg) {
+      // 念のため (C) 由来の自己回転 inline transform が残っていたら剥がす
+      // (deg=0 戻しのケース等で 'rotate(0deg)' が残ると無害だが綺麗に保つ)
+      stripSelfRotateFromTransform(el);
+      return;
+    }
+    // ── (B) inline / dataset bg-image を持つ: rotate-layer を生成 ──────
+    var bg = el.dataset.bgImage ||
+      (el.style.backgroundImage && el.style.backgroundImage !== 'none' ? el.style.backgroundImage : '');
+    if (bg) {
       var layer = el.querySelector(':scope > .zk-rotate-layer');
       if (deg) {
         // bg が `url("...")` 形式 or 生 URL 双方を受ける
@@ -723,7 +741,29 @@ window.EditorBootstrapConfig = {
           else el.style.backgroundImage = '';
         }
       }
+      stripSelfRotateFromTransform(el);
+      return;
     }
+    // ── (C) img も inline-bg も無い複合要素: 自身を translate+rotate で回す ─
+    // LayoutEditor は drag 中に `transform: translate(tx px, ty px)` を直書き
+    // するため、 ここでも translate 部分を保持しつつ rotate を合成する。
+    var tx = (typeof el._tx === 'number') ? el._tx : 0;
+    var ty = (typeof el._ty === 'number') ? el._ty : 0;
+    if (deg) {
+      el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) rotate(' + deg + 'deg)';
+      el.dataset._zkSelfRot = '1';
+    } else {
+      el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      delete el.dataset._zkSelfRot;
+    }
+  }
+  // (A)(B) 分岐で要素自身に rotate が残っていたら剥がす (transform を再構築)
+  function stripSelfRotateFromTransform(el) {
+    if (el.dataset._zkSelfRot !== '1') return;
+    delete el.dataset._zkSelfRot;
+    var tx = (typeof el._tx === 'number') ? el._tx : 0;
+    var ty = (typeof el._ty === 'number') ? el._ty : 0;
+    el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
   }
   window.__zk_inv_applyRotate = applyRotate;
 
@@ -861,6 +901,36 @@ window.EditorBootstrapConfig = {
     document.getElementById('zk-aspect-lock').addEventListener('click', toggleAspectLock);
     // 選択変更イベントで button 状態を更新
     try { ed.on('select', refreshButtons); } catch (e) {}
+    // === transform 再適用 hook (sw v949) ====================================
+    // LayoutEditor の drag/resize は el.style.transform を 'translate(...)' で
+    // 直書きするため、 (C) 分岐で自身に焼いた rotate(...) が剥がれる。
+    // 'transform' イベントを listen して、 該当 element に dataset.rotate が
+    // 残っていれば applyRotate を再実行する。
+    //   - kind='resize' / 'zk-rotate' / 'zk-reset-natural' は info.el がある
+    //   - kind='move' / 'group-resize' は el が無いので選択中要素すべてを総当たり
+    //   - 無限ループ回避: applyRotate は (C) 内でのみ transform を書き換え、
+    //     直後に新たな 'transform' イベントを emit しないので OK。
+    try {
+      ed.on('transform', function (info) {
+        if (!info) return;
+        var src = info && info.kind;
+        // applyRotate 自身が起点の 'transform' は再帰しないように skip
+        if (src === 'zk-rotate' || src === 'zk-reset-natural') return;
+        if (info.el) {
+          if (info.el.dataset && info.el.dataset.rotate) {
+            try { applyRotate(info.el); } catch (e) {}
+          }
+          return;
+        }
+        // info.el が無いケース (move / group-resize): 選択中要素を全部見る
+        var sel = getSelected();
+        sel.forEach(function (el) {
+          if (el && el.dataset && el.dataset.rotate) {
+            try { applyRotate(el); } catch (e) {}
+          }
+        });
+      });
+    } catch (e) {}
     // ?edit=1 で起動した直後は cornerHandleFreeMode を OFF=true (自由) に初期化。
     // 「現状 横幅が固定されていて自由に変えられない」 を解消するのが主目的。
     ed._state.cornerHandleFreeMode = true;
