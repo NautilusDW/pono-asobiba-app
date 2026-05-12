@@ -1722,7 +1722,13 @@ SCREEN_HOOKS.search = {
 function renderQuestion() {
   setImg(document.getElementById('outerBgImg'), SHARED_OUTER_BG);
   const fieldBg = document.getElementById('fieldBg');
-  setImg(document.getElementById('windowBg'), currentSpot.fieldBg);
+  // 背景バリアント対応 (簡易): fieldBgVariants が定義されていれば 0 番目 (v1) を
+  // 優先採用、 無ければ既存 fieldBg にフォールバック。 後方互換完全。
+  // 将来 variant 選択 UI 追加時はこのインデックスを切替可能にする。
+  const _bgFromVariants = Array.isArray(currentSpot.fieldBgVariants)
+    ? currentSpot.fieldBgVariants[0]
+    : null;
+  setImg(document.getElementById('windowBg'), _bgFromVariants || currentSpot.fieldBg);
   setImg(document.getElementById('windowFrame'), currentSpot.windowFrame);
 
   const totalSpots = (currentArea.spots || []).length;

@@ -45,6 +45,12 @@ window.ZUKAN_DATA = {
           id: "flower_path_main",
           name: "おはなの ひろば",
           fieldBg: "../assets/zukan/search/flower_path_field_16x9.png",
+          // v1 (= 既存 fieldBg) + v2〜v5 placeholder。null は「未生成」を示す。
+          // 命名規則: <area>_field_16x9_v<N>.png (v1 は既存ファイル名のまま、v2〜v5 が新規)
+          fieldBgVariants: [
+            "../assets/zukan/search/flower_path_field_16x9.png",
+            null, null, null, null
+          ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
           // innermap 上のピン位置 (spot_flower_path.png 上の比率)
           mapPin: { x: 0.50, y: 0.55 },
@@ -86,6 +92,10 @@ window.ZUKAN_DATA = {
           id: "mushroom_forest_main",
           name: "きのこの ひろば",
           fieldBg: "../assets/zukan/search/mushroom_forest_field_16x9.png",
+          fieldBgVariants: [
+            "../assets/zukan/search/mushroom_forest_field_16x9.png",
+            null, null, null, null
+          ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
           mapPin: { x: 0.50, y: 0.55 },
           animals: [
@@ -127,6 +137,12 @@ window.ZUKAN_DATA = {
           id: "sunlit_forest_main",
           name: "こもれびの ひろば",
           fieldBg: "../assets/zukan/search/leaf_glow_forest_field_16x9.png",
+          // 注意: v1 のファイル名は既存命名 (leaf_glow_forest_field_16x9.png) を温存。
+          // v2〜v5 は <area>_field_16x9_v<N>.png 規約に従い sunlit_forest_field_16x9_v<N>.png とする。
+          fieldBgVariants: [
+            "../assets/zukan/search/leaf_glow_forest_field_16x9.png",
+            null, null, null, null
+          ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
           mapPin: { x: 0.50, y: 0.55 },
           animals: [
@@ -168,6 +184,10 @@ window.ZUKAN_DATA = {
           id: "dew_pond_main",
           name: "しずくの ひろば",
           fieldBg: "../assets/zukan/search/dew_pond_field_16x9.png",
+          fieldBgVariants: [
+            "../assets/zukan/search/dew_pond_field_16x9.png",
+            null, null, null, null
+          ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
           mapPin: { x: 0.50, y: 0.55 },
           animals: [

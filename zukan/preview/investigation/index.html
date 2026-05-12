@@ -14,6 +14,10 @@
      ──────────────────────────────────────────────────────────────── -->
 <link rel="stylesheet" href="../../../common/layout/layout-shared.css">
 <script src="../../../common/layout/editor-bootstrap.js" defer></script>
+<!-- ずかんデータ (fieldBgVariants 配列を参照するため、 editor-bootstrap より先に
+     synchronous で読み込み、 window.ZUKAN_DATA を確実に DOMContentLoaded 前に
+     入手しておく。 -->
+<script src="../../data/zukan-data.js"></script>
 
 <style>
 :root {
@@ -453,6 +457,19 @@ body.layout-editor-on .zk-inv-toolbar { display: flex; }
   margin-right: 4px;
   font-size: 11px;
 }
+.zk-inv-toolbar select {
+  font-family: var(--jp-font);
+  font-size: 12px;
+  background: #2a2a2a;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.zk-inv-toolbar select option:disabled {
+  color: #777;
+}
 
 /* ───── ZK-INV: rotate 適用 ─────────────────────────────────────────────
  *  対象要素にインライン CSS 変数 --zk-rotate-deg を仕込んで、
@@ -579,6 +596,15 @@ body.layout-editor-on [data-aspect-lock="1"]::after {
           title="選択中の枠を 90° 回転 (0→90→180→270→0)">🔄 90°回転</button>
   <button id="zk-aspect-lock" type="button" aria-pressed="false"
           title="アスペクト比固定 ON/OFF (OFF = 角ハンドルでも自由に縦横変えられる)">🔒 比率固定 OFF</button>
+  <span class="zk-inv-label" style="margin-left:8px;">🌅 背景バリアント</span>
+  <select id="zk-bg-variant"
+          title="同じエリアの背景画像を v1〜v5 で切替 (レイアウトは共有)">
+    <option value="0">v1 (現在のメイン)</option>
+    <option value="1">v2 (未生成)</option>
+    <option value="2">v3 (未生成)</option>
+    <option value="3">v4 (未生成)</option>
+    <option value="4">v5 (未生成)</option>
+  </select>
 </div>
 
 <!-- エディタが起動していない時の説明 (?edit=1 を促す) -->
@@ -861,6 +887,119 @@ window.EditorBootstrapConfig = {
       console.log('[zk-inv] LayoutEditor not enabled (no ?edit=1?), skipping bind');
     }
   }, 100);
+})();
+</script>
+
+<!-- ─────────────────────────────────────────────────────────────────────
+     ZK-INV: 背景バリアント切替 (1 エリアあたり最大 5 種類)
+     - zukan-data.js の spots[].fieldBgVariants 配列 (length 5) を読み取り、
+       v1〜v5 の option を構築。 null は「未生成」 / 実際に HTTP 404 になったら
+       「未生成」 にダウングレード。
+     - 切替時、 .field-bg > img の src を差し替え (レイアウトは共有)。
+     - このページは「花の小道 (flower_path)」 を編集する固定 1 エリア用エディタ。
+     ───────────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  // このエディタが扱うエリア ID (固定)。 将来複数エリア切替したい場合は
+  // URL ?area=<id> 等で動的化する。
+  var AREA_ID = 'flower_path';
+
+  var sel = document.getElementById('zk-bg-variant');
+  if (!sel) return;
+  var fieldImg = document.querySelector('.field-bg > img');
+  if (!fieldImg) return;
+
+  function getVariants() {
+    var data = window.ZUKAN_DATA;
+    if (!data || !Array.isArray(data.areas)) return null;
+    var area = data.areas.filter(function (a) { return a.id === AREA_ID; })[0];
+    if (!area || !Array.isArray(area.spots) || !area.spots[0]) return null;
+    var spot = area.spots[0];
+    // 後方互換: fieldBgVariants が無い場合は [fieldBg, null x4]
+    if (Array.isArray(spot.fieldBgVariants)) return spot.fieldBgVariants.slice(0, 5);
+    return [spot.fieldBg || null, null, null, null, null];
+  }
+
+  function setOptionLabel(idx, label, disabled) {
+    var opt = sel.options[idx];
+    if (!opt) return;
+    opt.textContent = label;
+    opt.disabled = !!disabled;
+  }
+
+  // HTTP で実在チェック (null は skip)。 404 が出たら disable に降格。
+  function probeVariant(idx, url) {
+    if (!url) {
+      setOptionLabel(idx, 'v' + (idx + 1) + ' (未生成)', true);
+      return;
+    }
+    var probe = new Image();
+    probe.onload = function () {
+      setOptionLabel(idx, 'v' + (idx + 1), false);
+    };
+    probe.onerror = function () {
+      console.warn('[zk-bg] v' + (idx + 1) + ' not found (404), marked as 未生成 — ' + url);
+      setOptionLabel(idx, 'v' + (idx + 1) + ' (未生成)', true);
+      // 現在選択中だった場合は v1 に戻す
+      if (parseInt(sel.value, 10) === idx) {
+        sel.value = '0';
+        applyVariant(0);
+      }
+    };
+    probe.src = url;
+  }
+
+  function applyVariant(idx) {
+    var variants = getVariants();
+    if (!variants) return;
+    var url = variants[idx];
+    if (!url) {
+      console.warn('[zk-bg] cannot apply v' + (idx + 1) + ': URL is null');
+      return;
+    }
+    // レイアウト (userbox 配置・回転・フレーム等) は触らず src のみ swap
+    fieldImg.src = url;
+    console.log('[zk-bg] switched to v' + (idx + 1) + ', src=' + url);
+  }
+
+  function init() {
+    var variants = getVariants();
+    if (!variants) {
+      console.warn('[zk-bg] ZUKAN_DATA not loaded, variant UI inactive');
+      return;
+    }
+    // 「v1 (現在のメイン)」 はそのまま、 v2〜v5 は null かどうかで初期 disable 判定
+    setOptionLabel(0, variants[0] ? 'v1 (現在のメイン)' : 'v1 (未生成)', !variants[0]);
+    for (var i = 1; i < 5; i++) {
+      if (variants[i]) {
+        setOptionLabel(i, 'v' + (i + 1), false);
+      } else {
+        setOptionLabel(i, 'v' + (i + 1) + ' (未生成)', true);
+      }
+    }
+    // 実ファイル確認 (非同期、 404 なら disable 化)
+    for (var j = 0; j < 5; j++) {
+      probeVariant(j, variants[j]);
+    }
+    // change handler
+    sel.addEventListener('change', function () {
+      var idx = parseInt(sel.value, 10) || 0;
+      applyVariant(idx);
+    });
+    // 起動時のデフォルトは v1
+    sel.value = '0';
+
+    var available = variants.filter(function (v) { return !!v; }).length;
+    console.log('[zk-bg] variant UI bound, available=' + available + ', default=v1');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 </script>
 </body>

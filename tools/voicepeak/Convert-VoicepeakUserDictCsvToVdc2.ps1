@@ -62,9 +62,40 @@ function Add-JsonPropertyLine {
     $suffix = if ($TrailingComma) { "," } else { "" }
     if ($Value -is [int]) {
         $Lines.Add(('    {0}: {1}{2}' -f (ConvertTo-JsonEscapedString $Name), $Value, $suffix))
+    } elseif ($Value -is [System.Array]) {
+        # Array of integers (overwriteAccents)
+        $joined = ($Value -join ', ')
+        $Lines.Add(('    {0}: [{1}]{2}' -f (ConvertTo-JsonEscapedString $Name), $joined, $suffix))
     } else {
         $Lines.Add(('    {0}: {1}{2}' -f (ConvertTo-JsonEscapedString $Name), (ConvertTo-JsonEscapedString ([string]$Value)), $suffix))
     }
+}
+
+function Convert-PosLabelToVdc2 {
+    param([string]$Label)
+
+    # Map Japanese CSV pos labels to VOICEPEAK VDC2 internal pos identifiers.
+    # VOICEPEAK uses underscore-separated romaji identifiers (e.g. Japanese_Futsuu_meishi).
+    # All entries currently observed in test.vdc2 are Futsuu_meishi; verb mapping is best-effort.
+    # Build Japanese label literals from char codes so the script stays ASCII-only
+    # (Windows PowerShell 5.1 cannot parse UTF-8 source files without BOM if they
+    # contain non-ASCII characters).
+    $labelMeishi      = ([char]0x540D) + ([char]0x8A5E)                                 # noun
+    $labelFutsuuMeishi = ([char]0x666E) + ([char]0x901A) + ([char]0x540D) + ([char]0x8A5E) # common noun
+    $labelDoushi      = ([char]0x52D5) + ([char]0x8A5E)                                 # verb
+    $labelKeiyoushi   = ([char]0x5F62) + ([char]0x5BB9) + ([char]0x8A5E)               # adjective
+    $labelFukushi     = ([char]0x526F) + ([char]0x8A5E)                                 # adverb
+
+    if ([string]::IsNullOrWhiteSpace($Label)) {
+        return "Japanese_Futsuu_meishi"
+    }
+    $trimmed = $Label.Trim()
+    if ($trimmed -eq $labelMeishi)        { return "Japanese_Futsuu_meishi" }
+    if ($trimmed -eq $labelFutsuuMeishi)  { return "Japanese_Futsuu_meishi" }
+    if ($trimmed -eq $labelDoushi)        { return "Japanese_Doushi" }
+    if ($trimmed -eq $labelKeiyoushi)     { return "Japanese_Keiyoushi" }
+    if ($trimmed -eq $labelFukushi)       { return "Japanese_Fukushi" }
+    return "Japanese_Futsuu_meishi"
 }
 
 $inputPath = Resolve-PathForWrite $InputCsv
@@ -87,14 +118,16 @@ for ($i = 0; $i -lt $rows.Count; $i++) {
     $row = $rows[$i]
     $columns = @($row.PSObject.Properties)
     if ($columns.Count -lt 4) {
-        throw "Row $($i + 2): expected 4 CSV columns, got $($columns.Count)"
+        throw "Row $($i + 2): expected at least 4 CSV columns, got $($columns.Count)"
     }
 
-    # Column order: surface, pronunciation, accent type, part of speech.
+    # Column order: surface, pronunciation, accent type, part of speech, overwriteAccents (optional, ; separated).
     # Keep this script ASCII-only so Windows PowerShell 5.1 can parse it as UTF-8 without BOM.
     $surface = [string]$columns[0].Value
     $pronunciation = [string]$columns[1].Value
     $accentTypeText = [string]$columns[2].Value
+    $posLabel = [string]$columns[3].Value
+    $overwriteText = if ($columns.Count -ge 5) { [string]$columns[4].Value } else { "" }
 
     if ([string]::IsNullOrWhiteSpace($surface)) {
         throw "Row $($i + 2): surface is empty"
@@ -108,12 +141,37 @@ for ($i = 0; $i -lt $rows.Count; $i++) {
         throw "Row $($i + 2): accent type must be an integer for '$surface': '$accentTypeText'"
     }
 
+    $posValue = Convert-PosLabelToVdc2 $posLabel
+
+    $overwriteArray = $null
+    if (-not [string]::IsNullOrWhiteSpace($overwriteText)) {
+        $tokens = $overwriteText.Split(';')
+        $intList = New-Object "System.Collections.Generic.List[int]"
+        foreach ($tok in $tokens) {
+            $trimmed = $tok.Trim()
+            if ([string]::IsNullOrWhiteSpace($trimmed)) { continue }
+            $value = 0
+            if (-not [int]::TryParse($trimmed, [ref]$value)) {
+                throw "Row $($i + 2): overwriteAccents must be ;-separated integers for '$surface': '$overwriteText'"
+            }
+            $intList.Add($value)
+        }
+        if ($intList.Count -gt 0) {
+            $overwriteArray = $intList.ToArray()
+        }
+    }
+
     $lines.Add("  {")
     Add-JsonPropertyLine $lines "sur" $surface $true
     Add-JsonPropertyLine $lines "pron" $pronunciation $true
-    Add-JsonPropertyLine $lines "pos" "Japanese_Futsuu_meishi" $true
+    Add-JsonPropertyLine $lines "pos" $posValue $true
     Add-JsonPropertyLine $lines "priority" $DefaultPriority $true
-    Add-JsonPropertyLine $lines "accentType" $accentType $true
+    if ($null -ne $overwriteArray) {
+        Add-JsonPropertyLine $lines "accentType" $accentType $true
+        Add-JsonPropertyLine $lines "overwriteAccents" $overwriteArray $true
+    } else {
+        Add-JsonPropertyLine $lines "accentType" $accentType $true
+    }
     Add-JsonPropertyLine $lines "lang" "ja" $false
 
     if ($i -lt ($rows.Count - 1)) {
