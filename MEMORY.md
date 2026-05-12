@@ -121,6 +121,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T12:57:56Z - quizland v971-v973: chip-illust wrapper化で個別 resize 可能化 (img replaced element 問題回避) + chip-label 編集の text 抽出を DOM walk に置換 (改行 <div> 中身消失 regression を解消) + block 要素 leading \n 補完追加で iOS Safari/Shift+Enter 経路の改行保護完了
+- **タスク**: quizland v971-v973: chip-illust wrapper化で個別 resize 可能化 (img replaced element 問題回避) + chip-label 編集の text 抽出を DOM walk に置換 (改行 <div> 中身消失 regression を解消) + block 要素 leading \n 補完追加で iOS Safari/Shift+Enter 経路の改行保護完了
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 69
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 24, "Bash": 34, "Edit": 5, "Write": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T12:56:00Z - layout-editor v973: _extractChipLabelText の DOM walk に leading \n 補完を追加し <div> ブロック開始時の改行消失 (HIGH cross-review バグ) を解消、 node 論理 5 ケース PASS、 sw v972→v973 bump
 - **タスク**: layout-editor v973: _extractChipLabelText の DOM walk に leading \n 補完を追加し <div> ブロック開始時の改行消失 (HIGH cross-review バグ) を解消、 node 論理 5 ケース PASS、 sw v972→v973 bump
 - **結果**: 成功
@@ -223,18 +236,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 13, "Bash": 23, "Agent": 29, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T09:12:36Z - quizland v968: chip-label 編集時の overlay 子要素 (resize-handle x8 + resize-size-label 288xN) 混入問題を detach/reattach + cloneNode strip + tail regex sanitizer + idempotency guard の 4 段防御で根絶 + saved-layout.json の broken entries 3 件を Python 直接修復
-- **タスク**: quizland v968: chip-label 編集時の overlay 子要素 (resize-handle x8 + resize-size-label 288xN) 混入問題を detach/reattach + cloneNode strip + tail regex sanitizer + idempotency guard の 4 段防御で根絶 + saved-layout.json の broken entries 3 件を Python 直接修復
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 20
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 10, "Bash": 9}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
