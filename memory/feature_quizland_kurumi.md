@@ -156,6 +156,41 @@ type: feature
 - 改善 C は 150ms 重なるため、 ユーザー試聴で「重なりすぎ」 と感じた場合は段階的に 0.12 → 0.10 へ下げる方針
 - iOS Safari の HW デコーダーで mp3 末尾再生がうまくいかないケースに備え、 ended fallback は引き続き必須
 
+## ユーザー手動編集 mp3 5 ファイル差し替え (2026-05-12 / sw v965)
+
+v963 までの自動 ffmpeg トリミング (kurumi 冒頭 -40dB cut + don 末尾 cut + timeupdate 150ms 拡大) のあと、 **ユーザーが Audacity 等で 5 ファイルを手動で波形ベースで silence カット + 微調整した mp3** を 5 本提供 (`D:\ポノのおへや\Dr.owl'quiz\SE\Count_jingle\{1-5}-kurumi.mp3`)。 これを `assets/audio/sfx/quiz/kurumi_dai{1-5}mon.mp3` に配置 + SE_PATHS の拡張子を `.wav` → `.mp3` に変更。
+
+### 変更内容
+
+- **アセット差し替え**: `assets/audio/sfx/quiz/kurumi_dai{1-5}mon.mp3` を新規配置 (元は `D:\ポノのおへや\Dr.owl'quiz\SE\Count_jingle\{1-5}-kurumi.mp3`)。 旧 wav 5 ファイル (`kurumi_dai{1-5}mon.wav`) は assets から削除
+- **元 wav の温存**: VOICEPEAK 出力の元 wav は引き続き `tmp/quizland_NA/kurumi_expanded/kurumi_dai{1-5}mon.wav` に温存 (v962 で ffmpeg トリミング済の作業中間ファイル、 必要なら再展開可能)
+- **SE_PATHS**: `quizland/index.html` の SE_PATHS で `kurumi_dai1` 〜 `kurumi_dai5` のパス末尾を `.wav` → `.mp3` に変更 (5 行)、 don.mp3 と拡張子統一
+- **preload IIFE (`preloadKurumiNumberSe`) は無変更**: SE_PATHS をキー参照しているだけで拡張子を直接書いていないため自動で新パスを取得
+- **timeupdate 閾値 (`_remaining <= 0.15`) は v963 のまま温存**: ユーザー手動編集 mp3 の冒頭 silence は (Audacity 等で) かなり詰めている可能性が高く、 試聴次第で 50〜100ms に戻す余地あり。 **今回は試聴前なので無変更**
+
+### ファイルサイズ比較
+- before (wav, ffmpeg トリミング後): 90,556 + 90,520 + 97,828 + 97,378 + 96,122 = **472,404 bytes (約 461 KB)**
+- after  (mp3, ユーザー手動編集): 68,479 + 68,735 + 68,735 + 68,735 + 68,735 = **343,419 bytes (約 335 KB)**
+- 削減: 約 126 KB (約 27% 減)。 PCM wav → mp3 圧縮 (推定 128kbps 前後) によるもの。 体感品質は VOICEPEAK 「女性4」 のクリーンな波形なら 128kbps mp3 で十分 (本番運用想定)
+
+### sw.js
+- CACHE_VERSION 964 → 965 (v964 は同日 chip-label 改行 wrap 修正で既消費。 本タスク開始時点で既に 964 にバンプ済だったため、 v963 → v964 ではなく v964 → v965)
+- precache リストに quiz sfx は含まれないため追加不要 (HTTP cache でブラウザが取り直す)
+
+### 動作確認手順 (ユーザー向け)
+1. ハードリロード (Cmd/Ctrl + Shift + R) で sw v965 取得
+2. クイズ第 1 問 〜 第 5 問で don.mp3 → kurumi 「第N問」 がユーザー手動編集の新音源で再生されるか確認
+3. don 末尾と kurumi 冒頭の重なり (timeupdate 0.15s 早期 trigger による ~100ms オーバーラップ) が新音源と整合か体感確認
+4. 違和感があれば次回 timeupdate 閾値を 0.05 〜 0.10 に下げて再調整 (現状 0.15 のまま)
+5. 体感的に 「冒頭が早すぎる」 「don 末尾と被りすぎ」 と感じたら 0.10 → 0.05 へ段階的に下げる方針 (旧 v961 baseline)、 「むしろ間が空きすぎ」 なら 0.20 まで広げる方針
+
+### 注意点 / 既知の制約
+- 元 wav は assets からは削除したが `tmp/quizland_NA/kurumi_expanded/` に温存しているため、 ユーザー編集 mp3 を破棄したくなった時は wav から復元可能 (再生成手順は v962 「don → kurumi ラグ短縮 第 2 弾」 の改善 B 参照)
+- mp3 はブラウザがネイティブデコードするため iOS Safari でも問題なし (wav と同じく `<audio>` 要素で再生)
+- ファイルサイズが ~73KB/ファイルになり HTTP 取得が更に速くなる (元 wav は ~95KB/ファイル) → preload + ネットワーク取得の効率も若干向上
+- **発注書側の `kurumi_dai{N}mon.wav` 表記は無変更**: `docs/quizland-voicevox-order/ORDER-EXTRA-NON-QUIZ.md` と `tools/voicepeak/voicepeak_unique_expand_kurumi_dai1_5.json` は VOICEPEAK 生成側のファイル名 (= wav) を表記しており、 デプロイ側 (mp3) と区別される設計
+- 「波形編集後の冒頭 silence の有無」 はユーザーが手動編集した結果次第のため、 timeupdate 閾値の最適値は試聴して決める
+
 ## 関連ファイル
 - 発注書: `docs/quizland-voicevox-order/COWORK-TEST-ORDER.md`, `docs/quizland-voicevox-order/ORDER-FULL.md`
 - 既存博士 voice: `js/quizland-babble.js` (owl preset、shift キャラ別)

@@ -117,6 +117,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T08:26:09Z - Quizland 問題本編 wav 配置 + manifest.json 自動生成スクリプト先回り準備 (Build-NarrationManifest.ps1 + _build_narration_manifest.py + Deploy-VoicepeakWavs.ps1 + DEPLOY-WORKFLOW.md)
+- **タスク**: Quizland 問題本編 wav 配置 + manifest.json 自動生成スクリプト先回り準備 (Build-NarrationManifest.ps1 + _build_narration_manifest.py + Deploy-VoicepeakWavs.ps1 + DEPLOY-WORKFLOW.md)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 239
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 24, "Agent": 132, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 42, "Glob": 6, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-12T08:25:08Z - Quizland v965: ユーザー手動編集 mp3 5 ファイルを kurumi_dai{1-5}mon に差し替え (wav→mp3)、 旧 wav 5 本削除 (tmp に温存)、 SE_PATHS 拡張子変更、 sw v964→965 bump、 memory v965 セクション追加、 timeupdate 閾値 150ms 温存
+- **タスク**: Quizland v965: ユーザー手動編集 mp3 5 ファイルを kurumi_dai{1-5}mon に差し替え (wav→mp3)、 旧 wav 5 本削除 (tmp に温存)、 SE_PATHS 拡張子変更、 sw v964→965 bump、 memory v965 セクション追加、 timeupdate 閾値 150ms 温存
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 239
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 24, "Agent": 132, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 42, "Glob": 6, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T08:19:29Z - quizland chip-label 改行 wrap 時の位置ズレ修正 (.chip-label を display:flex + flex:1 1 0% + min-height:0 + align/justify center に変更、 overflow:hidden は box-shadow 保護のため chip-label 側に配置、 sw v963→v964)
 - **タスク**: quizland chip-label 改行 wrap 時の位置ズレ修正 (.chip-label を display:flex + flex:1 1 0% + min-height:0 + align/justify center に変更、 overflow:hidden は box-shadow 保護のため chip-label 側に配置、 sw v963→v964)
 - **結果**: 成功
@@ -205,32 +231,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 24, "Agent": 124, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 38, "Glob": 5, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T07:05:49Z - Quizland くるみ「第N問」 音声 MVP 実装 (kurumi_dai1-5mon.wav 配置 + SE_PATHS 追加 + don→kurumi 順次再生 + sw v956→957 bump + memory 追記)
-- **タスク**: Quizland くるみ「第N問」 音声 MVP 実装 (kurumi_dai1-5mon.wav 配置 + SE_PATHS 追加 + don→kurumi 順次再生 + sw v956→957 bump + memory 追記)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 204
-- **エラー数**: 22
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 41, "Read": 60, "Grep": 44, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 53, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T07:02:18Z - applyRotate を 全要素統一: container ごと回転 + 90/270 で width/height swap にシンプル化 (sw v955)
-- **タスク**: applyRotate を 全要素統一: container ごと回転 + 90/270 で width/height swap にシンプル化 (sw v955)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 223
-- **エラー数**: 13
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 24, "Agent": 122, "ToolSearch": 8, "Write": 9, "ExitPlanMode": 2, "Bash": 37, "Glob": 5, "WebSearch": 3, "Edit": 9, "WebFetch": 1, "Grep": 3}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
