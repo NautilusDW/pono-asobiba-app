@@ -1037,9 +1037,16 @@ body.sheet-on .hdr-right .ctrl-btn {
    Staged reveal (typewriter -> illustration -> choices)
    loadQuestion で .q-stage-pending を付け、 _runPlateAndType が
    tape の進行に合わせて .q-stage-revealed へ切替える。
-   - 挿絵 (.emoji-display / .emoji-main-img) … typewriter 50% で fade-in
-   - 4 択 (#answer-panel) … typewriter 完了後に fade-in
+   - 問題文 (#q-text) … Q1-5 では plate fade-out (kurumi ended +300ms) で reveal、
+                       Q6+ では typewriter 開始時に reveal
+   - 挿絵 (.emoji-display / .emoji-main-img) … Q1-5 では plate fade-out で reveal、
+                                                Q6+ では typewriter 50% で fade-in
+   - 4 択 (#answer-panel) … Q1-5 では plate fade-out で reveal、
+                            Q6+ では typewriter 完了後に fade-in
+   v967: 「第N問」 プレート表示中は問題文 / 挿絵 / 4 択 すべてを隠蔽するため、
+         #q-text を pending 管理対象に追加 (案 C)。
    ───────────────────────────────────────────────────────── */
+#q-text.q-stage-pending,
 .emoji-display.q-stage-pending,
 .emoji-main-img.q-stage-pending,
 #answer-panel.q-stage-pending {
@@ -1047,6 +1054,7 @@ body.sheet-on .hdr-right .ctrl-btn {
   pointer-events: none;
   transition: opacity 0.4s ease-out;
 }
+#q-text.q-stage-revealed,
 .emoji-display.q-stage-revealed,
 .emoji-main-img.q-stage-revealed,
 #answer-panel.q-stage-revealed {
@@ -4636,6 +4644,10 @@ function loadQuestion(q) {
   });
   const _ansPanel = document.getElementById('answer-panel');
   if (_ansPanel) _ansPanel.classList.add('q-stage-pending');
+  // v967: 「第N問」 プレート表示中は問題文も隠す (案 C)。
+  //   Q1-5: hideQuestionNumberPlate() で reveal される (kurumi ended +300ms = plate fade-out 同期)
+  //   Q6+:  _runPlateAndType() で typewriter 開始時に reveal される (plate 無いため即時)
+  if (_qTextEl) _qTextEl.classList.add('q-stage-pending');
   updateHUD();
   setupNarration(q);
   showProblemDialogue(q);
@@ -5316,6 +5328,15 @@ async function _runPlateAndType(qIdx) {
   }
   const el = document.getElementById('q-text');
   if (!el) return;
+  // v967: Q6+ は plate 無し = hideQuestionNumberPlate が走らないため、 typewriter
+  //   開始時にここで #q-text を reveal する。 Q1-5 でも先に reveal してしまうと
+  //   plate 表示中に問題文が見えてしまうので、 まだ pending のまま
+  //   typewriter を回す (テキスト追加は文字単位だが opacity:0 で不可視)。
+  //   Q1-5 では hideQuestionNumberPlate() が #q-text を含む全 pending を reveal する。
+  if (qIdx >= 5 && el.classList.contains('q-stage-pending')) {
+    el.classList.remove('q-stage-pending');
+    el.classList.add('q-stage-revealed');
+  }
   const text = el.dataset.pendingText;
   if (text == null) return;
 
@@ -6442,11 +6463,24 @@ async function playQuestionNumberPlate(qIdx) {
 
 // v960: kurumi 音声 ended (+0.3s) で plate をフェードアウト + DOM hide。
 // 重複呼び出し safe (既に hidden / running 中でない場合は no-op)。
+// v967: plate fade-out のタイミングで問題文 / 挿絵 / 4 択を一括 reveal (案 C)。
+//   loadQuestion 末尾で .q-stage-pending を付けて隠蔽 → ここで .q-stage-revealed
+//   に切替えて opacity 0→1 transition (CSS 0.4s) で同期的にフェードイン。
+//   tap-to-skip 経路 (_revealAllPendingStages) でも同じノードが reveal されるので
+//   既存タップスキップとも整合。
 function hideQuestionNumberPlate() {
   const root = document.getElementById('qno-plate-overlay');
   const img = document.getElementById('qno-plate-img');
   if (!root) return;
   if (root.classList.contains('hidden')) return;
+  // v967: plate fade-out 開始と同時に staged reveal を発火
+  //   (#q-text / .emoji-display / .emoji-main-img / #answer-panel が対象)
+  try {
+    document.querySelectorAll('.q-stage-pending').forEach(function (el) {
+      el.classList.remove('q-stage-pending');
+      el.classList.add('q-stage-revealed');
+    });
+  } catch (e) { /* noop */ }
   // フェードアウト用の transition を発火
   root.classList.add('is-fadeout');
   root.classList.remove('is-tap-skip');

@@ -1439,6 +1439,20 @@ body.layout-editor-on .chip-text-editing {
   white-space: pre-wrap;
   min-width: 1em;
   min-height: 1em;
+  /* v967: chip-label を編集 (contenteditable=true) する際、 通常表示用の
+     `display: flex` + `overflow: hidden` (quizland v964 で導入) のままだと、
+     テキストノードが anonymous flex item になり caret 位置が安定せず、
+     カーソル / 選択範囲が hidden 領域でクリップされて編集不能に近い状態になる。
+     編集中だけ `display: block` + `overflow: visible` に戻すことで、
+     通常時 (display:flex + center + hidden = 改行 wrap 位置ズレ fix v964) を
+     温存しつつ contenteditable の編集を復活させる。
+     対象は .chip .chip-label (および同クラスを兼ねる .chip-illust-label)、
+     count_total 用 .chip-count-num も同様に念のためカバー。 */
+  display: block !important;
+  overflow: visible !important;
+  /* flex 解除に伴い grow が消えるため、 高さ確保用の min-height を chip 内で
+     ある程度保つ (1em ではコンパクトすぎるので 1.2em に微調整)。 */
+  min-height: 1.2em;
 }
 /* 編集中の chip-label 内に resize-handle が居ると視覚的に邪魔なので隠す。
    edit が終われば contenteditable=false に戻り、 hide も解除される。 */
