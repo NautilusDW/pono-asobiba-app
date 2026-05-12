@@ -121,6 +121,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-12T12:27:09Z - quizland v970: chip-label 編集の overlay+改行混入を 5 段防御で完全根絶 (saved-layout.json merge marker 解決 + 4 entries sanitize + clone querySelectorAll('*') broad strip + <br> 除外 + 2-pass 全角対応 regex + load-time sanitizer + sw v968→v970)。 5 エージェント並列 (Explore + impl + reviewer REJECT + fix + verify)、 真因は前任が saved-layout.json の git merge marker (JSON invalid) を見逃していたこと + 旧 regex が半角のみで全角混入対応してなかったこと
+- **タスク**: quizland v970: chip-label 編集の overlay+改行混入を 5 段防御で完全根絶 (saved-layout.json merge marker 解決 + 4 entries sanitize + clone querySelectorAll('*') broad strip + <br> 除外 + 2-pass 全角対応 regex + load-time sanitizer + sw v968→v970)。 5 エージェント並列 (Explore + impl + reviewer REJECT + fix + verify)、 真因は前任が saved-layout.json の git merge marker (JSON invalid) を見逃していたこと + 旧 regex が半角のみで全角混入対応してなかったこと
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 59
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 17, "Bash": 31, "Edit": 5, "Write": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-12T12:26:10Z - v970 chip-label HIGH-1 br preservation cross-review fix
 - **タスク**: v970 chip-label HIGH-1 br preservation cross-review fix
 - **結果**: 成功
@@ -223,18 +236,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Agent": 7, "Bash": 7}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-12T08:46:59Z - Quizland v967: 第N問プレート表示中は問題文/挿絵/4択を隠蔽 (案C: #q-text を pending 化 + hideQuestionNumberPlate で全 reveal + Q1-5 では typewriter 完了時の reveal を抑止) + chip-label 編集復活 (案X: .chip-text-editing で display:flex→block / overflow:hidden→visible 切替) + sw v966→v967 bump
-- **タスク**: Quizland v967: 第N問プレート表示中は問題文/挿絵/4択を隠蔽 (案C: #q-text を pending 化 + hideQuestionNumberPlate で全 reveal + Q1-5 では typewriter 完了時の reveal を抑止) + chip-label 編集復活 (案X: .chip-text-editing で display:flex→block / overflow:hidden→visible 切替) + sw v966→v967 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 11
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 11}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
