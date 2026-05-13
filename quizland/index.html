@@ -1167,6 +1167,18 @@ body.sheet-on .hdr-right .ctrl-btn {
   object-fit: contain;
   pointer-events: none;
 }
+/* hooray (両手上げ) ポーズ時は全身画像 (dance_hooray.webp) をバストショット化:
+   他の think_v_* (バストショット) と構図を揃えるため、 画像を 1.7倍に拡大し
+   上端 (頭〜腕) を基準に表示、 下半分 (脚) をはみ出させてコンテナ枠でクリップ。
+   stage-pono は overflow: hidden ではないが、 周囲は board の安全領域なので
+   見切れ表示でも実害なし。 念のため overflow も hidden 化。 */
+.stage-pono.is-hooray { overflow: hidden; }
+.stage-pono.is-hooray .stage-pono-img {
+  object-fit: cover;
+  object-position: top center;
+  transform: scale(1.7);
+  transform-origin: top center;
+}
 .stage-pono-bubble {
   position: absolute;
   /* ポノの右横、 ぐっと左に寄せて頭〜耳の高さ。
@@ -3347,7 +3359,7 @@ body.layout-editor-on .op-skip {
     <div class="modal-icon" id="result-icon">🎉</div>
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
-    <button class="modal-btn" id="result-btn">もう一回 ▶</button>
+    <button class="modal-btn" id="result-btn">もういっかい ▶</button>
     <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
@@ -4622,9 +4634,13 @@ function playStagePonoHooray() {
   // flip-book を一旦停止して hooray ポーズに固定
   if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
   imgEl.src = '../assets/images/characters/pono/dance/dance_hooray.webp';
+  // 全身画像をバストショット化するため is-hooray クラスを付与 (CSS で transform: scale)
+  const stagePono = document.getElementById('stage-pono');
+  if (stagePono) stagePono.classList.add('is-hooray');
   clearTimeout(_stagePonoHoorayTimer);
   _stagePonoHoorayTimer = setTimeout(function() {
-    // hooray 表示が終わったら通常 flip-book を再開 (stage-pono が生きている時のみ)
+    // hooray 表示が終わったらクロップ解除 → 通常 flip-book を再開
+    if (stagePono) stagePono.classList.remove('is-hooray');
     if (!_stagePonoStarted) return;
     if (_stagePonoPoseInterval) return; // 既に再開済
     _stagePonoPoseInterval = setInterval(function() {
@@ -5357,7 +5373,7 @@ function onChoice(idx, btn) {
     playWrong();
     showFeedback('もういっかい！', true);
     showWrongDialogue();
-    // もう1回チャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
+    // もういっかいチャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
     locked = false;
   }
 }
