@@ -1217,27 +1217,29 @@ body.layout-editor-on .stage-pono { display: none; }
   width: 100%;
 }
 /* 4 択中央のスピーカーボタン: 2x2 grid のちょうど中央 (.answer-tray は position: relative)。
-   60px サイズ、 木目アイコンを白丸の上に乗せて視認性を確保。 上に乗るので z-index で chip より上。
+   円形枠なしのシンプルな絵文字スピーカー。 上に乗るので z-index で chip より上。
    読み上げ中は .reading で軽く拡大 + 不透明度低下し、 連打を抑止する (pointer-events:none)。 */
 .answer-speaker {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #fffdf3 0%, #f3e3b8 70%, #d9bf86 100%);
-  border: 3px solid var(--wood-dark, #6b4421);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(0,0,0,0.15);
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   padding: 0;
+  font-size: 40px;
+  line-height: 1;
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer;
   z-index: 6;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.answer-speaker img { width: 70%; height: 70%; display: block; pointer-events: none; }
+.answer-speaker img { width: 100%; height: 100%; display: block; pointer-events: none; }
 .answer-speaker:hover, .answer-speaker:focus-visible { transform: translate(-50%, -50%) scale(1.08); }
 .answer-speaker:active { transform: translate(-50%, -50%) scale(0.94); }
 .answer-speaker.reading { pointer-events: none; opacity: 0.85; }
@@ -3297,7 +3299,7 @@ body.layout-editor-on .op-skip {
             <!-- 4 択中央のスピーカー (押すと a→b→c→d を順次読み上げ + 該当 chip を pressed 表示)。
                  .answer-tray は position: relative なので、 ここに absolute で 4 chip の中央間隙へ。
                  data-le-keep-position で layout-editor (?edit=1) では動かない。 -->
-            <button id="answer-speaker" type="button" class="answer-speaker" data-le-keep-position aria-label="せんたくしを じゅんに よむ" title="せんたくしを じゅんに よむ" style="display:none"><img src="../assets/ui/icon_speaker.png" alt="" width="60" height="60"></button>
+            <button id="answer-speaker" type="button" class="answer-speaker" data-le-keep-position aria-label="せんたくしを じゅんに よむ" title="せんたくしを じゅんに よむ" style="display:none">🔊</button>
           </div>
           <div class="bottom-right">
             <div class="char-hint" id="char-hint-bubble"><span id="char-hint-text">ヒント！</span></div>
