@@ -466,6 +466,10 @@
     data.__texts = collectEditableTexts();
     data.__hidden = collectHiddenKeys();
     data.__userboxes = collectUserboxes();
+    // 2026-05-13 (sw v983): drop&drop で追加された .le-dropped-img を snapshot に含める。
+    //   従来 localStorage のみで管理されていたため dirty flag が立たず、 add/delete が
+    //   GitHub の saved-layout.json に永続化されなかった。
+    data.__droppedImages = collectDroppedImages();
     data.__locked = collectLockedKeys();
     if (state.zoom !== 1) data.__zoom = state.zoom;
     if (state.gridOn) data.__grid = { size: state.gridSize, on: true };
@@ -533,6 +537,39 @@
         axis: g.classList.contains('h') ? 'h' : 'v',
         pos: g.classList.contains('h') ? parseFloat(g.style.top) : parseFloat(g.style.left),
       };
+    });
+  }
+  // 2026-05-13 (sw v983): .le-dropped-img を saved-layout.json に統合。
+  //   従来 localStorage のみだったため snapshot 比較で dirty が立たず、
+  //   保存ボタンがオレンジにならない / GitHub に反映されない / 他ブラウザで消える
+  //   バグがあった。snapshot に __droppedImages を含めて永続化する。
+  //   localStorage 経路は fallback として残す。
+  function collectDroppedImages() {
+    return $$('.le-dropped-img').map(function (el) {
+      var src = '';
+      if (el.tagName === 'IMG') src = el.src || '';
+      else { var inner = el.querySelector('img'); src = inner ? inner.src : ''; }
+      var entry = {
+        id:    el.dataset.dropId  || '',
+        name:  el.dataset.dropName || '',
+        label: (el.dataset && el.dataset.leLabel) || '',
+        src:   src,
+        left:  el.style.left   || '',
+        top:   el.style.top    || '',
+        width: el.style.width  || '',
+        height:el.style.height || '',
+        tx: el._tx || 0,
+        ty: el._ty || 0,
+        z:  el.style.zIndex || ''
+      };
+      // 任意の ZK 拡張 (rotate / aspectLock / artScale / frameKind) — 値がある時だけ保存
+      // 旧 saved-layout.json と後方互換を保つために未設定なら entry に含めない。
+      var rot = parseFloat(el.dataset.rotate || '0');
+      if (rot && isFinite(rot)) entry.rotate = ((rot % 360) + 360) % 360;
+      if (el.dataset && el.dataset.aspectLock === '1') entry.aspectLock = '1';
+      if (el.dataset && el.dataset.artScale)   entry.artScale   = el.dataset.artScale;
+      if (el.dataset && el.dataset.frameKind)  entry.frameKind  = el.dataset.frameKind;
+      return entry;
     });
   }
   function collectUserboxes() {
@@ -1497,7 +1534,59 @@
     if (data.__comparison) state.comparison = data.__comparison;
     // Restore guides
     if (Array.isArray(data.__guides)) restoreGuides(data.__guides);
+    // 2026-05-13 (sw v983): saved-layout.json に統合された .le-dropped-img を復元。
+    //   旧 saved-layout.json (__droppedImages 無し) は localStorage fallback (restoreDroppedImages)
+    //   が引き続き拾うので後方互換を維持する。
+    if (Array.isArray(data.__droppedImages)) {
+      try { applyDroppedImages(data.__droppedImages); }
+      catch (e) { console.warn('[LayoutEditor] applyDroppedImages failed', e); }
+    }
     refreshLockBadges();
+  }
+
+  // 2026-05-13 (sw v983): saved-layout.json の __droppedImages 配列から .le-dropped-img
+  //   を再生成する。 state-reset で既存をクリアしてから配列順に再構築する。
+  //   canvas が無いと再生成できないので state.canvasEl を必須にする (= 編集モード有効後)。
+  function applyDroppedImages(arr) {
+    if (!Array.isArray(arr)) return;
+    var canvas = state.canvasEl;
+    if (!canvas) return;
+    // 既存の .le-dropped-img を全削除 (state-reset)
+    $$('.le-dropped-img').forEach(function (el) {
+      try { el.remove(); } catch (e) {}
+    });
+    arr.forEach(function (item) {
+      if (!item || !item.src) return;
+      var wrap = buildDroppedWrapper(item.src, item.name, { label: item.label || '' });
+      if (item.id) wrap.dataset.dropId = item.id;
+      if (item.label) wrap.dataset.leLabel = item.label;
+      wrap.style.position = 'absolute';
+      if (item.left)   wrap.style.left   = item.left;
+      if (item.top)    wrap.style.top    = item.top;
+      if (item.width)  wrap.style.width  = item.width;
+      if (item.height) wrap.style.height = item.height;
+      if (item.z)      wrap.style.zIndex = item.z;
+      var tx = parseFloat(item.tx) || 0, ty = parseFloat(item.ty) || 0;
+      if (tx || ty) {
+        wrap._tx = tx; wrap._ty = ty;
+        wrap.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      }
+      // ZK 拡張 (任意) — 値があれば dataset に復元
+      if (item.rotate && isFinite(item.rotate)) {
+        wrap.dataset.rotate = String(((item.rotate % 360) + 360) % 360);
+        if (window.__zk_inv_applyRotate) {
+          try { window.__zk_inv_applyRotate(wrap); } catch (e) {}
+        }
+      }
+      if (item.aspectLock === '1' || item.aspectLock === true) wrap.dataset.aspectLock = '1';
+      if (item.artScale)  wrap.dataset.artScale  = String(item.artScale);
+      if (item.frameKind) wrap.dataset.frameKind = String(item.frameKind);
+      wrap.setAttribute('data-le-keep-position', '1');
+      canvas.appendChild(wrap);
+      try { attachHandle(wrap, 'wh'); } catch (e) {}
+    });
+    // localStorage fallback も同期 (オフライン / 他ブラウザでの初回 fallback 用)
+    try { saveDroppedImages(); } catch (e) {}
   }
 
   // ====================================================================
