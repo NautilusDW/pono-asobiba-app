@@ -84,6 +84,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-14 - [batch:oto-sheet1a-phase1-redo] **Done** — `docs/oto-icons/codex-prompts/sheet1a-phase1.md` 再読後、Sheet 1a Phase1 をデザイン言語別 5 案としてやり直し。`tmp/alpha_pending/17/sheet1a_phase1_proposalA-E.png` を上書き納品。A=グロッシージェル / B=ネオンサイバー / C=トゥーン太線 / D=3Dプラスチック / E=グラスモーフィズム。全て `1024x512` RGBA 透過 PNG、3MB 未満。 (by Codex)
+
 - 2026-05-14 - [batch:oto-sheet1a-phase1] **Done** — Sheet 1a Phase1 楽器ボタン中央モチーフ提案 3 案を `tmp/alpha_pending/17/` に納品 (`sheet1a_phase1_proposalA.png` / `B.png` / `C.png`)。全て `1024x512` RGBA 透過 PNG、3MB 未満。 (by Codex)
 
 - 2026-05-08 - [batch:12-quizland-trivia-stage-raw] **Done** — Quizland trivia 追加ステージ絵 6 枚を assets/images/quizland/illust/stage/ に最終配置 + questions.js 結線 (2026-05-08 完了)。
