@@ -1514,6 +1514,12 @@ body.layout-editor-on .chip-illust-wrap {
   overflow-wrap: break-word;
   overflow: hidden; /* 万一テキストが溢れても箱の外に出さない */
 }
+/* E2 (2026-05-13): セリフ override で textarea から保存された改行 (\n) を
+   そのまま改行として表示する。 textContent 経由でも pre-line なら \n が反映される。
+   `word-break: keep-all` は親 .char-hint から継承される。 */
+#char-hint-text {
+  white-space: pre-line;
+}
 .character {
   width: 200px; height: 220px;
   display: flex; align-items: center; justify-content: center;
@@ -3646,6 +3652,95 @@ const HAKASE_DIALOGUE = {
   },
 };
 
+// E2 (2026-05-13): HAKASE_DIALOGUE override 経路。
+// layout-editor (E1) の UI パネルが `window.HAKASE_DIALOGUE` を参照して
+// 全文を一覧表示し、 編集結果を `window._currentLayoutData.__hakase_dialogue_overrides`
+// に書き込む。 ここでは override が無いキーは元の HAKASE_DIALOGUE をそのまま返す
+// (= 後方互換)。 key 形式は "category.index" (例: "problem.general.0",
+// "problem.byCategory.order_color.0", "clear.perfect.2")。
+window.HAKASE_DIALOGUE = HAKASE_DIALOGUE;
+
+function _getHakaseOverrides() {
+  const data = window._currentLayoutData;
+  return (data && data.__hakase_dialogue_overrides) || {};
+}
+
+// dotted path で深い arr/文字列ノードに辿り着く。
+function _getHakaseNodeByPath(path) {
+  const parts = path.split('.');
+  let obj = HAKASE_DIALOGUE;
+  for (const p of parts) {
+    if (obj && Object.prototype.hasOwnProperty.call(obj, p)) obj = obj[p];
+    else return undefined;
+  }
+  return obj;
+}
+
+// category = "problem.general" のような dotted path (= arr の親)。
+// index = arr 内の位置。 override があれば優先、 無ければ HAKASE_DIALOGUE から。
+// 単一文字列ノード (= byCategory[cat] は文字列) の場合は index を無視する。
+function _getHakaseText(category, index) {
+  const overrides = _getHakaseOverrides();
+  const node = _getHakaseNodeByPath(category);
+  if (Array.isArray(node)) {
+    const key = category + '.' + index;
+    if (overrides[key] !== undefined && overrides[key] !== null) return overrides[key];
+    return (node[index] !== undefined) ? node[index] : null;
+  }
+  // 単一文字列ノード (= byCategory[cat])
+  if (typeof node === 'string') {
+    if (overrides[category] !== undefined && overrides[category] !== null) return overrides[category];
+    return node;
+  }
+  return null;
+}
+
+// 配列カテゴリからランダムに 1 件取得 (override 反映)。
+function _pickRandomFromCategory(category) {
+  const arr = _getHakaseNodeByPath(category);
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const idx = Math.floor(Math.random() * arr.length);
+  return _getHakaseText(category, idx);
+}
+
+// E2: ふくろうはかせ吹き出しテキストの font-size を動的に上書きする。
+// sizeMap = { base: '20px', '14:9': '18px', '4:3': '16px' } のような形。
+// 値は CSS 単位付き文字列 (px / vmin / rem 等)。 空文字はスキップ。
+// E1 (layout-editor UI) のスライダ変更時 + saved-layout ロード時に呼ばれる。
+window._applyHakaseTextSize = function(sizeMap) {
+  if (!sizeMap || typeof sizeMap !== 'object') return;
+  let styleEl = document.getElementById('hakase-text-size-override');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'hakase-text-size-override';
+    document.head.appendChild(styleEl);
+  }
+  const baseSize = sizeMap.base || '';
+  const size149  = sizeMap['14:9'] || '';
+  const size43   = sizeMap['4:3'] || '';
+  let css = '';
+  if (baseSize) {
+    css += '#char-hint-text { font-size: ' + baseSize + ' !important; }\n';
+  }
+  if (size149) {
+    css += '@media (max-aspect-ratio: 14/9) { #char-hint-text { font-size: ' + size149 + ' !important; } }\n';
+  }
+  if (size43) {
+    css += '@media (max-aspect-ratio: 4/3) { #char-hint-text { font-size: ' + size43 + ' !important; } }\n';
+  }
+  styleEl.textContent = css;
+};
+
+// saved-layout 初期ロード完了時に呼ばれる。 _currentLayoutData が
+// セットされた後で適用する (= LayoutSystem.init の onReady hook 経由)。
+function _applyInitialHakaseTextSize() {
+  const data = window._currentLayoutData;
+  if (data && data.__hakase_dialogue_text_size) {
+    try { window._applyHakaseTextSize(data.__hakase_dialogue_text_size); } catch (e) {}
+  }
+}
+window._applyInitialHakaseTextSize = _applyInitialHakaseTextSize;
+
 const HAKASE_DETAIL_INTROS = [
   'ふむふむ、',
   'そうじゃ、',
@@ -3681,8 +3776,8 @@ function showProblemDialogue(question) {
   const cat = (question && (question.category || question._cat || question.type)) || null;
   // 50% でカテゴリ別、50% で general (バリエーション増加)
   const text = (cat && Math.random() < 0.5 && HAKASE_DIALOGUE.problem.byCategory[cat])
-    ? HAKASE_DIALOGUE.problem.byCategory[cat]
-    : pickRandom(HAKASE_DIALOGUE.problem.general);
+    ? _getHakaseText('problem.byCategory.' + cat, 0)
+    : _pickRandomFromCategory('problem.general');
   setHakaseDialogue(text);
   // 自動ヒントは廃止 (汎用文がカテゴリと噛み合わず混乱を招くため)。
   // ユーザーが吹き出しをタップしたらカテゴリ別ヒント2へ進む。
@@ -3692,7 +3787,7 @@ function showProblemDialogue(question) {
 
 function showHint1() {
   _hintLevel = 1;
-  setHakaseDialogue(pickRandom(HAKASE_DIALOGUE.hint1));
+  setHakaseDialogue(_pickRandomFromCategory('hint1'));
   playHintSe();
 }
 
@@ -3703,19 +3798,20 @@ function showHint2(question) {
     setHakaseDialogue(question.hint);
     return;
   }
-  // カテゴリ別フォールバック
+  // カテゴリ別フォールバック (override 経路使用)
   const cat = question && (question.category || question._cat || question.type);
-  const pool = (cat && HAKASE_DIALOGUE.hint2FallbackByCategory[cat])
-            || HAKASE_DIALOGUE.hint2FallbackGeneric;
-  setHakaseDialogue(pickRandom(pool));
+  const catPath = (cat && HAKASE_DIALOGUE.hint2FallbackByCategory && HAKASE_DIALOGUE.hint2FallbackByCategory[cat])
+    ? ('hint2FallbackByCategory.' + cat)
+    : 'hint2FallbackGeneric';
+  setHakaseDialogue(_pickRandomFromCategory(catPath));
 }
 
 function showCorrectDialogue() {
   _consecutiveMisses = 0;
   const useRare = Math.random() < RARE_PRAISE_CHANCE;
   const text = useRare
-    ? pickRandom(HAKASE_DIALOGUE.rarePraise)
-    : pickRandom(HAKASE_DIALOGUE.correct);
+    ? _pickRandomFromCategory('rarePraise')
+    : _pickRandomFromCategory('correct');
   setHakaseDialogue(text);
 }
 
@@ -3728,19 +3824,19 @@ function showDetailDialogue(detail) {
 function showWrongDialogue() {
   _consecutiveMisses++;
   const text = _consecutiveMisses >= CONSECUTIVE_MISS_THRESHOLD
-    ? pickRandom(HAKASE_DIALOGUE.consecutiveMiss)
-    : pickRandom(HAKASE_DIALOGUE.wrong);
+    ? _pickRandomFromCategory('consecutiveMiss')
+    : _pickRandomFromCategory('wrong');
   setHakaseDialogue(text);
 }
 
 function showClearDialogue(correctCnt, totalCnt) {
   const ratio = totalCnt > 0 ? (correctCnt / totalCnt) : 0;
-  let pool;
-  if (ratio === 1)        pool = HAKASE_DIALOGUE.clear.perfect;
-  else if (ratio >= 0.8)  pool = HAKASE_DIALOGUE.clear.good;
-  else if (ratio >= 0.6)  pool = HAKASE_DIALOGUE.clear.okay;
-  else                    pool = HAKASE_DIALOGUE.clear.tryAgain;
-  setHakaseDialogue(pickRandom(pool));
+  let path;
+  if (ratio === 1)        path = 'clear.perfect';
+  else if (ratio >= 0.8)  path = 'clear.good';
+  else if (ratio >= 0.6)  path = 'clear.okay';
+  else                    path = 'clear.tryAgain';
+  setHakaseDialogue(_pickRandomFromCategory(path));
 }
 
 // 吹き出しクリックでヒント2を表示
@@ -4027,6 +4123,19 @@ window.EditorBootstrapConfig = {
   // Future (Phase 2): aspect-aware layout fork
   // beforeApply: (data) => matchMedia('(max-aspect-ratio: 4/3)').matches
   //   ? mergeLayout(data, fourThreeOverrides) : data
+
+  // E2 (2026-05-13): saved-layout.json 内の `__hakase_dialogue_text_size`
+  // (= { base, '14:9', '4:3' } 形式) を初期ロード完了時に CSS へ反映する。
+  // E1 (layout-editor UI パネル) はスライダ操作中 window._applyHakaseTextSize
+  // を直接呼んでプレビューする。 保存後のリロード/別ユーザ閲覧時はこの
+  // onReady 経路で saved-layout 値が CSS として復元される。
+  onReady: function(result) {
+    try {
+      if (typeof window._applyInitialHakaseTextSize === 'function') {
+        window._applyInitialHakaseTextSize();
+      }
+    } catch (e) { /* non-fatal */ }
+  },
 };
 
 // ═══════════════════════════════════════════════════════════

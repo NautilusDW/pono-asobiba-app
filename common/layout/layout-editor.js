@@ -4006,6 +4006,277 @@
     refreshElementList();
   }
 
+  // ====================================================================
+  //  E1: 🦉 フクロウ博士セリフ編集パネル
+  //   - quizland 等で window.HAKASE_DIALOGUE (= 既定セリフ辞書) を公開している
+  //     ことを前提に、 タブ別に文字列を上書きできる UI を提供する。
+  //   - 上書き値は window._currentLayoutData.__hakase_dialogue_overrides に、
+  //     文字サイズは window._currentLayoutData.__hakase_dialogue_text_size に
+  //     保存される。 保存は既存 LayoutEditor.save() 経由 (= GitHub/local 両方)。
+  //   - 文字サイズスライダーは window._applyHakaseTextSize(textSize) が
+  //     定義されていればライブプレビューを呼ぶ (E2 担当)。
+  // ====================================================================
+  function _hkzGetPath(obj, path) {
+    if (!obj || !path) return null;
+    return path.split('.').reduce(function (o, p) {
+      return (o && o[p] !== undefined && o[p] !== null) ? o[p] : null;
+    }, obj);
+  }
+
+  function _hkzEscapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    // textarea 内では \n はそのまま改行で表示されるのでエスケープ不要
+  }
+
+  function buildHakaseDialoguePanel() {
+    var panel = document.createElement('div');
+    panel.className = 'le-list-panel hakase-dialogue-panel';
+    panel.id = 'hakase-dialogue-panel';
+    panel.innerHTML =
+      '<div class="le-list-head" title="ドラッグで移動 / ダブルクリックで初期位置に戻す">' +
+        '<span class="le-panel-drag-handle">&#x2261;</span>' +
+        '<span class="le-panel-title-text">🦉 セリフ編集</span>' +
+        '<button class="le-panel-close" title="閉じる" aria-label="閉じる">×</button>' +
+      '</div>' +
+      '<div class="le-panel-body hakase-body">' +
+        '<div class="hakase-text-size-section">' +
+          '<h4>📏 吹き出し文字サイズ</h4>' +
+          '<label>base: <input type="range" id="hkz-size-base" min="10" max="24" step="1" value="16"> <span id="hkz-size-base-val">16</span>px</label>' +
+          '<label>14:9 帯: <input type="range" id="hkz-size-149" min="10" max="22" step="1" value="16"> <span id="hkz-size-149-val">16</span>px</label>' +
+          '<label>4:3 帯: <input type="range" id="hkz-size-43" min="10" max="20" step="1" value="14"> <span id="hkz-size-43-val">14</span>px</label>' +
+          '<button id="hkz-size-reset" class="le-btn" type="button">リセット</button>' +
+        '</div>' +
+        '<div class="hakase-tabs">' +
+          '<button class="hakase-tab active" data-cat="problem.general" type="button">問題</button>' +
+          '<button class="hakase-tab" data-cat="problem.byCategory" type="button">問題カテゴリ別</button>' +
+          '<button class="hakase-tab" data-cat="hint1" type="button">ヒント1</button>' +
+          '<button class="hakase-tab" data-cat="hint2FallbackByCategory" type="button">ヒント2 カテゴリ</button>' +
+          '<button class="hakase-tab" data-cat="hint2FallbackGeneric" type="button">ヒント2 汎用</button>' +
+          '<button class="hakase-tab" data-cat="correct" type="button">正解</button>' +
+          '<button class="hakase-tab" data-cat="rarePraise" type="button">レア褒め</button>' +
+          '<button class="hakase-tab" data-cat="wrong" type="button">不正解</button>' +
+          '<button class="hakase-tab" data-cat="consecutiveMiss" type="button">連続ミス</button>' +
+          '<button class="hakase-tab" data-cat="clear.perfect" type="button">完璧クリア</button>' +
+          '<button class="hakase-tab" data-cat="clear.good" type="button">良クリア</button>' +
+          '<button class="hakase-tab" data-cat="clear.okay" type="button">普通クリア</button>' +
+          '<button class="hakase-tab" data-cat="clear.tryAgain" type="button">再挑戦</button>' +
+        '</div>' +
+        '<div class="hakase-content" id="hkz-content"></div>' +
+        '<div class="hakase-actions">' +
+          '<button id="hkz-save" class="le-btn primary" type="button">💾 保存</button>' +
+          '<button id="hkz-reset-all" class="le-btn" type="button">🔄 すべてデフォルトに</button>' +
+          '<span class="hkz-dirty-indicator" id="hkz-dirty"></span>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(panel);
+    makePanelDraggable(panel, 'hakase-dialogue');
+    restorePanelPosition('hakase-dialogue', panel);
+    makePanelResizable(panel, 'hakase-dialogue');
+    restorePanelSize(panel, 'hakase-dialogue');
+
+    initHakaseDialoguePanel(panel);
+    return panel;
+  }
+
+  function initHakaseDialoguePanel(panel) {
+    var dialogue = (typeof window.HAKASE_DIALOGUE !== 'undefined') ? window.HAKASE_DIALOGUE : null;
+    if (!dialogue) {
+      var content = panel.querySelector('#hkz-content');
+      if (content) content.innerHTML = '<div class="hkz-empty">HAKASE_DIALOGUE が読み込まれていません</div>';
+      // 閉じるボタンだけは効くようにしておく
+      var closeBtn0 = panel.querySelector('.le-panel-close');
+      if (closeBtn0) closeBtn0.addEventListener('click', function () { panel.style.display = 'none'; });
+      return;
+    }
+
+    var overrides = (window._currentLayoutData && window._currentLayoutData.__hakase_dialogue_overrides)
+      ? JSON.parse(JSON.stringify(window._currentLayoutData.__hakase_dialogue_overrides)) : {};
+    var textSize = (window._currentLayoutData && window._currentLayoutData.__hakase_dialogue_text_size)
+      ? JSON.parse(JSON.stringify(window._currentLayoutData.__hakase_dialogue_text_size)) : {};
+    var dirty = false;
+    var currentTab = 'problem.general';
+
+    function setDirty(b) {
+      dirty = b;
+      var dEl = panel.querySelector('#hkz-dirty');
+      if (dEl) dEl.textContent = b ? '● 未保存' : '';
+    }
+
+    function renderTab(category) {
+      currentTab = category;
+      panel.querySelectorAll('.hakase-tab').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.cat === category);
+      });
+      var contentEl = panel.querySelector('#hkz-content');
+      contentEl.innerHTML = '';
+
+      var obj = _hkzGetPath(dialogue, category);
+      if (obj == null) {
+        contentEl.innerHTML = '<div class="hkz-empty">このカテゴリには項目がありません</div>';
+        return;
+      }
+
+      function appendRow(labelText, ovKey, originalText) {
+        var current = overrides[ovKey] !== undefined ? overrides[ovKey] : originalText;
+        var row = document.createElement('div');
+        row.className = 'hkz-row';
+        row.innerHTML =
+          '<label>' + _hkzEscapeHtml(labelText) + ':</label>' +
+          '<textarea data-key="' + _hkzEscapeHtml(ovKey) + '">' + _hkzEscapeHtml(current) + '</textarea>' +
+          '<button class="hkz-row-reset" data-key="' + _hkzEscapeHtml(ovKey) + '" type="button" title="この項目をデフォルトに戻す">↺</button>';
+        contentEl.appendChild(row);
+      }
+
+      if (Array.isArray(obj)) {
+        // 文字列配列 (= problem.general / hint1 / correct ...)
+        obj.forEach(function (text, idx) {
+          var ovKey = category + '.' + idx;
+          appendRow(category + ' [' + idx + ']', ovKey, text);
+        });
+      } else if (typeof obj === 'object') {
+        // ネストオブジェクト (= problem.byCategory / hint2FallbackByCategory)
+        Object.keys(obj).forEach(function (subKey) {
+          var sub = obj[subKey];
+          if (Array.isArray(sub)) {
+            sub.forEach(function (text, idx) {
+              var ovKey = category + '.' + subKey + '.' + idx;
+              appendRow(subKey + ' [' + idx + ']', ovKey, text);
+            });
+          } else if (typeof sub === 'string') {
+            var ovKey2 = category + '.' + subKey;
+            appendRow(subKey, ovKey2, sub);
+          }
+        });
+      }
+
+      // textarea change で overrides 更新
+      contentEl.querySelectorAll('textarea').forEach(function (ta) {
+        ta.addEventListener('input', function () {
+          var k = ta.dataset.key;
+          var orig = _hkzGetPath(dialogue, k);
+          // 文字列でない (= 配列要素は index 経由でしか取れない) パスは getPath で
+          //   取り直せないので、保存時の比較用にも個別評価。 reduce 経由でも数値 index は通る。
+          if (orig != null && ta.value === String(orig)) {
+            delete overrides[k];
+          } else {
+            overrides[k] = ta.value;
+          }
+          setDirty(true);
+        });
+      });
+
+      // 個別リセット
+      contentEl.querySelectorAll('.hkz-row-reset').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var k = btn.dataset.key;
+          delete overrides[k];
+          renderTab(currentTab);
+          setDirty(true);
+        });
+      });
+    }
+
+    // タブクリック
+    panel.querySelectorAll('.hakase-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () { renderTab(btn.dataset.cat); });
+    });
+
+    // テキストサイズスライダー
+    var sizeKeyMap = { 'base': 'base', '149': '14:9', '43': '4:3' };
+    ['base', '149', '43'].forEach(function (key) {
+      var slider = panel.querySelector('#hkz-size-' + key);
+      var valSpan = panel.querySelector('#hkz-size-' + key + '-val');
+      var storeKey = sizeKeyMap[key];
+      // 初期値復元
+      if (textSize[storeKey]) {
+        var v = parseInt(textSize[storeKey], 10);
+        if (!isNaN(v)) {
+          slider.value = v;
+          valSpan.textContent = v;
+        }
+      }
+      slider.addEventListener('input', function () {
+        valSpan.textContent = slider.value;
+        textSize[storeKey] = slider.value + 'px';
+        if (typeof window._applyHakaseTextSize === 'function') {
+          try { window._applyHakaseTextSize(textSize); } catch (e) { console.warn('[HakaseDialogue] _applyHakaseTextSize failed', e); }
+        }
+        setDirty(true);
+      });
+    });
+
+    panel.querySelector('#hkz-size-reset').addEventListener('click', function () {
+      textSize = {};
+      var defaults = { 'base': 16, '149': 16, '43': 14 };
+      ['base', '149', '43'].forEach(function (key) {
+        var slider = panel.querySelector('#hkz-size-' + key);
+        var valSpan = panel.querySelector('#hkz-size-' + key + '-val');
+        slider.value = defaults[key];
+        valSpan.textContent = defaults[key];
+      });
+      if (typeof window._applyHakaseTextSize === 'function') {
+        try { window._applyHakaseTextSize({}); } catch (e) {}
+      }
+      setDirty(true);
+    });
+
+    // 💾 保存
+    panel.querySelector('#hkz-save').addEventListener('click', function () {
+      if (!window._currentLayoutData) window._currentLayoutData = {};
+      window._currentLayoutData.__hakase_dialogue_overrides = JSON.parse(JSON.stringify(overrides));
+      window._currentLayoutData.__hakase_dialogue_text_size = JSON.parse(JSON.stringify(textSize));
+      try {
+        var p = (window.LayoutEditor && typeof window.LayoutEditor.save === 'function')
+          ? window.LayoutEditor.save() : null;
+        if (p && typeof p.then === 'function') {
+          p.then(function () {
+            setDirty(false);
+            try { showToast('セリフ + 文字サイズを保存', 'success'); } catch (_) {}
+          }).catch(function (err) {
+            console.warn('[HakaseDialogue] save failed', err);
+            try { showToast('保存に失敗しました', 'error'); } catch (_) {}
+          });
+        } else {
+          setDirty(false);
+          try { showToast('セリフ + 文字サイズを保存', 'success'); } catch (_) {}
+        }
+      } catch (e) {
+        console.warn('[HakaseDialogue] save error', e);
+        try { showToast('保存に失敗しました: ' + (e && e.message || e), 'error'); } catch (_) {}
+      }
+    });
+
+    // 🔄 すべてリセット
+    panel.querySelector('#hkz-reset-all').addEventListener('click', function () {
+      if (!confirm('すべてのセリフ上書きと文字サイズをデフォルトに戻しますか?')) return;
+      overrides = {};
+      textSize = {};
+      var defaults = { 'base': 16, '149': 16, '43': 14 };
+      ['base', '149', '43'].forEach(function (key) {
+        var slider = panel.querySelector('#hkz-size-' + key);
+        var valSpan = panel.querySelector('#hkz-size-' + key + '-val');
+        slider.value = defaults[key];
+        valSpan.textContent = defaults[key];
+      });
+      if (typeof window._applyHakaseTextSize === 'function') {
+        try { window._applyHakaseTextSize({}); } catch (e) {}
+      }
+      renderTab(currentTab);
+      setDirty(true);
+    });
+
+    // 閉じるボタン
+    var closeBtn = panel.querySelector('.le-panel-close');
+    if (closeBtn) closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
+
+    // 初期タブ描画
+    renderTab(currentTab);
+  }
+
   function refreshElementList() {
     if (!state.listPanelEl) return;
     var body = state.listPanelEl.querySelector('.le-list-body');
@@ -5874,6 +6145,8 @@
       '</select>' +
       '<button id="le-comparison" title="比較モード" aria-label="比較モード">🆚 比較</button>' +
       '<button id="le-list-toggle" title="要素一覧" aria-label="要素一覧パネル切替">📋 要素</button>' +
+      // E1: 🦉 フクロウ博士セリフ編集パネルの開閉
+      '<button id="le-hakase-toggle" title="🦉 フクロウ博士セリフ編集" aria-label="セリフ編集パネル切替">🦉 セリフ</button>' +
       '<button id="le-pages" class="le-pages-btn" title="他の編集ページへ移動" aria-label="ページ移動" aria-haspopup="true" aria-expanded="false">🌐 ページ</button>' +
       '<button id="le-help" title="?: ヘルプ" aria-label="ヘルプ">❓</button>' +
       '</div>' +
@@ -6038,6 +6311,19 @@
       // R1: persist open/closed state
       try { localStorage.setItem('pono_layout_panel_open', nowOpen ? '1' : '0'); } catch (e) {}
     });
+    // E1: 🦉 セリフ編集パネル開閉
+    var hakaseBtn = tb.querySelector('#le-hakase-toggle');
+    if (hakaseBtn) {
+      hakaseBtn.addEventListener('click', function () {
+        if (!state.hakasePanelEl) {
+          state.hakasePanelEl = buildHakaseDialoguePanel();
+        }
+        var p = state.hakasePanelEl;
+        // display:none ↔ flex で切替 (CSS default: flex)
+        var isHidden = (p.style.display === 'none');
+        p.style.display = isHidden ? 'flex' : 'none';
+      });
+    }
     // 🌐 Page navigation: hide button when no pages configured.
     var pagesBtn = tb.querySelector('#le-pages');
     if (pagesBtn) {
@@ -7635,6 +7921,8 @@
     if (state.toolbarEl) state.toolbarEl.remove();
     if (state.numericPanelEl) state.numericPanelEl.remove();
     if (state.listPanelEl) state.listPanelEl.remove();
+    // E1: 🦉 セリフ編集パネルも cleanup
+    if (state.hakasePanelEl) state.hakasePanelEl.remove();
     if (state.rulerH) state.rulerH.remove();
     if (state.rulerV) state.rulerV.remove();
     if (state.helpModalEl) state.helpModalEl.remove();
@@ -7676,6 +7964,7 @@
     state.toolbarEl = null;
     state.numericPanelEl = null;
     state.listPanelEl = null;
+    state.hakasePanelEl = null;
     state.rulerH = null;
     state.rulerV = null;
     state.aspectLocked = false;

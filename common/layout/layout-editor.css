@@ -1477,3 +1477,172 @@ body.layout-editor-on .char-hint.resizable {
   max-height: none !important;
 }
 
+/* === E1: 🦉 フクロウ博士セリフ編集パネル ===
+   - 既存 .le-list-panel を継承しつつ独自寸法・配色をオーバーライド。
+   - .le-list-panel:not(.open) { display: none } が効くため、 hakase 専用に
+     強制表示 / 強制サイズを上書き。
+*/
+body.layout-editor-on .hakase-dialogue-panel {
+  display: flex !important;
+  position: fixed;
+  top: 50px;
+  right: 50px;
+  bottom: auto;
+  width: 480px;
+  height: 600px;
+  max-height: none;
+  background: rgba(30, 30, 30, 0.97);
+  color: #eee;
+  z-index: 10000;
+  overflow: hidden;
+}
+body.layout-editor-on .hakase-dialogue-panel .hakase-body {
+  overflow: auto;
+  flex: 1;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-panel-close {
+  background: transparent;
+  color: #ccc;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: auto;
+  line-height: 1;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-panel-close:hover {
+  color: #fff;
+}
+body.layout-editor-on .hakase-text-size-section {
+  padding: 8px 10px;
+  border-bottom: 1px solid #444;
+  background: rgba(0, 0, 0, 0.2);
+}
+body.layout-editor-on .hakase-text-size-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: #ffba6b;
+  font-weight: 600;
+}
+body.layout-editor-on .hakase-text-size-section label {
+  display: block;
+  margin: 4px 0;
+  font-size: 11px;
+  color: #ccc;
+}
+body.layout-editor-on .hakase-text-size-section input[type=range] {
+  width: 200px;
+  vertical-align: middle;
+  margin: 0 4px;
+}
+body.layout-editor-on .hakase-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #444;
+}
+body.layout-editor-on .hakase-tab {
+  background: #444;
+  color: #ddd;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+body.layout-editor-on .hakase-tab:hover {
+  background: #555;
+}
+body.layout-editor-on .hakase-tab.active {
+  background: #4a8;
+  color: #fff;
+}
+body.layout-editor-on .hakase-content {
+  padding: 8px 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+body.layout-editor-on .hkz-empty {
+  color: #888;
+  font-style: italic;
+  padding: 8px 0;
+  font-size: 11px;
+}
+body.layout-editor-on .hkz-row {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+}
+body.layout-editor-on .hkz-row label {
+  font-size: 11px;
+  min-width: 120px;
+  padding-top: 4px;
+  color: #ccc;
+  word-break: break-all;
+}
+body.layout-editor-on .hkz-row textarea {
+  flex: 1;
+  min-height: 40px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px;
+  font-size: 12px;
+  resize: vertical;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+body.layout-editor-on .hkz-row textarea:focus {
+  outline: 1px solid #4a8;
+  border-color: #4a8;
+}
+body.layout-editor-on .hkz-row-reset {
+  background: #555;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  align-self: flex-start;
+}
+body.layout-editor-on .hkz-row-reset:hover {
+  background: #666;
+}
+body.layout-editor-on .hakase-actions {
+  padding: 8px 10px;
+  border-top: 1px solid #444;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn {
+  background: #555;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn:hover {
+  background: #666;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn.primary {
+  background: #4a8;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn.primary:hover {
+  background: #5b9;
+}
+body.layout-editor-on .hkz-dirty-indicator {
+  color: #fa5;
+  font-size: 11px;
+  margin-left: auto;
+}
+
