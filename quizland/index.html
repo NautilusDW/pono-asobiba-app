@@ -5153,43 +5153,13 @@ function _playWavOnce(url) {
     setTimeout(function(){ if (!done) { try { a.pause(); } catch(_){} finish(); } }, 10000);
   });
 }
-// BB1 (2026-05-13): 正解 chip のみの音声を再生する小型ヘルパー。
-// playAllChoices と同じ解決順:
-//   1) manifest (narrationKey + 正解 suffix) に登録があれば wav
-//   2) chip text が 0-10 (全角含む) なら g_num_*.wav を直接
-//   3) fallback: Web Speech API (chip text)
-// 既存 SE / narration ロジックを壊さないよう、 副作用は audio 再生だけ。
+// CC1 (2026-05-13): 全カテゴリ共通の「正解.wav」 (= seikai_voice.wav) を 1 回再生。
+// ユーザー希望変更: 正解時の音声を chip 数字読み上げから単一 wav に統一。
+// BB1 の 3 段 fallback (manifest / g_num / Web Speech) は削除。
 async function _playCorrectChipAudio(q, correctBtn) {
-  if (!q) return;
   try {
-    const correctIdx = (typeof q.answer === 'number') ? q.answer : -1;
-    if (correctIdx < 0) return;
-    const suffix = ['a', 'b', 'c', 'd'][correctIdx];
-    const panel = document.getElementById('answer-panel');
-    const chip = (panel && panel.querySelector('.chip[data-idx="' + correctIdx + '"]'))
-              || correctBtn || null;
-    // 1) manifest
-    if (typeof Narration !== 'undefined') {
-      try { await Narration.load(); } catch(_) {}
-      const key = narrationKey(q, suffix);
-      if (key && Narration.hasEntry(key)) {
-        const url = await _resolveChoiceWavUrl(key);
-        if (url) { await _playWavOnce(url); return; }
-      }
-    }
-    // 2) g_num_*.wav (chip text が 0-10)
-    if (chip) {
-      let txt = (chip.querySelector('.chip-count-num')?.textContent
-                || chip.textContent || '').trim();
-      txt = txt.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-      if (/^(10|[0-9])$/.test(txt)) {
-        try { await _playWavOnce('../assets/tts/quiz/g_num_' + txt + '.wav'); return; }
-        catch (_) { /* fallback below */ }
-      }
-    }
-    // 3) Web Speech API
-    if (chip) { try { await _speakChipText(chip); } catch(_) {} }
-  } catch (_) { /* 失敗しても正解演出本体には影響させない */ }
+    await _playWavOnce('../assets/audio/sfx/quiz/seikai_voice.wav');
+  } catch (_) { /* silent fail */ }
 }
 
 async function playAllChoices() {
