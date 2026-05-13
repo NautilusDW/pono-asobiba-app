@@ -591,6 +591,42 @@ function renderStockGrid() {
   });
 }
 
+// Unified delete for both pools (素材ライブラリ + 調整済みストック).
+// Image ids share a namespace across project.images / project.stockImages /
+// imageCache, so a single removeImageById() cleans every pool atomically.
+// Returns true if deletion happened, false if the user cancelled.
+function removeImageById(id) {
+  if (!project.images[id] && !(project.stockImages && project.stockImages[id])) {
+    return false;
+  }
+  const refCount = project.frames.filter(f => f.imageId === id).length;
+  if (refCount > 0) {
+    const msg =
+      `この素材は ${refCount} 件のフレームで使われています。\n` +
+      `削除すると該当フレームも一緒に削除されます。続行しますか？`;
+    if (!confirm(msg)) return false;
+  } else {
+    if (!confirm('この素材を削除しますか？')) return false;
+  }
+  // Snapshot BEFORE mutation so Undo restores frames (note: image dataUrls are
+  // not part of the undo snapshot, so undo only restores frame references —
+  // the image itself stays deleted, which matches existing undo scope).
+  snapshotForUndo('素材削除');
+  if (refCount > 0) {
+    project.frames = project.frames.filter(f => f.imageId !== id);
+    if (getSelectedFrame() == null) selectFrame(project.frames[0]?.id || null);
+  }
+  delete project.images[id];
+  if (project.stockImages) delete project.stockImages[id];
+  imageCache.delete(id);
+  renderAssetGrid();
+  renderStockGrid();
+  renderStrip();
+  renderStage();
+  markDirty();
+  return true;
+}
+
 // Shared card builder for asset library + stock area.
 // Both pools (project.images, project.stockImages) share the same imageId namespace
 // so makeFrame() / imageCache lookups work uniformly for either.
@@ -611,23 +647,12 @@ function buildImageCard(id, meta, opts) {
   const del = document.createElement('div');
   del.className = 'asset-del';
   del.textContent = '✕ 削除';
+  del.title = opts.isStock
+    ? 'このストックを削除 (素材プールからも消えます)'
+    : 'この素材を削除';
   del.addEventListener('click', e => {
     e.stopPropagation();
-    const used = project.frames.some(f => f.imageId === id);
-    if (used) {
-      if (!confirm('この素材を使ったフレームがあります。\n素材と該当フレームを両方削除しますか？')) return;
-      project.frames = project.frames.filter(f => f.imageId !== id);
-      if (getSelectedFrame() == null) selectFrame(project.frames[0]?.id || null);
-    }
-    delete project.images[id];
-    if (project.stockImages) delete project.stockImages[id];
-    imageCache.delete(id);
-    renderAssetGrid();
-    renderStockGrid();
-    renderStrip();
-    renderStage();
-    markDirty();
-    snapshotForUndo('素材削除');
+    removeImageById(id);
   });
 
   card.appendChild(imgEl);
