@@ -75,6 +75,18 @@
   #now-frame-label { font-size:13px; color:#9aa5b8; }
   #project-name-input { width: 200px; }
 
+  /* === Guide toggles ===================================================== */
+  #guides-toggles .guides-label { font-size: 15px; color: #9aa5b8; margin-right: 2px; }
+  #guides-toggles label {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 12px; color: #cbd0db;
+    padding: 2px 4px; border-radius: 4px;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  #guides-toggles label:hover { background: #2a2f3a; }
+  #guides-toggles input[type=checkbox] { margin: 0; cursor: pointer; }
+
   /* === Left pane: asset library ========================================= */
   #drop-zone {
     border: 2px dashed #3a4150;
@@ -265,6 +277,13 @@
       <button id="btn-pause" title="一時停止">⏸</button>
       <button id="btn-stop"  title="停止">⏹</button>
       <span id="now-frame-label">0 / 0</span>
+    </div>
+    <div class="group" id="guides-toggles" title="ステージにガイド線を表示">
+      <span class="guides-label">📐</span>
+      <label><input type="checkbox" id="guide-center"> 中央十字</label>
+      <label><input type="checkbox" id="guide-thirds"> 三分割</label>
+      <label><input type="checkbox" id="guide-grid"> グリッド</label>
+      <label><input type="checkbox" id="guide-safe"> セーフ</label>
     </div>
   </div>
 
@@ -917,11 +936,89 @@ function renderStage() {
   renderOverlay();
 }
 
+// drawGuides: draws optional alignment guides onto the overlay canvas.
+// Toggled via the 📐 UI in the top bar; state persisted in localStorage.
+// Drawn before the selection box so handles stay on top.
+function drawGuides(octx, stageWidth, stageHeight) {
+  const guides = window._komaGuides || {};
+  if (!guides.center && !guides.thirds && !guides.grid && !guides.safe) return;
+  octx.save();
+
+  // Safe area (5% inner margin) — drawn first so other guides overlay it
+  if (guides.safe) {
+    octx.strokeStyle = 'rgba(255, 200, 100, 0.8)';
+    octx.lineWidth = 2 / viewScale;
+    octx.setLineDash([8 / viewScale, 4 / viewScale]);
+    const m = Math.min(stageWidth, stageHeight) * 0.05;
+    octx.strokeRect(m, m, stageWidth - 2 * m, stageHeight - 2 * m);
+  }
+
+  // Grid (16x16 fine cells — 8x8 would be too sparse on 1024px)
+  if (guides.grid) {
+    octx.strokeStyle = 'rgba(150, 200, 255, 0.25)';
+    octx.lineWidth = 1 / viewScale;
+    octx.setLineDash([]);
+    const stepX = stageWidth / 16;
+    for (let i = 1; i < 16; i++) {
+      octx.beginPath();
+      octx.moveTo(i * stepX, 0);
+      octx.lineTo(i * stepX, stageHeight);
+      octx.stroke();
+    }
+    const stepY = stageHeight / 16;
+    for (let i = 1; i < 16; i++) {
+      octx.beginPath();
+      octx.moveTo(0, i * stepY);
+      octx.lineTo(stageWidth, i * stepY);
+      octx.stroke();
+    }
+  }
+
+  // Rule of thirds
+  if (guides.thirds) {
+    octx.strokeStyle = 'rgba(100, 255, 200, 0.7)';
+    octx.lineWidth = 1.5 / viewScale;
+    octx.setLineDash([6 / viewScale, 3 / viewScale]);
+    for (let i = 1; i < 3; i++) {
+      octx.beginPath();
+      octx.moveTo(i * stageWidth / 3, 0);
+      octx.lineTo(i * stageWidth / 3, stageHeight);
+      octx.stroke();
+    }
+    for (let i = 1; i < 3; i++) {
+      octx.beginPath();
+      octx.moveTo(0, i * stageHeight / 3);
+      octx.lineTo(stageWidth, i * stageHeight / 3);
+      octx.stroke();
+    }
+  }
+
+  // Center cross
+  if (guides.center) {
+    octx.strokeStyle = 'rgba(255, 100, 100, 0.7)';
+    octx.lineWidth = 1.5 / viewScale;
+    octx.setLineDash([4 / viewScale, 4 / viewScale]);
+    const cx = stageWidth / 2, cy = stageHeight / 2;
+    octx.beginPath();
+    octx.moveTo(cx, 0); octx.lineTo(cx, stageHeight);
+    octx.stroke();
+    octx.beginPath();
+    octx.moveTo(0, cy); octx.lineTo(stageWidth, cy);
+    octx.stroke();
+  }
+
+  octx.restore();
+}
+
 // renderOverlay: draws the selection box + 8 resize handles + rotate knob
 // on top of the stage. Disabled during playback for clean preview.
 function renderOverlay() {
   overlayCtx.clearRect(0, 0, overlayCv.width, overlayCv.height);
   if (playback.playing) return;
+
+  // Guides are drawn first so the selection box / handles stay on top.
+  drawGuides(overlayCtx, project.stageWidth, project.stageHeight);
+
   const f = getSelectedFrame();
   if (!f) return;
   const img = imageCache.get(f.imageId);
@@ -1773,6 +1870,34 @@ function stepFrame(delta) {
   selectFrame(project.frames[next].id);
 }
 
+// ─── Guides (overlay) ────────────────────────────────────────────────────
+// Stored as { center?, thirds?, grid?, safe? } in localStorage.
+const KOMA_GUIDES_STORAGE_KEY = 'koma-guides-v1';
+function initGuides() {
+  try {
+    window._komaGuides = JSON.parse(
+      localStorage.getItem(KOMA_GUIDES_STORAGE_KEY) || '{}'
+    ) || {};
+  } catch (_e) {
+    window._komaGuides = {};
+  }
+  ['center', 'thirds', 'grid', 'safe'].forEach(name => {
+    const cb = $('guide-' + name);
+    if (!cb) return;
+    cb.checked = !!window._komaGuides[name];
+    cb.addEventListener('change', () => {
+      window._komaGuides[name] = cb.checked;
+      try {
+        localStorage.setItem(
+          KOMA_GUIDES_STORAGE_KEY,
+          JSON.stringify(window._komaGuides)
+        );
+      } catch (_e) { /* quota / private mode — non-fatal */ }
+      renderStage();
+    });
+  });
+}
+
 // ─── Resize observer (window resize → re-fit stage) ─────────────────────
 window.addEventListener('resize', () => {
   resizeStage();
@@ -1782,6 +1907,7 @@ window.addEventListener('resize', () => {
 // ─── Boot ───────────────────────────────────────────────────────────────
 (function boot() {
   resizeStage();
+  initGuides();
   if (!loadFromLocalStorage()) {
     // Fresh start
     renderAssetGrid();
