@@ -84,6 +84,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-14 - [batch:oto-reference-all-buttons-2k-spacing] **Done** — user 指摘「上下が詰まる・くっつく・幅不足で円が楕円。全体を小さく、隙間を空け、2Kぐらい」に対応。`tmp/alpha_pending/19/` に余白多めの 2K 改訂版 4 シートを納品: `oto_ref_buttons_2k_sheet1_icons.png` / `oto_ref_buttons_2k_sheet2_objects.png` / `oto_ref_buttons_2k_sheet3_controls.png` / `oto_ref_buttons_2k_sheet4_swatches.png`。納品用は全て `2048x2048` RGB PNG、生成 API の元サイズ `1254x1254` は `tmp/alpha_pending/19/raw_source/` に保管。 (by Codex)
+
 - 2026-05-14 - [batch:oto-reference-all-buttons] **Done** — user 指示「ボタンの中身を参考画像と同じ感じに変更。丸で囲われてないものもボタン風に囲む。ポノはいらない。全部出して」に対応。`tmp/alpha_pending/18/` に 4 シート納品: `oto_ref_buttons_sheet1_icons.png` (基本アイコン 16) / `sheet2_objects.png` (音・道具・生活 16) / `sheet3_controls.png` (操作・速度・モード 16) / `sheet4_swatches.png` (色玉 16)。全て `1536x1024` RGBA 透過 PNG、3MB 未満。 (by Codex)
 
 - 2026-05-14 - [batch:oto-sheet1a-reference-style] **Done** — user 添付の参考画像テイスト (手描き水彩・ステッチ風ワッペン・淡い紙/布パッチ感) に寄せた Sheet 1a 追加案 3 枚を `tmp/alpha_pending/17/` に納品。`sheet1a_phase1_refstyleA.png`=丸い水彩ステッチメダル、`refstyleB.png`=ぷっくりワッペン、`refstyleC.png`=シンプル丸トークン。全て `1024x512` RGBA 透過 PNG、3MB 未満。 (by Codex)
