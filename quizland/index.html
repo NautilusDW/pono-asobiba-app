@@ -1150,7 +1150,7 @@ body.sheet-on .hdr-right .ctrl-btn {
 .stage-pono {
   position: absolute;
   left: 30px;            /* safe-area 左端から内側、 装飾どんぐりを避ける */
-  bottom: 20px;
+  bottom: 16px;          /* 下が切れる問題回避で 4px 下げた (旧: 20px) */
   width: 273px;          /* 390px の 70% */
   height: 273px;
   /* body.sheet-on で .safe-area > .body が z-index:6 に持ち上がるため、
@@ -2050,7 +2050,7 @@ body.layout-editor-on .character img {
   .emoji-main-img { max-width: 320px !important; max-height: 320px !important; }
   .opposite-display { font-size: 72px !important; padding: 20px 40px !important; }
   /* 14:9 帯では board が縮むので stage-pono も小さく (3 倍化) */
-  .stage-pono { width: 224px !important; height: 224px !important; left: 24px !important; bottom: 14px !important; }
+  .stage-pono { width: 224px !important; height: 224px !important; left: 24px !important; bottom: 10px !important; }
   .stage-pono-bubble { width: 270px !important; height: 108px !important; }
   /* saved-layout.json の inline width/height/transform を打ち消し、
      visible slice (1098 canvas-px) を超える要素を grid に従わせる。
@@ -2134,7 +2134,7 @@ body.layout-editor-on .character img {
   .emoji-main-img { max-width: 280px !important; max-height: 280px !important; }
   .opposite-display { font-size: 64px !important; padding: 18px 36px !important; }
   /* 4:3 帯では更に控えめサイズで (3 倍化) */
-  .stage-pono { width: 196px !important; height: 196px !important; left: 20px !important; bottom: 12px !important; }
+  .stage-pono { width: 196px !important; height: 196px !important; left: 20px !important; bottom: 8px !important; }
   .stage-pono-bubble { width: 240px !important; height: 96px !important; }
   /* ─────────────────────────────────────────────────────────
      saved-layout.json は 16:9 (1600 canvas-px) 想定で width/height と
@@ -2208,7 +2208,7 @@ body.layout-editor-on .character img {
   .emoji-main-img { max-width: 240px !important; max-height: 240px !important; }
   .opposite-display { font-size: 56px !important; padding: 14px 28px !important; }
   /* 5:4 帯は最も狭い、 stage-pono を最小サイズに (3 倍化) */
-  .stage-pono { width: 168px !important; height: 168px !important; left: 16px !important; bottom: 10px !important; }
+  .stage-pono { width: 168px !important; height: 168px !important; left: 16px !important; bottom: 6px !important; }
   .stage-pono-bubble { width: 200px !important; height: 80px !important; }
   /* 5:4 は 4:3 より更に狭いので 4:3 と同じ inline 打ち消しを継承する */
   .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
@@ -4609,6 +4609,31 @@ function stopStagePono() {
   if (bubbleImg) { bubbleImg.removeAttribute('src'); }
 }
 
+// 正解時に左下ポノを「両手上げ (banzai)」ポーズに一時切替え。
+//   onChoice の correct 分岐から呼ぶ。 pose flip-book interval を一旦停止し、
+//   2.5 秒間 dance_hooray.webp を表示、 その後通常のローテーションを再開する。
+//   stage-pono が表示中 (= !has-trivia-pono) でないと意味がないので存在チェック。
+let _stagePonoHoorayTimer = null;
+function playStagePonoHooray() {
+  const imgEl = document.getElementById('stage-pono-img');
+  if (!imgEl) return;
+  // trivia 中央ポノ表示中は左下ポノは hidden なのでスキップ
+  if (document.body.classList.contains('has-trivia-pono')) return;
+  // flip-book を一旦停止して hooray ポーズに固定
+  if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
+  imgEl.src = '../assets/images/characters/pono/dance/dance_hooray.webp';
+  clearTimeout(_stagePonoHoorayTimer);
+  _stagePonoHoorayTimer = setTimeout(function() {
+    // hooray 表示が終わったら通常 flip-book を再開 (stage-pono が生きている時のみ)
+    if (!_stagePonoStarted) return;
+    if (_stagePonoPoseInterval) return; // 既に再開済
+    _stagePonoPoseInterval = setInterval(function() {
+      _stagePonoPoseIdx = (_stagePonoPoseIdx + 1) % TRIVIA_POSES.length;
+      imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_stagePonoPoseIdx];
+    }, STAGE_PONO_POSE_INTERVAL_MS);
+  }, 2500);
+}
+
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   // phase-question: 問題出題中の状態クラス。 revealAnswer で phase-answer に切替。
@@ -5128,6 +5153,45 @@ function _playWavOnce(url) {
     setTimeout(function(){ if (!done) { try { a.pause(); } catch(_){} finish(); } }, 10000);
   });
 }
+// BB1 (2026-05-13): 正解 chip のみの音声を再生する小型ヘルパー。
+// playAllChoices と同じ解決順:
+//   1) manifest (narrationKey + 正解 suffix) に登録があれば wav
+//   2) chip text が 0-10 (全角含む) なら g_num_*.wav を直接
+//   3) fallback: Web Speech API (chip text)
+// 既存 SE / narration ロジックを壊さないよう、 副作用は audio 再生だけ。
+async function _playCorrectChipAudio(q, correctBtn) {
+  if (!q) return;
+  try {
+    const correctIdx = (typeof q.answer === 'number') ? q.answer : -1;
+    if (correctIdx < 0) return;
+    const suffix = ['a', 'b', 'c', 'd'][correctIdx];
+    const panel = document.getElementById('answer-panel');
+    const chip = (panel && panel.querySelector('.chip[data-idx="' + correctIdx + '"]'))
+              || correctBtn || null;
+    // 1) manifest
+    if (typeof Narration !== 'undefined') {
+      try { await Narration.load(); } catch(_) {}
+      const key = narrationKey(q, suffix);
+      if (key && Narration.hasEntry(key)) {
+        const url = await _resolveChoiceWavUrl(key);
+        if (url) { await _playWavOnce(url); return; }
+      }
+    }
+    // 2) g_num_*.wav (chip text が 0-10)
+    if (chip) {
+      let txt = (chip.querySelector('.chip-count-num')?.textContent
+                || chip.textContent || '').trim();
+      txt = txt.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+      if (/^(10|[0-9])$/.test(txt)) {
+        try { await _playWavOnce('../assets/tts/quiz/g_num_' + txt + '.wav'); return; }
+        catch (_) { /* fallback below */ }
+      }
+    }
+    // 3) Web Speech API
+    if (chip) { try { await _speakChipText(chip); } catch(_) {} }
+  } catch (_) { /* 失敗しても正解演出本体には影響させない */ }
+}
+
 async function playAllChoices() {
   if (_playAllChoicesRunning) return;
   if (typeof Narration === 'undefined') return;
@@ -5274,7 +5338,12 @@ function onChoice(idx, btn) {
     showCorrectDialogue();
     showSeikaiStamp();
     ponoJump();
+    playStagePonoHooray();  // 左下ポノを「両手上げ banzai」ポーズに 2.5 秒切替
     launchConfetti();
+    // BB1 (2026-05-13): 正解 chip の音声 (= 「ろく」「あか」 等) を再生。
+    // 既存 SE「正解1.mp3」 (= ぴんぽーん) と被らないよう 300ms 遅延。
+    // playAllChoices と同じ解決順 (manifest → g_num_*.wav → Web Speech) を使う。
+    setTimeout(function(){ _playCorrectChipAudio(currentQ, btn); }, 300);
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
     // スタンプラリー: プレイ記録
