@@ -84,6 +84,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-14 - [batch:oto-sheet1a-phase1] **Done** — Sheet 1a Phase1 楽器ボタン中央モチーフ提案 3 案を `tmp/alpha_pending/17/` に納品 (`sheet1a_phase1_proposalA.png` / `B.png` / `C.png`)。全て `1024x512` RGBA 透過 PNG、3MB 未満。 (by Codex)
+
 - 2026-05-08 - [batch:12-quizland-trivia-stage-raw] **Done** — Quizland trivia 追加ステージ絵 6 枚を assets/images/quizland/illust/stage/ に最終配置 + questions.js 結線 (2026-05-08 完了)。
 - 2026-05-07 - [batch:12-quizland-trivia-stage-raw] Codex: `tmp/quizland-trivia-audit/CODEX-ORDER.md` を受領。追加ステージ絵 6 枚 (`stage_shape_soccerball` / `stage_trivia_unripe_banana` / `stage_trivia_rabbit_no_ears` / `stage_trivia_speed_dust` / `stage_shape_notebook` / `stage_body_munching`) の raw 生成に着手。HANDOFF / git log / assets / tmp 検索で同名成果物無しと確認済。AGENTS 現行方針により本配置ではなく `tmp/alpha_pending/12/` に raw 納品する。 (by Codex)
 - 2026-05-07 - [batch:12-quizland-trivia-stage-raw] Codex: user 追加指示を反映。最終的に縮小してフレーム内へ収めるため、画面端まできれいに描く full-bleed 背景は禁止。白背景上の水彩ビネットとして、外周を淡く不規則・ぼんやりさせ、白削除マスクを作りやすい raw にする。旧プロンプトで走った可能性がある soccerball は納品対象外にして新方針で再生成する。 (by Codex)
