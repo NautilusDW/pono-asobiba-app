@@ -5161,6 +5161,16 @@ async function playAllChoices() {
           const url = await _resolveChoiceWavUrl(key);
           if (url) { await _playWavOnce(url); played = true; }
         }
+        // 2026-05-12 修正(W3): manifest 未登録でも chip text が 0-10 の数字なら
+        // g_num_*.wav を直接再生して 4 拞統一する (= 不正解 a/d も WAV 化)。
+        if (!played) {
+          const txt = (chip && (chip.querySelector('.chip-count-num')?.textContent
+                      || chip.textContent) || '').trim();
+          if (/^([0-9]|10)$/.test(txt)) {
+            try { await _playWavOnce('../assets/tts/quiz/g_num_' + txt + '.wav'); played = true; }
+            catch (_) { /* fallback to Web Speech */ }
+          }
+        }
         if (!played) {
           // manifest 未登録 → Web Speech API で chip テキスト読み上げ。
           await _speakChipText(chip);
