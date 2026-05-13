@@ -1095,6 +1095,7 @@ body.sheet-on .hdr-right .ctrl-btn {
 #q-text.q-stage-pending,
 .emoji-display.q-stage-pending,
 .emoji-main-img.q-stage-pending,
+#stage-area.q-stage-pending,
 #answer-panel.q-stage-pending {
   opacity: 0;
   pointer-events: none;
@@ -1104,6 +1105,7 @@ body.sheet-on .hdr-right .ctrl-btn {
 #q-text.q-stage-revealed,
 .emoji-display.q-stage-revealed,
 .emoji-main-img.q-stage-revealed,
+#stage-area.q-stage-revealed,
 #answer-panel.q-stage-revealed {
   opacity: 1;
   pointer-events: auto;
@@ -1243,12 +1245,18 @@ body.layout-editor-on .stage-pono { display: none; }
 .answer-speaker:hover, .answer-speaker:focus-visible { transform: translate(-50%, -50%) scale(1.08); }
 .answer-speaker:active { transform: translate(-50%, -50%) scale(0.94); }
 .answer-speaker.reading { pointer-events: none; opacity: 0.85; }
-/* 順次読み上げ時に各 chip を「押した状態」風にハイライト (色付き枠 + 軽い縮小)。
-   sheet-on モード (pressed 画像) でも被らないように、 box-shadow ベースで主張する。 */
+/* 順次読み上げ時に各 chip を「押した状態」風にハイライト。
+   2026-05-12 修正(T3): ユーザー希望 = 通常タップ時と同じ黄色いハロー (= .chip.pressed
+   の挙動) を再現したい。 sheet-on モードは pressed 画像が出るので、 既存
+   .chip.pressed セレクタの効果 (黄色グラデ + translateY+scale, sheet-on では
+   pressed 画像) を流用するため renderChoices で .pressed を併用付与する。
+   ここでは fallback として独立した強調も残し、 sheet-off 環境で確実に黄色く光る
+   ようにする。 */
 .chip.reading-active {
-  transform: scale(0.96);
-  box-shadow: 0 0 0 5px #ffcf6b, 0 6px 16px rgba(0,0,0,0.25);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transform: translateY(3px) scale(0.97);
+  background: linear-gradient(180deg, #FDE68A, #FCD34D) !important;
+  box-shadow: 0 2px 0 var(--wood-dark), 0 0 0 5px #ffcf6b, 0 6px 16px rgba(0,0,0,0.25);
+  transition: transform 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
 }
 .bottom-right {
   display: flex;
@@ -4914,6 +4922,13 @@ function loadQuestion(q) {
   document.querySelectorAll('#stage-area .emoji-main-img').forEach(function(el) {
     el.classList.add('q-stage-pending');
   });
+  // T4 fix (2026-05-12): `#stage-area` 自身にも pending を付与する。
+  // order_color / count_total / shape_name / number_sequence / weather / opposite /
+  // trivia / body 等は `.emoji-display` も `.emoji-main-img` も持たないため
+  // (= `<img class="color-chip">` など独自構造)、 stage-area 自体を隠蔽するのが
+  // 全タイプ一括カバーになる最小修正。 reveal は既存の querySelectorAll('.q-stage-pending')
+  // 一括処理で自動的に行われる。
+  if (stage) stage.classList.add('q-stage-pending');
   const _ansPanel = document.getElementById('answer-panel');
   if (_ansPanel) _ansPanel.classList.add('q-stage-pending');
   // v967: 「第N問」 プレート表示中は問題文も隠す (案 C)。
@@ -5057,6 +5072,39 @@ function _resolveChoiceWavUrl(key) {
     })
     .catch(function(){ return null; });
 }
+// 2026-05-12 修正(T3): manifest に wav が無い chip 用の Web Speech フォールバック。
+// chip 内の text (= 「6」 「7」 「8」 「9」 等) を ja-JP TTS で読み上げる。
+// 数字は ja-JP 設定で「ろく/なな/はち/きゅう」 と自然に読まれる。
+// 既存ナレーション声 (女性4 / VOICEPEAK) とは異なるが、 manifest 未登録時の
+// 救済策として「順次読み上げ」 体験を維持する。
+function _speakChipText(chip) {
+  return new Promise(function(resolve) {
+    if (!chip) { resolve(); return; }
+    if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') {
+      resolve(); return;
+    }
+    const el = chip.querySelector('.chip-count-num')
+              || chip.querySelector('.chip-illust-label')
+              || chip.querySelector('.chip-label');
+    const text = ((el && el.textContent) || chip.textContent || '').trim();
+    if (!text) { resolve(); return; }
+    let done = false;
+    function finish() { if (done) return; done = true; resolve(); }
+    try {
+      // narration.js 側の問題文音声を停止 (衝突回避)。
+      if (typeof Narration !== 'undefined' && Narration.stop) Narration.stop();
+      speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'ja-JP';
+      utter.rate = 1.0;
+      utter.onend = finish;
+      utter.onerror = finish;
+      speechSynthesis.speak(utter);
+      // セーフティ: 4 秒で強制終了。
+      setTimeout(function(){ if (!done) { try { speechSynthesis.cancel(); } catch(_){} finish(); } }, 4000);
+    } catch (_) { finish(); }
+  });
+}
 function _playWavOnce(url) {
   return new Promise(function(resolve) {
     if (!url) { resolve(); return; }
@@ -5096,21 +5144,44 @@ async function playAllChoices() {
   if (speaker) speaker.classList.add('reading');
   try {
     await Narration.load();
-    const suffixes = ['a', 'b', 'c', 'd']; // data-idx 0=TL=a, 1=TR=b, 2=BL=c, 3=BR=d
+    // data-idx 0=TL=a, 1=TR=b, 2=BL=c, 3=BR=d。 ユーザー希望「左上→右上→左下→右下」
+    // = idx 0→1→2→3 と等価。
+    const suffixes = ['a', 'b', 'c', 'd'];
     for (let i = 0; i < suffixes.length; i++) {
       const chip = panel.querySelector('.chip[data-idx="' + i + '"]');
       const key = narrationKey(currentQ, suffixes[i]);
-      if (!key || !Narration.hasEntry(key)) continue;
-      if (chip) chip.classList.add('reading-active');
+      // 2026-05-12 修正(T3): 以前は manifest 未登録 (hasEntry=false) 時に
+      // `continue` で skip し chip を点灯すらしなかった。 結果として
+      // number_sequence のように 4 択中 1 つ (正解のみ) しか wav が無いカテゴリ
+      // では「右上の文言しか再生されない」 状態だった。 今は全 chip を必ず
+      // 順次点灯し、 wav が有れば wav、 無ければ Web Speech API で chip テキスト
+      // を読み上げる fallback を実行する。
+      if (chip) {
+        chip.classList.add('reading-active');
+        chip.classList.add('pressed'); // sheet-on モードの pressed 画像も発火させる
+      }
       try {
-        const url = await _resolveChoiceWavUrl(key);
-        await _playWavOnce(url);
+        let played = false;
+        if (key && Narration.hasEntry(key)) {
+          const url = await _resolveChoiceWavUrl(key);
+          if (url) { await _playWavOnce(url); played = true; }
+        }
+        if (!played) {
+          // manifest 未登録 → Web Speech API で chip テキスト読み上げ。
+          await _speakChipText(chip);
+        }
       } catch (_) { /* 個別失敗は無視して次へ */ }
-      if (chip) chip.classList.remove('reading-active');
+      if (chip) {
+        chip.classList.remove('reading-active');
+        chip.classList.remove('pressed');
+      }
     }
   } finally {
     if (speaker) speaker.classList.remove('reading');
-    panel.querySelectorAll('.chip.reading-active').forEach(function(c){ c.classList.remove('reading-active'); });
+    panel.querySelectorAll('.chip.reading-active').forEach(function(c){
+      c.classList.remove('reading-active');
+      c.classList.remove('pressed');
+    });
     _playAllChoicesRunning = false;
     _playAllChoicesAudio = null;
   }
