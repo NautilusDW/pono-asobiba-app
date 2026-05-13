@@ -334,6 +334,35 @@
   body.global-mask-mode #stage-canvas,
   body.global-mask-mode #overlay-canvas { cursor: crosshair; }
 
+  /* === Mask "Clear all" buttons + delete hint ============================ */
+  .mask-clear-all {
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 6px;
+    background: #3a2326;
+    color: #ffb3b3;
+    border: 1px solid #5a2c30;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .mask-clear-all:hover { background: #4a2a2e; color: #ffd0d0; }
+  .mask-clear-all:disabled {
+    opacity: 0.35; cursor: default;
+    background: #232831; color: #6c7383; border-color: #2e3340;
+  }
+  .mask-delete-hint {
+    font-size: 10px; color: #6c7383;
+    margin-top: 4px; padding: 0 2px;
+    line-height: 1.4;
+  }
+  /* Hovered mask row in the right-pane list (helps identify which is which) */
+  #mask-section .mask-row.selected,
+  #global-mask-section .mask-row.selected {
+    background: rgba(255, 255, 255, 0.08);
+    outline: 1px solid #4e8bff;
+  }
+
   /* === Toast ============================================================ */
   #toast {
     position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
@@ -458,12 +487,16 @@
       <button id="mask-mode-toggle" class="toggle" style="width:100%;margin-bottom:4px;" title="マスクモード ON 時、ステージで drag → 矩形マスク追加">マスクモード OFF</button>
       <div class="prop-help">ON 時にステージで drag → 矩形領域を alpha 0 化 (= 透明マスク)。 入力画像座標で保存。 rotation=0 推奨 (Phase 4 で改善)</div>
       <div id="mask-list" class="mask-list"></div>
+      <button id="mask-clear-all" class="mask-clear-all" title="このコマのマスクをすべて削除">🗑️ このコマのマスクをすべてクリア</button>
+      <div class="mask-delete-hint">💡 ステージのマスク矩形を <kbd>Alt</kbd>+クリック → <kbd>Delete</kbd> で削除</div>
     </div>
     <div class="prop-section" id="global-mask-section">
       <div class="section-title">🌐 全コマ共通マスク (全フレーム)</div>
       <button id="global-mask-mode-toggle" class="toggle" style="width:100%;margin-bottom:4px;" title="ON 時、ステージで drag → 全フレーム共通マスク追加 (ステージ座標)">共通マスクモード OFF</button>
       <div class="prop-help">ON 時にステージで drag → ステージ座標の矩形を全フレームから穴抜き (= ctx.clip evenodd で実装、 高速)。 個別マスクとモード排他。</div>
       <div id="global-mask-list" class="mask-list"></div>
+      <button id="global-mask-clear-all" class="mask-clear-all" title="共通マスクをすべて削除">🗑️ 共通マスクをすべてクリア</button>
+      <div class="mask-delete-hint">💡 ステージの共通マスクを <kbd>Alt</kbd>+クリック → <kbd>Delete</kbd> で削除</div>
     </div>
     <div class="prop-section">
       <div class="section-title">ステージ</div>
@@ -1263,6 +1296,19 @@ function renderOverlay() {
     }
     overlayCtx.restore();
   }
+  // 選択中の共通マスクをハイライト (白い破線で強調)
+  if (_selectedMaskRef && _selectedMaskRef.type === 'global') {
+    const r = (project.globalMaskRects || [])[_selectedMaskRef.idx];
+    if (r) {
+      overlayCtx.save();
+      overlayCtx.strokeStyle = '#ffffff';
+      overlayCtx.lineWidth = 3 / viewScale;
+      overlayCtx.setLineDash([6 / viewScale, 3 / viewScale]);
+      overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+      overlayCtx.setLineDash([]);
+      overlayCtx.restore();
+    }
+  }
 
   const f = getSelectedFrame();
   if (!f) return;
@@ -1287,6 +1333,21 @@ function renderOverlay() {
       overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
     }
     overlayCtx.setLineDash([]);
+    // 選択中の個別マスクをハイライト (白い破線、 frame-local 座標系)
+    if (_selectedMaskRef && _selectedMaskRef.type === 'frame'
+        && _selectedMaskRef.frameId === f.id) {
+      const r = f.maskRects[_selectedMaskRef.idx];
+      if (r) {
+        overlayCtx.strokeStyle = '#ffffff';
+        overlayCtx.lineWidth = 2.5 / (viewScale * (f.scale || 1));
+        overlayCtx.setLineDash([
+          6 / (viewScale * (f.scale || 1)),
+          3 / (viewScale * (f.scale || 1)),
+        ]);
+        overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+        overlayCtx.setLineDash([]);
+      }
+    }
   }
   // Live mask drag preview
   if (activeOp && activeOp.kind === 'mask-draw' && activeOp.cur) {
@@ -1410,6 +1471,36 @@ function onStagePointerDown(e) {
   if (e.button !== 0) return;
   const { sx, sy } = clientToStage(e.clientX, e.clientY);
 
+  // Alt+click → マスク矩形を選択 (Delete/Backspace で削除可能に)。
+  // マスクモード中は drag が優先されるので Alt+click は受け付けない。
+  if (e.altKey && !_maskMode && !_globalMaskMode) {
+    const hit = pickMaskAtStagePoint(sx, sy);
+    if (hit) {
+      _selectedMaskRef = hit;
+      // 個別マスクの場合は親フレームも選択 (= overlay の描画範囲に入れる)
+      if (hit.type === 'frame' && hit.frameId !== selectedFrameId) {
+        selectFrame(hit.frameId);
+      }
+      // 該当リストの行ハイライトを更新
+      if (hit.type === 'frame') renderMaskList(); else renderGlobalMaskList();
+      renderOverlay();
+      toast(hit.type === 'global'
+        ? `🌐 共通マスク #${hit.idx + 1} 選択 (Delete で削除)`
+        : `🎭 マスク #${hit.idx + 1} 選択 (Delete で削除)`);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }
+  // 通常クリックで選択ハイライト解除 (Alt なしの場合のみ)
+  if (!e.altKey && _selectedMaskRef) {
+    _selectedMaskRef = null;
+    renderMaskList();
+    renderGlobalMaskList();
+    renderOverlay();
+    // fall through — 通常のフレーム drag/選択は引き続き処理
+  }
+
   // Global mask mode: drag → rect in stage coords (= shared across all frames).
   // No frame selection needed since masks live on project.globalMaskRects.
   if (typeof _globalMaskMode !== 'undefined' && _globalMaskMode) {
@@ -1509,6 +1600,36 @@ function _stageToFrameLocal(sx, sy, frame, img) {
   const ix = local.dx / (frame.scale || 1) + img.width  / 2;
   const iy = local.dy / (frame.scale || 1) + img.height / 2;
   return { x: ix, y: iy };
+}
+
+// ステージ座標 (sx, sy) で hit するマスク矩形を検索。
+// 検索順: globalMaskRects (上に描画) → 選択中フレームの maskRects (frame-local 逆変換)。
+// 戻り値: { type: 'global', idx } | { type: 'frame', frameId, idx } | null
+function pickMaskAtStagePoint(sx, sy) {
+  const globals = project.globalMaskRects || [];
+  for (let i = globals.length - 1; i >= 0; i--) {
+    const r = globals[i];
+    if (sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) {
+      return { type: 'global', idx: i };
+    }
+  }
+  // 個別マスクは frame-local 座標で保存されているので、 stage→frame-local 変換して比較。
+  // 全フレームを z-order 逆順で検索 (= 上のフレームを優先)。
+  for (let fi = project.frames.length - 1; fi >= 0; fi--) {
+    const f = project.frames[fi];
+    if (!f.maskRects || f.maskRects.length === 0) continue;
+    const img = imageCache.get(f.imageId);
+    if (!img) continue;
+    const local = _stageToFrameLocal(sx, sy, f, img);
+    for (let i = f.maskRects.length - 1; i >= 0; i--) {
+      const r = f.maskRects[i];
+      if (local.x >= r.x && local.x <= r.x + r.w
+          && local.y >= r.y && local.y <= r.y + r.h) {
+        return { type: 'frame', frameId: f.id, idx: i };
+      }
+    }
+  }
+  return null;
 }
 
 function onStagePointerMove(e) {
@@ -2169,6 +2290,8 @@ function loadProject(obj) {
     renderStrip();
     renderStage();
     syncPropsFromFrame();
+    // 読み込み時はマスク選択をクリア (= 古いプロジェクトの選択が残らないように)
+    if (typeof _selectedMaskRef !== 'undefined') _selectedMaskRef = null;
     if (typeof renderGlobalMaskList === 'function') renderGlobalMaskList();
     // Reset undo history to this freshly-loaded project state.
     _undoStack.length = 0;
@@ -2403,6 +2526,41 @@ let _clipboard = null;
 window.addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
 
+  // Delete / Backspace : 選択中マスク矩形を削除 (= Alt+click で選択した矩形)。
+  // モディファイア (Ctrl/Cmd/Alt) なしの素の Delete のみ反応 (= 他ショートカットと干渉防止)。
+  if ((e.key === 'Delete' || e.key === 'Backspace')
+      && !e.ctrlKey && !e.metaKey && !e.altKey
+      && _selectedMaskRef) {
+    const ref = _selectedMaskRef;
+    if (ref.type === 'global') {
+      const masks = project.globalMaskRects || [];
+      if (ref.idx >= 0 && ref.idx < masks.length) {
+        masks.splice(ref.idx, 1);
+        _selectedMaskRef = null;
+        renderStage();
+        renderStripActive();
+        renderGlobalMaskList();
+        markDirty();
+        snapshotForUndo('共通マスク削除 (キー)');
+        toast('🌐 共通マスク削除');
+      }
+    } else if (ref.type === 'frame') {
+      const f = project.frames.find(x => x.id === ref.frameId);
+      if (f && f.maskRects && ref.idx >= 0 && ref.idx < f.maskRects.length) {
+        f.maskRects.splice(ref.idx, 1);
+        _selectedMaskRef = null;
+        renderStage();
+        renderStripActive();
+        renderMaskList();
+        markDirty();
+        snapshotForUndo('マスク削除 (キー)');
+        toast('🎭 マスク削除');
+      }
+    }
+    e.preventDefault();
+    return;
+  }
+
   // Ctrl/Cmd + Z : undo  /  Ctrl+Shift+Z or Ctrl+Y : redo
   if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
     e.preventDefault();
@@ -2493,8 +2651,18 @@ function initGuides() {
 // rendering は drawFrameOnContext の masks path で alpha 0 化。
 let _maskMode = false;
 
+// 選択中のマスク (Alt+click で選択、 Delete/Backspace で削除)。
+// { type: 'frame'|'global', frameId?: string, idx: number } | null
+let _selectedMaskRef = null;
+
 function setMaskMode(on) {
   _maskMode = !!on;
+  // mask-mode 切替時は Alt+click 選択をクリア (= drag と選択が混在しないように)
+  if (_selectedMaskRef) {
+    _selectedMaskRef = null;
+    if (typeof renderMaskList === 'function') renderMaskList();
+    if (typeof renderGlobalMaskList === 'function') renderGlobalMaskList();
+  }
   // 排他: 共通マスクモードが ON なら OFF にする (forward declaration safe)
   if (_maskMode && typeof _globalMaskMode !== 'undefined' && _globalMaskMode) {
     _globalMaskMode = false;
@@ -2516,14 +2684,17 @@ function setMaskMode(on) {
 
 function renderMaskList() {
   const host = $('mask-list');
+  const clearBtn = $('mask-clear-all');
   if (!host) return;
   host.innerHTML = '';
   const f = getSelectedFrame();
   if (!f) {
     host.innerHTML = '<div class="mask-empty">フレーム未選択</div>';
+    if (clearBtn) clearBtn.disabled = true;
     return;
   }
   const masks = f.maskRects || [];
+  if (clearBtn) clearBtn.disabled = (masks.length === 0);
   if (masks.length === 0) {
     host.innerHTML = '<div class="mask-empty">マスクなし</div>';
     return;
@@ -2531,6 +2702,10 @@ function renderMaskList() {
   masks.forEach((r, i) => {
     const row = document.createElement('div');
     row.className = 'mask-row';
+    if (_selectedMaskRef && _selectedMaskRef.type === 'frame'
+        && _selectedMaskRef.frameId === f.id && _selectedMaskRef.idx === i) {
+      row.classList.add('selected');
+    }
     const label = document.createElement('div');
     label.className = 'mask-label';
     label.textContent = `#${i + 1}  (${Math.round(r.x)},${Math.round(r.y)}) ${Math.round(r.w)}×${Math.round(r.h)}`;
@@ -2540,6 +2715,11 @@ function renderMaskList() {
     del.title = 'このマスクを削除';
     del.addEventListener('click', () => {
       f.maskRects.splice(i, 1);
+      if (_selectedMaskRef && _selectedMaskRef.type === 'frame'
+          && _selectedMaskRef.frameId === f.id) {
+        if (_selectedMaskRef.idx === i) _selectedMaskRef = null;
+        else if (_selectedMaskRef.idx > i) _selectedMaskRef.idx -= 1;
+      }
       renderStage();
       renderStripActive();
       renderMaskList();
@@ -2553,9 +2733,31 @@ function renderMaskList() {
   });
 }
 
+// 「このコマのマスクをすべてクリア」 ボタン用ハンドラ
+function clearFrameMasks() {
+  const f = getSelectedFrame();
+  if (!f) return;
+  const n = (f.maskRects || []).length;
+  if (n === 0) return;
+  if (!confirm(`このコマのマスク ${n} 件をすべて削除しますか？`)) return;
+  f.maskRects = [];
+  if (_selectedMaskRef && _selectedMaskRef.type === 'frame'
+      && _selectedMaskRef.frameId === f.id) {
+    _selectedMaskRef = null;
+  }
+  renderStage();
+  renderStripActive();
+  renderMaskList();
+  markDirty();
+  snapshotForUndo('個別マスク全クリア');
+  toast(`🎭 マスク ${n} 件 削除`);
+}
+
 function initMaskUI() {
   const btn = $('mask-mode-toggle');
   if (btn) btn.addEventListener('click', () => setMaskMode(!_maskMode));
+  const clearBtn = $('mask-clear-all');
+  if (clearBtn) clearBtn.addEventListener('click', clearFrameMasks);
   // Re-render mask list when selection changes
   const origSelectFrame = selectFrame;
   // wrap selectFrame via monkey-patch on the closure name — simpler is to
@@ -2576,6 +2778,12 @@ let _globalMaskMode = false;
 
 function setGlobalMaskMode(on) {
   _globalMaskMode = !!on;
+  // mask-mode 切替時は Alt+click 選択をクリア
+  if (_selectedMaskRef) {
+    _selectedMaskRef = null;
+    if (typeof renderMaskList === 'function') renderMaskList();
+    if (typeof renderGlobalMaskList === 'function') renderGlobalMaskList();
+  }
   // 排他: 個別マスクが ON なら OFF にする
   if (_globalMaskMode && _maskMode) {
     setMaskMode(false);
@@ -2591,9 +2799,11 @@ function setGlobalMaskMode(on) {
 
 function renderGlobalMaskList() {
   const host = $('global-mask-list');
+  const clearBtn = $('global-mask-clear-all');
   if (!host) return;
   host.innerHTML = '';
   const masks = project.globalMaskRects || [];
+  if (clearBtn) clearBtn.disabled = (masks.length === 0);
   if (masks.length === 0) {
     host.innerHTML = '<div class="mask-empty">共通マスクなし</div>';
     return;
@@ -2601,6 +2811,10 @@ function renderGlobalMaskList() {
   masks.forEach((r, i) => {
     const row = document.createElement('div');
     row.className = 'mask-row';
+    if (_selectedMaskRef && _selectedMaskRef.type === 'global'
+        && _selectedMaskRef.idx === i) {
+      row.classList.add('selected');
+    }
     const label = document.createElement('div');
     label.className = 'mask-label';
     label.textContent = `#${i + 1}  (${Math.round(r.x)},${Math.round(r.y)}) ${Math.round(r.w)}×${Math.round(r.h)}`;
@@ -2610,6 +2824,10 @@ function renderGlobalMaskList() {
     del.title = 'この共通マスクを削除';
     del.addEventListener('click', () => {
       project.globalMaskRects.splice(i, 1);
+      if (_selectedMaskRef && _selectedMaskRef.type === 'global') {
+        if (_selectedMaskRef.idx === i) _selectedMaskRef = null;
+        else if (_selectedMaskRef.idx > i) _selectedMaskRef.idx -= 1;
+      }
       renderStage();
       renderStripActive();
       renderGlobalMaskList();
@@ -2623,9 +2841,29 @@ function renderGlobalMaskList() {
   });
 }
 
+// 「共通マスクをすべてクリア」 ボタン用ハンドラ
+function clearGlobalMasks() {
+  const masks = project.globalMaskRects || [];
+  const n = masks.length;
+  if (n === 0) return;
+  if (!confirm(`全コマ共通マスク ${n} 件をすべて削除しますか？`)) return;
+  project.globalMaskRects = [];
+  if (_selectedMaskRef && _selectedMaskRef.type === 'global') {
+    _selectedMaskRef = null;
+  }
+  renderStage();
+  renderStripActive();
+  renderGlobalMaskList();
+  markDirty();
+  snapshotForUndo('共通マスク全クリア');
+  toast(`🌐 共通マスク ${n} 件 削除`);
+}
+
 function initGlobalMaskUI() {
   const btn = $('global-mask-mode-toggle');
   if (btn) btn.addEventListener('click', () => setGlobalMaskMode(!_globalMaskMode));
+  const clearBtn = $('global-mask-clear-all');
+  if (clearBtn) clearBtn.addEventListener('click', clearGlobalMasks);
   window.__komaRenderGlobalMaskList = renderGlobalMaskList;
   renderGlobalMaskList();
 }
