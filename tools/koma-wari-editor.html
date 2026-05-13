@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- JSZip CDN: used by 📦 Export to bundle webp frames + manifest.json -->
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- idb-keyval CDN: used by in-app project manager (IndexedDB, localStorage 5-10MB limit回避) -->
+<script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
 <style>
   /*
    * ──────────────────────────────────────────────────────────────────
@@ -238,6 +240,72 @@
   .strip-cell .strip-del { position:absolute; top:2px; right:2px; font-size:11px; background:rgba(0,0,0,0.5); border:none; padding:0 4px; border-radius:3px; line-height:16px; }
   .strip-cell .strip-del:hover { background:#a13a3a; }
 
+  /* === Project menu (📁 dropdown) ======================================== */
+  .pm-wrap { position: relative; }
+  #pm-menu {
+    position: absolute; top: 100%; left: 0;
+    background: #22262f; border: 1px solid #3a4150; border-radius: 6px;
+    padding: 6px; min-width: 260px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    z-index: 1500;
+    display: none; flex-direction: column; gap: 2px;
+    max-height: 70vh; overflow: auto;
+  }
+  #pm-menu.show { display: flex; }
+  #pm-menu button.pm-action {
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 5px 8px;
+    font-size: 13px;
+    border-radius: 4px;
+  }
+  #pm-menu button.pm-action:hover { background: #2a2f3a; border-color: #3a4150; }
+  #pm-menu .pm-sep {
+    border: 0; border-top: 1px solid #2e3340; margin: 4px 2px;
+    font-size: 10px; color: #6c7383; text-align: center;
+  }
+  #pm-menu .pm-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  #pm-menu .pm-item:hover { background: #2a2f3a; }
+  #pm-menu .pm-item.active { background: #2c3a55; border-left: 3px solid #4e8bff; padding-left: 3px; }
+  #pm-menu .pm-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pm-menu .pm-item-date { font-size: 10px; color: #6c7383; }
+  #pm-menu .pm-empty { font-size: 11px; color: #6c7383; padding: 6px; text-align: center; }
+  #pm-current-name { font-size: 11px; color: #9aa5b8; padding: 2px 6px 6px; border-bottom: 1px solid #2e3340; margin-bottom: 4px; }
+
+  /* === Mask section (right pane) ========================================= */
+  #mask-section .mask-list {
+    max-height: 200px; overflow-y: auto;
+    margin-top: 6px;
+    border: 1px solid #2e3340; border-radius: 4px;
+    background: #1a1d24;
+  }
+  #mask-section .mask-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    border-bottom: 1px solid #2a2f3a;
+  }
+  #mask-section .mask-row:last-child { border-bottom: 0; }
+  #mask-section .mask-row .mask-label { flex: 1; color: #9aa5b8; }
+  #mask-section .mask-row .mask-del {
+    background: transparent; border: 0; color: #aaa;
+    padding: 0 4px; cursor: pointer; font-size: 12px;
+  }
+  #mask-section .mask-row .mask-del:hover { color: #ff7777; }
+  #mask-section .mask-empty {
+    font-size: 11px; color: #6c7383; padding: 6px; text-align: center;
+  }
+  #mask-mode-toggle.on { background: #2e8f5a; border-color: #50c98a; }
+  /* Mask drag visual: dim stage cursor */
+  body.mask-mode #stage-canvas,
+  body.mask-mode #overlay-canvas { cursor: crosshair; }
+
   /* === Toast ============================================================ */
   #toast {
     position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
@@ -256,9 +324,23 @@
   <!-- ===== Top bar ===== -->
   <div id="pane-top">
     <div class="group">
-      <button id="btn-open"   title="プロジェクト JSON を開く">📥 開く</button>
-      <button id="btn-save"   title="プロジェクト JSON を保存">💾 保存</button>
-      <button id="btn-export" class="primary" title="ZIP (manifest + WebP) をエクスポート">📦 エクスポート</button>
+      <div class="pm-wrap">
+        <button id="btn-pm-toggle" title="エディタ内に保存されたプロジェクトを管理 (IndexedDB)">📁 プロジェクト ▼</button>
+        <div id="pm-menu" role="menu" aria-label="プロジェクト管理">
+          <div id="pm-current-name">未保存プロジェクト</div>
+          <button class="pm-action" id="pm-new"        title="現在の作業を破棄して空のプロジェクトを開く">＋ 新規プロジェクト</button>
+          <button class="pm-action" id="pm-save"       title="現在のプロジェクトを IndexedDB に上書き保存">💾 上書き保存</button>
+          <button class="pm-action" id="pm-save-as"    title="名前を付けて新規 id で IndexedDB に保存">💾 別名で保存…</button>
+          <button class="pm-action" id="pm-duplicate"  title="現在のプロジェクトを複製して新規 id で保存">📋 複製</button>
+          <button class="pm-action" id="pm-rename"     title="現在のプロジェクト名を変更">✏️ 名前変更</button>
+          <button class="pm-action" id="pm-delete"     title="現在のプロジェクトを IndexedDB から削除">× 削除</button>
+          <div class="pm-sep">━━━ プロジェクト一覧 ━━━</div>
+          <div id="pm-list"></div>
+        </div>
+      </div>
+      <button id="btn-open"   title="ファイルからプロジェクト JSON を読み込み">📥 ファイルから読み込み</button>
+      <button id="btn-save"   title="プロジェクト JSON ファイルをダウンロード">📤 ファイルとしてエクスポート</button>
+      <button id="btn-export" class="primary" title="ZIP (manifest + WebP) をエクスポート">📦 ZIP エクスポート</button>
       <input type="file" id="file-input-json" accept=".json,application/json" style="display:none">
     </div>
     <div class="group">
@@ -342,6 +424,12 @@
       <button id="btn-fit"       style="width:100%;margin-bottom:4px;">画面にフィット</button>
       <button id="btn-save-to-stock" style="width:100%;margin-bottom:4px;" title="現在の位置/Scale/Rotation で 1 枚にレンダリングしてストックへ保存">📦 この状態をストックへ</button>
       <button id="btn-delete"    class="danger" style="width:100%;">🗑 このフレームを削除</button>
+    </div>
+    <div class="prop-section" id="mask-section">
+      <div class="section-title">🎭 マスク</div>
+      <button id="mask-mode-toggle" class="toggle" style="width:100%;margin-bottom:4px;" title="マスクモード ON 時、ステージで drag → 矩形マスク追加">マスクモード OFF</button>
+      <div class="prop-help">ON 時にステージで drag → 矩形領域を alpha 0 化 (= 透明マスク)。 入力画像座標で保存。 rotation=0 推奨 (Phase 4 で改善)</div>
+      <div id="mask-list" class="mask-list"></div>
     </div>
     <div class="prop-section">
       <div class="section-title">ステージ</div>
@@ -945,8 +1033,45 @@ function drawFrameOnContext(ctx, frame, opts = {}) {
   ctx.translate(frame.x, frame.y);
   ctx.rotate(frame.rotation * Math.PI / 180);
   ctx.scale(frame.scale, frame.scale);
-  // Image origin at center
-  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+  const masks = frame.maskRects && frame.maskRects.length > 0 ? frame.maskRects : null;
+  if (masks) {
+    // Mask path: render image to tmp canvas (in input-image coords), wipe
+    // alpha inside maskRects, then drawImage(tmp) under the frame transform.
+    // This keeps mask coords stable across scale/rotation (= mask follows the
+    // image, not the screen). Performance is OK for MVP (1 getImageData per frame).
+    const tmp = document.createElement('canvas');
+    tmp.width  = img.width;
+    tmp.height = img.height;
+    const tctx = tmp.getContext('2d');
+    tctx.drawImage(img, 0, 0);
+    try {
+      const data = tctx.getImageData(0, 0, img.width, img.height);
+      const d = data.data;
+      const W = img.width, H = img.height;
+      for (const r of masks) {
+        const x0 = Math.max(0, Math.floor(r.x));
+        const y0 = Math.max(0, Math.floor(r.y));
+        const x1 = Math.min(W, Math.floor(r.x + r.w));
+        const y1 = Math.min(H, Math.floor(r.y + r.h));
+        for (let py = y0; py < y1; py++) {
+          const rowBase = py * W * 4;
+          for (let px = x0; px < x1; px++) {
+            d[rowBase + px * 4 + 3] = 0; // alpha 0
+          }
+        }
+      }
+      tctx.putImageData(data, 0, 0);
+      ctx.drawImage(tmp, -img.width / 2, -img.height / 2);
+    } catch (e) {
+      // CORS-tainted canvas or unexpected error → fall back to raw image
+      console.warn('[koma] mask render failed, falling back:', e);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    }
+  } else {
+    // Image origin at center
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  }
   ctx.restore();
 }
 
@@ -1166,6 +1291,34 @@ function onStagePointerDown(e) {
   if (e.button !== 0) return;
   const { sx, sy } = clientToStage(e.clientX, e.clientY);
 
+  // Mask mode: drag → maskRect on the selected frame's input-image coords.
+  // Falls back to normal hit-test if no frame selected or image not loaded.
+  if (_maskMode) {
+    const f = getSelectedFrame();
+    if (f) {
+      const img = imageCache.get(f.imageId);
+      if (img) {
+        e.preventDefault();
+        stageWrap.setPointerCapture && stageWrap.setPointerCapture(e.pointerId);
+        const local = _stageToFrameLocal(sx, sy, f, img);
+        activeOp = {
+          pointerId: e.pointerId,
+          kind: 'mask-draw',
+          start: { sx, sy, lx: local.x, ly: local.y },
+          frameRef: f.id,
+          imgW: img.width,
+          imgH: img.height,
+          cur: { x: local.x, y: local.y, w: 0, h: 0 },
+        };
+        window.addEventListener('pointermove', onStagePointerMove);
+        window.addEventListener('pointerup',   onStagePointerUp);
+        window.addEventListener('pointercancel', onStagePointerUp);
+        return;
+      }
+    }
+    // No frame / no image → fall through to normal selection so user can pick first
+  }
+
   // First, try hit-test on current selection
   let hit = hitTestOnSelected(sx, sy);
 
@@ -1209,6 +1362,19 @@ function onStagePointerDown(e) {
   window.addEventListener('pointercancel', onStagePointerUp);
 }
 
+// Convert stage coords → frame-local *input-image* coords (origin at image
+// top-left, in image px). Used by mask drag so masks are stored in
+// img-pixel space (= survive future scale/rotation changes).
+function _stageToFrameLocal(sx, sy, frame, img) {
+  const dx = sx - frame.x, dy = sy - frame.y;
+  const local = rotateDeltaInverse(frame.rotation, dx, dy);
+  // local is now in *frame.scale*-scaled image coords with origin at image center.
+  // Divide by scale → input-image coords, then translate to top-left origin.
+  const ix = local.dx / (frame.scale || 1) + img.width  / 2;
+  const iy = local.dy / (frame.scale || 1) + img.height / 2;
+  return { x: ix, y: iy };
+}
+
 function onStagePointerMove(e) {
   if (!activeOp) return;
   const f = getSelectedFrame();
@@ -1216,6 +1382,19 @@ function onStagePointerMove(e) {
   const { sx, sy } = clientToStage(e.clientX, e.clientY);
   const dx = sx - activeOp.start.sx;
   const dy = sy - activeOp.start.sy;
+
+  if (activeOp.kind === 'mask-draw') {
+    const img = imageCache.get(f.imageId);
+    if (!img) return;
+    const local = _stageToFrameLocal(sx, sy, f, img);
+    const x0 = Math.min(activeOp.start.lx, local.x);
+    const y0 = Math.min(activeOp.start.ly, local.y);
+    const w  = Math.abs(local.x - activeOp.start.lx);
+    const h  = Math.abs(local.y - activeOp.start.ly);
+    activeOp.cur = { x: x0, y: y0, w, h };
+    renderOverlay(); // overlay will read activeOp.cur via _drawMaskPreview hook
+    return;
+  }
 
   if (activeOp.kind === 'body') {
     // Move
@@ -1275,6 +1454,32 @@ function onStagePointerUp(e) {
   window.removeEventListener('pointercancel', onStagePointerUp);
   stageWrap.releasePointerCapture && stageWrap.releasePointerCapture(activeOp.pointerId);
   const opKind = activeOp.kind;
+
+  if (opKind === 'mask-draw') {
+    const f = project.frames.find(x => x.id === activeOp.frameRef);
+    const cur = activeOp.cur;
+    activeOp = null;
+    // Min-size guard: ignore tiny accidental clicks (< 4px in image coords)
+    if (f && cur && cur.w >= 4 && cur.h >= 4) {
+      f.maskRects = f.maskRects || [];
+      f.maskRects.push({
+        x: Math.round(cur.x),
+        y: Math.round(cur.y),
+        w: Math.round(cur.w),
+        h: Math.round(cur.h),
+      });
+      renderStage();
+      renderStripActive();
+      renderMaskList();
+      markDirty();
+      snapshotForUndo('マスク追加');
+      toast('🎭 マスク追加');
+    } else {
+      renderStage(); // clear the live preview
+    }
+    return;
+  }
+
   activeOp = null;
   renderStripActive();    // thumb of selected frame may have changed
   markDirty();
