@@ -114,7 +114,37 @@
   .asset-card .asset-name { font-size:10px; color:#9aa5b8; margin-top:2px; word-break:break-all; line-height:1.1; max-height:24px; overflow:hidden; }
   .asset-card .asset-del { font-size:10px; color:#aaa; cursor:pointer; margin-top:2px; }
   .asset-card .asset-del:hover { color:#ff7777; }
+  .asset-card .asset-adjust { font-size:10px; color:#9ad0ff; cursor:pointer; margin-top:1px; }
+  .asset-card .asset-adjust:hover { color:#cfe6ff; }
   .section-title { font-size:12px; color:#9aa5b8; margin: 8px 0 4px; letter-spacing:.05em; }
+  .section-title.stock { color:#f0b840; }
+
+  /* === Adjust modal ====================================================== */
+  #adjust-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center; z-index: 2000;
+  }
+  #adjust-overlay.show { display: flex; }
+  #adjust-modal {
+    background: #22262f; border: 1px solid #3a4150; border-radius: 8px;
+    padding: 16px; width: 640px; max-width: 92vw; max-height: 92vh;
+    overflow: auto; display: flex; flex-direction: column; gap: 10px;
+  }
+  #adjust-modal h3 { margin: 0 0 4px; font-size: 15px; }
+  #adjust-modal .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #adjust-modal .row label { font-size: 12px; color: #9aa5b8; }
+  #adjust-canvas {
+    display: block; margin: 0 auto;
+    background:
+      linear-gradient(45deg, #2a2f3a 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2f3a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2f3a 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2f3a 75%);
+    background-color: #181b22; background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    border: 1px solid #3a4150;
+  }
+  #adjust-modal .buttons { display: flex; gap: 8px; justify-content: flex-end; }
 
   /* === Center pane: stage canvas ======================================== */
   #stage-wrap { position:relative; }
@@ -247,6 +277,8 @@
     </div>
     <div class="section-title">素材ライブラリ</div>
     <div id="asset-grid"></div>
+    <div class="section-title stock">📦 調整済みストック</div>
+    <div id="stock-grid"></div>
   </div>
 
   <!-- ===== Center: stage ===== -->
@@ -313,6 +345,39 @@
     <div id="timeline-strip"></div>
   </div>
 
+</div>
+
+<!-- ===== Adjust modal (✂️ 調整: fit element into target size) ===== -->
+<div id="adjust-overlay">
+  <div id="adjust-modal">
+    <h3>✂️ 素材を調整してストックに保存</h3>
+    <div class="row">
+      <label>サイズ</label>
+      <input type="number" id="adjust-target-w" value="512" min="32" max="4096" step="16">
+      <span>×</span>
+      <input type="number" id="adjust-target-h" value="512" min="32" max="4096" step="16">
+      <button id="adjust-preset-512">512²</button>
+      <button id="adjust-preset-1024">1024²</button>
+      <button id="adjust-preset-stage">ステージサイズ</button>
+    </div>
+    <div class="row">
+      <label>Scale</label>
+      <input type="range" id="adjust-scale" min="0.05" max="4" step="0.01" value="1">
+      <span id="adjust-scale-label">1.00</span>
+      <button id="adjust-fit">画面にフィット</button>
+      <button id="adjust-fill">画面いっぱい (cover)</button>
+    </div>
+    <div class="row">
+      <label>名前</label>
+      <input type="text" id="adjust-name" style="flex:1; width:auto;">
+    </div>
+    <canvas id="adjust-canvas" width="512" height="512"></canvas>
+    <div class="prop-help" style="text-align:center;">キャンバス上をドラッグで位置調整 (= 中心位置)</div>
+    <div class="buttons">
+      <button id="adjust-cancel">キャンセル</button>
+      <button id="adjust-save" class="primary">📦 ストックに保存</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -384,6 +449,7 @@ function blankProject() {
     exportFormat: 'webp',
     exportQuality: 0.9,
     images: {}, // imageId → {name, dataUrl, width, height}
+    stockImages: {}, // stockId → {name, dataUrl, width, height} - 調整済み素材
     frames: [], // see makeFrame()
     exportedAt: '',
   };
@@ -477,67 +543,261 @@ function decodeAllImages(done) {
 function renderAssetGrid() {
   const grid = $('asset-grid');
   grid.innerHTML = '';
-  const ids = Object.keys(project.images);
+  // Asset library shows only original images (not stock items which are in stockImages)
+  const ids = Object.keys(project.images).filter(id => !project.stockImages[id]);
   if (!ids.length) {
     grid.innerHTML = '<div style="font-size:11px;color:#555;text-align:center;padding:8px;">(まだ素材なし)</div>';
     return;
   }
   ids.forEach(id => {
-    const meta = project.images[id];
-    const card = document.createElement('div');
-    card.className = 'asset-card';
-    card.draggable = true;
-    card.dataset.imageId = id;
-    const imgEl = document.createElement('img');
-    imgEl.src = meta.dataUrl;
-    imgEl.alt = meta.name;
-    const name = document.createElement('div');
-    name.className = 'asset-name';
-    name.textContent = meta.name;
-    name.title = meta.name + ` (${meta.width}×${meta.height})`;
-    const del = document.createElement('div');
-    del.className = 'asset-del';
-    del.textContent = '✕ 削除';
-    del.addEventListener('click', e => {
-      e.stopPropagation();
-      // Refuse if frames still reference this image
-      const used = project.frames.some(f => f.imageId === id);
-      if (used) {
-        if (!confirm('この素材を使ったフレームがあります。\n素材と該当フレームを両方削除しますか？')) return;
-        project.frames = project.frames.filter(f => f.imageId !== id);
-        if (getSelectedFrame() == null) selectFrame(project.frames[0]?.id || null);
-      }
-      delete project.images[id];
-      imageCache.delete(id);
-      renderAssetGrid();
-      renderStrip();
-      renderStage();
-      markDirty();
-    });
-    card.appendChild(imgEl);
-    card.appendChild(name);
-    card.appendChild(del);
-
-    // Click to add a new frame using this image
-    card.addEventListener('click', () => {
-      const f = makeFrame(id);
-      project.frames.push(f);
-      selectFrame(f.id);
-      renderStrip();
-      renderStage();
-      markDirty();
-      toast('フレーム追加');
-    });
-
-    // Drag → stage = add at drop position
-    card.addEventListener('dragstart', e => {
-      e.dataTransfer.setData('text/x-koma-image-id', id);
-      e.dataTransfer.effectAllowed = 'copy';
-    });
-
-    grid.appendChild(card);
+    grid.appendChild(buildImageCard(id, project.images[id], { canAdjust: true, isStock: false }));
   });
 }
+
+function renderStockGrid() {
+  const grid = $('stock-grid');
+  grid.innerHTML = '';
+  const ids = Object.keys(project.stockImages || {});
+  if (!ids.length) {
+    grid.innerHTML = '<div style="font-size:11px;color:#555;text-align:center;padding:8px;">(ストック空)</div>';
+    return;
+  }
+  ids.forEach(id => {
+    grid.appendChild(buildImageCard(id, project.stockImages[id], { canAdjust: false, isStock: true }));
+  });
+}
+
+// Shared card builder for asset library + stock area.
+// Both pools (project.images, project.stockImages) share the same imageId namespace
+// so makeFrame() / imageCache lookups work uniformly for either.
+function buildImageCard(id, meta, opts) {
+  const card = document.createElement('div');
+  card.className = 'asset-card';
+  card.draggable = true;
+  card.dataset.imageId = id;
+
+  const imgEl = document.createElement('img');
+  imgEl.src = meta.dataUrl;
+  imgEl.alt = meta.name;
+  const name = document.createElement('div');
+  name.className = 'asset-name';
+  name.textContent = meta.name;
+  name.title = meta.name + ` (${meta.width}×${meta.height})`;
+
+  const del = document.createElement('div');
+  del.className = 'asset-del';
+  del.textContent = '✕ 削除';
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    const used = project.frames.some(f => f.imageId === id);
+    if (used) {
+      if (!confirm('この素材を使ったフレームがあります。\n素材と該当フレームを両方削除しますか？')) return;
+      project.frames = project.frames.filter(f => f.imageId !== id);
+      if (getSelectedFrame() == null) selectFrame(project.frames[0]?.id || null);
+    }
+    delete project.images[id];
+    if (project.stockImages) delete project.stockImages[id];
+    imageCache.delete(id);
+    renderAssetGrid();
+    renderStockGrid();
+    renderStrip();
+    renderStage();
+    markDirty();
+  });
+
+  card.appendChild(imgEl);
+  card.appendChild(name);
+  card.appendChild(del);
+
+  // ✂️ Adjust → modal for original assets only
+  if (opts.canAdjust) {
+    const adj = document.createElement('div');
+    adj.className = 'asset-adjust';
+    adj.textContent = '✂️ 調整';
+    adj.title = '調整モーダルを開く (サイズフィット → ストックへ保存)';
+    adj.addEventListener('click', e => { e.stopPropagation(); openAdjustModal(id); });
+    card.appendChild(adj);
+  }
+
+  // Click to add a frame using this image
+  card.addEventListener('click', () => {
+    const f = makeFrame(id);
+    project.frames.push(f);
+    selectFrame(f.id);
+    renderStrip();
+    renderStage();
+    markDirty();
+    toast('フレーム追加');
+  });
+
+  // Drag → stage = add at drop position
+  card.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/x-koma-image-id', id);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+
+  return card;
+}
+
+// ─── Adjust modal (✂️) ───────────────────────────────────────────────────
+// Fits an original asset into a target canvas (e.g. 512×512). User can pan
+// (drag on preview) and scale (slider / fit / fill). Saving generates a NEW
+// imageId stored in BOTH project.images (so makeFrame/imageCache work) and
+// project.stockImages (so it appears in the stock grid).
+const _adjustState = {
+  srcImageId: null,
+  targetW: 512,
+  targetH: 512,
+  scale: 1,         // image scale applied within target
+  offsetX: 0,       // image center x within target canvas (in canvas coords)
+  offsetY: 0,
+  dragging: false,
+  dragStart: null,
+};
+
+function openAdjustModal(imageId) {
+  const meta = project.images[imageId];
+  if (!meta) return;
+  _adjustState.srcImageId = imageId;
+  _adjustState.targetW = 512;
+  _adjustState.targetH = 512;
+  $('adjust-target-w').value = 512;
+  $('adjust-target-h').value = 512;
+  // Default scale: fit
+  ensureImageDecoded(imageId, img => {
+    if (!img) return;
+    _adjustScaleFit();
+    $('adjust-name').value = (meta.name || 'asset').replace(/\.[^.]+$/, '') + '_adjusted';
+    drawAdjustCanvas();
+    $('adjust-overlay').classList.add('show');
+  });
+}
+
+function _adjustScaleFit() {
+  const img = imageCache.get(_adjustState.srcImageId);
+  if (!img) return;
+  const s = Math.min(_adjustState.targetW / img.width, _adjustState.targetH / img.height);
+  _adjustState.scale = s;
+  _adjustState.offsetX = _adjustState.targetW / 2;
+  _adjustState.offsetY = _adjustState.targetH / 2;
+  $('adjust-scale').value = String(s);
+  $('adjust-scale-label').textContent = s.toFixed(2);
+}
+
+function _adjustScaleFill() {
+  const img = imageCache.get(_adjustState.srcImageId);
+  if (!img) return;
+  const s = Math.max(_adjustState.targetW / img.width, _adjustState.targetH / img.height);
+  _adjustState.scale = s;
+  _adjustState.offsetX = _adjustState.targetW / 2;
+  _adjustState.offsetY = _adjustState.targetH / 2;
+  $('adjust-scale').value = String(s);
+  $('adjust-scale-label').textContent = s.toFixed(2);
+}
+
+function drawAdjustCanvas() {
+  const cv = $('adjust-canvas');
+  // Set display + backing size to target dimensions, capped to 512 display
+  const tw = _adjustState.targetW, th = _adjustState.targetH;
+  cv.width  = tw; cv.height = th;
+  const displayMax = 512;
+  const dispScale = Math.min(displayMax / tw, displayMax / th, 1);
+  cv.style.width  = Math.round(tw * dispScale) + 'px';
+  cv.style.height = Math.round(th * dispScale) + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, tw, th);
+  const img = imageCache.get(_adjustState.srcImageId);
+  if (!img) return;
+  ctx.save();
+  ctx.translate(_adjustState.offsetX, _adjustState.offsetY);
+  ctx.scale(_adjustState.scale, _adjustState.scale);
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  ctx.restore();
+}
+
+function wireAdjustModal() {
+  $('adjust-cancel').addEventListener('click', () => $('adjust-overlay').classList.remove('show'));
+  $('adjust-overlay').addEventListener('click', e => {
+    if (e.target.id === 'adjust-overlay') $('adjust-overlay').classList.remove('show');
+  });
+
+  const tw = $('adjust-target-w'), th = $('adjust-target-h');
+  function onTargetChange() {
+    _adjustState.targetW = clamp(parseInt(tw.value, 10) || 0, 32, 4096);
+    _adjustState.targetH = clamp(parseInt(th.value, 10) || 0, 32, 4096);
+    _adjustScaleFit();
+    drawAdjustCanvas();
+  }
+  tw.addEventListener('input', onTargetChange);
+  th.addEventListener('input', onTargetChange);
+
+  $('adjust-preset-512').addEventListener('click',  () => { tw.value = 512;  th.value = 512;  onTargetChange(); });
+  $('adjust-preset-1024').addEventListener('click', () => { tw.value = 1024; th.value = 1024; onTargetChange(); });
+  $('adjust-preset-stage').addEventListener('click',() => {
+    tw.value = project.stageWidth; th.value = project.stageHeight; onTargetChange();
+  });
+
+  $('adjust-fit').addEventListener('click',  () => { _adjustScaleFit();  drawAdjustCanvas(); });
+  $('adjust-fill').addEventListener('click', () => { _adjustScaleFill(); drawAdjustCanvas(); });
+
+  $('adjust-scale').addEventListener('input', () => {
+    const v = parseFloat($('adjust-scale').value);
+    if (Number.isFinite(v)) {
+      _adjustState.scale = v;
+      $('adjust-scale-label').textContent = v.toFixed(2);
+      drawAdjustCanvas();
+    }
+  });
+
+  // Pan via drag on canvas (offset = image center in canvas coords)
+  const cv = $('adjust-canvas');
+  cv.addEventListener('pointerdown', e => {
+    _adjustState.dragging = true;
+    _adjustState.dragStart = {
+      cx: e.clientX, cy: e.clientY,
+      ox: _adjustState.offsetX, oy: _adjustState.offsetY,
+    };
+    cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!_adjustState.dragging) return;
+    const rect = cv.getBoundingClientRect();
+    const sx = _adjustState.targetW / rect.width;
+    const sy = _adjustState.targetH / rect.height;
+    _adjustState.offsetX = _adjustState.dragStart.ox + (e.clientX - _adjustState.dragStart.cx) * sx;
+    _adjustState.offsetY = _adjustState.dragStart.oy + (e.clientY - _adjustState.dragStart.cy) * sy;
+    drawAdjustCanvas();
+  });
+  cv.addEventListener('pointerup', e => {
+    _adjustState.dragging = false;
+    cv.releasePointerCapture && cv.releasePointerCapture(e.pointerId);
+  });
+
+  $('adjust-save').addEventListener('click', () => {
+    const cv = $('adjust-canvas');
+    const dataUrl = cv.toDataURL('image/png');
+    const stockId = uid('stk');
+    const nameRaw = ($('adjust-name').value || '').trim() || 'stock_asset';
+    // Register in BOTH pools (same id namespace) so makeFrame() finds it.
+    const meta = {
+      name: nameRaw, dataUrl,
+      width: _adjustState.targetW, height: _adjustState.targetH,
+    };
+    project.images[stockId] = meta;
+    project.stockImages[stockId] = meta;
+    // Decode into imageCache so it can be drawn immediately
+    const newImg = new Image();
+    newImg.onload = () => {
+      imageCache.set(stockId, newImg);
+      renderStockGrid();
+      markDirty();
+      $('adjust-overlay').classList.remove('show');
+      toast('📦 ストックに保存');
+    };
+    newImg.src = dataUrl;
+  });
+}
+wireAdjustModal();
 
 // ─── Drop zone wiring ───────────────────────────────────────────────────
 (function wireDropZone() {
@@ -982,6 +1242,11 @@ $('prop-stage-h').addEventListener('input', e => {
 });
 
 // ─── Timeline strip (bottom pane) ───────────────────────────────────────
+// HTML5 drag API: only dragstart fires with reliable e.ctrlKey on all
+// browsers. We capture clone-mode at dragstart and use it in drop handler.
+let _dragCloneMode = false;
+let _dragFromFrameId = null;
+
 function renderStrip() {
   const strip = $('timeline-strip');
   strip.innerHTML = '';
@@ -1038,14 +1303,21 @@ function renderStrip() {
     cell.draggable = true;
     cell.addEventListener('click', () => selectFrame(f.id));
     cell.addEventListener('dragstart', e => {
+      _dragCloneMode = !!(e.ctrlKey || e.metaKey);
+      _dragFromFrameId = f.id;
       e.dataTransfer.setData('text/x-koma-frame-id', f.id);
-      e.dataTransfer.effectAllowed = 'move';
-      cell.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = _dragCloneMode ? 'copy' : 'move';
+      cell.style.opacity = _dragCloneMode ? '0.7' : '0.4';
     });
-    cell.addEventListener('dragend', () => { cell.style.opacity = ''; });
+    cell.addEventListener('dragend', () => {
+      cell.style.opacity = '';
+      _dragCloneMode = false;
+      _dragFromFrameId = null;
+    });
     cell.addEventListener('dragover', e => {
       if (e.dataTransfer.types.includes('text/x-koma-frame-id')) {
         e.preventDefault();
+        e.dataTransfer.dropEffect = _dragCloneMode ? 'copy' : 'move';
         const r = cell.getBoundingClientRect();
         const before = (e.clientX - r.left) < r.width / 2;
         cell.classList.toggle('drop-target-before', before);
@@ -1057,20 +1329,37 @@ function renderStrip() {
       cell.classList.remove('drop-target-after');
     });
     cell.addEventListener('drop', e => {
-      const draggedId = e.dataTransfer.getData('text/x-koma-frame-id');
+      const draggedId = e.dataTransfer.getData('text/x-koma-frame-id') || _dragFromFrameId;
       cell.classList.remove('drop-target-before');
       cell.classList.remove('drop-target-after');
-      if (!draggedId || draggedId === f.id) return;
+      if (!draggedId) return;
       e.preventDefault();
       const from = project.frames.findIndex(x => x.id === draggedId);
       if (from < 0) return;
-      const moved = project.frames.splice(from, 1)[0];
-      let to = project.frames.findIndex(x => x.id === f.id);
       const r = cell.getBoundingClientRect();
       const before = (e.clientX - r.left) < r.width / 2;
-      if (!before) to += 1;
-      project.frames.splice(to, 0, moved);
-      renderStrip(); markDirty();
+
+      if (_dragCloneMode) {
+        // Clone: insert a duplicate at drop position; original stays in place.
+        const src = project.frames[from];
+        const copy = makeFrame(src.imageId, {
+          x: src.x, y: src.y, scale: src.scale,
+          rotation: src.rotation, duration: src.duration,
+        });
+        let to = project.frames.findIndex(x => x.id === f.id);
+        if (!before) to += 1;
+        project.frames.splice(to, 0, copy);
+        selectFrame(copy.id);
+        renderStrip(); renderStage(); markDirty();
+        toast('複製');
+      } else {
+        if (draggedId === f.id) return;
+        const moved = project.frames.splice(from, 1)[0];
+        let to = project.frames.findIndex(x => x.id === f.id);
+        if (!before) to += 1;
+        project.frames.splice(to, 0, moved);
+        renderStrip(); markDirty();
+      }
     });
 
     strip.appendChild(cell);
@@ -1330,6 +1619,7 @@ function loadProject(obj) {
   project = Object.assign(blankProject(), obj);
   // Defensive: ensure containers
   project.images = project.images || {};
+  project.stockImages = project.stockImages || {};
   project.frames = project.frames || [];
   imageCache.clear();
   decodeAllImages(() => {
@@ -1344,6 +1634,7 @@ function loadProject(obj) {
     $('prop-stage-h').value = project.stageHeight;
     resizeStage();
     renderAssetGrid();
+    renderStockGrid();
     renderStrip();
     renderStage();
     syncPropsFromFrame();
@@ -1434,8 +1725,38 @@ $('btn-export').addEventListener('click', async () => {
 });
 
 // ─── Keyboard shortcuts ─────────────────────────────────────────────────
+// Module-level clipboard for Ctrl+C / Ctrl+V. Stores a *frame snapshot* (full
+// deep clone of one project.frames[*] entry) — paste pushes a fresh clone to
+// the end of the timeline so it can be repeatedly pasted.
+let _clipboard = null;
+
 window.addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+  // Ctrl/Cmd + C : copy selected frame to clipboard
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+    const f = getSelectedFrame();
+    if (f) {
+      _clipboard = JSON.parse(JSON.stringify(f));
+      e.preventDefault();
+      toast('📋 コピー');
+    }
+    return;
+  }
+  // Ctrl/Cmd + V : paste clipboard frame to end of timeline
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+    if (_clipboard) {
+      const copy = JSON.parse(JSON.stringify(_clipboard));
+      copy.id = uid('f');
+      project.frames.push(copy);
+      selectFrame(copy.id);
+      renderStrip(); renderStage(); markDirty();
+      e.preventDefault();
+      toast('📋 貼り付け (末尾)');
+    }
+    return;
+  }
+
   if (e.code === 'Space')      { e.preventDefault(); playback.playing ? playbackPause() : playbackStart(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') {
     if (selectedFrameId) { e.preventDefault(); $('btn-delete').click(); }
@@ -1464,6 +1785,7 @@ window.addEventListener('resize', () => {
   if (!loadFromLocalStorage()) {
     // Fresh start
     renderAssetGrid();
+    renderStockGrid();
     renderStrip();
     renderStage();
     syncPropsFromFrame();
