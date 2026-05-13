@@ -44,7 +44,9 @@
       "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once)",
       "Bash(git ls-remote *)",
       "WebFetch(domain:www.ah-soft.com)",
-      "Bash(:)"
+      "Bash(:)",
+      "Bash(mkdir -p \"d:/AppDevelopment/pono-asobiba-app/.claude\")",
+      "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")"
     ],
     "additionalDirectories": [
       "D:\\AppDevelopment\\pono-asobiba-app\\.claude"
