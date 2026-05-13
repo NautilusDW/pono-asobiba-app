@@ -262,6 +262,10 @@
       <input type="file" id="file-input-json" accept=".json,application/json" style="display:none">
     </div>
     <div class="group">
+      <button id="btn-undo" title="取り消し (Ctrl+Z)" disabled>↶ 取り消し</button>
+      <button id="btn-redo" title="やり直し (Ctrl+Shift+Z / Ctrl+Y)" disabled>↷ やり直し</button>
+    </div>
+    <div class="group">
       <label>名前 <input type="text" id="project-name-input" value="pono-banzai-bust"></label>
     </div>
     <div class="group">
@@ -336,6 +340,7 @@
     <div class="prop-section">
       <button id="btn-center"    style="width:100%;margin-bottom:4px;">中央へ</button>
       <button id="btn-fit"       style="width:100%;margin-bottom:4px;">画面にフィット</button>
+      <button id="btn-save-to-stock" style="width:100%;margin-bottom:4px;" title="現在の位置/Scale/Rotation で 1 枚にレンダリングしてストックへ保存">📦 この状態をストックへ</button>
       <button id="btn-delete"    class="danger" style="width:100%;">🗑 このフレームを削除</button>
     </div>
     <div class="prop-section">
@@ -622,6 +627,7 @@ function buildImageCard(id, meta, opts) {
     renderStrip();
     renderStage();
     markDirty();
+    snapshotForUndo('素材削除');
   });
 
   card.appendChild(imgEl);
@@ -647,6 +653,7 @@ function buildImageCard(id, meta, opts) {
     renderStage();
     markDirty();
     toast('フレーム追加');
+    snapshotForUndo('素材からフレーム追加');
   });
 
   // Drag → stage = add at drop position
@@ -859,6 +866,7 @@ stageWrap.addEventListener('drop', e => {
   renderStrip();
   renderStage();
   markDirty();
+  snapshotForUndo('ステージへドロップ');
 });
 
 // ─── Stage view sizing / coords ─────────────────────────────────────────
@@ -1241,9 +1249,16 @@ function onStagePointerUp(e) {
   window.removeEventListener('pointerup',   onStagePointerUp);
   window.removeEventListener('pointercancel', onStagePointerUp);
   stageWrap.releasePointerCapture && stageWrap.releasePointerCapture(activeOp.pointerId);
+  const opKind = activeOp.kind;
   activeOp = null;
   renderStripActive();    // thumb of selected frame may have changed
   markDirty();
+  // Snapshot only on commit (pointerup), never on pointermove — keeps stack small.
+  const label = opKind === 'body' ? '移動'
+              : opKind === 'rotate' ? '回転'
+              : opKind && opKind.startsWith('handle-') ? 'リサイズ'
+              : '操作';
+  snapshotForUndo(label);
 }
 
 // ─── Selection ──────────────────────────────────────────────────────────
@@ -1285,7 +1300,7 @@ function syncPropsFromFrame() {
   propDuration.value = Math.round(f.duration);
 }
 
-function bindPropInput(input, key, parse) {
+function bindPropInput(input, key, parse, undoLabel) {
   input.addEventListener('input', () => {
     const f = getSelectedFrame();
     if (!f) return;
@@ -1296,18 +1311,23 @@ function bindPropInput(input, key, parse) {
     renderStripActive();
     markDirty();
   });
+  // Snapshot on commit (Enter / blur) — not on every keystroke.
+  input.addEventListener('change', () => {
+    snapshotForUndo(undoLabel || key);
+  });
 }
-bindPropInput(propX,        'x',        v => parseFloat(v));
-bindPropInput(propY,        'y',        v => parseFloat(v));
-bindPropInput(propScale,    'scale',    v => clamp(parseFloat(v), MIN_SCALE, MAX_SCALE));
-bindPropInput(propRotation, 'rotation', v => parseFloat(v));
-bindPropInput(propDuration, 'duration', v => clamp(parseFloat(v), 10, 5000));
+bindPropInput(propX,        'x',        v => parseFloat(v),                              'X 変更');
+bindPropInput(propY,        'y',        v => parseFloat(v),                              'Y 変更');
+bindPropInput(propScale,    'scale',    v => clamp(parseFloat(v), MIN_SCALE, MAX_SCALE), 'Scale 変更');
+bindPropInput(propRotation, 'rotation', v => parseFloat(v),                              '回転変更');
+bindPropInput(propDuration, 'duration', v => clamp(parseFloat(v), 10, 5000),             'Duration 変更');
 
 $('btn-center').addEventListener('click', () => {
   const f = getSelectedFrame(); if (!f) return;
   f.x = project.stageWidth / 2;
   f.y = project.stageHeight / 2;
   syncPropsFromFrame(); renderStage(); markDirty();
+  snapshotForUndo('中央へ');
 });
 $('btn-fit').addEventListener('click', () => {
   const f = getSelectedFrame(); if (!f) return;
@@ -1318,6 +1338,7 @@ $('btn-fit').addEventListener('click', () => {
   f.y = project.stageHeight / 2;
   f.rotation = 0;
   syncPropsFromFrame(); renderStage(); renderStripActive(); markDirty();
+  snapshotForUndo('画面にフィット');
 });
 $('btn-delete').addEventListener('click', () => {
   const f = getSelectedFrame(); if (!f) return;
@@ -1325,6 +1346,7 @@ $('btn-delete').addEventListener('click', () => {
   project.frames.splice(idx, 1);
   selectFrame(project.frames[Math.min(idx, project.frames.length - 1)]?.id || null);
   renderStrip(); renderStage(); markDirty();
+  snapshotForUndo('フレーム削除');
 });
 
 $('prop-stage-w').addEventListener('input', e => {
@@ -1375,6 +1397,9 @@ function renderStrip() {
       const v = clamp(parseInt(dur.value, 10), 10, 5000);
       if (Number.isFinite(v)) { f.duration = v; markDirty(); if (f.id === selectedFrameId) propDuration.value = v; }
     });
+    dur.addEventListener('change', () => {
+      snapshotForUndo('Duration 変更');
+    });
     meta.appendChild(num);
     meta.appendChild(dur);
 
@@ -1390,6 +1415,7 @@ function renderStrip() {
         selectFrame(project.frames[Math.min(idx, project.frames.length - 1)]?.id || null);
       }
       renderStrip(); renderStage(); markDirty();
+      snapshotForUndo('フレーム削除');
     });
 
     cell.appendChild(thumbWrap);
@@ -1449,6 +1475,7 @@ function renderStrip() {
         selectFrame(copy.id);
         renderStrip(); renderStage(); markDirty();
         toast('複製');
+        snapshotForUndo('複製ドロップ');
       } else {
         if (draggedId === f.id) return;
         const moved = project.frames.splice(from, 1)[0];
@@ -1456,6 +1483,7 @@ function renderStrip() {
         if (!before) to += 1;
         project.frames.splice(to, 0, moved);
         renderStrip(); markDirty();
+        snapshotForUndo('並び替え');
       }
     });
 
@@ -1526,6 +1554,7 @@ $('btn-add').addEventListener('click', () => {
   project.frames.push(f);
   selectFrame(f.id);
   renderStrip(); renderStage(); markDirty();
+  snapshotForUndo('フレーム追加');
 });
 $('btn-duplicate').addEventListener('click', () => {
   const cur = getSelectedFrame();
@@ -1535,6 +1564,7 @@ $('btn-duplicate').addEventListener('click', () => {
   project.frames.splice(idx, 0, copy);
   selectFrame(copy.id);
   renderStrip(); renderStage(); markDirty();
+  snapshotForUndo('複製');
 });
 $('btn-carry').addEventListener('click', () => {
   const last = project.frames[project.frames.length - 1];
@@ -1549,6 +1579,7 @@ $('btn-carry').addEventListener('click', () => {
   project.frames.push(f);
   selectFrame(f.id);
   renderStrip(); renderStage(); markDirty();
+  snapshotForUndo('前から引き継ぐ');
 });
 $('btn-remove').addEventListener('click', () => $('btn-delete').click());
 
@@ -1735,6 +1766,10 @@ function loadProject(obj) {
     renderStrip();
     renderStage();
     syncPropsFromFrame();
+    // Reset undo history to this freshly-loaded project state.
+    _undoStack.length = 0;
+    _redoStack.length = 0;
+    snapshotForUndo('読み込み');
   });
 }
 
@@ -1821,6 +1856,133 @@ $('btn-export').addEventListener('click', async () => {
   }
 });
 
+// ─── Undo / Redo ────────────────────────────────────────────────────────
+// Stack-based snapshot system. Each snapshot stores a deep clone of
+// project.frames + selectedFrameId so we can revert mid-edit changes
+// (drag/scale/rotate/numeric input/add/delete/duplicate/reorder).
+// Snapshots are taken on *commit* events only (pointerup / change /
+// post-button-click) — never on pointermove — so the stack stays under
+// the 50-entry cap during free-form dragging.
+const _undoStack = [];
+const _redoStack = [];
+const UNDO_MAX = 50;
+let _undoSuspended = false; // avoid recursion when restoring
+
+function snapshotForUndo(label) {
+  if (_undoSuspended) return;
+  const snap = {
+    frames: JSON.parse(JSON.stringify(project.frames)),
+    selectedFrameId: selectedFrameId,
+    label: label || '',
+    timestamp: Date.now(),
+  };
+  _undoStack.push(snap);
+  if (_undoStack.length > UNDO_MAX) _undoStack.shift();
+  _redoStack.length = 0; // any new edit invalidates redo
+  updateUndoRedoUI();
+}
+
+function restoreSnapshot(snap) {
+  _undoSuspended = true;
+  try {
+    project.frames = JSON.parse(JSON.stringify(snap.frames));
+    // selectedFrameId only valid if still present in restored frames
+    const exists = project.frames.some(f => f.id === snap.selectedFrameId);
+    selectedFrameId = exists ? snap.selectedFrameId : (project.frames[0]?.id || null);
+    renderStrip();
+    renderStage();
+    syncPropsFromFrame();
+    markDirty();
+  } finally {
+    _undoSuspended = false;
+  }
+}
+
+function undo() {
+  // Need at least 2 entries: the "current state" snapshot + something before.
+  if (_undoStack.length < 2) return;
+  const current = _undoStack.pop();
+  _redoStack.push(current);
+  const prev = _undoStack[_undoStack.length - 1];
+  restoreSnapshot(prev);
+  updateUndoRedoUI();
+  toast('↶ 取り消し' + (prev.label ? ': ' + prev.label : ''));
+}
+
+function redo() {
+  if (_redoStack.length === 0) return;
+  const next = _redoStack.pop();
+  _undoStack.push(next);
+  restoreSnapshot(next);
+  updateUndoRedoUI();
+  toast('↷ やり直し' + (next.label ? ': ' + next.label : ''));
+}
+
+function updateUndoRedoUI() {
+  const ub = $('btn-undo'); const rb = $('btn-redo');
+  if (ub) ub.disabled = _undoStack.length < 2;
+  if (rb) rb.disabled = _redoStack.length === 0;
+}
+
+$('btn-undo').addEventListener('click', undo);
+$('btn-redo').addEventListener('click', redo);
+
+// ─── Save current frame state to stock ──────────────────────────────────
+// Renders the currently-selected frame (its image + x/y/scale/rotation)
+// into an offscreen canvas at stage size and registers the result as a
+// new stock entry (id in BOTH project.images and project.stockImages,
+// same dual-pool pattern as the ✂️ adjust modal).
+function saveCurrentToStock() {
+  const f = getSelectedFrame();
+  if (!f) { toast('フレームが選択されていません'); return; }
+  const img = imageCache.get(f.imageId);
+  if (!img) { toast('画像がまだ読み込まれていません'); return; }
+
+  const srcName = (f.sourceFile || project.images[f.imageId]?.name || 'frame').replace(/\.[^.]+$/, '');
+  const def = srcName + '_adjusted';
+  const nameInput = prompt('ストック名 (空でデフォルト):', def);
+  if (nameInput === null) return; // user cancelled
+  const finalName = (nameInput || '').trim() || def;
+
+  // Offscreen canvas matches stage size, transparent background.
+  const canvas = document.createElement('canvas');
+  canvas.width  = project.stageWidth;
+  canvas.height = project.stageHeight;
+  const ctx = canvas.getContext('2d', { alpha: true });
+  // Identical math to drawFrameOnContext() — origin at frame center.
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.rotate(f.rotation * Math.PI / 180);
+  ctx.scale(f.scale, f.scale);
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  ctx.restore();
+
+  const dataUrl = canvas.toDataURL('image/png');
+  const newId = uid('stk');
+  const meta = {
+    name: finalName,
+    dataUrl: dataUrl,
+    width:  project.stageWidth,
+    height: project.stageHeight,
+  };
+  project.images[newId] = meta;
+  project.stockImages[newId] = meta;
+
+  const newImg = new Image();
+  newImg.onload = () => {
+    imageCache.set(newId, newImg);
+    renderStockGrid();
+    markDirty();
+    toast('📦 ストックに保存: ' + finalName);
+  };
+  newImg.onerror = () => {
+    toast('ストック保存に失敗しました');
+  };
+  newImg.src = dataUrl;
+}
+
+$('btn-save-to-stock').addEventListener('click', saveCurrentToStock);
+
 // ─── Keyboard shortcuts ─────────────────────────────────────────────────
 // Module-level clipboard for Ctrl+C / Ctrl+V. Stores a *frame snapshot* (full
 // deep clone of one project.frames[*] entry) — paste pushes a fresh clone to
@@ -1829,6 +1991,21 @@ let _clipboard = null;
 
 window.addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+  // Ctrl/Cmd + Z : undo  /  Ctrl+Shift+Z or Ctrl+Y : redo
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (
+        ((e.key === 'z' || e.key === 'Z') && e.shiftKey) ||
+        (e.key === 'y' || e.key === 'Y')
+      )) {
+    e.preventDefault();
+    redo();
+    return;
+  }
 
   // Ctrl/Cmd + C : copy selected frame to clipboard
   if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
@@ -1850,6 +2027,7 @@ window.addEventListener('keydown', e => {
       renderStrip(); renderStage(); markDirty();
       e.preventDefault();
       toast('📋 貼り付け (末尾)');
+      snapshotForUndo('貼り付け');
     }
     return;
   }
@@ -1916,6 +2094,12 @@ window.addEventListener('resize', () => {
     renderStage();
     syncPropsFromFrame();
   }
+  // Seed undo with the initial state (loadProject already seeds when
+  // localStorage hit; this covers the fresh-start branch).
+  if (_undoStack.length === 0) {
+    snapshotForUndo('initial');
+  }
+  updateUndoRedoUI();
   // Debug hook
   window.__komaEditor = {
     get project() { return project; },
