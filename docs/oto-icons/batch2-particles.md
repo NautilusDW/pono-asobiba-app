@@ -33,6 +33,22 @@ canvas で `fillText` していた絵文字パーティクル ✨⭐💖🎵🎶
 - 回転は **0° 基準** (DOM/canvas 側でランダム回転させる)
 - 影なし、シート全体に余計な背景・ガイド線なし
 
+> **共通スタイル基準は `batch1-buttons.md` の「共通スタイル基準 (Sheet 1a / 1b / Batch2 すべて共通)」セクションを正本とする**（ハイライト方向 / 線アクセント / 角丸 / グロー彩度の数値）。本 Batch2 は影なし要件のみ Batch1 と差し替え、それ以外は同セクションに従う。
+
+### bbox 機械抽出公式 / アンカー / safe area (Batch2)
+- **セル左上座標公式**: `x = (col-1) * cellW + paddingX`, `y = (row-1) * cellH + paddingY`
+- **セル寸法表**:
+
+  | パラメータ | 値 |
+  |---|---|
+  | cellW | 256 |
+  | cellH | 256 |
+  | paddingX | 32 |
+  | paddingY | 32 |
+
+- **描画アンカー**: 全セル **セル中心揃え** (`cellCenter = (x + cellW/2, y + cellH/2)`)。被写体は中心から左右上下対称
+- **safe area**: padding を除いた `cellW - 2*paddingX` × `cellH - 2*paddingY` = **192 × 192 px**。被写体はこの中に収める
+
 ## セル個別仕様
 
 | 座標 (col,row) | ファイル名 | 用途 | モチーフ詳細 |
