@@ -488,7 +488,7 @@
       <div class="prop-help">ON 時にステージで drag → 矩形領域を alpha 0 化 (= 透明マスク)。 入力画像座標で保存。 rotation=0 推奨 (Phase 4 で改善)</div>
       <div id="mask-list" class="mask-list"></div>
       <button id="mask-clear-all" class="mask-clear-all" title="このコマのマスクをすべて削除">🗑️ このコマのマスクをすべてクリア</button>
-      <div class="mask-delete-hint">💡 ステージのマスク矩形を <kbd>Alt</kbd>+クリック → <kbd>Delete</kbd> で削除</div>
+      <div class="mask-delete-hint">💡 ステージのマスク矩形を <kbd>Alt</kbd>+クリックで選択 → ハンドルで大きさ変更 / 内側 drag で移動 / <kbd>Delete</kbd> で削除</div>
     </div>
     <div class="prop-section" id="global-mask-section">
       <div class="section-title">🌐 全コマ共通マスク (全フレーム)</div>
@@ -496,7 +496,7 @@
       <div class="prop-help">ON 時にステージで drag → ステージ座標の矩形を全フレームから穴抜き (= ctx.clip evenodd で実装、 高速)。 個別マスクとモード排他。</div>
       <div id="global-mask-list" class="mask-list"></div>
       <button id="global-mask-clear-all" class="mask-clear-all" title="共通マスクをすべて削除">🗑️ 共通マスクをすべてクリア</button>
-      <div class="mask-delete-hint">💡 ステージの共通マスクを <kbd>Alt</kbd>+クリック → <kbd>Delete</kbd> で削除</div>
+      <div class="mask-delete-hint">💡 ステージの共通マスクを <kbd>Alt</kbd>+クリックで選択 → ハンドルで大きさ変更 / 内側 drag で移動 / <kbd>Delete</kbd> で削除</div>
     </div>
     <div class="prop-section">
       <div class="section-title">ステージ</div>
@@ -577,6 +577,7 @@ const STORAGE_KEY       = 'koma-wari-project-v1';
 const AUTOSAVE_MS       = 5000;
 const HANDLE_SIZE       = 12;                  // px, in stage coords (scaled to view)
 const ROTATE_KNOB_DIST  = 28;                  // px above the bounding box (stage coords)
+const MASK_HANDLE_SIZE  = 10;                  // px, mask 8-handle (stage coords / viewScale)
 const MIN_SCALE         = 0.05;
 const MAX_SCALE         = 10;
 
@@ -1310,6 +1311,25 @@ function renderOverlay() {
     }
   }
 
+  // 選択中マスクの 8 ハンドル (resize 用、 stage 座標で描画)。
+  // 共通マスク・個別マスク 両方とも _getMaskHandlePositions() がステージ座標を返すので統一描画。
+  if (_selectedMaskRef) {
+    const handlePos = _getMaskHandlePositions();
+    if (handlePos) {
+      const hs = MASK_HANDLE_SIZE / viewScale;
+      overlayCtx.save();
+      overlayCtx.fillStyle   = '#ffffff';
+      overlayCtx.strokeStyle = '#1a1d24';
+      overlayCtx.lineWidth   = 1 / viewScale;
+      for (const name of Object.keys(handlePos)) {
+        const p = handlePos[name];
+        overlayCtx.fillRect(p.x - hs / 2, p.y - hs / 2, hs, hs);
+        overlayCtx.strokeRect(p.x - hs / 2, p.y - hs / 2, hs, hs);
+      }
+      overlayCtx.restore();
+    }
+  }
+
   const f = getSelectedFrame();
   if (!f) return;
   const img = imageCache.get(f.imageId);
@@ -1465,6 +1485,33 @@ overlayCv.style.pointerEvents = 'auto'; // we want overlay to take pointer
 // Both canvases sit on top; we attach to the wrapper so we cover both.
 stageWrap.addEventListener('pointerdown', onStagePointerDown);
 
+// ハンドル hover → 適切な cursor へ変更 (drag 中は move/resize 内部で固定なのでスキップ)。
+stageWrap.addEventListener('pointermove', onStageHoverForMaskHandle);
+function onStageHoverForMaskHandle(e) {
+  if (_maskResize || _maskMove || activeOp) return; // drag 中は触らない
+  if (_maskMode || _globalMaskMode) return;          // crosshair 優先
+  if (!_selectedMaskRef) {
+    // 選択解除時に cursor が残らないよう、 マスク由来の cursor だけリセット
+    if (stageWrap.dataset.maskCursor) {
+      stageWrap.style.cursor = '';
+      delete stageWrap.dataset.maskCursor;
+    }
+    return;
+  }
+  const { sx, sy } = clientToStage(e.clientX, e.clientY);
+  const handle = pickMaskHandle(sx, sy);
+  let next = '';
+  if (handle) next = _maskHandleCursor(handle);
+  else if (pickMaskInside(sx, sy)) next = 'move';
+  if (next) {
+    stageWrap.style.cursor = next;
+    stageWrap.dataset.maskCursor = '1';
+  } else if (stageWrap.dataset.maskCursor) {
+    stageWrap.style.cursor = '';
+    delete stageWrap.dataset.maskCursor;
+  }
+}
+
 function onStagePointerDown(e) {
   if (playback.playing) return;
   // Ignore right-click
@@ -1485,13 +1532,53 @@ function onStagePointerDown(e) {
       if (hit.type === 'frame') renderMaskList(); else renderGlobalMaskList();
       renderOverlay();
       toast(hit.type === 'global'
-        ? `🌐 共通マスク #${hit.idx + 1} 選択 (Delete で削除)`
-        : `🎭 マスク #${hit.idx + 1} 選択 (Delete で削除)`);
+        ? `🌐 共通マスク #${hit.idx + 1} 選択 (ハンドルで大きさ / 内側 drag で移動 / Delete で削除)`
+        : `🎭 マスク #${hit.idx + 1} 選択 (ハンドルで大きさ / 内側 drag で移動 / Delete で削除)`);
       e.preventDefault();
       e.stopPropagation();
       return;
     }
   }
+
+  // 選択中マスクがあれば、 通常 pointerdown でハンドル/内側 hit → resize/move 開始。
+  // マスクモード中 (= drag で新規追加) は無効化、 Alt+click は上の分岐で処理済み。
+  if (_selectedMaskRef && !_maskMode && !_globalMaskMode && !e.altKey) {
+    const handle = pickMaskHandle(sx, sy);
+    if (handle) {
+      const got = _getSelectedMaskRectRef();
+      if (got) {
+        _maskResize = {
+          handle,
+          startRect: { x: got.rect.x, y: got.rect.y, w: got.rect.w, h: got.rect.h },
+          startStagePoint: { sx, sy },
+        };
+        e.preventDefault();
+        e.stopPropagation();
+        stageWrap.setPointerCapture && stageWrap.setPointerCapture(e.pointerId);
+        window.addEventListener('pointermove', onStagePointerMove);
+        window.addEventListener('pointerup',   onStagePointerUp);
+        window.addEventListener('pointercancel', onStagePointerUp);
+        return;
+      }
+    }
+    if (pickMaskInside(sx, sy)) {
+      const got = _getSelectedMaskRectRef();
+      if (got) {
+        _maskMove = {
+          startRect: { x: got.rect.x, y: got.rect.y, w: got.rect.w, h: got.rect.h },
+          startStagePoint: { sx, sy },
+        };
+        e.preventDefault();
+        e.stopPropagation();
+        stageWrap.setPointerCapture && stageWrap.setPointerCapture(e.pointerId);
+        window.addEventListener('pointermove', onStagePointerMove);
+        window.addEventListener('pointerup',   onStagePointerUp);
+        window.addEventListener('pointercancel', onStagePointerUp);
+        return;
+      }
+    }
+  }
+
   // 通常クリックで選択ハイライト解除 (Alt なしの場合のみ)
   if (!e.altKey && _selectedMaskRef) {
     _selectedMaskRef = null;
@@ -1632,7 +1719,184 @@ function pickMaskAtStagePoint(sx, sy) {
   return null;
 }
 
+// frame-local input-image coords → stage coords. _stageToFrameLocal の逆変換。
+// 個別マスクの 8 ハンドル位置をステージ上に描画/hit-test する際に使用。
+function _frameLocalToStage(lx, ly, frame, img) {
+  // local coords are img top-left origin → recenter to image center
+  const cx = lx - img.width  / 2;
+  const cy = ly - img.height / 2;
+  // apply frame scale
+  const sxLocal = cx * (frame.scale || 1);
+  const syLocal = cy * (frame.scale || 1);
+  // apply frame rotation (forward: rotate by +deg)
+  const r = (frame.rotation || 0) * Math.PI / 180;
+  const c = Math.cos(r), s = Math.sin(r);
+  const rx = c * sxLocal - s * syLocal;
+  const ry = s * sxLocal + c * syLocal;
+  // translate to frame center on stage
+  return { x: rx + frame.x, y: ry + frame.y };
+}
+
+// 選択中マスク矩形の参照を実体 (={x,y,w,h}) に解決して返す。
+// 戻り値: { rect, frame? } | null  (frame は 個別マスク時のみ)
+function _getSelectedMaskRectRef() {
+  if (!_selectedMaskRef) return null;
+  const ref = _selectedMaskRef;
+  if (ref.type === 'global') {
+    const rect = (project.globalMaskRects || [])[ref.idx];
+    if (!rect) return null;
+    return { rect, frame: null };
+  }
+  if (ref.type === 'frame') {
+    const f = project.frames.find(x => x.id === ref.frameId);
+    if (!f || !f.maskRects) return null;
+    const rect = f.maskRects[ref.idx];
+    if (!rect) return null;
+    return { rect, frame: f };
+  }
+  return null;
+}
+
+// 選択中マスクの 8 ハンドル位置 (ステージ座標) を計算する。
+// 戻り値: { nw, n, ne, e, se, s, sw, w } | null
+function _getMaskHandlePositions() {
+  const got = _getSelectedMaskRectRef();
+  if (!got) return null;
+  const { rect, frame } = got;
+  let toStage;
+  if (!frame) {
+    // global mask → stage coords directly
+    toStage = (lx, ly) => ({ x: lx, y: ly });
+  } else {
+    const img = imageCache.get(frame.imageId);
+    if (!img) return null;
+    toStage = (lx, ly) => _frameLocalToStage(lx, ly, frame, img);
+  }
+  return {
+    nw: toStage(rect.x,             rect.y),
+    n:  toStage(rect.x + rect.w / 2, rect.y),
+    ne: toStage(rect.x + rect.w,    rect.y),
+    e:  toStage(rect.x + rect.w,    rect.y + rect.h / 2),
+    se: toStage(rect.x + rect.w,    rect.y + rect.h),
+    s:  toStage(rect.x + rect.w / 2, rect.y + rect.h),
+    sw: toStage(rect.x,             rect.y + rect.h),
+    w:  toStage(rect.x,             rect.y + rect.h / 2),
+  };
+}
+
+// 選択中マスクのハンドル hit-test。 ステージ座標で受け取り、 ハンドル名を返す。
+// 戻り値: 'nw'|'n'|'ne'|'e'|'se'|'s'|'sw'|'w' | null
+function pickMaskHandle(sx, sy) {
+  const handles = _getMaskHandlePositions();
+  if (!handles) return null;
+  const tol = MASK_HANDLE_SIZE / viewScale; // ハンドルサイズと同程度の判定半径
+  for (const name of Object.keys(handles)) {
+    const p = handles[name];
+    if (Math.abs(p.x - sx) <= tol && Math.abs(p.y - sy) <= tol) {
+      return name;
+    }
+  }
+  return null;
+}
+
+// 選択中マスク矩形の内側 (= ハンドル外) を hit するか? 戻り値: bool
+function pickMaskInside(sx, sy) {
+  const got = _getSelectedMaskRectRef();
+  if (!got) return false;
+  const { rect, frame } = got;
+  let lx, ly;
+  if (!frame) {
+    lx = sx; ly = sy;
+  } else {
+    const img = imageCache.get(frame.imageId);
+    if (!img) return false;
+    const loc = _stageToFrameLocal(sx, sy, frame, img);
+    lx = loc.x; ly = loc.y;
+  }
+  return lx >= rect.x && lx <= rect.x + rect.w
+      && ly >= rect.y && ly <= rect.y + rect.h;
+}
+
+// ハンドル名 → CSS cursor
+function _maskHandleCursor(name) {
+  switch (name) {
+    case 'nw': case 'se': return 'nwse-resize';
+    case 'ne': case 'sw': return 'nesw-resize';
+    case 'n':  case 's':  return 'ns-resize';
+    case 'e':  case 'w':  return 'ew-resize';
+    default: return '';
+  }
+}
+
+// resize 中の rect 更新本体。 startRect (drag 開始時の rect スナップショット) と
+// stage 座標系での dx/dy を受け取り、 ハンドルに応じて rect を上書きする。
+// 個別マスクの場合は frame の rotation/scale を逆補正してローカル dx/dy に変換する。
+function applyMaskResize(handle, startRect, stageDx, stageDy) {
+  const got = _getSelectedMaskRectRef();
+  if (!got) return;
+  const { rect, frame } = got;
+  let dx = stageDx, dy = stageDy;
+  if (frame) {
+    const inv = rotateDeltaInverse(frame.rotation || 0, stageDx, stageDy);
+    const s = frame.scale || 1;
+    dx = inv.dx / s;
+    dy = inv.dy / s;
+  }
+  let nx = startRect.x, ny = startRect.y, nw = startRect.w, nh = startRect.h;
+  switch (handle) {
+    case 'nw': nx = startRect.x + dx; ny = startRect.y + dy; nw = startRect.w - dx; nh = startRect.h - dy; break;
+    case 'n':  ny = startRect.y + dy;                                                nh = startRect.h - dy; break;
+    case 'ne':                        ny = startRect.y + dy; nw = startRect.w + dx; nh = startRect.h - dy; break;
+    case 'e':                                                nw = startRect.w + dx;                        break;
+    case 'se':                                               nw = startRect.w + dx; nh = startRect.h + dy; break;
+    case 's':                                                                       nh = startRect.h + dy; break;
+    case 'sw': nx = startRect.x + dx;                        nw = startRect.w - dx; nh = startRect.h + dy; break;
+    case 'w':  nx = startRect.x + dx;                        nw = startRect.w - dx;                        break;
+  }
+  // 反転 (= ハンドルを反対側に通り越した) → 4px 下限でクランプ
+  if (nw < 4) { nx = nx + nw - 4; nw = 4; }
+  if (nh < 4) { ny = ny + nh - 4; nh = 4; }
+  rect.x = nx; rect.y = ny; rect.w = nw; rect.h = nh;
+}
+
+// マスク位置移動。 stageDx/dy を受け取り、 個別マスクは frame ローカルに変換して
+// startRect.x/y にオフセットを足す。
+function applyMaskMove(startRect, stageDx, stageDy) {
+  const got = _getSelectedMaskRectRef();
+  if (!got) return;
+  const { rect, frame } = got;
+  let dx = stageDx, dy = stageDy;
+  if (frame) {
+    const inv = rotateDeltaInverse(frame.rotation || 0, stageDx, stageDy);
+    const s = frame.scale || 1;
+    dx = inv.dx / s;
+    dy = inv.dy / s;
+  }
+  rect.x = startRect.x + dx;
+  rect.y = startRect.y + dy;
+}
+
 function onStagePointerMove(e) {
+  // マスク矩形 resize/move は activeOp とは独立の状態 (_maskResize / _maskMove) で進行する。
+  if (_maskResize) {
+    const { sx, sy } = clientToStage(e.clientX, e.clientY);
+    const dx = sx - _maskResize.startStagePoint.sx;
+    const dy = sy - _maskResize.startStagePoint.sy;
+    applyMaskResize(_maskResize.handle, _maskResize.startRect, dx, dy);
+    renderStage();
+    renderOverlay();
+    return;
+  }
+  if (_maskMove) {
+    const { sx, sy } = clientToStage(e.clientX, e.clientY);
+    const dx = sx - _maskMove.startStagePoint.sx;
+    const dy = sy - _maskMove.startStagePoint.sy;
+    applyMaskMove(_maskMove.startRect, dx, dy);
+    renderStage();
+    renderOverlay();
+    return;
+  }
+
   if (!activeOp) return;
   const { sx, sy } = clientToStage(e.clientX, e.clientY);
 
@@ -1717,6 +1981,34 @@ function onStagePointerMove(e) {
 }
 
 function onStagePointerUp(e) {
+  // マスク矩形 resize/move のコミット (= activeOp とは独立で先に処理)
+  if (_maskResize || _maskMove) {
+    const wasResize = !!_maskResize;
+    _maskResize = null;
+    _maskMove = null;
+    window.removeEventListener('pointermove', onStagePointerMove);
+    window.removeEventListener('pointerup',   onStagePointerUp);
+    window.removeEventListener('pointercancel', onStagePointerUp);
+    try { stageWrap.releasePointerCapture && stageWrap.releasePointerCapture(e.pointerId); }
+    catch (_e) { /* not captured — non-fatal */ }
+    // 矩形値を整数に丸めて IndexedDB に保存しやすく
+    const got = _getSelectedMaskRectRef();
+    if (got) {
+      got.rect.x = Math.round(got.rect.x);
+      got.rect.y = Math.round(got.rect.y);
+      got.rect.w = Math.round(got.rect.w);
+      got.rect.h = Math.round(got.rect.h);
+    }
+    renderStage();
+    renderOverlay();
+    renderMaskList();
+    renderGlobalMaskList();
+    markDirty();
+    snapshotForUndo(wasResize ? 'マスクリサイズ' : 'マスク移動');
+    toast(wasResize ? '🎭 マスクリサイズ' : '🎭 マスク移動');
+    return;
+  }
+
   if (!activeOp) return;
   window.removeEventListener('pointermove', onStagePointerMove);
   window.removeEventListener('pointerup',   onStagePointerUp);
@@ -2654,6 +2946,15 @@ let _maskMode = false;
 // 選択中のマスク (Alt+click で選択、 Delete/Backspace で削除)。
 // { type: 'frame'|'global', frameId?: string, idx: number } | null
 let _selectedMaskRef = null;
+
+// マスク矩形 resize 中の状態。 pointerdown でハンドルを掴んだ瞬間に作成し、
+// pointermove で applyMaskResize 適用、 pointerup で snapshotForUndo + null へ戻す。
+// { handle: 'nw'|...|'w', startRect: {x,y,w,h}, startStagePoint: {sx,sy} } | null
+let _maskResize = null;
+
+// マスク矩形 位置移動中の状態 (= ハンドル外の内側 drag)。
+// { startRect: {x,y,w,h}, startStagePoint: {sx,sy} } | null
+let _maskMove = null;
 
 function setMaskMode(on) {
   _maskMode = !!on;
