@@ -1,5 +1,5 @@
 ---
-name: VOICEPEAK 全カテゴリ横断 + Phase 1/2 統合ユニーク化 設計案 (2026-05-12 ユーザー指示、 次バッチから採用)
+name: VOICEPEAK 全カテゴリ横断 + Phase 1/2 統合ユニーク化 設計案 (2026-05-12 ユーザー指示、 次バッチから採用) (実装開始 2026-05-13)
 description: 同一単語 (= 「二」 「三」 「七」 等の数字単独や色名・体パーツ等) を全カテゴリ + Phase 1/2 で 1 wav に統一し、 アクセント違いが必要なら後で個別に別 wav を追加する設計。 number_sequence バッチ完了 (sw v967 想定) 後、 order_color バッチ着手前に設計実装する
 type: project
 ---
@@ -56,3 +56,19 @@ type: project
 - [reference_voicepeak_vdc2_format.md] (辞書 VDC2 仕様)
 - 関連ツール: `tools/voicepeak/Expand-VoicepeakUniqueWavs.ps1` (= 刷新対象)
 - 関連 batch plan: `tools/voicepeak/BATCH-PLAN-PHASE1-PHASE2.md` (= 設計刷新で見直し)
+
+## 実装履歴 2026-05-13: 数字単独 wav (1-10) をグローバル化、 CSV 削除済、 manifest g_num_*.wav 参照
+
+- ステータス: **集約設計案 → 実装開始** (= 数字パートから着手)
+- 数字パート (= 一〜十、 漢字読み + ひらがな読み) を **グローバル wav 化**: `assets/tts/quiz/g_num_1.wav` 〜 `g_num_10.wav` (1 単語 = 1 wav)
+- 並列 V1 ジョブで `g_num_*.wav` を配置 + manifest 更新
+- 本ジョブ (V2) で カテゴリ別 CSV から **単独数字行** を削除済:
+  - `voicepeak_lines_unique_phase1_number_sequence.csv`: 20 → 12 行 (8 行削除、 問題文のみ残る)
+  - `voicepeak_lines_phase1_number_sequence.csv`: 24 → 12 行 (12 行削除)
+  - `voicepeak_lines_unique_phase2_number_sequence.csv`: 10 → 0 行 (= Phase 2 不正解候補は全部単独数字)
+  - `voicepeak_lines_phase2_number_sequence.csv`: 36 → 0 行 (= 同上)
+  - `voicepeak_lines_full912.csv`: number_sequence 区画 (L843-902) のみ単独数字 48 行を削除、 912 → 864 行
+- 削除対象 = Speech 列が `一/二/三/四/五/六/七/八/九/十` または `いち/に/さん/よん/ご/ろく/なな/はち/きゅう/じゅう` のいずれか
+- 他カテゴリ (= order_color, count_total, weather 等) には単独数字行が無いことを scan で確認 (= スコープ外)
+- 次のグローバル化対象 (= 順次): 色名 (`g_red.wav` 等)、 体パーツ (`g_mimi.wav` 等)、 天気、 形 等
+- 注意: phase2 number_sequence CSV は 0 行になったため、 次回バッチでは投入対象から除外する (= manifest 側で g_num_*.wav を参照)
