@@ -124,6 +124,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-13T07:52:46Z - koma-wari-editor 画像ドロップ2枚重複バグ修正 (drop zone→window バブリング)
+- **タスク**: koma-wari-editor 画像ドロップ2枚重複バグ修正 (drop zone→window バブリング)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 193
+- **エラー数**: 15
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 151, "ToolSearch": 1, "Grep": 1, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-13T07:45:42Z - Phase 1a: tools/koma-wari-editor.html MVP (5-pane editor + drag/scale/rotate + timeline strip + WebP ZIP export)
 - **タスク**: Phase 1a: tools/koma-wari-editor.html MVP (5-pane editor + drag/scale/rotate + timeline strip + WebP ZIP export)
 - **結果**: 成功
@@ -225,19 +238,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 131, "ToolSearch": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-13T01:00:59Z - VOICEPEAK 各カテゴリ CSV から単独数字行を削除 + memory 更新 (cross-category dedup 実装開始記録)
-- **タスク**: VOICEPEAK 各カテゴリ CSV から単独数字行を削除 + memory 更新 (cross-category dedup 実装開始記録)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 164
-- **エラー数**: 12
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 124, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

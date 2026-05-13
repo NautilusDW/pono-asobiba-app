@@ -552,6 +552,7 @@ function renderAssetGrid() {
   dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
   dz.addEventListener('drop', e => {
     e.preventDefault();
+    e.stopPropagation();
     dz.classList.remove('drag-over');
     if (e.dataTransfer.files && e.dataTransfer.files.length) ingestFiles(e.dataTransfer.files);
   });
