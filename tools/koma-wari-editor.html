@@ -1,0 +1,1483 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>コマ割アニメーションエディタ (MVP)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- JSZip CDN: used by 📦 Export to bundle webp frames + manifest.json -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  /*
+   * ──────────────────────────────────────────────────────────────────
+   *  Pono Koma-Wari Editor (Phase 1 MVP)
+   *  Single-file editor for creating bust-shot animations (e.g. pono-banzai)
+   *  using position + uniform scale + rotation per frame.
+   *  Exports as ZIP (manifest.json + frame_NNN.webp) consumed by
+   *  js/animation-player.js (Phase 1b).
+   * ──────────────────────────────────────────────────────────────────
+   */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+    background: #1a1d24;
+    color: #e8eaf0;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button {
+    background: #2a2f3a; color: #e8eaf0;
+    border: 1px solid #3a4150;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  button:hover { background: #353b48; }
+  button:active { background: #1f2530; }
+  button.primary { background: #2e6ad6; border-color: #4e8bff; }
+  button.primary:hover { background: #3878e0; }
+  button.danger  { background: #6a2a2a; border-color: #a13a3a; }
+  button.danger:hover { background: #7a3535; }
+  button.toggle.on { background: #2e8f5a; border-color: #50c98a; }
+  input[type=number], input[type=text] {
+    background: #1f242e; color: #e8eaf0;
+    border: 1px solid #3a4150; border-radius: 4px;
+    padding: 3px 6px; width: 70px;
+  }
+  input[type=range] { width: 120px; vertical-align: middle; }
+
+  /* === Layout ============================================================ */
+  /* 5-pane CSS grid: Top / Left / Center / Right / Bottom                  */
+  #app {
+    display: grid;
+    grid-template-columns: 240px 1fr 240px;
+    grid-template-rows: 56px 1fr 200px;
+    grid-template-areas:
+      "top    top    top"
+      "left   center right"
+      "bottom bottom bottom";
+    height: 100vh;
+    width: 100vw;
+  }
+  #pane-top    { grid-area: top;    background:#22262f; border-bottom:1px solid #2e3340; display:flex; align-items:center; gap:10px; padding:0 12px; flex-wrap:wrap; }
+  #pane-left   { grid-area: left;   background:#1e2128; border-right:1px solid #2e3340; overflow:auto; padding:8px; }
+  #pane-center { grid-area: center; background:#0e1014; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  #pane-right  { grid-area: right;  background:#1e2128; border-left:1px solid #2e3340; overflow:auto; padding:10px; }
+  #pane-bottom { grid-area: bottom; background:#1a1d24; border-top:1px solid #2e3340; overflow:hidden; display:flex; flex-direction:column; }
+
+  /* === Top bar =========================================================== */
+  #pane-top .group { display:flex; align-items:center; gap:6px; padding:0 6px; border-right:1px solid #2e3340; height:36px; }
+  #pane-top .group:last-child { border-right:none; }
+  #pane-top label { display:flex; align-items:center; gap:4px; font-size:13px; }
+  #now-frame-label { font-size:13px; color:#9aa5b8; }
+  #project-name-input { width: 200px; }
+
+  /* === Left pane: asset library ========================================= */
+  #drop-zone {
+    border: 2px dashed #3a4150;
+    border-radius: 8px;
+    padding: 14px 8px;
+    text-align: center;
+    cursor: pointer;
+    background: #1a1d24;
+    margin-bottom: 8px;
+    transition: background .12s, border-color .12s;
+  }
+  #drop-zone.drag-over { background:#2a2f3a; border-color:#5a8bff; }
+  #drop-zone .drop-icon { font-size: 26px; }
+  #drop-zone .drop-text { font-size: 12px; color:#9aa5b8; margin-top:4px; }
+  #asset-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .asset-card {
+    background: #2a2f3a;
+    border: 1px solid #3a4150;
+    border-radius: 6px;
+    padding: 4px;
+    cursor: grab;
+    text-align: center;
+    overflow: hidden;
+  }
+  .asset-card:active { cursor: grabbing; }
+  .asset-card img {
+    width: 100%; height: 64px;
+    object-fit: contain;
+    background:
+      linear-gradient(45deg, #333 25%, transparent 25%),
+      linear-gradient(-45deg, #333 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #333 75%),
+      linear-gradient(-45deg, transparent 75%, #333 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  }
+  .asset-card .asset-name { font-size:10px; color:#9aa5b8; margin-top:2px; word-break:break-all; line-height:1.1; max-height:24px; overflow:hidden; }
+  .asset-card .asset-del { font-size:10px; color:#aaa; cursor:pointer; margin-top:2px; }
+  .asset-card .asset-del:hover { color:#ff7777; }
+  .section-title { font-size:12px; color:#9aa5b8; margin: 8px 0 4px; letter-spacing:.05em; }
+
+  /* === Center pane: stage canvas ======================================== */
+  #stage-wrap { position:relative; }
+  #stage-canvas {
+    display: block;
+    background:
+      linear-gradient(45deg, #20242c 25%, transparent 25%),
+      linear-gradient(-45deg, #20242c 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #20242c 75%),
+      linear-gradient(-45deg, transparent 75%, #20242c 75%);
+    background-color: #181b22;
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    border: 1px solid #3a4150;
+    box-shadow: 0 0 24px rgba(0,0,0,0.5);
+  }
+  #overlay-canvas {
+    position: absolute;
+    left: 0; top: 0;
+    pointer-events: none;
+  }
+  #stage-empty {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #555; font-size: 14px; pointer-events: none;
+  }
+
+  /* === Right pane: properties =========================================== */
+  .prop-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:13px; }
+  .prop-row label { width: 64px; color:#9aa5b8; }
+  .prop-row input[type=number] { flex: 1; min-width: 0; }
+  .prop-section { border-top: 1px solid #2e3340; padding-top: 8px; margin-top: 8px; }
+  .prop-help { font-size:11px; color:#6c7383; margin: 2px 0 6px; }
+  #frame-info { font-size:12px; color:#9aa5b8; margin-bottom:6px; }
+
+  /* === Bottom pane: timeline strip ====================================== */
+  #timeline-toolbar { display:flex; align-items:center; gap:6px; padding:6px 10px; background:#22262f; border-bottom:1px solid #2e3340; }
+  #timeline-toolbar .right { margin-left:auto; font-size:12px; color:#9aa5b8; }
+  #timeline-strip {
+    flex: 1;
+    display: flex; align-items: stretch; gap: 6px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .strip-cell {
+    width: 96px;
+    flex: 0 0 96px;
+    background: #2a2f3a;
+    border: 1px solid #3a4150;
+    border-radius: 6px;
+    padding: 4px;
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 2px;
+    transition: border-color .1s, background .1s;
+    position: relative;
+  }
+  .strip-cell.active   { border-color: #4e8bff; background: #2c3a55; }
+  .strip-cell.selected { border-color: #f0b840; }
+  .strip-cell.drop-target-before { box-shadow: -3px 0 0 #50c98a; }
+  .strip-cell.drop-target-after  { box-shadow:  3px 0 0 #50c98a; }
+  .strip-cell .strip-thumb {
+    width: 88px; height: 88px;
+    background:
+      linear-gradient(45deg, #444 25%, transparent 25%),
+      linear-gradient(-45deg, #444 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #444 75%),
+      linear-gradient(-45deg, transparent 75%, #444 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+    background-color: #20242c;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 3px;
+  }
+  .strip-cell .strip-thumb canvas { max-width: 100%; max-height: 100%; }
+  .strip-cell .strip-meta { font-size:10px; color:#9aa5b8; display:flex; justify-content:space-between; }
+  .strip-cell .strip-meta input { width: 44px; font-size: 10px; padding: 1px 2px; }
+  .strip-cell .strip-del { position:absolute; top:2px; right:2px; font-size:11px; background:rgba(0,0,0,0.5); border:none; padding:0 4px; border-radius:3px; line-height:16px; }
+  .strip-cell .strip-del:hover { background:#a13a3a; }
+
+  /* === Toast ============================================================ */
+  #toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); color: #fff;
+    padding: 8px 14px; border-radius: 6px; font-size: 13px;
+    pointer-events: none; opacity: 0; transition: opacity .2s;
+    z-index: 1000;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== Top bar ===== -->
+  <div id="pane-top">
+    <div class="group">
+      <button id="btn-open"   title="プロジェクト JSON を開く">📥 開く</button>
+      <button id="btn-save"   title="プロジェクト JSON を保存">💾 保存</button>
+      <button id="btn-export" class="primary" title="ZIP (manifest + WebP) をエクスポート">📦 エクスポート</button>
+      <input type="file" id="file-input-json" accept=".json,application/json" style="display:none">
+    </div>
+    <div class="group">
+      <label>名前 <input type="text" id="project-name-input" value="pono-banzai-bust"></label>
+    </div>
+    <div class="group">
+      <label>FPS
+        <input type="range" id="fps-range" min="1" max="30" step="1" value="12">
+        <span id="fps-label">12</span>
+      </label>
+      <button id="btn-loop"     class="toggle on" title="ループ">🔁</button>
+      <button id="btn-pingpong" class="toggle"     title="pingPong">🔂</button>
+    </div>
+    <div class="group">
+      <button id="btn-play"  title="再生">▶</button>
+      <button id="btn-pause" title="一時停止">⏸</button>
+      <button id="btn-stop"  title="停止">⏹</button>
+      <span id="now-frame-label">0 / 0</span>
+    </div>
+  </div>
+
+  <!-- ===== Left: asset library ===== -->
+  <div id="pane-left">
+    <div id="drop-zone">
+      <div class="drop-icon">📁</div>
+      <div class="drop-text">画像をドロップ<br>または クリックして選択</div>
+      <input type="file" id="file-input-img" multiple accept="image/*" style="display:none">
+    </div>
+    <div class="section-title">素材ライブラリ</div>
+    <div id="asset-grid"></div>
+  </div>
+
+  <!-- ===== Center: stage ===== -->
+  <div id="pane-center">
+    <div id="stage-wrap">
+      <canvas id="stage-canvas"   width="1024" height="1024"></canvas>
+      <canvas id="overlay-canvas" width="1024" height="1024"></canvas>
+      <div id="stage-empty">素材ライブラリの画像をドラッグ、または「+追加」でフレーム作成</div>
+    </div>
+  </div>
+
+  <!-- ===== Right: properties ===== -->
+  <div id="pane-right">
+    <div id="frame-info">フレーム未選択</div>
+    <div class="prop-row">
+      <label>X</label>
+      <input type="number" id="prop-x" step="1">
+    </div>
+    <div class="prop-row">
+      <label>Y</label>
+      <input type="number" id="prop-y" step="1">
+    </div>
+    <div class="prop-row">
+      <label>Scale</label>
+      <input type="number" id="prop-scale" step="0.01" min="0.05" max="10">
+    </div>
+    <div class="prop-row">
+      <label>Rotate°</label>
+      <input type="number" id="prop-rotation" step="1">
+    </div>
+    <div class="prop-row">
+      <label>Duration</label>
+      <input type="number" id="prop-duration" step="10" min="10" max="5000">
+      <span style="font-size:11px;color:#6c7383;">ms</span>
+    </div>
+    <div class="prop-section">
+      <button id="btn-center"    style="width:100%;margin-bottom:4px;">中央へ</button>
+      <button id="btn-fit"       style="width:100%;margin-bottom:4px;">画面にフィット</button>
+      <button id="btn-delete"    class="danger" style="width:100%;">🗑 このフレームを削除</button>
+    </div>
+    <div class="prop-section">
+      <div class="section-title">ステージ</div>
+      <div class="prop-row">
+        <label>W</label>
+        <input type="number" id="prop-stage-w" step="1" min="64" max="4096" value="1024">
+      </div>
+      <div class="prop-row">
+        <label>H</label>
+        <input type="number" id="prop-stage-h" step="1" min="64" max="4096" value="1024">
+      </div>
+      <div class="prop-help">変更すると stage canvas が再描画されます</div>
+    </div>
+  </div>
+
+  <!-- ===== Bottom: timeline strip ===== -->
+  <div id="pane-bottom">
+    <div id="timeline-toolbar">
+      <button id="btn-add"       title="新規フレームを追加 (= 最後の素材を使用)">+ 追加</button>
+      <button id="btn-duplicate" title="選択中フレームを複製">複製</button>
+      <button id="btn-carry"     title="直前フレームの位置/scale/rotation を引き継いで追加">前から引き継ぐ</button>
+      <button id="btn-remove"    class="danger" title="選択中フレームを削除">削除</button>
+      <span class="right" id="frame-count-label">0 frames</span>
+    </div>
+    <div id="timeline-strip"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────────────
+ *  Pono Koma-Wari Editor — main script
+ *  No external deps except JSZip (CDN, only used inside exportZip()).
+ *  Single closure, no globals except `window.__komaEditor` (debug hook).
+ * ──────────────────────────────────────────────────────────────────── */
+(() => {
+'use strict';
+
+// ─── Constants ──────────────────────────────────────────────────────────
+const SCHEMA            = 'pono-koma-wari-v1';
+const MANIFEST_SCHEMA   = 'pono-anim-manifest-v1';
+const STORAGE_KEY       = 'koma-wari-project-v1';
+const AUTOSAVE_MS       = 5000;
+const HANDLE_SIZE       = 12;                  // px, in stage coords (scaled to view)
+const ROTATE_KNOB_DIST  = 28;                  // px above the bounding box (stage coords)
+const MIN_SCALE         = 0.05;
+const MAX_SCALE         = 10;
+
+// ─── Project state ──────────────────────────────────────────────────────
+let project = blankProject();
+let selectedFrameId = null;
+let dirty = false;        // flips true on edits, autosave consumes
+
+// Asset image element cache: imageId → HTMLImageElement (decoded)
+const imageCache = new Map();
+
+// ─── DOM refs ───────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const stageCv    = $('stage-canvas');
+const overlayCv  = $('overlay-canvas');
+const stageCtx   = stageCv.getContext('2d');
+const overlayCtx = overlayCv.getContext('2d');
+const stageWrap  = $('stage-wrap');
+
+// ─── Math util ──────────────────────────────────────────────────────────
+// rotateDeltaInverse: convert a mouse delta back into the frame's local
+// (un-rotated) coord system. Copied from common/layout/layout-editor.js
+// L89-98 per Phase 1 plan (rule #8: write only the math we need, no import).
+function rotateDeltaInverse(deg, dx, dy) {
+  if (!deg) return { dx, dy };
+  const r = deg * Math.PI / 180;
+  const c = Math.cos(r), s = Math.sin(r);
+  return { dx:  c * dx + s * dy, dy: -s * dx + c * dy };
+}
+
+function uid(prefix = 'f') {
+  return prefix + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// ─── Data factories ─────────────────────────────────────────────────────
+function blankProject() {
+  return {
+    schema: SCHEMA,
+    id: 'pono-banzai-bust',
+    name: 'pono-banzai-bust',
+    fps: 12,
+    loop: true,
+    pingPong: false,
+    stageWidth: 1024,
+    stageHeight: 1024,
+    bgMode: 'transparent',
+    exportFormat: 'webp',
+    exportQuality: 0.9,
+    images: {}, // imageId → {name, dataUrl, width, height}
+    frames: [], // see makeFrame()
+    exportedAt: '',
+  };
+}
+
+function makeFrame(imageId, opts = {}) {
+  const img = project.images[imageId];
+  return {
+    id: uid('f'),
+    imageId,
+    sourceFile: img ? img.name : '',
+    x: opts.x !== undefined ? opts.x : project.stageWidth / 2,
+    y: opts.y !== undefined ? opts.y : project.stageHeight / 2,
+    scale: opts.scale !== undefined ? opts.scale : 1.0,
+    rotation: opts.rotation !== undefined ? opts.rotation : 0,
+    duration: opts.duration !== undefined ? opts.duration : Math.round(1000 / project.fps),
+    maskRects: [], // Phase 3
+  };
+}
+
+function getSelectedFrame() {
+  if (!selectedFrameId) return null;
+  return project.frames.find(f => f.id === selectedFrameId) || null;
+}
+
+// ─── Toast ──────────────────────────────────────────────────────────────
+let _toastTimer = null;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ─── Asset library / FileReader ─────────────────────────────────────────
+function ingestFiles(files) {
+  const list = Array.from(files || []).filter(f => /^image\//.test(f.type));
+  if (!list.length) return;
+  let added = 0;
+  list.forEach(file => loadImageFile(file, () => {
+    added++;
+    if (added === list.length) {
+      renderAssetGrid();
+      markDirty();
+      toast(`画像を ${added} 件追加`);
+    }
+  }));
+}
+
+function loadImageFile(file, done) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const imageId = uid('img');
+      project.images[imageId] = {
+        name: file.name,
+        dataUrl: e.target.result,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      };
+      imageCache.set(imageId, img);
+      done && done(imageId);
+    };
+    img.onerror = () => { done && done(null); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function ensureImageDecoded(imageId, cb) {
+  if (imageCache.has(imageId)) { cb(imageCache.get(imageId)); return; }
+  const meta = project.images[imageId];
+  if (!meta) { cb(null); return; }
+  const img = new Image();
+  img.onload  = () => { imageCache.set(imageId, img); cb(img); };
+  img.onerror = () => { cb(null); };
+  img.src = meta.dataUrl;
+}
+
+function decodeAllImages(done) {
+  const ids = Object.keys(project.images);
+  if (!ids.length) { done(); return; }
+  let pending = ids.length;
+  ids.forEach(id => ensureImageDecoded(id, () => {
+    if (--pending === 0) done();
+  }));
+}
+
+function renderAssetGrid() {
+  const grid = $('asset-grid');
+  grid.innerHTML = '';
+  const ids = Object.keys(project.images);
+  if (!ids.length) {
+    grid.innerHTML = '<div style="font-size:11px;color:#555;text-align:center;padding:8px;">(まだ素材なし)</div>';
+    return;
+  }
+  ids.forEach(id => {
+    const meta = project.images[id];
+    const card = document.createElement('div');
+    card.className = 'asset-card';
+    card.draggable = true;
+    card.dataset.imageId = id;
+    const imgEl = document.createElement('img');
+    imgEl.src = meta.dataUrl;
+    imgEl.alt = meta.name;
+    const name = document.createElement('div');
+    name.className = 'asset-name';
+    name.textContent = meta.name;
+    name.title = meta.name + ` (${meta.width}×${meta.height})`;
+    const del = document.createElement('div');
+    del.className = 'asset-del';
+    del.textContent = '✕ 削除';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      // Refuse if frames still reference this image
+      const used = project.frames.some(f => f.imageId === id);
+      if (used) {
+        if (!confirm('この素材を使ったフレームがあります。\n素材と該当フレームを両方削除しますか？')) return;
+        project.frames = project.frames.filter(f => f.imageId !== id);
+        if (getSelectedFrame() == null) selectFrame(project.frames[0]?.id || null);
+      }
+      delete project.images[id];
+      imageCache.delete(id);
+      renderAssetGrid();
+      renderStrip();
+      renderStage();
+      markDirty();
+    });
+    card.appendChild(imgEl);
+    card.appendChild(name);
+    card.appendChild(del);
+
+    // Click to add a new frame using this image
+    card.addEventListener('click', () => {
+      const f = makeFrame(id);
+      project.frames.push(f);
+      selectFrame(f.id);
+      renderStrip();
+      renderStage();
+      markDirty();
+      toast('フレーム追加');
+    });
+
+    // Drag → stage = add at drop position
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/x-koma-image-id', id);
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+// ─── Drop zone wiring ───────────────────────────────────────────────────
+(function wireDropZone() {
+  const dz = $('drop-zone');
+  const fi = $('file-input-img');
+  dz.addEventListener('click', () => fi.click());
+  fi.addEventListener('change', () => {
+    if (fi.files.length) ingestFiles(fi.files);
+    fi.value = '';
+  });
+  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    if (e.dataTransfer.files && e.dataTransfer.files.length) ingestFiles(e.dataTransfer.files);
+  });
+  // Whole-page drop fallback
+  window.addEventListener('dragover', e => { e.preventDefault(); });
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length &&
+        Array.from(e.dataTransfer.files).some(f => /^image\//.test(f.type))) {
+      ingestFiles(e.dataTransfer.files);
+    }
+  });
+})();
+
+// Center pane: accept asset drag-drop to create a frame at drop position
+stageWrap.addEventListener('dragover', e => { e.preventDefault(); });
+stageWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  const id = e.dataTransfer.getData('text/x-koma-image-id');
+  if (!id || !project.images[id]) return;
+  const { sx, sy } = clientToStage(e.clientX, e.clientY);
+  const f = makeFrame(id, { x: sx, y: sy });
+  project.frames.push(f);
+  selectFrame(f.id);
+  renderStrip();
+  renderStage();
+  markDirty();
+});
+
+// ─── Stage view sizing / coords ─────────────────────────────────────────
+// CSS-displayed size of the stage canvas (fit inside #pane-center).
+// We keep the canvas backing store at project.stageWidth × project.stageHeight
+// (= true 1024 pixels) and only scale via CSS for display.
+let viewScale = 1;
+function resizeStage() {
+  stageCv.width  = project.stageWidth;
+  stageCv.height = project.stageHeight;
+  overlayCv.width  = project.stageWidth;
+  overlayCv.height = project.stageHeight;
+
+  const pane = $('pane-center');
+  const rect = pane.getBoundingClientRect();
+  const pad = 24;
+  const availW = rect.width  - pad * 2;
+  const availH = rect.height - pad * 2;
+  const s = Math.min(availW / project.stageWidth, availH / project.stageHeight, 1);
+  viewScale = s > 0 ? s : 1;
+  const w = Math.round(project.stageWidth * viewScale);
+  const h = Math.round(project.stageHeight * viewScale);
+  stageCv.style.width   = w + 'px';
+  stageCv.style.height  = h + 'px';
+  overlayCv.style.width  = w + 'px';
+  overlayCv.style.height = h + 'px';
+  stageWrap.style.width  = w + 'px';
+  stageWrap.style.height = h + 'px';
+}
+
+// Map a clientX/Y (viewport coords) to stage coords (= canvas backing pixels).
+function clientToStage(cx, cy) {
+  const r = stageCv.getBoundingClientRect();
+  return {
+    sx: (cx - r.left) / viewScale,
+    sy: (cy - r.top)  / viewScale,
+  };
+}
+
+// ─── Stage rendering ────────────────────────────────────────────────────
+// drawFrameOnContext: draws a single frame onto an arbitrary 2d context,
+// at the given stage size. Used by:
+//   - renderStage()   : live preview on stageCv
+//   - playback        : same path, with timeline-current frame index
+//   - exportZip()     : offscreen canvas → toBlob('image/webp', q)
+function drawFrameOnContext(ctx, frame, opts = {}) {
+  if (!frame) return;
+  const img = imageCache.get(frame.imageId);
+  if (!img) return;
+  ctx.save();
+  ctx.translate(frame.x, frame.y);
+  ctx.rotate(frame.rotation * Math.PI / 180);
+  ctx.scale(frame.scale, frame.scale);
+  // Image origin at center
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  ctx.restore();
+}
+
+function renderStage() {
+  stageCtx.clearRect(0, 0, stageCv.width, stageCv.height);
+
+  // Determine which frame is "current": during playback it's the active
+  // frame index; otherwise it's the selected frame.
+  let frame = null;
+  if (playback.playing) {
+    frame = project.frames[playback.curIdx] || null;
+  } else {
+    frame = getSelectedFrame();
+  }
+  if (frame) drawFrameOnContext(stageCtx, frame);
+
+  // Toggle empty hint
+  $('stage-empty').style.display = project.frames.length === 0 ? 'flex' : 'none';
+
+  renderOverlay();
+}
+
+// renderOverlay: draws the selection box + 8 resize handles + rotate knob
+// on top of the stage. Disabled during playback for clean preview.
+function renderOverlay() {
+  overlayCtx.clearRect(0, 0, overlayCv.width, overlayCv.height);
+  if (playback.playing) return;
+  const f = getSelectedFrame();
+  if (!f) return;
+  const img = imageCache.get(f.imageId);
+  if (!img) return;
+
+  // Frame's local axis-aligned bbox (centered at origin), in local image coords:
+  const halfW = (img.width  * f.scale) / 2;
+  const halfH = (img.height * f.scale) / 2;
+
+  overlayCtx.save();
+  overlayCtx.translate(f.x, f.y);
+  overlayCtx.rotate(f.rotation * Math.PI / 180);
+
+  // Bounding box
+  overlayCtx.lineWidth = 2 / viewScale;
+  overlayCtx.strokeStyle = '#4e8bff';
+  overlayCtx.setLineDash([6 / viewScale, 4 / viewScale]);
+  overlayCtx.strokeRect(-halfW, -halfH, halfW * 2, halfH * 2);
+  overlayCtx.setLineDash([]);
+
+  // 8 handles (only corners are used for uniform scale in MVP; edges drawn
+  // for visual parity but inactive — clicking them falls through to drag).
+  const hs = HANDLE_SIZE / viewScale;
+  const handlePositions = [
+    { name: 'nw', x: -halfW, y: -halfH, type: 'corner' },
+    { name: 'ne', x:  halfW, y: -halfH, type: 'corner' },
+    { name: 'sw', x: -halfW, y:  halfH, type: 'corner' },
+    { name: 'se', x:  halfW, y:  halfH, type: 'corner' },
+    { name: 'n',  x: 0,      y: -halfH, type: 'edge'   },
+    { name: 's',  x: 0,      y:  halfH, type: 'edge'   },
+    { name: 'w',  x: -halfW, y: 0,      type: 'edge'   },
+    { name: 'e',  x:  halfW, y: 0,      type: 'edge'   },
+  ];
+  handlePositions.forEach(p => {
+    overlayCtx.fillStyle   = p.type === 'corner' ? '#ffffff' : '#cbd0db';
+    overlayCtx.strokeStyle = '#1a1d24';
+    overlayCtx.lineWidth   = 1 / viewScale;
+    overlayCtx.fillRect(  p.x - hs/2, p.y - hs/2, hs, hs);
+    overlayCtx.strokeRect(p.x - hs/2, p.y - hs/2, hs, hs);
+  });
+
+  // Rotate knob (top-center, offset above bbox)
+  const knobOffset = ROTATE_KNOB_DIST / viewScale;
+  const knobY = -halfH - knobOffset;
+  overlayCtx.beginPath();
+  overlayCtx.moveTo(0, -halfH);
+  overlayCtx.lineTo(0, knobY);
+  overlayCtx.strokeStyle = '#f0b840';
+  overlayCtx.lineWidth = 1.5 / viewScale;
+  overlayCtx.stroke();
+  overlayCtx.beginPath();
+  overlayCtx.arc(0, knobY, 7 / viewScale, 0, Math.PI * 2);
+  overlayCtx.fillStyle = '#f0b840';
+  overlayCtx.fill();
+  overlayCtx.strokeStyle = '#1a1d24';
+  overlayCtx.lineWidth = 1 / viewScale;
+  overlayCtx.stroke();
+
+  overlayCtx.restore();
+}
+
+// ─── Hit testing ────────────────────────────────────────────────────────
+// Returns one of: 'rotate', 'handle-nw'|'handle-ne'|'handle-sw'|'handle-se',
+//                 'handle-n'|'handle-s'|'handle-w'|'handle-e',
+//                 'body', null.
+function hitTestOnSelected(sx, sy) {
+  const f = getSelectedFrame();
+  if (!f) return null;
+  const img = imageCache.get(f.imageId);
+  if (!img) return null;
+  // Transform stage point into frame-local (unrotated, around frame center)
+  const dx = sx - f.x, dy = sy - f.y;
+  const local = rotateDeltaInverse(f.rotation, dx, dy);
+  const lx = local.dx, ly = local.dy;
+  const halfW = (img.width  * f.scale) / 2;
+  const halfH = (img.height * f.scale) / 2;
+  const hs = HANDLE_SIZE / viewScale;
+  const knobY = -halfH - ROTATE_KNOB_DIST / viewScale;
+  const knobR = 10 / viewScale;
+  // Rotate knob
+  if (Math.hypot(lx, ly - knobY) <= knobR) return 'rotate';
+  // Handles
+  const handles = [
+    ['handle-nw', -halfW, -halfH],
+    ['handle-ne',  halfW, -halfH],
+    ['handle-sw', -halfW,  halfH],
+    ['handle-se',  halfW,  halfH],
+    ['handle-n',   0,     -halfH],
+    ['handle-s',   0,      halfH],
+    ['handle-w',  -halfW,  0    ],
+    ['handle-e',   halfW,  0    ],
+  ];
+  for (const [name, hx, hy] of handles) {
+    if (Math.abs(lx - hx) <= hs && Math.abs(ly - hy) <= hs) return name;
+  }
+  // Body
+  if (Math.abs(lx) <= halfW && Math.abs(ly) <= halfH) return 'body';
+  return null;
+}
+
+// ─── Pointer interaction on stage ───────────────────────────────────────
+let activeOp = null;
+overlayCv.style.pointerEvents = 'auto'; // we want overlay to take pointer
+// Re-enable hit-tests through overlay → stage by checking stageWrap below.
+
+// Both canvases sit on top; we attach to the wrapper so we cover both.
+stageWrap.addEventListener('pointerdown', onStagePointerDown);
+
+function onStagePointerDown(e) {
+  if (playback.playing) return;
+  // Ignore right-click
+  if (e.button !== 0) return;
+  const { sx, sy } = clientToStage(e.clientX, e.clientY);
+
+  // First, try hit-test on current selection
+  let hit = hitTestOnSelected(sx, sy);
+
+  // If no hit on selection, search frames in z-order (top-most = last) for body
+  if (!hit) {
+    for (let i = project.frames.length - 1; i >= 0; i--) {
+      const f = project.frames[i];
+      const img = imageCache.get(f.imageId);
+      if (!img) continue;
+      const dx = sx - f.x, dy = sy - f.y;
+      const local = rotateDeltaInverse(f.rotation, dx, dy);
+      const halfW = (img.width  * f.scale) / 2;
+      const halfH = (img.height * f.scale) / 2;
+      if (Math.abs(local.dx) <= halfW && Math.abs(local.dy) <= halfH) {
+        selectFrame(f.id);
+        hit = 'body';
+        break;
+      }
+    }
+  }
+
+  if (!hit) return;
+
+  e.preventDefault();
+  stageWrap.setPointerCapture && stageWrap.setPointerCapture(e.pointerId);
+
+  const f = getSelectedFrame();
+  activeOp = {
+    pointerId: e.pointerId,
+    kind: hit,                  // 'body' | 'rotate' | 'handle-*'
+    start: { sx, sy },
+    frameBefore: { x: f.x, y: f.y, scale: f.scale, rotation: f.rotation },
+  };
+  if (hit.startsWith('handle-')) {
+    const img = imageCache.get(f.imageId);
+    activeOp.imgW = img.width;
+    activeOp.imgH = img.height;
+  }
+  window.addEventListener('pointermove', onStagePointerMove);
+  window.addEventListener('pointerup',   onStagePointerUp);
+  window.addEventListener('pointercancel', onStagePointerUp);
+}
+
+function onStagePointerMove(e) {
+  if (!activeOp) return;
+  const f = getSelectedFrame();
+  if (!f) return;
+  const { sx, sy } = clientToStage(e.clientX, e.clientY);
+  const dx = sx - activeOp.start.sx;
+  const dy = sy - activeOp.start.sy;
+
+  if (activeOp.kind === 'body') {
+    // Move
+    f.x = activeOp.frameBefore.x + dx;
+    f.y = activeOp.frameBefore.y + dy;
+    if (e.shiftKey) {
+      // Constrain to axis with larger movement
+      if (Math.abs(dx) > Math.abs(dy)) f.y = activeOp.frameBefore.y;
+      else                              f.x = activeOp.frameBefore.x;
+    }
+  } else if (activeOp.kind === 'rotate') {
+    // Angle from frame center to pointer; "up" is -90°.
+    const a = Math.atan2(sy - f.y, sx - f.x) * 180 / Math.PI + 90;
+    let deg = a;
+    if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+    // Normalize to [-180, 180] for display sanity
+    while (deg > 180)  deg -= 360;
+    while (deg < -180) deg += 360;
+    f.rotation = deg;
+  } else if (activeOp.kind.startsWith('handle-')) {
+    // Uniform scale via corner; edges fall through to same algorithm (still uniform).
+    // Convert pointer delta into frame-local coords.
+    const local = rotateDeltaInverse(activeOp.frameBefore.rotation, dx, dy);
+    // Compute scale factor based on which corner was grabbed.
+    // For a corner at (sx0, sy0) in local coords (where sx0,sy0 ∈ {±halfW, ±halfH}),
+    // the desired new halfWidth = |sx0 + signX*dLocalX|, etc.
+    const startScale = activeOp.frameBefore.scale;
+    const halfW0 = (activeOp.imgW * startScale) / 2;
+    const halfH0 = (activeOp.imgH * startScale) / 2;
+    // Sign of corner
+    const name = activeOp.kind.slice('handle-'.length);
+    let sx0 = 0, sy0 = 0;
+    if (name.includes('w')) sx0 = -halfW0; else if (name.includes('e')) sx0 = halfW0;
+    if (name.includes('n')) sy0 = -halfH0; else if (name.includes('s')) sy0 = halfH0;
+    // New corner position in local coords
+    const nx = sx0 + local.dx;
+    const ny = sy0 + local.dy;
+    // For corners → average of x/y scale ratios; for edges → ratio of the axis
+    let factorX = halfW0 ? Math.abs(nx) / halfW0 : 1;
+    let factorY = halfH0 ? Math.abs(ny) / halfH0 : 1;
+    let factor;
+    if (name.length === 2) factor = (factorX + factorY) / 2;          // corner
+    else if (name === 'n' || name === 's') factor = factorY;          // top/bottom edge
+    else factor = factorX;                                            // left/right edge
+    factor = clamp(factor, MIN_SCALE / startScale, MAX_SCALE / startScale);
+    f.scale = clamp(startScale * factor, MIN_SCALE, MAX_SCALE);
+  }
+
+  syncPropsFromFrame();
+  renderStage();
+}
+
+function onStagePointerUp(e) {
+  if (!activeOp) return;
+  window.removeEventListener('pointermove', onStagePointerMove);
+  window.removeEventListener('pointerup',   onStagePointerUp);
+  window.removeEventListener('pointercancel', onStagePointerUp);
+  stageWrap.releasePointerCapture && stageWrap.releasePointerCapture(activeOp.pointerId);
+  activeOp = null;
+  renderStripActive();    // thumb of selected frame may have changed
+  markDirty();
+}
+
+// ─── Selection ──────────────────────────────────────────────────────────
+function selectFrame(id) {
+  selectedFrameId = id;
+  syncPropsFromFrame();
+  renderStripActive();
+  renderStage();
+}
+
+// ─── Right pane (properties) ↔ frame binding ────────────────────────────
+const propX        = $('prop-x');
+const propY        = $('prop-y');
+const propScale    = $('prop-scale');
+const propRotation = $('prop-rotation');
+const propDuration = $('prop-duration');
+
+function syncPropsFromFrame() {
+  const f = getSelectedFrame();
+  const info = $('frame-info');
+  if (!f) {
+    info.textContent = 'フレーム未選択';
+    propX.value = ''; propY.value = '';
+    propScale.value = ''; propRotation.value = '';
+    propDuration.value = '';
+    propX.disabled = propY.disabled = propScale.disabled =
+      propRotation.disabled = propDuration.disabled = true;
+    return;
+  }
+  propX.disabled = propY.disabled = propScale.disabled =
+    propRotation.disabled = propDuration.disabled = false;
+  const idx = project.frames.indexOf(f) + 1;
+  const src = f.sourceFile || (project.images[f.imageId]?.name || '?');
+  info.textContent = `Frame #${idx} (${src})`;
+  propX.value = Math.round(f.x);
+  propY.value = Math.round(f.y);
+  propScale.value    = (+f.scale).toFixed(3);
+  propRotation.value = Math.round(f.rotation);
+  propDuration.value = Math.round(f.duration);
+}
+
+function bindPropInput(input, key, parse) {
+  input.addEventListener('input', () => {
+    const f = getSelectedFrame();
+    if (!f) return;
+    const v = parse(input.value);
+    if (!Number.isFinite(v)) return;
+    f[key] = v;
+    renderStage();
+    renderStripActive();
+    markDirty();
+  });
+}
+bindPropInput(propX,        'x',        v => parseFloat(v));
+bindPropInput(propY,        'y',        v => parseFloat(v));
+bindPropInput(propScale,    'scale',    v => clamp(parseFloat(v), MIN_SCALE, MAX_SCALE));
+bindPropInput(propRotation, 'rotation', v => parseFloat(v));
+bindPropInput(propDuration, 'duration', v => clamp(parseFloat(v), 10, 5000));
+
+$('btn-center').addEventListener('click', () => {
+  const f = getSelectedFrame(); if (!f) return;
+  f.x = project.stageWidth / 2;
+  f.y = project.stageHeight / 2;
+  syncPropsFromFrame(); renderStage(); markDirty();
+});
+$('btn-fit').addEventListener('click', () => {
+  const f = getSelectedFrame(); if (!f) return;
+  const img = imageCache.get(f.imageId); if (!img) return;
+  const s = Math.min(project.stageWidth / img.width, project.stageHeight / img.height);
+  f.scale = clamp(s, MIN_SCALE, MAX_SCALE);
+  f.x = project.stageWidth / 2;
+  f.y = project.stageHeight / 2;
+  f.rotation = 0;
+  syncPropsFromFrame(); renderStage(); renderStripActive(); markDirty();
+});
+$('btn-delete').addEventListener('click', () => {
+  const f = getSelectedFrame(); if (!f) return;
+  const idx = project.frames.indexOf(f);
+  project.frames.splice(idx, 1);
+  selectFrame(project.frames[Math.min(idx, project.frames.length - 1)]?.id || null);
+  renderStrip(); renderStage(); markDirty();
+});
+
+$('prop-stage-w').addEventListener('input', e => {
+  const v = clamp(parseInt(e.target.value, 10) || 0, 64, 4096);
+  project.stageWidth = v;
+  resizeStage(); renderStage(); markDirty();
+});
+$('prop-stage-h').addEventListener('input', e => {
+  const v = clamp(parseInt(e.target.value, 10) || 0, 64, 4096);
+  project.stageHeight = v;
+  resizeStage(); renderStage(); markDirty();
+});
+
+// ─── Timeline strip (bottom pane) ───────────────────────────────────────
+function renderStrip() {
+  const strip = $('timeline-strip');
+  strip.innerHTML = '';
+  project.frames.forEach((f, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'strip-cell';
+    cell.dataset.id = f.id;
+    if (f.id === selectedFrameId) cell.classList.add('selected');
+
+    // Thumbnail (small canvas, frame composited)
+    const thumbWrap = document.createElement('div');
+    thumbWrap.className = 'strip-thumb';
+    const tcv = document.createElement('canvas');
+    tcv.width = 88; tcv.height = 88;
+    drawThumbnail(tcv, f);
+    thumbWrap.appendChild(tcv);
+
+    const meta = document.createElement('div');
+    meta.className = 'strip-meta';
+    const num = document.createElement('span');
+    num.textContent = `#${i + 1}`;
+    const dur = document.createElement('input');
+    dur.type = 'number';
+    dur.min = '10'; dur.max = '5000'; dur.step = '10';
+    dur.value = Math.round(f.duration);
+    dur.title = 'duration (ms)';
+    dur.addEventListener('click', e => e.stopPropagation());
+    dur.addEventListener('input', () => {
+      const v = clamp(parseInt(dur.value, 10), 10, 5000);
+      if (Number.isFinite(v)) { f.duration = v; markDirty(); if (f.id === selectedFrameId) propDuration.value = v; }
+    });
+    meta.appendChild(num);
+    meta.appendChild(dur);
+
+    const del = document.createElement('button');
+    del.className = 'strip-del';
+    del.textContent = '×';
+    del.title = 'このフレームを削除';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = project.frames.indexOf(f);
+      project.frames.splice(idx, 1);
+      if (f.id === selectedFrameId) {
+        selectFrame(project.frames[Math.min(idx, project.frames.length - 1)]?.id || null);
+      }
+      renderStrip(); renderStage(); markDirty();
+    });
+
+    cell.appendChild(thumbWrap);
+    cell.appendChild(meta);
+    cell.appendChild(del);
+
+    // Click selects (does not drag-reorder unless we move > threshold)
+    cell.draggable = true;
+    cell.addEventListener('click', () => selectFrame(f.id));
+    cell.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/x-koma-frame-id', f.id);
+      e.dataTransfer.effectAllowed = 'move';
+      cell.style.opacity = '0.4';
+    });
+    cell.addEventListener('dragend', () => { cell.style.opacity = ''; });
+    cell.addEventListener('dragover', e => {
+      if (e.dataTransfer.types.includes('text/x-koma-frame-id')) {
+        e.preventDefault();
+        const r = cell.getBoundingClientRect();
+        const before = (e.clientX - r.left) < r.width / 2;
+        cell.classList.toggle('drop-target-before', before);
+        cell.classList.toggle('drop-target-after', !before);
+      }
+    });
+    cell.addEventListener('dragleave', () => {
+      cell.classList.remove('drop-target-before');
+      cell.classList.remove('drop-target-after');
+    });
+    cell.addEventListener('drop', e => {
+      const draggedId = e.dataTransfer.getData('text/x-koma-frame-id');
+      cell.classList.remove('drop-target-before');
+      cell.classList.remove('drop-target-after');
+      if (!draggedId || draggedId === f.id) return;
+      e.preventDefault();
+      const from = project.frames.findIndex(x => x.id === draggedId);
+      if (from < 0) return;
+      const moved = project.frames.splice(from, 1)[0];
+      let to = project.frames.findIndex(x => x.id === f.id);
+      const r = cell.getBoundingClientRect();
+      const before = (e.clientX - r.left) < r.width / 2;
+      if (!before) to += 1;
+      project.frames.splice(to, 0, moved);
+      renderStrip(); markDirty();
+    });
+
+    strip.appendChild(cell);
+  });
+  $('frame-count-label').textContent = `${project.frames.length} frames`;
+  renderStripActive();
+}
+
+function drawThumbnail(canvas, frame) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const img = imageCache.get(frame.imageId);
+  if (!img) {
+    ctx.fillStyle = '#555'; ctx.font = '10px sans-serif';
+    ctx.fillText('(no img)', 4, 14);
+    return;
+  }
+  // Draw the *stage* miniature: fit project.stageWidth × stageHeight into thumb
+  const stageW = project.stageWidth, stageH = project.stageHeight;
+  const s = Math.min(canvas.width / stageW, canvas.height / stageH);
+  ctx.save();
+  ctx.translate((canvas.width  - stageW * s) / 2, (canvas.height - stageH * s) / 2);
+  ctx.scale(s, s);
+  // Clip to stage rect (so we don't draw outside)
+  ctx.beginPath(); ctx.rect(0, 0, stageW, stageH); ctx.clip();
+  ctx.translate(frame.x, frame.y);
+  ctx.rotate(frame.rotation * Math.PI / 180);
+  ctx.scale(frame.scale, frame.scale);
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  ctx.restore();
+}
+
+function renderStripActive() {
+  const strip = $('timeline-strip');
+  if (!strip) return;
+  let activeIdx;
+  if (playback.playing) activeIdx = playback.curIdx;
+  else                  activeIdx = project.frames.findIndex(x => x.id === selectedFrameId);
+  Array.from(strip.children).forEach((cell, i) => {
+    cell.classList.toggle('active',   i === activeIdx);
+    cell.classList.toggle('selected', cell.dataset.id === selectedFrameId);
+  });
+  // Refresh the selected frame's thumbnail (its scale/rot/x/y may have changed)
+  const f = getSelectedFrame();
+  if (f) {
+    const cell = Array.from(strip.children).find(c => c.dataset.id === f.id);
+    if (cell) {
+      const tcv = cell.querySelector('canvas');
+      if (tcv) drawThumbnail(tcv, f);
+      const dur = cell.querySelector('input');
+      if (dur && document.activeElement !== dur) dur.value = Math.round(f.duration);
+    }
+  }
+  // Update now-frame label
+  const total = project.frames.length;
+  const cur = playback.playing ? (playback.curIdx + 1) :
+              (selectedFrameId ? (project.frames.findIndex(x => x.id === selectedFrameId) + 1) : 0);
+  $('now-frame-label').textContent = `${cur} / ${total}`;
+}
+
+// ─── Bottom toolbar buttons ─────────────────────────────────────────────
+$('btn-add').addEventListener('click', () => {
+  const ids = Object.keys(project.images);
+  if (!ids.length) { toast('先に素材を読み込んでください'); return; }
+  const imageId = getSelectedFrame()?.imageId || ids[ids.length - 1];
+  const f = makeFrame(imageId);
+  project.frames.push(f);
+  selectFrame(f.id);
+  renderStrip(); renderStage(); markDirty();
+});
+$('btn-duplicate').addEventListener('click', () => {
+  const cur = getSelectedFrame();
+  if (!cur) { toast('複製元のフレームを選択してください'); return; }
+  const copy = makeFrame(cur.imageId, { x: cur.x, y: cur.y, scale: cur.scale, rotation: cur.rotation, duration: cur.duration });
+  const idx = project.frames.indexOf(cur) + 1;
+  project.frames.splice(idx, 0, copy);
+  selectFrame(copy.id);
+  renderStrip(); renderStage(); markDirty();
+});
+$('btn-carry').addEventListener('click', () => {
+  const last = project.frames[project.frames.length - 1];
+  if (!last) {
+    // No previous frame → fall back to plain add
+    $('btn-add').click();
+    return;
+  }
+  const f = makeFrame(last.imageId, {
+    x: last.x, y: last.y, scale: last.scale, rotation: last.rotation, duration: last.duration,
+  });
+  project.frames.push(f);
+  selectFrame(f.id);
+  renderStrip(); renderStage(); markDirty();
+});
+$('btn-remove').addEventListener('click', () => $('btn-delete').click());
+
+// ─── Top-bar wiring: FPS / loop / playback ──────────────────────────────
+const fpsRange = $('fps-range');
+const fpsLabel = $('fps-label');
+fpsRange.addEventListener('input', () => {
+  const v = parseInt(fpsRange.value, 10);
+  if (Number.isFinite(v) && v >= 1 && v <= 30) {
+    project.fps = v;
+    fpsLabel.textContent = String(v);
+    markDirty();
+  }
+});
+$('btn-loop').addEventListener('click', () => {
+  project.loop = !project.loop;
+  $('btn-loop').classList.toggle('on', project.loop);
+  markDirty();
+});
+$('btn-pingpong').addEventListener('click', () => {
+  project.pingPong = !project.pingPong;
+  $('btn-pingpong').classList.toggle('on', project.pingPong);
+  markDirty();
+});
+$('project-name-input').addEventListener('input', () => {
+  const v = $('project-name-input').value.trim();
+  if (!v) return;
+  project.name = v;
+  project.id   = v.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase() || 'untitled';
+  markDirty();
+});
+
+// ─── Playback ───────────────────────────────────────────────────────────
+// We don't reuse the time-acc Timeline of creature_studio.html verbatim
+// because per-frame `duration` (ms) replaces fixed `framesPerCell` here.
+// Algorithm: setTimeout per frame, honoring `duration` and loop/pingPong.
+const playback = {
+  playing: false,
+  curIdx: 0,
+  direction: 1,   // for pingPong
+  timer: null,
+};
+
+function playbackStart() {
+  if (playback.playing || project.frames.length === 0) return;
+  playback.playing = true;
+  playback.direction = 1;
+  if (playback.curIdx >= project.frames.length) playback.curIdx = 0;
+  $('stage-empty').style.display = 'none';
+  scheduleNext();
+  renderStage();
+  renderStripActive();
+}
+
+function scheduleNext() {
+  if (!playback.playing) return;
+  const f = project.frames[playback.curIdx];
+  if (!f) { playbackStop(); return; }
+  const dur = Math.max(10, f.duration | 0);
+  playback.timer = setTimeout(() => {
+    if (!playback.playing) return;
+    advanceFrame();
+    renderStage();
+    renderStripActive();
+    scheduleNext();
+  }, dur);
+}
+
+function advanceFrame() {
+  const n = project.frames.length;
+  if (n === 0) return;
+  if (project.pingPong) {
+    let next = playback.curIdx + playback.direction;
+    if (next >= n) {
+      // Reverse direction
+      playback.direction = -1;
+      next = Math.max(0, n - 2);
+    } else if (next < 0) {
+      playback.direction = 1;
+      next = Math.min(n - 1, 1);
+      if (!project.loop) { playbackStop(); return; }
+    }
+    playback.curIdx = next;
+  } else {
+    let next = playback.curIdx + 1;
+    if (next >= n) {
+      if (project.loop) next = 0;
+      else { playbackStop(); return; }
+    }
+    playback.curIdx = next;
+  }
+}
+
+function playbackPause() {
+  playback.playing = false;
+  if (playback.timer) { clearTimeout(playback.timer); playback.timer = null; }
+  renderStage();
+  renderStripActive();
+}
+
+function playbackStop() {
+  playbackPause();
+  playback.curIdx = 0;
+  renderStage();
+  renderStripActive();
+}
+
+$('btn-play').addEventListener('click', playbackStart);
+$('btn-pause').addEventListener('click', playbackPause);
+$('btn-stop').addEventListener('click', playbackStop);
+
+// Auto-pause when the tab is hidden (avoid runaway timers)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && playback.playing) playbackPause();
+});
+
+// ─── Save / Load (JSON) ─────────────────────────────────────────────────
+function projectToJSON() {
+  return {
+    ...project,
+    exportedAt: new Date().toISOString(),
+  };
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('btn-save').addEventListener('click', () => {
+  const payload = projectToJSON();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  downloadBlob(blob, `${project.id || 'koma'}-${ts}.json`);
+  toast('💾 プロジェクトを保存しました');
+});
+
+$('btn-open').addEventListener('click', () => $('file-input-json').click());
+$('file-input-json').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result);
+      if (obj.schema !== SCHEMA) {
+        if (!confirm(`schema が一致しません (${obj.schema}). 続行しますか?`)) return;
+      }
+      loadProject(obj);
+      toast('📥 プロジェクトを読み込みました');
+    } catch (err) {
+      alert('JSON 読み込み失敗: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function loadProject(obj) {
+  project = Object.assign(blankProject(), obj);
+  // Defensive: ensure containers
+  project.images = project.images || {};
+  project.frames = project.frames || [];
+  imageCache.clear();
+  decodeAllImages(() => {
+    selectedFrameId = project.frames[0]?.id || null;
+    // Push toolbar state
+    fpsRange.value = project.fps;
+    fpsLabel.textContent = String(project.fps);
+    $('btn-loop').classList.toggle('on', !!project.loop);
+    $('btn-pingpong').classList.toggle('on', !!project.pingPong);
+    $('project-name-input').value = project.name || project.id || '';
+    $('prop-stage-w').value = project.stageWidth;
+    $('prop-stage-h').value = project.stageHeight;
+    resizeStage();
+    renderAssetGrid();
+    renderStrip();
+    renderStage();
+    syncPropsFromFrame();
+  });
+}
+
+// ─── localStorage autosave (every AUTOSAVE_MS, only if dirty) ───────────
+// Pattern adapted from tools/op-layout-editor.html L1561 + L2437-2449.
+function markDirty() { dirty = true; }
+
+function autoSaveTick() {
+  if (!dirty) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projectToJSON()));
+    dirty = false;
+  } catch (e) {
+    // Quota exceeded; show toast at most once per minute
+    console.warn('[koma] autosave failed:', e);
+  }
+}
+setInterval(autoSaveTick, AUTOSAVE_MS);
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const obj = JSON.parse(raw);
+    if (!obj || obj.schema !== SCHEMA) return false;
+    loadProject(obj);
+    return true;
+  } catch (e) {
+    console.warn('[koma] failed to load from localStorage:', e);
+    return false;
+  }
+}
+
+// ─── Export ZIP (manifest.json + frame_NNN.webp) ────────────────────────
+$('btn-export').addEventListener('click', async () => {
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip が読み込まれていません。 ネット接続を確認してください。');
+    return;
+  }
+  if (project.frames.length === 0) {
+    alert('フレームがありません。');
+    return;
+  }
+  toast('📦 エクスポート中…');
+  try {
+    await new Promise(res => decodeAllImages(res));
+    const zip = new JSZip();
+    const manifest = {
+      schema: MANIFEST_SCHEMA,
+      id: project.id,
+      name: project.name,
+      fps: project.fps,
+      loop: project.loop,
+      pingPong: project.pingPong,
+      stageWidth: project.stageWidth,
+      stageHeight: project.stageHeight,
+      frames: [],
+      exportedAt: new Date().toISOString(),
+    };
+    const off = document.createElement('canvas');
+    off.width  = project.stageWidth;
+    off.height = project.stageHeight;
+    const offCtx = off.getContext('2d', { alpha: true });
+    const ext  = project.exportFormat === 'webp' ? 'webp' : 'png';
+    const mime = project.exportFormat === 'webp' ? 'image/webp' : 'image/png';
+    for (let i = 0; i < project.frames.length; i++) {
+      const f = project.frames[i];
+      offCtx.clearRect(0, 0, off.width, off.height);
+      drawFrameOnContext(offCtx, f);
+      // toBlob is async; wrap in promise
+      const blob = await new Promise(res => off.toBlob(res, mime, project.exportQuality));
+      if (!blob) throw new Error(`frame ${i+1} toBlob failed`);
+      const name = `frame_${String(i+1).padStart(3, '0')}.${ext}`;
+      zip.file(name, blob);
+      manifest.frames.push({ file: name, duration: Math.round(f.duration) });
+    }
+    zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(blob, `${project.id || 'koma'}.zip`);
+    toast('📦 エクスポート完了');
+  } catch (err) {
+    console.error('[koma] export failed:', err);
+    alert('エクスポート失敗: ' + err.message);
+  }
+});
+
+// ─── Keyboard shortcuts ─────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  if (e.code === 'Space')      { e.preventDefault(); playback.playing ? playbackPause() : playbackStart(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedFrameId) { e.preventDefault(); $('btn-delete').click(); }
+  }
+  else if (e.key === 'ArrowLeft')  { stepFrame(-1); }
+  else if (e.key === 'ArrowRight') { stepFrame( 1); }
+});
+
+function stepFrame(delta) {
+  if (project.frames.length === 0) return;
+  const cur = project.frames.findIndex(x => x.id === selectedFrameId);
+  let next = (cur < 0 ? 0 : cur + delta);
+  next = clamp(next, 0, project.frames.length - 1);
+  selectFrame(project.frames[next].id);
+}
+
+// ─── Resize observer (window resize → re-fit stage) ─────────────────────
+window.addEventListener('resize', () => {
+  resizeStage();
+  renderStage();
+});
+
+// ─── Boot ───────────────────────────────────────────────────────────────
+(function boot() {
+  resizeStage();
+  if (!loadFromLocalStorage()) {
+    // Fresh start
+    renderAssetGrid();
+    renderStrip();
+    renderStage();
+    syncPropsFromFrame();
+  }
+  // Debug hook
+  window.__komaEditor = {
+    get project() { return project; },
+    get selected() { return getSelectedFrame(); },
+    blankProject,
+    loadProject,
+  };
+  console.log('[koma] editor ready. Storage key:', STORAGE_KEY);
+})();
+
+})();
+</script>
+</body>
+</html>

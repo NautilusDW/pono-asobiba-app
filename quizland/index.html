@@ -13,6 +13,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
+<script src="../js/animation-player.js"></script>
 <script src="./data/questions.js"></script>
 <!-- Layout system (Phase A+B): saved-layout.json applier (always loaded).
      Editor (drag/resize/save) は ?edit=1 のときだけ自動で遅延ロード。 -->
@@ -4630,27 +4631,65 @@ function stopStagePono() {
 //   2.5 秒間 dance_hooray.webp を表示、 その後通常のローテーションを再開する。
 //   stage-pono が表示中 (= !has-trivia-pono) でないと意味がないので存在チェック。
 let _stagePonoHoorayTimer = null;
-function playStagePonoHooray() {
+let _stagePonoHoorayAnimHandle = null;
+async function playStagePonoHooray() {
   const imgEl = document.getElementById('stage-pono-img');
   if (!imgEl) return;
   // trivia 中央ポノ表示中は左下ポノは hidden なのでスキップ
   if (document.body.classList.contains('has-trivia-pono')) return;
   // flip-book を一旦停止して hooray ポーズに固定
   if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
-  imgEl.src = '../assets/images/characters/pono/dance/dance_hooray.webp';
-  // 全身画像をバストショット化するため is-hooray クラスを付与 (CSS で transform: scale)
   const stagePono = document.getElementById('stage-pono');
-  if (stagePono) stagePono.classList.add('is-hooray');
-  clearTimeout(_stagePonoHoorayTimer);
-  _stagePonoHoorayTimer = setTimeout(function() {
-    // hooray 表示が終わったらクロップ解除 → 通常 flip-book を再開
-    if (stagePono) stagePono.classList.remove('is-hooray');
+
+  // 通常 flip-book を再開する共通処理
+  const resumeFlipBook = function () {
     if (!_stagePonoStarted) return;
     if (_stagePonoPoseInterval) return; // 既に再開済
     _stagePonoPoseInterval = setInterval(function() {
       _stagePonoPoseIdx = (_stagePonoPoseIdx + 1) % TRIVIA_POSES.length;
       imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_stagePonoPoseIdx];
     }, STAGE_PONO_POSE_INTERVAL_MS);
+  };
+
+  // 多重発火対策: 前回の anim handle / timer を破棄
+  if (_stagePonoHoorayAnimHandle && typeof _stagePonoHoorayAnimHandle.stop === 'function') {
+    _stagePonoHoorayAnimHandle.stop();
+    _stagePonoHoorayAnimHandle = null;
+  }
+  clearTimeout(_stagePonoHoorayTimer);
+
+  // ★新経路: manifest があれば AnimationPlayer で再生
+  let handle = null;
+  if (window.AnimationPlayer && typeof window.AnimationPlayer.play === 'function') {
+    try {
+      handle = await window.AnimationPlayer.play(imgEl, 'pono-banzai-bust', {
+        onComplete: function () {
+          _stagePonoHoorayAnimHandle = null;
+          if (stagePono) stagePono.classList.remove('is-hooray');
+          resumeFlipBook();
+        }
+      });
+    } catch (e) {
+      handle = null;
+    }
+  }
+
+  if (handle) {
+    // 新経路: AnimationPlayer に再生を委譲。 onComplete で flip-book 再開する
+    _stagePonoHoorayAnimHandle = handle;
+    // バストショット化 CSS は新経路でも継続適用 (= バナナ素材以前と同じ見た目)
+    if (stagePono) stagePono.classList.add('is-hooray');
+    return;
+  }
+
+  // ★既存経路 fallback: manifest 無し / 失敗 → 旧 dance_hooray.webp + CSS crop
+  imgEl.src = '../assets/images/characters/pono/dance/dance_hooray.webp';
+  // 全身画像をバストショット化するため is-hooray クラスを付与 (CSS で transform: scale)
+  if (stagePono) stagePono.classList.add('is-hooray');
+  _stagePonoHoorayTimer = setTimeout(function() {
+    // hooray 表示が終わったらクロップ解除 → 通常 flip-book を再開
+    if (stagePono) stagePono.classList.remove('is-hooray');
+    resumeFlipBook();
   }, 2500);
 }
 
