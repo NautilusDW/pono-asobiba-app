@@ -1607,7 +1607,15 @@
     else if (op.type === 'show') op.el.classList.remove('user-hidden');
     else if (op.type === 'text') op.el.textContent = op.after;
     else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
-    else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.after; }
+    else if (op.type === 'bg-image-swap') {
+      op.el.style.backgroundImage = op.after;
+      // 2026-05-13 fix (userbox save bug): dataset.bgImage を redo 値で揃える。
+      //   旧 history (afterDataset 未保持) は touch しない (前回挙動維持)。
+      if (op.el.dataset && Object.prototype.hasOwnProperty.call(op, 'afterDataset')) {
+        if (op.afterDataset) op.el.dataset.bgImage = op.afterDataset;
+        else delete op.el.dataset.bgImage;
+      }
+    }
     // sw v952: 外部 (ZK 投資画面エディタ等) から登録された任意の undo/redo 可能 op。
     //   { type: 'zk-custom', _undo: fn, _redo: fn, _label: string } 形式。
     //   既存 op type には影響しない (zk-custom は pushHistory を外部から呼んだ時だけ流入)。
@@ -1676,7 +1684,15 @@
     else if (op.type === 'show') op.el.classList.add('user-hidden');
     else if (op.type === 'text') op.el.textContent = op.before;
     else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
-    else if (op.type === 'bg-image-swap') { op.el.style.backgroundImage = op.before; }
+    else if (op.type === 'bg-image-swap') {
+      op.el.style.backgroundImage = op.before;
+      // 2026-05-13 fix (userbox save bug): dataset.bgImage を before 値で復元。
+      //   旧 history (beforeDataset 未保持) は touch しない (前回挙動維持)。
+      if (op.el.dataset && Object.prototype.hasOwnProperty.call(op, 'beforeDataset')) {
+        if (op.beforeDataset) op.el.dataset.bgImage = op.beforeDataset;
+        else delete op.el.dataset.bgImage;
+      }
+    }
     // sw v952: 外部 (ZK 投資画面エディタ等) から登録された任意の undo/redo 可能 op の inverse。
     else if (op.type === 'zk-custom') {
       if (typeof op._undo === 'function') {
@@ -6554,6 +6570,11 @@
   function _isPersistedReplaceTarget(el) {
     if (!el) return false;
     if (el.classList && el.classList.contains('le-dropped-img')) return true;
+    // 2026-05-13 fix (userbox save bug): userbox 自身も saved-layout.json の
+    //   __userboxes[].bgImage 経由で永続化される (= プレビューのみではない)。
+    //   旧コードでは userbox が除外されており、 ユーザーに「ページ再読み込みで戻ります」
+    //   と誤った警告が出ていた。
+    if (el.classList && el.classList.contains('userbox')) return true;
     var p = el.parentNode;
     if (p && p.classList && p.classList.contains('le-dropped-img')) return true;
     return false;
@@ -6789,8 +6810,24 @@
     }
     var newBg = 'url("' + newSrc + '")';
     if (current === newBg) return true;
+    // 2026-05-13 fix (userbox save bug): userbox は dataset.bgImage を saved-layout.json
+    //   に persist する設計。 style.backgroundImage しか更新しないと collectUserboxes が
+    //   旧/空の dataset.bgImage を拾い、 「保存しても画像が部分的にしか反映されない」
+    //   症状になる。 dataset.bgImage を style と一緒に同期する。 undo/redo も併せて保持。
+    var beforeDataset = el.dataset && el.dataset.bgImage ? el.dataset.bgImage : '';
     el.style.backgroundImage = newBg;
-    pushHistory({ type: 'bg-image-swap', el: el, before: current, after: newBg });
+    if (el.dataset) {
+      if (newSrc) el.dataset.bgImage = newSrc;
+      else delete el.dataset.bgImage;
+    }
+    pushHistory({
+      type: 'bg-image-swap',
+      el: el,
+      before: current,
+      after: newBg,
+      beforeDataset: beforeDataset,
+      afterDataset: newSrc || '',
+    });
     return true;
   }
 
