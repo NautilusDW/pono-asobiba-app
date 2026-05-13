@@ -306,6 +306,34 @@
   body.mask-mode #stage-canvas,
   body.mask-mode #overlay-canvas { cursor: crosshair; }
 
+  /* === Global mask section (right pane) ================================== */
+  #global-mask-section .mask-list {
+    max-height: 200px; overflow-y: auto;
+    margin-top: 6px;
+    border: 1px solid #2e3340; border-radius: 4px;
+    background: #1a1d24;
+  }
+  #global-mask-section .mask-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    border-bottom: 1px solid #2a2f3a;
+  }
+  #global-mask-section .mask-row:last-child { border-bottom: 0; }
+  #global-mask-section .mask-row .mask-label { flex: 1; color: #d9c47a; }
+  #global-mask-section .mask-row .mask-del {
+    background: transparent; border: 0; color: #aaa;
+    padding: 0 4px; cursor: pointer; font-size: 12px;
+  }
+  #global-mask-section .mask-row .mask-del:hover { color: #ff7777; }
+  #global-mask-section .mask-empty {
+    font-size: 11px; color: #6c7383; padding: 6px; text-align: center;
+  }
+  #global-mask-mode-toggle.on { background: #b88820; border-color: #e6b347; color: #1a1d24; }
+  /* Global mask drag visual */
+  body.global-mask-mode #stage-canvas,
+  body.global-mask-mode #overlay-canvas { cursor: crosshair; }
+
   /* === Toast ============================================================ */
   #toast {
     position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
@@ -426,10 +454,16 @@
       <button id="btn-delete"    class="danger" style="width:100%;">🗑 このフレームを削除</button>
     </div>
     <div class="prop-section" id="mask-section">
-      <div class="section-title">🎭 マスク</div>
+      <div class="section-title">🎭 個別マスク (このコマだけ)</div>
       <button id="mask-mode-toggle" class="toggle" style="width:100%;margin-bottom:4px;" title="マスクモード ON 時、ステージで drag → 矩形マスク追加">マスクモード OFF</button>
       <div class="prop-help">ON 時にステージで drag → 矩形領域を alpha 0 化 (= 透明マスク)。 入力画像座標で保存。 rotation=0 推奨 (Phase 4 で改善)</div>
       <div id="mask-list" class="mask-list"></div>
+    </div>
+    <div class="prop-section" id="global-mask-section">
+      <div class="section-title">🌐 全コマ共通マスク (全フレーム)</div>
+      <button id="global-mask-mode-toggle" class="toggle" style="width:100%;margin-bottom:4px;" title="ON 時、ステージで drag → 全フレーム共通マスク追加 (ステージ座標)">共通マスクモード OFF</button>
+      <div class="prop-help">ON 時にステージで drag → ステージ座標の矩形を全フレームから穴抜き (= ctx.clip evenodd で実装、 高速)。 個別マスクとモード排他。</div>
+      <div id="global-mask-list" class="mask-list"></div>
     </div>
     <div class="prop-section">
       <div class="section-title">ステージ</div>
@@ -563,6 +597,9 @@ function blankProject() {
     images: {}, // imageId → {name, dataUrl, width, height}
     stockImages: {}, // stockId → {name, dataUrl, width, height} - 調整済み素材
     frames: [], // see makeFrame()
+    // 全フレーム共通マスク (= ステージ座標、 個別 frame.maskRects とは独立)
+    // 描画時に ctx.clip('evenodd') で穴抜き → getImageData 不要、 全 frame に同じ穴
+    globalMaskRects: [], // [{x, y, w, h}] in stage coords
     exportedAt: '',
   };
 }
@@ -1030,6 +1067,21 @@ function drawFrameOnContext(ctx, frame, opts = {}) {
   const img = imageCache.get(frame.imageId);
   if (!img) return;
   ctx.save();
+
+  // 全フレーム共通マスク (= ステージ座標、 frame transform 前に clip 設定)
+  // evenodd で 「stage 全体矩形 - 穴矩形」 を内側にすることで穴抜きを実現。
+  // getImageData 不要なので個別マスクより高速 + scale/rotation の影響を受けない。
+  const gMasks = (project.globalMaskRects && project.globalMaskRects.length > 0)
+    ? project.globalMaskRects : null;
+  if (gMasks) {
+    ctx.beginPath();
+    ctx.rect(0, 0, project.stageWidth, project.stageHeight);
+    for (const r of gMasks) {
+      ctx.rect(r.x, r.y, r.w, r.h);
+    }
+    ctx.clip('evenodd');
+  }
+
   ctx.translate(frame.x, frame.y);
   ctx.rotate(frame.rotation * Math.PI / 180);
   ctx.scale(frame.scale, frame.scale);
@@ -1177,6 +1229,41 @@ function renderOverlay() {
   // Guides are drawn first so the selection box / handles stay on top.
   drawGuides(overlayCtx, project.stageWidth, project.stageHeight);
 
+  // 全フレーム共通マスク (= ステージ座標、 frame に依存しないので常時表示)
+  // 黄色半透明 + 「全」 ラベルで個別マスク (赤) と区別。
+  const gMasks = project.globalMaskRects || [];
+  if (gMasks.length > 0 || (activeOp && activeOp.kind === 'global-mask-draw' && activeOp.cur)) {
+    overlayCtx.save();
+    overlayCtx.fillStyle = 'rgba(255, 210, 80, 0.22)';
+    overlayCtx.strokeStyle = 'rgba(255, 220, 100, 0.95)';
+    overlayCtx.lineWidth = 2 / viewScale;
+    overlayCtx.setLineDash([6 / viewScale, 3 / viewScale]);
+    for (const r of gMasks) {
+      overlayCtx.fillRect(r.x, r.y, r.w, r.h);
+      overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+    }
+    overlayCtx.setLineDash([]);
+    // ラベル 「全」 (= 各矩形の左上)
+    overlayCtx.fillStyle = 'rgba(255, 220, 100, 0.95)';
+    overlayCtx.font = `${Math.max(14, 18 / viewScale)}px sans-serif`;
+    overlayCtx.textBaseline = 'top';
+    for (const r of gMasks) {
+      overlayCtx.fillText('全', r.x + 4 / viewScale, r.y + 4 / viewScale);
+    }
+    // Live global mask drag preview
+    if (activeOp && activeOp.kind === 'global-mask-draw' && activeOp.cur) {
+      const r = activeOp.cur;
+      overlayCtx.fillStyle = 'rgba(255, 180, 60, 0.30)';
+      overlayCtx.strokeStyle = 'rgba(255, 200, 80, 1)';
+      overlayCtx.lineWidth = 2 / viewScale;
+      overlayCtx.setLineDash([6 / viewScale, 3 / viewScale]);
+      overlayCtx.fillRect(r.x, r.y, r.w, r.h);
+      overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+      overlayCtx.setLineDash([]);
+    }
+    overlayCtx.restore();
+  }
+
   const f = getSelectedFrame();
   if (!f) return;
   const img = imageCache.get(f.imageId);
@@ -1323,6 +1410,23 @@ function onStagePointerDown(e) {
   if (e.button !== 0) return;
   const { sx, sy } = clientToStage(e.clientX, e.clientY);
 
+  // Global mask mode: drag → rect in stage coords (= shared across all frames).
+  // No frame selection needed since masks live on project.globalMaskRects.
+  if (typeof _globalMaskMode !== 'undefined' && _globalMaskMode) {
+    e.preventDefault();
+    stageWrap.setPointerCapture && stageWrap.setPointerCapture(e.pointerId);
+    activeOp = {
+      pointerId: e.pointerId,
+      kind: 'global-mask-draw',
+      start: { sx, sy },
+      cur: { x: sx, y: sy, w: 0, h: 0 },
+    };
+    window.addEventListener('pointermove', onStagePointerMove);
+    window.addEventListener('pointerup',   onStagePointerUp);
+    window.addEventListener('pointercancel', onStagePointerUp);
+    return;
+  }
+
   // Mask mode: drag → maskRect on the selected frame's input-image coords.
   // Falls back to normal hit-test if no frame selected or image not loaded.
   if (_maskMode) {
@@ -1409,9 +1513,21 @@ function _stageToFrameLocal(sx, sy, frame, img) {
 
 function onStagePointerMove(e) {
   if (!activeOp) return;
+  const { sx, sy } = clientToStage(e.clientX, e.clientY);
+
+  // Global mask drag: stage coords, frame-agnostic.
+  if (activeOp.kind === 'global-mask-draw') {
+    const x0 = Math.min(activeOp.start.sx, sx);
+    const y0 = Math.min(activeOp.start.sy, sy);
+    const w  = Math.abs(sx - activeOp.start.sx);
+    const h  = Math.abs(sy - activeOp.start.sy);
+    activeOp.cur = { x: x0, y: y0, w, h };
+    renderOverlay();
+    return;
+  }
+
   const f = getSelectedFrame();
   if (!f) return;
-  const { sx, sy } = clientToStage(e.clientX, e.clientY);
   const dx = sx - activeOp.start.sx;
   const dy = sy - activeOp.start.sy;
 
@@ -1506,6 +1622,30 @@ function onStagePointerUp(e) {
       markDirty();
       snapshotForUndo('マスク追加');
       toast('🎭 マスク追加');
+    } else {
+      renderStage(); // clear the live preview
+    }
+    return;
+  }
+
+  if (opKind === 'global-mask-draw') {
+    const cur = activeOp.cur;
+    activeOp = null;
+    // Min-size guard: ignore tiny accidental clicks (< 4px in stage coords)
+    if (cur && cur.w >= 4 && cur.h >= 4) {
+      project.globalMaskRects = project.globalMaskRects || [];
+      project.globalMaskRects.push({
+        x: Math.round(cur.x),
+        y: Math.round(cur.y),
+        w: Math.round(cur.w),
+        h: Math.round(cur.h),
+      });
+      renderStage();
+      renderStripActive();
+      if (typeof renderGlobalMaskList === 'function') renderGlobalMaskList();
+      markDirty();
+      snapshotForUndo('共通マスク追加');
+      toast('🌐 共通マスク追加');
     } else {
       renderStage(); // clear the live preview
     }
@@ -2011,6 +2151,7 @@ function loadProject(obj) {
   project.images = project.images || {};
   project.stockImages = project.stockImages || {};
   project.frames = project.frames || [];
+  project.globalMaskRects = project.globalMaskRects || [];
   imageCache.clear();
   decodeAllImages(() => {
     selectedFrameId = project.frames[0]?.id || null;
@@ -2028,6 +2169,7 @@ function loadProject(obj) {
     renderStrip();
     renderStage();
     syncPropsFromFrame();
+    if (typeof renderGlobalMaskList === 'function') renderGlobalMaskList();
     // Reset undo history to this freshly-loaded project state.
     _undoStack.length = 0;
     _redoStack.length = 0;
@@ -2134,6 +2276,8 @@ function snapshotForUndo(label) {
   if (_undoSuspended) return;
   const snap = {
     frames: JSON.parse(JSON.stringify(project.frames)),
+    // 全フレーム共通マスクも undo 対象 (= 個別 frames と独立)
+    globalMaskRects: JSON.parse(JSON.stringify(project.globalMaskRects || [])),
     selectedFrameId: selectedFrameId,
     label: label || '',
     timestamp: Date.now(),
@@ -2148,12 +2292,17 @@ function restoreSnapshot(snap) {
   _undoSuspended = true;
   try {
     project.frames = JSON.parse(JSON.stringify(snap.frames));
+    // 全フレーム共通マスクも復元 (= 旧スナップショットには無いので fallback)
+    project.globalMaskRects = snap.globalMaskRects
+      ? JSON.parse(JSON.stringify(snap.globalMaskRects))
+      : [];
     // selectedFrameId only valid if still present in restored frames
     const exists = project.frames.some(f => f.id === snap.selectedFrameId);
     selectedFrameId = exists ? snap.selectedFrameId : (project.frames[0]?.id || null);
     renderStrip();
     renderStage();
     syncPropsFromFrame();
+    if (typeof renderGlobalMaskList === 'function') renderGlobalMaskList();
     markDirty();
   } finally {
     _undoSuspended = false;
@@ -2346,6 +2495,16 @@ let _maskMode = false;
 
 function setMaskMode(on) {
   _maskMode = !!on;
+  // 排他: 共通マスクモードが ON なら OFF にする (forward declaration safe)
+  if (_maskMode && typeof _globalMaskMode !== 'undefined' && _globalMaskMode) {
+    _globalMaskMode = false;
+    const gbtn = document.getElementById('global-mask-mode-toggle');
+    if (gbtn) {
+      gbtn.classList.remove('on');
+      gbtn.textContent = '共通マスクモード OFF';
+    }
+    document.body.classList.remove('global-mask-mode');
+  }
   const btn = $('mask-mode-toggle');
   if (btn) {
     btn.classList.toggle('on', _maskMode);
@@ -2406,6 +2565,69 @@ function initMaskUI() {
   // existing call sites via a public function.
   window.__komaRenderMaskList = renderMaskList; // for tests / future hooks
   renderMaskList();
+}
+
+// ─── Global mask mode (all-frames common mask) ──────────────────────────
+// State: _globalMaskMode (bool) — ON 時にステージで drag → project.globalMaskRects に push。
+// 矩形はステージ座標 (= 全 frame 共通) で保存。 描画は drawFrameOnContext の
+// ctx.clip('evenodd') で frame 描画前に穴抜き → frame の transform に影響されない。
+// 個別マスクとモード排他 (= 一方 ON で他方 OFF)。
+let _globalMaskMode = false;
+
+function setGlobalMaskMode(on) {
+  _globalMaskMode = !!on;
+  // 排他: 個別マスクが ON なら OFF にする
+  if (_globalMaskMode && _maskMode) {
+    setMaskMode(false);
+  }
+  const btn = $('global-mask-mode-toggle');
+  if (btn) {
+    btn.classList.toggle('on', _globalMaskMode);
+    btn.textContent = _globalMaskMode ? '共通マスクモード ON' : '共通マスクモード OFF';
+  }
+  document.body.classList.toggle('global-mask-mode', _globalMaskMode);
+  renderOverlay();
+}
+
+function renderGlobalMaskList() {
+  const host = $('global-mask-list');
+  if (!host) return;
+  host.innerHTML = '';
+  const masks = project.globalMaskRects || [];
+  if (masks.length === 0) {
+    host.innerHTML = '<div class="mask-empty">共通マスクなし</div>';
+    return;
+  }
+  masks.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'mask-row';
+    const label = document.createElement('div');
+    label.className = 'mask-label';
+    label.textContent = `#${i + 1}  (${Math.round(r.x)},${Math.round(r.y)}) ${Math.round(r.w)}×${Math.round(r.h)}`;
+    const del = document.createElement('button');
+    del.className = 'mask-del';
+    del.textContent = '×';
+    del.title = 'この共通マスクを削除';
+    del.addEventListener('click', () => {
+      project.globalMaskRects.splice(i, 1);
+      renderStage();
+      renderStripActive();
+      renderGlobalMaskList();
+      markDirty();
+      snapshotForUndo('共通マスク削除');
+      toast('🌐 共通マスク削除');
+    });
+    row.appendChild(label);
+    row.appendChild(del);
+    host.appendChild(row);
+  });
+}
+
+function initGlobalMaskUI() {
+  const btn = $('global-mask-mode-toggle');
+  if (btn) btn.addEventListener('click', () => setGlobalMaskMode(!_globalMaskMode));
+  window.__komaRenderGlobalMaskList = renderGlobalMaskList;
+  renderGlobalMaskList();
 }
 
 // ─── Project manager (IndexedDB via idb-keyval) ─────────────────────────
@@ -2738,8 +2960,10 @@ window.addEventListener('resize', () => {
 
   // Mask UI
   initMaskUI();
+  initGlobalMaskUI();
   _lastMaskListFrameId = selectedFrameId;
   renderMaskList();
+  renderGlobalMaskList();
 
   // Debug hook
   window.__komaEditor = {
@@ -2753,6 +2977,8 @@ window.addEventListener('resize', () => {
     deleteProjectFromDb,
     get maskMode() { return _maskMode; },
     setMaskMode,
+    get globalMaskMode() { return _globalMaskMode; },
+    setGlobalMaskMode,
   };
   console.log('[koma] editor ready. Storage key:', STORAGE_KEY);
 })();

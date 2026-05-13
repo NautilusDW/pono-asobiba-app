@@ -48,9 +48,18 @@ d:\AppDevelopment\pono-asobiba-app\assets\animations\<animId>\
 - 上部 Top Bar の📐ガイド トグル 4 つ、 localStorage 保存
 
 ### マスク
-- 右ペイン「🎭 マスク」 セクション、 モード ON/OFF
+- 右ペイン「🎭 個別マスク」 セクション (= このコマだけ)、 モード ON/OFF
 - ON 時にステージ drag で frame.maskRects に矩形追加 (= 入力画像座標、 rotation/scale 補正済)
 - 描画時に一時 canvas で alpha 0 化 → 元 frame に焼き付け
+- 矩形一覧 + 個別 × 削除
+
+### 全コマ共通マスク (= 2026-05-13 追加)
+- 右ペイン「🌐 全コマ共通マスク」 セクション、 モード ON/OFF
+- ON 時にステージ drag で `project.globalMaskRects` に矩形追加 (= ステージ座標、 全 frame 共通)
+- 描画時に `ctx.clip('evenodd')` で frame 描画前に穴抜き (= getImageData 不要、 高速、 scale/rotation の影響なし)
+- 個別マスクモードと排他 (= 一方 ON で他方 OFF)
+- overlay は黄色半透明 + 「全」 ラベル (個別=赤、 共通=黄)
+- snapshotForUndo は `frames` + `globalMaskRects` を両方スナップショット (= 旧スナップショットは fallback で `[]`)
 - 矩形一覧 + 個別 × 削除
 
 ### プロジェクト管理

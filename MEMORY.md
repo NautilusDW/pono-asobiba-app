@@ -126,6 +126,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-13T11:00:14Z - koma-wari-editor.html に全フレーム共通マスクモード (globalMaskRects + ctx.clip evenodd) 追加
+- **タスク**: koma-wari-editor.html に全フレーム共通マスクモード (globalMaskRects + ctx.clip evenodd) 追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 227
+- **エラー数**: 24
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 48, "Read": 60, "Grep": 44, "ToolSearch": 3, "Write": 1, "ExitPlanMode": 1, "Bash": 69, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-13T10:08:13Z - koma-wari-editor の状態を memory に記録 + MEMORY.md インデックス追加 + docs-skip-once 配置 + commit/push
 - **タスク**: koma-wari-editor の状態を memory に記録 + MEMORY.md インデックス追加 + docs-skip-once 配置 + commit/push
 - **結果**: 成功
@@ -227,19 +240,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 151, "ToolSearch": 1, "Grep": 1, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-13T07:45:42Z - Phase 1a: tools/koma-wari-editor.html MVP (5-pane editor + drag/scale/rotate + timeline strip + WebP ZIP export)
-- **タスク**: Phase 1a: tools/koma-wari-editor.html MVP (5-pane editor + drag/scale/rotate + timeline strip + WebP ZIP export)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 191
-- **エラー数**: 15
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 149, "ToolSearch": 1, "Grep": 1, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
