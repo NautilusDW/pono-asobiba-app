@@ -1216,6 +1216,38 @@ body.layout-editor-on .stage-pono { display: none; }
   gap: 16px;
   width: 100%;
 }
+/* 4 択中央のスピーカーボタン: 2x2 grid のちょうど中央 (.answer-tray は position: relative)。
+   60px サイズ、 木目アイコンを白丸の上に乗せて視認性を確保。 上に乗るので z-index で chip より上。
+   読み上げ中は .reading で軽く拡大 + 不透明度低下し、 連打を抑止する (pointer-events:none)。 */
+.answer-speaker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fffdf3 0%, #f3e3b8 70%, #d9bf86 100%);
+  border: 3px solid var(--wood-dark, #6b4421);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(0,0,0,0.15);
+  padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 6;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.answer-speaker img { width: 70%; height: 70%; display: block; pointer-events: none; }
+.answer-speaker:hover, .answer-speaker:focus-visible { transform: translate(-50%, -50%) scale(1.08); }
+.answer-speaker:active { transform: translate(-50%, -50%) scale(0.94); }
+.answer-speaker.reading { pointer-events: none; opacity: 0.85; }
+/* 順次読み上げ時に各 chip を「押した状態」風にハイライト (色付き枠 + 軽い縮小)。
+   sheet-on モード (pressed 画像) でも被らないように、 box-shadow ベースで主張する。 */
+.chip.reading-active {
+  transform: scale(0.96);
+  box-shadow: 0 0 0 5px #ffcf6b, 0 6px 16px rgba(0,0,0,0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
 .bottom-right {
   display: flex;
   align-items: center;
@@ -1435,11 +1467,10 @@ body.layout-editor-on .chip-illust-wrap {
   position: relative;
   width: 280px;
   height: 112px; /* aspect-ratio 未対応 browser 用 fallback (280 * 793/1983 ≈ 112) */
-  aspect-ratio: 1983 / 793 !important; /* balloon_temp.png 元画像比 */
+  aspect-ratio: 1983 / 793; /* balloon_temp.png 元画像比 (S4: !important 削除, layout-editor で aspect-ratio:auto に解除可) */
   min-width: 0 !important;
   min-height: 0 !important;
-  max-width: 280px;
-  max-height: 112px;
+  /* S4 修正: max-width / max-height を完全削除 (= inline width/height の上限を取り去る) */
   background-image: url('../assets/images/quizland/balloons/balloon_temp.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1717,27 +1748,66 @@ body.layout-editor-on .character img {
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(120, 83, 20, 0.25));
 }
-/* ===== Perfect (5/5 全問正解) 専用 演出 (2026-05-12) =====
+/* ===== Perfect (5/5 全問正解) 専用 演出 (2026-05-12 R3 リデザイン) =====
    背景: 図書室で踊るポノとフクロウ博士+リス。
-   スタンプは「ドン！」と押されるような impact アニメーションで大きく出現。 */
+   スタンプは「ドカン！」 と画面中央に巨大表示 (= 2x size + drop-shadow + 黄色光彩)。
+   modal カードは透明化し、 ボタンは画面下部に配置。 */
 .overlay.is-perfect {
   background:
     linear-gradient(rgba(93,78,55,0.32), rgba(93,78,55,0.42)),
     url('../assets/images/quizland/stamp-bg/stamp_bg.png') center/cover no-repeat;
   backdrop-filter: blur(2px);
+  /* スタンプを中央、 ボタンを下部に配置するため flex-column + space-between */
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5vh 20px 6vh;
 }
+/* modal カード (白い角丸長方形) を透明化して背景画像を活かす */
 .overlay.is-perfect .modal {
-  background: rgba(255, 252, 240, 0.92);
-  box-shadow: 0 18px 50px rgba(80, 50, 10, 0.45),
-              0 0 0 6px rgba(255, 222, 120, 0.55);
-  position: relative;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  gap: 18px;
+  /* modal 内部の縦並びは維持しつつ、 全体を flex で「スタンプ上・ボタン下」 に展開 */
+  flex: 1;
+  justify-content: space-between;
   overflow: visible;
 }
-/* Perfect 時はスタンプ画像をさらに大きく表示 */
+/* Perfect 時はスタンプを 2 倍 (320 → 640px)、 中央ドカン配置 + ドロップシャドウ + 黄色光彩 */
 .overlay.is-perfect .result-stamp-img {
-  width: 320px;
-  height: 320px;
-  filter: drop-shadow(0 10px 22px rgba(120, 60, 20, 0.45));
+  width: min(80vh, 640px);
+  height: min(80vh, 640px);
+  max-width: 90vw;
+  filter:
+    drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45))
+    drop-shadow(0 0 40px rgba(255, 220, 100, 0.85))
+    drop-shadow(0 0 14px rgba(255, 200, 60, 0.7));
+}
+/* 「クリア！」 / 「N もんちゅう N もん せいかい！」 を背景透けでも読めるよう強化 */
+.overlay.is-perfect .modal-title,
+.overlay.is-perfect .modal-msg {
+  color: #fff;
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.7),
+    0 0 14px rgba(120, 60, 20, 0.8),
+    0 0 24px rgba(0, 0, 0, 0.55);
+  -webkit-text-fill-color: #fff;
+  background: none;
+}
+.overlay.is-perfect .modal-title { font-size: 2rem; }
+.overlay.is-perfect .modal-msg   { font-size: 1.15rem; }
+/* ボタン群は modal の末尾にあるためフロー下端に集約される。 視認性のため影を強化 */
+.overlay.is-perfect .modal-btn {
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(245, 158, 11, 0.55);
+}
+.overlay.is-perfect .modal-back {
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
 }
 /* スタンプ「押す」インパクトアニメーション (回転+スケール+わずかな揺れ) */
 @keyframes stampImpact {
@@ -1757,20 +1827,24 @@ body.layout-editor-on .character img {
   animation: stampImpact 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: center center;
 }
-/* スタンプ周囲のリング (modal-icon を relative にして ::after で重ねる) */
+/* スタンプエリア (modal-icon) は modal 内で上半分をドカンと占有、 リングを中央に重ねる */
 .overlay.is-perfect .modal-icon {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0; /* 既存 emoji が混入しても影響しないよう */
+  flex: 1;
+  width: 100%;
 }
 .overlay.is-perfect .modal-icon::after {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
-  width: 320px;
-  height: 320px;
-  border: 6px solid rgba(220, 60, 50, 0.55);
+  width: min(80vh, 640px);
+  height: min(80vh, 640px);
+  max-width: 90vw;
+  border: 8px solid rgba(220, 60, 50, 0.55);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0.6);
   opacity: 0;
@@ -1780,8 +1854,17 @@ body.layout-editor-on .character img {
   animation: stampRingPulse 0.9s ease-out 0.12s both;
 }
 @media (max-width: 768px) {
-  .overlay.is-perfect .result-stamp-img { width: 240px; height: 240px; }
-  .overlay.is-perfect .modal-icon::after { width: 240px; height: 240px; }
+  .overlay.is-perfect { padding: 3vh 16px 4vh; }
+  .overlay.is-perfect .result-stamp-img {
+    width: min(80vw, 480px);
+    height: min(80vw, 480px);
+  }
+  .overlay.is-perfect .modal-icon::after {
+    width: min(80vw, 480px);
+    height: min(80vw, 480px);
+  }
+  .overlay.is-perfect .modal-title { font-size: 1.6rem; }
+  .overlay.is-perfect .modal-msg   { font-size: 1rem; }
 }
 /* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に、 320→960 に拡大 2026-05-06) */
 .seikai-stamp {
@@ -1982,14 +2065,12 @@ body.layout-editor-on .character img {
   .chip { width: 216px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
   .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (14:9 帯では 260×104) */
+  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (14:9 帯では 260×104)
+     S4 修正: !important / max-* / transform を削除、 inline width/height/transform を活かす */
   .char-hint {
     width: 260px;
     height: 104px; /* 260 * 793/1983 ≈ 104 */
-    aspect-ratio: 1983 / 793 !important;
-    max-width: 260px;
-    max-height: 104px;
-    transform: translate(0, 0) !important;
+    aspect-ratio: 1983 / 793;
   }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
@@ -2024,15 +2105,14 @@ body.layout-editor-on .character img {
   /* .chip.txt-long { font-size: 18px; } */
   .chip.chip-count { font-size: 48px; }
   /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(240×96 5:2) = 394px → 余裕あり
-     フクロウの吹き出しは元画像 AR (5:2) で固定 (4:3 帯では 240×96) */
+     フクロウの吹き出しは元画像 AR (5:2) で固定 (4:3 帯では 240×96)
+     S4 修正: !important / max-* を削除、 inline width/height を活かす */
   .char-hint {
     width: 240px;
     height: 96px; /* 240 * 793/1983 ≈ 96 */
-    aspect-ratio: 1983 / 793 !important;
+    aspect-ratio: 1983 / 793;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: 240px;
-    max-height: 96px;
     font-size: 14px;
     padding: 8px 14px;
     box-sizing: border-box;
@@ -2091,14 +2171,12 @@ body.layout-editor-on .character img {
      min-height で視覚的にも明確な領域を与えて上の tray と分離する */
   .bottom-right { min-height: 100px !important; }
   /* フクロウの吹き出しは元画像 AR (5:2) で固定。 4:3 帯の上書きは上の .char-hint
-     ルールで既に適用済みだが、 inline transform 解除のため width/height を再宣言 */
+     ルールで既に適用済み。
+     S4 修正: !important / max-* / transform を削除、 inline width/height/transform を活かす */
   .char-hint {
     width: 240px;
     height: 96px;
-    aspect-ratio: 1983 / 793 !important;
-    max-width: 240px;
-    max-height: 96px;
-    transform: translate(0, 0) !important;
+    aspect-ratio: 1983 / 793;
   }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
@@ -2146,17 +2224,15 @@ body.layout-editor-on .character img {
   .chip.chip-count { font-size: 44px !important; }
   .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
   .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (5:4 帯では 220×88) */
+  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (5:4 帯では 220×88)
+     S4 修正: !important / max-* / transform を削除、 inline width/height/transform を活かす */
   .char-hint {
     width: 220px;
     height: 88px; /* 220 * 793/1983 ≈ 88 */
-    aspect-ratio: 1983 / 793 !important;
+    aspect-ratio: 1983 / 793;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: 220px;
-    max-height: 88px;
     font-size: 13px !important;
-    transform: translate(0, 0) !important;
   }
 }
 
@@ -3095,7 +3171,7 @@ body.layout-editor-on .op-skip {
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.25));
   transform: scale(0);
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.22s ease-out;
 }
 /* v960: スケールイン (0.45s) → 表示維持 (kurumi 音声終了 +0.3s で fade out)
    旧仕様 (1.6s 自動 fade out) を分割。 fade out は .is-fadeout で transition 発火。 */
@@ -3218,6 +3294,10 @@ body.layout-editor-on .op-skip {
         <div class="a-col">
           <div class="answer-tray">
             <div class="answer-panel" id="answer-panel"></div>
+            <!-- 4 択中央のスピーカー (押すと a→b→c→d を順次読み上げ + 該当 chip を pressed 表示)。
+                 .answer-tray は position: relative なので、 ここに absolute で 4 chip の中央間隙へ。
+                 data-le-keep-position で layout-editor (?edit=1) では動かない。 -->
+            <button id="answer-speaker" type="button" class="answer-speaker" data-le-keep-position aria-label="せんたくしを じゅんに よむ" title="せんたくしを じゅんに よむ" style="display:none"><img src="../assets/ui/icon_speaker.png" alt="" width="60" height="60"></button>
           </div>
           <div class="bottom-right">
             <div class="char-hint" id="char-hint-bubble"><span id="char-hint-text">ヒント！</span></div>
@@ -4819,6 +4899,19 @@ function loadQuestion(q) {
   document.querySelectorAll('#stage-area .emoji-display').forEach(function(el) {
     el.classList.add('q-stage-pending');
   });
+  // S2 fix (2026-05-12): `.emoji-main-img` (= 問題の メイン イラスト) にも直接
+  // pending を付与する。 親 `.emoji-display` の visibility:hidden は本来 child に
+  // 継承されるが、 LayoutApplier (per-Q saved-layout.json) が `.emoji-main-img` に
+  // 対し inline width/height/transform を後付けする経路があり、 inline transform
+  // 等で新規 stacking context / 別 paint layer が生まれると、 親の hidden が
+  // 体感上 反映されず 「最初から出ている」 ように見えるケースがある。
+  // CSS 側 (line ~1097) では既に `.emoji-main-img.q-stage-pending { visibility:hidden }`
+  // を定義済なので、 ここでクラスを直接付ければ確実に隠蔽できる。
+  // hideQuestionNumberPlate() / _revealAllPendingStages() / _runPlateAndType() の
+  // 全 reveal 経路は `.q-stage-pending` セレクタ一括処理なので追加修正不要。
+  document.querySelectorAll('#stage-area .emoji-main-img').forEach(function(el) {
+    el.classList.add('q-stage-pending');
+  });
   const _ansPanel = document.getElementById('answer-panel');
   if (_ansPanel) _ansPanel.classList.add('q-stage-pending');
   // v967: 「第N問」 プレート表示中は問題文も隠す (案 C)。
@@ -4867,10 +4960,12 @@ function loadQuestion(q) {
     if (_kAudio && typeof _kAudio.addEventListener === 'function') {
       var _onKurumiEnded = function () {
         _kAudio.removeEventListener('ended', _onKurumiEnded);
-        setTimeout(function () {
-          hideQuestionNumberPlate();
-          _fireQNarrOnce();
-        }, 300);
+        // R2 (2026-05-12): kurumi ended と同 tick で plate fade-out 開始 +
+        //   narration 発火。 CSS transition 0.22s で fade out しつつ、 ナレーションは
+        //   即時開始するため、 plate が薄まりながら問題文読み上げが始まる (= 多少 OL)。
+        //   旧: setTimeout 300ms 待機 → cut 気味。
+        hideQuestionNumberPlate();
+        _fireQNarrOnce();
       };
       _kAudio.addEventListener('ended', _onKurumiEnded, { once: true });
       // fallback: ended が発火しなくても 6 秒で強制 hide + narration
@@ -4881,10 +4976,9 @@ function loadQuestion(q) {
       }, 6000);
     } else {
       // mp3 取得失敗時の fallback (kurumi 音声無し)。 plate 即時 hide + narration。
-      setTimeout(function () {
-        hideQuestionNumberPlate();
-        _fireQNarrOnce();
-      }, 300);
+      // R2: 旧 300ms wait を撤去。 fade out は CSS transition (0.22s) で実施。
+      hideQuestionNumberPlate();
+      _fireQNarrOnce();
     }
   } else {
     // Q6+ (kurumi 音声無し): setupNarration が既に即時自動再生済。 plate も無し。
@@ -4923,6 +5017,122 @@ function setupNarration(q, opts) {
       }
     }
     if (prefetchKeys.length) Narration.prefetch(prefetchKeys);
+    // 4 択スピーカーの表示/wiring も同 question lifecycle で更新。
+    _setupAnswerSpeaker(q);
+    // 選択肢音声も prefetch (= タップ時のロード待ち短縮)
+    const choicePrefetch = [];
+    ['a','b','c','d'].forEach(function(suf){
+      const k = narrationKey(q, suf);
+      if (k && Narration.hasEntry(k)) choicePrefetch.push(k);
+    });
+    if (choicePrefetch.length) Narration.prefetch(choicePrefetch);
+  });
+}
+
+// 4 択中央のスピーカー: a→b→c→d (= data-idx 0..3) の順に音声を再生しつつ
+// 各 chip を .reading-active で「押した状態」表示する。
+// - Narration.play は再生開始時に resolve するので、 完了は別途独自に Audio を
+//   起こして ended イベントで待つ (narration.js は外部に Audio を露出しないため)。
+//   manifest 自体は再 fetch せず、 軽量な独自マップ (_choiceUrlCache) に保存。
+// - 該当 key が manifest に無い chip はスキップ (light up もしない)。
+// - 連打防止: 実行中は #answer-speaker に .reading を付け pointer-events を止める。
+let _playAllChoicesRunning = false;
+let _playAllChoicesAudio = null;          // 現在再生中の Audio (キャンセル用)
+const _choiceUrlCache = {};               // key → wav URL (depth-aware で 1 回だけ計算)
+function _resolveChoiceWavUrl(key) {
+  if (_choiceUrlCache[key]) return _choiceUrlCache[key];
+  // narration.js の SAFE_FILE_RE と同じ命名規約。 manifest.json を再 fetch して
+  // entries[key].file を直接拾う (軽量 / cache 制御も narration.js と同様)。
+  // 既に load() 済みの manifest を覗ければ早いが、 公開 API には無いので
+  // 単発 fetch する。 結果はメモ化されるので問題ごと 1 回だけ走る。
+  return fetch('../assets/tts/manifest.json', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(m){
+      if (!m || !m.entries || !m.entries[key] || !m.entries[key].file) return null;
+      const url = '../assets/tts/' + m.entries[key].file;
+      _choiceUrlCache[key] = url;
+      return url;
+    })
+    .catch(function(){ return null; });
+}
+function _playWavOnce(url) {
+  return new Promise(function(resolve) {
+    if (!url) { resolve(); return; }
+    try {
+      // narration.js 側の currentPlaying と衝突しないよう、 まず問題文音声を停止。
+      if (typeof Narration !== 'undefined' && Narration.stop) Narration.stop();
+    } catch(_) {}
+    const a = new Audio(url);
+    _playAllChoicesAudio = a;
+    let done = false;
+    function finish() {
+      if (done) return; done = true;
+      a.removeEventListener('ended', finish);
+      a.removeEventListener('error', finish);
+      if (_playAllChoicesAudio === a) _playAllChoicesAudio = null;
+      resolve();
+    }
+    a.addEventListener('ended', finish);
+    a.addEventListener('error', finish);
+    try {
+      a.volume = (typeof Narration !== 'undefined' && Narration.getVolume) ? Narration.getVolume() : 0.9;
+      a.playbackRate = (typeof Narration !== 'undefined' && Narration.getRate) ? Narration.getRate() : 1.15;
+    } catch(_) {}
+    a.play().catch(function(){ finish(); });
+    // セーフティ: 最大 10s で強制終了 (ended が来ない端末対策)。
+    setTimeout(function(){ if (!done) { try { a.pause(); } catch(_){} finish(); } }, 10000);
+  });
+}
+async function playAllChoices() {
+  if (_playAllChoicesRunning) return;
+  if (typeof Narration === 'undefined') return;
+  if (!currentQ) return;
+  const speaker = document.getElementById('answer-speaker');
+  const panel = document.getElementById('answer-panel');
+  if (!panel) return;
+  _playAllChoicesRunning = true;
+  if (speaker) speaker.classList.add('reading');
+  try {
+    await Narration.load();
+    const suffixes = ['a', 'b', 'c', 'd']; // data-idx 0=TL=a, 1=TR=b, 2=BL=c, 3=BR=d
+    for (let i = 0; i < suffixes.length; i++) {
+      const chip = panel.querySelector('.chip[data-idx="' + i + '"]');
+      const key = narrationKey(currentQ, suffixes[i]);
+      if (!key || !Narration.hasEntry(key)) continue;
+      if (chip) chip.classList.add('reading-active');
+      try {
+        const url = await _resolveChoiceWavUrl(key);
+        await _playWavOnce(url);
+      } catch (_) { /* 個別失敗は無視して次へ */ }
+      if (chip) chip.classList.remove('reading-active');
+    }
+  } finally {
+    if (speaker) speaker.classList.remove('reading');
+    panel.querySelectorAll('.chip.reading-active').forEach(function(c){ c.classList.remove('reading-active'); });
+    _playAllChoicesRunning = false;
+    _playAllChoicesAudio = null;
+  }
+}
+// answer-speaker の表示/非表示を currentQ に合わせて更新。
+// いずれかの選択肢音声 (a/b/c/d) が manifest に有ればボタンを出す。
+// 1 つも無ければ非表示 (= 既存 question-speaker と同じポリシー)。
+function _setupAnswerSpeaker(q) {
+  if (typeof Narration === 'undefined') return;
+  const btn = document.getElementById('answer-speaker');
+  if (!btn || !q) return;
+  Narration.load().then(function() {
+    const suffixes = ['a', 'b', 'c', 'd'];
+    let anyEntry = false;
+    for (let i = 0; i < suffixes.length; i++) {
+      const k = narrationKey(q, suffixes[i]);
+      if (k && Narration.hasEntry(k)) { anyEntry = true; break; }
+    }
+    btn.style.display = (anyEntry && Narration.getMode() !== 'off') ? '' : 'none';
+    btn.onclick = function(e) {
+      if (document.body.classList.contains('layout-editor-on')) { e.preventDefault(); e.stopPropagation(); return; }
+      e.preventDefault();
+      playAllChoices();
+    };
   });
 }
 
@@ -6742,7 +6952,7 @@ function hideQuestionNumberPlate() {
     root.setAttribute('aria-hidden', 'true');
     if (img) img.src = '';
     _qnoRunning = false;
-  }, 360); // CSS transition (0.35s) と一致
+  }, 240); // CSS transition (0.22s) と一致 (R2: 早めの fade out + 多少 OL)
 }
 
 // ═══════════════════════════════════════════════════════════

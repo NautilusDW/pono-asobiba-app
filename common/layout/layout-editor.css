@@ -1464,3 +1464,16 @@ body.layout-editor-on .chip-text-editing:focus {
   outline-color: #00d4ff !important;
 }
 
+/* === S4: layout-editor モードでは .char-hint (フクロウ吹き出し) を 自由 resize 可能に ===
+   本番モード (= 非編集) では quizland/index.html の base + media-query で
+   aspect-ratio: 1983/793 が効いて元画像の 5:2 比を保つが、
+   editor (?edit=1) では 8 ハンドル drag で自由に W/H を変えたい。
+   aspect-ratio: auto で比率固定を解除し、 max-width/max-height は明示的に
+   none で打ち消す (もし将来 quizland 側で max-* が再導入されても効くように). */
+body.layout-editor-on .char-hint,
+body.layout-editor-on .char-hint.resizable {
+  aspect-ratio: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
