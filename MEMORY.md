@@ -124,6 +124,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-13T01:32:31Z - Y1: staging配信状況確認+sw.js bump+ハードコードgrep (g_num_*.wav 11件全てローカル/git/staging OK, runtime hardcode 0件, sw.js 978->979 bump push)
+- **タスク**: Y1: staging配信状況確認+sw.js bump+ハードコードgrep (g_num_*.wav 11件全てローカル/git/staging OK, runtime hardcode 0件, sw.js 978->979 bump push)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 171
+- **エラー数**: 12
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 131, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-13T01:00:59Z - VOICEPEAK 各カテゴリ CSV から単独数字行を削除 + memory 更新 (cross-category dedup 実装開始記録)
 - **タスク**: VOICEPEAK 各カテゴリ CSV から単独数字行を削除 + memory 更新 (cross-category dedup 実装開始記録)
 - **結果**: 成功
@@ -225,19 +238,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 14, "Bash": 23, "Agent": 104, "ToolSearch": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T23:45:56Z - O3: O1+O2 narration fixes (hakase bubble tx/ty + plate/SE RAF sync) commit + push
-- **タスク**: O3: O1+O2 narration fixes (hakase bubble tx/ty + plate/SE RAF sync) commit + push
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 141
-- **エラー数**: 11
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 14, "Bash": 23, "Agent": 102, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
