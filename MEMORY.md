@@ -47,6 +47,8 @@
 - **【設計変更 2026-05-12】 VOICEPEAK 全カテゴリ + Phase 1/2 横断ユニーク化案 (次バッチから採用)**: [memory/feature_voicepeak_cross_category_dedup.md](memory/feature_voicepeak_cross_category_dedup.md) — 同一単語 (= 「二」 「三」 「七」 等の数字単独や色名・体パーツ等) を全カテゴリ + Phase 1/2 で 1 wav に集約、 アクセント違いが必要なら後で個別追加。 number_sequence バッチ完了後 order_color 着手前に設計実装
 - **【恒久ルール 2026-05-12 大事故から導出】 questions.js の Q### 真値は QUIZLAND_CATEGORIES キー順、 ORDER-FULL.md の宣言順表記は信用しない**: [memory/feedback_questions_js_q_number_canonical_source.md](memory/feedback_questions_js_q_number_canonical_source.md) — Q### は CATEGORIES キー順 (= order_color Q1-24 / count_total Q25-48 / shape_name Q49-71 / **number_sequence Q72-83** / trivia Q84-109 / weather Q110-133 / opposite Q134-157 / body Q158-181) で決まる。 ORDER-FULL.md は宣言順表記で +1 以上ズレている可能性大、 必ず questions.js の CATEGORIES を真値として参照
 
+- **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
+
 ---
 
 ## Key Learnings
