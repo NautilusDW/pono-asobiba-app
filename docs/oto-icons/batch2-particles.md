@@ -1,7 +1,14 @@
 # 音タッチ Batch 2 — フラットパーティクル/装飾アセットシート 発注仕様
 
+## 用途宣言（Batch1 / Batch2 の役割分担）
+- `assets/images/oto/buttons/` = **タップ対象 UI 素材**（Batch1）
+- `assets/images/oto/icons/` = **装飾 / 粒子素材**（本 Batch2）。canvas に飛ばすパーティクル / DOM 装飾。タップ非対象。
+- prefix: 粒子は `spark_*`、装飾は `deco_*`（Batch1 の `btn_*` と衝突しない）。
+
 ## ゴール
 canvas で `fillText` していた絵文字パーティクル ✨⭐💖🎵🎶💫🌟 と、チュートリアル吹き出し冒頭/末尾の装飾 🎵 ✨ を、**透過 PNG のフラットアイコン**に置き換える。シート 1 枚 (3×3 グリッド) で 9 セル分を一括納品。
+
+> Batch1 のボタンにも内包スパークが含まれるが、それは**ボタン土台に彫り込まれる静的装飾**。本 Batch2 の `spark_sparkle.png` 等は**canvas に飛ばす独立粒子**で、用途が異なる（同じ「キラリ」モチーフでも別素材として並立）。
 
 ## スタイル方針
 
@@ -16,7 +23,7 @@ canvas で `fillText` していた絵文字パーティクル ✨⭐💖🎵🎶
 - 絵本水彩・クレヨン質感
 - 木目・布・紙などのアナログ素材感 (音色を想起させてしまうため厳禁)
 - ポノ (クマ) のモチーフを混ぜない (タイトルロゴ側で担保済み)
-- ドロップシャドウ・自前の影 (canvas 側で screen/lighten 合成するため乗算事故源)
+- ドロップシャドウ・自前の影（Batch1 のボタンに合成して使う可能性があるため、自前 shadow があると違和感が出る／canvas 側で screen/lighten 合成する際の乗算事故源にもなる）
 - リアル質感、過剰な細部描写
 
 ## アセットシート仕様
@@ -41,10 +48,11 @@ canvas で `fillText` していた絵文字パーティクル ✨⭐💖🎵🎶
 | (3,3) | `deco_hint_sparkle.png` | チュートリ「ながく押すと…」末尾 | **spark_sparkle と同モチーフ**だが装飾用にやや大きめ・正立固定 |
 
 > 流用方針: 装飾 2 種はパーティクル版と**色・形を完全に揃える** (運用上の一貫性のため)。差分は描画サイズと向きのみ。
+> **別 PNG にする理由**: DOM 配置時にサイズ違い・正立固定で使うため、canvas 用の `spark_*` をそのまま `<img>` に流用すると `width/height` 再指定でぼやけるリスクがある。装飾用に最適な解像度で個別書き出した固有 PNG を用意する。
 
 ## 命名・保存先
-- 切り出し後の個別 PNG: `assets/images/oto/icons/oto/<filename>.png`
-- 例: `assets/images/oto/icons/oto/spark_sparkle.png`
+- 切り出し後の個別 PNG: `assets/images/oto/icons/<filename>.png`
+- 例: `assets/images/oto/icons/spark_sparkle.png`
 - シート原本も同ディレクトリに `batch2_sheet.png` で保管
 
 ## Codex への余白
