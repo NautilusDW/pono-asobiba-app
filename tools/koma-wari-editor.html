@@ -1182,6 +1182,38 @@ function renderOverlay() {
   const img = imageCache.get(f.imageId);
   if (!img) return;
 
+  // Mask rects (saved + live preview). Drawn in frame-local input-image coords
+  // → stage coords via the same transform stack as drawFrameOnContext.
+  overlayCtx.save();
+  overlayCtx.translate(f.x, f.y);
+  overlayCtx.rotate(f.rotation * Math.PI / 180);
+  overlayCtx.scale(f.scale, f.scale);
+  overlayCtx.translate(-img.width / 2, -img.height / 2);
+  // Existing maskRects: dashed outline + semi-transparent red fill
+  if (f.maskRects && f.maskRects.length > 0) {
+    overlayCtx.fillStyle = 'rgba(255, 80, 80, 0.25)';
+    overlayCtx.strokeStyle = 'rgba(255, 120, 120, 0.9)';
+    overlayCtx.lineWidth = 1 / (viewScale * (f.scale || 1));
+    overlayCtx.setLineDash([4 / (viewScale * (f.scale || 1)), 2 / (viewScale * (f.scale || 1))]);
+    for (const r of f.maskRects) {
+      overlayCtx.fillRect(r.x, r.y, r.w, r.h);
+      overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+    }
+    overlayCtx.setLineDash([]);
+  }
+  // Live mask drag preview
+  if (activeOp && activeOp.kind === 'mask-draw' && activeOp.cur) {
+    const r = activeOp.cur;
+    overlayCtx.fillStyle = 'rgba(80, 200, 120, 0.25)';
+    overlayCtx.strokeStyle = 'rgba(120, 240, 160, 1)';
+    overlayCtx.lineWidth = 2 / (viewScale * (f.scale || 1));
+    overlayCtx.setLineDash([6 / (viewScale * (f.scale || 1)), 3 / (viewScale * (f.scale || 1))]);
+    overlayCtx.fillRect(r.x, r.y, r.w, r.h);
+    overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+    overlayCtx.setLineDash([]);
+  }
+  overlayCtx.restore();
+
   // Frame's local axis-aligned bbox (centered at origin), in local image coords:
   const halfW = (img.width  * f.scale) / 2;
   const halfH = (img.height * f.scale) / 2;
@@ -2306,6 +2338,374 @@ function initGuides() {
   });
 }
 
+// ─── Mask mode (UI + state) ─────────────────────────────────────────────
+// State: _maskMode (bool) — ON 時にステージで drag → frame.maskRects に push。
+// マスク矩形は入力画像座標 (= img-pixel space, origin 左上) で保存される。
+// rendering は drawFrameOnContext の masks path で alpha 0 化。
+let _maskMode = false;
+
+function setMaskMode(on) {
+  _maskMode = !!on;
+  const btn = $('mask-mode-toggle');
+  if (btn) {
+    btn.classList.toggle('on', _maskMode);
+    btn.textContent = _maskMode ? 'マスクモード ON' : 'マスクモード OFF';
+  }
+  document.body.classList.toggle('mask-mode', _maskMode);
+  renderOverlay();
+}
+
+function renderMaskList() {
+  const host = $('mask-list');
+  if (!host) return;
+  host.innerHTML = '';
+  const f = getSelectedFrame();
+  if (!f) {
+    host.innerHTML = '<div class="mask-empty">フレーム未選択</div>';
+    return;
+  }
+  const masks = f.maskRects || [];
+  if (masks.length === 0) {
+    host.innerHTML = '<div class="mask-empty">マスクなし</div>';
+    return;
+  }
+  masks.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'mask-row';
+    const label = document.createElement('div');
+    label.className = 'mask-label';
+    label.textContent = `#${i + 1}  (${Math.round(r.x)},${Math.round(r.y)}) ${Math.round(r.w)}×${Math.round(r.h)}`;
+    const del = document.createElement('button');
+    del.className = 'mask-del';
+    del.textContent = '×';
+    del.title = 'このマスクを削除';
+    del.addEventListener('click', () => {
+      f.maskRects.splice(i, 1);
+      renderStage();
+      renderStripActive();
+      renderMaskList();
+      markDirty();
+      snapshotForUndo('マスク削除');
+      toast('🎭 マスク削除');
+    });
+    row.appendChild(label);
+    row.appendChild(del);
+    host.appendChild(row);
+  });
+}
+
+function initMaskUI() {
+  const btn = $('mask-mode-toggle');
+  if (btn) btn.addEventListener('click', () => setMaskMode(!_maskMode));
+  // Re-render mask list when selection changes
+  const origSelectFrame = selectFrame;
+  // wrap selectFrame via monkey-patch on the closure name — simpler is to
+  // just call renderMaskList from selectFrame; do it via a post hook here.
+  // We extend by listening to a custom callback: just call renderMaskList()
+  // anywhere selectFrame() is called. For minimal patch we hook into the
+  // existing call sites via a public function.
+  window.__komaRenderMaskList = renderMaskList; // for tests / future hooks
+  renderMaskList();
+}
+
+// ─── Project manager (IndexedDB via idb-keyval) ─────────────────────────
+// schema: list at key 'koma-projects-list' = [{id, name, updatedAt}, ...]
+//         body at key 'koma-project-<id>'  = {id, name, project, updatedAt}
+// 既存「ファイル読込/保存」 と localStorage 自動保存はそのまま温存。
+// IndexedDB は複数プロジェクト保管用途 (= localStorage 5-10MB 制限回避)。
+let _idbStore = null;
+let _idbReady = false;
+let _currentProjectDbId = null;
+let _currentProjectDbName = null;
+
+function _initIdb() {
+  if (typeof idbKeyval === 'undefined') {
+    console.warn('[koma] idb-keyval not loaded; project manager disabled');
+    return false;
+  }
+  if (!_idbStore) {
+    try {
+      _idbStore = idbKeyval.createStore('koma-wari', 'projects');
+      _idbReady = true;
+    } catch (e) {
+      console.warn('[koma] idb createStore failed:', e);
+      return false;
+    }
+  }
+  return _idbReady;
+}
+
+async function listProjectsFromDb() {
+  if (!_initIdb()) return [];
+  const list = (await idbKeyval.get('koma-projects-list', _idbStore)) || [];
+  // Sort by updatedAt DESC
+  return list.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+
+async function saveProjectToDb(id, name) {
+  if (!_initIdb()) throw new Error('IndexedDB 未対応');
+  const payload = {
+    id, name,
+    project: JSON.parse(JSON.stringify(project)),
+    updatedAt: Date.now(),
+  };
+  await idbKeyval.set('koma-project-' + id, payload, _idbStore);
+  const list = (await idbKeyval.get('koma-projects-list', _idbStore)) || [];
+  const ex = list.findIndex(p => p.id === id);
+  const entry = { id, name, updatedAt: payload.updatedAt };
+  if (ex >= 0) list[ex] = entry;
+  else list.push(entry);
+  await idbKeyval.set('koma-projects-list', list, _idbStore);
+}
+
+async function loadProjectFromDb(id) {
+  if (!_initIdb()) return null;
+  const payload = await idbKeyval.get('koma-project-' + id, _idbStore);
+  if (!payload) return null;
+  // Use existing loadProject() to preserve schema migration / decodeAllImages /
+  // undo seeding / asset+stock+strip+stage re-render in one path.
+  loadProject(payload.project);
+  _currentProjectDbId = id;
+  _currentProjectDbName = payload.name || '';
+  return payload;
+}
+
+async function deleteProjectFromDb(id) {
+  if (!_initIdb()) return;
+  await idbKeyval.del('koma-project-' + id, _idbStore);
+  let list = (await idbKeyval.get('koma-projects-list', _idbStore)) || [];
+  list = list.filter(p => p.id !== id);
+  await idbKeyval.set('koma-projects-list', list, _idbStore);
+}
+
+function _pmGenId() {
+  return 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function _pmUpdateCurrentLabel() {
+  const el = $('pm-current-name');
+  if (!el) return;
+  if (_currentProjectDbId) {
+    el.textContent = '現在: ' + (_currentProjectDbName || '(無題)');
+    el.style.color = '#cbd0db';
+  } else {
+    el.textContent = '未保存 (IndexedDB 未登録)';
+    el.style.color = '#9aa5b8';
+  }
+}
+
+async function refreshPmList() {
+  const host = $('pm-list');
+  if (!host) return;
+  host.innerHTML = '';
+  let list = [];
+  try { list = await listProjectsFromDb(); }
+  catch (e) { console.warn('[koma] pm list failed:', e); }
+  if (list.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'pm-empty';
+    empty.textContent = '保存済プロジェクトなし';
+    host.appendChild(empty);
+    return;
+  }
+  list.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'pm-item' + (p.id === _currentProjectDbId ? ' active' : '');
+    row.title = `開く: ${p.name}`;
+    const nm = document.createElement('div');
+    nm.className = 'pm-item-name';
+    nm.textContent = p.name || '(無題)';
+    const dt = document.createElement('div');
+    dt.className = 'pm-item-date';
+    const d = new Date(p.updatedAt || 0);
+    dt.textContent = isFinite(d) ? d.toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+    row.appendChild(nm);
+    row.appendChild(dt);
+    row.addEventListener('click', async () => {
+      // Discard guard: only when dirty + different project
+      if (p.id === _currentProjectDbId) { _closePmMenu(); return; }
+      try {
+        await loadProjectFromDb(p.id);
+        _pmUpdateCurrentLabel();
+        renderMaskList();
+        refreshPmList();
+        toast('📁 「' + (p.name || '(無題)') + '」を開きました');
+      } catch (e) {
+        alert('開けませんでした: ' + e.message);
+      }
+      _closePmMenu();
+    });
+    host.appendChild(row);
+  });
+}
+
+function _openPmMenu() {
+  const m = $('pm-menu');
+  if (!m) return;
+  m.classList.add('show');
+  refreshPmList();
+  _pmUpdateCurrentLabel();
+}
+function _closePmMenu() {
+  const m = $('pm-menu');
+  if (m) m.classList.remove('show');
+}
+
+function _bindPm() {
+  const btn = $('btn-pm-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const m = $('pm-menu');
+    if (m && m.classList.contains('show')) _closePmMenu();
+    else _openPmMenu();
+  });
+  // Close on outside click
+  document.addEventListener('click', e => {
+    const m = $('pm-menu');
+    if (!m || !m.classList.contains('show')) return;
+    if (m.contains(e.target) || btn.contains(e.target)) return;
+    _closePmMenu();
+  });
+
+  $('pm-new')?.addEventListener('click', () => {
+    if (!confirm('現在のプロジェクトを破棄して空のプロジェクトを開きますか? (IndexedDB の保存済プロジェクトは消えません)')) return;
+    loadProject(blankProject());
+    _currentProjectDbId = null;
+    _currentProjectDbName = null;
+    _pmUpdateCurrentLabel();
+    refreshPmList();
+    renderMaskList();
+    toast('＋ 新規プロジェクト');
+  });
+
+  $('pm-save')?.addEventListener('click', async () => {
+    try {
+      if (_currentProjectDbId) {
+        const nm = _currentProjectDbName || project.name || project.id || '無題';
+        await saveProjectToDb(_currentProjectDbId, nm);
+        toast('💾 上書き保存: ' + nm);
+      } else {
+        // Promote to "save as" flow if no current id
+        const nm = prompt('プロジェクト名を入力:', project.name || project.id || '無題');
+        if (nm === null) return;
+        const name = (nm || '').trim() || '無題';
+        const id = _pmGenId();
+        await saveProjectToDb(id, name);
+        _currentProjectDbId = id;
+        _currentProjectDbName = name;
+        toast('💾 保存: ' + name);
+      }
+      _pmUpdateCurrentLabel();
+      refreshPmList();
+    } catch (e) {
+      alert('保存失敗: ' + e.message);
+    }
+  });
+
+  $('pm-save-as')?.addEventListener('click', async () => {
+    const nm = prompt('別名で保存 — 新しいプロジェクト名:', (project.name || '無題') + ' のコピー');
+    if (nm === null) return;
+    const name = (nm || '').trim() || '無題';
+    const id = _pmGenId();
+    try {
+      await saveProjectToDb(id, name);
+      _currentProjectDbId = id;
+      _currentProjectDbName = name;
+      _pmUpdateCurrentLabel();
+      refreshPmList();
+      toast('💾 別名で保存: ' + name);
+    } catch (e) {
+      alert('保存失敗: ' + e.message);
+    }
+  });
+
+  $('pm-duplicate')?.addEventListener('click', async () => {
+    const baseName = _currentProjectDbName || project.name || project.id || '無題';
+    const nm = prompt('複製名:', baseName + ' のコピー');
+    if (nm === null) return;
+    const name = (nm || '').trim() || (baseName + ' のコピー');
+    const id = _pmGenId();
+    try {
+      await saveProjectToDb(id, name);
+      _currentProjectDbId = id;
+      _currentProjectDbName = name;
+      _pmUpdateCurrentLabel();
+      refreshPmList();
+      toast('📋 複製: ' + name);
+    } catch (e) {
+      alert('複製失敗: ' + e.message);
+    }
+  });
+
+  $('pm-rename')?.addEventListener('click', async () => {
+    if (!_currentProjectDbId) {
+      alert('まず IndexedDB に保存してください (💾 上書き保存 or 💾 別名で保存)');
+      return;
+    }
+    const nm = prompt('新しい名前:', _currentProjectDbName || '');
+    if (nm === null) return;
+    const name = (nm || '').trim() || '無題';
+    try {
+      await saveProjectToDb(_currentProjectDbId, name);
+      _currentProjectDbName = name;
+      _pmUpdateCurrentLabel();
+      refreshPmList();
+      toast('✏️ 名前変更: ' + name);
+    } catch (e) {
+      alert('リネーム失敗: ' + e.message);
+    }
+  });
+
+  $('pm-delete')?.addEventListener('click', async () => {
+    if (!_currentProjectDbId) {
+      alert('IndexedDB に保存されていないプロジェクトです');
+      return;
+    }
+    const nm = _currentProjectDbName || '(無題)';
+    if (!confirm('「' + nm + '」を IndexedDB から削除しますか? (取り消し不可)')) return;
+    try {
+      await deleteProjectFromDb(_currentProjectDbId);
+      _currentProjectDbId = null;
+      _currentProjectDbName = null;
+      _pmUpdateCurrentLabel();
+      refreshPmList();
+      toast('× 削除しました: ' + nm);
+    } catch (e) {
+      alert('削除失敗: ' + e.message);
+    }
+  });
+}
+
+// IndexedDB への自動保存 (30 秒ごと、 _currentProjectDbId がある時のみ)
+const _PM_AUTOSAVE_MS = 30000;
+let _pmLastAutoSave = 0;
+async function _pmAutoSaveTick() {
+  if (!_currentProjectDbId || !_idbReady) return;
+  if (!dirty && (Date.now() - _pmLastAutoSave) < _PM_AUTOSAVE_MS * 2) return;
+  try {
+    await saveProjectToDb(_currentProjectDbId, _currentProjectDbName || project.name || '無題');
+    _pmLastAutoSave = Date.now();
+  } catch (e) {
+    console.warn('[koma] pm autosave failed:', e);
+  }
+}
+setInterval(_pmAutoSaveTick, _PM_AUTOSAVE_MS);
+
+// Hook into selection / load: refresh mask list (selectFrame は closure 内で
+// 多くの場所から呼ばれるため、 ここでは選択変化を検知するため renderStripActive
+// 後のコールバックではなく、 boot 後と pm 経由 load で明示的に呼ぶ。 さらに
+// 既存の selectFrame() / loadProject() 経由ではフレーム変更時にも更新したい
+// ので、 ポーリング相当の軽量フックを setInterval で代用。
+let _lastMaskListFrameId = null;
+setInterval(() => {
+  // Only refresh DOM if selection identity changed since last tick
+  if (_lastMaskListFrameId !== selectedFrameId) {
+    _lastMaskListFrameId = selectedFrameId;
+    renderMaskList();
+  }
+}, 250);
+
 // ─── Resize observer (window resize → re-fit stage) ─────────────────────
 window.addEventListener('resize', () => {
   resizeStage();
@@ -2330,12 +2730,29 @@ window.addEventListener('resize', () => {
     snapshotForUndo('initial');
   }
   updateUndoRedoUI();
+
+  // In-app project manager (IndexedDB)
+  _initIdb();
+  _bindPm();
+  _pmUpdateCurrentLabel();
+
+  // Mask UI
+  initMaskUI();
+  _lastMaskListFrameId = selectedFrameId;
+  renderMaskList();
+
   // Debug hook
   window.__komaEditor = {
     get project() { return project; },
     get selected() { return getSelectedFrame(); },
     blankProject,
     loadProject,
+    listProjectsFromDb,
+    saveProjectToDb,
+    loadProjectFromDb,
+    deleteProjectFromDb,
+    get maskMode() { return _maskMode; },
+    setMaskMode,
   };
   console.log('[koma] editor ready. Storage key:', STORAGE_KEY);
 })();
