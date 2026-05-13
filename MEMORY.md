@@ -124,6 +124,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-13T00:36:01Z - T5: T2+T3+T4統合のcommit+push (quizland speaker/chip読み上げ/stage-area一括隠蔽)
+- **タスク**: T5: T2+T3+T4統合のcommit+push (quizland speaker/chip読み上げ/stage-area一括隠蔽)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 160
+- **エラー数**: 12
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 15, "Bash": 23, "Agent": 120, "ToolSearch": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-13T00:17:10Z - S5: S2+S3+S4+R2+R3 統合 commit + push (quizland hakase resize / emoji hide / 4-choice speaker / fade out / 5-of-5 stamp)
 - **タスク**: S5: S2+S3+S4+R2+R3 統合 commit + push (quizland hakase resize / emoji hide / 4-choice speaker / fade out / 5-of-5 stamp)
 - **結果**: 成功
@@ -226,18 +239,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 14, "Bash": 23, "Agent": 81, "ToolSearch": 1, "Grep": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-12T22:16:00Z - quizland v975→v976: number_sequence stage display の配色をブルー系→オレンジ系 (wood-dark/wood-light) に統一 + ◯ を Unicode 文字から SVG dashed circle (stroke-linecap:round) に置換
-- **タスク**: quizland v975→v976: number_sequence stage display の配色をブルー系→オレンジ系 (wood-dark/wood-light) に統一 + ◯ を Unicode 文字から SVG dashed circle (stroke-linecap:round) に置換
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 91
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 31, "Bash": 38, "Edit": 9, "Write": 3, "Glob": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
