@@ -3763,28 +3763,65 @@
 
   // ====================================================================
   //  Victor-2: 削除 (Delete)
-  //    隠す (hide) と異なり DOM から完全に取り除く。
-  //    既存の 'remove' op (Wave 29 で複数 op に追加済み) を使って Ctrl+Z で復活可能。
-  //    spec 由来要素を削除した場合、saved-layout.json には残るので reload で復活する。
-  //    動的要素 (.le-dropped-img / .le-added-text) は localStorage を再同期する。
+  //    spec 由来要素 (= RESIZABLE_SPEC に登録された .hint-panel / .pono-bubble /
+  //    .field-bg / .window-frame 等) は DOM から取り除く代わりに `user-hidden`
+  //    クラスを付与する (= hide と等価)。 こうすることで snapshot の
+  //    `collectHiddenKeys()` が key を拾い、 saved-layout.json の `__hidden` に
+  //    永続化される。 リロード後は applier の `applyHidden` が再度 user-hidden を
+  //    当てて CSS で display:none になる。 (sw v984 修正)
+  //
+  //    動的要素 (.le-dropped-img / .le-added-text / .userbox) は引き続き DOM から
+  //    完全に取り除く — それぞれ __droppedImages / __added_texts / __userboxes の
+  //    配列に「現在 DOM にあるもの」 だけが書き出されるため、 削除＝配列から
+  //    抜けて永続化される。
+  //
+  //    Ctrl+Z でいずれの操作も復活可能 (hide op の inverse / remove op の inverse)。
   // ====================================================================
+  // 2026-05-13 (sw v984): spec 要素か否かを判定するヘルパー。
+  //   - state.spec に登録された selector のいずれかにマッチする
+  //   - かつ、 別経路で永続化されている動的/特殊クラス (.userbox / .le-dropped-img
+  //     / .le-added-text) では「ない」
+  //   を満たすものを true と判定する。 true = hide 経路で永続化、 false = DOM remove。
+  function _isSpecRegisteredElement(el) {
+    if (!el || el.nodeType !== 1 || !el.classList) return false;
+    // 別経路で永続化される特殊クラスは spec マッチでも除外
+    if (el.classList.contains('userbox')) return false;
+    if (el.classList.contains('le-dropped-img')) return false;
+    if (el.classList.contains('le-added-text')) return false;
+    // state.spec のいずれかにマッチすれば spec 要素
+    if (!state.spec || !state.spec.length) return false;
+    for (var i = 0; i < state.spec.length; i++) {
+      var sel = state.spec[i] && state.spec[i][0];
+      if (!sel) continue;
+      try { if (el.matches(sel)) return true; } catch (e) { /* invalid sel — skip */ }
+    }
+    return false;
+  }
   function deleteSelected() {
     if (!state.selectedElements || state.selectedElements.size === 0) {
       showToast('削除する対象を選択してください', 'error');
       return;
     }
     var els = Array.from(state.selectedElements);
-    var ops = els.map(function (el) {
-      return {
-        type: 'remove',
-        el: el,
-        parent: el.parentNode,
-        next: el.nextSibling
-      };
-    });
-    // 削除実行 (DOM から取り除く)
+    // 2026-05-13 (sw v984): spec 要素は hide 経路へ、 それ以外 (.userbox / 動的要素) は
+    //   従来通り DOM remove。 ops は 1 つの batch にまとめて Ctrl+Z で一括復活可能。
+    var ops = [];
+    var hideCount = 0, removeCount = 0;
     els.forEach(function (el) {
-      if (el && el.parentNode) el.parentNode.removeChild(el);
+      if (!el) return;
+      if (_isSpecRegisteredElement(el)) {
+        if (!el.classList.contains('user-hidden')) {
+          el.classList.add('user-hidden');
+          ops.push({ type: 'hide', el: el });
+        }
+        hideCount++;
+      } else {
+        if (el.parentNode) {
+          ops.push({ type: 'remove', el: el, parent: el.parentNode, next: el.nextSibling });
+          el.parentNode.removeChild(el);
+        }
+        removeCount++;
+      }
     });
     // 選択 / 優先ターゲット解除
     state.selectedElements.clear();
@@ -3796,7 +3833,9 @@
     try { saveAddedTexts(); } catch (e) {}
     refreshElementList();
     refreshSelectionUI();
-    showToast(els.length + ' 個を削除しました（Ctrl+Z で復活）', 'success');
+    // spec 要素 hide と dyn 要素 remove が混在する場合も総数で表示
+    var total = hideCount + removeCount;
+    showToast(total + ' 個を削除しました（Ctrl+Z で復活）', 'success');
   }
   // 単一要素を削除する補助 (要素一覧の行 🗑 ボタン用)。
   // 選択状態を上書きしてから deleteSelected を呼び、結果として
