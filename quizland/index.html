@@ -1172,12 +1172,16 @@ body.sheet-on .hdr-right .ctrl-btn {
    上端 (頭〜腕) を基準に表示、 下半分 (脚) をはみ出させてコンテナ枠でクリップ。
    stage-pono は overflow: hidden ではないが、 周囲は board の安全領域なので
    見切れ表示でも実害なし。 念のため overflow も hidden 化。 */
-.stage-pono.is-hooray { overflow: hidden; }
-.stage-pono.is-hooray .stage-pono-img {
-  object-fit: cover;
-  object-position: top center;
-  transform: scale(1.7);
-  transform-origin: top center;
+.stage-pono.is-hooray { overflow: hidden !important; }
+.stage-pono.is-hooray .stage-pono-img,
+.stage-pono.is-hooray #stage-pono-img,
+#stage-pono.is-hooray .stage-pono-img,
+#stage-pono.is-hooray #stage-pono-img {
+  object-fit: cover !important;
+  /* 顔・腕・上半身が container の上 65% に収まるよう、 画像内 y=30% を中央付近にする */
+  object-position: center 25% !important;
+  transform: scale(1.85) translateY(-8%) !important;
+  transform-origin: center top !important;
 }
 .stage-pono-bubble {
   position: absolute;
