@@ -1449,11 +1449,17 @@
     // Cache-buster for Claude preview only (skirts a stale service worker
     // that returns broken responses for <img> while fetch() works).
     const __isPreview = /claudeusercontent\.com$/.test(location.hostname);
-    const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}` : url;
+    // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
+    // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
+    // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
+    const PAGE_CACHE_VERSION = 992;
+    const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
     // scrollTop when the user crosses a set boundary. data-idx stays the
     // canonical 0..GAMES.length-1 index; data-rep is just the copy number.
+    // NOTE: 3 → 2 への削減は scroll teleport 計算 (start = oneSetH() の中央コピー基準、
+    // 境界 set*0.5 / set*1.5) を壊すので変更しない (2026-05-14 リスク回避)。
     const LOOP_COPIES = 3;
 
     function cardMarkup(g, i, rep) {
@@ -1471,10 +1477,10 @@
       const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
       return `
         <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
-          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false">
+          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="lazy" decoding="async">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
-            <img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false">
+            <img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="lazy" decoding="async">
           </div>
           <div class="game-card__text">
             <div class="game-card__title">${decorateKana(g.title)}</div>
@@ -1482,7 +1488,7 @@
           </div>
           ${comingBadge}
           <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
-            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.png'))}" alt="" draggable="false">
+            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.png'))}" alt="" draggable="false" loading="lazy" decoding="async">
           </button>
         </div>
       `;
@@ -1498,9 +1504,25 @@
       cardList.innerHTML = html;
       cardList.addEventListener('click', onCardClick);
 
-      // Mark broken images so CSS fallbacks kick in (local preview without assets)
+      // Mark broken images so CSS fallbacks kick in (local preview without assets).
+      // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
+      // 最大 2 回まで自動 retry を試みてからフォールバックする (2026-05-14 トップページ
+      // 画像部分読込バグ対策)。retry は同 URL を一旦外してから次フレームで再代入する
+      // ことでブラウザに再リクエストを強制させる。
       cardList.querySelectorAll('img').forEach((img) => {
-        img.addEventListener('error', () => img.classList.add('is-broken'), { once: true });
+        img.addEventListener('error', () => {
+          const retries = Number(img.dataset.retries || 0);
+          if (retries < 2) {
+            img.dataset.retries = String(retries + 1);
+            const src = img.src;
+            setTimeout(() => {
+              img.removeAttribute('src');
+              requestAnimationFrame(() => { img.src = src; });
+            }, 800);
+          } else {
+            img.classList.add('is-broken');
+          }
+        });
       });
 
       // Wire the infinite-loop scroll teleport. Defer one frame so layout
