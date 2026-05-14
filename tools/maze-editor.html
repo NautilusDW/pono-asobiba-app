@@ -591,7 +591,8 @@ function loadImageFile(file) {
           && Number.isFinite(state.handoffViewBox.w)
           && Number.isFinite(state.handoffViewBox.h)
           && state.handoffViewBox.w > 0 && state.handoffViewBox.h > 0) {
-        rescaled = _rescaleFromHandoffViewBox();
+        // silent: 後段の resizeCanvas() + draw() に任せて二重 draw / 二重 scheduleAutoSave を防ぐ
+        rescaled = _rescaleFromHandoffViewBox({ silent: true });
       }
       resizeCanvas();
       draw();
