@@ -131,6 +131,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T22:47:19Z - maze-editor: obstacle/creature drag 機能追加 (hit-test 半径は描画と一致、 _grabbedItemOnDown で click 抑止) + redo 機能 (state.redoStack + _snapshotJSON/_applySnapshot 共通ヘルパ + redoBtn UI) + Ctrl+Z/Y/Shift+Z ショートカット (IME ガード優先で input 内では無効化、 Escape の IME ガード順序バグも併せて修正)
+- **タスク**: maze-editor: obstacle/creature drag 機能追加 (hit-test 半径は描画と一致、 _grabbedItemOnDown で click 抑止) + redo 機能 (state.redoStack + _snapshotJSON/_applySnapshot 共通ヘルパ + redoBtn UI) + Ctrl+Z/Y/Shift+Z ショートカット (IME ガード優先で input 内では無効化、 Escape の IME ガード順序バグも併せて修正)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 86
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 42, "ToolSearch": 1, "Bash": 27, "Grep": 6, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-14T22:44:31Z - maze-editor: obstacles/creatures の drag 移動 + redo (Ctrl+Y / Ctrl+Shift+Z) + Ctrl+Z キーボードショートカット 追加
+- **タスク**: maze-editor: obstacles/creatures の drag 移動 + redo (Ctrl+Y / Ctrl+Shift+Z) + Ctrl+Z キーボードショートカット 追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 81
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 39, "ToolSearch": 1, "Bash": 25, "Grep": 6, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-14T22:35:13Z - maze-editor: 障害物/お邪魔虫が削除モードで消せないバグ修正 (handleDeleteClick の hit-test 半径を描画半径と画面36px の max() に拡大、 描画と hit zone の単位系不一致を解消)
 - **タスク**: maze-editor: 障害物/お邪魔虫が削除モードで消せないバグ修正 (handleDeleteClick の hit-test 半径を描画半径と画面36px の max() に拡大、 描画と hit zone の単位系不一致を解消)
 - **結果**: 成功
@@ -220,31 +246,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 26, "ToolSearch": 2, "Bash": 53, "Write": 1, "Edit": 12, "Grep": 4, "WebSearch": 5}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T14:51:11Z - maze エディタ: edges 一括削除ボタン (resetBtn 隣) + start/goal radius slider (20-300px, JSON 双方向対応) + ランタイム (maze/index.html) で node.radius 描画反映。 クロスレビュー指摘の semantics 不一致 (エディタ全高 vs ランタイム半径 2x) を sz=r で解消、 slider値とruntime描画 1:1 一致。 sw.js 999→1000 bump
-- **タスク**: maze エディタ: edges 一括削除ボタン (resetBtn 隣) + start/goal radius slider (20-300px, JSON 双方向対応) + ランタイム (maze/index.html) で node.radius 描画反映。 クロスレビュー指摘の semantics 不一致 (エディタ全高 vs ランタイム半径 2x) を sz=r で解消、 slider値とruntime描画 1:1 一致。 sw.js 999→1000 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 60
-- **エラー数**: 6
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 5, "Agent": 31, "ToolSearch": 1, "Bash": 18, "Grep": 4, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T14:50:32Z - stage 16:9統合: メディアクエリ4帯の :root --safe-w 上書きを削除し fitStage の contain-fit を完成、sw.js CACHE_VERSION 998→999
-- **タスク**: stage 16:9統合: メディアクエリ4帯の :root --safe-w 上書きを削除し fitStage の contain-fit を完成、sw.js CACHE_VERSION 998→999
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 56
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 5, "Agent": 31, "ToolSearch": 1, "Bash": 15, "Grep": 4}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
