@@ -2023,9 +2023,6 @@ body.layout-editor-on .character img {
 @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
   /* 厳密に 16:9 より狭い (16:10 1920×1200 等の比較的近いもの)
      visible slice ≈ 1440 canvas-px → safe-w 1400 は -40 buffer で OK */
-  :root {
-    --safe-w: 1400px;
-  }
   /* hdr の 1fr 700px は a-col が安定しているのでそのまま、ただし 700px は
      1400 の 50% で広すぎるので 600px に詰めて q-col に余裕を残す */
   .hdr { grid-template-columns: 1fr 600px; }
@@ -2047,9 +2044,6 @@ body.layout-editor-on .character img {
      iPad Pro 11" / Air 11" など 1.39 ≤ ratio < 1.45 帯では結果として 177px の
      余白が出るが、レイアウト上は中央寄せで違和感なく追加 min-aspect-ratio 分岐は
      導入しない (デザイン後退リスク回避)。 */
-  :root {
-    --safe-w: 1080px;
-  }
   .hdr { grid-template-columns: 1fr 480px; }
   .body { grid-template-columns: 1fr 480px; }
   .hdr-right .ctrl-btn { width: 96px; height: 96px; font-size: 14px; }
@@ -2110,9 +2104,6 @@ body.layout-editor-on .character img {
      で safe-w 1020 は -77 buffer。 max-aspect-ratio:4/3 カスケードの実効
      最狭ケース (ratio = 4/3 ジャスト、例: 1200×900) では visible slice
      = 1200×900/900 = 1125 canvas-px なので safe-w 1020 は -105 buffer 確保。 */
-  :root {
-    --safe-w: 1020px;
-  }
   .hdr { grid-template-columns: 1fr 440px; }
   .body { grid-template-columns: 1fr 440px; gap: 12px; }
   .hdr-right .ctrl-btn { width: 88px; height: 88px; font-size: 13px; }
@@ -2216,9 +2207,6 @@ body.layout-editor-on .character img {
      で safe-w 980 は -145 buffer。 max-aspect-ratio:5/4 カスケードの実効最狭ケース
      (ratio = 5/4 ジャスト、例: 1125×900) でも visible slice = 1125 canvas-px なので
      safe-w 980 は同じく -145 buffer 確保。 */
-  :root {
-    --safe-w: 980px;
-  }
   .hdr { grid-template-columns: 1fr 420px; }
   .body { grid-template-columns: 1fr 420px; }
   .hdr-right .ctrl-btn { width: 84px; height: 84px; font-size: 12px; }

@@ -130,6 +130,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T14:51:11Z - maze エディタ: edges 一括削除ボタン (resetBtn 隣) + start/goal radius slider (20-300px, JSON 双方向対応) + ランタイム (maze/index.html) で node.radius 描画反映。 クロスレビュー指摘の semantics 不一致 (エディタ全高 vs ランタイム半径 2x) を sz=r で解消、 slider値とruntime描画 1:1 一致。 sw.js 999→1000 bump
+- **タスク**: maze エディタ: edges 一括削除ボタン (resetBtn 隣) + start/goal radius slider (20-300px, JSON 双方向対応) + ランタイム (maze/index.html) で node.radius 描画反映。 クロスレビュー指摘の semantics 不一致 (エディタ全高 vs ランタイム半径 2x) を sz=r で解消、 slider値とruntime描画 1:1 一致。 sw.js 999→1000 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 60
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 5, "Agent": 31, "ToolSearch": 1, "Bash": 18, "Grep": 4, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T14:50:32Z - stage 16:9統合: メディアクエリ4帯の :root --safe-w 上書きを削除し fitStage の contain-fit を完成、sw.js CACHE_VERSION 998→999
+- **タスク**: stage 16:9統合: メディアクエリ4帯の :root --safe-w 上書きを削除し fitStage の contain-fit を完成、sw.js CACHE_VERSION 998→999
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 56
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 5, "Agent": 31, "ToolSearch": 1, "Bash": 15, "Grep": 4}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T14:49:58Z - maze/index.html の imgNodeMarkerSize で radius semantics をエディタと揃える (sz = r * 2 → sz = r)
+- **タスク**: maze/index.html の imgNodeMarkerSize で radius semantics をエディタと揃える (sz = r * 2 → sz = r)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 55
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 31, "ToolSearch": 1, "Bash": 15, "Grep": 4}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T14:45:55Z - maze-editor.html: start/goal の radius を slider で可変化 (描画/hit-test/JSON/handoff rescale 全対応)
 - **タスク**: maze-editor.html: start/goal の radius を slider で可変化 (描画/hit-test/JSON/handoff rescale 全対応)
 - **結果**: 成功
@@ -205,45 +244,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 4, "Agent": 22, "ToolSearch": 1, "Bash": 12, "Grep": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T14:29:46Z - puzzle 横画面専用化: CSS aspect-ratio 3/4→4/3 + notice 反転 + landscape MQ で flex-row + sidebar 180px + ResizeObserver で進捗保護 + sw v995→997
-- **タスク**: puzzle 横画面専用化: CSS aspect-ratio 3/4→4/3 + notice 反転 + landscape MQ で flex-row + sidebar 180px + ResizeObserver で進捗保護 + sw v995→997
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 33
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 6, "Glob": 2, "Bash": 16, "Grep": 3, "Agent": 5, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。
-
-
-### 2026-05-14T14:29:44Z - maze-editor.html: handoff JSON の viewBox を保持し、画像読み込み時に nodes/edges/obstacles/creatures を実画像サイズへ自動rescaleする_rescaleFromHandoffViewBox()を新規追加
-- **タスク**: maze-editor.html: handoff JSON の viewBox を保持し、画像読み込み時に nodes/edges/obstacles/creatures を実画像サイズへ自動rescaleする_rescaleFromHandoffViewBox()を新規追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 32
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 6, "Glob": 2, "Bash": 15, "Grep": 3, "Agent": 5, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。
-
-
-### 2026-05-14T14:28:14Z - puzzle横画面化レビュー修正: style.cssにlandscape×coarse専用横並び+モーダル圧縮メディアクエリ追加、main.jsのResizeObserverで進捗温存判定追加、sw.js v996→997
-- **タスク**: puzzle横画面化レビュー修正: style.cssにlandscape×coarse専用横並び+モーダル圧縮メディアクエリ追加、main.jsのResizeObserverで進捗温存判定追加、sw.js v996→997
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 39
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Agent": 19, "ToolSearch": 1, "Bash": 12, "Grep": 3}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
