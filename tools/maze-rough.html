@@ -397,6 +397,10 @@ input[type="file"]::file-selector-button {
       </label>
       <button class="btn" id="compareBtn" style="flex:1; font-size:0.78rem;">🪟 別タブで開く</button>
     </div>
+    <label class="btn" id="pngImportBtn" style="margin-top:6px; font-size:0.78rem; width:100%; cursor:pointer; text-align:center; padding:8px; display:block;">
+      📷 PNG から復元
+      <input type="file" id="pngImportInput" accept="image/png" style="display:none;">
+    </label>
     <h3 style="margin-top:8px;">🔀 比較ペイン (上下分割)</h3>
     <select id="compareSelect" style="width:100%; padding:6px 8px; font-family:inherit; font-size:0.78rem;
                                        background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
@@ -2941,6 +2945,132 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
   reader.readAsText(f);
   e.target.value = '';
 });
+
+// 📷 PNG (1920×1080 or 3840×1080 export) → tiles / start / goal を逆解析して復元
+// 失った localStorage 下書きを手元の PNG から救出するためのレスキュー機能。
+// 検出対象: 道タイル (#FAF6E8) と スタート/ゴール円 (#3B8DD9 / #D74E4E)。
+// creatures / waypoints / obstacles / edges は PNG に描かれていないので空にリセット。
+function _importFromPngImage(img) {
+  const W = img.naturalWidth || img.width;
+  const H = img.naturalHeight || img.height;
+
+  // パネル判定: 60px/タイル × 18行 = 1080 高さ固定。横幅で 1/2 パネルを区別
+  let targetPanels, targetGridW;
+  if (H === 1080 && W === 1920) { targetPanels = 1; targetGridW = 32; }
+  else if (H === 1080 && W === 3840) { targetPanels = 2; targetGridW = 64; }
+  else {
+    alert('対応外のサイズ (' + W + '×' + H + ') です。\n1920×1080 (1 パネル) か 3840×1080 (2 パネル) のみ対応しています。');
+    return false;
+  }
+
+  // 既存作業の確認 (重いピクセル走査の前に確認する。 3840×1080 だと約 400 万 px 走査するため)
+  const hasContent = state.creatures.length > 0 || state.waypoints.length > 0 ||
+    state.obstacles.length > 0 || state.edges.length > 0 ||
+    state.start || state.goal ||
+    state.tiles.some(function(row) { return row.some(function(t) { return t === 'path'; }); });
+  if (hasContent && !confirm('現在の作業を破棄して PNG から復元します。よろしいですか？')) {
+    return false;
+  }
+
+  // off-screen canvas にコピーして getImageData
+  const oc = document.createElement('canvas');
+  oc.width = W; oc.height = H;
+  const octx = oc.getContext('2d');
+  octx.drawImage(img, 0, 0);
+  let imgData;
+  try {
+    imgData = octx.getImageData(0, 0, W, H);
+  } catch (e) {
+    alert('PNG の解析に失敗 (canvas tainted の可能性): ' + e.message);
+    return false;
+  }
+  const px = imgData.data;
+
+  // ヘルパ: (x, y) ピクセル → RGBA index
+  function _at(x, y) {
+    const i = (y * W + x) * 4;
+    return [px[i], px[i+1], px[i+2]];
+  }
+
+  // タイル判定 (タイル中心 px をサンプル、 道色 #FAF6E8 ≒ (240,246,232) に近ければ path)
+  const TOL = 25;
+  const newTiles = new Array(GRID_H);
+  for (let y = 0; y < GRID_H; y++) {
+    newTiles[y] = new Array(targetGridW);
+    for (let x = 0; x < targetGridW; x++) {
+      const cx = x * CELL + (CELL >> 1);
+      const cy = y * CELL + (CELL >> 1);
+      const rgb = _at(cx, cy);
+      const isPath =
+        Math.abs(rgb[0] - 240) <= TOL &&
+        Math.abs(rgb[1] - 246) <= TOL &&
+        Math.abs(rgb[2] - 232) <= TOL;
+      newTiles[y][x] = isPath ? 'path' : 'wall';
+    }
+  }
+
+  // start/goal マーカー検出: 各色域に当てはまるピクセルを集めて重心を取る。
+  // start: #3B8DD9 (R<80, G:120-180, B>180)
+  // goal : #D74E4E (R>180, G<100, B<100)
+  let sSumX = 0, sSumY = 0, sCnt = 0;
+  let gSumX = 0, gSumY = 0, gCnt = 0;
+  // 走査ステップ: マーカー半径は CELL*0.7 以上 → 2px サンプリングでも十分捕捉できる
+  for (let y = 0; y < H; y += 2) {
+    for (let x = 0; x < W; x += 2) {
+      const i = (y * W + x) * 4;
+      const r = px[i], g = px[i+1], b = px[i+2];
+      // start (青円)
+      if (r < 80 && g >= 120 && g <= 180 && b > 180) {
+        sSumX += x; sSumY += y; sCnt++;
+      }
+      // goal (赤円)
+      else if (r > 180 && g < 100 && b < 100) {
+        gSumX += x; gSumY += y; gCnt++;
+      }
+    }
+  }
+  const MIN_PX = 50;
+  const newStart = (sCnt >= MIN_PX) ? { x: sSumX / sCnt, y: sSumY / sCnt } : null;
+  const newGoal  = (gCnt >= MIN_PX) ? { x: gSumX / gCnt, y: gSumY / gCnt } : null;
+
+  pushHistory();
+  // パネル数を合わせる (内部で tiles を makeEmptyGrid() で初期化するので、 そのあと上書きする)
+  _resizeCanvas(targetGridW, targetPanels);
+  state.tiles = newTiles;
+  state.start = newStart;
+  state.goal  = newGoal;
+  // PNG に描かれていない要素はリセット
+  state.creatures = [];
+  state.waypoints = [];
+  state.obstacles = [];
+  state.edges = [];
+  state.cellLayout = null;
+
+  afterEdit();
+  showBanner('✅ PNG から復元しました (panels=' + targetPanels +
+    '、 start=' + (newStart ? '○' : '×') +
+    ' goal=' + (newGoal ? '○' : '×') + ')');
+  return true;
+}
+
+document.getElementById('pngImportInput').addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = function() {
+    try { _importFromPngImage(img); }
+    catch (err) { alert('PNG 復元に失敗: ' + err.message); }
+    finally { URL.revokeObjectURL(url); }
+  };
+  img.onerror = function() {
+    URL.revokeObjectURL(url);
+    alert('PNG の読み込みに失敗しました');
+  };
+  img.src = url;
+  e.target.value = '';
+});
+
 document.getElementById('saveNameInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
