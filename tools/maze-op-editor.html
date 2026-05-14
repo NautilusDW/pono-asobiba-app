@@ -394,10 +394,22 @@ const DEFAULT_BEATS = [
   'みんなを みつけて、\nあんしんさせて あげよう！'
 ];
 
+// フレーム画像ソースの allowlist 正規表現 (XSS 対策の第一線):
+// `assets/images/...` 配下の png/jpg/jpeg/webp のみ許可。値はここを通過したものだけ
+// state.layout.frame.src に格納される。 renderStage で CSS に差し込む際にも
+// 追加の sanitize (`'`, `"`, `)`, `\\` を除去) を実行する 2 段防御。
+const FRAME_SRC_RE = /^assets\/images\/[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
+
 const DEFAULT_LAYOUT = {
-  box:  { xPct: 10, yPct: 60, widthPct: 80, heightPct: 30 },
-  text: { fontSize: 26, lineHeight: 1.6, color: '#ffffff', align: 'center', letterSpacing: 0 },
-  bg:   { color: '#000000', alpha: 0.55, radius: 16, padding: 16 }
+  // フレーム画像 (パピルス板) を前提に、初期値はリーダブルなクリーム色対応に揃える:
+  //   - text.color: 濃茶 (#3a2818) でクリーム背景に読みやすく
+  //   - bg.alpha/radius: 0 (フレーム画像に背景描画を委譲)
+  //   - box.widthPct: 75 / heightPct: 28 (フレームが画面端で切れないように)
+  //   - box.yPct: 62 (フレームを下半分中央寄りに配置)
+  box:  { xPct: 12, yPct: 62, widthPct: 75, heightPct: 28 },
+  text: { fontSize: 26, lineHeight: 1.6, color: '#3a2818', align: 'center', letterSpacing: 0 },
+  bg:   { color: '#000000', alpha: 0, radius: 0, padding: 16 },
+  frame:{ enabled: true, src: 'assets/images/maze/OP/frame_s2.png' }
 };
 
 // ----------------------------------------------------------------------------
@@ -482,6 +494,9 @@ function saveToLocal() {
 
 function mergeLayout(base, incoming) {
   const out = clone(base);
+  // defensive default: frame フィールド未定義の旧 JSON を Import しても落ちないように、
+  // 最初に out.frame を必ず確保する (== Import 互換用の保険)。
+  out.frame = out.frame || { enabled: false, src: '' };
   if (!incoming || typeof incoming !== 'object') return out;
   if (incoming.box && typeof incoming.box === 'object') {
     out.box.xPct      = clampNum(incoming.box.xPct,      0,   100, out.box.xPct);
@@ -501,6 +516,19 @@ function mergeLayout(base, incoming) {
     out.bg.alpha   = clampNum(incoming.bg.alpha,   0,   1,   out.bg.alpha);
     out.bg.radius  = clampNum(incoming.bg.radius,  0, 100,   out.bg.radius);
     out.bg.padding = clampNum(incoming.bg.padding, 0, 100,   out.bg.padding);
+  }
+  if (incoming.frame && typeof incoming.frame === 'object') {
+    if (typeof incoming.frame.enabled === 'boolean') {
+      out.frame.enabled = incoming.frame.enabled;
+    }
+    // 受入: string かつ allowlist 正規表現 (assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
+    // 空文字列も許容 (= フレーム未指定状態を Export/Import で表現できるように)。
+    if (typeof incoming.frame.src === 'string') {
+      const s = incoming.frame.src.trim();
+      if (s === '' || FRAME_SRC_RE.test(s)) {
+        out.frame.src = s;
+      }
+    }
   }
   return out;
 }
@@ -545,8 +573,23 @@ function renderStage() {
   box.style.width  = L.box.widthPct + '%';
   box.style.height = L.box.heightPct + '%';
   box.style.padding         = L.bg.padding + 'px';
-  box.style.borderRadius    = L.bg.radius  + 'px';
-  box.style.backgroundColor = hexToRgba(L.bg.color, L.bg.alpha);
+
+  // フレーム画像 (パピルス板) が有効なときは、 角丸 / 半透明黒 を全て無効化して
+  // 装飾はフレーム PNG に完全委譲する。 enabled=false のときは従来通り bg.* を尊重。
+  if (L.frame && L.frame.enabled && L.frame.src) {
+    // XSS 2 段防御: mergeLayout 側の正規表現で allowlist を通したうえで、
+    // 念のため CSS injection に使われうる文字 (', ", \\, )) を除去する。
+    const safeSrc = String(L.frame.src).replace(/['"\\)]/g, '');
+    box.style.backgroundImage    = "url('" + safeSrc + "')";
+    box.style.backgroundSize     = '100% 100%';
+    box.style.backgroundRepeat   = 'no-repeat';
+    box.style.backgroundColor    = 'transparent';
+    box.style.borderRadius       = '0';
+  } else {
+    box.style.backgroundImage    = '';
+    box.style.backgroundColor    = hexToRgba(L.bg.color, L.bg.alpha);
+    box.style.borderRadius       = L.bg.radius  + 'px';
+  }
 
   // Text style.
   text.style.fontSize      = L.text.fontSize + 'px';

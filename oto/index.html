@@ -964,18 +964,32 @@ function startHeldNote(btn, set, idx) {
     freqs = [_doremiFreqs()[idx] || 440];
   }
   var t = ac.currentTime;
-  var oscs = freqs.map(function(f, i) {
-    var o = ac.createOscillator();
-    o.type = (set === 'kira') ? 'sine' : 'triangle';
-    o.frequency.setValueAtTime(f, t);
-    var g = ac.createGain();
-    g.gain.setValueAtTime(0, t);
-    var peak = (set === 'kira' ? 0.18 : 0.22) - i * 0.025; // 上の倍音は少し控え目
-    if (peak < 0.04) peak = 0.04;
-    g.gain.linearRampToValueAtTime(peak, t + 0.015);
-    o.connect(g); g.connect(ac.destination);
-    o.start(t);
-    return { osc: o, gain: g };
+  // kira (鐘) は背景タップの playKira と同じく sine 3倍音 (1.0/2.01/3.02) で鳴らす。
+  // 単音だと triangle っぽい音色になり、playKira (倍音入り「鐘」) と不一致になるため。
+  // CHORD_MODE === 'on' の時は和音3音を鳴らすので倍音化はスキップ (音が濁る)。
+  var partials = (set === 'kira' && CHORD_MODE !== 'on')
+    ? [1.0, 2.01, 3.02]
+    : [1.0];
+  var oscs = [];
+  freqs.forEach(function(f, ci) {
+    partials.forEach(function(mul, pi) {
+      var o = ac.createOscillator();
+      o.type = (set === 'kira') ? 'sine' : 'triangle';
+      o.frequency.setValueAtTime(f * mul, t);
+      var g = ac.createGain();
+      g.gain.setValueAtTime(0, t);
+      // ベースのピーク: kira は控えめ (倍音重ねるとクリップしやすい)
+      var basePeak = (set === 'kira' ? 0.18 : 0.22) - ci * 0.025;
+      // 倍音は減衰させる: 2倍音 1/2、3倍音 1/3 (playKira と同じ比率)
+      var peak = basePeak / (pi + 1);
+      if (set === 'kira' && partials.length > 1) peak *= 0.65; // 合計でクリップしないよう調整
+      if (peak < 0.04) peak = 0.04;
+      g.gain.linearRampToValueAtTime(peak, t + 0.015);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t);
+      // LFO 注入は基音 (pi === 0) のみ対象にする (倍音までビブラート掛けると周波数比が崩れる)
+      oscs.push({ osc: o, gain: g, isFundamental: pi === 0 });
+    });
   });
   var note = { oscs: oscs, vibratoTo: null, lfo: null, lfoGain: null };
   // 250ms 後にビブラート LFO 開始
@@ -987,7 +1001,10 @@ function startHeldNote(btn, set, idx) {
     var lfoG = ac.createGain();
     lfoG.gain.value = 6;       // ±6Hz の周波数揺らぎ
     lfo.connect(lfoG);
-    note.oscs.forEach(function(o) { lfoG.connect(o.osc.frequency); });
+    // 倍音にも掛けると周波数比が崩れて鐘らしさが消えるので、基音だけにビブラートを掛ける
+    note.oscs.forEach(function(o) {
+      if (o.isFundamental !== false) lfoG.connect(o.osc.frequency);
+    });
     lfo.start();
     note.lfo = lfo;
     note.lfoGain = lfoG;
