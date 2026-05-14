@@ -130,6 +130,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T14:32:38Z - quizland stage を 21:9 (2100x900) から 16:9 (1600x900) に縮小 + sw.js CACHE_VERSION 997->998
+- **タスク**: quizland stage を 21:9 (2100x900) から 16:9 (1600x900) に縮小 + sw.js CACHE_VERSION 997->998
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 42
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 22, "ToolSearch": 1, "Bash": 12, "Grep": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T14:29:46Z - puzzle 横画面専用化: CSS aspect-ratio 3/4→4/3 + notice 反転 + landscape MQ で flex-row + sidebar 180px + ResizeObserver で進捗保護 + sw v995→997
 - **タスク**: puzzle 横画面専用化: CSS aspect-ratio 3/4→4/3 + notice 反転 + landscape MQ で flex-row + sidebar 180px + ResizeObserver で進捗保護 + sw v995→997
 - **結果**: 成功
@@ -223,19 +236,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-05-14T10:59:12Z - quizland index.html: 4 aspect-ratio メディアクエリの .board に max-width: none !important を追加
 - **タスク**: quizland index.html: 4 aspect-ratio メディアクエリの .board に max-width: none !important を追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 31
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 3, "Agent": 16, "ToolSearch": 1, "Bash": 9, "Grep": 2}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T10:59:11Z - maze-editor.html にラフ作成ツール (maze-rough.html) からの handoff データ自動検出/取り込み機構を実装
-- **タスク**: maze-editor.html にラフ作成ツール (maze-rough.html) からの handoff データ自動検出/取り込み機構を実装
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 31

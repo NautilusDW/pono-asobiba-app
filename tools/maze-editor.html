@@ -2165,7 +2165,10 @@ function _draftHasWork() {
 // state.nodes / edges.controls / edges.polyline / obstacles / creatures を一括 rescale する。
 // 完了後 state.handoffViewBox を null クリアして二重 rescale を防ぐ。
 // 戻り値: 実際に座標を書き換えたら true、 等倍 (scale=1,1) で no-op だった場合は false。
-function _rescaleFromHandoffViewBox() {
+// opts.silent: true なら内部の draw() / scheduleAutoSave() を省略する
+// (loadImageFile 経路からは呼び出し側が後段で draw() / resizeCanvas() を行うため重複呼び出しを避ける)
+function _rescaleFromHandoffViewBox(opts) {
+  opts = opts || {};
   const hv = state.handoffViewBox;
   if (!hv || !Number.isFinite(hv.w) || !Number.isFinite(hv.h) || hv.w <= 0 || hv.h <= 0) {
     state.handoffViewBox = null;
@@ -2175,13 +2178,13 @@ function _rescaleFromHandoffViewBox() {
       || state.imgW <= 0 || state.imgH <= 0) {
     return false;
   }
-  const sx = state.imgW / hv.w;
-  const sy = state.imgH / hv.h;
-  // 等倍なら no-op (ただし handoffViewBox はクリアする)
-  if (sx === 1 && sy === 1) {
+  // 等倍判定は浮動小数点誤差を避けるため整数値で直接比較
+  if (state.imgW === hv.w && state.imgH === hv.h) {
     state.handoffViewBox = null;
     return false;
   }
+  const sx = state.imgW / hv.w;
+  const sy = state.imgH / hv.h;
   // Nodes
   if (Array.isArray(state.nodes)) {
     state.nodes.forEach(function(n) {
@@ -2228,8 +2231,24 @@ function _rescaleFromHandoffViewBox() {
   }
   // 二重 rescale 防止
   state.handoffViewBox = null;
-  try { draw(); } catch (e) {}
-  try { scheduleAutoSave(); } catch (e) {}
+  // 直前に pushHistory() で積まれた生座標スナップショットを rescale 後の座標で上書きする。
+  // (pushHistory の形式と完全に同じ JSON.stringify(...) を使う。)
+  // これがないと undo で 1920×1080 等の生座標に戻り、 ずれた状態になる。
+  if (state.history && state.history.length > 0) {
+    state.history[state.history.length - 1] = JSON.stringify({
+      nodes: state.nodes,
+      edges: state.edges,
+      obstacles: state.obstacles,
+      creatures: state.creatures,
+      nextStopId: state.nextStopId,
+      nextCreatureId: state.nextCreatureId,
+      edgeInProgress: state.edgeInProgress,
+    });
+  }
+  if (!opts.silent) {
+    try { draw(); } catch (e) {}
+    try { scheduleAutoSave(); } catch (e) {}
+  }
   return true;
 }
 
