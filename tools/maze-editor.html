@@ -188,6 +188,31 @@ html, body { height: 100vh; overflow: hidden;
     <input type="file" id="jsonInput" accept=".json,application/json">
     <p style="font-size: 0.7rem; color: #888;">前に保存した JSON を編集再開する場合だけ</p>
 
+    <!-- ラフ作成 (tools/maze-rough.html) からの handoff データを取り込む UI。
+         handoff が localStorage に存在しないときは display:none (init で動的に切替)。 -->
+    <div id="roughHandoffRow" style="display:none; margin-top:8px; padding:8px;
+         background:#1f3a2a; border:1px solid #4a7a5a; border-radius:4px;">
+      <div style="font-size:0.78rem; color:#cfd; font-weight:700; margin-bottom:4px;">
+        🌿 ラフ作成 → エディタ
+      </div>
+      <div id="roughHandoffInfo" style="font-size:0.7rem; color:#9bc;
+           margin-bottom:6px;"></div>
+      <button id="roughImportBtn" class="mode-btn"
+              style="width:100%; padding:6px 10px; font-size:0.78rem;
+                     background:#2a5a3a; color:#cfd; border-color:#7ac76d;">
+        📥 ラフから取り込み
+      </button>
+      <button id="roughReimportBtn" class="mode-btn"
+              style="width:100%; padding:6px 10px; font-size:0.78rem;
+                     background:#2a3e5a; color:#cef; border-color:#5a7ab2;
+                     margin-top:4px; display:none;">
+        ↻ ラフから再取り込み
+      </button>
+      <p style="font-size:0.65rem; color:#8a8; margin-top:4px;">
+        ラフで描いた迷路グラフを取り込み (画像は別途差し替え)
+      </p>
+    </div>
+
     <h3>3. モード</h3>
     <div class="modes">
       <button class="mode-btn active" data-mode="start">🟠 スタート</button>
@@ -2088,6 +2113,216 @@ document.getElementById('libCompareBtn').addEventListener('click', function() {
 });
 
 // ────────────────────────────────────────────────────────
+// ラフ作成 (tools/maze-rough.html) → エディタ handoff
+// ────────────────────────────────────────────────────────
+// ラフ側 (別エージェント実装) が常時 localStorage[HANDOFF_KEY] に
+// handoff JSON (version:1, source:'maze-rough.html') を書き出している。
+// エディタ起動時に検出して、 ユーザーの作業を上書きしない範囲で取り込む。
+//
+// 設計:
+//  - handoff キーは「削除しない」 (ラフ側がさらに更新する可能性があるため)
+//  - 同一セッション内で多重ロードしないように _handoffLoadedFlag で防御
+//  - 既存 draft に編集中のデータがあれば自動取り込みせず、 ボタンだけ出す
+const HANDOFF_KEY = 'pono_maze_rough_handoff_v1';
+const HANDOFF_SESSION_FLAG = 'pono_maze_rough_handoff_loaded_v1';
+
+function _readHandoff() {
+  try {
+    const raw = localStorage.getItem(HANDOFF_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== 'object') return null;
+    if (obj.version !== 1) return null;
+    if (obj.source !== 'maze-rough.html') return null;
+    return obj;
+  } catch (e) {
+    console.warn('handoff read failed:', e);
+    return null;
+  }
+}
+
+function _draftHasWork() {
+  // 「編集中」 とみなす最低条件: ノードが 2 つ以上、 または エッジが 1 つ以上
+  // (start のみ・goal のみは空に近いとみなし、 上書き許可)
+  if (!Array.isArray(state.nodes)) return false;
+  if (state.edges && state.edges.length >= 1) return true;
+  if (state.nodes.length >= 2) return true;
+  return false;
+}
+
+// handoff JSON を editor state に流し込む。
+// 既存 jsonInput の change handler の構造を踏襲し、 同じバリデーション・正規化を行う。
+// imageUrl は意図的にセットしない (ユーザーが画像を後で差し替える前提)。
+function _applyHandoff(h, opts) {
+  opts = opts || {};
+  try {
+    // Validate
+    if (!h || !Array.isArray(h.nodes) || !Array.isArray(h.edges)) {
+      throw new Error('nodes/edges 配列がありません');
+    }
+    pushHistory();
+
+    // Nodes: start/goal/stop 全部受理 (ラフ側は waypoints を stop として書く想定)
+    state.nodes = h.nodes.filter(function(n) {
+      return n && typeof n.id === 'string'
+        && Number.isFinite(n.x) && Number.isFinite(n.y)
+        && (n.kind === 'start' || n.kind === 'goal' || n.kind === 'stop');
+    }).map(function(n) {
+      return { id: n.id, x: Number(n.x), y: Number(n.y), kind: n.kind };
+    });
+
+    // Edges: polyline → controls (内部表現)
+    state.edges = h.edges.filter(function(e2) {
+      return e2 && typeof e2.from === 'string' && typeof e2.to === 'string'
+        && Array.isArray(e2.polyline) && e2.polyline.length >= 2;
+    }).map(function(e2) {
+      const controls = e2.polyline
+        .filter(function(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y); })
+        .map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
+      return { from: e2.from, to: e2.to, controls: controls };
+    });
+
+    // nextStopId を既存 stop の最大番号+1 に
+    const usedIds = state.nodes.filter(function(n) { return n.kind === 'stop'; })
+      .map(function(n) { const m = n.id.match(/^stop(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
+    state.nextStopId = (usedIds.length > 0 ? Math.max.apply(null, usedIds) : 0) + 1;
+
+    // ステージ名
+    if (h.name) stageNameInput.value = String(h.name).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    // Obstacles / Creatures (kind 値はラフ側と同じ語彙: tree/pond/hole/stump/rock,
+    //                                                mayoi/odoke/nemuri/pyon)
+    state.obstacles = Array.isArray(h.obstacles)
+      ? h.obstacles
+          .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
+          .map(function(o) { return { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) }; })
+      : [];
+    state.creatures = Array.isArray(h.creatures)
+      ? h.creatures
+          .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
+          .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)),
+                                        kind: c.kind || 'mayoi',
+                                        x: Number(c.x), y: Number(c.y) }; })
+      : [];
+    const usedCIds = state.creatures.map(function(c) {
+      const m = c.id.match(/^c(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    });
+    state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
+
+    state.edgeInProgress = null;
+    if (edgeProgressEl) edgeProgressEl.textContent = '';
+
+    // imageUrl はあえて流さない — ユーザーが差し替える
+    draw();
+    updateStatus();
+    scheduleAutoSave(); // この取り込みも auto-save に反映
+
+    // セッション内フラグ: 同一セッションで再ロードしない
+    try { sessionStorage.setItem(HANDOFF_SESSION_FLAG, '1'); } catch (e) {}
+
+    const msg = (opts.silent ? '' :
+      '📥 ラフ作成から取り込みました — 画像を差し替えて作業を続けてください'
+      + ' (ノード ' + state.nodes.length + ' / 道 ' + state.edges.length + ')');
+    if (!opts.silent) showBanner(msg);
+
+    // 再取り込みボタンを表示
+    const reimport = document.getElementById('roughReimportBtn');
+    if (reimport) reimport.style.display = 'block';
+    const importBtn = document.getElementById('roughImportBtn');
+    if (importBtn) importBtn.style.display = 'none';
+
+    return true;
+  } catch (err) {
+    console.warn('handoff apply failed:', err);
+    alert('ラフからの取り込みに失敗: ' + (err.message || err));
+    return false;
+  }
+}
+
+function _updateRoughHandoffUI() {
+  const row = document.getElementById('roughHandoffRow');
+  const info = document.getElementById('roughHandoffInfo');
+  const importBtn = document.getElementById('roughImportBtn');
+  const reimportBtn = document.getElementById('roughReimportBtn');
+  if (!row) return;
+
+  const h = _readHandoff();
+  if (!h) {
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = 'block';
+
+  // info: 「いつ書き込まれたか」 + 「グラフサイズ」
+  let when = '';
+  try {
+    const ts = h.savedAt ? Date.parse(h.savedAt) : 0;
+    if (ts) {
+      const min = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+      when = min < 1 ? '今しがた' : ('約 ' + min + ' 分前');
+    }
+  } catch (e) {}
+  const nodeN = Array.isArray(h.nodes) ? h.nodes.length : 0;
+  const edgeN = Array.isArray(h.edges) ? h.edges.length : 0;
+  info.textContent = (when ? (when + ' / ') : '') + 'ノード ' + nodeN + ' / 道 ' + edgeN;
+
+  // セッション中に既にロード済みなら 再取り込みボタンだけ表示
+  const loaded = (function() {
+    try { return sessionStorage.getItem(HANDOFF_SESSION_FLAG) === '1'; }
+    catch (e) { return false; }
+  })();
+  if (loaded) {
+    if (importBtn) importBtn.style.display = 'none';
+    if (reimportBtn) reimportBtn.style.display = 'block';
+  } else {
+    if (importBtn) importBtn.style.display = 'block';
+    if (reimportBtn) reimportBtn.style.display = 'none';
+  }
+}
+
+// 起動時 handoff 自動検出 — 既存 draft に編集物がなければ自動で取り込み、
+// あればボタン経由のみに留める。
+function _maybeAutoLoadHandoff() {
+  const h = _readHandoff();
+  if (!h) return false;
+  // 既にこのセッションでロード済みなら skip
+  try {
+    if (sessionStorage.getItem(HANDOFF_SESSION_FLAG) === '1') return false;
+  } catch (e) {}
+  // 既存 draft に作業があれば自動取り込みしない
+  if (_draftHasWork()) {
+    showBanner('🌿 ラフ作成にデータあり — 「📥 ラフから取り込み」で取り込めます');
+    return false;
+  }
+  return _applyHandoff(h, { silent: false });
+}
+
+// ボタン handler を結線
+(function _wireRoughHandoffButtons() {
+  const importBtn = document.getElementById('roughImportBtn');
+  if (importBtn) {
+    importBtn.addEventListener('click', function() {
+      const h = _readHandoff();
+      if (!h) { alert('ラフ作成側にデータがありません'); return; }
+      if (_draftHasWork()) {
+        if (!confirm('現在の編集内容が上書きされます。 取り込みますか?')) return;
+      }
+      _applyHandoff(h, { silent: false });
+    });
+  }
+  const reimportBtn = document.getElementById('roughReimportBtn');
+  if (reimportBtn) {
+    reimportBtn.addEventListener('click', function() {
+      const h = _readHandoff();
+      if (!h) { alert('ラフ作成側にデータがありません'); return; }
+      if (!confirm('ラフの最新状態で再取り込みします (現在の編集を上書き)。 進めますか?')) return;
+      _applyHandoff(h, { silent: false });
+    });
+  }
+})();
+
+// ────────────────────────────────────────────────────────
 // Init
 // ────────────────────────────────────────────────────────
 updateStatus();
@@ -2102,7 +2337,11 @@ if (_editorAutoLoad && libGetAll()[_editorAutoLoad]) {
 } else {
   // Try to restore the auto-saved draft (single-slot)
   _restoreDraft();
+  // draft 復元の後で handoff を判定 (draft が空なら自動取り込み)
+  _maybeAutoLoadHandoff();
 }
+// UI 状態 (handoff 行の表示 / ボタン切り替え) を最後に更新
+_updateRoughHandoffUI();
 libRefreshList();
 _setAutoSaveStatus('💾 自動保存 ON (操作するたびに保存)', '#888');
 </script>
