@@ -912,6 +912,8 @@ function sanitizeFrameFilename(rawName) {
   let base = baseRaw.replace(/[^A-Za-z0-9_.-]/g, '_');
   // 先頭/末尾 `.` を除去 (隠しファイル化防止)
   base = base.replace(/^\.+/, '').replace(/\.+$/, '');
+  // 中間 `..` も `_` に置換 (worker traversal guard と一貫性確保)
+  base = base.replace(/\.\./g, '_');
   if (!base) base = 'frame';
   return base + '.' + extRaw;
 }
@@ -949,6 +951,20 @@ async function readFileAsBase64(file) {
   let bin = '';
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin);
+}
+
+async function detectImageMagicBytes(file) {
+  // 最初 16 byte を見て image format を判定
+  const head = await file.slice(0, 16).arrayBuffer();
+  const b = new Uint8Array(head);
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47) return 'png';
+  // JPEG: FF D8 FF
+  if (b[0]===0xFF && b[1]===0xD8 && b[2]===0xFF) return 'jpeg';
+  // WebP: 'RIFF' (52 49 46 46) ... 'WEBP' (57 45 42 50) at offset 8
+  if (b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 &&
+      b[8]===0x57 && b[9]===0x45 && b[10]===0x42 && b[11]===0x50) return 'webp';
+  return null;
 }
 
 // 指定 path の sha を取得 (存在しなければ null)。 _ghContentsUrl は L808 で定義済。
@@ -1001,9 +1017,30 @@ async function handleFramePicked(file) {
     toast('対応形式は png / jpg / webp のみ', 'err');
     return;
   }
+  // 1-A. MIME type の即時チェック (軽量、 file.type は偽装可能なため二段防御)
+  const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
+  if (!ALLOWED_MIME.has(file.type)) {
+    toast('PNG / JPEG / WebP のみアップロード可能です (検出: ' + (file.type || '不明') + ')', 'err');
+    return;
+  }
   // 2. サイズチェック
   if (file.size > FRAME_MAX_BYTES) {
     toast('ファイルが大きすぎます (上限 3MB)', 'err');
+    return;
+  }
+  // 2-A. magic byte 検証 (file.type 偽装にも対応; 拡張子と実コンテンツの不一致もチェック)
+  const detected = await detectImageMagicBytes(file);
+  if (!detected) {
+    toast('画像形式が認識できません (PNG / JPEG / WebP のみ対応)', 'err');
+    return;
+  }
+  const declaredExt = (filename.match(/\.([a-z]+)$/)||[])[1] || '';
+  const actualExt = detected === 'jpeg' ? 'jpg' : detected;
+  const matches = (declaredExt === actualExt) ||
+                  (declaredExt === 'jpeg' && actualExt === 'jpg') ||
+                  (declaredExt === 'jpg'  && actualExt === 'jpg');
+  if (!matches) {
+    toast('拡張子 (.' + declaredExt + ') と実際の画像形式 (' + detected + ') が一致しません', 'err');
     return;
   }
   // 3. 即時プレビュー (data URL を直接 box に貼る)
