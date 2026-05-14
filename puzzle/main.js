@@ -491,6 +491,8 @@ function initPuzzle(img) {
   const rect = puzzleContainer.getBoundingClientRect();
   canvasW = rect.width  || 600;
   canvasH = rect.height || 400;
+  lastInitW = canvasW;
+  lastInitH = canvasH;
 
   // Remove old canvas & listeners
   puzzleContainer.innerHTML = '';
@@ -642,8 +644,17 @@ window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => 
 
 // ===== Responsive Resize =====
 let resizeTimer = null;
+let lastInitW = 0, lastInitH = 0;
 const resizeObserver = new ResizeObserver(() => {
   if (!sourceImg) return;
+  const rect = puzzleContainer.getBoundingClientRect();
+  // ピース 1 つ以上スナップ済 + サイズ差 ±20% 以内 なら 再初期化 skip
+  // (子供向けで進捗を消したくないため、 微小 resize では CSS スケールに任せる)
+  if (snappedCount > 0) {
+    const dw = Math.abs(rect.width  - lastInitW) / Math.max(lastInitW, 1);
+    const dh = Math.abs(rect.height - lastInitH) / Math.max(lastInitH, 1);
+    if (dw < 0.2 && dh < 0.2) return;
+  }
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => initPuzzle(sourceImg), 250);
 });

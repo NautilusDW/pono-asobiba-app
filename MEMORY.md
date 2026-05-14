@@ -128,6 +128,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T14:29:46Z - puzzle 横画面専用化: CSS aspect-ratio 3/4→4/3 + notice 反転 + landscape MQ で flex-row + sidebar 180px + ResizeObserver で進捗保護 + sw v995→997
+- **タスク**: puzzle 横画面専用化: CSS aspect-ratio 3/4→4/3 + notice 反転 + landscape MQ で flex-row + sidebar 180px + ResizeObserver で進捗保護 + sw v995→997
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 33
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 6, "Glob": 2, "Bash": 16, "Grep": 3, "Agent": 5, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。
+
+
+### 2026-05-14T14:29:44Z - maze-editor.html: handoff JSON の viewBox を保持し、画像読み込み時に nodes/edges/obstacles/creatures を実画像サイズへ自動rescaleする_rescaleFromHandoffViewBox()を新規追加
+- **タスク**: maze-editor.html: handoff JSON の viewBox を保持し、画像読み込み時に nodes/edges/obstacles/creatures を実画像サイズへ自動rescaleする_rescaleFromHandoffViewBox()を新規追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 32
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 6, "Glob": 2, "Bash": 15, "Grep": 3, "Agent": 5, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。
+
+
+### 2026-05-14T14:28:14Z - puzzle横画面化レビュー修正: style.cssにlandscape×coarse専用横並び+モーダル圧縮メディアクエリ追加、main.jsのResizeObserverで進捗温存判定追加、sw.js v996→997
+- **タスク**: puzzle横画面化レビュー修正: style.cssにlandscape×coarse専用横並び+モーダル圧縮メディアクエリ追加、main.jsのResizeObserverで進捗温存判定追加、sw.js v996→997
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 39
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 19, "ToolSearch": 1, "Bash": 12, "Grep": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T14:21:57Z - puzzle/ を縦画面強制から横画面強制に変更 (CSS aspect-ratio 4/3, 判定反転, sw.js bump)
 - **タスク**: puzzle/ を縦画面強制から横画面強制に変更 (CSS aspect-ratio 4/3, 判定反転, sw.js bump)
 - **結果**: 成功
@@ -204,44 +243,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 3, "Agent": 16, "ToolSearch": 1, "Bash": 9, "Grep": 2}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T10:58:38Z - maze-rough.html にエディタ用 handoff の常時 localStorage 書き出し機構を追加 (BFS + 方向重複除去 polyline + start/goal null 時 skip)
-- **タスク**: maze-rough.html にエディタ用 handoff の常時 localStorage 書き出し機構を追加 (BFS + 方向重複除去 polyline + start/goal null 時 skip)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 36
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 20, "ToolSearch": 1, "Bash": 10, "Write": 1, "Edit": 1, "Grep": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T10:54:29Z - AGENTS.md §3 違反対応: saved-layout.json revert + index.html CSS で .board max-width 制約追加
-- **タスク**: AGENTS.md §3 違反対応: saved-layout.json revert + index.html CSS で .board max-width 制約追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 29
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 3, "Agent": 14, "ToolSearch": 1, "Bash": 9, "Grep": 2}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T10:50:03Z - quizland fitStage safe-area化 + board幅修正 + sw.js v994 (develop直接編集, commit/push無し)
-- **タスク**: quizland fitStage safe-area化 + board幅修正 + sw.js v994 (develop直接編集, commit/push無し)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 27
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 14, "ToolSearch": 1, "Bash": 8, "Write": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -166,6 +166,59 @@ body {
   .page-wrapper { max-width: min(95vw, 960px); }
 }
 
+/* ===== Landscape (touch) layout — sidebar to the right ===== */
+@media (orientation: landscape) and (pointer: coarse) {
+  .page-wrapper {
+    max-width: none;
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .header { padding: 0; text-align: center; }
+  .header .title { font-size: 1.1rem; margin: 0; }
+  .header .subtitle,
+  .header .stage-label { font-size: 0.8rem; margin: 0; }
+  .main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+  }
+  .puzzle-frame {
+    width: min(calc(100vw - 220px), calc((100dvh - 110px) * 4 / 3));
+    aspect-ratio: 4 / 3;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 180px;
+    flex-shrink: 0;
+  }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+  }
+  .progress-bar { width: 100%; max-width: none; }
+}
+
+/* ===== Landscape modal compaction (short viewports) ===== */
+@media (orientation: landscape) and (max-height: 480px) {
+  .modal-content {
+    padding: 16px 20px;
+    gap: 8px;
+    max-width: 360px;
+  }
+  .modal-emoji { font-size: 2.2rem; }
+  .modal-title { font-size: 1.4rem; }
+}
+
 #puzzle-container {
   width: 100%;
   height: 100%;

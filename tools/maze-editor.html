@@ -365,6 +365,7 @@ const state = {
   edgeInProgress: null, // { fromId, points: [{x,y}] }
   history: [],          // shallow snapshots for undo
   hover: null,          // {x, y} mouse pos in image coords
+  handoffViewBox: null, // { w, h } — ラフ側 viewBox。 画像読み込み時 rescale 用に保持し、 適用後 null クリア
 };
 
 // ────────────────────────────────────────────────────────
@@ -584,9 +585,19 @@ function loadImageFile(file) {
       emptyMsg.style.display = 'none';
       // ステージ名のデフォルト値は空 (ユーザーが意識的に名前を付ける運用)。
       // ファイル名からの自動入力はしない (うっかり長い hf_xxx 等で保存されないように)
+      // ラフからの handoff viewBox が乗っていたら、 実画像サイズに合わせて座標を rescale
+      let rescaled = false;
+      if (state.handoffViewBox
+          && Number.isFinite(state.handoffViewBox.w)
+          && Number.isFinite(state.handoffViewBox.h)
+          && state.handoffViewBox.w > 0 && state.handoffViewBox.h > 0) {
+        rescaled = _rescaleFromHandoffViewBox();
+      }
       resizeCanvas();
       draw();
-      showBanner('画像を読み込みました: ' + state.imgW + ' × ' + state.imgH);
+      let msg = '画像を読み込みました: ' + state.imgW + ' × ' + state.imgH;
+      if (rescaled) msg += ' (ラフ座標を画像サイズに自動スケール)';
+      showBanner(msg);
     };
     img.src = ev.target.result;
   };
@@ -2150,6 +2161,78 @@ function _draftHasWork() {
   return false;
 }
 
+// ラフ側 viewBox (state.handoffViewBox) と実画像サイズ (state.imgW/imgH) の比率で
+// state.nodes / edges.controls / edges.polyline / obstacles / creatures を一括 rescale する。
+// 完了後 state.handoffViewBox を null クリアして二重 rescale を防ぐ。
+// 戻り値: 実際に座標を書き換えたら true、 等倍 (scale=1,1) で no-op だった場合は false。
+function _rescaleFromHandoffViewBox() {
+  const hv = state.handoffViewBox;
+  if (!hv || !Number.isFinite(hv.w) || !Number.isFinite(hv.h) || hv.w <= 0 || hv.h <= 0) {
+    state.handoffViewBox = null;
+    return false;
+  }
+  if (!Number.isFinite(state.imgW) || !Number.isFinite(state.imgH)
+      || state.imgW <= 0 || state.imgH <= 0) {
+    return false;
+  }
+  const sx = state.imgW / hv.w;
+  const sy = state.imgH / hv.h;
+  // 等倍なら no-op (ただし handoffViewBox はクリアする)
+  if (sx === 1 && sy === 1) {
+    state.handoffViewBox = null;
+    return false;
+  }
+  // Nodes
+  if (Array.isArray(state.nodes)) {
+    state.nodes.forEach(function(n) {
+      if (!n) return;
+      if (Number.isFinite(n.x)) n.x = Math.round(n.x * sx);
+      if (Number.isFinite(n.y)) n.y = Math.round(n.y * sy);
+    });
+  }
+  // Edges (controls がメイン、 polyline フィールドが万一あれば両方)
+  if (Array.isArray(state.edges)) {
+    state.edges.forEach(function(e2) {
+      if (!e2) return;
+      if (Array.isArray(e2.controls)) {
+        e2.controls.forEach(function(p) {
+          if (!p) return;
+          if (Number.isFinite(p.x)) p.x = Math.round(p.x * sx);
+          if (Number.isFinite(p.y)) p.y = Math.round(p.y * sy);
+        });
+      }
+      if (Array.isArray(e2.polyline)) {
+        e2.polyline.forEach(function(p) {
+          if (!p) return;
+          if (Number.isFinite(p.x)) p.x = Math.round(p.x * sx);
+          if (Number.isFinite(p.y)) p.y = Math.round(p.y * sy);
+        });
+      }
+    });
+  }
+  // Obstacles
+  if (Array.isArray(state.obstacles)) {
+    state.obstacles.forEach(function(o) {
+      if (!o) return;
+      if (Number.isFinite(o.x)) o.x = Math.round(o.x * sx);
+      if (Number.isFinite(o.y)) o.y = Math.round(o.y * sy);
+    });
+  }
+  // Creatures
+  if (Array.isArray(state.creatures)) {
+    state.creatures.forEach(function(c) {
+      if (!c) return;
+      if (Number.isFinite(c.x)) c.x = Math.round(c.x * sx);
+      if (Number.isFinite(c.y)) c.y = Math.round(c.y * sy);
+    });
+  }
+  // 二重 rescale 防止
+  state.handoffViewBox = null;
+  try { draw(); } catch (e) {}
+  try { scheduleAutoSave(); } catch (e) {}
+  return true;
+}
+
 // handoff JSON を editor state に流し込む。
 // 既存 jsonInput の change handler の構造を踏襲し、 同じバリデーション・正規化を行う。
 // imageUrl は意図的にセットしない (ユーザーが画像を後で差し替える前提)。
@@ -2212,6 +2295,25 @@ function _applyHandoff(h, opts) {
 
     state.edgeInProgress = null;
     if (edgeProgressEl) edgeProgressEl.textContent = '';
+
+    // ラフ側 viewBox を保持 (画像読み込み時に rescale するためのフラグ)
+    // 不正な値は無視 (rescale は走らず、 ユーザーが目視で確認することになる)
+    if (h.viewBox
+        && Number.isFinite(h.viewBox.w) && Number.isFinite(h.viewBox.h)
+        && h.viewBox.w > 0 && h.viewBox.h > 0) {
+      state.handoffViewBox = { w: Number(h.viewBox.w), h: Number(h.viewBox.h) };
+    } else {
+      state.handoffViewBox = null;
+    }
+
+    // すでに画像が読み込まれていれば、 その場で rescale を走らせる
+    // (image なし or サイズ未取得なら次回 loadImageFile で rescale される)
+    if (state.handoffViewBox
+        && state.image
+        && Number.isFinite(state.imgW) && state.imgW > 0
+        && Number.isFinite(state.imgH) && state.imgH > 0) {
+      _rescaleFromHandoffViewBox();
+    }
 
     // imageUrl はあえて流さない — ユーザーが差し替える
     draw();
