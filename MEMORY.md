@@ -130,6 +130,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T14:35:20Z - maze handoff の座標系不一致による polyline ずれを修正: handoff viewBox を state 保持 + 画像読み込み時に sx=imgW/vb.w / sy=imgH/vb.h で nodes/edges/obstacles/creatures を一括 rescale。 クロスレビューで HIGH (undo 履歴上書き) + MEDIUM 2 (整数等倍判定 + draw 二重呼び出し silent option) 全件反映済み
+- **タスク**: maze handoff の座標系不一致による polyline ずれを修正: handoff viewBox を state 保持 + 画像読み込み時に sx=imgW/vb.w / sy=imgH/vb.h で nodes/edges/obstacles/creatures を一括 rescale。 クロスレビューで HIGH (undo 履歴上書き) + MEDIUM 2 (整数等倍判定 + draw 二重呼び出し silent option) 全件反映済み
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 47
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 23, "ToolSearch": 1, "Bash": 15, "Grep": 4}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T14:33:58Z - maze-editor handoff rescale クロスレビュー 3 件反映 (undo履歴上書き / 整数等倍判定 / silent二重draw抑制)
+- **タスク**: maze-editor handoff rescale クロスレビュー 3 件反映 (undo履歴上書き / 整数等倍判定 / silent二重draw抑制)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 91
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 6, "Agent": 25, "ToolSearch": 2, "Bash": 40, "Write": 1, "Edit": 9, "Grep": 3, "WebSearch": 5}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T14:32:38Z - quizland stage を 21:9 (2100x900) から 16:9 (1600x900) に縮小 + sw.js CACHE_VERSION 997->998
 - **タスク**: quizland stage を 21:9 (2100x900) から 16:9 (1600x900) に縮小 + sw.js CACHE_VERSION 997->998
 - **結果**: 成功
@@ -219,31 +245,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 4, "Agent": 21, "ToolSearch": 1, "Bash": 12, "Write": 1, "Edit": 6, "Grep": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T11:03:15Z - maze ラフ→エディタ シームレス auto-handoff: ラフ側で常時 localStorage に handoff JSON を書き出し (tiles→BFS polyline + 障害物/お邪魔虫)、 エディタ起動時に自動取り込み + 既存 draft あれば緑バナー+ボタン提示。 sessionStorage で多重ロード抑制、 imageUrl は流さず生成画像を差し替える前提
-- **タスク**: maze ラフ→エディタ シームレス auto-handoff: ラフ側で常時 localStorage に handoff JSON を書き出し (tiles→BFS polyline + 障害物/お邪魔虫)、 エディタ起動時に自動取り込み + 既存 draft あれば緑バナー+ボタン提示。 sessionStorage で多重ロード抑制、 imageUrl は流さず生成画像を差し替える前提
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 38
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Agent": 18, "ToolSearch": 1, "Bash": 12, "Grep": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T10:59:12Z - quizland index.html: 4 aspect-ratio メディアクエリの .board に max-width: none !important を追加
-- **タスク**: quizland index.html: 4 aspect-ratio メディアクエリの .board に max-width: none !important を追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 31
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 3, "Agent": 16, "ToolSearch": 1, "Bash": 9, "Grep": 2}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
