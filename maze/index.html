@@ -872,17 +872,14 @@ body.image-stage-mode .game-wrap {
 /* ===== Maze OP Overlay (タイトル → OP → loadStage) =====
    タイトル画面タップ後に再生される導入アニメーション。
    op-layout.json を fetch して BG (op_scale.png) + frame + ビート毎テキスト + ナレーション再生。
-   ビート進行は「タップしてつづける ▶」 ボタン、 スキップは右側ボタン。 */
+   ビート進行はフレーム右下の▼ (明滅) をタップ。 スキップ無し (子供は全ビート視聴必須)。 */
 #maze-op-overlay {
-  display: none;
   position: fixed; inset: 0;
   z-index: 300;
   background: #000;
-  /* stage と step を縦並びにし、 step をフレーム外 (stage 下) に表示 */
-  flex-direction: column;
+  display: none;
   align-items: center;
   justify-content: center;
-  gap: 24px;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -914,33 +911,51 @@ body.image-stage-mode .game-wrap {
   white-space: pre-wrap;
   width: 100%;
 }
-#maze-op-step {
-  /* stage の外 (overlay 直下) に通常フローで配置 → フレームに被らない */
+
+/* 進むボタン: フレームの右下に小さく明滅 (▼ アイコン) */
+#maze-op-frame-box #maze-op-next {
+  position: absolute;
+  right: 8%;
+  bottom: 8%;
+  width: 36px;
+  height: 36px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-#maze-op-skip, #maze-op-next {
-  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-  font-weight: 700;
-  font-size: clamp(0.85rem, 2.2vw, 1.05rem);
-  padding: 10px 20px;
+  font-size: 18px;
+  font-family: inherit;
+  color: #3a2818;
+  background: transparent;
   border: none;
-  border-radius: 999px;
   cursor: pointer;
-  background: rgba(255,255,255,0.88);
-  color: #2a2424;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-  letter-spacing: 0.04em;
+  padding: 0;
+  border-radius: 50%;
+  animation: mazeOpNextBlink 1.2s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
 }
-#maze-op-skip {
-  background: rgba(80,60,50,0.7);
-  color: #FFE8B0;
-  font-size: clamp(0.75rem, 1.8vw, 0.9rem);
-  padding: 8px 14px;
+#maze-op-frame-box #maze-op-next:hover {
+  background: rgba(58, 40, 24, 0.1);
 }
-#maze-op-next:hover, #maze-op-skip:hover { opacity: 0.92; }
+#maze-op-frame-box #maze-op-next:active {
+  transform: scale(0.9);
+}
+
+@keyframes mazeOpNextBlink {
+  0%, 100% { opacity: 0.45; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(2px); }
+}
+
+/* 進行インジケータ: 左下に控えめに (1/3 〜 3/3) */
+#maze-op-frame-box #maze-op-step-ind {
+  position: absolute;
+  left: 8%;
+  bottom: 8%;
+  font-size: 12px;
+  color: rgba(58, 40, 24, 0.55);
+  font-family: inherit;
+  pointer-events: none;
+  user-select: none;
+}
 </style>
 </head>
 <body>
@@ -3740,18 +3755,16 @@ async function playMazeOpening(onDone) {
   }
 
   // overlay を動的生成 (CSS は <style> で定義済)
-  // 注: #maze-op-step は #maze-op-stage の外 (overlay 直下) に配置し、
-  //     stage 下に独立した帯として表示する (フレーム上に被らないように)
+  // 注: スキップボタンは廃止。 #maze-op-next (▼) を #maze-op-frame-box の子として
+  //     右下に絶対配置し明滅アニメで「次に進む」ヒントを出す。 子供は全ビート視聴必須。
   const tpl = ''
     + '<div id="maze-op-overlay">'
     +   '<div id="maze-op-stage">'
     +     '<div id="maze-op-frame-box">'
     +       '<div id="maze-op-text"></div>'
+    +       '<button id="maze-op-next" type="button" aria-label="つづける">▼</button>'
+    +       '<div id="maze-op-step-ind" aria-hidden="true">1/1</div>'
     +     '</div>'
-    +   '</div>'
-    +   '<div id="maze-op-step">'
-    +     '<button id="maze-op-skip" type="button">スキップ</button>'
-    +     '<button id="maze-op-next" type="button">タップしてつづける ▶</button>'
     +   '</div>'
     + '</div>';
   document.body.insertAdjacentHTML('beforeend', tpl);
@@ -3760,7 +3773,7 @@ async function playMazeOpening(onDone) {
   const fbox    = document.getElementById('maze-op-frame-box');
   const textEl  = document.getElementById('maze-op-text');
   const nextBtn = document.getElementById('maze-op-next');
-  const skipBtn = document.getElementById('maze-op-skip');
+  const stepInd = document.getElementById('maze-op-step-ind');
 
   // layout 設定を box / text / frame / bg に反映
   const L  = (cfg && cfg.layout) || {};
@@ -3846,6 +3859,7 @@ async function playMazeOpening(onDone) {
   function showBeat(i) {
     stopAudio();
     textEl.textContent = beats[i] || '';
+    if (stepInd) stepInd.textContent = (i + 1) + '/' + beats.length;
     const audioPath = audios[i];
     if (audioPath) {
       try {
@@ -3860,7 +3874,7 @@ async function playMazeOpening(onDone) {
         console.warn('[maze-op] audio init failed:', e);
       }
     }
-    nextBtn.textContent = (i === beats.length - 1) ? 'はじめる ▶' : 'タップしてつづける ▶';
+    // ▼ アイコンは固定なのでテキスト切替なし (旧: 最終ビートで 'はじめる ▶' へ切替)
   }
 
   function finish() {
@@ -3874,15 +3888,30 @@ async function playMazeOpening(onDone) {
     if (typeof onDone === 'function') onDone();
   }
 
-  nextBtn.addEventListener('click', function() {
+  // ▼ ボタンと overlay 全体タップの両方で進めるよう共通の advance 関数に集約。
+  // 子供が画面のどこをタップしても次ビートへ進める (▼ は視覚ヒントとして残す)。
+  function advance(e) {
+    if (_finished) return;
+    // ▼ click が overlay へ bubble して二重発火するのを防止
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (idx < beats.length - 1) {
       idx++;
       showBeat(idx);
     } else {
       finish();
     }
+  }
+
+  // ▼ ボタン (視覚ヒント) のクリック → stopPropagation で overlay へ届かない
+  nextBtn.addEventListener('click', advance);
+
+  // overlay 全体のクリックでも進む (画面のどこをタップしても OK)
+  overlay.addEventListener('click', function(e) {
+    // 保険: stopPropagation が効かないケースに備えて e.target チェックで dedupe
+    if (e.target === nextBtn || (nextBtn && nextBtn.contains && nextBtn.contains(e.target))) return;
+    advance(e);
   });
-  skipBtn.addEventListener('click', finish);
+  // スキップボタンは廃止 (子供は全ビート視聴必須)
 
   // 初回ビート表示
   showBeat(0);
