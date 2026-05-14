@@ -84,7 +84,7 @@
 
 ## Recent (Done — 古い順に削除)
 
-- 2026-05-14 - [batch:oto-next-backlog-3-buttons] **Done** — `docs/oto-icons/codex-prompts/next-batch-backlog.md` の不足 3 枚を対応。`btn_note_so.png` は鍵から水色の小鳥へ差し替え、`btn_ui_loop.png` は緑の循環矢印、`btn_ui_save.png` は宝箱で新規追加。全て `assets/images/oto/buttons/` に `342x342` RGBA 透過 PNG として配置、raw/processed/review/旧 `btn_note_so` バックアップは `tmp/alpha_pending/24/` に保存。既存 21 枚との review sheet は `tmp/alpha_pending/24/oto_buttons_backlog_review.png`。画像配置は auto-commit `cd11271` に含まれ、後続 auto-commit `05c6958` が現在 HEAD。 (by Codex)
+- 2026-05-14 - [batch:oto-next-backlog-3-buttons] **Done** — `docs/oto-icons/codex-prompts/next-batch-backlog.md` の不足 3 枚を対応。`btn_note_so.png` は鍵から水色の小鳥へ差し替え、`btn_ui_loop.png` は緑の循環矢印、`btn_ui_save.png` は宝箱で新規追加。全て `assets/images/oto/buttons/` に `342x342` RGBA 透過 PNG として配置、raw/processed/review/旧 `btn_note_so` バックアップは `tmp/alpha_pending/24/` に保存。既存 21 枚との review sheet は `tmp/alpha_pending/24/oto_buttons_backlog_review.png`。画像配置は auto-commit `cd11271` に含まれる。 (by Codex)
 
 - 2026-05-14 - [batch:oto-reference-all-buttons-clean-no-line] **Done** — user 指摘「一番下のアイコンに横に白い線が入る」に対応。横線は `tmp/alpha_pending/21/` の不採用補正版に出ていた症状のため、採用済み `tmp/alpha_pending/22/` から横線なしの clean 版だけを `tmp/alpha_pending/23/` に再配置: `oto_ref_buttons_clean_sheet1_icons.png` / `oto_ref_buttons_clean_sheet2_objects.png` / `oto_ref_buttons_clean_sheet3_controls.png` / `oto_ref_buttons_clean_sheet4_swatches.png`。全て `2048x2048` RGB PNG、目視で下段横線なしを確認。今後は `23/` を使用。 (by Codex)
 
