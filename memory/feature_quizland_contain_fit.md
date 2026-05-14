@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-contain-fit-default
-description: quizland の fitStage を cover→contain 化 + safe-area (16:9) を fit ターゲット化 + board に max-width 制約 + chip 幅縮小 (2026-05-14, sw v993→v995)。iPad 4:3 / mini 等で UI 切れ防止 + 余白削減。?fit=cover で旧動作に退避可能
+description: quizland の fitStage を cover→contain 化 + stage を 16:9 (1600×900) に統合 + safe-area = stage 同一化 + メディアクエリの --safe-w 動的縮小を全廃 (2026-05-14, sw v993→v1000)。画面比違いは全部レターボックスで吸収。?fit=cover で旧動作に退避可能
 metadata:
   type: feature
 ---
 
-# quizland contain-fit + safe-area target + board max-width + chip 幅整合 (sw v995, 2026-05-14)
+# quizland 16:9 stage + 完全レターボックス対応 (sw v1000, 2026-05-14)
 
 ## なに
 
@@ -102,4 +102,44 @@ quizland/index.html 6 行変更 + sw.js CACHE_VERSION 994 → 995。
 
 ### 教訓
 **「fit-target = safe-area が画面内に収まる」は内側 grid (q-col / a-col) の chip 配置が収まることを保証しない**。メディアクエリで `.chip { width: Npx !important }` のような `!important` 強制サイズを当てている場合、box-sizing と padding / border / gap を **全部足して** a-col 容量内に収まるか毎回再計算が必要。v994 リサーチで Plan エージェントは内側 chip サイズまでチェックしなかった (= safe-area 配置までで止めた)。今後同種の修正では **「safe-area 配置 OK + 内側 grid 容量 OK」を 2 段階で確認**することを徹底
+
+## v996-v998 (2026-05-14、stage 21:9 → 16:9 統合の第 1 段)
+
+### 残課題発見
+v995 適用後も iPad 4:3 (1024×768) で右ボタン切れが続く。 ユーザー指摘で根本判明: stage が **21:9 (2100×900)** の固定キャンバスで、内側に 16:9 (1600×900) の safe-area を中央配置している **入れ子設計** が「stage 全体を fit → 上下余白」「safe-area を fit → 左右余白で UI 切れ」のジレンマを生んでいた。 ユーザーが望むのは **「stage = 16:9 で、画面比違いは全部レターボックス」** の王道方式。
+
+### v998 の変更
+- `:root { --canvas-w: 2100px → 1600px }` (stage を 16:9 に縮小、safe-area と同サイズに統合)
+- 冒頭コメントを stage 16:9 仕様に更新
+- fitStage 周辺コメントを「contain-fit デフォルト + レターボックス」前提に書き換え
+- saved-layout.json は **無変更** (Plan エージェント分析: tx/ty は safe-area 内 natural-flow からの delta、 stage 縮小に追従)
+- CACHE_VERSION 995 → 998 (auto-commit hook 連鎖で複数 bump)
+
+### v998 だけでは効果が出ない問題
+ユーザーがローカル + staging 両方で「変わらない」と報告。 原因解明: **4 帯のメディアクエリ (16:10 / 14:9 / 4:3 / 5:4) が `:root { --safe-w: 1400/1080/1020/980 }` で `--safe-w` を縮めていた**ため、 fitStage が `parseFloat(--safe-w)` で縮小値を取得 → scale 計算が旧来通り (例 0.853) → stage 16:9 化の効果が完全に潰された。
+
+これは PR1 を「最小変更」に絞った私の判断ミス。Plan エージェントの案 A (= メディアクエリ温存) が、 fitStage が `--safe-w` を参照する経路 (v994 で追加) を見落としていた。
+
+## v999-v1000 (2026-05-14、stage 16:9 化の完成)
+
+### v999 の変更
+- 4 帯メディアクエリの `:root { --safe-w: Npx }` ブロックを **全削除** (12 行削除)
+- `--safe-w` は常に :root の 1600px (= stage 全幅) に固定
+- fitStage の scale 計算が `Math.min(w/1600, h/900)` = stage 全体 contain-fit に確定
+- 4 帯メディアクエリ内の `.body grid-template-columns` / `.chip width !important` / `.character` 等の **内側 UI サイズ調整は全部温存** (視認性確保のため必要)
+- CACHE_VERSION 998 → 1000 (auto-commit hook で連鎖 bump)
+
+### 完成した挙動 (画面比×スケール早見表)
+| viewport | scale | 描画後 stage | レターボックス |
+|---|---|---|---|
+| 1024×768 (4:3) | min(1024/1600, 768/900) = 0.64 | 1024×576 | 上下 96px ずつ |
+| 1133×744 (iPad mini 8.3") | min(1133/1600, 744/900) = 0.708 | 1133×637 | 上下 53px ずつ |
+| 1920×1080 (16:9) | min(1920/1600, 1080/900) = 1.2 | 1920×1080 | **なし、ぴったり** |
+| 2560×1080 (21:9) | min(2560/1600, 1080/900) = 1.2 | 1920×1080 | 左右 320px ずつ |
+| 852×393 (iPhone 横) | min(852/1600, 393/900) = 0.437 | 698×393 | 左右 77px ずつ |
+
+レターボックス領域は `.stage-wrap` の `background: stage-bg.png cover` で自然に埋まる。
+
+### 教訓 (今回の最重要)
+**設計変更を「最小差分」で段階導入する時、 既存コードがどの CSS 変数 / 値を参照しているかを `grep` で全件追跡しないと、 主目的が無効化される**。 今回は `--canvas-w` を変えただけでは効果ゼロだった (= fitStage が `--safe-w` を見ていたため)。 Plan エージェントの「段階導入 = 安全」発想は、 依存関係を見落とすと逆に「変更が無効」になる落とし穴。 stage / safe-area / fit-target の 3 概念を統合した瞬間に、メディアクエリの `--safe-w` 動的縮小も同時撤去するのが正解だった。
 
