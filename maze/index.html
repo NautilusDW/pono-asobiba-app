@@ -3685,19 +3685,185 @@ function _getInitialStageIdx() {
   } catch (e) { /* ignore */ }
   return 1;
 }
+// 起動時は image stage index と ?image=<name> のみ解決し、loadStage は保留。
+// タイトル画面タップ後に OP を再生してから初回 loadStage を呼ぶことで、
+// 起動時にいきなり storyIntro モーダルが被さる旧バグを根本回避する。
 _loadImageStageIndex()
-  .then(function() { return _loadImageStageFromURL(); })
-  .then(function() { loadStage(_getInitialStageIdx()); });
+  .then(function() { return _loadImageStageFromURL(); });
 requestAnimationFrame(draw);
 
-// タイトル画面タップ → ゲーム本体を表示 (ゲーム本体は裏で既に loadStage 済み)
+// ---- OP 再生 (op-layout.json 駆動) ---------------------------------------
+// タイトル画面タップ後に overlay を動的生成して BG (op_scale.png) + frame +
+// ビート毎テキスト + ナレーション再生を行う。終了時に onDone() を呼ぶ。
+// fetch / 設定欠落時は overlay を出さずに onDone() を即時呼ぶ (safe fallback)。
+function _mazeOpHexToRgba(hex, alpha) {
+  const h = String(hex || '#000000').replace(/^#/, '');
+  const r = parseInt(h.substring(0, 2), 16) || 0;
+  const g = parseInt(h.substring(2, 4), 16) || 0;
+  const b = parseInt(h.substring(4, 6), 16) || 0;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + (Number(alpha) || 0) + ')';
+}
+
+async function playMazeOpening(onDone) {
+  let cfg;
+  try {
+    const r = await fetch('op-layout.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('op-layout HTTP ' + r.status);
+    cfg = await r.json();
+  } catch (e) {
+    console.warn('[maze-op] config load failed, skipping OP:', e);
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+
+  const beats  = Array.isArray(cfg && cfg.beats) ? cfg.beats : [];
+  const audios = Array.isArray(cfg && cfg.narrationAudio) ? cfg.narrationAudio : [];
+  if (beats.length === 0) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+
+  // overlay を動的生成 (CSS は <style> で定義済)
+  const tpl = ''
+    + '<div id="maze-op-overlay">'
+    +   '<div id="maze-op-stage">'
+    +     '<div id="maze-op-frame-box">'
+    +       '<div id="maze-op-text"></div>'
+    +     '</div>'
+    +     '<div id="maze-op-step">'
+    +       '<button id="maze-op-skip" type="button">スキップ</button>'
+    +       '<button id="maze-op-next" type="button">タップしてつづける ▶</button>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+  document.body.insertAdjacentHTML('beforeend', tpl);
+
+  const overlay = document.getElementById('maze-op-overlay');
+  const fbox    = document.getElementById('maze-op-frame-box');
+  const textEl  = document.getElementById('maze-op-text');
+  const nextBtn = document.getElementById('maze-op-next');
+  const skipBtn = document.getElementById('maze-op-skip');
+
+  // layout 設定を box / text / frame / bg に反映
+  const L  = (cfg && cfg.layout) || {};
+  const box = L.box   || { xPct: 50, yPct: 84, widthPct: 60, heightPct: 30 };
+  const tx  = L.text  || {};
+  const bg  = L.bg    || {};
+  const fr  = L.frame || {};
+
+  fbox.style.left  = (Number(box.xPct) || 50) + '%';
+  fbox.style.top   = (Number(box.yPct) || 84) + '%';
+  fbox.style.width = (Number(box.widthPct) || 60) + '%';
+
+  if (fr.enabled && fr.src) {
+    // frame.src は editor の `../assets/...` 形式を maze ランタイムでもそのまま使える
+    const safe = String(fr.src).replace(/['"\\)]/g, '');
+    fbox.style.backgroundImage = "url('" + safe + "')";
+    fbox.style.backgroundColor = 'transparent';
+    if (fr.lockAspect) {
+      // frame 自然サイズで aspect-ratio を固定 (= 高さは width / aspect で自動決定)
+      const probe = new Image();
+      probe.onload = function() {
+        if (probe.naturalWidth > 0 && probe.naturalHeight > 0) {
+          fbox.style.aspectRatio = probe.naturalWidth + ' / ' + probe.naturalHeight;
+          fbox.style.height = 'auto';
+        }
+      };
+      probe.onerror = function() {
+        // 失敗時は heightPct fallback
+        fbox.style.height = (Number(box.heightPct) || 30) + '%';
+      };
+      probe.src = safe;
+      // probe ロード完了までの暫定 height
+      fbox.style.height = (Number(box.heightPct) || 30) + '%';
+    } else {
+      fbox.style.height = (Number(box.heightPct) || 30) + '%';
+    }
+  } else {
+    fbox.style.height = (Number(box.heightPct) || 30) + '%';
+    fbox.style.backgroundColor = _mazeOpHexToRgba(bg.color || '#000', bg.alpha || 0);
+    fbox.style.borderRadius    = (Number(bg.radius) || 0) + 'px';
+  }
+  fbox.style.padding = (Number(bg.padding) || 16) + 'px';
+
+  textEl.style.fontSize      = (Number(tx.fontSize) || 20) + 'px';
+  textEl.style.lineHeight    = (tx.lineHeight != null ? tx.lineHeight : 1.5);
+  textEl.style.color         = tx.color || '#3a2818';
+  textEl.style.textAlign     = tx.align || 'center';
+  textEl.style.letterSpacing = (Number(tx.letterSpacing) || 0) + 'em';
+
+  overlay.classList.add('is-active');
+
+  // ビート進行制御
+  let idx = 0;
+  let currentAudio = null;
+
+  function stopAudio() {
+    if (currentAudio) {
+      try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {}
+      currentAudio = null;
+    }
+  }
+
+  function showBeat(i) {
+    stopAudio();
+    textEl.textContent = beats[i] || '';
+    const audioPath = audios[i];
+    if (audioPath) {
+      try {
+        currentAudio = new Audio(audioPath);
+        currentAudio.volume = 0.85;
+        // タイトルタップ起因の文脈なので autoplay 制限を通過できる
+        const p = currentAudio.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function(e) { console.warn('[maze-op] audio play failed:', e); });
+        }
+      } catch (e) {
+        console.warn('[maze-op] audio init failed:', e);
+      }
+    }
+    nextBtn.textContent = (i === beats.length - 1) ? 'はじめる ▶' : 'タップしてつづける ▶';
+  }
+
+  function finish() {
+    stopAudio();
+    overlay.classList.remove('is-active');
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    if (typeof onDone === 'function') onDone();
+  }
+
+  nextBtn.addEventListener('click', function() {
+    if (idx < beats.length - 1) {
+      idx++;
+      showBeat(idx);
+    } else {
+      finish();
+    }
+  });
+  skipBtn.addEventListener('click', finish);
+
+  // 初回ビート表示
+  showBeat(0);
+}
+
+// タイトル画面タップ → (OP 再生 →) 初回 loadStage
+// ?stage=N / ?image=<name> 直リンク時は OP をスキップして即 loadStage (デバッグ/直リンク用途)
 (function() {
   var ts = document.getElementById('title-screen');
-  if (ts) {
-    ts.addEventListener('click', function() {
-      ts.classList.add('hidden');
-    });
-  }
+  if (!ts) return;
+  ts.addEventListener('click', function() {
+    ts.classList.add('hidden');
+    var params;
+    try { params = new URLSearchParams(window.location.search); } catch (_) { params = null; }
+    var hasStageParam = params && params.has('stage');
+    var hasImageParam = params && params.has('image');
+    if (hasStageParam || hasImageParam) {
+      // 直リンク (デバッグ含む) は OP スキップ
+      loadStage(_getInitialStageIdx());
+    } else {
+      playMazeOpening(function() { loadStage(_getInitialStageIdx()); });
+    }
+  }, { once: true });
 })();
 </script>
 </body>
