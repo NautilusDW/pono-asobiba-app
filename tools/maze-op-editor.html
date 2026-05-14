@@ -367,6 +367,7 @@
 // ----------------------------------------------------------------------------
 const SCHEMA = 'pono-maze-op-v1';
 const LS_KEY = 'pono-maze-op-layout-v1';
+const LS_SELECTED_KEY = 'pono-maze-op-selected-v1';
 
 // GitHub publish (worker proxy) — only enabled on allowed origins.
 const GH_OWNER  = 'NautilusDW';
@@ -438,6 +439,8 @@ function clampNum(v, lo, hi, fallback) {
   return Math.min(hi, Math.max(lo, n));
 }
 
+function isHexColor(s) { return typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s); }
+
 // ----------------------------------------------------------------------------
 // Persistence (localStorage)
 // ----------------------------------------------------------------------------
@@ -453,6 +456,10 @@ function loadFromLocal() {
     if (obj.layout) {
       state.layout = mergeLayout(state.layout, obj.layout);
     }
+    const rawSel = localStorage.getItem(LS_SELECTED_KEY);
+    if (rawSel != null) {
+      state.selected = clampNum(parseInt(rawSel, 10), 0, state.beats.length - 1, 0);
+    }
   } catch (e) {
     console.warn('[maze-op-editor] localStorage load failed', e);
   }
@@ -467,6 +474,7 @@ function saveToLocal() {
       beats: state.beats,
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    localStorage.setItem(LS_SELECTED_KEY, String(state.selected));
   } catch (e) {
     console.warn('[maze-op-editor] localStorage save failed', e);
   }
@@ -484,12 +492,12 @@ function mergeLayout(base, incoming) {
   if (incoming.text && typeof incoming.text === 'object') {
     out.text.fontSize      = clampNum(incoming.text.fontSize,      6,   120, out.text.fontSize);
     out.text.lineHeight    = clampNum(incoming.text.lineHeight,    0.8, 3.0, out.text.lineHeight);
-    if (typeof incoming.text.color === 'string') out.text.color = incoming.text.color;
+    if (isHexColor(incoming.text.color)) out.text.color = incoming.text.color;
     if (['left','center','right'].includes(incoming.text.align)) out.text.align = incoming.text.align;
     out.text.letterSpacing = clampNum(incoming.text.letterSpacing, 0,   1.0, out.text.letterSpacing);
   }
   if (incoming.bg && typeof incoming.bg === 'object') {
-    if (typeof incoming.bg.color === 'string') out.bg.color = incoming.bg.color;
+    if (isHexColor(incoming.bg.color)) out.bg.color = incoming.bg.color;
     out.bg.alpha   = clampNum(incoming.bg.alpha,   0,   1,   out.bg.alpha);
     out.bg.radius  = clampNum(incoming.bg.radius,  0, 100,   out.bg.radius);
     out.bg.padding = clampNum(incoming.bg.padding, 0, 100,   out.bg.padding);
@@ -556,8 +564,8 @@ function renderStage() {
   // Step indicator.
   const ind = document.getElementById('stepIndicator');
   ind.textContent = (state.selected + 1) + '/' + state.beats.length;
-  document.getElementById('btnPrev').disabled = state.beats.length <= 1;
-  document.getElementById('btnNext').disabled = state.beats.length <= 1;
+  document.getElementById('btnPrev').disabled = state.beats.length <= 1 || state.selected === 0;
+  document.getElementById('btnNext').disabled = state.beats.length <= 1 || state.selected === state.beats.length - 1;
 }
 
 function renderRightPane() {
@@ -603,6 +611,7 @@ function renderAll() {
 function selectBeat(i) {
   if (i < 0 || i >= state.beats.length) return;
   state.selected = i;
+  saveToLocal();
   renderBeatList();
   renderTextarea();
   renderStage();
@@ -617,19 +626,23 @@ function addBeat() {
 
 function removeBeat() {
   if (state.beats.length <= 1) return;
-  state.beats.pop();
-  if (state.selected >= state.beats.length) state.selected = state.beats.length - 1;
+  state.beats.splice(state.selected, 1);
+  state.selected = Math.min(state.selected, state.beats.length - 1);
   saveToLocal();
   renderAll();
 }
 
 function stepPrev() {
   if (state.beats.length <= 1) return;
-  selectBeat((state.selected - 1 + state.beats.length) % state.beats.length);
+  if (state.selected > 0) {
+    selectBeat(state.selected - 1);
+  }
 }
 function stepNext() {
   if (state.beats.length <= 1) return;
-  selectBeat((state.selected + 1) % state.beats.length);
+  if (state.selected < state.beats.length - 1) {
+    selectBeat(state.selected + 1);
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -794,7 +807,7 @@ function bindColorPair(colorId, textId, getter, setter) {
   });
   t.addEventListener('change', () => {
     const v = String(t.value || '').trim();
-    if (/^#[0-9a-f]{6}$/i.test(v)) {
+    if (isHexColor(v)) {
       setter(v);
       c.value = v;
       saveToLocal();
