@@ -436,20 +436,20 @@ async function handleAiTts(request, env) {
 // 書込許可パターン (PUT / DELETE / POST 用)。 GET と書込で同一範囲。
 const ALLOWED_GH_PATTERNS = [
   // saved-layout.json (LayoutSystem 配下、 quizland/zukan 等)
-  /^\/repos\/[^/]+\/[^/]+\/contents\/(?:[A-Za-z0-9_./-]+\/)?saved-layout\.json$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/(?:[A-Za-z0-9%_./-]+\/)?saved-layout\.json$/,
   // quizland 関連 (questions.js / _review / playtest_screenshots 等)
-  /^\/repos\/[^/]+\/[^/]+\/contents\/quizland\/[A-Za-z0-9_./-]+$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/quizland\/[A-Za-z0-9%_./-]+$/,
   // maze image stages (_index.json + 各ステージの json/jpg/png)
-  /^\/repos\/[^/]+\/[^/]+\/contents\/maze\/imageStages(?:\/[A-Za-z0-9_./-]+)?$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/maze\/imageStages(?:\/[A-Za-z0-9%_./-]+)?$/,
   // maze OP layout (maze-op-editor.html が PUT)
   /^\/repos\/[^/]+\/[^/]+\/contents\/maze\/op-layout\.json$/,
   // assets 配下: data (JSON) / tts / images / sounds
-  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/data\/[A-Za-z0-9_.-]+\.json$/,
-  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/tts(?:\/[A-Za-z0-9_./-]+)?$/,
-  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/images\/[A-Za-z0-9_./-]+$/,
-  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/sounds\/[A-Za-z0-9_./-]+$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/data\/[A-Za-z0-9%_.-]+\.json$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/tts(?:\/[A-Za-z0-9%_./-]+)?$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/images\/[A-Za-z0-9%_./-]+$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/sounds\/[A-Za-z0-9%_./-]+$/,
   // room/ (items.js / index.html / 配下)
-  /^\/repos\/[^/]+\/[^/]+\/contents\/room\/[A-Za-z0-9_./-]+$/,
+  /^\/repos\/[^/]+\/[^/]+\/contents\/room\/[A-Za-z0-9%_./-]+$/,
 ];
 
 // 接続テスト等の GET 専用エンドポイント。 admin/index.html の「PAT 接続テスト」が
@@ -483,6 +483,18 @@ async function handleGhProxy(request, env) {
   // 念のため normalize して比較する。
   if (ghPath.indexOf('..') >= 0) {
     return new Response(JSON.stringify({ error: 'Path traversal blocked', path: ghPath }), {
+      status: 403,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': corsAllowedOrigin(request),
+      },
+    });
+  }
+
+  // Encoded path traversal guard — `%` を ALLOWED_GH_PATTERNS の文字クラスに加えた副作用で
+  // `%2E%2E` (encoded `..`) や `%00` (NUL injection) が allowlist を素通りするので追加で塞ぐ。
+  if (/%2[eE]%2[eE]/.test(ghPath) || /%00/i.test(ghPath)) {
+    return new Response(JSON.stringify({ error: 'Encoded path traversal blocked', path: ghPath }), {
       status: 403,
       headers: {
         'Content-Type': 'application/json',
