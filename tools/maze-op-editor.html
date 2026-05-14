@@ -339,7 +339,7 @@
         <label>src</label>
         <input type="text" id="tFrameSrc" placeholder="assets/images/maze/OP/frame_s2.png">
       </div>
-      <div style="font-size:10px; color:#94a3b8; margin-top:4px; line-height:1.4;">
+      <div style="font-size:11px; color:#f59e0b; margin-top:4px; line-height:1.4;">
         ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)
       </div>
     </div>
@@ -412,7 +412,10 @@ const DEFAULT_BEATS = [
 // `assets/images/...` 配下の png/jpg/jpeg/webp のみ許可。値はここを通過したものだけ
 // state.layout.frame.src に格納される。 renderStage で CSS に差し込む際にも
 // 追加の sanitize (`'`, `"`, `)`, `\\` を除去) を実行する 2 段防御。
-const FRAME_SRC_RE = /^assets\/images\/[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
+// 先頭 lookahead `(?!.*\.\.)` で `..` traversal 字句を defense-in-depth として拒否。
+// ✗ assets/images/../etc/passwd.png  → `..` を含むため reject
+// ✓ assets/images/maze/OP/frame_s2.png
+const FRAME_SRC_RE = /^(?!.*\.\.)assets\/images\/[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
 
 const DEFAULT_LAYOUT = {
   // フレーム画像 (パピルス板) を前提に、初期値はリーダブルなクリーム色対応に揃える:
@@ -508,8 +511,8 @@ function saveToLocal() {
 
 function mergeLayout(base, incoming) {
   const out = clone(base);
-  // defensive default: frame フィールド未定義の旧 JSON を Import しても落ちないように、
-  // 最初に out.frame を必ず確保する (== Import 互換用の保険)。
+  // Defensive default: base が DEFAULT_LAYOUT 以外 (将来) に変わった場合の保険。
+  // incoming 側の旧 JSON 互換は L534-546 の frame 個別検証で対応。
   out.frame = out.frame || { enabled: false, src: '' };
   if (!incoming || typeof incoming !== 'object') return out;
   if (incoming.box && typeof incoming.box === 'object') {
@@ -649,6 +652,18 @@ function renderRightPane() {
   const fr = (L.frame || { enabled: false, src: '' });
   document.getElementById('cFrameEnabled').checked = !!fr.enabled;
   document.getElementById('tFrameSrc').value       = fr.src || '';
+  applyFrameUIGuard();
+}
+
+// フレーム ON 時は bg.color / bg.alpha / bg.radius は renderStage で上書きされ
+// 画面に反映されないため、対応する input を disabled にしてユーザー混乱を防ぐ。
+function applyFrameUIGuard() {
+  const fr = state.layout.frame || { enabled: false };
+  const disabled = !!fr.enabled;
+  ['cBgColor', 'tBgColor', 'rBgAlpha', 'rRadius'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = disabled;
+  });
 }
 
 function setField(rangeId, displayId, value) {
@@ -909,10 +924,14 @@ function initRightPane() {
   frameEnabled.addEventListener('change', () => {
     if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
     state.layout.frame.enabled = !!frameEnabled.checked;
+    applyFrameUIGuard();
     saveToLocal();
     renderStage();
   });
-  frameSrc.addEventListener('change', () => {
+  // change のみだとフォーカスアウト/Enter までライブプレビューが更新されないため、
+  // input イベントにも同ハンドラを bind してタイピング中もプレビュー反映する。
+  // 検証通過時のみ state 更新 + render なので、同値再代入時は実質 no-op で重複発火問題なし。
+  const onFrameSrcChange = function() {
     if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
     const v = String(frameSrc.value || '').trim();
     if (v === '' || FRAME_SRC_RE.test(v)) {
@@ -924,7 +943,9 @@ function initRightPane() {
       frameSrc.value = state.layout.frame.src || '';
       toast('src は assets/images/...(png|jpg|webp) のみ', 'err');
     }
-  });
+  };
+  frameSrc.addEventListener('change', onFrameSrcChange);
+  frameSrc.addEventListener('input', onFrameSrcChange);
 }
 
 // ----------------------------------------------------------------------------
