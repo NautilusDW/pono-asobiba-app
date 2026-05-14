@@ -49,6 +49,8 @@
 
 - **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
 
+- **quizland contain-fit デフォルト化 (2026-05-14, sw v993)**: [memory/feature_quizland_contain_fit.md](memory/feature_quizland_contain_fit.md) — `fitStage()` のデフォルトを cover (`Math.max`) → contain (`Math.min`) に反転。iPad mini など 4:3 系で UI が画面外に切れる問題を恒久解決。レターボックスは `.stage-wrap` 背景に `stage-bg.png` を敷いて自然に埋める。`?fit=cover` / `localStorage.pono_fit_mode='cover'` で旧動作に退避可能。差分 6 行のみで実装
+
 ---
 
 ## Key Learnings
