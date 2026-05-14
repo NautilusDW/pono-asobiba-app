@@ -337,11 +337,15 @@
       </div>
       <div class="field-row">
         <label>src</label>
-        <input type="text" id="tFrameSrc" placeholder="/assets/images/maze/OP/frame_s2.png">
+        <input type="text" id="tFrameSrc" placeholder="../assets/images/maze/OP/frame_s2.png">
+      </div>
+      <div style="margin-top:6px;">
+        <button type="button" id="btnFramePick" style="padding:6px 10px; font-size:11px; background:#2563eb; color:#fff; border:none; border-radius:3px; cursor:pointer;">📥 画像を選ぶ</button>
+        <input type="file" id="filFramePick" accept="image/png,image/jpeg,image/webp" style="display:none;">
       </div>
       <div style="font-size:11px; color:#f59e0b; margin-top:4px; line-height:1.4;">
         ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)<br>
-        ※ サイトルートからの絶対パスを指定 (<code>/</code> から始める)
+        ※ tools/ からの相対パスで指定 (<code>../assets/images/maze/OP/&lt;name&gt;.png</code> の形式)
       </div>
     </div>
 
@@ -410,17 +414,20 @@ const DEFAULT_BEATS = [
 ];
 
 // フレーム画像ソースの allowlist 正規表現 (XSS 対策の第一線):
-// `/assets/images/...` 配下の png/jpg/jpeg/webp のみ許可 (絶対パス必須)。値はここを
-// 通過したものだけ state.layout.frame.src に格納される。 renderStage で CSS に差し込む
-// 際にも追加の sanitize (`'`, `"`, `)`, `\\` を除去) を実行する 2 段防御。
-// 先頭 lookahead `(?!.*\.\.)` で `..` traversal 字句を defense-in-depth として拒否。
-// エディタは `/tools/` 配下に置かれているため、相対パス (`assets/...`) は
-// `/tools/assets/...` に解決されて 404 になる → 絶対パス必須。 旧形式相対パスは
-// mergeLayout 側で自動マイグレートする (`assets/...` → `/assets/...`)。
-// ✗ assets/images/maze/OP/frame_s2.png     → 先頭 `/` 欠落で reject (相対パス禁止)
-// ✗ /assets/images/../etc/passwd.png       → `..` を含むため reject
-// ✓ /assets/images/maze/OP/frame_s2.png
-const FRAME_SRC_RE = /^(?!.*\.\.)\/assets\/images\/[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
+// 先頭 `../assets/images/` で始まる相対パス (png/jpg/jpeg/webp) のみ許可。
+// エディタは `/tools/` 配下に置かれており、 file:// / wrangler dev / Cloudflare Workers
+// で動作するため、 絶対パス (`/assets/...`) は環境依存で 404 になる場合がある。
+// 同居する `op_scale.png` の参照 convention (L143 の CSS) に合わせて相対パス `../assets/...`
+// に統一する。 値はここを通過したものだけ state.layout.frame.src に格納される。
+// renderStage で CSS に差し込む際にも追加の sanitize (`'`, `"`, `)`, `\\` を除去) を
+// 実行する 2 段防御。 旧形式 (相対 prefix なし `assets/...` / 絶対 `/assets/...`) は
+// mergeLayout 側で自動マイグレートする (`../assets/...` に統一)。
+// 後半 lookahead `(?!.*\.\.)` は先頭 `../` 以降の `..` 再出現を拒否し traversal を防止。
+// ✓ ../assets/images/maze/OP/frame_s2.png
+// ✗ ../assets/images/../../../etc/passwd.png  → 途中の `..` を後半 lookahead で reject
+// ✗ assets/images/maze/OP/frame_s2.png        → 先頭 `../` がない相対は reject
+// ✗ /assets/images/maze/OP/frame_s2.png       → 絶対 path は環境互換性のため reject
+const FRAME_SRC_RE = /^\.\.\/assets\/images\/(?!.*\.\.)[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
 
 const DEFAULT_LAYOUT = {
   // フレーム画像 (パピルス板) を前提に、初期値はリーダブルなクリーム色対応に揃える:
@@ -431,7 +438,7 @@ const DEFAULT_LAYOUT = {
   box:  { xPct: 12, yPct: 62, widthPct: 75, heightPct: 28 },
   text: { fontSize: 26, lineHeight: 1.6, color: '#3a2818', align: 'center', letterSpacing: 0 },
   bg:   { color: '#000000', alpha: 0, radius: 0, padding: 16 },
-  frame:{ enabled: true, src: '/assets/images/maze/OP/frame_s2.png' }
+  frame:{ enabled: true, src: '../assets/images/maze/OP/frame_s2.png' }
 };
 
 // ----------------------------------------------------------------------------
@@ -543,14 +550,18 @@ function mergeLayout(base, incoming) {
     if (typeof incoming.frame.enabled === 'boolean') {
       out.frame.enabled = incoming.frame.enabled;
     }
-    // 受入: string かつ allowlist 正規表現 (/assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
+    // 受入: string かつ allowlist 正規表現 (../assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
     // 空文字列も許容 (= フレーム未指定状態を Export/Import で表現できるように)。
-    // 旧形式 (相対パス `assets/images/...`) は絶対パス (`/assets/images/...`) に自動マイグレート。
-    // 既存ユーザの localStorage / Export JSON に旧値が残っていても、リロード時に自動補正されて
-    // フレーム画像が表示される (元相対パスの値は実質失効)。
+    // 過去 3 形式の混在 localStorage / Export JSON を `../assets/...` の正規形に自動マイグレート:
+    //   - `assets/images/...`      (最初期、相対 prefix なし)        → `../assets/images/...`
+    //   - `/assets/images/...`     (絶対、 環境依存で 404 になりうる) → `../assets/images/...`
+    //   - `../assets/images/...`   (現行 正規形)                     → そのまま
+    // 既存ユーザの localStorage / Export JSON に旧値が残っていても、 リロード時に自動補正されて
+    // フレーム画像が現環境で表示されるようになる。
     if (typeof incoming.frame.src === 'string') {
       let s = incoming.frame.src.trim();
-      if (/^assets\/images\//.test(s)) s = '/' + s;
+      if      (/^\/assets\/images\//.test(s)) s = '..' + s;   // `/assets/...`  → `../assets/...`
+      else if (/^assets\/images\//.test(s))   s = '../' + s;  // `assets/...`   → `../assets/...`
       if (s === '' || FRAME_SRC_RE.test(s)) {
         out.frame.src = s;
       }
@@ -882,6 +893,176 @@ async function publishToGitHub() {
 }
 
 // ----------------------------------------------------------------------------
+// Frame image picker (新規: ボタン → ファイル選択 → 即時プレビュー + GH アップロード)
+// ----------------------------------------------------------------------------
+// GitHub に画像ファイルを PUT する。 path は `assets/images/maze/OP/<filename>`、
+// content は base64 エンコードしたバイナリ。 既存ファイル更新時のために GET で sha 取得。
+const GH_FRAME_DIR = 'assets/images/maze/OP';
+const FRAME_MAX_BYTES = 3 * 1024 * 1024;          // 3MB hard cap
+const FRAME_WARN_BYTES = 1024 * 1024;             // 1MB 推奨上限 (超過時 warning toast)
+
+function sanitizeFrameFilename(rawName) {
+  // 拡張子保持、 ベースは [^A-Za-z0-9_.-] を `_` に置換。
+  // 末尾 `..` は traversal guard で proxy 側が弾くが、 文字置換でも事実上ブロック。
+  const m = /^(.*)\.([A-Za-z0-9]+)$/.exec(String(rawName || ''));
+  if (!m) return null;
+  const baseRaw = m[1];
+  const extRaw  = m[2].toLowerCase();
+  if (!/^(png|jpe?g|webp)$/.test(extRaw)) return null;
+  let base = baseRaw.replace(/[^A-Za-z0-9_.-]/g, '_');
+  // 先頭/末尾 `.` を除去 (隠しファイル化防止)
+  base = base.replace(/^\.+/, '').replace(/\.+$/, '');
+  if (!base) base = 'frame';
+  return base + '.' + extRaw;
+}
+
+// data URL でプレビューを直接 box.style.backgroundImage に書き込む (state.layout.frame.src
+// は schema 上 FRAME_SRC_RE を通る path のみ受け付けるため、 一時 data URL は state に入れない)。
+// 次の renderStage で path 値に戻る = アップロード成功後に path を更新して renderStage を呼ぶと
+// 自然にプレビューが新 path に切替わる。 失敗時はリロードで data URL 状態が消える (= 状態汚染なし)。
+function previewFrameImage(dataUrl) {
+  const box = document.getElementById('opBox');
+  if (!box) return;
+  // CSS injection 防止: data URL の中身は base64+MIME のみだが、 念のため `'` を escape。
+  const safe = String(dataUrl || '').replace(/'/g, '%27');
+  box.style.backgroundImage  = "url('" + safe + "')";
+  box.style.backgroundSize   = '100% 100%';
+  box.style.backgroundRepeat = 'no-repeat';
+  box.style.backgroundColor  = 'transparent';
+  box.style.borderRadius     = '0';
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload  = () => resolve(String(fr.result || ''));
+    fr.onerror = () => reject(fr.error || new Error('FileReader error'));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function readFileAsBase64(file) {
+  // ArrayBuffer → base64 (multi-byte safe; FileReader.readAsDataURL の base64 部分でも可だが
+  // バイナリの方が確実)。
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+// 指定 path の sha を取得 (存在しなければ null)。 _ghContentsUrl は L808 で定義済。
+async function _ghGetFrameSha(path) {
+  const url = _ghContentsUrl(path) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+  const j = await r.json();
+  return j.sha || null;
+}
+
+async function _ghPutFrameBinary(path, b64Content, sha) {
+  const body = {
+    message: 'chore(maze-op): upload frame image (' + path + ')',
+    content: b64Content,
+    branch:  GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(path), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error('GH PUT ' + r.status + ' ' + txt.slice(0, 200));
+  }
+  return true;
+}
+
+let _frameUploading = false;
+async function handleFramePicked(file) {
+  if (_frameUploading) {
+    toast('別のアップロードが進行中', 'err');
+    return;
+  }
+  // 1. サニタイズ済ファイル名 + 拡張子検証
+  const filename = sanitizeFrameFilename(file.name);
+  if (!filename) {
+    toast('対応形式は png / jpg / webp のみ', 'err');
+    return;
+  }
+  // 2. サイズチェック
+  if (file.size > FRAME_MAX_BYTES) {
+    toast('ファイルが大きすぎます (上限 3MB)', 'err');
+    return;
+  }
+  // 3. 即時プレビュー (data URL を直接 box に貼る)
+  let dataUrl;
+  try {
+    dataUrl = await readFileAsDataUrl(file);
+  } catch (e) {
+    toast('ファイル読込失敗', 'err');
+    return;
+  }
+  previewFrameImage(dataUrl);
+  if (file.size > FRAME_WARN_BYTES) {
+    toast('画像が大きめです (' + Math.round(file.size / 1024) + 'KB) — 1MB 以下推奨');
+  }
+
+  // 4. origin チェック — file:// / localhost ではアップロード不可
+  const here = location.origin;
+  if (ALLOWED_GH_ORIGINS.indexOf(here) < 0) {
+    toast('📡 GH アップロード非対応 origin です。 一時プレビュー表示中');
+    return;
+  }
+
+  // 5. GH PUT (新規 or 上書き)
+  _frameUploading = true;
+  const btn = document.getElementById('btnFramePick');
+  if (btn) btn.disabled = true;
+  try {
+    toast('GitHub にアップロード中…');
+    const ghPath = GH_FRAME_DIR + '/' + filename;
+    const b64    = await readFileAsBase64(file);
+    let sha = null;
+    try { sha = await _ghGetFrameSha(ghPath); } catch (e) {
+      console.warn('[maze-op-editor] frame sha lookup failed', e);
+      // sha 取得失敗でも PUT 試行は継続 (新規作成扱い)
+    }
+    await _ghPutFrameBinary(ghPath, b64, sha);
+    // 成功: state.frame.src を新 path に更新 + persist + render
+    if (!state.layout.frame) state.layout.frame = { enabled: true, src: '' };
+    state.layout.frame.enabled = true;
+    state.layout.frame.src     = '../' + ghPath;  // `../assets/images/maze/OP/<filename>`
+    saveToLocal();
+    renderRightPane();   // tFrameSrc input / checkbox を新値に同期
+    renderStage();       // backgroundImage を path 値に戻す (data URL → path)
+    toast('フレーム画像を更新しました');
+  } catch (e) {
+    console.warn('[maze-op-editor] frame upload failed', e);
+    if (e && e.status === 409) {
+      toast('競合: 他で更新されています。再試行してください', 'err');
+    } else {
+      toast('アップロード失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+    // プレビューはそのまま残す (ユーザが「もう一度試す」 / 「path を別名にする」 判断できるように)。
+  } finally {
+    _frameUploading = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Right-pane bindings
 // ----------------------------------------------------------------------------
 function bindRange(rangeId, displayId, getter, setter, precision) {
@@ -971,11 +1152,24 @@ function initRightPane() {
     const v = String(frameSrc.value || '').trim();
     if (v !== '' && !FRAME_SRC_RE.test(v)) {
       // 確定 (blur/Enter) 時のみ、 検証失敗を 1 回だけ通知。
-      toast('frame.src は /assets/images/.../*.png|jpg|webp 形式で指定してください', 'err');
+      toast('frame.src は ../assets/images/.../*.png|jpg|webp 形式で指定してください', 'err');
     }
   };
   frameSrc.addEventListener('input',  onFrameSrcInput);
   frameSrc.addEventListener('change', onFrameSrcChangeFinal);
+
+  // Frame image picker (差し替えボタン)
+  const btnPick = document.getElementById('btnFramePick');
+  const filPick = document.getElementById('filFramePick');
+  if (btnPick && filPick) {
+    btnPick.addEventListener('click', () => filPick.click());
+    filPick.addEventListener('change', () => {
+      const file = filPick.files && filPick.files[0];
+      if (!file) return;
+      handleFramePicked(file);
+      filPick.value = ''; // reset for re-pick same file
+    });
+  }
 }
 
 // ----------------------------------------------------------------------------

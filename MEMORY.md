@@ -126,6 +126,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T05:52:10Z - maze OP editor フレーム画像差し替え + path 互換修正
+- **タスク**: maze OP editor フレーム画像差し替え + path 互換修正
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 51
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 15, "Bash": 10, "Glob": 3, "Grep": 12, "Agent": 10, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-14T05:34:36Z - oto/index.html AudioNode disconnect 追加 (kira hybrid + LFO + doremi 単音) + .docs-skip-once 作成
 - **タスク**: oto/index.html AudioNode disconnect 追加 (kira hybrid + LFO + doremi 単音) + .docs-skip-once 作成
 - **結果**: 成功
@@ -228,18 +241,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 14, "Bash": 9, "Glob": 2, "Grep": 9, "Agent": 4, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T02:54:32Z - 音タッチCSS調整4件(drop-shadow確認/set-btn54→60+narrow override/CACHE_VERSION 987→988/docs既に23ボタン更新済確認)+.docs-skip-once作成
-- **タスク**: 音タッチCSS調整4件(drop-shadow確認/set-btn54→60+narrow override/CACHE_VERSION 987→988/docs既に23ボタン更新済確認)+.docs-skip-once作成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 76
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 8, "Read": 31, "Bash": 6, "Grep": 3, "Agent": 26, "Write": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
