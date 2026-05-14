@@ -107,7 +107,7 @@ html, body {
 .stage-wrap {
   position: fixed; inset: 0;
   overflow: hidden;
-  background: #000;
+  background: #0c0c0c url('../assets/_legacy/preview-placeholders/stage-bg.png') center / cover no-repeat;
 }
 .stage {
   position: absolute;
@@ -3873,8 +3873,9 @@ if (document.readyState === 'loading') {
 // ═══════════════════════════════════════════════════════════
 const stageEl = document.getElementById('stage');
 
-// fit-mode 判定 (URL ?fit=contain または localStorage.pono_fit_mode === 'contain' で
-// contain (Math.min, 黒帯あり) に切替。 デフォルトは cover (Math.max, 現状維持)。
+// fit-mode 判定 (URL ?fit=cover または localStorage.pono_fit_mode === 'cover' で
+// cover (Math.max, はみ出しクリップ) に切替。デフォルトは contain (Math.min, レターボックスあり) ―
+// iPad mini など 4:3 系で UI が切れないようにするため。
 // 判定はマウント時 1 回のみ確定する (resize で揺れないように)。
 const _qzUrlParams = (function () {
   try { return new URLSearchParams(window.location.search); } catch (_) { return null; }
@@ -3883,7 +3884,7 @@ const _qzFitFromUrl = _qzUrlParams && _qzUrlParams.get('fit');
 const _qzFitFromLS = (function () {
   try { return localStorage.getItem('pono_fit_mode'); } catch (_) { return null; }
 })();
-const QZ_FIT_MODE = (_qzFitFromUrl === 'contain' || _qzFitFromLS === 'contain') ? 'contain' : 'cover';
+const QZ_FIT_MODE = (_qzFitFromUrl === 'cover' || _qzFitFromLS === 'cover') ? 'cover' : 'contain';
 
 function fitStage() {
   const w = window.innerWidth, h = window.innerHeight;
