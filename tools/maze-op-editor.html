@@ -1348,7 +1348,23 @@ async function handleFramePicked(file) {
   // 4. origin チェック — file:// / localhost ではアップロード不可
   const here = location.origin;
   if (ALLOWED_GH_ORIGINS.indexOf(here) < 0) {
-    toast('📡 GH アップロード非対応 origin です。 一時プレビュー表示中');
+    // 非 GH origin (localhost / file:) では GH PUT は出来ないが、
+    // ユーザーが意図した path を state に反映する (Export JSON で使われる)。
+    // ファイル実体は別途 GH 経由でデプロイ済 / これからデプロイされる前提。
+    // バグ修正前は preview だけ表示して state.layout.frame.src は default の
+    // ままだったため、 Export JSON すると古い path が書き出されていた。
+    const intendedPath = '../' + GH_FRAME_DIR + '/' + filename;
+    if (FRAME_SRC_RE.test(intendedPath)) {
+      if (!state.layout.frame) state.layout.frame = { enabled: true, src: '' };
+      state.layout.frame.enabled = true;
+      state.layout.frame.src     = intendedPath;
+      saveToLocal();
+      renderRightPane();   // tFrameSrc input / checkbox を新値に同期
+      pushHistory();       // フレーム差し替え (path のみ) で 1 回 push
+      toast('📡 GH アップロード非対応 origin です。 src のみ更新 (ファイル実体は別途配置が必要)', 'info');
+    } else {
+      toast('📡 GH アップロード非対応 origin です。 一時プレビュー表示中', 'info');
+    }
     return;
   }
 
