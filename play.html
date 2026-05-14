@@ -1475,12 +1475,17 @@
       const panelMatch = String(g.panel || '').match(/menu_card_base_0?(\d+)\.png/i);
       const panelN = panelMatch ? parseInt(panelMatch[1], 10) : ((i % 4) + 1);
       const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
+      // LOOP_COPIES の最初のコピー (rep===0) はファーストビュー上に必ず存在するため eager 読み込み。
+      // 残り 2 コピー (rep 1,2 = scroll loop teleport 用の予備) は lazy のままで memory を節約。
+      // 全カードに loading="lazy" を付けると iOS Safari の intersection observer 経路で
+      // ファーストビューのカードも初回 blank になる事故 (2026-05 修正済) の再発防止。
+      const loadingAttr = (rep === 0) ? 'eager' : 'lazy';
       return `
         <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
-          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="lazy" decoding="async">
+          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
-            <img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="lazy" decoding="async">
+            <img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
           </div>
           <div class="game-card__text">
             <div class="game-card__title">${decorateKana(g.title)}</div>
@@ -1488,7 +1493,7 @@
           </div>
           ${comingBadge}
           <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
-            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.png'))}" alt="" draggable="false" loading="lazy" decoding="async">
+            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.png'))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
           </button>
         </div>
       `;

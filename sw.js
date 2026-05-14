@@ -67,12 +67,15 @@ self.addEventListener('fetch', event => {
       const networkPromise = fetch(event.request).then(resp => {
         if (resp && resp.ok) {
           const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          // fire-and-forget の cache.put — 失敗しても caller に影響させない (unhandled rejection 対策)
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone)).catch(() => {});
+          return resp;
         }
-        return resp;
-      }).catch(() => null);
-      // cache があれば即返却、 なければネット待ち、 どちらも失敗なら null
-      return cached || (await networkPromise) || cached;
+        // 404 等の bad response でも cached があれば優先 (古い画像 > 壊れた画像)
+        return cached || resp;
+      }).catch(() => cached || null);
+      // SWR: cache があれば即返却、 なければ network 待ち
+      return cached || networkPromise;
     })());
     return;
   }
