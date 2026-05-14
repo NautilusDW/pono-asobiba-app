@@ -337,14 +337,15 @@
       </div>
       <div class="field-row">
         <label>src</label>
-        <input type="text" id="tFrameSrc" placeholder="assets/images/maze/OP/frame_s2.png">
+        <input type="text" id="tFrameSrc" placeholder="/assets/images/maze/OP/frame_s2.png">
       </div>
       <div style="font-size:11px; color:#f59e0b; margin-top:4px; line-height:1.4;">
-        ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)
+        ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)<br>
+        ※ サイトルートからの絶対パスを指定 (<code>/</code> から始める)
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" id="bgSection">
       <h3>Background</h3>
       <div class="field-row">
         <label>bgColor</label>
@@ -409,13 +410,17 @@ const DEFAULT_BEATS = [
 ];
 
 // フレーム画像ソースの allowlist 正規表現 (XSS 対策の第一線):
-// `assets/images/...` 配下の png/jpg/jpeg/webp のみ許可。値はここを通過したものだけ
-// state.layout.frame.src に格納される。 renderStage で CSS に差し込む際にも
-// 追加の sanitize (`'`, `"`, `)`, `\\` を除去) を実行する 2 段防御。
+// `/assets/images/...` 配下の png/jpg/jpeg/webp のみ許可 (絶対パス必須)。値はここを
+// 通過したものだけ state.layout.frame.src に格納される。 renderStage で CSS に差し込む
+// 際にも追加の sanitize (`'`, `"`, `)`, `\\` を除去) を実行する 2 段防御。
 // 先頭 lookahead `(?!.*\.\.)` で `..` traversal 字句を defense-in-depth として拒否。
-// ✗ assets/images/../etc/passwd.png  → `..` を含むため reject
-// ✓ assets/images/maze/OP/frame_s2.png
-const FRAME_SRC_RE = /^(?!.*\.\.)assets\/images\/[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
+// エディタは `/tools/` 配下に置かれているため、相対パス (`assets/...`) は
+// `/tools/assets/...` に解決されて 404 になる → 絶対パス必須。 旧形式相対パスは
+// mergeLayout 側で自動マイグレートする (`assets/...` → `/assets/...`)。
+// ✗ assets/images/maze/OP/frame_s2.png     → 先頭 `/` 欠落で reject (相対パス禁止)
+// ✗ /assets/images/../etc/passwd.png       → `..` を含むため reject
+// ✓ /assets/images/maze/OP/frame_s2.png
+const FRAME_SRC_RE = /^(?!.*\.\.)\/assets\/images\/[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
 
 const DEFAULT_LAYOUT = {
   // フレーム画像 (パピルス板) を前提に、初期値はリーダブルなクリーム色対応に揃える:
@@ -426,7 +431,7 @@ const DEFAULT_LAYOUT = {
   box:  { xPct: 12, yPct: 62, widthPct: 75, heightPct: 28 },
   text: { fontSize: 26, lineHeight: 1.6, color: '#3a2818', align: 'center', letterSpacing: 0 },
   bg:   { color: '#000000', alpha: 0, radius: 0, padding: 16 },
-  frame:{ enabled: true, src: 'assets/images/maze/OP/frame_s2.png' }
+  frame:{ enabled: true, src: '/assets/images/maze/OP/frame_s2.png' }
 };
 
 // ----------------------------------------------------------------------------
@@ -538,10 +543,14 @@ function mergeLayout(base, incoming) {
     if (typeof incoming.frame.enabled === 'boolean') {
       out.frame.enabled = incoming.frame.enabled;
     }
-    // 受入: string かつ allowlist 正規表現 (assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
+    // 受入: string かつ allowlist 正規表現 (/assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
     // 空文字列も許容 (= フレーム未指定状態を Export/Import で表現できるように)。
+    // 旧形式 (相対パス `assets/images/...`) は絶対パス (`/assets/images/...`) に自動マイグレート。
+    // 既存ユーザの localStorage / Export JSON に旧値が残っていても、リロード時に自動補正されて
+    // フレーム画像が表示される (元相対パスの値は実質失効)。
     if (typeof incoming.frame.src === 'string') {
-      const s = incoming.frame.src.trim();
+      let s = incoming.frame.src.trim();
+      if (/^assets\/images\//.test(s)) s = '/' + s;
       if (s === '' || FRAME_SRC_RE.test(s)) {
         out.frame.src = s;
       }
@@ -657,13 +666,28 @@ function renderRightPane() {
 
 // フレーム ON 時は bg.color / bg.alpha / bg.radius は renderStage で上書きされ
 // 画面に反映されないため、対応する input を disabled にしてユーザー混乱を防ぐ。
+// さらに opacity を直接当てて視覚的にも「フレーム ON 中は BG 全体が無効」と一目で分かるように。
 function applyFrameUIGuard() {
   const fr = state.layout.frame || { enabled: false };
   const disabled = !!fr.enabled;
   ['cBgColor', 'tBgColor', 'rBgAlpha', 'rRadius'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.disabled = disabled;
+    if (el) {
+      el.disabled = disabled;
+      // 親 .field-row 全体に opacity を当てて、 ラベル / vnum スパンも一緒に薄くする。
+      const row = el.closest && el.closest('.field-row');
+      if (row) row.style.opacity = disabled ? '0.4' : '1';
+    }
   });
+  // BACKGROUND セクションヘッダ (h3) も同じ opacity を当てて、 ユーザーが「フレーム ON 中
+  // は BG 全体が無効」 と一目で分かるようにする。 padding row は frame ON でも有効
+  // (renderStage は frame と無関係に box.style.padding を反映) のため、 行単位の opacity
+  // は当てず、 ヘッダ h3 だけ薄くする。
+  const sec = document.getElementById('bgSection');
+  if (sec) {
+    const h3 = sec.querySelector('h3');
+    if (h3) h3.style.opacity = disabled ? '0.4' : '1';
+  }
 }
 
 function setField(rangeId, displayId, value) {
@@ -929,23 +953,29 @@ function initRightPane() {
     renderStage();
   });
   // change のみだとフォーカスアウト/Enter までライブプレビューが更新されないため、
-  // input イベントにも同ハンドラを bind してタイピング中もプレビュー反映する。
-  // 検証通過時のみ state 更新 + render なので、同値再代入時は実質 no-op で重複発火問題なし。
-  const onFrameSrcChange = function() {
+  // input イベントでも検証通過時は state 更新 + render してタイピング中もライブプレビュー反映する。
+  // ただし input で毎キーストロークの不正値に対し toast を出すと鬱陶しいので、
+  // toast は change (blur/Enter) のみで発火させる。 (タイピング中はサイレント受理、 確定時に
+  // 検証失敗フィードバック、 という UX)
+  const onFrameSrcInput = function() {
     if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
     const v = String(frameSrc.value || '').trim();
     if (v === '' || FRAME_SRC_RE.test(v)) {
       state.layout.frame.src = v;
       saveToLocal();
       renderStage();
-    } else {
-      // 不正値は元に戻して error toast。 (assets/images/.../*.png|jpg|jpeg|webp のみ許可)
-      frameSrc.value = state.layout.frame.src || '';
-      toast('src は assets/images/...(png|jpg|webp) のみ', 'err');
+    }
+    // 不正値はサイレント (input イベントでは toast を出さない)
+  };
+  const onFrameSrcChangeFinal = function() {
+    const v = String(frameSrc.value || '').trim();
+    if (v !== '' && !FRAME_SRC_RE.test(v)) {
+      // 確定 (blur/Enter) 時のみ、 検証失敗を 1 回だけ通知。
+      toast('frame.src は /assets/images/.../*.png|jpg|webp 形式で指定してください', 'err');
     }
   };
-  frameSrc.addEventListener('change', onFrameSrcChange);
-  frameSrc.addEventListener('input', onFrameSrcChange);
+  frameSrc.addEventListener('input',  onFrameSrcInput);
+  frameSrc.addEventListener('change', onFrameSrcChangeFinal);
 }
 
 // ----------------------------------------------------------------------------
