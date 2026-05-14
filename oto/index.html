@@ -111,38 +111,37 @@
     width: var(--sz, 128px); height: var(--sz, 128px);
     border-radius: 50%;
     border: none;
-    background:
-      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.65), rgba(255,255,255,0) 48%),
-      linear-gradient(180deg, var(--c1, #FF6B9D), var(--c2, #E13870));
-    box-shadow:
-      0 10px 0 rgba(0,0,0,0.22),
-      inset 0 0 0 3px rgba(255,255,255,0.35);
+    /* PNG が円ボタン全体を担当するので背景・shadow は無効化 */
+    background: transparent;
+    box-shadow: none;
     color: #fff;
     font-size: clamp(2.4rem, 9vw, 3.6rem);
+    padding: 0;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     pointer-events: auto;
     touch-action: manipulation;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    transition: transform 0.08s, box-shadow 0.08s;
+    transition: transform 0.08s, filter 0.08s;
     /* translate(-50%,-50%) で X,Y 中心指定 */
     transform: translate(-50%, -50%);
   }
   .instr-btn.press {
-    transform: translate(-50%, -50%) scale(0.9);
-    box-shadow:
-      0 4px 0 rgba(0,0,0,0.22),
-      inset 0 0 0 3px rgba(255,255,255,0.35);
+    transform: translate(-50%, -50%) scale(0.92);
+    filter: brightness(0.92);
   }
-  .instr-btn.i1 { --c1:#FF6B9D; --c2:#E13870; }  /* ピンク */
-  .instr-btn.i2 { --c1:#FFA94D; --c2:#F2742A; }  /* オレンジ */
-  .instr-btn.i3 { --c1:#FFD84D; --c2:#F2B800; }  /* イエロー */
-  .instr-btn.i4 { --c1:#7DD3A0; --c2:#35A86A; }  /* グリーン */
-  .instr-btn.i5 { --c1:#C4B5FD; --c2:#8B5CF6; }  /* パープル */
-  .instr-btn.i6 { --c1:#67E8F9; --c2:#0891B2; }  /* シアン */
-  .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
-  .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
+  /* 共通: ボタン中央に貼る PNG イラスト */
+  .btn-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    display: block;
+  }
+  /* (i1〜i8 の色変数は廃止。PNG が色を持つ) */
 
   /* 8ボタン: ポノを中心に楕円配置 (左右サイドの 0/3/4/7 は縦中央寄り、上下の 1/2/5/6 は画面端寄り) */
   .instr-btn[data-idx="0"] { left: 12%; top: 40%; --sz: 108px; }
@@ -263,8 +262,8 @@
     display: flex; gap: 6px;
   }
   .speed-btn {
-    padding: 8px 14px;
-    border-radius: 22px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 28px;
     border: 3px solid rgba(255,255,255,0.6);
     background: rgba(255,255,255,0.12);
     color: #fff;
@@ -275,6 +274,11 @@
     touch-action: manipulation;
     white-space: nowrap;
     transition: transform 0.1s, background 0.18s, border-color 0.18s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .speed-btn .btn-img {
+    width: 36px; height: 36px;
+    flex: 0 0 auto;
   }
   .speed-btn:active { transform: scale(0.94); }
   .speed-btn.on {
@@ -343,21 +347,23 @@
     display: flex; gap: 7px;
   }
   .sound-sets .set-btn {
-    width: 40px; height: 40px;
-    border-radius: 50%; border: 3px solid #fff;
-    background: rgba(255,255,255,0.92);
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    padding: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 1.25rem;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    box-shadow: none;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
     touch-action: manipulation;
     flex: 0 0 auto;
   }
   .sound-sets .set-btn:active { transform: scale(0.92); }
   .sound-sets .set-btn.active {
-    border-color: #FFD84D;
-    box-shadow: 0 0 0 3px rgba(255,216,77,0.5), 0 4px 12px rgba(0,0,0,0.25);
+    /* アクティブはオレンジグロー (PNG はそのまま、外周ハイライト) */
+    box-shadow: 0 0 0 3px rgba(255,216,77,0.85), 0 0 14px rgba(255,176,32,0.65);
   }
 
   /* ── コード/単音 切替ピル (ねいろ box の直下) ── */
@@ -408,16 +414,17 @@
   .set-trigger {
     width: 52px; height: 52px;
     border-radius: 50%;
-    border: 3px solid #fff;
-    background: rgba(255,255,255,0.92);
+    border: none;
+    background: transparent;
+    padding: 0;
     font-size: 1.7rem;
     cursor: pointer;
     touch-action: manipulation;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    box-shadow: none;
     display: flex; align-items: center; justify-content: center;
-    transition: transform 0.1s;
+    transition: transform 0.1s, filter 0.1s;
   }
-  .set-trigger:active { transform: scale(0.92); }
+  .set-trigger:active { transform: scale(0.92); filter: brightness(0.92); }
   .set-popover {
     display: none;
     position: absolute;
@@ -734,9 +741,9 @@
     <div class="band-group" id="band-group">
       <div class="band-group-label">ばんそう (ドラム)</div>
       <div class="speed-row" id="speed-row">
-        <button class="speed-btn" data-speed="slow"   aria-label="おそい">🐢 おそい</button>
-        <button class="speed-btn" data-speed="normal" aria-label="ふつう">🚶 ふつう</button>
-        <button class="speed-btn" data-speed="fast"   aria-label="はやい">🏃 はやい</button>
+        <button class="speed-btn" data-speed="slow"   aria-label="おそい"><img class="btn-img" src="../assets/images/oto/buttons/btn_speed_slow.png" alt=""><span>おそい</span></button>
+        <button class="speed-btn" data-speed="normal" aria-label="ふつう"><img class="btn-img" src="../assets/images/oto/buttons/btn_speed_normal.png" alt=""><span>ふつう</span></button>
+        <button class="speed-btn" data-speed="fast"   aria-label="はやい"><img class="btn-img" src="../assets/images/oto/buttons/btn_speed_fast.png" alt=""><span>はやい</span></button>
       </div>
     </div>
 
@@ -744,18 +751,18 @@
     <div class="sound-sets-box">
       <div class="sound-sets-label">ねいろ</div>
       <div class="sound-sets" id="sound-sets" role="tablist">
-        <button class="set-btn active" data-set="doremi"  aria-label="ドレミ">🎹</button>
-        <button class="set-btn"        data-set="kira"    aria-label="きらきら">🎼</button>
-        <button class="set-btn"        data-set="marimba" aria-label="マリンバ">🪘</button>
-        <button class="set-btn"        data-set="blip"    aria-label="ピコ">⚡</button>
-        <button class="set-btn"        data-set="taiko"   aria-label="たいこ">🥁</button>
-        <button class="set-btn"        data-set="animal"  aria-label="どうぶつ">🐾</button>
+        <button class="set-btn active" data-set="doremi"  aria-label="ドレミ"><img class="btn-img" src="../assets/images/oto/buttons/btn_set_doremi.png" alt=""></button>
+        <button class="set-btn"        data-set="kira"    aria-label="きらきら"><img class="btn-img" src="../assets/images/oto/buttons/btn_set_kira.png" alt=""></button>
+        <button class="set-btn"        data-set="marimba" aria-label="マリンバ"><img class="btn-img" src="../assets/images/oto/buttons/btn_set_marimba.png" alt=""></button>
+        <button class="set-btn"        data-set="blip"    aria-label="ピコ"><img class="btn-img" src="../assets/images/oto/buttons/btn_set_blip.png" alt=""></button>
+        <button class="set-btn"        data-set="taiko"   aria-label="たいこ"><img class="btn-img" src="../assets/images/oto/buttons/btn_set_taiko.png" alt=""></button>
+        <button class="set-btn"        data-set="animal"  aria-label="どうぶつ"><img class="btn-img" src="../assets/images/oto/buttons/btn_set_animal.png" alt=""></button>
       </div>
     </div>
 
     <!-- スケール 折りたたみ (右上、popover でふつう/ペンタのみ) -->
     <div class="sets-collapsed" id="sets">
-      <button class="set-trigger" id="set-trigger" aria-label="スケール">♪</button>
+      <button class="set-trigger" id="set-trigger" aria-label="スケール"><img class="btn-img" src="../assets/images/oto/buttons/btn_ui_scale.png" alt=""></button>
       <div class="set-popover" id="set-popover">
         <div class="scale-row">
           <span class="scale-label">スケール</span>
@@ -787,14 +794,14 @@
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
     <div id="instruments">
-      <button class="instr-btn i1" data-idx="0" aria-label="ド">🌸</button>
-      <button class="instr-btn i2" data-idx="1" aria-label="レ">🦋</button>
-      <button class="instr-btn i3" data-idx="2" aria-label="ミ">⭐</button>
-      <button class="instr-btn i4" data-idx="3" aria-label="ファ">🍀</button>
-      <button class="instr-btn i5" data-idx="4" aria-label="ソ">🎈</button>
-      <button class="instr-btn i6" data-idx="5" aria-label="ラ">🍎</button>
-      <button class="instr-btn i7" data-idx="6" aria-label="シ">🐟</button>
-      <button class="instr-btn i8" data-idx="7" aria-label="ド高">🌈</button>
+      <button class="instr-btn i1" data-idx="0" aria-label="ド"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_do.png" alt=""></button>
+      <button class="instr-btn i2" data-idx="1" aria-label="レ"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_re.png" alt=""></button>
+      <button class="instr-btn i3" data-idx="2" aria-label="ミ"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_mi.png" alt=""></button>
+      <button class="instr-btn i4" data-idx="3" aria-label="ファ"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_fa.png" alt=""></button>
+      <button class="instr-btn i5" data-idx="4" aria-label="ソ"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_so.png" alt=""></button>
+      <button class="instr-btn i6" data-idx="5" aria-label="ラ"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_la.png" alt=""></button>
+      <button class="instr-btn i7" data-idx="6" aria-label="シ"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_si.png" alt=""></button>
+      <button class="instr-btn i8" data-idx="7" aria-label="ド高"><img class="btn-img" src="../assets/images/oto/buttons/btn_note_do_high.png" alt=""></button>
     </div>
   </div>
 </div>
