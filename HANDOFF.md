@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-14 - [batch:oto-next-backlog-3-buttons] Codex: `docs/oto-icons/codex-prompts/next-batch-backlog.md` を受領。HANDOFF / git log / `assets/images/oto/buttons/` を確認し、`btn_ui_loop.png` と `btn_ui_save.png` は未配置、`btn_note_so.png` は既存の鍵アイコン差し替え対象と確認済。既存 21 枚のステッチ円形ボタン style に合わせて 3 枚を生成・整形する。`sw.js` は Codex では触らず、必要バンプとして申し送る。 (by Codex)
+
 - 2026-05-12 - [batch:voicepeak-vdc2-dict] Codex: user が `tools/voicepeak/test/` に置いた `testword.vdc2` / `testword02.vdc2` を確認。`.vdc2` は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の形式と判明。`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1` を追加し、`tools/voicepeak/voicepeak_user_dict.csv` 65 語から `tools/voicepeak/voicepeak_user_dict.vdc2` を生成済。VOICEPEAK 実機インポート確認は未実施。 (by Codex)
 
 - 2026-05-11 - [batch:16-zukan-frames] Codex: `tmp/zukan-frames-codex-order/CODEX-ORDER.md` を受領。HANDOFF / git log / `tmp/zukan-frames-codex-order/` / `tmp/alpha_pending/` を確認し、zukan frame 4種の既存納品は無しと確認済。reference は `tmp/zukan-frames-codex-order/reference/referenceImage.png`。納品先は `tmp/alpha_pending/16/` として着手。 (by Codex)

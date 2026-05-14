@@ -140,6 +140,16 @@
     -webkit-user-drag: none;
     user-select: none;
     display: block;
+    /* PNG の透過部分も含めて自然に浮き上がるドロップシャドウ
+       (box-shadow だと矩形になるため drop-shadow filter を使用) */
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.18));
+    transition: filter 0.08s;
+  }
+  /* タップ時は影を弱めて凹みを強調 */
+  .instr-btn:active .btn-img,
+  .set-btn:active .btn-img,
+  .speed-btn:active .btn-img {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
   }
   /* (i1〜i8 の色変数は廃止。PNG が色を持つ) */
 
@@ -343,17 +353,19 @@
   .song-btn-val { font-size: 0.85rem; font-weight: 900; line-height: 1; }
 
   /* ── 音色 (角丸枠 sound-sets-box の中、6個入る) ── */
+  /* 2026-05-14: set-btn を約 12.5% 拡大 (48→54)。横並び 6 個維持 +
+     375px 縦画面でも 6×54 + 5×5(gap) + 24px(padding) + 4px(border) = 377px で収まる範囲 */
   .sound-sets {
-    display: flex; gap: 7px;
+    display: flex; gap: 5px;
   }
   .sound-sets .set-btn {
-    width: 48px; height: 48px;
+    width: 54px; height: 54px;
     border-radius: 50%;
     border: none;
     background: transparent;
     padding: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     box-shadow: none;
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
@@ -671,13 +683,13 @@
     .sound-sets {
       flex-direction: row;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 4px;
       justify-content: center;
-      max-width: 200px;
+      max-width: 220px;
     }
     .sound-sets .set-btn {
-      width: 38px; height: 38px;
-      font-size: 1.1rem;
+      width: 44px; height: 44px;
+      font-size: 1.2rem;
     }
 
     /* 伴奏 ばんそう: 左パネル中心 (24%) に揃える */

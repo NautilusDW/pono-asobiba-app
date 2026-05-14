@@ -107,22 +107,32 @@
 - ポノ（クマ）は描かない（タイトルロゴ専用）
 - 8 個並べたときの **シリーズ感**（同じステッチ風 baseline が 8 個分連続）と **8 音の色相虹順**（ド=赤 → ド高=ピンク）は維持
 
-### 配置完了 21 ボタン (2026-05-14)
+### 配置完了 23 ボタン (2026-05-14)
 
 別注の Codex 48 枚セットから選定し、`assets/images/oto/buttons/` 配下に配置済:
 
 - 楽器 8 個: `btn_note_do` `btn_note_re` `btn_note_mi` `btn_note_fa` `btn_note_so` `btn_note_la` `btn_note_si` `btn_note_do_high`
 - 音色 6 個: `btn_set_doremi` `btn_set_kira` `btn_set_marimba` `btn_set_blip` `btn_set_taiko` `btn_set_animal`
 - 速度 3 個: `btn_speed_slow` `btn_speed_normal` `btn_speed_fast`
-- UI 4 個: `btn_ui_scale` `btn_ui_rec` `btn_ui_menu` `btn_ui_help`
+- UI 6 個: `btn_ui_scale` `btn_ui_rec` `btn_ui_menu` `btn_ui_help` `btn_ui_loop` `btn_ui_save`
 
-### Backlog (次回 Codex 発注予定)
+#### 新規追加 (2026-05-14 後追い)
 
-- `btn_note_so` の **真の水色版** (現状の選定品から色相を微調整したいパターン用、再発注予定)
-- `btn_ui_loop` (現存ボタンだが未配置)
-- `btn_ui_save` (将来実装予定の予約スロット、未配置)
+backlog にあった残り 3 枚も同日中に Codex 発注 → 配置完了し、Sheet 1a の発注対象は完全に揃った:
 
-> 上記 3 件は次回 Codex 発注時にステッチ風 baseline で同じ世界観に合わせて追加発注する。発注書には「Sheet 1a で確定済のステッチ風円ボタン + 中央個別イラストに合わせる」と明示し、既存 21 枚の参照画像を添付する。
+- `btn_note_so.png` — **水色の小鳥**で正式採用 (旧「鍵で代用」を差し替え)
+- `btn_ui_loop.png` — **緑のループ矢印** (DOM L783 で🔁 絵文字として表示されていたスロットに PNG 投入)
+- `btn_ui_save.png` — **宝箱** (将来実装予定の予約スロット、素材のみ先行配置)
+
+### Backlog (履歴 / 2026-05-14 完了済)
+
+> ✅ **このバッチの未配置リストは空** — backlog 3 件はすべて配置完了済。以下は historical record として残す。
+
+- ✅ **完了** `btn_note_so` の **真の水色版** (旧「鍵で代用」→ 水色の小鳥で正式採用)
+- ✅ **完了** `btn_ui_loop` (緑のループ矢印で配置)
+- ✅ **完了** `btn_ui_save` (宝箱モチーフで配置、将来実装予定の予約スロット)
+
+> 上記 3 件は Codex 発注時にステッチ風 baseline で同じ世界観に合わせて追加発注済。発注書には「Sheet 1a で確定済のステッチ風円ボタン + 中央個別イラストに合わせる」と明示し、既存 21 枚の参照画像を添付した。
 
 ### 旧 Phase1/Phase2 提案フローについて
 
