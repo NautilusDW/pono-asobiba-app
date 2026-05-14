@@ -131,6 +131,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T15:18:20Z - .stage の background を削除して .stage-wrap の背景画像 1 枚で画面全体を覆い、stage 帯の継ぎ目を物理的に消す + sw.js CACHE_VERSION 1000→1001
+- **タスク**: .stage の background を削除して .stage-wrap の背景画像 1 枚で画面全体を覆い、stage 帯の継ぎ目を物理的に消す + sw.js CACHE_VERSION 1000→1001
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 113
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 27, "ToolSearch": 2, "Bash": 53, "Write": 1, "Edit": 12, "Grep": 4, "WebSearch": 5}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T14:55:55Z - memory化: maze ラフ→エディタ シームレス handoff + radius slider + edges 削除 + gh proxy 日本語対応 + PNG インポート を memory/feature_maze_rough_to_editor_workflow.md に集約 + MEMORY.md + 関連memoryクロスリンク
 - **タスク**: memory化: maze ラフ→エディタ シームレス handoff + radius slider + edges 削除 + gh proxy 日本語対応 + PNG インポート を memory/feature_maze_rough_to_editor_workflow.md に集約 + MEMORY.md + 関連memoryクロスリンク
 - **結果**: 成功
@@ -233,18 +246,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 4, "Agent": 23, "ToolSearch": 1, "Bash": 15, "Grep": 4}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T14:33:58Z - maze-editor handoff rescale クロスレビュー 3 件反映 (undo履歴上書き / 整数等倍判定 / silent二重draw抑制)
-- **タスク**: maze-editor handoff rescale クロスレビュー 3 件反映 (undo履歴上書き / 整数等倍判定 / silent二重draw抑制)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 91
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 6, "Agent": 25, "ToolSearch": 2, "Bash": 40, "Write": 1, "Edit": 9, "Grep": 3, "WebSearch": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
