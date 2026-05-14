@@ -331,6 +331,20 @@
     </div>
 
     <div class="section">
+      <h3>🖼 フレーム画像</h3>
+      <div class="field-row">
+        <label><input type="checkbox" id="cFrameEnabled" style="flex:0 0 auto; margin-right:6px;">フレームを使う</label>
+      </div>
+      <div class="field-row">
+        <label>src</label>
+        <input type="text" id="tFrameSrc" placeholder="assets/images/maze/OP/frame_s2.png">
+      </div>
+      <div style="font-size:10px; color:#94a3b8; margin-top:4px; line-height:1.4;">
+        ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)
+      </div>
+    </div>
+
+    <div class="section">
       <h3>Background</h3>
       <div class="field-row">
         <label>bgColor</label>
@@ -631,6 +645,10 @@ function renderRightPane() {
   setField('rBgAlpha',  'vBgAlpha',  L.bg.alpha);
   setField('rRadius',   'vRadius',   L.bg.radius);
   setField('rPadding',  'vPadding',  L.bg.padding);
+  // frame
+  const fr = (L.frame || { enabled: false, src: '' });
+  document.getElementById('cFrameEnabled').checked = !!fr.enabled;
+  document.getElementById('tFrameSrc').value       = fr.src || '';
 }
 
 function setField(rangeId, displayId, value) {
@@ -884,6 +902,29 @@ function initRightPane() {
   bindRange('rBgAlpha', 'vBgAlpha', () => state.layout.bg.alpha,   v => state.layout.bg.alpha   = v, 2);
   bindRange('rRadius',  'vRadius',  () => state.layout.bg.radius,  v => state.layout.bg.radius  = v, 0);
   bindRange('rPadding', 'vPadding', () => state.layout.bg.padding, v => state.layout.bg.padding = v, 0);
+
+  // Frame (image-based background panel)
+  const frameEnabled = document.getElementById('cFrameEnabled');
+  const frameSrc     = document.getElementById('tFrameSrc');
+  frameEnabled.addEventListener('change', () => {
+    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
+    state.layout.frame.enabled = !!frameEnabled.checked;
+    saveToLocal();
+    renderStage();
+  });
+  frameSrc.addEventListener('change', () => {
+    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
+    const v = String(frameSrc.value || '').trim();
+    if (v === '' || FRAME_SRC_RE.test(v)) {
+      state.layout.frame.src = v;
+      saveToLocal();
+      renderStage();
+    } else {
+      // 不正値は元に戻して error toast。 (assets/images/.../*.png|jpg|jpeg|webp のみ許可)
+      frameSrc.value = state.layout.frame.src || '';
+      toast('src は assets/images/...(png|jpg|webp) のみ', 'err');
+    }
+  });
 }
 
 // ----------------------------------------------------------------------------
