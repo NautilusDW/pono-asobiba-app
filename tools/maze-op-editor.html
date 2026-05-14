@@ -150,6 +150,10 @@
   }
   .op-box {
     position: absolute;
+    /* Center-anchor: xPct/yPct は box の中心点座標 (translate(-50%, -50%) で
+       left/top を box の中心に解釈し直す)。 widthPct/heightPct を変えても
+       中心位置が固定 → 左右上下対称に拡縮する。 */
+    transform: translate(-50%, -50%);
     font-family: 'Zen Maru Gothic', sans-serif;
     white-space: pre-wrap;
     word-break: break-word;
@@ -231,6 +235,8 @@
     <span class="spacer"></span>
     <button class="ghost" id="btnExport">📥 Export JSON</button>
     <button class="ghost" id="btnImport">📤 Import JSON</button>
+    <button class="ghost" type="button" id="btnUndo" disabled title="取り消し (Ctrl+Z)">↶ 取り消し</button>
+    <button class="ghost" type="button" id="btnRedo" disabled title="やり直し (Ctrl+Shift+Z / Ctrl+Y)">↷ やり直し</button>
     <button class="publish" id="btnPublish" style="display:none;">📡 配信</button>
     <button class="ghost" id="btnGoMaze" title="ステージ編集 (maze-editor) に移動">🧭 ステージ編集へ</button>
     <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
@@ -271,7 +277,7 @@
   <aside id="right" class="panel">
 
     <div class="section">
-      <h3>Position (% of stage)</h3>
+      <h3>Position (% of stage, center anchor)</h3>
       <div class="field-row">
         <label>xPct</label>
         <input type="range" id="rXPct" min="0" max="100" step="0.5">
@@ -281,6 +287,11 @@
         <label>yPct</label>
         <input type="range" id="rYPct" min="0" max="100" step="0.5">
         <span class="vnum" id="vYPct">0</span>
+      </div>
+      <div class="field-row" style="margin-top:8px;">
+        <button type="button" id="btnCenter" style="padding:6px 12px; font-size:11px; background:#10b981; color:#fff; border:none; border-radius:3px; cursor:pointer; width:100%;">
+          🎯 中央にリセット
+        </button>
       </div>
     </div>
 
@@ -439,8 +450,11 @@ const DEFAULT_LAYOUT = {
   //   - text.color: 濃茶 (#3a2818) でクリーム背景に読みやすく
   //   - bg.alpha/radius: 0 (フレーム画像に背景描画を委譲)
   //   - box.widthPct: 75 / heightPct: 28 (フレームが画面端で切れないように)
-  //   - box.yPct: 62 (フレームを下半分中央寄りに配置)
-  box:  { xPct: 12, yPct: 62, widthPct: 75, heightPct: 28 },
+  //   - box.xPct: 50 / yPct: 75 (center anchor、 横は中央、 縦は下寄り中央)
+  // _anchor: 'center' で「xPct/yPct は box の中心点」 を明示。 旧 top-left anchor の
+  // JSON (= _anchor 未指定) は mergeLayout 側で xPct + widthPct/2, yPct + heightPct/2 に
+  // 変換して center anchor に自動 migration する。
+  box:  { xPct: 50, yPct: 75, widthPct: 75, heightPct: 28, _anchor: 'center' },
   text: { fontSize: 26, lineHeight: 1.6, color: '#3a2818', align: 'center', letterSpacing: 0 },
   bg:   { color: '#000000', alpha: 0, radius: 0, padding: 16 },
   // lockAspect: true (デフォルト ON) で、 box 矩形を frame 画像本来のアスペクト比に
@@ -453,6 +467,93 @@ const DEFAULT_LAYOUT = {
 // `aspect-ratio` の `"W / H"` 形式文字列) を保持。 lockAspect=true 時に renderStage が
 // box.style.aspectRatio に適用する。 src 変更時に再算出、 ロード失敗時は null。
 let _frameAspectRatio = null;
+
+// ----------------------------------------------------------------------------
+// Undo / Redo history (module-level, NOT part of `state` to avoid recursive
+// serialization). snapshot は { layout, beats, selected } の deep clone。
+// _previewFrameDataUrl は transient なので含めない (data URL でスタックが肥大化、 かつ
+// 再生時は path に戻る想定で OK)。 applying flag は undo/redo 適用中の二重 push 防止。
+// HISTORY_LIMIT 超過時は古い順に切詰める。 redo branch (cursor より右) は push で破棄。
+// ----------------------------------------------------------------------------
+const HISTORY_LIMIT = 50;
+const _history = {
+  stack: [],      // Array<{ layout, beats, selected }>
+  cursor: -1,     // 現在位置 (= stack[cursor] が現在の state)
+  applying: false // undo/redo 中の二重 push 防止
+};
+
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function pushHistory() {
+  if (_history.applying) return; // undo/redo 中は無視
+  const snap = {
+    layout: deepClone(state.layout),
+    beats:  deepClone(state.beats),
+    selected: state.selected
+  };
+  // 重複防止: 直近 snapshot と同一なら skip。
+  const top = _history.stack[_history.cursor];
+  if (top && JSON.stringify(top) === JSON.stringify(snap)) return;
+  // redo 分岐 (cursor より右) を破棄して新規 push。
+  _history.stack = _history.stack.slice(0, _history.cursor + 1);
+  _history.stack.push(snap);
+  // 上限超過時は古い順に削る。
+  if (_history.stack.length > HISTORY_LIMIT) {
+    _history.stack = _history.stack.slice(-HISTORY_LIMIT);
+  }
+  _history.cursor = _history.stack.length - 1;
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  if (_history.cursor <= 0) return;
+  _history.applying = true;
+  _history.cursor--;
+  const snap = _history.stack[_history.cursor];
+  state.layout = deepClone(snap.layout);
+  state.beats  = deepClone(snap.beats);
+  state.selected = snap.selected;
+  state._previewFrameDataUrl = null;
+  _history.applying = false;
+  saveToLocal();
+  // frame.src が変わっている可能性があるため aspect 再プローブ。
+  if (state.layout.frame && state.layout.frame.src) {
+    _probeFrameAspect(state.layout.frame.src);
+  } else {
+    _frameAspectRatio = null;
+  }
+  renderAll();
+  updateUndoRedoButtons();
+  toast('取り消しました');
+}
+
+function redo() {
+  if (_history.cursor >= _history.stack.length - 1) return;
+  _history.applying = true;
+  _history.cursor++;
+  const snap = _history.stack[_history.cursor];
+  state.layout = deepClone(snap.layout);
+  state.beats  = deepClone(snap.beats);
+  state.selected = snap.selected;
+  state._previewFrameDataUrl = null;
+  _history.applying = false;
+  saveToLocal();
+  if (state.layout.frame && state.layout.frame.src) {
+    _probeFrameAspect(state.layout.frame.src);
+  } else {
+    _frameAspectRatio = null;
+  }
+  renderAll();
+  updateUndoRedoButtons();
+  toast('やり直しました');
+}
+
+function updateUndoRedoButtons() {
+  const u = document.getElementById('btnUndo');
+  const r = document.getElementById('btnRedo');
+  if (u) u.disabled = (_history.cursor <= 0);
+  if (r) r.disabled = (_history.cursor >= _history.stack.length - 1);
+}
 
 // ----------------------------------------------------------------------------
 // State
@@ -546,10 +647,26 @@ function mergeLayout(base, incoming) {
   out.frame = out.frame || { enabled: false, src: '', lockAspect: false };
   if (!incoming || typeof incoming !== 'object') return out;
   if (incoming.box && typeof incoming.box === 'object') {
-    out.box.xPct      = clampNum(incoming.box.xPct,      0,   100, out.box.xPct);
-    out.box.yPct      = clampNum(incoming.box.yPct,      0,   100, out.box.yPct);
-    out.box.widthPct  = clampNum(incoming.box.widthPct, 10,   100, out.box.widthPct);
-    out.box.heightPct = clampNum(incoming.box.heightPct, 5,   100, out.box.heightPct);
+    // anchor migration: 旧 JSON (= _anchor 未指定) は top-left anchor で
+    // 保存されていた。 center anchor に変換するため xPct + widthPct/2,
+    // yPct + heightPct/2 を新しい中心座標として再計算する。 _anchor === 'center'
+    // で保存されたものはそのまま受け入れる (= 一度 migration されたら次回は no-op)。
+    const inAnchor = incoming.box._anchor;
+    const inX = clampNum(incoming.box.xPct,      0, 100, out.box.xPct);
+    const inY = clampNum(incoming.box.yPct,      0, 100, out.box.yPct);
+    const inW = clampNum(incoming.box.widthPct, 10, 100, out.box.widthPct);
+    const inH = clampNum(incoming.box.heightPct, 5, 100, out.box.heightPct);
+    if (inAnchor === 'center') {
+      out.box.xPct = inX;
+      out.box.yPct = inY;
+    } else {
+      // 旧 top-left → center 変換 (視覚的に同じ位置が維持される)。
+      out.box.xPct = clampNum(inX + inW / 2, 0, 100, out.box.xPct);
+      out.box.yPct = clampNum(inY + inH / 2, 0, 100, out.box.yPct);
+    }
+    out.box.widthPct  = inW;
+    out.box.heightPct = inH;
+    out.box._anchor   = 'center';  // 以降は常に center として永続化される
   }
   if (incoming.text && typeof incoming.text === 'object') {
     out.text.fontSize      = clampNum(incoming.text.fontSize,      6,   120, out.text.fontSize);
@@ -785,6 +902,7 @@ function addBeat() {
   state.selected = state.beats.length - 1;
   saveToLocal();
   renderAll();
+  pushHistory();
 }
 
 function removeBeat() {
@@ -793,6 +911,7 @@ function removeBeat() {
   state.selected = Math.min(state.selected, state.beats.length - 1);
   saveToLocal();
   renderAll();
+  pushHistory();
 }
 
 function stepPrev() {
@@ -849,6 +968,7 @@ function importJsonFromFile(file) {
       }
       saveToLocal();
       renderAll();
+      pushHistory();
       toast('JSON 取込完了');
     } catch (e) {
       console.warn('[maze-op-editor] import failed', e);
@@ -1169,6 +1289,7 @@ async function handleFramePicked(file) {
     saveToLocal();
     renderRightPane();   // tFrameSrc input / checkbox を新値に同期
     renderStage();       // backgroundImage を path 値に戻す (data URL → path)
+    pushHistory();       // フレーム差し替え確定で 1 回 push
     toast('フレーム画像を更新しました');
   } catch (e) {
     console.warn('[maze-op-editor] frame upload failed', e);
@@ -1190,12 +1311,17 @@ async function handleFramePicked(file) {
 function bindRange(rangeId, displayId, getter, setter, precision) {
   const r = document.getElementById(rangeId);
   const d = document.getElementById(displayId);
+  // input: ドラッグ中の中間値はライブプレビューのみ。 履歴 push しない。
   r.addEventListener('input', () => {
     const v = Number(r.value);
     setter(v);
     d.textContent = (precision != null && !Number.isInteger(v)) ? v.toFixed(precision) : String(v);
     saveToLocal();
     renderStage();
+  });
+  // change: ドラッグ確定 (mouseup / Enter / blur) で 1 回だけ push。
+  r.addEventListener('change', () => {
+    pushHistory();
   });
 }
 
@@ -1208,6 +1334,10 @@ function bindColorPair(colorId, textId, getter, setter) {
     saveToLocal();
     renderStage();
   });
+  // color picker のドラッグ確定で push。
+  c.addEventListener('change', () => {
+    pushHistory();
+  });
   t.addEventListener('change', () => {
     const v = String(t.value || '').trim();
     if (isHexColor(v)) {
@@ -1215,6 +1345,7 @@ function bindColorPair(colorId, textId, getter, setter) {
       c.value = v;
       saveToLocal();
       renderStage();
+      pushHistory();
     } else {
       t.value = getter();
       toast('色は #rrggbb 形式で', 'err');
@@ -1226,6 +1357,20 @@ function initRightPane() {
   // Position
   bindRange('rXPct', 'vXPct', () => state.layout.box.xPct, v => state.layout.box.xPct = v, 1);
   bindRange('rYPct', 'vYPct', () => state.layout.box.yPct, v => state.layout.box.yPct = v, 1);
+  // 🎯 中央にリセット: box を stage 幾何中央 (xPct=50, yPct=50) に戻す。
+  // pushHistory() で 1 操作 1 履歴に積むため、 やり直したくなったら Ctrl+Z で復元できる。
+  const btnCenter = document.getElementById('btnCenter');
+  if (btnCenter) {
+    btnCenter.addEventListener('click', () => {
+      state.layout.box.xPct = 50;
+      state.layout.box.yPct = 50;
+      saveToLocal();
+      renderRightPane();
+      renderStage();
+      pushHistory();
+      toast('中央に配置しました');
+    });
+  }
   // Size
   bindRange('rWPct', 'vWPct', () => state.layout.box.widthPct,  v => state.layout.box.widthPct  = v, 1);
   bindRange('rHPct', 'vHPct', () => state.layout.box.heightPct, v => state.layout.box.heightPct = v, 1);
@@ -1238,6 +1383,7 @@ function initRightPane() {
     state.layout.text.align = e.target.value;
     saveToLocal();
     renderStage();
+    pushHistory();
   });
   // Background
   bindColorPair('cBgColor', 'tBgColor', () => state.layout.bg.color, v => state.layout.bg.color = v);
@@ -1255,6 +1401,7 @@ function initRightPane() {
     applyFrameUIGuard();
     saveToLocal();
     renderStage();
+    pushHistory();
   });
   // lockAspect トグル: 状態保存 + UI guard 更新 + renderStage で即時反映。
   // 内部の aspect 値 (_frameAspectRatio) は既に init / src 変更時にロード済なので
@@ -1266,6 +1413,7 @@ function initRightPane() {
       applyFrameUIGuard();
       saveToLocal();
       renderStage();
+      pushHistory();
     });
   }
   // change のみだとフォーカスアウト/Enter までライブプレビューが更新されないため、
@@ -1295,6 +1443,9 @@ function initRightPane() {
     if (v !== '' && !FRAME_SRC_RE.test(v)) {
       // 確定 (blur/Enter) 時のみ、 検証失敗を 1 回だけ通知。
       toast('frame.src は ../assets/images/.../*.png|jpg|webp 形式で指定してください', 'err');
+    } else {
+      // 有効値 (空文字 or allowlist 通過) で確定 → 履歴 push。
+      pushHistory();
     }
   };
   frameSrc.addEventListener('input',  onFrameSrcInput);
@@ -1361,10 +1512,29 @@ function init() {
     saveToLocal();
     renderBeatList();
     renderStage();
+    // タイピング毎に push せず、 blur で 1 回だけ push (= 1 編集セッション = 1 履歴)。
+  });
+  ta.addEventListener('blur', () => {
+    pushHistory();
+  });
+
+  // Undo/Redo buttons + keybinding
+  document.getElementById('btnUndo').addEventListener('click', undo);
+  document.getElementById('btnRedo').addEventListener('click', redo);
+  document.addEventListener('keydown', (e) => {
+    // テキスト入力中はブラウザネイティブの undo/redo を尊重 (上書きしない)。
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+      e.preventDefault();
+      redo();
+    }
   });
 
   initRightPane();
-  renderAll();
   // 起動時に現在の frame.src からアスペクト比をロードする (デフォルトは frame_s2.png)。
   // lockAspect=true (DEFAULT_LAYOUT の初期値) の状態でリロードした既存ユーザーも
   // ここで naturalWidth/Height を取得 → box.style.aspectRatio に反映 → 葉飾りが歪まない。
@@ -1373,6 +1543,9 @@ function init() {
   if (state.layout.frame && state.layout.frame.src) {
     _probeFrameAspect(state.layout.frame.src);
   }
+  // 起動時 state を履歴の base 点として記録 → undo の最古到達点になる。
+  pushHistory();
+  renderAll();
 }
 
 window.addEventListener('DOMContentLoaded', init);
