@@ -84,6 +84,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-14 - [batch:oto-reference-all-buttons-clean-no-line] **Done** — user 指摘「一番下のアイコンに横に白い線が入る」に対応。横線は `tmp/alpha_pending/21/` の不採用補正版に出ていた症状のため、採用済み `tmp/alpha_pending/22/` から横線なしの clean 版だけを `tmp/alpha_pending/23/` に再配置: `oto_ref_buttons_clean_sheet1_icons.png` / `oto_ref_buttons_clean_sheet2_objects.png` / `oto_ref_buttons_clean_sheet3_controls.png` / `oto_ref_buttons_clean_sheet4_swatches.png`。全て `2048x2048` RGB PNG、目視で下段横線なしを確認。今後は `23/` を使用。 (by Codex)
+
 - 2026-05-14 - [batch:oto-reference-all-buttons-circlefix] **Done** — user 指摘「今度は縦にのびちゃったな」に対応。`tmp/alpha_pending/20/` に正円指定で再生成した 2K 版を置き、採用版として `tmp/alpha_pending/22/` に横方向 106% の軽い幾何補正をかけた `2048x2048` RGB PNG 4 シートを納品: `oto_ref_buttons_circlefix_x106_sheet1_icons.png` / `oto_ref_buttons_circlefix_x106_sheet2_objects.png` / `oto_ref_buttons_circlefix_x106_sheet3_controls.png` / `oto_ref_buttons_circlefix_x106_sheet4_swatches.png`。`tmp/alpha_pending/21/` は作業中の不採用補正版 (行境界の帯が出たため採用しない)。 (by Codex)
 
 - 2026-05-14 - [batch:oto-reference-all-buttons-2k-spacing] **Done** — user 指摘「上下が詰まる・くっつく・幅不足で円が楕円。全体を小さく、隙間を空け、2Kぐらい」に対応。`tmp/alpha_pending/19/` に余白多めの 2K 改訂版 4 シートを納品: `oto_ref_buttons_2k_sheet1_icons.png` / `oto_ref_buttons_2k_sheet2_objects.png` / `oto_ref_buttons_2k_sheet3_controls.png` / `oto_ref_buttons_2k_sheet4_swatches.png`。納品用は全て `2048x2048` RGB PNG、生成 API の元サイズ `1254x1254` は `tmp/alpha_pending/19/raw_source/` に保管。 (by Codex)
