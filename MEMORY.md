@@ -49,7 +49,7 @@
 
 - **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
 
-- **quizland contain-fit + safe-area target + board max-width (2026-05-14, sw v993→v994)**: [memory/feature_quizland_contain_fit.md](memory/feature_quizland_contain_fit.md) — v993 で contain-fit デフォルト化 (cover→contain, レターボックスは `.stage-wrap` 背景で埋め) + v994 で fit ターゲットを stage(21:9) → safe-area(16:9) に変えて 4:3 余白半減 + `.board` に `max-width: calc(--safe-w - 700 - 16)` で wide path の右ズレ 87px→6px 圧縮 (狭アスペクト 4 帯は `max-width: none !important` で解除)。`?fit=cover` で旧動作に退避可能。AGENTS.md §3 「saved-layout.json 手書き禁止」遵守で CSS 方式採用
+- **quizland contain-fit + safe-area target + board max-width + chip 幅整合 (2026-05-14, sw v993→v995)**: [memory/feature_quizland_contain_fit.md](memory/feature_quizland_contain_fit.md) — v993 で contain-fit デフォルト化 (cover→contain) + v994 で fit ターゲットを stage(21:9) → safe-area(16:9) に変えて 4:3 余白半減 + `.board` に `max-width: calc(--safe-w - 700 - 16)` で wide path 右ズレ 87px→6px 圧縮 + **v995 で 14/9・4/3・5/4 帯の `.chip { width }` を -8px ずつ縮めて a-col 容量内に確実収容 (4/3 帯で「2つ・4つ」が画面右端切れる残課題を解消、 余裕 +2px → +10〜+20px)**。`?fit=cover` で旧動作に退避可能。AGENTS.md §3 「saved-layout.json 手書き禁止」遵守で CSS 方式採用。**教訓: 「safe-area 配置 OK」は内側 grid (chip) が収まることを保証しない、毎回 box-sizing 込み再計算必須**
 
 ---
 

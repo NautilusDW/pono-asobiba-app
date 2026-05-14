@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-contain-fit-default
-description: quizland の fitStage を cover→contain 化 + safe-area (16:9) を fit ターゲット化 + board に max-width 制約 (2026-05-14, sw v993→v994)。iPad mini 等で UI 切れ防止 + 4:3 余白半減 + 右ズレ抑制。?fit=cover で旧動作に退避可能
+description: quizland の fitStage を cover→contain 化 + safe-area (16:9) を fit ターゲット化 + board に max-width 制約 + chip 幅縮小 (2026-05-14, sw v993→v995)。iPad 4:3 / mini 等で UI 切れ防止 + 余白削減。?fit=cover で旧動作に退避可能
 metadata:
   type: feature
 ---
 
-# quizland contain-fit + safe-area target + board max-width (sw v994, 2026-05-14)
+# quizland contain-fit + safe-area target + board max-width + chip 幅整合 (sw v995, 2026-05-14)
 
 ## なに
 
@@ -78,4 +78,28 @@ v993 で contain-fit デフォルト化したが、stage 全体 (2100×900 = 21:
 ### 残課題
 - 16:10 帯 (1440×900 等) では max-width: none で制約解除しているため saved-layout 971px のまま (右ズレ残存)。ユーザー主訴は iPad mini / wide 中心のためスコープ外として温存。必要なら別タスクで layout-editor 経由で `.board|0.w` を 884 (もしくは 16:10 用の 784) に更新
 - code-reviewer から「`scaledW = stageW * scale` で `scale = w/safeW` の式と不整合では」と HIGH 指摘されたが、stage 中央寄せ = safe-area 中央寄せ (safe-area が stage 中央にあるため) の数式的に正しい。レビュア提案の `scaledW = safeW * scale` に変えると逆に safe-area が右に 300px ズレる
+
+## v995 更新 (2026-05-14、 v994 デプロイ直後の追加修正)
+
+### 発見された残課題
+v994 デプロイ後、ユーザーが iPad DevTools 1024×768 (4:3) で確認 → **右側 2×2 回答ボタンの右列 (「2つ」「4つ」等) が画面右端で切れる** ことが判明。v994 / fitStage は正しく動作 (transform scale=0.853 確認済) していたが、**4/3 帯メディアクエリの chip 幅計算が a-col 容量を 20px 超過していた**。 
+
+具体的:
+- 4/3 帯: `.body { grid-template-columns: 1fr 440px }` で a-col=440px
+- `box-sizing: border-box` で `.chip { width: 196px !important }` × 2 + gap 10 + pad 24 + border 10 = 計算上 **+2px の余裕しかなく** subpixel rounding で overflow
+- 14/9 / 5/4 帯も同様に余裕 +2px しか無く脆弱
+
+Plan エージェントの初期分析と私 (orchestrator) はこの内側 grid 制約を見落とした (= safe-area が画面に収まる ≠ a-col 内側の chip も収まる)。
+
+### v995 の変更
+3 帯の chip width を **-8px ずつ縮めて余裕 +10〜+20px を確保**:
+- 14/9 帯: 216 → **208** (余裕 +10px)
+- 4/3 帯:  196 → **188** (余裕 +20px、今回の主犯)
+- 5/4 帯:  190 → **182** (余裕 +18px)
+- 16:10 帯は `1fr` 指定なので変更不要
+
+quizland/index.html 6 行変更 + sw.js CACHE_VERSION 994 → 995。
+
+### 教訓
+**「fit-target = safe-area が画面内に収まる」は内側 grid (q-col / a-col) の chip 配置が収まることを保証しない**。メディアクエリで `.chip { width: Npx !important }` のような `!important` 強制サイズを当てている場合、box-sizing と padding / border / gap を **全部足して** a-col 容量内に収まるか毎回再計算が必要。v994 リサーチで Plan エージェントは内側 chip サイズまでチェックしなかった (= safe-area 配置までで止めた)。今後同種の修正では **「safe-area 配置 OK + 内側 grid 容量 OK」を 2 段階で確認**することを徹底
 
