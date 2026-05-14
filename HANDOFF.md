@@ -17,8 +17,6 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-05-14 - [batch:oto-next-backlog-3-buttons] Codex: `docs/oto-icons/codex-prompts/next-batch-backlog.md` を受領。HANDOFF / git log / `assets/images/oto/buttons/` を確認し、`btn_ui_loop.png` と `btn_ui_save.png` は未配置、`btn_note_so.png` は既存の鍵アイコン差し替え対象と確認済。既存 21 枚のステッチ円形ボタン style に合わせて 3 枚を生成・整形する。`sw.js` は Codex では触らず、必要バンプとして申し送る。 (by Codex)
-
 - 2026-05-12 - [batch:voicepeak-vdc2-dict] Codex: user が `tools/voicepeak/test/` に置いた `testword.vdc2` / `testword02.vdc2` を確認。`.vdc2` は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の形式と判明。`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1` を追加し、`tools/voicepeak/voicepeak_user_dict.csv` 65 語から `tools/voicepeak/voicepeak_user_dict.vdc2` を生成済。VOICEPEAK 実機インポート確認は未実施。 (by Codex)
 
 - 2026-05-11 - [batch:16-zukan-frames] Codex: `tmp/zukan-frames-codex-order/CODEX-ORDER.md` を受領。HANDOFF / git log / `tmp/zukan-frames-codex-order/` / `tmp/alpha_pending/` を確認し、zukan frame 4種の既存納品は無しと確認済。reference は `tmp/zukan-frames-codex-order/reference/referenceImage.png`。納品先は `tmp/alpha_pending/16/` として着手。 (by Codex)
@@ -85,6 +83,8 @@
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-14 - [batch:oto-next-backlog-3-buttons] **Done** — `docs/oto-icons/codex-prompts/next-batch-backlog.md` の不足 3 枚を対応。`btn_note_so.png` は鍵から水色の小鳥へ差し替え、`btn_ui_loop.png` は緑の循環矢印、`btn_ui_save.png` は宝箱で新規追加。全て `assets/images/oto/buttons/` に `342x342` RGBA 透過 PNG として配置、raw/processed/review/旧 `btn_note_so` バックアップは `tmp/alpha_pending/24/` に保存。既存 21 枚との review sheet は `tmp/alpha_pending/24/oto_buttons_backlog_review.png`。画像配置は auto-commit `cd11271` に含まれ、後続 auto-commit `05c6958` が現在 HEAD。 (by Codex)
 
 - 2026-05-14 - [batch:oto-reference-all-buttons-clean-no-line] **Done** — user 指摘「一番下のアイコンに横に白い線が入る」に対応。横線は `tmp/alpha_pending/21/` の不採用補正版に出ていた症状のため、採用済み `tmp/alpha_pending/22/` から横線なしの clean 版だけを `tmp/alpha_pending/23/` に再配置: `oto_ref_buttons_clean_sheet1_icons.png` / `oto_ref_buttons_clean_sheet2_objects.png` / `oto_ref_buttons_clean_sheet3_controls.png` / `oto_ref_buttons_clean_sheet4_swatches.png`。全て `2048x2048` RGB PNG、目視で下段横線なしを確認。今後は `23/` を使用。 (by Codex)
 

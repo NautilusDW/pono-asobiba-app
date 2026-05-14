@@ -48,7 +48,8 @@
       "Bash(mkdir -p \"d:/AppDevelopment/pono-asobiba-app/.claude\")",
       "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")",
       "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once && ls -la d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once)",
-      "Bash(type nul *)"
+      "Bash(type nul *)",
+      "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\" && ls -la \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")"
     ],
     "additionalDirectories": [
       "D:\\AppDevelopment\\pono-asobiba-app\\.claude",
