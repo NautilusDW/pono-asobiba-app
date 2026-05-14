@@ -1,0 +1,41 @@
+{
+  "schema": "pono-maze-op-v1",
+  "savedAt": "2026-05-14T06:39:27.636Z",
+  "layout": {
+    "box": {
+      "xPct": 50,
+      "yPct": 84,
+      "widthPct": 60,
+      "heightPct": 30.5,
+      "_anchor": "center"
+    },
+    "text": {
+      "fontSize": 20,
+      "lineHeight": 1.05,
+      "color": "#3a2818",
+      "align": "center",
+      "letterSpacing": 0.05
+    },
+    "bg": {
+      "color": "#000000",
+      "alpha": 0,
+      "radius": 0,
+      "padding": 16
+    },
+    "frame": {
+      "enabled": true,
+      "src": "../assets/images/maze/OP/frame_s2.png",
+      "lockAspect": true
+    }
+  },
+  "beats": [
+    "よるの もりで、\nなかまたちが まいごに なったよ。",
+    "ポノと いっしょに\nランタンを もって、\nもりの みちを すすもう。",
+    "みんなを みつけて、\nあんしんさせて あげよう！"
+  ],
+  "narrationAudio": [
+    "../assets/sounds/maze/op/1.mp3",
+    "../assets/sounds/maze/op/2.mp3",
+    "../assets/sounds/maze/op/3.mp3"
+  ]
+}

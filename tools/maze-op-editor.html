@@ -365,6 +365,24 @@
       </div>
     </div>
 
+    <div class="section">
+      <h3>🎙 ナレーション音声</h3>
+      <div class="field-row">
+        <label>src</label>
+        <input type="text" id="tNarrationSrc" placeholder="../assets/sounds/maze/op/1.mp3">
+      </div>
+      <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" id="btnNarrationPick" style="padding:6px 10px; font-size:11px; background:#2563eb; color:#fff; border:none; border-radius:3px; cursor:pointer;">📥 音声を選ぶ</button>
+        <button type="button" id="btnNarrationPlay" style="padding:6px 10px; font-size:11px; background:#10b981; color:#fff; border:none; border-radius:3px; cursor:pointer;">▶ 再生</button>
+        <button type="button" id="btnNarrationStop" style="padding:6px 10px; font-size:11px; background:#374151; color:#e5e7eb; border:none; border-radius:3px; cursor:pointer;">⏹ 停止</button>
+        <input type="file" id="filNarrationPick" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4" style="display:none;">
+      </div>
+      <div style="font-size:11px; color:#f59e0b; margin-top:6px; line-height:1.4;">
+        ※ tools/ からの相対パスで指定 (<code>../assets/sounds/maze/op/&lt;name&gt;.mp3</code> 形式)<br>
+        ※ 対応形式: mp3 / wav / ogg / m4a
+      </div>
+    </div>
+
     <div class="section" id="bgSection">
       <h3>Background</h3>
       <div class="field-row">
@@ -445,6 +463,12 @@ const DEFAULT_BEATS = [
 // ✗ /assets/images/maze/OP/frame_s2.png       → 絶対 path は環境互換性のため reject
 const FRAME_SRC_RE = /^\.\.\/assets\/images\/(?!.*\.\.)[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
 
+// ナレーション音声ソースの allowlist 正規表現 (FRAME_SRC_RE と同じ思想):
+// 先頭 `../assets/sounds/` で始まる相対パス (mp3/wav/ogg/m4a) のみ許可。
+// 後半 lookahead `(?!.*\.\.)` で先頭 `../` 以降の `..` 再出現を拒否し traversal を防止。
+// 旧 path 形式 (`assets/sounds/...` / `/assets/sounds/...`) はマイグレートして `../assets/sounds/...` 形式に統一する。
+const AUDIO_SRC_RE = /^\.\.\/assets\/sounds\/(?!.*\.\.)[A-Za-z0-9_./-]+\.(mp3|wav|ogg|m4a)$/;
+
 const DEFAULT_LAYOUT = {
   // フレーム画像 (パピルス板) を前提に、初期値はリーダブルなクリーム色対応に揃える:
   //   - text.color: 濃茶 (#3a2818) でクリーム背景に読みやすく
@@ -489,6 +513,7 @@ function pushHistory() {
   const snap = {
     layout: deepClone(state.layout),
     beats:  deepClone(state.beats),
+    narrationAudio: deepClone(state.narrationAudio || []),
     selected: state.selected
   };
   // 重複防止: 直近 snapshot と同一なら skip。
@@ -512,8 +537,12 @@ function undo() {
   const snap = _history.stack[_history.cursor];
   state.layout = deepClone(snap.layout);
   state.beats  = deepClone(snap.beats);
+  state.narrationAudio = deepClone(snap.narrationAudio || []);
+  while (state.narrationAudio.length < state.beats.length) state.narrationAudio.push('');
+  state.narrationAudio.length = state.beats.length;
   state.selected = snap.selected;
   state._previewFrameDataUrl = null;
+  _stopCurrentNarrationAudio();
   _history.applying = false;
   saveToLocal();
   // frame.src が変わっている可能性があるため aspect 再プローブ。
@@ -534,8 +563,12 @@ function redo() {
   const snap = _history.stack[_history.cursor];
   state.layout = deepClone(snap.layout);
   state.beats  = deepClone(snap.beats);
+  state.narrationAudio = deepClone(snap.narrationAudio || []);
+  while (state.narrationAudio.length < state.beats.length) state.narrationAudio.push('');
+  state.narrationAudio.length = state.beats.length;
   state.selected = snap.selected;
   state._previewFrameDataUrl = null;
+  _stopCurrentNarrationAudio();
   _history.applying = false;
   saveToLocal();
   if (state.layout.frame && state.layout.frame.src) {
@@ -567,7 +600,21 @@ const state = {
   // localStorage / Export JSON / GH PUT body のいずれにも含めない (super long base64 で容量
   // 肥大化するため)。 init() 起動時は常に null から開始 (= リロード時 preview は自動消滅)。
   _previewFrameDataUrl: null,
+  // ビート毎のナレーション音声 path 配列 (beats と並列、 index 対応)。 各要素は AUDIO_SRC_RE
+  // を満たす相対 path (`../assets/sounds/...`) または空文字。 beats.length と常に同期する
+  // (addBeat / removeBeat / loadFromLocal / importJsonFromFile で揃える)。
+  narrationAudio: ['', '', ''],
 };
+
+// 再生中の Audio オブジェクト (module-level、 selectBeat / stop / 次再生開始時に pause + 破棄)。
+// 同時複数再生を防ぐため常に最大 1 つに保つ。
+let _currentNarrationAudio = null;
+function _stopCurrentNarrationAudio() {
+  if (_currentNarrationAudio) {
+    try { _currentNarrationAudio.pause(); _currentNarrationAudio.currentTime = 0; } catch (e) {}
+    _currentNarrationAudio = null;
+  }
+}
 
 // ----------------------------------------------------------------------------
 // Utilities
@@ -616,6 +663,7 @@ function loadFromLocal() {
     if (obj.layout) {
       state.layout = mergeLayout(state.layout, obj.layout);
     }
+    state.narrationAudio = normalizeNarrationAudio(obj.narrationAudio, state.beats.length);
     const rawSel = localStorage.getItem(LS_SELECTED_KEY);
     if (rawSel != null) {
       state.selected = clampNum(parseInt(rawSel, 10), 0, state.beats.length - 1, 0);
@@ -625,6 +673,26 @@ function loadFromLocal() {
   }
 }
 
+// narrationAudio 配列を beats.length と同じ長さに正規化する。
+// - 各要素が AUDIO_SRC_RE を通過する文字列ならそのまま、 通過しないか string でなければ空文字。
+// - 旧 path 形式 (`assets/sounds/...` / `/assets/sounds/...`) は `../assets/sounds/...` に自動マイグレート。
+// - 入力が array でなければ beats.length 個の空文字配列を返す。
+// - 入力が短ければ空文字で末尾を埋め、 長ければ切り詰める。
+function normalizeNarrationAudio(input, targetLen) {
+  const out = [];
+  const src = Array.isArray(input) ? input : [];
+  for (let i = 0; i < targetLen; i++) {
+    const raw = i < src.length ? src[i] : '';
+    if (typeof raw !== 'string') { out.push(''); continue; }
+    let s = raw.trim();
+    if (s === '') { out.push(''); continue; }
+    if      (/^\/assets\/sounds\//.test(s)) s = '..' + s;
+    else if (/^assets\/sounds\//.test(s))   s = '../' + s;
+    out.push(AUDIO_SRC_RE.test(s) ? s : '');
+  }
+  return out;
+}
+
 function saveToLocal() {
   try {
     const payload = {
@@ -632,6 +700,7 @@ function saveToLocal() {
       savedAt: new Date().toISOString(),
       layout: state.layout,
       beats: state.beats,
+      narrationAudio: state.narrationAudio || [],
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
     localStorage.setItem(LS_SELECTED_KEY, String(state.selected));
@@ -832,6 +901,11 @@ function renderRightPane() {
   const lockEl = document.getElementById('cFrameLock');
   if (lockEl) lockEl.checked = !!fr.lockAspect;
   applyFrameUIGuard();
+  // narrationAudio (selected ビート分のみ)
+  const tNarrationSrc = document.getElementById('tNarrationSrc');
+  if (tNarrationSrc) {
+    tNarrationSrc.value = (state.narrationAudio && state.narrationAudio[state.selected]) || '';
+  }
 }
 
 // フレーム ON 時は bg.color / bg.alpha / bg.radius は renderStage で上書きされ
@@ -891,14 +965,20 @@ function renderAll() {
 function selectBeat(i) {
   if (i < 0 || i >= state.beats.length) return;
   state.selected = i;
+  // ビート切替時は再生中のナレ音声を停止 (ユーザ混乱防止)。
+  _stopCurrentNarrationAudio();
   saveToLocal();
   renderBeatList();
   renderTextarea();
   renderStage();
+  // 右ペインのナレ音声 src 入力欄にも切替後ビートの path を反映する。
+  const t = document.getElementById('tNarrationSrc');
+  if (t) t.value = state.narrationAudio[state.selected] || '';
 }
 
 function addBeat() {
   state.beats.push('');
+  state.narrationAudio.push('');
   state.selected = state.beats.length - 1;
   saveToLocal();
   renderAll();
@@ -908,7 +988,9 @@ function addBeat() {
 function removeBeat() {
   if (state.beats.length <= 1) return;
   state.beats.splice(state.selected, 1);
+  state.narrationAudio.splice(state.selected, 1);
   state.selected = Math.min(state.selected, state.beats.length - 1);
+  _stopCurrentNarrationAudio();
   saveToLocal();
   renderAll();
   pushHistory();
@@ -936,6 +1018,7 @@ function buildPayload() {
     savedAt: new Date().toISOString(),
     layout: clone(state.layout),
     beats: state.beats.slice(),
+    narrationAudio: clone(state.narrationAudio || []),
   };
 }
 
@@ -966,6 +1049,9 @@ function importJsonFromFile(file) {
         state.beats = obj.beats.map(s => String(s || ''));
         state.selected = 0;
       }
+      // beats.length に合わせて narrationAudio を再正規化 (空文字埋め / トリム / 不正値クリア)。
+      state.narrationAudio = normalizeNarrationAudio(obj.narrationAudio, state.beats.length);
+      _stopCurrentNarrationAudio();
       saveToLocal();
       renderAll();
       pushHistory();
@@ -1306,6 +1392,169 @@ async function handleFramePicked(file) {
 }
 
 // ----------------------------------------------------------------------------
+// Narration audio picker (新規: ボタン → ファイル選択 → magic byte 検証 → GH アップロード)
+// ----------------------------------------------------------------------------
+const GH_AUDIO_DIR = 'assets/sounds/maze/op';
+const AUDIO_MAX_BYTES = 5 * 1024 * 1024;          // 5MB hard cap (ナレ 1 ビート 〜30 秒想定)
+const AUDIO_WARN_BYTES = 2 * 1024 * 1024;         // 2MB 推奨上限
+const ALLOWED_AUDIO_MIME = new Set([
+  'audio/mpeg', 'audio/mp3',
+  'audio/wav', 'audio/wave', 'audio/x-wav',
+  'audio/ogg', 'application/ogg',
+  'audio/mp4', 'audio/x-m4a', 'audio/aac',
+]);
+
+function sanitizeAudioFilename(rawName) {
+  // 拡張子保持、 ベースは [^A-Za-z0-9_.-] を `_` に置換。 frame と同じ思想。
+  const m = /^(.*)\.([A-Za-z0-9]+)$/.exec(String(rawName || ''));
+  if (!m) return null;
+  const baseRaw = m[1];
+  const extRaw  = m[2].toLowerCase();
+  if (!/^(mp3|wav|ogg|m4a)$/.test(extRaw)) return null;
+  let base = baseRaw.replace(/[^A-Za-z0-9_.-]/g, '_');
+  base = base.replace(/^\.+/, '').replace(/\.+$/, '');
+  base = base.replace(/\.\./g, '_');
+  if (!base) base = 'narration';
+  return base + '.' + extRaw;
+}
+
+async function detectAudioMagicBytes(file) {
+  // 最初 16 byte を見て audio format を判定
+  const head = await file.slice(0, 16).arrayBuffer();
+  const b = new Uint8Array(head);
+  // MP3 with ID3v2 tag: 49 44 33 (= 'ID3')
+  if (b[0]===0x49 && b[1]===0x44 && b[2]===0x33) return 'mp3';
+  // MP3 raw frame sync: FF Ex/Fx (= MPEG audio frame)
+  if (b[0]===0xFF && (b[1] & 0xE0) === 0xE0) return 'mp3';
+  // WAV: 'RIFF' (52 49 46 46) ... 'WAVE' (57 41 56 45) at offset 8
+  if (b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 &&
+      b[8]===0x57 && b[9]===0x41 && b[10]===0x56 && b[11]===0x45) return 'wav';
+  // OGG: 'OggS' (4F 67 67 53)
+  if (b[0]===0x4F && b[1]===0x67 && b[2]===0x67 && b[3]===0x53) return 'ogg';
+  // M4A / MP4: 'ftyp' (66 74 79 70) at offset 4
+  if (b[4]===0x66 && b[5]===0x74 && b[6]===0x79 && b[7]===0x70) return 'm4a';
+  return null;
+}
+
+async function _ghGetAudioSha(path) {
+  const url = _ghContentsUrl(path) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+  const j = await r.json();
+  return j.sha || null;
+}
+
+async function _ghPutAudioBinary(path, b64Content, sha) {
+  const body = {
+    message: 'chore(maze-op): upload narration audio (' + path + ')',
+    content: b64Content,
+    branch:  GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(path), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error('GH PUT ' + r.status + ' ' + txt.slice(0, 200));
+  }
+  return true;
+}
+
+let _audioUploading = false;
+async function handleNarrationPicked(file) {
+  if (_audioUploading) {
+    toast('別のアップロードが進行中', 'err');
+    return;
+  }
+  // 1. サニタイズ済ファイル名 + 拡張子検証
+  const filename = sanitizeAudioFilename(file.name);
+  if (!filename) {
+    toast('対応形式は mp3 / wav / ogg / m4a のみ', 'err');
+    return;
+  }
+  // 1-A. MIME type の即時チェック (file.type は偽装可能なため二段防御)
+  if (!ALLOWED_AUDIO_MIME.has(file.type)) {
+    toast('mp3 / wav / ogg / m4a のみアップロード可能です (検出: ' + (file.type || '不明') + ')', 'err');
+    return;
+  }
+  // 2. サイズチェック
+  if (file.size > AUDIO_MAX_BYTES) {
+    toast('ファイルが大きすぎます (上限 5MB)', 'err');
+    return;
+  }
+  // 2-A. magic byte 検証 (拡張子と実コンテンツの不一致もチェック)
+  const detected = await detectAudioMagicBytes(file);
+  if (!detected) {
+    toast('音声形式が認識できません (mp3 / wav / ogg / m4a のみ対応)', 'err');
+    return;
+  }
+  const declaredExt = (filename.match(/\.([a-z0-9]+)$/)||[])[1] || '';
+  if (declaredExt !== detected) {
+    toast('拡張子 (.' + declaredExt + ') と実際の音声形式 (' + detected + ') が一致しません', 'err');
+    return;
+  }
+  if (file.size > AUDIO_WARN_BYTES) {
+    toast('音声ファイルが大きめです (' + Math.round(file.size / 1024) + 'KB) — 2MB 以下推奨');
+  }
+
+  // 3. origin チェック — file:// / localhost ではアップロード不可
+  const here = location.origin;
+  if (ALLOWED_GH_ORIGINS.indexOf(here) < 0) {
+    // ローカル試行段階では path のみ state に書いて即時 src 反映、 再生も可能にする。
+    state.narrationAudio[state.selected] = '../' + GH_AUDIO_DIR + '/' + filename;
+    saveToLocal();
+    renderRightPane();
+    pushHistory();
+    toast('📡 GH アップロード非対応 origin です。 src のみ更新しました');
+    return;
+  }
+
+  // 4. GH PUT (新規 or 上書き)
+  _audioUploading = true;
+  const btn = document.getElementById('btnNarrationPick');
+  if (btn) btn.disabled = true;
+  try {
+    toast('GitHub にアップロード中…');
+    const ghPath = GH_AUDIO_DIR + '/' + filename;
+    const b64    = await readFileAsBase64(file);
+    let sha = null;
+    try { sha = await _ghGetAudioSha(ghPath); } catch (e) {
+      console.warn('[maze-op-editor] audio sha lookup failed', e);
+    }
+    await _ghPutAudioBinary(ghPath, b64, sha);
+    // 成功: state.narrationAudio[selected] を新 path に更新
+    state.narrationAudio[state.selected] = '../' + ghPath;
+    saveToLocal();
+    renderRightPane();
+    pushHistory();
+    toast('ナレーション音声を更新しました');
+  } catch (e) {
+    console.warn('[maze-op-editor] audio upload failed', e);
+    if (e && e.status === 409) {
+      toast('競合: 他で更新されています。再試行してください', 'err');
+    } else {
+      toast('アップロード失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+  } finally {
+    _audioUploading = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Right-pane bindings
 // ----------------------------------------------------------------------------
 function bindRange(rangeId, displayId, getter, setter, precision) {
@@ -1463,6 +1712,71 @@ function initRightPane() {
       filPick.value = ''; // reset for re-pick same file
     });
   }
+
+  // Narration audio src input + pick + play + stop
+  const narrSrc       = document.getElementById('tNarrationSrc');
+  const btnNarrPick   = document.getElementById('btnNarrationPick');
+  const filNarrPick   = document.getElementById('filNarrationPick');
+  const btnNarrPlay   = document.getElementById('btnNarrationPlay');
+  const btnNarrStop   = document.getElementById('btnNarrationStop');
+  if (narrSrc) {
+    // タイピング中はサイレント受理 + 検証通過なら state 更新 (frame と同じ思想)
+    narrSrc.addEventListener('input', () => {
+      const v = String(narrSrc.value || '').trim();
+      if (v === '' || AUDIO_SRC_RE.test(v)) {
+        state.narrationAudio[state.selected] = v;
+        // src 変更時は再生中音声を停止 (異なる src を再生してしまう事故防止)
+        _stopCurrentNarrationAudio();
+        saveToLocal();
+      }
+    });
+    narrSrc.addEventListener('change', () => {
+      const v = String(narrSrc.value || '').trim();
+      if (v !== '' && !AUDIO_SRC_RE.test(v)) {
+        toast('narrationAudio は ../assets/sounds/.../*.mp3|wav|ogg|m4a 形式で指定してください', 'err');
+      } else {
+        pushHistory();
+      }
+    });
+  }
+  if (btnNarrPick && filNarrPick) {
+    btnNarrPick.addEventListener('click', () => filNarrPick.click());
+    filNarrPick.addEventListener('change', () => {
+      const file = filNarrPick.files && filNarrPick.files[0];
+      if (!file) return;
+      handleNarrationPicked(file);
+      filNarrPick.value = ''; // reset for re-pick same file
+    });
+  }
+  if (btnNarrPlay) {
+    btnNarrPlay.addEventListener('click', () => {
+      const path = (state.narrationAudio && state.narrationAudio[state.selected]) || '';
+      if (!path || !AUDIO_SRC_RE.test(path)) {
+        toast('再生する音声が設定されていません', 'err');
+        return;
+      }
+      _stopCurrentNarrationAudio();
+      try {
+        _currentNarrationAudio = new Audio(path);
+        _currentNarrationAudio.onerror = () => toast('音声再生失敗 (ファイルが存在しない可能性)', 'err');
+        const p = _currentNarrationAudio.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(err => {
+            console.warn('[maze-op-editor] narration play failed', err);
+            toast('音声再生失敗: ' + (err && err.message ? err.message.slice(0, 60) : 'unknown'), 'err');
+          });
+        }
+      } catch (e) {
+        console.warn('[maze-op-editor] narration play threw', e);
+        toast('音声再生失敗', 'err');
+      }
+    });
+  }
+  if (btnNarrStop) {
+    btnNarrStop.addEventListener('click', () => {
+      _stopCurrentNarrationAudio();
+    });
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -1471,6 +1785,8 @@ function initRightPane() {
 function init() {
   loadFromLocal();
   state.selected = Math.min(state.selected, state.beats.length - 1);
+  // beats.length に narrationAudio を最終調整 (loadFromLocal が空でデフォルトのままなら no-op)。
+  state.narrationAudio = normalizeNarrationAudio(state.narrationAudio, state.beats.length);
 
   // Header buttons
   document.getElementById('btnExport').addEventListener('click', exportJson);
