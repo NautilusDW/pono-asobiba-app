@@ -12,6 +12,7 @@
 - **文字書きシンプルモード復活 Phase 1 + UIリデザイン**: [memory/feature_writing_simple_mode.md](memory/feature_writing_simple_mode.md) — RPG化前のロジックを `writing/simple.html` として復活、左右分割レイアウト・RPGダークテーマ統一・妖精2体fixed常駐応援、Phase 2 (行選択+単語フェーズ) は未実装
 - **迷路 画像ステージ Phase 1**: [memory/feature_maze_image_stage.md](memory/feature_maze_image_stage.md) — `?image=<name>` でAI生成画像背景+ポリライン歩行+カメラ追従。横画面前提。Phase 2 (エディタ・細線化) 未着手
 - **迷路ラフ作成ツール**: [memory/feature_maze_rough_maker.md](memory/feature_maze_rough_maker.md) — `tools/maze-rough.html` で 32×18 タイルラフを描いて PNG 出力 → 生成 AI に「道の形を守って絵本風に」と一緒に渡すワークフロー
+- **maze ラフ → エディタ シームレス auto-handoff + start/goal radius 可変**: [memory/feature_maze_rough_to_editor_workflow.md](memory/feature_maze_rough_to_editor_workflow.md) — ラフを編集すると裏で常時 localStorage に nodes/edges/polyline を書き出し、 エディタタブを開くと自動取り込み (画像差し替えだけで作業継続)。 handoff の viewBox を保持して画像読み込み時に sx=imgW/vb.w で全座標 rescale。 start/goal radius slider 追加 + edges 一括削除 + gh proxy 日本語ファイル名対応 + maze-rough PNG インポート (sw v1000)
 - **クリーンエッジスタジオ タイムライン再生**: [memory/feature_timeline_player.md](memory/feature_timeline_player.md) — 分割スプライトをID連番順に並べてFPS+各コマフレーム数で即時再生。スプライトカードはサムネドラッグで並び替え可、🎯ボタンで比較タブの元矩形にジャンプ
 - **Layout System (`common/layout/`)**: [memory/reference_layout_system.md](memory/reference_layout_system.md) — WYSIWYG レイアウトエディタ + applier 共通モジュール。`LayoutSystem.init()` 4 行で opt-in、`?edit=1` でエディタ遅延ロード。ページ author docs は `common/layout/README.md`
 - **Babble Voice System (Quizland)**: [memory/feature_babble_voice.md](memory/feature_babble_voice.md) — フクロウ博士・ポノ・くるみちゃんのしゃべり声 (タイピング + Web Audio 合成)。owl preset = 年配おじいさん風 (5母音フォルマント切替、6.2Hz ビブラート)、pono = bright triangle chirp、**kurumi = baseFreq 450Hz の優しいお姉さん声 chirp (2026-05-11 追加)**。`js/quizland-babble.js` + `quizland/index.html` の OP cinematic で `presetForLine = isHakase ? 'owl' : (isKurumi ? 'kurumi' : 'pono')` の 3 way 切替。hedgehog preset は stub のみ
@@ -130,6 +131,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T14:55:55Z - memory化: maze ラフ→エディタ シームレス handoff + radius slider + edges 削除 + gh proxy 日本語対応 + PNG インポート を memory/feature_maze_rough_to_editor_workflow.md に集約 + MEMORY.md + 関連memoryクロスリンク
+- **タスク**: memory化: maze ラフ→エディタ シームレス handoff + radius slider + edges 削除 + gh proxy 日本語対応 + PNG インポート を memory/feature_maze_rough_to_editor_workflow.md に集約 + MEMORY.md + 関連memoryクロスリンク
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 111
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Agent": 26, "ToolSearch": 2, "Bash": 53, "Write": 1, "Edit": 12, "Grep": 4, "WebSearch": 5}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T14:51:11Z - maze エディタ: edges 一括削除ボタン (resetBtn 隣) + start/goal radius slider (20-300px, JSON 双方向対応) + ランタイム (maze/index.html) で node.radius 描画反映。 クロスレビュー指摘の semantics 不一致 (エディタ全高 vs ランタイム半径 2x) を sz=r で解消、 slider値とruntime描画 1:1 一致。 sw.js 999→1000 bump
 - **タスク**: maze エディタ: edges 一括削除ボタン (resetBtn 隣) + start/goal radius slider (20-300px, JSON 双方向対応) + ランタイム (maze/index.html) で node.radius 描画反映。 クロスレビュー指摘の semantics 不一致 (エディタ全高 vs ランタイム半径 2x) を sz=r で解消、 slider値とruntime描画 1:1 一致。 sw.js 999→1000 bump
 - **結果**: 成功
@@ -232,18 +246,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 6, "Agent": 25, "ToolSearch": 2, "Bash": 40, "Write": 1, "Edit": 9, "Grep": 3, "WebSearch": 5}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T14:32:38Z - quizland stage を 21:9 (2100x900) から 16:9 (1600x900) に縮小 + sw.js CACHE_VERSION 997->998
-- **タスク**: quizland stage を 21:9 (2100x900) から 16:9 (1600x900) に縮小 + sw.js CACHE_VERSION 997->998
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 42
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Agent": 22, "ToolSearch": 1, "Bash": 12, "Grep": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
