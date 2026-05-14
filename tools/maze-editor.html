@@ -1059,22 +1059,23 @@ function handleDeleteClick(p) {
     showBanner('ノード削除: ' + snapped.id);
     return;
   }
-  // Try to find a creature first (smaller hit radius)
-  const cr = 36 / canvasScale;
+  // Try to find a creature first — hit radius = max(36px on-screen, draw radius)
+  const crCreature = Math.max(36 / canvasScale, state.imgH / 22);
   for (let i = state.creatures.length - 1; i >= 0; i--) {
     const c = state.creatures[i];
     const dx = p.x - c.x, dy = p.y - c.y;
-    if (dx*dx + dy*dy < cr * cr) {
+    if (dx*dx + dy*dy < crCreature * crCreature) {
       state.creatures.splice(i, 1);
       showBanner('お邪魔虫を削除: ' + c.id);
       return;
     }
   }
-  // Then obstacles
+  // Then obstacles — hit radius = max(36px on-screen, draw radius)
+  const crObstacle = Math.max(36 / canvasScale, state.imgH / 24);
   for (let i = state.obstacles.length - 1; i >= 0; i--) {
     const o = state.obstacles[i];
     const dx = p.x - o.x, dy = p.y - o.y;
-    if (dx*dx + dy*dy < cr * cr) {
+    if (dx*dx + dy*dy < crObstacle * crObstacle) {
       state.obstacles.splice(i, 1);
       showBanner('障害物を削除: ' + o.kind);
       return;
