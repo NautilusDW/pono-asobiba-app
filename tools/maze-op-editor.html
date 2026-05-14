@@ -343,6 +343,11 @@
         <button type="button" id="btnFramePick" style="padding:6px 10px; font-size:11px; background:#2563eb; color:#fff; border:none; border-radius:3px; cursor:pointer;">📥 画像を選ぶ</button>
         <input type="file" id="filFramePick" accept="image/png,image/jpeg,image/webp" style="display:none;">
       </div>
+      <div class="field-row" style="margin-top:8px;">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:11px; color:#cbd5e1; flex:1 1 auto;">
+          <input type="checkbox" id="cFrameLock" style="flex:0 0 auto; margin:0;"> 縦横比を固定 (推奨)
+        </label>
+      </div>
       <div style="font-size:11px; color:#f59e0b; margin-top:4px; line-height:1.4;">
         ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)<br>
         ※ tools/ からの相対パスで指定 (<code>../assets/images/maze/OP/&lt;name&gt;.png</code> の形式)
@@ -438,8 +443,16 @@ const DEFAULT_LAYOUT = {
   box:  { xPct: 12, yPct: 62, widthPct: 75, heightPct: 28 },
   text: { fontSize: 26, lineHeight: 1.6, color: '#3a2818', align: 'center', letterSpacing: 0 },
   bg:   { color: '#000000', alpha: 0, radius: 0, padding: 16 },
-  frame:{ enabled: true, src: '../assets/images/maze/OP/frame_s2.png' }
+  // lockAspect: true (デフォルト ON) で、 box 矩形を frame 画像本来のアスペクト比に
+  // 自動合わせる (heightPct は無視される)。 OFF にすると従来通り widthPct/heightPct
+  // で box を自由に伸縮できる (= 画像が歪む可能性あり、 上級者向け)。
+  frame:{ enabled: true, src: '../assets/images/maze/OP/frame_s2.png', lockAspect: true }
 };
+
+// frame.src の画像をロードして得た naturalWidth/naturalHeight からアスペクト比 (CSS
+// `aspect-ratio` の `"W / H"` 形式文字列) を保持。 lockAspect=true 時に renderStage が
+// box.style.aspectRatio に適用する。 src 変更時に再算出、 ロード失敗時は null。
+let _frameAspectRatio = null;
 
 // ----------------------------------------------------------------------------
 // State
@@ -525,7 +538,7 @@ function mergeLayout(base, incoming) {
   const out = clone(base);
   // Defensive default: base が DEFAULT_LAYOUT 以外 (将来) に変わった場合の保険。
   // incoming 側の旧 JSON 互換は L534-546 の frame 個別検証で対応。
-  out.frame = out.frame || { enabled: false, src: '' };
+  out.frame = out.frame || { enabled: false, src: '', lockAspect: false };
   if (!incoming || typeof incoming !== 'object') return out;
   if (incoming.box && typeof incoming.box === 'object') {
     out.box.xPct      = clampNum(incoming.box.xPct,      0,   100, out.box.xPct);
@@ -549,6 +562,10 @@ function mergeLayout(base, incoming) {
   if (incoming.frame && typeof incoming.frame === 'object') {
     if (typeof incoming.frame.enabled === 'boolean') {
       out.frame.enabled = incoming.frame.enabled;
+    }
+    // lockAspect は boolean のみ受入。 未指定の旧 JSON は base 既定値 (= true) を維持。
+    if (typeof incoming.frame.lockAspect === 'boolean') {
+      out.frame.lockAspect = incoming.frame.lockAspect;
     }
     // 受入: string かつ allowlist 正規表現 (../assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
     // 空文字列も許容 (= フレーム未指定状態を Export/Import で表現できるように)。
@@ -608,7 +625,6 @@ function renderStage() {
   box.style.left   = L.box.xPct + '%';
   box.style.top    = L.box.yPct + '%';
   box.style.width  = L.box.widthPct + '%';
-  box.style.height = L.box.heightPct + '%';
   box.style.padding         = L.bg.padding + 'px';
 
   // フレーム画像 (パピルス板) が有効なときは、 角丸 / 半透明黒 を全て無効化して
@@ -622,10 +638,22 @@ function renderStage() {
     box.style.backgroundRepeat   = 'no-repeat';
     box.style.backgroundColor    = 'transparent';
     box.style.borderRadius       = '0';
+    // lockAspect=true: box の高さは widthPct から aspect-ratio 経由で自動算出される。
+    // heightPct スライダーは UI 側で disable されるが、 値自体は state に残しておく
+    // (= ユーザーが lockAspect を OFF にしたら元の heightPct 値が復活する設計)。
+    if (L.frame.lockAspect) {
+      box.style.aspectRatio = _frameAspectRatio || 'auto';
+      box.style.height      = 'auto';
+    } else {
+      box.style.aspectRatio = 'auto';
+      box.style.height      = L.box.heightPct + '%';
+    }
   } else {
     box.style.backgroundImage    = '';
     box.style.backgroundColor    = hexToRgba(L.bg.color, L.bg.alpha);
     box.style.borderRadius       = L.bg.radius  + 'px';
+    box.style.aspectRatio        = 'auto';
+    box.style.height             = L.box.heightPct + '%';
   }
 
   // Text style.
@@ -669,9 +697,11 @@ function renderRightPane() {
   setField('rRadius',   'vRadius',   L.bg.radius);
   setField('rPadding',  'vPadding',  L.bg.padding);
   // frame
-  const fr = (L.frame || { enabled: false, src: '' });
+  const fr = (L.frame || { enabled: false, src: '', lockAspect: false });
   document.getElementById('cFrameEnabled').checked = !!fr.enabled;
   document.getElementById('tFrameSrc').value       = fr.src || '';
+  const lockEl = document.getElementById('cFrameLock');
+  if (lockEl) lockEl.checked = !!fr.lockAspect;
   applyFrameUIGuard();
 }
 
@@ -679,8 +709,9 @@ function renderRightPane() {
 // 画面に反映されないため、対応する input を disabled にしてユーザー混乱を防ぐ。
 // さらに opacity を直接当てて視覚的にも「フレーム ON 中は BG 全体が無効」と一目で分かるように。
 function applyFrameUIGuard() {
-  const fr = state.layout.frame || { enabled: false };
+  const fr = state.layout.frame || { enabled: false, lockAspect: false };
   const disabled = !!fr.enabled;
+  const lockOn   = disabled && !!fr.lockAspect;
   ['cBgColor', 'tBgColor', 'rBgAlpha', 'rRadius'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -698,6 +729,15 @@ function applyFrameUIGuard() {
   if (sec) {
     const h3 = sec.querySelector('h3');
     if (h3) h3.style.opacity = disabled ? '0.4' : '1';
+  }
+  // lockAspect=ON 時は heightPct スライダーが無視される (box.height は aspect-ratio
+  // 経由で自動算出) ため、 該当 range + 表示 vnum を含む .field-row を disable + 薄く。
+  // widthPct は依然として有効 (基準幅の調整に使う) ので触らない。
+  const rH = document.getElementById('rHPct');
+  if (rH) {
+    rH.disabled = lockOn;
+    const row = rH.closest && rH.closest('.field-row');
+    if (row) row.style.opacity = lockOn ? '0.4' : '1';
   }
 }
 
@@ -922,6 +962,29 @@ function sanitizeFrameFilename(rawName) {
 // は schema 上 FRAME_SRC_RE を通る path のみ受け付けるため、 一時 data URL は state に入れない)。
 // 次の renderStage で path 値に戻る = アップロード成功後に path を更新して renderStage を呼ぶと
 // 自然にプレビューが新 path に切替わる。 失敗時はリロードで data URL 状態が消える (= 状態汚染なし)。
+// frame.src を非同期にロードして naturalWidth/Height から CSS aspect-ratio 文字列
+// (`"W / H"`) を算出し _frameAspectRatio に格納する。 lockAspect=true 時の
+// renderStage がこの値を box.style.aspectRatio に適用するため、 src 変更タイミング
+// ごとに呼び出す。 src 空/ロード失敗時は null を入れて、 renderStage 側で `auto`
+// にフォールバックする。 計算完了後に renderStage を再走させてプレビューを即更新。
+function _probeFrameAspect(src) {
+  if (!src) { _frameAspectRatio = null; renderStage(); return; }
+  const img = new Image();
+  img.onload = function() {
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      _frameAspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
+    } else {
+      _frameAspectRatio = null;
+    }
+    renderStage();
+  };
+  img.onerror = function() {
+    _frameAspectRatio = null;
+    renderStage();
+  };
+  img.src = src;
+}
+
 function previewFrameImage(dataUrl) {
   const box = document.getElementById('opBox');
   if (!box) return;
@@ -1052,6 +1115,12 @@ async function handleFramePicked(file) {
     return;
   }
   previewFrameImage(dataUrl);
+  // 新フレーム画像が確定する前に、 data URL からアスペクト比を先行プローブして
+  // lockAspect=ON 状態でも即時に box.aspectRatio が新画像比に追従するようにする。
+  // GH PUT 失敗時もここでセットした値が残るため、 ローカル試行段階で「縦横比固定」
+  // の振る舞いが体感できる。 GH PUT 成功後の path 設定で renderStage は再度走るが
+  // _frameAspectRatio は同じ画像由来のため再プローブ不要。
+  _probeFrameAspect(dataUrl);
   if (file.size > FRAME_WARN_BYTES) {
     toast('画像が大きめです (' + Math.round(file.size / 1024) + 'KB) — 1MB 以下推奨');
   }
@@ -1163,24 +1232,41 @@ function initRightPane() {
   // Frame (image-based background panel)
   const frameEnabled = document.getElementById('cFrameEnabled');
   const frameSrc     = document.getElementById('tFrameSrc');
+  const frameLock    = document.getElementById('cFrameLock');
   frameEnabled.addEventListener('change', () => {
-    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
+    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '', lockAspect: false };
     state.layout.frame.enabled = !!frameEnabled.checked;
     applyFrameUIGuard();
     saveToLocal();
     renderStage();
   });
+  // lockAspect トグル: 状態保存 + UI guard 更新 + renderStage で即時反映。
+  // 内部の aspect 値 (_frameAspectRatio) は既に init / src 変更時にロード済なので
+  // ここでは追加プローブは不要 (= 同じ src のままなら値は変わらない)。
+  if (frameLock) {
+    frameLock.addEventListener('change', () => {
+      if (!state.layout.frame) state.layout.frame = { enabled: false, src: '', lockAspect: false };
+      state.layout.frame.lockAspect = !!frameLock.checked;
+      applyFrameUIGuard();
+      saveToLocal();
+      renderStage();
+    });
+  }
   // change のみだとフォーカスアウト/Enter までライブプレビューが更新されないため、
   // input イベントでも検証通過時は state 更新 + render してタイピング中もライブプレビュー反映する。
   // ただし input で毎キーストロークの不正値に対し toast を出すと鬱陶しいので、
   // toast は change (blur/Enter) のみで発火させる。 (タイピング中はサイレント受理、 確定時に
   // 検証失敗フィードバック、 という UX)
   const onFrameSrcInput = function() {
-    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '' };
+    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '', lockAspect: false };
     const v = String(frameSrc.value || '').trim();
     if (v === '' || FRAME_SRC_RE.test(v)) {
       state.layout.frame.src = v;
       saveToLocal();
+      // 新しい src で aspect 比を再計算 (非同期、 完了後に renderStage を再走させる)。
+      // 同期的にも renderStage を一度呼んで src 反映する (= aspect 算出前は _frameAspectRatio
+      // が古い値だが、 算出完了時に再 render される)。
+      _probeFrameAspect(v);
       renderStage();
     }
     // 不正値はサイレント (input イベントでは toast を出さない)
@@ -1260,6 +1346,14 @@ function init() {
 
   initRightPane();
   renderAll();
+  // 起動時に現在の frame.src からアスペクト比をロードする (デフォルトは frame_s2.png)。
+  // lockAspect=true (DEFAULT_LAYOUT の初期値) の状態でリロードした既存ユーザーも
+  // ここで naturalWidth/Height を取得 → box.style.aspectRatio に反映 → 葉飾りが歪まない。
+  // 旧 JSON (lockAspect 未定義) は mergeLayout の defensive default 経由でも base 既定の
+  // true が維持されるため、 既存 localStorage を保持したままリロードしても自動適用される。
+  if (state.layout.frame && state.layout.frame.src) {
+    _probeFrameAspect(state.layout.frame.src);
+  }
 }
 
 window.addEventListener('DOMContentLoaded', init);
