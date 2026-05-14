@@ -19,7 +19,7 @@
 <body>
   <div id="landscape-notice">
     <div class="rotate-icon">📱</div>
-    <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+    <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
   </div>
   <audio id="bgm" loop src="../assets/audio/Cheery Strike Loop2.mp3" preload="auto"></audio>
   <div id="title-screen" class="title-screen" role="button" aria-label="タップしてスタート">
@@ -83,7 +83,7 @@
       if (!notice) return;
       const isLandscape = window.innerWidth > window.innerHeight;
       const isTouch = matchMedia('(pointer: coarse)').matches;
-      notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+      notice.style.display = (!isLandscape && isTouch) ? 'flex' : 'none';
     }
     updateLandscapeNotice();
     window.addEventListener('orientationchange', () => {
