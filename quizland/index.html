@@ -2091,8 +2091,8 @@ body.layout-editor-on .character img {
   .q-text-card .audio { width: 70px !important; height: 70px !important; transform: translateY(-50%) !important; }
   .board { width: auto !important; max-width: none !important; transform: translate(0, 0) !important; }
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  /* セル幅 = (480 track - 2*5 border - 2*12 pad - 12 gap) / 2 = 217px → chip 216 で +1 buffer */
-  .chip { width: 216px !important; transform: translate(0, 0) !important; }
+  /* セル幅 = (480 track - 2*5 border - 2*12 pad - 12 gap) / 2 = 217px → chip 208 で +10 buffer (subpixel rounding 対策) */
+  .chip { width: 208px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
   .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
   /* フクロウの吹き出しは元画像 AR (5:2) で固定 (14:9 帯では 260×104)
@@ -2193,8 +2193,8 @@ body.layout-editor-on .character img {
   /* C案: max-height でトレイの伸びを抑え、 余白を .bottom-right (博士) に回す。
      計算: chip 160×2 + gap 10 + pad 12×2 + border 5×2 = 354px → 340 で snug 抑制 */
   .answer-tray { width: auto !important; height: auto !important; max-height: 340px !important; transform: translate(0, 0) !important; }
-  /* セル幅 = (440 track - 2*5 border - 2*12 pad - 10 gap) / 2 = 198px → chip 196 で +2 buffer */
-  .chip { width: 196px !important; transform: translate(0, 0) !important; }
+  /* セル幅 = (440 track - 2*5 border - 2*12 pad - 10 gap) / 2 = 198px → chip 188 で +20 buffer (iPad 1024x768 で右列切れ対策) */
+  .chip { width: 188px !important; transform: translate(0, 0) !important; }
   .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
   .character { width: 180px !important; height: 200px !important; transform: translate(0, 0) !important; }
   /* 博士 (180×200) の専用エリア。 character flex:0 0 auto で 200px は確保されるが、
@@ -2249,7 +2249,7 @@ body.layout-editor-on .character img {
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; padding: 10px !important; }
   .answer-panel { gap: 8px !important; }
   /* 2026-05-07 修正(v795): #q-text 24px (継承) と揃えるため 28→24px に変更 */
-  .chip, .chip.has-image { width: 190px !important; height: 170px !important; font-size: 24px !important; transform: translate(0, 0) !important; }
+  .chip, .chip.has-image { width: 182px !important; height: 170px !important; font-size: 24px !important; transform: translate(0, 0) !important; }
   .chip.chip-with-image .chip-illust-label { font-size: 24px !important; }
   .chip.chip-count { font-size: 44px !important; }
   .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
