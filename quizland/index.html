@@ -786,6 +786,7 @@ body.sheet-on .hdr-right .ctrl-btn {
   box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
   height: 500px;
   overflow: hidden;
+  max-width: calc(var(--safe-w, 1600px) - 700px - 16px);
 }
 #stage-area {
   width: 100%; height: 100%;
@@ -2031,6 +2032,7 @@ body.layout-editor-on .character img {
   /* 16:10 帯でも .character img が center center だと顔が下に寄るので
      14/9・4/3・5/4 と統一して center top で頭を視線レベルに固定 */
   .character img { object-position: center top; }
+  .board { max-width: none !important; }
 }
 @media (orientation: landscape) and (max-aspect-ratio: 14/9) {
   /* aspect ≤ 14/9 (1.555) の帯。1366×900 (≈1.518) や 14/9 直下のディスプレイなど。
@@ -2087,7 +2089,7 @@ body.layout-editor-on .character img {
   .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .q-text-card .audio { width: 70px !important; height: 70px !important; transform: translateY(-50%) !important; }
-  .board { width: auto !important; transform: translate(0, 0) !important; }
+  .board { width: auto !important; max-width: none !important; transform: translate(0, 0) !important; }
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   /* セル幅 = (480 track - 2*5 border - 2*12 pad - 12 gap) / 2 = 217px → chip 216 で +1 buffer */
   .chip { width: 216px !important; transform: translate(0, 0) !important; }
@@ -2187,7 +2189,7 @@ body.layout-editor-on .character img {
   .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .q-text-card .audio { width: 64px !important; height: 64px !important; transform: translateY(-50%) !important; right: 14px !important; }
-  .board { width: auto !important; height: 440px !important; transform: translate(0, 0) !important; }
+  .board { width: auto !important; max-width: none !important; height: 440px !important; transform: translate(0, 0) !important; }
   /* C案: max-height でトレイの伸びを抑え、 余白を .bottom-right (博士) に回す。
      計算: chip 160×2 + gap 10 + pad 12×2 + border 5×2 = 354px → 340 で snug 抑制 */
   .answer-tray { width: auto !important; height: auto !important; max-height: 340px !important; transform: translate(0, 0) !important; }
@@ -2243,7 +2245,7 @@ body.layout-editor-on .character img {
   .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
   .q-text-card .audio { width: 60px !important; height: 60px !important; transform: translateY(-50%) !important; right: 12px !important; }
-  .board { width: auto !important; height: 420px !important; transform: translate(0, 0) !important; }
+  .board { width: auto !important; max-width: none !important; height: 420px !important; transform: translate(0, 0) !important; }
   .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; padding: 10px !important; }
   .answer-panel { gap: 8px !important; }
   /* 2026-05-07 修正(v795): #q-text 24px (継承) と揃えるため 28→24px に変更 */
@@ -3907,8 +3909,10 @@ function fitStage() {
   }
   // fit-mode: cover (Math.max, デフォルト) は片軸ぴったりでもう片方を clip。
   //           contain (Math.min) は両軸が viewport 内に収まり、余白に黒帯が出る。
+  const cs = getComputedStyle(document.documentElement);
+  const safeW = parseFloat(cs.getPropertyValue('--safe-w')) || stageW;
   const scale = (QZ_FIT_MODE === 'contain')
-    ? Math.min(w / stageW, h / stageH)
+    ? Math.min(w / safeW, h / stageH)
     : Math.max(w / stageW, h / stageH);
   const scaledW = stageW * scale;
   const scaledH = stageH * scale;

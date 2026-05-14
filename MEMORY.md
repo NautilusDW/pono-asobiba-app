@@ -49,7 +49,7 @@
 
 - **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
 
-- **quizland contain-fit デフォルト化 (2026-05-14, sw v993)**: [memory/feature_quizland_contain_fit.md](memory/feature_quizland_contain_fit.md) — `fitStage()` のデフォルトを cover (`Math.max`) → contain (`Math.min`) に反転。iPad mini など 4:3 系で UI が画面外に切れる問題を恒久解決。レターボックスは `.stage-wrap` 背景に `stage-bg.png` を敷いて自然に埋める。`?fit=cover` / `localStorage.pono_fit_mode='cover'` で旧動作に退避可能。差分 6 行のみで実装
+- **quizland contain-fit + safe-area target + board max-width (2026-05-14, sw v993→v994)**: [memory/feature_quizland_contain_fit.md](memory/feature_quizland_contain_fit.md) — v993 で contain-fit デフォルト化 (cover→contain, レターボックスは `.stage-wrap` 背景で埋め) + v994 で fit ターゲットを stage(21:9) → safe-area(16:9) に変えて 4:3 余白半減 + `.board` に `max-width: calc(--safe-w - 700 - 16)` で wide path の右ズレ 87px→6px 圧縮 (狭アスペクト 4 帯は `max-width: none !important` で解除)。`?fit=cover` で旧動作に退避可能。AGENTS.md §3 「saved-layout.json 手書き禁止」遵守で CSS 方式採用
 
 ---
 
@@ -128,6 +128,97 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T11:03:38Z - quizland v994: fit ターゲットを safe-area(16:9) 化で iPad mini 等の余白半減 + .board に max-width 制約で wide path 右ズレ抑制 (saved-layout 手書き禁止ルール準拠で CSS 方式)
+- **タスク**: quizland v994: fit ターゲットを safe-area(16:9) 化で iPad mini 等の余白半減 + .board に max-width 制約で wide path 右ズレ抑制 (saved-layout 手書き禁止ルール準拠で CSS 方式)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 47
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 21, "ToolSearch": 1, "Bash": 12, "Write": 1, "Edit": 6, "Grep": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T11:03:15Z - maze ラフ→エディタ シームレス auto-handoff: ラフ側で常時 localStorage に handoff JSON を書き出し (tiles→BFS polyline + 障害物/お邪魔虫)、 エディタ起動時に自動取り込み + 既存 draft あれば緑バナー+ボタン提示。 sessionStorage で多重ロード抑制、 imageUrl は流さず生成画像を差し替える前提
+- **タスク**: maze ラフ→エディタ シームレス auto-handoff: ラフ側で常時 localStorage に handoff JSON を書き出し (tiles→BFS polyline + 障害物/お邪魔虫)、 エディタ起動時に自動取り込み + 既存 draft あれば緑バナー+ボタン提示。 sessionStorage で多重ロード抑制、 imageUrl は流さず生成画像を差し替える前提
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 38
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Agent": 18, "ToolSearch": 1, "Bash": 12, "Grep": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T10:59:12Z - quizland index.html: 4 aspect-ratio メディアクエリの .board に max-width: none !important を追加
+- **タスク**: quizland index.html: 4 aspect-ratio メディアクエリの .board に max-width: none !important を追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 31
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 3, "Agent": 16, "ToolSearch": 1, "Bash": 9, "Grep": 2}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T10:59:11Z - maze-editor.html にラフ作成ツール (maze-rough.html) からの handoff データ自動検出/取り込み機構を実装
+- **タスク**: maze-editor.html にラフ作成ツール (maze-rough.html) からの handoff データ自動検出/取り込み機構を実装
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 31
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 3, "Agent": 16, "ToolSearch": 1, "Bash": 9, "Grep": 2}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T10:58:38Z - maze-rough.html にエディタ用 handoff の常時 localStorage 書き出し機構を追加 (BFS + 方向重複除去 polyline + start/goal null 時 skip)
+- **タスク**: maze-rough.html にエディタ用 handoff の常時 localStorage 書き出し機構を追加 (BFS + 方向重複除去 polyline + start/goal null 時 skip)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 36
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 2, "Agent": 20, "ToolSearch": 1, "Bash": 10, "Write": 1, "Edit": 1, "Grep": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-14T10:54:29Z - AGENTS.md §3 違反対応: saved-layout.json revert + index.html CSS で .board max-width 制約追加
+- **タスク**: AGENTS.md §3 違反対応: saved-layout.json revert + index.html CSS で .board max-width 制約追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 29
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 3, "Agent": 14, "ToolSearch": 1, "Bash": 9, "Grep": 2}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-14T10:50:03Z - quizland fitStage safe-area化 + board幅修正 + sw.js v994 (develop直接編集, commit/push無し)
+- **タスク**: quizland fitStage safe-area化 + board幅修正 + sw.js v994 (develop直接編集, commit/push無し)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 27
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 2, "Agent": 14, "ToolSearch": 1, "Bash": 8, "Write": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-14T10:15:29Z - maze-rough.html に PNG インポート機能を追加 (1920x1080 / 3840x1080 対応、タイル + start/goal 復元、creatures/障害物はリセット、 confirm 位置最適化)
 - **タスク**: maze-rough.html に PNG インポート機能を追加 (1920x1080 / 3840x1080 対応、タイル + start/goal 復元、creatures/障害物はリセット、 confirm 位置最適化)
 - **結果**: 成功
@@ -152,96 +243,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 2, "Agent": 12, "ToolSearch": 1, "Bash": 6}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T10:10:17Z - maze-rough.html に PNG インポート機能を追加 (1920x1080 / 3840x1080 を逆解析して tiles/start/goal を復元)
-- **タスク**: maze-rough.html に PNG インポート機能を追加 (1920x1080 / 3840x1080 を逆解析して tiles/start/goal を復元)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 18
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 9, "ToolSearch": 1, "Bash": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T09:56:22Z - gh proxy 403: ALLOWED_GH_PATTERNS の文字クラスに % を追加して URL-encoded 日本語ファイル名を許可 + encoded path traversal (%2E%2E / %00) ブロックを併設
-- **タスク**: gh proxy 403: ALLOWED_GH_PATTERNS の文字クラスに % を追加して URL-encoded 日本語ファイル名を許可 + encoded path traversal (%2E%2E / %00) ブロックを併設
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 15
-- **エラー数**: 4
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 6, "ToolSearch": 1, "Bash": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T09:54:35Z - worker.js handleGhProxy に encoded path traversal (%2E%2E) と NUL byte (%00) ブロックを追加
-- **タスク**: worker.js handleGhProxy に encoded path traversal (%2E%2E) と NUL byte (%00) ブロックを追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 8
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 6, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T09:51:17Z - worker.js の ALLOWED_GH_PATTERNS に % を追加して percent-encoded 日本語パスを許可
-- **タスク**: worker.js の ALLOWED_GH_PATTERNS に % を追加して percent-encoded 日本語パスを許可
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 4
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T09:47:36Z - quizland contain-fit デフォルト化で iPad mini など 4:3 系の右切れ問題を恒久解決 (差分 6 行: stage-wrap 背景 + QZ_FIT_MODE 反転 + コメント更新 + sw.js v993)
-- **タスク**: quizland contain-fit デフォルト化で iPad mini など 4:3 系の右切れ問題を恒久解決 (差分 6 行: stage-wrap 背景 + QZ_FIT_MODE 反転 + コメント更新 + sw.js v993)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 20
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 10, "ToolSearch": 1, "Bash": 8}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T09:46:31Z - quizland/index.html の fit-mode 反転後の stale コメントを実態 (default=contain) に整合させる
-- **タスク**: quizland/index.html の fit-mode 反転後の stale コメントを実態 (default=contain) に整合させる
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 18
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Agent": 10, "ToolSearch": 1, "Bash": 6}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T09:08:05Z - maze OP 一連の改修 (editor 構築 / frame 差替 / Undo-Redo / 中心スケール / 画面全体タップ進行 / top page 画像部分ロード修正 / maze タイトル + OP ランタイム実装) と push まで
-- **タスク**: maze OP 一連の改修 (editor 構築 / frame 差替 / Undo-Redo / 中心スケール / 画面全体タップ進行 / top page 画像部分ロード修正 / maze タイトル + OP ランタイム実装) と push まで
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 143
-- **エラー数**: 10
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 30, "Bash": 46, "Glob": 7, "Grep": 28, "Agent": 30, "ToolSearch": 1, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
