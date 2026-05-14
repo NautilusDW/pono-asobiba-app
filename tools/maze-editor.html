@@ -266,6 +266,7 @@ html, body { height: 100vh; overflow: hidden;
       <button id="exportBtn" class="secondary">💾 JSON ダウンロード (ローカル用)</button>
       <button id="undoBtn" class="secondary">⤺ さいごの操作を取り消し</button>
       <button id="resetBtn" class="danger">↺ ぜんぶリセット</button>
+      <button id="clearEdgesBtn" class="danger">✂️ 道をすべて削除</button>
     </div>
 
     <h3>📁 ステージ管理 (ブラウザ内)</h3>
@@ -1320,6 +1321,21 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   draw();
   updateStatus();
   showBanner('リセットしました');
+});
+
+// ────────────────────────────────────────────────────────
+// Clear edges only (keep nodes / obstacles / creatures)
+// ────────────────────────────────────────────────────────
+document.getElementById('clearEdgesBtn').addEventListener('click', function() {
+  if (!confirm('全ての道（エッジ）を削除します。よろしいですか?')) return;
+  pushHistory();
+  state.edges = [];
+  state.edgeInProgress = null;
+  if (edgeProgressEl) edgeProgressEl.textContent = '';
+  draw();
+  updateStatus();
+  scheduleAutoSave();
+  showBanner('道をすべて削除しました');
 });
 
 // ────────────────────────────────────────────────────────
