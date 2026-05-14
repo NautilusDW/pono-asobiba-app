@@ -461,6 +461,11 @@ const state = {
   beats: DEFAULT_BEATS.slice(),
   layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
   selected: 0,
+  // session-only (NOT persisted): file picker / D&D で選択された画像の data URL を一時保持。
+  // セットされていれば renderStage が state.layout.frame.src よりも優先表示する (race 防止)。
+  // localStorage / Export JSON / GH PUT body のいずれにも含めない (super long base64 で容量
+  // 肥大化するため)。 init() 起動時は常に null から開始 (= リロード時 preview は自動消滅)。
+  _previewFrameDataUrl: null,
 };
 
 // ----------------------------------------------------------------------------
@@ -633,7 +638,14 @@ function renderStage() {
     // XSS 2 段防御: mergeLayout 側の正規表現で allowlist を通したうえで、
     // 念のため CSS injection に使われうる文字 (', ", \\, )) を除去する。
     const safeSrc = String(L.frame.src).replace(/['"\\)]/g, '');
-    box.style.backgroundImage    = "url('" + safeSrc + "')";
+    // 一時 preview (file picker / D&D 直後、 GH PUT 完了前) があれば優先表示。
+    // data URL も同等の char strip を通して CSS injection を防ぐ (base64+MIME 領域には
+    // 本来含まれないが、 呼出側を信頼しすぎないための保険)。
+    const previewSrc = state._previewFrameDataUrl
+      ? String(state._previewFrameDataUrl).replace(/['"\\)]/g, '')
+      : null;
+    const renderSrc = previewSrc || safeSrc;
+    box.style.backgroundImage    = "url('" + renderSrc + "')";
     box.style.backgroundSize     = '100% 100%';
     box.style.backgroundRepeat   = 'no-repeat';
     box.style.backgroundColor    = 'transparent';
@@ -985,16 +997,18 @@ function _probeFrameAspect(src) {
   img.src = src;
 }
 
+// previewFrameImage: file picker や D&D で選択された画像を data URL 化したものを
+// 受け取り、 state._previewFrameDataUrl にセットして renderStage を再呼出する。
+// renderStage は preview があれば優先表示する (URL ベースの frame.src を上書き)。
+// GH PUT 成功時に handleFramePicked が _previewFrameDataUrl を null に戻すことで
+// 永続化された path 経由の通常ロードに切り替わる。
+// 旧実装で DOM を直接書き換えていた版は、 _probeFrameAspect の onload race で
+// renderStage が state.layout.frame.src (= 古い path) を読み戻して preview を
+// 上書きしてしまい、 「古い画像が新画像のアスペクト比で表示」 されるバグの温床だった。
+// state-driven にすることで renderStage 一本に責務集約 = race 自体が消える。
 function previewFrameImage(dataUrl) {
-  const box = document.getElementById('opBox');
-  if (!box) return;
-  // CSS injection 防止: data URL の中身は base64+MIME のみだが、 念のため `'` を escape。
-  const safe = String(dataUrl || '').replace(/'/g, '%27');
-  box.style.backgroundImage  = "url('" + safe + "')";
-  box.style.backgroundSize   = '100% 100%';
-  box.style.backgroundRepeat = 'no-repeat';
-  box.style.backgroundColor  = 'transparent';
-  box.style.borderRadius     = '0';
+  state._previewFrameDataUrl = String(dataUrl || '') || null;
+  renderStage();
 }
 
 function readFileAsDataUrl(file) {
@@ -1150,6 +1164,8 @@ async function handleFramePicked(file) {
     if (!state.layout.frame) state.layout.frame = { enabled: true, src: '' };
     state.layout.frame.enabled = true;
     state.layout.frame.src     = '../' + ghPath;  // `../assets/images/maze/OP/<filename>`
+    // 永続 path に切り替わったので一時 preview をクリア (= renderStage は URL ベースで描画)。
+    state._previewFrameDataUrl = null;
     saveToLocal();
     renderRightPane();   // tFrameSrc input / checkbox を新値に同期
     renderStage();       // backgroundImage を path 値に戻す (data URL → path)
@@ -1262,6 +1278,9 @@ function initRightPane() {
     const v = String(frameSrc.value || '').trim();
     if (v === '' || FRAME_SRC_RE.test(v)) {
       state.layout.frame.src = v;
+      // ユーザが path text input を直接編集した場合、 一時 preview (= file picker 経由の
+      // data URL) は意図と乖離するためクリアする (空文字にした場合も同様)。
+      state._previewFrameDataUrl = null;
       saveToLocal();
       // 新しい src で aspect 比を再計算 (非同期、 完了後に renderStage を再走させる)。
       // 同期的にも renderStage を一度呼んで src 反映する (= aspect 算出前は _frameAspectRatio
