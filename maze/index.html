@@ -2316,7 +2316,7 @@ const OBSTACLE_KIND_IMG = {
 };
 
 // Resolve a node's rendered marker height (world units) from optional `radius`.
-// `radius` is the marker's world-space radius (= half rendered height).
+// `radius` は描画高さ (px)。エディタ (tools/maze-editor.html) の slider 値と 1:1 対応。
 // If unset/invalid, fall back to the legacy default `viewBox.h / 6`.
 // Clamped to [5, 500] world px to avoid pathological values.
 function imgNodeMarkerSize(stage, node) {
@@ -2324,7 +2324,7 @@ function imgNodeMarkerSize(stage, node) {
   if (!node) return defaultSz;
   const r = node.radius;
   if (typeof r !== 'number' || !Number.isFinite(r) || r <= 0) return defaultSz;
-  const sz = r * 2;
+  const sz = r;   // radius はエディタ slider と同じ「描画全高 (px)」 として解釈
   if (sz < 5)   return 5;
   if (sz > 500) return 500;
   return sz;
@@ -2333,7 +2333,7 @@ function imgNodeMarkerSize(stage, node) {
 function imgDrawMarkers(stage) {
   // Draw the start and goal asset markers at their node positions.
   // Default size is viewBox.h / 6 so they read clearly at any zoom but don't dominate.
-  // Per-node `radius` (optional, world units) overrides the default: rendered height = radius * 2.
+  // Per-node `radius` (optional, world units) overrides the default: rendered height = radius (エディタ slider と 1:1)。
   if (stage.start && imgMarkerStart.complete && imgMarkerStart.naturalWidth > 0) {
     const sz = imgNodeMarkerSize(stage, stage.start);
     // Preserve aspect ratio
