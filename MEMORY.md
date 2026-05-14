@@ -126,6 +126,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-14T07:39:55Z - top page image partial-load fix
+- **タスク**: top page image partial-load fix
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 83
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 20, "Bash": 17, "Glob": 3, "Grep": 19, "Agent": 23, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-14T07:26:09Z - maze OP layout + narration MP3 配置 + audio 編集対応
 - **タスク**: maze OP layout + narration MP3 配置 + audio 編集対応
 - **結果**: 成功
@@ -228,18 +241,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 15, "Bash": 10, "Glob": 3, "Grep": 12, "Agent": 10, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-14T05:34:36Z - oto/index.html AudioNode disconnect 追加 (kira hybrid + LFO + doremi 単音) + .docs-skip-once 作成
-- **タスク**: oto/index.html AudioNode disconnect 追加 (kira hybrid + LFO + doremi 単音) + .docs-skip-once 作成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 84
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 8, "Read": 31, "Bash": 6, "Grep": 3, "Agent": 34, "Write": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -2024,9 +2024,13 @@
     // (covers the case where Tweaks panel hasn't been toggled open yet).
     applyTweaks(TWEAK_DEFAULTS);
 
-    // Apply cache-busted src to brand images (preview SW workaround)
+    // Apply cache-busted src to brand images (preview SW workaround).
+    // Date.now() ベースだと iOS Safari の HTTP キャッシュが効かず毎回再取得されて
+    // 部分的に画像読込が止まる原因になる。PAGE_CACHE_VERSION (sw.js と揃った値) を
+    // バスターに使うことで、同一バージョン中は HTTP キャッシュが効き、デプロイ時の
+    // バンプで自動的に新しい URL になる。
     const __isPv = /claudeusercontent\.com$/.test(location.hostname);
-    const __bustUrl = (url) => __isPv ? `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}` : url;
+    const __bustUrl = (url) => __isPv ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     document.querySelectorAll('img[data-src]').forEach((img) => {
       const url = img.getAttribute('data-src');
       img.src = __bustUrl(url);

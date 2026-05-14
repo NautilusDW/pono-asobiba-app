@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 991;
+const CACHE_VERSION = 992;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -56,14 +56,24 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 画像は SW キャッシュをスキップして常にネットワーク取得
-  // （ピボットツールでスワップした画像が即反映されるように）
-  // オフライン時のみ既存キャッシュにフォールバック
+  // 画像は stale-while-revalidate: キャッシュがあれば即返却、 同時に背景でネットワーク
+  // 取得してキャッシュを最新化する。 iOS Safari ではメモリ圧迫時に no-store のネット待ち
+  // で画像読込が止まる症状があったため、 v992 で network-first から SWR に移行。
+  // （ピボットツールでスワップした画像も次回アクセスで反映される。 即時反映が必須な
+  //  ツール経路は line 38-44 の bypass でカバー済）
   if (event.request.destination === 'image') {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .catch(() => caches.match(event.request))
-    );
+    event.respondWith((async () => {
+      const cached = await caches.match(event.request);
+      const networkPromise = fetch(event.request).then(resp => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return resp;
+      }).catch(() => null);
+      // cache があれば即返却、 なければネット待ち、 どちらも失敗なら null
+      return cached || (await networkPromise) || cached;
+    })());
     return;
   }
 
