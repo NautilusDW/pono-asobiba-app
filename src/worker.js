@@ -441,6 +441,8 @@ const ALLOWED_GH_PATTERNS = [
   /^\/repos\/[^/]+\/[^/]+\/contents\/quizland\/[A-Za-z0-9_./-]+$/,
   // maze image stages (_index.json + 各ステージの json/jpg/png)
   /^\/repos\/[^/]+\/[^/]+\/contents\/maze\/imageStages(?:\/[A-Za-z0-9_./-]+)?$/,
+  // maze OP layout (maze-op-editor.html が PUT)
+  /^\/repos\/[^/]+\/[^/]+\/contents\/maze\/op-layout\.json$/,
   // assets 配下: data (JSON) / tts / images / sounds
   /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/data\/[A-Za-z0-9_.-]+\.json$/,
   /^\/repos\/[^/]+\/[^/]+\/contents\/assets\/tts(?:\/[A-Za-z0-9_./-]+)?$/,

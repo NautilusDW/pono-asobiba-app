@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+<title>迷路 OP レイアウトエディタ</title>
+<style>
+  /* 本番側 (maze runtime) と同じ Zen Maru Gothic を読み込み、ナレーション
+     プレビューと表示を一致させる。UI (header / sidebar) は OS 標準 sans-serif。 */
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1c1f26; color: #e5e7eb; overflow: hidden;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 220px 1fr 300px;
+    grid-template-rows: 48px 1fr;
+    grid-template-areas:
+      "header header header"
+      "left   center right";
+    height: 100vh;
+    width: 100vw;
+  }
+
+  header {
+    grid-area: header;
+    background: #14161c;
+    border-bottom: 1px solid #2a2e3a;
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+    z-index: 10;
+  }
+  header h1 { font-size: 14px; margin: 0; color: #f3f4f6; font-weight: 600; }
+  header .spacer { flex: 1; }
+  header button {
+    background: #2563eb; color: #fff;
+    border: none; padding: 6px 12px; border-radius: 4px;
+    cursor: pointer; font-size: 12px;
+  }
+  header button:hover { background: #1d4ed8; }
+  header button.ghost {
+    background: transparent; border: 1px solid #3a4050; color: #cbd5e1;
+  }
+  header button.ghost:hover { background: #20242e; }
+  header button.publish { background: #b45309; }
+  header button.publish:hover { background: #92400e; }
+
+  .panel {
+    background: #181b22;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 12px;
+    min-height: 0;
+    height: 100%;
+  }
+  #left  { grid-area: left;  border-right: 1px solid #2a2e3a; }
+  #right { grid-area: right; border-left:  1px solid #2a2e3a; }
+
+  .section { margin-bottom: 18px; }
+  .section h3 {
+    margin: 0 0 8px 0; font-size: 11px; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* Beat list */
+  .beat-list { display: flex; flex-direction: column; gap: 4px; }
+  .beat-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px;
+    background: #0f1218;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+  .beat-item:hover { border-color: #3a4050; }
+  .beat-item.active {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px #10b98144;
+    background: #122019;
+  }
+  .beat-item .beat-num {
+    flex: 0 0 auto; width: 28px;
+    font-weight: 700; color: #10b981;
+    font-size: 13px; text-align: center;
+  }
+  .beat-item .beat-preview {
+    flex: 1; min-width: 0;
+    color: #94a3b8; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .beat-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .beat-actions button {
+    flex: 1; padding: 6px 8px;
+    font-size: 11px; border-radius: 4px;
+    border: 1px solid #3a4050; background: #20242e; color: #cbd5e1;
+    cursor: pointer;
+  }
+  .beat-actions button:hover { background: #2a3040; }
+  .beat-actions button.danger { color: #fca5a5; border-color: #5b1f1f; }
+  .beat-actions button.danger:hover { background: #3a1f1f; }
+  .beat-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Beat textarea (left pane bottom) */
+  .beat-edit-label { margin-top: 14px; }
+  .beat-edit-label .lbl {
+    font-size: 11px; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px; display: block;
+  }
+  textarea#beatTextarea {
+    width: 100%; min-height: 160px;
+    padding: 8px; font-family: inherit; font-size: 12px;
+    background: #0f1218; color: #e5e7eb;
+    border: 1px solid #2a2e3a; border-radius: 4px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  textarea#beatTextarea:focus { outline: 1px solid #10b981; }
+
+  /* Center: stage preview */
+  #center {
+    grid-area: center;
+    background: #0a0c10;
+    overflow: auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .stage-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .stage {
+    position: relative;
+    width: 720px; height: 360px;
+    background-color: #000;
+    background-image: url('../assets/images/maze/OP/op_scale.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.6);
+  }
+  .op-box {
+    position: absolute;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .op-box .text { width: 100%; }
+
+  .step-nav {
+    display: flex; align-items: center; gap: 14px;
+    color: #cbd5e1; font-size: 13px;
+  }
+  .step-nav button {
+    background: #20242e; color: #e5e7eb;
+    border: 1px solid #3a4050; border-radius: 4px;
+    padding: 6px 14px; cursor: pointer; font-size: 13px;
+  }
+  .step-nav button:hover { background: #2a3040; }
+  .step-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .step-nav .indicator {
+    color: #10b981; font-weight: 700;
+    min-width: 50px; text-align: center;
+  }
+
+  /* Right pane */
+  .field-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .field-row label {
+    flex: 0 0 70px; font-size: 11px; color: #94a3b8;
+  }
+  .field-row input[type="number"], .field-row input[type="text"] {
+    flex: 1; min-width: 0;
+    background: #0f1218; color: #e5e7eb;
+    border: 1px solid #2a2e3a; border-radius: 3px;
+    padding: 4px 6px; font-size: 11px; font-family: inherit;
+  }
+  .field-row input[type="range"] { flex: 1; }
+  .field-row input[type="color"] {
+    width: 36px; height: 22px; padding: 0;
+    background: #0f1218; border: 1px solid #2a2e3a; border-radius: 3px;
+    cursor: pointer;
+  }
+  .field-row .vnum {
+    width: 56px; text-align: right;
+    font-size: 11px; color: #cbd5e1;
+    font-variant-numeric: tabular-nums;
+  }
+  .field-row select {
+    flex: 1; background: #0f1218; color: #e5e7eb;
+    border: 1px solid #2a2e3a; border-radius: 3px;
+    padding: 4px 6px; font-size: 11px; font-family: inherit;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937; color: #f3f4f6;
+    border: 1px solid #374151; border-radius: 4px;
+    padding: 10px 16px; font-size: 13px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    z-index: 1000;
+    opacity: 0; transition: opacity 0.18s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.err { background: #4c1d1d; border-color: #7f1d1d; color: #fecaca; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>迷路 OP レイアウトエディタ</h1>
+    <span class="spacer"></span>
+    <button class="ghost" id="btnExport">📥 Export JSON</button>
+    <button class="ghost" id="btnImport">📤 Import JSON</button>
+    <button class="publish" id="btnPublish" style="display:none;">📡 配信</button>
+    <button class="ghost" id="btnGoMaze" title="ステージ編集 (maze-editor) に移動">🧭 ステージ編集へ</button>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
+  </header>
+
+  <aside id="left" class="panel">
+    <div class="section">
+      <h3>ビート一覧</h3>
+      <div class="beat-list" id="beatList"></div>
+      <div class="beat-actions">
+        <button id="btnBeatAdd">＋ 追加</button>
+        <button id="btnBeatRemove" class="danger">－ 削除</button>
+      </div>
+    </div>
+
+    <div class="beat-edit-label">
+      <span class="lbl">選択中ビートのテキスト</span>
+      <textarea id="beatTextarea" spellcheck="false"
+                placeholder="ナレーション本文 (改行はそのまま反映)"></textarea>
+    </div>
+  </aside>
+
+  <main id="center">
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="op-box" id="opBox">
+          <div class="text" id="opText"></div>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button id="btnPrev">◀ 前</button>
+        <span class="indicator" id="stepIndicator">1/1</span>
+        <button id="btnNext">次 ▶</button>
+      </div>
+    </div>
+  </main>
+
+  <aside id="right" class="panel">
+
+    <div class="section">
+      <h3>Position (% of stage)</h3>
+      <div class="field-row">
+        <label>xPct</label>
+        <input type="range" id="rXPct" min="0" max="100" step="0.5">
+        <span class="vnum" id="vXPct">0</span>
+      </div>
+      <div class="field-row">
+        <label>yPct</label>
+        <input type="range" id="rYPct" min="0" max="100" step="0.5">
+        <span class="vnum" id="vYPct">0</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Size (% of stage)</h3>
+      <div class="field-row">
+        <label>widthPct</label>
+        <input type="range" id="rWPct" min="10" max="100" step="0.5">
+        <span class="vnum" id="vWPct">0</span>
+      </div>
+      <div class="field-row">
+        <label>heightPct</label>
+        <input type="range" id="rHPct" min="10" max="100" step="0.5">
+        <span class="vnum" id="vHPct">0</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Text</h3>
+      <div class="field-row">
+        <label>fontSize</label>
+        <input type="range" id="rFontSize" min="10" max="60" step="1">
+        <span class="vnum" id="vFontSize">26</span>
+      </div>
+      <div class="field-row">
+        <label>lineHeight</label>
+        <input type="range" id="rLineHeight" min="1" max="2.4" step="0.05">
+        <span class="vnum" id="vLineHeight">1.6</span>
+      </div>
+      <div class="field-row">
+        <label>color</label>
+        <input type="color" id="cColor">
+        <input type="text" id="tColor" maxlength="7">
+      </div>
+      <div class="field-row">
+        <label>align</label>
+        <select id="sAlign">
+          <option value="left">left</option>
+          <option value="center">center</option>
+          <option value="right">right</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label>letterSpc</label>
+        <input type="range" id="rLetterSpacing" min="0" max="0.3" step="0.01">
+        <span class="vnum" id="vLetterSpacing">0</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Background</h3>
+      <div class="field-row">
+        <label>bgColor</label>
+        <input type="color" id="cBgColor">
+        <input type="text" id="tBgColor" maxlength="7">
+      </div>
+      <div class="field-row">
+        <label>bgAlpha</label>
+        <input type="range" id="rBgAlpha" min="0" max="1" step="0.01">
+        <span class="vnum" id="vBgAlpha">0.55</span>
+      </div>
+      <div class="field-row">
+        <label>radius</label>
+        <input type="range" id="rRadius" min="0" max="40" step="1">
+        <span class="vnum" id="vRadius">16</span>
+      </div>
+      <div class="field-row">
+        <label>padding</label>
+        <input type="range" id="rPadding" min="0" max="40" step="1">
+        <span class="vnum" id="vPadding">16</span>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ----------------------------------------------------------------------------
+// Schema / persistence keys
+// ----------------------------------------------------------------------------
+const SCHEMA = 'pono-maze-op-v1';
+const LS_KEY = 'pono-maze-op-layout-v1';
+
+// GitHub publish (worker proxy) — only enabled on allowed origins.
+const GH_OWNER  = 'NautilusDW';
+const GH_REPO   = 'pono-asobiba-app';
+const GH_BRANCH = 'develop';
+const GH_PATH   = 'maze/op-layout.json';
+
+// 配信ボタンを表示する origin。 worker の ALLOWED_GH_ORIGINS と同じ集合。
+// file:// (= location.origin === 'null') では非表示。
+const ALLOWED_GH_ORIGINS = [
+  'https://pono-asobiba-staging.ndw.workers.dev',
+  'https://pono-asobiba-app.ndw.workers.dev',
+  'https://pono.kodama-no-mori.com',
+  'http://localhost:8788',
+  'http://127.0.0.1:8788',
+];
+
+// ----------------------------------------------------------------------------
+// Defaults
+// ----------------------------------------------------------------------------
+const DEFAULT_BEATS = [
+  'よるの もりで、\nなかまたちが まいごに なったよ。',
+  'ポノと いっしょに\nランタンを もって、\nもりの みちを すすもう。',
+  'みんなを みつけて、\nあんしんさせて あげよう！'
+];
+
+const DEFAULT_LAYOUT = {
+  box:  { xPct: 10, yPct: 60, widthPct: 80, heightPct: 30 },
+  text: { fontSize: 26, lineHeight: 1.6, color: '#ffffff', align: 'center', letterSpacing: 0 },
+  bg:   { color: '#000000', alpha: 0.55, radius: 16, padding: 16 }
+};
+
+// ----------------------------------------------------------------------------
+// State
+// ----------------------------------------------------------------------------
+const state = {
+  beats: DEFAULT_BEATS.slice(),
+  layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
+  selected: 0,
+};
+
+// ----------------------------------------------------------------------------
+// Utilities
+// ----------------------------------------------------------------------------
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+function toast(msg, kind) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', kind === 'err');
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function hexToRgba(hex, alpha) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return 'rgba(0,0,0,' + (alpha == null ? 1 : alpha) + ')';
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function clampNum(v, lo, hi, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+// ----------------------------------------------------------------------------
+// Persistence (localStorage)
+// ----------------------------------------------------------------------------
+function loadFromLocal() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (!obj || obj.schema !== SCHEMA) return;
+    if (Array.isArray(obj.beats) && obj.beats.length >= 1) {
+      state.beats = obj.beats.map(s => String(s || ''));
+    }
+    if (obj.layout) {
+      state.layout = mergeLayout(state.layout, obj.layout);
+    }
+  } catch (e) {
+    console.warn('[maze-op-editor] localStorage load failed', e);
+  }
+}
+
+function saveToLocal() {
+  try {
+    const payload = {
+      schema: SCHEMA,
+      savedAt: new Date().toISOString(),
+      layout: state.layout,
+      beats: state.beats,
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('[maze-op-editor] localStorage save failed', e);
+  }
+}
+
+function mergeLayout(base, incoming) {
+  const out = clone(base);
+  if (!incoming || typeof incoming !== 'object') return out;
+  if (incoming.box && typeof incoming.box === 'object') {
+    out.box.xPct      = clampNum(incoming.box.xPct,      0,   100, out.box.xPct);
+    out.box.yPct      = clampNum(incoming.box.yPct,      0,   100, out.box.yPct);
+    out.box.widthPct  = clampNum(incoming.box.widthPct, 10,   100, out.box.widthPct);
+    out.box.heightPct = clampNum(incoming.box.heightPct, 5,   100, out.box.heightPct);
+  }
+  if (incoming.text && typeof incoming.text === 'object') {
+    out.text.fontSize      = clampNum(incoming.text.fontSize,      6,   120, out.text.fontSize);
+    out.text.lineHeight    = clampNum(incoming.text.lineHeight,    0.8, 3.0, out.text.lineHeight);
+    if (typeof incoming.text.color === 'string') out.text.color = incoming.text.color;
+    if (['left','center','right'].includes(incoming.text.align)) out.text.align = incoming.text.align;
+    out.text.letterSpacing = clampNum(incoming.text.letterSpacing, 0,   1.0, out.text.letterSpacing);
+  }
+  if (incoming.bg && typeof incoming.bg === 'object') {
+    if (typeof incoming.bg.color === 'string') out.bg.color = incoming.bg.color;
+    out.bg.alpha   = clampNum(incoming.bg.alpha,   0,   1,   out.bg.alpha);
+    out.bg.radius  = clampNum(incoming.bg.radius,  0, 100,   out.bg.radius);
+    out.bg.padding = clampNum(incoming.bg.padding, 0, 100,   out.bg.padding);
+  }
+  return out;
+}
+
+// ----------------------------------------------------------------------------
+// Rendering
+// ----------------------------------------------------------------------------
+function renderBeatList() {
+  const list = document.getElementById('beatList');
+  list.innerHTML = '';
+  const total = state.beats.length;
+  state.beats.forEach((txt, i) => {
+    const it = document.createElement('div');
+    it.className = 'beat-item' + (i === state.selected ? ' active' : '');
+    const preview = (txt || '').split('\n')[0].slice(0, 24) || '(空)';
+    it.innerHTML = '';
+    const num = document.createElement('span'); num.className = 'beat-num';
+    num.textContent = (i + 1) + '/' + total;
+    const pv = document.createElement('span'); pv.className = 'beat-preview';
+    pv.textContent = preview;
+    it.appendChild(num);
+    it.appendChild(pv);
+    it.addEventListener('click', () => { selectBeat(i); });
+    list.appendChild(it);
+  });
+  document.getElementById('btnBeatRemove').disabled = state.beats.length <= 1;
+}
+
+function renderTextarea() {
+  document.getElementById('beatTextarea').value = state.beats[state.selected] || '';
+}
+
+function renderStage() {
+  const stage = document.getElementById('stage');
+  const box   = document.getElementById('opBox');
+  const text  = document.getElementById('opText');
+  const L = state.layout;
+
+  // Box position / size (% based, inline values; no transform translate).
+  box.style.left   = L.box.xPct + '%';
+  box.style.top    = L.box.yPct + '%';
+  box.style.width  = L.box.widthPct + '%';
+  box.style.height = L.box.heightPct + '%';
+  box.style.padding         = L.bg.padding + 'px';
+  box.style.borderRadius    = L.bg.radius  + 'px';
+  box.style.backgroundColor = hexToRgba(L.bg.color, L.bg.alpha);
+
+  // Text style.
+  text.style.fontSize      = L.text.fontSize + 'px';
+  text.style.lineHeight    = L.text.lineHeight;
+  text.style.color         = L.text.color;
+  text.style.textAlign     = L.text.align;
+  text.style.letterSpacing = L.text.letterSpacing + 'em';
+  text.style.fontWeight    = '700';
+  // Soft drop shadow improves legibility against image.
+  text.style.textShadow    = '0 2px 4px rgba(0,0,0,0.6)';
+
+  // Beat content.
+  text.textContent = state.beats[state.selected] || '';
+
+  // Step indicator.
+  const ind = document.getElementById('stepIndicator');
+  ind.textContent = (state.selected + 1) + '/' + state.beats.length;
+  document.getElementById('btnPrev').disabled = state.beats.length <= 1;
+  document.getElementById('btnNext').disabled = state.beats.length <= 1;
+}
+
+function renderRightPane() {
+  const L = state.layout;
+  // box
+  setField('rXPct', 'vXPct', L.box.xPct);
+  setField('rYPct', 'vYPct', L.box.yPct);
+  setField('rWPct', 'vWPct', L.box.widthPct);
+  setField('rHPct', 'vHPct', L.box.heightPct);
+  // text
+  setField('rFontSize',      'vFontSize',      L.text.fontSize);
+  setField('rLineHeight',    'vLineHeight',    L.text.lineHeight);
+  setField('rLetterSpacing', 'vLetterSpacing', L.text.letterSpacing);
+  document.getElementById('cColor').value = L.text.color;
+  document.getElementById('tColor').value = L.text.color;
+  document.getElementById('sAlign').value = L.text.align;
+  // bg
+  document.getElementById('cBgColor').value = L.bg.color;
+  document.getElementById('tBgColor').value = L.bg.color;
+  setField('rBgAlpha',  'vBgAlpha',  L.bg.alpha);
+  setField('rRadius',   'vRadius',   L.bg.radius);
+  setField('rPadding',  'vPadding',  L.bg.padding);
+}
+
+function setField(rangeId, displayId, value) {
+  document.getElementById(rangeId).value   = value;
+  document.getElementById(displayId).textContent =
+    (typeof value === 'number' && !Number.isInteger(value))
+      ? Number(value).toFixed(2)
+      : String(value);
+}
+
+function renderAll() {
+  renderBeatList();
+  renderTextarea();
+  renderRightPane();
+  renderStage();
+}
+
+// ----------------------------------------------------------------------------
+// Beat operations
+// ----------------------------------------------------------------------------
+function selectBeat(i) {
+  if (i < 0 || i >= state.beats.length) return;
+  state.selected = i;
+  renderBeatList();
+  renderTextarea();
+  renderStage();
+}
+
+function addBeat() {
+  state.beats.push('');
+  state.selected = state.beats.length - 1;
+  saveToLocal();
+  renderAll();
+}
+
+function removeBeat() {
+  if (state.beats.length <= 1) return;
+  state.beats.pop();
+  if (state.selected >= state.beats.length) state.selected = state.beats.length - 1;
+  saveToLocal();
+  renderAll();
+}
+
+function stepPrev() {
+  if (state.beats.length <= 1) return;
+  selectBeat((state.selected - 1 + state.beats.length) % state.beats.length);
+}
+function stepNext() {
+  if (state.beats.length <= 1) return;
+  selectBeat((state.selected + 1) % state.beats.length);
+}
+
+// ----------------------------------------------------------------------------
+// Export / Import
+// ----------------------------------------------------------------------------
+function buildPayload() {
+  return {
+    schema: SCHEMA,
+    savedAt: new Date().toISOString(),
+    layout: clone(state.layout),
+    beats: state.beats.slice(),
+  };
+}
+
+function exportJson() {
+  const payload = buildPayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const ts   = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'maze-op-layout-' + ts + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('JSON エクスポート');
+}
+
+function importJsonFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(String(reader.result || ''));
+      if (!obj || obj.schema !== SCHEMA) {
+        toast('スキーマが違います (' + (obj && obj.schema) + ')', 'err');
+        return;
+      }
+      if (obj.layout) state.layout = mergeLayout(state.layout, obj.layout);
+      if (Array.isArray(obj.beats) && obj.beats.length >= 1) {
+        state.beats = obj.beats.map(s => String(s || ''));
+        state.selected = 0;
+      }
+      saveToLocal();
+      renderAll();
+      toast('JSON 取込完了');
+    } catch (e) {
+      console.warn('[maze-op-editor] import failed', e);
+      toast('JSON 読込失敗', 'err');
+    }
+  };
+  reader.onerror = () => toast('ファイル読込失敗', 'err');
+  reader.readAsText(file);
+}
+
+// ----------------------------------------------------------------------------
+// GitHub publish
+// ----------------------------------------------------------------------------
+function _ghContentsUrl(path) {
+  return '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + encodeURI(path);
+}
+
+async function _ghGet() {
+  const url = _ghContentsUrl(GH_PATH) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return { contents: null, sha: null };
+  if (!r.ok) throw new Error('GH GET ' + GH_PATH + ' → ' + r.status);
+  const j = await r.json();
+  const b64Raw = (j.content || '').replace(/\n/g, '');
+  let parsed = null;
+  try {
+    const bin   = atob(b64Raw);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  } catch (e) { parsed = null; }
+  if (!parsed && b64Raw.length > 0) {
+    throw new Error('GH GET: parse failed (content non-empty but parse failed)');
+  }
+  return { contents: parsed, sha: j.sha || null };
+}
+
+async function _ghPut(jsonObj, sha) {
+  const text  = JSON.stringify(jsonObj, null, 2);
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  const b64 = btoa(bin);
+  const body = {
+    message: 'chore(maze-op): update OP layout (' + GH_PATH + ')',
+    content: b64,
+    branch:  GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(GH_PATH), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error('GH PUT ' + r.status + ' ' + txt.slice(0, 200));
+  }
+  return true;
+}
+
+let _publishing = false;
+async function publishToGitHub() {
+  if (_publishing) return;
+  if (!confirm('全端末に配信されます。 続行しますか?')) return;
+  _publishing = true;
+  const btn = document.getElementById('btnPublish');
+  if (btn) btn.disabled = true;
+  try {
+    toast('GitHub に配信中…');
+    const got = await _ghGet();
+    await _ghPut(buildPayload(), got.sha);
+    toast('GitHub 配信完了 (' + GH_PATH + ')');
+  } catch (e) {
+    console.warn('[maze-op-editor] publish failed', e);
+    if (e && e.status === 409) {
+      toast('別エディタが先に保存しました。再試行してください', 'err');
+    } else {
+      toast('配信失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+  } finally {
+    _publishing = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Right-pane bindings
+// ----------------------------------------------------------------------------
+function bindRange(rangeId, displayId, getter, setter, precision) {
+  const r = document.getElementById(rangeId);
+  const d = document.getElementById(displayId);
+  r.addEventListener('input', () => {
+    const v = Number(r.value);
+    setter(v);
+    d.textContent = (precision != null && !Number.isInteger(v)) ? v.toFixed(precision) : String(v);
+    saveToLocal();
+    renderStage();
+  });
+}
+
+function bindColorPair(colorId, textId, getter, setter) {
+  const c = document.getElementById(colorId);
+  const t = document.getElementById(textId);
+  c.addEventListener('input', () => {
+    setter(c.value);
+    t.value = c.value;
+    saveToLocal();
+    renderStage();
+  });
+  t.addEventListener('change', () => {
+    const v = String(t.value || '').trim();
+    if (/^#[0-9a-f]{6}$/i.test(v)) {
+      setter(v);
+      c.value = v;
+      saveToLocal();
+      renderStage();
+    } else {
+      t.value = getter();
+      toast('色は #rrggbb 形式で', 'err');
+    }
+  });
+}
+
+function initRightPane() {
+  // Position
+  bindRange('rXPct', 'vXPct', () => state.layout.box.xPct, v => state.layout.box.xPct = v, 1);
+  bindRange('rYPct', 'vYPct', () => state.layout.box.yPct, v => state.layout.box.yPct = v, 1);
+  // Size
+  bindRange('rWPct', 'vWPct', () => state.layout.box.widthPct,  v => state.layout.box.widthPct  = v, 1);
+  bindRange('rHPct', 'vHPct', () => state.layout.box.heightPct, v => state.layout.box.heightPct = v, 1);
+  // Text
+  bindRange('rFontSize',      'vFontSize',      () => state.layout.text.fontSize,      v => state.layout.text.fontSize      = v, 0);
+  bindRange('rLineHeight',    'vLineHeight',    () => state.layout.text.lineHeight,    v => state.layout.text.lineHeight    = v, 2);
+  bindRange('rLetterSpacing', 'vLetterSpacing', () => state.layout.text.letterSpacing, v => state.layout.text.letterSpacing = v, 2);
+  bindColorPair('cColor', 'tColor', () => state.layout.text.color, v => state.layout.text.color = v);
+  document.getElementById('sAlign').addEventListener('change', e => {
+    state.layout.text.align = e.target.value;
+    saveToLocal();
+    renderStage();
+  });
+  // Background
+  bindColorPair('cBgColor', 'tBgColor', () => state.layout.bg.color, v => state.layout.bg.color = v);
+  bindRange('rBgAlpha', 'vBgAlpha', () => state.layout.bg.alpha,   v => state.layout.bg.alpha   = v, 2);
+  bindRange('rRadius',  'vRadius',  () => state.layout.bg.radius,  v => state.layout.bg.radius  = v, 0);
+  bindRange('rPadding', 'vPadding', () => state.layout.bg.padding, v => state.layout.bg.padding = v, 0);
+}
+
+// ----------------------------------------------------------------------------
+// Boot
+// ----------------------------------------------------------------------------
+function init() {
+  loadFromLocal();
+  state.selected = Math.min(state.selected, state.beats.length - 1);
+
+  // Header buttons
+  document.getElementById('btnExport').addEventListener('click', exportJson);
+  document.getElementById('btnImport').addEventListener('click', () => {
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importJsonFromFile(f);
+    e.target.value = '';
+  });
+  document.getElementById('btnGoMaze').addEventListener('click', () => {
+    location.href = 'maze-editor.html';
+  });
+
+  // Publish only when origin is allowed (worker.js gating).
+  const here = location.origin;
+  const publishVisible = ALLOWED_GH_ORIGINS.indexOf(here) >= 0;
+  const pubBtn = document.getElementById('btnPublish');
+  if (publishVisible) {
+    pubBtn.style.display = '';
+    pubBtn.addEventListener('click', publishToGitHub);
+  } else {
+    pubBtn.style.display = 'none';
+  }
+
+  // Beat list buttons
+  document.getElementById('btnBeatAdd').addEventListener('click', addBeat);
+  document.getElementById('btnBeatRemove').addEventListener('click', removeBeat);
+
+  // Step nav
+  document.getElementById('btnPrev').addEventListener('click', stepPrev);
+  document.getElementById('btnNext').addEventListener('click', stepNext);
+
+  // Beat textarea
+  const ta = document.getElementById('beatTextarea');
+  ta.addEventListener('input', () => {
+    state.beats[state.selected] = ta.value;
+    saveToLocal();
+    renderBeatList();
+    renderStage();
+  });
+
+  initRightPane();
+  renderAll();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
