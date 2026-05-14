@@ -27,10 +27,10 @@
    Quizland v2 (Strategy: Replace)
    --------------------------------------------------------------
    このファイルは quizland/preview/full/index.html を視覚的土台と
-   して採用する。 stage は 2100×900 (21:9) の固定キャンバスで、
-   内側に 16:9 の safe-area (1600×900) を持つ。 端末サイズに合わせて
-   transform: scale で常時 fit させる (preview/full の preview-mode を
-   標準動作にしたもの)。
+   して採用する。 stage は 1600×900 (16:9) の固定キャンバスで、
+   safe-area は stage と同サイズ (画面比違いはレターボックス処理)。
+   端末サイズに合わせて transform: scale で常時 fit させる
+   (preview/full の preview-mode を標準動作にしたもの)。
 
    既存のゲームロジック (slim 版: questions/categories/render/audio/
    achievements 連携) はそのまま温存し、 IDs を preview/full の DOM に
@@ -51,8 +51,9 @@
   --text-light: #f0f0f0;
   --owl-bg: #b08acf;
 
-  /* 21:9 outer / 16:9 safe area inner (preview/full と同じ) */
-  --canvas-w: 2100px;
+  /* stage = 16:9 (1600×900)。 safe-area と同サイズに統合し、
+     画面比違いはレターボックスで吸収する (旧 21:9 outer は廃止)。 */
+  --canvas-w: 1600px;
   --canvas-h: 900px;
   --safe-w: 1600px;
   --safe-h: 900px;
@@ -3864,14 +3865,11 @@ if (document.readyState === 'loading') {
 // ═══════════════════════════════════════════════════════════
 // Stage auto-fit (cover-fit / play.html と同じ Math.max ロジック)
 // --------------------------------------------------------------
-// 旧実装は Math.min (contain) だったため iPad 4:3 / iPhone 19.5:9 で
-// 大きなレターボックス黒帯が発生していた。 Math.max (cover-fit) に
-// 切り替えて viewport を完全に埋め、 上下/左右にあふれる canvas 端
-// (sheet-on の装飾領域) のみクリップされるようにする。
-// 16:9 より縦長の viewport では safe-area が画面外にこぼれないよう、
-// CSS 側の max-aspect-ratio メディアクエリで --safe-w を visible slice
-// 内に詰めてある (お知らせ/せってい/回答チップ/キャラはすべて safe-area
-// 内に収まる)。
+// stage = 16:9 (1600×900) で safe-area と同サイズに統合済み。
+// 画面比違いは contain-fit (Math.min) のレターボックスで吸収するのが
+// デフォルト。 ?fit=cover 指定時のみ Math.max で viewport を完全に埋め、
+// 上下/左右にあふれる canvas 端をクリップする。
+// safe-area 内に お知らせ/せってい/回答チップ/キャラがすべて収まる前提。
 // ═══════════════════════════════════════════════════════════
 const stageEl = document.getElementById('stage');
 

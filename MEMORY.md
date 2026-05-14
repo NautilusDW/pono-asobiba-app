@@ -51,6 +51,8 @@
 
 - **quizland contain-fit + safe-area target + board max-width + chip 幅整合 (2026-05-14, sw v993→v995)**: [memory/feature_quizland_contain_fit.md](memory/feature_quizland_contain_fit.md) — v993 で contain-fit デフォルト化 (cover→contain) + v994 で fit ターゲットを stage(21:9) → safe-area(16:9) に変えて 4:3 余白半減 + `.board` に `max-width: calc(--safe-w - 700 - 16)` で wide path 右ズレ 87px→6px 圧縮 + **v995 で 14/9・4/3・5/4 帯の `.chip { width }` を -8px ずつ縮めて a-col 容量内に確実収容 (4/3 帯で「2つ・4つ」が画面右端切れる残課題を解消、 余裕 +2px → +10〜+20px)**。`?fit=cover` で旧動作に退避可能。AGENTS.md §3 「saved-layout.json 手書き禁止」遵守で CSS 方式採用。**教訓: 「safe-area 配置 OK」は内側 grid (chip) が収まることを保証しない、毎回 box-sizing 込み再計算必須**
 
+- **パズル 横画面専用化 (2026-05-14, sw v995→v997)**: [memory/feature_puzzle_landscape.md](memory/feature_puzzle_landscape.md) — `puzzle/` を縦画面強制 → 横画面専用に。画像は触らず CSS のみで対応。第1ラウンドで aspect-ratio 3/4→4/3 + notice 反転 + title 中央配置 (sw v996)、クロスレビュー HIGH 2/MED 2 を受けて第2ラウンドで `@media (orientation: landscape) and (pointer: coarse)` 新設し `.main { flex-direction: row }` の **左パズル+右 180px サイドバー** に切替、`.puzzle-frame` を高さベース計算 `min(100vw-220px, (100dvh-110px)*4/3)` に変更 (iPhone 横で 200px 切手化を解消)、ResizeObserver に snappedCount + ±20% 差分の進捗保護ガード追加 (sw v997)
+
 ---
 
 ## Key Learnings
