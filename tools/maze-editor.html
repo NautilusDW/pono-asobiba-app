@@ -863,7 +863,8 @@ cv.addEventListener('pointerdown', function(e) {
   }
 
   // === ノード drag === (他モード)
-  if (state.mode !== 'delete') {
+  // edge モード中はノード click を handleEdgeClick に通すため drag に入らない
+  if (state.mode !== 'delete' && state.mode !== 'edge') {
     const nodeHit = findNodeAt(p);
     if (nodeHit) {
       pushHistory();
