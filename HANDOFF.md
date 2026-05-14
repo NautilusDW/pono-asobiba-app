@@ -84,6 +84,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-14 - [batch:oto-reference-all-buttons-circlefix] **Done** — user 指摘「今度は縦にのびちゃったな」に対応。`tmp/alpha_pending/20/` に正円指定で再生成した 2K 版を置き、採用版として `tmp/alpha_pending/22/` に横方向 106% の軽い幾何補正をかけた `2048x2048` RGB PNG 4 シートを納品: `oto_ref_buttons_circlefix_x106_sheet1_icons.png` / `oto_ref_buttons_circlefix_x106_sheet2_objects.png` / `oto_ref_buttons_circlefix_x106_sheet3_controls.png` / `oto_ref_buttons_circlefix_x106_sheet4_swatches.png`。`tmp/alpha_pending/21/` は作業中の不採用補正版 (行境界の帯が出たため採用しない)。 (by Codex)
+
 - 2026-05-14 - [batch:oto-reference-all-buttons-2k-spacing] **Done** — user 指摘「上下が詰まる・くっつく・幅不足で円が楕円。全体を小さく、隙間を空け、2Kぐらい」に対応。`tmp/alpha_pending/19/` に余白多めの 2K 改訂版 4 シートを納品: `oto_ref_buttons_2k_sheet1_icons.png` / `oto_ref_buttons_2k_sheet2_objects.png` / `oto_ref_buttons_2k_sheet3_controls.png` / `oto_ref_buttons_2k_sheet4_swatches.png`。納品用は全て `2048x2048` RGB PNG、生成 API の元サイズ `1254x1254` は `tmp/alpha_pending/19/raw_source/` に保管。 (by Codex)
 
 - 2026-05-14 - [batch:oto-reference-all-buttons] **Done** — user 指示「ボタンの中身を参考画像と同じ感じに変更。丸で囲われてないものもボタン風に囲む。ポノはいらない。全部出して」に対応。`tmp/alpha_pending/18/` に 4 シート納品: `oto_ref_buttons_sheet1_icons.png` (基本アイコン 16) / `sheet2_objects.png` (音・道具・生活 16) / `sheet3_controls.png` (操作・速度・モード 16) / `sheet4_swatches.png` (色玉 16)。全て `1536x1024` RGBA 透過 PNG、3MB 未満。 (by Codex)
