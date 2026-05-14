@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-14 - [batch:28-maze-leaf-glow-from-scratch-mask] Codex: user 指摘「スタートとゴールの位置が違う、一段上に上げている」を受領。添付された最新ラフ画像を正本として、青/赤の円形クリアリングを下段の現在位置に固定し、生成モデル任せではなくラフのグリッド/マスクを保持する方式で `tmp/alpha_pending/28/` に 1 から再作成する。 (by Codex)
+
 - 2026-05-12 - [batch:voicepeak-vdc2-dict] Codex: user が `tools/voicepeak/test/` に置いた `testword.vdc2` / `testword02.vdc2` を確認。`.vdc2` は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の形式と判明。`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1` を追加し、`tools/voicepeak/voicepeak_user_dict.csv` 65 語から `tools/voicepeak/voicepeak_user_dict.vdc2` を生成済。VOICEPEAK 実機インポート確認は未実施。 (by Codex)
 
 - 2026-05-11 - [batch:16-zukan-frames] Codex: `tmp/zukan-frames-codex-order/CODEX-ORDER.md` を受領。HANDOFF / git log / `tmp/zukan-frames-codex-order/` / `tmp/alpha_pending/` を確認し、zukan frame 4種の既存納品は無しと確認済。reference は `tmp/zukan-frames-codex-order/reference/referenceImage.png`。納品先は `tmp/alpha_pending/16/` として着手。 (by Codex)
@@ -83,6 +85,8 @@
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-14 - [batch:27-maze-leaf-glow-layout-fix] **Done** — user 指摘「マップが最初のとは違う、ちゃんと合わせて」を受け、`tmp/alpha_pending/26/` とは別に layout-fix 版を `tmp/alpha_pending/27/` へ再生成。最終候補は `maze_leaf_glow_forest_layoutfix_v2_raw.png` (`1672x941` RGB PNG、2,987,010 bytes)。同フォルダに比較用 `maze_leaf_glow_forest_layoutfix_raw.png` / `maze_leaf_glow_forest_v2_layoutfix_raw.png` も保持。生成プロンプトは「最新ラフ画像を直接ペイントオーバー・通路マスク固定」に強化したが、生成モデルのためピクセル完全一致は未保証。既存 `maze/imageStages/` 上書きなし、assets 配置や `sw.js` bump は未実施。 (by Codex)
 
 - 2026-05-14 - [batch:26-maze-leaf-glow-forest-bg-v2] **Done** — user 添付の新しい迷路ラフ画像を、前回と同じ「木の葉あかりの森 / Moonlit Leaf-Glow Forest」プロンプトで生成。`tmp/alpha_pending/25/` は残し、別 raw として `tmp/alpha_pending/26/maze_leaf_glow_forest_v2_raw.png` に納品 (`1672x941` RGB PNG、3,028,914 bytes)。夜森・砂道・低い草壁・下側2つの円形クリアリングを目視確認済。既存 `maze/imageStages/` 上書きなし、assets 配置や `sw.js` bump は未実施。 (by Codex)
 
