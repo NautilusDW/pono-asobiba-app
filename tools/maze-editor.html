@@ -59,6 +59,22 @@ html, body { height: 100vh; overflow: hidden;
 #libList button.del:hover { background: #5d2a2a; }
 #libList .empty { color: #888; font-size: 0.7rem; padding: 8px; }
 .actions { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.param-row {
+  margin: 6px 0;
+  font-size: 0.78rem;
+  color: #ddd;
+}
+.param-row label {
+  display: block;
+  margin-bottom: 4px;
+  color: #ccc;
+}
+.param-row input[type=range] {
+  width: 100%;
+  accent-color: #A4C76D;
+  cursor: pointer;
+}
+.param-row .param-val { color: #cf8; font-weight: 700; }
 .actions button {
   padding: 10px; font-family: inherit; font-size: 0.85rem;
   background: #6C8E3F; color: #fff; border: 0; border-radius: 4px;
@@ -238,6 +254,17 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn" data-ckind="nemuri">😴 ねむり</button>
       <button class="kind-btn" data-ckind="pyon">🦗 ぴょん</button>
     </div>
+
+    <h3>3b. スタート / ゴールの大きさ</h3>
+    <div class="param-row">
+      <label>スタートの大きさ: <span id="startRadiusVal" class="param-val">120</span>px</label>
+      <input type="range" id="startRadiusSlider" min="20" max="300" step="5" value="120">
+    </div>
+    <div class="param-row">
+      <label>ゴールの大きさ: <span id="goalRadiusVal" class="param-val">120</span>px</label>
+      <input type="range" id="goalRadiusSlider" min="20" max="300" step="5" value="120">
+    </div>
+    <p style="font-size:0.7rem; color:#888;">画像高さの 1/6 (デフォルト) を基準に調整</p>
 
     <div class="status">
       <div>ノード: <span id="nodeCount">0</span> (start: <span id="hasStart">なし</span>, goal: <span id="hasGoal">なし</span>, 中継: <span id="stopCount">0</span>)</div>
@@ -443,6 +470,10 @@ jsonInput.addEventListener('change', function(e) {
         return n && typeof n.id === 'string'
           && Number.isFinite(n.x) && Number.isFinite(n.y)
           && (n.kind === 'start' || n.kind === 'goal' || n.kind === 'stop');
+      }).map(function(n) {
+        const out = { id: n.id, x: Number(n.x), y: Number(n.y), kind: n.kind };
+        if (Number.isFinite(n.radius) && n.radius > 0) out.radius = Number(n.radius);
+        return out;
       });
       state.edges = def.edges.filter(function(e2) {
         return e2 && typeof e2.from === 'string' && typeof e2.to === 'string'
@@ -702,10 +733,19 @@ cv.addEventListener('click', function(e) {
 
   if (state.mode === 'start') {
     state.nodes = state.nodes.filter(function(n) { return n.kind !== 'start'; });
-    state.nodes.push({ id: 'start', x: p.x, y: p.y, kind: 'start' });
+    const startNode = { id: 'start', x: p.x, y: p.y, kind: 'start' };
+    // 現在の slider 値を新規 node に焼き付ける (fallback と差があれば radius を明示)
+    const sl = document.getElementById('startRadiusSlider');
+    const slv = sl ? parseInt(sl.value, 10) : NaN;
+    if (Number.isFinite(slv) && slv > 0) startNode.radius = slv;
+    state.nodes.push(startNode);
   } else if (state.mode === 'goal') {
     state.nodes = state.nodes.filter(function(n) { return n.kind !== 'goal'; });
-    state.nodes.push({ id: 'goal', x: p.x, y: p.y, kind: 'goal' });
+    const goalNode = { id: 'goal', x: p.x, y: p.y, kind: 'goal' };
+    const sl = document.getElementById('goalRadiusSlider');
+    const slv = sl ? parseInt(sl.value, 10) : NaN;
+    if (Number.isFinite(slv) && slv > 0) goalNode.radius = slv;
+    state.nodes.push(goalNode);
   } else if (state.mode === 'stop') {
     state.nodes.push({ id: 'stop' + state.nextStopId, x: p.x, y: p.y, kind: 'stop' });
     state.nextStopId++;
@@ -758,15 +798,31 @@ function findAnchorAt(p) {
   return null;
 }
 
+// Default radius (image-px) for each node kind. Used as fallback when n.radius is unset.
+// 'start'/'goal' = imgH / 6 (= 180 @ 1080), 'stop' = imgH / 30 (= 36 @ 1080).
+function defaultRadiusForKind(kind) {
+  const h = state.imgH || 1080;
+  if (kind === 'stop') return h / 30;
+  return h / 6; // start, goal
+}
+
+// Effective radius (image-px) for a node — explicit n.radius wins, else default.
+function effectiveNodeRadius(n) {
+  if (n && Number.isFinite(n.radius) && n.radius > 0) return n.radius;
+  return defaultRadiusForKind(n && n.kind);
+}
+
 // Find a node hit for grab-and-drag (any mode except delete which has its own click logic)
 function findNodeAt(p) {
-  const r = Math.max(28, (state.imgH || 1080) / 28);
-  const r2 = r * r;
+  let best = null, bestD2 = Infinity;
   for (const n of state.nodes) {
+    const r = Math.max(28, effectiveNodeRadius(n));
+    const r2 = r * r;
     const dx = p.x - n.x, dy = p.y - n.y;
-    if (dx*dx + dy*dy < r2) return n;
+    const d2 = dx*dx + dy*dy;
+    if (d2 < r2 && d2 < bestD2) { bestD2 = d2; best = n; }
   }
-  return null;
+  return best;
 }
 
 // Pointerdown を全モードで効くように (ノード drag 優先 + edit-points のアンカー drag)
@@ -1174,16 +1230,16 @@ function drawEdge(poly, color, alpha, dashed) {
 }
 
 function _drawNodeBoundingBox(n, isSelected) {
-  // ノードの寸法をモード別に算出
+  // ノードの寸法をモード別に算出 (n.radius があればそれを優先)
   let halfW, halfH;
   if (n.kind === 'start' || n.kind === 'goal') {
-    const sz = (state.imgH || 1080) / 6;
+    const sz = effectiveNodeRadius(n);
     const img = (n.kind === 'start') ? imgMarkerStart : imgMarkerGoal;
     const ratio = (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : 1;
     halfW = sz * ratio / 2;
     halfH = sz / 2;
   } else {
-    const r = (state.imgH || 1080) / 30;
+    const r = effectiveNodeRadius(n);
     halfW = halfH = r;
   }
   const padding = (state.imgH || 1080) / 80;
@@ -1218,7 +1274,7 @@ function _drawNodeBoundingBox(n, isSelected) {
 function drawNode(n) {
   ctx.save();
   if (n.kind === 'start' && imgMarkerStart.complete && imgMarkerStart.naturalWidth > 0) {
-    const sz = state.imgH / 6;
+    const sz = effectiveNodeRadius(n);
     const ratio = imgMarkerStart.naturalWidth / imgMarkerStart.naturalHeight;
     ctx.drawImage(imgMarkerStart, n.x - (sz*ratio)/2, n.y - sz/2, sz * ratio, sz);
     // Subtle outline ring so it remains clickable when overlapping bg
@@ -1227,7 +1283,7 @@ function drawNode(n) {
     ctx.lineWidth = 4 / canvasScale;
     ctx.beginPath(); ctx.arc(n.x, n.y, sz/2, 0, Math.PI * 2); ctx.stroke();
   } else if (n.kind === 'goal' && imgMarkerGoal.complete && imgMarkerGoal.naturalWidth > 0) {
-    const sz = state.imgH / 6;
+    const sz = effectiveNodeRadius(n);
     const ratio = imgMarkerGoal.naturalWidth / imgMarkerGoal.naturalHeight;
     ctx.drawImage(imgMarkerGoal, n.x - (sz*ratio)/2, n.y - sz/2, sz * ratio, sz);
     ctx.globalAlpha = 0.6;
@@ -1236,7 +1292,7 @@ function drawNode(n) {
     ctx.beginPath(); ctx.arc(n.x, n.y, sz/2, 0, Math.PI * 2); ctx.stroke();
   } else {
     // Stop nodes: image-px の固定サイズなので zoom と一緒に拡大される
-    const r = (state.imgH || 1080) / 30; // 画像高さ比で約 1/30
+    const r = effectiveNodeRadius(n); // 画像高さ比で約 1/30 (デフォルト)
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#5D4E37';
     ctx.lineWidth = Math.max(2, r * 0.18);
@@ -1369,7 +1425,11 @@ function buildExportDef() {
       obstacles: state.obstacles.map(function(o) { return { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y) }; }),
       creatures: state.creatures.map(function(c) { return { id: c.id, kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) }; }),
       nodes: state.nodes.map(function(n) {
-        return { id: n.id, x: n.x, y: n.y, kind: n.kind };
+        const out = { id: n.id, x: n.x, y: n.y, kind: n.kind };
+        if (Number.isFinite(n.radius) && n.radius > 0) {
+          out.radius = Math.round(n.radius);
+        }
+        return out;
       }),
       edges: state.edges.map(function(e) {
         // Runtime uses `polyline` (densified curve). `_editor.controls` preserves
@@ -2203,11 +2263,16 @@ function _rescaleFromHandoffViewBox(opts) {
   const sx = state.imgW / hv.w;
   const sy = state.imgH / hv.h;
   // Nodes
+  // radius は等方スケールで歪ませないように min(sx, sy) を使う (推奨仕様)
+  const sRadius = Math.min(sx, sy);
   if (Array.isArray(state.nodes)) {
     state.nodes.forEach(function(n) {
       if (!n) return;
       if (Number.isFinite(n.x)) n.x = Math.round(n.x * sx);
       if (Number.isFinite(n.y)) n.y = Math.round(n.y * sy);
+      if (Number.isFinite(n.radius) && n.radius > 0) {
+        n.radius = Math.round(n.radius * sRadius);
+      }
     });
   }
   // Edges (controls がメイン、 polyline フィールドが万一あれば両方)
@@ -2287,7 +2352,9 @@ function _applyHandoff(h, opts) {
         && Number.isFinite(n.x) && Number.isFinite(n.y)
         && (n.kind === 'start' || n.kind === 'goal' || n.kind === 'stop');
     }).map(function(n) {
-      return { id: n.id, x: Number(n.x), y: Number(n.y), kind: n.kind };
+      const out = { id: n.id, x: Number(n.x), y: Number(n.y), kind: n.kind };
+      if (Number.isFinite(n.radius) && n.radius > 0) out.radius = Number(n.radius);
+      return out;
     });
 
     // Edges: polyline → controls (内部表現)
@@ -2461,6 +2528,117 @@ function _maybeAutoLoadHandoff() {
 })();
 
 // ────────────────────────────────────────────────────────
+// Start / Goal radius sliders
+// ────────────────────────────────────────────────────────
+// node.radius を可変にする UI。 未設定 = imgH/6 の fallback。
+// 操作中は draw() を即時反映、 scheduleAutoSave() は 200ms debounce で吸収
+// (input event 連続発火で auto-save が暴発しないように)。
+const _startRadiusSlider = document.getElementById('startRadiusSlider');
+const _goalRadiusSlider  = document.getElementById('goalRadiusSlider');
+const _startRadiusVal    = document.getElementById('startRadiusVal');
+const _goalRadiusVal     = document.getElementById('goalRadiusVal');
+
+let _radiusAutoSaveTimer = null;
+function _scheduleRadiusAutoSave() {
+  if (_radiusAutoSaveTimer) clearTimeout(_radiusAutoSaveTimer);
+  _radiusAutoSaveTimer = setTimeout(function() {
+    _radiusAutoSaveTimer = null;
+    try { scheduleAutoSave(); } catch (e) {}
+  }, 200);
+}
+
+function _applyRadiusToKind(kind, radius) {
+  // 該当 kind の全 node に適用 (start/goal は通常 1 つだが防御的に)
+  let changed = false;
+  for (const n of state.nodes) {
+    if (n.kind !== kind) continue;
+    if (n.radius !== radius) {
+      n.radius = radius;
+      changed = true;
+    }
+  }
+  if (changed) {
+    draw();
+    _scheduleRadiusAutoSave();
+  }
+}
+
+if (_startRadiusSlider) {
+  _startRadiusSlider.addEventListener('input', function() {
+    const v = parseInt(_startRadiusSlider.value, 10);
+    if (!Number.isFinite(v) || v <= 0) return;
+    if (_startRadiusVal) _startRadiusVal.textContent = v;
+    _applyRadiusToKind('start', v);
+  });
+}
+if (_goalRadiusSlider) {
+  _goalRadiusSlider.addEventListener('input', function() {
+    const v = parseInt(_goalRadiusSlider.value, 10);
+    if (!Number.isFinite(v) || v <= 0) return;
+    if (_goalRadiusVal) _goalRadiusVal.textContent = v;
+    _applyRadiusToKind('goal', v);
+  });
+}
+
+// ステージロード後 / 復元後に slider を「現在の start/goal radius」 に同期する。
+// node.radius が未設定なら imgH/6 (= デフォルト) を反映。
+function syncRadiusSlidersFromState() {
+  const fallback = Math.round((state.imgH || 1080) / 6);
+  function pickRadius(kind) {
+    const n = state.nodes.find(function(x) { return x.kind === kind; });
+    if (n && Number.isFinite(n.radius) && n.radius > 0) return Math.round(n.radius);
+    return fallback;
+  }
+  function clampSlider(slider, v) {
+    if (!slider) return v;
+    const min = parseInt(slider.min, 10) || 20;
+    const max = parseInt(slider.max, 10) || 300;
+    return Math.max(min, Math.min(max, v));
+  }
+  if (_startRadiusSlider) {
+    const v = clampSlider(_startRadiusSlider, pickRadius('start'));
+    _startRadiusSlider.value = v;
+    if (_startRadiusVal) _startRadiusVal.textContent = v;
+  }
+  if (_goalRadiusSlider) {
+    const v = clampSlider(_goalRadiusSlider, pickRadius('goal'));
+    _goalRadiusSlider.value = v;
+    if (_goalRadiusVal) _goalRadiusVal.textContent = v;
+  }
+}
+
+// 既存のロード経路後に slider を必ず同期させる。
+// 各ロード経路の後に setTimeout で同期 (非同期 FileReader / Image.onload を吸収するため少し遅延)。
+(function _wireRadiusSliderSync() {
+  const SYNC_DELAY_MS = 80;
+  const SYNC_DELAY_ASYNC = 300; // FileReader 経由 (jsonInput) や image load 待ち
+  function syncSoon(ms) { setTimeout(syncRadiusSlidersFromState, ms || SYNC_DELAY_MS); }
+
+  // jsonInput 読込 (元 handler が FileReader 非同期で state を埋める)
+  const ji = document.getElementById('jsonInput');
+  if (ji) ji.addEventListener('change', function() { syncSoon(SYNC_DELAY_ASYNC); });
+
+  // undo / reset / clearEdges
+  const undoB = document.getElementById('undoBtn');
+  if (undoB) undoB.addEventListener('click', function() { syncSoon(); });
+  const resetB = document.getElementById('resetBtn');
+  if (resetB) resetB.addEventListener('click', function() { syncSoon(); });
+
+  // rough handoff buttons (handoff 取り込み)
+  const importBtn = document.getElementById('roughImportBtn');
+  if (importBtn) importBtn.addEventListener('click', function() { syncSoon(SYNC_DELAY_ASYNC); });
+  const reimportBtn = document.getElementById('roughReimportBtn');
+  if (reimportBtn) reimportBtn.addEventListener('click', function() { syncSoon(SYNC_DELAY_ASYNC); });
+
+  // ライブラリ「読込」 ボタンは動的生成なので、 libList へ click を委譲
+  const libList = document.getElementById('libList');
+  if (libList) libList.addEventListener('click', function(e) {
+    const t = e.target;
+    if (t && t.tagName === 'BUTTON' && t.textContent === '読込') syncSoon(SYNC_DELAY_ASYNC);
+  });
+})();
+
+// ────────────────────────────────────────────────────────
 // Init
 // ────────────────────────────────────────────────────────
 updateStatus();
@@ -2481,6 +2659,8 @@ if (_editorAutoLoad && libGetAll()[_editorAutoLoad]) {
 // UI 状態 (handoff 行の表示 / ボタン切り替え) を最後に更新
 _updateRoughHandoffUI();
 libRefreshList();
+// 初期 radius slider を現在の state に同期 (起動時の _restoreDraft / handoff 自動取り込み後)
+try { syncRadiusSlidersFromState(); } catch (e) {}
 _setAutoSaveStatus('💾 自動保存 ON (操作するたびに保存)', '#888');
 </script>
 </body>
