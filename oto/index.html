@@ -955,6 +955,65 @@ function _supportsHold(set) { return set === 'doremi' || set === 'kira'; }
 function startHeldNote(btn, set, idx) {
   var ac = getAC(); if (!ac) return false;
   if (!_supportsHold(set)) return false;
+
+  // ────────────────────────────────
+  // kira ハイブリッド分岐 (CHORD_MODE='off' のみ):
+  //   - 押した瞬間: playKira(ac, idx) で鐘のワンショット (5ms attack + 1.2s 指数減衰)
+  //   - 同時: 低音量の持続倍音オシレータ (3 sine partials) を 200ms かけてフェードイン
+  //   - リリース: stopHeldNote で 80ms フェードアウト (鐘本体は既に減衰中)
+  // CHORD_MODE='on' の kira は和音 3 音 × 倍音だと過剰なのでハイブリッド適用外
+  // (従来通り、和音のみの startHeldNote 経路で持続音だけ鳴らす)
+  // ────────────────────────────────
+  if (set === 'kira' && CHORD_MODE !== 'on') {
+    var t0 = ac.currentTime;
+    // 1) ワンショット鐘発火 (playKira は純粋関数、副作用なし)
+    try { playKira(ac, idx); } catch(e){}
+
+    // 2) 持続倍音オシレータ作成
+    var fK = _kiraFreqs()[idx] || 523.25;
+    var partialsK = [1.0, 2.01, 3.02];
+    var basePeakK = 0.18;
+    var oscsK = [];
+    partialsK.forEach(function(mul, pi) {
+      var o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(fK * mul, t0);
+      var g = ac.createGain();
+      g.gain.setValueAtTime(0, t0);
+      // 持続のピーク: basePeak/(pi+1) * 0.55、最小 0.025
+      var peak = (basePeakK / (pi + 1)) * 0.55;
+      if (peak < 0.025) peak = 0.025;
+      // 3) 200ms かけてフェードイン (短タップでも目立たないように 0 → peak の ramp)
+      g.gain.linearRampToValueAtTime(peak, t0 + 0.20);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t0);
+      oscsK.push({ osc: o, gain: g, isFundamental: pi === 0 });
+    });
+
+    var noteK = { oscs: oscsK, vibratoTo: null, lfo: null, lfoGain: null, shortRelease: true };
+    // 4) 200ms 後に LFO ビブラート (基音のみ)
+    noteK.vibratoTo = setTimeout(function() {
+      if (!_heldNotes.get(btn)) return;
+      var lfo = ac.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 5.5;
+      var lfoG = ac.createGain();
+      lfoG.gain.value = 6;
+      lfo.connect(lfoG);
+      noteK.oscs.forEach(function(o) {
+        if (o.isFundamental !== false) lfoG.connect(o.osc.frequency);
+      });
+      lfo.start();
+      noteK.lfo = lfo;
+      noteK.lfoGain = lfoG;
+    }, 200);
+    _heldNotes.set(btn, noteK);
+    return true;
+  }
+
+  // ────────────────────────────────
+  // doremi 分岐 + CHORD_MODE='on' の kira 分岐 (従来挙動)
+  // ────────────────────────────────
   var freqs;
   if (CHORD_MODE === 'on') {
     freqs = _chordFor(idx);
@@ -964,12 +1023,8 @@ function startHeldNote(btn, set, idx) {
     freqs = [_doremiFreqs()[idx] || 440];
   }
   var t = ac.currentTime;
-  // kira (鐘) は背景タップの playKira と同じく sine 3倍音 (1.0/2.01/3.02) で鳴らす。
-  // 単音だと triangle っぽい音色になり、playKira (倍音入り「鐘」) と不一致になるため。
-  // CHORD_MODE === 'on' の時は和音3音を鳴らすので倍音化はスキップ (音が濁る)。
-  var partials = (set === 'kira' && CHORD_MODE !== 'on')
-    ? [1.0, 2.01, 3.02]
-    : [1.0];
+  // CHORD_MODE='on' の kira は和音 3 音を鳴らすので倍音化はスキップ (音が濁る)
+  var partials = [1.0];
   var oscs = [];
   freqs.forEach(function(f, ci) {
     partials.forEach(function(mul, pi) {
@@ -978,16 +1033,12 @@ function startHeldNote(btn, set, idx) {
       o.frequency.setValueAtTime(f * mul, t);
       var g = ac.createGain();
       g.gain.setValueAtTime(0, t);
-      // ベースのピーク: kira は控えめ (倍音重ねるとクリップしやすい)
       var basePeak = (set === 'kira' ? 0.18 : 0.22) - ci * 0.025;
-      // 倍音は減衰させる: 2倍音 1/2、3倍音 1/3 (playKira と同じ比率)
       var peak = basePeak / (pi + 1);
-      if (set === 'kira' && partials.length > 1) peak *= 0.65; // 合計でクリップしないよう調整
       if (peak < 0.04) peak = 0.04;
       g.gain.linearRampToValueAtTime(peak, t + 0.015);
       o.connect(g); g.connect(ac.destination);
       o.start(t);
-      // LFO 注入は基音 (pi === 0) のみ対象にする (倍音までビブラート掛けると周波数比が崩れる)
       oscs.push({ osc: o, gain: g, isFundamental: pi === 0 });
     });
   });
@@ -1017,13 +1068,37 @@ function stopHeldNote(btn) {
   if (!note) return;
   if (note.vibratoTo) clearTimeout(note.vibratoTo);
   var ac = getAC(); var t = ac ? ac.currentTime : 0;
-  if (note.lfo) try { note.lfo.stop(t + 0.05); } catch(e){}
+  // LFO osc / LFO gain: stop 後に ended で disconnect (メモリ衛生)
+  if (note.lfo) {
+    try { note.lfo.stop(t + 0.05); } catch(e){}
+    try {
+      var _lfo = note.lfo, _lfoG = note.lfoGain;
+      _lfo.addEventListener('ended', function() {
+        try { _lfo.disconnect(); } catch(e){}
+        try { if (_lfoG) _lfoG.disconnect(); } catch(e){}
+      });
+    } catch(e){}
+  }
+  // kira ハイブリッドは持続倍音のみの release (鐘本体は既に減衰中) なので 80ms で fade
+  var releaseSec = note.shortRelease ? 0.08 : 0.10;
+  var stopSec = note.shortRelease ? 0.10 : 0.12;
   note.oscs.forEach(function(o) {
     try {
       o.gain.gain.cancelScheduledValues(t);
       o.gain.gain.setValueAtTime(o.gain.gain.value || 0.001, t);
-      o.gain.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
-      o.osc.stop(t + 0.12);
+      // linearRampToValueAtTime で 0 までフェード (exp は 0 に到達しないため kira hybrid では linear を使用)
+      if (note.shortRelease) {
+        o.gain.gain.linearRampToValueAtTime(0, t + releaseSec);
+      } else {
+        o.gain.gain.exponentialRampToValueAtTime(0.001, t + releaseSec);
+      }
+      o.osc.stop(t + stopSec);
+      // stop 後に ended イベントで disconnect (osc + gain どちらも解放)
+      var _o = o.osc, _g = o.gain;
+      _o.addEventListener('ended', function() {
+        try { _o.disconnect(); } catch(e){}
+        try { _g.disconnect(); } catch(e){}
+      });
     } catch(e){}
   });
   _heldNotes.delete(btn);
@@ -1096,6 +1171,11 @@ function playTone(kind, idx) {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
     o.connect(g); g.connect(ac.destination);
     o.start(t); o.stop(t + 0.85);
+    // stop 後に ended イベントで disconnect (将来のメモリ衛生)
+    o.addEventListener('ended', function() {
+      try { o.disconnect(); } catch(e){}
+      try { g.disconnect(); } catch(e){}
+    });
   } else if (kind === 'taiko') {
     playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   }
