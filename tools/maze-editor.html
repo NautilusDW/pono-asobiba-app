@@ -291,7 +291,8 @@ html, body { height: 100vh; overflow: hidden;
       <button id="commitBtn" style="background:#3a6c1f;">💾 本番に保存 (commit)</button>
       <button id="testBtn">▶ 迷路で試す (新タブ)</button>
       <button id="exportBtn" class="secondary">💾 JSON ダウンロード (ローカル用)</button>
-      <button id="undoBtn" class="secondary">⤺ さいごの操作を取り消し</button>
+      <button id="undoBtn" class="secondary">⤺ 取り消し (Ctrl+Z)</button>
+      <button id="redoBtn" class="secondary">⤻ やり直し (Ctrl+Y)</button>
       <button id="resetBtn" class="danger">↺ ぜんぶリセット</button>
       <button id="clearEdgesBtn" class="danger">✂️ 道をすべて削除</button>
     </div>
@@ -392,6 +393,9 @@ const state = {
   creatureKind: 'mayoi',
   edgeInProgress: null, // { fromId, points: [{x,y}] }
   history: [],          // shallow snapshots for undo
+  redoStack: [],        // shallow snapshots for redo (cleared on any new pushHistory)
+  draggingObstacle: null, // 現在 drag 中の obstacle 参照 (state.obstacles 内の要素)
+  draggingCreature: null, // 現在 drag 中の creature 参照 (state.creatures 内の要素)
   hover: null,          // {x, y} mouse pos in image coords
   handoffViewBox: null, // { w, h } — ラフ側 viewBox。 画像読み込み時 rescale 用に保持し、 適用後 null クリア
 };
@@ -728,6 +732,8 @@ cv.addEventListener('click', function(e) {
   // pointerdown でノードを掴んだ場合は click を完全にスキップ (drag 移動の有無を問わず)
   // → 中継ノードを掴んだだけで「新規配置」が発動するバグを防ぐ
   if (_grabbedNodeOnDown) { _grabbedNodeOnDown = false; _wasNodeDragging = false; return; }
+  // 同様に obstacle / creature を掴んだ click も skip (新規配置を防ぐ)
+  if (_grabbedItemOnDown) { _grabbedItemOnDown = false; return; }
   const p = mouseToImage(e);
   pushHistory();
 
@@ -776,7 +782,34 @@ cv.addEventListener('contextmenu', function(e) {
   if (state.edgeInProgress) cancelEdgeInProgress();
 });
 window.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && state.edgeInProgress) cancelEdgeInProgress();
+  // 入力フィールド・編集可能要素にフォーカスがある時は無効化
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (e.key === 'Escape' && state.edgeInProgress) { cancelEdgeInProgress(); return; }
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const k = (e.key || '').toLowerCase();
+  // Ctrl/Cmd + Shift + Z → redo
+  if (k === 'z' && e.shiftKey) {
+    e.preventDefault();
+    const rb = document.getElementById('redoBtn');
+    if (rb) rb.click();
+    return;
+  }
+  // Ctrl/Cmd + Z → undo
+  if (k === 'z') {
+    e.preventDefault();
+    const ub = document.getElementById('undoBtn');
+    if (ub) ub.click();
+    return;
+  }
+  // Ctrl/Cmd + Y → redo
+  if (k === 'y') {
+    e.preventDefault();
+    const rb = document.getElementById('redoBtn');
+    if (rb) rb.click();
+    return;
+  }
 });
 
 // ────────────────────────────────────────────────────────
@@ -828,13 +861,42 @@ function findNodeAt(p) {
 // Pointerdown を全モードで効くように (ノード drag 優先 + edit-points のアンカー drag)
 let _wasNodeDragging = false;
 let _grabbedNodeOnDown = false; // pointerdown で ノードを掴んだ → click を skip するためのフラグ
+let _grabbedItemOnDown = false; // pointerdown で obstacle/creature を掴んだ → click を skip するためのフラグ
 state.selectedNodeId = null;    // 選択されてるノードの id (バウンディングボックス表示用)
 state.hoveringNodeId = null;    // ホバー中のノード id
+
+// Hit-test helpers for obstacle / creature drag (描画半径と一致)
+function findCreatureAt(p) {
+  const r = Math.max(36 / canvasScale, state.imgH / 22);
+  const r2 = r * r;
+  let best = null, bestD2 = Infinity;
+  // 後から描かれている = 配列の後ろ側を優先 (= 上にあるものを掴めるように)
+  for (let i = state.creatures.length - 1; i >= 0; i--) {
+    const c = state.creatures[i];
+    const dx = p.x - c.x, dy = p.y - c.y;
+    const d2 = dx*dx + dy*dy;
+    if (d2 < r2 && d2 < bestD2) { bestD2 = d2; best = c; }
+  }
+  return best;
+}
+function findObstacleAt(p) {
+  const r = Math.max(36 / canvasScale, state.imgH / 24);
+  const r2 = r * r;
+  let best = null, bestD2 = Infinity;
+  for (let i = state.obstacles.length - 1; i >= 0; i--) {
+    const o = state.obstacles[i];
+    const dx = p.x - o.x, dy = p.y - o.y;
+    const d2 = dx*dx + dy*dy;
+    if (d2 < r2 && d2 < bestD2) { bestD2 = d2; best = o; }
+  }
+  return best;
+}
 
 cv.addEventListener('pointerdown', function(e) {
   if (!state.image) return;
   const p = mouseToImage(e);
   _grabbedNodeOnDown = false;
+  _grabbedItemOnDown = false;
 
   // === edit-points モード === (node drag より優先、まずアンカー、次に挿入)
   if (state.mode === 'edit-points') {
@@ -872,6 +934,30 @@ cv.addEventListener('pointerdown', function(e) {
       state.selectedNodeId = nodeHit.id;
       _wasNodeDragging = false;
       _grabbedNodeOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+    // === creature drag === (描画上はノードより上にいるので先に hit-test)
+    const creatureHit = findCreatureAt(p);
+    if (creatureHit) {
+      pushHistory();
+      state.draggingCreature = creatureHit;
+      _grabbedItemOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+    // === obstacle drag ===
+    const obstacleHit = findObstacleAt(p);
+    if (obstacleHit) {
+      pushHistory();
+      state.draggingObstacle = obstacleHit;
+      _grabbedItemOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       cv.style.cursor = 'grabbing';
       draw();
@@ -952,6 +1038,24 @@ cv.addEventListener('pointermove', function(e) {
   if (!state.image) return;
   const p = mouseToImage(e);
   state.hover = p;
+  // creature drag リアルタイム移動
+  if (state.draggingCreature) {
+    const cx = Math.max(0, Math.min(state.imgW, p.x));
+    const cy = Math.max(0, Math.min(state.imgH, p.y));
+    state.draggingCreature.x = cx;
+    state.draggingCreature.y = cy;
+    draw();
+    return;
+  }
+  // obstacle drag リアルタイム移動
+  if (state.draggingObstacle) {
+    const cx = Math.max(0, Math.min(state.imgW, p.x));
+    const cy = Math.max(0, Math.min(state.imgH, p.y));
+    state.draggingObstacle.x = cx;
+    state.draggingObstacle.y = cy;
+    draw();
+    return;
+  }
   // ノード drag リアルタイム移動 + 接続エッジの端点も追従
   if (state.draggingNode) {
     _wasNodeDragging = true;
@@ -994,6 +1098,24 @@ cv.addEventListener('pointermove', function(e) {
 });
 
 cv.addEventListener('pointerup', function(e) {
+  if (state.draggingCreature) {
+    state.draggingCreature = null;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = 'crosshair';
+    showBanner('お邪魔虫を移動しました');
+    scheduleAutoSave();
+    updateStatus();
+    return;
+  }
+  if (state.draggingObstacle) {
+    state.draggingObstacle = null;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = 'crosshair';
+    showBanner('障害物を移動しました');
+    scheduleAutoSave();
+    updateStatus();
+    return;
+  }
   if (state.draggingNode) {
     const wasMoving = _wasNodeDragging;
     state.draggingNode = null;
@@ -1333,8 +1455,8 @@ function showBanner(msg) {
 // ────────────────────────────────────────────────────────
 // History (undo)
 // ────────────────────────────────────────────────────────
-function pushHistory() {
-  state.history.push(JSON.stringify({
+function _snapshotJSON() {
+  return JSON.stringify({
     nodes: state.nodes,
     edges: state.edges,
     obstacles: state.obstacles,
@@ -1342,25 +1464,57 @@ function pushHistory() {
     nextStopId: state.nextStopId,
     nextCreatureId: state.nextCreatureId,
     edgeInProgress: state.edgeInProgress,
-  }));
+  });
+}
+function _applySnapshot(snap) {
+  state.nodes = snap.nodes;
+  state.edges = snap.edges;
+  state.obstacles = snap.obstacles || [];
+  state.creatures = snap.creatures || [];
+  state.nextStopId = snap.nextStopId;
+  state.nextCreatureId = snap.nextCreatureId || 1;
+  state.edgeInProgress = snap.edgeInProgress;
+  edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
+}
+function _updateRedoBtn() {
+  const rb = document.getElementById('redoBtn');
+  if (rb) rb.disabled = (state.redoStack.length === 0);
+}
+function pushHistory() {
+  state.history.push(_snapshotJSON());
   if (state.history.length > 50) state.history.shift();
+  // 新規操作のたびに redoStack をクリア (一般的な undo/redo 設計)
+  state.redoStack = [];
+  _updateRedoBtn();
 }
 
 document.getElementById('undoBtn').addEventListener('click', function() {
   if (state.history.length === 0) { showBanner('もう取り消せないよ'); return; }
+  // 現在の状態を redoStack に push (redo で戻れるように)
+  state.redoStack.push(_snapshotJSON());
+  if (state.redoStack.length > 50) state.redoStack.shift();
   const prev = JSON.parse(state.history.pop());
-  state.nodes = prev.nodes;
-  state.edges = prev.edges;
-  state.obstacles = prev.obstacles || [];
-  state.creatures = prev.creatures || [];
-  state.nextStopId = prev.nextStopId;
-  state.nextCreatureId = prev.nextCreatureId || 1;
-  state.edgeInProgress = prev.edgeInProgress;
-  edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
+  _applySnapshot(prev);
   draw();
   updateStatus();
-  showBanner('1ステップ取り消し');
+  _updateRedoBtn();
+  showBanner('取り消し: 1 ステップ');
 });
+
+document.getElementById('redoBtn').addEventListener('click', function() {
+  if (state.redoStack.length === 0) { showBanner('やり直せる操作はないよ'); return; }
+  // 現在の状態を history に push (undo で戻れるように)
+  state.history.push(_snapshotJSON());
+  if (state.history.length > 50) state.history.shift();
+  const next = JSON.parse(state.redoStack.pop());
+  _applySnapshot(next);
+  draw();
+  updateStatus();
+  _updateRedoBtn();
+  showBanner('やり直し: 1 ステップ');
+});
+// 初期状態で redoBtn を disabled に
+_updateRedoBtn();
 
 // ────────────────────────────────────────────────────────
 // Reset
