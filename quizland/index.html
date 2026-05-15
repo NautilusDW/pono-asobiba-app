@@ -28,9 +28,21 @@
    --------------------------------------------------------------
    このファイルは quizland/preview/full/index.html を視覚的土台と
    して採用する。 stage は 1600×900 (16:9) の固定キャンバスで、
-   safe-area は stage と同サイズ (画面比違いはレターボックス処理)。
+   safe-area は stage と同サイズ。
    端末サイズに合わせて transform: scale で常時 fit させる
    (preview/full の preview-mode を標準動作にしたもの)。
+
+   【レイアウト方針 — v1007 で確定】
+   - stage は常に 16:9 完全固定 (1600×900)。
+   - 内側 UI (grid / chip / character 等) は画面比で一切変えない。
+   - 画面比違いは 100% レターボックス余白のみで吸収する
+     (fitStage = Math.min(w/1600, h/900) で contain-fit、 余白は
+     .stage-wrap の背景画像 1 枚で覆う)。
+   - 16:10 / 14:9 / 4:3 / 5:4 のメディアクエリによる内側 UI 調整は
+     v1007 で全廃止 (saved-layout.json を !important で打ち消すブロック
+     を含む)。 「アスペクト比帯ごとに UI を変える」 設計は今後復活させない。
+   - ポートレート警告と ?fit=cover 退避路と OP シネマティック向け
+     min-aspect-ratio 系メディアクエリは温存。
 
    既存のゲームロジック (slim 版: questions/categories/render/audio/
    achievements 連携) はそのまま温存し、 IDs を preview/full の DOM に
@@ -2009,250 +2021,15 @@ body.layout-editor-on .character img {
   top: calc(max(12px, env(safe-area-inset-top)) + 140px) !important;
 }
 
-/* ===== Aspect-ratio defensive rules (iPad 4:3 / iPhone 19.5:9 etc.) =====
-   fitStage が Math.max (cover-fit) で stage を viewport 全体に広げるため、
-   16:9 より縦長の viewport では canvas の左右が画面外にクリップされる。
-   safe-area (16:9 / 1600×900) は canvas の中央にあり、--safe-w が visible
-   slice より広いと UI (hdr / answer-tray / character) が画面外に逃げてしまう。
-   visible slice (canvas-px) ≈ vw × canvas-h / vh なので、
-   各 max-aspect-ratio に対し safe-w を slice 内に収まるよう詰める。
-
-   16:9 (1.7778) viewport (1920×1080 等) は無調整のまま 1600px で OK。
-   iPhone 横持ち (19.5:9 ≈ 2.16) は visible slice ≈ 1951 → 余裕あり、無調整。 */
-@media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
-  /* 厳密に 16:9 より狭い (16:10 1920×1200 等の比較的近いもの)
-     visible slice ≈ 1440 canvas-px → safe-w 1400 は -40 buffer で OK */
-  /* hdr の 1fr 700px は a-col が安定しているのでそのまま、ただし 700px は
-     1400 の 50% で広すぎるので 600px に詰めて q-col に余裕を残す */
-  .hdr { grid-template-columns: 1fr 600px; }
-  .body { grid-template-columns: 1fr 600px; }
-  /* 16:10 帯でも .character img が center center だと顔が下に寄るので
-     14/9・4/3・5/4 と統一して center top で頭を視線レベルに固定 */
-  .character img { object-position: center top; }
-  .board { max-width: none !important; }
-}
-@media (orientation: landscape) and (max-aspect-ratio: 14/9) {
-  /* aspect ≤ 14/9 (1.555) の帯。1366×900 (≈1.518) や 14/9 直下のディスプレイなど。
-     iPad Pro 11" (1668×1194 ≈ 1.397) も 4/3 (1.333) より広いのでこのブランチに入る。
-     (1599/900 ブランチを抜けて来るので実質 1.333 < ratio ≦ 1.555 の帯)
-     typical viewport (例: 1366×900 / iPad Pro 11") では visible slice ≈ 1098-1257
-     canvas-px で safe-w 1080 は -18 〜 -177 buffer。ただし max-aspect-ratio:14/9
-     カスケードの実効最狭ケース (ratio = 14/9 ジャスト、例: 1400×900) では
-     visible slice = 1400×900/900 ≈ 1200 canvas-px なので safe-w 1080 は -120 buffer
-     確保される (cover-fit 後の canvas slice 計算: vw * 900/vh)。
-     iPad Pro 11" / Air 11" など 1.39 ≤ ratio < 1.45 帯では結果として 177px の
-     余白が出るが、レイアウト上は中央寄せで違和感なく追加 min-aspect-ratio 分岐は
-     導入しない (デザイン後退リスク回避)。 */
-  .hdr { grid-template-columns: 1fr 480px; }
-  .body { grid-template-columns: 1fr 480px; }
-  .hdr-right .ctrl-btn { width: 96px; height: 96px; font-size: 14px; }
-  .hdr-right .ctrl-btn .icon { font-size: 32px; }
-  .answer-tray { padding: 12px; }
-  .answer-panel { gap: 12px; }
-  .character { width: 160px; height: 180px; }
-  /* base .character img は object-fit:contain なのでクロップは起きないが、
-     縦長になった時 (160×180 → アスペクト 0.89) 顔が中央より下に寄ると
-     吹き出しと目線がずれるので center top 寄せで頭を視線レベルに固定 */
-  .character img { object-position: center top; }
-  /* 14:9 right pane 480px。 フクロウの吹き出しは下の .char-hint ルールで
-     元画像 AR (5:2) で固定済み。 ここでは font-size のみ明示。 */
-  .char-hint { font-size: 16px; }
-  /* 14:9 用: 解説/結果まわりの「詳細画面」も grid 準拠に縮める */
-  .q-text-card { font-size: 28px; padding: 18px 104px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
-  #q-text { font-size: 26px; }
-  /* 2026-05-07 修正(v795): chip / chip-illust-label を #q-text と同じ 26px に統一 */
-  .chip, .chip.has-image { font-size: 26px; }
-  .chip.chip-with-image .chip-illust-label { font-size: 26px; }
-  .trivia-pono-wrap { width: 320px !important; height: 200px !important; margin-top: 50px !important; }
-  .trivia-pono { width: 320px !important; height: 320px !important; }
-  .trivia-balloon { width: 150px !important; }
-  .emoji-main-img { max-width: 320px !important; max-height: 320px !important; }
-  .opposite-display { font-size: 72px !important; padding: 20px 40px !important; }
-  /* 14:9 帯では board が縮むので stage-pono も小さく (3 倍化) */
-  .stage-pono { width: 224px !important; height: 224px !important; left: 24px !important; bottom: 10px !important; }
-  .stage-pono-bubble { width: 270px !important; height: 108px !important; }
-  /* saved-layout.json の inline width/height/transform を打ち消し、
-     visible slice (1098 canvas-px) を超える要素を grid に従わせる。
-     transform は 0,0 にリセットして 16:9 想定の絶対オフセットを除去。 */
-  .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-left .owl-icon { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
-  .hdr-left .title-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
-  .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .q-text-card .audio { width: 70px !important; height: 70px !important; transform: translateY(-50%) !important; }
-  .board { width: auto !important; max-width: none !important; transform: translate(0, 0) !important; }
-  .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  /* セル幅 = (480 track - 2*5 border - 2*12 pad - 12 gap) / 2 = 217px → chip 208 で +10 buffer (subpixel rounding 対策) */
-  .chip { width: 208px !important; transform: translate(0, 0) !important; }
-  .chip .circle { width: 96px !important; height: 96px !important; transform: translate(0, 0) !important; }
-  .character { width: 160px !important; height: 180px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (14:9 帯では 260×104)
-     S4 修正: !important / max-* / transform を削除、 inline width/height/transform を活かす */
-  .char-hint {
-    width: 260px;
-    height: 104px; /* 260 * 793/1983 ≈ 104 */
-    aspect-ratio: 1983 / 793;
-  }
-}
-@media (orientation: landscape) and (max-aspect-ratio: 4/3) {
-  /* iPad 1024×768、iPad Pro 12.9 2048×1536 など真正 4:3
-     typical viewport (例: 1024×768) では visible slice ≈ 1097 canvas-px
-     で safe-w 1020 は -77 buffer。 max-aspect-ratio:4/3 カスケードの実効
-     最狭ケース (ratio = 4/3 ジャスト、例: 1200×900) では visible slice
-     = 1200×900/900 = 1125 canvas-px なので safe-w 1020 は -105 buffer 確保。 */
-  .hdr { grid-template-columns: 1fr 440px; }
-  .body { grid-template-columns: 1fr 440px; gap: 12px; }
-  .hdr-right .ctrl-btn { width: 88px; height: 88px; font-size: 13px; }
-  .hdr-right .ctrl-btn .icon { font-size: 28px; }
-  .hdr-right { gap: 8px; }
-  .q-text-card { font-size: 26px; padding: 18px 60px 18px 24px; min-height: 140px; max-width: calc(var(--safe-w) * 0.96); }
-  #q-text { font-size: 24px; }
-  .answer-tray { padding: 12px; }
-  .answer-panel { gap: 10px; }
-  /* 2026-05-07 修正(v795): #q-text 24px と揃えるため chip を 30→24px に変更
-     (このブランチでは #q-text=24px、 .q-text-card=26px)。 */
-  /* 2026-05-07 修正(C案): 4:3 で博士キャラ (180×200) と選択肢グリッドが圧迫し合う
-     問題を構造側で解消。 chip を 180→160 に縮小、 .answer-tray に max-height、
-     .bottom-right に min-height を入れて博士に専用エリアを確保。 */
-  .chip, .chip.has-image { height: 160px; font-size: 24px; }
-  .chip.chip-with-image .chip-illust-label { font-size: 24px; }
-  /* 2026-05-07 修正(v793): iPad 4:3 メディアクエリ内の size class 縮小も無効化。
-     グローバルで v792 に同じく無効化済みのため、 ここも揃える。
-     全 chip で base 統一、 折り返しで長文を吸収。 */
-  /* .chip.txt-medium { font-size: 22px; } */
-  /* .chip.txt-long { font-size: 18px; } */
-  .chip.chip-count { font-size: 48px; }
-  /* 4:3 right pane 440px = character(140) + gap(14) + char-hint(240×96 5:2) = 394px → 余裕あり
-     フクロウの吹き出しは元画像 AR (5:2) で固定 (4:3 帯では 240×96)
-     S4 修正: !important / max-* を削除、 inline width/height を活かす */
-  .char-hint {
-    width: 240px;
-    height: 96px; /* 240 * 793/1983 ≈ 96 */
-    aspect-ratio: 1983 / 793;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    font-size: 14px;
-    padding: 8px 14px;
-    box-sizing: border-box;
-  }
-  /* base .character img は object-fit:contain なのでクロップは起きないが、
-     140×158 (アスペクト 0.886) で顔位置を上寄せに固定し吹き出しと目線を揃える */
-  .character img { object-position: center top; }
-  /* 4:3 用 詳細画面 (showDetailDialogue で同じ吹き出しに長文が入る) と
-     trivia-display (Pono ダンス + balloon)、emoji/opposite 出題画面を
-     visible slice (1097 canvas-px) と board (440px 高) に収める */
-  .trivia-pono-wrap { width: 280px !important; height: 180px !important; margin-top: 40px !important; }
-  .trivia-pono { width: 280px !important; height: 280px !important; }
-  .trivia-balloon { width: 130px !important; top: -6px !important; right: 6% !important; }
-  .emoji-main-img { max-width: 280px !important; max-height: 280px !important; }
-  .opposite-display { font-size: 64px !important; padding: 18px 36px !important; }
-  /* 4:3 帯では更に控えめサイズで (3 倍化) */
-  .stage-pono { width: 196px !important; height: 196px !important; left: 20px !important; bottom: 8px !important; }
-  .stage-pono-bubble { width: 240px !important; height: 96px !important; }
-  /* ─────────────────────────────────────────────────────────
-     saved-layout.json は 16:9 (1600 canvas-px) 想定で width/height と
-     transform: translate(tx, ty) を inline で書き込んでいる。
-     visible slice が 1097 canvas-px に縮んだ 4:3 では、saved 値 (例:
-     .hdr-left 979px / .q-text-card 971px / .board 999px / .answer-tray
-     ty=169 / .character ty=-566) が grid トラックを破って横切れ・文字
-     ずれを起こすので、当該プロパティを !important で打ち消し、grid と
-     CSS の縮小値を効かせる。 transform は translate(0, 0) で 16:9 用の
-     絶対オフセットを完全に除去 (audio ボタンだけは absolute centering の
-     translateY(-50%) を維持)。
-     ───────────────────────────────────────────────────────── */
-  .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-left .owl-icon { width: 88px !important; height: 88px !important; transform: translate(0, 0) !important; }
-  .hdr-left .title-card {
-    width: auto !important;
-    height: auto !important;
-    transform: translate(0, 0) !important;
-    /* 2026-05-08 fix: 4:3 で saved-layout の width が打ち消されて自然幅で小さく見える問題 */
-    font-size: 22px !important;
-    min-width: 320px !important;
-    padding: 8px 18px !important;
-  }
-  .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 18px !important; padding: 4px 14px !important; }
-  .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
-  .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .q-text-card .audio { width: 64px !important; height: 64px !important; transform: translateY(-50%) !important; right: 14px !important; }
-  .board { width: auto !important; max-width: none !important; height: 440px !important; transform: translate(0, 0) !important; }
-  /* C案: max-height でトレイの伸びを抑え、 余白を .bottom-right (博士) に回す。
-     計算: chip 160×2 + gap 10 + pad 12×2 + border 5×2 = 354px → 340 で snug 抑制 */
-  .answer-tray { width: auto !important; height: auto !important; max-height: 340px !important; transform: translate(0, 0) !important; }
-  /* セル幅 = (440 track - 2*5 border - 2*12 pad - 10 gap) / 2 = 198px → chip 188 で +20 buffer (iPad 1024x768 で右列切れ対策) */
-  .chip { width: 188px !important; transform: translate(0, 0) !important; }
-  .chip .circle { width: 90px !important; height: 90px !important; transform: translate(0, 0) !important; }
-  .character { width: 180px !important; height: 200px !important; transform: translate(0, 0) !important; }
-  /* 博士 (180×200) の専用エリア。 character flex:0 0 auto で 200px は確保されるが、
-     min-height で視覚的にも明確な領域を与えて上の tray と分離する */
-  .bottom-right { min-height: 100px !important; }
-  /* フクロウの吹き出しは元画像 AR (5:2) で固定。 4:3 帯の上書きは上の .char-hint
-     ルールで既に適用済み。
-     S4 修正: !important / max-* / transform を削除、 inline width/height/transform を活かす */
-  .char-hint {
-    width: 240px;
-    height: 96px;
-    aspect-ratio: 1983 / 793;
-  }
-}
-@media (orientation: landscape) and (max-aspect-ratio: 5/4) {
-  /* 1280×1024 等、超 4:3。
-     typical viewport (例: 1280×1024) では visible slice ≈ 1125 canvas-px (1280×900/1024)
-     で safe-w 980 は -145 buffer。 max-aspect-ratio:5/4 カスケードの実効最狭ケース
-     (ratio = 5/4 ジャスト、例: 1125×900) でも visible slice = 1125 canvas-px なので
-     safe-w 980 は同じく -145 buffer 確保。 */
-  .hdr { grid-template-columns: 1fr 420px; }
-  .body { grid-template-columns: 1fr 420px; }
-  .hdr-right .ctrl-btn { width: 84px; height: 84px; font-size: 12px; }
-  .hdr-right .ctrl-btn .icon { font-size: 26px; }
-  .q-text-card { font-size: 24px; padding: 16px 56px 16px 22px; min-height: 130px; max-width: calc(var(--safe-w) * 0.96); }
-  /* base .character img は object-fit:contain なのでクロップは起きないが、
-     130×146 (アスペクト 0.890) で顔位置を上寄せに固定 */
-  .character img { object-position: center top; }
-  /* 5:4 用 詳細画面 (吹き出し長文) と trivia-display + emoji/opposite を更に詰める */
-  .trivia-pono-wrap { width: 240px !important; height: 156px !important; margin-top: 32px !important; }
-  .trivia-pono { width: 240px !important; height: 240px !important; }
-  .trivia-balloon { width: 116px !important; top: -4px !important; right: 4% !important; }
-  .emoji-main-img { max-width: 240px !important; max-height: 240px !important; }
-  .opposite-display { font-size: 56px !important; padding: 14px 28px !important; }
-  /* 5:4 帯は最も狭い、 stage-pono を最小サイズに (3 倍化) */
-  .stage-pono { width: 168px !important; height: 168px !important; left: 16px !important; bottom: 6px !important; }
-  .stage-pono-bubble { width: 200px !important; height: 80px !important; }
-  /* 5:4 は 4:3 より更に狭いので 4:3 と同じ inline 打ち消しを継承する */
-  .hdr-left { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-left .owl-icon { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
-  .hdr-left .title-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 15px !important; }
-  .hdr-left .progress-num { width: auto !important; height: auto !important; transform: translate(0, 0) !important; font-size: 17px !important; }
-  .hdr-left .dots { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .hdr-right .ctrl-btn { transform: translate(0, 0) !important; }
-  .q-text-card { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  #q-text { width: auto !important; height: auto !important; transform: translate(0, 0) !important; }
-  .q-text-card .audio { width: 60px !important; height: 60px !important; transform: translateY(-50%) !important; right: 12px !important; }
-  .board { width: auto !important; max-width: none !important; height: 420px !important; transform: translate(0, 0) !important; }
-  .answer-tray { width: auto !important; height: auto !important; transform: translate(0, 0) !important; padding: 10px !important; }
-  .answer-panel { gap: 8px !important; }
-  /* 2026-05-07 修正(v795): #q-text 24px (継承) と揃えるため 28→24px に変更 */
-  .chip, .chip.has-image { width: 182px !important; height: 170px !important; font-size: 24px !important; transform: translate(0, 0) !important; }
-  .chip.chip-with-image .chip-illust-label { font-size: 24px !important; }
-  .chip.chip-count { font-size: 44px !important; }
-  .chip .circle { width: 84px !important; height: 84px !important; transform: translate(0, 0) !important; }
-  .character { width: 130px !important; height: 146px !important; transform: translate(0, 0) !important; }
-  /* フクロウの吹き出しは元画像 AR (5:2) で固定 (5:4 帯では 220×88)
-     S4 修正: !important / max-* / transform を削除、 inline width/height/transform を活かす */
-  .char-hint {
-    width: 220px;
-    height: 88px; /* 220 * 793/1983 ≈ 88 */
-    aspect-ratio: 1983 / 793;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    font-size: 13px !important;
-  }
-}
+/* ===== Aspect-ratio defensive rules — v1007 で全廃 =====
+   かつて 16:10 / 14:9 / 4:3 / 5:4 の 4 帯メディアクエリで内側 UI
+   (grid 列幅 / chip width / character サイズ / saved-layout 打ち消し等) を
+   調整していたが、 v1007 で **16:9 完全固定 + 100% レターボックス余白** 方針
+   に統一したため、 該当ブロックは全削除した。
+   - 画面比違いは fitStage の Math.min で contain-fit し、 余白は .stage-wrap
+     の背景画像 1 枚で埋める (v1001 設計)。
+   - 内側 UI を画面比で変えない設計は今後も維持する。 復活させない。
+   詳細は memory/feature_quizland_contain_fit.md 参照。 */
 
 /* ===== デバッグ全問プレイモード (?debug=all) =====
    通常ユーザーには絶対見えない。 body.debug-mode が付いたときのみ表示。
@@ -3878,22 +3655,8 @@ function fitStage() {
   const stageW = parseFloat(getComputedStyle(stageEl).width);
   const stageH = parseFloat(getComputedStyle(stageEl).height);
   if (!stageW || !stageH) return;
-  // aspect class toggle: viewport 比率に応じて body にクラスを付け、
-  // Team-1/2 のメディアクエリより細かい上書きを将来できる保険ルートを提供。
-  // 1.55 を境に narrow (< 1.55, 4:3～5:4 寄り) / wide (>= 1.55, 16:9 寄り) を分ける。
-  const aspect = h > 0 ? (w / h) : 0;
-  const _body = document.body;
-  if (_body) {
-    if (aspect > 0 && aspect < 1.55) {
-      _body.classList.add('aspect-narrow');
-      _body.classList.remove('aspect-wide');
-    } else {
-      _body.classList.add('aspect-wide');
-      _body.classList.remove('aspect-narrow');
-    }
-  }
-  // fit-mode: cover (Math.max, デフォルト) は片軸ぴったりでもう片方を clip。
-  //           contain (Math.min) は両軸が viewport 内に収まり、余白に黒帯が出る。
+  // fit-mode: contain (Math.min, v1007 デフォルト) は両軸が viewport 内に収まり余白に黒帯。
+  //           cover (Math.max, ?fit=cover 退避路) は片軸ぴったりでもう片方を clip。
   const cs = getComputedStyle(document.documentElement);
   const safeW = parseFloat(cs.getPropertyValue('--safe-w')) || stageW;
   const scale = (QZ_FIT_MODE === 'contain')

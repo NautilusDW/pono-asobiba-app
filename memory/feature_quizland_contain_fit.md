@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-contain-fit-default
-description: quizland の fitStage を cover→contain 化 + stage を 16:9 (1600×900) 化 + safe-area = stage 同一化 + メディアクエリの --safe-w 動的縮小を全廃 + .stage 背景削除で stage-wrap 背景 1 枚に統一 (2026-05-14〜15, sw v993→v1001)。画面比違いは全部レターボックスで吸収、 stage 内外の継ぎ目=帯も解消
+description: quizland の fitStage を cover→contain 化 + stage を 16:9 (1600×900) 化 + safe-area = stage 同一化 + メディアクエリの --safe-w 動的縮小を全廃 + .stage 背景削除で stage-wrap 背景 1 枚に統一 + 4 帯メディアクエリ (16:10/14:9/4:3/5:4) を完全撤去で内側 UI も画面比不変 (2026-05-14〜15, sw v993→v1007)。画面比違いは全部レターボックスで吸収、 stage 内外の継ぎ目=帯も解消、 内側 UI の段階的変形も完全消滅
 metadata:
   type: feature
 ---
 
-# quizland 16:9 stage + 完全レターボックス + 継ぎ目=帯解消 (sw v1001, 2026-05-14〜15)
+# quizland 16:9 stage + 完全レターボックス + 継ぎ目=帯解消 (sw v1007, 2026-05-14〜15)
 
 ## なに
 
@@ -166,4 +166,40 @@ v993 時点で `.stage-wrap` (画面全体) と `.stage` (transform 後の 16:9 
 
 ### 教訓
 **同じ画像を 2 重貼りすると、 スケール差で継ぎ目が見える**。 これは「stage と stage-wrap で同じ絵を使う」設計の落とし穴。 1 枚に統一するか、 完全に異なる画像を使うかのどちらか。 中間 (同じ画像で違うスケール) は避ける。
+
+## v1007 (2026-05-15、 4 帯メディアクエリ完全撤去で内側 UI も画面比不変化)
+
+### 残課題発見
+v1000-v1001 で stage scale は 16:9 contain-fit になっていたが、 ユーザーが「クイズが今でもレスポンシブ的な動きをしている」と報告。 調査の結果、 fitStage は v1000 以降で純粋な 16:9 contain-fit になっていたが、 内側 UI が 4 帯メディアクエリ (16:10 / 14:9 / 4:3 / 5:4) で段階的に変形していたのが「レスポンシブ症状」の正体だった。 具体的には `.hdr / .body { grid-template-columns: ... }` の grid 列幅、 `.chip { width: Npx !important }` の chip 強制サイズ、 `.character` 各種が画面比ごとに変わっていた。
+
+ユーザーに撤去範囲を確認 →「4 帯すべて撤去 (内側 UI も画面比で一切変えない)」で方針確定。
+
+### v1007 の変更
+- 4 帯 `@media (orientation: landscape) and (max-aspect-ratio:)` ブロック (16:10 / 14:9 / 4:3 / 5:4) を **丸ごと撤去** (244 行削除 → コメントブロック 12 行に置換、 純減 -223 行)
+- 撤去対象は `.hdr / .body { grid-template-columns: ... }` の画面比別 grid 列幅、 `.chip { width: Npx !important }` の chip 強制サイズ、 `.character` 各種すべて含む
+- 4:3 帯にあった saved-layout.json の値を `!important` で打ち消すブロックも同時撤去
+- fitStage 関数内の `aspect-narrow` / `aspect-wide` クラス付与ロジック (4 行) も削除 (対応 CSS が消えてデッドコードになっていたため)
+- sw CACHE_VERSION 1006 → 1007 bump
+- `saved-layout.json` は **完全無変更** (AGENTS.md §3 厳守)
+
+### 完成した挙動
+- stage は完全に 16:9 (1600×900) 固定
+- 画面比違いは 100% レターボックスで吸収
+- 内側 UI (grid / chip / character) は画面比で一切変わらない (4 帯ごとの段階的変形は完全消滅)
+
+### 副作用 (構造的に発生する仕様)
+- 4:3 デバイス (iPad 1024×768) では scale=0.64 で UI 全体が相対的に小さくなる
+- 16:10 / 14:9 などの「ほぼ 16:9」帯では saved-layout の grid 設計 (16:9 想定) のまま contain-fit で表示される
+- 切れ / はみ出し / 押せないボタン等の機能破綻は構造上発生しない (= 仕様の必然)
+
+### 温存
+- `?fit=cover` URL クエリ / `localStorage.pono_fit_mode='cover'` 退避路
+- 縦持ち警告 (`@media (orientation: portrait)` の `.landscape-notice`)
+- OP シネマティック専用 `@media (min-aspect-ratio: 85/100|14/10|19/10)` クエリ
+- saved-layout.json (AGENTS.md §3 厳守、 完全無変更)
+
+### 教訓 (今回の最重要)
+- **「stage scale = 16:9」 ≠ 「内側 UI も画面比不変」**。 v998-v1001 でユーザーは「stage が 16:9 になった」のに「クイズがまだレスポンシブ」と感じていた。 これは内側 UI (grid / chip / character) のメディアクエリが残っていたため。 「16:9 固定」を本当に意味通り実現するには、 stage scale だけでなく内側 UI のメディアクエリも全撤去が必要だった
+- **「視認性のための温存」は二重の正解を持つ罠**。 v1000 で「4 帯の grid / chip サイズ調整は視認性のため温存」と判断したが、 ユーザーの「常に 16:9」要求は「視認性より一貫性優先」だった。 仕様判断はユーザーに確認するのが正解
+- **デッドコードは派生して残る**。 4 帯メディアクエリを消したとき、 fitStage 内の `aspect-narrow` / `aspect-wide` クラス付与は対応 CSS を失ってデッドコードになった。 クロスレビューで指摘されて発見
 
