@@ -3192,6 +3192,9 @@ function loadProject(obj) {
     syncPropsFromFrame();
     // 読み込み時はマスク選択をクリア (= 古いプロジェクトの選択が残らないように)
     if (typeof _selectedMaskRef !== 'undefined') _selectedMaskRef = null;
+    // 別プロジェクトへの誤貼り付け防止: クリップボードもクリア
+    if (typeof _maskClipboard !== 'undefined') _maskClipboard = null;
+    if (typeof _clipboard !== 'undefined') _clipboard = null;
     if (typeof renderMaskUnifiedList === 'function') renderMaskUnifiedList();
     if (typeof renderSelectedMaskPane === 'function') renderSelectedMaskPane();
     // Reset undo history to this freshly-loaded project state.
@@ -3540,8 +3543,98 @@ $('btn-save-to-stock').addEventListener('click', saveCurrentToStock);
 // the end of the timeline so it can be repeatedly pasted.
 let _clipboard = null;
 
+// ─── Mask clipboard (in-memory only; lost on reload) ────────────────────
+// 別アニメに同じマスクを使い回すための一時保管。 単一マスクのコピーから着手するが、
+// 将来複数マスクの一括コピー&貼り付けに拡張できるよう items 配列で持つ。
+// items: [{ scope: 'frame'|'global', rect: { x, y, w, h, rotation } }, ...]
+// copiedAt: Date.now() — デバッグ用 (現状ロジックでは未使用)
+let _maskClipboard = null;
+
+// Helper: 現在 _selectedMaskRef が指している rect を取り出して deep-clone した状態で
+// _maskClipboard に格納する。 ref が陳腐化していたら false を返す。
+function copySelectedMaskToClipboard() {
+  if (!_selectedMaskRef) return false;
+  const got = _getSelectedMaskRectRef();
+  if (!got) return false;
+  const r = got.rect;
+  const rectCopy = {
+    x: r.x, y: r.y, w: r.w, h: r.h,
+    rotation: r.rotation || 0,
+  };
+  _maskClipboard = {
+    items: [{
+      scope: _selectedMaskRef.type === 'global' ? 'global' : 'frame',
+      rect: rectCopy,
+    }],
+    copiedAt: Date.now(),
+  };
+  // 「最後にコピーしたものを優先」 のメンタルモデル統一: フレーム CB をクリア
+  _clipboard = null;
+  return true;
+}
+
+// Helper: _maskClipboard の内容をアクティブアニメに貼り付ける。
+// scope='global' → activeAnim().globalMaskRects.push
+// scope='frame'  → 現在選択中フレームの maskRects.push (フレーム未選択時は alert)
+// 各マスクに新しい id を振り直す。 座標はそのまま (上書きで見えにくいので +8px オフセット)。
+// 挿入したマスクを最後に選択状態にする。 true 返却なら成功、 false なら失敗 (alert 済 or 空)。
+function pasteMaskFromClipboard() {
+  if (!_maskClipboard || !Array.isArray(_maskClipboard.items) || _maskClipboard.items.length === 0) {
+    return false;
+  }
+  const a = activeAnim();
+  if (!a) return false;
+  // 「frame スコープを貼り付けようとしているがフレーム未選択」 を最初に検知
+  const hasFrameItem = _maskClipboard.items.some(it => it && it.scope === 'frame');
+  const selFrame = getSelectedFrame();
+  if (hasFrameItem && !selFrame) {
+    alert('フレームを選択してから貼り付けてください');
+    return false;
+  }
+  let lastRef = null;
+  _maskClipboard.items.forEach(it => {
+    if (!it || !it.rect) return;
+    const newRect = makeMaskRect(
+      (it.rect.x || 0) + 8,
+      (it.rect.y || 0) + 8,
+      Math.max(4, it.rect.w || 0),
+      Math.max(4, it.rect.h || 0),
+      it.rect.rotation || 0
+    );
+    if (it.scope === 'global') {
+      if (!Array.isArray(a.globalMaskRects)) a.globalMaskRects = [];
+      a.globalMaskRects.push(newRect);
+      lastRef = { type: 'global', idx: a.globalMaskRects.length - 1 };
+    } else {
+      // frame スコープ
+      if (!selFrame.maskRects) selFrame.maskRects = [];
+      selFrame.maskRects.push(newRect);
+      lastRef = { type: 'frame', frameId: selFrame.id, idx: selFrame.maskRects.length - 1 };
+    }
+  });
+  if (lastRef) _selectedMaskRef = lastRef;
+  renderStage();
+  renderOverlay();
+  renderStripActive();
+  renderMaskUnifiedList();
+  renderSelectedMaskPane();
+  markDirty();
+  snapshotForUndo('マスク貼り付け');
+  return true;
+}
+
+// keydown ハンドラ内で「入力フィールドにフォーカス中なら通常動作を温存して早期 return」
+// するための共通判定。 input / textarea / contenteditable をカバー。
+function _isEditableTarget(t) {
+  if (!t) return false;
+  const tag = t.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (t.isContentEditable) return true;
+  return false;
+}
+
 window.addEventListener('keydown', e => {
-  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  if (_isEditableTarget(e.target)) return;
 
   // Delete / Backspace : 選択中マスク矩形を削除 (= Alt+click で選択した矩形)。
   // モディファイア (Ctrl/Cmd/Alt) なしの素の Delete のみ反応 (= 他ショートカットと干渉防止)。
@@ -3599,18 +3692,39 @@ window.addEventListener('keydown', e => {
     return;
   }
 
-  // Ctrl/Cmd + C : copy selected frame to clipboard
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+  // Ctrl/Cmd + C : マスク選択中ならマスクコピー、 そうでなければフレームコピーへフォールバック。
+  // input/textarea/contenteditable はハンドラ冒頭で早期 return 済 — ここに到達した時点で
+  // ユーザーは通常のテキストコピー対象に居ない。
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C') && !e.shiftKey && !e.altKey) {
+    if (_selectedMaskRef) {
+      if (copySelectedMaskToClipboard()) {
+        e.preventDefault();
+        toast('🎭 マスクをコピーしました');
+      }
+      return;
+    }
     const f = getSelectedFrame();
     if (f) {
       _clipboard = JSON.parse(JSON.stringify(f));
+      _maskClipboard = null;
       e.preventDefault();
       toast('📋 コピー');
     }
     return;
   }
-  // Ctrl/Cmd + V : paste clipboard frame to end of timeline
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+  // Ctrl/Cmd + V : マスククリップボードが空でなければマスク貼り付けを優先、
+  // 空 (= 一度もマスクをコピーしていない) ならフレームクリップボードに fall back。
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V') && !e.shiftKey && !e.altKey) {
+    if (_maskClipboard && _maskClipboard.items && _maskClipboard.items.length > 0) {
+      if (pasteMaskFromClipboard()) {
+        e.preventDefault();
+        toast('🎭 マスクを貼り付け');
+      } else {
+        // alert ですでにフィードバック済 (フレーム未選択など)。 preventDefault しておく。
+        e.preventDefault();
+      }
+      return;
+    }
     if (_clipboard) {
       const copy = JSON.parse(JSON.stringify(_clipboard));
       copy.id = uid('f');
@@ -3779,6 +3893,28 @@ function renderMaskUnifiedList() {
     }
     label.textContent = `${scopeLabel}  ${Math.round(entry.rect.w)}×${Math.round(entry.rect.h)}${rotStr}`;
     label.title = `(${Math.round(entry.rect.x)}, ${Math.round(entry.rect.y)}) ${Math.round(entry.rect.w)}×${Math.round(entry.rect.h)}${rotStr}`;
+    // 📋 コピー ボタン: そのマスクを _maskClipboard に詰める (Ctrl+C と同じ処理)。
+    // 別アニメに切り替えてから Ctrl+V / ⌘+V or 同等の UI で貼り付けて使い回す前提。
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'mask-scope-toggle';
+    copyBtn.textContent = '📋 コピー';
+    copyBtn.title = 'このマスクをコピー (別アニメに貼り付け可)';
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // 行のマスクをいったん選択してからコピー処理を共通化。 失敗時は ref を巻き戻す。
+      const prevRef = _selectedMaskRef;
+      _selectedMaskRef = entry.type === 'global'
+        ? { type: 'global', idx: entry.idx }
+        : { type: 'frame', frameId: entry.frameId, idx: entry.idx };
+      if (copySelectedMaskToClipboard()) {
+        renderMaskUnifiedList();
+        renderSelectedMaskPane();
+        renderOverlay();
+        toast('🎭 マスクをコピーしました');
+      } else {
+        _selectedMaskRef = prevRef;
+      }
+    });
     const scope = document.createElement('button');
     scope.className = 'mask-scope-toggle';
     scope.textContent = entry.type === 'global' ? '→個別' : '→共通';
@@ -3799,6 +3935,7 @@ function renderMaskUnifiedList() {
     });
     row.appendChild(chip);
     row.appendChild(label);
+    row.appendChild(copyBtn);
     row.appendChild(scope);
     row.appendChild(del);
     row.addEventListener('click', () => {
