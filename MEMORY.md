@@ -131,6 +131,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-15T01:18:54Z - maze-editor 移動ツール (mode='move') 追加: あらゆるオブジェクト (node/creature/obstacle) をモード切替なしで drag できる専用モード。 hit-test は既存 generic パスと同じ creature→obstacle→node の順 (描画上層を優先)、 click は早期 return で新規配置抑止、 カーソルは move/grab/grabbing で UX 整備。 既存個別モードの drag は温存
+- **タスク**: maze-editor 移動ツール (mode='move') 追加: あらゆるオブジェクト (node/creature/obstacle) をモード切替なしで drag できる専用モード。 hit-test は既存 generic パスと同じ creature→obstacle→node の順 (描画上層を優先)、 click は早期 return で新規配置抑止、 カーソルは move/grab/grabbing で UX 整備。 既存個別モードの drag は温存
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 92
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 46, "ToolSearch": 1, "Bash": 29, "Grep": 6, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-15T00:16:47Z - maze-editor move モード hit-test 順序を generic パスと揃える (creature→obstacle→node)
+- **タスク**: maze-editor move モード hit-test 順序を generic パスと揃える (creature→obstacle→node)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 90
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 46, "ToolSearch": 1, "Bash": 27, "Grep": 6, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-15T00:12:46Z - maze-editor.html に移動モード追加 (node/creature/obstacle 区別なく drag)
+- **タスク**: maze-editor.html に移動モード追加 (node/creature/obstacle 区別なく drag)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 87
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 9, "Agent": 43, "ToolSearch": 1, "Bash": 27, "Grep": 6, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-14T22:47:19Z - maze-editor: obstacle/creature drag 機能追加 (hit-test 半径は描画と一致、 _grabbedItemOnDown で click 抑止) + redo 機能 (state.redoStack + _snapshotJSON/_applySnapshot 共通ヘルパ + redoBtn UI) + Ctrl+Z/Y/Shift+Z ショートカット (IME ガード優先で input 内では無効化、 Escape の IME ガード順序バグも併せて修正)
 - **タスク**: maze-editor: obstacle/creature drag 機能追加 (hit-test 半径は描画と一致、 _grabbedItemOnDown で click 抑止) + redo 機能 (state.redoStack + _snapshotJSON/_applySnapshot 共通ヘルパ + redoBtn UI) + Ctrl+Z/Y/Shift+Z ショートカット (IME ガード優先で input 内では無効化、 Escape の IME ガード順序バグも併せて修正)
 - **結果**: 成功
@@ -206,45 +245,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 10, "Agent": 27, "ToolSearch": 2, "Bash": 56, "Write": 1, "Edit": 15, "Grep": 4, "WebSearch": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T22:22:09Z - quizland: stage 21:9→16:9 化 + 完全レターボックス + 継ぎ目=帯解消 (v993→v1001、 4 帯メディアクエリ整理 + .stage 背景削除で stage-wrap 1 枚に統一)、 実機 iPad mini 8.3" でベスト表示確認
-- **タスク**: quizland: stage 21:9→16:9 化 + 完全レターボックス + 継ぎ目=帯解消 (v993→v1001、 4 帯メディアクエリ整理 + .stage 背景削除で stage-wrap 1 枚に統一)、 実機 iPad mini 8.3" でベスト表示確認
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 120
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 10, "Agent": 27, "ToolSearch": 2, "Bash": 56, "Write": 1, "Edit": 15, "Grep": 4, "WebSearch": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T15:18:20Z - .stage の background を削除して .stage-wrap の背景画像 1 枚で画面全体を覆い、stage 帯の継ぎ目を物理的に消す + sw.js CACHE_VERSION 1000→1001
-- **タスク**: .stage の background を削除して .stage-wrap の背景画像 1 枚で画面全体を覆い、stage 帯の継ぎ目を物理的に消す + sw.js CACHE_VERSION 1000→1001
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 113
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 9, "Agent": 27, "ToolSearch": 2, "Bash": 53, "Write": 1, "Edit": 12, "Grep": 4, "WebSearch": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-14T14:55:55Z - memory化: maze ラフ→エディタ シームレス handoff + radius slider + edges 削除 + gh proxy 日本語対応 + PNG インポート を memory/feature_maze_rough_to_editor_workflow.md に集約 + MEMORY.md + 関連memoryクロスリンク
-- **タスク**: memory化: maze ラフ→エディタ シームレス handoff + radius slider + edges 削除 + gh proxy 日本語対応 + PNG インポート を memory/feature_maze_rough_to_editor_workflow.md に集約 + MEMORY.md + 関連memoryクロスリンク
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 111
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 26, "ToolSearch": 2, "Bash": 53, "Write": 1, "Edit": 12, "Grep": 4, "WebSearch": 5}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
