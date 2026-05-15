@@ -236,6 +236,7 @@ html, body { height: 100vh; overflow: hidden;
       <button class="mode-btn" data-mode="stop">⚪ 中継</button>
       <button class="mode-btn" data-mode="edge">📏 道を描く</button>
       <button class="mode-btn" data-mode="edit-points" style="background:#1f3a5a; color:#cef;">✏️ ポイント編集</button>
+      <button class="mode-btn" data-mode="move" style="background:#1f3a3a; color:#9ee;">✋ 移動</button>
       <button class="mode-btn" data-mode="obstacle" style="background:#3a2c1a; color:#fc8;">🌳 障害物</button>
       <button class="mode-btn" data-mode="creature" style="background:#2c3a1a; color:#cf8;">🐛 お邪魔虫</button>
       <button class="mode-btn" data-mode="delete" style="background: #5a3030; color: #fcc;">🗑 削除</button>
@@ -325,6 +326,7 @@ html, body { height: 100vh; overflow: hidden;
         <li>「スタート」「ゴール」モードで位置を 1 つずつ置く</li>
         <li>「中継」モードで分岐や角に置く</li>
         <li>「道を描く」モードで、<b>ノード A</b> をクリック → カーブの形を決めるアンカー点を順にクリック → <b>ノード B</b> をクリックして完成</li>
+        <li><b>「✋ 移動」モード:</b> ノード・障害物・お邪魔虫をドラッグで動かす (新規配置なし)</li>
         <li><b>「▶ 迷路で試す」</b> ボタンで<b>すぐ試遊</b> (デプロイ不要、sessionStorage 経由)</li>
         <li>OK なら「💾 JSON ダウンロード」→ <code style="color:#A4C76D">maze/imageStages/&lt;name&gt;.json</code> に配置 + 画像コピー → コミットで本番反映</li>
       </ol>
@@ -429,6 +431,8 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     // Toggle sub-rows
     document.getElementById('obstacleKindRow').style.display = state.mode === 'obstacle' ? 'flex' : 'none';
     document.getElementById('creatureKindRow').style.display = state.mode === 'creature' ? 'flex' : 'none';
+    // 移動モードに切り替えた瞬間のカーソルを 'move' にプリセット (pointermove で grab/grabbing に上書きされる)
+    if (cv) cv.style.cursor = (state.mode === 'move') ? 'move' : 'crosshair';
     showBanner('モード: ' + btn.textContent.trim());
     draw();
   });
@@ -729,6 +733,14 @@ cv.addEventListener('click', function(e) {
   if (!state.image) return;
   // In edit-points mode, click does nothing — drag is the action (pointer events)
   if (state.mode === 'edit-points') return;
+  // In move mode, click does nothing either — drag-only mode (no new placement)
+  if (state.mode === 'move') {
+    // フラグもクリアしておく (掴んでいなかったケースでも次のクリックに影響させない)
+    _grabbedNodeOnDown = false;
+    _grabbedItemOnDown = false;
+    _wasNodeDragging = false;
+    return;
+  }
   // pointerdown でノードを掴んだ場合は click を完全にスキップ (drag 移動の有無を問わず)
   // → 中継ノードを掴んだだけで「新規配置」が発動するバグを防ぐ
   if (_grabbedNodeOnDown) { _grabbedNodeOnDown = false; _wasNodeDragging = false; return; }
@@ -924,6 +936,50 @@ cv.addEventListener('pointerdown', function(e) {
     return;
   }
 
+  // === move モード === (node / creature / obstacle を区別なく drag。新規配置なし)
+  // hit-test 順序は既存 generic パス (下記 line 983 付近) と揃える: creature → obstacle → node
+  // (描画上 creature がノードより上にいるため先に hit-test)
+  if (state.mode === 'move') {
+    const creatureHit = findCreatureAt(p);
+    if (creatureHit) {
+      pushHistory();
+      state.draggingCreature = creatureHit;
+      _grabbedItemOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+    const obstacleHit = findObstacleAt(p);
+    if (obstacleHit) {
+      pushHistory();
+      state.draggingObstacle = obstacleHit;
+      _grabbedItemOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+    const nodeHit = findNodeAt(p);
+    if (nodeHit) {
+      pushHistory();
+      state.draggingNode = nodeHit;
+      state.selectedNodeId = nodeHit.id;
+      _wasNodeDragging = false;
+      _grabbedNodeOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+    // move モードで何も hit しなければ何もしない (選択解除のみ)
+    if (state.selectedNodeId) { state.selectedNodeId = null; draw(); }
+    return;
+  }
+
   // === ノード drag === (他モード)
   // edge モード中はノード click を handleEdgeClick に通すため drag に入らない
   if (state.mode !== 'delete' && state.mode !== 'edge') {
@@ -1094,14 +1150,22 @@ cv.addEventListener('pointermove', function(e) {
     state.hoveringNodeId = newHoverId;
     draw();
   }
-  cv.style.cursor = hovered ? 'grab' : 'crosshair';
+  if (state.mode === 'move') {
+    // 移動モード: node / creature / obstacle のいずれかに hover していれば 'grab'、そうでなければ 'move'
+    const overGrabbable = hovered || findCreatureAt(p) || findObstacleAt(p);
+    cv.style.cursor = overGrabbable ? 'grab' : 'move';
+  } else {
+    cv.style.cursor = hovered ? 'grab' : 'crosshair';
+  }
 });
 
 cv.addEventListener('pointerup', function(e) {
+  // 移動モードでは drag 終了後のカーソルは 'move' に戻す (それ以外は 'crosshair')
+  const restCursor = (state.mode === 'move') ? 'move' : 'crosshair';
   if (state.draggingCreature) {
     state.draggingCreature = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
-    cv.style.cursor = 'crosshair';
+    cv.style.cursor = restCursor;
     showBanner('お邪魔虫を移動しました');
     scheduleAutoSave();
     updateStatus();
@@ -1110,7 +1174,7 @@ cv.addEventListener('pointerup', function(e) {
   if (state.draggingObstacle) {
     state.draggingObstacle = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
-    cv.style.cursor = 'crosshair';
+    cv.style.cursor = restCursor;
     showBanner('障害物を移動しました');
     scheduleAutoSave();
     updateStatus();
@@ -1120,7 +1184,7 @@ cv.addEventListener('pointerup', function(e) {
     const wasMoving = _wasNodeDragging;
     state.draggingNode = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
-    cv.style.cursor = 'crosshair';
+    cv.style.cursor = restCursor;
     if (wasMoving) showBanner('ノードを移動しました');
     scheduleAutoSave();
     updateStatus();
