@@ -133,6 +133,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-15T23:16:51Z - feature_quizland_contain_fit.md に sw v1008 セクション追記 (.board base max-width 撤去で saved-layout WYSIWYG 化)
+- **タスク**: feature_quizland_contain_fit.md に sw v1008 セクション追記 (.board base max-width 撤去で saved-layout WYSIWYG 化)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 25
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 14, "ToolSearch": 1, "Grep": 1, "Bash": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
 ### 2026-05-15T13:24:44Z - quizland 16:9 完全固定化 (4 帯メディアクエリ全廃 + saved-layout 打ち消し撤去 + デッドコード削除、 sw v1007)
 - **タスク**: quizland 16:9 完全固定化 (4 帯メディアクエリ全廃 + saved-layout 打ち消し撤去 + デッドコード削除、 sw v1007)
 - **結果**: 成功
@@ -235,18 +248,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 11, "ToolSearch": 1, "Grep": 1, "Bash": 3}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T12:24:11Z - コマ割エディタ v2 スキーマ化: 1 プロジェクトで複数アニメ管理 (animations[] + activeAnimationId、アニメタブバー UI、全アニメ ZIP エクスポート、Undo/Redo・migrate 対応、sw v1006)
-- **タスク**: コマ割エディタ v2 スキーマ化: 1 プロジェクトで複数アニメ管理 (animations[] + activeAnimationId、アニメタブバー UI、全アニメ ZIP エクスポート、Undo/Redo・migrate 対応、sw v1006)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 47
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 12, "Glob": 9, "Grep": 6, "Read": 3, "ToolSearch": 2, "Agent": 14, "TaskOutput": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

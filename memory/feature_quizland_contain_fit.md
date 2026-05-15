@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-contain-fit-default
-description: quizland の fitStage を cover→contain 化 + stage を 16:9 (1600×900) 化 + safe-area = stage 同一化 + メディアクエリの --safe-w 動的縮小を全廃 + .stage 背景削除で stage-wrap 背景 1 枚に統一 + 4 帯メディアクエリ (16:10/14:9/4:3/5:4) を完全撤去で内側 UI も画面比不変 (2026-05-14〜15, sw v993→v1007)。画面比違いは全部レターボックスで吸収、 stage 内外の継ぎ目=帯も解消、 内側 UI の段階的変形も完全消滅
+description: quizland の fitStage を cover→contain 化 + stage を 16:9 (1600×900) 化 + safe-area = stage 同一化 + メディアクエリの --safe-w 動的縮小を全廃 + .stage 背景削除で stage-wrap 背景 1 枚に統一 + 4 帯メディアクエリ (16:10/14:9/4:3/5:4) を完全撤去で内側 UI も画面比不変 + .board の base max-width 絞り (v994 由来) を撤去で saved-layout WYSIWYG 化 (2026-05-14〜16, sw v993→v1008)。画面比違いは全部レターボックスで吸収、 stage 内外の継ぎ目=帯も解消、 内側 UI の段階的変形も完全消滅、 .board は saved-layout 971x503 のまま描画
 metadata:
   type: feature
 ---
 
-# quizland 16:9 stage + 完全レターボックス + 継ぎ目=帯解消 (sw v1007, 2026-05-14〜15)
+# quizland 16:9 stage + 完全レターボックス + 継ぎ目=帯解消 (sw v1008, 2026-05-14〜16)
 
 ## なに
 
@@ -202,4 +202,38 @@ v1000-v1001 で stage scale は 16:9 contain-fit になっていたが、 ユー
 - **「stage scale = 16:9」 ≠ 「内側 UI も画面比不変」**。 v998-v1001 でユーザーは「stage が 16:9 になった」のに「クイズがまだレスポンシブ」と感じていた。 これは内側 UI (grid / chip / character) のメディアクエリが残っていたため。 「16:9 固定」を本当に意味通り実現するには、 stage scale だけでなく内側 UI のメディアクエリも全撤去が必要だった
 - **「視認性のための温存」は二重の正解を持つ罠**。 v1000 で「4 帯の grid / chip サイズ調整は視認性のため温存」と判断したが、 ユーザーの「常に 16:9」要求は「視認性より一貫性優先」だった。 仕様判断はユーザーに確認するのが正解
 - **デッドコードは派生して残る**。 4 帯メディアクエリを消したとき、 fitStage 内の `aspect-narrow` / `aspect-wide` クラス付与は対応 CSS を失ってデッドコードになった。 クロスレビューで指摘されて発見
+
+## v1008 (2026-05-16、 .board の base max-width 絞り撤去で saved-layout WYSIWYG 化)
+
+### ユーザー報告
+v1007 適用後、 画面比 2:1 wide (2235×1115) で「左下フレーム (.board / papyrus 紙ボード) が縦長に潰れている」と指摘。 saved-layout 上のデザイナー実態値 (971×503 = 1.93:1) より明らかに縦長 (= 横が絞られている) 比率で描画されていた。
+
+### 真因
+- v994 で導入された `.board` ベース定義 `max-width: calc(var(--safe-w, 1600px) - 700px - 16px) = 884px` が、 saved-layout `.board|0.w = 971px` を CSS で **884px に強制絞り** していた。 結果 884×503 = **1.757:1** で描画 (= 縦長に潰れて見える正体)
+- これは v994 当時の 21:9 stage (2100×900) における **右ズレ対策** として導入されたもので、 v998 で stage を 16:9 完全固定化した時点で **対策の前提自体が崩れていた潜在問題**。 16:9 stage では saved-layout 971×503 がデザイナー実態値であり、 そのまま描画すべき
+- v1007 までで気づけなかった理由:
+  - 16:10 帯メディアクエリ (`max-aspect-ratio: 1599/900`) に `.board { max-width: none !important }` の override があり、 狭アスペクト帯では絞りが解除されていた (= 一部画面比では症状が出なかった)
+  - wide path (16:9 以上) では base 884 が常に効いていたが、 saved-layout がそれを前提に「右側 87px は a-col 側に意図的に食い込ませる」 設計に見えていた可能性
+  - v1007 で 4 帯メディアクエリを全廃したことで `max-width: none !important` も同時に消え、 base 884 絞りの存在が顕在化した
+
+### v1008 の変更
+- `quizland/index.html` 行 801 付近の `.board` ベース定義から `max-width: calc(var(--safe-w, 1600px) - 700px - 16px)` の **1 行を削除**
+- sw CACHE_VERSION 1007 → 1008 bump
+- `saved-layout.json` は **完全無変更** (AGENTS.md §3 厳守)
+- diff 合計 2 行 (index.html -1 行 + sw.js +1/-1 行)
+
+### 完成した挙動
+- 全画面比で `.board` は saved-layout 971×503 (= 1.93:1) のまま描画
+- q-col grid 列 (884px) から 87px overflow するが、 これは saved-layout WYSIWYG エディタでの設計値そのまま
+- 「saved-layout で見えている通りに本番でも見える」 = WYSIWYG が成立
+
+### 副作用 (構造的に発生)
+- `.board` の右端 (saved-layout tx=22 + w=971 = 993px) が a-col 開始位置 (900px) を **93px 超える**
+- ただし a-col 内の chip 2x2 は saved-layout で独自配置されている可能性が高く、 通常重なりは出ない想定
+- 万一重なりが顕在化したら、 saved-layout エディタで `.board|0.w` を調整するのが正規ルート (= AGENTS.md §3 厳守、 CSS で打ち消すのは NG)
+
+### 教訓 (今回の最重要)
+- **「base 定義の制約」 は時代を経ると本来の前提が崩れる**。 v994 で導入された 21:9 stage 用の右ズレ対策が、 v998 stage 16:9 化で前提自体が崩れていたのに 3 段階 (v998-v1001 / v1007 / v1008) に渡って気づけなかった。 「過去のメモリ ([feature_quizland_contain_fit.md] v994 セクション) を読んで前提変更が base 定義に波及していないか確認する」 を新ルールにすべき
+- **メディアクエリ全廃の副作用は wide path にも出る**。 v1007 で「狭アスペクト用の override しか撤去していない、 wide path には影響なし」 と判断したが、 実は狭アスペクトで「base の絞りを解除していた」 つまり「wide path にも絞りが効いていた」 ことを覆い隠していた。 メディアクエリ撤去時は **base 定義側に何があるかも撤去前に確認** すべき
+- **「saved-layout はデザイナー実態値、 CSS で絞らない」 が WYSIWYG の本質**。 saved-layout エディタで配置した値が本番で別サイズに化ける時点で WYSIWYG ではない。 AGENTS.md §3 (saved-layout.json は layout-editor 経由でのみ更新) の精神を CSS 側でも徹底する (= saved-layout のサイズを CSS で打ち消さない) のが正解
 
