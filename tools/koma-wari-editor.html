@@ -410,6 +410,52 @@
   body.global-mask-mode #stage-canvas,
   body.global-mask-mode #overlay-canvas { cursor: crosshair; }
 
+  /* === Animation tab bar (= 1 プロジェクト内の複数アニメ切替) ============== */
+  #anim-tabbar {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 8px; border-bottom: 1px solid #2a2e3a;
+    overflow-x: auto;
+    background: #161920;
+    flex-wrap: nowrap;
+  }
+  #anim-tabbar .anim-tab {
+    padding: 6px 12px; border-radius: 6px 6px 0 0;
+    background: #2a2e3a; color: #c9cdda;
+    border: 1px solid #2a2e3a; border-bottom: none;
+    cursor: pointer; font-size: 13px;
+    display: flex; gap: 6px; align-items: center; white-space: nowrap;
+    flex: 0 0 auto;
+  }
+  #anim-tabbar .anim-tab[aria-pressed="true"] { background: #3b8eea; color: #fff; }
+  #anim-tabbar .anim-tab .badge { font-size: 11px; opacity: 0.7; }
+  #anim-tabbar .anim-tab-add,
+  #anim-tabbar .anim-tab-more {
+    background: transparent; color: #c9cdda;
+    border: 1px solid transparent;
+    padding: 6px 10px; border-radius: 6px;
+    cursor: pointer; font-size: 13px;
+    flex: 0 0 auto;
+  }
+  #anim-tabbar .anim-tab-add:hover,
+  #anim-tabbar .anim-tab-more:hover { background: #2a2e3a; }
+  #anim-more-menu {
+    position: absolute; background: #22262f;
+    border: 1px solid #3a4150; border-radius: 6px;
+    padding: 6px; min-width: 180px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    z-index: 1500;
+    display: none; flex-direction: column; gap: 2px;
+  }
+  #anim-more-menu.show { display: flex; }
+  #anim-more-menu button {
+    text-align: left; background: transparent;
+    border: 1px solid transparent; padding: 5px 8px;
+    font-size: 13px; border-radius: 4px;
+    color: #e8eaf0; cursor: pointer;
+  }
+  #anim-more-menu button:hover { background: #2a2f3a; border-color: #3a4150; }
+  #anim-more-menu button:disabled { color: #555; cursor: not-allowed; background: transparent; }
+
   /* === Toast ============================================================ */
   #toast {
     position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
@@ -444,7 +490,8 @@
       </div>
       <button id="btn-open"   title="ファイルからプロジェクト JSON を読み込み">📥 ファイルから読み込み</button>
       <button id="btn-save"   title="プロジェクト JSON ファイルをダウンロード">📤 ファイルとしてエクスポート</button>
-      <button id="btn-export" class="primary" title="ZIP (manifest + WebP) をエクスポート">📦 ZIP エクスポート</button>
+      <button id="btn-export"     class="primary" title="現在のアニメだけを ZIP (manifest + WebP) でエクスポート">📦 ZIP エクスポート</button>
+      <button id="btn-export-all" title="全アニメをまとめて ZIP (各アニメごとにサブフォルダ) でエクスポート">📦 全アニメをエクスポート</button>
       <input type="file" id="file-input-json" accept=".json,application/json" style="display:none">
     </div>
     <div class="group">
@@ -591,8 +638,10 @@
     </div>
   </div>
 
-  <!-- ===== Bottom: timeline strip ===== -->
+  <!-- ===== Bottom: animation tab bar + timeline strip ===== -->
   <div id="pane-bottom">
+    <!-- アニメタブバー: 1 プロジェクトの中で複数アニメ (考え中ループ / 正解時 etc.) を切替 -->
+    <div id="anim-tabbar" role="tablist" aria-label="アニメタブ"></div>
     <div id="timeline-toolbar">
       <button id="btn-add"       title="新規フレームを追加 (= 最後の素材を使用)">+ 追加</button>
       <button id="btn-duplicate" title="選択中フレームを複製">複製</button>
@@ -601,6 +650,12 @@
       <span class="right" id="frame-count-label">0 frames</span>
     </div>
     <div id="timeline-strip"></div>
+  </div>
+  <!-- アニメ「⋯」(more) メニュー: リネーム / 複製 / 削除 -->
+  <div id="anim-more-menu" role="menu" aria-label="アニメ操作">
+    <button id="anim-more-rename"    type="button">✏️ リネーム</button>
+    <button id="anim-more-duplicate" type="button">📋 複製</button>
+    <button id="anim-more-delete"    type="button" style="color:#ff9090;">× 削除</button>
   </div>
 
 </div>
@@ -650,7 +705,8 @@
 'use strict';
 
 // ─── Constants ──────────────────────────────────────────────────────────
-const SCHEMA            = 'pono-koma-wari-v1';
+const SCHEMA            = 'pono-koma-wari-v2';
+const LEGACY_SCHEMA_V1  = 'pono-koma-wari-v1';
 const MANIFEST_SCHEMA   = 'pono-anim-manifest-v1';
 const STORAGE_KEY       = 'koma-wari-project-v1';
 const AUTOSAVE_MS       = 5000;
@@ -700,10 +756,100 @@ function maskUid() {
   return 'mask_' + a.slice(0, 8);
 }
 
+// Animation id generator. 'anim_<8 hex chars>'.
+function animUid() {
+  const a = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');
+  return 'anim_' + a.slice(0, 8);
+}
+
+// v1 → v2 migration. Idempotent: safe to call on already-migrated projects.
+// v1: project.frames / globalMaskRects / fps / loop / pingPong / exportFormat /
+//     exportQuality lived at project root.
+// v2: those move into project.animations[].
+//     project.images / project.stockImages remain at root (= shared across anims).
+function migrateProject(proj) {
+  if (!proj || typeof proj !== 'object') return;
+  // ★ 重要: loadProject は Object.assign(blankProject(), obj) を使うため、
+  // v1 obj を読み込んだ後でも proj.animations は blankProject() の値が残る。
+  // v1 起源かどうかは「root に v1 由来の frames フィールドがある」ことで判定。
+  // (空配列でも legacy 形跡として扱う — 通常 v1 export には frames が必ずある)
+  const looksV1 = proj.schema === LEGACY_SCHEMA_V1
+               || (proj.schema !== SCHEMA && Array.isArray(proj.frames));
+  if (!looksV1 && proj.schema === SCHEMA && Array.isArray(proj.animations) && proj.animations.length > 0) {
+    if (!proj.activeAnimationId
+        || !proj.animations.some(a => a && a.id === proj.activeAnimationId)) {
+      proj.activeAnimationId = proj.animations[0].id;
+    }
+    // Defensive: ensure each anim has required fields
+    proj.animations.forEach(a => {
+      if (!a) return;
+      if (!a.id) a.id = animUid();
+      if (typeof a.name !== 'string') a.name = 'アニメ';
+      if (typeof a.fps !== 'number' || !isFinite(a.fps)) a.fps = 12;
+      if (typeof a.loop !== 'boolean') a.loop = true;
+      if (typeof a.pingPong !== 'boolean') a.pingPong = false;
+      if (typeof a.exportFormat !== 'string') a.exportFormat = 'webp';
+      if (typeof a.exportQuality !== 'number') a.exportQuality = 0.9;
+      if (!Array.isArray(a.frames)) a.frames = [];
+      if (!Array.isArray(a.globalMaskRects)) a.globalMaskRects = [];
+    });
+    return;
+  }
+  // v1 (or no schema) → wrap legacy fields into a single animation entry.
+  const anim = {
+    id: animUid(),
+    name: proj.name || 'アニメ1',
+    fps: typeof proj.fps === 'number' && isFinite(proj.fps) ? proj.fps : 12,
+    loop: typeof proj.loop === 'boolean' ? proj.loop : true,
+    pingPong: typeof proj.pingPong === 'boolean' ? proj.pingPong : false,
+    exportFormat: typeof proj.exportFormat === 'string' ? proj.exportFormat : 'webp',
+    exportQuality: typeof proj.exportQuality === 'number' ? proj.exportQuality : 0.9,
+    frames: Array.isArray(proj.frames) ? proj.frames : [],
+    globalMaskRects: Array.isArray(proj.globalMaskRects) ? proj.globalMaskRects : [],
+  };
+  proj.animations = [anim];
+  proj.activeAnimationId = anim.id;
+  // 旧 root-level props は冗長になるので削除 (= 二重管理を防ぐ)。
+  // 既に読み終わって anim に内包したので、 残しておくと grep でも紛らわしい。
+  delete proj.frames;
+  delete proj.globalMaskRects;
+  delete proj.fps;
+  delete proj.loop;
+  delete proj.pingPong;
+  delete proj.exportFormat;
+  delete proj.exportQuality;
+  proj.schema = SCHEMA;
+}
+
+// Accessors — always go through these so legacy project.frames etc. callers
+// are funneled through the active-animation path. Calling these on an
+// un-migrated project will throw; callers must ensure migrateProject() ran.
+function activeAnim() {
+  if (!project || !Array.isArray(project.animations) || project.animations.length === 0) {
+    return null;
+  }
+  return project.animations.find(a => a && a.id === project.activeAnimationId)
+      || project.animations[0]
+      || null;
+}
+function activeFrames() {
+  const a = activeAnim();
+  if (!a) return [];
+  if (!Array.isArray(a.frames)) a.frames = [];
+  return a.frames;
+}
+function activeGlobalMasks() {
+  const a = activeAnim();
+  if (!a) return [];
+  if (!Array.isArray(a.globalMaskRects)) a.globalMaskRects = [];
+  return a.globalMaskRects;
+}
+
 // Ensure every mask rect on the given project has { id, rotation } fields.
 // Idempotent — safe to call on already-migrated projects and on blank ones.
 // Called from loadProject() and snapshotForUndo() to defend against old data
 // reaching downstream code that depends on id/rotation.
+// v2 schema: iterate every animation's frames + globalMaskRects.
 function migrateMasks(proj) {
   if (!proj) return;
   const fixRect = (r) => {
@@ -711,11 +857,26 @@ function migrateMasks(proj) {
     if (!r.id) r.id = maskUid();
     if (typeof r.rotation !== 'number' || !isFinite(r.rotation)) r.rotation = 0;
   };
-  if (Array.isArray(proj.globalMaskRects)) {
-    proj.globalMaskRects.forEach(fixRect);
-  } else {
-    proj.globalMaskRects = [];
+  const fixAnim = (a) => {
+    if (!a) return;
+    if (Array.isArray(a.globalMaskRects)) {
+      a.globalMaskRects.forEach(fixRect);
+    } else {
+      a.globalMaskRects = [];
+    }
+    if (Array.isArray(a.frames)) {
+      a.frames.forEach(f => {
+        if (!f) return;
+        if (!Array.isArray(f.maskRects)) f.maskRects = [];
+        f.maskRects.forEach(fixRect);
+      });
+    }
+  };
+  if (Array.isArray(proj.animations)) {
+    proj.animations.forEach(fixAnim);
   }
+  // Legacy v1 fallback (= called before migrateProject ran).
+  if (Array.isArray(proj.globalMaskRects)) proj.globalMaskRects.forEach(fixRect);
   if (Array.isArray(proj.frames)) {
     proj.frames.forEach(f => {
       if (!f) return;
@@ -769,32 +930,47 @@ function pointInRotatedRect(px, py, rect) {
 }
 
 // ─── Data factories ─────────────────────────────────────────────────────
-function blankProject() {
+// Build a blank animation entry. Each animation owns its own frames + global
+// masks + playback / export settings; the parent project owns images / stock /
+// stage dims (= shared across all anims).
+function blankAnimation(name) {
   return {
-    schema: SCHEMA,
-    id: 'pono-banzai-bust',
-    name: 'pono-banzai-bust',
+    id: animUid(),
+    name: name || 'アニメ1',
     fps: 12,
     loop: true,
     pingPong: false,
-    stageWidth: 1024,
-    stageHeight: 1024,
-    bgMode: 'transparent',
     exportFormat: 'webp',
     exportQuality: 0.9,
-    images: {}, // imageId → {name, dataUrl, width, height}
-    stockImages: {}, // stockId → {name, dataUrl, width, height} - 調整済み素材
     frames: [], // see makeFrame()
     // 全フレーム共通マスク (= ステージ座標、 個別 frame.maskRects とは独立)
     // 描画時に ctx.clip('evenodd') で穴抜き → getImageData 不要、 全 frame に同じ穴
     // Schema: { id: 'mask_<8hex>', x, y, w, h, rotation } (rotation in radians)
     globalMaskRects: [],
+  };
+}
+
+function blankProject() {
+  const a = blankAnimation('アニメ1');
+  return {
+    schema: SCHEMA,
+    id: 'pono-banzai-bust',
+    name: 'pono-banzai-bust',
+    stageWidth: 1024,
+    stageHeight: 1024,
+    bgMode: 'transparent',
+    images: {}, // imageId → {name, dataUrl, width, height}
+    stockImages: {}, // stockId → {name, dataUrl, width, height} - 調整済み素材
+    animations: [a],
+    activeAnimationId: a.id,
     exportedAt: '',
   };
 }
 
 function makeFrame(imageId, opts = {}) {
   const img = project.images[imageId];
+  const a = activeAnim();
+  const fps = (a && typeof a.fps === 'number' && a.fps > 0) ? a.fps : 12;
   return {
     id: uid('f'),
     imageId,
@@ -803,14 +979,14 @@ function makeFrame(imageId, opts = {}) {
     y: opts.y !== undefined ? opts.y : project.stageHeight / 2,
     scale: opts.scale !== undefined ? opts.scale : 1.0,
     rotation: opts.rotation !== undefined ? opts.rotation : 0,
-    duration: opts.duration !== undefined ? opts.duration : Math.round(1000 / project.fps),
+    duration: opts.duration !== undefined ? opts.duration : Math.round(1000 / fps),
     maskRects: [], // Phase 3
   };
 }
 
 function getSelectedFrame() {
   if (!selectedFrameId) return null;
-  return project.frames.find(f => f.id === selectedFrameId) || null;
+  return activeFrames().find(f => f.id === selectedFrameId) || null;
 }
 
 // ─── Toast ──────────────────────────────────────────────────────────────
@@ -913,7 +1089,7 @@ function removeImageById(id) {
   if (!project.images[id] && !(project.stockImages && project.stockImages[id])) {
     return false;
   }
-  const refCount = project.frames.filter(f => f.imageId === id).length;
+  const refCount = activeFrames().filter(f => f.imageId === id).length;
   if (refCount > 0) {
     const msg =
       `この素材は ${refCount} 件のフレームで使われています。\n` +
@@ -927,8 +1103,12 @@ function removeImageById(id) {
   // the image itself stays deleted, which matches existing undo scope).
   snapshotForUndo('素材削除');
   if (refCount > 0) {
-    project.frames = project.frames.filter(f => f.imageId !== id);
-    if (getSelectedFrame() == null) selectFrame(project.frames[0]?.id || null);
+    // 全アニメから当該 image を参照する frame を一括削除 (= images プールは共有)
+    (project.animations || []).forEach(a => {
+      if (!a || !Array.isArray(a.frames)) return;
+      a.frames = a.frames.filter(f => f.imageId !== id);
+    });
+    if (getSelectedFrame() == null) selectFrame(activeFrames()[0]?.id || null);
   }
   delete project.images[id];
   if (project.stockImages) delete project.stockImages[id];
@@ -986,7 +1166,7 @@ function buildImageCard(id, meta, opts) {
   // Click to add a frame using this image
   card.addEventListener('click', () => {
     const f = makeFrame(id);
-    project.frames.push(f);
+    activeFrames().push(f);
     selectFrame(f.id);
     renderStrip();
     renderStage();
@@ -1200,7 +1380,7 @@ stageWrap.addEventListener('drop', e => {
   if (!id || !project.images[id]) return;
   const { sx, sy } = clientToStage(e.clientX, e.clientY);
   const f = makeFrame(id, { x: sx, y: sy });
-  project.frames.push(f);
+  activeFrames().push(f);
   selectFrame(f.id);
   renderStrip();
   renderStage();
@@ -1260,8 +1440,8 @@ function drawFrameOnContext(ctx, frame, opts = {}) {
   // 全フレーム共通マスク (= ステージ座標、 frame transform 前に clip 設定)
   // evenodd で 「stage 全体矩形 - 穴 (回転対応 polygon)」 を内側にすることで穴抜きを実現。
   // 回転マスクは 4 頂点 polygon (moveTo/lineTo/closePath) として Path2D に追加。
-  const gMasks = (project.globalMaskRects && project.globalMaskRects.length > 0)
-    ? project.globalMaskRects : null;
+  const _gm = activeGlobalMasks();
+  const gMasks = (_gm && _gm.length > 0) ? _gm : null;
   if (gMasks) {
     ctx.beginPath();
     ctx.rect(0, 0, project.stageWidth, project.stageHeight);
@@ -1326,14 +1506,14 @@ function renderStage() {
   // frame index; otherwise it's the selected frame.
   let frame = null;
   if (playback.playing) {
-    frame = project.frames[playback.curIdx] || null;
+    frame = activeFrames()[playback.curIdx] || null;
   } else {
     frame = getSelectedFrame();
   }
   if (frame) drawFrameOnContext(stageCtx, frame);
 
   // Toggle empty hint
-  $('stage-empty').style.display = project.frames.length === 0 ? 'flex' : 'none';
+  $('stage-empty').style.display = activeFrames().length === 0 ? 'flex' : 'none';
 
   renderOverlay();
 }
@@ -1445,7 +1625,7 @@ function renderOverlay() {
 
   // 全フレーム共通マスク (= ステージ座標、 frame に依存しないので常時表示)
   // 黄色半透明、 4 頂点 polygon (rotation 対応)。
-  const gMasks = project.globalMaskRects || [];
+  const gMasks = activeGlobalMasks();
   if (gMasks.length > 0) {
     overlayCtx.save();
     overlayCtx.lineWidth = 2 / viewScale;
@@ -1822,8 +2002,9 @@ function onStagePointerDown(e) {
 
   // If no hit on selection, search frames in z-order (top-most = last) for body
   if (!hit) {
-    for (let i = project.frames.length - 1; i >= 0; i--) {
-      const f = project.frames[i];
+    const _af = activeFrames();
+    for (let i = _af.length - 1; i >= 0; i--) {
+      const f = _af[i];
       const img = imageCache.get(f.imageId);
       if (!img) continue;
       const dx = sx - f.x, dy = sy - f.y;
@@ -1879,7 +2060,7 @@ function _stageToFrameLocal(sx, sy, frame, img) {
 // (リストからは選択可能、 個別マスクを掴むには親フレームを先に選択する)。
 // 回転対応 (pointInRotatedRect)。 戻り値: { type, frameId?, idx } | null
 function pickMaskAtStagePoint(sx, sy) {
-  const globals = project.globalMaskRects || [];
+  const globals = activeGlobalMasks();
   for (let i = globals.length - 1; i >= 0; i--) {
     const r = globals[i];
     if (pointInRotatedRect(sx, sy, r)) {
@@ -1926,12 +2107,12 @@ function _getSelectedMaskRectRef() {
   if (!_selectedMaskRef) return null;
   const ref = _selectedMaskRef;
   if (ref.type === 'global') {
-    const rect = (project.globalMaskRects || [])[ref.idx];
+    const rect = activeGlobalMasks()[ref.idx];
     if (!rect) return null;
     return { rect, frame: null };
   }
   if (ref.type === 'frame') {
-    const f = project.frames.find(x => x.id === ref.frameId);
+    const f = activeFrames().find(x => x.id === ref.frameId);
     if (!f || !f.maskRects) return null;
     const rect = f.maskRects[ref.idx];
     if (!rect) return null;
@@ -2422,7 +2603,7 @@ function onStagePointerUp(e) {
   const opKind = activeOp.kind;
 
   if (opKind === 'mask-draw') {
-    const f = project.frames.find(x => x.id === activeOp.frameRef);
+    const f = activeFrames().find(x => x.id === activeOp.frameRef);
     const cur = activeOp.cur;
     activeOp = null;
     // Min-size guard: ignore tiny accidental clicks (< 4px in image coords)
@@ -2451,10 +2632,10 @@ function onStagePointerUp(e) {
     activeOp = null;
     // Min-size guard: ignore tiny accidental clicks (< 4px in stage coords)
     if (cur && cur.w >= 4 && cur.h >= 4) {
-      project.globalMaskRects = project.globalMaskRects || [];
+      const _gm = activeGlobalMasks();
       const newRect = makeMaskRect(cur.x, cur.y, cur.w, cur.h, 0);
-      project.globalMaskRects.push(newRect);
-      _selectedMaskRef = { type: 'global', idx: project.globalMaskRects.length - 1 };
+      _gm.push(newRect);
+      _selectedMaskRef = { type: 'global', idx: _gm.length - 1 };
       renderStage();
       renderOverlay();
       renderStripActive();
@@ -2509,7 +2690,7 @@ function syncPropsFromFrame() {
   }
   propX.disabled = propY.disabled = propScale.disabled =
     propRotation.disabled = propDuration.disabled = false;
-  const idx = project.frames.indexOf(f) + 1;
+  const idx = activeFrames().indexOf(f) + 1;
   const src = f.sourceFile || (project.images[f.imageId]?.name || '?');
   info.textContent = `Frame #${idx} (${src})`;
   propX.value = Math.round(f.x);
@@ -2561,9 +2742,10 @@ $('btn-fit').addEventListener('click', () => {
 });
 $('btn-delete').addEventListener('click', () => {
   const f = getSelectedFrame(); if (!f) return;
-  const idx = project.frames.indexOf(f);
-  project.frames.splice(idx, 1);
-  selectFrame(project.frames[Math.min(idx, project.frames.length - 1)]?.id || null);
+  const fr = activeFrames();
+  const idx = fr.indexOf(f);
+  fr.splice(idx, 1);
+  selectFrame(fr[Math.min(idx, fr.length - 1)]?.id || null);
   renderStrip(); renderStage(); markDirty();
   snapshotForUndo('フレーム削除');
 });
@@ -2588,7 +2770,7 @@ let _dragFromFrameId = null;
 function renderStrip() {
   const strip = $('timeline-strip');
   strip.innerHTML = '';
-  project.frames.forEach((f, i) => {
+  activeFrames().forEach((f, i) => {
     const cell = document.createElement('div');
     cell.className = 'strip-cell';
     cell.dataset.id = f.id;
@@ -2628,10 +2810,11 @@ function renderStrip() {
     del.title = 'このフレームを削除';
     del.addEventListener('click', e => {
       e.stopPropagation();
-      const idx = project.frames.indexOf(f);
-      project.frames.splice(idx, 1);
+      const fr = activeFrames();
+      const idx = fr.indexOf(f);
+      fr.splice(idx, 1);
       if (f.id === selectedFrameId) {
-        selectFrame(project.frames[Math.min(idx, project.frames.length - 1)]?.id || null);
+        selectFrame(fr[Math.min(idx, fr.length - 1)]?.id || null);
       }
       renderStrip(); renderStage(); markDirty();
       snapshotForUndo('フレーム削除');
@@ -2676,31 +2859,32 @@ function renderStrip() {
       cell.classList.remove('drop-target-after');
       if (!draggedId) return;
       e.preventDefault();
-      const from = project.frames.findIndex(x => x.id === draggedId);
+      const fr = activeFrames();
+      const from = fr.findIndex(x => x.id === draggedId);
       if (from < 0) return;
       const r = cell.getBoundingClientRect();
       const before = (e.clientX - r.left) < r.width / 2;
 
       if (_dragCloneMode) {
         // Clone: insert a duplicate at drop position; original stays in place.
-        const src = project.frames[from];
+        const src = fr[from];
         const copy = makeFrame(src.imageId, {
           x: src.x, y: src.y, scale: src.scale,
           rotation: src.rotation, duration: src.duration,
         });
-        let to = project.frames.findIndex(x => x.id === f.id);
+        let to = fr.findIndex(x => x.id === f.id);
         if (!before) to += 1;
-        project.frames.splice(to, 0, copy);
+        fr.splice(to, 0, copy);
         selectFrame(copy.id);
         renderStrip(); renderStage(); markDirty();
         toast('複製');
         snapshotForUndo('複製ドロップ');
       } else {
         if (draggedId === f.id) return;
-        const moved = project.frames.splice(from, 1)[0];
-        let to = project.frames.findIndex(x => x.id === f.id);
+        const moved = fr.splice(from, 1)[0];
+        let to = fr.findIndex(x => x.id === f.id);
         if (!before) to += 1;
-        project.frames.splice(to, 0, moved);
+        fr.splice(to, 0, moved);
         renderStrip(); markDirty();
         snapshotForUndo('並び替え');
       }
@@ -2708,7 +2892,7 @@ function renderStrip() {
 
     strip.appendChild(cell);
   });
-  $('frame-count-label').textContent = `${project.frames.length} frames`;
+  $('frame-count-label').textContent = `${activeFrames().length} frames`;
   renderStripActive();
 }
 
@@ -2741,7 +2925,7 @@ function renderStripActive() {
   if (!strip) return;
   let activeIdx;
   if (playback.playing) activeIdx = playback.curIdx;
-  else                  activeIdx = project.frames.findIndex(x => x.id === selectedFrameId);
+  else                  activeIdx = activeFrames().findIndex(x => x.id === selectedFrameId);
   Array.from(strip.children).forEach((cell, i) => {
     cell.classList.toggle('active',   i === activeIdx);
     cell.classList.toggle('selected', cell.dataset.id === selectedFrameId);
@@ -2758,9 +2942,10 @@ function renderStripActive() {
     }
   }
   // Update now-frame label
-  const total = project.frames.length;
+  const _af = activeFrames();
+  const total = _af.length;
   const cur = playback.playing ? (playback.curIdx + 1) :
-              (selectedFrameId ? (project.frames.findIndex(x => x.id === selectedFrameId) + 1) : 0);
+              (selectedFrameId ? (_af.findIndex(x => x.id === selectedFrameId) + 1) : 0);
   $('now-frame-label').textContent = `${cur} / ${total}`;
 }
 
@@ -2770,7 +2955,7 @@ $('btn-add').addEventListener('click', () => {
   if (!ids.length) { toast('先に素材を読み込んでください'); return; }
   const imageId = getSelectedFrame()?.imageId || ids[ids.length - 1];
   const f = makeFrame(imageId);
-  project.frames.push(f);
+  activeFrames().push(f);
   selectFrame(f.id);
   renderStrip(); renderStage(); markDirty();
   snapshotForUndo('フレーム追加');
@@ -2779,14 +2964,16 @@ $('btn-duplicate').addEventListener('click', () => {
   const cur = getSelectedFrame();
   if (!cur) { toast('複製元のフレームを選択してください'); return; }
   const copy = makeFrame(cur.imageId, { x: cur.x, y: cur.y, scale: cur.scale, rotation: cur.rotation, duration: cur.duration });
-  const idx = project.frames.indexOf(cur) + 1;
-  project.frames.splice(idx, 0, copy);
+  const fr = activeFrames();
+  const idx = fr.indexOf(cur) + 1;
+  fr.splice(idx, 0, copy);
   selectFrame(copy.id);
   renderStrip(); renderStage(); markDirty();
   snapshotForUndo('複製');
 });
 $('btn-carry').addEventListener('click', () => {
-  const last = project.frames[project.frames.length - 1];
+  const fr = activeFrames();
+  const last = fr[fr.length - 1];
   if (!last) {
     // No previous frame → fall back to plain add
     $('btn-add').click();
@@ -2795,7 +2982,7 @@ $('btn-carry').addEventListener('click', () => {
   const f = makeFrame(last.imageId, {
     x: last.x, y: last.y, scale: last.scale, rotation: last.rotation, duration: last.duration,
   });
-  project.frames.push(f);
+  fr.push(f);
   selectFrame(f.id);
   renderStrip(); renderStage(); markDirty();
   snapshotForUndo('前から引き継ぐ');
@@ -2808,19 +2995,22 @@ const fpsLabel = $('fps-label');
 fpsRange.addEventListener('input', () => {
   const v = parseInt(fpsRange.value, 10);
   if (Number.isFinite(v) && v >= 1 && v <= 30) {
-    project.fps = v;
+    const a = activeAnim();
+    if (a) { a.fps = v; }
     fpsLabel.textContent = String(v);
     markDirty();
   }
 });
 $('btn-loop').addEventListener('click', () => {
-  project.loop = !project.loop;
-  $('btn-loop').classList.toggle('on', project.loop);
+  const a = activeAnim(); if (!a) return;
+  a.loop = !a.loop;
+  $('btn-loop').classList.toggle('on', a.loop);
   markDirty();
 });
 $('btn-pingpong').addEventListener('click', () => {
-  project.pingPong = !project.pingPong;
-  $('btn-pingpong').classList.toggle('on', project.pingPong);
+  const a = activeAnim(); if (!a) return;
+  a.pingPong = !a.pingPong;
+  $('btn-pingpong').classList.toggle('on', a.pingPong);
   markDirty();
 });
 $('project-name-input').addEventListener('input', () => {
@@ -2843,10 +3033,11 @@ const playback = {
 };
 
 function playbackStart() {
-  if (playback.playing || project.frames.length === 0) return;
+  const fr = activeFrames();
+  if (playback.playing || fr.length === 0) return;
   playback.playing = true;
   playback.direction = 1;
-  if (playback.curIdx >= project.frames.length) playback.curIdx = 0;
+  if (playback.curIdx >= fr.length) playback.curIdx = 0;
   $('stage-empty').style.display = 'none';
   scheduleNext();
   renderStage();
@@ -2855,7 +3046,7 @@ function playbackStart() {
 
 function scheduleNext() {
   if (!playback.playing) return;
-  const f = project.frames[playback.curIdx];
+  const f = activeFrames()[playback.curIdx];
   if (!f) { playbackStop(); return; }
   const dur = Math.max(10, f.duration | 0);
   playback.timer = setTimeout(() => {
@@ -2868,9 +3059,12 @@ function scheduleNext() {
 }
 
 function advanceFrame() {
-  const n = project.frames.length;
+  const a = activeAnim();
+  const n = activeFrames().length;
   if (n === 0) return;
-  if (project.pingPong) {
+  const pingPong = !!(a && a.pingPong);
+  const loop = !!(a && a.loop);
+  if (pingPong) {
     let next = playback.curIdx + playback.direction;
     if (next >= n) {
       // Reverse direction
@@ -2879,13 +3073,13 @@ function advanceFrame() {
     } else if (next < 0) {
       playback.direction = 1;
       next = Math.min(n - 1, 1);
-      if (!project.loop) { playbackStop(); return; }
+      if (!loop) { playbackStop(); return; }
     }
     playback.curIdx = next;
   } else {
     let next = playback.curIdx + 1;
     if (next >= n) {
-      if (project.loop) next = 0;
+      if (loop) next = 0;
       else { playbackStop(); return; }
     }
     playback.curIdx = next;
@@ -2949,7 +3143,8 @@ $('file-input-json').addEventListener('change', e => {
   reader.onload = () => {
     try {
       const obj = JSON.parse(reader.result);
-      if (obj.schema !== SCHEMA) {
+      // v1 は自動 migrate するため警告不要。 v2 でも v1 でもない schema は確認のみ。
+      if (obj.schema && obj.schema !== SCHEMA && obj.schema !== LEGACY_SCHEMA_V1) {
         if (!confirm(`schema が一致しません (${obj.schema}). 続行しますか?`)) return;
       }
       loadProject(obj);
@@ -2967,24 +3162,27 @@ function loadProject(obj) {
   // Defensive: ensure containers
   project.images = project.images || {};
   project.stockImages = project.stockImages || {};
-  project.frames = project.frames || [];
-  project.globalMaskRects = project.globalMaskRects || [];
+  // v1 → v2 migration (= legacy frames/fps/loop/... を animations[] に格納)。
+  // 冪等なので v2 プロジェクトを再 load しても壊れない。
+  migrateProject(project);
   // Mask schema migration (id + rotation 補完) — 旧データ読み込み時の defensive
   migrateMasks(project);
   imageCache.clear();
   decodeAllImages(() => {
-    selectedFrameId = project.frames[0]?.id || null;
-    // Push toolbar state
-    fpsRange.value = project.fps;
-    fpsLabel.textContent = String(project.fps);
-    $('btn-loop').classList.toggle('on', !!project.loop);
-    $('btn-pingpong').classList.toggle('on', !!project.pingPong);
+    const a = activeAnim();
+    selectedFrameId = activeFrames()[0]?.id || null;
+    // Push toolbar state from active animation
+    fpsRange.value = (a && a.fps) || 12;
+    fpsLabel.textContent = String((a && a.fps) || 12);
+    $('btn-loop').classList.toggle('on', !!(a && a.loop));
+    $('btn-pingpong').classList.toggle('on', !!(a && a.pingPong));
     $('project-name-input').value = project.name || project.id || '';
     $('prop-stage-w').value = project.stageWidth;
     $('prop-stage-h').value = project.stageHeight;
     resizeStage();
     renderAssetGrid();
     renderStockGrid();
+    renderAnimTabbar();
     renderStrip();
     renderStage();
     syncPropsFromFrame();
@@ -3020,7 +3218,8 @@ function loadFromLocalStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const obj = JSON.parse(raw);
-    if (!obj || obj.schema !== SCHEMA) return false;
+    // v1 / v2 どちらも受け入れる (loadProject 内で migrateProject が走る)
+    if (!obj || (obj.schema !== SCHEMA && obj.schema !== LEGACY_SCHEMA_V1)) return false;
     loadProject(obj);
     return true;
   } catch (e) {
@@ -3030,12 +3229,60 @@ function loadFromLocalStorage() {
 }
 
 // ─── Export ZIP (manifest.json + frame_NNN.webp) ────────────────────────
+// アニメ名をファイル/フォルダ名に使う前にサニタイズ。 半角英数 / ハイフン / アンダースコア
+// 以外は _ に置換、 空なら anim_<id> でフォールバック。
+function sanitizeAnimFolderName(anim) {
+  if (!anim) return 'anim';
+  const raw = (anim.name || '').trim();
+  const safe = raw.replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  if (safe) return safe;
+  return 'anim_' + (anim.id || 'unknown');
+}
+
+// 1 つのアニメを ZIP に書き込むヘルパ。 オフセット (folder prefix) を指定可能。
+// この関数は global mask の renderer (= drawFrameOnContext) に依存するため、
+// 呼び出し前に project.activeAnimationId をその anim にセットして「active」 にする
+// 必要がある。
+async function _writeAnimToZip(zip, anim, folderPrefix) {
+  const ext  = anim.exportFormat === 'webp' ? 'webp' : 'png';
+  const mime = anim.exportFormat === 'webp' ? 'image/webp' : 'image/png';
+  const quality = (typeof anim.exportQuality === 'number') ? anim.exportQuality : 0.9;
+  const manifest = {
+    schema: MANIFEST_SCHEMA,
+    id: anim.id,
+    name: anim.name,
+    fps: anim.fps,
+    loop: anim.loop,
+    pingPong: anim.pingPong,
+    stageWidth: project.stageWidth,
+    stageHeight: project.stageHeight,
+    frames: [],
+    exportedAt: new Date().toISOString(),
+  };
+  const off = document.createElement('canvas');
+  off.width  = project.stageWidth;
+  off.height = project.stageHeight;
+  const offCtx = off.getContext('2d', { alpha: true });
+  for (let i = 0; i < anim.frames.length; i++) {
+    const f = anim.frames[i];
+    offCtx.clearRect(0, 0, off.width, off.height);
+    drawFrameOnContext(offCtx, f);
+    const blob = await new Promise(res => off.toBlob(res, mime, quality));
+    if (!blob) throw new Error(`frame ${i+1} toBlob failed`);
+    const name = `frame_${String(i+1).padStart(3, '0')}.${ext}`;
+    zip.file((folderPrefix || '') + name, blob);
+    manifest.frames.push({ file: name, duration: Math.round(f.duration) });
+  }
+  zip.file((folderPrefix || '') + 'manifest.json', JSON.stringify(manifest, null, 2));
+}
+
 $('btn-export').addEventListener('click', async () => {
   if (typeof JSZip === 'undefined') {
     alert('JSZip が読み込まれていません。 ネット接続を確認してください。');
     return;
   }
-  if (project.frames.length === 0) {
+  const anim = activeAnim();
+  if (!anim || !anim.frames || anim.frames.length === 0) {
     alert('フレームがありません。');
     return;
   }
@@ -3043,42 +3290,53 @@ $('btn-export').addEventListener('click', async () => {
   try {
     await new Promise(res => decodeAllImages(res));
     const zip = new JSZip();
-    const manifest = {
-      schema: MANIFEST_SCHEMA,
-      id: project.id,
-      name: project.name,
-      fps: project.fps,
-      loop: project.loop,
-      pingPong: project.pingPong,
-      stageWidth: project.stageWidth,
-      stageHeight: project.stageHeight,
-      frames: [],
-      exportedAt: new Date().toISOString(),
-    };
-    const off = document.createElement('canvas');
-    off.width  = project.stageWidth;
-    off.height = project.stageHeight;
-    const offCtx = off.getContext('2d', { alpha: true });
-    const ext  = project.exportFormat === 'webp' ? 'webp' : 'png';
-    const mime = project.exportFormat === 'webp' ? 'image/webp' : 'image/png';
-    for (let i = 0; i < project.frames.length; i++) {
-      const f = project.frames[i];
-      offCtx.clearRect(0, 0, off.width, off.height);
-      drawFrameOnContext(offCtx, f);
-      // toBlob is async; wrap in promise
-      const blob = await new Promise(res => off.toBlob(res, mime, project.exportQuality));
-      if (!blob) throw new Error(`frame ${i+1} toBlob failed`);
-      const name = `frame_${String(i+1).padStart(3, '0')}.${ext}`;
-      zip.file(name, blob);
-      manifest.frames.push({ file: name, duration: Math.round(f.duration) });
-    }
-    zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+    await _writeAnimToZip(zip, anim, '');
     const blob = await zip.generateAsync({ type: 'blob' });
     downloadBlob(blob, `${project.id || 'koma'}.zip`);
     toast('📦 エクスポート完了');
   } catch (err) {
     console.error('[koma] export failed:', err);
     alert('エクスポート失敗: ' + err.message);
+  }
+});
+
+// 全アニメをまとめて 1 つの ZIP に書き出し (各アニメごとにサブフォルダ)。
+// 各アニメの描画には active 切替を伴うので、 元の active を保存しておき終了時に復帰する。
+$('btn-export-all').addEventListener('click', async () => {
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip が読み込まれていません。 ネット接続を確認してください。');
+    return;
+  }
+  const anims = (project.animations || []).filter(a => a && a.frames && a.frames.length > 0);
+  if (anims.length === 0) {
+    alert('フレームを持つアニメがありません。');
+    return;
+  }
+  toast('📦 全アニメをエクスポート中…');
+  const savedActiveId = project.activeAnimationId;
+  try {
+    await new Promise(res => decodeAllImages(res));
+    const zip = new JSZip();
+    // フォルダ名重複を避けるため使用済みを記録 (= 同名は _2 / _3 と suffix)
+    const usedNames = new Set();
+    for (const anim of anims) {
+      let folder = sanitizeAnimFolderName(anim);
+      let candidate = folder, n = 2;
+      while (usedNames.has(candidate)) { candidate = `${folder}_${n++}`; }
+      folder = candidate;
+      usedNames.add(folder);
+      // 描画は active animation の globalMaskRects に依存するので一時的に切り替える
+      project.activeAnimationId = anim.id;
+      await _writeAnimToZip(zip, anim, folder + '/');
+    }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(blob, `${project.id || 'koma'}-all.zip`);
+    toast('📦 全アニメ ' + anims.length + ' 件をエクスポート');
+  } catch (err) {
+    console.error('[koma] export-all failed:', err);
+    alert('エクスポート失敗: ' + err.message);
+  } finally {
+    project.activeAnimationId = savedActiveId;
   }
 });
 
@@ -3096,13 +3354,13 @@ let _undoSuspended = false; // avoid recursion when restoring
 
 function snapshotForUndo(label) {
   if (_undoSuspended) return;
-  // Migration guard: ensure mask schema is up-to-date BEFORE snapshotting,
-  // so old project loads (which path through here) get id+rotation pinned.
+  // Migration guard: v1→v2 + mask schema を up-to-date に。
+  migrateProject(project);
   migrateMasks(project);
   const snap = {
-    frames: JSON.parse(JSON.stringify(project.frames)),
-    // 全フレーム共通マスクも undo 対象 (= 個別 frames と独立)
-    globalMaskRects: JSON.parse(JSON.stringify(project.globalMaskRects || [])),
+    // v2: animations 配列全体 + activeAnimationId を保存
+    animations: JSON.parse(JSON.stringify(project.animations || [])),
+    activeAnimationId: project.activeAnimationId,
     selectedFrameId: selectedFrameId,
     // マスク選択も undo 対象 (= 「マスクを選択 → 編集 → undo」 で選択も戻る)
     selectedMaskRef: _selectedMaskRef ? JSON.parse(JSON.stringify(_selectedMaskRef)) : null,
@@ -3118,25 +3376,39 @@ function snapshotForUndo(label) {
 function restoreSnapshot(snap) {
   _undoSuspended = true;
   try {
-    project.frames = JSON.parse(JSON.stringify(snap.frames));
-    // 全フレーム共通マスクも復元 (= 旧スナップショットには無いので fallback)
-    project.globalMaskRects = snap.globalMaskRects
-      ? JSON.parse(JSON.stringify(snap.globalMaskRects))
-      : [];
+    // v2 snapshot
+    if (Array.isArray(snap.animations)) {
+      project.animations = JSON.parse(JSON.stringify(snap.animations));
+      project.activeAnimationId = snap.activeAnimationId
+        && project.animations.some(a => a && a.id === snap.activeAnimationId)
+        ? snap.activeAnimationId
+        : (project.animations[0]?.id || null);
+    } else if (Array.isArray(snap.frames)) {
+      // 旧 v1 snapshot fallback: active animation の frames / globalMaskRects だけを差し戻す
+      const a = activeAnim();
+      if (a) {
+        a.frames = JSON.parse(JSON.stringify(snap.frames));
+        a.globalMaskRects = snap.globalMaskRects
+          ? JSON.parse(JSON.stringify(snap.globalMaskRects))
+          : [];
+      }
+    }
     // Mask schema migration guard (= 古い snapshot 経由でも id/rotation 補完)
+    migrateProject(project);
     migrateMasks(project);
-    // selectedFrameId only valid if still present in restored frames
-    const exists = project.frames.some(f => f.id === snap.selectedFrameId);
-    selectedFrameId = exists ? snap.selectedFrameId : (project.frames[0]?.id || null);
+    // selectedFrameId only valid if still present in active anim's frames
+    const fr = activeFrames();
+    const exists = fr.some(f => f.id === snap.selectedFrameId);
+    selectedFrameId = exists ? snap.selectedFrameId : (fr[0]?.id || null);
     // マスク選択も復元 (= idx 範囲チェックを通す)
     if (snap.selectedMaskRef) {
       const ref = snap.selectedMaskRef;
+      const gm = activeGlobalMasks();
       if (ref.type === 'global'
-          && Array.isArray(project.globalMaskRects)
-          && ref.idx >= 0 && ref.idx < project.globalMaskRects.length) {
+          && ref.idx >= 0 && ref.idx < gm.length) {
         _selectedMaskRef = { type: 'global', idx: ref.idx };
       } else if (ref.type === 'frame') {
-        const f = project.frames.find(x => x.id === ref.frameId);
+        const f = fr.find(x => x.id === ref.frameId);
         if (f && Array.isArray(f.maskRects)
             && ref.idx >= 0 && ref.idx < f.maskRects.length) {
           _selectedMaskRef = { type: 'frame', frameId: ref.frameId, idx: ref.idx };
@@ -3149,6 +3421,15 @@ function restoreSnapshot(snap) {
     } else {
       _selectedMaskRef = null;
     }
+    // Sync top-bar to active animation
+    const a = activeAnim();
+    if (a) {
+      fpsRange.value = a.fps;
+      fpsLabel.textContent = String(a.fps);
+      $('btn-loop').classList.toggle('on', !!a.loop);
+      $('btn-pingpong').classList.toggle('on', !!a.pingPong);
+    }
+    if (typeof renderAnimTabbar === 'function') renderAnimTabbar();
     renderStrip();
     renderStage();
     renderOverlay();
@@ -3263,13 +3544,13 @@ window.addEventListener('keydown', e => {
     const ref = _selectedMaskRef;
     let did = false;
     if (ref.type === 'global') {
-      const masks = project.globalMaskRects || [];
+      const masks = activeGlobalMasks();
       if (ref.idx >= 0 && ref.idx < masks.length) {
         masks.splice(ref.idx, 1);
         did = true;
       }
     } else if (ref.type === 'frame') {
-      const f = project.frames.find(x => x.id === ref.frameId);
+      const f = activeFrames().find(x => x.id === ref.frameId);
       if (f && f.maskRects && ref.idx >= 0 && ref.idx < f.maskRects.length) {
         f.maskRects.splice(ref.idx, 1);
         did = true;
@@ -3326,7 +3607,7 @@ window.addEventListener('keydown', e => {
     if (_clipboard) {
       const copy = JSON.parse(JSON.stringify(_clipboard));
       copy.id = uid('f');
-      project.frames.push(copy);
+      activeFrames().push(copy);
       selectFrame(copy.id);
       renderStrip(); renderStage(); markDirty();
       e.preventDefault();
@@ -3345,11 +3626,12 @@ window.addEventListener('keydown', e => {
 });
 
 function stepFrame(delta) {
-  if (project.frames.length === 0) return;
-  const cur = project.frames.findIndex(x => x.id === selectedFrameId);
+  const fr = activeFrames();
+  if (fr.length === 0) return;
+  const cur = fr.findIndex(x => x.id === selectedFrameId);
   let next = (cur < 0 ? 0 : cur + delta);
-  next = clamp(next, 0, project.frames.length - 1);
-  selectFrame(project.frames[next].id);
+  next = clamp(next, 0, fr.length - 1);
+  selectFrame(fr[next].id);
 }
 
 // ─── Guides (overlay) ────────────────────────────────────────────────────
@@ -3440,11 +3722,11 @@ function _refreshMaskModeButtons() {
 // 戻り値: [{type, frameId?, idx, rect, displayIdx}] (displayIdx は 1-based 通し番号)
 function buildUnifiedMaskEntries() {
   const out = [];
-  const globals = project.globalMaskRects || [];
+  const globals = activeGlobalMasks();
   globals.forEach((r, i) => {
     out.push({ type: 'global', idx: i, rect: r });
   });
-  (project.frames || []).forEach(f => {
+  activeFrames().forEach(f => {
     (f.maskRects || []).forEach((r, i) => {
       out.push({ type: 'frame', frameId: f.id, idx: i, rect: r });
     });
@@ -3485,7 +3767,7 @@ function renderMaskUnifiedList() {
     if (entry.type === 'global') {
       scopeLabel = `共通 #${entry.idx + 1}`;
     } else {
-      const fIdx = project.frames.findIndex(f => f.id === entry.frameId);
+      const fIdx = activeFrames().findIndex(f => f.id === entry.frameId);
       scopeLabel = `個別 F${fIdx + 1} #${entry.idx + 1}`;
     }
     label.textContent = `${scopeLabel}  ${Math.round(entry.rect.w)}×${Math.round(entry.rect.h)}${rotStr}`;
@@ -3531,7 +3813,7 @@ function renderMaskUnifiedList() {
 // マスク削除 (= unified entry から削除)。 選択中なら選択も解除。
 function deleteMask(entry) {
   if (entry.type === 'global') {
-    const masks = project.globalMaskRects || [];
+    const masks = activeGlobalMasks();
     if (entry.idx >= 0 && entry.idx < masks.length) {
       masks.splice(entry.idx, 1);
       if (_selectedMaskRef && _selectedMaskRef.type === 'global') {
@@ -3540,7 +3822,7 @@ function deleteMask(entry) {
       }
     }
   } else {
-    const f = project.frames.find(x => x.id === entry.frameId);
+    const f = activeFrames().find(x => x.id === entry.frameId);
     if (f && f.maskRects && entry.idx >= 0 && entry.idx < f.maskRects.length) {
       f.maskRects.splice(entry.idx, 1);
       if (_selectedMaskRef && _selectedMaskRef.type === 'frame'
@@ -3576,7 +3858,7 @@ function moveMaskScope(entry, newScope) {
     }
     const img = imageCache.get(f.imageId);
     if (!img) { alert('画像が未読み込みです。'); return; }
-    const r = (project.globalMaskRects || [])[entry.idx];
+    const r = activeGlobalMasks()[entry.idx];
     if (!r) return;
     // 共通 rect 4 頂点 (stage) → frame-local
     const stageVerts = rectVertices(r);
@@ -3595,13 +3877,13 @@ function moveMaskScope(entry, newScope) {
     const newRot = 0;
     const newRect = makeMaskRect(cx - nw / 2, cy - nh / 2, nw, nh, newRot);
     // 共通から削除して個別へ追加
-    project.globalMaskRects.splice(entry.idx, 1);
+    activeGlobalMasks().splice(entry.idx, 1);
     f.maskRects = f.maskRects || [];
     f.maskRects.push(newRect);
     _selectedMaskRef = { type: 'frame', frameId: f.id, idx: f.maskRects.length - 1 };
   } else if (newScope === 'global') {
     // 個別 → 共通
-    const f = project.frames.find(x => x.id === entry.frameId);
+    const f = activeFrames().find(x => x.id === entry.frameId);
     if (!f) return;
     const img = imageCache.get(f.imageId);
     if (!img) { alert('画像が未読み込みです。'); return; }
@@ -3620,9 +3902,9 @@ function moveMaskScope(entry, newScope) {
     const newRot = 0;
     const newRect = makeMaskRect(cx - nw / 2, cy - nh / 2, nw, nh, newRot);
     f.maskRects.splice(entry.idx, 1);
-    project.globalMaskRects = project.globalMaskRects || [];
-    project.globalMaskRects.push(newRect);
-    _selectedMaskRef = { type: 'global', idx: project.globalMaskRects.length - 1 };
+    const gm = activeGlobalMasks();
+    gm.push(newRect);
+    _selectedMaskRef = { type: 'global', idx: gm.length - 1 };
   }
   renderStage();
   renderOverlay();
@@ -3644,8 +3926,11 @@ function clearAllMasks() {
     ? `マスクを ${total} 個まとめて削除します。元に戻せませんがよろしいですか？`
     : `すべてのマスクを削除します。よろしいですか？`;
   if (!confirm(msg)) return;
-  project.globalMaskRects = [];
-  (project.frames || []).forEach(f => { f.maskRects = []; });
+  const a = activeAnim();
+  if (a) {
+    a.globalMaskRects = [];
+    (a.frames || []).forEach(f => { f.maskRects = []; });
+  }
   _selectedMaskRef = null;
   renderStage();
   renderOverlay();
@@ -3685,7 +3970,7 @@ function renderSelectedMaskPane() {
     if (_selectedMaskRef.type === 'global') {
       name.textContent = `共通マスク #${_selectedMaskRef.idx + 1}`;
     } else {
-      const fIdx = project.frames.findIndex(f => f.id === _selectedMaskRef.frameId);
+      const fIdx = activeFrames().findIndex(f => f.id === _selectedMaskRef.frameId);
       name.textContent = `個別マスク F${fIdx + 1} #${_selectedMaskRef.idx + 1}`;
     }
   }
@@ -3952,6 +4237,7 @@ function _bindPm() {
     _currentProjectDbName = null;
     _pmUpdateCurrentLabel();
     refreshPmList();
+    renderAnimTabbar();
     renderMaskUnifiedList();
     renderSelectedMaskPane();
     toast('＋ 新規プロジェクト');
@@ -4076,6 +4362,10 @@ setInterval(_pmAutoSaveTick, _PM_AUTOSAVE_MS);
 // 既存の selectFrame() / loadProject() 経由ではフレーム変更時にも更新したい
 // ので、 ポーリング相当の軽量フックを setInterval で代用。
 let _lastMaskListFrameId = null;
+// アニメタブの (フレーム数) バッジを最新に保つための簡易ポーリング (= renderStrip
+// 呼び出し全箇所に手を入れずに、 frame 数変化を 250ms 以内に反映)。
+let _lastTabbarFrameCount = -1;
+let _lastTabbarActiveId = null;
 setInterval(() => {
   // Only refresh DOM if selection identity changed since last tick
   if (_lastMaskListFrameId !== selectedFrameId) {
@@ -4083,7 +4373,241 @@ setInterval(() => {
     renderMaskUnifiedList();
     renderSelectedMaskPane();
   }
+  const fc = activeFrames().length;
+  const aid = project.activeAnimationId;
+  if (fc !== _lastTabbarFrameCount || aid !== _lastTabbarActiveId) {
+    _lastTabbarFrameCount = fc;
+    _lastTabbarActiveId = aid;
+    if (typeof renderAnimTabbar === 'function') renderAnimTabbar();
+  }
 }, 250);
+
+// ─── Animation tab bar (= 1 プロジェクト内の複数アニメ切替) ─────────────
+// 「考え中ループ」と「正解時の 1 枚絵」 を 1 プロジェクトで管理するための UI。
+// 各タブは project.animations[*] にマップ、 タブクリックで activeAnimationId 切替。
+function renderAnimTabbar() {
+  const host = $('anim-tabbar');
+  if (!host) return;
+  host.innerHTML = '';
+  const anims = project.animations || [];
+  const activeId = project.activeAnimationId;
+  anims.forEach(a => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'anim-tab';
+    btn.dataset.animId = a.id;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-pressed', a.id === activeId ? 'true' : 'false');
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = a.name || '(無題)';
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = `(${(a.frames || []).length})`;
+    btn.appendChild(nameSpan);
+    btn.appendChild(badge);
+    btn.title = `${a.name} — ${(a.frames || []).length} frames`;
+    btn.addEventListener('click', () => {
+      if (a.id === project.activeAnimationId) {
+        // 既選択タブの再クリック → ⋯ メニューと衝突しないよう何もしない
+        return;
+      }
+      setActiveAnimation(a.id);
+    });
+    host.appendChild(btn);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'anim-tab-add';
+  addBtn.textContent = '+ 追加';
+  addBtn.title = '新規アニメを追加 (空のフレーム配列で作成)';
+  addBtn.addEventListener('click', addAnimation);
+  host.appendChild(addBtn);
+  const moreBtn = document.createElement('button');
+  moreBtn.type = 'button';
+  moreBtn.className = 'anim-tab-more';
+  moreBtn.textContent = '⋯';
+  moreBtn.title = '現在のアニメをリネーム / 複製 / 削除';
+  moreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleAnimMoreMenu(moreBtn);
+  });
+  host.appendChild(moreBtn);
+}
+
+function setActiveAnimation(id) {
+  if (!project.animations) return;
+  const a = project.animations.find(x => x && x.id === id);
+  if (!a) return;
+  if (project.activeAnimationId === id) return;
+  project.activeAnimationId = id;
+  // フレーム選択 / マスク選択は per-anim ではないのでクリア (= 古い id を引きずらない)
+  selectedFrameId = (a.frames && a.frames[0]) ? a.frames[0].id : null;
+  _selectedMaskRef = null;
+  // 再生中なら止めて先頭へ
+  playbackStop();
+  // Top-bar (fps/loop/pingpong) を切替後の anim に同期
+  fpsRange.value = a.fps;
+  fpsLabel.textContent = String(a.fps);
+  $('btn-loop').classList.toggle('on', !!a.loop);
+  $('btn-pingpong').classList.toggle('on', !!a.pingPong);
+  // 描画キャッシュ系の invalidate (= 古い frame の temp canvas 参照を残さない)
+  renderAnimTabbar();
+  renderStrip();
+  renderStage();
+  renderOverlay();
+  syncPropsFromFrame();
+  renderMaskUnifiedList();
+  renderSelectedMaskPane();
+  markDirty();
+  snapshotForUndo('アニメ切替: ' + (a.name || ''));
+}
+
+function addAnimation() {
+  const n = (project.animations || []).length + 1;
+  const a = blankAnimation('アニメ' + n);
+  if (!Array.isArray(project.animations)) project.animations = [];
+  project.animations.push(a);
+  project.activeAnimationId = a.id;
+  selectedFrameId = null;
+  _selectedMaskRef = null;
+  playbackStop();
+  // Reset top-bar to new anim defaults
+  fpsRange.value = a.fps;
+  fpsLabel.textContent = String(a.fps);
+  $('btn-loop').classList.toggle('on', !!a.loop);
+  $('btn-pingpong').classList.toggle('on', !!a.pingPong);
+  renderAnimTabbar();
+  renderStrip();
+  renderStage();
+  renderOverlay();
+  syncPropsFromFrame();
+  renderMaskUnifiedList();
+  renderSelectedMaskPane();
+  markDirty();
+  snapshotForUndo('アニメ追加');
+  toast('＋ アニメ追加: ' + a.name);
+}
+
+function renameActiveAnimation() {
+  const a = activeAnim();
+  if (!a) return;
+  const nm = prompt('新しいアニメ名:', a.name || '');
+  if (nm === null) return;
+  const name = (nm || '').trim();
+  if (!name) return;
+  a.name = name;
+  renderAnimTabbar();
+  markDirty();
+  snapshotForUndo('アニメ名変更');
+  toast('✏️ リネーム: ' + name);
+}
+
+function duplicateActiveAnimation() {
+  const a = activeAnim();
+  if (!a) return;
+  const clone = JSON.parse(JSON.stringify(a));
+  clone.id = animUid();
+  clone.name = (a.name || 'アニメ') + ' (copy)';
+  // frame の id も再生成 (= グローバル一意性は厳密には不要だが Undo 等で衝突しないよう)
+  if (Array.isArray(clone.frames)) {
+    clone.frames.forEach(f => { if (f) f.id = uid('f'); });
+  }
+  project.animations.push(clone);
+  project.activeAnimationId = clone.id;
+  selectedFrameId = (clone.frames && clone.frames[0]) ? clone.frames[0].id : null;
+  _selectedMaskRef = null;
+  playbackStop();
+  fpsRange.value = clone.fps;
+  fpsLabel.textContent = String(clone.fps);
+  $('btn-loop').classList.toggle('on', !!clone.loop);
+  $('btn-pingpong').classList.toggle('on', !!clone.pingPong);
+  renderAnimTabbar();
+  renderStrip();
+  renderStage();
+  renderOverlay();
+  syncPropsFromFrame();
+  renderMaskUnifiedList();
+  renderSelectedMaskPane();
+  markDirty();
+  snapshotForUndo('アニメ複製');
+  toast('📋 複製: ' + clone.name);
+}
+
+function deleteActiveAnimation() {
+  const anims = project.animations || [];
+  if (anims.length <= 1) {
+    alert('最後の 1 個のアニメは削除できません。');
+    return;
+  }
+  const a = activeAnim();
+  if (!a) return;
+  if (!confirm('アニメ「' + (a.name || '無題') + '」を削除します。よろしいですか?')) return;
+  const idx = anims.findIndex(x => x && x.id === a.id);
+  anims.splice(idx, 1);
+  const nextAnim = anims[Math.min(idx, anims.length - 1)] || anims[0];
+  project.activeAnimationId = nextAnim ? nextAnim.id : null;
+  selectedFrameId = (nextAnim && nextAnim.frames && nextAnim.frames[0])
+    ? nextAnim.frames[0].id : null;
+  _selectedMaskRef = null;
+  playbackStop();
+  if (nextAnim) {
+    fpsRange.value = nextAnim.fps;
+    fpsLabel.textContent = String(nextAnim.fps);
+    $('btn-loop').classList.toggle('on', !!nextAnim.loop);
+    $('btn-pingpong').classList.toggle('on', !!nextAnim.pingPong);
+  }
+  renderAnimTabbar();
+  renderStrip();
+  renderStage();
+  renderOverlay();
+  syncPropsFromFrame();
+  renderMaskUnifiedList();
+  renderSelectedMaskPane();
+  markDirty();
+  snapshotForUndo('アニメ削除');
+  toast('× 削除: ' + (a.name || ''));
+}
+
+function toggleAnimMoreMenu(anchorBtn) {
+  const menu = $('anim-more-menu');
+  if (!menu) return;
+  if (menu.classList.contains('show')) {
+    menu.classList.remove('show');
+    return;
+  }
+  // Position below the ⋯ button
+  const r = anchorBtn.getBoundingClientRect();
+  menu.style.left = Math.round(r.left) + 'px';
+  menu.style.top  = Math.round(r.bottom + 2) + 'px';
+  menu.classList.add('show');
+  // 最後の 1 個なら 削除 を disabled
+  const delBtn = $('anim-more-delete');
+  if (delBtn) {
+    delBtn.disabled = (project.animations || []).length <= 1;
+  }
+}
+
+function _initAnimTabbar() {
+  $('anim-more-rename')?.addEventListener('click', () => {
+    $('anim-more-menu')?.classList.remove('show');
+    renameActiveAnimation();
+  });
+  $('anim-more-duplicate')?.addEventListener('click', () => {
+    $('anim-more-menu')?.classList.remove('show');
+    duplicateActiveAnimation();
+  });
+  $('anim-more-delete')?.addEventListener('click', () => {
+    $('anim-more-menu')?.classList.remove('show');
+    deleteActiveAnimation();
+  });
+  // 外側クリックで閉じる
+  document.addEventListener('click', (e) => {
+    const menu = $('anim-more-menu');
+    if (!menu || !menu.classList.contains('show')) return;
+    if (menu.contains(e.target)) return;
+    menu.classList.remove('show');
+  });
+}
 
 // ─── Resize observer (window resize → re-fit stage) ─────────────────────
 window.addEventListener('resize', () => {
@@ -4095,10 +4619,13 @@ window.addEventListener('resize', () => {
 (function boot() {
   resizeStage();
   initGuides();
+  // Migration guard: blankProject() からのフレッシュ起動でも v2 整合性を保証
+  migrateProject(project);
   if (!loadFromLocalStorage()) {
     // Fresh start
     renderAssetGrid();
     renderStockGrid();
+    renderAnimTabbar();
     renderStrip();
     renderStage();
     syncPropsFromFrame();
@@ -4121,11 +4648,16 @@ window.addEventListener('resize', () => {
   renderMaskUnifiedList();
   renderSelectedMaskPane();
 
+  // Animation tab bar (v2 schema)
+  _initAnimTabbar();
+  renderAnimTabbar();
+
   // Debug hook
   window.__komaEditor = {
     get project() { return project; },
     get selected() { return getSelectedFrame(); },
     blankProject,
+    blankAnimation,
     loadProject,
     listProjectsFromDb,
     saveProjectToDb,
@@ -4135,6 +4667,15 @@ window.addEventListener('resize', () => {
     setMaskMode,
     get globalMaskMode() { return _globalMaskMode; },
     setGlobalMaskMode,
+    // v2 anim helpers
+    activeAnim,
+    activeFrames,
+    activeGlobalMasks,
+    setActiveAnimation,
+    addAnimation,
+    renameActiveAnimation,
+    duplicateActiveAnimation,
+    deleteActiveAnimation,
   };
   console.log('[koma] editor ready. Storage key:', STORAGE_KEY);
 })();
