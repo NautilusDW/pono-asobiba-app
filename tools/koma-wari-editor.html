@@ -490,8 +490,8 @@
       </div>
       <button id="btn-open"   title="ファイルからプロジェクト JSON を読み込み">📥 ファイルから読み込み</button>
       <button id="btn-save"   title="プロジェクト JSON ファイルをダウンロード">📤 ファイルとしてエクスポート</button>
-      <button id="btn-export"     class="primary" title="現在のアニメだけを ZIP (manifest + WebP) でエクスポート">📦 ZIP エクスポート</button>
-      <button id="btn-export-all" title="全アニメをまとめて ZIP (各アニメごとにサブフォルダ) でエクスポート">📦 全アニメをエクスポート</button>
+      <button id="btn-export"     class="primary" title="現在のアニメだけを ZIP (manifest + WebP) でエクスポート">📦 このアニメだけ ZIP</button>
+      <button id="btn-export-all" title="全アニメをサブフォルダ付きでまとめて ZIP にエクスポート" style="background:#3b2566; border-color:#8a5cf0; color:#e8d8ff;">📦 全アニメまとめて ZIP</button>
       <input type="file" id="file-input-json" accept=".json,application/json" style="display:none">
     </div>
     <div class="group">
@@ -774,7 +774,9 @@ function migrateProject(proj) {
   // v1 起源かどうかは「root に v1 由来の frames フィールドがある」ことで判定。
   // (空配列でも legacy 形跡として扱う — 通常 v1 export には frames が必ずある)
   const looksV1 = proj.schema === LEGACY_SCHEMA_V1
-               || (proj.schema !== SCHEMA && Array.isArray(proj.frames));
+               || (proj.schema !== SCHEMA
+                   && Array.isArray(proj.frames)
+                   && !Array.isArray(proj.animations));
   if (!looksV1 && proj.schema === SCHEMA && Array.isArray(proj.animations) && proj.animations.length > 0) {
     if (!proj.activeAnimationId
         || !proj.animations.some(a => a && a.id === proj.activeAnimationId)) {
@@ -1089,10 +1091,12 @@ function removeImageById(id) {
   if (!project.images[id] && !(project.stockImages && project.stockImages[id])) {
     return false;
   }
-  const refCount = activeFrames().filter(f => f.imageId === id).length;
+  const refCount = (project.animations || []).reduce((sum, a) => {
+    return sum + (Array.isArray(a?.frames) ? a.frames.filter(f => f.imageId === id).length : 0);
+  }, 0);
   if (refCount > 0) {
     const msg =
-      `この素材は ${refCount} 件のフレームで使われています。\n` +
+      `この素材は複数アニメにまたがる ${refCount} 件のフレームで使われています。\n` +
       `削除すると該当フレームも一緒に削除されます。続行しますか？`;
     if (!confirm(msg)) return false;
   } else {
@@ -3244,9 +3248,11 @@ function sanitizeAnimFolderName(anim) {
 // 呼び出し前に project.activeAnimationId をその anim にセットして「active」 にする
 // 必要がある。
 async function _writeAnimToZip(zip, anim, folderPrefix) {
-  const ext  = anim.exportFormat === 'webp' ? 'webp' : 'png';
-  const mime = anim.exportFormat === 'webp' ? 'image/webp' : 'image/png';
-  const quality = (typeof anim.exportQuality === 'number') ? anim.exportQuality : 0.9;
+  // 旧 project や未マイグレートのデータでも安全に動くよう fallback を入れる
+  const fmt  = (anim.exportFormat || 'webp');
+  const ext  = fmt === 'webp' ? 'webp' : 'png';
+  const mime = fmt === 'webp' ? 'image/webp' : 'image/png';
+  const quality = (anim.exportQuality ?? 0.9);
   const manifest = {
     schema: MANIFEST_SCHEMA,
     id: anim.id,
@@ -3394,7 +3400,8 @@ function restoreSnapshot(snap) {
       }
     }
     // Mask schema migration guard (= 古い snapshot 経由でも id/rotation 補完)
-    migrateProject(project);
+    // 注: migrateProject はここで呼ばない (v1 fallback 後に呼ぶと animations を上書き
+    //     してしまう。v2 ブランチ側は既に project の整合性が取れているので不要)
     migrateMasks(project);
     // selectedFrameId only valid if still present in active anim's frames
     const fr = activeFrames();
@@ -4385,6 +4392,26 @@ setInterval(() => {
 // ─── Animation tab bar (= 1 プロジェクト内の複数アニメ切替) ─────────────
 // 「考え中ループ」と「正解時の 1 枚絵」 を 1 プロジェクトで管理するための UI。
 // 各タブは project.animations[*] にマップ、 タブクリックで activeAnimationId 切替。
+
+// タブにフォーカスがある時の左右キー切替 (a11y)
+function _onTabKey(e) {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const anims = project.animations || [];
+  const i = anims.findIndex(a => a && a.id === project.activeAnimationId);
+  if (i < 0) return;
+  const next = e.key === 'ArrowLeft'
+    ? Math.max(0, i - 1)
+    : Math.min(anims.length - 1, i + 1);
+  if (next !== i) {
+    setActiveAnimation(anims[next].id);
+    // 再描画後の対応するタブにフォーカスを移す
+    const host = $('anim-tabbar');
+    const nextBtn = host && host.querySelector(`.anim-tab[data-anim-id="${anims[next].id}"]`);
+    if (nextBtn) nextBtn.focus();
+  }
+  e.preventDefault();
+}
+
 function renderAnimTabbar() {
   const host = $('anim-tabbar');
   if (!host) return;
@@ -4397,7 +4424,8 @@ function renderAnimTabbar() {
     btn.className = 'anim-tab';
     btn.dataset.animId = a.id;
     btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-pressed', a.id === activeId ? 'true' : 'false');
+    btn.setAttribute('aria-selected', a.id === activeId ? 'true' : 'false');
+    btn.addEventListener('keydown', _onTabKey);
     const nameSpan = document.createElement('span');
     nameSpan.textContent = a.name || '(無題)';
     const badge = document.createElement('span');
@@ -4458,8 +4486,8 @@ function setActiveAnimation(id) {
   syncPropsFromFrame();
   renderMaskUnifiedList();
   renderSelectedMaskPane();
-  markDirty();
-  snapshotForUndo('アニメ切替: ' + (a.name || ''));
+  // 注: アニメ切替はデータ変更ではない (View 切替) ので markDirty / snapshotForUndo は呼ばない
+  //     → Ctrl+Z でアニメ切替が undo されると混乱するため。
 }
 
 function addAnimation() {
@@ -4541,7 +4569,9 @@ function deleteActiveAnimation() {
   }
   const a = activeAnim();
   if (!a) return;
-  if (!confirm('アニメ「' + (a.name || '無題') + '」を削除します。よろしいですか?')) return;
+  const frameCount = (a.frames || []).length;
+  const msg = `アニメ "${a.name || '無題'}" を削除します。\n（フレーム ${frameCount}個 + マスクが消えます）\n\n誤って削除した場合は Ctrl+Z で戻せます。`;
+  if (!confirm(msg)) return;
   const idx = anims.findIndex(x => x && x.id === a.id);
   anims.splice(idx, 1);
   const nextAnim = anims[Math.min(idx, anims.length - 1)] || anims[0];
@@ -4583,7 +4613,9 @@ function toggleAnimMoreMenu(anchorBtn) {
   // 最後の 1 個なら 削除 を disabled
   const delBtn = $('anim-more-delete');
   if (delBtn) {
-    delBtn.disabled = (project.animations || []).length <= 1;
+    const anims = project.animations || [];
+    delBtn.disabled = anims.length <= 1;
+    delBtn.title = delBtn.disabled ? 'アニメは最低1個必要です' : 'このアニメを削除';
   }
 }
 
