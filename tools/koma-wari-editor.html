@@ -3595,8 +3595,8 @@ function pasteMaskFromClipboard() {
   _maskClipboard.items.forEach(it => {
     if (!it || !it.rect) return;
     const newRect = makeMaskRect(
-      (it.rect.x || 0) + 8,
-      (it.rect.y || 0) + 8,
+      (it.rect.x || 0),
+      (it.rect.y || 0),
       Math.max(4, it.rect.w || 0),
       Math.max(4, it.rect.h || 0),
       it.rect.rotation || 0

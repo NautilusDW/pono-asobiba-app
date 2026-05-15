@@ -133,6 +133,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-15T23:50:39Z - マスク貼り付け時の+8オフセット除去 (koma-wari-editor.html pasteMaskFromClipboard) + sw.js CACHE_VERSION 1010→1011
+- **タスク**: マスク貼り付け時の+8オフセット除去 (koma-wari-editor.html pasteMaskFromClipboard) + sw.js CACHE_VERSION 1010→1011
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 37
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 19, "ToolSearch": 1, "Grep": 1, "Bash": 16}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
+### 2026-05-15T23:49:27Z - ojamamushi kind set: pyon/kabuto/hachi 画像追加 + nemuri 廃止 + maze-rough kind ボタン更新
+- **タスク**: ojamamushi kind set: pyon/kabuto/hachi 画像追加 + nemuri 廃止 + maze-rough kind ボタン更新
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 64
+- **エラー数**: 5
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 21, "Glob": 9, "Grep": 6, "Read": 6, "ToolSearch": 2, "Agent": 19, "TaskOutput": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-05-15T23:47:52Z - maze-editor.html ojamamushi kind set update (remove nemuri, add kabuto+hachi, image pyon, nemuri->mayoi alias)
+- **タスク**: maze-editor.html ojamamushi kind set update (remove nemuri, add kabuto+hachi, image pyon, nemuri->mayoi alias)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 36
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 18, "ToolSearch": 1, "Grep": 1, "Bash": 16}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
 ### 2026-05-15T23:46:38Z - お邪魔虫3体PNG配置 + 画像最適化スクリプト実行
 - **タスク**: お邪魔虫3体PNG配置 + 画像最適化スクリプト実行
 - **結果**: 成功
@@ -208,45 +247,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 17, "ToolSearch": 1, "Grep": 1, "Bash": 10}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T23:27:42Z - koma-wari-editor マスクコピー&ペースト機能追加 (Ctrl+C/V + 行ボタン、 _maskClipboard module-level、 別アニメへ使い回し可、 sw v1009)
-- **タスク**: koma-wari-editor マスクコピー&ペースト機能追加 (Ctrl+C/V + 行ボタン、 _maskClipboard module-level、 別アニメへ使い回し可、 sw v1009)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 27
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 15, "ToolSearch": 1, "Grep": 1, "Bash": 10}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T23:19:24Z - quizland .board max-width 撤去で saved-layout 値 (971x503) のまま描画化 — 左下フレーム縦長修正 (sw v1008)
-- **タスク**: quizland .board max-width 撤去で saved-layout 値 (971x503) のまま描画化 — 左下フレーム縦長修正 (sw v1008)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 53
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 30, "Read": 8, "Agent": 9, "ToolSearch": 1, "Grep": 2, "Edit": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-15T23:16:51Z - feature_quizland_contain_fit.md に sw v1008 セクション追記 (.board base max-width 撤去で saved-layout WYSIWYG 化)
-- **タスク**: feature_quizland_contain_fit.md に sw v1008 セクション追記 (.board base max-width 撤去で saved-layout WYSIWYG 化)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 25
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 14, "ToolSearch": 1, "Grep": 1, "Bash": 9}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。
 
 

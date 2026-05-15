@@ -246,13 +246,14 @@ input[type="file"]::file-selector-button {
     <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
       <div style="font-size:0.78rem; color:#cfa; margin-bottom:3px;">おじゃま虫の しゅるい:</div>
       <div class="mode-row">
-        <button class="btn kind-btn active" data-creature-kind="mayoi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/mayoi.png" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">まよい</button>
-        <button class="btn kind-btn"        data-creature-kind="odoke"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/odoke.png" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">おどけ</button>
-        <button class="btn kind-btn"        data-creature-kind="nemuri" style="background:#5a3a7a; color:#e6c8ff;">😴 ねむり</button>
-        <button class="btn kind-btn"        data-creature-kind="pyon"   style="background:#5a3a7a; color:#e6c8ff;">🦗 ぴょん</button>
+        <button class="btn kind-btn active" data-creature-kind="mayoi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/mayoi.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">まよい</button>
+        <button class="btn kind-btn"        data-creature-kind="odoke"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/odoke.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">おどけ</button>
+        <button class="btn kind-btn"        data-creature-kind="pyon"   style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/pyon.png"   style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">ぴょん</button>
+        <button class="btn kind-btn"        data-creature-kind="kabuto" style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/kabuto.png" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">コツコツ</button>
+        <button class="btn kind-btn"        data-creature-kind="hachi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/hachi.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">ブンブン</button>
       </div>
       <div style="font-size:0.7rem; color:#9aa; margin-top:2px;">
-        まよい=じゃんけん / おどけ=○×クイズ / ねむり=シルエット / ぴょん=リズム模倣
+        まよい=じゃんけん / おどけ=○×クイズ / ぴょん=リズム模倣 / コツコツ=カブト / ブンブン=ハチ
       </div>
     </div>
 
@@ -481,12 +482,15 @@ const COLOR_GRID  = 'rgba(0,0,0,0.12)';
 const COLOR_START = '#3B8DD9';
 const COLOR_GOAL  = '#D74E4E';
 const COLOR_CREATURE = '#A855E6'; // お邪魔虫マーカー (紫)
-// Phase 3.5+: お邪魔虫の見た目用 PNG。 mayoi/odoke だけ画像があり、 nemuri/pyon は
-// 画像未制作なので絵文字 (kind ボタン) のままにする。 描画側 (drawCreatureMarker)
-// は画像があれば紫リングの上に重ね、 無ければリングのみ (= 従来通り)。
+// Phase 3.5+: お邪魔虫の見た目用 PNG。 全 5 kind (mayoi/odoke/pyon/kabuto/hachi) に
+// 画像あり。 描画側 (drawCreatureMarker) は画像があれば紫リングの上に重ね、
+// 無ければ (読み込み中など) リングのみ (= 従来通り)。
 const CREATURE_IMAGE_URL = {
-  mayoi: '/assets/images/maze/creatures/mayoi.png',
-  odoke: '/assets/images/maze/creatures/odoke.png',
+  mayoi:  '/assets/images/maze/creatures/mayoi.png',
+  odoke:  '/assets/images/maze/creatures/odoke.png',
+  pyon:   '/assets/images/maze/creatures/pyon.png',
+  kabuto: '/assets/images/maze/creatures/kabuto.png',
+  hachi:  '/assets/images/maze/creatures/hachi.png',
 };
 const _roughCreatureImgCache = {};
 function _getCreatureImg(kind) {
@@ -522,7 +526,7 @@ const state = {
   tiles: makeEmptyGrid(), // 'wall' | 'path'
   start: null,            // { x, y } in PIXEL coords (free positioning, not grid-snapped)
   goal:  null,            // same — pixel coords
-  creatures: [],          // [{ x, y, kind:'mayoi'|'odoke'|'nemuri'|'pyon' }] お邪魔虫マーカー (PIXEL coords)
+  creatures: [],          // [{ x, y, kind:'mayoi'|'odoke'|'pyon'|'kabuto'|'hachi' }] お邪魔虫マーカー (PIXEL coords)。 旧 'nemuri' は load 時に 'mayoi' へ alias。
                           // Phase 3.5: kind を持って、配置時に selectedCreatureKind を採用
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
   edges: [],              // [{ polyline: [{x,y},{x,y},...] }] ノード間の道筋 (PIXEL coords)
@@ -1184,15 +1188,15 @@ function drawCreatureMarker(pos) {
   ctx.lineWidth = 4;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
   if (img) {
-    // 画像あり (mayoi / odoke): 紫リングの直径を基準に、 PNG 本来のアスペクト比を保って中央揃え。
-    // (1:1 で描くと spider 系の横長 PNG が縦に潰れるため)
+    // 画像あり (mayoi / odoke / pyon / kabuto / hachi): 紫リングの直径を基準に、
+    // PNG 本来のアスペクト比を保って中央揃え。 (1:1 で描くと spider 系の横長 PNG が縦に潰れるため)
     const d = r * 2;
     const ratio = img.naturalWidth / img.naturalHeight;
     const dh = d;
     const dw = d * ratio;
     ctx.drawImage(img, cx - dw/2, cy - dh/2, dw, dh);
   } else {
-    // 画像なし (nemuri / pyon、 または読み込み中): 従来通り白い小さなアクセント点。
+    // 画像なし (読み込み中、 または旧 nemuri のような未知 kind): 従来通り白い小さなアクセント点。
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(cx - r*0.3, cy - r*0.25, r*0.15, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(cx + r*0.3, cy - r*0.25, r*0.15, 0, Math.PI * 2); ctx.fill();
@@ -2595,14 +2599,16 @@ function _buildHandoff() {
     { from: 'start', to: 'goal', polyline: polyline },
   ];
   // creatures: kind 必須、 id を付与
-  const validCKinds = { mayoi: 1, odoke: 1, nemuri: 1, pyon: 1 };
+  // 'nemuri' は廃止された旧 kind。 後方互換のため load/handoff 時は無音で 'mayoi' へ alias。
+  const validCKinds = { mayoi: 1, odoke: 1, pyon: 1, kabuto: 1, hachi: 1 };
   const creatures = [];
   const srcC = Array.isArray(state.creatures) ? state.creatures : [];
   let cIdx = 1;
   for (let i = 0; i < srcC.length; i++) {
     const c = srcC[i];
     if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
-    const kind = (c.kind && validCKinds[c.kind]) ? c.kind : 'mayoi';
+    const rawKind = (c.kind === 'nemuri') ? 'mayoi' : c.kind;
+    const kind = (rawKind && validCKinds[rawKind]) ? rawKind : 'mayoi';
     creatures.push({ id: 'c' + cIdx, kind: kind, x: c.x, y: c.y });
     cIdx++;
   }
