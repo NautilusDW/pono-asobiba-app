@@ -1207,7 +1207,12 @@ function handleEdgeClick(p) {
     state.edgeInProgress = { fromId: snapped.id, points: [] };
     edgeProgressEl.textContent = '描画中: ' + snapped.id + ' から (Esc / 右クリックで取消)';
   } else {
-    if (snapped && snapped.id !== state.edgeInProgress.fromId) {
+    if (snapped) {
+      const isSelfLoop = snapped.id === state.edgeInProgress.fromId;
+      if (isSelfLoop && state.edgeInProgress.points.length === 0) {
+        showBanner('ループ道は途中のアンカーを 1 点以上追加してね');
+        return;
+      }
       // Commit the edge — store CONTROLS (anchors). Densification happens at render/export.
       const fromNode = state.nodes.find(function(n) { return n.id === state.edgeInProgress.fromId; });
       const controls = [{ x: fromNode.x, y: fromNode.y }]
@@ -1217,9 +1222,11 @@ function handleEdgeClick(p) {
       state.edgeInProgress = null;
       edgeProgressEl.textContent = '';
       const shape = controls.length === 2 ? '直線' : ('カーブ ' + (controls.length - 2) + ' 制御点');
-      showBanner('道を作成: ' + fromNode.id + ' → ' + snapped.id + ' (' + shape + ')');
-    } else if (snapped && snapped.id === state.edgeInProgress.fromId) {
-      showBanner('同じノードには戻れないよ');
+      if (isSelfLoop) {
+        showBanner('ループ道を作成: ' + fromNode.id + ' (' + shape + ')');
+      } else {
+        showBanner('道を作成: ' + fromNode.id + ' → ' + snapped.id + ' (' + shape + ')');
+      }
     } else {
       // Add intermediate point
       state.edgeInProgress.points.push(p);
