@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-15 - [batch:29-puzzle-stage-raw] Codex: `d:\Download\ポノのパズルゲーム_生成用指示文とプロンプト一覧.md` を受領。HANDOFF / git log / `assets/images/puzzle` / `tmp/alpha_pending` を確認し、`puzzle_stage_*` 系の既存成果物無しと確認済 → 着手します。通常ステージ raw を `tmp/alpha_pending/29/` に納品予定。ポノ特別ステージ 05/10/15/20 は元絵が必要なため別扱い。 (by Codex)
+
 - 2026-05-14 - [batch:28-maze-leaf-glow-from-scratch-mask] Codex: user 指摘「スタートとゴールの位置が違う、一段上に上げている」を受領。添付された最新ラフ画像を正本として、青/赤の円形クリアリングを下段の現在位置に固定し、生成モデル任せではなくラフのグリッド/マスクを保持する方式で `tmp/alpha_pending/28/` に 1 から再作成する。 (by Codex)
 
 - 2026-05-12 - [batch:voicepeak-vdc2-dict] Codex: user が `tools/voicepeak/test/` に置いた `testword.vdc2` / `testword02.vdc2` を確認。`.vdc2` は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の形式と判明。`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1` を追加し、`tools/voicepeak/voicepeak_user_dict.csv` 65 語から `tools/voicepeak/voicepeak_user_dict.vdc2` を生成済。VOICEPEAK 実機インポート確認は未実施。 (by Codex)
