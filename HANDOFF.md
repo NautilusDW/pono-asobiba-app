@@ -86,6 +86,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-15 - [batch:32-maze-ojamamushi-spider] **Done** — 迷路用お邪魔虫の単体蜘蛛 raw を `tmp/alpha_pending/32/maze_ojamamushi_spider_raw.png` に納品 (`1448x1086` PNG、白背景、alpha なし)。8本脚・ストップ風前脚・半目のいたずら顔・葉アクセントを目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
+
 - 2026-05-15 - [batch:31-maze-ojamamushi-sheet] **Done** — 迷路用お邪魔虫 5 体の raw asset sheet を `tmp/alpha_pending/31/maze_ojamamushi_bug_sheet_raw.png` に納品 (`1774x887` PNG、白背景、alpha なし)。Mayoi / Kurukuru / Nemuri / Kakurenbo / Nazobato 風の5体が横一列・全身・同スケールで、文字/ラベル/UIなしを目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
 - 2026-05-15 - [batch:31-maze-ojamamushi-sheet] **Done** — user 指摘「手足の数がおかしいので、芋虫以外は6本」を受け、脚数修正版 `tmp/alpha_pending/31/maze_ojamamushi_bug_sheet_raw_v2.png` を追加納品 (`1983x793` PNG、白背景、alpha なし)。芋虫以外は「2腕+4脚」に寄せ、余分な小脚を避ける指定で再生成。旧 `maze_ojamamushi_bug_sheet_raw.png` は比較用に保持。 (by Codex)
 
