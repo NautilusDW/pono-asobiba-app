@@ -246,11 +246,11 @@ input[type="file"]::file-selector-button {
     <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
       <div style="font-size:0.78rem; color:#cfa; margin-bottom:3px;">おじゃま虫の しゅるい:</div>
       <div class="mode-row">
-        <button class="btn kind-btn active" data-creature-kind="mayoi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/mayoi.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">まよい</button>
-        <button class="btn kind-btn"        data-creature-kind="odoke"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/odoke.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">おどけ</button>
-        <button class="btn kind-btn"        data-creature-kind="pyon"   style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/pyon.png"   style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">ぴょん</button>
-        <button class="btn kind-btn"        data-creature-kind="kabuto" style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/kabuto.png" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">コツコツ</button>
-        <button class="btn kind-btn"        data-creature-kind="hachi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="/assets/images/maze/creatures/hachi.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">ブンブン</button>
+        <button class="btn kind-btn active" data-creature-kind="mayoi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="../assets/images/maze/creatures/mayoi.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">まよい</button>
+        <button class="btn kind-btn"        data-creature-kind="odoke"  style="background:#5a3a7a; color:#e6c8ff;"><img src="../assets/images/maze/creatures/odoke.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">おどけ</button>
+        <button class="btn kind-btn"        data-creature-kind="pyon"   style="background:#5a3a7a; color:#e6c8ff;"><img src="../assets/images/maze/creatures/pyon.png"   style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">ぴょん</button>
+        <button class="btn kind-btn"        data-creature-kind="kabuto" style="background:#5a3a7a; color:#e6c8ff;"><img src="../assets/images/maze/creatures/kabuto.png" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">コツコツ</button>
+        <button class="btn kind-btn"        data-creature-kind="hachi"  style="background:#5a3a7a; color:#e6c8ff;"><img src="../assets/images/maze/creatures/hachi.png"  style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:2px" alt="">ブンブン</button>
       </div>
       <div style="font-size:0.7rem; color:#9aa; margin-top:2px;">
         まよい=じゃんけん / おどけ=○×クイズ / ぴょん=リズム模倣 / コツコツ=カブト / ブンブン=ハチ
@@ -486,11 +486,11 @@ const COLOR_CREATURE = '#A855E6'; // お邪魔虫マーカー (紫)
 // 画像あり。 描画側 (drawCreatureMarker) は画像があれば紫リングの上に重ね、
 // 無ければ (読み込み中など) リングのみ (= 従来通り)。
 const CREATURE_IMAGE_URL = {
-  mayoi:  '/assets/images/maze/creatures/mayoi.png',
-  odoke:  '/assets/images/maze/creatures/odoke.png',
-  pyon:   '/assets/images/maze/creatures/pyon.png',
-  kabuto: '/assets/images/maze/creatures/kabuto.png',
-  hachi:  '/assets/images/maze/creatures/hachi.png',
+  mayoi:  '../assets/images/maze/creatures/mayoi.png',
+  odoke:  '../assets/images/maze/creatures/odoke.png',
+  pyon:   '../assets/images/maze/creatures/pyon.png',
+  kabuto: '../assets/images/maze/creatures/kabuto.png',
+  hachi:  '../assets/images/maze/creatures/hachi.png',
 };
 const _roughCreatureImgCache = {};
 function _getCreatureImg(kind) {
