@@ -1707,6 +1707,12 @@ function imgLoadStage(def) {
     console.error('[maze] MazeImage runtime not loaded');
     return;
   }
+  // ステージリロード時、前回ステージの defeat-dialog timer が残っていたらキャンセル
+  // (timer 内の if (_encounterActive) ガードはあるが、念のため確実に殺しておく)
+  if (_creatureDefeatTimer) {
+    clearTimeout(_creatureDefeatTimer);
+    _creatureDefeatTimer = null;
+  }
   // Switch body to image-stage layout (full viewport landscape, hide grid UI)
   document.body.classList.add('image-stage-mode');
   stage = window.MazeImage.buildStage(def);
@@ -2290,6 +2296,10 @@ function imgClampCameraToBounds(stage, viewportW, viewportH) {
 const _defeatedCreatures = new Set(); // session-only memory of defeated creatures
 let _encounterActive = false;          // true while encounter modal is open
 let _encounteringCreatureId = null;   // current creature being fought
+let _creatureDefeatTimer = null;       // pending setTimeout id for the post-defeat-dialog auto-close
+                                       // 1.6s setTimeout が新しいエンカウンター/ステージリロードを跨いで誤発火するのを防ぐため、
+                                       // _triggerEncounter / imgLoadStage / _closeEncounter / _showCreatureDefeatDialog で必ず
+                                       // clearTimeout(_creatureDefeatTimer) してから新しい timer を仕込む。
 const encModal = document.getElementById('encModal');
 const encCreatureEl = document.getElementById('encCreature');
 const encNameEl = document.getElementById('encName');
@@ -2303,6 +2313,10 @@ const CREATURE_KIND_DATA = {
   nemuri:{ emoji: '😴', color: '#9B7EBC', name: 'ねむりムシ', dialog: 'シルエット クイズ で<br>あそぼう…zzz', defaultGame: 'silhouette' },
   pyon:  { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon' },
 };
+// 全お邪魔虫共通の台詞 (出会った瞬間 / プレイヤーが勝った瞬間)。
+// c.dialog (ステージ JSON での明示指定) があれば encounter ではそちらを優先。
+const CREATURE_ENCOUNTER_DIALOG = 'ここは とおさないぞ！\nぼくに かったら、とおしてあげる！';
+const CREATURE_DEFEAT_DIALOG    = 'うーん、まけちゃった！\nとおって いいよ。';
 function _creatureData(c) {
   return CREATURE_KIND_DATA[c.kind] || CREATURE_KIND_DATA.mayoi;
 }
@@ -2491,6 +2505,12 @@ let _currentGame = null;
 
 function _triggerEncounter(c) {
   if (_encounterActive) return;
+  // 新しいエンカウンター開始時、前回の defeat-dialog timer が残っていたら必ずキャンセル
+  // (前回の勝利演出 timer がまだ走っていると、新しい敵に対して誤って _closeEncounter(true) してしまうため)
+  if (_creatureDefeatTimer) {
+    clearTimeout(_creatureDefeatTimer);
+    _creatureDefeatTimer = null;
+  }
   _encounterActive = true;
   _encounteringCreatureId = c.id || (c.x + ',' + c.y);
   _currentCreature = c;
@@ -2517,9 +2537,10 @@ function _triggerEncounter(c) {
     encCreatureEl.textContent = data.emoji;
   }
   encNameEl.textContent = data.name;
-  // dialog: ミニゲームごとに変える (お邪魔虫の種類ではなく今回出るゲームに合わせる)
-  // 作者が c.dialog を明示指定している場合のみそれを尊重
-  const _dialogText = (c.dialog || _GAME_DIALOGS[_currentGame] || '').replace(/<br\s*\/?\s*>/gi, '\n');
+  // dialog: 全お邪魔虫共通の固定セリフ。
+  // 作者が c.dialog を明示指定している場合のみそれを尊重 (escape hatch)。
+  // _GAME_DIALOGS は当面そのまま残置 (将来用 / 互換性のため)。
+  const _dialogText = (c.dialog || CREATURE_ENCOUNTER_DIALOG).replace(/<br\s*\/?\s*>/gi, '\n');
   encDialogEl.textContent = '';
   _dialogText.split('\n').forEach(function(line, i) {
     if (i > 0) encDialogEl.appendChild(document.createElement('br'));
@@ -2610,7 +2631,19 @@ function _resolveJanken(playerHand) {
     document.getElementById('encRetry').addEventListener('click', _showJankenChoices);
   } else {
     document.getElementById('encNext').addEventListener('click', function() {
-      _closeEncounter(outcome === 'win');
+      if (outcome === 'win') {
+        // 勝利時のみ: 他ミニゲーム (_resolveQuiz) と同じ「うーん、まけちゃった！」演出を挟んでから
+        // 1.6秒後に _closeEncounter(true) する。timer id は _creatureDefeatTimer に保存し、
+        // 新しいエンカウンター開始/ステージリロード等で確実にキャンセルできるようにする。
+        _showCreatureDefeatDialog();
+        _creatureDefeatTimer = setTimeout(function() {
+          _creatureDefeatTimer = null;
+          if (_encounterActive) _closeEncounter(true);
+        }, 1600);
+      } else {
+        // 敗北時は従来通り即バウンスバック
+        _closeEncounter(false);
+      }
     });
   }
 }
@@ -3006,8 +3039,43 @@ function _resolveQuiz(correct) {
       '</button>' +
     '</div>';
   document.getElementById('encNextQ').addEventListener('click', function() {
-    _closeEncounter(correct);
+    if (correct) {
+      // 勝利時のみ: お邪魔虫が観念するセリフを encStageEl に表示してから、
+      // 1.6秒で自動的に _closeEncounter(true) へ進む。
+      // (ミニゲーム共通 / 全種類共通の固定文)
+      // timer id は _creatureDefeatTimer に保存し、新しいエンカウンター開始や
+      // ステージリロード等で確実にキャンセルできるようにする。
+      _showCreatureDefeatDialog();
+      _creatureDefeatTimer = setTimeout(function() {
+        _creatureDefeatTimer = null;
+        // 同じエンカウンターが続いていて (誤クローズ防止)、
+        // モーダルがまだ開いている場合のみ閉じる
+        if (_encounterActive) _closeEncounter(true);
+      }, 1600);
+    } else {
+      // 敗北時は従来通り即座にバウンスバック
+      _closeEncounter(false);
+    }
   });
+}
+
+// 勝利後の「うーん、まけちゃった！…」セリフ表示。
+// encStageEl の中身をこのセリフだけに差し替える (ボタンなし、自動進行)。
+// XSS 対策で textContent + <br> DOM 構築。
+function _showCreatureDefeatDialog() {
+  // idempotency: もし前回の defeat-dialog timer が残っていたらキャンセル
+  if (_creatureDefeatTimer) {
+    clearTimeout(_creatureDefeatTimer);
+    _creatureDefeatTimer = null;
+  }
+  encStageEl.textContent = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'enc-result win';
+  CREATURE_DEFEAT_DIALOG.split('\n').forEach(function(line, i) {
+    if (i > 0) wrap.appendChild(document.createElement('br'));
+    wrap.appendChild(document.createTextNode(line));
+  });
+  encStageEl.appendChild(wrap);
 }
 
 // ゲーム starter のディスパッチ表
@@ -3021,6 +3089,11 @@ const _GAME_STARTERS = {
 
 function _closeEncounter(playerWon) {
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
+  // 念のため: 別経路で _closeEncounter が呼ばれた場合に備え、未発火の defeat-dialog timer をキャンセル
+  if (_creatureDefeatTimer) {
+    clearTimeout(_creatureDefeatTimer);
+    _creatureDefeatTimer = null;
+  }
   encModal.classList.remove('show');
   encModal.setAttribute('aria-hidden', 'true');
   const cid = _encounteringCreatureId;
