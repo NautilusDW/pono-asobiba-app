@@ -250,8 +250,8 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn" data-okind="rock">🪨 石</button>
     </div>
     <div id="creatureKindRow" class="modes" style="display:none; margin-top:6px;">
-      <button class="kind-btn active" data-ckind="mayoi">🐛 まよい</button>
-      <button class="kind-btn" data-ckind="odoke">🐞 おどけ</button>
+      <button class="kind-btn active" data-ckind="mayoi"><img src="../assets/images/maze/creatures/mayoi.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> まよい</button>
+      <button class="kind-btn" data-ckind="odoke"><img src="../assets/images/maze/creatures/odoke.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> おどけ</button>
       <button class="kind-btn" data-ckind="nemuri">😴 ねむり</button>
       <button class="kind-btn" data-ckind="pyon">🦗 ぴょん</button>
     </div>
@@ -376,6 +376,18 @@ const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/
 // Re-render once each marker loads so first-paint isn't blank
 imgMarkerStart.onload = function() { try { draw(); } catch (e) {} };
 imgMarkerGoal.onload  = function() { try { draw(); } catch (e) {} };
+
+// Creature image cache (kinds without an entry fall back to emoji)
+const _editorCreatureImgCache = {};
+function _getCreatureImg(url) {
+  if (!url) return null;
+  if (_editorCreatureImgCache[url]) return _editorCreatureImgCache[url];
+  const im = new Image();
+  im.onload = function() { try { draw(); } catch (e) {} };
+  im.src = url;
+  _editorCreatureImgCache[url] = im;
+  return im;
+}
 
 // ────────────────────────────────────────────────────────
 // State
@@ -1387,8 +1399,8 @@ function drawObstacle(o) {
 }
 
 const CREATURE_VIS = {
-  mayoi: { emoji: '🐛', color: '#7AB540' },
-  odoke: { emoji: '🐞', color: '#D7553A' },
+  mayoi: { emoji: '🐛', color: '#7AB540', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
+  odoke: { emoji: '🐞', color: '#D7553A', imageUrl: '../assets/images/maze/creatures/odoke.png' },
   nemuri:{ emoji: '😴', color: '#9B7EBC' },
   pyon:  { emoji: '🦗', color: '#5BB8A8' },
 };
@@ -1403,10 +1415,18 @@ function drawCreature(c) {
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 4 / canvasScale;
   ctx.stroke();
-  ctx.font = (sz * 0.65) + 'px serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#fff';
-  ctx.fillText(v.emoji, c.x, c.y);
+  const cim = _getCreatureImg(v.imageUrl);
+  if (cim && cim.complete && cim.naturalWidth > 0) {
+    const ratio = cim.naturalWidth / cim.naturalHeight;
+    const drawH = sz * 0.95;
+    const drawW = drawH * ratio;
+    ctx.drawImage(cim, c.x - drawW/2, c.y - drawH/2, drawW, drawH);
+  } else {
+    ctx.font = (sz * 0.65) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(v.emoji, c.x, c.y);
+  }
   ctx.restore();
 }
 
@@ -2373,12 +2393,21 @@ function drawCompare() {
   if (Array.isArray(snap.creatures)) {
     const sz = (snap.imgH || cv2.height) / 11;
     for (const c of snap.creatures) {
-      const emoji = ({ mayoi:'🐛', odoke:'🐞', nemuri:'😴', pyon:'🦗' })[c.kind] || '🐛';
-      ctx2.fillStyle = ({ mayoi:'#7AB540', odoke:'#D7553A', nemuri:'#9B7EBC', pyon:'#5BB8A8' })[c.kind] || '#7AB540';
+      const v = CREATURE_VIS[c.kind] || CREATURE_VIS.mayoi;
+      ctx2.fillStyle = v.color;
       ctx2.beginPath(); ctx2.arc(c.x, c.y, sz/2, 0, Math.PI * 2); ctx2.fill();
-      ctx2.font = (sz * 0.65) + 'px serif';
-      ctx2.fillStyle = '#fff';
-      ctx2.fillText(emoji, c.x, c.y);
+      const cim = _getCreatureImg(v.imageUrl);
+      if (cim && cim.complete && cim.naturalWidth > 0) {
+        const ratio = cim.naturalWidth / cim.naturalHeight;
+        const drawH = sz * 0.95;
+        const drawW = drawH * ratio;
+        ctx2.drawImage(cim, c.x - drawW/2, c.y - drawH/2, drawW, drawH);
+      } else {
+        ctx2.font = (sz * 0.65) + 'px serif';
+        ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+        ctx2.fillStyle = '#fff';
+        ctx2.fillText(v.emoji, c.x, c.y);
+      }
     }
   }
 }

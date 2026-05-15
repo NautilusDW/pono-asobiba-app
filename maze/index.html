@@ -2298,8 +2298,8 @@ const encStageEl = document.getElementById('encStage');
 const encStartBtn = document.getElementById('encStartBtn');
 
 const CREATURE_KIND_DATA = {
-  mayoi: { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken' },
-  odoke: { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse' },
+  mayoi: { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
+  odoke: { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse', imageUrl: '../assets/images/maze/creatures/odoke.png' },
   nemuri:{ emoji: '😴', color: '#9B7EBC', name: 'ねむりムシ', dialog: 'シルエット クイズ で<br>あそぼう…zzz', defaultGame: 'silhouette' },
   pyon:  { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon' },
 };
@@ -2381,29 +2381,51 @@ function imgDrawObstacles(stage) {
   }
 }
 
+// Lazy image cache for お邪魔虫 sprites (kinds with imageUrl).
+const _creatureImgCache = {};
+function _creatureImg(url) {
+  if (!url) return null;
+  let img = _creatureImgCache[url];
+  if (!img) {
+    img = new Image();
+    img.src = url;
+    _creatureImgCache[url] = img;
+  }
+  return (img.complete && img.naturalWidth > 0) ? img : null;
+}
+
 function imgDrawCreatures(stage, now) {
   const size = stage.viewBox.h / 11;
   for (const c of stage.creatures) {
     if (_defeatedCreatures.has(c.id || (c.x + ',' + c.y))) continue;
     const data = _creatureData(c);
     const bob = Math.sin(now / 320 + (c.x + c.y) * 0.01) * (size * 0.06);
+    const sprite = _creatureImg(data.imageUrl);
     ctx.save();
-    // Body (color-coded circle)
-    ctx.fillStyle = data.color;
-    ctx.globalAlpha = 0.85;
-    ctx.beginPath();
-    ctx.arc(c.x, c.y + bob, size / 2, 0, Math.PI * 2);
-    ctx.fill();
-    // Outline
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    // Emoji face
-    ctx.font = (size * 0.65) + 'px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fff';
-    ctx.fillText(data.emoji, c.x, c.y + bob);
+    if (sprite) {
+      // Image sprite: keep aspect ratio, fit to circle's diameter (= size)
+      const ratio = sprite.naturalWidth / sprite.naturalHeight;
+      const sh = size;
+      const sw = sh * ratio;
+      ctx.drawImage(sprite, c.x - sw/2, (c.y + bob) - sh/2, sw, sh);
+    } else {
+      // Body (color-coded circle)
+      ctx.fillStyle = data.color;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y + bob, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      // Outline
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      // Emoji face
+      ctx.font = (size * 0.65) + 'px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(data.emoji, c.x, c.y + bob);
+    }
     ctx.restore();
   }
 }
@@ -2478,7 +2500,22 @@ function _triggerEncounter(c) {
   hideArrows();
   // Set up modal content
   const data = _creatureData(c);
-  encCreatureEl.textContent = data.emoji;
+  if (data.imageUrl) {
+    // Use PNG sprite — wrap in <img> sized to fill the existing .enc-creature box.
+    encCreatureEl.textContent = '';
+    const _img = document.createElement('img');
+    _img.src = data.imageUrl;
+    _img.alt = '';
+    _img.style.height = '1em';
+    _img.style.width = 'auto';
+    _img.style.maxWidth = '1.6em';
+    _img.style.objectFit = 'contain';
+    _img.style.display = 'block';
+    _img.style.margin = '0 auto';
+    encCreatureEl.appendChild(_img);
+  } else {
+    encCreatureEl.textContent = data.emoji;
+  }
   encNameEl.textContent = data.name;
   // dialog: ミニゲームごとに変える (お邪魔虫の種類ではなく今回出るゲームに合わせる)
   // 作者が c.dialog を明示指定している場合のみそれを尊重

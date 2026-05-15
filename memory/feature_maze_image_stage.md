@@ -116,6 +116,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
   - `imgLoadStage()` で `_imgBubble = null` リセット
 - ✅ **障害物衝突で 1 秒静止してから戻る (2026-04-27)**: 以前は障害物に当たった瞬間に直前ノードへ瞬間移動していたが、子供が「何が起きたか」を理解できないため、まずぶつかった位置でポノを停止 → 1 秒間 (`_imgPauseUntil` フラグ) その場でホバリング + 吹き出し「いてっ！とおれない！」を表示 → 経過後に直前ノードに自動的に戻る、という流れに変更。`_imgPauseUntil` の間は `imgDraw()` の arrow safety net も抑制 (誤って中途半端な位置に矢印を出さない)。`setTimeout` のクロージャに `_stageRef` を保持し、ステージ切り替え中なら復帰処理をスキップ
 - ✅ **お邪魔虫: 種類関係なくランダムなミニゲーム (2026-04-27)**: 以前は虫の `kind` ごとに `defaultGame` が固定 (mayoi=janken, odoke=truefalse, ...) で予測可能だったが、再プレイ性向上のため `_gameForCreature(c)` を「ステージ作者が `c.minigame` を明示指定していない限り `_GAME_LABELS` の全 5 種類からランダム」に変更。ランダム抽選は遭遇開始時 (1 体ごと) なので、同じ虫でも別の試行で別ゲームになる
+- ✅ **お邪魔虫マーカーの PNG スプライト対応 (2026-05-15)**: 一部の `kind` を絵文字から PNG イラストに差し替え。画像対応済: `mayoi` (いも虫, `/assets/images/maze/creatures/mayoi.png`) / `odoke` (くも, `/assets/images/maze/creatures/odoke.png`)。絵文字フォールバック維持: `nemuri` (😴) / `pyon` (🦗) — 画像未着のため。実装: `CREATURE_KIND_DATA` (ランタイム) / `CREATURE_VIS` (エディタ) / `CREATURE_IMAGE_URL` (ラフ) に `imageUrl` フィールドを追加し、`Image` をレイジー load + キャッシュ。読込完了後はアスペクト比保持で描画、未マッピング (nemuri/pyon) は従来の絵文字パスにフォールバックして両立。修正ファイル: `maze/index.html`, `tools/maze-editor.html`, `tools/maze-rough.html` + 新規 PNG 2 枚
 
 ## 画像最適化ポリシー (2026-04-27 確立)
 
