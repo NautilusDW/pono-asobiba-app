@@ -252,8 +252,9 @@ html, body { height: 100vh; overflow: hidden;
     <div id="creatureKindRow" class="modes" style="display:none; margin-top:6px;">
       <button class="kind-btn active" data-ckind="mayoi"><img src="../assets/images/maze/creatures/mayoi.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> まよい</button>
       <button class="kind-btn" data-ckind="odoke"><img src="../assets/images/maze/creatures/odoke.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> おどけ</button>
-      <button class="kind-btn" data-ckind="nemuri">😴 ねむり</button>
-      <button class="kind-btn" data-ckind="pyon">🦗 ぴょん</button>
+      <button class="kind-btn" data-ckind="pyon"><img src="../assets/images/maze/creatures/pyon.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> ぴょん</button>
+      <button class="kind-btn" data-ckind="kabuto"><img src="../assets/images/maze/creatures/kabuto.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> コツコツ</button>
+      <button class="kind-btn" data-ckind="hachi"><img src="../assets/images/maze/creatures/hachi.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> ブンブン</button>
     </div>
 
     <h3>3b. スタート / ゴールの大きさ</h3>
@@ -532,7 +533,7 @@ jsonInput.addEventListener('change', function(e) {
       state.creatures = Array.isArray(def.creatures)
         ? def.creatures
             .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
-            .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)), kind: c.kind || 'mayoi', x: Number(c.x), y: Number(c.y) }; })
+            .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)), kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')), x: Number(c.x), y: Number(c.y) }; })
         : [];
       // Bump nextCreatureId past any existing
       const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
@@ -1399,10 +1400,11 @@ function drawObstacle(o) {
 }
 
 const CREATURE_VIS = {
-  mayoi: { emoji: '🐛', color: '#7AB540', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
-  odoke: { emoji: '🐞', color: '#D7553A', imageUrl: '../assets/images/maze/creatures/odoke.png' },
-  nemuri:{ emoji: '😴', color: '#9B7EBC' },
-  pyon:  { emoji: '🦗', color: '#5BB8A8' },
+  mayoi:  { emoji: '🐛', color: '#7AB540', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
+  odoke:  { emoji: '🐞', color: '#D7553A', imageUrl: '../assets/images/maze/creatures/odoke.png' },
+  pyon:   { emoji: '🦗', color: '#5BB8A8', imageUrl: '../assets/images/maze/creatures/pyon.png' },
+  kabuto: { emoji: '🪲', color: '#8B5A3C', imageUrl: '../assets/images/maze/creatures/kabuto.png' },
+  hachi:  { emoji: '🐝', color: '#E6B800', imageUrl: '../assets/images/maze/creatures/hachi.png' },
 };
 function drawCreature(c) {
   const sz = state.imgH / 11;
@@ -2633,7 +2635,7 @@ function _applyHandoff(h, opts) {
     if (h.name) stageNameInput.value = String(h.name).replace(/[^a-zA-Z0-9_-]/g, '_');
 
     // Obstacles / Creatures (kind 値はラフ側と同じ語彙: tree/pond/hole/stump/rock,
-    //                                                mayoi/odoke/nemuri/pyon)
+    //                                                mayoi/odoke/pyon/kabuto/hachi; 旧 nemuri は mayoi にエイリアス)
     state.obstacles = Array.isArray(h.obstacles)
       ? h.obstacles
           .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
@@ -2643,7 +2645,7 @@ function _applyHandoff(h, opts) {
       ? h.creatures
           .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
           .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)),
-                                        kind: c.kind || 'mayoi',
+                                        kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')),
                                         x: Number(c.x), y: Number(c.y) }; })
       : [];
     const usedCIds = state.creatures.map(function(c) {
