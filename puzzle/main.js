@@ -1,21 +1,177 @@
 // ===== Stage Configuration =====
+//
+// 20ステージ進行 (4→4→6→6→6→9→9→9→12→12→12→12→16→16→16→16→20→20→20→20)
+// 対象年齢: 3〜6歳。最大ピース数 20。
+//
+// 各ステージは以下スキーマ:
+//   { id, title, rows, cols, pieceCount, image,
+//     rotationEnabled, challengeRotationEnabled, allowedRotations,
+//     pieceShapeStyle, snapAssist }
+//
+// pieceShapeStyle (Level A〜F):
+//   soft-rounded         (A) — ほぼ四角・凹凸控えめ
+//   large-jigsaw         (B) — 大きめ丸タブ・pos 0.5 固定
+//   standard-jigsaw      (C) — 中サイズ・pos 0.5 固定
+//   standard-jigsaw-v2   (D) — pos 0.40-0.60 ランダム
+//   advanced-jigsaw      (E) — pos 0.32-0.68 ランダム
+//   advanced-jigsaw-v2   (F) — pos 0.28-0.72 ランダム (最多様化)
+//
+// snapAssist (SNAP_DIST スケール、pieceW 比率):
+//   very-strong   — pieceW * 0.55
+//   strong        — pieceW * 0.45
+//   medium-strong — pieceW * 0.38
+//   normal        — pieceW * 0.30
+//
+// チャレンジモード (90度回転):
+//   デフォルト OFF。 window.PUZZLE_CHALLENGE_ROTATION = true
+//   または localStorage.puzzle_challenge_rotation === 'on' で有効化。
+//   challengeRotationEnabled が true のステージで、 mode ON 時のみ回転状態を付与。
+
+// Stage 20 のピース数はプレイテストで調整可能 (難しすぎる場合は 16 に下げる)
+const STAGE_20_PIECE_COUNT = 20; // tweakable: 16 if too hard
+
+// ステージ画像のパス解決
+// 通常ステージ (01-04, 06-09, 11-14, 16-19) は assets/images/puzzle/stages/puzzle_stage_NN_<topic>.jpg を直接参照。
+// ポノ特別枠 (05, 10, 15, 20) は既存の puzzle_pono_*.jpg を流用。
+const STAGE_IMAGES = {
+  1:  '../assets/images/puzzle/stages/puzzle_stage_01_apple_leaf.jpg',
+  2:  '../assets/images/puzzle/stages/puzzle_stage_02_balloons.jpg',
+  3:  '../assets/images/puzzle/stages/puzzle_stage_03_flower_butterfly.jpg',
+  4:  '../assets/images/puzzle/stages/puzzle_stage_04_fish_waterplants.jpg',
+  5:  '../assets/images/puzzle_pono_sleep.jpg',    // ポノ特別枠
+  6:  '../assets/images/puzzle/stages/puzzle_stage_06_fruit_basket.jpg',
+  7:  '../assets/images/puzzle/stages/puzzle_stage_07_music_toy_box.jpg',
+  8:  '../assets/images/puzzle/stages/puzzle_stage_08_flower_field_bugs.jpg',
+  9:  '../assets/images/puzzle/stages/puzzle_stage_09_underwater_world.jpg',
+  10: '../assets/images/puzzle_pono_water.jpg',    // ポノ特別枠
+  11: '../assets/images/puzzle/stages/puzzle_stage_11_rainbow_after_rain.jpg',
+  12: '../assets/images/puzzle/stages/puzzle_stage_12_dream_night_sky.jpg',
+  13: '../assets/images/puzzle/stages/puzzle_stage_13_sweets_table.jpg',
+  14: '../assets/images/puzzle/stages/puzzle_stage_14_animal_music_concert.jpg',
+  15: '../assets/images/puzzle_pono_sparkle.jpg',  // ポノ特別枠
+  16: '../assets/images/puzzle/stages/puzzle_stage_16_vehicle_town.jpg',
+  17: '../assets/images/puzzle/stages/puzzle_stage_17_forest_picnic.jpg',
+  18: '../assets/images/puzzle/stages/puzzle_stage_18_magical_bookshelf.jpg',
+  19: '../assets/images/puzzle/stages/puzzle_stage_19_puzzle_play_table.jpg',
+  20: '../assets/images/puzzle_pono_owl.jpg',      // ポノ特別枠
+};
+
+function resolveStageImage(stageNum) {
+  return STAGE_IMAGES[stageNum] || STAGE_IMAGES[1];
+}
+
+// 20 ステージ定義
 const BASE_STAGES = [
-  { cols: 2, rows: 2, image: '../assets/images/puzzle_bear.jpg'   },
-  { cols: 3, rows: 2, image: '../assets/images/puzzle_cover.jpg'  },
-  { cols: 4, rows: 2, image: '../assets/images/puzzle_birds.jpg'  },
-  { cols: 4, rows: 3, image: '../assets/images/puzzle_P01_01.jpg' },
-  { cols: 4, rows: 3, image: '../assets/images/puzzle_05.jpg', advanced: true },
-  // ── 新ステージ ──
-  { cols: 4, rows: 3, image: '../assets/images/puzzle_pono_sleep.jpg', advanced: true },
-  { cols: 4, rows: 4, image: '../assets/images/puzzle_pono_water.jpg' },
-  { cols: 4, rows: 4, image: '../assets/images/puzzle_pono_rock.jpg' },
-  { cols: 4, rows: 4, image: '../assets/images/puzzle_pono_unsettled.jpg', advanced: true },
-  { cols: 5, rows: 3, image: '../assets/images/puzzle_pono_sleepy.jpg' },
-  { cols: 5, rows: 3, image: '../assets/images/puzzle_pono_sparkle.jpg', advanced: true },
-  { cols: 5, rows: 4, image: '../assets/images/puzzle_pono_topdown.jpg' },
-  { cols: 5, rows: 4, image: '../assets/images/puzzle_pono_icicle.jpg', advanced: true },
-  { cols: 6, rows: 4, image: '../assets/images/puzzle_pono_owl.jpg', advanced: true },
+  // ── Stage 01-02: 4 pieces / soft-rounded / very-strong ──
+  { id: 1,  title: 'はじめての なかま',  rows: 2, cols: 2, pieceCount: 4,
+    image: resolveStageImage(1),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'soft-rounded', snapAssist: 'very-strong' },
+  { id: 2,  title: 'もりの どうぶつ',    rows: 2, cols: 2, pieceCount: 4,
+    image: resolveStageImage(2),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'soft-rounded', snapAssist: 'very-strong' },
+
+  // ── Stage 03-05: 6 pieces / large-jigsaw / strong ──
+  { id: 3,  title: 'たのしい おさんぽ',  rows: 2, cols: 3, pieceCount: 6,
+    image: resolveStageImage(3),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong' },
+  { id: 4,  title: 'おひさま いっぱい',  rows: 2, cols: 3, pieceCount: 6,
+    image: resolveStageImage(4),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong' },
+  { id: 5,  title: '✨ おやすみ ポノ',   rows: 2, cols: 3, pieceCount: 6,
+    image: resolveStageImage(5),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong' },
+
+  // ── Stage 06-08: 9 pieces / standard-jigsaw / strong ──
+  { id: 6,  title: 'なかよし ピクニック', rows: 3, cols: 3, pieceCount: 9,
+    image: resolveStageImage(6),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
+  { id: 7,  title: 'はらっぱで かけっこ', rows: 3, cols: 3, pieceCount: 9,
+    image: resolveStageImage(7),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
+  { id: 8,  title: 'おはなの はたけ',    rows: 3, cols: 3, pieceCount: 9,
+    image: resolveStageImage(8),
+    rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
+
+  // ── Stage 09-12: 12 pieces / standard-jigsaw-v2 / medium-strong ──
+  { id: 9,  title: 'みずべの ぼうけん',  rows: 3, cols: 4, pieceCount: 12,
+    image: resolveStageImage(9),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+  { id: 10, title: '✨ みずあそび ポノ', rows: 3, cols: 4, pieceCount: 12,
+    image: resolveStageImage(10),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+  { id: 11, title: 'そらの くもさん',    rows: 3, cols: 4, pieceCount: 12,
+    image: resolveStageImage(11),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+  { id: 12, title: 'やまの ハイキング',  rows: 3, cols: 4, pieceCount: 12,
+    image: resolveStageImage(12),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+
+  // ── Stage 13-16: 16 pieces / advanced-jigsaw / normal ──
+  { id: 13, title: 'うみの なかま',      rows: 4, cols: 4, pieceCount: 16,
+    image: resolveStageImage(13),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+  { id: 14, title: 'よるの ほしぞら',    rows: 4, cols: 4, pieceCount: 16,
+    image: resolveStageImage(14),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+  { id: 15, title: '✨ きらきら ポノ',   rows: 4, cols: 4, pieceCount: 16,
+    image: resolveStageImage(15),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+  { id: 16, title: 'ふゆの けしき',      rows: 4, cols: 4, pieceCount: 16,
+    image: resolveStageImage(16),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+
+  // ── Stage 17-20: 20 pieces / advanced-jigsaw-v2 / normal ──
+  { id: 17, title: 'もりの ピクニック',  rows: 4, cols: 5, pieceCount: 20,
+    image: resolveStageImage(17),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw-v2', snapAssist: 'normal' },
+  { id: 18, title: 'まちの たんけん',    rows: 4, cols: 5, pieceCount: 20,
+    image: resolveStageImage(18),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw-v2', snapAssist: 'normal' },
+  { id: 19, title: 'おまつり よる',      rows: 4, cols: 5, pieceCount: 20,
+    image: resolveStageImage(19),
+    rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+    pieceShapeStyle: 'advanced-jigsaw-v2', snapAssist: 'normal' },
+  // Stage 20: ピース数は STAGE_20_PIECE_COUNT で可変
+  (function() {
+    const pc = STAGE_20_PIECE_COUNT;
+    // 20 → 4×5, 16 → 4×4
+    const rows = pc === 16 ? 4 : 4;
+    const cols = pc === 16 ? 4 : 5;
+    return {
+      id: 20, title: '✨ ポノと さいごのぼうけん', rows, cols, pieceCount: pc,
+      image: resolveStageImage(20),
+      rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
+      pieceShapeStyle: pc === 16 ? 'advanced-jigsaw' : 'advanced-jigsaw-v2',
+      snapAssist: 'normal',
+    };
+  })(),
 ];
+
+// スキーマ検証: pieceCount === rows * cols
+BASE_STAGES.forEach((s, i) => {
+  if (s.rows * s.cols !== s.pieceCount) {
+    console.warn(`[puzzle] Stage ${s.id} pieceCount mismatch: ${s.rows}*${s.cols} !== ${s.pieceCount}`);
+  }
+});
+
 let STAGES = [...BASE_STAGES];
 
 function loadDrawingStages() {
@@ -27,18 +183,43 @@ function loadDrawingStages() {
       if (old) drawings.push({ dataUrl: old, ts: Date.now() });
     }
     return drawings.map((d, i) => ({
-      cols: 3, rows: 2,
+      // おえかきパズルは soft-rounded で簡単め (6 ピース)
+      id: 1000 + i,
+      title: `🎨 おえかきパズル ${i + 1}`,
+      rows: 2, cols: 3, pieceCount: 6,
       imageDataUrl: d.dataUrl,
+      rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
+      pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong',
       stageText: `🎨 おえかきパズル ${i + 1}`,
     }));
   } catch { return []; }
 }
-const SNAP_DIST = 55;
+
+// snapAssist → SNAP_DIST 計算用比率
+const SNAP_ASSIST_RATIO = {
+  'very-strong':   0.55,
+  'strong':        0.45,
+  'medium-strong': 0.38,
+  'normal':        0.30,
+};
+
+// チャレンジモード判定 (グローバル設定または localStorage)
+function isChallengeRotationOn() {
+  if (typeof window !== 'undefined' && window.PUZZLE_CHALLENGE_ROTATION === true) return true;
+  try {
+    return localStorage.getItem('puzzle_challenge_rotation') === 'on';
+  } catch { return false; }
+}
 
 // ===== Stage State =====
 let currentStageIndex = 0;
 let stageCols = 2, stageRows = 2, stageTotalPieces = 4;
-let stageAdvanced = false;
+let stagePieceShapeStyle = 'soft-rounded';
+let stageSnapAssist = 'very-strong';
+let stageChallengeRotationEnabled = false;
+let stageAllowedRotations = [0, 90, 180, 270];
+let stageRotationActive = false;  // 現在のステージで実際に回転モードが有効か (challenge ON × stage allows)
+let SNAP_DIST = 55;               // pieceW * ratio で毎ロード更新
 
 // ===== Puzzle State =====
 let pieces = [];
@@ -278,15 +459,41 @@ function buildPiecePath(target, px, py, pw, ph, tabs) {
 }
 
 // ===== Build pieces data =====
+//
+// makeEdge() は stagePieceShapeStyle に応じて異なる形状パラメータを返す。
+// 戻り値の解釈:
+//   number      → 単一ベジエの小さいタブ (buildPiecePath の typeof === 'number' 分岐)
+//   { dir, pos, hw, [softness] } → 2 ベジエの非対称なノブ
+//
+// パラメータ一覧 (buildPiecePath 側の解釈と整合):
+//   soft-rounded       : number dir のみ。 buildPiecePath 側で softness 比率を小さくする
+//   large-jigsaw       : { dir, pos: 0.5, hw: 0.18-0.22 }  大きめ丸タブ
+//   standard-jigsaw    : { dir, pos: 0.5, hw: 0.16 }       中サイズ
+//   standard-jigsaw-v2 : { dir, pos: 0.40-0.60, hw: 0.15-0.18 }
+//   advanced-jigsaw    : { dir, pos: 0.32-0.68, hw: 0.14-0.21 }
+//   advanced-jigsaw-v2 : { dir, pos: 0.28-0.72, hw: 0.13-0.22 }
 function buildPieces() {
   function makeEdge() {
     const dir = Math.random() < 0.5 ? 1 : -1;
-    if (!stageAdvanced) return dir;
-    return {
-      dir,
-      pos: 0.32 + Math.random() * 0.36,  // 0.32 – 0.68
-      hw:  0.14 + Math.random() * 0.07,  // 0.14 – 0.21
-    };
+    switch (stagePieceShapeStyle) {
+      case 'soft-rounded':
+        // ほぼ四角・凹凸ごく控えめ。 number sentinel に変換するため小さい number を返す。
+        // buildPiecePath は number を受けると単一ベジエでタブを描く。
+        // soft の場合は強度を弱めるため dir を 0.35 倍して返す ( buildPiecePath 内で len*0.32 がさらに掛かる)。
+        return dir * 0.35;
+      case 'large-jigsaw':
+        return { dir, pos: 0.5, hw: 0.18 + Math.random() * 0.04, style: 'large' }; // hw 0.18–0.22
+      case 'standard-jigsaw':
+        return { dir, pos: 0.5, hw: 0.16, style: 'standard' };
+      case 'standard-jigsaw-v2':
+        return { dir, pos: 0.40 + Math.random() * 0.20, hw: 0.15 + Math.random() * 0.03, style: 'standard' }; // pos 0.40-0.60
+      case 'advanced-jigsaw':
+        return { dir, pos: 0.32 + Math.random() * 0.36, hw: 0.14 + Math.random() * 0.07, style: 'standard' }; // pos 0.32-0.68
+      case 'advanced-jigsaw-v2':
+        return { dir, pos: 0.28 + Math.random() * 0.44, hw: 0.13 + Math.random() * 0.09, style: 'standard' }; // pos 0.28-0.72
+      default:
+        return dir;
+    }
   }
 
   const hEdge = [];
@@ -309,6 +516,15 @@ function buildPieces() {
     for (let col = 0; col < stageCols; col++) {
       const homeX = boardX + col * pieceW;
       const homeY = boardY + row * pieceH;
+      // チャレンジモード有効 + 現ステージ challengeRotationEnabled = true なら、 0/90/180/270 をランダム付与
+      let rotation = 0;
+      if (stageRotationActive) {
+        const opts = stageAllowedRotations.filter(r => r !== 0);
+        // 全ピース回転なしだとチャレンジ要素が薄れるため、 約 75% で非ゼロにする
+        if (Math.random() < 0.75 && opts.length > 0) {
+          rotation = opts[Math.floor(Math.random() * opts.length)];
+        }
+      }
       pieces.push({
         col, row, homeX, homeY, x: homeX, y: homeY,
         tabs: {
@@ -317,6 +533,7 @@ function buildPieces() {
           left:   col === 0             ? 0 : hEdge[col - 1][row],
           right:  col === stageCols - 1 ? 0 : hEdge[col][row],
         },
+        rotation,             // 現在の回転角 (0/90/180/270)
         snapped: false,
         zOrder: col + row * stageCols,
         path: null,
@@ -350,14 +567,41 @@ function drawBoard() {
 }
 
 function rebuildPath(piece) {
+  // 回転がない場合は単純に絶対座標で Path2D を作る。
+  // 回転がある場合、 isPointInPath は Path2D の幾何形状で判定するので、
+  // ピース中心で回転した path を作る (描画時の transform と合わせる)。
   const path = new Path2D();
-  buildPiecePath(path, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+  if (!piece.rotation) {
+    buildPiecePath(path, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+  } else {
+    // ピース中心で回転させた path を作るために、 一旦原点中心で path を作り、
+    // 手動で回転変換 + 平行移動した別 Path2D に addPath で焼き付ける。
+    const local = new Path2D();
+    buildPiecePath(local, -pieceW / 2, -pieceH / 2, pieceW, pieceH, piece.tabs);
+    const cx = piece.x + pieceW / 2, cy = piece.y + pieceH / 2;
+    // DOMMatrix.rotate() は度数法
+    const m = new DOMMatrix()
+      .translate(cx, cy)
+      .rotate(piece.rotation);
+    path.addPath(local, m);
+  }
   piece.path = path;
 }
 
 // ===== Draw a single piece =====
 function drawPiece(piece) {
+  const rotated = !!piece.rotation;
+  const cx = piece.x + pieceW / 2;
+  const cy = piece.y + pieceH / 2;
+  const rad = (piece.rotation || 0) * Math.PI / 180;
+
+  // ---- 画像クリップ描画 ----
   puzzleCtx.save();
+  if (rotated) {
+    puzzleCtx.translate(cx, cy);
+    puzzleCtx.rotate(rad);
+    puzzleCtx.translate(-cx, -cy);
+  }
   puzzleCtx.beginPath();
   buildPiecePath(puzzleCtx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
   puzzleCtx.clip();
@@ -366,7 +610,13 @@ function drawPiece(piece) {
   puzzleCtx.drawImage(sourceImg, imgOffX, imgOffY, boardW, boardH);
   puzzleCtx.restore();
 
+  // ---- アウトライン ----
   puzzleCtx.save();
+  if (rotated) {
+    puzzleCtx.translate(cx, cy);
+    puzzleCtx.rotate(rad);
+    puzzleCtx.translate(-cx, -cy);
+  }
   puzzleCtx.beginPath();
   buildPiecePath(puzzleCtx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
   puzzleCtx.strokeStyle = piece === dragPiece ? '#F2915A' : '#5D4E37';
@@ -380,6 +630,21 @@ function drawPiece(piece) {
     puzzleCtx.stroke();
   }
   puzzleCtx.restore();
+
+  // ---- 回転インジケータ (チャレンジモードで未スナップ時のみ) ----
+  if (rotated && !piece.snapped) {
+    puzzleCtx.save();
+    puzzleCtx.fillStyle = 'rgba(242, 145, 90, 0.85)';
+    puzzleCtx.beginPath();
+    puzzleCtx.arc(cx, cy, Math.min(pieceW, pieceH) * 0.12, 0, Math.PI * 2);
+    puzzleCtx.fill();
+    puzzleCtx.fillStyle = '#fff';
+    puzzleCtx.font = `bold ${Math.floor(Math.min(pieceW, pieceH) * 0.16)}px sans-serif`;
+    puzzleCtx.textAlign = 'center';
+    puzzleCtx.textBaseline = 'middle';
+    puzzleCtx.fillText('↻', cx, cy);
+    puzzleCtx.restore();
+  }
 }
 
 function redraw() {
@@ -396,23 +661,81 @@ function hitTest(piece, px, py) {
 }
 
 // ===== Shuffle =====
+//
+// 横画面最適化: ピースを「ボード左ゾーン」と「ボード右ゾーン」に半数ずつ分配する。
+// 各ゾーン内では縦方向は全高、横方向はゾーン幅内でランダム配置。
+// ゾーン幅が pieceW * 1.2 未満 (極端に細い余白) ならフォールバックで全域ランダム配置に切り替え。
+function computePlacementZones() {
+  const pad = 8;
+  const leftZone = {
+    minX: pad,
+    maxX: boardX - pad - pieceW,
+    minY: pad,
+    maxY: canvasH - pad - pieceH,
+  };
+  const rightZone = {
+    minX: boardX + boardW + pad,
+    maxX: canvasW - pad - pieceW,
+    minY: pad,
+    maxY: canvasH - pad - pieceH,
+  };
+  const leftWidth  = leftZone.maxX  - leftZone.minX;
+  const rightWidth = rightZone.maxX - rightZone.minX;
+  const minWidth = pieceW * 0.2; // ゾーン幅 - pieceW で見た時の最小 (pieceW * 1.2 が元のしきい値相当)
+  const ok = leftWidth >= minWidth && rightWidth >= minWidth;
+  return { leftZone, rightZone, ok, pad };
+}
+
+function placePieceInZone(zone) {
+  const x = zone.minX + Math.random() * Math.max(0, zone.maxX - zone.minX);
+  const y = zone.minY + Math.random() * Math.max(0, zone.maxY - zone.minY);
+  return { x, y };
+}
+
+function placePieceFallback(pad) {
+  // フォールバック: 全域からランダムサンプリングしてボード上を避ける (旧挙動)
+  let best = null;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const tx = pad + Math.random() * Math.max(0, canvasW - pieceW - pad * 2);
+    const ty = pad + Math.random() * Math.max(0, canvasH - pieceH - pad * 2);
+    const onBoard = (
+      tx + pieceW > boardX + pad && tx < boardX + boardW - pad &&
+      ty + pieceH > boardY + pad && ty < boardY + boardH - pad
+    );
+    if (!onBoard) return { x: tx, y: ty };
+    if (!best) best = { x: tx, y: ty };
+  }
+  return best;
+}
+
+function scatterPiece(piece, index, zones) {
+  let pos;
+  if (zones.ok) {
+    // 偶数 index → 左、 奇数 index → 右 で半数ずつ分配
+    const zone = (index % 2 === 0) ? zones.leftZone : zones.rightZone;
+    pos = placePieceInZone(zone);
+  } else {
+    pos = placePieceFallback(zones.pad);
+  }
+  piece.x = pos.x;
+  piece.y = pos.y;
+}
+
 function shufflePieces() {
   snappedCount = 0;
-  const pad = 8;
+  const zones = computePlacementZones();
   pieces.forEach((p, i) => {
     p.snapped = false;
-    let best = null;
-    for (let attempt = 0; attempt < 40; attempt++) {
-      const tx = pad + Math.random() * Math.max(0, canvasW - pieceW - pad * 2);
-      const ty = pad + Math.random() * Math.max(0, canvasH - pieceH - pad * 2);
-      const onBoard = (
-        tx + pieceW > boardX + pad && tx < boardX + boardW - pad &&
-        ty + pieceH > boardY + pad && ty < boardY + boardH - pad
-      );
-      if (!onBoard) { best = { x: tx, y: ty }; break; }
-      if (!best) best = { x: tx, y: ty };
+    // チャレンジモード有効時は回転もランダム再設定
+    if (stageRotationActive) {
+      const opts = stageAllowedRotations.filter(r => r !== 0);
+      p.rotation = (Math.random() < 0.75 && opts.length > 0)
+        ? opts[Math.floor(Math.random() * opts.length)]
+        : 0;
+    } else {
+      p.rotation = 0;
     }
-    p.x = best.x; p.y = best.y;
+    scatterPiece(p, i, zones);
     p.zOrder = i;
     rebuildPath(p);
   });
@@ -421,22 +744,24 @@ function shufflePieces() {
 }
 
 // ===== Snap =====
+// チャレンジモードでは rotation === 0 (正位置) でないとスナップしない
 function trySnap(piece) {
-  if (Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY) < SNAP_DIST) {
-    piece.x = piece.homeX; piece.y = piece.homeY;
-    piece.snapped = true;
-    piece.zOrder = -1; // はめ込み済みは常に背後
-    rebuildPath(piece);
-    snappedCount++;
-    updateProgress();
-    playSnapSound();
-    if (snappedCount >= stageTotalPieces) {
-      redraw();
-      setTimeout(showSuccessModal, 300);
-    }
-    return true;
+  if (Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY) >= SNAP_DIST) return false;
+  if (piece.rotation && piece.rotation !== 0) return false; // 回転中はスナップ不可
+
+  piece.x = piece.homeX; piece.y = piece.homeY;
+  piece.rotation = 0;
+  piece.snapped = true;
+  piece.zOrder = -1; // はめ込み済みは常に背後
+  rebuildPath(piece);
+  snappedCount++;
+  updateProgress();
+  playSnapSound();
+  if (snappedCount >= stageTotalPieces) {
+    redraw();
+    setTimeout(showSuccessModal, 300);
   }
-  return false;
+  return true;
 }
 
 // ===== Pointer Events =====
@@ -450,6 +775,13 @@ function getPos(e) {
   return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
 }
 
+// タップ vs ドラッグ判別用の状態
+let pointerDownTime = 0;
+let pointerDownX = 0, pointerDownY = 0;
+let pointerMoveDist = 0;
+const TAP_MAX_DIST = 8;     // px (canvas 座標) — これ以下の累積移動量ならタップ
+const TAP_MAX_DURATION = 300; // ms — これ以下の時間ならタップ
+
 function onPointerDown(e) {
   e.preventDefault();
   const { x, y } = getPos(e);
@@ -462,6 +794,13 @@ function onPointerDown(e) {
   dragPiece = found;
   dragOffX = x - found.x; dragOffY = y - found.y;
   dragPiece.zOrder = Math.max(...pieces.map(p => p.zOrder)) + 1;
+
+  // タップ検出用の初期値
+  pointerDownTime = Date.now();
+  pointerDownX = x;
+  pointerDownY = y;
+  pointerMoveDist = 0;
+
   redraw();
 }
 
@@ -469,6 +808,7 @@ function onPointerMove(e) {
   if (!dragPiece) return;
   e.preventDefault();
   const { x, y } = getPos(e);
+  pointerMoveDist = Math.hypot(x - pointerDownX, y - pointerDownY);
   dragPiece.x = Math.max(0, Math.min(canvasW - pieceW, x - dragOffX));
   dragPiece.y = Math.max(0, Math.min(canvasH - pieceH, y - dragOffY));
   rebuildPath(dragPiece);
@@ -480,6 +820,23 @@ function onPointerUp(e) {
   e.preventDefault();
   const piece = dragPiece;
   dragPiece = null;
+
+  const elapsed = Date.now() - pointerDownTime;
+  const isTap = pointerMoveDist < TAP_MAX_DIST && elapsed < TAP_MAX_DURATION;
+
+  // チャレンジモード有効 + タップ + スナップ済みでない → 90度時計回り回転
+  if (isTap && stageRotationActive && !piece.snapped) {
+    // タップ時はピース位置を元に戻す (ドラッグで微妙にズレた分を相殺)
+    piece.x = pointerDownX - dragOffX;
+    piece.y = pointerDownY - dragOffY;
+    piece.x = Math.max(0, Math.min(canvasW - pieceW, piece.x));
+    piece.y = Math.max(0, Math.min(canvasH - pieceH, piece.y));
+    piece.rotation = ((piece.rotation || 0) + 90) % 360;
+    rebuildPath(piece);
+    redraw();
+    return;
+  }
+
   trySnap(piece);
   redraw();
 }
@@ -504,7 +861,8 @@ function initPuzzle(img) {
   puzzleContainer.appendChild(puzzleCanvas);
   puzzleCtx = puzzleCanvas.getContext('2d');
 
-  const boardMaxW = canvasW * 0.60;
+  // 横画面最適化: ボード幅を 55% に抑え、左右に各 ~22.5% のピース展開エリアを確保
+  const boardMaxW = canvasW * 0.55;
   const boardMaxH = canvasH * 0.60;
   // Use the image's natural aspect ratio to avoid stretching
   const imgAspect = (img.naturalWidth && img.naturalHeight)
@@ -519,6 +877,10 @@ function initPuzzle(img) {
   boardY = (canvasH - boardH) / 2;
   pieceW = boardW / stageCols;
   pieceH = boardH / stageRows;
+
+  // ステージ別 SNAP_DIST (pieceW * 比率)
+  const ratio = SNAP_ASSIST_RATIO[stageSnapAssist] || SNAP_ASSIST_RATIO['normal'];
+  SNAP_DIST = pieceW * ratio;
 
   snappedCount = 0;
   updateProgress();
@@ -541,12 +903,21 @@ function initPuzzle(img) {
 function loadStage(index) {
   currentStageIndex = index;
   const stage = STAGES[index];
-  stageCols        = stage.cols;
-  stageRows        = stage.rows;
-  stageTotalPieces = stageCols * stageRows;
-  stageAdvanced    = !!stage.advanced;
+  stageCols              = stage.cols;
+  stageRows              = stage.rows;
+  stageTotalPieces       = stage.pieceCount || (stageCols * stageRows);
+  stagePieceShapeStyle   = stage.pieceShapeStyle || 'standard-jigsaw';
+  stageSnapAssist        = stage.snapAssist || 'normal';
+  stageChallengeRotationEnabled = !!stage.challengeRotationEnabled;
+  stageAllowedRotations  = stage.allowedRotations || [0, 90, 180, 270];
+  // チャレンジモードが ON で、 かつステージ側も許可していれば回転モード有効
+  stageRotationActive    = isChallengeRotationOn() && stageChallengeRotationEnabled;
 
-  stageLabel.textContent = stage.stageText || `ステージ ${index + 1} / ${STAGES.length}`;
+  // ステージタイトル
+  const title = stage.title || stage.stageText;
+  stageLabel.textContent = title
+    ? `${title} (${index + 1}/${STAGES.length})`
+    : `ステージ ${index + 1} / ${STAGES.length}`;
 
   loadingEl.classList.remove('hidden');
   dragPiece = null;
@@ -578,15 +949,17 @@ btnShuffle.addEventListener('click', () => {
 btnHint.addEventListener('click', () => {
   if (!puzzleCanvas) return;
   dragPiece = null;
-  pieces.forEach(p => { p.x = p.homeX; p.y = p.homeY; rebuildPath(p); });
+  // ヒント: 一時的に完成形を見せる (回転モード時は正位置に戻して表示)
+  const savedRotations = pieces.map(p => p.rotation || 0);
+  pieces.forEach(p => { p.x = p.homeX; p.y = p.homeY; p.rotation = 0; rebuildPath(p); });
   redraw();
   setTimeout(() => {
     if (snappedCount < stageTotalPieces) {
-      const margin = Math.min(pieceW, pieceH) * 0.3;
-      pieces.forEach(p => {
+      const zones = computePlacementZones();
+      pieces.forEach((p, i) => {
         if (!p.snapped) {
-          p.x = margin + Math.random() * (canvasW - pieceW - margin * 2);
-          p.y = margin + Math.random() * (canvasH - pieceH - margin * 2);
+          scatterPiece(p, i, zones);
+          p.rotation = savedRotations[i]; // 回転状態を復元
           rebuildPath(p);
         }
       });
