@@ -1,11 +1,11 @@
 ---
 name: feature-puzzle-20stage-redesign
-description: puzzle/ ゲームの難易度を3〜6歳向け20ステージ進行に再設計 (ピース数4→20、形状LevelA-F、snapAssist4段階、90度チャレンジ回転モード、横画面ピース左右ゾーン分配)
+description: puzzle/ ゲームの難易度を3〜6歳向け20ステージ進行に再設計 (ピース数4→20、形状LevelA-F、snapAssist4段階、90度チャレンジ回転モード、横画面ピース左右ゾーン分配、背景=木のお部屋+緑ラグ)
 metadata:
   type: project
 ---
 
-# パズル難易度 20ステージ再設計 (2026-05-15, sw v1001→v1002)
+# パズル難易度 20ステージ再設計 (2026-05-15, sw v1001→v1003)
 
 ## 確定方針
 
@@ -101,6 +101,15 @@ Codex 納品 (`tmp/alpha_pending/29/`) を `assets/images/puzzle/stages/` に配
 - 旧 `SNAP_DIST = 55` 固定値は廃止。 ピース実寸ベースの相対値に
 - `loadDrawingStages()` (お絵描きパズル) も新スキーマ対応 (`pieceShapeStyle: 'large-jigsaw'`, `snapAssist: 'strong'`)
 - 受け入れ条件「すべての難易度設定はステージ定義データで変更可」を厳守 — マジックナンバーは `BASE_STAGES` の各エントリへ集約
+
+## 画面背景 (sw v1003 で差し替え)
+
+`puzzle/style.css` の `body { background-image }` を旧 `../assets/images/BG_03.webp` (汎用) から **`../assets/images/puzzle/bg_carpet_room.jpg`** (puzzle 専用) へ。
+
+- 構図: 木のお部屋インテリア + **中央に大きな緑のラグ** (パズルボード位置と一致)
+- 左右: 観葉植物・本棚・ランタン・クッション等で散らかしピースの周辺装飾になる
+- Codex 納品 `tmp/alpha_pending/30/puzzle_screen_background_carpet_raw.png` → JPG 最適化 (2715KB → 329KB)
+- 旧 `BG_03.webp` は他 9 ゲーム (`index.html` / `play.html` / `breakout/` / `coloring/` / `drawing/` / `message/` / `stacking/` / `slide/` / `wordmatch/`) で使用中のため温存
 
 ## 関連
 
