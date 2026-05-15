@@ -133,6 +133,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-15T23:55:07Z - 迷路お邪魔虫: 3画像追加+kind set刷新 (mayoi/odoke/pyon[新画像]/kabuto[新]/hachi[新]、nemuri廃止+mayoiエイリアス、ランタイム+両エディタ刷新、クロスレビュー後パス相対化+hachi軽量化、sw v1012)
+- **タスク**: 迷路お邪魔虫: 3画像追加+kind set刷新 (mayoi/odoke/pyon[新画像]/kabuto[新]/hachi[新]、nemuri廃止+mayoiエイリアス、ランタイム+両エディタ刷新、クロスレビュー後パス相対化+hachi軽量化、sw v1012)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 76
+- **エラー数**: 5
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 27, "Glob": 9, "Grep": 6, "Read": 7, "ToolSearch": 2, "Agent": 23, "TaskOutput": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-15T23:50:39Z - マスク貼り付け時の+8オフセット除去 (koma-wari-editor.html pasteMaskFromClipboard) + sw.js CACHE_VERSION 1010→1011
 - **タスク**: マスク貼り付け時の+8オフセット除去 (koma-wari-editor.html pasteMaskFromClipboard) + sw.js CACHE_VERSION 1010→1011
 - **結果**: 成功
@@ -234,19 +247,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 17, "ToolSearch": 1, "Grep": 1, "Bash": 12}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T23:34:18Z - koma-wari-editor マスクコピペ Major3 + Minor1 最小差分修正 (M1: snapshotForUndo順序統一, M2: Ctrl+C/copy で対向CBクリア, M3: copyBtn失敗時 _selectedMaskRef ロールバック, m6: loadProjectでクリップボードクリア)
-- **タスク**: koma-wari-editor マスクコピペ Major3 + Minor1 最小差分修正 (M1: snapshotForUndo順序統一, M2: Ctrl+C/copy で対向CBクリア, M3: copyBtn失敗時 _selectedMaskRef ロールバック, m6: loadProjectでクリップボードクリア)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 29
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 17, "ToolSearch": 1, "Grep": 1, "Bash": 10}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。
 
 
