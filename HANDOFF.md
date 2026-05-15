@@ -86,6 +86,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-15 - [batch:35-maze-ojamamushi-grasshopper] **Done** — 迷路用お邪魔虫の単体グラスホッパー raw を `tmp/alpha_pending/35/maze_ojamamushi_grasshopper_raw.png` に納品 (`1254x1254` PNG、白背景、alpha なし)。シー/ストップ風の前腕・長い後脚・半目のいたずら顔・緑/黄緑の体を目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
+
 - 2026-05-15 - [batch:34-maze-ojamamushi-beetle] **Done** — 迷路用お邪魔虫の単体ビートル raw を `tmp/alpha_pending/34/maze_ojamamushi_beetle_raw.png` に納品 (`1254x1254` PNG、白背景、alpha なし)。腕組み・半目の得意げな表情・茶色い甲羅/腹部・丸い短脚を目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
 
 - 2026-05-15 - [batch:33-maze-ojamamushi-caterpillar] **Done** — 迷路用お邪魔虫の単体キャタピラー raw を `tmp/alpha_pending/33/maze_ojamamushi_caterpillar_raw.png` に納品 (`1448x1086` PNG、白背景、alpha なし)。眠り顔ではなく、半目の挑発顔・ストップポーズ・緑/クリームの丸い体節を目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
