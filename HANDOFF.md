@@ -87,6 +87,7 @@
 ## Recent (Done — 古い順に削除)
 
 - 2026-05-15 - [batch:31-maze-ojamamushi-sheet] **Done** — 迷路用お邪魔虫 5 体の raw asset sheet を `tmp/alpha_pending/31/maze_ojamamushi_bug_sheet_raw.png` に納品 (`1774x887` PNG、白背景、alpha なし)。Mayoi / Kurukuru / Nemuri / Kakurenbo / Nazobato 風の5体が横一列・全身・同スケールで、文字/ラベル/UIなしを目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
+- 2026-05-15 - [batch:31-maze-ojamamushi-sheet] **Done** — user 指摘「手足の数がおかしいので、芋虫以外は6本」を受け、脚数修正版 `tmp/alpha_pending/31/maze_ojamamushi_bug_sheet_raw_v2.png` を追加納品 (`1983x793` PNG、白背景、alpha なし)。芋虫以外は「2腕+4脚」に寄せ、余分な小脚を避ける指定で再生成。旧 `maze_ojamamushi_bug_sheet_raw.png` は比較用に保持。 (by Codex)
 
 - 2026-05-15 - [batch:30-puzzle-screen-bg-frame] **Done** — user 添付スクショを参考に、パズル画面用の背景と4:3木枠を別 raw データとして `tmp/alpha_pending/30/` に納品。`puzzle_screen_background_carpet_raw.png` は中央に空いた柔らかい緑カーペットのある 16:9 背景 (`1672x941`)。`puzzle_board_wood_frame_simple_raw.png` は装飾なしのシンプル木枠 (`1448x1086`)。`_contact_sheet.png` で目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
 
