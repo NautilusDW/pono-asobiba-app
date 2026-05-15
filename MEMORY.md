@@ -54,6 +54,8 @@
 
 - **パズル 横画面専用化 (2026-05-14, sw v995→v997)**: [memory/feature_puzzle_landscape.md](memory/feature_puzzle_landscape.md) — `puzzle/` を縦画面強制 → 横画面専用に。画像は触らず CSS のみで対応。第1ラウンドで aspect-ratio 3/4→4/3 + notice 反転 + title 中央配置 (sw v996)、クロスレビュー HIGH 2/MED 2 を受けて第2ラウンドで `@media (orientation: landscape) and (pointer: coarse)` 新設し `.main { flex-direction: row }` の **左パズル+右 180px サイドバー** に切替、`.puzzle-frame` を高さベース計算 `min(100vw-220px, (100dvh-110px)*4/3)` に変更 (iPhone 横で 200px 切手化を解消)、ResizeObserver に snappedCount + ±20% 差分の進捗保護ガード追加 (sw v997)
 
+- **パズル 難易度20ステージ再設計 (2026-05-15, sw v1001→v1002)**: [memory/feature_puzzle_20stage_redesign.md](memory/feature_puzzle_20stage_redesign.md) — 対象年齢3〜6歳向けに **20ステージ進行 (4→4→6→6→6→9→9→9→12→12→12→12→16→16→16→16→20→20→20→20)** へ再設計。 `pieceShapeStyle` 6段階 (soft-rounded / large-jigsaw / standard-jigsaw / standard-jigsaw-v2 / advanced-jigsaw / advanced-jigsaw-v2)、 `snapAssist` 4段階 (very-strong/strong/medium-strong/normal、 SNAP_DIST = pieceW * ratio で動的計算)、 **90度チャレンジ回転モード** (デフォルトOFF、`window.PUZZLE_CHALLENGE_ROTATION = true` or `localStorage.puzzle_challenge_rotation = 'on'` で有効化、Stage 09 以降のみ作用、タップ検出 < 8px / < 300ms で90度回転、`rotation === 0` の時のみスナップ受理)、 任意角度回転は不可。 新ステージ画像16枚 (Codex 納品 `tmp/alpha_pending/29/` → `assets/images/puzzle/stages/` 配置・JPG最適化、合計5.27MB)、 ポノ特別枠 Stage 05/10/15/20 は既存 `puzzle_pono_*.jpg` 流用 (sleep/water/sparkle/owl)。 横画面用に **ボード幅 0.60→0.55** に縮小+`shufflePieces` を左右ゾーン分配方式に書き換え (偶数 index→左、奇数→右、ゾーン極細時は全域ランダムフォールバック)、 ヒントボタンも同ヘルパー (`scatterPiece`) で統一。 `STAGE_20_PIECE_COUNT` 定数で 20→16 への縮退切替可。 旧 `advanced: true|false` 二分岐は廃止、 全難易度設定は `BASE_STAGES` エントリへ集約 (受け入れ条件「コード直書きしすぎず、ステージ定義データで変更可」厳守)
+
 ---
 
 ## Key Learnings
