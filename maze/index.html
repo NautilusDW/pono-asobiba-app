@@ -2308,17 +2308,21 @@ const encStageEl = document.getElementById('encStage');
 const encStartBtn = document.getElementById('encStartBtn');
 
 const CREATURE_KIND_DATA = {
-  mayoi: { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
-  odoke: { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse', imageUrl: '../assets/images/maze/creatures/odoke.png' },
-  nemuri:{ emoji: '😴', color: '#9B7EBC', name: 'ねむりムシ', dialog: 'シルエット クイズ で<br>あそぼう…zzz', defaultGame: 'silhouette' },
-  pyon:  { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon' },
+  mayoi:  { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
+  odoke:  { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse', imageUrl: '../assets/images/maze/creatures/odoke.png' },
+  pyon:   { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon', imageUrl: '../assets/images/maze/creatures/pyon.png' },
+  kabuto: { emoji: '🪲', color: '#8B5A3C', name: 'コツコツムシ', dialog: '', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/kabuto.png' },
+  hachi:  { emoji: '🐝', color: '#E6B800', name: 'ブンブンムシ', dialog: '', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/hachi.png' },
 };
 // 全お邪魔虫共通の台詞 (出会った瞬間 / プレイヤーが勝った瞬間)。
 // c.dialog (ステージ JSON での明示指定) があれば encounter ではそちらを優先。
 const CREATURE_ENCOUNTER_DIALOG = 'ここは とおさないぞ！\nぼくに かったら、とおしてあげる！';
 const CREATURE_DEFEAT_DIALOG    = 'うーん、まけちゃった！\nとおって いいよ。';
 function _creatureData(c) {
-  return CREATURE_KIND_DATA[c.kind] || CREATURE_KIND_DATA.mayoi;
+  // Backward-compat: legacy stage JSON may reference removed kind 'nemuri' —
+  // alias it to 'mayoi' so old stages keep working without JSON edits.
+  const k = (c && c.kind === 'nemuri') ? 'mayoi' : (c && c.kind);
+  return CREATURE_KIND_DATA[k] || CREATURE_KIND_DATA.mayoi;
 }
 
 const OBSTACLE_KIND_IMG = {

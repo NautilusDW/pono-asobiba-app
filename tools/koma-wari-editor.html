@@ -3695,13 +3695,21 @@ window.addEventListener('keydown', e => {
   // Ctrl/Cmd + C : マスク選択中ならマスクコピー、 そうでなければフレームコピーへフォールバック。
   // input/textarea/contenteditable はハンドラ冒頭で早期 return 済 — ここに到達した時点で
   // ユーザーは通常のテキストコピー対象に居ない。
+  // 「マスク選択中」の判定は _selectedMaskRef の truthy だけでなく、実体 (rect) が
+  // 解決できることまで確認する。 ref が陳腐化していた場合は静かに null へ戻し、
+  // フレームコピーへ fall through する (= 過去 UX: 何も起きずユーザー困惑 を回避)。
   if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C') && !e.shiftKey && !e.altKey) {
     if (_selectedMaskRef) {
-      if (copySelectedMaskToClipboard()) {
+      if (_getSelectedMaskRectRef()) {
+        // マスクが選択されており実体も生きている → マスクコピー優先 (絶対に frame copy へ落とさない)
+        copySelectedMaskToClipboard();
         e.preventDefault();
         toast('🎭 マスクをコピーしました');
+        return;
       }
-      return;
+      // ref があるのに実体が無い (削除済 / アニメ切替後 etc.) → ref をクリアして
+      // 通常のフレームコピーへ fall through
+      _selectedMaskRef = null;
     }
     const f = getSelectedFrame();
     if (f) {
