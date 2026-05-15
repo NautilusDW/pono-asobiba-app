@@ -133,6 +133,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-15T23:57:20Z - memory/feature_maze_image_stage.md を creature 5種(mayoi/odoke/pyon/kabuto/hachi)構成に追従して書き換え
+- **タスク**: memory/feature_maze_image_stage.md を creature 5種(mayoi/odoke/pyon/kabuto/hachi)構成に追従して書き換え
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 39
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 19, "ToolSearch": 1, "Grep": 1, "Bash": 18}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
 ### 2026-05-15T23:55:07Z - 迷路お邪魔虫: 3画像追加+kind set刷新 (mayoi/odoke/pyon[新画像]/kabuto[新]/hachi[新]、nemuri廃止+mayoiエイリアス、ランタイム+両エディタ刷新、クロスレビュー後パス相対化+hachi軽量化、sw v1012)
 - **タスク**: 迷路お邪魔虫: 3画像追加+kind set刷新 (mayoi/odoke/pyon[新画像]/kabuto[新]/hachi[新]、nemuri廃止+mayoiエイリアス、ランタイム+両エディタ刷新、クロスレビュー後パス相対化+hachi軽量化、sw v1012)
 - **結果**: 成功
@@ -235,18 +248,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 21, "Glob": 9, "Grep": 6, "Read": 6, "ToolSearch": 2, "Agent": 15, "TaskOutput": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-15T23:35:08Z - コマ割エディタにマスクのコピペ機能を追加 (Ctrl+C/V + リスト📋ボタン、フレームCBとの相互排他、Major3+Minor1修正、sw.js v1009)
-- **タスク**: コマ割エディタにマスクのコピペ機能を追加 (Ctrl+C/V + リスト📋ボタン、フレームCBとの相互排他、Major3+Minor1修正、sw.js v1009)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 31
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 17, "ToolSearch": 1, "Grep": 1, "Bash": 12}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
 
 
