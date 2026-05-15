@@ -86,6 +86,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-15 - [batch:31-maze-ojamamushi-sheet] **Done** — 迷路用お邪魔虫 5 体の raw asset sheet を `tmp/alpha_pending/31/maze_ojamamushi_bug_sheet_raw.png` に納品 (`1774x887` PNG、白背景、alpha なし)。Mayoi / Kurukuru / Nemuri / Kakurenbo / Nazobato 風の5体が横一列・全身・同スケールで、文字/ラベル/UIなしを目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
+
 - 2026-05-15 - [batch:30-puzzle-screen-bg-frame] **Done** — user 添付スクショを参考に、パズル画面用の背景と4:3木枠を別 raw データとして `tmp/alpha_pending/30/` に納品。`puzzle_screen_background_carpet_raw.png` は中央に空いた柔らかい緑カーペットのある 16:9 背景 (`1672x941`)。`puzzle_board_wood_frame_simple_raw.png` は装飾なしのシンプル木枠 (`1448x1086`)。`_contact_sheet.png` で目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
 
 - 2026-05-15 - [batch:29-puzzle-stage-raw] **Done** — ポノのパズルゲーム通常ステージ raw 16 枚を `tmp/alpha_pending/29/` に納品完了。対象は Stage 01-04 / 06-09 / 11-14 / 16-19、全て `1448x1086` PNG / alpha なし / 3MB 未満。目視確認用 `_contact_sheet.png` も同フォルダに作成。Stage 05/10/15/20 は「ユーザー側で制作済みのポノ絵柄を使用」指定のため、元絵未提供として未生成。 (by Codex)
