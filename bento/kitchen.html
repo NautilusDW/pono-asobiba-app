@@ -13,6 +13,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  /* 16:9 固定 stage キャンバス (quizland / writing-mori と同じ contain-fit パターン)。
+     fitStage = Math.min(w/1600, h/900) で全体スケール、余白は .stage-wrap 背景 (画面別グラデ) で埋める。 */
+  --canvas-w: 1600px;
+  --canvas-h: 900px;
+
   /* 背景: 淡い黄〜オレンジ系の暖色（select 画面のベース） */
   --bg-1: #FFF7E1;
   --bg-2: #FFE9C2;
@@ -64,27 +69,53 @@
 }
 
 html, body {
-  min-height: 100dvh;
+  width: 100%;
+  height: 100dvh;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
-  background-attachment: fixed;
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.6s ease;
-}
-/* 画面ごとに body の背景を切り替え（data-screen を body に付与） */
-body[data-screen="select"] {
-  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
-}
-body[data-screen="chop"] {
-  background: linear-gradient(180deg, var(--bg-chop-1) 0%, var(--bg-chop-2) 50%, var(--bg-chop-3) 100%);
-}
-body[data-screen="fridge"] {
-  background: linear-gradient(180deg, var(--bg-fridge-1) 0%, var(--bg-fridge-2) 50%, var(--bg-fridge-3) 100%);
+  overflow: hidden;
 }
 body {
-  padding: 12px 12px 24px;
-  overflow-x: hidden;
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== 16:9 Stage container (auto-fit on viewport) =====
+   quizland / writing-mori と同じ contain-fit パターン。
+   .stage-wrap = viewport 全面（レターボックス＝画面別グラデで埋める）。
+   .stage      = 1600×900 固定キャンバス。JS の fitStage が translate + scale を当てる。 */
+.stage-wrap {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+  transition: background 0.6s ease;
+}
+/* 画面ごとに stage-wrap の背景（=レターボックス色）を切り替え。
+   data-screen は body にも付与され続けるが、見た目はここで切り替わる。 */
+body[data-screen="select"] .stage-wrap {
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+}
+body[data-screen="chop"] .stage-wrap {
+  background: linear-gradient(180deg, var(--bg-chop-1) 0%, var(--bg-chop-2) 50%, var(--bg-chop-3) 100%);
+}
+body[data-screen="fridge"] .stage-wrap {
+  background: linear-gradient(180deg, var(--bg-fridge-1) 0%, var(--bg-fridge-2) 50%, var(--bg-fridge-3) 100%);
+}
+.stage {
+  position: absolute;
+  top: 0; left: 0;
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  transform-origin: 0 0;  /* JS が translate + scale を当てる */
+  overflow: hidden;
+  padding: 18px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* スクリーンリーダー専用テキスト（aria-live 通知用） */
@@ -104,25 +135,20 @@ body {
    ヘッダー：タイトル + サブ + 5ステップフローチップ
    ========================================================= */
 .app-header {
-  max-width: 1200px;
-  margin: 0 auto 14px;
+  width: 100%;
+  margin: 0 0 8px;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
   gap: 14px;
   align-items: center;
-  padding: 6px 4px 0;
-}
-@media (max-width: 860px) {
-  .app-header {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
+  padding: 0;
+  flex: 0 0 auto;
 }
 
 .title-block { min-width: 0; }
 .app-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1.5rem, 4.4vw, 2.6rem);
+  font-size: 2.4rem;
   font-weight: 900;
   color: #F2A53A;
   text-shadow:
@@ -134,7 +160,7 @@ body {
 }
 .app-subtitle {
   margin-top: 4px;
-  font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-soft);
 }
@@ -147,15 +173,12 @@ body {
   gap: 0;
   flex-wrap: wrap;
 }
-@media (max-width: 860px) {
-  .flow-chips { justify-content: flex-start; }
-}
 .flow-chip {
   position: relative;
   background: var(--chip-color, #eee);
   color: var(--text);
   font-weight: 900;
-  font-size: clamp(0.65rem, 1.2vw, 0.85rem);
+  font-size: 0.85rem;
   padding: 8px 16px 8px 14px;
   border-radius: 14px;
   box-shadow: 0 3px 0 rgba(0,0,0,0.08), 0 4px 8px var(--shadow-soft);
@@ -245,7 +268,7 @@ body {
 .top-actions .btn {
   font-family: inherit;
   font-weight: 900;
-  font-size: clamp(0.72rem, 1.6vw, 0.9rem);
+  font-size: 0.9rem;
   padding: 8px 14px;
   border: 2px solid #fff;
   border-radius: 999px;
@@ -267,11 +290,15 @@ body {
    SPA: screen container (3 sections + fade)
    ========================================================= */
 .screen {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 4px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   opacity: 1;
   transition: opacity 0.3s ease;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .screen[hidden] {
   display: none !important;
@@ -285,7 +312,7 @@ body {
   gap: 4px;
   font-family: inherit;
   font-weight: 900;
-  font-size: clamp(0.78rem, 1.6vw, 0.95rem);
+  font-size: 0.95rem;
   padding: 6px 14px;
   background: rgba(255,255,255,0.92);
   color: var(--text);
@@ -304,6 +331,8 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .select-pono-row {
   display: flex;
@@ -314,7 +343,7 @@ body {
   border-radius: var(--radius);
   padding: 12px 14px;
   box-shadow: 0 4px 10px var(--shadow-soft);
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   width: 100%;
 }
@@ -325,24 +354,20 @@ body {
   padding: 18px;
   box-shadow: 0 6px 16px var(--shadow-soft);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 14px;
-}
-@media (max-width: 600px) {
-  .select-ingredient-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 12px;
-  }
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .select-stage .ingredient-btn {
-  font-size: clamp(2.4rem, 7vw, 3.6rem);
-  min-height: 130px;
+  font-size: 3.4rem;
+  min-height: 150px;
   padding: 14px 8px;
 }
 .select-stage .ingredient-btn .ingredient-name {
-  font-size: clamp(0.78rem, 1.7vw, 1rem);
+  font-size: 1rem;
   margin-top: 6px;
 }
 
@@ -352,13 +377,10 @@ body {
 .chop-stage-wrap {
   display: grid;
   grid-template-columns: 1.4fr 0.9fr;
-  gap: 16px;
+  gap: 18px;
   align-items: stretch;
-}
-@media (max-width: 860px) {
-  .chop-stage-wrap {
-    grid-template-columns: 1fr;
-  }
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .chop-main {
   background: linear-gradient(180deg, #FFFDF6 0%, #FFF3DF 100%);
@@ -370,7 +392,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 420px;
+  /* min-height は stage 1600x900 の縦余白に合わせた固定値。
+     header (~80px) + back (~50) + panel-pill (~50) + gap で残り
+     約 720px、その中で chop-main が 560px を確保して
+     chop-side と縦並びにならないようにする */
+  min-height: 560px;
 }
 .chop-side {
   display: flex;
@@ -390,10 +416,15 @@ body {
    ========================================================= */
 .fridge-screen-wrap {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  max-width: 880px;
+  /* 冷蔵庫を画面の主役にするため左ペインを優位に配分。
+     旧 1.05fr 1fr → 1.4fr 0.8fr で「冷蔵庫=主役、レシピ=添え物」の階層を作る */
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 18px;
+  width: 100%;
   margin: 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
 }
 .fridge-hero {
   background: linear-gradient(180deg, #F0FAFF 0%, #D4ECFA 100%);
@@ -401,6 +432,10 @@ body {
   border-radius: var(--radius-lg);
   padding: 18px;
   box-shadow: 0 6px 16px var(--shadow-soft);
+  /* 子の fridge-body を flex-grow させて縦の主役性を作る */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .fridge-actions {
   display: flex;
@@ -412,7 +447,7 @@ body {
 .fridge-actions .btn {
   font-family: inherit;
   font-weight: 900;
-  font-size: clamp(0.85rem, 1.7vw, 1rem);
+  font-size: 1rem;
   padding: 10px 22px;
   border: 2px solid #fff;
   border-radius: 999px;
@@ -458,7 +493,7 @@ body {
   border-radius: 999px;
   padding: 5px 12px;
   font-weight: 900;
-  font-size: clamp(0.78rem, 1.6vw, 0.95rem);
+  font-size: 0.95rem;
   box-shadow: 0 2px 0 rgba(0,0,0,0.08);
 }
 .panel-pill .pill-num {
@@ -487,7 +522,7 @@ body {
   border: 3px solid #FFD9A8;
   border-radius: 16px;
   padding: 8px 14px;
-  font-size: clamp(0.88rem, 1.9vw, 1.05rem);
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
   box-shadow: 0 2px 6px var(--shadow-soft);
@@ -515,7 +550,7 @@ body {
   border-radius: 14px;
   background: linear-gradient(180deg, #FFFEF8 0%, #FFF1D9 100%);
   box-shadow: 0 3px 0 rgba(140,100,60,0.25), 0 4px 6px rgba(0,0,0,0.08);
-  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-size: 2.2rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -584,7 +619,7 @@ body {
   white-space: nowrap;
 }
 .ingredient-name {
-  font-size: clamp(0.6rem, 1.2vw, 0.72rem);
+  font-size: 0.72rem;
   font-weight: 900;
   color: var(--text);
   margin-top: 2px;
@@ -611,7 +646,7 @@ body {
   border-radius: 999px;
   padding: 8px 18px;
   font-weight: 900;
-  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-size: 1.15rem;
   box-shadow: 0 3px 0 var(--pink-deep), 0 5px 10px rgba(0,0,0,0.15);
   opacity: 0;
   transform: scale(0.6);
@@ -639,7 +674,7 @@ body {
   left: 50%;
   transform: translateX(-50%) rotate(-10deg);
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-size: 2.4rem;
   font-weight: 900;
   color: var(--pink-deep);
   text-shadow:
@@ -659,7 +694,7 @@ body {
 /* まな板 */
 .cutting-board {
   position: relative;
-  width: min(92%, 420px);
+  width: min(92%, 560px);
   aspect-ratio: 5/3;
   background:
     repeating-linear-gradient(
@@ -698,8 +733,8 @@ body {
   position: absolute;
   top: -22px;
   right: 28px;
-  width: clamp(60px, 16vw, 96px);
-  height: clamp(18px, 4.6vw, 28px);
+  width: 110px;
+  height: 32px;
   transform: rotate(-22deg);
   transform-origin: 90% 50%;
   z-index: 3;
@@ -743,7 +778,7 @@ body {
 }
 
 .ingredient-on-board {
-  font-size: clamp(3.4rem, 10vw, 5.6rem);
+  font-size: 5.6rem;
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.18));
   user-select: none;
   pointer-events: none;
@@ -777,7 +812,7 @@ body {
 .empty-board-hint {
   color: var(--text-light);
   font-weight: 900;
-  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  font-size: 1rem;
   text-align: center;
   padding: 0 12px;
   pointer-events: none;
@@ -805,7 +840,7 @@ body {
 }
 .cut-piece {
   position: absolute;
-  font-size: clamp(0.9rem, 2.2vw, 1.4rem);
+  font-size: 1.4rem;
   pointer-events: none;
   user-select: none;
   animation: cutPieceLand 0.5s ease-out;
@@ -860,7 +895,7 @@ body {
 .progress-caption {
   font-family: 'Zen Maru Gothic', sans-serif;
   font-weight: 900;
-  font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+  font-size: 1.05rem;
   color: var(--pink-deep);
   text-shadow: 2px 2px 0 #fff;
   letter-spacing: 0.03em;
@@ -879,7 +914,10 @@ body {
     0 6px 0 var(--fridge-deep),
     0 10px 18px var(--shadow-soft);
   transition: transform 0.4s;
-  min-height: 280px;
+  /* 冷蔵庫主役要件: 縦の存在感を出すため底上げ (旧 280px → 420px)。
+     stage 1600x900 内、fridge 画面の縦余白の大半を fridge-body が占めるようにする */
+  min-height: 420px;
+  flex: 1 1 auto;
   position: relative;
   perspective: 1200px;
 }
@@ -948,14 +986,14 @@ body {
   .fridge-body.open::before { animation: none; opacity: 0; }
 }
 .fridge-icon {
-  font-size: clamp(2.4rem, 6vw, 3.2rem);
+  font-size: 3.2rem;
   text-align: center;
   margin-bottom: 6px;
 }
 .fridge-label {
   text-align: center;
   font-weight: 900;
-  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  font-size: 1.15rem;
   color: var(--text);
   background: #fff;
   border-radius: 12px;
@@ -964,19 +1002,18 @@ body {
   box-shadow: 0 1px 0 var(--shadow-soft);
 }
 .fridge-shelves {
-  flex: 1;
+  /* fridge-body が縦に大きく開いたぶん shelves も縦に伸ばす。
+     grid-auto-rows を 72px に底上げして、棚が空でも縦の存在感を維持 */
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(60px, auto);
+  grid-auto-rows: minmax(72px, 1fr);
   gap: 8px;
   align-content: start;
-  padding: 10px;
+  padding: 12px;
   background: rgba(255,255,255,0.6);
   border-radius: 12px;
-  min-height: 140px;
-}
-@media (max-width: 600px) {
-  .fridge-shelves { grid-template-columns: repeat(3, 1fr); }
+  min-height: 240px;
 }
 .fridge-item {
   display: flex;
@@ -985,7 +1022,7 @@ body {
   background: #fff;
   border-radius: 12px;
   padding: 6px;
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-size: 2.4rem;
   aspect-ratio: 1;
   box-shadow: 0 1px 2px var(--shadow-soft);
   animation: popIn 0.5s ease-out;
@@ -1022,11 +1059,21 @@ body {
    作れるおかずパネル（fridge 画面の下半分）
    ========================================================= */
 .recipes-panel {
-  padding: 14px 16px;
+  /* 右ペインは添え物。padding を抑え、内部スクロールで縦はみ出しを防ぐ */
+  padding: 12px 12px;
   background: linear-gradient(180deg, #FFF6E2 0%, #FFE4B5 100%);
   border: 3px solid #fff;
   border-radius: var(--radius-lg);
   box-shadow: 0 6px 16px var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.recipes-panel .recipes-grid {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  align-content: start;
 }
 .recipes-head {
   display: flex;
@@ -1039,20 +1086,24 @@ body {
 }
 .recipes-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+  /* 冷蔵庫が主役、レシピは添え物の階層にするため見出しを控えめに (旧 1.5rem → 1.15rem) */
+  font-size: 1.15rem;
   font-weight: 900;
   color: var(--primary-deep);
   text-shadow: 2px 2px 0 #fff;
 }
 .recipes-sub {
-  font-size: clamp(0.78rem, 1.5vw, 0.92rem);
+  font-size: 0.82rem;
   color: var(--text-soft);
   font-weight: 700;
 }
 .recipes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  /* レシピカードに上限を設けて巨大化を防ぐ (max 110px)。
+     右ペインが狭くなったので min も 96px に縮小 */
+  grid-template-columns: repeat(auto-fill, minmax(96px, 110px));
+  justify-content: center;
+  gap: 8px;
 }
 .recipe-card {
   background: #FFFEF7;
@@ -1084,7 +1135,7 @@ body {
   background: #fff;
 }
 .recipe-name {
-  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
+  font-size: 0.85rem;
   font-weight: 900;
   color: var(--text);
   text-align: center;
@@ -1139,7 +1190,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-size: 2.4rem;
 }
 .recipe-img-fallback.show {
   display: flex;
@@ -1158,7 +1209,7 @@ body {
   border-radius: 18px;
   padding: 16px 24px;
   font-weight: 900;
-  font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+  font-size: 1.2rem;
   color: var(--text);
   box-shadow: 0 10px 28px rgba(0,0,0,0.22);
   z-index: 50;
@@ -1222,13 +1273,13 @@ body {
 }
 .back-confirm__title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+  font-size: 1.3rem;
   font-weight: 900;
   color: var(--primary-deep);
   margin-bottom: 6px;
 }
 .back-confirm__body {
-  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-soft);
   margin-bottom: 16px;
@@ -1243,7 +1294,7 @@ body {
 .back-confirm__btn {
   font-family: inherit;
   font-weight: 900;
-  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  font-size: 1rem;
   padding: 10px 18px;
   border-radius: 999px;
   border: 2px solid #fff;
@@ -1255,23 +1306,39 @@ body {
 .back-confirm__btn--cancel { background: var(--green); }
 .back-confirm__btn--ok { background: var(--primary); }
 
-/* =========================================================
-   小さい画面の微調整
-   ========================================================= */
-@media (max-width: 600px) {
-  body { padding: 10px 8px 24px; }
-  .app-title { font-size: 1.6rem; }
-  .pono-img { width: 52px; height: 52px; }
-  .flow-chip {
-    padding: 6px 12px 6px 10px;
-    margin-right: 12px;
+/* 縦画面（portrait）警告: 横画面型固定（writing-mori と同じ）
+   contain-fit でレターボックスを出すよりも、縦持ち時は明示的に
+   横向きに促した方が伝わりやすい。 */
+@media (orientation: portrait) {
+  body::before {
+    content: '📱  よこむきに してね';
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: var(--bg-1);
+    color: var(--primary-deep);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: clamp(1.2rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: all;
   }
-  .flow-chip::after { right: -12px; border-width: 12px; }
-  .knife { right: 18px; }
 }
 </style>
 </head>
 <body data-screen="select">
+
+<!-- ===================== 16:9 Stage (1600×900 contain-fit) =====================
+     quizland / writing-mori と同じ contain-fit パターン。
+     viewport 全面 = .stage-wrap (画面別グラデでレターボックス)。
+     1600×900 内側 = .stage (JS の fitStage が translate + scale を当てる)。
+=========================================================================== -->
+<div class="stage-wrap" id="stage-wrap">
+<div class="stage" id="stage">
 
 <!-- ===================== 共通ヘッダー ===================== -->
 <header class="app-header">
@@ -1402,6 +1469,11 @@ body {
   </div>
 </section>
 
+</div><!-- /.stage -->
+</div><!-- /.stage-wrap -->
+
+<!-- 以下は viewport 全面オーバーレイ用 (position: fixed)。
+     stage の transform: scale を継がず、常に実ピクセルで表示する。 -->
 <div class="toast" id="toast"></div>
 
 <!-- スクリーンリーダー向け 画面切替アナウンス -->
@@ -1422,6 +1494,29 @@ body {
 <script>
 (function() {
   'use strict';
+
+  // ════════════════════════════════════════════════
+  // fitStage — 16:9 (1600×900) contain-fit
+  // quizland / writing-mori と同じパターン。
+  // viewport の幅と高さの両方に対して Math.min を取り、内側 1600×900 を
+  // 等比でスケール。余白は .stage-wrap の背景 (画面別グラデ) で埋める。
+  // ════════════════════════════════════════════════
+  const stageEl = document.getElementById('stage');
+  function fitStage() {
+    if (!stageEl) return;
+    const w = window.innerWidth, h = window.innerHeight;
+    const scale = Math.min(w / 1600, h / 900);
+    const sw = 1600 * scale, sh = 900 * scale;
+    const ox = (w - sw) / 2, oy = (h - sh) / 2;
+    stageEl.style.transformOrigin = '0 0';
+    stageEl.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + scale + ')';
+  }
+  window.addEventListener('resize', fitStage);
+  window.addEventListener('orientationchange', function () { setTimeout(fitStage, 100); });
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) fitStage();
+  });
+  fitStage();
 
   // ========== 設定 ==========
   const STORAGE_KEY = 'bentoUnlockedIngredients';
@@ -1970,6 +2065,11 @@ body {
   }
 
   function flySparklesToFridge() {
+    // sparkle は document.body に直接 append する設計
+    // → .stage の transform:scale を継承しない
+    // → getBoundingClientRect() の返り値（実画面ピクセル座標）と
+    //    sparkle の position:fixed left/top（実ピクセル）が一致する
+    // 将来 .stage 内に移動する場合は座標補正が必要になる点に注意
     const bowlRect = els.bowl.getBoundingClientRect();
     // 冷蔵庫はまだ画面に出ていないので、画面右上の chip 位置に向ける
     const fridgeChip = els.flowChips.querySelector('.flow-chip[data-step="3"]');
