@@ -17,6 +17,9 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: `tmp/Bento/pono_tonton_kitchen_codex_image_generation_instructions.md` を受領。HANDOFF / git log / `tmp/Bento/` / `tmp/alpha_pending/44-45/` / `assets/images/bento` を確認し、`kitchen_` / `chop_carrot` / `fx_chop` 系の既存成果物無し、44/45 は別件と確認済。AGENTS 現行方針により alpha 抜き・切り抜き・本配置は行わず、Phase 1 raw を `tmp/alpha_pending/46/` に納品する。 (by Codex)
+- 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: Phase 1 raw 4 枚を `tmp/alpha_pending/46/` に納品完了 (`kitchen_bg_21x9_raw.png` / `kitchen_phase1_ui_props_sheet_raw.png` / `kitchen_carrot_chop_sequence_sheet_raw.png` / `kitchen_phase1_fx_sheet_raw.png`)。寸法確認と目視確認済。alpha 抜き・切り抜き・本配置・sw.js bump は未実施で、ユーザー/Claude 側の後工程待ち。 (by Codex)
+
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` を受領。HANDOFF / git log / `tmp/alpha_pending/43/` を確認し、対象 raw 10 枚は未納品・batch 30/31 は別件と確認済。`tmp/alpha_pending/43/` に raw 納品する。 (by Codex)
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: writing-mori-shi stage1 raw 画像 10 種を `tmp/alpha_pending/43/` に納品完了 (bg / pono x3 / rabbit x3 / path overlay / card frame / shippo icon)。alpha 抜き・切り抜き・本配置・sw.js bump は未実施、ユーザー/Claude 側の後工程待ち。 (by Codex)
 
