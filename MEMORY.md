@@ -133,6 +133,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-16T00:40:06Z - クイズランド: pono-thinking/correct-stamp の表示クロップ問題修正 (新素材は既にバストショットなのに is-hooray の全身用クロップが二重適用されてた→using-anim-frame クラスで分離, コンテナ拡大, sw.js v1014)
+- **タスク**: クイズランド: pono-thinking/correct-stamp の表示クロップ問題修正 (新素材は既にバストショットなのに is-hooray の全身用クロップが二重適用されてた→using-anim-frame クラスで分離, コンテナ拡大, sw.js v1014)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 51
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 24, "ToolSearch": 1, "Grep": 1, "Bash": 25}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
+### 2026-05-16T00:39:14Z - クイズランド: 左下ポノ (pono-thinking / pono-correct-stamp) の右上偏ったクロップ + 小さすぎ問題を修正 (新経路用 .using-anim-frame クラス追加, コンテナ 273→360, scale 2.0 transform でキャラ中央寄せ, sw v1014)
+- **タスク**: クイズランド: 左下ポノ (pono-thinking / pono-correct-stamp) の右上偏ったクロップ + 小さすぎ問題を修正 (新経路用 .using-anim-frame クラス追加, コンテナ 273→360, scale 2.0 transform でキャラ中央寄せ, sw v1014)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 50
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 24, "ToolSearch": 1, "Grep": 1, "Bash": 24}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
 ### 2026-05-16T00:27:40Z - CLAUDE.mdにスキル自動発火ルール(MUST/SHOULDトリガ表)を追加、save-session/resume-sessionリストを分離
 - **タスク**: CLAUDE.mdにスキル自動発火ルール(MUST/SHOULDトリガ表)を追加、save-session/resume-sessionリストを分離
 - **結果**: 成功
@@ -221,32 +247,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 19, "ToolSearch": 1, "Grep": 1, "Bash": 16}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T23:49:27Z - ojamamushi kind set: pyon/kabuto/hachi 画像追加 + nemuri 廃止 + maze-rough kind ボタン更新
-- **タスク**: ojamamushi kind set: pyon/kabuto/hachi 画像追加 + nemuri 廃止 + maze-rough kind ボタン更新
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 64
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 21, "Glob": 9, "Grep": 6, "Read": 6, "ToolSearch": 2, "Agent": 19, "TaskOutput": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-15T23:47:52Z - maze-editor.html ojamamushi kind set update (remove nemuri, add kabuto+hachi, image pyon, nemuri->mayoi alias)
-- **タスク**: maze-editor.html ojamamushi kind set update (remove nemuri, add kabuto+hachi, image pyon, nemuri->mayoi alias)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 36
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 18, "ToolSearch": 1, "Grep": 1, "Bash": 16}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。
 
 

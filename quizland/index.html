@@ -1184,17 +1184,46 @@ body.sheet-on .hdr-right .ctrl-btn {
    他の think_v_* (バストショット) と構図を揃えるため、 画像を 1.7倍に拡大し
    上端 (頭〜腕) を基準に表示、 下半分 (脚) をはみ出させてコンテナ枠でクリップ。
    stage-pono は overflow: hidden ではないが、 周囲は board の安全領域なので
-   見切れ表示でも実害なし。 念のため overflow も hidden 化。 */
-.stage-pono.is-hooray { overflow: hidden !important; }
-.stage-pono.is-hooray .stage-pono-img,
-.stage-pono.is-hooray #stage-pono-img,
-#stage-pono.is-hooray .stage-pono-img,
-#stage-pono.is-hooray #stage-pono-img {
+   見切れ表示でも実害なし。 念のため overflow も hidden 化。
+   ※ 新素材 (AnimationPlayer 経路 = pono-thinking / pono-correct-stamp) は
+     既にバストショット構図でレンダリングされているため、 このクロップは
+     当てない (二重クロップ + キャラ右上偏り問題の根本対策)。
+     新経路用クラス .using-anim-frame は別ルールで扱う。 */
+.stage-pono.is-hooray:not(.using-anim-frame) { overflow: hidden !important; }
+.stage-pono.is-hooray:not(.using-anim-frame) .stage-pono-img,
+.stage-pono.is-hooray:not(.using-anim-frame) #stage-pono-img,
+#stage-pono.is-hooray:not(.using-anim-frame) .stage-pono-img,
+#stage-pono.is-hooray:not(.using-anim-frame) #stage-pono-img {
   object-fit: cover !important;
   /* 顔・腕・上半身が container の上 65% に収まるよう、 画像内 y=30% を中央付近にする */
   object-position: center 25% !important;
   transform: scale(1.85) translateY(-8%) !important;
   transform-origin: center top !important;
+}
+
+/* AnimationPlayer (manifest 駆動) 経路で再生中は、 画像がすでにバストショット
+   素材として作られているため CSS 側のクロップは不要。 さらに、 1024x1024 の
+   キャンバスにキャラが ~50% サイズで配置されているため、 そのまま contain で
+   表示するとコンテナの 273x273 中で更に縮小されて非常に小さく見える。 そこで
+   素材内のキャラ実領域分を打ち消す scale 1.7 を transform で当てて、 コンテナ
+   いっぱいに「顔〜上半身」が見えるようにする。 transform-origin は中央上寄り
+   (画像内のキャラがやや右上寄りに配置されているため translate でセンタリング)。
+   コンテナサイズも 273 → 360 に拡大してそもそもの表示面積を増やす。 */
+.stage-pono.using-anim-frame {
+  width: 360px;
+  height: 360px;
+  overflow: visible !important;
+}
+.stage-pono.using-anim-frame .stage-pono-img,
+.stage-pono.using-anim-frame #stage-pono-img,
+#stage-pono.using-anim-frame .stage-pono-img,
+#stage-pono.using-anim-frame #stage-pono-img {
+  object-fit: contain !important;
+  object-position: center center !important;
+  /* 画像 1024x1024 内のキャラ実領域 ~520x520 (中央〜右上) を、 コンテナ全域に
+     拡大して見せる。 scale 約 2.0、 画像中心がコンテナ中心になるよう translate。 */
+  transform: scale(2.0) translate(2%, 4%) !important;
+  transform-origin: center center !important;
 }
 .stage-pono-bubble {
   position: absolute;
@@ -4520,6 +4549,10 @@ async function playStagePonoThinking() {
     }
     if (handle) {
       _stagePonoThinkingHandle = handle;
+      // 新素材 (バストショット構図) 用のクラスを付与: is-hooray のクロップを無効化し、
+      // コンテナを 360x360 に拡大 + キャラを scale 2.0 でセンタリング表示する。
+      const stagePono = document.getElementById('stage-pono');
+      if (stagePono) stagePono.classList.add('using-anim-frame');
     } else {
       // manifest 取得失敗 → flip-book を復活させる (startStagePono の interval 再起動)
       _stagePonoThinkingHandle = null;
@@ -4541,6 +4574,10 @@ function stopStagePonoThinking() {
     _stagePonoThinkingHandle.stop();
   }
   _stagePonoThinkingHandle = null;
+  // hooray (新経路) が引き続き走る場合は再 add されるので、 ここで一旦剥がしても害なし。
+  // hooray (旧経路 fallback) が走る場合は is-hooray が別経路で付くので、 同様に問題なし。
+  const stagePono = document.getElementById('stage-pono');
+  if (stagePono) stagePono.classList.remove('using-anim-frame');
 }
 
 // stage-pono の通常 flip-book を再開する共通ヘルパ。
@@ -4602,7 +4639,10 @@ async function playStagePonoHooray() {
           //   なった場合の保険として実装。
           if (_stagePonoHoorayToken !== myToken) return;
           _stagePonoHoorayAnimHandle = null;
-          if (stagePono) stagePono.classList.remove('is-hooray');
+          if (stagePono) {
+            stagePono.classList.remove('is-hooray');
+            stagePono.classList.remove('using-anim-frame');
+          }
           resumeFlipBook();
         }
       });
@@ -4620,8 +4660,9 @@ async function playStagePonoHooray() {
   if (handle) {
     // 新経路: AnimationPlayer に再生を委譲。 2.5 秒後に明示 stop → flip-book 復帰。
     _stagePonoHoorayAnimHandle = handle;
-    // バストショット化 CSS は新経路でも継続適用 (= バナナ素材以前と同じ見た目)
-    if (stagePono) stagePono.classList.add('is-hooray');
+    // 新素材 (pono-correct-stamp = 既にバストショット構図) 用クラス。 旧 is-hooray
+    // のクロップは当てない (二重クロップ + キャラ右上偏り問題の根本対策)。
+    if (stagePono) stagePono.classList.add('using-anim-frame');
     _stagePonoHoorayTimer = setTimeout(function() {
       // タイマー発火時にも自己検証 (loadQuestion で token クリアされていれば何もしない)
       if (_stagePonoHoorayToken !== myToken) return;
@@ -4629,7 +4670,10 @@ async function playStagePonoHooray() {
         _stagePonoHoorayAnimHandle.stop();
       }
       _stagePonoHoorayAnimHandle = null;
-      if (stagePono) stagePono.classList.remove('is-hooray');
+      if (stagePono) {
+        stagePono.classList.remove('is-hooray');
+        stagePono.classList.remove('using-anim-frame');
+      }
       resumeFlipBook();
     }, 2500);
     return;
@@ -4939,7 +4983,10 @@ function loadQuestion(q) {
   }
   _stagePonoHoorayAnimHandle = null;
   const _stagePonoElForHoorayReset = document.getElementById('stage-pono');
-  if (_stagePonoElForHoorayReset) _stagePonoElForHoorayReset.classList.remove('is-hooray');
+  if (_stagePonoElForHoorayReset) {
+    _stagePonoElForHoorayReset.classList.remove('is-hooray');
+    _stagePonoElForHoorayReset.classList.remove('using-anim-frame');
+  }
   if (q.type === 'trivia') {
     document.body.classList.add('has-trivia-pono');
   } else {
