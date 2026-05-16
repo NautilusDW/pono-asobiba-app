@@ -40,6 +40,7 @@
 - **博士最上級セリフ「はかせを こえとるかも しれんのう」 全カテゴリ制覇限定昇格** (未着手): [memory/feature_quizland_hakase_perfect_master_seal.md](memory/feature_quizland_hakase_perfect_master_seal.md) — clear.perfect[2] を 5/5 ランダム発火から「難しい/優しい/物知り 全カテゴリパーフェクトクリア」 限定発火に格上げ、 音声録音は今進める / 発動条件改修は録音完了後
 - **過去の候補を ID/ラベルで参照する時は本文併記** (恒久ルール): [memory/feedback_restate_content_when_referring.md](memory/feedback_restate_content_when_referring.md) — D/B1 等の短縮 ID だけで参照せず、 必ず本文を併記してユーザーがスクロールせずに済むようにする
 - **Quizland 音声プロジェクト 引き継ぎ書 (次セッション用)**: [tools/voicepeak/HANDOFF-NEXT-SESSION.md](tools/voicepeak/HANDOFF-NEXT-SESSION.md) — sw v966 終了時点の到達点 (くるみ第1-5問目 5 件 mp3 配置完了 / 問題本編 907 件未着手)、 次バッチ = number_sequence (20 ユニーク → 24 q###)、 確定話者 = VOICEPEAK 「女性4」 (くるみ) + 「ナレーター おじいさん」 (博士、 MVP 後回し)、 やってはいけないこと (CSS バナー新規作成 NG / qno_plate デフォルト消去 NG / don 別途再生 NG / VOICEVOX や 「女の子」 提案 NG)、 準備済 CSV/JSON/スクリプト/発注書一覧、 関連 memory ファイル 10 本
+- **Quizland VOICEPEAK 進捗追跡 (sw v383, 2026-05-16 = 60/181 問 33%)**: [memory/feature_quizland_voicepeak_progress.md](memory/feature_quizland_voicepeak_progress.md) — 完了 3 (order_color / count_total / number_sequence) + 準備完了 1 (shape_name) + 未着手 4 (trivia / weather / opposite / body)。 セッション再開時に最初に Read して現状把握する進捗追跡メモリ
 - **画像生成ルート方針 (2026-05-11 更新)**: 一次経路は **Codex 経由の GPT-Image 2 (OpenAI `gpt-image-1` 系)** か **Higgsfield の Nano Banana Pro** の二択。被写体・用途で使い分ける (キャラ・人物系 → Nano Banana Pro / 抽象・UI 素材・テキスト含む系 → GPT-Image 2、運用知見が貯まり次第追記)。Claude Code セッションは生成タスクを直接抱えない — 生成は Codex / Higgsfield 側で行い、生成物は `tmp/alpha_pending/<NN>/` 経由で投入され、Claude は最終配置・最適化 (`assets/` への移動、ファイル名整備、軽量化、`sw.js` バンプ、commit) のみ担当。**以前の「GPT Image 2 単一・他モデル禁止」方針は撤回**、現方針は GPT-Image 2 / Nano Banana Pro の使い分け。解像度・SAFE エリア・外周ぼかし等の既存ガイドライン ([memory/feedback_codex_canvas_safe_margin.md](memory/feedback_codex_canvas_safe_margin.md)) はそのまま有効
 - **【未対処懸案 2026-05-12】 develop / origin/develop divergence 同期残課題**: [memory/project_develop_origin_divergence_pending.md](memory/project_develop_origin_divergence_pending.md) — 19 behind / 5 ahead、 単純 pull --rebase NG (2026-05-12 大事故の根本)、 落ち着いた時間に手動同期 (hook 一時停止 + backup 切り + origin 19 commits 内容確認 → 同期 → hook 復帰)
 - **【未対処懸案 2026-05-12】 chip-label v968 4 段防御で残るバグ + v969 attempt 破棄** (v970-v973 で完了): [memory/project_chip_label_v968_residual.md](memory/project_chip_label_v968_residual.md) — 288×240 + 改行混入が v968 で残存、 v969 attempt は rebase 混乱で broken 判定で全破棄。 **v970-v973 で完全解決** = [memory/feature_chip_label_editor_saga.md](memory/feature_chip_label_editor_saga.md) 参照
@@ -136,6 +137,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-16T13:18:29Z - VOICEPEAK 進捗追跡メモリ feature_quizland_voicepeak_progress.md 新規作成 + MEMORY.md インデックス 1 行追加 (sw v383, 60/181 問 33%)
+- **タスク**: VOICEPEAK 進捗追跡メモリ feature_quizland_voicepeak_progress.md 新規作成 + MEMORY.md インデックス 1 行追加 (sw v383, 60/181 問 33%)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 109
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 59, "Read": 9, "Agent": 34, "ToolSearch": 1, "Grep": 2, "Edit": 3, "Glob": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-05-16T13:11:14Z - VOICEPEAK count_total Phase 1 完成 (48 wav 配置 + manifest 48 + sw v383) + shape_name バッチ準備 (BATCH-RUN-shape_name.md)
 - **タスク**: VOICEPEAK count_total Phase 1 完成 (48 wav 配置 + manifest 48 + sw v383) + shape_name バッチ準備 (BATCH-RUN-shape_name.md)
 - **結果**: 成功
@@ -229,19 +243,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-05-16T10:58:35Z - kitchen.html fridge画面 冷蔵庫主役レイアウト調整 (1.4fr/0.8fr、fridge-body min-height 280→420、recipes-title 1.5→1.15rem、レシピカード上限110px、sw v381→382)
 - **タスク**: kitchen.html fridge画面 冷蔵庫主役レイアウト調整 (1.4fr/0.8fr、fridge-body min-height 280→420、recipes-title 1.5→1.15rem、レシピカード上限110px、sw v381→382)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 80
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 47, "Read": 8, "Agent": 19, "ToolSearch": 1, "Grep": 2, "Edit": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-16T10:58:23Z - quizland ?edit=1 で chip タップ無反応バグ修正 — bubble click / chip pointerdown / 吹き出し再生 2 箇所の旧 layout-editor-on ガードを Pause guard に統一 (sw v381)
-- **タスク**: quizland ?edit=1 で chip タップ無反応バグ修正 — bubble click / chip pointerdown / 吹き出し再生 2 箇所の旧 layout-editor-on ガードを Pause guard に統一 (sw v381)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 80
