@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: user 指摘「細かく描きすぎ、もっと大雑把で手描き感、毛並みは全身ではなく明部/影部のみ、輪郭は束を大きく長く」を受領。既存 batch 45 の Cut 1 v4 (`tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_long_handdrawn_fur_slim_pono_v4_raw.png`) を確認し、全身の短線テクスチャが過密と判断。alpha 抜き・切り抜きは行わず、同構図の粗い手描き毛束版 raw を `tmp/alpha_pending/47/` に追加納品する。 (by Codex)
+- 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: Cut 1 rough-fur raw 2 案を `tmp/alpha_pending/47/` に納品完了。`puzzle_opening_cut1_rough_fur_v1_raw.png` / `puzzle_opening_cut1_rough_fur_v2_raw.png` はどちらも `1672x941` / RGB / 3MB 未満。v1 はキャラ固定を優先、v2 は胴体の面をより静かにした候補で現時点の推奨。1 回目の生成案は狐/あらいぐまが別キャラ化したため不採用・未納品。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
 
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: `tmp/Bento/pono_tonton_kitchen_codex_image_generation_instructions.md` を受領。HANDOFF / git log / `tmp/Bento/` / `tmp/alpha_pending/44-45/` / `assets/images/bento` を確認し、`kitchen_` / `chop_carrot` / `fx_chop` 系の既存成果物無し、44/45 は別件と確認済。AGENTS 現行方針により alpha 抜き・切り抜き・本配置は行わず、Phase 1 raw を `tmp/alpha_pending/46/` に納品する。 (by Codex)
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: Phase 1 raw 4 枚を `tmp/alpha_pending/46/` に納品完了 (`kitchen_bg_21x9_raw.png` / `kitchen_phase1_ui_props_sheet_raw.png` / `kitchen_carrot_chop_sequence_sheet_raw.png` / `kitchen_phase1_fx_sheet_raw.png`)。寸法確認と目視確認済。alpha 抜き・切り抜き・本配置・sw.js bump は未実施で、ユーザー/Claude 側の後工程待ち。 (by Codex)
