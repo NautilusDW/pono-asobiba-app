@@ -1168,6 +1168,38 @@ body.layout-editor-on .le-toolbar #le-multi-select.active {
   background: #6a4ed4; border-color: #8a5ef0;
 }
 
+/* ⏸ 一時停止 / ▶ 再開 トグルボタン (active = pause 中) */
+body.layout-editor-on .le-toolbar #le-pause-toggle.active {
+  background: #c4451c;
+  border-color: #ff7a45;
+  color: #fff8d4;
+}
+
+/* pause 中の視覚 hint オーバーレイ。
+   toolbar より z-index 高め、 pointer-events:none で操作を妨げない。
+   位置は画面右上 (toolbar の直下にかかる位置)。 */
+#le-paused-overlay {
+  position: fixed;
+  top: calc(var(--le-toolbar-h, 0px) + 12px);
+  right: 16px;
+  z-index: 999999;
+  pointer-events: none;
+  padding: 6px 14px;
+  background: rgba(196, 69, 28, 0.88);
+  color: #fff8d4;
+  font: 700 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0.08em;
+  border: 1px solid #ff7a45;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  /* 軽い pulse でユーザーに pause 中を伝える */
+  animation: le-paused-pulse 1.6s ease-in-out infinite;
+}
+@keyframes le-paused-pulse {
+  0%, 100% { opacity: 0.95; }
+  50%      { opacity: 0.55; }
+}
+
 /* Top-toolbar alignment cluster (U4) — same look as numeric-panel align bar */
 body.layout-editor-on .le-toolbar .le-align-tb {
   display: inline-flex;

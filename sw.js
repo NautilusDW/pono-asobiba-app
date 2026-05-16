@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1033;
+const CACHE_VERSION = 377;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -56,27 +56,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 画像は stale-while-revalidate: キャッシュがあれば即返却、 同時に背景でネットワーク
-  // 取得してキャッシュを最新化する。 iOS Safari ではメモリ圧迫時に no-store のネット待ち
-  // で画像読込が止まる症状があったため、 v992 で network-first から SWR に移行。
-  // （ピボットツールでスワップした画像も次回アクセスで反映される。 即時反映が必須な
-  //  ツール経路は line 38-44 の bypass でカバー済）
+  // 画像は SW キャッシュをスキップして常にネットワーク取得
+  // （ピボットツールでスワップした画像が即反映されるように）
+  // オフライン時のみ既存キャッシュにフォールバック
   if (event.request.destination === 'image') {
-    event.respondWith((async () => {
-      const cached = await caches.match(event.request);
-      const networkPromise = fetch(event.request).then(resp => {
-        if (resp && resp.ok) {
-          const clone = resp.clone();
-          // fire-and-forget の cache.put — 失敗しても caller に影響させない (unhandled rejection 対策)
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone)).catch(() => {});
-          return resp;
-        }
-        // 404 等の bad response でも cached があれば優先 (古い画像 > 壊れた画像)
-        return cached || resp;
-      }).catch(() => cached || null);
-      // SWR: cache があれば即返却、 なければ network 待ち
-      return cached || networkPromise;
-    })());
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 
@@ -99,10 +86,7 @@ self.addEventListener('fetch', event => {
       || event.request.url.includes('/assets/data/rewards.json')
       || event.request.url.includes('/assets/tts/manifest.json')
       || event.request.url.includes('/assets/audio/bgm/')
-      || event.request.url.includes('/assets/audio/storyboard/')
-      || event.request.url.includes('/maze/imageStages/')
-      || event.request.url.includes('/quizland/preview/full/saved-layout.json')
-      || event.request.url.includes('/quizland/saved-layout.json')) {
+      || event.request.url.includes('/assets/audio/storyboard/')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(response => {

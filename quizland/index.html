@@ -5528,6 +5528,14 @@ function ponoJump() {
 // editor の「次の問題へ」ボタン (common/layout/layout-editor.js) から呼べるよう window 公開
 window.nextQuestion = nextQuestion;
 function nextQuestion() {
+  // Pause guard (?edit=1 + ⏸ トグル中は次問題への進行だけを凍結)。
+  // チップタップ・正解判定・演出・スタンプ・SE は通常動作、 ここで「次の問題」 への
+  // 遷移経路だけを止める。 layout-editor 側の toolbar が body.layout-editor-paused +
+  // window._quizlandPaused を立てる想定 (どちらか true なら pause 状態とみなす)。
+  if (window._quizlandPaused ||
+      (document.body && document.body.classList.contains('layout-editor-paused'))) {
+    return;
+  }
   // Phase 2 / impl-B hook: editor mode で per-Q レイアウト編集中の dirty 確認。
   // impl-A が LayoutEditor.confirmDiscardIfDirty() を公開する想定で呼び出す。
   // 未公開でも null guard で素通り (= 通常プレイは影響なし)。
@@ -5554,21 +5562,21 @@ function nextQuestion() {
 }
 
 function _doNextQuestion() {
+  // Pause guard (?edit=1 + ⏸ トグル中は次問題への進行だけを凍結)。
+  // nextQuestion() ラッパー経由でない直呼び出し (debug 保存後の続行 _qzPtSaveCurrentNote
+  // の resolve コールバック等) も確実にブロックするため、 ここでも判定する。
+  if (window._quizlandPaused ||
+      (document.body && document.body.classList.contains('layout-editor-paused'))) {
+    return;
+  }
   clearTimeout(_autoHintTimer);
   stopTriviaPoseAnimation(); // 前の質問のポーズ循環を必ず止める (interval リーク防止)
   hideNextButton();           // 「つぎへ」を必ず片付ける (オーバーレイで残らないように)
   questionIdx++;
   if (questionIdx >= totalQuestions) {
-    // editor mode (?edit=1): リザルトモーダルは閉じる手段が無く編集を阻害するので
-    // 表示せず先頭へループバックする (既存の editor ガード方針 chip pointerdown /
-    // 吹き出しクリック / HUD ボタン等と同じパターン)。
-    if (document.body.classList.contains('layout-editor-on')) {
-      questionIdx = 0;
-      loadQuestion(playlist[0]);
-      try { _runPlateAndType(0); } catch (e) {}
-      try { console.log('[quizland editor] 全問完走 — 先頭に戻ります'); } catch (_) {}
-      return;
-    }
+    // 全問完走時は ?edit=1 でも本番と同じ結果画面を表示する (= 編集者がゲームフロー
+    // 全体を視認できるようにする方針)。 編集中に結果画面が邪魔な場合は layout-editor
+    // 側の ⏸ トグルで「次の問題への進行」 自体を止める運用に切り替えた。
     showResult();
     return;
   }

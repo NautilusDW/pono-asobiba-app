@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ポノのトントンキッチン | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* 背景: 淡い黄〜オレンジ系の暖色 */
+  --bg-1: #FFF7E1;
+  --bg-2: #FFE9C2;
+  --bg-3: #FFD79A;
+
+  /* チップ5色（スクショに合わせたパステル） */
+  --chip-green:  #B8E0A6;
+  --chip-orange: #FFB877;
+  --chip-blue:   #B8DFF2;
+  --chip-pink:   #FFC2D1;
+  --chip-yellow: #FFE082;
+
+  /* テキスト/影 */
+  --text: #5D4E37;
+  --text-soft: #8B7757;
+  --text-light: #A89880;
+  --shadow: rgba(93,78,55,0.18);
+  --shadow-soft: rgba(93,78,55,0.10);
+
+  /* まな板（暖色木目） */
+  --board-1: #F2C994;
+  --board-2: #DBA76A;
+  --board-3: #B97F47;
+
+  /* 冷蔵庫 */
+  --fridge-bg: #DBF1FF;
+  --fridge-edge: #8FCDED;
+  --fridge-deep: #5FA8D1;
+
+  /* アクセント */
+  --primary: #F2915A;
+  --primary-deep: #D86E2F;
+  --pink: #F47CA1;
+  --pink-deep: #D85687;
+  --green: #7FB069;
+
+  --radius: 18px;
+  --radius-lg: 22px;
+}
+
+html, body {
+  min-height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+  background-attachment: fixed;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  padding: 12px 12px 24px;
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   ヘッダー：タイトル + サブ + 5ステップフローチップ
+   ========================================================= */
+.app-header {
+  max-width: 1200px;
+  margin: 0 auto 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+  gap: 14px;
+  align-items: center;
+  padding: 6px 4px 0;
+}
+@media (max-width: 860px) {
+  .app-header {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.title-block { min-width: 0; }
+.app-title {
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.5rem, 4.4vw, 2.6rem);
+  font-weight: 900;
+  color: #F2A53A;
+  text-shadow:
+    3px 3px 0 #FFFCEF,
+    5px 5px 0 rgba(210,140,40,0.22);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+.app-subtitle {
+  margin-top: 4px;
+  font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+/* 5ステップ フローチップ */
+.flow-chips {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 0;
+  flex-wrap: wrap;
+}
+@media (max-width: 860px) {
+  .flow-chips { justify-content: flex-start; }
+}
+.flow-chip {
+  position: relative;
+  background: var(--chip-color, #eee);
+  color: var(--text);
+  font-weight: 900;
+  font-size: clamp(0.65rem, 1.2vw, 0.85rem);
+  padding: 8px 16px 8px 14px;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.08), 0 4px 8px var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 14px;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  border: 2px solid rgba(255,255,255,0.7);
+  transition: transform 0.15s ease;
+}
+.flow-chip::after {
+  content: '';
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 14px solid transparent;
+  border-left-color: var(--chip-color, #eee);
+  filter: drop-shadow(2px 0 0 rgba(255,255,255,0.7));
+}
+.flow-chip:last-child { margin-right: 0; }
+.flow-chip:last-child::after { display: none; }
+.flow-chip .step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.flow-chip .step-icon {
+  font-size: 1rem;
+}
+.flow-chip.active {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 5px 0 rgba(0,0,0,0.12), 0 8px 14px var(--shadow);
+  border-color: #fff;
+  z-index: 2;
+}
+.flow-chip.active::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 18px;
+  border: 3px dashed #fff;
+  pointer-events: none;
+  animation: chipPulse 1.4s ease-in-out infinite;
+}
+@keyframes chipPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.flow-chip.done { opacity: 0.78; }
+
+/* チップ別カラー */
+.flow-chip[data-step="1"] { --chip-color: var(--chip-green); }
+.flow-chip[data-step="2"] { --chip-color: var(--chip-orange); }
+.flow-chip[data-step="3"] { --chip-color: var(--chip-blue); }
+.flow-chip[data-step="4"] { --chip-color: var(--chip-pink); }
+.flow-chip[data-step="5"] { --chip-color: var(--chip-yellow); }
+
+/* =========================================================
+   トップアクション（右上ボタン）
+   ========================================================= */
+.top-actions {
+  position: fixed;
+  top: 10px; right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 30;
+}
+.top-actions .btn {
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(0.72rem, 1.6vw, 0.9rem);
+  padding: 8px 14px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--shadow);
+  color: #fff;
+  transition: transform 0.08s;
+}
+.top-actions .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow); }
+.btn-primary { background: var(--primary); }
+.btn-secondary { background: var(--green); }
+
+/* =========================================================
+   メインステージ：① 材料 / ② まな板 / ③ 冷蔵庫
+   ========================================================= */
+.stage {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.45fr 1fr;
+  gap: 12px;
+  padding: 0 4px;
+}
+@media (max-width: 980px) {
+  .stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: #FFFDF6;
+  border: 3px solid rgba(255,255,255,0.95);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 16px var(--shadow-soft), 0 2px 0 rgba(255,255,255,0.6) inset;
+  padding: 14px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.panel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pill-bg, #eee);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-weight: 900;
+  font-size: clamp(0.78rem, 1.6vw, 0.95rem);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.08);
+}
+.panel-pill .pill-num {
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+}
+.panel--pick   .panel-pill { --pill-bg: var(--chip-green); }
+.panel--chop   .panel-pill { --pill-bg: var(--chip-orange); }
+.panel--fridge .panel-pill { --pill-bg: var(--chip-blue); }
+
+/* ---------- ① 材料をえらぶパネル ---------- */
+.panel--pick .pono-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pono-img {
+  width: 56px; height: 56px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.12));
+}
+.speech-bubble {
+  background: #fff;
+  border: 3px solid #FFD9A8;
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: clamp(0.82rem, 1.7vw, 0.98rem);
+  font-weight: 700;
+  color: var(--text);
+  box-shadow: 0 2px 6px var(--shadow-soft);
+  position: relative;
+  line-height: 1.4;
+  flex: 1;
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px; top: 18px;
+  border: 8px solid transparent;
+  border-right-color: #FFD9A8;
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  left: -8px; top: 20px;
+  border: 6px solid transparent;
+  border-right-color: #fff;
+}
+
+.ingredient-bar {
+  background: linear-gradient(180deg, #FFF7E0 0%, #FFE9BD 100%);
+  border: 3px solid #fff;
+  border-radius: var(--radius);
+  padding: 10px 8px;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 2px 6px var(--shadow-soft);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.ingredient-btn {
+  border: 3px solid #fff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFEF8 0%, #FFF1D9 100%);
+  box-shadow: 0 3px 0 rgba(140,100,60,0.25), 0 4px 6px rgba(0,0,0,0.08);
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  transition: transform 0.1s;
+  position: relative;
+  aspect-ratio: 1;
+  font-family: inherit;
+}
+.ingredient-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(140,100,60,0.3); }
+.ingredient-btn.unlocked {
+  background: linear-gradient(180deg, #EFFBE3 0%, #C8EBA9 100%);
+}
+.ingredient-btn.unlocked::after {
+  content: '✓';
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 22px; height: 22px;
+  background: var(--green);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 0 var(--shadow);
+  font-weight: 900;
+}
+.ingredient-btn.selected {
+  background: linear-gradient(180deg, #FFE0BB 0%, var(--primary) 100%);
+  border-color: var(--primary);
+}
+.ingredient-btn.locked {
+  opacity: 0.55;
+  cursor: help;
+}
+.ingredient-btn.locked::after {
+  content: '🔒';
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 22px; height: 22px;
+  background: #fff;
+  color: var(--text);
+  border-radius: 50%;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 0 var(--shadow);
+  border: 2px solid #FFE2B6;
+}
+.ingredient-name {
+  font-size: clamp(0.6rem, 1.2vw, 0.72rem);
+  font-weight: 900;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+/* ---------- ② トントン切る (まな板) ---------- */
+.panel--chop {
+  align-items: center;
+  background: linear-gradient(180deg, #FFFDF6 0%, #FFF3DF 100%);
+}
+.chop-stage {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 0 4px;
+}
+
+/* コンボピル（右上） */
+.combo-pill {
+  position: absolute;
+  top: -4px;
+  right: 4px;
+  background: linear-gradient(180deg, #FFB1CB 0%, var(--pink) 100%);
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 900;
+  font-size: clamp(0.85rem, 2vw, 1.05rem);
+  box-shadow: 0 3px 0 var(--pink-deep), 0 5px 10px rgba(0,0,0,0.15);
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.combo-pill.show {
+  opacity: 1;
+  transform: scale(1);
+}
+.combo-pill.pulse { animation: comboPulse 0.45s ease-out; }
+@keyframes comboPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* 「トン！」テキスト */
+.ton-burst {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-weight: 900;
+  color: var(--pink-deep);
+  text-shadow:
+    3px 3px 0 #fff,
+    5px 5px 0 rgba(216,86,135,0.25);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.ton-burst.show { animation: tonPop 0.55s ease-out; }
+@keyframes tonPop {
+  0%   { transform: translateX(-50%) translateY(0) rotate(-12deg) scale(0.5); opacity: 0; }
+  35%  { transform: translateX(-50%) translateY(-18px) rotate(-6deg) scale(1.25); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-40px) rotate(-2deg) scale(1.05); opacity: 0; }
+}
+
+/* まな板 */
+.cutting-board {
+  position: relative;
+  width: min(92%, 360px);
+  aspect-ratio: 5/3;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 18px,
+      rgba(108,68,32,0.10) 18px,
+      rgba(108,68,32,0.10) 20px
+    ),
+    linear-gradient(180deg, var(--board-1) 0%, var(--board-2) 60%, var(--board-3) 100%);
+  border: 6px solid var(--board-3);
+  border-radius: 22px;
+  box-shadow:
+    inset 0 -6px 0 rgba(120,70,30,0.25),
+    0 8px 0 rgba(120,70,30,0.45),
+    0 14px 22px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1;
+  overflow: visible;
+  touch-action: manipulation;
+  outline: none;
+}
+.cutting-board:focus-visible {
+  box-shadow:
+    inset 0 -6px 0 rgba(120,70,30,0.25),
+    0 8px 0 rgba(120,70,30,0.45),
+    0 14px 22px rgba(0,0,0,0.18),
+    0 0 0 4px #F2915A;
+}
+
+/* 包丁（赤い柄＋銀色の刃 — CSS） */
+.knife {
+  position: absolute;
+  top: -22px;
+  right: 28px;
+  width: clamp(60px, 16vw, 96px);
+  height: clamp(18px, 4.6vw, 28px);
+  transform: rotate(-22deg);
+  transform-origin: 90% 50%;
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25));
+}
+.knife .blade {
+  position: absolute;
+  left: 0; top: 0;
+  width: 65%; height: 100%;
+  background: linear-gradient(180deg, #F5F8FB 0%, #C7D1DA 60%, #92A0AE 100%);
+  border-radius: 4px 6px 28px 4px / 4px 6px 18px 4px;
+  border: 2px solid #6E7C8B;
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.08);
+}
+.knife .handle {
+  position: absolute;
+  right: 0; top: -2px;
+  width: 38%;
+  height: calc(100% + 4px);
+  background: linear-gradient(180deg, #E54F4F 0%, #B7322B 100%);
+  border: 2px solid #8C2421;
+  border-radius: 6px 10px 10px 6px;
+}
+.knife .rivets {
+  position: absolute;
+  right: 12%;
+  top: 30%;
+  width: 18%;
+  height: 40%;
+  background:
+    radial-gradient(circle at 30% 50%, #FAD2C5 0 18%, transparent 19%),
+    radial-gradient(circle at 70% 50%, #FAD2C5 0 18%, transparent 19%);
+}
+.knife.chop { animation: knifeChop 0.32s ease-out; }
+@keyframes knifeChop {
+  0%   { transform: rotate(-22deg) translateY(0); }
+  35%  { transform: rotate(8deg) translateY(36px); }
+  60%  { transform: rotate(-12deg) translateY(14px); }
+  100% { transform: rotate(-22deg) translateY(0); }
+}
+
+/* まな板上の材料 */
+.ingredient-on-board {
+  font-size: clamp(3rem, 9vw, 5rem);
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.18));
+  user-select: none;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.18s ease-out;
+}
+.ingredient-on-board.shake { animation: ingShake 0.25s ease-out; }
+@keyframes ingShake {
+  0%, 100% { transform: translate(0,0) rotate(0deg); }
+  20%      { transform: translate(-4px, 2px) rotate(-3deg); }
+  60%      { transform: translate(4px, -2px) rotate(3deg); }
+}
+
+.spark {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 2;
+}
+.spark.show { animation: sparkPop 0.4s ease-out; }
+@keyframes sparkPop {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+}
+
+.empty-board-hint {
+  color: var(--text-light);
+  font-weight: 900;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  text-align: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+/* 切れ端（小皿に飛ぶ花型オレンジパーツ） */
+.bowl {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  width: clamp(56px, 11vw, 84px);
+  aspect-ratio: 1.3/1;
+  border-radius: 50% / 60%;
+  background: linear-gradient(180deg, #DDF1B8 0%, #B8DD8B 100%);
+  border: 3px solid #95C566;
+  box-shadow: 0 3px 0 rgba(120,150,60,0.35), 0 5px 10px rgba(0,0,0,0.12);
+  z-index: 1;
+  overflow: hidden;
+}
+.bowl::before {
+  content: '';
+  position: absolute;
+  inset: 4px 6px;
+  border-radius: 50%/60%;
+  background: rgba(255,255,255,0.35);
+}
+.cut-piece {
+  position: absolute;
+  font-size: clamp(0.9rem, 2.2vw, 1.4rem);
+  pointer-events: none;
+  user-select: none;
+  animation: cutPieceLand 0.5s ease-out;
+}
+@keyframes cutPieceLand {
+  0%   { transform: translate(var(--fx, 0), -160px) scale(0.6) rotate(0deg); opacity: 0; }
+  40%  { opacity: 1; }
+  100% { transform: translate(var(--fx, 0), var(--fy, 0)) scale(1) rotate(var(--fr, 0deg)); opacity: 1; }
+}
+
+/* 進行バー（虹色グラデ） */
+.progress-row {
+  width: 92%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.progress-track {
+  width: 100%;
+  height: 16px;
+  background: rgba(255,255,255,0.7);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 3px var(--shadow-soft), 0 2px 4px var(--shadow-soft);
+  position: relative;
+}
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    #F47C7C 0%,
+    #FFB877 22%,
+    #FFE082 45%,
+    #B8E0A6 68%,
+    #B8DFF2 86%,
+    #D9B8F2 100%
+  );
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.progress-star {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  pointer-events: none;
+}
+.progress-caption {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+  color: var(--pink-deep);
+  text-shadow: 2px 2px 0 #fff;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- ③ 冷蔵庫パネル ---------- */
+.panel--fridge {
+  background: linear-gradient(180deg, #EAF7FF 0%, #C8E8F8 100%);
+}
+.fridge-body {
+  flex: 1;
+  background: linear-gradient(180deg, var(--fridge-bg) 0%, #C2E2F4 100%);
+  border: 4px solid var(--fridge-edge);
+  border-radius: 16px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.06), 0 4px 8px var(--shadow-soft);
+  transition: transform 0.4s;
+}
+.fridge-body.open { animation: fridgeShake 0.6s ease; }
+@keyframes fridgeShake {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-1.5deg) translateX(-2px); }
+  75%      { transform: rotate(1.5deg) translateX(2px); }
+}
+.fridge-icon {
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.fridge-label {
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(0.78rem, 1.6vw, 0.95rem);
+  color: var(--text);
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 0 var(--shadow-soft);
+}
+.fridge-shelves {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(50px, auto);
+  gap: 6px;
+  align-content: start;
+  padding: 6px;
+  background: rgba(255,255,255,0.55);
+  border-radius: 10px;
+  min-height: 120px;
+}
+.fridge-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px;
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
+  aspect-ratio: 1;
+  box-shadow: 0 1px 2px var(--shadow-soft);
+  animation: popIn 0.5s ease-out;
+  position: relative;
+}
+@keyframes popIn {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.fridge-item .new-badge {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 0 var(--shadow);
+  letter-spacing: 0.03em;
+}
+.fridge-empty {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  text-align: center;
+  padding: 18px 4px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   作れるおかずパネル（中段ワイド）
+   ========================================================= */
+.recipes-panel {
+  max-width: 1200px;
+  margin: 14px auto 0;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #FFF6E2 0%, #FFE4B5 100%);
+  border: 3px solid #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 16px var(--shadow-soft);
+}
+.recipes-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.recipes-title {
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+  font-weight: 900;
+  color: var(--primary-deep);
+  text-shadow: 2px 2px 0 #fff;
+}
+.recipes-sub {
+  font-size: clamp(0.78rem, 1.5vw, 0.92rem);
+  color: var(--text-soft);
+  font-weight: 700;
+}
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.recipe-card {
+  background: #FFFEF7;
+  border: 3px solid #fff;
+  border-radius: 16px;
+  box-shadow: 0 3px 0 rgba(140,100,60,0.18), 0 4px 8px var(--shadow-soft);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  transition: transform 0.15s ease;
+}
+.recipe-card.locked { opacity: 0.42; filter: grayscale(0.7); }
+.recipe-card.unlocked {
+  animation: cardPop 0.55s ease-out;
+}
+@keyframes cardPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.recipe-img {
+  width: 100%;
+  aspect-ratio: 1.2/1;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+.recipe-name {
+  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
+  font-weight: 900;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.2;
+}
+.recipe-card .new-badge {
+  position: absolute;
+  top: -8px; left: -8px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 0 var(--shadow);
+  letter-spacing: 0.05em;
+}
+.recipe-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 1.4rem;
+  pointer-events: none;
+  background: rgba(255,253,246,0.55);
+  border-radius: 14px;
+}
+.recipe-lock .lock-needs {
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.recipe-lock .lock-hint {
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: var(--text);
+  background: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  box-shadow: 0 1px 0 var(--shadow-soft);
+  white-space: nowrap;
+}
+.recipe-img-fallback {
+  width: 100%;
+  aspect-ratio: 1.2/1;
+  border-radius: 10px;
+  background: #fff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+.recipe-img-fallback.show {
+  display: flex;
+}
+
+/* =========================================================
+   ボトムリファレンス
+   ========================================================= */
+.bottom-ref {
+  max-width: 1200px;
+  margin: 14px auto 0;
+  display: grid;
+  grid-template-columns: 1.3fr 1.2fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 980px) {
+  .bottom-ref { grid-template-columns: 1fr; }
+}
+.ref-block {
+  background: #FFFDF6;
+  border: 3px solid #fff;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  box-shadow: 0 4px 10px var(--shadow-soft);
+}
+.ref-title {
+  font-weight: 900;
+  font-size: clamp(0.85rem, 1.7vw, 1rem);
+  color: var(--text);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ref-title .tag {
+  background: var(--chip-yellow);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+}
+.ref-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ref-chip {
+  background: #fff;
+  border: 2px solid #FFE2B6;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-size: clamp(1.2rem, 2.6vw, 1.6rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+}
+.ref-chip small {
+  font-size: 0.55rem;
+  font-weight: 900;
+  color: var(--text-soft);
+}
+.ref-stages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.ref-stage {
+  background: #fff;
+  border: 2px solid #FFE2B6;
+  border-radius: 10px;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  position: relative;
+}
+.ref-stage small {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 900;
+  color: var(--text-soft);
+  margin-top: 2px;
+}
+.ref-points {
+  background: #FFFDF0;
+  border: 2px dashed #FFCB7F;
+  border-radius: 14px;
+  padding: 8px 12px;
+  list-style: none;
+}
+.ref-points li {
+  font-size: clamp(0.72rem, 1.4vw, 0.88rem);
+  font-weight: 700;
+  color: var(--text);
+  padding: 3px 0;
+  line-height: 1.4;
+}
+.ref-points li::before {
+  content: '🌟 ';
+}
+
+/* =========================================================
+   トースト & キラキラ
+   ========================================================= */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 28%;
+  transform: translate(-50%, -50%) scale(0.7);
+  background: rgba(255, 255, 255, 0.97);
+  border: 3px solid var(--primary);
+  border-radius: 18px;
+  padding: 16px 24px;
+  font-weight: 900;
+  font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+  color: var(--text);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  max-width: 80vw;
+}
+.toast.show { animation: toastShow 2.4s ease-out forwards; }
+@keyframes toastShow {
+  0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  15%  { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+  25%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  85%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -55%) scale(1); opacity: 0; }
+}
+
+.sparkle {
+  position: fixed;
+  pointer-events: none;
+  font-size: 1.4rem;
+  z-index: 49;
+  animation: sparkleFly 1.2s ease-out forwards;
+}
+@keyframes sparkleFly {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translate(var(--sx, 40px), var(--sy, -60px)) scale(1.2); opacity: 0; }
+}
+
+/* =========================================================
+   小さい画面の微調整
+   ========================================================= */
+@media (max-width: 600px) {
+  body { padding: 10px 8px 24px; }
+  .app-title { font-size: 1.6rem; }
+  .panel { padding: 10px; min-height: 260px; }
+  .pono-img { width: 46px; height: 46px; }
+  .flow-chip {
+    padding: 6px 12px 6px 10px;
+    margin-right: 12px;
+  }
+  .flow-chip::after { right: -12px; border-width: 12px; }
+  .knife { right: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== ヘッダー ===================== -->
+<header class="app-header">
+  <div class="title-block">
+    <h1 class="app-title">ポノのトントンキッチン</h1>
+    <p class="app-subtitle">トントン切って、冷蔵庫に集めて、おいしいおべんとうをつくろう！</p>
+  </div>
+  <nav class="flow-chips" id="flow-chips" aria-label="プレイの流れ">
+    <div class="flow-chip" data-step="1"><span class="step-num">1</span><span class="step-icon">🔪</span><span>ざいりょうを えらぶ</span></div>
+    <div class="flow-chip active" data-step="2"><span class="step-num">2</span><span class="step-icon">✂️</span><span>トントン きる</span></div>
+    <div class="flow-chip" data-step="3"><span class="step-num">3</span><span class="step-icon">🧊</span><span>れいぞうこに いれる</span></div>
+    <div class="flow-chip" data-step="4"><span class="step-num">4</span><span class="step-icon">👨‍🍳</span><span>おかずを つくる</span></div>
+    <div class="flow-chip" data-step="5"><span class="step-num">5</span><span class="step-icon">🍱</span><span>おべんとうに つめる</span></div>
+  </nav>
+</header>
+
+<!-- 右上アクション -->
+<div class="top-actions">
+  <button class="btn btn-secondary" id="reset-btn" type="button">もっと じゅんびする</button>
+  <button class="btn btn-primary" id="goto-bento-btn" type="button">おべんとうを つくる</button>
+</div>
+
+<!-- ===================== メインステージ ===================== -->
+<section class="stage" id="stage">
+
+  <!-- ① 材料をえらぶ -->
+  <div class="panel panel--pick">
+    <div class="panel-head">
+      <span class="panel-pill"><span class="pill-num">1</span>ざいりょうを えらぶ</span>
+    </div>
+    <div class="pono-row">
+      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
+      <div class="speech-bubble" id="speech">きょうは にんじんを きってみよう！</div>
+    </div>
+    <div class="ingredient-bar" id="ingredient-bar"></div>
+  </div>
+
+  <!-- ② トントン切る (まな板) -->
+  <div class="panel panel--chop">
+    <div class="panel-head">
+      <span class="panel-pill"><span class="pill-num">2</span>トントン きる</span>
+    </div>
+    <div class="chop-stage">
+      <div class="combo-pill" id="combo-pill" aria-live="polite"></div>
+      <div class="ton-burst" id="ton-text">トン！</div>
+
+      <div class="cutting-board" id="cutting-board" role="button" tabindex="0" aria-label="まな板（タップまたは Enter/Space キーでトントン）" aria-keyshortcuts="Enter Space">
+        <div class="knife" id="knife" aria-hidden="true">
+          <span class="blade"></span>
+          <span class="handle"></span>
+          <span class="rivets"></span>
+        </div>
+        <div class="spark" id="spark"></div>
+        <div class="ingredient-on-board" id="ingredient-on-board"></div>
+        <div class="empty-board-hint" id="empty-board-hint">したから ざいりょうを えらんでね</div>
+        <div class="bowl" id="bowl" aria-hidden="true"></div>
+      </div>
+
+      <div class="progress-row">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+          <span class="progress-star">⭐</span>
+        </div>
+        <div class="progress-caption" id="progress-caption">トントンしてみよう！</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 冷蔵庫 -->
+  <div class="panel panel--fridge">
+    <div class="panel-head">
+      <span class="panel-pill"><span class="pill-num">3</span>れいぞうこに いれる</span>
+    </div>
+    <div class="fridge-body" id="fridge">
+      <div class="fridge-icon">🧊</div>
+      <div class="fridge-label">れいぞうこ</div>
+      <div class="fridge-shelves" id="fridge-shelves">
+        <div class="fridge-empty" id="fridge-empty">からっぽ</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ===================== 作れるおかず ===================== -->
+<section class="recipes-panel">
+  <div class="recipes-head">
+    <div class="recipes-title" id="recipes-title">🎉 つくれる おかずが ふえたよ！</div>
+    <div class="recipes-sub" id="recipes-sub">れいぞうこの ざいりょうで おかずが ひらくよ</div>
+  </div>
+  <div class="recipes-grid" id="recipes-grid"></div>
+</section>
+
+<!-- ===================== ボトムリファレンス ===================== -->
+<section class="bottom-ref">
+  <!-- 切れる材料いろいろ -->
+  <div class="ref-block">
+    <div class="ref-title"><span class="tag">A</span>きれる ざいりょう いろいろ</div>
+    <div class="ref-row">
+      <div class="ref-chip">🥕<small>にんじん</small></div>
+      <div class="ref-chip">🥒<small>きゅうり</small></div>
+      <div class="ref-chip">🥔<small>じゃがいも</small></div>
+      <div class="ref-chip">🌭<small>ウィンナー</small></div>
+      <div class="ref-chip">🍳<small>たまご</small></div>
+      <div class="ref-chip">🥦<small>ブロッコリー</small></div>
+      <div class="ref-chip">🍎<small>りんご</small></div>
+    </div>
+  </div>
+
+  <!-- 切ったあとのイメージ -->
+  <div class="ref-block">
+    <div class="ref-title"><span class="tag">B</span>きった あとの イメージ</div>
+    <div class="ref-stages">
+      <div class="ref-stage">🥕<small>まるごと</small></div>
+      <div class="ref-stage">🔪<small>きりはじめ</small></div>
+      <div class="ref-stage">✨<small>トントン</small></div>
+      <div class="ref-stage">🍽️<small>できあがり</small></div>
+    </div>
+  </div>
+
+  <!-- 切るときのポイント -->
+  <div class="ref-block">
+    <div class="ref-title"><span class="tag">C</span>きる ときの ポイント</div>
+    <ul class="ref-points">
+      <li>リズムよく トントン しよう！</li>
+      <li>たくさん きると コンボが ふえるよ！</li>
+      <li>できたら れいぞうこに しまおう！</li>
+    </ul>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ========== 設定 ==========
+  const STORAGE_KEY = 'bentoUnlockedIngredients';
+  const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
+
+  // 材料定義 (Phase 1 は carrot のみ実装)
+  const INGREDIENTS = [
+    { id: 'carrot',    name: 'にんじん',     emoji: '🥕', piece: '🥕', chopCount: 5, implemented: true  },
+    { id: 'wiener',    name: 'ウインナー',   emoji: '🌭', piece: '🌭', chopCount: 4, implemented: false },
+    { id: 'egg',       name: 'たまご',       emoji: '🥚', piece: '🍳', chopCount: 4, implemented: false },
+    { id: 'broccoli',  name: 'ブロッコリー', emoji: '🥦', piece: '🥦', chopCount: 3, implemented: false },
+    { id: 'potato',    name: 'じゃがいも',   emoji: '🥔', piece: '🥔', chopCount: 5, implemented: false },
+    { id: 'apple',     name: 'りんご',       emoji: '🍎', piece: '🍎', chopCount: 5, implemented: false },
+  ];
+
+  // 材料→解放されるレシピ（プレースホルダ）
+  const RECIPES = [
+    // にんじんで解放される 3 つ
+    { id: 'ninjin_ingen', name: 'にんじん いんげん', img: '../assets/images/Bento_parts/ninjin_ingen2.png', needs: ['carrot'] },
+    { id: 'kinpira',      name: 'きんぴら ごぼう',   img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
+    { id: 'chikuzenni',   name: 'ちくぜんに',        img: '../assets/images/Bento_parts/chikuzenni.png',    needs: ['carrot'] },
+    // 他材料の placeholder
+    { id: 'tako_wiener',  name: 'タコさん ウインナー', img: '../assets/images/Bento_parts/tako_wiener2.png', needs: ['wiener'] },
+    { id: 'tamagoyaki',   name: 'たまごやき',          img: '../assets/images/Bento_parts/tamagoyaki2.png',  needs: ['egg'] },
+    { id: 'broccoli',     name: 'ブロッコリー',        img: '../assets/images/Bento_parts/broccoli2.png',    needs: ['broccoli'] },
+  ];
+
+  // ========== State ==========
+  const state = {
+    unlocked: loadUnlocked(),       // Set<string>
+    newBadges: loadNewBadges(),     // Set<string> - 表示中の NEW! バッジ
+    current: null,
+    chopProgress: 0,
+    combo: 0,
+    cutting: false,
+  };
+
+  // ========== localStorage ==========
+  function loadUnlocked() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? new Set(arr) : new Set();
+    } catch (e) {
+      console.warn('[kitchen] loadUnlocked failed', e);
+      return new Set();
+    }
+  }
+  function saveUnlocked() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(state.unlocked)));
+    } catch (e) {
+      console.warn('[kitchen] saveUnlocked failed', e);
+    }
+  }
+  function loadNewBadges() {
+    try {
+      const raw = localStorage.getItem(NEW_BADGE_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? new Set(arr) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  }
+  function saveNewBadges() {
+    try {
+      localStorage.setItem(NEW_BADGE_KEY, JSON.stringify(Array.from(state.newBadges)));
+    } catch (e) { /* noop */ }
+  }
+
+  // ========== DOM refs ==========
+  const els = {
+    speech:        document.getElementById('speech'),
+    bar:           document.getElementById('ingredient-bar'),
+    board:         document.getElementById('cutting-board'),
+    ingOnBoard:    document.getElementById('ingredient-on-board'),
+    emptyHint:     document.getElementById('empty-board-hint'),
+    knife:         document.getElementById('knife'),
+    spark:         document.getElementById('spark'),
+    ton:           document.getElementById('ton-text'),
+    comboPill:     document.getElementById('combo-pill'),
+    progress:      document.getElementById('progress-fill'),
+    progressCap:   document.getElementById('progress-caption'),
+    bowl:          document.getElementById('bowl'),
+    fridge:        document.getElementById('fridge'),
+    shelves:       document.getElementById('fridge-shelves'),
+    fridgeEmpty:   document.getElementById('fridge-empty'),
+    recipesGrid:   document.getElementById('recipes-grid'),
+    recipesTitle:  document.getElementById('recipes-title'),
+    recipesSub:    document.getElementById('recipes-sub'),
+    toast:         document.getElementById('toast'),
+    flowChips:     document.getElementById('flow-chips'),
+    gotoBentoBtn:  document.getElementById('goto-bento-btn'),
+    resetBtn:      document.getElementById('reset-btn'),
+  };
+
+  // ========== 初期化 ==========
+  function init() {
+    buildIngredientBar();
+    renderFridge();
+    renderRecipes();
+    setActiveStep(2); // Phase 1 はステップ2が active
+
+    els.gotoBentoBtn.addEventListener('click', () => {
+      location.href = './index.html';
+    });
+    els.resetBtn.addEventListener('click', () => {
+      resetBoard();
+      setSpeech('きょうは なにを じゅんびする？');
+      setActiveStep(2);
+    });
+    els.board.addEventListener('click', onBoardTap);
+    // キーボード操作: Enter / Space でトントン (アクセシビリティ対応)
+    els.board.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        onBoardTap();
+      }
+    });
+  }
+
+  // ========== フローチップ ==========
+  function setActiveStep(step) {
+    [...els.flowChips.querySelectorAll('.flow-chip')].forEach(c => {
+      const n = parseInt(c.dataset.step, 10);
+      c.classList.toggle('active', n === step);
+      c.classList.toggle('done', n < step);
+    });
+  }
+
+  // ========== 材料バー描画 ==========
+  function buildIngredientBar() {
+    els.bar.innerHTML = '';
+    INGREDIENTS.forEach(ing => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ingredient-btn';
+      btn.dataset.id = ing.id;
+      if (state.unlocked.has(ing.id)) btn.classList.add('unlocked');
+      if (!ing.implemented) {
+        btn.classList.add('locked');
+        // aria-disabled で AT に「準備中」と伝えつつ、JS は onIngredientPick で
+        // 「じゅんびちゅう！」placeholder feedback を出すためクリック自体は許可する
+        btn.setAttribute('aria-disabled', 'true');
+        btn.setAttribute('aria-label', ing.name + '（じゅんびちゅう）');
+      }
+      btn.innerHTML =
+        '<span aria-hidden="true">' + ing.emoji + '</span>' +
+        '<span class="ingredient-name">' + ing.name + '</span>';
+      btn.addEventListener('click', () => onIngredientPick(ing));
+      els.bar.appendChild(btn);
+    });
+  }
+
+  function highlightSelected(id) {
+    [...els.bar.querySelectorAll('.ingredient-btn')].forEach(b => {
+      b.classList.toggle('selected', b.dataset.id === id);
+    });
+  }
+
+  // ========== 材料選択 ==========
+  function onIngredientPick(ing) {
+    if (state.cutting) return;
+    if (!ing.implemented) {
+      setSpeech(ing.name + 'は じゅんびちゅう！ もうちょっと まっててね');
+      showToast(ing.name + 'は じゅんびちゅう！');
+      return;
+    }
+    state.current = ing;
+    state.chopProgress = 0;
+    state.combo = 0;
+    els.ingOnBoard.textContent = ing.emoji;
+    els.emptyHint.style.display = 'none';
+    highlightSelected(ing.id);
+    clearBowl();
+    hideCombo();
+    updateProgress();
+    setSpeech(ing.name + 'を トントン してみよう！');
+    setProgressCaption('トントンしてみよう！');
+  }
+
+  // ========== まな板タップ (トントン) ==========
+  function onBoardTap() {
+    if (state.cutting) return;
+    if (!state.current) {
+      setSpeech('したから ざいりょうを えらんでね！');
+      return;
+    }
+    state.chopProgress += 1;
+    state.combo += 1;
+    playChopAnim();
+    addCutPieceToBowl(state.current);
+    showTon();
+    showCombo(state.combo);
+    updateProgress();
+
+    // 進行キャプション
+    if (state.combo >= 4) setProgressCaption('じょうず！');
+    else if (state.combo >= 2) setProgressCaption('いいかんじ！');
+
+    // 応援セリフ
+    if (state.combo === 2) setSpeech('いいかんじ！');
+    else if (state.combo === 3) setSpeech('じょうず！ そのちょうし！');
+
+    if (state.chopProgress >= state.current.chopCount) {
+      completeIngredient(state.current);
+    }
+  }
+
+  function playChopAnim() {
+    els.knife.classList.remove('chop');
+    void els.knife.offsetWidth;
+    els.knife.classList.add('chop');
+
+    els.ingOnBoard.classList.remove('shake');
+    void els.ingOnBoard.offsetWidth;
+    els.ingOnBoard.classList.add('shake');
+
+    els.spark.classList.remove('show');
+    void els.spark.offsetWidth;
+    els.spark.classList.add('show');
+  }
+
+  function showTon() {
+    els.ton.classList.remove('show');
+    void els.ton.offsetWidth;
+    els.ton.classList.add('show');
+  }
+
+  function showCombo(n) {
+    if (n < 2) { hideCombo(); return; }
+    els.comboPill.textContent = '🌟 コンボ ' + n + '!';
+    els.comboPill.classList.add('show');
+    els.comboPill.classList.remove('pulse');
+    void els.comboPill.offsetWidth;
+    els.comboPill.classList.add('pulse');
+  }
+  function hideCombo() {
+    els.comboPill.classList.remove('show', 'pulse');
+    els.comboPill.textContent = '';
+  }
+
+  function setProgressCaption(text) {
+    els.progressCap.textContent = text;
+  }
+
+  function updateProgress() {
+    if (!state.current) {
+      els.progress.style.width = '0%';
+      return;
+    }
+    const pct = Math.min(100, (state.chopProgress / state.current.chopCount) * 100);
+    els.progress.style.width = pct + '%';
+  }
+
+  function clearBowl() {
+    // 切れ端を全消去（bowl 内のみ）
+    [...els.bowl.querySelectorAll('.cut-piece')].forEach(p => p.remove());
+  }
+
+  function addCutPieceToBowl(ing) {
+    const piece = document.createElement('span');
+    piece.className = 'cut-piece';
+    // 花型風の代替テキスト（オレンジ系材料は花型 emoji ❀ で雰囲気を出す）
+    piece.textContent = ing.id === 'carrot' ? '❀' : ing.piece;
+    if (ing.id === 'carrot') {
+      piece.style.color = '#F2915A';
+      piece.style.textShadow = '0 1px 0 #fff';
+    }
+    const rect = els.bowl.getBoundingClientRect();
+    const w = rect.width || 80;
+    const h = rect.height || 60;
+    const cx = w * 0.5;
+    const cy = h * 0.55;
+    const r = Math.random() * Math.min(w, h) * 0.25;
+    const a = Math.random() * Math.PI * 2;
+    const x = cx + Math.cos(a) * r - 10;
+    const y = cy + Math.sin(a) * r - 10;
+    const rot = (Math.random() - 0.5) * 80;
+    piece.style.left = x + 'px';
+    piece.style.top = y + 'px';
+    piece.style.setProperty('--fx', '0px');
+    piece.style.setProperty('--fy', '0px');
+    piece.style.setProperty('--fr', rot + 'deg');
+    piece.style.transform = 'rotate(' + rot + 'deg)';
+    els.bowl.appendChild(piece);
+  }
+
+  // ========== 完成 ==========
+  function completeIngredient(ing) {
+    state.cutting = true;
+    setProgressCaption('できあがり！');
+
+    setTimeout(() => {
+      els.fridge.classList.add('open');
+      flySparklesToFridge();
+    }, 300);
+
+    setTimeout(() => {
+      unlockIngredient(ing);
+      showToast(ing.name + 'を れいぞうこに しまったよ！');
+      setSpeech('あたらしい おかずが つくれるようになったよ！');
+    }, 900);
+
+    setTimeout(() => {
+      els.fridge.classList.remove('open');
+      resetBoard();
+    }, 2600);
+  }
+
+  function flySparklesToFridge() {
+    const bowlRect = els.bowl.getBoundingClientRect();
+    const fridgeRect = els.fridge.getBoundingClientRect();
+    const startX = bowlRect.left + bowlRect.width / 2;
+    const startY = bowlRect.top + bowlRect.height / 2;
+    const endX = fridgeRect.left + fridgeRect.width / 2;
+    const endY = fridgeRect.top + fridgeRect.height / 2;
+    for (let i = 0; i < 6; i++) {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = ['✨', '⭐', '🌟'][i % 3];
+      s.style.left = (startX - 12) + 'px';
+      s.style.top = (startY - 12) + 'px';
+      s.style.setProperty('--sx', (endX - startX + (Math.random() - 0.5) * 40) + 'px');
+      s.style.setProperty('--sy', (endY - startY + (Math.random() - 0.5) * 30) + 'px');
+      s.style.animationDelay = (i * 0.08) + 's';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 1400);
+    }
+  }
+
+  function unlockIngredient(ing) {
+    const wasNew = !state.unlocked.has(ing.id);
+    state.unlocked.add(ing.id);
+    saveUnlocked();
+    if (wasNew) {
+      state.newBadges.add(ing.id);
+      saveNewBadges();
+    }
+    renderFridge();
+    renderRecipes();
+    const btn = els.bar.querySelector('[data-id="' + ing.id + '"]');
+    if (btn) btn.classList.add('unlocked');
+  }
+
+  function renderFridge() {
+    els.shelves.innerHTML = '';
+    const unlocked = INGREDIENTS.filter(i => state.unlocked.has(i.id));
+    if (unlocked.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'fridge-empty';
+      empty.textContent = 'からっぽ';
+      els.shelves.appendChild(empty);
+      return;
+    }
+    unlocked.forEach(ing => {
+      const item = document.createElement('div');
+      item.className = 'fridge-item';
+      item.title = ing.name;
+      item.textContent = ing.emoji;
+      if (state.newBadges.has(ing.id)) {
+        const badge = document.createElement('span');
+        badge.className = 'new-badge';
+        badge.textContent = 'NEW!';
+        item.appendChild(badge);
+      }
+      els.shelves.appendChild(item);
+    });
+  }
+
+  // 材料 id → emoji 解決ヘルパ (locked ヒント表示用)
+  function emojiFor(ingId) {
+    const ing = INGREDIENTS.find(i => i.id === ingId);
+    return ing ? ing.emoji : '❓';
+  }
+
+  function updateRecipesHeading() {
+    if (!els.recipesTitle) return;
+    const unlockedCount = INGREDIENTS.filter(i => state.unlocked.has(i.id)).length;
+    if (unlockedCount === 0) {
+      els.recipesTitle.textContent = '🎁 これから あたらしい おかずが ひらくよ！';
+      if (els.recipesSub) {
+        els.recipesSub.textContent = 'まずは ざいりょうを えらんで トントンしてみよう';
+      }
+    } else {
+      els.recipesTitle.textContent = '🎉 あたらしい おかずが つくれるようになったよ！';
+      if (els.recipesSub) {
+        els.recipesSub.textContent = 'れいぞうこの ざいりょうで おかずが ひらくよ';
+      }
+    }
+  }
+
+  function renderRecipes() {
+    els.recipesGrid.innerHTML = '';
+    updateRecipesHeading();
+    RECIPES.forEach(rec => {
+      const isUnlocked = rec.needs.every(id => state.unlocked.has(id));
+      const card = document.createElement('div');
+      card.className = 'recipe-card ' + (isUnlocked ? 'unlocked' : 'locked');
+
+      // 画像 + 絵文字フォールバックを予め配置し、onerror で切替
+      const img = document.createElement('img');
+      img.className = 'recipe-img';
+      img.src = rec.img;
+      img.alt = rec.name;
+      img.loading = 'lazy';
+
+      const fallback = document.createElement('div');
+      fallback.className = 'recipe-img-fallback';
+      fallback.setAttribute('aria-hidden', 'true');
+      // レシピが必要とする材料の絵文字を fallback として表示（最大2つ）。
+      // 無ければ お弁当アイコン 🍱。
+      const needEmojis = (rec.needs || []).map(emojiFor).slice(0, 2).join('');
+      fallback.textContent = needEmojis || '🍱';
+
+      img.onerror = function() {
+        // 画像が読めない場合は img を隠して fallback を表示
+        this.style.display = 'none';
+        fallback.classList.add('show');
+      };
+      card.appendChild(img);
+      card.appendChild(fallback);
+
+      const name = document.createElement('div');
+      name.className = 'recipe-name';
+      name.textContent = rec.name;
+      card.appendChild(name);
+
+      if (isUnlocked && rec.needs.some(id => state.newBadges.has(id))) {
+        const badge = document.createElement('span');
+        badge.className = 'new-badge';
+        badge.textContent = 'NEW!';
+        card.appendChild(badge);
+      }
+
+      if (!isUnlocked) {
+        const lock = document.createElement('div');
+        lock.className = 'recipe-lock';
+        const needsStr = (rec.needs || []).map(emojiFor).join('');
+        // 必要な材料の絵文字 + 「○○で ひらく」ヒントを表示
+        const needsSpan = document.createElement('span');
+        needsSpan.className = 'lock-needs';
+        needsSpan.textContent = needsStr || '🔒';
+        const hint = document.createElement('span');
+        hint.className = 'lock-hint';
+        hint.textContent = needsStr ? needsStr + 'で ひらく' : 'ロック';
+        lock.appendChild(needsSpan);
+        lock.appendChild(hint);
+        card.appendChild(lock);
+      }
+
+      els.recipesGrid.appendChild(card);
+    });
+  }
+
+  function resetBoard() {
+    state.current = null;
+    state.chopProgress = 0;
+    state.combo = 0;
+    state.cutting = false;
+    els.ingOnBoard.textContent = '';
+    els.emptyHint.style.display = '';
+    els.progress.style.width = '0%';
+    hideCombo();
+    clearBowl();
+    setProgressCaption('トントンしてみよう！');
+    highlightSelected(null);
+  }
+
+  // ========== 共通ヘルパ ==========
+  function setSpeech(text) {
+    els.speech.textContent = text;
+  }
+
+  let toastTimer = null;
+  function showToast(text) {
+    els.toast.textContent = text;
+    els.toast.classList.remove('show');
+    void els.toast.offsetWidth;
+    els.toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      els.toast.classList.remove('show');
+    }, 2400);
+  }
+
+  // ========== Service Worker ==========
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('../sw.js').catch(() => {});
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'sw-updated') {
+        // soft update only
+      }
+    });
+  }
+
+  // ========== Go! ==========
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>

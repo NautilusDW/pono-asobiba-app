@@ -6151,6 +6151,35 @@
   //  Toolbar
   // ====================================================================
 
+  // ⏸ 一時停止 / ▶ 再開 状態を一括反映するヘルパ。
+  //   - body.layout-editor-paused class を on/off
+  //   - window._quizlandPaused (boolean) を同期 expose (quizland 側 guard が参照)
+  //   - toolbar ボタンのラベル + .active class を更新
+  //   - 視覚 hint オーバーレイ (#le-paused-overlay) を作成 / 表示切替
+  //   - silent=true の場合は toast 抑制 (初期化時に呼ぶため)
+  function applyPauseState(paused, btn, silent) {
+    document.body.classList.toggle('layout-editor-paused', !!paused);
+    try { window._quizlandPaused = !!paused; } catch (_) {}
+    if (btn) {
+      btn.textContent = paused ? '▶ 再開' : '⏸ 一時停止';
+      btn.classList.toggle('active', !!paused);
+    }
+    // pause 中の視覚 hint オーバーレイ。 toolbar より上、 pointer-events:none で
+    // 操作の邪魔をしない。 CSS 側で表示制御するが、 DOM の有無も保証する。
+    var overlay = document.getElementById('le-paused-overlay');
+    if (paused && !overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'le-paused-overlay';
+      overlay.textContent = '⏸ EDIT PAUSED';
+      document.body.appendChild(overlay);
+    } else if (!paused && overlay) {
+      overlay.remove();
+    }
+    if (!silent && typeof showToast === 'function') {
+      showToast(paused ? '一時停止' : '再開', 'success');
+    }
+  }
+
   function buildToolbar() {
     var tb = document.createElement('div');
     tb.className = 'le-toolbar';
@@ -6192,6 +6221,13 @@
       '<button id="le-chip-preset-clear-overrides" title="選択 chip と同種別の個別設定エントリを削除し、 preset 値を全 chip に強制反映 (preset 未定義のパーツはスキップ)" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
       '<button id="le-chip-text-clear" title="選択 chip のテキスト override (__chip_text_overrides) を削除し、 元テキストに戻す。 chip-label / chip-illust-label / chip-count-num の dblclick で編集された改行入りテキストをリセット" aria-label="テキスト初期化">🔡 テキスト初期化</button>' +
       '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
+      // ⏸ 一時停止 / ▶ 再開: editor 中も普通にプレイ可能にしつつ、
+      //   調整したい瞬間 (例: 正解画面の位置を確認したい) だけ任意に
+      //   問題進行を停止する。 停止中も chip タップ・正解判定・SE・
+      //   アニメは継続し、 nextQuestion() への自動遷移だけ guard する。
+      //   状態は body.layout-editor-paused class + window._quizlandPaused で
+      //   外部 (quizland/index.html 側) に同期 expose。
+      '<button id="le-pause-toggle" title="問題進行を一時停止 / 再開 (chip タップ・正解判定・SE は継続、 次問題への自動遷移のみ止まる)" aria-label="一時停止トグル">⏸ 一時停止</button>' +
       // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
       //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
       //   他ページでは非表示。
@@ -6284,6 +6320,29 @@
         showToast('nextQuestion() がこのページで定義されていません', 'warn');
       }
     });
+
+    // ⏸ 一時停止 / ▶ 再開 トグル
+    //   - body.layout-editor-paused class と window._quizlandPaused (boolean) を
+    //     同期して切り替える。 これは quizland/index.html 側の pause guard
+    //     (nextQuestion / _doNextQuestion) から参照される共通 interface。
+    //   - 状態は localStorage ('le-quiz-paused') に永続化。 リロード後も
+    //     pause 中なら pause 状態のまま editor を起動する。
+    //   - 視覚 hint オーバーレイ (#le-paused-overlay) も同時に表示/非表示する。
+    var pauseBtn = tb.querySelector('#le-pause-toggle');
+    if (pauseBtn) {
+      // Initialize window flag (always defined while editor is loaded, even when not paused)
+      try { window._quizlandPaused = false; } catch (_) {}
+      // Restore persisted pause state from previous session
+      var pausedInit = false;
+      try { pausedInit = localStorage.getItem('le-quiz-paused') === '1'; } catch (_) {}
+      applyPauseState(pausedInit, pauseBtn, /*silent*/ true);
+
+      pauseBtn.addEventListener('click', function () {
+        var next = !document.body.classList.contains('layout-editor-paused');
+        applyPauseState(next, pauseBtn, /*silent*/ false);
+        try { localStorage.setItem('le-quiz-paused', next ? '1' : '0'); } catch (_) {}
+      });
+    }
 
     // 🧪 Playtest toggle: editor 内 playtest UI (debug=all モードと同じ playtest UI:
     //   コメント / 自動キャプチャ / 添付 / 前へ次へ / ジャンプ select) の ON/OFF。
@@ -7984,7 +8043,14 @@
       state.originalCanvasWidth = null;
     }
     document.body.classList.remove(EDIT_MODE_BODY_CLASS, 'resize-mode', 'anno-mode', 'draw-mode',
-                                    'eraser-mode', 'has-selection', 'preview-mode', 'layout-comparison-on');
+                                    'eraser-mode', 'has-selection', 'preview-mode', 'layout-comparison-on',
+                                    'layout-editor-paused');
+    // editor 終了時は pause 状態と pause hint overlay も解除して、
+    //   通常プレイ側に副作用を残さない (window._quizlandPaused は flag そのまま
+    //   消えるとガード側で undefined チェックが要るので false に明示する)。
+    try { window._quizlandPaused = false; } catch (_) {}
+    var _pausedOverlay = document.getElementById('le-paused-overlay');
+    if (_pausedOverlay) _pausedOverlay.remove();
     // Remove handles + size labels but KEEP applied styles
     $$('.resize-handle, .resize-size-label').forEach(function (el) { el.remove(); });
     $$('.resizable').forEach(function (el) {
