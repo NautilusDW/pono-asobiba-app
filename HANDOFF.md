@@ -35,6 +35,7 @@
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: user 指摘「包丁は後回し / まな板が正方形寄りなので横幅を長く」を受け、`tmp/alpha_pending/46/kitchen_cutting_board_wide_raw.png` を追加納品。1536x1024、横長のまな板単体白背景 raw。alpha 抜き・切り抜きは未実施。 (by Codex)
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: user 指摘「カウンターと角度が違う / カウンターの角度に合わせて」を受け、`tmp/alpha_pending/46/kitchen_cutting_board_wide_counter_angle_raw.png` を追加納品。1672x941、カウンター角度に合わせて横辺水平・Y 軸回転 0 度・上面主体・前側だけ薄い厚みが見える横長まな板単体白背景 raw。alpha 抜き・切り抜きは未実施。 (by Codex)
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: user 指摘「右利きでまな板上の材料をトントン切る / 持ち手右下・刃先左上 / 45〜65度 / 商品写真構図にしない」を受け、`tmp/alpha_pending/46/kitchen_safe_knife_right_hand_diagonal_raw.png` を追加納品。1447x1087、包丁単体白背景 raw、子ども向けの丸い安全刃。alpha 抜き・切り抜きは未実施。 (by Codex)
+- 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: user 添付包丁画像を基に「もう少し角度はまっすぐ」を反映し、`tmp/alpha_pending/46/kitchen_safe_knife_reference_straighter_raw.png` を追加納品。1448x1086、丸い安全刃・緑の持ち手・花型アクセントを維持しつつ、少し寝かせた包丁単体白背景 raw。alpha 抜き・切り抜きは未実施。 (by Codex)
 
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` を受領。HANDOFF / git log / `tmp/alpha_pending/43/` を確認し、対象 raw 10 枚は未納品・batch 30/31 は別件と確認済。`tmp/alpha_pending/43/` に raw 納品する。 (by Codex)
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: writing-mori-shi stage1 raw 画像 10 種を `tmp/alpha_pending/43/` に納品完了 (bg / pono x3 / rabbit x3 / path overlay / card frame / shippo icon)。alpha 抜き・切り抜き・本配置・sw.js bump は未実施、ユーザー/Claude 側の後工程待ち。 (by Codex)
