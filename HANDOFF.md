@@ -19,6 +19,7 @@
 
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: `tmp/Bento/pono_tonton_kitchen_codex_image_generation_instructions.md` を受領。HANDOFF / git log / `tmp/Bento/` / `tmp/alpha_pending/44-45/` / `assets/images/bento` を確認し、`kitchen_` / `chop_carrot` / `fx_chop` 系の既存成果物無し、44/45 は別件と確認済。AGENTS 現行方針により alpha 抜き・切り抜き・本配置は行わず、Phase 1 raw を `tmp/alpha_pending/46/` に納品する。 (by Codex)
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: Phase 1 raw 4 枚を `tmp/alpha_pending/46/` に納品完了 (`kitchen_bg_21x9_raw.png` / `kitchen_phase1_ui_props_sheet_raw.png` / `kitchen_carrot_chop_sequence_sheet_raw.png` / `kitchen_phase1_fx_sheet_raw.png`)。寸法確認と目視確認済。alpha 抜き・切り抜き・本配置・sw.js bump は未実施で、ユーザー/Claude 側の後工程待ち。 (by Codex)
+- 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: user 指摘「背景のまな板が巨大・冷蔵庫とのスケール不整合・前後関係不明・16:9にして普通のキッチンへ」を受領。背景のみ再生成し、まな板を背景から外して、手前カウンターに後置き用スペースを空ける 16:9 raw を追加納品する。 (by Codex)
 
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` を受領。HANDOFF / git log / `tmp/alpha_pending/43/` を確認し、対象 raw 10 枚は未納品・batch 30/31 は別件と確認済。`tmp/alpha_pending/43/` に raw 納品する。 (by Codex)
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: writing-mori-shi stage1 raw 画像 10 種を `tmp/alpha_pending/43/` に納品完了 (bg / pono x3 / rabbit x3 / path overlay / card frame / shippo icon)。alpha 抜き・切り抜き・本配置・sw.js bump は未実施、ユーザー/Claude 側の後工程待ち。 (by Codex)
@@ -94,6 +95,7 @@
 
 - 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「子鹿の角なし、動物たちの毛並みをもっと柔らかく。1枚目からやり直し」を受け、Cut 1 soft-fur raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_soft_fur_no_antlers_raw.png` に納品 (`1661x947` PNG、RGB、alpha なし、約 2.6MB)。Pono が立って歓迎、きつね/あらいぐま/子鹿/うさぎがラグへ集まる構図、閉じた風景パズル箱 + 小プレビューカードのみ。子鹿は角/角の突起なし、全体の毛先を丸く柔らかめに修正、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
 - 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「まだトゲトゲしい、毛表現を間引く、白い線をなくす、歓迎方向が逆」を受け、Cut 1 minimal-fur/welcome-fixed v2 raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_minimal_fur_welcome_fixed_v2_raw.png` に納品 (`1660x947` PNG、RGB、alpha なし、約 2.6MB)。Pono は友だち側へ体を向けて招くポーズに変更、動物の毛表現は個別の白線/細かい毛束を大きく減らして面の陰影中心に修正。子鹿は角/角の突起なし、閉じた風景箱 + 小カードのみ、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
+- 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「毛が短い、ラグ模様のようなプロシージャルノイズに見える、ペンで一本ずつ描いた線に見えない、Pono が太って見える」を受け、Cut 1 long-handdrawn-fur/slim-Pono v4 raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_long_handdrawn_fur_slim_pono_v4_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.8MB)。短い粒状テクスチャより長めの同系色ストロークへ寄せ、Pono の胴回り/腕の膨らみを抑えた。Pono は友だち側を招く向き、子鹿は角/角突起なし、閉じた風景箱 + 小カードのみ、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
 
 - 2026-05-16 - [batch:44-puzzle-opening-landscape-cut3] **Done** — Cut 2 v4 の続きとして、風景テーマ opening Cut 3 raw を `tmp/alpha_pending/44/puzzle_opening_cut3_landscape_start_ready_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.7MB)。中央の低い木枠ボードはほぼ空で淡い風景ガイドのみ、small loose pieces は未配置のまま周囲に散らし、選択中の風景箱と右下の別絵柄候補箱3個を残した。完成パズル盤/濃いジグソー線/文字/UIなし、右側の余白維持を目視確認済。 (by Codex)
 
