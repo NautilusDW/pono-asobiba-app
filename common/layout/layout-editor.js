@@ -3536,6 +3536,54 @@
     });
   }
 
+  // ====================================================================
+  //  Whiskey-2.5: 横幅専用リサイズハンドル
+  //    - 右辺の細い帯 (.le-panel-resize-width) をドラッグで W のみ更新
+  //    - 要素一覧パネルの要素名見切れ対策
+  //    - 制約: W [180, min(600, vw*0.8)]
+  //    - 既存の panelSizeKey と同じスキーマ {width, height} で保存
+  // ====================================================================
+  function makePanelWidthResizable(panel, panelId) {
+    if (!panel || panel._leWidthResizeWired) return;
+    panel._leWidthResizeWired = true;
+    var handle = document.createElement('div');
+    handle.className = 'le-panel-resize-width';
+    handle.title = 'ドラッグで横幅を変更';
+    panel.appendChild(handle);
+
+    var start = null;
+    function maxW() { return Math.min(600, Math.floor(window.innerWidth * 0.8)); }
+
+    function onMove(e) {
+      if (!start) return;
+      var newW = Math.max(180, Math.min(maxW(), start.w + (e.clientX - start.x)));
+      panel.style.width = newW + 'px';
+    }
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      var wasResizing = !!start;
+      start = null;
+      if (wasResizing) {
+        try {
+          var r = panel.getBoundingClientRect();
+          localStorage.setItem(panelSizeKey(panelId), JSON.stringify({
+            width: r.width,
+            height: r.height
+          }));
+        } catch (err) {}
+      }
+    }
+    handle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var r = panel.getBoundingClientRect();
+      start = { x: e.clientX, w: r.width };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+      document.addEventListener('pointercancel', onUp, { once: true });
+    });
+  }
+
   function restorePanelSize(panel, panelId) {
     try {
       var json = localStorage.getItem(panelSizeKey(panelId));
@@ -4002,6 +4050,8 @@
     restorePanelPosition('list', panel);
     // Whiskey-2: パネルサイズも変更可能 + 保存サイズ復元
     makePanelResizable(panel, 'list');
+    // Whiskey-2.5: 横幅専用ハンドル (要素名見切れ対策)
+    makePanelWidthResizable(panel, 'list');
     restorePanelSize(panel, 'list');
     refreshElementList();
   }

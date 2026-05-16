@@ -1245,7 +1245,12 @@ body.has-trivia-pono .stage-pono { display: none; }
    ハンドルが付かない / ドラッグできない、 という根本問題が出ていた。
    編集中は trivia の重複回避ルール (has-trivia-pono) も上書きして必ず
    見えるようにし、 pointer-events を有効化してハンドルを掴めるようにする。
-   背景と破線で「ここに左下ポノが出る」プレースホルダだと分かるよう装飾。 */
+   背景と破線で「ここに左下ポノが出る」プレースホルダだと分かるよう装飾。
+   ※ 2026-05-16 (sw v1018): 真因は別だった —
+   layout-editor.css の `body.layout-editor-on .resizable:not([data-le-keep-position])
+   { position: relative }` が `.stage-pono` の `position: absolute` を上書きし、
+   `.safe-area` の grid auto-row 3 行目に落ちて見えなくなる、 が真の根本原因。
+   HTML 側で `data-le-keep-position` を付けて opt-out 済 (line 3170 付近)。 */
 body.layout-editor-on .stage-pono,
 body.layout-editor-on.has-trivia-pono .stage-pono {
   display: block !important;
@@ -3166,8 +3171,14 @@ body.layout-editor-on .op-skip {
            safe-area の左下に小さくポノ (考え中ポーズ flip-book) を常駐し、
            ランダム間隔で短いセリフ吹き出しを出す。 trivia 出題時は中央
            ポノが居るため body.has-trivia-pono クラスで自動非表示。
-           pointer-events: none で chip クリックを邪魔しない。 -->
-      <div class="stage-pono" id="stage-pono" aria-hidden="true">
+           pointer-events: none で chip クリックを邪魔しない。
+           data-le-keep-position: layout-editor (?edit=1) で .resizable に
+             付く `position: relative` 強制を opt-out するために必須。
+             これを付けないと bottom/left の絶対座標がリセットされ、
+             .safe-area の grid auto-row 3 行目に落ちて見えなくなる
+             (= 「エディタ要素一覧に出ない / プレースホルダが見えない」
+             の根本原因 / sw v1018 で修正)。 -->
+      <div class="stage-pono" id="stage-pono" data-le-keep-position aria-hidden="true">
         <img class="stage-pono-img" id="stage-pono-img" alt="">
         <div class="stage-pono-bubble" id="stage-pono-bubble">
           <img class="stage-pono-bubble-img" id="stage-pono-bubble-img" alt="">

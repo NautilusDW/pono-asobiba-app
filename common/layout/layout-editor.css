@@ -530,6 +530,22 @@ body.layout-editor-on .le-panel-resize:hover {
     transparent 80%
   );
 }
+/* === Whiskey-2.5: パネル右辺の横幅専用リサイズハンドル === */
+body.layout-editor-on .le-panel-resize-width {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 100;
+  touch-action: none;
+  background: rgba(255, 200, 100, 0);
+  transition: background 0.2s;
+}
+body.layout-editor-on .le-panel-resize-width:hover {
+  background: rgba(255, 200, 100, 0.5);
+}
 /* le-list-panel は既に display: flex; overflow: hidden で .le-list-body が flex:1 + overflow-y:auto なので追加不要 */
 body.layout-editor-on .le-list-body {
   flex: 1;
