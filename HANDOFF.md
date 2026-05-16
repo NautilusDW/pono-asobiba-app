@@ -86,6 +86,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-16 - [batch:40-puzzle-opening-cut3] **Done** — パズルゲーム opening Cut 3「Stage 1 りんごと葉パズル開始直前」16:9 raw を `tmp/alpha_pending/40/puzzle_opening_cut3_apple_start_ready_v2_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 3.0MB)。Pono + きつね + あらいぐま + 子鹿 + うさぎがラグ周りに半円で注目、低い盤は薄いりんごガイドのみ、りんご/葉 loose pieces とりんご箱/プレビューカードあり。完成パズル/組立済み盤/虹・魚・花テーマ/文字/UIなしを目視確認済。`*_start_ready_raw.png` は比率がやや横長だったため比較用。 (by Codex)
+
 - 2026-05-16 - [batch:39-puzzle-opening-cut2] **Done** — パズルゲーム opening Cut 2「友だちが集まり、りんご箱/プレビューカード/未組立ピースを広げ始める」16:9 raw を `tmp/alpha_pending/39/puzzle_opening_cut2_apple_box_spread_v2_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 3.0MB)。Pono + きつね + あらいぐま + 子鹿 + うさぎがラグ周りに座り/寄り、開いたりんご箱・未組立 loose pieces・小さなりんご/花蝶カードあり、完成パズル/組立済み盤/文字/UIなしを目視確認済。`puzzle_opening_cut2_apple_box_spread_raw.png` は比率がやや 16:9 から外れたため比較用。 (by Codex)
 
 - 2026-05-16 - [batch:38-puzzle-opening-illustration] **Done** — パズルゲーム開幕用 16:9 raw イラストを `tmp/alpha_pending/38/puzzle_opening_illustration_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.6MB)。Pono + きつね + あらいぐま + 子鹿 + うさぎが中央の木製テーブル周りに集合、テーブル面にピース線/グリッド/文字/UIなし、右上にナレーション用の落ち着いた余白ありを目視確認済。Codex は AGENTS 現行方針どおり alpha 抜き・切り抜き未実施。 (by Codex)
