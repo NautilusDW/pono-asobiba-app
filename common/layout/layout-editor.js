@@ -6330,18 +6330,27 @@
     //   - 視覚 hint オーバーレイ (#le-paused-overlay) も同時に表示/非表示する。
     var pauseBtn = tb.querySelector('#le-pause-toggle');
     if (pauseBtn) {
-      // Initialize window flag (always defined while editor is loaded, even when not paused)
-      try { window._quizlandPaused = false; } catch (_) {}
-      // Restore persisted pause state from previous session
-      var pausedInit = false;
-      try { pausedInit = localStorage.getItem('le-quiz-paused') === '1'; } catch (_) {}
-      applyPauseState(pausedInit, pauseBtn, /*silent*/ true);
+      // quizland 専用機能 — playtest トグルと同じ判定で非 quizland では非表示にする
+      // (誤操作で body.layout-editor-paused / window._quizlandPaused / localStorage が
+      //  立ってしまうのを防ぐ)
+      var isQuizlandForPause = (typeof window._qzPtBuildPanel === 'function' &&
+                                typeof window._qzBuildDebugNavDOM === 'function');
+      if (!isQuizlandForPause) {
+        pauseBtn.style.display = 'none';
+      } else {
+        // Initialize window flag (always defined while editor is loaded, even when not paused)
+        try { window._quizlandPaused = false; } catch (_) {}
+        // Restore persisted pause state from previous session
+        var pausedInit = false;
+        try { pausedInit = localStorage.getItem('le-quiz-paused') === '1'; } catch (_) {}
+        applyPauseState(pausedInit, pauseBtn, /*silent*/ true);
 
-      pauseBtn.addEventListener('click', function () {
-        var next = !document.body.classList.contains('layout-editor-paused');
-        applyPauseState(next, pauseBtn, /*silent*/ false);
-        try { localStorage.setItem('le-quiz-paused', next ? '1' : '0'); } catch (_) {}
-      });
+        pauseBtn.addEventListener('click', function () {
+          var next = !document.body.classList.contains('layout-editor-paused');
+          applyPauseState(next, pauseBtn, /*silent*/ false);
+          try { localStorage.setItem('le-quiz-paused', next ? '1' : '0'); } catch (_) {}
+        });
+      }
     }
 
     // 🧪 Playtest toggle: editor 内 playtest UI (debug=all モードと同じ playtest UI:

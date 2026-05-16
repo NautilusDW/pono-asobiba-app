@@ -56,6 +56,7 @@
 
 - **writing-mori (かいてひらく！ポノのことばの森) Stage 1「しっぽの こみち」 (2026-05-16, sw v1026)**: [memory/feature_writing_mori_shi_stage1.md](memory/feature_writing_mori_shi_stage1.md) — 既存 `writing/` (RPG) と別の新ゲーム `writing-mori/index.html`。 文字「し」をなぞり → 線が小道に変化 → ポノが歩いてうさぎを発見 → カード獲得。 16:9 固定 1600x900 (contain-fit)、 AnimCJK SVG (U+3057 = 12375 dec、 raw.githubusercontent 一次 + jsdelivr 二次 + 内蔵ベジェ最終fallback)、 子供向けゆるい判定 (START/END_TOLERANCE 110/100px、 カバレッジ72%、 否定語ゼロ)、 `WRITING_STAGES[]` 配列で 50音追加可能。 既存 [pono_001.png] + [dance_hooray.png] 流用 (`naturalWidth/Height` で動的高さ計算)、 AnimCJK は DOMParser で XSS 配慮、 縦画面は `body::before` 警告。 Codex 発注書 = `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` (batch 43、 全10種 — 30/31 は別件占有のため空き43)
 - **パズル 難易度20ステージ再設計 + 画面背景刷新 (2026-05-15, sw v1001→v1003)**: [memory/feature_puzzle_20stage_redesign.md](memory/feature_puzzle_20stage_redesign.md) — 対象年齢3〜6歳向けに **20ステージ進行 (4→4→6→6→6→9→9→9→12→12→12→12→16→16→16→16→20→20→20→20)** へ再設計。 **v1003 で画面背景を `assets/images/puzzle/bg_carpet_room.jpg` (木のお部屋+中央緑ラグ、 329KB) に差し替え** (中央ラグがパズルボード位置と一致、 左右は植物/本棚/クッション等でピース散布の周辺装飾、 旧 BG_03.webp は他9ゲーム使用中のため温存)。 `pieceShapeStyle` 6段階 (soft-rounded / large-jigsaw / standard-jigsaw / standard-jigsaw-v2 / advanced-jigsaw / advanced-jigsaw-v2)、 `snapAssist` 4段階 (very-strong/strong/medium-strong/normal、 SNAP_DIST = pieceW * ratio で動的計算)、 **90度チャレンジ回転モード** (デフォルトOFF、`window.PUZZLE_CHALLENGE_ROTATION = true` or `localStorage.puzzle_challenge_rotation = 'on'` で有効化、Stage 09 以降のみ作用、タップ検出 < 8px / < 300ms で90度回転、`rotation === 0` の時のみスナップ受理)、 任意角度回転は不可。 新ステージ画像16枚 (Codex 納品 `tmp/alpha_pending/29/` → `assets/images/puzzle/stages/` 配置・JPG最適化、合計5.27MB)、 ポノ特別枠 Stage 05/10/15/20 は既存 `puzzle_pono_*.jpg` 流用 (sleep/water/sparkle/owl)。 横画面用に **ボード幅 0.60→0.55** に縮小+`shufflePieces` を左右ゾーン分配方式に書き換え (偶数 index→左、奇数→右、ゾーン極細時は全域ランダムフォールバック)、 ヒントボタンも同ヘルパー (`scatterPiece`) で統一。 `STAGE_20_PIECE_COUNT` 定数で 20→16 への縮退切替可。 旧 `advanced: true|false` 二分岐は廃止、 全難易度設定は `BASE_STAGES` エントリへ集約 (受け入れ条件「コード直書きしすぎず、ステージ定義データで変更可」厳守)
+- **Quizland ?edit=1 Pause トグル + 結果画面復活** (2026-05-16, sw v1034): [memory/feature_quizland_editor_pause_toggle.md](memory/feature_quizland_editor_pause_toggle.md) — ⏸/▶ トグルで「次の問題への進行」 だけ凍結、 本番と同じ結果画面まで表示できるよう L5565-5571 のスキップガードも撤去。 共通 interface = `window._quizlandPaused || body.layout-editor-paused` の OR 判定
 
 ---
 
@@ -133,6 +134,32 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-16T09:47:30Z - layout-editor.js: #le-pause-toggle を quizland 専用に制限 (非 quizland では display:none)
+- **タスク**: layout-editor.js: #le-pause-toggle を quizland 専用に制限 (非 quizland では display:none)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 65
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 36, "Read": 8, "Agent": 15, "ToolSearch": 1, "Grep": 2, "Edit": 3}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-05-16T09:45:32Z - quizland editor Pause トグルのメモリファイル新規作成 + MEMORY.md インデックス追加 (sw v1034)
+- **タスク**: quizland editor Pause トグルのメモリファイル新規作成 + MEMORY.md インデックス追加 (sw v1034)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 19
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 7, "Agent": 6, "Read": 1, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
 
 ### 2026-05-16T09:43:14Z - bento/kitchen.html Phase 1 仕上げ修正（W2 locked材料aria-disabled, W5 touch-action, キーボード対応, レシピロックヒント, img fallback, 動的見出し）
 - **タスク**: bento/kitchen.html Phase 1 仕上げ修正（W2 locked材料aria-disabled, W5 touch-action, キーボード対応, レシピロックヒント, img fallback, 動的見出し）
@@ -223,31 +250,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 1}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-16T08:02:02Z - writing-mori v1031: pointer-events 深掘り修正 (trace-bg rect に pointer-events=all、 svg に bounding-box、 START_TOLERANCE 130→200、 DEBUG flag 追加)
-- **タスク**: writing-mori v1031: pointer-events 深掘り修正 (trace-bg rect に pointer-events=all、 svg に bounding-box、 START_TOLERANCE 130→200、 DEBUG flag 追加)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 3
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 2, "Agent": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-16T06:49:25Z - セリフ編集モーダル: textareaフォーカス時にそのセリフを吹き出しに即プレビュー反映 (どの行を選ぶかをクリック=フォーカスで指定可能に) + 直前の片肺フォールバック修正 v1027 含む (sw.js v1028)
-- **タスク**: セリフ編集モーダル: textareaフォーカス時にそのセリフを吹き出しに即プレビュー反映 (どの行を選ぶかをクリック=フォーカスで指定可能に) + 直前の片肺フォールバック修正 v1027 含む (sw.js v1028)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 95
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 41, "ToolSearch": 1, "Grep": 1, "Bash": 48, "Read": 4}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
 
 
