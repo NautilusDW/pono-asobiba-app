@@ -1239,8 +1239,35 @@ body.sheet-on .hdr-right .ctrl-btn {
 .stage-pono-bubble.show { opacity: 1; }
 /* trivia 出題で中央ポノが居る間は左下ポノを隠す (重複回避) */
 body.has-trivia-pono .stage-pono { display: none; }
-/* layout-editor (?edit=1) 中はハンドル衝突回避のため非表示 */
-body.layout-editor-on .stage-pono { display: none; }
+/* layout-editor (?edit=1) 中はプレースホルダとして強制表示。
+   元々ここは display:none にしていたが、 それだと layout-editor.js が
+   `.stage-pono` を resizable 対象として登録していても要素が不可視 →
+   ハンドルが付かない / ドラッグできない、 という根本問題が出ていた。
+   編集中は trivia の重複回避ルール (has-trivia-pono) も上書きして必ず
+   見えるようにし、 pointer-events を有効化してハンドルを掴めるようにする。
+   背景と破線で「ここに左下ポノが出る」プレースホルダだと分かるよう装飾。 */
+body.layout-editor-on .stage-pono,
+body.layout-editor-on.has-trivia-pono .stage-pono {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 0.6 !important;
+  min-width: 120px;
+  min-height: 120px;
+  pointer-events: auto !important;
+  background: rgba(255, 200, 50, 0.15);
+  outline: 1px dashed rgba(255, 150, 0, 0.7);
+}
+body.layout-editor-on .stage-pono::after {
+  content: "stage-pono";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: #c70;
+  font-weight: bold;
+  pointer-events: none;
+  text-shadow: 0 0 2px #fff;
+}
 
 /* ===== Answer column (right) ===== */
 .a-col {
