@@ -3708,11 +3708,10 @@ function _bindHakaseBubbleClick() {
   if (!bubble) return;
   bubble.style.cursor = 'pointer';
   bubble.addEventListener('click', () => {
-    // layout-editor (?edit=1) 中は吹き出しクリックを常に抑止 (要素移動・編集選択を妨げないため)。
-    // v816 で Playtest ON 時も抑止するように戻した: editor mode + Playtest ON は
-    // 「全問巡回 + コメント残し」 が主目的であり、 答え判定は通常プレイで行う設計に
-    // 揃えた (chip pointerdown と同じガード)。
-    if (document.body.classList.contains('layout-editor-on')) return;
+    // 吹き出しクリック (ヒント2 表示) は ?edit=1 でも通常進行させる (= 普通にプレイしながら編集できる v1035 方針)。
+    // Pause トグル ON のときだけ抑止して、 編集中の意図しないヒント表示を防ぐ。 chip pointerdown / 吹き出し再生と同じ OR 判定で統一。
+    if (window._quizlandPaused ||
+        (document.body && document.body.classList.contains('layout-editor-paused'))) return;
     if (currentQ) showHint2(currentQ);
   });
 }
@@ -4909,13 +4908,11 @@ function renderChoices(q) {
       if (sizeCls) btn.classList.add(sizeCls);
     }
     btn.addEventListener('pointerdown', function(e) {
-      // layout-editor (?edit=1) 中は chip クリックで quiz を進行させない
-      // (チップを掴んで動かしたいのに「答えた」と判定されて困る対策)。
-      // v816: Playtest ON 時もエディタ選択を最優先にするため抑止に戻した。
-      // editor + Playtest ON は「全問巡回 + コメント残し」が目的で、 答え判定は
-      // 通常プレイ (?edit=1 を外して) で確認する運用に揃える。 問題遷移は
-      // toolbar の ⏭ 次へ / debug nav (前へ・次へ・ジャンプ) で行う。
-      if (document.body.classList.contains('layout-editor-on')) return;
+      // chip タップは ?edit=1 でも通常進行させる (= 普通にプレイしながら編集できる v1035 方針)。
+      // Pause トグル ON のときだけ chip 反応を抑止して、 編集中の意図しない進行を防ぐ。
+      // nextQuestion / _doNextQuestion の pause guard と同じ OR 判定で統一。
+      if (window._quizlandPaused ||
+          (document.body && document.body.classList.contains('layout-editor-paused'))) return;
       e.preventDefault();
       if (locked) return;
       onChoice(i, btn);
@@ -5170,7 +5167,10 @@ function setupNarration(q, opts) {
     const has = Narration.hasEntry(key);
     btn.style.display = (has && Narration.getMode() !== 'off') ? '' : 'none';
     btn.onclick = function(e) {
-      if (document.body.classList.contains('layout-editor-on')) { e.preventDefault(); e.stopPropagation(); return; }
+      // 吹き出し再生は ?edit=1 でも通常進行させる (= 普通にプレイしながら編集できる v1035 方針)。
+      // Pause トグル ON のときだけ抑止して、 編集中の意図しない再生を防ぐ。 chip pointerdown と同じ OR 判定で統一。
+      if (window._quizlandPaused ||
+          (document.body && document.body.classList.contains('layout-editor-paused'))) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
       Narration.play(key);
     };
@@ -5376,7 +5376,10 @@ function _setupAnswerSpeaker(q) {
     }
     btn.style.display = (anyEntry && Narration.getMode() !== 'off') ? '' : 'none';
     btn.onclick = function(e) {
-      if (document.body.classList.contains('layout-editor-on')) { e.preventDefault(); e.stopPropagation(); return; }
+      // 4 択読み上げも ?edit=1 でも通常進行させる (= 普通にプレイしながら編集できる v1035 方針)。
+      // Pause トグル ON のときだけ抑止して、 編集中の意図しない再生を防ぐ。 chip pointerdown と同じ OR 判定で統一。
+      if (window._quizlandPaused ||
+          (document.body && document.body.classList.contains('layout-editor-paused'))) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
       playAllChoices();
     };
