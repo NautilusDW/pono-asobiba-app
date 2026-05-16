@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>かいてひらく！ポノのことばの森 | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="../manifest.json">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sky-top: #FFE9B5;
+  --sky-mid: #FFD380;
+  --sky-low: #FFB55A;
+  --grass-1: #6DC36A;
+  --grass-2: #4FA557;
+  --grass-3: #2F7B45;
+  --path-brown: #C49364;
+  --path-shadow: #8E6336;
+  --ink: #5B3A1E;
+  --primary: #FF8A47;
+  --primary-dark: #E2691E;
+  --bubble-bg: rgba(255,255,255,0.94);
+  --bubble-border: #FFB55A;
+  --card-bg: #FFFDF4;
+  --card-border: #B07849;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', 'Rounded Mplus 1c', sans-serif;
+  background: #2a1c0d;
+  color: var(--ink);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  position: fixed;
+  top: 0; left: 0;
+}
+
+/* ───────────────────────────────────────────────
+   16:9 固定 stage (1600×900) を contain-fit でレターボックス。
+   quizland と同じ fitStage パターン。
+─────────────────────────────────────────────── */
+#stage-wrap {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #1a1208;
+  overflow: hidden;
+}
+#stage {
+  position: relative;
+  width: 1600px; height: 900px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 35%, var(--sky-low) 60%, #E89A4F 70%, transparent 70%),
+    linear-gradient(180deg, transparent 65%, var(--grass-1) 70%, var(--grass-2) 88%, var(--grass-3) 100%);
+}
+
+/* 縦画面警告 (横画面型固定) */
+@media (orientation: portrait) {
+  body::before {
+    content: '📱  よこむきに してね';
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: #2a1c0d;
+    color: #FFD36E;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: clamp(1.2rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    pointer-events: all;
+  }
+}
+
+/* ───── 背景プレースホルダ (花の小道) ───── */
+.bg-layer { position: absolute; inset: 0; pointer-events: none; }
+.bg-clouds {
+  position: absolute; top: 60px; left: 0; right: 0; height: 200px;
+  opacity: 0.85;
+}
+.cloud {
+  position: absolute;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  filter: blur(0.5px);
+}
+.cloud.c1 { width: 200px; height: 70px; top: 20px; left: 200px; box-shadow: 60px 10px 0 -10px rgba(255,255,255,0.85), -50px 5px 0 -5px rgba(255,255,255,0.85); }
+.cloud.c2 { width: 280px; height: 80px; top: 80px; left: 900px; box-shadow: 80px 10px 0 -10px rgba(255,255,255,0.85), -70px 5px 0 -5px rgba(255,255,255,0.85); }
+.cloud.c3 { width: 160px; height: 55px; top: 40px; right: 240px; box-shadow: 50px 8px 0 -8px rgba(255,255,255,0.85); }
+
+/* 遠景の草むら (奥) */
+.bush-far {
+  position: absolute;
+  background: radial-gradient(ellipse at 50% 30%, #7BC57C 0%, #4FA557 60%, #2F7B45 100%);
+  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+  filter: blur(1px);
+}
+
+/* 花プレースホルダ */
+.flower {
+  position: absolute;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+}
+.flower::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, #FFE066 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 18%, #FF9CC8 0 28%, transparent 29%),
+    radial-gradient(circle at 82% 50%, #FF9CC8 0 28%, transparent 29%),
+    radial-gradient(circle at 50% 82%, #FF9CC8 0 28%, transparent 29%),
+    radial-gradient(circle at 18% 50%, #FF9CC8 0 28%, transparent 29%);
+}
+.flower.purple::before {
+  background:
+    radial-gradient(circle at 50% 50%, #FFE066 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 18%, #C49EFF 0 28%, transparent 29%),
+    radial-gradient(circle at 82% 50%, #C49EFF 0 28%, transparent 29%),
+    radial-gradient(circle at 50% 82%, #C49EFF 0 28%, transparent 29%),
+    radial-gradient(circle at 18% 50%, #C49EFF 0 28%, transparent 29%);
+}
+
+/* ───── タイトル ───── */
+.stage-title {
+  position: absolute;
+  top: 28px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,253,244,0.92);
+  color: var(--ink);
+  padding: 14px 42px;
+  border-radius: 999px;
+  border: 4px solid #B07849;
+  font-size: 38px; font-weight: 900;
+  letter-spacing: 0.08em;
+  box-shadow: 0 6px 0 rgba(143,92,40,0.35), 0 12px 30px rgba(0,0,0,0.25);
+  z-index: 30;
+}
+
+/* ───── ポノ立ち絵 ───── */
+.pono {
+  position: absolute;
+  left: 90px; bottom: 70px;
+  width: 280px;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.28));
+  z-index: 10;
+  transition: opacity 0.3s ease, transform 0.4s ease;
+}
+.pono img { width: 100%; height: auto; display: block; }
+.pono.walking {
+  animation: walkBob 0.5s ease-in-out infinite;
+}
+@keyframes walkBob {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50%      { transform: translateY(-10px) rotate(1.2deg); }
+}
+.pono.cheer {
+  animation: cheerPop 0.6s ease-out 1;
+}
+@keyframes cheerPop {
+  0%   { transform: scale(0.85); }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* ───── うさぎのしっぽ (発見前) ───── */
+.tail-hint {
+  position: absolute;
+  right: 240px; top: 380px;
+  width: 90px; height: 90px;
+  z-index: 6;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  animation: tailWiggle 1.8s ease-in-out infinite;
+}
+@keyframes tailWiggle {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%      { transform: translateY(-6px) rotate(3deg); }
+}
+
+/* ───── うさぎ登場 (発見後) ───── */
+.rabbit {
+  position: absolute;
+  right: 200px; top: 290px;
+  width: 220px;
+  z-index: 8;
+  opacity: 0;
+  transform: translateY(40px) scale(0.7);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.34,1.56,.64,1);
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3));
+}
+.rabbit.show { opacity: 1; transform: translateY(0) scale(1); }
+.rabbit.hop {
+  animation: rabbitHop 1.2s ease-in-out infinite;
+}
+@keyframes rabbitHop {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-18px); }
+}
+
+/* ───── 吹き出し ───── */
+.bubble {
+  position: absolute;
+  left: 380px; bottom: 110px;
+  max-width: 720px;
+  background: var(--bubble-bg);
+  color: var(--ink);
+  padding: 22px 30px;
+  border: 5px solid var(--bubble-border);
+  border-radius: 26px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 0 rgba(143,92,40,0.25), 0 14px 40px rgba(0,0,0,0.25);
+  white-space: pre-line;
+  z-index: 20;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.bubble.show { opacity: 1; transform: translateY(0); }
+.bubble::after {
+  content: '';
+  position: absolute;
+  left: 40px; bottom: -22px;
+  width: 0; height: 0;
+  border: 14px solid transparent;
+  border-top-color: var(--bubble-border);
+  border-bottom: 0;
+}
+.bubble::before {
+  content: '';
+  position: absolute;
+  left: 46px; bottom: -14px;
+  width: 0; height: 0;
+  border: 10px solid transparent;
+  border-top-color: var(--bubble-bg);
+  border-bottom: 0;
+  z-index: 1;
+}
+
+/* ───── なぞり SVG ───── */
+.trace-area {
+  position: absolute;
+  /* 中央寄せ。 1024×1024 viewBox を 640×640 で表示する。 */
+  left: 50%; top: 50%;
+  transform: translate(-50%, -52%);
+  width: 640px; height: 640px;
+  z-index: 15;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.trace-area.show { opacity: 1; pointer-events: auto; }
+.trace-area svg {
+  width: 100%; height: 100%;
+  touch-action: none;
+}
+.trace-bg {
+  fill: rgba(255,253,244,0.55);
+  stroke: rgba(176,120,73,0.4);
+  stroke-width: 6;
+}
+.guide-path {
+  fill: none;
+  stroke: rgba(110,80,50,0.28);
+  stroke-width: 78;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 教科書体スケルトン (中心線) の上にゆとり幅を載せる */
+}
+.guide-center {
+  fill: none;
+  stroke: rgba(255,138,71,0.55);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 18 16;
+  animation: guideDash 2s linear infinite;
+}
+@keyframes guideDash {
+  to { stroke-dashoffset: -68; }
+}
+.user-path {
+  fill: none;
+  stroke: #FF8A47;
+  stroke-width: 24;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(255,138,71,0.6));
+}
+.start-marker {
+  fill: #FF6B3D;
+  stroke: #FFFDF4;
+  stroke-width: 4;
+  animation: pulseStart 1.4s ease-in-out infinite;
+}
+@keyframes pulseStart {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.18); }
+}
+.end-spark {
+  fill: #FFE066;
+  stroke: #FFFDF4;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px #FFD36E);
+  animation: pulseEnd 1.4s ease-in-out infinite alternate;
+}
+@keyframes pulseEnd {
+  0%   { opacity: 0.7; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.15); }
+}
+.trace-area.success .guide-path,
+.trace-area.success .guide-center,
+.trace-area.success .start-marker,
+.trace-area.success .end-spark {
+  animation: fadeOutGuide 0.7s ease forwards;
+}
+@keyframes fadeOutGuide {
+  to { opacity: 0; }
+}
+.trace-area.success .user-path {
+  animation: glowFlash 0.9s ease 1;
+  stroke: #FFD36E;
+  stroke-width: 30;
+}
+@keyframes glowFlash {
+  0%   { filter: drop-shadow(0 0 0 rgba(255,211,110,0)); }
+  40%  { filter: drop-shadow(0 0 28px rgba(255,235,150,1)); stroke: #FFFFFF; }
+  100% { filter: drop-shadow(0 0 12px rgba(255,211,110,0.8)); }
+}
+
+/* ───── 小道レイヤー (し の形に伸びる道) ───── */
+.path-layer {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 12;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.path-layer.show { opacity: 1; }
+.path-stroke {
+  fill: none;
+  stroke: var(--path-brown);
+  stroke-width: 64;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 4000;
+  stroke-dashoffset: 4000;
+}
+.path-layer.draw .path-stroke {
+  animation: pathDraw 1.4s ease-out forwards;
+}
+@keyframes pathDraw {
+  to { stroke-dashoffset: 0; }
+}
+.path-shadow-stroke {
+  fill: none;
+  stroke: var(--path-shadow);
+  stroke-width: 72;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.35;
+  transform: translate(4px, 6px);
+}
+
+/* ───── ポップする草花 (成功演出) ───── */
+.pop-petals { position: absolute; inset: 0; pointer-events: none; z-index: 16; }
+.petal {
+  position: absolute;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: petalPop 1s ease-out forwards;
+}
+@keyframes petalPop {
+  0%   { opacity: 0; transform: scale(0); }
+  30%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(0.6) translateY(-40px); }
+}
+
+/* ───── 草むら揺れ ───── */
+.grass-shake { animation: grassShake 0.6s ease-in-out 3; transform-origin: center bottom; }
+@keyframes grassShake {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-4deg); }
+  75%      { transform: rotate(4deg); }
+}
+
+/* ───── カード演出 ───── */
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.card-overlay.show { opacity: 1; pointer-events: auto; }
+.letter-card {
+  background: linear-gradient(180deg, #FFFDF4 0%, #FFE9C3 100%);
+  border: 10px solid var(--card-border);
+  border-radius: 30px;
+  width: 620px;
+  padding: 36px 30px 30px;
+  text-align: center;
+  box-shadow:
+    0 20px 50px rgba(0,0,0,0.5),
+    inset 0 0 0 4px #FFE5A8;
+  transform: scale(0.4) rotate(-8deg);
+  transition: transform 0.6s cubic-bezier(.34,1.56,.64,1);
+  position: relative;
+}
+.card-overlay.show .letter-card { transform: scale(1) rotate(0); }
+.letter-card .card-kana {
+  font-size: 220px;
+  font-weight: 900;
+  color: var(--ink);
+  line-height: 1;
+  text-shadow: 0 6px 0 rgba(176,120,73,0.25);
+  margin-bottom: 4px;
+}
+.letter-card .card-word {
+  font-size: 52px;
+  font-weight: 900;
+  color: var(--primary-dark);
+  letter-spacing: 0.1em;
+}
+.letter-card .card-icon {
+  position: absolute;
+  right: 30px; top: 30px;
+  width: 90px; height: 90px;
+}
+.card-buttons {
+  display: flex; justify-content: center; gap: 20px;
+  margin-top: 24px;
+}
+.card-btn {
+  font-family: inherit;
+  font-size: 28px; font-weight: 900;
+  padding: 14px 32px;
+  border: 4px solid var(--card-border);
+  border-radius: 18px;
+  background: #FFFDF4;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(143,92,40,0.4);
+  transition: transform 0.1s ease;
+  letter-spacing: 0.05em;
+}
+.card-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(143,92,40,0.4); }
+.card-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
+
+/* ───── スタートタップ案内 (初回) ───── */
+.tap-prompt {
+  position: absolute;
+  left: 50%; bottom: 38px;
+  transform: translateX(-50%);
+  background: rgba(255,253,244,0.92);
+  color: var(--primary-dark);
+  font-size: 24px; font-weight: 900;
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 4px solid var(--primary);
+  box-shadow: 0 6px 0 rgba(226,105,30,0.4);
+  z-index: 25;
+  animation: tapBob 1.4s ease-in-out infinite;
+  cursor: pointer;
+}
+@keyframes tapBob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, -8px); }
+}
+.tap-prompt.hide { display: none; }
+
+/* ───── 戻るボタン ───── */
+.back-btn {
+  position: absolute;
+  top: 28px; left: 28px;
+  z-index: 40;
+  background: rgba(255,253,244,0.92);
+  color: var(--ink);
+  border: 4px solid #B07849;
+  border-radius: 999px;
+  font-family: inherit; font-weight: 900;
+  font-size: 22px;
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(143,92,40,0.3);
+}
+.back-btn:active { transform: translateY(2px); }
+
+/* loading hint while AnimCJK SVG is fetched */
+.loading-hint {
+  position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 17;
+  color: #5B3A1E;
+  font-size: 26px; font-weight: 900;
+  background: rgba(255,253,244,0.85);
+  padding: 14px 28px; border-radius: 18px;
+  border: 4px dashed #B07849;
+}
+.loading-hint.hide { display: none; }
+
+/* やり直しトースト */
+.retry-toast {
+  position: absolute;
+  left: 50%; top: 90px;
+  transform: translateX(-50%);
+  background: rgba(255,107,61,0.92);
+  color: #fff;
+  font-weight: 900; font-size: 26px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 4px solid #fff;
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.retry-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+
+    <!-- 戻るボタン -->
+    <button class="back-btn" id="back-btn" aria-label="もどる">← もどる</button>
+
+    <!-- 背景レイヤー (花の小道プレースホルダ) -->
+    <div class="bg-layer" id="bg-layer">
+      <div class="bg-clouds">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="cloud c3"></div>
+      </div>
+
+      <!-- 遠景の草むら -->
+      <div class="bush-far" style="right: 130px; top: 320px; width: 360px; height: 200px;"></div>
+      <div class="bush-far" style="right: 80px;  top: 380px; width: 240px; height: 160px;"></div>
+      <div class="bush-far" style="right: 360px; top: 360px; width: 280px; height: 180px;"></div>
+
+      <!-- 花 散らし -->
+      <div class="flower"        style="left: 320px; bottom: 90px;"></div>
+      <div class="flower purple" style="left: 420px; bottom: 60px;"></div>
+      <div class="flower"        style="left: 540px; bottom: 110px;"></div>
+      <div class="flower purple" style="left: 720px; bottom: 70px;"></div>
+      <div class="flower"        style="left: 900px; bottom: 90px;"></div>
+      <div class="flower purple" style="left: 1080px; bottom: 60px;"></div>
+      <div class="flower"        style="left: 1250px; bottom: 100px;"></div>
+      <div class="flower purple" style="left: 1420px; bottom: 70px;"></div>
+    </div>
+
+    <!-- 「し」型の小道レイヤー (成功後にドロー) -->
+    <svg class="path-layer" id="path-layer" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+      <!-- 「し」: 上から右下にすうっと下がり、最後に左へカーブ。 1600×900 座標系で描く。 -->
+      <path class="path-shadow-stroke"
+            d="M 780 280 C 800 480, 820 620, 760 700 C 700 760, 580 760, 520 700"/>
+      <path class="path-stroke" id="path-stroke"
+            d="M 780 280 C 800 480, 820 620, 760 700 C 700 760, 580 760, 520 700"/>
+    </svg>
+
+    <!-- うさぎのしっぽ プレースホルダ -->
+    <svg class="tail-hint" id="tail-hint" viewBox="0 0 100 100" aria-hidden="true">
+      <!-- 草むらから少しのぞく白い丸尻尾 -->
+      <ellipse cx="50" cy="58" rx="34" ry="28" fill="#FFFFFF" stroke="#E6D9C2" stroke-width="2"/>
+      <ellipse cx="50" cy="58" rx="34" ry="28" fill="url(#tailGrad)" opacity="0.5"/>
+      <defs>
+        <radialGradient id="tailGrad" cx="0.5" cy="0.35" r="0.7">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#D8C8AC"/>
+        </radialGradient>
+      </defs>
+      <!-- ふわふわパフ感 -->
+      <circle cx="32" cy="52" r="10" fill="#FFFFFF"/>
+      <circle cx="68" cy="52" r="10" fill="#FFFFFF"/>
+      <circle cx="50" cy="38" r="9"  fill="#FFFFFF"/>
+    </svg>
+
+    <!-- うさぎ プレースホルダ (発見後) -->
+    <svg class="rabbit" id="rabbit" viewBox="0 0 200 240" aria-hidden="true">
+      <!-- 体 -->
+      <ellipse cx="100" cy="170" rx="62" ry="58" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
+      <!-- 顔 -->
+      <circle cx="100" cy="105" r="48" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
+      <!-- 耳 -->
+      <ellipse cx="78"  cy="48" rx="11" ry="36" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3" transform="rotate(-12 78 48)"/>
+      <ellipse cx="122" cy="48" rx="11" ry="36" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3" transform="rotate(12 122 48)"/>
+      <ellipse cx="78"  cy="52" rx="5" ry="22" fill="#FFC0D2" transform="rotate(-12 78 52)"/>
+      <ellipse cx="122" cy="52" rx="5" ry="22" fill="#FFC0D2" transform="rotate(12 122 52)"/>
+      <!-- 目 -->
+      <circle cx="84"  cy="108" r="5" fill="#2A1C0D"/>
+      <circle cx="116" cy="108" r="5" fill="#2A1C0D"/>
+      <circle cx="86"  cy="106" r="1.6" fill="#FFFFFF"/>
+      <circle cx="118" cy="106" r="1.6" fill="#FFFFFF"/>
+      <!-- 鼻と口 -->
+      <ellipse cx="100" cy="122" rx="3.5" ry="2.5" fill="#FF8FA8"/>
+      <path d="M100 124 Q 94 132 88 130 M100 124 Q 106 132 112 130" stroke="#5B3A1E" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- 前足 -->
+      <ellipse cx="76"  cy="200" rx="14" ry="22" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
+      <ellipse cx="124" cy="200" rx="14" ry="22" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
+    </svg>
+
+    <!-- ポノ立ち絵 -->
+    <div class="pono" id="pono">
+      <img id="pono-img" src="../assets/images/characters/pono/pono_001.png" alt="ポノ">
+    </div>
+
+    <!-- タイトル -->
+    <div class="stage-title" id="stage-title">しっぽの こみち</div>
+
+    <!-- 吹き出し -->
+    <div class="bubble" id="bubble"></div>
+
+    <!-- なぞり SVG (Phase 2) -->
+    <div class="trace-area" id="trace-area">
+      <svg id="trace-svg" viewBox="0 0 1024 1024" aria-hidden="true">
+        <rect class="trace-bg" x="20" y="20" width="984" height="984" rx="32" ry="32"/>
+        <!-- AnimCJK 取得後にここへ <path class="guide-path"/> と <path class="guide-center" id="guide-median"/> を挿入 -->
+        <g id="guide-group"></g>
+        <!-- ユーザー描画 -->
+        <path class="user-path" id="user-path" d=""/>
+        <!-- 始点マーカー / 終点光の粒 (median が判った後に座標を再計算) -->
+        <circle class="start-marker" id="start-marker" cx="0" cy="0" r="34" style="display:none"/>
+        <circle class="end-spark"    id="end-spark"    cx="0" cy="0" r="22" style="display:none"/>
+      </svg>
+      <div class="loading-hint" id="loading-hint">よみこみちゅう…</div>
+    </div>
+
+    <!-- 花びらポップ -->
+    <div class="pop-petals" id="pop-petals"></div>
+
+    <!-- やり直しトースト -->
+    <div class="retry-toast" id="retry-toast">だいじょうぶ。 もういちど、うえから かいてみよう。</div>
+
+    <!-- タップ案内 -->
+    <div class="tap-prompt" id="tap-prompt">タップしてはじめる ▶</div>
+
+    <!-- カード演出 -->
+    <div class="card-overlay" id="card-overlay">
+      <div class="letter-card">
+        <svg class="card-icon" viewBox="0 0 100 100" aria-hidden="true">
+          <!-- うさぎ尻尾アイコン -->
+          <circle cx="32" cy="52" r="14" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
+          <circle cx="68" cy="52" r="14" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
+          <circle cx="50" cy="38" r="13" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
+          <ellipse cx="50" cy="58" rx="36" ry="28" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
+        </svg>
+        <div class="card-kana"  id="card-kana">し</div>
+        <div class="card-word"  id="card-word">しっぽ</div>
+        <div class="card-buttons">
+          <button class="card-btn primary" id="btn-retry">もういちど</button>
+          <button class="card-btn" id="btn-close">とじる</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════
+   ステージ定義 (仕様書 7 準拠 — 将来 50 音まで拡張可能な配列)
+   ════════════════════════════════════════════════ */
+const WRITING_STAGES = [
+  {
+    id: 'shi_tail_path',
+    kana: 'し',
+    word: 'しっぽ',
+    title: 'しっぽの こみち',
+    unicodeHex: '3057',      // 参考 (U+3057)
+    unicodeDec: 12375,       // AnimCJK ファイル名は十進数
+    scene: {
+      background: 'flower_path_shi',
+      hiddenAnimal: 'rabbit',
+      gimmickType: 'path_reveal'
+    },
+    storyText: {
+      intro:        'なにか しろい もふもふ…\nうさぎさん？',
+      guide:        '「し」の もじを なぞると、 こみちが あらわれるよ。',
+      tracingHint:  'ゆっくり、 うえから したへ。 さいごは ひだりへ カーブ！',
+      success:      'うわぁ！ こみちが できた！',
+      clear:        'うさぎさん、 みっけ！\n「し」と「しっぽ」、 おぼえたね！',
+      retry:        'だいじょうぶ。\nもういちど、うえから かいてみよう。'
+    },
+    reward: { type: 'letterCard', kana: 'し', word: 'しっぽ' }
+  }
+];
+
+const STAGE = WRITING_STAGES[0];
+
+/* ════════════════════════════════════════════════
+   fitStage — quizland と同じ contain-fit パターン
+   ════════════════════════════════════════════════ */
+const stageEl = document.getElementById('stage');
+function fitStage() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const scale = Math.min(w / 1600, h / 900);
+  const sw = 1600 * scale, sh = 900 * scale;
+  const ox = (w - sw) / 2, oy = (h - sh) / 2;
+  stageEl.style.transformOrigin = '0 0';
+  stageEl.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
+}
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) fitStage(); });
+fitStage();
+
+/* ════════════════════════════════════════════════
+   要素参照
+   ════════════════════════════════════════════════ */
+const bubbleEl     = document.getElementById('bubble');
+const tapPromptEl  = document.getElementById('tap-prompt');
+const traceAreaEl  = document.getElementById('trace-area');
+const traceSvgEl   = document.getElementById('trace-svg');
+const guideGroupEl = document.getElementById('guide-group');
+const userPathEl   = document.getElementById('user-path');
+const startMarkerEl= document.getElementById('start-marker');
+const endSparkEl   = document.getElementById('end-spark');
+const loadingHint  = document.getElementById('loading-hint');
+const pathLayerEl  = document.getElementById('path-layer');
+const pathStrokeEl = document.getElementById('path-stroke');
+const tailHintEl   = document.getElementById('tail-hint');
+const rabbitEl     = document.getElementById('rabbit');
+const ponoEl       = document.getElementById('pono');
+const ponoImgEl    = document.getElementById('pono-img');
+const retryToastEl = document.getElementById('retry-toast');
+const cardOverlay  = document.getElementById('card-overlay');
+const cardKanaEl   = document.getElementById('card-kana');
+const cardWordEl   = document.getElementById('card-word');
+const popPetalsEl  = document.getElementById('pop-petals');
+
+/* ════════════════════════════════════════════════
+   吹き出しヘルパー
+   ════════════════════════════════════════════════ */
+function showBubble(text) {
+  bubbleEl.textContent = text;
+  bubbleEl.classList.add('show');
+}
+function hideBubble() { bubbleEl.classList.remove('show'); }
+
+/* ════════════════════════════════════════════════
+   Phase 1: 初期画面表示
+   ════════════════════════════════════════════════ */
+function showOpening() {
+  document.getElementById('stage-title').textContent = STAGE.title;
+  showBubble(STAGE.storyText.intro);
+  tapPromptEl.classList.remove('hide');
+}
+
+/* ════════════════════════════════════════════════
+   Phase 2: AnimCJK SVG 取得 → ガイド表示 → なぞり判定
+   ════════════════════════════════════════════════ */
+let medianPathEl = null;
+let medianTotalLength = 0;
+let medianStart = null;  // {x,y}
+let medianEnd = null;    // {x,y}
+let medianSampledPoints = [];
+
+async function loadGuideSvg() {
+  // AnimCJK のファイル名は **十進** のコードポイント (ゼロ詰めなし)。
+  // jsdelivr の gh エンドポイントは repo サイズ 50MB 超で 403 を返すため、
+  // raw.githubusercontent を一次経路にし、 失敗時 jsdelivr にフォールバック。
+  const urls = [
+    `https://raw.githubusercontent.com/parsimonhi/animCJK/master/svgsJaKana/${STAGE.unicodeDec}.svg`,
+    `https://cdn.jsdelivr.net/gh/parsimonhi/animCJK@master/svgsJaKana/${STAGE.unicodeDec}.svg`
+  ];
+  loadingHint.classList.remove('hide');
+  let svgText = null;
+  for (const u of urls) {
+    try {
+      const resp = await fetch(u);
+      if (!resp.ok) continue;
+      svgText = await resp.text();
+      if (svgText && svgText.indexOf('<svg') >= 0) break;
+      svgText = null;
+    } catch (_) { /* try next */ }
+  }
+  try {
+    if (!svgText) throw new Error('all AnimCJK endpoints failed');
+    // SVG 全体をパース
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+    // stroke (輪郭) = path[id], median (中心線) = path[clip-path]
+    const strokes = Array.from(doc.querySelectorAll('path[id]'));
+    const medians = Array.from(doc.querySelectorAll('path[clip-path]'));
+    // 輪郭をガイド帯として描画
+    strokes.forEach(p => {
+      const np = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      np.setAttribute('d', p.getAttribute('d'));
+      np.setAttribute('class', 'guide-path');
+      guideGroupEl.appendChild(np);
+    });
+    // 中心線 (し は 1 ストロークなので medians[0]) を取得
+    if (medians.length === 0) throw new Error('no median path found');
+    const medianD = medians[0].getAttribute('d');
+    medianPathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    medianPathEl.setAttribute('d', medianD);
+    medianPathEl.setAttribute('class', 'guide-center');
+    medianPathEl.setAttribute('id', 'guide-median');
+    guideGroupEl.appendChild(medianPathEl);
+    // サンプリング
+    medianTotalLength = medianPathEl.getTotalLength();
+    medianSampledPoints = [];
+    const SAMPLE_N = 80;
+    for (let i = 0; i <= SAMPLE_N; i++) {
+      const p = medianPathEl.getPointAtLength((i / SAMPLE_N) * medianTotalLength);
+      medianSampledPoints.push({ x: p.x, y: p.y });
+    }
+    medianStart = medianSampledPoints[0];
+    medianEnd   = medianSampledPoints[medianSampledPoints.length - 1];
+    // 始点 / 終点マーカー配置
+    startMarkerEl.setAttribute('cx', medianStart.x);
+    startMarkerEl.setAttribute('cy', medianStart.y);
+    startMarkerEl.style.display = '';
+    endSparkEl.setAttribute('cx', medianEnd.x);
+    endSparkEl.setAttribute('cy', medianEnd.y);
+    endSparkEl.style.display = '';
+    loadingHint.classList.add('hide');
+    return true;
+  } catch (e) {
+    console.warn('AnimCJK fetch failed, using fallback path:', e);
+    // フォールバック: 「し」を素直なベジェで近似
+    const fallbackD = 'M 350 250 C 380 480, 420 700, 420 780 C 420 860, 320 880, 240 820';
+    const guide = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    guide.setAttribute('d', fallbackD);
+    guide.setAttribute('class', 'guide-path');
+    guideGroupEl.appendChild(guide);
+    medianPathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    medianPathEl.setAttribute('d', fallbackD);
+    medianPathEl.setAttribute('class', 'guide-center');
+    guideGroupEl.appendChild(medianPathEl);
+    medianTotalLength = medianPathEl.getTotalLength();
+    medianSampledPoints = [];
+    for (let i = 0; i <= 80; i++) {
+      const p = medianPathEl.getPointAtLength((i / 80) * medianTotalLength);
+      medianSampledPoints.push({ x: p.x, y: p.y });
+    }
+    medianStart = medianSampledPoints[0];
+    medianEnd   = medianSampledPoints[medianSampledPoints.length - 1];
+    startMarkerEl.setAttribute('cx', medianStart.x);
+    startMarkerEl.setAttribute('cy', medianStart.y);
+    startMarkerEl.style.display = '';
+    endSparkEl.setAttribute('cx', medianEnd.x);
+    endSparkEl.setAttribute('cy', medianEnd.y);
+    endSparkEl.style.display = '';
+    loadingHint.classList.add('hide');
+    return true;
+  }
+}
+
+/* ───── 入力 → SVG 座標への変換 ───── */
+function clientToSvgPoint(clientX, clientY) {
+  const pt = traceSvgEl.createSVGPoint();
+  pt.x = clientX; pt.y = clientY;
+  return pt.matrixTransform(traceSvgEl.getScreenCTM().inverse());
+}
+
+/* ───── 判定 ───── */
+const ACCEPT_DIST = 110;         // ガイド中心線からの許容距離 (px in 1024 viewBox)
+const START_TOLERANCE = 130;     // 始点付近とみなす半径
+const END_TOLERANCE = 130;       // 終点到達とみなす半径
+const COVERAGE_THRESHOLD = 0.72; // ガイド点の何%以上に「近づいた」か
+
+function distance(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+function nearestMedianIndex(p) {
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < medianSampledPoints.length; i++) {
+    const d = distance(p, medianSampledPoints[i]);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return { index: best, dist: bestD };
+}
+
+let userPoints = [];
+let drawing = false;
+let startedNearStart = false;
+let coveredIndices = new Set();
+let directionOk = true;  // 大まかな進行方向 (start→end) を保つか
+
+function resetTracing() {
+  userPoints = [];
+  drawing = false;
+  startedNearStart = false;
+  coveredIndices = new Set();
+  directionOk = true;
+  userPathEl.setAttribute('d', '');
+}
+
+function pointerDown(e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  if (!medianStart) return;
+  // 始点付近からなら受理
+  const p = clientToSvgPoint(e.clientX, e.clientY);
+  startedNearStart = distance(p, medianStart) <= START_TOLERANCE;
+  if (!startedNearStart) {
+    // 始点から外れている → 軽くやり直し案内
+    flashRetry('ポノも いっしょに みてるよ。');
+    return;
+  }
+  drawing = true;
+  resetTracing();
+  startedNearStart = true;
+  userPoints.push({ x: p.x, y: p.y });
+  updateUserPath();
+  try { traceSvgEl.setPointerCapture(e.pointerId); } catch (_) {}
+  e.preventDefault();
+}
+
+function pointerMove(e) {
+  if (!drawing) return;
+  const p = clientToSvgPoint(e.clientX, e.clientY);
+  userPoints.push({ x: p.x, y: p.y });
+  updateUserPath();
+  // 進行方向チェック (前ポイントの nearest index < 今の nearest index を期待)
+  if (userPoints.length >= 6) {
+    const here = nearestMedianIndex(p);
+    if (here.dist <= ACCEPT_DIST) coveredIndices.add(here.index);
+    // 6 ポイント前の median index と比較
+    const before = nearestMedianIndex(userPoints[userPoints.length - 6]);
+    if (before.dist <= ACCEPT_DIST && here.dist <= ACCEPT_DIST) {
+      if (here.index + 4 < before.index) directionOk = false; // 大きく逆走
+    }
+  }
+}
+
+function pointerUp(e) {
+  if (!drawing) return;
+  drawing = false;
+  try { traceSvgEl.releasePointerCapture(e.pointerId); } catch (_) {}
+  evaluateTrace();
+}
+
+function pointerCancel(e) {
+  if (!drawing) return;
+  drawing = false;
+  // 途中で離れたら静かにリセット
+  resetTracing();
+}
+
+function updateUserPath() {
+  if (userPoints.length === 0) return;
+  let d = `M ${userPoints[0].x} ${userPoints[0].y}`;
+  for (let i = 1; i < userPoints.length; i++) {
+    d += ` L ${userPoints[i].x} ${userPoints[i].y}`;
+  }
+  userPathEl.setAttribute('d', d);
+}
+
+function evaluateTrace() {
+  if (!startedNearStart) { flashRetry('ポノも いっしょに みてるよ。'); resetTracing(); return; }
+  if (!directionOk)      { flashRetry('こんどは ゆっくり いってみよう。'); resetTracing(); return; }
+  // 終点付近に到達したか
+  const last = userPoints[userPoints.length - 1];
+  const reachedEnd = distance(last, medianEnd) <= END_TOLERANCE;
+  // カバレッジ
+  const coverage = coveredIndices.size / medianSampledPoints.length;
+  if (reachedEnd && coverage >= COVERAGE_THRESHOLD) {
+    onTraceSuccess();
+  } else if (!reachedEnd && coverage >= COVERAGE_THRESHOLD * 0.85) {
+    flashRetry('こんどは ゆっくり いってみよう。');
+    resetTracing();
+  } else {
+    // デフォルト = STAGE.storyText.retry「だいじょうぶ。\nもういちど、うえから かいてみよう。」
+    flashRetry();
+    resetTracing();
+  }
+}
+
+let retryTimerId = null;
+function flashRetry(msg) {
+  retryToastEl.textContent = msg || STAGE.storyText.retry;
+  retryToastEl.classList.add('show');
+  if (retryTimerId) clearTimeout(retryTimerId);
+  retryTimerId = setTimeout(() => {
+    retryToastEl.classList.remove('show');
+    retryTimerId = null;
+  }, 1600);
+}
+
+/* ════════════════════════════════════════════════
+   Phase 3: 成功演出
+   ════════════════════════════════════════════════ */
+function onTraceSuccess() {
+  showBubble(STAGE.storyText.success);
+  traceAreaEl.classList.add('success');
+  spawnPetals();
+  // ガイドを消したあと、 小道レイヤーを表示
+  setTimeout(() => {
+    traceAreaEl.classList.remove('show', 'success');
+    traceAreaEl.style.pointerEvents = 'none';
+    pathLayerEl.classList.add('show');
+    // M-5: stroke-dasharray を path 実長で動的セット (CSS のハードコード 4000 から脱却)
+    try {
+      const len = pathStrokeEl.getTotalLength();
+      pathStrokeEl.style.strokeDasharray = len;
+      pathStrokeEl.style.strokeDashoffset = len;
+    } catch (_) { /* getTotalLength 不可ブラウザではフォールバック (CSS の 4000 が効く) */ }
+    // 次フレームで draw クラスを付与してアニメ発火 (CSS keyframes が dashoffset:0 まで遷移)
+    requestAnimationFrame(() => pathLayerEl.classList.add('draw'));
+    setTimeout(walkPonoAlongPath, 1500);
+  }, 1100);
+}
+
+function spawnPetals() {
+  const colors = ['#FF9CC8', '#C49EFF', '#FFE066', '#FFB57C', '#A6E89B'];
+  // viewBox 1024×1024 を画面の 640×640 の trace-area に重ねるので、 画面相対で 12〜20 個飛ばす
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    el.style.left = (Math.random() * 600 + 500) + 'px';
+    el.style.top  = (Math.random() * 400 + 250) + 'px';
+    el.style.background = colors[i % colors.length];
+    el.style.animationDelay = (Math.random() * 0.3) + 's';
+    popPetalsEl.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   Phase 4: ポノが「し」の小道を歩く
+   ════════════════════════════════════════════════ */
+function walkPonoAlongPath() {
+  ponoEl.classList.add('walking');
+  // 元の left/bottom 位置を吸収するため、 transform で動かす
+  // path-stroke は viewBox=1600×900 = stage と同座標系なのでそのまま使える
+  const total = pathStrokeEl.getTotalLength();
+  // ポノ画像の表示サイズ: CSS 上 width=280px。 height は画像の naturalHeight/naturalWidth で
+  // 動的に算出。 画像未ロード時はフォールバック値 (280) を使う。
+  const PONO_WIDTH = 280;
+  const nw = ponoImgEl && ponoImgEl.naturalWidth ? ponoImgEl.naturalWidth : 0;
+  const nh = ponoImgEl && ponoImgEl.naturalHeight ? ponoImgEl.naturalHeight : 0;
+  const ponoDisplayH = (nw > 0 && nh > 0) ? (PONO_WIDTH * nh / nw) : PONO_WIDTH;
+  // ポノの現在位置: left:90, bottom:70, width:280 → 中心 X = 90 + 140
+  // 中心 Y は (900 - 70 - ponoDisplayH/2)。 transform 基準点として top-left = (900 - 70 - ponoDisplayH) を使う。
+  const ponoBaseX = 90 + PONO_WIDTH / 2;
+  const ponoBaseY = 900 - 70 - ponoDisplayH; // top px in 1600x900
+  const duration = 2800;
+  const startTs = performance.now();
+  function tick(ts) {
+    const t = Math.min(1, (ts - startTs) / duration);
+    const p = pathStrokeEl.getPointAtLength(t * total);
+    const tx = p.x - ponoBaseX;
+    const ty = p.y - ponoBaseY - 60;  // 60px 上にずらして道の上に立つ感じに
+    ponoEl.style.transform = `translate(${tx}px, ${ty}px)`;
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      ponoEl.classList.remove('walking');
+      onReachedTail();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ════════════════════════════════════════════════
+   Phase 5: うさぎ発見 → カード獲得
+   ════════════════════════════════════════════════ */
+function onReachedTail() {
+  // 草むら揺れ
+  document.querySelectorAll('.bush-far').forEach(b => {
+    b.classList.add('grass-shake');
+    setTimeout(() => b.classList.remove('grass-shake'), 1800);
+  });
+  // しっぽプレースホルダ消す → うさぎ出す
+  setTimeout(() => {
+    tailHintEl.style.display = 'none';
+    rabbitEl.classList.add('show');
+    setTimeout(() => rabbitEl.classList.add('hop'), 600);
+    // ポノ喜びポーズ (dance_hooray) に差し替え
+    ponoImgEl.src = '../assets/images/characters/pono/dance/dance_hooray.png';
+    ponoEl.classList.remove('walking'); // N-3: cheer 付与前に walking を明示 remove
+    ponoEl.classList.add('cheer');
+    showBubble(STAGE.storyText.clear);
+  }, 600);
+  // カード演出
+  setTimeout(() => {
+    cardKanaEl.textContent = STAGE.reward.kana;
+    cardWordEl.textContent = STAGE.reward.word;
+    cardOverlay.classList.add('show');
+  }, 2400);
+}
+
+/* ════════════════════════════════════════════════
+   ボタン制御 / ライフサイクル
+   ════════════════════════════════════════════════ */
+async function startStage() {
+  tapPromptEl.classList.add('hide');
+  hideBubble();
+  // ガイド表示
+  showBubble(STAGE.storyText.guide);
+  setTimeout(async () => {
+    await loadGuideSvg();
+    traceAreaEl.classList.add('show');
+    traceAreaEl.style.pointerEvents = 'auto';
+    showBubble(STAGE.storyText.tracingHint);
+    bindPointerEvents();
+  }, 800);
+}
+
+let pointerHandlersBound = false;
+function bindPointerEvents() {
+  if (pointerHandlersBound) return;
+  pointerHandlersBound = true;
+  traceSvgEl.addEventListener('pointerdown', pointerDown);
+  traceSvgEl.addEventListener('pointermove', pointerMove);
+  traceSvgEl.addEventListener('pointerup', pointerUp);
+  traceSvgEl.addEventListener('pointercancel', pointerCancel);
+  traceSvgEl.addEventListener('pointerleave', pointerCancel);
+}
+
+function resetStage() {
+  // すべて Phase 1 へ戻す
+  cardOverlay.classList.remove('show');
+  pathLayerEl.classList.remove('show', 'draw');
+  // M-5 で動的に書き込んだ stroke-dasharray/offset もクリア (CSS 既定値に戻す)
+  pathStrokeEl.style.strokeDasharray = '';
+  pathStrokeEl.style.strokeDashoffset = '';
+  rabbitEl.classList.remove('show', 'hop');
+  tailHintEl.style.display = '';
+  ponoImgEl.src = '../assets/images/characters/pono/pono_001.png';
+  ponoEl.classList.remove('cheer', 'walking');
+  ponoEl.style.transform = '';
+  // guide 要素クリア
+  while (guideGroupEl.firstChild) guideGroupEl.removeChild(guideGroupEl.firstChild);
+  userPathEl.setAttribute('d', '');
+  startMarkerEl.style.display = 'none';
+  endSparkEl.style.display = 'none';
+  traceAreaEl.classList.remove('show', 'success');
+  // B-1: trace-area の pointer-events をリセットし、 ハンドラ binding を再実行可能にする
+  traceAreaEl.style.pointerEvents = '';
+  pointerHandlersBound = false;
+  resetTracing();
+  showOpening();
+}
+
+document.getElementById('btn-retry').addEventListener('click', () => {
+  cardOverlay.classList.remove('show');
+  setTimeout(resetStage, 350);
+});
+document.getElementById('btn-close').addEventListener('click', () => {
+  // play 一覧に戻す (将来カード追加した play.html 用)。 ない場合はトップへ。
+  try { window.history.back(); }
+  catch (_) { window.location.href = '../index.html'; }
+});
+document.getElementById('back-btn').addEventListener('click', () => {
+  try { window.history.back(); }
+  catch (_) { window.location.href = '../index.html'; }
+});
+
+tapPromptEl.addEventListener('click', startStage);
+tapPromptEl.addEventListener('pointerdown', (e) => { e.preventDefault(); startStage(); });
+
+/* ════════════════════════════════════════════════
+   SW 更新通知に追従
+   ════════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e && e.data && e.data.type === 'sw-updated') {
+      // 静かにリロード
+      setTimeout(() => location.reload(), 200);
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════
+   起動
+   ════════════════════════════════════════════════ */
+showOpening();
+</script>
+</body>
+</html>

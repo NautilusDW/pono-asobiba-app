@@ -1245,8 +1245,10 @@ body.sheet-on .hdr-right .ctrl-btn {
   display: block;
 }
 .stage-pono-bubble.show { opacity: 1; }
-/* trivia 出題で中央ポノが居る間は左下ポノを隠す (重複回避) */
-body.has-trivia-pono .stage-pono { display: none; }
+/* 2026-05-16: 「全タイプで左下ポノを表示」 仕様に変更したため、 trivia 時の
+   左下ポノ非表示ルールを撤去。 中央ポノとの位置が視覚的に重なる場合は
+   layout-editor (?edit=1) でユーザーが調整可能。 */
+/* body.has-trivia-pono .stage-pono { display: none; } */
 /* layout-editor (?edit=1) 中はプレースホルダとして強制表示。
    元々ここは display:none にしていたが、 それだと layout-editor.js が
    `.stage-pono` を resizable 対象として登録していても要素が不可視 →
@@ -4594,8 +4596,8 @@ let _stagePonoThinkingToken = null;
 async function playStagePonoThinking() {
   const imgEl = document.getElementById('stage-pono-img');
   if (!imgEl) return;
-  // trivia 中央ポノ表示中は左下ポノは hidden なのでスキップ
-  if (document.body.classList.contains('has-trivia-pono')) return;
+  // 2026-05-16: 全タイプで左下ポノを表示する仕様に変更したため、 trivia 時に
+  // 早期 return していたガードを撤去 (CSS 非表示ルールも併せて撤去済)。
   // 既に thinking ループ中 or 起動中ならガード (truthy なプレースホルダーも含む)
   if (_stagePonoThinkingHandle) return;
   if (!(window.AnimationPlayer && typeof window.AnimationPlayer.play === 'function')) return;
@@ -4671,8 +4673,8 @@ let _stagePonoHoorayToken = null;
 async function playStagePonoHooray() {
   const imgEl = document.getElementById('stage-pono-img');
   if (!imgEl) return;
-  // trivia 中央ポノ表示中は左下ポノは hidden なのでスキップ
-  if (document.body.classList.contains('has-trivia-pono')) return;
+  // 2026-05-16: 全タイプで左下ポノを表示する仕様に変更したため、 trivia 時に
+  // 早期 return していたガードを撤去 (CSS 非表示ルールも併せて撤去済)。
   // 出題中の thinking ループを必ず停止 (同じ <img> を奪い合わないため)
   stopStagePonoThinking();
   // flip-book を一旦停止して hooray ポーズに固定
@@ -4695,22 +4697,21 @@ async function playStagePonoHooray() {
   _stagePonoHoorayToken = myToken;
 
   // ★新経路: manifest があれば AnimationPlayer で再生
-  //   pono-correct-stamp は loop=true (frame_001 = 1000ms の待機を内包) のため、
-  //   2.5 秒固定タイマーで明示 stop → flip-book 復帰させる。
+  //   pono-correct-stamp は loop=false なので、 4 フレーム再生後にそのまま
+  //   最終フレームで停止 (flip-book には戻さない)。 次の loadQuestion 側で
+  //   handle.stop() + using-anim-frame クラス除去 → thinking ループへ移行。
   let handle = null;
   if (window.AnimationPlayer && typeof window.AnimationPlayer.play === 'function') {
+    // using-anim-frame は再生開始前に付ける (バストショット構図のコンテナ)
+    if (stagePono) stagePono.classList.add('using-anim-frame');
     try {
       handle = await window.AnimationPlayer.play(imgEl, 'pono-correct-stamp', {
         onComplete: function () {
-          // loop:true なので通常は呼ばれないが、 manifest 差替えで loop:false に
-          //   なった場合の保険として実装。
-          if (_stagePonoHoorayToken !== myToken) return;
-          _stagePonoHoorayAnimHandle = null;
-          if (stagePono) {
-            stagePono.classList.remove('is-hooray');
-            stagePono.classList.remove('using-anim-frame');
+          // loop:false → 最終フレームで停止。 ここでは何もせず最終フレーム画像を維持。
+          // 古い呼び出し (連続正解で token 不一致) の場合だけ念のため停止する。
+          if (_stagePonoHoorayToken !== myToken) {
+            if (handle && typeof handle.stop === 'function') handle.stop();
           }
-          resumeFlipBook();
         }
       });
     } catch (e) {
@@ -4725,24 +4726,10 @@ async function playStagePonoHooray() {
   }
 
   if (handle) {
-    // 新経路: AnimationPlayer に再生を委譲。 2.5 秒後に明示 stop → flip-book 復帰。
+    // 新経路: AnimationPlayer に再生を委譲。 最終フレームで停止したまま維持する
+    //   (タイマー停止しない / flip-book に戻さない)。 次の loadQuestion cleanup で
+    //   handle.stop() + クラス除去 → thinking ループに切り替わる。
     _stagePonoHoorayAnimHandle = handle;
-    // 新素材 (pono-correct-stamp = 既にバストショット構図) 用クラス。 旧 is-hooray
-    // のクロップは当てない (二重クロップ + キャラ右上偏り問題の根本対策)。
-    if (stagePono) stagePono.classList.add('using-anim-frame');
-    _stagePonoHoorayTimer = setTimeout(function() {
-      // タイマー発火時にも自己検証 (loadQuestion で token クリアされていれば何もしない)
-      if (_stagePonoHoorayToken !== myToken) return;
-      if (_stagePonoHoorayAnimHandle && typeof _stagePonoHoorayAnimHandle.stop === 'function') {
-        _stagePonoHoorayAnimHandle.stop();
-      }
-      _stagePonoHoorayAnimHandle = null;
-      if (stagePono) {
-        stagePono.classList.remove('is-hooray');
-        stagePono.classList.remove('using-anim-frame');
-      }
-      resumeFlipBook();
-    }, 2500);
     return;
   }
 
@@ -5054,15 +5041,19 @@ function loadQuestion(q) {
     _stagePonoElForHoorayReset.classList.remove('is-hooray');
     _stagePonoElForHoorayReset.classList.remove('using-anim-frame');
   }
+  // 2026-05-16: 全タイプで左下ポノを表示する (trivia でも有効化)。
+  //   trivia 用の `has-trivia-pono` クラスは中央ポノの位置/表示制御で使われる
+  //   ため引き続き付ける。 左下ポノ (`.stage-pono`) を隠す CSS / 関数内ガードは
+  //   別途撤去済 (この変更とセットで「全タイプで左下ポノが出る」が成立)。
   if (q.type === 'trivia') {
     document.body.classList.add('has-trivia-pono');
   } else {
     document.body.classList.remove('has-trivia-pono');
-    startStagePono();
-    // 出題開始: 左下ポノを「考え中」ループに切替える (manifest 駆動 / loop=true)。
-    // manifest 取得失敗時は内部で flip-book 復帰するので fallback 安全。
-    playStagePonoThinking();
   }
+  startStagePono();
+  // 出題開始: 左下ポノを「考え中」ループに切替える (manifest 駆動 / loop=true)。
+  // manifest 取得失敗時は内部で flip-book 復帰するので fallback 安全。
+  playStagePonoThinking();
   renderChoices(q);
   // Staged reveal: 挿絵 (.emoji-display) と 4択 (#answer-panel) を pending に
   // 落としておき、 _runPlateAndType が typewriter の進行に合わせて revealed
