@@ -1303,6 +1303,19 @@ body.layout-editor-on .mode-screen {
   display: none !important;
 }
 
+/* 2026-05-16: エディタモード時、 .char-hint (フクロウ博士の吹き出し) は
+   通常プレイ中は setHakaseDialogue 経由でしか書き換わらないため、 ?edit=1 で
+   ゲームを開始せずにセリフ編集モーダルを開いた瞬間は textarea を書き換えても
+   親 .char-hint が visibility:hidden 相当の状態に見える (内容: 初期 "ヒント！")。
+   ライブプレビューを目に見える形にするため、 エディタ中は .char-hint を
+   常時可視に強制する。 通常モード (?edit=1 なし) はこのクラスが付かないので影響ゼロ。 */
+body.layout-editor-on .char-hint,
+body.layout-editor-on #char-hint-bubble {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 0.95 !important;
+}
+
 /* ===== Answer column (right) ===== */
 .a-col {
   display: flex; flex-direction: column;

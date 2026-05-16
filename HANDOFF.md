@@ -86,6 +86,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-16 - [batch:42-puzzle-opening-landscape-cut2] **Done** — 風景テーマ opening Cut 2 raw を `tmp/alpha_pending/42/puzzle_opening_cut2_landscape_spread_facing_animals_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.9MB)。Cut 1 風景箱から続き、Pono + きつね + あらいぐま + 子鹿 + うさぎがラグ周りに集まり、開いた風景パズル箱・未組立 loose pieces・複数プレビューカードあり。箱/カードの風景は視聴者側から上下逆で動物側から読める向き、完成パズル盤/文字/UIなしを目視確認済。 (by Codex)
+
 - 2026-05-16 - [batch:41-puzzle-opening-landscape-redo-cut1] **Done** — user 指摘「りんごの単純形だと最後の一枚でピース不一致が目立つ。1枚目から複雑な風景テーマでやり直し」を受け、opening Cut 1 風景テーマ redo raw を `tmp/alpha_pending/41/puzzle_opening_cut1_landscape_gathering_v2_raw.png` に納品 (`1672x940` PNG、RGB、alpha なし、約 2.8MB)。Pono が友だちを歓迎、きつね/あらいぐま/子鹿/うさぎが左〜中央から集合、閉じた「森の小道・小川・小橋・花」の風景パズル箱 + 小プレビューカードのみ、完成パズル/ピース/文字/UIなしを目視確認済。`*_landscape_gathering_raw.png` は比率がやや 16:9 から外れたため比較用。 (by Codex)
 - 2026-05-16 - [batch:41-puzzle-opening-landscape-redo-cut1] **Done** — user 指摘「パズルが視聴者側に向いちゃってる」を受け、風景パズル箱/カードの印刷絵を動物たち側から読みやすい向きへ修正。採用候補は `tmp/alpha_pending/41/puzzle_opening_cut1_landscape_gathering_facing_animals_v2_raw.png` (`1672x941` PNG、RGB、alpha なし、約 2.8MB)。視聴者側から見ると箱/カードの風景が上下逆、動物側から読める向き、完成パズル/ピース/文字/UIなしを目視確認済。`*_facing_animals_raw.png` は Cut 1 の集まり始め感が弱いため比較用。 (by Codex)
 
