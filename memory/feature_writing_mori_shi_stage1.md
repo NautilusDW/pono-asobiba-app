@@ -67,9 +67,25 @@ const WRITING_STAGES = [{
 
 ## 配信 / バージョン
 
-- `sw.js` CACHE_VERSION: 1023 → **1026** (本実装で bump)
+- `sw.js` CACHE_VERSION: 1023 → **1026** (初版実装) → **1027** (ポリッシュ phase) → **1028** (staging で確認時の値、 別 auto-commit でさらに +1)
 - network-first 純構成のため precache 配列追加なし
-- staging 反映: `develop` push → GH Actions が `wrangler deploy --env staging`
+- staging 反映: `develop` push → GH Actions が `wrangler deploy --env staging` (1m6s)
+- **2026-05-16 staging 初公開**: https://pono-asobiba-staging.ndw.workers.dev/writing-mori/
+
+## ポリッシュ phase (本素材待ちの仮素材作り込み)
+
+本物画像納品 (batch:43) を待つ間、 CSS+SVG プレースホルダを「絵本風で実機表示に耐えるレベル」 まで作り込み:
+
+- 背景: 8 段グラデの空 + 雲3 (radialGradient + 14-18s 揺れ) + 遠景の丘 2 層 + 遠景の木 2 本 + うねる草地 2 層 + 草の束 10 本 (`<symbol>` + `<use>`、 3 グループで違う速度の揺れ) + 花 10 輪 (黄/白/ピンク、 5秒バウンス)
+- 右奥うさぎ尻尾: 白楕円中央 + 周囲パフ円 5 個 + 影 + ハイライト、 2 秒揺れ
+- うさぎ本体: 耳 (外白+内ピンク+12度傾き) → 頭 → 体 → 前足 → ほっぺ + 三角鼻 + Y型口 + つぶらな目 + ハイライト、 cubic-bezier(.34,1.56,.64,1) で出現
+- 小道 (Phase 3): 影/縁取り/本体の 3 層 + 道沿いに小石/草/花
+- カード: 木目縞 + 四隅葉装飾 + クリーム紙 (radial cream→#FFF8E1)、 spring scale
+- 吹き出し: 左下しっぽでポノを指す形
+
+クロスレビューで指摘された HIGH 2 件 + MED 1 件 (`treeNearGrad` 未参照削除 / `path-layer` preserveAspectRatio xMidYMid meet 整合 / `prefers-reduced-motion: reduce` 追加) は別 commit で反映済み。
+
+中央なぞり領域 (約 400x400) は仕様書 §4 通り視覚的に空け、 花/草も画面下端と両端寄りに配置。 子供向けの muted earth-tone palette 厳守。
 
 ## 関連発注書
 
