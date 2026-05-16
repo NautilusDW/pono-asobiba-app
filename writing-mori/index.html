@@ -108,6 +108,15 @@ html, body {
   }
 }
 
+/* アクセシビリティ: 動きの抑制設定への配慮 (古い iPad / iOS 低性能機含む) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ───── 背景レイヤー (絵本風の花の小道) ─────
    後で本物画像を差し替える際は #bg-layer に
    `background-image: url(...);` を 1 行追加するだけで上書き可能。
@@ -660,11 +669,6 @@ html, body {
             <stop offset="60%" stop-color="#7DA85A"/>
             <stop offset="100%" stop-color="#4F7A35"/>
           </radialGradient>
-          <radialGradient id="treeNearGrad" cx="50%" cy="35%" r="65%">
-            <stop offset="0%"  stop-color="#9FCB72"/>
-            <stop offset="60%" stop-color="#6FA049"/>
-            <stop offset="100%" stop-color="#3F6E26"/>
-          </radialGradient>
           <!-- 花びら (黄芯ピンク) -->
           <radialGradient id="petalPink" cx="50%" cy="50%" r="50%">
             <stop offset="0%"  stop-color="#FFC2D8"/>
@@ -802,7 +806,7 @@ html, body {
     </div>
 
     <!-- 「し」型の小道レイヤー (成功後にドロー) -->
-    <svg class="path-layer" id="path-layer" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+    <svg class="path-layer" id="path-layer" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
       <!-- 「し」: 上から右下にすうっと下がり、最後に左へカーブ。 1600×900 座標系。
            3 層: 影 (下) → 縁取り (中) → 本体 (上)。 path-stroke は walkPonoAlongPath 用なので id を維持。 -->
       <path class="path-shadow-stroke"
