@@ -127,7 +127,7 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'shape_name', shape:'circle',    q:'このかたちに かどは いくつ？', answer:1, choices:['2こ','0こ（ない）','4こ','1こ'] },
     { level:3, type:'shape_name', shape:'square',    q:'このかたちの かどは ぜんぶで いくつ？', answer:2, choices:['3こ','5こ','4こ','6こ'] },
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
-    { level:3, type:'shape_name', shape:'diamond',   q:'ひしがたの かどは ぜんぶで いくつ？', answer:1, choices:['3こ','4こ','5こ','6こ'] },
+    /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
     // sprint-13 結線済み (2026-05-08): pizza_whole/half を image-based に、quarter/eighth は text-image mismatch のため text-only 据え置き
     { level:3, type:'shape_name', shape:'circle', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:[
