@@ -14,21 +14,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --sky-top: #FFE9B5;
-  --sky-mid: #FFD380;
-  --sky-low: #FFB55A;
-  --grass-1: #6DC36A;
-  --grass-2: #4FA557;
-  --grass-3: #2F7B45;
+  /* 朝〜昼の絵本風スカイ (薄水色 → クリーム) */
+  --sky-top: #BFE3F3;
+  --sky-mid: #E6F0F0;
+  --sky-low: #FFF4D6;
+  --sky-warm: #FFE9B5;
+  /* 草地 muted earth-tone */
+  --grass-1: #B5D88F;
+  --grass-2: #8FBE6C;
+  --grass-3: #6C9F4E;
+  --grass-4: #4F7F38;
+  --grass-deep: #386024;
+  /* 道 */
   --path-brown: #C49364;
-  --path-shadow: #8E6336;
+  --path-edge:  #8E6336;
+  --path-shadow:#5C3F22;
+  /* テキスト・差し色 */
   --ink: #5B3A1E;
   --primary: #FF8A47;
   --primary-dark: #E2691E;
-  --bubble-bg: rgba(255,255,255,0.94);
-  --bubble-border: #FFB55A;
-  --card-bg: #FFFDF4;
-  --card-border: #B07849;
+  /* バブル */
+  --bubble-bg: rgba(255,253,247,0.96);
+  --bubble-border: #B07849;
+  /* カード */
+  --card-paper: #FFF8E1;
+  --card-paper-2: #FFEEC2;
+  --card-frame: #8B5A2B;
+  --card-frame-2: #6B3F1A;
 }
 
 html, body {
@@ -60,9 +72,21 @@ html, body {
   width: 1600px; height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
+  /* ベース: 朝の柔らかい空 → 地平線でクリーム → 遠景の緑 → 手前の濃い緑 */
   background:
-    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 35%, var(--sky-low) 60%, #E89A4F 70%, transparent 70%),
-    linear-gradient(180deg, transparent 65%, var(--grass-1) 70%, var(--grass-2) 88%, var(--grass-3) 100%);
+    /* 朝霧 ハイライト */
+    radial-gradient(ellipse 1100px 280px at 75% 18%, rgba(255,255,255,0.55) 0%, transparent 70%),
+    radial-gradient(ellipse 900px 200px at 30% 14%, rgba(255,250,230,0.45) 0%, transparent 70%),
+    /* 空 → 地平線 → 遠景の緑 */
+    linear-gradient(180deg,
+      var(--sky-top) 0%,
+      var(--sky-mid) 28%,
+      var(--sky-low) 52%,
+      var(--sky-warm) 60%,
+      var(--grass-1) 64%,
+      var(--grass-2) 78%,
+      var(--grass-3) 90%,
+      var(--grass-4) 100%);
 }
 
 /* 縦画面警告 (横画面型固定) */
@@ -84,66 +108,82 @@ html, body {
   }
 }
 
-/* ───── 背景プレースホルダ (花の小道) ───── */
+/* ───── 背景レイヤー (絵本風の花の小道) ─────
+   後で本物画像を差し替える際は #bg-layer に
+   `background-image: url(...);` を 1 行追加するだけで上書き可能。
+─────────────────────────────────────────────── */
 .bg-layer { position: absolute; inset: 0; pointer-events: none; }
-.bg-clouds {
-  position: absolute; top: 60px; left: 0; right: 0; height: 200px;
-  opacity: 0.85;
-}
-.cloud {
-  position: absolute;
-  background: rgba(255,255,255,0.85);
-  border-radius: 50%;
-  filter: blur(0.5px);
-}
-.cloud.c1 { width: 200px; height: 70px; top: 20px; left: 200px; box-shadow: 60px 10px 0 -10px rgba(255,255,255,0.85), -50px 5px 0 -5px rgba(255,255,255,0.85); }
-.cloud.c2 { width: 280px; height: 80px; top: 80px; left: 900px; box-shadow: 80px 10px 0 -10px rgba(255,255,255,0.85), -70px 5px 0 -5px rgba(255,255,255,0.85); }
-.cloud.c3 { width: 160px; height: 55px; top: 40px; right: 240px; box-shadow: 50px 8px 0 -8px rgba(255,255,255,0.85); }
+.bg-art   { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-/* 遠景の草むら (奥) */
+/* SVG 全体に共通でかかる柔らかさ */
+.bg-art .soft { filter: blur(0.4px); }
+
+/* 雲のアニメーション (ゆっくり呼吸) */
+.cloud-puff { animation: cloudDrift 14s ease-in-out infinite; transform-origin: 50% 50%; }
+.cloud-puff.c2 { animation-duration: 18s; animation-delay: -4s; }
+.cloud-puff.c3 { animation-duration: 16s; animation-delay: -8s; }
+@keyframes cloudDrift {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* 草の揺れ */
+.grass-tuft { transform-origin: 50% 100%; animation: grassSway 3.4s ease-in-out infinite; }
+.grass-tuft.s2 { animation-duration: 4.2s; animation-delay: -1s; }
+.grass-tuft.s3 { animation-duration: 3.8s; animation-delay: -2s; }
+@keyframes grassSway {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50%      { transform: rotate(1.5deg); }
+}
+
+/* 花の小さな上下動 */
+.flower-svg { transform-origin: 50% 100%; animation: flowerBob 4s ease-in-out infinite; }
+.flower-svg.b2 { animation-duration: 4.8s; animation-delay: -1.2s; }
+.flower-svg.b3 { animation-duration: 5.2s; animation-delay: -2.4s; }
+@keyframes flowerBob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-3px) rotate(1.5deg); }
+}
+
+/* 遠景の草むら (うさぎ尻尾が見え隠れする領域) */
 .bush-far {
   position: absolute;
-  background: radial-gradient(ellipse at 50% 30%, #7BC57C 0%, #4FA557 60%, #2F7B45 100%);
-  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
-  filter: blur(1px);
+  background: radial-gradient(ellipse at 50% 28%, #A4D08A 0%, #6FA855 55%, #4A8237 100%);
+  border-radius: 50% 50% 32% 32% / 62% 62% 40% 40%;
+  filter: blur(0.6px);
+  box-shadow:
+    inset 0 -8px 12px rgba(0,0,0,0.12),
+    inset 0 6px 10px rgba(255,255,255,0.18);
 }
-
-/* 花プレースホルダ */
-.flower {
-  position: absolute;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-}
-.flower::before {
-  content: ''; position: absolute; inset: 0;
+.bush-far::after {
+  /* 草むらの上にぽつぽつ濃い葉のテクスチャ */
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
   background:
-    radial-gradient(circle at 50% 50%, #FFE066 0 22%, transparent 23%),
-    radial-gradient(circle at 50% 18%, #FF9CC8 0 28%, transparent 29%),
-    radial-gradient(circle at 82% 50%, #FF9CC8 0 28%, transparent 29%),
-    radial-gradient(circle at 50% 82%, #FF9CC8 0 28%, transparent 29%),
-    radial-gradient(circle at 18% 50%, #FF9CC8 0 28%, transparent 29%);
-}
-.flower.purple::before {
-  background:
-    radial-gradient(circle at 50% 50%, #FFE066 0 22%, transparent 23%),
-    radial-gradient(circle at 50% 18%, #C49EFF 0 28%, transparent 29%),
-    radial-gradient(circle at 82% 50%, #C49EFF 0 28%, transparent 29%),
-    radial-gradient(circle at 50% 82%, #C49EFF 0 28%, transparent 29%),
-    radial-gradient(circle at 18% 50%, #C49EFF 0 28%, transparent 29%);
+    radial-gradient(circle at 22% 38%, rgba(60,110,52,0.45) 0 5%, transparent 6%),
+    radial-gradient(circle at 50% 28%, rgba(60,110,52,0.4) 0 4%, transparent 5%),
+    radial-gradient(circle at 72% 42%, rgba(60,110,52,0.45) 0 5%, transparent 6%),
+    radial-gradient(circle at 38% 60%, rgba(60,110,52,0.3) 0 4%, transparent 5%),
+    radial-gradient(circle at 64% 65%, rgba(60,110,52,0.3) 0 4%, transparent 5%);
 }
 
 /* ───── タイトル ───── */
 .stage-title {
   position: absolute;
   top: 28px; left: 50%; transform: translateX(-50%);
-  background: rgba(255,253,244,0.92);
+  background:
+    linear-gradient(180deg, #FFFFFF 0%, rgba(255,253,244,0.96) 100%);
   color: var(--ink);
   padding: 14px 42px;
   border-radius: 999px;
-  border: 4px solid #B07849;
+  border: 4px solid var(--bubble-border);
   font-size: 38px; font-weight: 900;
   letter-spacing: 0.08em;
-  box-shadow: 0 6px 0 rgba(143,92,40,0.35), 0 12px 30px rgba(0,0,0,0.25);
+  box-shadow:
+    0 6px 0 rgba(143,92,40,0.35),
+    0 12px 30px rgba(0,0,0,0.22),
+    inset 0 0 0 2px rgba(255,255,255,0.6);
   z-index: 30;
 }
 
@@ -173,55 +213,61 @@ html, body {
   100% { transform: scale(1); }
 }
 
-/* ───── うさぎのしっぽ (発見前) ───── */
+/* ───── うさぎのしっぽ (発見前 — 草むらからちょこんとのぞく) ───── */
 .tail-hint {
   position: absolute;
   right: 240px; top: 380px;
-  width: 90px; height: 90px;
+  width: 110px; height: 110px;
   z-index: 6;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-  animation: tailWiggle 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.28));
+  animation: tailWiggle 2s ease-in-out infinite;
 }
 @keyframes tailWiggle {
   0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50%      { transform: translateY(-6px) rotate(3deg); }
+  50%      { transform: translateY(-7px) rotate(3deg); }
 }
 
-/* ───── うさぎ登場 (発見後) ───── */
+/* ───── うさぎ登場 (発見後 — 絵本風かわいい白うさぎ) ───── */
 .rabbit {
   position: absolute;
   right: 200px; top: 290px;
-  width: 220px;
+  width: 200px;
   z-index: 8;
   opacity: 0;
   transform: translateY(40px) scale(0.7);
   transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.34,1.56,.64,1);
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 10px 12px rgba(0,0,0,0.28));
 }
 .rabbit.show { opacity: 1; transform: translateY(0) scale(1); }
 .rabbit.hop {
-  animation: rabbitHop 1.2s ease-in-out infinite;
+  /* ぴょこんと跳ねる: -8px → 0 を 0.4s easeOut、 2 回。 その後は静止維持 */
+  animation: rabbitHop 0.4s ease-out 2;
 }
 @keyframes rabbitHop {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-18px); }
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
 }
 
-/* ───── 吹き出し ───── */
+/* ───── 吹き出し (漫画風・左下にポノ向けのしっぽ) ───── */
 .bubble {
   position: absolute;
   left: 380px; bottom: 110px;
   max-width: 720px;
-  background: var(--bubble-bg);
+  background:
+    linear-gradient(180deg, #FFFFFF 0%, var(--bubble-bg) 100%);
   color: var(--ink);
   padding: 22px 30px;
-  border: 5px solid var(--bubble-border);
+  border: 4px solid var(--bubble-border);
   border-radius: 26px;
   font-size: 28px;
   font-weight: 700;
   line-height: 1.55;
   letter-spacing: 0.04em;
-  box-shadow: 0 8px 0 rgba(143,92,40,0.25), 0 14px 40px rgba(0,0,0,0.25);
+  box-shadow:
+    0 8px 0 rgba(93,62,38,0.18),
+    0 14px 36px rgba(0,0,0,0.22),
+    inset 0 0 0 2px rgba(255,255,255,0.55);
   white-space: pre-line;
   z-index: 20;
   opacity: 0;
@@ -229,22 +275,27 @@ html, body {
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .bubble.show { opacity: 1; transform: translateY(0); }
+/* しっぽ: 吹き出し左下からポノ側 (左下) に向けて伸ばす三角 */
 .bubble::after {
+  /* 枠線色 (奥) */
   content: '';
   position: absolute;
-  left: 40px; bottom: -22px;
+  left: 24px; bottom: -28px;
   width: 0; height: 0;
-  border: 14px solid transparent;
+  border: 16px solid transparent;
   border-top-color: var(--bubble-border);
+  border-right: 0;
   border-bottom: 0;
 }
 .bubble::before {
+  /* 内側白 (手前)。 ::after より少し小さく、 上に重ねる */
   content: '';
   position: absolute;
-  left: 46px; bottom: -14px;
+  left: 30px; bottom: -18px;
   width: 0; height: 0;
-  border: 10px solid transparent;
+  border: 12px solid transparent;
   border-top-color: var(--bubble-bg);
+  border-right: 0;
   border-bottom: 0;
   z-index: 1;
 }
@@ -340,7 +391,9 @@ html, body {
   100% { filter: drop-shadow(0 0 12px rgba(255,211,110,0.8)); }
 }
 
-/* ───── 小道レイヤー (し の形に伸びる道) ───── */
+/* ───── 小道レイヤー (し の形に伸びる森の道) ─────
+   3 層構造: 影 (濃い茶, 下) → 縁取り (中間茶) → 道本体 (明るい茶)
+─────────────────────────────────────────────── */
 .path-layer {
   position: absolute; inset: 0;
   pointer-events: none;
@@ -349,30 +402,49 @@ html, body {
   transition: opacity 0.6s ease;
 }
 .path-layer.show { opacity: 1; }
-.path-stroke {
+.path-shadow-stroke {
   fill: none;
-  stroke: var(--path-brown);
-  stroke-width: 64;
+  stroke: var(--path-shadow);
+  stroke-width: 76;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.32;
+  transform: translate(5px, 8px);
+  filter: blur(2px);
+}
+.path-edge-stroke {
+  /* 縁取り: 道本体より太く、 一段濃い茶色で出す */
+  fill: none;
+  stroke: var(--path-edge);
+  stroke-width: 72;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 4000;
   stroke-dashoffset: 4000;
 }
+.path-stroke {
+  /* 道本体: 明るい茶。 縁取りの内側に細く描く */
+  fill: none;
+  stroke: var(--path-brown);
+  stroke-width: 58;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 4000;
+  stroke-dashoffset: 4000;
+}
+.path-layer.draw .path-edge-stroke,
 .path-layer.draw .path-stroke {
   animation: pathDraw 1.4s ease-out forwards;
 }
 @keyframes pathDraw {
   to { stroke-dashoffset: 0; }
 }
-.path-shadow-stroke {
-  fill: none;
-  stroke: var(--path-shadow);
-  stroke-width: 72;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.35;
-  transform: translate(4px, 6px);
+/* 道沿いの小石 / 草 (path-layer.show 後にふわっと出現) */
+.path-decor {
+  opacity: 0;
+  transition: opacity 0.6s ease 0.8s;
 }
+.path-layer.show .path-decor { opacity: 1; }
 
 /* ───── ポップする草花 (成功演出) ───── */
 .pop-petals { position: absolute; inset: 0; pointer-events: none; z-index: 16; }
@@ -410,57 +482,92 @@ html, body {
 }
 .card-overlay.show { opacity: 1; pointer-events: auto; }
 .letter-card {
-  background: linear-gradient(180deg, #FFFDF4 0%, #FFE9C3 100%);
-  border: 10px solid var(--card-border);
-  border-radius: 30px;
-  width: 620px;
-  padding: 36px 30px 30px;
+  /* 外枠: 木目風 — 茶色グラデーション + 内側に重なる紙 */
+  background:
+    /* 紙ハイライト (上) */
+    linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 30%),
+    /* 木目: 縦方向のうすい縞 */
+    repeating-linear-gradient(96deg,
+      var(--card-frame) 0px,
+      var(--card-frame) 6px,
+      var(--card-frame-2) 6px,
+      var(--card-frame-2) 12px),
+    var(--card-frame);
+  border: 4px solid var(--card-frame-2);
+  border-radius: 28px;
+  width: 640px;
+  padding: 22px;
   text-align: center;
   box-shadow:
-    0 20px 50px rgba(0,0,0,0.5),
-    inset 0 0 0 4px #FFE5A8;
+    0 22px 50px rgba(0,0,0,0.5),
+    0 6px 0 rgba(0,0,0,0.25);
   transform: scale(0.4) rotate(-8deg);
   transition: transform 0.6s cubic-bezier(.34,1.56,.64,1);
   position: relative;
 }
 .card-overlay.show .letter-card { transform: scale(1) rotate(0); }
+/* 内側のクリーム紙 */
+.letter-card .card-paper {
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% 0%, #FFFFFF 0%, var(--card-paper) 50%, var(--card-paper-2) 100%);
+  border-radius: 18px;
+  padding: 32px 28px 24px;
+  box-shadow:
+    inset 0 0 0 2px rgba(139,90,43,0.35),
+    inset 0 6px 18px rgba(139,90,43,0.18);
+}
 .letter-card .card-kana {
   font-size: 220px;
   font-weight: 900;
   color: var(--ink);
   line-height: 1;
-  text-shadow: 0 6px 0 rgba(176,120,73,0.25);
+  text-shadow:
+    0 4px 0 rgba(176,120,73,0.18),
+    0 8px 14px rgba(0,0,0,0.08);
   margin-bottom: 4px;
 }
 .letter-card .card-word {
   font-size: 52px;
   font-weight: 900;
   color: var(--primary-dark);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.6);
 }
 .letter-card .card-icon {
   position: absolute;
-  right: 30px; top: 30px;
-  width: 90px; height: 90px;
+  right: 22px; bottom: 22px;
+  width: 86px; height: 86px;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.18));
 }
+/* 角の葉っぱ装飾 (四隅) */
+.letter-card .card-leaf {
+  position: absolute;
+  width: 56px; height: 56px;
+  pointer-events: none;
+}
+.letter-card .card-leaf.tl { top: -10px; left: -10px; transform: rotate(-20deg); }
+.letter-card .card-leaf.tr { top: -10px; right: -10px; transform: rotate(20deg) scaleX(-1); }
+.letter-card .card-leaf.bl { bottom: -6px; left: -10px; transform: rotate(-160deg); }
+.letter-card .card-leaf.br { bottom: -6px; right: -10px; transform: rotate(160deg) scaleX(-1); }
 .card-buttons {
   display: flex; justify-content: center; gap: 20px;
-  margin-top: 24px;
+  margin-top: 22px;
 }
 .card-btn {
   font-family: inherit;
   font-size: 28px; font-weight: 900;
   padding: 14px 32px;
-  border: 4px solid var(--card-border);
+  border: 4px solid var(--card-frame-2);
   border-radius: 18px;
   background: #FFFDF4;
   color: var(--ink);
   cursor: pointer;
-  box-shadow: 0 6px 0 rgba(143,92,40,0.4);
+  box-shadow: 0 6px 0 rgba(107,63,26,0.45);
   transition: transform 0.1s ease;
   letter-spacing: 0.05em;
 }
-.card-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(143,92,40,0.4); }
+.card-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(107,63,26,0.45); }
 .card-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
 
 /* ───── スタートタップ案内 (初回) ───── */
@@ -541,78 +648,260 @@ html, body {
     <!-- 戻るボタン -->
     <button class="back-btn" id="back-btn" aria-label="もどる">← もどる</button>
 
-    <!-- 背景レイヤー (花の小道プレースホルダ) -->
+    <!-- 背景レイヤー (絵本風の花の小道) -->
     <div class="bg-layer" id="bg-layer">
-      <div class="bg-clouds">
-        <div class="cloud c1"></div>
-        <div class="cloud c2"></div>
-        <div class="cloud c3"></div>
-      </div>
 
-      <!-- 遠景の草むら -->
-      <div class="bush-far" style="right: 130px; top: 320px; width: 360px; height: 200px;"></div>
-      <div class="bush-far" style="right: 80px;  top: 380px; width: 240px; height: 160px;"></div>
-      <div class="bush-far" style="right: 360px; top: 360px; width: 280px; height: 180px;"></div>
+      <!-- ① 絵本風 SVG 背景 (空・雲・遠景の山・木・草地) -->
+      <svg class="bg-art" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <!-- 遠景の木のグラデ -->
+          <radialGradient id="treeFarGrad" cx="50%" cy="35%" r="65%">
+            <stop offset="0%"  stop-color="#A8CB80"/>
+            <stop offset="60%" stop-color="#7DA85A"/>
+            <stop offset="100%" stop-color="#4F7A35"/>
+          </radialGradient>
+          <radialGradient id="treeNearGrad" cx="50%" cy="35%" r="65%">
+            <stop offset="0%"  stop-color="#9FCB72"/>
+            <stop offset="60%" stop-color="#6FA049"/>
+            <stop offset="100%" stop-color="#3F6E26"/>
+          </radialGradient>
+          <!-- 花びら (黄芯ピンク) -->
+          <radialGradient id="petalPink" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"  stop-color="#FFC2D8"/>
+            <stop offset="100%" stop-color="#FF8FB5"/>
+          </radialGradient>
+          <radialGradient id="petalWhite" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"  stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F3E7C2"/>
+          </radialGradient>
+          <radialGradient id="petalYellow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"  stop-color="#FFF1A8"/>
+            <stop offset="100%" stop-color="#FFD15A"/>
+          </radialGradient>
+          <!-- 雲: 内側白くて縁ふんわり -->
+          <radialGradient id="cloudGrad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.98"/>
+            <stop offset="70%" stop-color="#FFFFFF" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+          </radialGradient>
+          <!-- 草の束 1本 (path で生やす) -->
+          <symbol id="grassBlade" viewBox="0 0 30 50">
+            <path d="M15 50 Q 12 30 8 6 Q 14 22 15 50 Z"  fill="#6FA94A"/>
+            <path d="M15 50 Q 18 30 22 6 Q 16 22 15 50 Z" fill="#5A8E36"/>
+            <path d="M15 50 Q 15 28 15 4"  stroke="#3F6E26" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </symbol>
+          <!-- 花 1 輪 (黄芯・5 花弁) -->
+          <symbol id="flowerPink" viewBox="0 0 40 40">
+            <g>
+              <circle cx="20" cy="8"  r="8" fill="url(#petalPink)"/>
+              <circle cx="32" cy="20" r="8" fill="url(#petalPink)"/>
+              <circle cx="20" cy="32" r="8" fill="url(#petalPink)"/>
+              <circle cx="8"  cy="20" r="8" fill="url(#petalPink)"/>
+              <circle cx="20" cy="20" r="7" fill="url(#petalYellow)"/>
+            </g>
+          </symbol>
+          <symbol id="flowerWhite" viewBox="0 0 40 40">
+            <g>
+              <circle cx="20" cy="8"  r="8" fill="url(#petalWhite)"/>
+              <circle cx="32" cy="20" r="8" fill="url(#petalWhite)"/>
+              <circle cx="20" cy="32" r="8" fill="url(#petalWhite)"/>
+              <circle cx="8"  cy="20" r="8" fill="url(#petalWhite)"/>
+              <circle cx="20" cy="20" r="7" fill="url(#petalYellow)"/>
+            </g>
+          </symbol>
+          <symbol id="flowerYellow" viewBox="0 0 40 40">
+            <g>
+              <circle cx="20" cy="8"  r="8" fill="url(#petalYellow)"/>
+              <circle cx="32" cy="20" r="8" fill="url(#petalYellow)"/>
+              <circle cx="20" cy="32" r="8" fill="url(#petalYellow)"/>
+              <circle cx="8"  cy="20" r="8" fill="url(#petalYellow)"/>
+              <circle cx="20" cy="20" r="6" fill="#E2A12C"/>
+            </g>
+          </symbol>
+        </defs>
 
-      <!-- 花 散らし -->
-      <div class="flower"        style="left: 320px; bottom: 90px;"></div>
-      <div class="flower purple" style="left: 420px; bottom: 60px;"></div>
-      <div class="flower"        style="left: 540px; bottom: 110px;"></div>
-      <div class="flower purple" style="left: 720px; bottom: 70px;"></div>
-      <div class="flower"        style="left: 900px; bottom: 90px;"></div>
-      <div class="flower purple" style="left: 1080px; bottom: 60px;"></div>
-      <div class="flower"        style="left: 1250px; bottom: 100px;"></div>
-      <div class="flower purple" style="left: 1420px; bottom: 70px;"></div>
+        <!-- 雲 (3 個、 ふわっとした楕円の重なり) -->
+        <g class="cloud-puff c1">
+          <ellipse cx="280" cy="140" rx="110" ry="36" fill="url(#cloudGrad)"/>
+          <ellipse cx="220" cy="155" rx="60"  ry="26" fill="url(#cloudGrad)"/>
+          <ellipse cx="340" cy="155" rx="70"  ry="28" fill="url(#cloudGrad)"/>
+        </g>
+        <g class="cloud-puff c2">
+          <ellipse cx="980" cy="180" rx="150" ry="44" fill="url(#cloudGrad)"/>
+          <ellipse cx="900" cy="200" rx="80"  ry="32" fill="url(#cloudGrad)"/>
+          <ellipse cx="1060" cy="200" rx="90" ry="34" fill="url(#cloudGrad)"/>
+        </g>
+        <g class="cloud-puff c3">
+          <ellipse cx="1380" cy="130" rx="80" ry="28" fill="url(#cloudGrad)"/>
+          <ellipse cx="1430" cy="142" rx="48" ry="22" fill="url(#cloudGrad)"/>
+        </g>
+
+        <!-- 遠景の山っぽい丘 (奥) -->
+        <path d="M 0 600 Q 200 540 420 580 T 820 560 T 1280 600 T 1600 590 L 1600 700 L 0 700 Z"
+              fill="#C6DCA0" opacity="0.7"/>
+        <path d="M 0 640 Q 240 600 480 630 T 920 620 T 1320 650 T 1600 640 L 1600 740 L 0 740 Z"
+              fill="#9FC07A" opacity="0.85"/>
+
+        <!-- 遠景の木 (2 本、 左奥) -->
+        <g class="soft">
+          <!-- 木1 -->
+          <rect x="156" y="560" width="14" height="60" fill="#7A4F2A"/>
+          <ellipse cx="163" cy="540" rx="60" ry="56" fill="url(#treeFarGrad)"/>
+          <ellipse cx="183" cy="525" rx="36" ry="32" fill="url(#treeFarGrad)" opacity="0.9"/>
+          <!-- 木2 (右奥) -->
+          <rect x="1100" y="540" width="16" height="70" fill="#7A4F2A"/>
+          <ellipse cx="1108" cy="520" rx="68" ry="62" fill="url(#treeFarGrad)"/>
+          <ellipse cx="1140" cy="500" rx="40" ry="36" fill="url(#treeFarGrad)" opacity="0.9"/>
+        </g>
+
+        <!-- 中景の草地のうねり (一段濃い緑) -->
+        <path d="M 0 720 Q 300 690 600 720 T 1200 720 T 1600 710 L 1600 900 L 0 900 Z"
+              fill="#6FA049"/>
+        <path d="M 0 770 Q 280 745 560 770 T 1100 770 T 1600 762 L 1600 900 L 0 900 Z"
+              fill="#5A8E36" opacity="0.85"/>
+
+        <!-- 草の束 (画面下に連続。 中央なぞりエリア 600〜1000 を避ける) -->
+        <g class="grass-tuft s1">
+          <use href="#grassBlade" x="60"   y="800" width="44" height="68"/>
+          <use href="#grassBlade" x="120"  y="810" width="38" height="60"/>
+          <use href="#grassBlade" x="180"  y="800" width="42" height="66"/>
+          <use href="#grassBlade" x="248"  y="815" width="36" height="56"/>
+        </g>
+        <g class="grass-tuft s2">
+          <use href="#grassBlade" x="312"  y="810" width="40" height="62"/>
+          <use href="#grassBlade" x="372"  y="820" width="34" height="54"/>
+        </g>
+        <g class="grass-tuft s3">
+          <use href="#grassBlade" x="1180" y="810" width="42" height="64"/>
+          <use href="#grassBlade" x="1238" y="820" width="36" height="56"/>
+          <use href="#grassBlade" x="1296" y="810" width="40" height="62"/>
+          <use href="#grassBlade" x="1358" y="820" width="34" height="54"/>
+          <use href="#grassBlade" x="1418" y="810" width="42" height="64"/>
+          <use href="#grassBlade" x="1480" y="822" width="36" height="56"/>
+        </g>
+
+        <!-- 花 散らし (8〜12 個、 黄/白/ピンク。 中央の400×400トレース域は避ける) -->
+        <use class="flower-svg"    href="#flowerPink"   x="60"   y="780" width="34" height="34"/>
+        <use class="flower-svg b2" href="#flowerYellow" x="160"  y="800" width="28" height="28"/>
+        <use class="flower-svg b3" href="#flowerWhite"  x="240"  y="788" width="30" height="30"/>
+        <use class="flower-svg"    href="#flowerPink"   x="330"  y="800" width="26" height="26"/>
+        <use class="flower-svg b2" href="#flowerYellow" x="1190" y="788" width="30" height="30"/>
+        <use class="flower-svg b3" href="#flowerWhite"  x="1280" y="800" width="28" height="28"/>
+        <use class="flower-svg"    href="#flowerPink"   x="1370" y="790" width="32" height="32"/>
+        <use class="flower-svg b2" href="#flowerYellow" x="1460" y="800" width="26" height="26"/>
+        <use class="flower-svg b3" href="#flowerWhite"  x="1530" y="788" width="30" height="30"/>
+        <!-- 中央なぞりエリア外、 ポノ立ち位置の手前にもう少しだけ -->
+        <use class="flower-svg"    href="#flowerPink"   x="380"  y="822" width="22" height="22"/>
+        <use class="flower-svg b3" href="#flowerWhite"  x="1140" y="822" width="22" height="22"/>
+      </svg>
+
+      <!-- ② 遠景の草むら (うさぎ尻尾が見え隠れする領域) -->
+      <div class="bush-far" style="right: 130px; top: 360px; width: 360px; height: 200px;"></div>
+      <div class="bush-far" style="right: 80px;  top: 410px; width: 240px; height: 160px;"></div>
+      <div class="bush-far" style="right: 360px; top: 390px; width: 280px; height: 180px;"></div>
     </div>
 
     <!-- 「し」型の小道レイヤー (成功後にドロー) -->
     <svg class="path-layer" id="path-layer" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
-      <!-- 「し」: 上から右下にすうっと下がり、最後に左へカーブ。 1600×900 座標系で描く。 -->
+      <!-- 「し」: 上から右下にすうっと下がり、最後に左へカーブ。 1600×900 座標系。
+           3 層: 影 (下) → 縁取り (中) → 本体 (上)。 path-stroke は walkPonoAlongPath 用なので id を維持。 -->
       <path class="path-shadow-stroke"
+            d="M 780 280 C 800 480, 820 620, 760 700 C 700 760, 580 760, 520 700"/>
+      <path class="path-edge-stroke"
             d="M 780 280 C 800 480, 820 620, 760 700 C 700 760, 580 760, 520 700"/>
       <path class="path-stroke" id="path-stroke"
             d="M 780 280 C 800 480, 820 620, 760 700 C 700 760, 580 760, 520 700"/>
+      <!-- 道沿いの小石・草 (描画後にふわっと出現) -->
+      <g class="path-decor">
+        <!-- 小石 -->
+        <ellipse cx="745" cy="350"  rx="9"  ry="5"  fill="#D7C2A8" stroke="#A88560" stroke-width="1.2"/>
+        <ellipse cx="820" cy="490"  rx="7"  ry="4"  fill="#E5D2B7" stroke="#A88560" stroke-width="1.2"/>
+        <ellipse cx="838" cy="600"  rx="10" ry="5"  fill="#D7C2A8" stroke="#A88560" stroke-width="1.2"/>
+        <ellipse cx="700" cy="720"  rx="8"  ry="4"  fill="#E5D2B7" stroke="#A88560" stroke-width="1.2"/>
+        <ellipse cx="580" cy="745"  rx="9"  ry="5"  fill="#D7C2A8" stroke="#A88560" stroke-width="1.2"/>
+        <!-- 道沿いの小さな草 -->
+        <path d="M735 326 Q 732 314 730 304 Q 736 314 740 326 Z" fill="#6FA94A"/>
+        <path d="M830 540 Q 827 528 826 518 Q 832 528 836 540 Z" fill="#6FA94A"/>
+        <path d="M810 660 Q 807 648 806 638 Q 812 648 816 660 Z" fill="#6FA94A"/>
+        <path d="M615 760 Q 612 748 610 738 Q 616 748 620 760 Z" fill="#6FA94A"/>
+        <!-- 道脇の小さなピンクの花 -->
+        <use href="#flowerPink" x="745" y="395" width="20" height="20"/>
+        <use href="#flowerWhite" x="830" y="555" width="20" height="20"/>
+        <use href="#flowerPink" x="660" y="745" width="20" height="20"/>
+      </g>
     </svg>
 
-    <!-- うさぎのしっぽ プレースホルダ -->
-    <svg class="tail-hint" id="tail-hint" viewBox="0 0 100 100" aria-hidden="true">
-      <!-- 草むらから少しのぞく白い丸尻尾 -->
-      <ellipse cx="50" cy="58" rx="34" ry="28" fill="#FFFFFF" stroke="#E6D9C2" stroke-width="2"/>
-      <ellipse cx="50" cy="58" rx="34" ry="28" fill="url(#tailGrad)" opacity="0.5"/>
+    <!-- うさぎのしっぽ ヒント (草むらからちょこんとのぞくふわふわ尻尾) -->
+    <svg class="tail-hint" id="tail-hint" viewBox="0 0 120 120" aria-hidden="true">
       <defs>
-        <radialGradient id="tailGrad" cx="0.5" cy="0.35" r="0.7">
-          <stop offset="0%" stop-color="#FFFFFF"/>
+        <radialGradient id="tailMainGrad" cx="0.5" cy="0.35" r="0.7">
+          <stop offset="0%"  stop-color="#FFFFFF"/>
+          <stop offset="70%" stop-color="#F8F0DC"/>
           <stop offset="100%" stop-color="#D8C8AC"/>
         </radialGradient>
+        <radialGradient id="tailPuffGrad" cx="0.5" cy="0.4" r="0.7">
+          <stop offset="0%"  stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#EFE5CC"/>
+        </radialGradient>
       </defs>
-      <!-- ふわふわパフ感 -->
-      <circle cx="32" cy="52" r="10" fill="#FFFFFF"/>
-      <circle cx="68" cy="52" r="10" fill="#FFFFFF"/>
-      <circle cx="50" cy="38" r="9"  fill="#FFFFFF"/>
+      <!-- 影 (ふんわり) -->
+      <ellipse cx="60" cy="90" rx="44" ry="10" fill="rgba(0,0,0,0.18)"/>
+      <!-- 中央の白丸尻尾 -->
+      <ellipse cx="60" cy="64" rx="40" ry="34" fill="url(#tailMainGrad)" stroke="#D8C8AC" stroke-width="2"/>
+      <!-- 周りのふわふわパフ (5 個) -->
+      <circle cx="32" cy="58" r="13" fill="url(#tailPuffGrad)" stroke="#E6D9C2" stroke-width="1.5"/>
+      <circle cx="88" cy="58" r="13" fill="url(#tailPuffGrad)" stroke="#E6D9C2" stroke-width="1.5"/>
+      <circle cx="46" cy="38" r="11" fill="url(#tailPuffGrad)" stroke="#E6D9C2" stroke-width="1.5"/>
+      <circle cx="74" cy="38" r="11" fill="url(#tailPuffGrad)" stroke="#E6D9C2" stroke-width="1.5"/>
+      <circle cx="60" cy="30" r="10" fill="url(#tailPuffGrad)" stroke="#E6D9C2" stroke-width="1.5"/>
+      <!-- ハイライト -->
+      <ellipse cx="50" cy="50" rx="10" ry="6" fill="rgba(255,255,255,0.7)"/>
     </svg>
 
-    <!-- うさぎ プレースホルダ (発見後) -->
+    <!-- うさぎ本体 (絵本風かわいい白うさぎ) -->
     <svg class="rabbit" id="rabbit" viewBox="0 0 200 240" aria-hidden="true">
-      <!-- 体 -->
-      <ellipse cx="100" cy="170" rx="62" ry="58" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
-      <!-- 顔 -->
-      <circle cx="100" cy="105" r="48" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
-      <!-- 耳 -->
-      <ellipse cx="78"  cy="48" rx="11" ry="36" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3" transform="rotate(-12 78 48)"/>
-      <ellipse cx="122" cy="48" rx="11" ry="36" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3" transform="rotate(12 122 48)"/>
-      <ellipse cx="78"  cy="52" rx="5" ry="22" fill="#FFC0D2" transform="rotate(-12 78 52)"/>
-      <ellipse cx="122" cy="52" rx="5" ry="22" fill="#FFC0D2" transform="rotate(12 122 52)"/>
-      <!-- 目 -->
-      <circle cx="84"  cy="108" r="5" fill="#2A1C0D"/>
-      <circle cx="116" cy="108" r="5" fill="#2A1C0D"/>
-      <circle cx="86"  cy="106" r="1.6" fill="#FFFFFF"/>
-      <circle cx="118" cy="106" r="1.6" fill="#FFFFFF"/>
-      <!-- 鼻と口 -->
-      <ellipse cx="100" cy="122" rx="3.5" ry="2.5" fill="#FF8FA8"/>
-      <path d="M100 124 Q 94 132 88 130 M100 124 Q 106 132 112 130" stroke="#5B3A1E" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <defs>
+        <radialGradient id="rabbitBodyGrad" cx="0.5" cy="0.4" r="0.7">
+          <stop offset="0%"  stop-color="#FFFAF0"/>
+          <stop offset="80%" stop-color="#F5F0E6"/>
+          <stop offset="100%" stop-color="#E6DCC8"/>
+        </radialGradient>
+        <linearGradient id="rabbitEarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"  stop-color="#FFFAF0"/>
+          <stop offset="100%" stop-color="#E6DCC8"/>
+        </linearGradient>
+      </defs>
+      <!-- 足元の影 -->
+      <ellipse cx="100" cy="226" rx="58" ry="8" fill="rgba(0,0,0,0.22)"/>
+      <!-- 耳 (やや傾けて自然に) -->
+      <path d="M 78 80 Q 64 38 70 18 Q 86 24 92 78 Z"
+            fill="url(#rabbitEarGrad)" stroke="#CFC0A6" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M 76 76 Q 70 44 76 28 Q 84 38 86 76 Z" fill="#FFC8D6" opacity="0.85"/>
+      <path d="M 122 80 Q 136 38 130 18 Q 114 24 108 78 Z"
+            fill="url(#rabbitEarGrad)" stroke="#CFC0A6" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M 124 76 Q 130 44 124 28 Q 116 38 114 76 Z" fill="#FFC8D6" opacity="0.85"/>
+      <!-- 体 (頭と微妙に重ねる) -->
+      <ellipse cx="100" cy="178" rx="60" ry="54" fill="url(#rabbitBodyGrad)" stroke="#CFC0A6" stroke-width="2.5"/>
       <!-- 前足 -->
-      <ellipse cx="76"  cy="200" rx="14" ry="22" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
-      <ellipse cx="124" cy="200" rx="14" ry="22" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="3"/>
+      <ellipse cx="74"  cy="208" rx="14" ry="20" fill="url(#rabbitBodyGrad)" stroke="#CFC0A6" stroke-width="2"/>
+      <ellipse cx="126" cy="208" rx="14" ry="20" fill="url(#rabbitBodyGrad)" stroke="#CFC0A6" stroke-width="2"/>
+      <!-- 頭 -->
+      <ellipse cx="100" cy="118" rx="50" ry="46" fill="url(#rabbitBodyGrad)" stroke="#CFC0A6" stroke-width="2.5"/>
+      <!-- ほっぺ -->
+      <circle cx="70"  cy="130" r="7" fill="#FFC8D6" opacity="0.8"/>
+      <circle cx="130" cy="130" r="7" fill="#FFC8D6" opacity="0.8"/>
+      <!-- 目 -->
+      <ellipse cx="84"  cy="118" rx="5" ry="6" fill="#2A1C0D"/>
+      <ellipse cx="116" cy="118" rx="5" ry="6" fill="#2A1C0D"/>
+      <circle cx="86"  cy="115" r="1.8" fill="#FFFFFF"/>
+      <circle cx="118" cy="115" r="1.8" fill="#FFFFFF"/>
+      <!-- 鼻 (小さなピンク三角) -->
+      <path d="M 96 132 L 104 132 L 100 138 Z" fill="#FF8FA8" stroke="#D86C8A" stroke-width="1"/>
+      <!-- 口 -->
+      <path d="M 100 138 Q 100 144 100 145 M 100 145 Q 94 150 90 148 M 100 145 Q 106 150 110 148"
+            stroke="#5B3A1E" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- 額のハイライト -->
+      <ellipse cx="92" cy="98" rx="10" ry="6" fill="rgba(255,255,255,0.5)"/>
     </svg>
 
     <!-- ポノ立ち絵 -->
@@ -650,18 +939,39 @@ html, body {
     <!-- タップ案内 -->
     <div class="tap-prompt" id="tap-prompt">タップしてはじめる ▶</div>
 
-    <!-- カード演出 -->
+    <!-- カード演出 (絵本風 木枠 + クリーム紙) -->
     <div class="card-overlay" id="card-overlay">
       <div class="letter-card">
-        <svg class="card-icon" viewBox="0 0 100 100" aria-hidden="true">
-          <!-- うさぎ尻尾アイコン -->
-          <circle cx="32" cy="52" r="14" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
-          <circle cx="68" cy="52" r="14" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
-          <circle cx="50" cy="38" r="13" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
-          <ellipse cx="50" cy="58" rx="36" ry="28" fill="#FFFFFF" stroke="#D8C8AC" stroke-width="2"/>
+        <!-- 四隅の葉っぱ装飾 -->
+        <svg class="card-leaf tl" viewBox="0 0 60 60" aria-hidden="true">
+          <path d="M 6 30 Q 6 6 30 6 Q 30 22 22 30 Q 14 38 6 30 Z" fill="#7BB05A" stroke="#4F7A35" stroke-width="2"/>
+          <path d="M 10 28 Q 18 22 26 12" stroke="#3F6E26" stroke-width="1.5" fill="none" stroke-linecap="round"/>
         </svg>
-        <div class="card-kana"  id="card-kana">し</div>
-        <div class="card-word"  id="card-word">しっぽ</div>
+        <svg class="card-leaf tr" viewBox="0 0 60 60" aria-hidden="true">
+          <path d="M 6 30 Q 6 6 30 6 Q 30 22 22 30 Q 14 38 6 30 Z" fill="#7BB05A" stroke="#4F7A35" stroke-width="2"/>
+          <path d="M 10 28 Q 18 22 26 12" stroke="#3F6E26" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <svg class="card-leaf bl" viewBox="0 0 60 60" aria-hidden="true">
+          <path d="M 6 30 Q 6 6 30 6 Q 30 22 22 30 Q 14 38 6 30 Z" fill="#7BB05A" stroke="#4F7A35" stroke-width="2"/>
+          <path d="M 10 28 Q 18 22 26 12" stroke="#3F6E26" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <svg class="card-leaf br" viewBox="0 0 60 60" aria-hidden="true">
+          <path d="M 6 30 Q 6 6 30 6 Q 30 22 22 30 Q 14 38 6 30 Z" fill="#7BB05A" stroke="#4F7A35" stroke-width="2"/>
+          <path d="M 10 28 Q 18 22 26 12" stroke="#3F6E26" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <!-- 内側のクリーム紙 -->
+        <div class="card-paper">
+          <div class="card-kana"  id="card-kana">し</div>
+          <div class="card-word"  id="card-word">しっぽ</div>
+          <!-- 右下のうさぎ尻尾アイコン -->
+          <svg class="card-icon" viewBox="0 0 100 100" aria-hidden="true">
+            <ellipse cx="50" cy="62" rx="36" ry="28" fill="#FFFAF0" stroke="#CFC0A6" stroke-width="2"/>
+            <circle cx="32" cy="54" r="14" fill="#FFFAF0" stroke="#CFC0A6" stroke-width="2"/>
+            <circle cx="68" cy="54" r="14" fill="#FFFAF0" stroke="#CFC0A6" stroke-width="2"/>
+            <circle cx="50" cy="40" r="13" fill="#FFFAF0" stroke="#CFC0A6" stroke-width="2"/>
+            <ellipse cx="44" cy="54" rx="8" ry="5" fill="rgba(255,255,255,0.7)"/>
+          </svg>
+        </div>
         <div class="card-buttons">
           <button class="card-btn primary" id="btn-retry">もういちど</button>
           <button class="card-btn" id="btn-close">とじる</button>
@@ -1015,6 +1325,12 @@ function onTraceSuccess() {
       const len = pathStrokeEl.getTotalLength();
       pathStrokeEl.style.strokeDasharray = len;
       pathStrokeEl.style.strokeDashoffset = len;
+      // 縁取り (path-edge-stroke) も同じ d を共有しているので同様にセット
+      const edgeEl = document.querySelector('#path-layer .path-edge-stroke');
+      if (edgeEl) {
+        edgeEl.style.strokeDasharray = len;
+        edgeEl.style.strokeDashoffset = len;
+      }
     } catch (_) { /* getTotalLength 不可ブラウザではフォールバック (CSS の 4000 が効く) */ }
     // 次フレームで draw クラスを付与してアニメ発火 (CSS keyframes が dashoffset:0 まで遷移)
     requestAnimationFrame(() => pathLayerEl.classList.add('draw'));
@@ -1136,6 +1452,11 @@ function resetStage() {
   // M-5 で動的に書き込んだ stroke-dasharray/offset もクリア (CSS 既定値に戻す)
   pathStrokeEl.style.strokeDasharray = '';
   pathStrokeEl.style.strokeDashoffset = '';
+  const edgeEl = document.querySelector('#path-layer .path-edge-stroke');
+  if (edgeEl) {
+    edgeEl.style.strokeDasharray = '';
+    edgeEl.style.strokeDashoffset = '';
+  }
   rabbitEl.classList.remove('show', 'hop');
   tailHintEl.style.display = '';
   ponoImgEl.src = '../assets/images/characters/pono/pono_001.png';

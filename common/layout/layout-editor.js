@@ -4202,6 +4202,35 @@
       }
 
       // textarea change で overrides 更新 + ライブプレビュー
+      // E3 (2026-05-16, sw v1027): ライブプレビュー — 実機の吹き出しに即時反映。
+      //   v1022 で window.setHakaseDialogue 経由にしたが、 quizland/index.html の
+      //   主スクリプトが IIFE で包まれているため、 編集パネルが先にロードされて
+      //   `typeof window.setHakaseDialogue === 'function'` が false になるタイミング
+      //   (= 主スクリプト評価がまだ終わっていない / 別 page で未公開) が存在し、
+      //   結果として textarea を編集しても吹き出しが「ヒント！」のまま動かなかった。
+      //   修正方針: setHakaseDialogue が居れば呼んで PonoBabble.cancelAll 等の副作用も
+      //   走らせる + 居なくても #char-hint-text を**直接** textContent で書き換える
+      //   フォールバックを必ず通す。 これでどんな読み込み順でもライブプレビューが効く。
+      // E4 (2026-05-16, sw v1028): focus でも同じプレビュー処理を流すため
+      //   ヘルパ `_previewToBubble` に切り出して input / focus 両方から呼ぶ。
+      //   focus 時に即プレビュー → どの行を編集中か実機で確認できるようにする。
+      function _previewToBubble(value) {
+        var v = value == null ? '' : String(value);
+        try {
+          if (typeof window.setHakaseDialogue === 'function') {
+            window.setHakaseDialogue(v);
+            return;
+          }
+          var hintEl = document.getElementById('char-hint-text');
+          if (hintEl) hintEl.textContent = v;
+        } catch (e) {
+          // 最終フォールバック: setHakaseDialogue 内で例外が出ても直書きは試す
+          try {
+            var hintEl2 = document.getElementById('char-hint-text');
+            if (hintEl2) hintEl2.textContent = v;
+          } catch (_) {}
+        }
+      }
       contentEl.querySelectorAll('textarea').forEach(function (ta) {
         ta.addEventListener('input', function () {
           var k = ta.dataset.key;
@@ -4214,10 +4243,12 @@
             overrides[k] = ta.value;
           }
           setDirty(true);
-          // E3: ライブプレビュー — 実機の吹き出しに即時反映
-          if (typeof window.setHakaseDialogue === 'function') {
-            try { window.setHakaseDialogue(ta.value); } catch (e) {}
-          }
+          _previewToBubble(ta.value);
+        });
+        // E4 (sw v1028): フォーカス時に「この行をプレビュー中」として吹き出しを切替。
+        //   保存処理 (_persistOverride 等) には触らず、 純粋に表示更新のみ。
+        ta.addEventListener('focus', function () {
+          _previewToBubble(ta.value);
         });
       });
 
