@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-editor-pause-toggle
-description: quizland ?edit=1 レイアウトエディターに ⏸/▶ Pause トグル追加 + 結果画面スキップガード撤去 (sw v1034, 2026-05-16)。 pause 中は「次の問題への進行」 だけ凍結、 チップタップ・正解判定・SE・アニメは通常動作。 共通 interface: window._quizlandPaused + body.layout-editor-paused の OR 判定。
+description: quizland ?edit=1 レイアウトエディターに ⏸/▶ Pause トグル追加 + 結果画面スキップガード撤去 (sw v1034→v381, 2026-05-16)。 pause 中は「次の問題への進行」 だけ凍結、 チップタップ・正解判定・SE・アニメは通常動作。 共通 interface: window._quizlandPaused + body.layout-editor-paused の OR 判定。 v1035 (sw v381) で旧 layout-editor-on ガード 4 箇所 (chip / 吹き出し / 問題文 speaker / 答え speaker) を同じ OR 判定に統一し、 Pause OFF 時の chip 反応復活。
 metadata:
   type: feature
 ---
 
-# quizland ?edit=1 Pause トグル + 結果画面復活 (sw v1034, 2026-05-16)
+# quizland ?edit=1 Pause トグル + 結果画面復活 (sw v1034→v381, 2026-05-16)
 
 ## なに
 
@@ -118,3 +118,96 @@ AGENTS.md §3 厳守 (本機能はランタイム挙動の追加のみ、 レイ
 - `common/layout/layout-editor.css:1181-1196` — `#le-paused-overlay` 右上 fixed ラベル
 - `common/layout/layout-editor.css:1198` — `@keyframes le-paused-pulse` 1.6s ease-in-out infinite
 - `sw.js:4` — `CACHE_VERSION = 1034`
+
+## v1035 (sw v381, 2026-05-16) 追加修正: 旧 layout-editor-on ガード 4 箇所を Pause guard に統一
+
+### 残課題発見
+
+v1034 適用直後、 ユーザーから 「一時停止ボタンは押してないのに、 選択肢を押しても正解が出ません。 次に進まないよ」 と報告。 v1034 の設計上は「Pause OFF なら通常通り chip 反応、 Pause ON だけ進行抑止」 のはずだったが、 実際は `?edit=1` で開いた瞬間から Pause を一度も押していないのに chip / ヒント / ナレーションがすべて無反応の状態だった。
+
+### 真因
+
+v1034 で **Pause トグル経路は正しく追加**されたが、 旧 v816 由来の `?edit=1` モード全停止ガード:
+
+```js
+if (document.body.classList.contains('layout-editor-on')) return;
+```
+
+が `quizland/index.html` 内の chip pointerdown / bubble click / question-speaker / answer-speaker の **4 箇所に残存**していた。 これらは Pause トグルとは完全に別経路で、 `?edit=1` が立っている限り `body.layout-editor-on` は常時 true → 4 箇所すべて 100% 早期 return → chip / ヒント / ナレーションが全部ブロックされる。
+
+v1034 のメモリ本文に書いてある共通 interface (`window._quizlandPaused || body.layout-editor-paused`) は **nextQuestion 系の 2 箇所にしか適用されていなかった**。 「同種の旧ガードが他にもないか」 の grep 全件追跡を行わず、 「触らないほうが安全」 と判断して 4 箇所を温存してしまったのが設計不整合の原因。
+
+### v1035 の変更
+
+4 箇所のガード条件を nextQuestion 系と同じ OR 判定に**統一**:
+
+```js
+if (window._quizlandPaused ||
+    (document.body && document.body.classList.contains('layout-editor-paused'))) {
+  return;
+}
+```
+
+変更箇所 (条件式のみ置換、 処理本体は一切触らない):
+
+| 行 | 機能 | 旧 → 新 |
+|---|---|---|
+| `quizland/index.html:3713` | bubble click → `showHint2` (ヒント2 表示) | `layout-editor-on` → OR 判定 |
+| `quizland/index.html:4915` | chip pointerdown → `onChoice` (正解判定) | 同上 |
+| `quizland/index.html:5173` | question-speaker onclick (問題文ナレーション再生) | 同上 |
+| `quizland/index.html:5380` | answer-speaker onclick (4 択読み上げ) | 同上 |
+
+`sw.js` の `CACHE_VERSION` は 380 → 381 bump。 layout-editor.js / .css 側は無変更 (v1034 で完成済)。
+
+### 温存箇所 (= 引き続き `layout-editor-on` ガードを残す)
+
+以下は編集中の state リセット事故防止のため意図的に `layout-editor-on` ガードを残す:
+
+- `_isEditMode()` ヘルパ + HUD ボタン抑止 (retry / mode change / settings) — 編集中に HUD で state を吹き飛ばされないため
+- chip text override visual mark refresh — 編集モード専用の装飾再描画
+- debug nav — 編集モード限定の問題切替 UI
+- 装飾系 CSS (`.layout-editor-on` セレクタ) — Pause とは独立した編集中ビジュアル
+
+これらは Pause トグルとは無関係で、 「`?edit=1` モードである」 こと自体を条件にすべき処理。
+
+### 完成した挙動
+
+`?edit=1` で開いた直後の Pause OFF 状態:
+
+- chip タップ → 正解/不正解判定 → SE / アニメ / スタンプ → reveal シーケンス → 「次へ」 ボタン → 次の問題 → 最終問題後は **結果画面** (v1034 で復活済) → 「もういちど」 ボタンまで**フルフロー動作**
+- ヒント吹き出しタップ → ヒント2 表示
+- 問題文 speaker / 答え speaker タップ → ナレーション再生
+
+Pause ON 切替で 4 箇所全部凍結:
+
+- chip タップ → 無反応 (早期 return)
+- ヒント吹き出しタップ → 無反応
+- speaker タップ → 無反応
+- 既存の nextQuestion 系 2 箇所も凍結 → 「次へ」 ボタン押しても進まない
+
+→ v1034 のメモリ本文に書いてあった「Pause 中は進行だけ凍結、 それ以外は通常動作」 という設計が、 **v1035 で初めて実現**した。 (v1034 単体では `?edit=1` で常に 4 箇所抑止のため、 設計と実装が乖離していた)
+
+### 教訓
+
+**新機能追加時は「同種の旧ガードがないか grep 全件追跡」 が必須**。
+
+v1034 で Pause トグルを追加した際、 chip pointerdown / 吹き出しクリック / ナレーション再生の 4 箇所の旧 `layout-editor-on` ガードを 「触らないほうが安全」 と判断して温存した。 これは「既存挙動を壊さない」 という保守的判断としては筋が通っているように見えたが、 結果として **新機能 (Pause トグル) と旧機能 (`?edit=1` 全停止) の設計意図が衝突**し、 「Pause を押していないのに常に抑止」 という不整合が発生した。
+
+クロスレビューエージェントは v1034 計画書の 「触らないものリスト」 を素直に受け取って HIGH 指摘を出さなかった。 これはレビュアの責任ではなく、 元の計画段階での判断ミス: **「新ガードを追加するなら、 同じ目的の旧ガードが他にもないか全件確認し、 統一するか温存するかを意識的に決める」** という手順が抜けていた。
+
+今後、 編集モード系のガード/抑止系の新機能追加時は:
+
+1. まず `grep -n "layout-editor-on\|_isEditMode\|edit=1" path/` で全件列挙
+2. 各 hit について「新ガードに統一すべきか」 / 「旧のまま温存すべきか」 を**明示的に判断**
+3. 計画書に「統一: N 箇所 / 温存: M 箇所 (温存理由)」 を書く
+4. 温存判断には**具体的な事故シナリオ**を併記 (例: 「HUD retry ボタンは編集中の state を吹き飛ばすので `layout-editor-on` 判定でブロックすべき」)
+
+これを v1034→v1035 の失敗から学んだ手順として、 今後の編集モード系タスクで適用する。
+
+### 関連ファイル (file:line, v1035 追加分のみ)
+
+- `quizland/index.html:3713` — bubble click ガード OR 判定化
+- `quizland/index.html:4915` — chip pointerdown ガード OR 判定化
+- `quizland/index.html:5173` — question-speaker onclick ガード OR 判定化
+- `quizland/index.html:5380` — answer-speaker onclick ガード OR 判定化
+- `sw.js:4` — `CACHE_VERSION = 381` (380 → 381 bump)
