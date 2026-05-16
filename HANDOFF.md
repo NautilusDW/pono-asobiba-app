@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` を受領。HANDOFF / git log / `tmp/alpha_pending/43/` を確認し、対象 raw 10 枚は未納品・batch 30/31 は別件と確認済。`tmp/alpha_pending/43/` に raw 納品する。 (by Codex)
+- 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: writing-mori-shi stage1 raw 画像 10 種を `tmp/alpha_pending/43/` に納品完了 (bg / pono x3 / rabbit x3 / path overlay / card frame / shippo icon)。alpha 抜き・切り抜き・本配置・sw.js bump は未実施、ユーザー/Claude 側の後工程待ち。 (by Codex)
 
 - 2026-05-14 - [batch:28-maze-leaf-glow-from-scratch-mask] Codex: user 指摘「スタートとゴールの位置が違う、一段上に上げている」を受領。添付された最新ラフ画像を正本として、青/赤の円形クリアリングを下段の現在位置に固定し、生成モデル任せではなくラフのグリッド/マスクを保持する方式で `tmp/alpha_pending/28/` に 1 から再作成する。 (by Codex)
 
