@@ -62,13 +62,17 @@ html, body {
    quizland と同じ fitStage パターン。
 ─────────────────────────────────────────────── */
 #stage-wrap {
+  /* quizland と同じ: ここで中央寄せはしない。 JS の fitStage が
+     translate(ox,oy) + scale で配置する。 flex 中央寄せを併用すると
+     未スケール 1600×900 box を一旦中央配置 → さらに translate が重複し、
+     stage が右下に偏る (ウルトラワイドで顕著) ため、 v1029 で撤去。 */
   position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: center;
   background: #1a1208;
   overflow: hidden;
 }
 #stage {
-  position: relative;
+  position: absolute;
+  top: 0; left: 0;
   width: 1600px; height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
