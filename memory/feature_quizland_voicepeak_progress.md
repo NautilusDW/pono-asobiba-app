@@ -1,6 +1,6 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v383, 2026-05-16 時点)。 完了 3 カテゴリ (order_color / count_total / number_sequence = 60/181 問 = 33%)、 準備完了 1 (shape_name)、 未着手 4 (trivia / weather / opposite / body)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。
+description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v383, 2026-05-16 時点)。 完了 3 カテゴリ (order_color / count_total / number_sequence = 60/181 問 = 33%)、 準備完了 1 (shape_name)、 未着手 4 (trivia / weather / opposite / body)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。
 metadata:
   type: feature
 ---
@@ -89,3 +89,25 @@ metadata:
 - `tools/voicepeak/voicepeak_user_dict.vdc2`
 - `assets/tts/manifest.json` (120 エントリ登録済)
 - `assets/tts/quiz/q###_*.wav` (60 問 + g_num 11 件 + α)
+
+## 漢字化方針 (sw v384 想定、 2026-05-16 ユーザー指示)
+
+- **適用範囲**: shape_name 以降の CSV (= shape_name / weather / opposite / body / trivia)
+- **適用対象外**: 完了済 3 カテゴリ (order_color / count_total / number_sequence) は wav 生成済のため**再生成しない** (= ひらがな CSV のまま放置、 history としてのみ保持)
+- **目的**: VOICEPEAK の形態素解析・アクセント推定の安定化、 同音異義語の誤読回避 (例「あめ」 → 「雨」/「飴」)、 辞書追加負荷の軽減
+- **漢字化ガイドライン**:
+  - 名詞: 漢字化 (ほし → 星、 かたち → 形)
+  - 動詞: 漢字化 (いくつ → 幾つ、 補助動詞「ある」 はカナ維持)
+  - 形容詞: 漢字化可能なら (おおい → 多い、 まんまるい → 真ん丸い)
+  - 副詞・連体詞: 常用漢字なら漢字化、 そうでなければカナ維持 (どんな / どれ はカナ維持)
+  - 数詞: 漢数字化 (ご → 五、 さん → 三)
+  - 助数詞: 漢字化 (こ → 個、 ひとつ → 一つ)
+  - 美化語の「お」: 漢字化しない (お花 / お星様 はそのまま)
+  - 助詞: そのまま (は / の / が / を / と)
+  - カタカナ語: 漢字化しない (ピザ / ハート / ダイヤ)
+- **適用済 CSV** (= 今回 shape_name で実施):
+  - `voicepeak_lines_unique_phase1_shape_name.csv` (26 行)
+  - `voicepeak_lines_phase1_shape_name.csv` (46 行)
+- **次回適用予定**: weather / opposite / body / trivia の CSV (= 着手時に漢字化してから書き出し)
+- **既存博士パート計画との関係**: [[feature-quizland-voicepeak-pivot]] に「博士パート向けの漢字混じり化計画」 があったが、 v384 でくるみパート (shape_name 以降) にも適用拡大
+- **試聴駆動方針との両立**: 漢字化により辞書追加は減るが完全に無くなるわけではない。 試聴で読み崩れがあれば従来通り辞書追加 → 再書き出し
