@@ -286,6 +286,11 @@ html, body {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.35s ease, transform 0.35s ease;
+  /* v1030: 吹き出しは案内表示専用。 上層 (z=20) で trace-area (z=15) の
+     下半分に被るため、 pointer-events: none にしてクリック/ドラッグを
+     trace-svg にスルーさせる。 これがないと bubble 矩形内のなぞりが
+     全く反応しないバグになる。 */
+  pointer-events: none;
 }
 .bubble.show { opacity: 1; transform: translateY(0); }
 /* しっぽ: 吹き出し左下からポノ側 (左下) に向けて伸ばす三角 */
@@ -320,7 +325,10 @@ html, body {
   left: 50%; top: 50%;
   transform: translate(-50%, -52%);
   width: 640px; height: 640px;
-  z-index: 15;
+  /* v1030: bubble (z=20) より上に持ち上げて、 万一 bubble に
+     pointer-events が戻った場合でもなぞり SVG が pointerdown を
+     拾えるようにする。 stage-title (z=30) はトレース矩形外なので衝突しない。 */
+  z-index: 22;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s ease;
@@ -329,6 +337,10 @@ html, body {
 .trace-area svg {
   width: 100%; height: 100%;
   touch-action: none;
+  /* v1030: SVG ルートが pointer-events を明示しないと、
+     子要素の paint 状況によっては pointerdown がスルーされる
+     ケースがある (iOS Safari + 大きい透明領域)。 明示的に auto にする。 */
+  pointer-events: auto;
 }
 .trace-bg {
   fill: rgba(255,253,244,0.55);
@@ -1241,7 +1253,8 @@ function pointerDown(e) {
   startedNearStart = true;
   userPoints.push({ x: p.x, y: p.y });
   updateUserPath();
-  try { traceSvgEl.setPointerCapture(e.pointerId); } catch (_) {}
+  // v1030: ハンドラは traceAreaEl に attach されているため、 capture も同じ要素に。
+  try { traceAreaEl.setPointerCapture(e.pointerId); } catch (_) {}
   e.preventDefault();
 }
 
@@ -1265,7 +1278,8 @@ function pointerMove(e) {
 function pointerUp(e) {
   if (!drawing) return;
   drawing = false;
-  try { traceSvgEl.releasePointerCapture(e.pointerId); } catch (_) {}
+  // v1030: setPointerCapture と対応する解放先も traceAreaEl に。
+  try { traceAreaEl.releasePointerCapture(e.pointerId); } catch (_) {}
   evaluateTrace();
 }
 
@@ -1446,11 +1460,16 @@ let pointerHandlersBound = false;
 function bindPointerEvents() {
   if (pointerHandlersBound) return;
   pointerHandlersBound = true;
-  traceSvgEl.addEventListener('pointerdown', pointerDown);
-  traceSvgEl.addEventListener('pointermove', pointerMove);
-  traceSvgEl.addEventListener('pointerup', pointerUp);
-  traceSvgEl.addEventListener('pointercancel', pointerCancel);
-  traceSvgEl.addEventListener('pointerleave', pointerCancel);
+  // v1030: 外側の div コンテナ (traceAreaEl) に attach する。 SVG 内部の
+  // 透明領域 (guide-path のストローク外側) は pointer-events: visiblePainted
+  // のため traceSvgEl 単体だとイベントを拾えないが、 親 div は通常の HTML 要素
+  // なので矩形全体で確実に pointerdown を受け取れる。 SVG 内部のイベントも
+  // バブリングで親に届くため、 ハンドラ重複なく一括で処理できる。
+  traceAreaEl.addEventListener('pointerdown', pointerDown);
+  traceAreaEl.addEventListener('pointermove', pointerMove);
+  traceAreaEl.addEventListener('pointerup', pointerUp);
+  traceAreaEl.addEventListener('pointercancel', pointerCancel);
+  traceAreaEl.addEventListener('pointerleave', pointerCancel);
 }
 
 function resetStage() {
