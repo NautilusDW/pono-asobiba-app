@@ -2,29 +2,29 @@
 
 > 親計画: [BATCH-PLAN-PHASE1-PHASE2.md](./BATCH-PLAN-PHASE1-PHASE2.md)
 >
-> ユニーク件数: **15 件** (元 48 行、 dedup により 48 → 15 に圧縮 — 「りんごは いくつ？」 「ふたつ」 等の問題文・選択肢が複数 q### で再利用されるため)
+> ユニーク件数: **14 件** (元 48 行、 dedup により 48 → 14 に圧縮 — 内訳: 問題文 5 種 (「りんごは いくつ？」 「いちごは いくつ？」 「おはなは いくつ？」 「おほしさまは いくつ？」 「みかんは いくつ？」) + 答え 9 種 (「ひとつ」 「ふたつ」 「みっつ」 「よっつ」 「いつつ」 「むっつ」 「ななつ」 「やっつ」 「ここのつ」) = 14 ユニーク)
 > 全件展開数: 24 問 = 48 ファイル (q024_q.wav 〜 q047_c.wav、 = 1-indexed で Q25 〜 Q48) ← 展開 JSON 参照
-> 選択肢の数字音声 (1つ〜10こ) は別途 `g_num_0.wav` 〜 `g_num_10.wav` を動的マッピングで再生する仕組み (= number_sequence と同じ)。 本タスクで生成するのは問題文 + 選択肢「ひとつ」〜「ここのつ」 のみ。
+> 答え wav (= 和語数詞 9 種) は本バッチで個別に生成する (= 14 ユニークの中に含まれる)。 一方、 数読み「いち / に / さん …」 用の `g_num_0.wav` 〜 `g_num_10.wav` は number_sequence で使う別物で、 count_total の答え wav とは用途が異なる (count_total では使わない)。
 
 ## 前提
 
 - VOICEPEAK 起動済
-- ユーザー辞書 **v85 (旧 80 → +5 語: 「りんご」 「いちご」 「おはな」 「おほしさま」 「みかん」)** をインポート済 (新規 / 再インポート)
-  - CSV: `tools/voicepeak/voicepeak_user_dict.csv` (85 行 + ヘッダ 1)
+- ユーザー辞書 **(count_total 用 5 語追加済、 .vdc2 再生成済 — 追加語: 「りんご」 「いちご」 「おはな」 「おほしさま」 「みかん」)** をインポート済 (新規 / 再インポート)
+  - CSV: `tools/voicepeak/voicepeak_user_dict.csv`
   - VDC2: `tools/voicepeak/voicepeak_user_dict.vdc2` (本バッチ向けに再生成済)
 - プリセット **「女性4」** を選択 (くるみ確定話者、 [memory/feature_quizland_voicepeak_pivot_jyosei4.md](../../memory/feature_quizland_voicepeak_pivot_jyosei4.md))
 
 ## Step 1: VOICEPEAK で CSV インポート
 
 - **ファイル**: `tools/voicepeak/voicepeak_lines_unique_phase1_count_total.csv`
-  - 1 列目 = `女性4` (全 15 件統一済)
+  - 1 列目 = `女性4` (全 14 件統一済)
   - 2 列目 = speech (ひらがな + 「？」、 数え方は「ふたつ」「みっつ」等の和語)
   - ヘッダなし、 UTF-8 (BOM なし)、 CRLF
 - **プリセット**: 「女性4」
 - **出力ファイル名 (バッチ識別子)**: `count_total`
 - **サンプルレート**: 44100 Hz
 - **命名規則**: 連番 `0, 1, 2, ...` / プレフィックスなし / サフィックスなし
-  - → 出力: `0-count_total.wav` 〜 `14-count_total.wav` (15 ファイル)
+  - → 出力: `0-count_total.wav` 〜 `13-count_total.wav` (14 ファイル)
 - **出力先フォルダ**: `D:\AppDevelopment\pono-asobiba-app\tmp\quizland_NA\count_total`
 
 > 命名規則は他カテゴリと同じ。 Expand スクリプトは BaseName 先頭の数字で natural sort するため、 `0`/`00`/`001` のいずれでも OK。
@@ -33,7 +33,7 @@
 
 VOICEPEAK GUI で全行選択 → 書き出し → Step 1 のフォルダへ保存。
 
-→ `0-count_total.wav` 〜 `14-count_total.wav` (15 件) が生成される。
+→ `0-count_total.wav` 〜 `13-count_total.wav` (14 件) が生成される。
 
 ## Step 3: Expand スクリプト実行 (q番号への展開)
 
@@ -103,13 +103,13 @@ powershell -ExecutionPolicy Bypass -File tools\voicepeak\Expand-VoicepeakUniqueW
 | 和語数えのアクセント | 「ひとつ」 「ふたつ」 「みっつ」 〜 「ここのつ」 が伝統的な和語数え (= 大半が核 1 / 一部 0) として崩れず読まれるか。 とくに 「むっつ」 (促音) と 「ここのつ」 (4 モーラ) の連続性 |
 | 数字選択肢の不在 | 「2つ」 「10こ」 等の数字混じり選択肢は g_num_*.wav 側で再生される (= 本バッチで生成しない)。 unique CSV に数字混入していないか念のため確認 (CSV 確認済) |
 
-## 辞書カバレッジ (count_total Phase 1 全 15 件)
+## 辞書カバレッジ (count_total Phase 1 全 14 件)
 
 ### 既に登録済の和語数え (1-10 つ)
 - ひとつ / ふたつ / みっつ / よっつ / いつつ / むっつ / ななつ / やっつ / ここのつ (辞書既存)
 - 助数詞 「いくつ」 (辞書既存)
 
-### 本バッチで追加した名詞 (5 語、 辞書 80 → 85)
+### 本バッチで追加した名詞 (5 語、 count_total 用追加分)
 - **りんご (リンゴ, 核 0, 名詞)**
 - **いちご (イチゴ, 核 0, 名詞)**
 - **おはな (オハナ, 核 2, 名詞)**
@@ -118,13 +118,13 @@ powershell -ExecutionPolicy Bypass -File tools\voicepeak\Expand-VoicepeakUniqueW
 
 ### 結論
 
-**count_total Phase 1 で必要な語彙はすべて辞書 v85 でカバー完了**。 試聴前に追加すべき語は無し (試聴後に読み崩れ発見した場合のみ追加)。
+**count_total Phase 1 で必要な語彙はすべて辞書 (count_total 用 5 語追加済、 .vdc2 再生成済) でカバー完了**。 試聴前に追加すべき語は無し (試聴後に読み崩れ発見した場合のみ追加)。
 
 ---
 
 ## 注意
 
 - 既存 CSV (`voicepeak_lines_unique_phase1_count_total.csv` / `voicepeak_lines_phase1_count_total.csv`)、 展開 JSON (`voicepeak_unique_expand_count_total_phase1.json`)、 filename map (`voicepeak_filename_map_phase1_count_total.json`) は **無改変** (本タスクで触っていない)
-- 辞書は別エージェントが +5 語 (= 80 → 85)、 VDC2 再生成済 (本タスクでは触らない)
+- 辞書は別エージェントが count_total 用 5 語を追加済、 VDC2 再生成済 (本タスクでは触らない)
 - `quizland/index.html` / `sw.js` / `saved-layout.json` も触っていない
 - commit はしていない (ユーザー指示通り)
