@@ -1268,6 +1268,18 @@ body.layout-editor-on .stage-pono::after {
   pointer-events: none;
   text-shadow: 0 0 2px #fff;
 }
+/* 2026-05-16 (sw v1017): エディタモード (?edit=1) では タイトル画面
+   (.start-screen z:50) と モード選択 (.mode-screen z:49) が viewport を
+   完全に覆ってしまい、 その裏にある `.stage-pono` プレースホルダや stage 上の
+   編集対象が一切タップできなかった。 ?debug=all モードでは _qzDebugInit が
+   両 screen に .hidden を付けてスキップする (line 8070 付近)。 エディタ
+   モードでも同じ扱いにすべき。 CSS で強制非表示にして、 エディタ起動直後から
+   stage が編集可能になるようにする。 通常モード (?edit=1 なし) には body
+   クラスが付かないので影響ゼロ。 */
+body.layout-editor-on .start-screen,
+body.layout-editor-on .mode-screen {
+  display: none !important;
+}
 
 /* ===== Answer column (right) ===== */
 .a-col {

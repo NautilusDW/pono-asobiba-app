@@ -133,6 +133,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-16T03:18:47Z - クイズランド: ?edit=1 で .stage-pono が見えない真の原因は start-screen/mode-screen のフルスクリーンオーバーレイで裏に隠れていた事、エディタモード時にそれらを非表示にする CSS を追加 (sw.js v1017)
+- **タスク**: クイズランド: ?edit=1 で .stage-pono が見えない真の原因は start-screen/mode-screen のフルスクリーンオーバーレイで裏に隠れていた事、エディタモード時にそれらを非表示にする CSS を追加 (sw.js v1017)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 61
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 27, "ToolSearch": 1, "Grep": 1, "Bash": 31, "Read": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
+### 2026-05-16T03:18:03Z - クイズランドのエディタモードで .stage-pono プレースホルダが見えない問題を修正: start-screen/mode-screen (z:50/49 fixed inset:0) が viewport を覆って裏側の placeholder を隠していた根本原因に対し、CSS で edit モード時は両 screen を display:none 化
+- **タスク**: クイズランドのエディタモードで .stage-pono プレースホルダが見えない問題を修正: start-screen/mode-screen (z:50/49 fixed inset:0) が viewport を覆って裏側の placeholder を隠していた根本原因に対し、CSS で edit モード時は両 screen を display:none 化
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 59
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 27, "ToolSearch": 1, "Grep": 1, "Bash": 30}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
 ### 2026-05-16T03:03:01Z - クイズランド: .stage-pono がエディタで表示されない原因(エディタモード時にdisplay:noneにする旧CSSが残存)を撤去、プレースホルダ化、sw.js v1016
 - **タスク**: クイズランド: .stage-pono がエディタで表示されない原因(エディタモード時にdisplay:noneにする旧CSSが残存)を撤去、プレースホルダ化、sw.js v1016
 - **結果**: 成功
@@ -222,31 +248,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 4, "Read": 4, "Bash": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-16T00:18:56Z - クイズランド: 出題中=pono-thinking ループ + 正解時=pono-correct-stamp ジャンプ (5+4 frame webp 配置, AnimationPlayer 経路, await競合修正済, sw.js v1013)
-- **タスク**: クイズランド: 出題中=pono-thinking ループ + 正解時=pono-correct-stamp ジャンプ (5+4 frame webp 配置, AnimationPlayer 経路, await競合修正済, sw.js v1013)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 48
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 23, "ToolSearch": 1, "Grep": 1, "Bash": 23}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-16T00:18:06Z - quizland/index.html: playStagePonoThinking と playStagePonoHooray の await 競合バグを token ベース自己検証で修正 + loadQuestion で hooray token クリア
-- **タスク**: quizland/index.html: playStagePonoThinking と playStagePonoHooray の await 競合バグを token ベース自己検証で修正 + loadQuestion で hooray token クリア
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 46
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 23, "ToolSearch": 1, "Grep": 1, "Bash": 21}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
 
 
