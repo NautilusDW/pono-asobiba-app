@@ -1202,28 +1202,20 @@ body.sheet-on .hdr-right .ctrl-btn {
 }
 
 /* AnimationPlayer (manifest 駆動) 経路で再生中は、 画像がすでにバストショット
-   素材として作られているため CSS 側のクロップは不要。 さらに、 1024x1024 の
-   キャンバスにキャラが ~50% サイズで配置されているため、 そのまま contain で
-   表示するとコンテナの 273x273 中で更に縮小されて非常に小さく見える。 そこで
-   素材内のキャラ実領域分を打ち消す scale 1.7 を transform で当てて、 コンテナ
-   いっぱいに「顔〜上半身」が見えるようにする。 transform-origin は中央上寄り
-   (画像内のキャラがやや右上寄りに配置されているため translate でセンタリング)。
-   コンテナサイズも 273 → 360 に拡大してそもそもの表示面積を増やす。 */
+   素材として作られているため CSS 側のクロップは不要。 デフォルトでは元の
+   273x273 のまま素直に表示し、 transform は当てない。 位置・サイズは
+   クイズランドエディタ (?edit=1) で `.stage-pono` をドラッグ&リサイズ
+   して saved-layout.json に保存されたものが優先される (= デフォルト CSS には
+   !important / transform を付けない)。 */
 .stage-pono.using-anim-frame {
-  width: 360px;
-  height: 360px;
-  overflow: visible !important;
+  overflow: visible;
 }
 .stage-pono.using-anim-frame .stage-pono-img,
 .stage-pono.using-anim-frame #stage-pono-img,
 #stage-pono.using-anim-frame .stage-pono-img,
 #stage-pono.using-anim-frame #stage-pono-img {
-  object-fit: contain !important;
-  object-position: center center !important;
-  /* 画像 1024x1024 内のキャラ実領域 ~520x520 (中央〜右上) を、 コンテナ全域に
-     拡大して見せる。 scale 約 2.0、 画像中心がコンテナ中心になるよう translate。 */
-  transform: scale(2.0) translate(2%, 4%) !important;
-  transform-origin: center center !important;
+  object-fit: contain;
+  object-position: center center;
 }
 .stage-pono-bubble {
   position: absolute;
@@ -3802,6 +3794,7 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.hint',                    'wh', 'ヒント'],
   ['.character',               'wh', 'キャラクター'],
   ['.char-hint',               'wh', 'キャラ吹き出し'],
+  ['.stage-pono',              'wh', 'ステージポノ (左下)'],
 ];
 
 /* per-Q layout (Phase 2 / impl-B) ─────────────────────────────────────
