@@ -84,6 +84,26 @@ const WRITING_STAGES = [{
 
 **教訓**: **`transform-origin: 0 0` + JS translate を使うなら親に flex 中央寄せを併用してはならない**。 既存実装パターンに合わせる時は CSS/JS を 1 セットで真似する。
 
+### バグ 3: PC マウスでなぞれない / SVG 透明領域で pointer 取りこぼし (sw v1030 → v1031 で修正)
+
+**症状**: v1030 で z-index と bubble の pointer-events を直した後も、 PC マウスで始点付近をクリック/ドラッグしても反応しないケースがある。
+
+**原因 (深掘りで判明)**: SVG の既定 `pointer-events: visiblePainted` は、 `<rect class="trace-bg">` の fill が `rgba(...,0.55)` 半透明であってもイベントを通すが、 **ガイドパス挿入後はガイドパス外側の透明セル経由でイベントを取りこぼす**。 結果、 `traceAreaEl` div にハンドラ attach してもバブル元 (= SVG 子要素) が hit-test に失敗してバブリング自体が始まらない。 加えて `START_TOLERANCE = 130` (1024 viewBox 基準) は PC マウスのクリック精度には厳しすぎる。
+
+**修正 (三段防御パターン)**:
+1. `<rect class="trace-bg" ... pointer-events="all">` — SVG 内透明領域でも確実に hit (最も確実な保険)
+2. `.trace-area svg { pointer-events: bounding-box; }` + `@supports not (pointer-events: bounding-box) { .trace-area svg { pointer-events: auto; } }` (Chromium 標準 / Safari 互換フォールバック)
+3. `traceAreaEl` div へのバブリング (v1030 で導入済)
+4. `START_TOLERANCE` 130 → **200** (実寸 ≈125px、 PC マウス始点判定を緩く)
+5. `window.DEBUG_WRITING_MORI = true` で `pointerDown` / `bindPointerEvents` の console.log デバッグ計装追加 (本番デフォ無音)
+
+**教訓 (将来の SVG なぞり系ゲームで再利用)**:
+- **半透明 SVG 要素は pointer-events デフォルトでは「ガイドパス外の透明セル」 で取りこぼす**。 `pointer-events="all"` を SVG 内の背景 rect に明示すべし
+- SVG ルートには `pointer-events: bounding-box` を当てるとさらに堅牢 (Chromium)
+- z-index と pointer-events のヒエラルキー設計に加えて、 **「透明領域でも hit するかどうか」 も別軸で確認** すべき
+- 子供向けゲームではタップ判定の許容範囲を画面実寸換算で再評価する習慣 (`viewBox * scale = 実寸ピクセル`)
+- バグ報告 → 「もう直ったはず」 と即決せず、 **「画面のどこを触ったか」 「PC か iPad か」 「DevTools コンソールに何か出てるか」** を切り分けるための DEBUG 計装をフラグ付きで残しておくのが効率的
+
 ### バグ 2: Phase 2 で pointer events が拾えない (sw v1029 → v1030 で修正)
 
 **症状**: なぞり画面に入っても画面のどこをクリック/ドラッグしても反応しない。 ガイドパスは見えているのに何も起きない。
