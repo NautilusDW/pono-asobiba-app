@@ -337,10 +337,17 @@ html, body {
 .trace-area svg {
   width: 100%; height: 100%;
   touch-action: none;
-  /* v1030: SVG ルートが pointer-events を明示しないと、
-     子要素の paint 状況によっては pointerdown がスルーされる
-     ケースがある (iOS Safari + 大きい透明領域)。 明示的に auto にする。 */
-  pointer-events: auto;
+  /* v1031: SVG ルートに bounding-box を指定し、 SVG 全体の bbox 内であれば
+     paint されていない領域でも pointerdown を受け取れるようにする
+     (Chromium / Firefox / Safari 16+ で有効)。 旧 Safari は無視するが、
+     その場合は trace-bg rect の pointer-events="all" がフォールバックする。
+     v1030 の `pointer-events: auto` だと SVG の `visiblePainted` 既定が
+     継承されて子の透明領域がイベントを通さなかったため、 ここを強化する。 */
+  pointer-events: bounding-box;
+}
+/* 旧ブラウザ (bounding-box 非対応) では `auto` が使われる */
+@supports not (pointer-events: bounding-box) {
+  .trace-area svg { pointer-events: auto; }
 }
 .trace-bg {
   fill: rgba(255,253,244,0.55);
@@ -938,7 +945,11 @@ html, body {
     <!-- なぞり SVG (Phase 2) -->
     <div class="trace-area" id="trace-area">
       <svg id="trace-svg" viewBox="0 0 1024 1024" aria-hidden="true">
-        <rect class="trace-bg" x="20" y="20" width="984" height="984" rx="32" ry="32"/>
+        <!-- v1031: 背景矩形に pointer-events="all" を明示。 SVG 内部の透明領域
+             (guide-path のストローク外側) でも pointerdown を確実に拾わせる
+             ためのヒットターゲット。 これで PC マウスのドラッグもクリックも
+             一律にこの矩形でキャッチされ、 バブリングで親 div ハンドラに届く。 -->
+        <rect class="trace-bg" x="20" y="20" width="984" height="984" rx="32" ry="32" pointer-events="all"/>
         <!-- AnimCJK 取得後にここへ <path class="guide-path"/> と <path class="guide-center" id="guide-median"/> を挿入 -->
         <g id="guide-group"></g>
         <!-- ユーザー描画 -->
@@ -1204,7 +1215,10 @@ function clientToSvgPoint(clientX, clientY) {
 
 /* ───── 判定 ───── */
 const ACCEPT_DIST = 110;         // ガイド中心線からの許容距離 (px in 1024 viewBox)
-const START_TOLERANCE = 130;     // 始点付近とみなす半径
+// v1031: 始点判定を 130 → 200 にゆるめる。 PC マウスで start-marker (r=34) を
+// ピンポイントクリックするのは難しく、 130 だと「タップしたのに何も起きない」
+// に見えてしまうため。 200 でも始点付近 (画面実寸 125px 相当) なので十分厳しい。
+const START_TOLERANCE = 200;     // 始点付近とみなす半径
 const END_TOLERANCE = 130;       // 終点到達とみなす半径
 const COVERAGE_THRESHOLD = 0.72; // ガイド点の何%以上に「近づいた」か
 
@@ -1238,11 +1252,21 @@ function resetTracing() {
 }
 
 function pointerDown(e) {
+  // v1031: DEBUG ログ — `window.DEBUG_WRITING_MORI = true` を DevTools で
+  // セットすれば、 pointerdown が発火しているか / どの座標で始点判定に落ちているか
+  // を切り分けられる。 本番では何も出力しないので副作用なし。
+  if (window.DEBUG_WRITING_MORI) {
+    console.log('[trace] pointerDown', { target: e.target && e.target.id, type: e.pointerType, button: e.button, clientX: e.clientX, clientY: e.clientY });
+  }
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   if (!medianStart) return;
   // 始点付近からなら受理
   const p = clientToSvgPoint(e.clientX, e.clientY);
-  startedNearStart = distance(p, medianStart) <= START_TOLERANCE;
+  const dStart = distance(p, medianStart);
+  startedNearStart = dStart <= START_TOLERANCE;
+  if (window.DEBUG_WRITING_MORI) {
+    console.log('[trace] svgPoint', { x: p.x, y: p.y, medianStart, dStart, tolerance: START_TOLERANCE, accepted: startedNearStart });
+  }
   if (!startedNearStart) {
     // 始点から外れている → 軽くやり直し案内
     flashRetry('ポノも いっしょに みてるよ。');
@@ -1470,6 +1494,17 @@ function bindPointerEvents() {
   traceAreaEl.addEventListener('pointerup', pointerUp);
   traceAreaEl.addEventListener('pointercancel', pointerCancel);
   traceAreaEl.addEventListener('pointerleave', pointerCancel);
+  if (window.DEBUG_WRITING_MORI) {
+    const cs = getComputedStyle(traceAreaEl);
+    console.log('[trace] bindPointerEvents attached', {
+      el: traceAreaEl,
+      hasShowClass: traceAreaEl.classList.contains('show'),
+      pointerEvents: cs.pointerEvents,
+      zIndex: cs.zIndex,
+      opacity: cs.opacity,
+      rect: traceAreaEl.getBoundingClientRect(),
+    });
+  }
 }
 
 function resetStage() {
