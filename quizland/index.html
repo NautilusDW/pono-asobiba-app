@@ -4479,6 +4479,8 @@ function startStagePono() {
 function stopStagePono() {
   _stagePonoStarted = false;
   if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
+  // thinking ループも一緒に止める (= 左下ポノ全停止)
+  if (typeof stopStagePonoThinking === 'function') stopStagePonoThinking();
   clearTimeout(_stagePonoBubbleTimer); _stagePonoBubbleTimer = null;
   clearTimeout(_stagePonoBubbleHideTimer); _stagePonoBubbleHideTimer = null;
   const bubble = document.getElementById('stage-pono-bubble');
@@ -4487,30 +4489,94 @@ function stopStagePono() {
   if (bubbleImg) { bubbleImg.removeAttribute('src'); }
 }
 
-// 正解時に左下ポノを「両手上げ (banzai)」ポーズに一時切替え。
-//   onChoice の correct 分岐から呼ぶ。 pose flip-book interval を一旦停止し、
-//   2.5 秒間 dance_hooray.webp を表示、 その後通常のローテーションを再開する。
+// 出題中に左下ポノを「考え中ループ」(pono-thinking) に切替える。
+//   loadQuestion から呼ぶ。 AnimationPlayer (manifest 駆動, loop=true) を使用。
+//   多重発火 (連続出題) はガードして 1 本だけ走らせる。 manifest 取得失敗時は
+//   何もせず既存 flip-book に任せる (= 完全 graceful)。
+let _stagePonoThinkingHandle = null;
+let _stagePonoThinkingToken = null;
+async function playStagePonoThinking() {
+  const imgEl = document.getElementById('stage-pono-img');
+  if (!imgEl) return;
+  // trivia 中央ポノ表示中は左下ポノは hidden なのでスキップ
+  if (document.body.classList.contains('has-trivia-pono')) return;
+  // 既に thinking ループ中 or 起動中ならガード (truthy なプレースホルダーも含む)
+  if (_stagePonoThinkingHandle) return;
+  if (!(window.AnimationPlayer && typeof window.AnimationPlayer.play === 'function')) return;
+  // thinking 中は flip-book interval を止める (= 同じ <img> を奪い合わない)
+  if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
+  const myToken = {};
+  _stagePonoThinkingToken = myToken;
+  // await の間に再度呼ばれてもガードに引っかかるよう、 先に truthy なプレースホルダーを入れる
+  _stagePonoThinkingHandle = myToken;
+  try {
+    const handle = await window.AnimationPlayer.play(imgEl, 'pono-thinking', {
+      // loop=true なので onComplete は通常呼ばれない。 明示 stop() のみで止める。
+    });
+    if (_stagePonoThinkingToken !== myToken) {
+      // await 中に stop されたか、 別の呼び出しが上書きしている → 自分は撤退
+      if (handle && typeof handle.stop === 'function') handle.stop();
+      return;
+    }
+    if (handle) {
+      _stagePonoThinkingHandle = handle;
+    } else {
+      // manifest 取得失敗 → flip-book を復活させる (startStagePono の interval 再起動)
+      _stagePonoThinkingHandle = null;
+      _resumeStagePonoFlipBook();
+    }
+  } catch (e) {
+    if (_stagePonoThinkingToken === myToken) {
+      _stagePonoThinkingHandle = null;
+      _resumeStagePonoFlipBook();
+    }
+  }
+}
+
+// thinking ループを停止する (正解時 / 問題切替 / trivia 切替 等から呼ぶ)。
+function stopStagePonoThinking() {
+  // token をクリアすることで、 await 中の playStagePonoThinking 自身が撤退する
+  _stagePonoThinkingToken = null;
+  if (_stagePonoThinkingHandle && typeof _stagePonoThinkingHandle.stop === 'function') {
+    _stagePonoThinkingHandle.stop();
+  }
+  _stagePonoThinkingHandle = null;
+}
+
+// stage-pono の通常 flip-book を再開する共通ヘルパ。
+//   playStagePonoHooray / playStagePonoThinking 双方の復帰経路で使う。
+function _resumeStagePonoFlipBook() {
+  const imgEl = document.getElementById('stage-pono-img');
+  if (!imgEl) return;
+  if (!_stagePonoStarted) return;
+  if (_stagePonoPoseInterval) return; // 既に再開済
+  _stagePonoPoseInterval = setInterval(function() {
+    _stagePonoPoseIdx = (_stagePonoPoseIdx + 1) % TRIVIA_POSES.length;
+    imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_stagePonoPoseIdx];
+  }, STAGE_PONO_POSE_INTERVAL_MS);
+}
+
+// 正解時に左下ポノを「正解スタンプ (pono-correct-stamp)」アニメに一時切替え。
+//   onChoice の correct 分岐から呼ぶ。 thinking ループが走っていれば先に停止し、
+//   pose flip-book interval も止めてから 2.5 秒間 stamp アニメを再生、 その後
+//   通常のローテーションを再開する。
 //   stage-pono が表示中 (= !has-trivia-pono) でないと意味がないので存在チェック。
 let _stagePonoHoorayTimer = null;
 let _stagePonoHoorayAnimHandle = null;
+let _stagePonoHoorayToken = null;
 async function playStagePonoHooray() {
   const imgEl = document.getElementById('stage-pono-img');
   if (!imgEl) return;
   // trivia 中央ポノ表示中は左下ポノは hidden なのでスキップ
   if (document.body.classList.contains('has-trivia-pono')) return;
+  // 出題中の thinking ループを必ず停止 (同じ <img> を奪い合わないため)
+  stopStagePonoThinking();
   // flip-book を一旦停止して hooray ポーズに固定
   if (_stagePonoPoseInterval) { clearInterval(_stagePonoPoseInterval); _stagePonoPoseInterval = null; }
   const stagePono = document.getElementById('stage-pono');
 
-  // 通常 flip-book を再開する共通処理
-  const resumeFlipBook = function () {
-    if (!_stagePonoStarted) return;
-    if (_stagePonoPoseInterval) return; // 既に再開済
-    _stagePonoPoseInterval = setInterval(function() {
-      _stagePonoPoseIdx = (_stagePonoPoseIdx + 1) % TRIVIA_POSES.length;
-      imgEl.src = '../assets/images/characters/pono/dance/' + TRIVIA_POSES[_stagePonoPoseIdx];
-    }, STAGE_PONO_POSE_INTERVAL_MS);
-  };
+  // 通常 flip-book を再開する共通処理 (legacy 呼び出し互換)
+  const resumeFlipBook = _resumeStagePonoFlipBook;
 
   // 多重発火対策: 前回の anim handle / timer を破棄
   if (_stagePonoHoorayAnimHandle && typeof _stagePonoHoorayAnimHandle.stop === 'function') {
@@ -4519,12 +4585,22 @@ async function playStagePonoHooray() {
   }
   clearTimeout(_stagePonoHoorayTimer);
 
+  // 自己検証用 token。 await 中に loadQuestion 等で _stagePonoHoorayToken = null
+  // にされたら、 await 後にトークン不一致を見て自分は撤退する。
+  const myToken = {};
+  _stagePonoHoorayToken = myToken;
+
   // ★新経路: manifest があれば AnimationPlayer で再生
+  //   pono-correct-stamp は loop=true (frame_001 = 1000ms の待機を内包) のため、
+  //   2.5 秒固定タイマーで明示 stop → flip-book 復帰させる。
   let handle = null;
   if (window.AnimationPlayer && typeof window.AnimationPlayer.play === 'function') {
     try {
-      handle = await window.AnimationPlayer.play(imgEl, 'pono-banzai-bust', {
+      handle = await window.AnimationPlayer.play(imgEl, 'pono-correct-stamp', {
         onComplete: function () {
+          // loop:true なので通常は呼ばれないが、 manifest 差替えで loop:false に
+          //   なった場合の保険として実装。
+          if (_stagePonoHoorayToken !== myToken) return;
           _stagePonoHoorayAnimHandle = null;
           if (stagePono) stagePono.classList.remove('is-hooray');
           resumeFlipBook();
@@ -4535,11 +4611,27 @@ async function playStagePonoHooray() {
     }
   }
 
+  // await 中に loadQuestion 等で token がクリアされた場合は即撤退
+  if (_stagePonoHoorayToken !== myToken) {
+    if (handle && typeof handle.stop === 'function') handle.stop();
+    return;
+  }
+
   if (handle) {
-    // 新経路: AnimationPlayer に再生を委譲。 onComplete で flip-book 再開する
+    // 新経路: AnimationPlayer に再生を委譲。 2.5 秒後に明示 stop → flip-book 復帰。
     _stagePonoHoorayAnimHandle = handle;
     // バストショット化 CSS は新経路でも継続適用 (= バナナ素材以前と同じ見た目)
     if (stagePono) stagePono.classList.add('is-hooray');
+    _stagePonoHoorayTimer = setTimeout(function() {
+      // タイマー発火時にも自己検証 (loadQuestion で token クリアされていれば何もしない)
+      if (_stagePonoHoorayToken !== myToken) return;
+      if (_stagePonoHoorayAnimHandle && typeof _stagePonoHoorayAnimHandle.stop === 'function') {
+        _stagePonoHoorayAnimHandle.stop();
+      }
+      _stagePonoHoorayAnimHandle = null;
+      if (stagePono) stagePono.classList.remove('is-hooray');
+      resumeFlipBook();
+    }, 2500);
     return;
   }
 
@@ -4835,11 +4927,27 @@ function loadQuestion(q) {
     case 'trivia':      renderTrivia(stage, q); break;
   }
   // trivia 中央ポノが居る間は左下ポノを CSS で隠す。 それ以外は左下ポノを起動。
+  // 出題切替時は前問の thinking ループを必ず停止 (= 出題タイプ問わず)
+  stopStagePonoThinking();
+  // 出題切替時は進行中の hooray も確実にキャンセル
+  //   (await 中の playStagePonoHooray は token 不一致を見て撤退する)
+  _stagePonoHoorayToken = null;
+  clearTimeout(_stagePonoHoorayTimer);
+  _stagePonoHoorayTimer = null;
+  if (_stagePonoHoorayAnimHandle && typeof _stagePonoHoorayAnimHandle.stop === 'function') {
+    _stagePonoHoorayAnimHandle.stop();
+  }
+  _stagePonoHoorayAnimHandle = null;
+  const _stagePonoElForHoorayReset = document.getElementById('stage-pono');
+  if (_stagePonoElForHoorayReset) _stagePonoElForHoorayReset.classList.remove('is-hooray');
   if (q.type === 'trivia') {
     document.body.classList.add('has-trivia-pono');
   } else {
     document.body.classList.remove('has-trivia-pono');
     startStagePono();
+    // 出題開始: 左下ポノを「考え中」ループに切替える (manifest 駆動 / loop=true)。
+    // manifest 取得失敗時は内部で flip-book 復帰するので fallback 安全。
+    playStagePonoThinking();
   }
   renderChoices(q);
   // Staged reveal: 挿絵 (.emoji-display) と 4択 (#answer-panel) を pending に

@@ -1,0 +1,33 @@
+{
+  "schema": "pono-anim-manifest-v1",
+  "id": "pono-thinking",
+  "name": "pono-thinking",
+  "fps": 4,
+  "loop": true,
+  "pingPong": false,
+  "stageWidth": 1024,
+  "stageHeight": 1024,
+  "frames": [
+    {
+      "file": "frame_001.webp",
+      "duration": 1500
+    },
+    {
+      "file": "frame_002.webp",
+      "duration": 1500
+    },
+    {
+      "file": "frame_003.webp",
+      "duration": 1500
+    },
+    {
+      "file": "frame_004.webp",
+      "duration": 1500
+    },
+    {
+      "file": "frame_005.webp",
+      "duration": 1500
+    }
+  ],
+  "exportedAt": "2026-05-15T23:55:49.426Z"
+}

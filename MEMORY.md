@@ -133,6 +133,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-16T00:18:56Z - クイズランド: 出題中=pono-thinking ループ + 正解時=pono-correct-stamp ジャンプ (5+4 frame webp 配置, AnimationPlayer 経路, await競合修正済, sw.js v1013)
+- **タスク**: クイズランド: 出題中=pono-thinking ループ + 正解時=pono-correct-stamp ジャンプ (5+4 frame webp 配置, AnimationPlayer 経路, await競合修正済, sw.js v1013)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 48
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "ToolSearch": 1, "Grep": 1, "Bash": 23}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
+### 2026-05-16T00:18:06Z - quizland/index.html: playStagePonoThinking と playStagePonoHooray の await 競合バグを token ベース自己検証で修正 + loadQuestion で hooray token クリア
+- **タスク**: quizland/index.html: playStagePonoThinking と playStagePonoHooray の await 競合バグを token ベース自己検証で修正 + loadQuestion で hooray token クリア
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 46
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "ToolSearch": 1, "Grep": 1, "Bash": 21}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
+### 2026-05-16T00:10:48Z - クイズランドに pono-thinking (考え中ループ) と pono-correct-stamp (正解時) アニメを統合: 配置 + manifest 修正 + AnimationPlayer 利用 + sw v1013
+- **タスク**: クイズランドに pono-thinking (考え中ループ) と pono-correct-stamp (正解時) アニメを統合: 配置 + manifest 修正 + AnimationPlayer 利用 + sw v1013
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 43
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 20, "ToolSearch": 1, "Grep": 1, "Bash": 21}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。
+
+
 ### 2026-05-15T23:57:20Z - memory/feature_maze_image_stage.md を creature 5種(mayoi/odoke/pyon/kabuto/hachi)構成に追従して書き換え
 - **タスク**: memory/feature_maze_image_stage.md を creature 5種(mayoi/odoke/pyon/kabuto/hachi)構成に追従して書き換え
 - **結果**: 成功
@@ -208,45 +247,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 21, "Glob": 9, "Grep": 6, "Read": 6, "ToolSearch": 2, "Agent": 19, "TaskOutput": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-15T23:45:36Z - maze/index.html: ojamamushi kind set update (remove nemuri, add kabuto/hachi, pyon imageUrl, nemuri->mayoi alias)
-- **タスク**: maze/index.html: ojamamushi kind set update (remove nemuri, add kabuto/hachi, pyon imageUrl, nemuri->mayoi alias)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 35
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 18, "ToolSearch": 1, "Grep": 1, "Bash": 15}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T23:45:22Z - コマ割エディタ: マスク選択中の Ctrl+C がフレームコピーに流れるバグ修正 (stale ref 検出 + マスクコピー絶対優先, sw.js v1010)
-- **タスク**: コマ割エディタ: マスク選択中の Ctrl+C がフレームコピーに流れるバグ修正 (stale ref 検出 + マスクコピー絶対優先, sw.js v1010)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 35
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 18, "ToolSearch": 1, "Grep": 1, "Bash": 15}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。
-
-
-### 2026-05-15T23:44:13Z - koma-wari-editor: Ctrl+C マスクコピー優先 — stale _selectedMaskRef での fall through を防御 + 旧 UX (copy 失敗時に silent return) を修正
-- **タスク**: koma-wari-editor: Ctrl+C マスクコピー優先 — stale _selectedMaskRef での fall through を防御 + 旧 UX (copy 失敗時に silent return) を修正
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 60
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 21, "Glob": 9, "Grep": 6, "Read": 6, "ToolSearch": 2, "Agent": 15, "TaskOutput": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

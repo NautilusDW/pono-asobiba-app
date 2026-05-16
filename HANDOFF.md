@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-16 - [batch:39-puzzle-opening-cut2] Codex: パズルゲーム opening Cut 2「友だちが集まり、りんご箱/プレビューカード/未組立ピースを広げ始める」16:9 raw 生成に着手。HANDOFF / git log / tmp を確認し、Cut 1 (`tmp/alpha_pending/38/puzzle_opening_gathering_apple_box_raw.png`) はあるが Cut 2 の既存 raw は無しと確認済。納品先は `tmp/alpha_pending/39/`。alpha 抜き・切り抜き・本配置は行わない。 (by Codex)
+
 - 2026-05-14 - [batch:28-maze-leaf-glow-from-scratch-mask] Codex: user 指摘「スタートとゴールの位置が違う、一段上に上げている」を受領。添付された最新ラフ画像を正本として、青/赤の円形クリアリングを下段の現在位置に固定し、生成モデル任せではなくラフのグリッド/マスクを保持する方式で `tmp/alpha_pending/28/` に 1 から再作成する。 (by Codex)
 
 - 2026-05-12 - [batch:voicepeak-vdc2-dict] Codex: user が `tools/voicepeak/test/` に置いた `testword.vdc2` / `testword02.vdc2` を確認。`.vdc2` は UTF-8 JSON 配列で、`sur` / `pron` / `pos` / `priority` / `accentType` / `lang` の形式と判明。`tools/voicepeak/Convert-VoicepeakUserDictCsvToVdc2.ps1` を追加し、`tools/voicepeak/voicepeak_user_dict.csv` 65 語から `tools/voicepeak/voicepeak_user_dict.vdc2` を生成済。VOICEPEAK 実機インポート確認は未実施。 (by Codex)
