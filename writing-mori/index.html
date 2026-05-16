@@ -671,6 +671,76 @@ html, body {
   transition: opacity 0.3s ease;
 }
 .retry-toast.show { opacity: 1; }
+
+/* ───────────────────────────────────────────────
+   v1031 強制 DEBUG オーバーレイ (?debug=1 で有効化)
+   観察専用。 pointer-events: none 厳守。 production では DOM 自体が
+   生成されないので一切影響しない。
+─────────────────────────────────────────────── */
+#wm-debug-hud {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 99999;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.78);
+  color: #ffd54a;
+  font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 8px 10px;
+  border: 1px solid #ffd54a;
+  border-radius: 4px;
+  max-width: 360px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#wm-debug-cursor {
+  position: fixed;
+  z-index: 99998;
+  pointer-events: none;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  margin-top: -9px;
+  transform: translate(-9999px, -9999px); /* 初期は画面外 */
+}
+#wm-debug-cursor::before,
+#wm-debug-cursor::after {
+  content: '';
+  position: absolute;
+  background: #ff2a2a;
+}
+#wm-debug-cursor::before { /* horizontal */
+  left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px;
+}
+#wm-debug-cursor::after  { /* vertical */
+  top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px;
+}
+#wm-debug-bounds {
+  position: fixed;
+  z-index: 99997;
+  pointer-events: none;
+  border: 2px solid #00e676;
+  box-sizing: border-box;
+  display: none;
+}
+#wm-debug-start {
+  position: fixed;
+  z-index: 99997;
+  pointer-events: none;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: rgba(33, 150, 243, 0.85);
+  border: 2px solid #fff;
+  box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
+  display: none;
+}
 </style>
 </head>
 <body>
@@ -1017,6 +1087,20 @@ html, body {
 'use strict';
 
 /* ════════════════════════════════════════════════
+   v1031 強制 DEBUG オーバーレイ (?debug=1 で有効化)
+   既存ロジックは一切変えない。 純粋に「観察」 のための観測機構のみ。
+   production (非 debug) では DOM も生成されず、 副作用ゼロ。
+   ════════════════════════════════════════════════ */
+(function initWritingMoriDebug() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('debug') === '1') {
+      window.DEBUG_WRITING_MORI = true;
+    }
+  } catch (_) { /* URLSearchParams 非対応環境では無効化のまま */ }
+})();
+
+/* ════════════════════════════════════════════════
    ステージ定義 (仕様書 7 準拠 — 将来 50 音まで拡張可能な配列)
    ════════════════════════════════════════════════ */
 const WRITING_STAGES = [
@@ -1272,8 +1356,11 @@ function pointerDown(e) {
     flashRetry('ポノも いっしょに みてるよ。');
     return;
   }
-  drawing = true;
+  // v1033 H9 fix: resetTracing() は drawing/startedNearStart 等を全て false に
+  // 戻すため、 必ず先に呼んでから drawing = true をセットすること (順序が逆だと
+  // pointerMove 側の `if (!drawing) return;` で線が伸びない真因 H9)
   resetTracing();
+  drawing = true;
   startedNearStart = true;
   userPoints.push({ x: p.x, y: p.y });
   updateUserPath();
@@ -1565,6 +1652,210 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
+
+/* ════════════════════════════════════════════════
+   v1031 強制 DEBUG オーバーレイ (?debug=1 のときだけ DOM 生成)
+   - 画面右上に固定 HUD (黒背景 / 黄色テキスト、 z=99999)
+   - pointer 位置にリアルタイム赤十字 (z=99998)
+   - trace-area の境界を緑枠 + medianStart に青丸 (z=99997)
+   - 既存 pointerdown/move/up/cancel ハンドラには触らず、
+     window レベル capture phase で観察のみ行う (passive)。
+   - すべて pointer-events: none。 本物のなぞり操作は阻害しない。
+   - 失敗してもゲーム本体が壊れないよう try/catch で全体を包む。
+   ════════════════════════════════════════════════ */
+(function initWritingMoriDebugOverlay() {
+  if (!window.DEBUG_WRITING_MORI) return;
+  try {
+    // ── HUD 本体 ─────────────────────────────────
+    const hud = document.createElement('div');
+    hud.id = 'wm-debug-hud';
+    hud.textContent = 'wm-debug initializing...';
+    document.body.appendChild(hud);
+
+    // ── pointer 位置の赤十字 ─────────────────────
+    const cursor = document.createElement('div');
+    cursor.id = 'wm-debug-cursor';
+    document.body.appendChild(cursor);
+
+    // ── trace-area の境界 (緑枠) ────────────────
+    const bounds = document.createElement('div');
+    bounds.id = 'wm-debug-bounds';
+    document.body.appendChild(bounds);
+
+    // ── medianStart 位置 (青丸) ─────────────────
+    const startDot = document.createElement('div');
+    startDot.id = 'wm-debug-start';
+    document.body.appendChild(startDot);
+
+    // ── 状態 ────────────────────────────────────
+    const eventCounts = { down: 0, move: 0, up: 0, cancel: 0 };
+    let lastPointerDown = null;
+    let lastSvgPoint = null;
+    let lastDStart = null;
+    let lastStartedNearStart = null;
+    let lastFlashRetry = '';
+    let lastMoveClient = { x: -9999, y: -9999 };
+
+    // ── 現在 phase を推定 (中央の phase 変数が無いので状態から推測) ──
+    function currentPhase() {
+      try {
+        if (cardOverlay && cardOverlay.classList.contains('show')) return 'clear';
+        if (pathLayerEl && pathLayerEl.classList.contains('show')) return 'walking';
+        if (traceAreaEl && traceAreaEl.classList.contains('success')) return 'success';
+        if (traceAreaEl && traceAreaEl.classList.contains('show')) return 'tracing';
+        if (tapPromptEl && !tapPromptEl.classList.contains('hide')) return 'intro';
+        return 'loading';
+      } catch (_) { return '?'; }
+    }
+
+    // ── flashRetry をフックして直近 retry 文言を記録 ──
+    try {
+      const origFlashRetry = window.flashRetry || flashRetry;
+      if (typeof origFlashRetry === 'function') {
+        // eslint-disable-next-line no-global-assign
+        flashRetry = function (msg) {
+          lastFlashRetry = msg || (typeof STAGE !== 'undefined' && STAGE.storyText ? STAGE.storyText.retry : '');
+          return origFlashRetry.apply(this, arguments);
+        };
+      }
+    } catch (_) { /* fall through */ }
+
+    // ── medianStart を SVG → client 座標に投影 ──
+    function projectMedianStartToClient() {
+      try {
+        if (!medianStart || !traceSvgEl) return null;
+        const ctm = traceSvgEl.getScreenCTM();
+        if (!ctm) return null;
+        const pt = traceSvgEl.createSVGPoint();
+        pt.x = medianStart.x; pt.y = medianStart.y;
+        const cp = pt.matrixTransform(ctm);
+        return { x: cp.x, y: cp.y };
+      } catch (_) { return null; }
+    }
+
+    // ── HUD 描画 ────────────────────────────────
+    function fmt(o) {
+      if (o === null || o === undefined) return String(o);
+      try { return JSON.stringify(o); } catch (_) { return String(o); }
+    }
+    function shortClassList(el) {
+      try { return el && el.className ? String(el.className).slice(0, 80) : ''; }
+      catch (_) { return ''; }
+    }
+    function renderHud() {
+      try {
+        const lines = [];
+        lines.push('=== writing-mori DEBUG v1031 ===');
+        lines.push('phase: ' + currentPhase());
+        lines.push('traceArea.classList: ' + (traceAreaEl ? traceAreaEl.className : '(null)'));
+        lines.push('pointerHandlersBound: ' + (typeof pointerHandlersBound !== 'undefined' ? pointerHandlersBound : '?'));
+        lines.push('medianStart: ' + (medianStart ? fmt({ x: +medianStart.x.toFixed(1), y: +medianStart.y.toFixed(1) }) : 'null'));
+        lines.push('lastPointerDown: ' + (lastPointerDown ? fmt(lastPointerDown) : 'null'));
+        lines.push('lastSvgPoint: ' + (lastSvgPoint ? fmt(lastSvgPoint) : 'null'));
+        lines.push('dStart: ' + (lastDStart === null ? 'null' : (+lastDStart).toFixed(1))
+          + '  STARTED_NEAR_START: ' + (lastStartedNearStart === null ? '?' : lastStartedNearStart));
+        lines.push('lastFlashRetry: ' + (lastFlashRetry || '(none)'));
+        lines.push('eventCounts: down=' + eventCounts.down
+          + ' move=' + eventCounts.move
+          + ' up=' + eventCounts.up
+          + ' cancel=' + eventCounts.cancel);
+        hud.textContent = lines.join('\n');
+      } catch (_) { /* noop */ }
+    }
+
+    // ── trace-area 緑枠 / 青丸 を毎フレーム同期 ──
+    function syncOverlays() {
+      try {
+        if (traceAreaEl) {
+          const r = traceAreaEl.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            bounds.style.display = 'block';
+            bounds.style.left = r.left + 'px';
+            bounds.style.top  = r.top  + 'px';
+            bounds.style.width  = r.width  + 'px';
+            bounds.style.height = r.height + 'px';
+          } else {
+            bounds.style.display = 'none';
+          }
+        }
+        const sp = projectMedianStartToClient();
+        if (sp) {
+          startDot.style.display = 'block';
+          startDot.style.left = sp.x + 'px';
+          startDot.style.top  = sp.y + 'px';
+        } else {
+          startDot.style.display = 'none';
+        }
+      } catch (_) { /* noop */ }
+    }
+
+    function tick() {
+      renderHud();
+      syncOverlays();
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // ── 観察用 listener (capture phase, passive)
+    //   既存ハンドラは別途 traceAreaEl に bind 済み。 window 側で観察するだけで
+    //   既存ロジックには一切手を加えない。 preventDefault も呼ばない。
+    function obsDown(e) {
+      try {
+        eventCounts.down++;
+        lastMoveClient = { x: e.clientX, y: e.clientY };
+        cursor.style.transform = 'translate(' + e.clientX + 'px, ' + e.clientY + 'px)';
+        const tgt = e.target || {};
+        lastPointerDown = {
+          clientX: +Number(e.clientX).toFixed(1),
+          clientY: +Number(e.clientY).toFixed(1),
+          button: e.button,
+          pointerType: e.pointerType || '?',
+          targetTag: tgt.tagName || '?',
+          targetId: tgt.id || '',
+          targetClass: shortClassList(tgt)
+        };
+        // svg point & dStart を観察 (clientToSvgPoint は既存関数)
+        try {
+          if (typeof clientToSvgPoint === 'function' && traceSvgEl) {
+            const sp = clientToSvgPoint(e.clientX, e.clientY);
+            lastSvgPoint = { x: +sp.x.toFixed(1), y: +sp.y.toFixed(1) };
+            if (medianStart) {
+              const dx = sp.x - medianStart.x, dy = sp.y - medianStart.y;
+              lastDStart = Math.sqrt(dx*dx + dy*dy);
+              lastStartedNearStart = (typeof START_TOLERANCE !== 'undefined')
+                ? (lastDStart <= START_TOLERANCE) : null;
+            }
+          }
+        } catch (_) { /* svg ctm 未準備 */ }
+      } catch (_) { /* noop */ }
+    }
+    function obsMove(e) {
+      try {
+        eventCounts.move++;
+        lastMoveClient = { x: e.clientX, y: e.clientY };
+        cursor.style.transform = 'translate(' + e.clientX + 'px, ' + e.clientY + 'px)';
+      } catch (_) { /* noop */ }
+    }
+    function obsUp()     { try { eventCounts.up++;     } catch (_) {} }
+    function obsCancel() { try { eventCounts.cancel++; } catch (_) {} }
+
+    const opt = { capture: true, passive: true };
+    window.addEventListener('pointerdown',   obsDown,   opt);
+    window.addEventListener('pointermove',   obsMove,   opt);
+    window.addEventListener('mousemove',     obsMove,   opt);
+    window.addEventListener('pointerup',     obsUp,     opt);
+    window.addEventListener('pointercancel', obsCancel, opt);
+
+    // 初回描画
+    renderHud();
+    syncOverlays();
+    if (window.console && console.log) {
+      console.log('[wm-debug] overlay initialized (?debug=1) — pointer-events: none, observer only');
+    }
+  } catch (err) {
+    try { console.warn('[wm-debug] overlay init failed', err); } catch (_) {}
+  }
+})();
 
 /* ════════════════════════════════════════════════
    起動

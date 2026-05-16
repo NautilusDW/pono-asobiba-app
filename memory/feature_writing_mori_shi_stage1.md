@@ -122,6 +122,45 @@ const WRITING_STAGES = [{
 
 **教訓**: なぞり/タップ系 UI では **吹き出し・トーストなど装飾レイヤーは `pointer-events: none`** で透過させ、 **入力レイヤーは親 div に attach** して透明領域でもバブリングで届くようにすること。 z-index と pointer-events のヒエラルキーは必ずペアで設計。
 
+### バグ 4: `drawing` フラグが pointerDown 内 `resetTracing()` で上書きされる (sw v1032 → v1033 で修正)
+
+**症状**: v1030/v1031 で z-index・pointer-events・TOLERANCE を直してもなお、 PC マウス/iPad で始点丸をクリック後にドラッグしても線が一切伸びない。 `pointerDown` は発火している (DEBUG ログ確認済) のに `pointerMove` が即 return している。
+
+**原因 (真因 H9)**: `pointerDown` 内の状態セット順が逆だった。
+
+```js
+// 修正前 (NG)
+drawing = true;        // (a) ここで true にする
+resetTracing();        // (b) ← この関数内で drawing = false に戻す
+startedNearStart = true;
+```
+
+`resetTracing()` は `userPoints/coveredIndices/directionOk/userPathEl` のリセットと**同時に** `drawing = false` も実行する関数のため、 (a) で true にしてもすぐ (b) で false に上書きされる。 その後の `startedNearStart = true` だけが復活するため、 `pointerMove` 冒頭の `if (!drawing) return;` で全イベントが落ち、 ユーザー体験としては「クリックは効くが線が出ない」 になる。
+
+**修正 (最小局所)**: `pointerDown` 内で `resetTracing()` と `drawing = true` の順序を入れ替えるだけ。 `resetTracing()` 本体や他の関数には触らない (他からも呼ばれるため)。
+
+```js
+// 修正後 (OK)
+resetTracing();        // 先に全フラグを初期化 (drawing も false に戻すが想定内)
+drawing = true;        // その上で drawing を ON
+startedNearStart = true;
+```
+
+**drawing 状態遷移 (ASCII)**:
+
+```
+修正前: pointerDown 入口 [false] → (a)[true] → resetTracing()[false] → ... → pointerMove[false→早期 return]   NG
+修正後: pointerDown 入口 [false] → resetTracing()[false] → (a)[true] → pointerMove[true→線が伸びる]            OK
+```
+
+**バージョン番号の補足**: 本タスク指示は「1030 → 1031 にバンプ」 だったが、 着手時点で repo HEAD は v1031、 別エージェントが working tree で v1032 まで進めていた (デバッグ HUD 追加)。 本修正は **v1032 → v1033** として記録する。 「キャッシュ対象ファイルを編集したら CACHE_VERSION を必ずバンプ」 という規約の精神に従い、 working tree の最新値からさらに 1 上げる。
+
+**教訓 (再利用ルール)**:
+- **同じ変数を short-lived に true→false→true と切り替えるならステート変更の順序を厳密に管理**。 リセット系の関数は呼び出し前に副作用を全部書き出してから本処理に入る (あるいは本処理を関数呼び出しの後に置く)
+- 「**初期化関数は引数で受け取ったフラグだけ触る**」 か 「**初期化関数は全フラグを問答無用で false に倒す**」 のどちらかに方針を統一しないと、 呼び出し側の前後で挙動が変わる
+- DEBUG ログを残しておくと「pointerDown は発火しているのに pointerMove が走らない」 という症状から原因箇所を一発で絞れる (v1031 で残した `DEBUG_WRITING_MORI` 計装がここで効いた)
+- バンプ番号は **タスク指示の値ではなく working tree の現値 +1** を採る (他エージェントの並行作業がある時にズレを増やさない)
+
 ### 現行 z-index ヒエラルキー (確定済)
 
 ```
