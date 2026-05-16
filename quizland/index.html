@@ -1255,23 +1255,32 @@ body.layout-editor-on .stage-pono,
 body.layout-editor-on.has-trivia-pono .stage-pono {
   display: block !important;
   visibility: visible !important;
-  opacity: 0.6 !important;
+  opacity: 0.9 !important;
   min-width: 120px;
   min-height: 120px;
   pointer-events: auto !important;
-  background: rgba(255, 200, 50, 0.15);
+  /* 2026-05-16 (sw v1019): 黄色塗りつぶしを止めて、 考え中ポノの 1 枚目を
+     背景として表示。 ユーザーがレイアウト調整中も実物のバストショットで
+     位置/サイズ感を確認できる。 frame_001.webp は 1024x1024 で上半分中央に
+     バストショット、 下半分は透明なので contain で枠内に収まる。 */
+  background: url('/assets/animations/pono-thinking/frame_001.webp') center/contain no-repeat;
   outline: 1px dashed rgba(255, 150, 0, 0.7);
 }
 body.layout-editor-on .stage-pono::after {
   content: "stage-pono";
   position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 10px;
+  /* 画像 (上半分にバスト) と重ならないよう右上隅に小さく配置 */
+  top: 2px;
+  right: 4px;
+  font-size: 9px;
   color: #c70;
   font-weight: bold;
+  opacity: 0.8;
   pointer-events: none;
-  text-shadow: 0 0 2px #fff;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 0 3px;
+  border-radius: 2px;
 }
 /* 2026-05-16 (sw v1017): エディタモード (?edit=1) では タイトル画面
    (.start-screen z:50) と モード選択 (.mode-screen z:49) が viewport を
