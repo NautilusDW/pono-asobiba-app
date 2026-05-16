@@ -88,6 +88,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-16 - [batch:44-puzzle-opening-landscape-cut3] **Done** — Cut 2 v4 の続きとして、風景テーマ opening Cut 3 raw を `tmp/alpha_pending/44/puzzle_opening_cut3_landscape_start_ready_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.7MB)。中央の低い木枠ボードはほぼ空で淡い風景ガイドのみ、small loose pieces は未配置のまま周囲に散らし、選択中の風景箱と右下の別絵柄候補箱3個を残した。完成パズル盤/濃いジグソー線/文字/UIなし、右側の余白維持を目視確認済。 (by Codex)
+
 - 2026-05-16 - [batch:42-puzzle-opening-landscape-cut2] **Done** — 風景テーマ opening Cut 2 raw を `tmp/alpha_pending/42/puzzle_opening_cut2_landscape_spread_facing_animals_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.9MB)。Cut 1 風景箱から続き、Pono + きつね + あらいぐま + 子鹿 + うさぎがラグ周りに集まり、開いた風景パズル箱・未組立 loose pieces・複数プレビューカードあり。箱/カードの風景は視聴者側から上下逆で動物側から読める向き、完成パズル盤/文字/UIなしを目視確認済。 (by Codex)
 - 2026-05-16 - [batch:42-puzzle-opening-landscape-cut2] **Done** — user 指摘「同じパズルが3つ、ピースが大きすぎる」を受け、Cut 2 修正版を `tmp/alpha_pending/42/puzzle_opening_cut2_landscape_spread_facing_animals_v2_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.7MB)。重複していた風景プレビューカードは消し、風景パズルは箱上の1点に整理、補助カードはきのこ/どんぐり系の別絵に変更。loose pieces は前版の約半分サイズで未組立、完成パズル盤/文字/UIなしを目視確認済。 (by Codex)
 - 2026-05-16 - [batch:42-puzzle-opening-landscape-cut2] **Done** — user 指摘「他のいろんなパズルから選んでる感じが欲しい」を受け、Cut 2 v3 raw を `tmp/alpha_pending/42/puzzle_opening_cut2_landscape_spread_facing_animals_v3_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.6MB)。Pono が手をかけている風景パズル箱は選択中として残し、右下ラグ上に魚の池/花畑/夜空など別絵柄の閉じたパズル箱を3個積み上げて、複数候補から選んだ場面に修正。loose pieces は小さめ維持、完成パズル盤/文字/UIなしを目視確認済。 (by Codex)
