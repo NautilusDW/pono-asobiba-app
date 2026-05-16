@@ -4095,9 +4095,7 @@
       '<div class="le-panel-body hakase-body">' +
         '<div class="hakase-text-size-section">' +
           '<h4>📏 吹き出し文字サイズ</h4>' +
-          '<label>base: <input type="range" id="hkz-size-base" min="10" max="24" step="1" value="16"> <span id="hkz-size-base-val">16</span>px</label>' +
-          '<label>14:9 帯: <input type="range" id="hkz-size-149" min="10" max="22" step="1" value="16"> <span id="hkz-size-149-val">16</span>px</label>' +
-          '<label>4:3 帯: <input type="range" id="hkz-size-43" min="10" max="20" step="1" value="14"> <span id="hkz-size-43-val">14</span>px</label>' +
+          '<label>文字サイズ: <input type="range" id="hkz-size-base" min="10" max="24" step="1" value="16"> <span id="hkz-size-base-val">16</span>px</label>' +
           '<button id="hkz-size-reset" class="le-btn" type="button">リセット</button>' +
         '</div>' +
         '<div class="hakase-tabs">' +
@@ -4139,7 +4137,7 @@
       if (content) content.innerHTML = '<div class="hkz-empty">HAKASE_DIALOGUE が読み込まれていません</div>';
       // 閉じるボタンだけは効くようにしておく
       var closeBtn0 = panel.querySelector('.le-panel-close');
-      if (closeBtn0) closeBtn0.addEventListener('click', function () { panel.style.display = 'none'; });
+      if (closeBtn0) closeBtn0.addEventListener('click', function () { panel.classList.add('hidden'); });
       return;
     }
 
@@ -4203,7 +4201,7 @@
         });
       }
 
-      // textarea change で overrides 更新
+      // textarea change で overrides 更新 + ライブプレビュー
       contentEl.querySelectorAll('textarea').forEach(function (ta) {
         ta.addEventListener('input', function () {
           var k = ta.dataset.key;
@@ -4216,6 +4214,10 @@
             overrides[k] = ta.value;
           }
           setDirty(true);
+          // E3: ライブプレビュー — 実機の吹き出しに即時反映
+          if (typeof window.setHakaseDialogue === 'function') {
+            try { window.setHakaseDialogue(ta.value); } catch (e) {}
+          }
         });
       });
 
@@ -4235,15 +4237,13 @@
       btn.addEventListener('click', function () { renderTab(btn.dataset.cat); });
     });
 
-    // テキストサイズスライダー
-    var sizeKeyMap = { 'base': 'base', '149': '14:9', '43': '4:3' };
-    ['base', '149', '43'].forEach(function (key) {
-      var slider = panel.querySelector('#hkz-size-' + key);
-      var valSpan = panel.querySelector('#hkz-size-' + key + '-val');
-      var storeKey = sizeKeyMap[key];
+    // テキストサイズスライダー (16:9 単一: base のみ。旧 14:9/4:3 キーは無視して壊さない)
+    (function () {
+      var slider = panel.querySelector('#hkz-size-base');
+      var valSpan = panel.querySelector('#hkz-size-base-val');
       // 初期値復元
-      if (textSize[storeKey]) {
-        var v = parseInt(textSize[storeKey], 10);
+      if (textSize.base) {
+        var v = parseInt(textSize.base, 10);
         if (!isNaN(v)) {
           slider.value = v;
           valSpan.textContent = v;
@@ -4251,23 +4251,20 @@
       }
       slider.addEventListener('input', function () {
         valSpan.textContent = slider.value;
-        textSize[storeKey] = slider.value + 'px';
+        textSize.base = slider.value + 'px';
         if (typeof window._applyHakaseTextSize === 'function') {
           try { window._applyHakaseTextSize(textSize); } catch (e) { console.warn('[HakaseDialogue] _applyHakaseTextSize failed', e); }
         }
         setDirty(true);
       });
-    });
+    })();
 
     panel.querySelector('#hkz-size-reset').addEventListener('click', function () {
       textSize = {};
-      var defaults = { 'base': 16, '149': 16, '43': 14 };
-      ['base', '149', '43'].forEach(function (key) {
-        var slider = panel.querySelector('#hkz-size-' + key);
-        var valSpan = panel.querySelector('#hkz-size-' + key + '-val');
-        slider.value = defaults[key];
-        valSpan.textContent = defaults[key];
-      });
+      var slider = panel.querySelector('#hkz-size-base');
+      var valSpan = panel.querySelector('#hkz-size-base-val');
+      slider.value = 16;
+      valSpan.textContent = 16;
       if (typeof window._applyHakaseTextSize === 'function') {
         try { window._applyHakaseTextSize({}); } catch (e) {}
       }
@@ -4305,13 +4302,10 @@
       if (!confirm('すべてのセリフ上書きと文字サイズをデフォルトに戻しますか?')) return;
       overrides = {};
       textSize = {};
-      var defaults = { 'base': 16, '149': 16, '43': 14 };
-      ['base', '149', '43'].forEach(function (key) {
-        var slider = panel.querySelector('#hkz-size-' + key);
-        var valSpan = panel.querySelector('#hkz-size-' + key + '-val');
-        slider.value = defaults[key];
-        valSpan.textContent = defaults[key];
-      });
+      var slider = panel.querySelector('#hkz-size-base');
+      var valSpan = panel.querySelector('#hkz-size-base-val');
+      slider.value = 16;
+      valSpan.textContent = 16;
       if (typeof window._applyHakaseTextSize === 'function') {
         try { window._applyHakaseTextSize({}); } catch (e) {}
       }
@@ -4319,9 +4313,9 @@
       setDirty(true);
     });
 
-    // 閉じるボタン
+    // 閉じるボタン (E1-fix: CSS の display:flex !important を打ち消すため .hidden クラスで制御)
     var closeBtn = panel.querySelector('.le-panel-close');
-    if (closeBtn) closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
+    if (closeBtn) closeBtn.addEventListener('click', function () { panel.classList.add('hidden'); });
 
     // 初期タブ描画
     renderTab(currentTab);
@@ -6369,9 +6363,8 @@
           state.hakasePanelEl = buildHakaseDialoguePanel();
         }
         var p = state.hakasePanelEl;
-        // display:none ↔ flex で切替 (CSS default: flex)
-        var isHidden = (p.style.display === 'none');
-        p.style.display = isHidden ? 'flex' : 'none';
+        // E1-fix: CSS の display:flex !important を打ち消すため .hidden で制御
+        p.classList.toggle('hidden');
       });
     }
     // 🌐 Page navigation: hide button when no pages configured.

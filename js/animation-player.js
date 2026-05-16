@@ -47,9 +47,18 @@ window.AnimationPlayer = {
     let stopped = false;
     let timer = null;
     const fpsDuration = 1000 / (m.fps || 12);
+    // フレームのネイティブ解像度が `<img>` の width/height 属性として残っていると
+    // CSS の width/height よりも優先されてコンテナを突き抜けて表示される
+    // ことがあるため、 src を差し替える経路では width/height 属性を必ず剥がす。
+    // (フレームを自動トリミングした際の予期しない natural size 漏れ対策)
+    try { imgEl.removeAttribute('width'); } catch (_e) {}
+    try { imgEl.removeAttribute('height'); } catch (_e) {}
     const next = function () {
       if (stopped) return;
       const f = m.frames[idx];
+      // 各フレーム切替時にも防御的にクリア (= 万一外部から再設定されても巻き戻す)
+      if (imgEl.hasAttribute('width')) imgEl.removeAttribute('width');
+      if (imgEl.hasAttribute('height')) imgEl.removeAttribute('height');
       imgEl.src = base + '/' + f.file;
       idx++;
       const d = f.duration || fpsDuration;

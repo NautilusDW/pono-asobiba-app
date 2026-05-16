@@ -1214,6 +1214,14 @@ body.sheet-on .hdr-right .ctrl-btn {
 .stage-pono.using-anim-frame #stage-pono-img,
 #stage-pono.using-anim-frame .stage-pono-img,
 #stage-pono.using-anim-frame #stage-pono-img {
+  /* 2026-05-16 (sw v1021): frame_002 以降がコンテナを突き抜けて大きく
+     表示されるバグ対策。 自動トリミング後の webp natural size (413x371)
+     が何らかの経路で `<img>` の width/height 属性として漏れた場合でも、
+     CSS で 100% を強制して必ず親 .stage-pono の枠に収める。 !important で
+     HTML 属性より優先 (HTML width/height 属性は presentational hint で
+     specificity 0 だが、 念のため強い形で固定)。 */
+  width: 100% !important;
+  height: 100% !important;
   object-fit: contain;
   object-position: center center;
 }
@@ -3550,7 +3558,7 @@ function _pickRandomFromCategory(category) {
 }
 
 // E2: ふくろうはかせ吹き出しテキストの font-size を動的に上書きする。
-// sizeMap = { base: '20px', '14:9': '18px', '4:3': '16px' } のような形。
+// sizeMap = { base: '20px' } の形。16:9 単一スライダーに簡素化済み (旧 14:9/4:3 キーは無視)。
 // 値は CSS 単位付き文字列 (px / vmin / rem 等)。 空文字はスキップ。
 // E1 (layout-editor UI) のスライダ変更時 + saved-layout ロード時に呼ばれる。
 window._applyHakaseTextSize = function(sizeMap) {
@@ -3562,17 +3570,9 @@ window._applyHakaseTextSize = function(sizeMap) {
     document.head.appendChild(styleEl);
   }
   const baseSize = sizeMap.base || '';
-  const size149  = sizeMap['14:9'] || '';
-  const size43   = sizeMap['4:3'] || '';
   let css = '';
   if (baseSize) {
     css += '#char-hint-text { font-size: ' + baseSize + ' !important; }\n';
-  }
-  if (size149) {
-    css += '@media (max-aspect-ratio: 14/9) { #char-hint-text { font-size: ' + size149 + ' !important; } }\n';
-  }
-  if (size43) {
-    css += '@media (max-aspect-ratio: 4/3) { #char-hint-text { font-size: ' + size43 + ' !important; } }\n';
   }
   styleEl.textContent = css;
 };
@@ -3616,6 +3616,8 @@ function setHakaseDialogue(text) {
   try { if (window.PonoBabble && typeof window.PonoBabble.cancelAll === 'function') window.PonoBabble.cancelAll(); } catch (e) {}
   el.textContent = (text == null) ? '' : String(text);
 }
+// E3: layout-editor のセリフ編集パネル (ライブプレビュー) から呼べるよう window に露出
+window.setHakaseDialogue = setHakaseDialogue;
 
 function showProblemDialogue(question) {
   _hintLevel = 0;
