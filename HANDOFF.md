@@ -22,6 +22,7 @@
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: user 指摘「背景のまな板が巨大・冷蔵庫とのスケール不整合・前後関係不明・16:9にして普通のキッチンへ」を受領。背景のみ再生成し、まな板を背景から外して、手前カウンターに後置き用スペースを空ける 16:9 raw を追加納品する。 (by Codex)
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: follow-up「もっと寄った絵、カウンターに載せるまな板が主役なので上まで見せすぎない」を反映し、`tmp/alpha_pending/46/kitchen_bg_16x9_counter_close_raw.png` を追加納品。1672x941、まな板なし、手前カウンター主役の 16:9 寄り構図。 (by Codex)
 - 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: follow-up「1個前は食材見せ用に使う / まな板は後乗せ / Y軸回転0度でまっすぐ / 少し引き」を反映。`kitchen_bg_16x9_ingredient_display_raw.png` (1個前の全体キッチン) と `kitchen_chop_stage_counter_only_straight_raw.png` (天板のみ・水平・16:9) を `tmp/alpha_pending/46/` に追加納品。`kitchen_chop_stage_board_counter_raw.png` はまな板入り旧案のため非推奨。 (by Codex)
+- 2026-05-16 - [batch:46-bento-tonton-kitchen-phase1] Codex: follow-up「この角度でまな板・包丁・皿だけ / 包丁は上下トントン用 / リアルすぎず子ども包丁寄り」を反映し、`tmp/alpha_pending/46/kitchen_board_knife_plate_angle_sheet_raw.png` を追加納品。1748x899、白背景 raw シート、alpha 抜き・切り抜きは未実施。 (by Codex)
 
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` を受領。HANDOFF / git log / `tmp/alpha_pending/43/` を確認し、対象 raw 10 枚は未納品・batch 30/31 は別件と確認済。`tmp/alpha_pending/43/` に raw 納品する。 (by Codex)
 - 2026-05-16 - [batch:43-writing-mori-shi-stage1] Codex: writing-mori-shi stage1 raw 画像 10 種を `tmp/alpha_pending/43/` に納品完了 (bg / pono x3 / rabbit x3 / path overlay / card frame / shippo icon)。alpha 抜き・切り抜き・本配置・sw.js bump は未実施、ユーザー/Claude 側の後工程待ち。 (by Codex)
