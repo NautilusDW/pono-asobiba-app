@@ -89,6 +89,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「子鹿の角なし、動物たちの毛並みをもっと柔らかく。1枚目からやり直し」を受け、Cut 1 soft-fur raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_soft_fur_no_antlers_raw.png` に納品 (`1661x947` PNG、RGB、alpha なし、約 2.6MB)。Pono が立って歓迎、きつね/あらいぐま/子鹿/うさぎがラグへ集まる構図、閉じた風景パズル箱 + 小プレビューカードのみ。子鹿は角/角の突起なし、全体の毛先を丸く柔らかめに修正、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
+
 - 2026-05-16 - [batch:44-puzzle-opening-landscape-cut3] **Done** — Cut 2 v4 の続きとして、風景テーマ opening Cut 3 raw を `tmp/alpha_pending/44/puzzle_opening_cut3_landscape_start_ready_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.7MB)。中央の低い木枠ボードはほぼ空で淡い風景ガイドのみ、small loose pieces は未配置のまま周囲に散らし、選択中の風景箱と右下の別絵柄候補箱3個を残した。完成パズル盤/濃いジグソー線/文字/UIなし、右側の余白維持を目視確認済。 (by Codex)
 
 - 2026-05-16 - [batch:42-puzzle-opening-landscape-cut2] **Done** — 風景テーマ opening Cut 2 raw を `tmp/alpha_pending/42/puzzle_opening_cut2_landscape_spread_facing_animals_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.9MB)。Cut 1 風景箱から続き、Pono + きつね + あらいぐま + 子鹿 + うさぎがラグ周りに集まり、開いた風景パズル箱・未組立 loose pieces・複数プレビューカードあり。箱/カードの風景は視聴者側から上下逆で動物側から読める向き、完成パズル盤/文字/UIなしを目視確認済。 (by Codex)
