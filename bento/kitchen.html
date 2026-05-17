@@ -2621,14 +2621,25 @@ body.layout-editor-on .endX-marker {
   //
   // 解決: marker の DOM bbox に頼らず、 saved-layout の tx をそのまま読んで
   // CSS デフォルト (.startX-marker { left:87% }, .endX-marker { left:13% }) +
-  // tx + 半幅補正で % を計算する。 cutting-board は通常プレイでも可視なので
-  // getBoundingClientRect().width で正規化可能。
+  // tx + 半幅補正で % を計算する。
   //
-  // 公式:  pct = cssDefault% + 100 * (tx + halfWidth) / boardWidth
+  // 公式:  pct = cssDefault% + 100 * (tx + halfWidth) / boardWidth_local
   //   - cssDefault%: startX=87, endX=13 (kitchen.html の .startX-marker / .endX-marker
   //     CSS rule と同期)
   //   - halfWidth: 12 (marker は width:24px、 CSS の translate(-50%,-50%) を
   //     editor の translate(<tx>,<ty>) が打ち消すため、 中心揃え分を tx に加算)
+  //
+  // [v429 critical fix] boardWidth_local = els.board.offsetWidth (UNSCALED, layout 値) を使う。
+  //   旧 v427: bRect.width (= getBoundingClientRect().width、 stage scale 込みの SCALED 値) を
+  //     分母にしていた。 一方 saved-layout の tx は marker の local 座標系 (unscaled px) で保存
+  //     されているため、 scale != 1 の端末で式が破綻し、 startX/endX が大きくズレる結果に。
+  //     例: stage scale=0.44 (タブレット縦) → bRect.width=422、 offsetWidth=960。
+  //         carrot startX-marker.tx=-57.31:
+  //           旧式 pct = 87 + 100×(-57.31+12)/422 = 76.27%
+  //           新式 pct = 87 + 100×(-57.31+12)/960 = 82.28%
+  //         editor が表示している視覚位置 (= local 座標系で 82.28%) と一致するのは新式のみ。
+  //   ユーザー報告「1 発目は人参より遥か右、2 発目は緑色部分、3 発目は真ん中」は
+  //     scale != 1 の端末で旧式が startX を大きく外側にズラしていた結果。
   var STARTX_MARKER_WIDTH = 24;
   var ENDX_MARKER_WIDTH = 24;
   var STARTX_DEFAULT_PCT = 87;
@@ -2638,8 +2649,8 @@ body.layout-editor-on .endX-marker {
     if (!ing || !ing.chopMechanics) return;
     if (!window._currentLayoutData) return;
     if (!els.board) return;
-    var bRect = els.board.getBoundingClientRect();
-    if (!bRect.width) return;
+    var boardW = els.board.offsetWidth; // unscaled layout 幅 (stage の scale を含まない)
+    if (!boardW) return;
     var data = window._currentLayoutData;
     var ingId = ing.id;
 
@@ -2656,12 +2667,12 @@ body.layout-editor-on .endX-marker {
 
     var startTx = lookupTx('.startX-marker');
     if (startTx !== null) {
-      var startPct = STARTX_DEFAULT_PCT + 100 * (startTx + STARTX_MARKER_WIDTH / 2) / bRect.width;
+      var startPct = STARTX_DEFAULT_PCT + 100 * (startTx + STARTX_MARKER_WIDTH / 2) / boardW;
       if (isFinite(startPct)) ing.chopMechanics.startX_pct = startPct;
     }
     var endTx = lookupTx('.endX-marker');
     if (endTx !== null) {
-      var endPct = ENDX_DEFAULT_PCT + 100 * (endTx + ENDX_MARKER_WIDTH / 2) / bRect.width;
+      var endPct = ENDX_DEFAULT_PCT + 100 * (endTx + ENDX_MARKER_WIDTH / 2) / boardW;
       if (isFinite(endPct)) ing.chopMechanics.endX_pct = endPct;
     }
   }
@@ -2700,8 +2711,14 @@ body.layout-editor-on .endX-marker {
     if (!ing) return;
     if (!window._currentLayoutData) return;
     if (!els.ingOnBoard || !els.board) return;
-    var bRect = els.board.getBoundingClientRect();
-    if (!bRect.width || !bRect.height) return;
+    // [v429] bRect (getBoundingClientRect) は stage scale 込み (SCALED) なので
+    //   分母として使うと saved-layout の unscaled px (tx/ty/w/h) と座標系が
+    //   合わず、 scale != 1 の端末で位置・サイズがズレる (v427/v428 と同型の
+    //   scale バグ)。 offsetWidth / offsetHeight は layout 値 (unscaled) なので
+    //   saved-layout 座標系と一致する。
+    var boardW = els.board.offsetWidth;
+    var boardH = els.board.offsetHeight;
+    if (!boardW || !boardH) return;
     var data = window._currentLayoutData;
     var ingId = ing.id;
     // 優先: per-ingredient (@<id>)、 fallback: base
@@ -2718,9 +2735,9 @@ body.layout-editor-on .endX-marker {
     var hPx = parseFloat(entry.h);
     if (!isFinite(wPx) || wPx <= 0 || !isFinite(hPx) || hPx <= 0) return;
 
-    var centerXPct = BBOX_LEFT_DEFAULT_PCT + 100 * (tx + wPx / 2) / bRect.width;
-    var centerYPct = BBOX_TOP_DEFAULT_PCT  + 100 * (ty + hPx / 2) / bRect.height;
-    var widthPct   = 100 * wPx / bRect.width;
+    var centerXPct = BBOX_LEFT_DEFAULT_PCT + 100 * (tx + wPx / 2) / boardW;
+    var centerYPct = BBOX_TOP_DEFAULT_PCT  + 100 * (ty + hPx / 2) / boardH;
+    var widthPct   = 100 * wPx / boardW;
     if (!isFinite(centerXPct) || !isFinite(centerYPct) || !isFinite(widthPct)) return;
 
     // .ingredient-on-board の CSS transform: translate(-50%, -50%) (中央寄せ) は保持。
@@ -2730,19 +2747,73 @@ body.layout-editor-on .endX-marker {
     els.ingOnBoard.style.width = widthPct + '%';
   }
 
+  // [v429] chopY-marker (橙円) の tx/ty を saved-layout から直読みして
+  // chopMechanics.chopY_pct を更新する。 v427/v428 と同型の「marker が
+  // display:none で getBoundingClientRect が使えない」問題への対処。
+  //
+  // 真因 (v428 まで): syncChopYFromMarker は marker と knife の
+  // getBoundingClientRect から dy を算出するが、 通常プレイでは marker が
+  // display:none で markerRect.height === 0、 早期 return。 結果として
+  // chopMechanics.chopY_pct は JS デフォルト (50) のまま残り、 editor で
+  // 動かした橙マーカーの位置が通常プレイの振り下ろし最下点に反映されない。
+  // ユーザー報告: 「まず下の位置を合わせた方がいいのかな」。
+  //
+  // 公式 (board-local UNSCALED px で計算 → scale 非依存):
+  //   markerCY_local = (cssTop/100) × boardH + ty + halfHeight
+  //                  = 0.5 × boardH + ty + 24  (marker は top:50%, height:48px)
+  //   knifeCY_local  = knife.offsetTop + knife.offsetHeight/2 + (knife._ty || 0)
+  //                    (offsetTop/Height は transform 非依存の layout 値、
+  //                     _ty は LayoutApplier が書き込む editor 由来 ty)
+  //   chopY_pct = (markerCY_local - knifeCY_local) / knife.offsetHeight × 100
+  var CHOPY_MARKER_HEIGHT = 48; // .chopY-marker の CSS height と同期
+  var CHOPY_DEFAULT_TOP_PCT = 50; // .chopY-marker の CSS top と同期
+
+  function applyChopYMarkerFromSavedLayout(ing) {
+    if (!ing || !ing.chopMechanics) return;
+    if (!window._currentLayoutData) return;
+    if (!els.board || !els.knife) return;
+    var boardH = els.board.offsetHeight;
+    var knifeH = els.knife.offsetHeight;
+    if (!boardH || !knifeH) return;
+    var data = window._currentLayoutData;
+    var ingId = ing.id;
+    // 優先: per-ingredient (@<id>)、 fallback: base
+    var perKey  = '.chopY-marker|0@' + ingId;
+    var baseKey = '.chopY-marker|0';
+    var entry = (ingId && data[perKey]) ? data[perKey]
+              : data[baseKey] ? data[baseKey]
+              : null;
+    if (!entry) return; // entry 無し → chopMechanics デフォルト (50%) に任せる
+    var ty = (typeof entry.ty === 'number') ? entry.ty : 0;
+    var markerCY = (CHOPY_DEFAULT_TOP_PCT / 100) * boardH + ty + CHOPY_MARKER_HEIGHT / 2;
+    // knife の自然位置 (offsetTop + offsetHeight/2) + editor 由来 ty 補正。
+    // knife._ty は LayoutApplier.applyOne が書き込む保存値。 未設定なら 0。
+    var knifeCY = els.knife.offsetTop + knifeH / 2 + (els.knife._ty || 0);
+    var dyPct = ((markerCY - knifeCY) / knifeH) * 100;
+    if (!isFinite(dyPct)) return;
+    ing.chopMechanics.chopY_pct = dyPct;
+  }
+
   // chopY-marker と ingredient-bbox-marker の sync を一括実行する集約関数。
   // loadIngredient / rAF 内から呼び出される。
+  //
+  // 順序ポリシー (v429): 各 chopMechanics 値について
+  //   先に「saved-layout 直読み (apply*)」→ 後に「live bbox 同期 (sync*)」
+  // とすることで、 editor モードでは sync が最後に勝ち (drag 中の live 値が反映)、
+  // 通常プレイでは sync が no-op (display:none) なので apply の saved-layout 値が残る。
   function syncMechanicsFromMarkers(ing) {
-    syncChopYFromMarker(ing);
-    syncIngredientBboxFromMarker(ing);
-    // [v427] 通常プレイ時は marker が display:none で bbox 不可。
-    //   saved-layout の tx を直接読む経路で chopMechanics を先に更新する。
-    //   editor mode では bbox 同期がこの直後に上書きするので順序問題なし。
+    // [v427] startX/endX-marker (青/赤) の saved-layout 直読み → chopMechanics
     applyMarkerXFromSavedLayout(ing);
-    // [v410] 包丁の切り始め / 終わり X (青/赤縦線 marker) → chopMechanics.startX_pct / endX_pct
-    //   editor 時は marker が可視で getBoundingClientRect が有効なので bbox 経由で同期。
-    //   (drag 中は marker.style.transform = translate(tx, ty) が attachObserver 経由で
-    //    別途 syncStartXFromMarker を発火させる。)
+    // [v429] chopY-marker (橙) の saved-layout 直読み → chopMechanics.chopY_pct
+    //   旧 v428 まで sync が先、 apply が後ろの順だったが、 apply は live drag を
+    //   上書きしてしまうため v429 で順序を「apply 先、 sync 後」に統一。
+    applyChopYMarkerFromSavedLayout(ing);
+    // ingredient-bbox-marker の live 同期 (editor) — saved-layout 反映は別経路
+    //   (applyIngredientBboxFromSavedLayout は loadIngredient 内で直接呼ばれる)
+    syncIngredientBboxFromMarker(ing);
+    // editor 時は marker が可視で getBoundingClientRect が有効、 live 値が apply* を上書き。
+    //   通常プレイ時は marker display:none で sync* は早期 return → apply* 値が残る。
+    syncChopYFromMarker(ing);
     syncStartXFromMarker(ing);
     syncEndXFromMarker(ing);
   }
@@ -2851,20 +2922,22 @@ body.layout-editor-on .endX-marker {
     if (!state.current || !state.current.chopMechanics) return;
     const total = state.current.chopCount || 5;
     const cut = state.chopProgress || 0;
-    // [chop モデル B] knife と同じ進行率 t で mask を動かす。
-    //   t = (cut - 1) / (chopCount - 1)
-    //   cut = 0  : まだ切ってない → mask 全表示 (visiblePct = 100)
-    //   cut = 1  : 1st tap → t=0 → 削れ始めの境界が startX 側 (visiblePct = 100)
-    //   cut = N  : last tap → t=1 → mask 完全に消える (visiblePct = 0)
-    // ※ 物理整合 (刃先 X と mask 境界 X の食材内 % 一致) は次のステップで詰める。
-    //    ここでは knife と mask を線形 t で同じテンポに動かすシンプル実装。
-    const denom = Math.max(1, total - 1);
-    const t = cut > 0 ? Math.max(0, Math.min(1, (cut - 1) / denom)) : -1;
+    // [v429 chop モデル C] 均等リダクション: 1 タップごとに 1/chopCount ずつ削る。
+    //   旧モデル B (v414): t = (cut-1)/(chopCount-1)
+    //     - cut=1 → t=0 → visiblePct=100% (1st タップで何も削れない!) ← UX 不整合
+    //     - cut=N → t=1 → visiblePct=0%   (last タップで全部消えるが、 マスク 0 後に
+    //                                       Phase 2 が空のまな板で振り下ろし → 1 回多い)
+    //   新モデル C (v429): visiblePct = (1 - cut/chopCount) × 100
+    //     - cut=0 → visible 100% (初期)
+    //     - cut=1 → visible 80%  (1st タップで即 1/5 削れる、 視覚フィードバック有)
+    //     - cut=N → visible 0%   (last タップで完全消失)
+    //   ユーザー報告「ある程度等間隔じゃないとおかしくない？」「1 回減らす」を反映。
+    //   knife X (playChopAnim) は v414 モデル維持: cut=1 → startX、 cut=N → endX。
     let visiblePct;
-    if (t < 0) {
+    if (cut <= 0) {
       visiblePct = 100;  // 初期状態、何も切ってない
     } else {
-      visiblePct = Math.max(0, (1 - t) * 100);
+      visiblePct = Math.max(0, (1 - cut / Math.max(1, total)) * 100);
     }
     const axis = state.current.chopMechanics.maskAxis || 'right-to-left';
     // 各 axis で「不透明 → 透明」境界の進行方向を組み立てる。
@@ -3039,15 +3112,19 @@ body.layout-editor-on .endX-marker {
       const chopSnapshot = state.chopProgress;
 
       // Phase 2: 下 (200ms 後) — 横スライド完了 (0.18s) 後に振り下ろし。
-      //   ※ 最終タップでは onBoardTap → completeIngredient → clearPendingTimers が
-      //   この後すぐ走るため、 pendingTimers に push してしまうと cancel されて
-      //   「最後の切り」が見えなくなる。 cancel 対象から外し、 cutting フラグも見ない
-      //   (cutting でも実際の包丁振り下ろしモーションは見せたい)。
-      //   ただし連打時の stale callback 対策で chopSnapshot ガードを追加。
+      //   [v429] state.cutting (= 最終タップ後、 completeIngredient で立てられる) も
+      //     skip 条件に追加。 旧仕様では「最後の切りモーションを見せたい」目的で
+      //     cutting check を入れていなかったが、 v429 で mask モデルを均等化した結果
+      //     最終タップで mask が即 0% (= 食材消失) になるため、 空のまな板に対して
+      //     振り下ろしが発火し「1 回多い」「最後の一切れになってるのに包丁を下ろす」
+      //     とユーザーから報告された。 最終タップは横スライドのみ → 即 transition で
+      //     クリーンに見せる。
+      //   連打時の stale callback 対策で chopSnapshot ガードも維持。
       setTimeout(function () {
         if (!knifeInner) return;
         if (state.chopProgress !== chopSnapshot) return; // [v426] 古い chop の callback は破棄
         if (state.transitioning) return;
+        if (state.cutting) return; // [v429] 最終タップ後 (mask 0%) は振り下ろし skip
         knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
       }, 200);
 
