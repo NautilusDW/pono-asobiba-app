@@ -1003,8 +1003,12 @@ if (bgmEnabled) {
   bgm.play().then(() => {
     bgmStarted = true;
   }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
+    // タイトル画面がある場合は finishOpeningAndEnterGame() で BGM 起動するため、
+    // parse-time fallback は登録しない (オープニング再生中に narration と被るのを防ぐ)
+    if (!document.getElementById('title-screen')) {
+      document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+      document.addEventListener('pointerdown', tryStartBgm, { once: true });
+    }
   });
 }
 
