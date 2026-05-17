@@ -29,6 +29,31 @@
       <div class="title-screen__start">▶ タップしてスタート</div>
     </div>
   </div>
+
+  <!-- Opening cutscene overlay -->
+  <div id="puzzle-opening" class="puzzle-opening hidden" aria-hidden="true">
+    <div class="puzzle-opening__stage">
+      <picture class="puzzle-opening__pic" data-cut="1">
+        <source srcset="../assets/images/puzzle/opening/cut01.webp" type="image/webp">
+        <img class="puzzle-opening__img is-active" src="../assets/images/puzzle/opening/cut01.jpg" alt="">
+      </picture>
+      <picture class="puzzle-opening__pic" data-cut="2">
+        <source srcset="../assets/images/puzzle/opening/cut02.webp" type="image/webp">
+        <img class="puzzle-opening__img" src="../assets/images/puzzle/opening/cut02.jpg" alt="">
+      </picture>
+      <picture class="puzzle-opening__pic" data-cut="3">
+        <source srcset="../assets/images/puzzle/opening/cut03.webp" type="image/webp">
+        <img class="puzzle-opening__img" src="../assets/images/puzzle/opening/cut03.jpg" alt="">
+      </picture>
+    </div>
+    <button type="button" id="op-skip" class="opening-skip" aria-label="スキップ">スキップ ▶</button>
+    <div class="opening-progress"><div class="opening-progress__fill" id="op-progress-fill"></div></div>
+    <audio id="op-narration" preload="auto">
+      <source src="../assets/audio/puzzle/opening_narration.mp3" type="audio/mpeg">
+      <source src="../assets/audio/puzzle/opening_narration.wav" type="audio/wav">
+    </audio>
+  </div>
+
   <div class="tut-dim hidden" id="tut-dim"></div>
   <div class="tut-bubble hidden" id="tut-bubble"></div>
   <div class="page-wrapper">
