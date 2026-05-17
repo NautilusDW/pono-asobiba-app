@@ -1420,12 +1420,13 @@ body.layout-editor-on .chopY-marker {
     layoutUrl: './kitchen/saved-layout.json',
     canvas: '#stage',
     // [selector, mode, label] — mode 'wh' は wh+position 編集を許可。
+    // editor 対象は「位置/サイズを px で持つ」要素に限定。
+    // .ingredient-on-board / .cutting-board は CSS の % + aspect-ratio に
+    // 依存するため editor 対象から外す (px 固定化で表示が崩れる)。
     editableSelectors: [
       ['.app-header',          'wh', 'ヘッダー'],
-      ['.cutting-board',       'wh', 'まな板'],
-      ['.ingredient-on-board', 'wh', '食材本体'],
       ['.knife',               'wh', '包丁'],
-      ['.chopY-marker',        'wh', '振り下ろし最下点'],
+      ['.chopY-marker',        'wh', '[ツール] 包丁の最下点'],
       ['.bowl',                'wh', '切れ端ボウル'],
     ],
     // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
@@ -1433,7 +1434,7 @@ body.layout-editor-on .chopY-marker {
     // となり、 applier の lookup chain で base キーへ自動 fallback する。
     // ※ perQuestionSelectors という名前は quizland 由来。 本プロジェクトでは
     //   per-ingredient と読み替えること。
-    perQuestionSelectors: ['.ingredient-on-board', '.knife', '.chopY-marker'],
+    perQuestionSelectors: ['.knife', '.chopY-marker'],
     ghPath: 'bento/kitchen/saved-layout.json',
   };
 </script>
