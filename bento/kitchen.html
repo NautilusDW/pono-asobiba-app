@@ -2386,29 +2386,46 @@ body.layout-editor-on .endX-marker {
       });
     });
 
-    // ===== [v420] Layout 再適用: 食材切替時に per-ingredient 別座標を読込 =====
+    // ===== [v420/v421 DEBUG] Layout 再適用: 食材切替時に per-ingredient 別座標を読込 =====
     // layout-applier は MutationObserver で DOM 変化を検出するが、 qid (食材 ID) 変化
     // は自動検出しない。 quizland の loadQuestion と同様、 ページ側から手動再 apply する。
-    // これがないと editor で `.knife|0@carrot` のように保存した per-ingredient 位置が
-    // 通常プレイ (chop 画面遷移時) に反映されない。
-    if (window.LayoutApplier && window._currentLayoutData) {
-      try {
-        var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
-          ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
-        var cfg = window.EditorBootstrapConfig || {};
-        var sels = (cfg.editableSelectors || []).map(function (s) {
-          return Array.isArray(s) ? s[0] : s;
-        });
+    // v421: scope を null に変更 (whole document、 LayoutSystem 初期 apply と同じ)
+    //       + debug 用 console.log 追加 (apply 前後の値を可視化)。
+    try {
+      var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
+        ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
+      var cfg = window.EditorBootstrapConfig || {};
+      var sels = (cfg.editableSelectors || []).map(function (s) {
+        return Array.isArray(s) ? s[0] : s;
+      });
+      var dataExists = !!window._currentLayoutData;
+      var applierExists = !!window.LayoutApplier;
+      var knifeEntry = dataExists && ingredientId ? window._currentLayoutData['.knife|0@' + ingredientId] : null;
+      console.log('[bento v421] applyLayout', {
+        applierExists: applierExists,
+        dataExists: dataExists,
+        ingredientId: ingredientId,
+        sels: sels,
+        perQ: cfg.perQuestionSelectors,
+        knifeEntry: knifeEntry,
+        knifeStyleBefore: els.knife ? els.knife.style.cssText : 'no-knife',
+      });
+      if (applierExists && dataExists) {
         window.LayoutApplier.apply(
           window._currentLayoutData,
-          document.getElementById('stage') || null,
+          null,  // whole document scope (matches LayoutSystem initial apply)
           {
             selectors: sels,
             perQuestionSelectors: cfg.perQuestionSelectors || [],
             qid: ingredientId,
           }
         );
-      } catch (e) { /* noop: editor 未起動 or layout 未読込 */ }
+        console.log('[bento v421] after apply', {
+          knifeStyleAfter: els.knife ? els.knife.style.cssText : 'no-knife',
+        });
+      }
+    } catch (e) {
+      console.error('[bento v421] apply error', e);
     }
   }
 
