@@ -1103,72 +1103,139 @@ function finishOpeningAndEnterGame() {
   }
 }
 
-// ===== Opening Cutscene =====
+// ===== Opening Cutscene (owl-doctor style: per-cut audio + wooden-frame narration + fade-to-black) =====
+// 編集しやすいように、各カットの画像 / 音声 / ナレーションテキストはこのテーブルに集約。
+const OPENING_CUTS = [
+  {
+    id: 1,
+    imgWebp: '../assets/images/puzzle/opening/cut01.webp',
+    imgJpg:  '../assets/images/puzzle/opening/cut01.jpg',
+    audioMp3:'../assets/audio/puzzle/opening_narration_c01.mp3',
+    text: 'ここは、ポノの パズルひろば。\nきょうも おともだちが あつまってきました。',
+  },
+  {
+    id: 2,
+    imgWebp: '../assets/images/puzzle/opening/cut02.webp',
+    imgJpg:  '../assets/images/puzzle/opening/cut02.jpg',
+    audioMp3:'../assets/audio/puzzle/opening_narration_c02.mp3',
+    text: 'みんなのまえには、たのしい パズルが いっぱい。',
+  },
+  {
+    id: 3,
+    imgWebp: '../assets/images/puzzle/opening/cut03.webp',
+    imgJpg:  '../assets/images/puzzle/opening/cut03.jpg',
+    audioMp3:'../assets/audio/puzzle/opening_narration_c03.mp3',
+    text: 'きょうは、どのパズルで あそぼうかな。\nさあ、みんなで はじめましょう。',
+  },
+];
+
 function runOpeningCutscene(onDone) {
-  const overlay = document.getElementById('puzzle-opening');
-  const audio   = document.getElementById('op-narration');
-  const skipBtn = document.getElementById('op-skip');
-  const progFill= document.getElementById('op-progress-fill');
-  if (!overlay || !audio) { if (onDone) onDone(); return; }
+  const overlay  = document.getElementById('puzzle-opening');
+  const audio    = document.getElementById('op-narration');
+  const skipBtn  = document.getElementById('op-skip');
+  const narrEl   = document.getElementById('puzzle-op-narration');
+  const fadeEl   = document.getElementById('puzzle-op-fade');
+  const imgA     = document.getElementById('puzzle-op-img-a');
+  const imgB     = document.getElementById('puzzle-op-img-b');
+  if (!overlay || !audio || !narrEl || !imgA || !imgB) { if (onDone) onDone(); return; }
 
-  const imgs = overlay.querySelectorAll('.puzzle-opening__img');
-  if (imgs.length < 3) { if (onDone) onDone(); return; }
+  // mobile autoplay ブロック時の保険タイマー (秒)。actual mp3 はもっと短いが余裕を持たせる。
+  const FALLBACK_CUT_MS = 10000;
+  const FADE_MS = 500;     // overlay → 黒
+  const HOLD_BLACK_MS = 300;
+  const CROSSFADE_MS = 250;
 
-  // 各カットの表示時間配分 (proportional)
-  const FALLBACK_DURATION = 17.73; // 計測値 (8.87s ではなく実測 17.73s)
-  const FRACTIONS = [1/3, 2/3]; // 切替タイミング (相対)
-  const TAIL_HOLD_MS = 500;
-
-  let current = 0;
-  let cutTimers = [];
-  let progRaf = null;
+  let current = -1;
+  let fallbackTimer = null;
   let ended = false;
+  // 各 showCut 呼び出しごとに発行するワールドカウンタ。
+  // src 差し替え後に過去カットの ended イベントが遅延発火しても、世代が違えば無視する。
+  let cutGeneration = 0;
+  // ダブルバッファ: 表示中=front, 待機=back を交互スワップして 250ms クロスフェード。
+  let front = imgA;
+  let back  = imgB;
 
-  function setCut(i) {
-    if (i < 0 || i >= imgs.length) return;
+  function clearFallback() {
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+  }
+
+  // WebP → JPG フォールバック付きで img.src をセット。
+  function setImgSrcWithFallback(imgEl, cut) {
+    imgEl.onerror = () => { imgEl.onerror = null; imgEl.src = cut.imgJpg; };
+    imgEl.src = cut.imgWebp;
+  }
+
+  function showCut(i) {
+    if (i < 0 || i >= OPENING_CUTS.length) return;
+    if (i === current) return;
     current = i;
-    imgs.forEach((img, idx) => {
-      img.classList.toggle('is-active', idx === i);
-    });
-  }
+    const cut = OPENING_CUTS[i];
 
-  function clearCutTimers() {
-    cutTimers.forEach(t => clearTimeout(t));
-    cutTimers = [];
-  }
+    // 画像クロスフェード (初回は front に直接入れて即表示)
+    if (i === 0) {
+      setImgSrcWithFallback(front, cut);
+      front.classList.add('is-active');
+      back.classList.remove('is-active');
+    } else {
+      setImgSrcWithFallback(back, cut);
+      // 1tick 待ってから「変数スワップ → クラス切替」を同一フレームでアトミックに行う。
+      // setTimeout 経由で遅延スワップすると、CROSSFADE_MS 内に再 showCut された場合に
+      // front/back の指す要素が古いまま二重 is-active になり得るため。
+      requestAnimationFrame(() => {
+        const tmp = front; front = back; back = tmp;
+        front.classList.add('is-active');
+        back.classList.remove('is-active');
+      });
+    }
 
-  function scheduleAutoCutsFromDuration(durSec) {
-    clearCutTimers();
-    const dur = (Number.isFinite(durSec) && durSec > 0.1) ? durSec : FALLBACK_DURATION;
-    const elapsed = audio.currentTime || 0;
-    FRACTIONS.forEach((frac, idx) => {
-      const targetSec = dur * frac;
-      const delayMs = Math.max(0, (targetSec - elapsed) * 1000);
-      cutTimers.push(setTimeout(() => {
-        // 既に手動で進んでいたら追い越さない
-        if (current < idx + 1) setCut(idx + 1);
-      }, delayMs));
-    });
-    // 自動終了 (末尾余韻あり)
-    const endDelay = Math.max(0, (dur - elapsed) * 1000) + TAIL_HOLD_MS;
-    cutTimers.push(setTimeout(() => finish(), endDelay));
-  }
+    // ナレーション文を一旦フェードアウト→更新→フェードイン
+    narrEl.classList.add('is-hide');
+    setTimeout(() => {
+      narrEl.textContent = cut.text;
+      narrEl.classList.remove('is-hide');
+    }, 150);
 
-  function tickProgress() {
-    if (ended || !progFill) return;
-    const dur = audio.duration && isFinite(audio.duration) ? audio.duration : FALLBACK_DURATION;
-    const ratio = Math.min(1, Math.max(0, (audio.currentTime || 0) / dur));
-    progFill.style.width = (ratio * 100).toFixed(1) + '%';
-    progRaf = requestAnimationFrame(tickProgress);
+    // 音声差し替え。iOS Safari は src 変更後 load() を呼ばないと readyState が HAVE_NOTHING のままで
+    // play() が失敗 / 沈黙することがあるため明示的に load() する。また前カットの ended が遅延発火して
+    // advanceOrFinish が二重実行されないよう、世代カウンタで listener をガードする。
+    const myGen = ++cutGeneration;
+    try {
+      audio.pause();
+      audio.src = cut.audioMp3;
+      audio.load();
+      audio.currentTime = 0;
+    } catch (_) {}
+    // 既存の per-call listener があれば外す (念のため)
+    if (audio._endedHandler) {
+      audio.removeEventListener('ended', audio._endedHandler);
+      audio._endedHandler = null;
+    }
+    const endedHandler = () => {
+      audio.removeEventListener('ended', endedHandler);
+      if (audio._endedHandler === endedHandler) audio._endedHandler = null;
+      if (myGen === cutGeneration && !ended) advanceOrFinish();
+    };
+    audio._endedHandler = endedHandler;
+    audio.addEventListener('ended', endedHandler);
+    const playP = audio.play();
+    clearFallback();
+    if (playP && typeof playP.then === 'function') {
+      playP.catch(() => {
+        // mobile autoplay ブロック: 映像だけ fallback タイマーで進める
+        fallbackTimer = setTimeout(() => advanceOrFinish(), FALLBACK_CUT_MS);
+      });
+    } else {
+      // 古いブラウザ: 念のため fallback も張る
+      fallbackTimer = setTimeout(() => advanceOrFinish(), FALLBACK_CUT_MS);
+    }
   }
 
   function advanceOrFinish() {
-    if (current >= imgs.length - 1) {
-      finish();
+    clearFallback();
+    if (current >= OPENING_CUTS.length - 1) {
+      finishWithFade();
     } else {
-      setCut(current + 1);
-      // 残り時間に応じて自動終了タイマーを再スケジュール
-      scheduleAutoCutsFromDuration(audio.duration);
+      showCut(current + 1);
     }
   }
 
@@ -1180,55 +1247,47 @@ function runOpeningCutscene(onDone) {
   function onSkipClick(e) {
     e.preventDefault();
     e.stopPropagation();
-    finish();
+    // スキップ = 即フェードアウトして終了
+    finishWithFade();
   }
 
-  function onLoadedMeta() {
-    scheduleAutoCutsFromDuration(audio.duration);
-  }
-
-  function finish() {
+  // 最終カット後 (または skip) は黒フェード → hold → onDone
+  function finishWithFade() {
     if (ended) return;
     ended = true;
-    clearCutTimers();
-    if (progRaf) cancelAnimationFrame(progRaf);
+    clearFallback();
     try { audio.pause(); audio.currentTime = 0; } catch (_) {}
+    // per-call ended listener が残っていれば剥がす (世代 guard でも無害だが明示的に)
+    if (audio._endedHandler) {
+      audio.removeEventListener('ended', audio._endedHandler);
+      audio._endedHandler = null;
+    }
     overlay.removeEventListener('pointerdown', onStageTap);
     if (skipBtn) skipBtn.removeEventListener('pointerdown', onSkipClick);
-    audio.removeEventListener('loadedmetadata', onLoadedMeta);
-    audio.removeEventListener('ended', finish);
-    overlay.classList.add('hidden');
-    overlay.setAttribute('aria-hidden', 'true');
-    if (typeof onDone === 'function') onDone();
+
+    overlay.classList.add('is-fading');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('is-fading');
+      overlay.setAttribute('aria-hidden', 'true');
+      if (typeof onDone === 'function') onDone();
+    }, FADE_MS + HOLD_BLACK_MS);
   }
 
   // セットアップ
-  setCut(0);
-  if (progFill) progFill.style.width = '0%';
   overlay.classList.remove('hidden');
+  overlay.classList.remove('is-fading');
   overlay.setAttribute('aria-hidden', 'false');
+  if (fadeEl) fadeEl.style.opacity = ''; // CSS に任せる
+  narrEl.classList.remove('is-hide');
+  narrEl.textContent = '';
 
   overlay.addEventListener('pointerdown', onStageTap);
   if (skipBtn) skipBtn.addEventListener('pointerdown', onSkipClick);
-  audio.addEventListener('loadedmetadata', onLoadedMeta);
-  audio.addEventListener('ended', finish);
+  // ended listener は showCut 内で per-call + generation guard で張る (Safari 対策)
 
-  // duration が既に読めていれば即スケジュール、なければ fallback でとりあえず先に走らせる
-  if (audio.readyState >= 1 && audio.duration && isFinite(audio.duration)) {
-    scheduleAutoCutsFromDuration(audio.duration);
-  } else {
-    scheduleAutoCutsFromDuration(FALLBACK_DURATION);
-  }
-
-  // 再生開始 (ユーザージェスチャ直後なので通る想定。失敗しても映像のみ進行)
-  try { audio.currentTime = 0; } catch (_) {}
-  const playP = audio.play();
-  if (playP && typeof playP.then === 'function') {
-    playP.catch(() => { /* mobile autoplay ブロック時は映像のみ */ });
-  }
-
-  // プログレス
-  progRaf = requestAnimationFrame(tickProgress);
+  // 先頭カット投入
+  showCut(0);
 }
 
 // ===== Start =====

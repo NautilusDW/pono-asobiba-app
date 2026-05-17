@@ -5,15 +5,16 @@ metadata:
   type: project
 ---
 
-# パズル オープニングカットシーン (2026-05-17, sw v395)
+# パズル オープニングカットシーン (2026-05-17, sw v395 → v400 で owl 風刷新)
 
-## 確定方針
+## 確定方針 (v400 以降)
 
-- タイトル画面タップ → オープニング (3 カット + ナレーション) → パズル開始
+- タイトル画面タップ → オープニング (3 カット + 木枠ナレーション + 黒フェード) → パズル開始
 - **毎回再生** (localStorage で初回判定しない)。スキップボタンと画面タップで早送り可。
 - BGM (Cheery Strike Loop2) はオープニング再生中は **停止**。終了後に既存 `tryStartBgm()` を呼ぶ。
-- ナレーション 1 本通し、約 1/3 ずつで自動的に次カットへ (実測 17.73 秒 / fallback 値)。
-- 最終カットを 500ms 残してフェード終了 → そのままパズル画面。
+- **per-cut MP3 方式** (旧: 単一 WAV を 1/3 ずつ切替 → 新: cut1 → OP_C01.mp3, cut2 → OP_C02.mp3, cut3 → OP_C03.mp3、各 audio の `ended` で次カットへ)。
+- **木枠ナレーション** (quizland owl doctor `.op-narration` と同等スタイル: cream `#fff8e7` + brown shadow + 18px radius + bold 32px + `white-space: pre-wrap`)。 画像の下端 80px 位置、 width 1200px / max-width calc(100% - 64px)。
+- **黒フェードアウト** (cut3 終了 → overlay 全体を `.is-fading` で 500ms 黒に → 300ms hold → `finishOpeningAndEnterGame`)。 スキップ最終カット時も同じ黒フェード経由。
 - 既存チュートリアル表示判定 (`puzzle_tut_seen` flag) はオープニング終了後に発火。
 
 **Why:** 子供 (Pono) が「これは何のゲームか」を物語的に理解できるよう、ポノと森の仲間たちがパズルで遊び始めるシーンを毎回見せたい。スキップ可なので飽きても進める。

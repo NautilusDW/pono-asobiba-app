@@ -30,28 +30,16 @@
     </div>
   </div>
 
-  <!-- Opening cutscene overlay -->
-  <div id="puzzle-opening" class="puzzle-opening hidden" aria-hidden="true">
-    <div class="puzzle-opening__stage">
-      <picture class="puzzle-opening__pic" data-cut="1">
-        <source srcset="../assets/images/puzzle/opening/cut01.webp" type="image/webp">
-        <img class="puzzle-opening__img is-active" src="../assets/images/puzzle/opening/cut01.jpg" alt="">
-      </picture>
-      <picture class="puzzle-opening__pic" data-cut="2">
-        <source srcset="../assets/images/puzzle/opening/cut02.webp" type="image/webp">
-        <img class="puzzle-opening__img" src="../assets/images/puzzle/opening/cut02.jpg" alt="">
-      </picture>
-      <picture class="puzzle-opening__pic" data-cut="3">
-        <source srcset="../assets/images/puzzle/opening/cut03.webp" type="image/webp">
-        <img class="puzzle-opening__img" src="../assets/images/puzzle/opening/cut03.jpg" alt="">
-      </picture>
+  <!-- Opening cutscene overlay (owl-doctor style: wooden-frame narration + per-cut audio) -->
+  <div id="puzzle-opening" class="puzzle-op hidden" aria-hidden="true">
+    <div class="puzzle-op__stage">
+      <img class="puzzle-op__img is-active" id="puzzle-op-img-a" src="../assets/images/puzzle/opening/cut01.jpg" alt="">
+      <img class="puzzle-op__img" id="puzzle-op-img-b" src="" alt="">
     </div>
-    <button type="button" id="op-skip" class="opening-skip" aria-label="スキップ">スキップ ▶</button>
-    <div class="opening-progress"><div class="opening-progress__fill" id="op-progress-fill"></div></div>
-    <audio id="op-narration" preload="auto">
-      <source src="../assets/audio/puzzle/opening_narration.mp3" type="audio/mpeg">
-      <source src="../assets/audio/puzzle/opening_narration.wav" type="audio/wav">
-    </audio>
+    <div class="puzzle-op__narration" id="puzzle-op-narration"></div>
+    <button type="button" id="op-skip" class="puzzle-op__skip" aria-label="スキップ">スキップ ▶︎</button>
+    <div class="puzzle-op__fade" id="puzzle-op-fade"></div>
+    <audio id="op-narration" preload="auto"></audio>
   </div>
 
   <div class="tut-dim hidden" id="tut-dim"></div>
