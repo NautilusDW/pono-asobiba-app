@@ -1,6 +1,6 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v388, 2026-05-17 時点)。 完了 6 カテゴリ (order_color / count_total / shape_name / number_sequence / weather / opposite = 130/180 問 = 72%)、 準備完了 1 (body)、 未着手 1 (trivia)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 残存課題: trivia の expand JSON でも「ひらがな残存」 バグ可能性大 → 着手時 CSV 漢字化前に整合性確認必須 (body は事前修正済)。
+description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v388, 2026-05-17 時点)。 完了 6 カテゴリ (order_color / count_total / shape_name / number_sequence / weather / opposite = 130/180 問 = 72%)、 準備完了 1 (body)、 未着手 1 (trivia)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 v389+ から「句点 (。) 追加ルール」 適用 (2026-05-17 ユーザー指示)。 残存課題: trivia の expand JSON でも「ひらがな残存」 バグ可能性大 → 着手時 CSV 漢字化前に整合性確認必須 (body は事前修正済)。
 metadata:
   type: feature
 ---
@@ -140,6 +140,26 @@ metadata:
   - 読み揺れ・常用外・送り仮名違い → カナ戻し
   - 同形異義語があるが文脈で読み分け可能 → 残す (ただし優先度低)
 - **辞書追加との関係**: 辞書追加で確実に読ませる選択肢もある = 辞書 + 漢字 の組み合わせが効くケースもあるが、 辞書追加負荷が高いので「迷ったらカナ」 が原則
+
+### 句点 (。) 追加ルール
+
+- **適用日**: 2026-05-17 (sw v389+ 想定)
+- **ユーザー指示** (引用): 「句点が必要なところは入れてくれる？」
+- **適用範囲**: body 以降の全 CSV (= body / trivia)。 既に wav 生成済の 6 カテゴリ (order_color / count_total / shape_name / number_sequence / weather / opposite) は対象外 (= 再生成しない、 history としてのみ保持)
+- **目的**: VOICEPEAK の発音完了感を自然に。 答え wav が「途中で切れた」 ように聞こえるのを防ぐ
+- **追加する場所**:
+  - 答え文の末尾 (= 平叙的な答え): 「5本」 → 「5本。」、 「心臓」 → 「心臓。」、 「はえる」 → 「はえる。」 等
+  - 長文途中の文の切れ目: 複文・並列文の途中で必要な箇所
+- **追加しない場所**:
+  - 問題文末尾の「？」 (疑問符) はそのまま
+  - 問題文末尾の「！」 (感嘆符) はそのまま
+  - 既に「。」 がある箇所
+  - 答えが感嘆文・疑問文の場合 (= 「！」「？」 で終わっている)
+- **CSV 編集時の手順**:
+  1. CSV の各行の末尾文字を確認
+  2. 「？」「！」「。」 で終わっていなければ「。」 を追加
+  3. expand JSON のキーも CSV と完全一致するよう同期更新
+  4. BATCH-RUN-*.md の期待出力表も同期
 
 ## 残存課題: expand JSON ひらがな残存バグ
 
