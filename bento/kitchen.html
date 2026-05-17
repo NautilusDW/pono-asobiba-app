@@ -844,20 +844,36 @@ body.layout-editor-on .ingredient-bbox-marker {
 }
 
 /* ── 包丁の切り始め X (chopProgress=0 時の刃先位置) を WYSIWYG 調整
-   する marker。 layout-editor 専用、 通常プレイ時は完全非表示。 */
+   する marker。 layout-editor 専用、 通常プレイ時は完全非表示。
+   見た目は中央 4px 縦線 (::before)、 ホスト要素本体は 24px 幅の
+   透明な hit area として move drag を受け取る。 */
 .startX-marker {
   position: absolute;
   left: 87%;          /* 既存 chopMechanics.startX_pct のデフォルト */
   top: 50%;
-  width: 4px;
-  height: 80px;
+  width: 24px;
+  height: 100px;
   transform: translate(-50%, -50%);
-  border: 3px dashed #2196F3;   /* 青 */
-  background: rgba(33, 150, 243, 0.18);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
   pointer-events: none;
   z-index: 4;
   display: none;
+  cursor: ew-resize;
+}
+.startX-marker::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  transform: translateX(-50%);
+  border-left: 3px dashed #2196F3;
+  border-right: 3px dashed #2196F3;
+  background: rgba(33, 150, 243, 0.18);
+  border-radius: 4px;
+  pointer-events: none;
 }
 body.layout-editor-on .startX-marker {
   display: block;
@@ -866,20 +882,34 @@ body.layout-editor-on .startX-marker {
 }
 
 /* ── 包丁の切り終わり X (chopProgress=chopCount 時の刃先位置) を
-   WYSIWYG 調整する marker。 */
+   WYSIWYG 調整する marker。 同じパターン (赤)。 */
 .endX-marker {
   position: absolute;
   left: 13%;          /* 既存 chopMechanics.endX_pct のデフォルト */
   top: 50%;
-  width: 4px;
-  height: 80px;
+  width: 24px;
+  height: 100px;
   transform: translate(-50%, -50%);
-  border: 3px dashed #F44336;   /* 赤 */
-  background: rgba(244, 67, 54, 0.18);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
   pointer-events: none;
   z-index: 4;
   display: none;
+  cursor: ew-resize;
+}
+.endX-marker::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  transform: translateX(-50%);
+  border-left: 3px dashed #F44336;
+  border-right: 3px dashed #F44336;
+  background: rgba(244, 67, 54, 0.18);
+  border-radius: 4px;
+  pointer-events: none;
 }
 body.layout-editor-on .endX-marker {
   display: block;
