@@ -757,9 +757,13 @@ body[data-screen="fridge"] .stage-wrap {
                          以前の -480px ≒ cutting-board 高さの -55% 相当) */
 .knife {
   position: absolute;
-  /* JS が CSS 変数 --knife-x / --knife-y を更新し、 transition で滑らかに移動。
+  /* JS が CSS 変数 --knife-x を更新し、 transition で滑らかに移動。
      --knife-x: .cutting-board 基準の刃先 X % (chopMechanics.startX_pct / endX_pct)。
-     --knife-y: .knife 自身の高さ基準の Y % (liftY_pct / chopY_pct)。
+     --knife-y: [v417 で廃止] CSS 変数を transform 内に置くと変数更新で transition が
+     発火しない Chrome 119+/Safari 18+ の挙動を回避するため、 Y は JS から
+     style.transform を直接代入する方式に変更した。
+     下の transform: translate(-50%, var(--knife-y, 0%)) は inline transform が
+     消えた時の初期 fallback として残してある。
      旧 @keyframes knifeChop は廃止 (上下しか動かなかったため左→右の切り進みが
      できなかった)。 */
   left: var(--knife-x, 68%);
@@ -2292,7 +2296,9 @@ body.layout-editor-on .endX-marker {
       var seedTipOffset = m.bladeTipOffsetX_pct || 0;
       var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
       els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
-      els.knife.style.setProperty('--knife-y', (m.liftY_pct || 0) + '%');
+      // [v417] Y は style.transform 直接代入 (var-in-transform の transition 不発回避)
+      var seedLiftY = m.liftY_pct || 0;
+      els.knife.style.transform = 'translate(-50%, ' + seedLiftY + '%) rotate(0deg)';
       // 2-frame 後に transition を戻す (初回フラッシュ抑制)
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
@@ -2727,14 +2733,17 @@ body.layout-editor-on .endX-marker {
       // コンテナ中央を「刃先目標から見て逆方向」へずらすことで、 刃先が targetBladeX に来る。
       const compensation = -(tipOffset * KNIFE_WIDTH_PCT_OF_BOARD / 100);
       const nextX = targetBladeX + compensation;
-      els.knife.style.setProperty('--knife-x', nextX + '%');
-      els.knife.style.setProperty('--knife-y', (m.chopY_pct || 0) + '%');
+      els.knife.style.setProperty('--knife-x', nextX + '%');  // X は --knife-x 経由 (left プロパティで効く)
+      // [v417] Y は CSS var + transform の transition 不発を回避するため style.transform 直接代入
+      const chopY = m.chopY_pct || 0;
+      els.knife.style.transform = 'translate(-50%, ' + chopY + '%) rotate(0deg)';
       // [W3] lift setTimeout を pendingTimers に登録し、 clearPendingTimers でキャンセル可能に。
       state.pendingTimers.push(setTimeout(function () {
         if (!els.knife) return;
         // 完成タップ後 (cutting 中) は持ち上げず、 切り終わった位置で静止させる。
         if (state.cutting) return;
-        els.knife.style.setProperty('--knife-y', (m.liftY_pct || 0) + '%');
+        const liftY = m.liftY_pct || 0;
+        els.knife.style.transform = 'translate(-50%, ' + liftY + '%) rotate(0deg)';
       }, 180));
     }
 
@@ -3008,6 +3017,7 @@ body.layout-editor-on .endX-marker {
     if (els.knife) {
       els.knife.style.removeProperty('--knife-x');
       els.knife.style.removeProperty('--knife-y');
+      els.knife.style.removeProperty('transform');  // [v417] inline transform をクリアして CSS default に戻す
     }
     els.emptyHint.style.display = '';
     els.progress.style.width = '0%';
