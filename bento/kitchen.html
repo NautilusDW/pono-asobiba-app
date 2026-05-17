@@ -796,18 +796,24 @@ body.layout-editor-on .knife {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 28px;
-  height: 28px;
+  width: 48px;
+  height: 48px;
   transform: translate(-50%, -50%);
-  border: 2px dashed rgba(216, 110, 47, 0.9);
-  background: rgba(255, 200, 130, 0.45);
+  border: 3px dashed #D86E2F;
+  background: rgba(255, 140, 60, 0.6);
   border-radius: 50%;
   pointer-events: none;
   z-index: 4;
   display: none;
+  font-size: 28px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  align-items: center;
+  justify-content: center;
 }
 body.layout-editor-on .chopY-marker {
-  display: block;
+  display: flex;
+  pointer-events: auto;
 }
 
 .ingredient-on-board {
@@ -1517,7 +1523,7 @@ body.layout-editor-on .chopY-marker {
           <!-- layout-editor 専用 dummy: chopY (振り下ろし最下点) を per-ingredient で
                WYSIWYG 調整するためのターゲット。 通常プレイでは非表示 (CSS で
                body.layout-editor-on 時のみ display:block)。 -->
-          <div class="chopY-marker" id="chopY-marker" aria-hidden="true"></div>
+          <div class="chopY-marker" id="chopY-marker" aria-hidden="true">⬇</div>
           <div class="spark" id="spark"></div>
           <div class="ingredient-on-board" id="ingredient-on-board"></div>
           <div class="empty-board-hint" id="empty-board-hint">ざいりょうを えらんでね</div>
