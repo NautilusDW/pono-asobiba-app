@@ -58,7 +58,7 @@
 - **writing-mori (かいてひらく！ポノのことばの森) Stage 1「しっぽの こみち」 (2026-05-16, sw v1026)**: [memory/feature_writing_mori_shi_stage1.md](memory/feature_writing_mori_shi_stage1.md) — 既存 `writing/` (RPG) と別の新ゲーム `writing-mori/index.html`。 文字「し」をなぞり → 線が小道に変化 → ポノが歩いてうさぎを発見 → カード獲得。 16:9 固定 1600x900 (contain-fit)、 AnimCJK SVG (U+3057 = 12375 dec、 raw.githubusercontent 一次 + jsdelivr 二次 + 内蔵ベジェ最終fallback)、 子供向けゆるい判定 (START/END_TOLERANCE 110/100px、 カバレッジ72%、 否定語ゼロ)、 `WRITING_STAGES[]` 配列で 50音追加可能。 既存 [pono_001.png] + [dance_hooray.png] 流用 (`naturalWidth/Height` で動的高さ計算)、 AnimCJK は DOMParser で XSS 配慮、 縦画面は `body::before` 警告。 Codex 発注書 = `tmp/alpha_pending/43/CODEX-ORDER-writing-mori-shi.md` (batch 43、 全10種 — 30/31 は別件占有のため空き43)
 - **パズル 難易度20ステージ再設計 + 画面背景刷新 (2026-05-15, sw v1001→v1003)**: [memory/feature_puzzle_20stage_redesign.md](memory/feature_puzzle_20stage_redesign.md) — 対象年齢3〜6歳向けに **20ステージ進行 (4→4→6→6→6→9→9→9→12→12→12→12→16→16→16→16→20→20→20→20)** へ再設計。 **v1003 で画面背景を `assets/images/puzzle/bg_carpet_room.jpg` (木のお部屋+中央緑ラグ、 329KB) に差し替え** (中央ラグがパズルボード位置と一致、 左右は植物/本棚/クッション等でピース散布の周辺装飾、 旧 BG_03.webp は他9ゲーム使用中のため温存)。 `pieceShapeStyle` 6段階 (soft-rounded / large-jigsaw / standard-jigsaw / standard-jigsaw-v2 / advanced-jigsaw / advanced-jigsaw-v2)、 `snapAssist` 4段階 (very-strong/strong/medium-strong/normal、 SNAP_DIST = pieceW * ratio で動的計算)、 **90度チャレンジ回転モード** (デフォルトOFF、`window.PUZZLE_CHALLENGE_ROTATION = true` or `localStorage.puzzle_challenge_rotation = 'on'` で有効化、Stage 09 以降のみ作用、タップ検出 < 8px / < 300ms で90度回転、`rotation === 0` の時のみスナップ受理)、 任意角度回転は不可。 新ステージ画像16枚 (Codex 納品 `tmp/alpha_pending/29/` → `assets/images/puzzle/stages/` 配置・JPG最適化、合計5.27MB)、 ポノ特別枠 Stage 05/10/15/20 は既存 `puzzle_pono_*.jpg` 流用 (sleep/water/sparkle/owl)。 横画面用に **ボード幅 0.60→0.55** に縮小+`shufflePieces` を左右ゾーン分配方式に書き換え (偶数 index→左、奇数→右、ゾーン極細時は全域ランダムフォールバック)、 ヒントボタンも同ヘルパー (`scatterPiece`) で統一。 `STAGE_20_PIECE_COUNT` 定数で 20→16 への縮退切替可。 旧 `advanced: true|false` 二分岐は廃止、 全難易度設定は `BASE_STAGES` エントリへ集約 (受け入れ条件「コード直書きしすぎず、ステージ定義データで変更可」厳守)
 - **Quizland ?edit=1 Pause トグル + 結果画面復活** (2026-05-16, sw v1034): [memory/feature_quizland_editor_pause_toggle.md](memory/feature_quizland_editor_pause_toggle.md) — ⏸/▶ トグルで「次の問題への進行」 だけ凍結、 本番と同じ結果画面まで表示できるよう L5565-5571 のスキップガードも撤去。 共通 interface = `window._quizlandPaused || body.layout-editor-paused` の OR 判定
-- **パズル オープニングカットシーン** (2026-05-17, sw v395): [memory/feature_puzzle_opening_cutscene.md](memory/feature_puzzle_opening_cutscene.md) — タイトル→パズル間に **3 カット + ナレーション (約 17.7s)** のオープニングを挿入。毎回再生・スキップ可・タップで早送り。BGM はオープニング再生中は停止し終了後に開始。`<picture>` で webp 優先 + jpg fallback、`<audio>` は mp3 (278KB) + wav fallback、cut01-03 は webp 219/247/211 KB / jpg 332/350/323 KB / PNG はバックアップ保持。`runOpeningCutscene(onDone)` で `audio.duration` runtime 取得 → 相対 1/3 自動切替 + タップ早送り + `ended` flag で二重 finish ガード。元の `startFromTitleScreen` の sfx/bgm/tutorial 側効を `finishOpeningAndEnterGame` に移動
+- **パズル オープニングカットシーン (owl-style + per-cut 木枠ナレ + 黒フェード)** (2026-05-17, sw v395 → v400): [memory/feature_puzzle_opening_cutscene.md](memory/feature_puzzle_opening_cutscene.md) — タイトル→パズル間に **3 カット + 木枠ナレ + 黒フェード**。 **v400 で quizland owl doctor `.op-narration` スタイル踏襲** (cream `#fff8e7` + brown shadow + 18px radius + bold 32px + `white-space:pre-wrap`)、 **per-cut MP3 方式** (cut1→OP_C01 11s / cut2→OP_C02 7s / cut3→OP_C03 10s、 各 `audio.ended` で次カットへ)、 cut3 終了で overlay 全体を `.is-fading` 黒 500ms + 300ms hold → パズル開始。 v395 bump 後に別フックが v396 上書きしてキャッシュ整合崩れ (旧 CSS/JS で「cut01 が左に貼り付き右にパズル + ナレ無音 + tut 即発火」現象) → v397 bump で根治。 iOS Safari 対策 (P1 fix): `audio.src` 差替時に `audio.load()` 必須、 `ended` イベント per-cut generation guard、 ダブルバッファ swap は class toggle の前。 教訓: 同一コミット内 = 同一 CACHE_VERSION bump で完結させる、 別フック便乗厳禁
 - **ポノのトントンキッチン Phase 1 (bento/kitchen.html)** (2026-05-16〜17, sw v398): [memory/feature_bento_tonton_kitchen_phase1.md](memory/feature_bento_tonton_kitchen_phase1.md) — 既存お弁当の前段ミニゲーム。 **SPA 3画面構造 (select / chop / fridge)** で各画面1ステップ集中、 5ステップフローチップで動的アクティブ化＋強制切替。 にんじん 1材料 end-to-end (5タップで切る → 冷蔵庫 NEW! バッジ → レシピ3種解放)、 残り5材料は Phase 2。 `unlockedIngredients` は解放型 (localStorage `bentoUnlockedIngredients` / `bentoNewIngredients`)。 冷蔵庫は `rotateY(-92deg)` で左ヒンジ扉が開く演出。 chop 進捗中の「もどる」は画面内モーダルで確認。 **v382 で 16:9 contain-fit (1600×900 stage)化、 v387 で chop 画面背景を `kitchen_bg.png` + 包丁を `knife.png` に置換、 v389 で包丁 4倍 + にんじん PNG 11枚統合、 v391 で chop 画面の絶対 px 配置を全廃して cutting-board 基準 % に統一、 v393 で chop メカニクス (startX_pct/endX_pct/liftY_pct/chopY_pct/maskAxis/bladeTipOffsetX_pct) をコード管理化 + chopProgress 1 つの式で包丁横移動とマスク削れを完全連動、 v394 で editor 対象縮減 (にんじん極小化 + 親子追従バグ解消)、 v396 で knife.png 高解像度版差し替え + 圧縮 (101KB)、 v398 で editor マーカー 4 種 (`.ingredient-bbox-marker` 緑rect / `.startX-marker` 青縦線 / `.endX-marker` 赤縦線 / `.chopY-marker` 橙円) で 食材位置+サイズ + 包丁chop範囲を per-ingredient で WYSIWYG 化** (実体 `.ingredient-on-board` は editor から外したまま、マーカー経由で間接編集する責務分離)。 既存 `bento/index.html` (おかず49種+NPC6体+三色sk判定) は無変更で温存、 Phase 3 で連携予定。 仕様書 = `tmp/Bento/pono_tonton_kitchen_claude_code_instructions.md`
 
 ---
@@ -137,6 +137,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-17T07:02:43Z - パズル OP を owl doctor 風 (木枠ナレ + per-cut MP3 + 黒フェード) に刷新 + iOS Safari 対策
+- **タスク**: パズル OP を owl doctor 風 (木枠ナレ + per-cut MP3 + 黒フェード) に刷新 + iOS Safari 対策
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 74
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 18, "Read": 22, "Glob": 3, "Grep": 12, "ToolSearch": 1, "Agent": 7, "Edit": 10, "Write": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
 
 ### 2026-05-17T06:55:11Z - puzzle: opening cutscene を owl-doctor 風 (木枠ナレ + 3分割mp3 + fade-to-black) に刷新, sw v399
 - **タスク**: puzzle: opening cutscene を owl-doctor 風 (木枠ナレ + 3分割mp3 + fade-to-black) に刷新, sw v399
@@ -240,18 +253,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 76, "Read": 9, "Agent": 50, "ToolSearch": 2, "Grep": 2, "Edit": 3, "Glob": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-17T01:58:47Z - bento/kitchen.html Phase1: 5ステップフローチップ1行化+もどるボタン右下小型化 + sw v391
-- **タスク**: bento/kitchen.html Phase1: 5ステップフローチップ1行化+もどるボタン右下小型化 + sw v391
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 127
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 74, "Agent": 21, "Read": 12, "ToolSearch": 1, "Write": 1, "Edit": 14}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

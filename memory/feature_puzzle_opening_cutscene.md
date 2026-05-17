@@ -33,6 +33,22 @@ metadata:
 | スタイル | `puzzle/style.css` `.puzzle-opening` / `.opening-skip` / `.opening-progress` |
 | ロジック | `puzzle/main.js` `runOpeningCutscene(onDone)` + `finishOpeningAndEnterGame()` |
 
+## v400 ナレーションテキスト (木枠表示)
+
+| cut | audio | text |
+|---|---|---|
+| 1 | opening_narration_c01.mp3 (177 KB, ~11s) | `ここは、ポノの パズルひろば。\nきょうも おともだちが あつまってきました。` |
+| 2 | opening_narration_c02.mp3 (107 KB, ~7s) | `みんなのまえには、たのしい パズルが いっぱい。` |
+| 3 | opening_narration_c03.mp3 (167 KB, ~10s) | `きょうは、どのパズルで あそぼうかな。\nさあ、みんなで はじめましょう。` |
+
+`OPENING_CUTS` 配列で main.js 上部に定義 (`runOpeningCutscene` 直近、 編集しやすい場所)。 旧 `opening_narration.{wav,mp3}` (combined) は使用しないが disk には残置。
+
+## v400 で導入した iOS/Safari 対策 (クロスレビュー P1)
+
+1. **`audio.src` 差し替え時に必ず `audio.load()` を呼ぶ** — iOS Safari は `src` 再代入だけだと `readyState=HAVE_NOTHING` のまま `play()` が `NotSupportedError` を投げる。 `audio.src = newUrl; audio.load(); audio.currentTime = 0; audio.play();` の順。
+2. **`ended` イベントの per-cut generation guard** — 単一 `<audio>` 要素で src 差し替えると、 旧 cut の `ended` event が queue されたまま新 cut 開始後に発火し、 cut index が 1 つ飛ぶ/早期 finishWithFade が走るバグ。 `cutGeneration` カウンタ + `_endedHandler` のリスナを per-cut で attach/detach。
+3. **ダブルバッファ swap は class toggle の前** — `front`/`back` を 250ms `setTimeout` で swap していたが、 連打で stale ref が見えて両方 `.is-active` or 両方 inactive になる race。 `requestAnimationFrame` 内で swap → class toggle の順序に変更。
+
 ## 素材最適化結果
 
 | ファイル | 元 (PNG/WAV) | webp/mp3 | jpg |
