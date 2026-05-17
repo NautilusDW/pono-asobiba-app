@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v385, 2026-05-17 時点)。 完了 5 カテゴリ (order_color / count_total / shape_name / number_sequence / weather = 106/180 問 = 59%)、 準備完了 1 (opposite)、 未着手 2 (body / trivia)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 残存課題: body / trivia の expand JSON でも「ひらがな残存」 バグ可能性大 → 着手時 CSV 漢字化前に整合性確認必須。
+description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v388, 2026-05-17 時点)。 完了 6 カテゴリ (order_color / count_total / shape_name / number_sequence / weather / opposite = 130/180 問 = 72%)、 準備完了 1 (body)、 未着手 1 (trivia)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 残存課題: trivia の expand JSON でも「ひらがな残存」 バグ可能性大 → 着手時 CSV 漢字化前に整合性確認必須 (body は事前修正済)。
 metadata:
   type: feature
 ---
 
-# Quizland VOICEPEAK 音声プロジェクト 進捗追跡 (sw v385, 2026-05-14〜17)
+# Quizland VOICEPEAK 音声プロジェクト 進捗追跡 (sw v388, 2026-05-14〜17)
 
 ## なに
 
@@ -29,10 +29,10 @@ metadata:
 | shape_name | Q49-71 | 22 | q049-q071 (Q67 削除) | — | 完了 | 2026-05-16 (sw v384, Q67 菱形削除) |
 | number_sequence | Q72-83 | 12 | q072-q083 | 24 エントリ | 完了 | 2026-05-13 |
 | weather | Q110-133 | 24 | q110-q133 | — | 完了 | 2026-05-17 (sw v385) |
-| opposite | Q134-157 | 24 | — | — | 準備完了 | (BATCH-RUN-opposite.md 231 行 / 出力先 tmp/quizland_NA/opposite/ 既存) |
-| body | Q158-181 | 24 | — | — | 未着手 | — |
+| opposite | Q134-157 | 24 | q134-q157 | — | 完了 | 2026-05-17 (sw v388) |
+| body | Q158-181 | 24 | — | — | 準備完了 | (BATCH-RUN-body.md 248 行 / CSV 漢字化済 / expand JSON 39 キー漢字化済 / 出力先 tmp/quizland_NA/body/ 既存) |
 | trivia | Q84-109 | 26 | — | — | 未着手 | — |
-| **合計** | — | **180** | — | — | **106/180 = 59%** | — |
+| **合計** | — | **180** | — | — | **130/180 = 72%** | — |
 
 ## 確定話者・辞書・グローバル wav 設計
 
@@ -43,23 +43,23 @@ metadata:
 - **count_total 個別 wav**: 「ひとつ / ふたつ / みっつ / よっつ / いつつ / むっつ / ななつ / やっつ / ここのつ」 の和語数えは個別生成 (g_num では完結しない)
 - **MVP スコープ**: くるみ 912 件のみ。 博士 48 件は MVP 後回し ([[feature-quizland-voicepeak-pivot]])
 
-## 次バッチ = opposite
+## 次バッチ = body
 
-- 発注書 = `tools/voicepeak/BATCH-RUN-opposite.md` (231 行、 sw v385 時点で準備済)
-- 出力先パス = `tmp/quizland_NA/opposite/` (= 24 問、 ディレクトリ作成済)
-- 対象範囲 = Q134-Q157 (反対語ペア 24 問)
-- **CSV 漢字化済** + 「迷ったらカナ維持」 ルール適用済 = カナ維持 11 箇所
-- **expand JSON 修正済**: 事前検証で 48/48 全件不一致を検出 → 修正済 (= weather の 39/39 と同パターン)
+- 発注書 = `tools/voicepeak/BATCH-RUN-body.md` (248 行、 sw v388 時点で準備済)
+- 出力先パス = `tmp/quizland_NA/body/` (= 24 問 / 49 wav、 ディレクトリ作成済)
+- 対象範囲 = Q158-Q181 (体パーツ 24 問)
+- **CSV 漢字化済** + 「迷ったらカナ維持」 ルール適用済 = カナ維持 10 箇所 (1 モーラ漢字 + 同形異義語多発: め / て / あし / はな / は / した / はい / はえる / なおす / おなか)
+- **特殊変換**: 「5本」 (= ごほん、 数字化) / 「体じゅう」 (= タイチュウ音読み回避) / q173_a_alt 別エントリ (= 肺と灰の同形異義語回避)
+- **expand JSON 修正済**: 事前検証で 39 キー全件不一致を検出 → 修正済 (= weather / opposite と同パターン、 これで body も予防完了)
 - **試聴駆動方針**: 1 件生成 → 試聴 → OK なら次へ、 NG ならアクセント/辞書調整 → 再生成
-- opposite は cross-category dedup 設計 ([[feature-voicepeak-cross-category-dedup]]) の影響を受ける (= 反対語ペアで他カテゴリと重複する語があれば集約)
+- body は cross-category dedup 設計 ([[feature-voicepeak-cross-category-dedup]]) の影響を受ける (= 色名・数字とは独立、 部位名の重複は少なめ想定)
 
 ## 推奨順序
 
-1. **opposite** (Q134-157、 24 問) ← 次バッチ (準備済、 CSV 漢字化済、 expand JSON 修正済)
-2. **body** (Q158-181、 24 問) — 体パーツ、 dedup 候補多め (色名・数字とは独立)
-3. **trivia** (Q84-109、 26 問) — 文章長め・固有名詞含む、 最難関のため最後
+1. **body** (Q158-181、 24 問) ← 次バッチ (準備済、 CSV 漢字化済、 expand JSON 修正済)
+2. **trivia** (Q84-109、 26 問) — 文章長め・固有名詞含む、 最難関のため最後
 
-合計 74 問追加 → 180/180 = 100% で MVP 達成。
+合計 50 問追加 → 180/180 = 100% で MVP 達成。
 
 ## 主要 commit (sw 履歴)
 
@@ -69,7 +69,8 @@ metadata:
 - **sw v382**: shape_name バッチ準備 (BATCH-RUN-shape_name.md 投入)
 - **sw v383**: count_total Phase 1 完成、 60/181 問到達
 - **sw v384**: shape_name Phase 1 完成 (Q67 菱形削除込み、 22 問 + expand JSON ひらがな残存 26 キー修正)
-- **sw v385 (現行)**: weather Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 106/180 = 59% 到達
+- **sw v385**: weather Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 106/180 = 59% 到達
+- **sw v388 (現行)**: opposite Phase 1 完成 (24 問 + expand JSON 48/48 全件不一致を事前修正)、 130/180 = 72% 到達 (= 並走タスクで v385 → v387 まで進んでいたため +1 で v388)
 
 ## 関連メモリ
 
@@ -146,13 +147,13 @@ metadata:
 - **影響範囲 (確認済)**:
   - shape_name: 26 キー (sw v384 で事前修正)
   - weather: 39/39 全件不一致 (sw v385 で事前修正)
-  - opposite: 48/48 全件不一致 (sw v385 で事前修正、 次バッチに反映済)
-  - 計 **113 キー** (= 26 + 39 + 48) を事前防止で修正してきた
+  - opposite: 48/48 全件不一致 (sw v385 で事前修正、 sw v388 で生成完了)
+  - body: 39 キー全件不一致 (sw v388 で事前修正、 次バッチに反映済)
+  - 計 **152 キー** (= 26 + 39 + 48 + 39) を事前防止で修正してきた
 - **影響範囲 (要確認)**:
-  - **body** (Q158-181) — 着手時に必ず事前検証
-  - **trivia** (Q84-109) — 着手時に必ず事前検証
+  - **trivia** (Q84-109) — 残る最後の 1 カテゴリ、 着手時に必ず事前検証
 - **着手時の必須手順**:
   1. CSV 漢字化前に expand JSON の整合性確認 (= ひらがな残存がないか)
   2. 不一致があれば CSV と同じ漢字混じり版に expand JSON 側を更新
   3. その後で BATCH-RUN を実行
-- **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして欠落していた。 body / trivia 着手前に必ず同手順を実行する。
+- **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして欠落していた。 trivia 着手前に必ず同手順を実行する (body は既に事前修正済)。
