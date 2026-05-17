@@ -2207,6 +2207,23 @@ body.layout-editor-on .ingredient-bbox-marker {
     // 食材本体からズレて見える問題への対応。 ユーザー編集済みなら触らない。
     seedIngredientBboxFromOnBoard();
 
+    // [v409] img.naturalWidth/Height 確定前に seed が走ると getBoundingClientRect が
+    //   CSS aspect-ratio デフォルトを返すため、最初だけ bbox-marker と PNG がズレる
+    //   (特に初回 disk cache miss 時)。 img の load 完了を待って再 seed する。
+    //   emoji 食材 (implemented:false) には img がないので querySelector が null となり skip。
+    var ingImg = els.ingOnBoard.querySelector('img');
+    if (ingImg) {
+      if (ingImg.complete && ingImg.naturalWidth > 0) {
+        // 既にキャッシュから読み込み完了 → 即座に seed
+        seedIngredientBboxFromOnBoard();
+      } else {
+        // 未 load → load 完了時に seed
+        ingImg.addEventListener('load', function () {
+          seedIngredientBboxFromOnBoard();
+        }, { once: true });
+      }
+    }
+
     // chopY-marker / ingredient-bbox-marker は editor 専用ツール。
     // layout-editor で marker が動かされていなければ各 sync は no-op。
     // img の onload 後の bbox 精度のため、 2-frame 後にも再走させる。
