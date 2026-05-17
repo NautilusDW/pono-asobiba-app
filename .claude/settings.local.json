@@ -52,7 +52,8 @@
       "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\" && ls -la \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")",
       "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\" && ls \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")",
       "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once && ls -la d:/AppDevelopment/pono-asobiba-app/.claude/ | grep docs)",
-      "Bash(touch .claude/.docs-skip-once && ls -la .claude/.docs-skip-once)"
+      "Bash(touch .claude/.docs-skip-once && ls -la .claude/.docs-skip-once)",
+      "Bash(cd \"d:/AppDevelopment/pono-asobiba-app\" && touch .claude/.docs-skip-once && ls .claude/.docs-skip-once)"
     ],
     "additionalDirectories": [
       "D:\\AppDevelopment\\pono-asobiba-app\\.claude",

@@ -52,8 +52,23 @@ metadata:
 4. **タップ vs スキップボタン**: skip btn は overlay 内のため pointerdown は overlay に bubble する。skip 側で `e.target === skipBtn` をチェックして overlay 側 handler を抑止。
 5. **BGM 衝突**: 旧 `startFromTitleScreen` で即時 `tryStartBgm` 呼んでいた箇所を `finishOpeningAndEnterGame` に移動。
 
+## 実機検証で発覚した罠 (2026-05-17 sw v395→v397)
+
+実装直後の本番確認で「cut01 が背景に貼り付き + パズル普通に開始 + ナレーション無音 + tut 表示」の症状。 原因は **HTML だけ更新されて CSS/JS が古い v396 キャッシュから配信される ちぐはぐ状態** だった。
+
+- HTML は `cache: 'no-store'` (sw.js:51-57) なので即時新規取得
+- main.js / style.css は network-first + cache fallback (sw.js:104-115) で、ネットワーク不安定/PWA 起動時にキャッシュにフォールバック → 古い版が配信される
+- 旧 CSS には `.puzzle-opening.hidden { display:none }` も `position:fixed` も無いので、新 HTML の overlay が **body の flex 子としてインライン展開** されて「左に cut01、右にパズル」の見た目になる
+- 旧 main.js には `runOpeningCutscene` が無いのでナレーション/フロー切替が走らず、旧 startFromTitleScreen が即 tutorial を発火
+
+**根本対策:** sw.js CACHE_VERSION の bump を必ずやる。 v395 bump 後にユーザー/別フックが v396 に上書きしていたため、 puzzle 変更が v395 に紐付かず古い v396 キャッシュが残った。 v397 で全キャッシュ削除 + clients.claim + postMessage reload。
+
+**Why:** SW network-first + cache fallback は、 ネットワーク到達できる場合は必ず新版を取るが、 同一 CACHE_VERSION 期間中に複数のコード版をデプロイすると、 ユーザーの localStorage/SW cache に古い版が紛れ込み、 HTML/CSS/JS のバージョン整合性が崩れる。
+
+**How to apply:** 機能追加コミット 1 つ = CACHE_VERSION 1 bump を厳守。 リンター/フックが自動 bump してくれる場合でも、 自分のコミット範囲が確実にカバーされているか git log で確認。 別人/別フックの bump に便乗してはいけない。
+
 ## 関連
 
-- [[deploy-fact-cloudflare]] — sw v395 bump 必須
+- [[deploy-fact-cloudflare]] — sw v397 bump 必須
 - [[feature-puzzle-20stage-redesign]] — パズル本体仕様
 - [[feature-puzzle-landscape]] — 横画面前提 (OP も 16:9)
