@@ -2355,6 +2355,13 @@ body.layout-editor-on .endX-marker {
     // null / undefined の場合は CSS デフォルト (left:50%, top:42%, width:74%) に任せる。
     applyIngredientPlacement(ing);
 
+    // [v428] applyIngredientPlacement 直後に saved-layout の .ingredient-bbox-marker
+    //   {tx, ty, w, h} を直読みして ingredient-on-board.{left, top, width} を % で上書き。
+    //   通常プレイ時は bbox-marker が display:none で getBoundingClientRect 不可のため、
+    //   v427 で startX/endX-marker に適用したのと同じ「saved-layout 直読み」経路を踏襲。
+    //   entry が無ければ no-op で chopMechanics 値 (applyIngredientPlacement) が効く。
+    applyIngredientBboxFromSavedLayout(ing);
+
     // [v408] applyIngredientPlacement 直後に bbox-marker を ingredient-on-board の
     // 現在の表示位置・サイズで初期化する。 CSS デフォルト (left:50%, top:42%, width:74%) と
     // chopMechanics の inline 値 (例: 55%, 36%, 74%) が食い違うと editor の緑矩形が
@@ -2371,14 +2378,18 @@ body.layout-editor-on .endX-marker {
     //   CSS aspect-ratio デフォルトを返すため、最初だけ bbox-marker と PNG がズレる
     //   (特に初回 disk cache miss 時)。 img の load 完了を待って再 seed する。
     //   emoji 食材 (implemented:false) には img がないので querySelector が null となり skip。
+    //   [v428] img.onload 後にも applyIngredientBboxFromSavedLayout を再走させる
+    //   (img 寸法確定後に board.getBoundingClientRect が安定化するため、 % が正確化)。
     var ingImg = els.ingOnBoard.querySelector('img');
     if (ingImg) {
       if (ingImg.complete && ingImg.naturalWidth > 0) {
         // 既にキャッシュから読み込み完了 → 即座に seed
+        applyIngredientBboxFromSavedLayout(ing);
         seedIngredientBboxFromOnBoard();
       } else {
         // 未 load → load 完了時に seed
         ingImg.addEventListener('load', function () {
+          applyIngredientBboxFromSavedLayout(ing);
           seedIngredientBboxFromOnBoard();
         }, { once: true });
       }
@@ -2392,6 +2403,9 @@ body.layout-editor-on .endX-marker {
     syncMechanicsFromMarkers(ing);
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
+        // [v428] board.getBoundingClientRect が安定した 2-frame 後に saved-layout 由来の
+        //   ingredient-on-board 座標を再計算 (rotation/fitStage 反映後の正確な値)。
+        applyIngredientBboxFromSavedLayout(ing);
         // [v408] img onload 後の実 bbox で seed を再計算 (carrot PNG の高さ確定後)。
         seedIngredientBboxFromOnBoard();
         // [v410] startX/endX も 2-frame 後に再 seed (board の getBoundingClientRect が
@@ -2650,6 +2664,70 @@ body.layout-editor-on .endX-marker {
       var endPct = ENDX_DEFAULT_PCT + 100 * (endTx + ENDX_MARKER_WIDTH / 2) / bRect.width;
       if (isFinite(endPct)) ing.chopMechanics.endX_pct = endPct;
     }
+  }
+
+  // [v428] saved-layout から直接 ingredient-bbox-marker の {tx, ty, w, h} を読んで
+  //   .ingredient-on-board.style.{left, top, width} を % で書き込む。
+  //
+  // 真因 (v428 で修正): chop 画面ロード直後、 緑 bbox-marker と本体 PNG (にんじん) の
+  //   位置が一致せず、 そのズレた位置が 1st cut のマスク位置・刃先位置に波及していた。
+  //   既存の syncIngredientBboxFromMarker は marker の getBoundingClientRect を読むが、
+  //   通常プレイ時には `.ingredient-bbox-marker { display:none }` で mRect.width === 0
+  //   となり早期 return、 結局 ingredient-on-board は applyIngredientPlacement の
+  //   chopMechanics 値 (left:55%, top:36%, width:74%) のままになる。 これは v427 で
+  //   startX/endX-marker に発生していた同型バグ。
+  //
+  // 解決: marker の DOM bbox に頼らず、 saved-layout の tx/ty/w/h と CSS デフォルト
+  //   (.ingredient-bbox-marker { left:50%, top:42%, width:74%, aspect-ratio:3.2/1,
+  //   transform: translate(-50%, -50%) }) を組み合わせて、 cutting-board 基準 % を計算。
+  //   LayoutApplier が marker.style.transform を translate(tx, ty) で上書きすると CSS の
+  //   translate(-50%, -50%) が打ち消されるので、 marker の box top-left は
+  //   (50% × boardW + tx, 42% × boardH + ty)、 box center は + (w/2, h/2) となる。
+  //
+  // 公式 (cutting-board 基準 %):
+  //   centerX_pct = BBOX_LEFT_DEFAULT_PCT  + 100 * (tx + w/2) / boardW
+  //   centerY_pct = BBOX_TOP_DEFAULT_PCT   + 100 * (ty + h/2) / boardH
+  //   widthPct    = 100 * w / boardW
+  //
+  // .ingredient-on-board は CSS で transform: translate(-50%, -50%) (中央寄せ) なので
+  //   left/top は中心点の % として書き込めばよい (inline style は left/top/width のみ、
+  //   transform はノータッチで CSS の translate(-50%, -50%) を保持 — v403 chopY-marker
+  //   と同じ事故を避ける)。
+  var BBOX_LEFT_DEFAULT_PCT = 50; // .ingredient-bbox-marker CSS rule の left と同期
+  var BBOX_TOP_DEFAULT_PCT  = 42; // .ingredient-bbox-marker CSS rule の top と同期
+
+  function applyIngredientBboxFromSavedLayout(ing) {
+    if (!ing) return;
+    if (!window._currentLayoutData) return;
+    if (!els.ingOnBoard || !els.board) return;
+    var bRect = els.board.getBoundingClientRect();
+    if (!bRect.width || !bRect.height) return;
+    var data = window._currentLayoutData;
+    var ingId = ing.id;
+    // 優先: per-ingredient (@<id>)、 fallback: base
+    var perKey  = '.ingredient-bbox-marker|0@' + ingId;
+    var baseKey = '.ingredient-bbox-marker|0';
+    var entry = (ingId && data[perKey]) ? data[perKey]
+              : data[baseKey] ? data[baseKey]
+              : null;
+    if (!entry) return; // entry 無し → applyIngredientPlacement の chopMechanics 値に任せる
+    var tx = (typeof entry.tx === 'number') ? entry.tx : 0;
+    var ty = (typeof entry.ty === 'number') ? entry.ty : 0;
+    // w/h は "411.091px" の文字列。 数値抽出。 サイズ未編集 (空文字) なら no-op。
+    var wPx = parseFloat(entry.w);
+    var hPx = parseFloat(entry.h);
+    if (!isFinite(wPx) || wPx <= 0 || !isFinite(hPx) || hPx <= 0) return;
+
+    var centerXPct = BBOX_LEFT_DEFAULT_PCT + 100 * (tx + wPx / 2) / bRect.width;
+    var centerYPct = BBOX_TOP_DEFAULT_PCT  + 100 * (ty + hPx / 2) / bRect.height;
+    var widthPct   = 100 * wPx / bRect.width;
+    if (!isFinite(centerXPct) || !isFinite(centerYPct) || !isFinite(widthPct)) return;
+
+    // .ingredient-on-board の CSS transform: translate(-50%, -50%) (中央寄せ) は保持。
+    // inline で書くのは left/top/width のみ (height は img.height:auto で自然追従)。
+    els.ingOnBoard.style.left  = centerXPct + '%';
+    els.ingOnBoard.style.top   = centerYPct + '%';
+    els.ingOnBoard.style.width = widthPct + '%';
   }
 
   // chopY-marker と ingredient-bbox-marker の sync を一括実行する集約関数。
