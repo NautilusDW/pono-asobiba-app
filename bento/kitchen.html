@@ -735,35 +735,37 @@ body[data-screen="fridge"] .stage-wrap {
 }
 
 /* 包丁：絵本タッチ PNG を背景画像として配置。
-   元 PNG は対角配置（blade 左下、handle 右上、画像内に大きな透明余白）
-   なので、画像本来の角度を活かして「まな板の上、刃が下を向くように」
-   右上から斜めに差し込まれる構図にする。 */
+   元 PNG は対角配置（blade 左上、handle 右下、画像内に大きな透明余白、
+   長軸 ≒ -22°）。画像本来の傾きをそのまま活かし、回転は加えず垂直に
+   振り下ろす演出にする。サイズは 960×560（旧 240×140 の 4 倍）で、
+   cutting-board (~960px) より上方のカウンター天板付近まではみ出す。 */
 .knife {
   position: absolute;
-  /* まな板（hit area）の上端をまたぐように配置。座標は .cutting-board 基準。
-     PNG は対角配置（刃先 ≒ 35%,30% / handle ≒ 65%,45%、長軸 -20°〜-22°）。
-     base で +20° 回転して画像の傾きを打ち消し、刃先がまな板中央方向を指す姿勢に。 */
-  top: -70px;
-  right: -10px;
-  width: 240px;
-  height: 140px;
+  /* cutting-board の中央上方に配置（top はマイナスで cutting-board の上にせり出す）。
+     translateX(-50%) で水平中央寄せ、translateY(0) が待機ポジション。
+     base 状態では画像本来の対角 -22° をそのまま見せる（rotate 加えない）。 */
+  left: 50%;
+  top: -480px;
+  width: 960px;
+  height: 560px;
   background-image: url('../assets/images/bento/cooking/knife.png');
   background-repeat: no-repeat;
   background-position: center center;
   background-size: contain;
   image-rendering: -webkit-optimize-contrast;
-  transform: rotate(20deg);
-  transform-origin: 70% 30%; /* handle 側を支点に */
+  transform: translateX(-50%) translateY(0) rotate(0deg);
+  transform-origin: 50% 50%;
   z-index: 3;
   pointer-events: none;
-  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.22));
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.25));
 }
-.knife.chop { animation: knifeChop 0.32s ease-out; }
+.knife.chop { animation: knifeChop 0.36s ease-out; }
 @keyframes knifeChop {
-  0%   { transform: rotate(20deg) translateY(0); }
-  35%  { transform: rotate(45deg) translateY(50px); }
-  60%  { transform: rotate(15deg) translateY(18px); }
-  100% { transform: rotate(20deg) translateY(0); }
+  /* 振り回さず垂直方向のみに落下→戻る。画像本来の傾きを維持。 */
+  0%   { transform: translateX(-50%) translateY(0) rotate(0deg); }
+  40%  { transform: translateX(-50%) translateY(240px) rotate(0deg); }
+  70%  { transform: translateX(-50%) translateY(80px) rotate(0deg); }
+  100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
 }
 
 .ingredient-on-board {
@@ -778,6 +780,20 @@ body[data-screen="fridge"] .stage-wrap {
   transform: translate(-50%, -50%);
   z-index: 1;
   transition: transform 0.18s ease-out;
+  /* PNG 食材画像を入れたとき、まな板の幅 60% 程度に収まるよう調整 */
+  width: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.ingredient-on-board img {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 .ingredient-on-board.shake { animation: ingShake 0.25s ease-out; }
 @keyframes ingShake {
@@ -847,6 +863,15 @@ body[data-screen="fridge"] .stage-wrap {
   pointer-events: none;
   user-select: none;
   animation: cutPieceLand 0.5s ease-out;
+}
+.cut-piece img {
+  width: 60px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.18));
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 @keyframes cutPieceLand {
   0%   { transform: translate(var(--fx, 0), -160px) scale(0.6) rotate(0deg); opacity: 0; }
@@ -1918,7 +1943,13 @@ body[data-screen="fridge"] .stage-wrap {
     state.current = ing;
     state.chopProgress = 0;
     state.combo = 0;
-    els.ingOnBoard.textContent = ing.emoji;
+    // carrot は PNG 画像（carrot_001.png = 丸ごとにんじん）でまな板に表示。
+    // それ以外の食材は引き続き emoji を表示（Phase 1 では carrot のみ implemented）。
+    if (ing.id === 'carrot') {
+      els.ingOnBoard.innerHTML = '<img src="../assets/images/bento/cooking/carrot/carrot_001.png" alt="にんじん" draggable="false">';
+    } else {
+      els.ingOnBoard.textContent = ing.emoji;
+    }
     els.emptyHint.style.display = 'none';
     highlightSelected(ing.id);
     clearBowl();
@@ -2010,10 +2041,17 @@ body[data-screen="fridge"] .stage-wrap {
   function addCutPieceToBowl(ing) {
     const piece = document.createElement('span');
     piece.className = 'cut-piece';
-    piece.textContent = ing.id === 'carrot' ? '❀' : ing.piece;
     if (ing.id === 'carrot') {
-      piece.style.color = '#F2915A';
-      piece.style.textShadow = '0 1px 0 #fff';
+      // 切れ端は carrot_002〜carrot_011.png からランダム選択（10 バリエーション）
+      const n = 2 + Math.floor(Math.random() * 10); // 2..11
+      const idx = String(n).padStart(3, '0');
+      const img = document.createElement('img');
+      img.src = '../assets/images/bento/cooking/carrot/carrot_' + idx + '.png';
+      img.alt = '';
+      img.draggable = false;
+      piece.appendChild(img);
+    } else {
+      piece.textContent = ing.piece;
     }
     const rect = els.bowl.getBoundingClientRect();
     const w = rect.width || 80;
@@ -2217,6 +2255,7 @@ body[data-screen="fridge"] .stage-wrap {
     state.chopProgress = 0;
     state.combo = 0;
     state.cutting = false;
+    // textContent='' で img も含めて中身をクリア
     els.ingOnBoard.textContent = '';
     els.emptyHint.style.display = '';
     els.progress.style.width = '0%';
