@@ -818,6 +818,31 @@ body.layout-editor-on .chopY-marker {
   position: absolute !important;  /* editor の position:relative 強制を相殺 */
 }
 
+/* ── 食材の位置・サイズ調整 marker (layout-editor 専用)。
+   通常プレイ時は完全非表示。 body.layout-editor-on の時のみ表示。
+   editor で resize/move すると loadIngredient 内の
+   syncIngredientBboxFromMarker が .ingredient-on-board の
+   left/top/width を上書きする (high-specificity inline style)。 */
+.ingredient-bbox-marker {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 74%;
+  aspect-ratio: 3.2 / 1;       /* carrot_001.png の aspect 準拠（横長） */
+  transform: translate(-50%, -50%);
+  border: 3px dashed #4CAF50;
+  background: rgba(76, 175, 80, 0.12);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+}
+body.layout-editor-on .ingredient-bbox-marker {
+  display: block;
+  pointer-events: auto;
+  position: absolute !important;   /* editor の position:relative 強制を相殺（v405 知見） */
+}
+
 .ingredient-on-board {
   font-size: 5.6rem;
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.18));
@@ -1447,6 +1472,7 @@ body.layout-editor-on .chopY-marker {
       ['.app-header',     'wh', 'ヘッダー'],
       ['.knife',          'wh', '包丁'],
       ['.chopY-marker',   'wh', '[ツール] 包丁の最下点'],
+      ['.ingredient-bbox-marker', 'wh', '[ツール] 食材の位置とサイズ'],
       ['.bowl',           'wh', '切れ端ボウル'],
     ],
     // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
@@ -1454,7 +1480,7 @@ body.layout-editor-on .chopY-marker {
     // となり、 applier の lookup chain で base キーへ自動 fallback する。
     // ※ perQuestionSelectors という名前は quizland 由来。 本プロジェクトでは
     //   per-ingredient と読み替えること。
-    perQuestionSelectors: ['.knife', '.chopY-marker'],
+    perQuestionSelectors: ['.knife', '.chopY-marker', '.ingredient-bbox-marker'],
     ghPath: 'bento/kitchen/saved-layout.json',
   };
 </script>
@@ -1526,6 +1552,10 @@ body.layout-editor-on .chopY-marker {
                WYSIWYG 調整するためのターゲット。 通常プレイでは非表示 (CSS で
                body.layout-editor-on 時のみ display:block)。 -->
           <div class="chopY-marker" id="chopY-marker" aria-hidden="true" data-le-keep-position="1">⬇</div>
+          <!-- layout-editor 専用 dummy: 食材本体 .ingredient-on-board の位置/サイズを
+               per-ingredient で WYSIWYG 調整するためのターゲット。 通常プレイでは
+               非表示 (CSS で body.layout-editor-on 時のみ display:block)。 -->
+          <div class="ingredient-bbox-marker" id="ingredient-bbox-marker" aria-hidden="true" data-le-keep-position="1"></div>
           <div class="spark" id="spark"></div>
           <div class="ingredient-on-board" id="ingredient-on-board"></div>
           <div class="empty-board-hint" id="empty-board-hint">ざいりょうを えらんでね</div>
@@ -1799,6 +1829,7 @@ body.layout-editor-on .chopY-marker {
     emptyHint:     document.getElementById('empty-board-hint'),
     knife:         document.getElementById('knife'),
     chopYMarker:   document.getElementById('chopY-marker'),
+    ingBboxMarker: document.getElementById('ingredient-bbox-marker'),
     spark:         document.getElementById('spark'),
     ton:           document.getElementById('ton-text'),
     comboPill:     document.getElementById('combo-pill'),
@@ -2164,14 +2195,52 @@ body.layout-editor-on .chopY-marker {
     // null / undefined の場合は CSS デフォルト (left:50%, top:42%, width:74%) に任せる。
     applyIngredientPlacement(ing);
 
-    // chopY-marker は editor 専用ツール。 layout-editor で marker が動かされていなければ
-    // sync は no-op。 img の onload 後の精度のため、 2-frame 後にも再走させる。
-    syncChopYFromMarker(ing);
+    // chopY-marker / ingredient-bbox-marker は editor 専用ツール。
+    // layout-editor で marker が動かされていなければ各 sync は no-op。
+    // img の onload 後の bbox 精度のため、 2-frame 後にも再走させる。
+    // ※ 順序: 先に applyIngredientPlacement (上記)、 後に syncMechanicsFromMarkers
+    //   とすることで editor 編集済みなら最終的に marker 値が勝つ。
+    syncMechanicsFromMarkers(ing);
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
-        syncChopYFromMarker(ing);
+        syncMechanicsFromMarkers(ing);
       });
     });
+  }
+
+  // chopY-marker と ingredient-bbox-marker の sync を一括実行する集約関数。
+  // loadIngredient / rAF 内から呼び出される。
+  function syncMechanicsFromMarkers(ing) {
+    syncChopYFromMarker(ing);
+    syncIngredientBboxFromMarker(ing);
+  }
+
+  // ingredient-bbox-marker の位置・サイズを .ingredient-on-board に反映。
+  // editor 由来 inline transform / width が無ければ no-op で CSS default 維持。
+  //   - editor 未編集 (marker.style.transform が translate(-50%,-50%) のまま、 かつ
+  //     marker.style.width も未設定) → ingredient-on-board の inline style をクリア
+  //     して CSS / applyIngredientPlacement の値に任せる。
+  //   - editor で動かした後 → marker の getBoundingClientRect から % を算出して
+  //     ingredient-on-board の left/top/width を inline で上書き (high-specificity)。
+  function syncIngredientBboxFromMarker(ing) {
+    if (!els.ingBboxMarker || !els.ingOnBoard || !els.board) return;
+    var mTrans = els.ingBboxMarker.style.transform || '';
+    var hasEditorTx = /translate\([^,]+,/.test(mTrans) && mTrans.indexOf('-50%') === -1;
+    var hasEditorWH = !!els.ingBboxMarker.style.width;
+    if (!hasEditorTx && !hasEditorWH) {
+      // 未編集 → ingredient-on-board の inline style は applyIngredientPlacement
+      //          側に任せる (ここでは触らない)。
+      return;
+    }
+    var mRect = els.ingBboxMarker.getBoundingClientRect();
+    var bRect = els.board.getBoundingClientRect();
+    if (!mRect.width || !bRect.width) return;
+    var leftPct  = ((mRect.left + mRect.width / 2 - bRect.left) / bRect.width) * 100;
+    var topPct   = ((mRect.top  + mRect.height / 2 - bRect.top) / bRect.height) * 100;
+    var widthPct = (mRect.width / bRect.width) * 100;
+    els.ingOnBoard.style.left  = leftPct + '%';
+    els.ingOnBoard.style.top   = topPct + '%';
+    els.ingOnBoard.style.width = widthPct + '%';
   }
 
   // INGREDIENTS.chopMechanics.ingredientLeft/Top/Width_pct を
