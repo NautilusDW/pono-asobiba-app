@@ -1963,6 +1963,12 @@ body.layout-editor-on .ingredient-bbox-marker {
     // BENTO_KITCHEN_GET_CURRENT_INGREDIENT (= QUIZLAND_GET_CURRENT_QID alias) が
     // window.__bentoState.current.id を参照する。
     window.__bentoState = state;
+
+    // [v408] editor で bbox-marker / chopY-marker を drag / resize した瞬間に
+    // .ingredient-on-board / chopMechanics.chopY_pct をリアルタイム追従させる。
+    // MutationObserver は 1 度だけ取り付ければ DOM 存続中ずっと有効。
+    attachBboxMarkerObserver();
+    attachChopYMarkerObserver();
   }
 
   // ========== 画面切替 ==========
@@ -2195,6 +2201,12 @@ body.layout-editor-on .ingredient-bbox-marker {
     // null / undefined の場合は CSS デフォルト (left:50%, top:42%, width:74%) に任せる。
     applyIngredientPlacement(ing);
 
+    // [v408] applyIngredientPlacement 直後に bbox-marker を ingredient-on-board の
+    // 現在の表示位置・サイズで初期化する。 CSS デフォルト (left:50%, top:42%, width:74%) と
+    // chopMechanics の inline 値 (例: 55%, 36%, 74%) が食い違うと editor の緑矩形が
+    // 食材本体からズレて見える問題への対応。 ユーザー編集済みなら触らない。
+    seedIngredientBboxFromOnBoard();
+
     // chopY-marker / ingredient-bbox-marker は editor 専用ツール。
     // layout-editor で marker が動かされていなければ各 sync は no-op。
     // img の onload 後の bbox 精度のため、 2-frame 後にも再走させる。
@@ -2203,9 +2215,64 @@ body.layout-editor-on .ingredient-bbox-marker {
     syncMechanicsFromMarkers(ing);
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
+        // [v408] img onload 後の実 bbox で seed を再計算 (carrot PNG の高さ確定後)。
+        seedIngredientBboxFromOnBoard();
         syncMechanicsFromMarkers(ing);
       });
     });
+  }
+
+  // [v408] bbox-marker を ingredient-on-board の現在の表示矩形に合わせて初期化。
+  //   - CSS デフォルト (.ingredient-bbox-marker { left:50%; top:42%; width:74%; aspect-ratio:3.2/1 }) と
+  //     chopMechanics 由来 inline (.ingredient-on-board.style.left = "55%" 等) が食い違うと
+  //     editor の緑矩形が食材から外れて見えるため、 ロード直後に同期しておく。
+  //   - ユーザーが editor で動かした後 (marker.style.transform / width が editor 由来) は
+  //     編集を尊重して何もしない。
+  function seedIngredientBboxFromOnBoard() {
+    if (!els.ingBboxMarker || !els.ingOnBoard || !els.board) return;
+    var mTrans = els.ingBboxMarker.style.transform || '';
+    // editor 由来 transform (translate(<num>px, <num>px) 等) が既にあれば触らない。
+    // 既定値 translate(-50%, -50%) は -50% を含むため seed 対象。
+    if (/translate\([^,]+,/.test(mTrans) && mTrans.indexOf('-50%') === -1) return;
+    if (els.ingBboxMarker.style.width) return; // editor 編集済み (resize) → 触らない
+    var iRect = els.ingOnBoard.getBoundingClientRect();
+    var bRect = els.board.getBoundingClientRect();
+    if (!iRect.width || !bRect.width) return;
+    var leftPct  = ((iRect.left + iRect.width / 2 - bRect.left) / bRect.width) * 100;
+    var topPct   = ((iRect.top  + iRect.height / 2 - bRect.top)  / bRect.height) * 100;
+    var widthPct = (iRect.width / bRect.width) * 100;
+    els.ingBboxMarker.style.left   = leftPct + '%';
+    els.ingBboxMarker.style.top    = topPct + '%';
+    els.ingBboxMarker.style.width  = widthPct + '%';
+    els.ingBboxMarker.style.height = iRect.height + 'px';
+  }
+
+  // [v408] editor で bbox-marker を drag / resize した瞬間に
+  // .ingredient-on-board へ反映するための MutationObserver。
+  //   - 監視対象: .ingredient-bbox-marker.style 属性のみ。
+  //   - 発火時挙動: syncIngredientBboxFromMarker(state.current) を呼ぶ。
+  //   - 無限ループ懸念: sync 関数は .ingredient-on-board.style のみ書き、 marker.style は触らない。
+  //     → marker.style 変更 → sync → ingOnBoard.style 変更 で停止。 ループ無し。
+  function attachBboxMarkerObserver() {
+    if (!els.ingBboxMarker) return;
+    var obs = new MutationObserver(function () {
+      if (state.current) syncIngredientBboxFromMarker(state.current);
+    });
+    obs.observe(els.ingBboxMarker, { attributes: true, attributeFilter: ['style'] });
+  }
+
+  // [v408] editor で chopY-marker を drag した瞬間に
+  // chopMechanics.chopY_pct へ反映するための MutationObserver。
+  //   - 監視対象: .chopY-marker.style 属性のみ。
+  //   - 発火時挙動: syncChopYFromMarker(state.current) を呼ぶ。
+  //   - 無限ループ懸念: sync 関数は ing.chopMechanics.chopY_pct を更新するのみで
+  //     marker.style は触らない。 → ループ無し。
+  function attachChopYMarkerObserver() {
+    if (!els.chopYMarker) return;
+    var obs = new MutationObserver(function () {
+      if (state.current) syncChopYFromMarker(state.current);
+    });
+    obs.observe(els.chopYMarker, { attributes: true, attributeFilter: ['style'] });
   }
 
   // chopY-marker と ingredient-bbox-marker の sync を一括実行する集約関数。
