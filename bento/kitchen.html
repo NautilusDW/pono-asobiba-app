@@ -766,7 +766,9 @@ body[data-screen="fridge"] .stage-wrap {
   top: -55%;
   width: 70%;
   height: auto;
-  aspect-ratio: 240 / 140;
+  /* v400: knife.png 余白削減版 (953×1242, 0.767 縦長) に更新。
+     旧 240/140 のままだと画像が歪むため aspect-ratio も同期。 */
+  aspect-ratio: 953 / 1242;
   background-image: url('../assets/images/bento/cooking/knife.png');
   background-repeat: no-repeat;
   background-position: center center;
@@ -778,6 +780,12 @@ body[data-screen="fridge"] .stage-wrap {
   z-index: 3;
   pointer-events: none;
   filter: drop-shadow(0 8px 10px rgba(0,0,0,0.25));
+}
+/* v400 [Critical fix]: 通常プレイでは .knife を pointer-events: none で透過させて
+   まな板タップを邪魔しないが、 editor モード (?edit=1) では knife 本体を掴んで
+   drag できないとレイアウト調整できないため、 editor 時のみ pointer-events を復活。 */
+body.layout-editor-on .knife {
+  pointer-events: auto;
 }
 
 /* ── 振り下ろし最下点 marker (layout-editor 専用)。
@@ -1649,9 +1657,16 @@ body.layout-editor-on .chopY-marker {
   //                              'left-to-right' / 'top-to-bottom' / 'bottom-to-top'。
   //   bladeTipOffsetX_pct ...... knife コンテナ中央から見た刃先 X オフセット
   //                              (knife.png の画像幅 %、左がマイナス、右がプラス)。
-  //                              例: knife.png の刃先が画像内 (37.66%, 30.37%) にあるなら
-  //                              37.66 - 50 = -12.34。 playChopAnim でこの値を使って
+  //                              例: knife.png の刃先が画像内 X=10.8% にあるなら
+  //                              10.8 - 50 = -39.2。 playChopAnim でこの値を使って
   //                              「knife コンテナ中央 X」を逆算する。 未指定なら 0 (中央が刃先扱い)。
+  //
+  // ── ingredientLeft_pct / ingredientTop_pct / ingredientWidth_pct (まな板基準 0〜100%):
+  //    すべて .cutting-board (まな板領域) を基準にした 0〜100% 値。
+  //    ingredientLeft_pct = 0 はまな板の左端、 100 は右端、 50 は中央。
+  //    ingredientTop_pct  = 0 はまな板の上端、 100 は下端、 50 は中央 (デフォルト 42 は中央より少し上)。
+  //    ingredientWidth_pct = 食材のサイズ (まな板幅に対する %)。 デフォルト 74。
+  //    null / undefined なら CSS デフォルト (left:50%, top:42%, width:74%) が効く。
   //
   // imageBase / imagePieces .... まな板上の本体画像 / 切れ端バリエーション。
   //   imagePieces = { dir, from, to, pad } で carrot_002〜carrot_011 を生成する
@@ -1667,15 +1682,18 @@ body.layout-editor-on .chopY-marker {
         startX_pct: 87, endX_pct: 13,
         liftY_pct: 0, chopY_pct: 50,
         maskAxis: 'right-to-left',
-        // knife.png 実測: 刃先 (blade tip) は画像内 (37.66%, 30.37%)、画像中心 (50%, 52.48%)。
-        // 横方向オフセット = 37.66 - 50 = -12.34 (画像中心より左に約 12%pt)。
-        bladeTipOffsetX_pct: -12.34,
+        // v400: knife.png 余白削減版 (953×1242) 実測。
+        // 上端帯 (0〜5% 行) の中央 X = 約 10.8% (旧版 37.66% から大きく左に移動)。
+        // 横方向オフセット = 10.8 - 50 = -39.2 → -39 採用 (画像中心より左に約 39%pt)。
+        // 旧値 -12.34 (旧 knife.png 1200×675) からの差分は余白削減で「刃先がより画像内
+        // 左上に位置するようになった」ことに起因。
+        bladeTipOffsetX_pct: -39,
         // ── .ingredient-on-board の位置/サイズ (cutting-board 基準 %)。
-        // null の場合は CSS デフォルト (left:50%, top:42%, width:74%) に任せる。
-        // v399: editor の bbox marker を撤去したので、 ここで コード値として持つ方針に
-        // 切替 (まずは null = 既存挙動維持。 値を入れた瞬間に inline style で上書き)。
-        ingredientLeft_pct:  null,
-        ingredientTop_pct:   null,
+        // 上の長コメント参照。 null なら CSS デフォルト (50/42/74)。
+        // v400: ユーザー要望「もう少し右上」反映: left 50→55 (右+5pt) / top 42→36 (上-6pt)。
+        // width は触らず CSS デフォルト 74% を維持。
+        ingredientLeft_pct:  55,
+        ingredientTop_pct:   36,
         ingredientWidth_pct: null,
       },
     },
