@@ -789,30 +789,33 @@ body.layout-editor-on .knife {
 }
 
 /* ── 振り下ろし最下点 marker。
-   ※ DEBUG v404: 「絶対に見える」状態に強化。常時表示・真っ赤・最前面。
-   後で body.layout-editor-on 限定の控えめなスタイルに戻すこと。 */
+   通常プレイでは display:none、editor (?edit=1) 時のみ表示。
+   editor は .resizable に position:relative を強制するので、
+   HTML 側 data-le-keep-position="1" + CSS 側 position:absolute !important
+   の二段構えで cutting-board 中央配置を維持する。 */
 .chopY-marker {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 80px;          /* DEBUG: 48 → 80 にさらに拡大 */
-  height: 80px;         /* 同上 */
-  transform: translate(-50%, -50%) !important;  /* editor 上書き対策 */
-  border: 5px solid #FF0000;                    /* 真っ赤の太い border */
-  background: rgba(255, 0, 0, 0.8);             /* 赤の高不透明 */
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  border: 3px dashed #D86E2F;
+  background: rgba(255, 140, 60, 0.6);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 9999 !important;                     /* 最前面 */
-  font-size: 40px;                              /* ⬇ も大きく */
+  z-index: 4;
+  display: none;
+  font-size: 28px;
   color: #fff;
-  font-weight: 900;
-  display: flex !important;                     /* editor mode 関係なく常時表示 */
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   align-items: center;
   justify-content: center;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 body.layout-editor-on .chopY-marker {
-  pointer-events: auto;                         /* editor 時のみ drag 可能 */
+  display: flex;
+  pointer-events: auto;
+  position: absolute !important;  /* editor の position:relative 強制を相殺 */
 }
 
 .ingredient-on-board {
@@ -1522,7 +1525,7 @@ body.layout-editor-on .chopY-marker {
           <!-- layout-editor 専用 dummy: chopY (振り下ろし最下点) を per-ingredient で
                WYSIWYG 調整するためのターゲット。 通常プレイでは非表示 (CSS で
                body.layout-editor-on 時のみ display:block)。 -->
-          <div class="chopY-marker" id="chopY-marker" aria-hidden="true">⬇</div>
+          <div class="chopY-marker" id="chopY-marker" aria-hidden="true" data-le-keep-position="1">⬇</div>
           <div class="spark" id="spark"></div>
           <div class="ingredient-on-board" id="ingredient-on-board"></div>
           <div class="empty-board-hint" id="empty-board-hint">ざいりょうを えらんでね</div>
