@@ -139,6 +139,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-17T12:05:11Z - bento/kitchen.html editor mode で上部 toolbar 分の縦オフセット適用 (fitStage で toolbarH=96 / attachEditorModeObserver で body.class 変化監視, sw v414→v415)
+- **タスク**: bento/kitchen.html editor mode で上部 toolbar 分の縦オフセット適用 (fitStage で toolbarH=96 / attachEditorModeObserver で body.class 変化監視, sw v414→v415)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 342
+- **エラー数**: 37
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 153, "Agent": 49, "Read": 32, "ToolSearch": 1, "Write": 2, "Edit": 100, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-17T11:56:08Z - feature_quizland_voicepeak_progress.md を sw v413 (body 完了) に更新: マトリクス/フロントマター/H1/次バッチ/sw履歴/残存課題を 154/180=86% に同期、 次バッチを trivia に切替
 - **タスク**: feature_quizland_voicepeak_progress.md を sw v413 (body 完了) に更新: マトリクス/フロントマター/H1/次バッチ/sw履歴/残存課題を 154/180=86% に同期、 次バッチを trivia に切替
 - **結果**: 成功
@@ -240,19 +253,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 137, "Agent": 44, "Read": 29, "ToolSearch": 1, "Write": 2, "Edit": 83, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-17T08:48:28Z - bento/kitchen bbox-marker 初期位置同期 + MutationObserver による editor リアルタイム追従 (sw v408)
-- **タスク**: bento/kitchen bbox-marker 初期位置同期 + MutationObserver による editor リアルタイム追従 (sw v408)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 288
-- **エラー数**: 26
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 133, "Agent": 43, "Read": 28, "ToolSearch": 1, "Write": 2, "Edit": 76, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
