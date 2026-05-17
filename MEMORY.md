@@ -139,6 +139,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-17T13:59:12Z - order_color phase2: 既存 phase1 wav を manifest 動的参照で 71 件カバー + みずいろ 1 件後回し (TTS 重複生成回避)
+- **タスク**: order_color phase2: 既存 phase1 wav を manifest 動的参照で 71 件カバー + みずいろ 1 件後回し (TTS 重複生成回避)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 417
+- **エラー数**: 45
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 187, "Agent": 54, "Read": 47, "ToolSearch": 1, "Write": 2, "Edit": 121, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-17T13:37:52Z - feature_quizland_voicepeak_progress.md に phase2 進捗セクションを追加 (sw v420 / count_total + order_color = 2/8 完了 / +38 行)
 - **タスク**: feature_quizland_voicepeak_progress.md に phase2 進捗セクションを追加 (sw v420 / count_total + order_color = 2/8 完了 / +38 行)
 - **結果**: 成功
@@ -241,18 +254,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 82, "Read": 9, "Agent": 54, "ToolSearch": 2, "Grep": 2, "Edit": 3, "Glob": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-17T12:05:11Z - bento/kitchen.html editor mode で上部 toolbar 分の縦オフセット適用 (fitStage で toolbarH=96 / attachEditorModeObserver で body.class 変化監視, sw v414→v415)
-- **タスク**: bento/kitchen.html editor mode で上部 toolbar 分の縦オフセット適用 (fitStage で toolbarH=96 / attachEditorModeObserver で body.class 変化監視, sw v414→v415)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 342
-- **エラー数**: 37
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 153, "Agent": 49, "Read": 32, "ToolSearch": 1, "Write": 2, "Edit": 100, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
