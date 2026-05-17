@@ -1748,10 +1748,16 @@ body.layout-editor-on .endX-marker {
   const stageEl = document.getElementById('stage');
   function fitStage() {
     if (!stageEl) return;
-    const w = window.innerWidth, h = window.innerHeight;
+    // [v415] editor mode 時は上部 toolbar (約 96px) の下からステージ開始。
+    // 通常プレイ (?edit=1 なし) では toolbarH = 0 で従来挙動を完全に維持。
+    const isEditor = document.body.classList.contains('layout-editor-on');
+    const toolbarH = isEditor ? 96 : 0;
+    const w = window.innerWidth;
+    const h = window.innerHeight - toolbarH;
     const scale = Math.min(w / 1600, h / 900);
     const sw = 1600 * scale, sh = 900 * scale;
-    const ox = (w - sw) / 2, oy = (h - sh) / 2;
+    const ox = (w - sw) / 2;
+    const oy = toolbarH + (h - sh) / 2;
     stageEl.style.transformOrigin = '0 0';
     stageEl.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + scale + ')';
   }
@@ -2066,6 +2072,8 @@ body.layout-editor-on .endX-marker {
     // [v410] startX-marker / endX-marker (包丁の切り始め/終わり X) も同様に追従。
     attachStartXMarkerObserver();
     attachEndXMarkerObserver();
+    // [v415] editor mode 切替 (body.layout-editor-on) を監視して fitStage 再走。
+    attachEditorModeObserver();
   }
 
   // ========== 画面切替 ==========
@@ -2369,6 +2377,20 @@ body.layout-editor-on .endX-marker {
     els.ingBboxMarker.style.top    = topPct + '%';
     els.ingBboxMarker.style.width  = widthPct + '%';
     els.ingBboxMarker.style.height = iRect.height + 'px';
+  }
+
+  // [v415] body の class 変化 (layout-editor-on の付与/解除) を監視して
+  // editor mode 切替時にステージサイズを再計算する。
+  //   - 監視対象: document.body.class 属性のみ。
+  //   - 発火時挙動: fitStage() を呼ぶ。
+  //   - 無限ループ懸念: fitStage は stageEl.style.transform のみ書き、 body.class は触らない。
+  function attachEditorModeObserver() {
+    new MutationObserver(function () {
+      fitStage();
+    }).observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
   }
 
   // [v408] editor で bbox-marker を drag / resize した瞬間に
