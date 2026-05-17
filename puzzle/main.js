@@ -721,11 +721,18 @@ function computePlacementZones() {
 }
 
 function placePieceFallback(zones, w, h) {
-  // 安全策: 中央ボードを避ける条件すら満たせない場合の最終フォールバック
-  // (極端に細いフレーム等)。 全域からランダムに 1 点返す。
-  const x = zones.pad + Math.random() * Math.max(1, zones.W - 2 * zones.pad - w);
+  // 24 試行すべて失敗時の最終フォールバック: 左ストリップ or 右ストリップ
+  // (中央ボード矩形を必ず避ける)。 縦は全域からサンプリング。
+  const leftW  = Math.max(1, zones.bx0 - zones.pad - w);
+  const rightW = Math.max(1, zones.W - zones.bx1 - zones.pad - w);
+  const useLeft = (leftW > rightW) ? true
+                  : (rightW > leftW) ? false
+                  : (Math.random() < 0.5);
+  const x = useLeft
+    ? zones.pad + Math.random() * leftW
+    : zones.bx1 + Math.random() * rightW;
   const y = zones.pad + Math.random() * Math.max(1, zones.H - 2 * zones.pad - h);
-  return { x, y };
+  return { x: Math.max(zones.pad, x), y };
 }
 
 function placePieceInZone(zones, w, h, placed) {

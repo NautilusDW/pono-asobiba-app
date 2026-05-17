@@ -7,6 +7,20 @@ metadata:
 
 # パズル難易度 20ステージ再設計 (2026-05-15, sw v1001→v1003)
 
+## v411: 16:9 フレーム + 全面散布 + ベージュ背景 (2026-05-17)
+
+- `.puzzle-frame` を **`aspect-ratio: 4/3 → 16/9`** に変更 (default + landscape-touch media 両方)
+- 背景を `P02.png` (木の壁) → **flat beige `linear-gradient(180deg, #F5E6D3, #ECDCC2)`** に置換
+- `boardMaxW = canvasW * 0.55 → * 0.50` (ボードを若干縮めて scatter 領域を確保)
+- **scatter ロジック全面書換**: 旧「偶数 index → 左ゾーン / 奇数 → 右ゾーン」 → 新「**フルフレーム sample - 中央ボード矩形除外 + nearest-neighbor 分離 (target 0.85 * max(pieceW, pieceH), 24 attempts, best-of-24 fallback)**」
+- `placePieceFallback` も中央ボード矩形を必ず除外する strip-based に修正 (cross-review P1 fix)
+- hint 反転表示のフローも新 scatter API に揃え、 snap 済みピース位置を `placed[]` に pre-seed
+- 影響範囲: `puzzle/main.js` の `computePlacementZones` / `placePieceInZone` / `placePieceFallback` / `scatterPiece` / `shufflePieces` / `boardMaxW` / `btnHint` ハンドラ、 `puzzle/style.css` の `.puzzle-frame`
+
+**Why:** ユーザー指摘「ピースが狭い左右ゾーンに詰め込まれてすごい重なってる」。 4:3 + 55% ボード + 22.5%×2 左右ゾーンでは絶対面積が足りず、 ピース 6〜20 個が物理的に重なってしまっていた。 16:9 化 + 中央ボード以外の全周ゾーン + 0.85*pieceSize 分離で目視重なりを最小化。
+
+**How to apply:** 他ゲーム (bento/kitchen 等) でも「ピース/食材が散らばる必要があるけど中央に "固定オブジェクト" がある」 layout は同じパターンが使える: フレーム全域 sample - 固定オブジェクト矩形除外 + nearest-neighbor 分離 + best-of-N fallback。
+
 ## 確定方針
 
 - **対象年齢**: 3〜6歳。3〜4歳は序盤4-6ピースで遊べる、6歳は後半16-20ピースで歯ごたえ
