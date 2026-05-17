@@ -765,7 +765,11 @@ body[data-screen="fridge"] .stage-wrap {
      --knife-x: .cutting-board 基準の刃先 X % (chopMechanics.startX_pct / endX_pct)。
      editor が tx/ty を inline transform にセットするため、 wrapper には
      fallback transform を書かない (editor の transform を保護)。
-     transition は left のみ linear に (ease-out のベジェ風挙動を排除し直角感)。 */
+     transition は left のみ linear に (ease-out のベジェ風挙動を排除し直角感)。
+     [v426] 0.1s だと board 幅の半分以上を横断する場合に瞬間移動に見える子供が
+     多かったため 0.18s に延長。 playChopAnim の Phase 2/3 setTimeout も
+     100ms→200ms / 200ms→300ms にずらして「移動完了→振り下ろし→持ち上げ」を
+     視認可能なテンポにする。 */
   left: var(--knife-x, 68%);
   top: -55%;
   width: 70%;
@@ -775,7 +779,7 @@ body[data-screen="fridge"] .stage-wrap {
   aspect-ratio: 953 / 1242;
   image-rendering: -webkit-optimize-contrast;
   transform-origin: 50% 80%;
-  transition: left 0.1s linear;
+  transition: left 0.18s linear;
   z-index: 3;
   pointer-events: none;
   filter: drop-shadow(0 8px 10px rgba(0,0,0,0.25));
@@ -2317,27 +2321,31 @@ body.layout-editor-on .endX-marker {
     // bladeTipOffsetX_pct を逆補正してから seed する (playChopAnim と同じ式)。
     if (els.knife && ing.chopMechanics) {
       var m = ing.chopMechanics;
-      // [v419] wrapper (.knife) の transition は flash 抑制対象、 inner (.knife-inner) の
+      // [v419/426] wrapper (.knife) の transition は flash 抑制対象、 inner (.knife-inner) の
       // transform も初期 seed 時は瞬間反映したいので両方とも transition を一時 OFF。
-      var prevKnifeTransition = els.knife.style.transition;
-      var prevInnerTransition = els.knifeInner ? els.knifeInner.style.transition : '';
+      // [v426] 復元は prevKnifeTransition || '' をやめ、 必ず空文字 (= inline 削除) にする。
+      //   playChopAnim の Phase 1 で transition を 'none' に書き換える残滓を拾ってしまうと、
+      //   以降の横スライド (left transition) が無効化される再現条件 (稀) があった。
+      //   空文字なら CSS Sheet 由来の .knife { transition: left 0.18s linear; } に戻る。
       els.knife.style.transition = 'none';
       if (els.knifeInner) els.knifeInner.style.transition = 'none';
       var KNIFE_WIDTH_PCT_OF_BOARD_SEED = 70; // .knife { width: 70%; } と同期
       var seedTipOffset = m.bladeTipOffsetX_pct || 0;
       var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
       els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
-      // [v419] .knife の style.transform は触らない (editor 由来 transform を保護)。
-      // Y の seed は .knife-inner.style.transform で行う。
+      // [v419/426] loadIngredient (seed) では .knife の style.transform は触らない
+      //   (editor 由来 translate(tx, ty) を保護)。 chop 中だけ playChopAnim が
+      //   X 成分を捨て Y 成分 (ty) のみ残す translate(0, ty) に書き換える。
+      //   Y のチョップモーションは .knife-inner.style.transform 側で行う。
       var seedLiftY = m.liftY_pct || 0;
       if (els.knifeInner) {
         els.knifeInner.style.transform = 'translate(0, ' + seedLiftY + '%)';
       }
-      // 2-frame 後に transition を戻す (初回フラッシュ抑制)
+      // 2-frame 後に transition を戻す (初回フラッシュ抑制)。 [v426] 必ず空文字でクリア。
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
-          els.knife.style.transition = prevKnifeTransition || '';
-          if (els.knifeInner) els.knifeInner.style.transition = prevInnerTransition || '';
+          if (els.knife) els.knife.style.transition = '';
+          if (els.knifeInner) els.knifeInner.style.transition = '';
         });
       });
     }
@@ -2402,6 +2410,28 @@ body.layout-editor-on .endX-marker {
     // [v425] chop アニメ後に wrapper.style.transform が空になっているケースもあるので、
     // ここで apply が走ることで rest pose (editor の tx/ty) が確実に復元される。
     reapplyKnifeLayout();
+  }
+
+  // [v426] chop 中に保持したい Y 成分 (editor 保存の ty) を取得するヘルパ。
+  // playChopAnim で wrapper.style.transform を完全クリアすると、 editor 由来の ty
+  // (例: carrot で +125.7px) が一瞬で失われ、 包丁が「上にジャンプして横スライド」
+  // するように見える Y 軸ジャンプバグが起きていた (v425 報告)。 chop 中は X は
+  // --knife-x で制御し、 Y は editor 値 (ty) を translate(0, ty) で保持する。
+  //   - per-ingredient エントリ `.knife|0@<id>` を優先。
+  //   - フォールバックは whole-doc base `.knife|0`。
+  //   - state.current / window._currentLayoutData 未定義時は 0 を返す。
+  function getEditorTyForCurrentIngredient() {
+    try {
+      if (!window._currentLayoutData) return 0;
+      var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
+        ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
+      var key = ingredientId ? ('.knife|0@' + ingredientId) : null;
+      var base = '.knife|0';
+      var entry = (key && window._currentLayoutData[key]) || window._currentLayoutData[base];
+      return (entry && typeof entry.ty === 'number') ? entry.ty : 0;
+    } catch (e) {
+      return 0;
+    }
   }
 
   // [v425] knife wrapper の inline transform を saved-layout から再書き込みするヘルパ。
@@ -2799,29 +2829,40 @@ body.layout-editor-on .endX-marker {
       const chopY = m.chopY_pct || 0;
       const liftY = m.liftY_pct || 0;
 
-      // [v425] 順序逆転: 「左→下→上」(現タップの目標 X に横スライドしてから振り下ろし)。
+      // [v425/426] 順序逆転: 「左→下→上」(現タップの目標 X に横スライドしてから振り下ろし)。
       //   旧 v419: 下→上→左 (次タップ予告)。この場合 1st タップは editor 位置で振り下ろしになり
       //   「青ライン (startX) が 1st 切り口」というユーザー直感に反していた。
       //   v425:
       //     Phase 1 (即時)    : wrapper を現タップ目標 X へ横移動 (1st タップなら startX)
-      //     Phase 2 (100ms 後): knife-inner.Y = chopY  (真下に振り下ろし)
-      //     Phase 3 (200ms 後): knife-inner.Y = liftY  (持ち上げ)
+      //     Phase 2 (200ms 後): knife-inner.Y = chopY  (真下に振り下ろし)  [v426: 100→200ms]
+      //     Phase 3 (300ms 後): knife-inner.Y = liftY  (持ち上げ)         [v426: 200→300ms]
+      //   v426 (レビュー反映):
+      //     - 横スライドを 0.1s → 0.18s に延ばし「用意 → 開始点へ移動 → 切る」を視認可能に
+      //     - 横スライド時に wrapper.style.transform = '' で editor の ty が瞬時に失われ
+      //       垂直方向に上ジャンプして見える Y 軸ジャンプバグを修正。 ty (editor 保存値) は
+      //       chop 中も translate(0, ty) で保持。 X は --knife-x (left) で制御。
+      //     - Phase 2 setTimeout に「state スナップショット ガード」を追加。 連打で N+1 タップが
+      //       重なったとき、 古い Phase 2 callback が新しい chop の途中で発火して inner が
+      //       逆方向に戻るチラつきを抑止。
       //
       //   ※ editor 由来 wrapper.style.transform (translate(tx, ty) で rest pose を表現) は
-      //      chop 中だけ無効化する必要がある。 editor transform は X 軸を支配しているので、
-      //      これを残したまま --knife-x を変えても見た目は editor 位置から動かない。
-      //      → chop 開始時に inline transform を一旦クリア。 視覚的にジャンプしないよう、
-      //         クリア前の実 X (boundingRect) を一度 --knife-x として書き戻してから transform を
-      //         消す ⇒ 視覚位置は維持 ⇒ rAF で目標 --knife-x へ更新 → CSS transition (`left 0.1s linear`)
-      //         が走り「rest pose → startX へ横スライド」が成立する。
-      //      rest pose 復帰は resetBoard / loadIngredient で LayoutApplier.apply() を再走させる。
+      //      X 軸成分 (tx) のみ chop 中無効化、 Y 軸成分 (ty) は維持する。 wrapper の X は
+      //      --knife-x (left プロパティ) が支配、 editor の tx を消しても --knife-x で代替できる。
+      //      Y は --knife-y 系の代替がないため、 ty をそのまま保持しないと画面ジャンプする。
+      //      rest pose 復帰 (tx の再書込) は resetBoard / loadIngredient で
+      //      LayoutApplier.apply() を再走させる。
 
       // 現タップの目標 X (chopProgress は onBoardTap で += 1 済み = 1..total)。
       const tNow = Math.max(0, Math.min(1, (state.chopProgress - 1) / denom));
       const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * tNow;
       const targetWrapperX = targetBladeX + compensation;
 
-      // Phase 1: 左 — editor の inline transform を打ち消しつつ視覚位置を維持、
+      // [v426] editor 保存の ty (Y 成分) を取得。 chop 中も translate(0, ty) で保持する。
+      const editorTy = getEditorTyForCurrentIngredient();
+      const tyTransform = 'translate(0px, ' + editorTy + 'px)';
+
+      // Phase 1: 左 — editor の X 成分 (tx) を打ち消しつつ視覚位置を維持、
+      //          Y 成分 (ty) は translate(0, ty) で保持、
       //          次フレームで目標 X を書いて transition を走らせる。
       try {
         const bRect = els.board ? els.board.getBoundingClientRect() : null;
@@ -2832,7 +2873,7 @@ body.layout-editor-on .endX-marker {
           const prevTrans = els.knife.style.transition;
           els.knife.style.transition = 'none';
           els.knife.style.setProperty('--knife-x', currentLeftPct + '%');
-          els.knife.style.transform = ''; // editor 由来 translate を破棄 (chop 中だけ)
+          els.knife.style.transform = tyTransform; // [v426] X だけ捨てて ty は保持
           // 強制 reflow で seed を確定させてから transition を戻す
           void els.knife.offsetWidth;
           els.knife.style.transition = prevTrans || '';
@@ -2842,32 +2883,41 @@ body.layout-editor-on .endX-marker {
           });
         } else {
           // 板の bbox が取れない (画面外等) → fallback: 即時設定
-          els.knife.style.transform = '';
+          els.knife.style.transform = tyTransform;
           els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
         }
       } catch (e) {
-        els.knife.style.transform = '';
+        els.knife.style.transform = tyTransform;
         els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
       }
 
-      // Phase 2: 下 (100ms 後) — 横スライド完了後に振り下ろし。
+      // [v426] Phase 2/3 ガード用: この chop 呼び出し時点の chopProgress を snapshot。
+      // setTimeout 発火時に state.chopProgress と一致しなければ「古い chop の callback」
+      // とみなして no-op。 連打で N+1 タップが重なったときのチラつきを抑止。
+      const chopSnapshot = state.chopProgress;
+
+      // Phase 2: 下 (200ms 後) — 横スライド完了 (0.18s) 後に振り下ろし。
       //   ※ 最終タップでは onBoardTap → completeIngredient → clearPendingTimers が
       //   この後すぐ走るため、 pendingTimers に push してしまうと cancel されて
       //   「最後の切り」が見えなくなる。 cancel 対象から外し、 cutting フラグも見ない
       //   (cutting でも実際の包丁振り下ろしモーションは見せたい)。
+      //   ただし連打時の stale callback 対策で chopSnapshot ガードを追加。
       setTimeout(function () {
         if (!knifeInner) return;
+        if (state.chopProgress !== chopSnapshot) return; // [v426] 古い chop の callback は破棄
+        if (state.transitioning) return;
         knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
-      }, 100);
+      }, 200);
 
-      // Phase 3: 上 (200ms 後) — 持ち上げ。 完成タップ後 (cutting 中) は切り終わり
+      // Phase 3: 上 (300ms 後) — 持ち上げ。 完成タップ後 (cutting 中) は切り終わり
       //   位置で静止させたいので skip。 pendingTimers に積めば completeIngredient の
       //   clearPendingTimers で cancel されるが、 念のため cutting check も残す。
       state.pendingTimers.push(setTimeout(function () {
         if (!knifeInner) return;
         if (state.cutting) return;
+        if (state.chopProgress !== chopSnapshot) return; // [v426] 古い chop の callback は破棄
         knifeInner.style.transform = 'translate(0, ' + liftY + '%)';
-      }, 200));
+      }, 300));
     }
 
     els.ingOnBoard.classList.remove('shake');
