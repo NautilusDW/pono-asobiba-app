@@ -757,7 +757,12 @@ body[data-screen="fridge"] .stage-wrap {
                          以前の -480px ≒ cutting-board 高さの -55% 相当) */
 .knife {
   position: absolute;
-  left: 68%;
+  /* JS が CSS 変数 --knife-x / --knife-y を更新し、 transition で滑らかに移動。
+     --knife-x: .cutting-board 基準の刃先 X % (chopMechanics.startX_pct / endX_pct)。
+     --knife-y: .knife 自身の高さ基準の Y % (liftY_pct / chopY_pct)。
+     旧 @keyframes knifeChop は廃止 (上下しか動かなかったため左→右の切り進みが
+     できなかった)。 */
+  left: var(--knife-x, 68%);
   top: -55%;
   width: 70%;
   height: auto;
@@ -767,20 +772,34 @@ body[data-screen="fridge"] .stage-wrap {
   background-position: center center;
   background-size: contain;
   image-rendering: -webkit-optimize-contrast;
-  transform: translate(-50%, 0) rotate(0deg);
+  transform: translate(-50%, var(--knife-y, 0%)) rotate(0deg);
   transform-origin: 50% 80%;
+  transition: transform 0.18s ease-out, left 0.18s ease-out;
   z-index: 3;
   pointer-events: none;
   filter: drop-shadow(0 8px 10px rgba(0,0,0,0.25));
 }
-.knife.chop { animation: knifeChop 0.36s ease-out; }
-@keyframes knifeChop {
-  /* 振り回さず垂直方向のみに落下→戻る。画像本来の傾きを維持。
-     translateY も % 化（要素自身の高さ基準）でレイアウト追従性を担保。 */
-  0%   { transform: translate(-50%, 0)   rotate(0deg); }
-  40%  { transform: translate(-50%, 50%) rotate(0deg); }
-  70%  { transform: translate(-50%, 20%) rotate(0deg); }
-  100% { transform: translate(-50%, 0)   rotate(0deg); }
+
+/* ── 振り下ろし最下点 marker (layout-editor 専用)。
+   通常プレイ時は完全に非表示。 body.layout-editor-on の時のみ表示し、
+   per-ingredient の chopY (包丁の最下点) を WYSIWYG で調整するための
+   dummy DOM として機能する。 */
+.chopY-marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(216, 110, 47, 0.9);
+  background: rgba(255, 200, 130, 0.45);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+}
+body.layout-editor-on .chopY-marker {
+  display: block;
 }
 
 .ingredient-on-board {
@@ -1372,6 +1391,54 @@ body[data-screen="fridge"] .stage-wrap {
   }
 }
 </style>
+
+<!-- ===================== layout-editor 組み込み =====================
+     `?edit=1` を付けてアクセスすると右上に toolbar が出て、 .knife / .chopY-marker /
+     .ingredient-on-board を per-ingredient で WYSIWYG 調整できる。 通常プレイ時は
+     何も起動しない (defer + URL クエリ判定で LayoutSystem 側がガード)。
+
+     `BENTO_KITCHEN_GET_CURRENT_INGREDIENT` は本ページが提供する「いま選ばれている
+     食材 ID を返す関数」。 layout-editor / layout-system / layout-applier は内部的に
+     `QUIZLAND_GET_CURRENT_QID` という名前で per-entity ID を取りに来るので、
+     **同じ関数オブジェクトを alias として再束縛**して名前の壁を越える (汎用リネームは
+     別 PR 予定; 現状はコメントで「per-ingredient と読み替え」明示)。
+=================================================================== -->
+<link rel="stylesheet" href="../common/layout/layout-shared.css">
+<script>
+  window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT = function () {
+    try {
+      return (window.__bentoState && window.__bentoState.current && window.__bentoState.current.id) || null;
+    } catch (e) {
+      return null;
+    }
+  };
+  // layout-editor / applier が `QUIZLAND_GET_CURRENT_QID` を参照するので alias。
+  // ここでは per-ingredient ID (carrot / wiener / ...) を「qid 相当」として渡す。
+  window.QUIZLAND_GET_CURRENT_QID = window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT;
+
+  window.EditorBootstrapConfig = {
+    layoutUrl: './kitchen/saved-layout.json',
+    canvas: '#stage',
+    // [selector, mode, label] — mode 'wh' は wh+position 編集を許可。
+    editableSelectors: [
+      ['.app-header',          'wh', 'ヘッダー'],
+      ['.cutting-board',       'wh', 'まな板'],
+      ['.ingredient-on-board', 'wh', '食材本体'],
+      ['.knife',               'wh', '包丁'],
+      ['.chopY-marker',        'wh', '振り下ろし最下点'],
+      ['.bowl',                'wh', '切れ端ボウル'],
+    ],
+    // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
+    // editor の保存キーは `${sel}|${i}@${ingredientId}` の形 (`@carrot` / `@wiener` …)
+    // となり、 applier の lookup chain で base キーへ自動 fallback する。
+    // ※ perQuestionSelectors という名前は quizland 由来。 本プロジェクトでは
+    //   per-ingredient と読み替えること。
+    perQuestionSelectors: ['.ingredient-on-board', '.knife', '.chopY-marker'],
+    ghPath: 'bento/kitchen/saved-layout.json',
+  };
+</script>
+<script src="../common/layout/editor-bootstrap.js" defer></script>
+
 </head>
 <body data-screen="select">
 
@@ -1434,6 +1501,10 @@ body[data-screen="fridge"] .stage-wrap {
 
         <div class="cutting-board" id="cutting-board" role="button" tabindex="0" aria-label="まな板（タップまたは Enter/Space キーでトントン）" aria-keyshortcuts="Enter Space">
           <div class="knife" id="knife" aria-hidden="true"></div>
+          <!-- layout-editor 専用 dummy: chopY (振り下ろし最下点) を per-ingredient で
+               WYSIWYG 調整するためのターゲット。 通常プレイでは非表示 (CSS で
+               body.layout-editor-on 時のみ display:block)。 -->
+          <div class="chopY-marker" id="chopY-marker" aria-hidden="true"></div>
           <div class="spark" id="spark"></div>
           <div class="ingredient-on-board" id="ingredient-on-board"></div>
           <div class="empty-board-hint" id="empty-board-hint">ざいりょうを えらんでね</div>
@@ -1562,8 +1633,40 @@ body[data-screen="fridge"] .stage-wrap {
   const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
 
   // 材料定義 (Phase 1 は carrot のみ実装)
+  //
+  // chopMechanics: 刃先 X / 持ち上げ Y / 振り下ろし Y / マスク削れ方向 / 刃先補正。
+  //   startX_pct / endX_pct .... 包丁刃先の X 位置 (.cutting-board 基準 %)。
+  //                              chopProgress=0 で startX、=chopCount で endX。
+  //   liftY_pct  ............... タップ前後の包丁の Y (.knife 自身の高さ基準 %)。
+  //   chopY_pct  ............... 振り下ろし最下点 Y (同上)。
+  //   maskAxis   ............... 食材マスクが削れる方向。
+  //                              'right-to-left' (にんじん根本→先端) /
+  //                              'left-to-right' / 'top-to-bottom' / 'bottom-to-top'。
+  //   bladeTipOffsetX_pct ...... knife コンテナ中央から見た刃先 X オフセット
+  //                              (knife.png の画像幅 %、左がマイナス、右がプラス)。
+  //                              例: knife.png の刃先が画像内 (37.66%, 30.37%) にあるなら
+  //                              37.66 - 50 = -12.34。 playChopAnim でこの値を使って
+  //                              「knife コンテナ中央 X」を逆算する。 未指定なら 0 (中央が刃先扱い)。
+  //
+  // imageBase / imagePieces .... まな板上の本体画像 / 切れ端バリエーション。
+  //   imagePieces = { dir, from, to, pad } で carrot_002〜carrot_011 を生成する
+  //   per-ingredient な指定。 既存 addCutPieceToBowl は当面 carrot ハードコードのままで
+  //   問題ないが、 将来の汎用化フックとして属性だけ先に持たせておく。
   const INGREDIENTS = [
-    { id: 'carrot',    name: 'にんじん',     emoji: '🥕', piece: '🥕', chopCount: 5, implemented: true  },
+    {
+      id: 'carrot', name: 'にんじん', emoji: '🥕', piece: '🥕',
+      chopCount: 5, implemented: true,
+      imageBase: 'carrot/carrot_001',
+      imagePieces: { dir: 'carrot', from: 2, to: 11, pad: 3 },
+      chopMechanics: {
+        startX_pct: 87, endX_pct: 13,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        // knife.png 実測: 刃先 (blade tip) は画像内 (37.66%, 30.37%)、画像中心 (50%, 52.48%)。
+        // 横方向オフセット = 37.66 - 50 = -12.34 (画像中心より左に約 12%pt)。
+        bladeTipOffsetX_pct: -12.34,
+      },
+    },
     { id: 'wiener',    name: 'ウインナー',   emoji: '🌭', piece: '🌭', chopCount: 4, implemented: false },
     { id: 'egg',       name: 'たまご',       emoji: '🥚', piece: '🍳', chopCount: 4, implemented: false },
     { id: 'broccoli',  name: 'ブロッコリー', emoji: '🥦', piece: '🥦', chopCount: 3, implemented: false },
@@ -1657,6 +1760,7 @@ body[data-screen="fridge"] .stage-wrap {
     ingOnBoard:    document.getElementById('ingredient-on-board'),
     emptyHint:     document.getElementById('empty-board-hint'),
     knife:         document.getElementById('knife'),
+    chopYMarker:   document.getElementById('chopY-marker'),
     spark:         document.getElementById('spark'),
     ton:           document.getElementById('ton-text'),
     comboPill:     document.getElementById('combo-pill'),
@@ -1785,6 +1889,11 @@ body[data-screen="fridge"] .stage-wrap {
         onFlowChipClick(step);
       });
     });
+
+    // layout-editor が「いま選ばれている食材 ID」を取りに来るための公開窓。
+    // BENTO_KITCHEN_GET_CURRENT_INGREDIENT (= QUIZLAND_GET_CURRENT_QID alias) が
+    // window.__bentoState.current.id を参照する。
+    window.__bentoState = state;
   }
 
   // ========== 画面切替 ==========
@@ -1958,15 +2067,7 @@ body[data-screen="fridge"] .stage-wrap {
     state.current = ing;
     state.chopProgress = 0;
     state.combo = 0;
-    // carrot は PNG 画像（carrot_001.png = 丸ごとにんじん）でまな板に表示。
-    // それ以外の食材は引き続き emoji を表示（Phase 1 では carrot のみ implemented）。
-    if (ing.id === 'carrot') {
-      els.ingOnBoard.innerHTML = '<img src="../assets/images/bento/cooking/carrot/carrot_001.png" alt="にんじん" draggable="false">';
-    } else {
-      els.ingOnBoard.textContent = ing.emoji;
-    }
-    // 新しい食材を載せた直後はマスクをリセット（前回の削れ状態が残らないように）
-    resetCarrotMask();
+    loadIngredient(ing);
     els.emptyHint.style.display = 'none';
     highlightSelected(ing.id);
     clearBowl();
@@ -1978,26 +2079,138 @@ body[data-screen="fridge"] .stage-wrap {
     showScreen('chop');
   }
 
-  // ========== にんじんマスク（右から削れる演出） ==========
-  // tap ごとに右側から少しずつ消えていく。5 タップで完全消滅。
-  // CSS mask-image (Safari は -webkit-mask-image) で linear-gradient を当て、
-  // 左側 visiblePct% は不透明、それ以降は透明、という境界を進めていく。
-  function updateCarrotMask() {
+  // loadIngredient: まな板上の食材本体描画 + 包丁 X/Y の初期化を一手に。
+  // - carrot は PNG (carrot_001.png) を表示。 他食材は emoji (Phase 1 では未使用)。
+  // - chopMechanics があれば --knife-x = startX_pct%, --knife-y = liftY_pct% で seed。
+  //   切替直後に transition が走って「包丁が前の位置からスーッと動く」のを避けるため、
+  //   2-frame だけ transition: none を当てるフラッシュ抑制テクニックを使う。
+  // - chopY-marker は per-ingredient 値 (chopY_pct) と現在の knife サイズから px に
+  //   換算して y を seed する。 layout-editor で位置調整 → 次回 chop 時に
+  //   chopMechanics.chopY_pct に反映 (px ベースのプロトタイプ)。
+  function loadIngredient(ing) {
+    if (!ing) return;
+    // [W1] DOM を書き換える **前** に既存 img のマスクをリセットする。
+    // innerHTML / textContent で旧 img が破棄されると resetIngredientMask は no-op
+    // になるため、 旧 img が生きているうちに maskImage を剥がしておく方が安全。
+    resetIngredientMask();
+    if (ing.id === 'carrot' || (ing.imageBase && ing.imageBase.indexOf('carrot/') === 0)) {
+      els.ingOnBoard.innerHTML = '<img src="../assets/images/bento/cooking/carrot/carrot_001.png" alt="にんじん" draggable="false">';
+    } else {
+      els.ingOnBoard.textContent = ing.emoji;
+    }
+    // 新コンテンツ注入後も念のためリセット (新 img には maskImage は付いていないが二重防御)
+    resetIngredientMask();
+
+    // 包丁 seed (chopMechanics があれば)。
+    // [Critical 1 fix] --knife-x はコンテナ中央 X なので、 刃先が startX_pct に来るように
+    // bladeTipOffsetX_pct を逆補正してから seed する (playChopAnim と同じ式)。
+    if (els.knife && ing.chopMechanics) {
+      var m = ing.chopMechanics;
+      var prevTransition = els.knife.style.transition;
+      els.knife.style.transition = 'none';
+      var KNIFE_WIDTH_PCT_OF_BOARD_SEED = 70; // .knife { width: 70%; } と同期
+      var seedTipOffset = m.bladeTipOffsetX_pct || 0;
+      var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
+      els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
+      els.knife.style.setProperty('--knife-y', (m.liftY_pct || 0) + '%');
+      // 2-frame 後に transition を戻す (初回フラッシュ抑制)
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          els.knife.style.transition = prevTransition || '';
+        });
+      });
+    }
+
+    // chopY-marker → chopY_pct プロトタイプ反映 (px ベース)。
+    // layout-editor で動かした marker の y を読み、 knife の高さ % に換算して
+    // chopMechanics.chopY_pct を上書きする。 layout-editor 不使用時はノーオペ。
+    syncChopYFromMarker(ing);
+  }
+
+  // chopY-marker の y 座標 (cutting-board 基準 px) → knife 高さ基準 % へ換算し、
+  // chopMechanics.chopY_pct に反映するプロトタイプ。
+  //   - 採用: px ベース → % 換算。 理由: marker は cutting-board の子で、 layout-editor の
+  //     transform 出力 (translate(tx, ty) px) を読み取るのが最も素直。 % 直書きにすると
+  //     marker の親 (cutting-board) サイズ変動と knife サイズ変動の両方を考慮した
+  //     正規化が必要で、 プロトタイプ段階では破綻しやすい。
+  //   - 換算式: chopY_pct = (marker.centerY_px - knife.centerY_px) / knife.height_px * 100
+  //     ※ knife の top は cutting-board に対する % 指定なので getBoundingClientRect で
+  //       実 px を取れば座標系は揃う。 取得失敗時 (chop 画面未表示など) は値を変更しない。
+  function syncChopYFromMarker(ing) {
+    if (!ing || !ing.chopMechanics) return;
+    if (!els.chopYMarker || !els.knife) return;
+    try {
+      var markerRect = els.chopYMarker.getBoundingClientRect();
+      var knifeRect = els.knife.getBoundingClientRect();
+      if (!markerRect.height || !knifeRect.height) return;
+      var markerCY = markerRect.top + markerRect.height / 2;
+      var knifeCY = knifeRect.top + knifeRect.height / 2;
+      var dyPct = ((markerCY - knifeCY) / knifeRect.height) * 100;
+      // NaN / 異常値ガード
+      if (!isFinite(dyPct)) return;
+      // editor 未利用時は marker = knife の中心付近にあって dy≈0 になり得るが、
+      // それを反映してしまうと初期値 (50%) が無視されてしまう。
+      // → marker の inline transform が layout-editor 由来で書かれている時だけ反映。
+      var markerTransform = els.chopYMarker.style.transform || '';
+      var markerHasEditorTx = /translate\([^,]+,\s*-?\d/.test(markerTransform)
+        && markerTransform.indexOf('-50%') === -1; // 既定値 translate(-50%,-50%) は除外
+      if (!markerHasEditorTx) return;
+      ing.chopMechanics.chopY_pct = dyPct;
+    } catch (e) { /* noop */ }
+  }
+
+  // ========== 食材マスク（chopMechanics.maskAxis に応じた削れ演出） ==========
+  // tap ごとに食材本体の一部が消えていく。 chopCount タップで完全消滅。
+  // chopMechanics.maskAxis で削れる方向を指定:
+  //   'right-to-left' .... 右から削る (にんじん: 根本→先端)
+  //   'left-to-right' .... 左から削る
+  //   'top-to-bottom' .... 上から削る
+  //   'bottom-to-top' .... 下から削る
+  // chopMechanics を持たない食材 (Phase 1 では carrot 以外) はマスクなし。
+  function updateIngredientMask() {
     if (!els.ingOnBoard) return;
     const img = els.ingOnBoard.querySelector('img');
     if (!img) return;
-    if (!state.current || state.current.id !== 'carrot') return;
+    if (!state.current || !state.current.chopMechanics) return;
     const total = state.current.chopCount || 5;
     const cut = state.chopProgress || 0;
-    // 右から削る: 左端から (1 - cut/total) の幅だけ残す
     const visiblePct = Math.max(0, (1 - cut / total) * 100);
+    const axis = state.current.chopMechanics.maskAxis || 'right-to-left';
+    // 各 axis で「不透明 → 透明」境界の進行方向を組み立てる。
+    // 「残す側」を不透明 black、 「削る側」を transparent。
+    let dir, splitPct;
+    if (axis === 'right-to-left') {
+      // 残す: 左 visiblePct%、 削る: 右
+      dir = 'to right'; splitPct = visiblePct;
+    } else if (axis === 'left-to-right') {
+      // 残す: 右 visiblePct%、 削る: 左 (左側 (100-visible)% を transparent)
+      dir = 'to right';
+      const cutEdge = 100 - visiblePct;
+      const mask =
+        'linear-gradient(' + dir + ', transparent 0%, transparent ' + cutEdge + '%, black ' + cutEdge + '%, black 100%)';
+      img.style.maskImage = mask;
+      img.style.webkitMaskImage = mask;
+      return;
+    } else if (axis === 'top-to-bottom') {
+      dir = 'to bottom'; splitPct = visiblePct;
+    } else if (axis === 'bottom-to-top') {
+      dir = 'to bottom';
+      const cutEdge = 100 - visiblePct;
+      const mask =
+        'linear-gradient(' + dir + ', transparent 0%, transparent ' + cutEdge + '%, black ' + cutEdge + '%, black 100%)';
+      img.style.maskImage = mask;
+      img.style.webkitMaskImage = mask;
+      return;
+    } else {
+      dir = 'to right'; splitPct = visiblePct;
+    }
     const mask =
-      'linear-gradient(to right, black 0%, black ' + visiblePct + '%, transparent ' + visiblePct + '%, transparent 100%)';
+      'linear-gradient(' + dir + ', black 0%, black ' + splitPct + '%, transparent ' + splitPct + '%, transparent 100%)';
     img.style.maskImage = mask;
     img.style.webkitMaskImage = mask;
   }
 
-  function resetCarrotMask() {
+  function resetIngredientMask() {
     if (!els.ingOnBoard) return;
     const img = els.ingOnBoard.querySelector('img');
     if (!img) return;
@@ -2009,13 +2222,15 @@ body[data-screen="fridge"] .stage-wrap {
   function onBoardTap() {
     if (state.cutting) return;
     if (state.transitioning) return;
+    // layout-editor 起動中はドラッグハンドル等と衝突するため no-op (resetBoard も走らない)。
+    if (document.body.classList.contains('layout-editor-on')) return;
     if (!state.current) {
       setSpeech('したから ざいりょうを えらんでね！');
       return;
     }
     state.chopProgress += 1;
     state.combo += 1;
-    updateCarrotMask();
+    updateIngredientMask();
     playChopAnim();
     addCutPieceToBowl(state.current);
     showTon();
@@ -2033,10 +2248,41 @@ body[data-screen="fridge"] .stage-wrap {
     }
   }
 
+  // 包丁の振り下ろし + 食材の揺れ + spark。
+  // 旧 @keyframes knifeChop は廃止し、 CSS 変数 (--knife-x / --knife-y) を JS で
+  // 動的に更新する方式に切り替え。 chopProgress と chopMechanics.startX/endX から
+  // 「次の刃先 X」を計算し、 transition で滑らかに移動 → 180ms 後に持ち上げ Y へ戻す。
+  //
+  // 重要 (Critical 1 fix): `--knife-x` は **knife コンテナの中央 X (.cutting-board 基準 %)** を
+  // 指す (CSS で left: var(--knife-x); transform: translate(-50%, ...))。 一方 knife.png は対角
+  // 配置で、画像中心 ≠ 刃先位置。 そこで chopMechanics.bladeTipOffsetX_pct (画像幅 %) を
+  // cutting-board 基準 %pt に換算して逆補正し、 「刃先」がちょうど startX_pct〜endX_pct を
+  // 通るようにする。 これでマスク境界 X と刃先 X が一致する。
   function playChopAnim() {
-    els.knife.classList.remove('chop');
-    void els.knife.offsetWidth;
-    els.knife.classList.add('chop');
+    if (state.current && state.current.chopMechanics && els.knife) {
+      const m = state.current.chopMechanics;
+      const total = state.current.chopCount || 1;
+      // chopProgress は onBoardTap で += 1 された後の値。 0..total の比率で X を補間。
+      const t = Math.max(0, Math.min(1, state.chopProgress / total));
+      // 刃先が来るべき X (cutting-board %)。
+      const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * t;
+      // 画像内オフセット (% of knife width) → cutting-board 基準 %pt へ換算。
+      // .knife の width は cutting-board の 70% なので、 オフセット 1% は cutting-board 0.7%pt。
+      const KNIFE_WIDTH_PCT_OF_BOARD = 70; // .knife { width: 70%; } と同期
+      const tipOffset = m.bladeTipOffsetX_pct || 0;
+      // コンテナ中央を「刃先目標から見て逆方向」へずらすことで、 刃先が targetBladeX に来る。
+      const compensation = -(tipOffset * KNIFE_WIDTH_PCT_OF_BOARD / 100);
+      const nextX = targetBladeX + compensation;
+      els.knife.style.setProperty('--knife-x', nextX + '%');
+      els.knife.style.setProperty('--knife-y', (m.chopY_pct || 0) + '%');
+      // [W3] lift setTimeout を pendingTimers に登録し、 clearPendingTimers でキャンセル可能に。
+      state.pendingTimers.push(setTimeout(function () {
+        if (!els.knife) return;
+        // 完成タップ後 (cutting 中) は持ち上げず、 切り終わった位置で静止させる。
+        if (state.cutting) return;
+        els.knife.style.setProperty('--knife-y', (m.liftY_pct || 0) + '%');
+      }, 180));
+    }
 
     els.ingOnBoard.classList.remove('shake');
     void els.ingOnBoard.offsetWidth;
@@ -2302,8 +2548,13 @@ body[data-screen="fridge"] .stage-wrap {
     state.cutting = false;
     // textContent='' で img も含めて中身をクリア
     els.ingOnBoard.textContent = '';
-    // 念のため img.style.maskImage も初期化（次回の food load 時にも resetCarrotMask 走るが二重防御）
-    resetCarrotMask();
+    // 念のため img.style.maskImage も初期化（次回の food load 時にも resetIngredientMask 走るが二重防御）
+    resetIngredientMask();
+    // 包丁 CSS 変数も初期化 (次回 loadIngredient で新しい食材の startX が seed される)
+    if (els.knife) {
+      els.knife.style.removeProperty('--knife-x');
+      els.knife.style.removeProperty('--knife-y');
+    }
     els.emptyHint.style.display = '';
     els.progress.style.width = '0%';
     hideCombo();
