@@ -1768,9 +1768,16 @@ body.layout-editor-on .endX-marker {
 
   // 材料定義 (Phase 1 は carrot のみ実装)
   //
+  // chopCount: モデル B (v414〜) では「切り口の数」。 chopCount タップで完成。
+  //   chopProgress=1 (1st tap) → 刃先 = startX (最初の切り口)
+  //   chopProgress=N (last tap) → 刃先 = endX  (最後の切り口)
+  //   chopCount = 5 なら 5 箇所カット。 キャベツ千切りは 15-20、 ハンバーグこねは 3 など、
+  //   食材ごとに「細かさ」を表現するためにアレンジ可能。 chopCount=1 (1 タップ完了) も対応。
+  //
   // chopMechanics: 刃先 X / 持ち上げ Y / 振り下ろし Y / マスク削れ方向 / 刃先補正。
   //   startX_pct / endX_pct .... 包丁刃先の X 位置 (.cutting-board 基準 %)。
-  //                              chopProgress=0 で startX、=chopCount で endX。
+  //                              モデル B: chopProgress=1 で startX、=chopCount で endX。
+  //                              startX = 最初に切る場所、 endX = 最後に切る場所。
   //   liftY_pct  ............... タップ前後の包丁の Y (.knife 自身の高さ基準 %)。
   //   chopY_pct  ............... 振り下ろし最下点 Y (同上)。
   //   maskAxis   ............... 食材マスクが削れる方向。
@@ -1796,6 +1803,8 @@ body.layout-editor-on .endX-marker {
   const INGREDIENTS = [
     {
       id: 'carrot', name: 'にんじん', emoji: '🥕', piece: '🥕',
+      // chopCount = 切り口の数 (モデル B)。 startX → endX の間を等分して切る。
+      //   5 = 5 タップで 5 箇所カット。 千切りなら 15-20、 ハンバーグこねなら 3 等。
       chopCount: 5, implemented: true,
       imageBase: 'carrot/carrot_001',
       imagePieces: { dir: 'carrot', from: 2, to: 11, pad: 3 },
@@ -2573,7 +2582,21 @@ body.layout-editor-on .endX-marker {
     if (!state.current || !state.current.chopMechanics) return;
     const total = state.current.chopCount || 5;
     const cut = state.chopProgress || 0;
-    const visiblePct = Math.max(0, (1 - cut / total) * 100);
+    // [chop モデル B] knife と同じ進行率 t で mask を動かす。
+    //   t = (cut - 1) / (chopCount - 1)
+    //   cut = 0  : まだ切ってない → mask 全表示 (visiblePct = 100)
+    //   cut = 1  : 1st tap → t=0 → 削れ始めの境界が startX 側 (visiblePct = 100)
+    //   cut = N  : last tap → t=1 → mask 完全に消える (visiblePct = 0)
+    // ※ 物理整合 (刃先 X と mask 境界 X の食材内 % 一致) は次のステップで詰める。
+    //    ここでは knife と mask を線形 t で同じテンポに動かすシンプル実装。
+    const denom = Math.max(1, total - 1);
+    const t = cut > 0 ? Math.max(0, Math.min(1, (cut - 1) / denom)) : -1;
+    let visiblePct;
+    if (t < 0) {
+      visiblePct = 100;  // 初期状態、何も切ってない
+    } else {
+      visiblePct = Math.max(0, (1 - t) * 100);
+    }
     const axis = state.current.chopMechanics.maskAxis || 'right-to-left';
     // 各 axis で「不透明 → 透明」境界の進行方向を組み立てる。
     // 「残す側」を不透明 black、 「削る側」を transparent。
@@ -2657,12 +2680,22 @@ body.layout-editor-on .endX-marker {
   // 配置で、画像中心 ≠ 刃先位置。 そこで chopMechanics.bladeTipOffsetX_pct (画像幅 %) を
   // cutting-board 基準 %pt に換算して逆補正し、 「刃先」がちょうど startX_pct〜endX_pct を
   // 通るようにする。 これでマスク境界 X と刃先 X が一致する。
+  //
+  // [chop メカニクス モデル B] (v414 で変更 / 旧モデル A は t = chopProgress / chopCount)
+  //   t = (chopProgress - 1) / (chopCount - 1) で 0 → 1 に均等。
+  //   chopProgress=1 (1st tap): t=0 → 刃先が startX (最初の切り口)
+  //   chopProgress=N (last tap): t=1 → 刃先が endX (最後の切り口)
+  //   chopCount = 切り口の数 (5 で 5 箇所カット、 千切りなら 15-20 等)。
+  //   chopCount=1 の場合は分母 0 を避けるため Math.max(1, chopCount - 1) を使い、
+  //   1 タップで t=0 (= startX = endX 想定) に着地する。
   function playChopAnim() {
     if (state.current && state.current.chopMechanics && els.knife) {
       const m = state.current.chopMechanics;
       const total = state.current.chopCount || 1;
-      // chopProgress は onBoardTap で += 1 された後の値。 0..total の比率で X を補間。
-      const t = Math.max(0, Math.min(1, state.chopProgress / total));
+      // モデル B: chopProgress=1 → t=0 (startX)、 chopProgress=total → t=1 (endX)。
+      // chopProgress は onBoardTap で += 1 された後の値なので 1..total の整数を取る。
+      const denom = Math.max(1, total - 1);
+      const t = Math.max(0, Math.min(1, (state.chopProgress - 1) / denom));
       // 刃先が来るべき X (cutting-board %)。
       const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * t;
       // 画像内オフセット (% of knife width) → cutting-board 基準 %pt へ換算。
