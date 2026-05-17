@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗追跡 (sw v413, 2026-05-17 時点)。 完了 7 カテゴリ (order_color / count_total / shape_name / number_sequence / weather / opposite / body = 154/180 問 = 86%)、 準備完了 1 (trivia = 最後のカテゴリ)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 セッション再開時はここを最初に Read して現状把握する。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 v389+ から「句点 (。) 追加ルール」 適用 (2026-05-17 ユーザー指示)。 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。
+description: quizland VOICEPEAK 音声プロジェクトの完成記録 (sw v418, 2026-05-17 完成)。 全 8 カテゴリ完了 (order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia = 180/180 問 = 100% 完了)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 完成日 2026-05-17、 最終 sw v418。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 v389+ から「句点 (。) 追加ルール」 適用 (2026-05-17 ユーザー指示)。 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。
 metadata:
   type: feature
 ---
 
-# Quizland VOICEPEAK 音声プロジェクト 進捗追跡 (sw v413, 2026-05-14〜17)
+# Quizland VOICEPEAK 音声プロジェクト 完成記録 (sw v418, 2026-05-14〜17) — 完成 🎯
 
 ## なに
 
@@ -31,8 +31,8 @@ metadata:
 | weather | Q110-133 | 24 | q110-q133 | — | 完了 | 2026-05-17 (sw v385) |
 | opposite | Q134-157 | 24 | q134-q157 | — | 完了 | 2026-05-17 (sw v388) |
 | body | Q158-181 | 24 | q158-q181 | — | 完了 | 2026-05-17 (sw v413) |
-| trivia | Q84-109 | 26 | — | — | 準備完了 (最後) | (BATCH-RUN-trivia.md 303 行 / CSV 漢字化+カナ維持 27+句点 / expand JSON 50 キー漢字化済 / 出力先 tmp/quizland_NA/trivia/ 既存) |
-| **合計** | — | **180** | — | — | **154/180 = 86%** | — |
+| trivia | Q84-109 | 26 | q084-q109 | — | 完了 | 2026-05-17 (sw v418) |
+| **合計** | — | **180** | — | — | **180/180 = 100% 🎯 完了** | — |
 
 ## 確定話者・辞書・グローバル wav 設計
 
@@ -43,22 +43,15 @@ metadata:
 - **count_total 個別 wav**: 「ひとつ / ふたつ / みっつ / よっつ / いつつ / むっつ / ななつ / やっつ / ここのつ」 の和語数えは個別生成 (g_num では完結しない)
 - **MVP スコープ**: くるみ 912 件のみ。 博士 48 件は MVP 後回し ([[feature-quizland-voicepeak-pivot]])
 
-## 次バッチ = trivia (最後のカテゴリ)
+## 次バッチ = 完成 (= 次バッチなし)
 
-- 発注書 = `tools/voicepeak/BATCH-RUN-trivia.md` (303 行、 sw v413 時点で準備済)
-- 出力先パス = `tmp/quizland_NA/trivia/` (= 26 問 / 52 wav、 ディレクトリ作成済)
-- 対象範囲 = Q84-Q109 (雑学 26 問)
-- **CSV 漢字化済** + 「迷ったらカナ維持」 ルール適用済 = カナ維持 **27 箇所** (= body の 10 / opposite の 11 より多い、 雑学カテゴリの語彙多様性のため)
-- **句点 (。) 追加済** (= body の経験を踏襲、 平叙的な答えの末尾に「。」 を追加)
-- **expand JSON 修正済**: 事前検証で 50 キー漢字混じり化 → CSV と完全一致確認済 (= shape_name / weather / opposite / body と同パターン、 これで trivia も予防完了)
-- **試聴駆動方針**: 1 件生成 → 試聴 → OK なら次へ、 NG ならアクセント/辞書調整 → 再生成
-- trivia は cross-category dedup 設計 ([[feature-voicepeak-cross-category-dedup]]) の影響を受ける (= 文章長め・固有名詞含む、 最難関カテゴリ)
+- 全 8 カテゴリ (order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia) の生成が完了 (= 180/180 問 = 100% 達成、 sw v418 / 2026-05-17)
+- trivia (最後のカテゴリ、 Q84-109、 26 問) は sw v418 で Phase 1 完成
+- MVP スコープのくるみパートはこれで全て完了
 
 ## 推奨順序
 
-1. **trivia** (Q84-109、 26 問) ← 残る最後のカテゴリ (準備済、 CSV 漢字化+カナ維持 27+句点、 expand JSON 修正済)
-
-trivia 完成 → 180/180 = 100% で MVP 達成。
+- 全完了 (= 180/180 = 100%、 sw v418 で MVP 達成)
 
 ## 主要 commit (sw 履歴)
 
@@ -70,7 +63,8 @@ trivia 完成 → 180/180 = 100% で MVP 達成。
 - **sw v384**: shape_name Phase 1 完成 (Q67 菱形削除込み、 22 問 + expand JSON ひらがな残存 26 キー修正)
 - **sw v385**: weather Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 106/180 = 59% 到達
 - **sw v388**: opposite Phase 1 完成 (24 問 + expand JSON 48/48 全件不一致を事前修正)、 130/180 = 72% 到達 (= 並走タスクで v385 → v387 まで進んでいたため +1 で v388)
-- **sw v413 (現行)**: body Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 154/180 = 86% 到達 (= 並走タスクで v388 → v412 まで進んでいたため +1 で v413)
+- **sw v413**: body Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 154/180 = 86% 到達 (= 並走タスクで v388 → v412 まで進んでいたため +1 で v413)
+- **sw v418 (完成 🎯)**: trivia Phase 1 完成 (26 問 + expand JSON 50/50 全件不一致を事前修正)、 **180/180 = 100% 達成** (= 並走タスクで v413 → v417 まで進んでいたため +1 で v418)
 
 ## 関連メモリ
 
@@ -161,20 +155,48 @@ trivia 完成 → 180/180 = 100% で MVP 達成。
   3. expand JSON のキーも CSV と完全一致するよう同期更新
   4. BATCH-RUN-*.md の期待出力表も同期
 
-## 残存課題: expand JSON ひらがな残存バグ
+## 結果: 全カテゴリで予防完了 (202 キー)
 
 - **発生経緯**: shape_name (sw v384) で「CSV は漢字化済だが expand JSON 側はひらがなのまま」 という不整合を発見。 = 辞書ヒットせず読み崩れの遠因となる。
-- **影響範囲 (確認済)**:
+- **全カテゴリ事前修正の実績** (= 計 **202 キー**):
   - shape_name: 26 キー (sw v384 で事前修正)
   - weather: 39/39 全件不一致 (sw v385 で事前修正)
   - opposite: 48/48 全件不一致 (sw v385 で事前修正、 sw v388 で生成完了)
   - body: 39 キー全件不一致 (sw v388 で事前修正、 sw v413 で生成完了)
-  - trivia: 50 キー漢字混じり化済 (sw v413 で事前修正、 CSV と完全一致確認済)
-  - 計 **202 キー** (= 26 + 39 + 48 + 39 + 50) を事前防止で修正してきた
-- **影響範囲 (要確認)**:
-  - **なし** (= 全カテゴリで事前検証 + 修正実施済)
-- **着手時の必須手順**:
+  - trivia: 50 キー全件不一致 (sw v413 で事前修正、 sw v418 で生成完了)
+  - 合計 **26 + 39 + 48 + 39 + 50 = 202 キー** を事前防止で修正
+- **残存課題**: **なし** (= 全カテゴリで予防完了)
+- **確立した必須手順** (= ワークフロー組み込み済):
   1. CSV 漢字化前に expand JSON の整合性確認 (= ひらがな残存がないか)
   2. 不一致があれば CSV と同じ漢字混じり版に expand JSON 側を更新
   3. その後で BATCH-RUN を実行
-- **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして欠落していた。 trivia までで全カテゴリ事前修正完了 (= ワークフロー組み込み済)。
+- **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして当初欠落していた。 shape_name 発見以降の 5 カテゴリ (= shape_name / weather / opposite / body / trivia) で全て事前検証 + 修正を回し、 完成時点で残存ゼロ。
+
+## 完成記録
+
+- **完成日**: 2026-05-17
+- **最終 sw**: v418
+- **完成カテゴリ数**: 8/8 = 100% (= order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)
+- **完成問題数**: **180/180 問 = 100% 🎯**
+- **完成 wav 総数 (内訳)**:
+  - order_color: 24 問
+  - count_total: 24 問
+  - shape_name: 22 問 (Q67 菱形削除済)
+  - number_sequence: 12 問 (+ グローバル `g_num_0-10.wav` 11 件)
+  - weather: 24 問
+  - opposite: 24 問
+  - body: 24 問
+  - trivia: 26 問
+  - **合計 180 問** (= MVP くるみパート全件)
+- **確定話者**: VOICEPEAK 「女性4」 (くるみ)
+- **辞書 v109**: 109 entries (.vdc2 確定版)
+- **expand JSON 事前予防修正**: **計 202 キー** (= shape_name 26 + weather 39 + opposite 48 + body 39 + trivia 50) を「CSV と一致させる」 形で事前修正
+- **博士パート (48 件)**: MVP 後回しのため未生成 (= [[feature-quizland-voicepeak-pivot]] に記録、 単体購入「ナレーター おじいさん」 ¥5,980 で着手可能)
+
+### 主な発見と教訓
+
+1. **expand JSON ひらがな残存バグの事前予防が機能** (sw v384 → v418): shape_name で偶発的に発見した不整合を、 weather / opposite / body / trivia の 4 カテゴリで「漢字化前に必ず expand JSON を CSV と一致させる」 ワークフローへ組み込んだ。 結果、 202 キーを事前修正でき、 試聴時の読み崩れも最小化。
+2. **「迷ったらカナ維持」 が効いた** (sw v385+): 漢字化を一律適用するのではなく、 常用外漢字・読み揺れ・送り仮名揺れ・同訓異義の箇所をカナ戻しすることで、 試聴段階での再生成回数を大幅削減。 trivia でカナ維持 27 箇所 (= 雑学カテゴリの語彙多様性に対応) が最多。
+3. **句点 (。) 追加ルールが自然な発音完了感を生んだ** (sw v389+): body 以降の答え末尾に「。」 を追加することで、 wav が「途中で切れた」 印象を回避。 平叙的な答え (例「心臓。」「はえる。」) の自然さが向上。
+4. **試聴駆動 → 事前防止 へのシフト**: sw v384 までは「まず生成 → 試聴で問題発見 → 修正再生成」 だったのを、 sw v385 以降「漢字化時点で疑わしい箇所をカナに戻す + expand JSON を事前同期」 に切り替えたことで、 後半 4 カテゴリ (weather / opposite / body / trivia) は再生成回数が大きく減少。
+5. **並走タスクによる sw 番号の急進**: 各カテゴリ完成時に「+1 だけ進む」 ように見えるが、 実際は他作業で sw 番号が大きく前進している (= v388 → v412 → v413、 v413 → v417 → v418)。 「自分の作業で何が進んだか」 と「sw 番号の増分」 は別物として記録した方が混乱が少ない。
