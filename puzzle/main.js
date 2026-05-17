@@ -703,68 +703,70 @@ function hitTest(piece, px, py) {
 
 // ===== Shuffle =====
 //
-// 横画面最適化: ピースを「ボード左ゾーン」と「ボード右ゾーン」に半数ずつ分配する。
-// 各ゾーン内では縦方向は全高、横方向はゾーン幅内でランダム配置。
-// ゾーン幅が pieceW * 1.2 未満 (極端に細い余白) ならフォールバックで全域ランダム配置に切り替え。
+// 16:9 化に伴い、ピースは「フレーム全域 (中央ボード矩形を除く)」にランダム配置する。
+// 各ピースで最大 SCATTER_ATTEMPTS 回試行し、既に配置済みピースとの最近傍距離が
+// minDist (= max(pieceW, pieceH) * SEPARATION_RATIO) 以上になる位置を採用。
+// 全試行で minDist 未達なら、最も離れた候補をベストとして採用する。
+const SCATTER_ATTEMPTS = 24;
+const SEPARATION_RATIO = 0.85;
+
 function computePlacementZones() {
-  const pad = 8;
-  const leftZone = {
-    minX: pad,
-    maxX: boardX - pad - pieceW,
-    minY: pad,
-    maxY: canvasH - pad - pieceH,
-  };
-  const rightZone = {
-    minX: boardX + boardW + pad,
-    maxX: canvasW - pad - pieceW,
-    minY: pad,
-    maxY: canvasH - pad - pieceH,
-  };
-  const leftWidth  = leftZone.maxX  - leftZone.minX;
-  const rightWidth = rightZone.maxX - rightZone.minX;
-  const minWidth = pieceW * 0.2; // ゾーン幅 - pieceW で見た時の最小 (pieceW * 1.2 が元のしきい値相当)
-  const ok = leftWidth >= minWidth && rightWidth >= minWidth;
-  return { leftZone, rightZone, ok, pad };
+  const pad = Math.max(8, pieceW * 0.10);
+  // 中央ボード矩形 (ピースが落ちるとスナップ判定が発火しうるエリア) — pad で僅かに膨らませる
+  const bx0 = boardX - pad;
+  const by0 = boardY - pad;
+  const bx1 = boardX + boardW + pad;
+  const by1 = boardY + boardH + pad;
+  return { W: canvasW, H: canvasH, pad, bx0, by0, bx1, by1 };
 }
 
-function placePieceInZone(zone) {
-  const x = zone.minX + Math.random() * Math.max(0, zone.maxX - zone.minX);
-  const y = zone.minY + Math.random() * Math.max(0, zone.maxY - zone.minY);
+function placePieceFallback(zones, w, h) {
+  // 安全策: 中央ボードを避ける条件すら満たせない場合の最終フォールバック
+  // (極端に細いフレーム等)。 全域からランダムに 1 点返す。
+  const x = zones.pad + Math.random() * Math.max(1, zones.W - 2 * zones.pad - w);
+  const y = zones.pad + Math.random() * Math.max(1, zones.H - 2 * zones.pad - h);
   return { x, y };
 }
 
-function placePieceFallback(pad) {
-  // フォールバック: 全域からランダムサンプリングしてボード上を避ける (旧挙動)
+function placePieceInZone(zones, w, h, placed) {
+  const minDist = Math.max(w, h) * SEPARATION_RATIO;
   let best = null;
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const tx = pad + Math.random() * Math.max(0, canvasW - pieceW - pad * 2);
-    const ty = pad + Math.random() * Math.max(0, canvasH - pieceH - pad * 2);
-    const onBoard = (
-      tx + pieceW > boardX + pad && tx < boardX + boardW - pad &&
-      ty + pieceH > boardY + pad && ty < boardY + boardH - pad
-    );
-    if (!onBoard) return { x: tx, y: ty };
-    if (!best) best = { x: tx, y: ty };
+  let bestScore = -Infinity;
+  for (let attempt = 0; attempt < SCATTER_ATTEMPTS; attempt++) {
+    const x = zones.pad + Math.random() * Math.max(1, zones.W - 2 * zones.pad - w);
+    const y = zones.pad + Math.random() * Math.max(1, zones.H - 2 * zones.pad - h);
+    // ピース中心がボード矩形内に入る配置は除外 (スナップ誤発火防止)
+    const cx = x + w / 2, cy = y + h / 2;
+    const inBoard = (cx > zones.bx0 && cx < zones.bx1 && cy > zones.by0 && cy < zones.by1);
+    if (inBoard) continue;
+    // 既配置ピースとの最近傍距離をスコアに (大きい方が良い)
+    let nearest = Infinity;
+    for (const p of placed) {
+      const d = Math.hypot(x - p.x, y - p.y);
+      if (d < nearest) nearest = d;
+    }
+    if (nearest >= minDist) {
+      return { x, y };
+    }
+    if (nearest > bestScore) {
+      bestScore = nearest;
+      best = { x, y };
+    }
   }
-  return best;
+  return best || placePieceFallback(zones, w, h);
 }
 
-function scatterPiece(piece, index, zones) {
-  let pos;
-  if (zones.ok) {
-    // 偶数 index → 左、 奇数 index → 右 で半数ずつ分配
-    const zone = (index % 2 === 0) ? zones.leftZone : zones.rightZone;
-    pos = placePieceInZone(zone);
-  } else {
-    pos = placePieceFallback(zones.pad);
-  }
+function scatterPiece(piece, index, zones, placed) {
+  const pos = placePieceInZone(zones, pieceW, pieceH, placed || []);
   piece.x = pos.x;
   piece.y = pos.y;
+  if (placed) placed.push({ x: pos.x, y: pos.y });
 }
 
 function shufflePieces() {
   snappedCount = 0;
   const zones = computePlacementZones();
+  const placed = [];
   pieces.forEach((p, i) => {
     p.snapped = false;
     // チャレンジモード有効時は回転もランダム再設定
@@ -776,7 +778,7 @@ function shufflePieces() {
     } else {
       p.rotation = 0;
     }
-    scatterPiece(p, i, zones);
+    scatterPiece(p, i, zones, placed);
     p.zOrder = i;
     rebuildPath(p);
   });
@@ -902,8 +904,8 @@ function initPuzzle(img) {
   puzzleContainer.appendChild(puzzleCanvas);
   puzzleCtx = puzzleCanvas.getContext('2d');
 
-  // 横画面最適化: ボード幅を 55% に抑え、左右に各 ~22.5% のピース展開エリアを確保
-  const boardMaxW = canvasW * 0.55;
+  // 16:9 フレーム化に伴いボード幅を 50% に抑え、フレーム全域をピース散布エリアとして利用する
+  const boardMaxW = canvasW * 0.50;
   const boardMaxH = canvasH * 0.60;
   // Use the image's natural aspect ratio to avoid stretching
   const imgAspect = (img.naturalWidth && img.naturalHeight)
@@ -998,9 +1000,12 @@ btnHint.addEventListener('click', () => {
   setTimeout(() => {
     if (snappedCount < stageTotalPieces) {
       const zones = computePlacementZones();
+      const placed = [];
+      // 既にスナップ済みのピースは現在位置を「占有」として登録し、被りを避ける
+      pieces.forEach(p => { if (p.snapped) placed.push({ x: p.x, y: p.y }); });
       pieces.forEach((p, i) => {
         if (!p.snapped) {
-          scatterPiece(p, i, zones);
+          scatterPiece(p, i, zones, placed);
           p.rotation = savedRotations[i]; // 回転状態を復元
           rebuildPath(p);
         }
