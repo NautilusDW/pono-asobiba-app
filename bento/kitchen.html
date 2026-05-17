@@ -2399,25 +2399,34 @@ body.layout-editor-on .endX-marker {
     // は自動検出しない。 quizland の loadQuestion と同様、 ページ側から手動再 apply する。
     // これがないと editor で `.knife|0@carrot` のように保存した per-ingredient 位置が
     // 通常プレイ (chop 画面遷移時) に反映されない。
-    if (window.LayoutApplier && window._currentLayoutData) {
-      try {
-        var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
-          ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
-        var cfg = window.EditorBootstrapConfig || {};
-        var sels = (cfg.editableSelectors || []).map(function (s) {
-          return Array.isArray(s) ? s[0] : s;
-        });
-        window.LayoutApplier.apply(
-          window._currentLayoutData,
-          null,  // whole document scope
-          {
-            selectors: sels,
-            perQuestionSelectors: cfg.perQuestionSelectors || [],
-            qid: ingredientId,
-          }
-        );
-      } catch (e) { /* noop */ }
-    }
+    // [v425] chop アニメ後に wrapper.style.transform が空になっているケースもあるので、
+    // ここで apply が走ることで rest pose (editor の tx/ty) が確実に復元される。
+    reapplyKnifeLayout();
+  }
+
+  // [v425] knife wrapper の inline transform を saved-layout から再書き込みするヘルパ。
+  // chop 中は wrapper.style.transform をクリアして X 横移動を行うため、 rest pose に
+  // 戻る際 (resetBoard / loadIngredient) に editor が保存した translate(tx, ty) を
+  // 再適用する必要がある。 LayoutApplier.apply は idempotent なので何度呼んでも安全。
+  function reapplyKnifeLayout() {
+    if (!window.LayoutApplier || !window._currentLayoutData) return;
+    try {
+      var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
+        ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
+      var cfg = window.EditorBootstrapConfig || {};
+      var sels = (cfg.editableSelectors || []).map(function (s) {
+        return Array.isArray(s) ? s[0] : s;
+      });
+      window.LayoutApplier.apply(
+        window._currentLayoutData,
+        null,  // whole document scope
+        {
+          selectors: sels,
+          perQuestionSelectors: cfg.perQuestionSelectors || [],
+          qid: ingredientId,
+        }
+      );
+    } catch (e) { /* noop */ }
   }
 
   // [v408] bbox-marker を ingredient-on-board の現在の表示矩形に合わせて初期化。
@@ -2790,35 +2799,74 @@ body.layout-editor-on .endX-marker {
       const chopY = m.chopY_pct || 0;
       const liftY = m.liftY_pct || 0;
 
-      // [v419] 直角モーション (X と Y を順番に動かす)。
-      //   Phase 1 (即時)    : knife-inner.Y = chopY  (真下に下ろす)
-      //   Phase 2 (100ms 後): knife-inner.Y = liftY  (真上に戻す)
-      //   Phase 3 (200ms 後): wrapper.--knife-x = 次タップ用の X (左に進む)。 最終タップは skip。
-      // X と Y を同時に動かさないので「右に行ってから左」のベジェ風挙動が消える。
+      // [v425] 順序逆転: 「左→下→上」(現タップの目標 X に横スライドしてから振り下ろし)。
+      //   旧 v419: 下→上→左 (次タップ予告)。この場合 1st タップは editor 位置で振り下ろしになり
+      //   「青ライン (startX) が 1st 切り口」というユーザー直感に反していた。
+      //   v425:
+      //     Phase 1 (即時)    : wrapper を現タップ目標 X へ横移動 (1st タップなら startX)
+      //     Phase 2 (100ms 後): knife-inner.Y = chopY  (真下に振り下ろし)
+      //     Phase 3 (200ms 後): knife-inner.Y = liftY  (持ち上げ)
+      //
+      //   ※ editor 由来 wrapper.style.transform (translate(tx, ty) で rest pose を表現) は
+      //      chop 中だけ無効化する必要がある。 editor transform は X 軸を支配しているので、
+      //      これを残したまま --knife-x を変えても見た目は editor 位置から動かない。
+      //      → chop 開始時に inline transform を一旦クリア。 視覚的にジャンプしないよう、
+      //         クリア前の実 X (boundingRect) を一度 --knife-x として書き戻してから transform を
+      //         消す ⇒ 視覚位置は維持 ⇒ rAF で目標 --knife-x へ更新 → CSS transition (`left 0.1s linear`)
+      //         が走り「rest pose → startX へ横スライド」が成立する。
+      //      rest pose 復帰は resetBoard / loadIngredient で LayoutApplier.apply() を再走させる。
 
-      // Phase 1: 下
-      if (knifeInner) {
-        knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
+      // 現タップの目標 X (chopProgress は onBoardTap で += 1 済み = 1..total)。
+      const tNow = Math.max(0, Math.min(1, (state.chopProgress - 1) / denom));
+      const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * tNow;
+      const targetWrapperX = targetBladeX + compensation;
+
+      // Phase 1: 左 — editor の inline transform を打ち消しつつ視覚位置を維持、
+      //          次フレームで目標 X を書いて transition を走らせる。
+      try {
+        const bRect = els.board ? els.board.getBoundingClientRect() : null;
+        const kRect = els.knife.getBoundingClientRect();
+        if (bRect && bRect.width > 0) {
+          // 現在の視覚 X (wrapper 左端) を board% に換算 → seed として書き戻す。
+          const currentLeftPct = ((kRect.left - bRect.left) / bRect.width) * 100;
+          const prevTrans = els.knife.style.transition;
+          els.knife.style.transition = 'none';
+          els.knife.style.setProperty('--knife-x', currentLeftPct + '%');
+          els.knife.style.transform = ''; // editor 由来 translate を破棄 (chop 中だけ)
+          // 強制 reflow で seed を確定させてから transition を戻す
+          void els.knife.offsetWidth;
+          els.knife.style.transition = prevTrans || '';
+          requestAnimationFrame(function () {
+            if (!els.knife) return;
+            els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
+          });
+        } else {
+          // 板の bbox が取れない (画面外等) → fallback: 即時設定
+          els.knife.style.transform = '';
+          els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
+        }
+      } catch (e) {
+        els.knife.style.transform = '';
+        els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
       }
 
-      // Phase 2: 上 (100ms 後)
+      // Phase 2: 下 (100ms 後) — 横スライド完了後に振り下ろし。
+      //   ※ 最終タップでは onBoardTap → completeIngredient → clearPendingTimers が
+      //   この後すぐ走るため、 pendingTimers に push してしまうと cancel されて
+      //   「最後の切り」が見えなくなる。 cancel 対象から外し、 cutting フラグも見ない
+      //   (cutting でも実際の包丁振り下ろしモーションは見せたい)。
+      setTimeout(function () {
+        if (!knifeInner) return;
+        knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
+      }, 100);
+
+      // Phase 3: 上 (200ms 後) — 持ち上げ。 完成タップ後 (cutting 中) は切り終わり
+      //   位置で静止させたいので skip。 pendingTimers に積めば completeIngredient の
+      //   clearPendingTimers で cancel されるが、 念のため cutting check も残す。
       state.pendingTimers.push(setTimeout(function () {
         if (!knifeInner) return;
-        // 完成タップ後 (cutting 中) は持ち上げず、 切り終わった位置で静止させる。
         if (state.cutting) return;
         knifeInner.style.transform = 'translate(0, ' + liftY + '%)';
-      }, 100));
-
-      // Phase 3: 左 (200ms 後) — 次タップ位置へ wrapper X を移動。 最終タップは skip。
-      state.pendingTimers.push(setTimeout(function () {
-        if (!els.knife) return;
-        if (state.cutting) return;
-        const nextProgress = state.chopProgress + 1;
-        if (nextProgress > total) return;  // 念のため (state.cutting でも弾かれる想定)
-        const tNext = Math.max(0, Math.min(1, (nextProgress - 1) / denom));
-        const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * tNext;
-        const nextX = targetBladeX + compensation;
-        els.knife.style.setProperty('--knife-x', nextX + '%');
       }, 200));
     }
 
@@ -3092,8 +3140,12 @@ body.layout-editor-on .endX-marker {
     if (els.knife) {
       els.knife.style.removeProperty('--knife-x');
       els.knife.style.removeProperty('--knife-y');
-      // [v419] .knife の inline transform は editor が saved-layout から復元するため
-      // ここでは触らない (resetBoard で editor 由来 transform を消すと位置がリセットされる)。
+      // [v425] chop 中に wrapper の inline transform を一時クリアして横スライドさせるため、
+      // rest pose 復帰時は inline transform を空に戻す。 次回 loadIngredient 内で
+      // LayoutApplier.apply (perQuestion qid 付き) が走り editor 由来 translate(tx, ty) が
+      // 再適用される。 resetBoard 単独で呼ばれた場合 (例: 食材完成 → select 画面遷移) は
+      // 包丁が画面外なので transform 空のままで視覚上問題なし。
+      els.knife.style.transform = '';
       // chop アニメで動かす Y は内側 .knife-inner なので、 そちらを CSS default へ戻す。
       var _knifeInner = els.knifeInner || els.knife.querySelector('.knife-inner');
       if (_knifeInner) _knifeInner.style.transform = '';
