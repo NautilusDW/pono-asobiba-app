@@ -788,32 +788,31 @@ body.layout-editor-on .knife {
   pointer-events: auto;
 }
 
-/* ── 振り下ろし最下点 marker (layout-editor 専用)。
-   通常プレイ時は完全に非表示。 body.layout-editor-on の時のみ表示し、
-   per-ingredient の chopY (包丁の最下点) を WYSIWYG で調整するための
-   dummy DOM として機能する。 */
+/* ── 振り下ろし最下点 marker。
+   ※ DEBUG v404: 「絶対に見える」状態に強化。常時表示・真っ赤・最前面。
+   後で body.layout-editor-on 限定の控えめなスタイルに戻すこと。 */
 .chopY-marker {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 48px;
-  height: 48px;
-  transform: translate(-50%, -50%);
-  border: 3px dashed #D86E2F;
-  background: rgba(255, 140, 60, 0.6);
+  width: 80px;          /* DEBUG: 48 → 80 にさらに拡大 */
+  height: 80px;         /* 同上 */
+  transform: translate(-50%, -50%) !important;  /* editor 上書き対策 */
+  border: 5px solid #FF0000;                    /* 真っ赤の太い border */
+  background: rgba(255, 0, 0, 0.8);             /* 赤の高不透明 */
   border-radius: 50%;
   pointer-events: none;
-  z-index: 4;
-  display: none;
-  font-size: 28px;
+  z-index: 9999 !important;                     /* 最前面 */
+  font-size: 40px;                              /* ⬇ も大きく */
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  font-weight: 900;
+  display: flex !important;                     /* editor mode 関係なく常時表示 */
   align-items: center;
   justify-content: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 body.layout-editor-on .chopY-marker {
-  display: flex;
-  pointer-events: auto;
+  pointer-events: auto;                         /* editor 時のみ drag 可能 */
 }
 
 .ingredient-on-board {
