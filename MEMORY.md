@@ -59,6 +59,7 @@
 - **パズル 難易度20ステージ再設計 + 画面背景刷新 (2026-05-15, sw v1001→v1003)**: [memory/feature_puzzle_20stage_redesign.md](memory/feature_puzzle_20stage_redesign.md) — 対象年齢3〜6歳向けに **20ステージ進行 (4→4→6→6→6→9→9→9→12→12→12→12→16→16→16→16→20→20→20→20)** へ再設計。 **v1003 で画面背景を `assets/images/puzzle/bg_carpet_room.jpg` (木のお部屋+中央緑ラグ、 329KB) に差し替え** (中央ラグがパズルボード位置と一致、 左右は植物/本棚/クッション等でピース散布の周辺装飾、 旧 BG_03.webp は他9ゲーム使用中のため温存)。 `pieceShapeStyle` 6段階 (soft-rounded / large-jigsaw / standard-jigsaw / standard-jigsaw-v2 / advanced-jigsaw / advanced-jigsaw-v2)、 `snapAssist` 4段階 (very-strong/strong/medium-strong/normal、 SNAP_DIST = pieceW * ratio で動的計算)、 **90度チャレンジ回転モード** (デフォルトOFF、`window.PUZZLE_CHALLENGE_ROTATION = true` or `localStorage.puzzle_challenge_rotation = 'on'` で有効化、Stage 09 以降のみ作用、タップ検出 < 8px / < 300ms で90度回転、`rotation === 0` の時のみスナップ受理)、 任意角度回転は不可。 新ステージ画像16枚 (Codex 納品 `tmp/alpha_pending/29/` → `assets/images/puzzle/stages/` 配置・JPG最適化、合計5.27MB)、 ポノ特別枠 Stage 05/10/15/20 は既存 `puzzle_pono_*.jpg` 流用 (sleep/water/sparkle/owl)。 横画面用に **ボード幅 0.60→0.55** に縮小+`shufflePieces` を左右ゾーン分配方式に書き換え (偶数 index→左、奇数→右、ゾーン極細時は全域ランダムフォールバック)、 ヒントボタンも同ヘルパー (`scatterPiece`) で統一。 `STAGE_20_PIECE_COUNT` 定数で 20→16 への縮退切替可。 旧 `advanced: true|false` 二分岐は廃止、 全難易度設定は `BASE_STAGES` エントリへ集約 (受け入れ条件「コード直書きしすぎず、ステージ定義データで変更可」厳守)
 - **Quizland ?edit=1 Pause トグル + 結果画面復活** (2026-05-16, sw v1034): [memory/feature_quizland_editor_pause_toggle.md](memory/feature_quizland_editor_pause_toggle.md) — ⏸/▶ トグルで「次の問題への進行」 だけ凍結、 本番と同じ結果画面まで表示できるよう L5565-5571 のスキップガードも撤去。 共通 interface = `window._quizlandPaused || body.layout-editor-paused` の OR 判定
 - **パズル オープニングカットシーン (owl-style + per-cut 木枠ナレ + 黒フェード)** (2026-05-17, sw v395 → v400): [memory/feature_puzzle_opening_cutscene.md](memory/feature_puzzle_opening_cutscene.md) — タイトル→パズル間に **3 カット + 木枠ナレ + 黒フェード**。 **v400 で quizland owl doctor `.op-narration` スタイル踏襲** (cream `#fff8e7` + brown shadow + 18px radius + bold 32px + `white-space:pre-wrap`)、 **per-cut MP3 方式** (cut1→OP_C01 11s / cut2→OP_C02 7s / cut3→OP_C03 10s、 各 `audio.ended` で次カットへ)、 cut3 終了で overlay 全体を `.is-fading` 黒 500ms + 300ms hold → パズル開始。 v395 bump 後に別フックが v396 上書きしてキャッシュ整合崩れ (旧 CSS/JS で「cut01 が左に貼り付き右にパズル + ナレ無音 + tut 即発火」現象) → v397 bump で根治。 iOS Safari 対策 (P1 fix): `audio.src` 差替時に `audio.load()` 必須、 `ended` イベント per-cut generation guard、 ダブルバッファ swap は class toggle の前。 教訓: 同一コミット内 = 同一 CACHE_VERSION bump で完結させる、 別フック便乗厳禁
+- **パズル ボイスパック 14音声** (2026-05-17, sw v407): [memory/feature_puzzle_voice_pack.md](memory/feature_puzzle_voice_pack.md) — `window.PuzzleVoice` (IIFE, 3 method: playTut/playRandom/stop) で tut 3 + clear 5 + all_clear 2 + hint 1 + next_nudge 3 = 14 mp3 を子供向け音声誘導として組込み。 tutorial step bubble / success modal fanfare / hint btn / next-nudge 6s interval + `.btn-pulse` (scale 1↔1.12) で発火。 per-group `lastPlayedId` で back-to-back 重複回避、 nudge interval は 5 exit path 全停止
 - **ポノのトントンキッチン Phase 1 (bento/kitchen.html)** (2026-05-16〜17, sw v406): [memory/feature_bento_tonton_kitchen_phase1.md](memory/feature_bento_tonton_kitchen_phase1.md) — 既存お弁当の前段ミニゲーム。 **SPA 3画面構造 (select / chop / fridge)** で各画面1ステップ集中、 5ステップフローチップで動的アクティブ化＋強制切替。 にんじん 1材料 end-to-end (5タップで切る → 冷蔵庫 NEW! バッジ → レシピ3種解放)、 残り5材料は Phase 2。 `unlockedIngredients` は解放型 (localStorage `bentoUnlockedIngredients` / `bentoNewIngredients`)。 冷蔵庫は `rotateY(-92deg)` で左ヒンジ扉が開く演出。 chop 進捗中の「もどる」は画面内モーダルで確認。 **v382 で 16:9 contain-fit (1600×900 stage)化、 v387〜v391 で chop 画面背景 PNG 化 + cutting-board 基準 % レイアウト、 v393 で chop メカニクス (startX_pct/endX_pct/liftY_pct/chopY_pct/maskAxis/bladeTipOffsetX_pct) をコード管理化 + chopProgress 1 つの式で包丁横移動とマスク削れを完全連動、 v398 で editor マーカー 4 種導入したが v399 で 3 マーカー撤去 (ユーザー混乱「赤いやつ何のため？」「マスク？それはまだつけなくていい」)、 にんじん位置は chopMechanics.ingredientLeft/Top/Width_pct で Claude がコード値調整する方式に、 v401 で .knife の pointer-events:none drag 不能バグ解消 + 新 knife.png (953×1242 縦長、余白削減) 差替 + bladeTipOffsetX_pct -12.34→-39 再測定、 v402 で chopY-marker も同 pointer-events バグ + 視認性不足解消、 v403 で saved-layout.json の `.chopY-marker|0@carrot: { tx:0, ty:0 }` エントリ削除で画面外消滅 1 つ目解消、 v405 で chopY-marker editor mode 消滅の真因 (editor が `.resizable` クラス付与 → `body.layout-editor-on .resizable:not([data-le-keep-position])` で `position:absolute → relative` 強制変換 → 中央寄せ崩壊) を `data-le-keep-position="1"` 属性付与 + CSS `position: absolute !important` の二段構えで解消 (恒久ルール: editor 対象で position: absolute を維持する要素は data-le-keep-position 必須)、 v406 で v399 撤去の `.ingredient-bbox-marker` (緑 dashed rect) を v405 知見ベース (data-le-keep-position + position:absolute !important) で再導入して食材本体の位置・サイズを editor で WYSIWYG 調整可能化、 applyIngredientPlacement (コード値) と marker 編集の二段レイヤリングで共存**。 既存 `bento/index.html` (おかず49種+NPC6体+三色sk判定) は無変更で温存、 Phase 3 で連携予定。 仕様書 = `tmp/Bento/pono_tonton_kitchen_claude_code_instructions.md`
 
 ---
@@ -137,6 +138,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-17T08:43:41Z - puzzle voice pack 後の sw v406→v407 bump + memory file + index 追加
+- **タスク**: puzzle voice pack 後の sw v406→v407 bump + memory file + index 追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 287
+- **エラー数**: 26
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 133, "Agent": 42, "Read": 28, "ToolSearch": 1, "Write": 2, "Edit": 76, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
 
 ### 2026-05-17T08:38:08Z - puzzle ゲームに14本の音声ガイドを統合 (tutorial/clear/all_clear/hint/next_nudge) + nudge interval + btn-pulse CSS
 - **タスク**: puzzle ゲームに14本の音声ガイドを統合 (tutorial/clear/all_clear/hint/next_nudge) + nudge interval + btn-pulse CSS
@@ -240,18 +254,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 14, "Read": 15, "Glob": 2, "Grep": 7, "ToolSearch": 1, "Agent": 3, "Edit": 2, "Write": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-17T06:15:23Z - puzzle オープニングカットシーン実装 (3カット+ナレーション、画像/音声最適化)
-- **タスク**: puzzle オープニングカットシーン実装 (3カット+ナレーション、画像/音声最適化)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 172
-- **エラー数**: 12
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 85, "Agent": 31, "Read": 14, "ToolSearch": 1, "Write": 2, "Edit": 34, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
