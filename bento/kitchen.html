@@ -1627,7 +1627,14 @@ body.layout-editor-on .endX-marker {
         <div class="ton-burst" id="ton-text">トン！</div>
 
         <div class="cutting-board" id="cutting-board" role="button" tabindex="0" aria-label="まな板（タップまたは Enter/Space キーでトントン）" aria-keyshortcuts="Enter Space">
-          <div class="knife" id="knife" aria-hidden="true"></div>
+          <!-- [v419] knife を wrapper(.knife) + inner(.knife-inner) の 2 層に分離。
+               editor が動かすのは外側 .knife (per-ingredient transform を saved-layout
+               に保存)、 chop アニメが動かすのは内側 .knife-inner。 CSS transform は
+               親 → 子 で合成されるため、 editor 位置 + chop モーションが衝突せず
+               重ね合わせ可能になる。 -->
+          <div class="knife" id="knife" aria-hidden="true">
+            <div class="knife-inner"></div>
+          </div>
           <!-- layout-editor 専用 dummy: chopY (振り下ろし最下点) を per-ingredient で
                WYSIWYG 調整するためのターゲット。 通常プレイでは非表示 (CSS で
                body.layout-editor-on 時のみ display:block)。 -->
