@@ -138,6 +138,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-17T08:38:08Z - puzzle ゲームに14本の音声ガイドを統合 (tutorial/clear/all_clear/hint/next_nudge) + nudge interval + btn-pulse CSS
+- **タスク**: puzzle ゲームに14本の音声ガイドを統合 (tutorial/clear/all_clear/hint/next_nudge) + nudge interval + btn-pulse CSS
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 274
+- **エラー数**: 23
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 129, "Agent": 42, "Read": 27, "ToolSearch": 1, "Write": 2, "Edit": 68, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-17T08:14:44Z - bento/kitchen.html chopY-marker editor消失バグ修正(data-le-keep-position追加 + position:absolute !important + debug版を控えめ橙色版にrevert + sw v404→v405)
 - **タスク**: bento/kitchen.html chopY-marker editor消失バグ修正(data-le-keep-position追加 + position:absolute !important + debug版を控えめ橙色版にrevert + sw v404→v405)
 - **結果**: 成功
@@ -239,19 +252,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 85, "Agent": 31, "Read": 14, "ToolSearch": 1, "Write": 2, "Edit": 34, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-17T02:55:03Z - kitchen.html chop メカニクス Critical 1: 包丁刃先 X とマスク境界 X のずれ補正 (bladeTipOffsetX_pct 導入 + playChopAnim/loadIngredient seed 補正 + resetIngredientMask 順序修正 + pendingTimers 登録 + sw v393)
-- **タスク**: kitchen.html chop メカニクス Critical 1: 包丁刃先 X とマスク境界 X のずれ補正 (bladeTipOffsetX_pct 導入 + playChopAnim/loadIngredient seed 補正 + resetIngredientMask 順序修正 + pendingTimers 登録 + sw v393)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 149
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 2, "Grep": 2, "Bash": 78, "Agent": 29, "Read": 13, "ToolSearch": 1, "Write": 2, "Edit": 21, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

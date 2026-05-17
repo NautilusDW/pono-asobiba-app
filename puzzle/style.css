@@ -318,6 +318,13 @@ body {
   max-width: 260px;
 }
 
+/* Pulse animation for nudging the user to press the next-stage button. */
+.btn-pulse { animation: btnPulse 1.0s ease-in-out infinite; }
+@keyframes btnPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
 .btn-play-again {
   background: var(--primary-light);
   color: var(--text);

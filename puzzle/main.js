@@ -317,6 +317,34 @@ function updateProgress() {
   progressText.textContent = snappedCount + ' / ' + stageTotalPieces;
 }
 
+// ===== Next-stage nudge (pulses btn-next-stage + voice prompt every 6s) =====
+const nextNudge = {
+  timer: null,
+  start() {
+    this.stop();
+    this.timer = setInterval(() => {
+      // If the modal is gone or the next button is hidden, auto-stop.
+      if (!successModal || successModal.classList.contains('hidden')
+          || !btnNextStage || btnNextStage.classList.contains('hidden')) {
+        this.stop();
+        return;
+      }
+      if (window.PuzzleVoice) window.PuzzleVoice.playRandom('next_nudge');
+      if (btnNextStage) {
+        // Restart the CSS animation each cycle so it visibly pulses.
+        btnNextStage.classList.remove('btn-pulse');
+        // Force reflow so re-adding the class restarts the animation.
+        void btnNextStage.offsetWidth;
+        btnNextStage.classList.add('btn-pulse');
+      }
+    }, 6000);
+  },
+  stop() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (btnNextStage) btnNextStage.classList.remove('btn-pulse');
+  },
+};
+
 // ===== Success Modal =====
 function showSuccessModal() {
   playFanfare();
@@ -339,6 +367,12 @@ function showSuccessModal() {
     modalStageInfo.textContent = `ステージ ${currentStageIndex + 1} クリア！`;
     btnNextStage.classList.remove('hidden');
   }
+
+  // クリア音声: fanfare と被らないよう ~800ms 遅延。isLast は全クリア専用ボイス。
+  setTimeout(() => {
+    if (!window.PuzzleVoice) return;
+    window.PuzzleVoice.playRandom(isLast ? 'all_clear' : 'clear');
+  }, 800);
   if (window.PONO_MVP_NO_REWARDS) {
     if (modalDailyAcorn) modalDailyAcorn.style.display = 'none';
   } else if (modalDailyAcorn && window.getDailyAcorns) {
@@ -349,20 +383,27 @@ function showSuccessModal() {
     modalDailyAcorn.classList.toggle('full', n >= 5);
   }
 
+  // モーダルが実際に表示された後で nudge を開始 (isLast 時はスキップ: 次へボタンが無い)
+  function revealModal() {
+    successModal.classList.remove('hidden');
+    if (!isLast) nextNudge.start();
+  }
+
   // ★ 全ステージクリア時は宝箱演出を先に表示、閉じたら成功モーダル
   if (isLast && window.triggerFirstClearReward) {
     window.triggerFirstClearReward('puzzle', {
-      onClose: function() { successModal.classList.remove('hidden'); }
+      onClose: function() { revealModal(); }
     }).then(function(shown) {
-      if (!shown) setTimeout(function() { successModal.classList.remove('hidden'); }, 800);
-    }).catch(function() { setTimeout(function() { successModal.classList.remove('hidden'); }, 800); });
+      if (!shown) setTimeout(revealModal, 800);
+    }).catch(function() { setTimeout(revealModal, 800); });
   } else {
-    setTimeout(function() { successModal.classList.remove('hidden'); }, 800);
+    setTimeout(revealModal, 800);
   }
 }
 
 function hideSuccessModal() {
   successModal.classList.add('hidden');
+  nextNudge.stop();
 }
 
 // ===== Placeholder Image =====
@@ -948,6 +989,7 @@ btnShuffle.addEventListener('click', () => {
 
 btnHint.addEventListener('click', () => {
   if (!puzzleCanvas) return;
+  if (window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
   dragPiece = null;
   // ヒント: 一時的に完成形を見せる (回転モード時は正位置に戻して表示)
   const savedRotations = pieces.map(p => p.rotation || 0);
@@ -1050,8 +1092,13 @@ function showTutorial() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = '🧩 ピースを ゆびで うごかそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
+      if (window.PuzzleVoice) window.PuzzleVoice.playTut(0);
       requestAnimationFrame(() => {
-        document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+        document.getElementById('tut-next').addEventListener('pointerdown', e => {
+          e.preventDefault();
+          if (window.PuzzleVoice) window.PuzzleVoice.stop();
+          nextStep();
+        });
       });
     },
     () => {
@@ -1059,16 +1106,26 @@ function showTutorial() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = 'ただしい ばしょに おくと<br>パチッとはまるよ 💡<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
+      if (window.PuzzleVoice) window.PuzzleVoice.playTut(1);
       requestAnimationFrame(() => {
-        document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+        document.getElementById('tut-next').addEventListener('pointerdown', e => {
+          e.preventDefault();
+          if (window.PuzzleVoice) window.PuzzleVoice.stop();
+          nextStep();
+        });
       });
     },
     () => {
       bubble.className = 'tut-bubble';
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = 'ぜんぶ はめたら できあがり！🎉<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+      if (window.PuzzleVoice) window.PuzzleVoice.playTut(2);
       requestAnimationFrame(() => {
-        document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+        document.getElementById('tut-next').addEventListener('pointerdown', e => {
+          e.preventDefault();
+          if (window.PuzzleVoice) window.PuzzleVoice.stop();
+          endTut();
+        });
       });
     }
   ];
@@ -1077,6 +1134,7 @@ function showTutorial() {
   function endTut() {
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
+    if (window.PuzzleVoice) window.PuzzleVoice.stop();
     localStorage.setItem('puzzle_tut_seen', '1');
   }
 
