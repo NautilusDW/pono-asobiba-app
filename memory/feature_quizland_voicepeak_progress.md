@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの完成記録 (sw v418, 2026-05-17 完成)。 全 8 カテゴリ完了 (order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia = 180/180 問 = 100% 完了)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 完成日 2026-05-17、 最終 sw v418。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用 (2026-05-17 ユーザー指示)。 v389+ から「句点 (。) 追加ルール」 適用 (2026-05-17 ユーザー指示)。 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。
+description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v420, 2026-05-14〜17)。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は 2/8 完了 (count_total + order_color、 sw v420 時点)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 残り 6 カテゴリは個別バッチで TTS 生成)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。
 metadata:
   type: feature
 ---
 
-# Quizland VOICEPEAK 音声プロジェクト 完成記録 (sw v418, 2026-05-14〜17) — 完成 🎯
+# Quizland VOICEPEAK 音声プロジェクト 進捗記録 (sw v420, 2026-05-14〜17) — phase1 完成 / phase2 進行中 🎯
 
 ## なに
 
@@ -64,7 +64,8 @@ metadata:
 - **sw v385**: weather Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 106/180 = 59% 到達
 - **sw v388**: opposite Phase 1 完成 (24 問 + expand JSON 48/48 全件不一致を事前修正)、 130/180 = 72% 到達 (= 並走タスクで v385 → v387 まで進んでいたため +1 で v388)
 - **sw v413**: body Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 154/180 = 86% 到達 (= 並走タスクで v388 → v412 まで進んでいたため +1 で v413)
-- **sw v418 (完成 🎯)**: trivia Phase 1 完成 (26 問 + expand JSON 50/50 全件不一致を事前修正)、 **180/180 = 100% 達成** (= 並走タスクで v413 → v417 まで進んでいたため +1 で v418)
+- **sw v418 (phase1 完成 🎯)**: trivia Phase 1 完成 (26 問 + expand JSON 50/50 全件不一致を事前修正)、 **180/180 = 100% 達成** (= 並走タスクで v413 → v417 まで進んでいたため +1 で v418)
+- **sw v420 (phase2 開始)**: count_total phase2 manifest 動的化 (+72 エントリ、 g_num_*.wav 動的参照で TTS 不要)、 order_color phase2 準備完了 (BATCH-RUN-order_color-phase2.md 138 行、 漢字化 + 句点 + みずいろカナ維持で expand JSON 8 キー検証済)、 phase2 マトリクス 2/8 完了
 
 ## 関連メモリ
 
@@ -172,6 +173,42 @@ metadata:
   3. その後で BATCH-RUN を実行
 - **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして当初欠落していた。 shape_name 発見以降の 5 カテゴリ (= shape_name / weather / opposite / body / trivia) で全て事前検証 + 修正を回し、 完成時点で残存ゼロ。
 
+## phase2 進捗マトリクス (= 4 択の不正解選択肢、 sw v420 時点)
+
+- **背景**: sw v418 で phase1 (= 問題文 + 正解 wav) が 180/180 = 100% 完成。 sw v420 から phase2 (= 4 択の不正解選択肢 = a / c / d) の作業を開始
+- **設計方針** (= 2026-05-17 ユーザー指示で確定): ハイブリッド設計
+  - count_total と number_sequence は **g_num_*.wav 動的参照で TTS 不要** (= manifest 編集のみで完結)
+  - 残り 6 カテゴリ (order_color / shape_name / weather / opposite / body / trivia) は個別バッチで TTS 生成
+- **継承ルール**: 「漢字化 + 迷ったらカナ維持 + 句点 (。)」 3 ルール踏襲、 expand JSON 事前検証の予防手順継続
+
+| カテゴリ | ユニーク件数 | 全展開 | 方式 | 状態 | 完成/準備時期 |
+|---|---|---|---|---|---|
+| number_sequence | 0 | 0 | dynamic (g_num) | ✅ 完了 | 2026-05-13 (phase1 時点) |
+| **count_total** | 0 (manifest +72) | 72 | dynamic (g_num) | ✅ **完了** | **2026-05-17 (sw v420)** |
+| **order_color** | 8 | 72 (24×3) | TTS | 📋 **準備完了** | (BATCH-RUN-order_color-phase2.md 138 行) |
+| shape_name | 14 | (約 66) | TTS | ⏳ 未着手 | — |
+| weather | 51 | (約 72) | TTS | ⏳ 未着手 | — |
+| opposite | 49 | (約 72) | TTS | ⏳ 未着手 | — |
+| body | 49 | (約 72) | TTS | ⏳ 未着手 | — |
+| trivia | 68 | (約 78) | TTS | ⏳ 未着手 | — |
+| **合計** | **239** | **約 504** | — | **2/8 完了** | — |
+
+### count_total phase2 実装詳細 (= sw v420 で完了)
+
+- manifest に `quizland:count_total:N:a/c/d` (= 不正解 3 つ) の **72 エントリを g_num_*.wav 動的参照で追加**
+- 例 q0 (idx=0, 答え「2つ」): 不正解 b=g_num_3.wav, c=g_num_4.wav, d=g_num_5.wav
+- count_total エントリ計 120 件 (= 既存 48 + 新規 72)、 a / b / c / d / q 全 24 件揃い
+- TTS 生成なし、 manifest 編集のみで完結
+- ロジック: number_sequence で既に動いていた「chip text の数字判定 + g_num マッピング」 を明示拡張
+
+### order_color phase2 準備詳細 (= sw v420 時点で準備完了)
+
+- CSV 漢字化 (赤 / 黄色 / 緑 / 青 / 紫 / ピンク / オレンジ / みずいろ) + 句点付与
+- 「みずいろ」 はカナ維持 (= 「水色 → ミズショク」 誤読リスク回避)
+- expand JSON 8 キー漢字化 (CSV と完全一致確認、 72 wav 参照検証済)
+- BATCH-RUN-order_color-phase2.md 138 行
+- 辞書全カバー済 (= v109 で 8 色名すべて既登録)
+
 ## 完成記録
 
 - **完成日**: 2026-05-17
@@ -192,6 +229,7 @@ metadata:
 - **辞書 v109**: 109 entries (.vdc2 確定版)
 - **expand JSON 事前予防修正**: **計 202 キー** (= shape_name 26 + weather 39 + opposite 48 + body 39 + trivia 50) を「CSV と一致させる」 形で事前修正
 - **博士パート (48 件)**: MVP 後回しのため未生成 (= [[feature-quizland-voicepeak-pivot]] に記録、 単体購入「ナレーター おじいさん」 ¥5,980 で着手可能)
+- **phase2 開始**: 2026-05-17 〜 進行中 (count_total + order_color 完了 / 残 6 カテゴリ) ※詳細は上記「## phase2 進捗マトリクス」 セクション参照
 
 ### 主な発見と教訓
 
