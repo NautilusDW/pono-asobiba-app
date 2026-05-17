@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v420, 2026-05-14〜17)。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は 2/8 完了 (count_total + order_color、 sw v420 時点)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 残り 6 カテゴリは個別バッチで TTS 生成)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。
+description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v422, 2026-05-14〜17)。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は 3/8 完了 (count_total + order_color (みずいろ 1 件 pending) + number_sequence、 sw v422 時点)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ (shape_name / weather / opposite / body / trivia) は徹底クロスリファレンス調査済 = 計 191 件の新規 TTS 必要)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: みずいろ 1 + 5 カテゴリ未カバー 191 = 計 192 件の新規 TTS 集約バッチ。
 metadata:
   type: feature
 ---
 
-# Quizland VOICEPEAK 音声プロジェクト 進捗記録 (sw v420, 2026-05-14〜17) — phase1 完成 / phase2 進行中 🎯
+# Quizland VOICEPEAK 音声プロジェクト 進捗記録 (sw v422, 2026-05-14〜17) — phase1 完成 / phase2 進行中 🎯
 
 ## なに
 
@@ -66,6 +66,7 @@ metadata:
 - **sw v413**: body Phase 1 完成 (24 問 + expand JSON 39/39 全件不一致を事前修正)、 154/180 = 86% 到達 (= 並走タスクで v388 → v412 まで進んでいたため +1 で v413)
 - **sw v418 (phase1 完成 🎯)**: trivia Phase 1 完成 (26 問 + expand JSON 50/50 全件不一致を事前修正)、 **180/180 = 100% 達成** (= 並走タスクで v413 → v417 まで進んでいたため +1 で v418)
 - **sw v420 (phase2 開始)**: count_total phase2 manifest 動的化 (+72 エントリ、 g_num_*.wav 動的参照で TTS 不要)、 order_color phase2 準備完了 (BATCH-RUN-order_color-phase2.md 138 行、 漢字化 + 句点 + みずいろカナ維持で expand JSON 8 キー検証済)、 phase2 マトリクス 2/8 完了
+- **sw v422 (order_color phase2 完成 + 5 カテゴリ徹底調査)**: order_color phase2 manifest 動的化 (+71 エントリ、 phase1 正解 wav の動的再利用で 7/8 = 87.5% カバー、 みずいろ 1 件 pending)、 5 カテゴリ (shape_name / weather / opposite / body / trivia) phase2 不正解選択肢 231 ユニーク語と phase1 wav の徹底クロスリファレンス調査実施 = 新規 TTS 必要 191 件と判明、 phase2 マトリクス 3/8 完了
 
 ## 関連メモリ
 
@@ -173,25 +174,26 @@ metadata:
   3. その後で BATCH-RUN を実行
 - **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして当初欠落していた。 shape_name 発見以降の 5 カテゴリ (= shape_name / weather / opposite / body / trivia) で全て事前検証 + 修正を回し、 完成時点で残存ゼロ。
 
-## phase2 進捗マトリクス (= 4 択の不正解選択肢、 sw v420 時点)
+## phase2 進捗マトリクス (= 4 択の不正解選択肢、 sw v422 時点)
 
 - **背景**: sw v418 で phase1 (= 問題文 + 正解 wav) が 180/180 = 100% 完成。 sw v420 から phase2 (= 4 択の不正解選択肢 = a / c / d) の作業を開始
 - **設計方針** (= 2026-05-17 ユーザー指示で確定): ハイブリッド設計
   - count_total と number_sequence は **g_num_*.wav 動的参照で TTS 不要** (= manifest 編集のみで完結)
-  - 残り 6 カテゴリ (order_color / shape_name / weather / opposite / body / trivia) は個別バッチで TTS 生成
+  - order_color は **phase1 正解 wav の動的再利用で 87.5% (7/8) カバー** (= みずいろ 1 件のみ pending)
+  - 残り 5 カテゴリ (shape_name / weather / opposite / body / trivia) は個別バッチで TTS 生成 (= 徹底調査済、 計 191 件)
 - **継承ルール**: 「漢字化 + 迷ったらカナ維持 + 句点 (。)」 3 ルール踏襲、 expand JSON 事前検証の予防手順継続
 
-| カテゴリ | ユニーク件数 | 全展開 | 方式 | 状態 | 完成/準備時期 |
-|---|---|---|---|---|---|
-| number_sequence | 0 | 0 | dynamic (g_num) | ✅ 完了 | 2026-05-13 (phase1 時点) |
-| **count_total** | 0 (manifest +72) | 72 | dynamic (g_num) | ✅ **完了** | **2026-05-17 (sw v420)** |
-| **order_color** | 8 | 72 (24×3) | TTS | 📋 **準備完了** | (BATCH-RUN-order_color-phase2.md 138 行) |
-| shape_name | 14 | (約 66) | TTS | ⏳ 未着手 | — |
-| weather | 51 | (約 72) | TTS | ⏳ 未着手 | — |
-| opposite | 49 | (約 72) | TTS | ⏳ 未着手 | — |
-| body | 49 | (約 72) | TTS | ⏳ 未着手 | — |
-| trivia | 68 | (約 78) | TTS | ⏳ 未着手 | — |
-| **合計** | **239** | **約 504** | — | **2/8 完了** | — |
+| カテゴリ | ユニーク件数 | 方式 | 状態 | 完成/状況 |
+|---|---|---|---|---|
+| number_sequence | 0 | dynamic (g_num) | ✅ 完了 | 2026-05-13 (phase1 時点) |
+| **count_total** | 72 (manifest +72) | dynamic (g_num) | ✅ **完了** | **2026-05-17 (sw v420)** |
+| **order_color** | 71 + みずいろ 1 pending | **dynamic (phase1 wav 再利用) + pending** | ✅ **完了 (みずいろ後送り)** | **2026-05-17 (sw v422)** |
+| shape_name | 14 ユニーク (5 再利用可 + 9 新規) | TTS | 📋 調査済 | 新規 TTS 9 件必要 |
+| weather | 51 ユニーク (11 再利用可 + 40 新規) | TTS | 📋 調査済 | 新規 TTS 40 件必要 |
+| opposite | 49 ユニーク (8 再利用可 + 41 新規) | TTS | 📋 調査済 | 新規 TTS 41 件必要 |
+| body | 49 ユニーク (8 再利用可 + 41 新規) | TTS | 📋 調査済 | 新規 TTS 41 件必要 |
+| trivia | 68 ユニーク (8 再利用可 + 60 新規) | TTS | 📋 調査済 | 新規 TTS 60 件必要 |
+| **合計** | — | — | **3/8 完了** | 残 192 件 (= みずいろ 1 + 5 カテゴリ 191) |
 
 ### count_total phase2 実装詳細 (= sw v420 で完了)
 
@@ -201,13 +203,45 @@ metadata:
 - TTS 生成なし、 manifest 編集のみで完結
 - ロジック: number_sequence で既に動いていた「chip text の数字判定 + g_num マッピング」 を明示拡張
 
-### order_color phase2 準備詳細 (= sw v420 時点で準備完了)
+### order_color phase2 実装詳細 (= sw v422 で完了、 みずいろ 1 件 pending)
 
-- CSV 漢字化 (赤 / 黄色 / 緑 / 青 / 紫 / ピンク / オレンジ / みずいろ) + 句点付与
-- 「みずいろ」 はカナ維持 (= 「水色 → ミズショク」 誤読リスク回避)
-- expand JSON 8 キー漢字化 (CSV と完全一致確認、 72 wav 参照検証済)
-- BATCH-RUN-order_color-phase2.md 138 行
-- 辞書全カバー済 (= v109 で 8 色名すべて既登録)
+- **発見**: ユーザー指摘「本当に重複してない？やった記憶のあるものばかりなんだけど。」 → order_color phase2 の 8 色名のうち 7 色は phase1 で既に正解 wav として生成済だった
+- 結果 71 件 (= 87.5%) の重複 TTS を回避 (= 8 件全部 TTS で作り直そうとしていたエージェント設計を防いだ)
+- **7 色名の phase1 wav 代表マッピング**:
+  - 赤 → q003_a.wav (4 wav 候補から最初の正解)
+  - 青 → q001_b.wav (3 wav 候補から)
+  - 黄色 → q004_c.wav (7 wav 候補から)
+  - 緑 → q002_d.wav (3 wav 候補から)
+  - ピンク → q007_c.wav (2 wav 候補から)
+  - オレンジ → q006_a.wav (4 wav 候補から)
+  - 紫 → q023_c.wav (1 wav 候補)
+  - みずいろ → **pending (= manifest 未登録、 旧 cyan = Q15_c)**
+- **manifest +71 動的参照エントリ追加** (= 内訳 赤 13 / 青 16 / 黄色 13 / 緑 14 / ピンク 6 / オレンジ 5 / 紫 4)
+- order_color エントリ計 119 件 (= 既存 48 + 新規 71)
+- **句点 (。) 整合性**: phase1 wav は句点なし生成 (= 2026-05-16 以前)。 phase2 で動的参照する場合の音声差は微小で許容可
+
+## phase2 5 カテゴリ徹底調査結果 (2026-05-17)
+
+- **背景**: ユーザー指示「他のカテゴリーも徹底的に調べてください」 で全 5 カテゴリ (shape_name / weather / opposite / body / trivia) の phase2 不正解選択肢 231 ユニーク語と既存 phase1 wav (= 180 正解 wav + g_num 11 件) を 1:1 で照合
+- **結論**: order_color のような高カバレッジ (= 7/8 = 87.5%) は他カテゴリでは再現不可
+
+| カテゴリ | 再利用可 (同cat phase1) | cross-cat 追加 | 新規 TTS 必要 | 再利用率 |
+|---|---|---|---|---|
+| shape_name | 5 | 0 | **9** | 35.7% |
+| weather | 8 | +3 | **40** | 21.6% |
+| opposite | 8 | +1 | **41** (実際は 40) | 16.3% |
+| body | 7 | +1 | **41** (実際は 42) | 14.3% |
+| trivia | 4 | +4 | **60** | 11.8% |
+| **合計** | **32** | **+9** | **191** (= 約 199) | **17%** |
+
+- **理由** (= なぜ order_color のように高カバレッジにならないか):
+  - **語彙の多様性**: phase2 不正解には phase1 にない「文法形・派生語・説明文」 が多い
+    - 例 shape_name: phase1「5こ」 vs phase2「よんこ / ろっこ / さんこ / にこ / ごこ」 (= 古語助数詞)
+    - 例 opposite: phase1「ちいさい」 が正解 → phase2「おおきい」 が不正解 = 反対語ペアの片方未カバー
+    - 例 trivia: 動植物名「ライオン / シマウマ / つなみ / じしん」 等の独自語彙
+  - **domain isolation**: 各カテゴリが独自領域、 cross-category dedup の効果は 9 件 (= 3.9%) と限定的
+- **推奨優先順位** (= 新規 TTS 集約バッチ): shape_name 9 → opposite 41 → body 42 → weather 43 → trivia 60
+- **集約バッチ案内**: みずいろ 1 件と合算で計 **192 件** を一括生成推奨
 
 ## 完成記録
 
@@ -229,7 +263,7 @@ metadata:
 - **辞書 v109**: 109 entries (.vdc2 確定版)
 - **expand JSON 事前予防修正**: **計 202 キー** (= shape_name 26 + weather 39 + opposite 48 + body 39 + trivia 50) を「CSV と一致させる」 形で事前修正
 - **博士パート (48 件)**: MVP 後回しのため未生成 (= [[feature-quizland-voicepeak-pivot]] に記録、 単体購入「ナレーター おじいさん」 ¥5,980 で着手可能)
-- **phase2 開始**: 2026-05-17 〜 進行中 (count_total + order_color 完了 / 残 6 カテゴリ) ※詳細は上記「## phase2 進捗マトリクス」 セクション参照
+- **phase2 開始**: 2026-05-17 〜 進行中 (count_total + order_color + number_sequence = 3/8 完了、 みずいろ 1 件 pending、 残 5 カテゴリ 191 件は徹底調査済) ※詳細は上記「## phase2 進捗マトリクス」 セクション参照
 
 ### 主な発見と教訓
 
@@ -238,3 +272,4 @@ metadata:
 3. **句点 (。) 追加ルールが自然な発音完了感を生んだ** (sw v389+): body 以降の答え末尾に「。」 を追加することで、 wav が「途中で切れた」 印象を回避。 平叙的な答え (例「心臓。」「はえる。」) の自然さが向上。
 4. **試聴駆動 → 事前防止 へのシフト**: sw v384 までは「まず生成 → 試聴で問題発見 → 修正再生成」 だったのを、 sw v385 以降「漢字化時点で疑わしい箇所をカナに戻す + expand JSON を事前同期」 に切り替えたことで、 後半 4 カテゴリ (weather / opposite / body / trivia) は再生成回数が大きく減少。
 5. **並走タスクによる sw 番号の急進**: 各カテゴリ完成時に「+1 だけ進む」 ように見えるが、 実際は他作業で sw 番号が大きく前進している (= v388 → v412 → v413、 v413 → v417 → v418)。 「自分の作業で何が進んだか」 と「sw 番号の増分」 は別物として記録した方が混乱が少ない。
+6. **phase2 着手前は必ず phase1 正解カバレッジ調査を実施** (sw v422 恒久ルール化): ユーザー指摘「本当に重複してない？やった記憶のあるものばかりなんだけど。」 を契機に確立。 phase2 不正解 chip text が phase1 のどの正解 wav で発音済か全件マッピング → 重複 TTS を事前回避 (= count_total 72 / order_color 71 のように大幅削減できるケースあり)。 ただし「order_color のような高カバレッジは例外」 = 5 カテゴリ徹底調査の結果、 shape_name 35.7% / weather 21.6% / opposite 16.3% / body 14.3% / trivia 11.8% と各カテゴリの独自領域性で再利用率は低い。 cross-category dedup の効果は実測 3.9% (= 9/231) で期待値より低い。 = 「事前調査必須、 ただし高カバレッジは例外」 が恒久ルール。
