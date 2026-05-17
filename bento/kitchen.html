@@ -2595,12 +2595,76 @@ body.layout-editor-on .endX-marker {
     obs.observe(els.endXMarker, { attributes: true, attributeFilter: ['style'] });
   }
 
+  // [v427] saved-layout から直接 startX/endX-marker の tx を読んで
+  // chopMechanics.{startX_pct, endX_pct} を更新する。
+  //
+  // 真因 (v426 → v427 で修正): syncStartXFromMarker / syncEndXFromMarker は
+  // marker の getBoundingClientRect で % を算出するが、 通常プレイ時には
+  // `.startX-marker { display: none }` で box が無く mRect.width === 0、
+  // 早期 return して chopMechanics の値が JS デフォルト (87 / 13) のまま
+  // 残り続けるバグがあった。 editor で動かした青/赤 marker が通常プレイの
+  // chop に反映されない致命症状の原因。
+  //
+  // 解決: marker の DOM bbox に頼らず、 saved-layout の tx をそのまま読んで
+  // CSS デフォルト (.startX-marker { left:87% }, .endX-marker { left:13% }) +
+  // tx + 半幅補正で % を計算する。 cutting-board は通常プレイでも可視なので
+  // getBoundingClientRect().width で正規化可能。
+  //
+  // 公式:  pct = cssDefault% + 100 * (tx + halfWidth) / boardWidth
+  //   - cssDefault%: startX=87, endX=13 (kitchen.html の .startX-marker / .endX-marker
+  //     CSS rule と同期)
+  //   - halfWidth: 12 (marker は width:24px、 CSS の translate(-50%,-50%) を
+  //     editor の translate(<tx>,<ty>) が打ち消すため、 中心揃え分を tx に加算)
+  var STARTX_MARKER_WIDTH = 24;
+  var ENDX_MARKER_WIDTH = 24;
+  var STARTX_DEFAULT_PCT = 87;
+  var ENDX_DEFAULT_PCT = 13;
+
+  function applyMarkerXFromSavedLayout(ing) {
+    if (!ing || !ing.chopMechanics) return;
+    if (!window._currentLayoutData) return;
+    if (!els.board) return;
+    var bRect = els.board.getBoundingClientRect();
+    if (!bRect.width) return;
+    var data = window._currentLayoutData;
+    var ingId = ing.id;
+
+    function lookupTx(sel) {
+      // 優先: per-ingredient (@<id>)、 fallback: base
+      var perKey = sel + '|0@' + ingId;
+      var baseKey = sel + '|0';
+      var entry = (ingId && data[perKey]) ? data[perKey]
+                : data[baseKey] ? data[baseKey]
+                : null;
+      if (!entry) return null;
+      return (typeof entry.tx === 'number') ? entry.tx : null;
+    }
+
+    var startTx = lookupTx('.startX-marker');
+    if (startTx !== null) {
+      var startPct = STARTX_DEFAULT_PCT + 100 * (startTx + STARTX_MARKER_WIDTH / 2) / bRect.width;
+      if (isFinite(startPct)) ing.chopMechanics.startX_pct = startPct;
+    }
+    var endTx = lookupTx('.endX-marker');
+    if (endTx !== null) {
+      var endPct = ENDX_DEFAULT_PCT + 100 * (endTx + ENDX_MARKER_WIDTH / 2) / bRect.width;
+      if (isFinite(endPct)) ing.chopMechanics.endX_pct = endPct;
+    }
+  }
+
   // chopY-marker と ingredient-bbox-marker の sync を一括実行する集約関数。
   // loadIngredient / rAF 内から呼び出される。
   function syncMechanicsFromMarkers(ing) {
     syncChopYFromMarker(ing);
     syncIngredientBboxFromMarker(ing);
+    // [v427] 通常プレイ時は marker が display:none で bbox 不可。
+    //   saved-layout の tx を直接読む経路で chopMechanics を先に更新する。
+    //   editor mode では bbox 同期がこの直後に上書きするので順序問題なし。
+    applyMarkerXFromSavedLayout(ing);
     // [v410] 包丁の切り始め / 終わり X (青/赤縦線 marker) → chopMechanics.startX_pct / endX_pct
+    //   editor 時は marker が可視で getBoundingClientRect が有効なので bbox 経由で同期。
+    //   (drag 中は marker.style.transform = translate(tx, ty) が attachObserver 経由で
+    //    別途 syncStartXFromMarker を発火させる。)
     syncStartXFromMarker(ing);
     syncEndXFromMarker(ing);
   }
