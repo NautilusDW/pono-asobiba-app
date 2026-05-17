@@ -843,6 +843,50 @@ body.layout-editor-on .ingredient-bbox-marker {
   position: absolute !important;   /* editor の position:relative 強制を相殺（v405 知見） */
 }
 
+/* ── 包丁の切り始め X (chopProgress=0 時の刃先位置) を WYSIWYG 調整
+   する marker。 layout-editor 専用、 通常プレイ時は完全非表示。 */
+.startX-marker {
+  position: absolute;
+  left: 87%;          /* 既存 chopMechanics.startX_pct のデフォルト */
+  top: 50%;
+  width: 4px;
+  height: 80px;
+  transform: translate(-50%, -50%);
+  border: 3px dashed #2196F3;   /* 青 */
+  background: rgba(33, 150, 243, 0.18);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+}
+body.layout-editor-on .startX-marker {
+  display: block;
+  pointer-events: auto;
+  position: absolute !important;
+}
+
+/* ── 包丁の切り終わり X (chopProgress=chopCount 時の刃先位置) を
+   WYSIWYG 調整する marker。 */
+.endX-marker {
+  position: absolute;
+  left: 13%;          /* 既存 chopMechanics.endX_pct のデフォルト */
+  top: 50%;
+  width: 4px;
+  height: 80px;
+  transform: translate(-50%, -50%);
+  border: 3px dashed #F44336;   /* 赤 */
+  background: rgba(244, 67, 54, 0.18);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+}
+body.layout-editor-on .endX-marker {
+  display: block;
+  pointer-events: auto;
+  position: absolute !important;
+}
+
 .ingredient-on-board {
   font-size: 5.6rem;
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.18));
@@ -1473,6 +1517,8 @@ body.layout-editor-on .ingredient-bbox-marker {
       ['.knife',          'wh', '包丁'],
       ['.chopY-marker',   'wh', '[ツール] 包丁の最下点'],
       ['.ingredient-bbox-marker', 'wh', '[ツール] 食材の位置とサイズ'],
+      ['.startX-marker',  'wh', '[ツール] 包丁の切り始め X'],
+      ['.endX-marker',    'wh', '[ツール] 包丁の切り終わり X'],
       ['.bowl',           'wh', '切れ端ボウル'],
     ],
     // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
@@ -1480,7 +1526,7 @@ body.layout-editor-on .ingredient-bbox-marker {
     // となり、 applier の lookup chain で base キーへ自動 fallback する。
     // ※ perQuestionSelectors という名前は quizland 由来。 本プロジェクトでは
     //   per-ingredient と読み替えること。
-    perQuestionSelectors: ['.knife', '.chopY-marker', '.ingredient-bbox-marker'],
+    perQuestionSelectors: ['.knife', '.chopY-marker', '.ingredient-bbox-marker', '.startX-marker', '.endX-marker'],
     ghPath: 'bento/kitchen/saved-layout.json',
   };
 </script>
@@ -1556,6 +1602,13 @@ body.layout-editor-on .ingredient-bbox-marker {
                per-ingredient で WYSIWYG 調整するためのターゲット。 通常プレイでは
                非表示 (CSS で body.layout-editor-on 時のみ display:block)。 -->
           <div class="ingredient-bbox-marker" id="ingredient-bbox-marker" aria-hidden="true" data-le-keep-position="1"></div>
+          <!-- layout-editor 専用 dummy: 包丁の切り始め X (chopMechanics.startX_pct) を
+               per-ingredient で WYSIWYG 調整するための縦線 marker。 通常プレイでは
+               非表示 (CSS で body.layout-editor-on 時のみ display:block)。 -->
+          <div class="startX-marker" id="startX-marker" aria-hidden="true" data-le-keep-position="1"></div>
+          <!-- layout-editor 専用 dummy: 包丁の切り終わり X (chopMechanics.endX_pct) を
+               per-ingredient で WYSIWYG 調整するための縦線 marker。 -->
+          <div class="endX-marker" id="endX-marker" aria-hidden="true" data-le-keep-position="1"></div>
           <div class="spark" id="spark"></div>
           <div class="ingredient-on-board" id="ingredient-on-board"></div>
           <div class="empty-board-hint" id="empty-board-hint">ざいりょうを えらんでね</div>
@@ -1830,6 +1883,8 @@ body.layout-editor-on .ingredient-bbox-marker {
     knife:         document.getElementById('knife'),
     chopYMarker:   document.getElementById('chopY-marker'),
     ingBboxMarker: document.getElementById('ingredient-bbox-marker'),
+    startXMarker:  document.getElementById('startX-marker'),
+    endXMarker:    document.getElementById('endX-marker'),
     spark:         document.getElementById('spark'),
     ton:           document.getElementById('ton-text'),
     comboPill:     document.getElementById('combo-pill'),
@@ -1969,6 +2024,9 @@ body.layout-editor-on .ingredient-bbox-marker {
     // MutationObserver は 1 度だけ取り付ければ DOM 存続中ずっと有効。
     attachBboxMarkerObserver();
     attachChopYMarkerObserver();
+    // [v410] startX-marker / endX-marker (包丁の切り始め/終わり X) も同様に追従。
+    attachStartXMarkerObserver();
+    attachEndXMarkerObserver();
   }
 
   // ========== 画面切替 ==========
@@ -2207,6 +2265,12 @@ body.layout-editor-on .ingredient-bbox-marker {
     // 食材本体からズレて見える問題への対応。 ユーザー編集済みなら触らない。
     seedIngredientBboxFromOnBoard();
 
+    // [v410] startX-marker / endX-marker (青/赤の縦線) を
+    // chopMechanics.startX_pct / endX_pct の現在値で初期化する。
+    // editor 由来 transform があれば触らない (ユーザー編集を保護)。
+    seedStartXMarkerFromMechanics();
+    seedEndXMarkerFromMechanics();
+
     // [v409] img.naturalWidth/Height 確定前に seed が走ると getBoundingClientRect が
     //   CSS aspect-ratio デフォルトを返すため、最初だけ bbox-marker と PNG がズレる
     //   (特に初回 disk cache miss 時)。 img の load 完了を待って再 seed する。
@@ -2234,6 +2298,10 @@ body.layout-editor-on .ingredient-bbox-marker {
       requestAnimationFrame(function () {
         // [v408] img onload 後の実 bbox で seed を再計算 (carrot PNG の高さ確定後)。
         seedIngredientBboxFromOnBoard();
+        // [v410] startX/endX も 2-frame 後に再 seed (board の getBoundingClientRect が
+        //   確定してから marker.style.left を chopMechanics 値で安定化させるため)。
+        seedStartXMarkerFromMechanics();
+        seedEndXMarkerFromMechanics();
         syncMechanicsFromMarkers(ing);
       });
     });
@@ -2292,11 +2360,83 @@ body.layout-editor-on .ingredient-bbox-marker {
     obs.observe(els.chopYMarker, { attributes: true, attributeFilter: ['style'] });
   }
 
+  // [v410] startX-marker (青) を chopMechanics.startX_pct で初期化。
+  //   - editor 由来 transform (translate(<num>px,<num>px)) があれば触らない。
+  //   - 既定値 translate(-50%, -50%) は -50% を含むので seed 対象。
+  function seedStartXMarkerFromMechanics() {
+    if (!els.startXMarker || !state.current || !state.current.chopMechanics) return;
+    var mTrans = els.startXMarker.style.transform || '';
+    if (/translate\([^,]+,/.test(mTrans) && mTrans.indexOf('-50%') === -1) return;
+    els.startXMarker.style.left = state.current.chopMechanics.startX_pct + '%';
+  }
+
+  // [v410] endX-marker (赤) を chopMechanics.endX_pct で初期化。
+  function seedEndXMarkerFromMechanics() {
+    if (!els.endXMarker || !state.current || !state.current.chopMechanics) return;
+    var mTrans = els.endXMarker.style.transform || '';
+    if (/translate\([^,]+,/.test(mTrans) && mTrans.indexOf('-50%') === -1) return;
+    els.endXMarker.style.left = state.current.chopMechanics.endX_pct + '%';
+  }
+
+  // [v410] startX-marker の中心 X (cutting-board 基準 %) を
+  //   chopMechanics.startX_pct に反映するプロトタイプ。
+  //   - editor 未利用時 (translate(-50%,-50%) のまま) は no-op で初期値を保護。
+  //   - sync 関数は chopMechanics のみ更新し marker.style は触らない → 無限ループ無し。
+  function syncStartXFromMarker(ing) {
+    if (!ing || !ing.chopMechanics) return;
+    if (!els.startXMarker || !els.board) return;
+    var mTrans = els.startXMarker.style.transform || '';
+    var hasEditorTx = /translate\([^,]+,/.test(mTrans) && mTrans.indexOf('-50%') === -1;
+    if (!hasEditorTx) return;
+    var mRect = els.startXMarker.getBoundingClientRect();
+    var bRect = els.board.getBoundingClientRect();
+    if (!mRect.width || !bRect.width) return;
+    var pct = ((mRect.left + mRect.width / 2 - bRect.left) / bRect.width) * 100;
+    if (!isFinite(pct)) return;
+    ing.chopMechanics.startX_pct = pct;
+  }
+
+  // [v410] endX-marker の中心 X → chopMechanics.endX_pct。
+  function syncEndXFromMarker(ing) {
+    if (!ing || !ing.chopMechanics) return;
+    if (!els.endXMarker || !els.board) return;
+    var mTrans = els.endXMarker.style.transform || '';
+    var hasEditorTx = /translate\([^,]+,/.test(mTrans) && mTrans.indexOf('-50%') === -1;
+    if (!hasEditorTx) return;
+    var mRect = els.endXMarker.getBoundingClientRect();
+    var bRect = els.board.getBoundingClientRect();
+    if (!mRect.width || !bRect.width) return;
+    var pct = ((mRect.left + mRect.width / 2 - bRect.left) / bRect.width) * 100;
+    if (!isFinite(pct)) return;
+    ing.chopMechanics.endX_pct = pct;
+  }
+
+  // [v410] startX-marker の style 変化を監視 → chopMechanics.startX_pct を追従。
+  function attachStartXMarkerObserver() {
+    if (!els.startXMarker) return;
+    var obs = new MutationObserver(function () {
+      if (state.current) syncStartXFromMarker(state.current);
+    });
+    obs.observe(els.startXMarker, { attributes: true, attributeFilter: ['style'] });
+  }
+
+  // [v410] endX-marker の style 変化を監視 → chopMechanics.endX_pct を追従。
+  function attachEndXMarkerObserver() {
+    if (!els.endXMarker) return;
+    var obs = new MutationObserver(function () {
+      if (state.current) syncEndXFromMarker(state.current);
+    });
+    obs.observe(els.endXMarker, { attributes: true, attributeFilter: ['style'] });
+  }
+
   // chopY-marker と ingredient-bbox-marker の sync を一括実行する集約関数。
   // loadIngredient / rAF 内から呼び出される。
   function syncMechanicsFromMarkers(ing) {
     syncChopYFromMarker(ing);
     syncIngredientBboxFromMarker(ing);
+    // [v410] 包丁の切り始め / 終わり X (青/赤縦線 marker) → chopMechanics.startX_pct / endX_pct
+    syncStartXFromMarker(ing);
+    syncEndXFromMarker(ing);
   }
 
   // ingredient-bbox-marker の位置・サイズを .ingredient-on-board に反映。
