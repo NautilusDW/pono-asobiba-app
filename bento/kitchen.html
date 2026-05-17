@@ -100,6 +100,7 @@ body[data-screen="select"] .stage-wrap {
   background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
 }
 body[data-screen="chop"] .stage-wrap {
+  /* レターボックスは引き続き暖色グラデで埋める（キッチン画像は .chop-main 内に敷く） */
   background: linear-gradient(180deg, var(--bg-chop-1) 0%, var(--bg-chop-2) 50%, var(--bg-chop-3) 100%);
 }
 body[data-screen="fridge"] .stage-wrap {
@@ -383,7 +384,16 @@ body[data-screen="fridge"] .stage-wrap {
   min-height: 0;
 }
 .chop-main {
-  background: linear-gradient(180deg, #FFFDF6 0%, #FFF3DF 100%);
+  /* キッチン背景画像をフレーム全面に敷く。base 色は画像が読み込まれる前 /
+     レターボックス的な余白部分を柔らかく見せる暖色。
+     position は center 70% で、縦方向クロップ時に画像下端のまな板手前エッジ
+     （画像下端 95% 付近）を切らないよう、上側を優先的に切る。 */
+  background-color: #FFF3DF;
+  background-image: url('../assets/images/bento/cooking/kitchen_bg.png');
+  background-repeat: no-repeat;
+  background-position: center 70%;
+  background-size: cover;
+  image-rendering: -webkit-optimize-contrast;
   border: 3px solid #fff;
   border-radius: var(--radius-lg);
   padding: 14px;
@@ -392,6 +402,7 @@ body[data-screen="fridge"] .stage-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
   /* min-height は stage 1600x900 の縦余白に合わせた固定値。
      header (~80px) + back (~50) + panel-pill (~50) + gap で残り
      約 720px、その中で chop-main が 560px を確保して
@@ -625,17 +636,17 @@ body[data-screen="fridge"] .stage-wrap {
   margin-top: 2px;
 }
 
-/* ---------- まな板まわり（chop-main 内） ---------- */
+/* ---------- まな板まわり（chop-main 内） ----------
+   背景画像（kitchen_bg.png）が chop-main 全面に敷かれているので、
+   chop-stage は chop-main 内のフレームと同サイズで広がり、
+   その中に position: absolute でまな板 hit area と包丁を配置する。 */
 .chop-stage {
   position: relative;
   width: 100%;
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 6px 0 4px;
+  display: block; /* 子は absolute 配置にするため flex を解除 */
+  padding: 0;
+  min-height: 420px;
 }
 
 /* コンボピル（chop-side 側にもサポート用 inline 表示） */
@@ -691,90 +702,68 @@ body[data-screen="fridge"] .stage-wrap {
   100% { transform: translateX(-50%) translateY(-40px) rotate(-2deg) scale(1.05); opacity: 0; }
 }
 
-/* まな板 */
+/* まな板：背景画像にすでに描き込まれているまな板の上に、
+   透明な hit area として重ねる。CSS まな板グラフィックは描かない。
+   位置/サイズは kitchen_bg.png のまな板（画像下半分中央）に合わせて %。 */
 .cutting-board {
-  position: relative;
-  width: min(92%, 560px);
-  aspect-ratio: 5/3;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 18px,
-      rgba(108,68,32,0.10) 18px,
-      rgba(108,68,32,0.10) 20px
-    ),
-    linear-gradient(180deg, var(--board-1) 0%, var(--board-2) 60%, var(--board-3) 100%);
-  border: 6px solid var(--board-3);
-  border-radius: 22px;
-  box-shadow:
-    inset 0 -6px 0 rgba(120,70,30,0.25),
-    0 8px 0 rgba(120,70,30,0.45),
-    0 14px 22px rgba(0,0,0,0.18);
+  position: absolute;
+  /* 背景画像のまな板中心に合わせる。実画像測定:
+     横中心 ≒ 45.5%（中心より約 4.5% 左寄り）、縦中心 ≒ 79.5%、
+     画像内幅 ≒ 65%、アスペクト比 ≒ 1.18:1。
+     画像は cover で chop-main 全面に敷かれるため、% は chop-stage 基準。 */
+  left: 45.5%;
+  top: 80%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  aspect-ratio: 1.18 / 1;
+  background: transparent;
+  border: none;
+  border-radius: 22px; /* hit area の隅をまな板形状に合わせる */
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1;
+  z-index: 2;
   overflow: visible;
   touch-action: manipulation;
   outline: none;
 }
 .cutting-board:focus-visible {
-  box-shadow:
-    inset 0 -6px 0 rgba(120,70,30,0.25),
-    0 8px 0 rgba(120,70,30,0.45),
-    0 14px 22px rgba(0,0,0,0.18),
-    0 0 0 4px #F2915A;
+  /* 背景画像と重ねたときの可視フォーカスリングのみ */
+  box-shadow: 0 0 0 4px #F2915A;
 }
 
-/* 包丁 */
+/* 包丁：絵本タッチ PNG を背景画像として配置。
+   元 PNG は対角配置（blade 左下、handle 右上、画像内に大きな透明余白）
+   なので、画像本来の角度を活かして「まな板の上、刃が下を向くように」
+   右上から斜めに差し込まれる構図にする。 */
 .knife {
   position: absolute;
-  top: -22px;
-  right: 28px;
-  width: 110px;
-  height: 32px;
-  transform: rotate(-22deg);
-  transform-origin: 90% 50%;
+  /* まな板（hit area）の上端をまたぐように配置。座標は .cutting-board 基準。
+     PNG は対角配置（刃先 ≒ 35%,30% / handle ≒ 65%,45%、長軸 -20°〜-22°）。
+     base で +20° 回転して画像の傾きを打ち消し、刃先がまな板中央方向を指す姿勢に。 */
+  top: -70px;
+  right: -10px;
+  width: 240px;
+  height: 140px;
+  background-image: url('../assets/images/bento/cooking/knife.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  image-rendering: -webkit-optimize-contrast;
+  transform: rotate(20deg);
+  transform-origin: 70% 30%; /* handle 側を支点に */
   z-index: 3;
   pointer-events: none;
-  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25));
-}
-.knife .blade {
-  position: absolute;
-  left: 0; top: 0;
-  width: 65%; height: 100%;
-  background: linear-gradient(180deg, #F5F8FB 0%, #C7D1DA 60%, #92A0AE 100%);
-  border-radius: 4px 6px 28px 4px / 4px 6px 18px 4px;
-  border: 2px solid #6E7C8B;
-  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.08);
-}
-.knife .handle {
-  position: absolute;
-  right: 0; top: -2px;
-  width: 38%;
-  height: calc(100% + 4px);
-  background: linear-gradient(180deg, #E54F4F 0%, #B7322B 100%);
-  border: 2px solid #8C2421;
-  border-radius: 6px 10px 10px 6px;
-}
-.knife .rivets {
-  position: absolute;
-  right: 12%;
-  top: 30%;
-  width: 18%;
-  height: 40%;
-  background:
-    radial-gradient(circle at 30% 50%, #FAD2C5 0 18%, transparent 19%),
-    radial-gradient(circle at 70% 50%, #FAD2C5 0 18%, transparent 19%);
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.22));
 }
 .knife.chop { animation: knifeChop 0.32s ease-out; }
 @keyframes knifeChop {
-  0%   { transform: rotate(-22deg) translateY(0); }
-  35%  { transform: rotate(8deg) translateY(36px); }
-  60%  { transform: rotate(-12deg) translateY(14px); }
-  100% { transform: rotate(-22deg) translateY(0); }
+  0%   { transform: rotate(20deg) translateY(0); }
+  35%  { transform: rotate(45deg) translateY(50px); }
+  60%  { transform: rotate(15deg) translateY(18px); }
+  100% { transform: rotate(20deg) translateY(0); }
 }
 
 .ingredient-on-board {
@@ -782,15 +771,20 @@ body[data-screen="fridge"] .stage-wrap {
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.18));
   user-select: none;
   pointer-events: none;
-  position: relative;
+  /* .cutting-board (absolute) の中央に座標固定。背景画像内のまな板上に乗る。 */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 1;
   transition: transform 0.18s ease-out;
 }
 .ingredient-on-board.shake { animation: ingShake 0.25s ease-out; }
 @keyframes ingShake {
-  0%, 100% { transform: translate(0,0) rotate(0deg); }
-  20%      { transform: translate(-4px, 2px) rotate(-3deg); }
-  60%      { transform: translate(4px, -2px) rotate(3deg); }
+  /* base の translate(-50%,-50%) を維持しつつ揺らす */
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  20%      { transform: translate(calc(-50% - 4px), calc(-50% + 2px)) rotate(-3deg); }
+  60%      { transform: translate(calc(-50% + 4px), calc(-50% - 2px)) rotate(3deg); }
 }
 
 .spark {
@@ -810,12 +804,21 @@ body[data-screen="fridge"] .stage-wrap {
 }
 
 .empty-board-hint {
-  color: var(--text-light);
+  color: var(--text);
   font-weight: 900;
   font-size: 1rem;
   text-align: center;
-  padding: 0 12px;
+  /* キッチン背景の上で読みやすくするため半透明ピル化 */
+  padding: 6px 14px;
+  background: rgba(255, 253, 246, 0.82);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
 }
 
 /* 切れ端ボウル（chop-side 内に格納） */
@@ -1390,11 +1393,7 @@ body[data-screen="fridge"] .stage-wrap {
         <div class="ton-burst" id="ton-text">トン！</div>
 
         <div class="cutting-board" id="cutting-board" role="button" tabindex="0" aria-label="まな板（タップまたは Enter/Space キーでトントン）" aria-keyshortcuts="Enter Space">
-          <div class="knife" id="knife" aria-hidden="true">
-            <span class="blade"></span>
-            <span class="handle"></span>
-            <span class="rivets"></span>
-          </div>
+          <div class="knife" id="knife" aria-hidden="true"></div>
           <div class="spark" id="spark"></div>
           <div class="ingredient-on-board" id="ingredient-on-board"></div>
           <div class="empty-board-hint" id="empty-board-hint">ざいりょうを えらんでね</div>
