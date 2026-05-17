@@ -757,15 +757,15 @@ body[data-screen="fridge"] .stage-wrap {
                          以前の -480px ≒ cutting-board 高さの -55% 相当) */
 .knife {
   position: absolute;
-  /* JS が CSS 変数 --knife-x を更新し、 transition で滑らかに移動。
+  /* [v419] knife は wrapper(.knife) + inner(.knife-inner) の 2 層構造。
+     .knife (wrapper) は editor が drag/resize で動かす外枠。
+     .knife-inner は chop アニメで上下に動く内側 (背景画像を持つ)。
+     CSS transform は親 → 子で合成されるため、 editor 位置 + chop モーションが
+     衝突せず重ね合わせ可能。
      --knife-x: .cutting-board 基準の刃先 X % (chopMechanics.startX_pct / endX_pct)。
-     --knife-y: [v417 で廃止] CSS 変数を transform 内に置くと変数更新で transition が
-     発火しない Chrome 119+/Safari 18+ の挙動を回避するため、 Y は JS から
-     style.transform を直接代入する方式に変更した。
-     下の transform: translate(-50%, var(--knife-y, 0%)) は inline transform が
-     消えた時の初期 fallback として残してある。
-     旧 @keyframes knifeChop は廃止 (上下しか動かなかったため左→右の切り進みが
-     できなかった)。 */
+     editor が tx/ty を inline transform にセットするため、 wrapper には
+     fallback transform を書かない (editor の transform を保護)。
+     transition は left のみ linear に (ease-out のベジェ風挙動を排除し直角感)。 */
   left: var(--knife-x, 68%);
   top: -55%;
   width: 70%;
@@ -773,17 +773,26 @@ body[data-screen="fridge"] .stage-wrap {
   /* v400: knife.png 余白削減版 (953×1242, 0.767 縦長) に更新。
      旧 240/140 のままだと画像が歪むため aspect-ratio も同期。 */
   aspect-ratio: 953 / 1242;
+  image-rendering: -webkit-optimize-contrast;
+  transform-origin: 50% 80%;
+  transition: left 0.1s linear;
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.25));
+}
+/* [v419] knife の内側 (chop アニメ専用)。 wrapper を fill して背景画像を表示。
+   chop アニメは JS から style.transform で Y を直接書き換える。
+   transition は linear で 0.1s に短縮 (ベジェ風ではなく直角的なテンポ)。 */
+.knife-inner {
+  position: absolute;
+  inset: 0;
   background-image: url('../assets/images/bento/cooking/knife.png');
   background-repeat: no-repeat;
   background-position: center center;
   background-size: contain;
-  image-rendering: -webkit-optimize-contrast;
-  transform: translate(-50%, var(--knife-y, 0%)) rotate(0deg);
-  transform-origin: 50% 80%;
-  transition: transform 0.18s ease-out, left 0.18s ease-out;
-  z-index: 3;
+  transform: translate(0, 0);
+  transition: transform 0.1s linear;
   pointer-events: none;
-  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.25));
 }
 /* v400 [Critical fix]: 通常プレイでは .knife を pointer-events: none で透過させて
    まな板タップを邪魔しないが、 editor モード (?edit=1) では knife 本体を掴んで
@@ -1937,6 +1946,9 @@ body.layout-editor-on .endX-marker {
     ingOnBoard:    document.getElementById('ingredient-on-board'),
     emptyHint:     document.getElementById('empty-board-hint'),
     knife:         document.getElementById('knife'),
+    // [v419] .knife-inner は wrapper の中の chop アニメ専用レイヤ (Y を上下に動かす)。
+    // editor は外側 .knife を動かし、 chop アニメは内側 .knife-inner を動かす。
+    knifeInner:    document.getElementById('knife').querySelector('.knife-inner'),
     chopYMarker:   document.getElementById('chopY-marker'),
     ingBboxMarker: document.getElementById('ingredient-bbox-marker'),
     startXMarker:  document.getElementById('startX-marker'),
@@ -2297,19 +2309,27 @@ body.layout-editor-on .endX-marker {
     // bladeTipOffsetX_pct を逆補正してから seed する (playChopAnim と同じ式)。
     if (els.knife && ing.chopMechanics) {
       var m = ing.chopMechanics;
-      var prevTransition = els.knife.style.transition;
+      // [v419] wrapper (.knife) の transition は flash 抑制対象、 inner (.knife-inner) の
+      // transform も初期 seed 時は瞬間反映したいので両方とも transition を一時 OFF。
+      var prevKnifeTransition = els.knife.style.transition;
+      var prevInnerTransition = els.knifeInner ? els.knifeInner.style.transition : '';
       els.knife.style.transition = 'none';
+      if (els.knifeInner) els.knifeInner.style.transition = 'none';
       var KNIFE_WIDTH_PCT_OF_BOARD_SEED = 70; // .knife { width: 70%; } と同期
       var seedTipOffset = m.bladeTipOffsetX_pct || 0;
       var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
       els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
-      // [v417] Y は style.transform 直接代入 (var-in-transform の transition 不発回避)
+      // [v419] .knife の style.transform は触らない (editor 由来 transform を保護)。
+      // Y の seed は .knife-inner.style.transform で行う。
       var seedLiftY = m.liftY_pct || 0;
-      els.knife.style.transform = 'translate(-50%, ' + seedLiftY + '%) rotate(0deg)';
+      if (els.knifeInner) {
+        els.knifeInner.style.transform = 'translate(0, ' + seedLiftY + '%)';
+      }
       // 2-frame 後に transition を戻す (初回フラッシュ抑制)
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
-          els.knife.style.transition = prevTransition || '';
+          els.knife.style.transition = prevKnifeTransition || '';
+          if (els.knifeInner) els.knifeInner.style.transition = prevInnerTransition || '';
         });
       });
     }
@@ -2730,28 +2750,43 @@ body.layout-editor-on .endX-marker {
       // モデル B: chopProgress=1 → t=0 (startX)、 chopProgress=total → t=1 (endX)。
       // chopProgress は onBoardTap で += 1 された後の値なので 1..total の整数を取る。
       const denom = Math.max(1, total - 1);
-      const t = Math.max(0, Math.min(1, (state.chopProgress - 1) / denom));
-      // 刃先が来るべき X (cutting-board %)。
-      const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * t;
-      // 画像内オフセット (% of knife width) → cutting-board 基準 %pt へ換算。
-      // .knife の width は cutting-board の 70% なので、 オフセット 1% は cutting-board 0.7%pt。
+      const knifeInner = els.knifeInner || els.knife.querySelector('.knife-inner');
       const KNIFE_WIDTH_PCT_OF_BOARD = 70; // .knife { width: 70%; } と同期
       const tipOffset = m.bladeTipOffsetX_pct || 0;
-      // コンテナ中央を「刃先目標から見て逆方向」へずらすことで、 刃先が targetBladeX に来る。
       const compensation = -(tipOffset * KNIFE_WIDTH_PCT_OF_BOARD / 100);
-      const nextX = targetBladeX + compensation;
-      els.knife.style.setProperty('--knife-x', nextX + '%');  // X は --knife-x 経由 (left プロパティで効く)
-      // [v417] Y は CSS var + transform の transition 不発を回避するため style.transform 直接代入
       const chopY = m.chopY_pct || 0;
-      els.knife.style.transform = 'translate(-50%, ' + chopY + '%) rotate(0deg)';
-      // [W3] lift setTimeout を pendingTimers に登録し、 clearPendingTimers でキャンセル可能に。
+      const liftY = m.liftY_pct || 0;
+
+      // [v419] 直角モーション (X と Y を順番に動かす)。
+      //   Phase 1 (即時)    : knife-inner.Y = chopY  (真下に下ろす)
+      //   Phase 2 (100ms 後): knife-inner.Y = liftY  (真上に戻す)
+      //   Phase 3 (200ms 後): wrapper.--knife-x = 次タップ用の X (左に進む)。 最終タップは skip。
+      // X と Y を同時に動かさないので「右に行ってから左」のベジェ風挙動が消える。
+
+      // Phase 1: 下
+      if (knifeInner) {
+        knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
+      }
+
+      // Phase 2: 上 (100ms 後)
       state.pendingTimers.push(setTimeout(function () {
-        if (!els.knife) return;
+        if (!knifeInner) return;
         // 完成タップ後 (cutting 中) は持ち上げず、 切り終わった位置で静止させる。
         if (state.cutting) return;
-        const liftY = m.liftY_pct || 0;
-        els.knife.style.transform = 'translate(-50%, ' + liftY + '%) rotate(0deg)';
-      }, 180));
+        knifeInner.style.transform = 'translate(0, ' + liftY + '%)';
+      }, 100));
+
+      // Phase 3: 左 (200ms 後) — 次タップ位置へ wrapper X を移動。 最終タップは skip。
+      state.pendingTimers.push(setTimeout(function () {
+        if (!els.knife) return;
+        if (state.cutting) return;
+        const nextProgress = state.chopProgress + 1;
+        if (nextProgress > total) return;  // 念のため (state.cutting でも弾かれる想定)
+        const tNext = Math.max(0, Math.min(1, (nextProgress - 1) / denom));
+        const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * tNext;
+        const nextX = targetBladeX + compensation;
+        els.knife.style.setProperty('--knife-x', nextX + '%');
+      }, 200));
     }
 
     els.ingOnBoard.classList.remove('shake');
@@ -3024,7 +3059,11 @@ body.layout-editor-on .endX-marker {
     if (els.knife) {
       els.knife.style.removeProperty('--knife-x');
       els.knife.style.removeProperty('--knife-y');
-      els.knife.style.removeProperty('transform');  // [v417] inline transform をクリアして CSS default に戻す
+      // [v419] .knife の inline transform は editor が saved-layout から復元するため
+      // ここでは触らない (resetBoard で editor 由来 transform を消すと位置がリセットされる)。
+      // chop アニメで動かす Y は内側 .knife-inner なので、 そちらを CSS default へ戻す。
+      var _knifeInner = els.knifeInner || els.knife.querySelector('.knife-inner');
+      if (_knifeInner) _knifeInner.style.transform = '';
     }
     els.emptyHint.style.display = '';
     els.progress.style.width = '0%';
