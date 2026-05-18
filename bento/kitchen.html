@@ -529,8 +529,8 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .cook-play-area {
   position: relative;
-  width: min(88%, 720px);
-  aspect-ratio: 1 / 1;
+  width: min(92%, 780px);
+  aspect-ratio: 1.18 / 1;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -548,12 +548,67 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .cook-tool {
   position: absolute;
-  left: 50%;
-  top: 52%;
+  left: 59%;
+  top: 51%;
   transform: translate(-50%, -50%);
-  width: 86%;
+  width: 74%;
   aspect-ratio: 1 / 1;
   pointer-events: none;
+  z-index: 1;
+}
+.prep-plate {
+  position: absolute;
+  left: 18%;
+  top: 65%;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  width: 29%;
+  aspect-ratio: 1.4 / 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(255,255,255,0.96) 0 43%, #F7DDA7 44% 55%, #D99A58 56% 62%, transparent 63%),
+    radial-gradient(ellipse at 50% 55%, rgba(120,80,45,0.18), transparent 64%);
+  box-shadow: 0 10px 16px rgba(105,70,35,0.18);
+  pointer-events: none;
+  z-index: 2;
+}
+.heat-glow {
+  position: absolute;
+  left: 59%;
+  top: 82%;
+  transform: translate(-50%, -50%);
+  width: 42%;
+  height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,142,72,0.62), rgba(255,197,92,0.24) 48%, transparent 72%);
+  filter: blur(1px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.heat-glow::before,
+.heat-glow::after {
+  content: '';
+  position: absolute;
+  top: 22%;
+  width: 20%;
+  height: 68%;
+  border-radius: 50% 50% 46% 46%;
+  background: linear-gradient(180deg, #FFE38B 0%, #FF985B 68%, #E85C3F 100%);
+  transform-origin: 50% 100%;
+  opacity: 0.85;
+}
+.heat-glow::before {
+  left: 30%;
+  transform: rotate(-8deg);
+}
+.heat-glow::after {
+  right: 30%;
+  transform: rotate(8deg);
+}
+.cook-play-area.is-preheating .heat-glow,
+.cook-play-area.is-preheated .heat-glow {
+  opacity: 1;
+  animation: heatPulse 0.82s ease-in-out infinite alternate;
 }
 .cook-tool--pan {
   border-radius: 50%;
@@ -596,16 +651,25 @@ body[data-screen="fridge"] .stage-wrap {
 .cook-tool--pot::after { right: 1%; }
 .cooking-food {
   position: absolute;
-  left: 50%;
-  top: 49%;
+  left: 18%;
+  top: 62%;
   transform: translate(-50%, -50%);
-  width: 42%;
+  width: 26%;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   z-index: 3;
+  transition:
+    left 0.5s cubic-bezier(.18,.85,.2,1.02),
+    top 0.5s cubic-bezier(.18,.85,.2,1.02),
+    width 0.5s cubic-bezier(.18,.85,.2,1.02);
+}
+.cook-play-area.food-placed .cooking-food {
+  left: 59%;
+  top: 49%;
+  width: 39%;
 }
 .cooking-food img {
   max-width: 100%;
@@ -696,6 +760,11 @@ body[data-screen="fridge"] .stage-wrap {
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 2;
+  opacity: 0.18;
+  transition: opacity 0.25s ease;
+}
+.cook-play-area.food-placed .oil-bubbles {
+  opacity: 1;
 }
 .oil-bubbles i {
   position: absolute;
@@ -721,6 +790,10 @@ body[data-screen="fridge"] .stage-wrap {
   0%   { transform: translateY(-150px) scale(0.72); opacity: 0; }
   58%  { transform: translateY(10px) scale(1.08); opacity: 1; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes heatPulse {
+  0%   { transform: translate(-50%, -50%) scale(0.92); opacity: 0.62; }
+  100% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
 }
 @keyframes cookBurst {
   0%   { transform: translateX(-50%) translateY(8px) rotate(-10deg) scale(0.5); opacity: 0; }
@@ -2051,6 +2124,8 @@ body.layout-editor-on .endX-marker {
   <div class="cook-screen-wrap">
     <div class="cook-main">
       <div class="cook-play-area" id="grill-stage" role="button" tabindex="0" aria-label="フライパン">
+        <div class="heat-glow" id="grill-heat" aria-hidden="true"></div>
+        <div class="prep-plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pan" aria-hidden="true"></div>
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
         <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
@@ -2062,7 +2137,7 @@ body.layout-editor-on .endX-marker {
 
     <div class="cook-side">
       <div class="side-card">
-        <div class="cook-action-label" id="grill-action-label">フライパンで やこう</div>
+        <div class="cook-action-label" id="grill-action-label">まず フライパンを あたためよう</div>
         <div class="cook-progress-dots" id="grill-progress-dots" aria-hidden="true">
           <span></span><span></span>
         </div>
@@ -2070,7 +2145,7 @@ body.layout-editor-on .endX-marker {
       <div class="side-card">
         <div style="display:flex;align-items:flex-start;gap:8px;">
           <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-grill" alt="ポノ">
-          <div class="speech-bubble" id="speech-grill">タップで やいてみよう！</div>
+          <div class="speech-bubble" id="speech-grill">おさらで じゅんびしてるよ</div>
         </div>
       </div>
     </div>
@@ -2088,6 +2163,8 @@ body.layout-editor-on .endX-marker {
   <div class="cook-screen-wrap">
     <div class="cook-main">
       <div class="cook-play-area" id="fry-stage" role="button" tabindex="0" aria-label="あげなべ">
+        <div class="heat-glow" id="fry-heat" aria-hidden="true"></div>
+        <div class="prep-plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pot" aria-hidden="true"></div>
         <div class="oil-bubbles" id="oil-bubbles" aria-hidden="true">
           <i></i><i></i><i></i><i></i><i></i><i></i>
@@ -2102,7 +2179,7 @@ body.layout-editor-on .endX-marker {
 
     <div class="cook-side">
       <div class="side-card">
-        <div class="cook-action-label" id="fry-action-label">あぶらで あげよう</div>
+        <div class="cook-action-label" id="fry-action-label">まず あぶらを あたためよう</div>
         <div class="cook-progress-dots" id="fry-progress-dots" aria-hidden="true">
           <span></span><span></span>
         </div>
@@ -2110,7 +2187,7 @@ body.layout-editor-on .endX-marker {
       <div class="side-card">
         <div style="display:flex;align-items:flex-start;gap:8px;">
           <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-fry" alt="ポノ">
-          <div class="speech-bubble" id="speech-fry">いいいろに なったら とりだそう！</div>
+          <div class="speech-bubble" id="speech-fry">おさらで じゅんびしてるよ</div>
         </div>
       </div>
     </div>
@@ -2455,6 +2532,8 @@ body.layout-editor-on .endX-marker {
     actionIndex: 0,
     cookProgress: 0,
     cookAnimating: false,
+    cookPreheated: false,
+    cookFoodPlaced: false,
     fryReady: false,
     chopProgress: 0,
     combo: 0,
@@ -2905,7 +2984,9 @@ body.layout-editor-on .endX-marker {
     else if (step === 4) {
       const action = getCurrentAction();
       if (action && (action.type === 'grill' || action.type === 'fry')) {
-        showScreen(action.type);
+        if (state.currentScreen !== action.type) {
+          beginCurrentAction();
+        }
       } else {
         setSpeech('ざいりょうを えらぶと おかずづくりが はじまるよ！');
         showScreen(state.unlocked.size ? 'fridge' : 'select');
@@ -2983,6 +3064,8 @@ body.layout-editor-on .endX-marker {
     state.current = ing;
     state.actionIndex = 0;
     state.cookProgress = 0;
+    state.cookPreheated = false;
+    state.cookFoodPlaced = false;
     state.fryReady = false;
     state.chopProgress = 0;
     state.combo = 0;
@@ -3022,6 +3105,8 @@ body.layout-editor-on .endX-marker {
       state.combo = 0;
       state.cookProgress = 0;
       state.fryReady = false;
+      state.cookPreheated = false;
+      state.cookFoodPlaced = false;
       loadIngredient(ing);
       els.emptyHint.style.display = 'none';
       clearBowl();
@@ -3043,41 +3128,39 @@ body.layout-editor-on .endX-marker {
     state.combo = 0;
     state.cookProgress = 0;
     state.fryReady = false;
+    state.cookPreheated = false;
+    state.cookFoodPlaced = false;
     state.cookAnimating = false;
     hideCombo();
     updateCookView(action.type, 0, false);
-    const label = action.label || (action.type === 'fry' ? 'あぶらで あげよう' : 'フライパンで やこう');
+    updateCookStageState(action.type);
+    const label = action.label || (action.type === 'fry' ? 'まず あぶらを あたためよう' : 'まず フライパンを あたためよう');
     if (action.type === 'grill') {
       if (els.grillActionLabel) els.grillActionLabel.textContent = label;
-      setSpeech(ing.name + 'を やいてみよう！', 'grill');
+      setSpeech(ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
+      startCookPreheat(ing, action, 'grill');
     } else {
       if (els.fryActionLabel) els.fryActionLabel.textContent = label;
-      setSpeech(ing.name + 'を そっと いれるよ！', 'fry');
+      setSpeech(ing.name + 'は おさらで じゅんび！', 'fry');
       showScreen('fry');
-      state.pendingTimers.push(setTimeout(function () {
-        if (state.current !== ing || getCurrentAction() !== action) return;
-        if (els.fryingFoodWrap) {
-          els.fryingFoodWrap.classList.remove('drop');
-          void els.fryingFoodWrap.offsetWidth;
-          els.fryingFoodWrap.classList.add('drop');
-        }
-        showCookBurst('fry');
-      }, 320));
-      state.pendingTimers.push(setTimeout(function () {
-        if (state.current !== ing || getCurrentAction() !== action) return;
-        state.cookProgress = Math.max(state.cookProgress, 1);
-        updateCookView('fry', 1, true);
-        setSpeech('ジュージュー いいおと！', 'fry');
-      }, 520));
-      state.pendingTimers.push(setTimeout(function () {
-        if (state.current !== ing || getCurrentAction() !== action) return;
-        state.cookProgress = 2;
-        state.fryReady = true;
-        updateCookView('fry', 2, true);
-        setSpeech('きつねいろ！ タップで とりだそう！', 'fry');
-      }, 1500));
+      startCookPreheat(ing, action, 'fry');
     }
+  }
+
+  function startCookPreheat(ing, action, type) {
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action) return;
+      state.cookPreheated = true;
+      updateCookStageState(type);
+      if (type === 'fry') {
+        if (els.fryActionLabel) els.fryActionLabel.textContent = 'タップで あぶらに いれよう';
+        setSpeech('あぶらが あったまったよ！ タップで いれよう！', 'fry');
+      } else {
+        if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップで フライパンに のせよう';
+        setSpeech('フライパンが あったまったよ！ タップで のせよう！', 'grill');
+      }
+    }, 680));
   }
 
   function getPrimaryRecipeForIngredient(ing) {
@@ -3116,6 +3199,14 @@ body.layout-editor-on .endX-marker {
     return rec ? rec.img : '';
   }
 
+  function updateCookStageState(type) {
+    const stageEl = type === 'fry' ? els.fryStage : els.grillStage;
+    if (!stageEl) return;
+    stageEl.classList.toggle('is-preheating', !state.cookPreheated);
+    stageEl.classList.toggle('is-preheated', state.cookPreheated);
+    stageEl.classList.toggle('food-placed', state.cookFoodPlaced);
+  }
+
   function updateCookView(type, stage, animate) {
     const ing = state.current;
     const action = getCurrentAction();
@@ -3125,6 +3216,7 @@ body.layout-editor-on .endX-marker {
     const fallback = type === 'fry' ? els.fryingFoodFallback : els.grillingFoodFallback;
     if (!wrap || !img || !fallback) return;
 
+    updateCookStageState(type);
     wrap.dataset.stage = String(safeStage);
     wrap.classList.remove('flip', 'drop');
     fallback.textContent = (ing && (ing.piece || ing.emoji)) || (type === 'fry' ? '🍤' : '🍳');
@@ -3157,7 +3249,7 @@ body.layout-editor-on .endX-marker {
 
     updateCookDots(type, safeStage);
     if (animate) {
-      wrap.classList.add(type === 'fry' && safeStage === 0 ? 'drop' : 'flip');
+      if (type !== 'fry') wrap.classList.add('flip');
       showCookBurst(type);
     }
   }
@@ -3178,11 +3270,65 @@ body.layout-editor-on .endX-marker {
     burst.classList.add('show');
   }
 
+  function placeFoodForGrill() {
+    state.cookAnimating = true;
+    state.cookFoodPlaced = true;
+    updateCookStageState('grill');
+    showCookBurst('grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'もういちど タップで うらがえそう';
+    setSpeech('ジュッ！ フライパンに のったよ！', 'grill');
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.currentScreen !== 'grill') return;
+      state.cookProgress = 1;
+      updateCookView('grill', 1, true);
+      setSpeech('いいかんじ！ もういちど やこう！', 'grill');
+    }, 360));
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookAnimating = false;
+    }, 720));
+  }
+
+  function placeFoodForFry() {
+    const ing = state.current;
+    const action = getCurrentAction();
+    state.cookAnimating = true;
+    state.cookFoodPlaced = true;
+    updateCookStageState('fry');
+    showCookBurst('fry');
+    if (els.fryActionLabel) els.fryActionLabel.textContent = 'いいいろに なるまで まとう';
+    setSpeech('ポチャン！ あぶらに はいったよ！', 'fry');
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookAnimating = false;
+    }, 420));
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action || !state.cookFoodPlaced) return;
+      state.cookProgress = 1;
+      updateCookView('fry', 1, true);
+      setSpeech('ジュージュー いいおと！', 'fry');
+    }, 620));
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action || !state.cookFoodPlaced) return;
+      state.cookProgress = 2;
+      state.fryReady = true;
+      updateCookView('fry', 2, true);
+      if (els.fryActionLabel) els.fryActionLabel.textContent = 'タップで とりだそう';
+      setSpeech('きつねいろ！ タップで とりだそう！', 'fry');
+    }, 1450));
+  }
+
   function onGrillTap() {
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'grill') return;
+    if (!state.cookPreheated) {
+      setSpeech('フライパンが あったまるまで まってね！', 'grill');
+      return;
+    }
+    if (!state.cookFoodPlaced) {
+      placeFoodForGrill();
+      return;
+    }
     state.cookAnimating = true;
     state.cookProgress = Math.min(2, state.cookProgress + 1);
     updateCookView('grill', state.cookProgress, true);
@@ -3205,11 +3351,16 @@ body.layout-editor-on .endX-marker {
     if (state.currentScreen !== 'fry') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'fry') return;
+    if (!state.cookPreheated) {
+      setSpeech('あぶらが あったまるまで まってね！', 'fry');
+      return;
+    }
+    if (!state.cookFoodPlaced) {
+      placeFoodForFry();
+      return;
+    }
     if (state.cookProgress < 2) {
-      state.cookProgress = Math.min(2, state.cookProgress + 1);
-      if (state.cookProgress >= 2) state.fryReady = true;
-      updateCookView('fry', state.cookProgress, true);
-      setSpeech(state.fryReady ? 'きつねいろ！ タップで とりだそう！' : 'ジュージュー いいおと！', 'fry');
+      setSpeech('もうすこしで いいいろに なるよ！', 'fry');
       return;
     }
     state.cookAnimating = true;
@@ -4750,6 +4901,8 @@ body.layout-editor-on .endX-marker {
     state.actionIndex = 0;
     state.cookProgress = 0;
     state.cookAnimating = false;
+    state.cookPreheated = false;
+    state.cookFoodPlaced = false;
     state.fryReady = false;
     state.chopProgress = 0;
     state.combo = 0;

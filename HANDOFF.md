@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:61-kitchen-cook-preheat-plate] **Done** — `bento/kitchen.html` の grill/fry で、食材が最初からフライパン/鍋上に出る挙動をやめ、左側の皿に待機 → 予熱/油温まり → タップで投入 → 調理の流れへ変更。焼きは投入後に片面→裏返し完成、揚げは投入後に自動で色変化→タップで取り出し。ローカル Playwright で egg / chicken_marinated / wiener の遷移と recipe unlock、調理中に flow chip 3→4 で戻った時の再開を確認。`sw.js` は CACHE_VERSION 443。 (by Codex)
+
 - 2026-05-18 - [batch:59-bento-kitchen-phase2-grill-fry] **Done** — `bento/kitchen.html` を `select/chop/grill/fry/fridge` の 5 画面へ拡張し、9 材料・9 レシピの `cookingActions` flow、grill/fry タップ演出、`bentoUnlockedRecipes` 永続化を追加。正式素材前の暫定 stage PNG は既存 Bento_parts 由来で全て 150KB 以下、pan/pot は CSS 描画。ローカル Playwright で egg / chicken / wiener / carrot / mince_patty / salmon / shrimp / korokke の主要遷移と recipe unlock を確認。`sw.js` は CACHE_VERSION 442。 (by Codex)
 - 2026-05-18 - [batch:58-bento-cabbage-scatter] **Done** — `bento/kitchen.html` でキャベツ切れ端の flight 開始点・中間点・終点を `burstIndex` レーンで分散し、皿内配置も黄金角ベースの楕円散布へ変更。キャベツ専用分岐のみで、にんじんは未変更。ローカル Playwright で 1 打 16 切れ端、flight startX 約 170px / startY 約 125px / endY 約 345px、皿内 x 約 90px / y 約 56px の散らばり、12 連打完了、にんじん 1 打目維持を確認。`sw.js` は CACHE_VERSION 441。 (by Codex)
 
