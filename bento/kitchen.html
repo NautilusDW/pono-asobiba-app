@@ -762,7 +762,7 @@ body[data-screen="fridge"] .stage-wrap {
      .knife-inner は chop アニメで上下に動く内側 (背景画像を持つ)。
      CSS transform は親 → 子で合成されるため、 editor 位置 + chop モーションが
      衝突せず重ね合わせ可能。
-     --knife-x: .cutting-board 基準の刃先 X % (chopMechanics.startX_pct / endX_pct)。
+     --knife-x: .cutting-board 基準の wrapper 左端 X %。
      editor が tx/ty を inline transform にセットするため、 wrapper には
      fallback transform を書かない (editor の transform を保護)。
      transition は left のみ linear に (ease-out のベジェ風挙動を排除し直角感)。
@@ -1828,11 +1828,11 @@ body.layout-editor-on .endX-marker {
   //   maskAxis   ............... 食材マスクが削れる方向。
   //                              'right-to-left' (にんじん根本→先端) /
   //                              'left-to-right' / 'top-to-bottom' / 'bottom-to-top'。
-  //   bladeTipOffsetX_pct ...... knife コンテナ中央から見た刃先 X オフセット
+  //   bladeTipOffsetX_pct ...... knife 画像中央から見た刃先 X オフセット
   //                              (knife.png の画像幅 %、左がマイナス、右がプラス)。
   //                              例: knife.png の刃先が画像内 X=10.8% にあるなら
   //                              10.8 - 50 = -39.2。 playChopAnim でこの値を使って
-  //                              「knife コンテナ中央 X」を逆算する。 未指定なら 0 (中央が刃先扱い)。
+  //                              「knife wrapper 左端 X」を逆算する。 未指定なら 0 (中央が刃先扱い)。
   //
   // ── ingredientLeft_pct / ingredientTop_pct / ingredientWidth_pct (まな板基準 0〜100%):
   //    すべて .cutting-board (まな板領域) を基準にした 0〜100% 値。
@@ -2350,8 +2350,8 @@ body.layout-editor-on .endX-marker {
     resetIngredientMask();
 
     // 包丁 seed (chopMechanics があれば)。
-    // [Critical 1 fix] --knife-x はコンテナ中央 X なので、 刃先が startX_pct に来るように
-    // bladeTipOffsetX_pct を逆補正してから seed する (playChopAnim と同じ式)。
+    // [v432] --knife-x は wrapper 左端 X。刃先が startX_pct に来るように、
+    // editor 保存 tx と bladeTipOffsetX_pct を逆補正して seed する。
     if (els.knife && ing.chopMechanics) {
       var m = ing.chopMechanics;
       // [v419/426] wrapper (.knife) の transition は flash 抑制対象、 inner (.knife-inner) の
@@ -2465,26 +2465,34 @@ body.layout-editor-on .endX-marker {
     reapplyKnifeLayout();
   }
 
-  // [v426] chop 中に保持したい Y 成分 (editor 保存の ty) を取得するヘルパ。
-  // playChopAnim で wrapper.style.transform を完全クリアすると、 editor 由来の ty
-  // (例: carrot で +125.7px) が一瞬で失われ、 包丁が「上にジャンプして横スライド」
-  // するように見える Y 軸ジャンプバグが起きていた (v425 報告)。 chop 中は X は
-  // --knife-x で制御し、 Y は editor 値 (ty) を translate(0, ty) で保持する。
+  // [v432] chop 中に保持したい editor 保存の tx/ty を取得するヘルパ。
+  // playChopAnim で wrapper.style.transform の tx を 0 にすると、 wrapper 左端基準の
+  // --knife-x と座標系が変わる。さらに LayoutSystem の再 apply で tx が戻った瞬間、
+  // 包丁が左へ飛ぶため、chop 中も tx/ty を両方保持する。
   //   - per-ingredient エントリ `.knife|0@<id>` を優先。
   //   - フォールバックは whole-doc base `.knife|0`。
-  //   - state.current / window._currentLayoutData 未定義時は 0 を返す。
-  function getEditorTyForCurrentIngredient() {
+  //   - state.current / window._currentLayoutData 未定義時は DOM の _tx/_ty を返す。
+  function getEditorTransformForCurrentIngredient() {
     try {
-      if (!window._currentLayoutData) return 0;
+      if (!window._currentLayoutData) {
+        return { tx: (els.knife && els.knife._tx) || 0, ty: (els.knife && els.knife._ty) || 0 };
+      }
       var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
         ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
       var key = ingredientId ? ('.knife|0@' + ingredientId) : null;
       var base = '.knife|0';
       var entry = (key && window._currentLayoutData[key]) || window._currentLayoutData[base];
-      return (entry && typeof entry.ty === 'number') ? entry.ty : 0;
+      return {
+        tx: (entry && typeof entry.tx === 'number') ? entry.tx : ((els.knife && els.knife._tx) || 0),
+        ty: (entry && typeof entry.ty === 'number') ? entry.ty : ((els.knife && els.knife._ty) || 0),
+      };
     } catch (e) {
-      return 0;
+      return { tx: 0, ty: 0 };
     }
+  }
+
+  function getEditorTyForCurrentIngredient() {
+    return getEditorTransformForCurrentIngredient().ty || 0;
   }
 
   // [v425] knife wrapper の inline transform を saved-layout から再書き込みするヘルパ。
@@ -2512,15 +2520,20 @@ body.layout-editor-on .endX-marker {
     } catch (e) { /* noop */ }
   }
 
-  // .knife の left は「包丁 wrapper 中央 X」なので、刃先 marker の % から
-  // bladeTipOffsetX_pct を逆補正して seed する。
+  // .knife の left は「包丁 wrapper 左端 X」。刃先 marker の % から、
+  // editor 保存 tx と bladeTipOffsetX_pct を逆補正して seed する。
   function seedKnifeXFromMechanics(ing) {
     if (!els.knife || !ing || !ing.chopMechanics) return;
+    if (!els.board || !els.board.offsetWidth) return;
     var m = ing.chopMechanics;
-    var KNIFE_WIDTH_PCT_OF_BOARD_SEED = 70; // .knife { width: 70%; } と同期
+    var knifeWidthPctOfBoard = (els.knife.offsetWidth / els.board.offsetWidth) * 100;
+    if (!isFinite(knifeWidthPctOfBoard) || knifeWidthPctOfBoard <= 0) return;
     var seedTipOffset = m.bladeTipOffsetX_pct || 0;
-    var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
-    els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
+    var tipFromLeftPct = 50 + seedTipOffset;
+    var tipContribution = tipFromLeftPct * knifeWidthPctOfBoard / 100;
+    var editorTx = getEditorTransformForCurrentIngredient().tx || 0;
+    var editorTxPct = (editorTx / els.board.offsetWidth) * 100;
+    els.knife.style.setProperty('--knife-x', (m.startX_pct - tipContribution - editorTxPct) + '%');
   }
 
   // [v408] bbox-marker を ingredient-on-board の現在の表示矩形に合わせて初期化。
@@ -3078,11 +3091,10 @@ body.layout-editor-on .endX-marker {
   // 動的に更新する方式に切り替え。 chopProgress と chopMechanics.startX/endX から
   // 「次の刃先 X」を計算し、 transition で滑らかに移動 → 180ms 後に持ち上げ Y へ戻す。
   //
-  // 重要 (Critical 1 fix): `--knife-x` は **knife コンテナの中央 X (.cutting-board 基準 %)** を
-  // 指す (CSS で left: var(--knife-x); transform: translate(-50%, ...))。 一方 knife.png は対角
-  // 配置で、画像中心 ≠ 刃先位置。 そこで chopMechanics.bladeTipOffsetX_pct (画像幅 %) を
-  // cutting-board 基準 %pt に換算して逆補正し、 「刃先」がちょうど startX_pct〜endX_pct を
-  // 通るようにする。 これでマスク境界 X と刃先 X が一致する。
+  // 重要 (v432): `--knife-x` は **knife wrapper の左端 X (.cutting-board 基準 %)**。
+  // LayoutApplier が保存した transform: translate(tx, ty) は chop 中も保持する。
+  // 刃先位置は `left + tx + knifeWidth * (50 + bladeTipOffsetX_pct)%` なので、
+  // startX_pct〜endX_pct に刃先を合わせるには left 側で tx と刃先位置を逆補正する。
   //
   // [chop メカニクス モデル B] (v414 で変更 / 旧モデル A は t = chopProgress / chopCount)
   //   t = (chopProgress - 1) / (chopCount - 1) で 0 → 1 に均等。
@@ -3099,9 +3111,12 @@ body.layout-editor-on .endX-marker {
       // chopProgress は onBoardTap で += 1 された後の値なので 1..total の整数を取る。
       const denom = Math.max(1, total - 1);
       const knifeInner = els.knifeInner || els.knife.querySelector('.knife-inner');
-      const KNIFE_WIDTH_PCT_OF_BOARD = 70; // .knife { width: 70%; } と同期
+      const knifeWidthPctOfBoard = (els.board && els.board.offsetWidth && els.knife.offsetWidth)
+        ? (els.knife.offsetWidth / els.board.offsetWidth) * 100
+        : 70; // fallback only before layout is measurable
       const tipOffset = m.bladeTipOffsetX_pct || 0;
-      const compensation = -(tipOffset * KNIFE_WIDTH_PCT_OF_BOARD / 100);
+      const tipFromLeftPct = 50 + tipOffset;
+      const tipContribution = tipFromLeftPct * knifeWidthPctOfBoard / 100;
       const chopY = m.chopY_pct || 0;
       const liftY = m.liftY_pct || 0;
 
@@ -3115,41 +3130,38 @@ body.layout-editor-on .endX-marker {
       //   v426 (レビュー反映):
       //     - 横スライドを 0.1s → 0.18s に延ばし「用意 → 開始点へ移動 → 切る」を視認可能に
       //     - 横スライド時に wrapper.style.transform = '' で editor の ty が瞬時に失われ
-      //       垂直方向に上ジャンプして見える Y 軸ジャンプバグを修正。 ty (editor 保存値) は
-      //       chop 中も translate(0, ty) で保持。 X は --knife-x (left) で制御。
+      //       垂直方向に上ジャンプして見える Y 軸ジャンプバグを修正。
       //     - Phase 2 setTimeout に「state スナップショット ガード」を追加。 連打で N+1 タップが
       //       重なったとき、 古い Phase 2 callback が新しい chop の途中で発火して inner が
       //       逆方向に戻るチラつきを抑止。
+      //   v432:
+      //     - tx も 0 にしない。tx を捨てると右へ動き、LayoutSystem 再 apply で tx が戻った
+      //       瞬間に左へ飛ぶため、chop 中は editor 保存 transform をそのまま維持する。
       //
-      //   ※ editor 由来 wrapper.style.transform (translate(tx, ty) で rest pose を表現) は
-      //      X 軸成分 (tx) のみ chop 中無効化、 Y 軸成分 (ty) は維持する。 wrapper の X は
-      //      --knife-x (left プロパティ) が支配、 editor の tx を消しても --knife-x で代替できる。
-      //      Y は --knife-y 系の代替がないため、 ty をそのまま保持しないと画面ジャンプする。
-      //      rest pose 復帰 (tx の再書込) は resetBoard / loadIngredient で
-      //      LayoutApplier.apply() を再走させる。
-
       // 現タップの目標 X (chopProgress は onBoardTap で += 1 済み = 1..total)。
       const tNow = Math.max(0, Math.min(1, (state.chopProgress - 1) / denom));
       const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * tNow;
-      const targetWrapperX = targetBladeX + compensation;
+      const editorTransform = getEditorTransformForCurrentIngredient();
+      const editorTx = editorTransform.tx || 0;
+      const editorTy = editorTransform.ty || 0;
+      const fullEditorTransform = 'translate(' + editorTx + 'px, ' + editorTy + 'px)';
+      const boardLocalW = els.board ? els.board.offsetWidth : 0;
+      const editorTxPct = boardLocalW ? (editorTx / boardLocalW) * 100 : 0;
+      const targetWrapperX = targetBladeX - tipContribution - editorTxPct;
 
-      // [v426] editor 保存の ty (Y 成分) を取得。 chop 中も translate(0, ty) で保持する。
-      const editorTy = getEditorTyForCurrentIngredient();
-      const tyTransform = 'translate(0px, ' + editorTy + 'px)';
-
-      // Phase 1: 左 — editor の X 成分 (tx) を打ち消しつつ視覚位置を維持、
-      //          Y 成分 (ty) は translate(0, ty) で保持、
+      // Phase 1: 左 — editor の tx/ty を維持したまま現在の視覚位置を seed し、
       //          次フレームで目標 X を書いて transition を走らせる。
       try {
         const bRect = els.board ? els.board.getBoundingClientRect() : null;
         const kRect = els.knife.getBoundingClientRect();
-        if (bRect && bRect.width > 0) {
-          // 現在の視覚 X (wrapper 左端) を board% に換算 → seed として書き戻す。
-          const currentLeftPct = ((kRect.left - bRect.left) / bRect.width) * 100;
+        if (bRect && bRect.width > 0 && boardLocalW) {
+          // 現在の視覚 X (wrapper 左端) から editor tx 分を引き、CSS left の % に戻す。
+          const currentVisualLeftPct = ((kRect.left - bRect.left) / bRect.width) * 100;
+          const currentCssLeftPct = currentVisualLeftPct - editorTxPct;
           const prevTrans = els.knife.style.transition;
           els.knife.style.transition = 'none';
-          els.knife.style.setProperty('--knife-x', currentLeftPct + '%');
-          els.knife.style.transform = tyTransform; // [v426] X だけ捨てて ty は保持
+          els.knife.style.setProperty('--knife-x', currentCssLeftPct + '%');
+          els.knife.style.transform = fullEditorTransform;
           // 強制 reflow で seed を確定させてから transition を戻す
           void els.knife.offsetWidth;
           els.knife.style.transition = prevTrans || '';
@@ -3159,11 +3171,11 @@ body.layout-editor-on .endX-marker {
           });
         } else {
           // 板の bbox が取れない (画面外等) → fallback: 即時設定
-          els.knife.style.transform = tyTransform;
+          els.knife.style.transform = fullEditorTransform;
           els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
         }
       } catch (e) {
-        els.knife.style.transform = tyTransform;
+        els.knife.style.transform = fullEditorTransform;
         els.knife.style.setProperty('--knife-x', targetWrapperX + '%');
       }
 

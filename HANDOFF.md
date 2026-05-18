@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:49-bento-kitchen-knife-x-align] **Done** — `bento/kitchen.html` の包丁 X 座標を v432 として修正。`--knife-x` を wrapper 左端基準として扱い、chop 中も editor 保存 `tx/ty` を保持、刃先補正は実際の `knife.offsetWidth / board.offsetWidth` を使用。ローカル headless で tap1〜tap5 の刃先 X と目標 X の差が 0〜0.01px、5 タップ後 fridge 遷移を確認。`sw.js` は CACHE_VERSION 432。 (by Codex)
+
 - 2026-05-18 - [batch:48-bento-kitchen-chop-layout] **Done** — `bento/kitchen.html` の chop メカニクスを v431 として修正。`LayoutSystem.onReady` / chop 画面表示直後 / 初回タップ前に saved-layout 由来の hidden marker 値を明示再同期し、`.knife|0@id` の ty を直読みして chopY を計算、包丁 X seed を同期後に再適用。最終タップは `chopSnapshot >= total` でも振り下ろしを抑止。`sw.js` は CACHE_VERSION 431 にバンプ。inline script / sw.js の Node 構文チェックと staging headless golden path 確認済み。 (by Codex)
 
 - 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「子鹿の角なし、動物たちの毛並みをもっと柔らかく。1枚目からやり直し」を受け、Cut 1 soft-fur raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_soft_fur_no_antlers_raw.png` に納品 (`1661x947` PNG、RGB、alpha なし、約 2.6MB)。Pono が立って歓迎、きつね/あらいぐま/子鹿/うさぎがラグへ集まる構図、閉じた風景パズル箱 + 小プレビューカードのみ。子鹿は角/角の突起なし、全体の毛先を丸く柔らかめに修正、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
