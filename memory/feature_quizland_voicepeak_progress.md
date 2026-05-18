@@ -1,6 +1,6 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v452, 2026-05-14〜18) — phase2 100% 完成 🎯。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は **866 manifest エントリ = 100% 完成** (= order_color 120 / count_total 120 / shape_name 110 / number_sequence 24 / weather 120 / opposite 120 / body 121 / trivia 130、 alt 含む正常超過)。 sw v450 で phase2_uncovered 最終バッチ (= 238 wav + 224 manifest エントリ) を取り込み 99.7%、 sw v452 で残 3 件 (= body q171_c「ときどき はえる」 / trivia q102_b「ライオン」 / q104_b「ジンベイザメ」) を既存 wav コピー + 動的参照で復旧し 100% 達成 (= 新規 TTS ゼロ)。 残課題は q109_d「角」 試聴課題 1 件のみ (= 試聴判定後、 誤読なら 1 件ミニ TTS バッチ)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ shape_name / weather / opposite / body / trivia は phase1 wav 再利用 +135 動的エントリ追加 + 集約バッチ 190 unique → 238 q### 展開で本番組込み + sw v452 残 3 件復旧)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422、 5 カテゴリ manifest 動的化 sw v424、 uncovered 最終バッチ取り込み sw v450 / 2026-05-18、 **phase2 100% 完成達成 sw v452 / 2026-05-18**。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 v447+ から「日本語接続統一ルール」 適用 (2026-05-18 ユーザー指摘から導出)。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: 試聴 1 件のみ (= q109_d「角」 誤読チェック)。
+description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v452, 2026-05-14〜18) — phase2 100% 完成 🎯。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は **866 manifest エントリ = 100% 完成** (= order_color 120 / count_total 120 / shape_name 110 / number_sequence 24 / weather 120 / opposite 120 / body 121 / trivia 130、 alt 含む正常超過)。 sw v450 で phase2_uncovered 最終バッチ (= 238 wav + 224 manifest エントリ) を取り込み 99.7%、 sw v452 で残 3 件 (= body q171_c「ときどき はえる」 / trivia q102_b「ライオン」 / q104_b「ジンベイザメ」) を既存 wav コピー + 動的参照で復旧し 100% 達成 (= 新規 TTS ゼロ)。 残課題は q109_d「角」 試聴課題 1 件のみ (= 試聴判定後、 誤読なら 1 件ミニ TTS バッチ)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ shape_name / weather / opposite / body / trivia は phase1 wav 再利用 +135 動的エントリ追加 + 集約バッチ 190 unique → 238 q### 展開で本番組込み + sw v452 残 3 件復旧)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422、 5 カテゴリ manifest 動的化 sw v424、 uncovered 最終バッチ取り込み sw v450 / 2026-05-18、 **phase2 100% 完成達成 sw v452 / 2026-05-18**。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 v447+ から「日本語接続統一ルール」 適用 (2026-05-18 ユーザー指摘から導出)。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: 全件解決済 (= q109_d「角」 試聴判定済、 「つの」 と正しく読まれていることをユーザー確認、 修正不要)。
 metadata:
   type: feature
 ---
@@ -319,11 +319,11 @@ metadata:
   - manifest 総エントリ **866** (= alt 含む正常超過、 期待 864 を 2 件上回るのは alt エントリ分)
   - phase2 完成度 **100%** 達成 ✅
   - 新規 TTS ゼロ、 ユーザー出力 190 wav は全件正常 (= 「全部やった」 の確信が正しかった)
-  - 残課題は q109_d「角」 試聴判定 1 件のみ
+  - **q109_d 試聴確認 OK** (= 2026-05-18 ユーザー判定、 「つの」 と正しく読まれている、 カナ戻し再生成不要) → **残課題ゼロ = 完全 100% 完成達成** 🎯
 
-## 残課題 1 件 (= 試聴依存)
+## 残課題: ゼロ (= 全件解決済) 🎯
 
-- **背景**: sw v450 時点で 4 件残存だったが、 sw v452 でユーザー指摘の真因切り分けにより 3 件は既存 wav コピー + 動的参照で復旧済。 残る 1 件は試聴判定依存
+- **背景**: sw v450 時点で 4 件残存だったが、 sw v452 でユーザー指摘の真因切り分けにより 3 件は既存 wav コピー + 動的参照で復旧済。 残る 1 件 (q109_d「角」 試聴判定) も 2026-05-18 ユーザー試聴で「つの」 と正しく読まれていることを確認 = **修正不要**
 - **復旧済 3 件** (= sw v452 で対応完了):
 
 | # | wav | カテゴリ Q### | テキスト | 真因 | 復旧方法 |
@@ -332,16 +332,14 @@ metadata:
 | 2 | `q102_b.wav` | trivia Q18:b | 「ライオン」 | 同上 (= q096_a + q098_b + q102_b の 3 箇所参照を 2 箇所しか拾えず) | 既存 wav コピー ✅ |
 | 3 | trivia:20:b | trivia Q20:b | 「ジンベイザメ」 | 集約 CSV 対象外 (= phase1 正解 q102_c.wav が既存) | manifest 動的参照 (= trivia:20:b → q102_c.wav) ✅ |
 
-- **残課題 1 件** (= 試聴依存):
+- **試聴判定済 1 件** (= 2026-05-18 ユーザー確認):
 
-| # | wav | カテゴリ Q### | テキスト | 課題種別 | 対応策 |
+| # | wav | カテゴリ Q### | テキスト | 試聴結果 | 対応 |
 |---|---|---|---|---|---|
-| 4 | `q109_d.wav` | trivia Q35:d | 「つの」 (= 「角」 漢字化リスク) | 配置済だが「角」→「カド/カク」 誤読リスクあり | ユーザー試聴 → 誤読時のみ 1 件ミニ TTS バッチ (= 「つの。」 でカナ再生成) |
+| 4 | `q109_d.wav` | trivia Q35:d | 「つの」 (= 「角」 漢字化) | **「つの」 と正しく読まれている** (= 誤読なし) ✅ | カナ戻し再生成 **不要** |
 
-- **対応プラン**:
-  1. q109_d 試聴 → 読み崩れ確認 (= 「つの」 と正しく読めていれば OK)
-  2. 誤読時のみ 1 件ミニ TTS バッチ (= CSV 1 行で完結)
-- **見込み**: 現状 phase2 完成度は **100% に算入** (= q109_d は配置済、 試聴判定後に必要なら微修正)
+- **結論**: **phase2 完全 100% 完成達成** = 残課題ゼロ。 新規 TTS ゼロで全件解決
+- **試聴判定の結果が示すこと**: 「迷ったらカナ維持」 ルール (sw v385+) で「角」 をカナ戻し候補に挙げていたが、 VOICEPEAK 形態素解析が文脈 (= trivia「キリンの〇〇」) から「つの」 を正しく推定できた = 漢字残存でも安全圏のケースが存在することを実証
 
 ## phase2 5 カテゴリ徹底調査結果 (2026-05-17)
 
