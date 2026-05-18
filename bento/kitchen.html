@@ -692,25 +692,27 @@ body[data-screen="fridge"] .stage-wrap {
 /* 「トン！」テキスト */
 .ton-burst {
   position: absolute;
-  top: 14px;
+  top: clamp(72px, 12%, 108px);
   left: 50%;
   transform: translateX(-50%) rotate(-10deg);
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   font-size: 2.4rem;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
   color: var(--pink-deep);
   text-shadow:
     3px 3px 0 #fff,
     5px 5px 0 rgba(216,86,135,0.25);
   opacity: 0;
   pointer-events: none;
-  z-index: 4;
+  z-index: 25;
 }
 .ton-burst.show { animation: tonPop 0.55s ease-out; }
 @keyframes tonPop {
-  0%   { transform: translateX(-50%) translateY(0) rotate(-12deg) scale(0.5); opacity: 0; }
-  35%  { transform: translateX(-50%) translateY(-18px) rotate(-6deg) scale(1.25); opacity: 1; }
-  100% { transform: translateX(-50%) translateY(-40px) rotate(-2deg) scale(1.05); opacity: 0; }
+  0%   { transform: translateX(-50%) translateY(8px) rotate(-12deg) scale(0.5); opacity: 0; }
+  35%  { transform: translateX(-50%) translateY(-8px) rotate(-6deg) scale(1.25); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-16px) rotate(-2deg) scale(1.05); opacity: 0; }
 }
 
 /* まな板：背景画像にすでに描き込まれているまな板の上に、
@@ -1110,6 +1112,11 @@ body.layout-editor-on .endX-marker {
   -webkit-user-drag: none;
   pointer-events: none;
 }
+.flying-cut-piece.cabbage-burst-piece {
+  animation-name: cabbagePieceFlyOut;
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(.13,.76,.2,1);
+}
 @keyframes cutPieceFlyOut {
   0% {
     transform: translate(-50%, -50%) scale(0.76) rotate(var(--start-rot, -18deg));
@@ -1117,6 +1124,20 @@ body.layout-editor-on .endX-marker {
   }
   100% {
     transform: translate(calc(var(--end-x, 0px) - 50%), calc(var(--end-y, 0px) - 50%)) scale(0.96) rotate(var(--end-rot, 140deg));
+    opacity: 1;
+  }
+}
+@keyframes cabbagePieceFlyOut {
+  0% {
+    transform: translate(-50%, -50%) scale(var(--start-scale, 0.78)) rotate(var(--start-rot, -28deg));
+    opacity: 1;
+  }
+  46% {
+    transform: translate(calc(var(--mid-x, 0px) - 50%), calc(var(--mid-y, -150px) - 50%)) scale(var(--mid-scale, 1.18)) rotate(var(--mid-rot, 80deg));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--end-x, 0px) - 50%), calc(var(--end-y, 0px) - 50%)) scale(var(--end-scale, 0.96)) rotate(var(--end-rot, 180deg));
     opacity: 1;
   }
 }
@@ -1947,7 +1968,7 @@ body.layout-editor-on .endX-marker {
     },
     {
       id: 'cabbage', name: 'キャベツ', emoji: '🥬', piece: '🥬',
-      chopCount: 7, implemented: true,
+      chopCount: 12, implemented: true,
       imageBase: 'cabbage/cabbage_001',
       imagePieces: {
         dir: 'cabbage',
@@ -1955,8 +1976,11 @@ body.layout-editor-on .endX-marker {
         from: 2,
         to: 14,
         pad: 3,
-        sequence: [6, 7, 8, 9, 10, 11, 12, 2, 4, 3, 5, 13, 14],
+        sequence: [6, 7, 8, 9, 10, 11, 12, 13, 14, 8, 10, 12, 9, 11],
+        burstStride: 3,
       },
+      pieceBurstCount: 4,
+      bowlPieceLimit: 24,
       chopMechanics: {
         startX_pct: 87, endX_pct: 13,
         liftY_pct: 0, chopY_pct: 50,
@@ -3478,8 +3502,16 @@ body.layout-editor-on .endX-marker {
   }
 
   function addCutPieceToBowl(ing) {
-    const pieceData = getCutPieceData(ing);
-    const piece = createCutPieceNode(pieceData, 'cut-piece');
+    const burstCount = Math.max(1, (ing && ing.pieceBurstCount) || 1);
+    for (let i = 0; i < burstCount; i++) {
+      addSingleCutPieceToBowl(ing, i, burstCount);
+    }
+  }
+
+  function addSingleCutPieceToBowl(ing, burstIndex, burstCount) {
+    const isCabbage = ing && ing.id === 'cabbage';
+    const pieceData = getCutPieceData(ing, burstIndex);
+    const piece = createCutPieceNode(pieceData, isCabbage ? 'cut-piece cabbage-bowl-piece' : 'cut-piece');
     const rect = els.bowl.getBoundingClientRect();
     const w = rect.width || 80;
     const h = rect.height || 60;
@@ -3487,27 +3519,45 @@ body.layout-editor-on .endX-marker {
     const cy = h * 0.55;
     const r = Math.random() * Math.min(w, h) * 0.25;
     const a = Math.random() * Math.PI * 2;
-    const pieceSize = 86;
+    const pieceSize = isCabbage ? (70 + Math.random() * 18) : 86;
     const x = cx + Math.cos(a) * r - pieceSize / 2;
     const y = cy + Math.sin(a) * r - pieceSize / 2;
     const rot = (Math.random() - 0.5) * 80;
+    piece.style.width = pieceSize + 'px';
+    piece.style.height = pieceSize + 'px';
     piece.style.left = x + 'px';
     piece.style.top = y + 'px';
     piece.style.setProperty('--fr', rot + 'deg');
     piece.style.transform = 'rotate(' + rot + 'deg)';
     playCutPieceTransfer(pieceData, function () {
+      if (state.current !== ing) return;
       piece.classList.add('drop-in');
-      piece.style.setProperty('--drop-x', (-72 + Math.random() * 22) + 'px');
-      piece.style.setProperty('--drop-y', (-100 + Math.random() * 24) + 'px');
-      piece.style.setProperty('--drop-rot', (rot - 95 + Math.random() * 35) + 'deg');
+      piece.style.setProperty('--drop-x', ((isCabbage ? -92 : -72) + Math.random() * (isCabbage ? 48 : 22)) + 'px');
+      piece.style.setProperty('--drop-y', ((isCabbage ? -128 : -100) + Math.random() * (isCabbage ? 46 : 24)) + 'px');
+      piece.style.setProperty('--drop-rot', (rot - (isCabbage ? 130 : 95) + Math.random() * (isCabbage ? 95 : 35)) + 'deg');
       els.bowl.appendChild(piece);
+      enforceBowlPieceLimit(ing);
       els.bowl.classList.remove('catch');
       void els.bowl.offsetWidth;
       els.bowl.classList.add('catch');
+    }, {
+      cabbage: isCabbage,
+      burstIndex: burstIndex,
+      burstCount: burstCount,
     });
   }
 
-  function getCutPieceData(ing) {
+  function enforceBowlPieceLimit(ing) {
+    const limit = ing && ing.bowlPieceLimit;
+    if (!limit) return;
+    const pieces = [...els.bowl.querySelectorAll('.cut-piece')];
+    while (pieces.length > limit) {
+      const oldest = pieces.shift();
+      if (oldest) oldest.remove();
+    }
+  }
+
+  function getCutPieceData(ing, variantOffset) {
     if (ing && ing.imagePieces) {
       const cfg = ing.imagePieces;
       const seq = Array.isArray(cfg.sequence) && cfg.sequence.length
@@ -3515,7 +3565,9 @@ body.layout-editor-on .endX-marker {
         : Array.from({ length: Math.max(0, (cfg.to || 0) - (cfg.from || 0) + 1) }, function (_, i) {
             return (cfg.from || 0) + i;
           });
-      const n = seq[((state.chopProgress || 1) - 1) % seq.length];
+      const stride = Math.max(1, cfg.burstStride || 1);
+      const offset = Math.max(0, variantOffset || 0);
+      const n = seq[(((state.chopProgress || 1) - 1) * stride + offset) % seq.length];
       const idx = String(n).padStart(cfg.pad || 3, '0');
       const prefix = cfg.prefix || (cfg.dir + '_');
       return {
@@ -3544,7 +3596,9 @@ body.layout-editor-on .endX-marker {
     return piece;
   }
 
-  function playCutPieceTransfer(pieceData, onDone) {
+  function playCutPieceTransfer(pieceData, onDone, opts) {
+    opts = opts || {};
+    const isCabbage = !!opts.cabbage;
     const start = getCutPieceFlightStart();
     const clipper = document.querySelector('.chop-main') || els.board;
     if (!start || !clipper) {
@@ -3558,19 +3612,35 @@ body.layout-editor-on .endX-marker {
       onDone();
       return;
     }
-    const startLocalX = (start.x - cRect.left) / scaleX;
-    const startLocalY = (start.y - cRect.top) / scaleY;
-    const endLocalX = clipper.offsetWidth + 120;
-    const endLocalY = startLocalY - 46 + (Math.random() - 0.5) * 20;
+    const startLocalX = (start.x - cRect.left) / scaleX + (isCabbage ? (Math.random() - 0.5) * 44 : 0);
+    const startLocalY = (start.y - cRect.top) / scaleY + (isCabbage ? (Math.random() - 0.5) * 28 : 0);
+    const endLocalX = clipper.offsetWidth + (isCabbage ? 150 + Math.random() * 90 : 120);
+    const endLocalY = startLocalY - (isCabbage ? 76 : 46) + (Math.random() - 0.5) * (isCabbage ? 90 : 20);
     const fly = createCutPieceNode(pieceData, 'flying-cut-piece');
     const dx = endLocalX - startLocalX;
     const dy = endLocalY - startLocalY;
+    if (isCabbage) {
+      const flySize = 92 + Math.random() * 30;
+      const midT = 0.38 + Math.random() * 0.18;
+      const arcLift = 135 + Math.random() * 90;
+      fly.classList.add('cabbage-burst-piece');
+      fly.style.width = flySize + 'px';
+      fly.style.height = flySize + 'px';
+      fly.style.animationDelay = ((opts.burstIndex || 0) * 0.035) + 's';
+      fly.style.animationDuration = (0.56 + Math.random() * 0.12) + 's';
+      fly.style.setProperty('--mid-x', (dx * midT) + 'px');
+      fly.style.setProperty('--mid-y', (dy * 0.45 - arcLift) + 'px');
+      fly.style.setProperty('--start-scale', (0.78 + Math.random() * 0.1).toFixed(2));
+      fly.style.setProperty('--mid-scale', (1.08 + Math.random() * 0.18).toFixed(2));
+      fly.style.setProperty('--end-scale', (0.88 + Math.random() * 0.14).toFixed(2));
+      fly.style.setProperty('--mid-rot', (45 + Math.random() * 110) + 'deg');
+    }
     fly.style.setProperty('--start-x', startLocalX + 'px');
     fly.style.setProperty('--start-y', startLocalY + 'px');
     fly.style.setProperty('--end-x', dx + 'px');
     fly.style.setProperty('--end-y', dy + 'px');
-    fly.style.setProperty('--start-rot', (-24 + Math.random() * 18) + 'deg');
-    fly.style.setProperty('--end-rot', (120 + Math.random() * 70) + 'deg');
+    fly.style.setProperty('--start-rot', ((isCabbage ? -42 : -24) + Math.random() * (isCabbage ? 38 : 18)) + 'deg');
+    fly.style.setProperty('--end-rot', ((isCabbage ? 170 : 120) + Math.random() * (isCabbage ? 190 : 70)) + 'deg');
     clipper.appendChild(fly);
     let done = false;
     const finish = function () {
@@ -3580,7 +3650,7 @@ body.layout-editor-on .endX-marker {
       setTimeout(onDone, 80);
     };
     fly.addEventListener('animationend', finish, { once: true });
-    setTimeout(finish, 620);
+    setTimeout(finish, isCabbage ? 900 : 620);
   }
 
   function getCutPieceFlightStart() {
