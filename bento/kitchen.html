@@ -2167,6 +2167,16 @@ body.layout-editor-on .endX-marker {
       document.body.setAttribute('data-screen', name);
       setActiveStep(targetStep);
 
+      // v430: loadIngredient はフェード切替前の hidden な chop 画面で走るため、
+      // その時点では board.offsetWidth/Height が 0 になり saved-layout 直読みが
+      // no-op になり得る。chop 画面を表示した直後にもう一度同期して、
+      // entry 直後から marker 駆動の位置へ揃える。
+      if (name === 'chop' && state.current && typeof window.BENTO_KITCHEN_ON_LAYOUT_READY === 'function') {
+        requestAnimationFrame(function () {
+          window.BENTO_KITCHEN_ON_LAYOUT_READY();
+        });
+      }
+
       // 画面別の post-show 処理
       if (name === 'fridge') {
         onEnterFridge();
