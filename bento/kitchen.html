@@ -555,6 +555,10 @@ body[data-screen="fridge"] .stage-wrap {
   aspect-ratio: 1 / 1;
   pointer-events: none;
   z-index: 1;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 16px 18px rgba(80,50,30,0.18));
 }
 .prep-plate {
   position: absolute;
@@ -611,41 +615,18 @@ body[data-screen="fridge"] .stage-wrap {
   animation: heatPulse 0.82s ease-in-out infinite alternate;
 }
 .cook-tool--pan {
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 45%, #FFF2CE 0 35%, #F2B968 36% 51%, #C77B3D 52% 57%, #8B5532 58% 62%, transparent 63%),
-    radial-gradient(circle at 50% 50%, #3E4650 0 63%, #232A31 64% 70%, transparent 71%);
-  box-shadow: 0 16px 22px rgba(80,50,30,0.22);
+  background-image: url('../assets/images/bento/cooking/frying_pan.png');
 }
 .cook-tool--pan::after {
-  content: '';
-  position: absolute;
-  left: 74%;
-  top: 48%;
-  width: 45%;
-  height: 14%;
-  transform: rotate(17deg);
-  border-radius: 999px;
-  background: linear-gradient(90deg, #8A5C35 0%, #B98049 54%, #E5B176 100%);
-  box-shadow: inset 0 3px 0 rgba(255,255,255,0.28), 0 8px 12px rgba(80,50,30,0.2);
+  display: none;
 }
 .cook-tool--pot {
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 46%, #F9D276 0 34%, #E5A844 35% 47%, #D88E32 48% 52%, transparent 53%),
-    radial-gradient(circle at 50% 50%, #657783 0 62%, #3E4D56 63% 70%, transparent 71%);
-  box-shadow: 0 16px 22px rgba(50,55,60,0.24);
+  width: 79%;
+  background-image: url('../assets/images/bento/cooking/deep_pot.png');
 }
 .cook-tool--pot::before,
 .cook-tool--pot::after {
-  content: '';
-  position: absolute;
-  top: 44%;
-  width: 16%;
-  height: 12%;
-  border-radius: 999px;
-  background: #465763;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.22);
+  display: none;
 }
 .cook-tool--pot::before { left: 1%; }
 .cook-tool--pot::after { right: 1%; }
@@ -683,13 +664,13 @@ body[data-screen="fridge"] .stage-wrap {
   pointer-events: none;
 }
 .cooking-food[data-stage="0"] img {
-  filter: saturate(0.82) brightness(1.12) drop-shadow(0 8px 9px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 8px 9px rgba(0,0,0,0.2));
 }
 .cooking-food[data-stage="1"] img {
-  filter: saturate(1.05) brightness(1.02) sepia(0.08) drop-shadow(0 8px 9px rgba(0,0,0,0.22));
+  filter: drop-shadow(0 8px 9px rgba(0,0,0,0.22));
 }
 .cooking-food[data-stage="2"] img {
-  filter: saturate(1.16) brightness(0.98) sepia(0.16) drop-shadow(0 8px 9px rgba(0,0,0,0.24));
+  filter: drop-shadow(0 8px 9px rgba(0,0,0,0.24));
 }
 .cooking-food.flip img {
   animation: foodFlip 0.5s cubic-bezier(.2,.85,.24,1);
@@ -728,6 +709,58 @@ body[data-screen="fridge"] .stage-wrap {
 .cook-burst.show {
   animation: cookBurst 0.62s ease-out;
 }
+.grill-smoke {
+  position: absolute;
+  left: 59%;
+  top: 31%;
+  width: 34%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.cook-play-area.food-placed .grill-smoke {
+  opacity: 1;
+}
+.grill-smoke::before,
+.grill-smoke::after {
+  content: '';
+  position: absolute;
+  inset: 8% 20% 4% 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 34% 76%, rgba(230,230,230,0.64) 0 12%, transparent 32%),
+    radial-gradient(ellipse at 58% 58%, rgba(255,255,255,0.78) 0 14%, transparent 36%),
+    radial-gradient(ellipse at 42% 30%, rgba(220,220,220,0.46) 0 12%, transparent 34%);
+  filter: blur(1px);
+  opacity: 0.72;
+  animation: grillSmokeSheet 1.7s ease-in-out infinite;
+}
+.grill-smoke::after {
+  inset: 20% 30% 0 6%;
+  opacity: 0.56;
+  transform: scaleX(-1);
+  animation-delay: 0.48s;
+}
+.grill-smoke i {
+  position: absolute;
+  bottom: 4%;
+  width: 34px;
+  height: 72px;
+  border-radius: 56% 44% 48% 52%;
+  border-left: 8px solid rgba(255,255,255,0.86);
+  border-top: 5px solid rgba(255,255,255,0.48);
+  background: transparent;
+  box-shadow: -3px 0 0 rgba(120,120,120,0.12);
+  filter: blur(0.2px);
+  animation: grillSmoke 1.45s ease-in-out infinite;
+}
+.grill-smoke i:nth-child(1) { left: 26%; --smoke-r: -8deg; animation-delay: 0s; }
+.grill-smoke i:nth-child(2) { left: 44%; --smoke-r: 7deg; height: 86px; animation-delay: 0.22s; }
+.grill-smoke i:nth-child(3) { left: 60%; --smoke-r: -5deg; height: 76px; animation-delay: 0.46s; }
+.grill-smoke i:nth-child(4) { left: 36%; --smoke-r: 10deg; height: 64px; animation-delay: 0.68s; }
 .cook-progress-dots {
   display: flex;
   justify-content: center;
@@ -753,27 +786,54 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .oil-bubbles {
   position: absolute;
-  left: 50%;
+  left: 59%;
   top: 50%;
-  width: 58%;
-  height: 48%;
+  width: 50%;
+  height: 42%;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
   opacity: 0.18;
   transition: opacity 0.25s ease;
+}
+.oil-bubbles::before,
+.oil-bubbles::after {
+  content: '';
+  position: absolute;
+  inset: 8% 11% 12% 13%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 22% 46%, rgba(255,255,255,0.95) 0 4px, transparent 5px),
+    radial-gradient(circle at 30% 62%, rgba(255,255,255,0.8) 0 3px, transparent 4px),
+    radial-gradient(circle at 38% 34%, rgba(255,246,190,0.9) 0 4px, transparent 5px),
+    radial-gradient(circle at 44% 72%, rgba(255,255,255,0.92) 0 3px, transparent 4px),
+    radial-gradient(circle at 52% 45%, rgba(255,255,255,0.96) 0 5px, transparent 6px),
+    radial-gradient(circle at 60% 67%, rgba(255,244,180,0.86) 0 4px, transparent 5px),
+    radial-gradient(circle at 68% 38%, rgba(255,255,255,0.9) 0 3px, transparent 4px),
+    radial-gradient(circle at 76% 56%, rgba(255,255,255,0.82) 0 4px, transparent 5px);
+  animation: oilSpark 0.68s ease-in-out infinite alternate;
+}
+.oil-bubbles::after {
+  inset: 18% 18% 8% 8%;
+  transform: rotate(18deg);
+  opacity: 0.72;
+  animation-delay: 0.22s;
+}
+.cook-play-area.is-preheated .oil-bubbles {
+  opacity: 0.38;
 }
 .cook-play-area.food-placed .oil-bubbles {
   opacity: 1;
 }
 .oil-bubbles i {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  border: 3px solid rgba(255,255,255,0.88);
-  background: rgba(255,245,190,0.42);
-  animation: oilBubble 1.05s ease-in-out infinite;
+  border: 2px solid rgba(255,255,255,0.96);
+  background: rgba(255,248,202,0.56);
+  box-shadow: 0 0 7px rgba(255,248,190,0.72);
+  animation: oilBubble 0.86s ease-in-out infinite;
 }
 .oil-bubbles i:nth-child(1) { left: 18%; top: 56%; animation-delay: 0s; }
 .oil-bubbles i:nth-child(2) { left: 32%; top: 28%; animation-delay: 0.18s; }
@@ -781,6 +841,16 @@ body[data-screen="fridge"] .stage-wrap {
 .oil-bubbles i:nth-child(4) { left: 60%; top: 24%; animation-delay: 0.08s; }
 .oil-bubbles i:nth-child(5) { left: 72%; top: 52%; animation-delay: 0.28s; }
 .oil-bubbles i:nth-child(6) { left: 40%; top: 44%; animation-delay: 0.48s; }
+.oil-bubbles i:nth-child(7) { left: 24%; top: 38%; width: 10px; height: 10px; animation-delay: 0.12s; }
+.oil-bubbles i:nth-child(8) { left: 52%; top: 38%; width: 12px; height: 12px; animation-delay: 0.62s; }
+.oil-bubbles i:nth-child(9) { left: 68%; top: 34%; width: 9px; height: 9px; animation-delay: 0.42s; }
+.oil-bubbles i:nth-child(10) { left: 30%; top: 68%; width: 11px; height: 11px; animation-delay: 0.74s; }
+.oil-bubbles i:nth-child(11) { left: 57%; top: 70%; width: 10px; height: 10px; animation-delay: 0.24s; }
+.oil-bubbles i:nth-child(12) { left: 78%; top: 62%; width: 12px; height: 12px; animation-delay: 0.56s; }
+.oil-bubbles i:nth-child(13) { left: 36%; top: 18%; width: 8px; height: 8px; animation-delay: 0.36s; }
+.oil-bubbles i:nth-child(14) { left: 66%; top: 18%; width: 8px; height: 8px; animation-delay: 0.72s; }
+.oil-bubbles i:nth-child(15) { left: 48%; top: 22%; width: 9px; height: 9px; animation-delay: 0.92s; }
+.oil-bubbles i:nth-child(16) { left: 50%; top: 80%; width: 9px; height: 9px; animation-delay: 0.82s; }
 @keyframes foodFlip {
   0%   { transform: rotateY(0deg) translateY(0); }
   42%  { transform: rotateY(88deg) translateY(-34px) scale(1.08); }
@@ -795,15 +865,29 @@ body[data-screen="fridge"] .stage-wrap {
   0%   { transform: translate(-50%, -50%) scale(0.92); opacity: 0.62; }
   100% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
 }
+@keyframes grillSmoke {
+  0%   { transform: translateY(22px) translateX(0) rotate(var(--smoke-r, 0deg)) scale(0.62); opacity: 0; }
+  24%  { opacity: 0.9; }
+  100% { transform: translateY(-42px) translateX(18px) rotate(var(--smoke-r, 0deg)) scale(1.22); opacity: 0; }
+}
+@keyframes grillSmokeSheet {
+  0%   { transform: translateY(18px) scale(0.84); opacity: 0.18; }
+  42%  { opacity: 0.72; }
+  100% { transform: translateY(-30px) scale(1.16); opacity: 0.08; }
+}
 @keyframes cookBurst {
   0%   { transform: translateX(-50%) translateY(8px) rotate(-10deg) scale(0.5); opacity: 0; }
   35%  { transform: translateX(-50%) translateY(-10px) rotate(-6deg) scale(1.22); opacity: 1; }
   100% { transform: translateX(-50%) translateY(-22px) rotate(-2deg) scale(1.05); opacity: 0; }
 }
 @keyframes oilBubble {
-  0%   { transform: translateY(8px) scale(0.72); opacity: 0.15; }
-  40%  { opacity: 0.95; }
-  100% { transform: translateY(-20px) scale(1.18); opacity: 0; }
+  0%   { transform: translateY(7px) scale(0.74); opacity: 0.62; }
+  42%  { opacity: 1; }
+  100% { transform: translateY(-18px) scale(1.2); opacity: 0.58; }
+}
+@keyframes oilSpark {
+  0%   { opacity: 0.48; transform: scale(0.96); }
+  100% { opacity: 0.98; transform: scale(1.04); }
 }
 
 /* =========================================================
@@ -2127,6 +2211,9 @@ body.layout-editor-on .endX-marker {
         <div class="heat-glow" id="grill-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pan" aria-hidden="true"></div>
+        <div class="grill-smoke" id="grill-smoke" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </div>
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
         <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
           <img class="cooking-food-img" id="grilling-food" alt="" draggable="false">
@@ -2167,7 +2254,8 @@ body.layout-editor-on .endX-marker {
         <div class="prep-plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pot" aria-hidden="true"></div>
         <div class="oil-bubbles" id="oil-bubbles" aria-hidden="true">
-          <i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         </div>
         <div class="cook-burst" id="fry-burst">ジュワッ！</div>
         <div class="cooking-food cooking-food--fry" id="frying-food-wrap" data-stage="0">

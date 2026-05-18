@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:62-kitchen-phase2-final-assets] **Done** — `D:\ポノのおへや\Bento\cooking` の生成済み調理画像を `assets/images/bento/cooking/` の実参照名へ差し替え。`frying_pan.png` / `deep_pot.png` を追加し、grill/fry の道具を CSS 描画から画像表示に変更。焼き中の煙と揚げ中の小泡を CSS で追加。全 23 PNG は 100KB 未満〜約 80KB 中心に最適化、ローカル Playwright で egg/mince_patty/salmon/chicken/shrimp/korokke/wiener の recipe unlock と tool image 参照を確認。`sw.js` は CACHE_VERSION 444。 (by Codex)
+
 - 2026-05-18 - [batch:61-kitchen-cook-preheat-plate] **Done** — `bento/kitchen.html` の grill/fry で、食材が最初からフライパン/鍋上に出る挙動をやめ、左側の皿に待機 → 予熱/油温まり → タップで投入 → 調理の流れへ変更。焼きは投入後に片面→裏返し完成、揚げは投入後に自動で色変化→タップで取り出し。ローカル Playwright で egg / chicken_marinated / wiener の遷移と recipe unlock、調理中に flow chip 3→4 で戻った時の再開を確認。`sw.js` は CACHE_VERSION 443。 (by Codex)
 
 - 2026-05-18 - [batch:59-bento-kitchen-phase2-grill-fry] **Done** — `bento/kitchen.html` を `select/chop/grill/fry/fridge` の 5 画面へ拡張し、9 材料・9 レシピの `cookingActions` flow、grill/fry タップ演出、`bentoUnlockedRecipes` 永続化を追加。正式素材前の暫定 stage PNG は既存 Bento_parts 由来で全て 150KB 以下、pan/pot は CSS 描画。ローカル Playwright で egg / chicken / wiener / carrot / mince_patty / salmon / shrimp / korokke の主要遷移と recipe unlock を確認。`sw.js` は CACHE_VERSION 442。 (by Codex)
