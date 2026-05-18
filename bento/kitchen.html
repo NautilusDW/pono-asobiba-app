@@ -1897,6 +1897,7 @@ body.layout-editor-on .endX-marker {
     chopProgress: 0,
     combo: 0,
     cutting: false,
+    awaitingImpact: false,
     currentScreen: 'select',
     transitioning: false,
     fridgePonoTimer: null,
@@ -1908,6 +1909,7 @@ body.layout-editor-on .endX-marker {
 
   // pendingTimers にぶら下がる setTimeout をまとめてキャンセル
   function clearPendingTimers() {
+    state.awaitingImpact = false;
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
       try { clearTimeout(id); } catch (e) { /* noop */ }
@@ -2315,6 +2317,7 @@ body.layout-editor-on .endX-marker {
     state.current = ing;
     state.chopProgress = 0;
     state.combo = 0;
+    state.awaitingImpact = false;
     loadIngredient(ing);
     els.emptyHint.style.display = 'none';
     highlightSelected(ing.id);
@@ -2992,24 +2995,23 @@ body.layout-editor-on .endX-marker {
     if (!state.current || !state.current.chopMechanics) return;
     const total = state.current.chopCount || 5;
     const cut = state.chopProgress || 0;
-    // [v429 chop モデル C] 均等リダクション: 1 タップごとに 1/chopCount ずつ削る。
-    //   旧モデル B (v414): t = (cut-1)/(chopCount-1)
-    //     - cut=1 → t=0 → visiblePct=100% (1st タップで何も削れない!) ← UX 不整合
-    //     - cut=N → t=1 → visiblePct=0%   (last タップで全部消えるが、 マスク 0 後に
-    //                                       Phase 2 が空のまな板で振り下ろし → 1 回多い)
-    //   新モデル C (v429): visiblePct = (1 - cut/chopCount) × 100
-    //     - cut=0 → visible 100% (初期)
-    //     - cut=1 → visible 80%  (1st タップで即 1/5 削れる、 視覚フィードバック有)
-    //     - cut=N → visible 0%   (last タップで完全消失)
-    //   ユーザー報告「ある程度等間隔じゃないとおかしくない？」「1 回減らす」を反映。
-    //   knife X (playChopAnim) は v414 モデル維持: cut=1 → startX、 cut=N → endX。
+    const axis = state.current.chopMechanics.maskAxis || 'right-to-left';
+    // [v433] 横方向の食材は、マスク境界を「刃先ターゲット X」から逆算する。
+    // 旧 v429 の 1/chopCount 固定幅だと、包丁は startX/endX marker 間を等分する一方で
+    // マスクは食材 bbox 全幅を等分するため、2 打目以降に切り口が刃先より左へズレる。
+    // marker と bbox を同じ座標系で使えば、食材ごとの固定 px 補正なしで切り口が揃う。
     let visiblePct;
     if (cut <= 0) {
       visiblePct = 100;  // 初期状態、何も切ってない
+    } else if (cut >= total) {
+      visiblePct = 0;    // 最終タップは完全に切り終える
     } else {
-      visiblePct = Math.max(0, (1 - cut / Math.max(1, total)) * 100);
+      visiblePct = getVisiblePctFromCurrentBladeTarget(axis, total, cut);
+      if (visiblePct == null) {
+        // bbox / board が測れない場合だけ旧 v429 の均等リダクションへ fallback。
+        visiblePct = Math.max(0, (1 - cut / Math.max(1, total)) * 100);
+      }
     }
-    const axis = state.current.chopMechanics.maskAxis || 'right-to-left';
     // 各 axis で「不透明 → 透明」境界の進行方向を組み立てる。
     // 「残す側」を不透明 black、 「削る側」を transparent。
     let dir, splitPct;
@@ -3044,6 +3046,36 @@ body.layout-editor-on .endX-marker {
     img.style.webkitMaskImage = mask;
   }
 
+  function getVisiblePctFromCurrentBladeTarget(axis, total, cut) {
+    if (axis !== 'right-to-left' && axis !== 'left-to-right') return null;
+    if (!state.current || !state.current.chopMechanics) return null;
+    if (!els.board || !els.ingOnBoard) return null;
+    const bRect = els.board.getBoundingClientRect();
+    const iRect = els.ingOnBoard.getBoundingClientRect();
+    if (!bRect.width || !iRect.width) return null;
+    const m = state.current.chopMechanics;
+    const bladePct = getTargetBladeXBoardPct(m, total, cut);
+    const ingLeftPct = ((iRect.left - bRect.left) / bRect.width) * 100;
+    const ingWidthPct = (iRect.width / bRect.width) * 100;
+    if (!isFinite(bladePct) || !isFinite(ingLeftPct) || !isFinite(ingWidthPct) || ingWidthPct <= 0) {
+      return null;
+    }
+    const ingRightPct = ingLeftPct + ingWidthPct;
+    let pct;
+    if (axis === 'right-to-left') {
+      pct = ((bladePct - ingLeftPct) / ingWidthPct) * 100;
+    } else {
+      pct = ((ingRightPct - bladePct) / ingWidthPct) * 100;
+    }
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  function getTargetBladeXBoardPct(mechanics, total, cut) {
+    const denom = Math.max(1, total - 1);
+    const t = Math.max(0, Math.min(1, (cut - 1) / denom));
+    return mechanics.startX_pct + (mechanics.endX_pct - mechanics.startX_pct) * t;
+  }
+
   function resetIngredientMask() {
     if (!els.ingOnBoard) return;
     const img = els.ingOnBoard.querySelector('img');
@@ -3055,6 +3087,7 @@ body.layout-editor-on .endX-marker {
   // ========== まな板タップ (トントン) ==========
   function onBoardTap() {
     if (state.cutting) return;
+    if (state.awaitingImpact) return;
     if (state.transitioning) return;
     // layout-editor 起動中はドラッグハンドル等と衝突するため no-op (resetBoard も走らない)。
     if (document.body.classList.contains('layout-editor-on')) return;
@@ -3068,21 +3101,34 @@ body.layout-editor-on .endX-marker {
     }
     state.chopProgress += 1;
     state.combo += 1;
+    state.awaitingImpact = true;
+    const ing = state.current;
+    const progressSnapshot = state.chopProgress;
+    const comboSnapshot = state.combo;
+    playChopAnim(function () {
+      applyChopImpactEffects(ing, progressSnapshot, comboSnapshot);
+    });
+  }
+
+  function applyChopImpactEffects(ing, progressSnapshot, comboSnapshot) {
+    if (!ing || state.current !== ing) return;
+    if (state.chopProgress !== progressSnapshot) return;
+    state.awaitingImpact = false;
     updateIngredientMask();
-    playChopAnim();
-    addCutPieceToBowl(state.current);
+    showChopImpactFx();
+    addCutPieceToBowl(ing);
     showTon();
-    showCombo(state.combo);
+    showCombo(comboSnapshot);
     updateProgress();
 
-    if (state.combo >= 4) setProgressCaption('じょうず！');
-    else if (state.combo >= 2) setProgressCaption('いいかんじ！');
+    if (comboSnapshot >= 4) setProgressCaption('じょうず！');
+    else if (comboSnapshot >= 2) setProgressCaption('いいかんじ！');
 
-    if (state.combo === 2) setSpeech('いいかんじ！');
-    else if (state.combo === 3) setSpeech('じょうず！ そのちょうし！');
+    if (comboSnapshot === 2) setSpeech('いいかんじ！');
+    else if (comboSnapshot === 3) setSpeech('じょうず！ そのちょうし！');
 
-    if (state.chopProgress >= state.current.chopCount) {
-      completeIngredient(state.current);
+    if (progressSnapshot >= (ing.chopCount || 1)) {
+      completeIngredient(ing);
     }
   }
 
@@ -3103,13 +3149,12 @@ body.layout-editor-on .endX-marker {
   //   chopCount = 切り口の数 (5 で 5 箇所カット、 千切りなら 15-20 等)。
   //   chopCount=1 の場合は分母 0 を避けるため Math.max(1, chopCount - 1) を使い、
   //   1 タップで t=0 (= startX = endX 想定) に着地する。
-  function playChopAnim() {
+  function playChopAnim(onImpact) {
     if (state.current && state.current.chopMechanics && els.knife) {
       const m = state.current.chopMechanics;
       const total = state.current.chopCount || 1;
       // モデル B: chopProgress=1 → t=0 (startX)、 chopProgress=total → t=1 (endX)。
       // chopProgress は onBoardTap で += 1 された後の値なので 1..total の整数を取る。
-      const denom = Math.max(1, total - 1);
       const knifeInner = els.knifeInner || els.knife.querySelector('.knife-inner');
       const knifeWidthPctOfBoard = (els.board && els.board.offsetWidth && els.knife.offsetWidth)
         ? (els.knife.offsetWidth / els.board.offsetWidth) * 100
@@ -3126,7 +3171,7 @@ body.layout-editor-on .endX-marker {
       //   v425:
       //     Phase 1 (即時)    : wrapper を現タップ目標 X へ横移動 (1st タップなら startX)
       //     Phase 2 (200ms 後): knife-inner.Y = chopY  (真下に振り下ろし)  [v426: 100→200ms]
-      //     Phase 3 (300ms 後): knife-inner.Y = liftY  (持ち上げ)         [v426: 200→300ms]
+      //     Phase 3 (340ms 後): knife-inner.Y = liftY  (持ち上げ)         [v433: impact 後に少し保持]
       //   v426 (レビュー反映):
       //     - 横スライドを 0.1s → 0.18s に延ばし「用意 → 開始点へ移動 → 切る」を視認可能に
       //     - 横スライド時に wrapper.style.transform = '' で editor の ty が瞬時に失われ
@@ -3139,8 +3184,7 @@ body.layout-editor-on .endX-marker {
       //       瞬間に左へ飛ぶため、chop 中は editor 保存 transform をそのまま維持する。
       //
       // 現タップの目標 X (chopProgress は onBoardTap で += 1 済み = 1..total)。
-      const tNow = Math.max(0, Math.min(1, (state.chopProgress - 1) / denom));
-      const targetBladeX = m.startX_pct + (m.endX_pct - m.startX_pct) * tNow;
+      const targetBladeX = getTargetBladeXBoardPct(m, total, state.chopProgress);
       const editorTransform = getEditorTransformForCurrentIngredient();
       const editorTx = editorTransform.tx || 0;
       const editorTy = editorTransform.ty || 0;
@@ -3183,6 +3227,12 @@ body.layout-editor-on .endX-marker {
       // setTimeout 発火時に state.chopProgress と一致しなければ「古い chop の callback」
       // とみなして no-op。 連打で N+1 タップが重なったときのチラつきを抑止。
       const chopSnapshot = state.chopProgress;
+      let impactFired = false;
+      function runImpact() {
+        if (impactFired) return;
+        impactFired = true;
+        if (typeof onImpact === 'function') onImpact();
+      }
 
       // Phase 2: 下 (200ms 後) — 横スライド完了 (0.18s) 後に振り下ろし。
       //   [v429] state.cutting (= 最終タップ後、 completeIngredient で立てられる) も
@@ -3193,16 +3243,26 @@ body.layout-editor-on .endX-marker {
       //     とユーザーから報告された。 最終タップは横スライドのみ → 即 transition で
       //     クリーンに見せる。
       //   連打時の stale callback 対策で chopSnapshot ガードも維持。
-      setTimeout(function () {
+      state.pendingTimers.push(setTimeout(function () {
         if (!knifeInner) return;
         if (state.chopProgress !== chopSnapshot) return; // [v426] 古い chop の callback は破棄
         if (chopSnapshot >= total) return; // [v430] 最終タップは横移動のみ
         if (state.transitioning) return;
         if (state.cutting) return; // [v429] 最終タップ後 (mask 0%) は振り下ろし skip
         knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
-      }, 200);
+      }, 200));
 
-      // Phase 3: 上 (300ms 後) — 持ち上げ。 完成タップ後 (cutting 中) は切り終わり
+      // [v433] 食材マスク/切れ端/進捗はタップ直後ではなく、刃が着地した瞬間に出す。
+      // 非最終タップ: 横移動 180ms → 下移動開始 200ms → inner transition 100ms 後の 300ms。
+      // 最終タップ: 下ろさない仕様なので、横移動が終わる 200ms 後に完成処理だけ走らせる。
+      state.pendingTimers.push(setTimeout(function () {
+        if (state.chopProgress !== chopSnapshot) return;
+        if (state.transitioning) return;
+        if (state.cutting) return;
+        runImpact();
+      }, chopSnapshot >= total ? 200 : 300));
+
+      // Phase 3: 上 (340ms 後) — 持ち上げ。 完成タップ後 (cutting 中) は切り終わり
       //   位置で静止させたいので skip。 pendingTimers に積めば completeIngredient の
       //   clearPendingTimers で cancel されるが、 念のため cutting check も残す。
       state.pendingTimers.push(setTimeout(function () {
@@ -3210,9 +3270,14 @@ body.layout-editor-on .endX-marker {
         if (state.cutting) return;
         if (state.chopProgress !== chopSnapshot) return; // [v426] 古い chop の callback は破棄
         knifeInner.style.transform = 'translate(0, ' + liftY + '%)';
-      }, 300));
+      }, 340));
+      return;
     }
 
+    if (typeof onImpact === 'function') onImpact();
+  }
+
+  function showChopImpactFx() {
     els.ingOnBoard.classList.remove('shake');
     void els.ingOnBoard.offsetWidth;
     els.ingOnBoard.classList.add('shake');
@@ -3294,6 +3359,7 @@ body.layout-editor-on .endX-marker {
 
   // ========== 完成 ==========
   function completeIngredient(ing) {
+    state.awaitingImpact = false;
     state.cutting = true;
     setProgressCaption('できあがり！');
     setSpeech('できたよ！ れいぞうこに しまおう！');
@@ -3475,6 +3541,7 @@ body.layout-editor-on .endX-marker {
     state.chopProgress = 0;
     state.combo = 0;
     state.cutting = false;
+    state.awaitingImpact = false;
     // textContent='' で img も含めて中身をクリア
     els.ingOnBoard.textContent = '';
     // 念のため img.style.maskImage も初期化（次回の food load 時にも resetIngredientMask 走るが二重防御）
