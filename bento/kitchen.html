@@ -1958,7 +1958,7 @@ body.layout-editor-on .endX-marker {
         sequence: [6, 7, 8, 9, 10, 11, 12, 2, 4, 3, 5, 13, 14],
       },
       chopMechanics: {
-        startX_pct: 75, endX_pct: 29,
+        startX_pct: 87, endX_pct: 13,
         liftY_pct: 0, chopY_pct: 50,
         maskAxis: 'right-to-left',
         bladeTipOffsetX_pct: -39,
@@ -2221,6 +2221,7 @@ body.layout-editor-on .endX-marker {
   window.BENTO_KITCHEN_ON_LAYOUT_READY = function () {
     if (!state.current) return;
     reapplyKnifeLayout();
+    resetUnsavedPerIngredientTargets();
     applyIngredientBboxFromSavedLayout(state.current);
     seedIngredientBboxFromOnBoard();
     seedStartXMarkerFromMechanics();
@@ -2229,7 +2230,28 @@ body.layout-editor-on .endX-marker {
     if (state.chopProgress === 0) {
       seedKnifeXFromMechanics(state.current);
     }
+    refreshLayoutEditorBaselineWhenClean();
   };
+
+  function confirmLayoutEditorNavigationIfDirty() {
+    if (!window.LayoutEditor || typeof window.LayoutEditor.confirmDiscardIfDirty !== 'function') {
+      return true;
+    }
+    try {
+      return window.LayoutEditor.confirmDiscardIfDirty();
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function refreshLayoutEditorBaselineWhenClean() {
+    if (!window.LayoutEditor || typeof window.LayoutEditor.refreshCurrentFromLocal !== 'function') {
+      return;
+    }
+    try {
+      window.LayoutEditor.refreshCurrentFromLocal();
+    } catch (e) { /* noop */ }
+  }
 
   // ========== 画面切替 ==========
   function showScreen(name, opts) {
@@ -2404,6 +2426,7 @@ body.layout-editor-on .endX-marker {
   function onIngredientPick(ing) {
     if (state.cutting) return;
     if (state.transitioning) return;
+    if (!confirmLayoutEditorNavigationIfDirty()) return;
     if (!ing.implemented) {
       setSpeech(ing.name + 'は じゅんびちゅう！ もうちょっと まっててね');
       showToast(ing.name + 'は じゅんびちゅう！');
@@ -2553,6 +2576,7 @@ body.layout-editor-on .endX-marker {
         if (state.current === ing && state.chopProgress === 0) {
           seedKnifeXFromMechanics(ing);
         }
+        refreshLayoutEditorBaselineWhenClean();
       });
     });
 
@@ -2608,6 +2632,9 @@ body.layout-editor-on .endX-marker {
     try {
       if (!window._currentLayoutData) {
         return { tx: (els.knife && els.knife._tx) || 0, ty: (els.knife && els.knife._ty) || 0 };
+      }
+      if (document.body.classList.contains('layout-editor-on') && els.knife) {
+        return { tx: els.knife._tx || 0, ty: els.knife._ty || 0 };
       }
       var entry = getSavedLayoutEntryForCurrentIngredient('.knife');
       if (!entry) return { tx: 0, ty: 0 };

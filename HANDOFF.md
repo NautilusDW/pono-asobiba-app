@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:55-bento-kitchen-editor-kitchen02] **Done** — `D:\ポノのおへや\Bento\cooking\kitchen02.png` を `assets/images/bento/cooking/kitchen_bg.png` に差し替え、`bento/kitchen.html` の editor 食材切替時に clean baseline を現 qid へ更新するよう修正。キャベツの `.knife` / marker / bbox saved-layout 初期値を追加し、初期包丁位置・サイズ・start/end/chopY はにんじんと同じ、bbox はキャベツ既定配置を px/tx/ty 形式で保存。`sw.js` は CACHE_VERSION 438。 (by Codex)
+
 - 2026-05-18 - [batch:54-bento-kitchen-cabbage] **Done** — `D:\ポノのおへや\Bento\cooking\キャベツ` の PNG 14 枚を `assets/images/bento/cooking/cabbage/cabbage_001..014.png` として配置し、`bento/kitchen.html` に `cabbage` 食材を v437 として追加。`imageBase` / `imagePieces` を汎用化し、キャベツ本体表示と千切り切れ端 flight/drop-in に対応。`chopCount=7`、saved-layout entry なしでは CSS/chopMechanics 既定配置で動作。`sw.js` は CACHE_VERSION 437。 (by Codex)
 
 - 2026-05-18 - [batch:53-bento-kitchen-cut-piece-one-action] **Done** — `bento/kitchen.html` の切れ端 frameout を v436 として調整。飛行 keyframes の中間点を削除し、切断位置から右上寄りのフレーム外へ 0%→100% の一筆アニメに変更。右下へ吸われる成分をなくし、飛行サイズ 96px / 着地 86px は維持。ローカル headless で `.chop-main` 内 flight、body 直下 flight なし、着地後 pieces=1、5 タップ後 fridge 遷移を確認。`sw.js` は CACHE_VERSION 436。 (by Codex)
