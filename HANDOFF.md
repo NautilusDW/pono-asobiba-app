@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:63-kitchen-chicken-chop] **Done** — `D:\ポノのおへや\Bento\cooking\食材\肉` の鶏肉 13 枚を `assets/images/bento/cooking/chicken/chicken_chop_001..013.png` として配置し、`chicken_marinated` を「とりにく」表示の chop → fry フローへ変更。6 タップで鶏肉を切り、切れ端 2 個ずつを既存 flight/drop-in 演出へ流し、完了後は従来の揚げ工程で `karaage` レシピを解放。ローカル Playwright で chop→fry→fridge と localStorage 解放を確認。`sw.js` は CACHE_VERSION 445。 (by Codex)
+
 - 2026-05-18 - [batch:62-kitchen-phase2-final-assets] **Done** — `D:\ポノのおへや\Bento\cooking` の生成済み調理画像を `assets/images/bento/cooking/` の実参照名へ差し替え。`frying_pan.png` / `deep_pot.png` を追加し、grill/fry の道具を CSS 描画から画像表示に変更。焼き中の煙と揚げ中の小泡を CSS で追加。全 23 PNG は 100KB 未満〜約 80KB 中心に最適化、ローカル Playwright で egg/mince_patty/salmon/chicken/shrimp/korokke/wiener の recipe unlock と tool image 参照を確認。`sw.js` は CACHE_VERSION 444。 (by Codex)
 
 - 2026-05-18 - [batch:61-kitchen-cook-preheat-plate] **Done** — `bento/kitchen.html` の grill/fry で、食材が最初からフライパン/鍋上に出る挙動をやめ、左側の皿に待機 → 予熱/油温まり → タップで投入 → 調理の流れへ変更。焼きは投入後に片面→裏返し完成、揚げは投入後に自動で色変化→タップで取り出し。ローカル Playwright で egg / chicken_marinated / wiener の遷移と recipe unlock、調理中に flow chip 3→4 で戻った時の再開を確認。`sw.js` は CACHE_VERSION 443。 (by Codex)

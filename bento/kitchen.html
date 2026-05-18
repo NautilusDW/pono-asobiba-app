@@ -2413,7 +2413,7 @@ body.layout-editor-on .endX-marker {
   //
   // imageBase / imagePieces .... まな板上の本体画像 / 切れ端バリエーション。
   //   imagePieces = { dir, prefix, from, to, pad, sequence } で
-  //   carrot_002〜carrot_011 / cabbage_002〜cabbage_014 を生成する。
+  //   carrot_002〜carrot_011 / cabbage_002〜cabbage_014 / chicken_chop_002〜013 を生成する。
   const INGREDIENTS = [
     {
       id: 'carrot', name: 'にんじん', emoji: '🥕', piece: '🥕',
@@ -2558,9 +2558,10 @@ body.layout-editor-on .endX-marker {
       },
     },
     {
-      id: 'chicken_marinated', name: 'からあげ', emoji: '🍗', piece: '🍗',
-      chopCount: 1, implemented: true,
+      id: 'chicken_marinated', name: 'とりにく', emoji: '🍗', piece: '🍗',
+      chopCount: 6, implemented: true,
       cookingActions: [
+        { type: 'chop' },
         { type: 'fry', label: 'カラッと あげよう', stages: 2 },
       ],
       cookImages: {
@@ -2568,6 +2569,27 @@ body.layout-editor-on .endX-marker {
           stages: ['chicken/chicken_001_raw', 'chicken/chicken_002_mid', 'chicken/chicken_003_done'],
           fallback: '../assets/images/Bento_parts/karaage2.png',
         },
+      },
+      imageBase: 'chicken/chicken_chop_001',
+      imagePieces: {
+        dir: 'chicken',
+        prefix: 'chicken_chop_',
+        from: 2,
+        to: 13,
+        pad: 3,
+        sequence: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+        burstStride: 2,
+      },
+      pieceBurstCount: 2,
+      bowlPieceLimit: 28,
+      chopMechanics: {
+        startX_pct: 82, endX_pct: 18,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 52,
+        ingredientTop_pct: 40,
+        ingredientWidth_pct: 56,
       },
     },
     {
@@ -4571,7 +4593,7 @@ body.layout-editor-on .endX-marker {
     const h = rect.height || 60;
     const cx = w * 0.5;
     const cy = h * 0.55;
-    const pieceSize = isCabbage ? (42 + Math.random() * 28) : 86;
+    const pieceSize = isCabbage ? (42 + Math.random() * 28) : (burstCount > 1 ? 92 : 86);
     let rawX;
     let rawY;
     if (isCabbage) {
@@ -4669,7 +4691,8 @@ body.layout-editor-on .endX-marker {
     const isCabbage = !!opts.cabbage;
     const burstIndex = Math.max(0, opts.burstIndex || 0);
     const burstCount = Math.max(1, opts.burstCount || 1);
-    const laneT = isCabbage ? ((burstIndex + 0.5) / burstCount) : 0.5;
+    const spreadBurst = !isCabbage && burstCount > 1;
+    const laneT = (isCabbage || spreadBurst) ? ((burstIndex + 0.5) / burstCount) : 0.5;
     const fanT = laneT - 0.5;
     const fanWave = Math.sin(laneT * Math.PI * 2);
     const start = getCutPieceFlightStart();
@@ -4685,16 +4708,20 @@ body.layout-editor-on .endX-marker {
       onDone();
       return;
     }
-    const startSpreadX = isCabbage ? fanT * 150 + (Math.random() - 0.5) * 62 : 0;
-    const startSpreadY = isCabbage ? fanWave * 54 + (Math.random() - 0.5) * 60 : 0;
+    const startSpreadX = isCabbage
+      ? fanT * 150 + (Math.random() - 0.5) * 62
+      : (spreadBurst ? fanT * 92 + (Math.random() - 0.5) * 34 : 0);
+    const startSpreadY = isCabbage
+      ? fanWave * 54 + (Math.random() - 0.5) * 60
+      : (spreadBurst ? fanWave * 28 + (Math.random() - 0.5) * 28 : 0);
     const startLocalX = (start.x - cRect.left) / scaleX + startSpreadX;
     const startLocalY = (start.y - cRect.top) / scaleY + startSpreadY;
     const endLocalX = isCabbage
       ? clipper.offsetWidth + 90 + Math.random() * 260 + Math.abs(fanT) * 130
-      : clipper.offsetWidth + 120;
+      : clipper.offsetWidth + 120 + (spreadBurst ? Math.random() * 130 + Math.abs(fanT) * 90 : 0);
     const endLocalY = isCabbage
       ? startLocalY - 235 + laneT * 345 + (Math.random() - 0.5) * 110
-      : startLocalY - 46 + (Math.random() - 0.5) * 20;
+      : startLocalY - 46 + (Math.random() - 0.5) * (spreadBurst ? 86 : 20) - (spreadBurst ? Math.abs(fanT) * 34 : 0);
     const fly = createCutPieceNode(pieceData, 'flying-cut-piece');
     const dx = endLocalX - startLocalX;
     const dy = endLocalY - startLocalY;
@@ -4714,13 +4741,18 @@ body.layout-editor-on .endX-marker {
       fly.style.setProperty('--mid-scale', (0.82 + Math.random() * 0.5).toFixed(2));
       fly.style.setProperty('--end-scale', (0.56 + Math.random() * 0.34).toFixed(2));
       fly.style.setProperty('--mid-rot', ((fanT * 170) + 35 + Math.random() * 150) + 'deg');
+    } else if (spreadBurst) {
+      const flySize = 90 + Math.random() * 24;
+      fly.style.width = flySize + 'px';
+      fly.style.height = flySize + 'px';
+      fly.style.animationDuration = (0.38 + Math.random() * 0.1) + 's';
     }
     fly.style.setProperty('--start-x', startLocalX + 'px');
     fly.style.setProperty('--start-y', startLocalY + 'px');
     fly.style.setProperty('--end-x', dx + 'px');
     fly.style.setProperty('--end-y', dy + 'px');
-    fly.style.setProperty('--start-rot', ((isCabbage ? -80 + fanT * 70 : -24) + Math.random() * (isCabbage ? 90 : 18)) + 'deg');
-    fly.style.setProperty('--end-rot', ((isCabbage ? 140 + fanT * 220 : 120) + Math.random() * (isCabbage ? 260 : 70)) + 'deg');
+    fly.style.setProperty('--start-rot', ((isCabbage ? -80 + fanT * 70 : (spreadBurst ? -44 + fanT * 38 : -24)) + Math.random() * (isCabbage ? 90 : (spreadBurst ? 42 : 18))) + 'deg');
+    fly.style.setProperty('--end-rot', ((isCabbage ? 140 + fanT * 220 : (spreadBurst ? 92 + fanT * 110 : 120)) + Math.random() * (isCabbage ? 260 : (spreadBurst ? 120 : 70))) + 'deg');
     clipper.appendChild(fly);
     let done = false;
     const finish = function () {
