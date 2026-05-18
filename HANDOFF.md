@@ -17,8 +17,6 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-05-18 - [batch:64-kitchen-cooking-angle-assets] Codex: user が再投入した `D:\ポノのおへや\Bento\cooking` の新旧混在調理画像を確認中。後発版を基本採用しつつ、食材ステージ画像を 3/4 角度寄りに差し替え、prep plate / cut piece bowl も画像 asset 化する。フライパン/鍋は一旦後発版へ差し替え、次回はガスコンロ込み再生成指示文を返す。 (by Codex)
-
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: user 指摘「細かく描きすぎ、もっと大雑把で手描き感、毛並みは全身ではなく明部/影部のみ、輪郭は束を大きく長く」を受領。既存 batch 45 の Cut 1 v4 (`tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_long_handdrawn_fur_slim_pono_v4_raw.png`) を確認し、全身の短線テクスチャが過密と判断。alpha 抜き・切り抜きは行わず、同構図の粗い手描き毛束版 raw を `tmp/alpha_pending/47/` に追加納品する。 (by Codex)
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: Cut 1 rough-fur raw 2 案を `tmp/alpha_pending/47/` に納品完了。`puzzle_opening_cut1_rough_fur_v1_raw.png` / `puzzle_opening_cut1_rough_fur_v2_raw.png` はどちらも `1672x941` / RGB / 3MB 未満。v1 はキャラ固定を優先、v2 は胴体の面をより静かにした候補で現時点の推奨。1 回目の生成案は狐/あらいぐまが別キャラ化したため不採用・未納品。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: user 追加指摘「テイストは v1/v2 ぐらいで良いが、キャラデザインが変わりすぎ。キャラ設計は前の方へ合わせる」を受領。batch 45 v4 のキャラ比率・顔・種別を参照しつつ、毛密度だけ v1/v2 寄りの中間にする v3 raw を追加納品する。 (by Codex)
@@ -126,6 +124,8 @@
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-18 - [batch:65-kitchen-drag-cook-placement] **Done** — `bento/kitchen.html` の grill/fry で皿上の食材を pointer drag でフライパン/鍋へ投入する操作を追加し、実タップだけでは投入せずドラッグ案内を出すよう変更。prep plate を拡大し、grill 投入後の食材位置/サイズを調整、ハンバーグ専用に小さめ配置を追加。ローカル Playwright でハンバーグ drag → fridge recipe unlock、エビフライ drag fry → recipe unlock、エビフライ/コロッケ表示を確認。`sw.js` は CACHE_VERSION 448。 (by Codex)
 
 - 2026-05-18 - [batch:64-kitchen-cooking-angle-assets] **Done** — `D:\ポノのおへや\Bento\cooking` の後発生成素材を中心に、egg / wiener / mince_patty / salmon / chicken / shrimp / korokke の raw/mid/done 画像、`frying_pan.png` / `deep_pot.png` を 3/4 角度寄りの素材へ差し替え。`prep_plate.png` / `serving_plate.png` / `cooling_tray.png` / `cut_piece_bowl.png` を追加し、grill/fry の予備皿・完成皿/油切りトレイ、chop 側の切れ端ボウルを画像 asset 化。ローカル Playwright で hamburg / egg / wiener / chicken の主要画面と fry 完了トレイを確認。`sw.js` は CACHE_VERSION 446。 (by Codex)
 
