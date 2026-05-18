@@ -715,10 +715,48 @@ body[data-screen="fridge"] .stage-wrap {
   top: 45%;
   width: 32%;
 }
-#fry-stage.food-placed .cooking-food {
+#fry-stage.food-placed:not(.is-served) .cooking-food {
   left: 59%;
-  top: 47%;
-  width: 36%;
+  top: 49%;
+  width: 52%;
+  height: 38%;
+  aspect-ratio: auto;
+  overflow: hidden;
+  border-radius: 50%;
+  -webkit-clip-path: ellipse(48% 42% at 50% 49%);
+  clip-path: ellipse(48% 42% at 50% 49%);
+  padding: 2% 5% 4%;
+}
+#fry-stage.food-placed:not(.is-served) .cooking-food img,
+#fry-stage.food-placed:not(.is-served) .cooking-food .cooking-food-fallback {
+  max-width: 82%;
+  max-height: 112%;
+}
+#fry-stage.food-placed:not(.is-served)::after {
+  content: '';
+  position: absolute;
+  left: 61%;
+  top: 64%;
+  width: 46%;
+  height: 22%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.58;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(255,226,118,0.07) 0 36%, transparent 38%),
+    linear-gradient(180deg, rgba(65,55,42,0) 0 34%, rgba(48,39,31,0.42) 58%, rgba(25,22,20,0.68) 100%);
+  -webkit-clip-path: ellipse(50% 48% at 50% 61%);
+  clip-path: ellipse(50% 48% at 50% 61%);
+}
+#fry-stage[data-ingredient="shrimp_breaded"].food-placed:not(.is-served) .cooking-food {
+  top: 48%;
+  height: 40%;
+}
+#fry-stage[data-ingredient="shrimp_breaded"].food-placed:not(.is-served) .cooking-food img {
+  max-width: 78%;
+  max-height: 116%;
 }
 .cook-play-area.is-served .cooking-food {
   left: 22%;
@@ -870,7 +908,7 @@ body[data-screen="fridge"] .stage-wrap {
   height: 42%;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 4;
+  z-index: 6;
   opacity: 0.18;
   transition: opacity 0.25s ease;
 }

@@ -125,6 +125,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:67-kitchen-fry-pot-mask] **Done** — `bento/kitchen.html` の fry 画面で、鍋が背面画像だけのため揚げ物が前リムを突き抜けて見える問題を修正。揚げ中のみ `.cooking-food--fry` を油面の楕円 `clip-path` でマスクし、前リム風の薄い overlay を追加、泡を最前面へ戻した。`is-served` ではマスク解除されるため油切りトレー上の完成品は欠けない。ローカル Playwright でエビフライ投入中 / 取り出し後、コロッケ投入中、ハンバーグ grill 投入を確認。`sw.js` は CACHE_VERSION 453。 (by Codex)
 - 2026-05-18 - [batch:66-kitchen-select-grid-fit] **Done** — `bento/kitchen.html` の select 画面で材料カードが `aspect-ratio:1` と 3 列幅により巨大化し、3 段目が見切れる問題を修正。select 画面だけカードの正方形固定を解除し、grid 2 行目の残り高さに 3×3 を均等配分、padding/gap/font を縮小。ローカル Playwright で 1920×1080 edit / 1280×720 / mobile の全てで 9 カードの下端が stage 内に収まることを確認。`sw.js` は CACHE_VERSION 449。 (by Codex)
 
 - 2026-05-18 - [batch:65-kitchen-drag-cook-placement] **Done** — `bento/kitchen.html` の grill/fry で皿上の食材を pointer drag でフライパン/鍋へ投入する操作を追加し、実タップだけでは投入せずドラッグ案内を出すよう変更。prep plate を拡大し、grill 投入後の食材位置/サイズを調整、ハンバーグ専用に小さめ配置を追加。ローカル Playwright でハンバーグ drag → fridge recipe unlock、エビフライ drag fry → recipe unlock、エビフライ/コロッケ表示を確認。`sw.js` は CACHE_VERSION 448。 (by Codex)
