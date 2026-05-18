@@ -535,17 +535,27 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .cook-play-area {
   position: relative;
-  width: min(92%, 780px);
-  aspect-ratio: 1.18 / 1;
+  width: min(100%, 920px);
+  aspect-ratio: 16 / 9;
   border: none;
-  background: transparent;
+  background: #F3C983;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.48), 0 10px 20px rgba(125,75,35,0.12);
   cursor: pointer;
   touch-action: manipulation;
   outline: none;
 }
+.cook-stove-bg {
+  position: absolute;
+  inset: 0;
+  background: url('../assets/images/bento/cooking/stove_base.webp') center / cover no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
 .cook-play-area:focus-visible {
   box-shadow: 0 0 0 5px rgba(242,145,90,0.55);
-  border-radius: 50%;
+  border-radius: 18px;
 }
 .cook-side {
   display: flex;
@@ -554,13 +564,13 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .cook-tool {
   position: absolute;
-  left: 59%;
-  top: 51%;
+  left: 61%;
+  top: 62%;
   transform: translate(-50%, -50%);
-  width: 82%;
+  width: 52%;
   aspect-ratio: 1 / 1;
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -569,23 +579,23 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-plate {
   position: absolute;
   left: 18%;
-  top: 65%;
+  top: 68%;
   transform: translate(-50%, -50%) rotate(-4deg);
-  width: 38%;
+  width: 31%;
   aspect-ratio: 1.4 / 1;
   border-radius: 50%;
   background: url('../assets/images/bento/cooking/prep_plate.png') center / contain no-repeat;
   filter: drop-shadow(0 10px 16px rgba(105,70,35,0.18));
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
   transition: opacity 0.22s ease;
 }
 .finish-dish {
   position: absolute;
-  left: 21%;
-  top: 64%;
+  left: 18%;
+  top: 68%;
   transform: translate(-50%, -50%) rotate(-3deg);
-  width: 34%;
+  width: 28%;
   aspect-ratio: 1.62 / 1;
   background-repeat: no-repeat;
   background-position: center;
@@ -593,14 +603,14 @@ body[data-screen="fridge"] .stage-wrap {
   filter: drop-shadow(0 11px 16px rgba(80,50,30,0.17));
   opacity: 0;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
   transition: opacity 0.24s ease;
 }
 .finish-dish--plate {
   background-image: url('../assets/images/bento/cooking/serving_plate.png');
 }
 .finish-dish--tray {
-  width: 42%;
+  width: 34%;
   aspect-ratio: 1.98 / 1;
   background-image: url('../assets/images/bento/cooking/cooling_tray.png');
 }
@@ -612,17 +622,17 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .heat-glow {
   position: absolute;
-  left: 59%;
-  top: 82%;
+  left: 61%;
+  top: 62%;
   transform: translate(-50%, -50%);
-  width: 42%;
-  height: 14%;
+  width: 24%;
+  height: 16%;
   border-radius: 50%;
   background: radial-gradient(ellipse at 50% 50%, rgba(255,142,72,0.62), rgba(255,197,92,0.24) 48%, transparent 72%);
   filter: blur(1px);
   opacity: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 .heat-glow::before,
 .heat-glow::after {
@@ -650,14 +660,18 @@ body[data-screen="fridge"] .stage-wrap {
   animation: heatPulse 0.82s ease-in-out infinite alternate;
 }
 .cook-tool--pan {
-  width: 88%;
+  left: 61%;
+  top: 68%;
+  width: 46%;
   background-image: url('../assets/images/bento/cooking/frying_pan.png');
 }
 .cook-tool--pan::after {
   display: none;
 }
 .cook-tool--pot {
-  width: 88%;
+  left: 61%;
+  top: 61%;
+  width: 56%;
   background-image: url('../assets/images/bento/cooking/deep_pot.png');
 }
 .cook-tool--pot::before,
@@ -669,15 +683,15 @@ body[data-screen="fridge"] .stage-wrap {
 .cooking-food {
   position: absolute;
   left: 18%;
-  top: 62%;
+  top: 65%;
   transform: translate(-50%, -50%);
-  width: 30%;
+  width: 24%;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 3;
+  z-index: 4;
   touch-action: none;
   transition:
     left 0.5s cubic-bezier(.18,.85,.2,1.02),
@@ -701,25 +715,25 @@ body[data-screen="fridge"] .stage-wrap {
   transform: scale(1.04);
 }
 #grill-stage.food-placed .cooking-food {
-  left: 59%;
-  top: 40%;
-  width: 30%;
+  left: 61%;
+  top: 55%;
+  width: 23%;
 }
 #grill-stage[data-ingredient="mince_patty"].food-placed .cooking-food {
-  left: 59%;
-  top: 40%;
-  width: 27%;
+  left: 61%;
+  top: 55%;
+  width: 21%;
 }
 #grill-stage[data-ingredient="salmon"].food-placed .cooking-food {
-  left: 59%;
-  top: 40%;
-  width: 32%;
+  left: 61%;
+  top: 55%;
+  width: 25%;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food {
-  left: 59%;
-  top: 46%;
-  width: 56%;
-  height: 36%;
+  left: 61%;
+  top: 58%;
+  width: 34%;
+  height: 24%;
   aspect-ratio: auto;
   overflow: hidden;
   border-radius: 50%;
@@ -733,22 +747,22 @@ body[data-screen="fridge"] .stage-wrap {
   max-height: 110%;
 }
 #fry-stage[data-ingredient="shrimp_breaded"].food-placed:not(.is-served) .cooking-food {
-  top: 46%;
-  height: 38%;
+  top: 58%;
+  height: 25%;
 }
 #fry-stage[data-ingredient="shrimp_breaded"].food-placed:not(.is-served) .cooking-food img {
   max-width: 68%;
   max-height: 112%;
 }
 .cook-play-area.is-served .cooking-food {
-  left: 22%;
-  top: 61%;
-  width: 30%;
+  left: 18%;
+  top: 68%;
+  width: 22%;
 }
 #fry-stage.is-served .cooking-food {
-  left: 22%;
-  top: 60%;
-  width: 32%;
+  left: 18%;
+  top: 68%;
+  width: 24%;
 }
 .cooking-food img {
   max-width: 100%;
@@ -809,9 +823,9 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .grill-smoke {
   position: absolute;
-  left: 59%;
-  top: 31%;
-  width: 34%;
+  left: 61%;
+  top: 44%;
+  width: 28%;
   height: 30%;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -884,10 +898,10 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .oil-bubbles {
   position: absolute;
-  left: 59%;
-  top: 50%;
-  width: 50%;
-  height: 42%;
+  left: 61%;
+  top: 58%;
+  width: 34%;
+  height: 26%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 6;
@@ -2302,6 +2316,7 @@ body.layout-editor-on .endX-marker {
   <div class="cook-screen-wrap">
     <div class="cook-main">
       <div class="cook-play-area" id="grill-stage" role="button" tabindex="0" aria-label="フライパン">
+        <div class="cook-stove-bg" aria-hidden="true"></div>
         <div class="heat-glow" id="grill-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--plate" aria-hidden="true"></div>
@@ -2345,6 +2360,7 @@ body.layout-editor-on .endX-marker {
   <div class="cook-screen-wrap">
     <div class="cook-main">
       <div class="cook-play-area" id="fry-stage" role="button" tabindex="0" aria-label="あげなべ">
+        <div class="cook-stove-bg" aria-hidden="true"></div>
         <div class="heat-glow" id="fry-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--tray" aria-hidden="true"></div>
