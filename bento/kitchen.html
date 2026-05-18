@@ -1879,7 +1879,7 @@ body.layout-editor-on .endX-marker {
   const STORAGE_KEY = 'bentoUnlockedIngredients';
   const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
 
-  // 材料定義 (Phase 1 は carrot のみ実装)
+  // 材料定義
   //
   // chopCount: モデル B (v414〜) では「切り口の数」。 chopCount タップで完成。
   //   chopProgress=1 (1st tap) → 刃先 = startX (最初の切り口)
@@ -1910,9 +1910,8 @@ body.layout-editor-on .endX-marker {
   //    null / undefined なら CSS デフォルト (left:50%, top:42%, width:74%) が効く。
   //
   // imageBase / imagePieces .... まな板上の本体画像 / 切れ端バリエーション。
-  //   imagePieces = { dir, from, to, pad } で carrot_002〜carrot_011 を生成する
-  //   per-ingredient な指定。 既存 addCutPieceToBowl は当面 carrot ハードコードのままで
-  //   問題ないが、 将来の汎用化フックとして属性だけ先に持たせておく。
+  //   imagePieces = { dir, prefix, from, to, pad, sequence } で
+  //   carrot_002〜carrot_011 / cabbage_002〜cabbage_014 を生成する。
   const INGREDIENTS = [
     {
       id: 'carrot', name: 'にんじん', emoji: '🥕', piece: '🥕',
@@ -1920,7 +1919,13 @@ body.layout-editor-on .endX-marker {
       //   5 = 5 タップで 5 箇所カット。 千切りなら 15-20、 ハンバーグこねなら 3 等。
       chopCount: 5, implemented: true,
       imageBase: 'carrot/carrot_001',
-      imagePieces: { dir: 'carrot', from: 2, to: 11, pad: 3 },
+      imagePieces: {
+        dir: 'carrot',
+        from: 2,
+        to: 11,
+        pad: 3,
+        sequence: [3, 2, 4, 5, 6, 7, 9, 8, 11, 10],
+      },
       chopMechanics: {
         startX_pct: 87, endX_pct: 13,
         liftY_pct: 0, chopY_pct: 50,
@@ -1938,6 +1943,28 @@ body.layout-editor-on .endX-marker {
         ingredientLeft_pct:  55,
         ingredientTop_pct:   36,
         ingredientWidth_pct: null,
+      },
+    },
+    {
+      id: 'cabbage', name: 'キャベツ', emoji: '🥬', piece: '🥬',
+      chopCount: 7, implemented: true,
+      imageBase: 'cabbage/cabbage_001',
+      imagePieces: {
+        dir: 'cabbage',
+        prefix: 'cabbage_',
+        from: 2,
+        to: 14,
+        pad: 3,
+        sequence: [6, 7, 8, 9, 10, 11, 12, 2, 4, 3, 5, 13, 14],
+      },
+      chopMechanics: {
+        startX_pct: 75, endX_pct: 29,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 52,
+        ingredientTop_pct: 39,
+        ingredientWidth_pct: 46,
       },
     },
     { id: 'wiener',    name: 'ウインナー',   emoji: '🌭', piece: '🌭', chopCount: 4, implemented: false },
@@ -2399,7 +2426,7 @@ body.layout-editor-on .endX-marker {
   }
 
   // loadIngredient: まな板上の食材本体描画 + 包丁 X/Y の初期化を一手に。
-  // - carrot は PNG (carrot_001.png) を表示。 他食材は emoji (Phase 1 では未使用)。
+  // - imageBase がある食材は PNG を表示。 未実装/画像なしの食材は emoji fallback。
   // - chopMechanics があれば --knife-x = startX_pct%, --knife-y = liftY_pct% で seed。
   //   切替直後に transition が走って「包丁が前の位置からスーッと動く」のを避けるため、
   //   2-frame だけ transition: none を当てるフラッシュ抑制テクニックを使う。
@@ -2412,8 +2439,10 @@ body.layout-editor-on .endX-marker {
     // innerHTML / textContent で旧 img が破棄されると resetIngredientMask は no-op
     // になるため、 旧 img が生きているうちに maskImage を剥がしておく方が安全。
     resetIngredientMask();
-    if (ing.id === 'carrot' || (ing.imageBase && ing.imageBase.indexOf('carrot/') === 0)) {
-      els.ingOnBoard.innerHTML = '<img src="../assets/images/bento/cooking/carrot/carrot_001.png" alt="にんじん" draggable="false">';
+    if (ing.imageBase) {
+      var safeAlt = String(ing.name || '').replace(/"/g, '&quot;');
+      els.ingOnBoard.innerHTML =
+        '<img src="../assets/images/bento/cooking/' + ing.imageBase + '.png" alt="' + safeAlt + '" draggable="false">';
     } else {
       els.ingOnBoard.textContent = ing.emoji;
     }
@@ -2460,6 +2489,7 @@ body.layout-editor-on .endX-marker {
     // .knife._ty / marker の inline w,h,tx,ty が揃った状態で
     // apply*FromSavedLayout / sync* が同じ座標系を読めるようにする。
     reapplyKnifeLayout();
+    resetUnsavedPerIngredientTargets();
 
     // [v428] applyIngredientPlacement 直後に saved-layout の .ingredient-bbox-marker
     //   {tx, ty, w, h} を直読みして ingredient-on-board.{left, top, width} を % で上書き。
@@ -2540,22 +2570,50 @@ body.layout-editor-on .endX-marker {
   // playChopAnim で wrapper.style.transform の tx を 0 にすると、 wrapper 左端基準の
   // --knife-x と座標系が変わる。さらに LayoutSystem の再 apply で tx が戻った瞬間、
   // 包丁が左へ飛ぶため、chop 中も tx/ty を両方保持する。
+  function getSavedLayoutEntryForCurrentIngredient(sel) {
+    if (!window._currentLayoutData) return null;
+    var data = window._currentLayoutData;
+    var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
+      ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
+    var perKey = ingredientId ? (sel + '|0@' + ingredientId) : null;
+    var baseKey = sel + '|0';
+    if (perKey && Object.prototype.hasOwnProperty.call(data, perKey)) return data[perKey];
+    if (Object.prototype.hasOwnProperty.call(data, baseKey)) return data[baseKey];
+    return null;
+  }
+
+  function resetPerIngredientTargetIfNoSavedEntry(sel, el) {
+    if (!el || !window._currentLayoutData) return;
+    if (getSavedLayoutEntryForCurrentIngredient(sel)) return;
+    el.style.width = '';
+    el.style.height = '';
+    el.style.transform = '';
+    el._tx = 0;
+    el._ty = 0;
+  }
+
+  function resetUnsavedPerIngredientTargets() {
+    resetPerIngredientTargetIfNoSavedEntry('.knife', els.knife);
+    resetPerIngredientTargetIfNoSavedEntry('.chopY-marker', els.chopYMarker);
+    resetPerIngredientTargetIfNoSavedEntry('.ingredient-bbox-marker', els.ingBboxMarker);
+    resetPerIngredientTargetIfNoSavedEntry('.startX-marker', els.startXMarker);
+    resetPerIngredientTargetIfNoSavedEntry('.endX-marker', els.endXMarker);
+  }
+
   //   - per-ingredient エントリ `.knife|0@<id>` を優先。
   //   - フォールバックは whole-doc base `.knife|0`。
-  //   - state.current / window._currentLayoutData 未定義時は DOM の _tx/_ty を返す。
+  //   - saved-layout 未読込時だけ DOM の _tx/_ty を返す。
+  //   - saved-layout 読込済みで entry が無い新規食材は 0 に戻す。
   function getEditorTransformForCurrentIngredient() {
     try {
       if (!window._currentLayoutData) {
         return { tx: (els.knife && els.knife._tx) || 0, ty: (els.knife && els.knife._ty) || 0 };
       }
-      var ingredientId = (typeof window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT === 'function')
-        ? window.BENTO_KITCHEN_GET_CURRENT_INGREDIENT() : null;
-      var key = ingredientId ? ('.knife|0@' + ingredientId) : null;
-      var base = '.knife|0';
-      var entry = (key && window._currentLayoutData[key]) || window._currentLayoutData[base];
+      var entry = getSavedLayoutEntryForCurrentIngredient('.knife');
+      if (!entry) return { tx: 0, ty: 0 };
       return {
-        tx: (entry && typeof entry.tx === 'number') ? entry.tx : ((els.knife && els.knife._tx) || 0),
-        ty: (entry && typeof entry.ty === 'number') ? entry.ty : ((els.knife && els.knife._ty) || 0),
+        tx: (typeof entry.tx === 'number') ? entry.tx : 0,
+        ty: (typeof entry.ty === 'number') ? entry.ty : 0,
       };
     } catch (e) {
       return { tx: 0, ty: 0 };
@@ -3423,14 +3481,19 @@ body.layout-editor-on .endX-marker {
   }
 
   function getCutPieceData(ing) {
-    if (ing && ing.id === 'carrot') {
-      // 横向き/縦向きの輪切りが混ざるように、既存 carrot_002〜011 を順に使う。
-      const seq = [3, 2, 4, 5, 6, 7, 9, 8, 11, 10];
+    if (ing && ing.imagePieces) {
+      const cfg = ing.imagePieces;
+      const seq = Array.isArray(cfg.sequence) && cfg.sequence.length
+        ? cfg.sequence
+        : Array.from({ length: Math.max(0, (cfg.to || 0) - (cfg.from || 0) + 1) }, function (_, i) {
+            return (cfg.from || 0) + i;
+          });
       const n = seq[((state.chopProgress || 1) - 1) % seq.length];
-      const idx = String(n).padStart(3, '0');
+      const idx = String(n).padStart(cfg.pad || 3, '0');
+      const prefix = cfg.prefix || (cfg.dir + '_');
       return {
         type: 'image',
-        src: '../assets/images/bento/cooking/carrot/carrot_' + idx + '.png',
+        src: '../assets/images/bento/cooking/' + cfg.dir + '/' + prefix + idx + '.png',
       };
     }
     return {
