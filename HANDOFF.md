@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:58-bento-cabbage-scatter] **Done** — `bento/kitchen.html` でキャベツ切れ端の flight 開始点・中間点・終点を `burstIndex` レーンで分散し、皿内配置も黄金角ベースの楕円散布へ変更。キャベツ専用分岐のみで、にんじんは未変更。ローカル Playwright で 1 打 16 切れ端、flight startX 約 170px / startY 約 125px / endY 約 345px、皿内 x 約 90px / y 約 56px の散らばり、12 連打完了、にんじん 1 打目維持を確認。`sw.js` は CACHE_VERSION 441。 (by Codex)
+
 - 2026-05-18 - [batch:57-bento-cabbage-rapid-chop] **Done** — `bento/kitchen.html` でキャベツ専用に rapidTap queue を追加し、連打入力を捨てずに順次消化するよう変更。包丁は `knifeAnimating` と release delay で上がり切るまで次の横移動を開始しない。キャベツ切れ端は 1 打 16 個、delay 0、linear flight、皿内 72 個上限へ変更。ローカル Playwright で 12 連打完了、下がった包丁の横移動 0 samples、にんじん 1 打目維持を確認。`sw.js` は CACHE_VERSION 440。 (by Codex)
 
 - 2026-05-18 - [batch:56-bento-cabbage-burst] **Done** — `bento/kitchen.html` で「トン！」表示を下げて上切れを回避。キャベツは `chopCount=12`、1 打 4 切れ端、キャベツ専用の山なり飛行アニメ、皿内 24 個上限へ変更。にんじんは 1 打 1 切れ端のまま維持。ローカル Playwright でキャベツ 1 打目/12 打完了/にんじん 1 打目を確認。`sw.js` は CACHE_VERSION 439。 (by Codex)
