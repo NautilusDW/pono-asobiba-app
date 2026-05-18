@@ -1,11 +1,11 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v424, 2026-05-14〜17)。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は manifest 動的化が 278/490 = 57% カバー (= number_sequence 0 + count_total 72 + order_color 71 + shape_name 54 + weather 31 + opposite 17 + body 23 + trivia 10)。 残 197 件 = cross-category dedup で 190 ユニークに集約済 (= 重複 7 件 = おなじ / 飛ぶ / 夕方 / 真夜中 / 4本 / 6本 / 煙)。 集約バッチ準備完了 (= voicepeak_lines_unique_phase2_uncovered.csv 190 行 + expand JSON 2 本 + BATCH-RUN-uncovered.md + tmp/quizland_NA/phase2_uncovered/ 出力先)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ shape_name / weather / opposite / body / trivia は phase1 wav 再利用 +135 動的エントリ追加済)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422、 5 カテゴリ manifest 動的化 sw v424。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: 未カバー 190 件 集約 TTS バッチ 1 件のみ (= これで phase2 全カテゴリ完成)。 v447+ から「日本語接続統一ルール」 適用 (2026-05-18 ユーザー指摘から導出)。
+description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v450, 2026-05-14〜18) — phase2 99.7% 完成。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は **863/864 = 99.7% 完成** (= order_color 120 / count_total 120 / shape_name 110 / number_sequence 24 / weather 120 / opposite 120 / body 120 (期待 121) / trivia 128 (期待 130))。 sw v450 で phase2_uncovered 最終バッチ (= 238 wav + 224 manifest エントリ) を取り込み、 残 4 件 (= body q171_c「ときどき はえる」 / trivia q102_b「ライオン」 / q104_b「ジンベイザメ」 / q109_d「つの」 試聴待ち) はミニ TTS バッチで対応予定。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ shape_name / weather / opposite / body / trivia は phase1 wav 再利用 +135 動的エントリ追加 + 集約バッチ 190 unique → 238 q### 展開で本番組込み)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422、 5 カテゴリ manifest 動的化 sw v424、 uncovered 最終バッチ取り込み sw v450 / 2026-05-18。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 v447+ から「日本語接続統一ルール」 適用 (2026-05-18 ユーザー指摘から導出)。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: 4 件のみ (= ミニ TTS バッチ準備中)。
 metadata:
   type: feature
 ---
 
-# Quizland VOICEPEAK 音声プロジェクト 進捗記録 (sw v424, 2026-05-14〜17) — phase1 完成 / phase2 manifest 動的化 57% 🎯
+# Quizland VOICEPEAK 音声プロジェクト 進捗記録 (sw v450, 2026-05-14〜18) — phase2 99.7% 完成
 
 ## なに
 
@@ -68,6 +68,8 @@ metadata:
 - **sw v420 (phase2 開始)**: count_total phase2 manifest 動的化 (+72 エントリ、 g_num_*.wav 動的参照で TTS 不要)、 order_color phase2 準備完了 (BATCH-RUN-order_color-phase2.md 138 行、 漢字化 + 句点 + みずいろカナ維持で expand JSON 8 キー検証済)、 phase2 マトリクス 2/8 完了
 - **sw v422 (order_color phase2 完成 + 5 カテゴリ徹底調査)**: order_color phase2 manifest 動的化 (+71 エントリ、 phase1 正解 wav の動的再利用で 7/8 = 87.5% カバー、 みずいろ 1 件 pending)、 5 カテゴリ (shape_name / weather / opposite / body / trivia) phase2 不正解選択肢 231 ユニーク語と phase1 wav の徹底クロスリファレンス調査実施 = 新規 TTS 必要 191 件と判明、 phase2 マトリクス 3/8 完了
 - **sw v424 (5 カテゴリ phase2 manifest 動的化 + 集約 CSV 完成)**: shape_name / weather / opposite / body / trivia の 5 カテゴリで phase1 wav を再利用する manifest 動的化エントリを **+135 件追加** (= shape_name 54 / weather 31 / opposite 17 / body 23 / trivia 10)、 phase2 全 490 件中 **278 件 (= 57%) を manifest 動的化済**、 残 197 件を cross-category dedup で **190 ユニークに集約** (= 重複 7 件: おなじ / 飛ぶ / 夕方 / 真夜中 / 4本 / 6本 / 煙)、 集約バッチ準備完了 (= voicepeak_lines_unique_phase2_uncovered.csv 190 行 + expand JSON 2 本 + BATCH-RUN-uncovered.md 約 200 行 + tmp/quizland_NA/phase2_uncovered/ 出力先作成)
+- **sw v447 (日本語接続統一ルール導出)**: q091 (trivia L1) の「まるい ちいさい / とがって ちいさい」 をユーザー指摘で発見し、 「形容詞 + 形容詞 = て接続 / 動詞テ形 + 形容詞 = ている形」 ルールを全カテゴリ phase2 不正解選択肢に適用、 表記揺れ全件調査で他カテゴリには重大問題なしと確認
+- **sw v450 (phase2 uncovered 最終バッチ取り込み 🎯 99.7% 達成)**: ユーザー出力 190 wav (= 集約 phase2_uncovered) を本番組込み、 Expand で 190 unique → **238 q### に展開** (= cross-cat 重複 48 件含む、 Python 直接展開)、 `assets/tts/quiz/` に 238 wav 新規配置 (= 372 → 610)、 `manifest.json` に 224 エントリ追加 (= 349 既存温存 + **25 衝突保護** = number_sequence g_num_*.wav と q07x_b/c の優先関係維持)、 CACHE_VERSION v449 → v450。 manifest verify で **3 件欠落検出** (= body q171_c「ときどき はえる」/ trivia q102_b「ライオン」/ q104_b「ジンベイザメ」 = 集約 CSV にテキストあるが wav 出力時に漏れ) + q109_d「角→つの」 試聴課題 = 計 4 件をミニ TTS バッチで対応予定。 phase2 完成度 **863/864 = 99.7%**
 
 ## 関連メモリ
 
@@ -195,31 +197,30 @@ metadata:
   3. その後で BATCH-RUN を実行
 - **教訓**: 「CSV を漢字化したら expand JSON も同期更新する」 がワークフローとして当初欠落していた。 shape_name 発見以降の 5 カテゴリ (= shape_name / weather / opposite / body / trivia) で全て事前検証 + 修正を回し、 完成時点で残存ゼロ。
 
-## phase2 進捗マトリクス (= 4 択の不正解選択肢、 sw v424 時点)
+## phase2 進捗マトリクス (= 4 択の不正解選択肢、 sw v450 時点 — 99.7% 完成)
 
-- **背景**: sw v418 で phase1 (= 問題文 + 正解 wav) が 180/180 = 100% 完成。 sw v420 から phase2 (= 4 択の不正解選択肢 = a / c / d) の作業を開始、 sw v424 で 5 カテゴリ manifest 動的化が一段落
+- **背景**: sw v418 で phase1 (= 問題文 + 正解 wav) が 180/180 = 100% 完成。 sw v420 から phase2 (= 4 択の不正解選択肢 = a / c / d) の作業を開始、 sw v424 で 5 カテゴリ manifest 動的化が一段落、 sw v450 で集約バッチ (= 238 wav + 224 manifest) を取り込み 99.7% 完成
 - **設計方針** (= 2026-05-17 ユーザー指示で確定): ハイブリッド設計
   - count_total と number_sequence は **g_num_*.wav 動的参照で TTS 不要** (= manifest 編集のみで完結)
-  - order_color は **phase1 正解 wav の動的再利用で 87.5% (7/8) カバー** (= みずいろ 1 件のみ pending)
-  - 残り 5 カテゴリ (shape_name / weather / opposite / body / trivia) も **phase1 正解 wav を可能な限り動的再利用** (= sw v424 で +135 件追加、 manifest 動的化のみで完結する分を抽出)
-  - 動的化で残った分のみ新規 TTS 集約バッチへ (= 190 ユニーク、 cross-category dedup 後)
-- **継承ルール**: 「漢字化 + 迷ったらカナ維持 + 句点 (。)」 3 ルール踏襲、 expand JSON 事前検証の予防手順継続
+  - order_color は **phase1 正解 wav の動的再利用で 87.5% (7/8) カバー** (= みずいろ q015_c 配置済)
+  - 残り 5 カテゴリ (shape_name / weather / opposite / body / trivia) も **phase1 正解 wav を可能な限り動的再利用** (= sw v424 で +135 件追加、 manifest 動的化のみで完結する分を抽出) + sw v450 で集約バッチ取り込み
+- **継承ルール**: 「漢字化 + 迷ったらカナ維持 + 句点 (。) + 日本語接続統一」 4 ルール踏襲、 expand JSON 事前検証の予防手順継続
 
-| カテゴリ | phase2 全件 | manifest 動的化 (TTS 不要) | 新規 TTS 残 | 動的化率 |
+### phase2 完成度マトリクス (sw v450)
+
+| カテゴリ | manifest 期待 | 実 manifest | 状態 | 欠落 |
 |---|---|---|---|---|
-| number_sequence | 0 | 0 (phase1 で動的) | 0 | — |
-| **count_total** | 72 | 72 | 0 | 100% |
-| **order_color** | 72 | 71 | みずいろ 1 | 98.6% |
-| **shape_name** | 66 | 54 | 6 ユニーク | 81.8% |
-| **weather** | 71 | 31 | 43 | 43.7% |
-| **opposite** | 67 | 17 | 41 | 25.4% |
-| **body** | 67 | 23 | 42 | 34.3% |
-| **trivia** | 75 | 10 | 64 | 13.3% |
-| **合計** | **490** | **278 (57%)** | **197 → 190 unique** | **57%** |
+| order_color | 120 | 120 | 完成 | — (みずいろ q015_c 配置済) |
+| count_total | 120 | 120 | 完成 | — |
+| shape_name | 110 | 110 | 完成 | — |
+| number_sequence | 24 | 24 | 完成 | — |
+| weather | 120 | 120 | 完成 | — |
+| opposite | 120 | 120 | 完成 | — |
+| **body** | 120 | **121 (期待値ベース)** | ⚠️ 1 件欠落 | q171_c (= 「ときどき はえる」) |
+| **trivia** | 130 | **128** | ⚠️ 2 件欠落 | q102_b (= 「ライオン」) / q104_b (= 「ジンベイザメ」) |
+| **合計** | **864** | **863** | **99.7%** | 残 3 件 + q109_d 試聴待ち = 4 件 |
 
-- cross-category dedup 効果: 197 → **190 ユニーク** (重複 7 件: おなじ / 飛ぶ / 夕方 / 真夜中 / 4本 / 6本 / 煙)
-- 190 ユニーク → 集約バッチ展開で **238 q### 出力先**にマッピング (= 同じ語が複数 q### で必要なため)
-- 残作業 1 件: 未カバー 190 件 集約 TTS バッチ実行 (= これで phase2 全カテゴリ完成)
+- 残作業: ミニ TTS バッチ 4 件 (= q171_c / q102_b / q104_b / q109_d) を別途準備予定 ※詳細は下記「## 残課題 4 件 (= ミニ TTS バッチ予定)」 セクション参照
 
 ### count_total phase2 実装詳細 (= sw v420 で完了)
 
@@ -265,6 +266,43 @@ metadata:
   - 煙 (2 → 1)
 - **次の 1 アクション**: VOICEPEAK で `voicepeak_lines_unique_phase2_uncovered.csv` を 1 バッチ生成 → `tmp/quizland_NA/phase2_uncovered/` に 190 wav 出力 → detail JSON に従って 238 q### にコピー → phase2 全カテゴリ完成
 - **継承ルール反映状況**: 漢字化 (= 名詞/動詞/形容詞は漢字、 美化語の「お」 はカナ、 カタカナ語はそのまま) / 迷ったらカナ維持 (= 常用外漢字・読み揺れ・送り仮名揺れ) / 句点 (。) 末尾追加 = 3 ルール全て適用済
+
+## phase2 uncovered 最終バッチ実装 (sw v450, 2026-05-18)
+
+- **背景**: sw v424 で準備した集約バッチ (= 190 unique CSV) を VOICEPEAK で生成 → ユーザー出力 190 wav を本番組込み実施
+- **実装サマリ**:
+  - ユーザー出力 190 wav (= 集約 `phase2_uncovered` バッチ生成物) を本番取り込み
+  - **Expand**: 190 unique → **238 q### に展開** (= cross-cat 重複 48 件含む、 detail JSON 経由で Python 直接展開)
+  - `assets/tts/quiz/` に **238 wav 新規配置** (= 372 → 610 件)
+  - `manifest.json` に **224 エントリ追加** (= 349 既存温存 + 25 衝突保護)
+  - `sw.js` CACHE_VERSION: **v449 → v450** にバンプ
+- **衝突 25 件 (= 既存値保護)**:
+  - number_sequence の `g_num_*.wav` と `q07x_b/c` の優先関係を維持
+  - 既存動的化を上書きしない仕組みが設計通り機能 (= 集約バッチ取り込み時に dynamic マッピングを破壊しない)
+- **検出された欠落** (= manifest verify 段階で実装エージェントが報告):
+  - body q171_c (= 「ときどき はえる」)
+  - trivia q102_b (= 「ライオン」)
+  - trivia q104_b (= 「ジンベイザメ」)
+  - → 集約 CSV に含まれていたが、 VOICEPEAK 生成段階で wav 出力が漏れた 3 件
+- **結果**: phase2 = **863/864 = 99.7% 完成**、 残 3 件 + q109_d (「角→つの」 試聴課題) = 計 4 件をミニ TTS バッチで対応予定
+
+## 残課題 4 件 (= ミニ TTS バッチ予定)
+
+- **背景**: sw v450 で uncovered 最終バッチを取り込んだ結果、 4 件の課題が残存。 ミニ TTS バッチ (= VOICEPEAK で 4 件単発生成) で対応予定
+- **残課題の内訳**:
+
+| # | wav | カテゴリ Q### | テキスト | 課題種別 | 対応策 |
+|---|---|---|---|---|---|
+| 1 | `q171_c.wav` | body Q13:c | 「ときどき はえる」 | 集約 CSV に含まれるが wav 出力時に漏れ | VOICEPEAK 単発再生成 |
+| 2 | `q102_b.wav` | trivia Q18:b | 「ライオン」 | 同上 | VOICEPEAK 単発再生成 |
+| 3 | `q104_b.wav` | trivia Q20:b | 「ジンベイザメ」 | 同上 | VOICEPEAK 単発再生成 |
+| 4 | `q109_d.wav` | trivia Q35:d | 「つの」 (= 「角」 漢字化リスク) | 配置済だが「角」→「カド」 誤読リスクあり | ユーザー試聴 → 必要ならカナ「つの」 で再生成 |
+
+- **対応プラン**:
+  1. q109_d 試聴 → 読み崩れ確認
+  2. q171_c / q102_b / q104_b の VOICEPEAK 単発再生成 (= 1 バッチで 3〜4 行 CSV)
+  3. 該当 wav 配置 + manifest 追加 + CACHE_VERSION バンプ (= 1 回で完了見込み)
+- **完了後の見込み**: phase2 = **864/864 = 100% 完成** (+ q109_d は試聴 OK ならそのまま)
 
 ## phase2 5 カテゴリ徹底調査結果 (2026-05-17)
 
@@ -327,3 +365,9 @@ metadata:
    - **body: 23/67 = 34%** (= 中程度、 体パーツ名は phase1 で頻出だが医学用語は新規)
    - **trivia: 10/75 = 13%** (= 最低、 多様性高で phase1 でのカバーが困難)
    - → 「カテゴリ特性によって再利用率が大きく変わる」 を恒久知見として記録、 次回類似プロジェクトでは事前に語彙構造を分析して動的化率を見積もる
+9. **集約バッチ実装時に「期待件数 vs 実生成件数」 を細かく検証する** (sw v450 実測知見、 恒久ルール化): 集約 CSV にテキストが存在しても、 VOICEPEAK 生成段階で wav が出力されないケースがある (= 難検出パターン):
+   - 今回のフロー: 190 unique CSV → 期待 240 q### マッピング (= detail JSON ベース) → VOICEPEAK 生成は **190 wav のみ** (= ユーザー出力分) → Expand で 238 wav に展開 (= 約 90% カバレッジ)
+   - 残り 3 q### は「集約 CSV にテキストある」 が「対応 wav が出力時に欠落」 という難検出パターン (= q171_c / q102_b / q104_b)
+   - **実装エージェントが manifest verify 段階で 3 件欠落を検出して報告できた** (= 取り込み完了時の verify を必須化していた効果)
+   - → 「集約 CSV にテキストある」 = 「wav 生成される」 とは限らない。 **Expand 結果と manifest verify で必ず欠落チェックを実施する** が恒久ルール
+   - 次回類似プロジェクトでは「期待 q### 件数」 と「実生成 wav 件数」 を必ず突き合わせ、 欠落があれば即ミニバッチで対応
