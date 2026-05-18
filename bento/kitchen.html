@@ -1096,7 +1096,7 @@ body.layout-editor-on .endX-marker {
   user-select: none;
   z-index: 20;
   transform-origin: center;
-  animation: cutPieceFlyOut 0.44s cubic-bezier(.18,.72,.28,1) forwards;
+  animation: cutPieceFlyOut 0.42s cubic-bezier(.12,.74,.24,1) forwards;
 }
 .flying-cut-piece img {
   max-width: 100%;
@@ -1112,18 +1112,11 @@ body.layout-editor-on .endX-marker {
 }
 @keyframes cutPieceFlyOut {
   0% {
-    transform: translate(-50%, -50%) scale(0.55) rotate(var(--start-rot, -18deg));
-    opacity: 0;
-  }
-  14% {
-    opacity: 1;
-  }
-  58% {
-    transform: translate(calc(var(--mid-x, 0px) - 50%), calc(var(--mid-y, -120px) - 50%)) scale(1.08) rotate(var(--mid-rot, 120deg));
+    transform: translate(-50%, -50%) scale(0.76) rotate(var(--start-rot, -18deg));
     opacity: 1;
   }
   100% {
-    transform: translate(calc(var(--end-x, 0px) - 50%), calc(var(--end-y, 0px) - 50%)) scale(1) rotate(var(--end-rot, 240deg));
+    transform: translate(calc(var(--end-x, 0px) - 50%), calc(var(--end-y, 0px) - 50%)) scale(0.96) rotate(var(--end-rot, 140deg));
     opacity: 1;
   }
 }
@@ -3477,21 +3470,17 @@ body.layout-editor-on .endX-marker {
     }
     const startLocalX = (start.x - cRect.left) / scaleX;
     const startLocalY = (start.y - cRect.top) / scaleY;
-    const endLocalX = clipper.offsetWidth + 80;
-    const endLocalY = startLocalY - 18 + (Math.random() - 0.5) * 34;
+    const endLocalX = clipper.offsetWidth + 120;
+    const endLocalY = startLocalY - 46 + (Math.random() - 0.5) * 20;
     const fly = createCutPieceNode(pieceData, 'flying-cut-piece');
     const dx = endLocalX - startLocalX;
     const dy = endLocalY - startLocalY;
-    const arc = Math.min(120, Math.max(58, Math.abs(dx) * 0.12));
     fly.style.setProperty('--start-x', startLocalX + 'px');
     fly.style.setProperty('--start-y', startLocalY + 'px');
     fly.style.setProperty('--end-x', dx + 'px');
     fly.style.setProperty('--end-y', dy + 'px');
-    fly.style.setProperty('--mid-x', (dx * 0.48) + 'px');
-    fly.style.setProperty('--mid-y', (dy * 0.48 - arc) + 'px');
     fly.style.setProperty('--start-rot', (-24 + Math.random() * 18) + 'deg');
-    fly.style.setProperty('--mid-rot', (110 + Math.random() * 80) + 'deg');
-    fly.style.setProperty('--end-rot', (230 + Math.random() * 80) + 'deg');
+    fly.style.setProperty('--end-rot', (120 + Math.random() * 70) + 'deg');
     clipper.appendChild(fly);
     let done = false;
     const finish = function () {

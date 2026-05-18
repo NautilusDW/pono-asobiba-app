@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:53-bento-kitchen-cut-piece-one-action] **Done** — `bento/kitchen.html` の切れ端 frameout を v436 として調整。飛行 keyframes の中間点を削除し、切断位置から右上寄りのフレーム外へ 0%→100% の一筆アニメに変更。右下へ吸われる成分をなくし、飛行サイズ 96px / 着地 86px は維持。ローカル headless で `.chop-main` 内 flight、body 直下 flight なし、着地後 pieces=1、5 タップ後 fridge 遷移を確認。`sw.js` は CACHE_VERSION 436。 (by Codex)
+
 - 2026-05-18 - [batch:52-bento-kitchen-cut-piece-frameout] **Done** — `bento/kitchen.html` の切れ端演出を v435 として調整。切断位置からボウルへ直接つなげず、切れ端は `.chop-main` 内で右端へ飛んでフレームアウトし、約 0.08 秒後に `#bowl` 内へ左上から落ちる二段演出へ変更。飛行中切れ端は 96px、着地切れ端は 86px に拡大。ローカル headless で frameout/drop-in、5 タップ後 fridge 遷移・pieces=5・flying=0 を確認。`sw.js` は CACHE_VERSION 435。 (by Codex)
 
 - 2026-05-18 - [batch:51-bento-kitchen-cut-piece-flight] **Done** — `bento/kitchen.html` の切れ端演出を v434 として追加。impact 時に carrot_002〜011 の輪切り小片を切断位置から viewport-fixed で右側 `#bowl` へ飛ばし、到着後にボウル内へ残す。横/縦の輪切り素材を交互に使い、`#bowl` は catch アニメで受け止める。ローカル headless で desktop/mobile とも flight 生成→着地、5 タップ後 fridge 遷移・pieces=5・flying=0 を確認。`sw.js` は CACHE_VERSION 434。 (by Codex)
