@@ -3403,13 +3403,20 @@
       if (typeof data.left !== 'number' || typeof data.top !== 'number') return;
       // 復元時も画面外には出さない (リロード後にウィンドウ縮小されたケース対策)
       var left = clamp(data.left, -200, window.innerWidth - 50);
-      var top = clamp(data.top, 0, window.innerHeight - 50);
+      var top = clamp(data.top, getPanelMinTop(), window.innerHeight - 50);
       panel.style.position = 'fixed';
       panel.style.left = left + 'px';
       panel.style.top = top + 'px';
       panel.style.right = 'auto';
       panel.style.bottom = 'auto';
     } catch (e) {}
+  }
+
+  function getPanelMinTop() {
+    var toolbar = document.querySelector('.le-toolbar');
+    if (!toolbar) return 0;
+    var rect = toolbar.getBoundingClientRect();
+    return Math.max(0, Math.ceil(rect.bottom + 8));
   }
 
   function makePanelDraggable(panel, panelId) {
@@ -3427,7 +3434,7 @@
       var dy = e.clientY - dragStart.y;
       var w = panel.offsetWidth || 200;
       var newLeft = clamp(panelStart.left + dx, -w + 50, window.innerWidth - 50);
-      var newTop = clamp(panelStart.top + dy, 0, window.innerHeight - 50);
+      var newTop = clamp(panelStart.top + dy, getPanelMinTop(), window.innerHeight - 50);
       panel.style.position = 'fixed';
       panel.style.left = newLeft + 'px';
       panel.style.top = newTop + 'px';
