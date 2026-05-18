@@ -103,6 +103,10 @@ body[data-screen="chop"] .stage-wrap {
   /* レターボックスは引き続き暖色グラデで埋める（キッチン画像は .chop-main 内に敷く） */
   background: linear-gradient(180deg, var(--bg-chop-1) 0%, var(--bg-chop-2) 50%, var(--bg-chop-3) 100%);
 }
+body[data-screen="grill"] .stage-wrap,
+body[data-screen="fry"] .stage-wrap {
+  background: linear-gradient(180deg, #FFF2D8 0%, #FFE1B9 52%, #FFD59D 100%);
+}
 body[data-screen="fridge"] .stage-wrap {
   background: linear-gradient(180deg, var(--bg-fridge-1) 0%, var(--bg-fridge-2) 50%, var(--bg-fridge-3) 100%);
 }
@@ -366,16 +370,16 @@ body[data-screen="fridge"] .stage-wrap {
   padding: 18px;
   box-shadow: 0 6px 16px var(--shadow-soft);
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  max-width: 1300px;
+  max-width: 980px;
   width: 100%;
   margin: 0 auto;
 }
 
 .select-stage .ingredient-btn {
   font-size: 3.4rem;
-  min-height: 150px;
+  min-height: 118px;
   padding: 14px 8px;
 }
 .select-stage .ingredient-btn .ingredient-name {
@@ -498,6 +502,238 @@ body[data-screen="fridge"] .stage-wrap {
 }
 
 /* =========================================================
+   画面4: おかずを作る（焼く / 揚げる）
+   ========================================================= */
+.cook-screen-wrap {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr;
+  gap: 18px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.cook-main {
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255,255,255,0.62), transparent 24%),
+    linear-gradient(180deg, #FFF6E5 0%, #FFE3BE 100%);
+  border: 3px solid #fff;
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: 0 6px 16px var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 560px;
+}
+.cook-play-area {
+  position: relative;
+  width: min(88%, 720px);
+  aspect-ratio: 1 / 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  outline: none;
+}
+.cook-play-area:focus-visible {
+  box-shadow: 0 0 0 5px rgba(242,145,90,0.55);
+  border-radius: 50%;
+}
+.cook-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cook-tool {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: 86%;
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+}
+.cook-tool--pan {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 45%, #FFF2CE 0 35%, #F2B968 36% 51%, #C77B3D 52% 57%, #8B5532 58% 62%, transparent 63%),
+    radial-gradient(circle at 50% 50%, #3E4650 0 63%, #232A31 64% 70%, transparent 71%);
+  box-shadow: 0 16px 22px rgba(80,50,30,0.22);
+}
+.cook-tool--pan::after {
+  content: '';
+  position: absolute;
+  left: 74%;
+  top: 48%;
+  width: 45%;
+  height: 14%;
+  transform: rotate(17deg);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8A5C35 0%, #B98049 54%, #E5B176 100%);
+  box-shadow: inset 0 3px 0 rgba(255,255,255,0.28), 0 8px 12px rgba(80,50,30,0.2);
+}
+.cook-tool--pot {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 46%, #F9D276 0 34%, #E5A844 35% 47%, #D88E32 48% 52%, transparent 53%),
+    radial-gradient(circle at 50% 50%, #657783 0 62%, #3E4D56 63% 70%, transparent 71%);
+  box-shadow: 0 16px 22px rgba(50,55,60,0.24);
+}
+.cook-tool--pot::before,
+.cook-tool--pot::after {
+  content: '';
+  position: absolute;
+  top: 44%;
+  width: 16%;
+  height: 12%;
+  border-radius: 999px;
+  background: #465763;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.22);
+}
+.cook-tool--pot::before { left: 1%; }
+.cook-tool--pot::after { right: 1%; }
+.cooking-food {
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  transform: translate(-50%, -50%);
+  width: 42%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
+}
+.cooking-food img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 8px 9px rgba(0,0,0,0.22));
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.cooking-food[data-stage="0"] img {
+  filter: saturate(0.82) brightness(1.12) drop-shadow(0 8px 9px rgba(0,0,0,0.2));
+}
+.cooking-food[data-stage="1"] img {
+  filter: saturate(1.05) brightness(1.02) sepia(0.08) drop-shadow(0 8px 9px rgba(0,0,0,0.22));
+}
+.cooking-food[data-stage="2"] img {
+  filter: saturate(1.16) brightness(0.98) sepia(0.16) drop-shadow(0 8px 9px rgba(0,0,0,0.24));
+}
+.cooking-food.flip img {
+  animation: foodFlip 0.5s cubic-bezier(.2,.85,.24,1);
+}
+.cooking-food.drop img,
+.cooking-food.drop .cooking-food-fallback {
+  animation: foodDrop 0.52s cubic-bezier(.18,.85,.2,1.02);
+}
+.cooking-food-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  filter: drop-shadow(0 7px 8px rgba(0,0,0,0.2));
+}
+.cooking-food-fallback.show {
+  display: flex;
+}
+.cook-burst {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%) rotate(-7deg);
+  color: #D85687;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 3px 3px 0 #fff, 5px 5px 0 rgba(216,86,135,0.22);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.cook-burst.show {
+  animation: cookBurst 0.62s ease-out;
+}
+.cook-progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0 4px;
+}
+.cook-progress-dots span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFE3B6;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 0 rgba(140,100,60,0.18);
+}
+.cook-progress-dots span.done {
+  background: var(--green);
+}
+.cook-action-label {
+  text-align: center;
+  font-weight: 900;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+.oil-bubbles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58%;
+  height: 48%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+}
+.oil-bubbles i {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.88);
+  background: rgba(255,245,190,0.42);
+  animation: oilBubble 1.05s ease-in-out infinite;
+}
+.oil-bubbles i:nth-child(1) { left: 18%; top: 56%; animation-delay: 0s; }
+.oil-bubbles i:nth-child(2) { left: 32%; top: 28%; animation-delay: 0.18s; }
+.oil-bubbles i:nth-child(3) { left: 46%; top: 62%; animation-delay: 0.36s; }
+.oil-bubbles i:nth-child(4) { left: 60%; top: 24%; animation-delay: 0.08s; }
+.oil-bubbles i:nth-child(5) { left: 72%; top: 52%; animation-delay: 0.28s; }
+.oil-bubbles i:nth-child(6) { left: 40%; top: 44%; animation-delay: 0.48s; }
+@keyframes foodFlip {
+  0%   { transform: rotateY(0deg) translateY(0); }
+  42%  { transform: rotateY(88deg) translateY(-34px) scale(1.08); }
+  100% { transform: rotateY(180deg) translateY(0); }
+}
+@keyframes foodDrop {
+  0%   { transform: translateY(-150px) scale(0.72); opacity: 0; }
+  58%  { transform: translateY(10px) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes cookBurst {
+  0%   { transform: translateX(-50%) translateY(8px) rotate(-10deg) scale(0.5); opacity: 0; }
+  35%  { transform: translateX(-50%) translateY(-10px) rotate(-6deg) scale(1.22); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-22px) rotate(-2deg) scale(1.05); opacity: 0; }
+}
+@keyframes oilBubble {
+  0%   { transform: translateY(8px) scale(0.72); opacity: 0.15; }
+  40%  { opacity: 0.95; }
+  100% { transform: translateY(-20px) scale(1.18); opacity: 0; }
+}
+
+/* =========================================================
    コア要素（既存スタイル流用）
    ========================================================= */
 .panel-head {
@@ -528,9 +764,10 @@ body[data-screen="fridge"] .stage-wrap {
   justify-content: center;
   font-size: 0.78rem;
 }
-.panel--pick   .panel-pill { --pill-bg: var(--chip-green); }
-.panel--chop   .panel-pill { --pill-bg: var(--chip-orange); }
-.panel--fridge .panel-pill { --pill-bg: var(--chip-blue); }
+.panel--pick   .panel-pill, .panel-pill.panel--pick   { --pill-bg: var(--chip-green); }
+.panel--chop   .panel-pill, .panel-pill.panel--chop   { --pill-bg: var(--chip-orange); }
+.panel--fridge .panel-pill, .panel-pill.panel--fridge { --pill-bg: var(--chip-blue); }
+.panel--cook   .panel-pill, .panel-pill.panel--cook   { --pill-bg: var(--chip-pink); }
 
 /* ---------- ポノ吹き出し共通 ---------- */
 .pono-img {
@@ -1705,7 +1942,7 @@ body.layout-editor-on .endX-marker {
     <button type="button" class="flow-chip active" data-step="1"><span class="step-num">1</span><span class="step-icon">🥕</span><span>ざいりょうを えらぶ</span></button>
     <button type="button" class="flow-chip" data-step="2"><span class="step-num">2</span><span class="step-icon">✂️</span><span>トントン きる</span></button>
     <button type="button" class="flow-chip" data-step="3"><span class="step-num">3</span><span class="step-icon">🧊</span><span>れいぞうこに いれる</span></button>
-    <button type="button" class="flow-chip" data-step="4" aria-disabled="true" tabindex="-1"><span class="step-num">4</span><span class="step-icon">👨‍🍳</span><span>おかずを つくる</span></button>
+    <button type="button" class="flow-chip" data-step="4"><span class="step-num">4</span><span class="step-icon">👨‍🍳</span><span>おかずを つくる</span></button>
     <button type="button" class="flow-chip" data-step="5"><span class="step-num">5</span><span class="step-icon">🍱</span><span>おべんとうに つめる</span></button>
   </nav>
 </header>
@@ -1803,7 +2040,84 @@ body.layout-editor-on .endX-marker {
   </div>
 </section>
 
-<!-- ===================== 画面3: 冷蔵庫 ===================== -->
+<!-- ===================== 画面3: 焼く ===================== -->
+<section class="screen" data-screen="grill" id="screen-grill" tabindex="-1" aria-labelledby="screen-grill-heading" hidden>
+  <button type="button" class="screen-back" data-back="select">← もどる</button>
+
+  <div class="panel-head">
+    <span class="panel-pill panel--cook"><span class="pill-num">4</span>おかずを つくる</span>
+  </div>
+
+  <div class="cook-screen-wrap">
+    <div class="cook-main">
+      <div class="cook-play-area" id="grill-stage" role="button" tabindex="0" aria-label="フライパン">
+        <div class="cook-tool cook-tool--pan" aria-hidden="true"></div>
+        <div class="cook-burst" id="grill-burst">ジュッ！</div>
+        <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
+          <img class="cooking-food-img" id="grilling-food" alt="" draggable="false">
+          <div class="cooking-food-fallback" id="grilling-food-fallback" aria-hidden="true">🍳</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cook-side">
+      <div class="side-card">
+        <div class="cook-action-label" id="grill-action-label">フライパンで やこう</div>
+        <div class="cook-progress-dots" id="grill-progress-dots" aria-hidden="true">
+          <span></span><span></span>
+        </div>
+      </div>
+      <div class="side-card">
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-grill" alt="ポノ">
+          <div class="speech-bubble" id="speech-grill">タップで やいてみよう！</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 画面4: 揚げる ===================== -->
+<section class="screen" data-screen="fry" id="screen-fry" tabindex="-1" aria-labelledby="screen-fry-heading" hidden>
+  <button type="button" class="screen-back" data-back="select">← もどる</button>
+
+  <div class="panel-head">
+    <span class="panel-pill panel--cook"><span class="pill-num">4</span>おかずを つくる</span>
+  </div>
+
+  <div class="cook-screen-wrap">
+    <div class="cook-main">
+      <div class="cook-play-area" id="fry-stage" role="button" tabindex="0" aria-label="あげなべ">
+        <div class="cook-tool cook-tool--pot" aria-hidden="true"></div>
+        <div class="oil-bubbles" id="oil-bubbles" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="cook-burst" id="fry-burst">ジュワッ！</div>
+        <div class="cooking-food cooking-food--fry" id="frying-food-wrap" data-stage="0">
+          <img class="cooking-food-img" id="frying-food" alt="" draggable="false">
+          <div class="cooking-food-fallback" id="frying-food-fallback" aria-hidden="true">🍤</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cook-side">
+      <div class="side-card">
+        <div class="cook-action-label" id="fry-action-label">あぶらで あげよう</div>
+        <div class="cook-progress-dots" id="fry-progress-dots" aria-hidden="true">
+          <span></span><span></span>
+        </div>
+      </div>
+      <div class="side-card">
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-fry" alt="ポノ">
+          <div class="speech-bubble" id="speech-fry">いいいろに なったら とりだそう！</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 画面5: 冷蔵庫 ===================== -->
 <section class="screen" data-screen="fridge" id="screen-fridge" tabindex="-1" aria-labelledby="screen-fridge-heading" hidden>
   <button type="button" class="screen-back" data-back="select">← もどる</button>
 
@@ -1900,6 +2214,7 @@ body.layout-editor-on .endX-marker {
   // ========== 設定 ==========
   const STORAGE_KEY = 'bentoUnlockedIngredients';
   const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
+  const RECIPE_STORAGE_KEY = 'bentoUnlockedRecipes';
 
   // 材料定義
   //
@@ -1940,6 +2255,16 @@ body.layout-editor-on .endX-marker {
       // chopCount = 切り口の数 (モデル B)。 startX → endX の間を等分して切る。
       //   5 = 5 タップで 5 箇所カット。 千切りなら 15-20、 ハンバーグこねなら 3 等。
       chopCount: 5, implemented: true,
+      cookingActions: [
+        { type: 'chop' },
+        { type: 'grill', label: 'フライパンで いためよう', stages: 2 },
+      ],
+      cookImages: {
+        grill: {
+          stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'kinpira/kinpira_mid'],
+          fallback: '../assets/images/Bento_parts/ninjin_ingen2.png',
+        },
+      },
       imageBase: 'carrot/carrot_001',
       imagePieces: {
         dir: 'carrot',
@@ -1970,6 +2295,9 @@ body.layout-editor-on .endX-marker {
     {
       id: 'cabbage', name: 'キャベツ', emoji: '🥬', piece: '🥬',
       chopCount: 12, implemented: true,
+      cookingActions: [
+        { type: 'chop' },
+      ],
       imageBase: 'cabbage/cabbage_001',
       imagePieces: {
         dir: 'cabbage',
@@ -2002,28 +2330,132 @@ body.layout-editor-on .endX-marker {
         ingredientWidth_pct: 46,
       },
     },
-    { id: 'wiener',    name: 'ウインナー',   emoji: '🌭', piece: '🌭', chopCount: 4, implemented: false },
-    { id: 'egg',       name: 'たまご',       emoji: '🥚', piece: '🍳', chopCount: 4, implemented: false },
-    { id: 'broccoli',  name: 'ブロッコリー', emoji: '🥦', piece: '🥦', chopCount: 3, implemented: false },
-    { id: 'potato',    name: 'じゃがいも',   emoji: '🥔', piece: '🥔', chopCount: 5, implemented: false },
-    { id: 'apple',     name: 'りんご',       emoji: '🍎', piece: '🍎', chopCount: 5, implemented: false },
+    {
+      id: 'egg', name: 'たまご', emoji: '🥚', piece: '🍳',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'grill', label: 'ふんわり やこう', stages: 2 },
+      ],
+      cookImages: {
+        grill: {
+          stages: ['egg/egg_001_raw', 'egg/egg_002_mid', 'egg/egg_003_done'],
+          fallback: '../assets/images/Bento_parts/tamagoyaki2.png',
+        },
+      },
+    },
+    {
+      id: 'wiener', name: 'ウインナー', emoji: '🌭', piece: '🌭',
+      chopCount: 4, implemented: true,
+      cookingActions: [
+        { type: 'chop' },
+        { type: 'grill', label: 'タコさんを やこう', stages: 2 },
+      ],
+      cookImages: {
+        grill: {
+          stages: ['wiener/wiener_001_raw', 'wiener/wiener_002_cut', 'wiener/wiener_003_done'],
+          fallback: '../assets/images/Bento_parts/tako_wiener2.png',
+        },
+      },
+      chopMechanics: {
+        startX_pct: 78, endX_pct: 22,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 52,
+        ingredientTop_pct: 42,
+        ingredientWidth_pct: 52,
+      },
+    },
+    {
+      id: 'mince_patty', name: 'ハンバーグ', emoji: '🍖', piece: '🍖',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'grill', label: 'じゅうじゅう やこう', stages: 2 },
+      ],
+      cookImages: {
+        grill: {
+          stages: ['mince_patty/patty_001_raw', 'mince_patty/patty_002_mid', 'mince_patty/patty_003_done'],
+          fallback: '../assets/images/Bento_parts/hamburg2.png',
+        },
+      },
+    },
+    {
+      id: 'salmon', name: 'さけ', emoji: '🐟', piece: '🐟',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'grill', label: 'こんがり やこう', stages: 2 },
+      ],
+      cookImages: {
+        grill: {
+          stages: ['salmon/salmon_001_raw', 'salmon/salmon_002_mid', 'salmon/salmon_003_done'],
+          fallback: '../assets/images/Bento_parts/yakizake2.png',
+        },
+      },
+    },
+    {
+      id: 'chicken_marinated', name: 'からあげ', emoji: '🍗', piece: '🍗',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'fry', label: 'カラッと あげよう', stages: 2 },
+      ],
+      cookImages: {
+        fry: {
+          stages: ['chicken/chicken_001_raw', 'chicken/chicken_002_mid', 'chicken/chicken_003_done'],
+          fallback: '../assets/images/Bento_parts/karaage2.png',
+        },
+      },
+    },
+    {
+      id: 'shrimp_breaded', name: 'エビフライ', emoji: '🍤', piece: '🍤',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'fry', label: 'サクッと あげよう', stages: 2 },
+      ],
+      cookImages: {
+        fry: {
+          stages: ['shrimp/shrimp_001_raw', 'shrimp/shrimp_002_mid', 'shrimp/shrimp_003_done'],
+          fallback: '../assets/images/Bento_parts/ebi_fry2.png',
+        },
+      },
+    },
+    {
+      id: 'korokke_raw', name: 'コロッケ', emoji: '🟤', piece: '🟤',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'fry', label: 'きつねいろに あげよう', stages: 2 },
+      ],
+      cookImages: {
+        fry: {
+          stages: ['korokke/korokke_001_raw', 'korokke/korokke_002_mid', 'korokke/korokke_003_done'],
+          fallback: '../assets/images/Bento_parts/korokke2.png',
+        },
+      },
+    },
   ];
 
-  // 材料→解放されるレシピ（プレースホルダ）
+  // 材料→解放されるレシピ
   const RECIPES = [
-    { id: 'ninjin_ingen', name: 'にんじん いんげん', img: '../assets/images/Bento_parts/ninjin_ingen2.png', needs: ['carrot'] },
-    { id: 'kinpira',      name: 'きんぴら ごぼう',   img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
-    { id: 'chikuzenni',   name: 'ちくぜんに',        img: '../assets/images/Bento_parts/chikuzenni.png',    needs: ['carrot'] },
-    { id: 'tako_wiener',  name: 'タコさん ウインナー', img: '../assets/images/Bento_parts/tako_wiener2.png', needs: ['wiener'] },
-    { id: 'tamagoyaki',   name: 'たまごやき',          img: '../assets/images/Bento_parts/tamagoyaki2.png',  needs: ['egg'] },
-    { id: 'broccoli',     name: 'ブロッコリー',        img: '../assets/images/Bento_parts/broccoli2.png',    needs: ['broccoli'] },
+    { id: 'tamagoyaki',   name: 'たまごやき',        img: '../assets/images/Bento_parts/tamagoyaki2.png',   needs: ['egg'] },
+    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty'] },
+    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'] },
+    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'] },
+    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/Bento_parts/karaage2.png',      needs: ['chicken_marinated'] },
+    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'] },
+    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'] },
+    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.png', needs: ['carrot'] },
+    { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
   ];
 
   // ========== State ==========
   const state = {
     unlocked: loadUnlocked(),
     newBadges: loadNewBadges(),
+    unlockedRecipes: loadUnlockedRecipes(),
     current: null,
+    actionIndex: 0,
+    cookProgress: 0,
+    cookAnimating: false,
+    fryReady: false,
     chopProgress: 0,
     combo: 0,
     cutting: false,
@@ -2044,6 +2476,7 @@ body.layout-editor-on .endX-marker {
     state.awaitingImpact = false;
     state.knifeAnimating = false;
     state.queuedChopTaps = 0;
+    state.cookAnimating = false;
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
       try { clearTimeout(id); } catch (e) { /* noop */ }
@@ -2085,6 +2518,21 @@ body.layout-editor-on .endX-marker {
       localStorage.setItem(NEW_BADGE_KEY, JSON.stringify(Array.from(state.newBadges)));
     } catch (e) { /* noop */ }
   }
+  function loadUnlockedRecipes() {
+    try {
+      const raw = localStorage.getItem(RECIPE_STORAGE_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? new Set(arr) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  }
+  function saveUnlockedRecipes() {
+    try {
+      localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(Array.from(state.unlockedRecipes)));
+    } catch (e) { /* noop */ }
+  }
 
   // ========== DOM refs ==========
   const els = {
@@ -2116,6 +2564,26 @@ body.layout-editor-on .endX-marker {
     bowl:          document.getElementById('bowl'),
     speechChop:    document.getElementById('speech-chop'),
 
+    // grill screen
+    grillStage:    document.getElementById('grill-stage'),
+    grillingFoodWrap: document.getElementById('grilling-food-wrap'),
+    grillingFood:  document.getElementById('grilling-food'),
+    grillingFoodFallback: document.getElementById('grilling-food-fallback'),
+    grillBurst:    document.getElementById('grill-burst'),
+    grillDots:     document.getElementById('grill-progress-dots'),
+    grillActionLabel: document.getElementById('grill-action-label'),
+    speechGrill:   document.getElementById('speech-grill'),
+
+    // fry screen
+    fryStage:      document.getElementById('fry-stage'),
+    fryingFoodWrap: document.getElementById('frying-food-wrap'),
+    fryingFood:    document.getElementById('frying-food'),
+    fryingFoodFallback: document.getElementById('frying-food-fallback'),
+    fryBurst:      document.getElementById('fry-burst'),
+    fryDots:       document.getElementById('fry-progress-dots'),
+    fryActionLabel: document.getElementById('fry-action-label'),
+    speechFry:     document.getElementById('speech-fry'),
+
     // fridge screen
     fridge:        document.getElementById('fridge'),
     shelves:       document.getElementById('fridge-shelves'),
@@ -2142,6 +2610,8 @@ body.layout-editor-on .endX-marker {
     screens: {
       select: document.getElementById('screen-select'),
       chop:   document.getElementById('screen-chop'),
+      grill:  document.getElementById('screen-grill'),
+      fry:    document.getElementById('screen-fry'),
       fridge: document.getElementById('screen-fridge'),
     },
   };
@@ -2150,6 +2620,8 @@ body.layout-editor-on .endX-marker {
   const SCREEN_ANNOUNCE = {
     select: 'ざいりょうを えらぶ がめんに なったよ',
     chop:   'トントン きる がめんに なったよ',
+    grill:  'フライパンで やく がめんに なったよ',
+    fry:    'あぶらで あげる がめんに なったよ',
     fridge: 'れいぞうこ がめんに なったよ',
   };
 
@@ -2157,6 +2629,7 @@ body.layout-editor-on .endX-marker {
   function init() {
     buildIngredientBar();
     renderFridge();
+    refreshUnlockedRecipes();
     renderRecipes();
     showScreen('select', { skipFade: true });
 
@@ -2227,6 +2700,25 @@ body.layout-editor-on .endX-marker {
         onBoardTap();
       }
     });
+
+    if (els.grillStage) {
+      els.grillStage.addEventListener('click', onGrillTap);
+      els.grillStage.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          onGrillTap();
+        }
+      });
+    }
+    if (els.fryStage) {
+      els.fryStage.addEventListener('click', onFryTap);
+      els.fryStage.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          onFryTap();
+        }
+      });
+    }
 
     // フローチップタップ → 直接画面遷移
     [...els.flowChips.querySelectorAll('.flow-chip')].forEach(chip => {
@@ -2306,7 +2798,7 @@ body.layout-editor-on .endX-marker {
     // （chop 完了直後に「← もどる」を押した時の強制遷移を防止）
     clearPendingTimers();
 
-    const stepMap = { select: 1, chop: 2, fridge: 3 };
+    const stepMap = { select: 1, chop: 2, fridge: 3, grill: 4, fry: 4 };
     const targetStep = stepMap[name] || 1;
 
     const swap = () => {
@@ -2397,11 +2889,28 @@ body.layout-editor-on .endX-marker {
         setSpeech('まずは ざいりょうを えらんでね！');
         showScreen('select');
       } else {
-        showScreen('chop');
+        const actions = getIngredientActions(state.current);
+        const chopIndex = actions.findIndex(function (action) { return action.type === 'chop'; });
+        if (chopIndex >= 0) {
+          state.actionIndex = chopIndex;
+          beginCurrentAction();
+        } else {
+          setSpeech(state.current.name + 'は そのまま おかずづくりへ いくよ！');
+          state.actionIndex = 0;
+          beginCurrentAction();
+        }
       }
     }
     else if (step === 3) showScreen('fridge');
-    else if (step === 4) { /* Phase 2 で実装 */ }
+    else if (step === 4) {
+      const action = getCurrentAction();
+      if (action && (action.type === 'grill' || action.type === 'fry')) {
+        showScreen(action.type);
+      } else {
+        setSpeech('ざいりょうを えらぶと おかずづくりが はじまるよ！');
+        showScreen(state.unlocked.size ? 'fridge' : 'select');
+      }
+    }
     else if (step === 5) location.href = './index.html';
   }
 
@@ -2472,19 +2981,244 @@ body.layout-editor-on .endX-marker {
       return;
     }
     state.current = ing;
+    state.actionIndex = 0;
+    state.cookProgress = 0;
+    state.fryReady = false;
     state.chopProgress = 0;
     state.combo = 0;
     state.awaitingImpact = false;
-    loadIngredient(ing);
-    els.emptyHint.style.display = 'none';
     highlightSelected(ing.id);
-    clearBowl();
+    beginCurrentAction();
+  }
+
+  function getIngredientActions(ing) {
+    if (!ing) return [];
+    if (Array.isArray(ing.cookingActions) && ing.cookingActions.length) return ing.cookingActions;
+    return ing.chopCount ? [{ type: 'chop' }] : [];
+  }
+
+  function getCurrentAction() {
+    const actions = getIngredientActions(state.current);
+    return actions[state.actionIndex] || null;
+  }
+
+  function getNextAction(ing) {
+    const actions = getIngredientActions(ing || state.current);
+    return actions[state.actionIndex + 1] || null;
+  }
+
+  function beginCurrentAction() {
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!ing || !action) return;
+
+    clearPendingTimers();
+    state.cutting = false;
+    state.awaitingImpact = false;
+    state.cookAnimating = false;
+
+    if (action.type === 'chop') {
+      state.chopProgress = 0;
+      state.combo = 0;
+      state.cookProgress = 0;
+      state.fryReady = false;
+      loadIngredient(ing);
+      els.emptyHint.style.display = 'none';
+      clearBowl();
+      hideCombo();
+      updateProgress();
+      setSpeech(ing.name + 'を トントン してみよう！', 'chop');
+      setProgressCaption('トントンしてみよう！');
+      showScreen('chop');
+      return;
+    }
+
+    if (action.type === 'grill' || action.type === 'fry') {
+      beginCookAction(ing, action);
+    }
+  }
+
+  function beginCookAction(ing, action) {
+    state.chopProgress = 0;
+    state.combo = 0;
+    state.cookProgress = 0;
+    state.fryReady = false;
+    state.cookAnimating = false;
     hideCombo();
-    updateProgress();
-    setSpeech(ing.name + 'を トントン してみよう！');
-    setProgressCaption('トントンしてみよう！');
-    // chop 画面へ遷移
-    showScreen('chop');
+    updateCookView(action.type, 0, false);
+    const label = action.label || (action.type === 'fry' ? 'あぶらで あげよう' : 'フライパンで やこう');
+    if (action.type === 'grill') {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = label;
+      setSpeech(ing.name + 'を やいてみよう！', 'grill');
+      showScreen('grill');
+    } else {
+      if (els.fryActionLabel) els.fryActionLabel.textContent = label;
+      setSpeech(ing.name + 'を そっと いれるよ！', 'fry');
+      showScreen('fry');
+      state.pendingTimers.push(setTimeout(function () {
+        if (state.current !== ing || getCurrentAction() !== action) return;
+        if (els.fryingFoodWrap) {
+          els.fryingFoodWrap.classList.remove('drop');
+          void els.fryingFoodWrap.offsetWidth;
+          els.fryingFoodWrap.classList.add('drop');
+        }
+        showCookBurst('fry');
+      }, 320));
+      state.pendingTimers.push(setTimeout(function () {
+        if (state.current !== ing || getCurrentAction() !== action) return;
+        state.cookProgress = Math.max(state.cookProgress, 1);
+        updateCookView('fry', 1, true);
+        setSpeech('ジュージュー いいおと！', 'fry');
+      }, 520));
+      state.pendingTimers.push(setTimeout(function () {
+        if (state.current !== ing || getCurrentAction() !== action) return;
+        state.cookProgress = 2;
+        state.fryReady = true;
+        updateCookView('fry', 2, true);
+        setSpeech('きつねいろ！ タップで とりだそう！', 'fry');
+      }, 1500));
+    }
+  }
+
+  function getPrimaryRecipeForIngredient(ing) {
+    if (!ing) return null;
+    return RECIPES.find(function (rec) {
+      return (rec.needs || []).indexOf(ing.id) !== -1;
+    }) || null;
+  }
+
+  function cookingAssetPath(stagePath) {
+    if (!stagePath) return '';
+    if (/^(https?:)?\/\//.test(stagePath) || stagePath.indexOf('../') === 0 || stagePath.indexOf('/') === 0) {
+      return stagePath;
+    }
+    return '../assets/images/bento/cooking/' + stagePath + '.png';
+  }
+
+  function getCookImageConfig(ing, action) {
+    if (!ing || !action || !ing.cookImages) return null;
+    return ing.cookImages[action.type] || null;
+  }
+
+  function getCookStageSrc(ing, action, stage) {
+    const cfg = getCookImageConfig(ing, action);
+    if (cfg && Array.isArray(cfg.stages) && cfg.stages[stage]) {
+      return cookingAssetPath(cfg.stages[stage]);
+    }
+    const fallback = getCookFallbackSrc(ing, action);
+    return fallback || '';
+  }
+
+  function getCookFallbackSrc(ing, action) {
+    const cfg = getCookImageConfig(ing, action);
+    if (cfg && cfg.fallback) return cfg.fallback;
+    const rec = getPrimaryRecipeForIngredient(ing);
+    return rec ? rec.img : '';
+  }
+
+  function updateCookView(type, stage, animate) {
+    const ing = state.current;
+    const action = getCurrentAction();
+    const safeStage = Math.max(0, Math.min(2, stage || 0));
+    const wrap = type === 'fry' ? els.fryingFoodWrap : els.grillingFoodWrap;
+    const img = type === 'fry' ? els.fryingFood : els.grillingFood;
+    const fallback = type === 'fry' ? els.fryingFoodFallback : els.grillingFoodFallback;
+    if (!wrap || !img || !fallback) return;
+
+    wrap.dataset.stage = String(safeStage);
+    wrap.classList.remove('flip', 'drop');
+    fallback.textContent = (ing && (ing.piece || ing.emoji)) || (type === 'fry' ? '🍤' : '🍳');
+    fallback.classList.remove('show');
+    img.style.display = '';
+    img.alt = ing ? ing.name : '';
+
+    const primarySrc = getCookStageSrc(ing, action, safeStage);
+    const fallbackSrc = getCookFallbackSrc(ing, action);
+    img.onerror = function () {
+      img.onerror = function () {
+        img.style.display = 'none';
+        fallback.classList.add('show');
+      };
+      if (fallbackSrc && img.getAttribute('src') !== fallbackSrc) {
+        img.src = fallbackSrc;
+      } else {
+        img.style.display = 'none';
+        fallback.classList.add('show');
+      }
+    };
+    if (primarySrc) {
+      img.src = primarySrc;
+    } else if (fallbackSrc) {
+      img.src = fallbackSrc;
+    } else {
+      img.style.display = 'none';
+      fallback.classList.add('show');
+    }
+
+    updateCookDots(type, safeStage);
+    if (animate) {
+      wrap.classList.add(type === 'fry' && safeStage === 0 ? 'drop' : 'flip');
+      showCookBurst(type);
+    }
+  }
+
+  function updateCookDots(type, stage) {
+    const dots = type === 'fry' ? els.fryDots : els.grillDots;
+    if (!dots) return;
+    [...dots.querySelectorAll('span')].forEach(function (dot, idx) {
+      dot.classList.toggle('done', idx < stage);
+    });
+  }
+
+  function showCookBurst(type) {
+    const burst = type === 'fry' ? els.fryBurst : els.grillBurst;
+    if (!burst) return;
+    burst.classList.remove('show');
+    void burst.offsetWidth;
+    burst.classList.add('show');
+  }
+
+  function onGrillTap() {
+    if (state.cutting || state.transitioning || state.cookAnimating) return;
+    if (state.currentScreen !== 'grill') return;
+    const action = getCurrentAction();
+    if (!state.current || !action || action.type !== 'grill') return;
+    state.cookAnimating = true;
+    state.cookProgress = Math.min(2, state.cookProgress + 1);
+    updateCookView('grill', state.cookProgress, true);
+    if (state.cookProgress < 2) {
+      setSpeech('いいかんじ！ もういちど やこう！', 'grill');
+      state.pendingTimers.push(setTimeout(function () {
+        state.cookAnimating = false;
+      }, 520));
+      return;
+    }
+    setSpeech('こんがり できたよ！', 'grill');
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookAnimating = false;
+      completeCurrentAction(state.current);
+    }, 560));
+  }
+
+  function onFryTap() {
+    if (state.cutting || state.transitioning || state.cookAnimating) return;
+    if (state.currentScreen !== 'fry') return;
+    const action = getCurrentAction();
+    if (!state.current || !action || action.type !== 'fry') return;
+    if (state.cookProgress < 2) {
+      state.cookProgress = Math.min(2, state.cookProgress + 1);
+      if (state.cookProgress >= 2) state.fryReady = true;
+      updateCookView('fry', state.cookProgress, true);
+      setSpeech(state.fryReady ? 'きつねいろ！ タップで とりだそう！' : 'ジュージュー いいおと！', 'fry');
+      return;
+    }
+    state.cookAnimating = true;
+    showCookBurst('fry');
+    setSpeech('カラッと できたよ！', 'fry');
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookAnimating = false;
+      completeCurrentAction(state.current);
+    }, 420));
   }
 
   // loadIngredient: まな板上の食材本体描画 + 包丁 X/Y の初期化を一手に。
@@ -3779,6 +4513,36 @@ body.layout-editor-on .endX-marker {
 
   // ========== 完成 ==========
   function completeIngredient(ing) {
+    completeCurrentAction(ing);
+  }
+
+  function completeCurrentAction(ing) {
+    const nextAction = getNextAction(ing);
+    if (nextAction) {
+      state.awaitingImpact = false;
+      state.cutting = true;
+      state.cookAnimating = false;
+      if (els.progressCap) setProgressCaption('できあがり！');
+      clearPendingTimers();
+      const nextText = nextAction.type === 'fry'
+        ? 'つぎは あぶらで あげよう！'
+        : 'つぎは フライパンで やこう！';
+      setSpeech(nextText);
+      showToast(nextText);
+      state.pendingTimers.push(setTimeout(function () {
+        flySparklesToStep(4);
+      }, 120));
+      state.pendingTimers.push(setTimeout(function () {
+        state.actionIndex += 1;
+        state.cutting = false;
+        beginCurrentAction();
+      }, 760));
+      return;
+    }
+    finalizeIngredientToFridge(ing);
+  }
+
+  function finalizeIngredientToFridge(ing) {
     state.awaitingImpact = false;
     state.cutting = true;
     setProgressCaption('できあがり！');
@@ -3807,21 +4571,27 @@ body.layout-editor-on .endX-marker {
     }, 1400));
   }
 
-  function flySparklesToFridge() {
+  function getSparkleSourceRect() {
+    if (state.currentScreen === 'grill' && els.grillingFoodWrap) return els.grillingFoodWrap.getBoundingClientRect();
+    if (state.currentScreen === 'fry' && els.fryingFoodWrap) return els.fryingFoodWrap.getBoundingClientRect();
+    if (els.bowl) return els.bowl.getBoundingClientRect();
+    return { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 1, height: 1 };
+  }
+
+  function flySparklesToStep(step) {
     // sparkle は document.body に直接 append する設計
     // → .stage の transform:scale を継承しない
     // → getBoundingClientRect() の返り値（実画面ピクセル座標）と
     //    sparkle の position:fixed left/top（実ピクセル）が一致する
     // 将来 .stage 内に移動する場合は座標補正が必要になる点に注意
-    const bowlRect = els.bowl.getBoundingClientRect();
-    // 冷蔵庫はまだ画面に出ていないので、画面右上の chip 位置に向ける
-    const fridgeChip = els.flowChips.querySelector('.flow-chip[data-step="3"]');
-    const fridgeRect = fridgeChip ? fridgeChip.getBoundingClientRect()
+    const startRect = getSparkleSourceRect();
+    const targetChip = els.flowChips.querySelector('.flow-chip[data-step="' + step + '"]');
+    const targetRect = targetChip ? targetChip.getBoundingClientRect()
                                   : { left: window.innerWidth - 80, top: 20, width: 40, height: 40 };
-    const startX = bowlRect.left + bowlRect.width / 2;
-    const startY = bowlRect.top + bowlRect.height / 2;
-    const endX = fridgeRect.left + fridgeRect.width / 2;
-    const endY = fridgeRect.top + fridgeRect.height / 2;
+    const startX = startRect.left + startRect.width / 2;
+    const startY = startRect.top + startRect.height / 2;
+    const endX = targetRect.left + targetRect.width / 2;
+    const endY = targetRect.top + targetRect.height / 2;
     for (let i = 0; i < 6; i++) {
       const s = document.createElement('div');
       s.className = 'sparkle';
@@ -3836,6 +4606,10 @@ body.layout-editor-on .endX-marker {
     }
   }
 
+  function flySparklesToFridge() {
+    flySparklesToStep(3);
+  }
+
   function unlockIngredient(ing) {
     const wasNew = !state.unlocked.has(ing.id);
     state.unlocked.add(ing.id);
@@ -3844,10 +4618,25 @@ body.layout-editor-on .endX-marker {
       state.newBadges.add(ing.id);
       saveNewBadges();
     }
+    refreshUnlockedRecipes();
     renderFridge();
     renderRecipes();
     const btn = els.bar.querySelector('[data-id="' + ing.id + '"]');
     if (btn) btn.classList.add('unlocked');
+  }
+
+  function refreshUnlockedRecipes() {
+    let changed = false;
+    RECIPES.forEach(function (rec) {
+      const ready = (rec.needs || []).every(function (id) {
+        return state.unlocked.has(id);
+      });
+      if (ready && !state.unlockedRecipes.has(rec.id)) {
+        state.unlockedRecipes.add(rec.id);
+        changed = true;
+      }
+    });
+    if (changed) saveUnlockedRecipes();
   }
 
   function renderFridge() {
@@ -3900,7 +4689,7 @@ body.layout-editor-on .endX-marker {
     els.recipesGrid.innerHTML = '';
     updateRecipesHeading();
     RECIPES.forEach(rec => {
-      const isUnlocked = rec.needs.every(id => state.unlocked.has(id));
+      const isUnlocked = state.unlockedRecipes.has(rec.id) || rec.needs.every(id => state.unlocked.has(id));
       const card = document.createElement('div');
       card.className = 'recipe-card ' + (isUnlocked ? 'unlocked' : 'locked');
 
@@ -3958,6 +4747,10 @@ body.layout-editor-on .endX-marker {
     // completeIngredient で予約された画面ジャンプ等を全部キャンセル
     clearPendingTimers();
     state.current = null;
+    state.actionIndex = 0;
+    state.cookProgress = 0;
+    state.cookAnimating = false;
+    state.fryReady = false;
     state.chopProgress = 0;
     state.combo = 0;
     state.cutting = false;
@@ -3984,6 +4777,12 @@ body.layout-editor-on .endX-marker {
     els.progress.style.width = '0%';
     hideCombo();
     clearBowl();
+    updateCookDots('grill', 0);
+    updateCookDots('fry', 0);
+    if (els.grillingFood) els.grillingFood.removeAttribute('src');
+    if (els.fryingFood) els.fryingFood.removeAttribute('src');
+    if (els.grillingFoodFallback) els.grillingFoodFallback.classList.remove('show');
+    if (els.fryingFoodFallback) els.fryingFoodFallback.classList.remove('show');
     setProgressCaption('トントンしてみよう！');
     highlightSelected(null);
   }
@@ -4002,6 +4801,14 @@ body.layout-editor-on .endX-marker {
       els.speechChop.textContent = text;
       return;
     }
+    if (target === 'grill' && els.speechGrill) {
+      els.speechGrill.textContent = text;
+      return;
+    }
+    if (target === 'fry' && els.speechFry) {
+      els.speechFry.textContent = text;
+      return;
+    }
     if (target === 'fridge' && els.speechFridge) {
       els.speechFridge.textContent = text;
       return;
@@ -4009,6 +4816,8 @@ body.layout-editor-on .endX-marker {
     // フォールバック: 全部に書く（初期化時 / 画面ミスマッチ時）
     if (els.speechSelect) els.speechSelect.textContent = text;
     if (els.speechChop) els.speechChop.textContent = text;
+    if (els.speechGrill) els.speechGrill.textContent = text;
+    if (els.speechFry) els.speechFry.textContent = text;
     if (els.speechFridge) els.speechFridge.textContent = text;
   }
 
