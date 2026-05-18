@@ -363,7 +363,7 @@ const QUIZLAND_QUESTIONS = {
       img:'stage_trivia_rabbit_no_ears_face_crop.png', framed:true,
       img_answer:'stage_trivia_rabbit.png',
       q:'うさぎの みみは どんな かたち？',
-      answer:1, choices:['まるくて みじかい','ながくて たっている','まるい ちいさい','とがって ちいさい'] ,
+      answer:1, choices:['まるくて みじかい','ながくて たっている','まるくて ちいさい','とがっていて ちいさい'] ,
       detail:'うさぎは ながい みみで とおくの おとを よく きけるんだ！'},
     // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
     { level:1, type:'trivia', category:'trivia',
