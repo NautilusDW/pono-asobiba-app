@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:48-bento-kitchen-chop-layout] **Done** — `bento/kitchen.html` の chop メカニクスを v430 として修正。`LayoutSystem.onReady` と食材ロード時に saved-layout 由来の hidden marker 値を明示再同期し、`.knife|0@id` の ty を直読みして chopY を計算、包丁 X seed を同期後に再適用。最終タップは `chopSnapshot >= total` でも振り下ろしを抑止。`sw.js` は CACHE_VERSION 430 にバンプ。inline script / sw.js の Node 構文チェック済み、staging 実機確認は未実施。 (by Codex)
+
 - 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「子鹿の角なし、動物たちの毛並みをもっと柔らかく。1枚目からやり直し」を受け、Cut 1 soft-fur raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_soft_fur_no_antlers_raw.png` に納品 (`1661x947` PNG、RGB、alpha なし、約 2.6MB)。Pono が立って歓迎、きつね/あらいぐま/子鹿/うさぎがラグへ集まる構図、閉じた風景パズル箱 + 小プレビューカードのみ。子鹿は角/角の突起なし、全体の毛先を丸く柔らかめに修正、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
 - 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「まだトゲトゲしい、毛表現を間引く、白い線をなくす、歓迎方向が逆」を受け、Cut 1 minimal-fur/welcome-fixed v2 raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_minimal_fur_welcome_fixed_v2_raw.png` に納品 (`1660x947` PNG、RGB、alpha なし、約 2.6MB)。Pono は友だち側へ体を向けて招くポーズに変更、動物の毛表現は個別の白線/細かい毛束を大きく減らして面の陰影中心に修正。子鹿は角/角の突起なし、閉じた風景箱 + 小カードのみ、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)
 - 2026-05-16 - [batch:45-puzzle-opening-soft-fur-cut1] **Done** — user 指摘「毛が短い、ラグ模様のようなプロシージャルノイズに見える、ペンで一本ずつ描いた線に見えない、Pono が太って見える」を受け、Cut 1 long-handdrawn-fur/slim-Pono v4 raw を `tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_long_handdrawn_fur_slim_pono_v4_raw.png` に納品 (`1672x941` PNG、RGB、alpha なし、約 2.8MB)。短い粒状テクスチャより長めの同系色ストロークへ寄せ、Pono の胴回り/腕の膨らみを抑えた。Pono は友だち側を招く向き、子鹿は角/角突起なし、閉じた風景箱 + 小カードのみ、完成パズル/ピース/文字/UIなしを目視確認済。 (by Codex)

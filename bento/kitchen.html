@@ -1583,6 +1583,13 @@ body.layout-editor-on .endX-marker {
     //   per-ingredient と読み替えること。
     perQuestionSelectors: ['.knife', '.chopY-marker', '.ingredient-bbox-marker', '.startX-marker', '.endX-marker'],
     ghPath: 'bento/kitchen/saved-layout.json',
+    // v430: saved-layout fetch が食材ロードより後に完了した場合でも、
+    // hidden marker の保存値を通常プレイ用 chopMechanics へ再同期する。
+    onReady: function () {
+      if (typeof window.BENTO_KITCHEN_ON_LAYOUT_READY === 'function') {
+        window.BENTO_KITCHEN_ON_LAYOUT_READY();
+      }
+    },
   };
 </script>
 <script src="../common/layout/editor-bootstrap.js" defer></script>
@@ -2111,6 +2118,22 @@ body.layout-editor-on .endX-marker {
     attachEditorModeObserver();
   }
 
+  // v430: LayoutSystem の fetch/apply 完了後に、現在の食材へ saved-layout 由来の
+  // marker 値を明示的に反映する。通常プレイでは marker が display:none なので、
+  // LayoutApplier が style を書いただけでは sync* の getBoundingClientRect 経路が動かない。
+  window.BENTO_KITCHEN_ON_LAYOUT_READY = function () {
+    if (!state.current) return;
+    reapplyKnifeLayout();
+    applyIngredientBboxFromSavedLayout(state.current);
+    seedIngredientBboxFromOnBoard();
+    seedStartXMarkerFromMechanics();
+    seedEndXMarkerFromMechanics();
+    syncMechanicsFromMarkers(state.current);
+    if (state.chopProgress === 0) {
+      seedKnifeXFromMechanics(state.current);
+    }
+  };
+
   // ========== 画面切替 ==========
   function showScreen(name, opts) {
     opts = opts || {};
@@ -2329,10 +2352,7 @@ body.layout-editor-on .endX-marker {
       //   空文字なら CSS Sheet 由来の .knife { transition: left 0.18s linear; } に戻る。
       els.knife.style.transition = 'none';
       if (els.knifeInner) els.knifeInner.style.transition = 'none';
-      var KNIFE_WIDTH_PCT_OF_BOARD_SEED = 70; // .knife { width: 70%; } と同期
-      var seedTipOffset = m.bladeTipOffsetX_pct || 0;
-      var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
-      els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
+      seedKnifeXFromMechanics(ing);
       // [v419/426] loadIngredient (seed) では .knife の style.transform は触らない
       //   (editor 由来 translate(tx, ty) を保護)。 chop 中だけ playChopAnim が
       //   X 成分を捨て Y 成分 (ty) のみ残す translate(0, ty) に書き換える。
@@ -2354,6 +2374,11 @@ body.layout-editor-on .endX-marker {
     // ingredientLeft_pct / ingredientTop_pct / ingredientWidth_pct から反映。
     // null / undefined の場合は CSS デフォルト (left:50%, top:42%, width:74%) に任せる。
     applyIngredientPlacement(ing);
+
+    // v430: current qid (= ingredient id) で LayoutApplier を先に再適用する。
+    // .knife._ty / marker の inline w,h,tx,ty が揃った状態で
+    // apply*FromSavedLayout / sync* が同じ座標系を読めるようにする。
+    reapplyKnifeLayout();
 
     // [v428] applyIngredientPlacement 直後に saved-layout の .ingredient-bbox-marker
     //   {tx, ty, w, h} を直読みして ingredient-on-board.{left, top, width} を % で上書き。
@@ -2401,6 +2426,7 @@ body.layout-editor-on .endX-marker {
     // ※ 順序: 先に applyIngredientPlacement (上記)、 後に syncMechanicsFromMarkers
     //   とすることで editor 編集済みなら最終的に marker 値が勝つ。
     syncMechanicsFromMarkers(ing);
+    seedKnifeXFromMechanics(ing);
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         // [v428] board.getBoundingClientRect が安定した 2-frame 後に saved-layout 由来の
@@ -2413,6 +2439,9 @@ body.layout-editor-on .endX-marker {
         seedStartXMarkerFromMechanics();
         seedEndXMarkerFromMechanics();
         syncMechanicsFromMarkers(ing);
+        if (state.current === ing && state.chopProgress === 0) {
+          seedKnifeXFromMechanics(ing);
+        }
       });
     });
 
@@ -2471,6 +2500,17 @@ body.layout-editor-on .endX-marker {
         }
       );
     } catch (e) { /* noop */ }
+  }
+
+  // .knife の left は「包丁 wrapper 中央 X」なので、刃先 marker の % から
+  // bladeTipOffsetX_pct を逆補正して seed する。
+  function seedKnifeXFromMechanics(ing) {
+    if (!els.knife || !ing || !ing.chopMechanics) return;
+    var m = ing.chopMechanics;
+    var KNIFE_WIDTH_PCT_OF_BOARD_SEED = 70; // .knife { width: 70%; } と同期
+    var seedTipOffset = m.bladeTipOffsetX_pct || 0;
+    var seedCompensation = -(seedTipOffset * KNIFE_WIDTH_PCT_OF_BOARD_SEED / 100);
+    els.knife.style.setProperty('--knife-x', (m.startX_pct + seedCompensation) + '%');
   }
 
   // [v408] bbox-marker を ingredient-on-board の現在の表示矩形に合わせて初期化。
@@ -2761,9 +2801,9 @@ body.layout-editor-on .endX-marker {
   // 公式 (board-local UNSCALED px で計算 → scale 非依存):
   //   markerCY_local = (cssTop/100) × boardH + ty + halfHeight
   //                  = 0.5 × boardH + ty + 24  (marker は top:50%, height:48px)
-  //   knifeCY_local  = knife.offsetTop + knife.offsetHeight/2 + (knife._ty || 0)
+  //   knifeCY_local  = knife.offsetTop + knife.offsetHeight/2 + savedKnifeTy
   //                    (offsetTop/Height は transform 非依存の layout 値、
-  //                     _ty は LayoutApplier が書き込む editor 由来 ty)
+  //                     savedKnifeTy は `.knife|0@id` の ty を優先)
   //   chopY_pct = (markerCY_local - knifeCY_local) / knife.offsetHeight × 100
   var CHOPY_MARKER_HEIGHT = 48; // .chopY-marker の CSS height と同期
   var CHOPY_DEFAULT_TOP_PCT = 50; // .chopY-marker の CSS top と同期
@@ -2787,8 +2827,15 @@ body.layout-editor-on .endX-marker {
     var ty = (typeof entry.ty === 'number') ? entry.ty : 0;
     var markerCY = (CHOPY_DEFAULT_TOP_PCT / 100) * boardH + ty + CHOPY_MARKER_HEIGHT / 2;
     // knife の自然位置 (offsetTop + offsetHeight/2) + editor 由来 ty 補正。
-    // knife._ty は LayoutApplier.applyOne が書き込む保存値。 未設定なら 0。
-    var knifeCY = els.knife.offsetTop + knifeH / 2 + (els.knife._ty || 0);
+    // v430: LayoutApplier の適用タイミングに依存しないよう、 saved-layout の
+    // `.knife|0@<id>` / `.knife|0` を直読みし、未保存時だけ DOM の _ty に fallback。
+    var knifePerKey = '.knife|0@' + ingId;
+    var knifeBaseKey = '.knife|0';
+    var knifeEntry = (ingId && data[knifePerKey]) ? data[knifePerKey]
+                  : data[knifeBaseKey] ? data[knifeBaseKey]
+                  : null;
+    var knifeTy = (knifeEntry && typeof knifeEntry.ty === 'number') ? knifeEntry.ty : (els.knife._ty || 0);
+    var knifeCY = els.knife.offsetTop + knifeH / 2 + knifeTy;
     var dyPct = ((markerCY - knifeCY) / knifeH) * 100;
     if (!isFinite(dyPct)) return;
     ing.chopMechanics.chopY_pct = dyPct;
@@ -2992,6 +3039,10 @@ body.layout-editor-on .endX-marker {
       setSpeech('したから ざいりょうを えらんでね！');
       return;
     }
+    if (state.chopProgress >= (state.current.chopCount || 1)) return;
+    if (state.chopProgress === 0 && typeof window.BENTO_KITCHEN_ON_LAYOUT_READY === 'function') {
+      window.BENTO_KITCHEN_ON_LAYOUT_READY();
+    }
     state.chopProgress += 1;
     state.combo += 1;
     updateIngredientMask();
@@ -3123,6 +3174,7 @@ body.layout-editor-on .endX-marker {
       setTimeout(function () {
         if (!knifeInner) return;
         if (state.chopProgress !== chopSnapshot) return; // [v426] 古い chop の callback は破棄
+        if (chopSnapshot >= total) return; // [v430] 最終タップは横移動のみ
         if (state.transitioning) return;
         if (state.cutting) return; // [v429] 最終タップ後 (mask 0%) は振り下ろし skip
         knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
