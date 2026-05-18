@@ -346,7 +346,8 @@ body[data-screen="fridge"] .stage-wrap {
 .select-stage {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -357,9 +358,9 @@ body[data-screen="fridge"] .stage-wrap {
   background: rgba(255,255,255,0.7);
   border: 3px solid #fff;
   border-radius: var(--radius);
-  padding: 12px 14px;
+  padding: 10px 14px;
   box-shadow: 0 4px 10px var(--shadow-soft);
-  max-width: 960px;
+  max-width: 920px;
   margin: 0 auto;
   width: 100%;
 }
@@ -367,24 +368,29 @@ body[data-screen="fridge"] .stage-wrap {
   background: linear-gradient(180deg, #FFFDF6 0%, #FFF3DF 100%);
   border: 3px solid #fff;
   border-radius: var(--radius-lg);
-  padding: 18px;
+  padding: 14px;
   box-shadow: 0 6px 16px var(--shadow-soft);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  max-width: 980px;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 920px;
   width: 100%;
+  height: 100%;
+  min-height: 0;
   margin: 0 auto;
 }
 
 .select-stage .ingredient-btn {
-  font-size: 3.4rem;
-  min-height: 118px;
-  padding: 14px 8px;
+  aspect-ratio: auto;
+  font-size: 2.55rem;
+  min-height: 0;
+  height: 100%;
+  padding: 8px 6px;
 }
 .select-stage .ingredient-btn .ingredient-name {
-  font-size: 1rem;
-  margin-top: 6px;
+  font-size: 0.9rem;
+  margin-top: 4px;
 }
 
 /* =========================================================
