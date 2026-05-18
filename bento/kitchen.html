@@ -702,17 +702,17 @@ body[data-screen="fridge"] .stage-wrap {
 }
 #grill-stage.food-placed .cooking-food {
   left: 59%;
-  top: 45%;
+  top: 40%;
   width: 30%;
 }
 #grill-stage[data-ingredient="mince_patty"].food-placed .cooking-food {
   left: 59%;
-  top: 45%;
+  top: 40%;
   width: 27%;
 }
 #grill-stage[data-ingredient="salmon"].food-placed .cooking-food {
-  left: 58%;
-  top: 45%;
+  left: 59%;
+  top: 40%;
   width: 32%;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food {
@@ -3630,7 +3630,7 @@ body.layout-editor-on .endX-marker {
 
     updateCookDots(type, safeStage);
     if (animate) {
-      if (type !== 'fry') wrap.classList.add('flip');
+      if (type !== 'fry' && (animate === true || animate === 'flip')) wrap.classList.add('flip');
       showCookBurst(type);
     }
   }
@@ -3657,17 +3657,11 @@ body.layout-editor-on .endX-marker {
     state.cookServed = false;
     updateCookStageState('grill');
     showCookBurst('grill');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'もういちど タップで うらがえそう';
-    setSpeech('ジュッ！ フライパンに のったよ！', 'grill');
-    state.pendingTimers.push(setTimeout(function () {
-      if (state.currentScreen !== 'grill') return;
-      state.cookProgress = 1;
-      updateCookView('grill', 1, true);
-      setSpeech('いいかんじ！ もういちど やこう！', 'grill');
-    }, 360));
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップで うらがえそう';
+    setSpeech('ジュッ！ フライパンに のったよ！ タップで うらがえそう！', 'grill');
     state.pendingTimers.push(setTimeout(function () {
       state.cookAnimating = false;
-    }, 720));
+    }, 420));
   }
 
   function placeFoodForFry() {
@@ -3723,14 +3717,16 @@ body.layout-editor-on .endX-marker {
     state.cookAnimating = true;
     state.cookProgress = Math.min(2, state.cookProgress + 1);
     if (state.cookProgress >= 2) state.cookServed = true;
-    updateCookView('grill', state.cookProgress, true);
+    updateCookView('grill', state.cookProgress, state.cookProgress === 1 ? 'flip' : 'burst');
     if (state.cookProgress < 2) {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もういちど タップで しあげよう';
       setSpeech('いいかんじ！ もういちど やこう！', 'grill');
       state.pendingTimers.push(setTimeout(function () {
         state.cookAnimating = false;
       }, 520));
       return;
     }
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'できあがり！';
     setSpeech('こんがり できたよ！', 'grill');
     state.pendingTimers.push(setTimeout(function () {
       state.cookAnimating = false;

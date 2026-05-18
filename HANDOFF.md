@@ -125,6 +125,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:68-kitchen-grill-flip-center] **Done** — `bento/kitchen.html` の grill 画面で、フライパン投入直後に自動で `stage1` へ進み `.flip` が付いて食材が一回転する問題を修正。投入後は raw のまま中心寄りに置き、1 タップ目だけ裏返し (`stage1` + flip)、2 タップ目で仕上げ (`stage2` + burst) に変更。フライパン画像は柄込みの縦長素材なので焼き面中心に合わせ、grill 食材の `top` を 45%→40%、salmon の `left` を 59% に統一。ローカル Playwright でハンバーグ/鮭の drag→stage0→flip stage1→done stage2 を確認。`sw.js` は CACHE_VERSION 454。 (by Codex)
 - 2026-05-18 - [batch:67-kitchen-fry-pot-mask] **Done** — `bento/kitchen.html` の fry 画面で、鍋が背面画像だけのため揚げ物が前リムを突き抜けて見える問題を修正。揚げ中のみ `.cooking-food--fry` を油面の楕円 `clip-path` でマスクし、前リム風の薄い overlay を追加、泡を最前面へ戻した。`is-served` ではマスク解除されるため油切りトレー上の完成品は欠けない。ローカル Playwright でエビフライ投入中 / 取り出し後、コロッケ投入中、ハンバーグ grill 投入を確認。`sw.js` は CACHE_VERSION 453。 (by Codex)
 - 2026-05-18 - [batch:66-kitchen-select-grid-fit] **Done** — `bento/kitchen.html` の select 画面で材料カードが `aspect-ratio:1` と 3 列幅により巨大化し、3 段目が見切れる問題を修正。select 画面だけカードの正方形固定を解除し、grid 2 行目の残り高さに 3×3 を均等配分、padding/gap/font を縮小。ローカル Playwright で 1920×1080 edit / 1280×720 / mobile の全てで 9 カードの下端が stage 内に収まることを確認。`sw.js` は CACHE_VERSION 449。 (by Codex)
 
