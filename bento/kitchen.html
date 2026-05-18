@@ -565,7 +565,7 @@ body[data-screen="fridge"] .stage-wrap {
   left: 18%;
   top: 65%;
   transform: translate(-50%, -50%) rotate(-4deg);
-  width: 29%;
+  width: 38%;
   aspect-ratio: 1.4 / 1;
   border-radius: 50%;
   background: url('../assets/images/bento/cooking/prep_plate.png') center / contain no-repeat;
@@ -665,19 +665,51 @@ body[data-screen="fridge"] .stage-wrap {
   left: 18%;
   top: 62%;
   transform: translate(-50%, -50%);
-  width: 26%;
+  width: 30%;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   z-index: 3;
+  touch-action: none;
   transition:
     left 0.5s cubic-bezier(.18,.85,.2,1.02),
     top 0.5s cubic-bezier(.18,.85,.2,1.02),
     width 0.5s cubic-bezier(.18,.85,.2,1.02);
 }
-.cook-play-area.food-placed .cooking-food {
+.cook-play-area:not(.food-placed):not(.is-served) .cooking-food {
+  pointer-events: auto;
+  cursor: grab;
+}
+.cook-play-area.drop-ready .cook-tool {
+  filter: drop-shadow(0 16px 18px rgba(80,50,30,0.18)) brightness(1.08);
+}
+.cooking-food.is-dragging {
+  transition: none;
+  cursor: grabbing;
+  z-index: 5;
+}
+.cooking-food.is-dragging img,
+.cooking-food.is-dragging .cooking-food-fallback {
+  transform: scale(1.04);
+}
+#grill-stage.food-placed .cooking-food {
+  left: 59%;
+  top: 45%;
+  width: 30%;
+}
+#grill-stage[data-ingredient="mince_patty"].food-placed .cooking-food {
+  left: 59%;
+  top: 45%;
+  width: 27%;
+}
+#grill-stage[data-ingredient="salmon"].food-placed .cooking-food {
+  left: 58%;
+  top: 45%;
+  width: 32%;
+}
+#fry-stage.food-placed .cooking-food {
   left: 59%;
   top: 47%;
   width: 36%;
@@ -2683,6 +2715,10 @@ body.layout-editor-on .endX-marker {
     cookPreheated: false,
     cookFoodPlaced: false,
     cookServed: false,
+    cookDragging: false,
+    cookDragType: null,
+    cookDragPointerId: null,
+    suppressCookClick: false,
     fryReady: false,
     chopProgress: 0,
     combo: 0,
@@ -2938,6 +2974,12 @@ body.layout-editor-on .endX-marker {
         }
       });
     }
+    if (els.grillingFoodWrap) {
+      els.grillingFoodWrap.addEventListener('pointerdown', (e) => onCookFoodPointerDown(e, 'grill'));
+      els.grillingFoodWrap.addEventListener('pointermove', (e) => onCookFoodPointerMove(e, 'grill'));
+      els.grillingFoodWrap.addEventListener('pointerup', (e) => onCookFoodPointerEnd(e, 'grill'));
+      els.grillingFoodWrap.addEventListener('pointercancel', (e) => onCookFoodPointerEnd(e, 'grill'));
+    }
     if (els.fryStage) {
       els.fryStage.addEventListener('click', onFryTap);
       els.fryStage.addEventListener('keydown', (e) => {
@@ -2946,6 +2988,12 @@ body.layout-editor-on .endX-marker {
           onFryTap();
         }
       });
+    }
+    if (els.fryingFoodWrap) {
+      els.fryingFoodWrap.addEventListener('pointerdown', (e) => onCookFoodPointerDown(e, 'fry'));
+      els.fryingFoodWrap.addEventListener('pointermove', (e) => onCookFoodPointerMove(e, 'fry'));
+      els.fryingFoodWrap.addEventListener('pointerup', (e) => onCookFoodPointerEnd(e, 'fry'));
+      els.fryingFoodWrap.addEventListener('pointercancel', (e) => onCookFoodPointerEnd(e, 'fry'));
     }
 
     // フローチップタップ → 直接画面遷移
@@ -3216,6 +3264,10 @@ body.layout-editor-on .endX-marker {
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
     state.cookServed = false;
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.suppressCookClick = false;
     state.fryReady = false;
     state.chopProgress = 0;
     state.combo = 0;
@@ -3258,6 +3310,11 @@ body.layout-editor-on .endX-marker {
       state.cookPreheated = false;
       state.cookFoodPlaced = false;
       state.cookServed = false;
+      state.cookDragging = false;
+      state.cookDragType = null;
+      state.cookDragPointerId = null;
+      state.suppressCookClick = false;
+      resetCookDrag();
       loadIngredient(ing);
       els.emptyHint.style.display = 'none';
       clearBowl();
@@ -3283,6 +3340,11 @@ body.layout-editor-on .endX-marker {
     state.cookFoodPlaced = false;
     state.cookServed = false;
     state.cookAnimating = false;
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.suppressCookClick = false;
+    resetCookDrag(action.type);
     hideCombo();
     updateCookView(action.type, 0, false);
     updateCookStageState(action.type);
@@ -3306,11 +3368,11 @@ body.layout-editor-on .endX-marker {
       state.cookPreheated = true;
       updateCookStageState(type);
       if (type === 'fry') {
-        if (els.fryActionLabel) els.fryActionLabel.textContent = 'タップで あぶらに いれよう';
-        setSpeech('あぶらが あったまったよ！ タップで いれよう！', 'fry');
+        if (els.fryActionLabel) els.fryActionLabel.textContent = 'おさらから ドラッグして あぶらへ';
+        setSpeech('あぶらが あったまったよ！ おさらから ドラッグして いれよう！', 'fry');
       } else {
-        if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップで フライパンに のせよう';
-        setSpeech('フライパンが あったまったよ！ タップで のせよう！', 'grill');
+        if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから ドラッグして フライパンへ';
+        setSpeech('フライパンが あったまったよ！ おさらから ドラッグして のせよう！', 'grill');
       }
     }, 680));
   }
@@ -3358,6 +3420,128 @@ body.layout-editor-on .endX-marker {
     stageEl.classList.toggle('is-preheated', state.cookPreheated);
     stageEl.classList.toggle('food-placed', state.cookFoodPlaced);
     stageEl.classList.toggle('is-served', state.cookServed);
+    if (state.current && state.current.id) {
+      stageEl.dataset.ingredient = state.current.id;
+    } else {
+      delete stageEl.dataset.ingredient;
+    }
+  }
+
+  function getCookElements(type) {
+    return {
+      stage: type === 'fry' ? els.fryStage : els.grillStage,
+      wrap: type === 'fry' ? els.fryingFoodWrap : els.grillingFoodWrap,
+    };
+  }
+
+  function resetCookDrag(type) {
+    ['grill', 'fry'].forEach(function (kind) {
+      if (type && kind !== type) return;
+      const parts = getCookElements(kind);
+      if (parts.wrap) {
+        parts.wrap.classList.remove('is-dragging');
+        parts.wrap.style.removeProperty('left');
+        parts.wrap.style.removeProperty('top');
+      }
+      if (parts.stage) parts.stage.classList.remove('drop-ready');
+    });
+    if (!type || state.cookDragType === type) {
+      state.cookDragging = false;
+      state.cookDragType = null;
+      state.cookDragPointerId = null;
+    }
+  }
+
+  function getCookDragPoint(type, evt) {
+    const parts = getCookElements(type);
+    if (!parts.stage) return null;
+    const rect = parts.stage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      x: ((evt.clientX - rect.left) / rect.width) * 100,
+      y: ((evt.clientY - rect.top) / rect.height) * 100,
+    };
+  }
+
+  function isCookDropPoint(type, point) {
+    if (!point) return false;
+    if (type === 'fry') {
+      return point.x >= 36 && point.x <= 82 && point.y >= 24 && point.y <= 72;
+    }
+    return point.x >= 39 && point.x <= 79 && point.y >= 22 && point.y <= 68;
+  }
+
+  function moveCookDragToPoint(type, evt) {
+    const parts = getCookElements(type);
+    const point = getCookDragPoint(type, evt);
+    if (!parts.stage || !parts.wrap || !point) return false;
+    const x = Math.max(10, Math.min(88, point.x));
+    const y = Math.max(14, Math.min(86, point.y));
+    parts.wrap.style.left = x.toFixed(2) + '%';
+    parts.wrap.style.top = y.toFixed(2) + '%';
+    const ready = isCookDropPoint(type, point);
+    parts.stage.classList.toggle('drop-ready', ready);
+    return ready;
+  }
+
+  function nudgeCookDrag(type) {
+    const name = state.current ? state.current.name : 'ざいりょう';
+    if (type === 'fry') {
+      setSpeech(name + 'を おさらから あぶらへ ドラッグしてね！', 'fry');
+    } else {
+      setSpeech(name + 'を おさらから フライパンへ ドラッグしてね！', 'grill');
+    }
+  }
+
+  function placeCookFoodByType(type) {
+    resetCookDrag(type);
+    if (type === 'fry') placeFoodForFry();
+    else placeFoodForGrill();
+  }
+
+  function onCookFoodPointerDown(evt, type) {
+    if (state.cutting || state.transitioning || state.cookAnimating) return;
+    if (state.currentScreen !== type || state.cookFoodPlaced || state.cookServed) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    state.suppressCookClick = true;
+    window.setTimeout(function () { state.suppressCookClick = false; }, 120);
+    if (!state.cookPreheated) {
+      setSpeech(type === 'fry' ? 'あぶらが あったまるまで まってね！' : 'フライパンが あったまるまで まってね！', type);
+      return;
+    }
+    const parts = getCookElements(type);
+    if (!parts.wrap) return;
+    state.cookDragging = true;
+    state.cookDragType = type;
+    state.cookDragPointerId = evt.pointerId;
+    parts.wrap.classList.add('is-dragging');
+    if (parts.wrap.setPointerCapture) {
+      try { parts.wrap.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    moveCookDragToPoint(type, evt);
+  }
+
+  function onCookFoodPointerMove(evt, type) {
+    if (!state.cookDragging || state.cookDragType !== type || state.cookDragPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    moveCookDragToPoint(type, evt);
+  }
+
+  function onCookFoodPointerEnd(evt, type) {
+    if (!state.cookDragging || state.cookDragType !== type || state.cookDragPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    state.suppressCookClick = true;
+    window.setTimeout(function () { state.suppressCookClick = false; }, 160);
+    const dropped = moveCookDragToPoint(type, evt);
+    if (dropped) {
+      placeCookFoodByType(type);
+      return;
+    }
+    resetCookDrag(type);
+    nudgeCookDrag(type);
   }
 
   function updateCookView(type, stage, animate) {
@@ -3471,7 +3655,11 @@ body.layout-editor-on .endX-marker {
     }, 1450));
   }
 
-  function onGrillTap() {
+  function onGrillTap(evt) {
+    if (state.suppressCookClick) {
+      state.suppressCookClick = false;
+      return;
+    }
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
@@ -3481,6 +3669,10 @@ body.layout-editor-on .endX-marker {
       return;
     }
     if (!state.cookFoodPlaced) {
+      if (evt && evt.type === 'click') {
+        nudgeCookDrag('grill');
+        return;
+      }
       placeFoodForGrill();
       return;
     }
@@ -3502,7 +3694,11 @@ body.layout-editor-on .endX-marker {
     }, 560));
   }
 
-  function onFryTap() {
+  function onFryTap(evt) {
+    if (state.suppressCookClick) {
+      state.suppressCookClick = false;
+      return;
+    }
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== 'fry') return;
     const action = getCurrentAction();
@@ -3512,6 +3708,10 @@ body.layout-editor-on .endX-marker {
       return;
     }
     if (!state.cookFoodPlaced) {
+      if (evt && evt.type === 'click') {
+        nudgeCookDrag('fry');
+        return;
+      }
       placeFoodForFry();
       return;
     }
@@ -5072,6 +5272,10 @@ body.layout-editor-on .endX-marker {
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
     state.cookServed = false;
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.suppressCookClick = false;
     state.fryReady = false;
     state.chopProgress = 0;
     state.combo = 0;
@@ -5099,6 +5303,7 @@ body.layout-editor-on .endX-marker {
     els.progress.style.width = '0%';
     hideCombo();
     clearBowl();
+    resetCookDrag();
     updateCookDots('grill', 0);
     updateCookDots('fry', 0);
     if (els.grillingFood) els.grillingFood.removeAttribute('src');

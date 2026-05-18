@@ -1,6 +1,6 @@
 ---
 name: feature-quizland-voicepeak-progress
-description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v424, 2026-05-14〜17)。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は manifest 動的化が 278/490 = 57% カバー (= number_sequence 0 + count_total 72 + order_color 71 + shape_name 54 + weather 31 + opposite 17 + body 23 + trivia 10)。 残 197 件 = cross-category dedup で 190 ユニークに集約済 (= 重複 7 件 = おなじ / 飛ぶ / 夕方 / 真夜中 / 4本 / 6本 / 煙)。 集約バッチ準備完了 (= voicepeak_lines_unique_phase2_uncovered.csv 190 行 + expand JSON 2 本 + BATCH-RUN-uncovered.md + tmp/quizland_NA/phase2_uncovered/ 出力先)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ shape_name / weather / opposite / body / trivia は phase1 wav 再利用 +135 動的エントリ追加済)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422、 5 カテゴリ manifest 動的化 sw v424。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: 未カバー 190 件 集約 TTS バッチ 1 件のみ (= これで phase2 全カテゴリ完成)。
+description: quizland VOICEPEAK 音声プロジェクトの進捗記録 (sw v424, 2026-05-14〜17)。 phase1 = 問題文 + 正解 wav は 180/180 問 = 100% 完成 (全 8 カテゴリ: order_color / count_total / shape_name / number_sequence / weather / opposite / body / trivia)。 phase2 = 4 択の不正解選択肢は manifest 動的化が 278/490 = 57% カバー (= number_sequence 0 + count_total 72 + order_color 71 + shape_name 54 + weather 31 + opposite 17 + body 23 + trivia 10)。 残 197 件 = cross-category dedup で 190 ユニークに集約済 (= 重複 7 件 = おなじ / 飛ぶ / 夕方 / 真夜中 / 4本 / 6本 / 煙)。 集約バッチ準備完了 (= voicepeak_lines_unique_phase2_uncovered.csv 190 行 + expand JSON 2 本 + BATCH-RUN-uncovered.md + tmp/quizland_NA/phase2_uncovered/ 出力先)。 phase2 はハイブリッド設計 (count_total / number_sequence は g_num_*.wav 動的参照で TTS 不要、 order_color は phase1 正解 wav の動的再利用で 87.5% カバー、 残り 5 カテゴリ shape_name / weather / opposite / body / trivia は phase1 wav 再利用 +135 動的エントリ追加済)。 確定話者 = VOICEPEAK 「女性4」、 辞書 109 entries。 phase1 完成日 2026-05-17 / sw v418、 phase2 開始 2026-05-17 / sw v420、 order_color phase2 完成 sw v422、 5 カテゴリ manifest 動的化 sw v424。 v384 以降、 shape_name 〜 trivia は漢字混じり CSV で運用。 v385+ から「迷ったらカナ維持」 ルール適用。 v389+ から「句点 (。) 追加ルール」 適用。 phase1 残存課題: なし (= 全カテゴリで expand JSON 事前検証 + 修正実施済、 計 202 キー)。 phase2 残存課題: 未カバー 190 件 集約 TTS バッチ 1 件のみ (= これで phase2 全カテゴリ完成)。 v447+ から「日本語接続統一ルール」 適用 (2026-05-18 ユーザー指摘から導出)。
 metadata:
   type: feature
 ---
@@ -157,6 +157,26 @@ metadata:
   2. 「？」「！」「。」 で終わっていなければ「。」 を追加
   3. expand JSON のキーも CSV と完全一致するよう同期更新
   4. BATCH-RUN-*.md の期待出力表も同期
+
+### 日本語接続統一ルール
+
+- **適用日**: 2026-05-18 (sw v447+ 想定)
+- **ユーザー指摘** (引用): 「丸い 小さいは？」「とがって 小さい。 もとがっていてちいさいじゃない？」 (2026-05-18)
+- **発見経緯**: q091 (trivia L1「うさぎの みみは どんな かたち？」) で choices[2]「まるい ちいさい」 (= 形容詞並列で「て接続」 欠如) と choices[3]「とがって ちいさい」 (= 動詞テ形 + 形容詞、 「とがっていて」 のほうが意味的に明確) が判明。 同問題内の他選択肢「まるくて みじかい」「ながくて たっている」 が「て接続」 で統一されていたため、 4 択全件で接続形を統一 (= 「まるくて ちいさい」「とがっていて ちいさい」 に修正)
+- **適用範囲**: 全カテゴリの phase2 不正解選択肢 (= 既存・新規どちらも)
+- **ルール**:
+  - **形容詞 + 形容詞**: 接続「て」 で繋ぐ (例「大きい 赤い」 → 「大きくて 赤い」)
+  - **動詞テ形 + 形容詞**: 状態継続「ている」 のテ形で繋ぐ (例「とがって 小さい」 → 「とがっていて 小さい」)
+  - **同問題内 4 択は接続形を統一する** (= 子供向け視認性 + 自然な日本語)
+- **例外**:
+  - 1 つの形容詞・動詞 (= 連結なし) はそのまま
+  - 「○○くて」 (形容詞テ形) や「○○って」 (五段動詞促音便テ形) はそのまま許容、 ただし「○○って ちいさい」 のような動詞 + 形容詞は「○○っていて」 にする方が自然
+- **チェックポイント**:
+  - 同問題の 4 択全件で接続形が統一されているか
+  - 接続「て」 欠如の形容詞並列がないか
+  - 動詞テ形が「ている」 形のほうが自然な箇所はないか
+- **判断基準**: 「子供が音読したとき自然か」「VOICEPEAK が自然に読み上げるか」 で判断
+- **発見と修正の経緯**: 集約 CSV を VOICEPEAK 生成前にユーザー目視確認したことで発見、 表記揺れ全件調査で他カテゴリには重大な問題なしと確認 (= q091 のみ HIGH 案件)
 
 ## 結果: 全カテゴリで予防完了 (202 キー)
 
