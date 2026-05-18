@@ -1031,12 +1031,19 @@ body.layout-editor-on .endX-marker {
   border-radius: 50%/60%;
   background: rgba(255,255,255,0.35);
 }
+.bowl.catch {
+  animation: bowlCatch 0.28s ease-out;
+}
+@keyframes bowlCatch {
+  0%, 100% { transform: scale(1); }
+  45%      { transform: scale(1.06); }
+}
 .cut-piece {
   position: absolute;
   font-size: 1.4rem;
   pointer-events: none;
   user-select: none;
-  animation: cutPieceLand 0.5s ease-out;
+  animation: cutPieceSettle 0.24s ease-out;
 }
 .cut-piece img {
   width: 60px;
@@ -1047,10 +1054,48 @@ body.layout-editor-on .endX-marker {
   -webkit-user-drag: none;
   pointer-events: none;
 }
-@keyframes cutPieceLand {
-  0%   { transform: translate(var(--fx, 0), -160px) scale(0.6) rotate(0deg); opacity: 0; }
-  40%  { opacity: 1; }
-  100% { transform: translate(var(--fx, 0), var(--fy, 0)) scale(1) rotate(var(--fr, 0deg)); opacity: 1; }
+@keyframes cutPieceSettle {
+  0%   { transform: scale(0.75) rotate(var(--fr, 0deg)); opacity: 0; }
+  65%  { transform: scale(1.08) rotate(var(--fr, 0deg)); opacity: 1; }
+  100% { transform: scale(1) rotate(var(--fr, 0deg)); opacity: 1; }
+}
+.flying-cut-piece {
+  position: fixed;
+  left: var(--start-x, 0px);
+  top: var(--start-y, 0px);
+  width: 58px;
+  height: 58px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10000;
+  transform-origin: center;
+  animation: cutPieceFly 0.72s cubic-bezier(.18,.72,.28,1) forwards;
+}
+.flying-cut-piece img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 5px rgba(0,0,0,0.22));
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+@keyframes cutPieceFly {
+  0% {
+    transform: translate(-50%, -50%) scale(0.55) rotate(var(--start-rot, -18deg));
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  58% {
+    transform: translate(calc(var(--mid-x, 0px) - 50%), calc(var(--mid-y, -120px) - 50%)) scale(1.08) rotate(var(--mid-rot, 120deg));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--end-x, 0px) - 50%), calc(var(--end-y, 0px) - 50%)) scale(0.82) rotate(var(--end-rot, 240deg));
+    opacity: 0.9;
+  }
 }
 
 /* 進行バー */
@@ -3321,23 +3366,12 @@ body.layout-editor-on .endX-marker {
 
   function clearBowl() {
     [...els.bowl.querySelectorAll('.cut-piece')].forEach(p => p.remove());
+    [...document.querySelectorAll('.flying-cut-piece')].forEach(p => p.remove());
   }
 
   function addCutPieceToBowl(ing) {
-    const piece = document.createElement('span');
-    piece.className = 'cut-piece';
-    if (ing.id === 'carrot') {
-      // 切れ端は carrot_002〜carrot_011.png からランダム選択（10 バリエーション）
-      const n = 2 + Math.floor(Math.random() * 10); // 2..11
-      const idx = String(n).padStart(3, '0');
-      const img = document.createElement('img');
-      img.src = '../assets/images/bento/cooking/carrot/carrot_' + idx + '.png';
-      img.alt = '';
-      img.draggable = false;
-      piece.appendChild(img);
-    } else {
-      piece.textContent = ing.piece;
-    }
+    const pieceData = getCutPieceData(ing);
+    const piece = createCutPieceNode(pieceData, 'cut-piece');
     const rect = els.bowl.getBoundingClientRect();
     const w = rect.width || 80;
     const h = rect.height || 60;
@@ -3350,11 +3384,98 @@ body.layout-editor-on .endX-marker {
     const rot = (Math.random() - 0.5) * 80;
     piece.style.left = x + 'px';
     piece.style.top = y + 'px';
-    piece.style.setProperty('--fx', '0px');
-    piece.style.setProperty('--fy', '0px');
     piece.style.setProperty('--fr', rot + 'deg');
     piece.style.transform = 'rotate(' + rot + 'deg)';
-    els.bowl.appendChild(piece);
+    flyCutPieceToBowl(pieceData, x, y, rot, function () {
+      els.bowl.appendChild(piece);
+      els.bowl.classList.remove('catch');
+      void els.bowl.offsetWidth;
+      els.bowl.classList.add('catch');
+    });
+  }
+
+  function getCutPieceData(ing) {
+    if (ing && ing.id === 'carrot') {
+      // 横向き/縦向きの輪切りが混ざるように、既存 carrot_002〜011 を順に使う。
+      const seq = [3, 2, 4, 5, 6, 7, 9, 8, 11, 10];
+      const n = seq[((state.chopProgress || 1) - 1) % seq.length];
+      const idx = String(n).padStart(3, '0');
+      return {
+        type: 'image',
+        src: '../assets/images/bento/cooking/carrot/carrot_' + idx + '.png',
+      };
+    }
+    return {
+      type: 'text',
+      text: (ing && ing.piece) || '🍽️',
+    };
+  }
+
+  function createCutPieceNode(pieceData, className) {
+    const piece = document.createElement('span');
+    piece.className = className;
+    if (pieceData.type === 'image') {
+      const img = document.createElement('img');
+      img.src = pieceData.src;
+      img.alt = '';
+      img.draggable = false;
+      piece.appendChild(img);
+    } else {
+      piece.textContent = pieceData.text;
+    }
+    return piece;
+  }
+
+  function flyCutPieceToBowl(pieceData, bowlX, bowlY, bowlRot, onDone) {
+    const start = getCutPieceFlightStart();
+    const bowlRect = els.bowl.getBoundingClientRect();
+    if (!start || !bowlRect.width || !bowlRect.height) {
+      onDone();
+      return;
+    }
+    const endX = bowlRect.left + bowlX + 30;
+    const endY = bowlRect.top + bowlY + 30;
+    const fly = createCutPieceNode(pieceData, 'flying-cut-piece');
+    const dx = endX - start.x;
+    const dy = endY - start.y;
+    const arc = Math.min(150, Math.max(72, Math.abs(dx) * 0.18));
+    fly.style.setProperty('--start-x', start.x + 'px');
+    fly.style.setProperty('--start-y', start.y + 'px');
+    fly.style.setProperty('--end-x', dx + 'px');
+    fly.style.setProperty('--end-y', dy + 'px');
+    fly.style.setProperty('--mid-x', (dx * 0.55) + 'px');
+    fly.style.setProperty('--mid-y', (dy * 0.55 - arc) + 'px');
+    fly.style.setProperty('--start-rot', (-24 + Math.random() * 18) + 'deg');
+    fly.style.setProperty('--mid-rot', (110 + Math.random() * 80) + 'deg');
+    fly.style.setProperty('--end-rot', bowlRot + 'deg');
+    document.body.appendChild(fly);
+    let done = false;
+    const finish = function () {
+      if (done) return;
+      done = true;
+      if (!fly.isConnected) return;
+      fly.remove();
+      onDone();
+    };
+    fly.addEventListener('animationend', finish, { once: true });
+    setTimeout(finish, 900);
+  }
+
+  function getCutPieceFlightStart() {
+    if (!els.board || !els.ingOnBoard) return null;
+    const bRect = els.board.getBoundingClientRect();
+    const iRect = els.ingOnBoard.getBoundingClientRect();
+    if (!bRect.width || !iRect.width) return null;
+    let x = iRect.left + iRect.width * 0.5;
+    if (state.current && state.current.chopMechanics) {
+      const total = state.current.chopCount || 1;
+      const bladePct = getTargetBladeXBoardPct(state.current.chopMechanics, total, state.chopProgress || 1);
+      if (isFinite(bladePct)) x = bRect.left + bRect.width * bladePct / 100;
+    }
+    return {
+      x: x,
+      y: iRect.top + iRect.height * 0.48,
+    };
   }
 
   // ========== 完成 ==========

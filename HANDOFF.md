@@ -125,6 +125,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-18 - [batch:51-bento-kitchen-cut-piece-flight] **Done** — `bento/kitchen.html` の切れ端演出を v434 として追加。impact 時に carrot_002〜011 の輪切り小片を切断位置から viewport-fixed で右側 `#bowl` へ飛ばし、到着後にボウル内へ残す。横/縦の輪切り素材を交互に使い、`#bowl` は catch アニメで受け止める。ローカル headless で desktop/mobile とも flight 生成→着地、5 タップ後 fridge 遷移・pieces=5・flying=0 を確認。`sw.js` は CACHE_VERSION 434。 (by Codex)
+
 - 2026-05-18 - [batch:50-bento-kitchen-impact-timing] **Done** — `bento/kitchen.html` の chop タイミングを v433 として修正。マスク/切れ端/進捗/トン表示をタップ直後ではなく包丁 impact callback で確定し、`awaitingImpact` で連打中の早送りを抑止。切り口 X は固定 1/chopCount ではなく共有 `targetBladeX` を食材 bbox 内 % に変換してマスク境界へ使用。ローカル headless で impact 前は表示未更新、impact 後に更新、tap1〜tap4 の刃先/切り口差がおおむね board 1% 未満、tap5 後 fridge 遷移を確認。`sw.js` は CACHE_VERSION 433。 (by Codex)
 
 - 2026-05-18 - [batch:49-bento-kitchen-knife-x-align] **Done** — `bento/kitchen.html` の包丁 X 座標を v432 として修正。`--knife-x` を wrapper 左端基準として扱い、chop 中も editor 保存 `tx/ty` を保持、刃先補正は実際の `knife.offsetWidth / board.offsetWidth` を使用。ローカル headless で tap1〜tap5 の刃先 X と目標 X の差が 0〜0.01px、5 タップ後 fridge 遷移を確認。`sw.js` は CACHE_VERSION 432。 (by Codex)
