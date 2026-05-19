@@ -3950,17 +3950,17 @@ body.layout-editor-on .endX-marker {
   }
 
   function getIngredientFridgeThumbSrc(ing) {
-    const cutPieceSrc = getIngredientCutPieceThumbSrc(ing);
-    if (cutPieceSrc) return cutPieceSrc;
     if (ing && ing.cookImages) {
       const actions = Array.isArray(ing.cookingActions) ? ing.cookingActions.slice().reverse() : [];
       for (let i = 0; i < actions.length; i += 1) {
         const cfg = getCookImageConfig(ing, actions[i]);
         if (cfg && Array.isArray(cfg.stages) && cfg.stages.length) {
-          return cookingAssetPath(cfg.stages[cfg.stages.length - 1]);
+          return cookingAssetPath(cfg.stages[0]);
         }
       }
     }
+    const cutPieceSrc = getIngredientCutPieceThumbSrc(ing);
+    if (cutPieceSrc) return cutPieceSrc;
     return getIngredientThumbSrc(ing);
   }
 
@@ -6060,7 +6060,6 @@ body.layout-editor-on .endX-marker {
   function renderFridge() {
     els.shelves.innerHTML = '';
     const unlocked = INGREDIENTS.filter(i => state.unlocked.has(i.id));
-    const fillerItems = ['🥛', '🫙', '🥬', '🍅', '🧃', '🧀', '🥣', '🍎', '🥚'];
 
     unlocked.forEach(function (ing) {
       const item = document.createElement('div');
@@ -6095,18 +6094,6 @@ body.layout-editor-on .endX-marker {
       }
       els.shelves.appendChild(item);
     });
-
-    const fillerCount = Math.max(0, 9 - unlocked.length);
-    for (let i = 0; i < fillerCount; i += 1) {
-      const item = document.createElement('div');
-      item.className = 'fridge-item fridge-item--filler';
-      item.setAttribute('aria-hidden', 'true');
-      const art = document.createElement('span');
-      art.className = 'fridge-item-art';
-      art.textContent = fillerItems[i % fillerItems.length];
-      item.appendChild(art);
-      els.shelves.appendChild(item);
-    }
   }
 
   function emojiFor(ingId) {
