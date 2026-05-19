@@ -548,12 +548,17 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .cook-stove-bg {
   position: absolute;
-  inset: 0;
+  left: -2.72%;
+  top: -6.12%;
+  width: 134%;
+  height: 134%;
   background: url('../assets/images/bento/cooking/stove_base.webp') center / cover no-repeat;
-  transform: scale(1.34);
-  transform-origin: 8% 18%;
   pointer-events: none;
   z-index: 0;
+}
+body.layout-editor-on .grill-stove-bg,
+body.layout-editor-on .grill-pan {
+  pointer-events: auto;
 }
 .cook-play-area:focus-visible {
   box-shadow: 0 0 0 5px rgba(242,145,90,0.55);
@@ -624,8 +629,8 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .heat-glow {
   position: absolute;
-  left: 58%;
-  top: 77%;
+  left: var(--cook-heat-x, 58%);
+  top: var(--cook-heat-y, 77%);
   transform: translate(-50%, -50%) scaleX(0.86);
   width: 22%;
   height: 13%;
@@ -662,8 +667,9 @@ body[data-screen="fridge"] .stage-wrap {
   animation: heatPulse 0.82s ease-in-out infinite alternate;
 }
 .cook-tool--pan {
-  left: 58%;
-  top: 64%;
+  left: 31.5%;
+  top: 16.9%;
+  transform: none;
   width: 53%;
   background-image: url('../assets/images/bento/cooking/frying_pan.png');
 }
@@ -717,18 +723,18 @@ body[data-screen="fridge"] .stage-wrap {
   transform: scale(1.04);
 }
 #grill-stage.food-placed .cooking-food {
-  left: 58%;
-  top: 52%;
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
   width: 23%;
 }
 #grill-stage[data-ingredient="mince_patty"].food-placed .cooking-food {
-  left: 58%;
-  top: 52%;
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
   width: 21%;
 }
 #grill-stage[data-ingredient="salmon"].food-placed .cooking-food {
-  left: 58%;
-  top: 52%;
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
   width: 25%;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food {
@@ -825,8 +831,8 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .grill-smoke {
   position: absolute;
-  left: 58%;
-  top: 41%;
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-smoke-y, 41%);
   width: 28%;
   height: 30%;
   transform: translate(-50%, -50%);
@@ -2169,6 +2175,8 @@ body.layout-editor-on .endX-marker {
       ['.startX-marker',  'wh', '[ツール] 包丁の切り始め X'],
       ['.endX-marker',    'wh', '[ツール] 包丁の切り終わり X'],
       ['.bowl',           'wh', '切れ端ボウル'],
+      ['.grill-stove-bg',  'wh', '[調理] 焼く背景コンロ'],
+      ['.grill-pan',       'wh', '[調理] フライパン'],
     ],
     // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
     // editor の保存キーは `${sel}|${i}@${ingredientId}` の形 (`@carrot` / `@wiener` …)
@@ -2318,11 +2326,11 @@ body.layout-editor-on .endX-marker {
   <div class="cook-screen-wrap">
     <div class="cook-main">
       <div class="cook-play-area" id="grill-stage" role="button" tabindex="0" aria-label="フライパン">
-        <div class="cook-stove-bg" aria-hidden="true"></div>
+        <div class="cook-stove-bg grill-stove-bg" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="heat-glow" id="grill-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--plate" aria-hidden="true"></div>
-        <div class="cook-tool cook-tool--pan" aria-hidden="true"></div>
+        <div class="cook-tool cook-tool--pan grill-pan" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="grill-smoke" id="grill-smoke" aria-hidden="true">
           <i></i><i></i><i></i><i></i>
         </div>
@@ -2874,6 +2882,7 @@ body.layout-editor-on .endX-marker {
 
     // grill screen
     grillStage:    document.getElementById('grill-stage'),
+    grillPan:      document.querySelector('#grill-stage .grill-pan'),
     grillingFoodWrap: document.getElementById('grilling-food-wrap'),
     grillingFood:  document.getElementById('grilling-food'),
     grillingFoodFallback: document.getElementById('grilling-food-fallback'),
@@ -3064,6 +3073,7 @@ body.layout-editor-on .endX-marker {
     attachEndXMarkerObserver();
     // [v415] editor mode 切替 (body.layout-editor-on) を監視して fitStage 再走。
     attachEditorModeObserver();
+    attachCookLayoutObserver();
   }
 
   // v430: LayoutSystem の fetch/apply 完了後に、現在の食材へ saved-layout 由来の
@@ -3144,6 +3154,11 @@ body.layout-editor-on .endX-marker {
       if (name === 'chop' && state.current && typeof window.BENTO_KITCHEN_ON_LAYOUT_READY === 'function') {
         requestAnimationFrame(function () {
           window.BENTO_KITCHEN_ON_LAYOUT_READY();
+        });
+      }
+      if (name === 'grill' || name === 'fry') {
+        requestAnimationFrame(function () {
+          syncCookLayoutFromTools(name);
         });
       }
 
@@ -3469,6 +3484,53 @@ body.layout-editor-on .endX-marker {
     } else {
       delete stageEl.dataset.ingredient;
     }
+    if (type === 'grill') {
+      requestAnimationFrame(function () {
+        syncCookLayoutFromTools('grill');
+      });
+    }
+  }
+
+  function pctString(value) {
+    return Math.round(value * 1000) / 1000 + '%';
+  }
+
+  function syncCookLayoutFromTools(type) {
+    if (type !== 'grill') return;
+    const stage = els.grillStage;
+    const pan = els.grillPan;
+    if (!stage || !pan) return;
+    const stageRect = stage.getBoundingClientRect();
+    const panRect = pan.getBoundingClientRect();
+    if (!stageRect.width || !stageRect.height || !panRect.width || !panRect.height) return;
+
+    const cx = ((panRect.left + panRect.width * 0.5 - stageRect.left) / stageRect.width) * 100;
+    const foodY = ((panRect.top + panRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
+    const heatY = ((panRect.top + panRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
+
+    stage.style.setProperty('--grill-food-x', pctString(cx));
+    stage.style.setProperty('--grill-food-y', pctString(foodY));
+    stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
+    stage.style.setProperty('--cook-heat-x', pctString(cx));
+    stage.style.setProperty('--cook-heat-y', pctString(heatY));
+  }
+
+  function attachCookLayoutObserver() {
+    if (typeof MutationObserver === 'undefined') return;
+    let queued = false;
+    const schedule = function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () {
+        queued = false;
+        syncCookLayoutFromTools('grill');
+      });
+    };
+    const obs = new MutationObserver(schedule);
+    if (els.grillPan) obs.observe(els.grillPan, { attributes: true, attributeFilter: ['style', 'class'] });
+    if (els.grillStage) obs.observe(els.grillStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+    window.addEventListener('resize', schedule, { passive: true });
+    schedule();
   }
 
   function getCookElements(type) {
@@ -3507,10 +3569,31 @@ body.layout-editor-on .endX-marker {
     };
   }
 
+  function getElementBoundsPct(element, stage) {
+    if (!element || !stage) return null;
+    const stageRect = stage.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+    if (!stageRect.width || !stageRect.height || !rect.width || !rect.height) return null;
+    return {
+      left: ((rect.left - stageRect.left) / stageRect.width) * 100,
+      top: ((rect.top - stageRect.top) / stageRect.height) * 100,
+      width: (rect.width / stageRect.width) * 100,
+      height: (rect.height / stageRect.height) * 100,
+    };
+  }
+
   function isCookDropPoint(type, point) {
     if (!point) return false;
     if (type === 'fry') {
       return point.x >= 36 && point.x <= 82 && point.y >= 24 && point.y <= 72;
+    }
+    const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
+    if (panBounds) {
+      const left = panBounds.left + panBounds.width * 0.14;
+      const right = panBounds.left + panBounds.width * 0.90;
+      const top = panBounds.top + panBounds.height * 0.10;
+      const bottom = panBounds.top + panBounds.height * 0.96;
+      return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
     }
     return point.x >= 39 && point.x <= 79 && point.y >= 22 && point.y <= 68;
   }
