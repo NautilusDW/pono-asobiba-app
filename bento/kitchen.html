@@ -599,6 +599,9 @@ body.layout-editor-on .fry-pot {
   z-index: 3;
   transition: opacity 0.22s ease;
 }
+#fry-stage .prep-plate {
+  z-index: 30;
+}
 .finish-dish {
   position: absolute;
   left: 16%;
@@ -614,6 +617,9 @@ body.layout-editor-on .fry-pot {
   pointer-events: none;
   z-index: 3;
   transition: opacity 0.24s ease;
+}
+#fry-stage .finish-dish {
+  z-index: 30;
 }
 .finish-dish--plate {
   background-image: url('../assets/images/bento/cooking/serving_plate.png');
@@ -668,6 +674,12 @@ body.layout-editor-on .fry-pot {
   opacity: 1;
   animation: heatPulse 0.82s ease-in-out infinite alternate;
 }
+#fry-stage .heat-glow {
+  width: 27%;
+  height: 15%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,126,55,0.72), rgba(255,196,91,0.32) 48%, transparent 74%);
+  filter: blur(1.4px);
+}
 .cook-tool--pan {
   left: 31.5%;
   top: 16.9%;
@@ -708,6 +720,9 @@ body.layout-editor-on .fry-pot {
     left 0.5s cubic-bezier(.18,.85,.2,1.02),
     top 0.5s cubic-bezier(.18,.85,.2,1.02),
     width 0.5s cubic-bezier(.18,.85,.2,1.02);
+}
+#fry-stage .cooking-food {
+  z-index: 31;
 }
 .cook-play-area:not(.food-placed):not(.is-served) .cooking-food {
   pointer-events: auto;
@@ -918,6 +933,20 @@ body.layout-editor-on .fry-pot {
   z-index: 6;
   opacity: 0.18;
   transition: opacity 0.25s ease;
+}
+#fry-stage .oil-bubbles {
+  z-index: 32;
+}
+body.layout-editor-on #fry-stage .prep-plate,
+body.layout-editor-on #fry-stage .finish-dish {
+  z-index: 10020;
+}
+body.layout-editor-on #fry-stage .cooking-food {
+  z-index: 10021;
+  pointer-events: none;
+}
+body.layout-editor-on #fry-stage .oil-bubbles {
+  z-index: 10022;
 }
 .oil-bubbles::before,
 .oil-bubbles::after {
@@ -3512,7 +3541,7 @@ body.layout-editor-on .endX-marker {
     const cx = ((toolRect.left + toolRect.width * 0.5 - stageRect.left) / stageRect.width) * 100;
     if (type === 'fry') {
       const oilY = ((toolRect.top + toolRect.height * 0.47 - stageRect.top) / stageRect.height) * 100;
-      const heatY = ((toolRect.top + toolRect.height * 0.63 - stageRect.top) / stageRect.height) * 100;
+      const heatY = ((toolRect.top + toolRect.height * 0.82 - stageRect.top) / stageRect.height) * 100;
       const foodW = (toolRect.width * 0.61 / stageRect.width) * 100;
       const foodH = (toolRect.height * 0.24 / stageRect.height) * 100;
       const bubblesH = (toolRect.height * 0.26 / stageRect.height) * 100;
