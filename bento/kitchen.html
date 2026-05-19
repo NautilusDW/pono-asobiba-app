@@ -66,6 +66,24 @@
 
   --radius: 18px;
   --radius-lg: 22px;
+
+  --ui-flow-step-1: url('../assets/images/bento/cooking/ui/flow_step_1.png');
+  --ui-flow-step-2: url('../assets/images/bento/cooking/ui/flow_step_2.png');
+  --ui-flow-step-3: url('../assets/images/bento/cooking/ui/flow_step_3.png');
+  --ui-flow-step-4: url('../assets/images/bento/cooking/ui/flow_step_4.png');
+  --ui-flow-step-5: url('../assets/images/bento/cooking/ui/flow_step_5.png');
+  --ui-flow-num-1: url('../assets/images/bento/cooking/ui/flow_num_1.png');
+  --ui-flow-num-2: url('../assets/images/bento/cooking/ui/flow_num_2.png');
+  --ui-flow-num-3: url('../assets/images/bento/cooking/ui/flow_num_3.png');
+  --ui-flow-num-4: url('../assets/images/bento/cooking/ui/flow_num_4.png');
+  --ui-flow-num-5: url('../assets/images/bento/cooking/ui/flow_num_5.png');
+  --ui-flow-pointer: url('../assets/images/bento/cooking/ui/flow_pointer.png');
+  --ui-ingredient-card: url('../assets/images/bento/cooking/ui/ingredient_card_frame.png');
+  --ui-recipe-card: url('../assets/images/bento/cooking/ui/recipe_card_frame.png');
+  --ui-speech-bubble: url('../assets/images/bento/cooking/ui/speech_bubble_wide.png');
+  --ui-hint-box: url('../assets/images/bento/cooking/ui/hint_box_wide.png');
+  --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_open.png');
+  --ui-fridge-closed: url('../assets/images/bento/cooking/ui/fridge_closed.png');
 }
 
 html, body {
@@ -143,29 +161,32 @@ body[data-screen="fridge"] .stage-wrap {
   width: 100%;
   margin: 0 0 4px;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr);
-  gap: 10px;
-  align-items: center;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr);
+  gap: 16px;
+  align-items: start;
   padding: 0;
   flex: 0 0 auto;
 }
 
-.title-block { min-width: 0; }
+.title-block {
+  min-width: 0;
+  padding-top: 4px;
+}
 .app-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: 2.4rem;
+  font-size: 2.28rem;
   font-weight: 900;
   color: #F2A53A;
   text-shadow:
     3px 3px 0 #FFFCEF,
     5px 5px 0 rgba(210,140,40,0.22);
   letter-spacing: 0.04em;
-  line-height: 1.15;
+  line-height: 1.06;
   word-break: keep-all;
 }
 .app-subtitle {
   margin-top: 4px;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--text-soft);
 }
@@ -173,44 +194,52 @@ body[data-screen="fridge"] .stage-wrap {
 /* 5ステップ フローチップ（1600幅で5個を必ず1行に収める） */
 .flow-chips {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: flex-end;
-  gap: 0;
+  gap: 8px;
   flex-wrap: nowrap;
   min-width: 0;
 }
 .flow-chip {
   position: relative;
-  background: var(--chip-color, #eee);
+  background: var(--flow-card) center / 100% 100% no-repeat;
   color: var(--text);
   font-weight: 900;
-  font-size: 0.75rem;
-  padding: 5px 10px 5px 8px;
-  border-radius: 11px;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.08), 0 3px 6px var(--shadow-soft);
+  font-size: 0.78rem;
+  width: 112px;
+  height: 132px;
+  padding: 8px 8px 14px;
+  border-radius: 20px;
+  box-shadow: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  margin-right: 7px;
+  justify-content: flex-start;
+  gap: 2px;
+  margin-right: 0;
   margin-bottom: 0;
-  white-space: nowrap;
-  border: 2px solid rgba(255,255,255,0.7);
-  transition: transform 0.15s ease;
+  white-space: normal;
+  border: 0;
+  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
   cursor: pointer;
   font-family: inherit;
+  overflow: visible;
+  touch-action: manipulation;
 }
 .flow-chip::after {
   content: '';
   position: absolute;
-  right: -9px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: 9px solid transparent;
-  border-left-color: var(--chip-color, #eee);
-  filter: drop-shadow(2px 0 0 rgba(255,255,255,0.7));
+  left: 50%;
+  bottom: -13px;
+  width: 28px;
+  height: 25px;
+  transform: translateX(-50%);
+  background: var(--ui-flow-pointer) center / contain no-repeat;
+  opacity: 0;
+  filter: drop-shadow(0 2px 2px rgba(120,80,35,0.18));
+  pointer-events: none;
 }
 .flow-chip:last-child { margin-right: 0; }
-.flow-chip:last-child::after { display: none; }
 .flow-chip:active { transform: translateY(1px) scale(0.98); }
 .flow-chip[aria-disabled="true"] {
   opacity: 0.55;
@@ -218,11 +247,17 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .flow-chip[aria-disabled="true"]:active { transform: none; }
 .flow-chip .step-num {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.85);
-  color: var(--text);
-  font-size: 0.7rem;
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  width: 35px;
+  height: 35px;
+  transform: translateX(-50%);
+  border-radius: 0;
+  background: var(--flow-num) center / contain no-repeat;
+  color: transparent;
+  text-shadow: none;
+  font-size: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,35 +265,52 @@ body[data-screen="fridge"] .stage-wrap {
   flex-shrink: 0;
 }
 .flow-chip .step-icon {
-  font-size: 0.9rem;
+  display: none;
+}
+.flow-chip > span:last-child {
+  margin-top: auto;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.22;
+  padding: 0 5px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.85);
 }
 .flow-chip.active {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 5px 0 rgba(0,0,0,0.12), 0 8px 14px var(--shadow);
-  border-color: #fff;
+  transform: translateY(-4px) scale(1.045);
+  filter: drop-shadow(0 7px 8px rgba(120,80,35,0.22));
   z-index: 2;
 }
 .flow-chip.active::before {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: 14px;
-  border: 2px dashed #fff;
+  inset: -5px;
+  border-radius: 24px;
+  border: 2px solid rgba(255,201,78,0.72);
+  background: rgba(255,248,214,0.28);
   pointer-events: none;
   animation: chipPulse 1.4s ease-in-out infinite;
 }
+.flow-chip.active::after { opacity: 1; }
 @keyframes chipPulse {
   0%, 100% { opacity: 0.7; }
   50% { opacity: 1; }
 }
-.flow-chip.done { opacity: 0.78; }
+.flow-chip.done {
+  opacity: 0.86;
+  filter: saturate(0.9);
+}
 
 /* チップ別カラー */
-.flow-chip[data-step="1"] { --chip-color: var(--chip-green); }
-.flow-chip[data-step="2"] { --chip-color: var(--chip-orange); }
-.flow-chip[data-step="3"] { --chip-color: var(--chip-blue); }
-.flow-chip[data-step="4"] { --chip-color: var(--chip-pink); }
-.flow-chip[data-step="5"] { --chip-color: var(--chip-yellow); }
+.flow-chip[data-step="1"] { --flow-card: var(--ui-flow-step-1); --flow-num: var(--ui-flow-num-1); }
+.flow-chip[data-step="2"] { --flow-card: var(--ui-flow-step-2); --flow-num: var(--ui-flow-num-2); }
+.flow-chip[data-step="3"] { --flow-card: var(--ui-flow-step-3); --flow-num: var(--ui-flow-num-3); }
+.flow-chip[data-step="4"] { --flow-card: var(--ui-flow-step-4); --flow-num: var(--ui-flow-num-4); }
+.flow-chip[data-step="5"] { --flow-card: var(--ui-flow-step-5); --flow-num: var(--ui-flow-num-5); }
 
 /* =========================================================
    トップアクション（右上ボタン）
@@ -306,6 +358,13 @@ body[data-screen="fridge"] .stage-wrap {
   flex-direction: column;
   min-height: 0;
   position: relative; /* .screen-back の absolute 配置基準 */
+}
+.screen:focus:not(:focus-visible) {
+  outline: none;
+}
+.screen:focus-visible {
+  outline: 4px solid rgba(242,145,90,0.55);
+  outline-offset: -6px;
 }
 .screen[hidden] {
   display: none !important;
@@ -355,11 +414,11 @@ body[data-screen="fridge"] .stage-wrap {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: rgba(255,255,255,0.7);
-  border: 3px solid #fff;
+  background: rgba(255,255,255,0.42);
+  border: 0;
   border-radius: var(--radius);
-  padding: 10px 14px;
-  box-shadow: 0 4px 10px var(--shadow-soft);
+  padding: 6px 10px;
+  box-shadow: none;
   max-width: 920px;
   margin: 0 auto;
   width: 100%;
@@ -386,7 +445,7 @@ body[data-screen="fridge"] .stage-wrap {
   font-size: 2.55rem;
   min-height: 0;
   height: 100%;
-  padding: 8px 6px;
+  padding: 14px 20px 18px;
 }
 .select-stage .ingredient-btn .ingredient-name {
   font-size: 0.9rem;
@@ -460,10 +519,10 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .fridge-hero {
   background: linear-gradient(180deg, #F0FAFF 0%, #D4ECFA 100%);
-  border: 3px solid #fff;
+  border: 0;
   border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: 0 6px 16px var(--shadow-soft);
+  padding: 14px 16px 16px;
+  box-shadow: none;
   /* 子の fridge-body を flex-grow させて縦の主役性を作る */
   display: flex;
   flex-direction: column;
@@ -492,12 +551,12 @@ body[data-screen="fridge"] .stage-wrap {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: rgba(255,255,255,0.85);
-  border: 3px solid #fff;
+  background: rgba(255,255,255,0.34);
+  border: 0;
   border-radius: var(--radius);
-  padding: 12px 14px;
-  box-shadow: 0 4px 10px var(--shadow-soft);
-  margin-top: 12px;
+  padding: 8px 10px;
+  box-shadow: none;
+  margin-top: 8px;
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 0.5s ease, transform 0.5s ease;
@@ -1313,58 +1372,57 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   filter: drop-shadow(0 3px 4px rgba(0,0,0,0.12));
 }
 .speech-bubble {
-  background: #fff;
-  border: 3px solid #FFD9A8;
-  border-radius: 16px;
-  padding: 8px 14px;
+  background: var(--ui-speech-bubble) center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  padding: 18px 28px 18px 52px;
+  min-height: 66px;
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
-  box-shadow: 0 2px 6px var(--shadow-soft);
+  box-shadow: none;
   position: relative;
   line-height: 1.4;
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 .speech-bubble::before {
-  content: '';
-  position: absolute;
-  left: -12px; top: 18px;
-  border: 8px solid transparent;
-  border-right-color: #FFD9A8;
+  display: none;
 }
 .speech-bubble::after {
-  content: '';
-  position: absolute;
-  left: -8px; top: 20px;
-  border: 6px solid transparent;
-  border-right-color: #fff;
+  display: none;
 }
 
 .ingredient-btn {
-  border: 3px solid #fff;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #FFFEF8 0%, #FFF1D9 100%);
-  box-shadow: 0 3px 0 rgba(140,100,60,0.25), 0 4px 6px rgba(0,0,0,0.08);
+  border: 0;
+  border-radius: 18px;
+  background: var(--ui-ingredient-card) center / 100% 100% no-repeat;
+  box-shadow: none;
   font-size: 2.2rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
-  transition: transform 0.1s;
+  gap: 4px;
+  padding: 14px 20px 18px;
+  transition: transform 0.1s, filter 0.15s ease;
   position: relative;
   aspect-ratio: 1;
   font-family: inherit;
 }
-.ingredient-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(140,100,60,0.3); }
+.ingredient-btn:active {
+  transform: translateY(2px) scale(0.99);
+  filter: brightness(0.98);
+}
 .ingredient-btn.unlocked {
-  background: linear-gradient(180deg, #EFFBE3 0%, #C8EBA9 100%);
+  background: var(--ui-ingredient-card) center / 100% 100% no-repeat;
 }
 .ingredient-btn.unlocked::after {
   content: '✓';
   position: absolute;
-  top: -6px; right: -6px;
+  top: 8px; right: 12px;
   width: 22px; height: 22px;
   background: var(--green);
   color: #fff;
@@ -1377,8 +1435,10 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   font-weight: 900;
 }
 .ingredient-btn.selected {
-  background: linear-gradient(180deg, #FFE0BB 0%, var(--primary) 100%);
-  border-color: var(--primary);
+  background: var(--ui-ingredient-card) center / 100% 100% no-repeat;
+  outline: 4px solid rgba(242,145,90,0.8);
+  outline-offset: -8px;
+  filter: drop-shadow(0 6px 8px rgba(216,110,47,0.18));
 }
 .ingredient-btn.locked {
   opacity: 0.55;
@@ -1387,7 +1447,7 @@ body.layout-editor-on #fry-stage .oil-bubbles {
 .ingredient-btn.locked::after {
   content: '🔒';
   position: absolute;
-  top: -6px; right: -6px;
+  top: 8px; right: 12px;
   width: 22px; height: 22px;
   background: #fff;
   color: var(--text);
@@ -1398,6 +1458,26 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   justify-content: center;
   box-shadow: 0 1px 0 var(--shadow);
   border: 2px solid #FFE2B6;
+}
+.ingredient-art {
+  width: min(50%, 150px);
+  height: 54%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.ingredient-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 7px rgba(110,70,30,0.16));
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.ingredient-art.ingredient-emoji {
+  font-size: 3rem;
 }
 .ingredient-status {
   position: absolute;
@@ -1417,7 +1497,10 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   font-size: 0.72rem;
   font-weight: 900;
   color: var(--text);
-  margin-top: 2px;
+  margin-top: 0;
+  text-align: center;
+  line-height: 1.18;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.85);
 }
 
 /* ---------- まな板まわり（chop-main 内） ----------
@@ -1773,11 +1856,11 @@ body.layout-editor-on .endX-marker {
   font-weight: 900;
   font-size: 1rem;
   text-align: center;
-  /* キッチン背景の上で読みやすくするため半透明ピル化 */
-  padding: 6px 14px;
-  background: rgba(255, 253, 246, 0.82);
-  border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  padding: 18px 34px;
+  min-width: 260px;
+  background: var(--ui-hint-box) center / 100% 100% no-repeat;
+  border-radius: 0;
+  box-shadow: none;
   pointer-events: none;
   position: absolute;
   left: 50%;
@@ -1964,21 +2047,22 @@ body.layout-editor-on .endX-marker {
 
 /* ---------- 冷蔵庫（fridge 画面で巨大表示） ---------- */
 .fridge-body {
-  background: linear-gradient(180deg, var(--fridge-bg) 0%, #C2E2F4 100%);
-  border: 5px solid var(--fridge-edge);
-  border-radius: 22px;
-  padding: 18px;
+  background: var(--ui-fridge-open) center / contain no-repeat;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  box-shadow:
-    inset 0 -4px 0 rgba(0,0,0,0.06),
-    0 6px 0 var(--fridge-deep),
-    0 10px 18px var(--shadow-soft);
+  box-shadow: none;
   transition: transform 0.4s;
   /* 冷蔵庫主役要件: 縦の存在感を出すため底上げ (旧 280px → 420px)。
      stage 1600x900 内、fridge 画面の縦余白の大半を fridge-body が占めるようにする */
-  min-height: 420px;
-  flex: 1 1 auto;
+  min-height: 0;
+  height: 520px;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  flex: 0 0 520px;
+  align-self: center;
   position: relative;
   perspective: 1200px;
 }
@@ -1986,16 +2070,12 @@ body.layout-editor-on .endX-marker {
 .fridge-body::after {
   content: '';
   position: absolute;
-  inset: -5px;
-  border-radius: 22px;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.18) 60%, rgba(255,255,255,0.05) 100%),
-    linear-gradient(180deg, var(--fridge-bg) 0%, #B7DBF0 100%);
-  border: 5px solid var(--fridge-edge);
-  box-shadow:
-    inset 0 -4px 0 rgba(0,0,0,0.06),
-    0 4px 10px rgba(0,0,0,0.10);
-  transform-origin: left center;
+  inset: 0;
+  border-radius: 0;
+  background: var(--ui-fridge-closed) 14% center / auto 88% no-repeat;
+  border: 0;
+  box-shadow: none;
+  transform-origin: 22% center;
   transform: perspective(1200px) rotateY(0deg);
   opacity: 1;
   pointer-events: none;
@@ -2003,20 +2083,7 @@ body.layout-editor-on .endX-marker {
 }
 /* 取っ手 */
 .fridge-body::before {
-  content: '';
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  width: 6px;
-  height: 56px;
-  background: linear-gradient(180deg, #fff 0%, var(--fridge-edge) 100%);
-  border: 2px solid var(--fridge-deep);
-  border-radius: 4px;
-  transform: translateY(-50%);
-  z-index: 5;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.4s ease;
+  display: none;
 }
 .fridge-body.open { animation: fridgeShake 0.45s ease; }
 .fridge-body.open::after {
@@ -2032,7 +2099,7 @@ body.layout-editor-on .endX-marker {
 }
 @keyframes fridgeDoorOpen {
   0%   { transform: perspective(1200px) rotateY(0deg); opacity: 1; }
-  60%  { transform: perspective(1200px) rotateY(-70deg); opacity: 0.9; }
+  60%  { transform: perspective(1200px) rotateY(-62deg); opacity: 0.82; }
   100% { transform: perspective(1200px) rotateY(-92deg); opacity: 0; }
 }
 @keyframes fridgeHandleHide {
@@ -2047,40 +2114,41 @@ body.layout-editor-on .endX-marker {
   .fridge-body.open::before { animation: none; opacity: 0; }
 }
 .fridge-icon {
-  font-size: 3.2rem;
-  text-align: center;
-  margin-bottom: 6px;
+  display: none;
 }
 .fridge-label {
-  text-align: center;
-  font-weight: 900;
-  font-size: 1.15rem;
-  color: var(--text);
-  background: #fff;
-  border-radius: 12px;
-  padding: 6px 12px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 0 var(--shadow-soft);
+  display: none;
 }
 .fridge-shelves {
   /* fridge-body が縦に大きく開いたぶん shelves も縦に伸ばす。
      grid-auto-rows を 72px に底上げして、棚が空でも縦の存在感を維持 */
-  flex: 1 1 auto;
+  position: absolute;
+  left: 15.5%;
+  top: 23%;
+  width: 39%;
+  height: 56%;
+  flex: none;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(72px, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(70px, 1fr);
   gap: 8px;
   align-content: start;
-  padding: 12px;
-  background: rgba(255,255,255,0.6);
-  border-radius: 12px;
-  min-height: 240px;
+  padding: 8px;
+  background: rgba(255,255,255,0.20);
+  border: 2px solid rgba(255,255,255,0.34);
+  border-radius: 18px;
+  min-height: 0;
+  opacity: 0;
+  transition: opacity 0.35s ease 1.05s;
+}
+.fridge-body.open .fridge-shelves {
+  opacity: 1;
 }
 .fridge-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: rgba(255,255,255,0.72);
   border-radius: 12px;
   padding: 6px;
   font-size: 2.4rem;
@@ -2088,6 +2156,22 @@ body.layout-editor-on .endX-marker {
   box-shadow: 0 1px 2px var(--shadow-soft);
   animation: popIn 0.5s ease-out;
   position: relative;
+}
+.fridge-item-art {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fridge-item-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 5px rgba(80,55,35,0.14));
+  pointer-events: none;
+  -webkit-user-drag: none;
 }
 @keyframes popIn {
   0%   { transform: scale(0); opacity: 0; }
@@ -2167,19 +2251,20 @@ body.layout-editor-on .endX-marker {
   gap: 8px;
 }
 .recipe-card {
-  background: #FFFEF7;
-  border: 3px solid #fff;
-  border-radius: 16px;
-  box-shadow: 0 3px 0 rgba(140,100,60,0.18), 0 4px 8px var(--shadow-soft);
-  padding: 8px;
+  background: var(--ui-recipe-card) center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: none;
+  padding: 14px 12px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   position: relative;
   transition: transform 0.15s ease;
+  aspect-ratio: 406 / 545;
 }
-.recipe-card.locked { opacity: 0.42; filter: grayscale(0.7); }
+.recipe-card.locked { opacity: 0.5; filter: grayscale(0.55); }
 .recipe-card.unlocked {
   animation: cardPop 0.55s ease-out;
 }
@@ -2189,14 +2274,17 @@ body.layout-editor-on .endX-marker {
   100% { transform: scale(1); }
 }
 .recipe-img {
-  width: 100%;
-  aspect-ratio: 1.2/1;
+  width: 78%;
+  aspect-ratio: 1.18/1;
   object-fit: contain;
   border-radius: 10px;
-  background: #fff;
+  background: transparent;
+  margin-top: 8px;
+  filter: drop-shadow(0 4px 5px rgba(80,55,35,0.12));
 }
 .recipe-name {
-  font-size: 0.85rem;
+  margin-top: auto;
+  font-size: 0.78rem;
   font-weight: 900;
   color: var(--text);
   text-align: center;
@@ -2217,7 +2305,7 @@ body.layout-editor-on .endX-marker {
 }
 .recipe-lock {
   position: absolute;
-  inset: 0;
+  inset: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2225,7 +2313,7 @@ body.layout-editor-on .endX-marker {
   gap: 4px;
   font-size: 1.4rem;
   pointer-events: none;
-  background: rgba(255,253,246,0.55);
+  background: rgba(255,253,246,0.60);
   border-radius: 14px;
 }
 .recipe-lock .lock-needs {
@@ -2244,10 +2332,10 @@ body.layout-editor-on .endX-marker {
   white-space: nowrap;
 }
 .recipe-img-fallback {
-  width: 100%;
-  aspect-ratio: 1.2/1;
+  width: 78%;
+  aspect-ratio: 1.18/1;
   border-radius: 10px;
-  background: #fff;
+  background: transparent;
   display: none;
   align-items: center;
   justify-content: center;
@@ -3605,6 +3693,7 @@ body.layout-editor-on .endX-marker {
       btn.type = 'button';
       btn.className = 'ingredient-btn';
       btn.dataset.id = ing.id;
+      const thumbSrc = getIngredientThumbSrc(ing);
       if (state.unlocked.has(ing.id)) btn.classList.add('unlocked');
       if (!ing.implemented) {
         btn.classList.add('locked');
@@ -3614,9 +3703,17 @@ body.layout-editor-on .endX-marker {
         btn.setAttribute('tabindex', '-1');
       }
       btn.innerHTML =
-        '<span aria-hidden="true">' + ing.emoji + '</span>' +
+        (thumbSrc
+          ? '<span class="ingredient-art"><img src="' + thumbSrc + '" alt="" aria-hidden="true" draggable="false"></span>'
+          : '<span class="ingredient-art ingredient-emoji" aria-hidden="true">' + ing.emoji + '</span>') +
         '<span class="ingredient-name">' + ing.name + '</span>' +
         (!ing.implemented ? '<span class="ingredient-status">じゅんびちゅう</span>' : '');
+      const img = btn.querySelector('.ingredient-art img');
+      if (img) {
+        img.onerror = function () {
+          swapImageToEmoji(this, ing.emoji);
+        };
+      }
       btn.addEventListener('click', () => onIngredientPick(ing));
       els.bar.appendChild(btn);
     });
@@ -3797,6 +3894,31 @@ body.layout-editor-on .endX-marker {
     if (cfg && cfg.fallback) return cfg.fallback;
     const rec = getPrimaryRecipeForIngredient(ing);
     return rec ? rec.img : '';
+  }
+
+  function getIngredientThumbSrc(ing) {
+    if (!ing) return '';
+    if (ing.imageBase) return cookingAssetPath(ing.imageBase);
+    const actions = Array.isArray(ing.cookingActions) ? ing.cookingActions : [];
+    for (let i = 0; i < actions.length; i += 1) {
+      const cfg = getCookImageConfig(ing, actions[i]);
+      if (cfg && Array.isArray(cfg.stages) && cfg.stages[0]) {
+        return cookingAssetPath(cfg.stages[0]);
+      }
+    }
+    const rec = getPrimaryRecipeForIngredient(ing);
+    return rec ? rec.img : '';
+  }
+
+  function swapImageToEmoji(img, emoji) {
+    if (!img || !img.parentElement) return;
+    const fallback = document.createElement('span');
+    fallback.className = img.parentElement.classList.contains('fridge-item-art')
+      ? 'fridge-item-art'
+      : 'ingredient-art ingredient-emoji';
+    fallback.setAttribute('aria-hidden', 'true');
+    fallback.textContent = emoji || '🍱';
+    img.parentElement.replaceWith(fallback);
   }
 
   function updateCookStageState(type) {
@@ -5895,7 +6017,23 @@ body.layout-editor-on .endX-marker {
       const item = document.createElement('div');
       item.className = 'fridge-item';
       item.title = ing.name;
-      item.textContent = ing.emoji;
+      const art = document.createElement('span');
+      art.className = 'fridge-item-art';
+      const thumbSrc = getIngredientThumbSrc(ing);
+      if (thumbSrc) {
+        const img = document.createElement('img');
+        img.src = thumbSrc;
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        img.draggable = false;
+        img.onerror = function () {
+          swapImageToEmoji(this, ing.emoji);
+        };
+        art.appendChild(img);
+      } else {
+        art.textContent = ing.emoji;
+      }
+      item.appendChild(art);
       if (state.newBadges.has(ing.id)) {
         const badge = document.createElement('span');
         badge.className = 'new-badge';
