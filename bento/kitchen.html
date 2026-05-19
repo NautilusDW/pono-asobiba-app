@@ -557,7 +557,9 @@ body[data-screen="fridge"] .stage-wrap {
   z-index: 0;
 }
 body.layout-editor-on .grill-stove-bg,
-body.layout-editor-on .grill-pan {
+body.layout-editor-on .grill-pan,
+body.layout-editor-on .fry-stove-bg,
+body.layout-editor-on .fry-pot {
   pointer-events: auto;
 }
 .cook-play-area:focus-visible {
@@ -677,8 +679,9 @@ body.layout-editor-on .grill-pan {
   display: none;
 }
 .cook-tool--pot {
-  left: 58%;
-  top: 64%;
+  left: 30%;
+  top: 14.2%;
+  transform: none;
   width: 56%;
   background-image: url('../assets/images/bento/cooking/deep_pot.png');
 }
@@ -738,10 +741,10 @@ body.layout-editor-on .grill-pan {
   width: 25%;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food {
-  left: 58%;
-  top: 61%;
-  width: 34%;
-  height: 24%;
+  left: var(--fry-food-x, 58%);
+  top: var(--fry-food-y, 61%);
+  width: var(--fry-food-w, 34%);
+  height: var(--fry-food-h, 24%);
   aspect-ratio: auto;
   overflow: hidden;
   border-radius: 50%;
@@ -755,8 +758,8 @@ body.layout-editor-on .grill-pan {
   max-height: 110%;
 }
 #fry-stage[data-ingredient="shrimp_breaded"].food-placed:not(.is-served) .cooking-food {
-  top: 61%;
-  height: 25%;
+  top: var(--fry-food-y, 61%);
+  height: var(--fry-shrimp-food-h, 25%);
 }
 #fry-stage[data-ingredient="shrimp_breaded"].food-placed:not(.is-served) .cooking-food img {
   max-width: 68%;
@@ -906,10 +909,10 @@ body.layout-editor-on .grill-pan {
 }
 .oil-bubbles {
   position: absolute;
-  left: 58%;
-  top: 61%;
-  width: 34%;
-  height: 26%;
+  left: var(--fry-bubbles-x, 58%);
+  top: var(--fry-bubbles-y, 61%);
+  width: var(--fry-bubbles-w, 34%);
+  height: var(--fry-bubbles-h, 26%);
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 6;
@@ -2177,6 +2180,8 @@ body.layout-editor-on .endX-marker {
       ['.bowl',           'wh', '切れ端ボウル'],
       ['.grill-stove-bg',  'wh', '[調理] 焼く背景コンロ'],
       ['.grill-pan',       'wh', '[調理] フライパン'],
+      ['.fry-stove-bg',    'wh', '[調理] 揚げる背景コンロ'],
+      ['.fry-pot',         'wh', '[調理] 揚げ鍋'],
     ],
     // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
     // editor の保存キーは `${sel}|${i}@${ingredientId}` の形 (`@carrot` / `@wiener` …)
@@ -2370,11 +2375,11 @@ body.layout-editor-on .endX-marker {
   <div class="cook-screen-wrap">
     <div class="cook-main">
       <div class="cook-play-area" id="fry-stage" role="button" tabindex="0" aria-label="あげなべ">
-        <div class="cook-stove-bg" aria-hidden="true"></div>
+        <div class="cook-stove-bg fry-stove-bg" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="heat-glow" id="fry-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--tray" aria-hidden="true"></div>
-        <div class="cook-tool cook-tool--pot" aria-hidden="true"></div>
+        <div class="cook-tool cook-tool--pot fry-pot" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="oil-bubbles" id="oil-bubbles" aria-hidden="true">
           <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
           <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
@@ -2893,6 +2898,7 @@ body.layout-editor-on .endX-marker {
 
     // fry screen
     fryStage:      document.getElementById('fry-stage'),
+    fryPot:        document.querySelector('#fry-stage .fry-pot'),
     fryingFoodWrap: document.getElementById('frying-food-wrap'),
     fryingFood:    document.getElementById('frying-food'),
     fryingFoodFallback: document.getElementById('frying-food-fallback'),
@@ -3484,9 +3490,9 @@ body.layout-editor-on .endX-marker {
     } else {
       delete stageEl.dataset.ingredient;
     }
-    if (type === 'grill') {
+    if (type === 'grill' || type === 'fry') {
       requestAnimationFrame(function () {
-        syncCookLayoutFromTools('grill');
+        syncCookLayoutFromTools(type);
       });
     }
   }
@@ -3496,18 +3502,36 @@ body.layout-editor-on .endX-marker {
   }
 
   function syncCookLayoutFromTools(type) {
-    if (type !== 'grill') return;
-    const stage = els.grillStage;
-    const pan = els.grillPan;
-    if (!stage || !pan) return;
+    const stage = type === 'fry' ? els.fryStage : els.grillStage;
+    const tool = type === 'fry' ? els.fryPot : els.grillPan;
+    if (!stage || !tool) return;
     const stageRect = stage.getBoundingClientRect();
-    const panRect = pan.getBoundingClientRect();
-    if (!stageRect.width || !stageRect.height || !panRect.width || !panRect.height) return;
+    const toolRect = tool.getBoundingClientRect();
+    if (!stageRect.width || !stageRect.height || !toolRect.width || !toolRect.height) return;
 
-    const cx = ((panRect.left + panRect.width * 0.5 - stageRect.left) / stageRect.width) * 100;
-    const foodY = ((panRect.top + panRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
-    const heatY = ((panRect.top + panRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
+    const cx = ((toolRect.left + toolRect.width * 0.5 - stageRect.left) / stageRect.width) * 100;
+    if (type === 'fry') {
+      const oilY = ((toolRect.top + toolRect.height * 0.47 - stageRect.top) / stageRect.height) * 100;
+      const heatY = ((toolRect.top + toolRect.height * 0.63 - stageRect.top) / stageRect.height) * 100;
+      const foodW = (toolRect.width * 0.61 / stageRect.width) * 100;
+      const foodH = (toolRect.height * 0.24 / stageRect.height) * 100;
+      const bubblesH = (toolRect.height * 0.26 / stageRect.height) * 100;
+      stage.style.setProperty('--fry-food-x', pctString(cx));
+      stage.style.setProperty('--fry-food-y', pctString(oilY));
+      stage.style.setProperty('--fry-food-w', pctString(foodW));
+      stage.style.setProperty('--fry-food-h', pctString(foodH));
+      stage.style.setProperty('--fry-shrimp-food-h', pctString(foodH + 1));
+      stage.style.setProperty('--fry-bubbles-x', pctString(cx));
+      stage.style.setProperty('--fry-bubbles-y', pctString(oilY));
+      stage.style.setProperty('--fry-bubbles-w', pctString(foodW));
+      stage.style.setProperty('--fry-bubbles-h', pctString(bubblesH));
+      stage.style.setProperty('--cook-heat-x', pctString(cx));
+      stage.style.setProperty('--cook-heat-y', pctString(heatY));
+      return;
+    }
 
+    const foodY = ((toolRect.top + toolRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
+    const heatY = ((toolRect.top + toolRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
     stage.style.setProperty('--grill-food-x', pctString(cx));
     stage.style.setProperty('--grill-food-y', pctString(foodY));
     stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
@@ -3524,11 +3548,14 @@ body.layout-editor-on .endX-marker {
       requestAnimationFrame(function () {
         queued = false;
         syncCookLayoutFromTools('grill');
+        syncCookLayoutFromTools('fry');
       });
     };
     const obs = new MutationObserver(schedule);
     if (els.grillPan) obs.observe(els.grillPan, { attributes: true, attributeFilter: ['style', 'class'] });
     if (els.grillStage) obs.observe(els.grillStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+    if (els.fryPot) obs.observe(els.fryPot, { attributes: true, attributeFilter: ['style', 'class'] });
+    if (els.fryStage) obs.observe(els.fryStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
     window.addEventListener('resize', schedule, { passive: true });
     schedule();
   }
@@ -3585,6 +3612,14 @@ body.layout-editor-on .endX-marker {
   function isCookDropPoint(type, point) {
     if (!point) return false;
     if (type === 'fry') {
+      const potBounds = getElementBoundsPct(els.fryPot, els.fryStage);
+      if (potBounds) {
+        const left = potBounds.left + potBounds.width * 0.06;
+        const right = potBounds.left + potBounds.width * 0.94;
+        const top = potBounds.top + potBounds.height * 0.18;
+        const bottom = potBounds.top + potBounds.height * 0.80;
+        return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+      }
       return point.x >= 36 && point.x <= 82 && point.y >= 24 && point.y <= 72;
     }
     const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
