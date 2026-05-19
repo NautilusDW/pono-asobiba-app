@@ -125,6 +125,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-19 - [batch:75-kitchen-pan-burner-align] **Done** — `bento/kitchen.html` の grill 画面で、フライパン画像が縦長素材なのに正方形ボックス基準で置かれ、背景五徳/火に対して少し浮いて見える問題を調整。`cook-tool--pan` を `left:58% / top:64% / width:53%` に拡大・上寄せし、grill 食材は `top:52%`、煙は `top:41%` に追従。背景 close-up と fry 鍋配置は維持。ローカル Playwright で hamburg 実ドラッグ投入と shrimp_breaded fry を確認し、別エージェントのクロスレビューでもブロッカー無し。`sw.js` は CACHE_VERSION 461。 (by Codex)
 - 2026-05-19 - [batch:74-kitchen-stove-closeup-pan-fire] **Done** — `D:\ポノのおへや\Bento\cooking\調理器具\builtin_stove_only_bg_2x_upscaled のコピー.png` を見た目参照として、`bento/kitchen.html` の grill/fry 背景コンロを `scale(1.34)` / `transform-origin: 8% 18%` へ寄せ、フライパン/鍋・食材・煙/泡を `left:58%` 基準へ再配置。フライパン下から火が少し見えるよう `heat-glow` を下げて小さめに調整。ローカル Playwright で hamburg と shrimp_breaded の実ドラッグ投入を確認し、別エージェントのクロスレビューでもブロッカー無し。`sw.js` は CACHE_VERSION 460。 (by Codex)
 - 2026-05-19 - [batch:73-kitchen-stove-scale] **Done** — `bento/kitchen.html` の grill/fry 調理画面で、フライパン/鍋がコンロから落ちそうに見える問題を軽減するため、`.cook-stove-bg` を左下バーナー中心基準 (`transform-origin: 50% 63%`) で `scale(1.12)` に拡大。調理器具・食材座標は維持し、背景コンロだけを大きく見せる。ローカル Playwright で hamburg と shrimp_breaded の実ドラッグ投入を確認し、別エージェントのクロスレビューでもブロッカー無し。`sw.js` は CACHE_VERSION 459。 (by Codex)
 - 2026-05-19 - [batch:72-kitchen-stove-tool-align] **Done** — `bento/kitchen.html` の grill/fry 調理画面で、フライパン/鍋・食材・煙/泡の基準位置を `stove_base.webp` の左下バーナー中心へ合わせ直し、左の準備皿/完成皿を少し左寄せ・縮小して調理器具との干渉を軽減。ローカル Playwright で hamburg preheat/placed と shrimp fry placed のスクリーンショットを確認し、別エージェントのクロスレビューでもブロッカー無し。`sw.js` は CACHE_VERSION 458。 (by Codex)
