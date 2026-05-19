@@ -491,6 +491,19 @@
     return data;
   }
 
+  function currentLayoutDataWithLiveSnapshot() {
+    var data = window._currentLayoutData;
+    if (!data || typeof data !== 'object') return data;
+    try {
+      // Dynamic re-scan may run right after app DOM changes while the user has
+      // unsaved drag/resize edits. Merge the live DOM snapshot over the cached
+      // layout just before apply, so stale tx/ty cannot snap elements back.
+      data = mergeSnapshotOver(data, snapshot());
+      window._currentLayoutData = data;
+    } catch (e) { /* keep the existing cached data */ }
+    return data;
+  }
+
   function collectEditableTexts() {
     var data = {};
     $$('.editable-text').forEach(function (el) {
@@ -7974,7 +7987,7 @@
             try { refreshElementList(); } catch (e) {}
             try {
               if (window._currentLayoutData && window.LayoutApplier) {
-                window.LayoutApplier.apply(window._currentLayoutData, moRoot, _applierCfg({
+                window.LayoutApplier.apply(currentLayoutDataWithLiveSnapshot(), moRoot, _applierCfg({
                   selectors: state.spec.map(function (e) { return e[0]; })
                 }));
               }
