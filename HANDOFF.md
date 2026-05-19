@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-19 - [batch:82-kitchen-cook-timing-rating] Codex: `bento/kitchen.html` に焼く/揚げる用の青ゾーン timing gauge、星評価 (`★★★` / `★★☆`) 、完成後に皿へ移して画面中央へ出す served 表示を実装。grill は 2 回、fry は 1 回のタイミングを記録し、青以外でも失敗にせず星 2 評価へ落とす。クロスレビューで blocker なし、ローカル Playwright で egg grill 青 2 回 = `★★★` / shrimp fry 赤 = `★★☆` を確認済。`sw.js` は v468。commit/push 待ち。 (by Codex)
+
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: user 指摘「細かく描きすぎ、もっと大雑把で手描き感、毛並みは全身ではなく明部/影部のみ、輪郭は束を大きく長く」を受領。既存 batch 45 の Cut 1 v4 (`tmp/alpha_pending/45/puzzle_opening_cut1_landscape_gathering_long_handdrawn_fur_slim_pono_v4_raw.png`) を確認し、全身の短線テクスチャが過密と判断。alpha 抜き・切り抜きは行わず、同構図の粗い手描き毛束版 raw を `tmp/alpha_pending/47/` に追加納品する。 (by Codex)
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: Cut 1 rough-fur raw 2 案を `tmp/alpha_pending/47/` に納品完了。`puzzle_opening_cut1_rough_fur_v1_raw.png` / `puzzle_opening_cut1_rough_fur_v2_raw.png` はどちらも `1672x941` / RGB / 3MB 未満。v1 はキャラ固定を優先、v2 は胴体の面をより静かにした候補で現時点の推奨。1 回目の生成案は狐/あらいぐまが別キャラ化したため不採用・未納品。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
 - 2026-05-16 - [batch:47-puzzle-opening-cut1-rough-fur] Codex: user 追加指摘「テイストは v1/v2 ぐらいで良いが、キャラデザインが変わりすぎ。キャラ設計は前の方へ合わせる」を受領。batch 45 v4 のキャラ比率・顔・種別を参照しつつ、毛密度だけ v1/v2 寄りの中間にする v3 raw を追加納品する。 (by Codex)

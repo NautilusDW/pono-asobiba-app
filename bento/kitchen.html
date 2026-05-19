@@ -633,7 +633,17 @@ body.layout-editor-on .fry-pot {
   opacity: 0;
 }
 .cook-play-area.is-served .finish-dish {
+  left: 50%;
+  top: 64%;
+  width: 38%;
+  transform: translate(-50%, -50%) rotate(0deg) scale(1.04);
   opacity: 1;
+  z-index: 36;
+}
+#fry-stage.is-served .finish-dish {
+  top: 66%;
+  width: 46%;
+  z-index: 36;
 }
 .heat-glow {
   position: absolute;
@@ -781,14 +791,21 @@ body.layout-editor-on .fry-pot {
   max-height: 112%;
 }
 .cook-play-area.is-served .cooking-food {
-  left: 16%;
-  top: 68%;
-  width: 22%;
+  left: 50%;
+  top: 62%;
+  width: 24%;
+  z-index: 37;
 }
 #fry-stage.is-served .cooking-food {
-  left: 16%;
-  top: 68%;
-  width: 24%;
+  left: 50%;
+  top: 64%;
+  width: 27%;
+  z-index: 37;
+  height: auto;
+  overflow: visible;
+  border-radius: 0;
+  -webkit-clip-path: none;
+  clip-path: none;
 }
 .cooking-food img {
   max-width: 100%;
@@ -915,6 +932,84 @@ body.layout-editor-on .fry-pot {
 }
 .cook-progress-dots span.done {
   background: var(--green);
+}
+.cook-timing-meter {
+  margin: 10px auto 0;
+  width: min(100%, 300px);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.cook-timing-meter.is-active,
+.cook-timing-meter.show-rating {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cook-timing-caption {
+  text-align: center;
+  font-weight: 900;
+  color: var(--text);
+  font-size: 0.96rem;
+  margin-bottom: 5px;
+}
+.cook-timing-track {
+  position: relative;
+  height: 20px;
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,0.94);
+  overflow: hidden;
+  background:
+    linear-gradient(90deg,
+      #F57A68 0 16%,
+      #FFD274 16% 40%,
+      #5FC7FF 40% 68%,
+      #FFD274 68% 84%,
+      #F57A68 84% 100%);
+  box-shadow: inset 0 2px 5px rgba(95,62,28,0.2), 0 3px 7px rgba(110,70,35,0.12);
+}
+.cook-timing-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.42), transparent 55%);
+}
+.cook-timing-needle {
+  position: absolute;
+  left: var(--timing-pct, 0%);
+  top: 50%;
+  width: 18px;
+  height: 32px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: #2D6D83;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 3px 8px rgba(56,36,18,0.28);
+  z-index: 1;
+}
+.cook-timing-meter[data-zone="good"] .cook-timing-needle {
+  background: #1F9EDB;
+  box-shadow: 0 0 0 4px rgba(95,199,255,0.32), 0 3px 8px rgba(56,36,18,0.28);
+}
+.cook-timing-meter[data-zone="red"] .cook-timing-needle {
+  background: #E84E43;
+}
+.cook-rating {
+  min-height: 30px;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #F3A32F;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.78), 0 3px 8px rgba(146,89,35,0.16);
+}
+.cook-rating.show {
+  opacity: 1;
+  transform: scale(1);
 }
 .cook-action-label {
   text-align: center;
@@ -2379,6 +2474,13 @@ body.layout-editor-on .endX-marker {
     <div class="cook-side">
       <div class="side-card">
         <div class="cook-action-label" id="grill-action-label">まず フライパンを あたためよう</div>
+        <div class="cook-timing-meter" id="grill-timing-meter" data-zone="warm" aria-hidden="true">
+          <div class="cook-timing-caption" id="grill-timing-caption">あおで タップ！</div>
+          <div class="cook-timing-track">
+            <div class="cook-timing-needle" id="grill-timing-needle"></div>
+          </div>
+          <div class="cook-rating" id="grill-rating"></div>
+        </div>
         <div class="cook-progress-dots" id="grill-progress-dots" aria-hidden="true">
           <span></span><span></span>
         </div>
@@ -2424,6 +2526,13 @@ body.layout-editor-on .endX-marker {
     <div class="cook-side">
       <div class="side-card">
         <div class="cook-action-label" id="fry-action-label">まず あぶらを あたためよう</div>
+        <div class="cook-timing-meter" id="fry-timing-meter" data-zone="warm" aria-hidden="true">
+          <div class="cook-timing-caption" id="fry-timing-caption">あおで タップ！</div>
+          <div class="cook-timing-track">
+            <div class="cook-timing-needle" id="fry-timing-needle"></div>
+          </div>
+          <div class="cook-rating" id="fry-rating"></div>
+        </div>
         <div class="cook-progress-dots" id="fry-progress-dots" aria-hidden="true">
           <span></span><span></span>
         </div>
@@ -2536,6 +2645,12 @@ body.layout-editor-on .endX-marker {
   const STORAGE_KEY = 'bentoUnlockedIngredients';
   const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
   const RECIPE_STORAGE_KEY = 'bentoUnlockedRecipes';
+  const COOK_TIMING_CYCLE_MS = 1850;
+  const COOK_TIMING_GOOD_MIN = 40;
+  const COOK_TIMING_GOOD_MAX = 68;
+  const COOK_TIMING_RED_LEFT_MAX = 16;
+  const COOK_TIMING_RED_RIGHT_MIN = 84;
+  const COOK_TIMING_GOOD_GRACE_MS = 220;
 
   // 材料定義
   //
@@ -2804,6 +2919,16 @@ body.layout-editor-on .endX-marker {
     cookDragging: false,
     cookDragType: null,
     cookDragPointerId: null,
+    cookTimingActive: false,
+    cookTimingType: null,
+    cookTimingStart: 0,
+    cookTimingPct: 0,
+    cookTimingRaf: 0,
+    cookTimingLastGoodAt: 0,
+    cookTimingPointerType: null,
+    cookTimingPointerZone: null,
+    cookTimingPointerAt: 0,
+    cookTimingResults: [],
     suppressCookClick: false,
     fryReady: false,
     chopProgress: 0,
@@ -2827,6 +2952,7 @@ body.layout-editor-on .endX-marker {
     state.knifeAnimating = false;
     state.queuedChopTaps = 0;
     state.cookAnimating = false;
+    stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
       try { clearTimeout(id); } catch (e) { /* noop */ }
@@ -2923,6 +3049,10 @@ body.layout-editor-on .endX-marker {
     grillBurst:    document.getElementById('grill-burst'),
     grillDots:     document.getElementById('grill-progress-dots'),
     grillActionLabel: document.getElementById('grill-action-label'),
+    grillTimingMeter: document.getElementById('grill-timing-meter'),
+    grillTimingNeedle: document.getElementById('grill-timing-needle'),
+    grillTimingCaption: document.getElementById('grill-timing-caption'),
+    grillRating: document.getElementById('grill-rating'),
     speechGrill:   document.getElementById('speech-grill'),
 
     // fry screen
@@ -2934,6 +3064,10 @@ body.layout-editor-on .endX-marker {
     fryBurst:      document.getElementById('fry-burst'),
     fryDots:       document.getElementById('fry-progress-dots'),
     fryActionLabel: document.getElementById('fry-action-label'),
+    fryTimingMeter: document.getElementById('fry-timing-meter'),
+    fryTimingNeedle: document.getElementById('fry-timing-needle'),
+    fryTimingCaption: document.getElementById('fry-timing-caption'),
+    fryRating: document.getElementById('fry-rating'),
     speechFry:     document.getElementById('speech-fry'),
 
     // fridge screen
@@ -3054,6 +3188,7 @@ body.layout-editor-on .endX-marker {
     });
 
     if (els.grillStage) {
+      els.grillStage.addEventListener('pointerdown', (e) => onCookTimingPointerDown(e, 'grill'));
       els.grillStage.addEventListener('click', onGrillTap);
       els.grillStage.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
@@ -3069,6 +3204,7 @@ body.layout-editor-on .endX-marker {
       els.grillingFoodWrap.addEventListener('pointercancel', (e) => onCookFoodPointerEnd(e, 'grill'));
     }
     if (els.fryStage) {
+      els.fryStage.addEventListener('pointerdown', (e) => onCookTimingPointerDown(e, 'fry'));
       els.fryStage.addEventListener('click', onFryTap);
       els.fryStage.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
@@ -3361,6 +3497,7 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
+    state.cookTimingResults = [];
     state.suppressCookClick = false;
     state.fryReady = false;
     state.chopProgress = 0;
@@ -3407,7 +3544,10 @@ body.layout-editor-on .endX-marker {
       state.cookDragging = false;
       state.cookDragType = null;
       state.cookDragPointerId = null;
+      state.cookTimingResults = [];
       state.suppressCookClick = false;
+      resetCookTimingUI('grill');
+      resetCookTimingUI('fry');
       resetCookDrag();
       loadIngredient(ing);
       els.emptyHint.style.display = 'none';
@@ -3437,7 +3577,9 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
+    state.cookTimingResults = [];
     state.suppressCookClick = false;
+    resetCookTimingUI(action.type);
     resetCookDrag(action.type);
     hideCombo();
     updateCookView(action.type, 0, false);
@@ -3798,16 +3940,161 @@ body.layout-editor-on .endX-marker {
     burst.classList.add('show');
   }
 
+  function getCookTimingEls(type) {
+    return {
+      meter: type === 'fry' ? els.fryTimingMeter : els.grillTimingMeter,
+      needle: type === 'fry' ? els.fryTimingNeedle : els.grillTimingNeedle,
+      caption: type === 'fry' ? els.fryTimingCaption : els.grillTimingCaption,
+      rating: type === 'fry' ? els.fryRating : els.grillRating,
+    };
+  }
+
+  function getCookTimingZone(pct) {
+    if (pct >= COOK_TIMING_GOOD_MIN && pct <= COOK_TIMING_GOOD_MAX) return 'good';
+    if (pct <= COOK_TIMING_RED_LEFT_MAX || pct >= COOK_TIMING_RED_RIGHT_MIN) return 'red';
+    return 'warm';
+  }
+
+  function resetCookTimingUI(type) {
+    if (!type || state.cookTimingPointerType === type) {
+      state.cookTimingPointerType = null;
+      state.cookTimingPointerZone = null;
+      state.cookTimingPointerAt = 0;
+    }
+    const kinds = type ? [type] : ['grill', 'fry'];
+    kinds.forEach(function (kind) {
+      const ui = getCookTimingEls(kind);
+      if (ui.meter) {
+        ui.meter.classList.remove('is-active', 'show-rating');
+        ui.meter.dataset.zone = 'warm';
+      }
+      if (ui.needle) ui.needle.style.setProperty('--timing-pct', '0%');
+      if (ui.caption) ui.caption.textContent = 'あおで タップ！';
+      if (ui.rating) {
+        ui.rating.classList.remove('show');
+        ui.rating.textContent = '';
+      }
+    });
+  }
+
+  function stopCookTimingGauge() {
+    if (state.cookTimingRaf) {
+      try { cancelAnimationFrame(state.cookTimingRaf); } catch (e) { /* noop */ }
+    }
+    state.cookTimingRaf = 0;
+    state.cookTimingLastGoodAt = 0;
+    if (state.cookTimingActive && state.cookTimingType) {
+      const ui = getCookTimingEls(state.cookTimingType);
+      if (ui.meter) ui.meter.classList.remove('is-active');
+    }
+    state.cookTimingActive = false;
+    state.cookTimingType = null;
+    state.cookTimingPointerType = null;
+    state.cookTimingPointerZone = null;
+    state.cookTimingPointerAt = 0;
+  }
+
+  function startCookTimingGauge(type, caption) {
+    stopCookTimingGauge();
+    const ui = getCookTimingEls(type);
+    if (!ui.meter || !ui.needle) return;
+    state.cookTimingActive = true;
+    state.cookTimingType = type;
+    state.cookTimingStart = performance.now();
+    state.cookTimingPct = 0;
+    state.cookTimingLastGoodAt = 0;
+    state.cookTimingPointerType = null;
+    state.cookTimingPointerZone = null;
+    state.cookTimingPointerAt = 0;
+    if (ui.caption) ui.caption.textContent = caption || 'あおで タップ！';
+    if (ui.rating) {
+      ui.rating.classList.remove('show');
+      ui.rating.textContent = '';
+    }
+    ui.meter.classList.remove('show-rating');
+    ui.meter.classList.add('is-active');
+    const tick = function (now) {
+      if (!state.cookTimingActive || state.cookTimingType !== type) return;
+      const pct = ((now - state.cookTimingStart) % COOK_TIMING_CYCLE_MS) / COOK_TIMING_CYCLE_MS * 100;
+      state.cookTimingPct = pct;
+      const zone = getCookTimingZone(pct);
+      if (zone === 'good') state.cookTimingLastGoodAt = now;
+      ui.needle.style.setProperty('--timing-pct', pct.toFixed(2) + '%');
+      ui.meter.dataset.zone = zone;
+      state.cookTimingRaf = requestAnimationFrame(tick);
+    };
+    state.cookTimingRaf = requestAnimationFrame(tick);
+  }
+
+  function getCookTimingRecordZone() {
+    const zone = getCookTimingZone(state.cookTimingPct);
+    if (zone !== 'good' && state.cookTimingLastGoodAt) {
+      const elapsed = performance.now() - state.cookTimingLastGoodAt;
+      if (elapsed >= 0 && elapsed <= COOK_TIMING_GOOD_GRACE_MS) return 'good';
+    }
+    return zone;
+  }
+
+  function onCookTimingPointerDown(evt, type) {
+    if (evt && evt.button != null && evt.button !== 0) return;
+    if (!state.cookTimingActive || state.cookTimingType !== type) return;
+    state.cookTimingPointerType = type;
+    state.cookTimingPointerZone = getCookTimingRecordZone();
+    state.cookTimingPointerAt = performance.now();
+  }
+
+  function recordCookTiming(type) {
+    let zone = 'warm';
+    const pointerAge = performance.now() - state.cookTimingPointerAt;
+    if (state.cookTimingPointerType === type && state.cookTimingPointerZone && pointerAge >= 0 && pointerAge <= 800) {
+      zone = state.cookTimingPointerZone;
+    } else if (state.cookTimingActive && state.cookTimingType === type) {
+      zone = getCookTimingRecordZone();
+    }
+    state.cookTimingResults.push(zone);
+    stopCookTimingGauge();
+    return zone;
+  }
+
+  function cookTimingStars() {
+    const missCount = state.cookTimingResults.filter(function (z) { return z !== 'good'; }).length;
+    return missCount === 0 ? 3 : 2;
+  }
+
+  function showCookTimingRating(type) {
+    const ui = getCookTimingEls(type);
+    const stars = cookTimingStars();
+    const starText = stars === 3 ? '★★★' : '★★☆';
+    if (ui.meter) ui.meter.classList.add('show-rating');
+    if (ui.caption) ui.caption.textContent = stars === 3 ? 'ほし 3つ！' : 'ほし 2つ！';
+    if (ui.rating) {
+      ui.rating.textContent = starText;
+      ui.rating.classList.add('show');
+    }
+    return stars;
+  }
+
+  function cookTimingSpeech(zone, type, finished) {
+    if (finished) return zone === 'good' ? 'ばっちり！ できあがり！' : 'いいかんじ！ できあがり！';
+    if (zone === 'good') return type === 'fry' ? 'ばっちり！ いいタイミング！' : 'ばっちり！ うらがえったよ！';
+    return type === 'fry' ? 'だいじょうぶ！ おいしく あがったよ！' : 'だいじょうぶ！ もういちど やこう！';
+  }
+
   function placeFoodForGrill() {
+    const ing = state.current;
+    const action = getCurrentAction();
     state.cookAnimating = true;
     state.cookFoodPlaced = true;
     state.cookServed = false;
+    resetCookTimingUI('grill');
     updateCookStageState('grill');
     showCookBurst('grill');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップで うらがえそう';
-    setSpeech('ジュッ！ フライパンに のったよ！ タップで うらがえそう！', 'grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで うらがえそう';
+    setSpeech('ジュッ！ フライパンに のったよ！ あおで タップして うらがえそう！', 'grill');
     state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action || !state.cookFoodPlaced) return;
       state.cookAnimating = false;
+      startCookTimingGauge('grill', 'あおで うらがえそう！');
     }, 420));
   }
 
@@ -3817,6 +4104,7 @@ body.layout-editor-on .endX-marker {
     state.cookAnimating = true;
     state.cookFoodPlaced = true;
     state.cookServed = false;
+    resetCookTimingUI('fry');
     updateCookStageState('fry');
     showCookBurst('fry');
     if (els.fryActionLabel) els.fryActionLabel.textContent = 'いいいろに なるまで まとう';
@@ -3835,8 +4123,9 @@ body.layout-editor-on .endX-marker {
       state.cookProgress = 2;
       state.fryReady = true;
       updateCookView('fry', 2, true);
-      if (els.fryActionLabel) els.fryActionLabel.textContent = 'タップで とりだそう';
-      setSpeech('きつねいろ！ タップで とりだそう！', 'fry');
+      if (els.fryActionLabel) els.fryActionLabel.textContent = 'ゲージの あおで とりだそう';
+      startCookTimingGauge('fry', 'あおで とりだそう！');
+      setSpeech('きつねいろ！ あおで タップして とりだそう！', 'fry');
     }, 1450));
   }
 
@@ -3861,24 +4150,27 @@ body.layout-editor-on .endX-marker {
       placeFoodForGrill();
       return;
     }
+    const timingZone = recordCookTiming('grill');
     state.cookAnimating = true;
     state.cookProgress = Math.min(2, state.cookProgress + 1);
     if (state.cookProgress >= 2) state.cookServed = true;
     updateCookView('grill', state.cookProgress, state.cookProgress === 1 ? 'flip' : 'burst');
     if (state.cookProgress < 2) {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もういちど タップで しあげよう';
-      setSpeech('いいかんじ！ もういちど やこう！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もういちど あおで しあげよう';
+      setSpeech(cookTimingSpeech(timingZone, 'grill', false), 'grill');
       state.pendingTimers.push(setTimeout(function () {
         state.cookAnimating = false;
+        startCookTimingGauge('grill', 'あおで しあげよう！');
       }, 520));
       return;
     }
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'できあがり！';
-    setSpeech('こんがり できたよ！', 'grill');
+    const stars = showCookTimingRating('grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = stars === 3 ? 'タイミング ばっちり！' : 'おいしく できたよ！';
+    setSpeech(cookTimingSpeech(timingZone, 'grill', true), 'grill');
     state.pendingTimers.push(setTimeout(function () {
       state.cookAnimating = false;
       completeCurrentAction(state.current);
-    }, 560));
+    }, 1120));
   }
 
   function onFryTap(evt) {
@@ -3906,15 +4198,18 @@ body.layout-editor-on .endX-marker {
       setSpeech('もうすこしで いいいろに なるよ！', 'fry');
       return;
     }
+    const timingZone = recordCookTiming('fry');
     state.cookAnimating = true;
     state.cookServed = true;
     updateCookStageState('fry');
     showCookBurst('fry');
-    setSpeech('カラッと できたよ！', 'fry');
+    const stars = showCookTimingRating('fry');
+    if (els.fryActionLabel) els.fryActionLabel.textContent = stars === 3 ? 'タイミング ばっちり！' : 'カラッと できたよ！';
+    setSpeech(cookTimingSpeech(timingZone, 'fry', true), 'fry');
     state.pendingTimers.push(setTimeout(function () {
       state.cookAnimating = false;
       completeCurrentAction(state.current);
-    }, 420));
+    }, 1120));
   }
 
   // loadIngredient: まな板上の食材本体描画 + 包丁 X/Y の初期化を一手に。
@@ -5462,8 +5757,10 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
+    state.cookTimingResults = [];
     state.suppressCookClick = false;
     state.fryReady = false;
+    resetCookTimingUI();
     state.chopProgress = 0;
     state.combo = 0;
     state.cutting = false;
