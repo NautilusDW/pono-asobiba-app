@@ -771,10 +771,10 @@ body.layout-editor-on .fry-pot {
   width: var(--fry-food-w, 34%);
   height: var(--fry-food-h, 24%);
   aspect-ratio: auto;
-  overflow: hidden;
-  border-radius: 50%;
-  -webkit-clip-path: ellipse(48% 50% at 50% 50%);
-  clip-path: ellipse(48% 50% at 50% 50%);
+  overflow: visible;
+  border-radius: 0;
+  -webkit-clip-path: none;
+  clip-path: none;
   padding: 0;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food img,
@@ -4125,8 +4125,13 @@ body.layout-editor-on .endX-marker {
     return 'まだ はやいよ';
   }
 
+  function cookTimingActionText(type) {
+    if (type === 'fry') return 'とりだそう';
+    return state.cookProgress >= 1 ? 'おさらへ あげよう' : 'ひっくり返そう';
+  }
+
   function cookTimingCueText(type, zone) {
-    const action = type === 'fry' ? 'とりだそう' : 'ひっくり返そう';
+    const action = cookTimingActionText(type);
     if (zone === 'red') return 'あぶない！すぐ ' + action + '！';
     if (zone === 'danger') return '早く ' + action + '！';
     if (zone === 'warm') return 'そろそろ ' + action + '！';
@@ -4392,7 +4397,7 @@ body.layout-editor-on .endX-marker {
     if (state.cookProgress >= 2) state.cookServed = true;
     updateCookView('grill', state.cookProgress, state.cookProgress === 1 ? 'flip' : 'burst');
     if (state.cookProgress < 2) {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もういちど あおで しあげよう';
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで おさらへ あげよう';
       setSpeech(cookTimingSpeech(timingZone, 'grill', false), 'grill');
       state.pendingTimers.push(setTimeout(function () {
         state.cookAnimating = false;
