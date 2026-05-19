@@ -2066,7 +2066,7 @@ body.layout-editor-on .endX-marker {
   position: relative;
   perspective: 1200px;
 }
-/* 扉（疑似要素）— 開いた時だけ表示してパタンと開く */
+/* 扉（疑似要素）— 正面の閉じ絵を一瞬だけ見せて、回転なしで開いた絵へ切り替える。 */
 .fridge-body::after {
   content: '';
   position: absolute;
@@ -2076,7 +2076,7 @@ body.layout-editor-on .endX-marker {
   border: 0;
   box-shadow: none;
   transform-origin: 22% center;
-  transform: perspective(1200px) rotateY(0deg);
+  transform: none;
   opacity: 1;
   pointer-events: none;
   z-index: 4;
@@ -2085,27 +2085,16 @@ body.layout-editor-on .endX-marker {
 .fridge-body::before {
   display: none;
 }
-.fridge-body.open { animation: fridgeShake 0.45s ease; }
+.fridge-body.open { animation: none; }
 .fridge-body.open::after {
-  animation: fridgeDoorOpen 0.95s 0.45s ease-out forwards;
+  animation: fridgeInstantOpen 0.01s 0.18s steps(1, end) forwards;
 }
 .fridge-body.open::before {
-  animation: fridgeHandleHide 0.95s 0.45s ease-out forwards;
+  animation: none;
 }
-@keyframes fridgeShake {
-  0%, 100% { transform: rotate(0deg); }
-  25%      { transform: rotate(-1.2deg) translateX(-2px); }
-  75%      { transform: rotate(1.2deg) translateX(2px); }
-}
-@keyframes fridgeDoorOpen {
-  0%   { transform: perspective(1200px) rotateY(0deg); opacity: 1; }
-  60%  { transform: perspective(1200px) rotateY(-62deg); opacity: 0.82; }
-  100% { transform: perspective(1200px) rotateY(-92deg); opacity: 0; }
-}
-@keyframes fridgeHandleHide {
-  0%   { opacity: 1; transform: translateY(-50%) translateX(0); }
-  60%  { opacity: 0.6; transform: translateY(-50%) translateX(-30px); }
-  100% { opacity: 0; transform: translateY(-50%) translateX(-60px); }
+@keyframes fridgeInstantOpen {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 /* prefers-reduced-motion 対応 */
 @media (prefers-reduced-motion: reduce) {
@@ -2139,7 +2128,7 @@ body.layout-editor-on .endX-marker {
   border-radius: 18px;
   min-height: 0;
   opacity: 0;
-  transition: opacity 0.35s ease 1.05s;
+  transition: opacity 0.16s ease 0.22s;
 }
 .fridge-body.open .fridge-shelves {
   opacity: 1;
@@ -2156,6 +2145,25 @@ body.layout-editor-on .endX-marker {
   box-shadow: 0 1px 2px var(--shadow-soft);
   animation: popIn 0.5s ease-out;
   position: relative;
+  overflow: visible;
+}
+.fridge-item--filler {
+  opacity: 0.54;
+  filter: saturate(0.82);
+  background: rgba(255,255,255,0.42);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.24);
+  animation: none;
+}
+.fridge-item--filler .fridge-item-art {
+  font-size: 1.45rem;
+}
+.fridge-item--prepared {
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 5px 7px;
+  background: rgba(255,255,255,0.88);
+  box-shadow: 0 2px 0 rgba(96,132,156,0.16), 0 3px 8px rgba(93,78,55,0.10);
+  z-index: 1;
 }
 .fridge-item-art {
   width: 100%;
@@ -2172,6 +2180,23 @@ body.layout-editor-on .endX-marker {
   filter: drop-shadow(0 4px 5px rgba(80,55,35,0.14));
   pointer-events: none;
   -webkit-user-drag: none;
+}
+.fridge-item--prepared .fridge-item-art {
+  height: calc(100% - 20px);
+}
+.fridge-item-name {
+  width: 100%;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-weight: 900;
+  font-size: 0.56rem;
+  line-height: 1.05;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+  word-break: keep-all;
 }
 @keyframes popIn {
   0%   { transform: scale(0); opacity: 0; }
@@ -3908,6 +3933,35 @@ body.layout-editor-on .endX-marker {
     }
     const rec = getPrimaryRecipeForIngredient(ing);
     return rec ? rec.img : '';
+  }
+
+  function getIngredientCutPieceThumbSrc(ing) {
+    if (!ing || !ing.imagePieces) return '';
+    const cfg = ing.imagePieces;
+    const seq = Array.isArray(cfg.sequence) && cfg.sequence.length
+      ? cfg.sequence
+      : Array.from({ length: Math.max(0, (cfg.to || 0) - (cfg.from || 0) + 1) }, function (_, i) {
+          return (cfg.from || 0) + i;
+        });
+    if (!seq.length) return '';
+    const idx = String(seq[0]).padStart(cfg.pad || 3, '0');
+    const prefix = cfg.prefix || (cfg.dir + '_');
+    return '../assets/images/bento/cooking/' + cfg.dir + '/' + prefix + idx + '.png';
+  }
+
+  function getIngredientFridgeThumbSrc(ing) {
+    const cutPieceSrc = getIngredientCutPieceThumbSrc(ing);
+    if (cutPieceSrc) return cutPieceSrc;
+    if (ing && ing.cookImages) {
+      const actions = Array.isArray(ing.cookingActions) ? ing.cookingActions.slice().reverse() : [];
+      for (let i = 0; i < actions.length; i += 1) {
+        const cfg = getCookImageConfig(ing, actions[i]);
+        if (cfg && Array.isArray(cfg.stages) && cfg.stages.length) {
+          return cookingAssetPath(cfg.stages[cfg.stages.length - 1]);
+        }
+      }
+    }
+    return getIngredientThumbSrc(ing);
   }
 
   function swapImageToEmoji(img, emoji) {
@@ -6006,20 +6060,15 @@ body.layout-editor-on .endX-marker {
   function renderFridge() {
     els.shelves.innerHTML = '';
     const unlocked = INGREDIENTS.filter(i => state.unlocked.has(i.id));
-    if (unlocked.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'fridge-empty';
-      empty.textContent = 'からっぽ';
-      els.shelves.appendChild(empty);
-      return;
-    }
-    unlocked.forEach(ing => {
+    const fillerItems = ['🥛', '🫙', '🥬', '🍅', '🧃', '🧀', '🥣', '🍎', '🥚'];
+
+    unlocked.forEach(function (ing) {
       const item = document.createElement('div');
-      item.className = 'fridge-item';
+      item.className = 'fridge-item fridge-item--prepared';
       item.title = ing.name;
       const art = document.createElement('span');
       art.className = 'fridge-item-art';
-      const thumbSrc = getIngredientThumbSrc(ing);
+      const thumbSrc = getIngredientFridgeThumbSrc(ing);
       if (thumbSrc) {
         const img = document.createElement('img');
         img.src = thumbSrc;
@@ -6034,6 +6083,10 @@ body.layout-editor-on .endX-marker {
         art.textContent = ing.emoji;
       }
       item.appendChild(art);
+      const name = document.createElement('span');
+      name.className = 'fridge-item-name';
+      name.textContent = ing.name;
+      item.appendChild(name);
       if (state.newBadges.has(ing.id)) {
         const badge = document.createElement('span');
         badge.className = 'new-badge';
@@ -6042,6 +6095,18 @@ body.layout-editor-on .endX-marker {
       }
       els.shelves.appendChild(item);
     });
+
+    const fillerCount = Math.max(0, 9 - unlocked.length);
+    for (let i = 0; i < fillerCount; i += 1) {
+      const item = document.createElement('div');
+      item.className = 'fridge-item fridge-item--filler';
+      item.setAttribute('aria-hidden', 'true');
+      const art = document.createElement('span');
+      art.className = 'fridge-item-art';
+      art.textContent = fillerItems[i % fillerItems.length];
+      item.appendChild(art);
+      els.shelves.appendChild(item);
+    }
   }
 
   function emojiFor(ingId) {
