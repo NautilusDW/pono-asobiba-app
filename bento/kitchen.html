@@ -916,6 +916,42 @@ body.layout-editor-on .fry-pot {
 .grill-smoke i:nth-child(2) { left: 44%; --smoke-r: 7deg; height: 86px; animation-delay: 0.22s; }
 .grill-smoke i:nth-child(3) { left: 60%; --smoke-r: -5deg; height: 76px; animation-delay: 0.46s; }
 .grill-smoke i:nth-child(4) { left: 36%; --smoke-r: 10deg; height: 64px; animation-delay: 0.68s; }
+.cook-stage-cue {
+  position: absolute;
+  left: var(--cook-cue-x, 56%);
+  top: var(--cook-cue-y, 36%);
+  transform: translate(-50%, -50%) scale(var(--cue-scale, 0.92));
+  padding: 10px 18px;
+  min-width: min(210px, 58%);
+  max-width: 58%;
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,0.94);
+  background: rgba(255,255,255,0.9);
+  color: var(--cue-color, #5B4A34);
+  font-size: clamp(1rem, 2vw, 1.45rem);
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.18;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.75);
+  box-shadow: 0 8px 18px rgba(94,64,34,0.2), 0 0 0 5px rgba(255,214,135,0.16);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 41;
+  transition: opacity 0.16s ease, transform 0.16s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.cook-stage-cue.show {
+  opacity: 1;
+}
+.cook-stage-cue.urgent {
+  box-shadow: 0 10px 20px rgba(130,50,30,0.26), 0 0 0 calc(4px + var(--danger-alpha, 0) * 9px) rgba(242,87,77,0.16);
+}
+.cook-stage-cue.danger {
+  animation: cookCuePulse 0.55s ease-in-out infinite alternate;
+}
+@keyframes cookCuePulse {
+  from { transform: translate(-50%, -50%) scale(var(--cue-scale, 1)); }
+  to { transform: translate(-50%, -50%) scale(calc(var(--cue-scale, 1) + 0.05)); }
+}
 .cook-progress-dots {
   display: flex;
   justify-content: center;
@@ -2560,6 +2596,7 @@ body.layout-editor-on .endX-marker {
           <i></i><i></i><i></i><i></i>
         </div>
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
+        <div class="cook-stage-cue" id="grill-timing-cue" aria-hidden="true">いま！ひっくり返そう！</div>
         <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
           <img class="cooking-food-img" id="grilling-food" alt="" draggable="false">
           <div class="cooking-food-fallback" id="grilling-food-fallback" aria-hidden="true">🍳</div>
@@ -2619,6 +2656,7 @@ body.layout-editor-on .endX-marker {
           <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         </div>
         <div class="cook-burst" id="fry-burst">ジュワッ！</div>
+        <div class="cook-stage-cue" id="fry-timing-cue" aria-hidden="true">いま！とりだそう！</div>
         <div class="cooking-food cooking-food--fry" id="frying-food-wrap" data-stage="0">
           <img class="cooking-food-img" id="frying-food" alt="" draggable="false">
           <div class="cooking-food-fallback" id="frying-food-fallback" aria-hidden="true">🍤</div>
@@ -2755,7 +2793,7 @@ body.layout-editor-on .endX-marker {
   const STORAGE_KEY = 'bentoUnlockedIngredients';
   const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
   const RECIPE_STORAGE_KEY = 'bentoUnlockedRecipes';
-  const COOK_TIMING_DURATION_MS = 2800;
+  const COOK_TIMING_DURATION_MS = 10000;
   const COOK_TIMING_GOOD_MIN = 42;
   const COOK_TIMING_GOOD_MAX = 66;
   const COOK_TIMING_DANGER_MIN = 78;
@@ -3162,6 +3200,7 @@ body.layout-editor-on .endX-marker {
     grillTimingMeter: document.getElementById('grill-timing-meter'),
     grillTimingNeedle: document.getElementById('grill-timing-needle'),
     grillTimingCaption: document.getElementById('grill-timing-caption'),
+    grillTimingCue: document.getElementById('grill-timing-cue'),
     grillRating: document.getElementById('grill-rating'),
     speechGrill:   document.getElementById('speech-grill'),
 
@@ -3177,6 +3216,7 @@ body.layout-editor-on .endX-marker {
     fryTimingMeter: document.getElementById('fry-timing-meter'),
     fryTimingNeedle: document.getElementById('fry-timing-needle'),
     fryTimingCaption: document.getElementById('fry-timing-caption'),
+    fryTimingCue: document.getElementById('fry-timing-cue'),
     fryRating: document.getElementById('fry-rating'),
     speechFry:     document.getElementById('speech-fry'),
 
@@ -3808,6 +3848,8 @@ body.layout-editor-on .endX-marker {
       stage.style.setProperty('--fry-bubbles-h', pctString(bubblesH));
       stage.style.setProperty('--cook-heat-x', pctString(cx));
       stage.style.setProperty('--cook-heat-y', pctString(heatY));
+      stage.style.setProperty('--cook-cue-x', pctString(cx));
+      stage.style.setProperty('--cook-cue-y', pctString(oilY - 17));
       return;
     }
 
@@ -3818,6 +3860,8 @@ body.layout-editor-on .endX-marker {
     stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
     stage.style.setProperty('--cook-heat-x', pctString(cx));
     stage.style.setProperty('--cook-heat-y', pctString(heatY));
+    stage.style.setProperty('--cook-cue-x', pctString(cx));
+    stage.style.setProperty('--cook-cue-y', pctString(foodY - 15));
   }
 
   function attachCookLayoutObserver() {
@@ -4055,6 +4099,7 @@ body.layout-editor-on .endX-marker {
       meter: type === 'fry' ? els.fryTimingMeter : els.grillTimingMeter,
       needle: type === 'fry' ? els.fryTimingNeedle : els.grillTimingNeedle,
       caption: type === 'fry' ? els.fryTimingCaption : els.grillTimingCaption,
+      cue: type === 'fry' ? els.fryTimingCue : els.grillTimingCue,
       rating: type === 'fry' ? els.fryRating : els.grillRating,
     };
   }
@@ -4080,18 +4125,52 @@ body.layout-editor-on .endX-marker {
     return 'まだ はやいよ';
   }
 
-  function updateCookTimingVisual(ui, pct) {
+  function cookTimingCueText(type, zone) {
+    const action = type === 'fry' ? 'とりだそう' : 'ひっくり返そう';
+    if (zone === 'red') return 'あぶない！すぐ ' + action + '！';
+    if (zone === 'danger') return '早く ' + action + '！';
+    if (zone === 'warm') return 'そろそろ ' + action + '！';
+    if (zone === 'good') return 'いま！' + action + '！';
+    return type === 'fry' ? 'もう少し あげよう' : 'もう少し やこう';
+  }
+
+  function cookTimingCueColor(zone, dangerLevel) {
+    if (zone === 'raw') return '#6A6142';
+    if (zone === 'good') return '#1689C4';
+    const t = Math.max(0, Math.min(1, dangerLevel));
+    const start = { r: 201, g: 116, b: 38 };
+    const end = { r: 218, g: 54, b: 48 };
+    const r = Math.round(start.r + (end.r - start.r) * t);
+    const g = Math.round(start.g + (end.g - start.g) * t);
+    const b = Math.round(start.b + (end.b - start.b) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  function updateCookTimingVisual(ui, pct, type) {
     if (!ui.meter || !ui.needle) return 'raw';
     const safePct = Math.max(0, Math.min(100, pct || 0));
     const zone = getCookTimingZone(safePct);
     const dangerLevel = getCookTimingDangerLevel(safePct);
     const pctText = safePct.toFixed(2) + '%';
+    const cueColor = cookTimingCueColor(zone, dangerLevel);
     ui.meter.dataset.zone = zone;
     ui.meter.style.setProperty('--timing-pct', pctText);
     ui.meter.style.setProperty('--danger-alpha', dangerLevel.toFixed(3));
     ui.meter.style.setProperty('--danger-scale', (0.64 + dangerLevel * 0.74).toFixed(3));
     ui.needle.style.setProperty('--timing-pct', pctText);
-    if (ui.caption) ui.caption.textContent = cookTimingCaptionForZone(zone);
+    if (ui.caption) {
+      ui.caption.textContent = cookTimingCaptionForZone(zone);
+      ui.caption.style.color = cueColor;
+    }
+    if (ui.cue) {
+      ui.cue.textContent = cookTimingCueText(type, zone);
+      ui.cue.style.setProperty('--cue-color', cueColor);
+      ui.cue.style.setProperty('--danger-alpha', dangerLevel.toFixed(3));
+      ui.cue.style.setProperty('--cue-scale', (0.92 + dangerLevel * 0.12).toFixed(3));
+      ui.cue.classList.toggle('show', state.cookTimingActive);
+      ui.cue.classList.toggle('urgent', zone === 'warm' || zone === 'danger' || zone === 'red');
+      ui.cue.classList.toggle('danger', zone === 'danger' || zone === 'red');
+    }
     return zone;
   }
 
@@ -4112,7 +4191,16 @@ body.layout-editor-on .endX-marker {
         ui.meter.style.setProperty('--danger-scale', '0.6');
       }
       if (ui.needle) ui.needle.style.setProperty('--timing-pct', '0%');
-      if (ui.caption) ui.caption.textContent = 'あおで タップ！';
+      if (ui.caption) {
+        ui.caption.textContent = 'あおで タップ！';
+        ui.caption.style.removeProperty('color');
+      }
+      if (ui.cue) {
+        ui.cue.classList.remove('show', 'urgent', 'danger');
+        ui.cue.style.removeProperty('--cue-color');
+        ui.cue.style.removeProperty('--danger-alpha');
+        ui.cue.style.removeProperty('--cue-scale');
+      }
       if (ui.rating) {
         ui.rating.classList.remove('show');
         ui.rating.textContent = '';
@@ -4129,6 +4217,7 @@ body.layout-editor-on .endX-marker {
     if (state.cookTimingActive && state.cookTimingType) {
       const ui = getCookTimingEls(state.cookTimingType);
       if (ui.meter) ui.meter.classList.remove('is-active');
+      if (ui.cue) ui.cue.classList.remove('show', 'urgent', 'danger');
     }
     state.cookTimingActive = false;
     state.cookTimingType = null;
@@ -4155,12 +4244,12 @@ body.layout-editor-on .endX-marker {
     }
     ui.meter.classList.remove('show-rating');
     ui.meter.classList.add('is-active');
-    updateCookTimingVisual(ui, 0);
+    updateCookTimingVisual(ui, 0, type);
     const tick = function (now) {
       if (!state.cookTimingActive || state.cookTimingType !== type) return;
       const pct = Math.min(100, Math.max(0, (now - state.cookTimingStart) / COOK_TIMING_DURATION_MS * 100));
       state.cookTimingPct = pct;
-      const zone = updateCookTimingVisual(ui, pct);
+      const zone = updateCookTimingVisual(ui, pct, type);
       if (zone === 'good') state.cookTimingLastGoodAt = now;
       if (pct < 100) {
         state.cookTimingRaf = requestAnimationFrame(tick);
@@ -4212,6 +4301,8 @@ body.layout-editor-on .endX-marker {
     const starText = stars === 3 ? '★★★' : '★★☆';
     if (ui.meter) ui.meter.classList.add('show-rating');
     if (ui.caption) ui.caption.textContent = stars === 3 ? 'ほし 3つ！' : 'ほし 2つ！';
+    if (ui.caption) ui.caption.style.removeProperty('color');
+    if (ui.cue) ui.cue.classList.remove('show', 'urgent', 'danger');
     if (ui.rating) {
       ui.rating.textContent = starText;
       ui.rating.classList.add('show');
