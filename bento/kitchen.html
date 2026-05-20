@@ -639,6 +639,13 @@ body[data-screen="fridge"] .stage-wrap {
   outline: none;
   overflow: hidden;
 }
+.prep-workbench[data-prep-kind="mix_mince"] {
+  cursor: grab;
+  touch-action: none;
+}
+.prep-workbench[data-prep-kind="mix_mince"].is-dragging {
+  cursor: grabbing;
+}
 .prep-workbench:focus-visible {
   box-shadow: inset 0 0 0 3px rgba(255,255,255,0.58), 0 0 0 5px rgba(242,145,90,0.55);
 }
@@ -667,11 +674,17 @@ body[data-screen="fridge"] .stage-wrap {
   mix-blend-mode: multiply;
   transition: transform 0.2s ease, filter 0.2s ease;
 }
+.prep-workbench[data-prep-kind="mix_mince"] .prep-art-main {
+  width: min(84%, 680px);
+  height: 88%;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 16px 18px rgba(80,50,30,0.14));
+}
 .prep-workbench.is-working .prep-art-main {
   animation: prepWorkPop 0.34s ease-out;
 }
 .prep-workbench[data-prep-kind="mix_mince"].is-working .prep-art-main {
-  animation: prepKnead 0.42s ease-out;
+  animation: prepKnead 0.36s ease-out;
 }
 .prep-workbench[data-prep-kind^="bread_"].is-working .prep-art-main,
 .prep-workbench[data-prep-kind="coat_chicken"].is-working .prep-art-main {
@@ -3607,14 +3620,15 @@ body.layout-editor-on .endX-marker {
     },
     mix_mince: {
       kind: 'mix_mince',
-      startSpeech: 'ひきにくを こねこねして まるくしよう！',
+      dragPrep: true,
+      startSpeech: 'ひきにくを ぐるぐるドラッグして こねよう！',
       completeSpeech: 'ハンバーグの かたちが できたよ！',
       steps: [
-        { sheet: 'base', x: 0, y: 1, label: 'ひきにくを ボウルへ', caption: 'こねる じゅんび！', burst: 'ぽん！' },
-        { sheet: 'base', x: 1, y: 1, label: 'こねこね まぜよう', caption: 'こねこね！', burst: 'こねこね！' },
-        { sheet: 'base', x: 1, y: 1, label: 'もういちど こねよう', caption: 'まとまってきたよ！', burst: 'ぎゅっ！' },
-        { sheet: 'base', x: 2, y: 1, label: 'まるく かたちづくり', caption: 'ハンバーグの かたち！', burst: 'ぺたん！' },
-        { sheet: 'base', x: 2, y: 1, label: 'できあがり', caption: 'ハンバーグの したごしらえ できたよ！', burst: 'できた！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'ひきにくを ボウルへ', caption: 'ぐるぐるドラッグ！', burst: 'ぐるぐる！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png', label: 'ぐるぐる こねよう', caption: 'まざってきたよ！', burst: 'こねこね！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png', label: 'もっと こねよう', caption: 'まとまってきたよ！', burst: 'ぎゅっ！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'なめらかに しよう', caption: 'あとすこし！', burst: 'ぐるぐる！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'ハンバーグの したごしらえ できたよ！', burst: 'できた！' },
       ],
     },
     bread_shrimp: {
@@ -3669,6 +3683,13 @@ body.layout-editor-on .endX-marker {
     kitchenMode: 'prep',
     prepProgress: 0,
     prepAnimating: false,
+    prepDragging: false,
+    prepDragPointerId: null,
+    prepDragLastX: 0,
+    prepDragLastY: 0,
+    prepDragDistance: 0,
+    prepDragLastStep: 0,
+    suppressPrepClick: false,
     cookProgress: 0,
     cookAnimating: false,
     cookPreheated: false,
@@ -3716,6 +3737,9 @@ body.layout-editor-on .endX-marker {
     state.knifeAnimating = false;
     state.queuedChopTaps = 0;
     state.prepAnimating = false;
+    state.prepDragging = false;
+    state.prepDragPointerId = null;
+    state.suppressPrepClick = false;
     state.cookAnimating = false;
     stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
@@ -4167,10 +4191,14 @@ body.layout-editor-on .endX-marker {
 
     if (els.prepStage) {
       els.prepStage.addEventListener('click', onPrepTap);
+      els.prepStage.addEventListener('pointerdown', onPrepPointerDown);
+      els.prepStage.addEventListener('pointermove', onPrepPointerMove);
+      els.prepStage.addEventListener('pointerup', onPrepPointerUp);
+      els.prepStage.addEventListener('pointercancel', onPrepPointerUp);
       els.prepStage.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
           e.preventDefault();
-          onPrepTap();
+          onPrepTap({ keyboard: true });
         }
       });
     }
@@ -4658,6 +4686,13 @@ body.layout-editor-on .endX-marker {
   function beginPrepAction(ing, action) {
     state.prepProgress = 0;
     state.prepAnimating = false;
+    state.prepDragging = false;
+    state.prepDragPointerId = null;
+    state.prepDragLastX = 0;
+    state.prepDragLastY = 0;
+    state.prepDragDistance = 0;
+    state.prepDragLastStep = 0;
+    state.suppressPrepClick = false;
     state.chopProgress = 0;
     state.combo = 0;
     state.cookProgress = 0;
@@ -4714,7 +4749,8 @@ body.layout-editor-on .endX-marker {
     const steps = Array.isArray(config.steps) ? config.steps : [];
     const maxProgress = getPrepMaxProgress(config);
     const safeProgress = Math.max(0, Math.min(maxProgress, progress || 0));
-    const step = steps[safeProgress] || steps[0] || {};
+    const stepIndex = Math.max(0, Math.min(steps.length - 1, Math.floor(safeProgress + 0.001)));
+    const step = steps[stepIndex] || steps[0] || {};
     state.prepProgress = safeProgress;
     if (els.prepStage) {
       els.prepStage.dataset.prepKind = config.kind || '';
@@ -4788,7 +4824,109 @@ body.layout-editor-on .endX-marker {
     els.prepBurst.classList.add('show');
   }
 
-  function onPrepTap() {
+  function getActiveDragPrepConfig() {
+    if (state.currentScreen !== 'prep') return null;
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!ing || !action || action.type !== 'prep') return null;
+    const config = getPrepConfig(action, ing);
+    return config && config.dragPrep ? config : null;
+  }
+
+  function finishDragPrep(ing, config) {
+    if (state.prepAnimating) return;
+    state.prepDragging = false;
+    state.prepDragPointerId = null;
+    state.prepAnimating = true;
+    state.cutting = true;
+    if (els.prepStage) {
+      els.prepStage.classList.remove('is-dragging');
+      els.prepStage.classList.add('is-working');
+    }
+    const maxProgress = getPrepMaxProgress(config);
+    updatePrepView(config, maxProgress, true);
+    showPrepBurst('できた！');
+    setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
+    state.pendingTimers.push(setTimeout(function () {
+      if (els.prepStage) {
+        els.prepStage.classList.remove('is-working');
+        els.prepStage.classList.remove('is-dragging');
+      }
+      state.prepAnimating = false;
+      completeCurrentAction(ing);
+    }, 680));
+  }
+
+  function advanceDragPrep(config, deltaDistance) {
+    const ing = state.current;
+    if (!ing || !config || state.prepAnimating) return;
+    const maxProgress = getPrepMaxProgress(config);
+    if (!maxProgress || state.prepProgress >= maxProgress) return;
+    const rect = els.prepStage ? els.prepStage.getBoundingClientRect() : null;
+    const totalDistance = Math.max(1200, ((rect && rect.width) || 720) * 2.4);
+    state.prepDragDistance = Math.max(0, state.prepDragDistance + Math.max(0, deltaDistance || 0));
+    const nextProgress = Math.min(maxProgress, (state.prepDragDistance / totalDistance) * maxProgress);
+    const prevStep = Math.floor((state.prepProgress || 0) + 0.001);
+    const nextStep = Math.floor(nextProgress + 0.001);
+    updatePrepView(config, nextProgress, nextStep !== prevStep);
+    if (nextStep > state.prepDragLastStep && nextStep < maxProgress) {
+      const step = config.steps[nextStep] || {};
+      state.prepDragLastStep = nextStep;
+      showPrepBurst(step.burst || 'こねこね！');
+      setSpeech(step.caption || step.label || 'いいかんじ！', 'prep');
+    }
+    if (nextProgress >= maxProgress) finishDragPrep(ing, config);
+  }
+
+  function onPrepPointerDown(evt) {
+    const config = getActiveDragPrepConfig();
+    if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
+    evt.preventDefault();
+    state.prepDragging = true;
+    state.prepDragPointerId = evt.pointerId;
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    state.suppressPrepClick = false;
+    if (els.prepStage) {
+      els.prepStage.classList.add('is-dragging');
+      els.prepStage.classList.add('is-working');
+      try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
+    }
+    setSpeech('そのまま ぐるぐる こねよう！', 'prep');
+  }
+
+  function onPrepPointerMove(evt) {
+    if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
+    const config = getActiveDragPrepConfig();
+    if (!config) return;
+    evt.preventDefault();
+    const dx = evt.clientX - state.prepDragLastX;
+    const dy = evt.clientY - state.prepDragLastY;
+    const dist = Math.hypot(dx, dy);
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    if (dist > 1) {
+      state.suppressPrepClick = true;
+      advanceDragPrep(config, dist);
+    }
+  }
+
+  function onPrepPointerUp(evt) {
+    if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
+    state.prepDragging = false;
+    state.prepDragPointerId = null;
+    if (els.prepStage) {
+      els.prepStage.classList.remove('is-dragging');
+      els.prepStage.classList.remove('is-working');
+      try { els.prepStage.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+  }
+
+  function onPrepTap(evt) {
+    if (state.suppressPrepClick) {
+      state.suppressPrepClick = false;
+      return;
+    }
     if (state.cutting || state.transitioning || state.prepAnimating) return;
     if (state.currentScreen !== 'prep') return;
     const ing = state.current;
@@ -4797,6 +4935,12 @@ body.layout-editor-on .endX-marker {
     const config = getPrepConfig(action, ing);
     const maxProgress = getPrepMaxProgress(config);
     if (state.prepProgress >= maxProgress) return;
+
+    if (config.dragPrep) {
+      advanceDragPrep(config, Math.max(300, ((els.prepStage && els.prepStage.getBoundingClientRect().width) || 720) * 0.6));
+      if (evt && evt.keyboard) setSpeech('ぐるぐる こねよう！', 'prep');
+      return;
+    }
 
     state.prepAnimating = true;
     const currentProgress = state.prepProgress || 0;
@@ -7229,6 +7373,13 @@ body.layout-editor-on .endX-marker {
     state.actionIndex = 0;
     state.prepProgress = 0;
     state.prepAnimating = false;
+    state.prepDragging = false;
+    state.prepDragPointerId = null;
+    state.prepDragLastX = 0;
+    state.prepDragLastY = 0;
+    state.prepDragDistance = 0;
+    state.prepDragLastStep = 0;
+    state.suppressPrepClick = false;
     state.cookProgress = 0;
     state.cookAnimating = false;
     state.cookPreheated = false;
@@ -7269,6 +7420,7 @@ body.layout-editor-on .endX-marker {
     clearBowl();
     if (els.prepStage) {
       els.prepStage.classList.remove('is-working');
+      els.prepStage.classList.remove('is-dragging');
       els.prepStage.removeAttribute('data-prep-kind');
     }
     if (els.prepBurst) els.prepBurst.classList.remove('show');
