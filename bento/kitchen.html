@@ -679,9 +679,28 @@ body[data-screen="fridge"] .stage-wrap {
   height: 88%;
   mix-blend-mode: normal;
   filter: drop-shadow(0 16px 18px rgba(80,50,30,0.14));
+  opacity: 0;
+}
+.knead-canvas {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  width: min(84%, 680px);
+  height: 88%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 16px 18px rgba(80,50,30,0.14));
+}
+.prep-workbench[data-prep-kind="mix_mince"] .knead-canvas {
+  display: block;
 }
 .prep-workbench.is-working .prep-art-main {
   animation: prepWorkPop 0.34s ease-out;
+}
+.prep-workbench[data-prep-kind="mix_mince"].is-working .knead-canvas {
+  animation: prepKnead 0.36s ease-out;
 }
 .prep-workbench[data-prep-kind="mix_mince"].is-working .prep-art-main {
   animation: prepKnead 0.36s ease-out;
@@ -3039,6 +3058,7 @@ body.layout-editor-on .endX-marker {
     <div class="prep-main">
       <div class="prep-workbench" id="prep-stage" role="button" tabindex="0" aria-label="したごしらえ">
         <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
+        <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
         <div class="prep-burst" id="prep-burst">できた！</div>
       </div>
     </div>
@@ -3606,6 +3626,13 @@ body.layout-editor-on .endX-marker {
     { sheet: 'base', x: 2, y: 2, label: 'パンこ' },
   ];
 
+  const kneadRuntime = {
+    images: {},
+    loading: {},
+    lastSrc: '',
+    scratch: null,
+  };
+
   const PREP_CONFIGS = {
     egg_crack: {
       kind: 'egg_crack',
@@ -3981,6 +4008,7 @@ body.layout-editor-on .endX-marker {
     // prep screen
     prepStage:     document.getElementById('prep-stage'),
     prepArtMain:   document.getElementById('prep-art-main'),
+    kneadCanvas:   document.getElementById('knead-canvas'),
     prepBurst:     document.getElementById('prep-burst'),
     prepActionLabel: document.getElementById('prep-action-label'),
     prepProgress:  document.getElementById('prep-progress-fill'),
@@ -4716,6 +4744,9 @@ body.layout-editor-on .endX-marker {
     if (els.prepStage) els.prepStage.setAttribute('aria-label', ing.name + 'の したごしらえ');
     setSpeech(config.startSpeech || (ing.name + 'を したごしらえしよう！'), 'prep');
     showScreen('prep');
+    if (config.dragPrep) {
+      scheduleKneadCanvasReset(config, 0);
+    }
   }
 
   function getPrepConfig(action, ing) {
@@ -4757,6 +4788,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.toggle('is-working', !!animate);
     }
     setPrepVisual(els.prepArtMain, step);
+    if (config.dragPrep) syncKneadCanvas(config, safeProgress, animate);
     if (els.prepActionLabel) els.prepActionLabel.textContent = step.label || 'したごしらえしよう';
     if (els.prepProgress) {
       const pct = maxProgress ? (safeProgress / maxProgress) * 100 : 100;
@@ -4822,6 +4854,190 @@ body.layout-editor-on .endX-marker {
     els.prepBurst.classList.remove('show');
     void els.prepBurst.offsetWidth;
     els.prepBurst.classList.add('show');
+  }
+
+  function getKneadStepForProgress(config, progress) {
+    const steps = Array.isArray(config && config.steps) ? config.steps : [];
+    if (!steps.length) return null;
+    const idx = Math.max(0, Math.min(steps.length - 1, Math.floor((progress || 0) + 0.001)));
+    return steps[idx] || steps[0];
+  }
+
+  function loadKneadImage(src) {
+    if (!src) return Promise.resolve(null);
+    if (kneadRuntime.images[src]) return Promise.resolve(kneadRuntime.images[src]);
+    if (kneadRuntime.loading[src]) return kneadRuntime.loading[src];
+    kneadRuntime.loading[src] = new Promise(function (resolve) {
+      const img = new Image();
+      img.onload = function () {
+        kneadRuntime.images[src] = img;
+        resolve(img);
+      };
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+    return kneadRuntime.loading[src];
+  }
+
+  function resizeKneadCanvas() {
+    if (!els.kneadCanvas) return false;
+    const rect = els.kneadCanvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const w = Math.max(1, Math.round(rect.width * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (els.kneadCanvas.width !== w || els.kneadCanvas.height !== h) {
+      els.kneadCanvas.width = w;
+      els.kneadCanvas.height = h;
+      kneadRuntime.lastSrc = '';
+    }
+    return true;
+  }
+
+  function drawKneadImage(img, alpha) {
+    if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
+    const canvas = els.kneadCanvas;
+    const ctx = canvas.getContext('2d');
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
+    const dw = img.naturalWidth * scale;
+    const dh = img.naturalHeight * scale;
+    const dx = (cw - dw) / 2;
+    const dy = (ch - dh) / 2;
+    ctx.save();
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.restore();
+  }
+
+  function scheduleKneadCanvasReset(config, progress) {
+    requestAnimationFrame(function () {
+      resetKneadCanvas(config, progress);
+    });
+    state.pendingTimers.push(setTimeout(function () {
+      resetKneadCanvas(config, progress);
+    }, 360));
+  }
+
+  function resetKneadCanvas(config, progress) {
+    const step = getKneadStepForProgress(config, progress);
+    const src = step && step.src;
+    if (!els.kneadCanvas || !src) return;
+    loadKneadImage(src).then(function (img) {
+      if (!img || !els.kneadCanvas) return;
+      const activeConfig = getActiveDragPrepConfig();
+      if (activeConfig === config) {
+        const desiredStep = getKneadStepForProgress(config, state.prepProgress || 0);
+        if (desiredStep && desiredStep.src && desiredStep.src !== src) return;
+      }
+      if (!resizeKneadCanvas()) return;
+      const ctx = els.kneadCanvas.getContext('2d');
+      ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
+      kneadRuntime.lastSrc = src;
+      drawKneadImage(img, 1);
+    });
+  }
+
+  function replaceKneadCanvasBase(img, preserveAlpha) {
+    if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
+    const canvas = els.kneadCanvas;
+    const ctx = canvas.getContext('2d');
+    let scratch = kneadRuntime.scratch;
+    if (!scratch) {
+      scratch = document.createElement('canvas');
+      kneadRuntime.scratch = scratch;
+    }
+    if (scratch.width !== canvas.width || scratch.height !== canvas.height) {
+      scratch.width = canvas.width;
+      scratch.height = canvas.height;
+    }
+    const sctx = scratch.getContext('2d');
+    sctx.clearRect(0, 0, scratch.width, scratch.height);
+    sctx.drawImage(canvas, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawKneadImage(img, 1);
+    if (preserveAlpha > 0) {
+      ctx.save();
+      ctx.globalAlpha = preserveAlpha;
+      ctx.drawImage(scratch, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  function syncKneadCanvas(config, progress, animate) {
+    const step = getKneadStepForProgress(config, progress);
+    const src = step && step.src;
+    if (!els.kneadCanvas || !src) return;
+    if (!kneadRuntime.lastSrc) {
+      resetKneadCanvas(config, progress);
+      return;
+    }
+    if (src !== kneadRuntime.lastSrc) {
+      loadKneadImage(src).then(function (img) {
+        if (!img) return;
+        replaceKneadCanvasBase(img, animate ? 0.2 : 0);
+        kneadRuntime.lastSrc = src;
+      });
+    }
+  }
+
+  function smearKneadCanvas(fromX, fromY, toX, toY, progressRatio) {
+    const canvas = els.kneadCanvas;
+    if (!canvas || !resizeKneadCanvas()) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const px = canvas.width / rect.width;
+    const py = canvas.height / rect.height;
+    const x1 = (fromX - rect.left) * px;
+    const y1 = (fromY - rect.top) * py;
+    const x2 = (toX - rect.left) * px;
+    const y2 = (toY - rect.top) * py;
+    const cx = canvas.width * 0.5;
+    const cy = canvas.height * 0.51;
+    const rx = canvas.width * 0.34;
+    const ry = canvas.height * 0.33;
+    const inside = Math.pow((x2 - cx) / rx, 2) + Math.pow((y2 - cy) / ry, 2);
+    if (inside > 1.18) return;
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 2) return;
+    const angle = Math.atan2(dy, dx);
+    const ctx = canvas.getContext('2d');
+    let scratch = kneadRuntime.scratch;
+    if (!scratch) {
+      scratch = document.createElement('canvas');
+      kneadRuntime.scratch = scratch;
+    }
+    if (scratch.width !== canvas.width || scratch.height !== canvas.height) {
+      scratch.width = canvas.width;
+      scratch.height = canvas.height;
+    }
+    const sctx = scratch.getContext('2d');
+    sctx.clearRect(0, 0, scratch.width, scratch.height);
+    sctx.drawImage(canvas, 0, 0);
+
+    const p = Math.max(0, Math.min(1, progressRatio || 0));
+    const radius = Math.max(28, Math.min(canvas.width, canvas.height) * (0.065 + p * 0.028));
+    const stretch = Math.max(radius * 2.25, Math.min(radius * 3.9, radius * 1.65 + len * 1.2));
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(x2, y2, stretch * 0.58, radius * 0.62, angle, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.translate(x2, y2);
+    ctx.rotate(angle);
+    ctx.globalAlpha = 0.94;
+    ctx.drawImage(
+      scratch,
+      x1 - radius, y1 - radius * 0.82, radius * 2, radius * 1.64,
+      -radius * 0.42, -radius * 0.82, stretch, radius * 1.64
+    );
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = 'rgba(255, 225, 202, 0.9)';
+    ctx.fillRect(-stretch * 0.48, -radius * 0.14, stretch * 0.96, radius * 0.28);
+    ctx.restore();
   }
 
   function getActiveDragPrepConfig() {
@@ -4892,6 +5108,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.add('is-working');
       try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
     }
+    if (!kneadRuntime.lastSrc) resetKneadCanvas(config, state.prepProgress || 0);
     setSpeech('そのまま ぐるぐる こねよう！', 'prep');
   }
 
@@ -4903,6 +5120,9 @@ body.layout-editor-on .endX-marker {
     const dx = evt.clientX - state.prepDragLastX;
     const dy = evt.clientY - state.prepDragLastY;
     const dist = Math.hypot(dx, dy);
+    const maxProgress = getPrepMaxProgress(config);
+    const progressRatio = maxProgress ? Math.max(0, Math.min(1, (state.prepProgress || 0) / maxProgress)) : 0;
+    if (dist > 1) smearKneadCanvas(state.prepDragLastX, state.prepDragLastY, evt.clientX, evt.clientY, progressRatio);
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
     if (dist > 1) {
@@ -7432,6 +7652,11 @@ body.layout-editor-on .endX-marker {
       els.prepArtMain.style.backgroundImage = '';
       els.prepArtMain.style.backgroundSize = '';
       els.prepArtMain.style.backgroundPosition = '';
+    }
+    if (els.kneadCanvas) {
+      const ctx = els.kneadCanvas.getContext('2d');
+      ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
+      kneadRuntime.lastSrc = '';
     }
     resetCookDrag();
     updateCookDots('grill', 0);
