@@ -201,6 +201,7 @@ body[data-screen="fridge"] .stage-wrap {
   color: var(--text-soft);
 }
 
+/* 5ステップ フローチップ（1600幅で5個を必ず1行に収める） */
 .flow-chips {
   display: flex;
   align-items: center;
@@ -314,6 +315,7 @@ body[data-screen="fridge"] .stage-wrap {
   filter: saturate(0.9);
 }
 
+/* チップ別カラー */
 .flow-chip[data-step="1"] { --flow-card: var(--ui-flow-step-1); --flow-num: var(--ui-flow-num-1); }
 .flow-chip[data-step="2"] { --flow-card: var(--ui-flow-step-2); --flow-num: var(--ui-flow-num-2); }
 .flow-chip[data-step="3"] { --flow-card: var(--ui-flow-step-3); --flow-num: var(--ui-flow-num-3); }
@@ -630,7 +632,6 @@ body[data-screen="fridge"] .stage-wrap {
   border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.08)),
-    repeating-linear-gradient(0deg, rgba(177,116,55,0.05) 0 8px, rgba(255,255,255,0.05) 8px 16px),
     linear-gradient(180deg, #F5C98D 0%, #E8AA66 100%);
   box-shadow: inset 0 0 0 3px rgba(255,255,255,0.58), 0 10px 20px rgba(125,75,35,0.12);
   cursor: pointer;
@@ -670,7 +671,7 @@ body[data-screen="fridge"] .stage-wrap {
   background-position: center;
   background-size: contain;
   filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16));
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 .prep-workbench[data-prep-kind="mix_mince"] .prep-art-main {
@@ -728,6 +729,151 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-workbench-ui .progress-caption {
   font-size: 0.82rem;
   line-height: 1.1;
+}
+.prep-breading-game {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.prep-workbench[data-prep-kind="bread_shrimp"],
+.prep-workbench[data-prep-kind="bread_korokke"] {
+  cursor: default;
+  touch-action: none;
+}
+.prep-workbench[data-prep-kind="bread_shrimp"] .prep-art-main,
+.prep-workbench[data-prep-kind="bread_korokke"] .prep-art-main {
+  display: none;
+}
+.prep-workbench[data-prep-kind="bread_shrimp"] .prep-breading-game,
+.prep-workbench[data-prep-kind="bread_korokke"] .prep-breading-game {
+  display: block;
+}
+.prep-breading-trays {
+  position: absolute;
+  left: 5.5%;
+  right: 5.5%;
+  bottom: 7%;
+  height: 43%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.prep-breading-tray {
+  position: relative;
+  border-radius: 18px;
+  border: 3px solid rgba(255,255,255,0.74);
+  background: linear-gradient(180deg, #FFFDF7 0%, #FFF0D5 100%);
+  box-shadow: 0 8px 16px rgba(132,80,32,0.15), inset 0 0 0 2px rgba(255,255,255,0.58);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  padding: 10px 12px 8px;
+  overflow: hidden;
+  opacity: 0.72;
+  transform: translateY(0);
+  transition: transform 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+}
+.prep-breading-tray::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 32% 38%, rgba(255,255,255,0.68) 0 2px, transparent 3px),
+    radial-gradient(circle at 68% 58%, rgba(255,255,255,0.42) 0 2px, transparent 3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.prep-breading-tray.done,
+.prep-breading-tray.active {
+  opacity: 1;
+}
+.prep-breading-tray.active {
+  border-color: #F29F3D;
+  box-shadow: 0 0 0 5px rgba(242,159,61,0.22), 0 10px 18px rgba(132,80,32,0.18), inset 0 0 0 2px rgba(255,255,255,0.7);
+  transform: translateY(-4px);
+}
+.prep-breading-tray.active::after {
+  opacity: 1;
+}
+.prep-breading-tray.done {
+  border-color: #88C56C;
+}
+.prep-breading-tray-thumb {
+  width: 100%;
+  height: 100%;
+  min-height: 105px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 6px 8px rgba(110,70,30,0.12));
+}
+.prep-breading-tray-label {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+.prep-breading-food {
+  position: absolute;
+  left: var(--prep-food-x, 19%);
+  top: var(--prep-food-y, 41%);
+  width: var(--prep-food-w, 21%);
+  height: var(--prep-food-h, 22%);
+  transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scale(var(--prep-food-scale, 1));
+  transform-origin: center;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 12px 14px rgba(84,55,28,0.23));
+  z-index: 5;
+  cursor: grab;
+  touch-action: none;
+  transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+.prep-breading-food[data-kind="bread_korokke"] {
+  width: var(--prep-food-w, 20%);
+  height: var(--prep-food-h, 24%);
+}
+.prep-breading-food.is-dragging {
+  cursor: grabbing;
+  transition: none;
+  --prep-food-scale: 1.06;
+  filter: drop-shadow(0 16px 18px rgba(84,55,28,0.27));
+}
+.prep-workbench.is-working .prep-breading-food {
+  animation: prepBreadingDip 0.42s ease-out;
+}
+.prep-breading-hint {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  transform: translateX(-50%);
+  min-width: 42%;
+  max-width: 78%;
+  padding: 8px 18px 9px;
+  border-radius: 999px;
+  background: rgba(255,253,246,0.92);
+  color: #7A5532;
+  font-weight: 900;
+  font-size: 1rem;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: 0 6px 14px rgba(120,72,30,0.12);
+  z-index: 6;
+}
+@keyframes prepBreadingDip {
+  0%, 100% { transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scale(1); }
+  42% { transform: translate(-50%, -44%) rotate(calc(var(--prep-food-rot, 0deg) - 5deg)) scale(1.08); }
+  70% { transform: translate(-50%, -53%) rotate(calc(var(--prep-food-rot, 0deg) + 4deg)) scale(1.04); }
 }
 .prep-workbench.is-working .prep-art-main {
   animation: prepWorkPop 0.34s ease-out;
@@ -1725,6 +1871,7 @@ body.layout-editor-on #fry-stage .oil-bubbles {
 .panel--fridge .panel-pill, .panel-pill.panel--fridge { --pill-bg: var(--chip-blue); }
 .panel--cook   .panel-pill, .panel-pill.panel--cook   { --pill-bg: var(--chip-pink); }
 
+/* ---------- ポノ吹き出し共通 ---------- */
 .pono-img {
   width: 64px; height: 64px;
   object-fit: contain;
@@ -3117,6 +3264,11 @@ body.layout-editor-on .endX-marker {
       <div class="prep-workbench" id="prep-stage" role="button" tabindex="0" aria-label="したごしらえ">
         <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
         <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
+        <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
+          <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
+          <div class="prep-breading-trays" id="prep-breading-trays"></div>
+          <div class="prep-breading-food" id="prep-breading-food"></div>
+        </div>
         <div class="prep-workbench-ui">
           <div class="prep-action-label" id="prep-action-label">したごしらえしよう！</div>
           <div class="progress-row">
@@ -3713,25 +3865,39 @@ body.layout-editor-on .endX-marker {
     },
     bread_shrimp: {
       kind: 'bread_shrimp',
+      trayPrep: true,
       startSpeech: 'エビに ころもを つけよう！',
       completeSpeech: 'エビフライの したごしらえ できたよ！',
       toolSteps: PREP_TOOL_STEPS,
+      foodStages: [
+        '../assets/images/bento/cooking/shrimp/shrimp_001_raw.png',
+        '../assets/images/bento/cooking/shrimp/shrimp_002_mid.png',
+        '../assets/images/bento/cooking/shrimp/shrimp_003_done.png',
+        '../assets/images/bento/cooking/shrimp/shrimp_003_done.png',
+      ],
       steps: [
-        { sheet: 'breading', x: 0, y: 0, label: 'エビに こなを つけよう', caption: 'まず こな！', burst: 'ぱふっ！' },
-        { sheet: 'breading', x: 1, y: 0, label: 'たまごに くぐらせよう', caption: 'つぎは たまご！', burst: 'とろん！' },
-        { sheet: 'breading', x: 2, y: 0, label: 'パンこを まとわせよう', caption: 'パンこで サクサク！', burst: 'サクッ！' },
+        { sheet: 'breading', x: 0, y: 0, label: 'こなで ころころ', caption: 'こなの トレイで ころころ！', burst: 'ぱふっ！', trayLabel: 'こな' },
+        { sheet: 'breading', x: 1, y: 0, label: 'たまごに くぐらせよう', caption: 'たまごに くぐらせよう！', burst: 'とろん！', trayLabel: 'たまご' },
+        { sheet: 'breading', x: 2, y: 0, label: 'パンこで ころころ', caption: 'パンこで ころころ！', burst: 'サクッ！', trayLabel: 'パンこ' },
         { sheet: 'breading', x: 2, y: 0, label: 'できあがり', caption: 'エビフライの じゅんび できたよ！', burst: 'できた！' },
       ],
     },
     bread_korokke: {
       kind: 'bread_korokke',
+      trayPrep: true,
       startSpeech: 'コロッケに ころもを つけよう！',
       completeSpeech: 'コロッケの したごしらえ できたよ！',
       toolSteps: PREP_TOOL_STEPS,
+      foodStages: [
+        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
+        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
+        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
+        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
+      ],
       steps: [
-        { sheet: 'breading', x: 0, y: 1, label: 'たねを まるめよう', caption: 'まるめるよ！', burst: 'ころん！' },
-        { sheet: 'breading', x: 1, y: 1, label: 'こなと たまごを つけよう', caption: 'ころもを つけるよ！', burst: 'ぺたっ！' },
-        { sheet: 'breading', x: 2, y: 1, label: 'パンこを まとわせよう', caption: 'パンこで サクサク！', burst: 'サクッ！' },
+        { sheet: 'breading', x: 0, y: 1, label: 'こなで ころころ', caption: 'こなの トレイで ころころ！', burst: 'ぱふっ！', trayLabel: 'こな' },
+        { sheet: 'breading', x: 1, y: 1, label: 'たまごに くぐらせよう', caption: 'たまごに くぐらせよう！', burst: 'とろん！', trayLabel: 'たまご' },
+        { sheet: 'breading', x: 2, y: 1, label: 'パンこで ころころ', caption: 'パンこで ころころ！', burst: 'サクッ！', trayLabel: 'パンこ' },
         { sheet: 'breading', x: 2, y: 1, label: 'できあがり', caption: 'コロッケの じゅんび できたよ！', burst: 'できた！' },
       ],
     },
@@ -3764,10 +3930,12 @@ body.layout-editor-on .endX-marker {
     prepProgress: 0,
     prepAnimating: false,
     prepDragging: false,
+    prepDragMode: '',
     prepDragPointerId: null,
     prepDragLastX: 0,
     prepDragLastY: 0,
     prepDragDistance: 0,
+    prepTrayDistance: 0,
     prepDragLastStep: 0,
     suppressPrepClick: false,
     cookProgress: 0,
@@ -3818,7 +3986,9 @@ body.layout-editor-on .endX-marker {
     state.queuedChopTaps = 0;
     state.prepAnimating = false;
     state.prepDragging = false;
+    state.prepDragMode = '';
     state.prepDragPointerId = null;
+    state.prepTrayDistance = 0;
     state.suppressPrepClick = false;
     state.cookAnimating = false;
     stopCookTimingGauge();
@@ -4062,6 +4232,10 @@ body.layout-editor-on .endX-marker {
     prepStage:     document.getElementById('prep-stage'),
     prepArtMain:   document.getElementById('prep-art-main'),
     kneadCanvas:   document.getElementById('knead-canvas'),
+    prepBreadingGame: document.getElementById('prep-breading-game'),
+    prepBreadingTrays: document.getElementById('prep-breading-trays'),
+    prepBreadingFood: document.getElementById('prep-breading-food'),
+    prepBreadingHint: document.getElementById('prep-breading-hint'),
     prepBurst:     document.getElementById('prep-burst'),
     prepActionLabel: document.getElementById('prep-action-label'),
     prepProgress:  document.getElementById('prep-progress-fill'),
@@ -4768,10 +4942,12 @@ body.layout-editor-on .endX-marker {
     state.prepProgress = 0;
     state.prepAnimating = false;
     state.prepDragging = false;
+    state.prepDragMode = '';
     state.prepDragPointerId = null;
     state.prepDragLastX = 0;
     state.prepDragLastY = 0;
     state.prepDragDistance = 0;
+    state.prepTrayDistance = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
     state.chopProgress = 0;
@@ -4841,6 +5017,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.toggle('is-working', !!animate);
     }
     setPrepVisual(els.prepArtMain, step);
+    renderPrepBreadingGame(config, safeProgress);
     if (config.dragPrep) syncKneadCanvas(config, safeProgress, animate);
     if (els.prepActionLabel) els.prepActionLabel.textContent = step.label || 'したごしらえしよう';
     if (els.prepProgress) {
@@ -4874,6 +5051,92 @@ body.layout-editor-on .endX-marker {
     el.style.backgroundPosition = xPct + '% ' + yPct + '%';
   }
 
+  function isTrayPrepConfig(config) {
+    return !!(config && config.trayPrep);
+  }
+
+  function getPrepTraySteps(config) {
+    return (config && Array.isArray(config.toolSteps) && config.toolSteps.length)
+      ? config.toolSteps
+      : PREP_TOOL_STEPS;
+  }
+
+  function getPrepTrayActiveIndex(config, progress) {
+    const traySteps = getPrepTraySteps(config);
+    return Math.max(0, Math.min(traySteps.length - 1, Math.floor((progress || 0) + 0.001)));
+  }
+
+  function getPrepFoodStageSrc(config, progress) {
+    const foodStages = Array.isArray(config && config.foodStages) ? config.foodStages : [];
+    if (!foodStages.length) return '';
+    const idx = Math.max(0, Math.min(foodStages.length - 1, Math.floor((progress || 0) + 0.001)));
+    return foodStages[idx] || foodStages[0] || '';
+  }
+
+  function getPrepTrayCenterPct(index) {
+    const centers = [20.5, 50, 79.5];
+    return centers[Math.max(0, Math.min(centers.length - 1, index || 0))] || 50;
+  }
+
+  function snapPrepFoodToTray(index) {
+    if (!els.prepBreadingFood) return;
+    els.prepBreadingFood.style.setProperty('--prep-food-x', getPrepTrayCenterPct(index) + '%');
+    els.prepBreadingFood.style.setProperty('--prep-food-y', '59%');
+    els.prepBreadingFood.style.setProperty('--prep-food-rot', (index === 0 ? '-4deg' : index === 1 ? '2deg' : '5deg'));
+  }
+
+  function renderPrepBreadingGame(config, progress) {
+    if (!els.prepBreadingGame || !els.prepBreadingTrays || !els.prepBreadingFood) return;
+    if (!isTrayPrepConfig(config)) {
+      els.prepBreadingGame.setAttribute('aria-hidden', 'true');
+      els.prepBreadingTrays.innerHTML = '';
+      els.prepBreadingTrays.dataset.kind = '';
+      els.prepBreadingFood.style.backgroundImage = '';
+      return;
+    }
+
+    const traySteps = getPrepTraySteps(config);
+    const activeIndex = getPrepTrayActiveIndex(config, progress);
+    els.prepBreadingGame.setAttribute('aria-hidden', 'false');
+    if (els.prepBreadingTrays.dataset.kind !== config.kind) {
+      els.prepBreadingTrays.innerHTML = '';
+      traySteps.forEach(function (trayStep, idx) {
+        const tray = document.createElement('div');
+        tray.className = 'prep-breading-tray';
+        tray.dataset.trayIndex = String(idx);
+        const thumb = document.createElement('div');
+        thumb.className = 'prep-breading-tray-thumb';
+        setPrepVisual(thumb, trayStep);
+        const label = document.createElement('div');
+        label.className = 'prep-breading-tray-label';
+        label.textContent = trayStep.label || '';
+        tray.appendChild(thumb);
+        tray.appendChild(label);
+        els.prepBreadingTrays.appendChild(tray);
+      });
+      els.prepBreadingTrays.dataset.kind = config.kind || '';
+    }
+
+    [...els.prepBreadingTrays.querySelectorAll('.prep-breading-tray')].forEach(function (tray, idx) {
+      tray.classList.toggle('done', idx < activeIndex);
+      tray.classList.toggle('active', idx === activeIndex);
+    });
+
+    const foodSrc = getPrepFoodStageSrc(config, progress);
+    els.prepBreadingFood.dataset.kind = config.kind || '';
+    els.prepBreadingFood.dataset.step = String(activeIndex);
+    els.prepBreadingFood.style.backgroundImage = foodSrc ? 'url("' + foodSrc + '")' : '';
+    if (!state.prepDragging || state.prepDragMode !== 'tray') snapPrepFoodToTray(activeIndex);
+
+    const step = (config.steps && config.steps[activeIndex]) || {};
+    if (els.prepBreadingHint) {
+      const trayLabel = step.trayLabel || (traySteps[activeIndex] && traySteps[activeIndex].label) || '';
+      els.prepBreadingHint.textContent = step.caption || (trayLabel
+        ? trayLabel + 'の トレイで ころころしよう！'
+        : 'トレイの なかで ころころしよう！');
+    }
+  }
+
   function buildPrepStepLane(config, progress) {
     if (!els.prepStepLane) return;
     const laneSteps = (config && Array.isArray(config.toolSteps) && config.toolSteps.length)
@@ -4882,7 +5145,9 @@ body.layout-editor-on .endX-marker {
     const maxProgress = getPrepMaxProgress(config);
     const activeIndex = laneSteps.length <= 1
       ? 0
-      : Math.round((Math.max(0, progress || 0) / Math.max(1, maxProgress)) * (laneSteps.length - 1));
+      : (isTrayPrepConfig(config)
+        ? Math.max(0, Math.min(laneSteps.length - 1, Math.floor((progress || 0) + 0.001)))
+        : Math.round((Math.max(0, progress || 0) / Math.max(1, maxProgress)) * (laneSteps.length - 1)));
     els.prepStepLane.innerHTML = '';
     laneSteps.forEach(function (laneStep, idx) {
       const card = document.createElement('div');
@@ -5097,9 +5362,48 @@ body.layout-editor-on .endX-marker {
     return config && config.dragPrep ? config : null;
   }
 
+  function getActiveTrayPrepConfig() {
+    if (state.currentScreen !== 'prep') return null;
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!ing || !action || action.type !== 'prep') return null;
+    const config = getPrepConfig(action, ing);
+    return isTrayPrepConfig(config) ? config : null;
+  }
+
+  function getActivePrepTrayElement(config) {
+    if (!els.prepBreadingTrays) return null;
+    const idx = getPrepTrayActiveIndex(config, state.prepProgress || 0);
+    return els.prepBreadingTrays.querySelector('.prep-breading-tray[data-tray-index="' + idx + '"]');
+  }
+
+  function movePrepFoodToPointer(evt) {
+    if (!els.prepStage || !els.prepBreadingFood) return;
+    const rect = els.prepStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.max(9, Math.min(91, ((evt.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(18, Math.min(76, ((evt.clientY - rect.top) / rect.height) * 100));
+    els.prepBreadingFood.style.setProperty('--prep-food-x', x + '%');
+    els.prepBreadingFood.style.setProperty('--prep-food-y', y + '%');
+    els.prepBreadingFood.style.setProperty('--prep-food-rot', ((x - 50) * 0.09).toFixed(1) + 'deg');
+  }
+
+  function pointIsInsideActiveTray(evt, config) {
+    const tray = getActivePrepTrayElement(config);
+    if (!tray) return false;
+    const rect = tray.getBoundingClientRect();
+    return evt.clientX >= rect.left && evt.clientX <= rect.right && evt.clientY >= rect.top && evt.clientY <= rect.bottom;
+  }
+
+  function releasePrepPointerCapture(evt) {
+    if (!els.prepStage || !evt) return;
+    try { els.prepStage.releasePointerCapture(evt.pointerId); } catch (_) {}
+  }
+
   function finishDragPrep(ing, config) {
     if (state.prepAnimating) return;
     state.prepDragging = false;
+    state.prepDragMode = '';
     state.prepDragPointerId = null;
     state.prepAnimating = true;
     state.cutting = true;
@@ -5142,11 +5446,112 @@ body.layout-editor-on .endX-marker {
     if (nextProgress >= maxProgress) finishDragPrep(ing, config);
   }
 
+  function advanceTrayPrepStep(config) {
+    const ing = state.current;
+    if (!ing || !config || state.prepAnimating) return;
+    const maxProgress = getPrepMaxProgress(config);
+    if (!maxProgress || state.prepProgress >= maxProgress) return;
+
+    state.prepDragging = false;
+    state.prepDragMode = '';
+    state.prepDragPointerId = null;
+    state.prepTrayDistance = 0;
+    state.prepAnimating = true;
+    if (els.prepBreadingFood) els.prepBreadingFood.classList.remove('is-dragging');
+    if (els.prepStage) els.prepStage.classList.add('is-working');
+
+    const currentProgress = Math.floor((state.prepProgress || 0) + 0.001);
+    const actionStep = config.steps[currentProgress] || {};
+    const nextProgress = Math.min(maxProgress, currentProgress + 1);
+    const nextStep = config.steps[nextProgress] || actionStep;
+    updatePrepView(config, nextProgress, true);
+    showPrepBurst(actionStep.burst || 'できた！');
+    setSpeech(nextStep.caption || nextStep.label || actionStep.caption || 'いいかんじ！', 'prep');
+
+    if (nextProgress >= maxProgress) {
+      state.cutting = true;
+      state.pendingTimers.push(setTimeout(function () {
+        if (els.prepStage) els.prepStage.classList.remove('is-working');
+        state.prepAnimating = false;
+        setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
+        completeCurrentAction(ing);
+      }, 720));
+      return;
+    }
+
+    state.pendingTimers.push(setTimeout(function () {
+      if (els.prepStage) els.prepStage.classList.remove('is-working');
+      state.prepAnimating = false;
+    }, 380));
+  }
+
+  function beginTrayPrepDrag(evt, config) {
+    if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
+    evt.preventDefault();
+    state.prepDragging = true;
+    state.prepDragMode = 'tray';
+    state.prepDragPointerId = evt.pointerId;
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    state.prepTrayDistance = 0;
+    state.suppressPrepClick = false;
+    if (els.prepBreadingFood) els.prepBreadingFood.classList.add('is-dragging');
+    if (els.prepStage) {
+      try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
+    }
+    movePrepFoodToPointer(evt);
+    const activeIndex = getPrepTrayActiveIndex(config, state.prepProgress || 0);
+    const step = config.steps[activeIndex] || {};
+    setSpeech(step.caption || 'トレイの なかで ころころしよう！', 'prep');
+  }
+
+  function moveTrayPrepDrag(evt, config) {
+    if (!state.prepDragging || state.prepDragMode !== 'tray' || evt.pointerId !== state.prepDragPointerId) return;
+    if (!config) return;
+    evt.preventDefault();
+    const dx = evt.clientX - state.prepDragLastX;
+    const dy = evt.clientY - state.prepDragLastY;
+    const dist = Math.hypot(dx, dy);
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    if (dist > 1) {
+      state.suppressPrepClick = true;
+      movePrepFoodToPointer(evt);
+      if (pointIsInsideActiveTray(evt, config)) {
+        const tray = getActivePrepTrayElement(config);
+        const trayRect = tray ? tray.getBoundingClientRect() : null;
+        const threshold = Math.max(90, ((trayRect && trayRect.width) || 220) * 0.55);
+        state.prepTrayDistance += dist;
+        if (state.prepTrayDistance >= threshold) {
+          releasePrepPointerCapture(evt);
+          advanceTrayPrepStep(config);
+        }
+      }
+    }
+  }
+
+  function endTrayPrepDrag(evt, config) {
+    if (!state.prepDragging || state.prepDragMode !== 'tray' || evt.pointerId !== state.prepDragPointerId) return;
+    state.prepDragging = false;
+    state.prepDragMode = '';
+    state.prepDragPointerId = null;
+    state.prepTrayDistance = 0;
+    if (els.prepBreadingFood) els.prepBreadingFood.classList.remove('is-dragging');
+    releasePrepPointerCapture(evt);
+    snapPrepFoodToTray(getPrepTrayActiveIndex(config, state.prepProgress || 0));
+  }
+
   function onPrepPointerDown(evt) {
+    const trayConfig = getActiveTrayPrepConfig();
+    if (trayConfig) {
+      beginTrayPrepDrag(evt, trayConfig);
+      return;
+    }
     const config = getActiveDragPrepConfig();
     if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
     evt.preventDefault();
     state.prepDragging = true;
+    state.prepDragMode = 'knead';
     state.prepDragPointerId = evt.pointerId;
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
@@ -5161,6 +5566,10 @@ body.layout-editor-on .endX-marker {
   }
 
   function onPrepPointerMove(evt) {
+    if (state.prepDragMode === 'tray') {
+      moveTrayPrepDrag(evt, getActiveTrayPrepConfig());
+      return;
+    }
     if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
     const config = getActiveDragPrepConfig();
     if (!config) return;
@@ -5180,8 +5589,13 @@ body.layout-editor-on .endX-marker {
   }
 
   function onPrepPointerUp(evt) {
+    if (state.prepDragMode === 'tray') {
+      endTrayPrepDrag(evt, getActiveTrayPrepConfig());
+      return;
+    }
     if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
     state.prepDragging = false;
+    state.prepDragMode = '';
     state.prepDragPointerId = null;
     if (els.prepStage) {
       els.prepStage.classList.remove('is-dragging');
@@ -5203,6 +5617,11 @@ body.layout-editor-on .endX-marker {
     const config = getPrepConfig(action, ing);
     const maxProgress = getPrepMaxProgress(config);
     if (state.prepProgress >= maxProgress) return;
+
+    if (isTrayPrepConfig(config)) {
+      advanceTrayPrepStep(config);
+      return;
+    }
 
     if (config.dragPrep) {
       advanceDragPrep(config, Math.max(300, ((els.prepStage && els.prepStage.getBoundingClientRect().width) || 720) * 0.6));
@@ -7642,10 +8061,12 @@ body.layout-editor-on .endX-marker {
     state.prepProgress = 0;
     state.prepAnimating = false;
     state.prepDragging = false;
+    state.prepDragMode = '';
     state.prepDragPointerId = null;
     state.prepDragLastX = 0;
     state.prepDragLastY = 0;
     state.prepDragDistance = 0;
+    state.prepTrayDistance = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
     state.cookProgress = 0;
