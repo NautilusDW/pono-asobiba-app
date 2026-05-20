@@ -3631,6 +3631,7 @@ body.layout-editor-on .endX-marker {
     loading: {},
     lastSrc: '',
     scratch: null,
+    overlaySrc: '',
   };
 
   const PREP_CONFIGS = {
@@ -4935,34 +4936,29 @@ body.layout-editor-on .endX-marker {
       const ctx = els.kneadCanvas.getContext('2d');
       ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
       kneadRuntime.lastSrc = src;
+      kneadRuntime.overlaySrc = '';
       drawKneadImage(img, 1);
     });
   }
 
-  function replaceKneadCanvasBase(img, preserveAlpha) {
+  function overlayKneadCanvasBase(img, src, duration) {
     if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
-    const canvas = els.kneadCanvas;
-    const ctx = canvas.getContext('2d');
-    let scratch = kneadRuntime.scratch;
-    if (!scratch) {
-      scratch = document.createElement('canvas');
-      kneadRuntime.scratch = scratch;
-    }
-    if (scratch.width !== canvas.width || scratch.height !== canvas.height) {
-      scratch.width = canvas.width;
-      scratch.height = canvas.height;
-    }
-    const sctx = scratch.getContext('2d');
-    sctx.clearRect(0, 0, scratch.width, scratch.height);
-    sctx.drawImage(canvas, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawKneadImage(img, 1);
-    if (preserveAlpha > 0) {
-      ctx.save();
-      ctx.globalAlpha = preserveAlpha;
-      ctx.drawImage(scratch, 0, 0);
-      ctx.restore();
-    }
+    const steps = duration ? 7 : 1;
+    const interval = duration ? Math.max(60, Math.round(duration / steps)) : 0;
+    const baseAlpha = duration ? 0.15 : 1;
+    const finalAlpha = duration ? 0.22 : 1;
+    kneadRuntime.overlaySrc = src || '';
+    let frame = 0;
+    const drawOverlayFrame = function () {
+      if (!els.kneadCanvas || (src && kneadRuntime.overlaySrc !== src)) return;
+      const isFinal = frame >= steps - 1;
+      drawKneadImage(img, isFinal ? finalAlpha : baseAlpha);
+      frame += 1;
+      if (frame < steps) {
+        state.pendingTimers.push(setTimeout(drawOverlayFrame, interval));
+      }
+    };
+    drawOverlayFrame();
   }
 
   function syncKneadCanvas(config, progress, animate) {
@@ -4976,8 +4972,8 @@ body.layout-editor-on .endX-marker {
     if (src !== kneadRuntime.lastSrc) {
       loadKneadImage(src).then(function (img) {
         if (!img) return;
-        replaceKneadCanvasBase(img, animate ? 0.2 : 0);
         kneadRuntime.lastSrc = src;
+        overlayKneadCanvasBase(img, src, animate ? 840 : 0);
       });
     }
   }
@@ -4995,8 +4991,8 @@ body.layout-editor-on .endX-marker {
     const y2 = (toY - rect.top) * py;
     const cx = canvas.width * 0.5;
     const cy = canvas.height * 0.51;
-    const rx = canvas.width * 0.34;
-    const ry = canvas.height * 0.33;
+    const rx = canvas.width * 0.28;
+    const ry = canvas.height * 0.27;
     const inside = Math.pow((x2 - cx) / rx, 2) + Math.pow((y2 - cy) / ry, 2);
     if (inside > 1.18) return;
 
@@ -5070,7 +5066,7 @@ body.layout-editor-on .endX-marker {
       }
       state.prepAnimating = false;
       completeCurrentAction(ing);
-    }, 680));
+    }, 940));
   }
 
   function advanceDragPrep(config, deltaDistance) {
@@ -5079,7 +5075,7 @@ body.layout-editor-on .endX-marker {
     const maxProgress = getPrepMaxProgress(config);
     if (!maxProgress || state.prepProgress >= maxProgress) return;
     const rect = els.prepStage ? els.prepStage.getBoundingClientRect() : null;
-    const totalDistance = Math.max(1200, ((rect && rect.width) || 720) * 2.4);
+    const totalDistance = Math.max(3600, ((rect && rect.width) || 720) * 7.2);
     state.prepDragDistance = Math.max(0, state.prepDragDistance + Math.max(0, deltaDistance || 0));
     const nextProgress = Math.min(maxProgress, (state.prepDragDistance / totalDistance) * maxProgress);
     const prevStep = Math.floor((state.prepProgress || 0) + 0.001);
@@ -7657,6 +7653,7 @@ body.layout-editor-on .endX-marker {
       const ctx = els.kneadCanvas.getContext('2d');
       ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
       kneadRuntime.lastSrc = '';
+      kneadRuntime.overlaySrc = '';
     }
     resetCookDrag();
     updateCookDots('grill', 0);
