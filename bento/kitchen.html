@@ -85,6 +85,8 @@
   --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_stocked_open.png');
   --ui-fridge-closed: url('../assets/images/bento/cooking/ui/fridge_closed.png');
   --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_sheet.png');
+  --ui-prep-base: url('../assets/images/bento/cooking/ui/prep_base_actions_sheet.png');
+  --ui-prep-breading: url('../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.png');
 }
 
 html, body {
@@ -119,6 +121,7 @@ body[data-screen="mode"] .stage-wrap,
 body[data-screen="select"] .stage-wrap {
   background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
 }
+body[data-screen="prep"] .stage-wrap,
 body[data-screen="chop"] .stage-wrap {
   /* レターボックスは引き続き暖色グラデで埋める（キッチン画像は .chop-main 内に敷く） */
   background: linear-gradient(180deg, var(--bg-chop-1) 0%, var(--bg-chop-2) 50%, var(--bg-chop-3) 100%);
@@ -589,6 +592,180 @@ body[data-screen="fridge"] .stage-wrap {
   border-radius: var(--radius);
   padding: 12px;
   box-shadow: 0 4px 10px var(--shadow-soft);
+}
+
+/* =========================================================
+   画面2: したごしらえ（割る / こねる / ころも）
+   ========================================================= */
+.prep-stage-wrap {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr;
+  gap: 18px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.prep-main {
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255,255,255,0.62), transparent 24%),
+    linear-gradient(180deg, #FFF9EA 0%, #FFE4BD 100%);
+  border: 3px solid #fff;
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: 0 6px 16px var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 560px;
+}
+.prep-workbench {
+  position: relative;
+  width: min(100%, 920px);
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.08)),
+    repeating-linear-gradient(0deg, rgba(177,116,55,0.05) 0 8px, rgba(255,255,255,0.05) 8px 16px),
+    linear-gradient(180deg, #F5C98D 0%, #E8AA66 100%);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.58), 0 10px 20px rgba(125,75,35,0.12);
+  cursor: pointer;
+  touch-action: manipulation;
+  outline: none;
+  overflow: hidden;
+}
+.prep-workbench:focus-visible {
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.58), 0 0 0 5px rgba(242,145,90,0.55);
+}
+.prep-workbench::before {
+  content: '';
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  bottom: 10%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(116,68,36,0.16), transparent 70%);
+  pointer-events: none;
+}
+.prep-art-main {
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  width: min(66%, 560px);
+  height: 62%;
+  transform: translate(-50%, -50%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16));
+  mix-blend-mode: multiply;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.prep-workbench.is-working .prep-art-main {
+  animation: prepWorkPop 0.34s ease-out;
+}
+.prep-workbench[data-prep-kind="mix_mince"].is-working .prep-art-main {
+  animation: prepKnead 0.42s ease-out;
+}
+.prep-workbench[data-prep-kind^="bread_"].is-working .prep-art-main,
+.prep-workbench[data-prep-kind="coat_chicken"].is-working .prep-art-main {
+  animation: prepDust 0.38s ease-out;
+}
+@keyframes prepWorkPop {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  45% { transform: translate(-50%, -52%) scale(1.06) rotate(-1deg); }
+}
+@keyframes prepKnead {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  25% { transform: translate(calc(-50% - 8px), -50%) rotate(-3deg) scale(1.03); }
+  58% { transform: translate(calc(-50% + 8px), -49%) rotate(3deg) scale(1.04); }
+}
+@keyframes prepDust {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16)); }
+  42% { transform: translate(-50%, -53%) scale(1.08); filter: drop-shadow(0 16px 18px rgba(80,50,30,0.18)) brightness(1.05); }
+}
+.prep-burst {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translate(-50%, 10px) rotate(-8deg) scale(0.72);
+  color: #D85687;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  font-size: 2.2rem;
+  line-height: 1;
+  text-shadow: 3px 3px 0 #fff, 5px 5px 0 rgba(216,86,135,0.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+  white-space: nowrap;
+}
+.prep-burst.show {
+  animation: prepBurstPop 0.56s ease-out;
+}
+@keyframes prepBurstPop {
+  0% { opacity: 0; transform: translate(-50%, 12px) rotate(-10deg) scale(0.55); }
+  36% { opacity: 1; transform: translate(-50%, -8px) rotate(-5deg) scale(1.18); }
+  100% { opacity: 0; transform: translate(-50%, -22px) rotate(-2deg) scale(1.02); }
+}
+.prep-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prep-action-label {
+  font-weight: 900;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--text);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.prep-step-lane {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.prep-step-card {
+  min-height: 118px;
+  border-radius: 14px;
+  background: #FFFDF6;
+  border: 2px solid #FFE4BD;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  padding: 8px;
+  opacity: 0.72;
+}
+.prep-step-card.done,
+.prep-step-card.active {
+  opacity: 1;
+  border-color: #F2A53A;
+}
+.prep-step-card.active {
+  box-shadow: 0 0 0 3px rgba(242,165,58,0.25), inset 0 0 0 2px rgba(255,255,255,0.7);
+}
+.prep-step-thumb {
+  width: 100%;
+  height: 74px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 5px 7px rgba(110,70,30,0.14));
+}
+.prep-step-label {
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--text);
 }
 
 /* =========================================================
@@ -2682,7 +2859,7 @@ body.layout-editor-on .endX-marker {
   </div>
   <nav class="flow-chips" id="flow-chips" aria-label="プレイの流れ">
     <button type="button" class="flow-chip active" data-step="1"><span class="step-num">1</span><span class="step-icon">🥕</span><span>ざいりょうを えらぶ</span></button>
-    <button type="button" class="flow-chip" data-step="2"><span class="step-num">2</span><span class="step-icon">✂️</span><span>トントン きる</span></button>
+    <button type="button" class="flow-chip" data-step="2"><span class="step-num">2</span><span class="step-icon">✂️</span><span>したごしらえ</span></button>
     <button type="button" class="flow-chip" data-step="3"><span class="step-num">3</span><span class="step-icon">🧊</span><span>れいぞうこに いれる</span></button>
     <button type="button" class="flow-chip" data-step="4"><span class="step-num">4</span><span class="step-icon">👨‍🍳</span><span>おかずを つくる</span></button>
     <button type="button" class="flow-chip" data-step="5"><span class="step-num">5</span><span class="step-icon">🍱</span><span>おべんとうに つめる</span></button>
@@ -2813,7 +2990,50 @@ body.layout-editor-on .endX-marker {
   </div>
 </section>
 
-<!-- ===================== 画面3: 焼く ===================== -->
+<!-- ===================== 画面3: したごしらえ ===================== -->
+<section class="screen" data-screen="prep" id="screen-prep" tabindex="-1" aria-labelledby="screen-prep-heading" hidden>
+  <button type="button" class="screen-back" data-back="select">← もどる</button>
+
+  <div class="panel-head">
+    <span class="panel-pill panel--chop"><span class="pill-num">2</span>したごしらえ</span>
+  </div>
+
+  <div class="prep-stage-wrap">
+    <div class="prep-main">
+      <div class="prep-workbench" id="prep-stage" role="button" tabindex="0" aria-label="したごしらえ">
+        <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
+        <div class="prep-burst" id="prep-burst">できた！</div>
+      </div>
+    </div>
+
+    <div class="prep-side">
+      <div class="side-card">
+        <div class="prep-action-label" id="prep-action-label">したごしらえしよう！</div>
+        <div class="progress-row" style="margin-top:10px;">
+          <div class="progress-track">
+            <div class="progress-fill" id="prep-progress-fill"></div>
+            <span class="progress-star">⭐</span>
+          </div>
+          <div class="progress-caption" id="prep-progress-caption">タップして すすめよう！</div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-prep" alt="ポノ">
+          <div class="speech-bubble" id="speech-prep">タップして したごしらえしよう！</div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div style="text-align:center;font-weight:900;font-size:0.82rem;color:var(--text-soft);margin-bottom:6px;">じゅんばん</div>
+        <div class="prep-step-lane" id="prep-step-lane" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 画面4: 焼く ===================== -->
 <section class="screen" data-screen="grill" id="screen-grill" tabindex="-1" aria-labelledby="screen-grill-heading" hidden>
   <button type="button" class="screen-back" data-back="select">← もどる</button>
 
@@ -3080,6 +3300,9 @@ body.layout-editor-on .endX-marker {
         { type: 'chop' },
         { type: 'grill', label: 'フライパンで いためよう', stages: 2 },
       ],
+      prepActions: [
+        { type: 'chop' },
+      ],
       cookImages: {
         grill: {
           stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'kinpira/kinpira_mid'],
@@ -3117,6 +3340,9 @@ body.layout-editor-on .endX-marker {
       id: 'cabbage', name: 'キャベツ', emoji: '🥬', piece: '🥬',
       chopCount: 12, implemented: true,
       cookingActions: [
+        { type: 'chop' },
+      ],
+      prepActions: [
         { type: 'chop' },
       ],
       imageBase: 'cabbage/cabbage_001',
@@ -3157,6 +3383,9 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'grill', label: 'ふんわり やこう', stages: 2 },
       ],
+      prepActions: [
+        { type: 'prep', prepKind: 'egg_crack', label: 'たまごを わろう' },
+      ],
       cookImages: {
         grill: {
           stages: ['egg/egg_001_raw', 'egg/egg_002_mid', 'egg/egg_003_done'],
@@ -3170,6 +3399,9 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'chop' },
         { type: 'grill', label: 'タコさんを やこう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'chop' },
       ],
       cookImages: {
         grill: {
@@ -3193,6 +3425,9 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'grill', label: 'じゅうじゅう やこう', stages: 2 },
       ],
+      prepActions: [
+        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを こねよう' },
+      ],
       cookImages: {
         grill: {
           stages: ['mince_patty/patty_001_raw', 'mince_patty/patty_002_mid', 'mince_patty/patty_003_done'],
@@ -3205,6 +3440,9 @@ body.layout-editor-on .endX-marker {
       chopCount: 1, implemented: true,
       cookingActions: [
         { type: 'grill', label: 'こんがり やこう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'prep', prepKind: 'simple_store', label: 'さけを じゅんびしよう' },
       ],
       cookImages: {
         grill: {
@@ -3219,6 +3457,10 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'chop' },
         { type: 'fry', label: 'カラッと あげよう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'chop' },
+        { type: 'prep', prepKind: 'coat_chicken', label: 'こなを まぶそう' },
       ],
       cookImages: {
         fry: {
@@ -3254,6 +3496,9 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'fry', label: 'サクッと あげよう', stages: 2 },
       ],
+      prepActions: [
+        { type: 'prep', prepKind: 'bread_shrimp', label: 'パンこを つけよう' },
+      ],
       cookImages: {
         fry: {
           stages: ['shrimp/shrimp_001_raw', 'shrimp/shrimp_002_mid', 'shrimp/shrimp_003_done'],
@@ -3266,6 +3511,9 @@ body.layout-editor-on .endX-marker {
       chopCount: 1, implemented: true,
       cookingActions: [
         { type: 'fry', label: 'きつねいろに あげよう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'prep', prepKind: 'bread_korokke', label: 'パンこを つけよう' },
       ],
       cookImages: {
         fry: {
@@ -3289,6 +3537,91 @@ body.layout-editor-on .endX-marker {
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
   ];
 
+  const PREP_SHEETS = {
+    base: {
+      src: '../assets/images/bento/cooking/ui/prep_base_actions_sheet.png',
+      cols: 3,
+      rows: 3,
+    },
+    breading: {
+      src: '../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.png',
+      cols: 3,
+      rows: 3,
+    },
+  };
+
+  const PREP_TOOL_STEPS = [
+    { sheet: 'base', x: 0, y: 2, label: 'こな' },
+    { sheet: 'base', x: 1, y: 2, label: 'たまご' },
+    { sheet: 'base', x: 2, y: 2, label: 'パンこ' },
+  ];
+
+  const PREP_CONFIGS = {
+    egg_crack: {
+      kind: 'egg_crack',
+      startSpeech: 'たまごを コンコンして わってみよう！',
+      completeSpeech: 'たまごの したごしらえ できたよ！',
+      steps: [
+        { sheet: 'base', x: 0, y: 0, label: 'たまごを コンコン', caption: 'コンコンしてみよう！', burst: 'コンコン！' },
+        { sheet: 'base', x: 1, y: 0, label: 'からを ひらこう', caption: 'からが われたよ！', burst: 'パカッ！' },
+        { sheet: 'base', x: 2, y: 0, label: 'ボウルに いれよう', caption: 'ボウルに はいったよ！', burst: 'ぽとん！' },
+        { sheet: 'base', x: 2, y: 0, label: 'できあがり', caption: 'たまごの じゅんび できたよ！', burst: 'できた！' },
+      ],
+    },
+    mix_mince: {
+      kind: 'mix_mince',
+      startSpeech: 'ひきにくを こねこねして まるくしよう！',
+      completeSpeech: 'ハンバーグの かたちが できたよ！',
+      steps: [
+        { sheet: 'base', x: 0, y: 1, label: 'ひきにくを ボウルへ', caption: 'こねる じゅんび！', burst: 'ぽん！' },
+        { sheet: 'base', x: 1, y: 1, label: 'こねこね まぜよう', caption: 'こねこね！', burst: 'こねこね！' },
+        { sheet: 'base', x: 1, y: 1, label: 'もういちど こねよう', caption: 'まとまってきたよ！', burst: 'ぎゅっ！' },
+        { sheet: 'base', x: 2, y: 1, label: 'まるく かたちづくり', caption: 'ハンバーグの かたち！', burst: 'ぺたん！' },
+        { sheet: 'base', x: 2, y: 1, label: 'できあがり', caption: 'ハンバーグの したごしらえ できたよ！', burst: 'できた！' },
+      ],
+    },
+    bread_shrimp: {
+      kind: 'bread_shrimp',
+      startSpeech: 'エビに ころもを つけよう！',
+      completeSpeech: 'エビフライの したごしらえ できたよ！',
+      toolSteps: PREP_TOOL_STEPS,
+      steps: [
+        { sheet: 'breading', x: 0, y: 0, label: 'エビに こなを つけよう', caption: 'まず こな！', burst: 'ぱふっ！' },
+        { sheet: 'breading', x: 1, y: 0, label: 'たまごに くぐらせよう', caption: 'つぎは たまご！', burst: 'とろん！' },
+        { sheet: 'breading', x: 2, y: 0, label: 'パンこを まとわせよう', caption: 'パンこで サクサク！', burst: 'サクッ！' },
+        { sheet: 'breading', x: 2, y: 0, label: 'できあがり', caption: 'エビフライの じゅんび できたよ！', burst: 'できた！' },
+      ],
+    },
+    bread_korokke: {
+      kind: 'bread_korokke',
+      startSpeech: 'コロッケに ころもを つけよう！',
+      completeSpeech: 'コロッケの したごしらえ できたよ！',
+      toolSteps: PREP_TOOL_STEPS,
+      steps: [
+        { sheet: 'breading', x: 0, y: 1, label: 'たねを まるめよう', caption: 'まるめるよ！', burst: 'ころん！' },
+        { sheet: 'breading', x: 1, y: 1, label: 'こなと たまごを つけよう', caption: 'ころもを つけるよ！', burst: 'ぺたっ！' },
+        { sheet: 'breading', x: 2, y: 1, label: 'パンこを まとわせよう', caption: 'パンこで サクサク！', burst: 'サクッ！' },
+        { sheet: 'breading', x: 2, y: 1, label: 'できあがり', caption: 'コロッケの じゅんび できたよ！', burst: 'できた！' },
+      ],
+    },
+    coat_chicken: {
+      kind: 'coat_chicken',
+      startSpeech: 'とりにくに こなを まぶそう！',
+      completeSpeech: 'からあげの したごしらえ できたよ！',
+      toolSteps: [
+        { sheet: 'breading', x: 0, y: 2, label: 'とりにく' },
+        { sheet: 'breading', x: 1, y: 2, label: 'したあじ' },
+        { sheet: 'breading', x: 2, y: 2, label: 'こな' },
+      ],
+      steps: [
+        { sheet: 'breading', x: 0, y: 2, label: 'とりにくを ボウルへ', caption: 'とりにくを じゅんび！', burst: 'ぽん！' },
+        { sheet: 'breading', x: 1, y: 2, label: 'したあじを なじませよう', caption: 'もみもみ！', burst: 'もみもみ！' },
+        { sheet: 'breading', x: 2, y: 2, label: 'こなを まぶそう', caption: 'こなを まぶしたよ！', burst: 'ぱふっ！' },
+        { sheet: 'breading', x: 2, y: 2, label: 'できあがり', caption: 'からあげの じゅんび できたよ！', burst: 'できた！' },
+      ],
+    },
+  };
+
   // ========== State ==========
   const state = {
     unlocked: loadUnlocked(),
@@ -3296,6 +3629,9 @@ body.layout-editor-on .endX-marker {
     unlockedRecipes: loadUnlockedRecipes(),
     current: null,
     actionIndex: 0,
+    kitchenMode: 'prep',
+    prepProgress: 0,
+    prepAnimating: false,
     cookProgress: 0,
     cookAnimating: false,
     cookPreheated: false,
@@ -3336,6 +3672,7 @@ body.layout-editor-on .endX-marker {
     state.awaitingImpact = false;
     state.knifeAnimating = false;
     state.queuedChopTaps = 0;
+    state.prepAnimating = false;
     state.cookAnimating = false;
     stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
@@ -3409,6 +3746,16 @@ body.layout-editor-on .endX-marker {
     // select screen
     speechSelect:  document.getElementById('speech-select'),
     bar:           document.getElementById('ingredient-bar'),
+
+    // prep screen
+    prepStage:     document.getElementById('prep-stage'),
+    prepArtMain:   document.getElementById('prep-art-main'),
+    prepBurst:     document.getElementById('prep-burst'),
+    prepActionLabel: document.getElementById('prep-action-label'),
+    prepProgress:  document.getElementById('prep-progress-fill'),
+    prepProgressCap: document.getElementById('prep-progress-caption'),
+    prepStepLane:  document.getElementById('prep-step-lane'),
+    speechPrep:    document.getElementById('speech-prep'),
 
     // chop screen
     board:         document.getElementById('cutting-board'),
@@ -3488,6 +3835,7 @@ body.layout-editor-on .endX-marker {
     screens: {
       mode:   document.getElementById('screen-mode'),
       select: document.getElementById('screen-select'),
+      prep:   document.getElementById('screen-prep'),
       chop:   document.getElementById('screen-chop'),
       grill:  document.getElementById('screen-grill'),
       fry:    document.getElementById('screen-fry'),
@@ -3499,6 +3847,7 @@ body.layout-editor-on .endX-marker {
   const SCREEN_ANNOUNCE = {
     mode:   'きょうの あそびかたを えらぶ がめんに なったよ',
     select: 'ざいりょうを えらぶ がめんに なったよ',
+    prep:   'したごしらえ がめんに なったよ',
     chop:   'トントン きる がめんに なったよ',
     grill:  'フライパンで やく がめんに なったよ',
     fry:    'あぶらで あげる がめんに なったよ',
@@ -3520,6 +3869,7 @@ body.layout-editor-on .endX-marker {
 
     if (els.modePrepBtn) {
       els.modePrepBtn.addEventListener('click', () => {
+        state.kitchenMode = 'prep';
         resetBoard();
         setSpeech('ざいりょうを えらんで したごしらえしよう！', 'select');
         showScreen('select');
@@ -3527,6 +3877,7 @@ body.layout-editor-on .endX-marker {
     }
     if (els.modeCookBtn) {
       els.modeCookBtn.addEventListener('click', () => {
+        state.kitchenMode = 'cook';
         resetBoard();
         refreshUnlockedRecipes();
         renderFridge();
@@ -3553,10 +3904,17 @@ body.layout-editor-on .endX-marker {
         const to = btn.dataset.back || 'select';
         // chop 画面で進捗 > 0 かつ 完了アニメ中ではない場合、確認モーダル
         const onChop = state.currentScreen === 'chop';
-        const hasProgress = !!state.current
+        const onPrep = state.currentScreen === 'prep';
+        const action = getCurrentAction();
+        const hasChopProgress = !!state.current
           && state.chopProgress > 0
           && (!state.current.chopCount || state.chopProgress < state.current.chopCount);
-        if (onChop && hasProgress && !state.cutting) {
+        let hasPrepProgress = false;
+        if (onPrep && state.current && action && action.type === 'prep') {
+          const maxPrepProgress = getPrepMaxProgress(getPrepConfig(action, state.current));
+          hasPrepProgress = state.prepProgress > 0 && state.prepProgress < maxPrepProgress;
+        }
+        if ((onChop && hasChopProgress || onPrep && hasPrepProgress) && !state.cutting) {
           openBackConfirm(to);
           return;
         }
@@ -3598,6 +3956,16 @@ body.layout-editor-on .endX-marker {
         onBoardTap();
       }
     });
+
+    if (els.prepStage) {
+      els.prepStage.addEventListener('click', onPrepTap);
+      els.prepStage.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          onPrepTap();
+        }
+      });
+    }
 
     if (els.grillStage) {
       els.grillStage.addEventListener('pointerdown', (e) => onCookTimingPointerDown(e, 'grill'));
@@ -3711,7 +4079,7 @@ body.layout-editor-on .endX-marker {
     // （chop 完了直後に「← もどる」を押した時の強制遷移を防止）
     clearPendingTimers();
 
-    const stepMap = { mode: 1, select: 1, chop: 2, fridge: 3, grill: 4, fry: 4 };
+    const stepMap = { mode: 1, select: 1, prep: 2, chop: 2, fridge: 3, grill: 4, fry: 4 };
     const targetStep = stepMap[name] || 1;
 
     const swap = () => {
@@ -3808,9 +4176,9 @@ body.layout-editor-on .endX-marker {
         showScreen('select');
       } else {
         const actions = getIngredientActions(state.current);
-        const chopIndex = actions.findIndex(function (action) { return action.type === 'chop'; });
-        if (chopIndex >= 0) {
-          state.actionIndex = chopIndex;
+        const prepIndex = actions.findIndex(function (action) { return action.type === 'prep' || action.type === 'chop'; });
+        if (prepIndex >= 0) {
+          state.actionIndex = prepIndex;
           beginCurrentAction();
         } else {
           setSpeech(state.current.name + 'は そのまま おかずづくりへ いくよ！');
@@ -3911,6 +4279,8 @@ body.layout-editor-on .endX-marker {
     }
     state.current = ing;
     state.actionIndex = 0;
+    state.prepProgress = 0;
+    state.prepAnimating = false;
     state.cookProgress = 0;
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
@@ -3930,6 +4300,16 @@ body.layout-editor-on .endX-marker {
 
   function getIngredientActions(ing) {
     if (!ing) return [];
+    if (state.kitchenMode === 'prep') {
+      if (Array.isArray(ing.prepActions) && ing.prepActions.length) return ing.prepActions;
+      if (Array.isArray(ing.cookingActions) && ing.cookingActions.length) {
+        const prepLike = ing.cookingActions.filter(function (action) {
+          return action.type === 'prep' || action.type === 'chop';
+        });
+        if (prepLike.length) return prepLike;
+      }
+      return [{ type: 'prep', prepKind: 'simple_store', label: ing.name + 'を じゅんびしよう' }];
+    }
     if (Array.isArray(ing.cookingActions) && ing.cookingActions.length) return ing.cookingActions;
     return ing.chopCount ? [{ type: 'chop' }] : [];
   }
@@ -3952,9 +4332,16 @@ body.layout-editor-on .endX-marker {
     clearPendingTimers();
     state.cutting = false;
     state.awaitingImpact = false;
+    state.prepAnimating = false;
     state.cookAnimating = false;
 
+    if (action.type === 'prep') {
+      beginPrepAction(ing, action);
+      return;
+    }
+
     if (action.type === 'chop') {
+      state.prepProgress = 0;
       state.chopProgress = 0;
       state.combo = 0;
       state.cookProgress = 0;
@@ -3986,7 +4373,177 @@ body.layout-editor-on .endX-marker {
     }
   }
 
+  function beginPrepAction(ing, action) {
+    state.prepProgress = 0;
+    state.prepAnimating = false;
+    state.chopProgress = 0;
+    state.combo = 0;
+    state.cookProgress = 0;
+    state.fryReady = false;
+    state.cookPreheated = false;
+    state.cookFoodPlaced = false;
+    state.cookServed = false;
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.cookTimingResults = [];
+    state.suppressCookClick = false;
+    resetCookTimingUI('grill');
+    resetCookTimingUI('fry');
+    resetCookDrag();
+    hideCombo();
+    const config = getPrepConfig(action, ing);
+    updatePrepView(config, 0, false);
+    const firstStep = (config.steps && config.steps[0]) || {};
+    if (els.prepActionLabel) els.prepActionLabel.textContent = firstStep.label || action.label || 'したごしらえしよう';
+    if (els.prepStage) els.prepStage.setAttribute('aria-label', ing.name + 'の したごしらえ');
+    setSpeech(config.startSpeech || (ing.name + 'を したごしらえしよう！'), 'prep');
+    showScreen('prep');
+  }
+
+  function getPrepConfig(action, ing) {
+    const kind = (action && action.prepKind) || 'simple_store';
+    const preset = PREP_CONFIGS[kind];
+    if (preset) return preset;
+    return createSimplePrepConfig(ing, action);
+  }
+
+  function createSimplePrepConfig(ing, action) {
+    const name = ing ? ing.name : 'ざいりょう';
+    const thumb = getIngredientThumbSrc(ing);
+    return {
+      kind: 'simple_store',
+      startSpeech: name + 'を じゅんびしよう！',
+      completeSpeech: name + 'の したごしらえ できたよ！',
+      steps: [
+        { src: thumb, label: (action && action.label) || (name + 'を じゅんび'), caption: 'タップして じゅんび！', burst: 'ぽん！' },
+        { src: thumb, label: name + 'を しまおう', caption: 'じゅんび できたよ！', burst: 'できた！' },
+      ],
+    };
+  }
+
+  function getPrepMaxProgress(config) {
+    const steps = config && Array.isArray(config.steps) ? config.steps : [];
+    return Math.max(0, steps.length - 1);
+  }
+
+  function updatePrepView(config, progress, animate) {
+    config = config || getPrepConfig(getCurrentAction(), state.current);
+    const steps = Array.isArray(config.steps) ? config.steps : [];
+    const maxProgress = getPrepMaxProgress(config);
+    const safeProgress = Math.max(0, Math.min(maxProgress, progress || 0));
+    const step = steps[safeProgress] || steps[0] || {};
+    state.prepProgress = safeProgress;
+    if (els.prepStage) {
+      els.prepStage.dataset.prepKind = config.kind || '';
+      els.prepStage.classList.toggle('is-working', !!animate);
+    }
+    setPrepVisual(els.prepArtMain, step);
+    if (els.prepActionLabel) els.prepActionLabel.textContent = step.label || 'したごしらえしよう';
+    if (els.prepProgress) {
+      const pct = maxProgress ? (safeProgress / maxProgress) * 100 : 100;
+      els.prepProgress.style.width = pct + '%';
+    }
+    if (els.prepProgressCap) {
+      els.prepProgressCap.textContent = step.caption || (safeProgress >= maxProgress ? 'できあがり！' : 'タップして すすめよう！');
+    }
+    buildPrepStepLane(config, safeProgress);
+  }
+
+  function setPrepVisual(el, visual) {
+    if (!el || !visual) return;
+    el.style.backgroundRepeat = 'no-repeat';
+    if (visual.src) {
+      el.style.backgroundImage = 'url("' + visual.src + '")';
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundPosition = 'center';
+      return;
+    }
+    const sheet = PREP_SHEETS[visual.sheet] || PREP_SHEETS.base;
+    const cols = Math.max(1, sheet.cols || 1);
+    const rows = Math.max(1, sheet.rows || 1);
+    const x = Math.max(0, Math.min(cols - 1, visual.x || 0));
+    const y = Math.max(0, Math.min(rows - 1, visual.y || 0));
+    const xPct = cols <= 1 ? 50 : (x / (cols - 1)) * 100;
+    const yPct = rows <= 1 ? 50 : (y / (rows - 1)) * 100;
+    el.style.backgroundImage = 'url("' + sheet.src + '")';
+    el.style.backgroundSize = (cols * 100) + '% ' + (rows * 100) + '%';
+    el.style.backgroundPosition = xPct + '% ' + yPct + '%';
+  }
+
+  function buildPrepStepLane(config, progress) {
+    if (!els.prepStepLane) return;
+    const laneSteps = (config && Array.isArray(config.toolSteps) && config.toolSteps.length)
+      ? config.toolSteps
+      : ((config && Array.isArray(config.steps)) ? config.steps : []);
+    const maxProgress = getPrepMaxProgress(config);
+    const activeIndex = laneSteps.length <= 1
+      ? 0
+      : Math.round((Math.max(0, progress || 0) / Math.max(1, maxProgress)) * (laneSteps.length - 1));
+    els.prepStepLane.innerHTML = '';
+    laneSteps.forEach(function (laneStep, idx) {
+      const card = document.createElement('div');
+      card.className = 'prep-step-card';
+      card.classList.toggle('done', idx < activeIndex);
+      card.classList.toggle('active', idx === activeIndex);
+      const thumb = document.createElement('div');
+      thumb.className = 'prep-step-thumb';
+      setPrepVisual(thumb, laneStep);
+      const label = document.createElement('div');
+      label.className = 'prep-step-label';
+      label.textContent = laneStep.label || '';
+      card.appendChild(thumb);
+      card.appendChild(label);
+      els.prepStepLane.appendChild(card);
+    });
+  }
+
+  function showPrepBurst(text) {
+    if (!els.prepBurst) return;
+    els.prepBurst.textContent = text || 'できた！';
+    els.prepBurst.classList.remove('show');
+    void els.prepBurst.offsetWidth;
+    els.prepBurst.classList.add('show');
+  }
+
+  function onPrepTap() {
+    if (state.cutting || state.transitioning || state.prepAnimating) return;
+    if (state.currentScreen !== 'prep') return;
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!ing || !action || action.type !== 'prep') return;
+    const config = getPrepConfig(action, ing);
+    const maxProgress = getPrepMaxProgress(config);
+    if (state.prepProgress >= maxProgress) return;
+
+    state.prepAnimating = true;
+    const currentProgress = state.prepProgress || 0;
+    const actionStep = config.steps[currentProgress] || {};
+    const nextProgress = Math.min(maxProgress, currentProgress + 1);
+    updatePrepView(config, nextProgress, true);
+    showPrepBurst(actionStep.burst || 'できた！');
+    setSpeech(actionStep.speech || actionStep.label || 'いいかんじ！', 'prep');
+
+    if (nextProgress >= maxProgress) {
+      state.cutting = true;
+      state.pendingTimers.push(setTimeout(function () {
+        if (els.prepStage) els.prepStage.classList.remove('is-working');
+        state.prepAnimating = false;
+        setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
+        completeCurrentAction(ing);
+      }, 720));
+      return;
+    }
+
+    state.pendingTimers.push(setTimeout(function () {
+      if (els.prepStage) els.prepStage.classList.remove('is-working');
+      state.prepAnimating = false;
+    }, 360));
+  }
+
   function beginCookAction(ing, action) {
+    state.prepProgress = 0;
+    state.prepAnimating = false;
     state.chopProgress = 0;
     state.combo = 0;
     state.cookProgress = 0;
@@ -6091,13 +6648,11 @@ body.layout-editor-on .endX-marker {
       state.cookAnimating = false;
       if (els.progressCap) setProgressCaption('できあがり！');
       clearPendingTimers();
-      const nextText = nextAction.type === 'fry'
-        ? 'つぎは あぶらで あげよう！'
-        : 'つぎは フライパンで やこう！';
+      const nextText = getNextActionSpeech(nextAction);
       setSpeech(nextText);
       showToast(nextText);
       state.pendingTimers.push(setTimeout(function () {
-        flySparklesToStep(4);
+        flySparklesToStep(getFlowStepForAction(nextAction));
       }, 120));
       state.pendingTimers.push(setTimeout(function () {
         state.actionIndex += 1;
@@ -6107,6 +6662,21 @@ body.layout-editor-on .endX-marker {
       return;
     }
     finalizeIngredientToFridge(ing);
+  }
+
+  function getNextActionSpeech(action) {
+    if (!action) return 'つぎへ すすもう！';
+    if (action.type === 'prep') return 'つぎは したごしらえを しよう！';
+    if (action.type === 'chop') return 'つぎは トントン きろう！';
+    if (action.type === 'fry') return 'つぎは あぶらで あげよう！';
+    return 'つぎは フライパンで やこう！';
+  }
+
+  function getFlowStepForAction(action) {
+    if (!action) return 1;
+    if (action.type === 'prep' || action.type === 'chop') return 2;
+    if (action.type === 'grill' || action.type === 'fry') return 4;
+    return 1;
   }
 
   function finalizeIngredientToFridge(ing) {
@@ -6139,6 +6709,7 @@ body.layout-editor-on .endX-marker {
   }
 
   function getSparkleSourceRect() {
+    if (state.currentScreen === 'prep' && els.prepArtMain) return els.prepArtMain.getBoundingClientRect();
     if (state.currentScreen === 'grill' && els.grillingFoodWrap) return els.grillingFoodWrap.getBoundingClientRect();
     if (state.currentScreen === 'fry' && els.fryingFoodWrap) return els.fryingFoodWrap.getBoundingClientRect();
     if (els.bowl) return els.bowl.getBoundingClientRect();
@@ -6337,6 +6908,8 @@ body.layout-editor-on .endX-marker {
     clearPendingTimers();
     state.current = null;
     state.actionIndex = 0;
+    state.prepProgress = 0;
+    state.prepAnimating = false;
     state.cookProgress = 0;
     state.cookAnimating = false;
     state.cookPreheated = false;
@@ -6375,6 +6948,20 @@ body.layout-editor-on .endX-marker {
     els.progress.style.width = '0%';
     hideCombo();
     clearBowl();
+    if (els.prepStage) {
+      els.prepStage.classList.remove('is-working');
+      els.prepStage.removeAttribute('data-prep-kind');
+    }
+    if (els.prepBurst) els.prepBurst.classList.remove('show');
+    if (els.prepProgress) els.prepProgress.style.width = '0%';
+    if (els.prepProgressCap) els.prepProgressCap.textContent = 'タップして すすめよう！';
+    if (els.prepActionLabel) els.prepActionLabel.textContent = 'したごしらえしよう！';
+    if (els.prepStepLane) els.prepStepLane.innerHTML = '';
+    if (els.prepArtMain) {
+      els.prepArtMain.style.backgroundImage = '';
+      els.prepArtMain.style.backgroundSize = '';
+      els.prepArtMain.style.backgroundPosition = '';
+    }
     resetCookDrag();
     updateCookDots('grill', 0);
     updateCookDots('fry', 0);
@@ -6400,6 +6987,10 @@ body.layout-editor-on .endX-marker {
       els.speechSelect.textContent = text;
       return;
     }
+    if (target === 'prep' && els.speechPrep) {
+      els.speechPrep.textContent = text;
+      return;
+    }
     if (target === 'chop' && els.speechChop) {
       els.speechChop.textContent = text;
       return;
@@ -6419,6 +7010,7 @@ body.layout-editor-on .endX-marker {
     // フォールバック: 全部に書く（初期化時 / 画面ミスマッチ時）
     if (els.speechMode) els.speechMode.textContent = text;
     if (els.speechSelect) els.speechSelect.textContent = text;
+    if (els.speechPrep) els.speechPrep.textContent = text;
     if (els.speechChop) els.speechChop.textContent = text;
     if (els.speechGrill) els.speechGrill.textContent = text;
     if (els.speechFry) els.speechFry.textContent = text;
