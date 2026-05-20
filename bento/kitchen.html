@@ -84,6 +84,10 @@
   --ui-hint-box: url('../assets/images/bento/cooking/ui/hint_box_wide.png');
   --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_stocked_open.png');
   --ui-fridge-closed: url('../assets/images/bento/cooking/ui/fridge_closed.png');
+  --ui-fridge-open-pos: center top;
+  --ui-fridge-open-size: auto 112%;
+  --ui-fridge-closed-pos: center top;
+  --ui-fridge-closed-size: auto 112%;
   --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_sheet.png');
   --ui-prep-base: url('../assets/images/bento/cooking/ui/prep_base_actions_sheet.png');
   --ui-prep-breading: url('../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.png');
@@ -2313,7 +2317,7 @@ body.layout-editor-on .endX-marker {
 
 /* ---------- 冷蔵庫（fridge 画面で巨大表示） ---------- */
 .fridge-body {
-  background: var(--ui-fridge-open) center / contain no-repeat;
+  background: var(--ui-fridge-open) var(--ui-fridge-open-pos) / var(--ui-fridge-open-size) no-repeat;
   border: 0;
   border-radius: 0;
   padding: 0;
@@ -2331,6 +2335,7 @@ body.layout-editor-on .endX-marker {
   align-self: center;
   position: relative;
   perspective: 1200px;
+  overflow: hidden;
 }
 /* 扉（疑似要素）— 正面の閉じ絵を一瞬だけ見せて、回転なしで開いた絵へ切り替える。 */
 .fridge-body::after {
@@ -2338,7 +2343,7 @@ body.layout-editor-on .endX-marker {
   position: absolute;
   inset: 0;
   border-radius: 0;
-  background: var(--ui-fridge-closed) 14% center / auto 88% no-repeat;
+  background: var(--ui-fridge-closed) var(--ui-fridge-closed-pos) / var(--ui-fridge-closed-size) no-repeat;
   border: 0;
   box-shadow: none;
   transform-origin: 22% center;
