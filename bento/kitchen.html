@@ -2418,6 +2418,16 @@ body.layout-editor-on .endX-marker {
   position: relative;
   overflow: visible;
 }
+.fridge-item[role="button"] {
+  cursor: pointer;
+}
+.fridge-item[role="button"]:focus-visible {
+  outline: 4px solid rgba(255, 151, 57, 0.78);
+  outline-offset: 3px;
+}
+.fridge-item[role="button"]:active {
+  transform: translateY(2px) scale(0.98);
+}
 .fridge-item--filler {
   opacity: 0.54;
   filter: saturate(0.82);
@@ -2567,6 +2577,14 @@ body.layout-editor-on .endX-marker {
 .recipe-card.locked { opacity: 0.5; filter: grayscale(0.55); }
 .recipe-card.unlocked {
   animation: cardPop 0.55s ease-out;
+  cursor: pointer;
+}
+.recipe-card.unlocked:focus-visible {
+  outline: 4px solid rgba(255, 151, 57, 0.78);
+  outline-offset: 3px;
+}
+.recipe-card.unlocked:active {
+  transform: translateY(2px) scale(0.98);
 }
 @keyframes cardPop {
   0% { transform: scale(0.6); opacity: 0; }
@@ -4462,18 +4480,9 @@ body.layout-editor-on .endX-marker {
     });
   }
 
-  // ========== 材料選択 ==========
-  function onIngredientPick(ing) {
-    if (state.cutting) return;
-    if (state.transitioning) return;
-    if (!confirmLayoutEditorNavigationIfDirty()) return;
-    if (!ing.implemented) {
-      setSpeech(ing.name + 'は じゅんびちゅう！ もうちょっと まっててね');
-      showToast(ing.name + 'は じゅんびちゅう！');
-      return;
-    }
+  function startIngredientAction(ing, actionIndex) {
     state.current = ing;
-    state.actionIndex = 0;
+    state.actionIndex = Math.max(0, actionIndex || 0);
     state.prepProgress = 0;
     state.prepAnimating = false;
     state.cookProgress = 0;
@@ -4493,6 +4502,19 @@ body.layout-editor-on .endX-marker {
     beginCurrentAction();
   }
 
+  // ========== 材料選択 ==========
+  function onIngredientPick(ing) {
+    if (state.cutting) return;
+    if (state.transitioning) return;
+    if (!confirmLayoutEditorNavigationIfDirty()) return;
+    if (!ing.implemented) {
+      setSpeech(ing.name + 'は じゅんびちゅう！ もうちょっと まっててね');
+      showToast(ing.name + 'は じゅんびちゅう！');
+      return;
+    }
+    startIngredientAction(ing, 0);
+  }
+
   function getIngredientActions(ing) {
     if (!ing) return [];
     if (state.kitchenMode === 'prep') {
@@ -4509,6 +4531,10 @@ body.layout-editor-on .endX-marker {
     return ing.chopCount ? [{ type: 'chop' }] : [];
   }
 
+  function findIngredientById(id) {
+    return INGREDIENTS.find(function (ing) { return ing.id === id; }) || null;
+  }
+
   function getCurrentAction() {
     const actions = getIngredientActions(state.current);
     return actions[state.actionIndex] || null;
@@ -4517,6 +4543,67 @@ body.layout-editor-on .endX-marker {
   function getNextAction(ing) {
     const actions = getIngredientActions(ing || state.current);
     return actions[state.actionIndex + 1] || null;
+  }
+
+  function getFirstCookActionIndex(ing) {
+    const actions = Array.isArray(ing && ing.cookingActions) ? ing.cookingActions : [];
+    return actions.findIndex(function (action) {
+      return action.type === 'grill' || action.type === 'fry';
+    });
+  }
+
+  function handleKeyboardActivation(evt, handler) {
+    if (evt.key !== 'Enter' && evt.key !== ' ' && evt.key !== 'Spacebar') return;
+    evt.preventDefault();
+    handler();
+  }
+
+  function startCookFromFridgeIngredient(ing, rec) {
+    if (state.cutting || state.transitioning) return;
+    if (!ing || !ing.implemented) return;
+    if (!confirmLayoutEditorNavigationIfDirty()) return;
+    if (!state.unlocked.has(ing.id)) {
+      setSpeech('まずは ' + ing.name + 'を したごしらえしよう！', 'fridge');
+      showToast(ing.name + 'は まだ れいぞうこに ないよ');
+      return;
+    }
+    const cookActionIndex = getFirstCookActionIndex(ing);
+    if (cookActionIndex < 0) {
+      setSpeech(ing.name + 'は もう じゅんびできてるよ！', 'fridge');
+      showToast('おべんとうに つめられるよ！');
+      return;
+    }
+    state.kitchenMode = 'cook';
+    state.newBadges.delete(ing.id);
+    saveNewBadges();
+    if (rec) {
+      setSpeech(rec.name + 'を つくろう！', 'fridge');
+    } else {
+      setSpeech(ing.name + 'で おかずを つくろう！', 'fridge');
+    }
+    startIngredientAction(ing, cookActionIndex);
+  }
+
+  function startCookFromRecipe(rec) {
+    if (!rec) return;
+    const ready = (rec.needs || []).every(function (id) {
+      return state.unlocked.has(id);
+    });
+    if (!ready) {
+      const firstNeed = findIngredientById((rec.needs || [])[0]);
+      const name = firstNeed ? firstNeed.name : 'ざいりょう';
+      setSpeech('まずは ' + name + 'を したごしらえしよう！', 'fridge');
+      showToast('まだ ざいりょうが たりないよ');
+      return;
+    }
+    const ing = (rec.needs || []).map(findIngredientById).find(function (item) {
+      return item && getFirstCookActionIndex(item) >= 0;
+    });
+    if (!ing) {
+      setSpeech('この おかずは もう おべんとうに つめられるよ！', 'fridge');
+      return;
+    }
+    startCookFromFridgeIngredient(ing, rec);
   }
 
   function beginCurrentAction() {
@@ -6996,6 +7083,18 @@ body.layout-editor-on .endX-marker {
       const item = document.createElement('div');
       item.className = 'fridge-item fridge-item--prepared';
       item.title = ing.name;
+      item.dataset.id = ing.id;
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('aria-label', ing.name + 'で おかずを つくる');
+      item.addEventListener('click', function () {
+        startCookFromFridgeIngredient(ing);
+      });
+      item.addEventListener('keydown', function (evt) {
+        handleKeyboardActivation(evt, function () {
+          startCookFromFridgeIngredient(ing);
+        });
+      });
       const art = document.createElement('span');
       art.className = 'fridge-item-art';
       const thumbSrc = getIngredientFridgeThumbSrc(ing);
@@ -7055,6 +7154,22 @@ body.layout-editor-on .endX-marker {
       const isUnlocked = state.unlockedRecipes.has(rec.id) || rec.needs.every(id => state.unlocked.has(id));
       const card = document.createElement('div');
       card.className = 'recipe-card ' + (isUnlocked ? 'unlocked' : 'locked');
+      card.dataset.recipeId = rec.id;
+      if (isUnlocked) {
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', rec.name + 'を つくる');
+        card.addEventListener('click', function () {
+          startCookFromRecipe(rec);
+        });
+        card.addEventListener('keydown', function (evt) {
+          handleKeyboardActivation(evt, function () {
+            startCookFromRecipe(rec);
+          });
+        });
+      } else {
+        card.setAttribute('aria-disabled', 'true');
+      }
 
       const img = document.createElement('img');
       img.className = 'recipe-img';
