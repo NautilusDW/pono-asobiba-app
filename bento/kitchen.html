@@ -144,10 +144,10 @@ body[data-screen="fridge"] .stage-wrap {
   height: var(--canvas-h);
   transform-origin: 0 0;  /* JS が translate + scale を当てる */
   overflow: hidden;
-  padding: 18px 22px 24px;
+  padding: 10px 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 /* スクリーンリーダー専用テキスト（aria-live 通知用） */
@@ -168,44 +168,44 @@ body[data-screen="fridge"] .stage-wrap {
    ========================================================= */
 .app-header {
   width: 100%;
-  margin: 0 0 4px;
+  margin: 0;
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.5fr);
+  gap: 12px;
+  align-items: center;
   padding: 0;
   flex: 0 0 auto;
 }
 
 .title-block {
   min-width: 0;
-  padding-top: 4px;
+  padding-top: 0;
 }
 .app-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: 2.28rem;
+  font-size: 1.72rem;
   font-weight: 900;
   color: #F2A53A;
   text-shadow:
-    3px 3px 0 #FFFCEF,
-    5px 5px 0 rgba(210,140,40,0.22);
-  letter-spacing: 0.04em;
-  line-height: 1.06;
+    2px 2px 0 #FFFCEF,
+    3px 3px 0 rgba(210,140,40,0.22);
+  letter-spacing: 0.02em;
+  line-height: 1;
   word-break: keep-all;
 }
 .app-subtitle {
-  margin-top: 4px;
-  font-size: 0.98rem;
+  margin-top: 2px;
+  font-size: 0.76rem;
   font-weight: 700;
+  line-height: 1.12;
   color: var(--text-soft);
 }
 
-/* 5ステップ フローチップ（1600幅で5個を必ず1行に収める） */
 .flow-chips {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -214,17 +214,17 @@ body[data-screen="fridge"] .stage-wrap {
   background: var(--flow-card) center / 100% 100% no-repeat;
   color: var(--text);
   font-weight: 900;
-  font-size: 0.78rem;
-  width: 112px;
-  height: 132px;
-  padding: 8px 8px 14px;
-  border-radius: 20px;
+  font-size: 0.62rem;
+  width: 88px;
+  height: 84px;
+  padding: 6px 6px 9px;
+  border-radius: 14px;
   box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 2px;
+  gap: 0;
   margin-right: 0;
   margin-bottom: 0;
   white-space: normal;
@@ -239,9 +239,9 @@ body[data-screen="fridge"] .stage-wrap {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -13px;
-  width: 28px;
-  height: 25px;
+  bottom: -8px;
+  width: 20px;
+  height: 18px;
   transform: translateX(-50%);
   background: var(--ui-flow-pointer) center / contain no-repeat;
   opacity: 0;
@@ -258,9 +258,9 @@ body[data-screen="fridge"] .stage-wrap {
 .flow-chip .step-num {
   position: absolute;
   left: 50%;
-  top: -9px;
-  width: 35px;
-  height: 35px;
+  top: -6px;
+  width: 27px;
+  height: 27px;
   transform: translateX(-50%);
   border-radius: 0;
   background: var(--flow-num) center / contain no-repeat;
@@ -278,27 +278,27 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .flow-chip > span:last-child {
   margin-top: auto;
-  min-height: 44px;
+  min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: var(--text);
-  font-size: 0.8rem;
-  line-height: 1.22;
-  padding: 0 5px;
+  font-size: 0.62rem;
+  line-height: 1.08;
+  padding: 0 3px;
   text-shadow: 0 1px 0 rgba(255,255,255,0.85);
 }
 .flow-chip.active {
-  transform: translateY(-4px) scale(1.045);
-  filter: drop-shadow(0 7px 8px rgba(120,80,35,0.22));
+  transform: translateY(-2px) scale(1.025);
+  filter: drop-shadow(0 5px 6px rgba(120,80,35,0.2));
   z-index: 2;
 }
 .flow-chip.active::before {
   content: '';
   position: absolute;
-  inset: -5px;
-  border-radius: 24px;
+  inset: -3px;
+  border-radius: 17px;
   border: 2px solid rgba(255,201,78,0.72);
   background: rgba(255,248,214,0.28);
   pointer-events: none;
@@ -314,7 +314,6 @@ body[data-screen="fridge"] .stage-wrap {
   filter: saturate(0.9);
 }
 
-/* チップ別カラー */
 .flow-chip[data-step="1"] { --flow-card: var(--ui-flow-step-1); --flow-num: var(--ui-flow-num-1); }
 .flow-chip[data-step="2"] { --flow-card: var(--ui-flow-step-2); --flow-num: var(--ui-flow-num-2); }
 .flow-chip[data-step="3"] { --flow-card: var(--ui-flow-step-3); --flow-num: var(--ui-flow-num-3); }
@@ -603,8 +602,8 @@ body[data-screen="fridge"] .stage-wrap {
    ========================================================= */
 .prep-stage-wrap {
   display: grid;
-  grid-template-columns: 1.35fr 0.85fr;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 12px;
   align-items: stretch;
   flex: 1 1 auto;
   min-height: 0;
@@ -615,18 +614,18 @@ body[data-screen="fridge"] .stage-wrap {
     linear-gradient(180deg, #FFF9EA 0%, #FFE4BD 100%);
   border: 3px solid #fff;
   border-radius: var(--radius-lg);
-  padding: 18px;
+  padding: 10px;
   box-shadow: 0 6px 16px var(--shadow-soft);
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 560px;
+  min-height: 0;
 }
 .prep-workbench {
   position: relative;
-  width: min(100%, 920px);
+  width: min(100%, 1180px);
   aspect-ratio: 16 / 9;
   border-radius: 20px;
   background:
@@ -696,6 +695,40 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-workbench[data-prep-kind="mix_mince"] .knead-canvas {
   display: block;
 }
+.prep-workbench-ui {
+  position: absolute;
+  left: 4.5%;
+  right: 4.5%;
+  bottom: 4.5%;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: rgba(255,253,246,0.9);
+  box-shadow: 0 8px 18px rgba(116,68,36,0.14), inset 0 0 0 2px rgba(255,255,255,0.66);
+  pointer-events: none;
+}
+.prep-workbench-ui .prep-action-label {
+  min-height: 0;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 0.94rem;
+  line-height: 1.28;
+}
+.prep-workbench-ui .progress-row {
+  margin-top: 0 !important;
+  gap: 3px;
+}
+.prep-workbench-ui .progress-track {
+  height: 14px;
+}
+.prep-workbench-ui .progress-caption {
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
 .prep-workbench.is-working .prep-art-main {
   animation: prepWorkPop 0.34s ease-out;
 }
@@ -749,7 +782,33 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-side {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  min-height: 0;
+}
+.prep-pono-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+.prep-pono-talk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+}
+.prep-pono-talk .pono-img {
+  width: 92px;
+  height: 92px;
+}
+.prep-pono-talk .speech-bubble {
+  width: 100%;
+  min-height: 170px;
+  align-items: center;
+  font-size: 1rem;
+  line-height: 1.52;
 }
 .prep-action-label {
   font-weight: 900;
@@ -1637,36 +1696,35 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 .panel-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: var(--pill-bg, #eee);
   color: var(--text);
   border-radius: 999px;
-  padding: 5px 12px;
+  padding: 4px 10px;
   font-weight: 900;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   box-shadow: 0 2px 0 rgba(0,0,0,0.08);
 }
 .panel-pill .pill-num {
   background: rgba(255,255,255,0.85);
   color: var(--text);
   border-radius: 50%;
-  width: 22px; height: 22px;
+  width: 20px; height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
 }
 .panel--pick   .panel-pill, .panel-pill.panel--pick   { --pill-bg: var(--chip-green); }
 .panel--chop   .panel-pill, .panel-pill.panel--chop   { --pill-bg: var(--chip-orange); }
 .panel--fridge .panel-pill, .panel-pill.panel--fridge { --pill-bg: var(--chip-blue); }
 .panel--cook   .panel-pill, .panel-pill.panel--cook   { --pill-bg: var(--chip-pink); }
 
-/* ---------- ポノ吹き出し共通 ---------- */
 .pono-img {
   width: 64px; height: 64px;
   object-fit: contain;
@@ -3059,32 +3117,26 @@ body.layout-editor-on .endX-marker {
       <div class="prep-workbench" id="prep-stage" role="button" tabindex="0" aria-label="したごしらえ">
         <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
         <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
+        <div class="prep-workbench-ui">
+          <div class="prep-action-label" id="prep-action-label">したごしらえしよう！</div>
+          <div class="progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" id="prep-progress-fill"></div>
+              <span class="progress-star">⭐</span>
+            </div>
+            <div class="progress-caption" id="prep-progress-caption">タップして すすめよう！</div>
+          </div>
+        </div>
         <div class="prep-burst" id="prep-burst">できた！</div>
       </div>
     </div>
 
     <div class="prep-side">
-      <div class="side-card">
-        <div class="prep-action-label" id="prep-action-label">したごしらえしよう！</div>
-        <div class="progress-row" style="margin-top:10px;">
-          <div class="progress-track">
-            <div class="progress-fill" id="prep-progress-fill"></div>
-            <span class="progress-star">⭐</span>
-          </div>
-          <div class="progress-caption" id="prep-progress-caption">タップして すすめよう！</div>
-        </div>
-      </div>
-
-      <div class="side-card">
-        <div style="display:flex;align-items:flex-start;gap:8px;">
+      <div class="side-card prep-pono-card">
+        <div class="prep-pono-talk">
           <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-prep" alt="ポノ">
           <div class="speech-bubble" id="speech-prep">タップして したごしらえしよう！</div>
         </div>
-      </div>
-
-      <div class="side-card">
-        <div style="text-align:center;font-weight:900;font-size:0.82rem;color:var(--text-soft);margin-bottom:6px;">じゅんばん</div>
-        <div class="prep-step-lane" id="prep-step-lane" aria-hidden="true"></div>
       </div>
     </div>
   </div>
