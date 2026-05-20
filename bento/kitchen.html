@@ -2839,6 +2839,7 @@ body.layout-editor-on .endX-marker {
   };
 </script>
 <script src="../common/layout/editor-bootstrap.js" defer></script>
+<script src="../common/se.js"></script>
 
 </head>
 <body data-screen="mode">
@@ -3256,6 +3257,19 @@ body.layout-editor-on .endX-marker {
   const COOK_TIMING_DANGER_MIN = 78;
   const COOK_TIMING_RED_MIN = 92;
   const COOK_TIMING_GOOD_GRACE_MS = 220;
+  const KITCHEN_SE = {
+    chop: 'bento/chop',
+    stove: {
+      url: '../assets/sounds/se/bento/stove_loop.mp3',
+      volume: 0.16,
+      fadeSec: 1.7,
+    },
+    fry: {
+      url: '../assets/sounds/se/bento/fry_loop.mp3',
+      volume: 0.24,
+      fadeSec: 1.5,
+    },
+  };
 
   // 材料定義
   //
@@ -3667,6 +3681,12 @@ body.layout-editor-on .endX-marker {
     pendingTimers: [],
   };
 
+  const kitchenAudio = {
+    ctx: null,
+    buffers: {},
+    loops: {},
+  };
+
   // pendingTimers にぶら下がる setTimeout をまとめてキャンセル
   function clearPendingTimers() {
     state.awaitingImpact = false;
@@ -3680,6 +3700,170 @@ body.layout-editor-on .endX-marker {
       try { clearTimeout(id); } catch (e) { /* noop */ }
     });
     state.pendingTimers = [];
+  }
+
+  function kitchenAudioEnabled() {
+    return localStorage.getItem('pono_bgm_enabled') !== 'off';
+  }
+
+  function getKitchenAudioContext() {
+    if (window.SE && typeof window.SE.getCtx === 'function') {
+      try {
+        return window.SE.getCtx();
+      } catch (e) { /* fallback below */ }
+    }
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!kitchenAudio.ctx) kitchenAudio.ctx = new Ctx();
+    if (kitchenAudio.ctx.state === 'suspended') {
+      try { kitchenAudio.ctx.resume(); } catch (e) { /* noop */ }
+    }
+    return kitchenAudio.ctx;
+  }
+
+  function preloadKitchenSounds() {
+    if (!window.SE || typeof window.SE.preload !== 'function') return;
+    try {
+      window.SE.preload([KITCHEN_SE.chop]);
+    } catch (e) { /* noop */ }
+  }
+
+  function playKitchenSe(name, opts) {
+    if (!kitchenAudioEnabled()) return;
+    if (name === 'chop' && window.SE && typeof window.SE.play === 'function') {
+      try {
+        window.SE.play(KITCHEN_SE.chop, { volume: opts && opts.volume ? opts.volume : 0.46 });
+      } catch (e) { /* noop */ }
+    }
+  }
+
+  function decodeKitchenAudio(ctx, arrayBuffer) {
+    return new Promise(function (resolve, reject) {
+      try {
+        const maybePromise = ctx.decodeAudioData(arrayBuffer, resolve, reject);
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(resolve, reject);
+        }
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  function loadKitchenLoopBuffer(kind) {
+    if (kitchenAudio.buffers[kind]) return Promise.resolve(kitchenAudio.buffers[kind]);
+    const def = KITCHEN_SE[kind];
+    const ctx = getKitchenAudioContext();
+    if (!def || !ctx || !window.fetch) return Promise.reject(new Error('audio unavailable'));
+    return fetch(def.url)
+      .then(function (res) {
+        if (!res.ok) throw new Error('audio fetch failed: ' + def.url);
+        return res.arrayBuffer();
+      })
+      .then(function (buf) {
+        return decodeKitchenAudio(ctx, buf);
+      })
+      .then(function (audioBuffer) {
+        kitchenAudio.buffers[kind] = audioBuffer;
+        return audioBuffer;
+      });
+  }
+
+  function startKitchenAmbient(kind) {
+    if (!kitchenAudioEnabled()) {
+      stopKitchenAmbient(kind, 120);
+      return;
+    }
+    const def = KITCHEN_SE[kind];
+    if (!def) return;
+    const loop = kitchenAudio.loops[kind] || {
+      active: false,
+      sources: [],
+      timer: null,
+      loading: null,
+    };
+    kitchenAudio.loops[kind] = loop;
+    if (loop.active) return;
+    loop.active = true;
+    loop.loading = loadKitchenLoopBuffer(kind)
+      .then(function (buffer) {
+        if (!loop.active) return;
+        scheduleKitchenAmbient(kind, buffer);
+      })
+      .catch(function () {
+        loop.active = false;
+      });
+  }
+
+  function scheduleKitchenAmbient(kind, buffer) {
+    const loop = kitchenAudio.loops[kind];
+    const def = KITCHEN_SE[kind];
+    const ctx = getKitchenAudioContext();
+    if (!loop || !loop.active || !def || !ctx || !buffer) return;
+    if (!kitchenAudioEnabled()) {
+      stopKitchenAmbient(kind, 120);
+      return;
+    }
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    const duration = Math.max(buffer.duration || 1, 1);
+    const fadeSec = Math.min(def.fadeSec || 1.5, duration * 0.35);
+    const startAt = ctx.currentTime + 0.03;
+    const fadeOutAt = startAt + Math.max(0.12, duration - fadeSec);
+
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(0, startAt);
+    gain.gain.linearRampToValueAtTime(def.volume, startAt + fadeSec);
+    gain.gain.setValueAtTime(def.volume, fadeOutAt);
+    gain.gain.linearRampToValueAtTime(0, startAt + duration);
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(startAt);
+    try { source.stop(startAt + duration + 0.08); } catch (e) { /* noop */ }
+
+    const sourceEntry = { source: source, gain: gain };
+    loop.sources.push(sourceEntry);
+    source.onended = function () {
+      loop.sources = loop.sources.filter(function (entry) { return entry !== sourceEntry; });
+    };
+
+    if (loop.timer) clearTimeout(loop.timer);
+    loop.timer = setTimeout(function () {
+      scheduleKitchenAmbient(kind, buffer);
+    }, Math.max(220, (duration - fadeSec) * 1000));
+  }
+
+  function stopKitchenAmbient(kind, fadeMs) {
+    const loop = kitchenAudio.loops[kind];
+    if (!loop || (!loop.active && (!loop.sources || !loop.sources.length))) return;
+    loop.active = false;
+    if (loop.timer) {
+      clearTimeout(loop.timer);
+      loop.timer = null;
+    }
+    if (!loop.sources || !loop.sources.length) return;
+    const ctx = getKitchenAudioContext();
+    if (!ctx) {
+      loop.sources = [];
+      return;
+    }
+    const now = ctx.currentTime;
+    const fadeSec = Math.max(0.05, (fadeMs || 260) / 1000);
+    loop.sources.forEach(function (entry) {
+      try {
+        entry.gain.gain.cancelScheduledValues(now);
+        entry.gain.gain.setValueAtTime(entry.gain.gain.value, now);
+        entry.gain.gain.linearRampToValueAtTime(0, now + fadeSec);
+        entry.source.stop(now + fadeSec + 0.05);
+      } catch (e) { /* noop */ }
+    });
+    loop.sources = [];
+  }
+
+  function stopAllKitchenAmbient(fadeMs) {
+    stopKitchenAmbient('stove', fadeMs);
+    stopKitchenAmbient('fry', fadeMs);
   }
 
   // ========== localStorage ==========
@@ -3861,6 +4045,7 @@ body.layout-editor-on .endX-marker {
     refreshUnlockedRecipes();
     renderRecipes();
     showScreen('mode', { skipFade: true });
+    preloadKitchenSounds();
 
     // 共通ボタン
     els.gotoBentoBtn.addEventListener('click', () => {
@@ -4078,6 +4263,11 @@ body.layout-editor-on .endX-marker {
     // completeIngredient 等が積んだ setTimeout をキャンセル
     // （chop 完了直後に「← もどる」を押した時の強制遷移を防止）
     clearPendingTimers();
+    if (name !== 'grill' && name !== 'fry') {
+      stopAllKitchenAmbient(240);
+    } else if (name !== 'fry') {
+      stopKitchenAmbient('fry', 180);
+    }
 
     const stepMap = { mode: 1, select: 1, prep: 2, chop: 2, fridge: 3, grill: 4, fry: 4 };
     const targetStep = stepMap[name] || 1;
@@ -4582,9 +4772,11 @@ body.layout-editor-on .endX-marker {
       state.cookPreheated = true;
       updateCookStageState(type);
       if (type === 'fry') {
+        startKitchenAmbient('stove');
         if (els.fryActionLabel) els.fryActionLabel.textContent = 'おさらから ドラッグして あぶらへ';
         setSpeech('あぶらが あったまったよ！ おさらから ドラッグして いれよう！', 'fry');
       } else {
+        startKitchenAmbient('stove');
         if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから ドラッグして フライパンへ';
         setSpeech('フライパンが あったまったよ！ おさらから ドラッグして のせよう！', 'grill');
       }
@@ -5230,6 +5422,7 @@ body.layout-editor-on .endX-marker {
     resetCookTimingUI('fry');
     updateCookStageState('fry');
     showCookBurst('fry');
+    startKitchenAmbient('fry');
     if (els.fryActionLabel) els.fryActionLabel.textContent = 'いいいろに なるまで まとう';
     setSpeech('ポチャン！ あぶらに はいったよ！', 'fry');
     state.pendingTimers.push(setTimeout(function () {
@@ -5276,7 +5469,10 @@ body.layout-editor-on .endX-marker {
     const timingZone = recordCookTiming('grill');
     state.cookAnimating = true;
     state.cookProgress = Math.min(2, state.cookProgress + 1);
-    if (state.cookProgress >= 2) state.cookServed = true;
+    if (state.cookProgress >= 2) {
+      state.cookServed = true;
+      stopKitchenAmbient('stove', 320);
+    }
     updateCookView('grill', state.cookProgress, state.cookProgress === 1 ? 'flip' : 'burst');
     if (state.cookProgress < 2) {
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで おさらへ あげよう';
@@ -5324,6 +5520,7 @@ body.layout-editor-on .endX-marker {
     const timingZone = recordCookTiming('fry');
     state.cookAnimating = true;
     state.cookServed = true;
+    stopAllKitchenAmbient(320);
     updateCookStageState('fry');
     showCookBurst('fry');
     const stars = showCookTimingRating('fry');
@@ -6186,6 +6383,7 @@ body.layout-editor-on .endX-marker {
     if (!ing || state.current !== ing) return;
     if (state.chopProgress !== progressSnapshot) return;
     state.awaitingImpact = false;
+    playKitchenSe('chop');
     updateIngredientMask();
     showChopImpactFx();
     addCutPieceToBowl(ing);
@@ -6906,6 +7104,7 @@ body.layout-editor-on .endX-marker {
   function resetBoard() {
     // completeIngredient で予約された画面ジャンプ等を全部キャンセル
     clearPendingTimers();
+    stopAllKitchenAmbient(180);
     state.current = null;
     state.actionIndex = 0;
     state.prepProgress = 0;
