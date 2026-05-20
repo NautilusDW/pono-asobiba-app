@@ -82,8 +82,9 @@
   --ui-recipe-card: url('../assets/images/bento/cooking/ui/recipe_card_frame.png');
   --ui-speech-bubble: url('../assets/images/bento/cooking/ui/speech_bubble_wide.png');
   --ui-hint-box: url('../assets/images/bento/cooking/ui/hint_box_wide.png');
-  --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_open.png');
+  --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_stocked_open.png');
   --ui-fridge-closed: url('../assets/images/bento/cooking/ui/fridge_closed.png');
+  --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_sheet.png');
 }
 
 html, body {
@@ -114,6 +115,7 @@ body {
 }
 /* 画面ごとに stage-wrap の背景（=レターボックス色）を切り替え。
    data-screen は body にも付与され続けるが、見た目はここで切り替わる。 */
+body[data-screen="mode"] .stage-wrap,
 body[data-screen="select"] .stage-wrap {
   background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
 }
@@ -398,6 +400,93 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .screen-back:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.16); }
 .screen-back:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+/* =========================================================
+   画面0: モード選択
+   ========================================================= */
+.mode-stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.mode-pono-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(255,255,255,0.42);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  max-width: 1040px;
+  margin: 0 auto;
+  width: 100%;
+}
+.mode-choice-grid {
+  width: min(100%, 1040px);
+  min-height: 0;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+.mode-card {
+  position: relative;
+  border: 0;
+  border-radius: 22px;
+  min-height: 430px;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  filter: drop-shadow(0 8px 14px rgba(93,78,55,0.14));
+  transition: transform 0.12s ease, filter 0.16s ease;
+}
+.mode-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--ui-mode-cards);
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  pointer-events: none;
+}
+.mode-card--cook::before { background-position: left center; }
+.mode-card--prep::before { background-position: right center; }
+.mode-card:active {
+  transform: translateY(2px) scale(0.995);
+  filter: drop-shadow(0 4px 8px rgba(93,78,55,0.14)) brightness(0.99);
+}
+.mode-card-label {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 36%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  z-index: 1;
+  pointer-events: none;
+}
+.mode-card-title {
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.95);
+}
+.mode-card-desc {
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--text-soft);
+}
 
 /* =========================================================
    画面1: 材料えらび
@@ -2112,20 +2201,20 @@ body.layout-editor-on .endX-marker {
   /* fridge-body が縦に大きく開いたぶん shelves も縦に伸ばす。
      grid-auto-rows を 72px に底上げして、棚が空でも縦の存在感を維持 */
   position: absolute;
-  left: 15.5%;
-  top: 23%;
-  width: 39%;
-  height: 56%;
+  left: 27%;
+  top: 28%;
+  width: 46%;
+  height: 39%;
   flex: none;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(70px, 1fr);
-  gap: 8px;
+  grid-auto-rows: minmax(52px, 1fr);
+  gap: 6px;
   align-content: start;
-  padding: 8px;
-  background: rgba(255,255,255,0.20);
-  border: 2px solid rgba(255,255,255,0.34);
-  border-radius: 18px;
+  padding: 7px;
+  background: rgba(255,255,255,0.18);
+  border: 2px solid rgba(255,255,255,0.30);
+  border-radius: 16px;
   min-height: 0;
   opacity: 0;
   transition: opacity 0.16s ease 0.22s;
@@ -2138,9 +2227,9 @@ body.layout-editor-on .endX-marker {
   align-items: center;
   justify-content: center;
   background: rgba(255,255,255,0.72);
-  border-radius: 12px;
-  padding: 6px;
-  font-size: 2.4rem;
+  border-radius: 11px;
+  padding: 5px;
+  font-size: 2.1rem;
   aspect-ratio: 1;
   box-shadow: 0 1px 2px var(--shadow-soft);
   animation: popIn 0.5s ease-out;
@@ -2218,11 +2307,15 @@ body.layout-editor-on .endX-marker {
 }
 .fridge-empty {
   grid-column: 1 / -1;
-  font-size: 0.95rem;
+  align-self: center;
+  font-size: 0.9rem;
   color: var(--text-light);
   text-align: center;
-  padding: 32px 4px;
-  font-weight: 700;
+  padding: 28px 10px;
+  font-weight: 900;
+  background: rgba(255,255,255,0.76);
+  border-radius: 14px;
+  line-height: 1.35;
 }
 
 /* =========================================================
@@ -2571,7 +2664,7 @@ body.layout-editor-on .endX-marker {
 <script src="../common/layout/editor-bootstrap.js" defer></script>
 
 </head>
-<body data-screen="select">
+<body data-screen="mode">
 
 <!-- ===================== 16:9 Stage (1600×900 contain-fit) =====================
      quizland / writing-mori と同じ contain-fit パターン。
@@ -2601,8 +2694,39 @@ body.layout-editor-on .endX-marker {
   <button class="btn btn-primary" id="goto-bento-btn" type="button">おべんとうを つくる</button>
 </div>
 
+<!-- ===================== 画面0: モード選択 ===================== -->
+<section class="screen" data-screen="mode" id="screen-mode" tabindex="-1" aria-labelledby="screen-mode-heading">
+  <div class="panel-head">
+    <span class="panel-pill panel--pick"><span class="pill-num">1</span>きょうは どうする？</span>
+  </div>
+
+  <div class="mode-stage">
+    <div class="mode-pono-row">
+      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-mode" alt="ポノ">
+      <div class="speech-bubble" id="speech-mode">おかずを つくる？ それとも したごしらえする？</div>
+    </div>
+
+    <div class="mode-choice-grid">
+      <button type="button" class="mode-card mode-card--cook" id="mode-cook-btn">
+        <span class="mode-card-label">
+          <span class="mode-card-title">おかずを<br>つくる</span>
+          <span class="mode-card-desc">れいぞうこの ざいりょうで<br>つくれる おかずを みる</span>
+        </span>
+      </button>
+      <button type="button" class="mode-card mode-card--prep" id="mode-prep-btn">
+        <span class="mode-card-label">
+          <span class="mode-card-title">したごしらえを<br>する</span>
+          <span class="mode-card-desc">ざいりょうを えらんで<br>トントン じゅんびする</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</section>
+
 <!-- ===================== 画面1: 材料えらび ===================== -->
 <section class="screen" data-screen="select" id="screen-select" tabindex="-1" aria-labelledby="screen-select-heading">
+  <button type="button" class="screen-back" data-back="mode">← もどる</button>
+
   <div class="panel-head">
     <span class="panel-pill panel--pick"><span class="pill-num">1</span>ざいりょうを えらぶ</span>
   </div>
@@ -3196,7 +3320,7 @@ body.layout-editor-on .endX-marker {
     combo: 0,
     cutting: false,
     awaitingImpact: false,
-    currentScreen: 'select',
+    currentScreen: 'mode',
     transitioning: false,
     fridgePonoTimer: null,
     knifeAnimating: false,
@@ -3276,6 +3400,11 @@ body.layout-editor-on .endX-marker {
     // header / common
     flowChips:     document.getElementById('flow-chips'),
     gotoBentoBtn:  document.getElementById('goto-bento-btn'),
+
+    // mode screen
+    speechMode:    document.getElementById('speech-mode'),
+    modeCookBtn:   document.getElementById('mode-cook-btn'),
+    modePrepBtn:   document.getElementById('mode-prep-btn'),
 
     // select screen
     speechSelect:  document.getElementById('speech-select'),
@@ -3357,6 +3486,7 @@ body.layout-editor-on .endX-marker {
 
     // screens
     screens: {
+      mode:   document.getElementById('screen-mode'),
       select: document.getElementById('screen-select'),
       chop:   document.getElementById('screen-chop'),
       grill:  document.getElementById('screen-grill'),
@@ -3367,6 +3497,7 @@ body.layout-editor-on .endX-marker {
 
   // 画面切替アナウンス文（aria-live）
   const SCREEN_ANNOUNCE = {
+    mode:   'きょうの あそびかたを えらぶ がめんに なったよ',
     select: 'ざいりょうを えらぶ がめんに なったよ',
     chop:   'トントン きる がめんに なったよ',
     grill:  'フライパンで やく がめんに なったよ',
@@ -3380,18 +3511,36 @@ body.layout-editor-on .endX-marker {
     renderFridge();
     refreshUnlockedRecipes();
     renderRecipes();
-    showScreen('select', { skipFade: true });
+    showScreen('mode', { skipFade: true });
 
     // 共通ボタン
     els.gotoBentoBtn.addEventListener('click', () => {
       location.href = './index.html';
     });
 
+    if (els.modePrepBtn) {
+      els.modePrepBtn.addEventListener('click', () => {
+        resetBoard();
+        setSpeech('ざいりょうを えらんで したごしらえしよう！', 'select');
+        showScreen('select');
+      });
+    }
+    if (els.modeCookBtn) {
+      els.modeCookBtn.addEventListener('click', () => {
+        resetBoard();
+        refreshUnlockedRecipes();
+        renderFridge();
+        renderRecipes();
+        setSpeech('れいぞうこの ざいりょうで おかずを つくろう！', 'fridge');
+        showScreen('fridge');
+      });
+    }
+
     // fridge 画面のボタン
     els.resetBtn.addEventListener('click', () => {
       resetBoard();
-      setSpeech('きょうは なにを じゅんびする？');
-      showScreen('select');
+      setSpeech('きょうは どうする？', 'mode');
+      showScreen('mode');
     });
     els.fridgeGotoBentoBtn.addEventListener('click', () => {
       location.href = './index.html';
@@ -3411,7 +3560,7 @@ body.layout-editor-on .endX-marker {
           openBackConfirm(to);
           return;
         }
-        if (to === 'select') resetBoard();
+        if (to === 'select' || to === 'mode') resetBoard();
         showScreen(to);
       });
     });
@@ -3421,7 +3570,7 @@ body.layout-editor-on .endX-marker {
       els.backConfirmOk.addEventListener('click', () => {
         const to = els.backConfirm.dataset.targetScreen || 'select';
         closeBackConfirm();
-        if (to === 'select') resetBoard();
+        if (to === 'select' || to === 'mode') resetBoard();
         showScreen(to);
       });
     }
@@ -3562,7 +3711,7 @@ body.layout-editor-on .endX-marker {
     // （chop 完了直後に「← もどる」を押した時の強制遷移を防止）
     clearPendingTimers();
 
-    const stepMap = { select: 1, chop: 2, fridge: 3, grill: 4, fry: 4 };
+    const stepMap = { mode: 1, select: 1, chop: 2, fridge: 3, grill: 4, fry: 4 };
     const targetStep = stepMap[name] || 1;
 
     const swap = () => {
@@ -3651,11 +3800,11 @@ body.layout-editor-on .endX-marker {
   function onFlowChipClick(step) {
     // 完成アニメ中（trigger 後の pendingTimer 待ち）はフローチップ操作を無効化
     if (state.cutting) return;
-    if (step === 1) showScreen('select');
+    if (step === 1) showScreen('mode');
     else if (step === 2) {
       // chop は材料が選ばれていないと意味がないので、select に戻す
       if (!state.current) {
-        setSpeech('まずは ざいりょうを えらんでね！');
+        setSpeech('まずは ざいりょうを えらんでね！', 'select');
         showScreen('select');
       } else {
         const actions = getIngredientActions(state.current);
@@ -6061,6 +6210,14 @@ body.layout-editor-on .endX-marker {
     els.shelves.innerHTML = '';
     const unlocked = INGREDIENTS.filter(i => state.unlocked.has(i.id));
 
+    if (!unlocked.length) {
+      const empty = document.createElement('div');
+      empty.className = 'fridge-empty';
+      empty.textContent = 'したごしらえした ざいりょうが ここに はいるよ';
+      els.shelves.appendChild(empty);
+      return;
+    }
+
     unlocked.forEach(function (ing) {
       const item = document.createElement('div');
       item.className = 'fridge-item fridge-item--prepared';
@@ -6235,6 +6392,10 @@ body.layout-editor-on .endX-marker {
   // 省略時は state.currentScreen に従い、未知の画面なら 3 画面すべてに書く。
   function setSpeech(text, screen) {
     const target = screen || state.currentScreen || 'auto';
+    if (target === 'mode' && els.speechMode) {
+      els.speechMode.textContent = text;
+      return;
+    }
     if (target === 'select' && els.speechSelect) {
       els.speechSelect.textContent = text;
       return;
@@ -6256,6 +6417,7 @@ body.layout-editor-on .endX-marker {
       return;
     }
     // フォールバック: 全部に書く（初期化時 / 画面ミスマッチ時）
+    if (els.speechMode) els.speechMode.textContent = text;
     if (els.speechSelect) els.speechSelect.textContent = text;
     if (els.speechChop) els.speechChop.textContent = text;
     if (els.speechGrill) els.speechGrill.textContent = text;
