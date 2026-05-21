@@ -1028,6 +1028,10 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-breading-food[data-frame-series="true"]::after {
   opacity: 0 !important;
 }
+.prep-breading-food[data-frame-series="true"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
 .prep-breading-food.is-dragging {
   cursor: grabbing;
   transition: none;
@@ -5375,18 +5379,21 @@ body.layout-editor-on .endX-marker {
   function setPrepFoodVisual(el, visual) {
     if (!el) return;
     const foodVisual = visual || {};
+    const usesFrameSeries = Boolean(foodVisual.frameSeries);
     el.style.backgroundImage = '';
     el.style.backgroundSize = 'contain';
     el.style.backgroundPosition = 'center';
     el.style.mixBlendMode = foodVisual.blend || 'normal';
     el.style.filter = foodVisual.filter || '';
-    el.dataset.frameSeries = foodVisual.frameSeries ? 'true' : 'false';
-    el.style.setProperty('--prep-food-mask', foodVisual.mask || 'none');
-    el.style.setProperty('--prep-base-mask', foodVisual.mask || 'none');
+    el.dataset.frameSeries = usesFrameSeries ? 'true' : 'false';
+    el.style.setProperty('--prep-food-mask', usesFrameSeries ? 'none' : (foodVisual.mask || 'none'));
+    el.style.setProperty('--prep-base-mask', usesFrameSeries ? 'none' : (foodVisual.mask || 'none'));
     if (foodVisual.src) {
       el.style.backgroundImage = 'url("' + foodVisual.src + '")';
-      el.style.setProperty('--prep-food-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
-      el.style.setProperty('--prep-base-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
+      if (!usesFrameSeries) {
+        el.style.setProperty('--prep-food-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
+        el.style.setProperty('--prep-base-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
+      }
       return;
     }
     if (foodVisual.sheet) {
