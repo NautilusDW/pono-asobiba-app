@@ -528,6 +528,44 @@ html, body {
   border-color: var(--primary);
   color: #8B4513;
 }
+.free-tier-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  flex-shrink: 0;
+}
+.free-tier-btn {
+  border: 2px solid #F8C36B;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.52rem;
+  font-weight: 900;
+  min-height: 29px;
+  padding: 2px 1px;
+  cursor: pointer;
+}
+.free-tier-btn.active {
+  background: #FFEDD1;
+  border-color: var(--primary);
+  color: #8B4513;
+}
+.free-tier-badge {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  z-index: 4;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 248, 230, 0.92);
+  border: 2px solid rgba(248, 195, 107, 0.9);
+  color: #8B4513;
+  font-size: 0.58rem;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(93, 78, 55, 0.16);
+  pointer-events: none;
+}
 .free-action-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1950,30 +1988,32 @@ const bentoBoxes = [
     name: 'はんぶんこ べんとうばこ',
     image: FREE_ASSET + 'box_rect_split.png',
     shape: 'box_square',
-    bounds: { x: 10, y: 66, w: 740, h: 326 },
-    imageScale: 1.05,
+    bounds: { x: 34, y: 34, w: 692, h: 392 },
+    imageScale: 1.02,
+    tierCount: 1,
+    autoRice: { baseRice: 'rice_base_round', x: 248, y: 230, size: 178 },
     riceSpots: [
-      { x: 220, y: 230 },
+      { x: 248, y: 230 },
     ],
     foodSpots: [
-      { x: 500, y: 176 },
-      { x: 610, y: 176 },
-      { x: 500, y: 286 },
-      { x: 610, y: 286 },
-      { x: 555, y: 230 },
+      { x: 500, y: 170 },
+      { x: 612, y: 170 },
+      { x: 500, y: 292 },
+      { x: 612, y: 292 },
+      { x: 556, y: 230 },
     ],
     accessorySpots: [
-      { x: 510, y: 230 },
-      { x: 620, y: 230 },
-      { x: 555, y: 176 },
-      { x: 555, y: 286 },
+      { x: 506, y: 230 },
+      { x: 622, y: 230 },
+      { x: 556, y: 170 },
+      { x: 556, y: 292 },
     ],
     safeSpots: [
-      { x: 220, y: 230 },
-      { x: 500, y: 176 },
-      { x: 610, y: 176 },
-      { x: 500, y: 286 },
-      { x: 610, y: 286 },
+      { x: 248, y: 230 },
+      { x: 500, y: 170 },
+      { x: 612, y: 170 },
+      { x: 500, y: 292 },
+      { x: 612, y: 292 },
     ],
   },
   {
@@ -1983,6 +2023,11 @@ const bentoBoxes = [
     shape: 'box_square',
     bounds: { x: 76, y: 54, w: 608, h: 354 },
     imageScale: 1.18,
+    tierCount: 2,
+    autoRice: { templateId: 'roundSmile', x: 380, y: 230, size: 292 },
+    riceSpots: [
+      { x: 380, y: 230 },
+    ],
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -1998,6 +2043,11 @@ const bentoBoxes = [
     shape: 'box_round',
     bounds: { x: 92, y: 62, w: 576, h: 338 },
     imageScale: 1.18,
+    tierCount: 2,
+    autoRice: { templateId: 'roundSmile', x: 382, y: 230, size: 292 },
+    riceSpots: [
+      { x: 382, y: 230 },
+    ],
     safeSpots: [
       { x: 300, y: 226 },
       { x: 470, y: 216 },
@@ -2013,6 +2063,11 @@ const bentoBoxes = [
     shape: 'box_bear',
     bounds: { x: 76, y: 68, w: 608, h: 340 },
     imageScale: 1.18,
+    tierCount: 3,
+    autoRice: { templateId: 'bearSmile', x: 380, y: 230, size: 372 },
+    riceSpots: [
+      { x: 380, y: 230 },
+    ],
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -2028,6 +2083,11 @@ const bentoBoxes = [
     shape: 'box_bear',
     bounds: { x: 76, y: 68, w: 608, h: 340 },
     imageScale: 1.18,
+    tierCount: 3,
+    autoRice: { templateId: 'catSmile', x: 380, y: 230, size: 372 },
+    riceSpots: [
+      { x: 380, y: 230 },
+    ],
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -2047,11 +2107,9 @@ const bentoAccessories = [
   { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 104, layerBase: 12, rotation: 0 },
 ];
 const riceBases = [
-  { id: 'rice_base_round', type: 'rice', name: 'まるごはん', image: FREE_ASSET + 'rice_base_round.png', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
-  { id: 'rice_base_bear', type: 'rice', name: 'くまごはん', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
-  { id: 'rice_base_cat', type: 'rice', name: 'ねこごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
-  { id: 'rice_face_bear_smile', type: 'template', name: 'にこにこくま', templateId: 'bearSmile', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', size: 138 },
-  { id: 'rice_face_cat_smile', type: 'template', name: 'にこにこねこ', templateId: 'catSmile', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', size: 138 },
+  { id: 'rice_base_round', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_round.png', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
+  { id: 'rice_base_bear', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
+  { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
 ];
 const decorItems = [
   { id: 'nori_eye_round', type: 'decor', name: 'のりのめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 22, layerBase: 50 },
@@ -2064,6 +2122,17 @@ const decorItems = [
   { id: 'pick_heart', type: 'pick', name: 'ハートピック', image: FREE_ASSET + 'pick_heart.png', css: 'free-css-pick', size: 48, layerBase: 60 },
 ];
 const riceFaceTemplates = {
+  roundSmile: {
+    name: 'にこにこごはん',
+    baseRice: 'rice_base_round',
+    parts: [
+      { id: 'nori_eye_round', x: -30, y: -20, size: 18 },
+      { id: 'nori_eye_round', x: 30, y: -20, size: 18 },
+      { id: 'nori_mouth_smile', x: 0, y: 24, size: 38 },
+      { id: 'ketchup_cheek', x: -46, y: 12, size: 27 },
+      { id: 'ketchup_cheek', x: 46, y: 12, size: 27 },
+    ],
+  },
   bearSmile: {
     name: 'にこにこくま',
     baseRice: 'rice_base_bear',
@@ -2100,6 +2169,7 @@ let favSaved = false;   // この完成画面で既に保存したか
 let placedItems = [];
 let selectedBentoBoxId = 'box_rect_split';
 let freeLayoutTab = 'box';
+let freeActiveTier = 1;
 let freeLayerSeq = 1;
 let freeSelectedItemUid = null;
 let freeDragState = null;
@@ -2568,6 +2638,16 @@ function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.class
 function getSelectedBentoBox() {
   return bentoBoxes.find(b => b.id === selectedBentoBoxId) || bentoBoxes[0];
 }
+function getBoxTierCount(box = getSelectedBentoBox()) {
+  return Math.max(1, box.tierCount || 1);
+}
+function getItemTier(item) {
+  return item && item.tier ? item.tier : 1;
+}
+function getTierLabel(tier, box = getSelectedBentoBox()) {
+  if (getBoxTierCount(box) <= 1) return '';
+  return tier === 1 ? '1だんめ ごはん' : `${tier}だんめ おかず`;
+}
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
@@ -2593,25 +2673,48 @@ function getFreeFoodCatalog() {
 }
 function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories;
-  if (tabId === 'rice') return riceBases;
+  if (tabId === 'rice') return [getAutoRicePaletteItem()];
   if (tabId === 'food') return getFreeFoodCatalog();
   if (tabId === 'decor') return decorItems;
   return [];
 }
+function getAutoRicePaletteItem() {
+  const box = getSelectedBentoBox();
+  const auto = box.autoRice || { baseRice: 'rice_base_round' };
+  const template = auto.templateId ? riceFaceTemplates[auto.templateId] : null;
+  const base = riceBases.find(r => r.id === (auto.baseRice || template?.baseRice)) || riceBases[0];
+  return {
+    id: 'auto_rice_' + box.id,
+    type: 'rice_auto',
+    name: 'ごはんを よそう',
+    image: base.image,
+    css: base.css,
+    size: base.size,
+  };
+}
 function getBoxSpotsForType(box, type) {
   if (!box) return [];
-  if (type === 'rice' || type === 'template') return box.riceSpots || box.safeSpots || [];
+  if (type === 'rice' || type === 'template' || type === 'rice_auto') return box.riceSpots || box.safeSpots || [];
   if (type === 'food') return box.foodSpots || box.safeSpots || [];
   if (type === 'cup' || type === 'divider') return box.accessorySpots || box.foodSpots || box.safeSpots || [];
   if (type === 'pick') return box.foodSpots || box.safeSpots || [];
   return box.safeSpots || [];
 }
+function getTargetTierForType(type) {
+  const tierCount = getBoxTierCount();
+  if (tierCount <= 1) return 1;
+  if (type === 'rice' || type === 'template' || type === 'rice_auto') return 1;
+  if (type === 'decor') return freeActiveTier;
+  return Math.max(2, Math.min(freeActiveTier, tierCount));
+}
 function countPlacedBySpotType(type) {
-  if (type === 'rice' || type === 'template') return placedItems.filter(i => i.type === 'rice').length;
-  if (type === 'food') return placedItems.filter(i => i.type === 'food').length;
-  if (type === 'cup' || type === 'divider') return placedItems.filter(i => i.type === 'cup' || i.type === 'divider').length;
-  if (type === 'pick') return placedItems.filter(i => i.type === 'pick').length;
-  return placedItems.filter(i => i.type !== 'decor').length;
+  const targetTier = getTargetTierForType(type);
+  const sameTier = i => getBoxTierCount() <= 1 || getItemTier(i) === targetTier;
+  if (type === 'rice' || type === 'template' || type === 'rice_auto') return placedItems.filter(i => i.type === 'rice' && sameTier(i)).length;
+  if (type === 'food') return placedItems.filter(i => i.type === 'food' && sameTier(i)).length;
+  if (type === 'cup' || type === 'divider') return placedItems.filter(i => (i.type === 'cup' || i.type === 'divider') && sameTier(i)).length;
+  if (type === 'pick') return placedItems.filter(i => i.type === 'pick' && sameTier(i)).length;
+  return placedItems.filter(i => i.type !== 'decor' && sameTier(i)).length;
 }
 function getNextFreeSpot(type) {
   const box = getSelectedBentoBox();
@@ -2637,7 +2740,7 @@ function clampPointToBento(x, y, item) {
 function snapPointForItem(item, x, y) {
   let point = clampPointToBento(x, y, item);
   if (item.type === 'food') {
-    const cups = placedItems.filter(i => i.uid !== item.uid && i.snapTarget);
+    const cups = placedItems.filter(i => i.uid !== item.uid && i.snapTarget && (getBoxTierCount() <= 1 || getItemTier(i) === getItemTier(item)));
     let nearestCup = null;
     let nearestCupDist = Infinity;
     cups.forEach(c => {
@@ -2673,6 +2776,7 @@ function avoidFreeOverlap(item) {
   for (let i = 0; i < placedItems.length; i++) {
     const other = placedItems[i];
     if (other.uid === item.uid || other.type === 'decor') continue;
+    if (getBoxTierCount() > 1 && getItemTier(other) !== getItemTier(item)) continue;
     const minD = Math.max(38, ((item.size || 70) + (other.size || 70)) * 0.28);
     if (dist(item, other) < minD) {
       const p = clampPointToBento(item.x + 26, item.y + 18, item);
@@ -2770,6 +2874,7 @@ function onFreeItemDragEnd(e) {
   playPop();
 }
 function addFreeLayoutItem(def, opts = {}) {
+  const itemTier = opts.tier || getTargetTierForType(def.type);
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot(def.type);
   const item = {
     uid: 'free_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
@@ -2791,6 +2896,7 @@ function addFreeLayoutItem(def, opts = {}) {
     radius: def.radius || 0,
     parentId: opts.parentId || null,
     parentCupId: opts.parentCupId || null,
+    tier: itemTier,
   };
   const p = snapPointForItem(item, item.x, item.y);
   item.x = p.x; item.y = p.y;
@@ -2821,19 +2927,33 @@ function undoFreeItem() {
   const latest = [...placedItems].sort((a, b) => b.layer - a.layer)[0];
   removeFreeItem(latest.uid);
 }
-function addRiceFaceTemplate(templateId) {
+function removeRiceOnTier(tier) {
+  const removeIds = new Set();
+  placedItems.forEach(i => {
+    if (i.type === 'rice' && getItemTier(i) === tier) removeIds.add(i.uid);
+  });
+  placedItems.forEach(i => {
+    if (removeIds.has(i.parentId)) removeIds.add(i.uid);
+  });
+  placedItems = placedItems.filter(i => !removeIds.has(i.uid));
+  if (freeSelectedItemUid && removeIds.has(freeSelectedItemUid)) freeSelectedItemUid = null;
+}
+function addRiceFaceTemplate(templateId, opts = {}) {
   const tpl = riceFaceTemplates[templateId];
   if (!tpl) return;
   const base = riceBases.find(r => r.id === tpl.baseRice) || riceBases[0];
-  const spot = getNextFreeSpot('rice');
-  const rice = addFreeLayoutItem(base, { x: spot.x, y: spot.y, skipRender: true });
+  const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot('rice');
+  const size = opts.size || base.size || 138;
+  const scale = size / (base.size || 138);
+  const rice = addFreeLayoutItem(base, { x: spot.x, y: spot.y, size, tier: opts.tier || 1, skipRender: true });
   tpl.parts.forEach(part => {
     const def = decorItems.find(d => d.id === part.id);
     if (!def) return;
     addFreeLayoutItem(def, {
-      x: rice.x + part.x,
-      y: rice.y + part.y,
-      size: part.size || def.size,
+      x: rice.x + part.x * scale,
+      y: rice.y + part.y * scale,
+      size: Math.round((part.size || def.size) * scale),
+      tier: rice.tier,
       parentId: rice.uid,
       skipRender: true,
     });
@@ -2843,8 +2963,40 @@ function addRiceFaceTemplate(templateId) {
   renderFreeLayoutControls();
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
 }
+function addAutoRiceForSelectedBox() {
+  const box = getSelectedBentoBox();
+  const auto = box.autoRice || { baseRice: 'rice_base_round' };
+  freeActiveTier = 1;
+  removeRiceOnTier(1);
+  if (auto.templateId) {
+    addRiceFaceTemplate(auto.templateId, {
+      x: auto.x,
+      y: auto.y,
+      size: auto.size,
+      tier: 1,
+    });
+    return;
+  }
+  const base = riceBases.find(r => r.id === auto.baseRice) || riceBases[0];
+  const spot = {
+    x: auto.x != null ? auto.x : getNextFreeSpot('rice').x,
+    y: auto.y != null ? auto.y : getNextFreeSpot('rice').y,
+  };
+  const rice = addFreeLayoutItem(base, {
+    x: spot.x,
+    y: spot.y,
+    size: auto.size || base.size,
+    tier: 1,
+    skipRender: true,
+  });
+  freeSelectedItemUid = rice.uid;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+}
 function selectFreeBentoBox(id) {
   selectedBentoBoxId = id;
+  freeActiveTier = 1;
   const box = getSelectedBentoBox();
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
@@ -2900,6 +3052,11 @@ function createFreePlacedElement(item, interactive) {
 function renderFreeLayoutInto(host, opts = {}) {
   const box = bentoBoxes.find(b => b.id === (opts.boxId || selectedBentoBoxId)) || bentoBoxes[0];
   const items = Array.isArray(opts.items) ? opts.items : placedItems;
+  const tierCount = getBoxTierCount(box);
+  const activeTier = opts.tier || freeActiveTier;
+  const visibleItems = opts.interactive && tierCount > 1
+    ? items.filter(item => getItemTier(item) === activeTier)
+    : items;
   host.innerHTML = '';
   host.classList.add('free-layout-stage');
   const shape = document.createElement(box.image ? 'img' : 'div');
@@ -2916,9 +3073,15 @@ function renderFreeLayoutInto(host, opts = {}) {
   shape.style.width = toPctX(box.bounds.w);
   shape.style.height = toPctY(box.bounds.h);
   host.appendChild(shape);
+  if (opts.interactive && tierCount > 1) {
+    const badge = document.createElement('div');
+    badge.className = 'free-tier-badge';
+    badge.textContent = getTierLabel(activeTier, box);
+    host.appendChild(badge);
+  }
   const layer = document.createElement('div');
   layer.className = 'free-layout-items';
-  items.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
+  visibleItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
     layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
   });
   host.appendChild(layer);
@@ -2969,6 +3132,11 @@ function makeFreePaletteButton(def) {
       e.preventDefault();
       selectFreeBentoBox(def.id);
     });
+  } else if (def.type === 'rice_auto') {
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      addAutoRiceForSelectedBox();
+    });
   } else if (def.type === 'template') {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -2977,11 +3145,37 @@ function makeFreePaletteButton(def) {
   } else {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      if (getBoxTierCount() > 1 && def.type !== 'decor' && freeActiveTier === 1) {
+        freeActiveTier = 2;
+      }
       const item = addFreeLayoutItem(def);
       beginFreeItemDrag(e, item.uid);
     });
   }
   return btn;
+}
+function renderFreeTierControls() {
+  const box = getSelectedBentoBox();
+  const tierCount = getBoxTierCount(box);
+  if (tierCount <= 1) return null;
+  const row = document.createElement('div');
+  row.className = 'free-tier-row';
+  for (let tier = 1; tier <= tierCount; tier++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'free-tier-btn' + (tier === freeActiveTier ? ' active' : '');
+    b.textContent = tier === 1 ? '1だん ごはん' : `${tier}だん おかず`;
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      freeActiveTier = tier;
+      freeLayoutTab = tier === 1 ? 'rice' : 'food';
+      freeSelectedItemUid = null;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    });
+    row.appendChild(b);
+  }
+  return row;
 }
 function renderFreeLayoutControls() {
   const tray = document.getElementById('food-tray');
@@ -3004,6 +3198,9 @@ function renderFreeLayoutControls() {
     tabs.appendChild(b);
   });
   tray.appendChild(tabs);
+
+  const tierControls = renderFreeTierControls();
+  if (tierControls) tray.appendChild(tierControls);
 
   const actions = document.createElement('div');
   actions.className = 'free-action-row';
@@ -3047,6 +3244,7 @@ function loadFreeLayoutStage() {
   freeLayerSeq = 1;
   freeSelectedItemUid = null;
   freeLayoutTab = 'box';
+  freeActiveTier = 1;
   const box = document.querySelector('.bento-box');
   if (box) box.classList.add('free-layout-shell');
   const bentoInner = document.getElementById('bento-inner');
