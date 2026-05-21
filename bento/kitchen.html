@@ -701,8 +701,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 .prep-workbench[data-prep-kind="mix_mince"] .prep-art-main {
-  width: min(84%, 680px);
-  height: 88%;
+  top: 47%;
+  width: min(142%, 1360px);
+  height: 136%;
   mix-blend-mode: normal;
   filter: drop-shadow(0 16px 18px rgba(80,50,30,0.14));
   opacity: 0;
@@ -711,9 +712,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   display: none;
   position: absolute;
   left: 50%;
-  top: 49%;
-  width: min(84%, 680px);
-  height: 88%;
+  top: 47%;
+  width: min(142%, 1360px);
+  height: 136%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 2;
@@ -5624,8 +5625,37 @@ body.layout-editor-on .endX-marker {
     return steps[Math.min(steps.length - 1, idx + 1)] || current;
   }
 
+  function getKneadUniqueSteps(config) {
+    const steps = Array.isArray(config && config.steps) ? config.steps : [];
+    const seen = {};
+    return steps.filter(function (step) {
+      if (!step || !step.src || seen[step.src]) return false;
+      seen[step.src] = true;
+      return true;
+    });
+  }
+
+  function getKneadBrushSteps(config, progress) {
+    const unique = getKneadUniqueSteps(config);
+    if (!unique.length) return [];
+    const current = getKneadStepForProgress(config, progress);
+    const reveal = getKneadRevealStep(config, progress) || current;
+    const srcs = [];
+    const add = function (step) {
+      if (step && step.src && !srcs.includes(step.src)) srcs.push(step.src);
+    };
+    add(reveal);
+    const revealIndex = Math.max(0, unique.findIndex(function (step) { return reveal && step.src === reveal.src; }));
+    for (let i = revealIndex + 1; i < unique.length; i++) add(unique[i]);
+    for (let i = revealIndex - 1; i >= 0; i--) add(unique[i]);
+    add(current);
+    return srcs.slice(0, 3).map(function (src) {
+      return unique.find(function (step) { return step.src === src; }) || { src: src };
+    });
+  }
+
   function preloadKneadNeighborImages(config, progress) {
-    [getKneadStepForProgress(config, progress), getKneadRevealStep(config, progress)].forEach(function (step) {
+    [getKneadStepForProgress(config, progress)].concat(getKneadBrushSteps(config, progress)).forEach(function (step) {
       if (step && step.src) loadKneadImage(step.src);
     });
   }
@@ -5644,6 +5674,57 @@ body.layout-editor-on .endX-marker {
       x: a * x1 + b * mx + c * x2,
       y: a * y1 + b * my + c * y2,
     };
+  }
+
+  function seededNoise(seed) {
+    const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  function drawKneadBrushMask(ctx, x1, y1, mx, my, x2, y2, brushWidth, force, brushIndex, strokeId) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 2) return;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const angle = Math.atan2(dy, dx);
+    const stamps = Math.max(8, Math.min(22, Math.round(len / Math.max(12, brushWidth * 0.12))));
+    const seedBase = strokeId * 19.37 + brushIndex * 113.11;
+    const mainOffset = (brushIndex - 1) * brushWidth * 0.18;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.filter = 'blur(' + Math.max(1.5, brushWidth * (0.014 + brushIndex * 0.003)).toFixed(2) + 'px)';
+    ctx.globalAlpha = 0.12 + force * 0.08;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = brushWidth * (0.18 + brushIndex * 0.05);
+    drawKneadMaskPath(ctx, x1 + nx * mainOffset, y1 + ny * mainOffset, mx - nx * mainOffset * 0.4, my - ny * mainOffset * 0.4, x2 + nx * mainOffset, y2 + ny * mainOffset);
+    ctx.stroke();
+    ctx.filter = 'none';
+    for (let i = 0; i < stamps; i++) {
+      const t = stamps === 1 ? 0.5 : i / (stamps - 1);
+      const q = getQuadraticPoint(x1, y1, mx, my, x2, y2, t);
+      const r1 = seededNoise(seedBase + i * 2.13);
+      const r2 = seededNoise(seedBase + i * 3.91 + 7);
+      const r3 = seededNoise(seedBase + i * 5.17 + 11);
+      const edgeFalloff = 0.68 + Math.sin(t * Math.PI) * 0.38;
+      const side = (r1 - 0.5) * brushWidth * (0.66 + brushIndex * 0.16) + mainOffset;
+      const along = (r2 - 0.5) * brushWidth * 0.18;
+      ctx.beginPath();
+      ctx.ellipse(
+        q.x + nx * side + Math.cos(angle) * along,
+        q.y + ny * side + Math.sin(angle) * along,
+        brushWidth * (0.16 + r2 * 0.18) * edgeFalloff,
+        brushWidth * (0.10 + r3 * 0.16) * edgeFalloff,
+        angle + (r1 - 0.5) * 1.1,
+        0,
+        Math.PI * 2
+      );
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.34 + r3 * 0.36 + force * 0.16).toFixed(3) + ')';
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   function warpKneadCanvasAlongPath(ctx, source, x1, y1, mx, my, x2, y2, brushWidth, force) {
@@ -5673,7 +5754,7 @@ body.layout-editor-on .endX-marker {
       ctx.beginPath();
       ctx.ellipse(q.x, q.y, radiusX, radiusY, angle, 0, Math.PI * 2);
       ctx.clip();
-      ctx.globalAlpha = 0.34 + force * 0.18;
+      ctx.globalAlpha = 0.45 + force * 0.24;
       ctx.drawImage(source, tx * push + nx * sideShift, ty * push + ny * sideShift);
       ctx.restore();
     }
@@ -5819,11 +5900,14 @@ body.layout-editor-on .endX-marker {
     const inside = Math.pow((x2 - cx) / rx, 2) + Math.pow((y2 - cy) / ry, 2);
     if (inside > 1.18) return false;
 
-    const revealStep = getKneadRevealStep(config, state.prepProgress || 0);
-    const revealSrc = revealStep && revealStep.src;
-    const revealImg = revealSrc && kneadRuntime.images[revealSrc];
-    if (!revealImg) {
-      if (revealSrc) loadKneadImage(revealSrc);
+    const brushSteps = getKneadBrushSteps(config, state.prepProgress || 0);
+    const brushImages = brushSteps.map(function (step) {
+      return step && step.src ? kneadRuntime.images[step.src] : null;
+    }).filter(Boolean);
+    if (!brushImages.length) {
+      brushSteps.forEach(function (step) {
+        if (step && step.src) loadKneadImage(step.src);
+      });
       return false;
     }
 
@@ -5847,62 +5931,49 @@ body.layout-editor-on .endX-marker {
     const layer = getKneadWorkCanvas('layer', canvas);
     const mask = getKneadWorkCanvas('mask', canvas);
     if (!layer || !mask) return false;
-    clearCanvas(layer);
-    clearCanvas(mask);
 
     const lctx = layer.getContext('2d');
     const mctx = mask.getContext('2d');
-    drawKneadImageOnCanvas(layer, revealImg, 1);
-
-    mctx.save();
-    mctx.lineCap = 'round';
-    mctx.lineJoin = 'round';
-    mctx.filter = 'blur(' + edgeBlur.toFixed(2) + 'px)';
-    mctx.strokeStyle = 'rgba(255,255,255,' + (0.34 + force * 0.26).toFixed(3) + ')';
-    mctx.lineWidth = edgeWidth;
-    drawKneadMaskPath(mctx, x1, y1, mx, my, x2, y2);
-    mctx.stroke();
-    mctx.filter = 'none';
-    mctx.strokeStyle = 'rgba(255,255,255,' + (0.74 + force * 0.2).toFixed(3) + ')';
-    mctx.lineWidth = brushWidth * 0.72;
-    drawKneadMaskPath(mctx, x1, y1, mx, my, x2, y2);
-    mctx.stroke();
-    mctx.globalAlpha = 0.22 * force;
-    for (let i = 1; i <= 4; i++) {
-      const t = i / 5;
-      const q = getQuadraticPoint(x1, y1, mx, my, x2, y2, t);
-      const side = Math.sin(count * 0.9 + i * 1.41) * brushWidth * 0.16;
-      mctx.beginPath();
-      mctx.ellipse(
-        q.x + nx * side,
-        q.y + ny * side,
-        brushWidth * (0.22 + 0.04 * Math.sin(i + count)),
-        brushWidth * (0.13 + 0.03 * Math.cos(i * 1.7 + count)),
-        Math.atan2(dy, dx),
-        0,
-        Math.PI * 2
-      );
-      mctx.fillStyle = 'rgba(255,255,255,0.6)';
-      mctx.fill();
-    }
-    mctx.restore();
-
-    lctx.save();
-    lctx.globalCompositeOperation = 'destination-in';
-    lctx.drawImage(mask, 0, 0);
-    lctx.restore();
 
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx * 1.1, ry * 1.12, 0, 0, Math.PI * 2);
     ctx.clip();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(layer, 0, 0);
     const warp = getKneadWorkCanvas('scratch', canvas);
     if (warp) {
       const wctx = warp.getContext('2d');
       wctx.clearRect(0, 0, warp.width, warp.height);
       wctx.drawImage(canvas, 0, 0);
+    }
+    brushImages.forEach(function (img, brushIndex) {
+      clearCanvas(layer);
+      clearCanvas(mask);
+      drawKneadImageOnCanvas(layer, img, 1);
+
+      mctx.save();
+      mctx.lineCap = 'round';
+      mctx.lineJoin = 'round';
+      mctx.filter = 'blur(' + (edgeBlur * (0.42 + brushIndex * 0.08)).toFixed(2) + 'px)';
+      mctx.strokeStyle = 'rgba(255,255,255,' + (0.10 + force * 0.08).toFixed(3) + ')';
+      mctx.lineWidth = edgeWidth * (0.30 + brushIndex * 0.08);
+      const offset = (brushIndex - 1) * brushWidth * 0.16;
+      drawKneadMaskPath(mctx, x1 + nx * offset, y1 + ny * offset, mx - nx * offset * 0.35, my - ny * offset * 0.35, x2 + nx * offset, y2 + ny * offset);
+      mctx.stroke();
+      mctx.filter = 'none';
+      drawKneadBrushMask(mctx, x1, y1, mx, my, x2, y2, brushWidth, force, brushIndex, count);
+      mctx.restore();
+
+      lctx.save();
+      lctx.globalCompositeOperation = 'destination-in';
+      lctx.drawImage(mask, 0, 0);
+      lctx.restore();
+
+      ctx.globalAlpha = 0.34 - brushIndex * 0.07;
+      ctx.drawImage(layer, 0, 0);
+    });
+    ctx.globalAlpha = 1;
+    if (warp) {
       warpKneadCanvasAlongPath(ctx, warp, x1, y1, mx, my, x2, y2, brushWidth, force);
     }
     ctx.lineCap = 'round';
