@@ -720,19 +720,36 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   width: min(72%, 660px);
   height: 70%;
   z-index: 2;
-  transition: background-image 0.18s ease, transform 0.2s ease, filter 0.2s ease;
+  transform: translate(-50%, -50%);
+  transition: background-image 0.18s ease, transform 0.12s ease, filter 0.2s ease;
 }
 .prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
-  transform: translate(-50%, -50%) scale(1.035);
   filter: drop-shadow(0 14px 18px rgba(80,50,30,0.2));
+}
+.prep-workbench[data-prep-kind^="shape_"] .prep-art-main::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--shape-meat-image, none);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: var(--shape-meat-opacity, 0);
+  transform-origin: 50% 54%;
+  transform: scale(var(--shape-meat-scale-x, 1), var(--shape-meat-scale-y, 1));
+  transition: transform 0.12s ease, opacity 0.12s ease, background-image 0.18s ease;
+  pointer-events: none;
+}
+.prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
+  animation: none;
 }
 .shape-prep-guide {
   display: none;
   position: absolute;
   left: 50%;
-  top: 49%;
-  width: min(42%, 420px);
-  height: 27%;
+  top: var(--shape-guide-top, 49%);
+  width: var(--shape-guide-width, min(42%, 420px));
+  height: var(--shape-guide-height, 40%);
   transform: translate(-50%, -50%) scale(var(--shape-scale, 0.96));
   border-radius: 50%;
   pointer-events: none;
@@ -746,7 +763,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   inset: 0;
   border-radius: inherit;
   border: 5px dashed rgba(109, 174, 94, 0.72);
-  background: radial-gradient(ellipse at center, rgba(167, 220, 124, 0.15), transparent 68%);
+  background:
+    radial-gradient(ellipse at center, rgba(255,255,255,0.2), transparent 48%),
+    radial-gradient(ellipse at center, rgba(167, 220, 124, 0.18), transparent 68%);
   box-shadow: 0 0 0 6px rgba(255,255,255,0.48), 0 8px 18px rgba(86, 133, 68, 0.18);
 }
 .shape-prep-guide::after {
@@ -4349,9 +4368,30 @@ body.layout-editor-on .endX-marker {
       startSpeech: 'ひきにくを ぎゅっぎゅっと のばして かたちを つくろう！',
       completeSpeech: 'ハンバーグの かたちが できたよ！',
       steps: [
-        { src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_001_mound.png', label: 'まるめた ひきにく', caption: 'ドラッグで ぎゅっ！', burst: 'ぎゅっ！' },
-        { src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_002_pressing.png', label: 'ひらたく しよう', caption: 'いい かたち！', burst: 'ぺたん！' },
-        { src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_003_patty.png', label: 'できあがり', caption: 'やける かたちに なったよ！', burst: 'できた！' },
+        {
+          src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_plate.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/prep/shape/shape_hamburg_001_mound_meat.png',
+          thumbSrc: '../assets/images/bento/cooking/prep/shape/shape_hamburg_001_mound.png',
+          label: 'まるめた ひきにく',
+          caption: 'ドラッグで ぎゅっ！',
+          burst: 'ぎゅっ！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_plate.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/prep/shape/shape_hamburg_002_pressing_meat.png',
+          thumbSrc: '../assets/images/bento/cooking/prep/shape/shape_hamburg_002_pressing.png',
+          label: 'ひらたく しよう',
+          caption: 'いい かたち！',
+          burst: 'ぺたん！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_plate.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/prep/shape/shape_hamburg_003_patty_meat.png',
+          thumbSrc: '../assets/images/bento/cooking/prep/shape/shape_hamburg_003_patty.png',
+          label: 'できあがり',
+          caption: 'やける かたちに なったよ！',
+          burst: 'できた！',
+        },
       ],
     },
     shape_meatball: {
@@ -5782,11 +5822,16 @@ body.layout-editor-on .endX-marker {
   function updateShapePrepGuide(config, progress, maxProgress) {
     const isShape = !!(config && config.shapePrep);
     const ratio = isShape && maxProgress ? Math.max(0, Math.min(1, (progress || 0) / maxProgress)) : 0;
+    const isBallsShape = isShape && config.shapeType === 'balls';
+    const ease = 1 - Math.pow(1 - ratio, 2);
     if (els.shapePrepGuide) {
       els.shapePrepGuide.dataset.shapeType = isShape ? (config.shapeType || 'patty') : '';
       els.shapePrepGuide.style.setProperty('--shape-progress', ratio.toFixed(3));
-      els.shapePrepGuide.style.setProperty('--shape-scale', (0.96 + ratio * 0.04).toFixed(3));
-      els.shapePrepGuide.style.setProperty('--shape-opacity', (0.9 - ratio * 0.22).toFixed(3));
+      els.shapePrepGuide.style.setProperty('--shape-scale', isShape ? '1' : '0.96');
+      els.shapePrepGuide.style.setProperty('--shape-opacity', isShape ? (0.92 - ratio * 0.16).toFixed(3) : '0.9');
+      els.shapePrepGuide.style.setProperty('--shape-guide-width', isBallsShape ? 'min(44%, 420px)' : 'min(42%, 420px)');
+      els.shapePrepGuide.style.setProperty('--shape-guide-height', isBallsShape ? '40%' : '40%');
+      els.shapePrepGuide.style.setProperty('--shape-guide-top', isBallsShape ? '49%' : '49%');
       if (!isShape) {
         els.shapePrepGuide.style.setProperty('--shape-hit', '0');
         els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
@@ -5794,6 +5839,13 @@ body.layout-editor-on .endX-marker {
     }
     if (els.prepStage) {
       els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
+      if (isShape && !isBallsShape) {
+        els.prepStage.style.setProperty('--shape-meat-scale-x', (0.72 + ease * 0.36).toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-scale-y', (1.22 - ease * 0.28).toFixed(3));
+      } else {
+        els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
+        els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
+      }
     }
   }
 
@@ -5806,16 +5858,36 @@ body.layout-editor-on .endX-marker {
   }
 
   function preloadPrepFoodFrames(config) {
-    if (!config || !Array.isArray(config.stepFrames)) return;
-    config.stepFrames.forEach(function (frames) {
-      if (!Array.isArray(frames)) return;
-      frames.forEach(preloadPrepImage);
-    });
+    if (!config) return;
+    if (Array.isArray(config.steps)) {
+      config.steps.forEach(function (step) {
+        if (!step) return;
+        preloadPrepImage(step.src);
+        preloadPrepImage(step.shapeMeatSrc);
+        preloadPrepImage(step.thumbSrc);
+      });
+    }
+    if (Array.isArray(config.stepFrames)) {
+      config.stepFrames.forEach(function (frames) {
+        if (!Array.isArray(frames)) return;
+        frames.forEach(preloadPrepImage);
+      });
+    }
   }
 
   function setPrepVisual(el, visual) {
     if (!el || !visual) return;
     el.style.backgroundRepeat = 'no-repeat';
+    if (visual.shapeMeatSrc) {
+      el.style.backgroundImage = 'url("' + (visual.src || '') + '")';
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundPosition = 'center';
+      el.style.setProperty('--shape-meat-image', 'url("' + visual.shapeMeatSrc + '")');
+      el.style.setProperty('--shape-meat-opacity', '1');
+      return;
+    }
+    el.style.removeProperty('--shape-meat-image');
+    el.style.removeProperty('--shape-meat-opacity');
     if (visual.src) {
       el.style.backgroundImage = 'url("' + visual.src + '")';
       el.style.backgroundSize = 'contain';
@@ -5832,6 +5904,15 @@ body.layout-editor-on .endX-marker {
     el.style.backgroundImage = 'url("' + sheet.src + '")';
     el.style.backgroundSize = (cols * 100) + '% ' + (rows * 100) + '%';
     el.style.backgroundPosition = xPct + '% ' + yPct + '%';
+  }
+
+  function getPrepStepThumbVisual(visual) {
+    if (!visual || !visual.thumbSrc) return visual;
+    const thumbVisual = Object.assign({}, visual);
+    thumbVisual.src = visual.thumbSrc;
+    delete thumbVisual.shapeMeatSrc;
+    delete thumbVisual.thumbSrc;
+    return thumbVisual;
   }
 
   function isTrayPrepConfig(config) {
@@ -6155,7 +6236,7 @@ body.layout-editor-on .endX-marker {
       card.classList.toggle('active', idx === activeIndex);
       const thumb = document.createElement('div');
       thumb.className = 'prep-step-thumb';
-      setPrepVisual(thumb, laneStep);
+      setPrepVisual(thumb, getPrepStepThumbVisual(laneStep));
       const label = document.createElement('div');
       label.className = 'prep-step-label';
       label.textContent = laneStep.label || '';
@@ -9716,6 +9797,8 @@ body.layout-editor-on .endX-marker {
       els.prepArtMain.style.backgroundImage = '';
       els.prepArtMain.style.backgroundSize = '';
       els.prepArtMain.style.backgroundPosition = '';
+      els.prepArtMain.style.removeProperty('--shape-meat-image');
+      els.prepArtMain.style.removeProperty('--shape-meat-opacity');
     }
     if (els.shapePrepGuide) {
       els.shapePrepGuide.dataset.shapeType = '';
@@ -9724,6 +9807,13 @@ body.layout-editor-on .endX-marker {
       els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
       els.shapePrepGuide.style.setProperty('--shape-scale', '0.96');
       els.shapePrepGuide.style.setProperty('--shape-opacity', '0.9');
+      els.shapePrepGuide.style.setProperty('--shape-guide-width', 'min(42%, 420px)');
+      els.shapePrepGuide.style.setProperty('--shape-guide-height', '40%');
+      els.shapePrepGuide.style.setProperty('--shape-guide-top', '49%');
+    }
+    if (els.prepStage) {
+      els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
+      els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
     }
     if (els.kneadCanvas) {
       const ctx = els.kneadCanvas.getContext('2d');
