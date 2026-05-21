@@ -5328,7 +5328,11 @@ body.layout-editor-on .endX-marker {
       const activeIndex = getPrepTrayActiveIndex(config, progress);
       const frames = config.stepFrames[activeIndex];
       if (Array.isArray(frames) && frames.length) {
-        const ratio = Math.max(0, Math.min(1, typeof frameProgress === 'number' ? frameProgress : 0));
+        const maxProgress = getPrepMaxProgress(config);
+        const isComplete = maxProgress > 0 && (progress || 0) >= maxProgress;
+        const ratio = isComplete
+          ? 1
+          : Math.max(0, Math.min(1, typeof frameProgress === 'number' ? frameProgress : 0));
         const frameIndex = Math.max(0, Math.min(frames.length - 1, Math.round(ratio * (frames.length - 1))));
         return { src: frames[frameIndex], frameSeries: true };
       }
@@ -5949,9 +5953,10 @@ body.layout-editor-on .endX-marker {
     if (!rect.width || !rect.height) return;
     const x = Math.max(9, Math.min(91, ((evt.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(18, Math.min(76, ((evt.clientY - rect.top) / rect.height) * 100));
+    const tilt = Math.max(-8, Math.min(8, state.prepTrayRollAngle || 0));
     els.prepBreadingFood.style.setProperty('--prep-food-x', x + '%');
     els.prepBreadingFood.style.setProperty('--prep-food-y', y + '%');
-    els.prepBreadingFood.style.setProperty('--prep-food-rot', (((state.prepTrayRollAngle || 0) % 360) + (x - 50) * 0.04).toFixed(1) + 'deg');
+    els.prepBreadingFood.style.setProperty('--prep-food-rot', (tilt + (x - 50) * 0.025).toFixed(1) + 'deg');
     els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
   }
 
@@ -6103,13 +6108,14 @@ body.layout-editor-on .endX-marker {
         state.prepTrayFrontProgress = Math.min(1, (state.prepTrayFrontProgress || 0) + add);
       }
       state.prepTrayRollDistance += safeDist;
-      state.prepTrayRollAngle += safeDist * (state.prepTraySide === 'back' ? -0.46 : 0.46);
       const sideProgress = state.prepTraySide === 'back' ? state.prepTrayBackProgress : state.prepTrayFrontProgress;
-      if (sideProgress >= 0.5 && state.prepTrayRollDistance >= rollThreshold) {
-        state.prepTraySide = state.prepTraySide === 'back' ? 'front' : 'back';
+      if (state.prepTraySide === 'front' && sideProgress >= 0.64 && state.prepTrayRollDistance >= rollThreshold) {
+        state.prepTrayFrontProgress = 1;
+        state.prepTraySide = 'back';
         state.prepTrayRollDistance = 0;
-        showPrepBurst(state.prepTraySide === 'back' ? 'くるん！' : 'ころん！');
-        setSpeech(state.prepTraySide === 'back' ? 'うらにも つけよう！' : 'おもても もうすこし！', 'prep');
+        state.prepTrayRollAngle = -Math.max(3, Math.abs(state.prepTrayRollAngle || 0));
+        showPrepBurst('うらへ！');
+        setSpeech('うらにも つけよう！', 'prep');
       }
       spawnPrepBreadingParticles(evt, material, safeDist);
     }
@@ -6151,6 +6157,8 @@ body.layout-editor-on .endX-marker {
     state.prepDragLastY = evt.clientY;
     if (dist > 1) {
       state.suppressPrepClick = true;
+      const targetTilt = Math.max(-8, Math.min(8, dx * 0.16 + dy * 0.035));
+      state.prepTrayRollAngle = (state.prepTrayRollAngle || 0) * 0.35 + targetTilt * 0.65;
       movePrepFoodToPointer(evt);
       advanceTrayPrepCoating(config, dist, evt, pointIsInsideActiveTray(evt, config));
     }
@@ -6162,6 +6170,7 @@ body.layout-editor-on .endX-marker {
     state.prepDragMode = '';
     state.prepDragPointerId = null;
     state.prepTrayDistance = 0;
+    state.prepTrayRollAngle = 0;
     if (els.prepBreadingFood) els.prepBreadingFood.classList.remove('is-dragging');
     releasePrepPointerCapture(evt);
     snapPrepFoodToTray();
