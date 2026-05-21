@@ -672,27 +672,6 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-workbench[data-prep-kind="mix_mince"].is-dragging {
   cursor: grabbing;
 }
-.prep-workbench[data-prep-kind="mix_mince"]::after {
-  content: '';
-  position: absolute;
-  left: var(--knead-press-x, 50%);
-  top: var(--knead-press-y, 50%);
-  width: min(24%, 220px);
-  aspect-ratio: 1.55 / 1;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 4;
-  opacity: 0;
-  transform: translate(-50%, -50%) rotate(var(--knead-press-rot, 0deg)) scale(0.78);
-  background:
-    radial-gradient(ellipse at 34% 30%, rgba(255,239,222,0.48) 0 16%, transparent 47%),
-    radial-gradient(ellipse at 58% 62%, rgba(92,45,34,0.28) 0 34%, transparent 72%);
-  filter: blur(1px);
-  mix-blend-mode: normal;
-}
-.prep-workbench[data-prep-kind="mix_mince"].is-knead-pulse::after {
-  animation: kneadPressPulse 0.26s ease-out;
-}
 .prep-workbench:focus-visible {
   box-shadow: inset 0 0 0 3px rgba(255,255,255,0.58), 0 0 0 5px rgba(242,145,90,0.55);
 }
@@ -1126,20 +1105,6 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
   25% { transform: translate(calc(-50% - 8px), -50%) rotate(-3deg) scale(1.03); }
   58% { transform: translate(calc(-50% + 8px), -49%) rotate(3deg) scale(1.04); }
-}
-@keyframes kneadPressPulse {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(var(--knead-press-rot, 0deg)) scale(0.62);
-  }
-  34% {
-    opacity: 0.72;
-    transform: translate(-50%, -50%) rotate(var(--knead-press-rot, 0deg)) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(var(--knead-press-rot, 0deg)) scale(1.22);
-  }
 }
 @keyframes prepDust {
   0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16)); }
@@ -4090,7 +4055,6 @@ body.layout-editor-on .endX-marker {
     trailCount: 0,
     strokeDistance: 0,
     strokeLimit: 0,
-    lastPulseAt: 0,
   };
 
   const PREP_CONFIGS = {
@@ -5668,29 +5632,6 @@ body.layout-editor-on .endX-marker {
     ctx.quadraticCurveTo(mx, my, x2, y2);
   }
 
-  function triggerKneadPulse(clientX, clientY, clientDx, clientDy, force) {
-    const stage = els.prepStage;
-    if (!stage) return;
-    const now = performance.now ? performance.now() : Date.now();
-    if (now - (kneadRuntime.lastPulseAt || 0) < 90) return;
-    kneadRuntime.lastPulseAt = now;
-    const rect = stage.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const xPct = Math.max(14, Math.min(86, ((clientX - rect.left) / rect.width) * 100));
-    const yPct = Math.max(16, Math.min(82, ((clientY - rect.top) / rect.height) * 100));
-    const angle = Math.atan2(clientDy, clientDx || 0.001) * 180 / Math.PI;
-    stage.style.setProperty('--knead-press-x', xPct.toFixed(2) + '%');
-    stage.style.setProperty('--knead-press-y', yPct.toFixed(2) + '%');
-    stage.style.setProperty('--knead-press-rot', angle.toFixed(1) + 'deg');
-    stage.classList.remove('is-knead-pulse');
-    void stage.offsetWidth;
-    stage.classList.add('is-knead-pulse');
-  }
-
-  function clearKneadPulse() {
-    if (els.prepStage) els.prepStage.classList.remove('is-knead-pulse');
-  }
-
   function getQuadraticPoint(x1, y1, mx, my, x2, y2, t) {
     const a = (1 - t) * (1 - t);
     const b = 2 * (1 - t) * t;
@@ -5699,6 +5640,40 @@ body.layout-editor-on .endX-marker {
       x: a * x1 + b * mx + c * x2,
       y: a * y1 + b * my + c * y2,
     };
+  }
+
+  function warpKneadCanvasAlongPath(ctx, source, x1, y1, mx, my, x2, y2, brushWidth, force) {
+    if (!ctx || !source) return;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 3) return;
+    const tx = dx / len;
+    const ty = dy / len;
+    const nx = -ty;
+    const ny = tx;
+    const samples = Math.max(5, Math.min(14, Math.round(len / Math.max(16, brushWidth * 0.24))));
+    const angle = Math.atan2(dy, dx);
+    const shiftBase = Math.max(6, Math.min(30, brushWidth * (0.14 + force * 0.13)));
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < samples; i++) {
+      const t = samples === 1 ? 0.5 : i / (samples - 1);
+      const q = getQuadraticPoint(x1, y1, mx, my, x2, y2, t);
+      const wave = Math.sin((kneadRuntime.trailCount || 0) * 0.9 + i * 1.37);
+      const sideShift = wave * brushWidth * (0.045 + force * 0.025);
+      const push = shiftBase * (0.88 + force * 0.28) * (1 - Math.abs(t - 0.5) * 0.28);
+      const radiusX = brushWidth * (0.42 + force * 0.08);
+      const radiusY = brushWidth * (0.25 + force * 0.06);
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(q.x, q.y, radiusX, radiusY, angle, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.globalAlpha = 0.34 + force * 0.18;
+      ctx.drawImage(source, tx * push + nx * sideShift, ty * push + ny * sideShift);
+      ctx.restore();
+    }
+    ctx.restore();
   }
 
   function getKneadStrokeLimitCss() {
@@ -5777,8 +5752,6 @@ body.layout-editor-on .endX-marker {
       kneadRuntime.trailCount = 0;
       kneadRuntime.strokeDistance = 0;
       kneadRuntime.strokeLimit = 0;
-      kneadRuntime.lastPulseAt = 0;
-      clearKneadPulse();
       drawKneadImage(img, 1);
       preloadKneadNeighborImages(config, progress);
     });
@@ -5850,8 +5823,6 @@ body.layout-editor-on .endX-marker {
       return false;
     }
 
-    const clientDx = toX - fromX;
-    const clientDy = toY - fromY;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.hypot(dx, dy);
@@ -5923,6 +5894,13 @@ body.layout-editor-on .endX-marker {
     ctx.clip();
     ctx.globalCompositeOperation = 'source-over';
     ctx.drawImage(layer, 0, 0);
+    const warp = getKneadWorkCanvas('scratch', canvas);
+    if (warp) {
+      const wctx = warp.getContext('2d');
+      wctx.clearRect(0, 0, warp.width, warp.height);
+      wctx.drawImage(canvas, 0, 0);
+      warpKneadCanvasAlongPath(ctx, warp, x1, y1, mx, my, x2, y2, brushWidth, force);
+    }
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.globalAlpha = 0.075 * force;
@@ -5937,8 +5915,6 @@ body.layout-editor-on .endX-marker {
     drawKneadMaskPath(ctx, x1 - nx * brushWidth * 0.16, y1 - ny * brushWidth * 0.16, mx - nx * brushWidth * 0.24, my - ny * brushWidth * 0.24, x2 - nx * brushWidth * 0.16, y2 - ny * brushWidth * 0.16);
     ctx.stroke();
     ctx.restore();
-
-    triggerKneadPulse(toX, toY, clientDx, clientDy, force);
 
     return true;
   }
@@ -6000,7 +5976,6 @@ body.layout-editor-on .endX-marker {
     state.cutting = true;
     if (els.prepStage) {
       els.prepStage.classList.remove('is-dragging');
-      els.prepStage.classList.remove('is-knead-pulse');
       els.prepStage.classList.add('is-working');
     }
     const maxProgress = getPrepMaxProgress(config);
@@ -6011,7 +5986,6 @@ body.layout-editor-on .endX-marker {
       if (els.prepStage) {
         els.prepStage.classList.remove('is-working');
         els.prepStage.classList.remove('is-dragging');
-        els.prepStage.classList.remove('is-knead-pulse');
       }
       state.prepAnimating = false;
       completeCurrentAction(ing);
@@ -6268,7 +6242,6 @@ body.layout-editor-on .endX-marker {
     if (els.prepStage) {
       els.prepStage.classList.remove('is-dragging');
       els.prepStage.classList.remove('is-working');
-      clearKneadPulse();
       try { els.prepStage.releasePointerCapture(evt.pointerId); } catch (_) {}
     }
     resetKneadGesture();
@@ -8810,9 +8783,7 @@ body.layout-editor-on .endX-marker {
       kneadRuntime.trailCount = 0;
       kneadRuntime.strokeDistance = 0;
       kneadRuntime.strokeLimit = 0;
-      kneadRuntime.lastPulseAt = 0;
     }
-    clearKneadPulse();
     resetCookDrag();
     updateCookDots('grill', 0);
     updateCookDots('fry', 0);
