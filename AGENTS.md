@@ -87,8 +87,8 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 | `play.html` の CSS / HTML / アニメ | ✅ メイン | レビュー側 | カードレイアウト、 ホバー演出、 ボトムナビ装飾 |
 | `play.html` 内の hover/select 等の軽い JS | ✅ | レビュー側 | renderCards、 cardClick、 selectGame レベル |
 | `assets/ui/`, `assets/images/` の追加・差し替え | ✅ | レビュー側 | 画像最適化 (§5) を踏むこと |
-| `sw.js` (CACHE_VERSION バンプ含む) | ❌ 触らない | ✅ メイン | §6 のバンプ規約参照 |
-| `scripts/`, `common/`, ゲーム本体 (`maze/`, `quizland/` 等) | ❌ | ✅ メイン | ゲームロジック / 共通ライブラリ |
+| `sw.js` (CACHE_VERSION バンプ含む) | ✅ バンプ OK (2026-05-21〜) | ✅ メイン | §6 のバンプ規約参照。 Codex も自分の変更分は自分でバンプして良い。 競合は §6 の手順で回避 |
+| `scripts/`, `common/`, ゲーム本体 (`maze/`, `quizland/` 等) | ❌ | ✅ メイン | ゲームロジック / 共通ライブラリ。 Claude が並走編集中の競合大 |
 | `quizland/data/questions.js` | ✅ メイン (問題追加・文言調整) | レビュー側 | クイズデータ。 Codex は新規問題追加 OK、 既存問題の id 変更は禁止 |
 | `quizland/saved-layout.json` | ❌ 触らない | ✅ メイン | layout-editor 経由でのみ更新。 手書き編集禁止 (フォーマットが壊れる) |
 | `quizland/data/_review/codex-followup-*.md` | ✅ 読む側 (指示の受信) | ✅ 書く側 (指示の発信) | Claude → Codex への作業依頼ノート |
@@ -101,6 +101,20 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 | `AGENTS.md` (本ファイル) | 提案 OK / commit はユーザー承認後 | 同左 | ルール変更は両 AI が提案可 |
 
 **役割が重なる場合**は、 ユーザーが「いま誰が何を触っているか」口頭で伝える運用。 重なる懸念がある時は作業を始める前に確認すること。
+
+### 3.1 Codex 制限の最小化ポリシー (2026-05-21 追加)
+
+ユーザー方針として、 **Codex への禁止事項は「Claude Code の作業に直接支障が出るもの」 だけに絞る**。 上記マトリクスで Codex ❌ 印が付いているのは、 すべて以下の理由で技術的に競合・破損リスクがあるもののみ:
+
+- `scripts/`, `common/`, ゲーム本体: Claude が並走編集する頻度が極めて高い (orchestrator / layout-editor / ゲームロジック)
+- `quizland/saved-layout.json`: 手書き編集でフォーマットが壊れる (layout-editor 経由必須、 技術的制約)
+- `wrangler.toml` / `.github/workflows/` / `.git/hooks/`: デプロイ・CI 設定、 Claude が運用責任を持つ
+- `CLAUDE.md`: Claude Code 固有ファイル
+- `MEMORY.md`, `memory/*`: Claude の知見蓄積、 Codex が書くと学習ループが壊れる (※読むのは推奨)
+
+**上記マトリクスにない領域は、 Codex は基本的に自由**。 ドキュメント追記 (`docs/` 配下、 各種 `*-followup-*.md`)、 素材ファイル追加 (`assets/ui/`, `assets/images/`, `tmp/alpha_pending/`)、 `play.html` / `quizland/data/questions.js` 編集、 sw.js バンプ等は遠慮なくやって良い。 「迷ったらやらない」 ではなく 「迷ったらユーザーに 1 行確認」 で進めること。
+
+「Claude Code が同じファイルを編集中の場合のみ要注意」 という最小ルールに帰着する。 git status / git log で M 状態を確認、 大きな機能編集は HANDOFF.md でバッチ ID を切ってから着手。
 
 ---
 
@@ -282,9 +296,14 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 const CACHE_VERSION = NNN;  // ← 変更ごとに +1
 ```
 
-**運用**:
-- Codex は `sw.js` を触らないので、 PR / 作業完了時に **「sw.js CACHE_VERSION バンプお願いします」** とユーザーまたは Claude Code に伝える。
+**運用 (2026-05-21 更新: Codex もバンプ可)**:
+- **Codex も自分の変更分は自分でバンプして良い**。 ユーザーまたは Claude に依頼する必要なし。 §3 のマトリクスで `sw.js` が Codex ✅ になったのと整合。
 - Claude Code はコミット前に CACHE_VERSION バンプを習慣化。
+- **競合対策**: CACHE_VERSION は連番 (整数) なので、 同時編集が起きても **最新値 +1 で後勝ち** すれば整合性が崩れない。 ただし安全のため:
+  1. バンプ前に `git pull origin develop` で最新を取得
+  2. `sw.js` 4 行目の現在値を確認 → +1 して書き込み
+  3. push が rejected されたら fetch + rebase + 再度 +1 して push (= 番号がさらに進んでいる可能性があるため)
+- コミットメッセージには `sw vNNN` を末尾括弧内に入れる (§8.1 と同じ)。
 
 ---
 
