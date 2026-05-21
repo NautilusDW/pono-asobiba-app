@@ -4217,7 +4217,7 @@ body.layout-editor-on .endX-marker {
     mix_mince: {
       kind: 'mix_mince',
       dragPrep: true,
-      dragDistanceScale: 1.5,
+      dragDistanceScale: 2.25,
       startSpeech: 'ひきにくを ぐるぐるドラッグして こねよう！',
       completeSpeech: 'ハンバーグの かたちが できたよ！',
       steps: [
@@ -4553,6 +4553,49 @@ body.layout-editor-on .endX-marker {
     gain.connect(ctx.destination);
     source.start(t);
     source.stop(t + (key === 'egg' ? 0.19 : key === 'panko' ? 0.082 : 0.13));
+  }
+
+  function playKneadSe(dist, power) {
+    if (!kitchenAudioEnabled()) return;
+    const nowMs = (window.performance && performance.now) ? performance.now() : Date.now();
+    if (nowMs - (kitchenAudio.prepSeLast.knead || 0) < 105) return;
+    kitchenAudio.prepSeLast.knead = nowMs;
+
+    const ctx = getKitchenAudioContext();
+    const noise = getKitchenNoiseBuffer(ctx);
+    if (!ctx || !noise) return;
+    const force = Math.max(0.32, Math.min(1, ((dist || 42) / 96) * (0.55 + (power || 0.5) * 0.45)));
+    const t = ctx.currentTime + 0.01;
+    const source = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    source.buffer = noise;
+    source.playbackRate.value = 0.48 + Math.random() * 0.1;
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(390 + Math.random() * 70, t);
+    filter.frequency.exponentialRampToValueAtTime(115, t + 0.2);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.054 * force, t + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(92 + Math.random() * 18, t);
+    osc.frequency.exponentialRampToValueAtTime(52, t + 0.2);
+    oscGain.gain.setValueAtTime(0.001, t);
+    oscGain.gain.linearRampToValueAtTime(0.018 * force, t + 0.028);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    source.start(t);
+    source.stop(t + 0.24);
+    osc.start(t);
+    osc.stop(t + 0.22);
   }
 
   function decodeKitchenAudio(ctx, arrayBuffer) {
@@ -6133,8 +6176,8 @@ body.layout-editor-on .endX-marker {
     if (!els.kneadCanvas) return 180;
     const rect = els.kneadCanvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return 180;
-    const rx = rect.width * 0.34;
-    const ry = rect.height * 0.32;
+    const rx = rect.width * 0.37;
+    const ry = rect.height * 0.43;
     const perimeter = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
     return Math.max(280, perimeter * 0.4);
   }
@@ -6154,9 +6197,9 @@ body.layout-editor-on .endX-marker {
     const x = (clientX - rect.left) * px;
     const y = (clientY - rect.top) * py;
     const cx = canvas.width * 0.5;
-    const cy = canvas.height * 0.51;
-    const rx = canvas.width * 0.34;
-    const ry = canvas.height * 0.32;
+    const cy = canvas.height * 0.52;
+    const rx = canvas.width * 0.37;
+    const ry = canvas.height * 0.43;
     return Math.pow((x - cx) / rx, 2) + Math.pow((y - cy) / ry, 2) <= 1.22;
   }
 
@@ -6262,9 +6305,9 @@ body.layout-editor-on .endX-marker {
     const x2 = (toX - rect.left) * px;
     const y2 = (toY - rect.top) * py;
     const cx = canvas.width * 0.5;
-    const cy = canvas.height * 0.51;
-    const rx = canvas.width * 0.34;
-    const ry = canvas.height * 0.32;
+    const cy = canvas.height * 0.52;
+    const rx = canvas.width * 0.37;
+    const ry = canvas.height * 0.43;
     const inside = Math.pow((x2 - cx) / rx, 2) + Math.pow((y2 - cy) / ry, 2);
     if (inside > 1.22) return false;
 
@@ -6303,7 +6346,7 @@ body.layout-editor-on .endX-marker {
 
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx * 1.06, ry * 1.08, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, rx * 1.03, ry * 1.03, 0, 0, Math.PI * 2);
     ctx.clip();
     ctx.globalCompositeOperation = 'source-over';
     brushImages.forEach(function (img, brushIndex) {
@@ -6652,6 +6695,7 @@ body.layout-editor-on .endX-marker {
     if (dist > 1) state.suppressPrepClick = true;
     if (didSmear) {
       state.suppressPrepClick = true;
+      playKneadSe(gesture.effectiveDist, gesture.power);
       advanceDragPrep(config, gesture.effectiveDist * gesture.power * 3.2);
     }
   }
