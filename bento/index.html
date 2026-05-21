@@ -1806,6 +1806,18 @@ const FRUITS = [
   { img: P+'pineapple.png',  name: 'パイナップル', cat: 'fruit', sk: 'g' },
   { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit', sk: 'y' },
 ];
+const COOKING_P = '../assets/images/bento/cooking/';
+const FREE_COOKED_OKAZU = [
+  { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 192, rotation: -6 },
+  { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 188, rotation: 2 },
+  { img: COOKING_P+'chicken/chicken_003_done.png',         name: 'からあげ',         cat: 'meat', sk: 'r', size: 184, rotation: -2 },
+  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 204, rotation: 8 },
+  { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 184, rotation: -3 },
+  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 178, rotation: 3 },
+  { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 190, rotation: -4 },
+  { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 176, rotation: 1 },
+  { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 176, rotation: -1 },
+];
 
 // ===== NPC requesters (依頼者モード用) =====
 // セッション開始時 30% の確率で 1 体ランダム選定。 入れた食材の name が
@@ -1819,17 +1831,17 @@ const NPC_REQUESTERS = [
     portraitNormal: NPC_PORTRAIT_BASE + 'risu_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'risu_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'risu_02.png',
-    wantedFoods: ['いちご', 'みかん', 'ぶどう', 'りんご', 'メロン', 'もも'],
-    intro:    'こんにちは！ あまい くだものが ほしいな',
+    wantedFoods: ['たまごやき', 'コロッケ'],
+    intro:    'こんにちは！ ふわふわの おかずが ほしいな',
     happyMsg: 'やった！ ありがとう！',
-    sadMsg:   'こんど くだもの もってきてくれる？',
+    sadMsg:   'こんど おかず もってきてくれる？',
   },
   {
     id: 'inu', name: 'わんちゃん',
     portraitNormal: NPC_PORTRAIT_BASE + 'inu_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'inu_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'inu_02.png',
-    wantedFoods: ['ハンバーグ', 'からあげ', 'ミートボール', 'ぎょうざ', 'メンチカツ'],
+    wantedFoods: ['ハンバーグ', 'からあげ'],
     intro:    'おなか すいた〜 おにくが たべたいな！',
     happyMsg: 'わぁい おにく ありがとう！',
     sadMsg:   'こんど おにく いれてね…',
@@ -1839,18 +1851,18 @@ const NPC_REQUESTERS = [
     portraitNormal: NPC_PORTRAIT_BASE + 'ahiru_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'ahiru_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'ahiru_02.png',
-    wantedFoods: ['コーンほうれんそう', 'コーンバター', 'ブロッコリーコーン'],
-    intro:    'コーンが はいって いると うれしいな！',
-    happyMsg: 'コーン だいすき！ ありがとう！',
-    sadMsg:   'コーン また もってきてね',
+    wantedFoods: ['たまごやき', 'コロッケ'],
+    intro:    'きいろの おかずが はいって いると うれしいな！',
+    happyMsg: 'きいろの おかず だいすき！ ありがとう！',
+    sadMsg:   'きいろの おかず また もってきてね',
   },
   {
     id: 'shika', name: 'しかさん',
     portraitNormal: NPC_PORTRAIT_BASE + 'shika_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'shika_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'shika_02.png',
-    wantedFoods: ['ブロッコリー', 'えだまめ', 'ほうれんそう', 'コーンほうれんそう', 'おんやさい', 'ハムサラダ'],
-    intro:    'みどりの おやさいが すきなの',
+    wantedFoods: ['にんじんいんげん', 'きんぴらごぼう'],
+    intro:    'やさいの おかずが すきなの',
     happyMsg: 'みどり いっぱい！ ありがとう！',
     sadMsg:   'みどりの おやさい たべたかったな',
   },
@@ -1859,7 +1871,7 @@ const NPC_REQUESTERS = [
     portraitNormal: NPC_PORTRAIT_BASE + 'lesser_panda_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'lesser_panda_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'lesser_panda_02.png',
-    wantedFoods: ['ミニトマト', 'いちご', 'りんご', 'やきざけ', 'タコウインナー'],
+    wantedFoods: ['やきざけ', 'タコウインナー'],
     intro:    'あかい たべものが たのしみ！',
     happyMsg: 'あか はいってる！ うれしい！',
     sadMsg:   'あか また こんど いれてね',
@@ -1869,7 +1881,7 @@ const NPC_REQUESTERS = [
     portraitNormal: NPC_PORTRAIT_BASE + 'neko_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'neko_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'neko_02.png',
-    wantedFoods: ['やきざけ', 'うめぼしごはん', 'ごまごはん', 'ふりかけごはん'],
+    wantedFoods: ['やきざけ', 'ごはん'],
     intro:    'おさかなと ごはんが たべたいな〜',
     happyMsg: 'おさかな！ にゃー ありがとう！',
     sadMsg:   'こんど おさかな いれてくれる？',
@@ -2064,16 +2076,16 @@ const bentoBoxes = [
     bounds: { x: 54, y: 24, w: 652, h: 410 },
     imageScale: 1,
     tierCount: 3,
-    autoRice: { templateId: 'bearSmile', x: 380, y: 230, size: 400 },
+    autoRice: { templateId: 'bearSmile', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
     ],
     safeSpots: [
-      { x: 300, y: 224 },
-      { x: 470, y: 214 },
-      { x: 382, y: 162 },
-      { x: 286, y: 292 },
-      { x: 466, y: 294 },
+      { x: 270, y: 224 },
+      { x: 510, y: 214 },
+      { x: 390, y: 158 },
+      { x: 276, y: 304 },
+      { x: 504, y: 304 },
     ],
   },
   {
@@ -2084,16 +2096,16 @@ const bentoBoxes = [
     bounds: { x: 76, y: 52, w: 608, h: 374 },
     imageScale: 1.02,
     tierCount: 3,
-    autoRice: { templateId: 'catSmile', x: 380, y: 230, size: 400 },
+    autoRice: { templateId: 'catSmile', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
     ],
     safeSpots: [
-      { x: 300, y: 224 },
-      { x: 470, y: 214 },
-      { x: 382, y: 162 },
-      { x: 286, y: 292 },
-      { x: 466, y: 294 },
+      { x: 270, y: 224 },
+      { x: 510, y: 214 },
+      { x: 390, y: 158 },
+      { x: 276, y: 304 },
+      { x: 504, y: 304 },
     ],
   },
 ];
@@ -2659,15 +2671,15 @@ function dist(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 function getFreeFoodCatalog() {
-  return [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].map(f => {
+  return FREE_COOKED_OKAZU.map(f => {
     const base = (f.img || f.name || 'food').split('/').pop().replace(/\.[^.]+$/, '');
     return {
       ...f,
       id: 'food_' + base,
       type: 'food',
-      size: f.cat === 'fruit' ? 92 : 108,
+      size: f.size || 176,
       layerBase: 30,
-      rotation: Math.round((Math.random() * 8) - 4),
+      rotation: f.rotation != null ? f.rotation : Math.round((Math.random() * 8) - 4),
     };
   });
 }
