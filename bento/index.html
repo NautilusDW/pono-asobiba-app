@@ -365,6 +365,17 @@ html, body {
     radial-gradient(circle at 0% 70%, #FFD38F 0 18%, #C98953 19% 24%, transparent 25%),
     radial-gradient(circle at 100% 70%, #FFD38F 0 18%, #C98953 19% 24%, transparent 25%);
 }
+.free-bento-shape.has-image {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  object-fit: contain;
+  border-radius: 0;
+}
+.free-bento-shape.has-image::before,
+.free-bento-shape.has-image::after {
+  display: none;
+}
 .free-layout-items {
   position: absolute;
   inset: 0;
@@ -1931,62 +1942,90 @@ const FREE_TABS = [
   { id: 'food', label: 'おかず' },
   { id: 'decor', label: 'かざり' },
 ];
+const FREE_ASSET = '../assets/images/bento/free-layout/';
 const bentoBoxes = [
   {
     id: 'box_square',
     name: 'しかくい おべんとうばこ',
+    image: FREE_ASSET + 'box_square.png',
     shape: 'box_square',
     bounds: { x: 76, y: 54, w: 608, h: 354 },
     safeSpots: [
-      { x: 214, y: 166 },
-      { x: 382, y: 156 },
-      { x: 540, y: 176 },
-      { x: 270, y: 292 },
-      { x: 452, y: 302 },
+      { x: 300, y: 224 },
+      { x: 470, y: 214 },
+      { x: 382, y: 158 },
+      { x: 278, y: 304 },
+      { x: 486, y: 304 },
     ],
   },
   {
     id: 'box_round',
     name: 'まるい おべんとうばこ',
+    image: FREE_ASSET + 'box_round.png',
     shape: 'box_round',
     bounds: { x: 92, y: 62, w: 576, h: 338 },
     safeSpots: [
-      { x: 248, y: 168 },
-      { x: 382, y: 160 },
-      { x: 514, y: 188 },
-      { x: 298, y: 292 },
-      { x: 448, y: 292 },
+      { x: 300, y: 226 },
+      { x: 470, y: 216 },
+      { x: 382, y: 164 },
+      { x: 294, y: 296 },
+      { x: 456, y: 294 },
     ],
   },
   {
     id: 'box_bear',
     name: 'くまさん べんとうばこ',
+    image: FREE_ASSET + 'box_bear.png',
     shape: 'box_bear',
     bounds: { x: 76, y: 68, w: 608, h: 340 },
     safeSpots: [
-      { x: 220, y: 166 },
+      { x: 300, y: 224 },
+      { x: 470, y: 214 },
       { x: 382, y: 162 },
-      { x: 540, y: 184 },
+      { x: 286, y: 292 },
+      { x: 466, y: 294 },
+    ],
+  },
+  {
+    id: 'box_cat',
+    name: 'ねこちゃん べんとうばこ',
+    image: FREE_ASSET + 'box_cat.png',
+    shape: 'box_bear',
+    bounds: { x: 76, y: 68, w: 608, h: 340 },
+    safeSpots: [
+      { x: 300, y: 224 },
+      { x: 470, y: 214 },
+      { x: 382, y: 162 },
       { x: 286, y: 292 },
       { x: 466, y: 294 },
     ],
   },
 ];
 const bentoAccessories = [
-  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', css: 'free-css-cup', snapTarget: true, radius: 76, size: 98, layerBase: 10 },
-  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', css: 'free-css-divider', size: 112, layerBase: 12, rotation: -10 },
+  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
+  { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
+  { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
+  { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
+  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 122, layerBase: 12, rotation: -10 },
+  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 116, layerBase: 12, rotation: 0 },
+  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 104, layerBase: 12, rotation: 0 },
 ];
 const riceBases = [
-  { id: 'rice_base_round', type: 'rice', name: 'まるごはん', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
-  { id: 'rice_base_bear', type: 'rice', name: 'くまごはん', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
-  { id: 'rice_face_bear_smile', type: 'template', name: 'にこにこくま', templateId: 'bearSmile', css: 'free-css-rice-bear', size: 138 },
+  { id: 'rice_base_round', type: 'rice', name: 'まるごはん', image: FREE_ASSET + 'rice_base_round.png', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
+  { id: 'rice_base_bear', type: 'rice', name: 'くまごはん', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
+  { id: 'rice_base_cat', type: 'rice', name: 'ねこごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
+  { id: 'rice_face_bear_smile', type: 'template', name: 'にこにこくま', templateId: 'bearSmile', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', size: 138 },
+  { id: 'rice_face_cat_smile', type: 'template', name: 'にこにこねこ', templateId: 'catSmile', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', size: 138 },
 ];
 const decorItems = [
-  { id: 'nori_eye_round', type: 'decor', name: 'のりのめ', css: 'free-css-nori-eye', size: 22, layerBase: 50 },
-  { id: 'nori_nose_bear', type: 'decor', name: 'のりのはな', css: 'free-css-nori-nose', size: 28, layerBase: 50 },
-  { id: 'nori_mouth_smile', type: 'decor', name: 'にっこりくち', css: 'free-css-nori-mouth', size: 42, layerBase: 50 },
-  { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', css: 'free-css-ketchup-cheek', size: 30, layerBase: 50 },
-  { id: 'pick_star', type: 'pick', name: 'ほしピック', css: 'free-css-pick', size: 42, layerBase: 60 },
+  { id: 'nori_eye_round', type: 'decor', name: 'のりのめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 22, layerBase: 50 },
+  { id: 'nori_nose_bear', type: 'decor', name: 'のりのはな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 32, layerBase: 50 },
+  { id: 'nori_mouth_smile', type: 'decor', name: 'にっこりくち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 44, layerBase: 50 },
+  { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 31, layerBase: 50 },
+  { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 46, layerBase: 60 },
+  { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 48, layerBase: 60 },
+  { id: 'pick_flag', type: 'pick', name: 'はたピック', image: FREE_ASSET + 'pick_flag.png', css: 'free-css-pick', size: 48, layerBase: 60 },
+  { id: 'pick_heart', type: 'pick', name: 'ハートピック', image: FREE_ASSET + 'pick_heart.png', css: 'free-css-pick', size: 48, layerBase: 60 },
 ];
 const riceFaceTemplates = {
   bearSmile: {
@@ -1999,6 +2038,18 @@ const riceFaceTemplates = {
       { id: 'nori_mouth_smile', x: 0, y: 34, size: 42 },
       { id: 'ketchup_cheek', x: -54, y: 18, size: 30 },
       { id: 'ketchup_cheek', x: 54, y: 18, size: 30 },
+    ],
+  },
+  catSmile: {
+    name: 'にこにこねこ',
+    baseRice: 'rice_base_cat',
+    parts: [
+      { id: 'nori_eye_round', x: -34, y: -18, size: 20 },
+      { id: 'nori_eye_round', x: 34, y: -18, size: 20 },
+      { id: 'nori_nose_bear', x: 0, y: 10, size: 24 },
+      { id: 'nori_mouth_smile', x: 0, y: 32, size: 40 },
+      { id: 'ketchup_cheek', x: -54, y: 18, size: 28 },
+      { id: 'ketchup_cheek', x: 54, y: 18, size: 28 },
     ],
   },
 };
@@ -2674,7 +2725,7 @@ function addFreeLayoutItem(def, opts = {}) {
     id: def.id,
     type: def.type,
     name: def.name || '',
-    img: def.img || '',
+    img: def.img || def.image || '',
     emoji: def.emoji || '',
     css: def.css || '',
     sk: def.sk || '',
@@ -2800,8 +2851,12 @@ function renderFreeLayoutInto(host, opts = {}) {
   const items = Array.isArray(opts.items) ? opts.items : placedItems;
   host.innerHTML = '';
   host.classList.add('free-layout-stage');
-  const shape = document.createElement('div');
-  shape.className = 'free-bento-shape ' + box.shape;
+  const shape = document.createElement(box.image ? 'img' : 'div');
+  shape.className = 'free-bento-shape ' + box.shape + (box.image ? ' has-image' : '');
+  if (box.image) {
+    shape.src = box.image;
+    shape.alt = box.name || '';
+  }
   shape.style.left = toPctX(box.bounds.x);
   shape.style.top = toPctY(box.bounds.y);
   shape.style.width = toPctX(box.bounds.w);
@@ -2822,7 +2877,12 @@ function renderFreeLayoutStage() {
 function createPaletteVisual(def) {
   const wrap = document.createElement('div');
   wrap.className = 'free-palette-visual';
-  if (def.shape) {
+  if (def.img || def.image) {
+    const img = document.createElement('img');
+    img.src = def.img || def.image;
+    img.alt = def.name || '';
+    wrap.appendChild(img);
+  } else if (def.shape) {
     const icon = document.createElement('div');
     icon.style.width = '48px';
     icon.style.height = '36px';
@@ -2831,10 +2891,6 @@ function createPaletteVisual(def) {
     icon.style.boxShadow = '0 2px 0 rgba(255,255,255,0.65) inset';
     icon.style.borderRadius = def.shape === 'box_round' ? '45%' : def.shape === 'box_bear' ? '14px 14px 18px 18px' : '10px';
     wrap.appendChild(icon);
-  } else if (def.img) {
-    const img = document.createElement('img');
-    img.src = def.img; img.alt = def.name || '';
-    wrap.appendChild(img);
   } else {
     const cssItem = document.createElement('div');
     cssItem.className = 'free-css-item ' + (def.css || '');
