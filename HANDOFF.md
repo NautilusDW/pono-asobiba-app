@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-21 - [batch:96-bento-free-layout] Codex: `D:\ポノのおへや\Bento\bento_redesign` の2つの指示mdを受領。HANDOFF / git log / `bento/index.html` 周辺 / `assets/images/bento` を確認し、自由配置方式の既存成果物なしと判断。固定マス方式を残しつつ、`freeLayoutMode` + `placedItems` ベースの自由配置土台を追加する。 (by Codex)
+- 2026-05-21 - [batch:96-bento-free-layout] Codex: `bento/index.html` に `freeLayoutMode=true` の自由配置モードを追加。弁当箱選択、カップ/仕切り、ごはん、既存おかず、飾りタブ、`placedItems`、再ドラッグ、safeSpot補助、カップ吸着、くま顔テンプレ、自由配置の完成表示/お気に入り保存、三色判定移行を実装。`sw.js` は v506。Node 構文チェック + Playwright で配置→ドラッグ→完成表示を確認済。 (by Codex)
 - 2026-05-20 - [batch:95-kitchen-prep-minigames] Codex: `bento/kitchen.html` に下ごしらえ mini-game (`prep`) を追加中。対象は卵割り / ひき肉こね / エビ・コロッケのパン粉 / 鶏肉の粉まぶし。ローカル Playwright で egg / mince_patty / shrimp_breaded / chicken_marinated の prep flow を確認し、`sw.js` は v476 へバンプ。commit/push 前レビュー待ち。 (by Codex)
 - 2026-05-19 - [batch:82-kitchen-cook-timing-rating] Codex: `bento/kitchen.html` に焼く/揚げる用の青ゾーン timing gauge、星評価 (`★★★` / `★★☆`) 、完成後に皿へ移して画面中央へ出す served 表示を実装。grill は 2 回、fry は 1 回のタイミングを記録し、青以外でも失敗にせず星 2 評価へ落とす。クロスレビューで blocker なし、ローカル Playwright で egg grill 青 2 回 = `★★★` / shrimp fry 赤 = `★★☆` を確認済。`sw.js` は v468。commit/push 待ち。 (by Codex)
 - 2026-05-19 - [batch:83-kitchen-cook-timing-linear-gauge] Codex: user 指摘「ゲージが戻るとただのタイミングになる。早すぎる/焦げそうを表現し、赤に近づくほど危険感が欲しい」を受領。調理ゲージを一方向の火の通りバーへ変更中。左=まだ、中央=いま、右=いそいで/赤警告で、危険バッジが進行に応じて大きくなる設計。`sw.js` は v469 予定。 (by Codex)

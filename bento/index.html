@@ -304,6 +304,316 @@ html, body {
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 
+/* ===== 自由配置モード ===== */
+.bento-box.free-layout-shell {
+  padding: 5px;
+}
+.bento-inner.free-layout-inner {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,0.72) 0 12%, transparent 13%),
+    radial-gradient(circle at 84% 16%, rgba(255,238,191,0.58) 0 10%, transparent 11%),
+    repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 14px 14px;
+}
+.free-layout-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  touch-action: none;
+}
+.free-bento-shape {
+  position: absolute;
+  border: 5px solid #C98953;
+  background: linear-gradient(180deg, #FFE8BD 0%, #FFD38F 100%);
+  box-shadow:
+    0 10px 20px rgba(97, 51, 15, 0.18),
+    0 2px 0 rgba(255,255,255,0.65) inset,
+    0 -5px 0 rgba(151, 82, 34, 0.12) inset;
+}
+.free-bento-shape::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 24%, rgba(255,255,255,0.55) 0 7%, transparent 8%),
+    repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 12px 12px;
+  border: 2px dashed rgba(139,69,19,0.18);
+}
+.free-bento-shape.box_square {
+  border-radius: 18px;
+}
+.free-bento-shape.box_round {
+  border-radius: 42% / 48%;
+}
+.free-bento-shape.box_bear {
+  border-radius: 32px 32px 42px 42px;
+}
+.free-bento-shape.box_bear::before {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: -13%;
+  height: 32%;
+  background:
+    radial-gradient(circle at 0% 70%, #FFD38F 0 18%, #C98953 19% 24%, transparent 25%),
+    radial-gradient(circle at 100% 70%, #FFD38F 0 18%, #C98953 19% 24%, transparent 25%);
+}
+.free-layout-items {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.free-placed-item {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--scale, 1));
+  transform-origin: center center;
+  cursor: grab;
+  touch-action: none;
+  filter: drop-shadow(0 6px 8px rgba(68, 42, 16, 0.18));
+  transition: filter 0.16s ease;
+}
+.free-placed-item:active { cursor: grabbing; }
+.free-placed-item.selected {
+  filter:
+    drop-shadow(0 0 0 #FFFFFF)
+    drop-shadow(0 0 8px rgba(242,145,90,0.86))
+    drop-shadow(0 8px 10px rgba(68,42,16,0.2));
+}
+.free-placed-item.pop {
+  animation: freePlacePop 0.32s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes freePlacePop {
+  0%   { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(0.55); }
+  70%  { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(calc(var(--scale, 1) * 1.12)); }
+  100% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--scale, 1)); }
+}
+.free-placed-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.free-css-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.free-css-cup {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 28%, #FFFFFF 0 6%, transparent 7%),
+    radial-gradient(circle at 64% 34%, #FFFFFF 0 5%, transparent 6%),
+    radial-gradient(circle at 42% 68%, #FFFFFF 0 5%, transparent 6%),
+    linear-gradient(180deg, #DFF5FF, #91D5F6);
+  border: 5px solid #67B8E6;
+  box-shadow: 0 4px 0 rgba(255,255,255,0.55) inset, 0 -8px 0 rgba(37,99,145,0.12) inset;
+}
+.free-css-divider {
+  border-radius: 45% 55% 48% 52%;
+  background:
+    radial-gradient(circle at 24% 40%, rgba(255,255,255,0.45) 0 10%, transparent 11%),
+    linear-gradient(135deg, #7DD66E, #2E9F52);
+  border: 2px solid rgba(22,101,52,0.25);
+}
+.free-css-divider::before,
+.free-css-divider::after {
+  content: '';
+  position: absolute;
+  inset: 18% 16%;
+  border-top: 3px solid rgba(255,255,255,0.42);
+  border-radius: 50%;
+  transform: rotate(-18deg);
+}
+.free-css-rice-round,
+.free-css-rice-bear {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255,255,255,0.95) 0 12%, transparent 13%),
+    radial-gradient(circle at 70% 68%, rgba(235,235,220,0.55) 0 10%, transparent 11%),
+    #FFFDF4;
+  border: 2px solid rgba(213,202,179,0.85);
+  box-shadow: 0 7px 10px rgba(125,96,54,0.18);
+}
+.free-css-rice-bear::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: -12%;
+  height: 34%;
+  background:
+    radial-gradient(circle at 8% 65%, #FFFDF4 0 16%, rgba(213,202,179,0.85) 17% 19%, transparent 20%),
+    radial-gradient(circle at 92% 65%, #FFFDF4 0 16%, rgba(213,202,179,0.85) 17% 19%, transparent 20%);
+}
+.free-css-nori-eye,
+.free-css-nori-nose {
+  border-radius: 50%;
+  background: #3E3023;
+}
+.free-css-nori-nose {
+  border-radius: 48% 48% 56% 56%;
+}
+.free-css-nori-mouth {
+  border-radius: 0 0 999px 999px;
+  border-bottom: 6px solid #3E3023;
+}
+.free-css-ketchup-cheek {
+  border-radius: 50%;
+  background: radial-gradient(circle, #FF8A8A 0 58%, rgba(255,138,138,0.25) 59% 100%);
+}
+.free-css-pick {
+  border-radius: 50% 50% 46% 46%;
+  background: linear-gradient(180deg, #FFDB63, #FF9E58);
+  border: 2px solid rgba(184,95,22,0.22);
+}
+.free-css-pick::after {
+  content: '';
+  position: absolute;
+  left: 48%;
+  top: 68%;
+  width: 8%;
+  height: 48%;
+  background: #9A6A42;
+  border-radius: 999px;
+}
+.food-tray.free-layout-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+.free-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  flex-shrink: 0;
+}
+.free-tab {
+  border: 2px solid #F8C36B;
+  border-radius: 10px;
+  background: #FFF8E6;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.56rem;
+  font-weight: 900;
+  min-height: 31px;
+  padding: 3px 2px;
+  cursor: pointer;
+}
+.free-tab.active {
+  background: #FFE1A8;
+  border-color: var(--primary);
+  color: #8B4513;
+}
+.free-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.free-action-row button,
+.free-complete-btn {
+  border: none;
+  border-radius: 11px;
+  background: #FFFFFF;
+  color: var(--text);
+  box-shadow: 0 2px 6px var(--shadow);
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 900;
+  min-height: 32px;
+  cursor: pointer;
+}
+.free-complete-btn {
+  background: linear-gradient(180deg, #FFB86A, #F2915A);
+  color: #5D3000;
+  box-shadow: 0 3px 0 #B87200;
+}
+.free-item-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
+.free-palette-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 74px;
+  padding: 5px 3px;
+  border: 2.5px solid #FDE68A;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px var(--shadow);
+  font-family: inherit;
+  cursor: grab;
+}
+.free-palette-item:active { transform: scale(0.94); }
+.free-palette-item.selected {
+  border-color: var(--primary);
+  background: #FFF0D5;
+}
+.free-palette-visual {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.free-palette-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.free-palette-name {
+  max-width: 100%;
+  color: var(--text-light);
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.complete-bento.free-complete-bento,
+.fav-mini-bento.free-mini-bento {
+  aspect-ratio: 760 / 460;
+  padding: 4px;
+}
+.complete-bento.free-complete-bento {
+  width: min(92%, 520px);
+}
+.complete-bento.free-complete-bento .free-layout-stage,
+.fav-mini-bento.free-mini-bento .free-layout-stage {
+  height: 100%;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,0.72) 0 12%, transparent 13%),
+    repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 10px 10px;
+}
+.complete-bento.free-complete-bento .free-placed-item,
+.fav-mini-bento.free-mini-bento .free-placed-item {
+  cursor: default;
+  pointer-events: none;
+}
+
 @keyframes popIn {
   from { transform: scale(0); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
@@ -1072,6 +1382,12 @@ html, body {
   border-radius: 8px;
   padding: 3px;
 }
+.fav-item .fav-mini-bento.free-mini-bento {
+  aspect-ratio: 760 / 460;
+}
+.fav-item .fav-mini-bento.free-mini-bento .free-layout-stage {
+  height: 100%;
+}
 .fav-item .fav-mini-bento .cb-inner {
   background: repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 8px 8px;
   border-radius: 6px;
@@ -1604,6 +1920,89 @@ let inChallengeMode = false;
 let currentChallenge = null;
 let challengeCorrect = 0;
 
+// ===== Free layout mode =====
+const freeLayoutMode = true;
+const FREE_LAYOUT_W = 760;
+const FREE_LAYOUT_H = 460;
+const FREE_TABS = [
+  { id: 'box', label: 'おべんとうばこ' },
+  { id: 'accessory', label: 'カップ・しきり' },
+  { id: 'rice', label: 'ごはん' },
+  { id: 'food', label: 'おかず' },
+  { id: 'decor', label: 'かざり' },
+];
+const bentoBoxes = [
+  {
+    id: 'box_square',
+    name: 'しかくい おべんとうばこ',
+    shape: 'box_square',
+    bounds: { x: 76, y: 54, w: 608, h: 354 },
+    safeSpots: [
+      { x: 214, y: 166 },
+      { x: 382, y: 156 },
+      { x: 540, y: 176 },
+      { x: 270, y: 292 },
+      { x: 452, y: 302 },
+    ],
+  },
+  {
+    id: 'box_round',
+    name: 'まるい おべんとうばこ',
+    shape: 'box_round',
+    bounds: { x: 92, y: 62, w: 576, h: 338 },
+    safeSpots: [
+      { x: 248, y: 168 },
+      { x: 382, y: 160 },
+      { x: 514, y: 188 },
+      { x: 298, y: 292 },
+      { x: 448, y: 292 },
+    ],
+  },
+  {
+    id: 'box_bear',
+    name: 'くまさん べんとうばこ',
+    shape: 'box_bear',
+    bounds: { x: 76, y: 68, w: 608, h: 340 },
+    safeSpots: [
+      { x: 220, y: 166 },
+      { x: 382, y: 162 },
+      { x: 540, y: 184 },
+      { x: 286, y: 292 },
+      { x: 466, y: 294 },
+    ],
+  },
+];
+const bentoAccessories = [
+  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', css: 'free-css-cup', snapTarget: true, radius: 76, size: 98, layerBase: 10 },
+  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', css: 'free-css-divider', size: 112, layerBase: 12, rotation: -10 },
+];
+const riceBases = [
+  { id: 'rice_base_round', type: 'rice', name: 'まるごはん', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
+  { id: 'rice_base_bear', type: 'rice', name: 'くまごはん', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
+  { id: 'rice_face_bear_smile', type: 'template', name: 'にこにこくま', templateId: 'bearSmile', css: 'free-css-rice-bear', size: 138 },
+];
+const decorItems = [
+  { id: 'nori_eye_round', type: 'decor', name: 'のりのめ', css: 'free-css-nori-eye', size: 22, layerBase: 50 },
+  { id: 'nori_nose_bear', type: 'decor', name: 'のりのはな', css: 'free-css-nori-nose', size: 28, layerBase: 50 },
+  { id: 'nori_mouth_smile', type: 'decor', name: 'にっこりくち', css: 'free-css-nori-mouth', size: 42, layerBase: 50 },
+  { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', css: 'free-css-ketchup-cheek', size: 30, layerBase: 50 },
+  { id: 'pick_star', type: 'pick', name: 'ほしピック', css: 'free-css-pick', size: 42, layerBase: 60 },
+];
+const riceFaceTemplates = {
+  bearSmile: {
+    name: 'にこにこくま',
+    baseRice: 'rice_base_bear',
+    parts: [
+      { id: 'nori_eye_round', x: -34, y: -20, size: 20 },
+      { id: 'nori_eye_round', x: 34, y: -20, size: 20 },
+      { id: 'nori_nose_bear', x: 0, y: 8, size: 28 },
+      { id: 'nori_mouth_smile', x: 0, y: 34, size: 42 },
+      { id: 'ketchup_cheek', x: -54, y: 18, size: 30 },
+      { id: 'ketchup_cheek', x: 54, y: 18, size: 30 },
+    ],
+  },
+};
+
 // ===== State =====
 let stageIdx = 0, stepIdx = 0, okazuSlots = [], okazuFillCount = 0, pickedInStep = 0;
 let usedIds = new Set();
@@ -1611,6 +2010,12 @@ let bentoSkColors = []; // 入れた食材の三色を記録
 let bentoFoodNames = []; // 入れた食材の名前（豆知識用）
 let bentoSelected = []; // 入れた食材の完全記録 [{img, name, sk}] rice + okazu4
 let favSaved = false;   // この完成画面で既に保存したか
+let placedItems = [];
+let selectedBentoBoxId = 'box_square';
+let freeLayoutTab = 'box';
+let freeLayerSeq = 1;
+let freeSelectedItemUid = null;
+let freeDragState = null;
 
 // ===== NPC 依頼者モード state =====
 // セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
@@ -2072,10 +2477,520 @@ function playTada() {
 function setSpeech(t) { document.getElementById('speech').textContent = t; }
 function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.classList.add('happy');setTimeout(()=>i.classList.remove('happy'),600);} }
 
+// ===== Free layout helpers =====
+function getSelectedBentoBox() {
+  return bentoBoxes.find(b => b.id === selectedBentoBoxId) || bentoBoxes[0];
+}
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+function toPctX(x) { return (x / FREE_LAYOUT_W * 100) + '%'; }
+function toPctY(y) { return (y / FREE_LAYOUT_H * 100) + '%'; }
+function toPctSize(s) { return (s / FREE_LAYOUT_W * 100) + '%'; }
+function dist(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+function getFreeFoodCatalog() {
+  return [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].map(f => {
+    const base = (f.img || f.name || 'food').split('/').pop().replace(/\.[^.]+$/, '');
+    return {
+      ...f,
+      id: 'food_' + base,
+      type: 'food',
+      size: f.cat === 'fruit' ? 66 : 74,
+      layerBase: 30,
+      rotation: Math.round((Math.random() * 8) - 4),
+    };
+  });
+}
+function getFreePaletteItems(tabId) {
+  if (tabId === 'accessory') return bentoAccessories;
+  if (tabId === 'rice') return riceBases;
+  if (tabId === 'food') return getFreeFoodCatalog();
+  if (tabId === 'decor') return decorItems;
+  return [];
+}
+function getNextFreeSpot(type) {
+  const box = getSelectedBentoBox();
+  const spots = box.safeSpots || [];
+  const used = placedItems.filter(i => i.type !== 'decor').length;
+  const spot = spots[used % Math.max(1, spots.length)] || {
+    x: box.bounds.x + box.bounds.w / 2,
+    y: box.bounds.y + box.bounds.h / 2,
+  };
+  if (type === 'decor') return { x: spot.x + 18, y: spot.y + 18 };
+  return { x: spot.x, y: spot.y };
+}
+function clampPointToBento(x, y, item) {
+  const box = getSelectedBentoBox();
+  const b = box.bounds;
+  const size = (item && item.size ? item.size : 70) * (item && item.scale ? item.scale : 1);
+  const margin = Math.max(22, size * 0.28);
+  return {
+    x: clamp(x, b.x + margin, b.x + b.w - margin),
+    y: clamp(y, b.y + margin, b.y + b.h - margin),
+  };
+}
+function snapPointForItem(item, x, y) {
+  let point = clampPointToBento(x, y, item);
+  if (item.type === 'food') {
+    const cups = placedItems.filter(i => i.uid !== item.uid && i.snapTarget);
+    let nearestCup = null;
+    let nearestCupDist = Infinity;
+    cups.forEach(c => {
+      const d = dist(point, c);
+      if (d < nearestCupDist) { nearestCup = c; nearestCupDist = d; }
+    });
+    if (nearestCup && nearestCupDist <= (nearestCup.radius || 70)) {
+      item.parentCupId = nearestCup.uid;
+      return clampPointToBento(nearestCup.x, nearestCup.y, item);
+    }
+    delete item.parentCupId;
+  }
+
+  if (item.type !== 'decor' && item.type !== 'pick') {
+    const box = getSelectedBentoBox();
+    let nearestSpot = null;
+    let nearestDist = Infinity;
+    (box.safeSpots || []).forEach(s => {
+      const d = dist(point, s);
+      if (d < nearestDist) { nearestSpot = s; nearestDist = d; }
+    });
+    if (nearestSpot && nearestDist < 92) {
+      point = {
+        x: point.x * 0.62 + nearestSpot.x * 0.38,
+        y: point.y * 0.62 + nearestSpot.y * 0.38,
+      };
+    }
+  }
+  return clampPointToBento(point.x, point.y, item);
+}
+function avoidFreeOverlap(item) {
+  if (!item || item.type === 'decor') return;
+  for (let i = 0; i < placedItems.length; i++) {
+    const other = placedItems[i];
+    if (other.uid === item.uid || other.type === 'decor') continue;
+    const minD = Math.max(38, ((item.size || 70) + (other.size || 70)) * 0.28);
+    if (dist(item, other) < minD) {
+      const p = clampPointToBento(item.x + 26, item.y + 18, item);
+      item.x = p.x; item.y = p.y;
+      break;
+    }
+  }
+}
+function setFreeItemPosition(uid, x, y) {
+  const item = placedItems.find(i => i.uid === uid);
+  if (!item) return;
+  const p = clampPointToBento(x, y, item);
+  const dx = p.x - item.x;
+  const dy = p.y - item.y;
+  item.x = p.x;
+  item.y = p.y;
+  if (item.type === 'rice') {
+    placedItems.forEach(child => {
+      if (child.parentId === item.uid) {
+        child.x += dx;
+        child.y += dy;
+      }
+    });
+  }
+}
+function finalizeFreeItemPosition(uid) {
+  const item = placedItems.find(i => i.uid === uid);
+  if (!item) return;
+  const p = snapPointForItem(item, item.x, item.y);
+  setFreeItemPosition(uid, p.x, p.y);
+  const afterSnap = { x: item.x, y: item.y };
+  avoidFreeOverlap(item);
+  if (item.type === 'rice') {
+    const dx = item.x - afterSnap.x;
+    const dy = item.y - afterSnap.y;
+    if (dx || dy) {
+      placedItems.forEach(child => {
+        if (child.parentId === item.uid) {
+          child.x += dx;
+          child.y += dy;
+        }
+      });
+    }
+  }
+  item.pop = true;
+  setTimeout(() => {
+    item.pop = false;
+    renderFreeLayoutStage();
+  }, 360);
+}
+function bringFreeItemForward(uid) {
+  const item = placedItems.find(i => i.uid === uid);
+  if (!item) return;
+  item.layer = (item.layerBase || 20) + (++freeLayerSeq);
+  freeSelectedItemUid = uid;
+}
+function eventToFreePoint(e) {
+  const stage = document.getElementById('free-layout-stage');
+  if (!stage) return null;
+  const r = stage.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
+  return {
+    x: clamp((e.clientX - r.left) / r.width * FREE_LAYOUT_W, 0, FREE_LAYOUT_W),
+    y: clamp((e.clientY - r.top) / r.height * FREE_LAYOUT_H, 0, FREE_LAYOUT_H),
+  };
+}
+function beginFreeItemDrag(e, uid) {
+  if (e && e.cancelable) e.preventDefault();
+  bringFreeItemForward(uid);
+  freeDragState = { uid };
+  const p = e ? eventToFreePoint(e) : null;
+  if (p) setFreeItemPosition(uid, p.x, p.y);
+  renderFreeLayoutStage();
+  window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
+  window.addEventListener('pointerup', onFreeItemDragEnd, { once: true });
+}
+function onFreeItemDragMove(e) {
+  if (!freeDragState) return;
+  if (e.cancelable) e.preventDefault();
+  const p = eventToFreePoint(e);
+  if (!p) return;
+  setFreeItemPosition(freeDragState.uid, p.x, p.y);
+  renderFreeLayoutStage();
+}
+function onFreeItemDragEnd(e) {
+  if (!freeDragState) return;
+  if (e && e.cancelable) e.preventDefault();
+  const uid = freeDragState.uid;
+  freeDragState = null;
+  window.removeEventListener('pointermove', onFreeItemDragMove);
+  finalizeFreeItemPosition(uid);
+  renderFreeLayoutStage();
+  const el = document.querySelector(`[data-free-uid="${uid}"]`);
+  spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
+  playPop();
+}
+function addFreeLayoutItem(def, opts = {}) {
+  const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot(def.type);
+  const item = {
+    uid: 'free_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+    id: def.id,
+    type: def.type,
+    name: def.name || '',
+    img: def.img || '',
+    emoji: def.emoji || '',
+    css: def.css || '',
+    sk: def.sk || '',
+    x: spot.x,
+    y: spot.y,
+    scale: opts.scale || def.scale || 1,
+    rotation: opts.rotation != null ? opts.rotation : (def.rotation != null ? def.rotation : (def.type === 'food' ? Math.round(Math.random() * 10 - 5) : 0)),
+    layerBase: def.layerBase || 20,
+    layer: (def.layerBase || 20) + (++freeLayerSeq),
+    size: opts.size || def.size || 72,
+    snapTarget: !!def.snapTarget,
+    radius: def.radius || 0,
+    parentId: opts.parentId || null,
+    parentCupId: opts.parentCupId || null,
+  };
+  const p = snapPointForItem(item, item.x, item.y);
+  item.x = p.x; item.y = p.y;
+  placedItems.push(item);
+  freeSelectedItemUid = item.uid;
+  avoidFreeOverlap(item);
+  if (!opts.skipRender) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }
+  return item;
+}
+function removeFreeItem(uid) {
+  if (!uid) return;
+  const item = placedItems.find(i => i.uid === uid);
+  if (!item) return;
+  const removeIds = new Set([uid]);
+  if (item.type === 'rice') {
+    placedItems.forEach(i => { if (i.parentId === uid) removeIds.add(i.uid); });
+  }
+  placedItems = placedItems.filter(i => !removeIds.has(i.uid));
+  if (freeSelectedItemUid && removeIds.has(freeSelectedItemUid)) freeSelectedItemUid = null;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function undoFreeItem() {
+  if (!placedItems.length) return;
+  const latest = [...placedItems].sort((a, b) => b.layer - a.layer)[0];
+  removeFreeItem(latest.uid);
+}
+function addRiceFaceTemplate(templateId) {
+  const tpl = riceFaceTemplates[templateId];
+  if (!tpl) return;
+  const base = riceBases.find(r => r.id === tpl.baseRice) || riceBases[0];
+  const spot = getNextFreeSpot('rice');
+  const rice = addFreeLayoutItem(base, { x: spot.x, y: spot.y, skipRender: true });
+  tpl.parts.forEach(part => {
+    const def = decorItems.find(d => d.id === part.id);
+    if (!def) return;
+    addFreeLayoutItem(def, {
+      x: rice.x + part.x,
+      y: rice.y + part.y,
+      size: part.size || def.size,
+      parentId: rice.uid,
+      skipRender: true,
+    });
+  });
+  freeSelectedItemUid = rice.uid;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+}
+function selectFreeBentoBox(id) {
+  selectedBentoBoxId = id;
+  const box = getSelectedBentoBox();
+  placedItems.forEach(item => {
+    const old = { x: item.x, y: item.y };
+    const p = clampPointToBento(item.x, item.y, item);
+    item.x = p.x; item.y = p.y;
+    if (item.type === 'rice') {
+      const dx = item.x - old.x;
+      const dy = item.y - old.y;
+      placedItems.forEach(child => {
+        if (child.parentId === item.uid) {
+          child.x += dx;
+          child.y += dy;
+        }
+      });
+    }
+  });
+  setSpeech(box.name + 'に しよう！');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function createFreeVisual(item) {
+  if (item.img) {
+    const img = document.createElement('img');
+    img.src = item.img;
+    img.alt = item.name || '';
+    return img;
+  }
+  const d = document.createElement('div');
+  d.className = 'free-css-item ' + (item.css || '');
+  if (item.emoji) d.textContent = item.emoji;
+  return d;
+}
+function createFreePlacedElement(item, interactive) {
+  const el = document.createElement('div');
+  el.className = 'free-placed-item' + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '');
+  el.dataset.freeUid = item.uid;
+  el.style.left = toPctX(item.x);
+  el.style.top = toPctY(item.y);
+  el.style.width = toPctSize(item.size || 72);
+  el.style.height = toPctY(item.size || 72);
+  el.style.zIndex = item.layer || 1;
+  el.style.setProperty('--rot', (item.rotation || 0) + 'deg');
+  el.style.setProperty('--scale', item.scale || 1);
+  el.appendChild(createFreeVisual(item));
+  if (interactive) {
+    el.addEventListener('pointerdown', ev => {
+      ev.stopPropagation();
+      beginFreeItemDrag(ev, item.uid);
+    });
+  }
+  return el;
+}
+function renderFreeLayoutInto(host, opts = {}) {
+  const box = bentoBoxes.find(b => b.id === (opts.boxId || selectedBentoBoxId)) || bentoBoxes[0];
+  const items = Array.isArray(opts.items) ? opts.items : placedItems;
+  host.innerHTML = '';
+  host.classList.add('free-layout-stage');
+  const shape = document.createElement('div');
+  shape.className = 'free-bento-shape ' + box.shape;
+  shape.style.left = toPctX(box.bounds.x);
+  shape.style.top = toPctY(box.bounds.y);
+  shape.style.width = toPctX(box.bounds.w);
+  shape.style.height = toPctY(box.bounds.h);
+  host.appendChild(shape);
+  const layer = document.createElement('div');
+  layer.className = 'free-layout-items';
+  items.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
+    layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
+  });
+  host.appendChild(layer);
+}
+function renderFreeLayoutStage() {
+  const stage = document.getElementById('free-layout-stage');
+  if (!stage) return;
+  renderFreeLayoutInto(stage, { interactive: true });
+}
+function createPaletteVisual(def) {
+  const wrap = document.createElement('div');
+  wrap.className = 'free-palette-visual';
+  if (def.shape) {
+    const icon = document.createElement('div');
+    icon.style.width = '48px';
+    icon.style.height = '36px';
+    icon.style.border = '4px solid #C98953';
+    icon.style.background = 'linear-gradient(180deg,#FFE8BD,#FFD38F)';
+    icon.style.boxShadow = '0 2px 0 rgba(255,255,255,0.65) inset';
+    icon.style.borderRadius = def.shape === 'box_round' ? '45%' : def.shape === 'box_bear' ? '14px 14px 18px 18px' : '10px';
+    wrap.appendChild(icon);
+  } else if (def.img) {
+    const img = document.createElement('img');
+    img.src = def.img; img.alt = def.name || '';
+    wrap.appendChild(img);
+  } else {
+    const cssItem = document.createElement('div');
+    cssItem.className = 'free-css-item ' + (def.css || '');
+    wrap.appendChild(cssItem);
+  }
+  return wrap;
+}
+function makeFreePaletteButton(def) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'free-palette-item';
+  if ((freeLayoutTab === 'box' && def.id === selectedBentoBoxId) || def.uid === freeSelectedItemUid) {
+    btn.classList.add('selected');
+  }
+  btn.appendChild(createPaletteVisual(def));
+  const name = document.createElement('span');
+  name.className = 'free-palette-name';
+  name.textContent = def.name || '';
+  btn.appendChild(name);
+  if (freeLayoutTab === 'box') {
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      selectFreeBentoBox(def.id);
+    });
+  } else if (def.type === 'template') {
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      addRiceFaceTemplate(def.templateId);
+    });
+  } else {
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const item = addFreeLayoutItem(def);
+      beginFreeItemDrag(e, item.uid);
+    });
+  }
+  return btn;
+}
+function renderFreeLayoutControls() {
+  const tray = document.getElementById('food-tray');
+  if (!tray) return;
+  tray.className = 'food-tray free-layout-controls';
+  tray.innerHTML = '';
+
+  const tabs = document.createElement('div');
+  tabs.className = 'free-tabs';
+  FREE_TABS.forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'free-tab' + (t.id === freeLayoutTab ? ' active' : '');
+    b.textContent = t.label;
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      freeLayoutTab = t.id;
+      renderFreeLayoutControls();
+    });
+    tabs.appendChild(b);
+  });
+  tray.appendChild(tabs);
+
+  const actions = document.createElement('div');
+  actions.className = 'free-action-row';
+  const undo = document.createElement('button');
+  undo.type = 'button';
+  undo.textContent = 'ひとつもどす';
+  undo.addEventListener('pointerdown', e => { e.preventDefault(); undoFreeItem(); });
+  actions.appendChild(undo);
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.textContent = 'えらんだのをけす';
+  del.addEventListener('pointerdown', e => { e.preventDefault(); removeFreeItem(freeSelectedItemUid); });
+  actions.appendChild(del);
+  tray.appendChild(actions);
+
+  const list = document.createElement('div');
+  list.className = 'free-item-list';
+  const items = freeLayoutTab === 'box' ? bentoBoxes : getFreePaletteItems(freeLayoutTab);
+  items.forEach(def => list.appendChild(makeFreePaletteButton(def)));
+  tray.appendChild(list);
+
+  const complete = document.createElement('button');
+  complete.type = 'button';
+  complete.className = 'free-complete-btn';
+  complete.textContent = 'できあがり！';
+  complete.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const hasMain = placedItems.some(i => i.type === 'food' || i.type === 'rice');
+    if (!hasMain) {
+      showToast('ごはんや おかずを おいてみよう！');
+      return;
+    }
+    stageComplete();
+  });
+  tray.appendChild(complete);
+}
+function loadFreeLayoutStage() {
+  stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; okazuPicked = 0;
+  usedIds.clear(); bentoSkColors = []; bentoFoodNames = []; bentoSelected = []; favSaved = false;
+  placedItems = [];
+  freeLayerSeq = 1;
+  freeSelectedItemUid = null;
+  freeLayoutTab = 'box';
+  const box = document.querySelector('.bento-box');
+  if (box) box.classList.add('free-layout-shell');
+  const bentoInner = document.getElementById('bento-inner');
+  bentoInner.className = 'bento-inner free-layout-inner';
+  bentoInner.innerHTML = '<div class="free-layout-stage" id="free-layout-stage"></div>';
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  const playerName = getPlayerName();
+  setSpeech(playerName ? playerName + 'ちゃん、すきに ならべてね！' : 'すきに ならべてね！');
+}
+function getFreeLayoutCompletionData() {
+  const foodItems = placedItems.filter(i => i.type === 'food' || i.type === 'rice');
+  const skColors = foodItems.map(i => i.sk).filter(Boolean);
+  const foods = foodItems.map(i => ({ img: i.img || '', name: i.name || '', sk: i.sk || '', type: i.type, id: i.id }));
+  return {
+    foods,
+    skColors,
+    foodNames: foodItems.map(i => i.name).filter(Boolean),
+    okazuNames: foodItems.filter(i => i.type === 'food').map(i => i.name).filter(Boolean),
+    balance: {
+      r: skColors.filter(c => c === 'r').length,
+      y: skColors.filter(c => c === 'y').length,
+      g: skColors.filter(c => c === 'g').length,
+    },
+  };
+}
+function syncFreeLayoutSelectionState() {
+  const data = getFreeLayoutCompletionData();
+  bentoSkColors = data.skColors.slice();
+  bentoFoodNames = data.foodNames.slice();
+  bentoSelected = data.foods.map(f => ({ img: f.img, name: f.name, sk: f.sk }));
+  return data;
+}
+function renderFreeCompleteBento(host, items, boxId) {
+  host.className = 'complete-bento free-complete-bento';
+  host.innerHTML = '';
+  const stage = document.createElement('div');
+  stage.className = 'free-layout-stage';
+  renderFreeLayoutInto(stage, {
+    items: items.map(i => ({ ...i })),
+    boxId: boxId || selectedBentoBoxId,
+    interactive: false,
+  });
+  host.appendChild(stage);
+}
+
 // ===== Game =====
 function loadStage() {
   stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; okazuPicked = 0; usedIds.clear(); bentoSkColors = ['y'];
   bentoFoodNames = []; bentoSelected = []; favSaved = false;
+  if (freeLayoutMode) {
+    loadFreeLayoutStage();
+    return;
+  }
 
   // Rebuild bento-inner with vertical divider between rice and okazu
   const bentoInner = document.getElementById('bento-inner');
@@ -2303,6 +3218,19 @@ function flyFood(from, to, src, cb) {
 function showToast(m) { const t = document.getElementById('wrong-toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); }
 
 function stageComplete() {
+  const completionData = freeLayoutMode
+    ? syncFreeLayoutSelectionState()
+    : {
+        foods: bentoSelected.slice(0, 5),
+        skColors: bentoSkColors.slice(),
+        foodNames: bentoFoodNames.slice(),
+        okazuNames: bentoSelected.slice(1).map(s => s.name).filter(Boolean),
+        balance: {
+          r: bentoSkColors.filter(c => c === 'r').length,
+          y: bentoSkColors.filter(c => c === 'y').length,
+          g: bentoSkColors.filter(c => c === 'g').length,
+        },
+      };
   if (window.incrementStat) window.incrementStat('bento_complete', 1);
   // ※ どんぐり付与は評価が確定してから revealReactionWithDrama 内で行う (quality依存)
   // スタンプラリー: プレイ記録
@@ -2318,57 +3246,62 @@ function stageComplete() {
 
   // お弁当箱の中身をクローンして完成表示
   const cb = document.getElementById('complete-bento');
-  cb.innerHTML = '';
-  const inner = document.createElement('div');
-  inner.className = 'cb-inner';
-  // ご飯
-  const riceEl = document.getElementById('bento-rice');
-  const riceClone = document.createElement('div');
-  riceClone.className = 'cb-rice';
-  if (riceEl.querySelector('img')) {
-    const img = document.createElement('img');
-    img.src = riceEl.querySelector('img').src;
-    riceClone.appendChild(img);
-  }
-  inner.appendChild(riceClone);
-  // Vertical divider between rice and okazu
-  const cbVDiv = document.createElement('div');
-  cbVDiv.className = 'bento-divider-v';
-  inner.appendChild(cbVDiv);
-
-  // おかず (with dividers matching game bento)
-  const okazuClone = document.createElement('div');
-  okazuClone.className = 'cb-okazu';
-  // slot 0 (row1 col1)
-  function makeSlotClone(slot) {
-    const d = document.createElement('div');
-    if (slot.querySelector('img')) {
+  if (freeLayoutMode) {
+    renderFreeCompleteBento(cb, placedItems, selectedBentoBoxId);
+  } else {
+    cb.className = 'complete-bento';
+    cb.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.className = 'cb-inner';
+    // ご飯
+    const riceEl = document.getElementById('bento-rice');
+    const riceClone = document.createElement('div');
+    riceClone.className = 'cb-rice';
+    if (riceEl.querySelector('img')) {
       const img = document.createElement('img');
-      img.src = slot.querySelector('img').src;
-      d.appendChild(img);
-    } else if (slot.querySelector('span')) {
-      const s = document.createElement('span');
-      s.textContent = slot.querySelector('span').textContent;
-      s.style.cssText = 'font-size:1.4rem;line-height:1';
-      d.appendChild(s);
+      img.src = riceEl.querySelector('img').src;
+      riceClone.appendChild(img);
     }
-    return d;
+    inner.appendChild(riceClone);
+    // Vertical divider between rice and okazu
+    const cbVDiv = document.createElement('div');
+    cbVDiv.className = 'bento-divider-v';
+    inner.appendChild(cbVDiv);
+
+    // おかず (with dividers matching game bento)
+    const okazuClone = document.createElement('div');
+    okazuClone.className = 'cb-okazu';
+    // slot 0 (row1 col1)
+    function makeSlotClone(slot) {
+      const d = document.createElement('div');
+      if (slot.querySelector('img')) {
+        const img = document.createElement('img');
+        img.src = slot.querySelector('img').src;
+        d.appendChild(img);
+      } else if (slot.querySelector('span')) {
+        const s = document.createElement('span');
+        s.textContent = slot.querySelector('span').textContent;
+        s.style.cssText = 'font-size:1.4rem;line-height:1';
+        d.appendChild(s);
+      }
+      return d;
+    }
+    const cs0 = makeSlotClone(okazuSlots[0]); cs0.style.cssText='grid-column:1;grid-row:1'; okazuClone.appendChild(cs0);
+    const cs1 = makeSlotClone(okazuSlots[1]); cs1.style.cssText='grid-column:3;grid-row:1'; okazuClone.appendChild(cs1);
+    const cs2 = makeSlotClone(okazuSlots[2]); cs2.style.cssText='grid-column:1;grid-row:3'; okazuClone.appendChild(cs2);
+    const cs3 = makeSlotClone(okazuSlots[3]); cs3.style.cssText='grid-column:3;grid-row:3'; okazuClone.appendChild(cs3);
+    const cdv = document.createElement('div'); cdv.className = 'okazu-div-v'; okazuClone.appendChild(cdv);
+    const cdh = document.createElement('div'); cdh.className = 'okazu-div-h'; okazuClone.appendChild(cdh);
+    inner.appendChild(okazuClone);
+    cb.appendChild(inner);
   }
-  const cs0 = makeSlotClone(okazuSlots[0]); cs0.style.cssText='grid-column:1;grid-row:1'; okazuClone.appendChild(cs0);
-  const cs1 = makeSlotClone(okazuSlots[1]); cs1.style.cssText='grid-column:3;grid-row:1'; okazuClone.appendChild(cs1);
-  const cs2 = makeSlotClone(okazuSlots[2]); cs2.style.cssText='grid-column:1;grid-row:3'; okazuClone.appendChild(cs2);
-  const cs3 = makeSlotClone(okazuSlots[3]); cs3.style.cssText='grid-column:3;grid-row:3'; okazuClone.appendChild(cs3);
-  const cdv = document.createElement('div'); cdv.className = 'okazu-div-v'; okazuClone.appendChild(cdv);
-  const cdh = document.createElement('div'); cdh.className = 'okazu-div-h'; okazuClone.appendChild(cdh);
-  inner.appendChild(okazuClone);
-  cb.appendChild(inner);
   // Apply profile-based color to complete bento too
   applyBentoColor();
 
   // 三色バランス表示
-  const rCount = bentoSkColors.filter(c => c === 'r').length;
-  const yCount = bentoSkColors.filter(c => c === 'y').length;
-  const gCount = bentoSkColors.filter(c => c === 'g').length;
+  const rCount = completionData.balance.r;
+  const yCount = completionData.balance.y;
+  const gCount = completionData.balance.g;
   const balRow = document.getElementById('balance-row');
   const dot = (cls, n) => Array(Math.min(n, 3)).fill(`<span class="balance-dot ${cls}"></span>`).join('');
   const emptyDot = (n) => Array(Math.max(0, n)).fill('<span class="balance-dot empty"></span>').join('');
@@ -2378,14 +3311,13 @@ function stageComplete() {
     `<div class="balance-item">${dot('b-g', gCount)}${emptyDot(1 - Math.min(gCount, 1))} みどり</div>`;
 
   // ポノ表情＋セリフ（バランスに応じた演出） ※ 演出は revealReactionWithDrama で実行
-  // okazu 名は bentoSelected[0] = rice を除く 1..4 番目から抽出 (両パスで rice は常に先頭)
-  const okazuNames = bentoSelected.slice(1).map(s => s.name).filter(Boolean);
+  const okazuNames = completionData.okazuNames;
   const reaction = choosePonoReaction(rCount, yCount, gCount, okazuNames);
 
   // 豆知識（テキストだけ先にセット、表示は reveal 時）
   const triviaEl = document.getElementById('complete-trivia');
   if (triviaEl) {
-    const trivia = pickTrivia(bentoFoodNames, bentoSkColors);
+    const trivia = pickTrivia(completionData.foodNames, completionData.skColors);
     triviaEl.textContent = '💡 ' + trivia;
   }
 
@@ -2401,8 +3333,11 @@ function stageComplete() {
       const snapshot = {
         id: 'bf_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
         savedAt: Date.now(),
-        foods: bentoSelected.slice(0, 5),
-        skColors: bentoSkColors.slice(),
+        layoutMode: freeLayoutMode ? 'free' : 'fixed',
+        bentoBoxId: freeLayoutMode ? selectedBentoBoxId : '',
+        placedItems: freeLayoutMode ? placedItems.map(i => ({ ...i, pop: false })) : [],
+        foods: completionData.foods.slice(0, 8),
+        skColors: completionData.skColors.slice(),
         balance: { r: rCount, y: yCount, g: gCount },
         playerName: getPlayerName() || '',
       };
@@ -2421,6 +3356,10 @@ function stageComplete() {
     const rightEl = document.getElementById('complete-right');
     if (rightEl) rightEl.classList.remove('flashing','gloomy');
     document.getElementById('complete-overlay').classList.add('hidden');
+    if (freeLayoutMode) {
+      loadStage();
+      return;
+    }
     if (inChallengeMode) {
       loadChallengeStage();
     } else if (last) {
@@ -2608,49 +3547,61 @@ function renderFavoritesList() {
     // ミニ弁当サムネ: [rice]+おかず4
     const bento = document.createElement('div');
     bento.className = 'fav-mini-bento';
-    const inner = document.createElement('div');
-    inner.className = 'cb-inner';
     const foods = Array.isArray(fav.foods) ? fav.foods : [];
-    const rice = foods[0];
-    const okazu = foods.slice(1, 5);
+    if (fav.layoutMode === 'free' && Array.isArray(fav.placedItems) && fav.placedItems.length) {
+      bento.classList.add('free-mini-bento');
+      const stage = document.createElement('div');
+      stage.className = 'free-layout-stage';
+      renderFreeLayoutInto(stage, {
+        items: fav.placedItems.map(i => ({ ...i, pop: false })),
+        boxId: fav.bentoBoxId || 'box_square',
+        interactive: false,
+      });
+      bento.appendChild(stage);
+    } else {
+      const inner = document.createElement('div');
+      inner.className = 'cb-inner';
+      const rice = foods[0];
+      const okazu = foods.slice(1, 5);
 
-    const riceDiv = document.createElement('div');
-    riceDiv.className = 'cb-rice';
-    if (rice && rice.img) {
-      const img = document.createElement('img');
-      img.src = rice.img; img.alt = rice.name || '';
-      riceDiv.appendChild(img);
-    }
-    inner.appendChild(riceDiv);
-
-    const okazuGrid = document.createElement('div');
-    okazuGrid.className = 'cb-okazu';
-    const positions = [
-      { col: 1, row: 1 },
-      { col: 3, row: 1 },
-      { col: 1, row: 3 },
-      { col: 3, row: 3 },
-    ];
-    positions.forEach((pos, i) => {
-      const cell = document.createElement('div');
-      cell.style.gridColumn = pos.col;
-      cell.style.gridRow = pos.row;
-      const o = okazu[i];
-      if (o && o.img) {
+      const riceDiv = document.createElement('div');
+      riceDiv.className = 'cb-rice';
+      if (rice && rice.img) {
         const img = document.createElement('img');
-        img.src = o.img; img.alt = o.name || '';
-        cell.appendChild(img);
+        img.src = rice.img; img.alt = rice.name || '';
+        riceDiv.appendChild(img);
       }
-      okazuGrid.appendChild(cell);
-    });
-    const dv = document.createElement('div');
-    dv.className = 'okazu-div-v';
-    okazuGrid.appendChild(dv);
-    const dh = document.createElement('div');
-    dh.className = 'okazu-div-h';
-    okazuGrid.appendChild(dh);
-    inner.appendChild(okazuGrid);
-    bento.appendChild(inner);
+      inner.appendChild(riceDiv);
+
+      const okazuGrid = document.createElement('div');
+      okazuGrid.className = 'cb-okazu';
+      const positions = [
+        { col: 1, row: 1 },
+        { col: 3, row: 1 },
+        { col: 1, row: 3 },
+        { col: 3, row: 3 },
+      ];
+      positions.forEach((pos, i) => {
+        const cell = document.createElement('div');
+        cell.style.gridColumn = pos.col;
+        cell.style.gridRow = pos.row;
+        const o = okazu[i];
+        if (o && o.img) {
+          const img = document.createElement('img');
+          img.src = o.img; img.alt = o.name || '';
+          cell.appendChild(img);
+        }
+        okazuGrid.appendChild(cell);
+      });
+      const dv = document.createElement('div');
+      dv.className = 'okazu-div-v';
+      okazuGrid.appendChild(dv);
+      const dh = document.createElement('div');
+      dh.className = 'okazu-div-h';
+      okazuGrid.appendChild(dh);
+      inner.appendChild(okazuGrid);
+      bento.appendChild(inner);
+    }
     item.appendChild(bento);
 
     // バランス
