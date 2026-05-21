@@ -4195,6 +4195,8 @@ body.layout-editor-on .endX-marker {
     scratch: null,
     layer: null,
     mask: null,
+    meatMaskLayer: null,
+    meatMasks: {},
     overlaySrc: '',
     trailCount: 0,
     strokeDistance: 0,
@@ -5987,12 +5989,25 @@ body.layout-editor-on .endX-marker {
     const cssWidth = els.kneadCanvas.offsetWidth || rect.width;
     const cssHeight = els.kneadCanvas.offsetHeight || rect.height;
     if (!cssWidth || !cssHeight) return false;
-    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    const w = Math.max(1, Math.round(cssWidth * dpr));
-    const h = Math.max(1, Math.round(cssHeight * dpr));
+    const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const mobileLike = coarsePointer || window.innerWidth < 760;
+    const maxPixels = mobileLike ? 720000 : 1400000;
+    let dpr = Math.max(1, Math.min(mobileLike ? 1 : 1.35, window.devicePixelRatio || 1));
+    const estimatedPixels = cssWidth * cssHeight * dpr * dpr;
+    if (estimatedPixels > maxPixels) {
+      dpr = Math.sqrt(maxPixels / Math.max(1, cssWidth * cssHeight));
+    }
+    let w = Math.max(1, Math.round(cssWidth * dpr));
+    let h = Math.max(1, Math.round(cssHeight * dpr));
+    if (w * h > maxPixels) {
+      const reduce = Math.sqrt(maxPixels / (w * h));
+      w = Math.max(1, Math.floor(w * reduce));
+      h = Math.max(1, Math.floor(h * reduce));
+    }
     if (els.kneadCanvas.width !== w || els.kneadCanvas.height !== h) {
       els.kneadCanvas.width = w;
       els.kneadCanvas.height = h;
+      kneadRuntime.meatMasks = {};
       kneadRuntime.lastSrc = '';
       kneadRuntime.trailCount = 0;
       kneadRuntime.strokeDistance = 0;
@@ -6001,27 +6016,111 @@ body.layout-editor-on .endX-marker {
     return true;
   }
 
+  function getKneadImageFit(targetCanvas, img) {
+    const cw = targetCanvas.width;
+    const ch = targetCanvas.height;
+    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
+    const dw = img.naturalWidth * scale;
+    const dh = img.naturalHeight * scale;
+    return {
+      x: (cw - dw) / 2,
+      y: (ch - dh) / 2,
+      w: dw,
+      h: dh,
+    };
+  }
+
   function drawKneadImageOnCanvas(targetCanvas, img, alpha) {
     if (!targetCanvas || !img) return;
     const ctx = targetCanvas.getContext('2d');
     const cw = targetCanvas.width;
     const ch = targetCanvas.height;
     if (!cw || !ch) return;
-    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
-    const dw = img.naturalWidth * scale;
-    const dh = img.naturalHeight * scale;
-    const dx = (cw - dw) / 2;
-    const dy = (ch - dh) / 2;
+    const fit = getKneadImageFit(targetCanvas, img);
     ctx.save();
     ctx.globalAlpha = alpha == null ? 1 : alpha;
-    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.drawImage(img, fit.x, fit.y, fit.w, fit.h);
     ctx.restore();
   }
 
-  function drawKneadImage(img, alpha) {
+  function getKneadMeatMaskCanvas(src, img, baseCanvas) {
+    if (!src || !img || !baseCanvas || !baseCanvas.width || !baseCanvas.height) return null;
+    const key = src + '@' + baseCanvas.width + 'x' + baseCanvas.height;
+    if (kneadRuntime.meatMasks[key]) return kneadRuntime.meatMasks[key];
+    const raw = getKneadWorkCanvas('meatMaskLayer', baseCanvas);
+    if (!raw) return null;
+    clearCanvas(raw);
+    drawKneadImageOnCanvas(raw, img, 1);
+    const rawCtx = raw.getContext('2d', { willReadFrequently: true });
+    let pixels;
+    try {
+      pixels = rawCtx.getImageData(0, 0, raw.width, raw.height);
+    } catch (_) {
+      return null;
+    }
+    const data = pixels.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const redBias = r - Math.max(g, b) * 0.96;
+      const pinkBalance = g - b;
+      const isMeat = a > 18
+        && r > 104
+        && max - min > 18
+        && redBias > 8
+        && pinkBalance < 50
+        && b > 46;
+      const alpha = isMeat ? Math.max(0, Math.min(255, (redBias - 3) * 18)) : 0;
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = alpha;
+    }
+    const binary = document.createElement('canvas');
+    binary.width = raw.width;
+    binary.height = raw.height;
+    binary.getContext('2d').putImageData(pixels, 0, 0);
+
+    const mask = document.createElement('canvas');
+    mask.width = raw.width;
+    mask.height = raw.height;
+    const mctx = mask.getContext('2d');
+    mctx.save();
+    mctx.filter = 'blur(' + Math.max(1.4, Math.min(raw.width, raw.height) * 0.003).toFixed(2) + 'px)';
+    mctx.drawImage(binary, 0, 0);
+    mctx.restore();
+    kneadRuntime.meatMasks[key] = mask;
+    return mask;
+  }
+
+  function drawKneadImage(img, alpha, src, meatOnly) {
     if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
     const canvas = els.kneadCanvas;
-    drawKneadImageOnCanvas(canvas, img, alpha);
+    if (!meatOnly) {
+      drawKneadImageOnCanvas(canvas, img, alpha);
+      return;
+    }
+    const layer = getKneadWorkCanvas('layer', canvas);
+    const meatMask = getKneadMeatMaskCanvas(src, img, canvas);
+    if (!layer || !meatMask) {
+      return;
+    }
+    clearCanvas(layer);
+    drawKneadImageOnCanvas(layer, img, 1);
+    const lctx = layer.getContext('2d');
+    lctx.save();
+    lctx.globalCompositeOperation = 'destination-in';
+    lctx.drawImage(meatMask, 0, 0);
+    lctx.restore();
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.drawImage(layer, 0, 0);
+    ctx.restore();
   }
 
   function getKneadWorkCanvas(key, baseCanvas) {
@@ -6091,7 +6190,19 @@ body.layout-editor-on .endX-marker {
 
   function preloadKneadNeighborImages(config, progress) {
     [getKneadStepForProgress(config, progress)].concat(getKneadBrushSteps(config, progress)).forEach(function (step) {
-      if (step && step.src) loadKneadImage(step.src);
+      if (step && step.src) {
+        loadKneadImage(step.src).then(function (img) {
+          if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
+          const warmup = function () {
+            getKneadMeatMaskCanvas(step.src, img, els.kneadCanvas);
+          };
+          if (window.requestIdleCallback) {
+            window.requestIdleCallback(warmup, { timeout: 900 });
+          } else {
+            state.pendingTimers.push(setTimeout(warmup, 80));
+          }
+        });
+      }
     });
   }
 
@@ -6248,12 +6359,12 @@ body.layout-editor-on .endX-marker {
       kneadRuntime.trailCount = 0;
       kneadRuntime.strokeDistance = 0;
       kneadRuntime.strokeLimit = 0;
-      drawKneadImage(img, 1);
+      drawKneadImage(img, 1, src, false);
       preloadKneadNeighborImages(config, progress);
     });
   }
 
-  function overlayKneadCanvasBase(img, src, duration) {
+  function overlayKneadCanvasBase(img, src, duration, meatOnly) {
     if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
     const steps = duration ? 5 : 1;
     const interval = duration ? Math.max(60, Math.round(duration / steps)) : 0;
@@ -6264,7 +6375,7 @@ body.layout-editor-on .endX-marker {
     const drawOverlayFrame = function () {
       if (!els.kneadCanvas || (src && kneadRuntime.overlaySrc !== src)) return;
       const isFinal = frame >= steps - 1;
-      drawKneadImage(img, isFinal ? finalAlpha : baseAlpha);
+      drawKneadImage(img, isFinal ? finalAlpha : baseAlpha, src, meatOnly);
       frame += 1;
       if (frame < steps) {
         state.pendingTimers.push(setTimeout(drawOverlayFrame, interval));
@@ -6286,7 +6397,7 @@ body.layout-editor-on .endX-marker {
       loadKneadImage(src).then(function (img) {
         if (!img) return;
         kneadRuntime.lastSrc = src;
-        overlayKneadCanvasBase(img, src, animate ? 840 : 0);
+        overlayKneadCanvasBase(img, src, animate ? 840 : 0, config && config.kind === 'mix_mince');
       });
     }
   }
@@ -6362,6 +6473,12 @@ body.layout-editor-on .endX-marker {
       lctx.save();
       lctx.globalCompositeOperation = 'destination-in';
       lctx.drawImage(mask, 0, 0);
+      lctx.restore();
+      const meatMask = getKneadMeatMaskCanvas(brushSteps[brushIndex] && brushSteps[brushIndex].src, img, canvas);
+      if (!meatMask) return;
+      lctx.save();
+      lctx.globalCompositeOperation = 'destination-in';
+      lctx.drawImage(meatMask, 0, 0);
       lctx.restore();
 
       ctx.globalAlpha = Math.max(0.56, 0.88 - brushIndex * 0.12);
