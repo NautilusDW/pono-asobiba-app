@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-21 - [batch:98-bento-rect-split-box] Codex: user 指摘「弁当箱画像が小さい / 次は普通の一段長方形で半分ご飯・半分おかず」を受領。HANDOFF / git log / `assets/images/bento/free-layout/` を確認し、該当の長方形1段箱は未作成と判断。新規箱画像生成 + 自由配置デフォルト化 + 箱表示サイズ調整を実施する。 (by Codex)
+- 2026-05-21 - [batch:98-bento-rect-split-box] Codex: `box_rect_split.png` を GPT Image 2 built-in 生成から透過PNG化して追加。`bento/index.html` は新しい一段長方形箱をデフォルトにし、既存箱画像を拡大、配置スポットを型別に分けてご飯=左 / おかず・カップ=右へ初期配置するよう調整。`sw.js` は v509。ローカル Playwright で初期箱・画像表示・ご飯/おかず配置を確認済。 (by Codex)
 - 2026-05-21 - [batch:96-bento-free-layout] Codex: `D:\ポノのおへや\Bento\bento_redesign` の2つの指示mdを受領。HANDOFF / git log / `bento/index.html` 周辺 / `assets/images/bento` を確認し、自由配置方式の既存成果物なしと判断。固定マス方式を残しつつ、`freeLayoutMode` + `placedItems` ベースの自由配置土台を追加する。 (by Codex)
 - 2026-05-21 - [batch:96-bento-free-layout] Codex: `bento/index.html` に `freeLayoutMode=true` の自由配置モードを追加。弁当箱選択、カップ/仕切り、ごはん、既存おかず、飾りタブ、`placedItems`、再ドラッグ、safeSpot補助、カップ吸着、くま顔テンプレ、自由配置の完成表示/お気に入り保存、三色判定移行を実装。`sw.js` は v506。Node 構文チェック + Playwright で配置→ドラッグ→完成表示を確認済。 (by Codex)
 - 2026-05-21 - [batch:97-bento-free-layout-assets] Codex: 自由配置用の生成画像を `assets/images/bento/free-layout/` に 22 点追加。弁当箱4種、カップ4種、仕切り3種、ごはん3種、海苔/ほっぺ4種、ピック4種を GPT Image 2 built-in 生成シートから透明PNG化し、`bento/index.html` の自由配置パレットへ実装。`sw.js` は v507。 (by Codex)

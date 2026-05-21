@@ -371,6 +371,7 @@ html, body {
   box-shadow: none;
   object-fit: contain;
   border-radius: 0;
+  transform-origin: center;
 }
 .free-bento-shape.has-image::before,
 .free-bento-shape.has-image::after {
@@ -1945,11 +1946,43 @@ const FREE_TABS = [
 const FREE_ASSET = '../assets/images/bento/free-layout/';
 const bentoBoxes = [
   {
+    id: 'box_rect_split',
+    name: 'はんぶんこ べんとうばこ',
+    image: FREE_ASSET + 'box_rect_split.png',
+    shape: 'box_square',
+    bounds: { x: 10, y: 66, w: 740, h: 326 },
+    imageScale: 1.05,
+    riceSpots: [
+      { x: 220, y: 230 },
+    ],
+    foodSpots: [
+      { x: 500, y: 176 },
+      { x: 610, y: 176 },
+      { x: 500, y: 286 },
+      { x: 610, y: 286 },
+      { x: 555, y: 230 },
+    ],
+    accessorySpots: [
+      { x: 510, y: 230 },
+      { x: 620, y: 230 },
+      { x: 555, y: 176 },
+      { x: 555, y: 286 },
+    ],
+    safeSpots: [
+      { x: 220, y: 230 },
+      { x: 500, y: 176 },
+      { x: 610, y: 176 },
+      { x: 500, y: 286 },
+      { x: 610, y: 286 },
+    ],
+  },
+  {
     id: 'box_square',
-    name: 'しかくい おべんとうばこ',
+    name: 'しかくい 2だんばこ',
     image: FREE_ASSET + 'box_square.png',
     shape: 'box_square',
     bounds: { x: 76, y: 54, w: 608, h: 354 },
+    imageScale: 1.18,
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -1960,10 +1993,11 @@ const bentoBoxes = [
   },
   {
     id: 'box_round',
-    name: 'まるい おべんとうばこ',
+    name: 'まるい 2だんばこ',
     image: FREE_ASSET + 'box_round.png',
     shape: 'box_round',
     bounds: { x: 92, y: 62, w: 576, h: 338 },
+    imageScale: 1.18,
     safeSpots: [
       { x: 300, y: 226 },
       { x: 470, y: 216 },
@@ -1974,10 +2008,11 @@ const bentoBoxes = [
   },
   {
     id: 'box_bear',
-    name: 'くまさん べんとうばこ',
+    name: 'くまさん 3だんばこ',
     image: FREE_ASSET + 'box_bear.png',
     shape: 'box_bear',
     bounds: { x: 76, y: 68, w: 608, h: 340 },
+    imageScale: 1.18,
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -1988,10 +2023,11 @@ const bentoBoxes = [
   },
   {
     id: 'box_cat',
-    name: 'ねこちゃん べんとうばこ',
+    name: 'ねこちゃん 3だんばこ',
     image: FREE_ASSET + 'box_cat.png',
     shape: 'box_bear',
     bounds: { x: 76, y: 68, w: 608, h: 340 },
+    imageScale: 1.18,
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -2062,7 +2098,7 @@ let bentoFoodNames = []; // 入れた食材の名前（豆知識用）
 let bentoSelected = []; // 入れた食材の完全記録 [{img, name, sk}] rice + okazu4
 let favSaved = false;   // この完成画面で既に保存したか
 let placedItems = [];
-let selectedBentoBoxId = 'box_square';
+let selectedBentoBoxId = 'box_rect_split';
 let freeLayoutTab = 'box';
 let freeLayerSeq = 1;
 let freeSelectedItemUid = null;
@@ -2562,10 +2598,25 @@ function getFreePaletteItems(tabId) {
   if (tabId === 'decor') return decorItems;
   return [];
 }
+function getBoxSpotsForType(box, type) {
+  if (!box) return [];
+  if (type === 'rice' || type === 'template') return box.riceSpots || box.safeSpots || [];
+  if (type === 'food') return box.foodSpots || box.safeSpots || [];
+  if (type === 'cup' || type === 'divider') return box.accessorySpots || box.foodSpots || box.safeSpots || [];
+  if (type === 'pick') return box.foodSpots || box.safeSpots || [];
+  return box.safeSpots || [];
+}
+function countPlacedBySpotType(type) {
+  if (type === 'rice' || type === 'template') return placedItems.filter(i => i.type === 'rice').length;
+  if (type === 'food') return placedItems.filter(i => i.type === 'food').length;
+  if (type === 'cup' || type === 'divider') return placedItems.filter(i => i.type === 'cup' || i.type === 'divider').length;
+  if (type === 'pick') return placedItems.filter(i => i.type === 'pick').length;
+  return placedItems.filter(i => i.type !== 'decor').length;
+}
 function getNextFreeSpot(type) {
   const box = getSelectedBentoBox();
-  const spots = box.safeSpots || [];
-  const used = placedItems.filter(i => i.type !== 'decor').length;
+  const spots = getBoxSpotsForType(box, type);
+  const used = countPlacedBySpotType(type);
   const spot = spots[used % Math.max(1, spots.length)] || {
     x: box.bounds.x + box.bounds.w / 2,
     y: box.bounds.y + box.bounds.h / 2,
@@ -2604,7 +2655,7 @@ function snapPointForItem(item, x, y) {
     const box = getSelectedBentoBox();
     let nearestSpot = null;
     let nearestDist = Infinity;
-    (box.safeSpots || []).forEach(s => {
+    getBoxSpotsForType(box, item.type).forEach(s => {
       const d = dist(point, s);
       if (d < nearestDist) { nearestSpot = s; nearestDist = d; }
     });
@@ -2852,10 +2903,13 @@ function renderFreeLayoutInto(host, opts = {}) {
   host.innerHTML = '';
   host.classList.add('free-layout-stage');
   const shape = document.createElement(box.image ? 'img' : 'div');
-  shape.className = 'free-bento-shape ' + box.shape + (box.image ? ' has-image' : '');
+  shape.className = ['free-bento-shape', box.shape, box.id, box.image ? 'has-image' : ''].filter(Boolean).join(' ');
   if (box.image) {
     shape.src = box.image;
     shape.alt = box.name || '';
+  }
+  if (box.imageScale) {
+    shape.style.transform = `scale(${box.imageScale})`;
   }
   shape.style.left = toPctX(box.bounds.x);
   shape.style.top = toPctY(box.bounds.y);
