@@ -4414,6 +4414,7 @@ body.layout-editor-on .endX-marker {
     ctx: null,
     buffers: {},
     loops: {},
+    prepSeLast: {},
   };
 
   // pendingTimers にぶら下がる setTimeout をまとめてキャンセル
@@ -4474,6 +4475,84 @@ body.layout-editor-on .endX-marker {
         window.SE.play(KITCHEN_SE.chop, { volume: opts && opts.volume ? opts.volume : 0.46 });
       } catch (e) { /* noop */ }
     }
+  }
+
+  function getKitchenNoiseBuffer(ctx) {
+    if (!ctx) return null;
+    if (kitchenAudio.buffers.__prepNoise) return kitchenAudio.buffers.__prepNoise;
+    const duration = 0.22;
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    kitchenAudio.buffers.__prepNoise = buffer;
+    return buffer;
+  }
+
+  function playPrepBreadingSe(material, dist) {
+    if (!kitchenAudioEnabled()) return;
+    const nowMs = (window.performance && performance.now) ? performance.now() : Date.now();
+    const gaps = { flour: 118, egg: 148, panko: 86 };
+    const key = material || 'flour';
+    const minGap = gaps[key] || 120;
+    if (nowMs - (kitchenAudio.prepSeLast[key] || 0) < minGap) return;
+    kitchenAudio.prepSeLast[key] = nowMs;
+
+    const ctx = getKitchenAudioContext();
+    const noise = getKitchenNoiseBuffer(ctx);
+    if (!ctx || !noise) return;
+    const t = ctx.currentTime + 0.012;
+    const force = Math.max(0.42, Math.min(1, (dist || 80) / 130));
+    const volume = key === 'egg' ? 0.058 * force : key === 'panko' ? 0.052 * force : 0.044 * force;
+    const source = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    source.buffer = noise;
+    if (key === 'egg') {
+      source.playbackRate.value = 0.58 + Math.random() * 0.08;
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(680, t);
+      filter.frequency.exponentialRampToValueAtTime(280, t + 0.16);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(volume, t + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(145 + Math.random() * 20, t);
+      osc.frequency.exponentialRampToValueAtTime(86, t + 0.16);
+      oscGain.gain.setValueAtTime(0.001, t);
+      oscGain.gain.linearRampToValueAtTime(volume * 0.28, t + 0.022);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.18);
+    } else if (key === 'panko') {
+      source.playbackRate.value = 1.75 + Math.random() * 0.35;
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(1150, t);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.074);
+    } else {
+      source.playbackRate.value = 0.88 + Math.random() * 0.12;
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(820, t);
+      filter.Q.setValueAtTime(0.72, t);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(volume, t + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    }
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(t);
+    source.stop(t + (key === 'egg' ? 0.19 : key === 'panko' ? 0.082 : 0.13));
   }
 
   function decodeKitchenAudio(ctx, arrayBuffer) {
@@ -6444,6 +6523,7 @@ body.layout-editor-on .endX-marker {
       }
       state.prepTrayRollDistance += safeDist;
       const sideProgress = state.prepTraySide === 'back' ? state.prepTrayBackProgress : state.prepTrayFrontProgress;
+      playPrepBreadingSe(material, safeDist);
       if (!config.singleSurfacePrep && state.prepTraySide === 'front' && sideProgress >= 0.64 && state.prepTrayRollDistance >= rollThreshold) {
         state.prepTrayFrontProgress = 1;
         state.prepTraySide = 'back';
