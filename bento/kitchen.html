@@ -672,6 +672,13 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-workbench[data-prep-kind="mix_mince"].is-dragging {
   cursor: grabbing;
 }
+.prep-workbench[data-prep-kind^="shape_"] {
+  cursor: grab;
+  touch-action: none;
+}
+.prep-workbench[data-prep-kind^="shape_"].is-dragging {
+  cursor: grabbing;
+}
 .prep-workbench:focus-visible {
   box-shadow: inset 0 0 0 3px rgba(255,255,255,0.58), 0 0 0 5px rgba(242,145,90,0.55);
 }
@@ -707,6 +714,73 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   mix-blend-mode: normal;
   filter: drop-shadow(0 16px 18px rgba(80,50,30,0.14));
   opacity: 0;
+}
+.prep-workbench[data-prep-kind^="shape_"] .prep-art-main {
+  top: 48%;
+  width: min(72%, 660px);
+  height: 70%;
+  z-index: 2;
+  transition: background-image 0.18s ease, transform 0.2s ease, filter 0.2s ease;
+}
+.prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
+  transform: translate(-50%, -50%) scale(1.035);
+  filter: drop-shadow(0 14px 18px rgba(80,50,30,0.2));
+}
+.shape-prep-guide {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  width: min(42%, 420px);
+  height: 27%;
+  transform: translate(-50%, -50%) scale(var(--shape-scale, 0.96));
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 5;
+  opacity: var(--shape-opacity, 0.9);
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+.shape-prep-guide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 5px dashed rgba(109, 174, 94, 0.72);
+  background: radial-gradient(ellipse at center, rgba(167, 220, 124, 0.15), transparent 68%);
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.48), 0 8px 18px rgba(86, 133, 68, 0.18);
+}
+.shape-prep-guide::after {
+  content: '';
+  position: absolute;
+  width: 18%;
+  aspect-ratio: 1;
+  left: var(--shape-touch-x, 50%);
+  top: var(--shape-touch-y, 50%);
+  transform: translate(-50%, -50%) scale(var(--shape-hit-scale, 0.55));
+  border-radius: 999px;
+  background: rgba(255,255,255,0.42);
+  border: 3px solid rgba(255, 176, 88, 0.78);
+  opacity: var(--shape-hit, 0);
+}
+.prep-workbench[data-prep-kind^="shape_"] .shape-prep-guide {
+  display: block;
+}
+.shape-prep-guide[data-shape-type="balls"] {
+  width: min(44%, 420px);
+  height: 40%;
+  border-radius: 24px;
+}
+.shape-prep-guide[data-shape-type="balls"]::before {
+  inset: 0;
+  border: 0;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(167,220,124,0.18) 0 9%, rgba(109,174,94,0.78) 9.5% 11%, transparent 11.5%),
+    radial-gradient(circle at 30% 42%, rgba(167,220,124,0.18) 0 9%, rgba(109,174,94,0.78) 9.5% 11%, transparent 11.5%),
+    radial-gradient(circle at 70% 42%, rgba(167,220,124,0.18) 0 9%, rgba(109,174,94,0.78) 9.5% 11%, transparent 11.5%),
+    radial-gradient(circle at 38% 73%, rgba(167,220,124,0.18) 0 9%, rgba(109,174,94,0.78) 9.5% 11%, transparent 11.5%),
+    radial-gradient(circle at 62% 73%, rgba(167,220,124,0.18) 0 9%, rgba(109,174,94,0.78) 9.5% 11%, transparent 11.5%);
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.38), 0 8px 18px rgba(86, 133, 68, 0.14);
 }
 .knead-canvas {
   display: none;
@@ -3618,6 +3692,7 @@ body.layout-editor-on .endX-marker {
     <div class="prep-main">
       <div class="prep-workbench" id="prep-stage" role="button" tabindex="0" aria-label="したごしらえ">
         <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
+        <div class="shape-prep-guide" id="shape-prep-guide" aria-hidden="true"></div>
         <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
         <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
           <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
@@ -4064,6 +4139,7 @@ body.layout-editor-on .endX-marker {
       ],
       prepActions: [
         { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを こねよう' },
+        { type: 'prep', prepKind: 'shape_patty', label: 'かたちを つくろう' },
       ],
       cookImages: {
         grill: {
@@ -4226,7 +4302,7 @@ body.layout-editor-on .endX-marker {
       dragPrep: true,
       dragDistanceScale: 2.25,
       startSpeech: 'ひきにくを ぐるぐるドラッグして こねよう！',
-      completeSpeech: 'ハンバーグの かたちが できたよ！',
+      completeSpeech: 'ひきにくが まとまったよ！ つぎは かたちを つくろう！',
       steps: [
         { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'ひきにくを ボウルへ', caption: 'ぐるぐるドラッグ！', burst: 'ぐるぐる！' },
         {
@@ -4262,7 +4338,58 @@ body.layout-editor-on .endX-marker {
           caption: 'あとすこし！',
           burst: 'ぐるぐる！',
         },
-        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'ハンバーグの したごしらえ できたよ！', burst: 'できた！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'ひきにくが まとまったよ！', burst: 'できた！' },
+      ],
+    },
+    shape_patty: {
+      kind: 'shape_patty',
+      shapePrep: true,
+      shapeType: 'patty',
+      shapeDistanceScale: 1.05,
+      startSpeech: 'ひきにくを ぎゅっぎゅっと のばして かたちを つくろう！',
+      completeSpeech: 'ハンバーグの かたちが できたよ！',
+      steps: [
+        { src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_001_mound.png', label: 'まるめた ひきにく', caption: 'ドラッグで ぎゅっ！', burst: 'ぎゅっ！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_002_pressing.png', label: 'ひらたく しよう', caption: 'いい かたち！', burst: 'ぺたん！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_003_patty.png', label: 'できあがり', caption: 'やける かたちに なったよ！', burst: 'できた！' },
+      ],
+    },
+    shape_meatball: {
+      kind: 'shape_meatball',
+      shapePrep: true,
+      shapeType: 'balls',
+      shapeDistanceScale: 1.18,
+      startSpeech: 'ちいさく わけて ころころ まるめよう！',
+      completeSpeech: 'ミートボールの かたちが できたよ！',
+      steps: [
+        { src: '../assets/images/bento/cooking/prep/shape/shape_meatball_001_mound.png', label: 'ひきにくを わけよう', caption: 'ころころ ドラッグ！', burst: 'ころころ！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_meatball_002_dividing.png', label: 'ちいさく まるめよう', caption: 'まるく なってきたよ！', burst: 'ぽん！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_meatball_003_balls.png', label: 'できあがり', caption: 'ミートボールが できたよ！', burst: 'できた！' },
+      ],
+    },
+    shape_menchi: {
+      kind: 'shape_menchi',
+      shapePrep: true,
+      shapeType: 'patty',
+      shapeDistanceScale: 1.08,
+      startSpeech: 'メンチカツの かたちに まとめよう！',
+      completeSpeech: 'メンチカツの かたちが できたよ！',
+      steps: [
+        { src: '../assets/images/bento/cooking/prep/shape/shape_menchi_001_mound.png', label: 'ひきにくを まとめよう', caption: 'ドラッグで ぎゅっ！', burst: 'ぎゅっ！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_menchi_002_patty.png', label: 'だえんに しよう', caption: 'まとまってきたよ！', burst: 'ぺたん！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_menchi_003_ready.png', label: 'できあがり', caption: 'ころもを つけられるよ！', burst: 'できた！' },
+      ],
+    },
+    shape_tsukune: {
+      kind: 'shape_tsukune',
+      shapePrep: true,
+      shapeType: 'balls',
+      shapeDistanceScale: 1.08,
+      startSpeech: 'つくねを ころころ まとめよう！',
+      completeSpeech: 'つくねの かたちが できたよ！',
+      steps: [
+        { src: '../assets/images/bento/cooking/prep/shape/shape_tsukune_001_mound.png', label: 'とりひきにくを まとめよう', caption: 'ころころ ドラッグ！', burst: 'ころころ！' },
+        { src: '../assets/images/bento/cooking/prep/shape/shape_tsukune_003_shaped.png', label: 'できあがり', caption: 'つくねの かたちに なったよ！', burst: 'できた！' },
       ],
     },
     bread_shrimp: {
@@ -4839,6 +4966,7 @@ body.layout-editor-on .endX-marker {
     // prep screen
     prepStage:     document.getElementById('prep-stage'),
     prepArtMain:   document.getElementById('prep-art-main'),
+    shapePrepGuide: document.getElementById('shape-prep-guide'),
     kneadCanvas:   document.getElementById('knead-canvas'),
     prepBreadingGame: document.getElementById('prep-breading-game'),
     prepBreadingTrays: document.getElementById('prep-breading-trays'),
@@ -5636,6 +5764,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.toggle('is-working', !!animate);
     }
     document.body.dataset.prepKind = config.kind || '';
+    updateShapePrepGuide(config, safeProgress, maxProgress);
     setPrepVisual(els.prepArtMain, step);
     renderPrepBreadingGame(config, safeProgress);
     if (config.dragPrep) syncKneadCanvas(config, safeProgress, animate);
@@ -5648,6 +5777,24 @@ body.layout-editor-on .endX-marker {
       els.prepProgressCap.textContent = step.caption || (safeProgress >= maxProgress ? 'できあがり！' : 'タップして すすめよう！');
     }
     buildPrepStepLane(config, safeProgress);
+  }
+
+  function updateShapePrepGuide(config, progress, maxProgress) {
+    const isShape = !!(config && config.shapePrep);
+    const ratio = isShape && maxProgress ? Math.max(0, Math.min(1, (progress || 0) / maxProgress)) : 0;
+    if (els.shapePrepGuide) {
+      els.shapePrepGuide.dataset.shapeType = isShape ? (config.shapeType || 'patty') : '';
+      els.shapePrepGuide.style.setProperty('--shape-progress', ratio.toFixed(3));
+      els.shapePrepGuide.style.setProperty('--shape-scale', (0.96 + ratio * 0.04).toFixed(3));
+      els.shapePrepGuide.style.setProperty('--shape-opacity', (0.9 - ratio * 0.22).toFixed(3));
+      if (!isShape) {
+        els.shapePrepGuide.style.setProperty('--shape-hit', '0');
+        els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
+      }
+    }
+    if (els.prepStage) {
+      els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
+    }
   }
 
   function preloadPrepImage(src) {
@@ -6550,6 +6697,120 @@ body.layout-editor-on .endX-marker {
     return isTrayPrepConfig(config) ? config : null;
   }
 
+  function isShapePrepConfig(config) {
+    return !!(config && config.shapePrep);
+  }
+
+  function getActiveShapePrepConfig() {
+    if (state.currentScreen !== 'prep') return null;
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!ing || !action || action.type !== 'prep') return null;
+    const config = getPrepConfig(action, ing);
+    return isShapePrepConfig(config) ? config : null;
+  }
+
+  function updateShapePointerFeedback(evt, strength) {
+    if (!els.shapePrepGuide || !evt) return;
+    const rect = els.shapePrepGuide.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.max(0, Math.min(100, ((evt.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((evt.clientY - rect.top) / rect.height) * 100));
+    els.shapePrepGuide.style.setProperty('--shape-touch-x', x.toFixed(2) + '%');
+    els.shapePrepGuide.style.setProperty('--shape-touch-y', y.toFixed(2) + '%');
+    const hit = Math.max(0, Math.min(1, strength || 0));
+    els.shapePrepGuide.style.setProperty('--shape-hit', hit.toFixed(2));
+    els.shapePrepGuide.style.setProperty('--shape-hit-scale', (0.55 + hit * 0.55).toFixed(3));
+  }
+
+  function pointIsInsideShapePrep(evt, config) {
+    if (!evt || !els.shapePrepGuide) return false;
+    const rect = els.shapePrepGuide.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = ((evt.clientY - rect.top) / rect.height) * 2 - 1;
+    const coarsePointer = evt.pointerType === 'touch' || evt.pointerType === 'pen';
+    const tolerance = config && config.shapeType === 'balls'
+      ? (coarsePointer ? 2.4 : 1.4)
+      : (coarsePointer ? 2.0 : 1.24);
+    return x * x + y * y <= tolerance;
+  }
+
+  function beginShapePrepDrag(evt, config) {
+    if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
+    evt.preventDefault();
+    state.prepDragging = true;
+    state.prepDragMode = 'shape';
+    state.prepDragPointerId = evt.pointerId;
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    state.suppressPrepClick = false;
+    updateShapePointerFeedback(evt, 0.9);
+    if (els.prepStage) {
+      els.prepStage.classList.add('is-dragging');
+      els.prepStage.classList.add('is-working');
+      try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
+    }
+    const step = (config.steps && config.steps[Math.floor(state.prepProgress || 0)]) || {};
+    setSpeech(step.caption || 'ぎゅっぎゅっと かたちを つくろう！', 'prep');
+  }
+
+  function advanceShapePrep(config, deltaDistance) {
+    const ing = state.current;
+    if (!ing || !config || state.prepAnimating) return;
+    const maxProgress = getPrepMaxProgress(config);
+    if (!maxProgress || state.prepProgress >= maxProgress) return;
+    const rect = els.prepStage ? els.prepStage.getBoundingClientRect() : null;
+    const distanceScale = Math.max(0.5, config.shapeDistanceScale || 1);
+    const totalDistance = Math.max(900, ((rect && rect.width) || 720) * 1.55) * distanceScale;
+    state.prepDragDistance = Math.max(0, state.prepDragDistance + Math.max(0, deltaDistance || 0));
+    const nextProgress = Math.min(maxProgress, (state.prepDragDistance / totalDistance) * maxProgress);
+    const prevStep = Math.floor((state.prepProgress || 0) + 0.001);
+    const nextStep = Math.floor(nextProgress + 0.001);
+    updatePrepView(config, nextProgress, nextStep !== prevStep);
+    if (nextStep > state.prepDragLastStep && nextStep < maxProgress) {
+      const step = config.steps[nextStep] || {};
+      state.prepDragLastStep = nextStep;
+      showPrepBurst(step.burst || 'ぎゅっ！');
+      setSpeech(step.caption || step.label || 'いい かたち！', 'prep');
+    }
+    if (nextProgress >= maxProgress) finishDragPrep(ing, config);
+  }
+
+  function moveShapePrepDrag(evt, config) {
+    if (!state.prepDragging || state.prepDragMode !== 'shape' || evt.pointerId !== state.prepDragPointerId) return;
+    if (!config) return;
+    evt.preventDefault();
+    const dx = evt.clientX - state.prepDragLastX;
+    const dy = evt.clientY - state.prepDragLastY;
+    const dist = Math.hypot(dx, dy);
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    if (dist > 1) state.suppressPrepClick = true;
+    const inside = pointIsInsideShapePrep(evt, config);
+    updateShapePointerFeedback(evt, inside ? 1 : 0.18);
+    if (dist > 1 && inside) {
+      playKneadSe(dist, 0.72);
+      advanceShapePrep(config, dist);
+    }
+  }
+
+  function endShapePrepDrag(evt) {
+    if (!state.prepDragging || state.prepDragMode !== 'shape' || evt.pointerId !== state.prepDragPointerId) return;
+    state.prepDragging = false;
+    state.prepDragMode = '';
+    state.prepDragPointerId = null;
+    if (els.prepStage) {
+      els.prepStage.classList.remove('is-dragging');
+      els.prepStage.classList.remove('is-working');
+      try { els.prepStage.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+    if (els.shapePrepGuide) {
+      els.shapePrepGuide.style.setProperty('--shape-hit', '0');
+      els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
+    }
+  }
+
   function getActivePrepTrayElement(config) {
     if (!els.prepBreadingTrays) return null;
     const idx = getPrepTrayActiveIndex(config, state.prepProgress || 0);
@@ -6801,6 +7062,11 @@ body.layout-editor-on .endX-marker {
       beginTrayPrepDrag(evt, trayConfig);
       return;
     }
+    const shapeConfig = getActiveShapePrepConfig();
+    if (shapeConfig) {
+      beginShapePrepDrag(evt, shapeConfig);
+      return;
+    }
     const config = getActiveDragPrepConfig();
     if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
     evt.preventDefault();
@@ -6823,6 +7089,10 @@ body.layout-editor-on .endX-marker {
   function onPrepPointerMove(evt) {
     if (state.prepDragMode === 'tray') {
       moveTrayPrepDrag(evt, getActiveTrayPrepConfig());
+      return;
+    }
+    if (state.prepDragMode === 'shape') {
+      moveShapePrepDrag(evt, getActiveShapePrepConfig());
       return;
     }
     if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
@@ -6864,6 +7134,10 @@ body.layout-editor-on .endX-marker {
       endTrayPrepDrag(evt, getActiveTrayPrepConfig());
       return;
     }
+    if (state.prepDragMode === 'shape') {
+      endShapePrepDrag(evt);
+      return;
+    }
     if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
     state.prepDragging = false;
     state.prepDragMode = '';
@@ -6902,6 +7176,16 @@ body.layout-editor-on .endX-marker {
         setSpeech('ぐるぐる こねよう！', 'prep');
       } else {
         setSpeech('クリックして ぐるっとドラッグしよう！', 'prep');
+      }
+      return;
+    }
+
+    if (config.shapePrep) {
+      if (evt && evt.keyboard) {
+        advanceShapePrep(config, Math.max(260, ((els.prepStage && els.prepStage.getBoundingClientRect().width) || 720) * 0.34));
+        if (!state.prepAnimating) setSpeech('ぎゅっぎゅっと かたちを つくろう！', 'prep');
+      } else {
+        setSpeech('ドラッグで ぎゅっと かたちを つくろう！', 'prep');
       }
       return;
     }
@@ -9064,7 +9348,11 @@ body.layout-editor-on .endX-marker {
 
   function getNextActionSpeech(action) {
     if (!action) return 'つぎへ すすもう！';
-    if (action.type === 'prep') return 'つぎは したごしらえを しよう！';
+    if (action.type === 'prep') {
+      if (action.prepKind && action.prepKind.indexOf('shape_') === 0) return 'つぎは かたちを つくろう！';
+      if (action.prepKind && action.prepKind.indexOf('bread_') === 0) return 'つぎは ころもを つけよう！';
+      return 'つぎは したごしらえを しよう！';
+    }
     if (action.type === 'chop') return 'つぎは トントン きろう！';
     if (action.type === 'fry') return 'つぎは あぶらで あげよう！';
     return 'つぎは フライパンで やこう！';
@@ -9403,6 +9691,14 @@ body.layout-editor-on .endX-marker {
       els.prepArtMain.style.backgroundImage = '';
       els.prepArtMain.style.backgroundSize = '';
       els.prepArtMain.style.backgroundPosition = '';
+    }
+    if (els.shapePrepGuide) {
+      els.shapePrepGuide.dataset.shapeType = '';
+      els.shapePrepGuide.style.setProperty('--shape-progress', '0');
+      els.shapePrepGuide.style.setProperty('--shape-hit', '0');
+      els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
+      els.shapePrepGuide.style.setProperty('--shape-scale', '0.96');
+      els.shapePrepGuide.style.setProperty('--shape-opacity', '0.9');
     }
     if (els.kneadCanvas) {
       const ctx = els.kneadCanvas.getContext('2d');
