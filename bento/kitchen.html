@@ -1025,8 +1025,34 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background-size: contain;
   opacity: var(--prep-layer-opacity, 0);
   pointer-events: none;
-  transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease, opacity 0.16s ease;
+  transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease, opacity 0.34s ease;
   will-change: left, top, transform, opacity;
+}
+.prep-breading-liquid {
+  position: absolute;
+  left: 50%;
+  top: 54.4%;
+  width: min(96%, 1040px);
+  height: 78.5%;
+  transform: translate(-50%, -50%) translate3d(var(--prep-liquid-shift-x, 0%), var(--prep-liquid-shift-y, 0%), 0) scale(var(--prep-egg-wave-scale, 1));
+  transform-origin: center;
+  z-index: 3;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0;
+  pointer-events: none;
+  filter: url("#prep-egg-liquid-distort") blur(0.35px);
+  -webkit-mask-image: radial-gradient(ellipse 45% 34% at 50% 50%, #000 64%, rgba(0,0,0,0.72) 72%, transparent 83%);
+  mask-image: radial-gradient(ellipse 45% 34% at 50% 50%, #000 64%, rgba(0,0,0,0.72) 72%, transparent 83%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  transition: opacity 0.34s ease;
+  will-change: transform, opacity, filter;
 }
 .prep-breading-effect {
   z-index: 4;
@@ -1052,20 +1078,20 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   filter: drop-shadow(0 12px 14px rgba(93,62,34,0.14));
   overflow: hidden;
 }
-.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb {
-  filter: url("#prep-egg-liquid-distort") drop-shadow(0 12px 14px rgba(93,62,34,0.14));
-  animation: prepEggTrayWobble 1.75s ease-in-out infinite;
+.prep-breading-game[data-liquid="egg"] .prep-breading-liquid {
+  opacity: var(--prep-egg-liquid-opacity, 0);
+  animation: prepEggLiquidDrift 1.65s ease-in-out infinite;
 }
-.prep-breading-game[data-topview="true"][data-liquid-active="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb {
+.prep-breading-game[data-liquid="egg"][data-liquid-active="true"] .prep-breading-liquid {
   animation-duration: 1.05s;
 }
-.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::before,
-.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::after {
+.prep-breading-liquid::before,
+.prep-breading-liquid::after {
   content: '';
   position: absolute;
   pointer-events: none;
 }
-.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::before {
+.prep-breading-liquid::before {
   left: 6%;
   right: 6%;
   top: 14%;
@@ -1080,7 +1106,7 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.5%, 0, 0);
   animation: prepEggSurfaceFlow 1.25s ease-in-out infinite;
 }
-.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::after {
+.prep-breading-liquid::after {
   left: 10%;
   right: 10%;
   top: 18%;
@@ -1168,10 +1194,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   42% { transform: translate(-50%, -44%) rotate(calc(var(--prep-food-rot, 0deg) - 5deg)) scaleX(var(--prep-food-facing, 1)) scale(1.08); }
   70% { transform: translate(-50%, -53%) rotate(calc(var(--prep-food-rot, 0deg) + 4deg)) scaleX(var(--prep-food-facing, 1)) scale(1.04); }
 }
-@keyframes prepEggTrayWobble {
-  0%, 100% { transform: translate(-50%, -50%) scale(1.002, 0.998) skewX(0deg); }
-  38% { transform: translate(-50.2%, -50.1%) scale(1.008, 0.994) skewX(-0.8deg); }
-  68% { transform: translate(-49.8%, -49.9%) scale(0.997, 1.006) skewX(0.7deg); }
+@keyframes prepEggLiquidDrift {
+  0%, 100% { transform: translate(-50%, -50%) translate3d(-0.45%, -0.18%, 0) scale(var(--prep-egg-wave-scale, 1)); }
+  46% { transform: translate(-50%, -50%) translate3d(0.5%, 0.25%, 0) scale(var(--prep-egg-wave-scale, 1)); }
 }
 @keyframes prepEggSurfaceFlow {
   0%, 100% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.4%, -0.4%, 0) rotate(-0.4deg); }
@@ -3592,6 +3617,7 @@ body.layout-editor-on .endX-marker {
         <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
           <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
           <div class="prep-breading-trays" id="prep-breading-trays"></div>
+          <div class="prep-breading-liquid" id="prep-breading-liquid" aria-hidden="true"></div>
           <div class="prep-breading-particles" id="prep-breading-particles"></div>
           <div class="prep-breading-layer prep-breading-effect" id="prep-breading-effect" aria-hidden="true"></div>
           <div class="prep-breading-side-meter" id="prep-breading-side-meter">
@@ -4174,6 +4200,7 @@ body.layout-editor-on .endX-marker {
     strokeDistance: 0,
     strokeLimit: 0,
   };
+  const prepImagePreloadCache = {};
 
   const PREP_CONFIGS = {
     egg_crack: {
@@ -4649,6 +4676,7 @@ body.layout-editor-on .endX-marker {
     kneadCanvas:   document.getElementById('knead-canvas'),
     prepBreadingGame: document.getElementById('prep-breading-game'),
     prepBreadingTrays: document.getElementById('prep-breading-trays'),
+    prepBreadingLiquid: document.getElementById('prep-breading-liquid'),
     prepBreadingParticles: document.getElementById('prep-breading-particles'),
     prepBreadingEffect: document.getElementById('prep-breading-effect'),
     prepBreadingSideMeter: document.getElementById('prep-breading-side-meter'),
@@ -5391,6 +5419,7 @@ body.layout-editor-on .endX-marker {
     resetCookDrag();
     hideCombo();
     const config = getPrepConfig(action, ing);
+    preloadPrepFoodFrames(config);
     updatePrepView(config, 0, false);
     const firstStep = (config.steps && config.steps[0]) || {};
     if (els.prepActionLabel) els.prepActionLabel.textContent = firstStep.label || action.label || 'したごしらえしよう';
@@ -5455,6 +5484,22 @@ body.layout-editor-on .endX-marker {
     buildPrepStepLane(config, safeProgress);
   }
 
+  function preloadPrepImage(src) {
+    if (!src || prepImagePreloadCache[src]) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+    prepImagePreloadCache[src] = img;
+  }
+
+  function preloadPrepFoodFrames(config) {
+    if (!config || !Array.isArray(config.stepFrames)) return;
+    config.stepFrames.forEach(function (frames) {
+      if (!Array.isArray(frames)) return;
+      frames.forEach(preloadPrepImage);
+    });
+  }
+
   function setPrepVisual(el, visual) {
     if (!el || !visual) return;
     el.style.backgroundRepeat = 'no-repeat';
@@ -5516,7 +5561,6 @@ body.layout-editor-on .endX-marker {
     if (!el) return;
     const foodVisual = visual || {};
     const usesFrameSeries = Boolean(foodVisual.frameSeries);
-    el.style.backgroundImage = '';
     el.style.backgroundSize = 'contain';
     el.style.backgroundPosition = 'center';
     el.style.mixBlendMode = foodVisual.blend || 'normal';
@@ -5525,7 +5569,11 @@ body.layout-editor-on .endX-marker {
     el.style.setProperty('--prep-food-mask', usesFrameSeries ? 'none' : (foodVisual.mask || 'none'));
     el.style.setProperty('--prep-base-mask', usesFrameSeries ? 'none' : (foodVisual.mask || 'none'));
     if (foodVisual.src) {
-      el.style.backgroundImage = 'url("' + foodVisual.src + '")';
+      preloadPrepImage(foodVisual.src);
+      const nextImage = 'url("' + foodVisual.src + '")';
+      if (el.style.backgroundImage !== nextImage) {
+        el.style.backgroundImage = nextImage;
+      }
       if (!usesFrameSeries) {
         el.style.setProperty('--prep-food-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
         el.style.setProperty('--prep-base-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
@@ -5536,6 +5584,7 @@ body.layout-editor-on .endX-marker {
       setPrepVisual(el, foodVisual);
       return;
     }
+    el.style.backgroundImage = '';
   }
 
   function getPrepBreadingMaterial(step, trayStep, index) {
@@ -5604,19 +5653,19 @@ body.layout-editor-on .endX-marker {
     el.style.setProperty('--prep-layer-opacity', opacity.toFixed(3));
   }
 
-  function updatePrepBreadingLayers(config, material, progress) {
+  function updatePrepBreadingLayers(config, material, progress, traySrc) {
     if (!config || !config.topviewBreading) {
       clearPrepBreadingLayers();
-      updatePrepEggLiquidMotion(false, 0);
+      updatePrepEggLiquidMotion(false, 0, '');
       return;
     }
     const assets = config.topviewBreading;
     setPrepBreadingLayerVisual(els.prepBreadingEffect, assets.effect && assets.effect[material], progress);
     setPrepBreadingLayerVisual(els.prepBreadingForeground, assets.foreground && assets.foreground[material], progress);
-    updatePrepEggLiquidMotion(material === 'egg', progress);
+    updatePrepEggLiquidMotion(material === 'egg', progress, traySrc);
   }
 
-  function updatePrepEggLiquidMotion(active, progress) {
+  function updatePrepEggLiquidMotion(active, progress, traySrc) {
     if (!els.prepBreadingGame) return;
     const ratio = Math.max(0, Math.min(1, progress || 0));
     const isActive = !!active;
@@ -5626,11 +5675,18 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingGame.style.removeProperty('--prep-egg-wave-opacity');
       els.prepBreadingGame.style.removeProperty('--prep-egg-ripple-opacity');
       els.prepBreadingGame.style.removeProperty('--prep-egg-wave-scale');
+      els.prepBreadingGame.style.removeProperty('--prep-egg-liquid-opacity');
+      if (els.prepBreadingLiquid) els.prepBreadingLiquid.style.backgroundImage = '';
       return;
+    }
+    const src = traySrc || '../assets/images/bento/cooking/korokke/topview/tray_egg.png';
+    if (els.prepBreadingLiquid) {
+      els.prepBreadingLiquid.style.backgroundImage = 'url("' + src + '")';
     }
     els.prepBreadingGame.style.setProperty('--prep-egg-wave-opacity', (0.16 + ratio * 0.2).toFixed(3));
     els.prepBreadingGame.style.setProperty('--prep-egg-ripple-opacity', (0.14 + ratio * 0.24).toFixed(3));
     els.prepBreadingGame.style.setProperty('--prep-egg-wave-scale', (1 + ratio * 0.018).toFixed(3));
+    els.prepBreadingGame.style.setProperty('--prep-egg-liquid-opacity', (0.42 + ratio * 0.24).toFixed(3));
   }
 
   function snapPrepFoodToTray() {
@@ -5721,7 +5777,7 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingFood.style.setProperty('--prep-coat-rot', (((state.prepTrayRollAngle || 0) * -0.08) % 24).toFixed(1) + 'deg');
       els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
       els.prepBreadingFood.style.setProperty('--prep-food-rot', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
-      updatePrepBreadingLayers(config, material, coatProgress);
+      updatePrepBreadingLayers(config, material, coatProgress, trayStep && trayStep.src);
       setPrepBreadingLayerPose(
         els.prepBreadingFood.style.getPropertyValue('--prep-food-x') || '50%',
         els.prepBreadingFood.style.getPropertyValue('--prep-food-y') || '52%',
@@ -5998,8 +6054,8 @@ body.layout-editor-on .endX-marker {
     if (!els.kneadCanvas) return 180;
     const rect = els.kneadCanvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return 180;
-    const rx = rect.width * 0.28;
-    const ry = rect.height * 0.27;
+    const rx = rect.width * 0.34;
+    const ry = rect.height * 0.32;
     const perimeter = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
     return Math.max(280, perimeter * 0.4);
   }
@@ -6020,9 +6076,9 @@ body.layout-editor-on .endX-marker {
     const y = (clientY - rect.top) * py;
     const cx = canvas.width * 0.5;
     const cy = canvas.height * 0.51;
-    const rx = canvas.width * 0.28;
-    const ry = canvas.height * 0.27;
-    return Math.pow((x - cx) / rx, 2) + Math.pow((y - cy) / ry, 2) <= 1.18;
+    const rx = canvas.width * 0.34;
+    const ry = canvas.height * 0.32;
+    return Math.pow((x - cx) / rx, 2) + Math.pow((y - cy) / ry, 2) <= 1.22;
   }
 
   function getKneadGesturePower(deltaDistance) {
@@ -6128,10 +6184,10 @@ body.layout-editor-on .endX-marker {
     const y2 = (toY - rect.top) * py;
     const cx = canvas.width * 0.5;
     const cy = canvas.height * 0.51;
-    const rx = canvas.width * 0.28;
-    const ry = canvas.height * 0.27;
+    const rx = canvas.width * 0.34;
+    const ry = canvas.height * 0.32;
     const inside = Math.pow((x2 - cx) / rx, 2) + Math.pow((y2 - cy) / ry, 2);
-    if (inside > 1.18) return false;
+    if (inside > 1.22) return false;
 
     const brushSteps = getKneadBrushSteps(config, state.prepProgress || 0);
     const brushImages = brushSteps.map(function (step) {
@@ -6168,7 +6224,7 @@ body.layout-editor-on .endX-marker {
 
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx * 1.1, ry * 1.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, rx * 1.06, ry * 1.08, 0, 0, Math.PI * 2);
     ctx.clip();
     ctx.globalCompositeOperation = 'source-over';
     brushImages.forEach(function (img, brushIndex) {
