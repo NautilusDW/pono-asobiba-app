@@ -610,6 +610,32 @@ body[data-screen="fridge"] .stage-wrap {
   flex: 1 1 auto;
   min-height: 0;
 }
+body[data-screen="prep"][data-prep-kind^="bread_"] .prep-stage-wrap {
+  grid-template-columns: minmax(0, 1fr);
+}
+body[data-screen="prep"][data-prep-kind^="bread_"] .prep-side {
+  display: none;
+}
+body[data-screen="prep"][data-prep-kind^="bread_"] .prep-main {
+  padding: 4px;
+  align-items: stretch;
+  justify-content: stretch;
+}
+body[data-screen="prep"][data-prep-kind^="bread_"] .prep-workbench {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  aspect-ratio: auto;
+}
+body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
+  top: 0;
+  right: 18px;
+  bottom: auto;
+  min-height: 38px;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  z-index: 20;
+}
 .prep-main {
   background:
     radial-gradient(circle at 24% 18%, rgba(255,255,255,0.62), transparent 24%),
@@ -751,16 +777,16 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .prep-breading-trays {
   position: absolute;
-  left: 7%;
-  right: 7%;
-  top: 18%;
-  bottom: 12%;
+  left: 1.5%;
+  right: 1.5%;
+  top: 5%;
+  bottom: 3.5%;
   display: block;
 }
 .prep-breading-tray {
   position: absolute;
   inset: 0;
-  border-radius: 28px;
+  border-radius: 24px;
   border: 4px solid rgba(255,255,255,0.78);
   background:
     radial-gradient(ellipse at center, rgba(255,255,255,0.46) 0 28%, transparent 68%),
@@ -804,9 +830,9 @@ body[data-screen="fridge"] .stage-wrap {
   position: absolute;
   left: 50%;
   top: 53%;
-  width: min(86%, 660px);
-  height: 72%;
-  transform: translate(-50%, -50%) scale(1.08);
+  width: min(106%, 980px);
+  height: 90%;
+  transform: translate(-50%, -50%) scale(1.18);
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -854,7 +880,7 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-breading-side-meter {
   position: absolute;
   left: 50%;
-  bottom: 18%;
+  bottom: 7.5%;
   transform: translateX(-50%);
   z-index: 9;
   display: flex;
@@ -909,6 +935,14 @@ body[data-screen="fridge"] .stage-wrap {
   touch-action: none;
   transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease, filter 0.2s ease;
   will-change: left, top, transform;
+  -webkit-mask-image: var(--prep-base-mask, none);
+  mask-image: var(--prep-base-mask, none);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 .prep-breading-food[data-kind="bread_korokke"] {
   width: var(--prep-food-w, 28%);
@@ -932,6 +966,8 @@ body[data-screen="fridge"] .stage-wrap {
   mask-position: center;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
+  clip-path: ellipse(var(--prep-coat-rx, 82%) var(--prep-coat-ry, 76%) at var(--prep-coat-cx, 50%) var(--prep-coat-cy, 52%));
+  transform: rotate(var(--prep-coat-rot, 0deg));
   transition: opacity 0.18s ease;
 }
 .prep-breading-food::after {
@@ -940,10 +976,11 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .prep-breading-food[data-coat="flour"]::before {
   background:
-    radial-gradient(circle, rgba(255,255,255,0.95) 0 2px, transparent 3px),
-    radial-gradient(circle, rgba(238,226,199,0.82) 0 1px, transparent 2px);
-  background-size: 18px 16px, 13px 11px;
-  mix-blend-mode: screen;
+    radial-gradient(circle, rgba(255,255,255,0.98) 0 3px, transparent 4px),
+    radial-gradient(circle, rgba(236,224,197,0.9) 0 2px, transparent 3px),
+    linear-gradient(135deg, rgba(255,255,255,0.52), rgba(238,228,205,0.34));
+  background-size: 18px 16px, 13px 11px, auto;
+  mix-blend-mode: normal;
 }
 .prep-breading-food[data-coat="egg"]::before {
   background:
@@ -1011,7 +1048,7 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-breading-hint {
   position: absolute;
   left: 50%;
-  top: 8%;
+  top: 2.4%;
   transform: translateX(-50%);
   min-width: 42%;
   max-width: 78%;
@@ -4061,9 +4098,9 @@ body.layout-editor-on .endX-marker {
       completeSpeech: 'コロッケの したごしらえ できたよ！',
       toolSteps: PREP_TOOL_STEPS,
       foodStages: [
-        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
-        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
-        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
+        { sheet: 'breading', x: 1, y: 1, mask: 'radial-gradient(ellipse 47% 31% at 50% 52%, black 0 82%, transparent 100%)' },
+        { sheet: 'breading', x: 1, y: 1, mask: 'radial-gradient(ellipse 47% 31% at 50% 52%, black 0 82%, transparent 100%)' },
+        { sheet: 'breading', x: 1, y: 1, mask: 'radial-gradient(ellipse 47% 31% at 50% 52%, black 0 82%, transparent 100%)' },
         '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
       ],
       steps: [
@@ -5205,6 +5242,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.dataset.prepKind = config.kind || '';
       els.prepStage.classList.toggle('is-working', !!animate);
     }
+    document.body.dataset.prepKind = config.kind || '';
     setPrepVisual(els.prepArtMain, step);
     renderPrepBreadingGame(config, safeProgress);
     if (config.dragPrep) syncKneadCanvas(config, safeProgress, animate);
@@ -5255,11 +5293,34 @@ body.layout-editor-on .endX-marker {
     return Math.max(0, Math.min(traySteps.length - 1, Math.floor((progress || 0) + 0.001)));
   }
 
-  function getPrepFoodStageSrc(config, progress) {
+  function getPrepFoodStageVisual(config, progress) {
     const foodStages = Array.isArray(config && config.foodStages) ? config.foodStages : [];
     if (!foodStages.length) return '';
     const idx = Math.max(0, Math.min(foodStages.length - 1, Math.floor((progress || 0) + 0.001)));
-    return foodStages[idx] || foodStages[0] || '';
+    const visual = foodStages[idx] || foodStages[0] || '';
+    return typeof visual === 'string' ? { src: visual } : visual;
+  }
+
+  function setPrepFoodVisual(el, visual) {
+    if (!el) return;
+    const foodVisual = visual || {};
+    el.style.backgroundImage = '';
+    el.style.backgroundSize = 'contain';
+    el.style.backgroundPosition = 'center';
+    el.style.mixBlendMode = foodVisual.blend || 'normal';
+    el.style.filter = foodVisual.filter || '';
+    el.style.setProperty('--prep-food-mask', foodVisual.mask || 'none');
+    el.style.setProperty('--prep-base-mask', foodVisual.mask || 'none');
+    if (foodVisual.src) {
+      el.style.backgroundImage = 'url("' + foodVisual.src + '")';
+      el.style.setProperty('--prep-food-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
+      el.style.setProperty('--prep-base-mask', foodVisual.mask || ('url("' + foodVisual.src + '")'));
+      return;
+    }
+    if (foodVisual.sheet) {
+      setPrepVisual(el, foodVisual);
+      return;
+    }
   }
 
   function getPrepBreadingMaterial(step, trayStep, index) {
@@ -5332,12 +5393,11 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingTrays.dataset.step = String(activeIndex);
     }
 
-    const foodSrc = getPrepFoodStageSrc(config, progress);
+    const foodVisual = getPrepFoodStageVisual(config, progress);
     els.prepBreadingFood.dataset.kind = config.kind || '';
     els.prepBreadingFood.dataset.coat = material;
     els.prepBreadingFood.dataset.step = String(activeIndex);
-    els.prepBreadingFood.style.backgroundImage = foodSrc ? 'url("' + foodSrc + '")' : '';
-    els.prepBreadingFood.style.setProperty('--prep-food-mask', foodSrc ? 'url("' + foodSrc + '")' : 'none');
+    setPrepFoodVisual(els.prepBreadingFood, foodVisual);
     updatePrepBreadingCoatingView(config);
     if (!state.prepDragging || state.prepDragMode !== 'tray') snapPrepFoodToTray();
 
@@ -5352,7 +5412,15 @@ body.layout-editor-on .endX-marker {
       ? state.prepTrayBackProgress
       : state.prepTrayFrontProgress;
     if (els.prepBreadingFood) {
-      els.prepBreadingFood.style.setProperty('--prep-coat-visible', String(Math.max(0, Math.min(1, visibleProgress || 0))));
+      const coatProgress = Math.max(0, Math.min(1, visibleProgress || 0));
+      const rollWave = Math.sin(((state.prepTrayRollAngle || 0) * Math.PI) / 180);
+      const centerBias = state.prepTraySide === 'back' ? 56 : 44;
+      els.prepBreadingFood.style.setProperty('--prep-coat-visible', String(coatProgress));
+      els.prepBreadingFood.style.setProperty('--prep-coat-rx', (16 + coatProgress * 68).toFixed(1) + '%');
+      els.prepBreadingFood.style.setProperty('--prep-coat-ry', (18 + coatProgress * 58).toFixed(1) + '%');
+      els.prepBreadingFood.style.setProperty('--prep-coat-cx', (centerBias + rollWave * 8).toFixed(1) + '%');
+      els.prepBreadingFood.style.setProperty('--prep-coat-cy', (52 + Math.cos(((state.prepTrayRollAngle || 0) * Math.PI) / 180) * 4).toFixed(1) + '%');
+      els.prepBreadingFood.style.setProperty('--prep-coat-rot', (((state.prepTrayRollAngle || 0) * -0.08) % 24).toFixed(1) + 'deg');
       els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
       els.prepBreadingFood.style.setProperty('--prep-food-rot', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
     }
@@ -5875,8 +5943,8 @@ body.layout-editor-on .endX-marker {
     if (!maxProgress || state.prepProgress >= maxProgress) return;
     const tray = getActivePrepTrayElement(config);
     const trayRect = tray ? tray.getBoundingClientRect() : null;
-    const threshold = Math.max(260, ((trayRect && trayRect.width) || 520) * 0.72);
-    const rollThreshold = Math.max(110, ((trayRect && trayRect.width) || 520) * 0.24);
+    const threshold = Math.max(520, ((trayRect && trayRect.width) || 520) * 1.28);
+    const rollThreshold = Math.max(170, ((trayRect && trayRect.width) || 520) * 0.34);
     const material = getCurrentPrepBreadingMaterial(config);
     const safeDist = Math.max(0, dist || 0);
 
