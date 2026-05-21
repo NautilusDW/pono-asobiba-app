@@ -1807,6 +1807,7 @@ const FRUITS = [
   { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit', sk: 'y' },
 ];
 const COOKING_P = '../assets/images/bento/cooking/';
+const FREE_LAYOUT_ASSET_P = '../assets/images/bento/free-layout/';
 const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 192, rotation: -6 },
   { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 188, rotation: 2 },
@@ -1815,6 +1816,10 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 184, rotation: -3 },
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 178, rotation: 3 },
   { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 190, rotation: -4 },
+  { img: FREE_LAYOUT_ASSET_P+'tomato_single.png',           name: 'ミニトマト',       cat: 'veg',  sk: 'g', size: 260, rotation: -4 },
+  { img: FREE_LAYOUT_ASSET_P+'tomato_pair.png',             name: 'ふたごミニトマト', cat: 'veg',  sk: 'g', size: 252, rotation: 5 },
+  { img: FREE_LAYOUT_ASSET_P+'tomato_trio.png',             name: 'さんこミニトマト', cat: 'veg',  sk: 'g', size: 254, rotation: -2 },
+  { img: FREE_LAYOUT_ASSET_P+'tomato_cut.png',              name: 'カットミニトマト', cat: 'veg',  sk: 'g', size: 244, rotation: 3 },
   { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 176, rotation: 1 },
   { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 176, rotation: -1 },
 ];
@@ -2072,6 +2077,7 @@ const bentoBoxes = [
     id: 'box_bear',
     name: 'くまさん 3だんばこ',
     image: FREE_ASSET + 'box_bear.png',
+    riceImage: FREE_ASSET + 'box_bear_rice.png',
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
     imageScale: 1,
@@ -2092,6 +2098,7 @@ const bentoBoxes = [
     id: 'box_cat',
     name: 'ねこちゃん 3だんばこ',
     image: FREE_ASSET + 'box_cat.png',
+    riceImage: FREE_ASSET + 'box_cat_rice.png',
     shape: 'box_bear',
     bounds: { x: 76, y: 52, w: 608, h: 374 },
     imageScale: 1.02,
@@ -3066,15 +3073,22 @@ function renderFreeLayoutInto(host, opts = {}) {
   const items = Array.isArray(opts.items) ? opts.items : placedItems;
   const tierCount = getBoxTierCount(box);
   const activeTier = opts.tier || freeActiveTier;
+  const integratedRice = box.riceImage
+    ? items.find(item => item.type === 'rice' && getItemTier(item) === 1)
+    : null;
+  const useIntegratedRice = !!integratedRice && (!opts.interactive || activeTier === 1);
   const visibleItems = opts.interactive && tierCount > 1
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
+  const displayItems = useIntegratedRice
+    ? visibleItems.filter(item => item.uid !== integratedRice.uid && item.parentId !== integratedRice.uid)
+    : visibleItems;
   host.innerHTML = '';
   host.classList.add('free-layout-stage');
   const shape = document.createElement(box.image ? 'img' : 'div');
   shape.className = ['free-bento-shape', box.shape, box.id, box.image ? 'has-image' : ''].filter(Boolean).join(' ');
   if (box.image) {
-    shape.src = box.image;
+    shape.src = useIntegratedRice ? box.riceImage : box.image;
     shape.alt = box.name || '';
   }
   if (box.imageScale) {
@@ -3093,7 +3107,7 @@ function renderFreeLayoutInto(host, opts = {}) {
   }
   const layer = document.createElement('div');
   layer.className = 'free-layout-items';
-  visibleItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
+  displayItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
     layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
   });
   host.appendChild(layer);
