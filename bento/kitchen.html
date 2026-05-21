@@ -4190,6 +4190,7 @@ body.layout-editor-on .endX-marker {
     mix_mince: {
       kind: 'mix_mince',
       dragPrep: true,
+      dragDistanceScale: 1.5,
       startSpeech: 'ひきにくを ぐるぐるドラッグして こねよう！',
       completeSpeech: 'ハンバーグの かたちが できたよ！',
       steps: [
@@ -6275,7 +6276,8 @@ body.layout-editor-on .endX-marker {
     const maxProgress = getPrepMaxProgress(config);
     if (!maxProgress || state.prepProgress >= maxProgress) return;
     const rect = els.prepStage ? els.prepStage.getBoundingClientRect() : null;
-    const totalDistance = Math.max(3600, ((rect && rect.width) || 720) * 7.2);
+    const distanceScale = Math.max(0.5, config.dragDistanceScale || 1);
+    const totalDistance = Math.max(3600, ((rect && rect.width) || 720) * 7.2) * distanceScale;
     state.prepDragDistance = Math.max(0, state.prepDragDistance + Math.max(0, deltaDistance || 0));
     const nextProgress = Math.min(maxProgress, (state.prepDragDistance / totalDistance) * maxProgress);
     const prevStep = Math.floor((state.prepProgress || 0) + 0.001);
