@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-20 - [batch:95-kitchen-prep-minigames] Codex: `bento/kitchen.html` に下ごしらえ mini-game (`prep`) を追加中。対象は卵割り / ひき肉こね / エビ・コロッケのパン粉 / 鶏肉の粉まぶし。ローカル Playwright で egg / mince_patty / shrimp_breaded / chicken_marinated の prep flow を確認し、`sw.js` は v476 へバンプ。commit/push 前レビュー待ち。 (by Codex)
 - 2026-05-19 - [batch:82-kitchen-cook-timing-rating] Codex: `bento/kitchen.html` に焼く/揚げる用の青ゾーン timing gauge、星評価 (`★★★` / `★★☆`) 、完成後に皿へ移して画面中央へ出す served 表示を実装。grill は 2 回、fry は 1 回のタイミングを記録し、青以外でも失敗にせず星 2 評価へ落とす。クロスレビューで blocker なし、ローカル Playwright で egg grill 青 2 回 = `★★★` / shrimp fry 赤 = `★★☆` を確認済。`sw.js` は v468。commit/push 待ち。 (by Codex)
 - 2026-05-19 - [batch:83-kitchen-cook-timing-linear-gauge] Codex: user 指摘「ゲージが戻るとただのタイミングになる。早すぎる/焦げそうを表現し、赤に近づくほど危険感が欲しい」を受領。調理ゲージを一方向の火の通りバーへ変更中。左=まだ、中央=いま、右=いそいで/赤警告で、危険バッジが進行に応じて大きくなる設計。`sw.js` は v469 予定。 (by Codex)
 - 2026-05-19 - [batch:83-kitchen-cook-timing-linear-gauge] Codex: cook timing gauge を一方向進行へ変更済。2800ms で 0→100% に進み、100% で戻らず red のままタップ可能。ローカル Playwright で egg grill 青 2 回 = `★★★`、fry は 96→100% で戻らず、赤タップ = `★★☆` を確認。クロスレビュー blocker なし。commit/push 待ち。 (by Codex)
@@ -133,6 +134,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-21 - [batch:98-kitchen-korokke-breading-fix] **Done** — user 指摘「コロッケ画像に縞模様が乗る / 右の順番表示だけでなく容器内で浸す・転がす操作にしたい」を反映。`bento/kitchen.html` で prep 画像の `mix-blend-mode:multiply` と木目ストライプを撤去し、コロッケ/エビの衣付けを中央の `こな → たまご → パンこ` トレイ内で食材をドラッグして進める UI に変更。Playwright でコロッケの初期表示、こなドラッグ後のたまご遷移、こな→たまご→パンこ完走で fridge 遷移、エビ初期表示、844x390 表示を確認済。Codex は `sw.js` に触っていないため、反映時は Claude 側で CACHE_VERSION バンプが必要。 (by Codex)
 - 2026-05-20 - [batch:97-kitchen-knead-mince-stages-raw] **Done** — `bento/kitchen.html` のハンバーグ下ごしらえ「ひき肉をこねる」用に、トップダウンの丸いボウル内でひき肉が 5 段階に混ざる raw PNG を `tmp/alpha_pending/97_kitchen_knead_mince/` へ納品。最終推奨は解像度優先の分割版 `knead_mince_bowl_stages_1_3_raw.png` + `knead_mince_bowl_stages_4_5_raw.png`、比較/段階設計参考として 5 パネル版 `knead_mince_bowl_stages_sheet_candidate_a_raw.png` / `...candidate_b_raw.png` も保存。GPT Image 2 のみ、alpha 抜き・切り抜き・リサイズ・最適化なし。レビュー 2 名で、5 パネル版は位置揃え、分割版は実効解像度が強いと評価が割れたため、PM 判断で要件のフォールバック条件に沿って分割版を採用推奨。 (by Codex)
 - 2026-05-20 - [batch:96-kitchen-fridge-single-door-refstyle-raw] **Done** — batch 94 の正面/上部限定方向は user 評価「ダサい。デザインは前の方が良かった」により不採用。添付画像の青み・水彩・にぎやかな家庭冷蔵庫感へ戻し、片開き右ドア + 閉じ/開き 2 状態シートを `tmp/alpha_pending/96_kitchen_fridge_single_door_refstyle/kitchen_fridge_single_door_refstyle_v5_closed_open_raw.png` に納品。追加指摘の「扉の高さ」「閉じ絵」「最下段=切る前野菜室」「下から2番目=未カット鶏肉/牛肉/魚/エビのパック室」「下端は床で終わらず冷蔵庫が続く感じ」を反映。GPT Image 2 built-in 経路のみ、alpha 抜き・切り抜き・最適化・実装組み込み・`sw.js` 編集は未実施。レビュー担当 2 名で仕様/raw 利用性とも blocker なし。 (by Codex)
 - 2026-05-20 - [batch:96-kitchen-fridge-single-door-refstyle] **Done** — user 指摘「本体を長くしない、野菜室までを上段扱い、一番下に切る前野菜、旧ソーセージ段に調理前の肉/魚/エビ」を反映した v6 raw 2 案を追加納品。`kitchen_fridge_single_door_refstyle_v6_compact_contents_b_raw.png` を推奨候補、`..._a_raw.png` を比較候補として保存。GPT Image 2 built-in 経路のみ、alpha 抜き・切り抜き・リサイズ・最適化・色調整なし。レビュー 2 名で追加再生成不要、推奨は割れたが PM 判断で B を最終推奨。 (by Codex)

@@ -751,84 +751,154 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .prep-breading-trays {
   position: absolute;
-  left: 5.5%;
-  right: 5.5%;
-  bottom: 7%;
-  height: 43%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  left: 7%;
+  right: 7%;
+  top: 18%;
+  bottom: 12%;
+  display: block;
 }
 .prep-breading-tray {
-  position: relative;
-  border-radius: 18px;
-  border: 3px solid rgba(255,255,255,0.74);
-  background: linear-gradient(180deg, #FFFDF7 0%, #FFF0D5 100%);
-  box-shadow: 0 8px 16px rgba(132,80,32,0.15), inset 0 0 0 2px rgba(255,255,255,0.58);
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  align-items: center;
-  justify-items: center;
-  padding: 10px 12px 8px;
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  border: 4px solid rgba(255,255,255,0.78);
+  background:
+    radial-gradient(ellipse at center, rgba(255,255,255,0.46) 0 28%, transparent 68%),
+    linear-gradient(180deg, #FFFDF7 0%, #FFE6BE 100%);
+  box-shadow: 0 16px 28px rgba(132,80,32,0.18), inset 0 0 0 3px rgba(255,255,255,0.58);
   overflow: hidden;
-  opacity: 0.72;
-  transform: translateY(0);
-  transition: transform 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+  opacity: 1;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
+.prep-breading-tray::before,
 .prep-breading-tray::after {
   content: '';
   position: absolute;
-  inset: 8%;
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 32% 38%, rgba(255,255,255,0.68) 0 2px, transparent 3px),
-    radial-gradient(circle at 68% 58%, rgba(255,255,255,0.42) 0 2px, transparent 3px);
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s ease;
 }
-.prep-breading-tray.done,
-.prep-breading-tray.active {
-  opacity: 1;
+.prep-breading-tray::before {
+  inset: 9% 7% 12%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 34%, rgba(255,255,255,0.42) 0 8px, transparent 9px),
+    radial-gradient(circle at 68% 62%, rgba(255,255,255,0.28) 0 10px, transparent 11px);
+  opacity: 0.75;
+}
+.prep-breading-tray::after {
+  left: 6%;
+  right: 6%;
+  bottom: 7%;
+  height: 25%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(122,73,32,0.18), transparent 70%);
+  opacity: 0.52;
 }
 .prep-breading-tray.active {
   border-color: #F29F3D;
-  box-shadow: 0 0 0 5px rgba(242,159,61,0.22), 0 10px 18px rgba(132,80,32,0.18), inset 0 0 0 2px rgba(255,255,255,0.7);
-  transform: translateY(-4px);
-}
-.prep-breading-tray.active::after {
-  opacity: 1;
+  box-shadow: 0 0 0 5px rgba(242,159,61,0.2), 0 18px 30px rgba(132,80,32,0.18), inset 0 0 0 3px rgba(255,255,255,0.7);
 }
 .prep-breading-tray.done {
   border-color: #88C56C;
 }
 .prep-breading-tray-thumb {
-  width: 100%;
-  height: 100%;
-  min-height: 105px;
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  width: min(86%, 660px);
+  height: 72%;
+  transform: translate(-50%, -50%) scale(1.08);
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  filter: drop-shadow(0 6px 8px rgba(110,70,30,0.12));
+  filter: drop-shadow(0 8px 12px rgba(110,70,30,0.12));
+  opacity: 0.86;
 }
 .prep-breading-tray-label {
-  position: relative;
-  z-index: 1;
-  width: 100%;
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 128px;
+  padding: 6px 18px 7px;
+  border-radius: 999px;
+  background: rgba(255,253,246,0.9);
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.94rem;
   font-weight: 900;
   line-height: 1.15;
   text-align: center;
   white-space: normal;
+  box-shadow: 0 6px 12px rgba(120,72,30,0.1);
+}
+.prep-breading-tray[data-material="flour"] {
+  background:
+    radial-gradient(circle at 24% 42%, rgba(255,255,255,0.9) 0 18px, transparent 20px),
+    radial-gradient(circle at 68% 58%, rgba(255,255,255,0.65) 0 14px, transparent 16px),
+    linear-gradient(180deg, #FFFDF8 0%, #F1E3C9 100%);
+}
+.prep-breading-tray[data-material="egg"] {
+  background:
+    radial-gradient(circle at 36% 34%, rgba(255,246,183,0.86) 0 20px, transparent 22px),
+    radial-gradient(circle at 68% 58%, rgba(255,209,74,0.62) 0 18px, transparent 20px),
+    linear-gradient(180deg, #FFE891 0%, #F6B543 100%);
+}
+.prep-breading-tray[data-material="panko"] {
+  background:
+    radial-gradient(circle at 28% 35%, rgba(255,238,174,0.9) 0 7px, transparent 9px),
+    radial-gradient(circle at 58% 52%, rgba(214,158,76,0.55) 0 6px, transparent 8px),
+    radial-gradient(circle at 76% 66%, rgba(255,230,150,0.72) 0 5px, transparent 7px),
+    linear-gradient(180deg, #FFE9B3 0%, #C9914C 100%);
+  background-size: 70px 54px, 58px 48px, 46px 42px, auto;
+}
+.prep-breading-side-meter {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+}
+.prep-side-chip {
+  min-width: 112px;
+  padding: 6px 10px 7px;
+  border-radius: 999px;
+  background: rgba(255,253,246,0.9);
+  box-shadow: 0 6px 12px rgba(120,72,30,0.11);
+  color: #7A5532;
+  font-size: 0.74rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+.prep-side-fill {
+  display: block;
+  height: 5px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: rgba(138,98,58,0.14);
+  overflow: hidden;
+}
+.prep-side-fill::before {
+  content: '';
+  display: block;
+  width: calc(var(--side-progress, 0) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #FFB35F, #F7D764);
+}
+.prep-side-chip.active {
+  color: #D85687;
 }
 .prep-breading-food {
   position: absolute;
-  left: var(--prep-food-x, 19%);
-  top: var(--prep-food-y, 41%);
-  width: var(--prep-food-w, 21%);
-  height: var(--prep-food-h, 22%);
-  transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scale(var(--prep-food-scale, 1));
+  left: var(--prep-food-x, 50%);
+  top: var(--prep-food-y, 51%);
+  width: var(--prep-food-w, 29%);
+  height: var(--prep-food-h, 29%);
+  transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(var(--prep-food-scale, 1));
   transform-origin: center;
   background-repeat: no-repeat;
   background-position: center;
@@ -838,10 +908,71 @@ body[data-screen="fridge"] .stage-wrap {
   cursor: grab;
   touch-action: none;
   transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+  will-change: left, top, transform;
 }
 .prep-breading-food[data-kind="bread_korokke"] {
-  width: var(--prep-food-w, 20%);
-  height: var(--prep-food-h, 24%);
+  width: var(--prep-food-w, 28%);
+  height: var(--prep-food-h, 31%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 34%, rgba(221,142,99,0.55) 0 5px, transparent 6px),
+    radial-gradient(circle at 62% 44%, rgba(236,174,108,0.46) 0 6px, transparent 7px),
+    radial-gradient(circle at 46% 64%, rgba(211,134,86,0.42) 0 4px, transparent 5px),
+    radial-gradient(circle at 70% 70%, rgba(255,232,154,0.5) 0 5px, transparent 6px),
+    radial-gradient(ellipse at 48% 45%, #F3CE76 0 50%, #DFAE5F 72%, #B57C3D 100%) !important;
+  box-shadow: inset -10px -14px 22px rgba(132,82,31,0.2), inset 10px 10px 18px rgba(255,239,175,0.48);
+}
+.prep-breading-food::before,
+.prep-breading-food::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  background-position: center;
+  background-size: 28px 24px;
+  opacity: calc(var(--prep-coat-visible, 0) * 0.9);
+  pointer-events: none;
+  -webkit-mask-image: var(--prep-food-mask);
+  mask-image: var(--prep-food-mask);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  transition: opacity 0.18s ease;
+}
+.prep-breading-food::after {
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+.prep-breading-food[data-coat="flour"]::before {
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.95) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(238,226,199,0.82) 0 1px, transparent 2px);
+  background-size: 18px 16px, 13px 11px;
+  mix-blend-mode: screen;
+}
+.prep-breading-food[data-coat="egg"]::before {
+  background:
+    linear-gradient(135deg, rgba(255,196,52,0.74), rgba(255,236,117,0.42)),
+    radial-gradient(circle at 32% 28%, rgba(255,255,255,0.46) 0 4px, transparent 5px);
+  background-size: auto, 42px 36px;
+  mix-blend-mode: multiply;
+}
+.prep-breading-food[data-coat="egg"]::after {
+  background:
+    radial-gradient(ellipse at 34% 30%, rgba(255,255,255,0.62) 0 14%, transparent 34%),
+    radial-gradient(ellipse at 68% 62%, rgba(255,255,255,0.42) 0 9%, transparent 28%);
+  opacity: calc(var(--prep-coat-visible, 0) * 0.42);
+}
+.prep-breading-food[data-coat="panko"]::before {
+  background:
+    radial-gradient(circle, rgba(255,233,164,0.96) 0 3px, transparent 4px),
+    radial-gradient(circle, rgba(189,129,52,0.72) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(255,247,207,0.92) 0 2px, transparent 3px);
+  background-size: 22px 19px, 18px 16px, 13px 12px;
+  mix-blend-mode: normal;
 }
 .prep-breading-food.is-dragging {
   cursor: grabbing;
@@ -851,6 +982,39 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .prep-workbench.is-working .prep-breading-food {
   animation: prepBreadingDip 0.42s ease-out;
+}
+.prep-breading-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  overflow: hidden;
+}
+.prep-breading-particles i {
+  position: absolute;
+  left: var(--particle-x, 50%);
+  top: var(--particle-y, 50%);
+  width: var(--particle-size, 8px);
+  height: var(--particle-size, 8px);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: prepCoatingParticle 0.78s ease-out forwards;
+}
+.prep-breading-particles i[data-material="flour"] {
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 0 10px rgba(255,255,255,0.55);
+}
+.prep-breading-particles i[data-material="egg"] {
+  width: calc(var(--particle-size, 8px) * 1.45);
+  border-radius: 48% 52% 45% 55%;
+  background: rgba(255,197,53,0.78);
+  box-shadow: inset 0 0 5px rgba(255,255,255,0.55), 0 0 9px rgba(255,179,44,0.35);
+}
+.prep-breading-particles i[data-material="panko"] {
+  border-radius: 45% 38% 52% 44%;
+  background: #E7B65F;
+  box-shadow: inset 0 0 2px rgba(255,244,190,0.7);
 }
 .prep-breading-hint {
   position: absolute;
@@ -871,9 +1035,17 @@ body[data-screen="fridge"] .stage-wrap {
   z-index: 6;
 }
 @keyframes prepBreadingDip {
-  0%, 100% { transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scale(1); }
-  42% { transform: translate(-50%, -44%) rotate(calc(var(--prep-food-rot, 0deg) - 5deg)) scale(1.08); }
-  70% { transform: translate(-50%, -53%) rotate(calc(var(--prep-food-rot, 0deg) + 4deg)) scale(1.04); }
+  0%, 100% { transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1); }
+  42% { transform: translate(-50%, -44%) rotate(calc(var(--prep-food-rot, 0deg) - 5deg)) scaleX(var(--prep-food-facing, 1)) scale(1.08); }
+  70% { transform: translate(-50%, -53%) rotate(calc(var(--prep-food-rot, 0deg) + 4deg)) scaleX(var(--prep-food-facing, 1)) scale(1.04); }
+}
+@keyframes prepCoatingParticle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45) rotate(0deg); }
+  18% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, -36px))) scale(1.22) rotate(var(--particle-rot, 80deg));
+  }
 }
 .prep-workbench.is-working .prep-art-main {
   animation: prepWorkPop 0.34s ease-out;
@@ -3267,6 +3439,11 @@ body.layout-editor-on .endX-marker {
         <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
           <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
           <div class="prep-breading-trays" id="prep-breading-trays"></div>
+          <div class="prep-breading-particles" id="prep-breading-particles"></div>
+          <div class="prep-breading-side-meter" id="prep-breading-side-meter">
+            <span class="prep-side-chip" data-side="front">おもて<span class="prep-side-fill"></span></span>
+            <span class="prep-side-chip" data-side="back">うら<span class="prep-side-fill"></span></span>
+          </div>
           <div class="prep-breading-food" id="prep-breading-food"></div>
         </div>
         <div class="prep-workbench-ui">
@@ -3937,6 +4114,11 @@ body.layout-editor-on .endX-marker {
     prepDragLastY: 0,
     prepDragDistance: 0,
     prepTrayDistance: 0,
+    prepTraySide: 'front',
+    prepTrayFrontProgress: 0,
+    prepTrayBackProgress: 0,
+    prepTrayRollDistance: 0,
+    prepTrayRollAngle: 0,
     prepDragLastStep: 0,
     suppressPrepClick: false,
     cookProgress: 0,
@@ -3990,6 +4172,11 @@ body.layout-editor-on .endX-marker {
     state.prepDragMode = '';
     state.prepDragPointerId = null;
     state.prepTrayDistance = 0;
+    state.prepTraySide = 'front';
+    state.prepTrayFrontProgress = 0;
+    state.prepTrayBackProgress = 0;
+    state.prepTrayRollDistance = 0;
+    state.prepTrayRollAngle = 0;
     state.suppressPrepClick = false;
     state.cookAnimating = false;
     stopCookTimingGauge();
@@ -4235,6 +4422,8 @@ body.layout-editor-on .endX-marker {
     kneadCanvas:   document.getElementById('knead-canvas'),
     prepBreadingGame: document.getElementById('prep-breading-game'),
     prepBreadingTrays: document.getElementById('prep-breading-trays'),
+    prepBreadingParticles: document.getElementById('prep-breading-particles'),
+    prepBreadingSideMeter: document.getElementById('prep-breading-side-meter'),
     prepBreadingFood: document.getElementById('prep-breading-food'),
     prepBreadingHint: document.getElementById('prep-breading-hint'),
     prepBurst:     document.getElementById('prep-burst'),
@@ -4949,6 +5138,11 @@ body.layout-editor-on .endX-marker {
     state.prepDragLastY = 0;
     state.prepDragDistance = 0;
     state.prepTrayDistance = 0;
+    state.prepTraySide = 'front';
+    state.prepTrayFrontProgress = 0;
+    state.prepTrayBackProgress = 0;
+    state.prepTrayRollDistance = 0;
+    state.prepTrayRollAngle = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
     state.chopProgress = 0;
@@ -5074,16 +5268,38 @@ body.layout-editor-on .endX-marker {
     return foodStages[idx] || foodStages[0] || '';
   }
 
-  function getPrepTrayCenterPct(index) {
-    const centers = [20.5, 50, 79.5];
-    return centers[Math.max(0, Math.min(centers.length - 1, index || 0))] || 50;
+  function getPrepBreadingMaterial(step, trayStep, index) {
+    const raw = (step && (step.material || step.trayLabel || step.label)) || (trayStep && trayStep.label) || '';
+    if (raw.indexOf('たまご') >= 0) return 'egg';
+    if (raw.indexOf('パン') >= 0) return 'panko';
+    return 'flour';
   }
 
-  function snapPrepFoodToTray(index) {
+  function getPrepBreadingMaterialLabel(material) {
+    if (material === 'egg') return 'たまご';
+    if (material === 'panko') return 'パンこ';
+    return 'こな';
+  }
+
+  function resetPrepTrayCoatingProgress(side) {
+    state.prepTraySide = side || 'front';
+    state.prepTrayFrontProgress = 0;
+    state.prepTrayBackProgress = 0;
+    state.prepTrayRollDistance = 0;
+    state.prepTrayRollAngle = 0;
+  }
+
+  function getPrepTrayCoatingRatio() {
+    return (Math.max(0, Math.min(1, state.prepTrayFrontProgress || 0)) +
+      Math.max(0, Math.min(1, state.prepTrayBackProgress || 0))) / 2;
+  }
+
+  function snapPrepFoodToTray() {
     if (!els.prepBreadingFood) return;
-    els.prepBreadingFood.style.setProperty('--prep-food-x', getPrepTrayCenterPct(index) + '%');
-    els.prepBreadingFood.style.setProperty('--prep-food-y', '59%');
-    els.prepBreadingFood.style.setProperty('--prep-food-rot', (index === 0 ? '-4deg' : index === 1 ? '2deg' : '5deg'));
+    els.prepBreadingFood.style.setProperty('--prep-food-x', '50%');
+    els.prepBreadingFood.style.setProperty('--prep-food-y', '52%');
+    els.prepBreadingFood.style.setProperty('--prep-food-rot', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
+    els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
   }
 
   function renderPrepBreadingGame(config, progress) {
@@ -5093,48 +5309,76 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingTrays.innerHTML = '';
       els.prepBreadingTrays.dataset.kind = '';
       els.prepBreadingFood.style.backgroundImage = '';
+      els.prepBreadingFood.style.removeProperty('--prep-food-mask');
       return;
     }
 
     const traySteps = getPrepTraySteps(config);
     const activeIndex = getPrepTrayActiveIndex(config, progress);
+    const step = (config.steps && config.steps[activeIndex]) || {};
+    const trayStep = traySteps[activeIndex] || traySteps[0] || {};
+    const material = getPrepBreadingMaterial(step, trayStep, activeIndex);
     els.prepBreadingGame.setAttribute('aria-hidden', 'false');
-    if (els.prepBreadingTrays.dataset.kind !== config.kind) {
+    if (els.prepBreadingTrays.dataset.kind !== config.kind || els.prepBreadingTrays.dataset.step !== String(activeIndex)) {
       els.prepBreadingTrays.innerHTML = '';
-      traySteps.forEach(function (trayStep, idx) {
-        const tray = document.createElement('div');
-        tray.className = 'prep-breading-tray';
-        tray.dataset.trayIndex = String(idx);
-        const thumb = document.createElement('div');
-        thumb.className = 'prep-breading-tray-thumb';
-        setPrepVisual(thumb, trayStep);
-        const label = document.createElement('div');
-        label.className = 'prep-breading-tray-label';
-        label.textContent = trayStep.label || '';
-        tray.appendChild(thumb);
-        tray.appendChild(label);
-        els.prepBreadingTrays.appendChild(tray);
-      });
+      const tray = document.createElement('div');
+      tray.className = 'prep-breading-tray active';
+      tray.dataset.trayIndex = String(activeIndex);
+      tray.dataset.material = material;
+      const thumb = document.createElement('div');
+      thumb.className = 'prep-breading-tray-thumb';
+      setPrepVisual(thumb, trayStep);
+      const label = document.createElement('div');
+      label.className = 'prep-breading-tray-label';
+      label.textContent = getPrepBreadingMaterialLabel(material);
+      tray.appendChild(thumb);
+      tray.appendChild(label);
+      els.prepBreadingTrays.appendChild(tray);
       els.prepBreadingTrays.dataset.kind = config.kind || '';
+      els.prepBreadingTrays.dataset.step = String(activeIndex);
     }
-
-    [...els.prepBreadingTrays.querySelectorAll('.prep-breading-tray')].forEach(function (tray, idx) {
-      tray.classList.toggle('done', idx < activeIndex);
-      tray.classList.toggle('active', idx === activeIndex);
-    });
 
     const foodSrc = getPrepFoodStageSrc(config, progress);
     els.prepBreadingFood.dataset.kind = config.kind || '';
+    els.prepBreadingFood.dataset.coat = material;
     els.prepBreadingFood.dataset.step = String(activeIndex);
-    els.prepBreadingFood.style.backgroundImage = foodSrc ? 'url("' + foodSrc + '")' : '';
-    if (!state.prepDragging || state.prepDragMode !== 'tray') snapPrepFoodToTray(activeIndex);
+    if (config.kind === 'bread_korokke') {
+      els.prepBreadingFood.style.backgroundImage = '';
+      els.prepBreadingFood.style.setProperty('--prep-food-mask', 'radial-gradient(ellipse at center, black 0 62%, transparent 69%)');
+    } else {
+      els.prepBreadingFood.style.backgroundImage = foodSrc ? 'url("' + foodSrc + '")' : '';
+      els.prepBreadingFood.style.setProperty('--prep-food-mask', foodSrc ? 'url("' + foodSrc + '")' : 'none');
+    }
+    updatePrepBreadingCoatingView(config);
+    if (!state.prepDragging || state.prepDragMode !== 'tray') snapPrepFoodToTray();
 
-    const step = (config.steps && config.steps[activeIndex]) || {};
     if (els.prepBreadingHint) {
-      const trayLabel = step.trayLabel || (traySteps[activeIndex] && traySteps[activeIndex].label) || '';
-      els.prepBreadingHint.textContent = step.caption || (trayLabel
-        ? trayLabel + 'の トレイで ころころしよう！'
-        : 'トレイの なかで ころころしよう！');
+      els.prepBreadingHint.textContent = step.caption || (getPrepBreadingMaterialLabel(material) + 'の なかで ころころしよう！');
+    }
+  }
+
+  function updatePrepBreadingCoatingView(config) {
+    if (!isTrayPrepConfig(config)) return;
+    const visibleProgress = state.prepTraySide === 'back'
+      ? state.prepTrayBackProgress
+      : state.prepTrayFrontProgress;
+    if (els.prepBreadingFood) {
+      els.prepBreadingFood.style.setProperty('--prep-coat-visible', String(Math.max(0, Math.min(1, visibleProgress || 0))));
+      els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
+      els.prepBreadingFood.style.setProperty('--prep-food-rot', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
+    }
+    if (els.prepBreadingSideMeter) {
+      [...els.prepBreadingSideMeter.querySelectorAll('.prep-side-chip')].forEach(function (chip) {
+        const side = chip.dataset.side || 'front';
+        const progress = side === 'back' ? state.prepTrayBackProgress : state.prepTrayFrontProgress;
+        chip.classList.toggle('active', side === state.prepTraySide);
+        chip.style.setProperty('--side-progress', String(Math.max(0, Math.min(1, progress || 0))));
+      });
+    }
+    if (els.prepProgress) {
+      const maxProgress = Math.max(1, getPrepMaxProgress(config));
+      const pct = ((Math.max(0, state.prepProgress || 0) + getPrepTrayCoatingRatio()) / maxProgress) * 100;
+      els.prepProgress.style.width = Math.max(0, Math.min(100, pct)) + '%';
     }
   }
 
@@ -5441,7 +5685,8 @@ body.layout-editor-on .endX-marker {
     const y = Math.max(18, Math.min(76, ((evt.clientY - rect.top) / rect.height) * 100));
     els.prepBreadingFood.style.setProperty('--prep-food-x', x + '%');
     els.prepBreadingFood.style.setProperty('--prep-food-y', y + '%');
-    els.prepBreadingFood.style.setProperty('--prep-food-rot', ((x - 50) * 0.09).toFixed(1) + 'deg');
+    els.prepBreadingFood.style.setProperty('--prep-food-rot', (((state.prepTrayRollAngle || 0) % 360) + (x - 50) * 0.04).toFixed(1) + 'deg');
+    els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
   }
 
   function pointIsInsideActiveTray(evt, config) {
@@ -5520,6 +5765,7 @@ body.layout-editor-on .endX-marker {
     const actionStep = config.steps[currentProgress] || {};
     const nextProgress = Math.min(maxProgress, currentProgress + 1);
     const nextStep = config.steps[nextProgress] || actionStep;
+    resetPrepTrayCoatingProgress('front');
     updatePrepView(config, nextProgress, true);
     showPrepBurst(actionStep.burst || 'できた！');
     setSpeech(nextStep.caption || nextStep.label || actionStep.caption || 'いいかんじ！', 'prep');
@@ -5539,6 +5785,73 @@ body.layout-editor-on .endX-marker {
       if (els.prepStage) els.prepStage.classList.remove('is-working');
       state.prepAnimating = false;
     }, 380));
+  }
+
+  function getCurrentPrepBreadingMaterial(config) {
+    const traySteps = getPrepTraySteps(config);
+    const activeIndex = getPrepTrayActiveIndex(config, state.prepProgress || 0);
+    const step = (config.steps && config.steps[activeIndex]) || {};
+    const trayStep = traySteps[activeIndex] || traySteps[0] || {};
+    return getPrepBreadingMaterial(step, trayStep, activeIndex);
+  }
+
+  function spawnPrepBreadingParticles(evt, material, dist) {
+    if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
+    const rect = els.prepStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
+    const count = Math.max(2, Math.min(8, Math.floor((dist || 0) / 18)));
+    for (let i = 0; i < count; i++) {
+      const particle = document.createElement('i');
+      particle.dataset.material = material || 'flour';
+      particle.style.setProperty('--particle-x', (xPct + (Math.random() * 7 - 3.5)).toFixed(2) + '%');
+      particle.style.setProperty('--particle-y', (yPct + (Math.random() * 7 - 3.5)).toFixed(2) + '%');
+      particle.style.setProperty('--particle-size', (material === 'egg' ? 7 + Math.random() * 9 : 4 + Math.random() * 8).toFixed(1) + 'px');
+      particle.style.setProperty('--particle-dx', (Math.random() * 70 - 35).toFixed(1) + 'px');
+      particle.style.setProperty('--particle-dy', (-18 - Math.random() * 54).toFixed(1) + 'px');
+      particle.style.setProperty('--particle-rot', (Math.random() * 180 - 90).toFixed(1) + 'deg');
+      els.prepBreadingParticles.appendChild(particle);
+      state.pendingTimers.push(setTimeout(function () {
+        if (particle && particle.parentNode) particle.parentNode.removeChild(particle);
+      }, 850));
+    }
+  }
+
+  function advanceTrayPrepCoating(config, dist, evt, isInsideTray) {
+    if (!config || state.prepAnimating) return;
+    const maxProgress = getPrepMaxProgress(config);
+    if (!maxProgress || state.prepProgress >= maxProgress) return;
+    const tray = getActivePrepTrayElement(config);
+    const trayRect = tray ? tray.getBoundingClientRect() : null;
+    const threshold = Math.max(260, ((trayRect && trayRect.width) || 520) * 0.72);
+    const rollThreshold = Math.max(110, ((trayRect && trayRect.width) || 520) * 0.24);
+    const material = getCurrentPrepBreadingMaterial(config);
+    const safeDist = Math.max(0, dist || 0);
+
+    if (isInsideTray !== false) {
+      const add = safeDist / threshold;
+      if (state.prepTraySide === 'back') {
+        state.prepTrayBackProgress = Math.min(1, (state.prepTrayBackProgress || 0) + add);
+      } else {
+        state.prepTrayFrontProgress = Math.min(1, (state.prepTrayFrontProgress || 0) + add);
+      }
+      state.prepTrayRollDistance += safeDist;
+      state.prepTrayRollAngle += safeDist * (state.prepTraySide === 'back' ? -0.46 : 0.46);
+      const sideProgress = state.prepTraySide === 'back' ? state.prepTrayBackProgress : state.prepTrayFrontProgress;
+      if (sideProgress >= 0.5 && state.prepTrayRollDistance >= rollThreshold) {
+        state.prepTraySide = state.prepTraySide === 'back' ? 'front' : 'back';
+        state.prepTrayRollDistance = 0;
+        showPrepBurst(state.prepTraySide === 'back' ? 'くるん！' : 'ころん！');
+        setSpeech(state.prepTraySide === 'back' ? 'うらにも つけよう！' : 'おもても もうすこし！', 'prep');
+      }
+      spawnPrepBreadingParticles(evt, material, safeDist);
+    }
+
+    updatePrepBreadingCoatingView(config);
+    if ((state.prepTrayFrontProgress || 0) >= 1 && (state.prepTrayBackProgress || 0) >= 1) {
+      advanceTrayPrepStep(config);
+    }
   }
 
   function beginTrayPrepDrag(evt, config) {
@@ -5573,16 +5886,7 @@ body.layout-editor-on .endX-marker {
     if (dist > 1) {
       state.suppressPrepClick = true;
       movePrepFoodToPointer(evt);
-      if (pointIsInsideActiveTray(evt, config)) {
-        const tray = getActivePrepTrayElement(config);
-        const trayRect = tray ? tray.getBoundingClientRect() : null;
-        const threshold = Math.max(90, ((trayRect && trayRect.width) || 220) * 0.55);
-        state.prepTrayDistance += dist;
-        if (state.prepTrayDistance >= threshold) {
-          releasePrepPointerCapture(evt);
-          advanceTrayPrepStep(config);
-        }
-      }
+      advanceTrayPrepCoating(config, dist, evt, pointIsInsideActiveTray(evt, config));
     }
   }
 
@@ -5594,7 +5898,7 @@ body.layout-editor-on .endX-marker {
     state.prepTrayDistance = 0;
     if (els.prepBreadingFood) els.prepBreadingFood.classList.remove('is-dragging');
     releasePrepPointerCapture(evt);
-    snapPrepFoodToTray(getPrepTrayActiveIndex(config, state.prepProgress || 0));
+    snapPrepFoodToTray();
   }
 
   function onPrepPointerDown(evt) {
@@ -5676,7 +5980,8 @@ body.layout-editor-on .endX-marker {
     if (state.prepProgress >= maxProgress) return;
 
     if (isTrayPrepConfig(config)) {
-      advanceTrayPrepStep(config);
+      advanceTrayPrepCoating(config, Math.max(80, ((els.prepStage && els.prepStage.getBoundingClientRect().width) || 720) * 0.12), null, true);
+      if (!state.prepAnimating) setSpeech('ドラッグで ころころ ころがそう！', 'prep');
       return;
     }
 
@@ -8124,6 +8429,11 @@ body.layout-editor-on .endX-marker {
     state.prepDragLastY = 0;
     state.prepDragDistance = 0;
     state.prepTrayDistance = 0;
+    state.prepTraySide = 'front';
+    state.prepTrayFrontProgress = 0;
+    state.prepTrayBackProgress = 0;
+    state.prepTrayRollDistance = 0;
+    state.prepTrayRollAngle = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
     state.cookProgress = 0;
