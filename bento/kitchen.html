@@ -913,14 +913,6 @@ body[data-screen="fridge"] .stage-wrap {
 .prep-breading-food[data-kind="bread_korokke"] {
   width: var(--prep-food-w, 28%);
   height: var(--prep-food-h, 31%);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 28% 34%, rgba(221,142,99,0.55) 0 5px, transparent 6px),
-    radial-gradient(circle at 62% 44%, rgba(236,174,108,0.46) 0 6px, transparent 7px),
-    radial-gradient(circle at 46% 64%, rgba(211,134,86,0.42) 0 4px, transparent 5px),
-    radial-gradient(circle at 70% 70%, rgba(255,232,154,0.5) 0 5px, transparent 6px),
-    radial-gradient(ellipse at 48% 45%, #F3CE76 0 50%, #DFAE5F 72%, #B57C3D 100%) !important;
-  box-shadow: inset -10px -14px 22px rgba(132,82,31,0.2), inset 10px 10px 18px rgba(255,239,175,0.48);
 }
 .prep-breading-food::before,
 .prep-breading-food::after {
@@ -5344,13 +5336,8 @@ body.layout-editor-on .endX-marker {
     els.prepBreadingFood.dataset.kind = config.kind || '';
     els.prepBreadingFood.dataset.coat = material;
     els.prepBreadingFood.dataset.step = String(activeIndex);
-    if (config.kind === 'bread_korokke') {
-      els.prepBreadingFood.style.backgroundImage = '';
-      els.prepBreadingFood.style.setProperty('--prep-food-mask', 'radial-gradient(ellipse at center, black 0 62%, transparent 69%)');
-    } else {
-      els.prepBreadingFood.style.backgroundImage = foodSrc ? 'url("' + foodSrc + '")' : '';
-      els.prepBreadingFood.style.setProperty('--prep-food-mask', foodSrc ? 'url("' + foodSrc + '")' : 'none');
-    }
+    els.prepBreadingFood.style.backgroundImage = foodSrc ? 'url("' + foodSrc + '")' : '';
+    els.prepBreadingFood.style.setProperty('--prep-food-mask', foodSrc ? 'url("' + foodSrc + '")' : 'none');
     updatePrepBreadingCoatingView(config);
     if (!state.prepDragging || state.prepDragMode !== 'tray') snapPrepFoodToTray();
 
