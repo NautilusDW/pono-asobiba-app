@@ -1050,6 +1050,50 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transform: translate(-50%, -50%);
   opacity: 1;
   filter: drop-shadow(0 12px 14px rgba(93,62,34,0.14));
+  overflow: hidden;
+}
+.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb {
+  filter: url("#prep-egg-liquid-distort") drop-shadow(0 12px 14px rgba(93,62,34,0.14));
+  animation: prepEggTrayWobble 1.75s ease-in-out infinite;
+}
+.prep-breading-game[data-topview="true"][data-liquid-active="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb {
+  animation-duration: 1.05s;
+}
+.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::before,
+.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::before {
+  left: 6%;
+  right: 6%;
+  top: 14%;
+  bottom: 16%;
+  border-radius: 34% 36% 31% 33% / 47% 46% 42% 44%;
+  background:
+    radial-gradient(ellipse at 22% 35%, rgba(255,255,255,0.34) 0 8%, transparent 21%),
+    radial-gradient(ellipse at 66% 58%, rgba(255,255,255,0.2) 0 7%, transparent 20%),
+    repeating-linear-gradient(104deg, transparent 0 28px, rgba(255,255,255,0.16) 31px 36px, transparent 42px 70px);
+  opacity: var(--prep-egg-wave-opacity, 0);
+  mix-blend-mode: screen;
+  transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.5%, 0, 0);
+  animation: prepEggSurfaceFlow 1.25s ease-in-out infinite;
+}
+.prep-breading-game[data-topview="true"] .prep-breading-tray[data-material="egg"] .prep-breading-tray-thumb::after {
+  left: 10%;
+  right: 10%;
+  top: 18%;
+  bottom: 19%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 38% 45%, transparent 0 24%, rgba(255,246,183,0.26) 27% 31%, transparent 34%),
+    radial-gradient(ellipse at 61% 56%, transparent 0 16%, rgba(185,115,12,0.16) 19% 21%, transparent 25%),
+    radial-gradient(ellipse at 50% 50%, rgba(255,186,28,0.08), transparent 64%);
+  opacity: var(--prep-egg-ripple-opacity, 0);
+  mix-blend-mode: multiply;
+  transform: translate3d(1.5%, 0, 0) rotate(-1deg);
+  animation: prepEggRippleDrift 1.65s ease-in-out infinite;
 }
 .prep-breading-game[data-topview="true"] .prep-breading-side-meter {
   display: none;
@@ -1123,6 +1167,19 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   0%, 100% { transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1); }
   42% { transform: translate(-50%, -44%) rotate(calc(var(--prep-food-rot, 0deg) - 5deg)) scaleX(var(--prep-food-facing, 1)) scale(1.08); }
   70% { transform: translate(-50%, -53%) rotate(calc(var(--prep-food-rot, 0deg) + 4deg)) scaleX(var(--prep-food-facing, 1)) scale(1.04); }
+}
+@keyframes prepEggTrayWobble {
+  0%, 100% { transform: translate(-50%, -50%) scale(1.002, 0.998) skewX(0deg); }
+  38% { transform: translate(-50.2%, -50.1%) scale(1.008, 0.994) skewX(-0.8deg); }
+  68% { transform: translate(-49.8%, -49.9%) scale(0.997, 1.006) skewX(0.7deg); }
+}
+@keyframes prepEggSurfaceFlow {
+  0%, 100% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.4%, -0.4%, 0) rotate(-0.4deg); }
+  50% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(1.2%, 0.7%, 0) rotate(0.5deg); }
+}
+@keyframes prepEggRippleDrift {
+  0%, 100% { transform: translate3d(1.4%, -0.3%, 0) scale(0.985, 1.015) rotate(-1deg); }
+  45% { transform: translate3d(-1.2%, 0.6%, 0) scale(1.018, 0.992) rotate(1deg); }
 }
 @keyframes prepCoatingParticle {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45) rotate(0deg); }
@@ -3361,6 +3418,17 @@ body.layout-editor-on .endX-marker {
 </head>
 <body data-screen="mode">
 
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">
+  <filter id="prep-egg-liquid-distort" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.045" numOctaves="1" seed="8" result="eggWave">
+      <animate attributeName="baseFrequency" dur="1.6s" values="0.012 0.045;0.018 0.058;0.013 0.04;0.012 0.045" repeatCount="indefinite" />
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="eggWave" scale="2.6" xChannelSelector="R" yChannelSelector="G">
+      <animate attributeName="scale" dur="1.25s" values="1.2;3.7;2.1;1.2" repeatCount="indefinite" />
+    </feDisplacementMap>
+  </filter>
+</svg>
+
 <!-- ===================== 16:9 Stage (1600×900 contain-fit) =====================
      quizland / writing-mori と同じ contain-fit パターン。
      viewport 全面 = .stage-wrap (画面別グラデでレターボックス)。
@@ -5538,11 +5606,30 @@ body.layout-editor-on .endX-marker {
   function updatePrepBreadingLayers(config, material, progress) {
     if (!config || !config.topviewBreading) {
       clearPrepBreadingLayers();
+      updatePrepEggLiquidMotion(false, 0);
       return;
     }
     const assets = config.topviewBreading;
     setPrepBreadingLayerVisual(els.prepBreadingEffect, assets.effect && assets.effect[material], progress);
     setPrepBreadingLayerVisual(els.prepBreadingForeground, assets.foreground && assets.foreground[material], progress);
+    updatePrepEggLiquidMotion(material === 'egg', progress);
+  }
+
+  function updatePrepEggLiquidMotion(active, progress) {
+    if (!els.prepBreadingGame) return;
+    const ratio = Math.max(0, Math.min(1, progress || 0));
+    const isActive = !!active;
+    els.prepBreadingGame.dataset.liquid = isActive ? 'egg' : 'none';
+    els.prepBreadingGame.dataset.liquidActive = (isActive && (ratio > 0.02 || state.prepDragging)) ? 'true' : 'false';
+    if (!isActive) {
+      els.prepBreadingGame.style.removeProperty('--prep-egg-wave-opacity');
+      els.prepBreadingGame.style.removeProperty('--prep-egg-ripple-opacity');
+      els.prepBreadingGame.style.removeProperty('--prep-egg-wave-scale');
+      return;
+    }
+    els.prepBreadingGame.style.setProperty('--prep-egg-wave-opacity', (0.16 + ratio * 0.2).toFixed(3));
+    els.prepBreadingGame.style.setProperty('--prep-egg-ripple-opacity', (0.14 + ratio * 0.24).toFixed(3));
+    els.prepBreadingGame.style.setProperty('--prep-egg-wave-scale', (1 + ratio * 0.018).toFixed(3));
   }
 
   function snapPrepFoodToTray() {
@@ -5566,6 +5653,7 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingFood.style.removeProperty('--prep-base-mask');
       els.prepBreadingFood.dataset.frameSeries = 'false';
       clearPrepBreadingLayers();
+      updatePrepEggLiquidMotion(false, 0);
       return;
     }
 
