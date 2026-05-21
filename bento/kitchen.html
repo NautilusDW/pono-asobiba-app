@@ -4077,9 +4077,39 @@ body.layout-editor-on .endX-marker {
       completeSpeech: 'ハンバーグの かたちが できたよ！',
       steps: [
         { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'ひきにくを ボウルへ', caption: 'ぐるぐるドラッグ！', burst: 'ぐるぐる！' },
-        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png', label: 'ぐるぐる こねよう', caption: 'まざってきたよ！', burst: 'こねこね！' },
-        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png', label: 'もっと こねよう', caption: 'まとまってきたよ！', burst: 'ぎゅっ！' },
-        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'なめらかに しよう', caption: 'あとすこし！', burst: 'ぐるぐる！' },
+        {
+          src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_1.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_2.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_swirl_1.png',
+          ],
+          label: 'ぐるぐる こねよう',
+          caption: 'まざってきたよ！',
+          burst: 'こねこね！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_2.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_swirl_1.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_1.png',
+          ],
+          label: 'もっと こねよう',
+          caption: 'まとまってきたよ！',
+          burst: 'ぎゅっ！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/prep/knead_mince_variant_swirl_1.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_1.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_2.png',
+          ],
+          label: 'なめらかに しよう',
+          caption: 'あとすこし！',
+          burst: 'ぐるぐる！',
+        },
         { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'ハンバーグの したごしらえ できたよ！', burst: 'できた！' },
       ],
     },
@@ -5641,8 +5671,13 @@ body.layout-editor-on .endX-marker {
     const current = getKneadStepForProgress(config, progress);
     const reveal = getKneadRevealStep(config, progress) || current;
     const srcs = [];
+    const addSrc = function (src) {
+      if (src && !srcs.includes(src)) srcs.push(src);
+    };
     const add = function (step) {
-      if (step && step.src && !srcs.includes(step.src)) srcs.push(step.src);
+      if (!step) return;
+      addSrc(step.src);
+      (step.brushSrcs || []).forEach(addSrc);
     };
     add(reveal);
     const revealIndex = Math.max(0, unique.findIndex(function (step) { return reveal && step.src === reveal.src; }));
