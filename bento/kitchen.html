@@ -1024,6 +1024,10 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background-size: 22px 19px, 18px 16px, 13px 12px;
   mix-blend-mode: normal;
 }
+.prep-breading-food[data-frame-series="true"]::before,
+.prep-breading-food[data-frame-series="true"]::after {
+  opacity: 0 !important;
+}
 .prep-breading-food.is-dragging {
   cursor: grabbing;
   transition: none;
@@ -4136,10 +4140,30 @@ body.layout-editor-on .endX-marker {
       completeSpeech: 'コロッケの したごしらえ できたよ！',
       toolSteps: PREP_TOOL_STEPS,
       foodStages: [
-        { sheet: 'breading', x: 1, y: 1, mask: 'radial-gradient(ellipse 47% 31% at 50% 52%, black 0 82%, transparent 100%)' },
-        { sheet: 'breading', x: 1, y: 1, mask: 'radial-gradient(ellipse 47% 31% at 50% 52%, black 0 82%, transparent 100%)' },
-        { sheet: 'breading', x: 1, y: 1, mask: 'radial-gradient(ellipse 47% 31% at 50% 52%, black 0 82%, transparent 100%)' },
-        '../assets/images/bento/cooking/korokke/korokke_001_raw.png',
+        '../assets/images/bento/cooking/korokke/prep/korokke_panko_05.png',
+      ],
+      stepFrames: [
+        [
+          '../assets/images/bento/cooking/korokke/prep/korokke_flour_01.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_flour_02.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_flour_03.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_flour_04.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_flour_05.png',
+        ],
+        [
+          '../assets/images/bento/cooking/korokke/prep/korokke_egg_01.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_egg_02.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_egg_03.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_egg_04.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_egg_05.png',
+        ],
+        [
+          '../assets/images/bento/cooking/korokke/prep/korokke_panko_01.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_panko_02.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_panko_03.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_panko_04.png',
+          '../assets/images/bento/cooking/korokke/prep/korokke_panko_05.png',
+        ],
       ],
       steps: [
         { sheet: 'breading', x: 0, y: 1, label: 'こなで ころころ', caption: 'こなの トレイで ころころ！', burst: 'ぱふっ！', trayLabel: 'こな' },
@@ -5331,7 +5355,16 @@ body.layout-editor-on .endX-marker {
     return Math.max(0, Math.min(traySteps.length - 1, Math.floor((progress || 0) + 0.001)));
   }
 
-  function getPrepFoodStageVisual(config, progress) {
+  function getPrepFoodStageVisual(config, progress, frameProgress) {
+    if (isTrayPrepConfig(config) && Array.isArray(config && config.stepFrames)) {
+      const activeIndex = getPrepTrayActiveIndex(config, progress);
+      const frames = config.stepFrames[activeIndex];
+      if (Array.isArray(frames) && frames.length) {
+        const ratio = Math.max(0, Math.min(1, typeof frameProgress === 'number' ? frameProgress : 0));
+        const frameIndex = Math.max(0, Math.min(frames.length - 1, Math.round(ratio * (frames.length - 1))));
+        return { src: frames[frameIndex], frameSeries: true };
+      }
+    }
     const foodStages = Array.isArray(config && config.foodStages) ? config.foodStages : [];
     if (!foodStages.length) return '';
     const idx = Math.max(0, Math.min(foodStages.length - 1, Math.floor((progress || 0) + 0.001)));
@@ -5347,6 +5380,7 @@ body.layout-editor-on .endX-marker {
     el.style.backgroundPosition = 'center';
     el.style.mixBlendMode = foodVisual.blend || 'normal';
     el.style.filter = foodVisual.filter || '';
+    el.dataset.frameSeries = foodVisual.frameSeries ? 'true' : 'false';
     el.style.setProperty('--prep-food-mask', foodVisual.mask || 'none');
     el.style.setProperty('--prep-base-mask', foodVisual.mask || 'none');
     if (foodVisual.src) {
@@ -5403,6 +5437,8 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingTrays.dataset.kind = '';
       els.prepBreadingFood.style.backgroundImage = '';
       els.prepBreadingFood.style.removeProperty('--prep-food-mask');
+      els.prepBreadingFood.style.removeProperty('--prep-base-mask');
+      els.prepBreadingFood.dataset.frameSeries = 'false';
       return;
     }
 
@@ -5431,7 +5467,7 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingTrays.dataset.step = String(activeIndex);
     }
 
-    const foodVisual = getPrepFoodStageVisual(config, progress);
+    const foodVisual = getPrepFoodStageVisual(config, progress, getPrepTrayCoatingRatio());
     els.prepBreadingFood.dataset.kind = config.kind || '';
     els.prepBreadingFood.dataset.coat = material;
     els.prepBreadingFood.dataset.step = String(activeIndex);
@@ -5451,6 +5487,8 @@ body.layout-editor-on .endX-marker {
       : state.prepTrayFrontProgress;
     if (els.prepBreadingFood) {
       const coatProgress = Math.max(0, Math.min(1, visibleProgress || 0));
+      const foodVisual = getPrepFoodStageVisual(config, state.prepProgress || 0, coatProgress);
+      setPrepFoodVisual(els.prepBreadingFood, foodVisual);
       const rollWave = Math.sin(((state.prepTrayRollAngle || 0) * Math.PI) / 180);
       const centerBias = state.prepTraySide === 'back' ? 56 : 44;
       els.prepBreadingFood.style.setProperty('--prep-coat-visible', String(coatProgress));
