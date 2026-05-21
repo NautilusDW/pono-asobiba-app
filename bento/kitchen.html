@@ -1129,6 +1129,11 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   height: var(--prep-food-h, 21%);
   filter: drop-shadow(0 8px 9px rgba(84,55,28,0.18));
 }
+.prep-breading-game[data-topview="true"] .prep-breading-food[data-kind="bread_shrimp"] {
+  width: var(--prep-food-w, 22%);
+  height: var(--prep-food-h, 30%);
+  filter: drop-shadow(0 8px 9px rgba(84,55,28,0.18));
+}
 .prep-breading-food.is-dragging {
   cursor: grabbing;
   transition: none;
@@ -4263,19 +4268,56 @@ body.layout-editor-on .endX-marker {
     bread_shrimp: {
       kind: 'bread_shrimp',
       trayPrep: true,
+      singleSurfacePrep: true,
       startSpeech: 'エビに ころもを つけよう！',
       completeSpeech: 'エビフライの したごしらえ できたよ！',
-      toolSteps: PREP_TOOL_STEPS,
+      toolSteps: [
+        { src: '../assets/images/bento/cooking/korokke/topview/tray_flour.png', label: 'こな' },
+        { src: '../assets/images/bento/cooking/korokke/topview/tray_egg.png', label: 'たまご' },
+        { src: '../assets/images/bento/cooking/korokke/topview/tray_panko.png', label: 'パンこ' },
+      ],
+      topviewBreading: {
+        foreground: {
+          flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '32%', h: '22%', dy: '17%', opacity: 0.6 },
+          egg: { src: '../assets/images/bento/cooking/korokke/topview/overlay_egg_meniscus.png', w: '32%', h: '19%', dy: '30%', opacity: 0.84 },
+          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '35%', h: '17%', dy: '30%', opacity: 0.82 },
+        },
+        effect: {
+          flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '28%', h: '22%', dy: '-9%', opacity: 0.3 },
+          egg: { src: '../assets/images/bento/cooking/korokke/topview/overlay_egg_ripple_02.png', w: '39%', h: '27%', dy: '6%', opacity: 0.62 },
+          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '30%', h: '13%', dy: '17%', opacity: 0.38 },
+        },
+      },
       foodStages: [
-        '../assets/images/bento/cooking/shrimp/shrimp_001_raw.png',
-        '../assets/images/bento/cooking/shrimp/shrimp_002_mid.png',
-        '../assets/images/bento/cooking/shrimp/shrimp_003_done.png',
-        '../assets/images/bento/cooking/shrimp/shrimp_003_done.png',
+        '../assets/images/bento/cooking/shrimp/prep/shrimp_panko_05.png',
+      ],
+      stepFrames: [
+        [
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_flour_01.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_flour_02.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_flour_03.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_flour_04.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_flour_05.png',
+        ],
+        [
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_egg_01.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_egg_02.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_egg_03.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_egg_04.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_egg_05.png',
+        ],
+        [
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_panko_01.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_panko_02.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_panko_03.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_panko_04.png',
+          '../assets/images/bento/cooking/shrimp/prep/shrimp_panko_05.png',
+        ],
       ],
       steps: [
-        { sheet: 'breading', x: 0, y: 0, label: 'こなで ころころ', caption: 'こなの トレイで ころころ！', burst: 'ぱふっ！', trayLabel: 'こな' },
-        { sheet: 'breading', x: 1, y: 0, label: 'たまごに くぐらせよう', caption: 'たまごに くぐらせよう！', burst: 'とろん！', trayLabel: 'たまご' },
-        { sheet: 'breading', x: 2, y: 0, label: 'パンこで ころころ', caption: 'パンこで ころころ！', burst: 'サクッ！', trayLabel: 'パンこ' },
+        { sheet: 'breading', x: 0, y: 0, label: 'こなで うめよう', caption: 'こなの なかで こすろう！', burst: 'ぱふっ！', trayLabel: 'こな' },
+        { sheet: 'breading', x: 1, y: 0, label: 'たまごに ひたそう', caption: 'たまごに くぐらせよう！', burst: 'とろん！', trayLabel: 'たまご' },
+        { sheet: 'breading', x: 2, y: 0, label: 'パンこを おそう', caption: 'パンこに おしつけよう！', burst: 'サクッ！', trayLabel: 'パンこ' },
         { sheet: 'breading', x: 2, y: 0, label: 'できあがり', caption: 'エビフライの じゅんび できたよ！', burst: 'できた！' },
       ],
     },
