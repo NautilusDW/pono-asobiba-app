@@ -3836,6 +3836,7 @@ body.layout-editor-on .endX-marker {
     lastSrc: '',
     scratch: null,
     overlaySrc: '',
+    trailCount: 0,
   };
 
   const PREP_CONFIGS = {
@@ -5208,6 +5209,7 @@ body.layout-editor-on .endX-marker {
       els.kneadCanvas.width = w;
       els.kneadCanvas.height = h;
       kneadRuntime.lastSrc = '';
+      kneadRuntime.trailCount = 0;
     }
     return true;
   }
@@ -5254,16 +5256,17 @@ body.layout-editor-on .endX-marker {
       ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
       kneadRuntime.lastSrc = src;
       kneadRuntime.overlaySrc = '';
+      kneadRuntime.trailCount = 0;
       drawKneadImage(img, 1);
     });
   }
 
   function overlayKneadCanvasBase(img, src, duration) {
     if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
-    const steps = duration ? 7 : 1;
+    const steps = duration ? 5 : 1;
     const interval = duration ? Math.max(60, Math.round(duration / steps)) : 0;
-    const baseAlpha = duration ? 0.15 : 1;
-    const finalAlpha = duration ? 0.22 : 1;
+    const baseAlpha = duration ? 0.035 : 0.32;
+    const finalAlpha = duration ? 0.055 : 0.32;
     kneadRuntime.overlaySrc = src || '';
     let frame = 0;
     const drawOverlayFrame = function () {
@@ -5297,9 +5300,9 @@ body.layout-editor-on .endX-marker {
 
   function smearKneadCanvas(fromX, fromY, toX, toY, progressRatio) {
     const canvas = els.kneadCanvas;
-    if (!canvas || !resizeKneadCanvas()) return;
+    if (!canvas || !resizeKneadCanvas()) return false;
     const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
+    if (!rect.width || !rect.height) return false;
     const px = canvas.width / rect.width;
     const py = canvas.height / rect.height;
     const x1 = (fromX - rect.left) * px;
@@ -5311,12 +5314,12 @@ body.layout-editor-on .endX-marker {
     const rx = canvas.width * 0.28;
     const ry = canvas.height * 0.27;
     const inside = Math.pow((x2 - cx) / rx, 2) + Math.pow((y2 - cy) / ry, 2);
-    if (inside > 1.18) return;
+    if (inside > 1.18) return false;
 
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.hypot(dx, dy);
-    if (len < 2) return;
+    if (len < 2) return false;
     const angle = Math.atan2(dy, dx);
     const ctx = canvas.getContext('2d');
     let scratch = kneadRuntime.scratch;
@@ -5333,24 +5336,75 @@ body.layout-editor-on .endX-marker {
     sctx.drawImage(canvas, 0, 0);
 
     const p = Math.max(0, Math.min(1, progressRatio || 0));
-    const radius = Math.max(28, Math.min(canvas.width, canvas.height) * (0.065 + p * 0.028));
-    const stretch = Math.max(radius * 2.25, Math.min(radius * 3.9, radius * 1.65 + len * 1.2));
+    const radius = Math.max(24, Math.min(canvas.width, canvas.height) * (0.038 + p * 0.017));
+    const stretch = Math.max(radius * 2.1, Math.min(radius * 3.55, radius * 1.55 + len * 1.05));
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(x2, y2, stretch * 0.58, radius * 0.62, angle, 0, Math.PI * 2);
     ctx.clip();
     ctx.translate(x2, y2);
     ctx.rotate(angle);
-    ctx.globalAlpha = 0.94;
+    ctx.globalAlpha = 0.36;
     ctx.drawImage(
       scratch,
       x1 - radius, y1 - radius * 0.82, radius * 2, radius * 1.64,
       -radius * 0.42, -radius * 0.82, stretch, radius * 1.64
     );
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = 'rgba(255, 225, 202, 0.9)';
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = 'rgba(235, 120, 106, 0.95)';
     ctx.fillRect(-stretch * 0.48, -radius * 0.14, stretch * 0.96, radius * 0.28);
     ctx.restore();
+
+    const count = (kneadRuntime.trailCount = (kneadRuntime.trailCount || 0) + 1);
+    const wobble = Math.sin(count * 1.73) * radius * 0.18;
+    const nx = len ? -dy / len : 0;
+    const ny = len ? dx / len : 0;
+    const mx = (x1 + x2) * 0.5 + nx * wobble;
+    const my = (y1 + y2) * 0.5 + ny * wobble;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx * 1.1, ry * 1.12, 0, 0, Math.PI * 2);
+    ctx.clip();
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = 'rgba(196, 82, 74, 0.82)';
+    ctx.lineWidth = radius * 0.32;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.quadraticCurveTo(mx, my, x2, y2);
+    ctx.stroke();
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = 'rgba(255, 214, 196, 0.88)';
+    ctx.lineWidth = radius * 0.16;
+    ctx.beginPath();
+    ctx.moveTo(x1 + nx * radius * 0.18, y1 + ny * radius * 0.18);
+    ctx.quadraticCurveTo(mx + nx * radius * 0.3, my + ny * radius * 0.3, x2 + nx * radius * 0.18, y2 + ny * radius * 0.18);
+    ctx.stroke();
+
+    ctx.translate(x2, y2);
+    ctx.rotate(angle);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = 'rgba(175, 62, 58, 0.84)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radius * 0.8, radius * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = 'rgba(255, 218, 202, 0.86)';
+    ctx.beginPath();
+    ctx.ellipse(radius * 0.18, -radius * 0.1, radius * 0.44, radius * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    return true;
   }
 
   function getActiveDragPrepConfig() {
@@ -5579,10 +5633,11 @@ body.layout-editor-on .endX-marker {
     const dist = Math.hypot(dx, dy);
     const maxProgress = getPrepMaxProgress(config);
     const progressRatio = maxProgress ? Math.max(0, Math.min(1, (state.prepProgress || 0) / maxProgress)) : 0;
-    if (dist > 1) smearKneadCanvas(state.prepDragLastX, state.prepDragLastY, evt.clientX, evt.clientY, progressRatio);
+    const didSmear = dist > 1 && smearKneadCanvas(state.prepDragLastX, state.prepDragLastY, evt.clientX, evt.clientY, progressRatio);
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
-    if (dist > 1) {
+    if (dist > 1) state.suppressPrepClick = true;
+    if (didSmear) {
       state.suppressPrepClick = true;
       advanceDragPrep(config, dist);
     }
@@ -8127,6 +8182,7 @@ body.layout-editor-on .endX-marker {
       ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
       kneadRuntime.lastSrc = '';
       kneadRuntime.overlaySrc = '';
+      kneadRuntime.trailCount = 0;
     }
     resetCookDrag();
     updateCookDots('grill', 0);
