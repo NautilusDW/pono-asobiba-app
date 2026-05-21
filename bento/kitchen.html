@@ -1108,6 +1108,8 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   top: 54.4%;
   width: min(96%, 1040px);
   height: 78.5%;
+  --prep-egg-ripple-x: 50%;
+  --prep-egg-ripple-y: 52%;
   transform: translate(-50%, -50%) translate3d(var(--prep-liquid-shift-x, 0%), var(--prep-liquid-shift-y, 0%), 0) scale(var(--prep-egg-wave-scale, 1));
   transform-origin: center;
   z-index: 3;
@@ -1181,17 +1183,15 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   animation: prepEggSurfaceFlow 1.25s ease-in-out infinite;
 }
 .prep-breading-liquid::after {
-  left: 10%;
-  right: 10%;
-  top: 18%;
-  bottom: 19%;
+  inset: 0;
   border-radius: 50%;
   background:
-    radial-gradient(ellipse at 38% 45%, transparent 0 24%, rgba(255,246,183,0.26) 27% 31%, transparent 34%),
-    radial-gradient(ellipse at 61% 56%, transparent 0 16%, rgba(185,115,12,0.16) 19% 21%, transparent 25%),
-    radial-gradient(ellipse at 50% 50%, rgba(255,186,28,0.08), transparent 64%);
+    radial-gradient(ellipse 18% 12% at var(--prep-egg-ripple-x, 50%) var(--prep-egg-ripple-y, 52%), transparent 0 46%, rgba(255,247,190,0.34) 50% 57%, transparent 63%),
+    radial-gradient(ellipse 30% 20% at var(--prep-egg-ripple-x, 50%) var(--prep-egg-ripple-y, 52%), transparent 0 58%, rgba(185,115,12,0.16) 62% 66%, transparent 72%),
+    radial-gradient(ellipse 44% 30% at var(--prep-egg-ripple-x, 50%) var(--prep-egg-ripple-y, 52%), rgba(255,186,28,0.08), transparent 64%);
   opacity: var(--prep-egg-ripple-opacity, 0);
   mix-blend-mode: multiply;
+  transform-origin: var(--prep-egg-ripple-x, 50%) var(--prep-egg-ripple-y, 52%);
   transform: translate3d(1.5%, 0, 0) rotate(-1deg);
   animation: prepEggRippleDrift 1.65s ease-in-out infinite;
 }
@@ -5989,6 +5989,10 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingGame.style.removeProperty('--prep-egg-ripple-opacity');
       els.prepBreadingGame.style.removeProperty('--prep-egg-wave-scale');
       els.prepBreadingGame.style.removeProperty('--prep-egg-liquid-opacity');
+      if (els.prepBreadingLiquid) {
+        els.prepBreadingLiquid.style.removeProperty('--prep-egg-ripple-x');
+        els.prepBreadingLiquid.style.removeProperty('--prep-egg-ripple-y');
+      }
       if (els.prepBreadingLiquid) els.prepBreadingLiquid.style.backgroundImage = '';
       return;
     }
@@ -5996,10 +6000,30 @@ body.layout-editor-on .endX-marker {
     if (els.prepBreadingLiquid) {
       els.prepBreadingLiquid.style.backgroundImage = 'url("' + src + '")';
     }
+    if (!els.prepBreadingLiquid || !els.prepBreadingLiquid.style.getPropertyValue('--prep-egg-ripple-x')) {
+      setPrepEggRippleCenter('50%', '52%');
+    }
     els.prepBreadingGame.style.setProperty('--prep-egg-wave-opacity', (0.16 + ratio * 0.2).toFixed(3));
     els.prepBreadingGame.style.setProperty('--prep-egg-ripple-opacity', (0.14 + ratio * 0.24).toFixed(3));
     els.prepBreadingGame.style.setProperty('--prep-egg-wave-scale', (1 + ratio * 0.018).toFixed(3));
     els.prepBreadingGame.style.setProperty('--prep-egg-liquid-opacity', (0.42 + ratio * 0.24).toFixed(3));
+  }
+
+  function setPrepEggRippleCenter(x, y) {
+    if (!els.prepBreadingLiquid) return;
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-ripple-x', x);
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-ripple-y', y);
+  }
+
+  function updatePrepEggRippleCenterFromPointer(evt) {
+    if (!evt || !els.prepBreadingLiquid) return;
+    const config = getActiveTrayPrepConfig();
+    if (!config || getCurrentPrepBreadingMaterial(config) !== 'egg') return;
+    const rect = els.prepBreadingLiquid.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.max(18, Math.min(82, ((evt.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(24, Math.min(76, ((evt.clientY - rect.top) / rect.height) * 100));
+    setPrepEggRippleCenter(x.toFixed(2) + '%', y.toFixed(2) + '%');
   }
 
   function snapPrepFoodToTray() {
@@ -6829,6 +6853,7 @@ body.layout-editor-on .endX-marker {
     els.prepBreadingFood.style.setProperty('--prep-food-rot', (tilt + (x - 50) * 0.025).toFixed(1) + 'deg');
     els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
     setPrepBreadingLayerPose(x + '%', y + '%', (tilt + (x - 50) * 0.025).toFixed(1) + 'deg');
+    updatePrepEggRippleCenterFromPointer(evt);
   }
 
   function pointIsInsideActiveTray(evt, config) {
