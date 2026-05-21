@@ -5854,77 +5854,53 @@ body.layout-editor-on .endX-marker {
     const dy = y2 - y1;
     const len = Math.hypot(dx, dy);
     if (len < 2) return;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const angle = Math.atan2(dy, dx);
-    const stamps = Math.max(8, Math.min(22, Math.round(len / Math.max(12, brushWidth * 0.12))));
-    const seedBase = strokeId * 19.37 + brushIndex * 113.11;
-    const mainOffset = (brushIndex - 1) * brushWidth * 0.18;
-    ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.filter = 'blur(' + Math.max(1.5, brushWidth * (0.014 + brushIndex * 0.003)).toFixed(2) + 'px)';
-    ctx.globalAlpha = 0.12 + force * 0.08;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = brushWidth * (0.18 + brushIndex * 0.05);
-    drawKneadMaskPath(ctx, x1 + nx * mainOffset, y1 + ny * mainOffset, mx - nx * mainOffset * 0.4, my - ny * mainOffset * 0.4, x2 + nx * mainOffset, y2 + ny * mainOffset);
-    ctx.stroke();
-    ctx.filter = 'none';
-    for (let i = 0; i < stamps; i++) {
-      const t = stamps === 1 ? 0.5 : i / (stamps - 1);
-      const q = getQuadraticPoint(x1, y1, mx, my, x2, y2, t);
-      const r1 = seededNoise(seedBase + i * 2.13);
-      const r2 = seededNoise(seedBase + i * 3.91 + 7);
-      const r3 = seededNoise(seedBase + i * 5.17 + 11);
-      const edgeFalloff = 0.68 + Math.sin(t * Math.PI) * 0.38;
-      const side = (r1 - 0.5) * brushWidth * (0.66 + brushIndex * 0.16) + mainOffset;
-      const along = (r2 - 0.5) * brushWidth * 0.18;
-      ctx.beginPath();
-      ctx.ellipse(
-        q.x + nx * side + Math.cos(angle) * along,
-        q.y + ny * side + Math.sin(angle) * along,
-        brushWidth * (0.16 + r2 * 0.18) * edgeFalloff,
-        brushWidth * (0.10 + r3 * 0.16) * edgeFalloff,
-        angle + (r1 - 0.5) * 1.1,
-        0,
-        Math.PI * 2
-      );
-      ctx.fillStyle = 'rgba(255,255,255,' + (0.34 + r3 * 0.36 + force * 0.16).toFixed(3) + ')';
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  function warpKneadCanvasAlongPath(ctx, source, x1, y1, mx, my, x2, y2, brushWidth, force) {
-    if (!ctx || !source) return;
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const len = Math.hypot(dx, dy);
-    if (len < 3) return;
     const tx = dx / len;
     const ty = dy / len;
     const nx = -ty;
     const ny = tx;
-    const samples = Math.max(5, Math.min(14, Math.round(len / Math.max(16, brushWidth * 0.24))));
     const angle = Math.atan2(dy, dx);
-    const shiftBase = Math.max(6, Math.min(30, brushWidth * (0.14 + force * 0.13)));
+    const seedBase = strokeId * 19.37 + brushIndex * 113.11;
+    const stampCount = Math.max(9, Math.min(28, Math.round(len / Math.max(10, brushWidth * 0.11))));
+    const laneOffset = (brushIndex - 1) * brushWidth * 0.22;
+    const profile = [
+      { rx: 0.16, ry: 0.075, spread: 0.48, cluster: 2, turn: 0.35 },
+      { rx: 0.105, ry: 0.11, spread: 0.62, cluster: 3, turn: 1.15 },
+      { rx: 0.07, ry: 0.055, spread: 0.78, cluster: 5, turn: -0.55 },
+    ][brushIndex] || { rx: 0.1, ry: 0.075, spread: 0.58, cluster: 3, turn: 0 };
     ctx.save();
+    ctx.filter = 'none';
     ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < samples; i++) {
-      const t = samples === 1 ? 0.5 : i / (samples - 1);
+    for (let i = 0; i < stampCount; i++) {
+      const slot = stampCount === 1 ? 0.5 : i / (stampCount - 1);
+      const drift = (seededNoise(seedBase + i * 4.17) - 0.5) / Math.max(2, stampCount);
+      const t = Math.max(0, Math.min(1, slot + drift));
       const q = getQuadraticPoint(x1, y1, mx, my, x2, y2, t);
-      const wave = Math.sin((kneadRuntime.trailCount || 0) * 0.9 + i * 1.37);
-      const sideShift = wave * brushWidth * (0.045 + force * 0.025);
-      const push = shiftBase * (0.88 + force * 0.28) * (1 - Math.abs(t - 0.5) * 0.28);
-      const radiusX = brushWidth * (0.42 + force * 0.08);
-      const radiusY = brushWidth * (0.25 + force * 0.06);
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(q.x, q.y, radiusX, radiusY, angle, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.globalAlpha = 0.45 + force * 0.24;
-      ctx.drawImage(source, tx * push + nx * sideShift, ty * push + ny * sideShift);
-      ctx.restore();
+      const centerNoise = seededNoise(seedBase + i * 2.13 + 9);
+      const wave = Math.sin(t * Math.PI * (brushIndex + 1.6) + seedBase * 0.03) * brushWidth * 0.12;
+      const sideCenter = laneOffset + (centerNoise - 0.5) * brushWidth * profile.spread + wave;
+      const alongCenter = (seededNoise(seedBase + i * 5.91 + 17) - 0.5) * brushWidth * 0.2;
+      const edgeFalloff = 0.72 + Math.sin(t * Math.PI) * 0.34;
+      for (let j = 0; j < profile.cluster; j++) {
+        const r1 = seededNoise(seedBase + i * 7.31 + j * 11.7);
+        const r2 = seededNoise(seedBase + i * 8.47 + j * 13.3);
+        const r3 = seededNoise(seedBase + i * 9.61 + j * 3.9);
+        const side = sideCenter + (r1 - 0.5) * brushWidth * (0.18 + brushIndex * 0.07);
+        const along = alongCenter + (r2 - 0.5) * brushWidth * (0.2 + brushIndex * 0.05);
+        const radiusX = brushWidth * profile.rx * (0.62 + r2 * 0.7) * edgeFalloff;
+        const radiusY = brushWidth * profile.ry * (0.68 + r3 * 0.72) * edgeFalloff;
+        ctx.beginPath();
+        ctx.ellipse(
+          q.x + nx * side + tx * along,
+          q.y + ny * side + ty * along,
+          radiusX,
+          radiusY,
+          angle + profile.turn + (r1 - 0.5) * 0.95,
+          0,
+          Math.PI * 2
+        );
+        ctx.fillStyle = 'rgba(255,255,255,' + Math.min(0.96, 0.5 + r3 * 0.28 + force * 0.22).toFixed(3) + ')';
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
@@ -6087,9 +6063,7 @@ body.layout-editor-on .endX-marker {
     const count = (kneadRuntime.trailCount = (kneadRuntime.trailCount || 0) + 1);
     const p = Math.max(0, Math.min(1, progressRatio || 0));
     const baseRadius = Math.max(42, Math.min(canvas.width, canvas.height) * (0.076 + p * 0.018));
-    const brushWidth = baseRadius * (1.18 + force * 0.9);
-    const edgeWidth = brushWidth * (1.22 + force * 0.14);
-    const edgeBlur = Math.max(4, brushWidth * 0.14);
+    const brushWidth = baseRadius * (1.08 + force * 0.68);
     const nx = len ? -dy / len : 0;
     const ny = len ? dx / len : 0;
     const wobble = Math.sin(count * 1.73) * brushWidth * (0.12 + force * 0.1);
@@ -6108,26 +6082,12 @@ body.layout-editor-on .endX-marker {
     ctx.ellipse(cx, cy, rx * 1.1, ry * 1.12, 0, 0, Math.PI * 2);
     ctx.clip();
     ctx.globalCompositeOperation = 'source-over';
-    const warp = getKneadWorkCanvas('scratch', canvas);
-    if (warp) {
-      const wctx = warp.getContext('2d');
-      wctx.clearRect(0, 0, warp.width, warp.height);
-      wctx.drawImage(canvas, 0, 0);
-    }
     brushImages.forEach(function (img, brushIndex) {
       clearCanvas(layer);
       clearCanvas(mask);
       drawKneadImageOnCanvas(layer, img, 1);
 
       mctx.save();
-      mctx.lineCap = 'round';
-      mctx.lineJoin = 'round';
-      mctx.filter = 'blur(' + (edgeBlur * (0.42 + brushIndex * 0.08)).toFixed(2) + 'px)';
-      mctx.strokeStyle = 'rgba(255,255,255,' + (0.10 + force * 0.08).toFixed(3) + ')';
-      mctx.lineWidth = edgeWidth * (0.30 + brushIndex * 0.08);
-      const offset = (brushIndex - 1) * brushWidth * 0.16;
-      drawKneadMaskPath(mctx, x1 + nx * offset, y1 + ny * offset, mx - nx * offset * 0.35, my - ny * offset * 0.35, x2 + nx * offset, y2 + ny * offset);
-      mctx.stroke();
       mctx.filter = 'none';
       drawKneadBrushMask(mctx, x1, y1, mx, my, x2, y2, brushWidth, force, brushIndex, count);
       mctx.restore();
@@ -6137,26 +6097,10 @@ body.layout-editor-on .endX-marker {
       lctx.drawImage(mask, 0, 0);
       lctx.restore();
 
-      ctx.globalAlpha = 0.34 - brushIndex * 0.07;
+      ctx.globalAlpha = Math.max(0.56, 0.88 - brushIndex * 0.12);
       ctx.drawImage(layer, 0, 0);
     });
     ctx.globalAlpha = 1;
-    if (warp) {
-      warpKneadCanvasAlongPath(ctx, warp, x1, y1, mx, my, x2, y2, brushWidth, force);
-    }
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.globalAlpha = 0.075 * force;
-    ctx.strokeStyle = 'rgba(120, 62, 48, 0.5)';
-    ctx.lineWidth = brushWidth * 0.16;
-    drawKneadMaskPath(ctx, x1 + nx * brushWidth * 0.1, y1 + ny * brushWidth * 0.1, mx, my, x2 + nx * brushWidth * 0.1, y2 + ny * brushWidth * 0.1);
-    ctx.stroke();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.055 * force;
-    ctx.strokeStyle = 'rgba(255, 225, 205, 0.72)';
-    ctx.lineWidth = brushWidth * 0.11;
-    drawKneadMaskPath(ctx, x1 - nx * brushWidth * 0.16, y1 - ny * brushWidth * 0.16, mx - nx * brushWidth * 0.24, my - ny * brushWidth * 0.24, x2 - nx * brushWidth * 0.16, y2 - ny * brushWidth * 0.16);
-    ctx.stroke();
     ctx.restore();
 
     return true;
