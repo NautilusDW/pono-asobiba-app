@@ -1249,7 +1249,7 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-breading-particles {
   position: absolute;
   inset: 0;
-  z-index: 8;
+  z-index: 4;
   pointer-events: none;
   overflow: hidden;
 }
@@ -1262,7 +1262,8 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   border-radius: var(--particle-radius, 50%);
   opacity: 0;
   transform: translate(-50%, -50%);
-  animation: prepCoatingParticle 0.78s ease-out forwards;
+  animation: prepCoatingParticle var(--particle-life, 0.78s) ease-out forwards;
+  will-change: transform, opacity;
 }
 .prep-breading-particles i[data-material="flour"] {
   background: rgba(255,255,255,0.92);
@@ -1288,7 +1289,8 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background-repeat: no-repeat;
   background-size: 400% 400%;
   background-position: var(--particle-sprite-x, 0%) var(--particle-sprite-y, 0%);
-  filter: drop-shadow(0 2px 2px rgba(128,72,24,0.16));
+  filter: blur(var(--particle-blur, 0.12px)) drop-shadow(0 2px 2px rgba(128,72,24,0.14));
+  animation: prepPankoSettleParticle var(--particle-life, 0.92s) ease-out forwards;
 }
 .prep-breading-particles i[data-material="panko-bury"] {
   border-radius: 0;
@@ -1296,8 +1298,8 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background-repeat: no-repeat;
   background-size: 400% 400%;
   background-position: var(--particle-sprite-x, 0%) var(--particle-sprite-y, 100%);
-  filter: drop-shadow(0 4px 5px rgba(118,70,24,0.18));
-  animation: prepPankoBuryPatch 1.18s ease-out forwards;
+  filter: blur(var(--particle-blur, 0.42px)) drop-shadow(0 4px 5px rgba(118,70,24,0.15));
+  animation: prepPankoBuryPatch var(--particle-life, 1.46s) ease-out forwards;
 }
 .prep-breading-hint {
   position: absolute;
@@ -1368,10 +1370,10 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 }
 @keyframes prepCoatingParticle {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45) rotate(0deg); }
-  18% { opacity: 1; }
+  18% { opacity: var(--particle-peak-opacity, 1); }
   100% {
     opacity: 0;
-    transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, -36px))) scale(1.22) rotate(var(--particle-rot, 80deg));
+    transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, -36px))) scale(var(--particle-end-scale, 1.22)) rotate(var(--particle-rot, 80deg));
   }
 }
 @keyframes prepEggDripFall {
@@ -1383,10 +1385,22 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   }
 }
 @keyframes prepPankoBuryPatch {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.48, 0.32) rotate(var(--particle-rot, 0deg)); }
-  18% { opacity: 0.86; transform: translate(-50%, -50%) scale(1.04, 0.88) rotate(var(--particle-rot, 0deg)); }
-  68% { opacity: 0.68; transform: translate(calc(-50% + var(--particle-dx, 0px) * 0.28), calc(-50% + var(--particle-dy, 0px) * 0.18)) scale(1.08, 0.94) rotate(var(--particle-rot, 0deg)); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 12px))) scale(1.12, 0.98) rotate(var(--particle-rot, 0deg)); }
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(var(--particle-start-scale, 0.84)) rotate(var(--particle-start-rot, 0deg)); }
+  18% { opacity: var(--particle-peak-opacity, 0.62); transform: translate(-50%, -50%) scale(var(--particle-scale, 1)) rotate(var(--particle-rot, 0deg)); }
+  68% { opacity: var(--particle-mid-opacity, 0.42); transform: translate(calc(-50% + var(--particle-mid-dx, 0px)), calc(-50% + var(--particle-mid-dy, 0px))) scale(var(--particle-settle-scale, 1.02)) rotate(var(--particle-rot, 0deg)); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 8px))) scale(var(--particle-end-scale, 1.04)) rotate(var(--particle-rot, 0deg)); }
+}
+@keyframes prepPankoSettleParticle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(var(--particle-start-scale, 0.86)) rotate(var(--particle-start-rot, 0deg)); }
+  20% { opacity: var(--particle-peak-opacity, 0.64); }
+  68% {
+    opacity: var(--particle-mid-opacity, 0.42);
+    transform: translate(calc(-50% + var(--particle-mid-dx, 0px)), calc(-50% + var(--particle-mid-dy, 0px))) scale(var(--particle-scale, 1)) rotate(var(--particle-rot, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 0px))) scale(var(--particle-end-scale, 0.98)) rotate(var(--particle-rot, 0deg));
+  }
 }
 @media (pointer: coarse), (max-width: 900px), (prefers-reduced-motion: reduce) {
   .prep-breading-liquid {
@@ -1404,6 +1418,10 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   }
   .prep-breading-particles i {
     animation-duration: 0.58s;
+  }
+  .prep-breading-particles i[data-material="panko"],
+  .prep-breading-particles i[data-material="panko-bury"] {
+    animation-duration: var(--particle-life, 0.82s);
   }
   .prep-breading-liquid .prep-egg-impact-ripple {
     animation-duration: 0.54s;
@@ -7578,28 +7596,41 @@ body.layout-editor-on .endX-marker {
     const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
     const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
     const reduced = isPrepReducedEffects();
-    const maxCount = reduced ? (material === 'panko' ? 5 : 4) : (material === 'panko' ? 12 : 8);
-    const divisor = reduced ? 34 : 18;
+    const isPanko = material === 'panko';
+    const maxCount = reduced ? (isPanko ? 4 : 4) : (isPanko ? 8 : 8);
+    const divisor = isPanko ? (reduced ? 42 : 28) : (reduced ? 34 : 18);
     const count = Math.max(1, Math.min(maxCount, Math.floor((dist || 0) / divisor)));
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('i');
       particle.dataset.material = material || 'flour';
-      particle.style.setProperty('--particle-x', (xPct + (Math.random() * 7 - 3.5)).toFixed(2) + '%');
-      particle.style.setProperty('--particle-y', (yPct + (Math.random() * 7 - 3.5)).toFixed(2) + '%');
-      const size = material === 'egg' ? 7 + Math.random() * 9 : (material === 'panko' ? 8 + Math.random() * 12 : 4 + Math.random() * 8);
+      particle.style.setProperty('--particle-x', (xPct + (Math.random() * (isPanko ? 5 : 7) - (isPanko ? 2.5 : 3.5))).toFixed(2) + '%');
+      particle.style.setProperty('--particle-y', (yPct + (Math.random() * (isPanko ? 4 : 7) - (isPanko ? 1.6 : 3.5))).toFixed(2) + '%');
+      const size = material === 'egg' ? 7 + Math.random() * 9 : (isPanko ? (reduced ? 18 : 23) * (0.8 + Math.random() * 0.4) : 4 + Math.random() * 8);
       particle.style.setProperty('--particle-size', size.toFixed(1) + 'px');
-      if (material === 'panko') {
+      if (isPanko) {
         applyPrepPankoParticleSprite(particle, 'crumb');
-        particle.style.setProperty('--particle-w', (size * (1.35 + Math.random() * 1.55)).toFixed(1) + 'px');
-        particle.style.setProperty('--particle-h', (size * (0.48 + Math.random() * 0.48)).toFixed(1) + 'px');
+        particle.style.setProperty('--particle-w', size.toFixed(1) + 'px');
+        particle.style.setProperty('--particle-h', size.toFixed(1) + 'px');
+        particle.style.setProperty('--particle-life', (760 + Math.random() * 420).toFixed(0) + 'ms');
+        particle.style.setProperty('--particle-peak-opacity', (0.38 + Math.random() * 0.3).toFixed(2));
+        particle.style.setProperty('--particle-mid-opacity', (0.2 + Math.random() * 0.22).toFixed(2));
+        particle.style.setProperty('--particle-start-scale', (0.82 + Math.random() * 0.16).toFixed(2));
+        particle.style.setProperty('--particle-end-scale', (0.92 + Math.random() * 0.16).toFixed(2));
+        particle.style.setProperty('--particle-blur', (0.08 + Math.random() * 0.22).toFixed(2) + 'px');
       }
-      particle.style.setProperty('--particle-dx', (Math.random() * (material === 'panko' ? 106 : 70) - (material === 'panko' ? 53 : 35)).toFixed(1) + 'px');
-      particle.style.setProperty('--particle-dy', (material === 'panko' ? -8 - Math.random() * 70 : -18 - Math.random() * 54).toFixed(1) + 'px');
-      particle.style.setProperty('--particle-rot', (Math.random() * 180 - 90).toFixed(1) + 'deg');
+      const particleDx = Math.random() * (isPanko ? 28 : 70) - (isPanko ? 14 : 35);
+      const particleDy = isPanko ? Math.random() * 18 - 6 : -18 - Math.random() * 54;
+      particle.style.setProperty('--particle-dx', particleDx.toFixed(1) + 'px');
+      particle.style.setProperty('--particle-dy', particleDy.toFixed(1) + 'px');
+      if (isPanko) {
+        particle.style.setProperty('--particle-mid-dx', (particleDx * 0.46).toFixed(1) + 'px');
+        particle.style.setProperty('--particle-mid-dy', (particleDy * 0.42).toFixed(1) + 'px');
+      }
+      particle.style.setProperty('--particle-rot', (Math.random() * (isPanko ? 42 : 180) - (isPanko ? 21 : 90)).toFixed(1) + 'deg');
       els.prepBreadingParticles.appendChild(particle);
       state.pendingTimers.push(setTimeout(function () {
         if (particle && particle.parentNode) particle.parentNode.removeChild(particle);
-      }, 850));
+      }, isPanko ? 1240 : 850));
     }
   }
 
@@ -7612,24 +7643,37 @@ body.layout-editor-on .endX-marker {
     const reduced = isPrepReducedEffects();
     const opts = options || {};
     const burst = !!opts.burst;
-    const count = Math.max(burst ? (reduced ? 8 : 14) : 2, Math.min(reduced ? (burst ? 12 : 7) : (burst ? 30 : 16), Math.floor((dist || 0) / (reduced ? 16 : 8))));
+    const count = Math.max(burst ? (reduced ? 5 : 8) : 2, Math.min(reduced ? (burst ? 8 : 4) : (burst ? 13 : 7), Math.floor((dist || 0) / (reduced ? 44 : 36))));
     for (let i = 0; i < count; i++) {
       const crumb = document.createElement('i');
-      const size = (burst ? 9 : 7) + Math.random() * (burst ? 15 : 11);
+      const baseSize = burst ? (reduced ? 23 : 28) : (reduced ? 18 : 22);
+      const size = baseSize * (0.8 + Math.random() * 0.4);
+      const lifeMs = Math.round((burst ? 900 : 760) + Math.random() * (burst ? 520 : 420));
+      const peakOpacity = 0.36 + Math.random() * 0.34;
       crumb.dataset.material = 'panko';
       applyPrepPankoParticleSprite(crumb, 'crumb');
-      crumb.style.setProperty('--particle-x', (xPct + (Math.random() * (burst ? 18 : 11) - (burst ? 9 : 5.5))).toFixed(2) + '%');
-      crumb.style.setProperty('--particle-y', (yPct - (burst ? 6 : 2) - Math.random() * (burst ? 8 : 4)).toFixed(2) + '%');
+      crumb.style.setProperty('--particle-x', (xPct + (Math.random() * (burst ? 11 : 7) - (burst ? 5.5 : 3.5))).toFixed(2) + '%');
+      crumb.style.setProperty('--particle-y', (yPct + (Math.random() * (burst ? 7 : 4) - (burst ? 2.5 : 1.5))).toFixed(2) + '%');
       crumb.style.setProperty('--particle-size', size.toFixed(1) + 'px');
-      crumb.style.setProperty('--particle-w', (size * (1.28 + Math.random() * 1.7)).toFixed(1) + 'px');
-      crumb.style.setProperty('--particle-h', (size * (0.44 + Math.random() * 0.56)).toFixed(1) + 'px');
-      crumb.style.setProperty('--particle-dx', (Math.random() * (burst ? 138 : 74) - (burst ? 69 : 37)).toFixed(1) + 'px');
-      crumb.style.setProperty('--particle-dy', ((burst ? 34 : 42) + Math.random() * (burst ? 122 : 86)).toFixed(1) + 'px');
-      crumb.style.setProperty('--particle-rot', (Math.random() * 220 - 110).toFixed(1) + 'deg');
+      crumb.style.setProperty('--particle-w', size.toFixed(1) + 'px');
+      crumb.style.setProperty('--particle-h', size.toFixed(1) + 'px');
+      const crumbDx = Math.random() * (burst ? 34 : 22) - (burst ? 17 : 11);
+      const crumbDy = Math.random() * (burst ? 22 : 14) - (burst ? 7 : 4);
+      crumb.style.setProperty('--particle-dx', crumbDx.toFixed(1) + 'px');
+      crumb.style.setProperty('--particle-dy', crumbDy.toFixed(1) + 'px');
+      crumb.style.setProperty('--particle-mid-dx', (crumbDx * 0.46).toFixed(1) + 'px');
+      crumb.style.setProperty('--particle-mid-dy', (crumbDy * 0.42).toFixed(1) + 'px');
+      crumb.style.setProperty('--particle-rot', (Math.random() * (burst ? 52 : 36) - (burst ? 26 : 18)).toFixed(1) + 'deg');
+      crumb.style.setProperty('--particle-life', lifeMs + 'ms');
+      crumb.style.setProperty('--particle-peak-opacity', peakOpacity.toFixed(2));
+      crumb.style.setProperty('--particle-mid-opacity', (peakOpacity * (0.48 + Math.random() * 0.22)).toFixed(2));
+      crumb.style.setProperty('--particle-start-scale', (0.8 + Math.random() * 0.18).toFixed(2));
+      crumb.style.setProperty('--particle-end-scale', (0.92 + Math.random() * 0.16).toFixed(2));
+      crumb.style.setProperty('--particle-blur', (0.08 + Math.random() * 0.24).toFixed(2) + 'px');
       els.prepBreadingParticles.appendChild(crumb);
       state.pendingTimers.push(setTimeout(function () {
         if (crumb && crumb.parentNode) crumb.parentNode.removeChild(crumb);
-      }, 860));
+      }, lifeMs + 120));
     }
   }
 
@@ -7640,24 +7684,40 @@ body.layout-editor-on .endX-marker {
     const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
     const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
     const reduced = isPrepReducedEffects();
-    const count = reduced ? 2 : 3;
+    const count = reduced ? 3 : 5;
     for (let i = 0; i < count; i++) {
       const patch = document.createElement('i');
-      const size = (reduced ? 54 : 76) + Math.random() * (reduced ? 34 : 52) + Math.min(90, Math.max(0, dist || 0)) * 0.04;
+      const baseSize = reduced ? 82 : 112;
+      const size = baseSize * (0.8 + Math.random() * 0.4);
+      const lifeMs = Math.round(1280 + Math.random() * 720);
+      const peakOpacity = 0.3 + Math.random() * 0.34;
       patch.dataset.material = 'panko-bury';
       applyPrepPankoParticleSprite(patch, 'bury');
       patch.style.setProperty('--particle-x', (xPct + Math.random() * 8 - 4).toFixed(2) + '%');
-      patch.style.setProperty('--particle-y', (yPct + Math.random() * 5 - 1).toFixed(2) + '%');
+      patch.style.setProperty('--particle-y', (yPct + Math.random() * 6 - 2).toFixed(2) + '%');
       patch.style.setProperty('--particle-size', size.toFixed(1) + 'px');
-      patch.style.setProperty('--particle-w', (size * (1.28 + Math.random() * 0.42)).toFixed(1) + 'px');
-      patch.style.setProperty('--particle-h', (size * (0.34 + Math.random() * 0.14)).toFixed(1) + 'px');
-      patch.style.setProperty('--particle-dx', (Math.random() * 20 - 10).toFixed(1) + 'px');
-      patch.style.setProperty('--particle-dy', (8 + Math.random() * 18).toFixed(1) + 'px');
-      patch.style.setProperty('--particle-rot', (Math.random() * 26 - 13).toFixed(1) + 'deg');
+      patch.style.setProperty('--particle-w', size.toFixed(1) + 'px');
+      patch.style.setProperty('--particle-h', size.toFixed(1) + 'px');
+      const patchDx = Math.random() * 20 - 10;
+      const patchDy = Math.random() * 16 - 4;
+      patch.style.setProperty('--particle-dx', patchDx.toFixed(1) + 'px');
+      patch.style.setProperty('--particle-dy', patchDy.toFixed(1) + 'px');
+      patch.style.setProperty('--particle-mid-dx', (patchDx * 0.38).toFixed(1) + 'px');
+      patch.style.setProperty('--particle-mid-dy', (patchDy * 0.34).toFixed(1) + 'px');
+      patch.style.setProperty('--particle-rot', (Math.random() * 24 - 12).toFixed(1) + 'deg');
+      patch.style.setProperty('--particle-start-rot', (Math.random() * 12 - 6).toFixed(1) + 'deg');
+      patch.style.setProperty('--particle-life', lifeMs + 'ms');
+      patch.style.setProperty('--particle-peak-opacity', peakOpacity.toFixed(2));
+      patch.style.setProperty('--particle-mid-opacity', (peakOpacity * (0.5 + Math.random() * 0.22)).toFixed(2));
+      patch.style.setProperty('--particle-start-scale', (0.76 + Math.random() * 0.16).toFixed(2));
+      patch.style.setProperty('--particle-scale', (0.96 + Math.random() * 0.08).toFixed(2));
+      patch.style.setProperty('--particle-settle-scale', (0.98 + Math.random() * 0.08).toFixed(2));
+      patch.style.setProperty('--particle-end-scale', (0.96 + Math.random() * 0.1).toFixed(2));
+      patch.style.setProperty('--particle-blur', (0.28 + Math.random() * 0.38).toFixed(2) + 'px');
       els.prepBreadingParticles.appendChild(patch);
       state.pendingTimers.push(setTimeout(function () {
         if (patch && patch.parentNode) patch.parentNode.removeChild(patch);
-      }, 1240));
+      }, lifeMs + 140));
     }
   }
 
