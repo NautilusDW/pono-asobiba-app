@@ -748,8 +748,8 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   position: absolute;
   left: 50%;
   top: var(--shape-guide-top, 49%);
-  width: var(--shape-guide-width, min(42%, 420px));
-  height: var(--shape-guide-height, 40%);
+  width: var(--shape-guide-width, min(37%, 370px));
+  height: var(--shape-guide-height, 35.5%);
   transform: translate(-50%, -50%) scale(var(--shape-scale, 0.96));
   border-radius: 50%;
   pointer-events: none;
@@ -5872,8 +5872,8 @@ body.layout-editor-on .endX-marker {
       els.shapePrepGuide.style.setProperty('--shape-progress', ratio.toFixed(3));
       els.shapePrepGuide.style.setProperty('--shape-scale', isShape ? '1' : '0.96');
       els.shapePrepGuide.style.setProperty('--shape-opacity', isShape ? (0.92 - ratio * 0.16).toFixed(3) : '0.9');
-      els.shapePrepGuide.style.setProperty('--shape-guide-width', isBallsShape ? 'min(44%, 420px)' : 'min(42%, 420px)');
-      els.shapePrepGuide.style.setProperty('--shape-guide-height', isBallsShape ? '40%' : '40%');
+      els.shapePrepGuide.style.setProperty('--shape-guide-width', isBallsShape ? 'min(44%, 420px)' : 'min(37%, 370px)');
+      els.shapePrepGuide.style.setProperty('--shape-guide-height', isBallsShape ? '40%' : '35.5%');
       els.shapePrepGuide.style.setProperty('--shape-guide-top', isBallsShape ? '49%' : '49%');
       if (!isShape) {
         els.shapePrepGuide.style.setProperty('--shape-hit', '0');
@@ -9983,8 +9983,8 @@ body.layout-editor-on .endX-marker {
       els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
       els.shapePrepGuide.style.setProperty('--shape-scale', '0.96');
       els.shapePrepGuide.style.setProperty('--shape-opacity', '0.9');
-      els.shapePrepGuide.style.setProperty('--shape-guide-width', 'min(42%, 420px)');
-      els.shapePrepGuide.style.setProperty('--shape-guide-height', '40%');
+      els.shapePrepGuide.style.setProperty('--shape-guide-width', 'min(37%, 370px)');
+      els.shapePrepGuide.style.setProperty('--shape-guide-height', '35.5%');
       els.shapePrepGuide.style.setProperty('--shape-guide-top', '49%');
     }
     if (els.prepStage) {
