@@ -415,6 +415,10 @@ html, body {
   object-fit: contain;
   pointer-events: none;
 }
+.free-placed-item.type-pick img {
+  clip-path: inset(0 0 18% 0);
+  transform: translateY(7%);
+}
 .free-css-item {
   position: relative;
   width: 100%;
@@ -1810,18 +1814,18 @@ const COOKING_P = '../assets/images/bento/cooking/';
 const FREE_LAYOUT_ASSET_P = '../assets/images/bento/free-layout/';
 const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 132, rotation: -6 },
-  { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 126, rotation: 2 },
-  { img: COOKING_P+'chicken/chicken_003_done.png',         name: 'からあげ',         cat: 'meat', sk: 'r', size: 126, rotation: -2 },
-  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 140, rotation: 8 },
-  { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 126, rotation: -3 },
-  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 122, rotation: 3 },
-  { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 132, rotation: -4 },
-  { img: COOKING_P+'tomato/tomato_001.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 112, rotation: -4 },
-  { img: COOKING_P+'tomato/tomato_002.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 110, rotation: 3 },
-  { img: COOKING_P+'tomato/tomato_003.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 110, rotation: -1 },
-  { img: COOKING_P+'tomato/tomato_004.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 108, rotation: 4 },
-  { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 124, rotation: 1 },
-  { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 124, rotation: -1 },
+  { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 142, rotation: 2 },
+  { img: COOKING_P+'chicken/chicken_003_done.png',         name: 'からあげ',         cat: 'meat', sk: 'r', size: 142, rotation: -2 },
+  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 154, rotation: 8 },
+  { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 142, rotation: -3 },
+  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 136, rotation: 3 },
+  { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 146, rotation: -4 },
+  { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 120, rotation: -4 },
+  { img: COOKING_P+'tomato/tomato_002.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 118, rotation: 3 },
+  { img: COOKING_P+'tomato/tomato_003.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 118, rotation: -1 },
+  { img: COOKING_P+'tomato/tomato_004.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 116, rotation: 4 },
+  { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 136, rotation: 1 },
+  { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 136, rotation: -1 },
 ];
 
 // ===== NPC requesters (依頼者モード用) =====
@@ -2166,13 +2170,13 @@ const bentoBoxes = [
   },
 ];
 const bentoAccessories = [
-  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
-  { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
-  { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
-  { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 76, size: 104, layerBase: 10 },
-  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 122, layerBase: 12, rotation: -10 },
-  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 116, layerBase: 12, rotation: 0 },
-  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 104, layerBase: 12, rotation: 0 },
+  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
+  { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
+  { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
+  { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
+  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 150, layerBase: 12, rotation: -10 },
+  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 146, layerBase: 12, rotation: 0 },
+  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 132, layerBase: 12, rotation: 0 },
 ];
 const riceBases = [
   { id: 'rice_base_round', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_round.png', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
@@ -2760,12 +2764,18 @@ function getAutoRicePaletteItem() {
     size: base.size,
   };
 }
+function getBoxCenterSpot(box) {
+  return {
+    x: box.bounds.x + box.bounds.w / 2,
+    y: box.bounds.y + box.bounds.h / 2,
+  };
+}
 function getBoxSpotsForType(box, type) {
   if (!box) return [];
   if (type === 'rice' || type === 'template' || type === 'rice_auto') return box.riceSpots || box.safeSpots || [];
   if (type === 'food') return box.foodSpots || box.safeSpots || [];
   if (type === 'cup' || type === 'divider') return box.accessorySpots || box.foodSpots || box.safeSpots || [];
-  if (type === 'pick') return box.foodSpots || box.safeSpots || [];
+  if (type === 'pick') return box.pickSpots || [getBoxCenterSpot(box)];
   return box.safeSpots || [];
 }
 function getTargetTierForType(type) {
@@ -2807,6 +2817,10 @@ function clampPointToBento(x, y, item) {
 }
 function snapPointForItem(item, x, y) {
   let point = clampPointToBento(x, y, item);
+  if (item.type === 'decor' || item.type === 'pick') {
+    delete item.parentCupId;
+    return point;
+  }
   if (item.type === 'food') {
     const cups = placedItems.filter(i => i.uid !== item.uid && i.snapTarget && (getBoxTierCount() <= 1 || getItemTier(i) === getItemTier(item)));
     let nearestCup = null;
@@ -2840,7 +2854,7 @@ function snapPointForItem(item, x, y) {
   return clampPointToBento(point.x, point.y, item);
 }
 function avoidFreeOverlap(item) {
-  if (!item || item.type === 'decor') return;
+  if (!item || item.type === 'decor' || item.type === 'pick') return;
   for (let i = 0; i < placedItems.length; i++) {
     const other = placedItems[i];
     if (other.uid === item.uid || other.type === 'decor') continue;
@@ -3099,7 +3113,8 @@ function createFreeVisual(item) {
 }
 function createFreePlacedElement(item, interactive) {
   const el = document.createElement('div');
-  el.className = 'free-placed-item' + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '');
+  const typeClass = item.type ? ' type-' + item.type : '';
+  el.className = 'free-placed-item' + typeClass + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
