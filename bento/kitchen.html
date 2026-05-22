@@ -1283,22 +1283,20 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   animation: prepEggDripFall var(--drip-duration, 0.72s) cubic-bezier(.22,.7,.28,1) forwards;
 }
 .prep-breading-particles i[data-material="panko"] {
-  border-radius: var(--particle-radius, 28% 64% 42% 58% / 48% 35% 62% 40%);
-  background:
-    linear-gradient(135deg, rgba(255,244,180,0.95), rgba(225,165,73,0.96) 56%, rgba(178,112,44,0.86)),
-    radial-gradient(circle at 28% 28%, rgba(255,255,220,0.9), transparent 45%);
-  clip-path: polygon(8% 42%, 30% 10%, 73% 17%, 94% 48%, 76% 86%, 24% 78%);
-  box-shadow: inset 0 0 2px rgba(255,249,196,0.78), 0 2px 4px rgba(138,88,33,0.16);
+  border-radius: 0;
+  background-image: url('../assets/images/bento/cooking/korokke/topview/panko_particle_sprites.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: var(--particle-sprite-x, 0%) var(--particle-sprite-y, 0%);
+  filter: drop-shadow(0 2px 2px rgba(128,72,24,0.16));
 }
 .prep-breading-particles i[data-material="panko-bury"] {
-  border-radius: 42% 58% 46% 54% / 52% 45% 55% 48%;
-  background:
-    radial-gradient(ellipse at 28% 30%, rgba(255,242,164,0.82), transparent 42%),
-    radial-gradient(ellipse at 72% 58%, rgba(198,132,47,0.32), transparent 48%),
-    linear-gradient(135deg, rgba(244,193,87,0.9), rgba(192,125,45,0.82));
-  clip-path: polygon(6% 54%, 18% 25%, 44% 10%, 78% 18%, 96% 46%, 83% 80%, 46% 90%, 14% 78%);
-  box-shadow: inset 0 0 6px rgba(255,245,180,0.54), 0 5px 8px rgba(118,70,24,0.18);
-  mix-blend-mode: multiply;
+  border-radius: 0;
+  background-image: url('../assets/images/bento/cooking/korokke/topview/panko_particle_sprites.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: var(--particle-sprite-x, 0%) var(--particle-sprite-y, 100%);
+  filter: drop-shadow(0 4px 5px rgba(118,70,24,0.18));
   animation: prepPankoBuryPatch 1.18s ease-out forwards;
 }
 .prep-breading-hint {
@@ -7556,6 +7554,23 @@ body.layout-editor-on .endX-marker {
     return { activeIndex, step, trayStep };
   }
 
+  const PANKO_CRUMB_SPRITES = [
+    ['0%', '0%'], ['33.333%', '0%'], ['66.667%', '0%'], ['100%', '0%'],
+    ['0%', '33.333%'], ['33.333%', '33.333%'], ['66.667%', '33.333%'], ['100%', '33.333%'],
+    ['0%', '66.667%'], ['33.333%', '66.667%'], ['66.667%', '66.667%'], ['100%', '66.667%'],
+  ];
+  const PANKO_BURY_SPRITES = [
+    ['0%', '100%'], ['33.333%', '100%'], ['66.667%', '100%'], ['100%', '100%'],
+  ];
+
+  function applyPrepPankoParticleSprite(el, kind) {
+    if (!el) return;
+    const sprites = kind === 'bury' ? PANKO_BURY_SPRITES : PANKO_CRUMB_SPRITES;
+    const sprite = sprites[Math.floor(Math.random() * sprites.length)] || sprites[0];
+    el.style.setProperty('--particle-sprite-x', sprite[0]);
+    el.style.setProperty('--particle-sprite-y', sprite[1]);
+  }
+
   function spawnPrepBreadingParticles(evt, material, dist) {
     if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
     const rect = els.prepStage.getBoundingClientRect();
@@ -7574,9 +7589,9 @@ body.layout-editor-on .endX-marker {
       const size = material === 'egg' ? 7 + Math.random() * 9 : (material === 'panko' ? 8 + Math.random() * 12 : 4 + Math.random() * 8);
       particle.style.setProperty('--particle-size', size.toFixed(1) + 'px');
       if (material === 'panko') {
+        applyPrepPankoParticleSprite(particle, 'crumb');
         particle.style.setProperty('--particle-w', (size * (1.35 + Math.random() * 1.55)).toFixed(1) + 'px');
         particle.style.setProperty('--particle-h', (size * (0.48 + Math.random() * 0.48)).toFixed(1) + 'px');
-        particle.style.setProperty('--particle-radius', ['24% 68% 38% 56% / 50% 32% 66% 42%', '42% 28% 64% 36% / 38% 58% 34% 62%', '30% 58% 34% 70% / 60% 36% 52% 42%'][Math.floor(Math.random() * 3)]);
       }
       particle.style.setProperty('--particle-dx', (Math.random() * (material === 'panko' ? 106 : 70) - (material === 'panko' ? 53 : 35)).toFixed(1) + 'px');
       particle.style.setProperty('--particle-dy', (material === 'panko' ? -8 - Math.random() * 70 : -18 - Math.random() * 54).toFixed(1) + 'px');
@@ -7602,12 +7617,12 @@ body.layout-editor-on .endX-marker {
       const crumb = document.createElement('i');
       const size = (burst ? 9 : 7) + Math.random() * (burst ? 15 : 11);
       crumb.dataset.material = 'panko';
+      applyPrepPankoParticleSprite(crumb, 'crumb');
       crumb.style.setProperty('--particle-x', (xPct + (Math.random() * (burst ? 18 : 11) - (burst ? 9 : 5.5))).toFixed(2) + '%');
       crumb.style.setProperty('--particle-y', (yPct - (burst ? 6 : 2) - Math.random() * (burst ? 8 : 4)).toFixed(2) + '%');
       crumb.style.setProperty('--particle-size', size.toFixed(1) + 'px');
       crumb.style.setProperty('--particle-w', (size * (1.28 + Math.random() * 1.7)).toFixed(1) + 'px');
       crumb.style.setProperty('--particle-h', (size * (0.44 + Math.random() * 0.56)).toFixed(1) + 'px');
-      crumb.style.setProperty('--particle-radius', ['24% 68% 38% 56% / 50% 32% 66% 42%', '42% 28% 64% 36% / 38% 58% 34% 62%', '30% 58% 34% 70% / 60% 36% 52% 42%'][Math.floor(Math.random() * 3)]);
       crumb.style.setProperty('--particle-dx', (Math.random() * (burst ? 138 : 74) - (burst ? 69 : 37)).toFixed(1) + 'px');
       crumb.style.setProperty('--particle-dy', ((burst ? 34 : 42) + Math.random() * (burst ? 122 : 86)).toFixed(1) + 'px');
       crumb.style.setProperty('--particle-rot', (Math.random() * 220 - 110).toFixed(1) + 'deg');
@@ -7630,6 +7645,7 @@ body.layout-editor-on .endX-marker {
       const patch = document.createElement('i');
       const size = (reduced ? 54 : 76) + Math.random() * (reduced ? 34 : 52) + Math.min(90, Math.max(0, dist || 0)) * 0.04;
       patch.dataset.material = 'panko-bury';
+      applyPrepPankoParticleSprite(patch, 'bury');
       patch.style.setProperty('--particle-x', (xPct + Math.random() * 8 - 4).toFixed(2) + '%');
       patch.style.setProperty('--particle-y', (yPct + Math.random() * 5 - 1).toFixed(2) + '%');
       patch.style.setProperty('--particle-size', size.toFixed(1) + 'px');
@@ -7939,13 +7955,6 @@ body.layout-editor-on .endX-marker {
     state.prepEggContacting = false;
     state.prepEggRippleDistance = 0;
     state.prepEggImpactPending = false;
-    if (!droppedInsideMaterial && state.prepTrayDragStartCoating && !state.prepAnimating) {
-      state.prepProgress = state.prepTrayDragStartCoating.progress;
-      state.prepTrayFrontProgress = state.prepTrayDragStartCoating.front;
-      state.prepTrayBackProgress = state.prepTrayDragStartCoating.back;
-      state.prepTraySide = state.prepTrayDragStartCoating.side;
-      state.prepTrayRollDistance = state.prepTrayDragStartCoating.rollDistance;
-    }
     state.prepTrayDragStartCoating = null;
     updatePrepBreadingCoatingView(config);
     if (config && config.topviewBreading) {
