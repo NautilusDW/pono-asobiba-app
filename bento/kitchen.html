@@ -4448,6 +4448,36 @@ body.layout-editor-on .endX-marker {
     { sheet: 'base', x: 2, y: 2, label: 'パンこ' },
   ];
 
+  const BREADING_TRAY_SURFACE_FRAMES = {
+    flour: [
+      '../assets/images/bento/cooking/korokke/topview/tray_flour_surface_00.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_flour_surface_01.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_flour_surface_02.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_flour_surface_03.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_flour_surface_04.png',
+    ],
+    egg: [
+      '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_00.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_01.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_02.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_03.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_04.png',
+    ],
+    panko: [
+      '../assets/images/bento/cooking/korokke/topview/tray_panko_surface_00.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_panko_surface_01.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_panko_surface_02.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_panko_surface_03.png',
+      '../assets/images/bento/cooking/korokke/topview/tray_panko_surface_04.png',
+    ],
+  };
+
+  const BREADING_TRAY_STEPS = [
+    { src: BREADING_TRAY_SURFACE_FRAMES.flour[0], stateFrames: BREADING_TRAY_SURFACE_FRAMES.flour, label: 'こな' },
+    { src: BREADING_TRAY_SURFACE_FRAMES.egg[0], stateFrames: BREADING_TRAY_SURFACE_FRAMES.egg, label: 'たまご' },
+    { src: BREADING_TRAY_SURFACE_FRAMES.panko[0], stateFrames: BREADING_TRAY_SURFACE_FRAMES.panko, label: 'パンこ' },
+  ];
+
   const kneadRuntime = {
     images: {},
     loading: {},
@@ -4598,11 +4628,7 @@ body.layout-editor-on .endX-marker {
       singleSurfacePrep: true,
       startSpeech: 'エビに ころもを つけよう！',
       completeSpeech: 'エビフライの したごしらえ できたよ！',
-      toolSteps: [
-        { src: '../assets/images/bento/cooking/korokke/topview/tray_flour.png', label: 'こな' },
-        { src: '../assets/images/bento/cooking/korokke/topview/tray_egg.png', label: 'たまご' },
-        { src: '../assets/images/bento/cooking/korokke/topview/tray_panko.png', label: 'パンこ' },
-      ],
+      toolSteps: BREADING_TRAY_STEPS,
       topviewBreading: {
         foreground: {
           flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '35%', h: '25%', dy: '18%', opacity: 0.68 },
@@ -4654,11 +4680,7 @@ body.layout-editor-on .endX-marker {
       singleSurfacePrep: true,
       startSpeech: 'コロッケに ころもを つけよう！',
       completeSpeech: 'コロッケの したごしらえ できたよ！',
-      toolSteps: [
-        { src: '../assets/images/bento/cooking/korokke/topview/tray_flour.png', label: 'こな' },
-        { src: '../assets/images/bento/cooking/korokke/topview/tray_egg.png', label: 'たまご' },
-        { src: '../assets/images/bento/cooking/korokke/topview/tray_panko.png', label: 'パンこ' },
-      ],
+      toolSteps: BREADING_TRAY_STEPS,
       topviewBreading: {
         foreground: {
           flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '35%', h: '25%', dy: '18%', opacity: 0.68 },
@@ -6065,6 +6087,14 @@ body.layout-editor-on .endX-marker {
         frames.forEach(preloadPrepImage);
       });
     }
+    if (Array.isArray(config.toolSteps)) {
+      config.toolSteps.forEach(function (step) {
+        if (!step) return;
+        preloadPrepImage(step.src);
+        preloadPrepImage(step.thumbSrc);
+        if (Array.isArray(step.stateFrames)) step.stateFrames.forEach(preloadPrepImage);
+      });
+    }
   }
 
   function setPrepVisual(el, visual) {
@@ -6115,6 +6145,39 @@ body.layout-editor-on .endX-marker {
     return (config && Array.isArray(config.toolSteps) && config.toolSteps.length)
       ? config.toolSteps
       : PREP_TOOL_STEPS;
+  }
+
+  function getPrepTraySurfaceVisual(trayStep, progress) {
+    if (!trayStep) return {};
+    const visual = Object.assign({}, trayStep);
+    const frames = Array.isArray(trayStep.stateFrames) ? trayStep.stateFrames : [];
+    if (frames.length) {
+      const ratio = Math.max(0, Math.min(1, progress || 0));
+      const frameIndex = Math.max(0, Math.min(frames.length - 1, Math.round(ratio * (frames.length - 1))));
+      visual.src = frames[frameIndex] || visual.src;
+      visual.surfaceFrameIndex = frameIndex;
+    }
+    return visual;
+  }
+
+  function updatePrepTraySurfaceView(config, trayStep, progress) {
+    const visual = getPrepTraySurfaceVisual(trayStep, progress);
+    const tray = getActivePrepTrayElement(config);
+    if (!tray) return visual;
+    const thumb = tray.querySelector('.prep-breading-tray-thumb');
+    if (!thumb) return visual;
+    const surfaceKey = (visual.src || '') + '|' + (visual.surfaceFrameIndex == null ? 'base' : visual.surfaceFrameIndex);
+    if (thumb.dataset.surfaceKey !== surfaceKey) {
+      setPrepVisual(thumb, visual);
+      thumb.dataset.surfaceKey = surfaceKey;
+    }
+    return visual;
+  }
+
+  function getCurrentPrepTraySurfaceSrc(config) {
+    const current = getCurrentPrepTrayContext(config);
+    const visual = getPrepTraySurfaceVisual(current.trayStep, getPrepTrayCoatingRatio(config));
+    return visual && visual.src;
   }
 
   function getPrepTrayActiveIndex(config, progress) {
@@ -6304,8 +6367,7 @@ body.layout-editor-on .endX-marker {
       state.prepEggWakePower = Math.max(0, (state.prepEggWakePower || 0) * 0.91 - 0.0035);
       const activeConfig = config || getActiveTrayPrepConfig();
       if (activeConfig && getCurrentPrepBreadingMaterial(activeConfig) === 'egg') {
-        const current = getCurrentPrepTrayContext(activeConfig);
-        updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(activeConfig), current.trayStep && current.trayStep.src);
+        updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(activeConfig), getCurrentPrepTraySurfaceSrc(activeConfig));
       }
       if ((state.prepEggMotionIntensity || 0) > 0.01
         || (state.prepEggWakePower || 0) > 0.01
@@ -6347,8 +6409,7 @@ body.layout-editor-on .endX-marker {
       state.prepEggWakeRot = Math.atan2(dy || 0, dx || 1) * 180 / Math.PI;
     }
     if (power > 0.2) maybeSpawnPrepEggSplash(evt, power, dx, dy);
-    const current = getCurrentPrepTrayContext(config);
-    updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(config), current.trayStep && current.trayStep.src);
+    updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(config), getCurrentPrepTraySurfaceSrc(config));
     schedulePrepEggMotionDecay(config);
   }
 
@@ -6446,7 +6507,7 @@ body.layout-editor-on .endX-marker {
       if (els.prepBreadingLiquid) els.prepBreadingLiquid.style.backgroundImage = '';
       return;
     }
-    const src = traySrc || '../assets/images/bento/cooking/korokke/topview/tray_egg.png';
+    const src = traySrc || BREADING_TRAY_SURFACE_FRAMES.egg[0];
     if (els.prepBreadingLiquid) {
       els.prepBreadingLiquid.style.backgroundImage = 'url("' + src + '")';
     }
@@ -6637,7 +6698,7 @@ body.layout-editor-on .endX-marker {
       tray.dataset.material = material;
       const thumb = document.createElement('div');
       thumb.className = 'prep-breading-tray-thumb';
-      setPrepVisual(thumb, trayStep);
+      setPrepVisual(thumb, getPrepTraySurfaceVisual(trayStep, getPrepTrayCoatingRatio(config)));
       const label = document.createElement('div');
       label.className = 'prep-breading-tray-label';
       label.textContent = getPrepBreadingMaterialLabel(material);
@@ -6671,8 +6732,9 @@ body.layout-editor-on .endX-marker {
     const visibleProgress = state.prepTraySide === 'back'
       ? state.prepTrayBackProgress
       : state.prepTrayFrontProgress;
+    const coatProgress = Math.max(0, Math.min(1, visibleProgress || 0));
+    const traySurface = updatePrepTraySurfaceView(config, trayStep, coatProgress);
     if (els.prepBreadingFood) {
-      const coatProgress = Math.max(0, Math.min(1, visibleProgress || 0));
       const foodVisual = getPrepFoodStageVisual(config, state.prepProgress || 0, coatProgress);
       setPrepFoodVisual(els.prepBreadingFood, foodVisual);
       const rollWave = Math.sin(((state.prepTrayRollAngle || 0) * Math.PI) / 180);
@@ -6685,7 +6747,7 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingFood.style.setProperty('--prep-coat-rot', (((state.prepTrayRollAngle || 0) * -0.08) % 24).toFixed(1) + 'deg');
       els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
       els.prepBreadingFood.style.setProperty('--prep-food-rot', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
-      updatePrepBreadingLayers(config, material, coatProgress, trayStep && trayStep.src);
+      updatePrepBreadingLayers(config, material, coatProgress, traySurface && traySurface.src);
       setPrepBreadingLayerPose(
         els.prepBreadingFood.style.getPropertyValue('--prep-food-x') || '50%',
         els.prepBreadingFood.style.getPropertyValue('--prep-food-y') || '52%',
@@ -7988,8 +8050,7 @@ body.layout-editor-on .endX-marker {
       state.prepEggImpactPending = false;
       spawnPrepEggDrips(evt);
     }
-    const current = getCurrentPrepTrayContext(config);
-    updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(config), current.trayStep && current.trayStep.src);
+    updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(config), getCurrentPrepTraySurfaceSrc(config));
   }
 
   function advanceTrayPrepCoating(config, dist, evt, isInsideTray, options) {
