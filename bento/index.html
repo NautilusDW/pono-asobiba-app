@@ -605,7 +605,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 74px;
+  min-height: 84px;
   padding: 5px 3px;
   border: 2.5px solid #FDE68A;
   border-radius: 12px;
@@ -620,8 +620,8 @@ html, body {
   background: #FFF0D5;
 }
 .free-palette-visual {
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1809,19 +1809,19 @@ const FRUITS = [
 const COOKING_P = '../assets/images/bento/cooking/';
 const FREE_LAYOUT_ASSET_P = '../assets/images/bento/free-layout/';
 const FREE_COOKED_OKAZU = [
-  { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 192, rotation: -6 },
-  { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 188, rotation: 2 },
-  { img: COOKING_P+'chicken/chicken_003_done.png',         name: 'からあげ',         cat: 'meat', sk: 'r', size: 184, rotation: -2 },
-  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 204, rotation: 8 },
-  { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 184, rotation: -3 },
-  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 178, rotation: 3 },
-  { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 190, rotation: -4 },
-  { img: COOKING_P+'tomato/tomato_001.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 152, rotation: -4 },
-  { img: COOKING_P+'tomato/tomato_002.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 150, rotation: 3 },
-  { img: COOKING_P+'tomato/tomato_003.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 150, rotation: -1 },
-  { img: COOKING_P+'tomato/tomato_004.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 148, rotation: 4 },
-  { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 176, rotation: 1 },
-  { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 176, rotation: -1 },
+  { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 132, rotation: -6 },
+  { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 126, rotation: 2 },
+  { img: COOKING_P+'chicken/chicken_003_done.png',         name: 'からあげ',         cat: 'meat', sk: 'r', size: 126, rotation: -2 },
+  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 140, rotation: 8 },
+  { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 126, rotation: -3 },
+  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 122, rotation: 3 },
+  { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 132, rotation: -4 },
+  { img: COOKING_P+'tomato/tomato_001.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 112, rotation: -4 },
+  { img: COOKING_P+'tomato/tomato_002.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 110, rotation: 3 },
+  { img: COOKING_P+'tomato/tomato_003.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 110, rotation: -1 },
+  { img: COOKING_P+'tomato/tomato_004.png',                 name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 108, rotation: 4 },
+  { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 124, rotation: 1 },
+  { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 124, rotation: -1 },
 ];
 
 // ===== NPC requesters (依頼者モード用) =====
@@ -2046,6 +2046,18 @@ const bentoBoxes = [
     riceSpots: [
       { x: 380, y: 230 },
     ],
+    foodSpots: [
+      { x: 274, y: 234 },
+      { x: 382, y: 188 },
+      { x: 490, y: 234 },
+      { x: 318, y: 306 },
+      { x: 446, y: 306 },
+    ],
+    accessorySpots: [
+      { x: 292, y: 250 },
+      { x: 470, y: 250 },
+      { x: 382, y: 206 },
+    ],
     safeSpots: [
       { x: 300, y: 224 },
       { x: 470, y: 214 },
@@ -2065,6 +2077,18 @@ const bentoBoxes = [
     autoRice: { templateId: 'roundSmile', x: 382, y: 230, size: 292 },
     riceSpots: [
       { x: 382, y: 230 },
+    ],
+    foodSpots: [
+      { x: 274, y: 236 },
+      { x: 382, y: 190 },
+      { x: 490, y: 236 },
+      { x: 318, y: 302 },
+      { x: 446, y: 302 },
+    ],
+    accessorySpots: [
+      { x: 294, y: 248 },
+      { x: 468, y: 248 },
+      { x: 382, y: 206 },
     ],
     safeSpots: [
       { x: 300, y: 226 },
@@ -2087,6 +2111,18 @@ const bentoBoxes = [
     riceSpots: [
       { x: 380, y: 230 },
     ],
+    foodSpots: [
+      { x: 274, y: 254 },
+      { x: 382, y: 174 },
+      { x: 490, y: 270 },
+      { x: 318, y: 326 },
+      { x: 448, y: 326 },
+    ],
+    accessorySpots: [
+      { x: 284, y: 270 },
+      { x: 480, y: 270 },
+      { x: 382, y: 220 },
+    ],
     safeSpots: [
       { x: 270, y: 224 },
       { x: 510, y: 214 },
@@ -2107,6 +2143,18 @@ const bentoBoxes = [
     autoRice: { baseRice: 'rice_base_cat', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
+    ],
+    foodSpots: [
+      { x: 276, y: 254 },
+      { x: 382, y: 174 },
+      { x: 488, y: 270 },
+      { x: 320, y: 322 },
+      { x: 446, y: 322 },
+    ],
+    accessorySpots: [
+      { x: 286, y: 268 },
+      { x: 478, y: 268 },
+      { x: 382, y: 218 },
     ],
     safeSpots: [
       { x: 270, y: 224 },
@@ -2132,49 +2180,49 @@ const riceBases = [
   { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
 ];
 const decorItems = [
-  { id: 'nori_eye_round', type: 'decor', name: 'のりのめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 22, layerBase: 50 },
-  { id: 'nori_nose_bear', type: 'decor', name: 'のりのはな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 32, layerBase: 50 },
-  { id: 'nori_mouth_smile', type: 'decor', name: 'にっこりくち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 44, layerBase: 50 },
-  { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 31, layerBase: 50 },
-  { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 46, layerBase: 60 },
-  { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 48, layerBase: 60 },
-  { id: 'pick_flag', type: 'pick', name: 'はたピック', image: FREE_ASSET + 'pick_flag.png', css: 'free-css-pick', size: 48, layerBase: 60 },
-  { id: 'pick_heart', type: 'pick', name: 'ハートピック', image: FREE_ASSET + 'pick_heart.png', css: 'free-css-pick', size: 48, layerBase: 60 },
+  { id: 'nori_eye_round', type: 'decor', name: 'のりのめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 36, layerBase: 50 },
+  { id: 'nori_nose_bear', type: 'decor', name: 'のりのはな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 48, layerBase: 50 },
+  { id: 'nori_mouth_smile', type: 'decor', name: 'にっこりくち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 66, layerBase: 50 },
+  { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
+  { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
+  { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 64, layerBase: 60 },
+  { id: 'pick_flag', type: 'pick', name: 'はたピック', image: FREE_ASSET + 'pick_flag.png', css: 'free-css-pick', size: 64, layerBase: 60 },
+  { id: 'pick_heart', type: 'pick', name: 'ハートピック', image: FREE_ASSET + 'pick_heart.png', css: 'free-css-pick', size: 64, layerBase: 60 },
 ];
 const riceFaceTemplates = {
   roundSmile: {
     name: 'にこにこごはん',
     baseRice: 'rice_base_round',
     parts: [
-      { id: 'nori_eye_round', x: -30, y: -20, size: 18 },
-      { id: 'nori_eye_round', x: 30, y: -20, size: 18 },
-      { id: 'nori_mouth_smile', x: 0, y: 24, size: 38 },
-      { id: 'ketchup_cheek', x: -46, y: 12, size: 27 },
-      { id: 'ketchup_cheek', x: 46, y: 12, size: 27 },
+      { id: 'nori_eye_round', x: -34, y: -22, size: 27 },
+      { id: 'nori_eye_round', x: 34, y: -22, size: 27 },
+      { id: 'nori_mouth_smile', x: 0, y: 27, size: 54 },
+      { id: 'ketchup_cheek', x: -54, y: 12, size: 40 },
+      { id: 'ketchup_cheek', x: 54, y: 12, size: 40 },
     ],
   },
   bearSmile: {
     name: 'にこにこくま',
     baseRice: 'rice_base_bear',
     parts: [
-      { id: 'nori_eye_round', x: -34, y: -20, size: 20 },
-      { id: 'nori_eye_round', x: 34, y: -20, size: 20 },
-      { id: 'nori_nose_bear', x: 0, y: 8, size: 28 },
-      { id: 'nori_mouth_smile', x: 0, y: 34, size: 42 },
-      { id: 'ketchup_cheek', x: -54, y: 18, size: 30 },
-      { id: 'ketchup_cheek', x: 54, y: 18, size: 30 },
+      { id: 'nori_eye_round', x: -44, y: -26, size: 30 },
+      { id: 'nori_eye_round', x: 44, y: -26, size: 30 },
+      { id: 'nori_nose_bear', x: 0, y: 10, size: 42 },
+      { id: 'nori_mouth_smile', x: 0, y: 42, size: 58 },
+      { id: 'ketchup_cheek', x: -66, y: 18, size: 44 },
+      { id: 'ketchup_cheek', x: 66, y: 18, size: 44 },
     ],
   },
   catSmile: {
     name: 'にこにこねこ',
     baseRice: 'rice_base_cat',
     parts: [
-      { id: 'nori_eye_round', x: -34, y: -18, size: 20 },
-      { id: 'nori_eye_round', x: 34, y: -18, size: 20 },
-      { id: 'nori_nose_bear', x: 0, y: 10, size: 24 },
-      { id: 'nori_mouth_smile', x: 0, y: 32, size: 40 },
-      { id: 'ketchup_cheek', x: -54, y: 18, size: 28 },
-      { id: 'ketchup_cheek', x: 54, y: 18, size: 28 },
+      { id: 'nori_eye_round', x: -44, y: -24, size: 30 },
+      { id: 'nori_eye_round', x: 44, y: -24, size: 30 },
+      { id: 'nori_nose_bear', x: 0, y: 10, size: 38 },
+      { id: 'nori_mouth_smile', x: 0, y: 40, size: 56 },
+      { id: 'ketchup_cheek', x: -66, y: 18, size: 42 },
+      { id: 'ketchup_cheek', x: 66, y: 18, size: 42 },
     ],
   },
 };
