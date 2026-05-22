@@ -1121,6 +1121,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease, opacity 0.34s ease;
   will-change: left, top, transform, opacity;
 }
+.prep-breading-layer.is-dropping {
+  animation: prepBreadingLayerDrop 0.26s cubic-bezier(.2,.82,.24,1) forwards;
+}
 .prep-breading-liquid {
   position: absolute;
   left: 50%;
@@ -1233,6 +1236,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   --prep-food-scale: 1.06;
   filter: drop-shadow(0 16px 18px rgba(84,55,28,0.27));
 }
+.prep-breading-food.is-dropping {
+  animation: prepBreadingFoodDrop 0.26s cubic-bezier(.2,.82,.24,1) forwards;
+}
 .prep-workbench.is-working .prep-breading-food {
   animation: prepBreadingDip 0.42s ease-out;
 }
@@ -1303,6 +1309,16 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   42% { transform: translate(-50%, -44%) rotate(calc(var(--prep-food-rot, 0deg) - 5deg)) scaleX(var(--prep-food-facing, 1)) scale(1.08); }
   70% { transform: translate(-50%, -53%) rotate(calc(var(--prep-food-rot, 0deg) + 4deg)) scaleX(var(--prep-food-facing, 1)) scale(1.04); }
 }
+@keyframes prepBreadingFoodDrop {
+  0% { transform: translate(-50%, -61%) rotate(var(--prep-food-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1.08); filter: drop-shadow(0 20px 18px rgba(84,55,28,0.24)); }
+  72% { transform: translate(-50%, -48%) rotate(var(--prep-food-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(0.985); }
+  100% { transform: translate(-50%, -50%) rotate(var(--prep-food-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1); }
+}
+@keyframes prepBreadingLayerDrop {
+  0% { transform: translate(-50%, -61%) translate(var(--prep-layer-dx, 0%), var(--prep-layer-dy, 0%)) rotate(var(--prep-layer-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1.08); }
+  72% { transform: translate(-50%, -48%) translate(var(--prep-layer-dx, 0%), var(--prep-layer-dy, 0%)) rotate(var(--prep-layer-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(0.985); }
+  100% { transform: translate(-50%, -50%) translate(var(--prep-layer-dx, 0%), var(--prep-layer-dy, 0%)) rotate(var(--prep-layer-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1); }
+}
 @keyframes prepEggLiquidDrift {
   0%, 100% { transform: translate(-50%, -50%) translate3d(-0.45%, -0.18%, 0) scale(var(--prep-egg-wave-scale, 1)); }
   46% { transform: translate(-50%, -50%) translate3d(0.5%, 0.25%, 0) scale(var(--prep-egg-wave-scale, 1)); }
@@ -1350,6 +1366,27 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 46px))) scale(0.82, 1.28) rotate(var(--particle-rot, 12deg));
+  }
+}
+@media (pointer: coarse), (max-width: 900px), (prefers-reduced-motion: reduce) {
+  .prep-breading-liquid {
+    filter: none;
+    transition: opacity 0.2s ease;
+    will-change: opacity;
+  }
+  .prep-breading-game[data-liquid="egg"] .prep-breading-liquid,
+  .prep-breading-liquid::before,
+  .prep-breading-liquid::after {
+    animation: none;
+  }
+  .prep-breading-tray-thumb {
+    filter: drop-shadow(0 7px 8px rgba(93,62,34,0.1));
+  }
+  .prep-breading-particles i {
+    animation-duration: 0.58s;
+  }
+  .prep-breading-liquid .prep-egg-impact-ripple {
+    animation-duration: 0.54s;
   }
 }
 .prep-workbench.is-working .prep-art-main {
@@ -6077,6 +6114,50 @@ body.layout-editor-on .endX-marker {
     });
   }
 
+  function isPrepReducedEffects() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    return window.innerWidth <= 900;
+  }
+
+  function getPrepFoodPose() {
+    if (!els.prepBreadingFood) return { x: '50%', y: '52%', rot: '0deg' };
+    return {
+      x: els.prepBreadingFood.style.getPropertyValue('--prep-food-x') || '50%',
+      y: els.prepBreadingFood.style.getPropertyValue('--prep-food-y') || '52%',
+      rot: els.prepBreadingFood.style.getPropertyValue('--prep-food-rot') || '0deg',
+    };
+  }
+
+  function setPrepFoodPose(x, y, rot) {
+    if (!els.prepBreadingFood) return;
+    els.prepBreadingFood.style.setProperty('--prep-food-x', x);
+    els.prepBreadingFood.style.setProperty('--prep-food-y', y);
+    els.prepBreadingFood.style.setProperty('--prep-food-rot', rot);
+    els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
+    setPrepBreadingLayerPose(x, y, rot);
+  }
+
+  function syncPrepBreadingLayerPoseFromFood() {
+    const pose = getPrepFoodPose();
+    setPrepBreadingLayerPose(pose.x, pose.y, pose.rot);
+  }
+
+  function playPrepFoodDrop() {
+    if (!els.prepBreadingFood) return;
+    const targets = [els.prepBreadingFood, els.prepBreadingEffect, els.prepBreadingForeground].filter(Boolean);
+    targets.forEach(function (el) {
+      el.classList.remove('is-dropping');
+      void el.offsetWidth;
+      el.classList.add('is-dropping');
+    });
+    state.pendingTimers.push(setTimeout(function () {
+      targets.forEach(function (el) {
+        if (el) el.classList.remove('is-dropping');
+      });
+    }, 290));
+  }
+
   function setPrepBreadingLayerVisual(el, asset, progress) {
     if (!el) return;
     if (!asset || !asset.src) {
@@ -6192,30 +6273,28 @@ body.layout-editor-on .endX-marker {
 
   function snapPrepFoodToTray() {
     if (!els.prepBreadingFood) return;
-    els.prepBreadingFood.style.setProperty('--prep-food-x', '50%');
-    els.prepBreadingFood.style.setProperty('--prep-food-y', '52%');
-    els.prepBreadingFood.style.setProperty('--prep-food-rot', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
-    els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
-    setPrepBreadingLayerPose('50%', '52%', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
+    setPrepFoodPose('50%', '52%', ((state.prepTrayRollAngle || 0) % 360) + 'deg');
   }
 
   function snapPrepFoodToStaging(config) {
     if (!els.prepBreadingFood) return;
     const activeIndex = getPrepTrayActiveIndex(config, state.prepProgress || 0);
     const material = getCurrentPrepBreadingMaterial(config);
+    const pose = getPrepFoodPose();
+    const x = pose.x || '50%';
     const y = material === 'egg' ? '20%' : '19%';
     const rot = material === 'panko' ? '3deg' : '-3deg';
-    els.prepBreadingFood.style.setProperty('--prep-food-x', '50%');
-    els.prepBreadingFood.style.setProperty('--prep-food-y', y);
-    els.prepBreadingFood.style.setProperty('--prep-food-rot', rot);
-    els.prepBreadingFood.style.setProperty('--prep-food-facing', state.prepTraySide === 'back' ? '-1' : '1');
-    setPrepBreadingLayerPose('50%', y, rot);
+    setPrepFoodPose(x, y, rot);
     if (activeIndex <= 0) snapPrepFoodToTray();
   }
 
   function snapPrepFoodToRest(config) {
-    if (config && config.topviewBreading && getPrepTrayActiveIndex(config, state.prepProgress || 0) > 0 && getPrepTrayCoatingRatio(config) <= 0.001) {
-      snapPrepFoodToStaging(config);
+    if (config && config.topviewBreading) {
+      if (getPrepTrayActiveIndex(config, state.prepProgress || 0) > 0 && getPrepTrayCoatingRatio(config) <= 0.001) {
+        snapPrepFoodToStaging(config);
+        return;
+      }
+      syncPrepBreadingLayerPoseFromFood();
       return;
     }
     snapPrepFoodToTray();
@@ -7166,7 +7245,10 @@ body.layout-editor-on .endX-marker {
     if (!rect.width || !rect.height) return;
     const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
     const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
-    const count = Math.max(2, Math.min(material === 'panko' ? 12 : 8, Math.floor((dist || 0) / 18)));
+    const reduced = isPrepReducedEffects();
+    const maxCount = reduced ? (material === 'panko' ? 5 : 4) : (material === 'panko' ? 12 : 8);
+    const divisor = reduced ? 34 : 18;
+    const count = Math.max(1, Math.min(maxCount, Math.floor((dist || 0) / divisor)));
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('i');
       particle.dataset.material = material || 'flour';
@@ -7195,7 +7277,8 @@ body.layout-editor-on .endX-marker {
     if (!rect.width || !rect.height) return;
     const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
     const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
-    for (let i = 0; i < 5; i++) {
+    const count = isPrepReducedEffects() ? 3 : 5;
+    for (let i = 0; i < count; i++) {
       const drip = document.createElement('i');
       drip.dataset.material = 'egg-drip';
       drip.style.setProperty('--particle-x', (xPct + (Math.random() * 7 - 3.5)).toFixed(2) + '%');
@@ -7316,7 +7399,7 @@ body.layout-editor-on .endX-marker {
       const material = getCurrentPrepBreadingMaterial(config);
       updatePrepMaterialContact(config, evt, isInsideMaterial);
       if (material === 'panko' && isInsideMaterial && !state.prepTrayInsideMaterial) {
-        spawnPrepBreadingParticles(evt, 'panko', 170);
+        spawnPrepBreadingParticles(evt, 'panko', isPrepReducedEffects() ? 90 : 170);
       }
       state.prepTrayInsideMaterial = isInsideMaterial;
       advanceTrayPrepCoating(config, dist, evt, isInsideMaterial);
@@ -7332,9 +7415,15 @@ body.layout-editor-on .endX-marker {
     state.prepTrayRollAngle = 0;
     if (els.prepBreadingFood) els.prepBreadingFood.classList.remove('is-dragging');
     releasePrepPointerCapture(evt);
+    const droppedInsideMaterial = !!state.prepTrayInsideMaterial;
     state.prepTrayInsideMaterial = false;
     state.prepEggContacting = false;
     updatePrepBreadingCoatingView(config);
+    if (config && config.topviewBreading) {
+      syncPrepBreadingLayerPoseFromFood();
+      if (droppedInsideMaterial) playPrepFoodDrop();
+      return;
+    }
     snapPrepFoodToRest(config);
   }
 
