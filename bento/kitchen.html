@@ -1197,12 +1197,15 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   bottom: 16%;
   border-radius: 34% 36% 31% 33% / 47% 46% 42% 44%;
   background:
+    radial-gradient(ellipse var(--prep-egg-wake-w, 30%) var(--prep-egg-wake-h, 18%) at var(--prep-egg-wake-x, 50%) var(--prep-egg-wake-y, 52%), rgba(255,255,255,0.36) 0 12%, rgba(255,239,128,0.16) 30%, transparent 72%),
+    radial-gradient(ellipse 22% 14% at var(--prep-egg-wake-x, 50%) var(--prep-egg-wake-y, 52%), rgba(255,185,22,0.12), transparent 74%),
     radial-gradient(ellipse at 22% 35%, rgba(255,255,255,0.34) 0 8%, transparent 21%),
     radial-gradient(ellipse at 66% 58%, rgba(255,255,255,0.2) 0 7%, transparent 20%),
-    repeating-linear-gradient(104deg, transparent 0 28px, rgba(255,255,255,0.16) 31px 36px, transparent 42px 70px);
+    repeating-linear-gradient(104deg, transparent 0 42px, rgba(255,255,255,0.11) 48px 56px, transparent 64px 112px);
   opacity: var(--prep-egg-wave-opacity, 0);
   mix-blend-mode: screen;
-  transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.5%, 0, 0);
+  transform-origin: var(--prep-egg-wake-x, 50%) var(--prep-egg-wake-y, 52%);
+  transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.5%, 0, 0) rotate(var(--prep-egg-wake-rot, 0deg));
   animation: prepEggSurfaceFlow var(--prep-egg-surface-dur, 1.25s) ease-in-out infinite;
 }
 .prep-breading-liquid::after {
@@ -1321,16 +1324,16 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   100% { transform: translate(-50%, -50%) translate(var(--prep-layer-dx, 0%), var(--prep-layer-dy, 0%)) rotate(var(--prep-layer-rot, 0deg)) scaleX(var(--prep-food-facing, 1)) scale(1); }
 }
 @keyframes prepEggLiquidDrift {
-  0%, 100% { transform: translate(-50%, -50%) translate3d(-0.45%, -0.18%, 0) scale(var(--prep-egg-wave-scale, 1)); }
-  46% { transform: translate(-50%, -50%) translate3d(0.5%, 0.25%, 0) scale(var(--prep-egg-wave-scale, 1)); }
+  0%, 100% { transform: translate(-50%, -50%) translate3d(-0.22%, -0.1%, 0) scale(var(--prep-egg-wave-scale, 1)); }
+  46% { transform: translate(-50%, -50%) translate3d(0.28%, 0.14%, 0) scale(var(--prep-egg-wave-scale, 1)); }
 }
 @keyframes prepEggSurfaceFlow {
-  0%, 100% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-1.4%, -0.4%, 0) rotate(-0.4deg); }
-  50% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(1.2%, 0.7%, 0) rotate(0.5deg); }
+  0%, 100% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(-0.6%, -0.22%, 0) rotate(calc(var(--prep-egg-wake-rot, 0deg) - 0.12deg)); }
+  50% { transform: scale(var(--prep-egg-wave-scale, 1)) translate3d(0.55%, 0.32%, 0) rotate(calc(var(--prep-egg-wake-rot, 0deg) + 0.14deg)); }
 }
 @keyframes prepEggRippleDrift {
-  0%, 100% { transform: translate3d(1.4%, -0.3%, 0) scale(0.985, 1.015) rotate(-1deg); }
-  45% { transform: translate3d(-1.2%, 0.6%, 0) scale(1.018, 0.992) rotate(1deg); }
+  0%, 100% { transform: translate3d(0.58%, -0.16%, 0) scale(0.994, 1.006) rotate(-0.35deg); }
+  45% { transform: translate3d(-0.48%, 0.28%, 0) scale(1.008, 0.996) rotate(0.38deg); }
 }
 .prep-breading-liquid .prep-egg-impact-ripple {
   position: absolute;
@@ -3622,11 +3625,11 @@ body.layout-editor-on .endX-marker {
 
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">
   <filter id="prep-egg-liquid-distort" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.045" numOctaves="1" seed="8" result="eggWave">
-      <animate attributeName="baseFrequency" dur="1.6s" values="0.012 0.045;0.018 0.058;0.013 0.04;0.012 0.045" repeatCount="indefinite" />
+    <feTurbulence type="fractalNoise" baseFrequency="0.006 0.018" numOctaves="1" seed="8" result="eggWave">
+      <animate attributeName="baseFrequency" dur="5.2s" values="0.006 0.018;0.009 0.024;0.0065 0.016;0.006 0.018" repeatCount="indefinite" />
     </feTurbulence>
-    <feDisplacementMap in="SourceGraphic" in2="eggWave" scale="2.6" xChannelSelector="R" yChannelSelector="G">
-      <animate attributeName="scale" dur="1.25s" values="1.2;3.7;2.1;1.2" repeatCount="indefinite" />
+    <feDisplacementMap in="SourceGraphic" in2="eggWave" scale="1.1" xChannelSelector="R" yChannelSelector="G">
+      <animate attributeName="scale" dur="4.6s" values="0.45;1.35;0.72;0.45" repeatCount="indefinite" />
     </feDisplacementMap>
   </filter>
 </svg>
@@ -4673,7 +4676,14 @@ body.layout-editor-on .endX-marker {
     prepEggMotionX: 0,
     prepEggMotionY: 0,
     prepEggMotionRaf: 0,
+    prepEggWakeX: 50,
+    prepEggWakeY: 52,
+    prepEggWakeTargetX: 50,
+    prepEggWakeTargetY: 52,
+    prepEggWakePower: 0,
+    prepEggWakeRot: 0,
     prepTrayLastValidPose: null,
+    prepTrayDragStartCoating: null,
     prepPankoGrabDistance: 0,
     prepDragLastStep: 0,
     suppressPrepClick: false,
@@ -6154,6 +6164,12 @@ body.layout-editor-on .endX-marker {
     state.prepEggMotionIntensity = 0;
     state.prepEggMotionX = 0;
     state.prepEggMotionY = 0;
+    state.prepEggWakeX = 50;
+    state.prepEggWakeY = 52;
+    state.prepEggWakeTargetX = 50;
+    state.prepEggWakeTargetY = 52;
+    state.prepEggWakePower = 0;
+    state.prepEggWakeRot = 0;
     if (els.prepBreadingLiquid) {
       els.prepBreadingLiquid.style.removeProperty('--prep-liquid-shift-x');
       els.prepBreadingLiquid.style.removeProperty('--prep-liquid-shift-y');
@@ -6161,6 +6177,11 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingLiquid.style.removeProperty('--prep-egg-liquid-active-dur');
       els.prepBreadingLiquid.style.removeProperty('--prep-egg-surface-dur');
       els.prepBreadingLiquid.style.removeProperty('--prep-egg-ripple-dur');
+      els.prepBreadingLiquid.style.removeProperty('--prep-egg-wake-x');
+      els.prepBreadingLiquid.style.removeProperty('--prep-egg-wake-y');
+      els.prepBreadingLiquid.style.removeProperty('--prep-egg-wake-w');
+      els.prepBreadingLiquid.style.removeProperty('--prep-egg-wake-h');
+      els.prepBreadingLiquid.style.removeProperty('--prep-egg-wake-rot');
     }
   }
 
@@ -6173,44 +6194,70 @@ body.layout-editor-on .endX-marker {
     const motion = Math.max(0, Math.min(1, state.prepEggMotionIntensity || 0));
     const shiftX = Math.max(-1.25, Math.min(1.25, state.prepEggMotionX || 0));
     const shiftY = Math.max(-0.86, Math.min(0.86, state.prepEggMotionY || 0));
+    const wake = Math.max(0, Math.min(1, state.prepEggWakePower || 0));
     els.prepBreadingLiquid.style.setProperty('--prep-liquid-shift-x', shiftX.toFixed(2) + '%');
     els.prepBreadingLiquid.style.setProperty('--prep-liquid-shift-y', shiftY.toFixed(2) + '%');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-dur', (2.35 - motion * 1.2).toFixed(2) + 's');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-active-dur', (1.75 - motion * 1.05).toFixed(2) + 's');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-surface-dur', (1.9 - motion * 1.05).toFixed(2) + 's');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-ripple-dur', (2.2 - motion * 1.15).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-dur', (3.25 - motion * 0.72).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-active-dur', (2.65 - motion * 0.72).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-surface-dur', (3.05 - motion * 0.86).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-ripple-dur', (3.1 - motion * 0.88).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-x', (state.prepEggWakeX || 50).toFixed(2) + '%');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-y', (state.prepEggWakeY || 52).toFixed(2) + '%');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-w', (22 + wake * 24).toFixed(1) + '%');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-h', (12 + wake * 14).toFixed(1) + '%');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-rot', (state.prepEggWakeRot || 0).toFixed(1) + 'deg');
   }
 
   function schedulePrepEggMotionDecay(config) {
     if (state.prepEggMotionRaf) return;
     const tick = function () {
       state.prepEggMotionIntensity = Math.max(0, (state.prepEggMotionIntensity || 0) * 0.88 - 0.006);
-      state.prepEggMotionX = (state.prepEggMotionX || 0) * 0.78;
-      state.prepEggMotionY = (state.prepEggMotionY || 0) * 0.78;
+      state.prepEggMotionX = (state.prepEggMotionX || 0) * 0.72;
+      state.prepEggMotionY = (state.prepEggMotionY || 0) * 0.72;
+      state.prepEggWakeX += ((state.prepEggWakeTargetX || 50) - (state.prepEggWakeX || 50)) * 0.14;
+      state.prepEggWakeY += ((state.prepEggWakeTargetY || 52) - (state.prepEggWakeY || 52)) * 0.14;
+      state.prepEggWakePower = Math.max(0, (state.prepEggWakePower || 0) * 0.9 - 0.004);
       const activeConfig = config || getActiveTrayPrepConfig();
       if (activeConfig && getCurrentPrepBreadingMaterial(activeConfig) === 'egg') {
         const current = getCurrentPrepTrayContext(activeConfig);
         updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(activeConfig), current.trayStep && current.trayStep.src);
       }
-      if ((state.prepEggMotionIntensity || 0) > 0.012 || Math.abs(state.prepEggMotionX || 0) > 0.03 || Math.abs(state.prepEggMotionY || 0) > 0.03) {
+      if ((state.prepEggMotionIntensity || 0) > 0.012
+        || (state.prepEggWakePower || 0) > 0.012
+        || Math.abs((state.prepEggWakeTargetX || 50) - (state.prepEggWakeX || 50)) > 0.12
+        || Math.abs((state.prepEggWakeTargetY || 52) - (state.prepEggWakeY || 52)) > 0.12
+        || Math.abs(state.prepEggMotionX || 0) > 0.03
+        || Math.abs(state.prepEggMotionY || 0) > 0.03) {
         state.prepEggMotionRaf = requestAnimationFrame(tick);
       } else {
         state.prepEggMotionRaf = 0;
         state.prepEggMotionIntensity = 0;
         state.prepEggMotionX = 0;
         state.prepEggMotionY = 0;
+        state.prepEggWakePower = 0;
         applyPrepEggMotionStyles(!!activeConfig && getCurrentPrepBreadingMaterial(activeConfig) === 'egg');
       }
     };
     state.prepEggMotionRaf = requestAnimationFrame(tick);
   }
 
-  function nudgePrepEggMotion(config, dx, dy, dist) {
+  function nudgePrepEggMotion(config, dx, dy, dist, evt) {
     if (!config || getCurrentPrepBreadingMaterial(config) !== 'egg') return;
-    const power = Math.max(0, Math.min(1, (dist || 0) / (isPrepReducedEffects() ? 95 : 58)));
-    state.prepEggMotionIntensity = Math.min(1, (state.prepEggMotionIntensity || 0) * 0.45 + power * 0.75);
-    state.prepEggMotionX = Math.max(-1.25, Math.min(1.25, (state.prepEggMotionX || 0) * 0.45 + (dx || 0) * 0.018));
-    state.prepEggMotionY = Math.max(-0.86, Math.min(0.86, (state.prepEggMotionY || 0) * 0.45 + (dy || 0) * 0.014));
+    const power = Math.max(0, Math.min(1, (dist || 0) / (isPrepReducedEffects() ? 120 : 76)));
+    state.prepEggMotionIntensity = Math.min(1, (state.prepEggMotionIntensity || 0) * 0.6 + power * 0.55);
+    state.prepEggMotionX = Math.max(-0.72, Math.min(0.72, (state.prepEggMotionX || 0) * 0.58 + (dx || 0) * 0.008));
+    state.prepEggMotionY = Math.max(-0.48, Math.min(0.48, (state.prepEggMotionY || 0) * 0.58 + (dy || 0) * 0.006));
+    const pos = getPrepEggPointerPercent(evt);
+    if (pos) {
+      state.prepEggWakeTargetX = pos.x;
+      state.prepEggWakeTargetY = pos.y;
+      if (!state.prepEggWakePower) {
+        state.prepEggWakeX = pos.x - Math.max(-7, Math.min(7, (dx || 0) * 0.035));
+        state.prepEggWakeY = pos.y - Math.max(-5, Math.min(5, (dy || 0) * 0.028));
+      }
+      state.prepEggWakePower = Math.min(1, (state.prepEggWakePower || 0) * 0.68 + power * 0.62);
+      state.prepEggWakeRot = Math.atan2(dy || 0, dx || 1) * 180 / Math.PI;
+    }
     const current = getCurrentPrepTrayContext(config);
     updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(config), current.trayStep && current.trayStep.src);
     schedulePrepEggMotionDecay(config);
@@ -6317,9 +6364,10 @@ body.layout-editor-on .endX-marker {
       setPrepEggRippleCenter('50%', '52%');
     }
     const motion = Math.max(0, Math.min(1, state.prepEggMotionIntensity || 0));
-    els.prepBreadingGame.style.setProperty('--prep-egg-wave-opacity', ((isContacting ? 0.08 : 0.035) + ratio * 0.08 + motion * 0.28).toFixed(3));
-    els.prepBreadingGame.style.setProperty('--prep-egg-ripple-opacity', (isContacting ? 0.055 + motion * 0.36 : 0).toFixed(3));
-    els.prepBreadingGame.style.setProperty('--prep-egg-wave-scale', (1 + ratio * (isContacting ? 0.006 : 0.003) + motion * 0.035).toFixed(3));
+    const wake = Math.max(0, Math.min(1, state.prepEggWakePower || 0));
+    els.prepBreadingGame.style.setProperty('--prep-egg-wave-opacity', ((isContacting ? 0.075 : 0.028) + ratio * 0.065 + motion * 0.16 + wake * 0.13).toFixed(3));
+    els.prepBreadingGame.style.setProperty('--prep-egg-ripple-opacity', (isContacting ? 0.04 + motion * 0.18 : 0).toFixed(3));
+    els.prepBreadingGame.style.setProperty('--prep-egg-wave-scale', (1 + ratio * (isContacting ? 0.004 : 0.002) + motion * 0.012 + wake * 0.01).toFixed(3));
     els.prepBreadingGame.style.setProperty('--prep-egg-liquid-opacity', (0.42 + ratio * 0.24).toFixed(3));
     applyPrepEggMotionStyles(isActive);
   }
@@ -7253,10 +7301,25 @@ body.layout-editor-on .endX-marker {
     return false;
   }
 
-  function pointIsInsideActiveTray(evt, config) {
+  function getPrepTrayMaterialRect(config) {
     const tray = getActivePrepTrayElement(config);
-    if (!tray) return false;
-    const rect = tray.getBoundingClientRect();
+    if (!tray) return null;
+    const thumb = tray.querySelector('.prep-breading-tray-thumb');
+    const rect = (thumb || tray).getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      left: rect.left + rect.width * 0.08,
+      right: rect.right - rect.width * 0.08,
+      top: rect.top + rect.height * 0.22,
+      bottom: rect.bottom - rect.height * 0.14,
+      width: rect.width * 0.84,
+      height: rect.height * 0.64,
+    };
+  }
+
+  function pointIsInsideActiveTray(evt, config) {
+    const rect = getPrepTrayMaterialRect(config);
+    if (!rect) return false;
     return evt.clientX >= rect.left && evt.clientX <= rect.right && evt.clientY >= rect.top && evt.clientY <= rect.bottom;
   }
 
@@ -7273,25 +7336,81 @@ body.layout-editor-on .endX-marker {
     return pointIsInsideActiveTray(evt, config);
   }
 
+  function getPrepFoodCenterPx() {
+    if (!els.prepBreadingFood) return null;
+    const rect = els.prepBreadingFood.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }
+
+  function getRectOverlapRatio(a, b) {
+    if (!a || !b || !a.width || !a.height || !b.width || !b.height) return 0;
+    const left = Math.max(a.left, b.left);
+    const right = Math.min(a.right, b.right);
+    const top = Math.max(a.top, b.top);
+    const bottom = Math.min(a.bottom, b.bottom);
+    if (right <= left || bottom <= top) return 0;
+    return ((right - left) * (bottom - top)) / (a.width * a.height);
+  }
+
+  function pointIsInsideEggMaterialRect(x, y, rect) {
+    if (!rect || !rect.width || !rect.height) return false;
+    const rawX = ((x - rect.left) / rect.width) * 100;
+    const rawY = ((y - rect.top) / rect.height) * 100;
+    const dx = (rawX - 50) / 38;
+    const dy = (rawY - 52) / 28;
+    return (dx * dx + dy * dy) <= 1;
+  }
+
+  function getPrepFoodEggCoverageRatio() {
+    if (!els.prepBreadingFood || !els.prepBreadingLiquid) return 0;
+    const foodRect = els.prepBreadingFood.getBoundingClientRect();
+    const liquidRect = els.prepBreadingLiquid.getBoundingClientRect();
+    if (!foodRect.width || !foodRect.height || !liquidRect.width || !liquidRect.height) return 0;
+    const samples = [
+      [0.5, 0.5, 2],
+      [0.22, 0.5, 1],
+      [0.78, 0.5, 1],
+      [0.5, 0.24, 1],
+      [0.5, 0.76, 1],
+      [0.3, 0.32, 0.72],
+      [0.7, 0.32, 0.72],
+      [0.3, 0.68, 0.72],
+      [0.7, 0.68, 0.72],
+    ];
+    let score = 0;
+    let total = 0;
+    samples.forEach(function (sample) {
+      const x = foodRect.left + foodRect.width * sample[0];
+      const y = foodRect.top + foodRect.height * sample[1];
+      const weight = sample[2];
+      total += weight;
+      if (pointIsInsideEggMaterialRect(x, y, liquidRect)) score += weight;
+    });
+    return total ? score / total : 0;
+  }
+
+  function getPrepFoodTrayCoverageRatio(config) {
+    const materialRect = getPrepTrayMaterialRect(config);
+    if (!materialRect || !els.prepBreadingFood) return 0;
+    const foodRect = els.prepBreadingFood.getBoundingClientRect();
+    if (!foodRect.width || !foodRect.height) return 0;
+    return getRectOverlapRatio(foodRect, materialRect);
+  }
+
+  function getPrepFoodMaterialCoverageRatio(config) {
+    if (!els.prepBreadingFood || !config) return 0;
+    if (config.topviewBreading && getCurrentPrepBreadingMaterial(config) === 'egg') {
+      return getPrepFoodEggCoverageRatio();
+    }
+    return getPrepFoodTrayCoverageRatio(config);
+  }
+
   function pointKeepsPrepFoodInsideActiveMaterial(evt, config) {
     if (!evt || !els.prepBreadingFood) return false;
-    if (config && config.topviewBreading && getCurrentPrepBreadingMaterial(config) === 'egg') {
-      const pos = getPrepEggPointerPercent(evt);
-      if (!pos) return false;
-      const dx = (pos.rawX - 50) / 35;
-      const dy = (pos.rawY - 52) / 25;
-      return (dx * dx + dy * dy) <= 1;
-    }
-    const tray = getActivePrepTrayElement(config);
-    if (!tray) return false;
-    const trayRect = tray.getBoundingClientRect();
-    const foodRect = els.prepBreadingFood.getBoundingClientRect();
-    const marginX = Math.min(trayRect.width * 0.18, foodRect.width * 0.46);
-    const marginY = Math.min(trayRect.height * 0.22, foodRect.height * 0.42);
-    return evt.clientX >= trayRect.left + marginX
-      && evt.clientX <= trayRect.right - marginX
-      && evt.clientY >= trayRect.top + marginY
-      && evt.clientY <= trayRect.bottom - marginY;
+    const material = getCurrentPrepBreadingMaterial(config);
+    const threshold = material === 'egg' ? 0.58 : 0.7;
+    return getPrepFoodMaterialCoverageRatio(config) >= threshold;
   }
 
   function releasePrepPointerCapture(evt) {
@@ -7357,6 +7476,7 @@ body.layout-editor-on .endX-marker {
     state.prepDragPointerId = null;
     state.prepTrayDistance = 0;
     state.prepAnimating = true;
+    state.prepTrayDragStartCoating = null;
     if (els.prepBreadingFood) els.prepBreadingFood.classList.remove('is-dragging');
     if (els.prepStage) els.prepStage.classList.add('is-working');
 
@@ -7652,12 +7772,19 @@ body.layout-editor-on .endX-marker {
     state.prepTrayDistance = 0;
     state.suppressPrepClick = false;
     state.prepTrayLastValidPose = null;
+    state.prepTrayDragStartCoating = {
+      progress: state.prepProgress || 0,
+      front: state.prepTrayFrontProgress || 0,
+      back: state.prepTrayBackProgress || 0,
+      side: state.prepTraySide || 'front',
+      rollDistance: state.prepTrayRollDistance || 0,
+    };
     if (els.prepBreadingFood) els.prepBreadingFood.classList.add('is-dragging');
     if (els.prepStage) {
       try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
     }
     movePrepFoodToPointer(evt);
-    const isInsideMaterial = pointKeepsPrepFoodInsideActiveMaterial(evt, config);
+    const isInsideMaterial = pointIsInsideActiveMaterial(evt, config) && pointKeepsPrepFoodInsideActiveMaterial(evt, config);
     state.prepTrayInsideMaterial = isInsideMaterial;
     if (isInsideMaterial) rememberPrepTrayValidPose();
     updatePrepMaterialContact(config, evt, isInsideMaterial, { silentImpact: true });
@@ -7677,19 +7804,28 @@ body.layout-editor-on .endX-marker {
     state.prepDragLastY = evt.clientY;
     if (dist > 1) {
       state.suppressPrepClick = true;
+      const beforeFoodCenter = getPrepFoodCenterPx();
       const targetTilt = Math.max(-8, Math.min(8, dx * 0.16 + dy * 0.035));
       state.prepTrayRollAngle = (state.prepTrayRollAngle || 0) * 0.35 + targetTilt * 0.65;
       movePrepFoodToPointer(evt);
-      const isInsideMaterial = pointKeepsPrepFoodInsideActiveMaterial(evt, config);
+      const isInsideMaterial = pointIsInsideActiveMaterial(evt, config) && pointKeepsPrepFoodInsideActiveMaterial(evt, config);
       const material = getCurrentPrepBreadingMaterial(config);
+      if (!isInsideMaterial && state.prepTrayLastValidPose) {
+        restorePrepFoodToValidPose(config);
+      }
+      const afterFoodCenter = getPrepFoodCenterPx();
+      const visualDist = beforeFoodCenter && afterFoodCenter
+        ? Math.hypot(afterFoodCenter.x - beforeFoodCenter.x, afterFoodCenter.y - beforeFoodCenter.y)
+        : dist;
+      const effectiveDist = isInsideMaterial ? Math.min(dist, visualDist) : 0;
       if (isInsideMaterial) rememberPrepTrayValidPose();
-      updatePrepMaterialContact(config, evt, isInsideMaterial, { moveDistance: dist });
-      if (material === 'egg' && isInsideMaterial) nudgePrepEggMotion(config, dx, dy, dist);
+      updatePrepMaterialContact(config, evt, isInsideMaterial, { moveDistance: effectiveDist });
+      if (material === 'egg' && isInsideMaterial) nudgePrepEggMotion(config, dx, dy, effectiveDist, evt);
       if (material === 'panko' && isInsideMaterial && !state.prepTrayInsideMaterial) {
         spawnPrepBreadingParticles(evt, 'panko', isPrepReducedEffects() ? 90 : 170);
       }
       state.prepTrayInsideMaterial = isInsideMaterial;
-      advanceTrayPrepCoating(config, dist, evt, isInsideMaterial);
+      advanceTrayPrepCoating(config, effectiveDist, evt, isInsideMaterial);
     }
   }
 
@@ -7708,6 +7844,14 @@ body.layout-editor-on .endX-marker {
     state.prepEggContacting = false;
     state.prepEggRippleDistance = 0;
     state.prepEggImpactPending = false;
+    if (!droppedInsideMaterial && state.prepTrayDragStartCoating && !state.prepAnimating) {
+      state.prepProgress = state.prepTrayDragStartCoating.progress;
+      state.prepTrayFrontProgress = state.prepTrayDragStartCoating.front;
+      state.prepTrayBackProgress = state.prepTrayDragStartCoating.back;
+      state.prepTraySide = state.prepTrayDragStartCoating.side;
+      state.prepTrayRollDistance = state.prepTrayDragStartCoating.rollDistance;
+    }
+    state.prepTrayDragStartCoating = null;
     updatePrepBreadingCoatingView(config);
     if (config && config.topviewBreading) {
       if (material === 'egg' && droppedInsideMaterial) {
@@ -7734,6 +7878,10 @@ body.layout-editor-on .endX-marker {
     if (trayConfig) {
       if (canStartPrepPankoSprinkle(evt, trayConfig)) {
         beginPrepPankoSprinkle(evt, trayConfig);
+        return;
+      }
+      if (!pointIsInsidePrepFood(evt) && !pointIsInsideActiveMaterial(evt, trayConfig)) {
+        setSpeech('トレイの なかで ころころしよう！', 'prep');
         return;
       }
       beginTrayPrepDrag(evt, trayConfig);
