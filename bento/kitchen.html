@@ -1275,6 +1275,17 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background: rgba(255,197,53,0.78);
   box-shadow: inset 0 0 5px rgba(255,255,255,0.55), 0 0 9px rgba(255,179,44,0.35);
 }
+.prep-breading-particles i[data-material="egg-pop"] {
+  width: calc(var(--particle-size, 8px) * 1.38);
+  height: calc(var(--particle-size, 8px) * 0.86);
+  border-radius: 54% 46% 49% 51%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.72) 0 18%, transparent 24%),
+    radial-gradient(ellipse at center, rgba(255,228,86,0.78), rgba(240,163,28,0.42) 68%, transparent 72%);
+  box-shadow: inset 0 0 4px rgba(255,255,255,0.38), 0 2px 6px rgba(209,126,21,0.16);
+  mix-blend-mode: screen;
+  animation: prepEggPopParticle var(--particle-life, 0.62s) ease-out forwards;
+}
 .prep-breading-particles i[data-material="egg-drip"] {
   width: calc(var(--particle-size, 8px) * 0.58);
   height: calc(var(--particle-size, 8px) * 1.85);
@@ -1291,6 +1302,15 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background-position: var(--particle-sprite-x, 0%) var(--particle-sprite-y, 0%);
   filter: blur(var(--particle-blur, 0.12px)) drop-shadow(0 2px 2px rgba(128,72,24,0.14));
   animation: prepPankoSettleParticle var(--particle-life, 0.92s) ease-out forwards;
+}
+.prep-breading-particles i[data-material="panko-air"] {
+  border-radius: 0;
+  background-image: url('../assets/images/bento/cooking/korokke/topview/panko_particle_sprites.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: var(--particle-sprite-x, 0%) var(--particle-sprite-y, 0%);
+  filter: blur(var(--particle-blur, 0.08px)) drop-shadow(0 2px 2px rgba(128,72,24,0.13));
+  animation: prepPankoAirParticle var(--particle-life, 0.78s) ease-out forwards;
 }
 .prep-breading-particles i[data-material="panko-bury"] {
   border-radius: 0;
@@ -1384,6 +1404,18 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
     transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 46px))) scale(0.82, 1.28) rotate(var(--particle-rot, 12deg));
   }
 }
+@keyframes prepEggPopParticle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.42) rotate(var(--particle-start-rot, 0deg)); }
+  16% { opacity: var(--particle-peak-opacity, 0.78); }
+  64% {
+    opacity: var(--particle-mid-opacity, 0.42);
+    transform: translate(calc(-50% + var(--particle-mid-dx, 0px)), calc(-50% + var(--particle-mid-dy, 0px))) scale(var(--particle-scale, 1)) rotate(var(--particle-rot, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, -14px))) scale(var(--particle-end-scale, 0.72)) rotate(var(--particle-rot, 0deg));
+  }
+}
 @keyframes prepPankoBuryPatch {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(var(--particle-start-scale, 0.84)) rotate(var(--particle-start-rot, 0deg)); }
   18% { opacity: var(--particle-peak-opacity, 0.62); transform: translate(-50%, -50%) scale(var(--particle-scale, 1)) rotate(var(--particle-rot, 0deg)); }
@@ -1400,6 +1432,18 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 0px))) scale(var(--particle-end-scale, 0.98)) rotate(var(--particle-rot, 0deg));
+  }
+}
+@keyframes prepPankoAirParticle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(var(--particle-start-scale, 0.7)) rotate(var(--particle-start-rot, 0deg)); }
+  14% { opacity: var(--particle-peak-opacity, 0.58); }
+  58% {
+    opacity: var(--particle-mid-opacity, 0.34);
+    transform: translate(calc(-50% + var(--particle-mid-dx, 0px)), calc(-50% + var(--particle-mid-dy, -22px))) scale(var(--particle-scale, 0.95)) rotate(var(--particle-mid-rot, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, -48px))) scale(var(--particle-end-scale, 0.78)) rotate(var(--particle-rot, 0deg));
   }
 }
 @media (pointer: coarse), (max-width: 900px), (prefers-reduced-motion: reduce) {
@@ -1420,6 +1464,7 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
     animation-duration: 0.58s;
   }
   .prep-breading-particles i[data-material="panko"],
+  .prep-breading-particles i[data-material="panko-air"],
   .prep-breading-particles i[data-material="panko-bury"] {
     animation-duration: var(--particle-life, 0.82s);
   }
@@ -4705,6 +4750,7 @@ body.layout-editor-on .endX-marker {
     prepEggRippleDistance: 0,
     prepEggLastRippleAt: 0,
     prepEggImpactPending: false,
+    prepEggSplashLastAt: 0,
     prepEggMotionIntensity: 0,
     prepEggMotionX: 0,
     prepEggMotionY: 0,
@@ -4718,6 +4764,7 @@ body.layout-editor-on .endX-marker {
     prepTrayLastValidPose: null,
     prepTrayDragStartCoating: null,
     prepPankoGrabDistance: 0,
+    prepPankoAirLastAt: 0,
     prepDragLastStep: 0,
     suppressPrepClick: false,
     cookProgress: 0,
@@ -5874,9 +5921,11 @@ body.layout-editor-on .endX-marker {
     state.prepEggRippleDistance = 0;
     state.prepEggLastRippleAt = 0;
     state.prepEggImpactPending = false;
+    state.prepEggSplashLastAt = 0;
     resetPrepEggMotion();
     state.prepTrayLastValidPose = null;
     state.prepPankoGrabDistance = 0;
+    state.prepPankoAirLastAt = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
     state.chopProgress = 0;
@@ -6149,9 +6198,11 @@ body.layout-editor-on .endX-marker {
     state.prepEggRippleDistance = 0;
     state.prepEggLastRippleAt = 0;
     state.prepEggImpactPending = false;
+    state.prepEggSplashLastAt = 0;
     resetPrepEggMotion();
     state.prepTrayLastValidPose = null;
     state.prepPankoGrabDistance = 0;
+    state.prepPankoAirLastAt = 0;
   }
 
   function getPrepTrayCoatingRatio(config) {
@@ -6203,6 +6254,7 @@ body.layout-editor-on .endX-marker {
     state.prepEggWakeTargetY = 52;
     state.prepEggWakePower = 0;
     state.prepEggWakeRot = 0;
+    state.prepEggSplashLastAt = 0;
     if (els.prepBreadingLiquid) {
       els.prepBreadingLiquid.style.removeProperty('--prep-liquid-shift-x');
       els.prepBreadingLiquid.style.removeProperty('--prep-liquid-shift-y');
@@ -6230,10 +6282,10 @@ body.layout-editor-on .endX-marker {
     const wake = Math.max(0, Math.min(1, state.prepEggWakePower || 0));
     els.prepBreadingLiquid.style.setProperty('--prep-liquid-shift-x', shiftX.toFixed(2) + '%');
     els.prepBreadingLiquid.style.setProperty('--prep-liquid-shift-y', shiftY.toFixed(2) + '%');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-dur', (3.25 - motion * 0.72).toFixed(2) + 's');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-active-dur', (2.65 - motion * 0.72).toFixed(2) + 's');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-surface-dur', (3.05 - motion * 0.86).toFixed(2) + 's');
-    els.prepBreadingLiquid.style.setProperty('--prep-egg-ripple-dur', (3.1 - motion * 0.88).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-dur', (2.75 - motion * 0.92).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-liquid-active-dur', (2.05 - motion * 0.78).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-surface-dur', (2.35 - motion * 1.02).toFixed(2) + 's');
+    els.prepBreadingLiquid.style.setProperty('--prep-egg-ripple-dur', (2.18 - motion * 0.98).toFixed(2) + 's');
     els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-x', (state.prepEggWakeX || 50).toFixed(2) + '%');
     els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-y', (state.prepEggWakeY || 52).toFixed(2) + '%');
     els.prepBreadingLiquid.style.setProperty('--prep-egg-wake-w', (22 + wake * 24).toFixed(1) + '%');
@@ -6244,21 +6296,21 @@ body.layout-editor-on .endX-marker {
   function schedulePrepEggMotionDecay(config) {
     if (state.prepEggMotionRaf) return;
     const tick = function () {
-      state.prepEggMotionIntensity = Math.max(0, (state.prepEggMotionIntensity || 0) * 0.88 - 0.006);
-      state.prepEggMotionX = (state.prepEggMotionX || 0) * 0.72;
-      state.prepEggMotionY = (state.prepEggMotionY || 0) * 0.72;
-      state.prepEggWakeX += ((state.prepEggWakeTargetX || 50) - (state.prepEggWakeX || 50)) * 0.14;
-      state.prepEggWakeY += ((state.prepEggWakeTargetY || 52) - (state.prepEggWakeY || 52)) * 0.14;
-      state.prepEggWakePower = Math.max(0, (state.prepEggWakePower || 0) * 0.9 - 0.004);
+      state.prepEggMotionIntensity = Math.max(0, (state.prepEggMotionIntensity || 0) * 0.9 - 0.005);
+      state.prepEggMotionX = (state.prepEggMotionX || 0) * 0.76;
+      state.prepEggMotionY = (state.prepEggMotionY || 0) * 0.76;
+      state.prepEggWakeX += ((state.prepEggWakeTargetX || 50) - (state.prepEggWakeX || 50)) * 0.3;
+      state.prepEggWakeY += ((state.prepEggWakeTargetY || 52) - (state.prepEggWakeY || 52)) * 0.3;
+      state.prepEggWakePower = Math.max(0, (state.prepEggWakePower || 0) * 0.91 - 0.0035);
       const activeConfig = config || getActiveTrayPrepConfig();
       if (activeConfig && getCurrentPrepBreadingMaterial(activeConfig) === 'egg') {
         const current = getCurrentPrepTrayContext(activeConfig);
         updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(activeConfig), current.trayStep && current.trayStep.src);
       }
-      if ((state.prepEggMotionIntensity || 0) > 0.012
-        || (state.prepEggWakePower || 0) > 0.012
-        || Math.abs((state.prepEggWakeTargetX || 50) - (state.prepEggWakeX || 50)) > 0.12
-        || Math.abs((state.prepEggWakeTargetY || 52) - (state.prepEggWakeY || 52)) > 0.12
+      if ((state.prepEggMotionIntensity || 0) > 0.01
+        || (state.prepEggWakePower || 0) > 0.01
+        || Math.abs((state.prepEggWakeTargetX || 50) - (state.prepEggWakeX || 50)) > 0.08
+        || Math.abs((state.prepEggWakeTargetY || 52) - (state.prepEggWakeY || 52)) > 0.08
         || Math.abs(state.prepEggMotionX || 0) > 0.03
         || Math.abs(state.prepEggMotionY || 0) > 0.03) {
         state.prepEggMotionRaf = requestAnimationFrame(tick);
@@ -6288,9 +6340,13 @@ body.layout-editor-on .endX-marker {
         state.prepEggWakeX = pos.x - Math.max(-7, Math.min(7, (dx || 0) * 0.035));
         state.prepEggWakeY = pos.y - Math.max(-5, Math.min(5, (dy || 0) * 0.028));
       }
+      const follow = 0.42 + power * 0.32;
+      state.prepEggWakeX += (pos.x - (state.prepEggWakeX || pos.x)) * follow;
+      state.prepEggWakeY += (pos.y - (state.prepEggWakeY || pos.y)) * follow;
       state.prepEggWakePower = Math.min(1, (state.prepEggWakePower || 0) * 0.68 + power * 0.62);
       state.prepEggWakeRot = Math.atan2(dy || 0, dx || 1) * 180 / Math.PI;
     }
+    if (power > 0.2) maybeSpawnPrepEggSplash(evt, power, dx, dy);
     const current = getCurrentPrepTrayContext(config);
     updatePrepEggLiquidMotion(true, getPrepTrayCoatingRatio(config), current.trayStep && current.trayStep.src);
     schedulePrepEggMotionDecay(config);
@@ -6377,6 +6433,7 @@ body.layout-editor-on .endX-marker {
       state.prepEggRippleDistance = 0;
       state.prepEggLastRippleAt = 0;
       state.prepEggImpactPending = false;
+      state.prepEggSplashLastAt = 0;
       resetPrepEggMotion();
       els.prepBreadingGame.style.removeProperty('--prep-egg-wave-opacity');
       els.prepBreadingGame.style.removeProperty('--prep-egg-ripple-opacity');
@@ -6469,6 +6526,55 @@ body.layout-editor-on .endX-marker {
         if (ripple && ripple.parentNode) ripple.parentNode.removeChild(ripple);
       }, duration + i * 90 + 160));
     }
+  }
+
+  function spawnPrepEggSplash(evt, power, options) {
+    if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
+    const rect = els.prepStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const opts = options || {};
+    const reduced = isPrepReducedEffects();
+    const force = Math.max(0.18, Math.min(1, power || 0.35));
+    const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
+    const count = Math.max(1, Math.min(reduced ? 2 : 3, Math.round((opts.impact ? 1 : 0) + force * (reduced ? 1.4 : 2.2))));
+    for (let i = 0; i < count; i++) {
+      const pop = document.createElement('i');
+      const size = (reduced ? 5.2 : 6.2) + Math.random() * (reduced ? 5.5 : 7.8) + force * 2.2;
+      const dx = (Math.random() * 28 - 14) * (0.6 + force * 0.7) + (opts.dx || 0) * 0.16;
+      const dy = (-5 - Math.random() * 18) * (0.6 + force * 0.72) + (opts.dy || 0) * 0.1;
+      const lifeMs = Math.round((reduced ? 420 : 520) + Math.random() * 280 + force * 120);
+      const peakOpacity = 0.36 + force * 0.36 + Math.random() * 0.12;
+      pop.dataset.material = 'egg-pop';
+      pop.style.setProperty('--particle-x', (xPct + Math.random() * 4.8 - 2.4).toFixed(2) + '%');
+      pop.style.setProperty('--particle-y', (yPct + Math.random() * 4.2 - 1.8).toFixed(2) + '%');
+      pop.style.setProperty('--particle-size', size.toFixed(1) + 'px');
+      pop.style.setProperty('--particle-dx', dx.toFixed(1) + 'px');
+      pop.style.setProperty('--particle-dy', dy.toFixed(1) + 'px');
+      pop.style.setProperty('--particle-mid-dx', (dx * 0.42).toFixed(1) + 'px');
+      pop.style.setProperty('--particle-mid-dy', (dy * 0.5).toFixed(1) + 'px');
+      pop.style.setProperty('--particle-rot', (Math.random() * 44 - 22).toFixed(1) + 'deg');
+      pop.style.setProperty('--particle-start-rot', (Math.random() * 20 - 10).toFixed(1) + 'deg');
+      pop.style.setProperty('--particle-life', lifeMs + 'ms');
+      pop.style.setProperty('--particle-peak-opacity', Math.min(0.86, peakOpacity).toFixed(2));
+      pop.style.setProperty('--particle-mid-opacity', (peakOpacity * (0.45 + Math.random() * 0.18)).toFixed(2));
+      pop.style.setProperty('--particle-scale', (0.9 + Math.random() * 0.22).toFixed(2));
+      pop.style.setProperty('--particle-end-scale', (0.58 + Math.random() * 0.2).toFixed(2));
+      els.prepBreadingParticles.appendChild(pop);
+      state.pendingTimers.push(setTimeout(function () {
+        if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+      }, lifeMs + 120));
+    }
+  }
+
+  function maybeSpawnPrepEggSplash(evt, power, dx, dy) {
+    if (!evt || !pointIsInsidePrepEggLiquid(evt)) return;
+    const now = Date.now();
+    const reduced = isPrepReducedEffects();
+    const minGap = reduced ? 240 : 178;
+    if (now - (state.prepEggSplashLastAt || 0) < minGap) return;
+    state.prepEggSplashLastAt = now;
+    spawnPrepEggSplash(evt, power, { dx: dx || 0, dy: dy || 0 });
   }
 
   function snapPrepFoodToTray() {
@@ -7589,6 +7695,61 @@ body.layout-editor-on .endX-marker {
     el.style.setProperty('--particle-sprite-y', sprite[1]);
   }
 
+  function spawnPrepPankoAirParticles(evt, intensity, options) {
+    if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
+    const rect = els.prepStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const opts = options || {};
+    const reduced = isPrepReducedEffects();
+    const force = Math.max(0.2, Math.min(1, (intensity || 0) / (reduced ? 420 : 620)));
+    const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
+    const count = Math.max(1, Math.min(reduced ? 3 : 5, opts.count || Math.round(1 + force * (reduced ? 2 : 4))));
+    for (let i = 0; i < count; i++) {
+      const air = document.createElement('i');
+      const size = (reduced ? 10 : 12) + Math.random() * (reduced ? 8 : 10);
+      const dx = (Math.random() * 62 - 31) * (0.68 + force * 0.54);
+      const dy = (-26 - Math.random() * 54) * (0.7 + force * 0.48);
+      const lifeMs = Math.round((reduced ? 520 : 620) + Math.random() * 260 + force * 180);
+      const peakOpacity = 0.28 + force * 0.3 + Math.random() * 0.12;
+      air.dataset.material = 'panko-air';
+      applyPrepPankoParticleSprite(air, 'crumb');
+      air.style.setProperty('--particle-x', (xPct + Math.random() * 9 - 4.5).toFixed(2) + '%');
+      air.style.setProperty('--particle-y', (yPct + Math.random() * 5 - 3).toFixed(2) + '%');
+      air.style.setProperty('--particle-size', size.toFixed(1) + 'px');
+      air.style.setProperty('--particle-w', size.toFixed(1) + 'px');
+      air.style.setProperty('--particle-h', size.toFixed(1) + 'px');
+      air.style.setProperty('--particle-dx', dx.toFixed(1) + 'px');
+      air.style.setProperty('--particle-dy', dy.toFixed(1) + 'px');
+      air.style.setProperty('--particle-mid-dx', (dx * 0.48).toFixed(1) + 'px');
+      air.style.setProperty('--particle-mid-dy', (dy * 0.45).toFixed(1) + 'px');
+      air.style.setProperty('--particle-rot', (Math.random() * 86 - 43).toFixed(1) + 'deg');
+      air.style.setProperty('--particle-mid-rot', (Math.random() * 52 - 26).toFixed(1) + 'deg');
+      air.style.setProperty('--particle-start-rot', (Math.random() * 26 - 13).toFixed(1) + 'deg');
+      air.style.setProperty('--particle-life', lifeMs + 'ms');
+      air.style.setProperty('--particle-peak-opacity', Math.min(0.66, peakOpacity).toFixed(2));
+      air.style.setProperty('--particle-mid-opacity', (peakOpacity * (0.5 + Math.random() * 0.18)).toFixed(2));
+      air.style.setProperty('--particle-start-scale', (0.72 + Math.random() * 0.18).toFixed(2));
+      air.style.setProperty('--particle-scale', (0.86 + Math.random() * 0.18).toFixed(2));
+      air.style.setProperty('--particle-end-scale', (0.62 + Math.random() * 0.2).toFixed(2));
+      air.style.setProperty('--particle-blur', (0.04 + Math.random() * 0.16).toFixed(2) + 'px');
+      els.prepBreadingParticles.appendChild(air);
+      state.pendingTimers.push(setTimeout(function () {
+        if (air && air.parentNode) air.parentNode.removeChild(air);
+      }, lifeMs + 120));
+    }
+  }
+
+  function maybeSpawnPrepPankoAir(evt, intensity, options) {
+    const reduced = isPrepReducedEffects();
+    const threshold = reduced ? 96 : 58;
+    if ((intensity || 0) < threshold) return;
+    const now = Date.now();
+    if (now - (state.prepPankoAirLastAt || 0) < (reduced ? 230 : 165)) return;
+    state.prepPankoAirLastAt = now;
+    spawnPrepPankoAirParticles(evt, intensity, options);
+  }
+
   function spawnPrepBreadingParticles(evt, material, dist) {
     if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
     const rect = els.prepStage.getBoundingClientRect();
@@ -7632,6 +7793,7 @@ body.layout-editor-on .endX-marker {
         if (particle && particle.parentNode) particle.parentNode.removeChild(particle);
       }, isPanko ? 1240 : 850));
     }
+    if (isPanko) maybeSpawnPrepPankoAir(evt, dist);
   }
 
   function spawnPrepPankoSprinkles(evt, dist, options) {
@@ -7674,6 +7836,9 @@ body.layout-editor-on .endX-marker {
       state.pendingTimers.push(setTimeout(function () {
         if (crumb && crumb.parentNode) crumb.parentNode.removeChild(crumb);
       }, lifeMs + 120));
+    }
+    if (burst && (dist || 0) > (reduced ? 330 : 430)) {
+      spawnPrepPankoAirParticles(evt, dist, { count: reduced ? 2 : 4 });
     }
   }
 
@@ -7780,6 +7945,7 @@ body.layout-editor-on .endX-marker {
       if (state.prepEggContacting) state.prepEggContacting = false;
       state.prepEggRippleDistance = 0;
       state.prepEggImpactPending = false;
+      state.prepEggSplashLastAt = 0;
       return;
     }
     const wasContacting = !!state.prepEggContacting;
@@ -7793,6 +7959,7 @@ body.layout-editor-on .endX-marker {
           if (isPrepEggImpactPointReady(evt)) {
             spawnPrepEggImpactRipple(evt);
             spawnPrepBreadingParticles(evt, 'egg', isPrepReducedEffects() ? 58 : 104);
+            spawnPrepEggSplash(evt, 0.62, { impact: true });
             state.prepEggLastRippleAt = Date.now();
             state.prepEggImpactPending = false;
           } else {
@@ -7802,14 +7969,15 @@ body.layout-editor-on .endX-marker {
       } else if (opts.moveDistance > 0) {
         state.prepEggRippleDistance = (state.prepEggRippleDistance || 0) + opts.moveDistance;
         const now = Date.now();
-        const triggerDistance = isPrepReducedEffects() ? 138 : 104;
+        const triggerDistance = isPrepReducedEffects() ? 104 : 72;
         if (state.prepEggImpactPending && isPrepEggImpactPointReady(evt)) {
           spawnPrepEggImpactRipple(evt);
           spawnPrepBreadingParticles(evt, 'egg', isPrepReducedEffects() ? 58 : 104);
+          spawnPrepEggSplash(evt, 0.58, { impact: true });
           state.prepEggRippleDistance = 0;
           state.prepEggLastRippleAt = now;
           state.prepEggImpactPending = false;
-        } else if (state.prepEggRippleDistance >= triggerDistance && now - (state.prepEggLastRippleAt || 0) > 220) {
+        } else if (state.prepEggRippleDistance >= triggerDistance && now - (state.prepEggLastRippleAt || 0) > (isPrepReducedEffects() ? 185 : 132)) {
           spawnPrepEggImpactRipple(evt, { soft: true });
           state.prepEggRippleDistance = 0;
           state.prepEggLastRippleAt = now;
@@ -8015,12 +8183,14 @@ body.layout-editor-on .endX-marker {
     state.prepEggContacting = false;
     state.prepEggRippleDistance = 0;
     state.prepEggImpactPending = false;
+    state.prepEggSplashLastAt = 0;
     state.prepTrayDragStartCoating = null;
     updatePrepBreadingCoatingView(config);
     if (config && config.topviewBreading) {
       if (material === 'egg' && droppedInsideMaterial) {
         updatePrepEggRippleCenterFromPointer(evt);
         spawnPrepEggImpactRipple(evt, { soft: false });
+        spawnPrepEggSplash(evt, 0.72, { impact: true });
       }
       if (material === 'panko' && droppedInsideMaterial) {
         spawnPrepPankoSprinkles(evt, isPrepReducedEffects() ? 160 : 300, { burst: true });
