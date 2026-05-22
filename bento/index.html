@@ -589,6 +589,28 @@ html, body {
   min-height: 32px;
   cursor: pointer;
 }
+.free-size-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  flex-shrink: 0;
+}
+.free-size-btn {
+  border: 2px solid #F8C36B;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+  min-height: 30px;
+  cursor: pointer;
+}
+.free-size-btn.active {
+  background: #FFEDD1;
+  border-color: var(--primary);
+  color: #8B4513;
+}
 .free-complete-btn {
   background: linear-gradient(180deg, #FFB86A, #F2915A);
   color: #5D3000;
@@ -2011,6 +2033,8 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_rect_split.png',
     shape: 'box_square',
     bounds: { x: 34, y: 34, w: 692, h: 392 },
+    placeBounds: { x: 58, y: 62, w: 644, h: 330 },
+    clipPoints: [[58,62], [702,62], [702,392], [58,392]],
     imageScale: 1.02,
     tierCount: 1,
     autoRice: { baseRice: 'rice_base_round', x: 248, y: 230, size: 178 },
@@ -2044,6 +2068,8 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_square.png',
     shape: 'box_square',
     bounds: { x: 76, y: 54, w: 608, h: 354 },
+    placeBounds: { x: 124, y: 92, w: 512, h: 276 },
+    clipPoints: [[124,92], [636,92], [636,368], [124,368]],
     imageScale: 1.18,
     tierCount: 2,
     autoRice: { templateId: 'roundSmile', x: 380, y: 230, size: 292 },
@@ -2076,6 +2102,8 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_round.png',
     shape: 'box_round',
     bounds: { x: 92, y: 62, w: 576, h: 338 },
+    placeBounds: { x: 136, y: 92, w: 488, h: 276 },
+    clipPoints: [[380,86], [536,98], [622,190], [616,318], [514,372], [380,382], [246,372], [144,318], [138,190], [224,98]],
     imageScale: 1.18,
     tierCount: 2,
     autoRice: { templateId: 'roundSmile', x: 382, y: 230, size: 292 },
@@ -2109,6 +2137,8 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_bear_rice.png',
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
+    placeBounds: { x: 106, y: 82, w: 548, h: 284 },
+    clipPoints: [[102,142], [118,92], [204,76], [260,118], [380,102], [500,118], [556,76], [642,92], [658,142], [640,242], [624,332], [536,372], [380,386], [224,372], [136,332], [120,242]],
     imageScale: 1,
     tierCount: 3,
     autoRice: { baseRice: 'rice_base_bear', x: 380, y: 230, size: 470 },
@@ -2142,6 +2172,8 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_cat_rice.png',
     shape: 'box_bear',
     bounds: { x: 76, y: 52, w: 608, h: 374 },
+    placeBounds: { x: 118, y: 92, w: 524, h: 276 },
+    clipPoints: [[116,142], [140,96], [230,86], [278,122], [380,104], [482,122], [530,86], [620,96], [644,142], [630,240], [614,332], [528,372], [380,384], [232,372], [146,332], [130,240]],
     imageScale: 1.02,
     tierCount: 3,
     autoRice: { baseRice: 'rice_base_cat', x: 380, y: 230, size: 470 },
@@ -2170,14 +2202,26 @@ const bentoBoxes = [
   },
 ];
 const bentoAccessories = [
-  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
-  { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
-  { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
-  { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 90, size: 124, layerBase: 10 },
-  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 150, layerBase: 12, rotation: -10 },
-  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 146, layerBase: 12, rotation: 0 },
-  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 132, layerBase: 12, rotation: 0 },
+  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: '', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
+  { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
+  { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
+  { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
+  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 230, sizeKey: 'medium', layerBase: 12, rotation: -10 },
+  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: 0 },
+  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0 },
 ];
+const FREE_ACCESSORY_SIZE_PRESETS = {
+  cup: [
+    { key: 'small', label: '小', size: 150, radius: 108 },
+    { key: 'medium', label: '中', size: 190, radius: 136 },
+    { key: 'large', label: '大', size: 230, radius: 166 },
+  ],
+  divider: [
+    { key: 'small', label: '小', size: 180 },
+    { key: 'medium', label: '中', size: 230 },
+    { key: 'large', label: '大', size: 280 },
+  ],
+};
 const riceBases = [
   { id: 'rice_base_round', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_round.png', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
   { id: 'rice_base_bear', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
@@ -2770,6 +2814,13 @@ function getBoxCenterSpot(box) {
     y: box.bounds.y + box.bounds.h / 2,
   };
 }
+function getBoxClipPath(box) {
+  if (!box || !Array.isArray(box.clipPoints) || box.clipPoints.length < 3) return '';
+  return 'polygon(' + box.clipPoints.map(p => `${toPctX(p[0])} ${toPctY(p[1])}`).join(',') + ')';
+}
+function getPlacementBounds(box) {
+  return (box && box.placeBounds) || (box && box.bounds) || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
+}
 function getBoxSpotsForType(box, type) {
   if (!box) return [];
   if (type === 'rice' || type === 'template' || type === 'rice_auto') return box.riceSpots || box.safeSpots || [];
@@ -2807,7 +2858,7 @@ function getNextFreeSpot(type) {
 }
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
-  const b = box.bounds;
+  const b = getPlacementBounds(box);
   const size = (item && item.size ? item.size : 70) * (item && item.scale ? item.scale : 1);
   const margin = Math.max(22, size * 0.28);
   return {
@@ -2932,6 +2983,7 @@ function beginFreeItemDrag(e, uid) {
   const p = e ? eventToFreePoint(e) : null;
   if (p) setFreeItemPosition(uid, p.x, p.y);
   renderFreeLayoutStage();
+  renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
   window.addEventListener('pointerup', onFreeItemDragEnd, { once: true });
 }
@@ -2951,6 +3003,7 @@ function onFreeItemDragEnd(e) {
   window.removeEventListener('pointermove', onFreeItemDragMove);
   finalizeFreeItemPosition(uid);
   renderFreeLayoutStage();
+  renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
   spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
   playPop();
@@ -2974,6 +3027,7 @@ function addFreeLayoutItem(def, opts = {}) {
     layerBase: def.layerBase || 20,
     layer: (def.layerBase || 20) + (++freeLayerSeq),
     size: opts.size || def.size || 72,
+    sizeKey: opts.sizeKey || def.sizeKey || '',
     snapTarget: !!def.snapTarget,
     radius: def.radius || 0,
     parentId: opts.parentId || null,
@@ -3008,6 +3062,37 @@ function undoFreeItem() {
   if (!placedItems.length) return;
   const latest = [...placedItems].sort((a, b) => b.layer - a.layer)[0];
   removeFreeItem(latest.uid);
+}
+function getSelectedFreeItem() {
+  return placedItems.find(i => i.uid === freeSelectedItemUid) || null;
+}
+function getAccessorySizePresets(item) {
+  if (!item || !FREE_ACCESSORY_SIZE_PRESETS[item.type]) return [];
+  return FREE_ACCESSORY_SIZE_PRESETS[item.type];
+}
+function getAccessorySizeKey(item) {
+  const presets = getAccessorySizePresets(item);
+  if (!presets.length) return '';
+  if (item.sizeKey && presets.some(p => p.key === item.sizeKey)) return item.sizeKey;
+  let nearest = presets[0];
+  let nearestDiff = Infinity;
+  presets.forEach(p => {
+    const d = Math.abs((item.size || 0) - p.size);
+    if (d < nearestDiff) { nearest = p; nearestDiff = d; }
+  });
+  return nearest.key;
+}
+function setSelectedAccessorySize(sizeKey) {
+  const item = getSelectedFreeItem();
+  const preset = getAccessorySizePresets(item).find(p => p.key === sizeKey);
+  if (!item || !preset) return;
+  item.size = preset.size;
+  item.sizeKey = preset.key;
+  if (item.type === 'cup' && preset.radius) item.radius = preset.radius;
+  const p = clampPointToBento(item.x, item.y, item);
+  item.x = p.x; item.y = p.y;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
 }
 function removeRiceOnTier(tier) {
   const removeIds = new Set();
@@ -3171,6 +3256,8 @@ function renderFreeLayoutInto(host, opts = {}) {
   }
   const layer = document.createElement('div');
   layer.className = 'free-layout-items';
+  const clipPath = getBoxClipPath(box);
+  if (clipPath) layer.style.clipPath = clipPath;
   displayItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
     layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
   });
@@ -3189,6 +3276,12 @@ function createPaletteVisual(def) {
     img.src = def.img || def.image;
     img.alt = def.name || '';
     wrap.appendChild(img);
+  } else if (def.css) {
+    const icon = document.createElement('div');
+    icon.className = 'free-css-item ' + def.css;
+    icon.style.width = '56px';
+    icon.style.height = '56px';
+    wrap.appendChild(icon);
   } else if (def.shape) {
     const icon = document.createElement('div');
     icon.style.width = '48px';
@@ -3267,6 +3360,26 @@ function renderFreeTierControls() {
   }
   return row;
 }
+function renderSelectedAccessorySizeControls() {
+  const item = getSelectedFreeItem();
+  const presets = getAccessorySizePresets(item);
+  if (!presets.length) return null;
+  const row = document.createElement('div');
+  row.className = 'free-size-row';
+  const current = getAccessorySizeKey(item);
+  presets.forEach(preset => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'free-size-btn' + (preset.key === current ? ' active' : '');
+    b.textContent = preset.label;
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      setSelectedAccessorySize(preset.key);
+    });
+    row.appendChild(b);
+  });
+  return row;
+}
 function renderFreeLayoutControls() {
   const tray = document.getElementById('food-tray');
   if (!tray) return;
@@ -3291,6 +3404,9 @@ function renderFreeLayoutControls() {
 
   const tierControls = renderFreeTierControls();
   if (tierControls) tray.appendChild(tierControls);
+
+  const sizeControls = renderSelectedAccessorySizeControls();
+  if (sizeControls) tray.appendChild(sizeControls);
 
   const actions = document.createElement('div');
   actions.className = 'free-action-row';
