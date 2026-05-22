@@ -1280,7 +1280,7 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   border-radius: 48% 52% 58% 56% / 42% 42% 68% 70%;
   background: linear-gradient(180deg, rgba(255,237,121,0.94), rgba(238,155,28,0.84));
   box-shadow: inset 0 2px 3px rgba(255,255,255,0.55), 0 5px 8px rgba(204,116,20,0.2);
-  animation: prepEggDripFall 0.72s cubic-bezier(.22,.7,.28,1) forwards;
+  animation: prepEggDripFall var(--drip-duration, 0.72s) cubic-bezier(.22,.7,.28,1) forwards;
 }
 .prep-breading-particles i[data-material="panko"] {
   border-radius: var(--particle-radius, 28% 64% 42% 58% / 48% 35% 62% 40%);
@@ -1289,6 +1289,17 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
     radial-gradient(circle at 28% 28%, rgba(255,255,220,0.9), transparent 45%);
   clip-path: polygon(8% 42%, 30% 10%, 73% 17%, 94% 48%, 76% 86%, 24% 78%);
   box-shadow: inset 0 0 2px rgba(255,249,196,0.78), 0 2px 4px rgba(138,88,33,0.16);
+}
+.prep-breading-particles i[data-material="panko-bury"] {
+  border-radius: 42% 58% 46% 54% / 52% 45% 55% 48%;
+  background:
+    radial-gradient(ellipse at 28% 30%, rgba(255,242,164,0.82), transparent 42%),
+    radial-gradient(ellipse at 72% 58%, rgba(198,132,47,0.32), transparent 48%),
+    linear-gradient(135deg, rgba(244,193,87,0.9), rgba(192,125,45,0.82));
+  clip-path: polygon(6% 54%, 18% 25%, 44% 10%, 78% 18%, 96% 46%, 83% 80%, 46% 90%, 14% 78%);
+  box-shadow: inset 0 0 6px rgba(255,245,180,0.54), 0 5px 8px rgba(118,70,24,0.18);
+  mix-blend-mode: multiply;
+  animation: prepPankoBuryPatch 1.18s ease-out forwards;
 }
 .prep-breading-hint {
   position: absolute;
@@ -1372,6 +1383,12 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
     opacity: 0;
     transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 46px))) scale(0.82, 1.28) rotate(var(--particle-rot, 12deg));
   }
+}
+@keyframes prepPankoBuryPatch {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.48, 0.32) rotate(var(--particle-rot, 0deg)); }
+  18% { opacity: 0.86; transform: translate(-50%, -50%) scale(1.04, 0.88) rotate(var(--particle-rot, 0deg)); }
+  68% { opacity: 0.68; transform: translate(calc(-50% + var(--particle-dx, 0px) * 0.28), calc(-50% + var(--particle-dy, 0px) * 0.18)) scale(1.08, 0.94) rotate(var(--particle-rot, 0deg)); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--particle-dx, 0px)), calc(-50% + var(--particle-dy, 12px))) scale(1.12, 0.98) rotate(var(--particle-rot, 0deg)); }
 }
 @media (pointer: coarse), (max-width: 900px), (prefers-reduced-motion: reduce) {
   .prep-breading-liquid {
@@ -4529,12 +4546,12 @@ body.layout-editor-on .endX-marker {
         foreground: {
           flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '35%', h: '25%', dy: '18%', opacity: 0.68 },
           egg: { src: '../assets/images/bento/cooking/korokke/topview/overlay_egg_meniscus.png', w: '35%', h: '20%', dy: '31%', opacity: 0.92 },
-          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '39%', h: '19%', dy: '31%', opacity: 0.92 },
+          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '35%', h: '16%', dy: '27%', opacity: 0.38 },
         },
         effect: {
           flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '31%', h: '23%', dy: '-10%', opacity: 0.38 },
           egg: { src: '../assets/images/bento/cooking/korokke/topview/overlay_egg_ripple_02.png', w: '45%', h: '30%', dy: '6%', opacity: 0.72 },
-          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '32%', h: '14%', dy: '18%', opacity: 0.45 },
+          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '28%', h: '12%', dy: '14%', opacity: 0.18 },
         },
       },
       foodStages: [
@@ -4585,12 +4602,12 @@ body.layout-editor-on .endX-marker {
         foreground: {
           flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '35%', h: '25%', dy: '18%', opacity: 0.68 },
           egg: { src: '../assets/images/bento/cooking/korokke/topview/overlay_egg_meniscus.png', w: '35%', h: '20%', dy: '31%', opacity: 0.92 },
-          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '39%', h: '19%', dy: '31%', opacity: 0.92 },
+          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '35%', h: '16%', dy: '27%', opacity: 0.38 },
         },
         effect: {
           flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '31%', h: '23%', dy: '-10%', opacity: 0.38 },
           egg: { src: '../assets/images/bento/cooking/korokke/topview/overlay_egg_ripple_02.png', w: '45%', h: '30%', dy: '6%', opacity: 0.72 },
-          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '32%', h: '14%', dy: '18%', opacity: 0.45 },
+          panko: { src: '../assets/images/bento/cooking/korokke/topview/overlay_panko_ridge.png', w: '28%', h: '12%', dy: '14%', opacity: 0.18 },
         },
       },
       foodStages: [
@@ -7317,6 +7334,26 @@ body.layout-editor-on .endX-marker {
     };
   }
 
+  function getPrepTrayMoveRect(config) {
+    const tray = getActivePrepTrayElement(config);
+    if (!tray) return null;
+    const thumb = tray.querySelector('.prep-breading-tray-thumb');
+    const rect = (thumb || tray).getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      left: rect.left + rect.width * 0.08,
+      right: rect.right - rect.width * 0.08,
+      top: rect.top - rect.height * 0.24,
+      bottom: rect.bottom - rect.height * 0.08,
+    };
+  }
+
+  function pointIsInsidePrepMoveArea(evt, config) {
+    const rect = getPrepTrayMoveRect(config);
+    if (!rect || !evt) return false;
+    return evt.clientX >= rect.left && evt.clientX <= rect.right && evt.clientY >= rect.top && evt.clientY <= rect.bottom;
+  }
+
   function pointIsInsideActiveTray(evt, config) {
     const rect = getPrepTrayMaterialRect(config);
     if (!rect) return false;
@@ -7581,26 +7618,82 @@ body.layout-editor-on .endX-marker {
     }
   }
 
+  function spawnPrepPankoBurial(evt, dist) {
+    if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
+    const rect = els.prepStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
+    const reduced = isPrepReducedEffects();
+    const count = reduced ? 2 : 3;
+    for (let i = 0; i < count; i++) {
+      const patch = document.createElement('i');
+      const size = (reduced ? 54 : 76) + Math.random() * (reduced ? 34 : 52) + Math.min(90, Math.max(0, dist || 0)) * 0.04;
+      patch.dataset.material = 'panko-bury';
+      patch.style.setProperty('--particle-x', (xPct + Math.random() * 8 - 4).toFixed(2) + '%');
+      patch.style.setProperty('--particle-y', (yPct + Math.random() * 5 - 1).toFixed(2) + '%');
+      patch.style.setProperty('--particle-size', size.toFixed(1) + 'px');
+      patch.style.setProperty('--particle-w', (size * (1.28 + Math.random() * 0.42)).toFixed(1) + 'px');
+      patch.style.setProperty('--particle-h', (size * (0.34 + Math.random() * 0.14)).toFixed(1) + 'px');
+      patch.style.setProperty('--particle-dx', (Math.random() * 20 - 10).toFixed(1) + 'px');
+      patch.style.setProperty('--particle-dy', (8 + Math.random() * 18).toFixed(1) + 'px');
+      patch.style.setProperty('--particle-rot', (Math.random() * 26 - 13).toFixed(1) + 'deg');
+      els.prepBreadingParticles.appendChild(patch);
+      state.pendingTimers.push(setTimeout(function () {
+        if (patch && patch.parentNode) patch.parentNode.removeChild(patch);
+      }, 1240));
+    }
+  }
+
+  function spawnPrepEggDripCluster(xPct, yPct, count, options) {
+    if (!els.prepBreadingParticles) return;
+    const opts = options || {};
+    for (let i = 0; i < count; i++) {
+      const drip = document.createElement('i');
+      drip.dataset.material = 'egg-drip';
+      drip.style.setProperty('--particle-x', (xPct + (Math.random() * (opts.spreadX || 7) - (opts.spreadX || 7) / 2)).toFixed(2) + '%');
+      drip.style.setProperty('--particle-y', (yPct + (opts.yOffset || 4) + Math.random() * (opts.spreadY || 7)).toFixed(2) + '%');
+      drip.style.setProperty('--particle-size', ((opts.sizeBase || 7) + Math.random() * (opts.sizeRange || 8)).toFixed(1) + 'px');
+      drip.style.setProperty('--particle-dx', (Math.random() * (opts.dxRange || 22) - (opts.dxRange || 22) / 2).toFixed(1) + 'px');
+      drip.style.setProperty('--particle-dy', ((opts.dyBase || 36) + Math.random() * (opts.dyRange || 42)).toFixed(1) + 'px');
+      drip.style.setProperty('--particle-rot', (Math.random() * 28 - 14).toFixed(1) + 'deg');
+      drip.style.setProperty('--drip-duration', ((opts.duration || 0.72) + Math.random() * (opts.durationJitter || 0.18)).toFixed(2) + 's');
+      els.prepBreadingParticles.appendChild(drip);
+      state.pendingTimers.push(setTimeout(function () {
+        if (drip && drip.parentNode) drip.parentNode.removeChild(drip);
+      }, ((opts.duration || 0.72) + (opts.durationJitter || 0.18)) * 1000 + 140));
+    }
+  }
+
   function spawnPrepEggDrips(evt) {
     if (!evt || !els.prepStage || !els.prepBreadingParticles) return;
     const rect = els.prepStage.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const xPct = ((evt.clientX - rect.left) / rect.width) * 100;
     const yPct = ((evt.clientY - rect.top) / rect.height) * 100;
-    const count = isPrepReducedEffects() ? 3 : 5;
-    for (let i = 0; i < count; i++) {
-      const drip = document.createElement('i');
-      drip.dataset.material = 'egg-drip';
-      drip.style.setProperty('--particle-x', (xPct + (Math.random() * 7 - 3.5)).toFixed(2) + '%');
-      drip.style.setProperty('--particle-y', (yPct + 4 + Math.random() * 7).toFixed(2) + '%');
-      drip.style.setProperty('--particle-size', (7 + Math.random() * 8).toFixed(1) + 'px');
-      drip.style.setProperty('--particle-dx', (Math.random() * 22 - 11).toFixed(1) + 'px');
-      drip.style.setProperty('--particle-dy', (36 + Math.random() * 42).toFixed(1) + 'px');
-      drip.style.setProperty('--particle-rot', (Math.random() * 28 - 14).toFixed(1) + 'deg');
-      els.prepBreadingParticles.appendChild(drip);
+    const reduced = isPrepReducedEffects();
+    spawnPrepEggDripCluster(xPct, yPct, reduced ? 3 : 5, { duration: 0.68, durationJitter: 0.16 });
+    const followUps = reduced ? 1 : 2;
+    for (let i = 0; i < followUps; i++) {
+      const delay = 220 + i * 280 + Math.random() * 260;
       state.pendingTimers.push(setTimeout(function () {
-        if (drip && drip.parentNode) drip.parentNode.removeChild(drip);
-      }, 780));
+        spawnPrepEggDripCluster(
+          xPct + Math.random() * 4 - 2,
+          yPct + Math.random() * 3,
+          i === 0 ? (reduced ? 1 : 2) : 1,
+          {
+            spreadX: 5,
+            spreadY: 5,
+            yOffset: 7 + i * 2,
+            sizeBase: 6,
+            sizeRange: 7,
+            dyBase: 46 + i * 10,
+            dyRange: 44,
+            duration: 0.98 + i * 0.18,
+            durationJitter: 0.34,
+          }
+        );
+      }, delay));
     }
   }
 
@@ -7752,6 +7845,7 @@ body.layout-editor-on .endX-marker {
     const dropPower = Math.max(isPrepReducedEffects() ? 180 : 260, Math.min(isPrepReducedEffects() ? 460 : 720, (state.prepPankoGrabDistance || 0) * 1.35 + 180));
     if (droppedInsideMaterial) {
       spawnPrepPankoSprinkles(evt, dropPower, { burst: true });
+      spawnPrepPankoBurial(evt, dropPower);
       advanceTrayPrepCoating(config, dropPower * 0.72, evt, true, { skipParticles: true });
       setSpeech('パンこが ぱらぱら！', 'prep');
     }
@@ -7808,9 +7902,10 @@ body.layout-editor-on .endX-marker {
       const targetTilt = Math.max(-8, Math.min(8, dx * 0.16 + dy * 0.035));
       state.prepTrayRollAngle = (state.prepTrayRollAngle || 0) * 0.35 + targetTilt * 0.65;
       movePrepFoodToPointer(evt);
+      const isInsideMoveArea = pointIsInsidePrepMoveArea(evt, config);
       const isInsideMaterial = pointIsInsideActiveMaterial(evt, config) && pointKeepsPrepFoodInsideActiveMaterial(evt, config);
       const material = getCurrentPrepBreadingMaterial(config);
-      if (!isInsideMaterial && state.prepTrayLastValidPose) {
+      if (!isInsideMoveArea && !isInsideMaterial && state.prepTrayLastValidPose) {
         restorePrepFoodToValidPose(config);
       }
       const afterFoodCenter = getPrepFoodCenterPx();
@@ -7860,6 +7955,7 @@ body.layout-editor-on .endX-marker {
       }
       if (material === 'panko' && droppedInsideMaterial) {
         spawnPrepPankoSprinkles(evt, isPrepReducedEffects() ? 160 : 300, { burst: true });
+        spawnPrepPankoBurial(evt, isPrepReducedEffects() ? 160 : 300);
       }
       if (droppedInsideMaterial) {
         syncPrepBreadingLayerPoseFromFood();
