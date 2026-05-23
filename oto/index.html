@@ -142,6 +142,7 @@
     transition: opacity 0.12s ease-out, transform 0.08s linear;
     z-index: 0;
   }
+  .instr-btn::after { z-index: 2; }
   .instr-btn::before {
     background: radial-gradient(circle, rgba(255,248,179,0.72) 0%, rgba(255,216,77,0.42) 48%, rgba(255,216,77,0) 72%);
     transform: scale(1.05);
@@ -911,7 +912,7 @@
   }
 
   /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ */
-  @media (orientation: landscape) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) and (min-height: 560px) {
+  @media (orientation: landscape) and (min-width: 900px) and (min-height: 700px) {
     .instr-btn[data-idx="0"] { left: 45%; top: 35%; --sz: 196px; }
     .instr-btn[data-idx="1"] { left: 56%; top: 22%; --sz: 200px; }
     .instr-btn[data-idx="2"] { left: 76%; top: 22%; --sz: 200px; }
@@ -1705,7 +1706,8 @@ var RHYTHM_SONG = {
   name: 'きらきら',
   bpm: 100,
   bandSongId: 'twinkle100',
-  bandStems: ['drums', 'bass', 'keyboard'],
+  bandStems: ['drums', 'bass'],
+  bandVolume: 0.38,
   notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
 };
 var RHYTHM_GOOD_MS = 220;
@@ -1720,6 +1722,7 @@ var _rhythm = {
   raf: 0,
   streak: 0,
   ownsBand: false,
+  prevBandVolume: 1,
   nowCue: false
 };
 
@@ -1787,6 +1790,7 @@ function _ensureRhythmBand() {
   var songIdx = _songIndexById(RHYTHM_SONG.bandSongId);
   if (songIdx < 0) songIdx = SPEED_TO_SONG_IDX.normal;
   var stems = RHYTHM_SONG.bandStems || ['drums'];
+  _bandVolume = RHYTHM_SONG.bandVolume || 1;
   var alreadyOn = _curSongIdx === songIdx && stems.every(function(stem) {
     return !!_activeStems[stem];
   });
@@ -1860,6 +1864,7 @@ function _startRhythmMode() {
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
   _setRhythmStatus('ひかるボタンを いま！でタッチ', null);
+  _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   _scheduleRhythmNote(1.6);
   if (_rhythm.raf) cancelAnimationFrame(_rhythm.raf);
@@ -1883,6 +1888,7 @@ function _stopRhythmMode() {
     _renderSpeedBtns();
     _rhythm.ownsBand = false;
   }
+  _bandVolume = _rhythm.prevBandVolume || 1;
 }
 function setPlayMode(mode) {
   mode = mode === 'rhythm' ? 'rhythm' : 'free';
@@ -2728,9 +2734,13 @@ var DRUM_PATTERN = [
 
 // ─── 合成バンドの状態 ───
 var _activeStems = { drums: false, bass: false, keyboard: false };
+var _bandVolume = 1;
 var _bandClockStart = 0;    // 合成バンドの AC time 開始時刻
 var _scheduledStep = -1;
 var _schedulerInterval = null;
+function _bandLevel(value) {
+  return value * _bandVolume;
+}
 
 function _synthActive() {
   return _activeStems.drums || _activeStems.bass || _activeStems.keyboard;
@@ -2781,7 +2791,7 @@ function _stemStart(name) {
   src.buffer = _stemBuffers[name];
   src.loop = true;
   var g = ac.createGain();
-  g.gain.value = 0.7;
+  g.gain.value = _bandLevel(0.7);
   src.connect(g); g.connect(ac.destination);
   src.start(0, offset);
   _stemSources[name] = src;
@@ -2860,7 +2870,7 @@ function playDrumAt(ac, kind, t) {
     o.type = 'sine';
     o.frequency.setValueAtTime(160, t);
     o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
-    g.gain.setValueAtTime(0.9, t);
+    g.gain.setValueAtTime(_bandLevel(0.9), t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
     o.connect(g); g.connect(ac.destination);
     o.start(t); o.stop(t + 0.28);
@@ -2869,7 +2879,7 @@ function playDrumAt(ac, kind, t) {
     var ns = ac.createBufferSource(); ns.buffer = nb;
     var nf = ac.createBiquadFilter(); nf.type = 'highpass'; nf.frequency.value = 1500;
     var ng = ac.createGain();
-    ng.gain.setValueAtTime(0.5, t);
+    ng.gain.setValueAtTime(_bandLevel(0.5), t);
     ng.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
     ns.connect(nf); nf.connect(ng); ng.connect(ac.destination);
     ns.start(t); ns.stop(t + 0.22);
@@ -2877,7 +2887,7 @@ function playDrumAt(ac, kind, t) {
     so.type = 'triangle';
     so.frequency.setValueAtTime(220, t);
     so.frequency.exponentialRampToValueAtTime(140, t + 0.08);
-    sg.gain.setValueAtTime(0.35, t);
+    sg.gain.setValueAtTime(_bandLevel(0.35), t);
     sg.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
     so.connect(sg); sg.connect(ac.destination);
     so.start(t); so.stop(t + 0.12);
@@ -2886,7 +2896,7 @@ function playDrumAt(ac, kind, t) {
     var hs = ac.createBufferSource(); hs.buffer = hb;
     var hf = ac.createBiquadFilter(); hf.type = 'highpass'; hf.frequency.value = 6000;
     var hg = ac.createGain();
-    hg.gain.setValueAtTime(0.25, t);
+    hg.gain.setValueAtTime(_bandLevel(0.25), t);
     hg.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
     hs.connect(hf); hf.connect(hg); hg.connect(ac.destination);
     hs.start(t); hs.stop(t + 0.08);
@@ -2899,8 +2909,8 @@ function _playBassAt(ac, freq, t, dur) {
   o.frequency.setValueAtTime(freq, t);
   lpf.type = 'lowpass'; lpf.frequency.value = 600;
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.32, t + 0.02);
-  g.gain.setValueAtTime(0.28, t + dur - 0.1);
+  g.gain.linearRampToValueAtTime(_bandLevel(0.32), t + 0.02);
+  g.gain.setValueAtTime(_bandLevel(0.28), t + dur - 0.1);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(lpf); lpf.connect(g); g.connect(ac.destination);
   o.start(t); o.stop(t + dur + 0.05);
@@ -2911,7 +2921,7 @@ function _playKbdAt(ac, freqs, t, dur) {
     var o = ac.createOscillator(), g = ac.createGain();
     o.type = 'triangle';
     o.frequency.setValueAtTime(f, t);
-    var peak = 0.13 - i * 0.02;
+    var peak = _bandLevel(0.13 - i * 0.02);
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(peak, t + 0.03);
     g.gain.setValueAtTime(peak * 0.7, t + dur - 0.15);
