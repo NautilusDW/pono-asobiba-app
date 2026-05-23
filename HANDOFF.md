@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-23 - [batch:100-bento-fried-egg-lid] Codex: `bento/kitchen.html` に目玉焼きの「おかずをつくる→めだまやき→卵をコンコン→フライパンへぽとん→ガラス蓋→青ゲージで皿へ」フローを実装。ユーザー alpha 済み卵殻 3 点と蓋を `assets/images/bento/cooking/egg/` / `assets/images/bento/cooking/glass_lid.png` に本配置。Playwright で一連の flow verified、`sw.js` は v551。 (by Codex)
 - 2026-05-21 - [batch:98-bento-rect-split-box] Codex: user 指摘「弁当箱画像が小さい / 次は普通の一段長方形で半分ご飯・半分おかず」を受領。HANDOFF / git log / `assets/images/bento/free-layout/` を確認し、該当の長方形1段箱は未作成と判断。新規箱画像生成 + 自由配置デフォルト化 + 箱表示サイズ調整を実施する。 (by Codex)
 - 2026-05-21 - [batch:98-bento-rect-split-box] Codex: `box_rect_split.png` を GPT Image 2 built-in 生成から透過PNG化して追加。`bento/index.html` は新しい一段長方形箱をデフォルトにし、既存箱画像を拡大、配置スポットを型別に分けてご飯=左 / おかず・カップ=右へ初期配置するよう調整。`sw.js` は v509。ローカル Playwright で初期箱・画像表示・ご飯/おかず配置を確認済。 (by Codex)
 - 2026-05-21 - [batch:96-bento-free-layout] Codex: `D:\ポノのおへや\Bento\bento_redesign` の2つの指示mdを受領。HANDOFF / git log / `bento/index.html` 周辺 / `assets/images/bento` を確認し、自由配置方式の既存成果物なしと判断。固定マス方式を残しつつ、`freeLayoutMode` + `placedItems` ベースの自由配置土台を追加する。 (by Codex)
