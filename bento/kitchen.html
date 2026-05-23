@@ -972,6 +972,124 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   0%, 100% { transform: scale(calc(1 + var(--ball-hit) * 0.08)); }
   50% { transform: scale(calc(1.045 + var(--ball-hit) * 0.08)); }
 }
+.prep-marinate-game {
+  display: none;
+  position: absolute;
+  inset: 5% 5% 8%;
+  z-index: 7;
+  pointer-events: none;
+}
+.prep-workbench[data-marinate-mode="true"] .prep-art-main,
+.prep-workbench[data-marinate-mode="true"] .shape-prep-guide,
+.prep-workbench[data-marinate-mode="true"] .shape-ball-game,
+.prep-workbench[data-marinate-mode="true"] .knead-canvas,
+.prep-workbench[data-marinate-mode="true"] .prep-breading-game {
+  display: none;
+}
+.prep-workbench[data-marinate-mode="true"] .prep-marinate-game {
+  display: block;
+  pointer-events: auto;
+}
+.marinate-bowl {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  width: min(88%, 860px);
+  height: min(82%, 530px);
+  transform: translate(-50%, -50%);
+  background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / contain no-repeat;
+  filter: drop-shadow(0 16px 18px rgba(86,55,28,0.18));
+  touch-action: none;
+}
+.marinate-sauce {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 18%;
+  bottom: 17%;
+  border-radius: 44% 46% 42% 45% / 47% 49% 42% 43%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 28% 18% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,255,255,0.34), transparent 72%),
+    radial-gradient(ellipse 36% 22% at 36% 34%, rgba(255,208,112,0.35), transparent 68%),
+    radial-gradient(ellipse 45% 31% at 68% 65%, rgba(148,78,28,0.24), transparent 72%),
+    linear-gradient(135deg, rgba(159,82,31,0.64), rgba(235,151,60,0.52) 48%, rgba(126,59,26,0.56));
+  opacity: 0.88;
+  transform: scale(calc(1 + var(--marinate-motion, 0) * 0.018));
+  transition: transform 0.12s ease;
+}
+.marinate-sauce::before,
+.marinate-sauce::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.marinate-sauce::before {
+  background:
+    repeating-linear-gradient(114deg, transparent 0 44px, rgba(255,235,154,0.16) 52px 60px, transparent 68px 118px),
+    radial-gradient(ellipse 18% 10% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,255,255,0.42), transparent 68%);
+  mix-blend-mode: screen;
+  opacity: calc(0.38 + var(--marinate-motion, 0) * 0.22);
+  transform: translate3d(calc(var(--marinate-motion, 0) * 1.4%), 0, 0);
+}
+.marinate-sauce::after {
+  background:
+    radial-gradient(ellipse 18% 12% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), transparent 0 48%, rgba(93,45,20,0.18) 54% 60%, transparent 68%),
+    radial-gradient(ellipse 32% 20% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,205,92,0.18), transparent 68%);
+  opacity: var(--marinate-motion, 0);
+}
+.marinate-piece {
+  position: absolute;
+  left: var(--piece-x, 50%);
+  top: var(--piece-y, 50%);
+  width: var(--piece-size, 17%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(var(--piece-scale, 1));
+  transform-origin: center;
+  z-index: 5;
+  cursor: grab;
+  touch-action: none;
+  filter: drop-shadow(0 6px 7px rgba(84,45,26,0.2));
+  transition: transform 0.1s ease, filter 0.1s ease;
+  will-change: left, top, transform;
+}
+.marinate-piece.is-active {
+  z-index: 8;
+  cursor: grabbing;
+  --piece-scale: 1.07;
+  filter: drop-shadow(0 10px 11px rgba(84,45,26,0.3));
+}
+.marinate-piece img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.marinate-piece .stage-plain { opacity: 1; }
+.marinate-piece .stage-light { opacity: var(--piece-light, 0); }
+.marinate-piece .stage-marinated { opacity: var(--piece-marinated, 0); }
+.marinate-sauce-dot {
+  position: absolute;
+  left: var(--dot-x, 50%);
+  top: var(--dot-y, 50%);
+  width: var(--dot-size, 18px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,224,132,0.74), rgba(160,79,28,0.38) 58%, transparent 72%);
+  pointer-events: none;
+  z-index: 4;
+  animation: marinateSauceDot 0.78s ease-out forwards;
+}
+@keyframes marinateSauceDot {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45); }
+  18% { opacity: 0.74; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dot-dx, 0px)), calc(-50% + var(--dot-dy, 0px))) scale(1.6); }
+}
 .knead-canvas {
   display: none;
   position: absolute;
@@ -2120,6 +2238,86 @@ body.layout-editor-on .fry-pot {
   top: var(--grill-food-y, 52%);
   width: 25%;
 }
+#grill-stage[data-ingredient="meatball"].food-placed:not(.is-served) .cooking-food {
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
+  width: 14%;
+}
+#grill-stage[data-ingredient="meatball"].is-served .cooking-food {
+  width: 14%;
+}
+#grill-stage[data-ingredient="egg"]:not(.food-placed) .cooking-food {
+  left: 16%;
+  top: 65%;
+  width: 17%;
+  pointer-events: none;
+  z-index: 4;
+}
+#grill-stage[data-ingredient="egg"].egg-crack-split:not(.food-placed) .cooking-food {
+  opacity: 0;
+}
+#grill-stage[data-ingredient="egg"].food-placed:not(.is-served) .cooking-food {
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
+  width: 29%;
+}
+.egg-crack-shells {
+  position: absolute;
+  left: 16%;
+  top: 64%;
+  width: 22%;
+  height: 22%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.egg-crack-shells i {
+  position: absolute;
+  top: 50%;
+  width: 53%;
+  aspect-ratio: 1 / 1;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 7px 8px rgba(0,0,0,0.2));
+}
+.egg-crack-shells i:first-child {
+  left: 17%;
+  transform: translate(-50%, -50%) rotate(-13deg);
+  background-image: url('../assets/images/bento/cooking/egg/egg_shell_left.png');
+}
+.egg-crack-shells i:last-child {
+  left: 79%;
+  transform: translate(-50%, -50%) rotate(12deg);
+  background-image: url('../assets/images/bento/cooking/egg/egg_shell_right.png');
+}
+#grill-stage.egg-crack-split:not(.food-placed) .egg-crack-shells {
+  opacity: 1;
+}
+.egg-glass-lid {
+  position: absolute;
+  left: var(--grill-lid-x, var(--grill-food-x, 58%));
+  top: var(--grill-lid-y, var(--grill-food-y, 52%));
+  width: var(--grill-lid-w, 53%);
+  aspect-ratio: 1162 / 877;
+  transform: translate(-50%, -50%) scale(0.98);
+  transform-origin: center;
+  background: url('../assets/images/bento/cooking/glass_lid.png') center / contain no-repeat;
+  pointer-events: none;
+  z-index: 7;
+  opacity: 0;
+  filter: drop-shadow(0 12px 15px rgba(50,38,28,0.16));
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.18,.85,.2,1.02);
+}
+#grill-stage.egg-lid-closed:not(.is-served) .egg-glass-lid {
+  opacity: 0.96;
+  transform: translate(-50%, -50%) scale(1);
+}
+#grill-stage[data-ingredient="egg"].egg-lid-closed:not(.is-served) .grill-smoke {
+  opacity: 0.38;
+}
 #fry-stage.food-placed:not(.is-served) .cooking-food {
   left: var(--fry-food-x, 58%);
   top: var(--fry-food-y, 61%);
@@ -2184,6 +2382,9 @@ body.layout-editor-on .fry-pot {
 }
 .cooking-food.flip img {
   animation: foodFlip 0.5s cubic-bezier(.2,.85,.24,1);
+}
+#grill-stage[data-ingredient="meatball"] .cooking-food.flip img {
+  animation: meatballRoll 0.58s cubic-bezier(.18,.85,.22,1);
 }
 .cooking-food.drop img,
 .cooking-food.drop .cooking-food-fallback {
@@ -2340,6 +2541,22 @@ body.layout-editor-on .fry-pot {
 .cook-timing-meter.show-rating {
   opacity: 1;
   transform: translateY(0);
+}
+#screen-grill .cook-timing-meter,
+#screen-fry .cook-timing-meter {
+  position: absolute;
+  left: 31%;
+  bottom: 56px;
+  width: min(520px, 42%);
+  margin: 0;
+  z-index: 70;
+  transform: translate(-50%, 8px);
+}
+#screen-grill .cook-timing-meter.is-active,
+#screen-grill .cook-timing-meter.show-rating,
+#screen-fry .cook-timing-meter.is-active,
+#screen-fry .cook-timing-meter.show-rating {
+  transform: translate(-50%, 0);
 }
 .cook-timing-caption {
   text-align: center;
@@ -2589,6 +2806,11 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   0%   { transform: rotateY(0deg) translateY(0); }
   42%  { transform: rotateY(88deg) translateY(-34px) scale(1.08); }
   100% { transform: rotateY(180deg) translateY(0); }
+}
+@keyframes meatballRoll {
+  0%   { transform: translateX(-22px) rotate(0deg) scale(1); }
+  42%  { transform: translateX(8px) translateY(-15px) rotate(130deg) scale(1.06); }
+  100% { transform: translateX(24px) rotate(260deg) scale(1); }
 }
 @keyframes foodDrop {
   0%   { transform: translateY(-150px) scale(0.72); opacity: 0; }
@@ -4065,6 +4287,7 @@ body.layout-editor-on .endX-marker {
         <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
         <div class="shape-prep-guide" id="shape-prep-guide" aria-hidden="true"></div>
         <div class="shape-ball-game" id="shape-ball-game" aria-hidden="true"></div>
+        <div class="prep-marinate-game" id="prep-marinate-game" aria-hidden="true"></div>
         <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
         <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
           <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
@@ -4123,6 +4346,8 @@ body.layout-editor-on .endX-marker {
         <div class="grill-smoke" id="grill-smoke" aria-hidden="true">
           <i></i><i></i><i></i><i></i>
         </div>
+        <div class="egg-crack-shells" id="egg-crack-shells" aria-hidden="true"><i></i><i></i></div>
+        <div class="egg-glass-lid" id="egg-glass-lid" aria-hidden="true"></div>
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
         <div class="cook-stage-cue" id="grill-timing-cue" aria-hidden="true">いま！ひっくり返そう！</div>
         <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
@@ -4327,6 +4552,7 @@ body.layout-editor-on .endX-marker {
   const COOK_TIMING_DANGER_MIN = 78;
   const COOK_TIMING_RED_MIN = 92;
   const COOK_TIMING_GOOD_GRACE_MS = 220;
+  const EGG_CRACK_WHOLE_SRC = '../assets/images/bento/cooking/egg/egg_shell_whole.png';
   const KITCHEN_SE = {
     chop: 'bento/chop',
     stove: {
@@ -4463,12 +4689,9 @@ body.layout-editor-on .endX-marker {
     },
     {
       id: 'egg', name: 'たまご', emoji: '🥚', piece: '🍳',
-      chopCount: 1, implemented: true,
+      chopCount: 1, implemented: true, cookFromRaw: true,
       cookingActions: [
-        { type: 'grill', label: 'ふんわり やこう', stages: 2 },
-      ],
-      prepActions: [
-        { type: 'prep', prepKind: 'egg_crack', label: 'たまごを わろう' },
+        { type: 'grill', label: 'たまごを わって やこう', stages: 2, crackInPan: true },
       ],
       cookImages: {
         grill: {
@@ -4524,7 +4747,7 @@ body.layout-editor-on .endX-marker {
       id: 'meatball', name: 'ミートボール', emoji: '🟤', piece: '🟤',
       chopCount: 1, implemented: true,
       cookingActions: [
-        { type: 'grill', label: 'ころころ やこう', stages: 2 },
+        { type: 'grill', label: 'ころころ やこう', stages: 2, pieces: 5 },
       ],
       prepActions: [
         { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを こねよう' },
@@ -4533,7 +4756,16 @@ body.layout-editor-on .endX-marker {
       ],
       cookImages: {
         grill: {
-          stages: ['meatball/meatball_001_raw', 'meatball/meatball_002_mid', 'meatball/meatball_003_done'],
+          stages: [
+            'meatball/shape/meatball_round_01',
+            'meatball/shape/meatball_round_01',
+            'meatball/shape/meatball_round_01',
+          ],
+          stageFilters: [
+            '',
+            'sepia(0.36) saturate(1.25) hue-rotate(-11deg) brightness(0.98) drop-shadow(0 8px 9px rgba(0,0,0,0.22))',
+            'sepia(0.84) saturate(1.55) hue-rotate(-17deg) brightness(0.92) contrast(1.05) drop-shadow(0 8px 9px rgba(0,0,0,0.24))',
+          ],
           fallback: '../assets/images/Bento_parts/meatball2.png',
         },
       },
@@ -4563,6 +4795,7 @@ body.layout-editor-on .endX-marker {
       ],
       prepActions: [
         { type: 'chop' },
+        { type: 'prep', prepKind: 'marinate_chicken', label: 'したあじを なじませよう' },
         { type: 'prep', prepKind: 'coat_chicken', label: 'こなを まぶそう' },
       ],
       cookImages: {
@@ -4629,7 +4862,7 @@ body.layout-editor-on .endX-marker {
 
   // 材料→解放されるレシピ
   const RECIPES = [
-    { id: 'tamagoyaki',   name: 'たまごやき',        img: '../assets/images/Bento_parts/tamagoyaki2.png',   needs: ['egg'] },
+    { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_003_done.png', needs: ['egg'], startFromRaw: true },
     { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty'] },
     { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball'] },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'] },
@@ -4825,10 +5058,10 @@ body.layout-editor-on .endX-marker {
       ],
       ballRoughImages: [
         '../assets/images/bento/cooking/meatball/shape/meatball_rough_01.png',
-        '../assets/images/bento/cooking/meatball/shape/meatball_rough_02.png',
-        '../assets/images/bento/cooking/meatball/shape/meatball_rough_03.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_rough_04.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_rough_05.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_06.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_04.png',
       ],
       steps: [
         {
@@ -4864,17 +5097,17 @@ body.layout-editor-on .endX-marker {
       ],
       ballRoughImages: [
         '../assets/images/bento/cooking/meatball/shape/meatball_rough_01.png',
-        '../assets/images/bento/cooking/meatball/shape/meatball_rough_02.png',
-        '../assets/images/bento/cooking/meatball/shape/meatball_rough_03.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_rough_04.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_rough_05.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_06.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_04.png',
       ],
       ballRoundImages: [
         '../assets/images/bento/cooking/meatball/shape/meatball_round_01.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_round_02.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_round_03.png',
         '../assets/images/bento/cooking/meatball/shape/meatball_round_04.png',
-        '../assets/images/bento/cooking/meatball/shape/meatball_round_05.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_round_02.png',
       ],
       steps: [
         {
@@ -5033,18 +5266,37 @@ body.layout-editor-on .endX-marker {
         { sheet: 'breading', x: 2, y: 1, label: 'できあがり', caption: 'コロッケの じゅんび できたよ！', burst: 'できた！' },
       ],
     },
+    marinate_chicken: {
+      kind: 'marinate_chicken',
+      marinatePrep: true,
+      startSpeech: 'とりにくを したあじに からめよう！',
+      completeSpeech: 'したあじが しっかり なじんだよ！',
+      completeBurst: 'しみしみ！',
+      marinatePieces: [
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png'], x: 32, y: 36, size: 18, rot: -8 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png'], x: 49, y: 34, size: 17, rot: 6 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png'], x: 66, y: 38, size: 17, rot: -3 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 39, y: 53, size: 16, rot: 9 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 57, y: 52, size: 16, rot: -10 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png'], x: 74, y: 55, size: 15, rot: 4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png'], x: 45, y: 70, size: 15, rot: -4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png'], x: 62, y: 69, size: 15, rot: 7 },
+      ],
+      steps: [
+        { label: 'したあじに からめよう', caption: 'ひとつずつ ぐるぐる！', burst: 'とろっ！' },
+        { label: 'したあじ OK', caption: 'つぎは こなを まぶそう！', burst: 'しみしみ！' },
+      ],
+    },
     coat_chicken: {
       kind: 'coat_chicken',
       startSpeech: 'とりにくに こなを まぶそう！',
       completeSpeech: 'からあげの したごしらえ できたよ！',
       toolSteps: [
-        { sheet: 'breading', x: 0, y: 2, label: 'とりにく' },
         { sheet: 'breading', x: 1, y: 2, label: 'したあじ' },
         { sheet: 'breading', x: 2, y: 2, label: 'こな' },
       ],
       steps: [
-        { sheet: 'breading', x: 0, y: 2, label: 'とりにくを ボウルへ', caption: 'とりにくを じゅんび！', burst: 'ぽん！' },
-        { sheet: 'breading', x: 1, y: 2, label: 'したあじを なじませよう', caption: 'もみもみ！', burst: 'もみもみ！' },
+        { sheet: 'breading', x: 1, y: 2, label: 'したあじの とりにく', caption: 'こなを まぶそう！', burst: 'ぽん！' },
         { sheet: 'breading', x: 2, y: 2, label: 'こなを まぶそう', caption: 'こなを まぶしたよ！', burst: 'ぱふっ！' },
         { sheet: 'breading', x: 2, y: 2, label: 'できあがり', caption: 'からあげの じゅんび できたよ！', burst: 'できた！' },
       ],
@@ -5074,6 +5326,11 @@ body.layout-editor-on .endX-marker {
     prepTrayRollDistance: 0,
     prepTrayRollAngle: 0,
     prepTrayInsideMaterial: false,
+    prepMarinatePieces: [],
+    prepMarinateActiveIndex: -1,
+    prepMarinateRenderKey: '',
+    prepMarinateTrailLastAt: 0,
+    prepMarinateMotion: 0,
     prepEggContacting: false,
     prepEggHadContact: false,
     prepEggRippleDistance: 0,
@@ -5098,6 +5355,7 @@ body.layout-editor-on .endX-marker {
     prepDragLastStep: 0,
     suppressPrepClick: false,
     cookProgress: 0,
+    cookPieceIndex: 0,
     cookAnimating: false,
     cookPreheated: false,
     cookFoodPlaced: false,
@@ -5115,6 +5373,9 @@ body.layout-editor-on .endX-marker {
     cookTimingPointerZone: null,
     cookTimingPointerAt: 0,
     cookTimingResults: [],
+    cookEggCrackProgress: 0,
+    cookEggLidReady: false,
+    cookEggLidClosed: false,
     suppressCookClick: false,
     fryReady: false,
     chopProgress: 0,
@@ -5156,6 +5417,7 @@ body.layout-editor-on .endX-marker {
     state.prepTrayRollAngle = 0;
     state.suppressPrepClick = false;
     state.cookAnimating = false;
+    state.cookEggLidReady = false;
     stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
@@ -5519,6 +5781,7 @@ body.layout-editor-on .endX-marker {
     prepArtMain:   document.getElementById('prep-art-main'),
     shapePrepGuide: document.getElementById('shape-prep-guide'),
     shapeBallGame: document.getElementById('shape-ball-game'),
+    prepMarinateGame: document.getElementById('prep-marinate-game'),
     kneadCanvas:   document.getElementById('knead-canvas'),
     prepBreadingGame: document.getElementById('prep-breading-game'),
     prepBreadingTrays: document.getElementById('prep-breading-trays'),
@@ -5559,6 +5822,8 @@ body.layout-editor-on .endX-marker {
     // grill screen
     grillStage:    document.getElementById('grill-stage'),
     grillPan:      document.querySelector('#grill-stage .grill-pan'),
+    eggCrackShells: document.getElementById('egg-crack-shells'),
+    eggGlassLid:   document.getElementById('egg-glass-lid'),
     grillingFoodWrap: document.getElementById('grilling-food-wrap'),
     grillingFood:  document.getElementById('grilling-food'),
     grillingFoodFallback: document.getElementById('grilling-food-fallback'),
@@ -6062,6 +6327,7 @@ body.layout-editor-on .endX-marker {
     state.prepProgress = 0;
     state.prepAnimating = false;
     state.cookProgress = 0;
+    state.cookPieceIndex = 0;
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
     state.cookServed = false;
@@ -6069,6 +6335,9 @@ body.layout-editor-on .endX-marker {
     state.cookDragType = null;
     state.cookDragPointerId = null;
     state.cookTimingResults = [];
+    state.cookEggCrackProgress = 0;
+    state.cookEggLidReady = false;
+    state.cookEggLidClosed = false;
     state.suppressCookClick = false;
     state.fryReady = false;
     state.chopProgress = 0;
@@ -6086,6 +6355,13 @@ body.layout-editor-on .endX-marker {
     if (!ing.implemented) {
       setSpeech(ing.name + 'は じゅんびちゅう！ もうちょっと まっててね');
       showToast(ing.name + 'は じゅんびちゅう！');
+      return;
+    }
+    if (state.kitchenMode === 'prep' && ing.cookFromRaw) {
+      state.kitchenMode = 'cook';
+      setSpeech(ing.name + 'は フライパンで わって やこう！', 'select');
+      showToast('おかずづくりで ' + ing.name + 'を わろう！');
+      startIngredientAction(ing, 0);
       return;
     }
     startIngredientAction(ing, 0);
@@ -6128,6 +6404,14 @@ body.layout-editor-on .endX-marker {
     });
   }
 
+  function isEggGrillAction(ing, action) {
+    return !!ing && ing.id === 'egg' && !!action && action.type === 'grill' && !!action.crackInPan;
+  }
+
+  function isCurrentEggGrillAction() {
+    return isEggGrillAction(state.current, getCurrentAction());
+  }
+
   function handleKeyboardActivation(evt, handler) {
     if (evt.key !== 'Enter' && evt.key !== ' ' && evt.key !== 'Spacebar') return;
     evt.preventDefault();
@@ -6138,12 +6422,13 @@ body.layout-editor-on .endX-marker {
     if (state.cutting || state.transitioning) return;
     if (!ing || !ing.implemented) return;
     if (!confirmLayoutEditorNavigationIfDirty()) return;
-    if (!state.unlocked.has(ing.id)) {
+    const canCookFromRaw = !!ing.cookFromRaw || !!(rec && rec.startFromRaw);
+    if (!state.unlocked.has(ing.id) && !canCookFromRaw) {
       setSpeech('まずは ' + ing.name + 'を したごしらえしよう！', 'fridge');
       showToast(ing.name + 'は まだ れいぞうこに ないよ');
       return;
     }
-    const cookActionIndex = getFirstCookActionIndex(ing);
+    const cookActionIndex = canCookFromRaw ? 0 : getFirstCookActionIndex(ing);
     if (cookActionIndex < 0) {
       setSpeech(ing.name + 'は もう じゅんびできてるよ！', 'fridge');
       showToast('おべんとうに つめられるよ！');
@@ -6162,7 +6447,7 @@ body.layout-editor-on .endX-marker {
 
   function startCookFromRecipe(rec) {
     if (!rec) return;
-    const ready = (rec.needs || []).every(function (id) {
+    const ready = !!rec.startFromRaw || (rec.needs || []).every(function (id) {
       return state.unlocked.has(id);
     });
     if (!ready) {
@@ -6203,6 +6488,7 @@ body.layout-editor-on .endX-marker {
       state.chopProgress = 0;
       state.combo = 0;
       state.cookProgress = 0;
+      state.cookPieceIndex = 0;
       state.fryReady = false;
       state.cookPreheated = false;
       state.cookFoodPlaced = false;
@@ -6211,6 +6497,9 @@ body.layout-editor-on .endX-marker {
       state.cookDragType = null;
       state.cookDragPointerId = null;
       state.cookTimingResults = [];
+      state.cookEggCrackProgress = 0;
+      state.cookEggLidReady = false;
+      state.cookEggLidClosed = false;
       state.suppressCookClick = false;
       resetCookTimingUI('grill');
       resetCookTimingUI('fry');
@@ -6247,6 +6536,11 @@ body.layout-editor-on .endX-marker {
     state.prepTrayRollDistance = 0;
     state.prepTrayRollAngle = 0;
     state.prepTrayInsideMaterial = false;
+    state.prepMarinatePieces = [];
+    state.prepMarinateActiveIndex = -1;
+    state.prepMarinateRenderKey = '';
+    state.prepMarinateTrailLastAt = 0;
+    state.prepMarinateMotion = 0;
     state.prepEggContacting = false;
     state.prepEggHadContact = false;
     state.prepEggRippleDistance = 0;
@@ -6263,6 +6557,7 @@ body.layout-editor-on .endX-marker {
     state.chopProgress = 0;
     state.combo = 0;
     state.cookProgress = 0;
+    state.cookPieceIndex = 0;
     state.fryReady = false;
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
@@ -6271,6 +6566,9 @@ body.layout-editor-on .endX-marker {
     state.cookDragType = null;
     state.cookDragPointerId = null;
     state.cookTimingResults = [];
+    state.cookEggCrackProgress = 0;
+    state.cookEggLidReady = false;
+    state.cookEggLidClosed = false;
     state.suppressCookClick = false;
     resetCookTimingUI('grill');
     resetCookTimingUI('fry');
@@ -6311,9 +6609,19 @@ body.layout-editor-on .endX-marker {
   }
 
   function getPrepMaxProgress(config) {
+    if (isMarinatePrepConfig(config)) return 1;
     if (isMultiBallShapeConfig(config) || isPortionBallShapeConfig(config)) return getShapeBallCount(config);
     const steps = config && Array.isArray(config.steps) ? config.steps : [];
     return Math.max(0, steps.length - 1);
+  }
+
+  function isMarinatePrepConfig(config) {
+    return !!(
+      config
+      && config.marinatePrep
+      && Array.isArray(config.marinatePieces)
+      && config.marinatePieces.length
+    );
   }
 
   function isMultiBallShapeConfig(config) {
@@ -6400,6 +6708,7 @@ body.layout-editor-on .endX-marker {
     document.body.dataset.prepKind = config.kind || '';
     updateShapePrepGuide(config, safeProgress, maxProgress);
     renderShapeBallGame(config, safeProgress);
+    renderMarinateGame(config, safeProgress);
     setPrepVisual(els.prepArtMain, step);
     renderPrepBreadingGame(config, safeProgress);
     if (config.dragPrep) syncKneadCanvas(config, safeProgress, animate);
@@ -6562,6 +6871,168 @@ body.layout-editor-on .endX-marker {
     });
   }
 
+  function getMarinateRenderKey(config) {
+    if (!isMarinatePrepConfig(config)) return '';
+    return config.marinatePieces.map(function (piece) {
+      return (piece.stages || []).join(',');
+    }).join('|');
+  }
+
+  function ensureMarinatePieceStates(config) {
+    if (!isMarinatePrepConfig(config)) return [];
+    const renderKey = getMarinateRenderKey(config);
+    if (state.prepMarinateRenderKey === renderKey && state.prepMarinatePieces.length === config.marinatePieces.length) {
+      return state.prepMarinatePieces;
+    }
+    state.prepMarinateRenderKey = renderKey;
+    state.prepMarinatePieces = config.marinatePieces.map(function (piece, index) {
+      return {
+        x: Number.isFinite(piece.x) ? piece.x : 50,
+        y: Number.isFinite(piece.y) ? piece.y : 50,
+        size: Number.isFinite(piece.size) ? piece.size : 16,
+        rot: Number.isFinite(piece.rot) ? piece.rot : ((index % 2 ? 6 : -6)),
+        progress: 0,
+      };
+    });
+    return state.prepMarinatePieces;
+  }
+
+  function renderMarinateGame(config, progress) {
+    if (!els.prepMarinateGame) return;
+    if (!isMarinatePrepConfig(config)) {
+      els.prepMarinateGame.innerHTML = '';
+      els.prepMarinateGame.dataset.renderKey = '';
+      els.prepMarinateGame.setAttribute('aria-hidden', 'true');
+      if (els.prepStage) delete els.prepStage.dataset.marinateMode;
+      return;
+    }
+
+    const pieces = config.marinatePieces || [];
+    const states = ensureMarinatePieceStates(config);
+    const renderKey = getMarinateRenderKey(config);
+    if (els.prepMarinateGame.dataset.renderKey !== renderKey) {
+      let html = '<div class="marinate-bowl"><div class="marinate-sauce"></div>';
+      pieces.forEach(function (piece, index) {
+        const stages = piece.stages || [];
+        html += '<div class="marinate-piece" data-piece-index="' + index + '">'
+          + '<img class="stage-plain" src="' + (stages[0] || '') + '" alt="" draggable="false">'
+          + '<img class="stage-light" src="' + (stages[1] || stages[0] || '') + '" alt="" draggable="false">'
+          + '<img class="stage-marinated" src="' + (stages[2] || stages[1] || stages[0] || '') + '" alt="" draggable="false">'
+          + '</div>';
+      });
+      html += '</div>';
+      els.prepMarinateGame.innerHTML = html;
+      els.prepMarinateGame.dataset.renderKey = renderKey;
+    }
+
+    if (els.prepStage) els.prepStage.dataset.marinateMode = 'true';
+    els.prepMarinateGame.setAttribute('aria-hidden', 'true');
+    const bowl = getMarinateBowlElement();
+    if (bowl) {
+      bowl.style.setProperty('--marinate-motion', Math.max(0, Math.min(1, state.prepMarinateMotion || 0)).toFixed(3));
+    }
+    const nodes = els.prepMarinateGame.querySelectorAll('.marinate-piece');
+    nodes.forEach(function (node, index) {
+      const st = states[index] || {};
+      const p = Math.max(0, Math.min(1, st.progress || progress || 0));
+      const light = Math.max(0, Math.min(1, p * 2.2));
+      const marinated = Math.max(0, Math.min(1, (p - 0.42) / 0.58));
+      node.classList.toggle('is-active', index === state.prepMarinateActiveIndex);
+      node.style.setProperty('--piece-x', (Number.isFinite(st.x) ? st.x : 50).toFixed(2) + '%');
+      node.style.setProperty('--piece-y', (Number.isFinite(st.y) ? st.y : 50).toFixed(2) + '%');
+      node.style.setProperty('--piece-size', (Number.isFinite(st.size) ? st.size : 16).toFixed(2) + '%');
+      node.style.setProperty('--piece-rot', (Number.isFinite(st.rot) ? st.rot : 0).toFixed(2) + 'deg');
+      node.style.setProperty('--piece-light', light.toFixed(3));
+      node.style.setProperty('--piece-marinated', marinated.toFixed(3));
+    });
+  }
+
+  function getMarinateBowlElement() {
+    return els.prepMarinateGame ? els.prepMarinateGame.querySelector('.marinate-bowl') : null;
+  }
+
+  function getActiveMarinatePrepConfig() {
+    if (state.currentScreen !== 'prep') return null;
+    const action = getCurrentAction();
+    if (!action || action.type !== 'prep') return null;
+    const config = getPrepConfig(action, state.current);
+    return isMarinatePrepConfig(config) ? config : null;
+  }
+
+  function getPointerInMarinateBowl(evt) {
+    const bowl = getMarinateBowlElement();
+    if (!evt || !bowl) return null;
+    const rect = bowl.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      rect: rect,
+      x: ((evt.clientX - rect.left) / rect.width) * 100,
+      y: ((evt.clientY - rect.top) / rect.height) * 100,
+    };
+  }
+
+  function findMarinatePieceIndex(evt, config) {
+    const info = getPointerInMarinateBowl(evt);
+    if (!info) return -1;
+    const states = ensureMarinatePieceStates(config);
+    let bestIndex = -1;
+    let bestDistance = Infinity;
+    states.forEach(function (st, index) {
+      const dx = info.x - st.x;
+      const dy = info.y - st.y;
+      const distance = Math.hypot(dx, dy);
+      const hit = Math.max(8, (st.size || 16) * 0.68);
+      if (distance <= hit && distance < bestDistance) {
+        bestIndex = index;
+        bestDistance = distance;
+      }
+    });
+    if (bestIndex >= 0) return bestIndex;
+    states.forEach(function (st, index) {
+      const distance = Math.hypot(info.x - st.x, info.y - st.y);
+      if (distance < bestDistance) {
+        bestIndex = index;
+        bestDistance = distance;
+      }
+    });
+    return bestDistance <= 26 ? bestIndex : -1;
+  }
+
+  function clampMarinatePoint(x, y) {
+    return {
+      x: Math.max(18, Math.min(82, x)),
+      y: Math.max(25, Math.min(76, y)),
+    };
+  }
+
+  function updateMarinateProgressFromPieces(config) {
+    const states = ensureMarinatePieceStates(config);
+    const total = states.reduce(function (sum, st) { return sum + Math.max(0, Math.min(1, st.progress || 0)); }, 0);
+    state.prepProgress = states.length ? Math.min(1, total / states.length) : 0;
+    if (els.prepProgress) els.prepProgress.style.width = (state.prepProgress * 100) + '%';
+    if (els.prepProgressCap) {
+      els.prepProgressCap.textContent = state.prepProgress >= 0.98 ? 'したあじ OK！' : 'ひとつずつ ぐるぐる！';
+    }
+    renderMarinateGame(config, state.prepProgress);
+  }
+
+  function spawnMarinateSauceDot(info, force) {
+    const bowl = getMarinateBowlElement();
+    if (!bowl || !info) return;
+    const now = Date.now();
+    if (now - (state.prepMarinateTrailLastAt || 0) < (isPrepReducedEffects() ? 110 : 58)) return;
+    state.prepMarinateTrailLastAt = now;
+    const dot = document.createElement('i');
+    dot.className = 'marinate-sauce-dot';
+    dot.style.setProperty('--dot-x', Math.max(12, Math.min(88, info.x)) + '%');
+    dot.style.setProperty('--dot-y', Math.max(18, Math.min(82, info.y)) + '%');
+    dot.style.setProperty('--dot-size', (12 + Math.random() * 14 + Math.max(0, force || 0) * 9).toFixed(1) + 'px');
+    dot.style.setProperty('--dot-dx', ((Math.random() - 0.5) * 28).toFixed(1) + 'px');
+    dot.style.setProperty('--dot-dy', ((Math.random() - 0.5) * 18).toFixed(1) + 'px');
+    bowl.appendChild(dot);
+    setTimeout(function () { dot.remove(); }, 900);
+  }
+
   function preloadPrepImage(src) {
     if (!src || prepImagePreloadCache[src]) return;
     const img = new Image();
@@ -6588,6 +7059,11 @@ body.layout-editor-on .endX-marker {
       preloadPrepImage(config.portionSource && config.portionSource.src);
       preloadPrepImage(config.portionPlateSrc);
       config.ballRoughImages.forEach(preloadPrepImage);
+    }
+    if (isMarinatePrepConfig(config)) {
+      config.marinatePieces.forEach(function (piece) {
+        if (Array.isArray(piece.stages)) piece.stages.forEach(preloadPrepImage);
+      });
     }
     if (Array.isArray(config.stepFrames)) {
       config.stepFrames.forEach(function (frames) {
@@ -9046,7 +9522,98 @@ body.layout-editor-on .endX-marker {
     snapPrepFoodToRest(config);
   }
 
+  function beginMarinatePrepDrag(evt, config) {
+    if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
+    const info = getPointerInMarinateBowl(evt);
+    if (!info || info.x < 9 || info.x > 91 || info.y < 15 || info.y > 86) {
+      setSpeech('ボウルの なかで とりにくを ぐるぐるしよう！', 'prep');
+      return;
+    }
+    const index = findMarinatePieceIndex(evt, config);
+    if (index < 0) {
+      setSpeech('とりにくを つかんで まぜよう！', 'prep');
+      return;
+    }
+    evt.preventDefault();
+    state.prepDragging = true;
+    state.prepDragMode = 'marinate';
+    state.prepDragPointerId = evt.pointerId;
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+    state.prepMarinateActiveIndex = index;
+    state.suppressPrepClick = false;
+    if (els.prepStage) {
+      els.prepStage.classList.add('is-dragging');
+      els.prepStage.classList.add('is-working');
+      try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
+    }
+    renderMarinateGame(config, state.prepProgress || 0);
+    setSpeech('そのまま ぐるぐる からめよう！', 'prep');
+  }
+
+  function moveMarinatePrepDrag(evt, config) {
+    if (!state.prepDragging || state.prepDragMode !== 'marinate' || evt.pointerId !== state.prepDragPointerId || !config) return;
+    const info = getPointerInMarinateBowl(evt);
+    if (!info) return;
+    evt.preventDefault();
+    const states = ensureMarinatePieceStates(config);
+    const index = Math.max(0, Math.min(states.length - 1, state.prepMarinateActiveIndex));
+    const piece = states[index];
+    if (!piece) return;
+    const dx = evt.clientX - state.prepDragLastX;
+    const dy = evt.clientY - state.prepDragLastY;
+    const dist = Math.hypot(dx, dy);
+    const point = clampMarinatePoint(info.x, info.y);
+    piece.x = point.x;
+    piece.y = point.y;
+    piece.rot = Math.max(-24, Math.min(24, (piece.rot || 0) + dx * 0.08 + dy * 0.025));
+    if (dist > 1) {
+      state.suppressPrepClick = true;
+      const force = Math.max(0.16, Math.min(1, dist / 46));
+      piece.progress = Math.min(1, (piece.progress || 0) + force * 0.07);
+      states.forEach(function (other, otherIndex) {
+        if (otherIndex === index) return;
+        const near = Math.hypot((other.x || 50) - point.x, (other.y || 50) - point.y);
+        if (near < 18) other.progress = Math.min(1, (other.progress || 0) + force * 0.018);
+      });
+      state.prepMarinateMotion = Math.max(0.18, Math.min(1, force));
+      const bowl = getMarinateBowlElement();
+      if (bowl) {
+        bowl.style.setProperty('--marinate-wake-x', point.x.toFixed(2) + '%');
+        bowl.style.setProperty('--marinate-wake-y', point.y.toFixed(2) + '%');
+      }
+      spawnMarinateSauceDot(point, force);
+      updateMarinateProgressFromPieces(config);
+      if ((state.prepProgress || 0) >= 0.985) {
+        states.forEach(function (st) { st.progress = 1; });
+        finishDragPrep(state.current, config);
+      }
+    }
+    state.prepDragLastX = evt.clientX;
+    state.prepDragLastY = evt.clientY;
+  }
+
+  function endMarinatePrepDrag(evt, config) {
+    if (!state.prepDragging || state.prepDragMode !== 'marinate' || evt.pointerId !== state.prepDragPointerId) return;
+    state.prepDragging = false;
+    state.prepDragMode = '';
+    state.prepDragPointerId = null;
+    state.prepMarinateActiveIndex = -1;
+    state.prepMarinateMotion = 0;
+    if (els.prepStage) {
+      els.prepStage.classList.remove('is-dragging');
+      els.prepStage.classList.remove('is-working');
+      try { els.prepStage.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+    if (config) renderMarinateGame(config, state.prepProgress || 0);
+  }
+
   function onPrepPointerDown(evt) {
+    const marinateConfig = getActiveMarinatePrepConfig();
+    if (marinateConfig) {
+      beginMarinatePrepDrag(evt, marinateConfig);
+      return;
+    }
     const trayConfig = getActiveTrayPrepConfig();
     if (trayConfig) {
       if (canStartPrepPankoSprinkle(evt, trayConfig)) {
@@ -9085,6 +9652,10 @@ body.layout-editor-on .endX-marker {
   }
 
   function onPrepPointerMove(evt) {
+    if (state.prepDragMode === 'marinate') {
+      moveMarinatePrepDrag(evt, getActiveMarinatePrepConfig());
+      return;
+    }
     if (state.prepDragMode === 'tray') {
       moveTrayPrepDrag(evt, getActiveTrayPrepConfig());
       return;
@@ -9132,6 +9703,10 @@ body.layout-editor-on .endX-marker {
   }
 
   function onPrepPointerUp(evt) {
+    if (state.prepDragMode === 'marinate') {
+      endMarinatePrepDrag(evt, getActiveMarinatePrepConfig());
+      return;
+    }
     if (state.prepDragMode === 'tray') {
       endTrayPrepDrag(evt, getActiveTrayPrepConfig());
       return;
@@ -9173,6 +9748,33 @@ body.layout-editor-on .endX-marker {
     if (isTrayPrepConfig(config)) {
       advanceTrayPrepCoating(config, Math.max(80, ((els.prepStage && els.prepStage.getBoundingClientRect().width) || 720) * 0.12), null, true);
       if (!state.prepAnimating) setSpeech('ドラッグで ころころ ころがそう！', 'prep');
+      return;
+    }
+
+    if (isMarinatePrepConfig(config)) {
+      const states = ensureMarinatePieceStates(config);
+      const target = states.reduce(function (best, st, index) {
+        if (!best || (st.progress || 0) < (best.progress || 0)) return { index: index, progress: st.progress || 0 };
+        return best;
+      }, null);
+      const idx = target ? target.index : 0;
+      if (states[idx]) {
+        states[idx].progress = Math.min(1, (states[idx].progress || 0) + (evt && evt.keyboard ? 0.34 : 0.12));
+        state.prepMarinateActiveIndex = idx;
+        state.prepMarinateMotion = 0.42;
+        updateMarinateProgressFromPieces(config);
+        showPrepBurst('とろっ！');
+        setSpeech('ドラッグすると もっと からむよ！', 'prep');
+        state.pendingTimers.push(setTimeout(function () {
+          state.prepMarinateActiveIndex = -1;
+          state.prepMarinateMotion = 0;
+          renderMarinateGame(config, state.prepProgress || 0);
+        }, 220));
+      }
+      if ((state.prepProgress || 0) >= 0.985) {
+        states.forEach(function (st) { st.progress = 1; });
+        finishDragPrep(ing, config);
+      }
       return;
     }
 
@@ -9244,6 +9846,9 @@ body.layout-editor-on .endX-marker {
     state.cookDragType = null;
     state.cookDragPointerId = null;
     state.cookTimingResults = [];
+    state.cookEggCrackProgress = 0;
+    state.cookEggLidReady = false;
+    state.cookEggLidClosed = false;
     state.suppressCookClick = false;
     resetCookTimingUI(action.type);
     resetCookDrag(action.type);
@@ -9252,8 +9857,8 @@ body.layout-editor-on .endX-marker {
     updateCookStageState(action.type);
     const label = action.label || (action.type === 'fry' ? 'まず あぶらを あたためよう' : 'まず フライパンを あたためよう');
     if (action.type === 'grill') {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = label;
-      setSpeech(ing.name + 'は おさらで じゅんび！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = isEggGrillAction(ing, action) ? 'たまごを コンコンしよう' : label;
+      setSpeech(isEggGrillAction(ing, action) ? 'たまごを フライパンの まえで わってみよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
       startCookPreheat(ing, action, 'grill');
     } else {
@@ -9275,8 +9880,15 @@ body.layout-editor-on .endX-marker {
         setSpeech('あぶらが あったまったよ！ おさらから ドラッグして いれよう！', 'fry');
       } else {
         startKitchenAmbient('stove');
-        if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから ドラッグして フライパンへ';
-        setSpeech('フライパンが あったまったよ！ おさらから ドラッグして のせよう！', 'grill');
+        if (isEggGrillAction(ing, action)) {
+          if (els.grillActionLabel) {
+            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'フライパンへ ぽとん' : 'たまごを コンコンしよう';
+          }
+          setSpeech(state.cookEggCrackProgress > 0 ? 'フライパンが あったまったよ！ タップして たまごを いれよう！' : 'フライパンが あったまったよ！ たまごを コンコンしよう！', 'grill');
+        } else {
+          if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから ドラッグして フライパンへ';
+          setSpeech('フライパンが あったまったよ！ おさらから ドラッグして のせよう！', 'grill');
+        }
       }
     }, 680));
   }
@@ -9378,6 +9990,10 @@ body.layout-editor-on .endX-marker {
     stageEl.classList.toggle('is-preheated', state.cookPreheated);
     stageEl.classList.toggle('food-placed', state.cookFoodPlaced);
     stageEl.classList.toggle('is-served', state.cookServed);
+    const eggGrill = type === 'grill' && isCurrentEggGrillAction();
+    stageEl.classList.toggle('egg-crack-mode', eggGrill && !state.cookFoodPlaced);
+    stageEl.classList.toggle('egg-crack-split', eggGrill && !state.cookFoodPlaced && state.cookEggCrackProgress > 0);
+    stageEl.classList.toggle('egg-lid-closed', eggGrill && state.cookEggLidClosed && !state.cookServed);
     if (state.current && state.current.id) {
       stageEl.dataset.ingredient = state.current.id;
     } else {
@@ -9427,13 +10043,18 @@ body.layout-editor-on .endX-marker {
 
     const foodY = ((toolRect.top + toolRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
     const heatY = ((toolRect.top + toolRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
+    const lidY = ((toolRect.top + toolRect.height * 0.35 - stageRect.top) / stageRect.height) * 100;
+    const lidW = (toolRect.width * 0.82 / stageRect.width) * 100;
     stage.style.setProperty('--grill-food-x', pctString(cx));
     stage.style.setProperty('--grill-food-y', pctString(foodY));
     stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
+    stage.style.setProperty('--grill-lid-x', pctString(cx));
+    stage.style.setProperty('--grill-lid-y', pctString(lidY));
+    stage.style.setProperty('--grill-lid-w', pctString(lidW));
     stage.style.setProperty('--cook-heat-x', pctString(cx));
     stage.style.setProperty('--cook-heat-y', pctString(heatY));
     stage.style.setProperty('--cook-cue-x', pctString(cx));
-    stage.style.setProperty('--cook-cue-y', pctString(foodY - 15));
+    stage.style.setProperty('--cook-cue-y', pctString(foodY - (isCurrentEggGrillAction() ? 28 : 15)));
   }
 
   function attachCookLayoutObserver() {
@@ -9545,6 +10166,10 @@ body.layout-editor-on .endX-marker {
 
   function nudgeCookDrag(type) {
     const name = state.current ? state.current.name : 'ざいりょう';
+    if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
+      setSpeech(state.cookEggCrackProgress > 0 ? 'タップして フライパンへ ぽとん！' : 'タップして たまごを コンコンしよう！', 'grill');
+      return;
+    }
     if (type === 'fry') {
       setSpeech(name + 'を おさらから あぶらへ ドラッグしてね！', 'fry');
     } else {
@@ -9561,6 +10186,7 @@ body.layout-editor-on .endX-marker {
   function onCookFoodPointerDown(evt, type) {
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== type || state.cookFoodPlaced || state.cookServed) return;
+    if (type === 'grill' && isCurrentEggGrillAction()) return;
     evt.preventDefault();
     evt.stopPropagation();
     state.suppressCookClick = true;
@@ -9603,6 +10229,25 @@ body.layout-editor-on .endX-marker {
     nudgeCookDrag(type);
   }
 
+  function getCookPieceCount(action) {
+    return Math.max(1, Math.floor((action && action.pieces) || 1));
+  }
+
+  function isMultiPieceCookAction(action) {
+    return getCookPieceCount(action) > 1;
+  }
+
+  function getCookPieceText(action) {
+    if (!isMultiPieceCookAction(action)) return '';
+    return (state.cookPieceIndex + 1) + 'こめ / ' + getCookPieceCount(action) + 'こ';
+  }
+
+  function getCookStageFilter(ing, action, stage) {
+    const cfg = getCookImageConfig(ing, action);
+    if (!cfg || !Array.isArray(cfg.stageFilters)) return '';
+    return cfg.stageFilters[Math.max(0, Math.min(cfg.stageFilters.length - 1, stage || 0))] || '';
+  }
+
   function updateCookView(type, stage, animate) {
     const ing = state.current;
     const action = getCurrentAction();
@@ -9619,8 +10264,11 @@ body.layout-editor-on .endX-marker {
     fallback.classList.remove('show');
     img.style.display = '';
     img.alt = ing ? ing.name : '';
+    img.style.filter = getCookStageFilter(ing, action, safeStage) || '';
 
-    const primarySrc = getCookStageSrc(ing, action, safeStage);
+    const primarySrc = isEggGrillAction(ing, action) && !state.cookFoodPlaced
+      ? EGG_CRACK_WHOLE_SRC
+      : getCookStageSrc(ing, action, safeStage);
     const fallbackSrc = getCookFallbackSrc(ing, action);
     img.onerror = function () {
       img.onerror = function () {
@@ -9645,6 +10293,7 @@ body.layout-editor-on .endX-marker {
 
     updateCookDots(type, safeStage);
     if (animate) {
+      if (animate === 'drop') wrap.classList.add('drop');
       if (type !== 'fry' && (animate === true || animate === 'flip')) wrap.classList.add('flip');
       showCookBurst(type);
     }
@@ -9699,6 +10348,10 @@ body.layout-editor-on .endX-marker {
 
   function cookTimingActionText(type) {
     if (type === 'fry') return 'とりだそう';
+    if (isCurrentEggGrillAction()) return 'おさらへ あげよう';
+    if (type === 'grill' && isMultiPieceCookAction(getCurrentAction())) {
+      return state.cookProgress >= 1 ? 'おさらへ あげよう' : 'ころがそう';
+    }
     return state.cookProgress >= 1 ? 'おさらへ あげよう' : 'ひっくり返そう';
   }
 
@@ -9889,6 +10542,9 @@ body.layout-editor-on .endX-marker {
 
   function cookTimingSpeech(zone, type, finished) {
     if (finished) return zone === 'good' ? 'ばっちり！ できあがり！' : 'いいかんじ！ できあがり！';
+    if (type === 'grill' && isCurrentEggGrillAction()) {
+      return zone === 'good' ? 'ばっちり！ ふっくら やけたよ！' : 'だいじょうぶ！ おいしく やけたよ！';
+    }
     if (zone === 'good') return type === 'fry' ? 'ばっちり！ いいタイミング！' : 'ばっちり！ うらがえったよ！';
     return type === 'fry' ? 'だいじょうぶ！ おいしく あがったよ！' : 'だいじょうぶ！ もういちど やこう！';
   }
@@ -9896,19 +10552,88 @@ body.layout-editor-on .endX-marker {
   function placeFoodForGrill() {
     const ing = state.current;
     const action = getCurrentAction();
+    const eggGrill = isEggGrillAction(ing, action);
     state.cookAnimating = true;
     state.cookFoodPlaced = true;
     state.cookServed = false;
+    state.cookEggLidReady = false;
+    state.cookEggLidClosed = false;
     resetCookTimingUI('grill');
+    updateCookView('grill', 0, eggGrill ? 'drop' : false);
     updateCookStageState('grill');
+    if (els.grillBurst) els.grillBurst.textContent = eggGrill ? 'ぽとん！' : 'ジュッ！';
     showCookBurst('grill');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで うらがえそう';
-    setSpeech('ジュッ！ フライパンに のったよ！ あおで タップして うらがえそう！', 'grill');
+    if (eggGrill) {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして ふたを しめよう';
+      setSpeech('ぽとん！ たまごが フライパンに はいったよ！ ふたを しめよう！', 'grill');
+    } else if (isMultiPieceCookAction(action)) {
+      const pieceText = getCookPieceText(action);
+      if (els.grillActionLabel) els.grillActionLabel.textContent = pieceText + ' ゲージの あおで ころがそう';
+      setSpeech('ジュッ！ ' + pieceText + 'を フライパンで ころころ やこう！', 'grill');
+    } else {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで うらがえそう';
+      setSpeech('ジュッ！ フライパンに のったよ！ あおで タップして うらがえそう！', 'grill');
+    }
     state.pendingTimers.push(setTimeout(function () {
       if (state.current !== ing || getCurrentAction() !== action || !state.cookFoodPlaced) return;
       state.cookAnimating = false;
+      if (eggGrill) {
+        state.cookEggLidReady = true;
+        updateCookStageState('grill');
+      } else {
+        startCookTimingGauge('grill');
+      }
+    }, eggGrill ? 560 : 420));
+  }
+
+  function handleEggGrillBeforePlaced() {
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!isEggGrillAction(ing, action)) return false;
+    if (state.cookEggCrackProgress <= 0) {
+      state.cookAnimating = true;
+      state.cookEggCrackProgress = 1;
+      updateCookStageState('grill');
+      if (els.grillBurst) els.grillBurst.textContent = 'コンコン！';
+      showCookBurst('grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = state.cookPreheated ? 'フライパンへ ぽとん' : 'フライパンが あたたまるまで まとう';
+      setSpeech(state.cookPreheated ? 'からが われたよ！ タップして フライパンへ ぽとん！' : 'からが われたよ！ フライパンが あたたまるまで まってね！', 'grill');
+      state.pendingTimers.push(setTimeout(function () {
+        if (state.current !== ing || getCurrentAction() !== action || state.cookFoodPlaced) return;
+        state.cookAnimating = false;
+      }, 360));
+      return true;
+    }
+    if (!state.cookPreheated) {
+      setSpeech('フライパンが あったまるまで まってね！', 'grill');
+      return true;
+    }
+    placeFoodForGrill();
+    return true;
+  }
+
+  function closeEggLidForGrill() {
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!isEggGrillAction(ing, action) || !state.cookFoodPlaced || state.cookProgress !== 0) return false;
+    if (!state.cookEggLidReady) {
+      setSpeech('たまごが おちつくまで ちょっと まってね！', 'grill');
+      return true;
+    }
+    state.cookAnimating = true;
+    state.cookProgress = 1;
+    state.cookEggLidClosed = true;
+    if (els.grillBurst) els.grillBurst.textContent = 'ぱたん！';
+    updateCookView('grill', 1, 'burst');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたで むしやき中';
+    setSpeech('ふたを しめたよ！ ふっくら まとう！', 'grill');
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action || !state.cookFoodPlaced || state.cookServed) return;
+      state.cookAnimating = false;
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで おさらへ あげよう';
       startCookTimingGauge('grill');
-    }, 420));
+    }, 720));
+    return true;
   }
 
   function placeFoodForFry() {
@@ -9943,6 +10668,24 @@ body.layout-editor-on .endX-marker {
     }, 1450));
   }
 
+  function prepareNextGrillPiece(ing, action) {
+    const doneIndex = state.cookPieceIndex + 1;
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action) return;
+      state.cookPieceIndex = Math.min(getCookPieceCount(action) - 1, state.cookPieceIndex + 1);
+      state.cookProgress = 0;
+      state.cookFoodPlaced = false;
+      state.cookServed = false;
+      state.cookAnimating = false;
+      resetCookTimingUI('grill');
+      resetCookDrag('grill');
+      updateCookView('grill', 0, false);
+      updateCookStageState('grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = getCookPieceText(action) + 'を フライパンへ';
+      setSpeech(doneIndex + 'こ やけたよ！ つぎの ミートボールを フライパンへ！', 'grill');
+    }, 760));
+  }
+
   function onGrillTap(evt) {
     if (state.suppressCookClick) {
       state.suppressCookClick = false;
@@ -9952,6 +10695,10 @@ body.layout-editor-on .endX-marker {
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'grill') return;
+    if (isEggGrillAction(state.current, action) && !state.cookFoodPlaced) {
+      handleEggGrillBeforePlaced();
+      return;
+    }
     if (!state.cookPreheated) {
       setSpeech('フライパンが あったまるまで まってね！', 'grill');
       return;
@@ -9964,21 +10711,34 @@ body.layout-editor-on .endX-marker {
       placeFoodForGrill();
       return;
     }
+    if (closeEggLidForGrill()) return;
     const timingZone = recordCookTiming('grill');
     state.cookAnimating = true;
     state.cookProgress = Math.min(2, state.cookProgress + 1);
+    const hasNextPiece = isMultiPieceCookAction(action) && state.cookProgress >= 2 && state.cookPieceIndex < getCookPieceCount(action) - 1;
     if (state.cookProgress >= 2) {
       state.cookServed = true;
-      stopKitchenAmbient('stove', 320);
+      if (!hasNextPiece) stopKitchenAmbient('stove', 320);
     }
     updateCookView('grill', state.cookProgress, state.cookProgress === 1 ? 'flip' : 'burst');
     if (state.cookProgress < 2) {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで おさらへ あげよう';
+      if (els.grillActionLabel) {
+        els.grillActionLabel.textContent = isMultiPieceCookAction(action)
+          ? getCookPieceText(action) + ' ゲージの あおで おさらへ'
+          : 'ゲージの あおで おさらへ あげよう';
+      }
       setSpeech(cookTimingSpeech(timingZone, 'grill', false), 'grill');
       state.pendingTimers.push(setTimeout(function () {
         state.cookAnimating = false;
         startCookTimingGauge('grill');
       }, 520));
+      return;
+    }
+    if (hasNextPiece) {
+      const doneText = (state.cookPieceIndex + 1) + 'こめ やけたよ！';
+      if (els.grillActionLabel) els.grillActionLabel.textContent = doneText;
+      setSpeech(doneText + ' つぎも 1こずつ やこう！', 'grill');
+      prepareNextGrillPiece(state.current, action);
       return;
     }
     const stars = showCookTimingRating('grill');
@@ -11372,6 +12132,7 @@ body.layout-editor-on .endX-marker {
   function getNextActionSpeech(action) {
     if (!action) return 'つぎへ すすもう！';
     if (action.type === 'prep') {
+      if (action.prepKind === 'coat_chicken') return 'つぎは こなを まぶそう！';
       if (action.prepKind && action.prepKind.indexOf('shape_') === 0) return 'つぎは かたちを つくろう！';
       if (action.prepKind && action.prepKind.indexOf('bread_') === 0) return 'つぎは ころもを つけよう！';
       return 'つぎは したごしらえを しよう！';
@@ -11581,7 +12342,7 @@ body.layout-editor-on .endX-marker {
     els.recipesGrid.innerHTML = '';
     updateRecipesHeading();
     RECIPES.forEach(rec => {
-      const isUnlocked = state.unlockedRecipes.has(rec.id) || rec.needs.every(id => state.unlocked.has(id));
+      const isUnlocked = !!rec.startFromRaw || state.unlockedRecipes.has(rec.id) || rec.needs.every(id => state.unlocked.has(id));
       const card = document.createElement('div');
       card.className = 'recipe-card ' + (isUnlocked ? 'unlocked' : 'locked');
       card.dataset.recipeId = rec.id;
@@ -11671,10 +12432,16 @@ body.layout-editor-on .endX-marker {
     state.prepTrayBackProgress = 0;
     state.prepTrayRollDistance = 0;
     state.prepTrayRollAngle = 0;
+    state.prepMarinatePieces = [];
+    state.prepMarinateActiveIndex = -1;
+    state.prepMarinateRenderKey = '';
+    state.prepMarinateTrailLastAt = 0;
+    state.prepMarinateMotion = 0;
     state.prepFlourPressLastAt = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
     state.cookProgress = 0;
+    state.cookPieceIndex = 0;
     state.cookAnimating = false;
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
@@ -11683,6 +12450,9 @@ body.layout-editor-on .endX-marker {
     state.cookDragType = null;
     state.cookDragPointerId = null;
     state.cookTimingResults = [];
+    state.cookEggCrackProgress = 0;
+    state.cookEggLidReady = false;
+    state.cookEggLidClosed = false;
     state.suppressCookClick = false;
     state.fryReady = false;
     resetCookTimingUI();
@@ -11717,6 +12487,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.remove('is-dragging');
       els.prepStage.removeAttribute('data-prep-kind');
       els.prepStage.removeAttribute('data-shape-mode');
+      els.prepStage.removeAttribute('data-marinate-mode');
     }
     if (els.prepBurst) els.prepBurst.classList.remove('show');
     if (els.prepProgress) els.prepProgress.style.width = '0%';
@@ -11746,6 +12517,11 @@ body.layout-editor-on .endX-marker {
       els.shapeBallGame.dataset.renderKey = '';
       els.shapeBallGame.setAttribute('aria-hidden', 'true');
       els.shapeBallGame.classList.remove('is-portion', 'is-dragging');
+    }
+    if (els.prepMarinateGame) {
+      els.prepMarinateGame.innerHTML = '';
+      els.prepMarinateGame.dataset.renderKey = '';
+      els.prepMarinateGame.setAttribute('aria-hidden', 'true');
     }
     if (els.prepStage) {
       els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
