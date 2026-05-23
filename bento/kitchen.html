@@ -801,6 +801,92 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
     radial-gradient(circle at 62% 73%, rgba(167,220,124,0.18) 0 9%, rgba(109,174,94,0.78) 9.5% 11%, transparent 11.5%);
   box-shadow: 0 0 0 6px rgba(255,255,255,0.38), 0 8px 18px rgba(86, 133, 68, 0.14);
 }
+.shape-ball-game {
+  display: none;
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 13%;
+  bottom: 15%;
+  z-index: 6;
+  pointer-events: none;
+}
+.prep-workbench[data-shape-mode="multi-balls"] .shape-prep-guide {
+  display: none;
+}
+.prep-workbench[data-shape-mode="multi-balls"] .shape-ball-game {
+  display: block;
+}
+.prep-workbench[data-shape-mode="multi-balls"] .prep-art-main {
+  top: 49%;
+  width: min(76%, 680px);
+  height: 76%;
+}
+.shape-ball-slot {
+  position: absolute;
+  left: var(--ball-x, 50%);
+  top: var(--ball-y, 50%);
+  width: var(--ball-size, 21%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  --ball-hit: 0;
+  --rough-opacity: 1;
+  --round-opacity: 0;
+  --ball-scale: 0.92;
+}
+.shape-ball-target {
+  position: absolute;
+  inset: -7%;
+  border-radius: 999px;
+  border: 5px dashed rgba(109, 174, 94, 0.74);
+  background:
+    radial-gradient(circle at center, rgba(167, 220, 124, 0.14), transparent 68%),
+    rgba(255,255,255,0.1);
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.42), 0 8px 16px rgba(86, 133, 68, 0.14);
+  opacity: 0.54;
+  transform: scale(calc(1 + var(--ball-hit) * 0.08));
+  transition: transform 0.12s ease, opacity 0.12s ease, border-color 0.12s ease;
+}
+.shape-ball-slot.is-active .shape-ball-target {
+  opacity: 0.95;
+  border-color: rgba(93, 159, 76, 0.88);
+  animation: shapeBallTargetPulse 1s ease-in-out infinite;
+}
+.shape-ball-slot.is-done .shape-ball-target {
+  opacity: 0.22;
+  border-style: solid;
+}
+.shape-ball-piece {
+  position: absolute;
+  inset: 1%;
+  transform: scale(var(--ball-scale, 0.92)) rotate(var(--ball-rot, 0deg));
+  filter: drop-shadow(0 8px 10px rgba(90,45,26,0.16));
+  transition: transform 0.16s ease, filter 0.16s ease;
+}
+.shape-ball-slot.is-active .shape-ball-piece {
+  filter: drop-shadow(0 10px 12px rgba(90,45,26,0.22));
+}
+.shape-ball-piece img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.shape-ball-piece .rough {
+  opacity: var(--rough-opacity, 1);
+}
+.shape-ball-piece .round {
+  opacity: var(--round-opacity, 0);
+}
+@keyframes shapeBallTargetPulse {
+  0%, 100% { transform: scale(calc(1 + var(--ball-hit) * 0.08)); }
+  50% { transform: scale(calc(1.045 + var(--ball-hit) * 0.08)); }
+}
 .knead-canvas {
   display: none;
   position: absolute;
@@ -1225,13 +1311,13 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   display: none;
 }
 .prep-breading-game[data-topview="true"] .prep-breading-food[data-kind="bread_korokke"] {
-  width: var(--prep-food-w, 23%);
-  height: var(--prep-food-h, 21%);
+  width: var(--prep-food-w, 34.5%);
+  height: var(--prep-food-h, 31.5%);
   filter: drop-shadow(0 8px 9px rgba(84,55,28,0.18));
 }
 .prep-breading-game[data-topview="true"] .prep-breading-food[data-kind="bread_shrimp"] {
-  width: var(--prep-food-w, 22%);
-  height: var(--prep-food-h, 30%);
+  width: var(--prep-food-w, 33%);
+  height: var(--prep-food-h, 45%);
   filter: drop-shadow(0 8px 9px rgba(84,55,28,0.18));
 }
 .prep-breading-food.is-dragging {
@@ -3893,6 +3979,7 @@ body.layout-editor-on .endX-marker {
       <div class="prep-workbench" id="prep-stage" role="button" tabindex="0" aria-label="したごしらえ">
         <div class="prep-art-main" id="prep-art-main" aria-hidden="true"></div>
         <div class="shape-prep-guide" id="shape-prep-guide" aria-hidden="true"></div>
+        <div class="shape-ball-game" id="shape-ball-game" aria-hidden="true"></div>
         <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
         <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
           <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
@@ -4349,6 +4436,23 @@ body.layout-editor-on .endX-marker {
       },
     },
     {
+      id: 'meatball', name: 'ミートボール', emoji: '🟤', piece: '🟤',
+      chopCount: 1, implemented: true,
+      cookingActions: [
+        { type: 'grill', label: 'ころころ やこう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを こねよう' },
+        { type: 'prep', prepKind: 'shape_meatball', label: 'ちいさく まるめよう' },
+      ],
+      cookImages: {
+        grill: {
+          stages: ['meatball/meatball_001_raw', 'meatball/meatball_002_mid', 'meatball/meatball_003_done'],
+          fallback: '../assets/images/Bento_parts/meatball2.png',
+        },
+      },
+    },
+    {
       id: 'salmon', name: 'さけ', emoji: '🐟', piece: '🐟',
       chopCount: 1, implemented: true,
       cookingActions: [
@@ -4441,6 +4545,7 @@ body.layout-editor-on .endX-marker {
   const RECIPES = [
     { id: 'tamagoyaki',   name: 'たまごやき',        img: '../assets/images/Bento_parts/tamagoyaki2.png',   needs: ['egg'] },
     { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty'] },
+    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball'] },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'] },
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'] },
     { id: 'karaage',      name: 'からあげ',          img: '../assets/images/Bento_parts/karaage2.png',      needs: ['chicken_marinated'] },
@@ -4612,10 +4717,50 @@ body.layout-editor-on .endX-marker {
       shapeDistanceScale: 1.18,
       startSpeech: 'ちいさく わけて ころころ まるめよう！',
       completeSpeech: 'ミートボールの かたちが できたよ！',
+      multiBallShape: true,
+      ballTargets: [
+        { x: 50, y: 21, size: 20, rot: '-4deg' },
+        { x: 29, y: 43, size: 20, rot: '5deg' },
+        { x: 71, y: 43, size: 20, rot: '-2deg' },
+        { x: 39, y: 72, size: 20, rot: '2deg' },
+        { x: 61, y: 72, size: 20, rot: '-5deg' },
+      ],
+      ballRoughImages: [
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_01.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_02.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_03.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_04.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_rough_05.png',
+      ],
+      ballRoundImages: [
+        '../assets/images/bento/cooking/meatball/shape/meatball_round_01.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_round_02.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_round_03.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_round_04.png',
+        '../assets/images/bento/cooking/meatball/shape/meatball_round_05.png',
+      ],
       steps: [
-        { src: '../assets/images/bento/cooking/prep/shape/shape_meatball_001_mound.png', label: 'ひきにくを わけよう', caption: 'ころころ ドラッグ！', burst: 'ころころ！' },
-        { src: '../assets/images/bento/cooking/prep/shape/shape_meatball_002_dividing.png', label: 'ちいさく まるめよう', caption: 'まるく なってきたよ！', burst: 'ぽん！' },
-        { src: '../assets/images/bento/cooking/prep/shape/shape_meatball_003_balls.png', label: 'できあがり', caption: 'ミートボールが できたよ！', burst: 'できた！' },
+        {
+          src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_plate.png',
+          thumbSrc: '../assets/images/bento/cooking/prep/shape/shape_meatball_001_mound.png',
+          label: 'ひきにくを わけよう',
+          caption: 'みどりの まるで ころころ！',
+          burst: 'ころころ！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_plate.png',
+          thumbSrc: '../assets/images/bento/cooking/prep/shape/shape_meatball_002_dividing.png',
+          label: 'ちいさく まるめよう',
+          caption: 'つぎの まるも ころころ！',
+          burst: 'ぽん！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/shape/shape_hamburg_plate.png',
+          thumbSrc: '../assets/images/bento/cooking/prep/shape/shape_meatball_003_balls.png',
+          label: 'できあがり',
+          caption: 'ミートボールが できたよ！',
+          burst: 'できた！',
+        },
       ],
     },
     shape_menchi: {
@@ -5236,6 +5381,7 @@ body.layout-editor-on .endX-marker {
     prepStage:     document.getElementById('prep-stage'),
     prepArtMain:   document.getElementById('prep-art-main'),
     shapePrepGuide: document.getElementById('shape-prep-guide'),
+    shapeBallGame: document.getElementById('shape-ball-game'),
     kneadCanvas:   document.getElementById('knead-canvas'),
     prepBreadingGame: document.getElementById('prep-breading-game'),
     prepBreadingTrays: document.getElementById('prep-breading-trays'),
@@ -6028,8 +6174,61 @@ body.layout-editor-on .endX-marker {
   }
 
   function getPrepMaxProgress(config) {
+    if (isMultiBallShapeConfig(config)) return getShapeBallCount(config);
     const steps = config && Array.isArray(config.steps) ? config.steps : [];
     return Math.max(0, steps.length - 1);
+  }
+
+  function isMultiBallShapeConfig(config) {
+    return !!(
+      config
+      && config.shapePrep
+      && config.multiBallShape
+      && Array.isArray(config.ballTargets)
+      && config.ballTargets.length
+      && Array.isArray(config.ballRoughImages)
+      && config.ballRoughImages.length
+      && Array.isArray(config.ballRoundImages)
+      && config.ballRoundImages.length
+    );
+  }
+
+  function getShapeBallCount(config) {
+    if (!isMultiBallShapeConfig(config)) return 0;
+    return Math.max(0, Math.min(config.ballTargets.length, config.ballRoughImages.length, config.ballRoundImages.length));
+  }
+
+  function getShapeBallActiveIndex(config, progress) {
+    const count = getShapeBallCount(config);
+    if (!count) return -1;
+    const p = Math.max(0, Math.min(count - 0.001, progress || 0));
+    return Math.max(0, Math.min(count - 1, Math.floor(p)));
+  }
+
+  function getShapeBallLocalProgress(config, progress, index) {
+    const count = getShapeBallCount(config);
+    if (!count) return 0;
+    const p = Math.max(0, Math.min(count, progress || 0));
+    if (p >= count || index < Math.floor(p)) return 1;
+    if (index === Math.floor(p)) return Math.max(0, Math.min(1, p - index));
+    return 0;
+  }
+
+  function getPrepStepIndex(config, progress, maxProgress, steps) {
+    const len = steps && steps.length ? steps.length : 0;
+    if (!len) return 0;
+    if (isMultiBallShapeConfig(config) && maxProgress > 0) {
+      if ((progress || 0) >= maxProgress) return len - 1;
+      return Math.max(0, Math.min(len - 1, Math.floor(((progress || 0) / maxProgress) * Math.max(1, len - 1))));
+    }
+    return Math.max(0, Math.min(len - 1, Math.floor((progress || 0) + 0.001)));
+  }
+
+  function getPrepStepForProgress(config, progress) {
+    const steps = Array.isArray(config && config.steps) ? config.steps : [];
+    if (!steps.length) return {};
+    const maxProgress = getPrepMaxProgress(config);
+    return steps[getPrepStepIndex(config, progress, maxProgress, steps)] || steps[0] || {};
   }
 
   function updatePrepView(config, progress, animate) {
@@ -6037,7 +6236,7 @@ body.layout-editor-on .endX-marker {
     const steps = Array.isArray(config.steps) ? config.steps : [];
     const maxProgress = getPrepMaxProgress(config);
     const safeProgress = Math.max(0, Math.min(maxProgress, progress || 0));
-    const stepIndex = Math.max(0, Math.min(steps.length - 1, Math.floor(safeProgress + 0.001)));
+    const stepIndex = getPrepStepIndex(config, safeProgress, maxProgress, steps);
     const step = steps[stepIndex] || steps[0] || {};
     state.prepProgress = safeProgress;
     if (els.prepStage) {
@@ -6046,6 +6245,7 @@ body.layout-editor-on .endX-marker {
     }
     document.body.dataset.prepKind = config.kind || '';
     updateShapePrepGuide(config, safeProgress, maxProgress);
+    renderShapeBallGame(config, safeProgress);
     setPrepVisual(els.prepArtMain, step);
     renderPrepBreadingGame(config, safeProgress);
     if (config.dragPrep) syncKneadCanvas(config, safeProgress, animate);
@@ -6064,6 +6264,7 @@ body.layout-editor-on .endX-marker {
     const isShape = !!(config && config.shapePrep);
     const ratio = isShape && maxProgress ? Math.max(0, Math.min(1, (progress || 0) / maxProgress)) : 0;
     const isBallsShape = isShape && config.shapeType === 'balls';
+    const isMultiBalls = isMultiBallShapeConfig(config);
     const ease = 1 - Math.pow(1 - ratio, 2);
     if (els.shapePrepGuide) {
       els.shapePrepGuide.dataset.shapeType = isShape ? (config.shapeType || 'patty') : '';
@@ -6079,8 +6280,13 @@ body.layout-editor-on .endX-marker {
       }
     }
     if (els.prepStage) {
+      if (isMultiBalls) {
+        els.prepStage.dataset.shapeMode = 'multi-balls';
+      } else {
+        delete els.prepStage.dataset.shapeMode;
+      }
       els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
-      if (isShape && !isBallsShape) {
+      if (isShape && !isBallsShape && !isMultiBalls) {
         els.prepStage.style.setProperty('--shape-meat-scale-x', (0.72 + ease * 0.36).toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', (1.22 - ease * 0.28).toFixed(3));
       } else {
@@ -6088,6 +6294,56 @@ body.layout-editor-on .endX-marker {
         els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
       }
     }
+  }
+
+  function renderShapeBallGame(config, progress) {
+    if (!els.shapeBallGame) return;
+    if (!isMultiBallShapeConfig(config)) {
+      els.shapeBallGame.innerHTML = '';
+      els.shapeBallGame.dataset.renderKey = '';
+      els.shapeBallGame.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    const count = getShapeBallCount(config);
+    const targets = config.ballTargets || [];
+    const roughImages = config.ballRoughImages || [];
+    const roundImages = config.ballRoundImages || [];
+    const renderKey = count + '|' + roughImages.slice(0, count).join('|') + '|' + roundImages.slice(0, count).join('|');
+    if (els.shapeBallGame.dataset.renderKey !== renderKey) {
+      let html = '';
+      for (let i = 0; i < count; i += 1) {
+        const target = targets[i] || {};
+        const x = Number.isFinite(target.x) ? target.x : 50;
+        const y = Number.isFinite(target.y) ? target.y : 50;
+        const size = Number.isFinite(target.size) ? target.size : 21;
+        const rot = target.rot || '0deg';
+        html += '<div class="shape-ball-slot" data-ball-index="' + i + '" style="--ball-x:' + x + '%;--ball-y:' + y + '%;--ball-size:' + size + '%;--ball-rot:' + rot + ';">'
+          + '<div class="shape-ball-target"></div>'
+          + '<div class="shape-ball-piece">'
+          + '<img class="rough" src="' + roughImages[i] + '" alt="" draggable="false">'
+          + '<img class="round" src="' + roundImages[i] + '" alt="" draggable="false">'
+          + '</div>'
+          + '</div>';
+      }
+      els.shapeBallGame.innerHTML = html;
+      els.shapeBallGame.dataset.renderKey = renderKey;
+    }
+
+    els.shapeBallGame.setAttribute('aria-hidden', 'true');
+    const activeIndex = getShapeBallActiveIndex(config, progress);
+    const slots = els.shapeBallGame.querySelectorAll('.shape-ball-slot');
+    slots.forEach(function (slot, index) {
+      const local = getShapeBallLocalProgress(config, progress, index);
+      const done = local >= 0.999;
+      slot.classList.toggle('is-active', index === activeIndex && !done);
+      slot.classList.toggle('is-done', done);
+      slot.style.setProperty('--ball-progress', local.toFixed(3));
+      slot.style.setProperty('--rough-opacity', (1 - local).toFixed(3));
+      slot.style.setProperty('--round-opacity', local.toFixed(3));
+      slot.style.setProperty('--ball-scale', (0.86 + local * 0.16).toFixed(3));
+      if (index !== activeIndex) slot.style.setProperty('--ball-hit', '0');
+    });
   }
 
   function preloadPrepImage(src) {
@@ -6107,6 +6363,10 @@ body.layout-editor-on .endX-marker {
         preloadPrepImage(step.shapeMeatSrc);
         preloadPrepImage(step.thumbSrc);
       });
+    }
+    if (isMultiBallShapeConfig(config)) {
+      config.ballRoughImages.forEach(preloadPrepImage);
+      config.ballRoundImages.forEach(preloadPrepImage);
     }
     if (Array.isArray(config.stepFrames)) {
       config.stepFrames.forEach(function (frames) {
@@ -6807,7 +7067,7 @@ body.layout-editor-on .endX-marker {
       ? 0
       : (isTrayPrepConfig(config)
         ? Math.max(0, Math.min(laneSteps.length - 1, Math.floor((progress || 0) + 0.001)))
-        : Math.round((Math.max(0, progress || 0) / Math.max(1, maxProgress)) * (laneSteps.length - 1)));
+        : getPrepStepIndex(config, Math.max(0, progress || 0), maxProgress, laneSteps));
     els.prepStepLane.innerHTML = '';
     laneSteps.forEach(function (laneStep, idx) {
       const card = document.createElement('div');
@@ -7396,6 +7656,11 @@ body.layout-editor-on .endX-marker {
   }
 
   function updateShapePointerFeedback(evt, strength) {
+    const config = getActiveShapePrepConfig();
+    if (isMultiBallShapeConfig(config)) {
+      updateShapeBallPointerFeedback(evt, config, strength);
+      return;
+    }
     if (!els.shapePrepGuide || !evt) return;
     const rect = els.shapePrepGuide.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -7408,7 +7673,17 @@ body.layout-editor-on .endX-marker {
     els.shapePrepGuide.style.setProperty('--shape-hit-scale', (0.55 + hit * 0.55).toFixed(3));
   }
 
+  function updateShapeBallPointerFeedback(evt, config, strength) {
+    if (!els.shapeBallGame || !evt || !isMultiBallShapeConfig(config)) return;
+    const activeIndex = getShapeBallActiveIndex(config, state.prepProgress || 0);
+    const slot = els.shapeBallGame.querySelector('.shape-ball-slot[data-ball-index="' + activeIndex + '"]');
+    if (!slot) return;
+    const hit = Math.max(0, Math.min(1, strength || 0));
+    slot.style.setProperty('--ball-hit', hit.toFixed(2));
+  }
+
   function pointIsInsideShapePrep(evt, config) {
+    if (isMultiBallShapeConfig(config)) return pointIsInsideShapeBall(evt, config);
     if (!evt || !els.shapePrepGuide) return false;
     const rect = els.shapePrepGuide.getBoundingClientRect();
     if (!rect.width || !rect.height) return false;
@@ -7421,8 +7696,31 @@ body.layout-editor-on .endX-marker {
     return x * x + y * y <= tolerance;
   }
 
+  function pointIsInsideShapeBall(evt, config) {
+    if (!evt || !els.shapeBallGame || !isMultiBallShapeConfig(config)) return false;
+    const rect = els.shapeBallGame.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const activeIndex = getShapeBallActiveIndex(config, state.prepProgress || 0);
+    const target = config.ballTargets[activeIndex] || null;
+    if (!target) return false;
+    const x = ((evt.clientX - rect.left) / rect.width) * 100;
+    const y = ((evt.clientY - rect.top) / rect.height) * 100;
+    const dx = x - (Number.isFinite(target.x) ? target.x : 50);
+    const dy = y - (Number.isFinite(target.y) ? target.y : 50);
+    const coarsePointer = evt.pointerType === 'touch' || evt.pointerType === 'pen';
+    const radius = Math.max(10, (target.hitSize || target.size || 21) * (coarsePointer ? 0.78 : 0.62));
+    return dx * dx + dy * dy <= radius * radius;
+  }
+
   function beginShapePrepDrag(evt, config) {
     if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
+    if (isMultiBallShapeConfig(config) && !pointIsInsideShapePrep(evt, config)) {
+      evt.preventDefault();
+      state.suppressPrepClick = true;
+      updateShapePointerFeedback(evt, 0.14);
+      setSpeech('みどりの まるのうえで ころころしよう！', 'prep');
+      return;
+    }
     evt.preventDefault();
     state.prepDragging = true;
     state.prepDragMode = 'shape';
@@ -7436,7 +7734,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.add('is-working');
       try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
     }
-    const step = (config.steps && config.steps[Math.floor(state.prepProgress || 0)]) || {};
+    const step = getPrepStepForProgress(config, state.prepProgress || 0);
     setSpeech(step.caption || 'ぎゅっぎゅっと かたちを つくろう！', 'prep');
   }
 
@@ -7454,10 +7752,10 @@ body.layout-editor-on .endX-marker {
     const nextStep = Math.floor(nextProgress + 0.001);
     updatePrepView(config, nextProgress, nextStep !== prevStep);
     if (nextStep > state.prepDragLastStep && nextStep < maxProgress) {
-      const step = config.steps[nextStep] || {};
+      const step = getPrepStepForProgress(config, nextProgress);
       state.prepDragLastStep = nextStep;
-      showPrepBurst(step.burst || 'ぎゅっ！');
-      setSpeech(step.caption || step.label || 'いい かたち！', 'prep');
+      showPrepBurst(isMultiBallShapeConfig(config) ? ((nextStep + 1) + 'こめ！') : (step.burst || 'ぎゅっ！'));
+      setSpeech(isMultiBallShapeConfig(config) ? 'つぎの まるも ころころ！' : (step.caption || step.label || 'いい かたち！'), 'prep');
     }
     if (nextProgress >= maxProgress) finishDragPrep(ing, config);
   }
@@ -7493,6 +7791,11 @@ body.layout-editor-on .endX-marker {
     if (els.shapePrepGuide) {
       els.shapePrepGuide.style.setProperty('--shape-hit', '0');
       els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
+    }
+    if (els.shapeBallGame) {
+      els.shapeBallGame.querySelectorAll('.shape-ball-slot').forEach(function (slot) {
+        slot.style.setProperty('--ball-hit', '0');
+      });
     }
   }
 
@@ -10423,6 +10726,7 @@ body.layout-editor-on .endX-marker {
 
   function addSingleCutPieceToBowl(ing, burstIndex, burstCount) {
     const isCabbage = ing && ing.id === 'cabbage';
+    const isChicken = ing && ing.id === 'chicken_marinated';
     const pieceData = getCutPieceData(ing, burstIndex);
     const piece = createCutPieceNode(pieceData, isCabbage ? 'cut-piece cabbage-bowl-piece' : 'cut-piece');
     const rect = els.bowl.getBoundingClientRect();
@@ -10430,7 +10734,7 @@ body.layout-editor-on .endX-marker {
     const h = rect.height || 60;
     const cx = w * 0.5;
     const cy = h * 0.55;
-    const pieceSize = isCabbage ? (42 + Math.random() * 28) : (burstCount > 1 ? 92 : 86);
+    const pieceSize = isCabbage ? (42 + Math.random() * 28) : (isChicken ? 42 + Math.random() * 8 : (burstCount > 1 ? 92 : 86));
     let rawX;
     let rawY;
     if (isCabbage) {
@@ -10447,9 +10751,17 @@ body.layout-editor-on .endX-marker {
       rawX = cx + Math.cos(a) * r - pieceSize / 2;
       rawY = cy + Math.sin(a) * r - pieceSize / 2;
     }
-    const x = isCabbage ? Math.max(-pieceSize * 0.42, Math.min(w - pieceSize * 0.58, rawX)) : rawX;
-    const y = isCabbage ? Math.max(-pieceSize * 0.28, Math.min(h - pieceSize * 0.62, rawY)) : rawY;
-    const rot = (Math.random() - 0.5) * 80;
+    let x = isCabbage ? Math.max(-pieceSize * 0.42, Math.min(w - pieceSize * 0.58, rawX)) : rawX;
+    let y = isCabbage ? Math.max(-pieceSize * 0.28, Math.min(h - pieceSize * 0.62, rawY)) : rawY;
+    if (isChicken) {
+      const minX = Math.min(w * 0.16, Math.max(0, (w - pieceSize) * 0.5));
+      const maxX = Math.max(minX, w - pieceSize - minX);
+      const minY = Math.min(h * 0.16, Math.max(0, (h - pieceSize) * 0.5));
+      const maxY = Math.max(minY, h - pieceSize - h * 0.12);
+      x = Math.max(minX, Math.min(maxX, rawX));
+      y = Math.max(minY, Math.min(maxY, rawY));
+    }
+    const rot = (Math.random() - 0.5) * (isChicken ? 32 : 80);
     piece.style.width = pieceSize + 'px';
     piece.style.height = pieceSize + 'px';
     piece.style.left = x + 'px';
@@ -10984,6 +11296,7 @@ body.layout-editor-on .endX-marker {
       els.prepStage.classList.remove('is-working');
       els.prepStage.classList.remove('is-dragging');
       els.prepStage.removeAttribute('data-prep-kind');
+      els.prepStage.removeAttribute('data-shape-mode');
     }
     if (els.prepBurst) els.prepBurst.classList.remove('show');
     if (els.prepProgress) els.prepProgress.style.width = '0%';
@@ -11007,6 +11320,11 @@ body.layout-editor-on .endX-marker {
       els.shapePrepGuide.style.setProperty('--shape-guide-width', 'min(37%, 370px)');
       els.shapePrepGuide.style.setProperty('--shape-guide-height', '35.5%');
       els.shapePrepGuide.style.setProperty('--shape-guide-top', '49%');
+    }
+    if (els.shapeBallGame) {
+      els.shapeBallGame.innerHTML = '';
+      els.shapeBallGame.dataset.renderKey = '';
+      els.shapeBallGame.setAttribute('aria-hidden', 'true');
     }
     if (els.prepStage) {
       els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
