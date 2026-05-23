@@ -43,3 +43,9 @@ _debug*
 # Hybrid Stop hook (Option D) sentinel + debounce state
 .claude/.has-edits
 .claude/.last-push
+
+# Claude Code agent worktree submodules — internal state, not part of the app
+.claude/worktrees/
+
+# Local debug log (was historically tracked; now ignored)
+debug.log
