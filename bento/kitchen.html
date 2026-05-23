@@ -2241,19 +2241,90 @@ body.layout-editor-on .fry-pot {
 #grill-stage[data-ingredient="meatball"].food-placed:not(.is-served) .cooking-food {
   left: var(--grill-food-x, 58%);
   top: var(--grill-food-y, 52%);
-  width: 14%;
+  width: 8.8%;
 }
 #grill-stage[data-ingredient="meatball"].is-served .cooking-food {
-  width: 14%;
+  width: 8.8%;
+}
+#grill-stage[data-ingredient="meatball"]:not(.food-placed):not(.is-served) .prep-plate {
+  left: 16%;
+  top: 68%;
+  width: 32%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%) rotate(-3deg);
+}
+#grill-stage[data-ingredient="meatball"]:not(.food-placed):not(.is-served) .cooking-food {
+  width: 7.8%;
+  z-index: 5;
+}
+#grill-stage[data-ingredient="meatball"].food-placed:not(.is-served) .prep-plate {
+  left: 16%;
+  top: 68%;
+  width: 32%;
+  transform: translate(-50%, -50%) rotate(-3deg);
+}
+.cook-piece-bank {
+  display: none;
+  position: absolute;
+  left: 16%;
+  top: 68%;
+  width: 32%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%) rotate(-3deg);
+  pointer-events: none;
+  z-index: 4;
+}
+#grill-stage[data-ingredient="meatball"]:not(.is-served) .cook-piece-bank {
+  display: block;
+}
+.cook-piece-bank i {
+  position: absolute;
+  left: var(--piece-x, 50%);
+  top: var(--piece-y, 50%);
+  width: 24%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(var(--piece-scale, 1));
+  background: url('../assets/images/bento/cooking/meatball/shape/meatball_round_01.png') center / contain no-repeat;
+  filter: drop-shadow(0 4px 5px rgba(80,45,28,0.18));
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.cook-piece-bank i.is-current,
+.cook-piece-bank i.is-gone {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(0.72);
+}
+#grill-stage[data-ingredient="meatball"][data-cook-piece-index="0"]:not(.food-placed):not(.is-served) .cooking-food {
+  left: 16%;
+  top: 62%;
+}
+#grill-stage[data-ingredient="meatball"][data-cook-piece-index="1"]:not(.food-placed):not(.is-served) .cooking-food {
+  left: 9.8%;
+  top: 68.9%;
+}
+#grill-stage[data-ingredient="meatball"][data-cook-piece-index="2"]:not(.food-placed):not(.is-served) .cooking-food {
+  left: 21.7%;
+  top: 67.4%;
+}
+#grill-stage[data-ingredient="meatball"][data-cook-piece-index="3"]:not(.food-placed):not(.is-served) .cooking-food {
+  left: 13.8%;
+  top: 74.2%;
+}
+#grill-stage[data-ingredient="meatball"][data-cook-piece-index="4"]:not(.food-placed):not(.is-served) .cooking-food {
+  left: 21.6%;
+  top: 73.6%;
 }
 #grill-stage[data-ingredient="egg"]:not(.food-placed) .cooking-food {
   left: 16%;
   top: 65%;
-  width: 17%;
-  pointer-events: none;
+  width: 12%;
+  pointer-events: auto;
+  cursor: grab;
   z-index: 4;
 }
-#grill-stage[data-ingredient="egg"].egg-crack-split:not(.food-placed) .cooking-food {
+#grill-stage[data-ingredient="egg"].egg-crack-knocked:not(.food-placed) .cooking-food img {
+  animation: eggKnockWobble 0.28s ease;
+}
+#grill-stage[data-ingredient="egg"].egg-crack-split:not(.food-placed) .cooking-food img {
   opacity: 0;
 }
 #grill-stage[data-ingredient="egg"].food-placed:not(.is-served) .cooking-food {
@@ -2263,9 +2334,9 @@ body.layout-editor-on .fry-pot {
 }
 .egg-crack-shells {
   position: absolute;
-  left: 16%;
-  top: 64%;
-  width: 22%;
+  left: var(--grill-food-x, 58%);
+  top: calc(var(--grill-food-y, 52%) - 21%);
+  width: 18%;
   height: 22%;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -2275,7 +2346,7 @@ body.layout-editor-on .fry-pot {
 }
 .egg-crack-shells i {
   position: absolute;
-  top: 50%;
+  top: 54%;
   width: 53%;
   aspect-ratio: 1 / 1;
   background-repeat: no-repeat;
@@ -2284,13 +2355,13 @@ body.layout-editor-on .fry-pot {
   filter: drop-shadow(0 7px 8px rgba(0,0,0,0.2));
 }
 .egg-crack-shells i:first-child {
-  left: 17%;
-  transform: translate(-50%, -50%) rotate(-13deg);
+  left: 38%;
+  transform: translate(-50%, -50%) rotate(-118deg);
   background-image: url('../assets/images/bento/cooking/egg/egg_shell_left.png');
 }
 .egg-crack-shells i:last-child {
-  left: 79%;
-  transform: translate(-50%, -50%) rotate(12deg);
+  left: 62%;
+  transform: translate(-50%, -50%) rotate(118deg);
   background-image: url('../assets/images/bento/cooking/egg/egg_shell_right.png');
 }
 #grill-stage.egg-crack-split:not(.food-placed) .egg-crack-shells {
@@ -2811,6 +2882,12 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   0%   { transform: translateX(-22px) rotate(0deg) scale(1); }
   42%  { transform: translateX(8px) translateY(-15px) rotate(130deg) scale(1.06); }
   100% { transform: translateX(24px) rotate(260deg) scale(1); }
+}
+@keyframes eggKnockWobble {
+  0%   { transform: rotate(0deg) translateY(0); }
+  38%  { transform: rotate(-10deg) translateY(-3px); }
+  72%  { transform: rotate(8deg) translateY(1px); }
+  100% { transform: rotate(0deg) translateY(0); }
 }
 @keyframes foodDrop {
   0%   { transform: translateY(-150px) scale(0.72); opacity: 0; }
@@ -4341,6 +4418,7 @@ body.layout-editor-on .endX-marker {
         <div class="cook-stove-bg grill-stove-bg" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="heat-glow" id="grill-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
+        <div class="cook-piece-bank" id="grill-piece-bank" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pan grill-pan" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="grill-smoke" id="grill-smoke" aria-hidden="true">
@@ -4695,8 +4773,8 @@ body.layout-editor-on .endX-marker {
       ],
       cookImages: {
         grill: {
-          stages: ['egg/egg_001_raw', 'egg/egg_002_mid', 'egg/egg_003_done'],
-          fallback: '../assets/images/Bento_parts/tamagoyaki2.png',
+          stages: ['egg/egg_001_raw', 'egg/egg_002_mid', 'egg/egg_002_mid'],
+          fallback: '../assets/images/bento/cooking/egg/egg_002_mid.png',
         },
       },
     },
@@ -4862,7 +4940,7 @@ body.layout-editor-on .endX-marker {
 
   // 材料→解放されるレシピ
   const RECIPES = [
-    { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_003_done.png', needs: ['egg'], startFromRaw: true },
+    { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_002_mid.png', needs: ['egg'], startFromRaw: true },
     { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty'] },
     { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball'] },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'] },
@@ -5822,6 +5900,7 @@ body.layout-editor-on .endX-marker {
     // grill screen
     grillStage:    document.getElementById('grill-stage'),
     grillPan:      document.querySelector('#grill-stage .grill-pan'),
+    grillPieceBank: document.getElementById('grill-piece-bank'),
     eggCrackShells: document.getElementById('egg-crack-shells'),
     eggGlassLid:   document.getElementById('egg-glass-lid'),
     grillingFoodWrap: document.getElementById('grilling-food-wrap'),
@@ -9857,8 +9936,8 @@ body.layout-editor-on .endX-marker {
     updateCookStageState(action.type);
     const label = action.label || (action.type === 'fry' ? 'まず あぶらを あたためよう' : 'まず フライパンを あたためよう');
     if (action.type === 'grill') {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = isEggGrillAction(ing, action) ? 'たまごを コンコンしよう' : label;
-      setSpeech(isEggGrillAction(ing, action) ? 'たまごを フライパンの まえで わってみよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = isEggGrillAction(ing, action) ? 'たまごを フライパンのふちへ' : label;
+      setSpeech(isEggGrillAction(ing, action) ? 'たまごを もって、フライパンの ふちで コンコンしよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
       startCookPreheat(ing, action, 'grill');
     } else {
@@ -9882,9 +9961,9 @@ body.layout-editor-on .endX-marker {
         startKitchenAmbient('stove');
         if (isEggGrillAction(ing, action)) {
           if (els.grillActionLabel) {
-            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'フライパンへ ぽとん' : 'たまごを コンコンしよう';
+            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'もう1かい コンコン' : 'たまごを フライパンのふちへ';
           }
-          setSpeech(state.cookEggCrackProgress > 0 ? 'フライパンが あったまったよ！ タップして たまごを いれよう！' : 'フライパンが あったまったよ！ たまごを コンコンしよう！', 'grill');
+          setSpeech(state.cookEggCrackProgress > 0 ? 'フライパンが あったまったよ！ もう1かい ふちで コンコン！' : 'フライパンが あったまったよ！ たまごを ドラッグして ふちで コンコン！', 'grill');
         } else {
           if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから ドラッグして フライパンへ';
           setSpeech('フライパンが あったまったよ！ おさらから ドラッグして のせよう！', 'grill');
@@ -9992,8 +10071,14 @@ body.layout-editor-on .endX-marker {
     stageEl.classList.toggle('is-served', state.cookServed);
     const eggGrill = type === 'grill' && isCurrentEggGrillAction();
     stageEl.classList.toggle('egg-crack-mode', eggGrill && !state.cookFoodPlaced);
-    stageEl.classList.toggle('egg-crack-split', eggGrill && !state.cookFoodPlaced && state.cookEggCrackProgress > 0);
+    stageEl.classList.toggle('egg-crack-knocked', eggGrill && !state.cookFoodPlaced && state.cookEggCrackProgress === 1);
+    stageEl.classList.toggle('egg-crack-split', eggGrill && !state.cookFoodPlaced && state.cookEggCrackProgress >= 2);
     stageEl.classList.toggle('egg-lid-closed', eggGrill && state.cookEggLidClosed && !state.cookServed);
+    if (isMultiPieceCookAction(getCurrentAction())) {
+      stageEl.dataset.cookPieceIndex = String(state.cookPieceIndex || 0);
+    } else {
+      delete stageEl.dataset.cookPieceIndex;
+    }
     if (state.current && state.current.id) {
       stageEl.dataset.ingredient = state.current.id;
     } else {
@@ -10004,6 +10089,7 @@ body.layout-editor-on .endX-marker {
         syncCookLayoutFromTools(type);
       });
     }
+    if (type === 'grill') updateCookPieceBank(getCurrentAction());
   }
 
   function pctString(value) {
@@ -10127,8 +10213,24 @@ body.layout-editor-on .endX-marker {
     };
   }
 
+  function isEggCrackPoint(point) {
+    if (!point || !isCurrentEggGrillAction() || state.cookFoodPlaced) return false;
+    const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
+    if (panBounds) {
+      const left = panBounds.left + panBounds.width * 0.24;
+      const right = panBounds.left + panBounds.width * 0.80;
+      const top = panBounds.top + panBounds.height * 0.04;
+      const bottom = panBounds.top + panBounds.height * 0.39;
+      return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    }
+    return point.x >= 44 && point.x <= 72 && point.y >= 18 && point.y <= 36;
+  }
+
   function isCookDropPoint(type, point) {
     if (!point) return false;
+    if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
+      return isEggCrackPoint(point);
+    }
     if (type === 'fry') {
       const potBounds = getElementBoundsPct(els.fryPot, els.fryStage);
       if (potBounds) {
@@ -10167,7 +10269,7 @@ body.layout-editor-on .endX-marker {
   function nudgeCookDrag(type) {
     const name = state.current ? state.current.name : 'ざいりょう';
     if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
-      setSpeech(state.cookEggCrackProgress > 0 ? 'タップして フライパンへ ぽとん！' : 'タップして たまごを コンコンしよう！', 'grill');
+      setSpeech(state.cookEggCrackProgress > 0 ? 'たまごを もう1かい フライパンの ふちへ ドラッグしてね！' : 'たまごを ドラッグして、フライパンの ふちで コンコンしてね！', 'grill');
       return;
     }
     if (type === 'fry') {
@@ -10186,7 +10288,6 @@ body.layout-editor-on .endX-marker {
   function onCookFoodPointerDown(evt, type) {
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== type || state.cookFoodPlaced || state.cookServed) return;
-    if (type === 'grill' && isCurrentEggGrillAction()) return;
     evt.preventDefault();
     evt.stopPropagation();
     state.suppressCookClick = true;
@@ -10221,6 +10322,15 @@ body.layout-editor-on .endX-marker {
     state.suppressCookClick = true;
     window.setTimeout(function () { state.suppressCookClick = false; }, 160);
     const dropped = moveCookDragToPoint(type, evt);
+    if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
+      if (dropped) {
+        handleEggCrackDragEnd();
+        return;
+      }
+      resetCookDrag(type);
+      nudgeCookDrag(type);
+      return;
+    }
     if (dropped) {
       placeCookFoodByType(type);
       return;
@@ -10240,6 +10350,30 @@ body.layout-editor-on .endX-marker {
   function getCookPieceText(action) {
     if (!isMultiPieceCookAction(action)) return '';
     return (state.cookPieceIndex + 1) + 'こめ / ' + getCookPieceCount(action) + 'こ';
+  }
+
+  function updateCookPieceBank(action) {
+    if (!els.grillPieceBank) return;
+    const count = isMultiPieceCookAction(action) ? getCookPieceCount(action) : 0;
+    els.grillPieceBank.innerHTML = '';
+    if (!count || !state.current || state.current.id !== 'meatball') return;
+    const positions = [
+      { x: 50, y: 32, rot: '-4deg' },
+      { x: 30, y: 53, rot: '5deg' },
+      { x: 68, y: 49, rot: '-2deg' },
+      { x: 44, y: 72, rot: '2deg' },
+      { x: 68, y: 70, rot: '-5deg' },
+    ];
+    for (let i = 0; i < count; i += 1) {
+      const piece = document.createElement('i');
+      const pos = positions[i] || positions[positions.length - 1];
+      piece.style.setProperty('--piece-x', pos.x + '%');
+      piece.style.setProperty('--piece-y', pos.y + '%');
+      piece.style.setProperty('--piece-rot', pos.rot);
+      piece.classList.toggle('is-gone', i < state.cookPieceIndex);
+      piece.classList.toggle('is-current', i === state.cookPieceIndex);
+      els.grillPieceBank.appendChild(piece);
+    }
   }
 
   function getCookStageFilter(ing, action, stage) {
@@ -10590,26 +10724,43 @@ body.layout-editor-on .endX-marker {
     const ing = state.current;
     const action = getCurrentAction();
     if (!isEggGrillAction(ing, action)) return false;
-    if (state.cookEggCrackProgress <= 0) {
-      state.cookAnimating = true;
-      state.cookEggCrackProgress = 1;
-      updateCookStageState('grill');
-      if (els.grillBurst) els.grillBurst.textContent = 'コンコン！';
-      showCookBurst('grill');
-      if (els.grillActionLabel) els.grillActionLabel.textContent = state.cookPreheated ? 'フライパンへ ぽとん' : 'フライパンが あたたまるまで まとう';
-      setSpeech(state.cookPreheated ? 'からが われたよ！ タップして フライパンへ ぽとん！' : 'からが われたよ！ フライパンが あたたまるまで まってね！', 'grill');
-      state.pendingTimers.push(setTimeout(function () {
-        if (state.current !== ing || getCurrentAction() !== action || state.cookFoodPlaced) return;
-        state.cookAnimating = false;
-      }, 360));
-      return true;
-    }
     if (!state.cookPreheated) {
       setSpeech('フライパンが あったまるまで まってね！', 'grill');
       return true;
     }
-    placeFoodForGrill();
+    if (state.cookEggCrackProgress >= 2) {
+      placeFoodForGrill();
+      return true;
+    }
+    nudgeCookDrag('grill');
     return true;
+  }
+
+  function handleEggCrackDragEnd() {
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!isEggGrillAction(ing, action) || state.cookFoodPlaced) return;
+    resetCookDrag('grill');
+    state.cookAnimating = true;
+    state.cookEggCrackProgress = Math.min(2, state.cookEggCrackProgress + 1);
+    updateCookStageState('grill');
+    if (els.grillBurst) els.grillBurst.textContent = state.cookEggCrackProgress >= 2 ? 'ぱかっ！' : 'コン！';
+    showCookBurst('grill');
+    if (state.cookEggCrackProgress < 2) {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もう1かい コンコン';
+      setSpeech('いいね！ もう1かい フライパンの ふちで コンコン！', 'grill');
+      state.pendingTimers.push(setTimeout(function () {
+        if (state.current !== ing || getCurrentAction() !== action || state.cookFoodPlaced) return;
+        state.cookAnimating = false;
+      }, 300));
+      return;
+    }
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ぽとん！';
+    setSpeech('われたよ！ たまごが まんなかに おちるよ！', 'grill');
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.current !== ing || getCurrentAction() !== action || state.cookFoodPlaced) return;
+      placeFoodForGrill();
+    }, 420));
   }
 
   function closeEggLidForGrill() {
