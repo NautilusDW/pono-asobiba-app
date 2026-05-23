@@ -131,6 +131,52 @@
     transform: translate(-50%, -50%) scale(0.92);
     filter: brightness(0.92);
   }
+  .instr-btn::before,
+  .instr-btn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease-out, transform 0.08s linear;
+    z-index: 0;
+  }
+  .instr-btn::before {
+    background: radial-gradient(circle, rgba(255,248,179,0.72) 0%, rgba(255,216,77,0.42) 48%, rgba(255,216,77,0) 72%);
+    transform: scale(1.05);
+    filter: blur(1px);
+  }
+  .instr-btn::after {
+    inset: -22px;
+    border: 6px solid rgba(255,255,255,0.92);
+    box-shadow: 0 0 0 5px rgba(255,216,77,0.45), 0 0 22px rgba(255,216,77,0.8);
+    transform: scale(var(--rhythm-ring-scale, 1.65));
+    opacity: var(--rhythm-ring-opacity, 0);
+  }
+  .instr-btn.rhythm-next::before {
+    opacity: 0.46;
+    transform: scale(0.98);
+  }
+  .instr-btn.rhythm-target::before {
+    opacity: 1;
+    animation: rhythmTargetGlow 0.75s ease-in-out infinite;
+  }
+  .instr-btn.rhythm-target::after {
+    opacity: var(--rhythm-ring-opacity, 0.85);
+  }
+  .instr-btn.rhythm-hit::before {
+    opacity: 1;
+    background: radial-gradient(circle, rgba(167,243,208,0.9) 0%, rgba(52,211,153,0.54) 52%, rgba(52,211,153,0) 74%);
+  }
+  .instr-btn.rhythm-miss::before {
+    opacity: 0.86;
+    background: radial-gradient(circle, rgba(254,202,202,0.84) 0%, rgba(248,113,113,0.5) 50%, rgba(248,113,113,0) 74%);
+  }
+  @keyframes rhythmTargetGlow {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(255,216,77,0.8)); }
+    50%      { filter: drop-shadow(0 0 18px rgba(255,248,179,0.95)); }
+  }
   /* 共通: ボタン中央に貼る PNG イラスト */
   .btn-img {
     width: 100%;
@@ -144,6 +190,10 @@
        (box-shadow だと矩形になるため drop-shadow filter を使用) */
     filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.18));
     transition: filter 0.08s;
+  }
+  .instr-btn .btn-img {
+    position: relative;
+    z-index: 1;
   }
   /* タップ時は影を弱めて凹みを強調 */
   .instr-btn:active .btn-img,
@@ -421,6 +471,99 @@
   .chord-pill-btn.active {
     background: linear-gradient(135deg, #FFD84D, #F2B800);
     color: #5D4E37;
+  }
+
+  /* ── あそび方切替 + リズムガイド ── */
+  .mode-switch {
+    position: absolute;
+    top: calc(max(8px, env(safe-area-inset-top)) + 130px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 28px;
+    border: 2px solid rgba(255,255,255,0.72);
+    background: rgba(0,0,0,0.42);
+    z-index: 12;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.26);
+  }
+  .mode-btn {
+    min-width: 78px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 24px;
+    background: transparent;
+    color: rgba(255,255,255,0.86);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.14s, color 0.14s, transform 0.08s;
+  }
+  .mode-btn:active { transform: scale(0.94); }
+  .mode-btn.active {
+    background: linear-gradient(135deg, #A7F3D0, #34D399);
+    color: #064E3B;
+  }
+  .rhythm-hud {
+    position: absolute;
+    left: 50%;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 108px);
+    transform: translateX(-50%);
+    width: min(90vw, 520px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 9;
+    pointer-events: none;
+  }
+  .rhythm-hud.show { display: flex; }
+  .rhythm-status {
+    min-width: 190px;
+    padding: 7px 18px 8px;
+    border-radius: 24px;
+    border: 2px solid rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.48);
+    color: #fff;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 900;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.35);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.24);
+  }
+  .rhythm-status.good { background: rgba(6,95,70,0.72); }
+  .rhythm-status.warn { background: rgba(146,64,14,0.72); }
+  .rhythm-status.miss { background: rgba(127,29,29,0.72); }
+  .rhythm-queue {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(48px, 1fr));
+    gap: 8px;
+    width: min(86vw, 360px);
+  }
+  .rhythm-note {
+    height: 44px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.86);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 900;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+  }
+  .rhythm-note.now {
+    background: linear-gradient(135deg, #FFD84D, #F59E0B);
+    color: #5D4E37;
+    border-color: rgba(255,255,255,0.95);
+    transform: translateY(-2px);
+  }
+  .rhythm-note.next {
+    background: rgba(255,255,255,0.34);
   }
 
   /* (rec-bar / 録音 UI は復活させない方針で削除) */
@@ -733,6 +876,61 @@
       left: 66%; transform: translateX(-50%);
       width: min(60vw, 420px);
     }
+
+    .mode-switch {
+      top: max(8px, env(safe-area-inset-top));
+      left: 24%;
+      width: 220px;
+      box-sizing: border-box;
+    }
+    .mode-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 10px;
+    }
+    .rhythm-hud {
+      left: 24%;
+      bottom: max(120px, calc(env(safe-area-inset-bottom) + 120px));
+      width: 220px;
+    }
+    .rhythm-status {
+      min-width: 0;
+      width: 220px;
+      font-size: 0.9rem;
+      padding: 6px 12px 7px;
+    }
+    .rhythm-queue {
+      width: 220px;
+      gap: 4px;
+    }
+    .rhythm-note {
+      height: 38px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+  }
+
+  /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ */
+  @media (orientation: landscape) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 10/7) and (min-height: 560px) {
+    .instr-btn[data-idx="0"] { left: 45%; top: 35%; --sz: 168px; }
+    .instr-btn[data-idx="1"] { left: 56%; top: 22%; --sz: 172px; }
+    .instr-btn[data-idx="2"] { left: 76%; top: 22%; --sz: 172px; }
+    .instr-btn[data-idx="3"] { left: 89%; top: 35%; --sz: 168px; }
+    .instr-btn[data-idx="4"] { left: 45%; top: 65%; --sz: 168px; }
+    .instr-btn[data-idx="5"] { left: 56%; top: 78%; --sz: 172px; }
+    .instr-btn[data-idx="6"] { left: 76%; top: 78%; --sz: 172px; }
+    .instr-btn[data-idx="7"] { left: 89%; top: 65%; --sz: 168px; }
+    .pono-wrap {
+      left: 67%;
+      width: 250px;
+      height: 210px;
+    }
+    .pono-sprite { height: 205px; }
+  }
+
+  /* スマホ横は左コントロール列に余白がないため、リズム案内はボタン上の光と輪っかへ集約 */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .rhythm-hud.show { display: none; }
   }
 </style>
 </head>
@@ -800,6 +998,17 @@
     <div class="chord-pill" id="chord-pill">
       <button class="chord-pill-btn active" id="chord-off" aria-label="単音">たんおん</button>
       <button class="chord-pill-btn"        id="chord-on"  aria-label="コード">コード</button>
+    </div>
+
+    <!-- あそび方切替: 自由に鳴らす / リズムに合わせて順番に鳴らす -->
+    <div class="mode-switch" id="mode-switch" role="tablist" aria-label="あそび方">
+      <button class="mode-btn active" data-mode="free" role="tab" aria-selected="true">じゆう</button>
+      <button class="mode-btn" data-mode="rhythm" role="tab" aria-selected="false">リズム</button>
+    </div>
+
+    <div class="rhythm-hud" id="rhythm-hud" aria-live="polite">
+      <div class="rhythm-status" id="rhythm-status">ひかるボタンを いま！でタッチ</div>
+      <div class="rhythm-queue" id="rhythm-queue"></div>
     </div>
 
     <!-- カウントダウン / 録音中バナー -->
@@ -1487,6 +1696,223 @@ function playSetSoundFor(set, idx, useChord) {
   }
 }
 
+// ────────────────────────────────
+// リズムモード: 光るボタン + 縮む輪っかで「次」と「いま」を同じ場所に出す
+// ────────────────────────────────
+var NOTE_LABELS = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
+var RHYTHM_SONG = {
+  id: 'twinkle',
+  name: 'きらきら',
+  bpm: 100,
+  notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
+};
+var RHYTHM_GOOD_MS = 220;
+var RHYTHM_OK_MS = 520;
+var RHYTHM_MISS_MS = 760;
+var _playMode = 'free';
+var _rhythm = {
+  enabled: false,
+  idx: 0,
+  targetTime: 0,
+  leadMs: 0,
+  raf: 0,
+  streak: 0,
+  ownsDrums: false,
+  nowCue: false
+};
+
+function _rhythmBeatMs() {
+  var song = _currentSong();
+  if (song && song.type === 'synth' && _activeStems.drums && song.bpm) {
+    return 60000 / song.bpm;
+  }
+  return 60000 / RHYTHM_SONG.bpm;
+}
+function _rhythmExpectedIdx(offset) {
+  offset = offset || 0;
+  var notes = RHYTHM_SONG.notes;
+  return notes[(_rhythm.idx + offset) % notes.length];
+}
+function _rhythmButton(idx) {
+  return document.querySelector('.instr-btn[data-idx="' + idx + '"]');
+}
+function _clearRhythmButtonState() {
+  document.querySelectorAll('.instr-btn').forEach(function(btn) {
+    btn.classList.remove('rhythm-target', 'rhythm-next');
+    btn.style.removeProperty('--rhythm-ring-scale');
+    btn.style.removeProperty('--rhythm-ring-opacity');
+  });
+}
+function _pulseRhythmButton(btn, className) {
+  if (!btn) return;
+  btn.classList.add(className);
+  setTimeout(function() { btn.classList.remove(className); }, 180);
+}
+function _setRhythmStatus(text, tone) {
+  var el = document.getElementById('rhythm-status');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('good', 'warn', 'miss');
+  if (tone) el.classList.add(tone);
+}
+function _renderRhythmQueue() {
+  var queue = document.getElementById('rhythm-queue');
+  if (!queue) return;
+  var html = '';
+  for (var i = 0; i < 4; i++) {
+    var idx = _rhythmExpectedIdx(i);
+    var cls = i === 0 ? ' now' : (i === 1 ? ' next' : '');
+    html += '<div class="rhythm-note' + cls + '">' + NOTE_LABELS[idx] + '</div>';
+  }
+  queue.innerHTML = html;
+}
+function _renderRhythmTarget() {
+  _clearRhythmButtonState();
+  if (!_rhythm.enabled) return;
+  var target = _rhythmButton(_rhythmExpectedIdx(0));
+  var next = _rhythmButton(_rhythmExpectedIdx(1));
+  if (target) target.classList.add('rhythm-target');
+  if (next && next !== target) next.classList.add('rhythm-next');
+  _renderRhythmQueue();
+}
+function _ensureRhythmDrums() {
+  if (_activeStems.drums && _curSongIdx === SPEED_TO_SONG_IDX.normal) {
+    _rhythm.ownsDrums = false;
+    return;
+  }
+  _rhythm.ownsDrums = true;
+  _stopAllBands();
+  _curSongIdx = SPEED_TO_SONG_IDX.normal;
+  _activeStems.drums = true;
+  _startSongClock();
+  _renderSpeedBtns();
+}
+function _scheduleRhythmNote(leadBeats) {
+  if (!_rhythm.enabled) return;
+  var beatMs = _rhythmBeatMs();
+  _rhythm.leadMs = beatMs * (leadBeats || 1.05);
+  _rhythm.targetTime = performance.now() + _rhythm.leadMs;
+  _rhythm.nowCue = false;
+  _renderRhythmTarget();
+}
+function _advanceRhythm(wasHit) {
+  if (!_rhythm.enabled) return;
+  _rhythm.idx++;
+  var finished = _rhythm.idx > 0 && _rhythm.idx % RHYTHM_SONG.notes.length === 0;
+  if (finished) {
+    _rhythm.streak = 0;
+    _setRhythmStatus('できた！もういっかい', 'good');
+    bumpPono();
+    _scheduleRhythmNote(1.65);
+  } else {
+    _scheduleRhythmNote(wasHit ? 0.98 : 1.12);
+  }
+}
+function _rhythmTick() {
+  if (!_rhythm.enabled) return;
+  var btn = _rhythmButton(_rhythmExpectedIdx(0));
+  var now = performance.now();
+  var until = _rhythm.targetTime - now;
+  var lead = Math.max(1, _rhythm.leadMs);
+  var progress = Math.max(0, Math.min(1, 1 - (until / lead)));
+  var scale = 1.88 - progress * 0.88;
+  if (until < 0) scale = Math.max(0.92, 1 + until / 2400);
+  var opacity = until < -RHYTHM_MISS_MS ? 0 : 0.9;
+  if (btn) {
+    btn.style.setProperty('--rhythm-ring-scale', scale.toFixed(3));
+    btn.style.setProperty('--rhythm-ring-opacity', String(opacity));
+  }
+  if (!_rhythm.nowCue && Math.abs(until) <= 90) {
+    _rhythm.nowCue = true;
+    _setRhythmStatus('いま！', null);
+  }
+  if (until < -RHYTHM_MISS_MS) {
+    _rhythm.streak = 0;
+    _setRhythmStatus('つぎいこう', 'miss');
+    _pulseRhythmButton(btn, 'rhythm-miss');
+    _advanceRhythm(false);
+  }
+  _rhythm.raf = requestAnimationFrame(_rhythmTick);
+}
+function _startRhythmMode() {
+  if (_rhythm.enabled) return;
+  _rhythm.enabled = true;
+  _rhythm.idx = 0;
+  _rhythm.streak = 0;
+  _rhythm.nowCue = false;
+  var hud = document.getElementById('rhythm-hud');
+  if (hud) hud.classList.add('show');
+  _setRhythmStatus('ひかるボタンを いま！でタッチ', null);
+  _ensureRhythmDrums();
+  _scheduleRhythmNote(1.6);
+  if (_rhythm.raf) cancelAnimationFrame(_rhythm.raf);
+  _rhythm.raf = requestAnimationFrame(_rhythmTick);
+}
+function _stopRhythmMode() {
+  if (!_rhythm.enabled) return;
+  _rhythm.enabled = false;
+  if (_rhythm.raf) {
+    cancelAnimationFrame(_rhythm.raf);
+    _rhythm.raf = 0;
+  }
+  _clearRhythmButtonState();
+  document.querySelectorAll('.instr-btn').forEach(function(btn) {
+    btn.classList.remove('rhythm-hit', 'rhythm-miss');
+  });
+  var hud = document.getElementById('rhythm-hud');
+  if (hud) hud.classList.remove('show');
+  if (_rhythm.ownsDrums) {
+    _stopAllBands();
+    _renderSpeedBtns();
+    _rhythm.ownsDrums = false;
+  }
+}
+function setPlayMode(mode) {
+  mode = mode === 'rhythm' ? 'rhythm' : 'free';
+  _playMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(function(btn) {
+    var active = btn.dataset.mode === mode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  if (mode === 'rhythm') _startRhythmMode();
+  else _stopRhythmMode();
+}
+function handleRhythmTap(idx, btn) {
+  if (!_rhythm.enabled) return;
+  var expected = _rhythmExpectedIdx(0);
+  var delta = performance.now() - _rhythm.targetTime;
+  if (idx !== expected) {
+    _rhythm.streak = 0;
+    _setRhythmStatus('ひかるボタンだよ', 'miss');
+    _pulseRhythmButton(btn, 'rhythm-miss');
+    return;
+  }
+  if (delta < -RHYTHM_OK_MS) {
+    _setRhythmStatus('もうすこし', 'warn');
+    return;
+  }
+  var abs = Math.abs(delta);
+  _rhythm.streak++;
+  if (abs <= RHYTHM_GOOD_MS) {
+    _setRhythmStatus(_rhythm.streak >= 4 ? 'れんぞく！' : 'ぴったり！', 'good');
+  } else if (abs <= RHYTHM_OK_MS) {
+    _setRhythmStatus('いいね', 'good');
+  } else {
+    _setRhythmStatus('おしい', 'warn');
+  }
+  _pulseRhythmButton(btn, 'rhythm-hit');
+  _advanceRhythm(true);
+}
+document.querySelectorAll('.mode-btn').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    unlockAudio();
+    setPlayMode(btn.dataset.mode);
+  });
+});
+
 // 初回ユーザー操作で AudioContext アンロック + voice/animal の再デコード
 var _preloaded = false;
 function triggerPreload() {
@@ -1535,6 +1961,7 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
     spawnRipples(cx, cy);
     spawnParticles(cx, cy, 8);
     bumpPono();
+    handleRhythmTap(idx, btn);
 
     tapCount++;
     if (window.incrementStat) window.incrementStat('oto_taps', 1);
@@ -1564,7 +1991,9 @@ var _drag = { active: false, lastX: 0, lastY: 0, colorIdx: 0 };
 var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
 
 function _isOnButton(e) {
-  return !!(e.target && e.target.closest && e.target.closest('.instr-btn, .set-btn'));
+  return !!(e.target && e.target.closest && e.target.closest(
+    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .chord-pill-btn, .scale-btn, .set-trigger'
+  ));
 }
 
 // 指定座標に虹色シャボン玉を生成 + キラキラ音
