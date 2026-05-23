@@ -993,30 +993,31 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .marinate-bowl {
   position: absolute;
   left: 50%;
-  top: 53%;
-  width: min(88%, 860px);
-  height: min(82%, 530px);
+  top: 52.5%;
+  width: min(96%, 1040px);
+  height: min(86%, 620px);
   transform: translate(-50%, -50%);
-  background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / contain no-repeat;
+  background: url('../assets/images/bento/cooking/korokke/topview/tray_egg_surface_00.png') center / contain no-repeat;
   filter: drop-shadow(0 16px 18px rgba(86,55,28,0.18));
   touch-action: none;
 }
 .marinate-sauce {
   position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 18%;
-  bottom: 17%;
-  border-radius: 44% 46% 42% 45% / 47% 49% 42% 43%;
+  left: 8.5%;
+  right: 8.5%;
+  top: 20%;
+  bottom: 16%;
+  border-radius: 12% 12% 11% 11% / 17% 17% 12% 12%;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 28% 18% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,255,255,0.34), transparent 72%),
-    radial-gradient(ellipse 36% 22% at 36% 34%, rgba(255,208,112,0.35), transparent 68%),
-    radial-gradient(ellipse 45% 31% at 68% 65%, rgba(148,78,28,0.24), transparent 72%),
-    linear-gradient(135deg, rgba(159,82,31,0.64), rgba(235,151,60,0.52) 48%, rgba(126,59,26,0.56));
-  opacity: 0.88;
+    radial-gradient(ellipse 28% 18% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,255,255,0.32), transparent 72%),
+    radial-gradient(ellipse 36% 22% at 34% 34%, rgba(255,211,129,0.25), transparent 68%),
+    radial-gradient(ellipse 45% 31% at 68% 65%, rgba(105,52,24,0.22), transparent 72%),
+    linear-gradient(135deg, rgba(130,67,35,0.84), rgba(207,121,58,0.78) 48%, rgba(103,50,29,0.82));
+  opacity: 0.94;
   transform: scale(calc(1 + var(--marinate-motion, 0) * 0.018));
   transition: transform 0.12s ease;
+  box-shadow: inset 0 4px 14px rgba(84,42,22,0.2), inset 0 -5px 18px rgba(255,226,146,0.14);
 }
 .marinate-sauce::before,
 .marinate-sauce::after {
@@ -1073,6 +1074,51 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .marinate-piece .stage-plain { opacity: 1; }
 .marinate-piece .stage-light { opacity: var(--piece-light, 0); }
 .marinate-piece .stage-marinated { opacity: var(--piece-marinated, 0); }
+.marinate-cue {
+  position: absolute;
+  left: 50%;
+  top: 5.5%;
+  transform: translateX(-50%);
+  z-index: 12;
+  min-width: min(62%, 560px);
+  padding: 10px 22px 11px;
+  border: 3px solid #F2A53A;
+  border-radius: 999px;
+  background: rgba(255,253,246,0.96);
+  color: #754E2A;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.16;
+  text-align: center;
+  box-shadow: 0 10px 20px rgba(120,72,30,0.16);
+  pointer-events: none;
+}
+.marinate-cue::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  width: 22px;
+  height: 22px;
+  border-right: 4px solid #F2A53A;
+  border-bottom: 4px solid #F2A53A;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(255,253,246,0.96);
+}
+.marinate-target-ring {
+  position: absolute;
+  left: var(--marinate-target-x, 50%);
+  top: var(--marinate-target-y, 52%);
+  width: var(--marinate-target-size, 18%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  border: 4px dashed rgba(242,165,58,0.92);
+  border-radius: 44% 56% 48% 52%;
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.5), 0 0 20px rgba(242,165,58,0.24);
+  pointer-events: none;
+  animation: prepCuePulse 1.25s ease-in-out infinite;
+}
 .marinate-sauce-dot {
   position: absolute;
   left: var(--dot-x, 50%);
@@ -1146,16 +1192,19 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   z-index: 2;
 }
 .prep-workbench[data-prep-kind="bread_shrimp"],
-.prep-workbench[data-prep-kind="bread_korokke"] {
+.prep-workbench[data-prep-kind="bread_korokke"],
+.prep-workbench[data-prep-kind="coat_chicken"] {
   cursor: default;
   touch-action: none;
 }
 .prep-workbench[data-prep-kind="bread_shrimp"] .prep-art-main,
-.prep-workbench[data-prep-kind="bread_korokke"] .prep-art-main {
+.prep-workbench[data-prep-kind="bread_korokke"] .prep-art-main,
+.prep-workbench[data-prep-kind="coat_chicken"] .prep-art-main {
   display: none;
 }
 .prep-workbench[data-prep-kind="bread_shrimp"] .prep-breading-game,
-.prep-workbench[data-prep-kind="bread_korokke"] .prep-breading-game {
+.prep-workbench[data-prep-kind="bread_korokke"] .prep-breading-game,
+.prep-workbench[data-prep-kind="coat_chicken"] .prep-breading-game {
   display: block;
 }
 .prep-breading-trays {
@@ -1466,6 +1515,46 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   filter: drop-shadow(0 12px 14px rgba(93,62,34,0.14));
   overflow: hidden;
 }
+.prep-breading-game[data-topview="true"]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  width: min(63%, 690px);
+  height: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  border: 5px dashed rgba(242,165,58,0.78);
+  border-radius: 34% 36% 30% 32% / 40% 42% 28% 30%;
+  box-shadow: 0 0 0 7px rgba(255,255,255,0.42), 0 0 22px rgba(242,165,58,0.2);
+  pointer-events: none;
+  animation: prepCuePulse 1.28s ease-in-out infinite;
+}
+.prep-breading-game[data-topview="true"][data-material="panko"]::after {
+  width: min(56%, 610px);
+  height: 36%;
+}
+.prep-breading-game[data-topview="true"] .prep-breading-hint {
+  top: 2%;
+  min-width: min(68%, 720px);
+  padding: 11px 24px 12px;
+  border: 3px solid #F2A53A;
+  color: #754E2A;
+  font-size: 1.12rem;
+  box-shadow: 0 10px 20px rgba(120,72,30,0.16);
+}
+.prep-breading-game[data-topview="true"] .prep-breading-hint::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  width: 22px;
+  height: 22px;
+  border-right: 4px solid #F2A53A;
+  border-bottom: 4px solid #F2A53A;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(255,253,246,0.92);
+}
 .prep-breading-game[data-liquid="egg"] .prep-breading-liquid {
   opacity: var(--prep-egg-liquid-opacity, 0);
   animation: prepEggLiquidDrift var(--prep-egg-liquid-dur, 1.65s) ease-in-out infinite;
@@ -1522,6 +1611,11 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   width: var(--prep-food-w, 33%);
   height: var(--prep-food-h, 45%);
   filter: drop-shadow(0 8px 9px rgba(84,55,28,0.18));
+}
+.prep-breading-game[data-topview="true"] .prep-breading-food[data-kind="coat_chicken"] {
+  width: var(--prep-food-w, 41%);
+  height: var(--prep-food-h, 38%);
+  filter: drop-shadow(0 9px 10px rgba(84,55,28,0.19));
 }
 .prep-breading-food.is-dragging {
   cursor: grabbing;
@@ -1686,6 +1780,10 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   58% { opacity: 0.52; }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(2.65); }
 }
+@keyframes prepCuePulse {
+  0%, 100% { opacity: 0.46; transform: translate(-50%, -50%) scale(0.985); }
+  50% { opacity: 0.96; transform: translate(-50%, -50%) scale(1.025); }
+}
 @keyframes prepCoatingParticle {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45) rotate(0deg); }
   18% { opacity: var(--particle-peak-opacity, 1); }
@@ -1831,6 +1929,47 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   0% { opacity: 0; transform: translate(-50%, 12px) rotate(-10deg) scale(0.55); }
   36% { opacity: 1; transform: translate(-50%, -8px) rotate(-5deg) scale(1.18); }
   100% { opacity: 0; transform: translate(-50%, -22px) rotate(-2deg) scale(1.02); }
+}
+.prep-step-notice {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%) scale(0.92);
+  z-index: 24;
+  min-width: min(62%, 620px);
+  max-width: 82%;
+  padding: 18px 24px 19px;
+  border: 4px solid #F2A53A;
+  border-radius: 24px;
+  background: rgba(255,253,246,0.97);
+  box-shadow: 0 18px 34px rgba(95,59,30,0.22), inset 0 0 0 3px rgba(255,255,255,0.74);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+.prep-step-notice.show {
+  animation: prepStepNoticePop 1.12s ease-out forwards;
+}
+.prep-step-notice__done {
+  color: #D85687;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-shadow: 2px 2px 0 #fff;
+}
+.prep-step-notice__next {
+  margin-top: 7px;
+  color: #68482B;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.22;
+}
+@keyframes prepStepNoticePop {
+  0% { opacity: 0; transform: translate(-50%, -42%) scale(0.78); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
+  72% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -56%) scale(0.98); }
 }
 .prep-side {
   display: flex;
@@ -4390,6 +4529,10 @@ body.layout-editor-on .endX-marker {
           </div>
         </div>
         <div class="prep-burst" id="prep-burst">できた！</div>
+        <div class="prep-step-notice" id="prep-step-notice" aria-hidden="true">
+          <div class="prep-step-notice__done">できたよ！</div>
+          <div class="prep-step-notice__next">つぎへ すすもう！</div>
+        </div>
       </div>
     </div>
 
@@ -5354,9 +5497,9 @@ body.layout-editor-on .endX-marker {
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png'], x: 32, y: 36, size: 18, rot: -8 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png'], x: 49, y: 34, size: 17, rot: 6 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png'], x: 66, y: 38, size: 17, rot: -3 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 39, y: 53, size: 16, rot: 9 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png'], x: 39, y: 53, size: 16, rot: 9 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 57, y: 52, size: 16, rot: -10 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png'], x: 74, y: 55, size: 15, rot: 4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_light.png'], x: 74, y: 55, size: 15, rot: 4 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png'], x: 45, y: 70, size: 15, rot: -4 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png'], x: 62, y: 69, size: 15, rot: 7 },
       ],
@@ -5367,16 +5510,26 @@ body.layout-editor-on .endX-marker {
     },
     coat_chicken: {
       kind: 'coat_chicken',
+      trayPrep: true,
+      singleSurfacePrep: true,
       startSpeech: 'とりにくに こなを まぶそう！',
       completeSpeech: 'からあげの したごしらえ できたよ！',
-      toolSteps: [
-        { sheet: 'breading', x: 1, y: 2, label: 'したあじ' },
-        { sheet: 'breading', x: 2, y: 2, label: 'こな' },
+      completeBurst: 'ぱふっ！',
+      toolSteps: [BREADING_TRAY_STEPS[0]],
+      topviewBreading: {
+        foreground: {
+          flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '42%', h: '28%', dy: '17%', opacity: 0.62 },
+        },
+        effect: {
+          flour: { src: '../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png', w: '38%', h: '25%', dy: '-9%', opacity: 0.34 },
+        },
+      },
+      foodStages: [
+        { src: '../assets/images/bento/cooking/chicken/chicken_marinated_group.png' },
       ],
       steps: [
-        { sheet: 'breading', x: 1, y: 2, label: 'したあじの とりにく', caption: 'こなを まぶそう！', burst: 'ぽん！' },
-        { sheet: 'breading', x: 2, y: 2, label: 'こなを まぶそう', caption: 'こなを まぶしたよ！', burst: 'ぱふっ！' },
-        { sheet: 'breading', x: 2, y: 2, label: 'できあがり', caption: 'からあげの じゅんび できたよ！', burst: 'できた！' },
+        { material: 'flour', label: 'こなで うめよう', caption: 'こなの トレイへ おとして こすろう！', burst: 'ぱふっ！', trayLabel: 'こな' },
+        { material: 'flour', label: 'できあがり', caption: 'からあげの じゅんび できたよ！', burst: 'できた！', trayLabel: 'こな' },
       ],
     },
   };
@@ -5875,6 +6028,7 @@ body.layout-editor-on .endX-marker {
     prepProgress:  document.getElementById('prep-progress-fill'),
     prepProgressCap: document.getElementById('prep-progress-caption'),
     prepStepLane:  document.getElementById('prep-step-lane'),
+    prepStepNotice: document.getElementById('prep-step-notice'),
     speechPrep:    document.getElementById('speech-prep'),
 
     // chop screen
@@ -6990,7 +7144,7 @@ body.layout-editor-on .endX-marker {
     const states = ensureMarinatePieceStates(config);
     const renderKey = getMarinateRenderKey(config);
     if (els.prepMarinateGame.dataset.renderKey !== renderKey) {
-      let html = '<div class="marinate-bowl"><div class="marinate-sauce"></div>';
+      let html = '<div class="marinate-bowl"><div class="marinate-sauce"></div><div class="marinate-cue">とりにくを つかんで ぐるぐる</div><div class="marinate-target-ring"></div>';
       pieces.forEach(function (piece, index) {
         const stages = piece.stages || [];
         html += '<div class="marinate-piece" data-piece-index="' + index + '">'
@@ -7009,6 +7163,13 @@ body.layout-editor-on .endX-marker {
     const bowl = getMarinateBowlElement();
     if (bowl) {
       bowl.style.setProperty('--marinate-motion', Math.max(0, Math.min(1, state.prepMarinateMotion || 0)).toFixed(3));
+      const target = states.reduce(function (best, st) {
+        if (!best || (st.progress || 0) < (best.progress || 0)) return st;
+        return best;
+      }, null) || states[0] || {};
+      bowl.style.setProperty('--marinate-target-x', (Number.isFinite(target.x) ? target.x : 50).toFixed(2) + '%');
+      bowl.style.setProperty('--marinate-target-y', (Number.isFinite(target.y) ? target.y : 52).toFixed(2) + '%');
+      bowl.style.setProperty('--marinate-target-size', Math.max(15, (Number.isFinite(target.size) ? target.size : 16) + 6).toFixed(2) + '%');
     }
     const nodes = els.prepMarinateGame.querySelectorAll('.marinate-piece');
     nodes.forEach(function (node, index) {
@@ -7738,6 +7899,7 @@ body.layout-editor-on .endX-marker {
       els.prepBreadingTrays.innerHTML = '';
       els.prepBreadingTrays.dataset.kind = '';
       els.prepBreadingGame.dataset.topview = 'false';
+      delete els.prepBreadingGame.dataset.material;
       els.prepBreadingFood.style.backgroundImage = '';
       els.prepBreadingFood.style.removeProperty('--prep-food-mask');
       els.prepBreadingFood.style.removeProperty('--prep-base-mask');
@@ -7754,6 +7916,7 @@ body.layout-editor-on .endX-marker {
     const material = getPrepBreadingMaterial(step, trayStep, activeIndex);
     els.prepBreadingGame.setAttribute('aria-hidden', 'false');
     els.prepBreadingGame.dataset.topview = config.topviewBreading ? 'true' : 'false';
+    els.prepBreadingGame.dataset.material = material;
     if (els.prepBreadingTrays.dataset.kind !== config.kind || els.prepBreadingTrays.dataset.step !== String(activeIndex)) {
       els.prepBreadingTrays.innerHTML = '';
       const tray = document.createElement('div');
@@ -7868,6 +8031,17 @@ body.layout-editor-on .endX-marker {
     els.prepBurst.classList.remove('show');
     void els.prepBurst.offsetWidth;
     els.prepBurst.classList.add('show');
+  }
+
+  function showPrepStepNotice(doneText, nextText) {
+    if (!els.prepStepNotice) return;
+    const done = els.prepStepNotice.querySelector('.prep-step-notice__done');
+    const next = els.prepStepNotice.querySelector('.prep-step-notice__next');
+    if (done) done.textContent = doneText || 'できたよ！';
+    if (next) next.textContent = nextText || 'つぎへ すすもう！';
+    els.prepStepNotice.classList.remove('show');
+    void els.prepStepNotice.offsetWidth;
+    els.prepStepNotice.classList.add('show');
   }
 
   function getKneadStepForProgress(config, progress) {
@@ -8941,6 +9115,11 @@ body.layout-editor-on .endX-marker {
     updatePrepView(config, maxProgress, true);
     showPrepBurst(config.completeBurst || 'できた！');
     setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
+    const nextAction = getNextAction(ing);
+    showPrepStepNotice(
+      config.completeNotice || config.completeBurst || 'できたよ！',
+      nextAction ? getNextActionSpeech(nextAction) : 'れいぞうこに しまおう！'
+    );
     state.pendingTimers.push(setTimeout(function () {
       if (els.prepStage) {
         els.prepStage.classList.remove('is-working');
@@ -8948,7 +9127,7 @@ body.layout-editor-on .endX-marker {
       }
       state.prepAnimating = false;
       completeCurrentAction(ing);
-    }, 940));
+    }, 1180));
   }
 
   function advanceDragPrep(config, deltaDistance) {
@@ -8992,10 +9171,14 @@ body.layout-editor-on .endX-marker {
     const actionStep = config.steps[currentProgress] || {};
     const nextProgress = Math.min(maxProgress, currentProgress + 1);
     const nextStep = config.steps[nextProgress] || actionStep;
-    resetPrepTrayCoatingProgress('front');
-    updatePrepView(config, nextProgress, true);
     showPrepBurst(actionStep.burst || 'できた！');
-    setSpeech(nextStep.caption || nextStep.label || actionStep.caption || 'いいかんじ！', 'prep');
+    const materialName = getPrepBreadingMaterialLabel(getCurrentPrepBreadingMaterial(config));
+    const doneText = actionStep.doneNotice || (materialName + ' OK！');
+    const nextText = nextProgress >= maxProgress
+      ? (config.completeSpeech || 'したごしらえ できたよ！')
+      : ('つぎは ' + (nextStep.trayLabel || nextStep.label || 'つぎ') + '！');
+    showPrepStepNotice(doneText, nextText);
+    setSpeech(nextText, 'prep');
 
     if (nextProgress >= maxProgress) {
       state.cutting = true;
@@ -9004,14 +9187,18 @@ body.layout-editor-on .endX-marker {
         state.prepAnimating = false;
         setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
         completeCurrentAction(ing);
-      }, 720));
+      }, 1180));
       return;
     }
 
     state.pendingTimers.push(setTimeout(function () {
+      resetPrepTrayCoatingProgress('front');
+      updatePrepView(config, nextProgress, true);
+    }, 760));
+    state.pendingTimers.push(setTimeout(function () {
       if (els.prepStage) els.prepStage.classList.remove('is-working');
       state.prepAnimating = false;
-    }, 380));
+    }, 1040));
   }
 
   function getCurrentPrepBreadingMaterial(config) {
@@ -12283,6 +12470,7 @@ body.layout-editor-on .endX-marker {
   function getNextActionSpeech(action) {
     if (!action) return 'つぎへ すすもう！';
     if (action.type === 'prep') {
+      if (action.prepKind === 'marinate_chicken') return 'つぎは したあじを なじませよう！';
       if (action.prepKind === 'coat_chicken') return 'つぎは こなを まぶそう！';
       if (action.prepKind && action.prepKind.indexOf('shape_') === 0) return 'つぎは かたちを つくろう！';
       if (action.prepKind && action.prepKind.indexOf('bread_') === 0) return 'つぎは ころもを つけよう！';
@@ -12645,6 +12833,7 @@ body.layout-editor-on .endX-marker {
     if (els.prepProgressCap) els.prepProgressCap.textContent = 'タップして すすめよう！';
     if (els.prepActionLabel) els.prepActionLabel.textContent = 'したごしらえしよう！';
     if (els.prepStepLane) els.prepStepLane.innerHTML = '';
+    if (els.prepStepNotice) els.prepStepNotice.classList.remove('show');
     if (els.prepArtMain) {
       els.prepArtMain.style.backgroundImage = '';
       els.prepArtMain.style.backgroundSize = '';
