@@ -2276,7 +2276,7 @@ const bentoBoxes = [
   },
 ];
 const bentoAccessories = [
-  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: '', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
+  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
   { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
   { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
   { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
@@ -2940,8 +2940,58 @@ function clampPointToBento(x, y, item) {
     y: clamp(y, b.y + margin, b.y + b.h - margin),
   };
 }
-function snapPointForItem(item, x, y) {
+function getParentCup(item) {
+  if (!item || !item.parentCupId) return null;
+  return placedItems.find(i => i.uid === item.parentCupId && i.snapTarget) || null;
+}
+function getCupInnerRadius(cup, item) {
+  const cupRadius = cup && cup.radius ? cup.radius : ((cup && cup.size) || 150) * 0.58;
+  const itemSize = item && item.size ? item.size : 72;
+  return Math.max(18, cupRadius - itemSize * 0.32);
+}
+function clampPointToCup(x, y, item, cup) {
+  if (!cup) return clampPointToBento(x, y, item);
   let point = clampPointToBento(x, y, item);
+  const dx = point.x - cup.x;
+  const dy = point.y - cup.y;
+  const d = Math.hypot(dx, dy);
+  const maxD = getCupInnerRadius(cup, item);
+  if (d > maxD && d > 0.001) {
+    point = {
+      x: cup.x + dx / d * maxD,
+      y: cup.y + dy / d * maxD,
+    };
+  }
+  return clampPointToBento(point.x, point.y, item);
+}
+function clampCupChildren(cup) {
+  if (!cup) return;
+  placedItems.forEach(child => {
+    if (child.parentCupId === cup.uid) {
+      const p = clampPointToCup(child.x, child.y, child, cup);
+      child.x = p.x;
+      child.y = p.y;
+      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1);
+    }
+  });
+}
+function moveCupChildren(cup, dx, dy) {
+  if (!cup || (!dx && !dy)) return;
+  placedItems.forEach(child => {
+    if (child.parentCupId === cup.uid) {
+      child.x += dx;
+      child.y += dy;
+      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1);
+      const p = clampPointToCup(child.x, child.y, child, cup);
+      child.x = p.x;
+      child.y = p.y;
+    }
+  });
+}
+function snapPointForItem(item, x, y) {
+  let point = item.type === 'food' && getParentCup(item)
+    ? clampPointToCup(x, y, item, getParentCup(item))
+    : clampPointToBento(x, y, item);
   if (item.type === 'decor' || item.type === 'pick') {
     delete item.parentCupId;
     return point;
@@ -2956,12 +3006,14 @@ function snapPointForItem(item, x, y) {
     });
     if (nearestCup && nearestCupDist <= (nearestCup.radius || 70)) {
       item.parentCupId = nearestCup.uid;
-      return clampPointToBento(nearestCup.x, nearestCup.y, item);
+      item.layer = Math.max(item.layer || 1, (nearestCup.layer || 1) + 1);
+      return clampPointToCup(point.x, point.y, item, nearestCup);
     }
-    delete item.parentCupId;
+    const parentCup = getParentCup(item);
+    if (parentCup) return clampPointToCup(point.x, point.y, item, parentCup);
   }
 
-  if (item.type !== 'decor' && item.type !== 'pick') {
+  if (item.type === 'rice') {
     const box = getSelectedBentoBox();
     let nearestSpot = null;
     let nearestDist = Infinity;
@@ -2979,10 +3031,11 @@ function snapPointForItem(item, x, y) {
   return clampPointToBento(point.x, point.y, item);
 }
 function avoidFreeOverlap(item) {
-  if (!item || item.type === 'decor' || item.type === 'pick') return;
+  if (!item || item.type === 'decor' || item.type === 'pick' || item.type === 'cup' || item.parentCupId) return;
   for (let i = 0; i < placedItems.length; i++) {
     const other = placedItems[i];
     if (other.uid === item.uid || other.type === 'decor') continue;
+    if (other.parentCupId || other.type === 'cup') continue;
     if (getBoxTierCount() > 1 && getItemTier(other) !== getItemTier(item)) continue;
     const minD = Math.max(38, ((item.size || 70) + (other.size || 70)) * 0.28);
     if (dist(item, other) < minD) {
@@ -2995,7 +3048,8 @@ function avoidFreeOverlap(item) {
 function setFreeItemPosition(uid, x, y) {
   const item = placedItems.find(i => i.uid === uid);
   if (!item) return;
-  const p = clampPointToBento(x, y, item);
+  const parentCup = item.type === 'food' ? getParentCup(item) : null;
+  const p = parentCup ? clampPointToCup(x, y, item, parentCup) : clampPointToBento(x, y, item);
   const dx = p.x - item.x;
   const dy = p.y - item.y;
   item.x = p.x;
@@ -3008,6 +3062,7 @@ function setFreeItemPosition(uid, x, y) {
       }
     });
   }
+  if (item.snapTarget) moveCupChildren(item, dx, dy);
 }
 function finalizeFreeItemPosition(uid) {
   const item = placedItems.find(i => i.uid === uid);
@@ -3039,6 +3094,11 @@ function bringFreeItemForward(uid) {
   if (!item) return;
   item.layer = (item.layerBase || 20) + (++freeLayerSeq);
   freeSelectedItemUid = uid;
+  if (item.snapTarget) {
+    placedItems.forEach(child => {
+      if (child.parentCupId === item.uid) child.layer = item.layer + (++freeLayerSeq);
+    });
+  }
 }
 function eventToFreePoint(e) {
   const stage = document.getElementById('free-layout-stage');
@@ -3127,6 +3187,9 @@ function removeFreeItem(uid) {
   if (item.type === 'rice') {
     placedItems.forEach(i => { if (i.parentId === uid) removeIds.add(i.uid); });
   }
+  if (item.snapTarget) {
+    placedItems.forEach(i => { if (i.parentCupId === uid) removeIds.add(i.uid); });
+  }
   placedItems = placedItems.filter(i => !removeIds.has(i.uid));
   if (freeSelectedItemUid && removeIds.has(freeSelectedItemUid)) freeSelectedItemUid = null;
   renderFreeLayoutStage();
@@ -3165,6 +3228,7 @@ function setSelectedAccessorySize(sizeKey) {
   if (item.type === 'cup' && preset.radius) item.radius = preset.radius;
   const p = clampPointToBento(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
+  if (item.snapTarget) clampCupChildren(item);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -3243,9 +3307,9 @@ function selectFreeBentoBox(id) {
     const old = { x: item.x, y: item.y };
     const p = clampPointToBento(item.x, item.y, item);
     item.x = p.x; item.y = p.y;
+    const dx = item.x - old.x;
+    const dy = item.y - old.y;
     if (item.type === 'rice') {
-      const dx = item.x - old.x;
-      const dy = item.y - old.y;
       placedItems.forEach(child => {
         if (child.parentId === item.uid) {
           child.x += dx;
@@ -3253,6 +3317,7 @@ function selectFreeBentoBox(id) {
         }
       });
     }
+    if (item.snapTarget) moveCupChildren(item, dx, dy);
   });
   setSpeech(box.name + 'に しよう！');
   renderFreeLayoutStage();
