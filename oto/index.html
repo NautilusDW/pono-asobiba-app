@@ -148,10 +148,10 @@
     filter: blur(1px);
   }
   .instr-btn::after {
-    inset: -22px;
-    border: 6px solid rgba(255,255,255,0.92);
+    inset: 0;
+    border: 5px solid rgba(255,255,255,0.92);
     box-shadow: 0 0 0 5px rgba(255,216,77,0.45), 0 0 22px rgba(255,216,77,0.8);
-    transform: scale(var(--rhythm-ring-scale, 1.65));
+    transform: scale(var(--rhythm-ring-scale, 1.75));
     opacity: var(--rhythm-ring-opacity, 0);
   }
   .instr-btn.rhythm-next::before {
@@ -911,15 +911,15 @@
   }
 
   /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ */
-  @media (orientation: landscape) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 10/7) and (min-height: 560px) {
-    .instr-btn[data-idx="0"] { left: 45%; top: 35%; --sz: 168px; }
-    .instr-btn[data-idx="1"] { left: 56%; top: 22%; --sz: 172px; }
-    .instr-btn[data-idx="2"] { left: 76%; top: 22%; --sz: 172px; }
-    .instr-btn[data-idx="3"] { left: 89%; top: 35%; --sz: 168px; }
-    .instr-btn[data-idx="4"] { left: 45%; top: 65%; --sz: 168px; }
-    .instr-btn[data-idx="5"] { left: 56%; top: 78%; --sz: 172px; }
-    .instr-btn[data-idx="6"] { left: 76%; top: 78%; --sz: 172px; }
-    .instr-btn[data-idx="7"] { left: 89%; top: 65%; --sz: 168px; }
+  @media (orientation: landscape) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) and (min-height: 560px) {
+    .instr-btn[data-idx="0"] { left: 45%; top: 35%; --sz: 196px; }
+    .instr-btn[data-idx="1"] { left: 56%; top: 22%; --sz: 200px; }
+    .instr-btn[data-idx="2"] { left: 76%; top: 22%; --sz: 200px; }
+    .instr-btn[data-idx="3"] { left: 89%; top: 35%; --sz: 196px; }
+    .instr-btn[data-idx="4"] { left: 45%; top: 65%; --sz: 196px; }
+    .instr-btn[data-idx="5"] { left: 56%; top: 78%; --sz: 200px; }
+    .instr-btn[data-idx="6"] { left: 76%; top: 78%; --sz: 200px; }
+    .instr-btn[data-idx="7"] { left: 89%; top: 65%; --sz: 196px; }
     .pono-wrap {
       left: 67%;
       width: 250px;
@@ -1704,6 +1704,8 @@ var RHYTHM_SONG = {
   id: 'twinkle',
   name: 'きらきら',
   bpm: 100,
+  bandSongId: 'twinkle100',
+  bandStems: ['drums', 'bass', 'keyboard'],
   notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
 };
 var RHYTHM_GOOD_MS = 220;
@@ -1717,13 +1719,13 @@ var _rhythm = {
   leadMs: 0,
   raf: 0,
   streak: 0,
-  ownsDrums: false,
+  ownsBand: false,
   nowCue: false
 };
 
 function _rhythmBeatMs() {
   var song = _currentSong();
-  if (song && song.type === 'synth' && _activeStems.drums && song.bpm) {
+  if (song && song.type === 'synth' && _synthActive() && song.bpm) {
     return 60000 / song.bpm;
   }
   return 60000 / RHYTHM_SONG.bpm;
@@ -1775,15 +1777,30 @@ function _renderRhythmTarget() {
   if (next && next !== target) next.classList.add('rhythm-next');
   _renderRhythmQueue();
 }
-function _ensureRhythmDrums() {
-  if (_activeStems.drums && _curSongIdx === SPEED_TO_SONG_IDX.normal) {
-    _rhythm.ownsDrums = false;
+function _songIndexById(id) {
+  for (var i = 0; i < SONGS.length; i++) {
+    if (SONGS[i].id === id) return i;
+  }
+  return -1;
+}
+function _ensureRhythmBand() {
+  var songIdx = _songIndexById(RHYTHM_SONG.bandSongId);
+  if (songIdx < 0) songIdx = SPEED_TO_SONG_IDX.normal;
+  var stems = RHYTHM_SONG.bandStems || ['drums'];
+  var alreadyOn = _curSongIdx === songIdx && stems.every(function(stem) {
+    return !!_activeStems[stem];
+  });
+  if (alreadyOn) {
+    _rhythm.ownsBand = false;
     return;
   }
-  _rhythm.ownsDrums = true;
+  _rhythm.ownsBand = true;
   _stopAllBands();
-  _curSongIdx = SPEED_TO_SONG_IDX.normal;
-  _activeStems.drums = true;
+  _curSongIdx = songIdx;
+  _activeStems = { drums: false, bass: false, keyboard: false };
+  stems.forEach(function(stem) {
+    if (stem in _activeStems) _activeStems[stem] = true;
+  });
   _startSongClock();
   _renderSpeedBtns();
 }
@@ -1843,7 +1860,7 @@ function _startRhythmMode() {
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
   _setRhythmStatus('ひかるボタンを いま！でタッチ', null);
-  _ensureRhythmDrums();
+  _ensureRhythmBand();
   _scheduleRhythmNote(1.6);
   if (_rhythm.raf) cancelAnimationFrame(_rhythm.raf);
   _rhythm.raf = requestAnimationFrame(_rhythmTick);
@@ -1861,10 +1878,10 @@ function _stopRhythmMode() {
   });
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.remove('show');
-  if (_rhythm.ownsDrums) {
+  if (_rhythm.ownsBand) {
     _stopAllBands();
     _renderSpeedBtns();
-    _rhythm.ownsDrums = false;
+    _rhythm.ownsBand = false;
   }
 }
 function setPlayMode(mode) {
@@ -2686,7 +2703,8 @@ var SONGS = [
   { id: 'mp3',  name: '⭐',       type: 'mp3',   loopMs: 29300 },
   { id: 's80',  name: '🐢 80',    type: 'synth', bpm: 80,  bars: 4, chords: ['C','F','Am','G'] },
   { id: 's100', name: '🚶 100',   type: 'synth', bpm: 100, bars: 4, chords: ['C','F','Am','G'] },
-  { id: 's120', name: '🏃 120',   type: 'synth', bpm: 120, bars: 4, chords: ['C','F','Am','G'] }
+  { id: 's120', name: '🏃 120',   type: 'synth', bpm: 120, bars: 4, chords: ['C','F','Am','G'] },
+  { id: 'twinkle100', name: 'きらきら', type: 'synth', bpm: 100, bars: 4, chords: ['C','F','C','G'] }
 ];
 var _curSongIdx = 0;
 function _currentSong() { return SONGS[_curSongIdx]; }
