@@ -1219,6 +1219,7 @@ const writingCharacters = [
     char: 'あ',
     label: 'あ',
     strokes: 3,
+    guideSvg: 'hiragana_a.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1226,6 +1227,7 @@ const writingCharacters = [
     char: 'い',
     label: 'い',
     strokes: 2,
+    guideSvg: 'hiragana_i.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1233,6 +1235,7 @@ const writingCharacters = [
     char: 'う',
     label: 'う',
     strokes: 2,
+    guideSvg: 'hiragana_u.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1240,6 +1243,7 @@ const writingCharacters = [
     char: 'え',
     label: 'え',
     strokes: 2,
+    guideSvg: 'hiragana_e.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1247,6 +1251,7 @@ const writingCharacters = [
     char: 'お',
     label: 'お',
     strokes: 3,
+    guideSvg: 'hiragana_o.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   }
 ];
@@ -1273,6 +1278,7 @@ const trailCtx = pixelTrailCanvas.getContext('2d');
 const PIXEL_GRID_SIZE = 132;
 const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 5;
+const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1290,6 +1296,7 @@ let currentStrokeIndex = 0;
 let mistakeCount = 0;
 let complete = false;
 const completedCharacters = new Set();
+const guideSvgMaskCache = new Map();
 
 const defaultCareState = {
   nakayoshi: 32,
@@ -1452,6 +1459,91 @@ function makeStrokeMask(pathData, gridSize, pixelPadding, offsetX, offsetY) {
   return mask;
 }
 
+function countMaskCells(mask) {
+  let total = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) total += 1;
+  }
+  return total;
+}
+
+function getSvgViewBox(svgEl) {
+  const raw = svgEl.getAttribute('viewBox');
+  if (raw) {
+    const parts = raw.trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts.every(Number.isFinite) && parts[2] > 0 && parts[3] > 0) {
+      return { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
+    }
+  }
+  const width = Number(svgEl.getAttribute('width')) || 1024;
+  const height = Number(svgEl.getAttribute('height')) || 1024;
+  return { x: 0, y: 0, width, height };
+}
+
+function makeSvgGuideMask(svgText, gridSize) {
+  const svgDoc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  if (svgDoc.querySelector('parsererror')) {
+    throw new Error('SVG parse error');
+  }
+
+  const svgEl = svgDoc.documentElement;
+  const viewBox = getSvgViewBox(svgEl);
+  const pathEls = Array.from(svgDoc.querySelectorAll('path[d]'));
+  if (pathEls.length === 0) {
+    throw new Error('SVG path not found');
+  }
+
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = gridSize;
+  maskCanvas.height = gridSize;
+  const maskCtx = maskCanvas.getContext('2d');
+  const sx = gridSize / viewBox.width;
+  const sy = gridSize / viewBox.height;
+  maskCtx.clearRect(0, 0, gridSize, gridSize);
+  maskCtx.fillStyle = '#000';
+  maskCtx.setTransform(sx, 0, 0, sy, -viewBox.x * sx, -viewBox.y * sy);
+
+  pathEls.forEach((pathEl) => {
+    const path = new Path2D(pathEl.getAttribute('d'));
+    const fillRule = pathEl.getAttribute('fill-rule') === 'evenodd' ? 'evenodd' : 'nonzero';
+    try {
+      maskCtx.fill(path, fillRule);
+    } catch (_) {
+      maskCtx.fill(path);
+    }
+  });
+  maskCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+  const pixels = maskCtx.getImageData(0, 0, gridSize, gridSize).data;
+  const mask = new Uint8Array(gridSize * gridSize);
+  for (let i = 0; i < mask.length; i++) {
+    mask[i] = pixels[i * 4 + 3] > 16 ? 1 : 0;
+  }
+
+  const totalMaskCells = countMaskCells(mask);
+  if (!totalMaskCells) {
+    throw new Error('SVG mask is empty');
+  }
+  return { mask, totalMaskCells };
+}
+
+async function loadGuideSvgMask(item, gridSize) {
+  if (!item || !item.guideSvg) return null;
+  const cacheKey = `${item.guideSvg}:${gridSize}`;
+  if (guideSvgMaskCache.has(cacheKey)) {
+    return guideSvgMaskCache.get(cacheKey);
+  }
+
+  const response = await fetch(GUIDE_SVG_BASE_PATH + item.guideSvg);
+  if (!response.ok) {
+    throw new Error(`guide SVG not found: ${item.guideSvg}`);
+  }
+  const svgText = await response.text();
+  const guideMask = makeSvgGuideMask(svgText, gridSize);
+  guideSvgMaskCache.set(cacheKey, guideMask);
+  return guideMask;
+}
+
 function mergeStrokeMasks(strokeMasks, gridSize) {
   const mask = new Uint8Array(gridSize * gridSize);
   let totalMaskCells = 0;
@@ -1530,11 +1622,11 @@ function renderCanvasStrokeNumbers() {
   });
 }
 
-function buildPixelLetterMask(data) {
+async function buildPixelLetterMask(data, item, token) {
   pixelLetter = null;
   clearPixelTrail();
   clearStrokeNumbers();
-  if (!data || !Array.isArray(data.strokes) || typeof Path2D === 'undefined') return;
+  if (!data || !Array.isArray(data.strokes) || typeof Path2D === 'undefined') return false;
 
   const gridSize = PIXEL_GRID_SIZE;
   const pixelPadding = getPixelLetterPadding();
@@ -1556,19 +1648,38 @@ function buildPixelLetterMask(data) {
       }
     }
     updateWriterDisplayOffset(offsetX, offsetY, gridSize);
+
+    let guideMask = merged.mask;
+    let totalMaskCells = merged.totalMaskCells;
+    if (item && item.guideSvg) {
+      try {
+        const customGuide = await loadGuideSvgMask(item, gridSize);
+        if (customGuide && customGuide.totalMaskCells) {
+          guideMask = customGuide.mask;
+          totalMaskCells = customGuide.totalMaskCells;
+        }
+      } catch (error) {
+        console.warn('Could not load custom guide SVG:', item.guideSvg, error);
+      }
+    }
+
+    if (token !== undefined && token !== writerLoadToken) return false;
+
     pixelLetter = {
       gridSize,
-      mask: merged.mask,
+      mask: guideMask,
       strokeMasks,
       fill: new Uint8Array(gridSize * gridSize),
-      totalMaskCells: merged.totalMaskCells,
+      totalMaskCells,
       offsetX,
       offsetY
     };
     renderPixelLetter();
     renderCanvasStrokeNumbers();
+    return true;
   } catch (error) {
     console.warn('Could not build pixel guide letter:', error);
+    return false;
   }
 }
 
@@ -1736,9 +1847,12 @@ function createWriter() {
           if (token !== writerLoadToken) return;
           currentCharData = data;
           updateStrokeCountFromData(item, data);
-          buildPixelLetterMask(data);
-          renderStrokeOrder();
-          onComplete(data);
+          return buildPixelLetterMask(data, item, token)
+            .then((ready) => {
+              if (!ready || token !== writerLoadToken) return;
+              renderStrokeOrder();
+              onComplete(data);
+            });
         })
         .catch((error) => {
           console.warn('No kana data for character:', char, error);
