@@ -158,6 +158,8 @@
   .instr-btn.rhythm-next::before {
     opacity: 0.46;
     transform: scale(0.98);
+    background: radial-gradient(circle, rgba(186,230,253,0.92) 0%, rgba(56,189,248,0.52) 52%, rgba(56,189,248,0) 76%);
+    filter: drop-shadow(0 0 12px rgba(56,189,248,0.85));
   }
   .instr-btn.rhythm-target::before {
     opacity: 1;
@@ -564,7 +566,112 @@
     transform: translateY(-2px);
   }
   .rhythm-note.next {
-    background: rgba(255,255,255,0.34);
+    background: linear-gradient(135deg, #BAE6FD, #38BDF8);
+    color: #083344;
+    border-color: rgba(255,255,255,0.86);
+  }
+  .rhythm-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: rgba(8,25,55,0.58);
+    pointer-events: auto;
+  }
+  .rhythm-menu.show { display: flex; }
+  .rhythm-menu-panel {
+    width: min(86vw, 520px);
+    border-radius: 24px;
+    border: 3px solid rgba(255,255,255,0.82);
+    background: rgba(18,35,86,0.94);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.34);
+    padding: 24px 26px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .rhythm-menu-title {
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    font-weight: 900;
+    line-height: 1.15;
+    color: #FDE68A;
+    text-shadow: 0 3px 8px rgba(0,0,0,0.34);
+  }
+  .rhythm-menu-text {
+    font-size: clamp(1rem, 2.6vw, 1.3rem);
+    font-weight: 900;
+    line-height: 1.55;
+    color: #fff;
+  }
+  .rhythm-menu-cue {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: rgba(255,255,255,0.9);
+  }
+  .rhythm-cue-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #38BDF8;
+    box-shadow: 0 0 0 5px rgba(56,189,248,0.22);
+  }
+  .rhythm-song-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: min(100%, 340px);
+  }
+  .rhythm-song-choice {
+    min-height: 50px;
+    border-radius: 16px;
+    border: 3px solid rgba(255,255,255,0.68);
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .rhythm-song-choice.active {
+    background: linear-gradient(135deg, #FFD84D, #F59E0B);
+    color: #5D4E37;
+    border-color: #fff;
+  }
+  .rhythm-menu-actions {
+    display: flex;
+    gap: 10px;
+    width: min(100%, 380px);
+  }
+  .rhythm-menu-btn {
+    flex: 1;
+    min-height: 52px;
+    border: none;
+    border-radius: 18px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .rhythm-menu-btn.start {
+    background: linear-gradient(135deg, #34D399, #10B981);
+    color: #064E3B;
+  }
+  .rhythm-menu-btn.cancel {
+    background: rgba(255,255,255,0.16);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.5);
   }
 
   /* (rec-bar / 録音 UI は復活させない方針で削除) */
@@ -1010,6 +1117,19 @@
     <div class="rhythm-hud" id="rhythm-hud" aria-live="polite">
       <div class="rhythm-status" id="rhythm-status">ひかるボタンを いま！でタッチ</div>
       <div class="rhythm-queue" id="rhythm-queue"></div>
+    </div>
+
+    <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
+      <div class="rhythm-menu-panel">
+        <div class="rhythm-menu-title">リズムでえんそう</div>
+        <div class="rhythm-menu-text">輪っかがボタンに重なったらタッチ。<br>青く光るボタンが次だよ。</div>
+        <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>ゆっくり出る輪っかを見て押そう</span></div>
+        <div class="rhythm-song-list" id="rhythm-song-list"></div>
+        <div class="rhythm-menu-actions">
+          <button class="rhythm-menu-btn cancel" id="rhythm-menu-cancel">もどる</button>
+          <button class="rhythm-menu-btn start" id="rhythm-menu-start">はじめる</button>
+        </div>
+      </div>
     </div>
 
     <!-- カウントダウン / 録音中バナー -->
@@ -1701,18 +1821,21 @@ function playSetSoundFor(set, idx, useChord) {
 // リズムモード: 光るボタン + 縮む輪っかで「次」と「いま」を同じ場所に出す
 // ────────────────────────────────
 var NOTE_LABELS = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
-var RHYTHM_SONG = {
-  id: 'twinkle',
-  name: 'きらきら',
-  bpm: 100,
-  bandSongId: 'twinkle100',
-  bandStems: ['drums'],
-  bandVolume: 0.35,
-  notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
-};
-var RHYTHM_GOOD_MS = 220;
-var RHYTHM_OK_MS = 520;
-var RHYTHM_MISS_MS = 760;
+var RHYTHM_SONGS = [
+  {
+    id: 'twinkle',
+    name: 'きらきらぼし',
+    bpm: 80,
+    bandSongId: 'twinkle80',
+    bandStems: ['drums'],
+    bandVolume: 0.32,
+    notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
+  }
+];
+var RHYTHM_SONG = RHYTHM_SONGS[0];
+var RHYTHM_GOOD_MS = 330;
+var RHYTHM_OK_MS = 920;
+var RHYTHM_MISS_MS = 1350;
 var _playMode = 'free';
 var _rhythm = {
   enabled: false,
@@ -1738,8 +1861,37 @@ function _rhythmExpectedIdx(offset) {
   var notes = RHYTHM_SONG.notes;
   return notes[(_rhythm.idx + offset) % notes.length];
 }
+function _selectRhythmSong(id) {
+  var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
+  if (!found) return;
+  RHYTHM_SONG = found;
+  _renderRhythmSongMenu();
+}
+function _renderRhythmSongMenu() {
+  var list = document.getElementById('rhythm-song-list');
+  if (!list) return;
+  list.innerHTML = RHYTHM_SONGS.map(function(song) {
+    var active = song.id === RHYTHM_SONG.id ? ' active' : '';
+    return '<button class="rhythm-song-choice' + active + '" data-song="' + song.id + '">' + song.name + '</button>';
+  }).join('');
+  list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      _selectRhythmSong(btn.dataset.song);
+    });
+  });
+}
 function _rhythmButton(idx) {
   return document.querySelector('.instr-btn[data-idx="' + idx + '"]');
+}
+function _rhythmNextDifferentIdx() {
+  var current = _rhythmExpectedIdx(0);
+  for (var i = 1; i < RHYTHM_SONG.notes.length; i++) {
+    var idx = _rhythmExpectedIdx(i);
+    if (idx !== current) return idx;
+  }
+  return current;
 }
 function _clearRhythmButtonState() {
   document.querySelectorAll('.instr-btn').forEach(function(btn) {
@@ -1775,7 +1927,7 @@ function _renderRhythmTarget() {
   _clearRhythmButtonState();
   if (!_rhythm.enabled) return;
   var target = _rhythmButton(_rhythmExpectedIdx(0));
-  var next = _rhythmButton(_rhythmExpectedIdx(1));
+  var next = _rhythmButton(_rhythmNextDifferentIdx());
   if (target) target.classList.add('rhythm-target');
   if (next && next !== target) next.classList.add('rhythm-next');
   _renderRhythmQueue();
@@ -1811,7 +1963,7 @@ function _ensureRhythmBand() {
 function _scheduleRhythmNote(leadBeats) {
   if (!_rhythm.enabled) return;
   var beatMs = _rhythmBeatMs();
-  _rhythm.leadMs = beatMs * (leadBeats || 1.05);
+  _rhythm.leadMs = beatMs * (leadBeats || 2.1);
   _rhythm.targetTime = performance.now() + _rhythm.leadMs;
   _rhythm.nowCue = false;
   _renderRhythmTarget();
@@ -1824,9 +1976,9 @@ function _advanceRhythm(wasHit) {
     _rhythm.streak = 0;
     _setRhythmStatus('できた！もういっかい', 'good');
     bumpPono();
-    _scheduleRhythmNote(1.65);
+    _scheduleRhythmNote(3.0);
   } else {
-    _scheduleRhythmNote(wasHit ? 0.98 : 1.12);
+    _scheduleRhythmNote(wasHit ? 2.05 : 2.35);
   }
 }
 function _rhythmTick() {
@@ -1836,7 +1988,7 @@ function _rhythmTick() {
   var until = _rhythm.targetTime - now;
   var lead = Math.max(1, _rhythm.leadMs);
   var progress = Math.max(0, Math.min(1, 1 - (until / lead)));
-  var scale = 1.88 - progress * 0.88;
+  var scale = 2.2 - progress * 1.2;
   if (until < 0) scale = Math.max(0.92, 1 + until / 2400);
   var opacity = until < -RHYTHM_MISS_MS ? 0 : 0.9;
   if (btn) {
@@ -1866,9 +2018,20 @@ function _startRhythmMode() {
   _setRhythmStatus('ひかるボタンを いま！でタッチ', null);
   _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
-  _scheduleRhythmNote(1.6);
+  _scheduleRhythmNote(3.0);
   if (_rhythm.raf) cancelAnimationFrame(_rhythm.raf);
   _rhythm.raf = requestAnimationFrame(_rhythmTick);
+}
+function _showRhythmMenu() {
+  if (_rhythm.enabled) _stopRhythmMode();
+  _renderRhythmSongMenu();
+  _setModeButtons('rhythm');
+  var menu = document.getElementById('rhythm-menu');
+  if (menu) menu.classList.add('show');
+}
+function _hideRhythmMenu() {
+  var menu = document.getElementById('rhythm-menu');
+  if (menu) menu.classList.remove('show');
 }
 function _stopRhythmMode() {
   if (!_rhythm.enabled) return;
@@ -1890,14 +2053,17 @@ function _stopRhythmMode() {
   }
   _bandVolume = _rhythm.prevBandVolume || 1;
 }
-function setPlayMode(mode) {
-  mode = mode === 'rhythm' ? 'rhythm' : 'free';
-  _playMode = mode;
+function _setModeButtons(mode) {
   document.querySelectorAll('.mode-btn').forEach(function(btn) {
     var active = btn.dataset.mode === mode;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
+}
+function setPlayMode(mode) {
+  mode = mode === 'rhythm' ? 'rhythm' : 'free';
+  _playMode = mode;
+  _setModeButtons(mode);
   if (mode === 'rhythm') _startRhythmMode();
   else _stopRhythmMode();
 }
@@ -1932,9 +2098,29 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     e.preventDefault();
     e.stopPropagation();
     unlockAudio();
-    setPlayMode(btn.dataset.mode);
+    if (btn.dataset.mode === 'rhythm') _showRhythmMenu();
+    else {
+      _hideRhythmMenu();
+      setPlayMode('free');
+    }
   });
 });
+var rhythmMenuStart = document.getElementById('rhythm-menu-start');
+if (rhythmMenuStart) rhythmMenuStart.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  _hideRhythmMenu();
+  setPlayMode('rhythm');
+});
+var rhythmMenuCancel = document.getElementById('rhythm-menu-cancel');
+if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  _hideRhythmMenu();
+  setPlayMode('free');
+});
+_renderRhythmSongMenu();
 
 // 初回ユーザー操作で AudioContext アンロック + voice/animal の再デコード
 var _preloaded = false;
@@ -2710,6 +2896,7 @@ var SONGS = [
   { id: 's80',  name: '🐢 80',    type: 'synth', bpm: 80,  bars: 4, chords: ['C','F','Am','G'] },
   { id: 's100', name: '🚶 100',   type: 'synth', bpm: 100, bars: 4, chords: ['C','F','Am','G'] },
   { id: 's120', name: '🏃 120',   type: 'synth', bpm: 120, bars: 4, chords: ['C','F','Am','G'] },
+  { id: 'twinkle80',  name: 'きらきら', type: 'synth', bpm: 80,  bars: 4, chords: ['C','F','C','G'] },
   { id: 'twinkle100', name: 'きらきら', type: 'synth', bpm: 100, bars: 4, chords: ['C','F','C','G'] }
 ];
 var _curSongIdx = 0;
