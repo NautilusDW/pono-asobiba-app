@@ -113,7 +113,7 @@
     border: clamp(4px, calc(var(--sz, 128px) * 0.045), 7px) solid rgba(255,255,255,0.92);
     background:
       radial-gradient(circle at 34% 27%, rgba(255,255,255,0.9) 0 13%, rgba(255,255,255,0.34) 14% 23%, transparent 24%),
-      linear-gradient(145deg, var(--note-hi, #FDE68A), var(--note-lo, #F97316));
+      linear-gradient(145deg, var(--note-hi, #243754), var(--note-lo, #0F1F38));
     box-shadow:
       inset 0 -10px 18px rgba(80,32,12,0.18),
       inset 0 5px 12px rgba(255,255,255,0.42),
@@ -170,26 +170,19 @@
     opacity: 1;
     animation: rhythmTargetGlow 0.75s ease-in-out infinite;
   }
+  .instr-btn.rhythm-target {
+    --note-hi: #FDE68A;
+    --note-lo: #F59E0B;
+    --note-fg: #5D3A00;
+    border-color: rgba(255,255,255,0.98);
+    box-shadow:
+      inset 0 -10px 18px rgba(120,53,15,0.18),
+      inset 0 5px 12px rgba(255,255,255,0.48),
+      0 0 0 5px rgba(255,216,77,0.22),
+      0 10px 24px rgba(0,0,0,0.26);
+  }
   .instr-btn.rhythm-target::after {
     opacity: var(--rhythm-ring-opacity, 0.85);
-  }
-  .instr-btn.rhythm-upcoming-1,
-  .instr-btn.rhythm-upcoming-2,
-  .instr-btn.rhythm-upcoming-3 {
-    border-color: rgba(255,255,255,0.84);
-    box-shadow:
-      inset 0 -10px 18px rgba(80,32,12,0.14),
-      inset 0 5px 12px rgba(255,255,255,0.38),
-      0 0 0 4px rgba(56,189,248,0.16),
-      0 8px 18px rgba(0,0,0,0.2);
-  }
-  .instr-btn.rhythm-upcoming-1::before,
-  .instr-btn.rhythm-upcoming-2::before,
-  .instr-btn.rhythm-upcoming-3::before {
-    opacity: 0.38;
-    transform: scale(0.98);
-    background: radial-gradient(circle, rgba(186,230,253,0.92) 0%, rgba(56,189,248,0.5) 52%, rgba(56,189,248,0) 76%);
-    filter: drop-shadow(0 0 12px rgba(56,189,248,0.75));
   }
   .instr-btn.rhythm-hit::before {
     opacity: 1;
@@ -230,86 +223,21 @@
     height: 100%;
     padding-bottom: 0.06em;
   }
-  .note-label::after {
-    content: attr(data-step);
-    position: absolute;
-    right: -12%;
-    top: -15%;
-    min-width: calc(var(--sz, 128px) * 0.26);
-    height: calc(var(--sz, 128px) * 0.26);
-    padding: 0 0.45em;
-    border-radius: 999px;
-    border: 2px solid rgba(255,255,255,0.95);
-    background: rgba(7,89,133,0.94);
-    color: #fff;
-    font-size: calc(var(--sz, 128px) * 0.1);
-    line-height: calc(var(--sz, 128px) * 0.22);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transform: translateY(2px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.24);
-  }
-  .note-label[data-step]:not([data-step=""])::after {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .instr-btn.rhythm-target .note-label::after {
-    background: rgba(217,119,6,0.96);
-    color: #fff7ed;
-  }
   /* タップ時は影を弱めて凹みを強調 */
   .instr-btn:active .btn-img,
   .set-btn:active .btn-img,
   .speed-btn:active .btn-img {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
   }
-  .rhythm-path {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.12s ease-out;
-    overflow: visible;
-  }
-  .rhythm-path.show { opacity: 1; }
-  .rhythm-path line {
-    stroke-width: 5;
-    stroke-linecap: round;
-    stroke-dasharray: 10 12;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-  }
-  .rhythm-path .rhythm-link-1 { stroke: rgba(250,204,21,0.86); }
-  .rhythm-path .rhythm-link-2 { stroke: rgba(56,189,248,0.82); }
-  .rhythm-path .rhythm-link-3 { stroke: rgba(167,139,250,0.8); }
-  .rhythm-path circle {
-    fill: rgba(255,255,255,0.92);
-    stroke: rgba(8,47,73,0.55);
-    stroke-width: 2;
-  }
-  .rhythm-path text {
-    fill: #0f172a;
-    font-family: 'Zen Maru Gothic', sans-serif;
-    font-size: 15px;
-    font-weight: 900;
-    dominant-baseline: central;
-    text-anchor: middle;
-    pointer-events: none;
-  }
-
   /* 8ボタン: ポノを中心に楕円配置 (左右サイドの 0/3/4/7 は縦中央寄り、上下の 1/2/5/6 は画面端寄り) */
-  .instr-btn[data-idx="0"] { left: 12%; top: 40%; --sz: 108px; --note-hi: #FB7185; --note-lo: #EF4444; }
-  .instr-btn[data-idx="1"] { left: 34%; top: 26%; --sz: 108px; --note-hi: #FDE68A; --note-lo: #F59E0B; }
-  .instr-btn[data-idx="2"] { left: 66%; top: 26%; --sz: 108px; --note-hi: #86EFAC; --note-lo: #22C55E; }
-  .instr-btn[data-idx="3"] { left: 88%; top: 40%; --sz: 108px; --note-hi: #67E8F9; --note-lo: #06B6D4; }
-  .instr-btn[data-idx="4"] { left: 12%; top: 60%; --sz: 108px; --note-hi: #93C5FD; --note-lo: #3B82F6; }
-  .instr-btn[data-idx="5"] { left: 34%; top: 74%; --sz: 108px; --note-hi: #C4B5FD; --note-lo: #8B5CF6; }
-  .instr-btn[data-idx="6"] { left: 66%; top: 74%; --sz: 108px; --note-hi: #F9A8D4; --note-lo: #EC4899; }
-  .instr-btn[data-idx="7"] { left: 88%; top: 60%; --sz: 108px; --note-hi: #FDA4AF; --note-lo: #F43F5E; }
+  .instr-btn[data-idx="0"] { left: 12%; top: 40%; --sz: 108px; }
+  .instr-btn[data-idx="1"] { left: 34%; top: 26%; --sz: 108px; }
+  .instr-btn[data-idx="2"] { left: 66%; top: 26%; --sz: 108px; }
+  .instr-btn[data-idx="3"] { left: 88%; top: 40%; --sz: 108px; }
+  .instr-btn[data-idx="4"] { left: 12%; top: 60%; --sz: 108px; }
+  .instr-btn[data-idx="5"] { left: 34%; top: 74%; --sz: 108px; }
+  .instr-btn[data-idx="6"] { left: 66%; top: 74%; --sz: 108px; }
+  .instr-btn[data-idx="7"] { left: 88%; top: 60%; --sz: 108px; }
 
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
@@ -681,11 +609,6 @@
     color: #5D4E37;
     border-color: rgba(255,255,255,0.95);
     transform: translateY(-2px);
-  }
-  .rhythm-note.next {
-    background: linear-gradient(135deg, #BAE6FD, #38BDF8);
-    color: #083344;
-    border-color: rgba(255,255,255,0.86);
   }
   .rhythm-menu {
     position: absolute;
@@ -1275,7 +1198,6 @@
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
     <div id="instruments">
-      <svg class="rhythm-path" id="rhythm-path" aria-hidden="true"></svg>
       <button class="instr-btn i1" data-idx="0" aria-label="ド"><span class="note-label">ド</span><img class="btn-img" src="../assets/images/oto/buttons/btn_note_do.png" alt=""></button>
       <button class="instr-btn i2" data-idx="1" aria-label="レ"><span class="note-label">レ</span><img class="btn-img" src="../assets/images/oto/buttons/btn_note_re.png" alt=""></button>
       <button class="instr-btn i3" data-idx="2" aria-label="ミ"><span class="note-label">ミ</span><img class="btn-img" src="../assets/images/oto/buttons/btn_note_mi.png" alt=""></button>
@@ -2034,26 +1956,15 @@ function _renderRhythmSongMenu() {
 function _rhythmButton(idx) {
   return document.querySelector('.instr-btn[data-idx="' + idx + '"]');
 }
-function _rhythmNextDifferentIdx() {
-  var current = _rhythmExpectedIdx(0);
-  for (var i = 1; i < RHYTHM_SONG.notes.length; i++) {
-    var idx = _rhythmExpectedIdx(i);
-    if (idx !== current) return idx;
-  }
-  return current;
-}
 function _clearRhythmButtonState() {
   document.querySelectorAll('.instr-btn').forEach(function(btn) {
-    btn.classList.remove('rhythm-target', 'rhythm-next', 'rhythm-upcoming-1', 'rhythm-upcoming-2', 'rhythm-upcoming-3');
+    btn.classList.remove('rhythm-target');
     btn.style.removeProperty('--rhythm-ring-scale');
     btn.style.removeProperty('--rhythm-ring-opacity');
     btn.style.removeProperty('--rhythm-ring-border');
     btn.style.removeProperty('--rhythm-ring-halo');
     btn.style.removeProperty('--rhythm-ring-glow');
-    var label = btn.querySelector('.note-label');
-    if (label) label.removeAttribute('data-step');
   });
-  _renderRhythmPath([]);
 }
 function _pulseRhythmButton(btn, className) {
   if (!btn) return;
@@ -2079,32 +1990,6 @@ function _renderRhythmQueue() {
   }
   queue.innerHTML = html;
 }
-function _rhythmButtonCenter(btn, baseRect) {
-  var rect = btn.getBoundingClientRect();
-  return {
-    x: rect.left - baseRect.left + rect.width / 2,
-    y: rect.top - baseRect.top + rect.height / 2
-  };
-}
-function _renderRhythmPath(points) {
-  var svg = document.getElementById('rhythm-path');
-  if (!svg) return;
-  if (!points || points.length < 2) {
-    svg.classList.remove('show');
-    svg.innerHTML = '';
-    return;
-  }
-  var html = '<defs><marker id="rhythm-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="rgba(255,255,255,0.88)"></path></marker></defs>';
-  for (var i = 0; i < points.length - 1; i++) {
-    html += '<line class="rhythm-link-' + Math.min(points[i + 1].step || i + 1, 3) + '" x1="' + points[i].x.toFixed(1) + '" y1="' + points[i].y.toFixed(1) + '" x2="' + points[i + 1].x.toFixed(1) + '" y2="' + points[i + 1].y.toFixed(1) + '" marker-end="url(#rhythm-arrow)"></line>';
-  }
-  for (var j = 1; j < points.length; j++) {
-    html += '<circle cx="' + points[j].x.toFixed(1) + '" cy="' + points[j].y.toFixed(1) + '" r="13"></circle><text x="' + points[j].x.toFixed(1) + '" y="' + points[j].y.toFixed(1) + '">' + (points[j].label || points[j].step || j) + '</text>';
-  }
-  svg.setAttribute('viewBox', '0 0 ' + svg.clientWidth + ' ' + svg.clientHeight);
-  svg.innerHTML = html;
-  svg.classList.add('show');
-}
 function _rhythmRingStyle(targetTime, now) {
   var lead = _rhythmRingLeadMs();
   var until = targetTime - now;
@@ -2117,82 +2002,23 @@ function _rhythmRingStyle(targetTime, now) {
     opacity: until < 0 ? Math.max(0.35, 1 + until / RHYTHM_MISS_MS) : 0.9
   };
 }
-function _setRhythmStepBadge(btn, text) {
-  var label = btn && btn.querySelector ? btn.querySelector('.note-label') : null;
-  if (!label) return;
-  if (text) label.setAttribute('data-step', text);
-  else label.removeAttribute('data-step');
-}
-function _rhythmStepText(offset) {
-  return offset === 0 ? 'いま' : String(offset);
-}
-function _rhythmStepBadgeText(offsets) {
-  return offsets.map(_rhythmStepText).join('/');
-}
-function _rhythmPreviewGroups() {
-  var groups = [];
-  var byIdx = {};
-  for (var i = 0; i < RHYTHM_PREVIEW_STEPS; i++) {
-    var idx = _rhythmExpectedIdx(i);
-    if (!byIdx[idx]) {
-      byIdx[idx] = { idx: idx, offsets: [] };
-      groups.push(byIdx[idx]);
-    }
-    byIdx[idx].offsets.push(i);
-  }
-  return groups;
-}
-function _applyRhythmPreview(now, updatePath) {
+function _applyRhythmPreview(now) {
   if (!_rhythm.enabled) return;
-  var base = document.getElementById('instruments');
-  var baseRect = base ? base.getBoundingClientRect() : null;
-  var pathPoints = [];
-  var groups = _rhythmPreviewGroups();
-  for (var g = 0; g < groups.length; g++) {
-    var idx = groups[g].idx;
-    var i = groups[g].offsets[0];
-    var btn = _rhythmButton(idx);
-    if (!btn) continue;
-    var ring = _rhythmRingStyle(_rhythmTargetTimeFor(_rhythm.idx + i), now);
-    btn.style.setProperty('--rhythm-ring-scale', ring.scale.toFixed(3));
-    btn.style.setProperty('--rhythm-ring-opacity', String(ring.opacity));
-    if (i === 0) {
-      btn.style.setProperty('--rhythm-ring-border', 'rgba(255,255,255,0.96)');
-      btn.style.setProperty('--rhythm-ring-halo', 'rgba(255,216,77,0.52)');
-      btn.style.setProperty('--rhythm-ring-glow', 'rgba(255,216,77,0.9)');
-    } else {
-      btn.style.setProperty('--rhythm-ring-border', 'rgba(186,230,253,0.94)');
-      btn.style.setProperty('--rhythm-ring-halo', 'rgba(56,189,248,0.28)');
-      btn.style.setProperty('--rhythm-ring-glow', 'rgba(56,189,248,0.68)');
-    }
-    if (updatePath && baseRect) {
-      var point = _rhythmButtonCenter(btn, baseRect);
-      point.step = i;
-      point.label = i === 0 ? '' : String(i);
-      var last = pathPoints[pathPoints.length - 1];
-      if (!last || Math.hypot(point.x - last.x, point.y - last.y) > 8) pathPoints.push(point);
-    }
-  }
-  if (updatePath) _renderRhythmPath(pathPoints);
+  var btn = _rhythmButton(_rhythmExpectedIdx(0));
+  if (!btn) return;
+  var ring = _rhythmRingStyle(_rhythm.targetTime, now);
+  btn.style.setProperty('--rhythm-ring-scale', ring.scale.toFixed(3));
+  btn.style.setProperty('--rhythm-ring-opacity', String(ring.opacity));
+  btn.style.setProperty('--rhythm-ring-border', 'rgba(255,255,255,0.96)');
+  btn.style.setProperty('--rhythm-ring-halo', 'rgba(255,216,77,0.52)');
+  btn.style.setProperty('--rhythm-ring-glow', 'rgba(255,216,77,0.9)');
 }
 function _renderRhythmTarget() {
   _clearRhythmButtonState();
   if (!_rhythm.enabled) return;
-  var groups = _rhythmPreviewGroups();
-  for (var g = 0; g < groups.length; g++) {
-    var idx = groups[g].idx;
-    var i = groups[g].offsets[0];
-    var btn = _rhythmButton(idx);
-    if (!btn) continue;
-    if (i === 0) {
-      btn.classList.add('rhythm-target');
-      _setRhythmStepBadge(btn, _rhythmStepBadgeText(groups[g].offsets));
-    } else {
-      btn.classList.add('rhythm-next', 'rhythm-upcoming-' + i);
-      _setRhythmStepBadge(btn, _rhythmStepBadgeText(groups[g].offsets));
-    }
-  }
-  _applyRhythmPreview(performance.now(), true);
+  var target = _rhythmButton(_rhythmExpectedIdx(0));
+  if (target) target.classList.add('rhythm-target');
+  _applyRhythmPreview(performance.now());
   _renderRhythmQueue();
 }
 function _songIndexById(id) {
@@ -2253,7 +2079,7 @@ function _rhythmTick() {
   var btn = _rhythmButton(_rhythmExpectedIdx(0));
   var now = performance.now();
   var until = _rhythm.targetTime - now;
-  _applyRhythmPreview(now, false);
+  _applyRhythmPreview(now);
   if (!_rhythm.nowCue && Math.abs(until) <= 90) {
     _rhythm.nowCue = true;
     _setRhythmStatus('いま！', null);
