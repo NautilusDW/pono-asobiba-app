@@ -34,6 +34,28 @@
   --shadow: rgba(70, 42, 18, 0.25);
   --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --moji-writing-board: url('../assets/images/mojikko/writing/board_frame.png');
+  --moji-panel-plain: url('../assets/images/mojikko/writing/panel_plain.png');
+  --moji-panel-leaf: url('../assets/images/mojikko/writing/panel_leaf.png');
+  --moji-prompt-sign: url('../assets/images/mojikko/writing/prompt_sign_wide.png');
+  --moji-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
+  --moji-settings-button: url('../assets/images/mojikko/writing/settings_button.png');
+  --moji-companion-normal: url('../assets/images/mojikko/writing/companion_card_normal.png');
+  --moji-companion-reward: url('../assets/images/mojikko/writing/companion_card_reward.png');
+  --moji-milmaru-wave: url('../assets/images/mojikko/writing/milmaru_wave.png');
+  --moji-milmaru-cookie: url('../assets/images/mojikko/writing/milmaru_cookie.png');
+  --moji-milmaru-cheer: url('../assets/images/mojikko/writing/milmaru_cheer.png');
+  --moji-reward-box: url('../assets/images/mojikko/writing/reward_box.png');
+  --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
+  --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
+  --moji-button-retry: url('../assets/images/mojikko/writing/button_retry_normal.png');
+  --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_pressed.png');
+  --moji-button-care: url('../assets/images/mojikko/writing/button_care_normal.png');
+  --moji-button-care-pressed: url('../assets/images/mojikko/writing/button_care_pressed.png');
+  --moji-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
+  --moji-icon-cookie-glow: url('../assets/images/mojikko/writing/icon_cookie_glow.png');
+  --moji-icon-alert: url('../assets/images/mojikko/writing/icon_alert.png');
+  --moji-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
 }
 
 html, body {
@@ -230,6 +252,7 @@ html, body {
     linear-gradient(180deg, #fff6d7 0%, #f3cd8a 100%);
   cursor: pointer;
   transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+  image-rendering: pixelated;
 }
 
 .pixel-button:active {
@@ -307,24 +330,32 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  padding-left: 42px;
   font-family: var(--pixel-font);
   font-size: 27px;
   color: #6a4528;
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-star-counter) center / 100% 100% no-repeat;
+  box-shadow: none;
+  image-rendering: pixelated;
 }
 
 .star-icon {
-  width: 28px;
-  height: 28px;
-  clip-path: polygon(50% 0, 63% 34%, 100% 36%, 71% 58%, 82% 96%, 50% 74%, 18% 96%, 29% 58%, 0 36%, 37% 34%);
-  background: #ffd65a;
-  border: 2px solid #9b6a1d;
-  filter: drop-shadow(0 2px 0 rgba(95, 54, 12, 0.35));
+  display: none;
 }
 
 .settings-btn {
   width: 62px;
   padding: 0;
   font-size: 30px;
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-settings-button) center / contain no-repeat;
+  box-shadow: none;
+  color: transparent;
+  text-shadow: none;
+  image-rendering: pixelated;
 }
 
 .layout {
@@ -366,18 +397,33 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 4px solid rgba(111, 73, 44, 0.32);
+  border-bottom: 0;
   font-family: var(--pixel-font);
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  background: rgba(157, 205, 159, 0.42);
+  color: #fffaf0;
+  background: transparent;
+  text-shadow: 2px 2px 0 rgba(54, 86, 50, 0.5);
 }
 
 .character-panel,
 .companion-card,
 .stroke-panel {
   overflow: hidden;
+}
+
+.character-panel,
+.stroke-panel {
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-panel-leaf) center / 100% 100% no-repeat;
+  box-shadow: none;
+  image-rendering: pixelated;
+}
+
+.stroke-panel {
+  background-image: var(--moji-panel-plain);
 }
 
 .char-list {
@@ -442,6 +488,11 @@ html, body {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-companion-normal) center / 100% 100% no-repeat;
+  box-shadow: none;
+  image-rendering: pixelated;
   transition: transform 0.12s ease, filter 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -455,22 +506,16 @@ html, body {
 }
 
 .companion-card.reward-ready {
+  background-image: var(--moji-companion-reward);
   animation: careCardGlow 1.4s ease-in-out infinite;
 }
 
 @keyframes careCardGlow {
   0%, 100% {
-    box-shadow:
-      0 6px 0 #4f321e,
-      0 12px 22px rgba(65, 38, 17, 0.22),
-      inset 0 0 0 4px rgba(255,255,255,0.24);
+    filter: brightness(1);
   }
   50% {
-    box-shadow:
-      0 6px 0 #4f321e,
-      0 12px 22px rgba(65, 38, 17, 0.22),
-      inset 0 0 0 4px rgba(255,255,255,0.24),
-      0 0 0 6px rgba(255, 218, 91, 0.48);
+    filter: brightness(1.08) drop-shadow(0 0 12px rgba(255, 218, 91, 0.68));
   }
 }
 
@@ -483,13 +528,14 @@ html, body {
   display: none;
   align-items: center;
   justify-content: center;
-  border: 3px solid #8d5c2e;
-  border-radius: 8px;
-  background: #ffd65a;
-  color: #7a4324;
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-icon-alert) center / contain no-repeat;
+  color: transparent;
   font-family: var(--pixel-font);
   font-size: 24px;
-  box-shadow: 0 3px 0 #704523;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .companion-card.reward-ready .companion-alert {
@@ -503,13 +549,10 @@ html, body {
   width: 34px;
   height: 34px;
   display: none;
-  border: 4px solid #8a5a32;
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 30% 30%, #fff4cf 0 4px, transparent 5px),
-    radial-gradient(circle at 67% 64%, #be743e 0 4px, transparent 5px),
-    linear-gradient(135deg, #f7cf83, #e69a56);
-  box-shadow: 0 3px 0 #704523;
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-icon-cookie-glow) center / contain no-repeat;
+  box-shadow: none;
 }
 
 .companion-card.reward-ready .companion-cookie {
@@ -517,110 +560,52 @@ html, body {
 }
 
 .companion-name {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 16px;
   font-family: var(--pixel-font);
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.25;
+  text-align: center;
 }
 
 .companion-level {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 48px;
   margin-top: 4px;
   font-family: var(--pixel-font);
-  font-size: 18px;
+  font-size: 16px;
   color: var(--ink-soft);
+  text-align: center;
 }
 
 .pixel-creature {
   position: absolute;
-  left: 50px;
-  bottom: 46px;
-  width: 128px;
-  height: 118px;
-  animation: creatureIdle 1.9s ease-in-out infinite;
-}
-
-.pixel-creature::before,
-.pixel-creature::after {
-  content: '';
-  position: absolute;
-}
-
-.pixel-creature .body {
-  position: absolute;
-  left: 18px;
-  top: 24px;
-  width: 92px;
-  height: 82px;
-  border: 4px solid #7d5b43;
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 34% 26%, #fff 0 6px, transparent 7px),
-    radial-gradient(circle at 66% 26%, #fff 0 6px, transparent 7px),
-    linear-gradient(180deg, #fff8e9 0%, #f7dfbd 100%);
-  box-shadow:
-    -18px 12px 0 -5px #fff4df,
-    18px 12px 0 -5px #fff4df,
-    inset 0 -8px rgba(196, 147, 91, 0.16);
-}
-
-.pixel-creature .body::before {
-  content: '';
-  position: absolute;
-  left: 14px;
-  top: -24px;
-  width: 22px;
-  height: 22px;
-  border: 4px solid #7d5b43;
-  border-radius: 6px;
-  background: #fff7e8;
-  box-shadow: 36px 0 0 -4px #fff7e8, 36px 0 0 0 #7d5b43;
-}
-
-.pixel-creature .face {
-  position: absolute;
   left: 42px;
-  top: 52px;
-  width: 44px;
-  height: 30px;
+  bottom: 66px;
+  width: 152px;
+  height: 130px;
+  background: var(--moji-milmaru-wave) center bottom / contain no-repeat;
+  animation: creatureIdle 1.9s ease-in-out infinite;
+  image-rendering: pixelated;
 }
 
-.pixel-creature .face::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 0;
-  width: 9px;
-  height: 12px;
-  background: #5b3b27;
-  box-shadow: 31px 0 #5b3b27;
-  border-radius: 4px;
-}
-
-.pixel-creature .face::after {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 17px;
-  width: 15px;
-  height: 8px;
-  border-left: 4px solid #a75446;
-  border-right: 4px solid #a75446;
-  border-bottom: 4px solid #a75446;
-  border-radius: 0 0 10px 10px;
-}
-
+.pixel-creature .body,
+.pixel-creature .face,
 .pixel-creature .badge {
-  position: absolute;
-  left: 50px;
-  top: 86px;
-  width: 28px;
-  height: 28px;
-  background: var(--mint);
-  clip-path: polygon(50% 0, 96% 50%, 50% 100%, 4% 50%);
-  box-shadow: 0 0 0 3px #5aa47d;
+  display: none;
+}
+
+.companion-card.reward-ready .pixel-creature {
+  background-image: var(--moji-milmaru-cookie);
 }
 
 .companion-card.celebrate .pixel-creature {
+  background-image: var(--moji-milmaru-cheer);
   animation: creatureCheer 0.55s ease-in-out 5;
 }
 
@@ -644,10 +629,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 10px;
-  border: 3px solid #9f714c;
-  border-radius: 8px;
-  background: rgba(255, 255, 244, 0.92);
+  padding: 9px 12px 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-family: var(--pixel-font);
   font-size: 17px;
   line-height: 1.35;
@@ -667,10 +652,19 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-prompt-sign) center / 100% 100% no-repeat;
+  box-shadow: none;
   font-family: var(--pixel-font);
   font-size: 30px;
   font-weight: 700;
   letter-spacing: 0.06em;
+  color: #fffdf0;
+  text-shadow:
+    2px 2px 0 rgba(47, 97, 61, 0.58),
+    0 2px 0 rgba(47, 97, 61, 0.32);
+  image-rendering: pixelated;
 }
 
 .writing-board-wrap {
@@ -684,45 +678,17 @@ html, body {
   position: relative;
   width: min(610px, 100%);
   aspect-ratio: 1 / 1;
-  background:
-    linear-gradient(to right, transparent calc(50% - 2px), rgba(113, 188, 210, 0.5) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
-    linear-gradient(to bottom, transparent calc(50% - 2px), rgba(113, 188, 210, 0.5) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
-    repeating-linear-gradient(0deg, rgba(201, 173, 125, 0.1) 0 4px, transparent 4px 20px),
-    var(--paper);
-  border: 8px solid var(--wood-dark);
-  border-radius: 8px;
-  box-shadow:
-    0 8px 0 #4f321e,
-    0 18px 32px rgba(70, 42, 18, 0.27),
-    inset 0 0 0 8px #e5b46e,
-    inset 0 0 0 13px #fff6df;
+  background: var(--moji-writing-board) center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
+  image-rendering: pixelated;
 }
 
 .writing-board::before,
 .writing-board::after {
-  content: '';
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border: 6px solid #d5d9cf;
-  z-index: 7;
-}
-
-.writing-board::before {
-  left: 13px;
-  top: 13px;
-  border-right: none;
-  border-bottom: none;
-  transform: rotate(-12deg);
-}
-
-.writing-board::after {
-  right: 13px;
-  bottom: 13px;
-  border-left: none;
-  border-top: none;
-  transform: rotate(-12deg);
+  display: none;
 }
 
 .writing-board.success {
@@ -842,6 +808,38 @@ html, body {
   padding-right: 10px;
   font-size: 22px;
   white-space: nowrap;
+}
+
+#doneBtn,
+#resetBtn {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+#doneBtn {
+  padding-left: 58px;
+  color: #fffdf0;
+  background-image: var(--moji-button-success);
+  text-shadow: 2px 2px 0 rgba(41, 101, 132, 0.58);
+}
+
+#doneBtn:active {
+  background-image: var(--moji-button-success-pressed);
+}
+
+#resetBtn {
+  padding-left: 52px;
+  color: #5f3c22;
+  background-image: var(--moji-button-retry);
+}
+
+#resetBtn:active {
+  background-image: var(--moji-button-retry-pressed);
 }
 
 .message-box {
@@ -964,13 +962,15 @@ html, body {
 
 .reward-box {
   margin: 0 18px 18px;
-  padding: 12px;
+  padding: 16px 16px 12px;
   display: grid;
   gap: 10px;
   align-content: center;
-  background: rgba(255, 246, 218, 0.9);
-  border: 3px solid rgba(139, 96, 66, 0.48);
-  border-radius: 8px;
+  background: var(--moji-reward-box) center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  image-rendering: pixelated;
 }
 
 .reward-title {
@@ -991,13 +991,11 @@ html, body {
 .food-pixel {
   width: 42px;
   height: 42px;
-  border: 4px solid #8a5a32;
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 28% 28%, #fff8e2 0 5px, transparent 6px),
-    radial-gradient(circle at 64% 62%, #d58a57 0 5px, transparent 6px),
-    linear-gradient(135deg, #f7cd83, #e89b55);
-  box-shadow: inset 0 -5px rgba(127, 73, 35, 0.18);
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-icon-cookie) center / contain no-repeat;
+  box-shadow: none;
+  image-rendering: pixelated;
 }
 
 .result-overlay {
@@ -1063,6 +1061,36 @@ html, body {
 .result-actions {
   display: flex;
   gap: 14px;
+}
+
+#careBtn,
+#modalRetryBtn {
+  min-width: 220px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+#careBtn {
+  padding-left: 58px;
+  background-image: var(--moji-button-care);
+}
+
+#careBtn:active {
+  background-image: var(--moji-button-care-pressed);
+}
+
+#modalRetryBtn {
+  padding-left: 52px;
+  background-image: var(--moji-button-retry);
+}
+
+#modalRetryBtn:active {
+  background-image: var(--moji-button-retry-pressed);
 }
 
 .result-burst {

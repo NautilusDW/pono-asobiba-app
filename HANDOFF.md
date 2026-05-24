@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-24 - [batch:130-mojikko-writing-mask-assets] **Done** — user が `D:\ポノのおへや\Moji\assets` に配置したマスク付きPNG 44枚を `assets/images/mojikko/writing/` へ意味名で取り込み。`writing-mori/index.html` は文字データ・なぞり判定を維持しつつ、文字盤フレーム、左右パネル、ミルマルカード/表情、報酬枠、主要ボタン、クッキー/鉛筆/星/設定アイコンをPNG素材へ差し替え。`sw.js` は v591。Chrome `--dump-dom` でページ読み込みとCSS参照実在を確認済。スクリーンショット保存はChrome側のアクセス拒否で未取得。 (by Codex)
+
 - 2026-05-24 - [batch:128-kitchen-karaage-shape-locked-assets] **Done** — user が `D:\ポノのおへや\Bento\cooking\唐揚げ` に追加した唐揚げ単体画像を粉テクスチャとして使い、既存8個の鶏肉シルエットへ `light/coated` を焼き込み直した。下味トレイは生成済み raw から背景透過した `tray_marinade_generated.png` へ差し替え、ずれていた `tray_marinade_clean_surface_00..04.png` は削除。`bento/kitchen.html` / `sw.js` v589。ローカル Playwright で鶏肉 route choice → 下味 → 粉工程を確認済。 (by Codex)
 
 - 2026-05-24 - [batch:101-oto-rhythm-mode] **Done follow-up 11** — user 依頼「一番簡単な曲・きらきら星・もう1曲長めの3曲 / 開始前にお手本、2回目以降はスキップ可能」を反映。`oto/index.html` のリズム曲を `かえるのうた` / `きらきらぼし` / `よろこびのうた` の3曲に拡張し、曲ごとのドラム用 synth band id を追加。初回は `おてほんをみる` で自動ハイライト＋ドレミ音のお手本後にカウントダウン、曲ごとに localStorage へ見た履歴を保存し、2回目以降は `おてほん` / `すぐはじめる` を選べるようにした。`sw.js` は v588。ローカル Playwright 1024x768 でメニュー・初回お手本・自動開始・2回目スキップ・twinkle repeat cue を確認済。 (by Codex)
