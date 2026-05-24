@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:130-kitchen-karaage-individual-pieces] **Done** — 唐揚げの下味/粉工程を5個の個別肉に絞り、未操作の肉へ下味・粉の進捗表示が広がる不具合を修正。調理側も grouped 唐揚げ画像ではなく `assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01..05_{raw,mid,done}.png` を1個ずつ油へ入れる流れに変更。ローカル Playwright と staging で下味5個・未操作 opacity 0・粉5個・唐揚げ1個目→2個目遷移を確認。`bento/kitchen.html` / `sw.js` v594、commit `a12b8e9`。 (by Codex)
+
 - 2026-05-25 - [batch:132-bento-visual-guide-finale] **Done** — `bento/index.html` の自由配置ガイドを短文モーダル + ポノ表示へ変更し、ガイド中は右上ポノ行を隠して対象パレットだけ点滅。ドラッグ中の白枠ゴーストを撤去し、完成画面は作成済み段数を1段目から順番に積み上げ、蓋が閉まってキラキラする演出へ変更。`sw.js` は v593。Node 構文確認、Playwright でガイド/ドラッグ/3段完成DOMとサイズを確認済。 (by Codex)
 
 - 2026-05-24 - [batch:131-mojikko-care-mask-assets] **Done** — user が `D:\ポノのおへや\Moji\assets` に追加したお世話画面用マスク付きPNG 23枚を `assets/images/mojikko/care/` へ意味名で取り込み。`writing-mori/care.html` は状態管理と導線を維持しつつ、中央庭背景・家・ラグ・クッション・小物・花・エフェクト・ミルマル表示をPNG素材へ差し替え。`sw.js` は v592。CSS参照実在確認と Chrome `--dump-dom` ページ読み込み確認済。 (by Codex)
