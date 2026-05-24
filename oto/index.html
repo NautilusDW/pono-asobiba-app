@@ -202,7 +202,35 @@
       0 10px 24px rgba(0,0,0,0.26);
   }
   .instr-btn.rhythm-target::after {
-    opacity: var(--rhythm-ring-opacity, 0.85);
+    opacity: 0;
+  }
+  .rhythm-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: clamp(4px, calc(var(--sz, 128px) * 0.045), 7px) solid var(--rhythm-ring-border, rgba(255,255,255,0.92));
+    box-shadow:
+      0 0 0 5px var(--rhythm-ring-halo, rgba(255,216,77,0.45)),
+      0 0 22px var(--rhythm-ring-glow, rgba(255,216,77,0.8));
+    transform: scale(var(--rhythm-ring-scale, 1.8));
+    opacity: var(--rhythm-ring-opacity, 0);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .rhythm-ring.repeat {
+    --rhythm-ring-border: rgba(255,247,237,0.98);
+    --rhythm-ring-halo: rgba(251,146,60,0.52);
+    --rhythm-ring-glow: rgba(249,115,22,0.9);
+  }
+  .rhythm-ring.hold {
+    --rhythm-ring-border: rgba(240,253,244,0.98);
+    --rhythm-ring-halo: rgba(45,212,191,0.52);
+    --rhythm-ring-glow: rgba(16,185,129,0.9);
+  }
+  .rhythm-ring.upcoming {
+    --rhythm-ring-border: rgba(224,242,254,0.96);
+    --rhythm-ring-halo: rgba(125,211,252,0.4);
+    --rhythm-ring-glow: rgba(56,189,248,0.72);
   }
   .instr-btn.rhythm-hit::before {
     opacity: 1;
@@ -2055,14 +2083,13 @@ var RHYTHM_GOOD_MS = 220;
 var RHYTHM_OK_MS = 430;
 var RHYTHM_MISS_MS = 760;
 var RHYTHM_PREVIEW_STEPS = 4;
-var RHYTHM_RING_LEAD_BEATS = 2;
+var RHYTHM_RING_LEAD_MS = 1400;
 var _playMode = 'free';
 var _rhythm = {
   enabled: false,
   idx: 0,
   startPerfTime: 0,
   targetTime: 0,
-  leadMs: 0,
   raf: 0,
   streak: 0,
   ownsBand: false,
@@ -2079,7 +2106,7 @@ function _rhythmBeatMs() {
   return 60000 / RHYTHM_SONG.bpm;
 }
 function _rhythmRingLeadMs() {
-  return _rhythmBeatMs() * RHYTHM_RING_LEAD_BEATS;
+  return RHYTHM_RING_LEAD_MS;
 }
 function _rhythmExpectedIdx(offset) {
   offset = offset || 0;
@@ -2094,15 +2121,18 @@ function _rhythmBeatLengthAt(index) {
   var beats = RHYTHM_SONG.beats || [];
   return beats[index % RHYTHM_SONG.notes.length] || 1;
 }
-function _rhythmSpecialCue() {
+function _rhythmSpecialCueAt(seqIndex) {
   if (!_rhythm.enabled) return null;
-  var beatLen = _rhythmBeatLengthAt(_rhythm.idx);
+  var beatLen = _rhythmBeatLengthAt(seqIndex);
   if (beatLen > 1) return { type: 'hold', text: 'のばすよ' };
-  var nowIdx = _rhythmExpectedIdx(0);
-  var nextSame = nowIdx === _rhythmExpectedIdx(1);
-  var prevSame = _rhythm.idx > 0 && nowIdx === _rhythmIdxAt(_rhythm.idx - 1);
+  var nowIdx = _rhythmIdxAt(seqIndex);
+  var nextSame = nowIdx === _rhythmIdxAt(seqIndex + 1);
+  var prevSame = seqIndex > 0 && nowIdx === _rhythmIdxAt(seqIndex - 1);
   if (nextSame || prevSame) return { type: 'repeat', text: 'もう1回 おすよ' };
   return null;
+}
+function _rhythmSpecialCue() {
+  return _rhythmSpecialCueAt(_rhythm.idx);
 }
 function _rhythmBeatOffsetFor(seqIndex) {
   var len = RHYTHM_SONG.notes.length;
@@ -2145,6 +2175,12 @@ function _clearRhythmButtonState() {
     btn.style.removeProperty('--rhythm-ring-border');
     btn.style.removeProperty('--rhythm-ring-halo');
     btn.style.removeProperty('--rhythm-ring-glow');
+  });
+  _clearRhythmRings();
+}
+function _clearRhythmRings() {
+  document.querySelectorAll('.rhythm-ring').forEach(function(ring) {
+    ring.remove();
   });
 }
 function _pulseRhythmButton(btn, className) {
@@ -2215,7 +2251,7 @@ function _renderRhythmFloat() {
   box.classList.add('show');
 }
 function _rhythmRingStyle(targetTime, now) {
-  var lead = Math.max(260, _rhythm.leadMs || _rhythmRingLeadMs());
+  var lead = Math.max(260, _rhythmRingLeadMs());
   var until = targetTime - now;
   if (until > lead || until < -RHYTHM_MISS_MS) {
     return { scale: 2, opacity: 0 };
@@ -2228,24 +2264,24 @@ function _rhythmRingStyle(targetTime, now) {
 }
 function _applyRhythmPreview(now) {
   if (!_rhythm.enabled) return;
-  var btn = _rhythmButton(_rhythmExpectedIdx(0));
-  if (!btn) return;
-  var ring = _rhythmRingStyle(_rhythm.targetTime, now);
-  var cue = _rhythmSpecialCue();
-  btn.style.setProperty('--rhythm-ring-scale', ring.scale.toFixed(3));
-  btn.style.setProperty('--rhythm-ring-opacity', String(ring.opacity));
-  if (cue && cue.type === 'hold') {
-    btn.style.setProperty('--rhythm-ring-border', 'rgba(240,253,244,0.98)');
-    btn.style.setProperty('--rhythm-ring-halo', 'rgba(45,212,191,0.52)');
-    btn.style.setProperty('--rhythm-ring-glow', 'rgba(16,185,129,0.9)');
-  } else if (cue && cue.type === 'repeat') {
-    btn.style.setProperty('--rhythm-ring-border', 'rgba(255,247,237,0.98)');
-    btn.style.setProperty('--rhythm-ring-halo', 'rgba(251,146,60,0.52)');
-    btn.style.setProperty('--rhythm-ring-glow', 'rgba(249,115,22,0.9)');
-  } else {
-    btn.style.setProperty('--rhythm-ring-border', 'rgba(255,255,255,0.96)');
-    btn.style.setProperty('--rhythm-ring-halo', 'rgba(255,216,77,0.52)');
-    btn.style.setProperty('--rhythm-ring-glow', 'rgba(255,216,77,0.9)');
+  _clearRhythmRings();
+  var lead = _rhythmRingLeadMs();
+  for (var i = 0; i < RHYTHM_PREVIEW_STEPS; i++) {
+    var seqIndex = _rhythm.idx + i;
+    var targetTime = _rhythmTargetTimeFor(seqIndex);
+    if (targetTime - now > lead) continue;
+    var ring = _rhythmRingStyle(targetTime, now);
+    if (ring.opacity <= 0) continue;
+    var btn = _rhythmButton(_rhythmIdxAt(seqIndex));
+    if (!btn) continue;
+    var cue = _rhythmSpecialCueAt(seqIndex);
+    var el = document.createElement('span');
+    el.className = 'rhythm-ring' + (i > 0 ? ' upcoming' : '') + (cue ? ' ' + cue.type : '');
+    el.style.setProperty('--rhythm-ring-scale', ring.scale.toFixed(3));
+    el.style.setProperty('--rhythm-ring-opacity', String(ring.opacity));
+    el.style.zIndex = String(12 - i);
+    el.dataset.order = String(i + 1);
+    btn.appendChild(el);
   }
 }
 function _renderRhythmTarget() {
@@ -2293,7 +2329,6 @@ function _ensureRhythmBand() {
 function _scheduleRhythmNote() {
   if (!_rhythm.enabled) return;
   _rhythm.targetTime = _rhythmTargetTimeFor(_rhythm.idx);
-  _rhythm.leadMs = Math.max(260, Math.min(_rhythmRingLeadMs(), _rhythm.targetTime - performance.now()));
   _rhythm.nowCue = false;
   _renderRhythmTarget();
 }
