@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-24 - [batch:128-mojikko-farm-writing-ui-raw] Codex: user 依頼「もじっこファーム文字書き画面の参考画像・実装向けアセット生成」を受領。GPT Image 2 built-in 生成で full mockup / UI asset sheet / Milmaru sprite-icon sheet の raw 3 枚を `tmp/alpha_pending/128_mojikko_farm_writing_ui_raw/` に納品。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
 - 2026-05-24 - [batch:119-mojikko-farm-writing-screen] Codex: user 依頼「もじっこファーム 文字書きメイン画面の実装」を受領。HANDOFF / git log / `writing/` / `writing-mori/` を確認し、同名の既存成果物なしと判断。user 追加許可「しっぽの小道系は削除・変更OK」を受け、`writing-mori/index.html` を16:9固定・ドット絵レトロUI・あいうえお選択・なぞり軌跡・書き順パネル・成功演出・仮報酬・`onWritingComplete(result)` 接続口つきに刷新し、`sw.js` をバンプする。 (by Codex)
 - 2026-05-23 - [batch:101-oto-rhythm-mode] Codex: user 依頼「音タッチ 4:3 横画面のボタンを約2倍 / リズム音楽ゲーム風に、順番とタイミングがわかるモード追加」を受領。HANDOFF / git log / `oto/` を確認し、音タッチの同種進行中作業なしと判断。`oto/index.html` に4:3向けボタン拡大、`じゆう/リズム`切替、次ボタンの光り・縮む輪っか・下部4音プレビュー・ゆるめ判定を実装予定。 (by Codex)
 - 2026-05-23 - [batch:100-bento-fried-egg-lid] Codex: user 指摘「目玉焼きはひっくり返さず、卵を落としてからガラス蓋を閉める流れが自然」を受領。HANDOFF / git log / `assets/images/bento/cooking/egg/` / local `D:\ポノのおへや\Bento\cooking\食材\生卵` を確認し、ガラス蓋素材は未作成と判断。既存 `frying_pan.png` の上面角度に合わせた、中央が少し透けて中身が見えるフライパン用ガラス蓋 raw を生成して `tmp/alpha_pending/100/` へ納品する。卵が落ちる途中の差分も後続実装メモとして残す。 (by Codex)
