@@ -835,6 +835,14 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-workbench[data-shape-mode="portion-balls"] .prep-art-main {
   display: none;
 }
+.prep-workbench[data-shape-mode="portion-balls"] .prep-workbench-ui,
+.prep-workbench[data-shape-mode="multi-balls"] .prep-workbench-ui {
+  grid-template-columns: minmax(0, 1fr);
+}
+.prep-workbench[data-shape-mode="portion-balls"] .prep-action-label,
+.prep-workbench[data-shape-mode="multi-balls"] .prep-action-label {
+  display: none;
+}
 .shape-portion-source,
 .shape-portion-plate,
 .shape-portion-dragger {
@@ -863,6 +871,16 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   opacity: calc(0.7 + var(--portion-source-hit) * 0.24);
   transform: scale(calc(1 + var(--portion-source-hit) * 0.045));
   transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.shape-portion-source.is-tutorial {
+  filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16)) drop-shadow(0 0 18px rgba(255,178,78,0.44));
+}
+.shape-portion-source.is-tutorial::after {
+  inset: 9%;
+  border-color: rgba(242,165,58,0.95);
+  border-width: 6px;
+  background: rgba(255,248,220,0.1);
+  animation: prepCuePulse 1.2s ease-in-out infinite;
 }
 .shape-portion-plate {
   left: var(--portion-plate-x, 73%);
@@ -927,6 +945,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   opacity: 0.22;
   border-style: solid;
 }
+.shape-ball-slot.is-active .shape-ball-target {
+  box-shadow: 0 0 0 8px rgba(255,255,255,0.5), 0 0 22px rgba(106,180,86,0.28);
+}
 .shape-ball-game.is-portion .shape-ball-target {
   opacity: 0.5;
   border-width: 4px;
@@ -968,6 +989,103 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .shape-ball-piece .round {
   opacity: var(--round-opacity, 0);
 }
+.prep-tutorial {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+.prep-tutorial.is-hidden {
+  display: none;
+}
+.prep-tutorial__label {
+  position: absolute;
+  left: var(--tutorial-label-x, 50%);
+  top: var(--tutorial-label-y, 10%);
+  transform: translate(-50%, -50%);
+  min-width: min(52%, 520px);
+  padding: 10px 20px 11px;
+  border: 3px solid #F2A53A;
+  border-radius: 999px;
+  background: rgba(255,253,246,0.96);
+  color: #754E2A;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.16;
+  text-align: center;
+  box-shadow: 0 10px 20px rgba(120,72,30,0.16);
+}
+.prep-tutorial__hand {
+  position: absolute;
+  left: var(--tutorial-hand-x, 50%);
+  top: var(--tutorial-hand-y, 50%);
+  width: 66px;
+  height: 66px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 7px 7px rgba(88,54,27,0.28));
+}
+.prep-tutorial__hand span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 3rem;
+  line-height: 1;
+}
+.prep-tutorial__hand .closed {
+  opacity: 0;
+}
+.prep-tutorial--portion .prep-tutorial__hand {
+  left: var(--portion-source-x, 27%);
+  top: var(--portion-source-y, 52%);
+  animation: prepPortionHandDemo 4.8s ease-in-out infinite;
+}
+.prep-tutorial--portion .prep-tutorial__hand .open {
+  animation: prepHandOpen 4.8s ease-in-out infinite;
+}
+.prep-tutorial--portion .prep-tutorial__hand .closed {
+  animation: prepHandClosed 4.8s ease-in-out infinite;
+}
+.prep-tutorial--round .prep-tutorial__label {
+  top: 7%;
+}
+.prep-tutorial--round .prep-tutorial__hand {
+  animation: prepRoundHandDemo 2.6s ease-in-out infinite;
+}
+.prep-tutorial--round .prep-tutorial__hand .open {
+  animation: prepRoundHandOpen 2.6s ease-in-out infinite;
+}
+.prep-tutorial--round .prep-tutorial__hand .closed {
+  animation: prepRoundHandClosed 2.6s ease-in-out infinite;
+}
+@keyframes prepPortionHandDemo {
+  0%, 11%, 22%, 33% { left: var(--portion-source-x, 27%); top: var(--portion-source-y, 52%); transform: translate(-50%, -50%) scale(1); }
+  47% { left: 50%; top: 40%; transform: translate(-50%, -50%) scale(0.96); }
+  63%, 76% { left: var(--portion-target-x, 73%); top: var(--portion-target-y, 28%); transform: translate(-50%, -50%) scale(0.96); }
+  100% { left: var(--portion-source-x, 27%); top: var(--portion-source-y, 52%); transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes prepHandOpen {
+  0%, 8%, 18%, 28%, 76%, 100% { opacity: 1; }
+  11%, 22%, 33%, 63% { opacity: 0; }
+}
+@keyframes prepHandClosed {
+  0%, 8%, 18%, 28%, 76%, 100% { opacity: 0; }
+  11%, 22%, 33%, 47%, 63% { opacity: 1; }
+}
+@keyframes prepRoundHandDemo {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(-6deg); }
+  18% { transform: translate(calc(-50% - 18px), calc(-50% - 10px)) scale(0.96) rotate(-12deg); }
+  42% { transform: translate(calc(-50% + 20px), calc(-50% + 12px)) scale(0.98) rotate(9deg); }
+  66% { transform: translate(calc(-50% - 9px), calc(-50% + 16px)) scale(0.96) rotate(-4deg); }
+}
+@keyframes prepRoundHandOpen {
+  0%, 18%, 50%, 82%, 100% { opacity: 1; }
+  28%, 62% { opacity: 0; }
+}
+@keyframes prepRoundHandClosed {
+  0%, 18%, 50%, 82%, 100% { opacity: 0; }
+  28%, 62% { opacity: 1; }
+}
 @keyframes shapeBallTargetPulse {
   0%, 100% { transform: scale(calc(1 + var(--ball-hit) * 0.08)); }
   50% { transform: scale(calc(1.045 + var(--ball-hit) * 0.08)); }
@@ -997,27 +1115,12 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   width: min(96%, 1040px);
   height: min(86%, 620px);
   transform: translate(-50%, -50%);
-  background: url('../assets/images/bento/cooking/korokke/topview/tray_egg_surface_00.png') center / contain no-repeat;
+  background: url('../assets/images/bento/cooking/chicken/tray_marinade_surface_00.png') center / contain no-repeat;
   filter: drop-shadow(0 16px 18px rgba(86,55,28,0.18));
   touch-action: none;
 }
 .marinate-sauce {
-  position: absolute;
-  left: 8.5%;
-  right: 8.5%;
-  top: 20%;
-  bottom: 16%;
-  border-radius: 12% 12% 11% 11% / 17% 17% 12% 12%;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 28% 18% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,255,255,0.32), transparent 72%),
-    radial-gradient(ellipse 36% 22% at 34% 34%, rgba(255,211,129,0.25), transparent 68%),
-    radial-gradient(ellipse 45% 31% at 68% 65%, rgba(105,52,24,0.22), transparent 72%),
-    linear-gradient(135deg, rgba(130,67,35,0.84), rgba(207,121,58,0.78) 48%, rgba(103,50,29,0.82));
-  opacity: 0.94;
-  transform: scale(calc(1 + var(--marinate-motion, 0) * 0.018));
-  transition: transform 0.12s ease;
-  box-shadow: inset 0 4px 14px rgba(84,42,22,0.2), inset 0 -5px 18px rgba(255,226,146,0.14);
+  display: none;
 }
 .marinate-sauce::before,
 .marinate-sauce::after {
@@ -1970,6 +2073,62 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   18% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
   72% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -56%) scale(0.98); }
+}
+.prep-route-choice {
+  position: absolute;
+  inset: 0;
+  z-index: 42;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(255,232,190,0.72);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+.prep-route-choice.show {
+  display: flex;
+}
+.prep-route-choice__card {
+  width: min(680px, 88%);
+  padding: 24px 26px 22px;
+  border: 4px solid #F2A53A;
+  border-radius: 28px;
+  background: rgba(255,253,246,0.98);
+  box-shadow: 0 20px 38px rgba(95,59,30,0.24), inset 0 0 0 3px rgba(255,255,255,0.72);
+  text-align: center;
+}
+.prep-route-choice__title {
+  color: #6B4A2B;
+  font-size: 1.52rem;
+  font-weight: 900;
+  line-height: 1.22;
+  margin-bottom: 16px;
+}
+.prep-route-choice__buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.prep-route-choice__btn {
+  min-height: 94px;
+  border: 3px solid #fff;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #FFE4A8, #F6A94B);
+  box-shadow: 0 6px 0 rgba(152,90,35,0.26), 0 12px 20px rgba(132,80,32,0.16);
+  color: #5C3D24;
+  font-family: inherit;
+  font-size: 1.18rem;
+  font-weight: 900;
+  line-height: 1.25;
+  cursor: pointer;
+}
+.prep-route-choice__btn.secondary {
+  background: linear-gradient(180deg, #F8F1DF, #E9D7B8);
+}
+.prep-route-choice__btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(152,90,35,0.26), 0 7px 14px rgba(132,80,32,0.14);
 }
 .prep-side {
   display: flex;
@@ -4547,6 +4706,16 @@ body.layout-editor-on .endX-marker {
   </div>
 </section>
 
+<div class="prep-route-choice" id="prep-route-choice" aria-hidden="true">
+  <div class="prep-route-choice__card" role="dialog" aria-modal="true" aria-labelledby="prep-route-choice-title">
+    <div class="prep-route-choice__title" id="prep-route-choice-title">この とりにく、どうする？</div>
+    <div class="prep-route-choice__buttons">
+      <button type="button" class="prep-route-choice__btn" id="prep-route-karaage-btn">からあげにする<br><small>したあじと こな</small></button>
+      <button type="button" class="prep-route-choice__btn secondary" id="prep-route-store-btn">きった とりにくで<br><small>いったん しまう</small></button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== 画面4: 焼く ===================== -->
 <section class="screen" data-screen="grill" id="screen-grill" tabindex="-1" aria-labelledby="screen-grill-heading" hidden>
   <button type="button" class="screen-back" data-back="select">← もどる</button>
@@ -5493,13 +5662,20 @@ body.layout-editor-on .endX-marker {
       startSpeech: 'とりにくを したあじに からめよう！',
       completeSpeech: 'したあじが しっかり なじんだよ！',
       completeBurst: 'しみしみ！',
+      marinateSurfaces: [
+        '../assets/images/bento/cooking/chicken/tray_marinade_surface_00.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_surface_01.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_surface_02.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_surface_03.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_surface_04.png',
+      ],
       marinatePieces: [
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png'], x: 32, y: 36, size: 18, rot: -8 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png'], x: 49, y: 34, size: 17, rot: 6 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png'], x: 66, y: 38, size: 17, rot: -3 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png'], x: 39, y: 53, size: 16, rot: 9 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_plain_fixed.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 39, y: 53, size: 16, rot: 9 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 57, y: 52, size: 16, rot: -10 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_light.png'], x: 74, y: 55, size: 15, rot: 4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png'], x: 74, y: 55, size: 15, rot: 4 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png'], x: 45, y: 70, size: 15, rot: -4 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png'], x: 62, y: 69, size: 15, rot: 7 },
       ],
@@ -5562,6 +5738,7 @@ body.layout-editor-on .endX-marker {
     prepMarinateRenderKey: '',
     prepMarinateTrailLastAt: 0,
     prepMarinateMotion: 0,
+    prepRouteChoiceOpen: false,
     prepEggContacting: false,
     prepEggHadContact: false,
     prepEggRippleDistance: 0,
@@ -6029,6 +6206,9 @@ body.layout-editor-on .endX-marker {
     prepProgressCap: document.getElementById('prep-progress-caption'),
     prepStepLane:  document.getElementById('prep-step-lane'),
     prepStepNotice: document.getElementById('prep-step-notice'),
+    prepRouteChoice: document.getElementById('prep-route-choice'),
+    prepRouteKaraageBtn: document.getElementById('prep-route-karaage-btn'),
+    prepRouteStoreBtn: document.getElementById('prep-route-store-btn'),
     speechPrep:    document.getElementById('speech-prep'),
 
     // chop screen
@@ -6247,6 +6427,12 @@ body.layout-editor-on .endX-marker {
           onPrepTap({ keyboard: true });
         }
       });
+    }
+    if (els.prepRouteKaraageBtn) {
+      els.prepRouteKaraageBtn.addEventListener('click', chooseKaraagePrepRoute);
+    }
+    if (els.prepRouteStoreBtn) {
+      els.prepRouteStoreBtn.addEventListener('click', chooseStoreCutChickenRoute);
     }
 
     if (els.grillStage) {
@@ -7031,6 +7217,10 @@ body.layout-editor-on .endX-marker {
           + '</div>'
           + '</div>';
       }
+      html += '<div class="prep-tutorial prep-tutorial--round">'
+        + '<div class="prep-tutorial__label">1こずつ まるめよう</div>'
+        + '<div class="prep-tutorial__hand"><span class="open">✋</span><span class="closed">✊</span></div>'
+        + '</div>';
       els.shapeBallGame.innerHTML = html;
       els.shapeBallGame.dataset.renderKey = renderKey;
     }
@@ -7038,6 +7228,13 @@ body.layout-editor-on .endX-marker {
     els.shapeBallGame.setAttribute('aria-hidden', 'true');
     const activeIndex = getShapeBallActiveIndex(config, progress);
     const slots = els.shapeBallGame.querySelectorAll('.shape-ball-slot');
+    const activeTarget = targets[activeIndex] || {};
+    els.shapeBallGame.style.setProperty('--tutorial-hand-x', (Number.isFinite(activeTarget.x) ? activeTarget.x : 50) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-hand-y', (Number.isFinite(activeTarget.y) ? activeTarget.y : 50) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-label-x', (Number.isFinite(activeTarget.x) ? activeTarget.x : 50) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-label-y', Math.max(7, (Number.isFinite(activeTarget.y) ? activeTarget.y : 50) - 18) + '%');
+    const roundTutorial = els.shapeBallGame.querySelector('.prep-tutorial--round');
+    if (roundTutorial) roundTutorial.classList.toggle('is-hidden', (progress || 0) >= count);
     slots.forEach(function (slot, index) {
       const local = getShapeBallLocalProgress(config, progress, index);
       const done = local >= 0.999;
@@ -7083,7 +7280,11 @@ body.layout-editor-on .endX-marker {
           + '</div>'
           + '</div>';
       }
-      html += '<div class="shape-portion-dragger"><img src="' + activeSrc + '" alt="" draggable="false"></div>';
+      html += '<div class="shape-portion-dragger"><img src="' + activeSrc + '" alt="" draggable="false"></div>'
+        + '<div class="prep-tutorial prep-tutorial--portion">'
+        + '<div class="prep-tutorial__label">ひき肉をつまもう</div>'
+        + '<div class="prep-tutorial__hand"><span class="open">✋</span><span class="closed">✊</span></div>'
+        + '</div>';
       els.shapeBallGame.innerHTML = html;
       els.shapeBallGame.dataset.renderKey = renderKey;
     }
@@ -7092,6 +7293,19 @@ body.layout-editor-on .endX-marker {
     if (draggerImg && activeSrc && draggerImg.getAttribute('src') !== activeSrc) draggerImg.setAttribute('src', activeSrc);
     els.shapeBallGame.setAttribute('aria-hidden', 'true');
     const placedCount = Math.floor(Math.max(0, Math.min(count, progress || 0)));
+    const sourceEl = els.shapeBallGame.querySelector('.shape-portion-source');
+    const tutorial = els.shapeBallGame.querySelector('.prep-tutorial--portion');
+    const firstTarget = targets[0] || {};
+    els.shapeBallGame.style.setProperty('--portion-source-x', (Number.isFinite(source.x) ? source.x : 27) + '%');
+    els.shapeBallGame.style.setProperty('--portion-source-y', (Number.isFinite(source.y) ? source.y : 52) + '%');
+    els.shapeBallGame.style.setProperty('--portion-target-x', (Number.isFinite(firstTarget.x) ? firstTarget.x : 73) + '%');
+    els.shapeBallGame.style.setProperty('--portion-target-y', (Number.isFinite(firstTarget.y) ? firstTarget.y : 28) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-hand-x', (Number.isFinite(source.x) ? source.x : 27) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-hand-y', (Number.isFinite(source.y) ? source.y : 52) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-label-x', (Number.isFinite(source.x) ? source.x : 27) + '%');
+    els.shapeBallGame.style.setProperty('--tutorial-label-y', '11%');
+    if (sourceEl) sourceEl.classList.toggle('is-tutorial', placedCount === 0);
+    if (tutorial) tutorial.classList.toggle('is-hidden', placedCount > 0);
     const slots = els.shapeBallGame.querySelectorAll('.shape-ball-slot');
     slots.forEach(function (slot, index) {
       const done = index < placedCount;
@@ -7163,6 +7377,11 @@ body.layout-editor-on .endX-marker {
     const bowl = getMarinateBowlElement();
     if (bowl) {
       bowl.style.setProperty('--marinate-motion', Math.max(0, Math.min(1, state.prepMarinateMotion || 0)).toFixed(3));
+      const surfaces = Array.isArray(config.marinateSurfaces) ? config.marinateSurfaces : [];
+      if (surfaces.length) {
+        const surfaceIndex = Math.max(0, Math.min(surfaces.length - 1, Math.round((progress || 0) * (surfaces.length - 1))));
+        bowl.style.backgroundImage = "url('" + surfaces[surfaceIndex] + "')";
+      }
       const target = states.reduce(function (best, st) {
         if (!best || (st.progress || 0) < (best.progress || 0)) return st;
         return best;
@@ -7304,6 +7523,7 @@ body.layout-editor-on .endX-marker {
       config.marinatePieces.forEach(function (piece) {
         if (Array.isArray(piece.stages)) piece.stages.forEach(preloadPrepImage);
       });
+      if (Array.isArray(config.marinateSurfaces)) config.marinateSurfaces.forEach(preloadPrepImage);
     }
     if (Array.isArray(config.stepFrames)) {
       config.stepFrames.forEach(function (frames) {
@@ -12443,9 +12663,69 @@ body.layout-editor-on .endX-marker {
     completeCurrentAction(ing);
   }
 
+  function shouldPromptPrepRouteChoice(ing, nextAction) {
+    const action = getCurrentAction();
+    return !!(ing
+      && ing.id === 'chicken_marinated'
+      && state.kitchenMode === 'prep'
+      && state.currentScreen === 'chop'
+      && action
+      && action.type === 'chop'
+      && nextAction
+      && nextAction.type === 'prep'
+      && nextAction.prepKind === 'marinate_chicken');
+  }
+
+  function showPrepRouteChoice() {
+    state.awaitingImpact = false;
+    state.cutting = true;
+    state.cookAnimating = false;
+    state.prepRouteChoiceOpen = true;
+    clearPendingTimers();
+    if (els.progressCap) setProgressCaption('できあがり！');
+    setSpeech('きった とりにくで なにを つくる？', 'chop');
+    showToast('きった とりにく、どうする？');
+    if (els.prepRouteChoice) {
+      els.prepRouteChoice.classList.add('show');
+      els.prepRouteChoice.setAttribute('aria-hidden', 'false');
+    }
+    if (els.prepRouteKaraageBtn) {
+      try { els.prepRouteKaraageBtn.focus({ preventScroll: true }); } catch (e) { /* noop */ }
+    }
+  }
+
+  function hidePrepRouteChoice() {
+    state.prepRouteChoiceOpen = false;
+    if (els.prepRouteChoice) {
+      els.prepRouteChoice.classList.remove('show');
+      els.prepRouteChoice.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function chooseKaraagePrepRoute() {
+    if (!state.prepRouteChoiceOpen || !state.current) return;
+    hidePrepRouteChoice();
+    state.actionIndex += 1;
+    state.cutting = false;
+    setSpeech('からあげにするよ！ したあじを なじませよう！', 'prep');
+    beginCurrentAction();
+  }
+
+  function chooseStoreCutChickenRoute() {
+    if (!state.prepRouteChoiceOpen || !state.current) return;
+    const ing = state.current;
+    hidePrepRouteChoice();
+    state.cutting = false;
+    finalizeIngredientToFridge(ing);
+  }
+
   function completeCurrentAction(ing) {
     const nextAction = getNextAction(ing);
     if (nextAction) {
+      if (shouldPromptPrepRouteChoice(ing, nextAction)) {
+        showPrepRouteChoice();
+        return;
+      }
       state.awaitingImpact = false;
       state.cutting = true;
       state.cookAnimating = false;
@@ -12776,6 +13056,7 @@ body.layout-editor-on .endX-marker {
     state.prepMarinateRenderKey = '';
     state.prepMarinateTrailLastAt = 0;
     state.prepMarinateMotion = 0;
+    state.prepRouteChoiceOpen = false;
     state.prepFlourPressLastAt = 0;
     state.prepDragLastStep = 0;
     state.suppressPrepClick = false;
@@ -12834,6 +13115,7 @@ body.layout-editor-on .endX-marker {
     if (els.prepActionLabel) els.prepActionLabel.textContent = 'したごしらえしよう！';
     if (els.prepStepLane) els.prepStepLane.innerHTML = '';
     if (els.prepStepNotice) els.prepStepNotice.classList.remove('show');
+    hidePrepRouteChoice();
     if (els.prepArtMain) {
       els.prepArtMain.style.backgroundImage = '';
       els.prepArtMain.style.backgroundSize = '';
