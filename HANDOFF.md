@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:133-bento-guide-finale-polish] **Done** — user 指摘「点滅は緑/青系へ、海苔をポノ顔寄せ、モーダル文言をポノっぽく、画面タップで開始、完成演出を大きく・枠なし・蓋サイズ一致」を反映。`bento/index.html` はガイド対象を青信号系ハイライト、海苔をCSS製のポノ目/鼻/W口へ変更、中央ガイドに全画面タップレイヤーを追加。完成画面は弁当本体を大きく表示し、段は枠カードではなく中身そのものを重ね、蓋を弁当箱座標と同サイズで閉じる。`sw.js` は v595。Playwright とスクリーンショット目視、別エージェントレビュー blocker なし。 (by Codex)
+
 - 2026-05-25 - [batch:130-kitchen-karaage-individual-pieces] **Done** — 唐揚げの下味/粉工程を5個の個別肉に絞り、未操作の肉へ下味・粉の進捗表示が広がる不具合を修正。調理側も grouped 唐揚げ画像ではなく `assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01..05_{raw,mid,done}.png` を1個ずつ油へ入れる流れに変更。ローカル Playwright と staging で下味5個・未操作 opacity 0・粉5個・唐揚げ1個目→2個目遷移を確認。`bento/kitchen.html` / `sw.js` v594、commit `a12b8e9`。 (by Codex)
 
 - 2026-05-25 - [batch:132-bento-visual-guide-finale] **Done** — `bento/index.html` の自由配置ガイドを短文モーダル + ポノ表示へ変更し、ガイド中は右上ポノ行を隠して対象パレットだけ点滅。ドラッグ中の白枠ゴーストを撤去し、完成画面は作成済み段数を1段目から順番に積み上げ、蓋が閉まってキラキラする演出へ変更。`sw.js` は v593。Node 構文確認、Playwright でガイド/ドラッグ/3段完成DOMとサイズを確認済。 (by Codex)
