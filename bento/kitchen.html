@@ -1119,6 +1119,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   filter: drop-shadow(0 16px 18px rgba(86,55,28,0.18));
   touch-action: none;
 }
+.marinate-bowl[data-kind="marinate_chicken"] {
+  background-image: url('../assets/images/bento/cooking/chicken/tray_marinade_clean_surface_00.png');
+}
 .marinate-sauce {
   display: block;
   position: absolute;
@@ -1194,19 +1197,36 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .marinate-bowl[data-kind="coat_chicken"] {
   background-image: url('../assets/images/bento/cooking/korokke/topview/tray_flour_surface_00.png');
 }
+.marinate-bowl[data-kind="marinate_chicken"] .marinate-sauce {
+  left: 8.8%;
+  right: 8.8%;
+  top: 15.4%;
+  bottom: 13.4%;
+  border-radius: 8% / 12%;
+  background:
+    radial-gradient(ellipse 22% 14% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,218,122,0.38), transparent 68%),
+    radial-gradient(ellipse 38% 24% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,255,255,0.14), transparent 74%);
+  opacity: calc(var(--marinate-motion, 0) * 0.48);
+  mix-blend-mode: screen;
+}
+.marinate-bowl[data-kind="marinate_chicken"] .marinate-sauce::before {
+  background:
+    radial-gradient(ellipse 18% 11% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(255,240,180,0.46), transparent 72%),
+    radial-gradient(ellipse 32% 18% at calc(var(--marinate-wake-x, 50%) + 5%) calc(var(--marinate-wake-y, 52%) + 4%), rgba(116,58,24,0.2), transparent 76%);
+  opacity: calc(0.35 + var(--marinate-motion, 0) * 0.24);
+  transform: translate3d(calc(var(--marinate-motion, 0) * 0.7%), 0, 0);
+}
+.marinate-bowl[data-kind="marinate_chicken"] .marinate-sauce::after {
+  background:
+    radial-gradient(ellipse 16% 10% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), transparent 0 48%, rgba(255,226,142,0.28) 55% 62%, transparent 70%),
+    radial-gradient(ellipse 28% 18% at var(--marinate-wake-x, 50%) var(--marinate-wake-y, 52%), rgba(121,56,23,0.16), transparent 72%);
+  opacity: var(--marinate-motion, 0);
+}
 .marinate-bowl[data-kind="coat_chicken"] .marinate-sauce {
   display: none;
 }
 .marinate-bowl[data-kind="coat_chicken"] .marinate-piece::after {
-  content: '';
-  position: absolute;
-  inset: -18%;
-  border-radius: 46% 54% 44% 56%;
-  pointer-events: none;
-  background: url('../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png') center / 130% 110% no-repeat;
-  opacity: calc(var(--piece-marinated, 0) * 0.74);
-  mix-blend-mode: normal;
-  filter: blur(0.12px) saturate(0.74) brightness(1.04);
+  content: none;
 }
 .marinate-cue {
   position: absolute;
@@ -1264,6 +1284,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   pointer-events: none;
   z-index: 4;
   animation: marinateSauceDot 0.78s ease-out forwards;
+}
+.marinate-bowl[data-kind="marinate_chicken"] .marinate-sauce-dot {
+  background: radial-gradient(circle, rgba(226,154,75,0.76), rgba(124,58,25,0.52) 58%, transparent 74%);
 }
 .marinate-flour-dot {
   position: absolute;
@@ -5456,6 +5479,9 @@ body.layout-editor-on .endX-marker {
     {
       id: 'chicken_marinated', name: 'とりにく', emoji: '🍗', piece: '🍗',
       chopCount: 6, implemented: true,
+      rapidTap: true,
+      queuedTapLimit: 3,
+      chopTiming: { slideMs: 120, downDelayMs: 140, impactDelayMs: 210, liftDelayMs: 270, releaseDelayMs: 330, innerMs: 80 },
       cookingActions: [
         { type: 'chop' },
         { type: 'fry', label: 'カラッと あげよう', stages: 2 },
@@ -5484,7 +5510,7 @@ body.layout-editor-on .endX-marker {
       pieceBurstCount: 2,
       bowlPieceLimit: 28,
       chopMechanics: {
-        startX_pct: 82, endX_pct: 18,
+        startX_pct: 69, endX_pct: 18,
         liftY_pct: 0, chopY_pct: 50,
         maskAxis: 'right-to-left',
         bladeTipOffsetX_pct: -39,
@@ -5940,17 +5966,17 @@ body.layout-editor-on .endX-marker {
       completeSpeech: 'したあじが しっかり なじんだよ！',
       completeBurst: 'しみしみ！',
       marinateSurfaces: [
-        '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_00.png',
-        '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_01.png',
-        '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_02.png',
-        '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_03.png',
-        '../assets/images/bento/cooking/korokke/topview/tray_egg_surface_04.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_clean_surface_00.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_clean_surface_01.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_clean_surface_02.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_clean_surface_03.png',
+        '../assets/images/bento/cooking/chicken/tray_marinade_clean_surface_04.png',
       ],
       marinatePieces: [
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png'], x: 32, y: 36, size: 18, rot: -8 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png'], x: 49, y: 34, size: 17, rot: 6 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png'], x: 66, y: 38, size: 17, rot: -3 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_plain_fixed.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 39, y: 53, size: 16, rot: 9 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_plain_repaired.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 39, y: 53, size: 16, rot: 9 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 57, y: 52, size: 16, rot: -10 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png'], x: 74, y: 55, size: 15, rot: 4 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png'], x: 45, y: 70, size: 15, rot: -4 },
@@ -5976,14 +6002,14 @@ body.layout-editor-on .endX-marker {
         '../assets/images/bento/cooking/korokke/topview/tray_flour_surface_04.png',
       ],
       marinatePieces: [
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png'], x: 32, y: 36, size: 18, rot: -8 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png'], x: 49, y: 34, size: 17, rot: 6 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png'], x: 66, y: 38, size: 17, rot: -3 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 39, y: 53, size: 16, rot: 9 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 57, y: 52, size: 16, rot: -10 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png'], x: 74, y: 55, size: 15, rot: 4 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png'], x: 45, y: 70, size: 15, rot: -4 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png'], x: 62, y: 69, size: 15, rot: 7 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_01_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_01_coated.png'], x: 32, y: 36, size: 18, rot: -8 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_02_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_02_coated.png'], x: 49, y: 34, size: 17, rot: 6 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_03_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_03_coated.png'], x: 66, y: 38, size: 17, rot: -3 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_04_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_04_coated.png'], x: 39, y: 53, size: 16, rot: 9 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_05_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_05_coated.png'], x: 57, y: 52, size: 16, rot: -10 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_06_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_06_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_06_coated.png'], x: 74, y: 55, size: 15, rot: 4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_07_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_07_coated.png'], x: 45, y: 70, size: 15, rot: -4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_08_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_08_coated.png'], x: 62, y: 69, size: 15, rot: 7 },
       ],
       steps: [
         { label: 'こなに まぶそう', caption: '1こずつ こなの なかで ぐるぐる！', burst: 'ぱふっ！' },
@@ -6090,6 +6116,10 @@ body.layout-editor-on .endX-marker {
     fridgePonoTimer: null,
     knifeAnimating: false,
     queuedChopTaps: 0,
+    boardTapPointerId: null,
+    boardTapStartX: 0,
+    boardTapStartY: 0,
+    suppressBoardClickUntil: 0,
     // completeIngredient で発火した setTimeout を集約。
     // resetBoard / showScreen 冒頭で clearPendingTimers() を呼んで
     // 「← もどる」直後の予期せぬ画面ジャンプを防ぐ。
@@ -6719,7 +6749,16 @@ body.layout-editor-on .endX-marker {
     });
 
     // まな板
-    els.board.addEventListener('click', onBoardTap);
+    els.board.addEventListener('click', (e) => {
+      if (Date.now() < (state.suppressBoardClickUntil || 0)) {
+        e.preventDefault();
+        return;
+      }
+      onBoardTap();
+    });
+    els.board.addEventListener('pointerdown', onBoardPointerDown);
+    els.board.addEventListener('pointerup', onBoardPointerUp);
+    els.board.addEventListener('pointercancel', resetBoardPointerTap);
     els.board.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
@@ -7750,8 +7789,8 @@ body.layout-editor-on .endX-marker {
     nodes.forEach(function (node, index) {
       const st = states[index] || {};
       const p = Math.max(0, Math.min(1, st.progress || progress || 0));
-      const light = config.flourPiecePrep ? 0 : Math.max(0, Math.min(1, p * 2.2));
-      const marinated = config.flourPiecePrep ? p : Math.max(0, Math.min(1, (p - 0.42) / 0.58));
+      const light = config.flourPiecePrep ? Math.max(0, Math.min(1, p * 1.75)) : Math.max(0, Math.min(1, p * 2.2));
+      const marinated = config.flourPiecePrep ? Math.max(0, Math.min(1, (p - 0.34) / 0.66)) : Math.max(0, Math.min(1, (p - 0.42) / 0.58));
       node.classList.toggle('is-active', index === state.prepMarinateActiveIndex);
       node.style.setProperty('--piece-x', (Number.isFinite(st.x) ? st.x : 50).toFixed(2) + '%');
       node.style.setProperty('--piece-y', (Number.isFinite(st.y) ? st.y : 50).toFixed(2) + '%');
@@ -13364,6 +13403,37 @@ body.layout-editor-on .endX-marker {
     if (!img) return;
     img.style.maskImage = '';
     img.style.webkitMaskImage = '';
+  }
+
+  function isDirectBoardTapPointer(evt) {
+    return evt && (evt.pointerType === 'touch' || evt.pointerType === 'pen');
+  }
+
+  function onBoardPointerDown(evt) {
+    if (!isDirectBoardTapPointer(evt) || (evt.isPrimary === false)) return;
+    state.boardTapPointerId = evt.pointerId;
+    state.boardTapStartX = evt.clientX;
+    state.boardTapStartY = evt.clientY;
+    try { els.board.setPointerCapture(evt.pointerId); } catch (_) {}
+  }
+
+  function onBoardPointerUp(evt) {
+    if (!isDirectBoardTapPointer(evt) || state.boardTapPointerId !== evt.pointerId) return;
+    const moved = Math.hypot(evt.clientX - state.boardTapStartX, evt.clientY - state.boardTapStartY);
+    resetBoardPointerTap(evt);
+    if (moved > 24) return;
+    evt.preventDefault();
+    state.suppressBoardClickUntil = Date.now() + 650;
+    onBoardTap();
+  }
+
+  function resetBoardPointerTap(evt) {
+    if (evt && state.boardTapPointerId === evt.pointerId) {
+      try { els.board.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+    state.boardTapPointerId = null;
+    state.boardTapStartX = 0;
+    state.boardTapStartY = 0;
   }
 
   // ========== まな板タップ (トントン) ==========
