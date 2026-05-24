@@ -5,6 +5,13 @@ name: Deploy to Cloudflare Workers
 on:
   push:
     branches: [develop, master]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'memory/**'
+      - '.claude/**'
+      - 'logs/**'
+      - 'scripts/**'
   workflow_dispatch:
 
 # 同一 branch で連続 push があった時は、進行中の deploy をキャンセルして
