@@ -416,6 +416,25 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>   ← または Codex
 
 ---
 
+## 11.5 Agent tool 利用ルール (worktree 古化対策)
+
+Claude Code / Codex の Agent tool は子エージェント起動時に自動で git worktree を作成する。worktree は派生時点のコミットで固定され、develop の追従更新は自動では行われない。当プロジェクトは develop が高頻度更新されるため、worktree がすぐ陳腐化し、エージェントが数十行のつもりで編集しても最新 develop と比較すると数千行差分になり最近の改修を巻き戻す事故が起きる。
+実例: 2026-05-23 quizland OP 短縮タスクで agent worktree のベースが古く quizland/index.html に 9301 行差分が発生してマージ不能だった。
+
+**子エージェントへの指示テンプレに必ず含める**:
+- 作業開始時に `git fetch origin develop && git rebase origin/develop` で最新ベースに揃える
+- 実装後は `git add` + `git commit` を作成し、commit ハッシュをオーケストレータに報告する
+- 完了前に `git log origin/develop..HEAD` で commits ahead を確認する
+
+**オーケストレータ側の責務**:
+- 完了後 `git log` / `git diff origin/develop` でベース妥当性をチェック
+- 陳腐化判明時は rebase より新規エージェント再起動を優先
+- 差分判定の目安: `--stat` で 1ファイルあたり想定行数 × 3 を超えたら陳腐化を疑い再起動を選択
+- 完了マージ後は `git worktree remove <path>` で worktree を必ず破棄し、次タスクの誤再利用を防ぐ
+- 並列起動時は対象ファイルパスを事前申告させ、衝突する場合は直列化する
+
+---
+
 ## 12. AGENTS.md 自身の更新ルール
 
 - 内容を変えたい場合は提案コミットを作り、 ユーザー承認後にマージ。
