@@ -148,6 +148,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-24 - [batch:122-mojikko-menu-layout-polish] **Done** — `play.html` のゲーム一覧に「もじっこファーム」カードを追加し、`writing-mori/index.html` は上部の重複タイトルを非表示、下部メッセージ欄を非表示、4:3 では高さ基準で表示して左右メニューを内側へ寄せる compact レイアウトを追加。書き順サムネイルは medians bbox から viewBox を作り、文字が下寄りにならないよう中央寄せ。`sw.js` v587。ローカル Playwright でカード表示/遷移、4:3 compact 表示を確認済。 (by Codex)
+
 - 2026-05-24 - [batch:121-mojikko-route-writing-first] **Done** — `writing-mori/index.html` を文字書きメインへ戻し、お世話画面を `writing-mori/care.html` に分離。ミルマルカードをお世話入口にし、文字書き完了で `mojikkoFarmCareStateV1` にもじクッキー +1 / すくすく +3 を反映、完了モーダルは「ミルマルに あげる」「もういっかい かく」に変更。お世話画面では大きな「もじを かく！」を主導線にし、下段に「あげる・なでる・あそぶ」を配置。`write.html` は互換リダイレクト化、`sw.js` v585。ローカル Playwright で writing-first loop 確認済。 (by Codex)
 
 - 2026-05-24 - [batch:120-mojikko-care-loop] **Done** — `writing-mori/index.html` をミルマルのお世話画面に変更し、元の文字書き画面を `writing-mori/write.html` へ分離。ローカル state、なかよし/すくすく、もちもの、あげる/なでる/あそぶ/かく、文字書き完了報酬の localStorage 受け渡し、`sw.js` v584 を実装。Playwright で「クッキー消費→ゲージ増加→かく→完了→お世話へ→クッキー追加」を確認済。 (by Codex)

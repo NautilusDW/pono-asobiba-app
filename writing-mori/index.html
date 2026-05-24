@@ -283,8 +283,8 @@ html, body {
 }
 
 .title-plaque {
+  display: none;
   height: 66px;
-  display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--pixel-font);
@@ -294,6 +294,7 @@ html, body {
 }
 
 .header-right {
+  grid-column: 3;
   display: flex;
   justify-content: flex-end;
   gap: 14px;
@@ -336,6 +337,21 @@ html, body {
   grid-template-columns: 230px 1fr 258px;
   gap: 26px;
   z-index: 10;
+}
+
+#stage.compact .stage-header {
+  left: 210px;
+  right: 210px;
+  top: 18px;
+}
+
+#stage.compact .layout {
+  left: 210px;
+  right: 210px;
+  top: 104px;
+  bottom: 12px;
+  grid-template-columns: 230px minmax(0, 1fr) 258px;
+  gap: 18px;
 }
 
 .side-stack {
@@ -815,9 +831,10 @@ html, body {
 
 .feedback-row {
   display: grid;
-  grid-template-columns: 1fr 170px 170px;
+  grid-template-columns: 170px 170px;
   gap: 14px;
   align-items: center;
+  justify-content: end;
 }
 
 .feedback-row .pixel-button {
@@ -828,8 +845,8 @@ html, body {
 }
 
 .message-box {
+  display: none;
   min-height: 56px;
-  display: flex;
   align-items: center;
   padding: 10px 20px;
   font-family: var(--pixel-font);
@@ -1314,7 +1331,12 @@ function navigateToCareScreen() {
 }
 
 function fitStage() {
-  const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+  const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+  const compact = aspect < 1.55;
+  stageEl.classList.toggle('compact', compact);
+  const scale = compact
+    ? window.innerHeight / 900
+    : Math.min(window.innerWidth / 1600, window.innerHeight / 900);
   const ox = (window.innerWidth - 1600 * scale) / 2;
   const oy = (window.innerHeight - 900 * scale) / 2;
   stageEl.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
@@ -1561,12 +1583,13 @@ function renderStrokeOrder() {
   const item = getCurrentCharacter();
   const count = Math.max(1, item.strokes || 1);
   const strokePaths = currentCharData && Array.isArray(currentCharData.strokes) ? currentCharData.strokes : null;
+  const previewViewBox = getStrokePreviewViewBox();
   strokeListEl.innerHTML = '';
   for (let index = 0; index < count; index++) {
     const card = document.createElement('div');
     const cls = index < strokesCompleted ? 'done' : (index === Math.min(currentStrokeIndex, count - 1) ? 'current' : '');
     const preview = strokePaths
-      ? `<svg viewBox="0 0 1024 1024" aria-hidden="true">
+      ? `<svg viewBox="${previewViewBox}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <g transform="translate(0, 1024) scale(1, -1)">
             ${strokePaths.map((path, pathIndex) => {
               const pathClass = pathIndex < strokesCompleted ? 'preview-done' : (pathIndex === index ? 'preview-current' : '');
@@ -1585,6 +1608,35 @@ function renderStrokeOrder() {
     `;
     strokeListEl.appendChild(card);
   }
+}
+
+function getStrokePreviewViewBox() {
+  const medians = currentCharData && Array.isArray(currentCharData.medians) ? currentCharData.medians : null;
+  if (!medians || medians.length === 0) return '0 0 1024 1024';
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  medians.forEach((stroke) => {
+    if (!Array.isArray(stroke)) return;
+    stroke.forEach((point) => {
+      if (!Array.isArray(point) || point.length < 2) return;
+      const x = Number(point[0]);
+      const y = Number(point[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, 1024 - y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, 1024 - y);
+    });
+  });
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return '0 0 1024 1024';
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const span = Math.max(maxX - minX, maxY - minY, 360);
+  const viewH = Math.min(980, span + 300);
+  const viewW = viewH * 1.85;
+  return `${Math.round(cx - viewW / 2)} ${Math.round(cy - viewH / 2)} ${Math.round(viewW)} ${Math.round(viewH)}`;
 }
 
 function updateStrokeCountFromData(item, data) {

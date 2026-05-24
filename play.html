@@ -1339,6 +1339,18 @@
         thumb: 'assets/ui/thumb_wordmatch.png'
       },
       {
+        id: 'writing-mori',
+        title: 'もじっこファーム',
+        subtitle: 'ひらがなを なぞって ミルマルと そだとう',
+        icon: '✏️',
+        bg: 'assets/images/wordmatch/title_back.jpg',
+        href: 'writing-mori/index.html',
+        panel: 'assets/ui/menu_card_base_04.png',
+        thumb: 'assets/ui/thumb_wordmatch.png',
+        thumbPos: '45% 52%',
+        peekPos: '50% 50%'
+      },
+      {
         id: 'maze',
         title: 'ポノとランタンのめいろ',
         subtitle: 'ランタンをもって まいごさがし',
@@ -1452,7 +1464,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 992;
+    const PAGE_CACHE_VERSION = 587;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
