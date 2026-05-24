@@ -387,9 +387,9 @@ html, body {
   left: 50%;
   top: 50%;
   z-index: 6;
-  width: min(74%, 430px);
+  width: min(76%, 380px);
   transform: translate(-50%, -50%);
-  padding: 10px 16px;
+  padding: 10px 14px;
   border: 3px solid rgba(255, 184, 106, 0.9);
   border-radius: 18px;
   background: rgba(255, 248, 230, 0.88);
@@ -399,8 +399,25 @@ html, body {
   pointer-events: auto;
   cursor: pointer;
 }
+.free-main-guide-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.free-main-guide-pono {
+  width: 62px;
+  height: 62px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  animation: guidePonoNod 1.35s ease-in-out infinite;
+}
+.free-main-guide-copy {
+  min-width: 0;
+  text-align: left;
+}
 .free-main-guide-title {
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 900;
   line-height: 1.2;
 }
@@ -412,11 +429,15 @@ html, body {
   line-height: 1.25;
 }
 .free-main-guide-hint {
-  margin-top: 6px;
+  margin-top: 4px;
   color: #B8742E;
-  font-size: 0.48rem;
+  font-size: 0.52rem;
   font-weight: 900;
   line-height: 1.1;
+}
+@keyframes guidePonoNod {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-3px) rotate(3deg); }
 }
 .free-placed-item {
   position: absolute;
@@ -550,8 +571,13 @@ html, body {
 }
 .food-tray.free-layout-controls.guide-blocking > * {
   pointer-events: none;
-  opacity: 0.42;
-  filter: saturate(0.75);
+}
+.food-tray.free-layout-controls.guide-blocking .free-palette-item.guide-target {
+  opacity: 1;
+  filter: none;
+}
+.right-panel.free-guide-focus .pono-row {
+  display: none;
 }
 .free-tabs {
   display: grid;
@@ -853,21 +879,21 @@ html, body {
   left: 0;
   top: 0;
   z-index: 90;
-  width: 86px;
-  height: 86px;
+  width: 94px;
+  height: 94px;
   transform: translate(-50%, -50%) scale(1.08);
   pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 3px solid rgba(255, 184, 106, 0.9);
-  box-shadow: 0 10px 22px rgba(93, 78, 55, 0.2);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 .free-drag-ghost .free-palette-visual {
-  width: 74px;
-  height: 74px;
+  width: 86px;
+  height: 86px;
+  filter: drop-shadow(0 10px 14px rgba(93, 78, 55, 0.24));
 }
 .complete-bento.free-complete-bento,
 .fav-mini-bento.free-mini-bento {
@@ -878,23 +904,38 @@ html, body {
   width: min(92%, 520px);
 }
 .complete-bento.free-complete-stack {
-  width: min(96%, 560px);
+  position: relative;
+  width: min(100%, 620px);
+  min-height: clamp(232px, 39vh, 340px);
   aspect-ratio: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 6px;
+  display: block;
   padding: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
+  overflow: visible;
+}
+.free-complete-build-stage {
+  position: relative;
+  width: 100%;
+  height: clamp(232px, 39vh, 340px);
+  overflow: visible;
 }
 .free-complete-tier {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: var(--tier-y, 0px);
+  width: min(92%, 460px);
+  opacity: 0;
+  transform: translateX(-50%) translateY(-18px) scale(0.92);
+  z-index: var(--tier-z, 1);
   border: 3px solid #7A3D13;
   border-radius: 9px;
   background: #8B4513;
   padding: 3px;
   box-shadow: 0 2px 8px rgba(93, 78, 55, 0.16);
+  animation: completeTierIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: var(--tier-delay, 0s);
 }
 .free-complete-tier-label {
   position: absolute;
@@ -910,7 +951,76 @@ html, body {
   font-weight: 900;
 }
 .complete-bento.free-complete-stack .free-layout-stage {
+  width: 100%;
   aspect-ratio: 760 / 460;
+}
+.free-complete-lid {
+  position: absolute;
+  left: 50%;
+  top: var(--lid-y, 0px);
+  z-index: 30;
+  width: min(86%, 430px);
+  height: auto;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-112px) scale(1.04);
+  transform-origin: center bottom;
+  pointer-events: none;
+  filter: drop-shadow(0 13px 14px rgba(93, 78, 55, 0.24));
+  animation: completeLidClose 0.8s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+  animation-delay: var(--lid-delay, 1.3s);
+}
+.free-complete-sparkle {
+  position: absolute;
+  left: var(--spark-x, 50%);
+  top: var(--spark-y, 50%);
+  z-index: 40;
+  color: #FFC928;
+  font-size: var(--spark-size, 1rem);
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 2px 0 #FFFFFF, 0 0 8px rgba(255, 213, 74, 0.8);
+  animation: completeSparklePop 0.9s ease-out forwards;
+  animation-delay: var(--spark-delay, 1.9s);
+}
+@keyframes completeTierIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-24px) scale(0.88);
+  }
+  72% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+@keyframes completeLidClose {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-112px) scale(1.04);
+  }
+  24% { opacity: 1; }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+@keyframes completeSparklePop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(-18deg);
+  }
+  36% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.35) rotate(8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -62%) scale(0.78) rotate(24deg);
+  }
 }
 .complete-bento.free-complete-bento .free-layout-stage,
 .fav-mini-bento.free-mini-bento .free-layout-stage {
@@ -1415,7 +1525,7 @@ html, body {
 
 /* ===== Redesigned complete card (2-column) ===== */
 .complete-card-wide {
-  max-width: 620px;
+  max-width: 740px;
   width: 92%;
   padding: 10px 14px 12px;
   gap: 6px;
@@ -1428,7 +1538,7 @@ html, body {
   margin-top: 2px;
 }
 .complete-left {
-  flex: 1.05;
+  flex: 1.28;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1443,7 +1553,7 @@ html, body {
   max-width: none;
 }
 .complete-right {
-  flex: 1;
+  flex: 0.92;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2267,40 +2377,31 @@ const FREE_TABS = [
 ];
 const FREE_GUIDE_COPY = {
   box: {
-    title: '1. おべんとうばこを えらぼう',
-    text: 'さいしょに つかう はこを きめよう。',
+    title: 'おべんとうばこを えらぶ',
   },
   rice: {
-    title: '2. ごはんを よそおう',
-    text: '「ごはんを よそう」を おすと、1だんめに ごはんが はいるよ。',
+    title: 'ごはんを よそう',
   },
   decor: {
-    title: '3. のりで かざろう',
-    text: 'め・はな・くちを のせて、ごはんを かわいく しよう。',
+    title: 'のりで かざる',
   },
   tier2Main: {
-    title: '4. メインの おかずを いれよう',
-    text: 'ハンバーグや からあげなどを 2つまで えらべるよ。',
+    title: 'メインおかずを いれる',
   },
   tier2Side: {
-    title: '5. 小さい おかずを いれよう',
-    text: 'プチトマト、たまごやき、いんげん、きんぴらから えらぼう。',
+    title: '小さいおかずを いれる',
   },
   tier3Prompt: {
-    title: '6. もう 1だん つくる？',
-    text: 'ひつようなければ できあがり。もっと いれるなら 3だんめへ。',
+    title: 'もう 1だん つくる？',
   },
   tier3Main: {
-    title: '6. 3だんめの メインおかず',
-    text: '3だんめも メインのおかずを 2つまで えらべるよ。',
+    title: '3だんめ メインおかず',
   },
   tier3Side: {
-    title: '7. 3だんめの 小さいおかず',
-    text: 'すきまに 小さいおかずを いれよう。',
+    title: '3だんめ 小さいおかず',
   },
   cupEditor: {
-    title: 'カップに いれる おかずを えらぼう',
-    text: '大きさを きめて、おかずを おすと カップに はいるよ。',
+    title: 'カップに いれる',
   },
 };
 const FREE_ASSET = '../assets/images/bento/free-layout/';
@@ -3274,8 +3375,7 @@ function getFreeGuideCopy() {
   const copy = FREE_GUIDE_COPY[freeGuideStep] || FREE_GUIDE_COPY.box;
   if (freeGuideStep === 'tier2Main' && getBoxTierCount() <= 1) {
     return {
-      title: '4. メインの おかずを いれよう',
-      text: 'はんぶんの ところに メインのおかずを 2つまで えらべるよ。',
+      title: 'メインおかずを いれる',
     };
   }
   return copy;
@@ -4096,21 +4196,27 @@ function createFreeMainGuide() {
   guide.className = 'free-main-guide';
   guide.setAttribute('role', 'button');
   guide.tabIndex = 0;
-  guide.setAttribute('aria-label', '説明をとじる');
+  guide.setAttribute('aria-label', 'はじめる');
+  const row = document.createElement('div');
+  row.className = 'free-main-guide-row';
+  const pono = document.createElement('img');
+  pono.className = 'free-main-guide-pono';
+  const headerPono = document.getElementById('pono-img');
+  pono.src = headerPono ? headerPono.getAttribute('src') : PONO_BASE + 'pono_face_circle.png';
+  pono.alt = 'ポノ';
+  row.appendChild(pono);
+  const copyBox = document.createElement('div');
+  copyBox.className = 'free-main-guide-copy';
   const title = document.createElement('div');
   title.className = 'free-main-guide-title';
   title.textContent = copy.title;
-  guide.appendChild(title);
-  if (copy.text) {
-    const text = document.createElement('div');
-    text.className = 'free-main-guide-text';
-    text.textContent = copy.text;
-    guide.appendChild(text);
-  }
+  copyBox.appendChild(title);
   const hint = document.createElement('div');
   hint.className = 'free-main-guide-hint';
   hint.textContent = 'タップして はじめる';
-  guide.appendChild(hint);
+  copyBox.appendChild(hint);
+  row.appendChild(copyBox);
+  guide.appendChild(row);
   guide.addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
@@ -4510,6 +4616,8 @@ function renderFreeLayoutControls() {
   normalizeFreeGuideTab();
   tray.className = 'food-tray free-layout-controls';
   tray.classList.toggle('guide-blocking', isFreeMainGuideBlocking());
+  const rightPanel = tray.closest('.right-panel');
+  if (rightPanel) rightPanel.classList.toggle('free-guide-focus', isFreeMainGuideBlocking());
   tray.innerHTML = '';
 
   const cupEditorControls = renderFreeCupEditorControls();
@@ -4617,15 +4725,48 @@ function syncFreeLayoutSelectionState() {
   bentoSelected = data.foods.map(f => ({ img: f.img, name: f.name, sk: f.sk }));
   return data;
 }
+function getFreeCompletedTierCount(items, box) {
+  const maxTiers = getBoxTierCount(box);
+  if (maxTiers <= 1) return 1;
+  let count = 1;
+  for (let tier = 2; tier <= maxTiers; tier++) {
+    if (items.some(item => getItemTier(item) === tier)) count = tier;
+  }
+  return Math.min(maxTiers, Math.max(1, count));
+}
+function addFreeCompletionSparkles(host, delayStart) {
+  const sparkles = [
+    { x: 12, y: 18, size: 1.08, d: 0.00 },
+    { x: 86, y: 16, size: 0.92, d: 0.12 },
+    { x: 20, y: 74, size: 0.84, d: 0.22 },
+    { x: 78, y: 78, size: 1.18, d: 0.32 },
+    { x: 52, y: 8, size: 0.78, d: 0.42 },
+  ];
+  sparkles.forEach((s, idx) => {
+    const sparkle = document.createElement('span');
+    sparkle.className = 'free-complete-sparkle';
+    sparkle.textContent = idx % 2 ? '★' : '✦';
+    sparkle.style.setProperty('--spark-x', `${s.x}%`);
+    sparkle.style.setProperty('--spark-y', `${s.y}%`);
+    sparkle.style.setProperty('--spark-size', `${s.size}rem`);
+    sparkle.style.setProperty('--spark-delay', `${delayStart + s.d}s`);
+    host.appendChild(sparkle);
+  });
+}
 function renderFreeCompleteBento(host, items, boxId) {
   const box = bentoBoxes.find(b => b.id === (boxId || selectedBentoBoxId)) || getSelectedBentoBox();
-  const tierCount = getBoxTierCount(box);
+  const tierCount = getFreeCompletedTierCount(items, box);
   host.className = 'complete-bento free-complete-bento' + (tierCount > 1 ? ' free-complete-stack' : '');
   host.innerHTML = '';
   if (tierCount > 1) {
+    const build = document.createElement('div');
+    build.className = 'free-complete-build-stage';
     for (let tier = 1; tier <= tierCount; tier++) {
       const wrap = document.createElement('div');
       wrap.className = 'free-complete-tier';
+      wrap.style.setProperty('--tier-y', `${(tierCount - tier) * 32}px`);
+      wrap.style.setProperty('--tier-z', `${tier}`);
+      wrap.style.setProperty('--tier-delay', `${(tier - 1) * 0.58}s`);
       const label = document.createElement('div');
       label.className = 'free-complete-tier-label';
       label.textContent = getTierLabel(tier, box);
@@ -4640,8 +4781,20 @@ function renderFreeCompleteBento(host, items, boxId) {
         interactive: false,
       });
       wrap.appendChild(stage);
-      host.appendChild(wrap);
+      build.appendChild(wrap);
     }
+    const lidDelay = tierCount * 0.58 + 0.16;
+    if (box.lidImage) {
+      const lid = document.createElement('img');
+      lid.className = 'free-complete-lid';
+      lid.src = box.lidImage;
+      lid.alt = 'ふた';
+      lid.style.setProperty('--lid-delay', `${lidDelay}s`);
+      lid.style.setProperty('--lid-y', `${Math.max(0, (tierCount - 1) * 8)}px`);
+      build.appendChild(lid);
+    }
+    addFreeCompletionSparkles(build, lidDelay + (box.lidImage ? 0.72 : 0.18));
+    host.appendChild(build);
     return;
   }
   const stage = document.createElement('div');

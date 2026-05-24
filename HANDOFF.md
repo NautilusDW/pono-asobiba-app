@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:132-bento-visual-guide-finale] **Done** — `bento/index.html` の自由配置ガイドを短文モーダル + ポノ表示へ変更し、ガイド中は右上ポノ行を隠して対象パレットだけ点滅。ドラッグ中の白枠ゴーストを撤去し、完成画面は作成済み段数を1段目から順番に積み上げ、蓋が閉まってキラキラする演出へ変更。`sw.js` は v593。Node 構文確認、Playwright でガイド/ドラッグ/3段完成DOMとサイズを確認済。 (by Codex)
+
 - 2026-05-24 - [batch:131-mojikko-care-mask-assets] **Done** — user が `D:\ポノのおへや\Moji\assets` に追加したお世話画面用マスク付きPNG 23枚を `assets/images/mojikko/care/` へ意味名で取り込み。`writing-mori/care.html` は状態管理と導線を維持しつつ、中央庭背景・家・ラグ・クッション・小物・花・エフェクト・ミルマル表示をPNG素材へ差し替え。`sw.js` は v592。CSS参照実在確認と Chrome `--dump-dom` ページ読み込み確認済。 (by Codex)
 
 - 2026-05-24 - [batch:130-mojikko-writing-mask-assets] **Done** — user が `D:\ポノのおへや\Moji\assets` に配置したマスク付きPNG 44枚を `assets/images/mojikko/writing/` へ意味名で取り込み。`writing-mori/index.html` は文字データ・なぞり判定を維持しつつ、文字盤フレーム、左右パネル、ミルマルカード/表情、報酬枠、主要ボタン、クッキー/鉛筆/星/設定アイコンをPNG素材へ差し替え。`sw.js` は v591。Chrome `--dump-dom` でページ読み込みとCSS参照実在を確認済。スクリーンショット保存はChrome側のアクセス拒否で未取得。 (by Codex)
