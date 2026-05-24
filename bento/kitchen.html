@@ -1200,18 +1200,13 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .marinate-bowl[data-kind="coat_chicken"] .marinate-piece::after {
   content: '';
   position: absolute;
-  inset: 3%;
-  border-radius: 48% 52% 46% 54%;
+  inset: -18%;
+  border-radius: 46% 54% 44% 56%;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 28% 34%, rgba(255,255,255,0.84) 0 4%, transparent 5%),
-    radial-gradient(circle at 63% 28%, rgba(255,255,255,0.72) 0 3.4%, transparent 4.6%),
-    radial-gradient(circle at 42% 62%, rgba(255,255,255,0.78) 0 4.4%, transparent 5.4%),
-    radial-gradient(circle at 72% 68%, rgba(255,255,255,0.58) 0 3.2%, transparent 4.2%),
-    radial-gradient(ellipse at var(--flour-cx, 48%) var(--flour-cy, 52%), rgba(255,255,255,0.7), rgba(246,238,218,0.45) 48%, transparent 70%);
-  opacity: var(--piece-marinated, 0);
-  mix-blend-mode: screen;
-  filter: blur(0.2px);
+  background: url('../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png') center / 130% 110% no-repeat;
+  opacity: calc(var(--piece-marinated, 0) * 0.74);
+  mix-blend-mode: normal;
+  filter: blur(0.12px) saturate(0.74) brightness(1.04);
 }
 .marinate-cue {
   position: absolute;
@@ -1276,15 +1271,31 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   top: var(--dot-y, 50%);
   width: var(--dot-size, 18px);
   aspect-ratio: 1;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 46% 42%, rgba(255,255,255,0.9), rgba(235,226,205,0.52) 55%, transparent 75%);
+  border-radius: 0;
+  background: url('../assets/images/bento/cooking/korokke/topview/overlay_flour_dust.png') center / 210% 160% no-repeat;
   filter: blur(var(--dot-blur, 0.7px));
   opacity: 0;
   pointer-events: none;
   z-index: 4;
   mix-blend-mode: screen;
   animation: marinateFlourDot var(--dot-life, 0.86s) ease-out forwards;
+}
+.marinate-flour-smoke {
+  position: absolute;
+  left: var(--dot-x, 50%);
+  top: var(--dot-y, 50%);
+  width: var(--smoke-w, 86px);
+  height: var(--smoke-h, 42px);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 42% 54%, rgba(255,255,255,0.46), rgba(235,226,205,0.22) 48%, transparent 72%),
+    radial-gradient(ellipse at 64% 42%, rgba(255,255,255,0.32), transparent 66%);
+  filter: blur(var(--smoke-blur, 5px));
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+  mix-blend-mode: screen;
+  animation: marinateFlourSmoke var(--smoke-life, 1.05s) ease-out forwards;
 }
 @keyframes marinateSauceDot {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45); }
@@ -1297,6 +1308,20 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--dot-dx, 0px)), calc(-50% + var(--dot-dy, 0px))) scale(var(--dot-scale, 1.18));
+  }
+}
+@keyframes marinateFlourSmoke {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.48) rotate(var(--smoke-rot, -4deg));
+  }
+  18% { opacity: var(--smoke-peak, 0.42); }
+  100% {
+    opacity: 0;
+    transform:
+      translate(calc(-50% + var(--smoke-dx, 0px)), calc(-50% + var(--smoke-dy, -34px)))
+      scale(var(--smoke-scale, 1.45))
+      rotate(var(--smoke-end-rot, 6deg));
   }
 }
 .knead-canvas {
@@ -2385,6 +2410,7 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 }
 body.layout-editor-on .grill-stove-bg,
 body.layout-editor-on .grill-pan,
+body.layout-editor-on .egg-glass-lid,
 body.layout-editor-on .fry-stove-bg,
 body.layout-editor-on .fry-pot {
   pointer-events: auto;
@@ -2704,6 +2730,15 @@ body.layout-editor-on .fry-pot {
   cursor: grab;
   z-index: 4;
 }
+#grill-stage[data-ingredient="egg"]:not(.food-placed):not(.is-served) .prep-plate {
+  left: 16%;
+  top: 67.2%;
+  width: 33.5%;
+  aspect-ratio: 1.4 / 1;
+  transform: translate(-50%, -50%) rotate(-5deg);
+  z-index: 4;
+  filter: drop-shadow(0 12px 17px rgba(105,70,35,0.22));
+}
 #grill-stage[data-ingredient="egg"].egg-crack-knocked:not(.food-placed) .cooking-food img {
   animation: eggKnockWobble 0.28s ease;
 }
@@ -2739,8 +2774,8 @@ body.layout-editor-on .fry-pot {
 }
 .egg-target-cue {
   position: absolute;
-  left: var(--egg-target-x, var(--grill-food-x, 58%));
-  top: var(--egg-target-y, var(--grill-food-y, 52%));
+  left: var(--egg-target-x, 28%);
+  top: var(--egg-target-y, 60%);
   width: var(--egg-target-w, 17%);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
@@ -2758,9 +2793,9 @@ body.layout-editor-on .fry-pot {
   opacity: 1;
 }
 #grill-stage.egg-target-rim .egg-target-cue {
-  --egg-target-x: var(--egg-rim-target-x, 58%);
-  --egg-target-y: var(--egg-rim-target-y, 36%);
-  --egg-target-w: var(--egg-rim-target-w, 17%);
+  --egg-target-x: var(--egg-rim-target-x, 28%);
+  --egg-target-y: var(--egg-rim-target-y, 60%);
+  --egg-target-w: var(--egg-rim-target-w, 12%);
 }
 #grill-stage.egg-target-center .egg-target-cue {
   --egg-target-x: var(--egg-center-target-x, 58%);
@@ -2811,11 +2846,11 @@ body.layout-editor-on .fry-pot {
 }
 .egg-glass-lid {
   position: absolute;
-  left: var(--grill-lid-x, var(--grill-food-x, 58%));
-  top: var(--grill-lid-y, var(--grill-food-y, 52%));
+  left: var(--grill-lid-left, 43%);
+  top: var(--grill-lid-top, 32%);
   width: var(--grill-lid-w, 53%);
   aspect-ratio: 1162 / 877;
-  transform: translate(-50%, -50%) scale(0.98);
+  transform: scale(0.98);
   transform-origin: center;
   background: url('../assets/images/bento/cooking/glass_lid.png') center / contain no-repeat;
   pointer-events: none;
@@ -2824,9 +2859,14 @@ body.layout-editor-on .fry-pot {
   filter: drop-shadow(0 12px 15px rgba(50,38,28,0.16));
   transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.18,.85,.2,1.02);
 }
+body.layout-editor-on .egg-glass-lid {
+  opacity: 0.82;
+  pointer-events: auto;
+  position: absolute !important;
+}
 #grill-stage.egg-lid-closed:not(.is-served) .egg-glass-lid {
   opacity: 0.96;
-  transform: translate(-50%, -50%) scale(1);
+  transform: scale(1);
 }
 #grill-stage[data-ingredient="egg"].egg-lid-closed:not(.is-served) .grill-smoke {
   opacity: 0.38;
@@ -4626,6 +4666,7 @@ body.layout-editor-on .endX-marker {
       ['.bowl',           'wh', '切れ端ボウル'],
       ['.grill-stove-bg',  'wh', '[調理] 焼く背景コンロ'],
       ['.grill-pan',       'wh', '[調理] フライパン'],
+      ['.egg-glass-lid',   'wh', '[調理] 目玉焼きの蓋'],
       ['.fry-stove-bg',    'wh', '[調理] 揚げる背景コンロ'],
       ['.fry-pot',         'wh', '[調理] 揚げ鍋'],
     ],
@@ -4899,7 +4940,7 @@ body.layout-editor-on .endX-marker {
         </div>
         <div class="egg-target-cue" id="egg-target-cue" aria-hidden="true"></div>
         <div class="egg-crack-shells" id="egg-crack-shells" aria-hidden="true"><i></i><i></i></div>
-        <div class="egg-glass-lid" id="egg-glass-lid" aria-hidden="true"></div>
+        <div class="egg-glass-lid" id="egg-glass-lid" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
         <div class="cook-stage-cue" id="grill-timing-cue" aria-hidden="true">いま！ひっくり返そう！</div>
         <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
@@ -7714,6 +7755,7 @@ body.layout-editor-on .endX-marker {
     state.prepMarinateTrailLastAt = now;
     const reduced = isPrepReducedEffects();
     const count = opts.release ? (reduced ? 5 : 8) : (reduced ? 2 : 4);
+    const smokeCount = opts.release ? (reduced ? 2 : 4) : (reduced ? 1 : 2);
     for (let i = 0; i < count; i++) {
       const dot = document.createElement('i');
       const size = (opts.release ? 18 : 13) + Math.random() * (opts.release ? 18 : 12) + Math.max(0, force || 0) * 10;
@@ -7729,6 +7771,24 @@ body.layout-editor-on .endX-marker {
       dot.style.setProperty('--dot-life', Math.round((opts.release ? 760 : 620) + Math.random() * 420) + 'ms');
       bowl.appendChild(dot);
       setTimeout(function () { dot.remove(); }, 1180);
+    }
+    for (let i = 0; i < smokeCount; i++) {
+      const smoke = document.createElement('i');
+      smoke.className = 'marinate-flour-smoke';
+      smoke.style.setProperty('--dot-x', (Math.max(12, Math.min(88, info.x)) + Math.random() * 7 - 3.5).toFixed(2) + '%');
+      smoke.style.setProperty('--dot-y', (Math.max(18, Math.min(82, info.y)) + Math.random() * 5 - 2.5).toFixed(2) + '%');
+      smoke.style.setProperty('--smoke-w', ((opts.release ? 82 : 64) + Math.random() * (opts.release ? 58 : 42)).toFixed(1) + 'px');
+      smoke.style.setProperty('--smoke-h', ((opts.release ? 34 : 26) + Math.random() * (opts.release ? 28 : 20)).toFixed(1) + 'px');
+      smoke.style.setProperty('--smoke-dx', ((Math.random() - 0.5) * 26).toFixed(1) + 'px');
+      smoke.style.setProperty('--smoke-dy', (-(24 + Math.random() * (opts.release ? 44 : 30))).toFixed(1) + 'px');
+      smoke.style.setProperty('--smoke-blur', (4.2 + Math.random() * 4.6).toFixed(2) + 'px');
+      smoke.style.setProperty('--smoke-peak', (0.22 + Math.random() * 0.26 + Math.max(0, force || 0) * 0.08).toFixed(2));
+      smoke.style.setProperty('--smoke-scale', (1.26 + Math.random() * 0.44).toFixed(2));
+      smoke.style.setProperty('--smoke-rot', (Math.random() * 18 - 9).toFixed(1) + 'deg');
+      smoke.style.setProperty('--smoke-end-rot', (Math.random() * 28 - 14).toFixed(1) + 'deg');
+      smoke.style.setProperty('--smoke-life', Math.round(820 + Math.random() * 520) + 'ms');
+      bowl.appendChild(smoke);
+      setTimeout(function () { smoke.remove(); }, 1500);
     }
   }
 
@@ -10631,11 +10691,11 @@ body.layout-editor-on .endX-marker {
     if (action.type === 'grill') {
       if (els.grillActionLabel) {
         els.grillActionLabel.textContent = isEggGrillAction(ing, action)
-          ? 'たまごを フライパンのふちへ'
+          ? 'たまごを おさらのふちへ'
           : isMeatballCookAction(ing, action) ? '1こずつ フライパンへ' : label;
       }
       setSpeech(isEggGrillAction(ing, action)
-        ? 'たまごを 点線の まるへ もっていって はなそう！'
+        ? 'たまごを おさらのふちの 点線へ もっていって はなそう！'
         : isMeatballCookAction(ing, action) ? 'ミートボールを 1こずつ フライパンに のせよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
       startCookPreheat(ing, action, 'grill');
@@ -10660,9 +10720,9 @@ body.layout-editor-on .endX-marker {
         startKitchenAmbient('stove');
         if (isEggGrillAction(ing, action)) {
           if (els.grillActionLabel) {
-            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'まんなかの まるへ' : 'ふちの まるへ';
+            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'まんなかの まるへ' : 'おさらの ふちへ';
           }
-          setSpeech(state.cookEggCrackProgress > 0 ? 'ひびが はいった たまごを、まんなかの 点線へ もっていこう！' : 'フライパンが あったまったよ！ ふちの 点線へ たまごを もっていって はなそう！', 'grill');
+          setSpeech(state.cookEggCrackProgress > 0 ? 'ひびが はいった たまごを、まんなかの 点線へ もっていこう！' : 'フライパンが あったまったよ！ おさらの ふちの 点線へ たまごを もっていって はなそう！', 'grill');
         } else if (isMeatballCookAction(ing, action)) {
           if (els.grillActionLabel) els.grillActionLabel.textContent = '1こずつ フライパンへ';
           setSpeech('フライパンが あったまったよ！ ミートボールを 1こずつ のせよう！', 'grill');
@@ -10836,18 +10896,31 @@ body.layout-editor-on .endX-marker {
 
     const foodY = ((toolRect.top + toolRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
     const heatY = ((toolRect.top + toolRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
-    const lidY = ((toolRect.top + toolRect.height * 0.39 - stageRect.top) / stageRect.height) * 100;
-    const lidW = (toolRect.width * 0.76 / stageRect.width) * 100;
-    const rimTargetX = ((toolRect.left + toolRect.width * 0.50 - stageRect.left) / stageRect.width) * 100;
-    const rimTargetY = ((toolRect.top + toolRect.height * 0.18 - stageRect.top) / stageRect.height) * 100;
+    const lidCenterY = ((toolRect.top + toolRect.height * 0.35 - stageRect.top) / stageRect.height) * 100;
+    const lidW = (toolRect.width * 0.74 / stageRect.width) * 100;
+    const lidH = (toolRect.width * 0.74 * (877 / 1162) / stageRect.height) * 100;
+    const lidLeft = cx - lidW / 2;
+    const lidTop = lidCenterY - lidH / 2;
+    const plate = stage.querySelector('.prep-plate');
+    const plateRect = plate ? plate.getBoundingClientRect() : null;
+    const rimTargetX = plateRect && plateRect.width
+      ? ((plateRect.left + plateRect.width * 0.72 - stageRect.left) / stageRect.width) * 100
+      : 28;
+    const rimTargetY = plateRect && plateRect.height
+      ? ((plateRect.top + plateRect.height * 0.31 - stageRect.top) / stageRect.height) * 100
+      : 60;
     const centerTargetY = ((toolRect.top + toolRect.height * 0.39 - stageRect.top) / stageRect.height) * 100;
-    const rimTargetW = (toolRect.width * 0.18 / stageRect.width) * 100;
+    const rimTargetW = plateRect && plateRect.width
+      ? (plateRect.width * 0.22 / stageRect.width) * 100
+      : 12;
     const centerTargetW = (toolRect.width * 0.23 / stageRect.width) * 100;
     stage.style.setProperty('--grill-food-x', pctString(cx));
     stage.style.setProperty('--grill-food-y', pctString(foodY));
     stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
     stage.style.setProperty('--grill-lid-x', pctString(cx));
-    stage.style.setProperty('--grill-lid-y', pctString(lidY));
+    stage.style.setProperty('--grill-lid-y', pctString(lidCenterY));
+    stage.style.setProperty('--grill-lid-left', pctString(lidLeft));
+    stage.style.setProperty('--grill-lid-top', pctString(lidTop));
     stage.style.setProperty('--grill-lid-w', pctString(lidW));
     stage.style.setProperty('--egg-rim-target-x', pctString(rimTargetX));
     stage.style.setProperty('--egg-rim-target-y', pctString(rimTargetY));
@@ -10954,7 +11027,7 @@ body.layout-editor-on .endX-marker {
     if (!panBounds) {
       return kind === 'center'
         ? { x: 58, y: 52, rx: 10, ry: 8 }
-        : { x: 58, y: 36, rx: 8, ry: 6 };
+        : { x: 28, y: 60, rx: 7, ry: 5 };
     }
     if (kind === 'center') {
       return {
@@ -10964,11 +11037,21 @@ body.layout-editor-on .endX-marker {
         ry: panBounds.height * 0.15,
       };
     }
+    const plate = els.grillStage ? els.grillStage.querySelector('.prep-plate') : null;
+    const plateBounds = getElementBoundsPct(plate, els.grillStage);
+    if (plateBounds) {
+      return {
+        x: plateBounds.left + plateBounds.width * 0.72,
+        y: plateBounds.top + plateBounds.height * 0.31,
+        rx: plateBounds.width * 0.13,
+        ry: plateBounds.height * 0.17,
+      };
+    }
     return {
-      x: panBounds.left + panBounds.width * 0.50,
-      y: panBounds.top + panBounds.height * 0.18,
-      rx: panBounds.width * 0.15,
-      ry: panBounds.height * 0.11,
+      x: 28,
+      y: 60,
+      rx: 7,
+      ry: 5,
     };
   }
 
@@ -11051,7 +11134,7 @@ body.layout-editor-on .endX-marker {
   function nudgeCookDrag(type) {
     const name = state.current ? state.current.name : 'ざいりょう';
     if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
-      setSpeech(state.cookEggCrackProgress > 0 ? 'ひびが はいったよ！ まんなかの まるへ もっていこう！' : '点線の まるへ たまごを もっていって はなしてね！', 'grill');
+      setSpeech(state.cookEggCrackProgress > 0 ? 'ひびが はいったよ！ まんなかの まるへ もっていこう！' : 'おさらの ふちの 点線へ たまごを もっていって はなしてね！', 'grill');
       return;
     }
     if (type === 'fry') {
@@ -11091,7 +11174,7 @@ body.layout-editor-on .endX-marker {
     if (els.grillBurst) els.grillBurst.textContent = 'コンコン！';
     showCookBurst('grill');
     if (els.grillActionLabel) els.grillActionLabel.textContent = 'ひびが はいるよ';
-    setSpeech('コンコン！ ひびが はいったら まんなかへ もっていこう！', 'grill');
+    setSpeech('おさらの ふちで コンコン！ ひびが はいったら まんなかへ もっていこう！', 'grill');
     state.pendingTimers.push(setTimeout(function () {
       if (!isEggGrillAction(state.current, getCurrentAction()) || state.cookFoodPlaced) return;
       state.cookEggCrackProgress = 1;
