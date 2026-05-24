@@ -1175,16 +1175,18 @@ function getPixelLetterPadding() {
   return Math.max(36, Math.min(120, (WRITER_PADDING / size) * 1000));
 }
 
-function makeStrokeMask(pathData, gridSize, pixelPadding) {
+function makeStrokeMask(pathData, gridSize, pixelPadding, offsetX, offsetY) {
   const maskCanvas = document.createElement('canvas');
   maskCanvas.width = gridSize;
   maskCanvas.height = gridSize;
   const maskCtx = maskCanvas.getContext('2d');
   const gridPadding = (pixelPadding / 1000) * gridSize;
   const scale = (gridSize - gridPadding * 2) / 1024;
+  const dx = offsetX || 0;
+  const dy = offsetY || 0;
   maskCtx.clearRect(0, 0, gridSize, gridSize);
   maskCtx.fillStyle = '#000';
-  maskCtx.setTransform(scale, 0, 0, -scale, gridPadding, gridSize - gridPadding);
+  maskCtx.setTransform(scale, 0, 0, -scale, gridPadding + dx, gridSize - gridPadding + dy);
   maskCtx.fill(new Path2D(pathData));
   maskCtx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -1196,6 +1198,53 @@ function makeStrokeMask(pathData, gridSize, pixelPadding) {
   return mask;
 }
 
+function mergeStrokeMasks(strokeMasks, gridSize) {
+  const mask = new Uint8Array(gridSize * gridSize);
+  let totalMaskCells = 0;
+  strokeMasks.forEach((strokeMask) => {
+    for (let i = 0; i < mask.length; i++) {
+      if (strokeMask[i] && !mask[i]) {
+        mask[i] = 1;
+        totalMaskCells += 1;
+      }
+    }
+  });
+  return { mask, totalMaskCells };
+}
+
+function getMaskBounds(mask, gridSize) {
+  let minX = gridSize;
+  let minY = gridSize;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      if (!mask[y * gridSize + x]) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < 0) return null;
+  return { minX, minY, maxX, maxY };
+}
+
+function clampOffsetToBoard(offsetX, offsetY, bounds, gridSize) {
+  const inset = 2;
+  return {
+    x: Math.max(inset - bounds.minX, Math.min(gridSize - 1 - inset - bounds.maxX, offsetX)),
+    y: Math.max(inset - bounds.minY, Math.min(gridSize - 1 - inset - bounds.maxY, offsetY))
+  };
+}
+
+function updateWriterDisplayOffset(offsetX, offsetY, gridSize) {
+  const size = currentWriterSize || writingBoard.offsetWidth || 610;
+  const px = (offsetX / gridSize) * size;
+  const py = (offsetY / gridSize) * size;
+  writerTarget.style.transform = `translate(${px}px, ${py}px)`;
+}
+
 function buildPixelLetterMask(data) {
   pixelLetter = null;
   clearPixelTrail();
@@ -1204,23 +1253,31 @@ function buildPixelLetterMask(data) {
   const gridSize = PIXEL_GRID_SIZE;
   const pixelPadding = getPixelLetterPadding();
   try {
-    const strokeMasks = data.strokes.map((path) => makeStrokeMask(path, gridSize, pixelPadding));
-    const mask = new Uint8Array(gridSize * gridSize);
-    let totalMaskCells = 0;
-    strokeMasks.forEach((strokeMask) => {
-      for (let i = 0; i < mask.length; i++) {
-        if (strokeMask[i] && !mask[i]) {
-          mask[i] = 1;
-          totalMaskCells += 1;
-        }
+    let strokeMasks = data.strokes.map((path) => makeStrokeMask(path, gridSize, pixelPadding, 0, 0));
+    let merged = mergeStrokeMasks(strokeMasks, gridSize);
+    const bounds = getMaskBounds(merged.mask, gridSize);
+    let offsetX = 0;
+    let offsetY = 0;
+    if (bounds) {
+      const centerX = (bounds.minX + bounds.maxX + 1) / 2;
+      const centerY = (bounds.minY + bounds.maxY + 1) / 2;
+      const clamped = clampOffsetToBoard(Math.round(gridSize / 2 - centerX), Math.round(gridSize / 2 - centerY), bounds, gridSize);
+      offsetX = clamped.x;
+      offsetY = clamped.y;
+      if (offsetX || offsetY) {
+        strokeMasks = data.strokes.map((path) => makeStrokeMask(path, gridSize, pixelPadding, offsetX, offsetY));
+        merged = mergeStrokeMasks(strokeMasks, gridSize);
       }
-    });
+    }
+    updateWriterDisplayOffset(offsetX, offsetY, gridSize);
     pixelLetter = {
       gridSize,
-      mask,
+      mask: merged.mask,
       strokeMasks,
       fill: new Uint8Array(gridSize * gridSize),
-      totalMaskCells
+      totalMaskCells: merged.totalMaskCells,
+      offsetX,
+      offsetY
     };
     renderPixelLetter();
   } catch (error) {
@@ -1331,6 +1388,7 @@ function createWriter() {
   }
   pixelLetter = null;
   clearPixelTrail();
+  updateWriterDisplayOffset(0, 0, PIXEL_GRID_SIZE);
   writerTarget.innerHTML = '';
   if (typeof HanziWriter === 'undefined') {
     setMessage('よみこみが まだみたい。 もういちど ひらいてね', 'まっててね');
