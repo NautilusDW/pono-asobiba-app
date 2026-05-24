@@ -648,7 +648,7 @@ html, body {
 }
 
 #writerTarget {
-  z-index: 2;
+  z-index: 3;
 }
 
 #writerTarget svg {
@@ -656,13 +656,12 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: visible;
+  opacity: 0.001;
 }
 
 #writerTarget svg path,
 #writerTarget svg line {
-  filter:
-    drop-shadow(4px 0 0 rgba(255, 255, 255, 0.38))
-    drop-shadow(0 4px 0 rgba(255, 255, 255, 0.28));
+  filter: none;
 }
 
 #pixelTrailCanvas {
@@ -1094,10 +1093,15 @@ const companionSpeech = document.getElementById('companionSpeech');
 const starCountEl = document.getElementById('starCount');
 
 const trailCtx = pixelTrailCanvas.getContext('2d');
+const PIXEL_GRID_SIZE = 132;
+const WRITER_PADDING = 48;
+const LETTER_BRUSH_RADIUS = 5;
 let currentIndex = 0;
 let writer = null;
 let currentCharData = null;
 let writerLoadToken = 0;
+let currentWriterSize = 610;
+let pixelLetter = null;
 let trailDrawing = false;
 let lastTrailPoint = null;
 let trailDistance = 0;
@@ -1166,6 +1170,99 @@ function clearPixelTrail() {
   trailCtx.clearRect(0, 0, pixelTrailCanvas.width, pixelTrailCanvas.height);
 }
 
+function getPixelLetterPadding() {
+  const size = Math.max(1, currentWriterSize || writingBoard.getBoundingClientRect().width || 610);
+  return Math.max(36, Math.min(120, (WRITER_PADDING / size) * 1000));
+}
+
+function makeStrokeMask(pathData, gridSize, pixelPadding) {
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = gridSize;
+  maskCanvas.height = gridSize;
+  const maskCtx = maskCanvas.getContext('2d');
+  const gridPadding = (pixelPadding / 1000) * gridSize;
+  const scale = (gridSize - gridPadding * 2) / 1024;
+  maskCtx.clearRect(0, 0, gridSize, gridSize);
+  maskCtx.fillStyle = '#000';
+  maskCtx.setTransform(scale, 0, 0, -scale, gridPadding, gridSize - gridPadding);
+  maskCtx.fill(new Path2D(pathData));
+  maskCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+  const pixels = maskCtx.getImageData(0, 0, gridSize, gridSize).data;
+  const mask = new Uint8Array(gridSize * gridSize);
+  for (let i = 0; i < mask.length; i++) {
+    mask[i] = pixels[i * 4 + 3] > 16 ? 1 : 0;
+  }
+  return mask;
+}
+
+function buildPixelLetterMask(data) {
+  pixelLetter = null;
+  clearPixelTrail();
+  if (!data || !Array.isArray(data.strokes) || typeof Path2D === 'undefined') return;
+
+  const gridSize = PIXEL_GRID_SIZE;
+  const pixelPadding = getPixelLetterPadding();
+  try {
+    const strokeMasks = data.strokes.map((path) => makeStrokeMask(path, gridSize, pixelPadding));
+    const mask = new Uint8Array(gridSize * gridSize);
+    let totalMaskCells = 0;
+    strokeMasks.forEach((strokeMask) => {
+      for (let i = 0; i < mask.length; i++) {
+        if (strokeMask[i] && !mask[i]) {
+          mask[i] = 1;
+          totalMaskCells += 1;
+        }
+      }
+    });
+    pixelLetter = {
+      gridSize,
+      mask,
+      strokeMasks,
+      fill: new Uint8Array(gridSize * gridSize),
+      totalMaskCells
+    };
+    renderPixelLetter();
+  } catch (error) {
+    console.warn('Could not build pixel guide letter:', error);
+  }
+}
+
+function renderPixelLetter() {
+  clearPixelTrail();
+  if (!pixelLetter) return;
+
+  const { gridSize, mask, fill, strokeMasks } = pixelLetter;
+  const cell = 1000 / gridSize;
+  const activeStroke = strokeMasks[Math.min(currentStrokeIndex, strokeMasks.length - 1)];
+  trailCtx.save();
+  trailCtx.imageSmoothingEnabled = false;
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const index = y * gridSize + x;
+      if (!mask[index]) continue;
+
+      const isFilled = fill[index];
+      const isActive = activeStroke && activeStroke[index];
+      const hash = (x * 17 + y * 31) % 7;
+      if (isFilled) {
+        trailCtx.fillStyle = hash === 0 ? '#ffb36f' : (hash < 3 ? '#ff8a5d' : '#f27152');
+      } else if (isActive) {
+        trailCtx.fillStyle = hash < 2 ? 'rgba(130, 113, 92, 0.34)' : 'rgba(108, 94, 78, 0.28)';
+      } else {
+        trailCtx.fillStyle = hash < 2 ? 'rgba(117, 104, 88, 0.21)' : 'rgba(105, 93, 79, 0.16)';
+      }
+      trailCtx.fillRect(Math.floor(x * cell), Math.floor(y * cell), Math.ceil(cell) + 0.5, Math.ceil(cell) + 0.5);
+
+      if (isFilled && hash === 0) {
+        trailCtx.fillStyle = 'rgba(255, 232, 142, 0.55)';
+        trailCtx.fillRect(Math.floor(x * cell + cell * 0.58), Math.floor(y * cell + cell * 0.1), Math.max(1, cell * 0.33), Math.max(1, cell * 0.33));
+      }
+    }
+  }
+  trailCtx.restore();
+}
+
 function renderStrokeOrder() {
   const item = getCurrentCharacter();
   const count = Math.max(1, item.strokes || 1);
@@ -1232,6 +1329,8 @@ function createWriter() {
   if (writer && typeof writer.cancelQuiz === 'function') {
     try { writer.cancelQuiz(); } catch (_) {}
   }
+  pixelLetter = null;
+  clearPixelTrail();
   writerTarget.innerHTML = '';
   if (typeof HanziWriter === 'undefined') {
     setMessage('よみこみが まだみたい。 もういちど ひらいてね', 'まっててね');
@@ -1240,6 +1339,7 @@ function createWriter() {
 
   const rect = writingBoard.getBoundingClientRect();
   const size = Math.max(360, Math.round(rect.width));
+  currentWriterSize = size;
   writer = HanziWriter.create(writerTarget, item.char, {
     width: size,
     height: size,
@@ -1260,6 +1360,7 @@ function createWriter() {
           if (token !== writerLoadToken) return;
           currentCharData = data;
           updateStrokeCountFromData(item, data);
+          buildPixelLetterMask(data);
           renderStrokeOrder();
           onComplete(data);
         })
@@ -1291,6 +1392,8 @@ function resetWriting() {
   currentStrokeIndex = 0;
   mistakeCount = 0;
   complete = false;
+  currentCharData = null;
+  pixelLetter = null;
   resizePixelTrailCanvas();
   clearPixelTrail();
   writingBoard.classList.remove('success');
@@ -1299,7 +1402,7 @@ function resetWriting() {
   const item = getCurrentCharacter();
   promptText.textContent = `「${item.char}」を かいてみよう！`;
   rewardNameEl.textContent = item.reward.name;
-  setMessage('うすい もじを なぞってね', 'ゆっくりで だいじょうぶ');
+  setMessage('ドットの もじを なぞってね', 'ゆっくりで だいじょうぶ');
   renderStrokeOrder();
   updateCharacterButtons();
   createWriter();
@@ -1326,28 +1429,82 @@ function distance(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-function drawPixelSquare(x, y, size, color, alpha) {
-  trailCtx.save();
-  trailCtx.globalAlpha = alpha;
-  trailCtx.fillStyle = color;
-  const px = Math.round(x / 8) * 8;
-  const py = Math.round(y / 8) * 8;
-  trailCtx.fillRect(px - size / 2, py - size / 2, size, size);
-  trailCtx.restore();
+function fillLetterPixelsAt(point, radius) {
+  if (!pixelLetter) return { changed: 0, touched: 0 };
+  const { gridSize, mask, fill } = pixelLetter;
+  const gx = Math.floor((point.x / 1000) * gridSize);
+  const gy = Math.floor((point.y / 1000) * gridSize);
+  let changed = 0;
+  let touched = 0;
+  for (let y = gy - radius; y <= gy + radius; y++) {
+    if (y < 0 || y >= gridSize) continue;
+    for (let x = gx - radius; x <= gx + radius; x++) {
+      if (x < 0 || x >= gridSize) continue;
+      const dx = x - gx;
+      const dy = y - gy;
+      if (dx * dx + dy * dy > radius * radius) continue;
+      const index = y * gridSize + x;
+      if (!mask[index]) continue;
+      touched += 1;
+      if (!fill[index]) {
+        fill[index] = 1;
+        changed += 1;
+      }
+    }
+  }
+  return { changed, touched };
 }
 
-function drawTrail(from, to) {
+function paintTrailSegment(from, to) {
   const d = distance(from, to);
   if (!Number.isFinite(d) || d <= 0) return 0;
-  const steps = Math.max(1, Math.ceil(d / 8));
+  const steps = Math.max(1, Math.ceil(d / 10));
+  let changed = 0;
+  let touched = 0;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const x = from.x + (to.x - from.x) * t;
     const y = from.y + (to.y - from.y) * t;
-    drawPixelSquare(x, y, 18, '#f27c5b', 0.74);
-    drawPixelSquare(x + 4, y - 3, 8, '#ffe38a', 0.5);
+    const result = fillLetterPixelsAt({ x, y }, LETTER_BRUSH_RADIUS);
+    changed += result.changed;
+    touched += result.touched;
   }
-  return d;
+  if (changed > 0) renderPixelLetter();
+  return touched > 0 ? d : 0;
+}
+
+function fillStrokePixels(strokeIndex) {
+  if (!pixelLetter || !pixelLetter.strokeMasks[strokeIndex]) return 0;
+  const strokeMask = pixelLetter.strokeMasks[strokeIndex];
+  let changed = 0;
+  for (let i = 0; i < strokeMask.length; i++) {
+    if (strokeMask[i] && !pixelLetter.fill[i]) {
+      pixelLetter.fill[i] = 1;
+      changed += 1;
+    }
+  }
+  return changed;
+}
+
+function fillAllLetterPixels() {
+  if (!pixelLetter) return 0;
+  let changed = 0;
+  for (let i = 0; i < pixelLetter.mask.length; i++) {
+    if (pixelLetter.mask[i] && !pixelLetter.fill[i]) {
+      pixelLetter.fill[i] = 1;
+      changed += 1;
+    }
+  }
+  return changed;
+}
+
+function getFilledLetterRatio() {
+  if (!pixelLetter || !pixelLetter.totalMaskCells) return 0;
+  let filled = 0;
+  for (let i = 0; i < pixelLetter.mask.length; i++) {
+    if (pixelLetter.mask[i] && pixelLetter.fill[i]) filled += 1;
+  }
+  return filled / pixelLetter.totalMaskCells;
 }
 
 function spawnSpark(clientX, clientY) {
@@ -1364,14 +1521,15 @@ function onTrailPointerDown(event) {
   if (complete || event.pointerType === 'mouse' && event.button !== 0) return;
   trailDrawing = true;
   lastTrailPoint = boardPointFromEvent(event);
-  drawPixelSquare(lastTrailPoint.x, lastTrailPoint.y, 20, '#f27c5b', 0.86);
-  setMessage(Math.random() > 0.5 ? 'そのまま そーっと' : 'いいかんじ！', 'いいかんじ！');
+  const result = fillLetterPixelsAt(lastTrailPoint, LETTER_BRUSH_RADIUS);
+  if (result.changed > 0) renderPixelLetter();
+  setMessage(result.touched > 0 ? 'そのまま そーっと' : 'もじの うえを なぞってね', 'いいかんじ！');
 }
 
 function onTrailPointerMove(event) {
   if (!trailDrawing || complete || !lastTrailPoint) return;
   const next = boardPointFromEvent(event);
-  const d = drawTrail(lastTrailPoint, next);
+  const d = paintTrailSegment(lastTrailPoint, next);
   trailDistance += d;
   sparkleBudget += d;
   if (sparkleBudget > 130) {
@@ -1389,8 +1547,10 @@ function stopTrail() {
 function onCorrectStroke(data) {
   const item = getCurrentCharacter();
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  fillStrokePixels(strokeNum);
   strokesCompleted = Math.min(item.strokes, Math.max(strokesCompleted + 1, strokeNum + 1));
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
+  renderPixelLetter();
   setMessage(strokesCompleted >= item.strokes ? 'さいごまで かけたね！' : 'いいかんじ！ つぎの せんも いこう', 'もうすこし！');
   renderStrokeOrder();
 }
@@ -1404,15 +1564,17 @@ function onMistake() {
 
 function onWriterComplete(summary) {
   const item = getCurrentCharacter();
+  fillAllLetterPixels();
   strokesCompleted = item.strokes;
   currentStrokeIndex = item.strokes - 1;
+  renderPixelLetter();
   renderStrokeOrder();
   setTimeout(() => completeWriting(false, summary), 260);
 }
 
 function calculateAccuracy(item) {
   const strokeScore = Math.min(1, strokesCompleted / Math.max(1, item.strokes));
-  const trailScore = Math.min(1, trailDistance / 900);
+  const trailScore = Math.max(Math.min(1, trailDistance / 900), getFilledLetterRatio());
   const mistakePenalty = Math.min(0.2, mistakeCount * 0.035);
   const score = 0.7 + strokeScore * 0.2 + trailScore * 0.08 - mistakePenalty;
   return Math.max(0.72, Math.min(0.98, Math.round(score * 100) / 100));
@@ -1433,6 +1595,8 @@ function completeWriting(manual, summary) {
   if (manual) {
     strokesCompleted = item.strokes;
     currentStrokeIndex = item.strokes - 1;
+    fillAllLetterPixels();
+    renderPixelLetter();
   }
   completedCharacters.add(item.id);
   renderStrokeOrder();
