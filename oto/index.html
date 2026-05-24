@@ -563,6 +563,56 @@
   .rhythm-status.good { background: rgba(6,95,70,0.72); }
   .rhythm-status.warn { background: rgba(146,64,14,0.72); }
   .rhythm-status.miss { background: rgba(127,29,29,0.72); }
+  .rhythm-float {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 13;
+    display: none;
+    align-items: stretch;
+    gap: 10px;
+    width: min(86vw, 360px);
+    pointer-events: none;
+  }
+  .rhythm-float.show { display: flex; }
+  .rhythm-float-cell {
+    flex: 1;
+    min-width: 0;
+    border: 3px solid rgba(255,255,255,0.78);
+    border-radius: 22px;
+    background: rgba(9,23,44,0.78);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.24);
+    padding: 9px 12px 11px;
+    text-align: center;
+  }
+  .rhythm-float-cell.now {
+    background: linear-gradient(135deg, #FDE68A, #F59E0B);
+    color: #5D3A00;
+    border-color: rgba(255,255,255,0.96);
+  }
+  .rhythm-float-cell.next {
+    color: #fff;
+  }
+  .rhythm-float-cell.next.same {
+    border-color: rgba(253,230,138,0.88);
+    box-shadow: 0 0 0 4px rgba(253,230,138,0.18), 0 8px 18px rgba(0,0,0,0.24);
+  }
+  .rhythm-float-caption {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 900;
+    line-height: 1;
+    opacity: 0.86;
+    margin-bottom: 4px;
+  }
+  .rhythm-float-note {
+    display: block;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.22);
+  }
   .rhythm-queue {
     display: flex;
     align-items: center;
@@ -1066,6 +1116,18 @@
       margin-bottom: 2px;
     }
     .rhythm-note-label { font-size: 0.9rem; }
+    .rhythm-float {
+      top: max(10px, env(safe-area-inset-top));
+      left: 66%;
+      width: min(36vw, 330px);
+      gap: 8px;
+    }
+    .rhythm-float-cell {
+      border-radius: 18px;
+      padding: 7px 10px 9px;
+    }
+    .rhythm-float-caption { font-size: 0.66rem; }
+    .rhythm-float-note { font-size: 1.7rem; }
   }
 
   /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ */
@@ -1167,6 +1229,16 @@
     <div class="rhythm-hud" id="rhythm-hud" aria-live="polite">
       <div class="rhythm-status" id="rhythm-status">ひかるボタンを いま！でタッチ</div>
       <div class="rhythm-queue" id="rhythm-queue"></div>
+    </div>
+    <div class="rhythm-float" id="rhythm-float" aria-live="polite">
+      <div class="rhythm-float-cell now">
+        <span class="rhythm-float-caption" id="rhythm-float-now-caption">いま</span>
+        <span class="rhythm-float-note" id="rhythm-float-now">ド</span>
+      </div>
+      <div class="rhythm-float-cell next" id="rhythm-float-next-cell">
+        <span class="rhythm-float-caption" id="rhythm-float-next-caption">つぎ</span>
+        <span class="rhythm-float-note" id="rhythm-float-next">ド</span>
+      </div>
     </div>
 
     <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
@@ -1990,6 +2062,26 @@ function _renderRhythmQueue() {
   }
   queue.innerHTML = html;
 }
+function _renderRhythmFloat() {
+  var box = document.getElementById('rhythm-float');
+  if (!box) return;
+  if (!_rhythm.enabled) {
+    box.classList.remove('show');
+    return;
+  }
+  var nowIdx = _rhythmExpectedIdx(0);
+  var nextIdx = _rhythmExpectedIdx(1);
+  var same = nowIdx === nextIdx;
+  var nowNote = document.getElementById('rhythm-float-now');
+  var nextNote = document.getElementById('rhythm-float-next');
+  var nextCaption = document.getElementById('rhythm-float-next-caption');
+  var nextCell = document.getElementById('rhythm-float-next-cell');
+  if (nowNote) nowNote.textContent = NOTE_LABELS[nowIdx] || '';
+  if (nextNote) nextNote.textContent = NOTE_LABELS[nextIdx] || '';
+  if (nextCaption) nextCaption.textContent = same ? 'つぎも' : 'つぎ';
+  if (nextCell) nextCell.classList.toggle('same', same);
+  box.classList.add('show');
+}
 function _rhythmRingStyle(targetTime, now) {
   var lead = _rhythmRingLeadMs();
   var until = targetTime - now;
@@ -2020,6 +2112,7 @@ function _renderRhythmTarget() {
   if (target) target.classList.add('rhythm-target');
   _applyRhythmPreview(performance.now());
   _renderRhythmQueue();
+  _renderRhythmFloat();
 }
 function _songIndexById(id) {
   for (var i = 0; i < SONGS.length; i++) {
@@ -2160,6 +2253,8 @@ function _stopRhythmMode() {
   });
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.remove('show');
+  var floatCue = document.getElementById('rhythm-float');
+  if (floatCue) floatCue.classList.remove('show');
   if (_rhythm.ownsBand) {
     _stopAllBands();
     _renderSpeedBtns();
