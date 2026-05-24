@@ -148,6 +148,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-24 - [batch:121-mojikko-route-writing-first] **Done** — `writing-mori/index.html` を文字書きメインへ戻し、お世話画面を `writing-mori/care.html` に分離。ミルマルカードをお世話入口にし、文字書き完了で `mojikkoFarmCareStateV1` にもじクッキー +1 / すくすく +3 を反映、完了モーダルは「ミルマルに あげる」「もういっかい かく」に変更。お世話画面では大きな「もじを かく！」を主導線にし、下段に「あげる・なでる・あそぶ」を配置。`write.html` は互換リダイレクト化、`sw.js` v585。ローカル Playwright で writing-first loop 確認済。 (by Codex)
+
 - 2026-05-24 - [batch:120-mojikko-care-loop] **Done** — `writing-mori/index.html` をミルマルのお世話画面に変更し、元の文字書き画面を `writing-mori/write.html` へ分離。ローカル state、なかよし/すくすく、もちもの、あげる/なでる/あそぶ/かく、文字書き完了報酬の localStorage 受け渡し、`sw.js` v584 を実装。Playwright で「クッキー消費→ゲージ増加→かく→完了→お世話へ→クッキー追加」を確認済。 (by Codex)
 
 - 2026-05-24 - [batch:101-oto-rhythm-mode] **Done follow-up 8** — user 指摘「連続で同じボタンを押す時、2回目が小さく指で隠れてわかりづらい / 今・次を演奏エリア上部の吹き出しに出す案」を反映。`rhythm-float` を追加し、リズム中は右側演奏エリア上部に `いま <音>` と `つぎ/つぎも <音>` を大きめ表示。連続同音では `つぎも` にして同じ音をもう一度押すことを明示。既存の左下4音キュー・ターゲット1ボタン色変更・2拍リードリングは維持。`sw.js` は v569。ローカル Playwright と staging 1133x744 で確認済。commit `8a0ed12` / origin/develop push 済み。 (by Codex)
