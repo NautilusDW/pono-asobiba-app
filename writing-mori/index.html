@@ -8,6 +8,7 @@
 <title>もじっこファーム | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="../manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
 
@@ -638,69 +639,36 @@ html, body {
   45% { filter: brightness(1.12) drop-shadow(0 0 18px rgba(255, 221, 106, 0.95)); }
 }
 
-.guide-letter {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-bottom: 42px;
-  font-family: var(--round-font);
-  font-size: 470px;
-  font-weight: 900;
-  color: rgba(81, 68, 55, 0.16);
-  line-height: 1;
-  text-shadow:
-    4px 0 rgba(255,255,255,0.55),
-    0 4px rgba(255,255,255,0.55),
-    6px 6px rgba(130, 98, 74, 0.08);
-  pointer-events: none;
-  z-index: 1;
-}
-
-#guideSvg,
-#drawCanvas {
+#writerTarget,
+#pixelTrailCanvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-#guideSvg {
+#writerTarget {
   z-index: 2;
-  pointer-events: none;
 }
 
-#drawCanvas {
+#writerTarget svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+#writerTarget svg path,
+#writerTarget svg line {
+  filter:
+    drop-shadow(4px 0 0 rgba(255, 255, 255, 0.38))
+    drop-shadow(0 4px 0 rgba(255, 255, 255, 0.28));
+}
+
+#pixelTrailCanvas {
   z-index: 4;
-  touch-action: none;
-  cursor: crosshair;
-}
-
-.guide-stroke {
-  fill: none;
-  stroke: rgba(114, 100, 82, 0.22);
-  stroke-width: 44;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 14 18;
-}
-
-.guide-stroke.done {
-  stroke: rgba(242, 149, 92, 0.45);
-  stroke-dasharray: none;
-}
-
-.guide-stroke.current {
-  stroke: rgba(48, 168, 129, 0.48);
-  stroke-width: 46;
-  stroke-dasharray: 22 18;
-  animation: guideMarch 1.2s linear infinite;
-  filter: drop-shadow(0 0 7px rgba(76, 190, 145, 0.45));
-}
-
-@keyframes guideMarch {
-  to { stroke-dashoffset: -80; }
+  pointer-events: none;
+  image-rendering: pixelated;
 }
 
 .board-particle {
@@ -799,6 +767,24 @@ html, body {
   min-width: 0;
 }
 
+.stroke-preview {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(143, 101, 67, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.52);
+  font-family: var(--round-font);
+  font-size: 54px;
+  font-weight: 900;
+  color: rgba(79, 56, 37, 0.22);
+  text-shadow: 3px 3px 0 rgba(255, 255, 255, 0.55);
+}
+
+.stroke-card.current .stroke-preview { color: rgba(210, 92, 65, 0.56); }
+.stroke-card.done .stroke-preview { color: rgba(47, 148, 105, 0.5); }
+
 .stroke-mini svg {
   width: 100%;
   height: 70px;
@@ -808,22 +794,23 @@ html, body {
   border-radius: 6px;
 }
 
-.stroke-mini text {
-  font-family: var(--round-font);
-  font-weight: 900;
-  fill: rgba(79, 56, 37, 0.2);
-}
-
 .stroke-mini path {
-  fill: none;
-  stroke: #bfb7a9;
-  stroke-width: 60;
-  stroke-linecap: round;
+  fill: rgba(79, 56, 37, 0.09);
+  stroke: rgba(79, 56, 37, 0.14);
+  stroke-width: 16;
   stroke-linejoin: round;
 }
 
-.stroke-card.current .stroke-mini path { stroke: var(--coral); }
-.stroke-card.done .stroke-mini path { stroke: var(--mint-dark); }
+.stroke-mini path.preview-done {
+  fill: rgba(47, 148, 105, 0.34);
+  stroke: rgba(47, 148, 105, 0.52);
+}
+
+.stroke-mini path.preview-current {
+  fill: rgba(242, 124, 91, 0.38);
+  stroke: rgba(210, 92, 65, 0.62);
+  filter: drop-shadow(0 0 5px rgba(255, 197, 95, 0.65));
+}
 
 .stroke-label {
   margin-top: 4px;
@@ -1006,9 +993,8 @@ html, body {
         <div class="wood-panel prompt-bar" id="promptText">「あ」を かいてみよう！</div>
         <div class="writing-board-wrap">
           <div class="writing-board" id="writingBoard">
-            <div class="guide-letter" id="guideLetter">あ</div>
-            <svg id="guideSvg" viewBox="0 0 1000 1000" aria-hidden="true"></svg>
-            <canvas id="drawCanvas" width="1000" height="1000" aria-label="文字を書くキャンバス"></canvas>
+            <div id="writerTarget" aria-label="文字を書くキャンバス"></div>
+            <canvas id="pixelTrailCanvas" width="1000" height="1000" aria-hidden="true"></canvas>
           </div>
         </div>
         <div class="feedback-row">
@@ -1059,75 +1045,42 @@ const writingCharacters = [
     char: 'あ',
     label: 'あ',
     strokes: 3,
-    minDistance: 820,
-    rewardFood: 'もじクッキー',
-    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' },
-    guidePaths: [
-      'M 315 255 C 425 225 565 220 705 246',
-      'M 510 168 C 490 315 492 508 527 690',
-      'M 660 388 C 560 346 420 382 350 492 C 276 610 335 750 468 735 C 612 720 742 596 713 472 C 695 405 648 372 586 366'
-    ]
+    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
     id: 'i',
     char: 'い',
     label: 'い',
     strokes: 2,
-    minDistance: 560,
-    rewardFood: 'ふわパン',
-    reward: { type: 'food', id: 'fuwa_pan', name: 'ふわパン' },
-    guidePaths: [
-      'M 355 238 C 326 420 352 606 445 702',
-      'M 635 276 C 725 422 752 560 724 690'
-    ]
+    reward: { type: 'food', id: 'fuwa_pan', name: 'ふわパン' }
   },
   {
     id: 'u',
     char: 'う',
     label: 'う',
     strokes: 2,
-    minDistance: 650,
-    rewardFood: 'そらまめ',
-    reward: { type: 'food', id: 'sora_mame', name: 'そらまめ' },
-    guidePaths: [
-      'M 398 254 C 505 210 626 220 704 282',
-      'M 328 456 C 500 350 742 410 662 616 C 616 728 496 765 386 726'
-    ]
+    reward: { type: 'food', id: 'sora_mame', name: 'そらまめ' }
   },
   {
     id: 'e',
     char: 'え',
     label: 'え',
     strokes: 2,
-    minDistance: 720,
-    rewardFood: 'おひさまゼリー',
-    reward: { type: 'food', id: 'sun_jelly', name: 'おひさまゼリー' },
-    guidePaths: [
-      'M 392 226 C 512 188 628 194 712 248',
-      'M 376 414 C 486 370 606 360 698 398 C 600 472 498 574 358 700 C 474 622 560 598 642 662 C 696 704 760 710 824 678'
-    ]
+    reward: { type: 'food', id: 'sun_jelly', name: 'おひさまゼリー' }
   },
   {
     id: 'o',
     char: 'お',
     label: 'お',
     strokes: 3,
-    minDistance: 850,
-    rewardFood: 'にじキャンディ',
-    reward: { type: 'food', id: 'rainbow_candy', name: 'にじキャンディ' },
-    guidePaths: [
-      'M 320 280 C 444 260 560 258 690 278',
-      'M 484 160 C 472 330 472 540 490 720',
-      'M 332 500 C 252 612 304 724 436 706 C 560 688 636 574 612 482 C 690 392 814 420 824 572'
-    ]
+    reward: { type: 'food', id: 'rainbow_candy', name: 'にじキャンディ' }
   }
 ];
 
 const stageEl = document.getElementById('stage');
 const charListEl = document.getElementById('charList');
-const guideLetterEl = document.getElementById('guideLetter');
-const guideSvgEl = document.getElementById('guideSvg');
-const drawCanvas = document.getElementById('drawCanvas');
+const writerTarget = document.getElementById('writerTarget');
+const pixelTrailCanvas = document.getElementById('pixelTrailCanvas');
 const writingBoard = document.getElementById('writingBoard');
 const promptText = document.getElementById('promptText');
 const messageBox = document.getElementById('messageBox');
@@ -1140,16 +1093,21 @@ const companionCard = document.getElementById('companionCard');
 const companionSpeech = document.getElementById('companionSpeech');
 const starCountEl = document.getElementById('starCount');
 
-const ctx = drawCanvas.getContext('2d');
+const trailCtx = pixelTrailCanvas.getContext('2d');
 let currentIndex = 0;
-let isDrawing = false;
-let lastPoint = null;
-let currentStrokeDistance = 0;
-let drawnDistance = 0;
+let writer = null;
+let currentCharData = null;
+let writerLoadToken = 0;
+let trailDrawing = false;
+let lastTrailPoint = null;
+let trailDistance = 0;
+let sparkleBudget = 0;
 let strokesCompleted = 0;
+let currentStrokeIndex = 0;
+let mistakeCount = 0;
 let complete = false;
 let stars = 1250;
-let sparkleBudget = 0;
+const completedCharacters = new Set();
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1184,46 +1142,13 @@ function buildCharacterList() {
   });
 }
 
-function renderGuide() {
-  const item = getCurrentCharacter();
-  guideLetterEl.textContent = item.char;
-  const currentStroke = Math.min(strokesCompleted, item.strokes - 1);
-  guideSvgEl.innerHTML = item.guidePaths.map((d, index) => {
-    const cls = index < strokesCompleted ? 'done' : (index === currentStroke ? 'current' : '');
-    return `<path class="guide-stroke ${cls}" d="${escapeAttr(d)}"></path>`;
-  }).join('');
-}
-
-function renderStrokeOrder() {
-  const item = getCurrentCharacter();
-  strokeListEl.innerHTML = '';
-  for (let index = 0; index < item.strokes; index++) {
-    const card = document.createElement('div');
-    const cls = index < strokesCompleted ? 'done' : (index === Math.min(strokesCompleted, item.strokes - 1) ? 'current' : '');
-    card.className = `stroke-card ${cls}`;
-    card.innerHTML = `
-      <div class="stroke-num">${index + 1}</div>
-      <div class="stroke-mini">
-        <svg viewBox="0 0 1000 1000" aria-hidden="true">
-          <text x="500" y="650" text-anchor="middle" font-size="680">${item.char}</text>
-          <path d="${escapeAttr(item.guidePaths[index])}"></path>
-        </svg>
-        <div class="stroke-label">${index + 1}かくめ</div>
-      </div>
-    `;
-    strokeListEl.appendChild(card);
-  }
-}
-
 function updateCharacterButtons() {
   const buttons = charListEl.querySelectorAll('.char-button');
   buttons.forEach((btn, index) => {
+    const item = writingCharacters[index];
     btn.classList.toggle('active', index === currentIndex);
+    btn.classList.toggle('done', completedCharacters.has(item.id));
   });
-}
-
-function clearCanvas() {
-  ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 }
 
 function setMessage(text, speech) {
@@ -1231,15 +1156,143 @@ function setMessage(text, speech) {
   if (speech) companionSpeech.textContent = speech;
 }
 
+function resizePixelTrailCanvas() {
+  pixelTrailCanvas.width = 1000;
+  pixelTrailCanvas.height = 1000;
+  trailCtx.imageSmoothingEnabled = false;
+}
+
+function clearPixelTrail() {
+  trailCtx.clearRect(0, 0, pixelTrailCanvas.width, pixelTrailCanvas.height);
+}
+
+function renderStrokeOrder() {
+  const item = getCurrentCharacter();
+  const count = Math.max(1, item.strokes || 1);
+  const strokePaths = currentCharData && Array.isArray(currentCharData.strokes) ? currentCharData.strokes : null;
+  strokeListEl.innerHTML = '';
+  for (let index = 0; index < count; index++) {
+    const card = document.createElement('div');
+    const cls = index < strokesCompleted ? 'done' : (index === Math.min(currentStrokeIndex, count - 1) ? 'current' : '');
+    const preview = strokePaths
+      ? `<svg viewBox="0 0 1024 1024" aria-hidden="true">
+          <g transform="translate(0, 1024) scale(1, -1)">
+            ${strokePaths.map((path, pathIndex) => {
+              const pathClass = pathIndex < strokesCompleted ? 'preview-done' : (pathIndex === index ? 'preview-current' : '');
+              return `<path class="${pathClass}" d="${escapeAttr(path)}"></path>`;
+            }).join('')}
+          </g>
+        </svg>`
+      : `<div class="stroke-preview" aria-hidden="true">${item.char}</div>`;
+    card.className = `stroke-card ${cls}`;
+    card.innerHTML = `
+      <div class="stroke-num">${index + 1}</div>
+      <div class="stroke-mini">
+        ${preview}
+        <div class="stroke-label">${index + 1}かくめ</div>
+      </div>
+    `;
+    strokeListEl.appendChild(card);
+  }
+}
+
+function updateStrokeCountFromData(item, data) {
+  const nextCount = data && Array.isArray(data.strokes)
+    ? data.strokes.length
+    : (data && Array.isArray(data.medians) ? data.medians.length : item.strokes);
+  if (Number.isFinite(nextCount) && nextCount > 0) item.strokes = nextCount;
+}
+
+function loadKanaData(char) {
+  const urls = [
+    `https://cdn.jsdelivr.net/gh/ailectra/kana-json@v0.0.1/data/${char}.json`,
+    `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${char}.json`
+  ];
+  let index = 0;
+  function tryNext() {
+    const url = urls[index++];
+    return fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error('not found');
+        return response.json();
+      })
+      .catch((error) => {
+        if (index >= urls.length) throw error;
+        return tryNext();
+      });
+  }
+  return tryNext();
+}
+
+function createWriter() {
+  const item = getCurrentCharacter();
+  writerLoadToken += 1;
+  const token = writerLoadToken;
+  currentCharData = null;
+  if (writer && typeof writer.cancelQuiz === 'function') {
+    try { writer.cancelQuiz(); } catch (_) {}
+  }
+  writerTarget.innerHTML = '';
+  if (typeof HanziWriter === 'undefined') {
+    setMessage('よみこみが まだみたい。 もういちど ひらいてね', 'まっててね');
+    return;
+  }
+
+  const rect = writingBoard.getBoundingClientRect();
+  const size = Math.max(360, Math.round(rect.width));
+  writer = HanziWriter.create(writerTarget, item.char, {
+    width: size,
+    height: size,
+    padding: 48,
+    showOutline: true,
+    showCharacter: false,
+    strokeColor: 'rgba(92, 74, 58, 0.44)',
+    outlineColor: 'rgba(78, 62, 49, 0.18)',
+    drawingColor: 'rgba(242, 124, 91, 0.08)',
+    highlightColor: 'rgba(61, 168, 126, 0.72)',
+    radicalColor: 'rgba(92, 74, 58, 0.44)',
+    drawingWidth: 28,
+    strokeAnimationSpeed: 0.75,
+    delayBetweenStrokes: 500,
+    charDataLoader: function(char, onComplete) {
+      loadKanaData(char)
+        .then((data) => {
+          if (token !== writerLoadToken) return;
+          currentCharData = data;
+          updateStrokeCountFromData(item, data);
+          renderStrokeOrder();
+          onComplete(data);
+        })
+        .catch((error) => {
+          console.warn('No kana data for character:', char, error);
+          if (token === writerLoadToken) {
+            setMessage('もじデータを よみこめなかったよ', 'あとで もういちど');
+          }
+        });
+    }
+  });
+
+  writer.quiz({
+    onCorrectStroke: onCorrectStroke,
+    onMistake: onMistake,
+    onComplete: onWriterComplete,
+    showHintAfterMisses: 3,
+    highlightOnComplete: true,
+    highlightCompleteColor: 'rgba(255, 214, 90, 0.95)'
+  });
+}
+
 function resetWriting() {
-  isDrawing = false;
-  lastPoint = null;
-  currentStrokeDistance = 0;
-  drawnDistance = 0;
-  strokesCompleted = 0;
-  complete = false;
+  trailDrawing = false;
+  lastTrailPoint = null;
+  trailDistance = 0;
   sparkleBudget = 0;
-  clearCanvas();
+  strokesCompleted = 0;
+  currentStrokeIndex = 0;
+  mistakeCount = 0;
+  complete = false;
+  resizePixelTrailCanvas();
+  clearPixelTrail();
   writingBoard.classList.remove('success');
   resultOverlay.classList.remove('show');
   companionCard.classList.remove('celebrate');
@@ -1247,9 +1300,9 @@ function resetWriting() {
   promptText.textContent = `「${item.char}」を かいてみよう！`;
   rewardNameEl.textContent = item.reward.name;
   setMessage('うすい もじを なぞってね', 'ゆっくりで だいじょうぶ');
-  renderGuide();
   renderStrokeOrder();
   updateCharacterButtons();
+  createWriter();
 }
 
 function selectCharacter(index) {
@@ -1258,7 +1311,7 @@ function selectCharacter(index) {
 }
 
 function boardPointFromEvent(event) {
-  const rect = drawCanvas.getBoundingClientRect();
+  const rect = pixelTrailCanvas.getBoundingClientRect();
   return {
     x: Math.max(0, Math.min(1000, ((event.clientX - rect.left) / rect.width) * 1000)),
     y: Math.max(0, Math.min(1000, ((event.clientY - rect.top) / rect.height) * 1000)),
@@ -1274,25 +1327,25 @@ function distance(a, b) {
 }
 
 function drawPixelSquare(x, y, size, color, alpha) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
+  trailCtx.save();
+  trailCtx.globalAlpha = alpha;
+  trailCtx.fillStyle = color;
   const px = Math.round(x / 8) * 8;
   const py = Math.round(y / 8) * 8;
-  ctx.fillRect(px - size / 2, py - size / 2, size, size);
-  ctx.restore();
+  trailCtx.fillRect(px - size / 2, py - size / 2, size, size);
+  trailCtx.restore();
 }
 
 function drawTrail(from, to) {
   const d = distance(from, to);
   if (!Number.isFinite(d) || d <= 0) return 0;
-  const steps = Math.max(1, Math.ceil(d / 9));
+  const steps = Math.max(1, Math.ceil(d / 8));
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const x = from.x + (to.x - from.x) * t;
     const y = from.y + (to.y - from.y) * t;
-    drawPixelSquare(x, y, 18, '#f27c5b', 0.78);
-    drawPixelSquare(x + 3, y - 3, 8, '#ffe38a', 0.42);
+    drawPixelSquare(x, y, 18, '#f27c5b', 0.74);
+    drawPixelSquare(x + 4, y - 3, 8, '#ffe38a', 0.5);
   }
   return d;
 }
@@ -1307,78 +1360,83 @@ function spawnSpark(clientX, clientY) {
   setTimeout(() => particle.remove(), 900);
 }
 
-function onPointerDown(event) {
-  if (complete) return;
-  if (event.pointerType === 'mouse' && event.button !== 0) return;
-  isDrawing = true;
-  lastPoint = boardPointFromEvent(event);
-  currentStrokeDistance = 0;
-  drawPixelSquare(lastPoint.x, lastPoint.y, 20, '#f27c5b', 0.9);
-  try { drawCanvas.setPointerCapture(event.pointerId); } catch (_) {}
+function onTrailPointerDown(event) {
+  if (complete || event.pointerType === 'mouse' && event.button !== 0) return;
+  trailDrawing = true;
+  lastTrailPoint = boardPointFromEvent(event);
+  drawPixelSquare(lastTrailPoint.x, lastTrailPoint.y, 20, '#f27c5b', 0.86);
   setMessage(Math.random() > 0.5 ? 'そのまま そーっと' : 'いいかんじ！', 'いいかんじ！');
-  event.preventDefault();
 }
 
-function onPointerMove(event) {
-  if (!isDrawing || complete) return;
+function onTrailPointerMove(event) {
+  if (!trailDrawing || complete || !lastTrailPoint) return;
   const next = boardPointFromEvent(event);
-  const d = drawTrail(lastPoint, next);
-  drawnDistance += d;
-  currentStrokeDistance += d;
+  const d = drawTrail(lastTrailPoint, next);
+  trailDistance += d;
   sparkleBudget += d;
   if (sparkleBudget > 130) {
     sparkleBudget = 0;
     spawnSpark(event.clientX, event.clientY);
   }
-  lastPoint = next;
-  event.preventDefault();
+  lastTrailPoint = next;
 }
 
-function onPointerUp(event) {
-  if (!isDrawing) return;
-  isDrawing = false;
-  try { drawCanvas.releasePointerCapture(event.pointerId); } catch (_) {}
-  if (currentStrokeDistance > 44) {
-    const item = getCurrentCharacter();
-    strokesCompleted = Math.min(item.strokes, strokesCompleted + 1);
-    setMessage(strokesCompleted >= item.strokes ? 'さいごまで かけたね！' : 'いいかんじ！ つぎの せんも いこう', 'もうすこし！');
-    renderGuide();
-    renderStrokeOrder();
-    checkAutoComplete();
-  } else {
-    setMessage('もういちど やってみよう', 'だいじょうぶ');
-  }
-  currentStrokeDistance = 0;
+function stopTrail() {
+  trailDrawing = false;
+  lastTrailPoint = null;
 }
 
-function checkAutoComplete() {
+function onCorrectStroke(data) {
   const item = getCurrentCharacter();
-  if (complete) return;
-  const enoughDistance = drawnDistance >= item.minDistance * 0.55;
-  if (strokesCompleted >= item.strokes && enoughDistance) {
-    setTimeout(() => completeWriting(false), 360);
+  const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  strokesCompleted = Math.min(item.strokes, Math.max(strokesCompleted + 1, strokeNum + 1));
+  currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
+  setMessage(strokesCompleted >= item.strokes ? 'さいごまで かけたね！' : 'いいかんじ！ つぎの せんも いこう', 'もうすこし！');
+  renderStrokeOrder();
+}
+
+function onMistake() {
+  mistakeCount += 1;
+  if (mistakeCount % 2 === 1) {
+    setMessage('だいじょうぶ。 もういちど やってみよう', 'ゆっくりね');
   }
+}
+
+function onWriterComplete(summary) {
+  const item = getCurrentCharacter();
+  strokesCompleted = item.strokes;
+  currentStrokeIndex = item.strokes - 1;
+  renderStrokeOrder();
+  setTimeout(() => completeWriting(false, summary), 260);
 }
 
 function calculateAccuracy(item) {
-  const distanceScore = Math.min(1, drawnDistance / item.minDistance);
-  const strokeScore = Math.min(1, strokesCompleted / item.strokes);
-  const score = 0.68 + distanceScore * 0.2 + strokeScore * 0.09;
-  return Math.max(0.72, Math.min(0.97, Math.round(score * 100) / 100));
+  const strokeScore = Math.min(1, strokesCompleted / Math.max(1, item.strokes));
+  const trailScore = Math.min(1, trailDistance / 900);
+  const mistakePenalty = Math.min(0.2, mistakeCount * 0.035);
+  const score = 0.7 + strokeScore * 0.2 + trailScore * 0.08 - mistakePenalty;
+  return Math.max(0.72, Math.min(0.98, Math.round(score * 100) / 100));
 }
 
-function completeWriting(manual) {
+function completeWriting(manual, summary) {
   const item = getCurrentCharacter();
   if (complete) return;
-  if (manual && drawnDistance < item.minDistance * 0.22 && strokesCompleted === 0) {
+  if (manual && strokesCompleted === 0 && trailDistance < 120) {
     setMessage('うすい もじを すこし なぞってみよう', 'いっしょに かこう');
     return;
   }
-
   complete = true;
-  strokesCompleted = Math.max(strokesCompleted, Math.min(item.strokes, strokesCompleted));
-  renderGuide();
+  stopTrail();
+  if (writer && typeof writer.cancelQuiz === 'function') {
+    try { writer.cancelQuiz(); } catch (_) {}
+  }
+  if (manual) {
+    strokesCompleted = item.strokes;
+    currentStrokeIndex = item.strokes - 1;
+  }
+  completedCharacters.add(item.id);
   renderStrokeOrder();
+  updateCharacterButtons();
   writingBoard.classList.add('success');
   companionCard.classList.add('celebrate');
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
@@ -1392,7 +1450,7 @@ function completeWriting(manual) {
     char: item.char,
     success: true,
     accuracy: calculateAccuracy(item),
-    strokesCompleted: item.strokes,
+    strokesCompleted: Math.min(item.strokes, Math.max(strokesCompleted, summary && summary.totalStrokes || 0)),
     reward: item.reward
   };
   onWritingComplete(result);
@@ -1445,11 +1503,10 @@ document.getElementById('careBtn').addEventListener('click', () => {
   setMessage('おせわは つぎの おたのしみ！', 'また あとで');
 });
 
-drawCanvas.addEventListener('pointerdown', onPointerDown);
-drawCanvas.addEventListener('pointermove', onPointerMove);
-drawCanvas.addEventListener('pointerup', onPointerUp);
-drawCanvas.addEventListener('pointercancel', onPointerUp);
-drawCanvas.addEventListener('pointerleave', onPointerUp);
+writingBoard.addEventListener('pointerdown', onTrailPointerDown, true);
+writingBoard.addEventListener('pointermove', onTrailPointerMove, true);
+window.addEventListener('pointerup', stopTrail, true);
+window.addEventListener('pointercancel', stopTrail, true);
 
 window.MojikkoWritingGame = {
   writingCharacters,
