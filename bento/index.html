@@ -800,6 +800,7 @@ html, body {
   box-shadow: 0 2px 8px var(--shadow);
   font-family: inherit;
   cursor: grab;
+  touch-action: none;
 }
 .free-palette-item:active { transform: scale(0.94); }
 .free-palette-item.selected {
@@ -2576,6 +2577,7 @@ let freeActiveTier = 1;
 let freeLayerSeq = 1;
 let freeSelectedItemUid = null;
 let freeDragState = null;
+let freePaletteDragState = null;
 let freeGuideStep = 'box';
 let freeCupToolMode = 'move';
 let freeActiveCupUid = null;
@@ -3372,33 +3374,69 @@ function getParentCup(item) {
 function getCupInnerRadius(cup, item) {
   const cupRadius = cup && cup.radius ? cup.radius : ((cup && cup.size) || 150) * 0.58;
   const itemSize = item && item.size ? item.size : 72;
-  return Math.max(18, cupRadius - itemSize * 0.32);
+  return Math.max(12, cupRadius - itemSize * 0.58);
 }
 function clampPointToCup(x, y, item, cup) {
   if (!cup) return clampPointToBento(x, y, item);
-  let point = clampPointToBento(x, y, item);
-  const dx = point.x - cup.x;
-  const dy = point.y - cup.y;
-  const d = Math.hypot(dx, dy);
   const maxD = getCupInnerRadius(cup, item);
-  if (d > maxD && d > 0.001) {
-    point = {
-      x: cup.x + dx / d * maxD,
-      y: cup.y + dy / d * maxD,
-    };
+  const limitToCup = point => {
+    const dx = point.x - cup.x;
+    const dy = point.y - cup.y;
+    const d = Math.hypot(dx, dy);
+    if (d > maxD && d > 0.001) {
+      return {
+        x: cup.x + dx / d * maxD,
+        y: cup.y + dy / d * maxD,
+      };
+    }
+    return point;
+  };
+  let point = limitToCup({ x, y });
+  point = clampPointToBento(point.x, point.y, item);
+  point = limitToCup(point);
+  return point;
+}
+function getCupChildSlot(cup, index, childSize) {
+  const offsets = [
+    [0, 0],
+    [-0.26, -0.08],
+    [0.26, 0.08],
+    [0.02, -0.24],
+    [-0.18, 0.2],
+    [0.18, -0.2],
+    [0, 0.24],
+  ];
+  const inner = getCupInnerRadius(cup, { size: childSize });
+  const [ox, oy] = offsets[index % offsets.length];
+  return {
+    x: cup.x + ox * inner,
+    y: cup.y + oy * inner * 0.72,
+  };
+}
+function layoutCupChildren(cup) {
+  if (!cup) return;
+  const children = placedItems.filter(child => child.parentCupId === cup.uid);
+  children.forEach((child, index) => {
+    const slot = getCupChildSlot(cup, index, child.size || 72);
+    const p = clampPointToCup(slot.x, slot.y, child, cup);
+    child.x = p.x;
+    child.y = p.y;
+    child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1 + index);
+  });
+}
+function makePaletteDropToast(def) {
+  if (!def) return 'おべんとうばこまで もっていこう！';
+  if (def.type === 'rice_auto' || def.type === 'template' || def.type === 'rice') {
+    return 'ごはんを おべんとうばこまで もっていこう！';
   }
-  return clampPointToBento(point.x, point.y, item);
+  if (def.type === 'decor') {
+    return 'のりを ごはんのうえまで もっていこう！';
+  }
+  return 'おべんとうばこまで もっていこう！';
 }
 function clampCupChildren(cup) {
   if (!cup) return;
-  placedItems.forEach(child => {
-    if (child.parentCupId === cup.uid) {
-      const p = clampPointToCup(child.x, child.y, child, cup);
-      child.x = p.x;
-      child.y = p.y;
-      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1);
-    }
-  });
+  layoutCupChildren(cup);
 }
 function moveCupChildren(cup, dx, dy) {
   if (!cup || (!dx && !dy)) return;
@@ -3569,6 +3607,103 @@ function onFreeItemDragEnd(e) {
     openCupEditor(uid);
   }
 }
+function canStartFreePaletteDrag(def) {
+  if (!def || freeLayoutTab === 'box') return false;
+  if (def.type === 'food' && getEditingCup()) return false;
+  if (def.type === 'food' && !canAddFoodForCurrentStep(def)) {
+    showToast(getCurrentOkazuRole() === 'main' ? 'メインのおかずは 2つまでだよ！' : 'いまの おかずから えらぼう！');
+    return false;
+  }
+  return true;
+}
+function createFreePaletteDragItem(def, point) {
+  if (def.type === 'rice_auto') {
+    return addAutoRiceForSelectedBox({
+      x: point.x,
+      y: point.y,
+      skipRender: true,
+      skipGuideAdvance: true,
+    });
+  }
+  if (def.type === 'template') {
+    return addRiceFaceTemplate(def.templateId, {
+      x: point.x,
+      y: point.y,
+      skipRender: true,
+      skipGuideAdvance: true,
+    });
+  }
+  if (getBoxTierCount() > 1 && def.type !== 'decor' && freeActiveTier === 1) {
+    freeActiveTier = 2;
+  }
+  return addFreeLayoutItem(def, {
+    x: point.x,
+    y: point.y,
+    skipRender: true,
+  });
+}
+function beginFreePaletteDrag(e, def) {
+  if (e && e.cancelable) e.preventDefault();
+  if (!canStartFreePaletteDrag(def)) return;
+  freePaletteDragState = { def, uid: null };
+  window.addEventListener('pointermove', onFreePaletteDragMove, { passive: false });
+  window.addEventListener('pointerup', onFreePaletteDragEnd, { once: true });
+  window.addEventListener('pointercancel', onFreePaletteDragCancel, { once: true });
+  onFreePaletteDragMove(e);
+}
+function onFreePaletteDragMove(e) {
+  if (!freePaletteDragState) return;
+  if (e && e.cancelable) e.preventDefault();
+  const point = e ? eventToFreePoint(e) : null;
+  if (!point) return;
+  if (!freePaletteDragState.uid) {
+    const item = createFreePaletteDragItem(freePaletteDragState.def, point);
+    if (!item) return;
+    freePaletteDragState.uid = item.uid;
+    freeSelectedItemUid = item.uid;
+  }
+  setFreeItemPosition(freePaletteDragState.uid, point.x, point.y);
+  renderFreeLayoutStage();
+}
+function finishFreePaletteDrag(shouldFinalize) {
+  if (!freePaletteDragState) return;
+  const { def, uid } = freePaletteDragState;
+  freePaletteDragState = null;
+  window.removeEventListener('pointermove', onFreePaletteDragMove);
+  window.removeEventListener('pointerup', onFreePaletteDragEnd);
+  window.removeEventListener('pointercancel', onFreePaletteDragCancel);
+  if (!uid) {
+    if (shouldFinalize) showToast(makePaletteDropToast(def));
+    return;
+  }
+  if (!shouldFinalize) {
+    removeFreeItem(uid);
+    return;
+  }
+  finalizeFreeItemPosition(uid);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  const el = document.querySelector(`[data-free-uid="${uid}"]`);
+  spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
+  playPop();
+  if (def.snapTarget) {
+    openCupEditor(uid);
+    return;
+  }
+  if ((def.type === 'rice_auto' || def.type === 'template') && freeGuideStep === 'rice') {
+    setFreeGuideStep('decor');
+  } else if (freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
+    setSpeech('いいね！のりOKを おしてね。');
+  }
+}
+function onFreePaletteDragEnd(e) {
+  if (e && e.cancelable) e.preventDefault();
+  finishFreePaletteDrag(true);
+}
+function onFreePaletteDragCancel(e) {
+  if (e && e.cancelable) e.preventDefault();
+  finishFreePaletteDrag(false);
+}
 function addFreeLayoutItem(def, opts = {}) {
   const itemTier = opts.tier || getTargetTierForType(def.type);
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot(def.type);
@@ -3623,6 +3758,7 @@ function removeFreeItem(uid) {
   if (freeActiveCupUid && removeIds.has(freeActiveCupUid)) freeActiveCupUid = null;
   if (freeCupEditorUid && removeIds.has(freeCupEditorUid)) freeCupEditorUid = null;
   if (freePendingCupEditorUid && removeIds.has(freePendingCupEditorUid)) freePendingCupEditorUid = null;
+  if (item.parentCupId) layoutCupChildren(placedItems.find(i => i.uid === item.parentCupId && i.snapTarget));
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -3671,21 +3807,18 @@ function addFoodToSelectedCup(def) {
     return null;
   }
   const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
-  const angle = childCount * 2.35;
-  const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.58));
-  const offset = Math.min(42, getCupInnerRadius(cup, { size: childSize }) * 0.42);
+  const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.5));
+  const slot = getCupChildSlot(cup, childCount, childSize);
   const item = addFreeLayoutItem(def, {
-    x: cup.x + Math.cos(angle) * offset,
-    y: cup.y + Math.sin(angle) * offset * 0.68,
+    x: slot.x,
+    y: slot.y,
     size: childSize,
     tier: getItemTier(cup),
     parentCupId: cup.uid,
     skipRender: true,
   });
   item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
-  const p = clampPointToCup(item.x, item.y, item, cup);
-  item.x = p.x;
-  item.y = p.y;
+  layoutCupChildren(cup);
   freeSelectedItemUid = cup.uid;
   freeActiveCupUid = cup.uid;
   freeCupToolMode = 'contents';
@@ -3727,29 +3860,33 @@ function addRiceFaceTemplate(templateId, opts = {}) {
     });
   });
   freeSelectedItemUid = rice.uid;
-  renderFreeLayoutStage();
-  renderFreeLayoutControls();
-  spawnLandingSparkles(document.getElementById('free-layout-stage'));
-  if (freeGuideStep === 'rice') setFreeGuideStep('decor');
+  if (!opts.skipRender) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+    spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  }
+  if (!opts.skipGuideAdvance && freeGuideStep === 'rice') setFreeGuideStep('decor');
+  return rice;
 }
-function addAutoRiceForSelectedBox() {
+function addAutoRiceForSelectedBox(opts = {}) {
   const box = getSelectedBentoBox();
   const auto = box.autoRice || { baseRice: 'rice_base_round' };
   freeActiveTier = 1;
   removeRiceOnTier(1);
   if (auto.templateId) {
-    addRiceFaceTemplate(auto.templateId, {
-      x: auto.x,
-      y: auto.y,
+    return addRiceFaceTemplate(auto.templateId, {
+      x: opts.x != null ? opts.x : auto.x,
+      y: opts.y != null ? opts.y : auto.y,
       size: auto.size,
       tier: 1,
+      skipRender: opts.skipRender,
+      skipGuideAdvance: opts.skipGuideAdvance,
     });
-    return;
   }
   const base = riceBases.find(r => r.id === auto.baseRice) || riceBases[0];
   const spot = {
-    x: auto.x != null ? auto.x : getNextFreeSpot('rice').x,
-    y: auto.y != null ? auto.y : getNextFreeSpot('rice').y,
+    x: opts.x != null ? opts.x : (auto.x != null ? auto.x : getNextFreeSpot('rice').x),
+    y: opts.y != null ? opts.y : (auto.y != null ? auto.y : getNextFreeSpot('rice').y),
   };
   const rice = addFreeLayoutItem(base, {
     x: spot.x,
@@ -3759,10 +3896,13 @@ function addAutoRiceForSelectedBox() {
     skipRender: true,
   });
   freeSelectedItemUid = rice.uid;
-  renderFreeLayoutStage();
-  renderFreeLayoutControls();
-  spawnLandingSparkles(document.getElementById('free-layout-stage'));
-  if (freeGuideStep === 'rice') setFreeGuideStep('decor');
+  if (!opts.skipRender) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+    spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  }
+  if (!opts.skipGuideAdvance && freeGuideStep === 'rice') setFreeGuideStep('decor');
+  return rice;
 }
 function selectFreeBentoBox(id) {
   selectedBentoBoxId = id;
@@ -3981,16 +4121,6 @@ function makeFreePaletteButton(def) {
       e.preventDefault();
       selectFreeBentoBox(def.id);
     });
-  } else if (def.type === 'rice_auto') {
-    btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      addAutoRiceForSelectedBox();
-    });
-  } else if (def.type === 'template') {
-    btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      addRiceFaceTemplate(def.templateId);
-    });
   } else {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -4002,21 +4132,7 @@ function makeFreePaletteButton(def) {
         addFoodToSelectedCup(def);
         return;
       }
-      if (def.type === 'food' && !canAddFoodForCurrentStep(def)) {
-        showToast(getCurrentOkazuRole() === 'main' ? 'メインのおかずは 2つまでだよ！' : 'いまの おかずから えらぼう！');
-        return;
-      }
-      if (getBoxTierCount() > 1 && def.type !== 'decor' && freeActiveTier === 1) {
-        freeActiveTier = 2;
-      }
-      const item = addFreeLayoutItem(def);
-      if (def.snapTarget) {
-        openCupEditor(item.uid);
-        return;
-      }
-      if (freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
-        setSpeech('いいね！のりOKを おしてね。');
-      }
+      beginFreePaletteDrag(e, def);
     });
   }
   return btn;
