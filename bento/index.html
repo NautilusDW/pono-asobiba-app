@@ -396,7 +396,8 @@ html, body {
   box-shadow: 0 8px 18px rgba(93, 78, 55, 0.16);
   color: #6B3E16;
   text-align: center;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 .free-main-guide-title {
   font-size: 0.9rem;
@@ -409,6 +410,13 @@ html, body {
   font-size: 0.58rem;
   font-weight: 900;
   line-height: 1.25;
+}
+.free-main-guide-hint {
+  margin-top: 6px;
+  color: #B8742E;
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1.1;
 }
 .free-placed-item {
   position: absolute;
@@ -2573,6 +2581,7 @@ let freeCupToolMode = 'move';
 let freeActiveCupUid = null;
 let freeCupEditorUid = null;
 let freePendingCupEditorUid = null;
+let freeGuideDismissedKey = '';
 
 // ===== NPC 依頼者モード state =====
 // セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
@@ -3105,6 +3114,20 @@ function isOkazuGuideStep(step = freeGuideStep) {
 function getCurrentOkazuRole(step = freeGuideStep) {
   return String(step).endsWith('Side') ? 'side' : 'main';
 }
+function getFreeGuideDismissKey() {
+  const cup = getEditingCup();
+  return cup ? `cup:${cup.uid}` : freeGuideStep;
+}
+function resetFreeMainGuide() {
+  freeGuideDismissedKey = '';
+}
+function isFreeMainGuideDismissed() {
+  return freeGuideDismissedKey === getFreeGuideDismissKey();
+}
+function dismissFreeMainGuide() {
+  freeGuideDismissedKey = getFreeGuideDismissKey();
+  renderFreeLayoutStage();
+}
 function hasRiceOnTier(tier = 1) {
   return placedItems.some(i => i.type === 'rice' && getItemTier(i) === tier);
 }
@@ -3123,6 +3146,12 @@ function canAddFoodForCurrentStep(def) {
   if ((def.okazuRole || getOkazuRole(def)) !== role) return false;
   if (role === 'main' && countOkazuRoleOnTier(getGuideTierForStep(), 'main') >= 2) return false;
   return true;
+}
+function canAddFoodToCup(def) {
+  return !!def && def.type === 'food' && (def.okazuRole || getOkazuRole(def)) === 'side';
+}
+function getCupEditorFoodItems() {
+  return getFreeFoodCatalog().filter(canAddFoodToCup);
 }
 function getActiveTierCups() {
   return placedItems.filter(i => i.snapTarget && (getBoxTierCount() <= 1 || getItemTier(i) === freeActiveTier));
@@ -3150,6 +3179,7 @@ function openCupEditor(cupUid) {
   freeSelectedItemUid = cup.uid;
   freeCupToolMode = 'contents';
   freeLayoutTab = 'food';
+  resetFreeMainGuide();
   setSpeech('カップに いれる おかずを えらぼう！');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -3163,6 +3193,7 @@ function closeCupEditor() {
     freeSelectedItemUid = cup.uid;
   }
   freeLayoutTab = 'food';
+  resetFreeMainGuide();
   setSpeech(getBoxTierCount() > 1 ? `${freeActiveTier}だんめに おかずを いれよう！` : 'おかずを いれよう！');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -3182,6 +3213,7 @@ function setFreeGuideStep(step, opts = {}) {
   if (step === 'tier2') step = 'tier2Main';
   if (step === 'tier3') step = 'tier3Main';
   freeGuideStep = step;
+  resetFreeMainGuide();
   if (step === 'box') {
     freeActiveTier = 1;
     freeLayoutTab = 'box';
@@ -3634,6 +3666,10 @@ function setSelectedAccessorySize(sizeKey) {
 function addFoodToSelectedCup(def) {
   const cup = getEditingCup() || getActiveCup();
   if (!cup || !def || def.type !== 'food') return null;
+  if (!canAddFoodToCup(def)) {
+    showToast('カップには 小さいおかずを いれよう！');
+    return null;
+  }
   const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
   const angle = childCount * 2.35;
   const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.58));
@@ -3796,8 +3832,12 @@ function createFreePlacedElement(item, interactive) {
 function createFreeMainGuide() {
   const copy = getFreeGuideCopy();
   if (!copy || !copy.title) return null;
+  if (isFreeMainGuideDismissed()) return null;
   const guide = document.createElement('div');
   guide.className = 'free-main-guide';
+  guide.setAttribute('role', 'button');
+  guide.tabIndex = 0;
+  guide.setAttribute('aria-label', '説明をとじる');
   const title = document.createElement('div');
   title.className = 'free-main-guide-title';
   title.textContent = copy.title;
@@ -3808,6 +3848,20 @@ function createFreeMainGuide() {
     text.textContent = copy.text;
     guide.appendChild(text);
   }
+  const hint = document.createElement('div');
+  hint.className = 'free-main-guide-hint';
+  hint.textContent = 'タップして はじめる';
+  guide.appendChild(hint);
+  guide.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    dismissFreeMainGuide();
+  });
+  guide.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    dismissFreeMainGuide();
+  });
   return guide;
 }
 function renderFreeLayoutInto(host, opts = {}) {
@@ -3897,7 +3951,7 @@ function createPaletteVisual(def) {
 }
 function shouldHighlightFreeChoice(def) {
   if (!def) return false;
-  if (getEditingCup()) return def.type === 'food' && canAddFoodForCurrentStep(def);
+  if (getEditingCup()) return canAddFoodToCup(def);
   if (freeGuideStep === 'box') return freeLayoutTab === 'box';
   if (freeGuideStep === 'rice') return def.type === 'rice_auto';
   if (freeGuideStep === 'decor') return def.type === 'decor' && String(def.id || '').startsWith('nori_');
@@ -3941,8 +3995,8 @@ function makeFreePaletteButton(def) {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
       if (def.type === 'food' && getEditingCup()) {
-        if (!canAddFoodForCurrentStep(def)) {
-          showToast(getCurrentOkazuRole() === 'main' ? 'メインのおかずは 2つまでだよ！' : 'いまは 小さいおかずを えらぼう！');
+        if (!canAddFoodToCup(def)) {
+          showToast('カップには 小さいおかずを いれよう！');
           return;
         }
         addFoodToSelectedCup(def);
@@ -4059,6 +4113,17 @@ function tryFinishOkazuTier(tier) {
   }
   stageComplete();
 }
+function goBackFreeGuideStep() {
+  if (freeGuideStep === 'tier2Side') {
+    setFreeGuideStep('tier2Main');
+  } else if (freeGuideStep === 'tier3Prompt') {
+    setFreeGuideStep('tier2Side');
+  } else if (freeGuideStep === 'tier3Main') {
+    setFreeGuideStep('tier3Prompt');
+  } else if (freeGuideStep === 'tier3Side') {
+    setFreeGuideStep('tier3Main');
+  }
+}
 function renderFreeGuidePanel() {
   const actions = document.createElement('div');
   actions.className = 'free-guide-actions';
@@ -4069,15 +4134,19 @@ function renderFreeGuidePanel() {
     actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
+    actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton(getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1));
   } else if (freeGuideStep === 'tier3Prompt') {
+    actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton('できあがり', 'primary', () => stageComplete()));
     actions.appendChild(makeSmallControlButton('3だんめへ', '', () => setFreeGuideStep('tier3Main')));
   } else if (freeGuideStep === 'tier3Main') {
     const tier = getGuideTierForStep('tier3Main');
+    actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
   } else if (freeGuideStep === 'tier3Side') {
     const tier = getGuideTierForStep('tier3Side');
+    actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton('3だんめOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1));
     actions.appendChild(makeSmallControlButton('できあがり', '', () => stageComplete()));
   }
@@ -4163,12 +4232,12 @@ function renderFreeCupEditorControls() {
 
   const list = document.createElement('div');
   list.className = 'free-item-list';
-  getFreePaletteItems('food').forEach(def => list.appendChild(makeFreePaletteButton(def)));
+  getCupEditorFoodItems().forEach(def => list.appendChild(makeFreePaletteButton(def)));
   frag.appendChild(list);
   return frag;
 }
 function renderFreeCupControls() {
-  if (!(freeGuideStep === 'tier2' || freeGuideStep === 'tier3')) return null;
+  if (!isOkazuGuideStep()) return null;
   const cups = getActiveTierCups();
   if (!cups.length) return null;
   const panel = document.createElement('div');
@@ -4266,6 +4335,9 @@ function loadFreeLayoutStage() {
   freeGuideStep = 'box';
   freeCupToolMode = 'move';
   freeActiveCupUid = null;
+  freeCupEditorUid = null;
+  freePendingCupEditorUid = null;
+  resetFreeMainGuide();
   const box = document.querySelector('.bento-box');
   if (box) box.classList.add('free-layout-shell');
   const bentoInner = document.getElementById('bento-inner');
