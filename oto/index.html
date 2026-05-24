@@ -565,14 +565,14 @@
   .rhythm-status.miss { background: rgba(127,29,29,0.72); }
   .rhythm-float {
     position: absolute;
-    top: max(14px, env(safe-area-inset-top));
+    top: 32%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     z-index: 13;
     display: none;
     align-items: stretch;
     gap: 10px;
-    width: min(86vw, 360px);
+    width: min(74vw, 340px);
     pointer-events: none;
   }
   .rhythm-float.show { display: flex; }
@@ -1117,9 +1117,9 @@
     }
     .rhythm-note-label { font-size: 0.9rem; }
     .rhythm-float {
-      top: max(10px, env(safe-area-inset-top));
+      top: 33%;
       left: 66%;
-      width: min(36vw, 330px);
+      width: min(31vw, 300px);
       gap: 8px;
     }
     .rhythm-float-cell {
@@ -1146,6 +1146,11 @@
       height: 210px;
     }
     .pono-sprite { height: 205px; }
+    .rhythm-float {
+      top: 33%;
+      left: 67%;
+      width: min(30vw, 300px);
+    }
   }
 
   /* スマホ横は左コントロール列に余白がないため、リズム案内はボタン上の光と輪っかへ集約 */
@@ -2078,12 +2083,12 @@ function _renderRhythmFloat() {
   var nextCell = document.getElementById('rhythm-float-next-cell');
   if (nowNote) nowNote.textContent = NOTE_LABELS[nowIdx] || '';
   if (nextNote) nextNote.textContent = NOTE_LABELS[nextIdx] || '';
-  if (nextCaption) nextCaption.textContent = same ? 'つぎも' : 'つぎ';
+  if (nextCaption) nextCaption.textContent = same ? 'もう1回' : 'つぎ';
   if (nextCell) nextCell.classList.toggle('same', same);
   box.classList.add('show');
 }
 function _rhythmRingStyle(targetTime, now) {
-  var lead = _rhythmRingLeadMs();
+  var lead = Math.max(260, _rhythm.leadMs || _rhythmRingLeadMs());
   var until = targetTime - now;
   if (until > lead || until < -RHYTHM_MISS_MS) {
     return { scale: 2, opacity: 0 };
@@ -2145,7 +2150,7 @@ function _ensureRhythmBand() {
 function _scheduleRhythmNote() {
   if (!_rhythm.enabled) return;
   _rhythm.targetTime = _rhythmTargetTimeFor(_rhythm.idx);
-  _rhythm.leadMs = _rhythmRingLeadMs();
+  _rhythm.leadMs = Math.max(260, Math.min(_rhythmRingLeadMs(), _rhythm.targetTime - performance.now()));
   _rhythm.nowCue = false;
   _renderRhythmTarget();
 }
