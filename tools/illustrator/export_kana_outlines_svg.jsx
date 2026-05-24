@@ -1,26 +1,27 @@
 /**
  * export_kana_outlines_svg.jsx  (Adobe Illustrator ExtendScript)
  *
- * フォントで打ったかな文字を1文字ずつアウトライン化し、SVGとして書き出す。
- * もじっこファームの「表示用ガイド文字」素材を作るための補助スクリプト。
+ * Illustrator上で手作業で打ったテキストを正本にして、1文字ずつアウトラインSVGへ書き出す。
+ * フォント選びをIllustrator上で試しながら、決まった文字列とフォントだけをSVG化するための補助スクリプト。
+ *
+ * 基本の使い方:
+ * 1. Illustratorで任意のテキストオブジェクトを作る
+ * 2. 書き出したい文字列を入力する
+ * 3. フォントファミリー / ウェイト / 字形をIllustrator上で選んで見た目を確認する
+ * 4. そのテキストオブジェクトを選択する
+ * 5. ファイル > スクリプト > その他のスクリプト... からこのJSXを実行する
  *
  * 出力:
+ * - 選択テキスト内の文字を1文字ずつSVG化
  * - 1024 x 1024 pt のアートボード
  * - 文字は中央寄せ
  * - fill は黒、stroke なし
- * - 1文字 = 1 SVG ファイル
- *
- * 使い方:
- * 1. Illustrator を開く
- * 2. ファイル > スクリプト > その他のスクリプト...
- * 3. このファイルを選択
- * 4. フォント名またはフォントファミリー名を入力
- *    例: Zen Maru Gothic / Kozuka Gothic Pr6N / UD Digi Kyokasho NP-R など
+ * - 同じ文字が複数ある場合は最初の1回だけ出力
  *
  * 注意:
  * - ここで作れるのは「表示用の文字外形」です。
  * - 書き順や中心線データは出力されません。
- * - フォントに存在しない文字は豆腐グリフとして出る可能性があります。
+ * - 選択テキスト内で文字ごとに違うフォントを使った場合は、その文字に適用されているフォントで出力します。
  */
 
 #target illustrator
@@ -30,61 +31,39 @@
         artboardSize: 1024,
         padding: 92,
         sourceFontSize: 820,
-        defaultFontQuery: "Zen Maru Gothic",
         outputSubfolder: "kana_svg_outlines",
-        onlyCharacters: "", // 例: "あいうえお"。空なら下の全文字セットを書き出す。
-        includeHiragana: true,
-        includeKatakana: true,
-        includeSmallKana: true,
-        includeDakutenKana: true,
-        coordinatePrecision: 3
+        skipWhitespace: true,
+        uniqueCharactersOnly: true,
+        coordinatePrecision: 3,
+        sampleText: "あいうえお\nアイウエオ"
     };
 
     var oldInteractionLevel = app.userInteractionLevel;
     var createdCount = 0;
     var skippedCount = 0;
     var errors = [];
+    var KANA_FILE_NAMES = buildKanaFileNameMap();
 
     try {
-        var fontQuery = prompt(
-            "書き出しに使うフォント名、またはフォントファミリー名を入力してください。\n" +
-            "PostScript名が分かる場合はそれが一番確実です。",
-            CONFIG.defaultFontQuery
-        );
-        if (fontQuery === null) return;
-        fontQuery = trim(fontQuery);
-        if (!fontQuery) {
-            alert("フォント名が空です。処理を中止しました。");
+        var ranges = getSelectedTextRanges();
+        if (ranges.length === 0) {
+            offerSampleDocument();
             return;
         }
 
-        var textFont = findFont(fontQuery);
-        if (!textFont) {
-            var listFile = writeFontList();
-            alert(
-                "指定フォントが見つかりませんでした。\n\n" +
-                "入力: " + fontQuery + "\n\n" +
-                "Illustratorが認識しているフォント一覧を書き出しました。\n" +
-                listFile.fsName + "\n\n" +
-                "一覧の name / family を見て、もう一度実行してください。"
-            );
+        var entries = collectCharacterEntries(ranges);
+        if (entries.length === 0) {
+            alert("選択中のテキストに書き出せる文字がありません。");
             return;
         }
 
         var outputFolder = chooseOutputFolder();
         if (!outputFolder) return;
 
-        var chars = buildCharacterList();
-        chars = filterCharacters(chars, CONFIG.onlyCharacters);
-        if (chars.length === 0) {
-            alert("書き出す文字がありません。CONFIG.onlyCharacters を確認してください。");
-            return;
-        }
-
         var ok = confirm(
-            "以下の設定でSVGを書き出します。\n\n" +
-            "フォント: " + textFont.name + "\n" +
-            "文字数: " + chars.length + "\n" +
+            "選択中のテキストからSVGを書き出します。\n\n" +
+            "書き出し文字数: " + entries.length + "\n" +
+            "フォント: " + summarizeFonts(entries) + "\n" +
             "保存先: " + outputFolder.fsName + "\n\n" +
             "続行しますか？"
         );
@@ -92,8 +71,8 @@
 
         app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
 
-        for (var i = 0; i < chars.length; i++) {
-            exportCharacterSvg(chars[i], textFont, outputFolder);
+        for (var i = 0; i < entries.length; i++) {
+            exportCharacterSvg(entries[i], outputFolder);
         }
 
         alert(
@@ -109,7 +88,7 @@
         app.userInteractionLevel = oldInteractionLevel;
     }
 
-    function exportCharacterSvg(entry, textFont, outputFolder) {
+    function exportCharacterSvg(entry, outputFolder) {
         var doc = null;
         try {
             var size = CONFIG.artboardSize;
@@ -117,7 +96,7 @@
             doc.rulerUnits = RulerUnits.Points;
             doc.artboards[0].artboardRect = [0, size, size, 0];
 
-            var outline = createOutlinedCharacter(doc, entry.character, textFont);
+            var outline = createOutlinedCharacter(doc, entry);
             if (!outline) {
                 skippedCount++;
                 return;
@@ -138,15 +117,138 @@
         }
     }
 
-    function createOutlinedCharacter(doc, character, textFont) {
+    function createOutlinedCharacter(doc, entry) {
         var tf = doc.textFrames.add();
-        tf.contents = character;
+        tf.contents = entry.character;
         tf.position = [CONFIG.padding, CONFIG.artboardSize - CONFIG.padding];
-        tf.textRange.characterAttributes.textFont = textFont;
+        tf.textRange.characterAttributes.textFont = entry.textFont;
         tf.textRange.characterAttributes.size = CONFIG.sourceFontSize;
         tf.textRange.characterAttributes.fillColor = makeRgb(0, 0, 0);
         tf.textRange.characterAttributes.strokeColor = makeNoColor();
         return tf.createOutline();
+    }
+
+    function getSelectedTextRanges() {
+        var ranges = [];
+        if (app.documents.length === 0) return ranges;
+        var sel = app.selection;
+        if (!sel) return ranges;
+
+        if (sel.typename === "TextRange") {
+            ranges.push(sel);
+            return ranges;
+        }
+
+        if (sel.length === undefined) return ranges;
+
+        for (var i = 0; i < sel.length; i++) {
+            collectTextRangesFromItem(sel[i], ranges);
+        }
+        return ranges;
+    }
+
+    function collectTextRangesFromItem(item, ranges) {
+        if (!item) return;
+
+        if (item.typename === "TextFrame") {
+            ranges.push(item.textRange);
+            return;
+        }
+
+        if (item.typename === "TextRange") {
+            ranges.push(item);
+            return;
+        }
+
+        if (item.pageItems) {
+            for (var i = 0; i < item.pageItems.length; i++) {
+                collectTextRangesFromItem(item.pageItems[i], ranges);
+            }
+        }
+    }
+
+    function collectCharacterEntries(ranges) {
+        var entries = [];
+        var used = {};
+
+        for (var r = 0; r < ranges.length; r++) {
+            var chars = ranges[r].characters;
+            for (var i = 0; i < chars.length; i++) {
+                var ch = chars[i].contents;
+                if (!ch || isSkippedCharacter(ch)) {
+                    skippedCount++;
+                    continue;
+                }
+
+                if (CONFIG.uniqueCharactersOnly && used[ch]) {
+                    skippedCount++;
+                    continue;
+                }
+                used[ch] = true;
+
+                var textFont = getCharacterFont(chars[i], ranges[r]);
+                if (!textFont) {
+                    errors.push("フォント取得失敗: " + ch);
+                    skippedCount++;
+                    continue;
+                }
+
+                entries.push({
+                    character: ch,
+                    textFont: textFont,
+                    fileName: makeUniqueFileName(makeFileName(ch), entries)
+                });
+            }
+        }
+
+        return entries;
+    }
+
+    function getCharacterFont(characterRange, fallbackRange) {
+        try {
+            if (characterRange.characterAttributes.textFont) {
+                return characterRange.characterAttributes.textFont;
+            }
+        } catch (e1) {}
+
+        try {
+            if (fallbackRange.characterAttributes.textFont) {
+                return fallbackRange.characterAttributes.textFont;
+            }
+        } catch (e2) {}
+
+        return null;
+    }
+
+    function isSkippedCharacter(ch) {
+        if (!CONFIG.skipWhitespace) return false;
+        return ch === " " || ch === "\t" || ch === "\r" || ch === "\n" || ch === "\u3000";
+    }
+
+    function offerSampleDocument() {
+        var message =
+            "選択中のテキストオブジェクトがありません。\n\n" +
+            "先にIllustratorで文字を打ち、フォントを選んでから、そのテキストを選択して実行してください。\n\n" +
+            "入力用のサンプルドキュメントを作りますか？";
+
+        if (!confirm(message)) return;
+
+        var doc = app.documents.add(DocumentColorSpace.RGB, 1400, 900);
+        doc.rulerUnits = RulerUnits.Points;
+        var tf = doc.textFrames.add();
+        tf.contents = CONFIG.sampleText;
+        tf.position = [100, 760];
+        tf.textRange.characterAttributes.size = 150;
+        tf.textRange.characterAttributes.fillColor = makeRgb(0, 0, 0);
+        app.selection = null;
+        tf.selected = true;
+        alert(
+            "サンプルテキストを作りました。\n\n" +
+            "1. 文字列を必要な内容に変更\n" +
+            "2. フォントを選択\n" +
+            "3. テキストオブジェクトを選択したまま、このスクリプトをもう一度実行\n\n" +
+            "この流れでSVGを書き出せます。"
+        );
     }
 
     function fitAndCenter(item, artboardSize, padding) {
@@ -249,122 +351,54 @@
         return outputFolder;
     }
 
-    function buildCharacterList() {
-        var out = [];
-        if (CONFIG.includeHiragana) addHiragana(out);
-        if (CONFIG.includeKatakana) addKatakana(out);
-        return out;
+    function summarizeFonts(entries) {
+        var seen = {};
+        var names = [];
+        for (var i = 0; i < entries.length; i++) {
+            var name = entries[i].textFont ? entries[i].textFont.name : "(unknown)";
+            if (!seen[name]) {
+                seen[name] = true;
+                names.push(name);
+            }
+        }
+        if (names.length <= 3) return names.join(", ");
+        return names.slice(0, 3).join(", ") + " ほか " + (names.length - 3) + " 件";
     }
 
-    function addHiragana(out) {
-        addSeries(out, "hiragana", "あいうえお", ["a", "i", "u", "e", "o"]);
-        addSeries(out, "hiragana", "かきくけこ", ["ka", "ki", "ku", "ke", "ko"]);
-        addSeries(out, "hiragana", "さしすせそ", ["sa", "shi", "su", "se", "so"]);
-        addSeries(out, "hiragana", "たちつてと", ["ta", "chi", "tsu", "te", "to"]);
-        addSeries(out, "hiragana", "なにぬねの", ["na", "ni", "nu", "ne", "no"]);
-        addSeries(out, "hiragana", "はひふへほ", ["ha", "hi", "fu", "he", "ho"]);
-        addSeries(out, "hiragana", "まみむめも", ["ma", "mi", "mu", "me", "mo"]);
-        addSeries(out, "hiragana", "やゆよ", ["ya", "yu", "yo"]);
-        addSeries(out, "hiragana", "らりるれろ", ["ra", "ri", "ru", "re", "ro"]);
-        addSeries(out, "hiragana", "わをん", ["wa", "wo", "n"]);
-
-        if (CONFIG.includeSmallKana) {
-            addSeries(out, "hiragana", "ぁぃぅぇぉ", ["small_a", "small_i", "small_u", "small_e", "small_o"]);
-            addSeries(out, "hiragana", "ゃゅょっゎ", ["small_ya", "small_yu", "small_yo", "small_tsu", "small_wa"]);
-        }
-
-        if (CONFIG.includeDakutenKana) {
-            addSeries(out, "hiragana", "がぎぐげご", ["ga", "gi", "gu", "ge", "go"]);
-            addSeries(out, "hiragana", "ざじずぜぞ", ["za", "ji", "zu", "ze", "zo"]);
-            addSeries(out, "hiragana", "だぢづでど", ["da", "di", "du", "de", "do"]);
-            addSeries(out, "hiragana", "ばびぶべぼ", ["ba", "bi", "bu", "be", "bo"]);
-            addSeries(out, "hiragana", "ぱぴぷぺぽ", ["pa", "pi", "pu", "pe", "po"]);
-            addSeries(out, "hiragana", "ゔ", ["vu"]);
-        }
+    function makeFileName(ch) {
+        if (KANA_FILE_NAMES[ch]) return KANA_FILE_NAMES[ch];
+        return "u" + getCodePointHex(ch);
     }
 
-    function addKatakana(out) {
-        addSeries(out, "katakana", "アイウエオ", ["a", "i", "u", "e", "o"]);
-        addSeries(out, "katakana", "カキクケコ", ["ka", "ki", "ku", "ke", "ko"]);
-        addSeries(out, "katakana", "サシスセソ", ["sa", "shi", "su", "se", "so"]);
-        addSeries(out, "katakana", "タチツテト", ["ta", "chi", "tsu", "te", "to"]);
-        addSeries(out, "katakana", "ナニヌネノ", ["na", "ni", "nu", "ne", "no"]);
-        addSeries(out, "katakana", "ハヒフヘホ", ["ha", "hi", "fu", "he", "ho"]);
-        addSeries(out, "katakana", "マミムメモ", ["ma", "mi", "mu", "me", "mo"]);
-        addSeries(out, "katakana", "ヤユヨ", ["ya", "yu", "yo"]);
-        addSeries(out, "katakana", "ラリルレロ", ["ra", "ri", "ru", "re", "ro"]);
-        addSeries(out, "katakana", "ワヲン", ["wa", "wo", "n"]);
-        addSeries(out, "katakana", "ー", ["prolonged_sound"]);
-
-        if (CONFIG.includeSmallKana) {
-            addSeries(out, "katakana", "ァィゥェォ", ["small_a", "small_i", "small_u", "small_e", "small_o"]);
-            addSeries(out, "katakana", "ャュョッヮ", ["small_ya", "small_yu", "small_yo", "small_tsu", "small_wa"]);
+    function makeUniqueFileName(base, entries) {
+        var name = base;
+        var suffix = 2;
+        while (hasFileName(name, entries)) {
+            name = base + "_" + suffix;
+            suffix++;
         }
-
-        if (CONFIG.includeDakutenKana) {
-            addSeries(out, "katakana", "ガギグゲゴ", ["ga", "gi", "gu", "ge", "go"]);
-            addSeries(out, "katakana", "ザジズゼゾ", ["za", "ji", "zu", "ze", "zo"]);
-            addSeries(out, "katakana", "ダヂヅデド", ["da", "di", "du", "de", "do"]);
-            addSeries(out, "katakana", "バビブベボ", ["ba", "bi", "bu", "be", "bo"]);
-            addSeries(out, "katakana", "パピプペポ", ["pa", "pi", "pu", "pe", "po"]);
-            addSeries(out, "katakana", "ヴ", ["vu"]);
-        }
+        return name;
     }
 
-    function addSeries(out, scriptName, chars, ids) {
-        for (var i = 0; i < chars.length; i++) {
-            out.push({
-                character: chars.charAt(i),
-                fileName: scriptName + "_" + ids[i]
-            });
+    function hasFileName(name, entries) {
+        for (var i = 0; i < entries.length; i++) {
+            if (entries[i].fileName === name) return true;
         }
+        return false;
     }
 
-    function filterCharacters(chars, onlyCharacters) {
-        onlyCharacters = trim(onlyCharacters || "");
-        if (!onlyCharacters) return chars;
-
-        var wanted = {};
-        for (var i = 0; i < onlyCharacters.length; i++) {
-            wanted[onlyCharacters.charAt(i)] = true;
+    function getCodePointHex(ch) {
+        var first = ch.charCodeAt(0);
+        var code = first;
+        if (first >= 0xD800 && first <= 0xDBFF && ch.length > 1) {
+            var second = ch.charCodeAt(1);
+            if (second >= 0xDC00 && second <= 0xDFFF) {
+                code = ((first - 0xD800) * 0x400) + (second - 0xDC00) + 0x10000;
+            }
         }
-
-        var filtered = [];
-        for (var j = 0; j < chars.length; j++) {
-            if (wanted[chars[j].character]) filtered.push(chars[j]);
-        }
-        return filtered;
-    }
-
-    function findFont(query) {
-        query = normalize(query);
-        var i;
-        for (i = 0; i < app.textFonts.length; i++) {
-            if (normalize(app.textFonts[i].name) === query) return app.textFonts[i];
-        }
-        for (i = 0; i < app.textFonts.length; i++) {
-            if (normalize(app.textFonts[i].family) === query) return app.textFonts[i];
-        }
-        for (i = 0; i < app.textFonts.length; i++) {
-            if (normalize(app.textFonts[i].name).indexOf(query) >= 0) return app.textFonts[i];
-        }
-        for (i = 0; i < app.textFonts.length; i++) {
-            if (normalize(app.textFonts[i].family).indexOf(query) >= 0) return app.textFonts[i];
-        }
-        return null;
-    }
-
-    function writeFontList() {
-        var file = new File("~/Desktop/illustrator-font-list.txt");
-        file.encoding = "UTF-8";
-        file.open("w");
-        file.writeln("name\tfamily\tstyle");
-        for (var i = 0; i < app.textFonts.length; i++) {
-            var f = app.textFonts[i];
-            file.writeln(f.name + "\t" + f.family + "\t" + f.style);
-        }
-        file.close();
-        return file;
+        var hex = code.toString(16).toUpperCase();
+        while (hex.length < 4) hex = "0" + hex;
+        return hex;
     }
 
     function makeRgb(r, g, b) {
@@ -387,11 +421,45 @@
         }
     }
 
-    function trim(value) {
-        return String(value).replace(/^\s+|\s+$/g, "");
-    }
+    function buildKanaFileNameMap() {
+        return {
+        "あ": "hiragana_a", "い": "hiragana_i", "う": "hiragana_u", "え": "hiragana_e", "お": "hiragana_o",
+        "か": "hiragana_ka", "き": "hiragana_ki", "く": "hiragana_ku", "け": "hiragana_ke", "こ": "hiragana_ko",
+        "さ": "hiragana_sa", "し": "hiragana_shi", "す": "hiragana_su", "せ": "hiragana_se", "そ": "hiragana_so",
+        "た": "hiragana_ta", "ち": "hiragana_chi", "つ": "hiragana_tsu", "て": "hiragana_te", "と": "hiragana_to",
+        "な": "hiragana_na", "に": "hiragana_ni", "ぬ": "hiragana_nu", "ね": "hiragana_ne", "の": "hiragana_no",
+        "は": "hiragana_ha", "ひ": "hiragana_hi", "ふ": "hiragana_fu", "へ": "hiragana_he", "ほ": "hiragana_ho",
+        "ま": "hiragana_ma", "み": "hiragana_mi", "む": "hiragana_mu", "め": "hiragana_me", "も": "hiragana_mo",
+        "や": "hiragana_ya", "ゆ": "hiragana_yu", "よ": "hiragana_yo",
+        "ら": "hiragana_ra", "り": "hiragana_ri", "る": "hiragana_ru", "れ": "hiragana_re", "ろ": "hiragana_ro",
+        "わ": "hiragana_wa", "を": "hiragana_wo", "ん": "hiragana_n",
+        "ぁ": "hiragana_small_a", "ぃ": "hiragana_small_i", "ぅ": "hiragana_small_u", "ぇ": "hiragana_small_e", "ぉ": "hiragana_small_o",
+        "ゃ": "hiragana_small_ya", "ゅ": "hiragana_small_yu", "ょ": "hiragana_small_yo", "っ": "hiragana_small_tsu", "ゎ": "hiragana_small_wa",
+        "が": "hiragana_ga", "ぎ": "hiragana_gi", "ぐ": "hiragana_gu", "げ": "hiragana_ge", "ご": "hiragana_go",
+        "ざ": "hiragana_za", "じ": "hiragana_ji", "ず": "hiragana_zu", "ぜ": "hiragana_ze", "ぞ": "hiragana_zo",
+        "だ": "hiragana_da", "ぢ": "hiragana_di", "づ": "hiragana_du", "で": "hiragana_de", "ど": "hiragana_do",
+        "ば": "hiragana_ba", "び": "hiragana_bi", "ぶ": "hiragana_bu", "べ": "hiragana_be", "ぼ": "hiragana_bo",
+        "ぱ": "hiragana_pa", "ぴ": "hiragana_pi", "ぷ": "hiragana_pu", "ぺ": "hiragana_pe", "ぽ": "hiragana_po",
+        "ゔ": "hiragana_vu",
 
-    function normalize(value) {
-        return trim(value).toLowerCase();
+        "ア": "katakana_a", "イ": "katakana_i", "ウ": "katakana_u", "エ": "katakana_e", "オ": "katakana_o",
+        "カ": "katakana_ka", "キ": "katakana_ki", "ク": "katakana_ku", "ケ": "katakana_ke", "コ": "katakana_ko",
+        "サ": "katakana_sa", "シ": "katakana_shi", "ス": "katakana_su", "セ": "katakana_se", "ソ": "katakana_so",
+        "タ": "katakana_ta", "チ": "katakana_chi", "ツ": "katakana_tsu", "テ": "katakana_te", "ト": "katakana_to",
+        "ナ": "katakana_na", "ニ": "katakana_ni", "ヌ": "katakana_nu", "ネ": "katakana_ne", "ノ": "katakana_no",
+        "ハ": "katakana_ha", "ヒ": "katakana_hi", "フ": "katakana_fu", "ヘ": "katakana_he", "ホ": "katakana_ho",
+        "マ": "katakana_ma", "ミ": "katakana_mi", "ム": "katakana_mu", "メ": "katakana_me", "モ": "katakana_mo",
+        "ヤ": "katakana_ya", "ユ": "katakana_yu", "ヨ": "katakana_yo",
+        "ラ": "katakana_ra", "リ": "katakana_ri", "ル": "katakana_ru", "レ": "katakana_re", "ロ": "katakana_ro",
+        "ワ": "katakana_wa", "ヲ": "katakana_wo", "ン": "katakana_n", "ー": "katakana_prolonged_sound",
+        "ァ": "katakana_small_a", "ィ": "katakana_small_i", "ゥ": "katakana_small_u", "ェ": "katakana_small_e", "ォ": "katakana_small_o",
+        "ャ": "katakana_small_ya", "ュ": "katakana_small_yu", "ョ": "katakana_small_yo", "ッ": "katakana_small_tsu", "ヮ": "katakana_small_wa",
+        "ガ": "katakana_ga", "ギ": "katakana_gi", "グ": "katakana_gu", "ゲ": "katakana_ge", "ゴ": "katakana_go",
+        "ザ": "katakana_za", "ジ": "katakana_ji", "ズ": "katakana_zu", "ゼ": "katakana_ze", "ゾ": "katakana_zo",
+        "ダ": "katakana_da", "ヂ": "katakana_di", "ヅ": "katakana_du", "デ": "katakana_de", "ド": "katakana_do",
+        "バ": "katakana_ba", "ビ": "katakana_bi", "ブ": "katakana_bu", "ベ": "katakana_be", "ボ": "katakana_bo",
+        "パ": "katakana_pa", "ピ": "katakana_pi", "プ": "katakana_pu", "ペ": "katakana_pe", "ポ": "katakana_po",
+        "ヴ": "katakana_vu"
+        };
     }
 })();
