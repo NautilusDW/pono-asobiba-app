@@ -636,7 +636,6 @@ html, body {
   line-height: 1.2;
 }
 .free-guide-actions,
-.free-cup-actions,
 .free-cup-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -644,7 +643,6 @@ html, body {
   margin-top: 5px;
 }
 .free-guide-actions button,
-.free-cup-actions button,
 .free-cup-list button {
   border: 2px solid #F8C36B;
   border-radius: 10px;
@@ -658,7 +656,6 @@ html, body {
   cursor: pointer;
 }
 .free-guide-actions button.primary,
-.free-cup-actions button.active,
 .free-cup-list button.active {
   background: #FFE1A8;
   border-color: var(--primary);
@@ -680,6 +677,59 @@ html, body {
   font-size: 0.52rem;
   font-weight: 900;
   line-height: 1.15;
+}
+.free-cup-editor-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.free-cup-done-btn {
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #9EE6B2, #52B974);
+  color: #174B2C;
+  box-shadow: 0 3px 0 #2F7D49;
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 900;
+  min-height: 34px;
+  cursor: pointer;
+}
+.free-cup-contents {
+  border: 2px solid #F8C36B;
+  border-radius: 12px;
+  background: #FFFFFF;
+  padding: 5px;
+  flex-shrink: 0;
+}
+.free-cup-empty,
+.free-cup-content-row {
+  color: var(--text-light);
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.free-cup-content-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px;
+}
+.free-cup-content-row + .free-cup-content-row {
+  margin-top: 4px;
+}
+.free-cup-content-row button {
+  border: 2px solid #F8C36B;
+  border-radius: 999px;
+  background: #FFF8E6;
+  color: #8B4513;
+  font-family: inherit;
+  font-size: 0.48rem;
+  font-weight: 900;
+  min-height: 24px;
+  padding: 1px 8px;
+  cursor: pointer;
 }
 .free-placed-item.cup-child-locked {
   pointer-events: none;
@@ -2467,6 +2517,8 @@ let freeDragState = null;
 let freeGuideStep = 'box';
 let freeCupToolMode = 'move';
 let freeActiveCupUid = null;
+let freeCupEditorUid = null;
+let freePendingCupEditorUid = null;
 
 // ===== NPC 依頼者モード state =====
 // セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
@@ -3006,6 +3058,38 @@ function getSelectedCup() {
 function getActiveCup() {
   return placedItems.find(i => i.uid === freeActiveCupUid && i.snapTarget) || getSelectedCup();
 }
+function getEditingCup() {
+  return placedItems.find(i => i.uid === freeCupEditorUid && i.snapTarget) || null;
+}
+function getCupChildren(cup) {
+  if (!cup) return [];
+  return placedItems.filter(i => i.parentCupId === cup.uid);
+}
+function openCupEditor(cupUid) {
+  const cup = placedItems.find(i => i.uid === cupUid && i.snapTarget);
+  if (!cup) return;
+  freeCupEditorUid = cup.uid;
+  freeActiveCupUid = cup.uid;
+  freeSelectedItemUid = cup.uid;
+  freeCupToolMode = 'contents';
+  freeLayoutTab = 'food';
+  setSpeech('カップに いれる おかずを えらぼう！');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function closeCupEditor() {
+  const cup = getEditingCup();
+  freeCupEditorUid = null;
+  freeCupToolMode = 'move';
+  if (cup) {
+    freeActiveCupUid = cup.uid;
+    freeSelectedItemUid = cup.uid;
+  }
+  freeLayoutTab = 'food';
+  setSpeech(getBoxTierCount() > 1 ? `${freeActiveTier}だんめに おかずを いれよう！` : 'おかずを いれよう！');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
 function getFreeGuideCopy() {
   const copy = FREE_GUIDE_COPY[freeGuideStep] || FREE_GUIDE_COPY.box;
   if (freeGuideStep === 'tier2' && getBoxTierCount() <= 1) {
@@ -3023,35 +3107,41 @@ function setFreeGuideStep(step, opts = {}) {
     freeLayoutTab = 'box';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
+    freeCupEditorUid = null;
     setSpeech('まず おべんとうばこを えらぼう！');
   } else if (step === 'rice') {
     freeActiveTier = 1;
     freeLayoutTab = 'rice';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
+    freeCupEditorUid = null;
     setSpeech('つぎは ごはんを よそおう！');
   } else if (step === 'decor') {
     freeActiveTier = 1;
     freeLayoutTab = 'decor';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
+    freeCupEditorUid = null;
     setSpeech('のりで ごはんを かざろう！');
   } else if (step === 'tier2') {
     freeActiveTier = getGuideTierForStep('tier2');
     freeLayoutTab = 'food';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
+    freeCupEditorUid = null;
     setSpeech(getBoxTierCount() > 1 ? '2だんめに おかずを いれよう！' : 'おかずを いれよう！');
   } else if (step === 'tier3Prompt') {
     freeActiveTier = Math.min(2, getBoxTierCount());
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
+    freeCupEditorUid = null;
     setSpeech('3だんめも つくる？');
   } else if (step === 'tier3') {
     freeActiveTier = getGuideTierForStep('tier3');
     freeLayoutTab = 'food';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
+    freeCupEditorUid = null;
     setSpeech('3だんめも おかずを いれよう！');
   }
   normalizeFreeGuideTab();
@@ -3300,10 +3390,6 @@ function bringFreeItemForward(uid) {
     freeCupToolMode = 'move';
     freeActiveCupUid = item.uid;
   }
-  if (item.parentCupId) {
-    freeCupToolMode = 'contents';
-    freeActiveCupUid = item.parentCupId;
-  }
   if (item.snapTarget) {
     placedItems.forEach(child => {
       if (child.parentCupId === item.uid) child.layer = item.layer + (++freeLayerSeq);
@@ -3351,6 +3437,10 @@ function onFreeItemDragEnd(e) {
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
   spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
   playPop();
+  if (uid === freePendingCupEditorUid) {
+    freePendingCupEditorUid = null;
+    openCupEditor(uid);
+  }
 }
 function addFreeLayoutItem(def, opts = {}) {
   const itemTier = opts.tier || getTargetTierForType(def.type);
@@ -3403,6 +3493,8 @@ function removeFreeItem(uid) {
   placedItems = placedItems.filter(i => !removeIds.has(i.uid));
   if (freeSelectedItemUid && removeIds.has(freeSelectedItemUid)) freeSelectedItemUid = null;
   if (freeActiveCupUid && removeIds.has(freeActiveCupUid)) freeActiveCupUid = null;
+  if (freeCupEditorUid && removeIds.has(freeCupEditorUid)) freeCupEditorUid = null;
+  if (freePendingCupEditorUid && removeIds.has(freePendingCupEditorUid)) freePendingCupEditorUid = null;
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -3444,14 +3536,16 @@ function setSelectedAccessorySize(sizeKey) {
   renderFreeLayoutControls();
 }
 function addFoodToSelectedCup(def) {
-  const cup = getActiveCup();
+  const cup = getEditingCup() || getActiveCup();
   if (!cup || !def || def.type !== 'food') return null;
   const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
   const angle = childCount * 2.35;
-  const offset = Math.min(42, getCupInnerRadius(cup, { size: def.size || 120 }) * 0.42);
+  const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.58));
+  const offset = Math.min(42, getCupInnerRadius(cup, { size: childSize }) * 0.42);
   const item = addFreeLayoutItem(def, {
     x: cup.x + Math.cos(angle) * offset,
     y: cup.y + Math.sin(angle) * offset * 0.68,
+    size: childSize,
     tier: getItemTier(cup),
     parentCupId: cup.uid,
     skipRender: true,
@@ -3460,7 +3554,7 @@ function addFoodToSelectedCup(def) {
   const p = clampPointToCup(item.x, item.y, item, cup);
   item.x = p.x;
   item.y = p.y;
-  freeSelectedItemUid = item.uid;
+  freeSelectedItemUid = cup.uid;
   freeActiveCupUid = cup.uid;
   freeCupToolMode = 'contents';
   renderFreeLayoutStage();
@@ -3542,6 +3636,8 @@ function selectFreeBentoBox(id) {
   selectedBentoBoxId = id;
   freeActiveTier = 1;
   freeActiveCupUid = null;
+  freeCupEditorUid = null;
+  freePendingCupEditorUid = null;
   const box = getSelectedBentoBox();
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
@@ -3582,7 +3678,7 @@ function createFreeVisual(item) {
 function createFreePlacedElement(item, interactive) {
   const el = document.createElement('div');
   const typeClass = item.type ? ' type-' + item.type : '';
-  const lockCupChild = interactive && freeCupToolMode === 'move' && item.parentCupId && item.parentCupId === freeActiveCupUid;
+  const lockCupChild = interactive && !!item.parentCupId;
   el.className = 'free-placed-item' + typeClass + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
@@ -3712,7 +3808,7 @@ function makeFreePaletteButton(def) {
   } else {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
-      if (def.type === 'food' && freeCupToolMode === 'contents' && getActiveCup()) {
+      if (def.type === 'food' && getEditingCup()) {
         addFoodToSelectedCup(def);
         return;
       }
@@ -3720,6 +3816,7 @@ function makeFreePaletteButton(def) {
         freeActiveTier = 2;
       }
       const item = addFreeLayoutItem(def);
+      if (def.snapTarget) freePendingCupEditorUid = item.uid;
       if (freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
         setSpeech('いいね！のりOKを おしてね。');
       }
@@ -3840,6 +3937,98 @@ function renderFreeGuidePanel() {
   if (actions.children.length) card.appendChild(actions);
   return card;
 }
+function renderCupSizeControls(cup) {
+  if (!cup) return null;
+  const presets = getAccessorySizePresets(cup);
+  if (!presets.length) return null;
+  const row = document.createElement('div');
+  row.className = 'free-size-row';
+  const current = getAccessorySizeKey(cup);
+  presets.forEach(preset => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'free-size-btn' + (preset.key === current ? ' active' : '');
+    b.textContent = preset.label;
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      freeSelectedItemUid = cup.uid;
+      setSelectedAccessorySize(preset.key);
+    });
+    row.appendChild(b);
+  });
+  return row;
+}
+function renderCupContentsList(cup) {
+  const box = document.createElement('div');
+  box.className = 'free-cup-contents';
+  const children = getCupChildren(cup);
+  if (!children.length) {
+    const empty = document.createElement('div');
+    empty.className = 'free-cup-empty';
+    empty.textContent = 'まだ なにも はいってないよ';
+    box.appendChild(empty);
+    return box;
+  }
+  children.forEach((child, idx) => {
+    const row = document.createElement('div');
+    row.className = 'free-cup-content-row';
+    const name = document.createElement('span');
+    name.textContent = child.name || `おかず${idx + 1}`;
+    row.appendChild(name);
+    row.appendChild(makeSmallControlButton('けす', '', () => {
+      removeFreeItem(child.uid);
+      freeCupEditorUid = cup.uid;
+      freeActiveCupUid = cup.uid;
+      freeSelectedItemUid = cup.uid;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }));
+    box.appendChild(row);
+  });
+  return box;
+}
+function renderFreeCupEditorControls() {
+  const cup = getEditingCup();
+  if (!cup) {
+    freeCupEditorUid = null;
+    return null;
+  }
+  const frag = document.createDocumentFragment();
+  const card = document.createElement('div');
+  card.className = 'free-guide-card';
+  const title = document.createElement('div');
+  title.className = 'free-guide-title';
+  title.textContent = 'カップの なかみを えらぼう';
+  card.appendChild(title);
+  const text = document.createElement('div');
+  text.className = 'free-guide-text';
+  text.textContent = '大きさを きめて、おかずを おすと カップに はいるよ。いらない おかずは けせるよ。';
+  card.appendChild(text);
+  frag.appendChild(card);
+
+  const sizeControls = renderCupSizeControls(cup);
+  if (sizeControls) frag.appendChild(sizeControls);
+  frag.appendChild(renderCupContentsList(cup));
+
+  const actions = document.createElement('div');
+  actions.className = 'free-cup-editor-actions';
+  const done = document.createElement('button');
+  done.type = 'button';
+  done.className = 'free-cup-done-btn';
+  done.textContent = 'OK';
+  done.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    closeCupEditor();
+  });
+  actions.appendChild(done);
+  frag.appendChild(actions);
+
+  const list = document.createElement('div');
+  list.className = 'free-item-list';
+  getFreeFoodCatalog().forEach(def => list.appendChild(makeFreePaletteButton(def)));
+  frag.appendChild(list);
+  return frag;
+}
 function renderFreeCupControls() {
   if (!(freeGuideStep === 'tier2' || freeGuideStep === 'tier3')) return null;
   const cups = getActiveTierCups();
@@ -3848,45 +4037,18 @@ function renderFreeCupControls() {
   panel.className = 'free-cup-panel';
   const title = document.createElement('div');
   title.className = 'free-cup-title';
-  title.textContent = 'カップを えらべるよ';
+  title.textContent = 'カップを なおせるよ';
   panel.appendChild(title);
 
   const list = document.createElement('div');
   list.className = 'free-cup-list';
   cups.forEach((cup, idx) => {
     const active = cup.uid === freeActiveCupUid || cup.uid === freeSelectedItemUid;
-    list.appendChild(makeSmallControlButton(`カップ${idx + 1}`, active ? 'active' : '', () => {
-      freeActiveCupUid = cup.uid;
-      freeSelectedItemUid = cup.uid;
-      freeCupToolMode = 'move';
-      bringFreeItemForward(cup.uid);
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
+    list.appendChild(makeSmallControlButton(`カップ${idx + 1}をなおす`, active ? 'active' : '', () => {
+      openCupEditor(cup.uid);
     }));
   });
   panel.appendChild(list);
-
-  const cup = getActiveCup();
-  if (cup) {
-    const modes = document.createElement('div');
-    modes.className = 'free-cup-actions';
-    modes.appendChild(makeSmallControlButton('カップをうごかす', freeCupToolMode === 'move' ? 'active' : '', () => {
-      freeActiveCupUid = cup.uid;
-      freeSelectedItemUid = cup.uid;
-      freeCupToolMode = 'move';
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }));
-    modes.appendChild(makeSmallControlButton('中にいれる', freeCupToolMode === 'contents' ? 'active' : '', () => {
-      freeActiveCupUid = cup.uid;
-      freeSelectedItemUid = cup.uid;
-      freeCupToolMode = 'contents';
-      freeLayoutTab = 'food';
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }));
-    panel.appendChild(modes);
-  }
   return panel;
 }
 function renderFreeLayoutControls() {
@@ -3895,6 +4057,12 @@ function renderFreeLayoutControls() {
   normalizeFreeGuideTab();
   tray.className = 'food-tray free-layout-controls';
   tray.innerHTML = '';
+
+  const cupEditorControls = renderFreeCupEditorControls();
+  if (cupEditorControls) {
+    tray.appendChild(cupEditorControls);
+    return;
+  }
 
   tray.appendChild(renderFreeGuidePanel());
 
