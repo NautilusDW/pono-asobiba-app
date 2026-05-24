@@ -848,6 +848,27 @@ html, body {
   text-overflow: ellipsis;
   pointer-events: none;
 }
+.free-drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  width: 86px;
+  height: 86px;
+  transform: translate(-50%, -50%) scale(1.08);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 3px solid rgba(255, 184, 106, 0.9);
+  box-shadow: 0 10px 22px rgba(93, 78, 55, 0.2);
+}
+.free-drag-ghost .free-palette-visual {
+  width: 74px;
+  height: 74px;
+}
 .complete-bento.free-complete-bento,
 .fav-mini-bento.free-mini-bento {
   aspect-ratio: 760 / 460;
@@ -856,12 +877,50 @@ html, body {
 .complete-bento.free-complete-bento {
   width: min(92%, 520px);
 }
+.complete-bento.free-complete-stack {
+  width: min(96%, 560px);
+  aspect-ratio: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.free-complete-tier {
+  position: relative;
+  border: 3px solid #7A3D13;
+  border-radius: 9px;
+  background: #8B4513;
+  padding: 3px;
+  box-shadow: 0 2px 8px rgba(93, 78, 55, 0.16);
+}
+.free-complete-tier-label {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 8;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 248, 230, 0.92);
+  border: 2px solid rgba(248, 195, 107, 0.9);
+  color: #6B3E16;
+  font-size: 0.46rem;
+  font-weight: 900;
+}
+.complete-bento.free-complete-stack .free-layout-stage {
+  aspect-ratio: 760 / 460;
+}
 .complete-bento.free-complete-bento .free-layout-stage,
 .fav-mini-bento.free-mini-bento .free-layout-stage {
   height: 100%;
   background:
     radial-gradient(circle at 12% 10%, rgba(255,255,255,0.72) 0 12%, transparent 13%),
     repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 10px 10px;
+}
+.complete-bento.free-complete-stack .free-layout-stage {
+  height: auto;
 }
 .complete-bento.free-complete-bento .free-placed-item,
 .fav-mini-bento.free-mini-bento .free-placed-item {
@@ -3406,28 +3465,29 @@ function clampPointToCup(x, y, item, cup) {
   point = limitToCup(point);
   return point;
 }
-function getCupChildSlot(cup, index, childSize) {
-  const offsets = [
-    [0, 0],
-    [-0.26, -0.08],
-    [0.26, 0.08],
-    [0.02, -0.24],
-    [-0.18, 0.2],
-    [0.18, -0.2],
-    [0, 0.24],
-  ];
+function getCupChildSlot(cup, index, childSize, total = 1) {
   const inner = getCupInnerRadius(cup, { size: childSize });
-  const [ox, oy] = offsets[index % offsets.length];
+  if (total <= 1) return { x: cup.x, y: cup.y };
+  const radius = Math.min(inner * 0.72, Math.max(24, childSize * 0.58));
+  const angleOffset = total === 2 ? Math.PI : -Math.PI / 2;
+  const angle = angleOffset + (Math.PI * 2 * index / total);
   return {
-    x: cup.x + ox * inner,
-    y: cup.y + oy * inner * 0.72,
+    x: cup.x + Math.cos(angle) * radius,
+    y: cup.y + Math.sin(angle) * radius * 0.72,
   };
 }
 function layoutCupChildren(cup) {
   if (!cup) return;
   const children = placedItems.filter(child => child.parentCupId === cup.uid);
   children.forEach((child, index) => {
-    const slot = getCupChildSlot(cup, index, child.size || 72);
+    if (child.manualCupPosition) {
+      const p = clampPointToCup(child.x, child.y, child, cup);
+      child.x = p.x;
+      child.y = p.y;
+      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1 + index);
+      return;
+    }
+    const slot = getCupChildSlot(cup, index, child.size || 72, children.length);
     const p = clampPointToCup(slot.x, slot.y, child, cup);
     child.x = p.x;
     child.y = p.y;
@@ -3446,11 +3506,27 @@ function makePaletteDropToast(def) {
 }
 function clampCupChildren(cup) {
   if (!cup) return;
-  layoutCupChildren(cup);
+  placedItems.forEach(child => {
+    if (child.parentCupId === cup.uid) {
+      const p = clampPointToCup(child.x, child.y, child, cup);
+      child.x = p.x;
+      child.y = p.y;
+      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1);
+    }
+  });
 }
 function moveCupChildren(cup, dx, dy) {
-  if (!cup) return;
-  layoutCupChildren(cup);
+  if (!cup || (!dx && !dy)) return;
+  placedItems.forEach(child => {
+    if (child.parentCupId === cup.uid) {
+      child.x += dx;
+      child.y += dy;
+      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1);
+      const p = clampPointToCup(child.x, child.y, child, cup);
+      child.x = p.x;
+      child.y = p.y;
+    }
+  });
 }
 function snapPointForItem(item, x, y) {
   let point = item.type === 'food' && getParentCup(item)
@@ -3541,7 +3617,12 @@ function finalizeFreeItemPosition(uid) {
       });
     }
   }
-  if (item.snapTarget) layoutCupChildren(item);
+  if (item.snapTarget) {
+    const dx = item.x - afterSnap.x;
+    const dy = item.y - afterSnap.y;
+    if (dx || dy) moveCupChildren(item, dx, dy);
+    else clampCupChildren(item);
+  }
   item.pop = true;
   setTimeout(() => {
     item.pop = false;
@@ -3553,6 +3634,10 @@ function bringFreeItemForward(uid) {
   if (!item) return;
   item.layer = (item.layerBase || 20) + (++freeLayerSeq);
   freeSelectedItemUid = uid;
+  if (item.parentCupId) {
+    item.manualCupPosition = true;
+    freeActiveCupUid = item.parentCupId;
+  }
   if (item.snapTarget) {
     freeCupToolMode = 'move';
     freeActiveCupUid = item.uid;
@@ -3648,10 +3733,30 @@ function createFreePaletteDragItem(def, point) {
     skipRender: true,
   });
 }
+function updateFreePaletteDragGhost(e) {
+  if (!freePaletteDragState || !freePaletteDragState.ghost || !e) return;
+  freePaletteDragState.ghost.style.left = `${e.clientX}px`;
+  freePaletteDragState.ghost.style.top = `${e.clientY}px`;
+}
+function removeFreePaletteDragGhost() {
+  if (freePaletteDragState && freePaletteDragState.ghost) {
+    freePaletteDragState.ghost.remove();
+    freePaletteDragState.ghost = null;
+  }
+}
+function createFreePaletteDragGhost(def, e) {
+  const ghost = document.createElement('div');
+  ghost.className = 'free-drag-ghost';
+  ghost.appendChild(createPaletteVisual(def));
+  document.body.appendChild(ghost);
+  freePaletteDragState.ghost = ghost;
+  updateFreePaletteDragGhost(e);
+}
 function beginFreePaletteDrag(e, def) {
   if (e && e.cancelable) e.preventDefault();
   if (!canStartFreePaletteDrag(def)) return;
   freePaletteDragState = { def, uid: null };
+  createFreePaletteDragGhost(def, e);
   window.addEventListener('pointermove', onFreePaletteDragMove, { passive: false });
   window.addEventListener('pointerup', onFreePaletteDragEnd, { once: true });
   window.addEventListener('pointercancel', onFreePaletteDragCancel, { once: true });
@@ -3660,6 +3765,7 @@ function beginFreePaletteDrag(e, def) {
 function onFreePaletteDragMove(e) {
   if (!freePaletteDragState) return;
   if (e && e.cancelable) e.preventDefault();
+  updateFreePaletteDragGhost(e);
   const point = e ? eventToFreePoint(e) : null;
   if (!point) return;
   if (!freePaletteDragState.uid) {
@@ -3674,6 +3780,7 @@ function onFreePaletteDragMove(e) {
 function finishFreePaletteDrag(shouldFinalize) {
   if (!freePaletteDragState) return;
   const { def, uid } = freePaletteDragState;
+  removeFreePaletteDragGhost();
   freePaletteDragState = null;
   window.removeEventListener('pointermove', onFreePaletteDragMove);
   window.removeEventListener('pointerup', onFreePaletteDragEnd);
@@ -3813,8 +3920,8 @@ function addFoodToSelectedCup(def) {
     return null;
   }
   const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
-  const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.68));
-  const slot = getCupChildSlot(cup, childCount, childSize);
+  const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.78));
+  const slot = getCupChildSlot(cup, childCount, childSize, childCount + 1);
   const item = addFreeLayoutItem(def, {
     x: slot.x,
     y: slot.y,
@@ -3956,7 +4063,8 @@ function createFreeVisual(item) {
 function createFreePlacedElement(item, interactive) {
   const el = document.createElement('div');
   const typeClass = item.type ? ' type-' + item.type : '';
-  const lockCupChild = interactive && !!item.parentCupId;
+  const editingCup = getEditingCup();
+  const lockCupChild = interactive && !!item.parentCupId && (!editingCup || item.parentCupId !== editingCup.uid);
   el.className = 'free-placed-item' + typeClass + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
@@ -4020,11 +4128,14 @@ function renderFreeLayoutInto(host, opts = {}) {
   const items = Array.isArray(opts.items) ? opts.items : placedItems;
   const tierCount = getBoxTierCount(box);
   const activeTier = opts.tier || freeActiveTier;
+  const tierFilter = opts.tierFilter || null;
   const integratedRice = box.riceImage
     ? items.find(item => item.type === 'rice' && getItemTier(item) === 1)
     : null;
-  const useIntegratedRice = !!integratedRice && (!opts.interactive || activeTier === 1);
-  const visibleItems = opts.interactive && tierCount > 1
+  const useIntegratedRice = !!integratedRice && (!tierFilter || tierFilter === 1) && (!opts.interactive || activeTier === 1);
+  const visibleItems = tierFilter
+    ? items.filter(item => getItemTier(item) === tierFilter)
+    : opts.interactive && tierCount > 1
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
   const displayItems = useIntegratedRice
@@ -4507,8 +4618,32 @@ function syncFreeLayoutSelectionState() {
   return data;
 }
 function renderFreeCompleteBento(host, items, boxId) {
-  host.className = 'complete-bento free-complete-bento';
+  const box = bentoBoxes.find(b => b.id === (boxId || selectedBentoBoxId)) || getSelectedBentoBox();
+  const tierCount = getBoxTierCount(box);
+  host.className = 'complete-bento free-complete-bento' + (tierCount > 1 ? ' free-complete-stack' : '');
   host.innerHTML = '';
+  if (tierCount > 1) {
+    for (let tier = 1; tier <= tierCount; tier++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'free-complete-tier';
+      const label = document.createElement('div');
+      label.className = 'free-complete-tier-label';
+      label.textContent = getTierLabel(tier, box);
+      wrap.appendChild(label);
+      const stage = document.createElement('div');
+      stage.className = 'free-layout-stage';
+      renderFreeLayoutInto(stage, {
+        items: items.map(i => ({ ...i })),
+        boxId: box.id,
+        tier,
+        tierFilter: tier,
+        interactive: false,
+      });
+      wrap.appendChild(stage);
+      host.appendChild(wrap);
+    }
+    return;
+  }
   const stage = document.createElement('div');
   stage.className = 'free-layout-stage';
   renderFreeLayoutInto(stage, {
