@@ -2666,17 +2666,59 @@ body.layout-editor-on .fry-pot {
   top: var(--piece-y, 50%);
   width: var(--piece-size, 6.9%);
   aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(var(--piece-scale, 1));
+  transform:
+    translate(-50%, -50%)
+    perspective(420px)
+    rotateX(var(--piece-tilt-x, 0deg))
+    rotateY(var(--piece-tilt-y, 0deg))
+    rotate(calc(var(--piece-rot, 0deg) + var(--piece-spin, 0deg)))
+    scale(var(--piece-scale, 1));
+  transform-style: preserve-3d;
   background: url('../assets/images/bento/cooking/meatball/shape/meatball_round_01.png') center / contain no-repeat;
   filter: drop-shadow(0 4px 5px rgba(80,45,28,0.18));
   cursor: grab;
   pointer-events: auto;
   transition: opacity 0.18s ease, filter 0.18s ease, transform 0.18s ease, left 0.12s ease, top 0.12s ease;
   touch-action: none;
+  will-change: transform;
+}
+.cook-piece-bank i::before,
+.cook-piece-bank i::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.12s linear;
+}
+.cook-piece-bank i::before {
+  background:
+    radial-gradient(circle at var(--roll-spot-a-x, 36%) var(--roll-spot-a-y, 34%), rgba(80,34,18,var(--piece-brown-alpha,0.22)) 0 9%, rgba(80,34,18,0) 21%),
+    radial-gradient(circle at var(--roll-spot-b-x, 67%) var(--roll-spot-b-y, 61%), rgba(112,48,20,var(--piece-brown-alpha,0.2)) 0 8%, rgba(112,48,20,0) 20%),
+    radial-gradient(ellipse 34% 20% at var(--roll-band-x, 50%) var(--roll-band-y, 58%), rgba(82,42,22,var(--piece-brown-alpha,0.16)), rgba(82,42,22,0) 72%);
+  mix-blend-mode: multiply;
+  transform: rotate(var(--piece-surface-rot, 0deg)) scaleX(var(--piece-surface-sx, 1));
+}
+.cook-piece-bank i::after {
+  inset: 11%;
+  background:
+    radial-gradient(circle at var(--roll-highlight-x, 36%) var(--roll-highlight-y, 27%), rgba(255,232,176,0.72) 0 8%, rgba(255,232,176,0.18) 20%, rgba(255,232,176,0) 38%),
+    radial-gradient(ellipse 46% 32% at var(--roll-shadow-x, 64%) var(--roll-shadow-y, 70%), rgba(64,30,18,0.22), rgba(64,30,18,0) 70%);
+  mix-blend-mode: screen;
+  transform: rotate(var(--piece-highlight-rot, 0deg));
+}
+.cook-piece-bank i.is-in-pan::before,
+.cook-piece-bank i.is-served-piece::before {
+  opacity: var(--piece-brown-opacity, 0.34);
+}
+.cook-piece-bank i.is-in-pan::after,
+.cook-piece-bank i.is-served-piece::after {
+  opacity: var(--piece-shine-opacity, 0.5);
 }
 .cook-piece-bank i.is-hidden {
   opacity: 0;
-  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(0.72);
+  transform: translate(-50%, -50%) rotate(calc(var(--piece-rot, 0deg) + var(--piece-spin, 0deg))) scale(0.72);
   pointer-events: none;
 }
 .cook-piece-bank i.is-in-pan {
@@ -11436,6 +11478,7 @@ body.layout-editor-on .endX-marker {
       return;
     }
 
+    if (ball.inPan) updateMeatballRollPose(ball, dx, dy, dist);
     const target = getMeatballPanTarget(point);
     ball.x = target.x;
     ball.y = target.y;
@@ -11466,6 +11509,7 @@ body.layout-editor-on .endX-marker {
       updateCookPieceBank(action);
       return;
     }
+    settleMeatballRollPose(ball);
 
     if (state.cookMeatballPhase === 'serve') {
       if (isPointInMeatballServeDish(point)) {
@@ -11653,6 +11697,25 @@ body.layout-editor-on .endX-marker {
     return (state.cookPieceIndex + 1) + 'こめ / ' + getCookPieceCount(action) + 'こ';
   }
 
+  function updateMeatballRollPose(ball, dx, dy, distance) {
+    if (!ball || !ball.inPan || ball.served) return;
+    const amount = Math.max(0, distance || 0);
+    if (!amount) return;
+    const primary = Math.abs(dx || 0) >= Math.abs(dy || 0) ? dx : -(dy || 0);
+    const direction = primary >= 0 ? 1 : -1;
+    ball.roll = ((ball.roll || 0) + direction * amount * 7.2) % 360;
+    ball.tiltX = Math.max(-18, Math.min(18, -(dy || 0) * 0.42));
+    ball.tiltY = Math.max(-18, Math.min(18, (dx || 0) * 0.42));
+    ball.rollSpeed = Math.max(0.18, Math.min(1, amount / 34));
+  }
+
+  function settleMeatballRollPose(ball) {
+    if (!ball) return;
+    ball.tiltX = 0;
+    ball.tiltY = 0;
+    ball.rollSpeed = 0;
+  }
+
   function initCookMeatballs(action) {
     const count = getCookPieceCount(action);
     if (!isMeatballCookAction(state.current, action)) return;
@@ -11681,6 +11744,10 @@ body.layout-editor-on .endX-marker {
         serveX: serve.x,
         serveY: serve.y,
         rot: home.rot,
+        roll: index * 43,
+        tiltX: 0,
+        tiltY: 0,
+        rollSpeed: 0,
         inPan: false,
         served: false,
       };
@@ -11896,11 +11963,54 @@ body.layout-editor-on .endX-marker {
       const data = state.cookMeatballs[i];
       if (!data) continue;
       const piece = document.createElement('i');
+      const roll = Number.isFinite(data.roll) ? data.roll : 0;
+      const rollRad = ((roll + i * 17) * Math.PI) / 180;
+      const rollRadB = ((roll * 0.72 + i * 53) * Math.PI) / 180;
+      const localCooked = data.served ? 1 : cookedRatio;
+      const spotA = {
+        x: 50 + Math.cos(rollRad) * 24,
+        y: 48 + Math.sin(rollRad * 0.86) * 21,
+      };
+      const spotB = {
+        x: 50 + Math.cos(rollRadB + 2.1) * 23,
+        y: 52 + Math.sin(rollRadB) * 20,
+      };
+      const band = {
+        x: 50 + Math.sin(rollRad * 0.58) * 13,
+        y: 58 + Math.cos(rollRad * 0.54) * 9,
+      };
+      const highlight = {
+        x: 38 + Math.cos(rollRad + 1.2) * 17,
+        y: 28 + Math.sin(rollRad * 0.92 + 0.8) * 12,
+      };
+      const shadow = {
+        x: 62 + Math.cos(rollRad + 3.2) * 13,
+        y: 70 + Math.sin(rollRad * 0.84 + 2.3) * 10,
+      };
       piece.dataset.pieceIndex = String(i);
       piece.style.setProperty('--piece-x', data.x.toFixed(2) + '%');
       piece.style.setProperty('--piece-y', data.y.toFixed(2) + '%');
       piece.style.setProperty('--piece-rot', data.rot || '0deg');
-      piece.style.setProperty('--piece-cooked', data.served ? '1' : cookedRatio.toFixed(3));
+      piece.style.setProperty('--piece-cooked', localCooked.toFixed(3));
+      piece.style.setProperty('--piece-spin', roll.toFixed(1) + 'deg');
+      piece.style.setProperty('--piece-tilt-x', ((data.tiltX || 0)).toFixed(1) + 'deg');
+      piece.style.setProperty('--piece-tilt-y', ((data.tiltY || 0)).toFixed(1) + 'deg');
+      piece.style.setProperty('--piece-surface-rot', ((-roll * 0.62) + i * 29).toFixed(1) + 'deg');
+      piece.style.setProperty('--piece-highlight-rot', ((roll * 0.24) - i * 11).toFixed(1) + 'deg');
+      piece.style.setProperty('--piece-surface-sx', (0.94 + Math.sin(rollRad) * 0.05).toFixed(3));
+      piece.style.setProperty('--piece-brown-alpha', (0.16 + localCooked * 0.45).toFixed(3));
+      piece.style.setProperty('--piece-brown-opacity', (data.inPan || data.served ? 0.34 + localCooked * 0.42 : 0).toFixed(3));
+      piece.style.setProperty('--piece-shine-opacity', (data.inPan || data.served ? 0.52 - localCooked * 0.18 : 0).toFixed(3));
+      piece.style.setProperty('--roll-spot-a-x', spotA.x.toFixed(1) + '%');
+      piece.style.setProperty('--roll-spot-a-y', spotA.y.toFixed(1) + '%');
+      piece.style.setProperty('--roll-spot-b-x', spotB.x.toFixed(1) + '%');
+      piece.style.setProperty('--roll-spot-b-y', spotB.y.toFixed(1) + '%');
+      piece.style.setProperty('--roll-band-x', band.x.toFixed(1) + '%');
+      piece.style.setProperty('--roll-band-y', band.y.toFixed(1) + '%');
+      piece.style.setProperty('--roll-highlight-x', highlight.x.toFixed(1) + '%');
+      piece.style.setProperty('--roll-highlight-y', highlight.y.toFixed(1) + '%');
+      piece.style.setProperty('--roll-shadow-x', shadow.x.toFixed(1) + '%');
+      piece.style.setProperty('--roll-shadow-y', shadow.y.toFixed(1) + '%');
       piece.style.zIndex = String(10 + Math.round((data.y || 0) * 10));
       piece.classList.toggle('is-in-pan', !!data.inPan && !data.served);
       piece.classList.toggle('is-served-piece', !!data.served);
