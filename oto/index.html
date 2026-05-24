@@ -1825,27 +1825,30 @@ var RHYTHM_SONGS = [
   {
     id: 'twinkle',
     name: 'きらきらぼし',
-    bpm: 80,
-    bandSongId: 'twinkle80',
+    bpm: 100,
+    bandSongId: 'twinkle100',
     bandStems: ['drums'],
     bandVolume: 0.32,
-    notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
+    notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0],
+    beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
   }
 ];
 var RHYTHM_SONG = RHYTHM_SONGS[0];
-var RHYTHM_GOOD_MS = 330;
-var RHYTHM_OK_MS = 920;
-var RHYTHM_MISS_MS = 1350;
+var RHYTHM_GOOD_MS = 220;
+var RHYTHM_OK_MS = 430;
+var RHYTHM_MISS_MS = 760;
 var _playMode = 'free';
 var _rhythm = {
   enabled: false,
   idx: 0,
+  startPerfTime: 0,
   targetTime: 0,
   leadMs: 0,
   raf: 0,
   streak: 0,
   ownsBand: false,
   prevBandVolume: 1,
+  countdownTimers: [],
   nowCue: false
 };
 
@@ -1860,6 +1863,16 @@ function _rhythmExpectedIdx(offset) {
   offset = offset || 0;
   var notes = RHYTHM_SONG.notes;
   return notes[(_rhythm.idx + offset) % notes.length];
+}
+function _rhythmBeatLengthAt(index) {
+  var beats = RHYTHM_SONG.beats || [];
+  return beats[index % RHYTHM_SONG.notes.length] || 1;
+}
+function _rhythmBeatOffsetFor(seqIndex) {
+  var len = RHYTHM_SONG.notes.length;
+  var total = 0;
+  for (var i = 0; i < seqIndex; i++) total += _rhythmBeatLengthAt(i % len);
+  return total;
 }
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
@@ -1960,11 +1973,11 @@ function _ensureRhythmBand() {
   _startSongClock();
   _renderSpeedBtns();
 }
-function _scheduleRhythmNote(leadBeats) {
+function _scheduleRhythmNote() {
   if (!_rhythm.enabled) return;
   var beatMs = _rhythmBeatMs();
-  _rhythm.leadMs = beatMs * (leadBeats || 2.1);
-  _rhythm.targetTime = performance.now() + _rhythm.leadMs;
+  _rhythm.targetTime = _rhythm.startPerfTime + _rhythmBeatOffsetFor(_rhythm.idx) * beatMs;
+  _rhythm.leadMs = Math.max(beatMs, _rhythm.targetTime - performance.now());
   _rhythm.nowCue = false;
   _renderRhythmTarget();
 }
@@ -1973,12 +1986,17 @@ function _advanceRhythm(wasHit) {
   _rhythm.idx++;
   var finished = _rhythm.idx > 0 && _rhythm.idx % RHYTHM_SONG.notes.length === 0;
   if (finished) {
+    _rhythm.idx = 0;
+    _rhythm.startPerfTime = performance.now() + _rhythmBeatMs() * 2.4;
     _rhythm.streak = 0;
     _setRhythmStatus('できた！もういっかい', 'good');
     bumpPono();
-    _scheduleRhythmNote(3.0);
+    _scheduleRhythmNote();
   } else {
-    _scheduleRhythmNote(wasHit ? 2.05 : 2.35);
+    if (!wasHit && _rhythm.targetTime < performance.now()) {
+      _rhythm.startPerfTime = performance.now() + _rhythmBeatMs() * 1.8 - _rhythmBeatOffsetFor(_rhythm.idx) * _rhythmBeatMs();
+    }
+    _scheduleRhythmNote();
   }
 }
 function _rhythmTick() {
@@ -2018,12 +2036,40 @@ function _startRhythmMode() {
   _setRhythmStatus('ひかるボタンを いま！でタッチ', null);
   _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
-  _scheduleRhythmNote(3.0);
+  var ac = getAC();
+  var bandStartPerf = performance.now();
+  if (ac) {
+    var startAC = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
+    bandStartPerf += Math.max(0, (startAC - ac.currentTime) * 1000);
+  }
+  _rhythm.startPerfTime = bandStartPerf + _rhythmBeatMs() * 2;
+  _scheduleRhythmNote();
   if (_rhythm.raf) cancelAnimationFrame(_rhythm.raf);
   _rhythm.raf = requestAnimationFrame(_rhythmTick);
 }
+function _clearRhythmCountdown() {
+  _rhythm.countdownTimers.forEach(function(id) { clearTimeout(id); });
+  _rhythm.countdownTimers = [];
+  _hideOverlay();
+}
+function _beginRhythmCountdown() {
+  _clearRhythmCountdown();
+  _setModeButtons('rhythm');
+  var stepMs = 720;
+  _showOverlay(3, 'リズム スタート');
+  _rhythm.countdownTimers.push(setTimeout(function() { _showOverlay(2, 'リズム スタート'); }, stepMs));
+  _rhythm.countdownTimers.push(setTimeout(function() { _showOverlay(1, 'リズム スタート'); }, stepMs * 2));
+  _rhythm.countdownTimers.push(setTimeout(function() {
+    _showOverlay('スタート!', '');
+  }, stepMs * 3));
+  _rhythm.countdownTimers.push(setTimeout(function() {
+    _clearRhythmCountdown();
+    setPlayMode('rhythm');
+  }, stepMs * 3 + 420));
+}
 function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();
+  _clearRhythmCountdown();
   _renderRhythmSongMenu();
   _setModeButtons('rhythm');
   var menu = document.getElementById('rhythm-menu');
@@ -2034,6 +2080,7 @@ function _hideRhythmMenu() {
   if (menu) menu.classList.remove('show');
 }
 function _stopRhythmMode() {
+  _clearRhythmCountdown();
   if (!_rhythm.enabled) return;
   _rhythm.enabled = false;
   if (_rhythm.raf) {
@@ -2111,7 +2158,7 @@ if (rhythmMenuStart) rhythmMenuStart.addEventListener('click', function(e) {
   e.stopPropagation();
   unlockAudio();
   _hideRhythmMenu();
-  setPlayMode('rhythm');
+  _beginRhythmCountdown();
 });
 var rhythmMenuCancel = document.getElementById('rhythm-menu-cancel');
 if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
