@@ -2809,6 +2809,12 @@ body.layout-editor-on .fry-pot {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,0.74), rgba(255,226,134,0.24) 52%, transparent 72%);
 }
+#grill-stage.food-placed .egg-target-cue,
+#grill-stage.egg-lid-ready .egg-target-cue,
+#grill-stage.egg-lid-closed .egg-target-cue {
+  opacity: 0 !important;
+  display: none;
+}
 .egg-crack-shells {
   position: absolute;
   left: var(--grill-food-x, 58%);
@@ -2846,27 +2852,47 @@ body.layout-editor-on .fry-pot {
 }
 .egg-glass-lid {
   position: absolute;
-  left: var(--grill-lid-left, 43%);
-  top: var(--grill-lid-top, 32%);
-  width: var(--grill-lid-w, 53%);
+  left: var(--grill-lid-home-left, 73%);
+  top: var(--grill-lid-home-top, 12%);
+  width: var(--grill-lid-home-w, 28%);
   aspect-ratio: 1162 / 877;
-  transform: scale(0.98);
+  transform: scale(0.88);
   transform-origin: center;
   background: url('../assets/images/bento/cooking/glass_lid.png') center / contain no-repeat;
   pointer-events: none;
   z-index: 7;
   opacity: 0;
   filter: drop-shadow(0 12px 15px rgba(50,38,28,0.16));
-  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.18,.85,.2,1.02);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.18,.85,.2,1.02), left 0.2s ease, top 0.2s ease, width 0.2s ease;
 }
 body.layout-editor-on .egg-glass-lid {
   opacity: 0.82;
   pointer-events: auto;
   position: absolute !important;
 }
+#grill-stage[data-ingredient="egg"]:not(.is-served) .egg-glass-lid {
+  opacity: 0.58;
+}
+#grill-stage[data-ingredient="egg"].egg-lid-ready:not(.egg-lid-closed) .egg-glass-lid {
+  opacity: 0.88;
+  pointer-events: auto;
+  cursor: grab;
+  transform: scale(0.92);
+}
+#grill-stage.egg-lid-dragging .egg-glass-lid {
+  opacity: 0.94;
+  cursor: grabbing;
+  transition: none;
+  transform: scale(0.96);
+  z-index: 12;
+}
 #grill-stage.egg-lid-closed:not(.is-served) .egg-glass-lid {
+  left: var(--grill-lid-left, 43%);
+  top: var(--grill-lid-top, 32%);
+  width: var(--grill-lid-w, 53%);
   opacity: 0.96;
   transform: scale(1);
+  pointer-events: none;
 }
 #grill-stage[data-ingredient="egg"].egg-lid-closed:not(.is-served) .grill-smoke {
   opacity: 0.38;
@@ -6002,6 +6028,8 @@ body.layout-editor-on .endX-marker {
     cookEggAutoDropping: false,
     cookEggLidReady: false,
     cookEggLidClosed: false,
+    cookEggLidDragging: false,
+    cookEggLidBaseStyle: null,
     suppressCookClick: false,
     suppressCookClickToken: 0,
     fryReady: false,
@@ -6045,6 +6073,8 @@ body.layout-editor-on .endX-marker {
     state.suppressPrepClick = false;
     state.cookAnimating = false;
     state.cookEggLidReady = false;
+    state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
     stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
@@ -6685,6 +6715,12 @@ body.layout-editor-on .endX-marker {
       els.grillingFoodWrap.addEventListener('pointerup', (e) => onCookFoodPointerEnd(e, 'grill'));
       els.grillingFoodWrap.addEventListener('pointercancel', (e) => onCookFoodPointerEnd(e, 'grill'));
     }
+    if (els.eggGlassLid) {
+      els.eggGlassLid.addEventListener('pointerdown', onEggLidPointerDown);
+      els.eggGlassLid.addEventListener('pointermove', onEggLidPointerMove);
+      els.eggGlassLid.addEventListener('pointerup', onEggLidPointerEnd);
+      els.eggGlassLid.addEventListener('pointercancel', onEggLidPointerEnd);
+    }
     if (els.grillPieceBank) {
       els.grillPieceBank.addEventListener('pointerdown', onMeatballPiecePointerDown);
       els.grillPieceBank.addEventListener('pointermove', onMeatballPiecePointerMove);
@@ -7007,6 +7043,7 @@ body.layout-editor-on .endX-marker {
     state.cookEggAutoDropping = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
     state.suppressCookClick = false;
     state.fryReady = false;
     state.chopProgress = 0;
@@ -7175,6 +7212,7 @@ body.layout-editor-on .endX-marker {
       state.cookEggAutoDropping = false;
       state.cookEggLidReady = false;
       state.cookEggLidClosed = false;
+      state.cookEggLidDragging = false;
       state.suppressCookClick = false;
       resetCookTimingUI('grill');
       resetCookTimingUI('fry');
@@ -7254,6 +7292,7 @@ body.layout-editor-on .endX-marker {
     state.cookEggAutoDropping = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
     state.suppressCookClick = false;
     resetCookTimingUI('grill');
     resetCookTimingUI('fry');
@@ -10680,6 +10719,7 @@ body.layout-editor-on .endX-marker {
     state.cookEggAutoDropping = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
     state.suppressCookClick = false;
     resetCookTimingUI(action.type);
     resetCookDrag(action.type);
@@ -10839,6 +10879,8 @@ body.layout-editor-on .endX-marker {
     stageEl.classList.toggle('egg-target-center', eggGrill && state.cookPreheated && !state.cookFoodPlaced && !state.cookAnimating && state.cookEggCrackProgress === 1);
     stageEl.classList.toggle('egg-auto-knocking', eggGrill && !state.cookFoodPlaced && state.cookEggAutoKnocking);
     stageEl.classList.toggle('egg-auto-dropping', eggGrill && !state.cookFoodPlaced && state.cookEggAutoDropping);
+    stageEl.classList.toggle('egg-lid-ready', eggGrill && state.cookFoodPlaced && state.cookEggLidReady && !state.cookEggLidClosed && !state.cookServed);
+    stageEl.classList.toggle('egg-lid-dragging', eggGrill && state.cookEggLidDragging && !state.cookEggLidClosed);
     stageEl.classList.toggle('egg-lid-closed', eggGrill && state.cookEggLidClosed && !state.cookServed);
     stageEl.classList.toggle('meatball-serve', isMeatballCookAction(state.current, getCurrentAction()) && state.cookMeatballPhase === 'serve');
     if (isMultiPieceCookAction(getCurrentAction())) {
@@ -10901,6 +10943,9 @@ body.layout-editor-on .endX-marker {
     const lidH = (toolRect.width * 0.74 * (877 / 1162) / stageRect.height) * 100;
     const lidLeft = cx - lidW / 2;
     const lidTop = lidCenterY - lidH / 2;
+    const lidHomeW = Math.max(19, Math.min(27, lidW * 0.52));
+    const lidHomeLeft = Math.max(4, Math.min(99 - lidHomeW, cx + lidW * 0.45));
+    const lidHomeTop = Math.max(6, Math.min(22, ((toolRect.top + toolRect.height * 0.02 - stageRect.top) / stageRect.height) * 100));
     const plate = stage.querySelector('.prep-plate');
     const plateRect = plate ? plate.getBoundingClientRect() : null;
     const rimTargetX = plateRect && plateRect.width
@@ -10922,6 +10967,9 @@ body.layout-editor-on .endX-marker {
     stage.style.setProperty('--grill-lid-left', pctString(lidLeft));
     stage.style.setProperty('--grill-lid-top', pctString(lidTop));
     stage.style.setProperty('--grill-lid-w', pctString(lidW));
+    stage.style.setProperty('--grill-lid-home-left', pctString(lidHomeLeft));
+    stage.style.setProperty('--grill-lid-home-top', pctString(lidHomeTop));
+    stage.style.setProperty('--grill-lid-home-w', pctString(lidHomeW));
     stage.style.setProperty('--egg-rim-target-x', pctString(rimTargetX));
     stage.style.setProperty('--egg-rim-target-y', pctString(rimTargetY));
     stage.style.setProperty('--egg-rim-target-w', pctString(rimTargetW));
@@ -10973,7 +11021,11 @@ body.layout-editor-on .endX-marker {
       }
       if (parts.stage) parts.stage.classList.remove('drop-ready');
     });
-    if (!type || state.cookDragType === type) {
+    if (!type || type === 'grill') {
+      state.cookEggLidDragging = false;
+      resetEggLidToHome();
+    }
+    if (!type || state.cookDragType === type || (type === 'grill' && state.cookDragType === 'egg-lid')) {
       state.cookDragging = false;
       state.cookDragType = null;
       state.cookDragPointerId = null;
@@ -10993,6 +11045,7 @@ body.layout-editor-on .endX-marker {
       }
     }
     if (parts.stage) parts.stage.classList.remove('drop-ready');
+    if (type === 'grill') state.cookEggLidDragging = false;
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
@@ -11089,6 +11142,75 @@ body.layout-editor-on .endX-marker {
       return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
     }
     return point.x >= 42 && point.x <= 74 && point.y >= 16 && point.y <= 44;
+  }
+
+  function getEggLidDragSizePct() {
+    const base = state.cookEggLidBaseStyle;
+    if (base && Number.isFinite(base.widthPct) && base.widthPct > 0) {
+      return {
+        width: base.widthPct,
+        height: Number.isFinite(base.heightPct) && base.heightPct > 0 ? base.heightPct : base.widthPct * 0.72,
+      };
+    }
+    const stageRect = els.grillStage ? els.grillStage.getBoundingClientRect() : null;
+    const homeW = els.grillStage ? parseFloat(els.grillStage.style.getPropertyValue('--grill-lid-home-w')) : NaN;
+    const width = Number.isFinite(homeW) && homeW > 0 ? homeW : 24;
+    const height = stageRect && stageRect.width && stageRect.height
+      ? width * (877 / 1162) * (stageRect.width / stageRect.height)
+      : width * 0.72;
+    return { width, height };
+  }
+
+  function getEggLidDropTarget() {
+    const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
+    if (panBounds) {
+      return {
+        x: panBounds.left + panBounds.width * 0.50,
+        y: panBounds.top + panBounds.height * 0.35,
+        rx: panBounds.width * 0.30,
+        ry: panBounds.height * 0.24,
+      };
+    }
+    return { x: 58, y: 38, rx: 16, ry: 10 };
+  }
+
+  function isEggLidDropPoint(point) {
+    if (!point || !isCurrentEggGrillAction() || !state.cookFoodPlaced || state.cookEggLidClosed) return false;
+    const target = getEggLidDropTarget();
+    const dx = (point.x - target.x) / Math.max(1, target.rx);
+    const dy = (point.y - target.y) / Math.max(1, target.ry);
+    return (dx * dx + dy * dy) <= 1;
+  }
+
+  function resetEggLidToHome() {
+    if (!els.eggGlassLid) return;
+    const base = state.cookEggLidBaseStyle;
+    if (base) {
+      els.eggGlassLid.style.left = base.left || '';
+      els.eggGlassLid.style.top = base.top || '';
+      els.eggGlassLid.style.width = base.width || '';
+    } else if (els.eggGlassLid.dataset.lidDragInline === '1') {
+      els.eggGlassLid.style.removeProperty('left');
+      els.eggGlassLid.style.removeProperty('top');
+      els.eggGlassLid.style.removeProperty('width');
+    }
+    delete els.eggGlassLid.dataset.lidDragInline;
+    state.cookEggLidBaseStyle = null;
+  }
+
+  function moveEggLidToPoint(evt) {
+    const point = getCookDragPoint('grill', evt);
+    if (!point || !els.grillStage || !els.eggGlassLid) return false;
+    const size = getEggLidDragSizePct();
+    const left = Math.max(1, Math.min(99 - size.width, point.x - size.width / 2));
+    const top = Math.max(1, Math.min(96 - size.height, point.y - size.height / 2));
+    els.eggGlassLid.dataset.lidDragInline = '1';
+    els.eggGlassLid.style.left = left.toFixed(2) + '%';
+    els.eggGlassLid.style.top = top.toFixed(2) + '%';
+    els.eggGlassLid.style.width = size.width.toFixed(2) + '%';
+    const ready = isEggLidDropPoint(point);
+    els.grillStage.classList.toggle('drop-ready', ready);
+    return ready;
   }
 
   function isCookDropPoint(type, point) {
@@ -11439,6 +11561,63 @@ body.layout-editor-on .endX-marker {
     }
     resetCookDrag(type);
     nudgeCookDrag(type);
+  }
+
+  function onEggLidPointerDown(evt) {
+    if (evt && evt.button != null && evt.button !== 0) return;
+    if (document.body.classList.contains('layout-editor-on')) return;
+    if (!isCurrentEggGrillAction() || !state.cookFoodPlaced || state.cookServed || state.cookProgress !== 0 || state.cookEggLidClosed) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(180);
+    if (!state.cookEggLidReady || state.cookAnimating) {
+      setSpeech('たまごが おちついたら ふたを つかもう！', 'grill');
+      return;
+    }
+    state.cookDragging = true;
+    state.cookDragType = 'egg-lid';
+    state.cookDragPointerId = evt.pointerId;
+    state.cookEggLidDragging = true;
+    const lidBounds = getElementBoundsPct(els.eggGlassLid, els.grillStage);
+    state.cookEggLidBaseStyle = {
+      left: els.eggGlassLid ? els.eggGlassLid.style.left : '',
+      top: els.eggGlassLid ? els.eggGlassLid.style.top : '',
+      width: els.eggGlassLid ? els.eggGlassLid.style.width : '',
+      widthPct: lidBounds ? lidBounds.width : NaN,
+      heightPct: lidBounds ? lidBounds.height : NaN,
+    };
+    if (els.eggGlassLid && els.eggGlassLid.setPointerCapture) {
+      try { els.eggGlassLid.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    updateCookStageState('grill');
+    moveEggLidToPoint(evt);
+  }
+
+  function onEggLidPointerMove(evt) {
+    if (!state.cookDragging || state.cookDragType !== 'egg-lid' || state.cookDragPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    moveEggLidToPoint(evt);
+  }
+
+  function onEggLidPointerEnd(evt) {
+    if (!state.cookDragging || state.cookDragType !== 'egg-lid' || state.cookDragPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(180);
+    const dropped = moveEggLidToPoint(evt);
+    if (els.eggGlassLid && els.eggGlassLid.releasePointerCapture) {
+      try { els.eggGlassLid.releasePointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.cookEggLidDragging = false;
+    if (els.grillStage) els.grillStage.classList.remove('drop-ready');
+    if (dropped && closeEggLidForGrill(true)) return;
+    resetEggLidToHome();
+    updateCookStageState('grill');
+    setSpeech('ふたを つかんで フライパンの まんなかへ もっていこう！', 'grill');
   }
 
   function getCookPieceCount(action) {
@@ -12030,9 +12209,14 @@ body.layout-editor-on .endX-marker {
     state.cookServed = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
     state.cookEggAutoKnocking = false;
     state.cookEggAutoDropping = false;
     resetCookTimingUI('grill');
+    if (eggGrill && els.grillStage) {
+      els.grillStage.classList.remove('egg-target-rim', 'egg-target-center', 'egg-lid-ready', 'egg-lid-dragging');
+      resetEggLidToHome();
+    }
     updateCookView('grill', 0, eggGrill ? 'drop' : false);
     updateCookStageState('grill');
     if (eggGrill) {
@@ -12041,8 +12225,8 @@ body.layout-editor-on .endX-marker {
     if (els.grillBurst) els.grillBurst.textContent = eggGrill ? 'ぽとん！' : 'ジュッ！';
     showCookBurst('grill');
     if (eggGrill) {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして ふたを しめよう';
-      setSpeech('ぽとん！ たまごが フライパンに はいったよ！ ふたを しめよう！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを よういしよう';
+      setSpeech('ぽとん！ たまごが フライパンに はいったよ！ ふたを つかむ じゅんびをしよう！', 'grill');
     } else if (isMultiPieceCookAction(action)) {
       const pieceText = getCookPieceText(action);
       if (els.grillActionLabel) els.grillActionLabel.textContent = pieceText + ' ゲージの あおで ころがそう';
@@ -12056,6 +12240,8 @@ body.layout-editor-on .endX-marker {
       state.cookAnimating = false;
       if (eggGrill) {
         state.cookEggLidReady = true;
+        if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを ドラッグして しめよう';
+        setSpeech('ふたを つかんで フライパンへ もっていこう！', 'grill');
         updateCookStageState('grill');
       } else {
         startCookTimingGauge('grill');
@@ -12075,7 +12261,7 @@ body.layout-editor-on .endX-marker {
     return true;
   }
 
-  function closeEggLidForGrill() {
+  function closeEggLidForGrill(viaDrag) {
     const ing = state.current;
     const action = getCurrentAction();
     if (!isEggGrillAction(ing, action) || !state.cookFoodPlaced || state.cookProgress !== 0) return false;
@@ -12083,9 +12269,15 @@ body.layout-editor-on .endX-marker {
       setSpeech('たまごが おちつくまで ちょっと まってね！', 'grill');
       return true;
     }
+    if (!viaDrag) {
+      setSpeech('右上の ふたを つかんで フライパンへ もっていこう！', 'grill');
+      return true;
+    }
     state.cookAnimating = true;
     state.cookProgress = 1;
     state.cookEggLidClosed = true;
+    state.cookEggLidDragging = false;
+    resetEggLidToHome();
     if (els.grillBurst) els.grillBurst.textContent = 'ぱたん！';
     updateCookView('grill', 1, 'burst');
     if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたで むしやき中';
@@ -12179,7 +12371,7 @@ body.layout-editor-on .endX-marker {
       placeFoodForGrill();
       return;
     }
-    if (closeEggLidForGrill()) return;
+    if (closeEggLidForGrill(false)) return;
     const timingZone = recordCookTiming('grill');
     state.cookAnimating = true;
     state.cookProgress = Math.min(2, state.cookProgress + 1);
@@ -13990,6 +14182,7 @@ body.layout-editor-on .endX-marker {
     state.cookEggAutoDropping = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
     state.suppressCookClick = false;
     state.fryReady = false;
     resetCookTimingUI();
