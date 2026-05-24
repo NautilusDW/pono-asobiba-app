@@ -2852,9 +2852,9 @@ body.layout-editor-on .fry-pot {
 }
 .egg-glass-lid {
   position: absolute;
-  left: var(--grill-lid-home-left, 73%);
-  top: var(--grill-lid-home-top, 12%);
-  width: var(--grill-lid-home-w, 28%);
+  left: var(--grill-lid-home-left, 78%);
+  top: var(--grill-lid-home-top, 8%);
+  width: var(--grill-lid-home-w, 21%);
   aspect-ratio: 1162 / 877;
   transform: scale(0.88);
   transform-origin: center;
@@ -2866,21 +2866,21 @@ body.layout-editor-on .fry-pot {
   transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.18,.85,.2,1.02), left 0.2s ease, top 0.2s ease, width 0.2s ease;
 }
 body.layout-editor-on .egg-glass-lid {
-  opacity: 0.82;
+  opacity: 0.96;
   pointer-events: auto;
   position: absolute !important;
 }
 #grill-stage[data-ingredient="egg"]:not(.is-served) .egg-glass-lid {
-  opacity: 0.58;
+  opacity: 1;
 }
 #grill-stage[data-ingredient="egg"].egg-lid-ready:not(.egg-lid-closed) .egg-glass-lid {
-  opacity: 0.88;
+  opacity: 1;
   pointer-events: auto;
   cursor: grab;
   transform: scale(0.92);
 }
 #grill-stage.egg-lid-dragging .egg-glass-lid {
-  opacity: 0.94;
+  opacity: 1;
   cursor: grabbing;
   transition: none;
   transform: scale(0.96);
@@ -2890,7 +2890,7 @@ body.layout-editor-on .egg-glass-lid {
   left: var(--grill-lid-left, 43%);
   top: var(--grill-lid-top, 32%);
   width: var(--grill-lid-w, 53%);
-  opacity: 0.96;
+  opacity: 1;
   transform: scale(1);
   pointer-events: none;
 }
@@ -3144,6 +3144,7 @@ body.layout-editor-on .egg-glass-lid {
   font-size: 0.96rem;
   min-height: 1.35em;
   margin-bottom: 6px;
+  text-shadow: 0 2px 4px rgba(80,45,18,0.54), 0 0 2px rgba(80,45,18,0.72);
 }
 .cook-timing-track {
   position: relative;
@@ -3211,13 +3212,18 @@ body.layout-editor-on .egg-glass-lid {
   font-size: 0.76rem;
   font-weight: 900;
   color: rgba(88,62,40,0.82);
+  text-shadow: 0 2px 3px rgba(255,255,255,0.88);
 }
 .cook-timing-scale span {
   position: absolute;
   top: 0;
   white-space: nowrap;
 }
-.cook-timing-scale .scale-raw { left: 0; }
+.cook-timing-scale .scale-raw {
+  left: 0;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(80,45,18,0.6), 0 0 2px rgba(80,45,18,0.74);
+}
 .cook-timing-scale .scale-good {
   left: 54%;
   transform: translateX(-50%);
@@ -6786,6 +6792,8 @@ body.layout-editor-on .endX-marker {
     if (state.chopProgress === 0) {
       seedKnifeXFromMechanics(state.current);
     }
+    normalizeEggLidInlinePoseForPlay();
+    syncCookLayoutFromTools('grill');
     refreshLayoutEditorBaselineWhenClean();
   };
 
@@ -10943,9 +10951,10 @@ body.layout-editor-on .endX-marker {
     const lidH = (toolRect.width * 0.74 * (877 / 1162) / stageRect.height) * 100;
     const lidLeft = cx - lidW / 2;
     const lidTop = lidCenterY - lidH / 2;
-    const lidHomeW = Math.max(19, Math.min(27, lidW * 0.52));
-    const lidHomeLeft = Math.max(4, Math.min(99 - lidHomeW, cx + lidW * 0.45));
-    const lidHomeTop = Math.max(6, Math.min(22, ((toolRect.top + toolRect.height * 0.02 - stageRect.top) / stageRect.height) * 100));
+    const panRight = ((toolRect.left + toolRect.width - stageRect.left) / stageRect.width) * 100;
+    const lidHomeW = Math.max(18, Math.min(22, lidW * 0.40));
+    const lidHomeLeft = Math.max(4, Math.min(98 - lidHomeW, Math.max(76, panRight + 2)));
+    const lidHomeTop = Math.max(5, Math.min(13, ((toolRect.top - stageRect.top) / stageRect.height) * 100 - 1));
     const plate = stage.querySelector('.prep-plate');
     const plateRect = plate ? plate.getBoundingClientRect() : null;
     const rimTargetX = plateRect && plateRect.width
@@ -10956,9 +10965,9 @@ body.layout-editor-on .endX-marker {
       : 60;
     const centerTargetY = ((toolRect.top + toolRect.height * 0.39 - stageRect.top) / stageRect.height) * 100;
     const rimTargetW = plateRect && plateRect.width
-      ? (plateRect.width * 0.22 / stageRect.width) * 100
-      : 12;
-    const centerTargetW = (toolRect.width * 0.23 / stageRect.width) * 100;
+      ? (plateRect.width * 0.30 / stageRect.width) * 100
+      : 14;
+    const centerTargetW = (toolRect.width * 0.30 / stageRect.width) * 100;
     stage.style.setProperty('--grill-food-x', pctString(cx));
     stage.style.setProperty('--grill-food-y', pctString(foodY));
     stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
@@ -10980,6 +10989,7 @@ body.layout-editor-on .endX-marker {
     stage.style.setProperty('--cook-heat-y', pctString(heatY));
     stage.style.setProperty('--cook-cue-x', pctString(cx));
     stage.style.setProperty('--cook-cue-y', pctString(foodY - (isCurrentEggGrillAction() ? 28 : 15)));
+    normalizeEggLidInlinePoseForPlay();
   }
 
   function attachCookLayoutObserver() {
@@ -10997,6 +11007,7 @@ body.layout-editor-on .endX-marker {
     const obs = new MutationObserver(schedule);
     if (els.grillPan) obs.observe(els.grillPan, { attributes: true, attributeFilter: ['style', 'class'] });
     if (els.grillStage) obs.observe(els.grillStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+    if (els.eggGlassLid) obs.observe(els.eggGlassLid, { attributes: true, attributeFilter: ['style', 'class'] });
     if (els.fryPot) obs.observe(els.fryPot, { attributes: true, attributeFilter: ['style', 'class'] });
     if (els.fryStage) obs.observe(els.fryStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
     window.addEventListener('resize', schedule, { passive: true });
@@ -11079,15 +11090,15 @@ body.layout-editor-on .endX-marker {
     const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
     if (!panBounds) {
       return kind === 'center'
-        ? { x: 58, y: 52, rx: 10, ry: 8 }
-        : { x: 28, y: 60, rx: 7, ry: 5 };
+        ? { x: 58, y: 52, rx: 13, ry: 10 }
+        : { x: 28, y: 60, rx: 10, ry: 7 };
     }
     if (kind === 'center') {
       return {
         x: panBounds.left + panBounds.width * 0.50,
         y: panBounds.top + panBounds.height * 0.39,
-        rx: panBounds.width * 0.18,
-        ry: panBounds.height * 0.15,
+        rx: panBounds.width * 0.25,
+        ry: panBounds.height * 0.21,
       };
     }
     const plate = els.grillStage ? els.grillStage.querySelector('.prep-plate') : null;
@@ -11096,15 +11107,15 @@ body.layout-editor-on .endX-marker {
       return {
         x: plateBounds.left + plateBounds.width * 0.72,
         y: plateBounds.top + plateBounds.height * 0.31,
-        rx: plateBounds.width * 0.13,
-        ry: plateBounds.height * 0.17,
+        rx: plateBounds.width * 0.22,
+        ry: plateBounds.height * 0.26,
       };
     }
     return {
       x: 28,
       y: 60,
-      rx: 7,
-      ry: 5,
+      rx: 10,
+      ry: 7,
     };
   }
 
@@ -11120,8 +11131,9 @@ body.layout-editor-on .endX-marker {
     if (!point || !isCurrentEggGrillAction() || state.cookFoodPlaced) return false;
     const target = getEggTargetPoint(kind);
     if (!target) return false;
-    const dx = (point.x - target.x) / Math.max(1, target.rx);
-    const dy = (point.y - target.y) / Math.max(1, target.ry);
+    const coarseBoost = window.matchMedia && window.matchMedia('(pointer: coarse)').matches ? 1.22 : 1.08;
+    const dx = (point.x - target.x) / Math.max(1, target.rx * coarseBoost);
+    const dy = (point.y - target.y) / Math.max(1, target.ry * coarseBoost);
     return (dx * dx + dy * dy) <= 1;
   }
 
@@ -11182,20 +11194,24 @@ body.layout-editor-on .endX-marker {
     return (dx * dx + dy * dy) <= 1;
   }
 
-  function resetEggLidToHome() {
+  function isLayoutEditorMode() {
+    return document.body.classList.contains('layout-editor-on');
+  }
+
+  function normalizeEggLidInlinePoseForPlay() {
     if (!els.eggGlassLid) return;
-    const base = state.cookEggLidBaseStyle;
-    if (base) {
-      els.eggGlassLid.style.left = base.left || '';
-      els.eggGlassLid.style.top = base.top || '';
-      els.eggGlassLid.style.width = base.width || '';
-    } else if (els.eggGlassLid.dataset.lidDragInline === '1') {
-      els.eggGlassLid.style.removeProperty('left');
-      els.eggGlassLid.style.removeProperty('top');
-      els.eggGlassLid.style.removeProperty('width');
-    }
+    if (isLayoutEditorMode() || state.cookEggLidDragging) return;
+    els.eggGlassLid.style.removeProperty('left');
+    els.eggGlassLid.style.removeProperty('top');
+    els.eggGlassLid.style.removeProperty('width');
+    els.eggGlassLid.style.removeProperty('height');
+    els.eggGlassLid.style.removeProperty('transform');
     delete els.eggGlassLid.dataset.lidDragInline;
     state.cookEggLidBaseStyle = null;
+  }
+
+  function resetEggLidToHome() {
+    normalizeEggLidInlinePoseForPlay();
   }
 
   function moveEggLidToPoint(evt) {
@@ -11565,7 +11581,7 @@ body.layout-editor-on .endX-marker {
 
   function onEggLidPointerDown(evt) {
     if (evt && evt.button != null && evt.button !== 0) return;
-    if (document.body.classList.contains('layout-editor-on')) return;
+    if (isLayoutEditorMode()) return;
     if (!isCurrentEggGrillAction() || !state.cookFoodPlaced || state.cookServed || state.cookProgress !== 0 || state.cookEggLidClosed) return;
     evt.preventDefault();
     evt.stopPropagation();
@@ -12041,7 +12057,7 @@ body.layout-editor-on .endX-marker {
     ui.needle.style.setProperty('--timing-pct', pctText);
     if (ui.caption) {
       ui.caption.textContent = cookTimingCaptionForZone(zone);
-      ui.caption.style.color = cueColor;
+      ui.caption.style.color = zone === 'raw' ? '#fff' : cueColor;
     }
     if (ui.cue) {
       ui.cue.textContent = cookTimingCueText(type, zone);
