@@ -2541,6 +2541,9 @@ body.layout-editor-on .fry-pot {
   top: var(--grill-food-y, 52%);
   width: 8.8%;
 }
+#grill-stage[data-ingredient="meatball"] .cooking-food {
+  display: none;
+}
 #grill-stage[data-ingredient="meatball"].is-served .cooking-food {
   width: 8.8%;
 }
@@ -2564,32 +2567,58 @@ body.layout-editor-on .fry-pot {
 .cook-piece-bank {
   display: none;
   position: absolute;
-  left: 16%;
-  top: 68%;
-  width: 32%;
-  aspect-ratio: 1 / 1;
-  transform: translate(-50%, -50%) rotate(-3deg);
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 4;
+  z-index: 5;
 }
 #grill-stage[data-ingredient="meatball"]:not(.is-served) .cook-piece-bank {
   display: block;
+  pointer-events: auto;
 }
 .cook-piece-bank i {
   position: absolute;
   left: var(--piece-x, 50%);
   top: var(--piece-y, 50%);
-  width: 24%;
+  width: var(--piece-size, 6.9%);
   aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(var(--piece-scale, 1));
   background: url('../assets/images/bento/cooking/meatball/shape/meatball_round_01.png') center / contain no-repeat;
   filter: drop-shadow(0 4px 5px rgba(80,45,28,0.18));
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  cursor: grab;
+  pointer-events: auto;
+  transition: opacity 0.18s ease, filter 0.18s ease, transform 0.18s ease, left 0.12s ease, top 0.12s ease;
+  touch-action: none;
 }
-.cook-piece-bank i.is-current,
-.cook-piece-bank i.is-gone {
+.cook-piece-bank i.is-hidden {
   opacity: 0;
   transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(0.72);
+  pointer-events: none;
+}
+.cook-piece-bank i.is-in-pan {
+  --piece-size: 8.3%;
+  filter: sepia(calc(var(--piece-cooked, 0) * 0.74)) saturate(calc(1 + var(--piece-cooked, 0) * 0.5)) hue-rotate(calc(var(--piece-cooked, 0) * -15deg)) brightness(calc(1 - var(--piece-cooked, 0) * 0.06)) drop-shadow(0 7px 8px rgba(74,42,24,0.22));
+}
+.cook-piece-bank i.is-served-piece {
+  --piece-size: 8.2%;
+  filter: sepia(0.82) saturate(1.45) hue-rotate(-15deg) brightness(0.92) drop-shadow(0 5px 6px rgba(74,42,24,0.2));
+}
+.cook-piece-bank i.is-dragging {
+  --piece-scale: 1.12;
+  z-index: 40 !important;
+  cursor: grabbing;
+  transition: none;
+  filter: drop-shadow(0 13px 14px rgba(74,42,24,0.3));
+}
+#grill-stage[data-ingredient="meatball"].meatball-serve .finish-dish {
+  left: 16%;
+  top: 68%;
+  width: 32%;
+  transform: translate(-50%, -50%) rotate(-3deg);
+  opacity: 1;
+  z-index: 3;
 }
 #grill-stage[data-ingredient="meatball"][data-cook-piece-index="0"]:not(.food-placed):not(.is-served) .cooking-food {
   left: 16%;
@@ -5771,6 +5800,10 @@ body.layout-editor-on .endX-marker {
     cookDragging: false,
     cookDragType: null,
     cookDragPointerId: null,
+    cookMeatballs: [],
+    cookMeatballDragIndex: -1,
+    cookMeatballPhase: 'place',
+    cookMeatballRollDistance: 0,
     cookTimingActive: false,
     cookTimingType: null,
     cookTimingStart: 0,
@@ -5782,9 +5815,14 @@ body.layout-editor-on .endX-marker {
     cookTimingPointerAt: 0,
     cookTimingResults: [],
     cookEggCrackProgress: 0,
+    cookEggLastKnockAt: 0,
+    cookEggLastDragY: 0,
+    cookEggKnockTravel: 0,
+    cookEggKnockedThisDrag: false,
     cookEggLidReady: false,
     cookEggLidClosed: false,
     suppressCookClick: false,
+    suppressCookClickToken: 0,
     fryReady: false,
     chopProgress: 0,
     combo: 0,
@@ -6451,6 +6489,12 @@ body.layout-editor-on .endX-marker {
       els.grillingFoodWrap.addEventListener('pointerup', (e) => onCookFoodPointerEnd(e, 'grill'));
       els.grillingFoodWrap.addEventListener('pointercancel', (e) => onCookFoodPointerEnd(e, 'grill'));
     }
+    if (els.grillPieceBank) {
+      els.grillPieceBank.addEventListener('pointerdown', onMeatballPiecePointerDown);
+      els.grillPieceBank.addEventListener('pointermove', onMeatballPiecePointerMove);
+      els.grillPieceBank.addEventListener('pointerup', onMeatballPiecePointerEnd);
+      els.grillPieceBank.addEventListener('pointercancel', onMeatballPiecePointerEnd);
+    }
     if (els.fryStage) {
       els.fryStage.addEventListener('pointerdown', (e) => onCookTimingPointerDown(e, 'fry'));
       els.fryStage.addEventListener('click', onFryTap);
@@ -6753,8 +6797,16 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
+    state.cookMeatballs = [];
+    state.cookMeatballDragIndex = -1;
+    state.cookMeatballPhase = 'place';
+    state.cookMeatballRollDistance = 0;
     state.cookTimingResults = [];
     state.cookEggCrackProgress = 0;
+    state.cookEggLastKnockAt = 0;
+    state.cookEggLastDragY = 0;
+    state.cookEggKnockTravel = 0;
+    state.cookEggKnockedThisDrag = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
     state.suppressCookClick = false;
@@ -6917,6 +6969,10 @@ body.layout-editor-on .endX-marker {
       state.cookDragPointerId = null;
       state.cookTimingResults = [];
       state.cookEggCrackProgress = 0;
+      state.cookEggLastKnockAt = 0;
+      state.cookEggLastDragY = 0;
+      state.cookEggKnockTravel = 0;
+      state.cookEggKnockedThisDrag = false;
       state.cookEggLidReady = false;
       state.cookEggLidClosed = false;
       state.suppressCookClick = false;
@@ -6984,8 +7040,16 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
+    state.cookMeatballs = [];
+    state.cookMeatballDragIndex = -1;
+    state.cookMeatballPhase = 'place';
+    state.cookMeatballRollDistance = 0;
     state.cookTimingResults = [];
     state.cookEggCrackProgress = 0;
+    state.cookEggLastKnockAt = 0;
+    state.cookEggLastDragY = 0;
+    state.cookEggKnockTravel = 0;
+    state.cookEggKnockedThisDrag = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
     state.suppressCookClick = false;
@@ -10331,20 +10395,35 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
+    state.cookMeatballs = [];
+    state.cookMeatballDragIndex = -1;
+    state.cookMeatballPhase = 'place';
+    state.cookMeatballRollDistance = 0;
     state.cookTimingResults = [];
     state.cookEggCrackProgress = 0;
+    state.cookEggLastKnockAt = 0;
+    state.cookEggLastDragY = 0;
+    state.cookEggKnockTravel = 0;
+    state.cookEggKnockedThisDrag = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
     state.suppressCookClick = false;
     resetCookTimingUI(action.type);
     resetCookDrag(action.type);
+    if (isMeatballCookAction(ing, action)) initCookMeatballs(action);
     hideCombo();
     updateCookView(action.type, 0, false);
     updateCookStageState(action.type);
     const label = action.label || (action.type === 'fry' ? 'まず あぶらを あたためよう' : 'まず フライパンを あたためよう');
     if (action.type === 'grill') {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = isEggGrillAction(ing, action) ? 'たまごを フライパンのふちへ' : label;
-      setSpeech(isEggGrillAction(ing, action) ? 'たまごを もって、フライパンの ふちで コンコンしよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
+      if (els.grillActionLabel) {
+        els.grillActionLabel.textContent = isEggGrillAction(ing, action)
+          ? 'たまごを フライパンのふちへ'
+          : isMeatballCookAction(ing, action) ? '1こずつ フライパンへ' : label;
+      }
+      setSpeech(isEggGrillAction(ing, action)
+        ? 'たまごを もって、フライパンの ふちで 上下に コンコンしよう！'
+        : isMeatballCookAction(ing, action) ? 'ミートボールを 1こずつ フライパンに のせよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
       startCookPreheat(ing, action, 'grill');
     } else {
@@ -10368,9 +10447,12 @@ body.layout-editor-on .endX-marker {
         startKitchenAmbient('stove');
         if (isEggGrillAction(ing, action)) {
           if (els.grillActionLabel) {
-            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'もう1かい コンコン' : 'たまごを フライパンのふちへ';
+            els.grillActionLabel.textContent = state.cookEggCrackProgress > 0 ? 'もう1かい 上下に コンコン' : 'ふちで 上下に コンコン';
           }
-          setSpeech(state.cookEggCrackProgress > 0 ? 'フライパンが あったまったよ！ もう1かい ふちで コンコン！' : 'フライパンが あったまったよ！ たまごを ドラッグして ふちで コンコン！', 'grill');
+          setSpeech(state.cookEggCrackProgress > 0 ? 'フライパンが あったまったよ！ もう1かい ふちで 上下に コンコン！' : 'フライパンが あったまったよ！ たまごを ドラッグしたまま ふちで 上下に コンコン！', 'grill');
+        } else if (isMeatballCookAction(ing, action)) {
+          if (els.grillActionLabel) els.grillActionLabel.textContent = '1こずつ フライパンへ';
+          setSpeech('フライパンが あったまったよ！ ミートボールを 1こずつ のせよう！', 'grill');
         } else {
           if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから ドラッグして フライパンへ';
           setSpeech('フライパンが あったまったよ！ おさらから ドラッグして のせよう！', 'grill');
@@ -10481,6 +10563,7 @@ body.layout-editor-on .endX-marker {
     stageEl.classList.toggle('egg-crack-knocked', eggGrill && !state.cookFoodPlaced && state.cookEggCrackProgress === 1);
     stageEl.classList.toggle('egg-crack-split', eggGrill && !state.cookFoodPlaced && state.cookEggCrackProgress >= 2);
     stageEl.classList.toggle('egg-lid-closed', eggGrill && state.cookEggLidClosed && !state.cookServed);
+    stageEl.classList.toggle('meatball-serve', isMeatballCookAction(state.current, getCurrentAction()) && state.cookMeatballPhase === 'serve');
     if (isMultiPieceCookAction(getCurrentAction())) {
       stageEl.dataset.cookPieceIndex = String(state.cookPieceIndex || 0);
     } else {
@@ -10536,8 +10619,8 @@ body.layout-editor-on .endX-marker {
 
     const foodY = ((toolRect.top + toolRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
     const heatY = ((toolRect.top + toolRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
-    const lidY = ((toolRect.top + toolRect.height * 0.35 - stageRect.top) / stageRect.height) * 100;
-    const lidW = (toolRect.width * 0.82 / stageRect.width) * 100;
+    const lidY = ((toolRect.top + toolRect.height * 0.39 - stageRect.top) / stageRect.height) * 100;
+    const lidW = (toolRect.width * 0.76 / stageRect.width) * 100;
     stage.style.setProperty('--grill-food-x', pctString(cx));
     stage.style.setProperty('--grill-food-y', pctString(foodY));
     stage.style.setProperty('--grill-smoke-y', pctString(foodY - 11));
@@ -10596,6 +10679,24 @@ body.layout-editor-on .endX-marker {
     }
   }
 
+  function finishCookDragSession(type, keepPosition) {
+    const parts = getCookElements(type);
+    if (parts.wrap) {
+      parts.wrap.classList.remove('is-dragging');
+      if (!keepPosition) {
+        parts.wrap.style.removeProperty('left');
+        parts.wrap.style.removeProperty('top');
+      }
+      if (state.cookDragPointerId != null && parts.wrap.releasePointerCapture) {
+        try { parts.wrap.releasePointerCapture(state.cookDragPointerId); } catch (e) { /* noop */ }
+      }
+    }
+    if (parts.stage) parts.stage.classList.remove('drop-ready');
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+  }
+
   function getCookDragPoint(type, evt) {
     const parts = getCookElements(type);
     if (!parts.stage) return null;
@@ -10626,11 +10727,11 @@ body.layout-editor-on .endX-marker {
     if (panBounds) {
       const left = panBounds.left + panBounds.width * 0.24;
       const right = panBounds.left + panBounds.width * 0.80;
-      const top = panBounds.top + panBounds.height * 0.04;
-      const bottom = panBounds.top + panBounds.height * 0.39;
+      const top = panBounds.top + panBounds.height * 0.00;
+      const bottom = panBounds.top + panBounds.height * 0.56;
       return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
     }
-    return point.x >= 44 && point.x <= 72 && point.y >= 18 && point.y <= 36;
+    return point.x >= 42 && point.x <= 74 && point.y >= 16 && point.y <= 44;
   }
 
   function isCookDropPoint(type, point) {
@@ -10670,13 +10771,16 @@ body.layout-editor-on .endX-marker {
     parts.wrap.style.top = y.toFixed(2) + '%';
     const ready = isCookDropPoint(type, point);
     parts.stage.classList.toggle('drop-ready', ready);
+    if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced && ready) {
+      registerEggCrackDragMove(evt, point);
+    }
     return ready;
   }
 
   function nudgeCookDrag(type) {
     const name = state.current ? state.current.name : 'ざいりょう';
     if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
-      setSpeech(state.cookEggCrackProgress > 0 ? 'たまごを もう1かい フライパンの ふちへ ドラッグしてね！' : 'たまごを ドラッグして、フライパンの ふちで コンコンしてね！', 'grill');
+      setSpeech(state.cookEggCrackProgress > 0 ? 'たまごを ふちに あてて、もう1かい 上下に コンコン！' : 'たまごを ドラッグしたまま、フライパンの ふちで 上下に コンコンしてね！', 'grill');
       return;
     }
     if (type === 'fry') {
@@ -10692,13 +10796,180 @@ body.layout-editor-on .endX-marker {
     else placeFoodForGrill();
   }
 
+  function suppressCookClickFor(ms) {
+    state.suppressCookClick = true;
+    state.suppressCookClickToken = (state.suppressCookClickToken || 0) + 1;
+    const token = state.suppressCookClickToken;
+    if (ms > 0) {
+      window.setTimeout(function () {
+        if (state.suppressCookClickToken === token) state.suppressCookClick = false;
+      }, ms);
+    }
+    return token;
+  }
+
+  function onMeatballPiecePointerDown(evt) {
+    const action = getCurrentAction();
+    if (!isMeatballCookAction(state.current, action)) return;
+    const target = evt.target && evt.target.closest ? evt.target.closest('i[data-piece-index]') : null;
+    if (!els.grillPieceBank || state.cutting || state.transitioning || state.cookAnimating) return;
+    const point = getMeatballStagePoint(evt);
+    const nearestIndex = findMeatballPieceIndexAtPoint(point);
+    if (!target && nearestIndex < 0) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(160);
+    if (!state.cookPreheated) {
+      setSpeech('フライパンが あったまるまで まってね！', 'grill');
+      return;
+    }
+    const index = nearestIndex >= 0 ? nearestIndex : parseInt(target.dataset.pieceIndex, 10);
+    const ball = (state.cookMeatballs || [])[index];
+    if (!ball || ball.served || state.cookMeatballPhase === 'done') return;
+    state.cookMeatballDragIndex = index;
+    state.cookDragging = true;
+    state.cookDragType = 'meatball';
+    state.cookDragPointerId = evt.pointerId;
+    state.cookDragLastX = evt.clientX;
+    state.cookDragLastY = evt.clientY;
+    if (els.grillPieceBank.setPointerCapture) {
+      try { els.grillPieceBank.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    updateCookPieceBank(action);
+    if (state.cookMeatballPhase === 'serve') {
+      setSpeech('そのまま おさらに もどそう！', 'grill');
+    } else if (ball.inPan) {
+      setSpeech('フライパンの なかで ころころ！', 'grill');
+    } else {
+      setSpeech('1こずつ フライパンに のせよう！', 'grill');
+    }
+  }
+
+  function onMeatballPiecePointerMove(evt) {
+    const action = getCurrentAction();
+    if (!state.cookDragging || state.cookDragType !== 'meatball' || state.cookDragPointerId !== evt.pointerId) return;
+    if (!isMeatballCookAction(state.current, action)) return;
+    const index = state.cookMeatballDragIndex;
+    const ball = (state.cookMeatballs || [])[index];
+    const point = getMeatballStagePoint(evt);
+    if (!ball || !point) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    const dx = evt.clientX - (state.cookDragLastX || evt.clientX);
+    const dy = evt.clientY - (state.cookDragLastY || evt.clientY);
+    const dist = Math.hypot(dx, dy);
+    state.cookDragLastX = evt.clientX;
+    state.cookDragLastY = evt.clientY;
+
+    if (state.cookMeatballPhase === 'place' && !ball.inPan) {
+      ball.x = Math.max(5, Math.min(92, point.x));
+      ball.y = Math.max(12, Math.min(86, point.y));
+      if (els.grillStage) els.grillStage.classList.toggle('drop-ready', isCookDropPoint('grill', point));
+      updateCookPieceBank(action);
+      return;
+    }
+
+    if (state.cookMeatballPhase === 'serve') {
+      ball.x = Math.max(5, Math.min(92, point.x));
+      ball.y = Math.max(12, Math.min(86, point.y));
+      updateCookPieceBank(action);
+      return;
+    }
+
+    const target = getMeatballPanTarget(point);
+    ball.x = target.x;
+    ball.y = target.y;
+    ball.inPan = true;
+    resolveMeatballPanPositions(index);
+    if (allMeatballsInPan()) advanceMeatballRoll(dist);
+    updateCookPieceBank(action);
+  }
+
+  function onMeatballPiecePointerEnd(evt) {
+    const action = getCurrentAction();
+    if (!state.cookDragging || state.cookDragType !== 'meatball' || state.cookDragPointerId !== evt.pointerId) return;
+    if (!isMeatballCookAction(state.current, action)) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    const index = state.cookMeatballDragIndex;
+    const ball = (state.cookMeatballs || [])[index];
+    const point = getMeatballStagePoint(evt);
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.cookMeatballDragIndex = -1;
+    if (els.grillPieceBank && els.grillPieceBank.releasePointerCapture) {
+      try { els.grillPieceBank.releasePointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    if (els.grillStage) els.grillStage.classList.remove('drop-ready');
+    if (!ball || !point) {
+      updateCookPieceBank(action);
+      return;
+    }
+
+    if (state.cookMeatballPhase === 'serve') {
+      if (isPointInMeatballServeDish(point)) {
+        ball.served = true;
+        ball.inPan = false;
+        ball.x = ball.serveX;
+        ball.y = ball.serveY;
+        ball.rot = ((index % 2 ? 4 : -4) + 'deg');
+        if (els.grillBurst) els.grillBurst.textContent = 'ぽん！';
+        showCookBurst('grill');
+        if (allMeatballsServed()) {
+          updateCookPieceBank(action);
+          finishMeatballCook();
+          return;
+        }
+        setSpeech('いいね！ のこりも 1こずつ おさらに！', 'grill');
+      } else {
+        const target = getMeatballPanTarget(point);
+        ball.x = target.x;
+        ball.y = target.y;
+        ball.inPan = true;
+        setSpeech('おさらに もどしてみよう！', 'grill');
+      }
+      updateCookPieceBank(action);
+      return;
+    }
+
+    if (!ball.inPan && isCookDropPoint('grill', point)) {
+      const target = getMeatballPanTarget(point);
+      ball.x = target.x;
+      ball.y = target.y;
+      ball.inPan = true;
+      state.cookFoodPlaced = true;
+      resolveMeatballPanPositions(index);
+      if (els.grillBurst) els.grillBurst.textContent = 'ジュッ！';
+      showCookBurst('grill');
+      if (allMeatballsInPan()) {
+        updateCookPieceBank(action);
+        enterMeatballRollPhase();
+        return;
+      }
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'つぎも 1こずつ';
+      setSpeech('ジュッ！ つぎの ミートボールも 1こずつ のせよう！', 'grill');
+    } else if (!ball.inPan) {
+      ball.x = ball.homeX;
+      ball.y = ball.homeY;
+      setSpeech('フライパンの なかに 1こずつ のせよう！', 'grill');
+    } else {
+      const target = getMeatballPanTarget(point);
+      ball.x = target.x;
+      ball.y = target.y;
+      resolveMeatballPanPositions(index);
+      if (allMeatballsInPan() && state.cookMeatballPhase === 'place') enterMeatballRollPhase();
+    }
+    updateCookStageState('grill');
+    updateCookPieceBank(action);
+  }
+
   function onCookFoodPointerDown(evt, type) {
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== type || state.cookFoodPlaced || state.cookServed) return;
     evt.preventDefault();
     evt.stopPropagation();
-    state.suppressCookClick = true;
-    window.setTimeout(function () { state.suppressCookClick = false; }, 120);
+    suppressCookClickFor(120);
     if (!state.cookPreheated) {
       setSpeech(type === 'fry' ? 'あぶらが あったまるまで まってね！' : 'フライパンが あったまるまで まってね！', type);
       return;
@@ -10708,6 +10979,11 @@ body.layout-editor-on .endX-marker {
     state.cookDragging = true;
     state.cookDragType = type;
     state.cookDragPointerId = evt.pointerId;
+    if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
+      state.cookEggLastDragY = evt.clientY;
+      state.cookEggKnockTravel = 0;
+      state.cookEggKnockedThisDrag = false;
+    }
     parts.wrap.classList.add('is-dragging');
     if (parts.wrap.setPointerCapture) {
       try { parts.wrap.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
@@ -10726,15 +11002,11 @@ body.layout-editor-on .endX-marker {
     if (!state.cookDragging || state.cookDragType !== type || state.cookDragPointerId !== evt.pointerId) return;
     evt.preventDefault();
     evt.stopPropagation();
-    state.suppressCookClick = true;
-    window.setTimeout(function () { state.suppressCookClick = false; }, 160);
+    suppressCookClickFor(160);
     const dropped = moveCookDragToPoint(type, evt);
     if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
-      if (dropped) {
-        handleEggCrackDragEnd();
-        return;
-      }
-      resetCookDrag(type);
+      if (state.cookEggCrackProgress >= 2) return;
+      finishCookDragSession(type, true);
       nudgeCookDrag(type);
       return;
     }
@@ -10754,33 +11026,298 @@ body.layout-editor-on .endX-marker {
     return getCookPieceCount(action) > 1;
   }
 
+  function isMeatballCookAction(ing, action) {
+    return !!(ing && ing.id === 'meatball' && action && action.type === 'grill' && isMultiPieceCookAction(action));
+  }
+
   function getCookPieceText(action) {
     if (!isMultiPieceCookAction(action)) return '';
     return (state.cookPieceIndex + 1) + 'こめ / ' + getCookPieceCount(action) + 'こ';
+  }
+
+  function initCookMeatballs(action) {
+    const count = getCookPieceCount(action);
+    if (!isMeatballCookAction(state.current, action)) return;
+    const homes = [
+      { x: 13.8, y: 61.0, rot: '-4deg' },
+      { x: 22.2, y: 62.0, rot: '5deg' },
+      { x: 8.8, y: 69.0, rot: '-2deg' },
+      { x: 17.0, y: 70.8, rot: '2deg' },
+      { x: 25.1, y: 72.2, rot: '-5deg' },
+    ];
+    const serves = [
+      { x: 11.4, y: 65.8, rot: '-5deg' },
+      { x: 18.2, y: 64.8, rot: '4deg' },
+      { x: 23.8, y: 69.6, rot: '-3deg' },
+      { x: 14.7, y: 73.2, rot: '3deg' },
+      { x: 20.9, y: 74.4, rot: '-4deg' },
+    ];
+    state.cookMeatballs = Array.from({ length: count }, function (_, index) {
+      const home = homes[index] || homes[homes.length - 1];
+      const serve = serves[index] || serves[serves.length - 1];
+      return {
+        x: home.x,
+        y: home.y,
+        homeX: home.x,
+        homeY: home.y,
+        serveX: serve.x,
+        serveY: serve.y,
+        rot: home.rot,
+        inPan: false,
+        served: false,
+      };
+    });
+    state.cookMeatballDragIndex = -1;
+    state.cookMeatballPhase = 'place';
+    state.cookMeatballRollDistance = 0;
+  }
+
+  function getMeatballStagePoint(evt) {
+    if (!evt || !els.grillStage) return null;
+    const rect = els.grillStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      x: ((evt.clientX - rect.left) / rect.width) * 100,
+      y: ((evt.clientY - rect.top) / rect.height) * 100,
+    };
+  }
+
+  function getMeatballPanTarget(point) {
+    if (!point) return null;
+    const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
+    const cx = panBounds ? panBounds.left + panBounds.width * 0.50 : 58;
+    const cy = panBounds ? panBounds.top + panBounds.height * 0.38 : 43;
+    const rx = panBounds ? panBounds.width * 0.34 : 18;
+    const ry = panBounds ? panBounds.height * 0.30 : 13;
+    let dx = point.x - cx;
+    let dy = point.y - cy;
+    const normalized = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+    if (normalized > 1) {
+      const scale = Math.sqrt(normalized);
+      dx /= scale;
+      dy /= scale;
+    }
+    return {
+      x: cx + dx,
+      y: cy + dy,
+    };
+  }
+
+  function isPointInMeatballServeDish(point) {
+    if (!point) return false;
+    return point.x >= 2 && point.x <= 42 && point.y >= 48 && point.y <= 88;
+  }
+
+  function findMeatballPieceIndexAtPoint(point) {
+    if (!point) return -1;
+    let bestIndex = -1;
+    let bestDist = Infinity;
+    (state.cookMeatballs || []).forEach(function (ball, index) {
+      if (!ball || ball.served) return;
+      const dist = Math.hypot(point.x - ball.x, point.y - ball.y);
+      const hit = ball.inPan ? 6.4 : 5.6;
+      if (dist <= hit && dist < bestDist) {
+        bestDist = dist;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }
+
+  function resolveMeatballPanPositions(activeIndex) {
+    const balls = state.cookMeatballs || [];
+    const minDist = 9.3;
+    for (let pass = 0; pass < 5; pass += 1) {
+      for (let i = 0; i < balls.length; i += 1) {
+        const a = balls[i];
+        if (!a || !a.inPan || a.served) continue;
+        for (let j = i + 1; j < balls.length; j += 1) {
+          const b = balls[j];
+          if (!b || !b.inPan || b.served) continue;
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let dist = Math.hypot(dx, dy);
+          if (dist < 0.01) {
+            dx = 0.8 + j * 0.4;
+            dy = 0.7 + i * 0.3;
+            dist = Math.hypot(dx, dy);
+          }
+          if (dist >= minDist) continue;
+          const push = (minDist - dist) * 0.55;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const aWeight = i === activeIndex ? 0.18 : 0.5;
+          const bWeight = j === activeIndex ? 0.18 : 0.5;
+          a.x -= nx * push * aWeight;
+          a.y -= ny * push * aWeight;
+          b.x += nx * push * bWeight;
+          b.y += ny * push * bWeight;
+          const aClamp = getMeatballPanTarget(a);
+          const bClamp = getMeatballPanTarget(b);
+          a.x = aClamp.x;
+          a.y = aClamp.y;
+          b.x = bClamp.x;
+          b.y = bClamp.y;
+        }
+      }
+    }
+  }
+
+  function allMeatballsInPan() {
+    return (state.cookMeatballs || []).length > 0 && state.cookMeatballs.every(function (ball) {
+      return ball.inPan || ball.served;
+    });
+  }
+
+  function allMeatballsServed() {
+    return (state.cookMeatballs || []).length > 0 && state.cookMeatballs.every(function (ball) {
+      return ball.served;
+    });
+  }
+
+  function enterMeatballRollPhase() {
+    state.cookMeatballPhase = 'roll';
+    state.cookFoodPlaced = true;
+    state.cookProgress = 0;
+    state.cookMeatballRollDistance = 0;
+    resetCookTimingUI('grill');
+    updateCookDots('grill', 0);
+    updateCookStageState('grill');
+    if (els.grillBurst) els.grillBurst.textContent = 'ジュッ！';
+    showCookBurst('grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = '好きな順で ころころ';
+    setSpeech('ぜんぶ のったよ！ 好きな ミートボールを ころころ 動かして やこう！', 'grill');
+  }
+
+  function advanceMeatballRoll(distance) {
+    if (state.cookMeatballPhase !== 'roll' || !allMeatballsInPan()) return;
+    const stageRect = els.grillStage ? els.grillStage.getBoundingClientRect() : null;
+    const total = Math.max(1600, ((stageRect && stageRect.width) || 900) * 2.25);
+    const prev = state.cookProgress || 0;
+    state.cookMeatballRollDistance += Math.max(0, distance || 0);
+    state.cookProgress = Math.min(2, (state.cookMeatballRollDistance / total) * 2);
+    updateCookDots('grill', state.cookProgress);
+    updateCookPieceBank(getCurrentAction());
+    if (prev < 1 && state.cookProgress >= 1) {
+      if (els.grillBurst) els.grillBurst.textContent = 'いいいろ！';
+      showCookBurst('grill');
+      setSpeech('いいいろ！ もうすこし ころころしよう！', 'grill');
+    }
+    if (state.cookProgress >= 2) enterMeatballServePhase();
+  }
+
+  function enterMeatballServePhase() {
+    if (state.cookMeatballPhase === 'serve') return;
+    state.cookMeatballPhase = 'serve';
+    state.cookProgress = 2;
+    resetCookTimingUI('grill');
+    updateCookDots('grill', 2);
+    updateCookStageState('grill');
+    if (els.grillBurst) els.grillBurst.textContent = 'できた！';
+    showCookBurst('grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = '1こずつ おさらへ';
+    setSpeech('やけたよ！ 1こずつ おさらに もどそう！', 'grill');
+  }
+
+  function finishMeatballCook() {
+    if (state.cookMeatballPhase === 'done') return;
+    state.cookMeatballPhase = 'done';
+    state.cookServed = true;
+    state.cookAnimating = true;
+    stopKitchenAmbient('stove', 320);
+    updateCookStageState('grill');
+    showCookTimingRating('grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ころころ できたよ！';
+    setSpeech('ミートボール できあがり！', 'grill');
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookAnimating = false;
+      completeCurrentAction(state.current);
+    }, 1060));
+  }
+
+  function handleMeatballGrillTap() {
+    if (!state.cookPreheated) {
+      setSpeech('フライパンが あったまるまで まってね！', 'grill');
+      return;
+    }
+    if (state.cookMeatballPhase === 'place') {
+      setSpeech('おさらにある ミートボールを 1こずつ フライパンへ ドラッグしよう！', 'grill');
+      return;
+    }
+    if (state.cookMeatballPhase === 'roll') {
+      setSpeech('好きな ミートボールを つかんで フライパンの中で ころころ！', 'grill');
+      return;
+    }
+    if (state.cookMeatballPhase === 'serve') {
+      setSpeech('やけた ミートボールを 1こずつ おさらに もどそう！', 'grill');
+    }
   }
 
   function updateCookPieceBank(action) {
     if (!els.grillPieceBank) return;
     const count = isMultiPieceCookAction(action) ? getCookPieceCount(action) : 0;
     els.grillPieceBank.innerHTML = '';
-    if (!count || !state.current || state.current.id !== 'meatball') return;
-    const positions = [
-      { x: 50, y: 32, rot: '-4deg' },
-      { x: 30, y: 53, rot: '5deg' },
-      { x: 68, y: 49, rot: '-2deg' },
-      { x: 44, y: 72, rot: '2deg' },
-      { x: 68, y: 70, rot: '-5deg' },
-    ];
+    if (!count || !isMeatballCookAction(state.current, action)) return;
+    if (!state.cookMeatballs || state.cookMeatballs.length !== count) initCookMeatballs(action);
+    const cookedRatio = Math.max(0, Math.min(1, (state.cookProgress || 0) / 2));
     for (let i = 0; i < count; i += 1) {
+      const data = state.cookMeatballs[i];
+      if (!data) continue;
       const piece = document.createElement('i');
-      const pos = positions[i] || positions[positions.length - 1];
-      piece.style.setProperty('--piece-x', pos.x + '%');
-      piece.style.setProperty('--piece-y', pos.y + '%');
-      piece.style.setProperty('--piece-rot', pos.rot);
-      piece.classList.toggle('is-gone', i < state.cookPieceIndex);
-      piece.classList.toggle('is-current', i === state.cookPieceIndex);
+      piece.dataset.pieceIndex = String(i);
+      piece.style.setProperty('--piece-x', data.x.toFixed(2) + '%');
+      piece.style.setProperty('--piece-y', data.y.toFixed(2) + '%');
+      piece.style.setProperty('--piece-rot', data.rot || '0deg');
+      piece.style.setProperty('--piece-cooked', data.served ? '1' : cookedRatio.toFixed(3));
+      piece.style.zIndex = String(10 + Math.round((data.y || 0) * 10));
+      piece.classList.toggle('is-in-pan', !!data.inPan && !data.served);
+      piece.classList.toggle('is-served-piece', !!data.served);
+      piece.classList.toggle('is-dragging', i === state.cookMeatballDragIndex);
       els.grillPieceBank.appendChild(piece);
     }
+  }
+
+  function registerEggCrackDragMove(evt, point) {
+    if (!evt || !point || !isCurrentEggGrillAction() || state.cookFoodPlaced || state.cookEggCrackProgress >= 2) return;
+    if (state.cookEggKnockedThisDrag) return;
+    const now = performance.now();
+    const lastY = Number.isFinite(state.cookEggLastDragY) ? state.cookEggLastDragY : evt.clientY;
+    const dy = evt.clientY - lastY;
+    state.cookEggLastDragY = evt.clientY;
+    state.cookEggKnockTravel = (state.cookEggKnockTravel || 0) + Math.abs(dy);
+    const neededTravel = state.cookEggCrackProgress > 0 ? 6 : 10;
+    if (state.cookEggKnockTravel < neededTravel || now - (state.cookEggLastKnockAt || 0) < 160) return;
+    state.cookEggKnockTravel = 0;
+    state.cookEggLastKnockAt = now;
+    state.cookEggKnockedThisDrag = true;
+    state.cookEggCrackProgress = Math.min(2, state.cookEggCrackProgress + 1);
+    updateCookStageState('grill');
+    if (els.grillBurst) els.grillBurst.textContent = state.cookEggCrackProgress >= 2 ? 'ぱかっ！' : 'コン！';
+    showCookBurst('grill');
+    if (state.cookEggCrackProgress < 2) {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もう1かい 上下に コンコン';
+      setSpeech('コン！ そのまま もう1かい 上下に コンコン！', 'grill');
+      return;
+    }
+    finishCookDragSession('grill', true);
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ぽとん！';
+    setSpeech('われたよ！ 中身だけ フライパンに おちるよ！', 'grill');
+    const eggClickToken = suppressCookClickFor(0);
+    const releaseEggClickGuard = function () {
+      window.removeEventListener('pointerup', releaseEggClickGuard, true);
+      window.removeEventListener('pointercancel', releaseEggClickGuard, true);
+      window.setTimeout(function () {
+        if (state.suppressCookClickToken === eggClickToken) state.suppressCookClick = false;
+      }, 720);
+    };
+    window.addEventListener('pointerup', releaseEggClickGuard, true);
+    window.addEventListener('pointercancel', releaseEggClickGuard, true);
+    state.pendingTimers.push(setTimeout(function () {
+      const ing = state.current;
+      const action = getCurrentAction();
+      if (!isEggGrillAction(ing, action) || state.cookFoodPlaced) return;
+      placeFoodForGrill();
+    }, 420));
   }
 
   function getCookStageFilter(ing, action, stage) {
@@ -11102,6 +11639,9 @@ body.layout-editor-on .endX-marker {
     resetCookTimingUI('grill');
     updateCookView('grill', 0, eggGrill ? 'drop' : false);
     updateCookStageState('grill');
+    if (eggGrill) {
+      finishCookDragSession('grill', false);
+    }
     if (els.grillBurst) els.grillBurst.textContent = eggGrill ? 'ぽとん！' : 'ジュッ！';
     showCookBurst('grill');
     if (eggGrill) {
@@ -11141,33 +11681,6 @@ body.layout-editor-on .endX-marker {
     }
     nudgeCookDrag('grill');
     return true;
-  }
-
-  function handleEggCrackDragEnd() {
-    const ing = state.current;
-    const action = getCurrentAction();
-    if (!isEggGrillAction(ing, action) || state.cookFoodPlaced) return;
-    resetCookDrag('grill');
-    state.cookAnimating = true;
-    state.cookEggCrackProgress = Math.min(2, state.cookEggCrackProgress + 1);
-    updateCookStageState('grill');
-    if (els.grillBurst) els.grillBurst.textContent = state.cookEggCrackProgress >= 2 ? 'ぱかっ！' : 'コン！';
-    showCookBurst('grill');
-    if (state.cookEggCrackProgress < 2) {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'もう1かい コンコン';
-      setSpeech('いいね！ もう1かい フライパンの ふちで コンコン！', 'grill');
-      state.pendingTimers.push(setTimeout(function () {
-        if (state.current !== ing || getCurrentAction() !== action || state.cookFoodPlaced) return;
-        state.cookAnimating = false;
-      }, 300));
-      return;
-    }
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ぽとん！';
-    setSpeech('われたよ！ たまごが まんなかに おちるよ！', 'grill');
-    state.pendingTimers.push(setTimeout(function () {
-      if (state.current !== ing || getCurrentAction() !== action || state.cookFoodPlaced) return;
-      placeFoodForGrill();
-    }, 420));
   }
 
   function closeEggLidForGrill() {
@@ -11247,12 +11760,17 @@ body.layout-editor-on .endX-marker {
   function onGrillTap(evt) {
     if (state.suppressCookClick) {
       state.suppressCookClick = false;
+      state.suppressCookClickToken += 1;
       return;
     }
     if (state.cutting || state.transitioning || state.cookAnimating) return;
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'grill') return;
+    if (isMeatballCookAction(state.current, action)) {
+      handleMeatballGrillTap();
+      return;
+    }
     if (isEggGrillAction(state.current, action) && !state.cookFoodPlaced) {
       handleEggGrillBeforePlaced();
       return;
@@ -11311,6 +11829,7 @@ body.layout-editor-on .endX-marker {
   function onFryTap(evt) {
     if (state.suppressCookClick) {
       state.suppressCookClick = false;
+      state.suppressCookClickToken += 1;
       return;
     }
     if (state.cutting || state.transitioning || state.cookAnimating) return;
@@ -13071,6 +13590,10 @@ body.layout-editor-on .endX-marker {
     state.cookDragPointerId = null;
     state.cookTimingResults = [];
     state.cookEggCrackProgress = 0;
+    state.cookEggLastKnockAt = 0;
+    state.cookEggLastDragY = 0;
+    state.cookEggKnockTravel = 0;
+    state.cookEggKnockedThisDrag = false;
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
     state.suppressCookClick = false;

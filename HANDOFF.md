@@ -17,7 +17,6 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-05-24 - [batch:117-kitchen-egg-meatball-cook] Codex: user 指摘「目玉焼きで卵を割ると皿から卵が出る/離すと戻るのが不自然、フタがずれている、ミートボール焼きが1個目で終わる・順番固定でやりづらい・1個ずつ投入して同時に焼きたい」を受領。`HANDOFF.md` / `git log -- bento/kitchen.html assets/images/bento/cooking/egg` / 現行 `cookPieceIndex` 周辺を確認し、既存 batch 100 の follow-up と判断。`quizland/index.html` に未関連 dirty あり、触らず作業する。 (by Codex)
 - 2026-05-23 - [batch:101-oto-rhythm-mode] Codex: user 依頼「音タッチ 4:3 横画面のボタンを約2倍 / リズム音楽ゲーム風に、順番とタイミングがわかるモード追加」を受領。HANDOFF / git log / `oto/` を確認し、音タッチの同種進行中作業なしと判断。`oto/index.html` に4:3向けボタン拡大、`じゆう/リズム`切替、次ボタンの光り・縮む輪っか・下部4音プレビュー・ゆるめ判定を実装予定。 (by Codex)
 - 2026-05-23 - [batch:100-bento-fried-egg-lid] Codex: user 指摘「目玉焼きはひっくり返さず、卵を落としてからガラス蓋を閉める流れが自然」を受領。HANDOFF / git log / `assets/images/bento/cooking/egg/` / local `D:\ポノのおへや\Bento\cooking\食材\生卵` を確認し、ガラス蓋素材は未作成と判断。既存 `frying_pan.png` の上面角度に合わせた、中央が少し透けて中身が見えるフライパン用ガラス蓋 raw を生成して `tmp/alpha_pending/100/` へ納品する。卵が落ちる途中の差分も後続実装メモとして残す。 (by Codex)
 - 2026-05-23 - [batch:100-bento-fried-egg-lid] Codex: `tmp/alpha_pending/100/fried_egg_glass_lid_raw.png` を納品完了。1448x1086 / RGB / 約1.6MB。薄い青灰背景つき raw で、ガラス中央はできるだけ薄く、縁・つまみ・水滴で蓋として読ませる案。alpha 抜き・切り抜き・本配置・`bento/kitchen.html` 反映・sw.js bump は未実施。後続では「卵割り → 生卵がフライパンに落ちる → 蓋を閉める → 皿へ上げる」へ変更し、目玉焼きのひっくり返し工程を外すのが自然。 (by Codex)
@@ -148,6 +147,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-24 - [batch:117-kitchen-egg-meatball-cook] **Done** — user 指摘「目玉焼きで卵を割ると皿から卵が出る/離すと戻るのが不自然、フタがずれている、ミートボール焼きが1個目で終わる・順番固定でやりづらい・1個ずつ投入して同時に焼きたい」を反映。卵はドラッグしたままフライパンの縁で上下に2回コンコンすると割れ、中身だけが中央へ落ちる方式に変更し、1回目で手を離しても皿へ戻らない。蓋は pan sync のY/幅を調整。ミートボールは5個を個別オブジェクト化し、皿から1個ずつ投入、全個投入後に好きな順で転がして焼き、焼けたら1個ずつ皿へ戻す flow に変更。ローカル Playwright で卵 crack/lid、ミートボール place→roll→serve→complete を確認済。`sw.js` は v559。 (by Codex)
 - 2026-05-24 - [batch:116-kitchen-prep-tutorial-route] **Done** — user 指摘「下ごしらえ操作のやり方が左下テキストだけでは伝わらない / ひき肉皿を光らせて手アイコン実演 / 鶏肉を切った後に唐揚げ固定へ進まない選択 / 下味トレイ液体マスクを画像化」を反映。ミートボールの分ける工程は左皿を光らせ、手アイコンがつまんで右の丸へ運ぶ実演を追加。丸め工程は中央上に「1こずつ まるめよう」と手の丸め実演を追加。鶏肉は切った後に「からあげにする / いったんしまう」選択を挟み、からあげ選択時だけ下味工程へ進む。下味液体はCSSマスクをやめ、銀トレイ角度に合わせた `tray_marinade_surface_00..04.png` へ差し替え。`sw.js` は v557。ローカル Playwright でミートボール tutorial、鶏肉 route choice、下味トレイ画像、store route を確認済。 (by Codex)
 - 2026-05-24 - [batch:101-oto-rhythm-mode] **Done follow-up 3** — user 指摘「4:3系ボタンが大きすぎて重なるので85%程度 / キラキラ星伴奏のベース音が合わず音量バランスも悪いので一旦ドラムだけ」を反映。iPad mini系大ボタンを 196/200px → 166/170px に縮小。`RHYTHM_SONG.bandStems` を drums only に変更し bass/keyboard を停止、`bandVolume` は 0.35。`sw.js` は v553。ローカル Playwright と staging 1133x744 で確認済。commit `0966c9e` / origin/develop push 済み。 (by Codex)
 - 2026-05-23 - [batch:101-oto-rhythm-mode] **Done follow-up 2** — user 指摘「実機 iPad mini ではボタンが大きくならない / 伴奏が大きすぎる / タイミングがわかりづらい」を反映。Chrome プリセット 1024x768 と実機系 1133x744 の viewport 差を想定し、4:3系拡大条件を `min-width:900px && min-height:700px` へ変更。リズム伴奏は `twinkle100` の drums+bass のみにし、keyboard を外して `bandVolume:0.38` を適用。タイミング輪は前面表示にしてボタン外周と一致する終端を見やすくした。`sw.js` は v552。ローカル Playwright と staging 1133x744 で確認済。commit `8b1abe8` / origin/develop push 済み。 (by Codex)
