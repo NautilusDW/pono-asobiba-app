@@ -670,6 +670,54 @@ html, body {
   image-rendering: pixelated;
 }
 
+.stroke-number-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.guide-stroke-number {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  border: 4px solid #875b3b;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, #fff8df 0%, #f3cf8d 100%);
+  box-shadow:
+    0 4px 0 #6f462c,
+    inset 0 3px rgba(255, 255, 255, 0.58);
+  color: #5b3b29;
+  font-family: var(--pixel-font);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 1px 1px rgba(255, 255, 255, 0.7);
+}
+
+.guide-stroke-number.current {
+  border-color: #d56844;
+  background: linear-gradient(180deg, #fff3bd 0%, #ffad67 100%);
+  box-shadow:
+    0 4px 0 #8d4d31,
+    0 0 0 5px rgba(255, 207, 102, 0.45),
+    inset 0 3px rgba(255, 255, 255, 0.58);
+}
+
+.guide-stroke-number.done {
+  border-color: #398863;
+  background: linear-gradient(180deg, #eafff2 0%, #9fddb9 100%);
+  box-shadow:
+    0 4px 0 #2e6a4e,
+    inset 0 3px rgba(255, 255, 255, 0.58);
+  opacity: 0.82;
+}
+
 .board-particle {
   position: absolute;
   z-index: 8;
@@ -994,6 +1042,7 @@ html, body {
           <div class="writing-board" id="writingBoard">
             <div id="writerTarget" aria-label="文字を書くキャンバス"></div>
             <canvas id="pixelTrailCanvas" width="1000" height="1000" aria-hidden="true"></canvas>
+            <div class="stroke-number-overlay" id="strokeNumberOverlay" aria-hidden="true"></div>
           </div>
         </div>
         <div class="feedback-row">
@@ -1080,6 +1129,7 @@ const stageEl = document.getElementById('stage');
 const charListEl = document.getElementById('charList');
 const writerTarget = document.getElementById('writerTarget');
 const pixelTrailCanvas = document.getElementById('pixelTrailCanvas');
+const strokeNumberOverlay = document.getElementById('strokeNumberOverlay');
 const writingBoard = document.getElementById('writingBoard');
 const promptText = document.getElementById('promptText');
 const messageBox = document.getElementById('messageBox');
@@ -1170,6 +1220,10 @@ function clearPixelTrail() {
   trailCtx.clearRect(0, 0, pixelTrailCanvas.width, pixelTrailCanvas.height);
 }
 
+function clearStrokeNumbers() {
+  strokeNumberOverlay.innerHTML = '';
+}
+
 function getPixelLetterPadding() {
   const size = Math.max(1, currentWriterSize || writingBoard.getBoundingClientRect().width || 610);
   return Math.max(36, Math.min(120, (WRITER_PADDING / size) * 1000));
@@ -1245,9 +1299,41 @@ function updateWriterDisplayOffset(offsetX, offsetY, gridSize) {
   writerTarget.style.transform = `translate(${px}px, ${py}px)`;
 }
 
+function medianToBoardPercent(median) {
+  if (!pixelLetter || !median || !median.length) return null;
+  const [mx, my] = median[0];
+  if (!Number.isFinite(mx) || !Number.isFinite(my)) return null;
+  const gridSize = pixelLetter.gridSize;
+  const gridPadding = (getPixelLetterPadding() / 1000) * gridSize;
+  const scale = (gridSize - gridPadding * 2) / 1024;
+  const x = gridPadding + (pixelLetter.offsetX || 0) + mx * scale;
+  const y = gridSize - gridPadding + (pixelLetter.offsetY || 0) - my * scale;
+  return {
+    x: Math.max(5, Math.min(95, (x / gridSize) * 100)),
+    y: Math.max(5, Math.min(95, (y / gridSize) * 100))
+  };
+}
+
+function renderCanvasStrokeNumbers() {
+  clearStrokeNumbers();
+  if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return;
+  currentCharData.medians.forEach((median, index) => {
+    const pos = medianToBoardPercent(median);
+    if (!pos) return;
+    const num = document.createElement('div');
+    const stateClass = index < strokesCompleted ? 'done' : (index === Math.min(currentStrokeIndex, currentCharData.medians.length - 1) ? 'current' : '');
+    num.className = `guide-stroke-number ${stateClass}`;
+    num.textContent = String(index + 1);
+    num.style.left = `${pos.x}%`;
+    num.style.top = `${pos.y}%`;
+    strokeNumberOverlay.appendChild(num);
+  });
+}
+
 function buildPixelLetterMask(data) {
   pixelLetter = null;
   clearPixelTrail();
+  clearStrokeNumbers();
   if (!data || !Array.isArray(data.strokes) || typeof Path2D === 'undefined') return;
 
   const gridSize = PIXEL_GRID_SIZE;
@@ -1280,6 +1366,7 @@ function buildPixelLetterMask(data) {
       offsetY
     };
     renderPixelLetter();
+    renderCanvasStrokeNumbers();
   } catch (error) {
     console.warn('Could not build pixel guide letter:', error);
   }
@@ -1388,6 +1475,7 @@ function createWriter() {
   }
   pixelLetter = null;
   clearPixelTrail();
+  clearStrokeNumbers();
   updateWriterDisplayOffset(0, 0, PIXEL_GRID_SIZE);
   writerTarget.innerHTML = '';
   if (typeof HanziWriter === 'undefined') {
@@ -1454,6 +1542,7 @@ function resetWriting() {
   pixelLetter = null;
   resizePixelTrailCanvas();
   clearPixelTrail();
+  clearStrokeNumbers();
   writingBoard.classList.remove('success');
   resultOverlay.classList.remove('show');
   companionCard.classList.remove('celebrate');
@@ -1609,6 +1698,7 @@ function onCorrectStroke(data) {
   strokesCompleted = Math.min(item.strokes, Math.max(strokesCompleted + 1, strokeNum + 1));
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
   renderPixelLetter();
+  renderCanvasStrokeNumbers();
   setMessage(strokesCompleted >= item.strokes ? 'さいごまで かけたね！' : 'いいかんじ！ つぎの せんも いこう', 'もうすこし！');
   renderStrokeOrder();
 }
@@ -1626,6 +1716,7 @@ function onWriterComplete(summary) {
   strokesCompleted = item.strokes;
   currentStrokeIndex = item.strokes - 1;
   renderPixelLetter();
+  renderCanvasStrokeNumbers();
   renderStrokeOrder();
   setTimeout(() => completeWriting(false, summary), 260);
 }
@@ -1655,6 +1746,7 @@ function completeWriting(manual, summary) {
     currentStrokeIndex = item.strokes - 1;
     fillAllLetterPixels();
     renderPixelLetter();
+    renderCanvasStrokeNumbers();
   }
   completedCharacters.add(item.id);
   renderStrokeOrder();
