@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-25 - [batch:139-bento-followup-fixes] DONE - Codex: bento の右メニュータップでメインガイドを閉じる処理、旧チュートリアル dim の抑止、ガイド文言の明確化、服なし Pono の guide/modal + picnic BG 差し替え、cup_blue_dot / divider_lettuce の切れ修正、唐揚げ新アセット + キャベツ追加、kitchen 唐揚げの粉まぶし経路と fry 皿上表示を修正。生成 raw は `tmp/alpha_pending/139_bento_followup_assets_raw/` に保存。`sw.js` は v616。 (by Codex)
 - 2026-05-24 - [batch:129-mojikko-farm-care-ui-raw] Codex: user 依頼「もじっこファームお世話画面の参考画像・実装向けアセット生成」を受領。GPT Image 2 built-in 生成で care full mockup 2案 / care UI asset sheet / care background props sheet の raw 4 枚を `tmp/alpha_pending/129_mojikko_farm_care_ui_raw/` に納品。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
 - 2026-05-24 - [batch:128-mojikko-farm-writing-ui-raw] Codex: user 依頼「もじっこファーム文字書き画面の参考画像・実装向けアセット生成」を受領。GPT Image 2 built-in 生成で full mockup / UI asset sheet / Milmaru sprite-icon sheet の raw 3 枚を `tmp/alpha_pending/128_mojikko_farm_writing_ui_raw/` に納品。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
 - 2026-05-24 - [batch:119-mojikko-farm-writing-screen] Codex: user 依頼「もじっこファーム 文字書きメイン画面の実装」を受領。HANDOFF / git log / `writing/` / `writing-mori/` を確認し、同名の既存成果物なしと判断。user 追加許可「しっぽの小道系は削除・変更OK」を受け、`writing-mori/index.html` を16:9固定・ドット絵レトロUI・あいうえお選択・なぞり軌跡・書き順パネル・成功演出・仮報酬・`onWritingComplete(result)` 接続口つきに刷新し、`sw.js` をバンプする。 (by Codex)

@@ -2996,7 +2996,7 @@ body.layout-editor-on .egg-glass-lid {
 }
 #fry-stage[data-ingredient="chicken_marinated"]:not(.food-placed):not(.is-served) .cooking-food {
   width: 10%;
-  z-index: 5;
+  z-index: 32;
 }
 #fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food {
   width: 16%;
@@ -5523,6 +5523,8 @@ body.layout-editor-on .endX-marker {
       chopTiming: { slideMs: 120, downDelayMs: 140, impactDelayMs: 210, liftDelayMs: 270, releaseDelayMs: 330, innerMs: 80 },
       cookingActions: [
         { type: 'chop' },
+        { type: 'prep', prepKind: 'marinate_chicken', label: 'したあじを なじませよう' },
+        { type: 'prep', prepKind: 'coat_chicken', label: 'こなを まぶそう' },
         { type: 'fry', label: 'カラッと あげよう', stages: 2, pieces: 5 },
       ],
       prepActions: [
@@ -5540,7 +5542,7 @@ body.layout-editor-on .endX-marker {
             ['chicken/fry/chicken_fry_piece_05_raw', 'chicken/fry/chicken_fry_piece_05_mid', 'chicken/fry/chicken_fry_piece_05_done'],
           ],
           stages: ['chicken/fry/chicken_fry_piece_01_raw', 'chicken/fry/chicken_fry_piece_01_mid', 'chicken/fry/chicken_fry_piece_01_done'],
-          fallback: '../assets/images/Bento_parts/karaage2.png',
+          fallback: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png',
         },
       },
       imageBase: 'chicken/chicken_chop_001',
@@ -5606,9 +5608,10 @@ body.layout-editor-on .endX-marker {
     { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball'] },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'] },
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'] },
-    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/Bento_parts/karaage2.png',      needs: ['chicken_marinated'] },
+    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
     { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'] },
     { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'] },
+    { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/cooking/cabbage/cabbage_014.png', needs: ['cabbage'] },
     { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.png', needs: ['carrot'] },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
   ];
