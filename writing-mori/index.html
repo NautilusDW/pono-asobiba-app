@@ -1277,9 +1277,9 @@ const starCountEl = document.getElementById('starCount');
 const trailCtx = pixelTrailCanvas.getContext('2d');
 const PIXEL_GRID_SIZE = 132;
 const WRITER_PADDING = 48;
-const LETTER_BRUSH_RADIUS = 5;
+const LETTER_BRUSH_RADIUS = 4;
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
-const STROKE_FILL_COMPLETE_RATIO = 0.32;
+const STROKE_FILL_COMPLETE_RATIO = 0.38;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -2153,7 +2153,6 @@ function maybeAdvanceStrokeFromFill() {
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
   if (getStrokeFilledRatio(strokeIndex) < STROKE_FILL_COMPLETE_RATIO) return;
 
-  fillStrokePixels(strokeIndex);
   strokesCompleted = Math.max(strokesCompleted, strokeIndex + 1);
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
   renderPixelLetter();
@@ -2231,7 +2230,6 @@ function stopTrail() {
 function onCorrectStroke(data) {
   const item = getCurrentCharacter();
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
-  fillStrokePixels(strokeNum);
   const nextCompleted = strokeNum < strokesCompleted
     ? strokesCompleted
     : Math.max(strokesCompleted + 1, strokeNum + 1);
