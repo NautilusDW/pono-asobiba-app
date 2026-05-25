@@ -903,19 +903,23 @@ html, body {
   background-image: url('../assets/images/bento/ui/picker_card_selected.png');
 }
 .free-palette-item.guide-target {
-  outline: 3px solid #22C55E;
-  outline-offset: -4px;
-  box-shadow: 0 0 0 4px rgba(6,182,212,0.2);
+  outline: 0;
+  box-shadow: none;
+}
+.free-palette-item.guide-target .free-palette-visual {
   animation: guidePulse 1.05s ease-in-out infinite;
+}
+.free-palette-item.guide-target .free-palette-name {
+  color: #047857;
 }
 @keyframes guidePulse {
   0%, 100% {
-    outline-color: #22C55E;
-    box-shadow: 0 0 0 0 rgba(34,197,94,0.86);
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(34,197,94,0));
   }
   50% {
-    outline-color: #06B6D4;
-    box-shadow: 0 0 0 7px rgba(6,182,212,0.28);
+    transform: scale(1.07);
+    filter: drop-shadow(0 4px 8px rgba(34,197,94,0.36));
   }
 }
 .free-palette-visual {
@@ -2784,11 +2788,11 @@ const riceBases = [
   { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
 ];
 const decorItems = [
-  { id: 'nori_eye_round', type: 'decor', name: 'ポノのめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
-  { id: 'nori_nose_bear', type: 'decor', name: 'ポノのはな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 42, layerBase: 50 },
-  { id: 'nori_mouth_smile', type: 'decor', name: 'ポノのくち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 62, layerBase: 50 },
-  { id: 'nori_brow_left', type: 'decor', name: 'ポノのまゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
-  { id: 'nori_brow_right', type: 'decor', name: 'ポノのまゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
+  { id: 'nori_eye_round', type: 'decor', name: 'おめめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
+  { id: 'nori_nose_bear', type: 'decor', name: 'はな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 54, layerBase: 50 },
+  { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
+  { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
+  { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
   { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
   { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 64, layerBase: 60 },
@@ -2802,7 +2806,7 @@ const riceFaceTemplates = {
     parts: [
       { id: 'nori_eye_round', x: -34, y: -22, size: 27 },
       { id: 'nori_eye_round', x: 34, y: -22, size: 27 },
-      { id: 'nori_mouth_smile', x: 0, y: 27, size: 54 },
+      { id: 'nori_mouth_smile', x: 0, y: 29, size: 66 },
       { id: 'ketchup_cheek', x: -54, y: 12, size: 40 },
       { id: 'ketchup_cheek', x: 54, y: 12, size: 40 },
     ],
@@ -2813,8 +2817,8 @@ const riceFaceTemplates = {
     parts: [
       { id: 'nori_eye_round', x: -44, y: -26, size: 30 },
       { id: 'nori_eye_round', x: 44, y: -26, size: 30 },
-      { id: 'nori_nose_bear', x: 0, y: 10, size: 42 },
-      { id: 'nori_mouth_smile', x: 0, y: 42, size: 58 },
+      { id: 'nori_nose_bear', x: 0, y: 10, size: 54 },
+      { id: 'nori_mouth_smile', x: 0, y: 44, size: 74 },
       { id: 'ketchup_cheek', x: -66, y: 18, size: 44 },
       { id: 'ketchup_cheek', x: 66, y: 18, size: 44 },
     ],
@@ -2825,8 +2829,8 @@ const riceFaceTemplates = {
     parts: [
       { id: 'nori_eye_round', x: -44, y: -24, size: 30 },
       { id: 'nori_eye_round', x: 44, y: -24, size: 30 },
-      { id: 'nori_nose_bear', x: 0, y: 10, size: 38 },
-      { id: 'nori_mouth_smile', x: 0, y: 40, size: 56 },
+      { id: 'nori_nose_bear', x: 0, y: 10, size: 50 },
+      { id: 'nori_mouth_smile', x: 0, y: 42, size: 72 },
       { id: 'ketchup_cheek', x: -66, y: 18, size: 42 },
       { id: 'ketchup_cheek', x: 66, y: 18, size: 42 },
     ],
