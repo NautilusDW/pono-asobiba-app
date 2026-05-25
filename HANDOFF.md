@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:101-oto-rhythm-mode] **Done follow-up 15** — user 依頼「かえる後半修正 / 鍵盤とポノをさらに上へ / 左下の順番表示撤去 / お手本にもリズム / タイトル表示時のゲーム画面ちらつき防止 / 採点可否検討」を反映。`oto/index.html` はかえる後半の rhythm を `ドドドド / ドドレレミミファファ / ミーレードー` へ調整し、前半4音を速くしない beats に修正。4:3 rhythm 鍵盤は右寄せ・上寄せ、ポノも上寄せ。`rhythm-queue` は非表示・空描画にし、お手本本編開始時は drums を鳴らす。`#app` は intro クリックまで hidden にしてタイトル初期ちらつきを抑制。`sw.js` は v606。ローカル Playwright 1024x768 で intro cover、鍵盤位置、queue非表示、demo drums、かえる beats を確認済。 (by Codex)
+
 - 2026-05-25 - [batch:137-bento-user-masked-box-nori] **Done** — user が `D:\ポノのおへや\Bento\cooking\弁当箱` に置いた mask/alpha 済み熊弁当箱6枚を `assets/images/bento/free-layout/box_bear*.png` へ本配置し、`D:\ポノのおへや\Bento\bento_redesign\のり` の海苔素材を `nori_eye_round.png` / `nori_nose_bear.png` / `nori_mouth_smile.png` へ差し替え、眉2種 `nori_brow_left.png` / `nori_brow_right.png` を追加。`bento/index.html` の decorItems に眉パーツを追加。`sw.js` は v605。ローカル Playwright で青熊空箱、米入り `box_bear_rice.png`、海苔5種の読み込み・ページエラーなしを確認済。 (by Codex)
 
 - 2026-05-25 - [batch:136-bento-guide-box-pono-assets] **Done** — user 指摘「ガイドは画面どこでもタップで進める / 弁当箱は選択即決定ではなくメイン表示後OK / 熊箱と蓋をポノ寄せ再生成 / ノリもポノ顔バランスで画像生成 / 仕切り吸着を弱める」を反映。`bento/index.html` は中央ガイドのタップレイヤーを画面全体へ広げ、箱選択はプレビューだけにして `このはこでOK` で rice step へ進めるよう変更。海苔パーツはCSS描画ではなく既存PNG参照へ切替。仕切りは境界 margin を小さくし、overlap 回避の押し戻し対象から外した。raw 生成は `tmp/alpha_pending/136_bento_pono_assets_raw/` に `001_pono_bear_box_set_raw.png` / `002_pono_nori_face_parts_raw.png` / 推奨 `003_pono_bear_box_set_solid_ears_raw.png` を納品。`sw.js` は v604。ローカル Playwright で画面右側タップによるガイド dismiss、箱選択後も箱一覧維持、OK後にご飯工程へ進むことを確認済。 (by Codex)

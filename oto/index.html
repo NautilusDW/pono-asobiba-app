@@ -29,7 +29,9 @@
 
   #app {
     position: fixed; inset: 0;
+    visibility: hidden;
   }
+  body.app-started #app { visibility: visible; }
 
   /* ── ステージ全体 (Canvas 背景 + ボタン + ポノ) ── */
   .stage {
@@ -652,7 +654,7 @@
     color: #064E3B;
   }
   .rhythm-queue {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     gap: 12px;
@@ -1348,7 +1350,7 @@
     font-size: calc(var(--sz, 82px) * 0.34);
   }
   body.rhythm-layout .pono-wrap {
-    top: 38%;
+    top: 33%;
   }
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, -50%) translateY(4px) scale(0.98);
@@ -1358,31 +1360,31 @@
   body.rhythm-layout .rhythm-ring {
     border-radius: var(--btn-radius, 18px);
   }
-  body.rhythm-layout .instr-btn[data-idx="0"] { left: 20%; top: 58%; }
-  body.rhythm-layout .instr-btn[data-idx="1"] { left: 40%; top: 58%; }
-  body.rhythm-layout .instr-btn[data-idx="2"] { left: 60%; top: 58%; }
-  body.rhythm-layout .instr-btn[data-idx="3"] { left: 80%; top: 58%; }
-  body.rhythm-layout .instr-btn[data-idx="4"] { left: 20%; top: 74%; }
-  body.rhythm-layout .instr-btn[data-idx="5"] { left: 40%; top: 74%; }
-  body.rhythm-layout .instr-btn[data-idx="6"] { left: 60%; top: 74%; }
-  body.rhythm-layout .instr-btn[data-idx="7"] { left: 80%; top: 74%; }
+  body.rhythm-layout .instr-btn[data-idx="0"] { left: 20%; top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="1"] { left: 40%; top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="2"] { left: 60%; top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="3"] { left: 80%; top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="4"] { left: 20%; top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="5"] { left: 40%; top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="6"] { left: 60%; top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="7"] { left: 80%; top: 68%; }
   @media (orientation: landscape) {
     body.rhythm-layout .pono-wrap {
-      top: 44%;
+      top: 37%;
     }
     body.rhythm-layout .instr-btn {
       --sz: clamp(62px, 7.6vw, 82px);
       --btn-w: clamp(56px, 6.6vw, 74px);
       --btn-h: clamp(94px, 14.5vh, 118px);
     }
-    body.rhythm-layout .instr-btn[data-idx="0"] { left: 39%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="1"] { left: 46.5%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="2"] { left: 54%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="3"] { left: 61.5%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="4"] { left: 69%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="5"] { left: 76.5%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="6"] { left: 84%; top: 76%; }
-    body.rhythm-layout .instr-btn[data-idx="7"] { left: 91.5%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="0"] { left: 42%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="1"] { left: 49.2%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="2"] { left: 56.4%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="3"] { left: 63.6%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="4"] { left: 70.8%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="5"] { left: 78%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="6"] { left: 85.2%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { left: 92.4%; top: 68%; }
   }
   @media (orientation: landscape) and (max-height: 520px) {
     body.rhythm-layout .instr-btn {
@@ -1397,7 +1399,7 @@
     body.rhythm-layout .instr-btn[data-idx="4"],
     body.rhythm-layout .instr-btn[data-idx="5"],
     body.rhythm-layout .instr-btn[data-idx="6"],
-    body.rhythm-layout .instr-btn[data-idx="7"] { top: 72%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { top: 66%; }
   }
 </style>
 </head>
@@ -2220,7 +2222,7 @@ var RHYTHM_SONGS = [
         name: '2',
         note: 'グワッグワッ',
         notes: [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 2, 1, 0],
-        beats: [0.5, 0.5, 0.5, 0.5, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 1, 2]
+        beats: [1, 1, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 1, 2]
       }
     ]
   },
@@ -2517,18 +2519,7 @@ function _setRhythmStatus(text, tone) {
 function _renderRhythmQueue() {
   var queue = document.getElementById('rhythm-queue');
   if (!queue) return;
-  var html = '';
-  var orders = ['いま', 'つぎ', '2ばん', '3ばん'];
-  for (var i = 0; i < RHYTHM_PREVIEW_STEPS; i++) {
-    var idx = _rhythmExpectedIdx(i);
-    var cls = i === 0 ? ' now' : (i === 1 ? ' next' : '');
-    if (i === 0) {
-      var cue = _rhythmSpecialCue();
-      if (cue) cls += ' ' + cue.type;
-    }
-    html += '<div class="rhythm-note' + cls + '"><span class="rhythm-note-order">' + orders[i] + '</span><span class="rhythm-note-label">' + NOTE_LABELS[idx] + '</span></div>';
-  }
-  queue.innerHTML = html;
+  queue.innerHTML = '';
 }
 function _renderRhythmSpecialBubble() {
   var bubble = document.getElementById('rhythm-special-bubble');
@@ -2782,6 +2773,8 @@ function _clearRhythmDemo(keepHud) {
 function _runRhythmDemoSequence(thenStart) {
   if (!_rhythm.demoActive) return;
   _hideOverlay();
+  if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
+  _ensureRhythmBand();
   _setRhythmStatus('おてほんを みてね', null);
   var beatMs = 60000 / RHYTHM_SONG.bpm;
   var elapsed = 0;
@@ -3701,6 +3694,7 @@ if (window.initMenu) {
   function startIntro() {
     unlockAudio();
     _ensureAnimalDecoded();
+    document.body.classList.add('app-started');
     if (intro) intro.style.display = 'none';
     // 初回だけチュートリアルを自動表示
     try {
