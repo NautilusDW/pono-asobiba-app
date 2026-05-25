@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:134-bento-production-ui-raw] **Done** — 添付の本番用べんとう画面参考に合わせ、raw 5 枚を `tmp/alpha_pending/134_bento_production_ui_raw/` に番号付きで納品。内訳は `001_main_picnic_background_raw.png`、`002_rect_bento_box_coral_cream_raw.png`、`003_guide_modal_pono_raw.png`、`004_right_picker_panel_2col_parts_raw.png`、`005_decor_props_sheet_raw.png`。2列実装前提で右パネル部品を作り、未実装の箱サムネは作成せず。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
+
 - 2026-05-25 - [batch:133-bento-guide-finale-polish] **Done** — user 指摘「点滅は緑/青系へ、海苔をポノ顔寄せ、モーダル文言をポノっぽく、画面タップで開始、完成演出を大きく・枠なし・蓋サイズ一致」を反映。`bento/index.html` はガイド対象を青信号系ハイライト、海苔をCSS製のポノ目/鼻/W口へ変更、中央ガイドに全画面タップレイヤーを追加。完成画面は弁当本体を大きく表示し、段は枠カードではなく中身そのものを重ね、蓋を弁当箱座標と同サイズで閉じる。`sw.js` は v595。Playwright とスクリーンショット目視、別エージェントレビュー blocker なし。 (by Codex)
 
 - 2026-05-25 - [batch:130-kitchen-karaage-individual-pieces] **Done** — 唐揚げの下味/粉工程を5個の個別肉に絞り、未操作の肉へ下味・粉の進捗表示が広がる不具合を修正。調理側も grouped 唐揚げ画像ではなく `assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01..05_{raw,mid,done}.png` を1個ずつ油へ入れる流れに変更。ローカル Playwright と staging で下味5個・未操作 opacity 0・粉5個・唐揚げ1個目→2個目遷移を確認。`bento/kitchen.html` / `sw.js` v594、commit `a12b8e9`。 (by Codex)
