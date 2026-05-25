@@ -52,10 +52,19 @@
   --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_pressed.png');
   --moji-button-care: url('../assets/images/mojikko/writing/button_care_normal.png');
   --moji-button-care-pressed: url('../assets/images/mojikko/writing/button_care_pressed.png');
+  --moji-button-small-success: url('../assets/images/mojikko/writing/button_small_success_normal.png');
+  --moji-button-small-success-pressed: url('../assets/images/mojikko/writing/button_small_success_pressed.png');
+  --moji-button-small-retry: url('../assets/images/mojikko/writing/button_small_retry_normal.png');
+  --moji-button-small-retry-pressed: url('../assets/images/mojikko/writing/button_small_retry_pressed.png');
+  --moji-button-modal-care: url('../assets/images/mojikko/writing/button_modal_care_normal.png');
+  --moji-button-modal-care-pressed: url('../assets/images/mojikko/writing/button_modal_care_pressed.png');
+  --moji-button-modal-next: url('../assets/images/mojikko/writing/button_modal_next_normal.png');
+  --moji-button-modal-next-pressed: url('../assets/images/mojikko/writing/button_modal_next_pressed.png');
   --moji-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --moji-icon-cookie-glow: url('../assets/images/mojikko/writing/icon_cookie_glow.png');
   --moji-icon-alert: url('../assets/images/mojikko/writing/icon_alert.png');
   --moji-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
+  --moji-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
 }
 
 html, body {
@@ -816,6 +825,11 @@ html, body {
   width: 200px;
   height: 70px;
   min-height: 70px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 8px 16px 10px;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -826,24 +840,37 @@ html, body {
 }
 
 #doneBtn {
-  padding-left: 58px;
   color: #fffdf0;
-  background-image: var(--moji-button-success);
+  background-image: var(--moji-button-small-success);
   text-shadow: 2px 2px 0 rgba(41, 101, 132, 0.58);
 }
 
+#doneBtn::before {
+  content: '';
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  background: var(--moji-icon-pencil) center / contain no-repeat;
+}
+
 #doneBtn:active {
-  background-image: var(--moji-button-success-pressed);
+  background-image: var(--moji-button-small-success-pressed);
 }
 
 #resetBtn {
-  padding-left: 52px;
   color: #5f3c22;
-  background-image: var(--moji-button-retry);
+  background-image: var(--moji-button-small-retry);
+}
+
+#resetBtn::before {
+  content: '↻';
+  flex: 0 0 auto;
+  font-size: 29px;
+  line-height: 1;
 }
 
 #resetBtn:active {
-  background-image: var(--moji-button-retry-pressed);
+  background-image: var(--moji-button-small-retry-pressed);
 }
 
 .message-box {
@@ -1092,6 +1119,11 @@ html, body {
   height: 78px;
   min-height: 78px;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 8px 24px 10px;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -1106,21 +1138,38 @@ html, body {
 
 #careBtn {
   width: 430px;
-  padding: 8px 28px 10px 168px;
-  background-image: var(--moji-button-care);
+  background-image: var(--moji-button-modal-care);
+}
+
+#careBtn::before,
+#modalRetryBtn::before {
+  content: '';
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+#careBtn::before {
+  background-image: var(--moji-icon-cookie);
 }
 
 #careBtn:active {
-  background-image: var(--moji-button-care-pressed);
+  background-image: var(--moji-button-modal-care-pressed);
 }
 
 #modalRetryBtn {
-  padding: 8px 26px 10px 100px;
-  background-image: var(--moji-button-retry);
+  background-image: var(--moji-button-modal-next);
+}
+
+#modalRetryBtn::before {
+  background-image: var(--moji-icon-pencil);
 }
 
 #modalRetryBtn:active {
-  background-image: var(--moji-button-retry-pressed);
+  background-image: var(--moji-button-modal-next-pressed);
 }
 
 .result-burst {
