@@ -1360,6 +1360,8 @@ const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 4;
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
+const MIN_COMPLETE_TOTAL_FILL_RATIO = 0.36;
+const MIN_COMPLETE_STROKE_FILL_RATIO = 0.24;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1376,6 +1378,7 @@ let strokesCompleted = 0;
 let currentStrokeIndex = 0;
 let mistakeCount = 0;
 let complete = false;
+let completionQueued = false;
 const completedCharacters = new Set();
 const guideSvgMaskCache = new Map();
 
@@ -2144,6 +2147,7 @@ function resetWriting() {
   currentStrokeIndex = 0;
   mistakeCount = 0;
   complete = false;
+  completionQueued = false;
   currentCharData = null;
   pixelLetter = null;
   resizePixelTrailCanvas();
@@ -2255,7 +2259,11 @@ function getStrokeFilledRatio(strokeIndex) {
 function maybeAdvanceStrokeFromFill() {
   if (complete || !pixelLetter) return;
   const item = getCurrentCharacter();
-  if (!item || strokesCompleted >= item.strokes) return;
+  if (!item) return;
+  if (strokesCompleted >= item.strokes) {
+    maybeFinishWritingAfterProgress();
+    return;
+  }
 
   const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
@@ -2268,8 +2276,7 @@ function maybeAdvanceStrokeFromFill() {
   renderStrokeOrder();
 
   if (strokesCompleted >= item.strokes) {
-    setMessage('さいごまで かけたね！', 'できた！');
-    setTimeout(() => completeWriting(false), 260);
+    maybeFinishWritingAfterProgress();
   } else {
     setMessage('いいかんじ！ つぎの せんも いこう', 'もうすこし！');
   }
@@ -2294,6 +2301,64 @@ function getFilledLetterRatio() {
     if (pixelLetter.mask[i] && pixelLetter.fill[i]) filled += 1;
   }
   return filled / pixelLetter.totalMaskCells;
+}
+
+function getWritingReadiness(item) {
+  const requiredStrokes = Math.max(1, item && item.strokes || 1);
+  if (strokesCompleted < requiredStrokes) {
+    return {
+      ready: false,
+      message: 'まだ かけていない せんが あるよ',
+      subMessage: 'すうじの じゅんに なぞろう'
+    };
+  }
+
+  if (!pixelLetter) {
+    return {
+      ready: trailDistance >= 260,
+      message: 'うすい もじを もうすこし なぞってね',
+      subMessage: 'あとすこし'
+    };
+  }
+
+  const weakStrokeIndex = Array.from({ length: requiredStrokes }, (_, index) => index)
+    .find((index) => getStrokeFilledRatio(index) < MIN_COMPLETE_STROKE_FILL_RATIO);
+  if (weakStrokeIndex !== undefined) {
+    return {
+      ready: false,
+      message: `${weakStrokeIndex + 1}かくめを もうすこし なぞってね`,
+      subMessage: 'ゆっくりで だいじょうぶ'
+    };
+  }
+
+  const fillRatio = getFilledLetterRatio();
+  if (fillRatio < MIN_COMPLETE_TOTAL_FILL_RATIO) {
+    return {
+      ready: false,
+      message: 'うすい もじを もうすこし なぞってね',
+      subMessage: 'あとすこし'
+    };
+  }
+
+  return { ready: true, message: '', subMessage: '' };
+}
+
+function maybeFinishWritingAfterProgress(summary) {
+  if (complete || completionQueued) return;
+  const item = getCurrentCharacter();
+  const readiness = getWritingReadiness(item);
+  if (!readiness.ready) {
+    if (strokesCompleted >= Math.max(1, item.strokes || 1)) {
+      setMessage(readiness.message, readiness.subMessage);
+    }
+    return;
+  }
+  completionQueued = true;
+  setMessage('さいごまで かけたね！', 'できた！');
+  setTimeout(() => {
+    completionQueued = false;
+    completeWriting(false, summary);
+  }, 260);
 }
 
 function spawnSpark(clientX, clientY) {
@@ -2347,6 +2412,7 @@ function onCorrectStroke(data) {
   renderCanvasStrokeNumbers();
   setMessage(strokesCompleted >= item.strokes ? 'さいごまで かけたね！' : 'いいかんじ！ つぎの せんも いこう', 'もうすこし！');
   renderStrokeOrder();
+  maybeFinishWritingAfterProgress();
 }
 
 function onMistake() {
@@ -2358,13 +2424,12 @@ function onMistake() {
 
 function onWriterComplete(summary) {
   const item = getCurrentCharacter();
-  fillAllLetterPixels();
   strokesCompleted = item.strokes;
   currentStrokeIndex = item.strokes - 1;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   renderStrokeOrder();
-  setTimeout(() => completeWriting(false, summary), 260);
+  maybeFinishWritingAfterProgress(summary);
 }
 
 function calculateAccuracy(item) {
@@ -2378,22 +2443,23 @@ function calculateAccuracy(item) {
 function completeWriting(manual, summary) {
   const item = getCurrentCharacter();
   if (complete) return;
-  if (manual && strokesCompleted === 0 && trailDistance < 120) {
-    setMessage('うすい もじを すこし なぞってみよう', 'いっしょに かこう');
+  const readiness = getWritingReadiness(item);
+  if (!readiness.ready) {
+    completionQueued = false;
+    setMessage(readiness.message, readiness.subMessage);
     return;
   }
   complete = true;
+  completionQueued = false;
   stopTrail();
   if (writer && typeof writer.cancelQuiz === 'function') {
     try { writer.cancelQuiz(); } catch (_) {}
   }
-  if (manual) {
-    strokesCompleted = item.strokes;
-    currentStrokeIndex = item.strokes - 1;
-    fillAllLetterPixels();
-    renderPixelLetter();
-    renderCanvasStrokeNumbers();
-  }
+  strokesCompleted = item.strokes;
+  currentStrokeIndex = item.strokes - 1;
+  fillAllLetterPixels();
+  renderPixelLetter();
+  renderCanvasStrokeNumbers();
   completedCharacters.add(item.id);
   renderStrokeOrder();
   updateCharacterButtons();
