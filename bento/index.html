@@ -2517,6 +2517,7 @@ const FREE_GUIDE_COPY = {
 };
 const FREE_ASSET = '../assets/images/bento/free-layout/';
 const BENTO_UI_ASSET = '../assets/images/bento/ui/';
+const CHARACTER_BOX_INSIDE_MASK = FREE_ASSET + 'box_character_inside_mask.png';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -2627,6 +2628,8 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_bear.png',
     riceImage: FREE_ASSET + 'box_bear_rice.png',
     lidImage: FREE_ASSET + 'box_bear_lid.png',
+    maskImage: CHARACTER_BOX_INSIDE_MASK,
+    maskBounds: { x: 172, y: 48, w: 417, h: 364 },
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
     placeBounds: { x: 164, y: 82, w: 432, h: 302 },
@@ -2663,6 +2666,8 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_bear_pink.png',
     riceImage: FREE_ASSET + 'box_bear_pink_rice.png',
     lidImage: FREE_ASSET + 'box_bear_pink_lid.png',
+    maskImage: CHARACTER_BOX_INSIDE_MASK,
+    maskBounds: { x: 172, y: 48, w: 417, h: 364 },
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
     placeBounds: { x: 164, y: 82, w: 432, h: 302 },
@@ -3602,6 +3607,28 @@ function getBoxClipPath(box) {
   if (!box || !Array.isArray(box.clipPoints) || box.clipPoints.length < 3) return '';
   return 'polygon(' + box.clipPoints.map(p => `${toPctX(p[0])} ${toPctY(p[1])}`).join(',') + ')';
 }
+function getMaskPositionPct(pos, maskSize, stageSize) {
+  const available = stageSize - maskSize;
+  if (available <= 0) return '50%';
+  return (pos / available * 100).toFixed(4) + '%';
+}
+function applyBoxVisualMask(layer, box) {
+  if (!layer || !box || !box.maskImage || !box.maskBounds) return false;
+  const b = box.maskBounds;
+  const maskSize = `${toPctX(b.w)} ${toPctY(b.h)}`;
+  const maskPosition = `${getMaskPositionPct(b.x, b.w, FREE_LAYOUT_W)} ${getMaskPositionPct(b.y, b.h, FREE_LAYOUT_H)}`;
+  const maskUrl = `url("${box.maskImage}")`;
+  layer.style.setProperty('-webkit-mask-image', maskUrl);
+  layer.style.setProperty('mask-image', maskUrl);
+  layer.style.setProperty('-webkit-mask-size', maskSize);
+  layer.style.setProperty('mask-size', maskSize);
+  layer.style.setProperty('-webkit-mask-position', maskPosition);
+  layer.style.setProperty('mask-position', maskPosition);
+  layer.style.setProperty('-webkit-mask-repeat', 'no-repeat');
+  layer.style.setProperty('mask-repeat', 'no-repeat');
+  layer.style.setProperty('mask-mode', 'alpha');
+  return true;
+}
 function getPlacementBounds(box) {
   return (box && box.placeBounds) || (box && box.bounds) || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
 }
@@ -4398,8 +4425,10 @@ function renderFreeLayoutInto(host, opts = {}) {
   }
   const layer = document.createElement('div');
   layer.className = 'free-layout-items';
-  const clipPath = getBoxClipPath(box);
-  if (clipPath) layer.style.clipPath = clipPath;
+  if (!applyBoxVisualMask(layer, box)) {
+    const clipPath = getBoxClipPath(box);
+    if (clipPath) layer.style.clipPath = clipPath;
+  }
   displayItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
     layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
   });
