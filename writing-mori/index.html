@@ -797,7 +797,7 @@ html, body {
 
 .feedback-row {
   display: grid;
-  grid-template-columns: 170px 170px;
+  grid-template-columns: 200px 200px;
   gap: 14px;
   align-items: center;
   justify-content: end;
@@ -808,10 +808,14 @@ html, body {
   padding-right: 10px;
   font-size: 22px;
   white-space: nowrap;
+  line-height: 1;
 }
 
 #doneBtn,
 #resetBtn {
+  width: 200px;
+  height: 70px;
+  min-height: 70px;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -942,6 +946,23 @@ html, body {
   stroke-linejoin: round;
 }
 
+.stroke-mini rect {
+  shape-rendering: crispEdges;
+}
+
+.stroke-mini rect.preview-guide {
+  fill: rgba(79, 56, 37, 0.12);
+}
+
+.stroke-mini rect.preview-done {
+  fill: rgba(47, 148, 105, 0.42);
+}
+
+.stroke-mini rect.preview-current {
+  fill: rgba(242, 124, 91, 0.58);
+  filter: drop-shadow(0 0 3px rgba(255, 197, 95, 0.6));
+}
+
 .stroke-mini path.preview-done {
   fill: rgba(47, 148, 105, 0.34);
   stroke: rgba(47, 148, 105, 0.52);
@@ -1017,7 +1038,7 @@ html, body {
 }
 
 .result-card {
-  width: 620px;
+  width: min(900px, 92vw);
   min-height: 360px;
   padding: 26px 30px;
   display: grid;
@@ -1060,12 +1081,17 @@ html, body {
 
 .result-actions {
   display: flex;
-  gap: 14px;
+  width: 100%;
+  justify-content: center;
+  gap: 18px;
 }
 
 #careBtn,
 #modalRetryBtn {
-  min-width: 220px;
+  width: 330px;
+  height: 78px;
+  min-height: 78px;
+  min-width: 0;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -1073,10 +1099,14 @@ html, body {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   image-rendering: pixelated;
+  white-space: nowrap;
+  line-height: 1;
+  font-size: 22px;
 }
 
 #careBtn {
-  padding-left: 58px;
+  width: 430px;
+  padding: 8px 28px 10px 168px;
   background-image: var(--moji-button-care);
 }
 
@@ -1085,7 +1115,7 @@ html, body {
 }
 
 #modalRetryBtn {
-  padding-left: 52px;
+  padding: 8px 26px 10px 100px;
   background-image: var(--moji-button-retry);
 }
 
@@ -1203,7 +1233,7 @@ html, body {
         </div>
         <div class="result-actions">
           <button class="pixel-button" id="careBtn" type="button">ミルマルに あげる</button>
-          <button class="pixel-button ghost" id="modalRetryBtn" type="button">もういっかい かく</button>
+          <button class="pixel-button ghost" id="modalRetryBtn" type="button">つぎの もじ</button>
         </div>
       </div>
     </div>
@@ -1269,6 +1299,7 @@ const rewardNameEl = document.getElementById('rewardName');
 const resultOverlay = document.getElementById('resultOverlay');
 const resultReward = document.getElementById('resultReward');
 const resultBurst = document.getElementById('resultBurst');
+const modalRetryBtn = document.getElementById('modalRetryBtn');
 const companionCard = document.getElementById('companionCard');
 const companionSpeech = document.getElementById('companionSpeech');
 const companionStatus = document.getElementById('companionStatus');
@@ -1872,6 +1903,33 @@ function renderPixelLetter() {
   trailCtx.restore();
 }
 
+function maskToPreviewRects(mask, gridSize, className) {
+  if (!mask) return '';
+  const rects = [];
+  for (let y = 0; y < gridSize; y++) {
+    let x = 0;
+    while (x < gridSize) {
+      while (x < gridSize && !mask[y * gridSize + x]) x++;
+      if (x >= gridSize) break;
+      const startX = x;
+      while (x < gridSize && mask[y * gridSize + x]) x++;
+      rects.push(`<rect class="${className}" x="${startX}" y="${y}" width="${x - startX}" height="1"></rect>`);
+    }
+  }
+  return rects.join('');
+}
+
+function renderPixelStrokePreview(strokeIndex, strokeCount) {
+  if (!pixelLetter || !Array.isArray(pixelLetter.strokeMasks) || pixelLetter.strokeMasks.length === 0) return '';
+  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  const shapes = pixelLetter.strokeMasks.slice(0, strokeCount).map((mask, index) => {
+    const className = index < strokesCompleted ? 'preview-done' : (index === strokeIndex ? 'preview-current' : 'preview-guide');
+    return maskToPreviewRects(mask, gridSize, className);
+  }).join('');
+  if (!shapes) return '';
+  return `<svg class="stroke-mask-preview" viewBox="0 0 ${gridSize} ${gridSize}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>`;
+}
+
 function renderStrokeOrder() {
   const item = getCurrentCharacter();
   const count = Math.max(1, item.strokes || 1);
@@ -1881,7 +1939,8 @@ function renderStrokeOrder() {
   for (let index = 0; index < count; index++) {
     const card = document.createElement('div');
     const cls = index < strokesCompleted ? 'done' : (index === Math.min(currentStrokeIndex, count - 1) ? 'current' : '');
-    const preview = strokePaths
+    const pixelPreview = renderPixelStrokePreview(index, count);
+    const preview = pixelPreview || (strokePaths
       ? `<svg viewBox="${previewViewBox}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <g transform="translate(0, 1024) scale(1, -1)">
             ${strokePaths.map((path, pathIndex) => {
@@ -1890,7 +1949,7 @@ function renderStrokeOrder() {
             }).join('')}
           </g>
         </svg>`
-      : `<div class="stroke-preview" aria-hidden="true">${item.char}</div>`;
+      : `<div class="stroke-preview" aria-hidden="true">${item.char}</div>`);
     card.className = `stroke-card ${cls}`;
     card.innerHTML = `
       <div class="stroke-num">${index + 1}</div>
@@ -2293,6 +2352,7 @@ function completeWriting(manual, summary) {
   companionCard.classList.add('celebrate');
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
   resultReward.textContent = `${item.reward.name}を ゲット！`;
+  modalRetryBtn.textContent = `つぎは「${writingCharacters[(currentIndex + 1) % writingCharacters.length].char}」`;
   stars += 25;
   starCountEl.textContent = String(stars);
   launchBurst();
@@ -2361,7 +2421,7 @@ document.querySelector('.settings-btn').addEventListener('click', () => {
 
 document.getElementById('resetBtn').addEventListener('click', resetWriting);
 document.getElementById('doneBtn').addEventListener('click', () => completeWriting(true));
-document.getElementById('modalRetryBtn').addEventListener('click', resetWriting);
+modalRetryBtn.addEventListener('click', nextCharacter);
 document.getElementById('careBtn').addEventListener('click', navigateToCareScreen);
 companionCard.addEventListener('click', navigateToCareScreen);
 
