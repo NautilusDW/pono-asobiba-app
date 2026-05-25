@@ -720,6 +720,8 @@
   .rhythm-menu.show { display: flex; }
   .rhythm-menu-panel {
     width: min(86vw, 520px);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
     border-radius: 24px;
     border: 3px solid rgba(255,255,255,0.82);
     background: rgba(18,35,86,0.94);
@@ -797,6 +799,46 @@
     background: linear-gradient(135deg, #FFD84D, #F59E0B);
     color: #5D4E37;
     border-color: #fff;
+  }
+  .rhythm-practice {
+    width: min(100%, 420px);
+    display: grid;
+    gap: 8px;
+  }
+  .rhythm-practice-row,
+  .rhythm-block-list {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .rhythm-practice-btn,
+  .rhythm-block-btn {
+    min-height: 38px;
+    border: 2px solid rgba(255,255,255,0.58);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    padding: 7px 12px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .rhythm-practice-btn {
+    flex: 1;
+  }
+  .rhythm-block-btn {
+    min-width: 54px;
+  }
+  .rhythm-practice-btn.active,
+  .rhythm-block-btn.active {
+    background: linear-gradient(135deg, #BFDBFE, #38BDF8);
+    border-color: #fff;
+    color: #082F49;
+  }
+  .rhythm-block-list.hidden {
+    display: none;
   }
   .rhythm-menu-actions {
     display: flex;
@@ -1294,7 +1336,7 @@
     --btn-radius: 18px;
     --sz: min(18vw, 82px);
     --btn-w: min(18vw, 78px);
-    --btn-h: min(20vw, 94px);
+    --btn-h: min(25vw, 112px);
     --note-hi: #F8FAFC;
     --note-lo: #CBD5E1;
     --note-fg: #17324F;
@@ -1305,6 +1347,9 @@
       0 8px 16px rgba(0,0,0,0.24);
     font-size: calc(var(--sz, 82px) * 0.34);
   }
+  body.rhythm-layout .pono-wrap {
+    top: 38%;
+  }
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, -50%) translateY(4px) scale(0.98);
   }
@@ -1313,34 +1358,37 @@
   body.rhythm-layout .rhythm-ring {
     border-radius: var(--btn-radius, 18px);
   }
-  body.rhythm-layout .instr-btn[data-idx="0"] { left: 20%; top: 66%; }
-  body.rhythm-layout .instr-btn[data-idx="1"] { left: 40%; top: 66%; }
-  body.rhythm-layout .instr-btn[data-idx="2"] { left: 60%; top: 66%; }
-  body.rhythm-layout .instr-btn[data-idx="3"] { left: 80%; top: 66%; }
-  body.rhythm-layout .instr-btn[data-idx="4"] { left: 20%; top: 82%; }
-  body.rhythm-layout .instr-btn[data-idx="5"] { left: 40%; top: 82%; }
-  body.rhythm-layout .instr-btn[data-idx="6"] { left: 60%; top: 82%; }
-  body.rhythm-layout .instr-btn[data-idx="7"] { left: 80%; top: 82%; }
+  body.rhythm-layout .instr-btn[data-idx="0"] { left: 20%; top: 58%; }
+  body.rhythm-layout .instr-btn[data-idx="1"] { left: 40%; top: 58%; }
+  body.rhythm-layout .instr-btn[data-idx="2"] { left: 60%; top: 58%; }
+  body.rhythm-layout .instr-btn[data-idx="3"] { left: 80%; top: 58%; }
+  body.rhythm-layout .instr-btn[data-idx="4"] { left: 20%; top: 74%; }
+  body.rhythm-layout .instr-btn[data-idx="5"] { left: 40%; top: 74%; }
+  body.rhythm-layout .instr-btn[data-idx="6"] { left: 60%; top: 74%; }
+  body.rhythm-layout .instr-btn[data-idx="7"] { left: 80%; top: 74%; }
   @media (orientation: landscape) {
+    body.rhythm-layout .pono-wrap {
+      top: 44%;
+    }
     body.rhythm-layout .instr-btn {
       --sz: clamp(62px, 7.6vw, 82px);
-      --btn-w: clamp(56px, 7vw, 76px);
-      --btn-h: clamp(74px, 11.5vh, 98px);
+      --btn-w: clamp(56px, 6.6vw, 74px);
+      --btn-h: clamp(94px, 14.5vh, 118px);
     }
-    body.rhythm-layout .instr-btn[data-idx="0"] { left: 39%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="1"] { left: 46.5%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="2"] { left: 54%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="3"] { left: 61.5%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="4"] { left: 69%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="5"] { left: 76.5%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="6"] { left: 84%; top: 82%; }
-    body.rhythm-layout .instr-btn[data-idx="7"] { left: 91.5%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="0"] { left: 39%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="1"] { left: 46.5%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="2"] { left: 54%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="3"] { left: 61.5%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="4"] { left: 69%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="5"] { left: 76.5%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="6"] { left: 84%; top: 76%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { left: 91.5%; top: 76%; }
   }
   @media (orientation: landscape) and (max-height: 520px) {
     body.rhythm-layout .instr-btn {
       --sz: clamp(52px, 7vh, 64px);
       --btn-w: clamp(48px, 6.2vw, 62px);
-      --btn-h: clamp(58px, 12vh, 72px);
+      --btn-h: clamp(70px, 14vh, 82px);
     }
     body.rhythm-layout .instr-btn[data-idx="0"],
     body.rhythm-layout .instr-btn[data-idx="1"],
@@ -1349,7 +1397,7 @@
     body.rhythm-layout .instr-btn[data-idx="4"],
     body.rhythm-layout .instr-btn[data-idx="5"],
     body.rhythm-layout .instr-btn[data-idx="6"],
-    body.rhythm-layout .instr-btn[data-idx="7"] { top: 78%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { top: 72%; }
   }
 </style>
 </head>
@@ -1437,6 +1485,13 @@
         <div class="rhythm-menu-text">輪っかがボタンに重なったらタッチ。<br>小さい番号が つぎのじゅんばんだよ。</div>
         <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>同じ速さで小さくなる輪っかを見て押そう</span></div>
         <div class="rhythm-song-list" id="rhythm-song-list"></div>
+        <div class="rhythm-practice" id="rhythm-practice">
+          <div class="rhythm-practice-row">
+            <button class="rhythm-practice-btn active" data-practice="block">ブロック</button>
+            <button class="rhythm-practice-btn" data-practice="full">ぜんぶ</button>
+          </div>
+          <div class="rhythm-block-list" id="rhythm-block-list"></div>
+        </div>
         <div class="rhythm-menu-actions">
           <button class="rhythm-menu-btn cancel" id="rhythm-menu-cancel">もどる</button>
           <button class="rhythm-menu-btn demo hidden" id="rhythm-menu-demo">おてほん</button>
@@ -2149,38 +2204,83 @@ var RHYTHM_SONGS = [
   {
     id: 'kaeru',
     name: 'かえるのうた',
-    note: 'いちばんかんたん',
+    note: '2ブロック',
     bpm: 90,
     bandSongId: 'kaeru90',
     bandStems: ['drums'],
     bandVolume: 0.3,
-    notes: [0, 1, 2, 3, 2, 1, 0, 2, 3, 4, 5, 4, 3, 2, 0],
-    beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 2]
+    sections: [
+      {
+        name: '1',
+        note: 'うたがきこえる',
+        notes: [0, 1, 2, 3, 2, 1, 0, 2, 3, 4, 5, 4, 3, 2],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+      },
+      {
+        name: '2',
+        note: 'グワッグワッ',
+        notes: [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 2, 1, 0],
+        beats: [0.5, 0.5, 0.5, 0.5, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 1, 2]
+      }
+    ]
   },
   {
     id: 'twinkle',
     name: 'きらきらぼし',
-    note: 'ふつう',
+    note: '3ブロック',
     bpm: 100,
     bandSongId: 'twinkle100',
     bandStems: ['drums'],
     bandVolume: 0.32,
-    notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0],
-    beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+    sections: [
+      {
+        name: '1',
+        note: 'きらきら',
+        notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+      },
+      {
+        name: '2',
+        note: 'うえのそら',
+        notes: [4, 4, 3, 3, 2, 2, 1, 4, 4, 3, 3, 2, 2, 1],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+      },
+      {
+        name: '3',
+        note: 'さいご',
+        notes: [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+      }
+    ]
   },
   {
     id: 'ode',
     name: 'よろこびのうた',
-    note: 'ながめ',
+    note: '2ブロック',
     bpm: 100,
     bandSongId: 'ode100',
     bandStems: ['drums'],
     bandVolume: 0.3,
-    notes: [2, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1, 2, 2, 1, 1, 2, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1, 2, 1, 0, 0],
-    beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+    sections: [
+      {
+        name: '1',
+        note: '前半',
+        notes: [2, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1, 2, 2, 1, 1],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+      },
+      {
+        name: '2',
+        note: '後半',
+        notes: [2, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1, 2, 1, 0, 0],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+      }
+    ]
   }
 ];
-var RHYTHM_SONG = RHYTHM_SONGS[0];
+var RHYTHM_BASE_SONG = RHYTHM_SONGS[0];
+var RHYTHM_PRACTICE_MODE = 'block';
+var RHYTHM_SECTION_INDEX = 0;
+var RHYTHM_SONG = _buildRhythmSong(RHYTHM_BASE_SONG);
 var RHYTHM_GOOD_MS = 220;
 var RHYTHM_OK_MS = 430;
 var RHYTHM_MISS_MS = 760;
@@ -2208,6 +2308,42 @@ var _rhythm = {
 
 var RHYTHM_DEMO_SEEN_KEY = 'pono_oto_rhythm_demo_seen_v1';
 
+function _rhythmSections(song) {
+  return (song && song.sections && song.sections.length) ? song.sections : [];
+}
+function _concatRhythmSections(sections) {
+  var notes = [];
+  var beats = [];
+  sections.forEach(function(section) {
+    notes = notes.concat(section.notes || []);
+    beats = beats.concat(section.beats || []);
+  });
+  return { notes: notes, beats: beats };
+}
+function _buildRhythmSong(song) {
+  var sections = _rhythmSections(song);
+  var all = _concatRhythmSections(sections);
+  var sectionIndex = Math.max(0, Math.min(RHYTHM_SECTION_INDEX, Math.max(0, sections.length - 1)));
+  var section = sections[sectionIndex] || { name: '1', note: '', notes: all.notes, beats: all.beats };
+  var part = RHYTHM_PRACTICE_MODE === 'full' ? all : section;
+  return {
+    id: song.id + ':' + RHYTHM_PRACTICE_MODE + ':' + (RHYTHM_PRACTICE_MODE === 'full' ? 'all' : sectionIndex),
+    baseId: song.id,
+    name: song.name,
+    note: RHYTHM_PRACTICE_MODE === 'full' ? 'ぜんぶ' : (section.note || ('ブロック' + (sectionIndex + 1))),
+    bpm: song.bpm,
+    bandSongId: song.bandSongId,
+    bandStems: song.bandStems,
+    bandVolume: song.bandVolume,
+    notes: part.notes.slice(),
+    beats: part.beats.slice()
+  };
+}
+function _refreshRhythmSong() {
+  var sections = _rhythmSections(RHYTHM_BASE_SONG);
+  if (RHYTHM_SECTION_INDEX >= sections.length) RHYTHM_SECTION_INDEX = Math.max(0, sections.length - 1);
+  RHYTHM_SONG = _buildRhythmSong(RHYTHM_BASE_SONG);
+}
 function _rhythmBeatMs() {
   var song = _currentSong();
   if (song && song.type === 'synth' && _synthActive() && song.bpm) {
@@ -2259,7 +2395,21 @@ function _rhythmTargetTimeFor(seqIndex) {
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
   if (!found) return;
-  RHYTHM_SONG = found;
+  RHYTHM_BASE_SONG = found;
+  RHYTHM_SECTION_INDEX = 0;
+  _refreshRhythmSong();
+  _renderRhythmSongMenu();
+  _updateRhythmMenuActions();
+}
+function _setRhythmPracticeMode(mode) {
+  RHYTHM_PRACTICE_MODE = mode === 'full' ? 'full' : 'block';
+  _refreshRhythmSong();
+  _renderRhythmSongMenu();
+  _updateRhythmMenuActions();
+}
+function _setRhythmSection(index) {
+  RHYTHM_SECTION_INDEX = Math.max(0, index || 0);
+  _refreshRhythmSong();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
 }
@@ -2272,11 +2422,16 @@ function _rhythmDemoSeenMap() {
   }
 }
 function _rhythmDemoSeen(songId) {
-  return !!_rhythmDemoSeenMap()[songId || RHYTHM_SONG.id];
+  var id = songId || RHYTHM_SONG.id;
+  var map = _rhythmDemoSeenMap();
+  var baseId = String(id).split(':')[0];
+  return !!(map[id] || map[baseId]);
 }
 function _markRhythmDemoSeen(songId) {
   var map = _rhythmDemoSeenMap();
-  map[songId || RHYTHM_SONG.id] = true;
+  var id = songId || RHYTHM_SONG.id;
+  map[id] = true;
+  map[String(id).split(':')[0]] = true;
   try { localStorage.setItem(RHYTHM_DEMO_SEEN_KEY, JSON.stringify(map)); } catch(e) {}
 }
 function _updateRhythmMenuActions() {
@@ -2290,7 +2445,7 @@ function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
   if (!list) return;
   list.innerHTML = RHYTHM_SONGS.map(function(song) {
-    var active = song.id === RHYTHM_SONG.id ? ' active' : '';
+    var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
     return '<button class="rhythm-song-choice' + active + '" data-song="' + song.id + '"><span class="rhythm-song-name">' + song.name + '</span><span class="rhythm-song-note">' + song.note + '</span></button>';
   }).join('');
   list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
@@ -2298,6 +2453,33 @@ function _renderRhythmSongMenu() {
       e.preventDefault();
       e.stopPropagation();
       _selectRhythmSong(btn.dataset.song);
+    });
+  });
+  _renderRhythmPracticeControls();
+}
+function _renderRhythmPracticeControls() {
+  document.querySelectorAll('.rhythm-practice-btn').forEach(function(btn) {
+    var active = btn.dataset.practice === RHYTHM_PRACTICE_MODE;
+    btn.classList.toggle('active', active);
+    btn.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      _setRhythmPracticeMode(btn.dataset.practice);
+    };
+  });
+  var blockList = document.getElementById('rhythm-block-list');
+  if (!blockList) return;
+  var sections = _rhythmSections(RHYTHM_BASE_SONG);
+  blockList.classList.toggle('hidden', RHYTHM_PRACTICE_MODE === 'full' || sections.length <= 1);
+  blockList.innerHTML = sections.map(function(section, index) {
+    var active = index === RHYTHM_SECTION_INDEX ? ' active' : '';
+    return '<button class="rhythm-block-btn' + active + '" data-section="' + index + '">その' + (index + 1) + '</button>';
+  }).join('');
+  blockList.querySelectorAll('.rhythm-block-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      _setRhythmSection(parseInt(btn.dataset.section, 10) || 0);
     });
   });
 }
