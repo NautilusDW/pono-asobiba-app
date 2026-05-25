@@ -911,8 +911,30 @@
     font-weight: 900;
     color: #31506F;
   }
+  .rhythm-result-stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    margin-top: 12px;
+  }
+  .rhythm-result-star {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    opacity: 0.28;
+    filter: grayscale(1) saturate(0.55);
+    transform: scale(0.84);
+    transition: transform 0.28s cubic-bezier(0.34,1.9,0.64,1), opacity 0.24s ease, filter 0.24s ease;
+  }
+  .rhythm-result-star.lit {
+    opacity: 1;
+    filter: drop-shadow(0 0 9px rgba(255,201,60,0.72)) drop-shadow(0 3px 0 rgba(142,91,0,0.28));
+    transform: scale(1);
+  }
   .rhythm-complete-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
     margin-top: 18px;
@@ -922,7 +944,7 @@
     pointer-events: none;
   }
   .rhythm-complete-btn {
-    min-width: 132px;
+    min-width: 118px;
     min-height: 50px;
     border: 3px solid rgba(255,255,255,0.9);
     border-radius: 16px;
@@ -937,6 +959,13 @@
   .rhythm-complete-btn.again {
     background: linear-gradient(180deg, #FDE68A, #F59E0B);
     color: #5D3A00;
+  }
+  .rhythm-complete-btn.next {
+    background: linear-gradient(180deg, #B7F7D2, #34D399);
+    color: #064E3B;
+  }
+  .rhythm-complete-btn.hidden {
+    display: none;
   }
   .rhythm-complete-btn.done {
     background: rgba(255,255,255,0.94);
@@ -1505,10 +1534,16 @@
     <div class="rhythm-complete" id="rhythm-complete" role="dialog" aria-modal="true" aria-label="リズムおしまい">
       <div class="rhythm-complete-panel">
         <div class="rhythm-complete-title" id="rhythm-complete-title">よくできたね</div>
+        <div class="rhythm-result-stars" id="rhythm-result-stars" aria-label="ひょうか">
+          <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
+          <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
+          <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
+        </div>
         <div class="rhythm-complete-text" id="rhythm-complete-text">リズムだけ きいてね</div>
         <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
           <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
           <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
+          <button class="rhythm-complete-btn next hidden" id="rhythm-complete-next">つぎのパート</button>
         </div>
       </div>
     </div>
@@ -2304,6 +2339,8 @@ var _rhythm = {
   demoNoteBtn: null,
   completeTimers: [],
   hits: 0,
+  goodHits: 0,
+  okHits: 0,
   misses: 0,
   nowCue: false
 };
@@ -2414,6 +2451,18 @@ function _setRhythmSection(index) {
   _refreshRhythmSong();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
+}
+function _rhythmHasNextSection() {
+  var sections = _rhythmSections(RHYTHM_BASE_SONG);
+  return RHYTHM_PRACTICE_MODE === 'block' && RHYTHM_SECTION_INDEX < sections.length - 1;
+}
+function _goToNextRhythmSection() {
+  if (!_rhythmHasNextSection()) return false;
+  RHYTHM_SECTION_INDEX++;
+  _refreshRhythmSong();
+  _renderRhythmSongMenu();
+  _updateRhythmMenuActions();
+  return true;
 }
 function _rhythmDemoSeenMap() {
   try {
@@ -2623,21 +2672,42 @@ function _hideRhythmComplete() {
   if (complete) complete.classList.remove('show');
   var actions = document.getElementById('rhythm-complete-actions');
   if (actions) actions.classList.add('hidden');
+  _renderRhythmResultStars(0);
 }
-function _showRhythmComplete(good) {
+function _rhythmScoreStars() {
+  var total = Math.max(1, RHYTHM_SONG.notes.length);
+  var missLimit = Math.max(1, Math.ceil(total * 0.2));
+  var goodRate = _rhythm.goodHits / total;
+  var okRate = _rhythm.okHits / total;
+  if (_rhythm.misses === 0 && goodRate >= 0.65) return 3;
+  if (_rhythm.misses <= missLimit && okRate >= 0.55) return 2;
+  return 1;
+}
+function _renderRhythmResultStars(stars) {
+  document.querySelectorAll('.rhythm-result-star').forEach(function(star, index) {
+    star.classList.toggle('lit', index < stars);
+  });
+}
+function _showRhythmComplete(result) {
   _hideRhythmMenu();
   _clearRhythmCompleteTimers();
+  result = result || {};
+  var stars = Math.max(1, Math.min(3, result.stars || 1));
+  var hasNextPart = !!result.hasNextPart;
   var complete = document.getElementById('rhythm-complete');
   var title = document.getElementById('rhythm-complete-title');
   var text = document.getElementById('rhythm-complete-text');
   var actions = document.getElementById('rhythm-complete-actions');
+  var next = document.getElementById('rhythm-complete-next');
   if (!complete) return;
-  if (title) title.textContent = good ? 'よくできたね' : 'さいごまで できたね';
+  if (title) title.textContent = stars >= 3 ? 'よくできたね' : (stars === 2 ? 'いいね' : 'さいごまで できたね');
+  _renderRhythmResultStars(stars);
   if (text) text.textContent = 'リズムだけ きいてね';
   if (actions) actions.classList.add('hidden');
+  if (next) next.classList.toggle('hidden', !hasNextPart);
   complete.classList.add('show');
   _rhythm.completeTimers.push(setTimeout(function() {
-    if (text) text.textContent = 'もっと れんしゅうする？';
+    if (text) text.textContent = hasNextPart ? 'つぎのパートへ いけるよ' : 'もっと れんしゅうする？';
     if (actions) actions.classList.remove('hidden');
   }, 900));
 }
@@ -2659,7 +2729,10 @@ function _finishRhythmLoop() {
   var queue = document.getElementById('rhythm-queue');
   if (queue) queue.innerHTML = '';
   bumpPono();
-  _showRhythmComplete(_rhythm.misses === 0 && _rhythm.hits >= RHYTHM_SONG.notes.length);
+  _showRhythmComplete({
+    stars: _rhythmScoreStars(),
+    hasNextPart: _rhythmHasNextSection()
+  });
 }
 function _advanceRhythm(wasHit) {
   if (!_rhythm.enabled) return;
@@ -2701,6 +2774,8 @@ function _startRhythmMode() {
   _rhythm.idx = 0;
   _rhythm.streak = 0;
   _rhythm.hits = 0;
+  _rhythm.goodHits = 0;
+  _rhythm.okHits = 0;
   _rhythm.misses = 0;
   _rhythm.nowCue = false;
   var hud = document.getElementById('rhythm-hud');
@@ -2921,8 +2996,11 @@ function handleRhythmTap(idx, btn) {
   _rhythm.streak++;
   _rhythm.hits++;
   if (abs <= RHYTHM_GOOD_MS) {
+    _rhythm.goodHits++;
+    _rhythm.okHits++;
     _setRhythmStatus(_rhythm.streak >= 4 ? 'れんぞく！' : 'ぴったり！', 'good');
   } else if (abs <= RHYTHM_OK_MS) {
+    _rhythm.okHits++;
     _setRhythmStatus('いいね', 'good');
   } else {
     _setRhythmStatus('おしい', 'warn');
@@ -2982,6 +3060,15 @@ if (rhythmCompleteDone) rhythmCompleteDone.addEventListener('click', function(e)
   e.stopPropagation();
   _hideRhythmComplete();
   setPlayMode('free');
+});
+var rhythmCompleteNext = document.getElementById('rhythm-complete-next');
+if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  if (!_goToNextRhythmSection()) return;
+  _hideRhythmComplete();
+  _beginRhythmCountdown();
 });
 _renderRhythmSongMenu();
 _updateRhythmMenuActions();
