@@ -2186,13 +2186,30 @@ function distance(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function getAllowedStrokeLimit() {
+  const item = getCurrentCharacter();
+  if (!pixelLetter || !item || !Array.isArray(pixelLetter.strokeMasks)) return -1;
+  return Math.max(0, Math.min(item.strokes - 1, currentStrokeIndex));
+}
+
+function isAllowedStrokePixel(index, limit) {
+  if (!pixelLetter || limit < 0) return false;
+  for (let strokeIndex = 0; strokeIndex <= limit; strokeIndex++) {
+    if (pixelLetter.strokeMasks[strokeIndex] && pixelLetter.strokeMasks[strokeIndex][index]) return true;
+  }
+  return false;
+}
+
 function fillLetterPixelsAt(point, radius) {
   if (!pixelLetter) return { changed: 0, touched: 0 };
   const { gridSize, mask, fill } = pixelLetter;
+  const allowedStrokeLimit = getAllowedStrokeLimit();
   const gx = Math.floor((point.x / 1000) * gridSize);
   const gy = Math.floor((point.y / 1000) * gridSize);
   let changed = 0;
   let touched = 0;
+  let activeTouched = 0;
+  let blocked = 0;
   for (let y = gy - radius; y <= gy + radius; y++) {
     if (y < 0 || y >= gridSize) continue;
     for (let x = gx - radius; x <= gx + radius; x++) {
@@ -2203,13 +2220,18 @@ function fillLetterPixelsAt(point, radius) {
       const index = y * gridSize + x;
       if (!mask[index]) continue;
       touched += 1;
+      if (!isAllowedStrokePixel(index, allowedStrokeLimit)) {
+        blocked += 1;
+        continue;
+      }
+      activeTouched += 1;
       if (!fill[index]) {
         fill[index] = 1;
         changed += 1;
       }
     }
   }
-  return { changed, touched };
+  return { changed, touched, activeTouched, blocked };
 }
 
 function paintTrailSegment(from, to) {
@@ -2218,6 +2240,7 @@ function paintTrailSegment(from, to) {
   const steps = Math.max(1, Math.ceil(d / 10));
   let changed = 0;
   let touched = 0;
+  let activeTouched = 0;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const x = from.x + (to.x - from.x) * t;
@@ -2225,9 +2248,10 @@ function paintTrailSegment(from, to) {
     const result = fillLetterPixelsAt({ x, y }, LETTER_BRUSH_RADIUS);
     changed += result.changed;
     touched += result.touched;
+    if (result.activeTouched) activeTouched += result.activeTouched;
   }
   if (changed > 0) renderPixelLetter();
-  return touched > 0 ? d : 0;
+  return activeTouched > 0 ? d : 0;
 }
 
 function fillStrokePixels(strokeIndex) {
@@ -2256,7 +2280,7 @@ function getStrokeFilledRatio(strokeIndex) {
   return total ? filled / total : 0;
 }
 
-function maybeAdvanceStrokeFromFill() {
+function maybeUpdateProgressAfterFill() {
   if (complete || !pixelLetter) return;
   const item = getCurrentCharacter();
   if (!item) return;
@@ -2267,18 +2291,8 @@ function maybeAdvanceStrokeFromFill() {
 
   const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
-  if (getStrokeFilledRatio(strokeIndex) < STROKE_FILL_COMPLETE_RATIO) return;
-
-  strokesCompleted = Math.max(strokesCompleted, strokeIndex + 1);
-  currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
-  renderPixelLetter();
-  renderCanvasStrokeNumbers();
-  renderStrokeOrder();
-
-  if (strokesCompleted >= item.strokes) {
-    maybeFinishWritingAfterProgress();
-  } else {
-    setMessage('いいかんじ！ つぎの せんも いこう', 'もうすこし！');
+  if (getStrokeFilledRatio(strokeIndex) >= STROKE_FILL_COMPLETE_RATIO) {
+    setMessage(`${strokeIndex + 1}かくめ、いいかんじ！`, 'じゅんばんに かこう');
   }
 }
 
@@ -2377,8 +2391,14 @@ function onTrailPointerDown(event) {
   lastTrailPoint = boardPointFromEvent(event);
   const result = fillLetterPixelsAt(lastTrailPoint, LETTER_BRUSH_RADIUS);
   if (result.changed > 0) renderPixelLetter();
-  setMessage(result.touched > 0 ? 'そのまま そーっと' : 'もじの うえを なぞってね', 'いいかんじ！');
-  maybeAdvanceStrokeFromFill();
+  const nextStroke = Math.min(currentStrokeIndex + 1, getCurrentCharacter().strokes);
+  setMessage(
+    result.activeTouched > 0
+      ? 'そのまま そーっと'
+      : (result.touched > 0 ? `いまは ${nextStroke}かくめを なぞってね` : 'もじの うえを なぞってね'),
+    'いいかんじ！'
+  );
+  maybeUpdateProgressAfterFill();
 }
 
 function onTrailPointerMove(event) {
@@ -2392,7 +2412,7 @@ function onTrailPointerMove(event) {
     spawnSpark(event.clientX, event.clientY);
   }
   lastTrailPoint = next;
-  maybeAdvanceStrokeFromFill();
+  maybeUpdateProgressAfterFill();
 }
 
 function stopTrail() {
