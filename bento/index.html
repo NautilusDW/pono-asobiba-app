@@ -123,13 +123,21 @@ html, body {
    オーバーレイモーダル (sk-intro / portrait-notice / complete-overlay /
    npc-*) は別レイヤーで全画面のまま。 */
 #app {
+  position: relative;
   display: flex;
   height: 100dvh;
   width: 100%;
   max-width: calc(100dvh * 16 / 9);
   margin: 0 auto;
-  padding: 56px 6px 12px;
-  gap: 6px;
+  padding: 54px 16px 16px 18px;
+  gap: 12px;
+  background: center / cover no-repeat url('../assets/images/bento/ui/main_picnic_background.png');
+  overflow: hidden;
+  isolation: isolate;
+}
+#app > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── 左: お弁当箱（できるだけ大きく） ── */
@@ -138,7 +146,7 @@ html, body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 0 4px;
+  padding: 0;
 }
 
 .pono-row {
@@ -306,16 +314,17 @@ html, body {
 
 /* ===== 自由配置モード ===== */
 .bento-box.free-layout-shell {
-  padding: 5px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 .bento-inner.free-layout-inner {
   position: relative;
   display: block;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 12% 10%, rgba(255,255,255,0.72) 0 12%, transparent 13%),
-    radial-gradient(circle at 84% 16%, rgba(255,238,191,0.58) 0 10%, transparent 11%),
-    repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 14px 14px;
+  overflow: visible;
+  background: transparent;
+  padding: 0;
 }
 .free-layout-stage {
   position: relative;
@@ -323,7 +332,7 @@ html, body {
   height: 100%;
   min-height: 0;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   touch-action: none;
 }
 .free-bento-shape {
@@ -370,8 +379,10 @@ html, body {
   background: transparent;
   box-shadow: none;
   object-fit: contain;
+  object-position: center;
   border-radius: 0;
   transform-origin: center;
+  filter: drop-shadow(0 12px 16px rgba(93, 78, 55, 0.2));
 }
 .free-bento-shape.has-image::before,
 .free-bento-shape.has-image::after {
@@ -387,17 +398,21 @@ html, body {
   left: 50%;
   top: 50%;
   z-index: 6;
-  width: min(76%, 380px);
+  width: min(82%, 560px);
+  aspect-ratio: 1681 / 516;
   transform: translate(-50%, -50%);
-  padding: 10px 14px;
-  border: 3px solid rgba(255, 184, 106, 0.9);
-  border-radius: 18px;
-  background: rgba(255, 248, 230, 0.88);
-  box-shadow: 0 8px 18px rgba(93, 78, 55, 0.16);
+  padding: 0 6% 0 34%;
+  border: 0;
+  border-radius: 0;
+  background: center / contain no-repeat url('../assets/images/bento/ui/guide_modal_pono.png');
+  box-shadow: none;
   color: #6B3E16;
   text-align: center;
   pointer-events: auto;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 .free-main-guide-tap-layer {
   position: absolute;
@@ -410,36 +425,33 @@ html, body {
 .free-main-guide-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
 }
 .free-main-guide-pono {
-  width: 62px;
-  height: 62px;
-  flex: 0 0 auto;
-  object-fit: contain;
-  animation: guidePonoNod 1.35s ease-in-out infinite;
+  display: none;
 }
 .free-main-guide-copy {
   min-width: 0;
   text-align: left;
 }
 .free-main-guide-title {
-  font-size: 0.98rem;
+  font-size: clamp(0.86rem, 2vw, 1.12rem);
   font-weight: 900;
   line-height: 1.2;
 }
 .free-main-guide-text {
   margin-top: 4px;
   color: var(--text-light);
-  font-size: 0.58rem;
+  font-size: clamp(0.48rem, 1.2vw, 0.62rem);
   font-weight: 900;
   line-height: 1.25;
 }
 .free-main-guide-hint {
   margin-top: 4px;
   color: #148A62;
-  font-size: 0.52rem;
+  font-size: clamp(0.46rem, 1.1vw, 0.58rem);
   font-weight: 900;
   line-height: 1.1;
 }
@@ -617,6 +629,21 @@ html, body {
 .right-panel.free-guide-focus .pono-row {
   display: none;
 }
+.food-tray.free-layout-controls::-webkit-scrollbar,
+.free-item-list::-webkit-scrollbar {
+  width: 8px;
+}
+.food-tray.free-layout-controls::-webkit-scrollbar-track,
+.free-item-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+}
+.food-tray.free-layout-controls::-webkit-scrollbar-thumb,
+.free-item-list::-webkit-scrollbar-thumb {
+  background: #F47DA5;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+}
 .free-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -688,9 +715,9 @@ html, body {
 .free-complete-btn {
   border: none;
   border-radius: 11px;
-  background: #FFFFFF;
+  background: center / 100% 100% no-repeat url('../assets/images/bento/ui/button_pink.png');
   color: var(--text);
-  box-shadow: 0 2px 6px var(--shadow);
+  box-shadow: none;
   font-family: inherit;
   font-size: 0.62rem;
   font-weight: 900;
@@ -792,9 +819,9 @@ html, body {
 .free-cup-done-btn {
   border: none;
   border-radius: 11px;
-  background: linear-gradient(180deg, #9EE6B2, #52B974);
+  background: center / 100% 100% no-repeat url('../assets/images/bento/ui/button_green.png');
   color: #174B2C;
-  box-shadow: 0 3px 0 #2F7D49;
+  box-shadow: none;
   font-family: inherit;
   font-size: 0.62rem;
   font-weight: 900;
@@ -840,9 +867,9 @@ html, body {
   pointer-events: none;
 }
 .free-complete-btn {
-  background: linear-gradient(180deg, #FFB86A, #F2915A);
-  color: #5D3000;
-  box-shadow: 0 3px 0 #B87200;
+  background-image: url('../assets/images/bento/ui/button_green.png');
+  color: #174B2C;
+  box-shadow: none;
 }
 .free-item-list {
   display: grid;
@@ -861,40 +888,39 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 84px;
-  padding: 5px 3px;
-  border: 2.5px solid #FDE68A;
-  border-radius: 12px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 8px var(--shadow);
+  min-height: 86px;
+  padding: 7px 4px 6px;
+  border: 0;
+  border-radius: 0;
+  background: center / 100% 100% no-repeat url('../assets/images/bento/ui/picker_card_normal.png');
+  box-shadow: none;
   font-family: inherit;
   cursor: grab;
   touch-action: none;
 }
 .free-palette-item:active { transform: scale(0.94); }
 .free-palette-item.selected {
-  border-color: var(--primary);
-  background: #FFF0D5;
+  background-image: url('../assets/images/bento/ui/picker_card_selected.png');
 }
 .free-palette-item.guide-target {
-  border-color: #22C55E;
-  background: linear-gradient(180deg, #EAFDFF 0%, #E9FFF2 100%);
-  box-shadow: 0 2px 8px var(--shadow), 0 0 0 3px rgba(6,182,212,0.2);
+  outline: 3px solid #22C55E;
+  outline-offset: -4px;
+  box-shadow: 0 0 0 4px rgba(6,182,212,0.2);
   animation: guidePulse 1.05s ease-in-out infinite;
 }
 @keyframes guidePulse {
   0%, 100% {
-    border-color: #22C55E;
-    box-shadow: 0 2px 8px var(--shadow), 0 0 0 0 rgba(34,197,94,0.86);
+    outline-color: #22C55E;
+    box-shadow: 0 0 0 0 rgba(34,197,94,0.86);
   }
   50% {
-    border-color: #06B6D4;
-    box-shadow: 0 2px 8px var(--shadow), 0 0 0 7px rgba(6,182,212,0.28);
+    outline-color: #06B6D4;
+    box-shadow: 0 0 0 7px rgba(6,182,212,0.28);
   }
 }
 .free-palette-visual {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -908,7 +934,7 @@ html, body {
 .free-palette-name {
   max-width: 100%;
   color: var(--text-light);
-  font-size: 0.52rem;
+  font-size: 0.5rem;
   font-weight: 900;
   line-height: 1.05;
   white-space: nowrap;
@@ -1086,12 +1112,37 @@ html, body {
 
 /* ── 右: 食材選択パネル ── */
 .right-panel {
-  width: 40%;
-  max-width: 240px;
+  width: 34%;
+  max-width: 258px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
   min-height: 0;
+  padding: 16px 14px 14px;
+  background: center / 100% 100% no-repeat url('../assets/images/bento/ui/picker_panel_blank.png');
+  box-sizing: border-box;
+}
+.right-panel .pono-row {
+  min-height: 34px;
+  justify-content: center;
+  margin: 0 16px 2px;
+  background: center / 100% 100% no-repeat url('../assets/images/bento/ui/picker_header_pill.png');
+}
+.right-panel .pono-img {
+  display: none;
+}
+.right-panel .speech-bubble {
+  width: 100%;
+  padding: 5px 8px 6px;
+  background: transparent;
+  box-shadow: none;
+  color: #6B3E16;
+  font-size: 0.62rem;
+  line-height: 1.15;
+  text-align: center;
+}
+.right-panel .speech-bubble::before {
+  display: none;
 }
 
 /* question removed — ポノの吹き出しで指示 */
@@ -1795,19 +1846,19 @@ html, body {
   width: 36px; height: 36px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(180deg, #FFD84D, #F5A800);
-  color: #5C3A00;
+  background: center / contain no-repeat url('../assets/images/bento/ui/favorite_star_button.png');
+  color: transparent;
   font-size: 1.1rem;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 3px 0 #B87200, 0 4px 10px rgba(93,78,55,0.2);
+  box-shadow: none;
   display: flex; align-items: center; justify-content: center;
   line-height: 1;
   padding: 0;
 }
 .fav-header-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 #B87200;
+  box-shadow: none;
 }
 
 /* ===== Favorites overlay ===== */
@@ -2454,40 +2505,41 @@ const FREE_GUIDE_COPY = {
   },
 };
 const FREE_ASSET = '../assets/images/bento/free-layout/';
+const BENTO_UI_ASSET = '../assets/images/bento/ui/';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
     name: 'はんぶんこ べんとうばこ',
-    image: FREE_ASSET + 'box_rect_split.png',
+    image: BENTO_UI_ASSET + 'rect_bento_box_coral.png',
     shape: 'box_square',
-    bounds: { x: 34, y: 34, w: 692, h: 392 },
-    placeBounds: { x: 58, y: 62, w: 644, h: 330 },
-    clipPoints: [[58,62], [702,62], [702,392], [58,392]],
-    imageScale: 1.02,
+    bounds: { x: 50, y: 22, w: 660, h: 422 },
+    placeBounds: { x: 78, y: 78, w: 604, h: 314 },
+    clipPoints: [[78,78], [682,78], [682,392], [78,392]],
+    imageScale: 1,
     tierCount: 1,
-    autoRice: { baseRice: 'rice_base_round', x: 248, y: 230, size: 178 },
+    autoRice: { baseRice: 'rice_base_round', x: 244, y: 235, size: 206 },
     riceSpots: [
       { x: 248, y: 230 },
     ],
     foodSpots: [
-      { x: 500, y: 170 },
-      { x: 612, y: 170 },
-      { x: 500, y: 292 },
-      { x: 612, y: 292 },
-      { x: 556, y: 230 },
+      { x: 494, y: 174 },
+      { x: 612, y: 174 },
+      { x: 494, y: 296 },
+      { x: 612, y: 296 },
+      { x: 553, y: 235 },
     ],
     accessorySpots: [
-      { x: 506, y: 230 },
-      { x: 622, y: 230 },
-      { x: 556, y: 170 },
-      { x: 556, y: 292 },
+      { x: 500, y: 236 },
+      { x: 620, y: 236 },
+      { x: 556, y: 176 },
+      { x: 556, y: 300 },
     ],
     safeSpots: [
-      { x: 248, y: 230 },
-      { x: 500, y: 170 },
-      { x: 612, y: 170 },
-      { x: 500, y: 292 },
-      { x: 612, y: 292 },
+      { x: 244, y: 235 },
+      { x: 494, y: 174 },
+      { x: 612, y: 174 },
+      { x: 494, y: 296 },
+      { x: 612, y: 296 },
     ],
   },
   {

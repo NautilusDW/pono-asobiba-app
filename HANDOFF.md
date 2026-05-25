@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:135-bento-production-ui-apply] **Done** — user が `D:\ポノのおへや\Bento\bento_redesign\BentoUI` に配置した alpha 済み素材を `assets/images/bento/ui/` に意味名で取り込み、BG は batch 134 の `001_main_picnic_background_raw.png` を同フォルダへ本配置。`bento/index.html` はメイン背景、右パネル/カード/ボタン/星ボタン、中央ガイド、デフォルト長方形弁当箱を新素材へ差し替え。`sw.js` は v600。ローカル Playwright で bento 初期画面、画像読み込み、ページエラーなしを確認。 (by Codex)
+
 - 2026-05-25 - [batch:101-oto-rhythm-mode] **Done follow-up 12** — user 依頼「ポノ上の次ボタン表示を撤去 / お手本中の余計なタップ音を止める / お手本も無音の3,2,1で開始」を反映。`oto/index.html` から常時の `いま/つぎ` 浮遊表示を削除し、デモ中は楽器ボタンと背景タップを無効化。お手本開始は無音カウントダウン後に自動演奏へ入り、終了後に通常のリズム開始カウントへ進む。`sw.js` は v599。ローカル Playwright 1024x768 で3曲メニュー、float不在、デモ中tapCount不変、デモ後のリズム開始を確認済。 (by Codex)
 
 - 2026-05-25 - [batch:134-bento-production-ui-raw] **Done** — 添付の本番用べんとう画面参考に合わせ、raw 5 枚を `tmp/alpha_pending/134_bento_production_ui_raw/` に番号付きで納品。内訳は `001_main_picnic_background_raw.png`、`002_rect_bento_box_coral_cream_raw.png`、`003_guide_modal_pono_raw.png`、`004_right_picker_panel_2col_parts_raw.png`、`005_decor_props_sheet_raw.png`。2列実装前提で右パネル部品を作り、未実装の箱サムネは作成せず。alpha 抜き・切り抜き・本配置・sw.js bump は未実施。 (by Codex)
