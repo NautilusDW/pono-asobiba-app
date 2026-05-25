@@ -1279,6 +1279,7 @@ const PIXEL_GRID_SIZE = 132;
 const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 5;
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
+const STROKE_FILL_COMPLETE_RATIO = 0.32;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1544,6 +1545,143 @@ async function loadGuideSvgMask(item, gridSize) {
   return guideMask;
 }
 
+function rawMedianPointToGrid(point, gridSize) {
+  const x = Number(point && point[0]);
+  const y = Number(point && point[1]);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return {
+    x: (x / 1024) * gridSize,
+    y: ((1024 - y) / 1024) * gridSize
+  };
+}
+
+function getMedianBounds(medians, gridSize) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  if (!Array.isArray(medians)) return null;
+
+  medians.forEach((median) => {
+    if (!Array.isArray(median)) return;
+    median.forEach((point) => {
+      const gridPoint = rawMedianPointToGrid(point, gridSize);
+      if (!gridPoint) return;
+      minX = Math.min(minX, gridPoint.x);
+      minY = Math.min(minY, gridPoint.y);
+      maxX = Math.max(maxX, gridPoint.x);
+      maxY = Math.max(maxY, gridPoint.y);
+    });
+  });
+
+  if (!Number.isFinite(minX) || maxX <= minX || maxY <= minY) return null;
+  return { minX, minY, maxX, maxY };
+}
+
+function createMedianToGuideMapper(medians, guideBounds, gridSize) {
+  const medianBounds = getMedianBounds(medians, gridSize);
+  if (!medianBounds || !guideBounds) {
+    return (point) => rawMedianPointToGrid(point, gridSize);
+  }
+
+  const guideWidth = guideBounds.maxX - guideBounds.minX + 1;
+  const guideHeight = guideBounds.maxY - guideBounds.minY + 1;
+  const medianWidth = medianBounds.maxX - medianBounds.minX;
+  const medianHeight = medianBounds.maxY - medianBounds.minY;
+  const scale = Math.min(guideWidth / medianWidth, guideHeight / medianHeight);
+  const guideCenterX = (guideBounds.minX + guideBounds.maxX + 1) / 2;
+  const guideCenterY = (guideBounds.minY + guideBounds.maxY + 1) / 2;
+  const medianCenterX = (medianBounds.minX + medianBounds.maxX) / 2;
+  const medianCenterY = (medianBounds.minY + medianBounds.maxY) / 2;
+
+  return (point) => {
+    const gridPoint = rawMedianPointToGrid(point, gridSize);
+    if (!gridPoint) return null;
+    return {
+      x: guideCenterX + (gridPoint.x - medianCenterX) * scale,
+      y: guideCenterY + (gridPoint.y - medianCenterY) * scale
+    };
+  };
+}
+
+function makeMedianPolyline(median, mapMedianPoint) {
+  const points = [];
+  if (!Array.isArray(median)) return points;
+  median.forEach((point) => {
+    const gridPoint = mapMedianPoint(point);
+    if (gridPoint && Number.isFinite(gridPoint.x) && Number.isFinite(gridPoint.y)) {
+      points.push(gridPoint);
+    }
+  });
+  return points;
+}
+
+function distanceSqToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq <= 0.0001) {
+    const ox = px - ax;
+    const oy = py - ay;
+    return ox * ox + oy * oy;
+  }
+
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  const x = ax + dx * t;
+  const y = ay + dy * t;
+  const ox = px - x;
+  const oy = py - y;
+  return ox * ox + oy * oy;
+}
+
+function distanceSqToPolyline(px, py, points) {
+  if (!points || points.length === 0) return Infinity;
+  if (points.length === 1) {
+    const dx = px - points[0].x;
+    const dy = py - points[0].y;
+    return dx * dx + dy * dy;
+  }
+
+  let best = Infinity;
+  for (let i = 0; i < points.length - 1; i++) {
+    best = Math.min(best, distanceSqToSegment(px, py, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y));
+  }
+  return best;
+}
+
+function splitGuideMaskByNearestMedian(guideMask, medians, gridSize) {
+  if (!guideMask || !Array.isArray(medians) || medians.length === 0) return null;
+  const guideBounds = getMaskBounds(guideMask, gridSize);
+  if (!guideBounds) return null;
+
+  const mapMedianPoint = createMedianToGuideMapper(medians, guideBounds, gridSize);
+  const polylines = medians.map((median) => makeMedianPolyline(median, mapMedianPoint));
+  if (!polylines.some((points) => points.length > 0)) return null;
+
+  const strokeMasks = medians.map(() => new Uint8Array(gridSize * gridSize));
+  for (let y = guideBounds.minY; y <= guideBounds.maxY; y++) {
+    for (let x = guideBounds.minX; x <= guideBounds.maxX; x++) {
+      const index = y * gridSize + x;
+      if (!guideMask[index]) continue;
+
+      const px = x + 0.5;
+      const py = y + 0.5;
+      let bestStroke = 0;
+      let bestDistance = Infinity;
+      for (let strokeIndex = 0; strokeIndex < polylines.length; strokeIndex++) {
+        const d = distanceSqToPolyline(px, py, polylines[strokeIndex]);
+        if (d < bestDistance) {
+          bestDistance = d;
+          bestStroke = strokeIndex;
+        }
+      }
+      strokeMasks[bestStroke][index] = 1;
+    }
+  }
+
+  return { strokeMasks, mapMedianPoint };
+}
+
 function mergeStrokeMasks(strokeMasks, gridSize) {
   const mask = new Uint8Array(gridSize * gridSize);
   let totalMaskCells = 0;
@@ -1596,6 +1734,15 @@ function medianToBoardPercent(median) {
   const [mx, my] = median[0];
   if (!Number.isFinite(mx) || !Number.isFinite(my)) return null;
   const gridSize = pixelLetter.gridSize;
+  if (typeof pixelLetter.mapMedianPoint === 'function') {
+    const point = pixelLetter.mapMedianPoint(median[0]);
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      return {
+        x: Math.max(5, Math.min(95, (point.x / gridSize) * 100)),
+        y: Math.max(5, Math.min(95, (point.y / gridSize) * 100))
+      };
+    }
+  }
   const gridPadding = (getPixelLetterPadding() / 1000) * gridSize;
   const scale = (gridSize - gridPadding * 2) / 1024;
   const x = gridPadding + (pixelLetter.offsetX || 0) + mx * scale;
@@ -1651,12 +1798,18 @@ async function buildPixelLetterMask(data, item, token) {
 
     let guideMask = merged.mask;
     let totalMaskCells = merged.totalMaskCells;
+    let mapMedianPoint = null;
     if (item && item.guideSvg) {
       try {
         const customGuide = await loadGuideSvgMask(item, gridSize);
         if (customGuide && customGuide.totalMaskCells) {
           guideMask = customGuide.mask;
           totalMaskCells = customGuide.totalMaskCells;
+          const split = splitGuideMaskByNearestMedian(customGuide.mask, data.medians, gridSize);
+          if (split && split.strokeMasks) {
+            strokeMasks = split.strokeMasks;
+            mapMedianPoint = split.mapMedianPoint;
+          }
         }
       } catch (error) {
         console.warn('Could not load custom guide SVG:', item.guideSvg, error);
@@ -1672,7 +1825,8 @@ async function buildPixelLetterMask(data, item, token) {
       fill: new Uint8Array(gridSize * gridSize),
       totalMaskCells,
       offsetX,
-      offsetY
+      offsetY,
+      mapMedianPoint
     };
     renderPixelLetter();
     renderCanvasStrokeNumbers();
@@ -1977,6 +2131,43 @@ function fillStrokePixels(strokeIndex) {
   return changed;
 }
 
+function getStrokeFilledRatio(strokeIndex) {
+  if (!pixelLetter || !pixelLetter.strokeMasks[strokeIndex]) return 0;
+  const strokeMask = pixelLetter.strokeMasks[strokeIndex];
+  let total = 0;
+  let filled = 0;
+  for (let i = 0; i < strokeMask.length; i++) {
+    if (!strokeMask[i]) continue;
+    total += 1;
+    if (pixelLetter.fill[i]) filled += 1;
+  }
+  return total ? filled / total : 0;
+}
+
+function maybeAdvanceStrokeFromFill() {
+  if (complete || !pixelLetter) return;
+  const item = getCurrentCharacter();
+  if (!item || strokesCompleted >= item.strokes) return;
+
+  const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
+  if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
+  if (getStrokeFilledRatio(strokeIndex) < STROKE_FILL_COMPLETE_RATIO) return;
+
+  fillStrokePixels(strokeIndex);
+  strokesCompleted = Math.max(strokesCompleted, strokeIndex + 1);
+  currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
+  renderPixelLetter();
+  renderCanvasStrokeNumbers();
+  renderStrokeOrder();
+
+  if (strokesCompleted >= item.strokes) {
+    setMessage('さいごまで かけたね！', 'できた！');
+    setTimeout(() => completeWriting(false), 260);
+  } else {
+    setMessage('いいかんじ！ つぎの せんも いこう', 'もうすこし！');
+  }
+}
+
 function fillAllLetterPixels() {
   if (!pixelLetter) return 0;
   let changed = 0;
@@ -2015,6 +2206,7 @@ function onTrailPointerDown(event) {
   const result = fillLetterPixelsAt(lastTrailPoint, LETTER_BRUSH_RADIUS);
   if (result.changed > 0) renderPixelLetter();
   setMessage(result.touched > 0 ? 'そのまま そーっと' : 'もじの うえを なぞってね', 'いいかんじ！');
+  maybeAdvanceStrokeFromFill();
 }
 
 function onTrailPointerMove(event) {
@@ -2028,6 +2220,7 @@ function onTrailPointerMove(event) {
     spawnSpark(event.clientX, event.clientY);
   }
   lastTrailPoint = next;
+  maybeAdvanceStrokeFromFill();
 }
 
 function stopTrail() {
@@ -2039,7 +2232,10 @@ function onCorrectStroke(data) {
   const item = getCurrentCharacter();
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
   fillStrokePixels(strokeNum);
-  strokesCompleted = Math.min(item.strokes, Math.max(strokesCompleted + 1, strokeNum + 1));
+  const nextCompleted = strokeNum < strokesCompleted
+    ? strokesCompleted
+    : Math.max(strokesCompleted + 1, strokeNum + 1);
+  strokesCompleted = Math.min(item.strokes, nextCompleted);
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
   renderPixelLetter();
   renderCanvasStrokeNumbers();
