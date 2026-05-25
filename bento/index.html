@@ -397,7 +397,7 @@ html, body {
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 6;
+  z-index: 40;
   width: min(82%, 560px);
   aspect-ratio: 1681 / 516;
   transform: translate(-50%, -50%);
@@ -415,11 +415,11 @@ html, body {
   justify-content: flex-start;
 }
 .free-main-guide-tap-layer {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 5;
+  z-index: 39;
   pointer-events: auto;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.01);
   cursor: pointer;
 }
 .free-main-guide-row {
@@ -2782,9 +2782,9 @@ const riceBases = [
   { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
 ];
 const decorItems = [
-  { id: 'nori_eye_round', type: 'decor', name: 'ポノのめ', css: 'free-css-nori-eye', size: 32, layerBase: 50 },
-  { id: 'nori_nose_bear', type: 'decor', name: 'ポノのはな', css: 'free-css-nori-nose', size: 46, layerBase: 50 },
-  { id: 'nori_mouth_smile', type: 'decor', name: 'ポノのくち', css: 'free-css-nori-mouth', size: 72, layerBase: 50 },
+  { id: 'nori_eye_round', type: 'decor', name: 'ポノのめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
+  { id: 'nori_nose_bear', type: 'decor', name: 'ポノのはな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 42, layerBase: 50 },
+  { id: 'nori_mouth_smile', type: 'decor', name: 'ポノのくち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 62, layerBase: 50 },
   { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
   { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 64, layerBase: 60 },
@@ -3631,7 +3631,7 @@ function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
   const b = getPlacementBounds(box);
   const size = (item && item.size ? item.size : 70) * (item && item.scale ? item.scale : 1);
-  const margin = Math.max(22, size * 0.28);
+  const margin = item && item.type === 'divider' ? 14 : Math.max(22, size * 0.28);
   return {
     x: clamp(x, b.x + margin, b.x + b.w - margin),
     y: clamp(y, b.y + margin, b.y + b.h - margin),
@@ -3760,10 +3760,10 @@ function snapPointForItem(item, x, y) {
   return clampPointToBento(point.x, point.y, item);
 }
 function avoidFreeOverlap(item) {
-  if (!item || item.type === 'decor' || item.type === 'pick' || item.parentCupId) return;
+  if (!item || item.type === 'decor' || item.type === 'pick' || item.type === 'divider' || item.parentCupId) return;
   for (let i = 0; i < placedItems.length; i++) {
     const other = placedItems[i];
-    if (other.uid === item.uid || other.type === 'decor') continue;
+    if (other.uid === item.uid || other.type === 'decor' || other.type === 'divider') continue;
     if (other.parentCupId) continue;
     if (getBoxTierCount() > 1 && getItemTier(other) !== getItemTier(item)) continue;
     const includesCup = item.snapTarget || other.snapTarget;
@@ -4241,13 +4241,15 @@ function selectFreeBentoBox(id) {
     }
     if (item.snapTarget) moveCupChildren(item, dx, dy);
   });
-  if (freeGuideStep === 'box') {
-    setFreeGuideStep('rice');
-    return;
-  }
   setSpeech(box.name + 'に しよう！');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
+}
+function confirmFreeBentoBoxSelection() {
+  if (freeGuideStep !== 'box') return;
+  const box = getSelectedBentoBox();
+  setSpeech(box.name + 'で つくろう！');
+  setFreeGuideStep('rice');
 }
 function createFreeVisual(item) {
   if (item.img) {
@@ -4594,7 +4596,9 @@ function goBackFreeGuideStep() {
 function renderFreeGuidePanel() {
   const actions = document.createElement('div');
   actions.className = 'free-guide-actions';
-  if (freeGuideStep === 'decor') {
+  if (freeGuideStep === 'box') {
+    actions.appendChild(makeSmallControlButton('このはこでOK', 'primary', confirmFreeBentoBoxSelection));
+  } else if (freeGuideStep === 'decor') {
     actions.appendChild(makeSmallControlButton('のりOK', 'primary', tryAdvanceFromNori, !hasNoriDecorOnTier(1)));
   } else if (freeGuideStep === 'tier2Main') {
     const tier = getGuideTierForStep('tier2Main');
