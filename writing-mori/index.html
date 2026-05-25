@@ -1360,8 +1360,6 @@ const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 4;
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
-const MIN_COMPLETE_TOTAL_FILL_RATIO = 0.36;
-const MIN_COMPLETE_STROKE_FILL_RATIO = 0.24;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -2327,33 +2325,6 @@ function getWritingReadiness(item) {
     };
   }
 
-  if (!pixelLetter) {
-    return {
-      ready: trailDistance >= 260,
-      message: 'うすい もじを もうすこし なぞってね',
-      subMessage: 'あとすこし'
-    };
-  }
-
-  const weakStrokeIndex = Array.from({ length: requiredStrokes }, (_, index) => index)
-    .find((index) => getStrokeFilledRatio(index) < MIN_COMPLETE_STROKE_FILL_RATIO);
-  if (weakStrokeIndex !== undefined) {
-    return {
-      ready: false,
-      message: `${weakStrokeIndex + 1}かくめを もうすこし なぞってね`,
-      subMessage: 'ゆっくりで だいじょうぶ'
-    };
-  }
-
-  const fillRatio = getFilledLetterRatio();
-  if (fillRatio < MIN_COMPLETE_TOTAL_FILL_RATIO) {
-    return {
-      ready: false,
-      message: 'うすい もじを もうすこし なぞってね',
-      subMessage: 'あとすこし'
-    };
-  }
-
   return { ready: true, message: '', subMessage: '' };
 }
 
@@ -2423,6 +2394,7 @@ function stopTrail() {
 function onCorrectStroke(data) {
   const item = getCurrentCharacter();
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  fillStrokePixels(strokeNum);
   const nextCompleted = strokeNum < strokesCompleted
     ? strokesCompleted
     : Math.max(strokesCompleted + 1, strokeNum + 1);
@@ -2430,7 +2402,12 @@ function onCorrectStroke(data) {
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
   renderPixelLetter();
   renderCanvasStrokeNumbers();
-  setMessage(strokesCompleted >= item.strokes ? 'さいごまで かけたね！' : 'いいかんじ！ つぎの せんも いこう', 'もうすこし！');
+  setMessage(
+    strokesCompleted >= item.strokes
+      ? 'さいごの せんも OK！'
+      : `${strokeNum + 1}かくめ OK！ つぎの せんへ`,
+    'いいかんじ！'
+  );
   renderStrokeOrder();
   maybeFinishWritingAfterProgress();
 }
@@ -2438,12 +2415,13 @@ function onCorrectStroke(data) {
 function onMistake() {
   mistakeCount += 1;
   if (mistakeCount % 2 === 1) {
-    setMessage('だいじょうぶ。 もういちど やってみよう', 'ゆっくりね');
+    setMessage(`${currentStrokeIndex + 1}かくめを もういちど なぞってね`, 'ゆっくりね');
   }
 }
 
 function onWriterComplete(summary) {
   const item = getCurrentCharacter();
+  fillAllLetterPixels();
   strokesCompleted = item.strokes;
   currentStrokeIndex = item.strokes - 1;
   renderPixelLetter();
