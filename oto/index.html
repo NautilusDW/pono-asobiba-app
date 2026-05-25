@@ -611,64 +611,6 @@
   .rhythm-status.good { background: rgba(6,95,70,0.72); }
   .rhythm-status.warn { background: rgba(146,64,14,0.72); }
   .rhythm-status.miss { background: rgba(127,29,29,0.72); }
-  .rhythm-float {
-    position: absolute;
-    top: 32%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 13;
-    display: none;
-    align-items: stretch;
-    gap: 10px;
-    width: min(74vw, 340px);
-    pointer-events: none;
-  }
-  .rhythm-float.show { display: flex; }
-  .rhythm-float-cell {
-    flex: 1;
-    min-width: 0;
-    border: 3px solid rgba(255,255,255,0.78);
-    border-radius: 22px;
-    background: rgba(9,23,44,0.78);
-    box-shadow: 0 8px 18px rgba(0,0,0,0.24);
-    padding: 9px 12px 11px;
-    text-align: center;
-  }
-  .rhythm-float-cell.now {
-    background: linear-gradient(135deg, #FDE68A, #F59E0B);
-    color: #5D3A00;
-    border-color: rgba(255,255,255,0.96);
-  }
-  .rhythm-float-cell.now.repeat {
-    background: linear-gradient(135deg, #FDBA74, #F97316);
-    color: #5C2D05;
-  }
-  .rhythm-float-cell.now.hold {
-    background: linear-gradient(135deg, #A7F3D0, #10B981);
-    color: #064E3B;
-  }
-  .rhythm-float-cell.next {
-    color: #fff;
-  }
-  .rhythm-float-cell.next.same {
-    border-color: rgba(253,230,138,0.88);
-    box-shadow: 0 0 0 4px rgba(253,230,138,0.18), 0 8px 18px rgba(0,0,0,0.24);
-  }
-  .rhythm-float-caption {
-    display: block;
-    font-size: 0.74rem;
-    font-weight: 900;
-    line-height: 1;
-    opacity: 0.86;
-    margin-bottom: 4px;
-  }
-  .rhythm-float-note {
-    display: block;
-    font-size: 2rem;
-    font-weight: 900;
-    line-height: 1;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.22);
-  }
   .rhythm-special-bubble {
     position: absolute;
     left: 50%;
@@ -1240,18 +1182,6 @@
       margin-bottom: 2px;
     }
     .rhythm-note-label { font-size: 0.9rem; }
-    .rhythm-float {
-      top: 33%;
-      left: 66%;
-      width: min(31vw, 300px);
-      gap: 8px;
-    }
-    .rhythm-float-cell {
-      border-radius: 18px;
-      padding: 7px 10px 9px;
-    }
-    .rhythm-float-caption { font-size: 0.66rem; }
-    .rhythm-float-note { font-size: 1.7rem; }
     .rhythm-special-bubble {
       left: 66%;
       top: calc(50% - 88px);
@@ -1277,11 +1207,6 @@
       height: 210px;
     }
     .pono-sprite { height: 205px; }
-    .rhythm-float {
-      top: 33%;
-      left: 67%;
-      width: min(30vw, 300px);
-    }
     .rhythm-special-bubble {
       left: 67%;
       top: calc(50% - 116px);
@@ -1372,16 +1297,6 @@
     <div class="rhythm-hud" id="rhythm-hud" aria-live="polite">
       <div class="rhythm-status" id="rhythm-status">ひかるボタンを いま！でタッチ</div>
       <div class="rhythm-queue" id="rhythm-queue"></div>
-    </div>
-    <div class="rhythm-float" id="rhythm-float" aria-live="polite">
-      <div class="rhythm-float-cell now">
-        <span class="rhythm-float-caption" id="rhythm-float-now-caption">いま</span>
-        <span class="rhythm-float-note" id="rhythm-float-now">ド</span>
-      </div>
-      <div class="rhythm-float-cell next" id="rhythm-float-next-cell">
-        <span class="rhythm-float-caption" id="rhythm-float-next-caption">つぎ</span>
-        <span class="rhythm-float-note" id="rhythm-float-next">ド</span>
-      </div>
     </div>
     <div class="rhythm-special-bubble" id="rhythm-special-bubble" aria-live="polite"></div>
 
@@ -2300,33 +2215,6 @@ function _renderRhythmSpecialBubble() {
   bubble.textContent = cue.text;
   bubble.classList.add('show', cue.type);
 }
-function _renderRhythmFloat() {
-  var box = document.getElementById('rhythm-float');
-  if (!box) return;
-  if (!_rhythmVisualActive()) {
-    box.classList.remove('show');
-    return;
-  }
-  var nowIdx = _rhythmExpectedIdx(0);
-  var nextIdx = _rhythmExpectedIdx(1);
-  var same = nowIdx === nextIdx;
-  var nowNote = document.getElementById('rhythm-float-now');
-  var nextNote = document.getElementById('rhythm-float-next');
-  var nextCaption = document.getElementById('rhythm-float-next-caption');
-  var nextCell = document.getElementById('rhythm-float-next-cell');
-  var nowCell = box.querySelector('.rhythm-float-cell.now');
-  var cue = _rhythmSpecialCue();
-  if (nowCell) nowCell.classList.remove('repeat', 'hold');
-  if (cue) {
-    box.classList.remove('show');
-    return;
-  }
-  if (nowNote) nowNote.textContent = NOTE_LABELS[nowIdx] || '';
-  if (nextNote) nextNote.textContent = NOTE_LABELS[nextIdx] || '';
-  if (nextCaption) nextCaption.textContent = same ? 'もう1回' : 'つぎ';
-  if (nextCell) nextCell.classList.toggle('same', same);
-  box.classList.add('show');
-}
 function _rhythmRingStyle(targetTime, now) {
   var lead = Math.max(260, _rhythmRingLeadMs());
   var until = targetTime - now;
@@ -2372,7 +2260,6 @@ function _renderRhythmTarget() {
   }
   if (_rhythm.enabled) _applyRhythmPreview(performance.now());
   _renderRhythmQueue();
-  _renderRhythmFloat();
   _renderRhythmSpecialBubble();
 }
 function _songIndexById(id) {
@@ -2502,9 +2389,12 @@ function _clearRhythmDemo(keepHud) {
   _rhythm.demoTimers = [];
   _rhythm.demoActive = false;
   _rhythm.demoNoteBtn = null;
+  _hideOverlay();
   _clearRhythmButtonState();
-  var floatCue = document.getElementById('rhythm-float');
-  if (floatCue) floatCue.classList.remove('show');
+  if (!_rhythm.enabled) {
+    var queue = document.getElementById('rhythm-queue');
+    if (queue) queue.innerHTML = '';
+  }
   var specialCue = document.getElementById('rhythm-special-bubble');
   if (specialCue) {
     specialCue.textContent = '';
@@ -2515,19 +2405,9 @@ function _clearRhythmDemo(keepHud) {
     if (hud) hud.classList.remove('show');
   }
 }
-function _startRhythmDemo(thenStart) {
-  if (_rhythm.enabled) _stopRhythmMode();
-  _clearRhythmCountdown();
-  _clearRhythmDemo(true);
-  _hideRhythmMenu();
-  _setModeButtons('rhythm');
-  _playMode = 'free';
-  _rhythm.demoActive = true;
-  _rhythm.idx = 0;
-  _rhythm.streak = 0;
-  _rhythm.nowCue = false;
-  var hud = document.getElementById('rhythm-hud');
-  if (hud) hud.classList.add('show');
+function _runRhythmDemoSequence(thenStart) {
+  if (!_rhythm.demoActive) return;
+  _hideOverlay();
   _setRhythmStatus('おてほんを みてね', null);
   var beatMs = 60000 / RHYTHM_SONG.bpm;
   var elapsed = 0;
@@ -2560,6 +2440,29 @@ function _startRhythmDemo(thenStart) {
     if (thenStart) _beginRhythmCountdown();
     else _showRhythmMenu();
   }, elapsed + 360));
+}
+function _startRhythmDemo(thenStart) {
+  if (_rhythm.enabled) _stopRhythmMode();
+  _clearRhythmCountdown();
+  _clearRhythmDemo(true);
+  _hideRhythmMenu();
+  _setModeButtons('rhythm');
+  _playMode = 'free';
+  _rhythm.demoActive = true;
+  _rhythm.idx = 0;
+  _rhythm.streak = 0;
+  _rhythm.nowCue = false;
+  var hud = document.getElementById('rhythm-hud');
+  if (hud) hud.classList.add('show');
+  _setRhythmStatus('おてほん 3,2,1', null);
+  var stepMs = 720;
+  _showOverlay(3, 'おてほん');
+  _rhythm.demoTimers.push(setTimeout(function() { _showOverlay(2, 'おてほん'); }, stepMs));
+  _rhythm.demoTimers.push(setTimeout(function() { _showOverlay(1, 'おてほん'); }, stepMs * 2));
+  _rhythm.demoTimers.push(setTimeout(function() { _showOverlay('スタート!', ''); }, stepMs * 3));
+  _rhythm.demoTimers.push(setTimeout(function() {
+    _runRhythmDemoSequence(thenStart);
+  }, stepMs * 3 + 420));
 }
 function _beginRhythmCountdown() {
   _clearRhythmCountdown();
@@ -2606,8 +2509,6 @@ function _stopRhythmMode() {
   });
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.remove('show');
-  var floatCue = document.getElementById('rhythm-float');
-  if (floatCue) floatCue.classList.remove('show');
   var specialCue = document.getElementById('rhythm-special-bubble');
   if (specialCue) specialCue.classList.remove('show', 'repeat', 'hold');
   if (_rhythm.ownsBand) {
@@ -2721,6 +2622,10 @@ var _pressTimers = new Map();
 document.querySelectorAll('.instr-btn').forEach(function(btn) {
   btn.addEventListener('pointerdown', function(e) {
     e.preventDefault();
+    if (_rhythm.demoActive) {
+      e.stopPropagation();
+      return;
+    }
     var idx = parseInt(btn.dataset.idx, 10);
     // 押下アニメ
     btn.classList.add('press');
@@ -2800,6 +2705,11 @@ function spawnBubbleAt(x, y, colorIdx) {
 }
 
 _stageEl.addEventListener('pointerdown', function(e) {
+  if (_rhythm.demoActive) {
+    e.preventDefault();
+    _drag.active = false;
+    return;
+  }
   if (_isOnButton(e)) return;
   var x = e.clientX, y = e.clientY;
   if (popBubbleAt(x, y)) {
@@ -2819,6 +2729,10 @@ _stageEl.addEventListener('pointerdown', function(e) {
 });
 
 _stageEl.addEventListener('pointermove', function(e) {
+  if (_rhythm.demoActive) {
+    _drag.active = false;
+    return;
+  }
   if (!_drag.active) return;
   if (_isOnButton(e)) return;
   var x = e.clientX, y = e.clientY;
