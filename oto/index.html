@@ -108,8 +108,9 @@
   .instr-btn {
     position: absolute;
     left: 0; top: 0;
-    width: var(--sz, 128px); height: var(--sz, 128px);
-    border-radius: 50%;
+    width: var(--btn-w, var(--sz, 128px));
+    height: var(--btn-h, var(--sz, 128px));
+    border-radius: var(--btn-radius, 50%);
     border: clamp(4px, calc(var(--sz, 128px) * 0.045), 7px) solid rgba(255,255,255,0.92);
     background:
       radial-gradient(circle at 34% 27%, rgba(255,255,255,0.9) 0 13%, rgba(255,255,255,0.34) 14% 23%, transparent 24%),
@@ -145,7 +146,7 @@
     content: '';
     position: absolute;
     inset: -8px;
-    border-radius: 50%;
+    border-radius: var(--btn-radius, 50%);
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.12s ease-out, transform 0.08s linear;
@@ -207,7 +208,7 @@
   .rhythm-ring {
     position: absolute;
     inset: 0;
-    border-radius: 50%;
+    border-radius: var(--btn-radius, 50%);
     border: clamp(4px, calc(var(--sz, 128px) * 0.045), 7px) solid var(--rhythm-ring-border, rgba(255,255,255,0.92));
     box-shadow:
       0 0 0 5px var(--rhythm-ring-halo, rgba(255,216,77,0.45)),
@@ -829,6 +830,74 @@
     color: #fff;
     border: 2px solid rgba(255,255,255,0.5);
   }
+  .rhythm-complete {
+    position: absolute;
+    inset: 0;
+    z-index: 19;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(8,19,43,0.24);
+    pointer-events: auto;
+  }
+  .rhythm-complete.show { display: flex; }
+  .rhythm-complete-panel {
+    width: min(86vw, 420px);
+    padding: 22px 24px 24px;
+    border: 3px solid rgba(255,255,255,0.88);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(226,244,255,0.94));
+    color: #17324F;
+    text-align: center;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.28);
+  }
+  .rhythm-complete-title {
+    min-height: 2.5rem;
+    font-size: clamp(2rem, 7vw, 3rem);
+    font-weight: 900;
+    line-height: 1.05;
+    color: #0F3A5C;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.7);
+  }
+  .rhythm-complete-text {
+    min-height: 1.7rem;
+    margin-top: 10px;
+    font-size: clamp(1.05rem, 3.4vw, 1.35rem);
+    font-weight: 900;
+    color: #31506F;
+  }
+  .rhythm-complete-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 18px;
+  }
+  .rhythm-complete-actions.hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .rhythm-complete-btn {
+    min-width: 132px;
+    min-height: 50px;
+    border: 3px solid rgba(255,255,255,0.9);
+    border-radius: 16px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  }
+  .rhythm-complete-btn.again {
+    background: linear-gradient(180deg, #FDE68A, #F59E0B);
+    color: #5D3A00;
+  }
+  .rhythm-complete-btn.done {
+    background: rgba(255,255,255,0.94);
+    color: #334155;
+  }
 
   /* (rec-bar / 録音 UI は復活させない方針で削除) */
 
@@ -1220,6 +1289,68 @@
   @media (orientation: landscape) and (max-height: 520px) {
     .rhythm-hud.show { display: none; }
   }
+
+  body.rhythm-layout .instr-btn {
+    --btn-radius: 18px;
+    --sz: min(18vw, 82px);
+    --btn-w: min(18vw, 78px);
+    --btn-h: min(20vw, 94px);
+    --note-hi: #F8FAFC;
+    --note-lo: #CBD5E1;
+    --note-fg: #17324F;
+    border-color: rgba(255,255,255,0.96);
+    box-shadow:
+      inset 0 -9px 0 rgba(71,85,105,0.28),
+      inset 0 4px 12px rgba(255,255,255,0.72),
+      0 8px 16px rgba(0,0,0,0.24);
+    font-size: calc(var(--sz, 82px) * 0.34);
+  }
+  body.rhythm-layout .instr-btn.press {
+    transform: translate(-50%, -50%) translateY(4px) scale(0.98);
+  }
+  body.rhythm-layout .instr-btn::before,
+  body.rhythm-layout .instr-btn::after,
+  body.rhythm-layout .rhythm-ring {
+    border-radius: var(--btn-radius, 18px);
+  }
+  body.rhythm-layout .instr-btn[data-idx="0"] { left: 20%; top: 66%; }
+  body.rhythm-layout .instr-btn[data-idx="1"] { left: 40%; top: 66%; }
+  body.rhythm-layout .instr-btn[data-idx="2"] { left: 60%; top: 66%; }
+  body.rhythm-layout .instr-btn[data-idx="3"] { left: 80%; top: 66%; }
+  body.rhythm-layout .instr-btn[data-idx="4"] { left: 20%; top: 82%; }
+  body.rhythm-layout .instr-btn[data-idx="5"] { left: 40%; top: 82%; }
+  body.rhythm-layout .instr-btn[data-idx="6"] { left: 60%; top: 82%; }
+  body.rhythm-layout .instr-btn[data-idx="7"] { left: 80%; top: 82%; }
+  @media (orientation: landscape) {
+    body.rhythm-layout .instr-btn {
+      --sz: clamp(62px, 7.6vw, 82px);
+      --btn-w: clamp(56px, 7vw, 76px);
+      --btn-h: clamp(74px, 11.5vh, 98px);
+    }
+    body.rhythm-layout .instr-btn[data-idx="0"] { left: 39%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="1"] { left: 46.5%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="2"] { left: 54%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="3"] { left: 61.5%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="4"] { left: 69%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="5"] { left: 76.5%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="6"] { left: 84%; top: 82%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { left: 91.5%; top: 82%; }
+  }
+  @media (orientation: landscape) and (max-height: 520px) {
+    body.rhythm-layout .instr-btn {
+      --sz: clamp(52px, 7vh, 64px);
+      --btn-w: clamp(48px, 6.2vw, 62px);
+      --btn-h: clamp(58px, 12vh, 72px);
+    }
+    body.rhythm-layout .instr-btn[data-idx="0"],
+    body.rhythm-layout .instr-btn[data-idx="1"],
+    body.rhythm-layout .instr-btn[data-idx="2"],
+    body.rhythm-layout .instr-btn[data-idx="3"],
+    body.rhythm-layout .instr-btn[data-idx="4"],
+    body.rhythm-layout .instr-btn[data-idx="5"],
+    body.rhythm-layout .instr-btn[data-idx="6"],
+    body.rhythm-layout .instr-btn[data-idx="7"] { top: 78%; }
+  }
 </style>
 </head>
 <body>
@@ -1310,6 +1441,17 @@
           <button class="rhythm-menu-btn cancel" id="rhythm-menu-cancel">もどる</button>
           <button class="rhythm-menu-btn demo hidden" id="rhythm-menu-demo">おてほん</button>
           <button class="rhythm-menu-btn start" id="rhythm-menu-start">はじめる</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rhythm-complete" id="rhythm-complete" role="dialog" aria-modal="true" aria-label="リズムおしまい">
+      <div class="rhythm-complete-panel">
+        <div class="rhythm-complete-title" id="rhythm-complete-title">よくできたね</div>
+        <div class="rhythm-complete-text" id="rhythm-complete-text">リズムだけ きいてね</div>
+        <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
+          <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
+          <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
         </div>
       </div>
     </div>
@@ -2058,6 +2200,9 @@ var _rhythm = {
   demoActive: false,
   demoTimers: [],
   demoNoteBtn: null,
+  completeTimers: [],
+  hits: 0,
+  misses: 0,
   nowCue: false
 };
 
@@ -2277,7 +2422,6 @@ function _ensureRhythmBand() {
     return !!_activeStems[stem];
   });
   if (alreadyOn) {
-    _rhythm.ownsBand = false;
     return;
   }
   _rhythm.ownsBand = true;
@@ -2296,17 +2440,60 @@ function _scheduleRhythmNote() {
   _rhythm.nowCue = false;
   _renderRhythmTarget();
 }
+function _clearRhythmCompleteTimers() {
+  _rhythm.completeTimers.forEach(function(id) { clearTimeout(id); });
+  _rhythm.completeTimers = [];
+}
+function _hideRhythmComplete() {
+  _clearRhythmCompleteTimers();
+  var complete = document.getElementById('rhythm-complete');
+  if (complete) complete.classList.remove('show');
+  var actions = document.getElementById('rhythm-complete-actions');
+  if (actions) actions.classList.add('hidden');
+}
+function _showRhythmComplete(good) {
+  _hideRhythmMenu();
+  _clearRhythmCompleteTimers();
+  var complete = document.getElementById('rhythm-complete');
+  var title = document.getElementById('rhythm-complete-title');
+  var text = document.getElementById('rhythm-complete-text');
+  var actions = document.getElementById('rhythm-complete-actions');
+  if (!complete) return;
+  if (title) title.textContent = good ? 'よくできたね' : 'さいごまで できたね';
+  if (text) text.textContent = 'リズムだけ きいてね';
+  if (actions) actions.classList.add('hidden');
+  complete.classList.add('show');
+  _rhythm.completeTimers.push(setTimeout(function() {
+    if (text) text.textContent = 'もっと れんしゅうする？';
+    if (actions) actions.classList.remove('hidden');
+  }, 900));
+}
+function _finishRhythmLoop() {
+  if (!_rhythm.enabled) return;
+  _rhythm.enabled = false;
+  if (_rhythm.raf) {
+    cancelAnimationFrame(_rhythm.raf);
+    _rhythm.raf = 0;
+  }
+  _rhythm.idx = 0;
+  _clearRhythmButtonState();
+  _setRhythmStatus('リズムだけ きいてね', 'good');
+  var specialCue = document.getElementById('rhythm-special-bubble');
+  if (specialCue) {
+    specialCue.textContent = '';
+    specialCue.classList.remove('show', 'repeat', 'hold');
+  }
+  var queue = document.getElementById('rhythm-queue');
+  if (queue) queue.innerHTML = '';
+  bumpPono();
+  _showRhythmComplete(_rhythm.misses === 0 && _rhythm.hits >= RHYTHM_SONG.notes.length);
+}
 function _advanceRhythm(wasHit) {
   if (!_rhythm.enabled) return;
   _rhythm.idx++;
   var finished = _rhythm.idx > 0 && _rhythm.idx % RHYTHM_SONG.notes.length === 0;
   if (finished) {
-    _rhythm.idx = 0;
-    _rhythm.startPerfTime = performance.now() + _rhythmRingLeadMs();
-    _rhythm.streak = 0;
-    _setRhythmStatus('できた！もういっかい', 'good');
-    bumpPono();
-    _scheduleRhythmNote();
+    _finishRhythmLoop();
   } else {
     if (!wasHit && _rhythm.targetTime < performance.now()) {
       _rhythm.startPerfTime = performance.now() + _rhythmRingLeadMs() - _rhythmBeatOffsetFor(_rhythm.idx) * _rhythmBeatMs();
@@ -2326,22 +2513,27 @@ function _rhythmTick() {
   }
   if (until < -RHYTHM_MISS_MS) {
     _rhythm.streak = 0;
+    _rhythm.misses++;
     _setRhythmStatus('つぎいこう', 'miss');
     _pulseRhythmButton(btn, 'rhythm-miss');
     _advanceRhythm(false);
+    if (!_rhythm.enabled) return;
   }
   _rhythm.raf = requestAnimationFrame(_rhythmTick);
 }
 function _startRhythmMode() {
   if (_rhythm.enabled) return;
+  _hideRhythmComplete();
   _rhythm.enabled = true;
   _rhythm.idx = 0;
   _rhythm.streak = 0;
+  _rhythm.hits = 0;
+  _rhythm.misses = 0;
   _rhythm.nowCue = false;
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
   _setRhythmStatus('ひかるボタンを いま！でタッチ', null);
-  _rhythm.prevBandVolume = _bandVolume;
+  if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   var ac = getAC();
   var bandStartPerf = performance.now();
@@ -2467,6 +2659,7 @@ function _startRhythmDemo(thenStart) {
 function _beginRhythmCountdown() {
   _clearRhythmCountdown();
   _clearRhythmDemo(true);
+  _hideRhythmComplete();
   _setModeButtons('rhythm');
   var stepMs = 720;
   _showOverlay(3, 'リズム スタート');
@@ -2484,6 +2677,7 @@ function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
+  _hideRhythmComplete();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
   _setModeButtons('rhythm');
@@ -2497,7 +2691,7 @@ function _hideRhythmMenu() {
 function _stopRhythmMode() {
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
-  if (!_rhythm.enabled) return;
+  _hideRhythmComplete();
   _rhythm.enabled = false;
   if (_rhythm.raf) {
     cancelAnimationFrame(_rhythm.raf);
@@ -2519,6 +2713,7 @@ function _stopRhythmMode() {
   _bandVolume = _rhythm.prevBandVolume || 1;
 }
 function _setModeButtons(mode) {
+  document.body.classList.toggle('rhythm-layout', mode === 'rhythm');
   document.querySelectorAll('.mode-btn').forEach(function(btn) {
     var active = btn.dataset.mode === mode;
     btn.classList.toggle('active', active);
@@ -2538,6 +2733,7 @@ function handleRhythmTap(idx, btn) {
   var delta = performance.now() - _rhythm.targetTime;
   if (idx !== expected) {
     _rhythm.streak = 0;
+    _rhythm.misses++;
     _setRhythmStatus('ひかるボタンだよ', 'miss');
     _pulseRhythmButton(btn, 'rhythm-miss');
     return;
@@ -2548,6 +2744,7 @@ function handleRhythmTap(idx, btn) {
   }
   var abs = Math.abs(delta);
   _rhythm.streak++;
+  _rhythm.hits++;
   if (abs <= RHYTHM_GOOD_MS) {
     _setRhythmStatus(_rhythm.streak >= 4 ? 'れんぞく！' : 'ぴったり！', 'good');
   } else if (abs <= RHYTHM_OK_MS) {
@@ -2594,6 +2791,21 @@ if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
   _hideRhythmMenu();
+  setPlayMode('free');
+});
+var rhythmCompleteAgain = document.getElementById('rhythm-complete-again');
+if (rhythmCompleteAgain) rhythmCompleteAgain.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  _hideRhythmComplete();
+  _beginRhythmCountdown();
+});
+var rhythmCompleteDone = document.getElementById('rhythm-complete-done');
+if (rhythmCompleteDone) rhythmCompleteDone.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  _hideRhythmComplete();
   setPlayMode('free');
 });
 _renderRhythmSongMenu();
@@ -2682,7 +2894,7 @@ var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
 
 function _isOnButton(e) {
   return !!(e.target && e.target.closest && e.target.closest(
-    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .chord-pill-btn, .scale-btn, .set-trigger'
+    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .chord-pill-btn, .scale-btn, .set-trigger, .rhythm-menu, .rhythm-complete'
   ));
 }
 

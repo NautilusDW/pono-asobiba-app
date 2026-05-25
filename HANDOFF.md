@@ -150,6 +150,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-25 - [batch:101-oto-rhythm-mode] **Done follow-up 13** — user 依頼「リズム時は鍵盤風レイアウトも検討 / ワンループ後に自動継続せず、よくできたね→もっと練習する？→もう一回なら321」を反映。`oto/index.html` はリズムモード時のみドレミ順の鍵盤風配置へ切替、1曲完走時は判定を止めてドラムだけ残し、完了ダイアログで `おしまい` / `もういっかい` を選択可能にした。`もういっかい` は通常の `3,2,1` から再開。`sw.js` は v602。ローカル Playwright 1024x768 / 390x844 で鍵盤非重なり、完了UI、再開/終了 cleanup を確認済。 (by Codex)
+
 - 2026-05-25 - [batch:135-bento-production-ui-apply] **Done** — user が `D:\ポノのおへや\Bento\bento_redesign\BentoUI` に配置した alpha 済み素材を `assets/images/bento/ui/` に意味名で取り込み、BG は batch 134 の `001_main_picnic_background_raw.png` を同フォルダへ本配置。`bento/index.html` はメイン背景、右パネル/カード/ボタン/星ボタン、中央ガイド、デフォルト長方形弁当箱を新素材へ差し替え。`sw.js` は v600。ローカル Playwright で bento 初期画面、画像読み込み、ページエラーなしを確認。 (by Codex)
 
 - 2026-05-25 - [batch:101-oto-rhythm-mode] **Done follow-up 12** — user 依頼「ポノ上の次ボタン表示を撤去 / お手本中の余計なタップ音を止める / お手本も無音の3,2,1で開始」を反映。`oto/index.html` から常時の `いま/つぎ` 浮遊表示を削除し、デモ中は楽器ボタンと背景タップを無効化。お手本開始は無音カウントダウン後に自動演奏へ入り、終了後に通常のリズム開始カウントへ進む。`sw.js` は v599。ローカル Playwright 1024x768 で3曲メニュー、float不在、デモ中tapCount不変、デモ後のリズム開始を確認済。 (by Codex)
