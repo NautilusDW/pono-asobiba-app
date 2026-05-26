@@ -2265,6 +2265,19 @@ function fillStrokePixels(strokeIndex) {
   return changed;
 }
 
+function clearStrokePixels(strokeIndex) {
+  if (!pixelLetter || !pixelLetter.strokeMasks[strokeIndex]) return 0;
+  const strokeMask = pixelLetter.strokeMasks[strokeIndex];
+  let changed = 0;
+  for (let i = 0; i < strokeMask.length; i++) {
+    if (strokeMask[i] && pixelLetter.fill[i]) {
+      pixelLetter.fill[i] = 0;
+      changed += 1;
+    }
+  }
+  return changed;
+}
+
 function getStrokeFilledRatio(strokeIndex) {
   if (!pixelLetter || !pixelLetter.strokeMasks[strokeIndex]) return 0;
   const strokeMask = pixelLetter.strokeMasks[strokeIndex];
@@ -2412,11 +2425,17 @@ function onCorrectStroke(data) {
   maybeFinishWritingAfterProgress();
 }
 
-function onMistake() {
+function onMistake(data) {
   mistakeCount += 1;
-  if (mistakeCount % 2 === 1) {
-    setMessage(`${currentStrokeIndex + 1}かくめを もういちど なぞってね`, 'ゆっくりね');
+  const item = getCurrentCharacter();
+  const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : currentStrokeIndex;
+  const strokeNum = Math.max(strokesCompleted, Math.min(Math.max(0, item.strokes - 1), rawStrokeNum));
+  const erased = clearStrokePixels(strokeNum);
+  if (erased > 0) {
+    renderPixelLetter();
   }
+  stopTrail();
+  setMessage(`${strokeNum + 1}かくめを もういちど なぞってね`, 'ゆっくりね');
 }
 
 function onWriterComplete(summary) {
