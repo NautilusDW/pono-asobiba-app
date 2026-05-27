@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-28 - [batch:154-milmaru-egg-baby-raw] DONE - Codex: user 参照「ミルマル」デザインに合わせ、タマゴ→ひび割れ→孵化→ベビーまでの6段階横並び raw アセットシート `tmp/alpha_pending/154_milmaru_egg_baby_assets_raw/milmaru_egg_to_baby_asset_sheet_raw.png` を GPT Image 2 built-in で生成。2172x724 / RGB / 白背景。alpha 抜き・個別切り出し・本配置は未実施。 (by Codex)
 - 2026-05-28 - [batch:153-mojikko-writing-asset-swap] DONE - Codex: user 追加 `D:\ポノのおへや\Moji\assets` の新素材を文字書き画面に反映。背景は GPT Image 2 built-in で1枚絵 `background_garden.png` を生成・配置し、ボード/プロンプト/スター/設定/ミルマル/ボタン系を差し替え。文字リストと書き順の中身は画像へ焼き込まずHTMLボタン・動的カードのままにし、結果モーダルの白い棒入りボタンはCSSピクセルボタンへ置換。Playwrightで1600x900/1024x768表示、1画目判定、完了モーダルを確認。`sw.js` は v638。 (by Codex)
 - 2026-05-27 - [batch:152-mojikko-all-kana-ui-fix] DONE - Codex: もじっこファーム文字書き画面に、kana-json で判定可能なひらがな/カタカナ 150 文字を追加。左リストをひらがな/カタカナタブ + スクロールグリッドへ変更し、伸びていたプロンプト・左右パネル・書き取り板をCSSピクセル枠へ寄せて歪みを軽減。`sw.js` は v636。 (by Codex)
 - 2026-05-27 - [batch:151-mojikko-writing-end-progress] DONE - Codex: もじっこファーム文字書き判定に終点到達ゲートを追加。HanziWriter の正誤判定は維持しつつ、正しい線と判定されてもその画の終点側まで進んでいなければ未確定の一画を消してやり直す。`sw.js` は v634。 (by Codex)
