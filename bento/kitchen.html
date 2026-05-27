@@ -3930,6 +3930,51 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   transition: transform 0.1s linear;
   pointer-events: none;
 }
+.knife-speed-lines {
+  position: absolute;
+  left: 12%;
+  top: -4%;
+  width: 76%;
+  height: 108%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transform: skewX(-9deg);
+  background:
+    linear-gradient(90deg,
+      transparent 0 7%,
+      rgba(255, 255, 255, 0.88) 7% 8.4%,
+      transparent 8.4% 17%,
+      rgba(79, 184, 255, 0.42) 17% 19%,
+      transparent 19% 32%,
+      rgba(255, 220, 98, 0.58) 32% 34%,
+      transparent 34% 48%,
+      rgba(255, 255, 255, 0.76) 48% 49.5%,
+      transparent 49.5% 64%,
+      rgba(79, 184, 255, 0.34) 64% 66%,
+      transparent 66% 100%);
+  filter: blur(0.2px);
+  mix-blend-mode: screen;
+}
+.knife-speed-lines.show {
+  animation: knifeSpeedLines 0.18s ease-out both;
+}
+body.layout-editor-on .knife-speed-lines {
+  display: none;
+}
+@keyframes knifeSpeedLines {
+  0% {
+    opacity: 0;
+    transform: translateY(-8%) skewX(-9deg) scaleY(0.92);
+  }
+  18% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(14%) skewX(-9deg) scaleY(1.08);
+  }
+}
 /* v400 [Critical fix]: 通常プレイでは .knife を pointer-events: none で透過させて
    まな板タップを邪魔しないが、 editor モード (?edit=1) では knife 本体を掴んで
    drag できないとレイアウト調整できないため、 editor 時のみ pointer-events を復活。 */
@@ -4194,6 +4239,14 @@ body.layout-editor-on .endX-marker {
   align-items: center;
   justify-content: center;
 }
+.cut-piece--particle img,
+.flying-cut-piece--particle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  max-width: none;
+  max-height: none;
+}
 .cut-particle {
   display: block;
   width: 100%;
@@ -4259,6 +4312,13 @@ body.layout-editor-on .endX-marker {
   user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
+}
+.flying-cut-piece.flying-cut-piece--particle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  max-width: none;
+  max-height: none;
 }
 .flying-cut-piece.cabbage-burst-piece {
   animation-name: cabbagePieceFlyOut;
@@ -5000,6 +5060,7 @@ body.layout-editor-on .endX-marker {
         <div class="ton-burst" id="ton-text">トン！</div>
 
         <div class="cutting-board" id="cutting-board" role="button" tabindex="0" aria-label="まな板（タップまたは Enter/Space キーでトントン）" aria-keyshortcuts="Enter Space">
+          <div class="knife-speed-lines" id="knife-speed-lines" aria-hidden="true"></div>
           <!-- [v419] knife を wrapper(.knife) + inner(.knife-inner) の 2 層に分離。
                editor が動かすのは外側 .knife (per-ingredient transform を saved-layout
                に保存)、 chop アニメが動かすのは内側 .knife-inner。 CSS transform は
@@ -5490,25 +5551,34 @@ body.layout-editor-on .endX-marker {
     },
     {
       id: 'onion', name: 'たまねぎ', emoji: '🧅', piece: '🧅',
-      chopCount: 14, implemented: true,
+      chopCount: 40, implemented: true,
       prepActions: [
         { type: 'chop' },
       ],
       imageBase: 'onion/onion_whole_raw',
       fridgeImage: '../assets/images/bento/cooking/onion/onion_chopped_raw.png',
       particleKind: 'onion',
-      rapidTap: true,
-      queuedTapLimit: 18,
-      chopTiming: {
-        slideMs: 62,
-        downDelayMs: 68,
-        impactDelayMs: 132,
-        liftDelayMs: 154,
-        releaseDelayMs: 218,
-        innerMs: 58,
+      particleImages: {
+        dir: 'onion/mince',
+        prefix: 'onion_mince_piece_',
+        from: 1,
+        to: 22,
+        pad: 2,
+        sequence: [1, 8, 15, 3, 10, 17, 5, 12, 19, 7, 14, 21, 2, 9, 16, 4, 11, 18, 6, 13, 20, 22],
+        burstStride: 5,
       },
-      pieceBurstCount: 12,
-      bowlPieceLimit: 132,
+      rapidTap: true,
+      queuedTapLimit: 48,
+      chopTiming: {
+        slideMs: 34,
+        downDelayMs: 42,
+        impactDelayMs: 68,
+        liftDelayMs: 84,
+        releaseDelayMs: 118,
+        innerMs: 32,
+      },
+      pieceBurstCount: 5,
+      bowlPieceLimit: 210,
       chopMechanics: {
         startX_pct: 86, endX_pct: 14,
         liftY_pct: 0, chopY_pct: 50,
@@ -5702,7 +5772,7 @@ body.layout-editor-on .endX-marker {
     { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball', 'onion'] },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'], startFromRaw: true },
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'], startFromRaw: true },
-    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
+    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', needs: ['chicken_marinated'] },
     { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'], startFromRaw: true },
     { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'], startFromRaw: true },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', needs: ['cabbage'] },
@@ -6115,9 +6185,9 @@ body.layout-editor-on .endX-marker {
       marinatePieces: [
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png'], x: 34, y: 42, size: 15.4, rot: -8 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png'], x: 50, y: 38, size: 14.8, rot: 6 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 66, y: 44, size: 14.8, rot: -6 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png'], x: 43, y: 60, size: 13.8, rot: 4 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png'], x: 58, y: 61, size: 13.8, rot: 8 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png'], x: 66, y: 44, size: 14.8, rot: -6 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png'], x: 43, y: 60, size: 13.8, rot: 4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_plain.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_light.png', '../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png'], x: 58, y: 61, size: 13.8, rot: 8 },
       ],
       steps: [
         { label: 'したあじに からめよう', caption: 'ひとつずつ ぐるぐる！', burst: 'とろっ！' },
@@ -6142,9 +6212,9 @@ body.layout-editor-on .endX-marker {
       marinatePieces: [
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_01_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_01_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_01_coated.png'], x: 34, y: 42, size: 15.4, rot: -8 },
         { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_02_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_02_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_02_coated.png'], x: 50, y: 38, size: 14.8, rot: 6 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_05_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_05_coated.png'], x: 66, y: 44, size: 14.8, rot: -6 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_07_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_07_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_07_coated.png'], x: 43, y: 60, size: 13.8, rot: 4 },
-        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_08_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_08_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_08_coated.png'], x: 58, y: 61, size: 13.8, rot: 8 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_03_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_03_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_03_coated.png'], x: 66, y: 44, size: 14.8, rot: -6 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_04_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_04_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_04_coated.png'], x: 43, y: 60, size: 13.8, rot: 4 },
+        { stages: ['../assets/images/bento/cooking/chicken/marinate/chicken_marinate_piece_05_marinated.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_05_light.png', '../assets/images/bento/cooking/chicken/flour/chicken_flour_piece_05_coated.png'], x: 58, y: 61, size: 13.8, rot: 8 },
       ],
       steps: [
         { label: 'こなに まぶそう', caption: '1こずつ こなの なかで ぐるぐる！', burst: 'ぱふっ！' },
@@ -6696,6 +6766,7 @@ body.layout-editor-on .endX-marker {
     // [v419] .knife-inner は wrapper の中の chop アニメ専用レイヤ (Y を上下に動かす)。
     // editor は外側 .knife を動かし、 chop アニメは内側 .knife-inner を動かす。
     knifeInner:    document.getElementById('knife').querySelector('.knife-inner'),
+    knifeSpeedLines: document.getElementById('knife-speed-lines'),
     chopYMarker:   document.getElementById('chopY-marker'),
     ingBboxMarker: document.getElementById('ingredient-bbox-marker'),
     startXMarker:  document.getElementById('startX-marker'),
@@ -13644,13 +13715,23 @@ body.layout-editor-on .endX-marker {
     state.boardTapPointerId = evt.pointerId;
     state.boardTapStartX = evt.clientX;
     state.boardTapStartY = evt.clientY;
+    state.boardTapHandledOnDown = true;
     try { els.board.setPointerCapture(evt.pointerId); } catch (_) {}
+    evt.preventDefault();
+    state.suppressBoardClickUntil = Date.now() + 650;
+    onBoardTap();
   }
 
   function onBoardPointerUp(evt) {
     if (!isDirectBoardTapPointer(evt) || state.boardTapPointerId !== evt.pointerId) return;
     const moved = Math.hypot(evt.clientX - state.boardTapStartX, evt.clientY - state.boardTapStartY);
+    const handledOnDown = !!state.boardTapHandledOnDown;
     resetBoardPointerTap(evt);
+    if (handledOnDown) {
+      evt.preventDefault();
+      state.suppressBoardClickUntil = Date.now() + 650;
+      return;
+    }
     if (moved > 24) return;
     evt.preventDefault();
     state.suppressBoardClickUntil = Date.now() + 650;
@@ -13662,6 +13743,7 @@ body.layout-editor-on .endX-marker {
       try { els.board.releasePointerCapture(evt.pointerId); } catch (_) {}
     }
     state.boardTapPointerId = null;
+    state.boardTapHandledOnDown = false;
     state.boardTapStartX = 0;
     state.boardTapStartY = 0;
   }
@@ -13719,6 +13801,7 @@ body.layout-editor-on .endX-marker {
     const ing = state.current;
     const progressSnapshot = state.chopProgress;
     const comboSnapshot = state.combo;
+    showKnifeSpeedLines();
     playChopAnim(function () {
       applyChopImpactEffects(ing, progressSnapshot, comboSnapshot);
     });
@@ -13770,16 +13853,23 @@ body.layout-editor-on .endX-marker {
       const v = Number(cfg[name]);
       return isFinite(v) && v >= 0 ? v : fallback;
     }
-    const innerMs = ms('innerMs', 100);
-    const liftDelayMs = ms('liftDelayMs', 340);
+    const innerMs = ms('innerMs', 64);
+    const liftDelayMs = ms('liftDelayMs', 158);
     return {
-      slideMs: ms('slideMs', 180),
-      downDelayMs: ms('downDelayMs', 200),
-      impactDelayMs: ms('impactDelayMs', 300),
+      slideMs: ms('slideMs', 92),
+      downDelayMs: ms('downDelayMs', 98),
+      impactDelayMs: ms('impactDelayMs', 132),
       liftDelayMs: liftDelayMs,
-      releaseDelayMs: Math.max(ms('releaseDelayMs', liftDelayMs + innerMs + 10), liftDelayMs + innerMs),
+      releaseDelayMs: Math.max(ms('releaseDelayMs', liftDelayMs + innerMs + 6), liftDelayMs + innerMs),
       innerMs: innerMs,
     };
+  }
+
+  function showKnifeSpeedLines() {
+    if (!els.knifeSpeedLines) return;
+    els.knifeSpeedLines.classList.remove('show');
+    void els.knifeSpeedLines.offsetWidth;
+    els.knifeSpeedLines.classList.add('show');
   }
 
   function playChopAnim(onImpact) {
@@ -13992,7 +14082,7 @@ body.layout-editor-on .endX-marker {
     const cx = w * 0.5;
     const cy = h * 0.55;
     const pieceSize = isParticle
-      ? (8 + Math.random() * 13)
+      ? (7 + Math.random() * 11)
       : (isCabbage ? (42 + Math.random() * 28) : (isChicken ? 42 + Math.random() * 8 : (burstCount > 1 ? 92 : 86)));
     let rawX;
     let rawY;
@@ -14066,6 +14156,25 @@ body.layout-editor-on .endX-marker {
   }
 
   function getCutPieceData(ing, variantOffset) {
+    if (ing && ing.particleKind && ing.particleImages) {
+      const cfg = ing.particleImages;
+      const seq = Array.isArray(cfg.sequence) && cfg.sequence.length
+        ? cfg.sequence
+        : Array.from({ length: Math.max(0, (cfg.to || 0) - (cfg.from || 0) + 1) }, function (_, i) {
+            return (cfg.from || 0) + i;
+          });
+      const stride = Math.max(1, cfg.burstStride || 1);
+      const offset = Math.max(0, variantOffset || 0);
+      const n = seq[(((state.chopProgress || 1) - 1) * stride + offset) % seq.length];
+      const idx = String(n).padStart(cfg.pad || 3, '0');
+      const prefix = cfg.prefix || (cfg.dir + '_');
+      return {
+        type: 'particleImage',
+        kind: ing.particleKind,
+        variant: offset,
+        src: '../assets/images/bento/cooking/' + cfg.dir + '/' + prefix + idx + '.png',
+      };
+    }
     if (ing && ing.particleKind) {
       return {
         type: 'particle',
@@ -14100,6 +14209,14 @@ body.layout-editor-on .endX-marker {
     const piece = document.createElement('span');
     piece.className = className;
     if (pieceData.type === 'image') {
+      const img = document.createElement('img');
+      img.src = pieceData.src;
+      img.alt = '';
+      img.draggable = false;
+      piece.appendChild(img);
+    } else if (pieceData.type === 'particleImage') {
+      piece.classList.add('cut-piece--particle');
+      if (className.indexOf('flying-cut-piece') !== -1) piece.classList.add('flying-cut-piece--particle');
       const img = document.createElement('img');
       img.src = pieceData.src;
       img.alt = '';
@@ -14173,7 +14290,7 @@ body.layout-editor-on .endX-marker {
     const dx = endLocalX - startLocalX;
     const dy = endLocalY - startLocalY;
     if (isCabbage || isParticle) {
-      const flySize = isParticle ? (8 + Math.random() * 15) : (54 + Math.random() * 48);
+      const flySize = isParticle ? (7 + Math.random() * 11) : (54 + Math.random() * 48);
       const midT = 0.22 + laneT * 0.46 + Math.random() * 0.1;
       const arcLift = isParticle
         ? 80 + (1 - Math.abs(fanT) * 1.1) * 142 + Math.random() * 62
@@ -14186,9 +14303,9 @@ body.layout-editor-on .endX-marker {
       fly.style.animationDuration = ((isParticle ? 0.36 : 0.46) + laneT * 0.12 + Math.random() * 0.12) + 's';
       fly.style.setProperty('--mid-x', (dx * midT) + 'px');
       fly.style.setProperty('--mid-y', (dy * 0.42 - arcLift + midLaneY) + 'px');
-      fly.style.setProperty('--start-scale', ((isParticle ? 0.82 : 0.56) + Math.random() * (isParticle ? 0.22 : 0.28)).toFixed(2));
-      fly.style.setProperty('--mid-scale', ((isParticle ? 1.0 : 0.82) + Math.random() * (isParticle ? 0.42 : 0.5)).toFixed(2));
-      fly.style.setProperty('--end-scale', ((isParticle ? 0.7 : 0.56) + Math.random() * (isParticle ? 0.26 : 0.34)).toFixed(2));
+      fly.style.setProperty('--start-scale', ((isParticle ? 0.88 : 0.56) + Math.random() * (isParticle ? 0.18 : 0.28)).toFixed(2));
+      fly.style.setProperty('--mid-scale', ((isParticle ? 1.08 : 0.82) + Math.random() * (isParticle ? 0.28 : 0.5)).toFixed(2));
+      fly.style.setProperty('--end-scale', ((isParticle ? 0.78 : 0.56) + Math.random() * (isParticle ? 0.2 : 0.34)).toFixed(2));
       fly.style.setProperty('--mid-rot', ((fanT * (isParticle ? 260 : 170)) + 35 + Math.random() * (isParticle ? 240 : 150)) + 'deg');
     } else if (spreadBurst) {
       const flySize = 90 + Math.random() * 24;
