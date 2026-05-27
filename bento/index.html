@@ -474,10 +474,15 @@ html, body {
 .free-placed-item:active { cursor: grabbing; }
 .free-placed-item.selected {
   filter:
-    drop-shadow(0 0 2px #FFFFFF)
-    drop-shadow(0 0 0 #FFFFFF)
-    drop-shadow(0 0 5px #22C55E)
-    drop-shadow(0 0 10px rgba(21, 191, 115, 0.82))
+    drop-shadow(2px 0 0 #FFFFFF)
+    drop-shadow(-2px 0 0 #FFFFFF)
+    drop-shadow(0 2px 0 #FFFFFF)
+    drop-shadow(0 -2px 0 #FFFFFF)
+    drop-shadow(4px 0 0 #22C55E)
+    drop-shadow(-4px 0 0 #22C55E)
+    drop-shadow(0 4px 0 #22C55E)
+    drop-shadow(0 -4px 0 #22C55E)
+    drop-shadow(0 7px 6px rgba(21, 191, 115, 0.28))
     drop-shadow(0 8px 10px rgba(68,42,16,0.2));
 }
 .free-placed-item.pop {
@@ -495,9 +500,7 @@ html, body {
   pointer-events: none;
 }
 .free-placed-item.selected img {
-  filter:
-    drop-shadow(0 0 0 #22C55E)
-    drop-shadow(0 0 5px rgba(34,197,94,0.88));
+  filter: none;
 }
 .free-placed-item.type-pick img {
   clip-path: inset(0 0 18% 0);
@@ -861,6 +864,53 @@ html, body {
   height: 38px;
   object-fit: contain;
 }
+.free-context-toolbar {
+  position: absolute;
+  z-index: 36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border: 3px solid #34D399;
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.96);
+  box-shadow: 0 7px 16px rgba(34, 120, 82, 0.18);
+  color: #064E3B;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.free-context-toolbar.above {
+  transform: translate(-50%, -100%);
+}
+.free-context-toolbar button {
+  min-width: 34px;
+  height: 30px;
+  padding: 0 8px;
+  border: 2px solid #8AD6B6;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #064E3B;
+  font-family: inherit;
+  font-size: 0.55rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
+}
+.free-context-toolbar button.active {
+  background: #BBF7D0;
+  border-color: #22C55E;
+}
+.free-context-toolbar button.primary {
+  min-width: 54px;
+  background: #FFE1A8;
+  border-color: #F2915A;
+  color: #6B3E16;
+}
+.free-context-toolbar button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
 .free-placed-item.brush-locked {
   pointer-events: none;
 }
@@ -1046,18 +1096,28 @@ html, body {
 }
 .free-palette-item.box-choice.selected .free-palette-visual {
   filter:
-    drop-shadow(0 0 2px #FFFFFF)
-    drop-shadow(0 0 0 #FFFFFF)
-    drop-shadow(0 0 5px #22C55E)
-    drop-shadow(0 0 11px rgba(21, 191, 115, 0.82));
+    drop-shadow(2px 0 0 #FFFFFF)
+    drop-shadow(-2px 0 0 #FFFFFF)
+    drop-shadow(0 2px 0 #FFFFFF)
+    drop-shadow(0 -2px 0 #FFFFFF)
+    drop-shadow(4px 0 0 #22C55E)
+    drop-shadow(-4px 0 0 #22C55E)
+    drop-shadow(0 4px 0 #22C55E)
+    drop-shadow(0 -4px 0 #22C55E)
+    drop-shadow(0 5px 5px rgba(21, 191, 115, 0.28));
 }
 .free-bento-shape.box-selection-highlight {
   filter:
     drop-shadow(0 12px 16px rgba(93, 78, 55, 0.2))
-    drop-shadow(0 0 2px #FFFFFF)
-    drop-shadow(0 0 0 #FFFFFF)
-    drop-shadow(0 0 7px #22C55E)
-    drop-shadow(0 0 14px rgba(21, 191, 115, 0.86));
+    drop-shadow(2px 0 0 #FFFFFF)
+    drop-shadow(-2px 0 0 #FFFFFF)
+    drop-shadow(0 2px 0 #FFFFFF)
+    drop-shadow(0 -2px 0 #FFFFFF)
+    drop-shadow(4px 0 0 #22C55E)
+    drop-shadow(-4px 0 0 #22C55E)
+    drop-shadow(0 4px 0 #22C55E)
+    drop-shadow(0 -4px 0 #22C55E)
+    drop-shadow(0 7px 7px rgba(21, 191, 115, 0.3));
 }
 .free-box-ok-card {
   order: 20;
@@ -1283,8 +1343,8 @@ html, body {
 
 /* ── 右: 食材選択パネル ── */
 .right-panel {
-  width: 34%;
-  max-width: 258px;
+  width: 31%;
+  max-width: 238px;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -2692,7 +2752,7 @@ const FREE_GUIDE_COPY = {
 const FREE_ASSET = '../assets/images/bento/free-layout/';
 const BENTO_UI_ASSET = '../assets/images/bento/ui/';
 const CHARACTER_BOX_INSIDE_MASK = FREE_ASSET + 'box_character_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v1';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v2';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -2805,9 +2865,9 @@ const bentoBoxes = [
     lidImage: FREE_ASSET + 'box_bear_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
     maskKey: 'bear_character_box',
-    maskBounds: { x: 137, y: 39, w: 489, h: 348 },
+    maskBounds: { x: 116, y: 17, w: 543, h: 386 },
     shape: 'box_bear',
-    bounds: { x: 54, y: 24, w: 652, h: 410 },
+    bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 462 / 430,
     placeBounds: { x: 164, y: 82, w: 432, h: 302 },
     clipPoints: [[166,116], [188,70], [260,54], [300,96], [380,84], [460,96], [500,54], [572,70], [594,116], [590,250], [568,338], [500,386], [380,406], [260,386], [192,338], [170,250]],
@@ -2845,9 +2905,9 @@ const bentoBoxes = [
     lidImage: FREE_ASSET + 'box_bear_pink_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
     maskKey: 'bear_character_box',
-    maskBounds: { x: 137, y: 39, w: 489, h: 348 },
+    maskBounds: { x: 116, y: 17, w: 543, h: 386 },
     shape: 'box_bear',
-    bounds: { x: 54, y: 24, w: 652, h: 410 },
+    bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 462 / 430,
     placeBounds: { x: 164, y: 82, w: 432, h: 302 },
     clipPoints: [[166,116], [188,70], [260,54], [300,96], [380,84], [460,96], [500,54], [572,70], [594,116], [590,250], [568,338], [500,386], [380,406], [260,386], [192,338], [170,250]],
@@ -2884,7 +2944,8 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_cat_blue_rice.png',
     lidImage: FREE_ASSET + 'box_cat_blue_lid.png',
     shape: 'box_bear',
-    bounds: { x: 76, y: 28, w: 608, h: 408 },
+    bounds: { x: 30, y: 0, w: 700, h: 456 },
+    imageAspect: 561 / 516,
     placeBounds: { x: 166, y: 90, w: 428, h: 300 },
     clipPoints: [[164,124], [190,54], [292,118], [380,94], [468,118], [570,54], [596,124], [586,252], [564,338], [496,390], [380,408], [264,390], [196,338], [174,252]],
     imageScale: 1.02,
@@ -2920,7 +2981,8 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_cat_rice.png',
     lidImage: FREE_ASSET + 'box_cat_lid.png',
     shape: 'box_bear',
-    bounds: { x: 76, y: 28, w: 608, h: 408 },
+    bounds: { x: 30, y: 0, w: 700, h: 456 },
+    imageAspect: 561 / 516,
     placeBounds: { x: 166, y: 90, w: 428, h: 300 },
     clipPoints: [[164,124], [190,54], [292,118], [380,94], [468,118], [570,54], [596,124], [586,252], [564,338], [496,390], [380,408], [264,390], [196,338], [174,252]],
     imageScale: 1.02,
@@ -3929,7 +3991,9 @@ function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
   const b = getPlacementBounds(box);
   const size = (item && item.size ? item.size : 70) * (item && item.scale ? item.scale : 1);
-  const margin = item && item.type === 'divider' ? 14 : Math.max(22, size * 0.28);
+  const margin = item && item.type === 'divider'
+    ? Math.max(40, size * 0.34)
+    : Math.max(22, size * 0.28);
   return {
     x: clamp(x, b.x + margin, b.x + b.w - margin),
     y: clamp(y, b.y + margin, b.y + b.h - margin),
@@ -4908,6 +4972,73 @@ function createFreePlacedElement(item, interactive) {
   }
   return el;
 }
+function createFreeContextButton(label, className, onClick, disabled = false) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  if (className) b.className = className;
+  b.disabled = !!disabled;
+  b.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (b.disabled) return;
+    onClick();
+  });
+  return b;
+}
+function createFreeContextToolbar() {
+  const item = getSelectedFreeItem();
+  if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
+  const toolbar = document.createElement('div');
+  toolbar.className = 'free-context-toolbar';
+
+  const presets = getAccessorySizePresets(item);
+  if (presets.length) {
+    const current = getAccessorySizeKey(item);
+    presets.forEach(preset => {
+      toolbar.appendChild(createFreeContextButton(
+        preset.label,
+        preset.key === current ? 'active' : '',
+        () => setSelectedAccessorySize(preset.key)
+      ));
+    });
+  }
+
+  if (item.snapTarget) {
+    const editingCup = getEditingCup();
+    const isEditingThisCup = editingCup && editingCup.uid === item.uid;
+    toolbar.appendChild(createFreeContextButton(
+      isEditingThisCup ? 'OK' : 'なおす',
+      'primary',
+      () => isEditingThisCup ? closeCupEditor() : openCupEditor(item.uid)
+    ));
+  }
+
+  if (item.type !== 'rice') {
+    const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
+    if (selectedUnit && units.length >= 2 && overlapUnits.length) {
+      const index = units.findIndex(unit => unit.key === selectedUnit.key);
+      const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
+      const canDown = overlapIndexes.some(i => i >= 0 && i < index);
+      const canUp = overlapIndexes.some(i => i > index);
+      toolbar.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
+      toolbar.appendChild(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
+    }
+  }
+
+  if (!toolbar.childElementCount) return null;
+  const size = (item.size || 72) * (item.scale || 1);
+  const x = clamp(item.x || FREE_LAYOUT_W / 2, 86, FREE_LAYOUT_W - 86);
+  const belowY = (item.y || FREE_LAYOUT_H / 2) + size / 2 + 12;
+  const canShowBelow = belowY + 38 < FREE_LAYOUT_H - 8;
+  const y = canShowBelow
+    ? clamp(belowY, 8, FREE_LAYOUT_H - 42)
+    : clamp((item.y || FREE_LAYOUT_H / 2) - size / 2 - 12, 48, FREE_LAYOUT_H - 8);
+  if (!canShowBelow) toolbar.classList.add('above');
+  toolbar.style.left = toPctX(x);
+  toolbar.style.top = toPctY(y);
+  return toolbar;
+}
 function createFreeMainGuideTapLayer() {
   const layer = document.createElement('div');
   layer.className = 'free-main-guide-tap-layer';
@@ -5016,7 +5147,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     badge.textContent = getTierLabel(activeTier, box);
     host.appendChild(badge);
   }
-  if (opts.interactive && freeMaskEditorOpen && freeLayoutTab === 'box' && box.maskImage) {
+  if (opts.interactive && freeMaskEditorOpen && freeMaskEditorMode && box.maskImage) {
     const preview = document.createElement('div');
     preview.className = 'free-mask-preview';
     applyBoxVisualMask(preview, box);
@@ -5033,6 +5164,8 @@ function renderFreeLayoutInto(host, opts = {}) {
   });
   host.appendChild(layer);
   if (opts.interactive) {
+    const contextToolbar = createFreeContextToolbar();
+    if (contextToolbar) host.appendChild(contextToolbar);
     if (freeBrushStampDef) {
       const hint = document.createElement('div');
       hint.className = 'free-brush-stamp-hint';
@@ -5279,7 +5412,7 @@ function makeMaskRange(label, prop, min, max, bounds) {
 function renderFreeMaskEditorControls() {
   const box = getSelectedBentoBox();
   const bounds = getBoxMaskBounds(box);
-  if (!freeMaskEditorMode || !box || !box.maskImage || !bounds || freeLayoutTab !== 'box') return null;
+  if (!freeMaskEditorMode || !box || !box.maskImage || !bounds) return null;
   const panel = document.createElement('div');
   panel.className = 'free-mask-panel';
   const title = document.createElement('div');
@@ -5457,8 +5590,6 @@ function renderFreeCupEditorControls() {
     return null;
   }
   const frag = document.createDocumentFragment();
-  const sizeControls = renderCupSizeControls(cup);
-  if (sizeControls) frag.appendChild(sizeControls);
   frag.appendChild(renderCupContentsList(cup));
 
   const actions = document.createElement('div');
@@ -5558,20 +5689,11 @@ function renderFreeLayoutControls() {
   const maskControls = renderFreeMaskEditorControls();
   if (maskControls) tray.appendChild(maskControls);
 
-  const sizeControls = renderSelectedAccessorySizeControls();
-  if (sizeControls) tray.appendChild(sizeControls);
-
   const brushStampControls = renderBrushStampControls();
   if (brushStampControls) tray.appendChild(brushStampControls);
 
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
-
-  const layerControls = renderSelectedLayerControls();
-  if (layerControls) tray.appendChild(layerControls);
-
-  const cupControls = renderFreeCupControls();
-  if (cupControls) tray.appendChild(cupControls);
 
   const items = guideTabs.length
     ? (freeLayoutTab === 'box' ? bentoBoxes : getFreePaletteItems(freeLayoutTab))
@@ -5627,6 +5749,8 @@ function loadFreeLayoutStage() {
   if (maskEdit && maskEdit.boxId) {
     selectedBentoBoxId = maskEdit.boxId;
     freeMaskEditorOpen = true;
+    const titleScreen = document.getElementById('title-screen');
+    if (titleScreen) titleScreen.classList.add('hidden');
   }
   resetFreeMainGuide();
   if (maskEdit) freeGuideDismissedKey = getFreeGuideDismissKey();
