@@ -17,7 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-05-27 - [batch:148-mojikko-writing-old-judgment] DONE - Codex: もじっこファーム文字書き画面のローカル進捗判定を外し、正誤判定をHanziWriter側に戻した。未確定の一画は描き始め・ミス・途中離しで消えるようにして、重ね塗りで進まない挙動へ変更。`sw.js` は v628。 (by Codex)
+- 2026-05-27 - [batch:148-mojikko-writing-old-judgment] DONE - Codex: もじっこファーム文字書き画面のローカル進捗判定を外し、正誤判定をHanziWriter側に戻した。未確定の一画は描き始め・ミス・途中離しで消えるようにして、重ね塗りで進まない挙動へ変更。`sw.js` は v629。 (by Codex)
 - 2026-05-27 - [batch:147-bento-mask-overlap-layer] DONE - Codex: 熊箱マスク基準値を X137/Y39/W489/H348 に更新し、空箱/ご飯入り/蓋で描画矩形を共通化。キャベツは同じ段ごとの layerGroup として扱い、上下ボタンは実際に重なっているユニットだけを入れ替えるよう変更。選択中アイテム/キャベツグループは緑の太線で強調。`sw.js` は v627。 (by Codex)
 - 2026-05-27 - [batch:146-bento-cup-cabbage-brush] DONE - Codex: 水玉カップをチェックカップ形状ベースで丸い底まで見える水色ドット画像へ差し替え。キャベツは4ボタン操作を廃止し、選択後に弁当箱をタップして下レイヤーに敷くスタンプ方式へ変更。スタンプ中は他のおかずをドラッグできない。`?edit=1` / `?maskedit=1` でマスク調整から開始できる導線も追加。`sw.js` は v626。 (by Codex)
 - 2026-05-27 - [batch:145-mojikko-writing-source-reset] DONE - Codex: もじっこファーム文字書き画面のガイド文字をカスタムSVG基準からHanziWriter/kana-json基準へ戻し、ドット絵表示・塗り・書き順判定が同じ文字データを見る形に整理。`sw.js` は v625。 (by Codex)
