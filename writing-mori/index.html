@@ -1360,6 +1360,9 @@ const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 4;
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
+const STROKE_LOCAL_PASS_RATIO = 0.34;
+const STROKE_LOCAL_PASS_MIN_DISTANCE = 120;
+const STROKE_LOCAL_PASS_DISTANCE_RATIO = 0.42;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1636,6 +1639,44 @@ function rawMedianPointToGrid(point, gridSize) {
   };
 }
 
+function guideGridPointToRawMedian(point, gridSize, pixelPadding) {
+  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+  const gridPadding = (pixelPadding / 1000) * gridSize;
+  const scale = (gridSize - gridPadding * 2) / 1024;
+  if (!Number.isFinite(scale) || scale <= 0) return null;
+  return [
+    Math.max(0, Math.min(1024, (point.x - gridPadding) / scale)),
+    Math.max(0, Math.min(1024, (gridSize - gridPadding - point.y) / scale))
+  ];
+}
+
+async function prepareWriterCharData(data, item, gridSize, pixelPadding) {
+  if (!data || !item || !item.guideSvg || !Array.isArray(data.medians)) return data;
+  try {
+    const customGuide = await loadGuideSvgMask(item, gridSize);
+    const guideBounds = customGuide && getMaskBounds(customGuide.mask, gridSize);
+    if (!guideBounds) return data;
+
+    const mapMedianPoint = createMedianToGuideMapper(data.medians, guideBounds, gridSize);
+    const medians = data.medians.map((median) => {
+      if (!Array.isArray(median)) return median;
+      return median.map((point) => {
+        const guidePoint = mapMedianPoint(point);
+        return guideGridPointToRawMedian(guidePoint, gridSize, pixelPadding) || point;
+      });
+    });
+
+    return {
+      ...data,
+      medians,
+      _mojikkoGuideAdjusted: true
+    };
+  } catch (error) {
+    console.warn('Could not align writer medians to custom guide:', item.guideSvg, error);
+    return data;
+  }
+}
+
 function getMedianBounds(medians, gridSize) {
   let minX = Infinity;
   let minY = Infinity;
@@ -1875,11 +1916,11 @@ async function buildPixelLetterMask(data, item, token) {
         merged = mergeStrokeMasks(strokeMasks, gridSize);
       }
     }
-    updateWriterDisplayOffset(offsetX, offsetY, gridSize);
-
     let guideMask = merged.mask;
     let totalMaskCells = merged.totalMaskCells;
     let mapMedianPoint = null;
+    let writerOffsetX = offsetX;
+    let writerOffsetY = offsetY;
     if (item && item.guideSvg) {
       try {
         const customGuide = await loadGuideSvgMask(item, gridSize);
@@ -1890,6 +1931,10 @@ async function buildPixelLetterMask(data, item, token) {
           if (split && split.strokeMasks) {
             strokeMasks = split.strokeMasks;
             mapMedianPoint = split.mapMedianPoint;
+            if (data._mojikkoGuideAdjusted) {
+              writerOffsetX = 0;
+              writerOffsetY = 0;
+            }
           }
         }
       } catch (error) {
@@ -1898,6 +1943,7 @@ async function buildPixelLetterMask(data, item, token) {
     }
 
     if (token !== undefined && token !== writerLoadToken) return false;
+    updateWriterDisplayOffset(writerOffsetX, writerOffsetY, gridSize);
 
     pixelLetter = {
       gridSize,
@@ -1907,6 +1953,8 @@ async function buildPixelLetterMask(data, item, token) {
       totalMaskCells,
       offsetX,
       offsetY,
+      writerOffsetX,
+      writerOffsetY,
       mapMedianPoint
     };
     renderPixelLetter();
@@ -2102,10 +2150,12 @@ function createWriter() {
     highlightColor: 'rgba(61, 168, 126, 0.72)',
     radicalColor: 'rgba(92, 74, 58, 0.44)',
     drawingWidth: 28,
+    leniency: 1.35,
     strokeAnimationSpeed: 0.75,
     delayBetweenStrokes: 500,
     charDataLoader: function(char, onComplete) {
       loadKanaData(char)
+        .then((data) => prepareWriterCharData(data, item, PIXEL_GRID_SIZE, getPixelLetterPadding()))
         .then((data) => {
           if (token !== writerLoadToken) return;
           currentCharData = data;
@@ -2291,6 +2341,37 @@ function getStrokeFilledRatio(strokeIndex) {
   return total ? filled / total : 0;
 }
 
+function getStrokeMedianDistance(strokeIndex) {
+  if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return 0;
+  const median = currentCharData.medians[strokeIndex];
+  if (!Array.isArray(median) || median.length < 2) return 0;
+  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  let total = 0;
+  let prev = null;
+  median.forEach((point) => {
+    const gridPoint = pixelLetter.mapMedianPoint
+      ? pixelLetter.mapMedianPoint(point)
+      : rawMedianPointToGrid(point, gridSize);
+    if (!gridPoint || !Number.isFinite(gridPoint.x) || !Number.isFinite(gridPoint.y)) return;
+    if (prev) {
+      const dx = gridPoint.x - prev.x;
+      const dy = gridPoint.y - prev.y;
+      total += Math.sqrt(dx * dx + dy * dy);
+    }
+    prev = gridPoint;
+  });
+  return total * (1000 / gridSize);
+}
+
+function isLocalStrokeTraceComplete(strokeIndex) {
+  const fillRatio = getStrokeFilledRatio(strokeIndex);
+  const requiredDistance = Math.max(
+    STROKE_LOCAL_PASS_MIN_DISTANCE,
+    getStrokeMedianDistance(strokeIndex) * STROKE_LOCAL_PASS_DISTANCE_RATIO
+  );
+  return fillRatio >= STROKE_LOCAL_PASS_RATIO && trailDistance >= requiredDistance;
+}
+
 function maybeUpdateProgressAfterFill() {
   if (complete || !pixelLetter) return;
   const item = getCurrentCharacter();
@@ -2302,7 +2383,12 @@ function maybeUpdateProgressAfterFill() {
 
   const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
-  if (getStrokeFilledRatio(strokeIndex) >= STROKE_FILL_COMPLETE_RATIO) {
+  const fillRatio = getStrokeFilledRatio(strokeIndex);
+  if (isLocalStrokeTraceComplete(strokeIndex)) {
+    onCorrectStroke({ strokeNum: strokeIndex, source: 'local-trace' });
+    return;
+  }
+  if (fillRatio >= STROKE_FILL_COMPLETE_RATIO) {
     setMessage(`${strokeIndex + 1}かくめ、いいかんじ！`, 'じゅんばんに かこう');
   }
 }
@@ -2406,13 +2492,14 @@ function stopTrail() {
 
 function onCorrectStroke(data) {
   const item = getCurrentCharacter();
-  const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  const expectedStroke = Math.min(strokesCompleted, item.strokes - 1);
+  const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : expectedStroke;
+  if (strokeNum !== expectedStroke) return;
   fillStrokePixels(strokeNum);
-  const nextCompleted = strokeNum < strokesCompleted
-    ? strokesCompleted
-    : Math.max(strokesCompleted + 1, strokeNum + 1);
-  strokesCompleted = Math.min(item.strokes, nextCompleted);
+  strokesCompleted = Math.min(item.strokes, strokesCompleted + 1);
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
+  stopTrail();
+  trailDistance = 0;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   setMessage(
@@ -2426,15 +2513,21 @@ function onCorrectStroke(data) {
 }
 
 function onMistake(data) {
-  mistakeCount += 1;
   const item = getCurrentCharacter();
   const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : currentStrokeIndex;
-  const strokeNum = Math.max(strokesCompleted, Math.min(Math.max(0, item.strokes - 1), rawStrokeNum));
+  if (rawStrokeNum < strokesCompleted) return;
+  const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
+  if (isLocalStrokeTraceComplete(strokeNum)) {
+    onCorrectStroke({ strokeNum, source: 'local-trace-after-miss' });
+    return;
+  }
+  mistakeCount += 1;
   const erased = clearStrokePixels(strokeNum);
   if (erased > 0) {
     renderPixelLetter();
   }
   stopTrail();
+  trailDistance = 0;
   setMessage(`${strokeNum + 1}かくめを もういちど なぞってね`, 'ゆっくりね');
 }
 
