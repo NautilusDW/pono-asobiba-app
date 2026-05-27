@@ -1298,7 +1298,6 @@ const writingCharacters = [
     char: 'あ',
     label: 'あ',
     strokes: 3,
-    guideSvg: 'hiragana_a.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1306,7 +1305,6 @@ const writingCharacters = [
     char: 'い',
     label: 'い',
     strokes: 2,
-    guideSvg: 'hiragana_i.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1314,7 +1312,6 @@ const writingCharacters = [
     char: 'う',
     label: 'う',
     strokes: 2,
-    guideSvg: 'hiragana_u.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1322,7 +1319,6 @@ const writingCharacters = [
     char: 'え',
     label: 'え',
     strokes: 2,
-    guideSvg: 'hiragana_e.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   },
   {
@@ -1330,7 +1326,6 @@ const writingCharacters = [
     char: 'お',
     label: 'お',
     strokes: 3,
-    guideSvg: 'hiragana_o.svg',
     reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
   }
 ];
@@ -1358,6 +1353,8 @@ const trailCtx = pixelTrailCanvas.getContext('2d');
 const PIXEL_GRID_SIZE = 132;
 const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 4;
+// Legacy hook for custom font SVG guides. Current kana uses the writer data itself
+// so visual guide, stroke order, and tracing judgment share one source of truth.
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
 const STROKE_LOCAL_PASS_RATIO = 0.16;

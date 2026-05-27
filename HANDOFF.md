@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-27 - [batch:145-mojikko-writing-source-reset] DONE - Codex: もじっこファーム文字書き画面のガイド文字をカスタムSVG基準からHanziWriter/kana-json基準へ戻し、ドット絵表示・塗り・書き順判定が同じ文字データを見る形に整理。`sw.js` は v625。 (by Codex)
 - 2026-05-27 - [batch:144-oto-rhythm-key-spacing] DONE - Codex: 音タッチ rhythm layout の鍵盤配置を viewport % 間隔から固定px間隔へ変更し、横長画角でも鍵盤が離れすぎないようにした。リズムメニューは `はじめる` と `おてほん` を常時分離し、`はじめる` はお手本なしで 3,2,1 へ進む。`sw.js` は v624。 (by Codex)
 - 2026-05-27 - [batch:143-bento-repeatable-okazu-layering] DONE - Codex: 自由配置で「からあげ」ボタンから既存完成品 `chicken_fry_piece_01〜05_done.png` を1個ずつ循環配置するよう変更。メインおかずの2個上限を外し、タコウインナー/エビフライ等も複数配置可能にした。配置確定時の自動押しのけを停止し、選択中アイテムの「かさなりをかえる」前後操作を追加。`sw.js` は v623。 (by Codex)
 - 2026-05-27 - [batch:142-bento-karaage-existing-done] DONE - Codex: `D:\ポノのおへや\Bento\cooking\唐揚げ` の既存完成品 `20260522-123442_001〜005` を正本として、調理完了ピース `chicken_fry_piece_01〜05_done.png` と弁当配置用 `karaage_pieces_done.png` を差し替え。前回の色補正版は使わない。`sw.js` は v622。 (by Codex)
