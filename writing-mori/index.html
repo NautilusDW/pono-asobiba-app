@@ -406,13 +406,15 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 0;
+  border-bottom: 4px solid rgba(83, 112, 66, 0.28);
   font-family: var(--pixel-font);
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #fffaf0;
-  background: transparent;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.1) 0 9px, transparent 9px 18px),
+    linear-gradient(180deg, #86d7ac, #3fa774);
   text-shadow: 2px 2px 0 rgba(54, 86, 50, 0.5);
 }
 
@@ -424,55 +426,94 @@ html, body {
 
 .character-panel,
 .stroke-panel {
-  border: 0;
-  border-radius: 0;
-  background: var(--moji-panel-leaf) center / 100% 100% no-repeat;
-  box-shadow: none;
+  border: 5px solid var(--wood-dark);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 18%),
+    linear-gradient(180deg, #fff9ea 0%, #f4dfbd 100%);
+  box-shadow:
+    0 6px 0 #4f321e,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.28);
   image-rendering: pixelated;
 }
 
-.stroke-panel {
-  background-image: var(--moji-panel-plain);
+.character-panel {
+  display: grid;
+  grid-template-rows: 50px 50px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.kana-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 9px 16px 4px;
+}
+
+.kana-tab {
+  height: 36px;
+  border: 3px solid #7e573b;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #eefbe7, #9fdcaf);
+  color: #4f3825;
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 3px 0 #5b3b29;
+  cursor: pointer;
+}
+
+.kana-tab.active {
+  background: linear-gradient(180deg, #fff2ad, #f5c466);
+  box-shadow:
+    0 3px 0 #704523,
+    0 0 0 3px rgba(255, 223, 96, 0.36);
 }
 
 .char-list {
-  padding: 18px 22px;
+  min-height: 0;
+  padding: 8px 16px 14px;
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #a8794f rgba(255, 255, 255, 0.2);
 }
 
 .char-button {
   position: relative;
-  height: 52px;
+  height: 38px;
   display: grid;
-  grid-template-columns: 26px 1fr 24px;
+  grid-template-columns: 10px 1fr 10px;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 4px;
   border: 3px solid #a6794f;
-  border-radius: 8px;
+  border-radius: 7px;
   background: linear-gradient(180deg, #fff8e7, #ecd2a6);
   color: var(--ink);
   font-family: var(--round-font);
-  font-size: 30px;
+  font-size: 22px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 4px 0 #8a5d39;
+  box-shadow: 0 3px 0 #8a5d39;
 }
 
 .char-button .cursor {
   width: 0;
   height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-left: 15px solid transparent;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 8px solid transparent;
 }
 
 .char-button.active {
   background: linear-gradient(180deg, #fff0ae, #f8c76d);
   border-color: #8d5c2e;
   box-shadow:
-    0 4px 0 #704523,
-    0 0 0 4px rgba(255, 224, 101, 0.42);
+    0 3px 0 #704523,
+    0 0 0 3px rgba(255, 224, 101, 0.42);
 }
 
 .char-button.active .cursor {
@@ -481,15 +522,17 @@ html, body {
 }
 
 .char-button.done .done-mark {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   background: var(--mint-dark);
   clip-path: polygon(12% 52%, 32% 34%, 45% 50%, 82% 12%, 100% 30%, 46% 88%);
 }
 
 .companion-card {
   position: relative;
-  min-height: 218px;
+  align-self: end;
+  aspect-ratio: 248 / 295;
+  min-height: 0;
   padding: 14px;
   appearance: none;
   width: 100%;
@@ -633,18 +676,18 @@ html, body {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: 12px;
-  min-height: 48px;
+  bottom: 30px;
+  min-height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 9px 12px 7px;
+  padding: 6px 10px 5px;
   border: 0;
   border-radius: 0;
   background: transparent;
   font-family: var(--pixel-font);
-  font-size: 17px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.28;
   text-align: center;
   white-space: pre-line;
 }
@@ -658,13 +701,23 @@ html, body {
 }
 
 .prompt-bar {
+  position: relative;
+  justify-self: center;
+  width: min(760px, 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 0;
-  background: var(--moji-prompt-sign) center / 100% 100% no-repeat;
-  box-shadow: none;
+  overflow: hidden;
+  border: 5px solid #4b8757;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(66, 125, 73, 0.34) 0 24px, transparent 24px calc(100% - 24px), rgba(66, 125, 73, 0.34) calc(100% - 24px) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 10px, transparent 10px 20px),
+    linear-gradient(180deg, #8bd79b 0%, #4faf68 100%);
+  box-shadow:
+    0 6px 0 #2d633d,
+    0 12px 20px rgba(45, 63, 35, 0.18),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.22);
   font-family: var(--pixel-font);
   font-size: 30px;
   font-weight: 700;
@@ -674,6 +727,30 @@ html, body {
     2px 2px 0 rgba(47, 97, 61, 0.58),
     0 2px 0 rgba(47, 97, 61, 0.32);
   image-rendering: pixelated;
+}
+
+.prompt-bar::before,
+.prompt-bar::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  width: 46px;
+  height: 28px;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, transparent 0 36%, rgba(47, 97, 61, 0.7) 37% 50%, transparent 51%),
+    linear-gradient(180deg, #b7edb9, #5dbf78);
+  opacity: 0.8;
+}
+
+.prompt-bar::before {
+  left: 10px;
+  clip-path: polygon(0 0, 100% 0, 74% 100%, 0 72%);
+}
+
+.prompt-bar::after {
+  right: 10px;
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 26% 100%);
 }
 
 .writing-board-wrap {
@@ -687,17 +764,47 @@ html, body {
   position: relative;
   width: min(610px, 100%);
   aspect-ratio: 1 / 1;
-  background: var(--moji-writing-board) center / 100% 100% no-repeat;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  background:
+    linear-gradient(180deg, #f0b568, #9f6634);
+  border: 10px solid #764a2a;
+  border-radius: 8px;
+  box-shadow:
+    0 8px 0 #4a2e1d,
+    0 18px 28px rgba(58, 36, 19, 0.26),
+    inset 0 0 0 6px rgba(255, 221, 147, 0.44);
   overflow: hidden;
   image-rendering: pixelated;
 }
 
 .writing-board::before,
 .writing-board::after {
-  display: none;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.writing-board::before {
+  inset: 18px;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 2px), rgba(130, 207, 226, 0.72) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
+    linear-gradient(0deg, transparent calc(50% - 2px), rgba(130, 207, 226, 0.72) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
+    repeating-linear-gradient(180deg, rgba(192, 158, 98, 0.12) 0 3px, transparent 3px 21px),
+    linear-gradient(180deg, #fffdf3 0%, #fff4d7 100%);
+  box-shadow:
+    inset 0 0 0 4px #ffe1a6,
+    inset 0 0 18px rgba(121, 78, 36, 0.12);
+}
+
+.writing-board::after {
+  inset: 10px;
+  z-index: 2;
+  background:
+    linear-gradient(135deg, transparent 0 37%, #efe5c8 38% 62%, transparent 63%) left top / 72px 72px no-repeat,
+    linear-gradient(45deg, transparent 0 37%, #efe5c8 38% 62%, transparent 63%) right top / 72px 72px no-repeat,
+    linear-gradient(45deg, transparent 0 37%, #efe5c8 38% 62%, transparent 63%) left bottom / 72px 72px no-repeat,
+    linear-gradient(135deg, transparent 0 37%, #efe5c8 38% 62%, transparent 63%) right bottom / 72px 72px no-repeat;
+  opacity: 0.9;
 }
 
 .writing-board.success {
@@ -890,15 +997,18 @@ html, body {
 }
 
 .stroke-list {
-  padding: 18px;
+  min-height: 0;
+  padding: 16px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
   align-content: start;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #a8794f rgba(255, 255, 255, 0.2);
 }
 
 .stroke-card {
-  height: 116px;
+  height: 106px;
   display: grid;
   grid-template-columns: 46px 1fr;
   align-items: center;
@@ -940,7 +1050,7 @@ html, body {
 }
 
 .stroke-preview {
-  height: 70px;
+  height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -959,7 +1069,7 @@ html, body {
 
 .stroke-mini svg {
   width: 100%;
-  height: 70px;
+  height: 62px;
   display: block;
   background: rgba(255, 255, 255, 0.52);
   border: 2px solid rgba(143, 101, 67, 0.35);
@@ -1004,7 +1114,7 @@ html, body {
 .stroke-label {
   margin-top: 4px;
   font-family: var(--pixel-font);
-  font-size: 16px;
+  font-size: 15px;
   color: var(--ink-soft);
 }
 
@@ -1014,10 +1124,14 @@ html, body {
   display: grid;
   gap: 10px;
   align-content: center;
-  background: var(--moji-reward-box) center / 100% 100% no-repeat;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0) 26%),
+    #fff4d9;
+  border: 3px solid #a8794f;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 0 #7e5130,
+    inset 0 0 0 3px rgba(255,255,255,0.36);
   image-rendering: pixelated;
 }
 
@@ -1224,6 +1338,7 @@ html, body {
       <div class="side-stack">
         <aside class="pixel-panel character-panel" aria-label="もじリスト">
           <div class="panel-title">もじリスト</div>
+          <div class="kana-tabs" id="kanaTabs" role="tablist" aria-label="もじの しゅるい"></div>
           <div class="char-list" id="charList"></div>
         </aside>
 
@@ -1292,45 +1407,69 @@ html, body {
 <script>
 'use strict';
 
-const writingCharacters = [
+const KANA_GROUPS = [
   {
-    id: 'a',
-    char: 'あ',
-    label: 'あ',
-    strokes: 3,
-    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
+    id: 'hiragana',
+    label: 'ひらがな',
+    rows: [
+      'あいうえお',
+      'かきくけこ',
+      'さしすせそ',
+      'たちつてと',
+      'なにぬねの',
+      'はひふへほ',
+      'まみむめも',
+      'やゆよ',
+      'らりるれろ',
+      'わをん',
+      'がぎぐげご',
+      'ざじずぜぞ',
+      'だぢづでど',
+      'ばびぶべぼ',
+      'ぱぴぷぺぽ',
+      'ゃゅょっ'
+    ]
   },
   {
-    id: 'i',
-    char: 'い',
-    label: 'い',
-    strokes: 2,
-    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
-  },
-  {
-    id: 'u',
-    char: 'う',
-    label: 'う',
-    strokes: 2,
-    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
-  },
-  {
-    id: 'e',
-    char: 'え',
-    label: 'え',
-    strokes: 2,
-    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
-  },
-  {
-    id: 'o',
-    char: 'お',
-    label: 'お',
-    strokes: 3,
-    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
+    id: 'katakana',
+    label: 'カタカナ',
+    rows: [
+      'アイウエオ',
+      'カキクケコ',
+      'サシスセソ',
+      'タチツテト',
+      'ナニヌネノ',
+      'ハヒフヘホ',
+      'マミムメモ',
+      'ヤユヨ',
+      'ラリルレロ',
+      'ワヲン',
+      'ガギグゲゴ',
+      'ザジズゼゾ',
+      'ダヂヅデド',
+      'バビブベボ',
+      'パピプペポ',
+      'ャュョッ'
+    ]
   }
 ];
 
+const writingCharacters = KANA_GROUPS.flatMap((group) => {
+  const chars = group.rows.join('').split('');
+  return chars.map((char, index) => ({
+    id: `${group.id}_${char.codePointAt(0).toString(16)}`,
+    group: group.id,
+    groupLabel: group.label,
+    order: index,
+    char,
+    label: char,
+    strokes: 1,
+    reward: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
+  }));
+});
+
 const stageEl = document.getElementById('stage');
+const kanaTabsEl = document.getElementById('kanaTabs');
 const charListEl = document.getElementById('charList');
 const writerTarget = document.getElementById('writerTarget');
 const pixelTrailCanvas = document.getElementById('pixelTrailCanvas');
@@ -1364,6 +1503,7 @@ const STROKE_END_DISTANCE_TOLERANCE = 24;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
+let currentGroup = 'hiragana';
 let writer = null;
 let currentCharData = null;
 let writerLoadToken = 0;
@@ -1476,13 +1616,46 @@ function getCurrentCharacter() {
   return writingCharacters[currentIndex];
 }
 
+function getCurrentGroupMeta() {
+  return KANA_GROUPS.find((group) => group.id === currentGroup) || KANA_GROUPS[0];
+}
+
+function syncCurrentGroupFromCharacter() {
+  const item = getCurrentCharacter();
+  currentGroup = item && item.group ? item.group : KANA_GROUPS[0].id;
+}
+
+function setCurrentGroup(groupId) {
+  const firstIndex = writingCharacters.findIndex((item) => item.group === groupId);
+  if (firstIndex < 0) return;
+  currentGroup = groupId;
+  currentIndex = firstIndex;
+  resetWriting();
+}
+
 function escapeAttr(value) {
   return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 function buildCharacterList() {
+  kanaTabsEl.innerHTML = '';
+  KANA_GROUPS.forEach((group) => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = `kana-tab${group.id === currentGroup ? ' active' : ''}`;
+    tab.dataset.group = group.id;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', group.id === currentGroup ? 'true' : 'false');
+    tab.textContent = group.label;
+    tab.addEventListener('click', () => {
+      if (group.id !== currentGroup) setCurrentGroup(group.id);
+    });
+    kanaTabsEl.appendChild(tab);
+  });
+
   charListEl.innerHTML = '';
   writingCharacters.forEach((item, index) => {
+    if (item.group !== currentGroup) return;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'char-button';
@@ -1495,8 +1668,10 @@ function buildCharacterList() {
 
 function updateCharacterButtons() {
   const buttons = charListEl.querySelectorAll('.char-button');
-  buttons.forEach((btn, index) => {
+  buttons.forEach((btn) => {
+    const index = Number(btn.dataset.index);
     const item = writingCharacters[index];
+    if (!item) return;
     btn.classList.toggle('active', index === currentIndex);
     btn.classList.toggle('done', completedCharacters.has(item.id));
   });
@@ -2209,6 +2384,7 @@ function startWriterQuiz(startStrokeNum) {
 }
 
 function resetWriting() {
+  syncCurrentGroupFromCharacter();
   trailDrawing = false;
   lastTrailPoint = null;
   trailDistance = 0;
@@ -2238,12 +2414,14 @@ function resetWriting() {
   rewardNameEl.textContent = item.reward.name;
   setMessage('ドットの もじを なぞってね', 'ゆっくりで だいじょうぶ');
   renderStrokeOrder();
+  buildCharacterList();
   updateCharacterButtons();
   createWriter();
 }
 
 function selectCharacter(index) {
   currentIndex = index;
+  syncCurrentGroupFromCharacter();
   resetWriting();
 }
 
@@ -2814,6 +2992,7 @@ function launchBurst() {
 
 function nextCharacter() {
   currentIndex = (currentIndex + 1) % writingCharacters.length;
+  syncCurrentGroupFromCharacter();
   resetWriting();
 }
 
@@ -2846,7 +3025,6 @@ window.MojikkoWritingGame = {
   getCareState: () => JSON.parse(JSON.stringify(careState))
 };
 
-buildCharacterList();
 starCountEl.textContent = String(stars);
 resetWriting();
 </script>

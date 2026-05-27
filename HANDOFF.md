@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-27 - [batch:152-mojikko-all-kana-ui-fix] DONE - Codex: もじっこファーム文字書き画面に、kana-json で判定可能なひらがな/カタカナ 150 文字を追加。左リストをひらがな/カタカナタブ + スクロールグリッドへ変更し、伸びていたプロンプト・左右パネル・書き取り板をCSSピクセル枠へ寄せて歪みを軽減。`sw.js` は v636。 (by Codex)
 - 2026-05-27 - [batch:151-mojikko-writing-end-progress] DONE - Codex: もじっこファーム文字書き判定に終点到達ゲートを追加。HanziWriter の正誤判定は維持しつつ、正しい線と判定されてもその画の終点側まで進んでいなければ未確定の一画を消してやり直す。`sw.js` は v634。 (by Codex)
 - 2026-05-27 - [batch:150-mojikko-writing-leniency] DONE - Codex: もじっこファーム文字書き判定を幼児向けに再調整。HanziWriter `leniency` を 1.8 に上げ、ミス判定中も指を離すまでは線を消さず、離してから 520ms 後に未確定の一画だけ消すよう変更。`sw.js` は v631。 (by Codex)
 - 2026-05-27 - [batch:149-tonton-kitchen-menu-assets] DONE - Codex: トントンキッチンをトップの別メニューとして追加し、弁当カードは `bento/index.html` へ戻した。キッチンのモード選択画像を生成シートに差し替え、外枠フォーカスと伸びる吹き出し画像依存を撤去。下ごしらえは切る/こねる系だけに絞り、玉ねぎを追加。鮭/タコウインナー/エビフライ/コロッケはおかず作成側から直接開始可能。生成 raw は `tmp/alpha_pending/149_tonton_kitchen_raw/`、`sw.js` は v630。commit `06ebedf` / staging Actions success。 (by Codex)
