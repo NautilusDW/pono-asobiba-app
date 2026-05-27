@@ -746,6 +746,68 @@ html, body {
   border-color: var(--primary);
   color: #8B4513;
 }
+.free-mask-panel,
+.free-brush-panel {
+  border: 2px solid #B7E4CF;
+  border-radius: 12px;
+  background: #F0FDF4;
+  color: #174B2C;
+  padding: 6px 7px;
+  box-shadow: 0 2px 8px rgba(34, 120, 82, 0.12);
+  flex-shrink: 0;
+}
+.free-mask-title,
+.free-brush-title {
+  font-size: 0.54rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.free-mask-actions,
+.free-brush-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 5px;
+}
+.free-mask-actions button,
+.free-brush-actions button {
+  border: 2px solid #8AD6B6;
+  border-radius: 9px;
+  background: #FFFFFF;
+  color: #174B2C;
+  font-family: inherit;
+  font-size: 0.5rem;
+  font-weight: 900;
+  min-height: 28px;
+  padding: 3px 2px;
+  cursor: pointer;
+}
+.free-mask-actions button.primary,
+.free-brush-actions button.primary {
+  background: #BBF7D0;
+  border-color: #22C55E;
+}
+.free-mask-row {
+  display: grid;
+  grid-template-columns: 1.4em 1fr 3em;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  font-size: 0.48rem;
+  font-weight: 900;
+}
+.free-mask-row input {
+  min-width: 0;
+  accent-color: #22C55E;
+}
+.free-mask-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: rgba(34, 197, 94, 0.24);
+  filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.55));
+}
 .free-guide-card {
   border: 2px solid #F8C36B;
   border-radius: 12px;
@@ -2300,7 +2362,7 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 170, rotation: -3 },
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 163, rotation: 3 },
   { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 292, rotation: -4 },
-  { img: COOKING_P+'cabbage/cabbage_014.png',              name: 'キャベツ',         cat: 'veg',  sk: 'g', size: 148, rotation: 7 },
+  { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', size: 170, rotation: 0, brushItem: true, brushLevel: 1, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
   { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 72, rotation: -4 },
   { img: COOKING_P+'tomato/tomato_002.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 71, rotation: 3 },
   { img: COOKING_P+'tomato/tomato_003.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 71, rotation: -1 },
@@ -2518,6 +2580,7 @@ const FREE_GUIDE_COPY = {
 const FREE_ASSET = '../assets/images/bento/free-layout/';
 const BENTO_UI_ASSET = '../assets/images/bento/ui/';
 const CHARACTER_BOX_INSIDE_MASK = FREE_ASSET + 'box_character_inside_mask.png';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v1';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -2629,6 +2692,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_bear_rice.png',
     lidImage: FREE_ASSET + 'box_bear_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
+    maskKey: 'bear_character_box',
     maskBounds: { x: 172, y: 48, w: 417, h: 364 },
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
@@ -2667,6 +2731,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_bear_pink_rice.png',
     lidImage: FREE_ASSET + 'box_bear_pink_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
+    maskKey: 'bear_character_box',
     maskBounds: { x: 172, y: 48, w: 417, h: 364 },
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
@@ -2772,11 +2837,11 @@ const bentoBoxes = [
   },
 ];
 const bentoAccessories = [
-  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
+  { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 148, size: 206, sizeKey: 'medium', layerBase: 10 },
   { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
   { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
   { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
-  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 230, sizeKey: 'medium', layerBase: 12, rotation: -10 },
+  { id: 'divider_lettuce', type: 'divider', name: 'レタスしきり', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', size: 250, sizeKey: 'medium', layerBase: 12, rotation: -8 },
   { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: 0 },
   { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0 },
 ];
@@ -2868,6 +2933,8 @@ let freeActiveCupUid = null;
 let freeCupEditorUid = null;
 let freePendingCupEditorUid = null;
 let freeGuideDismissedKey = '';
+let freeMaskEditorOpen = false;
+let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 
 // ===== NPC 依頼者モード state =====
 // セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
@@ -3607,14 +3674,59 @@ function getBoxClipPath(box) {
   if (!box || !Array.isArray(box.clipPoints) || box.clipPoints.length < 3) return '';
   return 'polygon(' + box.clipPoints.map(p => `${toPctX(p[0])} ${toPctY(p[1])}`).join(',') + ')';
 }
+function loadFreeMaskBoundsOverrides() {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(FREE_MASK_EDITOR_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveFreeMaskBoundsOverrides() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(FREE_MASK_EDITOR_STORAGE_KEY, JSON.stringify(freeMaskBoundsOverrides || {}));
+  } catch (e) {}
+}
+function getBoxMaskKey(box) {
+  return box && (box.maskKey || box.id || '');
+}
+function getBoxMaskBounds(box) {
+  if (!box || !box.maskBounds) return null;
+  const key = getBoxMaskKey(box);
+  const override = key && freeMaskBoundsOverrides ? freeMaskBoundsOverrides[key] : null;
+  return override ? { ...box.maskBounds, ...override } : { ...box.maskBounds };
+}
+function updateSelectedBoxMaskBound(prop, value) {
+  const box = getSelectedBentoBox();
+  const base = getBoxMaskBounds(box);
+  const key = getBoxMaskKey(box);
+  if (!box || !base || !key) return;
+  const next = { ...base, [prop]: Math.round(Number(value) || 0) };
+  next.w = clamp(next.w, 120, FREE_LAYOUT_W);
+  next.h = clamp(next.h, 120, FREE_LAYOUT_H);
+  next.x = clamp(next.x, -160, FREE_LAYOUT_W);
+  next.y = clamp(next.y, -120, FREE_LAYOUT_H);
+  freeMaskBoundsOverrides[key] = next;
+  saveFreeMaskBoundsOverrides();
+}
+function resetSelectedBoxMaskBounds() {
+  const box = getSelectedBentoBox();
+  const key = getBoxMaskKey(box);
+  if (!key || !freeMaskBoundsOverrides[key]) return;
+  delete freeMaskBoundsOverrides[key];
+  saveFreeMaskBoundsOverrides();
+}
 function getMaskPositionPct(pos, maskSize, stageSize) {
   const available = stageSize - maskSize;
   if (available <= 0) return '50%';
   return (pos / available * 100).toFixed(4) + '%';
 }
 function applyBoxVisualMask(layer, box) {
-  if (!layer || !box || !box.maskImage || !box.maskBounds) return false;
-  const b = box.maskBounds;
+  const b = getBoxMaskBounds(box);
+  if (!layer || !box || !box.maskImage || !b) return false;
   const maskSize = `${toPctX(b.w)} ${toPctY(b.h)}`;
   const maskPosition = `${getMaskPositionPct(b.x, b.w, FREE_LAYOUT_W)} ${getMaskPositionPct(b.y, b.h, FREE_LAYOUT_H)}`;
   const maskUrl = `url("${box.maskImage}")`;
@@ -3744,6 +3856,13 @@ function makePaletteDropToast(def) {
     return 'のりを ごはんのうえまで もっていこう！';
   }
   return 'おべんとうばこまで もっていこう！';
+}
+function getFreeItemImage(item) {
+  if (item && Array.isArray(item.brushImages) && item.brushImages.length) {
+    const index = clamp(Math.round(item.brushLevel == null ? 1 : item.brushLevel), 0, item.brushImages.length - 1);
+    return item.brushImages[index] || item.img || '';
+  }
+  return item && (item.img || item.image || '');
 }
 function clampCupChildren(cup) {
   if (!cup) return;
@@ -4059,6 +4178,7 @@ function onFreePaletteDragCancel(e) {
   finishFreePaletteDrag(false);
 }
 function addFreeLayoutItem(def, opts = {}) {
+  if (!def) return null;
   const itemTier = opts.tier || getTargetTierForType(def.type);
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot(def.type);
   const item = {
@@ -4081,6 +4201,9 @@ function addFreeLayoutItem(def, opts = {}) {
     sizeKey: opts.sizeKey || def.sizeKey || '',
     snapTarget: !!def.snapTarget,
     radius: def.radius || 0,
+    brushItem: !!def.brushItem,
+    brushImages: Array.isArray(def.brushImages) ? def.brushImages.slice() : null,
+    brushLevel: opts.brushLevel != null ? opts.brushLevel : (def.brushLevel != null ? def.brushLevel : 1),
     parentId: opts.parentId || null,
     parentCupId: opts.parentCupId || null,
     tier: itemTier,
@@ -4153,6 +4276,63 @@ function setSelectedAccessorySize(sizeKey) {
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
+function getSelectedBrushItem() {
+  const item = getSelectedFreeItem();
+  return item && item.brushItem && Array.isArray(item.brushImages) && item.brushImages.length ? item : null;
+}
+function setSelectedBrushLevel(delta) {
+  const item = getSelectedBrushItem();
+  if (!item) return;
+  const max = item.brushImages.length - 1;
+  item.brushLevel = clamp((item.brushLevel == null ? 1 : item.brushLevel) + delta, 0, max);
+  item.size = [128, 170, 220][item.brushLevel] || item.size;
+  const parentCup = getParentCup(item);
+  const p = parentCup ? clampPointToCup(item.x, item.y, item, parentCup) : clampPointToBento(item.x, item.y, item);
+  item.x = p.x; item.y = p.y;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function duplicateSelectedBrushItem() {
+  const item = getSelectedBrushItem();
+  if (!item) return;
+  const parentCup = getParentCup(item);
+  const def = {
+    id: item.id,
+    type: item.type,
+    name: item.name,
+    img: item.img,
+    css: item.css,
+    sk: item.sk,
+    okazuRole: item.okazuRole,
+    brushItem: item.brushItem,
+    brushImages: item.brushImages.slice(),
+    brushLevel: item.brushLevel,
+    size: item.size,
+    layerBase: item.layerBase,
+    rotation: Math.round((Math.random() * 18) - 9),
+  };
+  const next = addFreeLayoutItem(def, {
+    x: item.x + (parentCup ? 16 : 44),
+    y: item.y + (parentCup ? 8 : 18),
+    size: item.size,
+    tier: getItemTier(item),
+    parentCupId: item.parentCupId || null,
+    brushLevel: item.brushLevel,
+    skipRender: true,
+  });
+  if (parentCup) {
+    next.layer = Math.max(next.layer || 1, (parentCup.layer || 1) + (++freeLayerSeq));
+    layoutCupChildren(parentCup);
+    freeSelectedItemUid = parentCup.uid;
+    freeActiveCupUid = parentCup.uid;
+  } else {
+    freeSelectedItemUid = next.uid;
+  }
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  playPop();
+}
 function addFoodToSelectedCup(def) {
   const cup = getEditingCup() || getActiveCup();
   if (!cup || !def || def.type !== 'food') return null;
@@ -4161,7 +4341,10 @@ function addFoodToSelectedCup(def) {
     return null;
   }
   const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
-  const childSize = Math.min(def.size || 120, Math.round((cup.size || 190) * 0.78));
+  const isBrushFood = !!def.brushItem;
+  const childSize = isBrushFood
+    ? Math.min(126, Math.round((cup.size || 190) * 0.66))
+    : Math.min(def.size || 120, Math.round((cup.size || 190) * 0.78));
   const slot = getCupChildSlot(cup, childCount, childSize, childCount + 1);
   const item = addFreeLayoutItem(def, {
     x: slot.x,
@@ -4169,6 +4352,7 @@ function addFoodToSelectedCup(def) {
     size: childSize,
     tier: getItemTier(cup),
     parentCupId: cup.uid,
+    brushLevel: isBrushFood ? 0 : def.brushLevel,
     skipRender: true,
   });
   item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
@@ -4292,9 +4476,10 @@ function confirmFreeBentoBoxSelection() {
   setFreeGuideStep('rice');
 }
 function createFreeVisual(item) {
-  if (item.img) {
+  const imgSrc = getFreeItemImage(item);
+  if (imgSrc) {
     const img = document.createElement('img');
-    img.src = item.img;
+    img.src = imgSrc;
     img.alt = item.name || '';
     return img;
   }
@@ -4422,6 +4607,12 @@ function renderFreeLayoutInto(host, opts = {}) {
     badge.className = 'free-tier-badge';
     badge.textContent = getTierLabel(activeTier, box);
     host.appendChild(badge);
+  }
+  if (opts.interactive && freeMaskEditorOpen && freeLayoutTab === 'box' && box.maskImage) {
+    const preview = document.createElement('div');
+    preview.className = 'free-mask-preview';
+    applyBoxVisualMask(preview, box);
+    host.appendChild(preview);
   }
   const layer = document.createElement('div');
   layer.className = 'free-layout-items';
@@ -4572,6 +4763,79 @@ function renderSelectedAccessorySizeControls() {
   });
   return row;
 }
+function renderSelectedBrushControls() {
+  const item = getSelectedBrushItem();
+  if (!item) return null;
+  const panel = document.createElement('div');
+  panel.className = 'free-brush-panel';
+  const title = document.createElement('div');
+  title.className = 'free-brush-title';
+  title.textContent = 'キャベツを ふやす・へらす';
+  panel.appendChild(title);
+  const actions = document.createElement('div');
+  actions.className = 'free-brush-actions';
+  actions.appendChild(makeSmallControlButton('へらす', '', () => setSelectedBrushLevel(-1), (item.brushLevel || 0) <= 0));
+  actions.appendChild(makeSmallControlButton('ふやす', 'primary', () => setSelectedBrushLevel(1), (item.brushLevel || 0) >= item.brushImages.length - 1));
+  actions.appendChild(makeSmallControlButton('となりに足す', '', duplicateSelectedBrushItem));
+  actions.appendChild(makeSmallControlButton('けす', '', () => removeFreeItem(item.uid)));
+  panel.appendChild(actions);
+  return panel;
+}
+function makeMaskRange(label, prop, min, max, bounds) {
+  const row = document.createElement('label');
+  row.className = 'free-mask-row';
+  const labelText = document.createElement('span');
+  labelText.textContent = label;
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.min = String(min);
+  input.max = String(max);
+  input.step = '1';
+  input.value = String(Math.round(bounds[prop] || 0));
+  const value = document.createElement('span');
+  value.textContent = input.value;
+  input.addEventListener('input', e => {
+    updateSelectedBoxMaskBound(prop, e.currentTarget.value);
+    value.textContent = String(Math.round(Number(e.currentTarget.value) || 0));
+    renderFreeLayoutStage();
+  });
+  row.appendChild(labelText);
+  row.appendChild(input);
+  row.appendChild(value);
+  return row;
+}
+function renderFreeMaskEditorControls() {
+  const box = getSelectedBentoBox();
+  const bounds = getBoxMaskBounds(box);
+  if (!box || !box.maskImage || !bounds || freeLayoutTab !== 'box') return null;
+  const panel = document.createElement('div');
+  panel.className = 'free-mask-panel';
+  const title = document.createElement('div');
+  title.className = 'free-mask-title';
+  title.textContent = 'マスク調整';
+  panel.appendChild(title);
+  const actions = document.createElement('div');
+  actions.className = 'free-mask-actions';
+  actions.appendChild(makeSmallControlButton(freeMaskEditorOpen ? 'マスク非表示' : 'マスク表示', 'primary', () => {
+    freeMaskEditorOpen = !freeMaskEditorOpen;
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }));
+  actions.appendChild(makeSmallControlButton('リセット', '', () => {
+    resetSelectedBoxMaskBounds();
+    freeMaskEditorOpen = true;
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }));
+  panel.appendChild(actions);
+  if (freeMaskEditorOpen) {
+    panel.appendChild(makeMaskRange('X', 'x', -80, FREE_LAYOUT_W, bounds));
+    panel.appendChild(makeMaskRange('Y', 'y', -80, FREE_LAYOUT_H, bounds));
+    panel.appendChild(makeMaskRange('W', 'w', 160, FREE_LAYOUT_W, bounds));
+    panel.appendChild(makeMaskRange('H', 'h', 140, FREE_LAYOUT_H, bounds));
+  }
+  return panel;
+}
 function makeSmallControlButton(label, className, onClick, disabled = false) {
   const b = document.createElement('button');
   b.type = 'button';
@@ -4592,10 +4856,6 @@ function tryAdvanceFromNori() {
   if (!hasRiceOnTier(1)) {
     showToast('まず ごはんを よそおう！');
     setFreeGuideStep('rice');
-    return;
-  }
-  if (!hasNoriDecorOnTier(1)) {
-    showToast('のりを ひとつ のせてみよう！');
     return;
   }
   setFreeGuideStep('tier2');
@@ -4641,7 +4901,8 @@ function renderFreeGuidePanel() {
   if (freeGuideStep === 'box') {
     actions.appendChild(makeSmallControlButton('このはこでOK', 'primary', confirmFreeBentoBoxSelection));
   } else if (freeGuideStep === 'decor') {
-    actions.appendChild(makeSmallControlButton('のりOK', 'primary', tryAdvanceFromNori, !hasNoriDecorOnTier(1)));
+    actions.appendChild(makeSmallControlButton('かざらず次へ', '', tryAdvanceFromNori));
+    actions.appendChild(makeSmallControlButton(hasNoriDecorOnTier(1) ? 'のりOK' : 'つぎへ', 'primary', tryAdvanceFromNori));
   } else if (freeGuideStep === 'tier2Main') {
     const tier = getGuideTierForStep('tier2Main');
     actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
@@ -4823,8 +5084,14 @@ function renderFreeLayoutControls() {
   const tierControls = freeGuideStep === 'box' ? renderFreeTierControls() : null;
   if (tierControls) tray.appendChild(tierControls);
 
+  const maskControls = renderFreeMaskEditorControls();
+  if (maskControls) tray.appendChild(maskControls);
+
   const sizeControls = renderSelectedAccessorySizeControls();
   if (sizeControls) tray.appendChild(sizeControls);
+
+  const brushControls = renderSelectedBrushControls();
+  if (brushControls) tray.appendChild(brushControls);
 
   const cupControls = renderFreeCupControls();
   if (cupControls) tray.appendChild(cupControls);
@@ -4883,7 +5150,7 @@ function loadFreeLayoutStage() {
 function getFreeLayoutCompletionData() {
   const foodItems = placedItems.filter(i => i.type === 'food' || i.type === 'rice');
   const skColors = foodItems.map(i => i.sk).filter(Boolean);
-  const foods = foodItems.map(i => ({ img: i.img || '', name: i.name || '', sk: i.sk || '', type: i.type, id: i.id }));
+  const foods = foodItems.map(i => ({ img: getFreeItemImage(i) || '', name: i.name || '', sk: i.sk || '', type: i.type, id: i.id }));
   return {
     foods,
     skColors,
