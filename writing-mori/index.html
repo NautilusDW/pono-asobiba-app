@@ -1359,6 +1359,8 @@ const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
 const QUIZ_LENIENCY = 1.8;
 const ATTEMPT_CLEAR_DELAY_MS = 520;
+const STROKE_END_PROGRESS_REQUIRED = 0.88;
+const STROKE_END_DISTANCE_TOLERANCE = 24;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1375,6 +1377,8 @@ let activeAttemptStroke = -1;
 let activeAttemptCompletedBefore = 0;
 let activeAttemptPainted = false;
 let activeAttemptHadMistake = false;
+let activeAttemptMaxProgress = 0;
+let pendingCorrectStroke = null;
 let sparkleBudget = 0;
 let strokesCompleted = 0;
 let currentStrokeIndex = 0;
@@ -2177,7 +2181,11 @@ function createWriter() {
     }
   });
 
-  writer.quiz({
+  startWriterQuiz(0);
+}
+
+function getWriterQuizOptions(startStrokeNum) {
+  const options = {
     onCorrectStroke: onCorrectStroke,
     onMistake: onMistake,
     onComplete: onWriterComplete,
@@ -2185,7 +2193,19 @@ function createWriter() {
     showHintAfterMisses: 3,
     highlightOnComplete: true,
     highlightCompleteColor: 'rgba(255, 214, 90, 0.95)'
-  });
+  };
+  if (Number.isFinite(startStrokeNum) && startStrokeNum > 0) {
+    options.quizStartStrokeNum = Math.max(0, startStrokeNum);
+  }
+  return options;
+}
+
+function startWriterQuiz(startStrokeNum) {
+  if (!writer || typeof writer.quiz !== 'function') return;
+  if (typeof writer.cancelQuiz === 'function') {
+    try { writer.cancelQuiz(); } catch (_) {}
+  }
+  writer.quiz(getWriterQuizOptions(startStrokeNum));
 }
 
 function resetWriting() {
@@ -2197,6 +2217,8 @@ function resetWriting() {
   activeAttemptCompletedBefore = 0;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
+  activeAttemptMaxProgress = 0;
+  pendingCorrectStroke = null;
   sparkleBudget = 0;
   strokesCompleted = 0;
   currentStrokeIndex = 0;
@@ -2307,6 +2329,100 @@ function paintTrailSegment(from, to) {
   }
   if (changed > 0) renderPixelLetter();
   return activeTouched > 0 ? d : 0;
+}
+
+function medianPointToLetterGrid(point) {
+  if (!pixelLetter) return null;
+  const x = Number(point && point[0]);
+  const y = Number(point && point[1]);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  if (typeof pixelLetter.mapMedianPoint === 'function') {
+    const mapped = pixelLetter.mapMedianPoint(point);
+    if (mapped && Number.isFinite(mapped.x) && Number.isFinite(mapped.y)) return mapped;
+  }
+
+  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  const gridPadding = (getPixelLetterPadding() / 1000) * gridSize;
+  const scale = (gridSize - gridPadding * 2) / 1024;
+  return {
+    x: gridPadding + (pixelLetter.offsetX || 0) + x * scale,
+    y: gridSize - gridPadding + (pixelLetter.offsetY || 0) - y * scale
+  };
+}
+
+function getStrokeProgressAtBoardPoint(strokeIndex, boardPoint) {
+  if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return 1;
+  const median = currentCharData.medians[strokeIndex];
+  if (!Array.isArray(median) || median.length < 2) return 1;
+
+  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  const px = (boardPoint.x / 1000) * gridSize;
+  const py = (boardPoint.y / 1000) * gridSize;
+  const points = median
+    .map(medianPointToLetterGrid)
+    .filter((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y));
+  if (points.length < 2) return 1;
+
+  const segments = [];
+  let totalLength = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const length = Math.hypot(b.x - a.x, b.y - a.y);
+    if (!Number.isFinite(length) || length <= 0.001) continue;
+    segments.push({ a, b, length, start: totalLength });
+    totalLength += length;
+  }
+  if (totalLength <= 0) return 1;
+
+  let bestDistanceSq = Infinity;
+  let bestProgress = 0;
+  segments.forEach((segment) => {
+    const dx = segment.b.x - segment.a.x;
+    const dy = segment.b.y - segment.a.y;
+    const lenSq = dx * dx + dy * dy;
+    const t = lenSq > 0
+      ? Math.max(0, Math.min(1, ((px - segment.a.x) * dx + (py - segment.a.y) * dy) / lenSq))
+      : 0;
+    const x = segment.a.x + dx * t;
+    const y = segment.a.y + dy * t;
+    const ox = px - x;
+    const oy = py - y;
+    const distanceSq = ox * ox + oy * oy;
+    if (distanceSq < bestDistanceSq) {
+      bestDistanceSq = distanceSq;
+      bestProgress = (segment.start + segment.length * t) / totalLength;
+    }
+  });
+
+  const maxDistanceSq = STROKE_END_DISTANCE_TOLERANCE * STROKE_END_DISTANCE_TOLERANCE;
+  return bestDistanceSq <= maxDistanceSq ? Math.max(0, Math.min(1, bestProgress)) : 0;
+}
+
+function hasAttemptReachedStrokeEnd(strokeIndex) {
+  if (!currentCharData || !Array.isArray(currentCharData.medians)) return true;
+  if (strokeIndex < 0 || strokeIndex < strokesCompleted) return true;
+  return activeAttemptMaxProgress >= STROKE_END_PROGRESS_REQUIRED;
+}
+
+function updateAttemptProgressForPoint(point) {
+  if (complete || !point || activeAttemptStroke < 0) return;
+  const item = getCurrentCharacter();
+  const strokeIndex = Math.min(activeAttemptStroke, item.strokes - 1);
+  if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
+  activeAttemptMaxProgress = Math.max(
+    activeAttemptMaxProgress,
+    getStrokeProgressAtBoardPoint(strokeIndex, point)
+  );
+
+  if (
+    pendingCorrectStroke &&
+    pendingCorrectStroke.strokeNum === strokeIndex &&
+    hasAttemptReachedStrokeEnd(strokeIndex)
+  ) {
+    acceptCorrectStroke(pendingCorrectStroke.data);
+  }
 }
 
 function fillStrokePixels(strokeIndex) {
@@ -2435,15 +2551,21 @@ function onTrailPointerDown(event) {
   trailAttemptId += 1;
   const item = getCurrentCharacter();
   const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
+  if (pendingCorrectStroke) {
+    pendingCorrectStroke = null;
+    startWriterQuiz(strokesCompleted);
+  }
   activeAttemptStroke = strokeIndex;
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
+  activeAttemptMaxProgress = 0;
   if (strokeIndex >= strokesCompleted) {
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) renderPixelLetter();
   }
   lastTrailPoint = boardPointFromEvent(event);
+  updateAttemptProgressForPoint(lastTrailPoint);
   const result = fillLetterPixelsAt(lastTrailPoint, LETTER_BRUSH_RADIUS);
   if (result.activeTouched > 0) activeAttemptPainted = true;
   if (result.changed > 0) renderPixelLetter();
@@ -2469,6 +2591,7 @@ function onTrailPointerMove(event) {
     spawnSpark(event.clientX, event.clientY);
   }
   lastTrailPoint = next;
+  updateAttemptProgressForPoint(next);
   maybeUpdateProgressAfterFill();
 }
 
@@ -2486,13 +2609,25 @@ function finishTrailAttempt() {
 
   setTimeout(() => {
     if (complete || trailAttemptId !== attemptId || activeAttemptStroke !== strokeIndex) return;
+    const pendingStroke = pendingCorrectStroke && pendingCorrectStroke.strokeNum === strokeIndex
+      ? pendingCorrectStroke
+      : null;
+    if (pendingStroke && hasAttemptReachedStrokeEnd(strokeIndex)) {
+      acceptCorrectStroke(pendingStroke.data);
+      return;
+    }
     activeAttemptStroke = -1;
     activeAttemptCompletedBefore = strokesCompleted;
-    const shouldClear = activeAttemptPainted || activeAttemptHadMistake;
+    const shouldClear = !!pendingStroke || activeAttemptPainted || activeAttemptHadMistake;
     activeAttemptPainted = false;
     activeAttemptHadMistake = false;
+    activeAttemptMaxProgress = 0;
     if (!shouldClear || strokesCompleted > completedBefore || strokeIndex < strokesCompleted) return;
 
+    if (pendingStroke) {
+      pendingCorrectStroke = null;
+      startWriterQuiz(strokeIndex);
+    }
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) {
       renderPixelLetter();
@@ -2503,8 +2638,19 @@ function finishTrailAttempt() {
 }
 
 function onCorrectStroke(data) {
+  const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  if (strokeNum >= strokesCompleted && !hasAttemptReachedStrokeEnd(strokeNum)) {
+    pendingCorrectStroke = { strokeNum, data };
+    setMessage(`${strokeNum + 1}かくめ、さいごの ところまで なぞってね`, 'あとすこし');
+    return;
+  }
+  acceptCorrectStroke(data);
+}
+
+function acceptCorrectStroke(data) {
   const item = getCurrentCharacter();
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  pendingCorrectStroke = null;
   fillStrokePixels(strokeNum);
   const nextCompleted = strokeNum < strokesCompleted
     ? strokesCompleted
@@ -2517,6 +2663,7 @@ function onCorrectStroke(data) {
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
+  activeAttemptMaxProgress = 0;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   setMessage(
@@ -2534,6 +2681,11 @@ function onMistake(data) {
   const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : currentStrokeIndex;
   if (rawStrokeNum < strokesCompleted) return;
   const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
+  if (pendingCorrectStroke) {
+    activeAttemptHadMistake = true;
+    setMessage(`${pendingCorrectStroke.strokeNum + 1}かくめ、さいごまで なぞってね`, 'あとすこし');
+    return;
+  }
   mistakeCount += 1;
   activeAttemptHadMistake = true;
   if (trailDrawing) {
@@ -2544,6 +2696,7 @@ function onMistake(data) {
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
+  activeAttemptMaxProgress = 0;
   const erased = clearStrokePixels(strokeNum);
   if (erased > 0) {
     renderPixelLetter();
@@ -2555,6 +2708,13 @@ function onMistake(data) {
 
 function onWriterComplete(summary) {
   const item = getCurrentCharacter();
+  if (pendingCorrectStroke || strokesCompleted < item.strokes) {
+    const strokeNum = pendingCorrectStroke
+      ? pendingCorrectStroke.strokeNum
+      : Math.min(strokesCompleted, item.strokes - 1);
+    setMessage(`${strokeNum + 1}かくめ、さいごまで なぞってね`, 'あとすこし');
+    return;
+  }
   fillAllLetterPixels();
   strokesCompleted = item.strokes;
   currentStrokeIndex = item.strokes - 1;
