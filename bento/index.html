@@ -792,6 +792,58 @@ html, body {
   background: #BBF7D0;
   border-color: #22C55E;
 }
+.free-brush-stamp-panel {
+  border-color: #A7F3D0;
+  background: #ECFDF5;
+}
+.free-brush-stamp-preview {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+}
+.free-brush-stamp-preview img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 5px rgba(34, 120, 82, 0.18));
+}
+.free-brush-stamp-cue {
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.free-brush-stamp-on {
+  cursor: crosshair;
+}
+.free-brush-stamp-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  z-index: 32;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 3px solid #34D399;
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.92);
+  color: #047857;
+  font-size: 0.66rem;
+  font-weight: 900;
+  pointer-events: none;
+  box-shadow: 0 6px 16px rgba(34, 120, 82, 0.16);
+}
+.free-brush-stamp-hint img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.free-placed-item.brush-locked {
+  pointer-events: none;
+}
 .free-mask-row {
   display: grid;
   grid-template-columns: 1.4em 1fr 3em;
@@ -2947,6 +2999,8 @@ let freePendingCupEditorUid = null;
 let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
+let freeBrushStampDef = null;
+let freeBrushStampLevel = 1;
 
 // ===== NPC 依頼者モード state =====
 // セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
@@ -2956,6 +3010,22 @@ let currentRequester = null;
 const NPC_SESSION_KEY = 'bento_npc_id';
 const NPC_DECIDED_KEY = 'bento_npc_decided';
 const NPC_REQUEST_RATE = 0.30;
+
+function getFreeMaskEditRequest() {
+  try {
+    const sp = new URLSearchParams(location.search);
+    const wants = sp.get('maskedit') === '1' || sp.get('edit') === '1';
+    if (!wants) return null;
+    const boxId = sp.get('box') || '';
+    return {
+      boxId: bentoBoxes.some(b => b.id === boxId && b.maskImage)
+        ? boxId
+        : ((bentoBoxes.find(b => b.maskImage) || {}).id || ''),
+    };
+  } catch (_) {
+    return null;
+  }
+}
 
 function decideNpcMode() {
   // ----- テスト用 URL パラメータ (?npc=...) -----
@@ -3879,6 +3949,14 @@ function getFreeItemImage(item) {
   }
   return item && (item.img || item.image || '');
 }
+function isCabbageBrushDef(def) {
+  return !!def && !!def.brushItem && String(def.img || '').includes('cabbage_shreds_patch_');
+}
+function getBrushStampImage(def = freeBrushStampDef) {
+  if (!def || !Array.isArray(def.brushImages) || !def.brushImages.length) return '';
+  const index = clamp(Math.round(freeBrushStampLevel == null ? 1 : freeBrushStampLevel), 0, def.brushImages.length - 1);
+  return def.brushImages[index] || def.img || '';
+}
 function getFreeVariantGroup(def) {
   if (!def || !Array.isArray(def.variantImages) || !def.variantImages.length) return '';
   return def.variantGroup || def.id || def.name || def.img || def.variantImages[0] || '';
@@ -4416,6 +4494,53 @@ function moveSelectedItemLayerTo(edge) {
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
+function sendItemLayerTo(item, edge) {
+  const items = getLayerContextItems(item).sort((a, b) => (a.layer || 0) - (b.layer || 0));
+  const index = items.findIndex(other => other.uid === (item && item.uid));
+  if (index < 0) return;
+  items.splice(index, 1);
+  if (edge === 'front') items.push(item);
+  else items.unshift(item);
+  applyLayerOrder(items);
+}
+function enterFreeBrushStampMode(def) {
+  if (!isCabbageBrushDef(def)) return;
+  freeBrushStampDef = def;
+  freeBrushStampLevel = clamp(def.brushLevel == null ? 1 : def.brushLevel, 0, (def.brushImages || []).length - 1);
+  freeLayoutTab = 'food';
+  freeCupEditorUid = null;
+  freeCupToolMode = 'move';
+  freeSelectedItemUid = null;
+  resetFreeMainGuide();
+  setSpeech('キャベツを しくところを タップ！');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function exitFreeBrushStampMode() {
+  freeBrushStampDef = null;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function addBrushStampAtPoint(point) {
+  if (!freeBrushStampDef || !point) return null;
+  const sizeByLevel = [128, 170, 220];
+  const level = clamp(Math.round(freeBrushStampLevel || 0), 0, (freeBrushStampDef.brushImages || []).length - 1);
+  const item = addFreeLayoutItem(freeBrushStampDef, {
+    x: point.x,
+    y: point.y,
+    size: sizeByLevel[level] || freeBrushStampDef.size || 170,
+    tier: getGuideTierForStep(),
+    brushLevel: level,
+    skipRender: true,
+  });
+  sendItemLayerTo(item, 'back');
+  freeSelectedItemUid = item.uid;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  playPop();
+  return item;
+}
 function addFoodToSelectedCup(def) {
   const cup = getEditingCup() || getActiveCup();
   if (!cup || !def || def.type !== 'food') return null;
@@ -4531,6 +4656,8 @@ function selectFreeBentoBox(id) {
   freeActiveCupUid = null;
   freeCupEditorUid = null;
   freePendingCupEditorUid = null;
+  freeBrushStampDef = null;
+  freeBrushStampLevel = 1;
   const box = getSelectedBentoBox();
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
@@ -4576,7 +4703,8 @@ function createFreePlacedElement(item, interactive) {
   const typeClass = item.type ? ' type-' + item.type : '';
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && (!editingCup || item.parentCupId !== editingCup.uid);
-  el.className = 'free-placed-item' + typeClass + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '');
+  const brushLocked = interactive && !!freeBrushStampDef;
+  el.className = 'free-placed-item' + typeClass + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '') + (brushLocked ? ' brush-locked' : '');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
@@ -4586,7 +4714,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.setProperty('--rot', (item.rotation || 0) + 'deg');
   el.style.setProperty('--scale', item.scale || 1);
   el.appendChild(createFreeVisual(item));
-  if (interactive) {
+  if (interactive && !freeBrushStampDef) {
     el.addEventListener('pointerdown', ev => {
       ev.stopPropagation();
       if (isFreeMainGuideBlocking()) {
@@ -4671,6 +4799,17 @@ function renderFreeLayoutInto(host, opts = {}) {
     : visibleItems;
   host.innerHTML = '';
   host.classList.add('free-layout-stage');
+  host.onpointerdown = null;
+  host.classList.toggle('free-brush-stamp-on', !!(opts.interactive && freeBrushStampDef));
+  if (opts.interactive && freeBrushStampDef) {
+    host.onpointerdown = e => {
+      if (isFreeMainGuideBlocking()) return;
+      const point = eventToFreePoint(e);
+      if (!point) return;
+      e.preventDefault();
+      addBrushStampAtPoint(point);
+    };
+  }
   const shape = document.createElement(box.image ? 'img' : 'div');
   shape.className = ['free-bento-shape', box.shape, box.id, box.image ? 'has-image' : ''].filter(Boolean).join(' ');
   if (box.image) {
@@ -4708,6 +4847,18 @@ function renderFreeLayoutInto(host, opts = {}) {
   });
   host.appendChild(layer);
   if (opts.interactive) {
+    if (freeBrushStampDef) {
+      const hint = document.createElement('div');
+      hint.className = 'free-brush-stamp-hint';
+      const img = document.createElement('img');
+      img.src = getBrushStampImage();
+      img.alt = '';
+      hint.appendChild(img);
+      const text = document.createElement('span');
+      text.textContent = 'タップで しく';
+      hint.appendChild(text);
+      host.appendChild(hint);
+    }
     const guide = createFreeMainGuide();
     if (guide) {
       host.appendChild(createFreeMainGuideTapLayer());
@@ -4766,7 +4917,7 @@ function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'free-palette-item';
-  if ((freeLayoutTab === 'box' && def.id === selectedBentoBoxId) || def.uid === freeSelectedItemUid) {
+  if ((freeLayoutTab === 'box' && def.id === selectedBentoBoxId) || def.uid === freeSelectedItemUid || (freeBrushStampDef && isCabbageBrushDef(def))) {
     btn.classList.add('selected');
   }
   if (shouldHighlightFreeChoice(def)) {
@@ -4797,6 +4948,15 @@ function makeFreePaletteButton(def) {
         addFoodToSelectedCup(def);
         return;
       }
+      if (isCabbageBrushDef(def)) {
+        if (!canAddFoodForCurrentStep(def)) {
+          showToast('いまの おかずから えらぼう！');
+          return;
+        }
+        enterFreeBrushStampMode(def);
+        return;
+      }
+      freeBrushStampDef = null;
       beginFreePaletteDrag(e, def);
     });
   }
@@ -4817,6 +4977,7 @@ function renderFreeTierControls() {
       e.preventDefault();
       freeActiveTier = tier;
       freeLayoutTab = tier === 1 ? 'rice' : 'food';
+      freeBrushStampDef = null;
       freeSelectedItemUid = null;
       renderFreeLayoutStage();
       renderFreeLayoutControls();
@@ -4847,20 +5008,37 @@ function renderSelectedAccessorySizeControls() {
   return row;
 }
 function renderSelectedBrushControls() {
-  const item = getSelectedBrushItem();
-  if (!item) return null;
+  return null;
+}
+function renderBrushStampControls() {
+  if (!freeBrushStampDef) return null;
   const panel = document.createElement('div');
-  panel.className = 'free-brush-panel';
-  const title = document.createElement('div');
-  title.className = 'free-brush-title';
-  title.textContent = 'キャベツを ふやす・へらす';
-  panel.appendChild(title);
+  panel.className = 'free-brush-panel free-brush-stamp-panel';
+  const preview = document.createElement('div');
+  preview.className = 'free-brush-stamp-preview';
+  const img = document.createElement('img');
+  img.src = getBrushStampImage();
+  img.alt = '';
+  preview.appendChild(img);
+  const cue = document.createElement('div');
+  cue.className = 'free-brush-stamp-cue';
+  cue.textContent = 'おべんとうを タップ';
+  preview.appendChild(cue);
+  panel.appendChild(preview);
   const actions = document.createElement('div');
   actions.className = 'free-brush-actions';
-  actions.appendChild(makeSmallControlButton('へらす', '', () => setSelectedBrushLevel(-1), (item.brushLevel || 0) <= 0));
-  actions.appendChild(makeSmallControlButton('ふやす', 'primary', () => setSelectedBrushLevel(1), (item.brushLevel || 0) >= item.brushImages.length - 1));
-  actions.appendChild(makeSmallControlButton('となりに足す', '', duplicateSelectedBrushItem));
-  actions.appendChild(makeSmallControlButton('けす', '', () => removeFreeItem(item.uid)));
+  [
+    { level: 0, label: '小' },
+    { level: 1, label: '中' },
+    { level: 2, label: '大' },
+  ].forEach(preset => {
+    actions.appendChild(makeSmallControlButton(preset.label, freeBrushStampLevel === preset.level ? 'primary' : '', () => {
+      freeBrushStampLevel = preset.level;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }));
+  });
+  actions.appendChild(makeSmallControlButton('OK', '', exitFreeBrushStampMode));
   panel.appendChild(actions);
   return panel;
 }
@@ -4877,10 +5055,10 @@ function renderSelectedLayerControls() {
   panel.appendChild(title);
   const actions = document.createElement('div');
   actions.className = 'free-layer-actions';
-  actions.appendChild(makeSmallControlButton('したへ', '', () => moveSelectedItemLayer(-1)));
-  actions.appendChild(makeSmallControlButton('うえへ', 'primary', () => moveSelectedItemLayer(1)));
-  actions.appendChild(makeSmallControlButton('いちばん下', '', () => moveSelectedItemLayerTo('back')));
-  actions.appendChild(makeSmallControlButton('いちばん上', '', () => moveSelectedItemLayerTo('front')));
+  actions.appendChild(makeSmallControlButton('↓', '', () => moveSelectedItemLayer(-1)));
+  actions.appendChild(makeSmallControlButton('↑', 'primary', () => moveSelectedItemLayer(1)));
+  actions.appendChild(makeSmallControlButton('⇩', '', () => moveSelectedItemLayerTo('back')));
+  actions.appendChild(makeSmallControlButton('⇧', '', () => moveSelectedItemLayerTo('front')));
   panel.appendChild(actions);
   return panel;
 }
@@ -5178,6 +5356,7 @@ function renderFreeLayoutControls() {
     b.addEventListener('pointerdown', e => {
       e.preventDefault();
       freeLayoutTab = t.id;
+      if (t.id !== 'food') freeBrushStampDef = null;
       renderFreeLayoutControls();
     });
     tabs.appendChild(b);
@@ -5192,6 +5371,9 @@ function renderFreeLayoutControls() {
 
   const sizeControls = renderSelectedAccessorySizeControls();
   if (sizeControls) tray.appendChild(sizeControls);
+
+  const brushStampControls = renderBrushStampControls();
+  if (brushStampControls) tray.appendChild(brushStampControls);
 
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
@@ -5239,7 +5421,15 @@ function loadFreeLayoutStage() {
   freeActiveCupUid = null;
   freeCupEditorUid = null;
   freePendingCupEditorUid = null;
+  freeBrushStampDef = null;
+  freeBrushStampLevel = 1;
+  const maskEdit = getFreeMaskEditRequest();
+  if (maskEdit && maskEdit.boxId) {
+    selectedBentoBoxId = maskEdit.boxId;
+    freeMaskEditorOpen = true;
+  }
   resetFreeMainGuide();
+  if (maskEdit) freeGuideDismissedKey = getFreeGuideDismissKey();
   const box = document.querySelector('.bento-box');
   if (box) box.classList.add('free-layout-shell');
   const bentoInner = document.getElementById('bento-inner');
@@ -5251,7 +5441,7 @@ function loadFreeLayoutStage() {
   if (oldTutorialBubble) oldTutorialBubble.classList.add('hidden');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  setSpeech('まず おべんとうばこを えらぼう！');
+  setSpeech(maskEdit ? 'マスクを ちょうせいしよう！' : 'まず おべんとうばこを えらぼう！');
 }
 function getFreeLayoutCompletionData() {
   const foodItems = placedItems.filter(i => i.type === 'food' || i.type === 'rice');
