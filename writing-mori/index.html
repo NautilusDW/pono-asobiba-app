@@ -1360,9 +1360,12 @@ const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 4;
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
-const STROKE_LOCAL_PASS_RATIO = 0.34;
+const STROKE_LOCAL_PASS_RATIO = 0.16;
 const STROKE_LOCAL_PASS_MIN_DISTANCE = 120;
-const STROKE_LOCAL_PASS_DISTANCE_RATIO = 0.42;
+const STROKE_LOCAL_PASS_DISTANCE_RATIO = 0.62;
+const STROKE_LOCAL_PASS_MIN_PROGRESS = 0.78;
+const STROKE_LOCAL_PASS_MIN_SPAN = 0.68;
+const STROKE_LOCAL_PASS_START_TOLERANCE = 0.22;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1374,6 +1377,9 @@ let pixelLetter = null;
 let trailDrawing = false;
 let lastTrailPoint = null;
 let trailDistance = 0;
+let strokeTraceMinProgress = 1;
+let strokeTraceMaxProgress = 0;
+let suppressMistakesUntilNextTrace = false;
 let sparkleBudget = 0;
 let strokesCompleted = 0;
 let currentStrokeIndex = 0;
@@ -2190,6 +2196,8 @@ function resetWriting() {
   trailDrawing = false;
   lastTrailPoint = null;
   trailDistance = 0;
+  resetStrokeTraceProgress();
+  suppressMistakesUntilNextTrace = false;
   sparkleBudget = 0;
   strokesCompleted = 0;
   currentStrokeIndex = 0;
@@ -2342,25 +2350,159 @@ function getStrokeFilledRatio(strokeIndex) {
 }
 
 function getStrokeMedianDistance(strokeIndex) {
-  if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return 0;
-  const median = currentCharData.medians[strokeIndex];
-  if (!Array.isArray(median) || median.length < 2) return 0;
-  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  const points = getStrokePolylinePoints(strokeIndex);
+  if (points.length < 2) return 0;
   let total = 0;
-  let prev = null;
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i + 1].x - points[i].x;
+    const dy = points[i + 1].y - points[i].y;
+    total += Math.sqrt(dx * dx + dy * dy);
+  }
+  return total * (1000 / (pixelLetter && pixelLetter.gridSize || PIXEL_GRID_SIZE));
+}
+
+function getStrokePolylinePoints(strokeIndex) {
+  if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return [];
+  const median = currentCharData.medians[strokeIndex];
+  if (!Array.isArray(median) || median.length < 2) return [];
+  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  const points = [];
   median.forEach((point) => {
     const gridPoint = pixelLetter.mapMedianPoint
       ? pixelLetter.mapMedianPoint(point)
       : rawMedianPointToGrid(point, gridSize);
     if (!gridPoint || !Number.isFinite(gridPoint.x) || !Number.isFinite(gridPoint.y)) return;
-    if (prev) {
-      const dx = gridPoint.x - prev.x;
-      const dy = gridPoint.y - prev.y;
-      total += Math.sqrt(dx * dx + dy * dy);
-    }
-    prev = gridPoint;
+    points.push(gridPoint);
   });
-  return total * (1000 / gridSize);
+  return points;
+}
+
+function getStrokeTraceCoverage(strokeIndex) {
+  if (!pixelLetter || !pixelLetter.strokeMasks[strokeIndex]) {
+    return { minProgress: 1, maxProgress: 0, span: 0 };
+  }
+  const points = getStrokePolylinePoints(strokeIndex);
+  if (points.length < 2) return { minProgress: 1, maxProgress: 0, span: 0 };
+
+  const segmentLengths = [];
+  let totalLength = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i + 1].x - points[i].x;
+    const dy = points[i + 1].y - points[i].y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    segmentLengths.push(length);
+    totalLength += length;
+  }
+  if (totalLength <= 0) return { minProgress: 1, maxProgress: 0, span: 0 };
+
+  const strokeMask = pixelLetter.strokeMasks[strokeIndex];
+  const { fill, gridSize } = pixelLetter;
+  let minProgress = 1;
+  let maxProgress = 0;
+  let touched = 0;
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const index = y * gridSize + x;
+      if (!strokeMask[index] || !fill[index]) continue;
+      const px = x + 0.5;
+      const py = y + 0.5;
+      let bestDistance = Infinity;
+      let bestProgressLength = 0;
+      let progressBeforeSegment = 0;
+      for (let i = 0; i < points.length - 1; i++) {
+        const ax = points[i].x;
+        const ay = points[i].y;
+        const bx = points[i + 1].x;
+        const by = points[i + 1].y;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        const t = lenSq <= 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+        const nx = ax + dx * t;
+        const ny = ay + dy * t;
+        const ox = px - nx;
+        const oy = py - ny;
+        const distanceSq = ox * ox + oy * oy;
+        if (distanceSq < bestDistance) {
+          bestDistance = distanceSq;
+          bestProgressLength = progressBeforeSegment + segmentLengths[i] * t;
+        }
+        progressBeforeSegment += segmentLengths[i];
+      }
+      const progress = bestProgressLength / totalLength;
+      minProgress = Math.min(minProgress, progress);
+      maxProgress = Math.max(maxProgress, progress);
+      touched += 1;
+    }
+  }
+  if (!touched) return { minProgress: 1, maxProgress: 0, span: 0 };
+  return {
+    minProgress,
+    maxProgress,
+    span: Math.max(0, maxProgress - minProgress)
+  };
+}
+
+function getStrokeProgressAtBoardPoint(strokeIndex, boardPoint) {
+  if (!boardPoint || !pixelLetter) return null;
+  const points = getStrokePolylinePoints(strokeIndex);
+  if (points.length < 2) return null;
+
+  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
+  const px = (boardPoint.x / 1000) * gridSize;
+  const py = (boardPoint.y / 1000) * gridSize;
+  let totalLength = 0;
+  const segmentLengths = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i + 1].x - points[i].x;
+    const dy = points[i + 1].y - points[i].y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    segmentLengths.push(length);
+    totalLength += length;
+  }
+  if (totalLength <= 0) return null;
+
+  let bestDistance = Infinity;
+  let bestProgressLength = 0;
+  let progressBeforeSegment = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const ax = points[i].x;
+    const ay = points[i].y;
+    const bx = points[i + 1].x;
+    const by = points[i + 1].y;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    const t = lenSq <= 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+    const nx = ax + dx * t;
+    const ny = ay + dy * t;
+    const ox = px - nx;
+    const oy = py - ny;
+    const distanceSq = ox * ox + oy * oy;
+    if (distanceSq < bestDistance) {
+      bestDistance = distanceSq;
+      bestProgressLength = progressBeforeSegment + segmentLengths[i] * t;
+    }
+    progressBeforeSegment += segmentLengths[i];
+  }
+
+  return bestProgressLength / totalLength;
+}
+
+function updateStrokeTraceProgress(boardPoint) {
+  if (!pixelLetter) return;
+  const item = getCurrentCharacter();
+  const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
+  if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
+  const progress = getStrokeProgressAtBoardPoint(strokeIndex, boardPoint);
+  if (!Number.isFinite(progress)) return;
+  strokeTraceMinProgress = Math.min(strokeTraceMinProgress, progress);
+  strokeTraceMaxProgress = Math.max(strokeTraceMaxProgress, progress);
+}
+
+function resetStrokeTraceProgress() {
+  strokeTraceMinProgress = 1;
+  strokeTraceMaxProgress = 0;
 }
 
 function isLocalStrokeTraceComplete(strokeIndex) {
@@ -2369,7 +2511,12 @@ function isLocalStrokeTraceComplete(strokeIndex) {
     STROKE_LOCAL_PASS_MIN_DISTANCE,
     getStrokeMedianDistance(strokeIndex) * STROKE_LOCAL_PASS_DISTANCE_RATIO
   );
-  return fillRatio >= STROKE_LOCAL_PASS_RATIO && trailDistance >= requiredDistance;
+  const progressSpan = Math.max(0, strokeTraceMaxProgress - strokeTraceMinProgress);
+  return fillRatio >= STROKE_LOCAL_PASS_RATIO
+    && trailDistance >= requiredDistance
+    && strokeTraceMinProgress <= STROKE_LOCAL_PASS_START_TOLERANCE
+    && strokeTraceMaxProgress >= STROKE_LOCAL_PASS_MIN_PROGRESS
+    && progressSpan >= STROKE_LOCAL_PASS_MIN_SPAN;
 }
 
 function maybeUpdateProgressAfterFill() {
@@ -2458,7 +2605,12 @@ function spawnSpark(clientX, clientY) {
 function onTrailPointerDown(event) {
   if (complete || event.pointerType === 'mouse' && event.button !== 0) return;
   trailDrawing = true;
+  trailDistance = 0;
+  sparkleBudget = 0;
+  suppressMistakesUntilNextTrace = false;
+  resetStrokeTraceProgress();
   lastTrailPoint = boardPointFromEvent(event);
+  updateStrokeTraceProgress(lastTrailPoint);
   const result = fillLetterPixelsAt(lastTrailPoint, LETTER_BRUSH_RADIUS);
   if (result.changed > 0) renderPixelLetter();
   const nextStroke = Math.min(currentStrokeIndex + 1, getCurrentCharacter().strokes);
@@ -2477,6 +2629,7 @@ function onTrailPointerMove(event) {
   const d = paintTrailSegment(lastTrailPoint, next);
   trailDistance += d;
   sparkleBudget += d;
+  updateStrokeTraceProgress(next);
   if (sparkleBudget > 130) {
     sparkleBudget = 0;
     spawnSpark(event.clientX, event.clientY);
@@ -2495,11 +2648,18 @@ function onCorrectStroke(data) {
   const expectedStroke = Math.min(strokesCompleted, item.strokes - 1);
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : expectedStroke;
   if (strokeNum !== expectedStroke) return;
+  const localSource = data && typeof data.source === 'string' && data.source.indexOf('local-trace') === 0;
+  if (!localSource && !isLocalStrokeTraceComplete(strokeNum)) {
+    setMessage(`${strokeNum + 1}かくめを もうすこし なぞってね`, 'あとすこし');
+    return;
+  }
   fillStrokePixels(strokeNum);
   strokesCompleted = Math.min(item.strokes, strokesCompleted + 1);
   currentStrokeIndex = Math.min(item.strokes - 1, strokesCompleted);
   stopTrail();
   trailDistance = 0;
+  resetStrokeTraceProgress();
+  suppressMistakesUntilNextTrace = true;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   setMessage(
@@ -2513,6 +2673,7 @@ function onCorrectStroke(data) {
 }
 
 function onMistake(data) {
+  if (suppressMistakesUntilNextTrace) return;
   const item = getCurrentCharacter();
   const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : currentStrokeIndex;
   if (rawStrokeNum < strokesCompleted) return;
@@ -2528,11 +2689,22 @@ function onMistake(data) {
   }
   stopTrail();
   trailDistance = 0;
+  resetStrokeTraceProgress();
   setMessage(`${strokeNum + 1}かくめを もういちど なぞってね`, 'ゆっくりね');
 }
 
 function onWriterComplete(summary) {
   const item = getCurrentCharacter();
+  if (strokesCompleted < item.strokes) {
+    const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
+    if (isLocalStrokeTraceComplete(strokeNum)) {
+      onCorrectStroke({ strokeNum, source: 'local-trace-writer-complete' });
+    }
+    if (strokesCompleted < item.strokes) {
+      setMessage(`${strokeNum + 1}かくめを もうすこし なぞってね`, 'あとすこし');
+      return;
+    }
+  }
   fillAllLetterPixels();
   strokesCompleted = item.strokes;
   currentStrokeIndex = item.strokes - 1;
