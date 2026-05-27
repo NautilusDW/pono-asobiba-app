@@ -65,6 +65,12 @@
   --moji-icon-alert: url('../assets/images/mojikko/writing/icon_alert.png');
   --moji-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --moji-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
+  --moji-bg-garden: url('../assets/images/mojikko/writing/background_garden.png');
+  --moji-kana-tab-normal: url('../assets/images/mojikko/writing/kana_tab_normal.png');
+  --moji-kana-tab-active: url('../assets/images/mojikko/writing/kana_tab_active.png');
+  --moji-char-button-normal: url('../assets/images/mojikko/writing/char_button_normal.png');
+  --moji-char-button-active: url('../assets/images/mojikko/writing/char_button_active.png');
+  --moji-char-button-done: url('../assets/images/mojikko/writing/char_button_done.png');
 }
 
 html, body {
@@ -98,8 +104,7 @@ html, body {
   height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, var(--sky) 0 42%, #b7e6d4 42% 66%, #7abf6c 66% 100%);
+  background: var(--moji-bg-garden) center / cover no-repeat;
   image-rendering: pixelated;
 }
 
@@ -108,11 +113,17 @@ html, body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(transparent 0 93%, rgba(91, 65, 38, 0.32) 93% 100%),
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 8px),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, transparent 2px 8px);
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 8px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 8px);
   mix-blend-mode: soft-light;
   pointer-events: none;
+}
+
+.bg-cloud,
+.hill,
+.tree,
+.ground-strip {
+  display: none;
 }
 
 @media (orientation: portrait) {
@@ -333,13 +344,14 @@ html, body {
 }
 
 .star-box {
-  min-width: 158px;
+  width: 186px;
+  min-width: 186px;
   height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding-left: 42px;
+  padding-left: 52px;
   font-family: var(--pixel-font);
   font-size: 27px;
   color: #6a4528;
@@ -356,6 +368,7 @@ html, body {
 
 .settings-btn {
   width: 62px;
+  height: 58px;
   padding: 0;
   font-size: 30px;
   border: 0;
@@ -446,28 +459,27 @@ html, body {
 .kana-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 9px 16px 4px;
+  gap: 6px;
+  padding: 10px 16px 4px;
 }
 
 .kana-tab {
   height: 36px;
-  border: 3px solid #7e573b;
-  border-radius: 7px;
-  background: linear-gradient(180deg, #eefbe7, #9fdcaf);
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-kana-tab-normal) center / 100% 100% no-repeat;
   color: #4f3825;
   font-family: var(--pixel-font);
   font-size: 15px;
   font-weight: 700;
-  box-shadow: 0 3px 0 #5b3b29;
+  box-shadow: none;
   cursor: pointer;
+  image-rendering: pixelated;
 }
 
 .kana-tab.active {
-  background: linear-gradient(180deg, #fff2ad, #f5c466);
-  box-shadow:
-    0 3px 0 #704523,
-    0 0 0 3px rgba(255, 223, 96, 0.36);
+  background-image: var(--moji-kana-tab-active);
+  filter: drop-shadow(0 0 4px rgba(255, 223, 96, 0.42));
 }
 
 .char-list {
@@ -484,20 +496,21 @@ html, body {
 
 .char-button {
   position: relative;
-  height: 38px;
+  height: 41px;
   display: grid;
   grid-template-columns: 10px 1fr 10px;
   align-items: center;
   padding: 0 4px;
-  border: 3px solid #a6794f;
-  border-radius: 7px;
-  background: linear-gradient(180deg, #fff8e7, #ecd2a6);
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-char-button-normal) center / 100% 100% no-repeat;
   color: var(--ink);
   font-family: var(--round-font);
   font-size: 22px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 3px 0 #8a5d39;
+  box-shadow: none;
+  image-rendering: pixelated;
 }
 
 .char-button .cursor {
@@ -509,11 +522,8 @@ html, body {
 }
 
 .char-button.active {
-  background: linear-gradient(180deg, #fff0ae, #f8c76d);
-  border-color: #8d5c2e;
-  box-shadow:
-    0 3px 0 #704523,
-    0 0 0 3px rgba(255, 224, 101, 0.42);
+  background-image: var(--moji-char-button-active);
+  filter: drop-shadow(0 0 4px rgba(255, 224, 101, 0.48));
 }
 
 .char-button.active .cursor {
@@ -522,10 +532,15 @@ html, body {
 }
 
 .char-button.done .done-mark {
-  width: 12px;
-  height: 12px;
-  background: var(--mint-dark);
-  clip-path: polygon(12% 52%, 32% 34%, 45% 50%, 82% 12%, 100% 30%, 46% 88%);
+  display: none;
+}
+
+.char-button.done {
+  background-image: var(--moji-char-button-done);
+}
+
+.char-button.done.active {
+  background-image: var(--moji-char-button-active);
 }
 
 .companion-card {
@@ -695,52 +710,38 @@ html, body {
 .center-stage {
   position: relative;
   display: grid;
-  grid-template-rows: 58px 610px 64px;
-  gap: 12px;
+  grid-template-rows: 84px 1fr 76px;
+  gap: 8px;
   min-width: 0;
 }
 
 .prompt-bar {
   position: relative;
   justify-self: center;
-  width: min(760px, 100%);
+  width: min(820px, 100%);
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 5px solid #4b8757;
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(66, 125, 73, 0.34) 0 24px, transparent 24px calc(100% - 24px), rgba(66, 125, 73, 0.34) calc(100% - 24px) 100%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 10px, transparent 10px 20px),
-    linear-gradient(180deg, #8bd79b 0%, #4faf68 100%);
-  box-shadow:
-    0 6px 0 #2d633d,
-    0 12px 20px rgba(45, 63, 35, 0.18),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.22);
+  border: 0;
+  border-radius: 0;
+  background: var(--moji-prompt-sign) center / 100% 100% no-repeat;
+  box-shadow: none;
   font-family: var(--pixel-font);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #fffdf0;
+  color: #4f3825;
   text-shadow:
-    2px 2px 0 rgba(47, 97, 61, 0.58),
-    0 2px 0 rgba(47, 97, 61, 0.32);
+    2px 2px 0 rgba(255, 255, 255, 0.78),
+    0 2px 0 rgba(89, 131, 82, 0.18);
   image-rendering: pixelated;
 }
 
 .prompt-bar::before,
 .prompt-bar::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  width: 46px;
-  height: 28px;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, transparent 0 36%, rgba(47, 97, 61, 0.7) 37% 50%, transparent 51%),
-    linear-gradient(180deg, #b7edb9, #5dbf78);
-  opacity: 0.8;
+  display: none;
 }
 
 .prompt-bar::before {
@@ -762,25 +763,19 @@ html, body {
 
 .writing-board {
   position: relative;
-  width: min(610px, 100%);
-  aspect-ratio: 1 / 1;
-  background:
-    linear-gradient(180deg, #f0b568, #9f6634);
-  border: 10px solid #764a2a;
-  border-radius: 8px;
-  box-shadow:
-    0 8px 0 #4a2e1d,
-    0 18px 28px rgba(58, 36, 19, 0.26),
-    inset 0 0 0 6px rgba(255, 221, 147, 0.44);
-  overflow: hidden;
+  width: min(640px, 100%);
+  aspect-ratio: 551 / 494;
+  background: var(--moji-writing-board) center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
   image-rendering: pixelated;
 }
 
 .writing-board::before,
 .writing-board::after {
-  content: '';
-  position: absolute;
-  pointer-events: none;
+  display: none;
 }
 
 .writing-board::before {
@@ -819,9 +814,12 @@ html, body {
 #writerTarget,
 #pixelTrailCanvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: 50%;
+  top: 50%;
+  width: 78.5%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  translate: -50% -50%;
 }
 
 #writerTarget {
@@ -849,7 +847,12 @@ html, body {
 
 .stroke-number-overlay {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  width: 78.5%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  translate: -50% -50%;
   z-index: 6;
   pointer-events: none;
 }
@@ -913,7 +916,7 @@ html, body {
 
 .feedback-row {
   display: grid;
-  grid-template-columns: 200px 200px;
+  grid-template-columns: 196px 220px;
   gap: 14px;
   align-items: center;
   justify-content: end;
@@ -929,9 +932,8 @@ html, body {
 
 #doneBtn,
 #resetBtn {
-  width: 200px;
-  height: 70px;
-  min-height: 70px;
+  height: 74px;
+  min-height: 74px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -947,8 +949,9 @@ html, body {
 }
 
 #doneBtn {
+  width: 220px;
   color: #fffdf0;
-  background-image: var(--moji-button-small-success);
+  background-image: var(--moji-button-success);
   text-shadow: 2px 2px 0 rgba(41, 101, 132, 0.58);
 }
 
@@ -961,12 +964,14 @@ html, body {
 }
 
 #doneBtn:active {
-  background-image: var(--moji-button-small-success-pressed);
+  background-image: var(--moji-button-success-pressed);
+  filter: brightness(0.96);
 }
 
 #resetBtn {
+  width: 196px;
   color: #5f3c22;
-  background-image: var(--moji-button-small-retry);
+  background-image: var(--moji-button-retry);
 }
 
 #resetBtn::before {
@@ -977,7 +982,8 @@ html, body {
 }
 
 #resetBtn:active {
-  background-image: var(--moji-button-small-retry-pressed);
+  background-image: var(--moji-button-retry-pressed);
+  filter: brightness(0.96);
 }
 
 .message-box {
@@ -1120,18 +1126,15 @@ html, body {
 
 .reward-box {
   margin: 0 18px 18px;
-  padding: 16px 16px 12px;
+  height: 92px;
+  padding: 12px 14px 10px 72px;
   display: grid;
-  gap: 10px;
+  gap: 6px;
   align-content: center;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0) 26%),
-    #fff4d9;
-  border: 3px solid #a8794f;
-  border-radius: 8px;
-  box-shadow:
-    0 4px 0 #7e5130,
-    inset 0 0 0 3px rgba(255,255,255,0.36);
+  background: var(--moji-reward-box) center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   image-rendering: pixelated;
 }
 
@@ -1148,6 +1151,14 @@ html, body {
   font-family: var(--round-font);
   font-size: 21px;
   font-weight: 900;
+}
+
+.reward-box .reward-item {
+  font-size: 18px;
+}
+
+.reward-box .food-pixel {
+  display: none;
 }
 
 .food-pixel {
@@ -1238,9 +1249,11 @@ html, body {
   justify-content: center;
   gap: 13px;
   padding: 8px 24px 10px;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  border: 4px solid #895b37;
+  border-radius: 8px;
+  box-shadow:
+    0 6px 0 #57361f,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.25);
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1252,7 +1265,9 @@ html, body {
 
 #careBtn {
   width: 430px;
-  background-image: var(--moji-button-modal-care);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0 10px, transparent 10px 20px),
+    linear-gradient(180deg, #ffd8e2 0%, #ef87a0 100%);
 }
 
 #careBtn::before,
@@ -1271,11 +1286,16 @@ html, body {
 }
 
 #careBtn:active {
-  background-image: var(--moji-button-modal-care-pressed);
+  transform: translateY(4px);
+  box-shadow:
+    0 2px 0 #57361f,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.22);
 }
 
 #modalRetryBtn {
-  background-image: var(--moji-button-modal-next);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 20px),
+    linear-gradient(180deg, #ffe8a8 0%, #f1b64f 100%);
 }
 
 #modalRetryBtn::before {
@@ -1283,7 +1303,10 @@ html, body {
 }
 
 #modalRetryBtn:active {
-  background-image: var(--moji-button-modal-next-pressed);
+  transform: translateY(4px);
+  box-shadow:
+    0 2px 0 #57361f,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.22);
 }
 
 .result-burst {
@@ -2025,7 +2048,8 @@ function clampOffsetToBoard(offsetX, offsetY, bounds, gridSize) {
 }
 
 function updateWriterDisplayOffset(offsetX, offsetY, gridSize) {
-  const size = currentWriterSize || writingBoard.offsetWidth || 610;
+  const targetRect = writerTarget.getBoundingClientRect();
+  const size = currentWriterSize || targetRect.width || writingBoard.offsetWidth || 610;
   const px = (offsetX / gridSize) * size;
   const py = (offsetY / gridSize) * size;
   writerTarget.style.transform = `translate(${px}px, ${py}px)`;
@@ -2315,7 +2339,7 @@ function createWriter() {
     return;
   }
 
-  const rect = writingBoard.getBoundingClientRect();
+  const rect = writerTarget.getBoundingClientRect();
   const size = Math.max(360, Math.round(rect.width));
   currentWriterSize = size;
   writer = HanziWriter.create(writerTarget, item.char, {
