@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-27 - [batch:150-mojikko-writing-leniency] DONE - Codex: もじっこファーム文字書き判定を幼児向けに再調整。HanziWriter `leniency` を 1.8 に上げ、ミス判定中も指を離すまでは線を消さず、離してから 520ms 後に未確定の一画だけ消すよう変更。`sw.js` は v631。 (by Codex)
 - 2026-05-27 - [batch:149-tonton-kitchen-menu-assets] DONE - Codex: トントンキッチンをトップの別メニューとして追加し、弁当カードは `bento/index.html` へ戻した。キッチンのモード選択画像を生成シートに差し替え、外枠フォーカスと伸びる吹き出し画像依存を撤去。下ごしらえは切る/こねる系だけに絞り、玉ねぎを追加。鮭/タコウインナー/エビフライ/コロッケはおかず作成側から直接開始可能。生成 raw は `tmp/alpha_pending/149_tonton_kitchen_raw/`、`sw.js` は v630。commit `06ebedf` / staging Actions success。 (by Codex)
 - 2026-05-27 - [batch:148-mojikko-writing-old-judgment] DONE - Codex: もじっこファーム文字書き画面のローカル進捗判定を外し、正誤判定をHanziWriter側に戻した。未確定の一画は描き始め・ミス・途中離しで消えるようにして、重ね塗りで進まない挙動へ変更。`sw.js` は v629。 (by Codex)
 - 2026-05-27 - [batch:147-bento-mask-overlap-layer] DONE - Codex: 熊箱マスク基準値を X137/Y39/W489/H348 に更新し、空箱/ご飯入り/蓋で描画矩形を共通化。キャベツは同じ段ごとの layerGroup として扱い、上下ボタンは実際に重なっているユニットだけを入れ替えるよう変更。選択中アイテム/キャベツグループは緑の太線で強調。`sw.js` は v627。 (by Codex)

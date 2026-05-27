@@ -1357,6 +1357,8 @@ const LETTER_BRUSH_RADIUS = 4;
 // so visual guide, stroke order, and tracing judgment share one source of truth.
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
+const QUIZ_LENIENCY = 1.8;
+const ATTEMPT_CLEAR_DELAY_MS = 520;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1372,6 +1374,7 @@ let trailAttemptId = 0;
 let activeAttemptStroke = -1;
 let activeAttemptCompletedBefore = 0;
 let activeAttemptPainted = false;
+let activeAttemptHadMistake = false;
 let sparkleBudget = 0;
 let strokesCompleted = 0;
 let currentStrokeIndex = 0;
@@ -2148,6 +2151,7 @@ function createWriter() {
     highlightColor: 'rgba(61, 168, 126, 0.72)',
     radicalColor: 'rgba(92, 74, 58, 0.44)',
     drawingWidth: 28,
+    leniency: QUIZ_LENIENCY,
     strokeAnimationSpeed: 0.75,
     delayBetweenStrokes: 500,
     charDataLoader: function(char, onComplete) {
@@ -2177,6 +2181,7 @@ function createWriter() {
     onCorrectStroke: onCorrectStroke,
     onMistake: onMistake,
     onComplete: onWriterComplete,
+    leniency: QUIZ_LENIENCY,
     showHintAfterMisses: 3,
     highlightOnComplete: true,
     highlightCompleteColor: 'rgba(255, 214, 90, 0.95)'
@@ -2191,6 +2196,7 @@ function resetWriting() {
   activeAttemptStroke = -1;
   activeAttemptCompletedBefore = 0;
   activeAttemptPainted = false;
+  activeAttemptHadMistake = false;
   sparkleBudget = 0;
   strokesCompleted = 0;
   currentStrokeIndex = 0;
@@ -2432,6 +2438,7 @@ function onTrailPointerDown(event) {
   activeAttemptStroke = strokeIndex;
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
+  activeAttemptHadMistake = false;
   if (strokeIndex >= strokesCompleted) {
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) renderPixelLetter();
@@ -2481,8 +2488,9 @@ function finishTrailAttempt() {
     if (complete || trailAttemptId !== attemptId || activeAttemptStroke !== strokeIndex) return;
     activeAttemptStroke = -1;
     activeAttemptCompletedBefore = strokesCompleted;
-    const shouldClear = activeAttemptPainted;
+    const shouldClear = activeAttemptPainted || activeAttemptHadMistake;
     activeAttemptPainted = false;
+    activeAttemptHadMistake = false;
     if (!shouldClear || strokesCompleted > completedBefore || strokeIndex < strokesCompleted) return;
 
     const erased = clearStrokePixels(strokeIndex);
@@ -2491,7 +2499,7 @@ function finishTrailAttempt() {
     }
     trailDistance = 0;
     setMessage(`${strokeIndex + 1}かくめを もういちど なぞってね`, 'ゆっくりね');
-  }, 140);
+  }, ATTEMPT_CLEAR_DELAY_MS);
 }
 
 function onCorrectStroke(data) {
@@ -2508,6 +2516,7 @@ function onCorrectStroke(data) {
   activeAttemptStroke = -1;
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
+  activeAttemptHadMistake = false;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   setMessage(
@@ -2526,9 +2535,15 @@ function onMistake(data) {
   if (rawStrokeNum < strokesCompleted) return;
   const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
   mistakeCount += 1;
+  activeAttemptHadMistake = true;
+  if (trailDrawing) {
+    setMessage(`${strokeNum + 1}かくめを ゆっくり なぞってね`, 'まだ かけるよ');
+    return;
+  }
   activeAttemptStroke = -1;
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
+  activeAttemptHadMistake = false;
   const erased = clearStrokePixels(strokeNum);
   if (erased > 0) {
     renderPixelLetter();
