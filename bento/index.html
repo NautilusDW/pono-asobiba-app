@@ -474,20 +474,11 @@ html, body {
 .free-placed-item:active { cursor: grabbing; }
 .free-placed-item.selected {
   filter:
+    drop-shadow(0 0 2px #FFFFFF)
     drop-shadow(0 0 0 #FFFFFF)
-    drop-shadow(0 0 10px rgba(21, 191, 115, 0.96))
+    drop-shadow(0 0 5px #22C55E)
+    drop-shadow(0 0 10px rgba(21, 191, 115, 0.82))
     drop-shadow(0 8px 10px rgba(68,42,16,0.2));
-}
-.free-placed-item.selected::after {
-  content: '';
-  position: absolute;
-  inset: -9%;
-  border: 5px solid #22C55E;
-  border-radius: 22px;
-  pointer-events: none;
-  box-shadow:
-    0 0 0 3px rgba(255,255,255,0.92),
-    0 0 16px rgba(34,197,94,0.58);
 }
 .free-placed-item.pop {
   animation: freePlacePop 0.32s cubic-bezier(0.34,1.56,0.64,1);
@@ -727,6 +718,9 @@ html, body {
   gap: 4px;
   flex-shrink: 0;
 }
+.free-action-row.has-guide-action {
+  grid-template-columns: 0.74fr 0.74fr 1.32fr;
+}
 .free-action-row button,
 .free-complete-btn {
   border: none;
@@ -739,6 +733,10 @@ html, body {
   font-weight: 900;
   min-height: 32px;
   cursor: pointer;
+}
+.free-action-row button.primary {
+  background-image: url('../assets/images/bento/ui/button_green.png');
+  color: #174B2C;
 }
 .free-size-row {
   display: grid;
@@ -1042,6 +1040,34 @@ html, body {
 .free-palette-item:active { transform: scale(0.94); }
 .free-palette-item.selected {
   background-image: url('../assets/images/bento/ui/picker_card_selected.png');
+}
+.free-palette-item.box-choice.selected {
+  background-image: url('../assets/images/bento/ui/picker_card_normal.png');
+}
+.free-palette-item.box-choice.selected .free-palette-visual {
+  filter:
+    drop-shadow(0 0 2px #FFFFFF)
+    drop-shadow(0 0 0 #FFFFFF)
+    drop-shadow(0 0 5px #22C55E)
+    drop-shadow(0 0 11px rgba(21, 191, 115, 0.82));
+}
+.free-bento-shape.box-selection-highlight {
+  filter:
+    drop-shadow(0 12px 16px rgba(93, 78, 55, 0.2))
+    drop-shadow(0 0 2px #FFFFFF)
+    drop-shadow(0 0 0 #FFFFFF)
+    drop-shadow(0 0 7px #22C55E)
+    drop-shadow(0 0 14px rgba(21, 191, 115, 0.86));
+}
+.free-box-ok-card {
+  order: 20;
+}
+.free-box-ok-card .free-guide-actions {
+  grid-template-columns: 1fr;
+}
+.free-box-ok-card .free-guide-actions button {
+  min-height: 40px;
+  font-size: 0.72rem;
 }
 .free-palette-item.guide-target {
   outline: 0;
@@ -2628,7 +2654,7 @@ const freeLayoutMode = true;
 const FREE_LAYOUT_W = 760;
 const FREE_LAYOUT_H = 460;
 const FREE_TABS = [
-  { id: 'box', label: 'おべんとうばこ' },
+  { id: 'box', label: 'はこ' },
   { id: 'accessory', label: 'カップ・しきり' },
   { id: 'rice', label: 'ごはん' },
   { id: 'food', label: 'おかず' },
@@ -3022,6 +3048,7 @@ let freeCupEditorUid = null;
 let freePendingCupEditorUid = null;
 let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
+let freeMaskEditorMode = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
@@ -3675,6 +3702,7 @@ function closeCupEditor() {
 }
 function getFreeGuideCopy() {
   if (getEditingCup()) return FREE_GUIDE_COPY.cupEditor;
+  if (freeGuideStep === 'box') return null;
   const copy = FREE_GUIDE_COPY[freeGuideStep] || FREE_GUIDE_COPY.box;
   if (freeGuideStep === 'tier2Main' && getBoxTierCount() <= 1) {
     return {
@@ -3694,7 +3722,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('まず おべんとうばこを えらぼう！');
+    setSpeech('まず はこを えらぼう！');
   } else if (step === 'rice') {
     freeActiveTier = 1;
     freeLayoutTab = 'rice';
@@ -3966,14 +3994,14 @@ function layoutCupChildren(cup) {
   });
 }
 function makePaletteDropToast(def) {
-  if (!def) return 'おべんとうばこまで もっていこう！';
+  if (!def) return 'はこの なかまで もっていこう！';
   if (def.type === 'rice_auto' || def.type === 'template' || def.type === 'rice') {
-    return 'ごはんを おべんとうばこまで もっていこう！';
+    return 'ごはんを はこの なかまで もっていこう！';
   }
   if (def.type === 'decor') {
     return 'のりを ごはんのうえまで もっていこう！';
   }
-  return 'おべんとうばこまで もっていこう！';
+  return 'はこの なかまで もっていこう！';
 }
 function getFreeItemImage(item) {
   if (item && Array.isArray(item.brushImages) && item.brushImages.length) {
@@ -4965,6 +4993,9 @@ function renderFreeLayoutInto(host, opts = {}) {
   }
   const shape = document.createElement(box.image ? 'img' : 'div');
   shape.className = ['free-bento-shape', box.shape, box.id, box.image ? 'has-image' : ''].filter(Boolean).join(' ');
+  if (opts.interactive && freeGuideStep === 'box') {
+    shape.classList.add('box-selection-highlight');
+  }
   if (box.image) {
     shape.src = useIntegratedRice ? box.riceImage : box.image;
     shape.alt = box.name || '';
@@ -4973,13 +5004,13 @@ function renderFreeLayoutInto(host, opts = {}) {
     shape.style.transform = `scale(${box.imageScale})`;
   }
   const imageRect = getBoxImageRect(box);
-  if (box.imageAspect) shape.style.objectFit = 'fill';
+  if (box.image) shape.style.objectFit = 'contain';
   shape.style.left = toPctX(imageRect.x);
   shape.style.top = toPctY(imageRect.y);
   shape.style.width = toPctX(imageRect.w);
   shape.style.height = toPctY(imageRect.h);
   host.appendChild(shape);
-  if (opts.interactive && tierCount > 1) {
+  if (opts.interactive && freeGuideStep !== 'box' && tierCount > 1 && getTierLabel(activeTier, box)) {
     const badge = document.createElement('div');
     badge.className = 'free-tier-badge';
     badge.textContent = getTierLabel(activeTier, box);
@@ -5072,6 +5103,7 @@ function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'free-palette-item';
+  if (freeLayoutTab === 'box') btn.classList.add('box-choice');
   if ((freeLayoutTab === 'box' && def.id === selectedBentoBoxId) || def.uid === freeSelectedItemUid || (freeBrushStampDef && isCabbageBrushDef(def))) {
     btn.classList.add('selected');
   }
@@ -5127,7 +5159,7 @@ function renderFreeTierControls() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'free-tier-btn' + (tier === freeActiveTier ? ' active' : '');
-    b.textContent = tier === 1 ? '1だん ごはん' : `${tier}だん おかず`;
+    b.textContent = tier === 1 ? 'ごはん' : 'おかず';
     b.addEventListener('pointerdown', e => {
       e.preventDefault();
       freeActiveTier = tier;
@@ -5247,7 +5279,7 @@ function makeMaskRange(label, prop, min, max, bounds) {
 function renderFreeMaskEditorControls() {
   const box = getSelectedBentoBox();
   const bounds = getBoxMaskBounds(box);
-  if (!box || !box.maskImage || !bounds || freeLayoutTab !== 'box') return null;
+  if (!freeMaskEditorMode || !box || !box.maskImage || !bounds || freeLayoutTab !== 'box') return null;
   const panel = document.createElement('div');
   panel.className = 'free-mask-panel';
   const title = document.createElement('div');
@@ -5344,8 +5376,7 @@ function renderFreeGuidePanel() {
     actions.appendChild(makeSmallControlButton('かざらず次へ', '', tryAdvanceFromNori));
     actions.appendChild(makeSmallControlButton(hasNoriDecorOnTier(1) ? 'のりOK' : 'つぎへ', 'primary', tryAdvanceFromNori));
   } else if (freeGuideStep === 'tier2Main') {
-    const tier = getGuideTierForStep('tier2Main');
-    actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
+    // 下部の戻す/けす行に表示する。
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
@@ -5355,9 +5386,7 @@ function renderFreeGuidePanel() {
     actions.appendChild(makeSmallControlButton('できあがり', 'primary', () => stageComplete()));
     actions.appendChild(makeSmallControlButton('3だんめへ', '', () => setFreeGuideStep('tier3Main')));
   } else if (freeGuideStep === 'tier3Main') {
-    const tier = getGuideTierForStep('tier3Main');
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
-    actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
   } else if (freeGuideStep === 'tier3Side') {
     const tier = getGuideTierForStep('tier3Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
@@ -5367,6 +5396,7 @@ function renderFreeGuidePanel() {
   if (!actions.children.length) return null;
   const card = document.createElement('div');
   card.className = 'free-guide-card';
+  if (freeGuideStep === 'box') card.classList.add('free-box-ok-card');
   card.appendChild(actions);
   return card;
 }
@@ -5502,7 +5532,7 @@ function renderFreeLayoutControls() {
   }
 
   const guidePanel = renderFreeGuidePanel();
-  if (guidePanel) tray.appendChild(guidePanel);
+  if (guidePanel && freeGuideStep !== 'box') tray.appendChild(guidePanel);
 
   const guideTabs = getFreeGuideTabs();
   const tabs = document.createElement('div');
@@ -5520,9 +5550,9 @@ function renderFreeLayoutControls() {
     });
     tabs.appendChild(b);
   });
-  if (guideTabs.length) tray.appendChild(tabs);
+  if (guideTabs.length && freeGuideStep !== 'box') tray.appendChild(tabs);
 
-  const tierControls = freeGuideStep === 'box' ? renderFreeTierControls() : null;
+  const tierControls = null;
   if (tierControls) tray.appendChild(tierControls);
 
   const maskControls = renderFreeMaskEditorControls();
@@ -5553,18 +5583,27 @@ function renderFreeLayoutControls() {
     tray.appendChild(list);
   }
 
+  if (guidePanel && freeGuideStep === 'box') tray.appendChild(guidePanel);
+
+  if (freeGuideStep === 'box') return;
+
   const actions = document.createElement('div');
   actions.className = 'free-action-row';
   const undo = document.createElement('button');
   undo.type = 'button';
-  undo.textContent = 'ひとつもどす';
+  undo.textContent = 'もどす';
   undo.addEventListener('pointerdown', e => { e.preventDefault(); undoFreeItem(); });
   actions.appendChild(undo);
   const del = document.createElement('button');
   del.type = 'button';
-  del.textContent = 'えらんだのをけす';
+  del.textContent = 'けす';
   del.addEventListener('pointerdown', e => { e.preventDefault(); removeFreeItem(freeSelectedItemUid); });
   actions.appendChild(del);
+  if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
+    const tier = getGuideTierForStep(freeGuideStep);
+    actions.classList.add('has-guide-action');
+    actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
+  }
   tray.appendChild(actions);
 }
 function loadFreeLayoutStage() {
@@ -5583,6 +5622,8 @@ function loadFreeLayoutStage() {
   freeBrushStampDef = null;
   freeBrushStampLevel = 1;
   const maskEdit = getFreeMaskEditRequest();
+  freeMaskEditorMode = !!maskEdit;
+  freeMaskEditorOpen = false;
   if (maskEdit && maskEdit.boxId) {
     selectedBentoBoxId = maskEdit.boxId;
     freeMaskEditorOpen = true;
@@ -5600,7 +5641,7 @@ function loadFreeLayoutStage() {
   if (oldTutorialBubble) oldTutorialBubble.classList.add('hidden');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  setSpeech(maskEdit ? 'マスクを ちょうせいしよう！' : 'まず おべんとうばこを えらぼう！');
+  setSpeech(maskEdit ? 'マスクを ちょうせいしよう！' : 'まず はこを えらぼう！');
 }
 function getFreeLayoutCompletionData() {
   const foodItems = placedItems.filter(i => i.type === 'food' || i.type === 'rice');
@@ -5669,7 +5710,7 @@ function createFreeCompleteLidStage(box, delay, tierCount = 1) {
   lid.src = box.lidImage;
   lid.alt = 'ふた';
   const imageRect = getBoxImageRect(box);
-  if (box.imageAspect) lid.style.objectFit = 'fill';
+  lid.style.objectFit = 'contain';
   lid.style.left = toPctX(imageRect.x);
   lid.style.top = toPctY(imageRect.y);
   lid.style.width = toPctX(imageRect.w);
@@ -5692,10 +5733,13 @@ function renderFreeCompleteBento(host, items, boxId) {
       wrap.style.setProperty('--tier-y', `${(tierCount - tier) * 32}px`);
       wrap.style.setProperty('--tier-z', `${tier}`);
       wrap.style.setProperty('--tier-delay', `${(tier - 1) * 0.58}s`);
-      const label = document.createElement('div');
-      label.className = 'free-complete-tier-label';
-      label.textContent = getTierLabel(tier, box);
-      wrap.appendChild(label);
+      const labelText = getTierLabel(tier, box);
+      if (labelText) {
+        const label = document.createElement('div');
+        label.className = 'free-complete-tier-label';
+        label.textContent = labelText;
+        wrap.appendChild(label);
+      }
       const stage = document.createElement('div');
       stage.className = 'free-layout-stage';
       renderFreeLayoutInto(stage, {

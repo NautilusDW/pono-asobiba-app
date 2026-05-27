@@ -129,7 +129,7 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
    - **理由**: 「いや、 その辺さ、 すでに以前に出してない？」 のリワーク事故を防ぐ。
 
 1. **作業前に最新を取得**: `git pull origin develop`
-2. **作業後にコミット & push**: `git push origin develop` (post-commit hook が自動 push するので明示不要なケースが多い)
+2. **作業後にコミット & push**: `git push origin develop` (現状 post-commit は無効化されているため、 明示 push が必要)
 3. **コミットメッセージの末尾に作者の AI 種別を入れる** (どっちが作業したか git log で追跡可能にする):
    ```
    ...通常のメッセージ...
@@ -197,6 +197,24 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 
    加えて、 プロジェクト root の `.editorconfig` (`charset = utf-8`, `end_of_line = lf`) に従って Codex 側でも EditorConfig 拡張 (`EditorConfig.EditorConfig`) を有効化することを推奨。 EditorConfig が効いていれば Codex VS Code 拡張の Shift_JIS 誤判定 → 上書き化けを防げる。
 
+### 4.8 ★難易度・作業量があるタスクのクロスレビュー必須
+
+画像生成に限らず、 ある程度の難易度・作業量があるタスクは、 完了報告前に必ずクロスレビューを行う。
+
+対象目安:
+- 複数ファイルにまたがる変更
+- ユーザー-visible な UI / ゲーム挙動 / データ追加
+- 画像・音声・問題データなどのバッチ作業
+- `sw.js` / cache / デプロイ / hook / 共通処理に影響する変更
+- 30 分以上かかる、 または手戻り時の影響が大きい作業
+
+レビュー方法:
+- Claude Code は Agent / Subagent / 自身の hook 運用を使ってレビュー担当を分ける。
+- Codex には Claude 専用 hook は発火しないため、 自動強制に頼らず、 作業者が明示的にレビュー観点を立てて確認する。 可能なら別エージェント / 別スレッド / ユーザー指定レビューに回す。
+- レビュー結果は `HANDOFF.md` または完了報告に「何を誰が / どの観点で確認したか」を 1 行で残す。
+
+軽微な typo 修正、 1 行の文言変更、 調査だけでファイル変更がない場合は対象外でよい。
+
 ---
 
 ## 5. 画像追加・差し替え手順
@@ -234,7 +252,9 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 >
 > **背景は不必要に白以外の色にしないでください。** alpha 抜きで多少色が残っても白なら目立たないが、 ピンク/紫など濃色が残ると視覚的に強烈に気になる。 どうしても白だと色かぶりして alpha 抜きがうまくいかない場合 (例: 雪・氷・白い動物など被写体が白い) のみ、 別の色を許容するが、 **その場合もなるべく薄い色** (淡いグレー、 淡い水色など) にしてください。
 
-これは Codex に**オーケストレーター専任モード**で動いてもらうための指示。 Codex が単独で全部やろうとせず、 サブエージェントを組成して並列実装 + クロスレビューする体制を作るための前置き。 alpha 抜き / crop も品質担保のためこの体制でやる。
+これは Codex に**オーケストレーター専任モード**で動いてもらうための指示。 Codex が単独で全部やろうとせず、 サブエージェントを組成して並列実装 + クロスレビューする体制を作るための前置き。 ただし alpha 抜き / crop は §5.1 の現行ルールどおり Codex では行わない。
+
+※ クロスレビュー義務の一般ルールは §4.8 を正とする。 本節は画像生成依頼時の追加テンプレであり、 クロスレビュー対象を画像生成に限定するものではない。
 
 **画像生成モデル統一**: GPT Image 2 以外のモデル (DALL-E / Stable Diffusion / Imagen / Flux / Nano Banana 等) を混ぜると画風が揺らぐ。 既存 quizland アセットは全て GPT Image 2 で生成されているので、 新規も同モデルで揃える (§2.7 で絶対禁止に格上げ済み)。
 
@@ -313,7 +333,7 @@ const CACHE_VERSION = NNN;  // ← 変更ごとに +1
 
 ### 7.1 コード/CSS/画像変更の場合
 
-1. 変更を commit & push (post-commit hook で自動 push される)
+1. 変更を commit & push (現状 post-commit は無効化されているため、 明示 push が必要)
 2. **sw.js CACHE_VERSION バンプ** (§6)
 3. GitHub Actions の staging デプロイが緑になるのを待つ (1-2 分)
 4. **シークレットウィンドウ** で staging URL を開いて**実際に動作確認**:
@@ -407,12 +427,12 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>   ← または Codex
 | Hook / Script | 対象 | 動作 |
 |---|---|---|
 | `.git/hooks/pre-commit` | 全 commit | 機密ファイル・3MB超画像をブロック |
-| `.git/hooks/post-commit` | develop ブランチ commit | 自動 `git push origin develop` (flock ガード) |
+| `.git/hooks/post-commit.disabled` | 無効 | 以前の自動 `git push origin develop` hook。 現状は自動発火しない |
 | Claude Code PostToolUse | Claude の Write/Edit | `auto_optimize_image.py --hook` (assets/images/ のみ) + `docs_review_hook.py --mark` |
 | Claude Code Stop | Claude セッション終了 | `docs_review_hook.py --check` (skip flag で逃げ可) + auto push |
 | GitHub Actions | develop / master push | Cloudflare Workers staging / production に自動デプロイ |
 
-**Codex 側はこれらのうち git hook (pre-commit / post-commit) と GitHub Actions の恩恵を自動的に受けます。** Claude 専用の PostToolUse / Stop hook は Codex の編集に対しては発火しません。
+**Codex 側は有効な git hook と GitHub Actions の恩恵を自動的に受けます。** Claude 専用の UserPromptSubmit / PostToolUse / Stop hook は Codex の編集に対しては発火しません。 したがって Codex のクロスレビューは hook 強制ではなく、 §4.8 の運用ルールとして明示的に実施します。
 
 ---
 

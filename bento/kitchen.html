@@ -4189,6 +4189,28 @@ body.layout-editor-on .endX-marker {
   -webkit-user-drag: none;
   pointer-events: none;
 }
+.cut-piece--particle,
+.flying-cut-piece--particle {
+  align-items: center;
+  justify-content: center;
+}
+.cut-particle {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scale(var(--particle-scale, 1)) rotate(var(--particle-inner-rot, 0deg));
+  filter: drop-shadow(0 1px 2px rgba(122, 100, 38, 0.18));
+}
+.cut-particle--onion {
+  border-radius: var(--particle-radius, 48% 52% 50% 46% / 44% 48% 54% 50%);
+  border: 1px solid rgba(214, 199, 128, 0.32);
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.96) 0 22%, rgba(255,255,255,0) 46%),
+    linear-gradient(135deg, rgba(255,255,245,0.96), rgba(238,228,167,0.86));
+  box-shadow:
+    inset 0 -1px 2px rgba(204, 185, 102, 0.24),
+    inset 1px 1px 1px rgba(255,255,255,0.72);
+}
 @keyframes cutPieceSettle {
   0%   { transform: scale(0.75) rotate(var(--fr, 0deg)); opacity: 0; }
   65%  { transform: scale(1.08) rotate(var(--fr, 0deg)); opacity: 1; }
@@ -4241,6 +4263,12 @@ body.layout-editor-on .endX-marker {
 .flying-cut-piece.cabbage-burst-piece {
   animation-name: cabbagePieceFlyOut;
   animation-duration: 0.54s;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+.flying-cut-piece.particle-burst-piece {
+  animation-name: cabbagePieceFlyOut;
+  animation-duration: 0.5s;
   animation-timing-function: linear;
   animation-fill-mode: both;
 }
@@ -5462,14 +5490,27 @@ body.layout-editor-on .endX-marker {
     },
     {
       id: 'onion', name: 'たまねぎ', emoji: '🧅', piece: '🧅',
-      chopCount: 10, implemented: true,
+      chopCount: 14, implemented: true,
       prepActions: [
         { type: 'chop' },
       ],
       imageBase: 'onion/onion_whole_raw',
       fridgeImage: '../assets/images/bento/cooking/onion/onion_chopped_raw.png',
+      particleKind: 'onion',
+      rapidTap: true,
+      queuedTapLimit: 18,
+      chopTiming: {
+        slideMs: 62,
+        downDelayMs: 68,
+        impactDelayMs: 132,
+        liftDelayMs: 154,
+        releaseDelayMs: 218,
+        innerMs: 58,
+      },
+      pieceBurstCount: 12,
+      bowlPieceLimit: 132,
       chopMechanics: {
-        startX_pct: 84, endX_pct: 16,
+        startX_pct: 86, endX_pct: 14,
         liftY_pct: 0, chopY_pct: 50,
         maskAxis: 'right-to-left',
         bladeTipOffsetX_pct: -39,
@@ -13942,17 +13983,29 @@ body.layout-editor-on .endX-marker {
   function addSingleCutPieceToBowl(ing, burstIndex, burstCount) {
     const isCabbage = ing && ing.id === 'cabbage';
     const isChicken = ing && ing.id === 'chicken_marinated';
+    const isParticle = ing && !!ing.particleKind;
     const pieceData = getCutPieceData(ing, burstIndex);
-    const piece = createCutPieceNode(pieceData, isCabbage ? 'cut-piece cabbage-bowl-piece' : 'cut-piece');
+    const piece = createCutPieceNode(pieceData, isCabbage ? 'cut-piece cabbage-bowl-piece' : (isParticle ? 'cut-piece cut-piece--particle' : 'cut-piece'));
     const rect = els.bowl.getBoundingClientRect();
     const w = rect.width || 80;
     const h = rect.height || 60;
     const cx = w * 0.5;
     const cy = h * 0.55;
-    const pieceSize = isCabbage ? (42 + Math.random() * 28) : (isChicken ? 42 + Math.random() * 8 : (burstCount > 1 ? 92 : 86));
+    const pieceSize = isParticle
+      ? (8 + Math.random() * 13)
+      : (isCabbage ? (42 + Math.random() * 28) : (isChicken ? 42 + Math.random() * 8 : (burstCount > 1 ? 92 : 86)));
     let rawX;
     let rawY;
-    if (isCabbage) {
+    if (isParticle) {
+      const fill = Math.min(1, (state.chopProgress || 1) / Math.max(1, (ing && ing.chopCount) || 1));
+      const count = Math.max(1, burstCount || 1);
+      const laneT = count > 1 ? (burstIndex % count) / (count - 1) : 0.5;
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const a = (state.chopProgress * 9 + burstIndex) * golden + Math.random() * 0.55;
+      const rNorm = 0.18 + Math.sqrt(Math.random()) * 0.78;
+      rawX = cx + Math.cos(a) * w * 0.42 * rNorm + (laneT - 0.5) * w * 0.14 - pieceSize / 2;
+      rawY = h * (0.69 - fill * 0.14) + Math.sin(a) * h * 0.25 * rNorm + Math.random() * h * 0.12 - pieceSize / 2;
+    } else if (isCabbage) {
       const count = Math.max(1, burstCount || 1);
       const t = count > 1 ? (burstIndex % count) / (count - 1) : 0.5;
       const golden = Math.PI * (3 - Math.sqrt(5));
@@ -13966,8 +14019,8 @@ body.layout-editor-on .endX-marker {
       rawX = cx + Math.cos(a) * r - pieceSize / 2;
       rawY = cy + Math.sin(a) * r - pieceSize / 2;
     }
-    let x = isCabbage ? Math.max(-pieceSize * 0.42, Math.min(w - pieceSize * 0.58, rawX)) : rawX;
-    let y = isCabbage ? Math.max(-pieceSize * 0.28, Math.min(h - pieceSize * 0.62, rawY)) : rawY;
+    let x = (isCabbage || isParticle) ? Math.max(-pieceSize * 0.42, Math.min(w - pieceSize * 0.58, rawX)) : rawX;
+    let y = (isCabbage || isParticle) ? Math.max(-pieceSize * 0.28, Math.min(h - pieceSize * 0.62, rawY)) : rawY;
     if (isChicken) {
       const minX = Math.min(w * 0.16, Math.max(0, (w - pieceSize) * 0.5));
       const maxX = Math.max(minX, w - pieceSize - minX);
@@ -13976,7 +14029,7 @@ body.layout-editor-on .endX-marker {
       x = Math.max(minX, Math.min(maxX, rawX));
       y = Math.max(minY, Math.min(maxY, rawY));
     }
-    const rot = (Math.random() - 0.5) * (isChicken ? 32 : 80);
+    const rot = (Math.random() - 0.5) * (isParticle ? 180 : (isChicken ? 32 : 80));
     piece.style.width = pieceSize + 'px';
     piece.style.height = pieceSize + 'px';
     piece.style.left = x + 'px';
@@ -13986,9 +14039,9 @@ body.layout-editor-on .endX-marker {
     playCutPieceTransfer(pieceData, function () {
       if (state.current !== ing) return;
       piece.classList.add('drop-in');
-      piece.style.setProperty('--drop-x', ((isCabbage ? -92 : -72) + Math.random() * (isCabbage ? 48 : 22)) + 'px');
-      piece.style.setProperty('--drop-y', ((isCabbage ? -128 : -100) + Math.random() * (isCabbage ? 46 : 24)) + 'px');
-      piece.style.setProperty('--drop-rot', (rot - (isCabbage ? 130 : 95) + Math.random() * (isCabbage ? 95 : 35)) + 'deg');
+      piece.style.setProperty('--drop-x', ((isParticle ? -46 : (isCabbage ? -92 : -72)) + Math.random() * (isParticle ? 84 : (isCabbage ? 48 : 22))) + 'px');
+      piece.style.setProperty('--drop-y', ((isParticle ? -78 : (isCabbage ? -128 : -100)) + Math.random() * (isParticle ? 74 : (isCabbage ? 46 : 24))) + 'px');
+      piece.style.setProperty('--drop-rot', (rot - (isParticle ? 190 : (isCabbage ? 130 : 95)) + Math.random() * (isParticle ? 220 : (isCabbage ? 95 : 35))) + 'deg');
       els.bowl.appendChild(piece);
       enforceBowlPieceLimit(ing);
       els.bowl.classList.remove('catch');
@@ -13996,6 +14049,7 @@ body.layout-editor-on .endX-marker {
       els.bowl.classList.add('catch');
     }, {
       cabbage: isCabbage,
+      particle: isParticle,
       burstIndex: burstIndex,
       burstCount: burstCount,
     });
@@ -14012,6 +14066,13 @@ body.layout-editor-on .endX-marker {
   }
 
   function getCutPieceData(ing, variantOffset) {
+    if (ing && ing.particleKind) {
+      return {
+        type: 'particle',
+        kind: ing.particleKind,
+        variant: Math.max(0, variantOffset || 0),
+      };
+    }
     if (ing && ing.imagePieces) {
       const cfg = ing.imagePieces;
       const seq = Array.isArray(cfg.sequence) && cfg.sequence.length
@@ -14044,6 +14105,23 @@ body.layout-editor-on .endX-marker {
       img.alt = '';
       img.draggable = false;
       piece.appendChild(img);
+    } else if (pieceData.type === 'particle') {
+      piece.classList.add('cut-piece--particle');
+      if (className.indexOf('flying-cut-piece') !== -1) piece.classList.add('flying-cut-piece--particle');
+      const particle = document.createElement('i');
+      particle.className = 'cut-particle cut-particle--' + (pieceData.kind || 'onion');
+      const variant = Math.max(0, pieceData.variant || 0);
+      const scale = (0.78 + ((variant * 37) % 32) / 100 + Math.random() * 0.2).toFixed(2);
+      const radii = [
+        '48% 52% 50% 46% / 44% 48% 54% 50%',
+        '56% 44% 52% 48% / 48% 58% 42% 52%',
+        '43% 57% 47% 53% / 55% 45% 51% 49%',
+        '51% 49% 59% 41% / 45% 52% 48% 55%',
+      ];
+      particle.style.setProperty('--particle-scale', scale);
+      particle.style.setProperty('--particle-inner-rot', ((variant * 47 + Math.random() * 32) % 180) + 'deg');
+      particle.style.setProperty('--particle-radius', radii[variant % radii.length]);
+      piece.appendChild(particle);
     } else {
       piece.textContent = pieceData.text;
     }
@@ -14053,10 +14131,11 @@ body.layout-editor-on .endX-marker {
   function playCutPieceTransfer(pieceData, onDone, opts) {
     opts = opts || {};
     const isCabbage = !!opts.cabbage;
+    const isParticle = !!opts.particle;
     const burstIndex = Math.max(0, opts.burstIndex || 0);
     const burstCount = Math.max(1, opts.burstCount || 1);
-    const spreadBurst = !isCabbage && burstCount > 1;
-    const laneT = (isCabbage || spreadBurst) ? ((burstIndex + 0.5) / burstCount) : 0.5;
+    const spreadBurst = !isCabbage && !isParticle && burstCount > 1;
+    const laneT = (isCabbage || isParticle || spreadBurst) ? ((burstIndex + 0.5) / burstCount) : 0.5;
     const fanT = laneT - 0.5;
     const fanWave = Math.sin(laneT * Math.PI * 2);
     const start = getCutPieceFlightStart();
@@ -14074,37 +14153,43 @@ body.layout-editor-on .endX-marker {
     }
     const startSpreadX = isCabbage
       ? fanT * 150 + (Math.random() - 0.5) * 62
-      : (spreadBurst ? fanT * 92 + (Math.random() - 0.5) * 34 : 0);
+      : (isParticle ? fanT * 124 + (Math.random() - 0.5) * 46 : (spreadBurst ? fanT * 92 + (Math.random() - 0.5) * 34 : 0));
     const startSpreadY = isCabbage
       ? fanWave * 54 + (Math.random() - 0.5) * 60
-      : (spreadBurst ? fanWave * 28 + (Math.random() - 0.5) * 28 : 0);
+      : (isParticle ? fanWave * 42 + (Math.random() - 0.5) * 44 : (spreadBurst ? fanWave * 28 + (Math.random() - 0.5) * 28 : 0));
     const startLocalX = (start.x - cRect.left) / scaleX + startSpreadX;
     const startLocalY = (start.y - cRect.top) / scaleY + startSpreadY;
     const endLocalX = isCabbage
       ? clipper.offsetWidth + 90 + Math.random() * 260 + Math.abs(fanT) * 130
-      : clipper.offsetWidth + 120 + (spreadBurst ? Math.random() * 130 + Math.abs(fanT) * 90 : 0);
+      : (isParticle
+          ? clipper.offsetWidth + 42 + Math.random() * 210 + Math.abs(fanT) * 120
+          : clipper.offsetWidth + 120 + (spreadBurst ? Math.random() * 130 + Math.abs(fanT) * 90 : 0));
     const endLocalY = isCabbage
       ? startLocalY - 235 + laneT * 345 + (Math.random() - 0.5) * 110
-      : startLocalY - 46 + (Math.random() - 0.5) * (spreadBurst ? 86 : 20) - (spreadBurst ? Math.abs(fanT) * 34 : 0);
+      : (isParticle
+          ? startLocalY - 170 + laneT * 300 + (Math.random() - 0.5) * 88
+          : startLocalY - 46 + (Math.random() - 0.5) * (spreadBurst ? 86 : 20) - (spreadBurst ? Math.abs(fanT) * 34 : 0));
     const fly = createCutPieceNode(pieceData, 'flying-cut-piece');
     const dx = endLocalX - startLocalX;
     const dy = endLocalY - startLocalY;
-    if (isCabbage) {
-      const flySize = 54 + Math.random() * 48;
+    if (isCabbage || isParticle) {
+      const flySize = isParticle ? (8 + Math.random() * 15) : (54 + Math.random() * 48);
       const midT = 0.22 + laneT * 0.46 + Math.random() * 0.1;
-      const arcLift = 110 + (1 - Math.abs(fanT) * 1.15) * 190 + Math.random() * 90;
-      const midLaneY = fanT * 130 + fanWave * 72;
-      fly.classList.add('cabbage-burst-piece');
+      const arcLift = isParticle
+        ? 80 + (1 - Math.abs(fanT) * 1.1) * 142 + Math.random() * 62
+        : 110 + (1 - Math.abs(fanT) * 1.15) * 190 + Math.random() * 90;
+      const midLaneY = fanT * (isParticle ? 96 : 130) + fanWave * (isParticle ? 58 : 72);
+      fly.classList.add(isParticle ? 'particle-burst-piece' : 'cabbage-burst-piece');
       fly.style.width = flySize + 'px';
       fly.style.height = flySize + 'px';
       fly.style.animationDelay = '0s';
-      fly.style.animationDuration = (0.46 + laneT * 0.12 + Math.random() * 0.12) + 's';
+      fly.style.animationDuration = ((isParticle ? 0.36 : 0.46) + laneT * 0.12 + Math.random() * 0.12) + 's';
       fly.style.setProperty('--mid-x', (dx * midT) + 'px');
       fly.style.setProperty('--mid-y', (dy * 0.42 - arcLift + midLaneY) + 'px');
-      fly.style.setProperty('--start-scale', (0.56 + Math.random() * 0.28).toFixed(2));
-      fly.style.setProperty('--mid-scale', (0.82 + Math.random() * 0.5).toFixed(2));
-      fly.style.setProperty('--end-scale', (0.56 + Math.random() * 0.34).toFixed(2));
-      fly.style.setProperty('--mid-rot', ((fanT * 170) + 35 + Math.random() * 150) + 'deg');
+      fly.style.setProperty('--start-scale', ((isParticle ? 0.82 : 0.56) + Math.random() * (isParticle ? 0.22 : 0.28)).toFixed(2));
+      fly.style.setProperty('--mid-scale', ((isParticle ? 1.0 : 0.82) + Math.random() * (isParticle ? 0.42 : 0.5)).toFixed(2));
+      fly.style.setProperty('--end-scale', ((isParticle ? 0.7 : 0.56) + Math.random() * (isParticle ? 0.26 : 0.34)).toFixed(2));
+      fly.style.setProperty('--mid-rot', ((fanT * (isParticle ? 260 : 170)) + 35 + Math.random() * (isParticle ? 240 : 150)) + 'deg');
     } else if (spreadBurst) {
       const flySize = 90 + Math.random() * 24;
       fly.style.width = flySize + 'px';
@@ -14115,8 +14200,8 @@ body.layout-editor-on .endX-marker {
     fly.style.setProperty('--start-y', startLocalY + 'px');
     fly.style.setProperty('--end-x', dx + 'px');
     fly.style.setProperty('--end-y', dy + 'px');
-    fly.style.setProperty('--start-rot', ((isCabbage ? -80 + fanT * 70 : (spreadBurst ? -44 + fanT * 38 : -24)) + Math.random() * (isCabbage ? 90 : (spreadBurst ? 42 : 18))) + 'deg');
-    fly.style.setProperty('--end-rot', ((isCabbage ? 140 + fanT * 220 : (spreadBurst ? 92 + fanT * 110 : 120)) + Math.random() * (isCabbage ? 260 : (spreadBurst ? 120 : 70))) + 'deg');
+    fly.style.setProperty('--start-rot', ((isCabbage ? -80 + fanT * 70 : (isParticle ? -90 + fanT * 120 : (spreadBurst ? -44 + fanT * 38 : -24))) + Math.random() * (isCabbage ? 90 : (isParticle ? 130 : (spreadBurst ? 42 : 18)))) + 'deg');
+    fly.style.setProperty('--end-rot', ((isCabbage ? 140 + fanT * 220 : (isParticle ? 180 + fanT * 260 : (spreadBurst ? 92 + fanT * 110 : 120))) + Math.random() * (isCabbage ? 260 : (isParticle ? 300 : (spreadBurst ? 120 : 70)))) + 'deg');
     clipper.appendChild(fly);
     let done = false;
     const finish = function () {
