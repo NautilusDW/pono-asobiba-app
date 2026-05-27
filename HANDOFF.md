@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-27 - [batch:142-bento-karaage-existing-done] DONE - Codex: `D:\ポノのおへや\Bento\cooking\唐揚げ` の既存完成品 `20260522-123442_001〜005` を正本として、調理完了ピース `chicken_fry_piece_01〜05_done.png` と弁当配置用 `karaage_pieces_done.png` を差し替え。前回の色補正版は使わない。`sw.js` は v622。 (by Codex)
 - 2026-05-27 - [batch:141-bento-mask-editor-cabbage] DONE - Codex: 弁当マスク調整パネルを自由配置の箱選択画面に追加し、X/Y/W/H を localStorage 保存で編集可能にした。飾りなし進行、キャベツ千切りの塊アセット3密度 + ふやす/へらす/となりに足す操作、唐揚げ完成品の揚げ色差し替え、カップ/レタス仕切り画像の余白・表示修正を実装。`writing-mori/index.html` の既存 dirty は未変更。`sw.js` は v621。 (by Codex)
 - 2026-05-25 - [batch:140-bento-user-mask] DONE - Codex: user 提供 `D:\ポノのおへや\Bento\cooking\弁当箱\レイヤー 1_20260525-161142_001.png` を `assets/images/bento/free-layout/box_character_inside_mask.png` に取り込み、水色/ピンクくま箱の自由配置アイテムレイヤーを polygon clip から CSS image mask へ切替。CSS mask 用に RGB は白化し、alpha 形状は保持。`sw.js` は v617。 (by Codex)
 - 2026-05-25 - [batch:139-bento-followup-fixes] DONE - Codex: bento の右メニュータップでメインガイドを閉じる処理、旧チュートリアル dim の抑止、ガイド文言の明確化、服なし Pono の guide/modal + picnic BG 差し替え、cup_blue_dot / divider_lettuce の切れ修正、唐揚げ新アセット + キャベツ追加、kitchen 唐揚げの粉まぶし経路と fry 皿上表示を修正。生成 raw は `tmp/alpha_pending/139_bento_followup_assets_raw/` に保存。`sw.js` は v616。 (by Codex)
