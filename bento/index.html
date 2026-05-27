@@ -475,8 +475,19 @@ html, body {
 .free-placed-item.selected {
   filter:
     drop-shadow(0 0 0 #FFFFFF)
-    drop-shadow(0 0 8px rgba(242,145,90,0.86))
+    drop-shadow(0 0 10px rgba(21, 191, 115, 0.96))
     drop-shadow(0 8px 10px rgba(68,42,16,0.2));
+}
+.free-placed-item.selected::after {
+  content: '';
+  position: absolute;
+  inset: -9%;
+  border: 5px solid #22C55E;
+  border-radius: 22px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.92),
+    0 0 16px rgba(34,197,94,0.58);
 }
 .free-placed-item.pop {
   animation: freePlacePop 0.32s cubic-bezier(0.34,1.56,0.64,1);
@@ -491,6 +502,11 @@ html, body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+}
+.free-placed-item.selected img {
+  filter:
+    drop-shadow(0 0 0 #22C55E)
+    drop-shadow(0 0 5px rgba(34,197,94,0.88));
 }
 .free-placed-item.type-pick img {
   clip-path: inset(0 0 18% 0);
@@ -791,6 +807,12 @@ html, body {
 .free-layer-actions button.primary {
   background: #BBF7D0;
   border-color: #22C55E;
+}
+.free-mask-actions button:disabled,
+.free-brush-actions button:disabled,
+.free-layer-actions button:disabled {
+  opacity: 0.38;
+  cursor: default;
 }
 .free-brush-stamp-panel {
   border-color: #A7F3D0;
@@ -2757,9 +2779,10 @@ const bentoBoxes = [
     lidImage: FREE_ASSET + 'box_bear_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
     maskKey: 'bear_character_box',
-    maskBounds: { x: 172, y: 48, w: 417, h: 364 },
+    maskBounds: { x: 137, y: 39, w: 489, h: 348 },
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
+    imageAspect: 462 / 430,
     placeBounds: { x: 164, y: 82, w: 432, h: 302 },
     clipPoints: [[166,116], [188,70], [260,54], [300,96], [380,84], [460,96], [500,54], [572,70], [594,116], [590,250], [568,338], [500,386], [380,406], [260,386], [192,338], [170,250]],
     imageScale: 1,
@@ -2796,9 +2819,10 @@ const bentoBoxes = [
     lidImage: FREE_ASSET + 'box_bear_pink_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
     maskKey: 'bear_character_box',
-    maskBounds: { x: 172, y: 48, w: 417, h: 364 },
+    maskBounds: { x: 137, y: 39, w: 489, h: 348 },
     shape: 'box_bear',
     bounds: { x: 54, y: 24, w: 652, h: 410 },
+    imageAspect: 462 / 430,
     placeBounds: { x: 164, y: 82, w: 432, h: 302 },
     clipPoints: [[166,116], [188,70], [260,54], [300,96], [380,84], [460,96], [500,54], [572,70], [594,116], [590,250], [568,338], [500,386], [380,406], [260,386], [192,338], [170,250]],
     imageScale: 1,
@@ -3485,6 +3509,18 @@ function getSelectedBentoBox() {
 function getBoxTierCount(box = getSelectedBentoBox()) {
   return Math.max(1, box.tierCount || 1);
 }
+function getBoxImageRect(box) {
+  const b = (box && box.bounds) || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
+  const aspect = box && box.imageAspect;
+  if (!aspect || !Number.isFinite(aspect) || aspect <= 0) return { ...b };
+  const current = b.w / b.h;
+  if (current > aspect) {
+    const w = b.h * aspect;
+    return { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
+  }
+  const h = b.w / aspect;
+  return { x: b.x, y: b.y + (b.h - h) / 2, w: b.w, h };
+}
 function getItemTier(item) {
   return item && item.tier ? item.tier : 1;
 }
@@ -3819,6 +3855,7 @@ function applyBoxVisualMask(layer, box) {
   layer.style.setProperty('mask-position', maskPosition);
   layer.style.setProperty('-webkit-mask-repeat', 'no-repeat');
   layer.style.setProperty('mask-repeat', 'no-repeat');
+  layer.style.setProperty('-webkit-mask-mode', 'alpha');
   layer.style.setProperty('mask-mode', 'alpha');
   return true;
 }
@@ -3951,6 +3988,12 @@ function getFreeItemImage(item) {
 }
 function isCabbageBrushDef(def) {
   return !!def && !!def.brushItem && String(def.img || '').includes('cabbage_shreds_patch_');
+}
+function getCabbageLayerGroup(tier, parentCupId = null) {
+  return parentCupId ? `cabbage:cup:${parentCupId}` : `cabbage:tier:${tier || 1}`;
+}
+function getFreeLayerGroupForDef(def, tier, parentCupId = null) {
+  return isCabbageBrushDef(def) ? getCabbageLayerGroup(tier, parentCupId) : '';
 }
 function getBrushStampImage(def = freeBrushStampDef) {
   if (!def || !Array.isArray(def.brushImages) || !def.brushImages.length) return '';
@@ -4285,6 +4328,7 @@ function addFreeLayoutItem(def, opts = {}) {
   if (!def) return null;
   const itemTier = opts.tier || getTargetTierForType(def.type);
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot(def.type);
+  const parentCupId = opts.parentCupId || null;
   const variantImages = Array.isArray(def.variantImages) ? def.variantImages.slice() : null;
   const variantIndex = variantImages && variantImages.length
     ? (opts.variantIndex != null ? opts.variantIndex : getNextFreeVariantIndex(def, itemTier))
@@ -4313,11 +4357,12 @@ function addFreeLayoutItem(def, opts = {}) {
     brushItem: !!def.brushItem,
     brushImages: Array.isArray(def.brushImages) ? def.brushImages.slice() : null,
     brushLevel: opts.brushLevel != null ? opts.brushLevel : (def.brushLevel != null ? def.brushLevel : 1),
+    layerGroup: opts.layerGroup || def.layerGroup || getFreeLayerGroupForDef(def, itemTier, parentCupId),
     variantGroup: getFreeVariantGroup(def),
     variantImages,
     variantIndex: variantIndex >= 0 ? variantIndex : 0,
     parentId: opts.parentId || null,
-    parentCupId: opts.parentCupId || null,
+    parentCupId,
     tier: itemTier,
   };
   const p = snapPointForItem(item, item.x, item.y);
@@ -4357,6 +4402,17 @@ function undoFreeItem() {
 }
 function getSelectedFreeItem() {
   return placedItems.find(i => i.uid === freeSelectedItemUid) || null;
+}
+function isItemVisuallySelected(item) {
+  const selected = getSelectedFreeItem();
+  if (!item || !selected) return false;
+  if (item.uid === selected.uid) return true;
+  if (selected.layerGroup && item.layerGroup === selected.layerGroup) {
+    return getItemTier(item) === getItemTier(selected)
+      && (item.parentCupId || null) === (selected.parentCupId || null);
+  }
+  if (selected.snapTarget && item.parentCupId === selected.uid) return true;
+  return false;
 }
 function getAccessorySizePresets(item) {
   if (!item || !FREE_ACCESSORY_SIZE_PRESETS[item.type]) return [];
@@ -4418,6 +4474,7 @@ function duplicateSelectedBrushItem() {
     brushItem: item.brushItem,
     brushImages: item.brushImages.slice(),
     brushLevel: item.brushLevel,
+    layerGroup: item.layerGroup || '',
     size: item.size,
     layerBase: item.layerBase,
     rotation: Math.round((Math.random() * 18) - 9),
@@ -4429,6 +4486,7 @@ function duplicateSelectedBrushItem() {
     tier: getItemTier(item),
     parentCupId: item.parentCupId || null,
     brushLevel: item.brushLevel,
+    layerGroup: item.layerGroup || '',
     skipRender: true,
   });
   if (parentCup) {
@@ -4450,58 +4508,150 @@ function getLayerContextItems(item) {
   const tier = getItemTier(item);
   return placedItems.filter(other => {
     if (getItemTier(other) !== tier) return false;
-    return (other.parentCupId || null) === parentCupId;
+    if (parentCupId) return (other.parentCupId || null) === parentCupId;
+    if (!other.parentCupId) return true;
+    const parent = placedItems.find(p => p.uid === other.parentCupId && p.snapTarget);
+    return !!parent && getItemTier(parent) === tier;
   });
 }
-function syncLayerLinkedChildren(item) {
-  if (!item || !item.snapTarget) return;
-  getCupChildren(item)
-    .sort((a, b) => (a.layer || 0) - (b.layer || 0))
-    .forEach((child, index) => {
-      child.layer = (item.layer || 1) + 1 + index;
-    });
+function getLayerUnitKey(item, selectedParentCupId = null) {
+  if (!item) return '';
+  if (!selectedParentCupId) {
+    if (item.parentCupId) return `cup:${item.parentCupId}`;
+    if (item.snapTarget) return `cup:${item.uid}`;
+  }
+  if (item.layerGroup) return `group:${item.layerGroup}`;
+  return `item:${item.uid}`;
 }
-function applyLayerOrder(items) {
-  items.forEach((item, index) => {
-    item.layer = 20 + index * 10;
-    syncLayerLinkedChildren(item);
+function getLayerItemBounds(item) {
+  const size = (item && item.size ? item.size : 72) * (item && item.scale ? item.scale : 1);
+  return {
+    left: (item.x || 0) - size / 2,
+    top: (item.y || 0) - size / 2,
+    right: (item.x || 0) + size / 2,
+    bottom: (item.y || 0) + size / 2,
+  };
+}
+function mergeLayerBounds(bounds, next) {
+  if (!bounds) return { ...next };
+  return {
+    left: Math.min(bounds.left, next.left),
+    top: Math.min(bounds.top, next.top),
+    right: Math.max(bounds.right, next.right),
+    bottom: Math.max(bounds.bottom, next.bottom),
+  };
+}
+function layerBoundsOverlap(a, b, padding = 8) {
+  if (!a || !b) return false;
+  return !(a.right < b.left - padding
+    || a.left > b.right + padding
+    || a.bottom < b.top - padding
+    || a.top > b.bottom + padding);
+}
+function buildLayerUnits(item) {
+  const selectedParentCupId = item && item.parentCupId ? item.parentCupId : null;
+  const units = new Map();
+  getLayerContextItems(item).forEach(other => {
+    const key = getLayerUnitKey(other, selectedParentCupId);
+    if (!units.has(key)) {
+      units.set(key, { key, items: [], bounds: null, layerMin: Infinity, layerMax: -Infinity });
+    }
+    const unit = units.get(key);
+    unit.items.push(other);
+    unit.bounds = mergeLayerBounds(unit.bounds, getLayerItemBounds(other));
+    unit.layerMin = Math.min(unit.layerMin, other.layer || 0);
+    unit.layerMax = Math.max(unit.layerMax, other.layer || 0);
+  });
+  return Array.from(units.values()).sort((a, b) => (a.layerMin - b.layerMin) || (a.layerMax - b.layerMax));
+}
+function getLayerUnitForItem(item, units = buildLayerUnits(item)) {
+  if (!item) return null;
+  const key = getLayerUnitKey(item, item.parentCupId || null);
+  return units.find(unit => unit.key === key) || null;
+}
+function getLayerOverlapContext(item) {
+  const units = buildLayerUnits(item);
+  const selectedUnit = getLayerUnitForItem(item, units);
+  const overlapUnits = selectedUnit
+    ? units.filter(unit => unit.key !== selectedUnit.key && layerBoundsOverlap(selectedUnit.bounds, unit.bounds, 10))
+    : [];
+  return { units, selectedUnit, overlapUnits };
+}
+function getOrderedLayerUnitItems(unit) {
+  return unit.items.slice().sort((a, b) => {
+    if (a.snapTarget && b.parentCupId === a.uid) return -1;
+    if (b.snapTarget && a.parentCupId === b.uid) return 1;
+    return (a.layer || 0) - (b.layer || 0);
+  });
+}
+function applyLayerUnitOrder(units) {
+  let layer = 20;
+  units.forEach(unit => {
+    getOrderedLayerUnitItems(unit).forEach(item => {
+      item.layer = layer++;
+    });
+    layer += 9;
   });
   const maxLayer = placedItems.reduce((max, item) => Math.max(max, item.layer || 0), 0);
   freeLayerSeq = Math.max(freeLayerSeq, Math.ceil(maxLayer) + 1);
 }
+function moveLayerUnitToIndex(units, fromIndex, toIndex) {
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return units;
+  const next = units.slice();
+  const [unit] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, unit);
+  return next;
+}
 function moveSelectedItemLayer(delta) {
   const item = getSelectedFreeItem();
-  const items = getLayerContextItems(item).sort((a, b) => (a.layer || 0) - (b.layer || 0));
-  const index = items.findIndex(other => other.uid === (item && item.uid));
-  if (index < 0 || items.length < 2) return;
-  const nextIndex = clamp(index + delta, 0, items.length - 1);
-  if (nextIndex === index) return;
-  items.splice(index, 1);
-  items.splice(nextIndex, 0, item);
-  applyLayerOrder(items);
+  const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
+  const index = units.findIndex(unit => unit.key === (selectedUnit && selectedUnit.key));
+  if (index < 0 || !overlapUnits.length) {
+    showToast('かさなっている おかずを えらぼう！');
+    return;
+  }
+  const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
+  const targetIndex = delta > 0
+    ? Math.min(...overlapIndexes.filter(i => i > index))
+    : Math.max(...overlapIndexes.filter(i => i < index));
+  if (!Number.isFinite(targetIndex)) {
+    showToast(delta > 0 ? 'これが いちばん上だよ' : 'これが いちばん下だよ');
+    return;
+  }
+  const nextUnits = units.slice();
+  [nextUnits[index], nextUnits[targetIndex]] = [nextUnits[targetIndex], nextUnits[index]];
+  applyLayerUnitOrder(nextUnits);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
 function moveSelectedItemLayerTo(edge) {
   const item = getSelectedFreeItem();
-  const items = getLayerContextItems(item).sort((a, b) => (a.layer || 0) - (b.layer || 0));
-  const index = items.findIndex(other => other.uid === (item && item.uid));
-  if (index < 0 || items.length < 2) return;
-  items.splice(index, 1);
-  if (edge === 'front') items.push(item);
-  else items.unshift(item);
-  applyLayerOrder(items);
+  const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
+  const index = units.findIndex(unit => unit.key === (selectedUnit && selectedUnit.key));
+  if (index < 0 || !overlapUnits.length) {
+    showToast('かさなっている おかずを えらぼう！');
+    return;
+  }
+  const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
+  let targetIndex = edge === 'front'
+    ? Math.max(...overlapIndexes)
+    : Math.min(...overlapIndexes);
+  if (!Number.isFinite(targetIndex)) return;
+  let insertIndex = targetIndex;
+  if (edge === 'front') insertIndex = targetIndex > index ? targetIndex : targetIndex + 1;
+  if (edge !== 'front') insertIndex = targetIndex < index ? targetIndex : targetIndex - 1;
+  const nextUnits = moveLayerUnitToIndex(units, index, clamp(insertIndex, 0, units.length - 1));
+  applyLayerUnitOrder(nextUnits);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
 function sendItemLayerTo(item, edge) {
-  const items = getLayerContextItems(item).sort((a, b) => (a.layer || 0) - (b.layer || 0));
-  const index = items.findIndex(other => other.uid === (item && item.uid));
+  const units = buildLayerUnits(item);
+  const selectedUnit = getLayerUnitForItem(item, units);
+  const index = units.findIndex(unit => unit.key === (selectedUnit && selectedUnit.key));
   if (index < 0) return;
-  items.splice(index, 1);
-  if (edge === 'front') items.push(item);
-  else items.unshift(item);
-  applyLayerOrder(items);
+  const nextUnits = moveLayerUnitToIndex(units, index, edge === 'front' ? units.length - 1 : 0);
+  applyLayerUnitOrder(nextUnits);
 }
 function enterFreeBrushStampMode(def) {
   if (!isCabbageBrushDef(def)) return;
@@ -4525,12 +4675,14 @@ function addBrushStampAtPoint(point) {
   if (!freeBrushStampDef || !point) return null;
   const sizeByLevel = [128, 170, 220];
   const level = clamp(Math.round(freeBrushStampLevel || 0), 0, (freeBrushStampDef.brushImages || []).length - 1);
+  const tier = getGuideTierForStep();
   const item = addFreeLayoutItem(freeBrushStampDef, {
     x: point.x,
     y: point.y,
     size: sizeByLevel[level] || freeBrushStampDef.size || 170,
-    tier: getGuideTierForStep(),
+    tier,
     brushLevel: level,
+    layerGroup: getCabbageLayerGroup(tier),
     skipRender: true,
   });
   sendItemLayerTo(item, 'back');
@@ -4704,7 +4856,8 @@ function createFreePlacedElement(item, interactive) {
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && (!editingCup || item.parentCupId !== editingCup.uid);
   const brushLocked = interactive && !!freeBrushStampDef;
-  el.className = 'free-placed-item' + typeClass + (item.uid === freeSelectedItemUid ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '') + (brushLocked ? ' brush-locked' : '');
+  const isSelected = interactive && isItemVisuallySelected(item);
+  el.className = 'free-placed-item' + typeClass + (isSelected ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '') + (brushLocked ? ' brush-locked' : '');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
@@ -4819,10 +4972,12 @@ function renderFreeLayoutInto(host, opts = {}) {
   if (box.imageScale) {
     shape.style.transform = `scale(${box.imageScale})`;
   }
-  shape.style.left = toPctX(box.bounds.x);
-  shape.style.top = toPctY(box.bounds.y);
-  shape.style.width = toPctX(box.bounds.w);
-  shape.style.height = toPctY(box.bounds.h);
+  const imageRect = getBoxImageRect(box);
+  if (box.imageAspect) shape.style.objectFit = 'fill';
+  shape.style.left = toPctX(imageRect.x);
+  shape.style.top = toPctY(imageRect.y);
+  shape.style.width = toPctX(imageRect.w);
+  shape.style.height = toPctY(imageRect.h);
   host.appendChild(shape);
   if (opts.interactive && tierCount > 1) {
     const badge = document.createElement('div');
@@ -5045,20 +5200,24 @@ function renderBrushStampControls() {
 function renderSelectedLayerControls() {
   const item = getSelectedFreeItem();
   if (!item || item.type === 'rice') return null;
-  const peers = getLayerContextItems(item);
-  if (peers.length < 2) return null;
+  const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
+  if (!selectedUnit || units.length < 2 || !overlapUnits.length) return null;
+  const index = units.findIndex(unit => unit.key === selectedUnit.key);
+  const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
+  const canDown = overlapIndexes.some(i => i >= 0 && i < index);
+  const canUp = overlapIndexes.some(i => i > index);
   const panel = document.createElement('div');
   panel.className = 'free-layer-panel';
   const title = document.createElement('div');
   title.className = 'free-layer-title';
-  title.textContent = 'かさなりを かえる';
+  title.textContent = 'かさなり';
   panel.appendChild(title);
   const actions = document.createElement('div');
   actions.className = 'free-layer-actions';
-  actions.appendChild(makeSmallControlButton('↓', '', () => moveSelectedItemLayer(-1)));
-  actions.appendChild(makeSmallControlButton('↑', 'primary', () => moveSelectedItemLayer(1)));
-  actions.appendChild(makeSmallControlButton('⇩', '', () => moveSelectedItemLayerTo('back')));
-  actions.appendChild(makeSmallControlButton('⇧', '', () => moveSelectedItemLayerTo('front')));
+  actions.appendChild(makeSmallControlButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
+  actions.appendChild(makeSmallControlButton('↑', 'primary', () => moveSelectedItemLayer(1), !canUp));
+  actions.appendChild(makeSmallControlButton('⇩', '', () => moveSelectedItemLayerTo('back'), !canDown));
+  actions.appendChild(makeSmallControlButton('⇧', '', () => moveSelectedItemLayerTo('front'), !canUp));
   panel.appendChild(actions);
   return panel;
 }
@@ -5509,10 +5668,12 @@ function createFreeCompleteLidStage(box, delay, tierCount = 1) {
   lid.className = 'free-complete-lid-img';
   lid.src = box.lidImage;
   lid.alt = 'ふた';
-  lid.style.left = toPctX(box.bounds.x);
-  lid.style.top = toPctY(box.bounds.y);
-  lid.style.width = toPctX(box.bounds.w);
-  lid.style.height = toPctY(box.bounds.h);
+  const imageRect = getBoxImageRect(box);
+  if (box.imageAspect) lid.style.objectFit = 'fill';
+  lid.style.left = toPctX(imageRect.x);
+  lid.style.top = toPctY(imageRect.y);
+  lid.style.width = toPctX(imageRect.w);
+  lid.style.height = toPctY(imageRect.h);
   if (box.imageScale) lid.style.transform = `scale(${box.imageScale})`;
   stage.appendChild(lid);
   return stage;
