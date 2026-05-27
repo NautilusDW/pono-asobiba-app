@@ -42,6 +42,7 @@
   <link rel="preload" as="image" href="assets/ui/thumb_maze.png">
   <link rel="preload" as="image" href="assets/ui/thumb_oto.png">
   <link rel="preload" as="image" href="assets/ui/thumb_bento.png">
+  <link rel="preload" as="image" href="assets/images/bento/cooking/ui/mode_select_cards_redesign_raw.png">
   <link rel="preload" as="image" href="assets/ui/thumb_puzzle.png">
 
   <style>
@@ -578,6 +579,7 @@
     .game-card[data-id="maze"]       .game-card__title { color: #f5d76a; }   /* lantern yellow */
     .game-card[data-id="oto"]        .game-card__title { color: #d38a2c; }   /* playful music amber */
     .game-card[data-id="bento"]      .game-card__title { color: #d7712d; }   /* carrot orange */
+    .game-card[data-id="kitchen"]    .game-card__title { color: #21846b; }   /* kitchen green */
     .game-card[data-id="puzzle"]     .game-card__title { color: #5a89bf; }   /* gentle puzzle blue */
     /* Wordmatch's title is the longest ("あつめよう！ポノのもりのずかん").
        Tighten letter spacing + nudge font-size so it fits without ellipsis. */
@@ -1382,11 +1384,23 @@
         subtitle: 'すきな おかずを つめよう',
         icon: '🍱',
         bg: 'assets/images/bento/title_back.jpg',
-        href: 'bento/kitchen.html',
+        href: 'bento/index.html',
         panel: 'assets/ui/menu_card_base_02.png',
         thumb: 'assets/ui/thumb_bento.png',
         thumbPos: '31% 58%',
         peekPos: '36% 52%'
+      },
+      {
+        id: 'kitchen',
+        title: 'ポノのトントンキッチン',
+        subtitle: 'おかずを つくって べんとうへ',
+        icon: '🍳',
+        bg: 'assets/images/bento/cooking/kitchen_bg.png',
+        href: 'bento/kitchen.html',
+        panel: 'assets/ui/menu_card_base_04.png',
+        thumb: 'assets/images/bento/cooking/ui/mode_select_cards_redesign_raw.png',
+        thumbPos: '27% 52%',
+        peekPos: '50% 70%'
       },
       {
         id: 'puzzle',

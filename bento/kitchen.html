@@ -88,7 +88,7 @@
   --ui-fridge-open-size: auto 112%;
   --ui-fridge-closed-pos: center top;
   --ui-fridge-closed-size: auto 112%;
-  --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_sheet.png');
+  --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_redesign_raw.png');
   --ui-prep-base: url('../assets/images/bento/cooking/ui/prep_base_actions_sheet.png');
   --ui-prep-breading: url('../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.png');
 }
@@ -373,8 +373,7 @@ body[data-screen="fridge"] .stage-wrap {
   outline: none;
 }
 .screen:focus-visible {
-  outline: 4px solid rgba(242,145,90,0.55);
-  outline-offset: -6px;
+  outline: none;
 }
 .screen[hidden] {
   display: none !important;
@@ -446,7 +445,7 @@ body[data-screen="fridge"] .stage-wrap {
   min-height: 430px;
   padding: 0;
   overflow: hidden;
-  background: transparent;
+  background: #fffdf8;
   cursor: pointer;
   font-family: inherit;
   color: var(--text);
@@ -470,10 +469,10 @@ body[data-screen="fridge"] .stage-wrap {
 }
 .mode-card-label {
   position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 36%;
-  min-height: 150px;
+  left: 10%;
+  right: 10%;
+  bottom: 28px;
+  min-height: 116px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -482,9 +481,14 @@ body[data-screen="fridge"] .stage-wrap {
   text-align: center;
   z-index: 1;
   pointer-events: none;
+  padding: 14px 16px 16px;
+  border: 3px solid rgba(255, 183, 92, 0.72);
+  border-radius: 20px;
+  background: rgba(255, 253, 245, 0.9);
+  box-shadow: 0 8px 18px rgba(94, 64, 37, 0.12);
 }
 .mode-card-title {
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 900;
   line-height: 1.15;
   text-shadow: 0 2px 0 rgba(255,255,255,0.95);
@@ -3602,15 +3606,16 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   filter: drop-shadow(0 3px 4px rgba(0,0,0,0.12));
 }
 .speech-bubble {
-  background: var(--ui-speech-bubble) center / 100% 100% no-repeat;
-  border: 0;
-  border-radius: 0;
-  padding: 18px 28px 18px 52px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,250,240,0.96) 100%);
+  border: 3px solid rgba(244, 184, 101, 0.82);
+  border-radius: 999px;
+  padding: 16px 30px 16px 44px;
   min-height: 66px;
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
-  box-shadow: none;
+  box-shadow: 0 5px 14px rgba(132, 88, 42, 0.1);
   position: relative;
   line-height: 1.4;
   flex: 1;
@@ -3618,10 +3623,28 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   align-items: center;
 }
 .speech-bubble::before {
-  display: none;
+  content: '';
+  display: block;
+  position: absolute;
+  left: -27px;
+  top: 50%;
+  width: 34px;
+  height: 24px;
+  transform: translateY(-50%);
+  background: rgba(244, 184, 101, 0.82);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }
 .speech-bubble::after {
-  display: none;
+  content: '';
+  display: block;
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  width: 28px;
+  height: 18px;
+  transform: translateY(-50%);
+  background: rgba(255, 252, 244, 0.98);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }
 
 .ingredient-btn {
@@ -3648,6 +3671,21 @@ body.layout-editor-on #fry-stage .oil-bubbles {
 }
 .ingredient-btn.unlocked {
   background: var(--ui-ingredient-card) center / 100% 100% no-repeat;
+}
+.ingredient-sprite,
+.ingredient-board-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: var(--sprite-size, contain);
+  background-position: var(--sprite-position, center);
+  pointer-events: none;
+}
+.ingredient-board-sprite {
+  height: auto;
+  aspect-ratio: 1 / 1;
+  filter: drop-shadow(0 8px 8px rgba(93,78,55,0.16));
 }
 .ingredient-btn.unlocked::after {
   content: '✓';
@@ -3705,6 +3743,12 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   filter: drop-shadow(0 5px 7px rgba(110,70,30,0.16));
   pointer-events: none;
   -webkit-user-drag: none;
+}
+.ingredient-btn[data-id="onion"] .ingredient-art img,
+.fridge-item[data-id="onion"] .fridge-item-art img,
+.ingredient-on-board[data-ingredient="onion"] img {
+  filter: none;
+  mix-blend-mode: multiply;
 }
 .ingredient-art.ingredient-emoji {
   font-size: 3rem;
@@ -4883,13 +4927,13 @@ body.layout-editor-on .endX-marker {
       <button type="button" class="mode-card mode-card--cook" id="mode-cook-btn">
         <span class="mode-card-label">
           <span class="mode-card-title">おかずを<br>つくる</span>
-          <span class="mode-card-desc">れいぞうこの ざいりょうで<br>つくれる おかずを みる</span>
+          <span class="mode-card-desc">やく・あげるで<br>おべんとうの おかずにする</span>
         </span>
       </button>
       <button type="button" class="mode-card mode-card--prep" id="mode-prep-btn">
         <span class="mode-card-label">
           <span class="mode-card-title">したごしらえを<br>する</span>
-          <span class="mode-card-desc">ざいりょうを えらんで<br>トントン じゅんびする</span>
+          <span class="mode-card-desc">きる・こねるだけ<br>トントン じゅんびする</span>
         </span>
       </button>
     </div>
@@ -5417,6 +5461,24 @@ body.layout-editor-on .endX-marker {
       },
     },
     {
+      id: 'onion', name: 'たまねぎ', emoji: '🧅', piece: '🧅',
+      chopCount: 10, implemented: true,
+      prepActions: [
+        { type: 'chop' },
+      ],
+      imageBase: 'onion/onion_whole_raw',
+      fridgeImage: '../assets/images/bento/cooking/onion/onion_chopped_raw.png',
+      chopMechanics: {
+        startX_pct: 84, endX_pct: 16,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 52,
+        ingredientTop_pct: 40,
+        ingredientWidth_pct: 48,
+      },
+    },
+    {
       id: 'egg', name: 'たまご', emoji: '🥚', piece: '🍳',
       chopCount: 1, implemented: true, cookFromRaw: true,
       cookingActions: [
@@ -5505,9 +5567,6 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'grill', label: 'こんがり やこう', stages: 2 },
       ],
-      prepActions: [
-        { type: 'prep', prepKind: 'simple_store', label: 'さけを じゅんびしよう' },
-      ],
       cookImages: {
         grill: {
           stages: ['salmon/salmon_001_raw', 'salmon/salmon_002_mid', 'salmon/salmon_003_done'],
@@ -5573,9 +5632,6 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'fry', label: 'サクッと あげよう', stages: 2 },
       ],
-      prepActions: [
-        { type: 'prep', prepKind: 'bread_shrimp', label: 'パンこを つけよう' },
-      ],
       cookImages: {
         fry: {
           stages: ['shrimp/shrimp_001_raw', 'shrimp/shrimp_002_mid', 'shrimp/shrimp_003_done'],
@@ -5589,9 +5645,6 @@ body.layout-editor-on .endX-marker {
       cookingActions: [
         { type: 'fry', label: 'きつねいろに あげよう', stages: 2 },
       ],
-      prepActions: [
-        { type: 'prep', prepKind: 'bread_korokke', label: 'パンこを つけよう' },
-      ],
       cookImages: {
         fry: {
           stages: ['korokke/korokke_001_raw', 'korokke/korokke_002_mid', 'korokke/korokke_003_done'],
@@ -5604,13 +5657,13 @@ body.layout-editor-on .endX-marker {
   // 材料→解放されるレシピ
   const RECIPES = [
     { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_002_mid.png', needs: ['egg'], startFromRaw: true },
-    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty'] },
-    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball'] },
-    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'] },
-    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'] },
+    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty', 'onion'] },
+    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball', 'onion'] },
+    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'], startFromRaw: true },
+    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'], startFromRaw: true },
     { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
-    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'] },
-    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'] },
+    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'], startFromRaw: true },
+    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'], startFromRaw: true },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', needs: ['cabbage'] },
     { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.png', needs: ['carrot'] },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
@@ -6712,6 +6765,7 @@ body.layout-editor-on .endX-marker {
       els.modePrepBtn.addEventListener('click', () => {
         state.kitchenMode = 'prep';
         resetBoard();
+        buildIngredientBar();
         setSpeech('ざいりょうを えらんで したごしらえしよう！', 'select');
         showScreen('select');
       });
@@ -6976,6 +7030,9 @@ body.layout-editor-on .endX-marker {
       state.currentScreen = name;
       document.body.setAttribute('data-screen', name);
       setActiveStep(targetStep);
+      if (name === 'select') {
+        buildIngredientBar();
+      }
 
       // v430: loadIngredient はフェード切替前の hidden な chop 画面で走るため、
       // その時点では board.offsetWidth/Height が 0 になり saved-layout 直読みが
@@ -7109,12 +7166,13 @@ body.layout-editor-on .endX-marker {
   // ========== 材料バー描画 ==========
   function buildIngredientBar() {
     els.bar.innerHTML = '';
-    INGREDIENTS.forEach(ing => {
+    INGREDIENTS.filter(shouldShowIngredientInCurrentMode).forEach(ing => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'ingredient-btn';
       btn.dataset.id = ing.id;
       const thumbSrc = getIngredientThumbSrc(ing);
+      const thumbSprite = getIngredientSprite(ing, 'thumb');
       if (state.unlocked.has(ing.id)) btn.classList.add('unlocked');
       if (!ing.implemented) {
         btn.classList.add('locked');
@@ -7123,21 +7181,46 @@ body.layout-editor-on .endX-marker {
         // aria-disabled だけでは Tab フォーカスを止められないので tabindex="-1" を併用
         btn.setAttribute('tabindex', '-1');
       }
-      btn.innerHTML =
-        (thumbSrc
-          ? '<span class="ingredient-art"><img src="' + thumbSrc + '" alt="" aria-hidden="true" draggable="false"></span>'
-          : '<span class="ingredient-art ingredient-emoji" aria-hidden="true">' + ing.emoji + '</span>') +
-        '<span class="ingredient-name">' + ing.name + '</span>' +
-        (!ing.implemented ? '<span class="ingredient-status">じゅんびちゅう</span>' : '');
-      const img = btn.querySelector('.ingredient-art img');
-      if (img) {
+      const art = document.createElement('span');
+      art.className = 'ingredient-art';
+      art.setAttribute('aria-hidden', 'true');
+      if (thumbSprite) {
+        art.classList.add('ingredient-sprite');
+        applySpriteStyle(art, thumbSprite);
+      } else if (thumbSrc) {
+        const img = document.createElement('img');
+        img.src = thumbSrc;
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        img.draggable = false;
         img.onerror = function () {
           swapImageToEmoji(this, ing.emoji);
         };
+        art.appendChild(img);
+      } else {
+        art.classList.add('ingredient-emoji');
+        art.textContent = ing.emoji;
+      }
+      btn.appendChild(art);
+      const name = document.createElement('span');
+      name.className = 'ingredient-name';
+      name.textContent = ing.name;
+      btn.appendChild(name);
+      if (!ing.implemented) {
+        const status = document.createElement('span');
+        status.className = 'ingredient-status';
+        status.textContent = 'じゅんびちゅう';
+        btn.appendChild(status);
       }
       btn.addEventListener('click', () => onIngredientPick(ing));
       els.bar.appendChild(btn);
     });
+  }
+
+  function shouldShowIngredientInCurrentMode(ing) {
+    if (!ing) return false;
+    if (state.kitchenMode !== 'prep') return true;
+    return Array.isArray(ing.prepActions) && ing.prepActions.length > 0;
   }
 
   function highlightSelected(id) {
@@ -7207,13 +7290,7 @@ body.layout-editor-on .endX-marker {
     if (!ing) return [];
     if (state.kitchenMode === 'prep') {
       if (Array.isArray(ing.prepActions) && ing.prepActions.length) return ing.prepActions;
-      if (Array.isArray(ing.cookingActions) && ing.cookingActions.length) {
-        const prepLike = ing.cookingActions.filter(function (action) {
-          return action.type === 'prep' || action.type === 'chop';
-        });
-        if (prepLike.length) return prepLike;
-      }
-      return [{ type: 'prep', prepKind: 'simple_store', label: ing.name + 'を じゅんびしよう' }];
+      return [];
     }
     if (Array.isArray(ing.cookingActions) && ing.cookingActions.length) return ing.cookingActions;
     return ing.chopCount ? [{ type: 'chop' }] : [];
@@ -10964,6 +11041,32 @@ body.layout-editor-on .endX-marker {
     return rec ? rec.img : '';
   }
 
+  function getIngredientSprite(ing, target) {
+    const sprite = ing && ing.sprite;
+    if (!sprite || !sprite.src) return null;
+    const cols = Math.max(1, sprite.cols || 1);
+    const rows = Math.max(1, sprite.rows || 1);
+    let index = sprite.thumbIndex || 0;
+    if (target === 'board' && typeof sprite.boardIndex === 'number') index = sprite.boardIndex;
+    if (target === 'fridge' && typeof sprite.fridgeIndex === 'number') index = sprite.fridgeIndex;
+    const col = Math.max(0, Math.min(cols - 1, index % cols));
+    const row = Math.max(0, Math.min(rows - 1, Math.floor(index / cols)));
+    const x = cols <= 1 ? 50 : (col / (cols - 1)) * 100;
+    const y = rows <= 1 ? 50 : (row / (rows - 1)) * 100;
+    return {
+      src: sprite.src,
+      size: (cols * 100) + '% ' + (rows * 100) + '%',
+      position: x + '% ' + y + '%',
+    };
+  }
+
+  function applySpriteStyle(el, sprite) {
+    if (!el || !sprite) return;
+    el.style.backgroundImage = 'url("' + sprite.src + '")';
+    el.style.setProperty('--sprite-size', sprite.size);
+    el.style.setProperty('--sprite-position', sprite.position);
+  }
+
   function getIngredientCutPieceThumbSrc(ing) {
     if (!ing || !ing.imagePieces) return '';
     const cfg = ing.imagePieces;
@@ -10979,6 +11082,8 @@ body.layout-editor-on .endX-marker {
   }
 
   function getIngredientFridgeThumbSrc(ing) {
+    if (getIngredientSprite(ing, 'fridge')) return '';
+    if (ing && ing.fridgeImage) return ing.fridgeImage;
     if (ing && ing.cookImages) {
       const actions = Array.isArray(ing.cookingActions) ? ing.cookingActions.slice().reverse() : [];
       for (let i = 0; i < actions.length; i += 1) {
@@ -12705,11 +12810,16 @@ body.layout-editor-on .endX-marker {
   //   chopMechanics.chopY_pct に反映 (px ベースのプロトタイプ)。
   function loadIngredient(ing) {
     if (!ing) return;
+    els.ingOnBoard.dataset.ingredient = ing.id || '';
     // [W1] DOM を書き換える **前** に既存 img のマスクをリセットする。
     // innerHTML / textContent で旧 img が破棄されると resetIngredientMask は no-op
     // になるため、 旧 img が生きているうちに maskImage を剥がしておく方が安全。
     resetIngredientMask();
-    if (ing.imageBase) {
+    const boardSprite = getIngredientSprite(ing, 'board');
+    if (boardSprite) {
+      els.ingOnBoard.innerHTML = '<span class="ingredient-board-sprite" aria-hidden="true"></span>';
+      applySpriteStyle(els.ingOnBoard.querySelector('.ingredient-board-sprite'), boardSprite);
+    } else if (ing.imageBase) {
       var safeAlt = String(ing.name || '').replace(/"/g, '&quot;');
       els.ingOnBoard.innerHTML =
         '<img src="../assets/images/bento/cooking/' + ing.imageBase + '.png" alt="' + safeAlt + '" draggable="false">';
@@ -14285,8 +14395,12 @@ body.layout-editor-on .endX-marker {
       });
       const art = document.createElement('span');
       art.className = 'fridge-item-art';
+      const sprite = getIngredientSprite(ing, 'fridge');
       const thumbSrc = getIngredientFridgeThumbSrc(ing);
-      if (thumbSrc) {
+      if (sprite) {
+        art.classList.add('ingredient-sprite');
+        applySpriteStyle(art, sprite);
+      } else if (thumbSrc) {
         const img = document.createElement('img');
         img.src = thumbSrc;
         img.alt = '';
