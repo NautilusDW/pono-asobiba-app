@@ -1365,9 +1365,9 @@
 
   body.rhythm-layout .instr-btn {
     --btn-radius: 18px;
-    --sz: min(18vw, 82px);
-    --btn-w: min(18vw, 78px);
-    --btn-h: min(25vw, 112px);
+    --sz: 82px;
+    --btn-w: 74px;
+    --btn-h: 112px;
     --note-hi: #F8FAFC;
     --note-lo: #CBD5E1;
     --note-fg: #17324F;
@@ -1389,46 +1389,56 @@
   body.rhythm-layout .rhythm-ring {
     border-radius: var(--btn-radius, 18px);
   }
-  body.rhythm-layout .instr-btn[data-idx="0"] { left: 20%; top: 52%; }
-  body.rhythm-layout .instr-btn[data-idx="1"] { left: 40%; top: 52%; }
-  body.rhythm-layout .instr-btn[data-idx="2"] { left: 60%; top: 52%; }
-  body.rhythm-layout .instr-btn[data-idx="3"] { left: 80%; top: 52%; }
-  body.rhythm-layout .instr-btn[data-idx="4"] { left: 20%; top: 68%; }
-  body.rhythm-layout .instr-btn[data-idx="5"] { left: 40%; top: 68%; }
-  body.rhythm-layout .instr-btn[data-idx="6"] { left: 60%; top: 68%; }
-  body.rhythm-layout .instr-btn[data-idx="7"] { left: 80%; top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="0"] { left: calc(50% - 129px); top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="1"] { left: calc(50% - 43px); top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="2"] { left: calc(50% + 43px); top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="3"] { left: calc(50% + 129px); top: 52%; }
+  body.rhythm-layout .instr-btn[data-idx="4"] { left: calc(50% - 129px); top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="5"] { left: calc(50% - 43px); top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="6"] { left: calc(50% + 43px); top: 68%; }
+  body.rhythm-layout .instr-btn[data-idx="7"] { left: calc(50% + 129px); top: 68%; }
+  @media (max-width: 380px) {
+    body.rhythm-layout .instr-btn[data-idx="0"] { left: calc(50% - 108px); }
+    body.rhythm-layout .instr-btn[data-idx="1"] { left: calc(50% - 36px); }
+    body.rhythm-layout .instr-btn[data-idx="2"] { left: calc(50% + 36px); }
+    body.rhythm-layout .instr-btn[data-idx="3"] { left: calc(50% + 108px); }
+    body.rhythm-layout .instr-btn[data-idx="4"] { left: calc(50% - 108px); }
+    body.rhythm-layout .instr-btn[data-idx="5"] { left: calc(50% - 36px); }
+    body.rhythm-layout .instr-btn[data-idx="6"] { left: calc(50% + 36px); }
+    body.rhythm-layout .instr-btn[data-idx="7"] { left: calc(50% + 108px); }
+  }
   @media (orientation: landscape) {
     body.rhythm-layout .pono-wrap {
       top: 37%;
     }
     body.rhythm-layout .instr-btn {
-      --sz: clamp(62px, 7.6vw, 82px);
-      --btn-w: clamp(56px, 6.6vw, 74px);
-      --btn-h: clamp(94px, 14.5vh, 118px);
+      --sz: 82px;
+      --btn-w: 70px;
+      --btn-h: 112px;
     }
-    body.rhythm-layout .instr-btn[data-idx="0"] { left: 42%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="1"] { left: 49.2%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="2"] { left: 56.4%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="3"] { left: 63.6%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="4"] { left: 70.8%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="5"] { left: 78%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="6"] { left: 85.2%; top: 68%; }
-    body.rhythm-layout .instr-btn[data-idx="7"] { left: 92.4%; top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="0"] { left: calc(68% - 266px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="1"] { left: calc(68% - 190px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="2"] { left: calc(68% - 114px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="3"] { left: calc(68% - 38px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="4"] { left: calc(68% + 38px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="5"] { left: calc(68% + 114px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="6"] { left: calc(68% + 190px); top: 68%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { left: calc(68% + 266px); top: 68%; }
   }
   @media (orientation: landscape) and (max-height: 520px) {
     body.rhythm-layout .instr-btn {
-      --sz: clamp(52px, 7vh, 64px);
-      --btn-w: clamp(48px, 6.2vw, 62px);
-      --btn-h: clamp(70px, 14vh, 82px);
+      --sz: 64px;
+      --btn-w: 58px;
+      --btn-h: 82px;
     }
-    body.rhythm-layout .instr-btn[data-idx="0"],
-    body.rhythm-layout .instr-btn[data-idx="1"],
-    body.rhythm-layout .instr-btn[data-idx="2"],
-    body.rhythm-layout .instr-btn[data-idx="3"],
-    body.rhythm-layout .instr-btn[data-idx="4"],
-    body.rhythm-layout .instr-btn[data-idx="5"],
-    body.rhythm-layout .instr-btn[data-idx="6"],
-    body.rhythm-layout .instr-btn[data-idx="7"] { top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="0"] { left: calc(68% - 224px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="1"] { left: calc(68% - 160px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="2"] { left: calc(68% - 96px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="3"] { left: calc(68% - 32px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="4"] { left: calc(68% + 32px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="5"] { left: calc(68% + 96px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="6"] { left: calc(68% + 160px); top: 66%; }
+    body.rhythm-layout .instr-btn[data-idx="7"] { left: calc(68% + 224px); top: 66%; }
   }
 </style>
 </head>
@@ -2488,9 +2498,8 @@ function _markRhythmDemoSeen(songId) {
 function _updateRhythmMenuActions() {
   var start = document.getElementById('rhythm-menu-start');
   var demo = document.getElementById('rhythm-menu-demo');
-  var seen = _rhythmDemoSeen(RHYTHM_SONG.id);
-  if (start) start.textContent = seen ? 'すぐはじめる' : 'おてほんをみる';
-  if (demo) demo.classList.toggle('hidden', !seen);
+  if (start) start.textContent = 'はじめる';
+  if (demo) demo.classList.remove('hidden');
 }
 function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
@@ -3025,12 +3034,8 @@ if (rhythmMenuStart) rhythmMenuStart.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
   unlockAudio();
-  if (_rhythmDemoSeen(RHYTHM_SONG.id)) {
-    _hideRhythmMenu();
-    _beginRhythmCountdown();
-  } else {
-    _startRhythmDemo(true);
-  }
+  _hideRhythmMenu();
+  _beginRhythmCountdown();
 });
 var rhythmMenuDemo = document.getElementById('rhythm-menu-demo');
 if (rhythmMenuDemo) rhythmMenuDemo.addEventListener('click', function(e) {

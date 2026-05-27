@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-27 - [batch:144-oto-rhythm-key-spacing] DONE - Codex: 音タッチ rhythm layout の鍵盤配置を viewport % 間隔から固定px間隔へ変更し、横長画角でも鍵盤が離れすぎないようにした。リズムメニューは `はじめる` と `おてほん` を常時分離し、`はじめる` はお手本なしで 3,2,1 へ進む。`sw.js` は v624。 (by Codex)
 - 2026-05-27 - [batch:143-bento-repeatable-okazu-layering] DONE - Codex: 自由配置で「からあげ」ボタンから既存完成品 `chicken_fry_piece_01〜05_done.png` を1個ずつ循環配置するよう変更。メインおかずの2個上限を外し、タコウインナー/エビフライ等も複数配置可能にした。配置確定時の自動押しのけを停止し、選択中アイテムの「かさなりをかえる」前後操作を追加。`sw.js` は v623。 (by Codex)
 - 2026-05-27 - [batch:142-bento-karaage-existing-done] DONE - Codex: `D:\ポノのおへや\Bento\cooking\唐揚げ` の既存完成品 `20260522-123442_001〜005` を正本として、調理完了ピース `chicken_fry_piece_01〜05_done.png` と弁当配置用 `karaage_pieces_done.png` を差し替え。前回の色補正版は使わない。`sw.js` は v622。 (by Codex)
 - 2026-05-27 - [batch:141-bento-mask-editor-cabbage] DONE - Codex: 弁当マスク調整パネルを自由配置の箱選択画面に追加し、X/Y/W/H を localStorage 保存で編集可能にした。飾りなし進行、キャベツ千切りの塊アセット3密度 + ふやす/へらす/となりに足す操作、唐揚げ完成品の揚げ色差し替え、カップ/レタス仕切り画像の余白・表示修正を実装。`writing-mori/index.html` の既存 dirty は未変更。`sw.js` は v621。 (by Codex)
