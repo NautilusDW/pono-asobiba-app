@@ -602,6 +602,13 @@ body[data-screen="fridge"] .stage-wrap {
   padding: 12px;
   box-shadow: 0 4px 10px var(--shadow-soft);
 }
+.side-card--cut-bowl {
+  flex: 1 1 250px;
+  min-height: 248px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
 
 /* =========================================================
    画面2: したごしらえ（割る / こねる / ころも）
@@ -4192,17 +4199,36 @@ body.layout-editor-on .endX-marker {
 .bowl {
   position: relative;
   width: 100%;
-  max-width: 210px;
+  max-width: 390px;
   aspect-ratio: 2.2 / 1;
   margin: 0 auto;
   border-radius: 50% / 58%;
   background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / contain no-repeat;
   border: none;
   filter: drop-shadow(0 5px 9px rgba(0,0,0,0.14));
-  overflow: hidden;
+  overflow: visible;
 }
 .bowl::before {
   display: none;
+}
+.bowl-fill-mask {
+  position: absolute;
+  left: 7%;
+  top: 18%;
+  width: 86%;
+  height: 65%;
+  border-radius: 50% / 48%;
+  clip-path: ellipse(48% 42% at 50% 56%);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+body.layout-editor-on .bowl-fill-mask {
+  outline: 3px dashed rgba(27, 177, 125, 0.88);
+  background: rgba(27, 177, 125, 0.12);
+  overflow: visible;
+  pointer-events: auto;
+  position: absolute !important;
 }
 .bowl.catch {
   animation: bowlCatch 0.28s ease-out;
@@ -4932,6 +4958,7 @@ body.layout-editor-on .endX-marker {
       ['.startX-marker',  'wh', '[ツール] 包丁の切り始め X'],
       ['.endX-marker',    'wh', '[ツール] 包丁の切り終わり X'],
       ['.bowl',           'wh', '切れ端ボウル'],
+      ['.bowl-fill-mask', 'wh', '切れ端マスク'],
       ['.grill-stove-bg',  'wh', '[調理] 焼く背景コンロ'],
       ['.grill-pan',       'wh', '[調理] フライパン'],
       ['.egg-glass-lid',   'wh', '[調理] 目玉焼きの蓋'],
@@ -4943,7 +4970,7 @@ body.layout-editor-on .endX-marker {
     // となり、 applier の lookup chain で base キーへ自動 fallback する。
     // ※ perQuestionSelectors という名前は quizland 由来。 本プロジェクトでは
     //   per-ingredient と読み替えること。
-    perQuestionSelectors: ['.knife', '.chopY-marker', '.ingredient-bbox-marker', '.startX-marker', '.endX-marker'],
+    perQuestionSelectors: ['.knife', '.chopY-marker', '.ingredient-bbox-marker', '.startX-marker', '.endX-marker', '.bowl', '.bowl-fill-mask'],
     ghPath: 'bento/kitchen/saved-layout.json',
     // v430: saved-layout fetch が食材ロードより後に完了した場合でも、
     // hidden marker の保存値を通常プレイ用 chopMechanics へ再同期する。
@@ -5111,9 +5138,11 @@ body.layout-editor-on .endX-marker {
         </div>
       </div>
 
-      <div class="side-card">
+      <div class="side-card side-card--cut-bowl">
         <div style="text-align:center;font-weight:900;font-size:0.82rem;color:var(--text-soft);margin-bottom:6px;">きれはし</div>
-        <div class="bowl" id="bowl" aria-hidden="true"></div>
+        <div class="bowl" id="bowl" aria-hidden="true">
+          <div class="bowl-fill-mask" id="bowl-fill-mask" data-le-keep-position="1"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -5583,9 +5612,12 @@ body.layout-editor-on .endX-marker {
         startX_pct: 86, endX_pct: 14,
         liftY_pct: 0, chopY_pct: 50,
         maskAxis: 'right-to-left',
+        maskProgressMode: 'count',
+        maskProgressScale: 0.88,
+        maskMinVisiblePct: 12,
         bladeTipOffsetX_pct: -39,
         ingredientLeft_pct: 52,
-        ingredientTop_pct: 40,
+        ingredientTop_pct: 34,
         ingredientWidth_pct: 48,
       },
     },
@@ -6777,6 +6809,7 @@ body.layout-editor-on .endX-marker {
     progress:      document.getElementById('progress-fill'),
     progressCap:   document.getElementById('progress-caption'),
     bowl:          document.getElementById('bowl'),
+    bowlFillMask:  document.getElementById('bowl-fill-mask'),
     speechChop:    document.getElementById('speech-chop'),
 
     // grill screen
@@ -13091,6 +13124,8 @@ body.layout-editor-on .endX-marker {
     resetPerIngredientTargetIfNoSavedEntry('.ingredient-bbox-marker', els.ingBboxMarker);
     resetPerIngredientTargetIfNoSavedEntry('.startX-marker', els.startXMarker);
     resetPerIngredientTargetIfNoSavedEntry('.endX-marker', els.endXMarker);
+    resetPerIngredientTargetIfNoSavedEntry('.bowl', els.bowl);
+    resetPerIngredientTargetIfNoSavedEntry('.bowl-fill-mask', els.bowlFillMask);
   }
 
   //   - per-ingredient エントリ `.knife|0@<id>` を優先。
@@ -13617,7 +13652,8 @@ body.layout-editor-on .endX-marker {
     if (!state.current || !state.current.chopMechanics) return;
     const total = state.current.chopCount || 5;
     const cut = state.chopProgress || 0;
-    const axis = state.current.chopMechanics.maskAxis || 'right-to-left';
+    const mechanics = state.current.chopMechanics;
+    const axis = mechanics.maskAxis || 'right-to-left';
     // [v433] 横方向の食材は、マスク境界を「刃先ターゲット X」から逆算する。
     // 旧 v429 の 1/chopCount 固定幅だと、包丁は startX/endX marker 間を等分する一方で
     // マスクは食材 bbox 全幅を等分するため、2 打目以降に切り口が刃先より左へズレる。
@@ -13627,6 +13663,11 @@ body.layout-editor-on .endX-marker {
       visiblePct = 100;  // 初期状態、何も切ってない
     } else if (cut >= total) {
       visiblePct = 0;    // 最終タップは完全に切り終える
+    } else if (mechanics.maskProgressMode === 'count') {
+      const scale = (mechanics.maskProgressScale !== undefined) ? mechanics.maskProgressScale : 1;
+      const minVisible = Math.max(0, Math.min(100, mechanics.maskMinVisiblePct || 0));
+      const ratio = Math.max(0, Math.min(1, (cut / Math.max(1, total)) * scale));
+      visiblePct = Math.max(minVisible, (1 - ratio) * 100);
     } else {
       visiblePct = getVisiblePctFromCurrentBladeTarget(axis, total, cut);
       if (visiblePct == null) {
@@ -14059,8 +14100,13 @@ body.layout-editor-on .endX-marker {
   }
 
   function clearBowl() {
-    [...els.bowl.querySelectorAll('.cut-piece')].forEach(p => p.remove());
+    const layer = getBowlPieceLayer();
+    [...layer.querySelectorAll('.cut-piece')].forEach(p => p.remove());
     [...document.querySelectorAll('.flying-cut-piece')].forEach(p => p.remove());
+  }
+
+  function getBowlPieceLayer() {
+    return els.bowlFillMask || els.bowl;
   }
 
   function addCutPieceToBowl(ing) {
@@ -14076,7 +14122,8 @@ body.layout-editor-on .endX-marker {
     const isParticle = ing && !!ing.particleKind;
     const pieceData = getCutPieceData(ing, burstIndex);
     const piece = createCutPieceNode(pieceData, isCabbage ? 'cut-piece cabbage-bowl-piece' : (isParticle ? 'cut-piece cut-piece--particle' : 'cut-piece'));
-    const rect = els.bowl.getBoundingClientRect();
+    const layer = getBowlPieceLayer();
+    const rect = layer.getBoundingClientRect();
     const w = rect.width || 80;
     const h = rect.height || 60;
     const cx = w * 0.5;
@@ -14109,8 +14156,12 @@ body.layout-editor-on .endX-marker {
       rawX = cx + Math.cos(a) * r - pieceSize / 2;
       rawY = cy + Math.sin(a) * r - pieceSize / 2;
     }
-    let x = (isCabbage || isParticle) ? Math.max(-pieceSize * 0.42, Math.min(w - pieceSize * 0.58, rawX)) : rawX;
-    let y = (isCabbage || isParticle) ? Math.max(-pieceSize * 0.28, Math.min(h - pieceSize * 0.62, rawY)) : rawY;
+    let x = (isCabbage || isParticle)
+      ? Math.max(w * 0.03, Math.min(w - pieceSize - w * 0.03, rawX))
+      : rawX;
+    let y = (isCabbage || isParticle)
+      ? Math.max(h * 0.08, Math.min(h - pieceSize - h * 0.06, rawY))
+      : rawY;
     if (isChicken) {
       const minX = Math.min(w * 0.16, Math.max(0, (w - pieceSize) * 0.5));
       const maxX = Math.max(minX, w - pieceSize - minX);
@@ -14132,7 +14183,7 @@ body.layout-editor-on .endX-marker {
       piece.style.setProperty('--drop-x', ((isParticle ? -46 : (isCabbage ? -92 : -72)) + Math.random() * (isParticle ? 84 : (isCabbage ? 48 : 22))) + 'px');
       piece.style.setProperty('--drop-y', ((isParticle ? -78 : (isCabbage ? -128 : -100)) + Math.random() * (isParticle ? 74 : (isCabbage ? 46 : 24))) + 'px');
       piece.style.setProperty('--drop-rot', (rot - (isParticle ? 190 : (isCabbage ? 130 : 95)) + Math.random() * (isParticle ? 220 : (isCabbage ? 95 : 35))) + 'deg');
-      els.bowl.appendChild(piece);
+      layer.appendChild(piece);
       enforceBowlPieceLimit(ing);
       els.bowl.classList.remove('catch');
       void els.bowl.offsetWidth;

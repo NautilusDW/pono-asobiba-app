@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-28 - [batch:156-kitchen-onion-chop-layout] DONE - Codex: トントンキッチンの玉ねぎ切りで、玉ねぎ初期位置をまな板上へ上げ、40連打の途中で先に消えないようカウント基準のマスク進行へ変更。切れ端の白ボックスと皿を大きくし、皿内に `bowl-fill-mask` を追加して切れ端が皿外へ出にくい構造へ変更。`?edit=1` で食材位置・切れ端ボウル・切れ端マスクを食材ごとに調整可能。`sw.js` は v640。 (by Codex)
 - 2026-05-28 - [batch:155-bento-context-controls] DONE - Codex: bento 自由配置の選択アウトラインをぼかし主体から太い実線+軽い影へ変更。カップ/仕切りのサイズ・カップ編集・重なり上下操作を右メニューから外し、選択中アイテム付近のコンテキスト操作へ移動。くま/ねこ箱の表示を少し大きくし、くま箱マスク基準値を新表示に合わせて v2 保存キーへ更新。`?maskedit=1` / `?edit=1` でタイトルを飛ばしてマスク編集パネルが開くこと、右メニューにサイズ/重なり/カップ修正パネルが出ないことを Playwright + ローカルHTTPで確認。`sw.js` は v639。 (by Codex)
 - 2026-05-28 - [batch:154-milmaru-egg-baby-raw] DONE - Codex: user 参照「ミルマル」デザインに合わせ、タマゴ→ひび割れ→孵化→ベビーまでの6段階横並び raw アセットシート `tmp/alpha_pending/154_milmaru_egg_baby_assets_raw/milmaru_egg_to_baby_asset_sheet_raw.png` を GPT Image 2 built-in で生成。2172x724 / RGB / 白背景。alpha 抜き・個別切り出し・本配置は未実施。 (by Codex)
 - 2026-05-28 - [batch:153-mojikko-writing-asset-swap] DONE - Codex: user 追加 `D:\ポノのおへや\Moji\assets` の新素材を文字書き画面に反映。背景は GPT Image 2 built-in で1枚絵 `background_garden.png` を生成・配置し、ボード/プロンプト/スター/設定/ミルマル/ボタン系を差し替え。文字リストと書き順の中身は画像へ焼き込まずHTMLボタン・動的カードのままにし、結果モーダルの白い棒入りボタンはCSSピクセルボタンへ置換。Playwrightで1600x900/1024x768表示、1画目判定、完了モーダルを確認。`sw.js` は v638。 (by Codex)
