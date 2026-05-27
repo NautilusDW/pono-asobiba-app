@@ -747,7 +747,8 @@ html, body {
   color: #8B4513;
 }
 .free-mask-panel,
-.free-brush-panel {
+.free-brush-panel,
+.free-layer-panel {
   border: 2px solid #B7E4CF;
   border-radius: 12px;
   background: #F0FDF4;
@@ -757,20 +758,23 @@ html, body {
   flex-shrink: 0;
 }
 .free-mask-title,
-.free-brush-title {
+.free-brush-title,
+.free-layer-title {
   font-size: 0.54rem;
   font-weight: 900;
   line-height: 1.15;
 }
 .free-mask-actions,
-.free-brush-actions {
+.free-brush-actions,
+.free-layer-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   margin-top: 5px;
 }
 .free-mask-actions button,
-.free-brush-actions button {
+.free-brush-actions button,
+.free-layer-actions button {
   border: 2px solid #8AD6B6;
   border-radius: 9px;
   background: #FFFFFF;
@@ -783,7 +787,8 @@ html, body {
   cursor: pointer;
 }
 .free-mask-actions button.primary,
-.free-brush-actions button.primary {
+.free-brush-actions button.primary,
+.free-layer-actions button.primary {
   background: #BBF7D0;
   border-color: #22C55E;
 }
@@ -2354,10 +2359,17 @@ const FRUITS = [
 ];
 const COOKING_P = '../assets/images/bento/cooking/';
 const FREE_LAYOUT_ASSET_P = '../assets/images/bento/free-layout/';
+const KARAAGE_DONE_VARIANTS = [
+  COOKING_P+'chicken/fry/chicken_fry_piece_01_done.png',
+  COOKING_P+'chicken/fry/chicken_fry_piece_02_done.png',
+  COOKING_P+'chicken/fry/chicken_fry_piece_03_done.png',
+  COOKING_P+'chicken/fry/chicken_fry_piece_04_done.png',
+  COOKING_P+'chicken/fry/chicken_fry_piece_05_done.png',
+];
 const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 132, rotation: -6 },
   { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 170, rotation: 2 },
-  { img: FREE_LAYOUT_ASSET_P+'karaage_pieces_done.png',    name: 'からあげ',         cat: 'meat', sk: 'r', size: 168, rotation: -2 },
+  { img: KARAAGE_DONE_VARIANTS[0],                         name: 'からあげ',         cat: 'meat', sk: 'r', size: 118, rotation: -5, variantGroup: 'karaage_done', variantImages: KARAAGE_DONE_VARIANTS },
   { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 185, rotation: 8 },
   { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 170, rotation: -3 },
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 163, rotation: 3 },
@@ -3502,7 +3514,6 @@ function canAddFoodForCurrentStep(def) {
   if (!isOkazuGuideStep()) return true;
   const role = getCurrentOkazuRole();
   if ((def.okazuRole || getOkazuRole(def)) !== role) return false;
-  if (role === 'main' && countOkazuRoleOnTier(getGuideTierForStep(), 'main') >= 2) return false;
   return true;
 }
 function canAddFoodToCup(def) {
@@ -3862,7 +3873,23 @@ function getFreeItemImage(item) {
     const index = clamp(Math.round(item.brushLevel == null ? 1 : item.brushLevel), 0, item.brushImages.length - 1);
     return item.brushImages[index] || item.img || '';
   }
+  if (item && Array.isArray(item.variantImages) && item.variantImages.length) {
+    const index = clamp(Math.round(item.variantIndex || 0), 0, item.variantImages.length - 1);
+    return item.variantImages[index] || item.img || '';
+  }
   return item && (item.img || item.image || '');
+}
+function getFreeVariantGroup(def) {
+  if (!def || !Array.isArray(def.variantImages) || !def.variantImages.length) return '';
+  return def.variantGroup || def.id || def.name || def.img || def.variantImages[0] || '';
+}
+function getNextFreeVariantIndex(def, tier) {
+  const images = Array.isArray(def && def.variantImages) ? def.variantImages : [];
+  if (!images.length) return -1;
+  const group = getFreeVariantGroup(def);
+  const sameTier = item => getBoxTierCount() <= 1 || getItemTier(item) === tier;
+  const count = placedItems.filter(item => item.variantGroup === group && sameTier(item)).length;
+  return count % images.length;
 }
 function clampCupChildren(cup) {
   if (!cup) return;
@@ -3964,7 +3991,6 @@ function finalizeFreeItemPosition(uid) {
   const p = snapPointForItem(item, item.x, item.y);
   setFreeItemPosition(uid, p.x, p.y);
   const afterSnap = { x: item.x, y: item.y };
-  avoidFreeOverlap(item);
   if (item.type === 'rice') {
     const dx = item.x - afterSnap.x;
     const dy = item.y - afterSnap.y;
@@ -4062,7 +4088,7 @@ function canStartFreePaletteDrag(def) {
   }
   if (def.type === 'food' && getEditingCup()) return false;
   if (def.type === 'food' && !canAddFoodForCurrentStep(def)) {
-    showToast(getCurrentOkazuRole() === 'main' ? 'メインのおかずは 2つまでだよ！' : 'いまの おかずから えらぼう！');
+    showToast('いまの おかずから えらぼう！');
     return false;
   }
   return true;
@@ -4181,12 +4207,17 @@ function addFreeLayoutItem(def, opts = {}) {
   if (!def) return null;
   const itemTier = opts.tier || getTargetTierForType(def.type);
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot(def.type);
+  const variantImages = Array.isArray(def.variantImages) ? def.variantImages.slice() : null;
+  const variantIndex = variantImages && variantImages.length
+    ? (opts.variantIndex != null ? opts.variantIndex : getNextFreeVariantIndex(def, itemTier))
+    : -1;
+  const variantImg = variantImages && variantIndex >= 0 ? variantImages[clamp(variantIndex, 0, variantImages.length - 1)] : '';
   const item = {
     uid: 'free_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
     id: def.id,
     type: def.type,
     name: def.name || '',
-    img: def.img || def.image || '',
+    img: variantImg || def.img || def.image || '',
     emoji: def.emoji || '',
     css: def.css || '',
     sk: def.sk || '',
@@ -4204,6 +4235,9 @@ function addFreeLayoutItem(def, opts = {}) {
     brushItem: !!def.brushItem,
     brushImages: Array.isArray(def.brushImages) ? def.brushImages.slice() : null,
     brushLevel: opts.brushLevel != null ? opts.brushLevel : (def.brushLevel != null ? def.brushLevel : 1),
+    variantGroup: getFreeVariantGroup(def),
+    variantImages,
+    variantIndex: variantIndex >= 0 ? variantIndex : 0,
     parentId: opts.parentId || null,
     parentCupId: opts.parentCupId || null,
     tier: itemTier,
@@ -4212,7 +4246,6 @@ function addFreeLayoutItem(def, opts = {}) {
   item.x = p.x; item.y = p.y;
   placedItems.push(item);
   freeSelectedItemUid = item.uid;
-  avoidFreeOverlap(item);
   if (!opts.skipRender) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
@@ -4332,6 +4365,56 @@ function duplicateSelectedBrushItem() {
   renderFreeLayoutControls();
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
   playPop();
+}
+function getLayerContextItems(item) {
+  if (!item) return [];
+  const parentCupId = item.parentCupId || null;
+  const tier = getItemTier(item);
+  return placedItems.filter(other => {
+    if (getItemTier(other) !== tier) return false;
+    return (other.parentCupId || null) === parentCupId;
+  });
+}
+function syncLayerLinkedChildren(item) {
+  if (!item || !item.snapTarget) return;
+  getCupChildren(item)
+    .sort((a, b) => (a.layer || 0) - (b.layer || 0))
+    .forEach((child, index) => {
+      child.layer = (item.layer || 1) + 1 + index;
+    });
+}
+function applyLayerOrder(items) {
+  items.forEach((item, index) => {
+    item.layer = 20 + index * 10;
+    syncLayerLinkedChildren(item);
+  });
+  const maxLayer = placedItems.reduce((max, item) => Math.max(max, item.layer || 0), 0);
+  freeLayerSeq = Math.max(freeLayerSeq, Math.ceil(maxLayer) + 1);
+}
+function moveSelectedItemLayer(delta) {
+  const item = getSelectedFreeItem();
+  const items = getLayerContextItems(item).sort((a, b) => (a.layer || 0) - (b.layer || 0));
+  const index = items.findIndex(other => other.uid === (item && item.uid));
+  if (index < 0 || items.length < 2) return;
+  const nextIndex = clamp(index + delta, 0, items.length - 1);
+  if (nextIndex === index) return;
+  items.splice(index, 1);
+  items.splice(nextIndex, 0, item);
+  applyLayerOrder(items);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function moveSelectedItemLayerTo(edge) {
+  const item = getSelectedFreeItem();
+  const items = getLayerContextItems(item).sort((a, b) => (a.layer || 0) - (b.layer || 0));
+  const index = items.findIndex(other => other.uid === (item && item.uid));
+  if (index < 0 || items.length < 2) return;
+  items.splice(index, 1);
+  if (edge === 'front') items.push(item);
+  else items.unshift(item);
+  applyLayerOrder(items);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
 }
 function addFoodToSelectedCup(def) {
   const cup = getEditingCup() || getActiveCup();
@@ -4781,6 +4864,26 @@ function renderSelectedBrushControls() {
   panel.appendChild(actions);
   return panel;
 }
+function renderSelectedLayerControls() {
+  const item = getSelectedFreeItem();
+  if (!item || item.type === 'rice') return null;
+  const peers = getLayerContextItems(item);
+  if (peers.length < 2) return null;
+  const panel = document.createElement('div');
+  panel.className = 'free-layer-panel';
+  const title = document.createElement('div');
+  title.className = 'free-layer-title';
+  title.textContent = 'かさなりを かえる';
+  panel.appendChild(title);
+  const actions = document.createElement('div');
+  actions.className = 'free-layer-actions';
+  actions.appendChild(makeSmallControlButton('したへ', '', () => moveSelectedItemLayer(-1)));
+  actions.appendChild(makeSmallControlButton('うえへ', 'primary', () => moveSelectedItemLayer(1)));
+  actions.appendChild(makeSmallControlButton('いちばん下', '', () => moveSelectedItemLayerTo('back')));
+  actions.appendChild(makeSmallControlButton('いちばん上', '', () => moveSelectedItemLayerTo('front')));
+  panel.appendChild(actions);
+  return panel;
+}
 function makeMaskRange(label, prop, min, max, bounds) {
   const row = document.createElement('label');
   row.className = 'free-mask-row';
@@ -5092,6 +5195,9 @@ function renderFreeLayoutControls() {
 
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
+
+  const layerControls = renderSelectedLayerControls();
+  if (layerControls) tray.appendChild(layerControls);
 
   const cupControls = renderFreeCupControls();
   if (cupControls) tray.appendChild(cupControls);
