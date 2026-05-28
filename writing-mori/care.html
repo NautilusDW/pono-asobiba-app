@@ -53,15 +53,19 @@
   --care-egg-idle: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
   --care-egg-cracked: url('../assets/images/mojikko/care/milmaru_egg_cracked.png');
   --care-egg-peek: url('../assets/images/mojikko/care/milmaru_egg_peek.png');
-  --care-shell-baby-happy: url('../assets/images/mojikko/care/milmaru_shell_baby_happy.png');
+  --care-shell-baby-happy: url('../assets/images/mojikko/care/milmaru_shell_baby_idle_pose.png');
+  --care-shell-baby-arms-up: url('../assets/images/mojikko/care/milmaru_shell_baby_arms_up.png');
+  --care-shell-baby-wiggle: url('../assets/images/mojikko/care/milmaru_shell_baby_wiggle.png');
+  --care-shell-baby-wave: url('../assets/images/mojikko/care/milmaru_shell_baby_wave.png');
+  --care-shell-baby-milk: url('../assets/images/mojikko/care/milmaru_shell_baby_milk_pose.png');
   --care-shell-baby-sleep: url('../assets/images/mojikko/care/milmaru_shell_baby_sleep.png');
   --care-shell-baby-left: url('../assets/images/mojikko/care/milmaru_shell_baby_left.png');
   --care-shell-baby-right: url('../assets/images/mojikko/care/milmaru_shell_baby_right.png');
-  --care-shell-baby-cry: url('../assets/images/mojikko/care/milmaru_shell_baby_cry.png');
-  --care-shell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_shell_baby_bigcry.png');
-  --care-shell-baby-angry: url('../assets/images/mojikko/care/milmaru_shell_baby_angry.png');
+  --care-shell-baby-cry: url('../assets/images/mojikko/care/milmaru_shell_baby_cry_pose.png');
+  --care-shell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_shell_baby_cry_pose.png');
+  --care-shell-baby-angry: url('../assets/images/mojikko/care/milmaru_shell_baby_angry_pose.png');
   --care-shell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_shell_baby_disappointed.png');
-  --care-shell-baby-worried: url('../assets/images/mojikko/care/milmaru_shell_baby_worried.png');
+  --care-shell-baby-worried: url('../assets/images/mojikko/care/milmaru_shell_baby_worried_pose.png');
   --care-headshell-baby-happy: url('../assets/images/mojikko/care/milmaru_headshell_baby_happy.png');
   --care-headshell-baby-cry: url('../assets/images/mojikko/care/milmaru_headshell_baby_cry.png');
   --care-headshell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_headshell_baby_bigcry.png');
@@ -734,11 +738,23 @@ html, body {
   background-image: var(--care-shell-baby-happy);
 }
 
-.milmaru.baby.happy,
-.milmaru.baby.eating,
-.milmaru.baby.play,
+.milmaru.baby.happy {
+  background-image: var(--care-shell-baby-arms-up);
+  animation: babyHappyFrames 0.82s step-end 2, happyBounce 0.72s ease;
+}
+
+.milmaru.baby.eating {
+  background-image: var(--care-shell-baby-milk);
+  animation: babyMilkFrames 0.9s step-end 2, eatingWiggle 0.8s ease;
+}
+
+.milmaru.baby.play {
+  background-image: var(--care-shell-baby-wiggle);
+  animation: babyPlayFrames 0.76s step-end 2, playHop 0.8s ease;
+}
+
 .milmaru.baby.birth {
-  background-image: var(--care-shell-baby-happy);
+  background-image: var(--care-shell-baby-arms-up);
 }
 
 .milmaru.baby.relaxed {
@@ -795,6 +811,18 @@ html, body {
   0%, 100% { transform: translateX(-50%) translateY(0); }
   22% { transform: translateX(-70%) translateY(-18px); }
   52% { transform: translateX(-30%) translateY(-28px); }
+}
+@keyframes babyHappyFrames {
+  0%, 100% { background-image: var(--care-shell-baby-arms-up); }
+  45% { background-image: var(--care-shell-baby-wave); }
+}
+@keyframes babyMilkFrames {
+  0%, 100% { background-image: var(--care-shell-baby-milk); }
+  48% { background-image: var(--care-shell-baby-wave); }
+}
+@keyframes babyPlayFrames {
+  0%, 100% { background-image: var(--care-shell-baby-wiggle); }
+  45% { background-image: var(--care-shell-baby-arms-up); }
 }
 @keyframes eggWarm {
   0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
@@ -926,7 +954,7 @@ html, body {
 .hatch-scene.phase-born .hatch-sprite {
   width: 430px;
   height: 430px;
-  background-image: var(--care-shell-baby-happy);
+  background-image: var(--care-shell-baby-arms-up);
   animation: hatchBabyBounce 0.9s cubic-bezier(.2,1.5,.3,1) both;
 }
 
