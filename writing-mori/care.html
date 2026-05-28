@@ -739,6 +739,145 @@ html, body {
   z-index: 8;
 }
 
+.hatch-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: 170px 1fr 132px;
+  justify-items: center;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background: #ffd6e1;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.hatch-scene.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.hatch-scene::before {
+  content: '';
+  position: absolute;
+  inset: -38%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      #fff1f6 0deg 9deg,
+      #ffc4d6 9deg 18deg,
+      #ff9fbd 18deg 27deg,
+      #ffdce8 27deg 36deg
+    );
+  transform-origin: center;
+  animation: hatchRaySpin 5.2s linear infinite;
+}
+
+.hatch-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.84) 0 12%, rgba(255,255,255,0.26) 27%, rgba(255,255,255,0) 58%),
+    radial-gradient(circle at center, rgba(255,152,185,0) 0 44%, rgba(181,75,111,0.16) 100%);
+}
+
+.hatch-copy,
+.hatch-subcopy {
+  position: relative;
+  z-index: 4;
+  min-width: 560px;
+  padding: 18px 34px;
+  border: 5px solid #8b6042;
+  border-radius: 16px;
+  background: rgba(255, 248, 232, 0.94);
+  box-shadow: 0 6px 0 #6f462c;
+  color: #5a3d28;
+  font-family: var(--pixel-font);
+  text-align: center;
+}
+
+.hatch-copy {
+  align-self: end;
+  font-size: 38px;
+}
+
+.hatch-subcopy {
+  align-self: start;
+  font-size: 24px;
+}
+
+.hatch-sprite {
+  position: relative;
+  z-index: 3;
+  width: 370px;
+  height: 470px;
+  background: var(--care-egg-cracked) center / contain no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 22px 0 rgba(95, 61, 38, 0.18));
+  transform-origin: center bottom;
+}
+
+.hatch-scene.phase-notice .hatch-sprite {
+  width: 340px;
+  height: 430px;
+  animation: hatchSlowPulse 1.15s ease-in-out infinite;
+}
+
+.hatch-scene.phase-ready .hatch-sprite {
+  width: 370px;
+  height: 470px;
+  animation: hatchEggShake 0.42s ease-in-out infinite;
+}
+
+.hatch-scene.phase-peek .hatch-sprite {
+  width: 430px;
+  height: 450px;
+  background-image: var(--care-egg-peek);
+  animation: hatchPopOpen 0.78s cubic-bezier(.2,1.5,.3,1) both;
+}
+
+.hatch-scene.phase-born .hatch-sprite {
+  width: 430px;
+  height: 430px;
+  background-image: var(--care-headshell-baby-happy);
+  animation: hatchBabyBounce 0.9s cubic-bezier(.2,1.5,.3,1) both;
+}
+
+@keyframes hatchRaySpin {
+  0% { transform: rotate(0deg) scale(1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes hatchSlowPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes hatchEggShake {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(1.03); }
+  20% { transform: translateX(-14px) rotate(-5deg) scale(1.04); }
+  45% { transform: translateX(11px) rotate(5deg) scale(1.05); }
+  70% { transform: translateX(-7px) rotate(-3deg) scale(1.04); }
+}
+
+@keyframes hatchPopOpen {
+  0% { transform: translateY(24px) scale(0.86); filter: brightness(1.1) drop-shadow(0 22px 0 rgba(95,61,38,0.18)); }
+  32% { transform: translateY(-28px) scale(1.16); filter: brightness(1.28) drop-shadow(0 28px 0 rgba(95,61,38,0.16)); }
+  100% { transform: translateY(0) scale(1); filter: brightness(1.05) drop-shadow(0 22px 0 rgba(95,61,38,0.18)); }
+}
+
+@keyframes hatchBabyBounce {
+  0% { transform: translateY(58px) scale(0.78); opacity: 0; }
+  45% { transform: translateY(-34px) scale(1.12); opacity: 1; }
+  72% { transform: translateY(10px) scale(0.96); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 .fx-piece {
   position: absolute;
   left: var(--x);
@@ -1131,6 +1270,11 @@ html, body {
     </nav>
 
     <div class="bottom-message" id="bottomMessage">いっしょに もじをかいて、すこしずつ げんきに そだてよう！</div>
+    <div class="hatch-scene" id="hatchScene" aria-hidden="true">
+      <div class="hatch-copy" id="hatchCopy">おや...？</div>
+      <div class="hatch-sprite" id="hatchSprite" aria-hidden="true"></div>
+      <div class="hatch-subcopy" id="hatchSubcopy">タマゴの ようすが...</div>
+    </div>
   </main>
 </div>
 
@@ -1176,9 +1320,12 @@ const feedBtn = document.getElementById('feedBtn');
 const mainActionIcon = document.getElementById('mainActionIcon');
 const mainActionText = document.getElementById('mainActionText');
 const mainActionHelp = document.getElementById('mainActionHelp');
+const hatchScene = document.getElementById('hatchScene');
+const hatchCopy = document.getElementById('hatchCopy');
+const hatchSubcopy = document.getElementById('hatchSubcopy');
 
 let hatchingNow = false;
-let hatchTimer = null;
+let hatchTimers = [];
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1345,9 +1492,7 @@ function renderActionMode() {
 function applyMilmaruClass(reaction) {
   const currentReaction = reaction || state.reaction || 'normal';
   const classes = ['milmaru'];
-  if (hatchingNow) {
-    classes.push('egg', 'egg-peek', 'birth');
-  } else if (state.hatched) {
+  if (state.hatched) {
     classes.push('baby', currentReaction);
   } else {
     classes.push('egg', getEggVisualClass(), currentReaction);
@@ -1386,35 +1531,82 @@ function spawnFx(type) {
   }
 }
 
-function maybeHatchEgg() {
-  if (state.hatched || state.eggWarmth < 100) return false;
-  if (hatchingNow) return true;
-  playSfx('hatch');
-  hatchingNow = true;
-  state.reaction = 'birth';
-  setSpeech('うまれるよ！', 'タマゴの からが ゆれているよ。');
-  spawnFx('sparkle');
-  saveState();
-  render();
-  clearTimeout(hatchTimer);
-  hatchTimer = setTimeout(() => {
-    hatchingNow = false;
+function queueHatchStep(delay, fn) {
+  const timer = setTimeout(fn, delay);
+  hatchTimers.push(timer);
+}
+
+function clearHatchSceneTimers() {
+  hatchTimers.forEach((timer) => clearTimeout(timer));
+  hatchTimers = [];
+}
+
+function setHatchScenePhase(phase, copy, subcopy) {
+  hatchScene.className = `hatch-scene show phase-${phase}`;
+  hatchScene.setAttribute('aria-hidden', 'false');
+  hatchCopy.textContent = copy;
+  hatchSubcopy.textContent = subcopy;
+}
+
+function hideHatchScene() {
+  hatchScene.className = 'hatch-scene';
+  hatchScene.setAttribute('aria-hidden', 'true');
+}
+
+function startHatchScene() {
+  clearHatchSceneTimers();
+  setHatchScenePhase('notice', 'おや...？', 'タマゴの ようすが...');
+  playSfx('warm');
+
+  queueHatchStep(900, () => {
+    setHatchScenePhase('ready', 'タマゴが かえりそうだぞ！', 'からが ぐらぐら ゆれているよ');
+    playSfx('warm');
+  });
+
+  queueHatchStep(1900, () => {
+    setHatchScenePhase('peek', 'パカッ！', 'ミルマルが でてきたよ！');
+    playSfx('hatch');
+    spawnFx('sparkle');
+  });
+
+  queueHatchStep(2800, () => {
     state.hatched = true;
     state.sukusuku = Math.max(10, state.sukusuku);
     state.reaction = 'birth';
     setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！つぎは もじを かいて おやつを もらおう。');
+    setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'こんにちは！これから いっしょに もじを かこう');
     spawnFx('sparkle');
     saveState();
     render();
+  });
+
+  queueHatchStep(4300, () => {
+    hideHatchScene();
+    hatchingNow = false;
     setReaction('birth', 1300);
-  }, 720);
-  setTimeout(() => {
+  });
+
+  queueHatchStep(5900, () => {
     if (state.reaction === 'normal') {
       setSpeech('いっしょに もじを かこう！', 'もじを かくと、ミルマルに あげる おやつが もらえるよ。');
       saveState();
       render();
     }
-  }, 2200);
+  });
+}
+
+function maybeHatchEgg() {
+  if (state.hatched || state.eggWarmth < 100) return false;
+  if (hatchingNow) return true;
+  playSfx('warm');
+  hatchingNow = true;
+  state.reaction = 'warm';
+  setSpeech('おや...？', 'タマゴの ようすが...');
+  spawnFx('sparkle');
+  saveState();
+  render();
+  clearHatchSceneTimers();
+  queueHatchStep(850, startHatchScene);
   return true;
 }
 

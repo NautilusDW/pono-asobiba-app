@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-28 - [batch:167-mojikko-hatch-cutscene] DONE - Codex: 孵化時に通常画面で「おや...？」を出した後、画面全体をピンク放射状ストライプのカットインへ切り替える演出を追加。カットイン内で卵アップ→揺れ→`egg_peek` のパカッ演出→頭殻ベビー誕生へ進む。通常画面での `egg_peek` 表示は避けたまま。Playwrightで通常一言、カットイン notice/peek/born、孵化後の頭殻ベビーを確認。`sw.js` は v651。 (by Codex)
 - 2026-05-28 - [batch:166-mojikko-hatch-peek-headshell] DONE - Codex: お世話画面の「もうすぐ うまれそう」段階で耳が出た `egg_peek` を表示しないよう変更し、通常の未孵化表示はひび入りタマゴまでに制限。`egg_peek` は孵化確定後の短い演出だけに使い、その後のお世話画面/文字書きミルマルカードは頭に殻を乗せたベビー画像へ切替。Playwrightで75%時点=ひび入り卵、孵化中=peek演出、孵化後=headshell baby、文字書きカード=headshell baby を確認。`sw.js` は v650。 (by Codex)
 - 2026-05-28 - [batch:165-mojikko-masked-assets-aspect] DONE - Codex: user 追加のマスク済み素材から横長「もういっかい」normal/pressed と温める大アイコンを配置。文字書き/お世話画面のスター数プレートは画像の 291:91 比率に固定し、結果モーダルの仮CSSストライプボタンを既存画像ボタンへ戻した。Playwrightで1600x900/1024x768の文字書き・お世話画面、スター比率、ボタン表示を確認。`sw.js` は v649。 (by Codex)
 - 2026-05-28 - [batch:164-kitchen-cut-bowl-editor-safe-frame] DONE - Codex: トントンキッチンの切れ端おさらで、皿画像が編集枠いっぱいに描かれて左右上が切れる問題を修正。`.bowl` を安全枠、皿画像を内側の `::before` 描画に分離し、切れ端ボウルカード/エディター時の overflow を visible にした。520x242 のエディター枠で Playwright スクリーンショット確認済み。`sw.js` は v648。 (by Codex)
