@@ -99,10 +99,37 @@ html, body {
   background: linear-gradient(180deg, #233f53 0%, #12222b 100%);
 }
 
+#stage-wrap::before {
+  content: '';
+  position: fixed;
+  inset: -72vmax;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.84) 0 12%, rgba(255,255,255,0.26) 27%, rgba(255,255,255,0) 58%),
+    radial-gradient(circle at center, rgba(255,152,185,0) 0 44%, rgba(181,75,111,0.16) 100%),
+    repeating-conic-gradient(
+      from 0deg,
+      #fff1f6 0deg 9deg,
+      #ffc4d6 9deg 18deg,
+      #ff9fbd 18deg 27deg,
+      #ffdce8 27deg 36deg
+    );
+  transform-origin: center;
+  transition: opacity 0.18s ease;
+}
+
+#stage-wrap.hatch-active::before {
+  opacity: 1;
+  animation: hatchRaySpin 5.2s linear infinite;
+}
+
 #stage {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;
   width: 1600px;
   height: 900px;
   transform-origin: 0 0;
@@ -764,7 +791,7 @@ html, body {
 .hatch-scene::before {
   content: '';
   position: absolute;
-  inset: -38%;
+  inset: -72%;
   background:
     repeating-conic-gradient(
       from 0deg,
@@ -849,8 +876,8 @@ html, body {
 }
 
 @keyframes hatchRaySpin {
-  0% { transform: rotate(0deg) scale(1); }
-  100% { transform: rotate(360deg) scale(1); }
+  0% { transform: rotate(0deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(1.08); }
 }
 
 @keyframes hatchSlowPulse {
@@ -1413,6 +1440,7 @@ const hatchScene = document.getElementById('hatchScene');
 const hatchCopy = document.getElementById('hatchCopy');
 const hatchSubcopy = document.getElementById('hatchSubcopy');
 const debugPanel = document.getElementById('debugPanel');
+const stageWrap = document.getElementById('stage-wrap');
 
 let hatchingNow = false;
 let hatchTimers = [];
@@ -1645,6 +1673,7 @@ function clearHatchSceneTimers() {
 }
 
 function setHatchScenePhase(phase, copy, subcopy) {
+  stageWrap.classList.add('hatch-active');
   hatchScene.className = `hatch-scene show phase-${phase}`;
   hatchScene.setAttribute('aria-hidden', 'false');
   hatchCopy.textContent = copy;
@@ -1652,6 +1681,7 @@ function setHatchScenePhase(phase, copy, subcopy) {
 }
 
 function hideHatchScene() {
+  stageWrap.classList.remove('hatch-active');
   hatchScene.className = 'hatch-scene';
   hatchScene.setAttribute('aria-hidden', 'true');
 }
