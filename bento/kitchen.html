@@ -608,6 +608,7 @@ body[data-screen="fridge"] .stage-wrap {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  overflow: visible;
 }
 
 /* =========================================================
@@ -4271,13 +4272,21 @@ body.layout-editor-on .endX-marker {
   aspect-ratio: 2.2 / 1;
   margin: 0 auto;
   border-radius: 50% / 58%;
-  background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / 100% 100% no-repeat;
+  background: none;
   border: none;
-  filter: drop-shadow(0 5px 9px rgba(0,0,0,0.14));
   overflow: visible;
+  --bowl-art-inset-x: 5.5%;
+  --bowl-art-inset-y: 7%;
 }
 .bowl::before {
-  display: none;
+  content: '';
+  position: absolute;
+  inset: var(--bowl-art-inset-y) var(--bowl-art-inset-x);
+  border-radius: inherit;
+  background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 5px 9px rgba(0,0,0,0.14));
+  pointer-events: none;
+  z-index: 0;
 }
 .bowl-fill-mask {
   position: absolute;
@@ -4290,6 +4299,11 @@ body.layout-editor-on .endX-marker {
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
+}
+body.layout-editor-on .chop-stage-wrap,
+body.layout-editor-on .chop-side,
+body.layout-editor-on .side-card--cut-bowl {
+  overflow: visible;
 }
 body.layout-editor-on .bowl-fill-mask {
   outline: 3px dashed rgba(27, 177, 125, 0.88);
