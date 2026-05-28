@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:171-kitchen-bowl-rim-chicken-depth] DONE - Codex: 切れ端おさらの左右上リム欠けを、皿アセット自体をフルリム・余白あり版へ差し替えて修正。`.bowl::before` の追加 inset は 0% に戻し、画像側の安全余白だけで欠けを防ぐ構造にした。鶏肉はまな板に合わせて奥行きが見える `chicken_thigh_board_depth_001.png` を生成・配置し、`chicken_marinated.imageBase` を差し替え。通常画面/エディター画面/6タップ進行を Playwright 確認、サブエージェント Raman クロスレビュー blocker/major なし。`sw.js` は v655。 (by Codex)
 - 2026-05-28 - [batch:170-mojikko-hatch-ray-overscan] DONE - Codex: もじっこファーム孵化カットインのピンク放射背景が回転中や4:3レターボックスで端に見切れる問題を修正。`.hatch-scene::before` の描画範囲を `-38%` から `-72%` へ広げ、回転アニメーションも `scale(1.08)` 固定にし、孵化中は `#stage-wrap` 側にも同じ放射背景を出してステージ外まで埋めるようにした。`sw.js` は v654。 (by Codex)
 - 2026-05-28 - [batch:169-mojikko-care-debug-controls] DONE - Codex: もじっこファームお世話画面に `?debug=1` で表示されるデバッグ調整パネルを追加。なかよし/すくすく/ぽかぽか/もじクッキー/スター/うまれた状態を直接変更でき、`タマゴ75` / `孵化直前` / `ベビー` / `初期化` の再現用プリセットも追加。`?debug=0` または「隠す」で非表示化。ローカルPlaywrightで値反映・プリセット・debug解除を確認。`sw.js` は v653。 (by Codex)
 - 2026-05-28 - [batch:168-kitchen-chicken-horizontal-swap] DONE - Codex: 唐揚げ用の切る前の鶏もも肉を、斜めではなく左から右へ長い横向き素材として GPT Image 2 built-in で再生成。`chicken_thigh_horizontal_001.png` をアプリ用 RGBA として配置し、`chicken_marinated.imageBase` を差し替え。横長比率で小さく見えないよう `ingredientTop_pct:39` / `ingredientWidth_pct:78` に調整。Playwrightで下ごしらえ→とりにく→切る画面、6タップ後の唐揚げ/保存ルート表示まで確認。`sw.js` は v652。 (by Codex)
