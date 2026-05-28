@@ -30,7 +30,7 @@
   --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --care-yard-bg: url('../assets/images/mojikko/care/yard_background.png');
-  --care-yard-bg-wide: url('../assets/images/mojikko/care/yard_background_wide.png');
+  --care-yard-bg-wide: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
   --care-house: url('../assets/images/mojikko/care/house_front.png');
   --care-rug: url('../assets/images/mojikko/care/pink_rug.png');
   --care-doghouse: url('../assets/images/mojikko/care/doghouse_and_jar.png');
@@ -100,7 +100,7 @@ html, body {
   height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
-  background: var(--care-yard-bg-wide) center / cover no-repeat;
+  background: var(--care-yard-bg-wide) right center / cover no-repeat;
   image-rendering: pixelated;
 }
 
@@ -567,8 +567,8 @@ html, body {
   position: absolute;
   left: 50%;
   bottom: 42px;
-  width: 360px;
-  height: 352px;
+  width: 330px;
+  height: 328px;
   transform: translateX(-50%);
   z-index: 5;
 }
@@ -618,8 +618,9 @@ html, body {
 .milmaru.play { animation: playHop 0.8s ease; }
 
 .milmaru.egg {
-  width: 270px;
-  height: 340px;
+  bottom: 74px;
+  width: 180px;
+  height: 232px;
   background-image: var(--care-egg-idle);
 }
 

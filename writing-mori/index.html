@@ -45,6 +45,8 @@
   --moji-milmaru-wave: url('../assets/images/mojikko/writing/milmaru_wave.png');
   --moji-milmaru-cookie: url('../assets/images/mojikko/writing/milmaru_cookie.png');
   --moji-milmaru-cheer: url('../assets/images/mojikko/writing/milmaru_cheer.png');
+  --moji-milmaru-egg: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
+  --moji-milmaru-baby: url('../assets/images/mojikko/care/milmaru_shell_baby_left.png');
   --moji-reward-box: url('../assets/images/mojikko/writing/reward_box.png');
   --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
   --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
@@ -65,7 +67,7 @@
   --moji-icon-alert: url('../assets/images/mojikko/writing/icon_alert.png');
   --moji-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --moji-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
-  --moji-bg-garden: url('../assets/images/mojikko/writing/background_garden.png');
+  --moji-bg-garden: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
   --moji-kana-tab-normal: url('../assets/images/mojikko/writing/kana_tab_normal.png');
   --moji-kana-tab-active: url('../assets/images/mojikko/writing/kana_tab_active.png');
   --moji-char-button-normal: url('../assets/images/mojikko/writing/char_button_normal.png');
@@ -104,7 +106,7 @@ html, body {
   height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
-  background: var(--moji-bg-garden) center / cover no-repeat;
+  background: var(--moji-bg-garden) right center / cover no-repeat;
   image-rendering: pixelated;
 }
 
@@ -387,7 +389,7 @@ html, body {
   top: 126px;
   bottom: 18px;
   display: grid;
-  grid-template-columns: 230px 1fr 258px;
+  grid-template-columns: 250px 1fr 258px;
   gap: 26px;
   z-index: 10;
 }
@@ -403,7 +405,7 @@ html, body {
   right: 210px;
   top: 104px;
   bottom: 12px;
-  grid-template-columns: 230px minmax(0, 1fr) 258px;
+  grid-template-columns: 250px minmax(0, 1fr) 258px;
   gap: 18px;
 }
 
@@ -555,10 +557,14 @@ html, body {
   font: inherit;
   color: inherit;
   cursor: pointer;
-  border: 0;
-  border-radius: 0;
-  background: var(--moji-companion-normal) center / 100% 100% no-repeat;
-  box-shadow: none;
+  border: 5px solid var(--wood-dark);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 22%),
+    linear-gradient(180deg, #fffaf0 0%, #fff1dc 100%);
+  box-shadow:
+    0 6px 0 #4f321e,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.28);
   image-rendering: pixelated;
   transition: transform 0.12s ease, filter 0.18s ease, box-shadow 0.18s ease;
 }
@@ -573,7 +579,6 @@ html, body {
 }
 
 .companion-card.reward-ready {
-  background-image: var(--moji-companion-reward);
   animation: careCardGlow 1.4s ease-in-out infinite;
 }
 
@@ -606,16 +611,16 @@ html, body {
 }
 
 .companion-card.reward-ready .companion-alert {
-  display: flex;
+  display: none;
 }
 
 .companion-cookie {
   position: absolute;
-  left: 18px;
-  top: 72px;
-  width: 34px;
-  height: 34px;
-  display: none;
+  left: 160px;
+  top: 15px;
+  width: 24px;
+  height: 24px;
+  display: block;
   border: 0;
   border-radius: 0;
   background: var(--moji-icon-cookie-glow) center / contain no-repeat;
@@ -629,33 +634,37 @@ html, body {
 .companion-name {
   position: absolute;
   left: 16px;
-  right: 16px;
-  top: 16px;
+  right: auto;
+  top: 17px;
   font-family: var(--pixel-font);
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 700;
-  line-height: 1.25;
-  text-align: center;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .companion-level {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  top: 48px;
-  margin-top: 4px;
+  left: 188px;
+  right: 14px;
+  top: 18px;
+  margin-top: 0;
   font-family: var(--pixel-font);
-  font-size: 16px;
+  font-size: 15px;
   color: var(--ink-soft);
-  text-align: center;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .pixel-creature {
   position: absolute;
-  left: 42px;
-  bottom: 66px;
+  left: 50%;
+  top: 122px;
+  bottom: auto;
   width: 152px;
-  height: 130px;
+  height: 142px;
+  transform: translateX(-50%);
   background: var(--moji-milmaru-wave) center bottom / contain no-repeat;
   animation: creatureIdle 1.9s ease-in-out infinite;
   image-rendering: pixelated;
@@ -671,40 +680,71 @@ html, body {
   background-image: var(--moji-milmaru-cookie);
 }
 
+.companion-card.egg-state .pixel-creature,
+.companion-card.egg-state.reward-ready .pixel-creature {
+  top: 126px;
+  width: 124px;
+  height: 154px;
+  background-image: var(--moji-milmaru-egg);
+}
+
+.companion-card.hatched-state .pixel-creature {
+  background-image: var(--moji-milmaru-baby);
+}
+
 .companion-card.celebrate .pixel-creature {
   background-image: var(--moji-milmaru-cheer);
   animation: creatureCheer 0.55s ease-in-out 5;
 }
 
+.companion-card.egg-state.celebrate .pixel-creature {
+  background-image: var(--moji-milmaru-egg);
+}
+
 @keyframes creatureIdle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
 }
 
 @keyframes creatureCheer {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  35% { transform: translateY(-18px) rotate(-5deg); }
-  70% { transform: translateY(-10px) rotate(5deg); }
+  0%, 100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
+  35% { transform: translateX(-50%) translateY(-18px) rotate(-5deg); }
+  70% { transform: translateX(-50%) translateY(-10px) rotate(5deg); }
 }
 
 .companion-speech {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 30px;
-  min-height: 42px;
+  left: 14px;
+  right: 14px;
+  top: 50px;
+  bottom: auto;
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px 5px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  padding: 7px 10px 6px;
+  border: 3px solid rgba(139, 96, 66, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.82);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35);
   font-family: var(--pixel-font);
   font-size: 15px;
   line-height: 1.28;
   text-align: center;
   white-space: pre-line;
+}
+
+.companion-speech::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  width: 20px;
+  height: 20px;
+  border-right: 3px solid rgba(139, 96, 66, 0.42);
+  border-bottom: 3px solid rgba(139, 96, 66, 0.42);
+  background: rgba(255, 253, 245, 0.92);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .center-stage {
@@ -969,16 +1009,15 @@ html, body {
 }
 
 #resetBtn {
-  width: 196px;
+  width: 250px;
+  padding-left: 62px;
+  padding-right: 16px;
   color: #5f3c22;
   background-image: var(--moji-button-retry);
 }
 
 #resetBtn::before {
-  content: '↻';
-  flex: 0 0 auto;
-  font-size: 29px;
-  line-height: 1;
+  content: none;
 }
 
 #resetBtn:active {
@@ -1553,14 +1592,17 @@ const guideSvgMaskCache = new Map();
 
 const defaultCareState = {
   nakayoshi: 32,
-  sukusuku: 18,
+  sukusuku: 0,
+  eggWarmth: 0,
+  hatched: false,
   stars: 1250,
   inventory: {
     moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
   reaction: 'normal',
-  speech: 'いっしょに もじを かこう！',
-  lastPetAt: 0
+  speech: 'まだ タマゴだよ',
+  lastPetAt: 0,
+  lastWarmAt: 0
 };
 
 let careState = loadCareState();
@@ -1578,10 +1620,13 @@ function loadCareState() {
     const merged = cloneDefaultCareState();
     merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
     merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
+    merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? Math.max(0, Math.min(100, parsed.eggWarmth)) : merged.eggWarmth;
+    merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
-    merged.speech = parsed.speech || merged.speech;
+    merged.speech = parsed.speech || (merged.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : merged.lastPetAt;
+    merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : merged.lastWarmAt;
     if (parsed.inventory && parsed.inventory.moji_cookie) {
       merged.inventory.moji_cookie.count = Math.max(0, Number(parsed.inventory.moji_cookie.count) || 0);
     }
@@ -1606,9 +1651,14 @@ function getCookieCount() {
 
 function updateCompanionCard() {
   const cookieCount = getCookieCount();
+  const hatched = careState.hatched === true;
   companionCard.classList.toggle('reward-ready', cookieCount > 0);
-  companionStatus.textContent = cookieCount > 0 ? `もじクッキー × ${cookieCount}` : 'いっしょに';
-  companionSpeech.textContent = cookieCount > 0
+  companionCard.classList.toggle('egg-state', !hatched);
+  companionCard.classList.toggle('hatched-state', hatched);
+  companionStatus.textContent = `× ${cookieCount}`;
+  companionSpeech.textContent = !hatched
+    ? 'タマゴを\nあたためよう！'
+    : cookieCount > 0
     ? 'もじクッキーを\nあげにいこう！'
     : 'いっしょに\nもじを かこう！';
 }
@@ -2958,7 +3008,7 @@ function completeWriting(manual, summary) {
   renderStrokeOrder();
   updateCharacterButtons();
   writingBoard.classList.add('success');
-  companionCard.classList.add('celebrate');
+  companionCard.classList.toggle('celebrate', careState.hatched === true);
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
   resultReward.textContent = `${item.reward.name}を ゲット！`;
   modalRetryBtn.textContent = `つぎは「${writingCharacters[(currentIndex + 1) % writingCharacters.length].char}」`;
@@ -2987,7 +3037,7 @@ function onWritingComplete(result) {
   careState.inventory.moji_cookie.count += 1;
   careState.sukusuku = Math.min(100, Math.max(0, careState.sukusuku + 3));
   careState.stars = stars;
-  careState.speech = 'おやつ ほしいな〜';
+  careState.speech = careState.hatched ? 'おやつ ほしいな〜' : 'タマゴを あたためよう！';
   try {
     localStorage.removeItem(PENDING_REWARD_KEY);
   } catch (error) {
