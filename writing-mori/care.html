@@ -121,7 +121,7 @@ html, body {
 }
 
 #stage-wrap.hatch-active::before {
-  opacity: 1;
+  opacity: 0;
   animation: hatchRaySpin 5.2s linear infinite;
 }
 
@@ -136,6 +136,14 @@ html, body {
   overflow: hidden;
   background: var(--care-yard-bg-wide) right center / cover no-repeat;
   image-rendering: pixelated;
+}
+
+#stage.hatch-active {
+  overflow: visible;
+}
+
+#stage.hatch-active::before {
+  display: none;
 }
 
 #stage::before {
@@ -368,38 +376,84 @@ html, body {
 }
 
 .item-card {
-  min-height: 104px;
-  padding: 14px;
+  min-height: 86px;
+  padding: 12px;
   display: grid;
-  grid-template-columns: 58px 1fr;
-  gap: 14px;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
   align-items: center;
   border: 3px solid rgba(139, 96, 66, 0.38);
   border-radius: 10px;
   background: rgba(255,255,255,0.48);
 }
 
-.cookie-icon {
-  width: 56px;
-  height: 56px;
+.cookie-icon,
+.milk-icon,
+.power-icon {
+  position: relative;
+  width: 50px;
+  height: 50px;
   border: 0;
   border-radius: 0;
-  background: var(--care-icon-cookie) center / contain no-repeat;
   box-shadow: none;
   image-rendering: pixelated;
 }
 
+.cookie-icon {
+  background: var(--care-icon-cookie) center / contain no-repeat;
+}
+
+.milk-icon {
+  width: 42px;
+  height: 56px;
+  justify-self: center;
+  border: 4px solid #9f7655;
+  border-radius: 8px 8px 12px 12px;
+  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
+  box-shadow: inset 0 4px rgba(255,255,255,0.75), 0 3px 0 rgba(111,70,44,0.25);
+}
+
+.milk-icon::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -10px;
+  height: 12px;
+  border: 4px solid #9f7655;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: #d7f1ed;
+}
+
+.power-icon {
+  display: grid;
+  place-items: center;
+  border: 4px solid #d89140;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff6b5, #f2b65d);
+}
+
+.power-icon::before {
+  content: '✦';
+  color: #fff8db;
+  font-family: var(--pixel-font);
+  font-size: 31px;
+  line-height: 1;
+  text-shadow: 2px 2px #b96d34;
+}
+
 .item-name {
   font-family: var(--round-font);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
   line-height: 1.25;
 }
 
 .item-count {
-  margin-top: 8px;
+  margin-top: 6px;
   font-family: var(--pixel-font);
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .locked-slot {
@@ -673,42 +727,42 @@ html, body {
 .milmaru.baby {
   width: 318px;
   height: 322px;
-  background-image: var(--care-headshell-baby-happy);
+  background-image: var(--care-shell-baby-happy);
 }
 
 .milmaru.baby.normal {
-  background-image: var(--care-headshell-baby-happy);
+  background-image: var(--care-shell-baby-happy);
 }
 
 .milmaru.baby.happy,
 .milmaru.baby.eating,
 .milmaru.baby.play,
 .milmaru.baby.birth {
-  background-image: var(--care-headshell-baby-happy);
+  background-image: var(--care-shell-baby-happy);
 }
 
 .milmaru.baby.relaxed {
-  background-image: var(--care-headshell-baby-happy);
+  background-image: var(--care-shell-baby-sleep);
 }
 
 .milmaru.baby.cry {
-  background-image: var(--care-headshell-baby-cry);
+  background-image: var(--care-shell-baby-cry);
 }
 
 .milmaru.baby.bigcry {
-  background-image: var(--care-headshell-baby-bigcry);
+  background-image: var(--care-shell-baby-bigcry);
 }
 
 .milmaru.baby.angry {
-  background-image: var(--care-headshell-baby-angry);
+  background-image: var(--care-shell-baby-angry);
 }
 
 .milmaru.baby.disappointed {
-  background-image: var(--care-headshell-baby-disappointed);
+  background-image: var(--care-shell-baby-disappointed);
 }
 
 .milmaru.baby.worried {
-  background-image: var(--care-headshell-baby-worried);
+  background-image: var(--care-shell-baby-worried);
 }
 
 .milmaru.egg.warm {
@@ -778,7 +832,7 @@ html, body {
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  background: #ffd6e1;
+  background: transparent;
   transition: opacity 0.18s ease, visibility 0.18s ease;
 }
 
@@ -786,6 +840,7 @@ html, body {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+  overflow: visible;
 }
 
 .hatch-scene::before {
@@ -807,7 +862,7 @@ html, body {
 .hatch-scene::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -72%;
   background:
     radial-gradient(circle at center, rgba(255,255,255,0.84) 0 12%, rgba(255,255,255,0.26) 27%, rgba(255,255,255,0) 58%),
     radial-gradient(circle at center, rgba(255,152,185,0) 0 44%, rgba(181,75,111,0.16) 100%);
@@ -871,7 +926,7 @@ html, body {
 .hatch-scene.phase-born .hatch-sprite {
   width: 430px;
   height: 430px;
-  background-image: var(--care-headshell-baby-happy);
+  background-image: var(--care-shell-baby-happy);
   animation: hatchBabyBounce 0.9s cubic-bezier(.2,1.5,.3,1) both;
 }
 
@@ -1035,7 +1090,7 @@ html, body {
 
 .sub-action-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
@@ -1096,6 +1151,11 @@ html, body {
   text-shadow: none;
 }
 
+.write-main-btn.needs-power {
+  background: linear-gradient(180deg, #e4f7c9, #8ed067);
+  border-color: #6c8f3c;
+}
+
 .action-help {
   font-family: var(--round-font);
   font-size: 16px;
@@ -1111,6 +1171,10 @@ html, body {
 .action-btn.pet { background: linear-gradient(180deg, #ffe0df, #f4a9a5); }
 .action-btn.play { background: linear-gradient(180deg, #cdeefe, #75c4e5); }
 .action-btn.write { background: linear-gradient(180deg, #e0f4c9, #9ed572); }
+
+.action-btn.power-empty {
+  filter: saturate(0.72) brightness(0.92);
+}
 
 .action-btn.feed.has-cookie {
   background: linear-gradient(180deg, #ffe6a2, #f2a64f);
@@ -1135,10 +1199,6 @@ html, body {
   box-shadow: 0 3px 0 #8d4b3a;
 }
 
-.action-btn.play {
-  display: none;
-}
-
 .care-actions.egg-mode {
   left: 480px;
   right: 480px;
@@ -1159,6 +1219,10 @@ html, body {
 .action-btn.feed .action-icon { background-image: var(--care-icon-cookie); }
 .action-btn.pet .action-icon { background-image: var(--care-icon-heart); }
 .action-btn.play .action-icon { background-image: var(--care-icon-star); }
+.action-btn.feed.milk .action-icon {
+  color: #4f3825;
+  background-image: none;
+}
 
 .bottom-message {
   position: absolute;
@@ -1281,14 +1345,26 @@ html, body {
       <div class="panel-heading">もちもの</div>
       <div class="panel-body">
         <div class="item-card">
+          <div class="milk-icon" aria-hidden="true"></div>
+          <div>
+            <div class="item-name">もじミルク</div>
+            <div class="item-count">× <span id="milkCount">0</span></div>
+          </div>
+        </div>
+        <div class="item-card">
           <div class="cookie-icon" aria-hidden="true"></div>
           <div>
             <div class="item-name">もじクッキー</div>
             <div class="item-count">× <span id="cookieCount">1</span></div>
           </div>
         </div>
-        <div class="locked-slot">🔒</div>
-        <div class="locked-slot">🔒</div>
+        <div class="item-card">
+          <div class="power-icon" aria-hidden="true"></div>
+          <div>
+            <div class="item-name">もじパワー</div>
+            <div class="item-count">× <span id="mojiPowerCount">0</span></div>
+          </div>
+        </div>
         <button class="pixel-button album-btn" id="inventoryBtn">もちものをみる</button>
       </div>
     </aside>
@@ -1373,6 +1449,8 @@ html, body {
       <label class="debug-row">なかよし<input id="debugNakayoshi" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">すくすく<input id="debugSukusuku" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">ぽかぽか<input id="debugEggWarmth" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">パワー<input id="debugMojiPower" type="number" min="0" max="99" step="1"></label>
+      <label class="debug-row">ミルク<input id="debugMilkCount" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">クッキー<input id="debugCookieCount" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">スター<input id="debugStars" type="number" min="0" max="99999" step="25"></label>
       <label class="debug-row checkbox">うまれた<input id="debugHatched" type="checkbox"></label>
@@ -1407,7 +1485,9 @@ const defaultState = {
   hatched: false,
   stars: 1250,
   inventory: {
-    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
+    moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
+    moji_power: { id: 'moji_power', name: 'もじパワー', count: 0, type: 'energy' }
   },
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
@@ -1422,6 +1502,17 @@ const growthStages = [
   { id: 'kids', name: 'キッズ', icon: '⭐', min: 50, next: 80 },
   { id: 'pre_evolution', name: 'しんかまえ', icon: '✨', min: 80, next: 100 }
 ];
+
+const careFoods = {
+  moji_milk: { id: 'moji_milk', name: 'もじミルク', gainNakayoshi: 4, gainSukusuku: 4 },
+  moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', gainNakayoshi: 5, gainSukusuku: 2 }
+};
+
+const actionPowerCost = {
+  warm: 1,
+  pet: 1,
+  play: 2
+};
 
 let state = loadState();
 
@@ -1544,8 +1635,12 @@ function loadState() {
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
-    if (parsed.inventory && parsed.inventory.moji_cookie) {
-      merged.inventory.moji_cookie.count = Math.max(0, Number(parsed.inventory.moji_cookie.count) || 0);
+    if (parsed.inventory) {
+      Object.keys(merged.inventory).forEach((id) => {
+        if (parsed.inventory[id]) {
+          merged.inventory[id].count = Math.max(0, Number(parsed.inventory[id].count) || 0);
+        }
+      });
     }
     return merged;
   } catch (error) {
@@ -1591,6 +1686,46 @@ function getCareStage() {
   return getGrowthStage(Math.max(10, state.sukusuku));
 }
 
+function getInventoryCount(id) {
+  const item = state.inventory[id];
+  return item ? Math.max(0, Number(item.count) || 0) : 0;
+}
+
+function changeInventory(id, delta) {
+  if (!state.inventory[id]) return 0;
+  state.inventory[id].count = clamp(getInventoryCount(id) + delta, 0, 99);
+  return state.inventory[id].count;
+}
+
+function getPreferredFood() {
+  if (!state.hatched) return careFoods.moji_milk;
+  const stage = getCareStage();
+  return stage.id === 'baby' ? careFoods.moji_milk : careFoods.moji_cookie;
+}
+
+function hasMojiPower(cost = 1) {
+  return getInventoryCount('moji_power') >= cost;
+}
+
+function showNeedWritingMessage(cost = 1) {
+  playSfx('mistake');
+  const shortage = Math.max(1, cost - getInventoryCount('moji_power'));
+  setSpeech('もじパワーが たりないよ', `あと ${shortage}かい もじをかくと、おせわが できるよ。`);
+  setReaction(state.hatched ? 'worried' : 'relaxed', 1200);
+  spawnFx('sparkle');
+  saveState();
+  render();
+}
+
+function spendMojiPower(cost, reason) {
+  if (!hasMojiPower(cost)) {
+    showNeedWritingMessage(cost);
+    return false;
+  }
+  changeInventory('moji_power', -cost);
+  return true;
+}
+
 function getNextGrowthProgress(sukusuku) {
   const stage = getGrowthStage(sukusuku);
   const max = stage.next;
@@ -1607,17 +1742,33 @@ function getEggVisualClass() {
 }
 
 function renderActionMode() {
+  const power = getInventoryCount('moji_power');
+  const preferredFood = getPreferredFood();
+  const preferredFoodCount = getInventoryCount(preferredFood.id);
   careActions.classList.toggle('egg-mode', !state.hatched);
-  writeBtn.classList.toggle('warm-main', !state.hatched);
+  writeBtn.classList.toggle('warm-main', !state.hatched && power > 0);
+  writeBtn.classList.toggle('needs-power', !state.hatched && power <= 0);
   if (state.hatched) {
     mainActionIcon.textContent = '';
     mainActionText.textContent = 'もじを かく！';
-    mainActionHelp.textContent = 'もじを かいて おやつを もらおう！';
+    mainActionHelp.textContent = 'もじを かいて おせわの もとを もらおう！';
   } else {
-    mainActionIcon.textContent = '';
-    mainActionText.textContent = 'あたためる！';
-    mainActionHelp.textContent = 'やさしく ぽかぽか してあげよう';
+    mainActionIcon.textContent = power > 0 ? '' : '✏';
+    mainActionText.textContent = power > 0 ? 'あたためる！' : 'もじを かく！';
+    mainActionHelp.textContent = power > 0 ? 'もじパワーを 1つ つかう' : 'かくと あたためられるよ';
   }
+  feedBtn.classList.toggle('milk', state.hatched && preferredFood.id === 'moji_milk');
+  feedBtn.classList.toggle('has-cookie', state.hatched && preferredFoodCount > 0);
+  feedBtn.querySelector('.action-icon').textContent = state.hatched && preferredFood.id === 'moji_milk' ? '🍼' : '';
+  feedBtn.querySelector('.action-help').textContent = state.hatched
+    ? `${preferredFood.name}を あげる`
+    : 'うまれてから あげよう';
+  const petButton = document.getElementById('petBtn');
+  const playButton = document.getElementById('playBtn');
+  petButton.classList.toggle('power-empty', !hasMojiPower(actionPowerCost.pet));
+  playButton.classList.toggle('power-empty', !hasMojiPower(actionPowerCost.play));
+  petButton.querySelector('.action-help').textContent = 'もじパワー1で なでる';
+  playButton.querySelector('.action-help').textContent = 'もじパワー2で あそぶ';
 }
 
 function applyMilmaruClass(reaction) {
@@ -1674,6 +1825,7 @@ function clearHatchSceneTimers() {
 
 function setHatchScenePhase(phase, copy, subcopy) {
   stageWrap.classList.add('hatch-active');
+  stageEl.classList.add('hatch-active');
   hatchScene.className = `hatch-scene show phase-${phase}`;
   hatchScene.setAttribute('aria-hidden', 'false');
   hatchCopy.textContent = copy;
@@ -1682,6 +1834,7 @@ function setHatchScenePhase(phase, copy, subcopy) {
 
 function hideHatchScene() {
   stageWrap.classList.remove('hatch-active');
+  stageEl.classList.remove('hatch-active');
   hatchScene.className = 'hatch-scene';
   hatchScene.setAttribute('aria-hidden', 'true');
 }
@@ -1706,8 +1859,8 @@ function startHatchScene() {
     state.hatched = true;
     state.sukusuku = Math.max(10, state.sukusuku);
     state.reaction = 'birth';
-    setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！つぎは もじを かいて おやつを もらおう。');
-    setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'こんにちは！これから いっしょに もじを かこう');
+    setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！もじミルクを あげてみよう。');
+    setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'こんにちは！もじミルクが だいすきだよ');
     spawnFx('sparkle');
     saveState();
     render();
@@ -1721,7 +1874,7 @@ function startHatchScene() {
 
   queueHatchStep(5900, () => {
     if (state.reaction === 'normal') {
-      setSpeech('いっしょに もじを かこう！', 'もじを かくと、ミルマルに あげる おやつが もらえるよ。');
+      setSpeech('いっしょに もじを かこう！', 'もじを かくと、もじミルクと もじパワーが もらえるよ。');
       saveState();
       render();
     }
@@ -1746,6 +1899,7 @@ function maybeHatchEgg() {
 function warmEgg() {
   const now = Date.now();
   if (now - state.lastWarmAt < 650) return;
+  if (!spendMojiPower(actionPowerCost.warm, 'warm')) return;
   playSfx('warm');
   state.lastWarmAt = now;
   state.eggWarmth = clamp(state.eggWarmth + 25, 0, 100);
@@ -1779,7 +1933,6 @@ function render() {
   state.nakayoshi = clamp(state.nakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku, 0, 100);
   state.eggWarmth = clamp(state.eggWarmth || 0, 0, 100);
-  const cookie = state.inventory.moji_cookie;
   const stage = getCareStage();
   const progress = state.hatched
     ? getNextGrowthProgress(Math.max(10, state.sukusuku))
@@ -1794,8 +1947,10 @@ function render() {
   document.getElementById('sukusukuText').textContent = state.hatched ? `${state.sukusuku} / 100` : `${state.eggWarmth} / 100`;
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
   document.getElementById('sukusukuFill').style.width = `${state.hatched ? state.sukusuku : state.eggWarmth}%`;
-  document.getElementById('cookieCount').textContent = String(cookie.count);
-  feedBtn.classList.toggle('has-cookie', state.hatched && cookie.count > 0);
+  document.getElementById('milkCount').textContent = String(getInventoryCount('moji_milk'));
+  document.getElementById('cookieCount').textContent = String(getInventoryCount('moji_cookie'));
+  document.getElementById('mojiPowerCount').textContent = String(getInventoryCount('moji_power'));
+  feedBtn.classList.toggle('has-cookie', state.hatched && getInventoryCount(getPreferredFood().id) > 0);
   document.getElementById('growthStageName').textContent = stage.name;
   document.getElementById('stageLabel').textContent = stage.name;
   document.getElementById('growthFill').style.width = `${progress.percent}%`;
@@ -1804,7 +1959,7 @@ function render() {
     : `ぽかぽか ${progress.current} / ${progress.max}`;
   document.getElementById('growthHint').textContent = state.hatched
     ? (writingCount > 0 ? `あと ${writingCount}かいで せいちょう！` : 'もうすぐ せいちょう！')
-    : (warmCount > 0 ? `あと ${warmCount}かい あたためよう！` : 'もうすぐ うまれるよ！');
+    : (getInventoryCount('moji_power') <= 0 ? 'もじを かくと あたためられるよ！' : (warmCount > 0 ? `あと ${warmCount}かい あたためよう！` : 'もうすぐ うまれるよ！'));
   document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
   document.getElementById('memoLine1').textContent = state.hatched ? 'やさしくて、がんばりやさん。' : 'タマゴの なかで すやすや。';
   document.getElementById('memoLine2').textContent = state.hatched ? 'ミルクのにおいが だいすき！' : 'ぽかぽかが だいすき！';
@@ -1820,7 +1975,9 @@ function renderDebugPanel() {
   document.getElementById('debugNakayoshi').value = String(state.nakayoshi);
   document.getElementById('debugSukusuku').value = String(state.sukusuku);
   document.getElementById('debugEggWarmth').value = String(state.eggWarmth);
-  document.getElementById('debugCookieCount').value = String(state.inventory.moji_cookie.count);
+  document.getElementById('debugMojiPower').value = String(getInventoryCount('moji_power'));
+  document.getElementById('debugMilkCount').value = String(getInventoryCount('moji_milk'));
+  document.getElementById('debugCookieCount').value = String(getInventoryCount('moji_cookie'));
   document.getElementById('debugStars').value = String(state.stars);
   document.getElementById('debugHatched').checked = state.hatched;
 }
@@ -1843,6 +2000,8 @@ function applyDebugState(next = {}) {
   state.nakayoshi = next.nakayoshi ?? readDebugNumber('debugNakayoshi', 0, 100);
   state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
   state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
+  state.inventory.moji_power.count = next.mojiPower ?? readDebugNumber('debugMojiPower', 0, 99);
+  state.inventory.moji_milk.count = next.milk ?? readDebugNumber('debugMilkCount', 0, 99);
   state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
   state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
   state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
@@ -1873,17 +2032,17 @@ function consumePendingWritingReward() {
     console.warn('Could not consume writing reward:', error);
   }
   if (!pending || !pending.result || !pending.result.success) return false;
-  const reward = pending.result.reward || { type: 'food', id: 'moji_cookie', name: 'もじクッキー' };
-  if (reward.id === 'moji_cookie') {
-    state.inventory.moji_cookie.count += 1;
+  const reward = pending.result.reward || getPreferredFood();
+  if (state.inventory[reward.id]) {
+    changeInventory(reward.id, 1);
   }
-  state.sukusuku = clamp(state.sukusuku + 3, 0, 100);
+  changeInventory('moji_power', 1);
   state.stars += 25;
   if (state.hatched) {
-    setSpeech(`${reward.name || 'もじクッキー'}を もらったよ！`, 'かいた もじが おやつに なったよ。ミルマルに あげてみよう！');
+    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, 'もじパワーも たまったよ。ミルマルに おせわを してみよう！');
     setReaction('happy');
   } else {
-    setSpeech(`${reward.name || 'もじクッキー'}を もらったよ！`, 'タマゴを あたためたら、うまれた ミルマルに あげよう。');
+    setSpeech('もじパワーが たまったよ！', 'タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
     setReaction('warm');
   }
   spawnFx('sparkle');
@@ -1895,38 +2054,43 @@ function applyEntrySpeech() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('from') !== 'writing') return;
   if (!state.hatched) {
-    setSpeech('タマゴを あたためよう！', 'ぽかぽか すると、ミルマルが うまれてくるよ。');
+    if (getInventoryCount('moji_power') > 0) {
+      setSpeech('タマゴを あたためよう！', 'もじパワーを つかって、ぽかぽか してあげよう。');
+    } else {
+      setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる パワーが たまるよ。');
+    }
     saveState();
     return;
   }
-  if (state.inventory.moji_cookie.count > 0) {
-    setSpeech('おやつ ほしいな〜', 'もじクッキーを あげたら、ミルマルが よろこぶよ。');
+  const food = getPreferredFood();
+  if (getInventoryCount(food.id) > 0) {
+    setSpeech(`${food.name} ほしいな〜`, `${food.name}を あげたら、ミルマルが よろこぶよ。`);
   } else {
-    setSpeech('いっしょに もじを かこう！', 'おやつが ないときは、もじを かいて もらいにいこう！');
+    setSpeech('いっしょに もじを かこう！', `もじを かくと、${food.name}と もじパワーが もらえるよ。`);
   }
   saveState();
 }
 
 function feedCookie() {
   if (!state.hatched) {
-    playSfx('warm');
-    setSpeech('まだ タマゴだよ', '先に あたためて、ミルマルを うまれさせよう。');
-    setReaction('warm');
+    playSfx('mistake');
+    setSpeech('まだ タマゴだよ', 'いまは もじパワーで あたためてあげよう。ミルクは うまれてからね。');
+    setReaction('relaxed');
     spawnFx('sparkle');
     return;
   }
-  const cookie = state.inventory.moji_cookie;
-  if (cookie.count <= 0) {
+  const food = getPreferredFood();
+  if (getInventoryCount(food.id) <= 0) {
     playSfx('mistake');
-    setSpeech('おやつが ないみたい。', 'もじを かいて もじクッキーを もらいにいこう！');
-    setReaction('normal');
+    setSpeech(`${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
+    setReaction('cry', 1200);
     return;
   }
-  cookie.count -= 1;
+  changeInventory(food.id, -1);
   playSfx('feed');
-  state.nakayoshi = clamp(state.nakayoshi + 5, 0, 100);
-  state.sukusuku = clamp(state.sukusuku + 2, 0, 100);
-  setSpeech('おいしい！ ありがとう！', 'もじクッキーを あげたよ。なかよしと すくすくが ふえた！');
+  state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
+  state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
+  setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', `${food.name}を あげたよ。なかよしと すくすくが ふえた！`);
   setReaction('eating');
   spawnFx('sparkle');
   saveState();
@@ -1936,6 +2100,7 @@ function feedCookie() {
 function petMilmaru() {
   const now = Date.now();
   if (now - state.lastPetAt < 700) return;
+  if (!spendMojiPower(actionPowerCost.pet, 'pet')) return;
   playSfx('pet');
   state.lastPetAt = now;
   state.nakayoshi = clamp(state.nakayoshi + 2, 0, 100);
@@ -1959,13 +2124,15 @@ function petMilmaru() {
 function playWithMilmaru() {
   if (!state.hatched) {
     playSfx('mistake');
-    setSpeech('まだ タマゴだよ', 'いまは あたためるのが いちばん だいじ。');
+    setSpeech('まだ タマゴだよ', 'いまは もじパワーで あたためるのが いちばん だいじ。');
     setReaction('warm');
     spawnFx('sparkle');
     return;
   }
+  if (!spendMojiPower(actionPowerCost.play, 'play')) return;
   playSfx('play');
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
+  state.sukusuku = clamp(state.sukusuku + 1, 0, 100);
   setSpeech('いっしょに あそぶの たのしい！', 'ミルマルが ぴょんぴょん はねたよ。');
   setReaction('play');
   spawnFx('sparkle');
@@ -1975,7 +2142,16 @@ function playWithMilmaru() {
 
 function goWrite() {
   if (!state.hatched) {
-    warmEgg();
+    if (hasMojiPower(actionPowerCost.warm)) {
+      warmEgg();
+      return;
+    }
+    playSfx('select');
+    setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる パワーが たまるよ。');
+    saveState();
+    setTimeout(() => {
+      window.location.href = 'index.html?from=care';
+    }, 180);
     return;
   }
   playSfx('select');
@@ -1995,6 +2171,7 @@ function setupDebugControls() {
     hatched: false,
     eggWarmth: 75,
     sukusuku: 0,
+    mojiPower: 1,
     speech: 'まだ タマゴだよ',
     message: 'あと 1かい あたためると 孵化演出を確認できるよ。'
   }));
@@ -2002,6 +2179,7 @@ function setupDebugControls() {
     hatched: false,
     eggWarmth: 99,
     sukusuku: 0,
+    mojiPower: 1,
     speech: 'まだ タマゴだよ',
     message: 'あたためると すぐ孵化演出に入るよ。'
   }));
@@ -2009,6 +2187,8 @@ function setupDebugControls() {
     hatched: true,
     eggWarmth: 100,
     sukusuku: Math.max(10, state.sukusuku),
+    milk: Math.max(1, getInventoryCount('moji_milk')),
+    mojiPower: Math.max(1, getInventoryCount('moji_power')),
     speech: 'いっしょに もじを かこう！',
     message: 'ベビー状態にしたよ。'
   }));
@@ -2034,7 +2214,7 @@ document.getElementById('settingsBtn').addEventListener('click', () => {
   setSpeech('せっていは じゅんびちゅうだよ', 'また あとで つかえるようにするね。');
 });
 document.getElementById('inventoryBtn').addEventListener('click', () => {
-  setSpeech('もちものは ここで みられるよ', 'いまは もじクッキーだけ もっているよ。');
+  setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・クッキー・もじパワーが ふえるよ。');
 });
 document.getElementById('albumBtn').addEventListener('click', () => {
   setSpeech('アルバムは じゅんびちゅう！', 'かいた もじを あとで ならべよう。');

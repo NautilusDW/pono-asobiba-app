@@ -46,7 +46,7 @@
   --moji-milmaru-cookie: url('../assets/images/mojikko/writing/milmaru_cookie.png');
   --moji-milmaru-cheer: url('../assets/images/mojikko/writing/milmaru_cheer.png');
   --moji-milmaru-egg: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
-  --moji-milmaru-baby: url('../assets/images/mojikko/care/milmaru_headshell_baby_happy.png');
+  --moji-milmaru-baby: url('../assets/images/mojikko/care/milmaru_shell_baby_happy.png');
   --moji-reward-box: url('../assets/images/mojikko/writing/reward_box.png');
   --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
   --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
@@ -1217,6 +1217,7 @@ html, body {
 }
 
 .food-pixel {
+  position: relative;
   width: 42px;
   height: 42px;
   border: 0;
@@ -1224,6 +1225,28 @@ html, body {
   background: var(--moji-icon-cookie) center / contain no-repeat;
   box-shadow: none;
   image-rendering: pixelated;
+}
+
+.food-pixel.milk {
+  width: 34px;
+  height: 46px;
+  border: 3px solid #9f7655;
+  border-radius: 7px 7px 10px 10px;
+  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
+  box-shadow: inset 0 3px rgba(255,255,255,0.75), 0 2px 0 rgba(111,70,44,0.25);
+}
+
+.food-pixel.milk::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: -8px;
+  height: 10px;
+  border: 3px solid #9f7655;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: #d7f1ed;
 }
 
 .result-overlay {
@@ -1453,7 +1476,7 @@ html, body {
         <div class="reward-box">
           <div class="reward-title">ごほうび</div>
           <div class="reward-item">
-            <span class="food-pixel" aria-hidden="true"></span>
+            <span class="food-pixel" id="rewardIcon" aria-hidden="true"></span>
             <span id="rewardName">もじクッキー</span>
           </div>
         </div>
@@ -1466,7 +1489,7 @@ html, body {
         <div class="result-title">すごい！</div>
         <div class="result-copy">じょうずに かけたね！</div>
         <div class="reward-large">
-          <span class="food-pixel" aria-hidden="true"></span>
+          <span class="food-pixel" id="resultRewardIcon" aria-hidden="true"></span>
           <span id="resultReward">もじクッキーを ゲット！</span>
         </div>
         <div class="result-actions">
@@ -1550,8 +1573,10 @@ const writingBoard = document.getElementById('writingBoard');
 const promptText = document.getElementById('promptText');
 const messageBox = document.getElementById('messageBox');
 const strokeListEl = document.getElementById('strokeList');
+const rewardIconEl = document.getElementById('rewardIcon');
 const rewardNameEl = document.getElementById('rewardName');
 const resultOverlay = document.getElementById('resultOverlay');
+const resultRewardIcon = document.getElementById('resultRewardIcon');
 const resultReward = document.getElementById('resultReward');
 const resultBurst = document.getElementById('resultBurst');
 const modalRetryBtn = document.getElementById('modalRetryBtn');
@@ -1607,12 +1632,19 @@ const defaultCareState = {
   hatched: false,
   stars: 1250,
   inventory: {
-    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
+    moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
+    moji_power: { id: 'moji_power', name: 'もじパワー', count: 0, type: 'energy' }
   },
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
   lastPetAt: 0,
   lastWarmAt: 0
+};
+
+const careFoodRewards = {
+  moji_milk: { type: 'food', id: 'moji_milk', name: 'もじミルク' },
+  moji_cookie: { type: 'food', id: 'moji_cookie', name: 'もじクッキー' }
 };
 
 let careState = loadCareState();
@@ -1717,8 +1749,12 @@ function loadCareState() {
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : merged.lastPetAt;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : merged.lastWarmAt;
-    if (parsed.inventory && parsed.inventory.moji_cookie) {
-      merged.inventory.moji_cookie.count = Math.max(0, Number(parsed.inventory.moji_cookie.count) || 0);
+    if (parsed.inventory) {
+      Object.keys(merged.inventory).forEach((id) => {
+        if (parsed.inventory[id]) {
+          merged.inventory[id].count = Math.max(0, Number(parsed.inventory[id].count) || 0);
+        }
+      });
     }
     return merged;
   } catch (error) {
@@ -1736,20 +1772,52 @@ function saveCareState() {
 }
 
 function getCookieCount() {
-  return Math.max(0, Number(careState.inventory.moji_cookie.count) || 0);
+  return getInventoryCount('moji_cookie');
+}
+
+function getInventoryCount(id) {
+  const item = careState.inventory[id];
+  return item ? Math.max(0, Number(item.count) || 0) : 0;
+}
+
+function changeInventory(id, delta) {
+  if (!careState.inventory[id]) return 0;
+  careState.inventory[id].count = Math.max(0, Math.min(99, getInventoryCount(id) + delta));
+  return careState.inventory[id].count;
+}
+
+function getCurrentCareStageId() {
+  if (!careState.hatched) return 'egg';
+  if (careState.sukusuku < 25) return 'baby';
+  if (careState.sukusuku < 50) return 'yochiyochi';
+  if (careState.sukusuku < 80) return 'kids';
+  return 'pre_evolution';
+}
+
+function getCurrentWritingReward() {
+  return getCurrentCareStageId() === 'baby' || getCurrentCareStageId() === 'egg'
+    ? careFoodRewards.moji_milk
+    : careFoodRewards.moji_cookie;
+}
+
+function setFoodIconClass(iconEl, reward) {
+  if (!iconEl || !reward) return;
+  iconEl.classList.toggle('milk', reward.id === 'moji_milk');
 }
 
 function updateCompanionCard() {
-  const cookieCount = getCookieCount();
+  const reward = getCurrentWritingReward();
+  const foodCount = getInventoryCount(reward.id);
+  const powerCount = getInventoryCount('moji_power');
   const hatched = careState.hatched === true;
-  companionCard.classList.toggle('reward-ready', cookieCount > 0);
+  companionCard.classList.toggle('reward-ready', foodCount > 0 || powerCount > 0);
   companionCard.classList.toggle('egg-state', !hatched);
   companionCard.classList.toggle('hatched-state', hatched);
-  companionStatus.textContent = `× ${cookieCount}`;
+  companionStatus.textContent = !hatched ? `✦ ${powerCount}` : `× ${foodCount}`;
   companionSpeech.textContent = !hatched
-    ? 'タマゴを\nあたためよう！'
-    : cookieCount > 0
-    ? 'もじクッキーを\nあげにいこう！'
+    ? (powerCount > 0 ? 'タマゴを\nあたためよう！' : 'もじをかくと\nぽかぽか！')
+    : foodCount > 0
+    ? `${reward.name}を\nあげにいこう！`
     : 'いっしょに\nもじを かこう！';
 }
 
@@ -2661,8 +2729,10 @@ function resetWriting() {
   resultOverlay.classList.remove('show');
   companionCard.classList.remove('celebrate');
   const item = getCurrentCharacter();
+  const reward = getCurrentWritingReward();
   promptText.textContent = `「${item.char}」を かいてみよう！`;
-  rewardNameEl.textContent = item.reward.name;
+  rewardNameEl.textContent = reward.name;
+  setFoodIconClass(rewardIconEl, reward);
   setMessage('ドットの もじを なぞってね', 'ゆっくりで だいじょうぶ');
   renderStrokeOrder();
   buildCharacterList();
@@ -3196,7 +3266,9 @@ function completeWriting(manual, summary) {
   writingBoard.classList.add('success');
   companionCard.classList.toggle('celebrate', careState.hatched === true);
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
-  resultReward.textContent = `${item.reward.name}を ゲット！`;
+  const reward = getCurrentWritingReward();
+  resultReward.textContent = `${reward.name}と もじパワーを ゲット！`;
+  setFoodIconClass(resultRewardIcon, reward);
   modalRetryBtn.textContent = `つぎは「${writingCharacters[(currentIndex + 1) % writingCharacters.length].char}」`;
   stars += 25;
   starCountEl.textContent = String(stars);
@@ -3208,7 +3280,7 @@ function completeWriting(manual, summary) {
     success: true,
     accuracy: calculateAccuracy(item),
     strokesCompleted: Math.min(item.strokes, Math.max(strokesCompleted, summary && summary.totalStrokes || 0)),
-    reward: item.reward
+    reward
   };
   onWritingComplete(result);
 
@@ -3220,10 +3292,13 @@ function completeWriting(manual, summary) {
 function onWritingComplete(result) {
   console.log('writing complete', result);
   careState = loadCareState();
-  careState.inventory.moji_cookie.count += 1;
-  careState.sukusuku = Math.min(100, Math.max(0, careState.sukusuku + 3));
+  const reward = result.reward || getCurrentWritingReward();
+  if (careState.inventory[reward.id]) {
+    changeInventory(reward.id, 1);
+  }
+  changeInventory('moji_power', 1);
   careState.stars = stars;
-  careState.speech = careState.hatched ? 'おやつ ほしいな〜' : 'タマゴを あたためよう！';
+  careState.speech = careState.hatched ? `${reward.name} ほしいな〜` : 'タマゴを あたためよう！';
   try {
     localStorage.removeItem(PENDING_REWARD_KEY);
   } catch (error) {
