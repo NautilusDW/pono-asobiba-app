@@ -3017,6 +3017,21 @@ body.layout-editor-on .egg-glass-lid {
   max-width: 96%;
   max-height: 118%;
 }
+#fry-stage[data-ingredient="chicken_marinated"]:not(.food-placed):not(.is-served) .cooking-food.has-piece-set {
+  left: 17.8%;
+  top: 68.3%;
+  width: 28%;
+  height: 22%;
+}
+#fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food.has-piece-set {
+  width: 31%;
+  height: 24%;
+}
+#fry-stage[data-ingredient="chicken_marinated"].is-served .cooking-food.has-piece-set {
+  top: 64.5%;
+  width: 38%;
+  height: 28%;
+}
 #fry-stage[data-ingredient="chicken_marinated"][data-cook-piece-index="0"]:not(.food-placed):not(.is-served) .cooking-food {
   left: 12.2%;
   top: 62.7%;
@@ -3064,6 +3079,36 @@ body.layout-editor-on .egg-glass-lid {
   user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
+}
+.cooking-food.has-piece-set {
+  overflow: visible;
+  aspect-ratio: auto;
+}
+.cooking-food.has-piece-set > .cooking-food-img {
+  display: none !important;
+}
+.cooking-piece-set {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cooking-piece-set img {
+  position: absolute;
+  left: var(--piece-x, 50%);
+  top: var(--piece-y, 50%);
+  width: var(--piece-w, 34%);
+  height: auto;
+  max-width: none !important;
+  max-height: none !important;
+  display: block;
+  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg));
+  filter: drop-shadow(0 8px 9px rgba(0,0,0,0.22));
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.cooking-food.drop .cooking-piece-set {
+  animation: foodDrop 0.52s cubic-bezier(.18,.85,.2,1.02);
 }
 .cooking-food[data-stage="0"] img {
   filter: drop-shadow(0 8px 9px rgba(0,0,0,0.2));
@@ -5727,7 +5772,7 @@ body.layout-editor-on .bowl-fill-mask {
         { type: 'chop' },
         { type: 'prep', prepKind: 'marinate_chicken', label: 'したあじを なじませよう' },
         { type: 'prep', prepKind: 'coat_chicken', label: 'こなを まぶそう' },
-        { type: 'fry', label: 'カラッと あげよう', stages: 2, pieces: 5 },
+        { type: 'fry', label: 'カラッと あげよう', stages: 2, pieces: 5, cookTogether: true, batchLabel: 'からあげ' },
       ],
       prepActions: [
         { type: 'chop' },
@@ -5747,26 +5792,26 @@ body.layout-editor-on .bowl-fill-mask {
           fallback: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png',
         },
       },
-      imageBase: 'chicken/chicken_chop_001',
+      imageBase: 'chicken/chicken_thigh_001_raw',
       imagePieces: {
         dir: 'chicken',
-        prefix: 'chicken_chop_',
-        from: 2,
-        to: 13,
+        prefix: 'chicken_thigh_piece_',
+        from: 1,
+        to: 5,
         pad: 3,
-        sequence: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+        sequence: [1, 2, 3, 4, 5, 2, 4, 1, 5, 3, 2, 4],
         burstStride: 2,
       },
       pieceBurstCount: 2,
       bowlPieceLimit: 28,
       chopMechanics: {
-        startX_pct: 69, endX_pct: 18,
+        startX_pct: 67, endX_pct: 31,
         liftY_pct: 0, chopY_pct: 50,
         maskAxis: 'right-to-left',
         bladeTipOffsetX_pct: -39,
-        ingredientLeft_pct: 52,
-        ingredientTop_pct: 40,
-        ingredientWidth_pct: 56,
+        ingredientLeft_pct: 50,
+        ingredientTop_pct: 43,
+        ingredientWidth_pct: 48,
       },
     },
     {
@@ -5804,7 +5849,7 @@ body.layout-editor-on .bowl-fill-mask {
     { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball', 'onion'] },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'], startFromRaw: true },
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'], startFromRaw: true },
-    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', needs: ['chicken_marinated'] },
+    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
     { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'], startFromRaw: true },
     { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'], startFromRaw: true },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', needs: ['cabbage'] },
@@ -11095,8 +11140,13 @@ body.layout-editor-on .bowl-fill-mask {
       showScreen('grill');
       startCookPreheat(ing, action, 'grill');
     } else {
-      if (els.fryActionLabel) els.fryActionLabel.textContent = isMultiPieceCookAction(action) ? '1こずつ あぶらへ' : label;
-      setSpeech(isMultiPieceCookAction(action) ? ing.name + 'を 1こずつ おさらから あぶらへ！' : ing.name + 'は おさらで じゅんび！', 'fry');
+      const batchText = getCookBatchText(ing, action);
+      if (els.fryActionLabel) {
+        els.fryActionLabel.textContent = batchText ? 'まとめて あぶらへ' : (isMultiPieceCookAction(action) ? '1こずつ あぶらへ' : label);
+      }
+      setSpeech(batchText
+        ? batchText + 'を おさらから あぶらへ まとめていれよう！'
+        : (isMultiPieceCookAction(action) ? ing.name + 'を 1こずつ おさらから あぶらへ！' : ing.name + 'は おさらで じゅんび！'), 'fry');
       showScreen('fry');
       startCookPreheat(ing, action, 'fry');
     }
@@ -11109,8 +11159,13 @@ body.layout-editor-on .bowl-fill-mask {
       updateCookStageState(type);
       if (type === 'fry') {
         startKitchenAmbient('stove');
-        if (els.fryActionLabel) els.fryActionLabel.textContent = isMultiPieceCookAction(action) ? getCookPieceText(action) + 'を あぶらへ' : 'おさらから ドラッグして あぶらへ';
-        setSpeech(isMultiPieceCookAction(action) ? 'あぶらが あったまったよ！ とりにくを 1こずつ いれよう！' : 'あぶらが あったまったよ！ おさらから ドラッグして いれよう！', 'fry');
+        const batchText = getCookBatchText(ing, action);
+        if (els.fryActionLabel) {
+          els.fryActionLabel.textContent = batchText ? batchText + 'を あぶらへ' : (isMultiPieceCookAction(action) ? getCookPieceText(action) + 'を あぶらへ' : 'おさらから ドラッグして あぶらへ');
+        }
+        setSpeech(batchText
+          ? 'あぶらが あったまったよ！ おさらの ' + batchText + 'を まとめていれよう！'
+          : (isMultiPieceCookAction(action) ? 'あぶらが あったまったよ！ とりにくを 1こずつ いれよう！' : 'あぶらが あったまったよ！ おさらから ドラッグして いれよう！'), 'fry');
       } else {
         startKitchenAmbient('stove');
         if (isEggGrillAction(ing, action)) {
@@ -11147,6 +11202,32 @@ body.layout-editor-on .bowl-fill-mask {
   function getCookImageConfig(ing, action) {
     if (!ing || !action || !ing.cookImages) return null;
     return ing.cookImages[action.type] || null;
+  }
+
+  function getGroupedCookPieceLayout(index) {
+    const layouts = [
+      { x: 25, y: 38, w: 31, rot: '-8deg' },
+      { x: 50, y: 33, w: 31, rot: '6deg' },
+      { x: 74, y: 42, w: 31, rot: '-5deg' },
+      { x: 37, y: 64, w: 32, rot: '4deg' },
+      { x: 64, y: 66, w: 32, rot: '-6deg' },
+    ];
+    return layouts[index % layouts.length];
+  }
+
+  function getCookStagePieceSrcs(ing, action, stage) {
+    const cfg = getCookImageConfig(ing, action);
+    if (!cfg || !Array.isArray(cfg.pieceStages)) return [];
+    const count = Math.min(getCookPieceCount(action), cfg.pieceStages.length);
+    const safeStage = Math.max(0, Math.min(2, stage || 0));
+    const srcs = [];
+    for (let i = 0; i < count; i += 1) {
+      const stages = cfg.pieceStages[i];
+      if (Array.isArray(stages) && stages[safeStage]) {
+        srcs.push(cookingAssetPath(stages[safeStage]));
+      }
+    }
+    return srcs;
   }
 
   function getCookStageSrc(ing, action, stage) {
@@ -11658,7 +11739,11 @@ body.layout-editor-on .bowl-fill-mask {
       return;
     }
     if (type === 'fry') {
-      setSpeech(isMultiPieceCookAction(getCurrentAction()) ? name + 'を 1こずつ おさらから あぶらへ ドラッグしてね！' : name + 'を おさらから あぶらへ ドラッグしてね！', 'fry');
+      const action = getCurrentAction();
+      const batchText = getCookBatchText(state.current, action);
+      setSpeech(batchText
+        ? 'おさらの ' + batchText + 'を まとめて あぶらへ ドラッグしてね！'
+        : (isMultiPieceCookAction(action) ? name + 'を 1こずつ おさらから あぶらへ ドラッグしてね！' : name + 'を おさらから あぶらへ ドラッグしてね！'), 'fry');
     } else {
       setSpeech(name + 'を おさらから フライパンへ ドラッグしてね！', 'grill');
     }
@@ -12024,8 +12109,12 @@ body.layout-editor-on .bowl-fill-mask {
     return Math.max(1, Math.floor((action && action.pieces) || 1));
   }
 
+  function isGroupedPieceCookAction(action) {
+    return !!(action && action.cookTogether && getCookPieceCount(action) > 1);
+  }
+
   function isMultiPieceCookAction(action) {
-    return getCookPieceCount(action) > 1;
+    return getCookPieceCount(action) > 1 && !isGroupedPieceCookAction(action);
   }
 
   function isMeatballCookAction(ing, action) {
@@ -12035,6 +12124,11 @@ body.layout-editor-on .bowl-fill-mask {
   function getCookPieceText(action) {
     if (!isMultiPieceCookAction(action)) return '';
     return (state.cookPieceIndex + 1) + 'こめ / ' + getCookPieceCount(action) + 'こ';
+  }
+
+  function getCookBatchText(ing, action) {
+    if (!isGroupedPieceCookAction(action)) return '';
+    return action.batchLabel || (ing && ing.name) || 'おかず';
   }
 
   function updateMeatballRollPose(ball, dx, dy, distance) {
@@ -12365,6 +12459,47 @@ body.layout-editor-on .bowl-fill-mask {
     return cfg.stageFilters[Math.max(0, Math.min(cfg.stageFilters.length - 1, stage || 0))] || '';
   }
 
+  function updateGroupedCookPieceSet(wrap, ing, action, stage) {
+    let pieceSet = wrap.querySelector('.cooking-piece-set');
+    const grouped = isGroupedPieceCookAction(action);
+    wrap.classList.toggle('has-piece-set', grouped);
+    if (!grouped) {
+      if (pieceSet) pieceSet.remove();
+      return false;
+    }
+    const srcs = getCookStagePieceSrcs(ing, action, stage);
+    if (!srcs.length) {
+      if (pieceSet) pieceSet.remove();
+      wrap.classList.remove('has-piece-set');
+      return false;
+    }
+    if (!pieceSet) {
+      pieceSet = document.createElement('div');
+      pieceSet.className = 'cooking-piece-set';
+      wrap.appendChild(pieceSet);
+    }
+    while (pieceSet.children.length > srcs.length) {
+      pieceSet.removeChild(pieceSet.lastElementChild);
+    }
+    srcs.forEach(function (src, index) {
+      let img = pieceSet.children[index];
+      if (!img) {
+        img = document.createElement('img');
+        img.alt = '';
+        img.draggable = false;
+        pieceSet.appendChild(img);
+      }
+      if (img.getAttribute('src') !== src) img.src = src;
+      const layout = getGroupedCookPieceLayout(index);
+      img.style.setProperty('--piece-x', layout.x + '%');
+      img.style.setProperty('--piece-y', layout.y + '%');
+      img.style.setProperty('--piece-w', layout.w + '%');
+      img.style.setProperty('--piece-rot', layout.rot);
+      img.style.zIndex = String(10 + Math.round(layout.y));
+    });
+    return true;
+  }
+
   function updateCookView(type, stage, animate) {
     const ing = state.current;
     const action = getCurrentAction();
@@ -12382,6 +12517,19 @@ body.layout-editor-on .bowl-fill-mask {
     img.style.display = '';
     img.alt = ing ? ing.name : '';
     img.style.filter = getCookStageFilter(ing, action, safeStage) || '';
+
+    if (updateGroupedCookPieceSet(wrap, ing, action, safeStage)) {
+      img.onerror = null;
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      fallback.classList.remove('show');
+      updateCookDots(type, safeStage);
+      if (animate) {
+        if (animate === 'drop') wrap.classList.add('drop');
+        showCookBurst(type);
+      }
+      return;
+    }
 
     const primarySrc = isEggGrillAction(ing, action) && !state.cookFoodPlaced
       ? EGG_CRACK_WHOLE_SRC
@@ -12768,8 +12916,13 @@ body.layout-editor-on .bowl-fill-mask {
     showCookBurst('fry');
     startKitchenAmbient('fry');
     const pieceText = getCookPieceText(action);
-    if (els.fryActionLabel) els.fryActionLabel.textContent = isMultiPieceCookAction(action) ? pieceText + ' いいいろに なるまで' : 'いいいろに なるまで まとう';
-    setSpeech(isMultiPieceCookAction(action) ? 'ポチャン！ ' + pieceText + 'が あぶらに はいったよ！' : 'ポチャン！ あぶらに はいったよ！', 'fry');
+    const batchText = getCookBatchText(ing, action);
+    if (els.fryActionLabel) {
+      els.fryActionLabel.textContent = batchText ? batchText + ' いいいろに なるまで' : (isMultiPieceCookAction(action) ? pieceText + ' いいいろに なるまで' : 'いいいろに なるまで まとう');
+    }
+    setSpeech(batchText
+      ? 'ポチャン！ ' + batchText + 'が まとめて あぶらに はいったよ！'
+      : (isMultiPieceCookAction(action) ? 'ポチャン！ ' + pieceText + 'が あぶらに はいったよ！' : 'ポチャン！ あぶらに はいったよ！'), 'fry');
     state.pendingTimers.push(setTimeout(function () {
       state.cookAnimating = false;
     }, 420));
@@ -12784,9 +12937,13 @@ body.layout-editor-on .bowl-fill-mask {
       state.cookProgress = 2;
       state.fryReady = true;
       updateCookView('fry', 2, true);
-      if (els.fryActionLabel) els.fryActionLabel.textContent = isMultiPieceCookAction(action) ? pieceText + ' ゲージの あおで' : 'ゲージの あおで とりだそう';
+      if (els.fryActionLabel) {
+        els.fryActionLabel.textContent = batchText ? batchText + 'を あおで とりだそう' : (isMultiPieceCookAction(action) ? pieceText + ' ゲージの あおで' : 'ゲージの あおで とりだそう');
+      }
       startCookTimingGauge('fry');
-      setSpeech(isMultiPieceCookAction(action) ? 'きつねいろ！ あおで タップして ' + pieceText + 'を とりだそう！' : 'きつねいろ！ あおで タップして とりだそう！', 'fry');
+      setSpeech(batchText
+        ? 'きつねいろ！ あおで タップして ' + batchText + 'を とりだそう！'
+        : (isMultiPieceCookAction(action) ? 'きつねいろ！ あおで タップして ' + pieceText + 'を とりだそう！' : 'きつねいろ！ あおで タップして とりだそう！'), 'fry');
     }, 1450));
   }
 
