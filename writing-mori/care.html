@@ -1150,6 +1150,77 @@ html, body {
   font-size: 20px;
   z-index: 7;
 }
+
+.debug-panel {
+  position: absolute;
+  left: 318px;
+  top: 236px;
+  z-index: 82;
+  width: 300px;
+  display: none;
+  gap: 8px;
+  padding: 12px;
+  border: 4px solid #6e4b2d;
+  border-radius: 8px;
+  background: rgba(255, 248, 232, 0.94);
+  box-shadow: 0 5px 0 #4f321e;
+  font-family: var(--pixel-font);
+  color: #4f3825;
+}
+
+#stage.debug-mode .debug-panel {
+  display: grid;
+}
+
+.debug-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.debug-row {
+  display: grid;
+  grid-template-columns: 1fr 94px;
+  gap: 8px;
+  align-items: center;
+  font-size: 15px;
+}
+
+.debug-row input {
+  min-width: 0;
+  height: 30px;
+  padding: 2px 6px;
+  border: 2px solid #9f7655;
+  border-radius: 4px;
+  background: #fffdf5;
+  color: #4f3825;
+  font: inherit;
+}
+
+.debug-row.checkbox {
+  grid-template-columns: 1fr auto;
+}
+
+.debug-row.checkbox input {
+  width: 26px;
+}
+
+.debug-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.debug-actions button {
+  min-height: 31px;
+  border: 2px solid #875b3b;
+  border-radius: 5px;
+  background: #ffd78c;
+  color: #4f3825;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -1270,6 +1341,23 @@ html, body {
     </nav>
 
     <div class="bottom-message" id="bottomMessage">いっしょに もじをかいて、すこしずつ げんきに そだてよう！</div>
+    <section class="debug-panel" id="debugPanel" aria-label="デバッグ調整">
+      <div class="debug-title">DEBUG</div>
+      <label class="debug-row">なかよし<input id="debugNakayoshi" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">すくすく<input id="debugSukusuku" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">ぽかぽか<input id="debugEggWarmth" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">クッキー<input id="debugCookieCount" type="number" min="0" max="99" step="1"></label>
+      <label class="debug-row">スター<input id="debugStars" type="number" min="0" max="99999" step="25"></label>
+      <label class="debug-row checkbox">うまれた<input id="debugHatched" type="checkbox"></label>
+      <div class="debug-actions">
+        <button type="button" id="debugApplyBtn">反映</button>
+        <button type="button" id="debugEgg75Btn">タマゴ75</button>
+        <button type="button" id="debugPreHatchBtn">孵化直前</button>
+        <button type="button" id="debugBabyBtn">ベビー</button>
+        <button type="button" id="debugResetBtn">初期化</button>
+        <button type="button" id="debugCloseBtn">隠す</button>
+      </div>
+    </section>
     <div class="hatch-scene" id="hatchScene" aria-hidden="true">
       <div class="hatch-copy" id="hatchCopy">おや...？</div>
       <div class="hatch-sprite" id="hatchSprite" aria-hidden="true"></div>
@@ -1283,6 +1371,7 @@ html, body {
 
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
+const DEBUG_MODE_KEY = 'mojikkoFarmCareDebugMode';
 
 const defaultState = {
   nakayoshi: 32,
@@ -1323,9 +1412,11 @@ const mainActionHelp = document.getElementById('mainActionHelp');
 const hatchScene = document.getElementById('hatchScene');
 const hatchCopy = document.getElementById('hatchCopy');
 const hatchSubcopy = document.getElementById('hatchSubcopy');
+const debugPanel = document.getElementById('debugPanel');
 
 let hatchingNow = false;
 let hatchTimers = [];
+let debugMode = false;
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1441,6 +1532,18 @@ function saveState() {
   } catch (error) {
     console.warn('Could not save care state:', error);
   }
+}
+
+function configureDebugModeFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get('debug');
+  if (value === '1') {
+    localStorage.setItem(DEBUG_MODE_KEY, '1');
+  } else if (value === '0') {
+    localStorage.removeItem(DEBUG_MODE_KEY);
+  }
+  debugMode = value === '1' || (value !== '0' && localStorage.getItem(DEBUG_MODE_KEY) === '1');
+  stageEl.classList.toggle('debug-mode', debugMode);
 }
 
 function clamp(value, min, max) {
@@ -1679,6 +1782,55 @@ function render() {
   renderGrowthIcons(stage);
   renderActionMode();
   applyMilmaruClass(state.reaction);
+  renderDebugPanel();
+}
+
+function renderDebugPanel() {
+  if (!debugMode || !debugPanel) return;
+  document.getElementById('debugNakayoshi').value = String(state.nakayoshi);
+  document.getElementById('debugSukusuku').value = String(state.sukusuku);
+  document.getElementById('debugEggWarmth').value = String(state.eggWarmth);
+  document.getElementById('debugCookieCount').value = String(state.inventory.moji_cookie.count);
+  document.getElementById('debugStars').value = String(state.stars);
+  document.getElementById('debugHatched').checked = state.hatched;
+}
+
+function readDebugNumber(id, min, max) {
+  const input = document.getElementById(id);
+  const value = Number(input.value);
+  if (!Number.isFinite(value)) return min;
+  return clamp(Math.round(value), min, max);
+}
+
+function stopHatchingCutscene() {
+  hatchingNow = false;
+  clearHatchSceneTimers();
+  hideHatchScene();
+}
+
+function applyDebugState(next = {}) {
+  stopHatchingCutscene();
+  state.nakayoshi = next.nakayoshi ?? readDebugNumber('debugNakayoshi', 0, 100);
+  state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
+  state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
+  state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
+  state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
+  state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
+  state.reaction = 'normal';
+  state.lastWarmAt = 0;
+  state.lastPetAt = 0;
+  state.speech = next.speech || (state.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
+  bottomMessage.textContent = next.message || 'デバッグ値を 反映したよ。';
+  saveState();
+  render();
+}
+
+function resetDebugState() {
+  stopHatchingCutscene();
+  state = cloneDefaultState();
+  saveState();
+  bottomMessage.textContent = 'デバッグ値を 初期化したよ。';
+  render();
 }
 
 function consumePendingWritingReward() {
@@ -1805,6 +1957,39 @@ function goWrite() {
   }, 180);
 }
 
+function setupDebugControls() {
+  configureDebugModeFromQuery();
+  if (!debugPanel) return;
+  document.getElementById('debugApplyBtn').addEventListener('click', () => applyDebugState());
+  document.getElementById('debugEgg75Btn').addEventListener('click', () => applyDebugState({
+    hatched: false,
+    eggWarmth: 75,
+    sukusuku: 0,
+    speech: 'まだ タマゴだよ',
+    message: 'あと 1かい あたためると 孵化演出を確認できるよ。'
+  }));
+  document.getElementById('debugPreHatchBtn').addEventListener('click', () => applyDebugState({
+    hatched: false,
+    eggWarmth: 99,
+    sukusuku: 0,
+    speech: 'まだ タマゴだよ',
+    message: 'あたためると すぐ孵化演出に入るよ。'
+  }));
+  document.getElementById('debugBabyBtn').addEventListener('click', () => applyDebugState({
+    hatched: true,
+    eggWarmth: 100,
+    sukusuku: Math.max(10, state.sukusuku),
+    speech: 'いっしょに もじを かこう！',
+    message: 'ベビー状態にしたよ。'
+  }));
+  document.getElementById('debugResetBtn').addEventListener('click', resetDebugState);
+  document.getElementById('debugCloseBtn').addEventListener('click', () => {
+    localStorage.removeItem(DEBUG_MODE_KEY);
+    debugMode = false;
+    stageEl.classList.remove('debug-mode');
+  });
+}
+
 document.addEventListener('pointerdown', (event) => {
   const button = event.target.closest('button');
   if (!button || !stageEl.contains(button)) return;
@@ -1829,6 +2014,7 @@ document.getElementById('petBtn').addEventListener('click', petMilmaru);
 document.getElementById('playBtn').addEventListener('click', playWithMilmaru);
 document.getElementById('writeBtn').addEventListener('click', goWrite);
 
+setupDebugControls();
 const consumedPendingReward = consumePendingWritingReward();
 if (!consumedPendingReward) applyEntrySpeech();
 render();
@@ -1840,6 +2026,7 @@ window.MojikkoCareGame = {
   playWithMilmaru,
   goWrite,
   warmEgg,
+  applyDebugState,
   consumePendingWritingReward
 };
 </script>

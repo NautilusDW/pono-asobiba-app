@@ -17,7 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-05-28 - [batch:169-mojikko-care-debug-controls] DONE - Codex: もじっこファームお世話画面に `?debug=1` で表示されるデバッグ調整パネルを追加。なかよし/すくすく/ぽかぽか/もじクッキー/スター/うまれた状態を直接変更でき、`タマゴ75` / `孵化直前` / `ベビー` / `初期化` の再現用プリセットも追加。`?debug=0` または「隠す」で非表示化。ローカルPlaywrightで値反映・プリセット・debug解除を確認。`sw.js` は v652。 (by Codex)
+- 2026-05-28 - [batch:169-mojikko-care-debug-controls] DONE - Codex: もじっこファームお世話画面に `?debug=1` で表示されるデバッグ調整パネルを追加。なかよし/すくすく/ぽかぽか/もじクッキー/スター/うまれた状態を直接変更でき、`タマゴ75` / `孵化直前` / `ベビー` / `初期化` の再現用プリセットも追加。`?debug=0` または「隠す」で非表示化。ローカルPlaywrightで値反映・プリセット・debug解除を確認。`sw.js` は v653。 (by Codex)
 - 2026-05-28 - [batch:168-kitchen-chicken-horizontal-swap] DONE - Codex: 唐揚げ用の切る前の鶏もも肉を、斜めではなく左から右へ長い横向き素材として GPT Image 2 built-in で再生成。`chicken_thigh_horizontal_001.png` をアプリ用 RGBA として配置し、`chicken_marinated.imageBase` を差し替え。横長比率で小さく見えないよう `ingredientTop_pct:39` / `ingredientWidth_pct:78` に調整。Playwrightで下ごしらえ→とりにく→切る画面、6タップ後の唐揚げ/保存ルート表示まで確認。`sw.js` は v652。 (by Codex)
 - 2026-05-28 - [batch:167-mojikko-hatch-cutscene] DONE - Codex: 孵化時に通常画面で「おや...？」を出した後、画面全体をピンク放射状ストライプのカットインへ切り替える演出を追加。カットイン内で卵アップ→揺れ→`egg_peek` のパカッ演出→頭殻ベビー誕生へ進む。通常画面での `egg_peek` 表示は避けたまま。Playwrightで通常一言、カットイン notice/peek/born、孵化後の頭殻ベビーを確認。`sw.js` は v651。 (by Codex)
 - 2026-05-28 - [batch:166-mojikko-hatch-peek-headshell] DONE - Codex: お世話画面の「もうすぐ うまれそう」段階で耳が出た `egg_peek` を表示しないよう変更し、通常の未孵化表示はひび入りタマゴまでに制限。`egg_peek` は孵化確定後の短い演出だけに使い、その後のお世話画面/文字書きミルマルカードは頭に殻を乗せたベビー画像へ切替。Playwrightで75%時点=ひび入り卵、孵化中=peek演出、孵化後=headshell baby、文字書きカード=headshell baby を確認。`sw.js` は v650。 (by Codex)
