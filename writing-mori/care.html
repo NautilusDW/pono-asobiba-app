@@ -62,6 +62,12 @@
   --care-shell-baby-angry: url('../assets/images/mojikko/care/milmaru_shell_baby_angry.png');
   --care-shell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_shell_baby_disappointed.png');
   --care-shell-baby-worried: url('../assets/images/mojikko/care/milmaru_shell_baby_worried.png');
+  --care-headshell-baby-happy: url('../assets/images/mojikko/care/milmaru_headshell_baby_happy.png');
+  --care-headshell-baby-cry: url('../assets/images/mojikko/care/milmaru_headshell_baby_cry.png');
+  --care-headshell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_headshell_baby_bigcry.png');
+  --care-headshell-baby-angry: url('../assets/images/mojikko/care/milmaru_headshell_baby_angry.png');
+  --care-headshell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_headshell_baby_disappointed.png');
+  --care-headshell-baby-worried: url('../assets/images/mojikko/care/milmaru_headshell_baby_worried.png');
   --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
@@ -640,42 +646,42 @@ html, body {
 .milmaru.baby {
   width: 318px;
   height: 322px;
-  background-image: var(--care-shell-baby-happy);
+  background-image: var(--care-headshell-baby-happy);
 }
 
 .milmaru.baby.normal {
-  background-image: var(--care-shell-baby-left);
+  background-image: var(--care-headshell-baby-happy);
 }
 
 .milmaru.baby.happy,
 .milmaru.baby.eating,
 .milmaru.baby.play,
 .milmaru.baby.birth {
-  background-image: var(--care-shell-baby-happy);
+  background-image: var(--care-headshell-baby-happy);
 }
 
 .milmaru.baby.relaxed {
-  background-image: var(--care-shell-baby-sleep);
+  background-image: var(--care-headshell-baby-happy);
 }
 
 .milmaru.baby.cry {
-  background-image: var(--care-shell-baby-cry);
+  background-image: var(--care-headshell-baby-cry);
 }
 
 .milmaru.baby.bigcry {
-  background-image: var(--care-shell-baby-bigcry);
+  background-image: var(--care-headshell-baby-bigcry);
 }
 
 .milmaru.baby.angry {
-  background-image: var(--care-shell-baby-angry);
+  background-image: var(--care-headshell-baby-angry);
 }
 
 .milmaru.baby.disappointed {
-  background-image: var(--care-shell-baby-disappointed);
+  background-image: var(--care-headshell-baby-disappointed);
 }
 
 .milmaru.baby.worried {
-  background-image: var(--care-shell-baby-worried);
+  background-image: var(--care-headshell-baby-worried);
 }
 
 .milmaru.egg.warm {
@@ -1171,6 +1177,9 @@ const mainActionIcon = document.getElementById('mainActionIcon');
 const mainActionText = document.getElementById('mainActionText');
 const mainActionHelp = document.getElementById('mainActionHelp');
 
+let hatchingNow = false;
+let hatchTimer = null;
+
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
   const ox = (window.innerWidth - 1600 * scale) / 2;
@@ -1315,7 +1324,6 @@ function getNextGrowthProgress(sukusuku) {
 }
 
 function getEggVisualClass() {
-  if (state.eggWarmth >= 70) return 'egg-peek';
   if (state.eggWarmth >= 35) return 'egg-cracked';
   return 'egg-idle';
 }
@@ -1337,7 +1345,9 @@ function renderActionMode() {
 function applyMilmaruClass(reaction) {
   const currentReaction = reaction || state.reaction || 'normal';
   const classes = ['milmaru'];
-  if (state.hatched) {
+  if (hatchingNow) {
+    classes.push('egg', 'egg-peek', 'birth');
+  } else if (state.hatched) {
     classes.push('baby', currentReaction);
   } else {
     classes.push('egg', getEggVisualClass(), currentReaction);
@@ -1378,22 +1388,33 @@ function spawnFx(type) {
 
 function maybeHatchEgg() {
   if (state.hatched || state.eggWarmth < 100) return false;
+  if (hatchingNow) return true;
   playSfx('hatch');
-  state.hatched = true;
-  state.sukusuku = Math.max(10, state.sukusuku);
+  hatchingNow = true;
   state.reaction = 'birth';
-  setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！つぎは もじを かいて おやつを もらおう。');
+  setSpeech('うまれるよ！', 'タマゴの からが ゆれているよ。');
   spawnFx('sparkle');
   saveState();
   render();
-  setReaction('birth', 1300);
+  clearTimeout(hatchTimer);
+  hatchTimer = setTimeout(() => {
+    hatchingNow = false;
+    state.hatched = true;
+    state.sukusuku = Math.max(10, state.sukusuku);
+    state.reaction = 'birth';
+    setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！つぎは もじを かいて おやつを もらおう。');
+    spawnFx('sparkle');
+    saveState();
+    render();
+    setReaction('birth', 1300);
+  }, 720);
   setTimeout(() => {
     if (state.reaction === 'normal') {
       setSpeech('いっしょに もじを かこう！', 'もじを かくと、ミルマルに あげる おやつが もらえるよ。');
       saveState();
       render();
     }
-  }, 1450);
+  }, 2200);
   return true;
 }
 
