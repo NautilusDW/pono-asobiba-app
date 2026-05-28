@@ -65,7 +65,7 @@
   --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
-  --care-icon-warm: url('../assets/images/mojikko/care/icon_warm.png');
+  --care-icon-warm: url('../assets/images/mojikko/care/icon_warm_large.png');
   --care-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --care-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
   --care-settings: url('../assets/images/mojikko/writing/settings_button.png');
@@ -203,7 +203,11 @@ html, body {
 }
 
 .star-box {
-  height: 62px;
+  width: 198px;
+  min-width: 198px;
+  aspect-ratio: 291 / 91;
+  height: auto;
+  justify-self: end;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,7 +217,7 @@ html, body {
   border-radius: 0;
   font-family: var(--pixel-font);
   font-size: 30px;
-  background: var(--care-star-counter) center / 100% 100% no-repeat;
+  background: var(--care-star-counter) center / contain no-repeat;
   box-shadow: none;
   image-rendering: pixelated;
 }

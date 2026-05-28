@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-28 - [batch:165-mojikko-masked-assets-aspect] DONE - Codex: user 追加のマスク済み素材から横長「もういっかい」normal/pressed と温める大アイコンを配置。文字書き/お世話画面のスター数プレートは画像の 291:91 比率に固定し、結果モーダルの仮CSSストライプボタンを既存画像ボタンへ戻した。Playwrightで1600x900/1024x768の文字書き・お世話画面、スター比率、ボタン表示を確認。`sw.js` は v649。 (by Codex)
 - 2026-05-28 - [batch:164-kitchen-cut-bowl-editor-safe-frame] DONE - Codex: トントンキッチンの切れ端おさらで、皿画像が編集枠いっぱいに描かれて左右上が切れる問題を修正。`.bowl` を安全枠、皿画像を内側の `::before` 描画に分離し、切れ端ボウルカード/エディター時の overflow を visible にした。520x242 のエディター枠で Playwright スクリーンショット確認済み。`sw.js` は v648。 (by Codex)
 - 2026-05-28 - [batch:163-mojikko-marker-button-icon] DONE - Codex: もじっこファーム文字書き画面の書き順番号を、単純な外向き移動ではなく文字マスクに重ならない近傍候補から選ぶ方式へ変更。GPT Image 2 built-in で「もういっかい」ボタン normal/pressed と温めるアイコンを生成し、実装用に `button_retry_*_v2.png` / `icon_warm.png` として配置。文字書き/お世話画面で表示確認、`sw.js` は v646。 (by Codex)
 - 2026-05-28 - [batch:162-mojikko-writing-list-sfx] DONE - Codex: もじっこファーム文字書き画面の「もういっかい」ボタンを画像依存からCSSピクセルボタンへ変更し、白い棒や縦横比崩れを解消。文字リストは5列固定の五十音表にして、や行/わ行は空セルで位置合わせ、小さい「ゃゅょっ/ャュョッ」は通常リストから除外。書き順番号はガイド線から外側へオフセットし、文字を隠しにくく調整。文字書き/ボタン/一画OK/完了/ミス、お世話画面のあたため/なでる/あげる/あそぶ/孵化にWeb Audio SEを追加。Playwrightで1600x900/1024x768表示、5列表、ボタン背景、書き順マーカー、お世話画面ロードを確認。`sw.js` は v645。 (by Codex)

@@ -50,8 +50,8 @@
   --moji-reward-box: url('../assets/images/mojikko/writing/reward_box.png');
   --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
   --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
-  --moji-button-retry: url('../assets/images/mojikko/writing/button_retry_normal_v2.png');
-  --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_pressed_v2.png');
+  --moji-button-retry: url('../assets/images/mojikko/writing/button_retry_wide_normal.png');
+  --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_wide_pressed.png');
   --moji-button-care: url('../assets/images/mojikko/writing/button_care_normal.png');
   --moji-button-care-pressed: url('../assets/images/mojikko/writing/button_care_pressed.png');
   --moji-button-small-success: url('../assets/images/mojikko/writing/button_small_success_normal.png');
@@ -348,7 +348,8 @@ html, body {
 .star-box {
   width: 186px;
   min-width: 186px;
-  height: 58px;
+  aspect-ratio: 291 / 91;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,7 +360,7 @@ html, body {
   color: #6a4528;
   border: 0;
   border-radius: 0;
-  background: var(--moji-star-counter) center / 100% 100% no-repeat;
+  background: var(--moji-star-counter) center / contain no-repeat;
   box-shadow: none;
   image-rendering: pixelated;
 }
@@ -971,8 +972,8 @@ html, body {
 
 .feedback-row {
   display: grid;
-  grid-template-columns: 196px 220px;
-  gap: 14px;
+  grid-template-columns: 352px 220px;
+  gap: 18px;
   align-items: center;
   justify-content: end;
 }
@@ -1024,9 +1025,9 @@ html, body {
 }
 
 #resetBtn {
-  width: 250px;
-  padding-left: 66px;
-  padding-right: 18px;
+  width: 352px;
+  padding-left: 84px;
+  padding-right: 24px;
   color: #5f3c22;
   background-image: var(--moji-button-retry);
 }
@@ -1319,9 +1320,7 @@ html, body {
 
 #careBtn {
   width: 430px;
-  background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0 10px, transparent 10px 20px),
-    linear-gradient(180deg, #ffd8e2 0%, #ef87a0 100%);
+  background-image: var(--moji-button-modal-care);
 }
 
 #careBtn::before,
@@ -1347,9 +1346,7 @@ html, body {
 }
 
 #modalRetryBtn {
-  background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 20px),
-    linear-gradient(180deg, #ffe8a8 0%, #f1b64f 100%);
+  background-image: var(--moji-button-modal-next);
 }
 
 #modalRetryBtn::before {
