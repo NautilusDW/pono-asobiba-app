@@ -389,7 +389,7 @@ html, body {
   top: 126px;
   bottom: 18px;
   display: grid;
-  grid-template-columns: 250px 1fr 258px;
+  grid-template-columns: 292px 1fr 258px;
   gap: 26px;
   z-index: 10;
 }
@@ -405,13 +405,13 @@ html, body {
   right: 210px;
   top: 104px;
   bottom: 12px;
-  grid-template-columns: 250px minmax(0, 1fr) 258px;
+  grid-template-columns: 292px minmax(0, 1fr) 258px;
   gap: 18px;
 }
 
 .side-stack {
   display: grid;
-  grid-template-rows: 398px 1fr;
+  grid-template-rows: 430px minmax(0, 1fr);
   gap: 22px;
   min-height: 0;
 }
@@ -486,29 +486,34 @@ html, body {
 
 .char-list {
   min-height: 0;
-  padding: 8px 16px 14px;
+  padding: 9px 14px 14px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 7px;
+  gap: 8px;
   align-content: start;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #a8794f rgba(255, 255, 255, 0.2);
 }
 
+.char-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
 .char-button {
   position: relative;
-  height: 41px;
-  display: grid;
-  grid-template-columns: 10px 1fr 10px;
+  height: 44px;
+  display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0 4px;
   border: 0;
   border-radius: 0;
   background: var(--moji-char-button-normal) center / 100% 100% no-repeat;
   color: var(--ink);
   font-family: var(--round-font);
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 900;
   cursor: pointer;
   box-shadow: none;
@@ -516,11 +521,19 @@ html, body {
 }
 
 .char-button .cursor {
+  position: absolute;
+  left: 4px;
+  top: 50%;
   width: 0;
   height: 0;
+  transform: translateY(-50%);
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
   border-left: 8px solid transparent;
+}
+
+.char-spacer {
+  min-height: 44px;
 }
 
 .char-button.active {
@@ -553,6 +566,8 @@ html, body {
   padding: 14px;
   appearance: none;
   width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
   text-align: left;
   font: inherit;
   color: inherit;
@@ -1010,10 +1025,16 @@ html, body {
 
 #resetBtn {
   width: 250px;
-  padding-left: 62px;
-  padding-right: 16px;
+  padding: 8px 22px 10px;
   color: #5f3c22;
-  background-image: var(--moji-button-retry);
+  border: 4px solid #8b6042;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0) 34%),
+    linear-gradient(180deg, #ffe49b 0%, #f0ad45 100%);
+  box-shadow:
+    0 6px 0 #5f3b22,
+    inset 0 0 0 4px rgba(255,255,255,0.25);
 }
 
 #resetBtn::before {
@@ -1021,7 +1042,9 @@ html, body {
 }
 
 #resetBtn:active {
-  background-image: var(--moji-button-retry-pressed);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0) 28%),
+    linear-gradient(180deg, #edab47 0%, #ffdc82 100%);
   filter: brightness(0.96);
 }
 
@@ -1474,50 +1497,48 @@ const KANA_GROUPS = [
     id: 'hiragana',
     label: 'ひらがな',
     rows: [
-      'あいうえお',
-      'かきくけこ',
-      'さしすせそ',
-      'たちつてと',
-      'なにぬねの',
-      'はひふへほ',
-      'まみむめも',
-      'やゆよ',
-      'らりるれろ',
-      'わをん',
-      'がぎぐげご',
-      'ざじずぜぞ',
-      'だぢづでど',
-      'ばびぶべぼ',
-      'ぱぴぷぺぽ',
-      'ゃゅょっ'
+      ['あ', 'い', 'う', 'え', 'お'],
+      ['か', 'き', 'く', 'け', 'こ'],
+      ['さ', 'し', 'す', 'せ', 'そ'],
+      ['た', 'ち', 'つ', 'て', 'と'],
+      ['な', 'に', 'ぬ', 'ね', 'の'],
+      ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+      ['ま', 'み', 'む', 'め', 'も'],
+      ['や', '', 'ゆ', '', 'よ'],
+      ['ら', 'り', 'る', 'れ', 'ろ'],
+      ['わ', '', '', 'を', 'ん'],
+      ['が', 'ぎ', 'ぐ', 'げ', 'ご'],
+      ['ざ', 'じ', 'ず', 'ぜ', 'ぞ'],
+      ['だ', 'ぢ', 'づ', 'で', 'ど'],
+      ['ば', 'び', 'ぶ', 'べ', 'ぼ'],
+      ['ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ']
     ]
   },
   {
     id: 'katakana',
     label: 'カタカナ',
     rows: [
-      'アイウエオ',
-      'カキクケコ',
-      'サシスセソ',
-      'タチツテト',
-      'ナニヌネノ',
-      'ハヒフヘホ',
-      'マミムメモ',
-      'ヤユヨ',
-      'ラリルレロ',
-      'ワヲン',
-      'ガギグゲゴ',
-      'ザジズゼゾ',
-      'ダヂヅデド',
-      'バビブベボ',
-      'パピプペポ',
-      'ャュョッ'
+      ['ア', 'イ', 'ウ', 'エ', 'オ'],
+      ['カ', 'キ', 'ク', 'ケ', 'コ'],
+      ['サ', 'シ', 'ス', 'セ', 'ソ'],
+      ['タ', 'チ', 'ツ', 'テ', 'ト'],
+      ['ナ', 'ニ', 'ヌ', 'ネ', 'ノ'],
+      ['ハ', 'ヒ', 'フ', 'ヘ', 'ホ'],
+      ['マ', 'ミ', 'ム', 'メ', 'モ'],
+      ['ヤ', '', 'ユ', '', 'ヨ'],
+      ['ラ', 'リ', 'ル', 'レ', 'ロ'],
+      ['ワ', '', '', 'ヲ', 'ン'],
+      ['ガ', 'ギ', 'グ', 'ゲ', 'ゴ'],
+      ['ザ', 'ジ', 'ズ', 'ゼ', 'ゾ'],
+      ['ダ', 'ヂ', 'ヅ', 'デ', 'ド'],
+      ['バ', 'ビ', 'ブ', 'ベ', 'ボ'],
+      ['パ', 'ピ', 'プ', 'ペ', 'ポ']
     ]
   }
 ];
 
 const writingCharacters = KANA_GROUPS.flatMap((group) => {
-  const chars = group.rows.join('').split('');
+  const chars = group.rows.flat().filter(Boolean);
   return chars.map((char, index) => ({
     id: `${group.id}_${char.codePointAt(0).toString(16)}`,
     group: group.id,
@@ -1607,6 +1628,86 @@ const defaultCareState = {
 
 let careState = loadCareState();
 let stars = Number.isFinite(careState.stars) ? careState.stars : 1250;
+let audioCtx = null;
+let lastWriteSfxAt = 0;
+
+function getAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioCtx) audioCtx = new AudioContextClass();
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function playTone(frequency, duration = 0.06, type = 'square', volume = 0.035, delay = 0) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const start = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.02);
+}
+
+function playNoise(duration = 0.045, volume = 0.018) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const sampleCount = Math.max(1, Math.floor(ctx.sampleRate * duration));
+  const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < sampleCount; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / sampleCount);
+  }
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  gain.gain.value = volume;
+  source.buffer = buffer;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  source.start();
+}
+
+function playSfx(kind) {
+  try {
+    if (kind === 'writeMove') {
+      playNoise(0.028, 0.010);
+      return;
+    }
+    if (kind === 'writeStart') {
+      playTone(430, 0.045, 'triangle', 0.026);
+      return;
+    }
+    if (kind === 'strokeOk') {
+      playTone(720, 0.055, 'square', 0.036);
+      playTone(960, 0.07, 'square', 0.032, 0.055);
+      return;
+    }
+    if (kind === 'complete') {
+      [660, 820, 1040].forEach((freq, i) => playTone(freq, 0.08, 'square', 0.034, i * 0.075));
+      return;
+    }
+    if (kind === 'mistake') {
+      playTone(220, 0.07, 'triangle', 0.026);
+      playTone(170, 0.08, 'triangle', 0.021, 0.055);
+      return;
+    }
+    if (kind === 'select') {
+      playTone(560, 0.04, 'square', 0.028);
+      playTone(720, 0.05, 'square', 0.024, 0.04);
+      return;
+    }
+    playTone(510, 0.045, 'square', 0.026);
+  } catch (_) {}
+}
 
 function cloneDefaultCareState() {
   return JSON.parse(JSON.stringify(defaultCareState));
@@ -1727,15 +1828,30 @@ function buildCharacterList() {
   });
 
   charListEl.innerHTML = '';
-  writingCharacters.forEach((item, index) => {
-    if (item.group !== currentGroup) return;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'char-button';
-    btn.dataset.index = String(index);
-    btn.innerHTML = `<span class="cursor" aria-hidden="true"></span><span>${item.label}</span><span class="done-mark" aria-hidden="true"></span>`;
-    btn.addEventListener('click', () => selectCharacter(index));
-    charListEl.appendChild(btn);
+  const activeGroup = getCurrentGroupMeta();
+  activeGroup.rows.forEach((row) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'char-row';
+    row.forEach((char) => {
+      if (!char) {
+        const spacer = document.createElement('div');
+        spacer.className = 'char-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        rowEl.appendChild(spacer);
+        return;
+      }
+      const index = writingCharacters.findIndex((item) => item.group === activeGroup.id && item.char === char);
+      if (index < 0) return;
+      const item = writingCharacters[index];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'char-button';
+      btn.dataset.index = String(index);
+      btn.innerHTML = `<span class="cursor" aria-hidden="true"></span><span>${item.label}</span><span class="done-mark" aria-hidden="true"></span>`;
+      btn.addEventListener('click', () => selectCharacter(index));
+      rowEl.appendChild(btn);
+    });
+    charListEl.appendChild(rowEl);
   });
 }
 
@@ -2129,18 +2245,45 @@ function medianToBoardPercent(median) {
   };
 }
 
+function clampBoardPercent(value, min = 8, max = 92) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function offsetStrokeNumberPosition(pos, index, total) {
+  if (!pos) return null;
+  const dx = pos.x - 50;
+  const dy = pos.y - 50;
+  const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+  let ux = 0;
+  let uy = -1;
+  if (distanceFromCenter >= 8) {
+    ux = dx / distanceFromCenter;
+    uy = dy / distanceFromCenter;
+  } else {
+    const angle = -Math.PI / 2 + (index / Math.max(3, total)) * Math.PI * 2;
+    ux = Math.cos(angle);
+    uy = Math.sin(angle);
+  }
+  const offset = 13.5;
+  return {
+    x: clampBoardPercent(pos.x + ux * offset),
+    y: clampBoardPercent(pos.y + uy * offset)
+  };
+}
+
 function renderCanvasStrokeNumbers() {
   clearStrokeNumbers();
   if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return;
   currentCharData.medians.forEach((median, index) => {
     const pos = medianToBoardPercent(median);
     if (!pos) return;
+    const markerPos = offsetStrokeNumberPosition(pos, index, currentCharData.medians.length) || pos;
     const num = document.createElement('div');
     const stateClass = index < strokesCompleted ? 'done' : (index === Math.min(currentStrokeIndex, currentCharData.medians.length - 1) ? 'current' : '');
     num.className = `guide-stroke-number ${stateClass}`;
     num.textContent = String(index + 1);
-    num.style.left = `${pos.x}%`;
-    num.style.top = `${pos.y}%`;
+    num.style.left = `${markerPos.x}%`;
+    num.style.top = `${markerPos.y}%`;
     strokeNumberOverlay.appendChild(num);
   });
 }
@@ -2797,6 +2940,7 @@ function spawnSpark(clientX, clientY) {
 
 function onTrailPointerDown(event) {
   if (complete || event.pointerType === 'mouse' && event.button !== 0) return;
+  playSfx('writeStart');
   trailDrawing = true;
   trailDistance = 0;
   sparkleBudget = 0;
@@ -2837,6 +2981,11 @@ function onTrailPointerMove(event) {
   const d = paintTrailSegment(lastTrailPoint, next);
   trailDistance += d;
   if (d > 0) activeAttemptPainted = true;
+  const now = performance.now();
+  if (d > 0 && now - lastWriteSfxAt > 90) {
+    lastWriteSfxAt = now;
+    playSfx('writeMove');
+  }
   sparkleBudget += d;
   if (sparkleBudget > 130) {
     sparkleBudget = 0;
@@ -2902,6 +3051,7 @@ function onCorrectStroke(data) {
 function acceptCorrectStroke(data) {
   const item = getCurrentCharacter();
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  playSfx('strokeOk');
   pendingCorrectStroke = null;
   fillStrokePixels(strokeNum);
   const nextCompleted = strokeNum < strokesCompleted
@@ -2932,6 +3082,7 @@ function onMistake(data) {
   const item = getCurrentCharacter();
   const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : currentStrokeIndex;
   if (rawStrokeNum < strokesCompleted) return;
+  playSfx('mistake');
   const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
   if (pendingCorrectStroke) {
     activeAttemptHadMistake = true;
@@ -2994,6 +3145,7 @@ function completeWriting(manual, summary) {
     return;
   }
   complete = true;
+  playSfx('complete');
   completionQueued = false;
   stopTrail();
   if (writer && typeof writer.cancelQuiz === 'function') {
@@ -3069,6 +3221,12 @@ function nextCharacter() {
   syncCurrentGroupFromCharacter();
   resetWriting();
 }
+
+document.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('button');
+  if (!button || !stageEl.contains(button)) return;
+  playSfx(button.classList.contains('char-button') || button.classList.contains('kana-tab') ? 'select' : 'button');
+}, true);
 
 document.getElementById('backBtn').addEventListener('click', () => {
   saveCareState();

@@ -1180,6 +1180,73 @@ window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) fitStage(); });
 fitStage();
 
+let audioCtx = null;
+
+function getAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioCtx) audioCtx = new AudioContextClass();
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function playTone(frequency, duration = 0.06, type = 'square', volume = 0.035, delay = 0) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const start = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.02);
+}
+
+function playSfx(kind) {
+  try {
+    if (kind === 'warm') {
+      playTone(430, 0.055, 'triangle', 0.03);
+      playTone(540, 0.055, 'triangle', 0.024, 0.05);
+      return;
+    }
+    if (kind === 'pet') {
+      playTone(590, 0.04, 'sine', 0.026);
+      playTone(740, 0.05, 'sine', 0.022, 0.045);
+      return;
+    }
+    if (kind === 'feed') {
+      playTone(520, 0.045, 'square', 0.03);
+      playTone(780, 0.065, 'square', 0.028, 0.055);
+      return;
+    }
+    if (kind === 'play') {
+      [620, 760, 620].forEach((freq, i) => playTone(freq, 0.05, 'square', 0.026, i * 0.05));
+      return;
+    }
+    if (kind === 'hatch') {
+      [580, 760, 960, 1180].forEach((freq, i) => playTone(freq, 0.09, 'square', 0.032, i * 0.075));
+      return;
+    }
+    if (kind === 'mistake') {
+      playTone(210, 0.07, 'triangle', 0.024);
+      return;
+    }
+    if (kind === 'select') {
+      playTone(560, 0.045, 'square', 0.026);
+      playTone(720, 0.05, 'square', 0.022, 0.04);
+      return;
+    }
+    playTone(500, 0.045, 'square', 0.026);
+  } catch (_) {}
+}
+
 function cloneDefaultState() {
   return JSON.parse(JSON.stringify(defaultState));
 }
@@ -1308,6 +1375,7 @@ function spawnFx(type) {
 
 function maybeHatchEgg() {
   if (state.hatched || state.eggWarmth < 100) return false;
+  playSfx('hatch');
   state.hatched = true;
   state.sukusuku = Math.max(10, state.sukusuku);
   state.reaction = 'birth';
@@ -1329,6 +1397,7 @@ function maybeHatchEgg() {
 function warmEgg() {
   const now = Date.now();
   if (now - state.lastWarmAt < 650) return;
+  playSfx('warm');
   state.lastWarmAt = now;
   state.eggWarmth = clamp(state.eggWarmth + 25, 0, 100);
   state.nakayoshi = clamp(state.nakayoshi + 1, 0, 100);
@@ -1442,6 +1511,7 @@ function applyEntrySpeech() {
 
 function feedCookie() {
   if (!state.hatched) {
+    playSfx('warm');
     setSpeech('まだ タマゴだよ', '先に あたためて、ミルマルを うまれさせよう。');
     setReaction('warm');
     spawnFx('sparkle');
@@ -1449,11 +1519,13 @@ function feedCookie() {
   }
   const cookie = state.inventory.moji_cookie;
   if (cookie.count <= 0) {
+    playSfx('mistake');
     setSpeech('おやつが ないみたい。', 'もじを かいて もじクッキーを もらいにいこう！');
     setReaction('normal');
     return;
   }
   cookie.count -= 1;
+  playSfx('feed');
   state.nakayoshi = clamp(state.nakayoshi + 5, 0, 100);
   state.sukusuku = clamp(state.sukusuku + 2, 0, 100);
   setSpeech('おいしい！ ありがとう！', 'もじクッキーを あげたよ。なかよしと すくすくが ふえた！');
@@ -1466,6 +1538,7 @@ function feedCookie() {
 function petMilmaru() {
   const now = Date.now();
   if (now - state.lastPetAt < 700) return;
+  playSfx('pet');
   state.lastPetAt = now;
   state.nakayoshi = clamp(state.nakayoshi + 2, 0, 100);
   if (!state.hatched) {
@@ -1487,11 +1560,13 @@ function petMilmaru() {
 
 function playWithMilmaru() {
   if (!state.hatched) {
+    playSfx('mistake');
     setSpeech('まだ タマゴだよ', 'いまは あたためるのが いちばん だいじ。');
     setReaction('warm');
     spawnFx('sparkle');
     return;
   }
+  playSfx('play');
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
   setSpeech('いっしょに あそぶの たのしい！', 'ミルマルが ぴょんぴょん はねたよ。');
   setReaction('play');
@@ -1505,6 +1580,7 @@ function goWrite() {
     warmEgg();
     return;
   }
+  playSfx('select');
   setSpeech('もじを かきにいこう！', 'かけたら もじクッキーが もらえるよ。');
   setReaction('happy');
   saveState();
@@ -1512,6 +1588,12 @@ function goWrite() {
     window.location.href = 'index.html?from=care';
   }, 180);
 }
+
+document.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('button');
+  if (!button || !stageEl.contains(button)) return;
+  playSfx('button');
+}, true);
 
 document.getElementById('backBtn').addEventListener('click', () => {
   saveState();
