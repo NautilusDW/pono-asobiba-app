@@ -65,6 +65,7 @@
   --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
+  --care-icon-warm: url('../assets/images/mojikko/care/icon_warm.png');
   --care-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --care-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
   --care-settings: url('../assets/images/mojikko/writing/settings_button.png');
@@ -914,11 +915,9 @@ html, body {
 }
 
 .write-main-btn.warm-main .action-icon {
-  color: #b85f31;
-  background:
-    radial-gradient(circle, #fff8cf 0 32%, #ffbf5f 33% 58%, transparent 60%),
-    rgba(255,255,255,0.45);
-  text-shadow: 1px 1px rgba(255,255,255,0.55);
+  color: transparent;
+  background: rgba(255,255,255,0.45) var(--care-icon-warm) center / contain no-repeat;
+  text-shadow: none;
 }
 
 .action-help {
@@ -1325,7 +1324,7 @@ function renderActionMode() {
     mainActionText.textContent = 'もじを かく！';
     mainActionHelp.textContent = 'もじを かいて おやつを もらおう！';
   } else {
-    mainActionIcon.textContent = '☀';
+    mainActionIcon.textContent = '';
     mainActionText.textContent = 'あたためる！';
     mainActionHelp.textContent = 'やさしく ぽかぽか してあげよう';
   }

@@ -50,8 +50,8 @@
   --moji-reward-box: url('../assets/images/mojikko/writing/reward_box.png');
   --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
   --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
-  --moji-button-retry: url('../assets/images/mojikko/writing/button_retry_normal.png');
-  --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_pressed.png');
+  --moji-button-retry: url('../assets/images/mojikko/writing/button_retry_normal_v2.png');
+  --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_pressed_v2.png');
   --moji-button-care: url('../assets/images/mojikko/writing/button_care_normal.png');
   --moji-button-care-pressed: url('../assets/images/mojikko/writing/button_care_pressed.png');
   --moji-button-small-success: url('../assets/images/mojikko/writing/button_small_success_normal.png');
@@ -1025,16 +1025,10 @@ html, body {
 
 #resetBtn {
   width: 250px;
-  padding: 8px 22px 10px;
+  padding-left: 66px;
+  padding-right: 18px;
   color: #5f3c22;
-  border: 4px solid #8b6042;
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0) 34%),
-    linear-gradient(180deg, #ffe49b 0%, #f0ad45 100%);
-  box-shadow:
-    0 6px 0 #5f3b22,
-    inset 0 0 0 4px rgba(255,255,255,0.25);
+  background-image: var(--moji-button-retry);
 }
 
 #resetBtn::before {
@@ -1042,9 +1036,7 @@ html, body {
 }
 
 #resetBtn:active {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0) 28%),
-    linear-gradient(180deg, #edab47 0%, #ffdc82 100%);
+  background-image: var(--moji-button-retry-pressed);
   filter: brightness(0.96);
 }
 
@@ -2249,35 +2241,80 @@ function clampBoardPercent(value, min = 8, max = 92) {
   return Math.max(min, Math.min(max, value));
 }
 
-function offsetStrokeNumberPosition(pos, index, total) {
+function getMarkerMaskOverlap(pos) {
+  if (!pixelLetter || !pixelLetter.mask) return 0;
+  const gridSize = pixelLetter.gridSize;
+  const gx = Math.round((pos.x / 100) * (gridSize - 1));
+  const gy = Math.round((pos.y / 100) * (gridSize - 1));
+  const radius = Math.ceil(gridSize * 0.052);
+  let overlap = 0;
+  for (let y = gy - radius; y <= gy + radius; y++) {
+    if (y < 0 || y >= gridSize) continue;
+    for (let x = gx - radius; x <= gx + radius; x++) {
+      if (x < 0 || x >= gridSize) continue;
+      const dx = x - gx;
+      const dy = y - gy;
+      if (dx * dx + dy * dy > radius * radius) continue;
+      if (pixelLetter.mask[y * gridSize + x]) overlap += 1;
+    }
+  }
+  return overlap;
+}
+
+function scoreStrokeNumberPosition(candidate, anchor, placedPositions) {
+  const dx = candidate.x - anchor.x;
+  const dy = candidate.y - anchor.y;
+  const distanceFromAnchor = Math.sqrt(dx * dx + dy * dy);
+  let score = getMarkerMaskOverlap(candidate) * 1200 + distanceFromAnchor * 18;
+  const edge = Math.min(candidate.x, candidate.y, 100 - candidate.x, 100 - candidate.y);
+  if (edge < 8) score += (8 - edge) * 500;
+  placedPositions.forEach((placed) => {
+    const px = candidate.x - placed.x;
+    const py = candidate.y - placed.y;
+    const d = Math.sqrt(px * px + py * py);
+    if (d < 10) score += (10 - d) * 900;
+  });
+  return score;
+}
+
+function offsetStrokeNumberPosition(pos, index, total, placedPositions) {
   if (!pos) return null;
   const dx = pos.x - 50;
   const dy = pos.y - 50;
   const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
-  let ux = 0;
-  let uy = -1;
-  if (distanceFromCenter >= 8) {
-    ux = dx / distanceFromCenter;
-    uy = dy / distanceFromCenter;
-  } else {
-    const angle = -Math.PI / 2 + (index / Math.max(3, total)) * Math.PI * 2;
-    ux = Math.cos(angle);
-    uy = Math.sin(angle);
+  const preferredAngle = distanceFromCenter >= 8
+    ? Math.atan2(dy, dx)
+    : -Math.PI / 2 + (index / Math.max(3, total)) * Math.PI * 2;
+  const radii = [6.5, 8, 9.5, 11, 12.5];
+  const angleSteps = [0, -0.45, 0.45, -0.9, 0.9, -1.35, 1.35, Math.PI, -Math.PI * 0.75, Math.PI * 0.75, -Math.PI / 2, Math.PI / 2];
+  let best = null;
+  let bestScore = Infinity;
+  for (const radius of radii) {
+    for (const angleStep of angleSteps) {
+      const angle = preferredAngle + angleStep;
+      const candidate = {
+        x: clampBoardPercent(pos.x + Math.cos(angle) * radius),
+        y: clampBoardPercent(pos.y + Math.sin(angle) * radius)
+      };
+      const score = scoreStrokeNumberPosition(candidate, pos, placedPositions || []);
+      if (score < bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
   }
-  const offset = 13.5;
-  return {
-    x: clampBoardPercent(pos.x + ux * offset),
-    y: clampBoardPercent(pos.y + uy * offset)
-  };
+  return best;
 }
 
 function renderCanvasStrokeNumbers() {
   clearStrokeNumbers();
   if (!pixelLetter || !currentCharData || !Array.isArray(currentCharData.medians)) return;
+  const placedPositions = [];
   currentCharData.medians.forEach((median, index) => {
     const pos = medianToBoardPercent(median);
     if (!pos) return;
-    const markerPos = offsetStrokeNumberPosition(pos, index, currentCharData.medians.length) || pos;
+    const markerPos = offsetStrokeNumberPosition(pos, index, currentCharData.medians.length, placedPositions) || pos;
+    placedPositions.push(markerPos);
     const num = document.createElement('div');
     const stateClass = index < strokesCompleted ? 'done' : (index === Math.min(currentStrokeIndex, currentCharData.medians.length - 1) ? 'current' : '');
     num.className = `guide-stroke-number ${stateClass}`;
