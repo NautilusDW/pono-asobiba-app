@@ -30,6 +30,7 @@
   --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --care-yard-bg: url('../assets/images/mojikko/care/yard_background.png');
+  --care-yard-bg-wide: url('../assets/images/mojikko/care/yard_background_wide.png');
   --care-house: url('../assets/images/mojikko/care/house_front.png');
   --care-rug: url('../assets/images/mojikko/care/pink_rug.png');
   --care-doghouse: url('../assets/images/mojikko/care/doghouse_and_jar.png');
@@ -49,6 +50,18 @@
   --care-milmaru-happy: url('../assets/images/mojikko/writing/milmaru_cheer.png');
   --care-milmaru-eating: url('../assets/images/mojikko/writing/milmaru_cookie.png');
   --care-milmaru-relaxed: url('../assets/images/mojikko/writing/milmaru_relaxed.png');
+  --care-egg-idle: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
+  --care-egg-cracked: url('../assets/images/mojikko/care/milmaru_egg_cracked.png');
+  --care-egg-peek: url('../assets/images/mojikko/care/milmaru_egg_peek.png');
+  --care-shell-baby-happy: url('../assets/images/mojikko/care/milmaru_shell_baby_happy.png');
+  --care-shell-baby-sleep: url('../assets/images/mojikko/care/milmaru_shell_baby_sleep.png');
+  --care-shell-baby-left: url('../assets/images/mojikko/care/milmaru_shell_baby_left.png');
+  --care-shell-baby-right: url('../assets/images/mojikko/care/milmaru_shell_baby_right.png');
+  --care-shell-baby-cry: url('../assets/images/mojikko/care/milmaru_shell_baby_cry.png');
+  --care-shell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_shell_baby_bigcry.png');
+  --care-shell-baby-angry: url('../assets/images/mojikko/care/milmaru_shell_baby_angry.png');
+  --care-shell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_shell_baby_disappointed.png');
+  --care-shell-baby-worried: url('../assets/images/mojikko/care/milmaru_shell_baby_worried.png');
   --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
@@ -87,8 +100,7 @@ html, body {
   height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, var(--sky) 0 43%, #b7e6d4 43% 67%, #7abf6c 67% 100%);
+  background: var(--care-yard-bg-wide) center / cover no-repeat;
   image-rendering: pixelated;
 }
 
@@ -97,12 +109,10 @@ html, body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 16% 18%, rgba(255,255,255,0.92) 0 42px, transparent 43px),
-    radial-gradient(circle at 22% 17%, rgba(255,255,255,0.82) 0 64px, transparent 65px),
-    radial-gradient(circle at 78% 15%, rgba(255,255,255,0.85) 0 48px, transparent 49px),
     linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255,255,255,0.08) 1px, transparent 1px);
-  background-size: auto, auto, auto, 8px 8px, 8px 8px;
+  background-size: 8px 8px, 8px 8px;
+  mix-blend-mode: soft-light;
   pointer-events: none;
 }
 
@@ -289,7 +299,7 @@ html, body {
 .side-panel {
   position: absolute;
   top: 146px;
-  bottom: 128px;
+  bottom: 70px;
   width: 270px;
   border-radius: 10px;
   z-index: 3;
@@ -388,6 +398,11 @@ html, body {
   image-rendering: pixelated;
 }
 
+.yard-bg,
+.yard-prop {
+  display: none;
+}
+
 .yard-bg::before {
   display: none;
 }
@@ -446,7 +461,7 @@ html, body {
 
 .yard-prop.cushion {
   right: 114px;
-  bottom: 64px;
+  bottom: 72px;
   width: 144px;
   height: 92px;
   background-image: var(--care-cushion);
@@ -551,9 +566,9 @@ html, body {
 .milmaru-wrap {
   position: absolute;
   left: 50%;
-  bottom: 34px;
-  width: 330px;
-  height: 336px;
+  bottom: 42px;
+  width: 360px;
+  height: 352px;
   transform: translateX(-50%);
   z-index: 5;
 }
@@ -562,8 +577,8 @@ html, body {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 286px;
-  height: 306px;
+  width: 300px;
+  height: 320px;
   transform: translateX(-50%);
   transform-origin: center bottom;
   background: var(--care-milmaru-normal) center bottom / contain no-repeat;
@@ -602,17 +617,71 @@ html, body {
 .milmaru.relaxed { animation: relaxedSway 1s ease; }
 .milmaru.play { animation: playHop 0.8s ease; }
 
-.milmaru.happy,
-.milmaru.play {
-  background-image: var(--care-milmaru-happy);
+.milmaru.egg {
+  width: 270px;
+  height: 340px;
+  background-image: var(--care-egg-idle);
 }
 
-.milmaru.eating {
-  background-image: var(--care-milmaru-eating);
+.milmaru.egg-cracked {
+  background-image: var(--care-egg-cracked);
 }
 
-.milmaru.relaxed {
-  background-image: var(--care-milmaru-relaxed);
+.milmaru.egg-peek {
+  background-image: var(--care-egg-peek);
+}
+
+.milmaru.baby {
+  width: 318px;
+  height: 322px;
+  background-image: var(--care-shell-baby-happy);
+}
+
+.milmaru.baby.normal {
+  background-image: var(--care-shell-baby-left);
+}
+
+.milmaru.baby.happy,
+.milmaru.baby.eating,
+.milmaru.baby.play,
+.milmaru.baby.birth {
+  background-image: var(--care-shell-baby-happy);
+}
+
+.milmaru.baby.relaxed {
+  background-image: var(--care-shell-baby-sleep);
+}
+
+.milmaru.baby.cry {
+  background-image: var(--care-shell-baby-cry);
+}
+
+.milmaru.baby.bigcry {
+  background-image: var(--care-shell-baby-bigcry);
+}
+
+.milmaru.baby.angry {
+  background-image: var(--care-shell-baby-angry);
+}
+
+.milmaru.baby.disappointed {
+  background-image: var(--care-shell-baby-disappointed);
+}
+
+.milmaru.baby.worried {
+  background-image: var(--care-shell-baby-worried);
+}
+
+.milmaru.egg.warm {
+  animation: eggWarm 0.9s ease;
+}
+
+.milmaru.egg.relaxed {
+  animation: eggPetWiggle 0.75s ease;
+}
+
+.milmaru.birth {
+  animation: birthPop 1.05s ease;
 }
 
 @keyframes happyBounce {
@@ -633,6 +702,22 @@ html, body {
   0%, 100% { transform: translateX(-50%) translateY(0); }
   22% { transform: translateX(-70%) translateY(-18px); }
   52% { transform: translateX(-30%) translateY(-28px); }
+}
+@keyframes eggWarm {
+  0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
+  38% { transform: translateX(-50%) scale(1.05); filter: brightness(1.12) drop-shadow(0 0 14px rgba(255, 218, 118, 0.7)); }
+  68% { transform: translateX(-50%) scale(0.98); }
+}
+@keyframes eggPetWiggle {
+  0%, 100% { transform: translateX(-50%) rotate(0); }
+  22% { transform: translateX(-50%) rotate(-5deg); }
+  48% { transform: translateX(-50%) rotate(5deg); }
+  72% { transform: translateX(-50%) rotate(-3deg); }
+}
+@keyframes birthPop {
+  0% { transform: translateX(-50%) translateY(0) scale(0.88); filter: brightness(1); }
+  42% { transform: translateX(-50%) translateY(-36px) scale(1.08); filter: brightness(1.18) drop-shadow(0 0 18px rgba(134, 215, 172, 0.8)); }
+  100% { transform: translateX(-50%) translateY(0) scale(1); filter: brightness(1); }
 }
 
 .fx-layer {
@@ -762,17 +847,17 @@ html, body {
   position: absolute;
   left: 300px;
   right: 300px;
-  bottom: 58px;
-  height: 154px;
+  bottom: 72px;
+  height: 142px;
   display: grid;
-  grid-template-rows: 70px 70px;
-  gap: 14px;
+  grid-template-rows: 66px 62px;
+  gap: 12px;
   z-index: 6;
 }
 
 .sub-action-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
@@ -783,9 +868,9 @@ html, body {
   grid-template-rows: 1fr auto;
   align-items: center;
   column-gap: 10px;
-  padding: 10px 16px;
+  padding: 7px 14px;
   text-align: left;
-  font-size: 26px;
+  font-size: 24px;
 }
 
 .write-main-btn {
@@ -794,9 +879,9 @@ html, body {
   grid-template-rows: 1fr auto;
   align-items: center;
   column-gap: 16px;
-  padding: 10px 28px;
+  padding: 7px 28px;
   text-align: left;
-  font-size: 34px;
+  font-size: 32px;
   background: linear-gradient(180deg, #e4f7c9, #8ed067);
   border-color: #6c8f3c;
 }
@@ -822,6 +907,19 @@ html, body {
   background-image: var(--care-icon-pencil);
 }
 
+.write-main-btn.warm-main {
+  background: linear-gradient(180deg, #fff0bd, #f3b86d);
+  border-color: #ad7040;
+}
+
+.write-main-btn.warm-main .action-icon {
+  color: #b85f31;
+  background:
+    radial-gradient(circle, #fff8cf 0 32%, #ffbf5f 33% 58%, transparent 60%),
+    rgba(255,255,255,0.45);
+  text-shadow: 1px 1px rgba(255,255,255,0.55);
+}
+
 .action-help {
   font-family: var(--round-font);
   font-size: 16px;
@@ -829,10 +927,58 @@ html, body {
   color: var(--ink-soft);
 }
 
+.write-main-btn .action-help {
+  display: none;
+}
+
 .action-btn.feed { background: linear-gradient(180deg, #fff0bd, #f0c16f); }
 .action-btn.pet { background: linear-gradient(180deg, #ffe0df, #f4a9a5); }
 .action-btn.play { background: linear-gradient(180deg, #cdeefe, #75c4e5); }
 .action-btn.write { background: linear-gradient(180deg, #e0f4c9, #9ed572); }
+
+.action-btn.feed.has-cookie {
+  background: linear-gradient(180deg, #ffe6a2, #f2a64f);
+  box-shadow: 0 5px 0 #6f462c, inset 0 3px rgba(255,255,255,0.55), 0 0 0 5px rgba(255, 219, 92, 0.45);
+}
+
+.action-btn.feed.has-cookie::after {
+  content: '!';
+  position: absolute;
+  left: 46px;
+  top: -18px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #b35d48;
+  border-radius: 999px;
+  background: #ff8f94;
+  color: #fff7de;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  box-shadow: 0 3px 0 #8d4b3a;
+}
+
+.action-btn.play {
+  display: none;
+}
+
+.care-actions.egg-mode {
+  left: 480px;
+  right: 480px;
+  bottom: 86px;
+  height: 138px;
+  grid-template-rows: 66px 58px;
+}
+
+.care-actions.egg-mode .sub-action-row {
+  grid-template-columns: 1fr;
+}
+
+.care-actions.egg-mode .action-btn.feed,
+.care-actions.egg-mode .action-btn.play {
+  display: none;
+}
 
 .action-btn.feed .action-icon { background-image: var(--care-icon-cookie); }
 .action-btn.pet .action-icon { background-image: var(--care-icon-heart); }
@@ -876,7 +1022,7 @@ html, body {
         </div>
       </div>
       <div class="paper-panel gauge-card">
-        <div class="gauge-title"><span class="gauge-icon leaf"></span><span>すくすく</span></div>
+        <div class="gauge-title"><span class="gauge-icon leaf"></span><span id="sukusukuLabel">すくすく</span></div>
         <div class="gauge-line">
           <div class="gauge-track"><div class="gauge-fill sukusuku" id="sukusukuFill"></div></div>
           <span id="sukusukuText">18 / 100</span>
@@ -950,8 +1096,8 @@ html, body {
         </div>
         <div class="memo-box">
           <div>メモ</div>
-          <div>やさしくて、がんばりやさん。</div>
-          <div>ミルクのにおいが だいすき！</div>
+          <div id="memoLine1">タマゴの なかで すやすや。</div>
+          <div id="memoLine2">ぽかぽかが だいすき！</div>
         </div>
         <button class="pixel-button album-btn" id="albumBtn">アルバム</button>
       </div>
@@ -959,7 +1105,7 @@ html, body {
 
     <nav class="care-actions" aria-label="お世話アクション">
       <button class="pixel-button write-main-btn" id="writeBtn">
-        <span class="action-icon">✏</span><span>もじを かく！</span><span class="action-help">メインの もじかきへ もどる</span>
+        <span class="action-icon" id="mainActionIcon">✏</span><span id="mainActionText">もじを かく！</span><span class="action-help" id="mainActionHelp">メインの もじかきへ もどる</span>
       </button>
       <div class="sub-action-row">
         <button class="pixel-button action-btn feed" id="feedBtn">
@@ -986,14 +1132,17 @@ const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 
 const defaultState = {
   nakayoshi: 32,
-  sukusuku: 18,
+  sukusuku: 0,
+  eggWarmth: 0,
+  hatched: false,
   stars: 1250,
   inventory: {
     moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
   reaction: 'normal',
-  speech: 'いっしょに もじを かこう！',
-  lastPetAt: 0
+  speech: 'まだ タマゴだよ',
+  lastPetAt: 0,
+  lastWarmAt: 0
 };
 
 const growthStages = [
@@ -1011,6 +1160,12 @@ const speechBubble = document.getElementById('speechBubble');
 const bottomMessage = document.getElementById('bottomMessage');
 const milmaru = document.getElementById('milmaru');
 const fxLayer = document.getElementById('fxLayer');
+const careActions = document.querySelector('.care-actions');
+const writeBtn = document.getElementById('writeBtn');
+const feedBtn = document.getElementById('feedBtn');
+const mainActionIcon = document.getElementById('mainActionIcon');
+const mainActionText = document.getElementById('mainActionText');
+const mainActionHelp = document.getElementById('mainActionHelp');
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1036,9 +1191,13 @@ function loadState() {
     const merged = cloneDefaultState();
     merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
     merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
+    merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? clamp(parsed.eggWarmth, 0, 100) : merged.eggWarmth;
+    merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
-    merged.speech = parsed.speech || merged.speech;
+    merged.speech = merged.hatched ? (parsed.speech || 'うまれたての あかちゃんだよ') : 'まだ タマゴだよ';
     merged.reaction = parsed.reaction || merged.reaction;
+    merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
+    merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
     if (parsed.inventory && parsed.inventory.moji_cookie) {
       merged.inventory.moji_cookie.count = Math.max(0, Number(parsed.inventory.moji_cookie.count) || 0);
     }
@@ -1069,6 +1228,11 @@ function getGrowthStage(sukusuku) {
   return growthStages[4];
 }
 
+function getCareStage() {
+  if (!state.hatched) return growthStages[0];
+  return getGrowthStage(Math.max(10, state.sukusuku));
+}
+
 function getNextGrowthProgress(sukusuku) {
   const stage = getGrowthStage(sukusuku);
   const max = stage.next;
@@ -1079,20 +1243,51 @@ function getNextGrowthProgress(sukusuku) {
   };
 }
 
+function getEggVisualClass() {
+  if (state.eggWarmth >= 70) return 'egg-peek';
+  if (state.eggWarmth >= 35) return 'egg-cracked';
+  return 'egg-idle';
+}
+
+function renderActionMode() {
+  careActions.classList.toggle('egg-mode', !state.hatched);
+  writeBtn.classList.toggle('warm-main', !state.hatched);
+  if (state.hatched) {
+    mainActionIcon.textContent = '';
+    mainActionText.textContent = 'もじを かく！';
+    mainActionHelp.textContent = 'もじを かいて おやつを もらおう！';
+  } else {
+    mainActionIcon.textContent = '☀';
+    mainActionText.textContent = 'あたためる！';
+    mainActionHelp.textContent = 'やさしく ぽかぽか してあげよう';
+  }
+}
+
+function applyMilmaruClass(reaction) {
+  const currentReaction = reaction || state.reaction || 'normal';
+  const classes = ['milmaru'];
+  if (state.hatched) {
+    classes.push('baby', currentReaction);
+  } else {
+    classes.push('egg', getEggVisualClass(), currentReaction);
+  }
+  milmaru.className = classes.join(' ');
+}
+
 function setSpeech(text, message) {
   state.speech = text;
   speechBubble.textContent = text;
   if (message) bottomMessage.textContent = message;
 }
 
-function setReaction(reaction) {
+function setReaction(reaction, duration = 950) {
   state.reaction = reaction;
-  milmaru.className = `milmaru ${reaction}`;
+  applyMilmaruClass(reaction);
   clearTimeout(setReaction._timer);
   setReaction._timer = setTimeout(() => {
     state.reaction = 'normal';
-    milmaru.className = 'milmaru normal';
-  }, 950);
+    applyMilmaruClass('normal');
+  }, duration);
 }
 
 function spawnFx(type) {
@@ -1110,6 +1305,49 @@ function spawnFx(type) {
   }
 }
 
+function maybeHatchEgg() {
+  if (state.hatched || state.eggWarmth < 100) return false;
+  state.hatched = true;
+  state.sukusuku = Math.max(10, state.sukusuku);
+  state.reaction = 'birth';
+  setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！つぎは もじを かいて おやつを もらおう。');
+  spawnFx('sparkle');
+  saveState();
+  render();
+  setReaction('birth', 1300);
+  setTimeout(() => {
+    if (state.reaction === 'normal') {
+      setSpeech('いっしょに もじを かこう！', 'もじを かくと、ミルマルに あげる おやつが もらえるよ。');
+      saveState();
+      render();
+    }
+  }, 1450);
+  return true;
+}
+
+function warmEgg() {
+  const now = Date.now();
+  if (now - state.lastWarmAt < 650) return;
+  state.lastWarmAt = now;
+  state.eggWarmth = clamp(state.eggWarmth + 25, 0, 100);
+  state.nakayoshi = clamp(state.nakayoshi + 1, 0, 100);
+  if (state.eggWarmth >= 100) {
+    maybeHatchEgg();
+    return;
+  }
+  if (state.eggWarmth >= 70) {
+    setSpeech('もうすぐ うまれそう！', 'タマゴの なかで ミルマルが うれしそうに うごいたよ。');
+  } else if (state.eggWarmth >= 35) {
+    setSpeech('ぽかぽか してきたよ', 'タマゴに ちいさな ひびが はいったみたい。');
+  } else {
+    setSpeech('あったかいね', 'やさしく あたためてあげよう。');
+  }
+  setReaction('warm', 900);
+  spawnFx('sparkle');
+  saveState();
+  render();
+}
+
 function renderGrowthIcons(currentStage) {
   const icons = document.getElementById('growthIcons');
   icons.innerHTML = growthStages.map((stage) => {
@@ -1121,28 +1359,40 @@ function renderGrowthIcons(currentStage) {
 function render() {
   state.nakayoshi = clamp(state.nakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku, 0, 100);
+  state.eggWarmth = clamp(state.eggWarmth || 0, 0, 100);
   const cookie = state.inventory.moji_cookie;
-  const stage = getGrowthStage(state.sukusuku);
-  const progress = getNextGrowthProgress(state.sukusuku);
+  const stage = getCareStage();
+  const progress = state.hatched
+    ? getNextGrowthProgress(Math.max(10, state.sukusuku))
+    : { current: state.eggWarmth, max: 100, percent: state.eggWarmth };
   const remaining = Math.max(0, progress.max - state.sukusuku);
   const writingCount = Math.max(0, Math.ceil(remaining / 3));
+  const warmCount = Math.max(0, Math.ceil((100 - state.eggWarmth) / 25));
 
   document.getElementById('starCount').textContent = String(state.stars);
   document.getElementById('nakayoshiText').textContent = `${state.nakayoshi} / 100`;
-  document.getElementById('sukusukuText').textContent = `${state.sukusuku} / 100`;
+  document.getElementById('sukusukuLabel').textContent = state.hatched ? 'すくすく' : 'ぽかぽか';
+  document.getElementById('sukusukuText').textContent = state.hatched ? `${state.sukusuku} / 100` : `${state.eggWarmth} / 100`;
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
-  document.getElementById('sukusukuFill').style.width = `${state.sukusuku}%`;
+  document.getElementById('sukusukuFill').style.width = `${state.hatched ? state.sukusuku : state.eggWarmth}%`;
   document.getElementById('cookieCount').textContent = String(cookie.count);
+  feedBtn.classList.toggle('has-cookie', state.hatched && cookie.count > 0);
   document.getElementById('growthStageName').textContent = stage.name;
   document.getElementById('stageLabel').textContent = stage.name;
   document.getElementById('growthFill').style.width = `${progress.percent}%`;
-  document.getElementById('growthText').textContent = `すくすく ${progress.current} / ${progress.max}`;
-  document.getElementById('growthHint').textContent = writingCount > 0
-    ? `あと ${writingCount}かいで せいちょう！`
-    : 'もうすぐ せいちょう！';
-  document.getElementById('milmaruLevel').textContent = String(Math.max(1, Math.floor(state.sukusuku / 20) + 1));
+  document.getElementById('growthText').textContent = state.hatched
+    ? `すくすく ${progress.current} / ${progress.max}`
+    : `ぽかぽか ${progress.current} / ${progress.max}`;
+  document.getElementById('growthHint').textContent = state.hatched
+    ? (writingCount > 0 ? `あと ${writingCount}かいで せいちょう！` : 'もうすぐ せいちょう！')
+    : (warmCount > 0 ? `あと ${warmCount}かい あたためよう！` : 'もうすぐ うまれるよ！');
+  document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
+  document.getElementById('memoLine1').textContent = state.hatched ? 'やさしくて、がんばりやさん。' : 'タマゴの なかで すやすや。';
+  document.getElementById('memoLine2').textContent = state.hatched ? 'ミルクのにおいが だいすき！' : 'ぽかぽかが だいすき！';
   speechBubble.textContent = state.speech;
   renderGrowthIcons(stage);
+  renderActionMode();
+  applyMilmaruClass(state.reaction);
 }
 
 function consumePendingWritingReward() {
@@ -1161,8 +1411,13 @@ function consumePendingWritingReward() {
   }
   state.sukusuku = clamp(state.sukusuku + 3, 0, 100);
   state.stars += 25;
-  setSpeech(`${reward.name || 'もじクッキー'}を もらったよ！`, 'かいた もじが おやつに なったよ。ミルマルに あげてみよう！');
-  setReaction('happy');
+  if (state.hatched) {
+    setSpeech(`${reward.name || 'もじクッキー'}を もらったよ！`, 'かいた もじが おやつに なったよ。ミルマルに あげてみよう！');
+    setReaction('happy');
+  } else {
+    setSpeech(`${reward.name || 'もじクッキー'}を もらったよ！`, 'タマゴを あたためたら、うまれた ミルマルに あげよう。');
+    setReaction('warm');
+  }
   spawnFx('sparkle');
   saveState();
   return true;
@@ -1171,6 +1426,11 @@ function consumePendingWritingReward() {
 function applyEntrySpeech() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('from') !== 'writing') return;
+  if (!state.hatched) {
+    setSpeech('タマゴを あたためよう！', 'ぽかぽか すると、ミルマルが うまれてくるよ。');
+    saveState();
+    return;
+  }
   if (state.inventory.moji_cookie.count > 0) {
     setSpeech('おやつ ほしいな〜', 'もじクッキーを あげたら、ミルマルが よろこぶよ。');
   } else {
@@ -1180,6 +1440,12 @@ function applyEntrySpeech() {
 }
 
 function feedCookie() {
+  if (!state.hatched) {
+    setSpeech('まだ タマゴだよ', '先に あたためて、ミルマルを うまれさせよう。');
+    setReaction('warm');
+    spawnFx('sparkle');
+    return;
+  }
   const cookie = state.inventory.moji_cookie;
   if (cookie.count <= 0) {
     setSpeech('おやつが ないみたい。', 'もじを かいて もじクッキーを もらいにいこう！');
@@ -1201,6 +1467,16 @@ function petMilmaru() {
   if (now - state.lastPetAt < 700) return;
   state.lastPetAt = now;
   state.nakayoshi = clamp(state.nakayoshi + 2, 0, 100);
+  if (!state.hatched) {
+    state.eggWarmth = clamp(state.eggWarmth + 8, 0, 100);
+    setSpeech('ゆらゆら うごいたよ', 'タマゴを やさしく なでたら、すこし あったかく なったよ。');
+    setReaction('relaxed');
+    spawnFx('sparkle');
+    saveState();
+    render();
+    maybeHatchEgg();
+    return;
+  }
   setSpeech('なでてくれて うれしい！', 'ミルマルが ほっとしているよ。');
   setReaction('relaxed');
   spawnFx('heart');
@@ -1209,6 +1485,12 @@ function petMilmaru() {
 }
 
 function playWithMilmaru() {
+  if (!state.hatched) {
+    setSpeech('まだ タマゴだよ', 'いまは あたためるのが いちばん だいじ。');
+    setReaction('warm');
+    spawnFx('sparkle');
+    return;
+  }
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
   setSpeech('いっしょに あそぶの たのしい！', 'ミルマルが ぴょんぴょん はねたよ。');
   setReaction('play');
@@ -1218,6 +1500,10 @@ function playWithMilmaru() {
 }
 
 function goWrite() {
+  if (!state.hatched) {
+    warmEgg();
+    return;
+  }
   setSpeech('もじを かきにいこう！', 'かけたら もじクッキーが もらえるよ。');
   setReaction('happy');
   saveState();
@@ -1254,6 +1540,7 @@ window.MojikkoCareGame = {
   petMilmaru,
   playWithMilmaru,
   goWrite,
+  warmEgg,
   consumePendingWritingReward
 };
 </script>

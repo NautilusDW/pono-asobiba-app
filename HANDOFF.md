@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-28 - [batch:159-mojikko-care-egg-baby] DONE - Codex: user が `D:\ポノのおへや\Moji\assets` に置いたタマゴ/ベビー素材を `assets/images/mojikko/care/` に配置し、お世話画面を初期タマゴ状態へ変更。主ボタンは孵化前 `あたためる！`、サブは `なでる` のみ表示し、4回あたためでベビー化。孵化後は `もじを かく！` 主導線 + `あげる`/`なでる` に戻り、クッキー所持時は `あげる` を強調。21:9横長の庭背景 `yard_background_wide.png` を GPT Image 2 built-in で生成・配置し、旧プロップ重ね背景を非表示化。Playwright で 1600x900 / 1024x768、卵→ベビー、pending reward→cookie+1、feed消費を確認。`sw.js` は v641。 (by Codex)
 - 2026-05-28 - [batch:158-milmaru-baby-expressions-raw] DONE - Codex: user 依頼「殻に座るベビー」と「頭に殻を乗せたベビー」の両方で、正面向きの笑う/泣く/大泣き/怒る/がっかり/困る表情差分を GPT Image 2 built-in で生成。2行×6列 raw シート `tmp/alpha_pending/158_milmaru_baby_expression_assets_raw/milmaru_shell_and_headshell_baby_expressions_raw.png`、1693x929 / RGB / 白背景。alpha 抜き・個別切り出し・本配置は未実施。 (by Codex)
 - 2026-05-28 - [batch:157-milmaru-shell-baby-raw] DONE - Codex: user 指摘「ベビーは殻から出ず、卵の殻の上にちょこんと座ってキョロキョロしている」を反映し、タマゴ→ひび割れ→孵化直前→下殻に座るベビーまでの6段階 raw シート `tmp/alpha_pending/157_milmaru_shell_baby_assets_raw/milmaru_egg_to_shell_baby_asset_sheet_raw.png` を GPT Image 2 built-in で再生成。2172x724 / RGB / 白背景。前回 batch154 の「殻から出たベビー」版よりこちらを優先。alpha 抜き・個別切り出し・本配置は未実施。 (by Codex)
 - 2026-05-28 - [batch:156-kitchen-onion-chop-layout] DONE - Codex: トントンキッチンの玉ねぎ切りで、玉ねぎ初期位置をまな板上へ上げ、40連打の途中で先に消えないようカウント基準のマスク進行へ変更。切れ端の白ボックスと皿を大きくし、皿内に `bowl-fill-mask` を追加して切れ端が皿外へ出にくい構造へ変更。`?edit=1` で食材位置・切れ端ボウル・切れ端マスクを食材ごとに調整可能。`sw.js` は v640。 (by Codex)
