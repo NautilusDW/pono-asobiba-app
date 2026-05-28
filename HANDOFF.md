@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:173-kitchen-chicken-perspective-visible] DONE - Codex: user 指摘「鶏肉は何が変わったのか分からない」を受け、横長薄帯ではなく上面と手前厚みがはっきり見える `chicken_thigh_board_perspective_001.png` を GPT Image 2 built-in で再生成・透過化・配置。`chicken_marinated.imageBase` を差し替え、表示を `ingredientTop_pct:40` / `ingredientWidth_pct:58` に調整。Playwrightで通常切る画面と6タップ後ルート表示を確認、サブエージェント Plato クロスレビュー blocker/major なし。`sw.js` は v657。 (by Codex)
 - 2026-05-29 - [batch:172-mojikko-care-writing-motivation-loop] DONE - Codex: もじっこファーム育成ループを「文字を書く→もじパワー+食べ物→お世話」に整理。文字書き完了でタマゴ/ベビー期は `もじミルク`、よちよち以降は `もじクッキー`、共通で `もじパワー` +1 を付与。お世話画面では、温める/なでる/あそぶに `もじパワー` 消費を必須化し、パワー不足時は文字書きへ誘導。ベビー表示は頭殻版から殻入り版へ変更し、ミルク/クッキー/パワー表示、喜怒哀楽系リアクション、21:9孵化カットインの端切れ防止を調整。ローカルPlaywrightで文字報酬、温め消費、パワー不足、ミルク/クッキー給餌、21:9孵化表示を確認。`sw.js` は v656。 (by Codex)
 - 2026-05-29 - [batch:171-kitchen-bowl-rim-chicken-depth] DONE - Codex: 切れ端おさらの左右上リム欠けを、皿アセット自体をフルリム・余白あり版へ差し替えて修正。`.bowl::before` の追加 inset は 0% に戻し、画像側の安全余白だけで欠けを防ぐ構造にした。鶏肉はまな板に合わせて奥行きが見える `chicken_thigh_board_depth_001.png` を生成・配置し、`chicken_marinated.imageBase` を差し替え。通常画面/エディター画面/6タップ進行を Playwright 確認、サブエージェント Raman クロスレビュー blocker/major なし。`sw.js` は v655。 (by Codex)
 - 2026-05-28 - [batch:170-mojikko-hatch-ray-overscan] DONE - Codex: もじっこファーム孵化カットインのピンク放射背景が回転中や4:3レターボックスで端に見切れる問題を修正。`.hatch-scene::before` の描画範囲を `-38%` から `-72%` へ広げ、回転アニメーションも `scale(1.08)` 固定にし、孵化中は `#stage-wrap` 側にも同じ放射背景を出してステージ外まで埋めるようにした。`sw.js` は v654。 (by Codex)
