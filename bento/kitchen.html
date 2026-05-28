@@ -2770,6 +2770,29 @@ body.layout-editor-on .fry-pot {
   transition: none;
   filter: drop-shadow(0 13px 14px rgba(74,42,24,0.3));
 }
+.cook-piece-bank--fry {
+  z-index: 31;
+  pointer-events: none;
+}
+#fry-stage[data-ingredient="chicken_marinated"]:not(.is-served) .cook-piece-bank--fry.show {
+  display: block;
+}
+.cook-piece-bank--fry img {
+  position: absolute;
+  left: var(--piece-x, 16%);
+  top: var(--piece-y, 68%);
+  width: var(--piece-w, 11.5%);
+  height: auto;
+  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg));
+  filter: drop-shadow(0 4px 5px rgba(80,45,28,0.2));
+  opacity: 0.92;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.cook-piece-bank--fry img.is-current {
+  opacity: 0;
+}
 #grill-stage[data-ingredient="meatball"].meatball-serve .finish-dish {
   left: 16%;
   top: 68%;
@@ -3006,7 +3029,7 @@ body.layout-editor-on .egg-glass-lid {
   transform: translate(-50%, -50%) rotate(-3deg);
 }
 #fry-stage[data-ingredient="chicken_marinated"]:not(.food-placed):not(.is-served) .cooking-food {
-  width: 10%;
+  width: 12%;
   z-index: 32;
 }
 #fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food {
@@ -4243,12 +4266,12 @@ body.layout-editor-on .endX-marker {
 /* 切れ端ボウル（chop-side 内に格納） */
 .bowl {
   position: relative;
-  width: 100%;
-  max-width: 390px;
+  width: min(100%, 520px);
+  max-width: none;
   aspect-ratio: 2.2 / 1;
   margin: 0 auto;
   border-radius: 50% / 58%;
-  background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / contain no-repeat;
+  background: url('../assets/images/bento/cooking/cut_piece_bowl.png') center / 100% 100% no-repeat;
   border: none;
   filter: drop-shadow(0 5px 9px rgba(0,0,0,0.14));
   overflow: visible;
@@ -4274,6 +4297,35 @@ body.layout-editor-on .bowl-fill-mask {
   overflow: visible;
   pointer-events: auto;
   position: absolute !important;
+}
+body.layout-editor-on .bowl {
+  outline: 3px solid rgba(243, 139, 82, 0.95);
+  outline-offset: 6px;
+}
+body.layout-editor-on .bowl::after,
+body.layout-editor-on .bowl-fill-mask::after {
+  position: absolute;
+  left: 50%;
+  top: -28px;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: #5f351a;
+  background: rgba(255,255,255,0.93);
+  box-shadow: 0 2px 7px rgba(0,0,0,0.16);
+  pointer-events: none;
+  z-index: 20;
+}
+body.layout-editor-on .bowl::after {
+  content: 'おさら本体';
+}
+body.layout-editor-on .bowl-fill-mask::after {
+  content: 'マスク';
+  color: #04533e;
 }
 .bowl.catch {
   animation: bowlCatch 0.28s ease-out;
@@ -5002,8 +5054,8 @@ body.layout-editor-on .bowl-fill-mask {
       ['.ingredient-bbox-marker', 'wh', '[ツール] 食材の位置とサイズ'],
       ['.startX-marker',  'wh', '[ツール] 包丁の切り始め X'],
       ['.endX-marker',    'wh', '[ツール] 包丁の切り終わり X'],
-      ['.bowl',           'wh', '切れ端ボウル'],
-      ['.bowl-fill-mask', 'wh', '切れ端マスク'],
+      ['.bowl',           'wh', '切れ端のおさら本体'],
+      ['.bowl-fill-mask', 'wh', '切れ端を入れるマスク'],
       ['.grill-stove-bg',  'wh', '[調理] 焼く背景コンロ'],
       ['.grill-pan',       'wh', '[調理] フライパン'],
       ['.egg-glass-lid',   'wh', '[調理] 目玉焼きの蓋'],
@@ -5185,7 +5237,7 @@ body.layout-editor-on .bowl-fill-mask {
 
       <div class="side-card side-card--cut-bowl">
         <div style="text-align:center;font-weight:900;font-size:0.82rem;color:var(--text-soft);margin-bottom:6px;">きれはし</div>
-        <div class="bowl" id="bowl" aria-hidden="true">
+        <div class="bowl" id="bowl" aria-hidden="true" data-le-keep-position="1">
           <div class="bowl-fill-mask" id="bowl-fill-mask" data-le-keep-position="1"></div>
         </div>
       </div>
@@ -5338,6 +5390,7 @@ body.layout-editor-on .bowl-fill-mask {
         <div class="cook-stove-bg fry-stove-bg" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="heat-glow" id="fry-heat" aria-hidden="true"></div>
         <div class="prep-plate" aria-hidden="true"></div>
+        <div class="cook-piece-bank cook-piece-bank--fry" id="fry-piece-bank" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--tray" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pot fry-pot" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="oil-bubbles" id="oil-bubbles" aria-hidden="true">
@@ -5706,14 +5759,18 @@ body.layout-editor-on .bowl-fill-mask {
       },
     },
     {
-      id: 'mince_patty', name: 'ハンバーグ', emoji: '🍖', piece: '🍖',
+      id: 'mince_patty', name: 'ひき肉', emoji: '🍖', piece: '🍖',
       chopCount: 1, implemented: true,
+      imageBase: 'prep/knead_mince_stage_1',
+      fridgeImage: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png',
+      cookStartActionIndex: 0,
       cookingActions: [
+        { type: 'prep', prepKind: 'mix_mince_onion', label: 'たまねぎを まぜよう' },
+        { type: 'prep', prepKind: 'shape_patty', label: 'ハンバーグの かたちにしよう' },
         { type: 'grill', label: 'じゅうじゅう やこう', stages: 2 },
       ],
       prepActions: [
         { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを こねよう' },
-        { type: 'prep', prepKind: 'shape_patty', label: 'かたちを つくろう' },
       ],
       cookImages: {
         grill: {
@@ -5725,14 +5782,15 @@ body.layout-editor-on .bowl-fill-mask {
     {
       id: 'meatball', name: 'ミートボール', emoji: '🟤', piece: '🟤',
       chopCount: 1, implemented: true,
+      recipeOnly: true,
+      cookStartActionIndex: 0,
       cookingActions: [
-        { type: 'grill', label: 'ころころ やこう', stages: 2, pieces: 5 },
-      ],
-      prepActions: [
-        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを こねよう' },
+        { type: 'prep', prepKind: 'mix_mince_onion', label: 'たまねぎを まぜよう' },
         { type: 'prep', prepKind: 'shape_meatball_portion', label: 'ひきにくを わけよう' },
         { type: 'prep', prepKind: 'shape_meatball', label: 'ちいさく まるめよう' },
+        { type: 'grill', label: 'ころころ やこう', stages: 2, pieces: 5 },
       ],
+      prepActions: [],
       cookImages: {
         grill: {
           stages: [
@@ -5772,7 +5830,7 @@ body.layout-editor-on .bowl-fill-mask {
         { type: 'chop' },
         { type: 'prep', prepKind: 'marinate_chicken', label: 'したあじを なじませよう' },
         { type: 'prep', prepKind: 'coat_chicken', label: 'こなを まぶそう' },
-        { type: 'fry', label: 'カラッと あげよう', stages: 2, pieces: 5, cookTogether: true, batchLabel: 'からあげ' },
+        { type: 'fry', label: 'カラッと あげよう', stages: 2, pieces: 5 },
       ],
       prepActions: [
         { type: 'chop' },
@@ -5792,7 +5850,7 @@ body.layout-editor-on .bowl-fill-mask {
           fallback: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png',
         },
       },
-      imageBase: 'chicken/chicken_thigh_001_raw',
+      imageBase: 'chicken/chicken_thigh_elongated_001_raw',
       imagePieces: {
         dir: 'chicken',
         prefix: 'chicken_thigh_piece_',
@@ -5811,7 +5869,7 @@ body.layout-editor-on .bowl-fill-mask {
         bladeTipOffsetX_pct: -39,
         ingredientLeft_pct: 50,
         ingredientTop_pct: 43,
-        ingredientWidth_pct: 48,
+        ingredientWidth_pct: 52,
       },
     },
     {
@@ -5845,8 +5903,8 @@ body.layout-editor-on .bowl-fill-mask {
   // 材料→解放されるレシピ
   const RECIPES = [
     { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_002_mid.png', needs: ['egg'], startFromRaw: true },
-    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty', 'onion'] },
-    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['meatball', 'onion'] },
+    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty', 'onion'], cookIngredientId: 'mince_patty' },
+    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['mince_patty', 'onion'], cookIngredientId: 'meatball' },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'], startFromRaw: true },
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'], startFromRaw: true },
     { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
@@ -5939,7 +5997,7 @@ body.layout-editor-on .bowl-fill-mask {
       dragPrep: true,
       dragDistanceScale: 2.25,
       startSpeech: 'ひきにくを ぐるぐるドラッグして こねよう！',
-      completeSpeech: 'ひきにくが まとまったよ！ つぎは かたちを つくろう！',
+      completeSpeech: 'ひきにくが まとまったよ！ れいぞうこに しまおう！',
       steps: [
         { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'ひきにくを ボウルへ', caption: 'ぐるぐるドラッグ！', burst: 'ぐるぐる！' },
         {
@@ -5976,6 +6034,39 @@ body.layout-editor-on .bowl-fill-mask {
           burst: 'ぐるぐる！',
         },
         { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'ひきにくが まとまったよ！', burst: 'できた！' },
+      ],
+    },
+    mix_mince_onion: {
+      kind: 'mix_mince',
+      dragPrep: true,
+      dragDistanceScale: 2.1,
+      startSpeech: 'ひきにくに たまねぎを まぜよう！',
+      completeSpeech: 'たまねぎが まざったよ！ つぎは かたちを つくろう！',
+      steps: [
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'たまねぎを いれよう', caption: 'ぐるぐるドラッグ！', burst: 'ぽん！' },
+        {
+          src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_1.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_2.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_swirl_1.png',
+          ],
+          label: 'たまねぎを まぜよう',
+          caption: 'まざってきたよ！',
+          burst: 'こねこね！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_2.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_swirl_1.png',
+            '../assets/images/bento/cooking/prep/knead_mince_variant_fold_1.png',
+          ],
+          label: 'もっと まぜよう',
+          caption: 'いいかんじ！',
+          burst: 'ぎゅっ！',
+        },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'たまねぎが まざったよ！', burst: 'できた！' },
       ],
     },
     shape_patty: {
@@ -6879,6 +6970,7 @@ body.layout-editor-on .bowl-fill-mask {
     // fry screen
     fryStage:      document.getElementById('fry-stage'),
     fryPot:        document.querySelector('#fry-stage .fry-pot'),
+    fryPieceBank:  document.getElementById('fry-piece-bank'),
     fryingFoodWrap: document.getElementById('frying-food-wrap'),
     fryingFood:    document.getElementById('frying-food'),
     fryingFoodFallback: document.getElementById('frying-food-fallback'),
@@ -7502,6 +7594,10 @@ body.layout-editor-on .bowl-fill-mask {
 
   function getFirstCookActionIndex(ing) {
     const actions = Array.isArray(ing && ing.cookingActions) ? ing.cookingActions : [];
+    if (ing && typeof ing.cookStartActionIndex === 'number') {
+      const index = Math.max(0, Math.min(actions.length - 1, ing.cookStartActionIndex));
+      if (actions[index]) return index;
+    }
     return actions.findIndex(function (action) {
       return action.type === 'grill' || action.type === 'fry';
     });
@@ -7526,7 +7622,21 @@ body.layout-editor-on .bowl-fill-mask {
     if (!ing || !ing.implemented) return;
     if (!confirmLayoutEditorNavigationIfDirty()) return;
     const canCookFromRaw = !!ing.cookFromRaw || !!(rec && rec.startFromRaw);
-    if (!state.unlocked.has(ing.id) && !canCookFromRaw) {
+    const recipeReady = !!(rec && ((rec.needs || []).every(function (id) {
+      return state.unlocked.has(id);
+    })));
+    if (!rec && ing.id === 'mince_patty' && !state.unlocked.has('onion')) {
+      setSpeech('ハンバーグや ミートボールには、たまねぎも じゅんびしよう！', 'fridge');
+      showToast('たまねぎも ひつようだよ');
+      return;
+    }
+    if (!rec && ing.id === 'mince_patty') {
+      setSpeech('ハンバーグか ミートボールを えらんで つくろう！', 'fridge');
+      showToast('下の おかずカードを えらんでね');
+      renderRecipes();
+      return;
+    }
+    if (!state.unlocked.has(ing.id) && !canCookFromRaw && !recipeReady) {
       setSpeech('まずは ' + ing.name + 'を したごしらえしよう！', 'fridge');
       showToast(ing.name + 'は まだ れいぞうこに ないよ');
       return;
@@ -7560,7 +7670,10 @@ body.layout-editor-on .bowl-fill-mask {
       showToast('まだ ざいりょうが たりないよ');
       return;
     }
-    const ing = (rec.needs || []).map(findIngredientById).find(function (item) {
+    const cookCandidates = rec.cookIngredientId
+      ? [findIngredientById(rec.cookIngredientId)]
+      : (rec.needs || []).map(findIngredientById);
+    const ing = cookCandidates.find(function (item) {
       return item && getFirstCookActionIndex(item) >= 0;
     });
     if (!ing) {
@@ -11230,6 +11343,48 @@ body.layout-editor-on .bowl-fill-mask {
     return srcs;
   }
 
+  function getFryPlatePieceLayout(index) {
+    const layouts = [
+      { x: 12.2, y: 62.7, w: 11.7, rot: '-7deg' },
+      { x: 20.8, y: 63.4, w: 11.6, rot: '6deg' },
+      { x: 14.5, y: 70.6, w: 11.9, rot: '3deg' },
+      { x: 23.2, y: 71.4, w: 11.5, rot: '-5deg' },
+      { x: 17.8, y: 76.5, w: 11.8, rot: '4deg' },
+    ];
+    return layouts[index % layouts.length];
+  }
+
+  function updateFryPieceBank(action) {
+    if (!els.fryPieceBank) return;
+    const ing = state.current;
+    const visible = !!(ing && ing.id === 'chicken_marinated'
+      && action && action.type === 'fry'
+      && isMultiPieceCookAction(action)
+      && !state.cookServed);
+    els.fryPieceBank.classList.toggle('show', visible);
+    els.fryPieceBank.innerHTML = '';
+    if (!visible) return;
+
+    const srcs = getCookStagePieceSrcs(ing, action, 0);
+    const currentIndex = Math.max(0, state.cookPieceIndex || 0);
+    srcs.forEach(function (src, index) {
+      if (index < currentIndex) return;
+      if (state.cookFoodPlaced && index === currentIndex) return;
+      const img = document.createElement('img');
+      const layout = getFryPlatePieceLayout(index);
+      img.src = src;
+      img.alt = '';
+      img.draggable = false;
+      img.style.setProperty('--piece-x', layout.x + '%');
+      img.style.setProperty('--piece-y', layout.y + '%');
+      img.style.setProperty('--piece-w', layout.w + '%');
+      img.style.setProperty('--piece-rot', layout.rot);
+      img.style.zIndex = String(10 + Math.round(layout.y));
+      img.classList.toggle('is-current', !state.cookFoodPlaced && index === currentIndex);
+      els.fryPieceBank.appendChild(img);
+    });
+  }
+
   function getCookStageSrc(ing, action, stage) {
     const cfg = getCookImageConfig(ing, action);
     if (cfg && Array.isArray(cfg.pieceStages) && isMultiPieceCookAction(action)) {
@@ -11370,6 +11525,7 @@ body.layout-editor-on .bowl-fill-mask {
       });
     }
     if (type === 'grill') updateCookPieceBank(getCurrentAction());
+    if (type === 'fry') updateFryPieceBank(getCurrentAction());
   }
 
   function pctString(value) {
@@ -14650,6 +14806,8 @@ body.layout-editor-on .bowl-fill-mask {
     if (action.type === 'prep') {
       if (action.prepKind === 'marinate_chicken') return 'つぎは したあじを なじませよう！';
       if (action.prepKind === 'coat_chicken') return 'つぎは こなを まぶそう！';
+      if (action.prepKind === 'mix_mince_onion') return 'つぎは たまねぎを まぜよう！';
+      if (action.prepKind === 'mix_mince') return 'つぎは ひきにくを こねよう！';
       if (action.prepKind && action.prepKind.indexOf('shape_') === 0) return 'つぎは かたちを つくろう！';
       if (action.prepKind && action.prepKind.indexOf('bread_') === 0) return 'つぎは ころもを つけよう！';
       return 'つぎは したごしらえを しよう！';
@@ -14670,6 +14828,22 @@ body.layout-editor-on .bowl-fill-mask {
     state.awaitingImpact = false;
     state.cutting = true;
     setProgressCaption('できあがり！');
+    if (ing && ing.recipeOnly) {
+      setSpeech(ing.name + 'が できたよ！');
+      clearPendingTimers();
+      state.pendingTimers.push(setTimeout(() => {
+        flySparklesToStep(5);
+      }, 200));
+      state.pendingTimers.push(setTimeout(() => {
+        showToast(ing.name + 'が できたよ！');
+      }, 700));
+      state.pendingTimers.push(setTimeout(() => {
+        setSpeech('ほかの おかずも つくれるよ！', 'fridge');
+        showScreen('fridge');
+        state.cutting = false;
+      }, 1400));
+      return;
+    }
     setSpeech('できたよ！ れいぞうこに しまおう！');
 
     // 既に積まれている timer があれば一旦キャンセル（多重発火防止）
@@ -14777,7 +14951,7 @@ body.layout-editor-on .bowl-fill-mask {
 
   function renderFridge() {
     els.shelves.innerHTML = '';
-    const unlocked = INGREDIENTS.filter(i => state.unlocked.has(i.id));
+    const unlocked = INGREDIENTS.filter(i => state.unlocked.has(i.id) && !i.recipeOnly);
 
     if (!unlocked.length) {
       const empty = document.createElement('div');
