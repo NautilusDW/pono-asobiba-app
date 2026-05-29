@@ -712,6 +712,7 @@ html, body {
 .milmaru.eating { animation: eatingWiggle 0.8s ease; }
 .milmaru.relaxed { animation: relaxedSway 1s ease; }
 .milmaru.play { animation: playHop 0.8s ease; }
+.milmaru.sleep { animation: relaxedSway 1.4s ease-in-out infinite; }
 
 .milmaru.egg {
   bottom: 74px;
@@ -758,6 +759,10 @@ html, body {
 }
 
 .milmaru.baby.relaxed {
+  background-image: var(--care-shell-baby-sleep);
+}
+
+.milmaru.baby.sleep {
   background-image: var(--care-shell-baby-sleep);
 }
 
@@ -1008,6 +1013,55 @@ html, body {
   width: 32px;
   height: 32px;
   background: var(--care-fx-sparkle) center / contain no-repeat;
+}
+
+.food-fx {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 10;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%);
+  animation: foodToMouth 0.78s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+.food-fx.cookie {
+  background-image: var(--care-icon-cookie);
+}
+
+.food-fx.milk {
+  width: 44px;
+  height: 66px;
+  border: 4px solid #9f7655;
+  border-radius: 8px 8px 12px 12px;
+  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
+  box-shadow: inset 0 4px rgba(255,255,255,0.75), 0 3px 0 rgba(111,70,44,0.25);
+}
+
+.food-fx.milk::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -10px;
+  height: 12px;
+  border: 4px solid #9f7655;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: #d7f1ed;
+}
+
+@keyframes foodToMouth {
+  0% { opacity: 0; transform: translate(-90px, 32px) scale(0.9); }
+  18% { opacity: 1; }
+  72% { opacity: 1; transform: translate(-12px, -8px) scale(1.05); }
+  100% { opacity: 0; transform: translate(0, -16px) scale(0.82); }
 }
 
 @keyframes fxRise {
@@ -1520,7 +1574,8 @@ const defaultState = {
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
   lastPetAt: 0,
-  lastWarmAt: 0
+  lastWarmAt: 0,
+  lastCareAt: Date.now()
 };
 
 const growthStages = [
@@ -1663,6 +1718,7 @@ function loadState() {
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
+    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
     if (parsed.inventory) {
       Object.keys(merged.inventory).forEach((id) => {
         if (parsed.inventory[id]) {
@@ -1729,6 +1785,83 @@ function getPreferredFood() {
   if (!state.hatched) return careFoods.moji_milk;
   const stage = getCareStage();
   return stage.id === 'baby' ? careFoods.moji_milk : careFoods.moji_cookie;
+}
+
+function markCareInteraction() {
+  state.lastCareAt = Date.now();
+}
+
+function getIdleMood(now = Date.now()) {
+  if (!state.hatched) return null;
+  const lastCareAt = Number.isFinite(state.lastCareAt) ? state.lastCareAt : now;
+  const hours = (now - lastCareAt) / 3600000;
+  if (hours >= 48) {
+    return {
+      reaction: 'angry',
+      speech: 'むぅ〜...',
+      message: 'しばらく おせわが なかったから、ミルマルは ちょっと ぷんぷん。'
+    };
+  }
+  if (hours >= 24) {
+    return {
+      reaction: 'worried',
+      speech: 'くぅん...',
+      message: 'ミルマルは すこし さみしかったみたい。やさしく おせわしよう。'
+    };
+  }
+  const hour = new Date(now).getHours();
+  if (hour >= 21 || hour < 6) {
+    return {
+      reaction: 'sleep',
+      speech: 'すぅ...すぅ...',
+      message: 'ミルマルは ねむっているよ。あした また おせわしよう。'
+    };
+  }
+  return null;
+}
+
+function getDisplayReaction(reaction) {
+  const currentReaction = reaction || state.reaction || 'normal';
+  if (currentReaction !== 'normal') return currentReaction;
+  const idleMood = getIdleMood();
+  return idleMood ? idleMood.reaction : currentReaction;
+}
+
+function getBabySpeech(text) {
+  const raw = String(text || '');
+  if (/ない|たりない|まだ/.test(raw)) return 'ふぇ...？';
+  if (/ねむ|すや|すぅ/.test(raw)) return 'すぅ...すぅ...';
+  if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むぅ〜...';
+  if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'みゅみゅ！';
+  if (/なで|うれしい|ありがとう|ぽかぽか/.test(raw)) return 'ふにゃ〜♪';
+  if (/あそ|たのしい|ぴょん/.test(raw)) return 'きゃっきゃ！';
+  if (/もじ|かこう|かき/.test(raw)) return 'あう〜？';
+  return 'ふにゃ？';
+}
+
+function getYochiyochiSpeech(text) {
+  const raw = String(text || '');
+  if (/ない|たりない/.test(raw)) return 'ないの...？';
+  if (/ねむ|すや|すぅ/.test(raw)) return 'ねむい...';
+  if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'まってた！';
+  if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま！';
+  if (/なで|うれしい|ありがとう/.test(raw)) return 'なでなで すき！';
+  if (/あそ|たのしい|ぴょん/.test(raw)) return 'あそぶ！';
+  if (/もじ|かこう|かき/.test(raw)) return 'もじ、かく！';
+  return raw.length > 10 ? 'うん！' : raw;
+}
+
+function getStageSpeech(text) {
+  if (!state.hatched) return text;
+  const stage = getCareStage();
+  if (stage.id === 'baby') return getBabySpeech(text);
+  if (stage.id === 'yochiyochi') return getYochiyochiSpeech(text);
+  return text;
+}
+
+function getDisplaySpeech(text) {
+  const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
+  return getStageSpeech(idleMood ? idleMood.speech : text);
 }
 
 function hasMojiPower(cost = 1) {
@@ -1800,7 +1933,7 @@ function renderActionMode() {
 }
 
 function applyMilmaruClass(reaction) {
-  const currentReaction = reaction || state.reaction || 'normal';
+  const currentReaction = getDisplayReaction(reaction);
   const classes = ['milmaru'];
   if (state.hatched) {
     classes.push('baby', currentReaction);
@@ -1812,7 +1945,7 @@ function applyMilmaruClass(reaction) {
 
 function setSpeech(text, message) {
   state.speech = text;
-  speechBubble.textContent = text;
+  speechBubble.textContent = getDisplaySpeech(text);
   if (message) bottomMessage.textContent = message;
 }
 
@@ -1823,6 +1956,8 @@ function setReaction(reaction, duration = 950) {
   setReaction._timer = setTimeout(() => {
     state.reaction = 'normal';
     applyMilmaruClass('normal');
+    speechBubble.textContent = getDisplaySpeech(state.speech);
+    saveState();
   }, duration);
 }
 
@@ -1839,6 +1974,15 @@ function spawnFx(type) {
     fxLayer.appendChild(piece);
     setTimeout(() => piece.remove(), 1200);
   }
+}
+
+function spawnFoodFx(foodId) {
+  const piece = document.createElement('div');
+  piece.className = `food-fx ${foodId === 'moji_cookie' ? 'cookie' : 'milk'}`;
+  piece.style.setProperty('--x', '57%');
+  piece.style.setProperty('--y', '54%');
+  fxLayer.appendChild(piece);
+  setTimeout(() => piece.remove(), 900);
 }
 
 function queueHatchStep(delay, fn) {
@@ -1887,6 +2031,7 @@ function startHatchScene() {
     state.hatched = true;
     state.sukusuku = Math.max(10, state.sukusuku);
     state.reaction = 'birth';
+    markCareInteraction();
     setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！もじミルクを あげてみよう。');
     setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'こんにちは！もじミルクが だいすきだよ');
     spawnFx('sparkle');
@@ -1930,6 +2075,7 @@ function warmEgg() {
   if (!spendMojiPower(actionPowerCost.warm, 'warm')) return;
   playSfx('warm');
   state.lastWarmAt = now;
+  markCareInteraction();
   state.eggWarmth = clamp(state.eggWarmth + 25, 0, 100);
   state.nakayoshi = clamp(state.nakayoshi + 1, 0, 100);
   if (state.eggWarmth >= 100) {
@@ -1991,7 +2137,11 @@ function render() {
   document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
   document.getElementById('memoLine1').textContent = state.hatched ? 'やさしくて、がんばりやさん。' : 'タマゴの なかで すやすや。';
   document.getElementById('memoLine2').textContent = state.hatched ? 'ミルクのにおいが だいすき！' : 'ぽかぽかが だいすき！';
-  speechBubble.textContent = state.speech;
+  speechBubble.textContent = getDisplaySpeech(state.speech);
+  const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
+  if (idleMood) {
+    bottomMessage.textContent = idleMood.message;
+  }
   renderGrowthIcons(stage);
   renderActionMode();
   applyMilmaruClass(state.reaction);
@@ -2034,6 +2184,7 @@ function applyDebugState(next = {}) {
   state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
   state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
   state.reaction = 'normal';
+  state.lastCareAt = Date.now();
   state.lastWarmAt = 0;
   state.lastPetAt = 0;
   state.speech = next.speech || (state.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
@@ -2066,6 +2217,7 @@ function consumePendingWritingReward() {
   }
   changeInventory('moji_power', 1);
   state.stars += 25;
+  markCareInteraction();
   if (state.hatched) {
     setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, 'もじパワーも たまったよ。ミルマルに おせわを してみよう！');
     setReaction('happy');
@@ -2111,15 +2263,17 @@ function feedCookie() {
   if (getInventoryCount(food.id) <= 0) {
     playSfx('mistake');
     setSpeech(`${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
-    setReaction('cry', 1200);
+    setReaction('worried', 1200);
     return;
   }
   changeInventory(food.id, -1);
   playSfx('feed');
+  markCareInteraction();
   state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
   setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', `${food.name}を あげたよ。なかよしと すくすくが ふえた！`);
   setReaction('eating');
+  spawnFoodFx(food.id);
   spawnFx('sparkle');
   saveState();
   render();
@@ -2131,6 +2285,7 @@ function petMilmaru() {
   if (!spendMojiPower(actionPowerCost.pet, 'pet')) return;
   playSfx('pet');
   state.lastPetAt = now;
+  markCareInteraction();
   state.nakayoshi = clamp(state.nakayoshi + 2, 0, 100);
   if (!state.hatched) {
     state.eggWarmth = clamp(state.eggWarmth + 8, 0, 100);
@@ -2159,6 +2314,7 @@ function playWithMilmaru() {
   }
   if (!spendMojiPower(actionPowerCost.play, 'play')) return;
   playSfx('play');
+  markCareInteraction();
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
   state.sukusuku = clamp(state.sukusuku + 1, 0, 100);
   setSpeech('いっしょに あそぶの たのしい！', 'ミルマルが ぴょんぴょん はねたよ。');

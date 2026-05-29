@@ -192,7 +192,7 @@
 
 ## Recent (Done — 古い順に削除)
 
-- 2026-05-29 - [batch:178-mojikko-baby-voice-mood-foodfx-yochiyochi-raw] **Done** — Mojikko Farm care/writing loop follow-up. `writing-mori/care.html` はベビー期の吹き出しを鳴き声表示にし、よちよち期は短い幼児語へ段階化。24h 放置で worried、48h 放置で angry、夜間は sleep の idle mood を追加し、ミルク/クッキーをあげた時に口元へ食べ物 FX を出すよう接続。`writing-mori/index.html` の左下カードもベビー期は鳴き声、よちよち期は短い言葉へ変更。よちよち期ポーズ raw sheet は `tmp/alpha_pending/178_milmaru_yochiyochi_pose_sheet_raw/milmaru_yochiyochi_pose_sheet_raw.png` に保存。`sw.js` は v663。ローカル Playwright でベビー発話変換、食べ物 FX、餌なし worried、48h angry、文字書きカード発話を確認。 (by Codex)
+- 2026-05-29 - [batch:180-mojikko-baby-voice-mood-foodfx-yochiyochi-raw] **Done** — Mojikko Farm care/writing loop follow-up. `writing-mori/care.html` はベビー期の吹き出しを鳴き声表示にし、よちよち期は短い幼児語へ段階化。24h 放置で worried、48h 放置で angry、夜間は sleep の idle mood を追加し、ミルク/クッキーをあげた時に口元へ食べ物 FX を出すよう接続。`writing-mori/index.html` の左下カードもベビー期は鳴き声、よちよち期は短い言葉へ変更。よちよち期ポーズ raw sheet は `tmp/alpha_pending/180_milmaru_yochiyochi_pose_sheet_raw/milmaru_yochiyochi_pose_sheet_raw.png` に保存。`sw.js` は v664。ローカル Playwright でベビー発話変換、食べ物 FX、餌なし worried、48h angry、文字書きカード発話を確認。 (by Codex)
 
 - 2026-05-25 - [batch:138-bento-nori-highlight-tune] **Done** — user 指摘「選択肢の真四角な緑枠と光り方が異様 / 海苔名にポノを付けない / 口と鼻を大きめに」を反映。`bento/index.html` は guide-target の親カード outline/box-shadow を撤去し、パレット画像だけを控えめに pulse させる形へ変更。海苔名は `おめめ` / `はな` / `くち` / `まゆ` に変更し、鼻・口のデフォルトサイズと顔テンプレ上の配置サイズを拡大。`sw.js` は v611。ローカル Playwright で海苔ラベル、guide-target outline なし、ページエラーなしを確認済。 (by Codex)
 

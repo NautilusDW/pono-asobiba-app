@@ -1634,7 +1634,8 @@ const defaultCareState = {
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
   lastPetAt: 0,
-  lastWarmAt: 0
+  lastWarmAt: 0,
+  lastCareAt: Date.now()
 };
 
 const careFoodRewards = {
@@ -1744,6 +1745,7 @@ function loadCareState() {
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : merged.lastPetAt;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : merged.lastWarmAt;
+    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
     if (parsed.inventory) {
       Object.keys(merged.inventory).forEach((id) => {
         if (parsed.inventory[id]) {
@@ -1805,15 +1807,22 @@ function updateCompanionCard() {
   const foodCount = getInventoryCount(reward.id);
   const powerCount = getInventoryCount('moji_power');
   const hatched = careState.hatched === true;
+  const stageId = getCurrentCareStageId();
   companionCard.classList.toggle('reward-ready', foodCount > 0 || powerCount > 0);
   companionCard.classList.toggle('egg-state', !hatched);
   companionCard.classList.toggle('hatched-state', hatched);
   companionStatus.textContent = !hatched ? `✦ ${powerCount}` : `× ${foodCount}`;
-  companionSpeech.textContent = !hatched
-    ? (powerCount > 0 ? 'タマゴを\nあたためよう！' : 'もじをかくと\nぽかぽか！')
-    : foodCount > 0
-    ? `${reward.name}を\nあげにいこう！`
-    : 'いっしょに\nもじを かこう！';
+  if (!hatched) {
+    companionSpeech.textContent = powerCount > 0 ? 'タマゴを\nあたためよう！' : 'もじをかくと\nぽかぽか！';
+  } else if (stageId === 'baby') {
+    companionSpeech.textContent = foodCount > 0 ? 'みゅみゅ！\nまんま...' : 'ふにゃ？\nあう〜';
+  } else if (stageId === 'yochiyochi') {
+    companionSpeech.textContent = foodCount > 0 ? `${reward.name}\nほしいな` : 'もじ、\nかく！';
+  } else {
+    companionSpeech.textContent = foodCount > 0
+      ? `${reward.name}を\nあげにいこう！`
+      : 'いっしょに\nもじを かこう！';
+  }
 }
 
 function navigateToCareScreen() {
@@ -3293,6 +3302,7 @@ function onWritingComplete(result) {
   }
   changeInventory('moji_power', 1);
   careState.stars = stars;
+  careState.lastCareAt = Date.now();
   careState.speech = careState.hatched ? `${reward.name} ほしいな〜` : 'タマゴを あたためよう！';
   try {
     localStorage.removeItem(PENDING_REWARD_KEY);
