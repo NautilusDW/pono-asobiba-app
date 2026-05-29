@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:177-kitchen-bowl-fill-mask-width] DONE - Codex: user 指摘「水色のお皿のマスクが縦しか調整できない」を受け、`.bowl-fill-mask` の固定楕円 `clip-path` を撤去。マスク要素自体の幅・高さがそのまま水色の調整範囲になるようにし、Playwrightで `?edit=1` の横幅変更が 172px→359px に追従し `clipPath:none` になることを確認。`sw.js` は v661。 (by Codex)
 - 2026-05-29 - [batch:176-mojikko-user-milmaru-poses] DONE - Codex: user が `D:\ポノのおへや\Moji\assets\ミルマル` に置いた殻入りベビー8枚を `assets/images/mojikko/care/` へ意味付き英字名で配置。通常/片手/両手/ミルク後/怒り/泣き/困り/wiggle を、お世話画面の `normal` / `happy` / `eating` / `play` / `angry` / `cry` / `worried` へ割り当て、happy/eating/play は短い背景差し替えアニメーションで手足が動くようにした。文字書き画面の左下ミルマルカードも新しい通常笑顔素材へ差し替え。ローカルPlaywrightで各リアクションの背景画像、文字書きカード表示を確認。`sw.js` は v660。 (by Codex)
 - 2026-05-29 - [batch:175-kitchen-bowl-body-unmask] DONE - Codex: user 指摘「おさら本体が楕円マニピュレーター/マスクで切れている」を受け、`.bowl` と `.bowl::before` の楕円 `border-radius` を撤去。おさら本体は透過PNGの矩形編集枠に戻し、切れ端を皿内に収める `.bowl-fill-mask` だけ楕円マスクとして残した。`?edit=1` で `おさら本体` が矩形枠になり、上左右が切れないことを Playwright スクリーンショットで確認。`sw.js` は v659。 (by Codex)
 - 2026-05-29 - [batch:174-mojikko-result-buttons-baby-poses] DONE - Codex: もじっこファーム文字書き完了モーダルの「じょうずに かけたね！」を DotGothic16 系のドットフォントへ統一。白い横棒が焼き込まれていた既存モーダルボタンを使わず、白棒なしのPNGボタン `button_modal_care_clean_*` / `button_modal_next_clean_*` を新規作成し、CSSの枠・影で作った見た目を外して画像ボタン主体に変更。殻入りベビーの手足リアクション用 raw シートを GPT Image 2 built-in で生成し、`tmp/alpha_pending/173_milmaru_shell_baby_pose_sheet_raw/milmaru_shell_baby_pose_sheet_raw.png` に配置。ローカルPlaywrightで完了モーダルのフォント、画像ボタン、枠/影なしを確認。`sw.js` は v658。 (by Codex)
