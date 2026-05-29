@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:188-bento-reference-angle-rice] Codex: user 指摘「一段ではあるが元の空箱イラストを参照しておらず角度が違う」を受領。正本は `assets/images/bento/free-layout/box_square.png` / `box_round.png`。前回 `tmp/alpha_pending/187_bento_one_tier_rice_raw/` は角度不一致のため使わない。元 PNG をベースに外形・角度・透明キャンバスを保持し、内側だけご飯合成した版を `tmp/alpha_pending/188_bento_reference_angle_rice_raw/` に作成する。 (by Codex)
+- 2026-05-29 - [batch:188-bento-reference-angle-rice] DONE - Codex: 元の空箱 `box_square.png` (350x307) / `box_round.png` (357x311) をベースに、外形・角度・リム・透明キャンバスを保持して内側にご飯だけ合成。納品先は `tmp/alpha_pending/188_bento_reference_angle_rice_raw/01_box_square_reference_angle_rice_raw.png` (1400x1228) / `02_box_round_reference_angle_rice_raw.png` (1428x1244) と source-size 版 2 枚。前回 187 は不採用。alpha 抜き・切り抜き・本配置は未実施。 (by Codex)
 - 2026-05-29 - [batch:187-bento-one-tier-rice-boxes] Codex: user 追加指摘「既存の四角/丸ご飯入りは2段に見えるので、1段で作り直し」を受領。`tmp/alpha_pending/183_bento_boxes_rice_raw/02` / `03` は既存だが意図不一致のため再生成対象。GPT Image 2 built-in で一段の四角/丸ご飯入り raw を `tmp/alpha_pending/187_bento_one_tier_rice_raw/` に納品する。alpha 抜き・切り抜き・本配置はしない。 (by Codex)
 - 2026-05-29 - [batch:187-bento-one-tier-rice-boxes] DONE - Codex: 一段の四角/丸ご飯入り raw を GPT Image 2 built-in で再生成し、`tmp/alpha_pending/187_bento_one_tier_rice_raw/01_box_square_one_tier_rice_raw.png` / `02_box_round_one_tier_rice_raw.png` に保存。どちらも 1254x1254 / RGB / 白背景。目視で横の二段継ぎ目なしを確認。alpha 抜き・切り抜き・本配置は未実施。 (by Codex)
 - 2026-05-29 - [batch:186-bento-box-labels-rice-existing] Codex: user 依頼「二段箱/くま箱/ねこ箱の名称整理、四角/丸のご飯入り画像生成」を受領。HANDOFF / git log / assets / tmp を確認し、四角/丸を含むご飯入り raw は既に `tmp/alpha_pending/183_bento_boxes_rice_raw/` に納品済みと確認。重複生成せず、まず `bento/index.html` の箱表示名を変更する。 (by Codex)
