@@ -2775,6 +2775,9 @@ body.layout-editor-on .fry-pot {
   z-index: 31;
   pointer-events: none;
 }
+#fry-stage[data-ingredient="chicken_marinated"] .cook-piece-bank--fry {
+  pointer-events: auto;
+}
 #fry-stage[data-ingredient="chicken_marinated"].has-done-tray .cook-piece-bank--fry.show,
 #fry-stage[data-ingredient="chicken_marinated"]:not(.is-served) .cook-piece-bank--fry.show {
   display: block;
@@ -2792,13 +2795,30 @@ body.layout-editor-on .fry-pot {
   -webkit-user-drag: none;
   pointer-events: none;
 }
+#fry-stage[data-ingredient="chicken_marinated"] .cook-piece-bank--fry img {
+  opacity: 1;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  transition: left 0.12s ease, top 0.12s ease, width 0.14s ease, opacity 0.14s ease, filter 0.14s linear, transform 0.14s ease;
+}
+#fry-stage[data-ingredient="chicken_marinated"] .cook-piece-bank--fry img.is-oil-piece {
+  width: var(--piece-w, 13.6%);
+  cursor: default;
+}
+#fry-stage[data-ingredient="chicken_marinated"] .cook-piece-bank--fry img.is-dragging {
+  cursor: grabbing;
+  transition: none;
+  transform: translate(-50%, -50%) rotate(var(--piece-rot, 0deg)) scale(1.12);
+  z-index: 80 !important;
+}
 .cook-piece-bank--fry img.is-current {
   opacity: 0;
 }
 .cook-done-tray {
   display: block;
   position: relative;
-  width: min(100%, 340px);
+  width: min(100%, 392px);
   aspect-ratio: 1.98 / 1;
   margin: 4px auto 0;
   background: url('../assets/images/bento/cooking/cooling_tray.png') center / contain no-repeat;
@@ -2811,7 +2831,7 @@ body.layout-editor-on .fry-pot {
 .cook-done-card {
   display: none;
   flex: 1 1 auto;
-  min-height: 220px;
+  min-height: 260px;
   align-items: center;
   justify-content: center;
   padding: 14px 18px;
@@ -3096,6 +3116,10 @@ body.layout-editor-on .egg-glass-lid {
 #fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food img {
   max-width: 96%;
   max-height: 118%;
+}
+#fry-stage[data-ingredient="chicken_marinated"] .cooking-food {
+  opacity: 0;
+  pointer-events: none;
 }
 #fry-stage[data-ingredient="chicken_marinated"]:not(.food-placed):not(.is-served) .cooking-food.has-piece-set {
   left: 17.8%;
@@ -6531,6 +6555,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     cookMeatballDragIndex: -1,
     cookMeatballPhase: 'place',
     cookMeatballRollDistance: 0,
+    fryPieces: [],
+    fryDragIndex: -1,
     cookTimingActive: false,
     cookTimingType: null,
     cookTimingStart: 0,
@@ -7286,6 +7312,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.fryingFoodWrap.addEventListener('pointerup', (e) => onCookFoodPointerEnd(e, 'fry'));
       els.fryingFoodWrap.addEventListener('pointercancel', (e) => onCookFoodPointerEnd(e, 'fry'));
     }
+    if (els.fryPieceBank) {
+      els.fryPieceBank.addEventListener('pointerdown', onFryPiecePointerDown);
+      els.fryPieceBank.addEventListener('pointermove', onFryPiecePointerMove);
+      els.fryPieceBank.addEventListener('pointerup', onFryPiecePointerEnd);
+      els.fryPieceBank.addEventListener('pointercancel', onFryPiecePointerEnd);
+    }
 
     // フローチップタップ → 直接画面遷移
     [...els.flowChips.querySelectorAll('.flow-chip')].forEach(chip => {
@@ -7607,6 +7639,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookMeatballDragIndex = -1;
     state.cookMeatballPhase = 'place';
     state.cookMeatballRollDistance = 0;
+    state.fryPieces = [];
+    state.fryDragIndex = -1;
     state.cookTimingResults = [];
     state.cookEggCrackProgress = 0;
     state.cookEggLastKnockAt = 0;
@@ -11316,6 +11350,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     resetCookTimingUI(action.type);
     resetCookDrag(action.type);
     if (isMeatballCookAction(ing, action)) initCookMeatballs(action);
+    if (isChickenFryAction(ing, action)) initChickenFryPieces(action);
     hideCombo();
     updateCookView(action.type, 0, false);
     updateCookStageState(action.type);
@@ -11433,9 +11468,173 @@ body.layout-editor-on .bowl-fill-mask::after {
     return layouts[index % layouts.length];
   }
 
+  function isChickenFryAction(ing, action) {
+    return !!(ing && ing.id === 'chicken_marinated' && action && action.type === 'fry' && isMultiPieceCookAction(action));
+  }
+
+  function initChickenFryPieces(action) {
+    const count = getCookPieceCount(action);
+    state.fryPieces = Array.from({ length: count }, function (_, index) {
+      const layout = getFryPlatePieceLayout(index);
+      return {
+        index: index,
+        status: 'plate',
+        x: layout.x,
+        y: layout.y,
+        homeX: layout.x,
+        homeY: layout.y,
+        w: layout.w,
+        rot: layout.rot,
+        startedAt: 0,
+        doneAt: 0,
+        doneZone: '',
+      };
+    });
+    state.fryDragIndex = -1;
+  }
+
+  function ensureChickenFryPieces(action) {
+    if (!isChickenFryAction(state.current, action)) return [];
+    if (!Array.isArray(state.fryPieces) || state.fryPieces.length !== getCookPieceCount(action)) {
+      initChickenFryPieces(action);
+    }
+    return state.fryPieces;
+  }
+
+  function getChickenFryDonePieces(action) {
+    return ensureChickenFryPieces(action).filter(function (piece) {
+      return piece && piece.status === 'done';
+    }).slice().sort(function (a, b) {
+      return ((a && a.doneAt) || 0) - ((b && b.doneAt) || 0);
+    });
+  }
+
+  function getChickenFryOilPieces(action) {
+    return ensureChickenFryPieces(action).filter(function (piece) {
+      return piece && piece.status === 'oil';
+    });
+  }
+
+  function getOldestChickenFryOilPiece(action) {
+    const oils = getChickenFryOilPieces(action);
+    if (!oils.length) return null;
+    oils.sort(function (a, b) {
+      return (a.startedAt || 0) - (b.startedAt || 0);
+    });
+    return oils[0];
+  }
+
+  function getChickenFryCookPct(piece, now) {
+    if (!piece || piece.status !== 'oil' || !piece.startedAt) return 0;
+    return Math.max(0, Math.min(100, ((now || performance.now()) - piece.startedAt) / COOK_TIMING_DURATION_MS * 100));
+  }
+
+  function getChickenFryVisualStage(piece, pct) {
+    if (!piece || piece.status === 'plate') return 0;
+    if (piece.status === 'done') return 2;
+    const safePct = Math.max(0, Math.min(100, pct || 0));
+    if (safePct < 20) return 0;
+    if (safePct < COOK_TIMING_GOOD_MIN) return 1;
+    return 2;
+  }
+
+  function getChickenFryFilter(piece, pct) {
+    const shadow = ' drop-shadow(0 5px 7px rgba(80,45,28,0.22))';
+    if (!piece || piece.status === 'plate') return 'drop-shadow(0 4px 5px rgba(80,45,28,0.2))';
+    if (piece.status === 'done') return 'saturate(1.08) brightness(1.02) contrast(1.02)' + shadow;
+    const safePct = Math.max(0, Math.min(100, pct || 0));
+    if (safePct < COOK_TIMING_GOOD_MIN) {
+      const t = safePct / COOK_TIMING_GOOD_MIN;
+      return 'sepia(' + (0.12 + t * 0.18).toFixed(2) + ') saturate(' + (0.88 + t * 0.42).toFixed(2) + ') brightness(' + (1.08 - t * 0.03).toFixed(2) + ') contrast(' + (0.96 + t * 0.08).toFixed(2) + ')' + shadow;
+    }
+    if (safePct <= COOK_TIMING_GOOD_MAX) {
+      return 'saturate(1.18) brightness(1.06) contrast(1.05)' + shadow;
+    }
+    const over = Math.max(0, Math.min(1, (safePct - COOK_TIMING_GOOD_MAX) / (100 - COOK_TIMING_GOOD_MAX)));
+    return 'sepia(' + (0.18 + over * 0.42).toFixed(2) + ') saturate(' + (1.2 + over * 0.26).toFixed(2) + ') brightness(' + (1.02 - over * 0.22).toFixed(2) + ') contrast(' + (1.04 + over * 0.18).toFixed(2) + ')' + shadow;
+  }
+
+  function applyChickenFryPieceVisual(img, piece, action, now) {
+    if (!img || !piece) return;
+    const pct = getChickenFryCookPct(piece, now);
+    const stage = getChickenFryVisualStage(piece, pct);
+    const srcs = getCookStagePieceSrcs(state.current, action, stage);
+    const src = srcs[piece.index] || getCookFallbackSrc(state.current, action);
+    if (src && img.getAttribute('src') !== src) img.src = src;
+    img.style.filter = getChickenFryFilter(piece, pct);
+    img.dataset.cookPct = pct.toFixed(1);
+  }
+
+  function updateChickenFryVisuals() {
+    const action = getCurrentAction();
+    if (!isChickenFryAction(state.current, action) || !els.fryPieceBank) return;
+    const now = performance.now();
+    const active = getOldestChickenFryOilPiece(action);
+    [...els.fryPieceBank.querySelectorAll('img[data-fry-piece-index]')].forEach(function (img) {
+      const index = parseInt(img.dataset.fryPieceIndex, 10);
+      const piece = ensureChickenFryPieces(action)[index];
+      applyChickenFryPieceVisual(img, piece, action, now);
+    });
+    if (active) {
+      state.cookProgress = Math.min(2, getChickenFryCookPct(active, now) / 50);
+      updateCookDots('fry', state.cookProgress);
+    }
+  }
+
+  function getFryPotPieceTarget(point, index) {
+    const potBounds = getElementBoundsPct(els.fryPot, els.fryStage);
+    const cx = potBounds ? potBounds.left + potBounds.width * 0.50 : 58;
+    const cy = potBounds ? potBounds.top + potBounds.height * 0.50 : 58;
+    const rx = potBounds ? potBounds.width * 0.30 : 15;
+    const ry = potBounds ? potBounds.height * 0.22 : 10;
+    let dx = (point ? point.x : cx) - cx;
+    let dy = (point ? point.y : cy) - cy;
+    const normalized = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+    if (normalized > 1) {
+      const scale = Math.sqrt(normalized);
+      dx /= scale;
+      dy /= scale;
+    }
+    if (!point) {
+      const angle = (index * 1.9 + 0.4) * Math.PI;
+      dx = Math.cos(angle) * rx * 0.34;
+      dy = Math.sin(angle) * ry * 0.36;
+    }
+    return { x: cx + dx, y: cy + dy };
+  }
+
   function updateFryPieceBank(action) {
     if (!els.fryPieceBank) return;
     const ing = state.current;
+    if (isChickenFryAction(ing, action)) {
+      const pieces = ensureChickenFryPieces(action);
+      const visible = pieces.some(function (piece) {
+        return piece && piece.status !== 'done';
+      });
+      els.fryPieceBank.classList.toggle('show', visible);
+      els.fryPieceBank.innerHTML = '';
+      if (!visible) return;
+      const now = performance.now();
+      pieces.forEach(function (piece) {
+        if (!piece || piece.status === 'done') return;
+        const img = document.createElement('img');
+        img.alt = '';
+        img.draggable = false;
+        img.dataset.fryPieceIndex = String(piece.index);
+        img.classList.add('is-fry-piece');
+        img.classList.toggle('is-plate-piece', piece.status === 'plate');
+        img.classList.toggle('is-oil-piece', piece.status === 'oil');
+        img.classList.toggle('is-dragging', piece.index === state.fryDragIndex);
+        img.style.setProperty('--piece-x', piece.x.toFixed(2) + '%');
+        img.style.setProperty('--piece-y', piece.y.toFixed(2) + '%');
+        img.style.setProperty('--piece-w', (piece.status === 'oil' ? 13.4 : piece.w).toFixed(1) + '%');
+        img.style.setProperty('--piece-rot', piece.rot || '0deg');
+        img.style.zIndex = String((piece.status === 'oil' ? 45 : 30) + Math.round(piece.y));
+        applyChickenFryPieceVisual(img, piece, action, now);
+        els.fryPieceBank.appendChild(img);
+      });
+      return;
+    }
     const doneCount = action ? getDoneCookPieceCount(action) : 0;
     const visible = !!(ing && ing.id === 'chicken_marinated'
       && action && action.type === 'fry'
@@ -11471,6 +11670,9 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function getDoneCookPieceCount(action) {
+    if (isChickenFryAction(state.current, action) && Array.isArray(state.fryPieces) && state.fryPieces.length) {
+      return getChickenFryDonePieces(action).length;
+    }
     if (!isMultiPieceCookAction(action)) return state.cookServed ? 1 : 0;
     const total = getCookPieceCount(action);
     const completed = (state.cookPieceIndex || 0) + (state.cookServed ? 1 : 0);
@@ -11479,11 +11681,11 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function getCookDoneTrayPieceLayout(index) {
     const layouts = [
-      { x: 28, y: 43, w: 22, rot: '-8deg' },
-      { x: 50, y: 38, w: 22, rot: '6deg' },
-      { x: 72, y: 45, w: 22, rot: '-5deg' },
-      { x: 40, y: 66, w: 23, rot: '4deg' },
-      { x: 61, y: 67, w: 23, rot: '-6deg' },
+      { x: 30, y: 43, w: 18.5, rot: '-8deg' },
+      { x: 49, y: 39, w: 18.5, rot: '6deg' },
+      { x: 68, y: 45, w: 18.5, rot: '-5deg' },
+      { x: 40, y: 65, w: 19, rot: '4deg' },
+      { x: 59, y: 66, w: 19, rot: '-6deg' },
     ];
     return layouts[index % layouts.length];
   }
@@ -11502,11 +11704,18 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!visible || completed <= 0) return;
 
     const srcs = getCookStagePieceSrcs(ing, action, 2);
-    for (let index = 0; index < completed; index += 1) {
-      const src = srcs[index] || getCookFallbackSrc(ing, action);
+    const donePieces = isChickenFryAction(ing, action)
+      ? getChickenFryDonePieces(action)
+      : Array.from({ length: completed }, function (_, index) { return { index: index, doneAt: index }; });
+    const latestDoneAt = donePieces.reduce(function (latest, piece) {
+      return Math.max(latest, (piece && piece.doneAt) || 0);
+    }, 0);
+    for (let doneIndex = 0; doneIndex < donePieces.length; doneIndex += 1) {
+      const piece = donePieces[doneIndex] || { index: doneIndex };
+      const src = srcs[piece.index] || getCookFallbackSrc(ing, action);
       if (!src) continue;
       const img = document.createElement('img');
-      const layout = getCookDoneTrayPieceLayout(index);
+      const layout = getCookDoneTrayPieceLayout(doneIndex);
       img.src = src;
       img.alt = '';
       img.draggable = false;
@@ -11515,7 +11724,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       img.style.setProperty('--done-w', layout.w + '%');
       img.style.setProperty('--done-rot', layout.rot);
       img.style.zIndex = String(10 + Math.round(layout.y));
-      img.classList.toggle('is-latest', index === completed - 1 && state.cookServed);
+      img.classList.toggle('is-latest', latestDoneAt > 0 ? piece.doneAt === latestDoneAt : (doneIndex === completed - 1 && state.cookServed));
       tray.appendChild(img);
     }
   }
@@ -11628,9 +11837,12 @@ body.layout-editor-on .bowl-fill-mask::after {
   function updateCookStageState(type) {
     const stageEl = type === 'fry' ? els.fryStage : els.grillStage;
     if (!stageEl) return;
+    const action = getCurrentAction();
+    const chickenFry = type === 'fry' && isChickenFryAction(state.current, action);
+    const chickenOilActive = chickenFry && getChickenFryOilPieces(action).length > 0;
     stageEl.classList.toggle('is-preheating', !state.cookPreheated);
     stageEl.classList.toggle('is-preheated', state.cookPreheated);
-    stageEl.classList.toggle('food-placed', state.cookFoodPlaced);
+    stageEl.classList.toggle('food-placed', state.cookFoodPlaced || chickenOilActive);
     stageEl.classList.toggle('is-served', state.cookServed);
     const eggGrill = type === 'grill' && isCurrentEggGrillAction();
     stageEl.classList.toggle('egg-crack-mode', eggGrill && !state.cookFoodPlaced);
@@ -11643,9 +11855,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     stageEl.classList.toggle('egg-lid-ready', eggGrill && state.cookFoodPlaced && state.cookEggLidReady && !state.cookEggLidClosed && !state.cookServed);
     stageEl.classList.toggle('egg-lid-dragging', eggGrill && state.cookEggLidDragging && !state.cookEggLidClosed);
     stageEl.classList.toggle('egg-lid-closed', eggGrill && state.cookEggLidClosed && !state.cookServed);
-    stageEl.classList.toggle('meatball-serve', isMeatballCookAction(state.current, getCurrentAction()) && state.cookMeatballPhase === 'serve');
-    if (isMultiPieceCookAction(getCurrentAction())) {
-      stageEl.dataset.cookPieceIndex = String(state.cookPieceIndex || 0);
+    stageEl.classList.toggle('meatball-serve', isMeatballCookAction(state.current, action) && state.cookMeatballPhase === 'serve');
+    if (isMultiPieceCookAction(action)) {
+      stageEl.dataset.cookPieceIndex = String(chickenFry ? getChickenFryDonePieces(action).length : (state.cookPieceIndex || 0));
     } else {
       delete stageEl.dataset.cookPieceIndex;
     }
@@ -11654,15 +11866,15 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       delete stageEl.dataset.ingredient;
     }
-    stageEl.classList.toggle('has-done-tray', shouldUseCookDoneTray(type, state.current, getCurrentAction()));
+    stageEl.classList.toggle('has-done-tray', shouldUseCookDoneTray(type, state.current, action));
     if (type === 'grill' || type === 'fry') {
       requestAnimationFrame(function () {
         syncCookLayoutFromTools(type);
       });
     }
-    if (type === 'grill') updateCookPieceBank(getCurrentAction());
-    if (type === 'fry') updateFryPieceBank(getCurrentAction());
-    updateCookDoneTray(type, getCurrentAction());
+    if (type === 'grill') updateCookPieceBank(action);
+    if (type === 'fry') updateFryPieceBank(action);
+    updateCookDoneTray(type, action);
   }
 
   function pctString(value) {
@@ -11791,6 +12003,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!type || type === 'grill') {
       state.cookEggLidDragging = false;
       resetEggLidToHome();
+    }
+    if (!type || type === 'fry') {
+      state.fryDragIndex = -1;
     }
     if (!type || state.cookDragType === type || (type === 'grill' && state.cookDragType === 'egg-lid')) {
       state.cookDragging = false;
@@ -12284,6 +12499,122 @@ body.layout-editor-on .bowl-fill-mask::after {
     }
     updateCookStageState('grill');
     updateCookPieceBank(action);
+  }
+
+  function getFryStagePoint(evt) {
+    if (!evt || !els.fryStage) return null;
+    const rect = els.fryStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      x: ((evt.clientX - rect.left) / rect.width) * 100,
+      y: ((evt.clientY - rect.top) / rect.height) * 100,
+    };
+  }
+
+  function syncChickenFryTimingForOldest() {
+    const action = getCurrentAction();
+    if (!isChickenFryAction(state.current, action)) return;
+    const oldest = getOldestChickenFryOilPiece(action);
+    if (!oldest) {
+      state.cookFoodPlaced = false;
+      state.fryReady = false;
+      state.cookProgress = 0;
+      stopCookTimingGauge();
+      resetCookTimingUI('fry');
+      updateCookDots('fry', 0);
+      return;
+    }
+    state.cookFoodPlaced = true;
+    state.cookServed = false;
+    state.fryReady = true;
+    startCookTimingGauge('fry', oldest.startedAt || performance.now());
+    updateChickenFryVisuals();
+  }
+
+  function onFryPiecePointerDown(evt) {
+    const action = getCurrentAction();
+    if (!isChickenFryAction(state.current, action)) return;
+    const target = evt.target && evt.target.closest ? evt.target.closest('img[data-fry-piece-index]') : null;
+    if (!target || !els.fryPieceBank || state.cutting || state.transitioning || state.cookAnimating) return;
+    const index = parseInt(target.dataset.fryPieceIndex, 10);
+    const piece = ensureChickenFryPieces(action)[index];
+    if (!piece || piece.status !== 'plate') return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(180);
+    if (!state.cookPreheated) {
+      setSpeech('あぶらが あったまるまで まってね！', 'fry');
+      return;
+    }
+    state.fryDragIndex = index;
+    state.cookDragging = true;
+    state.cookDragType = 'fry-piece';
+    state.cookDragPointerId = evt.pointerId;
+    if (els.fryPieceBank.setPointerCapture) {
+      try { els.fryPieceBank.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    updateFryPieceBank(action);
+    setSpeech('とりにくを なべの中へ いれよう！ いくつでも いっしょに あげられるよ。', 'fry');
+  }
+
+  function onFryPiecePointerMove(evt) {
+    const action = getCurrentAction();
+    if (!state.cookDragging || state.cookDragType !== 'fry-piece' || state.cookDragPointerId !== evt.pointerId) return;
+    if (!isChickenFryAction(state.current, action)) return;
+    const piece = ensureChickenFryPieces(action)[state.fryDragIndex];
+    const point = getFryStagePoint(evt);
+    if (!piece || !point) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    piece.x = Math.max(5, Math.min(92, point.x));
+    piece.y = Math.max(12, Math.min(86, point.y));
+    if (els.fryStage) els.fryStage.classList.toggle('drop-ready', isCookDropPoint('fry', point));
+    updateFryPieceBank(action);
+  }
+
+  function onFryPiecePointerEnd(evt) {
+    const action = getCurrentAction();
+    if (!state.cookDragging || state.cookDragType !== 'fry-piece' || state.cookDragPointerId !== evt.pointerId) return;
+    if (!isChickenFryAction(state.current, action)) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(180);
+    const piece = ensureChickenFryPieces(action)[state.fryDragIndex];
+    const point = getFryStagePoint(evt);
+    const dropped = point && isCookDropPoint('fry', point);
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.fryDragIndex = -1;
+    if (els.fryPieceBank && els.fryPieceBank.releasePointerCapture) {
+      try { els.fryPieceBank.releasePointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    if (els.fryStage) els.fryStage.classList.remove('drop-ready');
+    if (!piece) return;
+    if (dropped) {
+      const target = getFryPotPieceTarget(point, piece.index);
+      piece.status = 'oil';
+      piece.x = target.x;
+      piece.y = target.y;
+      piece.w = 13.4;
+      piece.startedAt = performance.now();
+      piece.doneAt = 0;
+      piece.doneZone = '';
+      if (els.fryBurst) els.fryBurst.textContent = 'ポチャン！';
+      showCookBurst('fry');
+      startKitchenAmbient('fry');
+      syncChickenFryTimingForOldest();
+      const oilCount = getChickenFryOilPieces(action).length;
+      if (els.fryActionLabel) els.fryActionLabel.textContent = oilCount + 'こ あげてるよ';
+      setSpeech(oilCount + 'こ あぶらの中！ あおになったら タップで 1こずつ とりだそう！', 'fry');
+    } else {
+      piece.status = 'plate';
+      piece.x = piece.homeX;
+      piece.y = piece.homeY;
+      piece.w = getFryPlatePieceLayout(piece.index).w;
+      setSpeech('なべの中で はなしてね！', 'fry');
+    }
+    updateCookStageState('fry');
   }
 
   function onCookFoodPointerDown(evt, type) {
@@ -12959,6 +13290,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       ui.cue.classList.toggle('urgent', zone === 'warm' || zone === 'danger' || zone === 'red');
       ui.cue.classList.toggle('danger', zone === 'danger' || zone === 'red');
     }
+    if (type === 'fry') updateChickenFryVisuals();
     return zone;
   }
 
@@ -13014,13 +13346,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookTimingPointerAt = 0;
   }
 
-  function startCookTimingGauge(type) {
+  function startCookTimingGauge(type, startAt) {
     stopCookTimingGauge();
     const ui = getCookTimingEls(type);
     if (!ui.meter || !ui.needle) return;
     state.cookTimingActive = true;
     state.cookTimingType = type;
-    state.cookTimingStart = performance.now();
+    state.cookTimingStart = Number.isFinite(startAt) ? startAt : performance.now();
     state.cookTimingPct = 0;
     state.cookTimingLastGoodAt = 0;
     state.cookTimingPointerType = null;
@@ -13039,7 +13371,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       state.cookTimingPct = pct;
       const zone = updateCookTimingVisual(ui, pct, type);
       if (zone === 'good') state.cookTimingLastGoodAt = now;
-      if (pct < 100) {
+      const keepFryVisualsRunning = type === 'fry'
+        && isChickenFryAction(state.current, getCurrentAction())
+        && getChickenFryOilPieces(getCurrentAction()).length > 0;
+      if (pct < 100 || keepFryVisualsRunning) {
         state.cookTimingRaf = requestAnimationFrame(tick);
       } else {
         state.cookTimingRaf = 0;
@@ -13277,6 +13612,70 @@ body.layout-editor-on .bowl-fill-mask::after {
     }, 760));
   }
 
+  function handleChickenFryTap() {
+    const ing = state.current;
+    const action = getCurrentAction();
+    if (!isChickenFryAction(ing, action)) return false;
+    const pieces = ensureChickenFryPieces(action);
+    const oilPiece = getOldestChickenFryOilPiece(action);
+    if (!oilPiece) {
+      const plateCount = pieces.filter(function (piece) { return piece && piece.status === 'plate'; }).length;
+      if (plateCount > 0) {
+        setSpeech('おさらの とりにくを つかんで、なべへ いれよう！', 'fry');
+      } else {
+        setSpeech('できあがりを まってね！', 'fry');
+      }
+      return true;
+    }
+
+    const pct = getChickenFryCookPct(oilPiece, performance.now());
+    if (pct < 18) {
+      setSpeech('まだ しろっぽいね。もう少し あげよう！', 'fry');
+      return true;
+    }
+
+    const timingZone = recordCookTiming('fry');
+    oilPiece.status = 'done';
+    oilPiece.doneAt = performance.now();
+    oilPiece.doneZone = timingZone;
+    state.cookPieceIndex = getChickenFryDonePieces(action).length;
+    state.cookFoodPlaced = getChickenFryOilPieces(action).length > 0;
+    state.cookServed = state.cookPieceIndex >= getCookPieceCount(action);
+    state.fryReady = state.cookFoodPlaced;
+    if (els.fryBurst) els.fryBurst.textContent = 'カラッ！';
+    showCookBurst('fry');
+    updateCookStageState('fry');
+
+    if (state.cookServed) {
+      stopAllKitchenAmbient(320);
+      const stars = showCookTimingRating('fry');
+      if (els.fryActionLabel) els.fryActionLabel.textContent = stars === 3 ? 'タイミング ばっちり！' : 'カラッと できたよ！';
+      setSpeech(cookTimingSpeech(timingZone, 'fry', true), 'fry');
+      state.cookAnimating = true;
+      state.pendingTimers.push(setTimeout(function () {
+        state.cookAnimating = false;
+        completeCurrentAction(ing);
+      }, 1120));
+      return true;
+    }
+
+    const oilCount = getChickenFryOilPieces(action).length;
+    const plateCount = pieces.filter(function (piece) { return piece && piece.status === 'plate'; }).length;
+    if (oilCount > 0) {
+      syncChickenFryTimingForOldest();
+      if (els.fryActionLabel) els.fryActionLabel.textContent = oilCount + 'こ あげてるよ';
+      setSpeech(state.cookPieceIndex + 'こ 右のトレーへ！ のこりも あおで とりだそう！', 'fry');
+    } else {
+      resetCookTimingUI('fry');
+      state.fryReady = false;
+      state.cookProgress = 0;
+      updateCookDots('fry', 0);
+      if (els.fryActionLabel) els.fryActionLabel.textContent = plateCount + 'こ のこり';
+      setSpeech(state.cookPieceIndex + 'こ 右のトレーへ！ のこりを おさらから なべへ いれよう！', 'fry');
+    }
+    return true;
+  }
+
   function onGrillTap(evt) {
     if (state.suppressCookClick) {
       state.suppressCookClick = false;
@@ -13360,6 +13759,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       setSpeech('あぶらが あったまるまで まってね！', 'fry');
       return;
     }
+    if (handleChickenFryTap()) return;
     if (!state.cookFoodPlaced) {
       if (evt && evt.type === 'click') {
         nudgeCookDrag('fry');
@@ -14580,7 +14980,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const cy = h * 0.55;
     const pieceSize = isParticle
       ? (7 + Math.random() * 11)
-      : (isCabbage ? (42 + Math.random() * 28) : (isChicken ? 42 + Math.random() * 8 : (burstCount > 1 ? 92 : 86)));
+      : (isCabbage ? (42 + Math.random() * 28) : (isChicken ? 68 + Math.random() * 14 : (burstCount > 1 ? 92 : 86)));
     let rawX;
     let rawY;
     if (isParticle) {
