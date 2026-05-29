@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:187-bento-one-tier-rice-boxes] Codex: user 追加指摘「既存の四角/丸ご飯入りは2段に見えるので、1段で作り直し」を受領。`tmp/alpha_pending/183_bento_boxes_rice_raw/02` / `03` は既存だが意図不一致のため再生成対象。GPT Image 2 built-in で一段の四角/丸ご飯入り raw を `tmp/alpha_pending/187_bento_one_tier_rice_raw/` に納品する。alpha 抜き・切り抜き・本配置はしない。 (by Codex)
+- 2026-05-29 - [batch:187-bento-one-tier-rice-boxes] DONE - Codex: 一段の四角/丸ご飯入り raw を GPT Image 2 built-in で再生成し、`tmp/alpha_pending/187_bento_one_tier_rice_raw/01_box_square_one_tier_rice_raw.png` / `02_box_round_one_tier_rice_raw.png` に保存。どちらも 1254x1254 / RGB / 白背景。目視で横の二段継ぎ目なしを確認。alpha 抜き・切り抜き・本配置は未実施。 (by Codex)
 - 2026-05-29 - [batch:186-bento-box-labels-rice-existing] Codex: user 依頼「二段箱/くま箱/ねこ箱の名称整理、四角/丸のご飯入り画像生成」を受領。HANDOFF / git log / assets / tmp を確認し、四角/丸を含むご飯入り raw は既に `tmp/alpha_pending/183_bento_boxes_rice_raw/` に納品済みと確認。重複生成せず、まず `bento/index.html` の箱表示名を変更する。 (by Codex)
 - 2026-05-29 - [batch:186-bento-box-labels-rice-existing] DONE - Codex: `bento/index.html` の箱表示名を「ふつうの おべんとう」「しかくい おべんとう」「まるい おべんとう」「みずいろ/ピンク クマさん」「みずいろ/ピンク ねこちゃん」へ変更。四角/丸のご飯入り raw は既存 `tmp/alpha_pending/183_bento_boxes_rice_raw/02...` / `03...` を目視確認済みのため重複生成なし。Playwright で `bentoBoxes` 名称確認、cross-review Fermat blocker なし。`sw.js` は v671。 (by Codex)
 - 2026-05-29 - [batch:185-milmaru-roaming-loop-correct-mark] DONE - Codex: user 追加の透過済み `D:\ポノのおへや\Moji\assets\ミルマル\はいはい` / `よちよち` 素材を `assets/images/mojikko/care/milmaru_yochiyochi_*_loop_*.png` として配置し、お世話画面のよちよち期 roaming に反映。`sukusuku < 38` はハイハイ6コマ、`sukusuku >= 38` はよちよち歩き4コマで移動し、移動方向に合わせて左右反転するよう修正。ローカルPlaywrightで `roaming-crawl` / `roaming-walk` と各背景画像適用を確認。五角星化対策の表情 raw は `tmp/alpha_pending/185_milmaru_correct_mark_raw/` に殻入りベビー/よちよち各1枚を保存。`sw.js` は v670。 (by Codex)
