@@ -813,9 +813,10 @@ html, body {
 }
 
 .milmaru.yochiyochi {
-  bottom: 72px;
-  width: 270px;
-  height: 268px;
+  bottom: 58px;
+  width: 360px;
+  height: 300px;
+  background-size: auto 218px;
   background-image: var(--care-yochiyochi-normal);
 }
 
@@ -865,11 +866,13 @@ html, body {
 }
 
 .milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-crawl {
-  animation: yochiyochiCrawlFrames 0.84s step-end infinite;
+  background-size: auto 260px;
+  animation: yochiyochiCrawlFrames 1.18s step-end infinite;
 }
 
 .milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-walk {
-  animation: yochiyochiWalkFrames 0.72s step-end infinite;
+  background-size: auto 270px;
+  animation: yochiyochiWalkFrames 1.04s step-end infinite;
 }
 
 .milmaru.egg.warm {
@@ -2003,7 +2006,7 @@ function applyRoamStyles(resetCenter = false) {
   milmaruWrap.style.setProperty('--roam-x', `${x}%`);
   milmaruWrap.style.setProperty('--roam-y', `${y}px`);
   milmaruWrap.style.setProperty('--roam-dir', String(resetCenter ? 1 : roamState.dir));
-  milmaruWrap.style.setProperty('--roam-duration', `${roamState.duration || 2.8}s`);
+  milmaruWrap.style.setProperty('--roam-duration', `${roamState.duration || 3.8}s`);
   speechBubble.style.setProperty('--speech-x', `${x}%`);
 }
 
@@ -2023,7 +2026,7 @@ function moveRoamTarget() {
   roamState.dir = nextX < roamState.x ? -1 : 1;
   roamState.x = nextX;
   roamState.y = nextY;
-  roamState.duration = Math.max(2.2, Math.min(4.4, 1.8 + distance * 0.08));
+  roamState.duration = Math.max(3.4, Math.min(6.2, 2.8 + distance * 0.12));
   roamState.moving = true;
   applyRoamStyles();
   applyMilmaruClass(state.reaction);
@@ -2031,7 +2034,7 @@ function moveRoamTarget() {
     roamState.moving = false;
     applyMilmaruClass(state.reaction);
   }, roamState.duration * 1000);
-  scheduleRoam((roamState.duration * 1000) + 900 + Math.random() * 1500);
+  scheduleRoam((roamState.duration * 1000) + 1300 + Math.random() * 1900);
 }
 
 function syncRoaming() {
