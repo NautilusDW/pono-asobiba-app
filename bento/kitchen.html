@@ -2775,6 +2775,7 @@ body.layout-editor-on .fry-pot {
   z-index: 31;
   pointer-events: none;
 }
+#fry-stage[data-ingredient="chicken_marinated"].has-done-tray .cook-piece-bank--fry.show,
 #fry-stage[data-ingredient="chicken_marinated"]:not(.is-served) .cook-piece-bank--fry.show {
   display: block;
 }
@@ -3075,6 +3076,14 @@ body.layout-editor-on .egg-glass-lid {
   width: 32%;
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%) rotate(-3deg);
+}
+#fry-stage[data-ingredient="chicken_marinated"].has-done-tray .prep-plate {
+  left: 16%;
+  top: 68%;
+  width: 32%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%) rotate(-3deg);
+  opacity: 1;
 }
 #fry-stage[data-ingredient="chicken_marinated"]:not(.food-placed):not(.is-served) .cooking-food {
   width: 12%;
@@ -11427,10 +11436,11 @@ body.layout-editor-on .bowl-fill-mask::after {
   function updateFryPieceBank(action) {
     if (!els.fryPieceBank) return;
     const ing = state.current;
+    const doneCount = action ? getDoneCookPieceCount(action) : 0;
     const visible = !!(ing && ing.id === 'chicken_marinated'
       && action && action.type === 'fry'
       && isMultiPieceCookAction(action)
-      && !state.cookServed);
+      && doneCount < getCookPieceCount(action));
     els.fryPieceBank.classList.toggle('show', visible);
     els.fryPieceBank.innerHTML = '';
     if (!visible) return;
@@ -11469,11 +11479,11 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function getCookDoneTrayPieceLayout(index) {
     const layouts = [
-      { x: 25, y: 41, w: 27, rot: '-8deg' },
-      { x: 51, y: 35, w: 27, rot: '6deg' },
-      { x: 74, y: 45, w: 27, rot: '-5deg' },
-      { x: 38, y: 67, w: 28, rot: '4deg' },
-      { x: 64, y: 68, w: 28, rot: '-6deg' },
+      { x: 28, y: 43, w: 22, rot: '-8deg' },
+      { x: 50, y: 38, w: 22, rot: '6deg' },
+      { x: 72, y: 45, w: 22, rot: '-5deg' },
+      { x: 40, y: 66, w: 23, rot: '4deg' },
+      { x: 61, y: 67, w: 23, rot: '-6deg' },
     ];
     return layouts[index % layouts.length];
   }

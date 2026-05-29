@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:180-kitchen-fry-tray-plate-stability] DONE - Codex: user 指摘「左のお皿が唐揚げを1個ずつ揚げるたび小さくなる/取り出す時に一瞬消える/完成唐揚げがトレーからはみ出す」を受け、複数唐揚げ調理中は `#fry-stage` の左 `prep-plate` を `is-served` 中も同サイズ・同位置・不透明で維持し、残りピースの bank も取り出し直後に消えないよう変更。右完成トレーの唐揚げレイアウトを内側へ寄せ小さくした。Playwrightで取り出し直後の左皿 opacity=1/幅267px、5個完了時の完成唐揚げ全画像がトレー内に収まることを確認。`sw.js` は v665。 (by Codex)
 - 2026-05-29 - [batch:179-kitchen-fry-done-tray-side-panel] DONE - Codex: user 指摘「右側はコンロ上ではなく、右の空いているパネル」を受け、完成トレーを `#fry-stage` 内から `cook-side` 下段カードへ移動。唐揚げ3個時スクショで右パネル内・コンロ外に表示されること、5個完了時に `#fry-done-tray` が5画像を保持することをPlaywrightで確認。`sw.js` は v663。 (by Codex)
 - 2026-05-29 - [batch:178-kitchen-fry-done-tray] DONE - Codex: user 要望「おかずを作るで、出来上がったものは右側に出す。唐揚げを1個あげたらトレーに1個ずつ溜まる」を受け、揚げる画面に右側の完成トレー `#fry-done-tray` を追加。複数ピース調理では完成数を `cookPieceIndex + cookServed` から算出し、唐揚げの完了画像を1個ずつ右トレーへ追加、中央の一時重複表示は非表示にした。Playwrightで唐揚げ2個時=トレー2枚、5個完了時=トレー5枚を確認。`sw.js` は v662。 (by Codex)
 - 2026-05-29 - [batch:177-kitchen-bowl-fill-mask-width] DONE - Codex: user 指摘「水色のお皿のマスクが縦しか調整できない」を受け、`.bowl-fill-mask` の固定楕円 `clip-path` を撤去。マスク要素自体の幅・高さがそのまま水色の調整範囲になるようにし、Playwrightで `?edit=1` の横幅変更が 172px→359px に追従し `clipPath:none` になることを確認。`sw.js` は v661。 (by Codex)
