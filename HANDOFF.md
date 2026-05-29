@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:190-mojikko-care-right-panel-roam] DONE - Codex: user 指摘「右側は四角の中だけ消す」を受け、右パネルの名前/Lv./現在段階/メモ/アルバムは復帰し、成長カード内だけを数値・段階アイコンなしの飾り空枠に変更。トップのすくすく/ぽかぽかバー削除と名前タイトルは維持。よちよち期 roaming はハイハイ/歩き素材を事前 preload し、移動開始を遅らせ、`sukusuku` に応じて初期はゆっくり・成長後は少し速く、さらに移動ごとのランダム緩急を入れるよう調整。Playwrightで右カード内テキスト空、トップすくすく無し、ハイハイ移動約9.9s/フレーム約2.5sを確認。`sw.js` は v674。 (by Codex)
 - 2026-05-29 - [batch:189-mojikko-care-simplify-name] DONE - Codex: お世話画面の右パネルから Lv./成長段階/すくすく進捗/メモ/アルバムを削除し、上部タイトルを生成済み `wood_title_plaque.png` 上のモンスター名だけに変更。トップのすくすく/ぽかぽかバーも削除し、内部成長値は画面に出さず成長間近だけ曖昧なメッセージで示す。孵化後の名前入力モーダルを追加し、保存した名前をタイトル/右パネルへ反映。user 追加のミルク画像を `assets/images/mojikko/care/icon_milk_bottle.png` として配置し、もちもの/給餌/演出に使用。Playwrightで詳細情報ID削除、名前保存、ミルクアイコン適用を確認。`sw.js` は v673。 (by Codex)
 - 2026-05-29 - [batch:188-bento-reference-angle-rice] Codex: user 指摘「一段ではあるが元の空箱イラストを参照しておらず角度が違う」を受領。正本は `assets/images/bento/free-layout/box_square.png` / `box_round.png`。前回 `tmp/alpha_pending/187_bento_one_tier_rice_raw/` は角度不一致のため使わない。元 PNG をベースに外形・角度・透明キャンバスを保持し、内側だけご飯合成した版を `tmp/alpha_pending/188_bento_reference_angle_rice_raw/` に作成する。 (by Codex)
 - 2026-05-29 - [batch:188-bento-reference-angle-rice] DONE - Codex: 元の空箱 `box_square.png` (350x307) / `box_round.png` (357x311) をベースに、外形・角度・リム・透明キャンバスを保持して内側にご飯だけ合成。納品先は `tmp/alpha_pending/188_bento_reference_angle_rice_raw/01_box_square_reference_angle_rice_raw.png` (1400x1228) / `02_box_round_reference_angle_rice_raw.png` (1428x1244) と source-size 版 2 枚。前回 187 は不採用。alpha 抜き・切り抜き・本配置は未実施。 (by Codex)

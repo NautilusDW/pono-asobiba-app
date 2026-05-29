@@ -662,7 +662,7 @@ html, body {
   font-size: 26px;
   text-align: center;
   z-index: 5;
-  transition: left 2.8s ease-in-out;
+  transition: left var(--roam-duration, 4.8s) ease-in-out;
 }
 
 .speech-bubble::after {
@@ -688,8 +688,9 @@ html, body {
   transform-origin: center bottom;
   z-index: 5;
   transition:
-    left var(--roam-duration, 2.8s) ease-in-out,
-    bottom var(--roam-duration, 2.8s) ease-in-out;
+    left var(--roam-duration, 4.8s) var(--roam-easing, ease-in-out),
+    bottom var(--roam-duration, 4.8s) var(--roam-easing, ease-in-out);
+  will-change: left, bottom, transform;
 }
 
 .milmaru {
@@ -703,6 +704,7 @@ html, body {
   background: var(--care-milmaru-normal) center bottom / contain no-repeat;
   image-rendering: pixelated;
   transition: transform 0.2s ease;
+  backface-visibility: hidden;
 }
 
 .milmaru::before,
@@ -864,12 +866,12 @@ html, body {
 
 .milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-crawl {
   background-size: auto 260px;
-  animation: yochiyochiCrawlFrames 1.18s step-end infinite;
+  animation: yochiyochiCrawlFrames var(--roam-frame-duration, 1.9s) step-end infinite;
 }
 
 .milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-walk {
   background-size: auto 270px;
-  animation: yochiyochiWalkFrames 1.04s step-end infinite;
+  animation: yochiyochiWalkFrames var(--roam-frame-duration, 1.35s) step-end infinite;
 }
 
 .milmaru.egg.warm {
@@ -1176,19 +1178,53 @@ html, body {
 }
 
 .milmaru-name {
-  width: 100%;
-  min-height: 92px;
-  display: grid;
-  place-items: center;
-  padding: 18px 10px;
-  border: 3px solid rgba(139, 96, 66, 0.34);
+  font-size: 28px;
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.profile-card {
+  min-height: 112px;
+}
+
+.growth-card {
+  min-height: 150px;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid rgba(139, 96, 66, 0.35);
   border-radius: 10px;
-  background: rgba(255,255,255,0.48);
-  font-family: var(--pixel-font);
-  font-size: 32px;
-  line-height: 1.1;
-  text-align: center;
-  word-break: keep-all;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0.08)),
+    rgba(255,255,255,0.34);
+}
+
+.growth-card.mystery-card::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 82px;
+  height: 82px;
+  transform: translate(-50%, -50%);
+  background: var(--care-fx-sparkle) center / contain no-repeat;
+  opacity: 0.22;
+  image-rendering: pixelated;
+}
+
+.growth-card.mystery-card::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 3px dashed rgba(139, 96, 66, 0.16);
+  border-radius: 8px;
+}
+
+.memo-box {
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 3px dashed rgba(139, 96, 66, 0.22);
+  font-size: 18px;
+  line-height: 1.6;
 }
 
 .album-btn {
@@ -1570,10 +1606,21 @@ html, body {
       </div>
     </section>
 
-    <aside class="paper-panel side-panel right" aria-label="なまえ">
+    <aside class="paper-panel side-panel right" aria-label="ミルマル情報">
       <div class="panel-heading" id="sideNameHeading">ミルマル</div>
       <div class="panel-body">
-        <div class="milmaru-name" id="milmaruNameDisplay">ミルマル</div>
+        <div class="info-block profile-card">
+          <div class="milmaru-name" id="milmaruNameDisplay">ミルマル</div>
+          <div>Lv. <span id="milmaruLevel">1</span></div>
+          <div><span id="growthStageName">タマゴ</span></div>
+        </div>
+        <div class="growth-card mystery-card" aria-hidden="true"></div>
+        <div class="memo-box">
+          <div>メモ</div>
+          <div id="memoLine1">タマゴの なかで すやすや。</div>
+          <div id="memoLine2">ぽかぽかが だいすき！</div>
+        </div>
+        <button class="pixel-button album-btn" id="albumBtn">アルバム</button>
       </div>
     </aside>
 
@@ -1707,8 +1754,30 @@ const roamState = {
   y: 72,
   dir: 1,
   moving: false,
-  timer: null
+  timer: null,
+  motionTimer: null,
+  duration: 5.2,
+  frameDuration: 1.9
 };
+
+const carePreloadImages = [
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_01.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_02.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_03.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_04.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_05.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_06.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_01.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_02.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_03.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_04.png'
+];
+
+carePreloadImages.forEach((src) => {
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = src;
+});
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1858,6 +1927,10 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function lerp(start, end, amount) {
+  return start + (end - start) * amount;
+}
+
 function getGrowthStage(sukusuku) {
   if (sukusuku < 10) return growthStages[0];
   if (sukusuku < 25) return growthStages[1];
@@ -1975,6 +2048,30 @@ function getYochiyochiMotionClass() {
   return state.sukusuku < 38 ? 'roaming-crawl' : 'roaming-walk';
 }
 
+function getRoamMaturity() {
+  return clamp((Math.max(25, state.sukusuku) - 25) / 25, 0, 1);
+}
+
+function getRoamProfile(distance = 0) {
+  const maturity = getRoamMaturity();
+  const isCrawling = state.sukusuku < 38;
+  const jitter = 0.82 + Math.random() * 0.62;
+  const duration = clamp(
+    (lerp(6.8, 3.5, maturity) + distance * lerp(0.32, 0.15, maturity)) * jitter,
+    lerp(8.4, 4.4, maturity),
+    lerp(13.8, 7.2, maturity)
+  );
+  return {
+    minX: lerp(43, 36, maturity),
+    maxX: lerp(57, 64, maturity),
+    minY: 60,
+    maxY: lerp(100, 136, maturity),
+    duration,
+    frameDuration: (isCrawling ? lerp(2.35, 1.45, maturity) : lerp(1.72, 1.08, maturity)) * (0.92 + Math.random() * 0.18),
+    pause: lerp(2600, 1000, maturity) + Math.random() * lerp(2800, 1700, maturity)
+  };
+}
+
 function shouldRoam() {
   return state.hatched
     && getMilmaruVisualStage() === 'yochiyochi'
@@ -1988,11 +2085,13 @@ function applyRoamStyles(resetCenter = false) {
   milmaruWrap.style.setProperty('--roam-x', `${x}%`);
   milmaruWrap.style.setProperty('--roam-y', `${y}px`);
   milmaruWrap.style.setProperty('--roam-dir', String(resetCenter ? 1 : roamState.dir));
-  milmaruWrap.style.setProperty('--roam-duration', `${roamState.duration || 3.8}s`);
+  milmaruWrap.style.setProperty('--roam-duration', `${roamState.duration || 5.2}s`);
+  milmaruWrap.style.setProperty('--roam-frame-duration', `${roamState.frameDuration || 1.9}s`);
+  milmaruWrap.style.setProperty('--roam-easing', resetCenter ? 'ease-out' : 'cubic-bezier(.38, 0, .22, 1)');
   speechBubble.style.setProperty('--speech-x', `${x}%`);
 }
 
-function scheduleRoam(delay = 900) {
+function scheduleRoam(delay = 1500) {
   clearTimeout(roamState.timer);
   roamState.timer = setTimeout(moveRoamTarget, delay);
 }
@@ -2002,21 +2101,25 @@ function moveRoamTarget() {
     syncRoaming();
     return;
   }
-  const nextX = 36 + Math.random() * 28;
-  const nextY = 58 + Math.random() * 78;
+  const range = getRoamProfile();
+  const nextX = range.minX + Math.random() * (range.maxX - range.minX);
+  const nextY = range.minY + Math.random() * (range.maxY - range.minY);
   const distance = Math.hypot(nextX - roamState.x, (nextY - roamState.y) / 4);
+  const profile = getRoamProfile(distance);
   roamState.dir = nextX < roamState.x ? -1 : 1;
   roamState.x = nextX;
   roamState.y = nextY;
-  roamState.duration = Math.max(3.4, Math.min(6.2, 2.8 + distance * 0.12));
+  roamState.duration = profile.duration;
+  roamState.frameDuration = profile.frameDuration;
   roamState.moving = true;
   applyRoamStyles();
   applyMilmaruClass(state.reaction);
-  setTimeout(() => {
+  clearTimeout(roamState.motionTimer);
+  roamState.motionTimer = setTimeout(() => {
     roamState.moving = false;
     applyMilmaruClass(state.reaction);
   }, roamState.duration * 1000);
-  scheduleRoam((roamState.duration * 1000) + 1300 + Math.random() * 1900);
+  scheduleRoam((roamState.duration * 1000) + profile.pause);
 }
 
 function syncRoaming() {
@@ -2024,13 +2127,15 @@ function syncRoaming() {
   milmaruWrap.classList.toggle('roaming', canRoam);
   if (!canRoam) {
     clearTimeout(roamState.timer);
+    clearTimeout(roamState.motionTimer);
     roamState.timer = null;
+    roamState.motionTimer = null;
     roamState.moving = false;
     applyRoamStyles(getMilmaruVisualStage() !== 'yochiyochi');
     return;
   }
   applyRoamStyles();
-  if (!roamState.timer) scheduleRoam(500 + Math.random() * 900);
+  if (!roamState.timer) scheduleRoam(1600 + Math.random() * 1600);
 }
 
 function hasMojiPower(cost = 1) {
@@ -2318,11 +2423,16 @@ function render() {
   state.eggWarmth = clamp(state.eggWarmth || 0, 0, 100);
   state.name = sanitizeMilmaruName(state.name);
   const displayName = getMilmaruName();
+  const stage = getCareStage();
 
   document.title = `もじっこファーム | ${displayName}`;
   document.getElementById('titleName').textContent = displayName;
   document.getElementById('sideNameHeading').textContent = displayName;
   document.getElementById('milmaruNameDisplay').textContent = displayName;
+  document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
+  document.getElementById('growthStageName').textContent = stage.name;
+  document.getElementById('memoLine1').textContent = state.hatched ? 'やさしくて、がんばりやさん。' : 'タマゴの なかで すやすや。';
+  document.getElementById('memoLine2').textContent = state.hatched ? 'ミルクのにおいが だいすき！' : 'ぽかぽかが だいすき！';
   document.getElementById('starCount').textContent = String(state.stars);
   document.getElementById('nakayoshiText').textContent = `${state.nakayoshi} / 100`;
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
@@ -2606,6 +2716,9 @@ document.getElementById('settingsBtn').addEventListener('click', () => {
 });
 document.getElementById('inventoryBtn').addEventListener('click', () => {
   setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・クッキー・もじパワーが ふえるよ。');
+});
+document.getElementById('albumBtn').addEventListener('click', () => {
+  setSpeech('アルバムは じゅんびちゅう！', 'かいた もじを あとで ならべよう。');
 });
 nameSaveBtn.addEventListener('click', saveMilmaruName);
 nameInput.addEventListener('keydown', (event) => {
