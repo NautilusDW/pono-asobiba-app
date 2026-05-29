@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>もじっこファーム | ミルマルのおへや</title>
+<title>もじっこファーム | ミルマル</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="../manifest.json">
 <style>
@@ -97,9 +97,11 @@
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
   --care-icon-warm: url('../assets/images/mojikko/care/icon_warm_large.png');
+  --care-icon-milk: url('../assets/images/mojikko/care/icon_milk_bottle.png');
   --care-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --care-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
   --care-settings: url('../assets/images/mojikko/writing/settings_button.png');
+  --care-title-plaque: url('../assets/images/mojikko/writing/wood_title_plaque.png');
 }
 
 html, body {
@@ -258,14 +260,21 @@ html, body {
 }
 
 .title-board {
-  height: 74px;
+  width: 570px;
+  aspect-ratio: 857 / 127;
+  justify-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border: 0;
+  border-radius: 0;
+  background: var(--care-title-plaque) center / contain no-repeat;
+  box-shadow: none;
   font-family: var(--pixel-font);
-  font-size: 44px;
+  font-size: 40px;
   letter-spacing: 0;
+  padding-bottom: 4px;
+  image-rendering: pixelated;
 }
 
 .star-box {
@@ -295,11 +304,11 @@ html, body {
 .gauges {
   position: absolute;
   top: 118px;
-  left: 322px;
-  right: 322px;
+  left: 480px;
+  right: 480px;
   height: 112px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 28px;
   z-index: 4;
 }
@@ -430,25 +439,13 @@ html, body {
 
 .milk-icon {
   width: 42px;
-  height: 56px;
+  height: 62px;
   justify-self: center;
-  border: 4px solid #9f7655;
-  border-radius: 8px 8px 12px 12px;
-  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
-  box-shadow: inset 0 4px rgba(255,255,255,0.75), 0 3px 0 rgba(111,70,44,0.25);
+  background: var(--care-icon-milk) center / contain no-repeat;
 }
 
 .milk-icon::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  top: -10px;
-  height: 12px;
-  border: 4px solid #9f7655;
-  border-bottom: 0;
-  border-radius: 5px 5px 0 0;
-  background: #d7f1ed;
+  display: none;
 }
 
 .power-icon {
@@ -1148,25 +1145,13 @@ html, body {
 }
 
 .food-fx.milk {
-  width: 44px;
-  height: 66px;
-  border: 4px solid #9f7655;
-  border-radius: 8px 8px 12px 12px;
-  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
-  box-shadow: inset 0 4px rgba(255,255,255,0.75), 0 3px 0 rgba(111,70,44,0.25);
+  width: 46px;
+  height: 76px;
+  background-image: var(--care-icon-milk);
 }
 
 .food-fx.milk::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  top: -10px;
-  height: 12px;
-  border: 4px solid #9f7655;
-  border-bottom: 0;
-  border-radius: 5px 5px 0 0;
-  background: #d7f1ed;
+  display: none;
 }
 
 @keyframes foodToMouth {
@@ -1191,77 +1176,19 @@ html, body {
 }
 
 .milmaru-name {
-  font-size: 28px;
-  font-family: var(--round-font);
-  font-weight: 900;
-}
-
-.growth-card {
-  padding: 12px;
-  border: 3px solid rgba(139, 96, 66, 0.35);
+  width: 100%;
+  min-height: 92px;
+  display: grid;
+  place-items: center;
+  padding: 18px 10px;
+  border: 3px solid rgba(139, 96, 66, 0.34);
   border-radius: 10px;
-  background: rgba(255,255,255,0.42);
-}
-
-.growth-icons {
-  margin: 14px 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 7px;
-  align-items: center;
-}
-
-.growth-icon {
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid rgba(139, 96, 66, 0.25);
-  border-radius: 8px;
-  background: rgba(255,255,255,0.44);
-  font-size: 23px;
-  opacity: 0.55;
-}
-.growth-icon.active {
-  border-color: #d58b45;
-  background: #fff1c4;
-  opacity: 1;
-  box-shadow: 0 0 0 4px rgba(255, 200, 86, 0.32);
-}
-
-.mini-gauge {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
-}
-.mini-track {
-  height: 22px;
-  border: 3px solid #9f7655;
-  border-radius: 6px;
-  background: #f4dfbd;
-  overflow: hidden;
-}
-.mini-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #7bd5b3, #43b985);
-  transition: width 0.35s ease;
-}
-
-.growth-hint {
-  margin-top: 8px;
+  background: rgba(255,255,255,0.48);
   font-family: var(--pixel-font);
-  font-size: 17px;
-  color: var(--ink-soft);
-}
-
-.memo-box {
-  margin-top: 12px;
-  padding-top: 14px;
-  border-top: 3px dashed rgba(139, 96, 66, 0.22);
-  font-size: 18px;
-  line-height: 1.6;
+  font-size: 32px;
+  line-height: 1.1;
+  text-align: center;
+  word-break: keep-all;
 }
 
 .album-btn {
@@ -1415,7 +1342,66 @@ html, body {
 .action-btn.play .action-icon { background-image: var(--care-icon-star); }
 .action-btn.feed.milk .action-icon {
   color: #4f3825;
-  background-image: none;
+  background-image: var(--care-icon-milk);
+  background-size: contain;
+}
+
+.name-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 92;
+  display: none;
+  place-items: center;
+  background: rgba(55, 37, 23, 0.38);
+}
+
+.name-modal.show {
+  display: grid;
+}
+
+.name-dialog {
+  width: 620px;
+  padding: 28px 34px 30px;
+  border-radius: 12px;
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  text-align: center;
+}
+
+.name-dialog-title {
+  font-family: var(--pixel-font);
+  font-size: 34px;
+  color: #b9653e;
+}
+
+.name-dialog-copy {
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  line-height: 1.5;
+}
+
+.name-input {
+  width: 420px;
+  height: 62px;
+  padding: 0 16px;
+  border: 4px solid #9f7655;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: var(--ink);
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  text-align: center;
+  outline: none;
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.name-save-btn {
+  min-width: 310px;
+  height: 62px;
+  font-size: 24px;
 }
 
 .bottom-message {
@@ -1513,7 +1499,7 @@ html, body {
   <main id="stage" aria-label="もじっこファーム お世話画面">
     <header class="care-header">
       <button class="pixel-button back-btn" id="backBtn">← もじへ</button>
-      <div class="wood-panel title-board">ミルマルのおへや</div>
+      <div class="title-board" id="titleName">ミルマル</div>
       <div class="pixel-panel star-box"><span class="star-icon" aria-hidden="true"></span><span id="starCount">1275</span></div>
       <button class="pixel-button icon-btn" id="settingsBtn" aria-label="設定">⚙</button>
     </header>
@@ -1524,13 +1510,6 @@ html, body {
         <div class="gauge-line">
           <div class="gauge-track"><div class="gauge-fill nakayoshi" id="nakayoshiFill"></div></div>
           <span id="nakayoshiText">32 / 100</span>
-        </div>
-      </div>
-      <div class="paper-panel gauge-card">
-        <div class="gauge-title"><span class="gauge-icon leaf"></span><span id="sukusukuLabel">すくすく</span></div>
-        <div class="gauge-line">
-          <div class="gauge-track"><div class="gauge-fill sukusuku" id="sukusukuFill"></div></div>
-          <span id="sukusukuText">18 / 100</span>
         </div>
       </div>
     </section>
@@ -1591,32 +1570,10 @@ html, body {
       </div>
     </section>
 
-    <aside class="paper-panel side-panel right" aria-label="ミルマル情報">
-      <div class="panel-heading">ミルマル</div>
+    <aside class="paper-panel side-panel right" aria-label="なまえ">
+      <div class="panel-heading" id="sideNameHeading">ミルマル</div>
       <div class="panel-body">
-        <div class="info-block">
-          <div class="milmaru-name">ミルマル</div>
-          <div>Lv. <span id="milmaruLevel">1</span></div>
-          <div><span id="growthStageName">ベビー</span></div>
-        </div>
-        <div class="growth-card">
-          <div class="info-block">
-            <div>もじで すくすく</div>
-            <div class="mini-gauge">
-              <div class="mini-track"><div class="mini-fill" id="growthFill"></div></div>
-              <span id="growthText">すくすく 18 / 25</span>
-            </div>
-            <div class="growth-hint" id="growthHint">あと 3かいで せいちょう！</div>
-          </div>
-          <div class="growth-icons" id="growthIcons"></div>
-          <div class="info-block" id="stageLabel">ベビー</div>
-        </div>
-        <div class="memo-box">
-          <div>メモ</div>
-          <div id="memoLine1">タマゴの なかで すやすや。</div>
-          <div id="memoLine2">ぽかぽかが だいすき！</div>
-        </div>
-        <button class="pixel-button album-btn" id="albumBtn">アルバム</button>
+        <div class="milmaru-name" id="milmaruNameDisplay">ミルマル</div>
       </div>
     </aside>
 
@@ -1662,6 +1619,14 @@ html, body {
       <div class="hatch-sprite" id="hatchSprite" aria-hidden="true"></div>
       <div class="hatch-subcopy" id="hatchSubcopy">タマゴの ようすが...</div>
     </div>
+    <div class="name-modal" id="nameModal" aria-hidden="true">
+      <div class="paper-panel name-dialog" role="dialog" aria-modal="true" aria-labelledby="nameDialogTitle">
+        <div class="name-dialog-title" id="nameDialogTitle">なまえを つけよう！</div>
+        <div class="name-dialog-copy">うまれた ミルマルに<br>すきな なまえを つけてね。</div>
+        <input class="name-input" id="nameInput" maxlength="8" inputmode="text" value="ミルマル" aria-label="ミルマルのなまえ">
+        <button class="pixel-button name-save-btn" id="nameSaveBtn" type="button">この なまえにする</button>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -1673,6 +1638,8 @@ const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 const DEBUG_MODE_KEY = 'mojikkoFarmCareDebugMode';
 
 const defaultState = {
+  name: 'ミルマル',
+  named: false,
   nakayoshi: 32,
   sukusuku: 0,
   eggWarmth: 0,
@@ -1726,6 +1693,9 @@ const mainActionHelp = document.getElementById('mainActionHelp');
 const hatchScene = document.getElementById('hatchScene');
 const hatchCopy = document.getElementById('hatchCopy');
 const hatchSubcopy = document.getElementById('hatchSubcopy');
+const nameModal = document.getElementById('nameModal');
+const nameInput = document.getElementById('nameInput');
+const nameSaveBtn = document.getElementById('nameSaveBtn');
 const debugPanel = document.getElementById('debugPanel');
 const stageWrap = document.getElementById('stage-wrap');
 
@@ -1823,12 +1793,23 @@ function cloneDefaultState() {
   return JSON.parse(JSON.stringify(defaultState));
 }
 
+function sanitizeMilmaruName(value) {
+  const text = String(value || '').trim().replace(/\s+/g, '');
+  return text ? text.slice(0, 8) : 'ミルマル';
+}
+
+function getMilmaruName() {
+  return sanitizeMilmaruName(state.name || 'ミルマル');
+}
+
 function loadState() {
   try {
     const saved = localStorage.getItem(CARE_STATE_KEY);
     if (!saved) return cloneDefaultState();
     const parsed = JSON.parse(saved);
     const merged = cloneDefaultState();
+    merged.name = sanitizeMilmaruName(parsed.name || merged.name);
+    merged.named = parsed.named === true || (parsed.hatched === true && parsed.named !== false && !Object.prototype.hasOwnProperty.call(parsed, 'named'));
     merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
     merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
     merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? clamp(parsed.eggWarmth, 0, 100) : merged.eggWarmth;
@@ -1913,20 +1894,21 @@ function markCareInteraction() {
 
 function getIdleMood(now = Date.now()) {
   if (!state.hatched) return null;
+  const name = getMilmaruName();
   const lastCareAt = Number.isFinite(state.lastCareAt) ? state.lastCareAt : now;
   const hours = (now - lastCareAt) / 3600000;
   if (hours >= 48) {
     return {
       reaction: 'angry',
       speech: 'むぅ〜...',
-      message: 'しばらく おせわが なかったから、ミルマルは ちょっと ぷんぷん。'
+      message: `しばらく おせわが なかったから、${name}は ちょっと ぷんぷん。`
     };
   }
   if (hours >= 24) {
     return {
       reaction: 'worried',
       speech: 'くぅん...',
-      message: 'ミルマルは すこし さみしかったみたい。やさしく おせわしよう。'
+      message: `${name}は すこし さみしかったみたい。やさしく おせわしよう。`
     };
   }
   const hour = new Date(now).getHours();
@@ -1934,7 +1916,7 @@ function getIdleMood(now = Date.now()) {
     return {
       reaction: 'sleep',
       speech: 'すぅ...すぅ...',
-      message: 'ミルマルは ねむっているよ。あした また おせわしよう。'
+      message: `${name}は ねむっているよ。あした また おせわしよう。`
     };
   }
   return null;
@@ -2084,6 +2066,19 @@ function getNextGrowthProgress(sukusuku) {
   };
 }
 
+function getHiddenGrowthHint() {
+  if (!state.hatched) {
+    if (state.eggWarmth >= 95) return 'タマゴが そわそわしているよ。もうすぐ うまれそう。';
+    if (state.eggWarmth >= 70) return 'タマゴの なかで、ちいさく コトコト うごいているよ。';
+    return '';
+  }
+  const progress = getNextGrowthProgress(Math.max(10, state.sukusuku));
+  const remaining = progress.max - Math.max(10, state.sukusuku);
+  if (remaining <= 0) return `${getMilmaruName()}が なんだか そわそわしているよ。`;
+  if (remaining <= 6) return `${getMilmaruName()}が すこし 背のびしてるみたい。`;
+  return '';
+}
+
 function getEggVisualClass() {
   if (state.eggWarmth >= 35) return 'egg-cracked';
   return 'egg-idle';
@@ -2107,7 +2102,7 @@ function renderActionMode() {
   }
   feedBtn.classList.toggle('milk', state.hatched && preferredFood.id === 'moji_milk');
   feedBtn.classList.toggle('has-cookie', state.hatched && preferredFoodCount > 0);
-  feedBtn.querySelector('.action-icon').textContent = state.hatched && preferredFood.id === 'moji_milk' ? '🍼' : '';
+  feedBtn.querySelector('.action-icon').textContent = '';
   feedBtn.querySelector('.action-help').textContent = state.hatched
     ? `${preferredFood.name}を あげる`
     : 'うまれてから あげよう';
@@ -2204,6 +2199,32 @@ function hideHatchScene() {
   hatchScene.setAttribute('aria-hidden', 'true');
 }
 
+function renderNameModal() {
+  if (!nameModal) return;
+  const shouldShow = state.hatched && !state.named && !hatchingNow;
+  const wasShown = nameModal.classList.contains('show');
+  nameModal.classList.toggle('show', shouldShow);
+  nameModal.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  if (shouldShow && !wasShown) {
+    nameInput.value = getMilmaruName();
+    setTimeout(() => {
+      nameInput.focus();
+      nameInput.select();
+    }, 80);
+  }
+}
+
+function saveMilmaruName() {
+  const nextName = sanitizeMilmaruName(nameInput.value);
+  state.name = nextName;
+  state.named = true;
+  state.speech = 'ふにゃ〜♪';
+  bottomMessage.textContent = `${nextName}、よろしくね。もじミルクを あげてみよう。`;
+  playSfx('select');
+  saveState();
+  render();
+}
+
 function startHatchScene() {
   clearHatchSceneTimers();
   setHatchScenePhase('notice', 'おや...？', 'タマゴの ようすが...');
@@ -2222,11 +2243,13 @@ function startHatchScene() {
 
   queueHatchStep(2800, () => {
     state.hatched = true;
+    state.named = false;
+    state.name = sanitizeMilmaruName(state.name);
     state.sukusuku = Math.max(10, state.sukusuku);
     state.reaction = 'birth';
     markCareInteraction();
-    setSpeech('うまれたよ！', 'ベビーの ミルマルが こんにちは！もじミルクを あげてみよう。');
-    setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'こんにちは！もじミルクが だいすきだよ');
+    setSpeech('うまれたよ！', 'なまえを つけてあげよう。');
+    setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'なまえを つけてあげよう');
     spawnFx('sparkle');
     saveState();
     render();
@@ -2236,10 +2259,11 @@ function startHatchScene() {
     hideHatchScene();
     hatchingNow = false;
     setReaction('birth', 1300);
+    render();
   });
 
   queueHatchStep(5900, () => {
-    if (state.reaction === 'normal') {
+    if (state.reaction === 'normal' && state.named) {
       setSpeech('いっしょに もじを かこう！', 'もじを かくと、もじミルクと もじパワーが もらえるよ。');
       saveState();
       render();
@@ -2288,57 +2312,36 @@ function warmEgg() {
   render();
 }
 
-function renderGrowthIcons(currentStage) {
-  const icons = document.getElementById('growthIcons');
-  icons.innerHTML = growthStages.map((stage) => {
-    const active = stage.id === currentStage.id ? ' active' : '';
-    return `<div class="growth-icon${active}" title="${stage.name}">${stage.icon}</div>`;
-  }).join('');
-}
-
 function render() {
   state.nakayoshi = clamp(state.nakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku, 0, 100);
   state.eggWarmth = clamp(state.eggWarmth || 0, 0, 100);
-  const stage = getCareStage();
-  const progress = state.hatched
-    ? getNextGrowthProgress(Math.max(10, state.sukusuku))
-    : { current: state.eggWarmth, max: 100, percent: state.eggWarmth };
-  const remaining = Math.max(0, progress.max - state.sukusuku);
-  const writingCount = Math.max(0, Math.ceil(remaining / 3));
-  const warmCount = Math.max(0, Math.ceil((100 - state.eggWarmth) / 25));
+  state.name = sanitizeMilmaruName(state.name);
+  const displayName = getMilmaruName();
 
+  document.title = `もじっこファーム | ${displayName}`;
+  document.getElementById('titleName').textContent = displayName;
+  document.getElementById('sideNameHeading').textContent = displayName;
+  document.getElementById('milmaruNameDisplay').textContent = displayName;
   document.getElementById('starCount').textContent = String(state.stars);
   document.getElementById('nakayoshiText').textContent = `${state.nakayoshi} / 100`;
-  document.getElementById('sukusukuLabel').textContent = state.hatched ? 'すくすく' : 'ぽかぽか';
-  document.getElementById('sukusukuText').textContent = state.hatched ? `${state.sukusuku} / 100` : `${state.eggWarmth} / 100`;
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
-  document.getElementById('sukusukuFill').style.width = `${state.hatched ? state.sukusuku : state.eggWarmth}%`;
   document.getElementById('milkCount').textContent = String(getInventoryCount('moji_milk'));
   document.getElementById('cookieCount').textContent = String(getInventoryCount('moji_cookie'));
   document.getElementById('mojiPowerCount').textContent = String(getInventoryCount('moji_power'));
   feedBtn.classList.toggle('has-cookie', state.hatched && getInventoryCount(getPreferredFood().id) > 0);
-  document.getElementById('growthStageName').textContent = stage.name;
-  document.getElementById('stageLabel').textContent = stage.name;
-  document.getElementById('growthFill').style.width = `${progress.percent}%`;
-  document.getElementById('growthText').textContent = state.hatched
-    ? `すくすく ${progress.current} / ${progress.max}`
-    : `ぽかぽか ${progress.current} / ${progress.max}`;
-  document.getElementById('growthHint').textContent = state.hatched
-    ? (writingCount > 0 ? `あと ${writingCount}かいで せいちょう！` : 'もうすぐ せいちょう！')
-    : (getInventoryCount('moji_power') <= 0 ? 'もじを かくと あたためられるよ！' : (warmCount > 0 ? `あと ${warmCount}かい あたためよう！` : 'もうすぐ うまれるよ！'));
-  document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
-  document.getElementById('memoLine1').textContent = state.hatched ? 'やさしくて、がんばりやさん。' : 'タマゴの なかで すやすや。';
-  document.getElementById('memoLine2').textContent = state.hatched ? 'ミルクのにおいが だいすき！' : 'ぽかぽかが だいすき！';
   speechBubble.textContent = getDisplaySpeech(state.speech);
   const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
   if (idleMood) {
     bottomMessage.textContent = idleMood.message;
+  } else {
+    const hiddenGrowthHint = getHiddenGrowthHint();
+    if (hiddenGrowthHint) bottomMessage.textContent = hiddenGrowthHint;
   }
-  renderGrowthIcons(stage);
   renderActionMode();
   applyMilmaruClass(state.reaction);
   syncRoaming();
+  renderNameModal();
   renderDebugPanel();
 }
 
@@ -2369,6 +2372,9 @@ function stopHatchingCutscene() {
 
 function applyDebugState(next = {}) {
   stopHatchingCutscene();
+  if (Object.prototype.hasOwnProperty.call(next, 'name')) {
+    state.name = sanitizeMilmaruName(next.name);
+  }
   state.nakayoshi = next.nakayoshi ?? readDebugNumber('debugNakayoshi', 0, 100);
   state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
   state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
@@ -2377,6 +2383,11 @@ function applyDebugState(next = {}) {
   state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
   state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
   state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
+  if (Object.prototype.hasOwnProperty.call(next, 'named')) {
+    state.named = next.named;
+  } else if (!state.hatched) {
+    state.named = false;
+  }
   state.reaction = 'normal';
   state.lastCareAt = Date.now();
   state.lastWarmAt = 0;
@@ -2413,7 +2424,7 @@ function consumePendingWritingReward() {
   state.stars += 25;
   markCareInteraction();
   if (state.hatched) {
-    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, 'もじパワーも たまったよ。ミルマルに おせわを してみよう！');
+    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, `もじパワーも たまったよ。${getMilmaruName()}に おせわを してみよう！`);
     setReaction('happy');
   } else {
     setSpeech('もじパワーが たまったよ！', 'タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
@@ -2438,7 +2449,7 @@ function applyEntrySpeech() {
   }
   const food = getPreferredFood();
   if (getInventoryCount(food.id) > 0) {
-    setSpeech(`${food.name} ほしいな〜`, `${food.name}を あげたら、ミルマルが よろこぶよ。`);
+    setSpeech(`${food.name} ほしいな〜`, `${food.name}を あげたら、${getMilmaruName()}が よろこぶよ。`);
   } else {
     setSpeech('いっしょに もじを かこう！', `もじを かくと、${food.name}と もじパワーが もらえるよ。`);
   }
@@ -2465,7 +2476,8 @@ function feedCookie() {
   markCareInteraction();
   state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
-  setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', `${food.name}を あげたよ。なかよしと すくすくが ふえた！`);
+  const growthHint = getHiddenGrowthHint();
+  setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', growthHint || `${food.name}を あげたよ。なかよしが ふえた！`);
   setReaction('eating');
   spawnFoodFx(food.id);
   spawnFx('sparkle');
@@ -2491,7 +2503,7 @@ function petMilmaru() {
     maybeHatchEgg();
     return;
   }
-  setSpeech('なでてくれて うれしい！', 'ミルマルが ほっとしているよ。');
+  setSpeech('なでてくれて うれしい！', `${getMilmaruName()}が ほっとしているよ。`);
   setReaction('relaxed');
   spawnFx('heart');
   saveState();
@@ -2511,7 +2523,7 @@ function playWithMilmaru() {
   markCareInteraction();
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
   state.sukusuku = clamp(state.sukusuku + 1, 0, 100);
-  setSpeech('いっしょに あそぶの たのしい！', 'ミルマルが ぴょんぴょん はねたよ。');
+  setSpeech('いっしょに あそぶの たのしい！', `${getMilmaruName()}が ぴょんぴょん はねたよ。`);
   setReaction('play');
   spawnFx('sparkle');
   saveState();
@@ -2563,6 +2575,7 @@ function setupDebugControls() {
   }));
   document.getElementById('debugBabyBtn').addEventListener('click', () => applyDebugState({
     hatched: true,
+    named: true,
     eggWarmth: 100,
     sukusuku: Math.max(10, state.sukusuku),
     milk: Math.max(1, getInventoryCount('moji_milk')),
@@ -2594,8 +2607,9 @@ document.getElementById('settingsBtn').addEventListener('click', () => {
 document.getElementById('inventoryBtn').addEventListener('click', () => {
   setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・クッキー・もじパワーが ふえるよ。');
 });
-document.getElementById('albumBtn').addEventListener('click', () => {
-  setSpeech('アルバムは じゅんびちゅう！', 'かいた もじを あとで ならべよう。');
+nameSaveBtn.addEventListener('click', saveMilmaruName);
+nameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') saveMilmaruName();
 });
 document.getElementById('feedBtn').addEventListener('click', feedCookie);
 document.getElementById('petBtn').addEventListener('click', petMilmaru);
