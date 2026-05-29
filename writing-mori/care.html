@@ -83,6 +83,16 @@
   --care-yochiyochi-angry: url('../assets/images/mojikko/care/milmaru_yochiyochi_angry.png');
   --care-yochiyochi-disappointed: url('../assets/images/mojikko/care/milmaru_yochiyochi_disappointed.png');
   --care-yochiyochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
+  --care-yochiyochi-crawl-1: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_01.png');
+  --care-yochiyochi-crawl-2: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_02.png');
+  --care-yochiyochi-crawl-3: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_03.png');
+  --care-yochiyochi-crawl-4: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_04.png');
+  --care-yochiyochi-crawl-5: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_05.png');
+  --care-yochiyochi-crawl-6: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_06.png');
+  --care-yochiyochi-walk-1: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_01.png');
+  --care-yochiyochi-walk-2: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_02.png');
+  --care-yochiyochi-walk-3: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_03.png');
+  --care-yochiyochi-walk-4: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_04.png');
   --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
@@ -854,8 +864,12 @@ html, body {
   background-image: var(--care-yochiyochi-worried);
 }
 
+.milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-crawl {
+  animation: yochiyochiCrawlFrames 0.84s step-end infinite;
+}
+
 .milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-walk {
-  animation: yochiyochiRoamFrames 0.72s step-end infinite;
+  animation: yochiyochiWalkFrames 0.72s step-end infinite;
 }
 
 .milmaru.egg.warm {
@@ -909,6 +923,20 @@ html, body {
 @keyframes yochiyochiRoamFrames {
   0%, 100% { background-image: var(--care-yochiyochi-play-a); }
   50% { background-image: var(--care-yochiyochi-play-b); }
+}
+@keyframes yochiyochiCrawlFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-crawl-1); }
+  16% { background-image: var(--care-yochiyochi-crawl-2); }
+  33% { background-image: var(--care-yochiyochi-crawl-3); }
+  50% { background-image: var(--care-yochiyochi-crawl-4); }
+  66% { background-image: var(--care-yochiyochi-crawl-5); }
+  83% { background-image: var(--care-yochiyochi-crawl-6); }
+}
+@keyframes yochiyochiWalkFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-walk-1); }
+  25% { background-image: var(--care-yochiyochi-walk-2); }
+  50% { background-image: var(--care-yochiyochi-walk-3); }
+  75% { background-image: var(--care-yochiyochi-walk-4); }
 }
 @keyframes eggWarm {
   0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
@@ -1958,6 +1986,10 @@ function getMilmaruVisualStage() {
   return getCareStage().id === 'baby' ? 'baby' : 'yochiyochi';
 }
 
+function getYochiyochiMotionClass() {
+  return state.sukusuku < 38 ? 'roaming-crawl' : 'roaming-walk';
+}
+
 function shouldRoam() {
   return state.hatched
     && getMilmaruVisualStage() === 'yochiyochi'
@@ -1988,7 +2020,7 @@ function moveRoamTarget() {
   const nextX = 36 + Math.random() * 28;
   const nextY = 58 + Math.random() * 78;
   const distance = Math.hypot(nextX - roamState.x, (nextY - roamState.y) / 4);
-  roamState.dir = nextX < roamState.x ? 1 : -1;
+  roamState.dir = nextX < roamState.x ? -1 : 1;
   roamState.x = nextX;
   roamState.y = nextY;
   roamState.duration = Math.max(2.2, Math.min(4.4, 1.8 + distance * 0.08));
@@ -2090,7 +2122,7 @@ function applyMilmaruClass(reaction) {
   if (state.hatched) {
     classes.push(getMilmaruVisualStage(), currentReaction);
     if (getMilmaruVisualStage() === 'yochiyochi' && currentReaction === 'normal' && roamState.moving) {
-      classes.push('roaming-walk');
+      classes.push(getYochiyochiMotionClass());
     }
   } else {
     classes.push('egg', getEggVisualClass(), currentReaction);
