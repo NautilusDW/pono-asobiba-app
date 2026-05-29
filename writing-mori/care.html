@@ -640,7 +640,7 @@ html, body {
 
 .speech-bubble {
   position: absolute;
-  left: 50%;
+  left: var(--speech-x, 50%);
   top: 20px;
   min-width: 320px;
   max-width: 560px;
@@ -655,6 +655,7 @@ html, body {
   font-size: 26px;
   text-align: center;
   z-index: 5;
+  transition: left 2.8s ease-in-out;
 }
 
 .speech-bubble::after {
@@ -672,12 +673,16 @@ html, body {
 
 .milmaru-wrap {
   position: absolute;
-  left: 50%;
-  bottom: 42px;
+  left: var(--roam-x, 50%);
+  bottom: var(--roam-y, 42px);
   width: 330px;
   height: 328px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scaleX(var(--roam-dir, 1));
+  transform-origin: center bottom;
   z-index: 5;
+  transition:
+    left var(--roam-duration, 2.8s) ease-in-out,
+    bottom var(--roam-duration, 2.8s) ease-in-out;
 }
 
 .milmaru {
@@ -849,6 +854,10 @@ html, body {
   background-image: var(--care-yochiyochi-worried);
 }
 
+.milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-walk {
+  animation: yochiyochiRoamFrames 0.72s step-end infinite;
+}
+
 .milmaru.egg.warm {
   animation: eggWarm 0.9s ease;
 }
@@ -896,6 +905,10 @@ html, body {
   0%, 100% { background-image: var(--care-yochiyochi-play-a); }
   35% { background-image: var(--care-yochiyochi-play-b); }
   70% { background-image: var(--care-yochiyochi-play-c); }
+}
+@keyframes yochiyochiRoamFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-play-a); }
+  50% { background-image: var(--care-yochiyochi-play-b); }
 }
 @keyframes eggWarm {
   0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
@@ -1670,6 +1683,7 @@ let state = loadState();
 const stageEl = document.getElementById('stage');
 const speechBubble = document.getElementById('speechBubble');
 const bottomMessage = document.getElementById('bottomMessage');
+const milmaruWrap = document.querySelector('.milmaru-wrap');
 const milmaru = document.getElementById('milmaru');
 const fxLayer = document.getElementById('fxLayer');
 const careActions = document.querySelector('.care-actions');
@@ -1687,6 +1701,13 @@ const stageWrap = document.getElementById('stage-wrap');
 let hatchingNow = false;
 let hatchTimers = [];
 let debugMode = false;
+const roamState = {
+  x: 50,
+  y: 72,
+  dir: 1,
+  moving: false,
+  timer: null
+};
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1909,14 +1930,14 @@ function getBabySpeech(text) {
 
 function getYochiyochiSpeech(text) {
   const raw = String(text || '');
-  if (/ない|たりない/.test(raw)) return 'ないの...？';
-  if (/ねむ|すや|すぅ/.test(raw)) return 'ねむい...';
-  if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'まってた！';
-  if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま！';
-  if (/なで|うれしい|ありがとう/.test(raw)) return 'なでなで すき！';
-  if (/あそ|たのしい|ぴょん/.test(raw)) return 'あそぶ！';
-  if (/もじ|かこう|かき/.test(raw)) return 'もじ、かく！';
-  return raw.length > 10 ? 'うん！' : raw;
+  if (/ない|たりない/.test(raw)) return 'なぁい...？';
+  if (/ねむ|すや|すぅ/.test(raw)) return 'ねむねむ...';
+  if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むーむー！';
+  if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま、んま！';
+  if (/なで|うれしい|ありがとう/.test(raw)) return 'なで...すき';
+  if (/あそ|たのしい|ぴょん/.test(raw)) return 'あしょぼ！';
+  if (/もじ|かこう|かき/.test(raw)) return 'もじ...かく？';
+  return raw.length > 8 ? 'うにゃ？' : raw;
 }
 
 function getStageSpeech(text) {
@@ -1935,6 +1956,64 @@ function getDisplaySpeech(text) {
 function getMilmaruVisualStage() {
   if (!state.hatched) return 'egg';
   return getCareStage().id === 'baby' ? 'baby' : 'yochiyochi';
+}
+
+function shouldRoam() {
+  return state.hatched
+    && getMilmaruVisualStage() === 'yochiyochi'
+    && getDisplayReaction(state.reaction) === 'normal'
+    && !hatchingNow;
+}
+
+function applyRoamStyles(resetCenter = false) {
+  const x = resetCenter ? 50 : roamState.x;
+  const y = resetCenter ? 42 : roamState.y;
+  milmaruWrap.style.setProperty('--roam-x', `${x}%`);
+  milmaruWrap.style.setProperty('--roam-y', `${y}px`);
+  milmaruWrap.style.setProperty('--roam-dir', String(resetCenter ? 1 : roamState.dir));
+  milmaruWrap.style.setProperty('--roam-duration', `${roamState.duration || 2.8}s`);
+  speechBubble.style.setProperty('--speech-x', `${x}%`);
+}
+
+function scheduleRoam(delay = 900) {
+  clearTimeout(roamState.timer);
+  roamState.timer = setTimeout(moveRoamTarget, delay);
+}
+
+function moveRoamTarget() {
+  if (!shouldRoam()) {
+    syncRoaming();
+    return;
+  }
+  const nextX = 36 + Math.random() * 28;
+  const nextY = 58 + Math.random() * 78;
+  const distance = Math.hypot(nextX - roamState.x, (nextY - roamState.y) / 4);
+  roamState.dir = nextX < roamState.x ? 1 : -1;
+  roamState.x = nextX;
+  roamState.y = nextY;
+  roamState.duration = Math.max(2.2, Math.min(4.4, 1.8 + distance * 0.08));
+  roamState.moving = true;
+  applyRoamStyles();
+  applyMilmaruClass(state.reaction);
+  setTimeout(() => {
+    roamState.moving = false;
+    applyMilmaruClass(state.reaction);
+  }, roamState.duration * 1000);
+  scheduleRoam((roamState.duration * 1000) + 900 + Math.random() * 1500);
+}
+
+function syncRoaming() {
+  const canRoam = shouldRoam();
+  milmaruWrap.classList.toggle('roaming', canRoam);
+  if (!canRoam) {
+    clearTimeout(roamState.timer);
+    roamState.timer = null;
+    roamState.moving = false;
+    applyRoamStyles(getMilmaruVisualStage() !== 'yochiyochi');
+    return;
+  }
+  applyRoamStyles();
+  if (!roamState.timer) scheduleRoam(500 + Math.random() * 900);
 }
 
 function hasMojiPower(cost = 1) {
@@ -2010,6 +2089,9 @@ function applyMilmaruClass(reaction) {
   const classes = ['milmaru'];
   if (state.hatched) {
     classes.push(getMilmaruVisualStage(), currentReaction);
+    if (getMilmaruVisualStage() === 'yochiyochi' && currentReaction === 'normal' && roamState.moving) {
+      classes.push('roaming-walk');
+    }
   } else {
     classes.push('egg', getEggVisualClass(), currentReaction);
   }
@@ -2025,11 +2107,13 @@ function setSpeech(text, message) {
 function setReaction(reaction, duration = 950) {
   state.reaction = reaction;
   applyMilmaruClass(reaction);
+  syncRoaming();
   clearTimeout(setReaction._timer);
   setReaction._timer = setTimeout(() => {
     state.reaction = 'normal';
     applyMilmaruClass('normal');
     speechBubble.textContent = getDisplaySpeech(state.speech);
+    syncRoaming();
     saveState();
   }, duration);
 }
@@ -2052,8 +2136,9 @@ function spawnFx(type) {
 function spawnFoodFx(foodId) {
   const piece = document.createElement('div');
   piece.className = `food-fx ${foodId === 'moji_cookie' ? 'cookie' : 'milk'}`;
-  piece.style.setProperty('--x', '57%');
-  piece.style.setProperty('--y', '54%');
+  const followsRoam = state.hatched && getMilmaruVisualStage() === 'yochiyochi';
+  piece.style.setProperty('--x', followsRoam ? `${roamState.x}%` : '57%');
+  piece.style.setProperty('--y', followsRoam ? '58%' : '54%');
   fxLayer.appendChild(piece);
   setTimeout(() => piece.remove(), 900);
 }
@@ -2218,6 +2303,7 @@ function render() {
   renderGrowthIcons(stage);
   renderActionMode();
   applyMilmaruClass(state.reaction);
+  syncRoaming();
   renderDebugPanel();
 }
 
