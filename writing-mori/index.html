@@ -47,6 +47,7 @@
   --moji-milmaru-cheer: url('../assets/images/mojikko/writing/milmaru_cheer.png');
   --moji-milmaru-egg: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
   --moji-milmaru-baby: url('../assets/images/mojikko/care/milmaru_shell_baby_idle_pose.png');
+  --moji-milmaru-yochiyochi: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
   --moji-reward-box: url('../assets/images/mojikko/writing/reward_box.png');
   --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
   --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
@@ -708,9 +709,20 @@ html, body {
   background-image: var(--moji-milmaru-baby);
 }
 
+.companion-card.yochiyochi-state .pixel-creature {
+  top: 118px;
+  width: 154px;
+  height: 154px;
+  background-image: var(--moji-milmaru-yochiyochi);
+}
+
 .companion-card.celebrate .pixel-creature {
   background-image: var(--moji-milmaru-cheer);
   animation: creatureCheer 0.55s ease-in-out 5;
+}
+
+.companion-card.yochiyochi-state.celebrate .pixel-creature {
+  background-image: var(--moji-milmaru-yochiyochi);
 }
 
 .companion-card.egg-state.celebrate .pixel-creature {
@@ -1811,6 +1823,8 @@ function updateCompanionCard() {
   companionCard.classList.toggle('reward-ready', foodCount > 0 || powerCount > 0);
   companionCard.classList.toggle('egg-state', !hatched);
   companionCard.classList.toggle('hatched-state', hatched);
+  companionCard.classList.toggle('baby-state', stageId === 'baby');
+  companionCard.classList.toggle('yochiyochi-state', stageId === 'yochiyochi');
   companionStatus.textContent = !hatched ? `✦ ${powerCount}` : `× ${foodCount}`;
   if (!hatched) {
     companionSpeech.textContent = powerCount > 0 ? 'タマゴを\nあたためよう！' : 'もじをかくと\nぽかぽか！';

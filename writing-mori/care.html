@@ -72,6 +72,17 @@
   --care-headshell-baby-angry: url('../assets/images/mojikko/care/milmaru_headshell_baby_angry.png');
   --care-headshell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_headshell_baby_disappointed.png');
   --care-headshell-baby-worried: url('../assets/images/mojikko/care/milmaru_headshell_baby_worried.png');
+  --care-yochiyochi-normal: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
+  --care-yochiyochi-happy: url('../assets/images/mojikko/care/milmaru_yochiyochi_arms_up.png');
+  --care-yochiyochi-eating: url('../assets/images/mojikko/care/milmaru_yochiyochi_eating.png');
+  --care-yochiyochi-play-a: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_left.png');
+  --care-yochiyochi-play-b: url('../assets/images/mojikko/care/milmaru_yochiyochi_side_left.png');
+  --care-yochiyochi-play-c: url('../assets/images/mojikko/care/milmaru_yochiyochi_side_right.png');
+  --care-yochiyochi-sleep: url('../assets/images/mojikko/care/milmaru_yochiyochi_sleep.png');
+  --care-yochiyochi-cry: url('../assets/images/mojikko/care/milmaru_yochiyochi_cry.png');
+  --care-yochiyochi-angry: url('../assets/images/mojikko/care/milmaru_yochiyochi_angry.png');
+  --care-yochiyochi-disappointed: url('../assets/images/mojikko/care/milmaru_yochiyochi_disappointed.png');
+  --care-yochiyochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
   --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
   --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
@@ -786,6 +797,58 @@ html, body {
   background-image: var(--care-shell-baby-worried);
 }
 
+.milmaru.yochiyochi {
+  bottom: 72px;
+  width: 270px;
+  height: 268px;
+  background-image: var(--care-yochiyochi-normal);
+}
+
+.milmaru.yochiyochi.normal {
+  background-image: var(--care-yochiyochi-normal);
+}
+
+.milmaru.yochiyochi.happy {
+  background-image: var(--care-yochiyochi-happy);
+  animation: happyBounce 0.72s ease;
+}
+
+.milmaru.yochiyochi.eating {
+  background-image: var(--care-yochiyochi-eating);
+  animation: eatingWiggle 0.8s ease;
+}
+
+.milmaru.yochiyochi.play {
+  background-image: var(--care-yochiyochi-play-a);
+  animation: yochiyochiPlayFrames 0.82s step-end 2, playHop 0.8s ease;
+}
+
+.milmaru.yochiyochi.birth {
+  background-image: var(--care-yochiyochi-happy);
+}
+
+.milmaru.yochiyochi.relaxed,
+.milmaru.yochiyochi.sleep {
+  background-image: var(--care-yochiyochi-sleep);
+}
+
+.milmaru.yochiyochi.cry,
+.milmaru.yochiyochi.bigcry {
+  background-image: var(--care-yochiyochi-cry);
+}
+
+.milmaru.yochiyochi.angry {
+  background-image: var(--care-yochiyochi-angry);
+}
+
+.milmaru.yochiyochi.disappointed {
+  background-image: var(--care-yochiyochi-disappointed);
+}
+
+.milmaru.yochiyochi.worried {
+  background-image: var(--care-yochiyochi-worried);
+}
+
 .milmaru.egg.warm {
   animation: eggWarm 0.9s ease;
 }
@@ -828,6 +891,11 @@ html, body {
 @keyframes babyPlayFrames {
   0%, 100% { background-image: var(--care-shell-baby-wiggle); }
   45% { background-image: var(--care-shell-baby-arms-up); }
+}
+@keyframes yochiyochiPlayFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-play-a); }
+  35% { background-image: var(--care-yochiyochi-play-b); }
+  70% { background-image: var(--care-yochiyochi-play-c); }
 }
 @keyframes eggWarm {
   0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
@@ -1864,6 +1932,11 @@ function getDisplaySpeech(text) {
   return getStageSpeech(idleMood ? idleMood.speech : text);
 }
 
+function getMilmaruVisualStage() {
+  if (!state.hatched) return 'egg';
+  return getCareStage().id === 'baby' ? 'baby' : 'yochiyochi';
+}
+
 function hasMojiPower(cost = 1) {
   return getInventoryCount('moji_power') >= cost;
 }
@@ -1936,7 +2009,7 @@ function applyMilmaruClass(reaction) {
   const currentReaction = getDisplayReaction(reaction);
   const classes = ['milmaru'];
   if (state.hatched) {
-    classes.push('baby', currentReaction);
+    classes.push(getMilmaruVisualStage(), currentReaction);
   } else {
     classes.push('egg', getEggVisualClass(), currentReaction);
   }
