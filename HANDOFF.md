@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-29 - [batch:178-kitchen-fry-done-tray] DONE - Codex: user 要望「おかずを作るで、出来上がったものは右側に出す。唐揚げを1個あげたらトレーに1個ずつ溜まる」を受け、揚げる画面に右側の完成トレー `#fry-done-tray` を追加。複数ピース調理では完成数を `cookPieceIndex + cookServed` から算出し、唐揚げの完了画像を1個ずつ右トレーへ追加、中央の一時重複表示は非表示にした。Playwrightで唐揚げ2個時=トレー2枚、5個完了時=トレー5枚を確認。`sw.js` は v662。 (by Codex)
 - 2026-05-29 - [batch:177-kitchen-bowl-fill-mask-width] DONE - Codex: user 指摘「水色のお皿のマスクが縦しか調整できない」を受け、`.bowl-fill-mask` の固定楕円 `clip-path` を撤去。マスク要素自体の幅・高さがそのまま水色の調整範囲になるようにし、Playwrightで `?edit=1` の横幅変更が 172px→359px に追従し `clipPath:none` になることを確認。`sw.js` は v661。 (by Codex)
 - 2026-05-29 - [batch:176-mojikko-user-milmaru-poses] DONE - Codex: user が `D:\ポノのおへや\Moji\assets\ミルマル` に置いた殻入りベビー8枚を `assets/images/mojikko/care/` へ意味付き英字名で配置。通常/片手/両手/ミルク後/怒り/泣き/困り/wiggle を、お世話画面の `normal` / `happy` / `eating` / `play` / `angry` / `cry` / `worried` へ割り当て、happy/eating/play は短い背景差し替えアニメーションで手足が動くようにした。文字書き画面の左下ミルマルカードも新しい通常笑顔素材へ差し替え。ローカルPlaywrightで各リアクションの背景画像、文字書きカード表示を確認。`sw.js` は v660。 (by Codex)
 - 2026-05-29 - [batch:175-kitchen-bowl-body-unmask] DONE - Codex: user 指摘「おさら本体が楕円マニピュレーター/マスクで切れている」を受け、`.bowl` と `.bowl::before` の楕円 `border-radius` を撤去。おさら本体は透過PNGの矩形編集枠に戻し、切れ端を皿内に収める `.bowl-fill-mask` だけ楕円マスクとして残した。`?edit=1` で `おさら本体` が矩形枠になり、上左右が切れないことを Playwright スクリーンショットで確認。`sw.js` は v659。 (by Codex)
