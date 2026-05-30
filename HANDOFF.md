@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:194-bento-box-alpha-assets] Codex: user が `D:\ポノのおへや\Bento\cooking\弁当箱` に追加した 4 PNG を確認。`20260530-091949_001`=四角ご飯入り、`091949_002`=四角空箱、`092011_001`=丸ご飯入り、`092011_002`=丸空箱。四角/丸の自由配置箱をこの透過済み素材へ差し替え、箱ごとの `riceImage` を追加し、二段ではなく1段扱いへ変更する。 (by Codex)
+- 2026-05-30 - [batch:194-bento-box-alpha-assets] DONE - Codex: `box_square.png` / `box_round.png` を user 追加の空箱透過PNGへ差し替え、`box_square_rice.png` / `box_round_rice.png` を追加。`bento/index.html` で四角/丸に `riceImage` を紐づけ、`tierCount: 1` として1段扱いに変更。Playwrightで空箱/ご飯入りの描画切替、4画像 200 読み込み、段バッジ非表示を確認。`sw.js` は v677。self-review: 187/188/190 の不採用生成物は使わず、user 切り抜き素材のみ採用。 (by Codex)
 - 2026-05-30 - [batch:193-mojikko-gokigen-friendship-loop] DONE - Codex: もじっこファームお世話に長期値 `nakayoshi` と短期値 `gokigen` の2層設計を実装。`nakayoshi` は下げず、`gokigen` は孵化後に6時間猶予後ゆっくり下がり、右パネルに数値なしの「きらきら/にこにこ/まったり/さみしい/むぅ...」表示を追加。低ごきげんでは既存の困り/怒り表情と優しい復帰メッセージを表示し、なでる/あげる/あそぶ/文字報酬で回復。`nakayoshi >= 65` かつ `gokigen` 良好時は文字書き完了時に応援ボーナスを付与、`>=85` では追加もじパワーも付与。デバッグパネルにごきげん入力を追加。既存表情素材で足りたため新規画像生成なし。Playwrightで応援ボーナス、低ごきげん表示、なでる回復を確認。`sw.js` は v676。 (by Codex)
 - 2026-05-30 - [batch:192-bento-accessory-assets] Codex: user が `D:\ポノのおへや\Bento\bento_redesign\BentoUI` に追加した 3 PNG を確認。`20260530-083855_001`=レタス、`002`=星型串、`003`=梅干し。レタス仕切りは既存 `divider_lettuce.png` を差し替え、星型串は既存 `pick_star.png` を新素材へ差し替え、梅干しは新規 `decor_umeboshi.png` として自由配置の飾りパレットへ追加する。 (by Codex)
 - 2026-05-30 - [batch:192-bento-accessory-assets] DONE - Codex: `divider_lettuce.png` / `pick_star.png` を user 追加素材に差し替え、`decor_umeboshi.png` を追加して `bento/index.html` の decorItems に「うめぼし」を追加。Playwright で bento ページ上の `bentoAccessories` / `decorItems` 登録と3画像 200 読み込みを確認。`sw.js` は v675。self-review: 対象は bento 自由配置アセット/パレットのみ、`writing-mori/care.html` の既存 dirty は未変更。 (by Codex)
