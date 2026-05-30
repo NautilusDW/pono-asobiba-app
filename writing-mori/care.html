@@ -1715,6 +1715,8 @@ html, body {
         <button type="button" id="debugEgg75Btn">タマゴ75</button>
         <button type="button" id="debugPreHatchBtn">孵化直前</button>
         <button type="button" id="debugBabyBtn">ベビー</button>
+        <button type="button" id="debugYochiyochiBtn">よちよち</button>
+        <button type="button" id="debugAlmostKidsBtn">成長前</button>
         <button type="button" id="debugResetBtn">初期化</button>
         <button type="button" id="debugCloseBtn">隠す</button>
       </div>
@@ -1758,6 +1760,7 @@ const defaultState = {
   },
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
+  lastStageId: 'egg',
   lastPetAt: 0,
   lastWarmAt: 0,
   lastMoodAt: Date.now(),
@@ -1947,6 +1950,7 @@ function loadState() {
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
     merged.speech = merged.hatched ? (parsed.speech || 'うまれたての あかちゃんだよ') : 'まだ タマゴだよ';
     merged.reaction = parsed.reaction || merged.reaction;
+    merged.lastStageId = parsed.lastStageId || (merged.hatched ? getGrowthStage(Math.max(10, merged.sukusuku)).id : 'egg');
     merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
@@ -2135,10 +2139,89 @@ function getYochiyochiSpeech(text) {
   if (/ねむ|すや|すぅ/.test(raw)) return 'ねむねむ...';
   if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むーむー！';
   if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま、んま！';
-  if (/なで|うれしい|ありがとう/.test(raw)) return 'なで...すき';
-  if (/あそ|たのしい|ぴょん/.test(raw)) return 'あしょぼ！';
+  if (/なで|うれしい|ありがとう|しっぽ|ふりふり/.test(raw)) return 'なで...すき';
+  if (/あそ|たのしい|ぴょん|おいかけ|たんけん/.test(raw)) return 'あしょぼ！';
+  if (/はいはい/.test(raw)) return 'はいはい...いく！';
+  if (/あんよ|歩|よちよち|せのび|たちあが/.test(raw)) return 'あんよ...できた！';
   if (/もじ|かこう|かき/.test(raw)) return 'もじ...かく？';
   return raw.length > 8 ? 'うにゃ？' : raw;
+}
+
+function getYochiyochiPhase() {
+  if (!state.hatched || getCareStage().id !== 'yochiyochi') return null;
+  if (state.sukusuku < 38) return 'crawl';
+  if (state.sukusuku < 45) return 'first_steps';
+  return 'almost_kids';
+}
+
+function getYochiyochiActionMessage(action) {
+  const phase = getYochiyochiPhase();
+  if (!phase) return '';
+  const name = getMilmaruName();
+  const messages = {
+    feed: {
+      crawl: `${name}が もぐもぐして、はいはいで ちょっと近づいてきたよ。`,
+      first_steps: `${name}が もぐもぐして、あんよを ふみふみしたよ。`,
+      almost_kids: `${name}が 背のびして、少し たくましく見えるよ。`
+    },
+    pet: {
+      crawl: `${name}が しっぽを ふりふりしているよ。`,
+      first_steps: `${name}が うれしくて、ちいさく たちあがったよ。`,
+      almost_kids: `${name}が えへへって じまんげだよ。`
+    },
+    play: {
+      crawl: `${name}と はいはいで おいかけっこしたよ。`,
+      first_steps: `${name}が よちよち歩きで ついてきたよ。`,
+      almost_kids: `${name}が ころばずに ぴょんと はねたよ。`
+    },
+    writing: {
+      crawl: `${name}が はいはいで そばにきて、おうえんしてるよ。`,
+      first_steps: `${name}が よちよち歩きで みにきたよ。`,
+      almost_kids: `${name}が 背のびして、もじを みているよ。`
+    }
+  };
+  return messages[action]?.[phase] || '';
+}
+
+function getStageUpCopy(stage) {
+  const name = getMilmaruName();
+  if (stage.id === 'yochiyochi') {
+    return {
+      speech: 'あんよ...？',
+      message: `${name}が はいはいで すすむように なったよ。おにわを たんけんできるね。`
+    };
+  }
+  if (stage.id === 'kids') {
+    return {
+      speech: 'できた！',
+      message: `${name}が しっかり たてるように なったよ。これから もっと いっしょに あそべそう。`
+    };
+  }
+  if (stage.id === 'pre_evolution') {
+    return {
+      speech: 'きらきら！',
+      message: `${name}の からだが ほんのり ひかっているよ。`
+    };
+  }
+  return null;
+}
+
+function syncGrowthStageChange() {
+  if (!state.hatched) {
+    state.lastStageId = 'egg';
+    return false;
+  }
+  const stage = getCareStage();
+  const previousStageId = state.lastStageId || stage.id;
+  if (previousStageId === stage.id) return false;
+  state.lastStageId = stage.id;
+  const copy = getStageUpCopy(stage);
+  if (!copy) return false;
+  playSfx('hatch');
+  setSpeech(copy.speech, copy.message);
+  setReaction('happy', 1500);
+  spawnFx('sparkle');
+  return true;
 }
 
 function getStageSpeech(text) {
@@ -2292,6 +2375,10 @@ function getHiddenGrowthHint() {
     if (state.eggWarmth >= 70) return 'タマゴの なかで、ちいさく コトコト うごいているよ。';
     return '';
   }
+  const yochiyochiPhase = getYochiyochiPhase();
+  if (yochiyochiPhase === 'almost_kids') {
+    return `${getMilmaruName()}が 背のびして、いつもより たくましく見えるよ。`;
+  }
   const progress = getNextGrowthProgress(Math.max(10, state.sukusuku));
   const remaining = progress.max - Math.max(10, state.sukusuku);
   if (remaining <= 0) return `${getMilmaruName()}が なんだか そわそわしているよ。`;
@@ -2306,6 +2393,12 @@ function getMemoLines(stage, mood, friendship) {
   if (friendship.level >= 4) return ['あなたの こえが だいすき！', 'もじをかくと、そばで おうえんするよ。'];
   if (friendship.level >= 3) return ['いっしょにいると にこにこ。', 'もじれんしゅうを みるのが すき。'];
   if (stage.id === 'baby') return ['ミルクのにおいが だいすき！', 'やさしくされると すぐ にこにこ。'];
+  if (stage.id === 'yochiyochi') {
+    const phase = getYochiyochiPhase();
+    if (phase === 'crawl') return ['はいはいで にわを たんけん中。', '呼ぶと、こっちを ちらっと見るよ。'];
+    if (phase === 'first_steps') return ['よちよち歩きが たのしいみたい。', 'ころばないように そっと見守ろう。'];
+    return ['背のびが じょうずに なってきた。', '新しいことが できそうな 予感。'];
+  }
   return ['やさしくて、がんばりやさん。', 'いろんなものに きょうみしんしん。'];
 }
 
@@ -2479,6 +2572,7 @@ function startHatchScene() {
     state.gokigen = 86;
     state.lastMoodAt = Date.now();
     state.sukusuku = Math.max(10, state.sukusuku);
+    state.lastStageId = 'baby';
     state.reaction = 'birth';
     markCareInteraction();
     setSpeech('うまれたよ！', 'なまえを つけてあげよう。');
@@ -2630,6 +2724,7 @@ function applyDebugState(next = {}) {
   state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
   state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
   state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
+  state.lastStageId = next.lastStageId || (state.hatched ? getCareStage().id : 'egg');
   if (Object.prototype.hasOwnProperty.call(next, 'named')) {
     state.named = next.named;
   } else if (!state.hatched) {
@@ -2678,7 +2773,8 @@ function consumePendingWritingReward() {
       state.stars += bonus.stars;
       if (bonus.power > 0) changeInventory('moji_power', bonus.power);
     }
-    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, bonus ? bonus.message : `もじパワーも たまったよ。${getMilmaruName()}に おせわを してみよう！`);
+    const stageMessage = getYochiyochiActionMessage('writing');
+    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, bonus ? bonus.message : (stageMessage || `もじパワーも たまったよ。${getMilmaruName()}に おせわを してみよう！`));
     setReaction('happy');
   } else {
     setSpeech('もじパワーが たまったよ！', 'タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
@@ -2705,7 +2801,7 @@ function applyEntrySpeech() {
   if (getInventoryCount(food.id) > 0) {
     setSpeech(`${food.name} ほしいな〜`, `${food.name}を あげたら、${getMilmaruName()}が よろこぶよ。`);
   } else {
-    setSpeech('いっしょに もじを かこう！', `もじを かくと、${food.name}と もじパワーが もらえるよ。`);
+    setSpeech('いっしょに もじを かこう！', getYochiyochiActionMessage('writing') || `もじを かくと、${food.name}と もじパワーが もらえるよ。`);
   }
   saveState();
 }
@@ -2731,9 +2827,13 @@ function feedCookie() {
   boostGokigen(food.id === 'moji_milk' ? 24 : 20);
   state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
-  const growthHint = getHiddenGrowthHint();
-  setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', growthHint || `${food.name}を あげたよ。なかよしが ふえた！`);
-  setReaction('eating');
+  const didStageUp = syncGrowthStageChange();
+  if (!didStageUp) {
+    const growthHint = getHiddenGrowthHint();
+    const stageMessage = getYochiyochiActionMessage('feed');
+    setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', growthHint || stageMessage || `${food.name}を あげたよ。なかよしが ふえた！`);
+    setReaction('eating');
+  }
   spawnFoodFx(food.id);
   spawnFx('sparkle');
   saveState();
@@ -2759,7 +2859,7 @@ function petMilmaru() {
     maybeHatchEgg();
     return;
   }
-  setSpeech('なでてくれて うれしい！', `${getMilmaruName()}が ほっとしているよ。`);
+  setSpeech('なでてくれて うれしい！', getYochiyochiActionMessage('pet') || `${getMilmaruName()}が ほっとしているよ。`);
   setReaction('relaxed');
   spawnFx('heart');
   saveState();
@@ -2780,8 +2880,11 @@ function playWithMilmaru() {
   boostGokigen(16);
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
   state.sukusuku = clamp(state.sukusuku + 1, 0, 100);
-  setSpeech('いっしょに あそぶの たのしい！', `${getMilmaruName()}が ぴょんぴょん はねたよ。`);
-  setReaction('play');
+  const didStageUp = syncGrowthStageChange();
+  if (!didStageUp) {
+    setSpeech('いっしょに あそぶの たのしい！', getYochiyochiActionMessage('play') || `${getMilmaruName()}が ぴょんぴょん はねたよ。`);
+    setReaction('play');
+  }
   spawnFx('sparkle');
   saveState();
   render();
@@ -2842,6 +2945,28 @@ function setupDebugControls() {
     mojiPower: Math.max(1, getInventoryCount('moji_power')),
     speech: 'いっしょに もじを かこう！',
     message: 'ベビー状態にしたよ。'
+  }));
+  document.getElementById('debugYochiyochiBtn').addEventListener('click', () => applyDebugState({
+    hatched: true,
+    named: true,
+    gokigen: Math.max(82, state.gokigen),
+    eggWarmth: 100,
+    sukusuku: 30,
+    cookies: Math.max(1, getInventoryCount('moji_cookie')),
+    mojiPower: Math.max(3, getInventoryCount('moji_power')),
+    speech: 'いっしょに もじを かこう！',
+    message: 'よちよち期の はいはい状態にしたよ。'
+  }));
+  document.getElementById('debugAlmostKidsBtn').addEventListener('click', () => applyDebugState({
+    hatched: true,
+    named: true,
+    gokigen: Math.max(86, state.gokigen),
+    eggWarmth: 100,
+    sukusuku: 46,
+    cookies: Math.max(1, getInventoryCount('moji_cookie')),
+    mojiPower: Math.max(3, getInventoryCount('moji_power')),
+    speech: 'いっしょに もじを かこう！',
+    message: '成長前の よちよち状態にしたよ。'
   }));
   document.getElementById('debugResetBtn').addEventListener('click', resetDebugState);
   document.getElementById('debugCloseBtn').addEventListener('click', () => {

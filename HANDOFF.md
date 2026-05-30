@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:195-mojikko-yochiyochi-stage-loop] DONE - Codex: もじっこファームお世話画面のよちよち期を `はいはい` / `歩きはじめ` / `成長前` の内部3段階に分け、メモ・吹き出し・お世話後メッセージを段階別に変更。ベビー→よちよち、よちよち→キッズの境目で短い段階アップ演出を出すようにし、`?debug=1` に「よちよち」「成長前」プリセットを追加。既存よちよち素材のみ使用、新規画像生成なし。Playwrightで3段階の文言、ベビー→よちよち、よちよち→キッズの段階アップを確認。`sw.js` は v679。 (by Codex)
 - 2026-05-30 - [batch:195-bento-rice-thumbnail] Codex: user が `D:\ポノのおへや\Bento\cooking\ごはん` に追加したご飯だけPNGを確認。`20260530-094339_001`=四角いご飯、`20260530-094108_001`=丸いご飯として、配置用 rice base は触らず、右パレットの `ごはんを よそう` サムネイル専用画像に使う。 (by Codex)
 - 2026-05-30 - [batch:195-bento-rice-thumbnail] DONE - Codex: `rice_thumb_square.png` / `rice_thumb_round.png` を追加し、半分こ/四角箱は四角ご飯、丸箱は丸ご飯を `getAutoRicePaletteItem()` のサムネイルに使用。くま/ねこ箱は既存のキャラご飯サムネを維持。Playwrightで各箱の `ごはんを よそう` 参照画像と 200 読み込み、サムネ見た目を確認。`sw.js` は v678。`writing-mori/care.html` の既存 dirty は未変更。 (by Codex)
 - 2026-05-30 - [batch:194-bento-box-alpha-assets] Codex: user が `D:\ポノのおへや\Bento\cooking\弁当箱` に追加した 4 PNG を確認。`20260530-091949_001`=四角ご飯入り、`091949_002`=四角空箱、`092011_001`=丸ご飯入り、`092011_002`=丸空箱。四角/丸の自由配置箱をこの透過済み素材へ差し替え、箱ごとの `riceImage` を追加し、二段ではなく1段扱いへ変更する。 (by Codex)
