@@ -1187,6 +1187,62 @@ html, body {
   min-height: 112px;
 }
 
+.mood-chip {
+  width: max-content;
+  min-width: 116px;
+  display: inline-grid;
+  grid-template-columns: 20px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 3px solid rgba(139, 96, 66, 0.32);
+  border-radius: 999px;
+  background: #fff6cf;
+  color: var(--ink);
+  font-family: var(--pixel-font);
+  font-size: 17px;
+}
+
+.mood-dot {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(120, 78, 48, 0.3);
+  border-radius: 999px;
+  background: #ff9aa5;
+  box-shadow: inset 0 2px rgba(255,255,255,0.62);
+}
+
+.mood-chip[data-mood="sparkly"] {
+  background: #fff1b8;
+}
+.mood-chip[data-mood="sparkly"] .mood-dot {
+  background: #ffd35e;
+}
+.mood-chip[data-mood="happy"] {
+  background: #e0f6d0;
+}
+.mood-chip[data-mood="happy"] .mood-dot {
+  background: #7edc9f;
+}
+.mood-chip[data-mood="normal"] {
+  background: #eef6d6;
+}
+.mood-chip[data-mood="normal"] .mood-dot {
+  background: #b9d86d;
+}
+.mood-chip[data-mood="lonely"] {
+  background: #e9efff;
+}
+.mood-chip[data-mood="lonely"] .mood-dot {
+  background: #8ea8e8;
+}
+.mood-chip[data-mood="sulky"] {
+  background: #ffe2cf;
+}
+.mood-chip[data-mood="sulky"] .mood-dot {
+  background: #ee8a61;
+}
+
 .growth-card {
   min-height: 150px;
   position: relative;
@@ -1613,6 +1669,7 @@ html, body {
           <div class="milmaru-name" id="milmaruNameDisplay">ミルマル</div>
           <div>Lv. <span id="milmaruLevel">1</span></div>
           <div><span id="growthStageName">タマゴ</span></div>
+          <div class="mood-chip" id="moodChip" data-mood="normal"><span class="mood-dot" aria-hidden="true"></span><span id="moodLabel">すやすや</span></div>
         </div>
         <div class="growth-card mystery-card" aria-hidden="true"></div>
         <div class="memo-box">
@@ -1645,6 +1702,7 @@ html, body {
     <section class="debug-panel" id="debugPanel" aria-label="デバッグ調整">
       <div class="debug-title">DEBUG</div>
       <label class="debug-row">なかよし<input id="debugNakayoshi" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">ごきげん<input id="debugGokigen" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">すくすく<input id="debugSukusuku" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">ぽかぽか<input id="debugEggWarmth" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">パワー<input id="debugMojiPower" type="number" min="0" max="99" step="1"></label>
@@ -1688,6 +1746,7 @@ const defaultState = {
   name: 'ミルマル',
   named: false,
   nakayoshi: 32,
+  gokigen: 78,
   sukusuku: 0,
   eggWarmth: 0,
   hatched: false,
@@ -1701,6 +1760,7 @@ const defaultState = {
   speech: 'まだ タマゴだよ',
   lastPetAt: 0,
   lastWarmAt: 0,
+  lastMoodAt: Date.now(),
   lastCareAt: Date.now()
 };
 
@@ -1880,15 +1940,17 @@ function loadState() {
     merged.name = sanitizeMilmaruName(parsed.name || merged.name);
     merged.named = parsed.named === true || (parsed.hatched === true && parsed.named !== false && !Object.prototype.hasOwnProperty.call(parsed, 'named'));
     merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
+    merged.gokigen = Number.isFinite(parsed.gokigen) ? parsed.gokigen : merged.gokigen;
     merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
     merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? clamp(parsed.eggWarmth, 0, 100) : merged.eggWarmth;
     merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
     merged.speech = merged.hatched ? (parsed.speech || 'うまれたての あかちゃんだよ') : 'まだ タマゴだよ';
     merged.reaction = parsed.reaction || merged.reaction;
+    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
-    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
+    merged.lastMoodAt = Number.isFinite(parsed.lastMoodAt) ? parsed.lastMoodAt : merged.lastCareAt;
     if (parsed.inventory) {
       Object.keys(merged.inventory).forEach((id) => {
         if (parsed.inventory[id]) {
@@ -1965,23 +2027,76 @@ function markCareInteraction() {
   state.lastCareAt = Date.now();
 }
 
+function applyGokigenDecay(now = Date.now()) {
+  const currentGokigen = Number(state.gokigen);
+  state.gokigen = Number.isFinite(currentGokigen) ? clamp(currentGokigen, 0, 100) : 78;
+  if (!state.hatched) {
+    state.gokigen = clamp(state.gokigen, 72, 100);
+    state.lastMoodAt = now;
+    return false;
+  }
+  const lastMoodAt = Number.isFinite(state.lastMoodAt) ? state.lastMoodAt : (Number.isFinite(state.lastCareAt) ? state.lastCareAt : now);
+  const elapsedHours = Math.max(0, (now - lastMoodAt) / 3600000);
+  const decaySteps = Math.floor(Math.max(0, elapsedHours - 6) / 6);
+  if (decaySteps <= 0) return false;
+  state.gokigen = clamp(state.gokigen - decaySteps * 5, 18, 100);
+  state.lastMoodAt = lastMoodAt + decaySteps * 6 * 3600000;
+  return true;
+}
+
+function boostGokigen(amount) {
+  applyGokigenDecay();
+  state.gokigen = clamp(state.gokigen + amount, 0, 100);
+  state.lastMoodAt = Date.now();
+}
+
+function getGokigenStatus() {
+  if (!state.hatched) return { id: 'sleepy', label: 'すやすや', reaction: 'normal' };
+  applyGokigenDecay();
+  if (state.gokigen >= 88) return { id: 'sparkly', label: 'きらきら', reaction: 'happy' };
+  if (state.gokigen >= 68) return { id: 'happy', label: 'にこにこ', reaction: 'happy' };
+  if (state.gokigen >= 46) return { id: 'normal', label: 'まったり', reaction: 'normal' };
+  if (state.gokigen >= 28) return { id: 'lonely', label: 'さみしい', reaction: 'worried' };
+  return { id: 'sulky', label: 'むぅ...', reaction: 'angry' };
+}
+
+function getFriendshipTier() {
+  const value = clamp(Number(state.nakayoshi) || 0, 0, 100);
+  if (value >= 85) return { level: 4, label: 'だいすき' };
+  if (value >= 65) return { level: 3, label: 'なかよし' };
+  if (value >= 40) return { level: 2, label: 'なれてきた' };
+  if (value >= 20) return { level: 1, label: 'すこしずつ' };
+  return { level: 0, label: 'はじめまして' };
+}
+
+function getFriendshipBonus() {
+  if (!state.hatched) return null;
+  const tier = getFriendshipTier();
+  const mood = getGokigenStatus();
+  if (mood.id === 'lonely' || mood.id === 'sulky') return null;
+  if (tier.level >= 4) return { stars: 20, power: 1, message: `${getMilmaruName()}の おうえん！もじパワーを もう1こ もらったよ。` };
+  if (tier.level >= 3) return { stars: 10, power: 0, message: `${getMilmaruName()}が おうえんしてくれたよ。スターが すこし ふえた！` };
+  return null;
+}
+
 function getIdleMood(now = Date.now()) {
   if (!state.hatched) return null;
   const name = getMilmaruName();
   const lastCareAt = Number.isFinite(state.lastCareAt) ? state.lastCareAt : now;
   const hours = (now - lastCareAt) / 3600000;
-  if (hours >= 48) {
+  const mood = getGokigenStatus();
+  if (mood.id === 'sulky' || hours >= 48) {
     return {
-      reaction: 'angry',
+      reaction: mood.id === 'sulky' ? 'angry' : 'worried',
       speech: 'むぅ〜...',
-      message: `しばらく おせわが なかったから、${name}は ちょっと ぷんぷん。`
+      message: `${name}は ちょっと すねているみたい。もじを かいて、おせわしてあげよう。`
     };
   }
-  if (hours >= 24) {
+  if (mood.id === 'lonely' || hours >= 24) {
     return {
       reaction: 'worried',
       speech: 'くぅん...',
-      message: `${name}は すこし さみしかったみたい。やさしく おせわしよう。`
+      message: `${name}は すこし さみしかったみたい。なでると すぐ げんきになるよ。`
     };
   }
   const hour = new Date(now).getHours();
@@ -2184,6 +2299,16 @@ function getHiddenGrowthHint() {
   return '';
 }
 
+function getMemoLines(stage, mood, friendship) {
+  if (!state.hatched) return ['タマゴの なかで すやすや。', 'ぽかぽかが だいすき！'];
+  if (mood.id === 'sulky') return ['ちょっと すねているみたい。', 'もじをかいて おせわすると、すぐ げんきになるよ。'];
+  if (mood.id === 'lonely') return ['すこし さみしかったみたい。', 'なでると ほっとするよ。'];
+  if (friendship.level >= 4) return ['あなたの こえが だいすき！', 'もじをかくと、そばで おうえんするよ。'];
+  if (friendship.level >= 3) return ['いっしょにいると にこにこ。', 'もじれんしゅうを みるのが すき。'];
+  if (stage.id === 'baby') return ['ミルクのにおいが だいすき！', 'やさしくされると すぐ にこにこ。'];
+  return ['やさしくて、がんばりやさん。', 'いろんなものに きょうみしんしん。'];
+}
+
 function getEggVisualClass() {
   if (state.eggWarmth >= 35) return 'egg-cracked';
   return 'egg-idle';
@@ -2323,6 +2448,7 @@ function saveMilmaruName() {
   const nextName = sanitizeMilmaruName(nameInput.value);
   state.name = nextName;
   state.named = true;
+  boostGokigen(10);
   state.speech = 'ふにゃ〜♪';
   bottomMessage.textContent = `${nextName}、よろしくね。もじミルクを あげてみよう。`;
   playSfx('select');
@@ -2350,6 +2476,8 @@ function startHatchScene() {
     state.hatched = true;
     state.named = false;
     state.name = sanitizeMilmaruName(state.name);
+    state.gokigen = 86;
+    state.lastMoodAt = Date.now();
     state.sukusuku = Math.max(10, state.sukusuku);
     state.reaction = 'birth';
     markCareInteraction();
@@ -2419,11 +2547,16 @@ function warmEgg() {
 
 function render() {
   state.nakayoshi = clamp(state.nakayoshi, 0, 100);
+  applyGokigenDecay();
+  state.gokigen = clamp(state.gokigen, 0, 100);
   state.sukusuku = clamp(state.sukusuku, 0, 100);
   state.eggWarmth = clamp(state.eggWarmth || 0, 0, 100);
   state.name = sanitizeMilmaruName(state.name);
   const displayName = getMilmaruName();
   const stage = getCareStage();
+  const mood = getGokigenStatus();
+  const friendship = getFriendshipTier();
+  const memoLines = getMemoLines(stage, mood, friendship);
 
   document.title = `もじっこファーム | ${displayName}`;
   document.getElementById('titleName').textContent = displayName;
@@ -2431,8 +2564,10 @@ function render() {
   document.getElementById('milmaruNameDisplay').textContent = displayName;
   document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
   document.getElementById('growthStageName').textContent = stage.name;
-  document.getElementById('memoLine1').textContent = state.hatched ? 'やさしくて、がんばりやさん。' : 'タマゴの なかで すやすや。';
-  document.getElementById('memoLine2').textContent = state.hatched ? 'ミルクのにおいが だいすき！' : 'ぽかぽかが だいすき！';
+  document.getElementById('moodChip').dataset.mood = mood.id;
+  document.getElementById('moodLabel').textContent = mood.label;
+  document.getElementById('memoLine1').textContent = memoLines[0];
+  document.getElementById('memoLine2').textContent = memoLines[1];
   document.getElementById('starCount').textContent = String(state.stars);
   document.getElementById('nakayoshiText').textContent = `${state.nakayoshi} / 100`;
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
@@ -2458,6 +2593,7 @@ function render() {
 function renderDebugPanel() {
   if (!debugMode || !debugPanel) return;
   document.getElementById('debugNakayoshi').value = String(state.nakayoshi);
+  document.getElementById('debugGokigen').value = String(state.gokigen);
   document.getElementById('debugSukusuku').value = String(state.sukusuku);
   document.getElementById('debugEggWarmth').value = String(state.eggWarmth);
   document.getElementById('debugMojiPower').value = String(getInventoryCount('moji_power'));
@@ -2486,6 +2622,7 @@ function applyDebugState(next = {}) {
     state.name = sanitizeMilmaruName(next.name);
   }
   state.nakayoshi = next.nakayoshi ?? readDebugNumber('debugNakayoshi', 0, 100);
+  state.gokigen = next.gokigen ?? readDebugNumber('debugGokigen', 0, 100);
   state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
   state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
   state.inventory.moji_power.count = next.mojiPower ?? readDebugNumber('debugMojiPower', 0, 99);
@@ -2500,6 +2637,7 @@ function applyDebugState(next = {}) {
   }
   state.reaction = 'normal';
   state.lastCareAt = Date.now();
+  state.lastMoodAt = Date.now();
   state.lastWarmAt = 0;
   state.lastPetAt = 0;
   state.speech = next.speech || (state.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
@@ -2534,7 +2672,13 @@ function consumePendingWritingReward() {
   state.stars += 25;
   markCareInteraction();
   if (state.hatched) {
-    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, `もじパワーも たまったよ。${getMilmaruName()}に おせわを してみよう！`);
+    boostGokigen(8);
+    const bonus = getFriendshipBonus();
+    if (bonus) {
+      state.stars += bonus.stars;
+      if (bonus.power > 0) changeInventory('moji_power', bonus.power);
+    }
+    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, bonus ? bonus.message : `もじパワーも たまったよ。${getMilmaruName()}に おせわを してみよう！`);
     setReaction('happy');
   } else {
     setSpeech('もじパワーが たまったよ！', 'タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
@@ -2584,6 +2728,7 @@ function feedCookie() {
   changeInventory(food.id, -1);
   playSfx('feed');
   markCareInteraction();
+  boostGokigen(food.id === 'moji_milk' ? 24 : 20);
   state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
   state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
   const growthHint = getHiddenGrowthHint();
@@ -2602,6 +2747,7 @@ function petMilmaru() {
   playSfx('pet');
   state.lastPetAt = now;
   markCareInteraction();
+  if (state.hatched) boostGokigen(12);
   state.nakayoshi = clamp(state.nakayoshi + 2, 0, 100);
   if (!state.hatched) {
     state.eggWarmth = clamp(state.eggWarmth + 8, 0, 100);
@@ -2631,6 +2777,7 @@ function playWithMilmaru() {
   if (!spendMojiPower(actionPowerCost.play, 'play')) return;
   playSfx('play');
   markCareInteraction();
+  boostGokigen(16);
   state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
   state.sukusuku = clamp(state.sukusuku + 1, 0, 100);
   setSpeech('いっしょに あそぶの たのしい！', `${getMilmaruName()}が ぴょんぴょん はねたよ。`);
@@ -2669,6 +2816,7 @@ function setupDebugControls() {
   document.getElementById('debugApplyBtn').addEventListener('click', () => applyDebugState());
   document.getElementById('debugEgg75Btn').addEventListener('click', () => applyDebugState({
     hatched: false,
+    gokigen: 80,
     eggWarmth: 75,
     sukusuku: 0,
     mojiPower: 1,
@@ -2677,6 +2825,7 @@ function setupDebugControls() {
   }));
   document.getElementById('debugPreHatchBtn').addEventListener('click', () => applyDebugState({
     hatched: false,
+    gokigen: 80,
     eggWarmth: 99,
     sukusuku: 0,
     mojiPower: 1,
@@ -2686,6 +2835,7 @@ function setupDebugControls() {
   document.getElementById('debugBabyBtn').addEventListener('click', () => applyDebugState({
     hatched: true,
     named: true,
+    gokigen: Math.max(82, state.gokigen),
     eggWarmth: 100,
     sukusuku: Math.max(10, state.sukusuku),
     milk: Math.max(1, getInventoryCount('moji_milk')),
