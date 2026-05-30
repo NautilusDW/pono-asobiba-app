@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:196-bento-box-back-cat-rice] Codex: user 指摘「弁当箱決定後に戻れない / 猫なのにクマのご飯」を受領。過去対応は 194/195 までで未対応。箱決定後の rice step に `はこにもどる` を追加し、decor/tier2Main からも前段階へ戻れるようにする。猫箱は `shape: box_cat` へ直し、`D:\ポノのおへや\Bento\cooking\ごはん\レイヤー 1_20260530-094450_001.png` を猫ご飯サムネ `rice_thumb_cat.png` として使う。 (by Codex)
+- 2026-05-30 - [batch:196-bento-box-back-cat-rice] DONE - Codex: 箱決定後の `rice` step に `はこにもどる`、`decor` step に `ごはんにもどる`、`tier2Main` に `かざりにもどる` を追加し、前段へ戻れるようにした。猫箱 2 種は `shape: box_cat` へ修正し、猫ご飯サムネ `rice_thumb_cat.png` を追加、`rice_base_cat.thumbnailImage` で右パレットに使用。Playwrightで水色猫選択→OK→rice→`はこにもどる`→box へ戻ること、猫サムネ/猫ご飯入り画像が 200 読み込みされることを確認。`sw.js` は v680。 (by Codex)
 - 2026-05-30 - [batch:195-mojikko-yochiyochi-stage-loop] DONE - Codex: もじっこファームお世話画面のよちよち期を `はいはい` / `歩きはじめ` / `成長前` の内部3段階に分け、メモ・吹き出し・お世話後メッセージを段階別に変更。ベビー→よちよち、よちよち→キッズの境目で短い段階アップ演出を出すようにし、`?debug=1` に「よちよち」「成長前」プリセットを追加。既存よちよち素材のみ使用、新規画像生成なし。Playwrightで3段階の文言、ベビー→よちよち、よちよち→キッズの段階アップを確認。`sw.js` は v679。 (by Codex)
 - 2026-05-30 - [batch:195-bento-rice-thumbnail] Codex: user が `D:\ポノのおへや\Bento\cooking\ごはん` に追加したご飯だけPNGを確認。`20260530-094339_001`=四角いご飯、`20260530-094108_001`=丸いご飯として、配置用 rice base は触らず、右パレットの `ごはんを よそう` サムネイル専用画像に使う。 (by Codex)
 - 2026-05-30 - [batch:195-bento-rice-thumbnail] DONE - Codex: `rice_thumb_square.png` / `rice_thumb_round.png` を追加し、半分こ/四角箱は四角ご飯、丸箱は丸ご飯を `getAutoRicePaletteItem()` のサムネイルに使用。くま/ねこ箱は既存のキャラご飯サムネを維持。Playwrightで各箱の `ごはんを よそう` 参照画像と 200 読み込み、サムネ見た目を確認。`sw.js` は v678。`writing-mori/care.html` の既存 dirty は未変更。 (by Codex)

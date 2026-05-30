@@ -2950,7 +2950,7 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_cat_blue.png',
     riceImage: FREE_ASSET + 'box_cat_blue_rice.png',
     lidImage: FREE_ASSET + 'box_cat_blue_lid.png',
-    shape: 'box_bear',
+    shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 561 / 516,
     placeBounds: { x: 166, y: 90, w: 428, h: 300 },
@@ -2987,7 +2987,7 @@ const bentoBoxes = [
     image: FREE_ASSET + 'box_cat.png',
     riceImage: FREE_ASSET + 'box_cat_rice.png',
     lidImage: FREE_ASSET + 'box_cat_lid.png',
-    shape: 'box_bear',
+    shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 561 / 516,
     placeBounds: { x: 166, y: 90, w: 428, h: 300 },
@@ -3043,7 +3043,7 @@ const FREE_ACCESSORY_SIZE_PRESETS = {
 const riceBases = [
   { id: 'rice_base_round', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_round.png', css: 'free-css-rice-round', sk: 'y', size: 126, layerBase: 20 },
   { id: 'rice_base_bear', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
-  { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
+  { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', thumbnailImage: FREE_ASSET + 'rice_thumb_cat.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
 ];
 const decorItems = [
   { id: 'nori_eye_round', type: 'decor', name: 'おめめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
@@ -5498,7 +5498,13 @@ function tryFinishOkazuTier(tier) {
   stageComplete();
 }
 function goBackFreeGuideStep() {
-  if (freeGuideStep === 'tier2Side') {
+  if (freeGuideStep === 'rice') {
+    setFreeGuideStep('box');
+  } else if (freeGuideStep === 'decor') {
+    setFreeGuideStep('rice');
+  } else if (freeGuideStep === 'tier2Main') {
+    setFreeGuideStep('decor');
+  } else if (freeGuideStep === 'tier2Side') {
     setFreeGuideStep('tier2Main');
   } else if (freeGuideStep === 'tier3Prompt') {
     setFreeGuideStep('tier2Side');
@@ -5513,11 +5519,14 @@ function renderFreeGuidePanel() {
   actions.className = 'free-guide-actions';
   if (freeGuideStep === 'box') {
     actions.appendChild(makeSmallControlButton('このはこでOK', 'primary', confirmFreeBentoBoxSelection));
+  } else if (freeGuideStep === 'rice') {
+    actions.appendChild(makeSmallControlButton('はこにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'decor') {
+    actions.appendChild(makeSmallControlButton('ごはんにもどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton('かざらず次へ', '', tryAdvanceFromNori));
     actions.appendChild(makeSmallControlButton(hasNoriDecorOnTier(1) ? 'のりOK' : 'つぎへ', 'primary', tryAdvanceFromNori));
   } else if (freeGuideStep === 'tier2Main') {
-    // 下部の戻す/けす行に表示する。
+    actions.appendChild(makeSmallControlButton('かざりにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
