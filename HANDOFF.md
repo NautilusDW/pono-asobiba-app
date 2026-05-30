@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:199-bento-normal-rice-thumbnail] Codex: user が `D:\ポノのおへや\Bento\cooking\ごはん` に追加した普通のお弁当箱用ご飯サムネ `レイヤー 1_20260530-193925_001.png` と、`D:\ポノのおへや\Bento\cooking\弁当箱` の普通箱＋ご飯 `レイヤー 0_20260529-170505_001.png` を確認。`box_rect_split` に専用サムネと `riceImage` を紐づける。 (by Codex)
+- 2026-05-30 - [batch:199-bento-normal-rice-thumbnail] DONE - Codex: `rice_thumb_rect_split.png` / `box_rect_split_rice.png` を追加し、普通のお弁当箱 `box_rect_split` の `ごはんを よそう` サムネと、ご飯追加後の一体画像に使用。Playwrightでサムネ/一体画像の 200 読み込みと、レンダリング時に `box_rect_split_rice.png` へ切り替わることを確認。`sw.js` は v684。 (by Codex)
 - 2026-05-30 - [batch:198-mojikko-milk-drops-petting] DONE - Codex: もじっこファームで表示名 `もじパワー` を `もじのしずく` へ変更し、しずく不足時は下部バーではなく中央 `stageNotice` に「もじをかこう」導線を出すよう修正。ハイハイ中 (`yochiyochi` かつ `sukusuku < 38`) は文字報酬/あげる対象を `もじミルク` にし、歩き始め以降は `もじクッキー`。ミルクは口へ消える `foodOfferArc` ではなく口元手前に留まる `milkOfferNear` へ分離。`なでる` はボタン即発動から、ボタン後に頭付近をスワイプ/ドラッグして成功時だけ `もじのしずく` を消費する方式に変更。Playwrightでミルク報酬/ミルク演出/しずく不足中央表示/なでスワイプ消費/文字書き報酬切替を確認。`sw.js` は v683。 (by Codex)
 - 2026-05-30 - [batch:198-bento-guide-mask-nori-layer] Codex: user 指摘「1枚目スクショの案内カード顔マスクずれ / 糊に上下マーク不要」を受領。対象は弁当箱内マスクではなく `assets/images/bento/ui/guide_modal_pono.png` の焼き込み顔。カード顔を中央に収まる丸顔素材へ差し替え、`nori_*` と `parentId` 付き飾りでは重なり上下ツールを出さないようにする。 (by Codex)
 - 2026-05-30 - [batch:198-bento-guide-mask-nori-layer] DONE - Codex: `guide_modal_pono.png` の案内カード顔を中央に収まる丸顔素材へ差し替え、丸枠からはみ出して見える焼き込みずれを解消。`canShowLayerControlsForItem()` を追加し、`nori_*` と `parentId` 付き飾りではコンテキスト/右パネルの上下重なり操作を出さないようにした。Playwrightで案内カード表示、糊子パーツ/単体糊の上下ツール非表示、非糊飾りでは上下ツールが残ることを確認。`sw.js` は v682。`writing-mori/*` の既存 dirty は未変更。 (by Codex)
