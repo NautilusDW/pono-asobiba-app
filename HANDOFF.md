@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:198-bento-guide-mask-nori-layer] Codex: user 指摘「1枚目スクショの案内カード顔マスクずれ / 糊に上下マーク不要」を受領。対象は弁当箱内マスクではなく `assets/images/bento/ui/guide_modal_pono.png` の焼き込み顔。カード顔を中央に収まる丸顔素材へ差し替え、`nori_*` と `parentId` 付き飾りでは重なり上下ツールを出さないようにする。 (by Codex)
+- 2026-05-30 - [batch:198-bento-guide-mask-nori-layer] DONE - Codex: `guide_modal_pono.png` の案内カード顔を中央に収まる丸顔素材へ差し替え、丸枠からはみ出して見える焼き込みずれを解消。`canShowLayerControlsForItem()` を追加し、`nori_*` と `parentId` 付き飾りではコンテキスト/右パネルの上下重なり操作を出さないようにした。Playwrightで案内カード表示、糊子パーツ/単体糊の上下ツール非表示、非糊飾りでは上下ツールが残ることを確認。`sw.js` は v682。`writing-mori/*` の既存 dirty は未変更。 (by Codex)
 - 2026-05-30 - [batch:197-mojikko-care-feed-stage-notice] DONE - Codex: もじっこファームお世話画面で、クッキー/ミルクを床へ投げたように見える `foodToMouth` をやめ、口元へ半円弧で届く `foodOfferArc` に変更。なでる/あげる/あそぶ/段階アップ中は roaming の現在位置を計算してその場で止めるよう修正。ベビー→よちよち/よちよち→キッズの段階アップは本人の吹き出しではなく、中央の目立つ説明パネル `stageNotice` で表示し、説明後に通常 roaming へ戻る構造にした。Playwrightで食べ物アニメ名、リアクション中の移動停止、キッズ段階アップ中央パネル、吹き出しに「できた！」が出ないことを確認。`sw.js` は v681。 (by Codex)
 - 2026-05-30 - [batch:196-bento-box-back-cat-rice] Codex: user 指摘「弁当箱決定後に戻れない / 猫なのにクマのご飯」を受領。過去対応は 194/195 までで未対応。箱決定後の rice step に `はこにもどる` を追加し、decor/tier2Main からも前段階へ戻れるようにする。猫箱は `shape: box_cat` へ直し、`D:\ポノのおへや\Bento\cooking\ごはん\レイヤー 1_20260530-094450_001.png` を猫ご飯サムネ `rice_thumb_cat.png` として使う。 (by Codex)
 - 2026-05-30 - [batch:196-bento-box-back-cat-rice] DONE - Codex: 箱決定後の `rice` step に `はこにもどる`、`decor` step に `ごはんにもどる`、`tier2Main` に `かざりにもどる` を追加し、前段へ戻れるようにした。猫箱 2 種は `shape: box_cat` へ修正し、猫ご飯サムネ `rice_thumb_cat.png` を追加、`rice_base_cat.thumbnailImage` で右パレットに使用。Playwrightで水色猫選択→OK→rice→`はこにもどる`→box へ戻ること、猫サムネ/猫ご飯入り画像が 200 読み込みされることを確認。`sw.js` は v680。 (by Codex)
