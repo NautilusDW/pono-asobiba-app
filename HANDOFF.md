@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-30 - [batch:198-mojikko-milk-drops-petting] DONE - Codex: もじっこファームで表示名 `もじパワー` を `もじのしずく` へ変更し、しずく不足時は下部バーではなく中央 `stageNotice` に「もじをかこう」導線を出すよう修正。ハイハイ中 (`yochiyochi` かつ `sukusuku < 38`) は文字報酬/あげる対象を `もじミルク` にし、歩き始め以降は `もじクッキー`。ミルクは口へ消える `foodOfferArc` ではなく口元手前に留まる `milkOfferNear` へ分離。`なでる` はボタン即発動から、ボタン後に頭付近をスワイプ/ドラッグして成功時だけ `もじのしずく` を消費する方式に変更。Playwrightでミルク報酬/ミルク演出/しずく不足中央表示/なでスワイプ消費/文字書き報酬切替を確認。`sw.js` は v683。 (by Codex)
 - 2026-05-30 - [batch:198-bento-guide-mask-nori-layer] Codex: user 指摘「1枚目スクショの案内カード顔マスクずれ / 糊に上下マーク不要」を受領。対象は弁当箱内マスクではなく `assets/images/bento/ui/guide_modal_pono.png` の焼き込み顔。カード顔を中央に収まる丸顔素材へ差し替え、`nori_*` と `parentId` 付き飾りでは重なり上下ツールを出さないようにする。 (by Codex)
 - 2026-05-30 - [batch:198-bento-guide-mask-nori-layer] DONE - Codex: `guide_modal_pono.png` の案内カード顔を中央に収まる丸顔素材へ差し替え、丸枠からはみ出して見える焼き込みずれを解消。`canShowLayerControlsForItem()` を追加し、`nori_*` と `parentId` 付き飾りではコンテキスト/右パネルの上下重なり操作を出さないようにした。Playwrightで案内カード表示、糊子パーツ/単体糊の上下ツール非表示、非糊飾りでは上下ツールが残ることを確認。`sw.js` は v682。`writing-mori/*` の既存 dirty は未変更。 (by Codex)
 - 2026-05-30 - [batch:197-mojikko-care-feed-stage-notice] DONE - Codex: もじっこファームお世話画面で、クッキー/ミルクを床へ投げたように見える `foodToMouth` をやめ、口元へ半円弧で届く `foodOfferArc` に変更。なでる/あげる/あそぶ/段階アップ中は roaming の現在位置を計算してその場で止めるよう修正。ベビー→よちよち/よちよち→キッズの段階アップは本人の吹き出しではなく、中央の目立つ説明パネル `stageNotice` で表示し、説明後に通常 roaming へ戻る構造にした。Playwrightで食べ物アニメ名、リアクション中の移動停止、キッズ段階アップ中央パネル、吹き出しに「できた！」が出ないことを確認。`sw.js` は v681。 (by Codex)
