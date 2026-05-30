@@ -2610,7 +2610,7 @@ function renderActionMode() {
   petButton.classList.toggle('power-empty', !hasMojiPower(actionPowerCost.pet));
   playButton.classList.toggle('power-empty', !hasMojiPower(actionPowerCost.play));
   petButton.querySelector('.action-help').textContent = 'しずく1で なでる';
-  playButton.querySelector('.action-help').textContent = 'しずく2で あそぶ';
+  playButton.querySelector('.action-help').textContent = 'しずく2で あそびば';
 }
 
 function applyMilmaruClass(reaction) {
@@ -2986,6 +2986,17 @@ function consumePendingWritingReward() {
 
 function applyEntrySpeech() {
   const params = new URLSearchParams(window.location.search);
+  if (params.get('from') === 'play') {
+    if (params.get('result') === 'success') {
+      setSpeech('あそぶの たのしい！', `${getMilmaruName()}と ころころボールで あそんだよ。なかよしが ふえた！`);
+      setReaction('happy', 1500);
+      spawnFx('sparkle');
+    } else if (state.hatched) {
+      setSpeech('また あそぼうね', 'もじを かいて しずくを ためると、また おもちゃで あそべるよ。');
+    }
+    saveState();
+    return;
+  }
   if (params.get('from') !== 'writing') return;
   if (!state.hatched) {
     if (getInventoryCount('moji_power') > 0) {
@@ -3178,20 +3189,17 @@ function playWithMilmaru() {
     spawnFx('sparkle');
     return;
   }
-  if (!spendMojiPower(actionPowerCost.play, 'play')) return;
-  playSfx('play');
-  markCareInteraction();
-  boostGokigen(16);
-  state.nakayoshi = clamp(state.nakayoshi + 3, 0, 100);
-  state.sukusuku = clamp(state.sukusuku + 1, 0, 100);
-  const didStageUp = syncGrowthStageChange();
-  if (!didStageUp) {
-    setSpeech('いっしょに あそぶの たのしい！', getYochiyochiActionMessage('play') || `${getMilmaruName()}が ぴょんぴょん はねたよ。`);
-    setReaction('play');
+  if (!hasMojiPower(actionPowerCost.play)) {
+    showNeedWritingMessage(actionPowerCost.play);
+    return;
   }
-  spawnFx('sparkle');
+  playSfx('select');
+  freezeRoamPosition();
+  setSpeech('あそびばに いこう！', 'ころころボールの あそび画面へ いくよ。');
   saveState();
-  render();
+  setTimeout(() => {
+    window.location.href = 'play.html?toy=ball&from=care';
+  }, 180);
 }
 
 function goWrite() {

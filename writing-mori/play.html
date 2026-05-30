@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>もじっこファーム | おもちゃひろば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="../manifest.json">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #4f3825;
+  --ink-soft: #7a5b41;
+  --wood-dark: #6e4b2d;
+  --wood-mid: #a66e3f;
+  --paper: #fff8e8;
+  --paper-deep: #f1ddb7;
+  --mint: #7fcea5;
+  --mint-dark: #3c986f;
+  --coral: #ee7b6b;
+  --gold: #f5bd4e;
+  --blue: #70bde4;
+  --shadow: rgba(70, 42, 18, 0.26);
+  --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --title-plaque: url('../assets/images/mojikko/writing/wood_title_plaque.png');
+  --star-counter: url('../assets/images/mojikko/writing/star_counter.png');
+  --settings-button: url('../assets/images/mojikko/writing/settings_button.png');
+  --button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
+  --button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
+  --button-retry: url('../assets/images/mojikko/writing/button_retry_wide_normal.png');
+  --button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_wide_pressed.png');
+  --button-next: url('../assets/images/mojikko/writing/button_next_normal.png');
+  --button-next-pressed: url('../assets/images/mojikko/writing/button_next_pressed.png');
+  --milmaru-baby: url('../assets/images/mojikko/care/milmaru_shell_baby_idle_pose.png');
+  --milmaru-baby-happy: url('../assets/images/mojikko/care/milmaru_shell_baby_arms_up.png');
+  --milmaru-yochi: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
+  --milmaru-yochi-catch: url('../assets/images/mojikko/care/milmaru_yochiyochi_arms_up.png');
+  --milmaru-yochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
+  --icon-star: url('../assets/images/mojikko/writing/icon_star.png');
+  --fx-sparkle: url('../assets/images/mojikko/care/fx_sparkle_cluster.png');
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  color: var(--ink);
+  background: #20394b;
+  font-family: var(--round-font);
+  position: fixed;
+  inset: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+#stage-wrap {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #20394b;
+}
+
+#stage {
+  position: absolute;
+  width: 1600px;
+  height: 900px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.2) 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, rgba(255,255,255,0.15) 0 1px, transparent 1px 8px),
+    linear-gradient(180deg, #8bd5ef 0%, #b9ecff 34%, #b9e5be 34%, #a3d98b 56%, #d8bd80 56%, #bf8c52 100%);
+  image-rendering: pixelated;
+}
+
+.pixel-button {
+  border: 0;
+  cursor: pointer;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 7px 0 rgba(61, 39, 24, 0.34));
+}
+
+.pixel-button:active {
+  transform: translateY(4px);
+  filter: drop-shadow(0 3px 0 rgba(61, 39, 24, 0.34));
+}
+
+.top-bar {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  top: 30px;
+  height: 92px;
+  display: grid;
+  grid-template-columns: 220px 1fr 290px 78px;
+  gap: 22px;
+  align-items: center;
+  z-index: 10;
+}
+
+.back-btn {
+  width: 220px;
+  height: 72px;
+  border: 5px solid var(--wood-dark);
+  border-radius: 8px;
+  background: linear-gradient(#fff1c9, #f2be64);
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,0.28), 0 7px 0 #4b2f1e;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.title-board {
+  height: 90px;
+  min-width: 640px;
+  display: grid;
+  place-items: center;
+  background: var(--title-plaque) center / contain no-repeat;
+  font-family: var(--pixel-font);
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.35);
+}
+
+.resource-box,
+.star-box {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 5px solid var(--wood-dark);
+  border-radius: 8px;
+  background: linear-gradient(#fff9e8, #f2dcaa);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.38), 0 6px 0 #4b2f1e;
+  font-family: var(--pixel-font);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.star-box {
+  width: 290px;
+  background: var(--star-counter) center / contain no-repeat;
+  border: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 5px 0 rgba(61,39,24,0.3));
+}
+
+.star-icon {
+  width: 42px;
+  height: 42px;
+  background: var(--icon-star) center / contain no-repeat;
+}
+
+.icon-btn {
+  width: 74px;
+  height: 74px;
+  background: var(--settings-button) center / contain no-repeat;
+  overflow: hidden;
+  color: transparent;
+  white-space: nowrap;
+  text-indent: 120%;
+}
+
+.sub-sign {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 470px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 5px solid #4f8f67;
+  border-radius: 8px;
+  background: linear-gradient(#8ad6a8, #56b87b);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.22), 0 5px 0 #3b6849;
+  color: #fff;
+  font-family: var(--pixel-font);
+  font-size: 27px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 rgba(57,85,55,0.45);
+  z-index: 9;
+}
+
+.panel {
+  position: absolute;
+  border: 5px solid var(--wood-dark);
+  border-radius: 9px;
+  background: linear-gradient(#fffaf0, #f5e5c2);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.4), 0 8px 0 #4b2f1e, 0 16px 22px var(--shadow);
+  overflow: hidden;
+}
+
+.panel-heading {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#62c594, #45a773);
+  color: #fff;
+  border-bottom: 4px solid rgba(92, 61, 37, 0.3);
+  font-family: var(--pixel-font);
+  font-size: 31px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 rgba(57,85,55,0.5);
+}
+
+.toy-panel {
+  left: 42px;
+  top: 168px;
+  width: 280px;
+  height: 538px;
+}
+
+.toy-grid {
+  padding: 20px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.toy-card {
+  position: relative;
+  height: 126px;
+  border: 4px solid #a0704c;
+  border-radius: 8px;
+  background: linear-gradient(#fff8e8, #efd6a7);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.38), 0 5px 0 #7b5736;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.toy-card.selected {
+  background: linear-gradient(#ffe69a, #f4b944);
+  border-color: #c3742f;
+}
+
+.toy-card.locked {
+  opacity: 0.56;
+  filter: saturate(0.55);
+}
+
+.toy-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 3px solid rgba(107,73,44,0.3);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.38);
+  font-size: 35px;
+}
+
+.how-panel {
+  right: 42px;
+  top: 168px;
+  width: 306px;
+  height: 538px;
+}
+
+.steps {
+  padding: 18px 16px 12px;
+  display: grid;
+  gap: 13px;
+}
+
+.step-card {
+  height: 82px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 4px solid #b48961;
+  border-radius: 8px;
+  background: rgba(255,252,241,0.75);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.36), 0 4px 0 rgba(103,72,45,0.35);
+  font-family: var(--pixel-font);
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.step-num {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #946747;
+  border-radius: 50%;
+  background: #fff2cc;
+}
+
+.reward-hint {
+  margin: 8px 18px 0;
+  padding: 16px 14px;
+  border: 4px dashed #d5b27e;
+  border-radius: 8px;
+  background: rgba(255,250,235,0.72);
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.playfield {
+  position: absolute;
+  left: 350px;
+  top: 190px;
+  width: 900px;
+  height: 540px;
+  border: 7px solid var(--wood-dark);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, transparent 0 335px, rgba(124, 91, 55, 0.18) 335px 342px, transparent 342px),
+    linear-gradient(180deg, #c7efff 0%, #eaf9ff 48%, #a7dc93 48%, #83ca6c 68%, #e0c487 68%, #c18c52 100%);
+  box-shadow: inset 0 0 0 7px rgba(255,255,255,0.38), 0 10px 0 #4b2f1e, 0 18px 28px var(--shadow);
+  overflow: hidden;
+}
+
+.playfield::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  background:
+    linear-gradient(180deg, #fff 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, #fff 0 1px, transparent 1px 8px);
+  pointer-events: none;
+}
+
+.cloud {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.88);
+}
+
+.cloud.one { width: 150px; height: 34px; left: 110px; top: 72px; }
+.cloud.two { width: 205px; height: 42px; left: 568px; top: 92px; opacity: 0.74; }
+.cloud::before,
+.cloud::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.cloud::before { width: 70px; height: 70px; left: 28px; bottom: 6px; }
+.cloud::after { width: 92px; height: 62px; left: 78px; bottom: 3px; }
+
+.ground-stripe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 108px;
+  background:
+    linear-gradient(90deg, rgba(86, 54, 31, 0.13) 0 22px, transparent 22px 46px),
+    linear-gradient(#d8b46e, #a86d36);
+  border-top: 6px solid rgba(101,67,39,0.45);
+}
+
+.lane {
+  position: absolute;
+  left: 80px;
+  right: 80px;
+  bottom: 100px;
+  height: 20px;
+  border: 4px solid rgba(120, 88, 52, 0.45);
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #fff7d5 0 25px, #ead09b 25px 42px);
+}
+
+.path-arc {
+  position: absolute;
+  left: 208px;
+  top: 210px;
+  width: 478px;
+  height: 182px;
+  border: 7px dotted rgba(255, 141, 88, 0.7);
+  border-color: rgba(255, 141, 88, 0.7) transparent transparent transparent;
+  border-radius: 50% 50% 0 0;
+  transform: rotate(-5deg);
+  pointer-events: none;
+}
+
+.launch-pad {
+  position: absolute;
+  left: 92px;
+  bottom: 142px;
+  width: 176px;
+  height: 122px;
+  border: 5px solid #89603f;
+  border-radius: 10px;
+  background: rgba(255,248,225,0.75);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.35), 0 6px 0 rgba(80,54,33,0.34);
+  display: grid;
+  place-items: center;
+  font-family: var(--pixel-font);
+  font-size: 20px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.target-ring {
+  position: absolute;
+  right: 144px;
+  bottom: 178px;
+  width: 154px;
+  height: 122px;
+  border: 8px dashed rgba(247, 190, 79, 0.95);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  animation: targetPulse 1.2s ease-in-out infinite;
+}
+
+.target-ring::after {
+  content: 'ここ！';
+  position: absolute;
+  left: 38px;
+  top: -46px;
+  padding: 4px 12px;
+  border: 3px solid #8b6040;
+  border-radius: 6px;
+  background: #fff4cf;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+@keyframes targetPulse {
+  50% { transform: scale(1.07); opacity: 0.72; }
+}
+
+.milmaru-speech {
+  position: absolute;
+  right: 148px;
+  top: 160px;
+  min-width: 170px;
+  padding: 14px 20px;
+  border: 5px solid #845b3d;
+  border-radius: 12px;
+  background: #fffaf0;
+  box-shadow: 0 6px 0 rgba(84,54,32,0.3);
+  font-family: var(--pixel-font);
+  font-size: 25px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.milmaru-speech::after {
+  content: '';
+  position: absolute;
+  left: 54px;
+  bottom: -23px;
+  width: 34px;
+  height: 34px;
+  border-right: 5px solid #845b3d;
+  border-bottom: 5px solid #845b3d;
+  background: #fffaf0;
+  transform: rotate(45deg);
+}
+
+.milmaru {
+  position: absolute;
+  right: 98px;
+  bottom: 128px;
+  width: 238px;
+  height: 238px;
+  background: var(--milmaru-yochi) center bottom / contain no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 12px 0 rgba(92,60,35,0.18));
+  z-index: 3;
+}
+
+.milmaru.baby {
+  width: 236px;
+  height: 236px;
+  background-image: var(--milmaru-baby);
+}
+
+.milmaru.catch {
+  animation: milmaruCatch 900ms ease both;
+  background-image: var(--milmaru-yochi-catch);
+}
+
+.milmaru.baby.catch {
+  background-image: var(--milmaru-baby-happy);
+}
+
+.milmaru.worried {
+  background-image: var(--milmaru-yochi-worried);
+}
+
+@keyframes milmaruCatch {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-18px) scale(1.05); }
+}
+
+.toy-ball {
+  position: absolute;
+  left: var(--ball-x, 160px);
+  top: var(--ball-y, 354px);
+  width: 76px;
+  height: 76px;
+  border: 5px solid #8e5930;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #fff2ac 0 13px, transparent 14px),
+    linear-gradient(135deg, #ffe17b 0 32%, #ffb94c 32% 50%, #f08a43 50% 68%, #ffd96f 68%);
+  box-shadow: inset -8px -10px 0 rgba(150,83,35,0.2), 0 8px 0 rgba(85,54,32,0.22);
+  cursor: grab;
+  z-index: 4;
+  image-rendering: pixelated;
+}
+
+.toy-ball.dragging {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+.toy-ball.flying {
+  transition: none;
+  animation: ballSpin 560ms steps(4) infinite;
+}
+
+@keyframes ballSpin {
+  to { transform: rotate(360deg); }
+}
+
+.aim-line {
+  position: absolute;
+  left: 168px;
+  top: 392px;
+  height: 8px;
+  width: var(--aim-length, 0px);
+  transform-origin: left center;
+  transform: rotate(var(--aim-angle, 0deg));
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #ff8d58 0 14px, transparent 14px 24px);
+  opacity: 0;
+  z-index: 2;
+}
+
+.aim-line.show {
+  opacity: 0.92;
+}
+
+.spark-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.spark {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  background: var(--fx-sparkle) center / contain no-repeat;
+  animation: sparkPop 900ms ease-out forwards;
+}
+
+@keyframes sparkPop {
+  0% { opacity: 0; transform: translate(0, 12px) scale(0.4); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.25); }
+}
+
+.status-strip {
+  position: absolute;
+  left: 350px;
+  right: 350px;
+  top: 732px;
+  height: 46px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: center;
+}
+
+.guide-panel,
+.friend-panel {
+  height: 46px;
+  border: 5px solid #8b6040;
+  border-radius: 9px;
+  background: rgba(255,248,232,0.9);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.34), 0 5px 0 rgba(74,48,30,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pixel-font);
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.friend-panel {
+  display: none;
+  gap: 8px;
+  font-size: 23px;
+}
+
+.heart-pip {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: #ff91a5;
+  border: 3px solid #a26847;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.28);
+}
+
+.heart-pip.empty {
+  background: #ead5b5;
+}
+
+.bottom-actions {
+  position: absolute;
+  left: 440px;
+  right: 440px;
+  bottom: 50px;
+  height: 64px;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.main-btn,
+.secondary-btn {
+  position: relative;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  background: var(--button-success) center / 100% 100% no-repeat;
+  color: #fff;
+  font-family: var(--pixel-font);
+  font-size: 28px;
+  font-weight: 900;
+  text-shadow: 0 3px 0 rgba(38,71,91,0.55);
+}
+
+.main-btn:active {
+  background-image: var(--button-success-pressed);
+}
+
+.secondary-btn {
+  background-image: var(--button-retry);
+  color: var(--ink);
+  text-shadow: 0 2px 0 rgba(255,255,255,0.45);
+  font-size: 26px;
+}
+
+.secondary-btn.next {
+  background-image: var(--button-next);
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(38,91,48,0.5);
+}
+
+.secondary-btn:active {
+  background-image: var(--button-retry-pressed);
+}
+
+.secondary-btn.next:active {
+  background-image: var(--button-next-pressed);
+}
+
+.message-bar {
+  position: absolute;
+  left: 250px;
+  right: 250px;
+  bottom: 8px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: rgba(255,250,235,0.92);
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.result-modal {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  background: rgba(52, 75, 50, 0.32);
+  z-index: 30;
+}
+
+.result-modal.show {
+  display: grid;
+}
+
+.result-card {
+  width: 680px;
+  min-height: 330px;
+  padding: 36px 46px 32px;
+  border: 7px solid var(--wood-dark);
+  border-radius: 12px;
+  background: linear-gradient(#fffaf0, #f5e4bf);
+  box-shadow: inset 0 0 0 7px rgba(255,255,255,0.4), 0 11px 0 #4b2f1e, 0 20px 40px rgba(50,32,20,0.3);
+  text-align: center;
+}
+
+.result-title {
+  margin-bottom: 16px;
+  color: #c26038;
+  font-family: var(--pixel-font);
+  font-size: 48px;
+  font-weight: 900;
+}
+
+.result-text {
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.result-actions {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-aspect-ratio: 4/3) {
+  #stage {
+    background-position: center;
+  }
+}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <main id="stage" aria-label="もじっこファーム おもちゃひろば">
+    <header class="top-bar">
+      <button class="pixel-button back-btn" id="backBtn">← おせわへ</button>
+      <div class="title-board">ころころボール</div>
+      <div class="star-box"><span id="starCount">1550</span></div>
+      <button class="pixel-button icon-btn" id="settingsBtn" aria-label="設定">設定</button>
+    </header>
+    <div class="sub-sign">ゆびで ころがそう！</div>
+
+    <aside class="panel toy-panel" aria-label="おもちゃ">
+      <div class="panel-heading">おもちゃ</div>
+      <div class="toy-grid">
+        <button class="toy-card selected" type="button" data-toy="ball"><span class="toy-icon">●</span><span>ボール</span></button>
+        <button class="toy-card locked" type="button" data-toy="rattle"><span class="toy-icon">♪</span><span>ガラガラ</span></button>
+        <button class="toy-card locked" type="button" data-toy="blocks"><span class="toy-icon">□</span><span>つみき</span></button>
+        <button class="toy-card locked" type="button" data-toy="book"><span class="toy-icon">本</span><span>えほん</span></button>
+      </div>
+    </aside>
+
+    <section class="playfield" id="playfield" aria-label="ころころボールのステージ">
+      <div class="cloud one" aria-hidden="true"></div>
+      <div class="cloud two" aria-hidden="true"></div>
+      <div class="path-arc" aria-hidden="true"></div>
+      <div class="lane" aria-hidden="true"></div>
+      <div class="ground-stripe" aria-hidden="true"></div>
+      <div class="launch-pad" id="launchPad">ここから<br>ひっぱる</div>
+      <div class="target-ring" id="targetRing" aria-hidden="true"></div>
+      <div class="milmaru-speech" id="milmaruSpeech">みゅっ♪</div>
+      <div class="milmaru" id="milmaru" aria-hidden="true"></div>
+      <div class="aim-line" id="aimLine" aria-hidden="true"></div>
+      <div class="toy-ball" id="ball" role="button" aria-label="ボール"></div>
+      <div class="spark-layer" id="sparkLayer" aria-hidden="true"></div>
+    </section>
+
+    <aside class="panel how-panel" aria-label="あそびかた">
+      <div class="panel-heading">あそびかた</div>
+      <div class="steps">
+        <div class="step-card"><span class="step-num">1</span><span>ひっぱる</span></div>
+        <div class="step-card"><span class="step-num">2</span><span>はなす</span></div>
+        <div class="step-card"><span class="step-num">3</span><span>ほめる</span></div>
+      </div>
+      <div class="reward-hint">もじのしずく 2こ<br>なかよし +3</div>
+    </aside>
+
+    <div class="status-strip">
+      <div class="guide-panel" id="guideText">ゆっくり ひっぱって はなそう</div>
+      <div class="friend-panel"><span>なかよし</span><span class="heart-pip"></span><span class="heart-pip"></span><span class="heart-pip empty"></span></div>
+    </div>
+
+    <nav class="bottom-actions" aria-label="ゲーム操作">
+      <button class="pixel-button main-btn" id="playBtn">あそぶ！</button>
+      <button class="pixel-button secondary-btn" id="retryBtn">もういっかい</button>
+      <button class="pixel-button secondary-btn next" id="careBtn">おせわへ</button>
+    </nav>
+    <div class="message-bar" id="messageBar">しずくを つかって、ミルマルと ゆっくり あそぼう！</div>
+
+    <div class="result-modal" id="resultModal" aria-hidden="true">
+      <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <div class="result-title" id="resultTitle">キャッチできた！</div>
+        <div class="result-text" id="resultText">ミルマルが よろこんでいるよ。<br>なかよしが ふえた！</div>
+        <div class="result-actions">
+          <button class="pixel-button secondary-btn" id="modalRetryBtn">もういっかい</button>
+          <button class="pixel-button secondary-btn next" id="modalCareBtn">おせわへ</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
+const PLAY_COST = 2;
+
+const defaultState = {
+  name: 'ミルマル',
+  named: false,
+  nakayoshi: 32,
+  gokigen: 78,
+  sukusuku: 0,
+  eggWarmth: 0,
+  hatched: false,
+  stars: 1250,
+  inventory: {
+    moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
+    moji_power: { id: 'moji_power', name: 'もじのしずく', count: 0, type: 'energy' }
+  },
+  reaction: 'normal',
+  speech: 'いっしょに もじを かこう！',
+  lastStageId: 'egg',
+  lastPetAt: 0,
+  lastWarmAt: 0,
+  lastMoodAt: Date.now(),
+  lastCareAt: Date.now()
+};
+
+let state = loadState();
+let audioCtx = null;
+let dragging = false;
+let startPoint = null;
+let currentPoint = null;
+let playedThisRound = false;
+let animationFrame = null;
+
+const stageEl = document.getElementById('stage');
+const ball = document.getElementById('ball');
+const playfield = document.getElementById('playfield');
+const aimLine = document.getElementById('aimLine');
+const guideText = document.getElementById('guideText');
+const messageBar = document.getElementById('messageBar');
+const milmaru = document.getElementById('milmaru');
+const milmaruSpeech = document.getElementById('milmaruSpeech');
+const resultModal = document.getElementById('resultModal');
+const resultTitle = document.getElementById('resultTitle');
+const resultText = document.getElementById('resultText');
+const sparkLayer = document.getElementById('sparkLayer');
+
+function fitStage() {
+  const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+  const ox = (window.innerWidth - 1600 * scale) / 2;
+  const oy = (window.innerHeight - 900 * scale) / 2;
+  stageEl.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
+}
+
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+fitStage();
+
+function cloneDefaultState() {
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function sanitizeMilmaruName(value) {
+  const text = String(value || '').trim().replace(/\s+/g, '');
+  return text ? text.slice(0, 8) : 'ミルマル';
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(CARE_STATE_KEY);
+    if (!saved) return cloneDefaultState();
+    const parsed = JSON.parse(saved);
+    const merged = cloneDefaultState();
+    merged.name = sanitizeMilmaruName(parsed.name || merged.name);
+    merged.named = parsed.named === true;
+    merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
+    merged.gokigen = Number.isFinite(parsed.gokigen) ? parsed.gokigen : merged.gokigen;
+    merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
+    merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? parsed.eggWarmth : merged.eggWarmth;
+    merged.hatched = parsed.hatched === true;
+    merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    merged.speech = parsed.speech || merged.speech;
+    merged.reaction = parsed.reaction || merged.reaction;
+    merged.lastStageId = parsed.lastStageId || merged.lastStageId;
+    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
+    merged.lastMoodAt = Number.isFinite(parsed.lastMoodAt) ? parsed.lastMoodAt : merged.lastCareAt;
+    if (parsed.inventory) {
+      Object.keys(merged.inventory).forEach((id) => {
+        if (parsed.inventory[id]) merged.inventory[id].count = Math.max(0, Number(parsed.inventory[id].count) || 0);
+      });
+    }
+    return merged;
+  } catch (error) {
+    console.warn('Could not load care state:', error);
+    return cloneDefaultState();
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(CARE_STATE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn('Could not save care state:', error);
+  }
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getInventoryCount(id) {
+  return Math.max(0, Number(state.inventory[id]?.count) || 0);
+}
+
+function changeInventory(id, delta) {
+  if (!state.inventory[id]) return 0;
+  state.inventory[id].count = clamp(getInventoryCount(id) + delta, 0, 99);
+  return state.inventory[id].count;
+}
+
+function getCareStageId() {
+  if (!state.hatched) return 'egg';
+  if (state.sukusuku < 25) return 'baby';
+  if (state.sukusuku < 50) return 'yochiyochi';
+  if (state.sukusuku < 80) return 'kids';
+  return 'pre_evolution';
+}
+
+function getBabySpeech(text) {
+  const raw = String(text || '');
+  if (/キャッチ|やった|たのし|あそ/.test(raw)) return 'きゃっきゃ！';
+  if (/たりない|ない/.test(raw)) return 'ふぇ...？';
+  return 'みゅっ♪';
+}
+
+function getYochiyochiSpeech(text) {
+  const raw = String(text || '');
+  if (/キャッチ|やった|たのし|あそ/.test(raw)) return 'あしょぼ！';
+  if (/たりない|ない/.test(raw)) return 'なぁい...？';
+  return 'みゅっ♪';
+}
+
+function getStageSpeech(text) {
+  const stage = getCareStageId();
+  if (stage === 'baby') return getBabySpeech(text);
+  if (stage === 'yochiyochi') return getYochiyochiSpeech(text);
+  return text;
+}
+
+function getAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioCtx) audioCtx = new AudioContextClass();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+function playTone(frequency, duration = 0.06, type = 'square', volume = 0.035, delay = 0) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const start = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.03);
+}
+
+function playSfx(kind) {
+  try {
+    if (kind === 'roll') {
+      [430, 470, 520].forEach((freq, i) => playTone(freq, 0.045, 'triangle', 0.024, i * 0.055));
+      return;
+    }
+    if (kind === 'success') {
+      [620, 780, 980].forEach((freq, i) => playTone(freq, 0.07, 'square', 0.03, i * 0.06));
+      return;
+    }
+    if (kind === 'mistake') {
+      playTone(220, 0.075, 'triangle', 0.024);
+      return;
+    }
+    playTone(560, 0.045, 'square', 0.026);
+  } catch (_) {}
+}
+
+function setBallPosition(x, y) {
+  ball.style.setProperty('--ball-x', `${x}px`);
+  ball.style.setProperty('--ball-y', `${y}px`);
+}
+
+function resetRound() {
+  cancelAnimationFrame(animationFrame);
+  playedThisRound = false;
+  dragging = false;
+  startPoint = null;
+  currentPoint = null;
+  ball.classList.remove('dragging', 'flying');
+  aimLine.classList.remove('show');
+  setBallPosition(160, 354);
+  milmaru.classList.remove('catch', 'worried');
+  resultModal.classList.remove('show');
+  resultModal.setAttribute('aria-hidden', 'true');
+  guideText.textContent = 'ゆっくり ひっぱって はなそう';
+  messageBar.textContent = getInventoryCount('moji_power') >= PLAY_COST
+    ? 'しずくを つかって、ミルマルと ゆっくり あそぼう！'
+    : 'もじを かくと、あそぶための しずくが もらえるよ。';
+  milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
+}
+
+function getLocalPoint(event) {
+  const rect = playfield.getBoundingClientRect();
+  const scaleX = playfield.offsetWidth / rect.width;
+  const scaleY = playfield.offsetHeight / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY
+  };
+}
+
+function updateAim() {
+  if (!startPoint || !currentPoint) return;
+  const dx = startPoint.x - currentPoint.x;
+  const dy = startPoint.y - currentPoint.y;
+  const distance = clamp(Math.hypot(dx, dy), 0, 150);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  aimLine.style.setProperty('--aim-length', `${distance}px`);
+  aimLine.style.setProperty('--aim-angle', `${angle}deg`);
+  aimLine.classList.toggle('show', distance > 12);
+  guideText.textContent = distance < 55 ? 'もうすこし ひっぱろう' : 'そのまま はなしてね';
+}
+
+function startDrag(event) {
+  if (playedThisRound) return;
+  if (!state.hatched) {
+    showNeedCareMessage('まだ タマゴだよ', 'おせわ画面で タマゴを あたためてあげよう。');
+    return;
+  }
+  if (getInventoryCount('moji_power') < PLAY_COST) {
+    showNeedCareMessage('しずくが たりないよ', `あと ${PLAY_COST - getInventoryCount('moji_power')}こ しずくが いるよ。もじを かこう！`);
+    return;
+  }
+  event.preventDefault();
+  playSfx('button');
+  dragging = true;
+  const point = getLocalPoint(event);
+  startPoint = { x: 198, y: 392 };
+  currentPoint = point;
+  ball.classList.add('dragging');
+  ball.setPointerCapture?.(event.pointerId);
+  updateAim();
+}
+
+function moveDrag(event) {
+  if (!dragging) return;
+  event.preventDefault();
+  currentPoint = getLocalPoint(event);
+  updateAim();
+}
+
+function endDrag(event) {
+  if (!dragging) return;
+  event.preventDefault();
+  dragging = false;
+  ball.releasePointerCapture?.(event.pointerId);
+  ball.classList.remove('dragging');
+  aimLine.classList.remove('show');
+  const dx = startPoint.x - currentPoint.x;
+  const dy = startPoint.y - currentPoint.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance < 54) {
+    playSfx('mistake');
+    guideText.textContent = 'もうすこし ひっぱろう';
+    messageBar.textContent = 'だいじょうぶ。ゆっくり もういっかい やってみよう。';
+    milmaruSpeech.textContent = getStageSpeech('ふぇ...？');
+    return;
+  }
+  launchBall(clamp(distance, 60, 150));
+}
+
+function launchBall(power) {
+  playedThisRound = true;
+  playSfx('roll');
+  ball.classList.add('flying');
+  guideText.textContent = 'ボールが ころころ...';
+  messageBar.textContent = 'ミルマルの ところへ やさしく とどけよう。';
+  const start = { x: 160, y: 354 };
+  const end = { x: 652, y: 306 };
+  const lift = clamp(power * 1.05, 75, 150);
+  const started = performance.now();
+  const duration = 940;
+
+  const tick = (now) => {
+    const t = clamp((now - started) / duration, 0, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const x = start.x + (end.x - start.x) * ease;
+    const y = start.y + (end.y - start.y) * ease - Math.sin(Math.PI * ease) * lift;
+    setBallPosition(x, y);
+    if (t < 1) {
+      animationFrame = requestAnimationFrame(tick);
+      return;
+    }
+    completePlay();
+  };
+  animationFrame = requestAnimationFrame(tick);
+}
+
+function completePlay() {
+  ball.classList.remove('flying');
+  setBallPosition(680, 292);
+  changeInventory('moji_power', -PLAY_COST);
+  state.nakayoshi = clamp((Number(state.nakayoshi) || 0) + 3, 0, 100);
+  state.sukusuku = clamp((Number(state.sukusuku) || 0) + 1, 0, 100);
+  state.gokigen = clamp((Number(state.gokigen) || 0) + 16, 0, 100);
+  state.stars = clamp((Number(state.stars) || 0) + 5, 0, 99999);
+  state.lastCareAt = Date.now();
+  state.lastMoodAt = Date.now();
+  state.reaction = 'happy';
+  state.speech = 'あそぶの たのしい！';
+  saveState();
+  renderCounts();
+  playSfx('success');
+  milmaru.classList.add('catch');
+  milmaruSpeech.textContent = getStageSpeech('キャッチできた！');
+  guideText.textContent = 'キャッチできた！';
+  messageBar.textContent = 'ミルマルが よろこんでいるよ。おせわ画面で ほめてあげよう。';
+  spawnSparkles();
+  setTimeout(showResult, 680);
+}
+
+function spawnSparkles() {
+  for (let i = 0; i < 18; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'spark';
+    spark.style.left = `${580 + Math.random() * 210}px`;
+    spark.style.top = `${205 + Math.random() * 150}px`;
+    spark.style.setProperty('--dx', `${(Math.random() - 0.5) * 160}px`);
+    spark.style.setProperty('--dy', `${-40 - Math.random() * 80}px`);
+    spark.style.animationDelay = `${Math.random() * 0.12}s`;
+    sparkLayer.appendChild(spark);
+    setTimeout(() => spark.remove(), 1050);
+  }
+}
+
+function showResult() {
+  resultTitle.textContent = 'キャッチできた！';
+  resultText.innerHTML = 'ミルマルが よろこんでいるよ。<br>なかよし +3　すくすく +1';
+  resultModal.classList.add('show');
+  resultModal.setAttribute('aria-hidden', 'false');
+}
+
+function showNeedCareMessage(title, message) {
+  playSfx('mistake');
+  milmaru.classList.add('worried');
+  milmaruSpeech.textContent = getStageSpeech(title);
+  guideText.textContent = title;
+  messageBar.textContent = message;
+  setTimeout(() => milmaru.classList.remove('worried'), 900);
+}
+
+function goCare(result = '') {
+  saveState();
+  const suffix = result ? `?from=play&result=${encodeURIComponent(result)}` : '?from=play';
+  window.location.href = `care.html${suffix}`;
+}
+
+function goWriting() {
+  saveState();
+  window.location.href = 'index.html?from=play';
+}
+
+function renderCounts() {
+  document.getElementById('starCount').textContent = String(state.stars);
+  const sign = document.querySelector('.sub-sign');
+  sign.textContent = `しずく ${getInventoryCount('moji_power')}こ`;
+  milmaru.classList.toggle('baby', getCareStageId() === 'baby');
+}
+
+document.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('button');
+  if (!button || !stageEl.contains(button)) return;
+  playSfx('button');
+}, true);
+
+document.getElementById('backBtn').addEventListener('click', () => goCare());
+document.getElementById('careBtn').addEventListener('click', () => goCare());
+document.getElementById('modalCareBtn').addEventListener('click', () => goCare('success'));
+document.getElementById('retryBtn').addEventListener('click', resetRound);
+document.getElementById('modalRetryBtn').addEventListener('click', () => {
+  if (getInventoryCount('moji_power') < PLAY_COST) {
+    resultModal.classList.remove('show');
+    showNeedCareMessage('しずくが たりないよ', 'もじを かいて、また あそびにこよう。');
+    return;
+  }
+  resetRound();
+});
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (playedThisRound) {
+    resetRound();
+    return;
+  }
+  guideText.textContent = 'ボールを ひっぱって はなそう';
+  messageBar.textContent = '左の ボールを やさしく ひっぱってね。';
+});
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  messageBar.textContent = 'せっていは じゅんびちゅうだよ。';
+});
+document.querySelectorAll('.toy-card.locked').forEach((button) => {
+  button.addEventListener('click', () => {
+    messageBar.textContent = 'この おもちゃは これから つかえるようにするね。';
+    playSfx('mistake');
+  });
+});
+
+ball.addEventListener('pointerdown', startDrag);
+ball.addEventListener('pointermove', moveDrag);
+ball.addEventListener('pointerup', endDrag);
+ball.addEventListener('pointercancel', endDrag);
+document.getElementById('launchPad').addEventListener('pointerdown', startDrag);
+document.getElementById('launchPad').addEventListener('pointermove', moveDrag);
+document.getElementById('launchPad').addEventListener('pointerup', endDrag);
+document.getElementById('launchPad').addEventListener('pointercancel', endDrag);
+
+if (!state.hatched) {
+  guideText.textContent = 'まだ あそべないよ';
+  messageBar.textContent = 'おせわ画面で タマゴを あたためてあげよう。';
+  milmaruSpeech.textContent = 'すぅ...';
+} else if (getInventoryCount('moji_power') < PLAY_COST) {
+  guideText.textContent = 'しずくが たりないよ';
+  messageBar.textContent = 'もじを かくと、あそぶための しずくが もらえるよ。';
+  milmaruSpeech.textContent = getStageSpeech('しずくが たりないよ');
+} else {
+  resetRound();
+}
+renderCounts();
+
+window.MojikkoToyPlayGame = {
+  getState: () => JSON.parse(JSON.stringify(state)),
+  resetRound,
+  completePlay,
+  goCare
+};
+</script>
+</body>
+</html>
