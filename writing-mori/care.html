@@ -964,6 +964,67 @@ html, body {
   z-index: 8;
 }
 
+.stage-notice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(720px, 62vw);
+  min-height: 190px;
+  z-index: 36;
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 28px 34px 28px 28px;
+  border: 6px solid #7d5133;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffeec9 100%);
+  box-shadow:
+    0 8px 0 #57331e,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.68);
+  color: #4d3124;
+  font-family: var(--pixel-font);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+.stage-notice.show {
+  animation: stageNoticePop 2.45s ease both;
+}
+
+.stage-notice-icon {
+  width: 78px;
+  height: 78px;
+  border-radius: 18px;
+  border: 4px solid #b9874d;
+  background:
+    var(--care-fx-sparkle) center / 54px 54px no-repeat,
+    linear-gradient(180deg, #fff6b7, #ffd980);
+  box-shadow: 0 5px 0 #805230;
+  image-rendering: pixelated;
+}
+
+.stage-notice-title {
+  margin-bottom: 10px;
+  color: #2f9d76;
+  font-size: 34px;
+  line-height: 1.2;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.8);
+}
+
+.stage-notice-text {
+  font-size: 24px;
+  line-height: 1.45;
+}
+
+@keyframes stageNoticePop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+  18%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+}
+
 .hatch-scene {
   position: absolute;
   inset: 0;
@@ -1128,8 +1189,8 @@ html, body {
 
 .food-fx {
   position: absolute;
-  left: var(--x);
-  top: var(--y);
+  left: var(--mouth-x);
+  top: var(--mouth-y);
   z-index: 10;
   width: 60px;
   height: 60px;
@@ -1139,7 +1200,7 @@ html, body {
   background-repeat: no-repeat;
   image-rendering: pixelated;
   transform: translate(-50%, -50%);
-  animation: foodToMouth 0.78s cubic-bezier(.22,1,.36,1) forwards;
+  animation: foodOfferArc 0.94s cubic-bezier(.24,.86,.36,1) forwards;
 }
 
 .food-fx.cookie {
@@ -1156,11 +1217,27 @@ html, body {
   display: none;
 }
 
-@keyframes foodToMouth {
-  0% { opacity: 0; transform: translate(-90px, 32px) scale(0.9); }
-  18% { opacity: 1; }
-  72% { opacity: 1; transform: translate(-12px, -8px) scale(1.05); }
-  100% { opacity: 0; transform: translate(0, -16px) scale(0.82); }
+@keyframes foodOfferArc {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% - 132px), calc(-50% + 20px)) scale(0.86) rotate(-10deg);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(calc(-50% - 108px), calc(-50% + 4px)) scale(0.96) rotate(-6deg);
+  }
+  54% {
+    opacity: 1;
+    transform: translate(calc(-50% - 50px), calc(-50% - 74px)) scale(1.08) rotate(8deg);
+  }
+  82% {
+    opacity: 1;
+    transform: translate(calc(-50% - 8px), calc(-50% - 12px)) scale(0.95) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72) rotate(0deg);
+  }
 }
 
 @keyframes fxRise {
@@ -1650,6 +1727,13 @@ html, body {
       <div class="yard-prop rug" aria-hidden="true"></div>
       <div class="speech-bubble" id="speechBubble">いっしょに もじを かこう！</div>
       <div class="fx-layer" id="fxLayer"></div>
+      <div class="stage-notice" id="stageNotice" aria-hidden="true">
+        <div class="stage-notice-icon" aria-hidden="true"></div>
+        <div>
+          <div class="stage-notice-title" id="stageNoticeTitle">すこし せいちょう！</div>
+          <div class="stage-notice-text" id="stageNoticeText">ミルマルが 新しいことを おぼえたよ。</div>
+        </div>
+      </div>
       <div class="milmaru-wrap">
         <div class="milmaru normal" id="milmaru">
           <div class="milmaru-tail"></div>
@@ -1794,6 +1878,9 @@ const bottomMessage = document.getElementById('bottomMessage');
 const milmaruWrap = document.querySelector('.milmaru-wrap');
 const milmaru = document.getElementById('milmaru');
 const fxLayer = document.getElementById('fxLayer');
+const stageNotice = document.getElementById('stageNotice');
+const stageNoticeTitle = document.getElementById('stageNoticeTitle');
+const stageNoticeText = document.getElementById('stageNoticeText');
 const careActions = document.querySelector('.care-actions');
 const writeBtn = document.getElementById('writeBtn');
 const feedBtn = document.getElementById('feedBtn');
@@ -2187,23 +2274,38 @@ function getStageUpCopy(stage) {
   const name = getMilmaruName();
   if (stage.id === 'yochiyochi') {
     return {
-      speech: 'あんよ...？',
+      title: 'はいはい できるようになったよ',
       message: `${name}が はいはいで すすむように なったよ。おにわを たんけんできるね。`
     };
   }
   if (stage.id === 'kids') {
     return {
-      speech: 'できた！',
+      title: 'しっかり たてるようになったよ',
       message: `${name}が しっかり たてるように なったよ。これから もっと いっしょに あそべそう。`
     };
   }
   if (stage.id === 'pre_evolution') {
     return {
-      speech: 'きらきら！',
+      title: 'からだが きらきらしているよ',
       message: `${name}の からだが ほんのり ひかっているよ。`
     };
   }
   return null;
+}
+
+function showStageNotice(copy) {
+  if (!stageNotice || !copy) return;
+  stageNoticeTitle.textContent = copy.title || 'すこし せいちょう！';
+  stageNoticeText.textContent = copy.message || '';
+  stageNotice.classList.remove('show');
+  stageNotice.setAttribute('aria-hidden', 'false');
+  void stageNotice.offsetWidth;
+  stageNotice.classList.add('show');
+  clearTimeout(showStageNotice._timer);
+  showStageNotice._timer = setTimeout(() => {
+    stageNotice.classList.remove('show');
+    stageNotice.setAttribute('aria-hidden', 'true');
+  }, 2450);
 }
 
 function syncGrowthStageChange() {
@@ -2218,8 +2320,9 @@ function syncGrowthStageChange() {
   const copy = getStageUpCopy(stage);
   if (!copy) return false;
   playSfx('hatch');
-  setSpeech(copy.speech, copy.message);
-  setReaction('happy', 1500);
+  bottomMessage.textContent = copy.message;
+  showStageNotice(copy);
+  setReaction('happy', 2600);
   spawnFx('sparkle');
   return true;
 }
@@ -2289,6 +2392,25 @@ function applyRoamStyles(resetCenter = false) {
   speechBubble.style.setProperty('--speech-x', `${x}%`);
 }
 
+function freezeRoamPosition() {
+  if (!state.hatched || getMilmaruVisualStage() !== 'yochiyochi') return;
+  const yardRect = document.querySelector('.center-yard').getBoundingClientRect();
+  const wrapRect = milmaruWrap.getBoundingClientRect();
+  if (!yardRect.width || !yardRect.height || !wrapRect.width) return;
+  const currentX = clamp(((wrapRect.left + wrapRect.width / 2 - yardRect.left) / yardRect.width) * 100, 32, 68);
+  const currentY = clamp(yardRect.bottom - wrapRect.bottom, 42, 152);
+  roamState.x = currentX;
+  roamState.y = currentY;
+  roamState.duration = 0.01;
+  roamState.frameDuration = 1.8;
+  roamState.moving = false;
+  clearTimeout(roamState.timer);
+  clearTimeout(roamState.motionTimer);
+  roamState.timer = null;
+  roamState.motionTimer = null;
+  applyRoamStyles();
+}
+
 function scheduleRoam(delay = 1500) {
   clearTimeout(roamState.timer);
   roamState.timer = setTimeout(moveRoamTarget, delay);
@@ -2324,6 +2446,9 @@ function syncRoaming() {
   const canRoam = shouldRoam();
   milmaruWrap.classList.toggle('roaming', canRoam);
   if (!canRoam) {
+    if (getMilmaruVisualStage() === 'yochiyochi' && roamState.moving) {
+      freezeRoamPosition();
+    }
     clearTimeout(roamState.timer);
     clearTimeout(roamState.motionTimer);
     roamState.timer = null;
@@ -2459,6 +2584,7 @@ function setSpeech(text, message) {
 
 function setReaction(reaction, duration = 950) {
   state.reaction = reaction;
+  if (reaction !== 'normal') freezeRoamPosition();
   applyMilmaruClass(reaction);
   syncRoaming();
   clearTimeout(setReaction._timer);
@@ -2486,14 +2612,29 @@ function spawnFx(type) {
   }
 }
 
+function getFoodMouthPoint() {
+  const yardRect = document.querySelector('.center-yard').getBoundingClientRect();
+  const wrapRect = milmaruWrap.getBoundingClientRect();
+  if (!yardRect.width || !yardRect.height || !wrapRect.width) {
+    return { x: 50, y: state.hatched ? 55 : 50 };
+  }
+  const visualStage = getMilmaruVisualStage();
+  const mouthOffsetY = visualStage === 'baby' ? 0.48 : 0.38;
+  const mouthOffsetX = visualStage === 'yochiyochi' ? 0.52 : 0.5;
+  return {
+    x: clamp(((wrapRect.left + wrapRect.width * mouthOffsetX - yardRect.left) / yardRect.width) * 100, 20, 80),
+    y: clamp(((wrapRect.top + wrapRect.height * mouthOffsetY - yardRect.top) / yardRect.height) * 100, 18, 82)
+  };
+}
+
 function spawnFoodFx(foodId) {
   const piece = document.createElement('div');
   piece.className = `food-fx ${foodId === 'moji_cookie' ? 'cookie' : 'milk'}`;
-  const followsRoam = state.hatched && getMilmaruVisualStage() === 'yochiyochi';
-  piece.style.setProperty('--x', followsRoam ? `${roamState.x}%` : '57%');
-  piece.style.setProperty('--y', followsRoam ? '58%' : '54%');
+  const mouth = getFoodMouthPoint();
+  piece.style.setProperty('--mouth-x', `${mouth.x}%`);
+  piece.style.setProperty('--mouth-y', `${mouth.y}%`);
   fxLayer.appendChild(piece);
-  setTimeout(() => piece.remove(), 900);
+  setTimeout(() => piece.remove(), 1050);
 }
 
 function queueHatchStep(delay, fn) {
