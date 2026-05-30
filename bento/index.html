@@ -2769,7 +2769,7 @@ const bentoBoxes = [
     clipPoints: [[78,78], [682,78], [682,392], [78,392]],
     imageScale: 1,
     tierCount: 1,
-    autoRice: { baseRice: 'rice_base_round', x: 244, y: 235, size: 206 },
+    autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_square.png', x: 244, y: 235, size: 206 },
     riceSpots: [
       { x: 248, y: 230 },
     ],
@@ -2805,7 +2805,7 @@ const bentoBoxes = [
     clipPoints: [[124,92], [636,92], [636,368], [124,368]],
     imageScale: 1.18,
     tierCount: 1,
-    autoRice: { baseRice: 'rice_base_round', x: 380, y: 230, size: 292 },
+    autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_square.png', x: 380, y: 230, size: 292 },
     riceSpots: [
       { x: 380, y: 230 },
     ],
@@ -2840,7 +2840,7 @@ const bentoBoxes = [
     clipPoints: [[380,86], [536,98], [622,190], [616,318], [514,372], [380,382], [246,372], [144,318], [138,190], [224,98]],
     imageScale: 1.18,
     tierCount: 1,
-    autoRice: { baseRice: 'rice_base_round', x: 382, y: 230, size: 292 },
+    autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_round.png', x: 382, y: 230, size: 292 },
     riceSpots: [
       { x: 382, y: 230 },
     ],
@@ -3874,7 +3874,7 @@ function getAutoRicePaletteItem() {
     id: 'auto_rice_' + box.id,
     type: 'rice_auto',
     name: 'ごはんを よそう',
-    image: base.image,
+    image: auto.thumbnailImage || base.thumbnailImage || base.image,
     css: base.css,
     size: base.size,
   };
