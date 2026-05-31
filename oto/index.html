@@ -237,11 +237,27 @@
     --rhythm-ring-glow: rgba(56,189,248,0.72);
   }
   /* Guitar Hero 風 ノート落下 (リズムモード時のみ表示) */
+  /* v716: 背景レイヤーを #rhythm-lanes 本体から分離。
+     #rhythm-lanes (z-index:4) はノート/ヒットライン/フラッシュ用の透明コンテナとし、
+     暗色グラデ背景は body.rhythm-layout::before (z-index:0) で最背面に敷く。
+     これで #instruments (z-index:3) の鍵盤ボタン・Pono(z-index:2) が背景に覆われない。 */
+  body.rhythm-layout #stage::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 22%;
+    right: 0;
+    z-index: 1; /* #bgCanvas(0) より上、.pono-wrap(2)/#instruments(3) より下 */
+    pointer-events: none;
+    background: linear-gradient(180deg, #050814 0%, #0a0f1f 50%, #121a33 100%);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.55);
+  }
   #rhythm-lanes {
     /* v713+: 左メニューを 11% 中心・幅 160px に縮めたため、レーン領域を 22% から開始。
        内側 100% = 画面右 78% にマッピングされ、内側 12.5% 等間隔 (.gh-note / .gh-lane / .gh-flash) は
        viewport 換算で 22% + 9.75% * (i+0.5) に対応 (ボタン left% と完全整合)。
-       v709: レーン領域を暗い濃紺〜濃黒のグラデにして、カラフルなノートが映えるように。 */
+       v716: 背景・shadow は ::before に移管。本体は透明コンテナ。 */
     position: absolute;
     top: 0;
     bottom: 0;
@@ -251,8 +267,7 @@
     z-index: 4;
     display: none;
     overflow: hidden;
-    background: linear-gradient(180deg, #050814 0%, #0a0f1f 50%, #121a33 100%);
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.55);
+    background: transparent;
   }
   body.rhythm-layout #rhythm-lanes { display: block; }
   .gh-lane {
