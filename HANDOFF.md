@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:218-mojikko-ball-meter-start-clouds] DONE - Codex: user 指摘「ゲームが始まらない/ゲージが動かない/ここから札がボールに被る/地面画面に雲不要」を受領。`writing-mori/play.html` でスター消費ゲートを外してスター0でもタイミングメーターを開始、雲を非表示化、発射札を上へ移動し、右ヒントからスター20表記を削除。Playwrightでスター0でもゲージ変化・1投目開始・雲非表示・札とボールの隙間を確認。`sw.js` は v713。 (by Codex)
 - 2026-05-31 - [batch:217-mojikko-ball-path-up] DONE - Codex: `writing-mori/play.html` のころころボールで、下部の人工レーンを非表示にし、発射点・ガイド線・到達点・ミルマル位置を土の道に沿うよう上寄せ。1600x900 と 1024x768 で初期位置/成功ショット/JSエラーなしを確認。`sw.js` は v712。 (by Codex)
 - 2026-05-31 - [batch:216-bento-mask-editor-gameplay-reflect] Codex: user 指摘「エディット画面には記録されているが実際のゲーム画面にマスクが反映されない。保存から時間がかかるのか」を受領。直前修正で通常ゲーム画面が editor 保存値を無視していたため、調整確認用として通常ゲーム画面にも即反映させる。最終的な全端末初期値は `maskBounds` へ焼き込む運用。 (by Codex)
 - 2026-05-31 - [batch:216-bento-mask-editor-gameplay-reflect] DONE - Codex: `getBoxMaskBounds()` を editor mode 限定ではなく保存済み mask override を常に合成する形へ戻した。Playwrightで通常起動 `?npc=0` でも `box_rect_split` の保存値が反映され、`box_bear_pink` は `box_bear`、`box_cat` は `box_cat_blue` の保存値を読むことを確認。`sw.js` は v708。 (by Codex)

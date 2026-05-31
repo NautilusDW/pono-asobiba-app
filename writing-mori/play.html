@@ -349,6 +349,7 @@ button {
 
 .cloud {
   position: absolute;
+  display: none;
   border-radius: 999px;
   background: rgba(255,255,255,0.88);
 }
@@ -409,9 +410,9 @@ button {
 .launch-pad {
   position: absolute;
   left: 46px;
-  top: 260px;
-  width: 168px;
-  height: 94px;
+  top: 196px;
+  width: 156px;
+  height: 72px;
   border: 5px solid #89603f;
   border-radius: 10px;
   background: rgba(255,248,225,0.75);
@@ -419,7 +420,7 @@ button {
   display: grid;
   place-items: center;
   font-family: var(--pixel-font);
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 900;
   text-align: center;
   line-height: 1.25;
@@ -1028,7 +1029,7 @@ button {
         <div class="step-card"><span class="step-num">2</span><span>ここでおす</span></div>
         <div class="step-card"><span class="step-num">3</span><span>5こで1セット</span></div>
       </div>
-      <div class="reward-hint">ちょうどいい強さで<br>ころころ とどけよう<br>スター20</div>
+      <div class="reward-hint">ちょうどいい強さで<br>ころころ とどけよう<br>5こで1セット</div>
     </aside>
 
     <div class="status-strip">
@@ -1041,7 +1042,7 @@ button {
       <button class="pixel-button secondary-btn" id="retryBtn">もういっかい</button>
       <button class="pixel-button secondary-btn next" id="careBtn">おせわへ</button>
     </nav>
-    <div class="message-bar" id="messageBar">スターを つかって、ミルマルと ゆっくり あそぼう！</div>
+    <div class="message-bar" id="messageBar">みどりのところで おして、ミルマルへ やさしく ころがそう！</div>
 
     <div class="result-modal" id="resultModal" aria-hidden="true">
       <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
@@ -1060,7 +1061,7 @@ button {
 'use strict';
 
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
-const PLAY_STAR_COST = 20;
+const PLAY_STAR_COST = 0;
 const TOTAL_ROUNDS = 5;
 const BALL_SIZE = 76;
 const BALL_RADIUS = BALL_SIZE / 2;
@@ -1657,7 +1658,7 @@ function goWriting() {
 function renderCounts() {
   document.getElementById('starCount').textContent = String(state.stars);
   const sign = document.querySelector('.sub-sign');
-  sign.textContent = `スター${PLAY_STAR_COST}で あそぶ`;
+  sign.textContent = PLAY_STAR_COST > 0 ? `スター${PLAY_STAR_COST}で あそぶ` : 'タイミングで ころころ';
   milmaru.classList.toggle('baby', getCareStageId() === 'baby');
   updateRoundUi();
 }
