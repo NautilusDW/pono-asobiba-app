@@ -255,6 +255,7 @@ button {
   font-family: var(--pixel-font);
   font-size: 22px;
   font-weight: 900;
+  cursor: pointer;
 }
 
 .toy-card.selected {
@@ -602,6 +603,14 @@ button {
   z-index: 5;
 }
 
+.power-meter.active {
+  background: rgba(255,251,231,0.96);
+  box-shadow:
+    inset 0 0 0 4px rgba(255,255,255,0.42),
+    0 4px 0 rgba(80,54,33,0.28),
+    0 0 0 5px rgba(255, 218, 99, 0.35);
+}
+
 .power-track {
   position: relative;
   height: 31px;
@@ -634,6 +643,10 @@ button {
   transform: translateX(-50%);
 }
 
+.power-meter.active .timing-marker {
+  display: block;
+}
+
 .milmaru-speech {
   position: absolute;
   left: var(--speech-x, 708px);
@@ -651,6 +664,11 @@ button {
   text-align: center;
   z-index: 9;
   transform: translate(-50%, -100%);
+  transition: opacity 140ms ease;
+}
+
+.milmaru-speech.hide {
+  opacity: 0;
 }
 
 .milmaru-speech::after {
@@ -670,8 +688,8 @@ button {
   position: absolute;
   left: var(--milmaru-x, 652px);
   top: var(--milmaru-y, 232px);
-  width: 108px;
-  height: 108px;
+  width: 92px;
+  height: 92px;
   background: var(--milmaru-yochi) center bottom / contain no-repeat;
   image-rendering: pixelated;
   filter: drop-shadow(0 8px 0 rgba(92,60,35,0.18));
@@ -683,8 +701,8 @@ button {
 }
 
 .milmaru.baby {
-  width: 104px;
-  height: 104px;
+  width: 94px;
+  height: 94px;
   background-image: var(--milmaru-baby);
 }
 
@@ -707,7 +725,7 @@ button {
 }
 
 .milmaru.crawling {
-  animation: crawlFrames 1.2s steps(1, end) infinite;
+  animation: crawlFrames 2.15s steps(1, end) infinite;
 }
 
 @keyframes crawlFrames {
@@ -738,6 +756,75 @@ button {
   clip-path: circle(48% at 50% 50%);
   transform: rotate(var(--ball-rotation, 0deg));
   transition: left 120ms ease, top 120ms ease, transform 80ms linear;
+}
+
+.toy-ball::before,
+.toy-ball::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.toy-ball[data-toy="rattle"] {
+  border-radius: 18px;
+  clip-path: none;
+  background:
+    radial-gradient(circle at 50% 22%, #fff7cf 0 11px, #ffe18f 12px 24px, #cc7b3a 25px 29px, transparent 30px),
+    linear-gradient(#f9e8bf 0 0) 24px 29px / 10px 28px no-repeat,
+    linear-gradient(135deg, #9be0c4, #53b98b);
+}
+
+.toy-ball[data-toy="rattle"]::after {
+  content: '♪';
+  left: 34px;
+  top: -11px;
+  color: #f08a43;
+  font-family: var(--pixel-font);
+  font-size: 24px;
+  text-shadow: 0 2px 0 #fff4cf;
+}
+
+.toy-ball[data-toy="blocks"] {
+  border-radius: 9px;
+  clip-path: none;
+  background:
+    linear-gradient(#fff4b8, #f5bd4e) left top / 31px 31px no-repeat,
+    linear-gradient(#b7d9f3, #70bde4) right top / 31px 31px no-repeat,
+    linear-gradient(#ffb5bf, #ee7b6b) 13px 25px / 34px 34px no-repeat;
+}
+
+.toy-ball[data-toy="blocks"]::after {
+  content: 'A';
+  left: 10px;
+  top: 4px;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.toy-ball[data-toy="book"] {
+  border-radius: 8px;
+  clip-path: none;
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(137,86,54,0.5) 48% 52%, transparent 53%),
+    linear-gradient(#fff8e8, #ffe8bb);
+}
+
+.toy-ball[data-toy="book"]::before {
+  inset: 9px 8px;
+  border-left: 3px solid rgba(137,86,54,0.32);
+  border-right: 3px solid rgba(137,86,54,0.32);
+}
+
+.toy-ball[data-toy="book"]::after {
+  content: '本';
+  left: 17px;
+  top: 13px;
+  color: #58b97a;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
 }
 
 .toy-ball.dragging {
@@ -1071,9 +1158,9 @@ button {
       <div class="panel-heading">おもちゃ</div>
       <div class="toy-grid">
         <button class="toy-card selected" type="button" data-toy="ball"><span class="toy-icon">●</span><span>ボール</span></button>
-        <button class="toy-card locked" type="button" data-toy="rattle"><span class="toy-icon">♪</span><span>ガラガラ</span></button>
-        <button class="toy-card locked" type="button" data-toy="blocks"><span class="toy-icon">□</span><span>つみき</span></button>
-        <button class="toy-card locked" type="button" data-toy="book"><span class="toy-icon">本</span><span>えほん</span></button>
+        <button class="toy-card" type="button" data-toy="rattle"><span class="toy-icon">♪</span><span>ガラガラ</span></button>
+        <button class="toy-card" type="button" data-toy="blocks"><span class="toy-icon">□</span><span>つみき</span></button>
+        <button class="toy-card" type="button" data-toy="book"><span class="toy-icon">本</span><span>えほん</span></button>
       </div>
     </aside>
 
@@ -1087,7 +1174,7 @@ button {
       <div class="shot-pips" id="shotPips" aria-hidden="true"></div>
       <div class="field-stars" id="fieldStars" aria-hidden="true"></div>
       <div class="launch-pad" id="launchPad">ここから<br>ころころ</div>
-      <div class="power-meter" aria-hidden="true">
+      <div class="power-meter" id="powerMeter" aria-hidden="true">
         <span>ちから</span>
         <div class="power-track"><div class="power-fill" id="powerFill"></div><div class="timing-marker" id="timingMarker"></div></div>
       </div>
@@ -1107,11 +1194,11 @@ button {
     <aside class="panel how-panel" aria-label="あそびかた">
       <div class="panel-heading">あそびかた</div>
       <div class="steps">
-        <div class="step-card"><span class="step-num">1</span><span>ねらう</span></div>
-        <div class="step-card"><span class="step-num">2</span><span>星のそば</span></div>
+        <div class="step-card"><span class="step-num">1</span><span>むき</span></div>
+        <div class="step-card"><span class="step-num">2</span><span>ちから</span></div>
         <div class="step-card"><span class="step-num">3</span><span>とりにいく</span></div>
       </div>
-      <div class="reward-hint">ちょうどいい強さで<br>ころころ とどけよう<br>5こで1セット</div>
+      <div class="reward-hint">むきをきめて<br>ちからで とどけよう<br>5こで1セット</div>
     </aside>
 
     <div class="status-strip">
@@ -1147,7 +1234,7 @@ const PLAY_STAR_COST = 0;
 const TOTAL_ROUNDS = 5;
 const BALL_SIZE = 58;
 const BALL_RADIUS = BALL_SIZE / 2;
-const MILMARU_SIZE = 108;
+const MILMARU_SIZE = 92;
 const LAUNCH_CENTER = { x: 126, y: 332 };
 const MIN_ROLL = 110;
 const MAX_ROLL = 640;
@@ -1166,6 +1253,48 @@ const STAR_POINTS = [
   { x: 684, y: 234 },
   { x: 768, y: 342 }
 ];
+const TOY_CONFIGS = {
+  ball: {
+    title: 'ころころボール',
+    label: 'ボール',
+    icon: '●',
+    subSign: 'むきをきめて、ちからでころがそう！',
+    launchLabel: 'ここから<br>ころころ',
+    guideVerb: 'ころがそう',
+    movingText: 'ころころ...',
+    resultTitle: 'ころころ できたね！'
+  },
+  rattle: {
+    title: 'ガラガラあそび',
+    label: 'ガラガラ',
+    icon: '♪',
+    subSign: 'むきをきめて、ちからでならそう！',
+    launchLabel: 'ここから<br>しゃらん',
+    guideVerb: 'ならそう',
+    movingText: 'しゃらん...',
+    resultTitle: 'しゃらんと あそべたね！'
+  },
+  blocks: {
+    title: 'つみきころり',
+    label: 'つみき',
+    icon: '□',
+    subSign: 'むきをきめて、ちからでころり！',
+    launchLabel: 'ここから<br>ころり',
+    guideVerb: 'ころがそう',
+    movingText: 'ころり...',
+    resultTitle: 'つみきで あそべたね！'
+  },
+  book: {
+    title: 'えほんすべり',
+    label: 'えほん',
+    icon: '本',
+    subSign: 'むきをきめて、ちからでとどけよう！',
+    launchLabel: 'ここから<br>すいー',
+    guideVerb: 'とどけよう',
+    movingText: 'すいー...',
+    resultTitle: 'えほんで あそべたね！'
+  }
+};
 
 const defaultState = {
   name: 'ミルマル',
@@ -1202,6 +1331,13 @@ let shotResults = [];
 let fieldStars = [];
 let milmaruPosition = { x: 690, y: 246 };
 let currentAim = null;
+let lockedAim = null;
+let controlPhase = 'aim';
+let selectedToyId = 'ball';
+let powerValue = 0;
+let powerDirection = 1;
+let powerFrame = null;
+let lastPowerFrameAt = 0;
 let animationFrame = null;
 let roamTimer = null;
 let isMilmaruBusy = false;
@@ -1209,6 +1345,7 @@ let isMilmaruBusy = false;
 const stageEl = document.getElementById('stage');
 const ball = document.getElementById('ball');
 const playfield = document.getElementById('playfield');
+const launchPad = document.getElementById('launchPad');
 const aimLine = document.getElementById('aimLine');
 const guideText = document.getElementById('guideText');
 const messageBar = document.getElementById('messageBar');
@@ -1220,7 +1357,9 @@ const resultText = document.getElementById('resultText');
 const sparkLayer = document.getElementById('sparkLayer');
 const targetRing = document.getElementById('targetRing');
 const roundCounter = document.getElementById('roundCounter');
+const powerMeter = document.getElementById('powerMeter');
 const powerFill = document.getElementById('powerFill');
+const timingMarker = document.getElementById('timingMarker');
 const mainPlayBtn = document.getElementById('playBtn');
 const shotPips = document.getElementById('shotPips');
 const predictionSvg = document.getElementById('predictionSvg');
@@ -1396,8 +1535,28 @@ function updateRoundUi() {
   renderShotPips();
 }
 
+function getToyConfig() {
+  return TOY_CONFIGS[selectedToyId] || TOY_CONFIGS.ball;
+}
+
+function updateToyUi() {
+  const config = getToyConfig();
+  document.querySelector('.title-board').textContent = config.title;
+  document.querySelector('.sub-sign').textContent = config.subSign;
+  launchPad.innerHTML = config.launchLabel;
+  ball.dataset.toy = selectedToyId;
+  ball.setAttribute('aria-label', config.label);
+  document.querySelectorAll('.toy-card').forEach((button) => {
+    button.classList.toggle('selected', button.dataset.toy === selectedToyId);
+  });
+}
+
 function resetPowerMeter() {
+  stopPowerMeter();
   powerFill.style.setProperty('--power', '0%');
+  timingMarker.style.setProperty('--timing', '0%');
+  powerMeter.classList.remove('active');
+  powerValue = 0;
 }
 
 function renderShotPips() {
@@ -1425,8 +1584,14 @@ function setMilmaruPosition(point, options = {}) {
   milmaruPosition = { x, y };
   milmaru.style.setProperty('--milmaru-x', `${x}px`);
   milmaru.style.setProperty('--milmaru-y', `${y}px`);
-  milmaruSpeech.style.setProperty('--speech-x', `${x + MILMARU_SIZE / 2}px`);
-  milmaruSpeech.style.setProperty('--speech-y', `${Math.max(70, y - 8)}px`);
+  if (options.updateSpeech !== false) {
+    positionSpeechToMilmaru();
+  }
+}
+
+function positionSpeechToMilmaru() {
+  milmaruSpeech.style.setProperty('--speech-x', `${milmaruPosition.x + MILMARU_SIZE / 2}px`);
+  milmaruSpeech.style.setProperty('--speech-y', `${Math.max(70, milmaruPosition.y - 8)}px`);
 }
 
 function getMilmaruCenter() {
@@ -1467,13 +1632,42 @@ function getPlayfieldPoint(event) {
   };
 }
 
-function buildAimPlan(point) {
+function getAimDirection(point) {
   const dx = point.x - LAUNCH_CENTER.x;
   const dy = point.y - LAUNCH_CENTER.y;
   const distance = Math.hypot(dx, dy);
-  const direction = distance > 0 ? { x: dx / distance, y: dy / distance } : { x: 1, y: 0 };
-  const power = clamp(distance / MAX_ROLL, 0, 1);
-  const rollDistance = clamp(distance, MIN_ROLL, MAX_ROLL);
+  if (distance < 18) return null;
+  return {
+    x: dx / distance,
+    y: dy / distance,
+    angle: Math.atan2(dy, dx)
+  };
+}
+
+function getDirectionalEnd(direction, rollDistance) {
+  return {
+    x: clamp(LAUNCH_CENTER.x + direction.x * rollDistance, 36, 850),
+    y: clamp(LAUNCH_CENTER.y + direction.y * rollDistance, 64, 470)
+  };
+}
+
+function buildAimPlan(point) {
+  const direction = getAimDirection(point);
+  if (!direction) return null;
+  const end = getDirectionalEnd(direction, MAX_ROLL);
+  return {
+    end,
+    direction,
+    power: 0,
+    routeHits: [],
+    angle: direction.angle,
+    aimingOnly: true
+  };
+}
+
+function buildPowerPlan(power = powerValue) {
+  const direction = lockedAim?.direction || { x: 1, y: 0, angle: 0 };
+  const rollDistance = MIN_ROLL + clamp(power, 0, 1) * (MAX_ROLL - MIN_ROLL);
   const end = {
     x: clamp(LAUNCH_CENTER.x + direction.x * rollDistance, 36, 850),
     y: clamp(LAUNCH_CENTER.y + direction.y * rollDistance, 64, 470)
@@ -1481,9 +1675,11 @@ function buildAimPlan(point) {
   const routeHits = getStarsOnRoute(getMilmaruCenter(), end);
   return {
     end,
+    direction,
     power,
     routeHits,
-    angle: Math.atan2(end.y - LAUNCH_CENTER.y, end.x - LAUNCH_CENTER.x)
+    angle: direction.angle,
+    aimingOnly: false
   };
 }
 
@@ -1529,7 +1725,12 @@ function showAim(plan) {
   aimLine.style.setProperty('--aim-length', `${Math.hypot(plan.end.x - LAUNCH_CENTER.x, plan.end.y - LAUNCH_CENTER.y)}px`);
   aimLine.style.setProperty('--aim-angle', `${plan.angle}rad`);
   powerFill.style.setProperty('--power', `${Math.round(plan.power * 100)}%`);
-  setLandingPreview(plan.end, safe ? '星へ' : 'ここ', safe ? 'safe' : '');
+  timingMarker.style.setProperty('--timing', `${Math.round(plan.power * 100)}%`);
+  setLandingPreview(
+    plan.end,
+    plan.aimingOnly ? 'むき' : (safe ? '星へ' : 'ここ'),
+    !plan.aimingOnly && safe ? 'safe' : ''
+  );
   targetRing.style.setProperty('--target-x', `${plan.end.x}px`);
   targetRing.style.setProperty('--target-y', `${plan.end.y}px`);
   targetRing.classList.add('show');
@@ -1558,12 +1759,61 @@ function showGoalBurst(point, label, isGood = true) {
   goalBurst.classList.add('show');
 }
 
+function stopPowerMeter() {
+  cancelAnimationFrame(powerFrame);
+  powerFrame = null;
+  lastPowerFrameAt = 0;
+  powerMeter?.classList.remove('active');
+}
+
+function startPowerMeter() {
+  stopPowerMeter();
+  controlPhase = 'power';
+  powerValue = 0.42;
+  powerDirection = 1;
+  powerMeter.classList.add('active');
+  mainPlayBtn.textContent = 'ここで おす！';
+  guideText.textContent = 'ちからを きめよう';
+  messageBar.textContent = 'ゲージを見て、ちょうどいいところで おしてね。';
+  playSfx('button');
+
+  const tick = (now) => {
+    if (controlPhase !== 'power') {
+      stopPowerMeter();
+      return;
+    }
+    if (!lastPowerFrameAt) lastPowerFrameAt = now;
+    const delta = Math.min(0.05, (now - lastPowerFrameAt) / 1000);
+    lastPowerFrameAt = now;
+    powerValue += powerDirection * delta * 0.78;
+    if (powerValue >= 1) {
+      powerValue = 1;
+      powerDirection = -1;
+    } else if (powerValue <= 0) {
+      powerValue = 0;
+      powerDirection = 1;
+    }
+    showAim(buildPowerPlan(powerValue));
+    powerFrame = requestAnimationFrame(tick);
+  };
+  showAim(buildPowerPlan(powerValue));
+  powerFrame = requestAnimationFrame(tick);
+}
+
+function confirmPower() {
+  if (controlPhase !== 'power' || playedThisRound || gameComplete) return;
+  const plan = buildPowerPlan(powerValue);
+  stopPowerMeter();
+  controlPhase = 'rolling';
+  launchBall(plan);
+}
+
 function startMilmaruRoam() {
   stopMilmaruRoam();
   if (!state.hatched || isMilmaruBusy || gameComplete) return;
-  const delay = 1400 + Math.random() * 1800;
+  const delay = 1800 + Math.random() * 2600;
   roamTimer = setTimeout(() => {
-    if (isMilmaruBusy || isAiming || playedThisRound || gameComplete) {
+    if (isMilmaruBusy || isAiming || controlPhase !== 'aim' || playedThisRound || gameComplete) {
       startMilmaruRoam();
       return;
     }
@@ -1572,7 +1822,8 @@ function startMilmaruRoam() {
       y: MILMARU_FIELD.minY + Math.random() * (MILMARU_FIELD.maxY - MILMARU_FIELD.minY)
     };
     moveMilmaruTo(next, {
-      speed: 58 + Math.random() * 24,
+      speed: 20 + Math.random() * 16,
+      maxDuration: 8200,
       after: startMilmaruRoam
     });
   }, delay);
@@ -1589,11 +1840,14 @@ function moveMilmaruTo(point, options = {}) {
     y: clamp(point.y - MILMARU_SIZE / 2, MILMARU_FIELD.minY, MILMARU_FIELD.maxY)
   };
   const distance = Math.hypot(target.x - milmaruPosition.x, target.y - milmaruPosition.y);
-  const duration = clamp((distance / (options.speed || 86)) * 1000, 520, options.maxDuration || 2600);
+  const duration = clamp((distance / (options.speed || 34)) * 1000, 1200, options.maxDuration || 7000);
   milmaru.classList.add('crawling');
-  setMilmaruPosition(target, { duration });
+  milmaruSpeech.classList.add('hide');
+  setMilmaruPosition(target, { duration, updateSpeech: false });
   setTimeout(() => {
     milmaru.classList.remove('crawling');
+    positionSpeechToMilmaru();
+    milmaruSpeech.classList.remove('hide');
     options.after?.();
   }, duration + 80);
   return duration;
@@ -1602,11 +1856,16 @@ function moveMilmaruTo(point, options = {}) {
 function resetRound(options = {}) {
   cancelAnimationFrame(animationFrame);
   animationFrame = null;
+  stopPowerMeter();
   isAiming = false;
+  controlPhase = 'aim';
+  currentAim = null;
+  lockedAim = null;
   playedThisRound = false;
   isMilmaruBusy = false;
   ball.classList.remove('dragging', 'rolling');
   milmaru.classList.remove('catch', 'worried', 'crawling');
+  milmaruSpeech.classList.remove('hide');
   aimLine.classList.remove('show');
   hidePrediction();
   setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
@@ -1616,10 +1875,11 @@ function resetRound(options = {}) {
     resultModal.classList.remove('show');
     resultModal.setAttribute('aria-hidden', 'true');
   }
+  updateToyUi();
   updateRoundUi();
   mainPlayBtn.textContent = 'あそびなおす';
-  guideText.textContent = `${currentRound}こめ：星のそばへ ころがそう`;
-  messageBar.textContent = 'ボールをひっぱると、方向と強さが決まるよ。';
+  guideText.textContent = `${currentRound}こめ：むきを きめよう`;
+  messageBar.textContent = `${getToyConfig().label}をひっぱって、まずは むきをきめよう。`;
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
   startMilmaruRoam();
 }
@@ -1633,51 +1893,66 @@ function resetGame() {
   resultApplied = false;
   resetFieldStars();
   setMilmaruPosition({ x: 640, y: 214 }, { duration: 120 });
+  updateToyUi();
   resetRound();
 }
 
 function beginAim(event) {
-  if (playedThisRound || gameComplete) return;
+  if (controlPhase === 'power') {
+    confirmPower();
+    return;
+  }
+  if (playedThisRound || gameComplete || controlPhase !== 'aim') return;
   if (!state.hatched) {
     showNeedCareMessage('まだ タマゴだよ', 'おせわ画面で タマゴを あたためてあげよう。');
     return;
   }
   event?.preventDefault?.();
   isAiming = true;
+  currentAim = null;
   stopMilmaruRoam();
+  milmaruSpeech.classList.add('hide');
   ball.classList.add('dragging');
   playfield.setPointerCapture?.(event.pointerId);
   updateAim(event);
-  messageBar.textContent = '星のそばをねらって、はなしてね。';
+  guideText.textContent = 'むきを きめよう';
+  messageBar.textContent = 'まだ強さは決まらないよ。はなしたあとに ちからをきめよう。';
 }
 
 function updateAim(event) {
   if (!isAiming || playedThisRound || gameComplete) return;
-  showAim(buildAimPlan(getPlayfieldPoint(event)));
+  const plan = buildAimPlan(getPlayfieldPoint(event));
+  if (plan) showAim(plan);
 }
 
 function finishAim(event) {
   if (!isAiming) return;
   event?.preventDefault?.();
+  if (event?.pointerId != null) {
+    try { playfield.releasePointerCapture?.(event.pointerId); } catch (_) {}
+  }
   isAiming = false;
   ball.classList.remove('dragging');
-  if (!currentAim || currentAim.power < 0.12) {
+  if (!currentAim) {
     hidePrediction();
     resetPowerMeter();
-    messageBar.textContent = 'もうすこし ひっぱると、遠くまでころがるよ。';
+    milmaruSpeech.classList.remove('hide');
+    messageBar.textContent = '少しはなれたところへ ひっぱって、むきをきめよう。';
     startMilmaruRoam();
     return;
   }
-  launchBall(currentAim);
+  lockedAim = currentAim;
+  startPowerMeter();
 }
 
 function launchBall(plan) {
+  controlPhase = 'rolling';
   playedThisRound = true;
   isMilmaruBusy = true;
   stopMilmaruRoam();
   playSfx('roll');
   ball.classList.add('rolling');
-  guideText.textContent = 'ボールが ころころ...';
+  guideText.textContent = `${getToyConfig().label}が ${getToyConfig().movingText}`;
   messageBar.textContent = 'ミルマルが とりにいくよ。';
   const start = { ...LAUNCH_CENTER };
   const end = plan.end;
@@ -1719,8 +1994,8 @@ function resolveShot(plan) {
   const hits = getStarsOnRoute(getMilmaruCenter(), plan.end);
   const collectedCount = hits.length;
   const duration = moveMilmaruTo(plan.end, {
-    speed: 92,
-    maxDuration: 2100,
+    speed: 32,
+    maxDuration: 7000,
     after: () => {
       if (collectedCount > 0) {
         collectStars(hits);
@@ -1812,7 +2087,7 @@ function showResult() {
   const friendGain = lastSetHits >= 3 ? 3 : lastSetHits >= 1 ? 2 : 1;
   const growthText = lastSetHits >= 3 ? 'すくすく +1' : 'すくすくは そのまま';
   const starGain = lastSetHits * 5;
-  resultTitle.textContent = '星を ひろえたね！';
+  resultTitle.textContent = getToyConfig().resultTitle;
   resultText.innerHTML = `星を ${lastSetHits}こ ひろったよ。<br>スター +${starGain}<br>なかよし +${friendGain}　${growthText}`;
   resultModal.classList.add('show');
   resultModal.setAttribute('aria-hidden', 'false');
@@ -1840,10 +2115,16 @@ function goWriting() {
 
 function renderCounts() {
   document.getElementById('starCount').textContent = String(state.stars);
-  const sign = document.querySelector('.sub-sign');
-  sign.textContent = 'ボールを ひっぱって はなそう！';
+  updateToyUi();
   milmaru.classList.toggle('baby', getCareStageId() === 'baby');
   updateRoundUi();
+}
+
+function selectToy(toyId) {
+  if (!TOY_CONFIGS[toyId]) return;
+  selectedToyId = toyId;
+  playSfx('button');
+  resetGame();
 }
 
 document.addEventListener('pointerdown', (event) => {
@@ -1862,8 +2143,12 @@ document.getElementById('modalRetryBtn').addEventListener('click', () => {
   resetGame();
 });
 mainPlayBtn.addEventListener('click', () => {
+  if (controlPhase === 'power') {
+    confirmPower();
+    return;
+  }
   if (gameComplete) {
-    resetGame();
+    goCare('success');
     return;
   }
   if (!state.hatched) {
@@ -1873,19 +2158,23 @@ mainPlayBtn.addEventListener('click', () => {
   if (playedThisRound) {
     return;
   }
-  messageBar.textContent = 'ボールをドラッグして、星のそばへころがしてね。';
+  messageBar.textContent = `${getToyConfig().label}をドラッグして、まずは むきをきめてね。`;
 });
 document.getElementById('settingsBtn').addEventListener('click', () => {
   messageBar.textContent = 'せっていは じゅんびちゅうだよ。';
 });
-document.querySelectorAll('.toy-card.locked').forEach((button) => {
+document.querySelectorAll('.toy-card').forEach((button) => {
   button.addEventListener('click', () => {
-    messageBar.textContent = 'この おもちゃは これから つかえるようにするね。';
-    playSfx('mistake');
+    selectToy(button.dataset.toy);
   });
 });
 
 playfield.addEventListener('pointerdown', (event) => {
+  if (controlPhase === 'power') {
+    event.preventDefault();
+    confirmPower();
+    return;
+  }
   if (event.target.closest('.round-counter, .shot-pips, .power-meter')) return;
   beginAim(event);
 });
@@ -1907,6 +2196,9 @@ window.MojikkoToyPlayGame = {
   resetRound,
   resetGame,
   beginAim,
+  confirmPower,
+  selectToy,
+  getPhase: () => controlPhase,
   applyPlayReward,
   goCare
 };
