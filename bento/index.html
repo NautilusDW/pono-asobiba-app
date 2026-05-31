@@ -4133,8 +4133,8 @@ function getBoxMaskKey(box) {
 function getBoxMaskBounds(box) {
   if (!box || !box.maskBounds) return null;
   const key = getBoxMaskKey(box);
-  // Editor overrides are calibration-only. Gameplay must use code defaults on every device.
-  const override = freeMaskEditorMode && key && freeMaskBoundsOverrides ? freeMaskBoundsOverrides[key] : null;
+  // Editor overrides must reflect immediately so mask calibration can be checked in the game flow.
+  const override = key && freeMaskBoundsOverrides ? freeMaskBoundsOverrides[key] : null;
   return override ? { ...box.maskBounds, ...override } : { ...box.maskBounds };
 }
 function updateSelectedBoxMaskBound(prop, value) {

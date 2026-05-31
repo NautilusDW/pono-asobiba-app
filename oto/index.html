@@ -3176,13 +3176,30 @@ function _startRhythmMode() {
   var bandStartPerf = performance.now();
   if (ac) {
     var startAC = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
-    bandStartPerf += Math.max(0, (startAC - ac.currentTime) * 1000);
+    // bandStartPerf は伴奏ループの開始時刻 (performance.now ベース)。
+    // 負値 OK: ループ再生中は startAC < ac.currentTime で過去になる。
+    // 後段の nBeats >= 1 で startPerfTime は常に未来 (>= now + RHYTHM_FALL_MS) に収まる。
+    // 過去に Math.max(0, ...) を入れたが、それだとループ 2 周目以降で拍同期が崩れるため外している。
+    bandStartPerf += (startAC - ac.currentTime) * 1000;
   }
-  // GH モードはノート落下時間ぶん、最初のターゲット時刻を先送り
-  var leadMs = document.body.classList.contains('rhythm-layout')
-    ? RHYTHM_FALL_MS
-    : _rhythmRingLeadMs();
-  _rhythm.startPerfTime = bandStartPerf + leadMs;
+  // v708: GH モードでも 主旋律 startPerfTime は「伴奏の拍に同期」させる必要がある。
+  // 旧 v702-707: leadMs = RHYTHM_FALL_MS としていたため、主旋律が 3.2s 後ろにずれ、
+  //              伴奏ドラムと約 1.8s ぶん非同期になっていた (= ユーザー報告のタイミングずれ)。
+  // 修正方針: 主旋律は常に bandStartPerf + 整数拍 だけ後にスタートさせる (= 拍同期)。
+  //          GH モードでは「最初のノートがヒットラインに着くまで RHYTHM_FALL_MS の落下時間がある」
+  //          ことを保証するため、N = ceil((now + RHYTHM_FALL_MS - bandStartPerf) / beatMs) の
+  //          最小整数拍ぶん オフセットする (=必ず拍に乗る)。
+  var beatMs = _rhythmBeatMs();
+  var isGH = document.body.classList.contains('rhythm-layout');
+  if (isGH) {
+    var requiredAnchor = performance.now() + RHYTHM_FALL_MS;
+    var deltaMs = requiredAnchor - bandStartPerf;
+    // 拍にスナップ (最低でも 1 拍は確保: 直後スタートを避け、UI が落ち着く時間も担保)
+    var nBeats = Math.max(1, Math.ceil(deltaMs / beatMs));
+    _rhythm.startPerfTime = bandStartPerf + nBeats * beatMs;
+  } else {
+    _rhythm.startPerfTime = bandStartPerf + _rhythmRingLeadMs();
+  }
   // レーンジオメトリ更新 (次フレームで再計算もする)
   if (document.body.classList.contains('rhythm-layout')) {
     _ghUpdateLanesGeometry();
@@ -3415,11 +3432,16 @@ function handleRhythmTap(idx, btn) {
       if (d < bestAbs) { bestAbs = d; best = n; }
     }
     if (!best || bestAbs > RHYTHM_MISS_MS) {
-      _rhythm.streak = 0;
-      _rhythm.misses++;
-      _setRhythmStatus('ちがうレーン', 'miss');
-      _ghFlashLane(laneIdx, 'miss');
-      _pulseRhythmButton(btn, 'rhythm-miss');
+      // v708: 画面に判定対象のノートが何も無いタップ (曲開始直後の素振り等) では
+      //       赤フラッシュを出さない。何かが落ちている時 / 同レーンで明確に過ぎている時のみ赤。
+      var hasAnyActiveNote = _rhythm.activeNotes && _rhythm.activeNotes.length > 0;
+      if (hasAnyActiveNote) {
+        _rhythm.streak = 0;
+        _rhythm.misses++;
+        _setRhythmStatus('ちがうレーン', 'miss');
+        _ghFlashLane(laneIdx, 'miss');
+        _pulseRhythmButton(btn, 'rhythm-miss');
+      }
       return;
     }
     var delta = now - best.targetTime;
