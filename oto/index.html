@@ -394,15 +394,16 @@
   .speed-btn:active .btn-img {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
   }
-  /* 8ボタン: ポノを中心に楕円配置 (左右サイドの 0/3/4/7 は縦中央寄り、上下の 1/2/5/6 は画面端寄り) */
-  .instr-btn[data-idx="0"] { left: 12%; top: 40%; --sz: 108px; }
-  .instr-btn[data-idx="1"] { left: 34%; top: 26%; --sz: 108px; }
-  .instr-btn[data-idx="2"] { left: 66%; top: 26%; --sz: 108px; }
-  .instr-btn[data-idx="3"] { left: 88%; top: 40%; --sz: 108px; }
-  .instr-btn[data-idx="4"] { left: 12%; top: 60%; --sz: 108px; }
-  .instr-btn[data-idx="5"] { left: 34%; top: 74%; --sz: 108px; }
-  .instr-btn[data-idx="6"] { left: 66%; top: 74%; --sz: 108px; }
-  .instr-btn[data-idx="7"] { left: 88%; top: 60%; --sz: 108px; }
+  /* 8ボタン: ポノを中心に楕円配置 (左右サイドの 0/3/4/7 は縦中央寄り、上下の 1/2/5/6 は画面端寄り)
+     リズムモード時は横一列配置 (body.rhythm-layout 側 rule) に譲るため :not(.rhythm-layout) ガード */
+  body:not(.rhythm-layout) .instr-btn[data-idx="0"] { left: 12%; top: 40%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="1"] { left: 34%; top: 26%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="2"] { left: 66%; top: 26%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="3"] { left: 88%; top: 40%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="4"] { left: 12%; top: 60%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="5"] { left: 34%; top: 74%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="6"] { left: 66%; top: 74%; --sz: 108px; }
+  body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 88%; top: 60%; --sz: 108px; }
 
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
@@ -1310,15 +1311,16 @@
   /* 横画面: 左1/3 にコントロール(単音/コード・音色・伴奏), 右2/3 が演奏エリア
      注意: このブロックは base styles の後ろに置くことで landscape で確実に効くようにしている */
   @media (orientation: landscape) {
-    /* 8 ボタン: ポノ (中心 left:66%, top:50%) を軸に上下左右対称 (15% step) */
-    .instr-btn[data-idx="0"] { left: 48%; top: 35%; --sz: 84px; }
-    .instr-btn[data-idx="1"] { left: 58%; top: 20%; --sz: 86px; }
-    .instr-btn[data-idx="2"] { left: 74%; top: 20%; --sz: 86px; }
-    .instr-btn[data-idx="3"] { left: 84%; top: 35%; --sz: 84px; }
-    .instr-btn[data-idx="4"] { left: 48%; top: 65%; --sz: 84px; }
-    .instr-btn[data-idx="5"] { left: 58%; top: 80%; --sz: 86px; }
-    .instr-btn[data-idx="6"] { left: 74%; top: 80%; --sz: 86px; }
-    .instr-btn[data-idx="7"] { left: 84%; top: 65%; --sz: 84px; }
+    /* 8 ボタン: ポノ (中心 left:66%, top:50%) を軸に上下左右対称 (15% step)
+       リズムモード時は譲る (横一列配置を勝たせるため body:not(.rhythm-layout) ガード) */
+    body:not(.rhythm-layout) .instr-btn[data-idx="0"] { left: 48%; top: 35%; --sz: 84px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="1"] { left: 58%; top: 20%; --sz: 86px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="2"] { left: 74%; top: 20%; --sz: 86px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="3"] { left: 84%; top: 35%; --sz: 84px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="4"] { left: 48%; top: 65%; --sz: 84px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="5"] { left: 58%; top: 80%; --sz: 86px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="6"] { left: 74%; top: 80%; --sz: 86px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 84%; top: 65%; --sz: 84px; }
     /* ポノはやや右へ */
     .pono-wrap {
       left: 66%;
@@ -1492,16 +1494,17 @@
     }
   }
 
-  /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ */
+  /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ
+     リズムモード時は譲る (横一列配置を勝たせるため body:not(.rhythm-layout) ガード) */
   @media (orientation: landscape) and (min-width: 900px) and (min-height: 700px) {
-    .instr-btn[data-idx="0"] { left: 45%; top: 35%; --sz: 166px; }
-    .instr-btn[data-idx="1"] { left: 56%; top: 22%; --sz: 170px; }
-    .instr-btn[data-idx="2"] { left: 76%; top: 22%; --sz: 170px; }
-    .instr-btn[data-idx="3"] { left: 89%; top: 35%; --sz: 166px; }
-    .instr-btn[data-idx="4"] { left: 45%; top: 65%; --sz: 166px; }
-    .instr-btn[data-idx="5"] { left: 56%; top: 78%; --sz: 170px; }
-    .instr-btn[data-idx="6"] { left: 76%; top: 78%; --sz: 170px; }
-    .instr-btn[data-idx="7"] { left: 89%; top: 65%; --sz: 166px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="0"] { left: 45%; top: 35%; --sz: 166px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="1"] { left: 56%; top: 22%; --sz: 170px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="2"] { left: 76%; top: 22%; --sz: 170px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="3"] { left: 89%; top: 35%; --sz: 166px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="4"] { left: 45%; top: 65%; --sz: 166px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="5"] { left: 56%; top: 78%; --sz: 170px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="6"] { left: 76%; top: 78%; --sz: 170px; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 89%; top: 65%; --sz: 166px; }
     .pono-wrap {
       left: 67%;
       width: 250px;
