@@ -82,9 +82,10 @@ button {
   transform-origin: 0 0;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.2) 0 1px, transparent 1px 8px),
-    linear-gradient(90deg, rgba(255,255,255,0.15) 0 1px, transparent 1px 8px),
-    linear-gradient(180deg, #8bd5ef 0%, #b9ecff 34%, #b9e5be 34%, #a3d98b 56%, #d8bd80 56%, #bf8c52 100%);
+    linear-gradient(180deg, rgba(255,255,255,0.12) 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 8px),
+    var(--rolling-bg) center / cover no-repeat,
+    linear-gradient(180deg, #a6dc7a, #bf8c52);
   image-rendering: pixelated;
 }
 
