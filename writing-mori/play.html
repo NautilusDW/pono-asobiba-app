@@ -80,9 +80,12 @@ button {
   transform-origin: 0 0;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.2) 0 1px, transparent 1px 8px),
-    linear-gradient(90deg, rgba(255,255,255,0.15) 0 1px, transparent 1px 8px),
-    linear-gradient(180deg, #8bd5ef 0%, #b9ecff 34%, #b9e5be 34%, #a3d98b 56%, #d8bd80 56%, #bf8c52 100%);
+    radial-gradient(circle at 15% 18%, rgba(255, 241, 145, 0.28) 0 7px, transparent 8px),
+    radial-gradient(circle at 72% 30%, rgba(84, 142, 65, 0.18) 0 12px, transparent 13px),
+    radial-gradient(circle at 42% 76%, rgba(116, 87, 50, 0.16) 0 10px, transparent 11px),
+    linear-gradient(180deg, rgba(255,255,255,0.16) 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, rgba(76, 112, 55, 0.14) 0 1px, transparent 1px 8px),
+    linear-gradient(135deg, #9bd37a 0%, #82c362 46%, #d5b66f 46%, #b8793d 100%);
   image-rendering: pixelated;
 }
 
@@ -329,8 +332,12 @@ button {
   border: 7px solid var(--wood-dark);
   border-radius: 10px;
   background:
-    linear-gradient(180deg, transparent 0 335px, rgba(124, 91, 55, 0.18) 335px 342px, transparent 342px),
-    linear-gradient(180deg, #c7efff 0%, #eaf9ff 48%, #a7dc93 48%, #83ca6c 68%, #e0c487 68%, #c18c52 100%);
+    radial-gradient(circle at 18% 22%, rgba(245, 228, 120, 0.42) 0 8px, transparent 9px),
+    radial-gradient(circle at 70% 34%, rgba(93, 154, 72, 0.25) 0 14px, transparent 15px),
+    radial-gradient(circle at 38% 76%, rgba(115, 82, 46, 0.18) 0 12px, transparent 13px),
+    linear-gradient(180deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 12px),
+    linear-gradient(90deg, rgba(84, 122, 58, 0.16) 0 1px, transparent 1px 12px),
+    linear-gradient(135deg, #94d36f 0%, #7cc45e 52%, #d7b66e 52%, #b8783c 100%);
   box-shadow: inset 0 0 0 7px rgba(255,255,255,0.38), 0 10px 0 #4b2f1e, 0 18px 28px var(--shadow);
   overflow: hidden;
 }
@@ -348,6 +355,7 @@ button {
 
 .cloud {
   position: absolute;
+  display: none;
   border-radius: 999px;
   background: rgba(255,255,255,0.88);
 }
@@ -369,11 +377,11 @@ button {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 108px;
+  height: 126px;
   background:
-    linear-gradient(90deg, rgba(86, 54, 31, 0.13) 0 22px, transparent 22px 46px),
-    linear-gradient(#d8b46e, #a86d36);
-  border-top: 6px solid rgba(101,67,39,0.45);
+    repeating-linear-gradient(90deg, rgba(86, 54, 31, 0.14) 0 20px, transparent 20px 44px),
+    linear-gradient(#d7b66e, #ad7138);
+  border-top: 6px solid rgba(101,67,39,0.36);
 }
 
 .lane {

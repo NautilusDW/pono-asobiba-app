@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:213-writing-ground-normal-bento-mask] Codex: user 指摘「もじっこ遊び背景の空をなくして地面だけの2Dゲーム視点へ / マスク調整は保存されるのか / 普通のお弁当マスクが形も位置も合っていない」を受領。`writing-mori/play.html` の空背景を地面だけの見た目へ変更し、普通のお弁当のマスク既定値と保存表示を直す。 (by Codex)
+- 2026-05-31 - [batch:213-writing-ground-normal-bento-mask] DONE - Codex: `writing-mori/play.html` の空色グラデーションと雲をなくし、ステージ/プレイフィールドを地面・土の2D見下ろし風背景へ変更。普通のお弁当マスクは user 追加PNGと現アセットのハッシュ一致を確認した上で既定 bounds を X140/Y78/W500/H314 に調整し、マスク調整値は端末 localStorage へ自動保存される旨をUIに表示。保存キーを v6 へ更新し、Playwrightで空色なし・雲非表示・マスク表示・保存反映を確認。`sw.js` は v701。 (by Codex)
 - 2026-05-31 - [batch:211-bento-title-mask-editors] Codex: user 指摘「タイトルとポノ顔が重なる / 揚げ鍋マスクが飛び出る / お弁当箱ごとのマスクずれを編集したい」を受領。タイトルUIを右余白へ寄せ、揚げ鍋の油面マスクを layout-editor 対象に追加し、自由配置のお弁当マスクを箱ごとに編集できるようにする。 (by Codex)
 - 2026-05-31 - [batch:211-bento-title-mask-editors] DONE - Codex: タイトルロゴ/「タップしてスタート」を横幅900px以下でも右余白へ固定。`?edit=1` の揚げ鍋に `.fry-oil-mask` を追加し、油面マスクをドロップ判定・唐揚げ配置・泡/食材表示の基準にした。`?maskedit=1` では全実装箱のマスク切替ボタンを追加し、くま/ねこ色違いも箱ごとの保存キーに分離。Playwrightで824x395/932x430/1365x768タイトル、マスク編集切替、鍋油面エディター対象を確認。`sw.js` は v697。 (by Codex)
 - 2026-05-31 - [batch:212-bento-mask-editor-followup] Codex: user 指摘「油はマスク調整が反映されない / お弁当はマスク自体が出ない」を受領。揚げ鍋の油面マスク変更を監視して泡・食材・唐揚げクリップへ反映し、お弁当マスクプレビューを視認できる強さにする。 (by Codex)

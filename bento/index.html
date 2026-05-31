@@ -802,6 +802,13 @@ html, body {
   font-weight: 900;
   line-height: 1.15;
 }
+.free-mask-save-note {
+  margin-top: 4px;
+  color: #2F7A4C;
+  font-size: 0.43rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
 .free-mask-box-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2925,7 +2932,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v5';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v6';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -2933,7 +2940,7 @@ const bentoBoxes = [
     image: BENTO_UI_ASSET + 'rect_bento_box_coral.webp',
     riceImage: FREE_ASSET + 'box_rect_split_rice.webp',
     maskImage: RECT_SPLIT_BOX_INSIDE_MASK,
-    maskBounds: { x: 70, y: 58, w: 626, h: 348 },
+    maskBounds: { x: 140, y: 78, w: 500, h: 314 },
     shape: 'box_square',
     bounds: { x: 50, y: 22, w: 660, h: 422 },
     placeBounds: { x: 78, y: 78, w: 604, h: 314 },
@@ -5747,6 +5754,10 @@ function renderFreeMaskEditorControls() {
   title.className = 'free-mask-title';
   title.textContent = box.name ? 'マスク調整: ' + box.name : 'マスク調整';
   panel.appendChild(title);
+  const note = document.createElement('div');
+  note.className = 'free-mask-save-note';
+  note.textContent = '数値はこの端末に自動保存';
+  panel.appendChild(note);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
   actions.className = 'free-mask-actions';
