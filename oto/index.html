@@ -238,8 +238,15 @@
   }
   /* Guitar Hero 風 ノート落下 (リズムモード時のみ表示) */
   #rhythm-lanes {
+    /* v707+: 左 35% は左メニュー (モード切替 / ねいろ / ばんそう) を避けるため空ける。
+       (24% center + 110px ≒ 中〜大画面で右端 33-38vw に達するため、25% では不足。)
+       内側は 100% = 画面右 65% にマッピングされる。
+       .gh-lane / .gh-note / .gh-flash の % 座標は全てこの内側基準 (12.5% 等間隔)。 */
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 35%;
+    right: 0;
     pointer-events: none;
     z-index: 4;
     display: none;
@@ -260,15 +267,19 @@
   .gh-lane.miss-flash {
     background-color: rgba(248,113,113,0.32);
   }
+  /* v705+: ヒットラインは中立色 (白〜薄金) に。
+     以前は黄色いグラデ+黄色グロー だったが、ユーザーから「赤くチカチカ光る」と誤読される
+     報告があったため、ベース表示は静的・無色寄りに。
+     ヒット時は .gh-flash (白〜金) で、ミス時は .gh-lane.miss-flash (赤) で別途光らせる。 */
   .gh-hitline {
     position: absolute;
     left: 0;
     width: 100%;
-    height: 6px;
+    height: 4px;
     top: var(--gh-hit-y, 80%);
-    transform: translateY(-3px);
-    background: linear-gradient(90deg, rgba(255,216,77,0) 0%, rgba(255,216,77,0.95) 20%, rgba(255,255,255,1) 50%, rgba(255,216,77,0.95) 80%, rgba(255,216,77,0) 100%);
-    box-shadow: 0 0 12px rgba(255,216,77,0.7), 0 0 22px rgba(255,216,77,0.5);
+    transform: translateY(-2px);
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 0 8px rgba(255,255,255,0.35);
     border-radius: 999px;
     pointer-events: none;
     z-index: 5;
@@ -1499,14 +1510,20 @@
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, 0) translateY(4px) scale(0.98);
   }
-  body.rhythm-layout .instr-btn[data-idx="0"] { left: 6.25%; }
-  body.rhythm-layout .instr-btn[data-idx="1"] { left: 18.75%; }
-  body.rhythm-layout .instr-btn[data-idx="2"] { left: 31.25%; }
-  body.rhythm-layout .instr-btn[data-idx="3"] { left: 43.75%; }
-  body.rhythm-layout .instr-btn[data-idx="4"] { left: 56.25%; }
-  body.rhythm-layout .instr-btn[data-idx="5"] { left: 68.75%; }
-  body.rhythm-layout .instr-btn[data-idx="6"] { left: 81.25%; }
-  body.rhythm-layout .instr-btn[data-idx="7"] { left: 93.75%; }
+  /* v707+: 左 35% は左メニュー帯 (モード切替 / ねいろ / ばんそう) を避けるため空ける。
+     8 ボタンは画面右 65% の中で等間隔配置。1 区間 = 65% / 8 = 8.125%。
+     ボタン中心は 39.0625% から始まり 8.125% 刻みで右へ。
+     レーンコンテナ内側 (left:35%, width:65%) の中心 6.25%, 18.75%, ..., 93.75% は
+     viewport 換算で 35% + 12.5% * 0.65 * (i+0.5) = 35% + 8.125% * (i+0.5) と一致するため
+     .gh-note / .gh-lane / .gh-flash (JS で (laneIdx+0.5)*12.5%) と完全整合。 */
+  body.rhythm-layout .instr-btn[data-idx="0"] { left: 39.0625%; }
+  body.rhythm-layout .instr-btn[data-idx="1"] { left: 47.1875%; }
+  body.rhythm-layout .instr-btn[data-idx="2"] { left: 55.3125%; }
+  body.rhythm-layout .instr-btn[data-idx="3"] { left: 63.4375%; }
+  body.rhythm-layout .instr-btn[data-idx="4"] { left: 71.5625%; }
+  body.rhythm-layout .instr-btn[data-idx="5"] { left: 79.6875%; }
+  body.rhythm-layout .instr-btn[data-idx="6"] { left: 87.8125%; }
+  body.rhythm-layout .instr-btn[data-idx="7"] { left: 95.9375%; }
   @media (max-width: 420px) {
     body.rhythm-layout .instr-btn {
       --sz: 64px;
@@ -2943,6 +2960,9 @@ function _ghRemoveNote(note) {
 function _ghUpdateFallingNotes(now) {
   var lanes = _ghLanesEl();
   if (!lanes) return;
+  // v705+: startPerfTime 未確定 (=0) のうちは判定に入らない。
+  // 「スタート!」表示中などに古い活性ノートが残っていても miss-flash (赤) を出さない。
+  if (!_rhythm.enabled || !_rhythm.startPerfTime) return;
   // キャッシュ未初期化なら 1 度だけジオメトリ計算
   if (_rhythm._ghHitY == null) {
     _ghUpdateLanesGeometry();
@@ -2971,6 +2991,9 @@ function _ghUpdateFallingNotes(now) {
 }
 function _ghSpawnDueNotes(now) {
   if (!_ghIsActive()) return;
+  // v705+: startPerfTime が未確定 (=0 / NaN) のままスポーンすると、
+  // targetTime も 0 となり「ずっと前に通過済」扱いになって miss-flash が連打される。
+  if (!_rhythm.startPerfTime || !isFinite(_rhythm.startPerfTime)) return;
   var notes = RHYTHM_SONG.notes;
   if (!notes || !notes.length) return;
   // 落下時間 RHYTHM_FALL_MS だけ手前にスポーン
@@ -3136,6 +3159,10 @@ function _startRhythmMode() {
   _rhythm.okHits = 0;
   _rhythm.misses = 0;
   _rhythm.nowCue = false;
+  // v705+: 古い startPerfTime が残っていると、ジオメトリ計算前に
+  // _rhythmTick が走った場合に大量 miss-flash の原因になる。
+  // 確実に再計算するため、いったん 0 にクリアしておく (この関数の末尾で再設定される)。
+  _rhythm.startPerfTime = 0;
   // Guitar Hero モード用 初期化
   _ghClearActiveNotes();
   _ghClearLaneFlashes();
@@ -3324,6 +3351,9 @@ function _stopRhythmMode() {
   _clearRhythmDemo(false);
   _hideRhythmComplete();
   _rhythm.enabled = false;
+  // v705+: スポーン/ミス判定ガード (_ghSpawnDueNotes / _ghUpdateFallingNotes) で
+  // 「startPerfTime==0 なら何もしない」とするため、停止時は明示的に 0 に戻す。
+  _rhythm.startPerfTime = 0;
   if (_rhythm.raf) {
     cancelAnimationFrame(_rhythm.raf);
     _rhythm.raf = 0;

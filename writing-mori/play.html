@@ -366,6 +366,7 @@ button {
 
 .ground-stripe {
   position: absolute;
+  display: none;
   left: 0;
   right: 0;
   bottom: 0;
@@ -1027,7 +1028,7 @@ button {
     </aside>
 
     <div class="status-strip">
-      <div class="guide-panel" id="guideText">ゆっくり ひっぱって はなそう</div>
+      <div class="guide-panel" id="guideText">みどりの ところで おそう</div>
       <div class="friend-panel"><span>なかよし</span><span class="heart-pip"></span><span class="heart-pip"></span><span class="heart-pip empty"></span></div>
     </div>
 
@@ -1040,7 +1041,7 @@ button {
 
     <div class="result-modal" id="resultModal" aria-hidden="true">
       <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
-        <div class="result-title" id="resultTitle">キャッチできた！</div>
+        <div class="result-title" id="resultTitle">ころころ できたね！</div>
         <div class="result-text" id="resultText">ミルマルが よろこんでいるよ。<br>なかよしが ふえた！</div>
         <div class="result-actions">
           <button class="pixel-button secondary-btn" id="modalRetryBtn">もういっかい</button>
@@ -1101,6 +1102,7 @@ let resultApplied = false;
 let currentRound = 1;
 let catches = 0;
 let lastSetHits = 0;
+let shotResults = [];
 let animationFrame = null;
 let targetMotionFrame = null;
 let targetMotionStarted = 0;
@@ -1294,16 +1296,20 @@ function getCurrentTarget() {
   return getCareStageId() === 'yochiyochi' ? YOCHI_TARGET : BABY_TARGET;
 }
 
-function updateRoundUi() {
+function applyTargetPosition() {
   const target = getCurrentTarget();
-  roundCounter.textContent = `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
   targetRing.style.setProperty('--target-x', `${target.x}px`);
   targetRing.style.setProperty('--target-y', `${target.y}px`);
   targetRing.style.setProperty('--target-w', `${target.radius * 1.6}px`);
   targetRing.style.setProperty('--target-h', `${target.radius * 1.18}px`);
-  targetRing.classList.toggle('tight', currentRound >= 4);
   milmaru.style.setProperty('--milmaru-x', `${target.x - 10}px`);
   milmaru.style.setProperty('--milmaru-y', `${target.y - (getCareStageId() === 'baby' ? 150 : 138)}px`);
+}
+
+function updateRoundUi() {
+  roundCounter.textContent = `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+  targetRing.classList.toggle('tight', currentRound >= 4);
+  applyTargetPosition();
   renderShotPips();
 }
 
@@ -1317,7 +1323,9 @@ function renderShotPips() {
   for (let i = 1; i <= TOTAL_ROUNDS; i++) {
     const pip = document.createElement('span');
     pip.className = 'shot-pip';
-    if (i < currentRound) pip.classList.add(i <= catches ? 'hit' : 'used');
+    const result = shotResults[i - 1];
+    if (result === 'hit') pip.classList.add('hit');
+    if (result === 'miss') pip.classList.add('used');
     shotPips.appendChild(pip);
   }
 }
@@ -1360,7 +1368,7 @@ function startTargetMotion() {
   const tick = (now) => {
     const t = (now - targetMotionStarted) / 1000;
     YOCHI_TARGET.y = 348 + Math.sin(t * 1.05) * 64;
-    updateRoundUi();
+    applyTargetPosition();
     targetMotionFrame = requestAnimationFrame(tick);
   };
   targetMotionFrame = requestAnimationFrame(tick);
@@ -1391,7 +1399,7 @@ function setLandingPreview(point, label, mode = '') {
 function showGoalBurst(point, label, isGood = true) {
   goalBurst.classList.remove('show', 'miss');
   goalBurst.textContent = label;
-  goalBurst.style.setProperty('--burst-x', `${point.x}px`);
+  goalBurst.style.setProperty('--burst-x', `${clamp(point.x, 120, 780)}px`);
   goalBurst.style.setProperty('--burst-y', `${Math.max(72, point.y - 46)}px`);
   goalBurst.classList.toggle('miss', !isGood);
   void goalBurst.offsetWidth;
@@ -1429,6 +1437,7 @@ function resetGame() {
   currentRound = 1;
   catches = 0;
   lastSetHits = 0;
+  shotResults = [];
   gameComplete = false;
   resultApplied = false;
   resetRound();
@@ -1525,6 +1534,7 @@ function resolveShot(plan) {
   setBallCenter(plan.end.x, plan.end.y);
   currentRound += 1;
   if (!plan.caught) {
+    shotResults.push('miss');
     playSfx('mistake');
     setLandingPreview(plan.end, plan.mode === 'strong' ? 'つよい' : 'おしい', 'miss');
     showGoalBurst(plan.end, plan.mode === 'strong' ? 'つよすぎ' : 'おしい！', false);
@@ -1539,6 +1549,7 @@ function resolveShot(plan) {
     return;
   }
   catches += 1;
+  shotResults.push('hit');
   playSfx('success');
   targetRing.classList.add('goal-hit');
   setLandingPreview(plan.end, 'OK!', 'safe');
@@ -1582,13 +1593,15 @@ function applyPlayReward() {
   if (resultApplied) return;
   resultApplied = true;
   state.stars = clamp((Number(state.stars) || 0) - PLAY_STAR_COST, 0, 99999);
-  state.nakayoshi = clamp((Number(state.nakayoshi) || 0) + 3, 0, 100);
-  state.sukusuku = clamp((Number(state.sukusuku) || 0) + 1, 0, 100);
+  const friendGain = lastSetHits >= 3 ? 3 : lastSetHits >= 1 ? 2 : 1;
+  const growthGain = lastSetHits >= 3 ? 1 : 0;
+  state.nakayoshi = clamp((Number(state.nakayoshi) || 0) + friendGain, 0, 100);
+  state.sukusuku = clamp((Number(state.sukusuku) || 0) + growthGain, 0, 100);
   state.gokigen = clamp((Number(state.gokigen) || 0) + 16, 0, 100);
   state.lastCareAt = Date.now();
   state.lastMoodAt = Date.now();
   state.reaction = 'happy';
-  state.speech = 'あそぶの たのしい！';
+  state.speech = lastSetHits >= 3 ? 'きゃっきゃ！' : 'ふにゃ〜♪';
   saveState();
   renderCounts();
 }
@@ -1608,8 +1621,10 @@ function spawnSparkles(center = getCurrentTarget()) {
 }
 
 function showResult() {
-  resultTitle.textContent = 'たくさん あそべたね！';
-  resultText.innerHTML = '3かい キャッチして、<br>ミルマルを ほめられたよ。<br>なかよし +3　すくすく +1';
+  const friendGain = lastSetHits >= 3 ? 3 : lastSetHits >= 1 ? 2 : 1;
+  const growthText = lastSetHits >= 3 ? 'すくすく +1' : 'すくすくは そのまま';
+  resultTitle.textContent = 'ころころ できたね！';
+  resultText.innerHTML = `${lastSetHits}こ とどいたよ。<br>なでてあげると、もっと よろこぶよ。<br>なかよし +${friendGain}　${growthText}`;
   resultModal.classList.add('show');
   resultModal.setAttribute('aria-hidden', 'false');
 }
@@ -1679,16 +1694,10 @@ mainPlayBtn.addEventListener('click', () => {
     goWriting();
     return;
   }
-  if (praisePending) {
-    praiseMilmaru();
-    return;
-  }
   if (playedThisRound) {
-    resetRound();
     return;
   }
-  guideText.textContent = 'ボールを ひっぱって はなそう';
-  messageBar.textContent = 'ボールを 後ろに ひっぱると、むきと ちからが かわるよ。';
+  handleTimingPress();
 });
 document.getElementById('settingsBtn').addEventListener('click', () => {
   messageBar.textContent = 'せっていは じゅんびちゅうだよ。';
@@ -1700,17 +1709,8 @@ document.querySelectorAll('.toy-card.locked').forEach((button) => {
   });
 });
 
-ball.addEventListener('pointerdown', startDrag);
-ball.addEventListener('pointermove', moveDrag);
-ball.addEventListener('pointerup', endDrag);
-ball.addEventListener('pointercancel', endDrag);
-document.getElementById('launchPad').addEventListener('pointerdown', startDrag);
-document.getElementById('launchPad').addEventListener('pointermove', moveDrag);
-document.getElementById('launchPad').addEventListener('pointerup', endDrag);
-document.getElementById('launchPad').addEventListener('pointercancel', endDrag);
-document.addEventListener('pointermove', moveDrag);
-document.addEventListener('pointerup', endDrag);
-document.addEventListener('pointercancel', endDrag);
+ball.addEventListener('pointerdown', handleTimingPress);
+document.getElementById('launchPad').addEventListener('pointerdown', handleTimingPress);
 
 if (!state.hatched) {
   guideText.textContent = 'まだ あそべないよ';
@@ -1730,6 +1730,7 @@ window.MojikkoToyPlayGame = {
   getState: () => JSON.parse(JSON.stringify(state)),
   resetRound,
   resetGame,
+  handleTimingPress,
   applyPlayReward,
   goCare
 };
