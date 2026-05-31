@@ -56,12 +56,12 @@ html, body {
 }
 .title-screen__content {
   position: absolute;
-  top: 50%;
-  right: clamp(8px, 3vw, 40px);
+  top: 52%;
+  right: clamp(32px, 7vw, 92px);
   transform: translateY(-50%);
   z-index: 1;
-  width: min(36vw, 460px);
-  max-width: calc(100vw - 48px);
+  width: min(34vw, 410px);
+  max-width: calc(100vw - 64px);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -69,7 +69,7 @@ html, body {
   pointer-events: none;
 }
 .title-screen__logo {
-  width: 90%;
+  width: 100%;
   max-width: 100%;
   height: auto;
   display: block;
@@ -77,10 +77,10 @@ html, body {
 }
 .title-screen__start {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1rem, 3.6vw, 1.6rem);
+  font-size: clamp(0.9rem, 2.5vw, 1.45rem);
   color: #5D3A00;
   text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.2);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
   background: rgba(255, 248, 224, 0.78);
   padding: 8px 22px;
   border-radius: 999px;
@@ -93,15 +93,21 @@ html, body {
 }
 @media (max-width: 900px) {
   .title-screen__content {
-    top: 50%;
-    left: 50%;
-    right: auto;
-    transform: translate(-50%, -50%);
-    width: min(78vw, 520px);
-    align-items: center;
+    top: 58%;
+    left: auto;
+    right: clamp(18px, 5vw, 46px);
+    transform: translateY(-50%);
+    width: min(36vw, 310px);
+    max-width: 38vw;
+    align-items: flex-end;
+    gap: 7px;
   }
   .title-screen__logo {
     width: 100%;
+  }
+  .title-screen__start {
+    font-size: clamp(0.72rem, 2.4vw, 1rem);
+    padding: 5px 13px;
   }
 }
 
@@ -795,6 +801,34 @@ html, body {
   font-size: 0.54rem;
   font-weight: 900;
   line-height: 1.15;
+}
+.free-mask-box-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 98px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding-right: 2px;
+}
+.free-mask-box-button {
+  min-width: 0;
+  min-height: 28px;
+  border: 2px solid #8AD6B6;
+  border-radius: 9px;
+  background: #FFFFFF;
+  color: #174B2C;
+  font-family: inherit;
+  font-size: 0.46rem;
+  font-weight: 900;
+  line-height: 1.12;
+  padding: 3px 4px;
+  cursor: pointer;
+  word-break: keep-all;
+}
+.free-mask-box-button.active {
+  background: #BBF7D0;
+  border-color: #22C55E;
 }
 .free-mask-actions,
 .free-brush-actions,
@@ -2880,7 +2914,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v4';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v5';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -3006,7 +3040,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_bear_rice.webp',
     lidImage: FREE_ASSET + 'box_bear_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
-    maskKey: 'bear_character_box',
+    maskKey: 'box_bear',
     maskBounds: { x: 150, y: 47, w: 457, h: 333 },
     shape: 'box_bear',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
@@ -3047,7 +3081,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_bear_pink_rice.webp',
     lidImage: FREE_ASSET + 'box_bear_pink_lid.png',
     maskImage: CHARACTER_BOX_INSIDE_MASK,
-    maskKey: 'bear_character_box',
+    maskKey: 'box_bear_pink',
     maskBounds: { x: 150, y: 47, w: 457, h: 333 },
     shape: 'box_bear',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
@@ -3088,7 +3122,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_cat_blue_rice.webp',
     lidImage: FREE_ASSET + 'box_cat_blue_lid.png',
     maskImage: CAT_BOX_INSIDE_MASK,
-    maskKey: 'cat_character_box',
+    maskKey: 'box_cat_blue',
     maskBounds: { x: 118, y: 28, w: 524, h: 382 },
     shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
@@ -3129,7 +3163,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_cat_rice.webp',
     lidImage: FREE_ASSET + 'box_cat_lid.png',
     maskImage: CAT_BOX_INSIDE_MASK,
-    maskKey: 'cat_character_box',
+    maskKey: 'box_cat',
     maskBounds: { x: 118, y: 28, w: 524, h: 382 },
     shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
@@ -5662,6 +5696,36 @@ function makeMaskRange(label, prop, min, max, bounds) {
   row.appendChild(value);
   return row;
 }
+function selectFreeMaskEditorBox(boxId) {
+  if (!boxId) return;
+  selectedBentoBoxId = boxId;
+  freeActiveTier = 1;
+  freeSelectedItemUid = null;
+  freeLayoutTab = 'box';
+  freeMaskEditorOpen = true;
+  resetFreeMainGuide();
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function renderFreeMaskBoxSelector(activeBox) {
+  const list = document.createElement('div');
+  list.className = 'free-mask-box-list';
+  bentoBoxes
+    .filter(candidate => candidate && candidate.maskImage && candidate.maskBounds)
+    .forEach(candidate => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'free-mask-box-button' + (activeBox && candidate.id === activeBox.id ? ' active' : '');
+      button.textContent = candidate.name || candidate.id;
+      button.setAttribute('aria-pressed', activeBox && candidate.id === activeBox.id ? 'true' : 'false');
+      button.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        selectFreeMaskEditorBox(candidate.id);
+      });
+      list.appendChild(button);
+    });
+  return list;
+}
 function renderFreeMaskEditorControls() {
   const box = getSelectedBentoBox();
   const bounds = getBoxMaskBounds(box);
@@ -5670,8 +5734,9 @@ function renderFreeMaskEditorControls() {
   panel.className = 'free-mask-panel';
   const title = document.createElement('div');
   title.className = 'free-mask-title';
-  title.textContent = 'マスク調整';
+  title.textContent = box.name ? 'マスク調整: ' + box.name : 'マスク調整';
   panel.appendChild(title);
+  panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
   actions.className = 'free-mask-actions';
   actions.appendChild(makeSmallControlButton(freeMaskEditorOpen ? 'マスク非表示' : 'マスク表示', 'primary', () => {

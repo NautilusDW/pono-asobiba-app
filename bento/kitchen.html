@@ -3570,6 +3570,26 @@ body.layout-editor-on .egg-glass-lid {
   color: var(--text);
   font-size: 1.1rem;
 }
+.fry-oil-mask {
+  position: absolute;
+  left: var(--fry-oil-mask-x, 58%);
+  top: var(--fry-oil-mask-y, 51%);
+  width: var(--fry-oil-mask-w, 34%);
+  height: var(--fry-oil-mask-h, 22%);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 33;
+  opacity: 0;
+}
+body.layout-editor-on #fry-stage .fry-oil-mask {
+  pointer-events: auto;
+  z-index: 10023;
+  opacity: 1;
+  background: rgba(34, 197, 94, 0.12);
+  outline: 4px solid rgba(34, 197, 94, 0.86);
+  box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.38);
+}
 .oil-bubbles {
   position: absolute;
   left: var(--fry-bubbles-x, 58%);
@@ -5154,6 +5174,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       ['.egg-glass-lid',   'wh', '[調理] 目玉焼きの蓋'],
       ['.fry-stove-bg',    'wh', '[調理] 揚げる背景コンロ'],
       ['.fry-pot',         'wh', '[調理] 揚げ鍋'],
+      ['.fry-oil-mask',    'wh', '[調理] 揚げ鍋の油面マスク'],
     ],
     // per-ingredient (= 各食材ごとに別座標で保存) 対象セレクタ。
     // editor の保存キーは `${sel}|${i}@${ingredientId}` の形 (`@carrot` / `@wiener` …)
@@ -5489,6 +5510,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="cook-piece-bank cook-piece-bank--fry" id="fry-piece-bank" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--tray" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pot fry-pot" aria-hidden="true" data-le-keep-position="1"></div>
+        <div class="fry-oil-mask" id="fry-oil-mask" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="oil-bubbles" id="oil-bubbles" aria-hidden="true">
           <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
           <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
@@ -7073,6 +7095,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     // fry screen
     fryStage:      document.getElementById('fry-stage'),
     fryPot:        document.querySelector('#fry-stage .fry-pot'),
+    fryOilMask:    document.getElementById('fry-oil-mask'),
     fryPieceBank:  document.getElementById('fry-piece-bank'),
     fryDoneCard:   document.getElementById('fry-done-card'),
     fryDoneTray:   document.getElementById('fry-done-tray'),
@@ -11585,11 +11608,11 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function getFryPotPieceTarget(point, index) {
-    const potBounds = getElementBoundsPct(els.fryPot, els.fryStage);
-    const cx = potBounds ? potBounds.left + potBounds.width * 0.50 : 58;
-    const cy = potBounds ? potBounds.top + potBounds.height * 0.50 : 58;
-    const rx = potBounds ? potBounds.width * 0.30 : 15;
-    const ry = potBounds ? potBounds.height * 0.22 : 10;
+    const oilBounds = getFryOilMaskBoundsPct();
+    const cx = oilBounds ? oilBounds.left + oilBounds.width * 0.50 : 58;
+    const cy = oilBounds ? oilBounds.top + oilBounds.height * 0.50 : 58;
+    const rx = oilBounds ? oilBounds.width * 0.42 : 15;
+    const ry = oilBounds ? oilBounds.height * 0.38 : 10;
     let dx = (point ? point.x : cx) - cx;
     let dy = (point ? point.y : cy) - cy;
     const normalized = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
@@ -11894,23 +11917,33 @@ body.layout-editor-on .bowl-fill-mask::after {
 
     const cx = ((toolRect.left + toolRect.width * 0.5 - stageRect.left) / stageRect.width) * 100;
     if (type === 'fry') {
-      const oilY = ((toolRect.top + toolRect.height * 0.47 - stageRect.top) / stageRect.height) * 100;
+      const defaultOilY = ((toolRect.top + toolRect.height * 0.47 - stageRect.top) / stageRect.height) * 100;
       const heatY = ((toolRect.top + toolRect.height * 0.82 - stageRect.top) / stageRect.height) * 100;
-      const foodW = (toolRect.width * 0.61 / stageRect.width) * 100;
-      const foodH = (toolRect.height * 0.24 / stageRect.height) * 100;
-      const bubblesH = (toolRect.height * 0.26 / stageRect.height) * 100;
-      stage.style.setProperty('--fry-food-x', pctString(cx));
+      const defaultFoodW = (toolRect.width * 0.61 / stageRect.width) * 100;
+      const defaultFoodH = (toolRect.height * 0.24 / stageRect.height) * 100;
+      const defaultBubblesH = (toolRect.height * 0.26 / stageRect.height) * 100;
+      stage.style.setProperty('--fry-oil-mask-x', pctString(cx));
+      stage.style.setProperty('--fry-oil-mask-y', pctString(defaultOilY));
+      stage.style.setProperty('--fry-oil-mask-w', pctString(defaultFoodW));
+      stage.style.setProperty('--fry-oil-mask-h', pctString(defaultFoodH));
+      const oilBounds = getFryOilMaskBoundsPct();
+      const oilCx = oilBounds ? oilBounds.left + oilBounds.width * 0.50 : cx;
+      const oilY = oilBounds ? oilBounds.top + oilBounds.height * 0.50 : defaultOilY;
+      const foodW = oilBounds ? oilBounds.width : defaultFoodW;
+      const foodH = oilBounds ? oilBounds.height : defaultFoodH;
+      const bubblesH = oilBounds ? oilBounds.height : defaultBubblesH;
+      stage.style.setProperty('--fry-food-x', pctString(oilCx));
       stage.style.setProperty('--fry-food-y', pctString(oilY));
       stage.style.setProperty('--fry-food-w', pctString(foodW));
       stage.style.setProperty('--fry-food-h', pctString(foodH));
       stage.style.setProperty('--fry-shrimp-food-h', pctString(foodH + 1));
-      stage.style.setProperty('--fry-bubbles-x', pctString(cx));
+      stage.style.setProperty('--fry-bubbles-x', pctString(oilCx));
       stage.style.setProperty('--fry-bubbles-y', pctString(oilY));
       stage.style.setProperty('--fry-bubbles-w', pctString(foodW));
       stage.style.setProperty('--fry-bubbles-h', pctString(bubblesH));
       stage.style.setProperty('--cook-heat-x', pctString(cx));
       stage.style.setProperty('--cook-heat-y', pctString(heatY));
-      stage.style.setProperty('--cook-cue-x', pctString(cx));
+      stage.style.setProperty('--cook-cue-x', pctString(oilCx));
       stage.style.setProperty('--cook-cue-y', pctString(oilY - 17));
       return;
     }
@@ -12058,6 +12091,24 @@ body.layout-editor-on .bowl-fill-mask::after {
       width: (rect.width / stageRect.width) * 100,
       height: (rect.height / stageRect.height) * 100,
     };
+  }
+
+  function getFryOilMaskBoundsPct() {
+    const maskBounds = getElementBoundsPct(els.fryOilMask, els.fryStage);
+    if (maskBounds && maskBounds.width > 1 && maskBounds.height > 1) return maskBounds;
+    return getElementBoundsPct(els.fryPot, els.fryStage);
+  }
+
+  function isPointInFryOilMask(point) {
+    const oilBounds = getFryOilMaskBoundsPct();
+    if (!oilBounds) return point.x >= 36 && point.x <= 82 && point.y >= 24 && point.y <= 72;
+    const cx = oilBounds.left + oilBounds.width * 0.50;
+    const cy = oilBounds.top + oilBounds.height * 0.50;
+    const rx = Math.max(1, oilBounds.width * 0.50);
+    const ry = Math.max(1, oilBounds.height * 0.50);
+    const dx = (point.x - cx) / rx;
+    const dy = (point.y - cy) / ry;
+    return (dx * dx + dy * dy) <= 1;
   }
 
   function getEggTargetPoint(kind) {
@@ -12209,15 +12260,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       return isEggCrackPoint(point);
     }
     if (type === 'fry') {
-      const potBounds = getElementBoundsPct(els.fryPot, els.fryStage);
-      if (potBounds) {
-        const left = potBounds.left + potBounds.width * 0.06;
-        const right = potBounds.left + potBounds.width * 0.94;
-        const top = potBounds.top + potBounds.height * 0.18;
-        const bottom = potBounds.top + potBounds.height * 0.80;
-        return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
-      }
-      return point.x >= 36 && point.x <= 82 && point.y >= 24 && point.y <= 72;
+      return isPointInFryOilMask(point);
     }
     const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
     if (panBounds) {
