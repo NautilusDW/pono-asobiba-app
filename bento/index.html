@@ -2442,7 +2442,6 @@ html, body {
         <div class="sk-intro-sublabel">ちょうしを ととのえる</div>
         <div class="sk-intro-imgs">
           <img src="../assets/images/Bento_parts/broccoli2.webp" alt="ブロッコリー">
-          <img src="../assets/images/Bento_parts/mini_tomato2.webp" alt="ミニトマト">
           <img src="../assets/images/Bento_parts/ichigo2.webp" alt="いちご">
         </div>
       </div>
@@ -2656,7 +2655,6 @@ const OKAZU_MEAT = [
 
 const OKAZU_VEG = [
   { img: P+'broccoli2.webp',      name: 'ブロッコリー',       cat: 'veg', sk: 'g' },
-  { img: P+'mini_tomato2.webp',   name: 'ミニトマト',         cat: 'veg', sk: 'g' },
   { img: P+'corn_spinach2.webp',  name: 'コーンほうれんそう', cat: 'veg', sk: 'g' },
   { img: P+'kinpira2.webp',       name: 'きんぴらごぼう',     cat: 'veg', sk: 'g' },
   { img: P+'edamame2.webp',       name: 'えだまめ',           cat: 'veg', sk: 'g' },
@@ -2703,11 +2701,8 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 170, rotation: -3 },
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 163, rotation: 3 },
   { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 292, rotation: -4 },
-  { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', size: 170, rotation: 0, brushItem: true, brushLevel: 1, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
+  { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', size: 170, rotation: 0, brushItem: true, brushLevel: 1, stackTarget: true, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
   { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 72, rotation: -4 },
-  { img: COOKING_P+'tomato/tomato_002.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 71, rotation: 3 },
-  { img: COOKING_P+'tomato/tomato_003.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 71, rotation: -1 },
-  { img: COOKING_P+'tomato/tomato_004.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 70, rotation: 4 },
   { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 136, rotation: 1 },
   { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 136, rotation: -1 },
 ];
@@ -2786,7 +2781,6 @@ const NPC_REQUESTERS = [
 // ===== 豆知識（4-5さい向け食育トリビア） =====
 const TRIVIA = {
   'ブロッコリー':       'ブロッコリーは みどりの ちからで かぜを はねかえすよ！',
-  'ミニトマト':         'あかい トマトは おはだを ぴかぴかに してくれるよ！',
   'プチトマト':         'あかい トマトは おはだを ぴかぴかに してくれるよ！',
   'にんじん':           'にんじんは めが よく みえるように してくれるよ！',
   'ほうれん':           'ほうれんそうは ぱわーが もりもり でるよ！',
@@ -4286,17 +4280,12 @@ function getCupChildSlot(cup, index, childSize, total = 1) {
 }
 function layoutCupChildren(cup) {
   if (!cup) return;
+  // カップ内アイテムは自動整列せず、落とした位置 (またはユーザーが動かした位置) に固定する。
+  // 初回ドロップ位置は呼び出し側で getCupChildSlot 等を使って決め、その後はここで clamp と layer 更新のみ行う。
   const children = placedItems.filter(child => child.parentCupId === cup.uid);
   children.forEach((child, index) => {
-    if (child.manualCupPosition) {
-      const p = clampPointToCup(child.x, child.y, child, cup);
-      child.x = p.x;
-      child.y = p.y;
-      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1 + index);
-      return;
-    }
-    const slot = getCupChildSlot(cup, index, child.size || 72, children.length);
-    const p = clampPointToCup(slot.x, slot.y, child, cup);
+    child.manualCupPosition = true;
+    const p = clampPointToCup(child.x, child.y, child, cup);
     child.x = p.x;
     child.y = p.y;
     child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1 + index);
@@ -4409,10 +4398,13 @@ function snapPointForItem(item, x, y) {
 }
 function avoidFreeOverlap(item) {
   if (!item || item.type === 'decor' || item.type === 'pick' || item.type === 'divider' || item.parentCupId) return;
+  // キャベツ等の stackTarget は「上に物を乗せられる」素材なので衝突回避をスキップする。
+  if (item.stackTarget) return;
   for (let i = 0; i < placedItems.length; i++) {
     const other = placedItems[i];
     if (other.uid === item.uid || other.type === 'decor' || other.type === 'divider') continue;
     if (other.parentCupId) continue;
+    if (other.stackTarget) continue;
     if (getBoxTierCount() > 1 && getItemTier(other) !== getItemTier(item)) continue;
     const includesCup = item.snapTarget || other.snapTarget;
     const minD = Math.max(includesCup ? 84 : 38, ((item.size || 70) + (other.size || 70)) * (includesCup ? 0.42 : 0.28));
