@@ -17,6 +17,15 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:211-bento-title-mask-editors] Codex: user 指摘「タイトルとポノ顔が重なる / 揚げ鍋マスクが飛び出る / お弁当箱ごとのマスクずれを編集したい」を受領。タイトルUIを右余白へ寄せ、揚げ鍋の油面マスクを layout-editor 対象に追加し、自由配置のお弁当マスクを箱ごとに編集できるようにする。 (by Codex)
+- 2026-05-31 - [batch:211-bento-title-mask-editors] DONE - Codex: タイトルロゴ/「タップしてスタート」を横幅900px以下でも右余白へ固定。`?edit=1` の揚げ鍋に `.fry-oil-mask` を追加し、油面マスクをドロップ判定・唐揚げ配置・泡/食材表示の基準にした。`?maskedit=1` では全実装箱のマスク切替ボタンを追加し、くま/ねこ色違いも箱ごとの保存キーに分離。Playwrightで824x395/932x430/1365x768タイトル、マスク編集切替、鍋油面エディター対象を確認。`sw.js` は v697。 (by Codex)
+- 2026-05-31 - [batch:212-bento-mask-editor-followup] Codex: user 指摘「油はマスク調整が反映されない / お弁当はマスク自体が出ない」を受領。揚げ鍋の油面マスク変更を監視して泡・食材・唐揚げクリップへ反映し、お弁当マスクプレビューを視認できる強さにする。 (by Codex)
+- 2026-05-31 - [batch:212-bento-mask-editor-followup] DONE - Codex: `.fry-oil-mask` の style 変更を監視し、layout ready 時にも fry 側を同期。油泡・通常揚げ食材・唐揚げ油中ピース用クリップを同じ油面マスクへ追従させ、油中ピースがマスク外なら油面内へ戻すよう修正。`?maskedit=1` のお弁当マスクプレビューは緑の塗り/斜線/縁取りで明確に見えるよう変更。Playwrightで油面マスク変更後に泡/食材/クリップが即追従し、お弁当マスクプレビューが表示されることを確認。`sw.js` は v700。 (by Codex)
+- 2026-05-31 - [batch:210-bento-rice-only-box-flow] Codex: user 指摘「丸い一段弁当で次工程がご飯のままになっている」を受領。箱全体がご飯になる丸・四角は、のり後におかず段へ進ませず完成へ進むようにし、普通の半分こ弁当や多段キャラ箱の流れは維持する。 (by Codex)
+- 2026-05-31 - [batch:210-bento-rice-only-box-flow] DONE - Codex: `box_square` / `box_round` に `riceOnly: true` を追加し、のり後の `tryAdvanceFromNori()` でおかず段へ進まず完成へ進むよう修正。普通の半分こ弁当は従来通りおかず工程へ進み、多段キャラ箱も tier2 へ進む。Playwrightで丸=完成オーバーレイ、普通=メインおかず工程を確認。`sw.js` は v695。 (by Codex)
+- 2026-05-31 - [batch:209-bento-nori-drag-ghost-size] Codex: user 指摘「ドラッグ中のノリが大きすぎて場所を指定しづらい」を受領。のり系パレットドラッグのゴーストだけを小型化し、弁当ステージ上では実サイズの配置物を優先して見せる。 (by Codex)
+- 2026-05-31 - [batch:209-bento-nori-drag-ghost-size] DONE - Codex: `bento/index.html` で `nori_*` のパレットドラッグゴーストをパーツ実寸ベースの小型表示に分離し、弁当ステージ上ではゴーストを透明化して実サイズの配置物だけで狙えるよう修正。Playwrightで丸弁当+ご飯+のりドラッグ中にゴーストが約34px、ステージ上 opacity 0、配置物約30px、JSエラーなしを確認。`sw.js` は v694。 (by Codex)
+- 2026-05-31 - [batch:208-mojikko-petting-kirari-reset] DONE - Codex: もじっこファームで `なでる` ボタンを削除し、ミルマル/タマゴ本体を直接スワイプすればいつでも無料でなでられるよう変更。なでるは `もじのきらり` を消費せず、タマゴ時はなかよしを増やさず反応のみ、誕生後はなかよし +1 / ごきげん回復。初期なかよしは 0 に修正し、未孵化中は保存済み旧値があっても表示を 0 に戻す。表示名 `もじのしずく` は用途が伝わりにくいため `もじのきらり` に統一。`sw.js` は v696。 (by Codex)
 - 2026-05-31 - [batch:207-bento-pono-peek-bubble-anchor] Codex: user 指摘「全身ポノではなく生成し直すべき / 解像度によって吹き出しがまだ合わない」を受領。全身素材をやめて上半身のぞき込み素材へ差し替え、吹き出しの尾を中央アンカーで合わせる。文言は「おべんとうばこ」に修正し、右側のお弁当箱名はDOMにも出さない。 (by Codex)
 - 2026-05-31 - [batch:207-bento-pono-peek-bubble-anchor] DONE - Codex: 下部ポノを全身から上半身のぞき込み素材 `decor_pono_peek.png` に差し替え、吹き出しは中央アンカーの二重三角尾にして 1365x768 / 824x395 / 932x430 / 812x375 で位置確認。文言は「おべんとうばこ」に変更し、右側のお弁当箱名はDOMへ追加しないよう修正。Playwrightでポノsrc、文言、箱カード名0件、JSエラーなしを確認。`sw.js` は v692。 (by Codex)
 - 2026-05-31 - [batch:206-bento-pono-speech-wording] Codex: user 指摘「下部ポノが服を着ている / 吹き出し形状が変 / 弁当箱を『箱』と呼ばない / 右側のお弁当選択名を削除」を受領。`bento/index.html` の表示文言・下部ポノ素材・吹き出しCSS・弁当選択カード名表示を修正する。 (by Codex)

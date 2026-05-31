@@ -2775,6 +2775,18 @@ body.layout-editor-on .fry-pot {
   z-index: 31;
   pointer-events: none;
 }
+.fry-oil-piece-clip {
+  position: absolute;
+  left: var(--fry-food-x, 58%);
+  top: var(--fry-food-y, 61%);
+  width: var(--fry-food-w, 34%);
+  height: var(--fry-food-h, 24%);
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 45;
+}
 #fry-stage[data-ingredient="chicken_marinated"] .cook-piece-bank--fry {
   pointer-events: auto;
 }
@@ -3071,8 +3083,8 @@ body.layout-editor-on .egg-glass-lid {
   width: var(--fry-food-w, 34%);
   height: var(--fry-food-h, 24%);
   aspect-ratio: auto;
-  overflow: visible;
-  border-radius: 0;
+  overflow: hidden;
+  border-radius: 50%;
   -webkit-clip-path: none;
   clip-path: none;
   padding: 0;
@@ -3110,8 +3122,8 @@ body.layout-editor-on .egg-glass-lid {
   z-index: 32;
 }
 #fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food {
-  width: 16%;
-  height: 15%;
+  width: var(--fry-food-w, 34%);
+  height: var(--fry-food-h, 24%);
 }
 #fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food img {
   max-width: 96%;
@@ -3128,8 +3140,8 @@ body.layout-editor-on .egg-glass-lid {
   height: 22%;
 }
 #fry-stage[data-ingredient="chicken_marinated"].food-placed:not(.is-served) .cooking-food.has-piece-set {
-  width: 31%;
-  height: 24%;
+  width: var(--fry-food-w, 34%);
+  height: var(--fry-food-h, 24%);
 }
 #fry-stage[data-ingredient="chicken_marinated"].is-served .cooking-food.has-piece-set {
   top: 64.5%;
@@ -3612,6 +3624,7 @@ body.layout-editor-on #fry-stage .finish-dish {
 body.layout-editor-on #fry-stage .cooking-food {
   z-index: 10021;
   pointer-events: none;
+  transition: none;
 }
 body.layout-editor-on #fry-stage .oil-bubbles {
   z-index: 10022;
@@ -7386,6 +7399,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     }
     normalizeEggLidInlinePoseForPlay();
     syncCookLayoutFromTools('grill');
+    syncCookLayoutFromTools('fry');
     refreshLayoutEditorBaselineWhenClean();
   };
 
@@ -11629,6 +11643,20 @@ body.layout-editor-on .bowl-fill-mask::after {
     return { x: cx + dx, y: cy + dy };
   }
 
+  function keepFryOilPiecesInsideMask(action) {
+    if (!isChickenFryAction(state.current, action) || !Array.isArray(state.fryPieces)) return false;
+    let changed = false;
+    state.fryPieces.forEach(function (piece) {
+      if (!piece || piece.status !== 'oil' || piece.index === state.fryDragIndex) return;
+      if (isPointInFryOilMask({ x: piece.x, y: piece.y })) return;
+      const target = getFryPotPieceTarget(null, piece.index);
+      piece.x = target.x;
+      piece.y = target.y;
+      changed = true;
+    });
+    return changed;
+  }
+
   function updateFryPieceBank(action) {
     if (!els.fryPieceBank) return;
     const ing = state.current;
@@ -11641,9 +11669,24 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.fryPieceBank.innerHTML = '';
       if (!visible) return;
       const now = performance.now();
+      const oilBounds = getFryOilMaskBoundsPct();
+      const oilClip = document.createElement('div');
+      oilClip.className = 'fry-oil-piece-clip';
+      let hasOilClipPieces = false;
       pieces.forEach(function (piece) {
         if (!piece || piece.status === 'done') return;
         const img = document.createElement('img');
+        let pieceX = piece.x;
+        let pieceY = piece.y;
+        let pieceW = piece.status === 'oil' ? 13.4 : piece.w;
+        let host = els.fryPieceBank;
+        if (piece.status === 'oil' && oilBounds && oilBounds.width > 1 && oilBounds.height > 1) {
+          host = oilClip;
+          hasOilClipPieces = true;
+          pieceX = ((piece.x - oilBounds.left) / oilBounds.width) * 100;
+          pieceY = ((piece.y - oilBounds.top) / oilBounds.height) * 100;
+          pieceW = (pieceW / oilBounds.width) * 100;
+        }
         img.alt = '';
         img.draggable = false;
         img.dataset.fryPieceIndex = String(piece.index);
@@ -11651,14 +11694,15 @@ body.layout-editor-on .bowl-fill-mask::after {
         img.classList.toggle('is-plate-piece', piece.status === 'plate');
         img.classList.toggle('is-oil-piece', piece.status === 'oil');
         img.classList.toggle('is-dragging', piece.index === state.fryDragIndex);
-        img.style.setProperty('--piece-x', piece.x.toFixed(2) + '%');
-        img.style.setProperty('--piece-y', piece.y.toFixed(2) + '%');
-        img.style.setProperty('--piece-w', (piece.status === 'oil' ? 13.4 : piece.w).toFixed(1) + '%');
+        img.style.setProperty('--piece-x', pieceX.toFixed(2) + '%');
+        img.style.setProperty('--piece-y', pieceY.toFixed(2) + '%');
+        img.style.setProperty('--piece-w', pieceW.toFixed(1) + '%');
         img.style.setProperty('--piece-rot', piece.rot || '0deg');
         img.style.zIndex = String((piece.status === 'oil' ? 45 : 30) + Math.round(piece.y));
         applyChickenFryPieceVisual(img, piece, action, now);
-        els.fryPieceBank.appendChild(img);
+        host.appendChild(img);
       });
+      if (hasOilClipPieces) els.fryPieceBank.appendChild(oilClip);
       return;
     }
     const doneCount = action ? getDoneCookPieceCount(action) : 0;
@@ -11945,6 +11989,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       stage.style.setProperty('--cook-heat-y', pctString(heatY));
       stage.style.setProperty('--cook-cue-x', pctString(oilCx));
       stage.style.setProperty('--cook-cue-y', pctString(oilY - 17));
+      const action = getCurrentAction();
+      if (keepFryOilPiecesInsideMask(action)) updateFryPieceBank(action);
       return;
     }
 
@@ -12013,6 +12059,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (els.grillStage) obs.observe(els.grillStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
     if (els.eggGlassLid) obs.observe(els.eggGlassLid, { attributes: true, attributeFilter: ['style', 'class'] });
     if (els.fryPot) obs.observe(els.fryPot, { attributes: true, attributeFilter: ['style', 'class'] });
+    if (els.fryOilMask) obs.observe(els.fryOilMask, { attributes: true, attributeFilter: ['style', 'class'] });
     if (els.fryStage) obs.observe(els.fryStage, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
     window.addEventListener('resize', schedule, { passive: true });
     schedule();
