@@ -3335,13 +3335,22 @@ function _startRhythmMode() {
     // bandStartAC は伴奏ループの開始 AC 時刻 (秒)。負値もあり得る (ループ 2 周目以降)。
     var fallSec = RHYTHM_FALL_MS / 1000;
     if (isGH) {
-      var requiredAnchorAC = ac.currentTime + fallSec;
-      var deltaSec = requiredAnchorAC - bandStartAC;
-      var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
-      _rhythm.startAcTime = bandStartAC + nBeats * beatSec;
+      // v722: _beginRhythmCountdown で算出した「次の小節線」AC 時刻があればそれを採用。
+      // これにより count "スタート!" = ドラムの拍頭 = 主旋律 1 ノート目ヒットライン到達 が完全一致。
+      if (_rhythm._pendingStartAcTime && _rhythm._pendingStartAcTime > ac.currentTime - 0.05) {
+        _rhythm.startAcTime = _rhythm._pendingStartAcTime;
+      } else {
+        // フォールバック: 「次の小節線」を bar 単位で snap (拍ではなく)
+        var barSec = 4 * beatSec;
+        var requiredAnchorAC = ac.currentTime + fallSec;
+        var deltaSec = requiredAnchorAC - bandStartAC;
+        var nBars = Math.max(1, Math.ceil(deltaSec / barSec));
+        _rhythm.startAcTime = bandStartAC + nBars * barSec;
+      }
     } else {
       _rhythm.startAcTime = ac.currentTime + _rhythmRingLeadMs() / 1000;
     }
+    _rhythm._pendingStartAcTime = 0;
     // 初期 startPerfTime: AC → perf 変換 (毎フレーム再計算される)
     _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
   } else {
@@ -3378,6 +3387,8 @@ function _clearRhythmCountdown() {
   _rhythm.countdownTimers.forEach(function(id) { clearTimeout(id); });
   _rhythm.countdownTimers = [];
   _hideOverlay();
+  // v722: 取り消し時は予約していた小節線アンカーも破棄 (次回開始時に再計算)
+  _rhythm._pendingStartAcTime = 0;
 }
 function _playRhythmDemoTone(idx, durationMs) {
   var ac = getAC();
@@ -3491,17 +3502,69 @@ function _beginRhythmCountdown() {
   _clearRhythmDemo(true);
   _hideRhythmComplete();
   _setModeButtons('rhythm');
-  var stepMs = 720;
-  _showOverlay(3, 'リズム スタート');
-  _rhythm.countdownTimers.push(setTimeout(function() { _showOverlay(2, 'リズム スタート'); }, stepMs));
-  _rhythm.countdownTimers.push(setTimeout(function() { _showOverlay(1, 'リズム スタート'); }, stepMs * 2));
-  _rhythm.countdownTimers.push(setTimeout(function() {
-    _showOverlay('スタート!', '');
-  }, stepMs * 3));
-  _rhythm.countdownTimers.push(setTimeout(function() {
-    _clearRhythmCountdown();
+  // v722: 「ベースの最初の音 = 主旋律の最初の音」を完璧に揃えるため、
+  //   (1) カウントダウン開始前に伴奏を起動 → bandStartAC を確定。
+  //   (2) 主旋律 1 ノート目のヒットライン到達時刻 T を「次の小節線」(= ドラム kick の拍頭) に固定。
+  //   (3) 3 / 2 / 1 のカウントダウン UI を beat 単位 (= 60/bpm 秒) で
+  //       T - 3拍 / T - 2拍 / T - 1拍 のタイミングに合わせて表示。
+  //       「スタート!」が出る瞬間 = T = 伴奏の拍頭 = 1ノート目がヒットライン到達。
+  //   (4) T を _pendingStartAcTime として保存し、_startRhythmMode 側はこれを採用する
+  //       (= 再計算による拍ズレを排除)。
+  //   (5) _startRhythmMode は「ノート落下時間 fallSec」確保のため T - fallSec で起動。
+  _rhythm.prevBandVolume = _bandVolume;
+  _ensureRhythmBand();
+  var ac = getAC();
+  var beatSec = _rhythmBeatMs() / 1000;
+  var fallSec = RHYTHM_FALL_MS / 1000;
+  var countBeats = 3;
+  var bandStartACVal = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
+  var pendingAc = 0;
+  var targetPerfMs;
+  if (ac && bandStartACVal && beatSec > 0) {
+    // 1 小節 = 4 拍 (合成バンドの DRUM_PATTERN は subBeatSec×8 = 4 拍周期)
+    var barSec = 4 * beatSec;
+    // T は ac.currentTime + max(fallSec, countBeats*beatSec) + バッファ より先の最初の小節線。
+    // これで「カウント開始時刻 T - 3拍」も「ノートスポーン時刻 T - fallSec」も 0 以上になる。
+    var requiredAheadSec = Math.max(fallSec, countBeats * beatSec) + 0.15;
+    var requiredAnchorAC = ac.currentTime + requiredAheadSec;
+    var deltaSec = requiredAnchorAC - bandStartACVal;
+    var nBars = Math.max(1, Math.ceil(deltaSec / barSec));
+    pendingAc = bandStartACVal + nBars * barSec;
+    targetPerfMs = performance.now() + (pendingAc - ac.currentTime) * 1000;
+  } else {
+    // フォールバック (AC 不在 / 伴奏未開始): 従来通り固定 720ms 刻みで進める
+    targetPerfMs = performance.now() + 720 * (countBeats + 1);
+    pendingAc = 0;
+  }
+  _rhythm._pendingStartAcTime = pendingAc;
+  var stepMs = (pendingAc && ac) ? beatSec * 1000 : 720;
+  var now = performance.now();
+  // カウントダウン「3」の表示時刻 (perf 絶対 ms)。負になりうるが setTimeout でガード。
+  var t3Perf = targetPerfMs - countBeats * stepMs;
+  // _startRhythmMode はノート落下時間 fallSec 確保のため T - fallSec で起動。
+  var startEnginePerf = targetPerfMs - fallSec * 1000;
+  function schedule(absPerfMs, fn) {
+    var delay = Math.max(0, absPerfMs - performance.now());
+    _rhythm.countdownTimers.push(setTimeout(fn, delay));
+  }
+  // 「3」表示 (T - 3拍)。t3Perf が現在より前なら即時。
+  schedule(t3Perf, function() { _showOverlay(countBeats, 'リズム スタート'); });
+  for (var k = 1; k < countBeats; k++) {
+    (function(kk) {
+      schedule(t3Perf + kk * stepMs, function() {
+        _showOverlay(countBeats - kk, 'リズム スタート');
+      });
+    })(k);
+  }
+  // エンジン起動 (= ノート落下開始)。T = 拍頭 とぴったり同期。
+  schedule(startEnginePerf, function() {
+    if (_rhythm.enabled) return;
     setPlayMode('rhythm');
-  }, stepMs * 3 + 420));
+  });
+  // 「スタート!」表示 (= T = 1ノート目ヒットライン到達 = 伴奏の拍頭)
+  schedule(targetPerfMs, function() { _showOverlay('スタート!', ''); });
+  // 少し見せてから overlay クリア
+  schedule(targetPerfMs + 380, function() { _clearRhythmCountdown(); });
 }
 function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();

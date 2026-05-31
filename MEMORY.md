@@ -60,7 +60,7 @@
 - **Quizland ?edit=1 Pause トグル + 結果画面復活** (2026-05-16, sw v1034): [memory/feature_quizland_editor_pause_toggle.md](memory/feature_quizland_editor_pause_toggle.md) — ⏸/▶ トグルで「次の問題への進行」 だけ凍結、 本番と同じ結果画面まで表示できるよう L5565-5571 のスキップガードも撤去。 共通 interface = `window._quizlandPaused || body.layout-editor-paused` の OR 判定
 - **パズル オープニングカットシーン (owl-style + per-cut 木枠ナレ + 黒フェード)** (2026-05-17, sw v395 → v400): [memory/feature_puzzle_opening_cutscene.md](memory/feature_puzzle_opening_cutscene.md) — タイトル→パズル間に **3 カット + 木枠ナレ + 黒フェード**。 **v400 で quizland owl doctor `.op-narration` スタイル踏襲** (cream `#fff8e7` + brown shadow + 18px radius + bold 32px + `white-space:pre-wrap`)、 **per-cut MP3 方式** (cut1→OP_C01 11s / cut2→OP_C02 7s / cut3→OP_C03 10s、 各 `audio.ended` で次カットへ)、 cut3 終了で overlay 全体を `.is-fading` 黒 500ms + 300ms hold → パズル開始。 v395 bump 後に別フックが v396 上書きしてキャッシュ整合崩れ (旧 CSS/JS で「cut01 が左に貼り付き右にパズル + ナレ無音 + tut 即発火」現象) → v397 bump で根治。 iOS Safari 対策 (P1 fix): `audio.src` 差替時に `audio.load()` 必須、 `ended` イベント per-cut generation guard、 ダブルバッファ swap は class toggle の前。 教訓: 同一コミット内 = 同一 CACHE_VERSION bump で完結させる、 別フック便乗厳禁
 - **パズル ボイスパック 14音声** (2026-05-17, sw v407): [memory/feature_puzzle_voice_pack.md](memory/feature_puzzle_voice_pack.md) — `window.PuzzleVoice` (IIFE, 3 method: playTut/playRandom/stop) で tut 3 + clear 5 + all_clear 2 + hint 1 + next_nudge 3 = 14 mp3 を子供向け音声誘導として組込み。 tutorial step bubble / success modal fanfare / hint btn / next-nudge 6s interval + `.btn-pulse` (scale 1↔1.12) で発火。 per-group `lastPlayedId` で back-to-back 重複回避、 nudge interval は 5 exit path 全停止
-- **音タッチ リズムモード Guitar Hero 化** (2026-05-31, sw v703→v721): [memory/feature_oto_rhythm_guitar_hero.md](memory/feature_oto_rhythm_guitar_hero.md) — `oto/index.html` のリズムモードのみ、**画面右78% (left:22%)** に8レーン横一列 + ノート真上から垂直落下 (3.2s) + 鍵盤上端ヒットライン判定方式へ。**v713+ で左メニュー圧縮**: chord-pill 隠し / 11%-160px / ねいろ 3x2 (44px) / ばんそう縦並び 130px、ボタン left = `22% + (idx+0.5)*9.75%` でノート x 座標と viewport 完全一致。v714 で band-group の translateX(-50%) 残置 = 小画面左端切れ修正。v715 で iPad 大画面横向きで鍵盤が消えるバグ修正 = 楕円配置 rule 3 ブロック (portrait base / landscape / iPad landscape) に `body:not(.rhythm-layout)` ガード付与で構造的分離。v716 で `#rhythm-lanes` の不透明背景が全要素を覆い隠すバグ修正 = 背景を `#stage::before` z:1 疑似要素に分離してコンテナ自体は透明化。v717-v718 で **`.gh-lane` の fallback height:100% が JS 同期前に鍵盤エリアを覆うバグ** と **portrait での `.band-group z:11` 中央底配置鍵盤被り** を修正 = `#instruments` を z:5 に昇格 + 左メニュー類を z:2 に下げる + `.instr-btn` 位置に `!important`、最終階層は bgCanvas(0)→背景(1)→Pono/左メニュー(2)→レーン(4)→鍵盤(5)→HUD(8+)。**v711 で真因「AC↔perfクロック累積ドリフト」を発見** = synth/mp3 stems が AC 時間でサンプル精度スケジュール、視覚ノートは perf.now ベース、両クロック ~数 ms/s ドリフトで数秒で音ずれ → `_rhythm.startAcTime` (sec, AC基準) 保持 + `_rhythmTick` 毎フレーム再導出でゼロ化。v712 で `_bandStartAC === 0` 時の即 miss バグ修正 + cleanup 対称化。レーン背景は暗色 navy グラデ (`#050814→#121a33`)、赤ミスフラッシュは `activeNotes.length > 0` のみ発火。**教訓: AudioContext と performance.now は別クロック、長時間ループする音楽同期では毎フレーム AC 基準で再同期が必要**。v720-v721 で GH 化と無関係の**既存バグ**を発見・修正 = ペンタスケール `DOREMI_PENTA=[C4,D4,E4,G4,A4,C5,D5,E5]` (F/Bスキップ) なのにラベル「ファ・シ」のまま残り「ファ以降の音が高い」現象 → `SCALE_LABELS_PENTA=[ド,レ,ミ,ソ,ラ,ド,レ,ミ]` 追加 + `_applyScaleLabels()` でスケール切替時にラベル更新、リズムは SCALE_MODE='major' 強制で譜面と一致
+- **音タッチ リズムモード Guitar Hero 化** (2026-05-31, sw v703→v722): [memory/feature_oto_rhythm_guitar_hero.md](memory/feature_oto_rhythm_guitar_hero.md) — `oto/index.html` のリズムモードのみ、**画面右78% (left:22%)** に8レーン横一列 + ノート真上から垂直落下 (3.2s) + 鍵盤上端ヒットライン判定方式へ。**v713+ で左メニュー圧縮**: chord-pill 隠し / 11%-160px / ねいろ 3x2 (44px) / ばんそう縦並び 130px、ボタン left = `22% + (idx+0.5)*9.75%` でノート x 座標と viewport 完全一致。v714 で band-group の translateX(-50%) 残置 = 小画面左端切れ修正。v715 で iPad 大画面横向きで鍵盤が消えるバグ修正 = 楕円配置 rule 3 ブロック (portrait base / landscape / iPad landscape) に `body:not(.rhythm-layout)` ガード付与で構造的分離。v716 で `#rhythm-lanes` の不透明背景が全要素を覆い隠すバグ修正 = 背景を `#stage::before` z:1 疑似要素に分離してコンテナ自体は透明化。v717-v718 で **`.gh-lane` の fallback height:100% が JS 同期前に鍵盤エリアを覆うバグ** と **portrait での `.band-group z:11` 中央底配置鍵盤被り** を修正 = `#instruments` を z:5 に昇格 + 左メニュー類を z:2 に下げる + `.instr-btn` 位置に `!important`、最終階層は bgCanvas(0)→背景(1)→Pono/左メニュー(2)→レーン(4)→鍵盤(5)→HUD(8+)。**v711 で真因「AC↔perfクロック累積ドリフト」を発見** = synth/mp3 stems が AC 時間でサンプル精度スケジュール、視覚ノートは perf.now ベース、両クロック ~数 ms/s ドリフトで数秒で音ずれ → `_rhythm.startAcTime` (sec, AC基準) 保持 + `_rhythmTick` 毎フレーム再導出でゼロ化。v712 で `_bandStartAC === 0` 時の即 miss バグ修正 + cleanup 対称化。レーン背景は暗色 navy グラデ (`#050814→#121a33`)、赤ミスフラッシュは `activeNotes.length > 0` のみ発火。**教訓: AudioContext と performance.now は別クロック、長時間ループする音楽同期では毎フレーム AC 基準で再同期が必要**。v720-v721 で GH 化と無関係の**既存バグ**を発見・修正 = ペンタスケール `DOREMI_PENTA=[C4,D4,E4,G4,A4,C5,D5,E5]` (F/Bスキップ) なのにラベル「ファ・シ」のまま残り「ファ以降の音が高い」現象 → `SCALE_LABELS_PENTA=[ド,レ,ミ,ソ,ラ,ド,レ,ミ]` 追加 + `_applyScaleLabels()` でスケール切替時にラベル更新、リズムは SCALE_MODE='major' 強制で譜面と一致。**v722 でタイミング根本治療** = ドラム kick は `subInBar===0` (= 4拍周期 = 小節境界) のみ発火、なのに v721 までは startAcTime を「拍境界」スナップで弱拍に乗ることがあった → **小節境界スナップ** (`bandStartAC + nBars*4*beatSec`) に変更 + **321 カウントダウン** を band beat 同期で AC 由来 perf 時刻 setTimeout で打ち、「スタート!」の瞬間 = 次の小節線 = ドラム kick = 主旋律 1ノート目ヒットライン到達で完全一致。「カウント開始が今より過去になる場合は次の小節まで待ってからカウント開始」を `requiredAheadSec = max(fallSec, countBeats*beatSec)+0.15` で自動確保
 - **ポノのトントンキッチン Phase 1 (bento/kitchen.html)** (2026-05-16〜17, sw v419): [memory/feature_bento_tonton_kitchen_phase1.md](memory/feature_bento_tonton_kitchen_phase1.md) — 既存お弁当の前段ミニゲーム。 **SPA 3画面構造 (select / chop / fridge)** で各画面1ステップ集中、 5ステップフローチップで動的アクティブ化＋強制切替。 にんじん 1材料 end-to-end (5タップで切る → 冷蔵庫 NEW! バッジ → レシピ3種解放)、 残り5材料は Phase 2。 `unlockedIngredients` は解放型 (localStorage `bentoUnlockedIngredients` / `bentoNewIngredients`)。 冷蔵庫は `rotateY(-92deg)` で左ヒンジ扉が開く演出。 chop 進捗中の「もどる」は画面内モーダルで確認。 **v382 で 16:9 contain-fit (1600×900 stage)化、 v387〜v391 で chop 画面背景 PNG 化 + cutting-board 基準 % レイアウト、 v393 で chop メカニクス (startX_pct/endX_pct/liftY_pct/chopY_pct/maskAxis/bladeTipOffsetX_pct) をコード管理化 + chopProgress 1 つの式で包丁横移動とマスク削れを完全連動、 v398 で editor マーカー 4 種導入したが v399 で 3 マーカー撤去 (ユーザー混乱「赤いやつ何のため？」「マスク？それはまだつけなくていい」)、 にんじん位置は chopMechanics.ingredientLeft/Top/Width_pct で Claude がコード値調整する方式に、 v401 で .knife の pointer-events:none drag 不能バグ解消 + 新 knife.png (953×1242 縦長、余白削減) 差替 + bladeTipOffsetX_pct -12.34→-39 再測定、 v402 で chopY-marker も同 pointer-events バグ + 視認性不足解消、 v403 で saved-layout.json の `.chopY-marker|0@carrot: { tx:0, ty:0 }` エントリ削除で画面外消滅 1 つ目解消、 v405 で chopY-marker editor mode 消滅の真因 (editor が `.resizable` クラス付与 → `body.layout-editor-on .resizable:not([data-le-keep-position])` で `position:absolute → relative` 強制変換 → 中央寄せ崩壊) を `data-le-keep-position="1"` 属性付与 + CSS `position: absolute !important` の二段構えで解消 (恒久ルール: editor 対象で position: absolute を維持する要素は data-le-keep-position 必須)、 v406 で v399 撤去の `.ingredient-bbox-marker` (緑 dashed rect) を v405 知見ベース (data-le-keep-position + position:absolute !important) で再導入して食材本体の位置・サイズを editor で WYSIWYG 調整可能化、 applyIngredientPlacement (コード値) と marker 編集の二段レイヤリングで共存、 v408 で bbox-marker 初期位置ずれを seedIngredientBboxFromOnBoard で解消 + MutationObserver で marker.style 変化を監視してリアルタイム drag/resize 同期 (今後 marker 追加時の定型パターンとして確立)、 v410 で startX/endX 青/赤 縦線 marker を editor 化 (合計 4 marker)、 v411 で縦線 marker hit area 24×100px 拡大 + ::before で視覚分離して本体 drag 可能化、 v412 で z-index 階層化 (縦線最前面 z:6)、 v414 で **chop メカニクスをモデル A→B に変更** (`t = (chopProgress - 1) / (chopCount - 1)` で startX = 最初の切り口、 endX = 最後の切り口、 ユーザー直感通り)、 chopCount を食材ごとに変えるだけで切り方アレンジ可能 (にんじん 5 / キャベツ千切り 15-20 / ハンバーグこね 3 等)、 v415 で editor mode 時の画面上部 toolbar 隠れ問題を fitStage で toolbar 分オフセット、 v417 で **包丁 Y 移動が動かない真因 (CSS 変数を transform 内に置くと transition 不発、 Chrome 119+/Safari 18+ 挙動) を style.transform 直接代入で解消** (恒久ルール: transform 内に var() を入れない、 動的変更は JS から transform 文字列を直接代入)、 v419 で **chop アニメを直角リニアモーション化** (knife を wrapper + inner の 2 層構造に再編、 wrapper = editor 用 / inner = chop アニメ用で責務分離して「同じ要素の transform を奪い合う」競合を解消、 アニメは「下 → 上 → 左」の 3 フェーズ 0.1s linear で完全直角化、 恒久ルール: editor と独自アニメが同じプロパティを書く時は wrapper/inner で DOM 階層分離)**。 既存 `bento/index.html` (おかず49種+NPC6体+三色sk判定) は無変更で温存、 Phase 3 で連携予定。 仕様書 = `tmp/Bento/pono_tonton_kitchen_claude_code_instructions.md`
 
 ---
@@ -139,6 +139,19 @@ wrangler deploy                  # master 内容を production に
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-05-31T14:51:07Z - リズムモード 拍頭同期 + 小節アンカー固定カウントダウン (v722)
+- **タスク**: リズムモード 拍頭同期 + 小節アンカー固定カウントダウン (v722)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 94
+- **エラー数**: 12
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 34, "ToolSearch": 1, "Bash": 3, "Read": 14, "Write": 2, "Edit": 40}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
 
 ### 2026-05-31T14:33:30Z - oto リズム終了時 SCALE_MODE 復元 race 修正 (sw v721)
 - **タスク**: oto リズム終了時 SCALE_MODE 復元 race 修正 (sw v721)
@@ -242,18 +255,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 4, "Bash": 5, "Grep": 1, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-31T09:02:22Z - oto リズム GH モード タイミング修正: 主旋律 startPerfTime を伴奏拍と再同期 + 赤フラッシュ誤発火ガード追加 (sw v708)
-- **タスク**: oto リズム GH モード タイミング修正: 主旋律 startPerfTime を伴奏拍と再同期 + 赤フラッシュ誤発火ガード追加 (sw v708)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 27
-- **エラー数**: 7
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 13, "ToolSearch": 1, "Bash": 3, "Read": 4, "Write": 2, "Edit": 4}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
