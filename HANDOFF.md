@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:203-image-performance-audit] Codex: user 指摘「読み込みがすごく遅い、スマホ/タブレット向けに画像解像度・容量を確認」を受領。tracked画像 2569枚/約774MBを棚卸しし、初期表示で重い `play.html` / `bento/index.html` / `bento/kitchen.html` の実測を優先。数MB級PNGをWebPへ置換し、トップ・弁当・キッチン初期ロードを軽くする。`writing-mori/play.html` は既存未コミット差分があったため触らない。 (by Codex)
+- 2026-05-31 - [batch:203-image-performance-audit] DONE - Codex: assets 全体を棚卸しし、主要初期表示画像をWebP化、未参照の旧PNG/JPGを削除、`assets/images` の既存最適化スクリプトで追加5ファイルを圧縮。Playwright実測で画像転送量は `play.html` 18.3MB→2.48MiB、`bento/index.html` 8.78MB→0.80MiB、`bento/kitchen.html` 7.45MB→0.60MiB、画像404なし。通常起動で不要な play の調整パネル外部読み込みも停止。スクショで play/bento/kitchen の表示確認済み。`sw.js` は v688。`writing-mori/play.html` の既存dirtyは未変更。 (by Codex)
 - 2026-05-31 - [batch:202-mojikko-ball-play-gameplay] DONE - Codex: `writing-mori/play.html` のころころボールを単発成功から3ラウンド制へ修正。ドラッグ中にボール自体が手元へ動き、ちからメーター・狙いリング・ラウンドごとの異なるターゲットを表示。キャッチ後は必ず「ほめる！」を押して次ラウンドへ進み、3回キャッチ後だけ `もじのしずく` 2消費 / なかよし +3 / すくすく +1 / スター +5 を保存。Playwrightでドラッグ追従、同じ狙いだと2回目はミス、3回完了報酬を確認。`sw.js` は v687。 (by Codex)
 - 2026-05-30 - [batch:201-mojikko-toy-play-screen] DONE - Codex: もじっこファームの「あそぶ」を牧場内即時リアクションから専用 `writing-mori/play.html` へ分離。初期実装は横2Dの「ころころボール」画面で、`もじのしずく` 2個を成功時に消費し、なかよし +3 / すくすく +1 / スター +5 を `mojikkoFarmCareStateV1` に保存して `care.html?from=play&result=success` へ戻す。Playwrightで成功ループとしずく不足時にお世話画面へ留まることを確認。`sw.js` は v686。 (by Codex)
 - 2026-05-30 - [batch:200-bento-box-masks] Codex: user が `D:\ポノのおへや\Bento\cooking\弁当箱` に追加した 23時台のマスクPNG 4枚を確認。`225329`=猫、`225848`=普通箱、`230040`=丸、`230353`=四角として、未実装の普通/四角/丸/猫箱へ `maskImage` を追加する。くま箱は既存 `box_character_inside_mask.png` を継続。`D:\ポノのおへや\Bento\cooking\ごはん` 側は前回までの普通/四角/丸/猫サムネが実装済みで、新しい未反映PNGなし。 (by Codex)

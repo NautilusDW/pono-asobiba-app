@@ -67,11 +67,11 @@
   --radius: 18px;
   --radius-lg: 22px;
 
-  --ui-flow-step-1: url('../assets/images/bento/cooking/ui/flow_step_1.png');
-  --ui-flow-step-2: url('../assets/images/bento/cooking/ui/flow_step_2.png');
-  --ui-flow-step-3: url('../assets/images/bento/cooking/ui/flow_step_3.png');
-  --ui-flow-step-4: url('../assets/images/bento/cooking/ui/flow_step_4.png');
-  --ui-flow-step-5: url('../assets/images/bento/cooking/ui/flow_step_5.png');
+  --ui-flow-step-1: url('../assets/images/bento/cooking/ui/flow_step_1.webp');
+  --ui-flow-step-2: url('../assets/images/bento/cooking/ui/flow_step_2.webp');
+  --ui-flow-step-3: url('../assets/images/bento/cooking/ui/flow_step_3.webp');
+  --ui-flow-step-4: url('../assets/images/bento/cooking/ui/flow_step_4.webp');
+  --ui-flow-step-5: url('../assets/images/bento/cooking/ui/flow_step_5.webp');
   --ui-flow-num-1: url('../assets/images/bento/cooking/ui/flow_num_1.png');
   --ui-flow-num-2: url('../assets/images/bento/cooking/ui/flow_num_2.png');
   --ui-flow-num-3: url('../assets/images/bento/cooking/ui/flow_num_3.png');
@@ -82,15 +82,15 @@
   --ui-recipe-card: url('../assets/images/bento/cooking/ui/recipe_card_frame.png');
   --ui-speech-bubble: url('../assets/images/bento/cooking/ui/speech_bubble_wide.png');
   --ui-hint-box: url('../assets/images/bento/cooking/ui/hint_box_wide.png');
-  --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_stocked_open.png');
-  --ui-fridge-closed: url('../assets/images/bento/cooking/ui/fridge_closed.png');
+  --ui-fridge-open: url('../assets/images/bento/cooking/ui/fridge_stocked_open.webp');
+  --ui-fridge-closed: url('../assets/images/bento/cooking/ui/fridge_closed.webp');
   --ui-fridge-open-pos: center top;
   --ui-fridge-open-size: auto 112%;
   --ui-fridge-closed-pos: center top;
   --ui-fridge-closed-size: auto 112%;
-  --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_redesign_raw.png');
-  --ui-prep-base: url('../assets/images/bento/cooking/ui/prep_base_actions_sheet.png');
-  --ui-prep-breading: url('../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.png');
+  --ui-mode-cards: url('../assets/images/bento/cooking/ui/mode_select_cards_redesign_raw.webp');
+  --ui-prep-base: url('../assets/images/bento/cooking/ui/prep_base_actions_sheet.webp');
+  --ui-prep-breading: url('../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.webp');
 }
 
 html, body {
@@ -570,7 +570,7 @@ body[data-screen="fridge"] .stage-wrap {
      position は center 70% で、縦方向クロップ時に画像下端のまな板手前エッジ
      （画像下端 95% 付近）を切らないよう、上側を優先的に切る。 */
   background-color: #FFF3DF;
-  background-image: url('../assets/images/bento/cooking/kitchen_bg.png');
+  background-image: url('../assets/images/bento/cooking/kitchen_bg.webp');
   background-repeat: no-repeat;
   background-position: center 70%;
   background-size: cover;
@@ -3934,7 +3934,7 @@ body.layout-editor-on #fry-stage .oil-bubbles {
 }
 
 /* ---------- まな板まわり（chop-main 内） ----------
-   背景画像（kitchen_bg.png）が chop-main 全面に敷かれているので、
+   背景画像（kitchen_bg.webp）が chop-main 全面に敷かれているので、
    chop-stage は chop-main 内のフレームと同サイズで広がり、
    その中に position: absolute でまな板 hit area と包丁を配置する。 */
 .chop-stage {
@@ -4003,7 +4003,7 @@ body.layout-editor-on #fry-stage .oil-bubbles {
 
 /* まな板：背景画像にすでに描き込まれているまな板の上に、
    透明な hit area として重ねる。CSS まな板グラフィックは描かない。
-   位置/サイズは kitchen_bg.png のまな板（画像下半分中央）に合わせて %。 */
+   位置/サイズは kitchen_bg.webp のまな板（画像下半分中央）に合わせて %。 */
 .cutting-board {
   position: absolute;
   /* 背景画像のまな板中心に合わせる。実画像測定:
@@ -4186,7 +4186,7 @@ body.layout-editor-on .chopY-marker {
   left: 50%;
   top: 42%;
   width: 74%;
-  aspect-ratio: 3.2 / 1;       /* carrot_001.png の aspect 準拠（横長） */
+  aspect-ratio: 3.2 / 1;       /* carrot_001.webp の aspect 準拠（横長） */
   transform: translate(-50%, -50%);
   border: 3px dashed #4CAF50;
   background: rgba(76, 175, 80, 0.12);
@@ -5224,7 +5224,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   <div class="mode-stage">
     <div class="mode-pono-row">
-      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-mode" alt="ポノ">
+      <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-mode" alt="ポノ">
       <div class="speech-bubble" id="speech-mode">おかずを つくる？ それとも したごしらえする？</div>
     </div>
 
@@ -5255,7 +5255,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   <div class="select-stage">
     <div class="select-pono-row">
-      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-select" alt="ポノ">
+      <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-select" alt="ポノ">
       <div class="speech-bubble" id="speech-select">きょうは なにを つくる？</div>
     </div>
     <div class="select-ingredient-grid" id="ingredient-bar"></div>
@@ -5323,7 +5323,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 
       <div class="side-card">
         <div style="display:flex;align-items:flex-start;gap:8px;">
-          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-chop" alt="ポノ">
+          <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-chop" alt="ポノ">
           <div class="speech-bubble" id="speech-chop">トントン してみよう！</div>
         </div>
       </div>
@@ -5388,7 +5388,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     <div class="prep-side">
       <div class="side-card prep-pono-card">
         <div class="prep-pono-talk">
-          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-prep" alt="ポノ">
+          <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-prep" alt="ポノ">
           <div class="speech-bubble" id="speech-prep">タップして したごしらえしよう！</div>
         </div>
       </div>
@@ -5461,7 +5461,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       </div>
       <div class="side-card">
         <div style="display:flex;align-items:flex-start;gap:8px;">
-          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-grill" alt="ポノ">
+          <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-grill" alt="ポノ">
           <div class="speech-bubble" id="speech-grill">おさらで じゅんびしてるよ</div>
         </div>
       </div>
@@ -5525,7 +5525,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       </div>
       <div class="side-card">
         <div style="display:flex;align-items:flex-start;gap:8px;">
-          <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-fry" alt="ポノ">
+          <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-fry" alt="ポノ">
           <div class="speech-bubble" id="speech-fry">おさらで じゅんびしてるよ</div>
         </div>
       </div>
@@ -5555,7 +5555,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       </div>
 
       <div class="fridge-pono-row" id="fridge-pono-row">
-        <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img-fridge" alt="ポノ">
+        <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" id="pono-img-fridge" alt="ポノ">
         <div class="speech-bubble" id="speech-fridge">おべんとうも つくれるよ！</div>
       </div>
 
@@ -5704,10 +5704,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       cookImages: {
         grill: {
           stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'kinpira/kinpira_mid'],
-          fallback: '../assets/images/Bento_parts/ninjin_ingen2.png',
+          fallback: '../assets/images/Bento_parts/ninjin_ingen2.webp',
         },
       },
-      imageBase: 'carrot/carrot_001',
+      imageBase: 'carrot/carrot_001.webp',
       imagePieces: {
         dir: 'carrot',
         from: 2,
@@ -5743,7 +5743,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       prepActions: [
         { type: 'chop' },
       ],
-      imageBase: 'cabbage/cabbage_001',
+      imageBase: 'cabbage/cabbage_001.webp',
       imagePieces: {
         dir: 'cabbage',
         prefix: 'cabbage_',
@@ -5781,7 +5781,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       prepActions: [
         { type: 'chop' },
       ],
-      imageBase: 'onion/onion_whole_raw',
+      imageBase: 'onion/onion_whole_raw.webp',
       fridgeImage: '../assets/images/bento/cooking/onion/onion_chopped_raw.png',
       particleKind: 'onion',
       particleImages: {
@@ -5843,8 +5843,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       ],
       cookImages: {
         grill: {
-          stages: ['wiener/wiener_001_raw', 'wiener/wiener_002_cut', 'wiener/wiener_003_done'],
-          fallback: '../assets/images/Bento_parts/tako_wiener2.png',
+          stages: ['wiener/wiener_001_raw.webp', 'wiener/wiener_002_cut', 'wiener/wiener_003_done'],
+          fallback: '../assets/images/Bento_parts/tako_wiener2.webp',
         },
       },
       chopMechanics: {
@@ -5860,7 +5860,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     {
       id: 'mince_patty', name: 'ひき肉', emoji: '🍖', piece: '🍖',
       chopCount: 1, implemented: true,
-      imageBase: 'prep/knead_mince_stage_1',
+      imageBase: 'prep/knead_mince_stage_1.webp',
       fridgeImage: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png',
       cookStartActionIndex: 0,
       cookingActions: [
@@ -5874,7 +5874,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       cookImages: {
         grill: {
           stages: ['mince_patty/patty_001_raw', 'mince_patty/patty_002_mid', 'mince_patty/patty_003_done'],
-          fallback: '../assets/images/Bento_parts/hamburg2.png',
+          fallback: '../assets/images/Bento_parts/hamburg2.webp',
         },
       },
     },
@@ -5902,7 +5902,7 @@ body.layout-editor-on .bowl-fill-mask::after {
             'sepia(0.36) saturate(1.25) hue-rotate(-11deg) brightness(0.98) drop-shadow(0 8px 9px rgba(0,0,0,0.22))',
             'sepia(0.84) saturate(1.55) hue-rotate(-17deg) brightness(0.92) contrast(1.05) drop-shadow(0 8px 9px rgba(0,0,0,0.24))',
           ],
-          fallback: '../assets/images/Bento_parts/meatball2.png',
+          fallback: '../assets/images/Bento_parts/meatball2.webp',
         },
       },
     },
@@ -5915,7 +5915,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       cookImages: {
         grill: {
           stages: ['salmon/salmon_001_raw', 'salmon/salmon_002_mid', 'salmon/salmon_003_done'],
-          fallback: '../assets/images/Bento_parts/yakizake2.png',
+          fallback: '../assets/images/Bento_parts/yakizake2.webp',
         },
       },
     },
@@ -5949,7 +5949,7 @@ body.layout-editor-on .bowl-fill-mask::after {
           fallback: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png',
         },
       },
-      imageBase: 'chicken/chicken_thigh_board_perspective_001',
+      imageBase: 'chicken/chicken_thigh_board_perspective_001.webp',
       imagePieces: {
         dir: 'chicken',
         prefix: 'chicken_thigh_piece_',
@@ -5980,7 +5980,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       cookImages: {
         fry: {
           stages: ['shrimp/shrimp_001_raw', 'shrimp/shrimp_002_mid', 'shrimp/shrimp_003_done'],
-          fallback: '../assets/images/Bento_parts/ebi_fry2.png',
+          fallback: '../assets/images/Bento_parts/ebi_fry2.webp',
         },
       },
     },
@@ -5993,7 +5993,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       cookImages: {
         fry: {
           stages: ['korokke/korokke_001_raw', 'korokke/korokke_002_mid', 'korokke/korokke_003_done'],
-          fallback: '../assets/images/Bento_parts/korokke2.png',
+          fallback: '../assets/images/Bento_parts/korokke2.webp',
         },
       },
     },
@@ -6002,26 +6002,26 @@ body.layout-editor-on .bowl-fill-mask::after {
   // 材料→解放されるレシピ
   const RECIPES = [
     { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_002_mid.png', needs: ['egg'], startFromRaw: true },
-    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.png',      needs: ['mince_patty', 'onion'], cookIngredientId: 'mince_patty' },
-    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.png',     needs: ['mince_patty', 'onion'], cookIngredientId: 'meatball' },
-    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.png',     needs: ['salmon'], startFromRaw: true },
-    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.png',  needs: ['wiener'], startFromRaw: true },
+    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.webp',      needs: ['mince_patty', 'onion'], cookIngredientId: 'mince_patty' },
+    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.webp',     needs: ['mince_patty', 'onion'], cookIngredientId: 'meatball' },
+    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.webp',     needs: ['salmon'], startFromRaw: true },
+    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.webp',  needs: ['wiener'], startFromRaw: true },
     { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
-    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.png',      needs: ['shrimp_breaded'], startFromRaw: true },
-    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.png',      needs: ['korokke_raw'], startFromRaw: true },
+    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.webp',      needs: ['shrimp_breaded'], startFromRaw: true },
+    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.webp',      needs: ['korokke_raw'], startFromRaw: true },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', needs: ['cabbage'] },
-    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.png', needs: ['carrot'] },
-    { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.png',      needs: ['carrot'] },
+    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.webp', needs: ['carrot'] },
+    { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
   ];
 
   const PREP_SHEETS = {
     base: {
-      src: '../assets/images/bento/cooking/ui/prep_base_actions_sheet.png',
+      src: '../assets/images/bento/cooking/ui/prep_base_actions_sheet.webp',
       cols: 3,
       rows: 3,
     },
     breading: {
-      src: '../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.png',
+      src: '../assets/images/bento/cooking/ui/prep_breading_sequences_sheet.webp',
       cols: 3,
       rows: 3,
     },
@@ -6098,7 +6098,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       startSpeech: 'ひきにくを ぐるぐるドラッグして こねよう！',
       completeSpeech: 'ひきにくが まとまったよ！ れいぞうこに しまおう！',
       steps: [
-        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'ひきにくを ボウルへ', caption: 'ぐるぐるドラッグ！', burst: 'ぐるぐる！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.webp', label: 'ひきにくを ボウルへ', caption: 'ぐるぐるドラッグ！', burst: 'ぐるぐる！' },
         {
           src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png',
           brushSrcs: [
@@ -6142,7 +6142,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       startSpeech: 'ひきにくに たまねぎを まぜよう！',
       completeSpeech: 'たまねぎが まざったよ！ つぎは かたちを つくろう！',
       steps: [
-        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.png', label: 'たまねぎを いれよう', caption: 'ぐるぐるドラッグ！', burst: 'ぽん！' },
+        { src: '../assets/images/bento/cooking/prep/knead_mince_stage_1.webp', label: 'たまねぎを いれよう', caption: 'ぐるぐるドラッグ！', burst: 'ぽん！' },
         {
           src: '../assets/images/bento/cooking/prep/knead_mince_stage_2.png',
           brushSrcs: [
@@ -11422,6 +11422,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!stagePath) return '';
     if (/^(https?:)?\/\//.test(stagePath) || stagePath.indexOf('../') === 0 || stagePath.indexOf('/') === 0) {
       return stagePath;
+    }
+    if (/\.(png|jpe?g|webp|gif)$/i.test(stagePath)) {
+      return '../assets/images/bento/cooking/' + stagePath;
     }
     return '../assets/images/bento/cooking/' + stagePath + '.png';
   }
