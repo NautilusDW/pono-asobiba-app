@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:221-mojikko-ball-star-roam-game] DONE - Codex: `writing-mori/play.html` のころころボールをタイミング押し/上下運動ターゲットから、ドラッグで方向・強さを決めて星のそばへ転がし、ミルマルがハイハイで取りに行く星集めゲームへ変更。ミルマルとボールを小型化し、フィールド上に5つの星、ルート予測、強さバー、自由ローミングを追加。Playwrightで星表示、ドラッグ予測、複数星回収、完了報酬スター+25、JSエラーなしを確認。`sw.js` は v721。 (by Codex)
 - 2026-05-31 - [batch:220-kitchen-veg-fruit-assets] Codex: user 指示「レタス/輪切りきゅうり/ごぼうささがき/弁当箱&カップに合う果物7種」を受領。HANDOFF / git log / assets / tmp / `D:\ポノのおへや\Bento\cooking` を確認し、既存は `assets/images/bento/free-layout/divider_lettuce.png`、word 用 `kyuuri.png`、旧 Bento_parts 果物6種程度で、今回の下ごしらえ/カップ用 raw としては未納品。AGENTS 方針どおり GPT Image 2 built-in で raw シート生成、alpha 抜き・切り抜き・本配置は行わず `tmp/alpha_pending/220_kitchen_veg_fruit_assets/` に保存する。 (by Codex)
 - 2026-05-31 - [batch:220-kitchen-veg-fruit-assets] DONE - Codex: raw シート 4 枚を `tmp/alpha_pending/220_kitchen_veg_fruit_assets/` に納品。`lettuce_whole_salad_pieces_sheet_raw.png`、`kyuuri_round_slices_sheet_raw.png`、`gobou_sasagaki_sheet_raw.png`、`bento_cup_fruits_7types_sheet_raw.png`。全て 1024x1536 / RGB / alpha なし。内容レビュー: レタスは丸ごと+サラダ片、きゅうりは丸ごと+輪切り、 ごぼうは一本+ささがき、果物は いちご/メロン/みかん/りんご/パイナップル/もも/キウイ が弁当カップ向け小片として分離配置。alpha 抜き・切り抜き・assets 配置・sw bump は未実施。 (by Codex)
 - 2026-05-31 - [batch:219-kitchen-peeled-potato-assets] Codex: user 指示「フライドポテトは現状維持、それ以外のじゃがいもは皮むき済み状態で切りたい」を受領。既存確認済: `D:\ポノのおへや\Bento\cooking\食材\食材元絵\じゃがいも細切り.png` は fries 用で維持、`じゃがいも 4つ切り.png` / `じゃがいも輪切り半分.png` は皮つきなので peeled raw へ再生成する。AGENTS 現行方針どおり alpha 抜き・切り抜きは行わず raw を `tmp/alpha_pending/219_kitchen_peeled_potato_assets/` に納品予定。 (by Codex)
