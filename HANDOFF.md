@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:216-bento-mask-editor-gameplay-reflect] Codex: user 指摘「エディット画面には記録されているが実際のゲーム画面にマスクが反映されない。保存から時間がかかるのか」を受領。直前修正で通常ゲーム画面が editor 保存値を無視していたため、調整確認用として通常ゲーム画面にも即反映させる。最終的な全端末初期値は `maskBounds` へ焼き込む運用。 (by Codex)
+- 2026-05-31 - [batch:216-bento-mask-editor-gameplay-reflect] DONE - Codex: `getBoxMaskBounds()` を editor mode 限定ではなく保存済み mask override を常に合成する形へ戻した。Playwrightで通常起動 `?npc=0` でも `box_rect_split` の保存値が反映され、`box_bear_pink` は `box_bear`、`box_cat` は `box_cat_blue` の保存値を読むことを確認。`sw.js` は v708。 (by Codex)
 - 2026-05-31 - [batch:215-bento-shared-character-mask-keys] Codex: user 指摘「くま/猫の色違いは片方を設定したらもう片方にも適用、水色側を設定済みなのでピンク側は水色設定を使う」を受領。ピンクくま/ピンク猫の `maskKey` を水色側へ統一する。 (by Codex)
 - 2026-05-31 - [batch:215-bento-shared-character-mask-keys] DONE - Codex: `box_bear_pink.maskKey` を `box_bear`、`box_cat.maskKey` を `box_cat_blue` に変更。Playwrightで `?maskedit=1&box=box_bear_pink` が `box_bear` の保存値を、`?maskedit=1&box=box_cat` が `box_cat_blue` の保存値を読み、ピンク側操作時も水色側キーへ保存されることを確認。`sw.js` は v706。 (by Codex)
 - 2026-05-31 - [batch:214-bento-mask-defaults-not-device-settings] Codex: user 指摘「背景の空の話は別スレッド / マスクは端末別ユーザー設定ではなくゲーム全体の初期値として保存するもの」を受領。直前の `writing-mori/play.html` 背景誤変更を戻し、弁当マスクは通常プレイで localStorage の調整値を使わずコード既定値だけを使うようにする。 (by Codex)
