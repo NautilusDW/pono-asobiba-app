@@ -270,6 +270,26 @@
     background: transparent;
   }
   body.rhythm-layout #rhythm-lanes { display: block; }
+  /* v717 CRITICAL FIX: リズムモードでは 8 鍵盤を画面下端 (bottom:28px) に横一列で出すが、
+     base CSS では .band-group(z:11) / .sound-sets-box(z:11) / .mode-switch(z:12) / .chord-pill(z:8) が
+     #instruments(z:3) より前面にいるため、これらパネル下の鍵盤が完全に隠れていた
+     (特に portrait で band-group が中央底に居座って 4 個程度を覆い、landscape でも idx=0 が消える)。
+     対策: リズムモードでは左メニュー類の z を #instruments の z(3) より下げて、鍵盤を最前面に。
+     パネルの位置は .rhythm-layout 専用ルールで既に左 11% に寄せてあるため、横方向で物理的に
+     ぶつかる箇所は限定的だが、z で確実に鍵盤を勝たせる。
+     パネル自身のタップは pointer-events:none の #instruments を貫通して効くので問題なし。 */
+  body.rhythm-layout .band-group,
+  body.rhythm-layout .sound-sets-box,
+  body.rhythm-layout .mode-switch,
+  body.rhythm-layout .chord-pill { z-index: 2; }
+  /* v718 LANDSCAPE FIX: #rhythm-lanes(z:4) は left:22%~right:0 で画面下端まで広がり、
+     その子 .gh-lane(高さ var(--gh-hit-y,100%) → 初期表示で 100%) が 8 鍵盤(#instruments z:3)を
+     視覚的に覆っていた。landscape 大画面では (--gh-hit-y を JS で px 値に更新する前の) 初期描画で
+     高さ 100% のまま鍵盤領域に被るため 8 個全消えとなる。
+     → リズムモード時は #instruments を #rhythm-lanes より上 (z:5) に昇格して
+        鍵盤を常に最前面に保つ。ノート(.gh-note z:4)は鍵盤の後ろを落ちるが、
+        ヒットライン(.gh-hitline z:5)はボタン上端より上にあるため重なり面積は実質ゼロ。 */
+  body.rhythm-layout #instruments { z-index: 5; }
   .gh-lane {
     position: absolute;
     top: 0;
@@ -1568,14 +1588,18 @@
   }
   /* Guitar Hero 風: 8ボタンを画面下端に横一列。レーン番号 0-7 = data-idx 0-7。 */
   /* 子供の指が画面下端ぎりぎりに届かないので 28px 浮かせる (ヒットラインは getBoundingClientRect 基準で自動追従) */
+  /* v718: landscape 大画面 (≈1820x870) で 8 鍵盤全てが本来位置に出ない不具合の確実回避。
+     bottom / transform / position に !important を付与して、他メディアクエリや継承スタイルからの
+     上書きを完全に遮断する (top: auto !important は v713 から既設定)。 */
   body.rhythm-layout .instr-btn {
     --gh-row-bottom: calc(28px + env(safe-area-inset-bottom));
+    position: absolute !important;
     top: auto !important;
-    bottom: var(--gh-row-bottom);
-    transform: translate(-50%, 0);
+    bottom: var(--gh-row-bottom) !important;
+    transform: translate(-50%, 0) !important;
   }
   body.rhythm-layout .instr-btn.press {
-    transform: translate(-50%, 0) translateY(4px) scale(0.98);
+    transform: translate(-50%, 0) translateY(4px) scale(0.98) !important;
   }
   /* v713+: 左 22% は左メニュー帯 (モード切替 / ねいろ / ばんそう, 中心 11% / 幅 160px) を
      避けるため空ける。8 ボタンは画面右 78% の中で等間隔配置。1 区間 = 78% / 8 = 9.75%。

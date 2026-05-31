@@ -42,6 +42,12 @@
   --milmaru-yochi: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
   --milmaru-yochi-catch: url('../assets/images/mojikko/care/milmaru_yochiyochi_arms_up.png');
   --milmaru-yochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
+  --milmaru-crawl-1: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_01.png');
+  --milmaru-crawl-2: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_02.png');
+  --milmaru-crawl-3: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_03.png');
+  --milmaru-crawl-4: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_04.png');
+  --milmaru-crawl-5: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_05.png');
+  --milmaru-crawl-6: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_06.png');
   --icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --fx-sparkle: url('../assets/images/mojikko/care/fx_sparkle_cluster.png');
   --rolling-bg: url('../assets/images/mojikko/play/rolling_ball_ground_background.png');
@@ -393,6 +399,7 @@ button {
 
 .path-arc {
   position: absolute;
+  display: none;
   left: 116px;
   top: 321px;
   width: 660px;
@@ -430,9 +437,10 @@ button {
   position: absolute;
   left: var(--target-x, 716px);
   top: var(--target-y, 332px);
-  width: var(--target-w, 142px);
-  height: var(--target-h, 104px);
-  border: 8px dashed rgba(82, 184, 121, 0.92);
+  display: none;
+  width: var(--target-w, 84px);
+  height: var(--target-h, 84px);
+  border: 6px dashed rgba(82, 184, 121, 0.92);
   border-radius: 50%;
   background: rgba(255,255,255,0.2);
   transform: translate(-50%, -50%);
@@ -441,7 +449,7 @@ button {
 }
 
 .target-ring::after {
-  content: 'ここへ';
+  content: 'ねらい';
   position: absolute;
   left: -18px;
   top: -42px;
@@ -450,8 +458,12 @@ button {
   border-radius: 6px;
   background: #fff4cf;
   font-family: var(--pixel-font);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
+}
+
+.target-ring.show {
+  display: block;
 }
 
 @keyframes targetPulse {
@@ -518,14 +530,65 @@ button {
   background: #85dca7;
 }
 
+.field-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.field-star {
+  position: absolute;
+  left: var(--star-x, 0px);
+  top: var(--star-y, 0px);
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffd558;
+  font-family: var(--pixel-font);
+  font-size: 34px;
+  font-weight: 900;
+  text-shadow:
+    0 3px 0 #8e5b2e,
+    3px 0 0 #fff4b8,
+    -3px 0 0 #fff4b8,
+    0 -3px 0 #fff4b8;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 5px 0 rgba(83, 54, 30, 0.22));
+  animation: starBob 1.6s ease-in-out infinite;
+}
+
+.field-star::before {
+  content: '★';
+}
+
+.field-star.collected {
+  animation: starCollect 520ms steps(3) forwards;
+}
+
+.field-star.highlight {
+  transform: translate(-50%, -50%) scale(1.22);
+  filter: drop-shadow(0 0 10px rgba(255, 227, 98, 0.95));
+}
+
+@keyframes starBob {
+  50% { transform: translate(-50%, calc(-50% - 6px)); }
+}
+
+@keyframes starCollect {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -92%) scale(0.3) rotate(25deg); }
+}
+
 .power-meter {
   position: absolute;
-  left: 256px;
-  bottom: 34px;
-  width: 388px;
-  height: 76px;
+  left: 284px;
+  bottom: 28px;
+  width: 332px;
+  height: 68px;
   display: grid;
-  grid-template-columns: 110px 1fr;
+  grid-template-columns: 82px 1fr;
   align-items: center;
   gap: 8px;
   padding: 5px 9px;
@@ -534,7 +597,7 @@ button {
   background: rgba(255,248,225,0.86);
   box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32), 0 4px 0 rgba(80,54,33,0.28);
   font-family: var(--pixel-font);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   z-index: 5;
 }
@@ -550,7 +613,7 @@ button {
 }
 
 .power-fill {
-  display: none;
+  display: block;
   width: var(--power, 0%);
   height: 100%;
   background: linear-gradient(90deg, #86d7ac, #f5bd4e, #ee7b6b);
@@ -559,6 +622,7 @@ button {
 
 .timing-marker {
   position: absolute;
+  display: none;
   left: var(--timing, 50%);
   top: -10px;
   width: 14px;
@@ -572,31 +636,32 @@ button {
 
 .milmaru-speech {
   position: absolute;
-  right: 86px;
-  top: 88px;
-  min-width: 170px;
-  max-width: 250px;
-  padding: 14px 20px;
-  border: 5px solid #845b3d;
+  left: var(--speech-x, 708px);
+  top: var(--speech-y, 154px);
+  min-width: 118px;
+  max-width: 210px;
+  padding: 10px 14px;
+  border: 4px solid #845b3d;
   border-radius: 12px;
   background: #fffaf0;
   box-shadow: 0 6px 0 rgba(84,54,32,0.3);
   font-family: var(--pixel-font);
-  font-size: 25px;
+  font-size: 20px;
   font-weight: 900;
   text-align: center;
   z-index: 9;
+  transform: translate(-50%, -100%);
 }
 
 .milmaru-speech::after {
   content: '';
   position: absolute;
-  left: 106px;
-  bottom: -23px;
-  width: 34px;
-  height: 34px;
-  border-right: 5px solid #845b3d;
-  border-bottom: 5px solid #845b3d;
+  left: calc(50% - 13px);
+  bottom: -19px;
+  width: 28px;
+  height: 28px;
+  border-right: 4px solid #845b3d;
+  border-bottom: 4px solid #845b3d;
   background: #fffaf0;
   transform: rotate(45deg);
 }
@@ -605,18 +670,21 @@ button {
   position: absolute;
   left: var(--milmaru-x, 652px);
   top: var(--milmaru-y, 232px);
-  width: 188px;
-  height: 188px;
+  width: 108px;
+  height: 108px;
   background: var(--milmaru-yochi) center bottom / contain no-repeat;
   image-rendering: pixelated;
-  filter: drop-shadow(0 12px 0 rgba(92,60,35,0.18));
+  filter: drop-shadow(0 8px 0 rgba(92,60,35,0.18));
   z-index: 3;
-  transition: top 220ms linear;
+  transform: scaleX(var(--milmaru-dir, 1));
+  transition:
+    left var(--milmaru-move-duration, 900ms) linear,
+    top var(--milmaru-move-duration, 900ms) linear;
 }
 
 .milmaru.baby {
-  width: 168px;
-  height: 168px;
+  width: 104px;
+  height: 104px;
   background-image: var(--milmaru-baby);
 }
 
@@ -638,19 +706,32 @@ button {
   35% { transform: translateY(-18px) scale(1.05); }
 }
 
+.milmaru.crawling {
+  animation: crawlFrames 1.2s steps(1, end) infinite;
+}
+
+@keyframes crawlFrames {
+  0% { background-image: var(--milmaru-crawl-1); }
+  16% { background-image: var(--milmaru-crawl-2); }
+  33% { background-image: var(--milmaru-crawl-3); }
+  50% { background-image: var(--milmaru-crawl-4); }
+  66% { background-image: var(--milmaru-crawl-5); }
+  83%, 100% { background-image: var(--milmaru-crawl-6); }
+}
+
 .toy-ball {
   position: absolute;
   left: var(--ball-x, 160px);
   top: var(--ball-y, 354px);
-  width: 76px;
-  height: 76px;
-  border: 5px solid #8e5930;
+  width: 58px;
+  height: 58px;
+  border: 4px solid #8e5930;
   border-radius: 50%;
   background:
     var(--rolling-ball) center / 150% no-repeat,
-    radial-gradient(circle at 32% 28%, #fff2ac 0 13px, transparent 14px),
+    radial-gradient(circle at 32% 28%, #fff2ac 0 9px, transparent 10px),
     linear-gradient(135deg, #ffe17b 0 32%, #ffb94c 32% 50%, #f08a43 50% 68%, #ffd96f 68%);
-  box-shadow: inset -8px -10px 0 rgba(150,83,35,0.2), 0 8px 0 rgba(85,54,32,0.22);
+  box-shadow: inset -6px -8px 0 rgba(150,83,35,0.2), 0 6px 0 rgba(85,54,32,0.22);
   cursor: grab;
   z-index: 6;
   image-rendering: pixelated;
@@ -660,8 +741,8 @@ button {
 }
 
 .toy-ball.dragging {
-  cursor: pointer;
-  transform: scale(1.05);
+  cursor: grabbing;
+  transform: scale(1.06);
   transition: none;
 }
 

@@ -17,6 +17,9 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:220-kitchen-veg-fruit-assets] Codex: user 指示「レタス/輪切りきゅうり/ごぼうささがき/弁当箱&カップに合う果物7種」を受領。HANDOFF / git log / assets / tmp / `D:\ポノのおへや\Bento\cooking` を確認し、既存は `assets/images/bento/free-layout/divider_lettuce.png`、word 用 `kyuuri.png`、旧 Bento_parts 果物6種程度で、今回の下ごしらえ/カップ用 raw としては未納品。AGENTS 方針どおり GPT Image 2 built-in で raw シート生成、alpha 抜き・切り抜き・本配置は行わず `tmp/alpha_pending/220_kitchen_veg_fruit_assets/` に保存する。 (by Codex)
+- 2026-05-31 - [batch:219-kitchen-peeled-potato-assets] Codex: user 指示「フライドポテトは現状維持、それ以外のじゃがいもは皮むき済み状態で切りたい」を受領。既存確認済: `D:\ポノのおへや\Bento\cooking\食材\食材元絵\じゃがいも細切り.png` は fries 用で維持、`じゃがいも 4つ切り.png` / `じゃがいも輪切り半分.png` は皮つきなので peeled raw へ再生成する。AGENTS 現行方針どおり alpha 抜き・切り抜きは行わず raw を `tmp/alpha_pending/219_kitchen_peeled_potato_assets/` に納品予定。 (by Codex)
+- 2026-05-31 - [batch:219-kitchen-peeled-potato-assets] DONE - Codex: 皮むき済みじゃがいも raw 2 枚を GPT Image 2 built-in 経路で生成し、`tmp/alpha_pending/219_kitchen_peeled_potato_assets/jagaimo_peeled_quarter_sheet_raw.png` と `jagaimo_peeled_round_half_sheet_raw.png` に保存。どちらも 1024x1536 / RGB / alpha なし。フライドポテト用 `じゃがいも細切り.png` は未変更。レビュー観点: 皮・茶色リムなし、細切り化なし、白背景 raw、切り出し余白ありを Codex self-review で確認。 (by Codex)
 - 2026-05-31 - [batch:218-mojikko-ball-meter-start-clouds] DONE - Codex: user 指摘「ゲームが始まらない/ゲージが動かない/ここから札がボールに被る/地面画面に雲不要」を受領。`writing-mori/play.html` でスター消費ゲートを外してスター0でもタイミングメーターを開始、雲を非表示化、発射札を上へ移動し、右ヒントからスター20表記を削除。Playwrightでスター0でもゲージ変化・1投目開始・雲非表示・札とボールの隙間を確認。`sw.js` は v713。 (by Codex)
 - 2026-05-31 - [batch:217-mojikko-ball-path-up] DONE - Codex: `writing-mori/play.html` のころころボールで、下部の人工レーンを非表示にし、発射点・ガイド線・到達点・ミルマル位置を土の道に沿うよう上寄せ。1600x900 と 1024x768 で初期位置/成功ショット/JSエラーなしを確認。`sw.js` は v712。 (by Codex)
 - 2026-05-31 - [batch:216-bento-mask-editor-gameplay-reflect] Codex: user 指摘「エディット画面には記録されているが実際のゲーム画面にマスクが反映されない。保存から時間がかかるのか」を受領。直前修正で通常ゲーム画面が editor 保存値を無視していたため、調整確認用として通常ゲーム画面にも即反映させる。最終的な全端末初期値は `maskBounds` へ焼き込む運用。 (by Codex)
