@@ -1886,10 +1886,30 @@ var KIRA_FREQS = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.5
 // 8ボタンに合わせて C4 D4 E4 G4 A4 C5 D5 E5 と展開
 var DOREMI_PENTA = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
 var KIRA_PENTA   = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
+// 各スケールにおける 8ボタンの音名ラベル (ボタン表示と実音を一致させるため必須)
+// v719 fix: penta では F/B を飛ばすため ファ/シ ラベルでは G/D が鳴り「ファ以降が高い」バグになっていた
+var SCALE_LABELS_MAJOR = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
+var SCALE_LABELS_PENTA = ['ド', 'レ', 'ミ', 'ソ', 'ラ', 'ド', 'レ', 'ミ'];
+var SCALE_ARIA_MAJOR   = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', '高いド'];
+var SCALE_ARIA_PENTA   = ['ド', 'レ', 'ミ', 'ソ', 'ラ', '高いド', '高いレ', '高いミ'];
 // スケールモード ('major' = 通常ドレミ / 'penta' = ペンタトニック)
 var SCALE_MODE = 'major';
 function _doremiFreqs() { return SCALE_MODE === 'penta' ? DOREMI_PENTA : DOREMI_FREQS; }
 function _kiraFreqs()   { return SCALE_MODE === 'penta' ? KIRA_PENTA   : KIRA_FREQS;   }
+function _currentScaleLabels() { return SCALE_MODE === 'penta' ? SCALE_LABELS_PENTA : SCALE_LABELS_MAJOR; }
+function _currentScaleAria()   { return SCALE_MODE === 'penta' ? SCALE_ARIA_PENTA   : SCALE_ARIA_MAJOR;   }
+// v719: スケール切替時にキーボードボタンのラベル/aria-label を実音名と一致させる
+function _applyScaleLabels() {
+  var labels = _currentScaleLabels();
+  var arias  = _currentScaleAria();
+  for (var i = 0; i < 8; i++) {
+    var btn = document.querySelector('.instr-btn[data-idx="' + i + '"]');
+    if (!btn) continue;
+    var span = btn.querySelector('.note-label');
+    if (span) span.textContent = labels[i];
+    btn.setAttribute('aria-label', arias[i]);
+  }
+}
 
 // ─── コードモード (王道進行 I-IV-V-vi: C, F, G, Am) ───
 var CHORD_MODE = 'off'; // 'off' / 'on'
@@ -2453,6 +2473,8 @@ function playSetSoundFor(set, idx, useChord) {
 // ────────────────────────────────
 // リズムモード: 光るボタン + 縮む輪っかで「次」と「いま」を同じ場所に出す
 // ────────────────────────────────
+// リズムモード用ノートラベル — 譜面 (RHYTHM_SONGS) は C メジャー前提の idx0-7 で書かれているため
+// 必ず major のラベルを使う (penta の時もリズム中は major にフォースしている)
 var NOTE_LABELS = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
 var RHYTHM_SONGS = [
   {
@@ -3265,6 +3287,13 @@ function _rhythmTick() {
 function _startRhythmMode() {
   if (_rhythm.enabled) return;
   _hideRhythmComplete();
+  // v719: 譜面 (RHYTHM_SONGS) は C メジャー idx0-7 前提のため、リズム中は penta を強制的に解除する。
+  // 復帰時のためにユーザー設定を一時退避し、_stopRhythmMode で復元する。
+  _rhythm._savedScale = SCALE_MODE;
+  if (SCALE_MODE !== 'major') {
+    SCALE_MODE = 'major';
+    _applyScaleLabels();
+  }
   _rhythm.enabled = true;
   _rhythm.idx = 0;
   _rhythm.streak = 0;
@@ -3493,6 +3522,14 @@ function _stopRhythmMode() {
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
   _hideRhythmComplete();
+  // v721: リズム中に major にフォースしていたスケールを復元
+  // (v719 のガード `!== SCALE_MODE` だと、リズム中に scale-btn でトグルされ
+  //  _savedScale と一致した場合にラベル再適用が走らず major のまま残る race を起こす)
+  if (_rhythm._savedScale) {
+    SCALE_MODE = _rhythm._savedScale;
+    _applyScaleLabels();
+  }
+  _rhythm._savedScale = null;
   _rhythm.enabled = false;
   // v705+: スポーン/ミス判定ガード (_ghSpawnDueNotes / _ghUpdateFallingNotes) で
   // 「startPerfTime==0 なら何もしない」とするため、停止時は明示的に 0 に戻す。
@@ -5014,6 +5051,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     try { localStorage.setItem('pono_oto_scale', mode); } catch(e) {}
     sMajor.classList.toggle('active', mode === 'major');
     sPenta.classList.toggle('active', mode === 'penta');
+    // v719: ラベルと実音を一致させる (ファ→ソ など penta の発音名へ書き換え)
+    _applyScaleLabels();
   }
   if (sMajor) sMajor.addEventListener('click', function(e) { e.stopPropagation(); setScale('major'); });
   if (sPenta) sPenta.addEventListener('click', function(e) { e.stopPropagation(); setScale('penta'); });
