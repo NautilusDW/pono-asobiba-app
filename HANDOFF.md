@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:206-bento-pono-speech-wording] Codex: user 指摘「下部ポノが服を着ている / 吹き出し形状が変 / 弁当箱を『箱』と呼ばない / 右側のお弁当選択名を削除」を受領。`bento/index.html` の表示文言・下部ポノ素材・吹き出しCSS・弁当選択カード名表示を修正する。 (by Codex)
+- 2026-05-31 - [batch:206-bento-pono-speech-wording] DONE - Codex: 下部ポノを服なし `assets/images/characters/pono/pono_001.png` に差し替え、吹き出しの尾を三角の二重レイヤーへ作り直し。自由配置のユーザー表示文言から「はこ」を外して「おべんとう」表現へ変更し、右側のお弁当選択カード名は非表示化。Playwrightで初期選択画面のポノsrc、吹き出し文言、右カード名 `display:none`、JSエラーなしを確認。`sw.js` は v691。 (by Codex)
 - 2026-05-31 - [batch:205-bento-free-layout-panel-rice-mask] Codex: user 指摘「ご飯ドラッグ時に箱が一瞬消える / のりの配置境界を弁当箱全体ではなくご飯にする / 全体マスクずれ調整 / 右パネルを大きくしてポノと吹き出しを別レイヤー化 / 背景は21:9で16:9安全内に必要要素」を受領。`bento/index.html` と背景アセットを修正し、Playwrightで自由配置の表示と操作を確認する。 (by Codex)
 - 2026-05-31 - [batch:205-bento-free-layout-panel-rice-mask] DONE - Codex: `bento/index.html` を21:9背景レイアウトへ変更し、右パネルを拡張、ポノと吹き出しを下部別レイヤー化。ご飯入り箱は空箱を残したまま一体画像をロード後に差し替える構造にしてドラッグ時の一瞬消えを抑制し、のり系飾りはご飯範囲へクランプ + ご飯範囲クリップで描画。箱マスク既定値を v4 へ更新し、背景 `free_layout_background_21x9.webp` を追加。Playwrightで desktop/mobile 表示、のり範囲、全箱画像 200、エラーなしを確認。`sw.js` は v690。 (by Codex)
 - 2026-05-31 - [batch:204-mojikko-ball-play-guidance] DONE - Codex: `writing-mori/play.html` のころころボールに、ドラッグ中の放物線予測と着地点マーカーを追加。リングに入った瞬間はターゲットの緑ハイライト、着地点の「はいった」、成功バーストで分かるようにし、ターゲット半径も子ども向けに少し広げた。ミルマルの吹き出しは上前面へ移動し、ドラッグ中に画面外で指を離してもリリースを拾うよう document pointerup/pointermove を追加。Playwrightで予測線表示、3回キャッチ完了、報酬保存、吹き出し z-index を確認。`sw.js` は v689。 (by Codex)
