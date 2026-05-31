@@ -1419,19 +1419,20 @@ html, body {
   bottom: 8px;
   z-index: 4;
   width: calc(100% - clamp(320px, 36%, 390px) - 48px);
-  height: 76px;
+  height: 82px;
   display: none;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: center;
+  gap: 6px;
   pointer-events: none;
 }
 #app.free-layout-active > .free-bottom-guide {
   display: flex;
 }
 .free-bottom-pono {
-  width: 72px;
-  height: 86px;
+  width: 94px;
+  height: 78px;
   object-fit: contain;
+  object-position: center bottom;
   flex: 0 0 auto;
   filter: drop-shadow(0 8px 10px rgba(120, 80, 45, 0.2));
   transition: transform 0.3s ease;
@@ -1442,7 +1443,7 @@ html, body {
 .free-bottom-speech {
   position: relative;
   min-height: 48px;
-  max-width: min(520px, calc(100% - 94px));
+  max-width: min(520px, calc(100% - 104px));
   padding: 10px 18px 11px;
   border: 3px solid #F7B75C;
   border-radius: 22px;
@@ -1459,23 +1460,25 @@ html, body {
   content: '';
   position: absolute;
   left: -20px;
-  bottom: 18px;
+  top: 50%;
   width: 0;
   height: 0;
   border-style: solid;
   border-width: 12px 20px 12px 0;
   border-color: transparent #F7B75C transparent transparent;
+  transform: translateY(-50%);
 }
 .free-bottom-speech::after {
   content: '';
   position: absolute;
   left: -13px;
-  bottom: 21px;
+  top: 50%;
   width: 0;
   height: 0;
   border-style: solid;
   border-width: 9px 15px 9px 0;
   border-color: transparent rgba(255, 253, 238, 0.94) transparent transparent;
+  transform: translateY(-50%);
 }
 
 /* question removed — ポノの吹き出しで指示 */
@@ -2415,7 +2418,7 @@ html, body {
     <div class="food-tray" id="food-tray"></div>
   </div>
   <div class="free-bottom-guide" id="free-bottom-guide" aria-live="polite">
-    <img src="../assets/images/characters/pono/pono_001.png" class="free-bottom-pono" id="free-pono-img" alt="ポノ">
+    <img src="../assets/images/bento/ui/decor_pono_peek.png" class="free-bottom-pono" id="free-pono-img" alt="ポノ">
     <div class="free-bottom-speech" id="free-speech">おなか すいたなー</div>
   </div>
 </div>
@@ -2820,7 +2823,7 @@ const freeLayoutMode = true;
 const FREE_LAYOUT_W = 760;
 const FREE_LAYOUT_H = 460;
 const FREE_TABS = [
-  { id: 'box', label: 'おべんとう' },
+  { id: 'box', label: 'おべんとうばこ' },
   { id: 'accessory', label: 'カップ・しきり' },
   { id: 'rice', label: 'ごはん' },
   { id: 'food', label: 'おかず' },
@@ -3938,7 +3941,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('まずは おべんとうを えらぼう！');
+    setSpeech('まずは おべんとうばこを えらぼう！');
   } else if (step === 'rice') {
     freeActiveTier = 1;
     freeLayoutTab = 'rice';
@@ -4234,14 +4237,14 @@ function layoutCupChildren(cup) {
   });
 }
 function makePaletteDropToast(def) {
-  if (!def) return 'おべんとうの なかまで もっていこう！';
+  if (!def) return 'おべんとうばこまで もっていこう！';
   if (def.type === 'rice_auto' || def.type === 'template' || def.type === 'rice') {
-    return 'ごはんを おべんとうに いれよう！';
+    return 'ごはんを おべんとうばこに いれよう！';
   }
   if (def.type === 'decor') {
     return 'のりを ごはんのうえまで もっていこう！';
   }
-  return 'おべんとうの なかまで もっていこう！';
+  return 'おべんとうばこまで もっていこう！';
 }
 function getFreeItemImage(item) {
   if (item && Array.isArray(item.brushImages) && item.brushImages.length) {
@@ -5464,10 +5467,12 @@ function makeFreePaletteButton(def) {
     btn.classList.add('guide-target');
   }
   btn.appendChild(createPaletteVisual(def));
-  const name = document.createElement('span');
-  name.className = 'free-palette-name';
-  name.textContent = def.name || '';
-  btn.appendChild(name);
+  if (freeLayoutTab !== 'box') {
+    const name = document.createElement('span');
+    name.className = 'free-palette-name';
+    name.textContent = def.name || '';
+    btn.appendChild(name);
+  }
   if (freeLayoutTab === 'box') {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -5732,7 +5737,7 @@ function renderFreeGuidePanel() {
   if (freeGuideStep === 'box') {
     actions.appendChild(makeSmallControlButton('これでOK', 'primary', confirmFreeBentoBoxSelection));
   } else if (freeGuideStep === 'rice') {
-    actions.appendChild(makeSmallControlButton('おべんとうにもどる', '', goBackFreeGuideStep));
+    actions.appendChild(makeSmallControlButton('おべんとうばこにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'decor') {
     actions.appendChild(makeSmallControlButton('ごはんにもどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton('かざらず次へ', '', tryAdvanceFromNori));
@@ -5997,7 +6002,7 @@ function loadFreeLayoutStage() {
   if (oldTutorialBubble) oldTutorialBubble.classList.add('hidden');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  setSpeech(maskEdit ? 'マスクを ちょうせいしよう！' : 'まずは おべんとうを えらぼう！');
+  setSpeech(maskEdit ? 'マスクを ちょうせいしよう！' : 'まずは おべんとうばこを えらぼう！');
 }
 function getFreeLayoutCompletionData() {
   const foodItems = placedItems.filter(i => i.type === 'food' || i.type === 'rice');

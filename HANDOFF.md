@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:207-bento-pono-peek-bubble-anchor] Codex: user 指摘「全身ポノではなく生成し直すべき / 解像度によって吹き出しがまだ合わない」を受領。全身素材をやめて上半身のぞき込み素材へ差し替え、吹き出しの尾を中央アンカーで合わせる。文言は「おべんとうばこ」に修正し、右側のお弁当箱名はDOMにも出さない。 (by Codex)
+- 2026-05-31 - [batch:207-bento-pono-peek-bubble-anchor] DONE - Codex: 下部ポノを全身から上半身のぞき込み素材 `decor_pono_peek.png` に差し替え、吹き出しは中央アンカーの二重三角尾にして 1365x768 / 824x395 / 932x430 / 812x375 で位置確認。文言は「おべんとうばこ」に変更し、右側のお弁当箱名はDOMへ追加しないよう修正。Playwrightでポノsrc、文言、箱カード名0件、JSエラーなしを確認。`sw.js` は v692。 (by Codex)
 - 2026-05-31 - [batch:206-bento-pono-speech-wording] Codex: user 指摘「下部ポノが服を着ている / 吹き出し形状が変 / 弁当箱を『箱』と呼ばない / 右側のお弁当選択名を削除」を受領。`bento/index.html` の表示文言・下部ポノ素材・吹き出しCSS・弁当選択カード名表示を修正する。 (by Codex)
 - 2026-05-31 - [batch:206-bento-pono-speech-wording] DONE - Codex: 下部ポノを服なし `assets/images/characters/pono/pono_001.png` に差し替え、吹き出しの尾を三角の二重レイヤーへ作り直し。自由配置のユーザー表示文言から「はこ」を外して「おべんとう」表現へ変更し、右側のお弁当選択カード名は非表示化。Playwrightで初期選択画面のポノsrc、吹き出し文言、右カード名 `display:none`、JSエラーなしを確認。`sw.js` は v691。 (by Codex)
 - 2026-05-31 - [batch:205-bento-free-layout-panel-rice-mask] Codex: user 指摘「ご飯ドラッグ時に箱が一瞬消える / のりの配置境界を弁当箱全体ではなくご飯にする / 全体マスクずれ調整 / 右パネルを大きくしてポノと吹き出しを別レイヤー化 / 背景は21:9で16:9安全内に必要要素」を受領。`bento/index.html` と背景アセットを修正し、Playwrightで自由配置の表示と操作を確認する。 (by Codex)
