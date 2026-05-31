@@ -934,7 +934,7 @@ button {
     <header class="top-bar">
       <button class="pixel-button back-btn" id="backBtn">← おせわへ</button>
       <div class="title-board">ころころボール</div>
-      <div class="star-box"><span id="starCount">1550</span></div>
+      <div class="star-box"><span id="starCount">0</span></div>
       <button class="pixel-button icon-btn" id="settingsBtn" aria-label="設定">設定</button>
     </header>
     <div class="sub-sign">ゆびで ころがそう！</div>
@@ -981,7 +981,7 @@ button {
         <div class="step-card"><span class="step-num">2</span><span>ころがす</span></div>
         <div class="step-card"><span class="step-num">3</span><span>ほめる</span></div>
       </div>
-      <div class="reward-hint">3かい キャッチ<br>きらり 2こ<br>なかよし +3</div>
+      <div class="reward-hint">3かい キャッチ<br>スター20<br>なかよし +3</div>
     </aside>
 
     <div class="status-strip">
@@ -994,7 +994,7 @@ button {
       <button class="pixel-button secondary-btn" id="retryBtn">もういっかい</button>
       <button class="pixel-button secondary-btn next" id="careBtn">おせわへ</button>
     </nav>
-    <div class="message-bar" id="messageBar">きらりを つかって、ミルマルと ゆっくり あそぼう！</div>
+    <div class="message-bar" id="messageBar">スターを つかって、ミルマルと ゆっくり あそぼう！</div>
 
     <div class="result-modal" id="resultModal" aria-hidden="true">
       <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
@@ -1013,7 +1013,7 @@ button {
 'use strict';
 
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
-const PLAY_COST = 2;
+const PLAY_STAR_COST = 20;
 const TOTAL_ROUNDS = 3;
 const MAX_PULL = 150;
 const BALL_SIZE = 76;
@@ -1032,11 +1032,10 @@ const defaultState = {
   sukusuku: 0,
   eggWarmth: 0,
   hatched: false,
-  stars: 1250,
+  stars: 0,
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
-    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
-    moji_power: { id: 'moji_power', name: 'もじのきらり', count: 0, type: 'energy' }
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
   reaction: 'normal',
   speech: 'いっしょに もじを かこう！',
@@ -1116,6 +1115,9 @@ function loadState() {
     merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? parsed.eggWarmth : merged.eggWarmth;
     merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    if (!merged.hatched && merged.eggWarmth === 0 && merged.stars >= 1000) {
+      merged.stars = 0;
+    }
     merged.speech = parsed.speech || merged.speech;
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastStageId = parsed.lastStageId || merged.lastStageId;
@@ -1153,6 +1155,10 @@ function changeInventory(id, delta) {
   if (!state.inventory[id]) return 0;
   state.inventory[id].count = clamp(getInventoryCount(id) + delta, 0, 99);
   return state.inventory[id].count;
+}
+
+function hasStars(cost = 1) {
+  return (Number(state.stars) || 0) >= cost;
 }
 
 function getCareStageId() {
@@ -1325,9 +1331,9 @@ function resetRound(options = {}) {
   updateRoundUi();
   mainPlayBtn.textContent = 'あそぶ！';
   guideText.textContent = `${currentRound}かいめ：リングを ねらおう`;
-  messageBar.textContent = getInventoryCount('moji_power') >= PLAY_COST
+  messageBar.textContent = hasStars(PLAY_STAR_COST)
     ? 'ボールを ひっぱると、ちからと むきが かわるよ。'
-    : 'もじを かくと、あそぶための きらりが もらえるよ。';
+    : 'もじを かくと、あそぶための スターが もらえるよ。';
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
 }
 
@@ -1387,8 +1393,8 @@ function startDrag(event) {
     showNeedCareMessage('まだ タマゴだよ', 'おせわ画面で タマゴを あたためてあげよう。');
     return;
   }
-  if (getInventoryCount('moji_power') < PLAY_COST) {
-    showNeedCareMessage('きらりが たりないよ', `あと ${PLAY_COST - getInventoryCount('moji_power')}こ きらりが いるよ。もじを かこう！`);
+  if (!hasStars(PLAY_STAR_COST)) {
+    showNeedCareMessage('スターが たりないよ', `あと ${PLAY_STAR_COST - (Number(state.stars) || 0)}スター いるよ。もじを かこう！`);
     return;
   }
   event.preventDefault();
@@ -1541,11 +1547,10 @@ function completeGame() {
 function applyPlayReward() {
   if (resultApplied) return;
   resultApplied = true;
-  changeInventory('moji_power', -PLAY_COST);
+  state.stars = clamp((Number(state.stars) || 0) - PLAY_STAR_COST, 0, 99999);
   state.nakayoshi = clamp((Number(state.nakayoshi) || 0) + 3, 0, 100);
   state.sukusuku = clamp((Number(state.sukusuku) || 0) + 1, 0, 100);
   state.gokigen = clamp((Number(state.gokigen) || 0) + 16, 0, 100);
-  state.stars = clamp((Number(state.stars) || 0) + 5, 0, 99999);
   state.lastCareAt = Date.now();
   state.lastMoodAt = Date.now();
   state.reaction = 'happy';
@@ -1598,7 +1603,7 @@ function goWriting() {
 function renderCounts() {
   document.getElementById('starCount').textContent = String(state.stars);
   const sign = document.querySelector('.sub-sign');
-  sign.textContent = `きらり ${getInventoryCount('moji_power')}こ`;
+  sign.textContent = `スター${PLAY_STAR_COST}で あそぶ`;
   milmaru.classList.toggle('baby', getCareStageId() === 'baby');
   updateRoundUi();
 }
@@ -1620,9 +1625,9 @@ document.getElementById('retryBtn').addEventListener('click', () => {
   resetRound();
 });
 document.getElementById('modalRetryBtn').addEventListener('click', () => {
-  if (getInventoryCount('moji_power') < PLAY_COST) {
+  if (!hasStars(PLAY_STAR_COST)) {
     resultModal.classList.remove('show');
-    showNeedCareMessage('きらりが たりないよ', 'もじを かいて、また あそびにこよう。');
+    showNeedCareMessage('スターが たりないよ', 'もじを かいて、また あそびにこよう。');
     return;
   }
   resetGame();
@@ -1669,10 +1674,10 @@ if (!state.hatched) {
   guideText.textContent = 'まだ あそべないよ';
   messageBar.textContent = 'おせわ画面で タマゴを あたためてあげよう。';
   milmaruSpeech.textContent = 'すぅ...';
-} else if (getInventoryCount('moji_power') < PLAY_COST) {
-  guideText.textContent = 'きらりが たりないよ';
-  messageBar.textContent = 'もじを かくと、あそぶための きらりが もらえるよ。';
-  milmaruSpeech.textContent = getStageSpeech('きらりが たりないよ');
+} else if (!hasStars(PLAY_STAR_COST)) {
+  guideText.textContent = 'スターが たりないよ';
+  messageBar.textContent = 'もじを かくと、あそぶための スターが もらえるよ。';
+  milmaruSpeech.textContent = getStageSpeech('スターが たりないよ');
 } else {
   resetGame();
 }

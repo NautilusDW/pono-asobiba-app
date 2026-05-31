@@ -1432,7 +1432,7 @@ html, body {
       <div class="header-right">
         <div class="pixel-panel star-box" aria-label="スター">
           <span class="star-icon" aria-hidden="true"></span>
-          <span id="starCount">1250</span>
+          <span id="starCount">0</span>
         </div>
         <button class="pixel-button settings-btn" type="button" aria-label="せってい">⚙</button>
       </div>
@@ -1596,6 +1596,8 @@ const trailCtx = pixelTrailCanvas.getContext('2d');
 const PIXEL_GRID_SIZE = 132;
 const WRITER_PADDING = 48;
 const LETTER_BRUSH_RADIUS = 4;
+const WRITING_STAR_REWARD = 10;
+const WARM_STAR_COST = 10;
 // Legacy hook for custom font SVG guides. Current kana uses the writer data itself
 // so visual guide, stroke order, and tracing judgment share one source of truth.
 const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/';
@@ -1640,11 +1642,10 @@ const defaultCareState = {
   sukusuku: 0,
   eggWarmth: 0,
   hatched: false,
-  stars: 1250,
+  stars: 0,
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
-    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
-    moji_power: { id: 'moji_power', name: 'もじのきらり', count: 0, type: 'energy' }
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
@@ -1661,7 +1662,7 @@ const careFoodRewards = {
 };
 
 let careState = loadCareState();
-let stars = Number.isFinite(careState.stars) ? careState.stars : 1250;
+let stars = Number.isFinite(careState.stars) ? careState.stars : 0;
 let audioCtx = null;
 let lastWriteSfxAt = 0;
 
@@ -1761,6 +1762,9 @@ function loadCareState() {
     merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? Math.max(0, Math.min(100, parsed.eggWarmth)) : merged.eggWarmth;
     merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    if (!merged.hatched && merged.eggWarmth === 0 && merged.stars >= 1000) {
+      merged.stars = 0;
+    }
     merged.speech = parsed.speech || (merged.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : merged.lastPetAt;
@@ -1833,17 +1837,17 @@ function setFoodIconClass(iconEl, reward) {
 function updateCompanionCard() {
   const reward = getCurrentWritingReward();
   const foodCount = getInventoryCount(reward.id);
-  const powerCount = getInventoryCount('moji_power');
+  const starValue = Number(careState.stars) || 0;
   const hatched = careState.hatched === true;
   const stageId = getCurrentCareStageId();
-  companionCard.classList.toggle('reward-ready', foodCount > 0 || powerCount > 0);
+  companionCard.classList.toggle('reward-ready', foodCount > 0 || (!hatched && starValue >= WARM_STAR_COST));
   companionCard.classList.toggle('egg-state', !hatched);
   companionCard.classList.toggle('hatched-state', hatched);
   companionCard.classList.toggle('baby-state', stageId === 'baby');
   companionCard.classList.toggle('yochiyochi-state', stageId === 'yochiyochi');
-  companionStatus.textContent = !hatched ? `✦ ${powerCount}` : `× ${foodCount}`;
+  companionStatus.textContent = !hatched ? `★ ${starValue}` : `× ${foodCount}`;
   if (!hatched) {
-    companionSpeech.textContent = powerCount > 0 ? 'タマゴを\nあたためよう！' : 'もじをかくと\nぽかぽか！';
+    companionSpeech.textContent = starValue >= WARM_STAR_COST ? 'タマゴを\nあたためよう！' : 'もじをかくと\nスター！';
   } else if (stageId === 'baby') {
     companionSpeech.textContent = foodCount > 0 ? 'みゅみゅ！\nまんま...' : 'ふにゃ？\nあう〜';
   } else if (stageId === 'yochiyochi') {
@@ -3301,10 +3305,10 @@ function completeWriting(manual, summary) {
   companionCard.classList.toggle('celebrate', careState.hatched === true);
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
   const reward = getCurrentWritingReward();
-  resultReward.textContent = `${reward.name}と もじのきらりを ゲット！`;
+  resultReward.textContent = `${reward.name}と スター +${WRITING_STAR_REWARD}を ゲット！`;
   setFoodIconClass(resultRewardIcon, reward);
   modalRetryBtn.textContent = `つぎは「${writingCharacters[(currentIndex + 1) % writingCharacters.length].char}」`;
-  stars += 25;
+  stars += WRITING_STAR_REWARD;
   starCountEl.textContent = String(stars);
   launchBurst();
 
@@ -3330,7 +3334,6 @@ function onWritingComplete(result) {
   if (careState.inventory[reward.id]) {
     changeInventory(reward.id, 1);
   }
-  changeInventory('moji_power', 1);
   careState.stars = stars;
   careState.lastCareAt = Date.now();
   careState.speech = careState.hatched ? `${reward.name} ほしいな〜` : 'タマゴを あたためよう！';

@@ -1699,7 +1699,7 @@ html, body {
     <header class="care-header">
       <button class="pixel-button back-btn" id="backBtn">← もじへ</button>
       <div class="title-board" id="titleName">ミルマル</div>
-      <div class="pixel-panel star-box"><span class="star-icon" aria-hidden="true"></span><span id="starCount">1275</span></div>
+      <div class="pixel-panel star-box"><span class="star-icon" aria-hidden="true"></span><span id="starCount">0</span></div>
       <button class="pixel-button icon-btn" id="settingsBtn" aria-label="設定">⚙</button>
     </header>
 
@@ -1728,13 +1728,6 @@ html, body {
           <div>
             <div class="item-name">もじクッキー</div>
             <div class="item-count">× <span id="cookieCount">1</span></div>
-          </div>
-        </div>
-        <div class="item-card">
-          <div class="power-icon" aria-hidden="true"></div>
-          <div>
-            <div class="item-name">もじのきらり</div>
-            <div class="item-count">× <span id="mojiPowerCount">0</span></div>
           </div>
         </div>
         <button class="pixel-button album-btn" id="inventoryBtn">もちものをみる</button>
@@ -1816,7 +1809,6 @@ html, body {
       <label class="debug-row">ごきげん<input id="debugGokigen" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">すくすく<input id="debugSukusuku" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">ぽかぽか<input id="debugEggWarmth" type="number" min="0" max="100" step="1"></label>
-      <label class="debug-row">きらり<input id="debugMojiPower" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">ミルク<input id="debugMilkCount" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">クッキー<input id="debugCookieCount" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">スター<input id="debugStars" type="number" min="0" max="99999" step="25"></label>
@@ -1863,11 +1855,10 @@ const defaultState = {
   sukusuku: 0,
   eggWarmth: 0,
   hatched: false,
-  stars: 1250,
+  stars: 0,
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
-    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
-    moji_power: { id: 'moji_power', name: 'もじのきらり', count: 0, type: 'energy' }
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
@@ -1891,9 +1882,9 @@ const careFoods = {
   moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', gainNakayoshi: 5, gainSukusuku: 2 }
 };
 
-const actionPowerCost = {
-  warm: 1,
-  play: 2
+const actionStarCost = {
+  warm: 10,
+  play: 20
 };
 
 let state = loadState();
@@ -2065,6 +2056,9 @@ function loadState() {
     merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? clamp(parsed.eggWarmth, 0, 100) : merged.eggWarmth;
     merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    if (!merged.hatched && merged.eggWarmth === 0 && merged.stars >= 1000) {
+      merged.stars = 0;
+    }
     merged.speech = merged.hatched ? (parsed.speech || 'うまれたての あかちゃんだよ') : 'まだ タマゴだよ';
     merged.reaction = parsed.reaction || merged.reaction;
     merged.lastStageId = parsed.lastStageId || (merged.hatched ? getGrowthStage(Math.max(10, merged.sukusuku)).id : 'egg');
@@ -2196,8 +2190,8 @@ function getFriendshipBonus() {
   const tier = getFriendshipTier();
   const mood = getGokigenStatus();
   if (mood.id === 'lonely' || mood.id === 'sulky') return null;
-  if (tier.level >= 4) return { stars: 20, power: 1, message: `${getMilmaruName()}の おうえん！もじのきらりを もう1こ もらったよ。` };
-  if (tier.level >= 3) return { stars: 10, power: 0, message: `${getMilmaruName()}が おうえんしてくれたよ。スターが すこし ふえた！` };
+  if (tier.level >= 4) return { stars: 20, message: `${getMilmaruName()}の おうえん！スターを たくさん もらったよ。` };
+  if (tier.level >= 3) return { stars: 10, message: `${getMilmaruName()}が おうえんしてくれたよ。スターが すこし ふえた！` };
   return null;
 }
 
@@ -2498,16 +2492,16 @@ function syncRoaming() {
   if (!roamState.timer) scheduleRoam(1600 + Math.random() * 1600);
 }
 
-function hasMojiPower(cost = 1) {
-  return getInventoryCount('moji_power') >= cost;
+function hasStars(cost = 1) {
+  return (Number(state.stars) || 0) >= cost;
 }
 
 function showNeedWritingMessage(cost = 1) {
   playSfx('mistake');
   finishPettingMode();
-  const shortage = Math.max(1, cost - getInventoryCount('moji_power'));
-  const message = `あと ${shortage}かい もじをかくと、おせわに使う きらりが あつまるよ。`;
-  setSpeech('きらりが たりないよ', message);
+  const shortage = Math.max(1, cost - (Number(state.stars) || 0));
+  const message = `あと ${shortage}スター たりないよ。もじを かいて スターを あつめよう。`;
+  setSpeech('スターが たりないよ', message);
   showCareNotice('もじを かこう！', message, 2600);
   setReaction(state.hatched ? 'worried' : 'relaxed', 1200);
   spawnFx('sparkle');
@@ -2515,12 +2509,12 @@ function showNeedWritingMessage(cost = 1) {
   render();
 }
 
-function spendMojiPower(cost, reason) {
-  if (!hasMojiPower(cost)) {
+function spendStars(cost) {
+  if (!hasStars(cost)) {
     showNeedWritingMessage(cost);
     return false;
   }
-  changeInventory('moji_power', -cost);
+  state.stars = clamp((Number(state.stars) || 0) - cost, 0, 99999);
   return true;
 }
 
@@ -2573,20 +2567,20 @@ function getEggVisualClass() {
 }
 
 function renderActionMode() {
-  const power = getInventoryCount('moji_power');
+  const stars = Number(state.stars) || 0;
   const preferredFood = getPreferredFood();
   const preferredFoodCount = getInventoryCount(preferredFood.id);
   careActions.classList.toggle('egg-mode', !state.hatched);
-  writeBtn.classList.toggle('warm-main', !state.hatched && power > 0);
-  writeBtn.classList.toggle('needs-power', !state.hatched && power <= 0);
+  writeBtn.classList.toggle('warm-main', !state.hatched && stars >= actionStarCost.warm);
+  writeBtn.classList.toggle('needs-power', !state.hatched && stars < actionStarCost.warm);
   if (state.hatched) {
     mainActionIcon.textContent = '';
     mainActionText.textContent = 'もじを かく！';
-    mainActionHelp.textContent = 'もじを かいて おせわの もとを もらおう！';
+    mainActionHelp.textContent = 'もじを かいて スターと おやつを もらおう！';
   } else {
-    mainActionIcon.textContent = power > 0 ? '' : '✏';
-    mainActionText.textContent = power > 0 ? 'あたためる！' : 'もじを かく！';
-    mainActionHelp.textContent = power > 0 ? 'もじのきらりを 1つ つかう' : 'かくと あたためられるよ';
+    mainActionIcon.textContent = stars >= actionStarCost.warm ? '' : '✏';
+    mainActionText.textContent = stars >= actionStarCost.warm ? 'あたためる！' : 'もじを かく！';
+    mainActionHelp.textContent = stars >= actionStarCost.warm ? `スター${actionStarCost.warm}で あたためる` : 'かくと スターが もらえるよ';
   }
   feedBtn.classList.toggle('milk', state.hatched && preferredFood.id === 'moji_milk');
   feedBtn.classList.toggle('has-cookie', state.hatched && preferredFoodCount > 0);
@@ -2595,8 +2589,8 @@ function renderActionMode() {
     ? `${preferredFood.name}を あげる`
     : 'うまれてから あげよう';
   const playButton = document.getElementById('playBtn');
-  playButton.classList.toggle('power-empty', !hasMojiPower(actionPowerCost.play));
-  playButton.querySelector('.action-help').textContent = 'きらり2で あそびば';
+  playButton.classList.toggle('power-empty', !hasStars(actionStarCost.play));
+  playButton.querySelector('.action-help').textContent = `スター${actionStarCost.play}で あそびば`;
 }
 
 function applyMilmaruClass(reaction) {
@@ -2777,7 +2771,7 @@ function startHatchScene() {
 
   queueHatchStep(5900, () => {
     if (state.reaction === 'normal' && state.named) {
-      setSpeech('いっしょに もじを かこう！', 'もじを かくと、もじミルクと もじのきらりが もらえるよ。');
+      setSpeech('いっしょに もじを かこう！', 'もじを かくと、もじミルクと スターが もらえるよ。');
       saveState();
       render();
     }
@@ -2802,7 +2796,7 @@ function maybeHatchEgg() {
 function warmEgg() {
   const now = Date.now();
   if (now - state.lastWarmAt < 650) return;
-  if (!spendMojiPower(actionPowerCost.warm, 'warm')) return;
+  if (!spendStars(actionStarCost.warm)) return;
   playSfx('warm');
   state.lastWarmAt = now;
   markCareInteraction();
@@ -2854,7 +2848,6 @@ function render() {
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
   document.getElementById('milkCount').textContent = String(getInventoryCount('moji_milk'));
   document.getElementById('cookieCount').textContent = String(getInventoryCount('moji_cookie'));
-  document.getElementById('mojiPowerCount').textContent = String(getInventoryCount('moji_power'));
   feedBtn.classList.toggle('has-cookie', state.hatched && getInventoryCount(getPreferredFood().id) > 0);
   speechBubble.textContent = getDisplaySpeech(state.speech);
   const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
@@ -2877,7 +2870,6 @@ function renderDebugPanel() {
   document.getElementById('debugGokigen').value = String(state.gokigen);
   document.getElementById('debugSukusuku').value = String(state.sukusuku);
   document.getElementById('debugEggWarmth').value = String(state.eggWarmth);
-  document.getElementById('debugMojiPower').value = String(getInventoryCount('moji_power'));
   document.getElementById('debugMilkCount').value = String(getInventoryCount('moji_milk'));
   document.getElementById('debugCookieCount').value = String(getInventoryCount('moji_cookie'));
   document.getElementById('debugStars').value = String(state.stars);
@@ -2906,7 +2898,6 @@ function applyDebugState(next = {}) {
   state.gokigen = next.gokigen ?? readDebugNumber('debugGokigen', 0, 100);
   state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
   state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
-  state.inventory.moji_power.count = next.mojiPower ?? readDebugNumber('debugMojiPower', 0, 99);
   state.inventory.moji_milk.count = next.milk ?? readDebugNumber('debugMilkCount', 0, 99);
   state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
   state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
@@ -2950,21 +2941,19 @@ function consumePendingWritingReward() {
   if (state.inventory[reward.id]) {
     changeInventory(reward.id, 1);
   }
-  changeInventory('moji_power', 1);
-  state.stars += 25;
+  state.stars = clamp((Number(state.stars) || 0) + 10, 0, 99999);
   markCareInteraction();
   if (state.hatched) {
     boostGokigen(8);
     const bonus = getFriendshipBonus();
     if (bonus) {
-      state.stars += bonus.stars;
-      if (bonus.power > 0) changeInventory('moji_power', bonus.power);
+      state.stars = clamp((Number(state.stars) || 0) + bonus.stars, 0, 99999);
     }
     const stageMessage = getYochiyochiActionMessage('writing');
-    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, bonus ? bonus.message : (stageMessage || `もじのきらりも たまったよ。${getMilmaruName()}に おせわを してみよう！`));
+    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, bonus ? bonus.message : (stageMessage || `スターも ふえたよ。${getMilmaruName()}に おせわを してみよう！`));
     setReaction('happy');
   } else {
-    setSpeech('もじのきらりが たまったよ！', 'タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
+    setSpeech('スターが ふえたよ！', 'スターで タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
     setReaction('warm');
   }
   spawnFx('sparkle');
@@ -2980,17 +2969,17 @@ function applyEntrySpeech() {
       setReaction('happy', 1500);
       spawnFx('sparkle');
     } else if (state.hatched) {
-      setSpeech('また あそぼうね', 'もじを かいて きらりを ためると、また おもちゃで あそべるよ。');
+      setSpeech('また あそぼうね', 'もじを かいて スターを ためると、また おもちゃで あそべるよ。');
     }
     saveState();
     return;
   }
   if (params.get('from') !== 'writing') return;
   if (!state.hatched) {
-    if (getInventoryCount('moji_power') > 0) {
-      setSpeech('タマゴを あたためよう！', 'もじのきらりを つかって、ぽかぽか してあげよう。');
+    if (hasStars(actionStarCost.warm)) {
+      setSpeech('タマゴを あたためよう！', 'スターを つかって、ぽかぽか してあげよう。');
     } else {
-      setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる きらりが たまるよ。');
+      setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる スターが ふえるよ。');
     }
     saveState();
     return;
@@ -2999,7 +2988,7 @@ function applyEntrySpeech() {
   if (getInventoryCount(food.id) > 0) {
     setSpeech(`${food.name} ほしいな〜`, `${food.name}を あげたら、${getMilmaruName()}が よろこぶよ。`);
   } else {
-    setSpeech('いっしょに もじを かこう！', getYochiyochiActionMessage('writing') || `もじを かくと、${food.name}と もじのきらりが もらえるよ。`);
+    setSpeech('いっしょに もじを かこう！', getYochiyochiActionMessage('writing') || `もじを かくと、${food.name}と スターが もらえるよ。`);
   }
   saveState();
 }
@@ -3007,7 +2996,7 @@ function applyEntrySpeech() {
 function feedCookie() {
   if (!state.hatched) {
     playSfx('mistake');
-    setSpeech('まだ タマゴだよ', 'いまは もじのきらりで あたためてあげよう。ミルクは うまれてからね。');
+    setSpeech('まだ タマゴだよ', 'いまは スターで あたためてあげよう。ミルクは うまれてからね。');
     setReaction('relaxed');
     spawnFx('sparkle');
     return;
@@ -3151,7 +3140,7 @@ function completePetMilmaru() {
   markCareInteraction();
   if (!state.hatched) {
     state.nakayoshi = 0;
-    setSpeech('ゆらゆら うごいたよ', 'タマゴを やさしく なでたよ。もじを かくと、ぽかぽか できるよ。');
+    setSpeech('ゆらゆら うごいたよ', 'タマゴを やさしく なでたよ。もじを かくと、スターで ぽかぽか できるよ。');
     setReaction('relaxed');
     spawnFx('sparkle');
     saveState();
@@ -3170,13 +3159,13 @@ function completePetMilmaru() {
 function playWithMilmaru() {
   if (!state.hatched) {
     playSfx('mistake');
-    setSpeech('まだ タマゴだよ', 'いまは もじのきらりで あたためるのが いちばん だいじ。');
+    setSpeech('まだ タマゴだよ', 'いまは スターで あたためるのが いちばん だいじ。');
     setReaction('warm');
     spawnFx('sparkle');
     return;
   }
-  if (!hasMojiPower(actionPowerCost.play)) {
-    showNeedWritingMessage(actionPowerCost.play);
+  if (!hasStars(actionStarCost.play)) {
+    showNeedWritingMessage(actionStarCost.play);
     return;
   }
   playSfx('select');
@@ -3190,12 +3179,12 @@ function playWithMilmaru() {
 
 function goWrite() {
   if (!state.hatched) {
-    if (hasMojiPower(actionPowerCost.warm)) {
+    if (hasStars(actionStarCost.warm)) {
       warmEgg();
       return;
     }
     playSfx('select');
-    setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる きらりが たまるよ。');
+    setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる スターが ふえるよ。');
     saveState();
     setTimeout(() => {
       window.location.href = 'index.html?from=care';
@@ -3220,7 +3209,7 @@ function setupDebugControls() {
     gokigen: 80,
     eggWarmth: 75,
     sukusuku: 0,
-    mojiPower: 1,
+    stars: Math.max(actionStarCost.warm, Number(state.stars) || 0),
     speech: 'まだ タマゴだよ',
     message: 'あと 1かい あたためると 孵化演出を確認できるよ。'
   }));
@@ -3229,7 +3218,7 @@ function setupDebugControls() {
     gokigen: 80,
     eggWarmth: 99,
     sukusuku: 0,
-    mojiPower: 1,
+    stars: Math.max(actionStarCost.warm, Number(state.stars) || 0),
     speech: 'まだ タマゴだよ',
     message: 'あたためると すぐ孵化演出に入るよ。'
   }));
@@ -3240,7 +3229,7 @@ function setupDebugControls() {
     eggWarmth: 100,
     sukusuku: Math.max(10, state.sukusuku),
     milk: Math.max(1, getInventoryCount('moji_milk')),
-    mojiPower: Math.max(1, getInventoryCount('moji_power')),
+    stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
     speech: 'いっしょに もじを かこう！',
     message: 'ベビー状態にしたよ。'
   }));
@@ -3251,7 +3240,7 @@ function setupDebugControls() {
     eggWarmth: 100,
     sukusuku: 30,
     milk: Math.max(1, getInventoryCount('moji_milk')),
-    mojiPower: Math.max(3, getInventoryCount('moji_power')),
+    stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
     speech: 'いっしょに もじを かこう！',
     message: 'よちよち期の はいはい状態にしたよ。'
   }));
@@ -3262,7 +3251,7 @@ function setupDebugControls() {
     eggWarmth: 100,
     sukusuku: 46,
     cookies: Math.max(1, getInventoryCount('moji_cookie')),
-    mojiPower: Math.max(3, getInventoryCount('moji_power')),
+    stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
     speech: 'いっしょに もじを かこう！',
     message: '成長前の よちよち状態にしたよ。'
   }));
@@ -3288,7 +3277,7 @@ document.getElementById('settingsBtn').addEventListener('click', () => {
   setSpeech('せっていは じゅんびちゅうだよ', 'また あとで つかえるようにするね。');
 });
 document.getElementById('inventoryBtn').addEventListener('click', () => {
-  setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・クッキー・もじのきらりが ふえるよ。');
+  setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・クッキー・スターが ふえるよ。');
 });
 document.getElementById('albumBtn').addEventListener('click', () => {
   setSpeech('アルバムは じゅんびちゅう！', 'かいた もじを あとで ならべよう。');
