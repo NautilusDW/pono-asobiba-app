@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:214-bento-mask-defaults-not-device-settings] Codex: user 指摘「背景の空の話は別スレッド / マスクは端末別ユーザー設定ではなくゲーム全体の初期値として保存するもの」を受領。直前の `writing-mori/play.html` 背景誤変更を戻し、弁当マスクは通常プレイで localStorage の調整値を使わずコード既定値だけを使うようにする。 (by Codex)
+- 2026-05-31 - [batch:214-bento-mask-defaults-not-device-settings] DONE - Codex: `writing-mori/play.html` のステージ背景・雲・地面帯を 2e17da2 時点の見た目へ戻した。`bento/index.html` は「数値はこの端末に自動保存」表示を削除し、`getBoxMaskBounds()` で editor 中だけ localStorage 調整値を使い、通常プレイは `maskBounds` 初期値 X140/Y78/W500/H314 を全端末共通で使うよう修正。Playwrightで editor override と通常プレイ初期値の切替、保存文言なし、JSエラーなしを確認。`sw.js` は v704。 (by Codex)
 - 2026-05-31 - [batch:213-writing-ground-normal-bento-mask] Codex: user 指摘「もじっこ遊び背景の空をなくして地面だけの2Dゲーム視点へ / マスク調整は保存されるのか / 普通のお弁当マスクが形も位置も合っていない」を受領。`writing-mori/play.html` の空背景を地面だけの見た目へ変更し、普通のお弁当のマスク既定値と保存表示を直す。 (by Codex)
 - 2026-05-31 - [batch:213-writing-ground-normal-bento-mask] DONE - Codex: `writing-mori/play.html` の空色グラデーションと雲をなくし、ステージ/プレイフィールドを地面・土の2D見下ろし風背景へ変更。普通のお弁当マスクは user 追加PNGと現アセットのハッシュ一致を確認した上で既定 bounds を X140/Y78/W500/H314 に調整し、マスク調整値は端末 localStorage へ自動保存される旨をUIに表示。保存キーを v6 へ更新し、Playwrightで空色なし・雲非表示・マスク表示・保存反映を確認。`sw.js` は v701。 (by Codex)
 - 2026-05-31 - [batch:211-bento-title-mask-editors] Codex: user 指摘「タイトルとポノ顔が重なる / 揚げ鍋マスクが飛び出る / お弁当箱ごとのマスクずれを編集したい」を受領。タイトルUIを右余白へ寄せ、揚げ鍋の油面マスクを layout-editor 対象に追加し、自由配置のお弁当マスクを箱ごとに編集できるようにする。 (by Codex)
