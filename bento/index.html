@@ -2932,6 +2932,7 @@ const bentoBoxes = [
     bounds: { x: 76, y: 54, w: 608, h: 354 },
     placeBounds: { x: 124, y: 92, w: 512, h: 276 },
     riceBounds: { x: 150, y: 104, w: 460, h: 250 },
+    riceOnly: true,
     clipPoints: [[124,92], [636,92], [636,368], [124,368]],
     imageScale: 1.18,
     tierCount: 1,
@@ -2970,6 +2971,7 @@ const bentoBoxes = [
     bounds: { x: 92, y: 62, w: 576, h: 338 },
     placeBounds: { x: 136, y: 92, w: 488, h: 276 },
     riceBounds: { x: 162, y: 104, w: 436, h: 250 },
+    riceOnly: true,
     clipPoints: [[380,86], [536,98], [622,190], [616,318], [514,372], [380,382], [246,372], [144,318], [138,190], [224,98]],
     imageScale: 1.18,
     tierCount: 1,
@@ -3769,6 +3771,9 @@ function getSelectedBentoBox() {
 }
 function getBoxTierCount(box = getSelectedBentoBox()) {
   return Math.max(1, box.tierCount || 1);
+}
+function isRiceOnlyBox(box = getSelectedBentoBox()) {
+  return !!(box && box.riceOnly && getBoxTierCount(box) <= 1);
 }
 function getBoxImageRect(box) {
   const b = (box && box.bounds) || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
@@ -5709,6 +5714,10 @@ function tryAdvanceFromNori() {
   if (!hasRiceOnTier(1)) {
     showToast('まず ごはんを よそおう！');
     setFreeGuideStep('rice');
+    return;
+  }
+  if (isRiceOnlyBox()) {
+    stageComplete();
     return;
   }
   setFreeGuideStep('tier2');
