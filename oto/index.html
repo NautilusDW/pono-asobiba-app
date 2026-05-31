@@ -238,15 +238,14 @@
   }
   /* Guitar Hero 風 ノート落下 (リズムモード時のみ表示) */
   #rhythm-lanes {
-    /* v707+: 左 35% は左メニュー (モード切替 / ねいろ / ばんそう) を避けるため空ける。
-       (24% center + 110px ≒ 中〜大画面で右端 33-38vw に達するため、25% では不足。)
-       内側は 100% = 画面右 65% にマッピングされる。
-       .gh-lane / .gh-note / .gh-flash の % 座標は全てこの内側基準 (12.5% 等間隔)。
+    /* v713+: 左メニューを 11% 中心・幅 160px に縮めたため、レーン領域を 22% から開始。
+       内側 100% = 画面右 78% にマッピングされ、内側 12.5% 等間隔 (.gh-note / .gh-lane / .gh-flash) は
+       viewport 換算で 22% + 9.75% * (i+0.5) に対応 (ボタン left% と完全整合)。
        v709: レーン領域を暗い濃紺〜濃黒のグラデにして、カラフルなノートが映えるように。 */
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 35%;
+    left: 22%;
     right: 0;
     pointer-events: none;
     z-index: 4;
@@ -1446,6 +1445,51 @@
       max-width: 260px;
       font-size: 1.28rem;
     }
+
+    /* v713: リズムモード時は左メニューを 11% 中心・幅 160px に縮めてレーン領域を確保。
+       コード/単音ピルはメロディ譜面では不要なので非表示。
+       (詳細度を base @media (orientation: landscape) と揃えるため同ブロック末尾に配置) */
+    body.rhythm-layout .chord-pill { display: none !important; }
+    body.rhythm-layout .mode-switch,
+    body.rhythm-layout .sound-sets-box,
+    body.rhythm-layout .band-group,
+    body.rhythm-layout .rhythm-hud,
+    body.rhythm-layout .rhythm-status,
+    body.rhythm-layout .rhythm-queue {
+      left: 11%;
+      width: 160px;
+    }
+    body.rhythm-layout .sound-sets-box {
+      max-width: 160px;
+      padding: 3px 4px 5px;
+    }
+    body.rhythm-layout .sound-sets {
+      flex-wrap: wrap;
+      gap: 3px;
+      max-width: 150px;
+      justify-content: center;
+    }
+    body.rhythm-layout .sound-sets .set-btn {
+      width: 44px;
+      height: 44px;
+    }
+    body.rhythm-layout .band-group {
+      padding: 5px 10px 8px;
+      max-width: 160px;
+      /* left:11% 左寄せアンカーに統一 (translateX(-50%) を残すと
+         小〜中画面 (vw < 727px) でパネル左端が画面外に切れる) */
+      transform: none;
+    }
+    body.rhythm-layout .speed-row {
+      flex-direction: column;
+      gap: 4px;
+    }
+    body.rhythm-layout .band-group .speed-btn {
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      min-height: 44px;
+      width: 130px;
+    }
   }
 
   /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ */
@@ -1515,20 +1559,20 @@
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, 0) translateY(4px) scale(0.98);
   }
-  /* v707+: 左 35% は左メニュー帯 (モード切替 / ねいろ / ばんそう) を避けるため空ける。
-     8 ボタンは画面右 65% の中で等間隔配置。1 区間 = 65% / 8 = 8.125%。
-     ボタン中心は 39.0625% から始まり 8.125% 刻みで右へ。
-     レーンコンテナ内側 (left:35%, width:65%) の中心 6.25%, 18.75%, ..., 93.75% は
-     viewport 換算で 35% + 12.5% * 0.65 * (i+0.5) = 35% + 8.125% * (i+0.5) と一致するため
+  /* v713+: 左 22% は左メニュー帯 (モード切替 / ねいろ / ばんそう, 中心 11% / 幅 160px) を
+     避けるため空ける。8 ボタンは画面右 78% の中で等間隔配置。1 区間 = 78% / 8 = 9.75%。
+     ボタン中心は 26.875% から始まり 9.75% 刻みで右へ。
+     レーンコンテナ内側 (left:22%, width:78%) の中心 6.25%, 18.75%, ..., 93.75% は
+     viewport 換算で 22% + 12.5% * 0.78 * (i+0.5) = 22% + 9.75% * (i+0.5) と一致するため
      .gh-note / .gh-lane / .gh-flash (JS で (laneIdx+0.5)*12.5%) と完全整合。 */
-  body.rhythm-layout .instr-btn[data-idx="0"] { left: 39.0625%; }
-  body.rhythm-layout .instr-btn[data-idx="1"] { left: 47.1875%; }
-  body.rhythm-layout .instr-btn[data-idx="2"] { left: 55.3125%; }
-  body.rhythm-layout .instr-btn[data-idx="3"] { left: 63.4375%; }
-  body.rhythm-layout .instr-btn[data-idx="4"] { left: 71.5625%; }
-  body.rhythm-layout .instr-btn[data-idx="5"] { left: 79.6875%; }
-  body.rhythm-layout .instr-btn[data-idx="6"] { left: 87.8125%; }
-  body.rhythm-layout .instr-btn[data-idx="7"] { left: 95.9375%; }
+  body.rhythm-layout .instr-btn[data-idx="0"] { left: 26.875%; }
+  body.rhythm-layout .instr-btn[data-idx="1"] { left: 36.625%; }
+  body.rhythm-layout .instr-btn[data-idx="2"] { left: 46.375%; }
+  body.rhythm-layout .instr-btn[data-idx="3"] { left: 56.125%; }
+  body.rhythm-layout .instr-btn[data-idx="4"] { left: 65.875%; }
+  body.rhythm-layout .instr-btn[data-idx="5"] { left: 75.625%; }
+  body.rhythm-layout .instr-btn[data-idx="6"] { left: 85.375%; }
+  body.rhythm-layout .instr-btn[data-idx="7"] { left: 95.125%; }
   @media (max-width: 420px) {
     body.rhythm-layout .instr-btn {
       --sz: 64px;
