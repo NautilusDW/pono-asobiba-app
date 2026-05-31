@@ -2589,8 +2589,10 @@ function renderActionMode() {
     ? `${preferredFood.name}を あげる`
     : 'うまれてから あげよう';
   const playButton = document.getElementById('playBtn');
-  playButton.classList.toggle('power-empty', !hasStars(actionStarCost.play));
-  playButton.querySelector('.action-help').textContent = `スター${actionStarCost.play}で あそびば`;
+  playButton.classList.toggle('power-empty', state.hatched && !hasStars(actionStarCost.play));
+  playButton.querySelector('.action-help').textContent = state.hatched && hasStars(actionStarCost.play)
+    ? `スター${actionStarCost.play}で あそぶ`
+    : 'あそびばへ いく';
 }
 
 function applyMilmaruClass(reaction) {
@@ -3164,13 +3166,11 @@ function playWithMilmaru() {
     spawnFx('sparkle');
     return;
   }
-  if (!hasStars(actionStarCost.play)) {
-    showNeedWritingMessage(actionStarCost.play);
-    return;
-  }
   playSfx('select');
   freezeRoamPosition();
-  setSpeech('あそびばに いこう！', 'ころころボールの あそび画面へ いくよ。');
+  setSpeech('あそびばに いこう！', hasStars(actionStarCost.play)
+    ? 'ころころボールの あそび画面へ いくよ。'
+    : 'スターが たりないときは、あそびばから もじを かきにいけるよ。');
   saveState();
   setTimeout(() => {
     window.location.href = 'play.html?toy=ball&from=care';

@@ -1329,11 +1329,12 @@ function resetRound(options = {}) {
     resultModal.setAttribute('aria-hidden', 'true');
   }
   updateRoundUi();
-  mainPlayBtn.textContent = 'あそぶ！';
-  guideText.textContent = `${currentRound}かいめ：リングを ねらおう`;
-  messageBar.textContent = hasStars(PLAY_STAR_COST)
+  const readyToPlay = hasStars(PLAY_STAR_COST);
+  mainPlayBtn.textContent = readyToPlay ? 'あそぶ！' : 'もじを かく！';
+  guideText.textContent = readyToPlay ? `${currentRound}かいめ：リングを ねらおう` : 'スターが たりないよ';
+  messageBar.textContent = readyToPlay
     ? 'ボールを ひっぱると、ちからと むきが かわるよ。'
-    : 'もじを かくと、あそぶための スターが もらえるよ。';
+    : `あと ${Math.max(1, PLAY_STAR_COST - (Number(state.stars) || 0))}スター。もじを かくと、あそぶための スターが もらえるよ。`;
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
 }
 
@@ -1637,6 +1638,14 @@ mainPlayBtn.addEventListener('click', () => {
     goCare('success');
     return;
   }
+  if (!state.hatched) {
+    goCare();
+    return;
+  }
+  if (!hasStars(PLAY_STAR_COST)) {
+    goWriting();
+    return;
+  }
   if (praisePending) {
     praiseMilmaru();
     return;
@@ -1678,6 +1687,7 @@ if (!state.hatched) {
   guideText.textContent = 'スターが たりないよ';
   messageBar.textContent = 'もじを かくと、あそぶための スターが もらえるよ。';
   milmaruSpeech.textContent = getStageSpeech('スターが たりないよ');
+  mainPlayBtn.textContent = 'もじを かく！';
 } else {
   resetGame();
 }
