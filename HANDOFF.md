@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:204-mojikko-ball-play-guidance] DONE - Codex: `writing-mori/play.html` のころころボールに、ドラッグ中の放物線予測と着地点マーカーを追加。リングに入った瞬間はターゲットの緑ハイライト、着地点の「はいった」、成功バーストで分かるようにし、ターゲット半径も子ども向けに少し広げた。ミルマルの吹き出しは上前面へ移動し、ドラッグ中に画面外で指を離してもリリースを拾うよう document pointerup/pointermove を追加。Playwrightで予測線表示、3回キャッチ完了、報酬保存、吹き出し z-index を確認。`sw.js` は v689。 (by Codex)
 - 2026-05-31 - [batch:203-image-performance-audit] Codex: user 指摘「読み込みがすごく遅い、スマホ/タブレット向けに画像解像度・容量を確認」を受領。tracked画像 2569枚/約774MBを棚卸しし、初期表示で重い `play.html` / `bento/index.html` / `bento/kitchen.html` の実測を優先。数MB級PNGをWebPへ置換し、トップ・弁当・キッチン初期ロードを軽くする。`writing-mori/play.html` は既存未コミット差分があったため触らない。 (by Codex)
 - 2026-05-31 - [batch:203-image-performance-audit] DONE - Codex: assets 全体を棚卸しし、主要初期表示画像をWebP化、未参照の旧PNG/JPGを削除、`assets/images` の既存最適化スクリプトで追加5ファイルを圧縮。Playwright実測で画像転送量は `play.html` 18.3MB→2.48MiB、`bento/index.html` 8.78MB→0.80MiB、`bento/kitchen.html` 7.45MB→0.60MiB、画像404なし。通常起動で不要な play の調整パネル外部読み込みも停止。スクショで play/bento/kitchen の表示確認済み。`sw.js` は v688。`writing-mori/play.html` の既存dirtyは未変更。 (by Codex)
 - 2026-05-31 - [batch:202-mojikko-ball-play-gameplay] DONE - Codex: `writing-mori/play.html` のころころボールを単発成功から3ラウンド制へ修正。ドラッグ中にボール自体が手元へ動き、ちからメーター・狙いリング・ラウンドごとの異なるターゲットを表示。キャッチ後は必ず「ほめる！」を押して次ラウンドへ進み、3回キャッチ後だけ `もじのしずく` 2消費 / なかよし +3 / すくすく +1 / スター +5 を保存。Playwrightでドラッグ追従、同じ狙いだと2回目はミス、3回完了報酬を確認。`sw.js` は v687。 (by Codex)

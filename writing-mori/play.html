@@ -397,6 +397,7 @@ button {
   border-color: rgba(255, 141, 88, 0.7) transparent transparent transparent;
   border-radius: 50% 50% 0 0;
   transform: rotate(-5deg);
+  opacity: 0.28;
   pointer-events: none;
 }
 
@@ -455,6 +456,18 @@ button {
   border-color: rgba(238, 123, 107, 0.92);
 }
 
+.target-ring.goal-hit {
+  border-color: #58b97a;
+  background: rgba(210, 255, 202, 0.38);
+  animation: targetHit 760ms steps(2) both;
+}
+
+@keyframes targetHit {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  45% { transform: translate(-50%, -50%) scale(1.18); filter: brightness(1.15); }
+  100% { transform: translate(-50%, -50%) scale(1.03); }
+}
+
 .round-counter {
   position: absolute;
   left: 32px;
@@ -511,9 +524,10 @@ button {
 
 .milmaru-speech {
   position: absolute;
-  right: 148px;
-  top: 160px;
+  right: 86px;
+  top: 88px;
   min-width: 170px;
+  max-width: 250px;
   padding: 14px 20px;
   border: 5px solid #845b3d;
   border-radius: 12px;
@@ -523,12 +537,13 @@ button {
   font-size: 25px;
   font-weight: 900;
   text-align: center;
+  z-index: 9;
 }
 
 .milmaru-speech::after {
   content: '';
   position: absolute;
-  left: 54px;
+  left: 106px;
   bottom: -23px;
   width: 34px;
   height: 34px;
@@ -623,6 +638,107 @@ button {
 
 .aim-line.show {
   opacity: 0.92;
+}
+
+.prediction-svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity 100ms linear;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.prediction-svg.show {
+  opacity: 1;
+}
+
+.prediction-svg path {
+  fill: none;
+  stroke: #ff8d58;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 16 13;
+  filter: drop-shadow(0 3px 0 rgba(115, 74, 45, 0.22));
+}
+
+.prediction-svg.safe path {
+  stroke: #58b97a;
+}
+
+.landing-preview {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 74px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 5px dashed #e97955;
+  border-radius: 50%;
+  background: rgba(255, 245, 210, 0.78);
+  box-shadow: 0 5px 0 rgba(84,54,32,0.22);
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 18px;
+  font-weight: 900;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.landing-preview.show {
+  opacity: 1;
+}
+
+.landing-preview.safe {
+  border-color: #58b97a;
+  background: rgba(214, 255, 202, 0.82);
+  color: #2f7a54;
+}
+
+.landing-preview.miss {
+  border-color: #ee7b6b;
+  background: rgba(255, 236, 205, 0.9);
+  color: #9b5f3f;
+}
+
+.goal-burst {
+  position: absolute;
+  left: var(--burst-x, 700px);
+  top: var(--burst-y, 300px);
+  min-width: 150px;
+  padding: 10px 18px 12px;
+  border: 5px solid #8b6040;
+  border-radius: 10px;
+  background: #fff4cf;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35), 0 6px 0 rgba(74,48,30,0.32);
+  color: #2f7a54;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  text-align: center;
+  transform: translate(-50%, -50%) scale(0.72);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.goal-burst.show {
+  animation: goalBurstPop 900ms ease-out both;
+}
+
+.goal-burst.miss {
+  color: #a45b3f;
+}
+
+@keyframes goalBurstPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  72% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.92); }
 }
 
 .spark-layer {
@@ -848,6 +964,11 @@ button {
       <div class="target-ring" id="targetRing" aria-hidden="true"></div>
       <div class="milmaru-speech" id="milmaruSpeech">みゅっ♪</div>
       <div class="milmaru" id="milmaru" aria-hidden="true"></div>
+      <svg class="prediction-svg" id="predictionSvg" viewBox="0 0 900 540" preserveAspectRatio="none" aria-hidden="true">
+        <path id="predictionPath" d=""></path>
+      </svg>
+      <div class="landing-preview" id="landingPreview" aria-hidden="true"><span>ここ</span></div>
+      <div class="goal-burst" id="goalBurst" aria-hidden="true">はいった！</div>
       <div class="aim-line" id="aimLine" aria-hidden="true"></div>
       <div class="toy-ball" id="ball" role="button" aria-label="ボール"></div>
       <div class="spark-layer" id="sparkLayer" aria-hidden="true"></div>
@@ -898,9 +1019,9 @@ const MAX_PULL = 150;
 const BALL_SIZE = 76;
 const LAUNCH_CENTER = { x: 198, y: 392 };
 const ROUND_TARGETS = [
-  { x: 716, y: 336, radius: 108 },
-  { x: 620, y: 254, radius: 76 },
-  { x: 770, y: 266, radius: 70 }
+  { x: 716, y: 336, radius: 126 },
+  { x: 650, y: 292, radius: 112 },
+  { x: 760, y: 292, radius: 104 }
 ];
 
 const defaultState = {
@@ -955,6 +1076,11 @@ const targetRing = document.getElementById('targetRing');
 const roundCounter = document.getElementById('roundCounter');
 const powerFill = document.getElementById('powerFill');
 const mainPlayBtn = document.getElementById('playBtn');
+const predictionSvg = document.getElementById('predictionSvg');
+const predictionPath = document.getElementById('predictionPath');
+const landingPreview = document.getElementById('landingPreview');
+const landingPreviewText = landingPreview.querySelector('span');
+const goalBurst = document.getElementById('goalBurst');
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1128,6 +1254,57 @@ function resetPowerMeter() {
   powerFill.style.setProperty('--power', '0%');
 }
 
+function hidePrediction() {
+  predictionSvg.classList.remove('show', 'safe');
+  predictionPath.setAttribute('d', '');
+  landingPreview.classList.remove('show', 'safe', 'miss');
+  goalBurst.classList.remove('show', 'miss');
+  targetRing.classList.remove('goal-hit');
+}
+
+function setLandingPreview(point, label, mode = '') {
+  landingPreview.style.left = `${point.x}px`;
+  landingPreview.style.top = `${point.y}px`;
+  landingPreviewText.textContent = label;
+  landingPreview.classList.remove('safe', 'miss');
+  if (mode) landingPreview.classList.add(mode);
+  landingPreview.classList.add('show');
+}
+
+function showGoalBurst(point, label, isGood = true) {
+  goalBurst.classList.remove('show', 'miss');
+  goalBurst.textContent = label;
+  goalBurst.style.setProperty('--burst-x', `${point.x}px`);
+  goalBurst.style.setProperty('--burst-y', `${Math.max(72, point.y - 46)}px`);
+  goalBurst.classList.toggle('miss', !isGood);
+  void goalBurst.offsetWidth;
+  goalBurst.classList.add('show');
+}
+
+function showPrediction(shot, sourcePoint) {
+  if (!shot || shot.power < 42) {
+    predictionSvg.classList.remove('show', 'safe');
+    landingPreview.classList.remove('show', 'safe', 'miss');
+    return;
+  }
+  const previewShot = { ...shot, power: clamp(shot.power, 60, MAX_PULL) };
+  const landing = getLandingPoint(previewShot);
+  const start = sourcePoint || LAUNCH_CENTER;
+  const lift = clamp(previewShot.power * 0.78, 70, 132);
+  const control = {
+    x: start.x + (landing.x - start.x) * 0.48,
+    y: Math.min(start.y, landing.y) - lift
+  };
+  predictionPath.setAttribute(
+    'd',
+    `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} Q ${control.x.toFixed(1)} ${control.y.toFixed(1)} ${landing.x.toFixed(1)} ${landing.y.toFixed(1)}`
+  );
+  const caught = isLandingCaught(landing);
+  predictionSvg.classList.add('show');
+  predictionSvg.classList.toggle('safe', caught);
+  setLandingPreview(landing, caught ? 'OK!' : 'ここ', caught ? 'safe' : '');
+}
+
 function resetRound(options = {}) {
   cancelAnimationFrame(animationFrame);
   playedThisRound = false;
@@ -1137,6 +1314,7 @@ function resetRound(options = {}) {
   currentPoint = null;
   ball.classList.remove('dragging', 'flying');
   aimLine.classList.remove('show');
+  hidePrediction();
   setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
   resetPowerMeter();
   milmaru.classList.remove('catch', 'worried');
@@ -1193,6 +1371,7 @@ function updateAim() {
   aimLine.style.setProperty('--aim-angle', `${angle}deg`);
   aimLine.classList.toggle('show', distance > 12);
   powerFill.style.setProperty('--power', `${Math.round((distance / MAX_PULL) * 100)}%`);
+  showPrediction({ dx, dy, power: distance }, currentPoint);
   if (distance < 55) {
     guideText.textContent = 'もうすこし ひっぱろう';
   } else if (distance > 132) {
@@ -1247,6 +1426,7 @@ function endDrag(event) {
     messageBar.textContent = 'だいじょうぶ。ゆっくり もういっかい やってみよう。';
     milmaruSpeech.textContent = getStageSpeech('ふぇ...？');
     setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+    hidePrediction();
     resetPowerMeter();
     return;
   }
@@ -1256,8 +1436,8 @@ function endDrag(event) {
 function getLandingPoint(shot) {
   const pullStrength = shot.power / MAX_PULL;
   return {
-    x: LAUNCH_CENTER.x + shot.dx * 4.7,
-    y: LAUNCH_CENTER.y + shot.dy * 1.7 + (pullStrength - 0.72) * 38
+    x: clamp(LAUNCH_CENTER.x + shot.dx * 4.7, 58, 842),
+    y: clamp(LAUNCH_CENTER.y + shot.dy * 1.7 + (pullStrength - 0.72) * 38, 92, 446)
   };
 }
 
@@ -1300,6 +1480,9 @@ function resolveShot(caught, end) {
   setBallCenter(end.x, end.y);
   if (!caught) {
     playSfx('mistake');
+    predictionSvg.classList.remove('safe');
+    setLandingPreview(end, 'おしい', 'miss');
+    showGoalBurst(end, 'おしい！', false);
     milmaru.classList.add('worried');
     milmaruSpeech.textContent = getStageSpeech('おしい！');
     guideText.textContent = 'おしい！もういっかい';
@@ -1310,18 +1493,23 @@ function resolveShot(caught, end) {
       playedThisRound = false;
       milmaru.classList.remove('worried');
       setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+      hidePrediction();
     }, 850);
     return;
   }
   catches += 1;
   praisePending = true;
   playSfx('success');
+  targetRing.classList.add('goal-hit');
+  predictionSvg.classList.add('safe');
+  setLandingPreview(end, 'はいった', 'safe');
+  showGoalBurst(end, 'はいった！', true);
   milmaru.classList.add('catch');
   milmaruSpeech.textContent = getStageSpeech('キャッチできた！');
-  guideText.textContent = 'キャッチ！ほめてあげよう';
-  messageBar.textContent = 'じょうずに できたね。下の「ほめる！」を おしてね。';
+  guideText.textContent = 'はいった！ほめてあげよう';
+  messageBar.textContent = 'リングに はいったよ。下の「ほめる！」を おしてね。';
   mainPlayBtn.textContent = 'ほめる！';
-  spawnSparkles();
+  spawnSparkles(end);
 }
 
 function praiseMilmaru() {
@@ -1366,12 +1554,12 @@ function applyPlayReward() {
   renderCounts();
 }
 
-function spawnSparkles() {
+function spawnSparkles(center = getCurrentTarget()) {
   for (let i = 0; i < 18; i++) {
     const spark = document.createElement('div');
     spark.className = 'spark';
-    spark.style.left = `${580 + Math.random() * 210}px`;
-    spark.style.top = `${205 + Math.random() * 150}px`;
+    spark.style.left = `${center.x - 90 + Math.random() * 180}px`;
+    spark.style.top = `${center.y - 80 + Math.random() * 130}px`;
     spark.style.setProperty('--dx', `${(Math.random() - 0.5) * 160}px`);
     spark.style.setProperty('--dy', `${-40 - Math.random() * 80}px`);
     spark.style.animationDelay = `${Math.random() * 0.12}s`;
@@ -1473,6 +1661,9 @@ document.getElementById('launchPad').addEventListener('pointerdown', startDrag);
 document.getElementById('launchPad').addEventListener('pointermove', moveDrag);
 document.getElementById('launchPad').addEventListener('pointerup', endDrag);
 document.getElementById('launchPad').addEventListener('pointercancel', endDrag);
+document.addEventListener('pointermove', moveDrag);
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
 
 if (!state.hatched) {
   guideText.textContent = 'まだ あそべないよ';
