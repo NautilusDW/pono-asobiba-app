@@ -380,6 +380,7 @@ button {
 
 .lane {
   position: absolute;
+  display: none;
   left: 80px;
   right: 80px;
   bottom: 100px;
@@ -391,9 +392,9 @@ button {
 
 .path-arc {
   position: absolute;
-  left: 170px;
-  top: 356px;
-  width: 565px;
+  left: 116px;
+  top: 321px;
+  width: 660px;
   height: 16px;
   border: 0;
   border-radius: 999px;
@@ -401,12 +402,14 @@ button {
   opacity: 0.74;
   pointer-events: none;
   z-index: 2;
+  transform: rotate(-2deg);
+  transform-origin: left center;
 }
 
 .launch-pad {
   position: absolute;
-  left: 92px;
-  bottom: 136px;
+  left: 46px;
+  top: 260px;
   width: 168px;
   height: 94px;
   border: 5px solid #89603f;
@@ -667,8 +670,8 @@ button {
 
 .aim-line {
   position: absolute;
-  left: 198px;
-  top: 392px;
+  left: 118px;
+  top: 330px;
   height: 8px;
   width: var(--aim-length, 0px);
   transform-origin: left center;
@@ -1061,9 +1064,10 @@ const PLAY_STAR_COST = 20;
 const TOTAL_ROUNDS = 5;
 const BALL_SIZE = 76;
 const BALL_RADIUS = BALL_SIZE / 2;
-const LAUNCH_CENTER = { x: 176, y: 391 };
-const BABY_TARGET = { x: 654, y: 374, radius: 72 };
-const YOCHI_TARGET = { x: 650, y: 348, radius: 86 };
+const LAUNCH_CENTER = { x: 124, y: 332 };
+const BABY_TARGET = { x: 716, y: 286, radius: 72 };
+const YOCHI_TARGET_BASE_Y = 276;
+const YOCHI_TARGET = { x: 714, y: YOCHI_TARGET_BASE_Y, radius: 86 };
 const TIMING_GOOD_MIN = 0.42;
 const TIMING_GOOD_MAX = 0.61;
 const TIMING_CLOSE_MIN = 0.34;
@@ -1368,7 +1372,7 @@ function startTargetMotion() {
   targetMotionStarted = performance.now();
   const tick = (now) => {
     const t = (now - targetMotionStarted) / 1000;
-    YOCHI_TARGET.y = 348 + Math.sin(t * 1.05) * 64;
+    YOCHI_TARGET.y = YOCHI_TARGET_BASE_Y + Math.sin(t * 0.78) * 38;
     applyTargetPosition();
     targetMotionFrame = requestAnimationFrame(tick);
   };
@@ -1449,7 +1453,7 @@ function getRollPlan(value) {
   const tooWeak = value < TIMING_CLOSE_MIN;
   const tooStrong = value > TIMING_CLOSE_MAX;
   const caught = value >= TIMING_GOOD_MIN && value <= TIMING_GOOD_MAX;
-  const laneY = target.y + 54;
+  const laneY = target.y + (getCareStageId() === 'baby' ? 46 : 50);
   if (caught) {
     return {
       caught,

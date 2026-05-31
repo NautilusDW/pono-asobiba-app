@@ -241,7 +241,8 @@
     /* v707+: 左 35% は左メニュー (モード切替 / ねいろ / ばんそう) を避けるため空ける。
        (24% center + 110px ≒ 中〜大画面で右端 33-38vw に達するため、25% では不足。)
        内側は 100% = 画面右 65% にマッピングされる。
-       .gh-lane / .gh-note / .gh-flash の % 座標は全てこの内側基準 (12.5% 等間隔)。 */
+       .gh-lane / .gh-note / .gh-flash の % 座標は全てこの内側基準 (12.5% 等間隔)。
+       v709: レーン領域を暗い濃紺〜濃黒のグラデにして、カラフルなノートが映えるように。 */
     position: absolute;
     top: 0;
     bottom: 0;
@@ -251,6 +252,8 @@
     z-index: 4;
     display: none;
     overflow: hidden;
+    background: linear-gradient(180deg, #050814 0%, #0a0f1f 50%, #121a33 100%);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.55);
   }
   body.rhythm-layout #rhythm-lanes { display: block; }
   .gh-lane {
@@ -258,14 +261,16 @@
     top: 0;
     width: var(--gh-lane-w, 12.5%);
     height: var(--gh-hit-y, 100%);
-    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.04) 70%, rgba(255,255,255,0.10) 100%);
-    border-left: 1px dashed rgba(255,255,255,0.18);
-    border-right: 1px dashed rgba(255,255,255,0.18);
+    /* v709: 暗背景に合わせてレーン内も濃紺グラデ。下端にいくほど少し明るく
+       (ヒットラインへの誘目)。境界線は薄白の点線で視認性を確保。 */
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(120,150,220,0.05) 70%, rgba(150,180,255,0.12) 100%);
+    border-left: 1px dashed rgba(180,200,255,0.22);
+    border-right: 1px dashed rgba(180,200,255,0.22);
     pointer-events: none;
     transition: background-color 0.18s;
   }
   .gh-lane.miss-flash {
-    background-color: rgba(248,113,113,0.32);
+    background-color: rgba(248,113,113,0.42);
   }
   /* v705+: ヒットラインは中立色 (白〜薄金) に。
      以前は黄色いグラデ+黄色グロー だったが、ユーザーから「赤くチカチカ光る」と誤読される
@@ -2468,6 +2473,13 @@ var _rhythm = {
   enabled: false,
   idx: 0,
   startPerfTime: 0,
+  // v709: startAcTime = 主旋律1ノート目のヒットライン到達 AC 時刻 (秒)。
+  // 視覚クロック (performance.now) と音声クロック (AudioContext.currentTime) は
+  // 数秒の経過でずれるため、startPerfTime を 1 回スナップショットすると
+  // 「だんだん伴奏とノートがずれて聞こえる」現象が起きる。
+  // 毎フレーム _rhythmTick で startAcTime → startPerfTime に再変換して
+  // ドリフトを実質ゼロにする。0 = 未確定 (ac 不在 or rhythm 停止中)。
+  startAcTime: 0,
   targetTime: 0,
   raf: 0,
   streak: 0,
@@ -3080,6 +3092,10 @@ function _finishRhythmLoop() {
   }
   _rhythm._ghHitY = null;
   _rhythm.nextSpawnSeq = 0;
+  // v712 HIGH-1 fix: _stopRhythmMode と対称化。残留した startAcTime/startPerfTime が
+  // 次回 _startRhythmMode 前に _rhythmTick が走った場合の誤算出原因にならないよう 0 リセット。
+  _rhythm.startPerfTime = 0;
+  _rhythm.startAcTime = 0;
   _clearRhythmButtonState();
   _setRhythmStatus('リズムだけ きいてね', 'good');
   var specialCue = document.getElementById('rhythm-special-bubble');
@@ -3110,6 +3126,9 @@ function _advanceRhythm(wasHit) {
   } else {
     if (!wasHit && _rhythm.targetTime < performance.now()) {
       _rhythm.startPerfTime = performance.now() + _rhythmRingLeadMs() - _rhythmBeatOffsetFor(_rhythm.idx) * _rhythmBeatMs();
+      // v709: ring モードの再アンカーは AC 同期ではなく perf 同期のため、
+      // startAcTime を 0 にして次フレームの AC リシンクを無効化する。
+      _rhythm.startAcTime = 0;
     }
     _scheduleRhythmNote();
   }
@@ -3117,6 +3136,15 @@ function _advanceRhythm(wasHit) {
 function _rhythmTick() {
   if (!_rhythm.enabled) return;
   var now = performance.now();
+  // v709: AC↔perf ドリフト補正。startAcTime (1ノート目のヒットライン AC 時刻) を
+  // 毎フレーム perf 時刻に変換して startPerfTime を更新する。これにより
+  // _rhythmTargetTimeFor(seq) が常に「伴奏ドラムの拍と AC レベルで一致」する。
+  if (_rhythm.startAcTime) {
+    var _ac = getAC();
+    if (_ac) {
+      _rhythm.startPerfTime = now + (_rhythm.startAcTime - _ac.currentTime) * 1000;
+    }
+  }
   if (document.body.classList.contains('rhythm-layout')) {
     // Guitar Hero 落下モード
     _ghSpawnDueNotes(now);
@@ -3163,6 +3191,7 @@ function _startRhythmMode() {
   // _rhythmTick が走った場合に大量 miss-flash の原因になる。
   // 確実に再計算するため、いったん 0 にクリアしておく (この関数の末尾で再設定される)。
   _rhythm.startPerfTime = 0;
+  _rhythm.startAcTime = 0;
   // Guitar Hero モード用 初期化
   _ghClearActiveNotes();
   _ghClearLaneFlashes();
@@ -3173,32 +3202,43 @@ function _startRhythmMode() {
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   var ac = getAC();
-  var bandStartPerf = performance.now();
-  if (ac) {
-    var startAC = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
-    // bandStartPerf は伴奏ループの開始時刻 (performance.now ベース)。
-    // 負値 OK: ループ再生中は startAC < ac.currentTime で過去になる。
-    // 後段の nBeats >= 1 で startPerfTime は常に未来 (>= now + RHYTHM_FALL_MS) に収まる。
-    // 過去に Math.max(0, ...) を入れたが、それだとループ 2 周目以降で拍同期が崩れるため外している。
-    bandStartPerf += (startAC - ac.currentTime) * 1000;
-  }
-  // v708: GH モードでも 主旋律 startPerfTime は「伴奏の拍に同期」させる必要がある。
-  // 旧 v702-707: leadMs = RHYTHM_FALL_MS としていたため、主旋律が 3.2s 後ろにずれ、
-  //              伴奏ドラムと約 1.8s ぶん非同期になっていた (= ユーザー報告のタイミングずれ)。
-  // 修正方針: 主旋律は常に bandStartPerf + 整数拍 だけ後にスタートさせる (= 拍同期)。
-  //          GH モードでは「最初のノートがヒットラインに着くまで RHYTHM_FALL_MS の落下時間がある」
-  //          ことを保証するため、N = ceil((now + RHYTHM_FALL_MS - bandStartPerf) / beatMs) の
-  //          最小整数拍ぶん オフセットする (=必ず拍に乗る)。
-  var beatMs = _rhythmBeatMs();
+  // v709: 「拍同期は AC 時刻 (秒) で計算 → 毎フレーム perf 時刻に変換」方式に統一。
+  // 旧 v708: bandStartPerf を 1 回スナップショットしてから startPerfTime を固定 → 数秒で
+  //          AC↔perf がドリフトして「だんだんノートが伴奏とずれる」と報告された。
+  // 新 v709: startAcTime (= 主旋律1ノート目のヒットライン AC 時刻 [秒]) を固定し、
+  //          _rhythmTick が毎フレーム _rhythm.startPerfTime = perf_now + (startAcTime - ac.currentTime)*1000
+  //          で再計算する → AC とのドリフトを毎フレーム解消。
+  var beatSec = _rhythmBeatMs() / 1000;
   var isGH = document.body.classList.contains('rhythm-layout');
-  if (isGH) {
-    var requiredAnchor = performance.now() + RHYTHM_FALL_MS;
-    var deltaMs = requiredAnchor - bandStartPerf;
-    // 拍にスナップ (最低でも 1 拍は確保: 直後スタートを避け、UI が落ち着く時間も担保)
-    var nBeats = Math.max(1, Math.ceil(deltaMs / beatMs));
-    _rhythm.startPerfTime = bandStartPerf + nBeats * beatMs;
+  var bandStartACVal = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
+  // v712 CRITICAL fix: bandStartAC===0 (= mp3 stems がまだ start していない) のとき AC 基準計算を使うと
+  // startAcTime = 0 + nBeats*beatSec が過去 (ac.currentTime より小) になり、_rhythmTick の
+  // startPerfTime = perf_now + (startAcTime - ac.currentTime)*1000 が大きな負値 → 全ノート即 miss。
+  // そのため bandStartAC が無効値 (0/null/undefined) の場合は perf-only path に分岐させる。
+  if (ac && bandStartACVal) {
+    var bandStartAC = bandStartACVal;
+    // bandStartAC は伴奏ループの開始 AC 時刻 (秒)。負値もあり得る (ループ 2 周目以降)。
+    var fallSec = RHYTHM_FALL_MS / 1000;
+    if (isGH) {
+      var requiredAnchorAC = ac.currentTime + fallSec;
+      var deltaSec = requiredAnchorAC - bandStartAC;
+      var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
+      _rhythm.startAcTime = bandStartAC + nBeats * beatSec;
+    } else {
+      _rhythm.startAcTime = ac.currentTime + _rhythmRingLeadMs() / 1000;
+    }
+    // 初期 startPerfTime: AC → perf 変換 (毎フレーム再計算される)
+    _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
   } else {
-    _rhythm.startPerfTime = bandStartPerf + _rhythmRingLeadMs();
+    // AC 不在時 (オフライン) または bandStartAC===0 (伴奏未開始) のフォールバック:
+    // perf 時計のみで startPerfTime を組み立て、AC ドリフト補正は無効化する (startAcTime=0)。
+    // _rhythmTick の `if (_rhythm.startAcTime)` ガードで AC 再同期がスキップされる。
+    _rhythm.startAcTime = 0;
+    if (isGH) {
+      _rhythm.startPerfTime = performance.now() + RHYTHM_FALL_MS;
+    } else {
+      _rhythm.startPerfTime = performance.now() + _rhythmRingLeadMs();
+    }
   }
   // レーンジオメトリ更新 (次フレームで再計算もする)
   if (document.body.classList.contains('rhythm-layout')) {
@@ -3371,6 +3411,7 @@ function _stopRhythmMode() {
   // v705+: スポーン/ミス判定ガード (_ghSpawnDueNotes / _ghUpdateFallingNotes) で
   // 「startPerfTime==0 なら何もしない」とするため、停止時は明示的に 0 に戻す。
   _rhythm.startPerfTime = 0;
+  _rhythm.startAcTime = 0;
   if (_rhythm.raf) {
     cancelAnimationFrame(_rhythm.raf);
     _rhythm.raf = 0;
@@ -3474,6 +3515,9 @@ function handleRhythmTap(idx, btn) {
     return;
   }
   // 従来 ring モード
+  // v712 note: ring-mode は perf-only で AC ドリフト未補正 (startAcTime は 0 のまま、
+  // targetTime は performance.now ベースで管理)。楕円配置で空間移動が無いため数秒スパンの
+  // ドリフトは体感影響なし。GH モードのみ AC 同期 (startAcTime + _rhythmTick で再アンカー) する。
   var expected = _rhythmExpectedIdx(0);
   var deltaL = performance.now() - _rhythm.targetTime;
   if (idx !== expected) {
