@@ -5853,6 +5853,38 @@ body.layout-editor-on .bowl-fill-mask::after {
       },
     },
     {
+      id: 'potato', name: 'じゃがいも', emoji: '🥔', piece: '🥔',
+      chopCount: 9, implemented: true,
+      cookingActions: [
+        { type: 'chop' },
+      ],
+      prepActions: [
+        { type: 'chop' },
+      ],
+      imageBase: 'potato/potato_001',
+      fridgeImage: '../assets/images/bento/cooking/potato/potato_002.png',
+      imagePieces: {
+        dir: 'potato',
+        prefix: 'potato_',
+        from: 2,
+        to: 10,
+        pad: 3,
+        sequence: [2, 3, 4, 5, 6, 7, 8, 9, 10],
+        burstStride: 1,
+      },
+      pieceBurstCount: 1,
+      bowlPieceLimit: 28,
+      chopMechanics: {
+        startX_pct: 82, endX_pct: 18,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 52,
+        ingredientTop_pct: 40,
+        ingredientWidth_pct: 58,
+      },
+    },
+    {
       id: 'onion', name: 'たまねぎ', emoji: '🧅', piece: '🧅',
       chopCount: 40, implemented: true,
       prepActions: [
@@ -6085,7 +6117,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.webp',  needs: ['wiener'], startFromRaw: true },
     { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
     { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.webp',      needs: ['shrimp_breaded'], startFromRaw: true },
-    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.webp',      needs: ['korokke_raw'], startFromRaw: true },
+    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.webp',      needs: ['potato'], cookIngredientId: 'korokke_raw' },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', needs: ['cabbage'] },
     { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.webp', needs: ['carrot'] },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
