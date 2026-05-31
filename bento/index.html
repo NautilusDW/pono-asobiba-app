@@ -802,13 +802,6 @@ html, body {
   font-weight: 900;
   line-height: 1.15;
 }
-.free-mask-save-note {
-  margin-top: 4px;
-  color: #2F7A4C;
-  font-size: 0.43rem;
-  font-weight: 900;
-  line-height: 1.15;
-}
 .free-mask-box-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4140,7 +4133,8 @@ function getBoxMaskKey(box) {
 function getBoxMaskBounds(box) {
   if (!box || !box.maskBounds) return null;
   const key = getBoxMaskKey(box);
-  const override = key && freeMaskBoundsOverrides ? freeMaskBoundsOverrides[key] : null;
+  // Editor overrides are calibration-only. Gameplay must use code defaults on every device.
+  const override = freeMaskEditorMode && key && freeMaskBoundsOverrides ? freeMaskBoundsOverrides[key] : null;
   return override ? { ...box.maskBounds, ...override } : { ...box.maskBounds };
 }
 function updateSelectedBoxMaskBound(prop, value) {
@@ -5754,10 +5748,6 @@ function renderFreeMaskEditorControls() {
   title.className = 'free-mask-title';
   title.textContent = box.name ? 'マスク調整: ' + box.name : 'マスク調整';
   panel.appendChild(title);
-  const note = document.createElement('div');
-  note.className = 'free-mask-save-note';
-  note.textContent = '数値はこの端末に自動保存';
-  panel.appendChild(note);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
   actions.className = 'free-mask-actions';
