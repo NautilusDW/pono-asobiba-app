@@ -44,6 +44,8 @@
   --milmaru-yochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
   --icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --fx-sparkle: url('../assets/images/mojikko/care/fx_sparkle_cluster.png');
+  --rolling-bg: url('../assets/images/mojikko/play/rolling_ball_ground_background.png');
+  --rolling-ball: url('../assets/images/mojikko/play/rolling_ball_orange_sprite_raw.png');
 }
 
 html, body {
@@ -331,13 +333,7 @@ button {
   height: 540px;
   border: 7px solid var(--wood-dark);
   border-radius: 10px;
-  background:
-    radial-gradient(circle at 18% 22%, rgba(245, 228, 120, 0.42) 0 8px, transparent 9px),
-    radial-gradient(circle at 70% 34%, rgba(93, 154, 72, 0.25) 0 14px, transparent 15px),
-    radial-gradient(circle at 38% 76%, rgba(115, 82, 46, 0.18) 0 12px, transparent 13px),
-    linear-gradient(180deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 12px),
-    linear-gradient(90deg, rgba(84, 122, 58, 0.16) 0 1px, transparent 1px 12px),
-    linear-gradient(135deg, #94d36f 0%, #7cc45e 52%, #d7b66e 52%, #b8783c 100%);
+  background: var(--rolling-bg) center / cover no-repeat;
   box-shadow: inset 0 0 0 7px rgba(255,255,255,0.38), 0 10px 0 #4b2f1e, 0 18px 28px var(--shadow);
   overflow: hidden;
 }
@@ -397,24 +393,24 @@ button {
 
 .path-arc {
   position: absolute;
-  left: 208px;
-  top: 210px;
-  width: 478px;
-  height: 182px;
-  border: 7px dotted rgba(255, 141, 88, 0.7);
-  border-color: rgba(255, 141, 88, 0.7) transparent transparent transparent;
-  border-radius: 50% 50% 0 0;
-  transform: rotate(-5deg);
-  opacity: 0.28;
+  left: 170px;
+  top: 356px;
+  width: 565px;
+  height: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(77, 175, 117, 0.78) 0 20px, transparent 20px 36px);
+  opacity: 0.74;
   pointer-events: none;
+  z-index: 2;
 }
 
 .launch-pad {
   position: absolute;
   left: 92px;
-  bottom: 142px;
-  width: 176px;
-  height: 122px;
+  bottom: 136px;
+  width: 168px;
+  height: 94px;
   border: 5px solid #89603f;
   border-radius: 10px;
   background: rgba(255,248,225,0.75);
@@ -422,7 +418,7 @@ button {
   display: grid;
   place-items: center;
   font-family: var(--pixel-font);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   text-align: center;
   line-height: 1.25;
@@ -432,9 +428,9 @@ button {
   position: absolute;
   left: var(--target-x, 716px);
   top: var(--target-y, 332px);
-  width: var(--target-w, 154px);
-  height: var(--target-h, 122px);
-  border: 8px dashed rgba(247, 190, 79, 0.95);
+  width: var(--target-w, 142px);
+  height: var(--target-h, 104px);
+  border: 8px dashed rgba(82, 184, 121, 0.92);
   border-radius: 50%;
   background: rgba(255,255,255,0.2);
   transform: translate(-50%, -50%);
@@ -443,7 +439,7 @@ button {
 }
 
 .target-ring::after {
-  content: 'ここ！';
+  content: 'ここへ';
   position: absolute;
   left: -18px;
   top: -42px;
@@ -494,14 +490,40 @@ button {
   z-index: 5;
 }
 
+.shot-pips {
+  position: absolute;
+  left: 168px;
+  top: 25px;
+  display: flex;
+  gap: 11px;
+  z-index: 5;
+}
+
+.shot-pip {
+  width: 32px;
+  height: 32px;
+  border: 4px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35), 0 4px 0 rgba(80,54,33,0.28);
+}
+
+.shot-pip.used {
+  background: #ead0a0;
+}
+
+.shot-pip.hit {
+  background: #85dca7;
+}
+
 .power-meter {
   position: absolute;
-  left: 98px;
-  bottom: 276px;
-  width: 182px;
-  height: 40px;
+  left: 256px;
+  bottom: 34px;
+  width: 388px;
+  height: 76px;
   display: grid;
-  grid-template-columns: 58px 1fr;
+  grid-template-columns: 110px 1fr;
   align-items: center;
   gap: 8px;
   padding: 5px 9px;
@@ -510,24 +532,40 @@ button {
   background: rgba(255,248,225,0.86);
   box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32), 0 4px 0 rgba(80,54,33,0.28);
   font-family: var(--pixel-font);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   z-index: 5;
 }
 
 .power-track {
-  height: 18px;
+  position: relative;
+  height: 31px;
   border: 3px solid #9b704b;
   border-radius: 999px;
-  background: #f5dfb5;
+  background:
+    linear-gradient(90deg, #b7d9f3 0 34%, #86d7ac 34% 61%, #ffd56e 61% 78%, #ee7b6b 78% 100%);
   overflow: hidden;
 }
 
 .power-fill {
+  display: none;
   width: var(--power, 0%);
   height: 100%;
   background: linear-gradient(90deg, #86d7ac, #f5bd4e, #ee7b6b);
   transition: width 90ms linear;
+}
+
+.timing-marker {
+  position: absolute;
+  left: var(--timing, 50%);
+  top: -10px;
+  width: 14px;
+  height: 45px;
+  border: 3px solid #6f462c;
+  border-radius: 5px;
+  background: #fffaf0;
+  box-shadow: 0 4px 0 rgba(74,48,30,0.28);
+  transform: translateX(-50%);
 }
 
 .milmaru-speech {
@@ -563,19 +601,20 @@ button {
 
 .milmaru {
   position: absolute;
-  right: 98px;
-  bottom: 128px;
-  width: 238px;
-  height: 238px;
+  left: var(--milmaru-x, 652px);
+  top: var(--milmaru-y, 232px);
+  width: 188px;
+  height: 188px;
   background: var(--milmaru-yochi) center bottom / contain no-repeat;
   image-rendering: pixelated;
   filter: drop-shadow(0 12px 0 rgba(92,60,35,0.18));
   z-index: 3;
+  transition: top 220ms linear;
 }
 
 .milmaru.baby {
-  width: 236px;
-  height: 236px;
+  width: 168px;
+  height: 168px;
   background-image: var(--milmaru-baby);
 }
 
@@ -606,28 +645,26 @@ button {
   border: 5px solid #8e5930;
   border-radius: 50%;
   background:
+    var(--rolling-ball) center / 150% no-repeat,
     radial-gradient(circle at 32% 28%, #fff2ac 0 13px, transparent 14px),
     linear-gradient(135deg, #ffe17b 0 32%, #ffb94c 32% 50%, #f08a43 50% 68%, #ffd96f 68%);
   box-shadow: inset -8px -10px 0 rgba(150,83,35,0.2), 0 8px 0 rgba(85,54,32,0.22);
   cursor: grab;
   z-index: 6;
   image-rendering: pixelated;
-  transition: left 120ms ease, top 120ms ease;
+  clip-path: circle(48% at 50% 50%);
+  transform: rotate(var(--ball-rotation, 0deg));
+  transition: left 120ms ease, top 120ms ease, transform 80ms linear;
 }
 
 .toy-ball.dragging {
-  cursor: grabbing;
+  cursor: pointer;
   transform: scale(1.05);
   transition: none;
 }
 
-.toy-ball.flying {
+.toy-ball.rolling {
   transition: none;
-  animation: ballSpin 560ms steps(4) infinite;
-}
-
-@keyframes ballSpin {
-  to { transform: rotate(360deg); }
 }
 
 .aim-line {
@@ -964,10 +1001,11 @@ button {
       <div class="lane" aria-hidden="true"></div>
       <div class="ground-stripe" aria-hidden="true"></div>
       <div class="round-counter" id="roundCounter">1 / 3</div>
-      <div class="launch-pad" id="launchPad">ここから<br>ひっぱる</div>
+      <div class="shot-pips" id="shotPips" aria-hidden="true"></div>
+      <div class="launch-pad" id="launchPad">ここから<br>ころころ</div>
       <div class="power-meter" aria-hidden="true">
-        <span>ちから</span>
-        <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
+        <span>タイミング</span>
+        <div class="power-track"><div class="power-fill" id="powerFill"></div><div class="timing-marker" id="timingMarker"></div></div>
       </div>
       <div class="target-ring" id="targetRing" aria-hidden="true"></div>
       <div class="milmaru-speech" id="milmaruSpeech">みゅっ♪</div>
@@ -985,11 +1023,11 @@ button {
     <aside class="panel how-panel" aria-label="あそびかた">
       <div class="panel-heading">あそびかた</div>
       <div class="steps">
-        <div class="step-card"><span class="step-num">1</span><span>ねらう</span></div>
-        <div class="step-card"><span class="step-num">2</span><span>ころがす</span></div>
-        <div class="step-card"><span class="step-num">3</span><span>ほめる</span></div>
+        <div class="step-card"><span class="step-num">1</span><span>ゲージをみる</span></div>
+        <div class="step-card"><span class="step-num">2</span><span>ここでおす</span></div>
+        <div class="step-card"><span class="step-num">3</span><span>5こで1セット</span></div>
       </div>
-      <div class="reward-hint">3かい キャッチ<br>スター20<br>なかよし +3</div>
+      <div class="reward-hint">ちょうどいい強さで<br>ころころ とどけよう<br>スター20</div>
     </aside>
 
     <div class="status-strip">
@@ -998,7 +1036,7 @@ button {
     </div>
 
     <nav class="bottom-actions" aria-label="ゲーム操作">
-      <button class="pixel-button main-btn" id="playBtn">あそぶ！</button>
+      <button class="pixel-button main-btn" id="playBtn">ここで おす！</button>
       <button class="pixel-button secondary-btn" id="retryBtn">もういっかい</button>
       <button class="pixel-button secondary-btn next" id="careBtn">おせわへ</button>
     </nav>
@@ -1022,15 +1060,16 @@ button {
 
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PLAY_STAR_COST = 20;
-const TOTAL_ROUNDS = 3;
-const MAX_PULL = 150;
+const TOTAL_ROUNDS = 5;
 const BALL_SIZE = 76;
-const LAUNCH_CENTER = { x: 198, y: 392 };
-const ROUND_TARGETS = [
-  { x: 716, y: 336, radius: 126 },
-  { x: 650, y: 292, radius: 112 },
-  { x: 760, y: 292, radius: 104 }
-];
+const BALL_RADIUS = BALL_SIZE / 2;
+const LAUNCH_CENTER = { x: 176, y: 391 };
+const BABY_TARGET = { x: 654, y: 374, radius: 72 };
+const YOCHI_TARGET = { x: 650, y: 348, radius: 86 };
+const TIMING_GOOD_MIN = 0.42;
+const TIMING_GOOD_MAX = 0.61;
+const TIMING_CLOSE_MIN = 0.34;
+const TIMING_CLOSE_MAX = 0.72;
 
 const defaultState = {
   name: 'ミルマル',
@@ -1056,16 +1095,19 @@ const defaultState = {
 
 let state = loadState();
 let audioCtx = null;
-let dragging = false;
-let startPoint = null;
-let currentPoint = null;
+let timingValue = 0;
+let timingDirection = 1;
+let timingFrame = null;
+let lastTimingTime = 0;
 let playedThisRound = false;
-let praisePending = false;
 let gameComplete = false;
 let resultApplied = false;
 let currentRound = 1;
 let catches = 0;
+let lastSetHits = 0;
 let animationFrame = null;
+let targetMotionFrame = null;
+let targetMotionStarted = 0;
 
 const stageEl = document.getElementById('stage');
 const ball = document.getElementById('ball');
@@ -1083,6 +1125,8 @@ const targetRing = document.getElementById('targetRing');
 const roundCounter = document.getElementById('roundCounter');
 const powerFill = document.getElementById('powerFill');
 const mainPlayBtn = document.getElementById('playBtn');
+const shotPips = document.getElementById('shotPips');
+const timingMarker = document.getElementById('timingMarker');
 const predictionSvg = document.getElementById('predictionSvg');
 const predictionPath = document.getElementById('predictionPath');
 const landingPreview = document.getElementById('landingPreview');
