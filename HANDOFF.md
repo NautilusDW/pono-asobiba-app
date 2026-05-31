@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:202-mojikko-ball-play-gameplay] DONE - Codex: `writing-mori/play.html` のころころボールを単発成功から3ラウンド制へ修正。ドラッグ中にボール自体が手元へ動き、ちからメーター・狙いリング・ラウンドごとの異なるターゲットを表示。キャッチ後は必ず「ほめる！」を押して次ラウンドへ進み、3回キャッチ後だけ `もじのしずく` 2消費 / なかよし +3 / すくすく +1 / スター +5 を保存。Playwrightでドラッグ追従、同じ狙いだと2回目はミス、3回完了報酬を確認。`sw.js` は v687。 (by Codex)
 - 2026-05-30 - [batch:201-mojikko-toy-play-screen] DONE - Codex: もじっこファームの「あそぶ」を牧場内即時リアクションから専用 `writing-mori/play.html` へ分離。初期実装は横2Dの「ころころボール」画面で、`もじのしずく` 2個を成功時に消費し、なかよし +3 / すくすく +1 / スター +5 を `mojikkoFarmCareStateV1` に保存して `care.html?from=play&result=success` へ戻す。Playwrightで成功ループとしずく不足時にお世話画面へ留まることを確認。`sw.js` は v686。 (by Codex)
 - 2026-05-30 - [batch:200-bento-box-masks] Codex: user が `D:\ポノのおへや\Bento\cooking\弁当箱` に追加した 23時台のマスクPNG 4枚を確認。`225329`=猫、`225848`=普通箱、`230040`=丸、`230353`=四角として、未実装の普通/四角/丸/猫箱へ `maskImage` を追加する。くま箱は既存 `box_character_inside_mask.png` を継続。`D:\ポノのおへや\Bento\cooking\ごはん` 側は前回までの普通/四角/丸/猫サムネが実装済みで、新しい未反映PNGなし。 (by Codex)
 - 2026-05-30 - [batch:200-bento-box-masks] DONE - Codex: `box_rect_split_inside_mask.png` / `box_square_inside_mask.png` / `box_round_inside_mask.png` / `box_cat_inside_mask.png` を追加し、普通・四角・丸・水色猫・ピンク猫の各箱へ `maskImage` と既定 `maskBounds` を設定。くま箱2種は既存くまマスクを維持。Playwrightで全実装箱の mask/rice 画像 200 読み込み、描画レイヤーへの CSS mask 適用、clipPath fallback 未使用を確認。ご飯フォルダに新規未反映PNGなし。self-review: 色違い箱は共有 `maskKey` で同じ調整値を使う。`sw.js` は v685。 (by Codex)

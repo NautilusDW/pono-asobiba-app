@@ -421,21 +421,23 @@ button {
 
 .target-ring {
   position: absolute;
-  right: 144px;
-  bottom: 178px;
-  width: 154px;
-  height: 122px;
+  left: var(--target-x, 716px);
+  top: var(--target-y, 332px);
+  width: var(--target-w, 154px);
+  height: var(--target-h, 122px);
   border: 8px dashed rgba(247, 190, 79, 0.95);
   border-radius: 50%;
   background: rgba(255,255,255,0.2);
+  transform: translate(-50%, -50%);
   animation: targetPulse 1.2s ease-in-out infinite;
+  z-index: 4;
 }
 
 .target-ring::after {
   content: 'ここ！';
   position: absolute;
-  left: 38px;
-  top: -46px;
+  left: -18px;
+  top: -42px;
   padding: 4px 12px;
   border: 3px solid #8b6040;
   border-radius: 6px;
@@ -446,7 +448,65 @@ button {
 }
 
 @keyframes targetPulse {
-  50% { transform: scale(1.07); opacity: 0.72; }
+  50% { transform: translate(-50%, -50%) scale(1.07); opacity: 0.72; }
+}
+
+.target-ring.tight {
+  border-color: rgba(238, 123, 107, 0.92);
+}
+
+.round-counter {
+  position: absolute;
+  left: 32px;
+  top: 24px;
+  min-width: 116px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: #fff4cf;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35), 0 4px 0 rgba(80,54,33,0.3);
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+  z-index: 5;
+}
+
+.power-meter {
+  position: absolute;
+  left: 98px;
+  bottom: 276px;
+  width: 182px;
+  height: 40px;
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: rgba(255,248,225,0.86);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32), 0 4px 0 rgba(80,54,33,0.28);
+  font-family: var(--pixel-font);
+  font-size: 18px;
+  font-weight: 900;
+  z-index: 5;
+}
+
+.power-track {
+  height: 18px;
+  border: 3px solid #9b704b;
+  border-radius: 999px;
+  background: #f5dfb5;
+  overflow: hidden;
+}
+
+.power-fill {
+  width: var(--power, 0%);
+  height: 100%;
+  background: linear-gradient(90deg, #86d7ac, #f5bd4e, #ee7b6b);
+  transition: width 90ms linear;
 }
 
 .milmaru-speech {
@@ -527,13 +587,15 @@ button {
     linear-gradient(135deg, #ffe17b 0 32%, #ffb94c 32% 50%, #f08a43 50% 68%, #ffd96f 68%);
   box-shadow: inset -8px -10px 0 rgba(150,83,35,0.2), 0 8px 0 rgba(85,54,32,0.22);
   cursor: grab;
-  z-index: 4;
+  z-index: 6;
   image-rendering: pixelated;
+  transition: left 120ms ease, top 120ms ease;
 }
 
 .toy-ball.dragging {
   cursor: grabbing;
   transform: scale(1.05);
+  transition: none;
 }
 
 .toy-ball.flying {
@@ -547,7 +609,7 @@ button {
 
 .aim-line {
   position: absolute;
-  left: 168px;
+  left: 198px;
   top: 392px;
   height: 8px;
   width: var(--aim-length, 0px);
@@ -777,7 +839,12 @@ button {
       <div class="path-arc" aria-hidden="true"></div>
       <div class="lane" aria-hidden="true"></div>
       <div class="ground-stripe" aria-hidden="true"></div>
+      <div class="round-counter" id="roundCounter">1 / 3</div>
       <div class="launch-pad" id="launchPad">ここから<br>ひっぱる</div>
+      <div class="power-meter" aria-hidden="true">
+        <span>ちから</span>
+        <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
+      </div>
       <div class="target-ring" id="targetRing" aria-hidden="true"></div>
       <div class="milmaru-speech" id="milmaruSpeech">みゅっ♪</div>
       <div class="milmaru" id="milmaru" aria-hidden="true"></div>
@@ -789,11 +856,11 @@ button {
     <aside class="panel how-panel" aria-label="あそびかた">
       <div class="panel-heading">あそびかた</div>
       <div class="steps">
-        <div class="step-card"><span class="step-num">1</span><span>ひっぱる</span></div>
-        <div class="step-card"><span class="step-num">2</span><span>はなす</span></div>
+        <div class="step-card"><span class="step-num">1</span><span>ねらう</span></div>
+        <div class="step-card"><span class="step-num">2</span><span>ころがす</span></div>
         <div class="step-card"><span class="step-num">3</span><span>ほめる</span></div>
       </div>
-      <div class="reward-hint">もじのしずく 2こ<br>なかよし +3</div>
+      <div class="reward-hint">3かい キャッチ<br>しずく 2こ<br>なかよし +3</div>
     </aside>
 
     <div class="status-strip">
@@ -826,6 +893,15 @@ button {
 
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PLAY_COST = 2;
+const TOTAL_ROUNDS = 3;
+const MAX_PULL = 150;
+const BALL_SIZE = 76;
+const LAUNCH_CENTER = { x: 198, y: 392 };
+const ROUND_TARGETS = [
+  { x: 716, y: 336, radius: 108 },
+  { x: 620, y: 254, radius: 76 },
+  { x: 770, y: 266, radius: 70 }
+];
 
 const defaultState = {
   name: 'ミルマル',
@@ -856,6 +932,11 @@ let dragging = false;
 let startPoint = null;
 let currentPoint = null;
 let playedThisRound = false;
+let praisePending = false;
+let gameComplete = false;
+let resultApplied = false;
+let currentRound = 1;
+let catches = 0;
 let animationFrame = null;
 
 const stageEl = document.getElementById('stage');
@@ -870,6 +951,10 @@ const resultModal = document.getElementById('resultModal');
 const resultTitle = document.getElementById('resultTitle');
 const resultText = document.getElementById('resultText');
 const sparkLayer = document.getElementById('sparkLayer');
+const targetRing = document.getElementById('targetRing');
+const roundCounter = document.getElementById('roundCounter');
+const powerFill = document.getElementById('powerFill');
+const mainPlayBtn = document.getElementById('playBtn');
 
 function fitStage() {
   const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
@@ -1021,23 +1106,59 @@ function setBallPosition(x, y) {
   ball.style.setProperty('--ball-y', `${y}px`);
 }
 
-function resetRound() {
+function setBallCenter(x, y) {
+  setBallPosition(x - BALL_SIZE / 2, y - BALL_SIZE / 2);
+}
+
+function getCurrentTarget() {
+  return ROUND_TARGETS[currentRound - 1] || ROUND_TARGETS[0];
+}
+
+function updateRoundUi() {
+  const target = getCurrentTarget();
+  roundCounter.textContent = `${currentRound} / ${TOTAL_ROUNDS}`;
+  targetRing.style.setProperty('--target-x', `${target.x}px`);
+  targetRing.style.setProperty('--target-y', `${target.y}px`);
+  targetRing.style.setProperty('--target-w', `${target.radius * 1.7}px`);
+  targetRing.style.setProperty('--target-h', `${target.radius * 1.35}px`);
+  targetRing.classList.toggle('tight', currentRound >= 3);
+}
+
+function resetPowerMeter() {
+  powerFill.style.setProperty('--power', '0%');
+}
+
+function resetRound(options = {}) {
   cancelAnimationFrame(animationFrame);
   playedThisRound = false;
+  praisePending = false;
   dragging = false;
   startPoint = null;
   currentPoint = null;
   ball.classList.remove('dragging', 'flying');
   aimLine.classList.remove('show');
-  setBallPosition(160, 354);
+  setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+  resetPowerMeter();
   milmaru.classList.remove('catch', 'worried');
-  resultModal.classList.remove('show');
-  resultModal.setAttribute('aria-hidden', 'true');
-  guideText.textContent = 'ゆっくり ひっぱって はなそう';
+  if (!options.keepModal) {
+    resultModal.classList.remove('show');
+    resultModal.setAttribute('aria-hidden', 'true');
+  }
+  updateRoundUi();
+  mainPlayBtn.textContent = 'あそぶ！';
+  guideText.textContent = `${currentRound}かいめ：リングを ねらおう`;
   messageBar.textContent = getInventoryCount('moji_power') >= PLAY_COST
-    ? 'しずくを つかって、ミルマルと ゆっくり あそぼう！'
+    ? 'ボールを ひっぱると、ちからと むきが かわるよ。'
     : 'もじを かくと、あそぶための しずくが もらえるよ。';
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
+}
+
+function resetGame() {
+  currentRound = 1;
+  catches = 0;
+  gameComplete = false;
+  resultApplied = false;
+  resetRound();
 }
 
 function getLocalPoint(event) {
@@ -1050,20 +1171,39 @@ function getLocalPoint(event) {
   };
 }
 
+function clampPullPoint(point) {
+  const dx = point.x - LAUNCH_CENTER.x;
+  const dy = point.y - LAUNCH_CENTER.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= MAX_PULL) return { x: point.x, y: point.y };
+  const scale = MAX_PULL / distance;
+  return {
+    x: LAUNCH_CENTER.x + dx * scale,
+    y: LAUNCH_CENTER.y + dy * scale
+  };
+}
+
 function updateAim() {
   if (!startPoint || !currentPoint) return;
   const dx = startPoint.x - currentPoint.x;
   const dy = startPoint.y - currentPoint.y;
-  const distance = clamp(Math.hypot(dx, dy), 0, 150);
+  const distance = clamp(Math.hypot(dx, dy), 0, MAX_PULL);
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-  aimLine.style.setProperty('--aim-length', `${distance}px`);
+  aimLine.style.setProperty('--aim-length', `${distance * 1.7}px`);
   aimLine.style.setProperty('--aim-angle', `${angle}deg`);
   aimLine.classList.toggle('show', distance > 12);
-  guideText.textContent = distance < 55 ? 'もうすこし ひっぱろう' : 'そのまま はなしてね';
+  powerFill.style.setProperty('--power', `${Math.round((distance / MAX_PULL) * 100)}%`);
+  if (distance < 55) {
+    guideText.textContent = 'もうすこし ひっぱろう';
+  } else if (distance > 132) {
+    guideText.textContent = 'ちから つよめ！ねらって はなそう';
+  } else {
+    guideText.textContent = 'いい ちから！リングを ねらおう';
+  }
 }
 
 function startDrag(event) {
-  if (playedThisRound) return;
+  if (playedThisRound || praisePending || gameComplete) return;
   if (!state.hatched) {
     showNeedCareMessage('まだ タマゴだよ', 'おせわ画面で タマゴを あたためてあげよう。');
     return;
@@ -1075,18 +1215,19 @@ function startDrag(event) {
   event.preventDefault();
   playSfx('button');
   dragging = true;
-  const point = getLocalPoint(event);
   startPoint = { x: 198, y: 392 };
-  currentPoint = point;
+  currentPoint = clampPullPoint(getLocalPoint(event));
+  setBallCenter(currentPoint.x, currentPoint.y);
   ball.classList.add('dragging');
-  ball.setPointerCapture?.(event.pointerId);
+  event.currentTarget.setPointerCapture?.(event.pointerId);
   updateAim();
 }
 
 function moveDrag(event) {
   if (!dragging) return;
   event.preventDefault();
-  currentPoint = getLocalPoint(event);
+  currentPoint = clampPullPoint(getLocalPoint(event));
+  setBallCenter(currentPoint.x, currentPoint.y);
   updateAim();
 }
 
@@ -1094,7 +1235,7 @@ function endDrag(event) {
   if (!dragging) return;
   event.preventDefault();
   dragging = false;
-  ball.releasePointerCapture?.(event.pointerId);
+  event.currentTarget.releasePointerCapture?.(event.pointerId);
   ball.classList.remove('dragging');
   aimLine.classList.remove('show');
   const dx = startPoint.x - currentPoint.x;
@@ -1105,41 +1246,113 @@ function endDrag(event) {
     guideText.textContent = 'もうすこし ひっぱろう';
     messageBar.textContent = 'だいじょうぶ。ゆっくり もういっかい やってみよう。';
     milmaruSpeech.textContent = getStageSpeech('ふぇ...？');
+    setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+    resetPowerMeter();
     return;
   }
-  launchBall(clamp(distance, 60, 150));
+  launchBall({ dx, dy, power: clamp(distance, 60, MAX_PULL) });
 }
 
-function launchBall(power) {
+function getLandingPoint(shot) {
+  const pullStrength = shot.power / MAX_PULL;
+  return {
+    x: LAUNCH_CENTER.x + shot.dx * 4.7,
+    y: LAUNCH_CENTER.y + shot.dy * 1.7 + (pullStrength - 0.72) * 38
+  };
+}
+
+function isLandingCaught(point) {
+  const target = getCurrentTarget();
+  return Math.hypot(point.x - target.x, point.y - target.y) <= target.radius;
+}
+
+function launchBall(shot) {
   playedThisRound = true;
   playSfx('roll');
   ball.classList.add('flying');
   guideText.textContent = 'ボールが ころころ...';
-  messageBar.textContent = 'ミルマルの ところへ やさしく とどけよう。';
-  const start = { x: 160, y: 354 };
-  const end = { x: 652, y: 306 };
-  const lift = clamp(power * 1.05, 75, 150);
+  messageBar.textContent = 'リングの 近くに とどくかな？';
+  resetPowerMeter();
+  const start = currentPoint || LAUNCH_CENTER;
+  const end = getLandingPoint(shot);
+  const caught = isLandingCaught(end);
+  const lift = clamp(shot.power * 0.92, 70, 142);
   const started = performance.now();
-  const duration = 940;
+  const duration = 980;
 
   const tick = (now) => {
     const t = clamp((now - started) / duration, 0, 1);
     const ease = 1 - Math.pow(1 - t, 3);
     const x = start.x + (end.x - start.x) * ease;
     const y = start.y + (end.y - start.y) * ease - Math.sin(Math.PI * ease) * lift;
-    setBallPosition(x, y);
+    setBallCenter(x, y);
     if (t < 1) {
       animationFrame = requestAnimationFrame(tick);
       return;
     }
-    completePlay();
+    resolveShot(caught, end);
   };
   animationFrame = requestAnimationFrame(tick);
 }
 
-function completePlay() {
+function resolveShot(caught, end) {
   ball.classList.remove('flying');
-  setBallPosition(680, 292);
+  setBallCenter(end.x, end.y);
+  if (!caught) {
+    playSfx('mistake');
+    milmaru.classList.add('worried');
+    milmaruSpeech.textContent = getStageSpeech('おしい！');
+    guideText.textContent = 'おしい！もういっかい';
+    messageBar.textContent = 'リングの 近くを ねらって、ちからを かえてみよう。';
+    mainPlayBtn.textContent = 'もういっかい';
+    setTimeout(() => {
+      if (praisePending || gameComplete) return;
+      playedThisRound = false;
+      milmaru.classList.remove('worried');
+      setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+    }, 850);
+    return;
+  }
+  catches += 1;
+  praisePending = true;
+  playSfx('success');
+  milmaru.classList.add('catch');
+  milmaruSpeech.textContent = getStageSpeech('キャッチできた！');
+  guideText.textContent = 'キャッチ！ほめてあげよう';
+  messageBar.textContent = 'じょうずに できたね。下の「ほめる！」を おしてね。';
+  mainPlayBtn.textContent = 'ほめる！';
+  spawnSparkles();
+}
+
+function praiseMilmaru() {
+  if (!praisePending) return;
+  praisePending = false;
+  playedThisRound = false;
+  playSfx('success');
+  milmaruSpeech.textContent = getStageSpeech('えへへ♪');
+  messageBar.textContent = `${catches}かい キャッチ！ミルマルが うれしそう。`;
+  spawnSparkles();
+  if (catches >= TOTAL_ROUNDS) {
+    completeGame();
+    return;
+  }
+  currentRound += 1;
+  guideText.textContent = 'つぎの リングを ねらおう';
+  setTimeout(() => resetRound(), 520);
+}
+
+function completeGame() {
+  gameComplete = true;
+  applyPlayReward();
+  guideText.textContent = '3かい キャッチできた！';
+  messageBar.textContent = 'たくさん ほめてもらって、ミルマルが よろこんでいるよ。';
+  mainPlayBtn.textContent = 'おせわへ';
+  setTimeout(showResult, 680);
+}
+
+function applyPlayReward() {
+  if (resultApplied) return;
+  resultApplied = true;
   changeInventory('moji_power', -PLAY_COST);
   state.nakayoshi = clamp((Number(state.nakayoshi) || 0) + 3, 0, 100);
   state.sukusuku = clamp((Number(state.sukusuku) || 0) + 1, 0, 100);
@@ -1151,13 +1364,6 @@ function completePlay() {
   state.speech = 'あそぶの たのしい！';
   saveState();
   renderCounts();
-  playSfx('success');
-  milmaru.classList.add('catch');
-  milmaruSpeech.textContent = getStageSpeech('キャッチできた！');
-  guideText.textContent = 'キャッチできた！';
-  messageBar.textContent = 'ミルマルが よろこんでいるよ。おせわ画面で ほめてあげよう。';
-  spawnSparkles();
-  setTimeout(showResult, 680);
 }
 
 function spawnSparkles() {
@@ -1175,8 +1381,8 @@ function spawnSparkles() {
 }
 
 function showResult() {
-  resultTitle.textContent = 'キャッチできた！';
-  resultText.innerHTML = 'ミルマルが よろこんでいるよ。<br>なかよし +3　すくすく +1';
+  resultTitle.textContent = 'たくさん あそべたね！';
+  resultText.innerHTML = '3かい キャッチして、<br>ミルマルを ほめられたよ。<br>なかよし +3　すくすく +1';
   resultModal.classList.add('show');
   resultModal.setAttribute('aria-hidden', 'false');
 }
@@ -1206,6 +1412,7 @@ function renderCounts() {
   const sign = document.querySelector('.sub-sign');
   sign.textContent = `しずく ${getInventoryCount('moji_power')}こ`;
   milmaru.classList.toggle('baby', getCareStageId() === 'baby');
+  updateRoundUi();
 }
 
 document.addEventListener('pointerdown', (event) => {
@@ -1217,22 +1424,36 @@ document.addEventListener('pointerdown', (event) => {
 document.getElementById('backBtn').addEventListener('click', () => goCare());
 document.getElementById('careBtn').addEventListener('click', () => goCare());
 document.getElementById('modalCareBtn').addEventListener('click', () => goCare('success'));
-document.getElementById('retryBtn').addEventListener('click', resetRound);
+document.getElementById('retryBtn').addEventListener('click', () => {
+  if (gameComplete) {
+    resetGame();
+    return;
+  }
+  resetRound();
+});
 document.getElementById('modalRetryBtn').addEventListener('click', () => {
   if (getInventoryCount('moji_power') < PLAY_COST) {
     resultModal.classList.remove('show');
     showNeedCareMessage('しずくが たりないよ', 'もじを かいて、また あそびにこよう。');
     return;
   }
-  resetRound();
+  resetGame();
 });
-document.getElementById('playBtn').addEventListener('click', () => {
+mainPlayBtn.addEventListener('click', () => {
+  if (gameComplete) {
+    goCare('success');
+    return;
+  }
+  if (praisePending) {
+    praiseMilmaru();
+    return;
+  }
   if (playedThisRound) {
     resetRound();
     return;
   }
   guideText.textContent = 'ボールを ひっぱって はなそう';
-  messageBar.textContent = '左の ボールを やさしく ひっぱってね。';
+  messageBar.textContent = 'ボールを 後ろに ひっぱると、むきと ちからが かわるよ。';
 });
 document.getElementById('settingsBtn').addEventListener('click', () => {
   messageBar.textContent = 'せっていは じゅんびちゅうだよ。';
@@ -1262,14 +1483,15 @@ if (!state.hatched) {
   messageBar.textContent = 'もじを かくと、あそぶための しずくが もらえるよ。';
   milmaruSpeech.textContent = getStageSpeech('しずくが たりないよ');
 } else {
-  resetRound();
+  resetGame();
 }
 renderCounts();
 
 window.MojikkoToyPlayGame = {
   getState: () => JSON.parse(JSON.stringify(state)),
   resetRound,
-  completePlay,
+  resetGame,
+  applyPlayReward,
   goCare
 };
 </script>
