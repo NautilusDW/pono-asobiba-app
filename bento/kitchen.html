@@ -5811,6 +5811,48 @@ body.layout-editor-on .bowl-fill-mask::after {
       },
     },
     {
+      id: 'lettuce', name: 'レタス', emoji: '🥬', piece: '🥬',
+      chopCount: 12, implemented: true,
+      cookingActions: [
+        { type: 'chop' },
+      ],
+      prepActions: [
+        { type: 'chop' },
+      ],
+      imageBase: 'lettuce/lettuce_001',
+      fridgeImage: '../assets/images/bento/cooking/lettuce/lettuce_001.png',
+      imagePieces: {
+        dir: 'lettuce',
+        prefix: 'lettuce_',
+        from: 2,
+        to: 15,
+        pad: 3,
+        sequence: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        burstStride: 2,
+      },
+      rapidTap: true,
+      queuedTapLimit: 16,
+      chopTiming: {
+        slideMs: 70,
+        downDelayMs: 76,
+        impactDelayMs: 148,
+        liftDelayMs: 168,
+        releaseDelayMs: 238,
+        innerMs: 64,
+      },
+      pieceBurstCount: 12,
+      bowlPieceLimit: 66,
+      chopMechanics: {
+        startX_pct: 87, endX_pct: 13,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 52,
+        ingredientTop_pct: 39,
+        ingredientWidth_pct: 52,
+      },
+    },
+    {
       id: 'onion', name: 'たまねぎ', emoji: '🧅', piece: '🧅',
       chopCount: 40, implemented: true,
       prepActions: [
@@ -15061,10 +15103,11 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function addSingleCutPieceToBowl(ing, burstIndex, burstCount) {
     const isCabbage = ing && ing.id === 'cabbage';
+    const isLeafy = isCabbage || (ing && ing.id === 'lettuce');
     const isChicken = ing && ing.id === 'chicken_marinated';
     const isParticle = ing && !!ing.particleKind;
     const pieceData = getCutPieceData(ing, burstIndex);
-    const piece = createCutPieceNode(pieceData, isCabbage ? 'cut-piece cabbage-bowl-piece' : (isParticle ? 'cut-piece cut-piece--particle' : 'cut-piece'));
+    const piece = createCutPieceNode(pieceData, isLeafy ? 'cut-piece cabbage-bowl-piece' : (isParticle ? 'cut-piece cut-piece--particle' : 'cut-piece'));
     const layer = getBowlPieceLayer();
     const rect = layer.getBoundingClientRect();
     const w = rect.width || 80;
@@ -15073,7 +15116,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const cy = h * 0.55;
     const pieceSize = isParticle
       ? (7 + Math.random() * 11)
-      : (isCabbage ? (42 + Math.random() * 28) : (isChicken ? 68 + Math.random() * 14 : (burstCount > 1 ? 92 : 86)));
+      : (isLeafy ? (42 + Math.random() * 28) : (isChicken ? 68 + Math.random() * 14 : (burstCount > 1 ? 92 : 86)));
     let rawX;
     let rawY;
     if (isParticle) {
@@ -15085,7 +15128,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       const rNorm = 0.18 + Math.sqrt(Math.random()) * 0.78;
       rawX = cx + Math.cos(a) * w * 0.42 * rNorm + (laneT - 0.5) * w * 0.14 - pieceSize / 2;
       rawY = h * (0.69 - fill * 0.14) + Math.sin(a) * h * 0.25 * rNorm + Math.random() * h * 0.12 - pieceSize / 2;
-    } else if (isCabbage) {
+    } else if (isLeafy) {
       const count = Math.max(1, burstCount || 1);
       const t = count > 1 ? (burstIndex % count) / (count - 1) : 0.5;
       const golden = Math.PI * (3 - Math.sqrt(5));
@@ -15099,10 +15142,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       rawX = cx + Math.cos(a) * r - pieceSize / 2;
       rawY = cy + Math.sin(a) * r - pieceSize / 2;
     }
-    let x = (isCabbage || isParticle)
+    let x = (isLeafy || isParticle)
       ? Math.max(w * 0.03, Math.min(w - pieceSize - w * 0.03, rawX))
       : rawX;
-    let y = (isCabbage || isParticle)
+    let y = (isLeafy || isParticle)
       ? Math.max(h * 0.08, Math.min(h - pieceSize - h * 0.06, rawY))
       : rawY;
     if (isChicken) {
@@ -15123,16 +15166,16 @@ body.layout-editor-on .bowl-fill-mask::after {
     playCutPieceTransfer(pieceData, function () {
       if (state.current !== ing) return;
       piece.classList.add('drop-in');
-      piece.style.setProperty('--drop-x', ((isParticle ? -46 : (isCabbage ? -92 : -72)) + Math.random() * (isParticle ? 84 : (isCabbage ? 48 : 22))) + 'px');
-      piece.style.setProperty('--drop-y', ((isParticle ? -78 : (isCabbage ? -128 : -100)) + Math.random() * (isParticle ? 74 : (isCabbage ? 46 : 24))) + 'px');
-      piece.style.setProperty('--drop-rot', (rot - (isParticle ? 190 : (isCabbage ? 130 : 95)) + Math.random() * (isParticle ? 220 : (isCabbage ? 95 : 35))) + 'deg');
+      piece.style.setProperty('--drop-x', ((isParticle ? -46 : (isLeafy ? -92 : -72)) + Math.random() * (isParticle ? 84 : (isLeafy ? 48 : 22))) + 'px');
+      piece.style.setProperty('--drop-y', ((isParticle ? -78 : (isLeafy ? -128 : -100)) + Math.random() * (isParticle ? 74 : (isLeafy ? 46 : 24))) + 'px');
+      piece.style.setProperty('--drop-rot', (rot - (isParticle ? 190 : (isLeafy ? 130 : 95)) + Math.random() * (isParticle ? 220 : (isLeafy ? 95 : 35))) + 'deg');
       layer.appendChild(piece);
       enforceBowlPieceLimit(ing);
       els.bowl.classList.remove('catch');
       void els.bowl.offsetWidth;
       els.bowl.classList.add('catch');
     }, {
-      cabbage: isCabbage,
+      cabbage: isLeafy,
       particle: isParticle,
       burstIndex: burstIndex,
       burstCount: burstCount,
