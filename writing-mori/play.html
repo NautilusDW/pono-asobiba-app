@@ -981,7 +981,7 @@ button {
         <div class="step-card"><span class="step-num">2</span><span>ころがす</span></div>
         <div class="step-card"><span class="step-num">3</span><span>ほめる</span></div>
       </div>
-      <div class="reward-hint">3かい キャッチ<br>しずく 2こ<br>なかよし +3</div>
+      <div class="reward-hint">3かい キャッチ<br>きらり 2こ<br>なかよし +3</div>
     </aside>
 
     <div class="status-strip">
@@ -994,7 +994,7 @@ button {
       <button class="pixel-button secondary-btn" id="retryBtn">もういっかい</button>
       <button class="pixel-button secondary-btn next" id="careBtn">おせわへ</button>
     </nav>
-    <div class="message-bar" id="messageBar">しずくを つかって、ミルマルと ゆっくり あそぼう！</div>
+    <div class="message-bar" id="messageBar">きらりを つかって、ミルマルと ゆっくり あそぼう！</div>
 
     <div class="result-modal" id="resultModal" aria-hidden="true">
       <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
@@ -1027,7 +1027,7 @@ const ROUND_TARGETS = [
 const defaultState = {
   name: 'ミルマル',
   named: false,
-  nakayoshi: 32,
+  nakayoshi: 0,
   gokigen: 78,
   sukusuku: 0,
   eggWarmth: 0,
@@ -1036,7 +1036,7 @@ const defaultState = {
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
     moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
-    moji_power: { id: 'moji_power', name: 'もじのしずく', count: 0, type: 'energy' }
+    moji_power: { id: 'moji_power', name: 'もじのきらり', count: 0, type: 'energy' }
   },
   reaction: 'normal',
   speech: 'いっしょに もじを かこう！',
@@ -1327,7 +1327,7 @@ function resetRound(options = {}) {
   guideText.textContent = `${currentRound}かいめ：リングを ねらおう`;
   messageBar.textContent = getInventoryCount('moji_power') >= PLAY_COST
     ? 'ボールを ひっぱると、ちからと むきが かわるよ。'
-    : 'もじを かくと、あそぶための しずくが もらえるよ。';
+    : 'もじを かくと、あそぶための きらりが もらえるよ。';
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
 }
 
@@ -1388,7 +1388,7 @@ function startDrag(event) {
     return;
   }
   if (getInventoryCount('moji_power') < PLAY_COST) {
-    showNeedCareMessage('しずくが たりないよ', `あと ${PLAY_COST - getInventoryCount('moji_power')}こ しずくが いるよ。もじを かこう！`);
+    showNeedCareMessage('きらりが たりないよ', `あと ${PLAY_COST - getInventoryCount('moji_power')}こ きらりが いるよ。もじを かこう！`);
     return;
   }
   event.preventDefault();
@@ -1598,7 +1598,7 @@ function goWriting() {
 function renderCounts() {
   document.getElementById('starCount').textContent = String(state.stars);
   const sign = document.querySelector('.sub-sign');
-  sign.textContent = `しずく ${getInventoryCount('moji_power')}こ`;
+  sign.textContent = `きらり ${getInventoryCount('moji_power')}こ`;
   milmaru.classList.toggle('baby', getCareStageId() === 'baby');
   updateRoundUi();
 }
@@ -1622,7 +1622,7 @@ document.getElementById('retryBtn').addEventListener('click', () => {
 document.getElementById('modalRetryBtn').addEventListener('click', () => {
   if (getInventoryCount('moji_power') < PLAY_COST) {
     resultModal.classList.remove('show');
-    showNeedCareMessage('しずくが たりないよ', 'もじを かいて、また あそびにこよう。');
+    showNeedCareMessage('きらりが たりないよ', 'もじを かいて、また あそびにこよう。');
     return;
   }
   resetGame();
@@ -1670,9 +1670,9 @@ if (!state.hatched) {
   messageBar.textContent = 'おせわ画面で タマゴを あたためてあげよう。';
   milmaruSpeech.textContent = 'すぅ...';
 } else if (getInventoryCount('moji_power') < PLAY_COST) {
-  guideText.textContent = 'しずくが たりないよ';
-  messageBar.textContent = 'もじを かくと、あそぶための しずくが もらえるよ。';
-  milmaruSpeech.textContent = getStageSpeech('しずくが たりないよ');
+  guideText.textContent = 'きらりが たりないよ';
+  messageBar.textContent = 'もじを かくと、あそぶための きらりが もらえるよ。';
+  milmaruSpeech.textContent = getStageSpeech('きらりが たりないよ');
 } else {
   resetGame();
 }

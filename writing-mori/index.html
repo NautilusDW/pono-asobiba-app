@@ -1635,7 +1635,7 @@ const guideSvgMaskCache = new Map();
 const defaultCareState = {
   name: 'ミルマル',
   named: false,
-  nakayoshi: 32,
+  nakayoshi: 0,
   gokigen: 78,
   sukusuku: 0,
   eggWarmth: 0,
@@ -1644,7 +1644,7 @@ const defaultCareState = {
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
     moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' },
-    moji_power: { id: 'moji_power', name: 'もじのしずく', count: 0, type: 'energy' }
+    moji_power: { id: 'moji_power', name: 'もじのきらり', count: 0, type: 'energy' }
   },
   reaction: 'normal',
   speech: 'まだ タマゴだよ',
@@ -3301,7 +3301,7 @@ function completeWriting(manual, summary) {
   companionCard.classList.toggle('celebrate', careState.hatched === true);
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
   const reward = getCurrentWritingReward();
-  resultReward.textContent = `${reward.name}と もじのしずくを ゲット！`;
+  resultReward.textContent = `${reward.name}と もじのきらりを ゲット！`;
   setFoodIconClass(resultRewardIcon, reward);
   modalRetryBtn.textContent = `つぎは「${writingCharacters[(currentIndex + 1) % writingCharacters.length].char}」`;
   stars += 25;
