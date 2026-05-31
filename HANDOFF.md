@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-05-31 - [batch:205-bento-free-layout-panel-rice-mask] Codex: user 指摘「ご飯ドラッグ時に箱が一瞬消える / のりの配置境界を弁当箱全体ではなくご飯にする / 全体マスクずれ調整 / 右パネルを大きくしてポノと吹き出しを別レイヤー化 / 背景は21:9で16:9安全内に必要要素」を受領。`bento/index.html` と背景アセットを修正し、Playwrightで自由配置の表示と操作を確認する。 (by Codex)
+- 2026-05-31 - [batch:205-bento-free-layout-panel-rice-mask] DONE - Codex: `bento/index.html` を21:9背景レイアウトへ変更し、右パネルを拡張、ポノと吹き出しを下部別レイヤー化。ご飯入り箱は空箱を残したまま一体画像をロード後に差し替える構造にしてドラッグ時の一瞬消えを抑制し、のり系飾りはご飯範囲へクランプ + ご飯範囲クリップで描画。箱マスク既定値を v4 へ更新し、背景 `free_layout_background_21x9.webp` を追加。Playwrightで desktop/mobile 表示、のり範囲、全箱画像 200、エラーなしを確認。`sw.js` は v690。 (by Codex)
 - 2026-05-31 - [batch:204-mojikko-ball-play-guidance] DONE - Codex: `writing-mori/play.html` のころころボールに、ドラッグ中の放物線予測と着地点マーカーを追加。リングに入った瞬間はターゲットの緑ハイライト、着地点の「はいった」、成功バーストで分かるようにし、ターゲット半径も子ども向けに少し広げた。ミルマルの吹き出しは上前面へ移動し、ドラッグ中に画面外で指を離してもリリースを拾うよう document pointerup/pointermove を追加。Playwrightで予測線表示、3回キャッチ完了、報酬保存、吹き出し z-index を確認。`sw.js` は v689。 (by Codex)
 - 2026-05-31 - [batch:203-image-performance-audit] Codex: user 指摘「読み込みがすごく遅い、スマホ/タブレット向けに画像解像度・容量を確認」を受領。tracked画像 2569枚/約774MBを棚卸しし、初期表示で重い `play.html` / `bento/index.html` / `bento/kitchen.html` の実測を優先。数MB級PNGをWebPへ置換し、トップ・弁当・キッチン初期ロードを軽くする。`writing-mori/play.html` は既存未コミット差分があったため触らない。 (by Codex)
 - 2026-05-31 - [batch:203-image-performance-audit] DONE - Codex: assets 全体を棚卸しし、主要初期表示画像をWebP化、未参照の旧PNG/JPGを削除、`assets/images` の既存最適化スクリプトで追加5ファイルを圧縮。Playwright実測で画像転送量は `play.html` 18.3MB→2.48MiB、`bento/index.html` 8.78MB→0.80MiB、`bento/kitchen.html` 7.45MB→0.60MiB、画像404なし。通常起動で不要な play の調整パネル外部読み込みも停止。スクショで play/bento/kitchen の表示確認済み。`sw.js` は v688。`writing-mori/play.html` の既存dirtyは未変更。 (by Codex)
