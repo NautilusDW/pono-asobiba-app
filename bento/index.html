@@ -1224,6 +1224,21 @@ html, body {
   height: 86px;
   filter: drop-shadow(0 10px 14px rgba(93, 78, 55, 0.24));
 }
+.free-drag-ghost.nori-drag-ghost {
+  width: var(--free-drag-ghost-size, 44px);
+  height: var(--free-drag-ghost-size, 44px);
+  transform: translate(-50%, -50%);
+  opacity: 0.92;
+  transition: opacity 0.08s ease;
+}
+.free-drag-ghost.nori-drag-ghost .free-palette-visual {
+  width: calc(var(--free-drag-ghost-size, 44px) * 0.92);
+  height: calc(var(--free-drag-ghost-size, 44px) * 0.92);
+  filter: drop-shadow(0 4px 6px rgba(93, 78, 55, 0.18));
+}
+.free-drag-ghost.nori-drag-ghost.is-over-stage {
+  opacity: 0;
+}
 .complete-bento.free-complete-bento,
 .fav-mini-bento.free-mini-bento {
   aspect-ratio: 760 / 460;
@@ -4521,6 +4536,9 @@ function updateFreePaletteDragGhost(e) {
   if (!freePaletteDragState || !freePaletteDragState.ghost || !e) return;
   freePaletteDragState.ghost.style.left = `${e.clientX}px`;
   freePaletteDragState.ghost.style.top = `${e.clientY}px`;
+  if (isNoriDecorItem(freePaletteDragState.def)) {
+    freePaletteDragState.ghost.classList.toggle('is-over-stage', !!eventToFreePoint(e));
+  }
 }
 function removeFreePaletteDragGhost() {
   if (freePaletteDragState && freePaletteDragState.ghost) {
@@ -4531,6 +4549,11 @@ function removeFreePaletteDragGhost() {
 function createFreePaletteDragGhost(def, e) {
   const ghost = document.createElement('div');
   ghost.className = 'free-drag-ghost';
+  if (isNoriDecorItem(def)) {
+    const ghostSize = Math.round(clamp((def.size || 44) * 1.12, 34, 72));
+    ghost.classList.add('nori-drag-ghost');
+    ghost.style.setProperty('--free-drag-ghost-size', `${ghostSize}px`);
+  }
   ghost.appendChild(createPaletteVisual(def));
   document.body.appendChild(ghost);
   freePaletteDragState.ghost = ghost;
