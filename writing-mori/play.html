@@ -1607,6 +1607,14 @@ button {
   animation: towerCollapse 740ms cubic-bezier(.2,.72,.28,1) forwards;
 }
 
+.block-stack.wobble .stack-block.physics.hit,
+.block-stack.collapse .stack-block.physics.hit,
+.stack-block.physics.miss,
+.stack-block.physics.collapse {
+  animation: none;
+  transform: translate(var(--block-x, 0px), var(--block-y, 0px)) rotate(var(--block-angle, 0rad));
+}
+
 .stack-block.falling {
   bottom: auto;
   top: 42px;
@@ -2668,6 +2676,7 @@ function restoreStackSnapshot(snapshot) {
       Body.setAngle(body, block.angle || 0);
       Body.setVelocity(body, { x: 0, y: 0 });
       Body.setAngularVelocity(body, 0);
+      Body.setStatic(body, true);
       World.add(stackEngine.world, body);
     }
     return { ...block, body, offset: block.offset || 0 };
@@ -2685,6 +2694,7 @@ function stabilizeStackPhysicsBodies(includeDropping = false) {
     if (!block.body) return;
     Body.setVelocity(block.body, { x: 0, y: 0 });
     Body.setAngularVelocity(block.body, 0);
+    Body.setStatic(block.body, true);
   });
 }
 
@@ -2709,21 +2719,25 @@ function getStackPhysicsOutcome() {
   const offset = body.position.x - targetCenter;
   const allowed = getStackAllowedOffset(target, shape);
   const edgeRatio = Math.abs(offset) / Math.max(1, allowed);
+  const initialEdgeRatio = Number.isFinite(stackDroppingBlock.initialEdgeRatio)
+    ? stackDroppingBlock.initialEdgeRatio
+    : edgeRatio;
   const droppedTilt = getStackFlatTilt(body.angle);
   const allBlocks = [...stackBlocks, stackDroppingBlock].filter((block) => block.body);
   const maxTilt = allBlocks.reduce((max, block) => Math.max(max, getStackFlatTilt(block.body.angle)), 0);
   const anyCollapsed = allBlocks.some((block) => isStackBodyOut(block.body) || getStackFlatTilt(block.body.angle) > 0.95);
   const landed = !isStackBodyOut(body) && body.position.y < MINI_STACK.stageH - 8;
-  const collapse = anyCollapsed || droppedTilt > 0.62 || edgeRatio > 1.15;
-  const success = landed && !collapse;
+  const collapse = anyCollapsed || droppedTilt > 0.62 || edgeRatio > 1.08 || initialEdgeRatio > 1;
+  const success = stackDroppingBlock.initialDropHit !== false && landed && !collapse;
   return {
     physics: true,
     landed,
     success,
     collapse,
-    wobble: success && (edgeRatio > 0.42 || droppedTilt > 0.12 || maxTilt > 0.15),
+    wobble: success && (initialEdgeRatio > 0.52 || edgeRatio > 0.42 || droppedTilt > 0.12 || maxTilt > 0.15),
     offset,
-    edgeRatio
+    edgeRatio,
+    initialEdgeRatio
   };
 }
 
@@ -3383,6 +3397,7 @@ function renderStackBlockHtml(block, extraClasses = [], label = block.round || '
   } else {
     style.push(`--block-x:${Math.round(block.x)}px`);
     style.push(`--block-bottom:${Math.round(block.bottom || MINI_STACK.baseBottom)}px`);
+    if (Number.isFinite(block.dropTo)) style.push(`--drop-to:${Math.round(block.dropTo)}px`);
   }
   if (block.offset < 0) {
     style.push('--collapse-dir:-1');
@@ -4111,11 +4126,22 @@ function resolveStackRound(landed) {
   }
 
   const shape = currentStackShape || getStackShapeForRound(currentRound);
+  const target = getStackTarget();
+  const blockCenter = stackSwingX + shape.w / 2;
+  const targetCenter = target.left + target.width / 2;
+  const initialOffset = blockCenter - targetCenter;
+  const initialAllowed = getStackAllowedOffset(target, shape);
+  const initialEdgeRatio = Math.abs(initialOffset) / Math.max(1, initialAllowed);
+  if (!landed) {
+    resolveStackRoundFallback(false);
+    return;
+  }
+
   playedThisRound = true;
   stopPowerMeter();
   stackWobbleActive = false;
   stackCollapseActive = false;
-  stackPreDropTarget = getStackTarget();
+  stackPreDropTarget = target;
   stackPreDropSnapshot = stackBlocks.map(takeStackSnapshot);
 
   const body = createStackPhysicsBody(shape, stackSwingX + shape.w / 2, 42 + shape.h / 2);
@@ -4132,6 +4158,9 @@ function resolveStackRound(landed) {
     r: shape.r,
     round: currentRound,
     offset: 0,
+    initialDropHit: landed,
+    initialOffset,
+    initialEdgeRatio,
     physics: true,
     success: true,
     collapse: false

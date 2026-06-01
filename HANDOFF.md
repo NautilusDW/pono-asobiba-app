@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-02 - [batch:237-mojikko-stack-hit-warp-fix] DONE - Codex: `writing-mori/play.html` のつみきで、落下前に外しているブロックが物理でたまたま乗って成功扱いになる問題を修正。落下前判定が miss の場合は fallback miss に固定し、成功後の Matter body は static 化して次の落下で塔が動き続けないようにした。physics ブロックの transform が `.miss` / `.wobble` / `.collapse` のCSSで上書きされ左上へ飛ぶ問題も専用overrideで修正。Playwrightで中央3積み→端外し=miss追加なし、5積み完了、左上ワープなし、JSエラーなしを確認。`sw.js` は v738。 (by Codex)
 - 2026-06-02 - [batch:236-mojikko-taiko-bpm-song] DONE - Codex: `writing-mori/play.html` のたいこ遊びを BPM76 / 8拍フレーズの譜面へ変更し、1回あたり約6.3秒に減速。音符の移動時間を約2倍にし、太鼓SE/直前cue/簡易伴奏の音量を上げた。文言も「音楽にあわせてドン」へ寄せた。Playwrightで開始待ち、カウントダウン、roundMs=6315ms、5回完了、18打ヒット、JSエラーなしを確認。Codex self-review: 既存の開始ボタン導線/ポーズ/5回リザルト/他おもちゃ分岐に影響がないことを差分確認。`sw.js` は v737。 (by Codex)
 - 2026-06-01 - [batch:235-mojikko-stack-physics] DONE - Codex: `writing-mori/play.html` のつみき遊びへ旧 `stacking/index.html` と同じ Matter.js ベースの物理を導入。`assets/lib/matter.min.js` をローカル配置し、落下中/着地後の body 位置と角度をDOMブロックへ反映、端置きでは物理結果に応じてぐらぐら/崩れ/失敗へ分岐し、失敗後は投入前の塔へ戻して次ラウンドを続ける構造にした。Playwrightでローカル Matter 読み込み、物理ブロック落下、着地後配置、5回完了、JSエラーなしを確認。`sw.js` は v736。 (by Codex)
 - 2026-06-01 - [batch:234-mojikko-taiko-clarity-bgm] DONE - Codex: `writing-mori/play.html` のたいこ遊びを、中央の大きい「はじめる」ボタンだけで開始するUIへ整理し、旧「スタート」表記と「しょうせつ」表記を削除。レーン幅を拡張し、ミルマルを判定レーン外へ退避、プレイ中のポーズ/再開ボタンと簡易BGMループを追加。完了後はポーズを非表示化。Playwrightで開始表示、カウントダウン、ポーズ、5回リズム完了、JSエラーなしを確認。`sw.js` は v735。 (by Codex)
