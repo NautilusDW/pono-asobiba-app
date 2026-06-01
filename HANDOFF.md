@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-01 - [batch:233-mojikko-taiko-measures-ui] DONE - Codex: `writing-mori/play.html` のたいこ遊びを、選択直後はスタート待ちにして押下後に3・2・1開始へ変更。5回単発から5しょうせつ制にし、各小節に3〜4個の音符パターンを置いてリズム変化を追加。たいこ時は右の遊び方パネルを隠し、中央フィールドを1208pxへ拡張、左のおもちゃメニュー内に遊び方を表示。Playwrightで開始待ち、右パネル非表示、5小節完了、結果モーダル、JSエラーなしを確認。`sw.js` は v734。 (by Codex)
 - 2026-06-01 - [batch:232-mojikko-taiko-lane] DONE - Codex: `writing-mori/play.html` のたいこ遊びを、右から流れる音符が判定丸に重なるタイミングで叩くリズムレーン方式へ変更。太鼓/バチは左側に残し、音符レーン・判定丸・「ドン！」cue・文言を追加。Playwrightで待機/ヒット画面、タップ成功で1ヒット、SE発火を確認。クロスレビュー観点としてスクショ2枚を目視確認。`sw.js` は v733。 (by Codex)
 - 2026-06-01 - [batch:231-mojikko-taiko-rhythm] DONE - Codex: `writing-mori/play.html` のリズムおもちゃを「でんでんだいこ」から「たいこトントン」へ変更。紐/玉表現を削除し、中央の大きな太鼓・バチ・ヒット発光だけに絞った。Playwrightで待機時の太鼓/バチ表示、ヒット時の太鼓/バチ/スプラッシュ発光、`drumCue`/`drum` SE、旧でんでん要素なし、成功判定を確認。`sw.js` は v732。 (by Codex)
 - 2026-06-01 - [batch:230-mojikko-denden-daiko-rattle] DONE - Codex: `writing-mori/play.html` のガラガラをコード描画の「でんでんだいこ」へ差し替え。旧い外側パッド/輪っか表現をやめ、中央太鼓・左右の紐・玉・接触フラッシュで「紐つきの玉が太鼓に当たったらタップ」と読める構造に変更。Playwrightで待機時の紐/玉表示、ヒット時の玉/太鼓/接触フラッシュ、`drumCue`/`drum` SE、旧パッド要素なしを確認。`sw.js` は v731。 (by Codex)
