@@ -387,10 +387,11 @@ button {
 }
 
 .playfield[data-toy="rattle"] .toy-mode-board {
-  left: 50px;
+  left: 30px;
   top: 62px;
-  width: 1108px;
+  width: 1148px;
   height: 420px;
+  pointer-events: auto;
 }
 
 #stage[data-toy="rattle"] .how-panel {
@@ -410,8 +411,20 @@ button {
 }
 
 #stage[data-toy="rattle"] .bottom-actions {
-  left: 492px;
-  right: 222px;
+  display: none;
+}
+
+#stage[data-toy="rattle"] .milmaru {
+  left: 1032px;
+  top: 382px;
+  width: 70px;
+  height: 70px;
+  z-index: 2;
+  opacity: 0.92;
+}
+
+#stage[data-toy="rattle"] .milmaru-speech {
+  display: none;
 }
 
 .playfield[data-toy="blocks"] {
@@ -1154,7 +1167,7 @@ button {
   position: absolute;
   left: 50%;
   top: 51%;
-  width: 1010px;
+  width: 1128px;
   height: 314px;
   transform: translate(-50%, -50%);
   z-index: 2;
@@ -1287,9 +1300,9 @@ button {
 
 .taiko-lane {
   position: absolute;
-  left: 236px;
+  left: 204px;
   top: 132px;
-  width: 720px;
+  width: 872px;
   height: 82px;
   border: 6px solid #8b6040;
   border-radius: 999px;
@@ -1422,6 +1435,74 @@ button {
   background: #ffe69a;
   color: #e97955;
   transform: translateY(-5px);
+}
+
+.taiko-start-button,
+.taiko-pause-button {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 5px solid #8b6040;
+  border-radius: 12px;
+  background: linear-gradient(#b7dff7, #64b7df);
+  color: #fffaf0;
+  font-family: var(--pixel-font);
+  font-weight: 900;
+  text-shadow: 0 3px 0 rgba(42,82,98,0.45);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 7px 0 rgba(74,48,30,0.35);
+  cursor: pointer;
+  z-index: 12;
+}
+
+.taiko-start-button {
+  left: 50%;
+  bottom: 38px;
+  width: 330px;
+  height: 74px;
+  transform: translateX(-50%);
+  font-size: 34px;
+}
+
+.taiko-start-button:active,
+.taiko-pause-button:active {
+  transform: translateX(-50%) translateY(4px);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 3px 0 rgba(74,48,30,0.35);
+}
+
+.taiko-pause-button {
+  right: 42px;
+  top: 22px;
+  width: 158px;
+  height: 52px;
+  background: linear-gradient(#fff1c9, #f2be64);
+  color: #5b3b28;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.45);
+  font-size: 22px;
+}
+
+.taiko-pause-button:active {
+  transform: translateY(4px);
+}
+
+.taiko-paused-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(84, 54, 32, 0.18);
+  z-index: 11;
+}
+
+.taiko-paused-card {
+  padding: 18px 34px;
+  border: 5px solid #8b6040;
+  border-radius: 12px;
+  background: #fffaf0;
+  color: #5b3b28;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.34), 0 8px 0 rgba(74,48,30,0.3);
 }
 
 .block-stack {
@@ -2044,7 +2125,7 @@ const MINI_STACK = {
   ]
 };
 const RHYTHM_LANE = {
-  startX: 672,
+  startX: 830,
   hitX: 126,
   endX: 34,
   leadMs: 980,
@@ -2072,13 +2153,13 @@ const TOY_CONFIGS = {
     title: 'たいこリズム',
     label: 'たいこ',
     icon: '♪',
-    subSign: 'スタートを おして はじめよう！',
+    subSign: 'たいこを たたこう！',
     launchLabel: 'ここから<br>トントン',
     guideVerb: 'たたこう',
     movingText: 'ドンドン...',
     resultTitle: 'たいこで あそべたね！',
-    steps: ['スタート', 'まるでドン', '5しょうせつ'],
-    rewardHint: '右からくる音符が<br>みどりの丸にきたら<br>ドン！でタップ',
+    steps: ['はじめる', 'まるでドン', '5回リズム'],
+    rewardHint: '音符が<br>みどりの丸にきたら<br>ドン！',
     actionText: 'ドン！',
     meterLabel: 'リズム',
     goodMin: 0.36,
@@ -2098,7 +2179,7 @@ const TOY_CONFIGS = {
     hitBurst: 'ドンドン！',
     missBurst: 'おしい',
     completeGuide: 'たいこを ならしたよ！',
-    sideHelp: 'スタートで 3・2・1。\n音符が丸に重なったら ドン！\n5しょうせつでリズムが変わるよ。'
+    sideHelp: 'はじめるを おすよ。\n丸にきたら ドン！\n5回 リズムが変わるよ。'
   },
   blocks: {
     mode: 'stack',
@@ -2196,6 +2277,9 @@ let rhythmCueMarks = [];
 let rhythmNoteResults = [];
 let rhythmLastHitIndex = -1;
 let rhythmMeasureHits = 0;
+let rhythmPaused = false;
+let rhythmPauseStartedAt = 0;
+let rhythmBgmTimer = null;
 let miniRoundStartedAt = 0;
 let stackSwingX = 144;
 let stackBlocks = [];
@@ -2413,6 +2497,29 @@ function playSfx(kind) {
   } catch (_) {}
 }
 
+function stopRhythmBgm() {
+  clearTimeout(rhythmBgmTimer);
+  rhythmBgmTimer = null;
+}
+
+function startRhythmBgm() {
+  stopRhythmBgm();
+  if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused) return;
+  const tick = () => {
+    if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) {
+      stopRhythmBgm();
+      return;
+    }
+    const elapsed = getRhythmElapsed(getToyConfig());
+    const step = Math.floor(elapsed / 340);
+    const root = step % 4 === 0;
+    playTone(root ? 196 : 294, 0.055, 'triangle', root ? 0.018 : 0.012);
+    if (step % 2 === 1) playTone(392, 0.035, 'square', 0.009, 0.05);
+    rhythmBgmTimer = setTimeout(tick, 340);
+  };
+  rhythmBgmTimer = setTimeout(tick, 80);
+}
+
 function setBallPosition(x, y) {
   ball.style.setProperty('--ball-x', `${x}px`);
   ball.style.setProperty('--ball-y', `${y}px`);
@@ -2424,7 +2531,7 @@ function setBallCenter(x, y) {
 
 function updateRoundUi() {
   roundCounter.textContent = getToyConfig().mode === 'rhythm'
-    ? `${Math.min(currentRound, TOTAL_ROUNDS)}しょうせつ / ${TOTAL_ROUNDS}`
+    ? `リズム ${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`
     : `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
   renderShotPips();
 }
@@ -2996,13 +3103,17 @@ function renderToyBoard(feedback = lastToyFeedback) {
     const motion = getTaikoMotion(config, isCountingDown);
     const hitReady = motion.hitReady;
     const isReady = controlPhase === 'ready';
+    const readyButton = isReady ? '<button class="taiko-start-button" type="button" data-taiko-start="true">はじめる</button>' : '';
+    const pauseButton = controlPhase === 'toy'
+      ? `<button class="taiko-pause-button" type="button" data-taiko-pause="true">${rhythmPaused ? 'つづける' : 'ポーズ'}</button>`
+      : '';
+    const pauseCover = rhythmPaused ? '<div class="taiko-paused-cover"><div class="taiko-paused-card">おやすみ中</div></div>' : '';
     const noteHtml = motion.notes.map((note) =>
       `<div class="taiko-note ${note.active ? 'active' : ''} ${note.state === 'miss' ? 'miss' : ''}" style="--note-x:${note.x.toFixed(1)}px">ドン</div>`
     ).join('');
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card rattle-game${cardState}" style="${motion.bachiStyle}">
-        <div class="toy-round-label">${Math.min(currentRound, TOTAL_ROUNDS)}しょうせつ / ${TOTAL_ROUNDS}</div>
-        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : isReady ? 'スタートで はじめる' : '音符をみて'}</div>`}
+        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : isReady ? 'じゅんびOK' : rhythmPaused ? 'ポーズ中' : '音符をみて'}</div>`}
         <div class="taiko-toy">
           <div class="taiko-stand"></div>
           <div class="taiko-bachi left ${hitReady ? 'active' : ''}"></div>
@@ -3017,9 +3128,11 @@ function renderToyBoard(feedback = lastToyFeedback) {
           </div>
           <div class="taiko-beat-pips">${motion.beatPips}</div>
         </div>
+        ${readyButton}
+        ${pauseButton}
+        ${pauseCover}
         <div class="rattle-target">${renderMiniRoundMarks()}</div>
-        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！で タップ' : isReady ? 'スタートを おそう' : 'まるに きたら ドン'}</div>
-        <div class="toy-mode-help">1しょうせつずつ あそぶよ</div>
+        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！' : isReady ? '音符が丸にきたら ドン！' : rhythmPaused ? 'つづけるを おそう' : 'まるに きたら ドン'}</div>
       </div>
     `;
     return;
@@ -3097,6 +3210,9 @@ function startRattleCountdown() {
   rhythmNoteResults = [];
   rhythmLastHitIndex = -1;
   rhythmMeasureHits = 0;
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
+  stopRhythmBgm();
   lastToyFeedback = '';
   rattleCountdownValue = '3';
   document.querySelector('.sub-sign').textContent = '3・2・1で はじめるよ！';
@@ -3106,10 +3222,10 @@ function startRattleCountdown() {
   powerMeter.classList.remove('active');
   renderToyBoard();
 
-  ['2', '1', 'スタート'].forEach((value, index) => {
+  ['2', '1', 'いくよ'].forEach((value, index) => {
     const timer = setTimeout(() => {
       rattleCountdownValue = value;
-      playSfx(value === 'スタート' ? 'success' : 'button');
+      playSfx(value === 'いくよ' ? 'success' : 'button');
       renderToyBoard();
     }, (index + 1) * 650);
     rattleCountdownTimers.push(timer);
@@ -3184,6 +3300,8 @@ function startRhythmRound() {
   rhythmNoteResults = Array(pattern.length).fill('');
   rhythmLastHitIndex = -1;
   rhythmMeasureHits = 0;
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
   miniRoundStartedAt = performance.now();
   lastPowerFrameAt = 0;
   lastToyFeedback = '';
@@ -3192,13 +3310,19 @@ function startRhythmRound() {
   timingMarker.style.setProperty('--timing', '0%');
   document.querySelector('.sub-sign').textContent = '音符が まるにきたら タップ！';
   mainPlayBtn.textContent = config.actionText || 'ふる！';
-  guideText.textContent = `${currentRound}しょうせつめ：まるにきたら ドン！`;
+  guideText.textContent = `${currentRound}回目：まるにきたら ドン！`;
   messageBar.textContent = '音符がみどりの丸に重なるところで、ドン！と押そう。';
   renderToyBoard();
+  startRhythmBgm();
 
   const tick = (now) => {
     if (controlPhase !== 'toy' || getToyConfig().mode !== 'rhythm' || gameComplete || playedThisRound) {
+      stopRhythmBgm();
       stopPowerMeter();
+      return;
+    }
+    if (rhythmPaused) {
+      powerFrame = requestAnimationFrame(tick);
       return;
     }
     const elapsed = now - miniRoundStartedAt;
@@ -3231,7 +3355,7 @@ function handleRhythmAction() {
     startRattleCountdown();
     return;
   }
-  if (controlPhase !== 'toy' || playedThisRound || gameComplete) return;
+  if (controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
   const noteIndex = getHittableRhythmNote();
   if (noteIndex < 0) {
     playSfx('mistake');
@@ -3253,15 +3377,39 @@ function handleRhythmAction() {
   lastToyFeedback = 'hit';
   playSfx('drum');
   guideText.textContent = 'ドンドン！';
-  messageBar.textContent = `${currentRound}しょうせつめ：いいリズム！`;
+  messageBar.textContent = `${currentRound}回目：いいリズム！`;
   renderToyBoard('hit');
   spawnSparkles({ x: 440, y: 266 });
+}
+
+function toggleRhythmPause() {
+  if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || playedThisRound || gameComplete) return;
+  if (!rhythmPaused) {
+    rhythmPaused = true;
+    rhythmPauseStartedAt = performance.now();
+    stopRhythmBgm();
+    guideText.textContent = 'ポーズ中';
+    messageBar.textContent = 'つづけるを押すと、またリズムが動くよ。';
+    renderToyBoard();
+    playSfx('button');
+    return;
+  }
+  rhythmPaused = false;
+  const pausedFor = performance.now() - rhythmPauseStartedAt;
+  miniRoundStartedAt += pausedFor;
+  rhythmPauseStartedAt = 0;
+  guideText.textContent = `${currentRound}回目：まるにきたら ドン！`;
+  messageBar.textContent = '音符がみどりの丸に重なるところで、ドン！と押そう。';
+  renderToyBoard();
+  startRhythmBgm();
+  playSfx('success');
 }
 
 function finishRhythmMeasure() {
   if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
   const config = getToyConfig();
   const pattern = getRhythmPattern(config);
+  stopRhythmBgm();
   stopPowerMeter();
   pattern.forEach((_, index) => {
     if (!rhythmNoteResults[index]) rhythmNoteResults[index] = 'miss';
@@ -3280,14 +3428,14 @@ function finishRhythmMeasure() {
     milmaru.classList.add('catch');
     milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
     guideText.textContent = `${hits}/${pattern.length} できた！`;
-    messageBar.textContent = '1しょうせつ、リズムよく たたけたよ。';
+    messageBar.textContent = 'リズムよく たたけたよ。';
     showGoalBurst({ x: 610, y: 250 }, 'いいリズム！', true);
   } else {
     playSfx('mistake');
     milmaru.classList.add('worried');
     milmaruSpeech.textContent = getStageSpeech('なぁい...？');
     guideText.textContent = `${hits}/${pattern.length} もういちど`;
-    messageBar.textContent = '音符がまるに重なるところを見て、次のしょうせつでやってみよう。';
+    messageBar.textContent = '音符がまるに重なるところを見て、次のリズムでやってみよう。';
     showGoalBurst({ x: 610, y: 250 }, config.missBurst || 'おしい', false);
   }
 
@@ -3349,6 +3497,7 @@ function resetToyMiniGame(options = {}) {
   cancelAnimationFrame(animationFrame);
   animationFrame = null;
   clearRattleCountdown();
+  stopRhythmBgm();
   stopMilmaruRoam();
   stopPowerMeter();
   isAiming = false;
@@ -3365,6 +3514,8 @@ function resetToyMiniGame(options = {}) {
   rhythmNoteResults = [];
   rhythmLastHitIndex = -1;
   rhythmMeasureHits = 0;
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
   rattleCountdownDone = false;
   stackDroppingBlock = null;
   stackWobbleActive = false;
@@ -3394,10 +3545,10 @@ function resetToyMiniGame(options = {}) {
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
   if (getToyConfig().mode === 'rhythm') {
     controlPhase = 'ready';
-    document.querySelector('.sub-sign').textContent = 'スタートを おして はじめよう！';
-    mainPlayBtn.textContent = 'スタート';
-    guideText.textContent = 'スタートで はじめるよ';
-    messageBar.textContent = 'たいこはスタートを押してから、3・2・1で始まるよ。';
+    document.querySelector('.sub-sign').textContent = 'たいこを たたこう！';
+    mainPlayBtn.textContent = 'ドン！';
+    guideText.textContent = 'はじめるを おしてね';
+    messageBar.textContent = '大きい「はじめる」ボタンを押すと、3・2・1ではじまるよ。';
     renderToyBoard();
     return;
   }
@@ -3748,18 +3899,21 @@ function resolveToyRound(success) {
 function getPlaySummaryText() {
   const config = getToyConfig();
   if (config.mode === 'roll') return `星を ${lastSetHits}こ ひろったよ。`;
-  if (config.mode === 'rhythm') return `リズムよく ${lastSetHits}しょうせつ ならせたよ。`;
+  if (config.mode === 'rhythm') return `リズムよく ${lastSetHits}回 たたけたよ。`;
   if (config.mode === 'stack') return `つみきを ${lastSetHits}こ のせられたよ。`;
   return `ページを ${lastSetHits}まい めくれたよ。`;
 }
 
 function completeGame() {
   gameComplete = true;
+  controlPhase = 'complete';
   isMilmaruBusy = false;
   stopMilmaruRoam();
   stopPowerMeter();
+  stopRhythmBgm();
   lastSetHits = catches;
   applyPlayReward();
+  renderToyBoard();
   guideText.textContent = getToyConfig().completeGuide || `星を ${catches}こ ひろったよ！`;
   messageBar.textContent = 'ミルマルが うれしそう。おせわ画面で なでてあげてもいいね。';
   mainPlayBtn.textContent = 'おせわへ';
@@ -3888,8 +4042,26 @@ document.querySelectorAll('.toy-card').forEach((button) => {
   });
 });
 
+document.addEventListener('pointerdown', (event) => {
+  if (!stageEl.contains(event.target)) return;
+  const startButton = event.target.closest('[data-taiko-start]');
+  if (startButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    handleRhythmAction();
+    return;
+  }
+  const pauseButton = event.target.closest('[data-taiko-pause]');
+  if (pauseButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleRhythmPause();
+  }
+}, true);
+
 playfield.addEventListener('pointerdown', (event) => {
   if (!isBallGame()) {
+    if (event.target.closest('button')) return;
     if (event.target.closest('.round-counter, .shot-pips, .power-meter')) return;
     if (controlPhase === 'ready') return;
     event.preventDefault();
