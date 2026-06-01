@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-01 - [batch:230-mojikko-denden-daiko-rattle] DONE - Codex: `writing-mori/play.html` のガラガラをコード描画の「でんでんだいこ」へ差し替え。旧い外側パッド/輪っか表現をやめ、中央太鼓・左右の紐・玉・接触フラッシュで「紐つきの玉が太鼓に当たったらタップ」と読める構造に変更。Playwrightで待機時の紐/玉表示、ヒット時の玉/太鼓/接触フラッシュ、`drumCue`/`drum` SE、旧パッド要素なしを確認。`sw.js` は v731。 (by Codex)
 - 2026-06-01 - [batch:229-mojikko-rattle-stack-timing] DONE - Codex: `writing-mori/play.html` のガラガラから縮む輪っかを廃止し、左右の玉が外側の太鼓に当たる瞬間に玉/太鼓/「ドン！」表示が光り、`drumCue`/`drum` SE が鳴る形へ変更。つみきは旧 `stacking/index.html` の流れに寄せ、落下中は未採点・未ぐらつきで見せ、着地後に成功/ぐらつき/崩れを判定する順番へ修正。Playwrightでガラガラ正解タイミング表示/SE発火、つみき落下前未採点、着地後配置を確認。`sw.js` は v730。 (by Codex)
 - 2026-06-01 - [batch:228-mojikko-rattle-stack-clarity] DONE - Codex: `writing-mori/play.html` のガラガラは内側カード枠を外し、大きな固定ターゲット「ここ」と縮む輪っかが重なるタイミングで押す表示に変更。つみきは専用の床/壁グラデーション背景へ切替、成功判定を中心距離ベースにして端寄りならぐらぐら、さらに端寄り/累積ズレ大なら崩れる演出と失敗判定を追加。Playwrightでガラガラ大画面/ターゲット表示、つみき背景切替、崩れ判定/崩れクラス、JSエラーなしを確認。`sw.js` は v729。 (by Codex)
 - 2026-06-01 - [batch:227-mojikko-toy-feedback-polish] DONE - Codex: `writing-mori/play.html` で、ころころボールの星回収を通過順に時間差消滅へ変更。ガラガラは開始時の 3・2・1 カウントダウン、押しどころ表示、拍の速度緩和を追加。つみきは内側カードを外してフィールドを広げ、落下中ブロックを `miniBlockDrop` アニメーションで表示してから積むよう変更。Playwrightでカウントダウン/押しどころ、つみき落下アニメーション、星の順番回収、JSエラーなしを確認。`sw.js` は v728。 (by Codex)
