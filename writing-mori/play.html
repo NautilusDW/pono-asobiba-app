@@ -1561,7 +1561,20 @@ button {
   font-family: var(--pixel-font);
   font-size: 24px;
   font-weight: 900;
+  transform-origin: center center;
   box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32), 0 5px 0 rgba(80,54,33,0.24);
+}
+
+.stack-block.physics {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  transform: translate(var(--block-x, 0px), var(--block-y, 0px)) rotate(var(--block-angle, 0rad));
+  transition: none;
+}
+
+.stack-block.physics.falling {
+  animation: none;
 }
 
 .stack-block.ghost {
@@ -2080,6 +2093,7 @@ button {
   </main>
 </div>
 
+<script src="../assets/lib/matter.min.js"></script>
 <script>
 'use strict';
 
@@ -2290,6 +2304,14 @@ let rattleCountdownTimers = [];
 let stackDroppingBlock = null;
 let stackWobbleActive = false;
 let stackCollapseActive = false;
+let stackMatter = null;
+let stackEngine = null;
+let stackPhysicsFrame = null;
+let stackPhysicsStartedAt = 0;
+let stackSettleStartedAt = 0;
+let stackLastPhysicsAt = 0;
+let stackPreDropTarget = null;
+let stackPreDropSnapshot = [];
 let animationFrame = null;
 let roamTimer = null;
 let isMilmaruBusy = false;
@@ -2518,6 +2540,217 @@ function startRhythmBgm() {
     rhythmBgmTimer = setTimeout(tick, 340);
   };
   rhythmBgmTimer = setTimeout(tick, 80);
+}
+
+function getStackSurfaceY() {
+  return MINI_STACK.stageH - MINI_STACK.baseBottom;
+}
+
+function getStackFlatTilt(angle = 0) {
+  const normalized = Math.atan2(Math.sin(angle), Math.cos(angle));
+  const abs = Math.abs(normalized);
+  return Math.min(abs, Math.abs(Math.PI - abs));
+}
+
+function stopStackPhysicsLoop() {
+  cancelAnimationFrame(stackPhysicsFrame);
+  stackPhysicsFrame = null;
+  stackLastPhysicsAt = 0;
+  stackSettleStartedAt = 0;
+}
+
+function createStackPhysicsWorld(resetBlocks = true) {
+  stopStackPhysicsLoop();
+  stackMatter = window.Matter || null;
+  stackEngine = null;
+  if (resetBlocks) stackBlocks = [];
+  if (!stackMatter) return false;
+
+  const { Engine, Bodies, World } = stackMatter;
+  stackEngine = Engine.create({ gravity: { y: 1.05 } });
+  const platformTop = getStackSurfaceY();
+  const platform = Bodies.rectangle(
+    MINI_STACK.baseLeft + MINI_STACK.baseW / 2,
+    platformTop + 12,
+    MINI_STACK.baseW,
+    24,
+    { isStatic: true, label: 'stack-platform', friction: 1.2, render: { visible: false } }
+  );
+  const ground = Bodies.rectangle(
+    MINI_STACK.stageW / 2,
+    MINI_STACK.stageH + 42,
+    MINI_STACK.stageW * 2,
+    84,
+    { isStatic: true, label: 'stack-ground', render: { visible: false } }
+  );
+  const wallL = Bodies.rectangle(-34, MINI_STACK.stageH / 2, 68, MINI_STACK.stageH * 2, {
+    isStatic: true,
+    label: 'stack-wall',
+    render: { visible: false }
+  });
+  const wallR = Bodies.rectangle(MINI_STACK.stageW + 34, MINI_STACK.stageH / 2, 68, MINI_STACK.stageH * 2, {
+    isStatic: true,
+    label: 'stack-wall',
+    render: { visible: false }
+  });
+  World.add(stackEngine.world, [platform, ground, wallL, wallR]);
+  return true;
+}
+
+function ensureStackPhysicsWorld() {
+  if (stackEngine && stackMatter) return true;
+  return createStackPhysicsWorld(false);
+}
+
+function createStackPhysicsBody(shape, centerX, centerY) {
+  if (!ensureStackPhysicsWorld()) return null;
+  const { Bodies } = stackMatter;
+  return Bodies.rectangle(centerX, centerY, shape.w, shape.h, {
+    restitution: 0.02,
+    friction: 1.35,
+    frictionStatic: 2.5,
+    frictionAir: 0.055,
+    slop: 0.015,
+    label: 'mojikko-stack-block',
+    render: { visible: false }
+  });
+}
+
+function getStackBlockLeft(block) {
+  return block.body ? block.body.position.x - block.w / 2 : block.x;
+}
+
+function getStackBlockTop(block) {
+  return block.body ? block.body.position.y - block.h / 2 : MINI_STACK.stageH - (block.bottom || MINI_STACK.baseBottom) - block.h;
+}
+
+function takeStackSnapshot(block) {
+  return {
+    w: block.w,
+    h: block.h,
+    r: block.r,
+    round: block.round,
+    offset: block.offset || 0,
+    x: getStackBlockLeft(block),
+    y: getStackBlockTop(block),
+    angle: block.body ? block.body.angle : 0
+  };
+}
+
+function restoreStackSnapshot(snapshot) {
+  createStackPhysicsWorld(true);
+  if (!stackEngine || !stackMatter) {
+    stackBlocks = snapshot.map((block) => ({ ...block, x: block.x, body: null }));
+    return;
+  }
+  const { Body, World } = stackMatter;
+  stackBlocks = snapshot.map((block) => {
+    const body = createStackPhysicsBody(block, block.x + block.w / 2, block.y + block.h / 2);
+    if (body) {
+      Body.setAngle(body, block.angle || 0);
+      Body.setVelocity(body, { x: 0, y: 0 });
+      Body.setAngularVelocity(body, 0);
+      World.add(stackEngine.world, body);
+    }
+    return { ...block, body, offset: block.offset || 0 };
+  });
+  toyStackCount = stackBlocks.length;
+}
+
+function stabilizeStackPhysicsBodies(includeDropping = false) {
+  if (!stackMatter) return;
+  const { Body } = stackMatter;
+  const blocks = includeDropping && stackDroppingBlock
+    ? [...stackBlocks, stackDroppingBlock]
+    : stackBlocks;
+  blocks.forEach((block) => {
+    if (!block.body) return;
+    Body.setVelocity(block.body, { x: 0, y: 0 });
+    Body.setAngularVelocity(block.body, 0);
+  });
+}
+
+function removeStackPhysicsBlock(block) {
+  if (!stackMatter || !stackEngine || !block?.body) return;
+  stackMatter.World.remove(stackEngine.world, block.body);
+}
+
+function isStackBodyOut(body) {
+  return !body
+    || body.position.y > MINI_STACK.stageH + 84
+    || body.position.x < -90
+    || body.position.x > MINI_STACK.stageW + 90;
+}
+
+function getStackPhysicsOutcome() {
+  if (!stackDroppingBlock?.body) return getStackDropOutcome(true);
+  const target = stackPreDropTarget || getStackTarget();
+  const body = stackDroppingBlock.body;
+  const shape = stackDroppingBlock;
+  const targetCenter = target.left + target.width / 2;
+  const offset = body.position.x - targetCenter;
+  const allowed = getStackAllowedOffset(target, shape);
+  const edgeRatio = Math.abs(offset) / Math.max(1, allowed);
+  const droppedTilt = getStackFlatTilt(body.angle);
+  const allBlocks = [...stackBlocks, stackDroppingBlock].filter((block) => block.body);
+  const maxTilt = allBlocks.reduce((max, block) => Math.max(max, getStackFlatTilt(block.body.angle)), 0);
+  const anyCollapsed = allBlocks.some((block) => isStackBodyOut(block.body) || getStackFlatTilt(block.body.angle) > 0.95);
+  const landed = !isStackBodyOut(body) && body.position.y < MINI_STACK.stageH - 8;
+  const collapse = anyCollapsed || droppedTilt > 0.62 || edgeRatio > 1.15;
+  const success = landed && !collapse;
+  return {
+    physics: true,
+    landed,
+    success,
+    collapse,
+    wobble: success && (edgeRatio > 0.42 || droppedTilt > 0.12 || maxTilt > 0.15),
+    offset,
+    edgeRatio
+  };
+}
+
+function startStackPhysicsSettlement() {
+  if (!stackEngine || !stackMatter || !stackDroppingBlock?.body) {
+    finishStackRound(getStackDropOutcome(true));
+    return;
+  }
+  stopStackPhysicsLoop();
+  const { Engine } = stackMatter;
+  stackPhysicsStartedAt = performance.now();
+  const tick = (now) => {
+    if (controlPhase !== 'toy' || getToyConfig().mode !== 'stack' || gameComplete || !stackDroppingBlock) {
+      stopStackPhysicsLoop();
+      return;
+    }
+    const delta = stackLastPhysicsAt ? Math.min(now - stackLastPhysicsAt, 34) : 16.67;
+    stackLastPhysicsAt = now;
+    Engine.update(stackEngine, delta);
+    renderToyBoard();
+
+    const bodies = [...stackBlocks, stackDroppingBlock].map((block) => block.body).filter(Boolean);
+    const maxMotion = bodies.reduce((max, body) => Math.max(max, body.speed + body.angularSpeed * 24), 0);
+    const elapsed = now - stackPhysicsStartedAt;
+    const droppedOut = isStackBodyOut(stackDroppingBlock.body);
+    if (droppedOut && elapsed > 520) {
+      finishStackRound(getStackPhysicsOutcome());
+      return;
+    }
+    if (elapsed > 520 && maxMotion < 0.18) {
+      if (!stackSettleStartedAt) stackSettleStartedAt = now;
+      if (now - stackSettleStartedAt > 420) {
+        finishStackRound(getStackPhysicsOutcome());
+        return;
+      }
+    } else {
+      stackSettleStartedAt = 0;
+    }
+    if (elapsed > 3100) {
+      finishStackRound(getStackPhysicsOutcome());
+      return;
+    }
+    stackPhysicsFrame = requestAnimationFrame(tick);
+  };
+  stackPhysicsFrame = requestAnimationFrame(tick);
 }
 
 function setBallPosition(x, y) {
@@ -2936,7 +3169,9 @@ function getStackShapeForRound(round) {
 }
 
 function getStackHeight() {
-  return stackBlocks.reduce((sum, block) => sum + block.h - 3, 0);
+  return stackBlocks
+    .filter((block) => !block.body)
+    .reduce((sum, block) => sum + block.h - 3, 0);
 }
 
 function getStackTarget() {
@@ -2945,15 +3180,30 @@ function getStackTarget() {
       left: MINI_STACK.baseLeft,
       width: MINI_STACK.baseW,
       bottom: MINI_STACK.baseBottom,
-      height: 0
+      height: 0,
+      surfaceBottom: MINI_STACK.baseBottom
+    };
+  }
+  const physicsTop = stackBlocks
+    .filter((block) => block.body && !isStackBodyOut(block.body))
+    .sort((a, b) => a.body.bounds.min.y - b.body.bounds.min.y)[0];
+  if (physicsTop) {
+    return {
+      left: physicsTop.body.position.x - physicsTop.w / 2,
+      width: physicsTop.w,
+      bottom: MINI_STACK.stageH - physicsTop.body.bounds.min.y,
+      height: 0,
+      surfaceBottom: MINI_STACK.stageH - physicsTop.body.bounds.min.y
     };
   }
   const top = stackBlocks[stackBlocks.length - 1];
+  const surfaceBottom = MINI_STACK.baseBottom + getStackHeight();
   return {
     left: top.x,
     width: top.w,
-    bottom: MINI_STACK.baseBottom + getStackHeight(),
-    height: top.h
+    bottom: surfaceBottom - top.h,
+    height: top.h,
+    surfaceBottom
   };
 }
 
@@ -3086,6 +3336,30 @@ function getTaikoMotion(config, isCountingDown) {
   };
 }
 
+function renderStackBlockHtml(block, extraClasses = [], label = block.round || '') {
+  const classes = ['stack-block', ...extraClasses];
+  const style = [
+    `--block-w:${block.w}px`,
+    `--block-h:${block.h}px`,
+    `border-radius:${block.r}px`
+  ];
+  if (block.body) {
+    classes.push('physics');
+    style.push(`--block-x:${(block.body.position.x - block.w / 2).toFixed(1)}px`);
+    style.push(`--block-y:${(block.body.position.y - block.h / 2).toFixed(1)}px`);
+    style.push(`--block-angle:${block.body.angle.toFixed(3)}rad`);
+  } else {
+    style.push(`--block-x:${Math.round(block.x)}px`);
+    style.push(`--block-bottom:${Math.round(block.bottom || MINI_STACK.baseBottom)}px`);
+  }
+  if (block.offset < 0) {
+    style.push('--collapse-dir:-1');
+  } else {
+    style.push('--collapse-dir:1');
+  }
+  return `<div class="${classes.join(' ')}" style="${style.join('; ')};">${label}</div>`;
+}
+
 function renderToyBoard(feedback = lastToyFeedback) {
   if (!toyModeBoard) return;
   if (isBallGame()) {
@@ -3142,12 +3416,13 @@ function renderToyBoard(feedback = lastToyFeedback) {
     const target = getStackTarget();
     let bottom = MINI_STACK.baseBottom;
     const placedBlocks = stackBlocks.map((block, index) => {
-      const classes = ['stack-block', 'hit'];
-      if (stackCollapseActive) classes.push('collapse');
-      const dir = block.offset < 0 ? -1 : 1;
-      const html = `<div class="${classes.join(' ')}" style="--block-x:${block.x}px; --block-w:${block.w}px; --block-h:${block.h}px; --block-bottom:${bottom}px; --collapse-dir:${dir}; border-radius:${block.r}px;">${index + 1}</div>`;
-      bottom += block.h - 3;
-      return html;
+      if (!block.body) {
+        block.bottom = bottom;
+        bottom += block.h - 3;
+      }
+      const classes = ['hit'];
+      if (stackCollapseActive && !block.body) classes.push('collapse');
+      return renderStackBlockHtml(block, classes, index + 1);
     }).join('');
     const shape = currentStackShape || MINI_STACK.shapes[0];
     const ghostLeft = Math.round(stackSwingX);
@@ -3156,7 +3431,15 @@ function renderToyBoard(feedback = lastToyFeedback) {
       ? `<div class="stack-block ghost ${successNow ? 'good' : ''}" style="--block-x:${ghostLeft}px; --block-w:${shape.w}px; --block-h:${shape.h}px; border-radius:${shape.r}px;">${currentRound}</div>`
       : '';
     const dropping = stackDroppingBlock
-      ? `<div class="stack-block falling ${stackDroppingBlock.landed ? 'hit' : 'miss'} ${stackDroppingBlock.collapse ? 'collapse' : ''}" style="--block-x:${stackDroppingBlock.x}px; --block-w:${stackDroppingBlock.w}px; --block-h:${stackDroppingBlock.h}px; --drop-to:${stackDroppingBlock.dropTo}px; --collapse-dir:${stackDroppingBlock.offset < 0 ? -1 : 1}; border-radius:${stackDroppingBlock.r}px;">${stackDroppingBlock.round}</div>`
+      ? renderStackBlockHtml(
+          stackDroppingBlock,
+          [
+            'falling',
+            stackDroppingBlock.success === false ? 'miss' : 'hit',
+            stackDroppingBlock.collapse ? 'collapse' : ''
+          ].filter(Boolean),
+          stackDroppingBlock.round
+        )
       : '';
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card block-game${cardState}">
@@ -3164,7 +3447,7 @@ function renderToyBoard(feedback = lastToyFeedback) {
         <div class="toy-round-label">${roundText}</div>
         <div class="block-stack ${stackWobbleActive ? 'wobble' : ''} ${stackCollapseActive ? 'collapse' : ''}">
           <div class="stack-swing-rail"></div>
-          <div class="stack-target-window" style="--target-left:${target.left}px; --target-width:${target.width}px; --target-bottom:${target.bottom + target.height + 4}px;"></div>
+          <div class="stack-target-window" style="--target-left:${target.left}px; --target-width:${target.width}px; --target-bottom:${(target.surfaceBottom || target.bottom + target.height) + 4}px;"></div>
           <div class="block-base-line"></div>
           ${placedBlocks}
           ${ghost}
@@ -3455,6 +3738,7 @@ function finishRhythmMeasure() {
 
 function startStackRound() {
   const config = getToyConfig();
+  ensureStackPhysicsWorld();
   controlPhase = 'toy';
   currentStackShape = getStackShapeForRound(currentRound);
   powerValue = 0.5;
@@ -3498,6 +3782,7 @@ function resetToyMiniGame(options = {}) {
   animationFrame = null;
   clearRattleCountdown();
   stopRhythmBgm();
+  stopStackPhysicsLoop();
   stopMilmaruRoam();
   stopPowerMeter();
   isAiming = false;
@@ -3520,7 +3805,10 @@ function resetToyMiniGame(options = {}) {
   stackDroppingBlock = null;
   stackWobbleActive = false;
   stackCollapseActive = false;
+  stackPreDropTarget = null;
+  stackPreDropSnapshot = [];
   if (getToyConfig().mode === 'stack') {
+    createStackPhysicsWorld(true);
     stackBlocks = [];
     currentStackShape = getStackShapeForRound(1);
     stackSwingX = Math.round((MINI_STACK.stageW - currentStackShape.w) / 2);
@@ -3753,7 +4041,7 @@ function handleToyAction() {
   resolveToyRound(success);
 }
 
-function resolveStackRound(landed) {
+function resolveStackRoundFallback(landed) {
   if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
   const shape = currentStackShape || getStackShapeForRound(currentRound);
   const stackOutcome = getStackDropOutcome(landed);
@@ -3782,27 +4070,69 @@ function resolveStackRound(landed) {
   setTimeout(() => finishStackRound(stackOutcome), stackOutcome.landed ? 900 : 620);
 }
 
+function resolveStackRound(landed) {
+  if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
+  if (!ensureStackPhysicsWorld()) {
+    resolveStackRoundFallback(landed);
+    return;
+  }
+
+  const shape = currentStackShape || getStackShapeForRound(currentRound);
+  playedThisRound = true;
+  stopPowerMeter();
+  stackWobbleActive = false;
+  stackCollapseActive = false;
+  stackPreDropTarget = getStackTarget();
+  stackPreDropSnapshot = stackBlocks.map(takeStackSnapshot);
+
+  const body = createStackPhysicsBody(shape, stackSwingX + shape.w / 2, 42 + shape.h / 2);
+  if (!body) {
+    resolveStackRoundFallback(landed);
+    return;
+  }
+  stackMatter.Body.setVelocity(body, { x: 0, y: 5.2 });
+  stackMatter.World.add(stackEngine.world, body);
+  stackDroppingBlock = {
+    body,
+    w: shape.w,
+    h: shape.h,
+    r: shape.r,
+    round: currentRound,
+    offset: 0,
+    physics: true,
+    success: true,
+    collapse: false
+  };
+  playSfx('fall');
+  guideText.textContent = `${currentRound}こめ：おちてるよ`;
+  messageBar.textContent = 'つみきが落ちて、乗ったあとにぐらぐらするよ。';
+  renderToyBoard();
+  updateRoundUi();
+  startStackPhysicsSettlement();
+}
+
 function finishStackRound(stackOutcome) {
   const config = getToyConfig();
   if (config.mode !== 'stack' || !stackDroppingBlock) return;
+  if (stackOutcome.physics) stopStackPhysicsLoop();
   const success = stackOutcome.success;
+  stackDroppingBlock.offset = stackOutcome.offset || 0;
+  stackDroppingBlock.success = success;
+  stackDroppingBlock.collapse = stackOutcome.collapse;
   lastToyFeedback = success ? 'hit' : 'miss';
   shotResults.push(success ? 'hit' : 'miss');
   if (success) catches += 1;
 
   if (stackOutcome.landed) {
-    stackBlocks.push({
-      x: stackDroppingBlock.x,
-      w: stackDroppingBlock.w,
-      h: stackDroppingBlock.h,
-      r: stackDroppingBlock.r,
-      offset: stackDroppingBlock.offset
-    });
-    toyStackCount = stackBlocks.length;
+    if (success) {
+      stackBlocks.push(stackDroppingBlock);
+      stabilizeStackPhysicsBodies();
+      stackDroppingBlock = null;
+      toyStackCount = stackBlocks.length;
+    }
   }
 
   const didCollapse = stackOutcome.collapse;
-  stackDroppingBlock = null;
   stackWobbleActive = stackOutcome.wobble || didCollapse;
   stackCollapseActive = didCollapse;
   renderToyBoard();
@@ -3832,10 +4162,18 @@ function finishStackRound(stackOutcome) {
   currentRound += 1;
   setTimeout(() => {
     milmaru.classList.remove('catch', 'worried');
-    if (didCollapse && stackBlocks.length) {
+    if (stackDroppingBlock) {
+      removeStackPhysicsBlock(stackDroppingBlock);
+      stackDroppingBlock = null;
+    }
+    if (!success && stackPreDropSnapshot.length) {
+      restoreStackSnapshot(stackPreDropSnapshot);
+    } else if (didCollapse && stackBlocks.length && !stackBlocks[stackBlocks.length - 1].body) {
       stackBlocks.pop();
       toyStackCount = stackBlocks.length;
     }
+    stackPreDropTarget = null;
+    stackPreDropSnapshot = [];
     stackWobbleActive = false;
     stackCollapseActive = false;
     renderToyBoard();
@@ -3911,6 +4249,7 @@ function completeGame() {
   stopMilmaruRoam();
   stopPowerMeter();
   stopRhythmBgm();
+  stopStackPhysicsLoop();
   lastSetHits = catches;
   applyPlayReward();
   renderToyBoard();
