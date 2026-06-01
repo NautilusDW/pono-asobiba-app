@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-01 - [batch:226-mojikko-rattle-stack-rework] DONE - Codex: `writing-mori/play.html` のガラガラを遅いゲージ停止から、でんでん太鼓風の短い拍に合わせて約0.5秒刻みで押すリズム入力へ変更。つみきは既存 `stacking/index.html` の横揺れブロック落下発想を、鳥/スクロール/フリーズなしの1画面5個積み上げ版として実装。非ボール玩具の余計な `toy-ball` 表示を非表示化。Playwrightでガラガラ5ヒット完了、つみき5個積み上げ完了、結果モーダル、JSエラーなしを確認。`sw.js` は v727。 (by Codex)
 - 2026-06-01 - [batch:225-mojikko-toy-games-split] DONE - Codex: `writing-mori/play.html` のおもちゃ遊びで、ボール狙い中の重複点線を廃止し `predictionSvg` 1本だけ表示するよう修正。ガラガラ/つみき/えほんをボールの見た目差し替えから分離し、ガラガラ=リズム、つみき=中央置き、えほん=ページめくりの別ミニゲームとして実装。Playwrightでボール aimLine 非表示・prediction 表示、3玩具の選択/5回完了/結果モーダル/JSエラーなしを確認。`sw.js` は v726。 (by Codex)
 - 2026-06-01 - [batch:224-bento-kitchen-potato-assets] DONE - Codex: user 追加の `D:\ポノのおへや\Bento\cooking\食材\ジャガイモ` 10枚を `assets/images/bento/cooking/potato/potato_001.png`〜`potato_010.png` として配置。`bento/kitchen.html` に下ごしらえ食材 `じゃがいも` を追加し、丸ごと1枚 + 切れ端9枚で9回トントンできるようにした。コロッケの解放条件を `potato` 準備後に変更し、`korokke_raw` を調理対象として使う。Playwrightでじゃがいもカード表示、まな板画像、potato_001〜010 すべて 200、9回カット後の冷蔵庫追加、コロッケ unlocked、JSエラーなしを確認。`sw.js` は v725。 (by Codex)
 - 2026-06-01 - [batch:223-mojikko-toy-play-two-step-all-toys] DONE - Codex: `writing-mori/play.html` のおもちゃ遊びを、ドラッグで方向だけ決めてから「ちから」ゲージを止めて距離を決める2段階入力へ変更。ミルマルのハイハイ速度/コマ速度を落とし、移動中は吹き出しを隠して到着後に表示。ボール/ガラガラ/つみき/えほんを同一スター集めルールで選択可能にし、玩具ごとにタイトル・発射札・見た目・文言を切替。Playwrightで4玩具解放、power phase、ゲージ変化、発射後 rolling、移動中吹き出し非表示、JSエラーなしを確認。`sw.js` は v724。 (by Codex)
