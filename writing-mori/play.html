@@ -1045,29 +1045,6 @@ button {
   color: #8a5636;
 }
 
-.rhythm-pulse {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 230px;
-  height: 230px;
-  border: 8px dashed rgba(82, 184, 121, 0.8);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(var(--pulse-scale, 1.8));
-  opacity: var(--pulse-opacity, 0.34);
-  z-index: 2;
-}
-
-.rhythm-pulse.active {
-  border-color: rgba(233, 121, 85, 0.92);
-  background: rgba(255, 230, 154, 0.2);
-}
-
-.rhythm-pulse.wait {
-  border-color: rgba(139, 96, 64, 0.38);
-  background: rgba(255, 250, 240, 0.16);
-}
-
 .rattle-countdown {
   position: absolute;
   left: 50%;
@@ -1190,37 +1167,59 @@ button {
   z-index: 3;
 }
 
-.rattle-hit-target {
+.rattle-drum-pad {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 250px;
-  height: 250px;
-  border: 9px solid rgba(255,250,240,0.9);
+  top: 48%;
+  width: 74px;
+  height: 74px;
+  border: 6px solid #8b6040;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,250,240,0.72) 0 42%, rgba(255,230,154,0.26) 43% 66%, transparent 67%);
-  box-shadow:
-    0 0 0 6px rgba(139,96,64,0.32),
-    inset 0 0 0 8px rgba(88,185,122,0.22);
-  transform: translate(-50%, -50%);
-  z-index: 1;
+  background: radial-gradient(circle, #fffaf0 0 47%, #ffe69a 48% 68%, #f5bd4e 69%);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 6px 0 rgba(80,54,33,0.24);
+  transform: translateY(-50%);
+  z-index: 2;
 }
 
-.rattle-hit-target::after {
-  content: '';
+.rattle-drum-pad.left {
+  left: calc(50% - 178px);
+}
+
+.rattle-drum-pad.right {
+  right: calc(50% - 178px);
+}
+
+.rattle-drum-pad.active {
+  background: radial-gradient(circle, #fffaf0 0 38%, #85dca7 39% 66%, #58b97a 67%);
+  transform: translateY(-50%) scale(1.12);
+  box-shadow:
+    inset 0 0 0 5px rgba(255,255,255,0.42),
+    0 6px 0 rgba(80,54,33,0.24),
+    0 0 0 8px rgba(88,185,122,0.28);
 }
 
 .rattle-target-label {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 31%;
   transform: translate(-50%, -50%);
-  color: #58b97a;
+  color: #8a5636;
   font-family: var(--pixel-font);
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 900;
   text-shadow: 0 3px 0 rgba(255,255,255,0.85);
   z-index: 6;
+}
+
+.rattle-hit-line {
+  position: absolute;
+  left: calc(50% - 178px);
+  right: calc(50% - 178px);
+  top: 48%;
+  height: 6px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(139,96,64,0.26) 0 12px, transparent 12px 22px);
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
 .rattle-bead.left {
@@ -1231,6 +1230,15 @@ button {
 .rattle-bead.right {
   left: calc(50% + var(--bead-spread, 118px));
   transform: translate(-50%, -50%);
+}
+
+.rattle-bead.active {
+  background: #85dca7;
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow:
+    inset 0 0 0 5px rgba(255,255,255,0.42),
+    0 5px 0 rgba(80,54,33,0.24),
+    0 0 0 8px rgba(88,185,122,0.28);
 }
 
 .block-stack {
@@ -1325,7 +1333,7 @@ button {
 .stack-block.falling {
   bottom: auto;
   top: 42px;
-  animation: miniBlockDrop 680ms cubic-bezier(.18,.82,.24,1) both;
+  animation: miniBlockDrop 820ms cubic-bezier(.18,.82,.24,1) both;
 }
 
 @keyframes miniBlockDrop {
@@ -1878,8 +1886,8 @@ const TOY_CONFIGS = {
     movingText: 'しゃらん...',
     resultTitle: 'しゃらんと あそべたね！',
     steps: ['リズム', 'ふる', 'きく'],
-    rewardHint: '3・2・1のあと<br>「いま！」で タップ<br>5かいで1セット',
-    actionText: 'ふる！',
+    rewardHint: '3・2・1のあと<br>ドン！で タップ<br>5かいで1セット',
+    actionText: 'ドン！',
     meterLabel: 'リズム',
     goodMin: 0.36,
     goodMax: 0.64,
@@ -1887,7 +1895,7 @@ const TOY_CONFIGS = {
     beatMs: 840,
     beatHitAt: 0.70,
     beatWindow: 0.22,
-    hitBurst: 'しゃらん！',
+    hitBurst: 'ドンドン！',
     missBurst: 'おしい',
     completeGuide: 'ガラガラを ならしたよ！'
   },
@@ -1980,6 +1988,7 @@ let lastPowerFrameAt = 0;
 let toyStackCount = 0;
 let lastToyFeedback = '';
 let rhythmProgress = 0;
+let rhythmCuePlayed = false;
 let miniRoundStartedAt = 0;
 let stackSwingX = 144;
 let stackBlocks = [];
@@ -2165,6 +2174,27 @@ function playSfx(kind) {
     }
     if (kind === 'success') {
       [620, 780, 980].forEach((freq, i) => playTone(freq, 0.07, 'square', 0.03, i * 0.06));
+      return;
+    }
+    if (kind === 'drum') {
+      playTone(118, 0.11, 'sine', 0.072);
+      playTone(92, 0.13, 'sine', 0.06, 0.09);
+      playTone(180, 0.045, 'triangle', 0.026);
+      playTone(150, 0.045, 'triangle', 0.022, 0.09);
+      return;
+    }
+    if (kind === 'drumCue') {
+      playTone(128, 0.075, 'sine', 0.048);
+      playTone(190, 0.035, 'triangle', 0.018);
+      return;
+    }
+    if (kind === 'wood') {
+      playTone(310, 0.045, 'triangle', 0.032);
+      playTone(190, 0.06, 'triangle', 0.026, 0.045);
+      return;
+    }
+    if (kind === 'fall') {
+      [520, 430, 340].forEach((freq, i) => playTone(freq, 0.04, 'triangle', 0.022, i * 0.045));
       return;
     }
     if (kind === 'mistake') {
@@ -2664,24 +2694,24 @@ function renderToyBoard(feedback = lastToyFeedback) {
   if (config.mode === 'rhythm') {
     const isCountingDown = controlPhase === 'countdown' && rattleCountdownValue;
     const hitReady = Math.abs(rhythmProgress - (config.beatHitAt || 0.68)) <= (config.beatWindow || 0.18);
-    const pulseScale = isCountingDown ? '1.68' : (2.2 - Math.min(rhythmProgress, 1) * 1.55).toFixed(2);
-    const pulseOpacity = isCountingDown ? '0.30' : (0.14 + Math.max(0, 1 - Math.abs(rhythmProgress - (config.beatHitAt || 0.68)) * 2.6) * 0.46).toFixed(2);
     const tilt = isCountingDown ? 0 : Math.sin(rhythmProgress * Math.PI * 4) * 8;
-    const spread = isCountingDown ? 112 : Math.round(94 + Math.abs(Math.sin(rhythmProgress * Math.PI * 2)) * 52);
+    const hitWave = isCountingDown ? 0 : Math.max(0, 1 - Math.abs(rhythmProgress - (config.beatHitAt || 0.68)) / (config.beatWindow || 0.18));
+    const spread = isCountingDown ? 104 : Math.round(90 + hitWave * 88);
     toyModeBoard.innerHTML = `
-      <div class="toy-mode-card rattle-game${cardState}" style="--pulse-scale:${pulseScale}; --pulse-opacity:${pulseOpacity}; --rattle-tilt:${tilt.toFixed(1)}deg; --bead-spread:${spread}px;">
+      <div class="toy-mode-card rattle-game${cardState}" style="--rattle-tilt:${tilt.toFixed(1)}deg; --bead-spread:${spread}px;">
         <div class="toy-round-label">${roundText}</div>
-        <div class="rattle-hit-target"></div>
-        <div class="rhythm-pulse ${hitReady ? 'active' : ''} ${isCountingDown ? 'wait' : ''}"></div>
-        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！' : 'まって'}</div>`}
-        <div class="rattle-bead left"></div>
-        <div class="rattle-bead right"></div>
+        <div class="rattle-hit-line"></div>
+        <div class="rattle-drum-pad left ${hitReady ? 'active' : ''}"></div>
+        <div class="rattle-drum-pad right ${hitReady ? 'active' : ''}"></div>
+        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : 'まって'}</div>`}
+        <div class="rattle-bead left ${hitReady ? 'active' : ''}"></div>
+        <div class="rattle-bead right ${hitReady ? 'active' : ''}"></div>
         <div class="rattle-stick"></div>
         <div class="rattle-face"></div>
-        <div class="rattle-target-label">ここ</div>
+        <div class="rattle-target-label">たいこに あたったら</div>
         <div class="rattle-target">${renderMiniRoundMarks()}</div>
-        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">ここで タップ</div>
-        <div class="toy-mode-help">輪っかが「ここ」にきたら</div>
+        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！で タップ' : 'たいこを よくみて'}</div>
+        <div class="toy-mode-help">外のたいこで ドン！</div>
       </div>
     `;
     return;
@@ -2754,11 +2784,12 @@ function startRattleCountdown() {
   clearRattleCountdown();
   controlPhase = 'countdown';
   rhythmProgress = 0;
+  rhythmCuePlayed = false;
   lastToyFeedback = '';
   rattleCountdownValue = '3';
   mainPlayBtn.textContent = 'まってね';
   guideText.textContent = '3・2・1で はじめるよ';
-  messageBar.textContent = '円が小さくなって「いま！」になったら、下のボタンをタップしてね。';
+  messageBar.textContent = '玉が左右のたいこに当たって、ドン！と鳴るところでタップしてね。';
   powerMeter.classList.remove('active');
   renderToyBoard();
 
@@ -2785,6 +2816,7 @@ function startToyMeter() {
   const config = getToyConfig();
   controlPhase = 'toy';
   rhythmProgress = 0;
+  rhythmCuePlayed = false;
   miniRoundStartedAt = performance.now();
   if (config.mode === 'rhythm') {
     if (!rattleCountdownDone && currentRound === 1) {
@@ -2844,8 +2876,8 @@ function startRhythmRound() {
   powerFill.style.setProperty('--power', '0%');
   timingMarker.style.setProperty('--timing', '0%');
   mainPlayBtn.textContent = config.actionText || 'ふる！';
-  guideText.textContent = `${currentRound}かいめ：タン！`;
-  messageBar.textContent = 'テンポよく、タン！のところで タップしてね。';
+  guideText.textContent = `${currentRound}かいめ：ドン！で タップ`;
+  messageBar.textContent = '玉が左右のたいこに当たって、ドン！と鳴るところでタップしてね。';
   renderToyBoard();
 
   const tick = (now) => {
@@ -2856,6 +2888,10 @@ function startRhythmRound() {
     const elapsed = now - miniRoundStartedAt;
     rhythmProgress = elapsed / (config.beatMs || 620);
     powerValue = clamp(rhythmProgress, 0, 1);
+    if (!rhythmCuePlayed && rhythmProgress >= (config.beatHitAt || 0.68)) {
+      rhythmCuePlayed = true;
+      playSfx('drumCue');
+    }
     renderToyBoard();
     if (rhythmProgress >= 1.08) {
       resolveToyRound(false);
@@ -2921,6 +2957,7 @@ function resetToyMiniGame(options = {}) {
   lastToyFeedback = '';
   toyStackCount = 0;
   rhythmProgress = 0;
+  rhythmCuePlayed = false;
   rattleCountdownDone = false;
   stackDroppingBlock = null;
   stackWobbleActive = false;
@@ -3145,49 +3182,68 @@ function handleToyAction() {
   resolveToyRound(success);
 }
 
-function resolveToyRound(success) {
+function resolveStackRound(landed) {
   if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
-  const config = getToyConfig();
-  let stackOutcome = null;
-  if (config.mode === 'stack') {
-    stackOutcome = getStackDropOutcome(success);
-    success = stackOutcome.success;
-  }
+  const shape = currentStackShape || getStackShapeForRound(currentRound);
+  const stackOutcome = getStackDropOutcome(landed);
   playedThisRound = true;
   stopPowerMeter();
+  stackDroppingBlock = {
+    x: Math.round(stackSwingX),
+    w: shape.w,
+    h: shape.h,
+    r: shape.r,
+    round: currentRound,
+    landed: stackOutcome.landed,
+    success: stackOutcome.success,
+    collapse: stackOutcome.collapse,
+    wobble: stackOutcome.wobble,
+    offset: stackOutcome.offset || 0,
+    dropTo: getStackDropTop(shape, stackOutcome.landed)
+  };
+  stackWobbleActive = false;
+  stackCollapseActive = false;
+  playSfx('fall');
+  guideText.textContent = `${currentRound}こめ：おちてるよ`;
+  messageBar.textContent = 'つみきが落ちて、土台にのるまで見てみよう。';
+  renderToyBoard();
+  updateRoundUi();
+  setTimeout(() => finishStackRound(stackOutcome), stackOutcome.landed ? 900 : 620);
+}
+
+function finishStackRound(stackOutcome) {
+  const config = getToyConfig();
+  if (config.mode !== 'stack' || !stackDroppingBlock) return;
+  const success = stackOutcome.success;
   lastToyFeedback = success ? 'hit' : 'miss';
   shotResults.push(success ? 'hit' : 'miss');
   if (success) catches += 1;
 
-  if (config.mode === 'stack') {
-    const shape = currentStackShape || getStackShapeForRound(currentRound);
-    stackDroppingBlock = {
-      x: Math.round(stackSwingX),
-      w: shape.w,
-      h: shape.h,
-      r: shape.r,
-      round: currentRound,
-      landed: stackOutcome?.landed === true,
-      success,
-      collapse: stackOutcome?.collapse === true,
-      wobble: stackOutcome?.wobble === true,
-      offset: stackOutcome?.offset || 0,
-      dropTo: getStackDropTop(shape, stackOutcome?.landed === true)
-    };
-    stackWobbleActive = stackOutcome?.wobble === true || stackOutcome?.collapse === true;
-    stackCollapseActive = false;
+  if (stackOutcome.landed) {
+    stackBlocks.push({
+      x: stackDroppingBlock.x,
+      w: stackDroppingBlock.w,
+      h: stackDroppingBlock.h,
+      r: stackDroppingBlock.r,
+      offset: stackDroppingBlock.offset
+    });
+    toyStackCount = stackBlocks.length;
   }
 
+  const didCollapse = stackOutcome.collapse;
+  stackDroppingBlock = null;
+  stackWobbleActive = stackOutcome.wobble || didCollapse;
+  stackCollapseActive = didCollapse;
   renderToyBoard();
   updateRoundUi();
 
   if (success) {
-    playSfx('success');
+    playSfx('wood');
     milmaru.classList.add('catch');
     milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
-    guideText.textContent = config.mode === 'stack' && stackOutcome?.wobble ? 'ぐらぐら…のった！' : (config.hitBurst || 'いいね！');
-    messageBar.textContent = config.mode === 'stack' && stackOutcome?.wobble
-      ? '少しゆれたけど、つみきはのったよ。まんなかだともっと安定するよ。'
+    guideText.textContent = stackOutcome.wobble ? 'ぐらぐら…のった！' : (config.hitBurst || 'いいね！');
+    messageBar.textContent = stackOutcome.wobble
+      ? '乗ってから少しゆれたよ。まんなかだともっと安定するよ。'
       : `${config.label}で じょうずに あそべたよ。`;
     showGoalBurst({ x: 450, y: 250 }, config.hitBurst || 'いいね！', true);
     spawnSparkles({ x: 450, y: 246 });
@@ -3195,44 +3251,70 @@ function resolveToyRound(success) {
     playSfx('mistake');
     milmaru.classList.add('worried');
     milmaruSpeech.textContent = getStageSpeech('なぁい...？');
-    guideText.textContent = config.mode === 'stack' && stackOutcome?.collapse ? 'ぐらぐら…くずれた！' : 'もういちど やってみよう';
-    messageBar.textContent = config.mode === 'stack'
-      ? (stackOutcome?.collapse ? 'はしっこすぎると、つみきがくずれちゃう。まんなかをねらおう。' : '土台のまんなかをよく見て、おとしてみよう。')
-      : 'みどりのところを よく見て、おしてみよう。';
-    showGoalBurst({ x: 450, y: 250 }, config.mode === 'stack' && stackOutcome?.collapse ? 'ぐらぐら' : (config.missBurst || 'おしい'), false);
+    guideText.textContent = didCollapse ? 'ぐらぐら…くずれた！' : 'もういちど やってみよう';
+    messageBar.textContent = didCollapse
+      ? '乗ったけど、はしっこすぎてくずれちゃった。まんなかをねらおう。'
+      : '土台に届かなかったよ。まんなかをよく見て、おとしてみよう。';
+    showGoalBurst({ x: 450, y: 250 }, didCollapse ? 'くずれた' : (config.missBurst || 'おしい'), false);
   }
 
   currentRound += 1;
-  const nextDelay = config.mode === 'rhythm' ? 520 : config.mode === 'stack' ? 980 : 860;
   setTimeout(() => {
     milmaru.classList.remove('catch', 'worried');
-    if (config.mode === 'stack' && stackDroppingBlock) {
-      if (stackDroppingBlock.collapse) {
-        stackCollapseActive = true;
-        renderToyBoard();
-      }
-      const didCollapse = stackDroppingBlock.collapse;
-      if (stackDroppingBlock.success) {
-        stackBlocks.push({
-          x: stackDroppingBlock.x,
-          w: stackDroppingBlock.w,
-          h: stackDroppingBlock.h,
-          r: stackDroppingBlock.r,
-          offset: stackDroppingBlock.offset
-        });
-        toyStackCount = stackBlocks.length;
-      }
-      stackDroppingBlock = null;
-      setTimeout(() => {
-        if (didCollapse && stackBlocks.length) {
-          stackBlocks.pop();
-          toyStackCount = stackBlocks.length;
-        }
-        stackWobbleActive = false;
-        stackCollapseActive = false;
-        renderToyBoard();
-      }, didCollapse ? 520 : 180);
+    if (didCollapse && stackBlocks.length) {
+      stackBlocks.pop();
+      toyStackCount = stackBlocks.length;
     }
+    stackWobbleActive = false;
+    stackCollapseActive = false;
+    renderToyBoard();
+    if (currentRound > TOTAL_ROUNDS) {
+      completeGame();
+      return;
+    }
+    playedThisRound = false;
+    updateRoundUi();
+    startToyMeter();
+  }, didCollapse ? 980 : 720);
+}
+
+function resolveToyRound(success) {
+  if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
+  const config = getToyConfig();
+  if (config.mode === 'stack') {
+    resolveStackRound(success);
+    return;
+  }
+  playedThisRound = true;
+  stopPowerMeter();
+  lastToyFeedback = success ? 'hit' : 'miss';
+  shotResults.push(success ? 'hit' : 'miss');
+  if (success) catches += 1;
+
+  renderToyBoard();
+  updateRoundUi();
+
+  if (success) {
+    playSfx(config.mode === 'rhythm' ? 'drum' : 'success');
+    milmaru.classList.add('catch');
+    milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
+    guideText.textContent = config.hitBurst || 'いいね！';
+    messageBar.textContent = `${config.label}で じょうずに あそべたよ。`;
+    showGoalBurst({ x: 450, y: 250 }, config.hitBurst || 'いいね！', true);
+    spawnSparkles({ x: 450, y: 246 });
+  } else {
+    playSfx('mistake');
+    milmaru.classList.add('worried');
+    milmaruSpeech.textContent = getStageSpeech('なぁい...？');
+    guideText.textContent = 'もういちど やってみよう';
+    messageBar.textContent = 'みどりのところを よく見て、おしてみよう。';
+    showGoalBurst({ x: 450, y: 250 }, config.missBurst || 'おしい', false);
+  }
+
+  currentRound += 1;
+  const nextDelay = config.mode === 'rhythm' ? 520 : 860;
+  setTimeout(() => {
+    milmaru.classList.remove('catch', 'worried');
     if (currentRound > TOTAL_ROUNDS) {
       completeGame();
       return;
