@@ -875,6 +875,13 @@ button {
   display: grid;
 }
 
+.playfield[data-toy="blocks"] .toy-mode-board {
+  left: 44px;
+  top: 76px;
+  width: 812px;
+  height: 390px;
+}
+
 .toy-mode-card {
   position: relative;
   width: 100%;
@@ -885,6 +892,18 @@ button {
   border-radius: 12px;
   background: rgba(255, 248, 225, 0.78);
   box-shadow: inset 0 0 0 5px rgba(255,255,255,0.34), 0 6px 0 rgba(80,54,33,0.24);
+}
+
+.toy-mode-card.block-game {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.toy-mode-card.block-game.is-hit,
+.toy-mode-card.block-game.is-miss {
+  box-shadow: none;
 }
 
 .toy-mode-card.is-hit {
@@ -925,6 +944,13 @@ button {
   font-family: var(--pixel-font);
   font-size: 19px;
   font-weight: 900;
+}
+
+.rattle-game .toy-mode-help {
+  right: auto;
+  left: 24px;
+  bottom: 82px;
+  font-size: 17px;
 }
 
 .toy-round-label {
@@ -1001,6 +1027,80 @@ button {
   background: rgba(255, 230, 154, 0.2);
 }
 
+.rhythm-pulse.wait {
+  border-color: rgba(139, 96, 64, 0.38);
+  background: rgba(255, 250, 240, 0.16);
+}
+
+.rattle-countdown {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  min-width: 130px;
+  padding: 14px 22px;
+  transform: translate(-50%, -50%);
+  border: 5px solid #8b6040;
+  border-radius: 14px;
+  background: #fffaf0;
+  color: #e97955;
+  font-family: var(--pixel-font);
+  font-size: 58px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.42), 0 8px 0 rgba(80,54,33,0.24);
+  z-index: 3;
+}
+
+.rattle-now {
+  position: absolute;
+  left: 50%;
+  top: 82px;
+  transform: translateX(-50%);
+  padding: 7px 18px;
+  border: 4px solid #8b6040;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(80,54,33,0.24);
+}
+
+.rattle-now.active {
+  background: #ffe69a;
+  color: #e97955;
+  transform: translateX(-50%) scale(1.12);
+}
+
+.rattle-tap-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  min-width: 190px;
+  padding: 8px 20px;
+  border: 4px solid #8b6040;
+  border-radius: 10px;
+  background: #fff4cf;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 23px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.34), 0 6px 0 rgba(80,54,33,0.22);
+}
+
+.rattle-tap-cue.active {
+  background: #85dca7;
+  color: #fffaf0;
+  animation: cuePop 360ms steps(2, end) infinite;
+}
+
+@keyframes cuePop {
+  50% { transform: translateX(-50%) scale(1.08); }
+}
+
 .rattle-face {
   position: absolute;
   left: 50%;
@@ -1063,16 +1163,16 @@ button {
 
 .block-stack {
   position: relative;
-  width: 430px;
-  height: 236px;
+  width: 760px;
+  height: 314px;
   overflow: hidden;
 }
 
 .block-base-line {
   position: absolute;
-  left: 76px;
+  left: 176px;
   bottom: 12px;
-  width: 278px;
+  width: 408px;
   height: 24px;
   border: 5px solid #8b6040;
   border-radius: 8px;
@@ -1082,9 +1182,9 @@ button {
 
 .stack-swing-rail {
   position: absolute;
-  left: 30px;
-  right: 30px;
-  top: 30px;
+  left: 52px;
+  right: 52px;
+  top: 38px;
   height: 8px;
   border-radius: 999px;
   background: repeating-linear-gradient(90deg, #8b6040 0 16px, #d5b27e 16px 30px);
@@ -1142,7 +1242,9 @@ button {
 }
 
 .stack-block.falling {
-  animation: miniBlockDrop 520ms ease-in both;
+  bottom: auto;
+  top: 42px;
+  animation: miniBlockDrop 680ms cubic-bezier(.18,.82,.24,1) both;
 }
 
 @keyframes miniBlockDrop {
@@ -1639,17 +1741,18 @@ const STAR_POINTS = [
   { x: 768, y: 342 }
 ];
 const MINI_STACK = {
-  stageW: 430,
-  baseLeft: 76,
-  baseW: 278,
+  stageW: 760,
+  stageH: 314,
+  baseLeft: 176,
+  baseW: 408,
   baseBottom: 36,
-  minX: 32,
-  maxX: 346,
-  bonus: 10,
+  minX: 44,
+  maxX: 660,
+  bonus: 14,
   shapes: [
-    { w: 116, h: 34, r: 8 },
-    { w: 82, h: 54, r: 8 },
-    { w: 62, h: 72, r: 7 }
+    { w: 150, h: 40, r: 9 },
+    { w: 104, h: 62, r: 9 },
+    { w: 78, h: 82, r: 8 }
   ]
 };
 const TOY_CONFIGS = {
@@ -1679,15 +1782,15 @@ const TOY_CONFIGS = {
     movingText: 'しゃらん...',
     resultTitle: 'しゃらんと あそべたね！',
     steps: ['リズム', 'ふる', 'きく'],
-    rewardHint: 'みどりのところで<br>ガラガラを ふろう<br>5かいで1セット',
+    rewardHint: '3・2・1のあと<br>「いま！」で タップ<br>5かいで1セット',
     actionText: 'ふる！',
     meterLabel: 'リズム',
     goodMin: 0.36,
     goodMax: 0.64,
     meterSpeed: 0.58,
-    beatMs: 560,
-    beatHitAt: 0.66,
-    beatWindow: 0.17,
+    beatMs: 840,
+    beatHitAt: 0.70,
+    beatWindow: 0.22,
     hitBurst: 'しゃらん！',
     missBurst: 'おしい',
     completeGuide: 'ガラガラを ならしたよ！'
@@ -1785,6 +1888,10 @@ let miniRoundStartedAt = 0;
 let stackSwingX = 144;
 let stackBlocks = [];
 let currentStackShape = MINI_STACK.shapes[0];
+let rattleCountdownDone = false;
+let rattleCountdownValue = '';
+let rattleCountdownTimers = [];
+let stackDroppingBlock = null;
 let animationFrame = null;
 let roamTimer = null;
 let isMilmaruBusy = false;
@@ -2146,6 +2253,14 @@ function buildPowerPlan(power = powerValue) {
   };
 }
 
+function getSegmentProgress(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return 0;
+  return clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / len2, 0, 1);
+}
+
 function distanceToSegment(point, start, end) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
@@ -2159,12 +2274,13 @@ function distanceToSegment(point, start, end) {
 
 function getStarsOnRoute(start, end) {
   return fieldStars
-    .map((star, index) => ({ star, index }))
+    .map((star, index) => ({ star, index, routeT: getSegmentProgress(star, start, end) }))
     .filter(({ star }) => !star.collected)
     .filter(({ star }) =>
       distanceToSegment(star, start, end) <= STAR_ROUTE_RADIUS ||
       Math.hypot(star.x - end.x, star.y - end.y) <= STAR_COLLECT_RADIUS
-    );
+    )
+    .sort((a, b) => a.routeT - b.routeT);
 }
 
 function hidePrediction() {
@@ -2405,6 +2521,12 @@ function isStackDropSuccess() {
   return blockRight > targetLeft && blockLeft < targetRight;
 }
 
+function getStackDropTop(shape, success) {
+  const target = getStackTarget();
+  const landingBottom = success ? target.bottom : MINI_STACK.baseBottom - 8;
+  return clamp(MINI_STACK.stageH - landingBottom - shape.h, 52, MINI_STACK.stageH - shape.h - 6);
+}
+
 function renderToyBoard(feedback = lastToyFeedback) {
   if (!toyModeBoard) return;
   if (isBallGame()) {
@@ -2418,22 +2540,25 @@ function renderToyBoard(feedback = lastToyFeedback) {
   const isGood = powerValue >= config.goodMin && powerValue <= config.goodMax;
 
   if (config.mode === 'rhythm') {
+    const isCountingDown = controlPhase === 'countdown' && rattleCountdownValue;
     const hitReady = Math.abs(rhythmProgress - (config.beatHitAt || 0.68)) <= (config.beatWindow || 0.18);
-    const pulseScale = (2.2 - Math.min(rhythmProgress, 1) * 1.55).toFixed(2);
-    const pulseOpacity = (0.14 + Math.max(0, 1 - Math.abs(rhythmProgress - (config.beatHitAt || 0.68)) * 2.6) * 0.46).toFixed(2);
-    const tilt = Math.sin(rhythmProgress * Math.PI * 4) * 8;
-    const spread = Math.round(94 + Math.abs(Math.sin(rhythmProgress * Math.PI * 2)) * 52);
+    const pulseScale = isCountingDown ? '1.68' : (2.2 - Math.min(rhythmProgress, 1) * 1.55).toFixed(2);
+    const pulseOpacity = isCountingDown ? '0.30' : (0.14 + Math.max(0, 1 - Math.abs(rhythmProgress - (config.beatHitAt || 0.68)) * 2.6) * 0.46).toFixed(2);
+    const tilt = isCountingDown ? 0 : Math.sin(rhythmProgress * Math.PI * 4) * 8;
+    const spread = isCountingDown ? 112 : Math.round(94 + Math.abs(Math.sin(rhythmProgress * Math.PI * 2)) * 52);
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card rattle-game${cardState}" style="--pulse-scale:${pulseScale}; --pulse-opacity:${pulseOpacity}; --rattle-tilt:${tilt.toFixed(1)}deg; --bead-spread:${spread}px;">
         <div class="toy-mode-title">タン！で ふろう</div>
         <div class="toy-round-label">${roundText}</div>
-        <div class="rhythm-pulse ${hitReady ? 'active' : ''}"></div>
+        <div class="rhythm-pulse ${hitReady ? 'active' : ''} ${isCountingDown ? 'wait' : ''}"></div>
+        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！' : 'まって'}</div>`}
         <div class="rattle-bead left"></div>
         <div class="rattle-bead right"></div>
         <div class="rattle-stick"></div>
         <div class="rattle-face"></div>
         <div class="rattle-target">${renderMiniRoundMarks()}</div>
-        <div class="toy-mode-help">タン！で タップ</div>
+        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">ここで タップ</div>
+        <div class="toy-mode-help">円が かさなったら</div>
       </div>
     `;
     return;
@@ -2450,8 +2575,11 @@ function renderToyBoard(feedback = lastToyFeedback) {
     const shape = currentStackShape || MINI_STACK.shapes[0];
     const ghostLeft = Math.round(stackSwingX);
     const successNow = isStackDropSuccess();
-    const ghost = currentRound <= TOTAL_ROUNDS && !playedThisRound
+    const ghost = currentRound <= TOTAL_ROUNDS && !playedThisRound && !stackDroppingBlock
       ? `<div class="stack-block ghost ${successNow ? 'good' : ''}" style="--block-x:${ghostLeft}px; --block-w:${shape.w}px; --block-h:${shape.h}px; border-radius:${shape.r}px;">${currentRound}</div>`
+      : '';
+    const dropping = stackDroppingBlock
+      ? `<div class="stack-block falling ${stackDroppingBlock.success ? 'hit' : 'miss'}" style="--block-x:${stackDroppingBlock.x}px; --block-w:${stackDroppingBlock.w}px; --block-h:${stackDroppingBlock.h}px; --drop-to:${stackDroppingBlock.dropTo}px; border-radius:${stackDroppingBlock.r}px;">${stackDroppingBlock.round}</div>`
       : '';
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card block-game${cardState}">
@@ -2463,6 +2591,7 @@ function renderToyBoard(feedback = lastToyFeedback) {
           <div class="block-base-line"></div>
           ${placedBlocks}
           ${ghost}
+          ${dropping}
         </div>
         <div class="toy-mode-help">タップで おとす</div>
       </div>
@@ -2488,6 +2617,42 @@ function renderToyBoard(feedback = lastToyFeedback) {
   `;
 }
 
+function clearRattleCountdown() {
+  rattleCountdownTimers.forEach((timer) => clearTimeout(timer));
+  rattleCountdownTimers = [];
+  rattleCountdownValue = '';
+}
+
+function startRattleCountdown() {
+  const config = getToyConfig();
+  clearRattleCountdown();
+  controlPhase = 'countdown';
+  rhythmProgress = 0;
+  lastToyFeedback = '';
+  rattleCountdownValue = '3';
+  mainPlayBtn.textContent = 'まってね';
+  guideText.textContent = '3・2・1で はじめるよ';
+  messageBar.textContent = '円が小さくなって「いま！」になったら、下のボタンをタップしてね。';
+  powerMeter.classList.remove('active');
+  renderToyBoard();
+
+  ['2', '1', 'スタート'].forEach((value, index) => {
+    const timer = setTimeout(() => {
+      rattleCountdownValue = value;
+      playSfx(value === 'スタート' ? 'success' : 'button');
+      renderToyBoard();
+    }, (index + 1) * 650);
+    rattleCountdownTimers.push(timer);
+  });
+
+  const startTimer = setTimeout(() => {
+    rattleCountdownDone = true;
+    rattleCountdownValue = '';
+    startRhythmRound();
+  }, 2600);
+  rattleCountdownTimers.push(startTimer);
+}
+
 function startToyMeter() {
   if (isBallGame() || gameComplete) return;
   stopPowerMeter();
@@ -2496,6 +2661,10 @@ function startToyMeter() {
   rhythmProgress = 0;
   miniRoundStartedAt = performance.now();
   if (config.mode === 'rhythm') {
+    if (!rattleCountdownDone && currentRound === 1) {
+      startRattleCountdown();
+      return;
+    }
     startRhythmRound();
     return;
   }
@@ -2614,6 +2783,7 @@ function startStackRound() {
 function resetToyMiniGame(options = {}) {
   cancelAnimationFrame(animationFrame);
   animationFrame = null;
+  clearRattleCountdown();
   stopMilmaruRoam();
   stopPowerMeter();
   isAiming = false;
@@ -2625,6 +2795,8 @@ function resetToyMiniGame(options = {}) {
   lastToyFeedback = '';
   toyStackCount = 0;
   rhythmProgress = 0;
+  rattleCountdownDone = false;
+  stackDroppingBlock = null;
   if (getToyConfig().mode === 'stack') {
     stackBlocks = [];
     currentStackShape = getStackShapeForRound(1);
@@ -2748,14 +2920,21 @@ function launchBall(plan) {
   animationFrame = requestAnimationFrame(tick);
 }
 
-function collectStars(hits) {
-  hits.forEach(({ index, star }) => {
-    if (fieldStars[index]?.collected) return;
-    fieldStars[index].collected = true;
-    const el = fieldStarsEl.querySelector(`[data-star-index="${index}"]`);
-    el?.classList.add('collected');
-    spawnSparkles(star);
+function collectStarHit({ index, star }) {
+  if (fieldStars[index]?.collected) return false;
+  fieldStars[index].collected = true;
+  const el = fieldStarsEl.querySelector(`[data-star-index="${index}"]`);
+  el?.classList.add('collected');
+  spawnSparkles(star);
+  playSfx('success');
+  return true;
+}
+
+function collectStarsSequential(hits, interval = 220) {
+  hits.forEach((hit, order) => {
+    setTimeout(() => collectStarHit(hit), order * interval);
   });
+  return Math.max(0, (hits.length - 1) * interval);
 }
 
 function resolveShot(plan) {
@@ -2769,16 +2948,20 @@ function resolveShot(plan) {
     maxDuration: 7000,
     after: () => {
       if (collectedCount > 0) {
-        collectStars(hits);
+        const collectDuration = collectStarsSequential(hits);
         catches += collectedCount;
         shotResults.push('hit');
-        playSfx('success');
         milmaru.classList.add('catch');
         milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
         guideText.textContent = `${collectedCount}こ ゲット！`;
         messageBar.textContent = '通り道の星をひろえたよ。';
-        showGoalBurst(plan.end, `★ ${collectedCount}`, true);
+        showGoalBurst(hits[hits.length - 1]?.star || plan.end, `★ ${collectedCount}`, true);
         setTimeout(() => milmaru.classList.remove('catch'), 700);
+        setTimeout(() => {
+          currentRound += 1;
+          advanceAfterShot();
+        }, collectDuration + 360);
+        return;
       } else {
         shotResults.push('miss');
         playSfx('mistake');
@@ -2793,9 +2976,6 @@ function resolveShot(plan) {
       advanceAfterShot();
     }
   });
-  setTimeout(() => {
-    if (collectedCount > 0) collectStars(hits);
-  }, Math.max(420, duration * 0.55));
 }
 
 function advanceAfterShot() {
@@ -2846,15 +3026,17 @@ function resolveToyRound(success) {
   shotResults.push(success ? 'hit' : 'miss');
   if (success) catches += 1;
 
-  if (config.mode === 'stack' && success) {
+  if (config.mode === 'stack') {
     const shape = currentStackShape || getStackShapeForRound(currentRound);
-    stackBlocks.push({
+    stackDroppingBlock = {
       x: Math.round(stackSwingX),
       w: shape.w,
       h: shape.h,
-      r: shape.r
-    });
-    toyStackCount = stackBlocks.length;
+      r: shape.r,
+      round: currentRound,
+      success,
+      dropTo: getStackDropTop(shape, success)
+    };
   }
 
   renderToyBoard();
@@ -2878,9 +3060,22 @@ function resolveToyRound(success) {
   }
 
   currentRound += 1;
-  const nextDelay = config.mode === 'rhythm' ? 260 : 860;
+  const nextDelay = config.mode === 'rhythm' ? 520 : config.mode === 'stack' ? 980 : 860;
   setTimeout(() => {
     milmaru.classList.remove('catch', 'worried');
+    if (config.mode === 'stack' && stackDroppingBlock) {
+      if (stackDroppingBlock.success) {
+        stackBlocks.push({
+          x: stackDroppingBlock.x,
+          w: stackDroppingBlock.w,
+          h: stackDroppingBlock.h,
+          r: stackDroppingBlock.r
+        });
+        toyStackCount = stackBlocks.length;
+      }
+      stackDroppingBlock = null;
+      renderToyBoard();
+    }
     if (currentRound > TOTAL_ROUNDS) {
       completeGame();
       return;
