@@ -1114,20 +1114,7 @@ button {
   50% { transform: translateX(-50%) scale(1.08); }
 }
 
-.rattle-target-label {
-  position: absolute;
-  left: 50%;
-  top: 28%;
-  transform: translate(-50%, -50%);
-  color: #8a5636;
-  font-family: var(--pixel-font);
-  font-size: 26px;
-  font-weight: 900;
-  text-shadow: 0 3px 0 rgba(255,255,255,0.85);
-  z-index: 6;
-}
-
-.denden-toy {
+.taiko-toy {
   position: absolute;
   left: 50%;
   top: 51%;
@@ -1137,34 +1124,34 @@ button {
   z-index: 2;
 }
 
-.denden-drum {
+.taiko-drum {
   position: absolute;
   left: 280px;
-  top: 142px;
-  width: 176px;
-  height: 176px;
-  border: 9px solid #8b6040;
+  top: 162px;
+  width: 232px;
+  height: 178px;
+  border: 10px solid #8b6040;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 34% 32%, rgba(255,255,255,0.75) 0 14px, transparent 15px),
-    radial-gradient(circle at 50% 50%, #fffaf0 0 47%, #ffe3a2 48% 64%, #f2b956 65% 100%);
+    radial-gradient(circle at 34% 30%, rgba(255,255,255,0.68) 0 18px, transparent 19px),
+    radial-gradient(circle at 50% 50%, #fffaf0 0 48%, #ffe3a2 49% 64%, #f2b956 65% 100%);
   box-shadow:
-    inset 0 0 0 8px rgba(255,255,255,0.38),
-    inset 0 0 0 20px rgba(139,96,64,0.1),
-    0 10px 0 rgba(80,54,33,0.24);
-  transform: translate(-50%, -50%) rotate(var(--denden-tilt, 0deg));
+    inset 0 0 0 9px rgba(255,255,255,0.38),
+    inset 0 0 0 24px rgba(139,96,64,0.1),
+    0 12px 0 rgba(80,54,33,0.24);
+  transform: translate(-50%, -50%) scale(var(--taiko-scale, 1));
   z-index: 5;
 }
 
-.denden-drum::before {
+.taiko-drum::before {
   content: '';
   position: absolute;
-  inset: 26px;
-  border: 5px dashed rgba(139,96,64,0.24);
+  inset: 31px 43px;
+  border: 6px dashed rgba(139,96,64,0.24);
   border-radius: 50%;
 }
 
-.denden-drum::after {
+.taiko-drum::after {
   content: '♪';
   position: absolute;
   left: 50%;
@@ -1172,113 +1159,94 @@ button {
   transform: translate(-50%, -50%);
   color: #e97955;
   font-family: var(--pixel-font);
-  font-size: 52px;
+  font-size: 58px;
   font-weight: 900;
 }
 
-.denden-drum.active {
-  animation: dendenHitPop 300ms steps(2, end) infinite;
+.taiko-drum.active {
+  animation: taikoHitPop 300ms steps(2, end) infinite;
   filter: drop-shadow(0 0 10px rgba(255, 214, 105, 0.82));
 }
 
-@keyframes dendenHitPop {
-  50% { transform: translate(-50%, -50%) rotate(var(--denden-tilt, 0deg)) scale(1.04); }
+@keyframes taikoHitPop {
+  50% { transform: translate(-50%, -50%) scale(1.05); }
 }
 
-.denden-stick {
+.taiko-stand {
   position: absolute;
-  left: 268px;
-  top: 218px;
-  width: 24px;
-  height: 86px;
+  left: 198px;
+  top: 235px;
+  width: 164px;
+  height: 28px;
   border: 5px solid #8b6040;
-  border-radius: 999px;
-  background: linear-gradient(#9be0c4, #58b97a);
+  border-radius: 10px;
+  background: linear-gradient(#d5b27e, #a97948);
   box-shadow: inset 0 0 0 4px rgba(255,255,255,0.22);
   z-index: 3;
 }
 
-.denden-string {
+.taiko-bachi {
   position: absolute;
-  left: var(--string-x, 224px);
-  top: var(--string-y, 142px);
-  width: var(--string-l, 64px);
-  height: 8px;
+  top: var(--bachi-y, 42px);
+  width: 22px;
+  height: 142px;
   border-radius: 999px;
-  background: repeating-linear-gradient(90deg, #8b6040 0 8px, #d5b27e 8px 13px);
-  transform-origin: 0 50%;
-  transform: rotate(var(--string-a, 180deg));
-  box-shadow: 0 2px 0 rgba(80,54,33,0.18);
-  z-index: 6;
-}
-
-.denden-string::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  border: 3px solid #8b6040;
-  border-radius: 50%;
-  background: #fff4cf;
-  transform: translateY(-50%);
-}
-
-.denden-bead {
-  position: absolute;
-  left: var(--bead-x, 160px);
-  top: var(--bead-y, 142px);
-  width: 48px;
-  height: 48px;
-  border: 5px solid #8b6040;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 30%, rgba(255,255,255,0.9) 0 7px, transparent 8px),
-    linear-gradient(#fff4cf, #ffd16c);
-  transform: translate(-50%, -50%) scale(var(--bead-scale, 1));
-  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 6px 0 rgba(80,54,33,0.24);
-  z-index: 8;
-}
-
-.denden-bead.active {
-  --bead-scale: 1.12;
-  background:
-    radial-gradient(circle at 34% 30%, rgba(255,255,255,0.9) 0 7px, transparent 8px),
-    linear-gradient(#d8f1c5, #85dca7);
-  box-shadow:
-    inset 0 0 0 5px rgba(255,255,255,0.42),
-    0 6px 0 rgba(80,54,33,0.24),
-    0 0 0 8px rgba(88,185,122,0.28);
-}
-
-.denden-contact {
-  position: absolute;
-  top: 142px;
-  width: 34px;
-  height: 58px;
-  border-radius: 50%;
-  background: rgba(255, 230, 154, 0.82);
-  opacity: 0;
-  transform: translate(-50%, -50%);
+  border: 4px solid #8b6040;
+  background: linear-gradient(#ffe69a, #d5a35a);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.3), 0 6px 0 rgba(80,54,33,0.18);
+  transform-origin: 50% 92%;
   z-index: 7;
 }
 
-.denden-contact.left {
-  left: 190px;
+.taiko-bachi::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  width: 36px;
+  height: 24px;
+  border: 4px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  transform: translateX(-50%);
 }
 
-.denden-contact.right {
-  left: 370px;
+.taiko-bachi.left {
+  left: 196px;
+  transform: rotate(var(--bachi-left-angle, -26deg));
 }
 
-.denden-contact.active {
+.taiko-bachi.right {
+  left: 342px;
+  transform: rotate(var(--bachi-right-angle, 26deg));
+}
+
+.taiko-bachi.active {
+  background: linear-gradient(#d8f1c5, #85dca7);
+  filter: drop-shadow(0 0 7px rgba(88,185,122,0.6));
+}
+
+.taiko-hit-splash {
+  position: absolute;
+  left: 280px;
+  top: 162px;
+  width: 136px;
+  height: 102px;
+  border-radius: 50%;
+  border: 8px solid rgba(255,230,154,0.9);
+  background: rgba(255,255,255,0.16);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+}
+
+.taiko-hit-splash.active {
   opacity: 1;
-  animation: contactFlash 300ms steps(2, end) infinite;
+  animation: taikoSplash 300ms steps(2, end) infinite;
 }
 
-@keyframes contactFlash {
-  50% { transform: translate(-50%, -50%) scale(1.28); }
+@keyframes taikoSplash {
+  50% { transform: translate(-50%, -50%) scale(1.18); }
 }
 
 .block-stack {
@@ -1786,7 +1754,7 @@ button {
       <div class="panel-heading">おもちゃ</div>
       <div class="toy-grid">
         <button class="toy-card selected" type="button" data-toy="ball"><span class="toy-icon">●</span><span>ボール</span></button>
-        <button class="toy-card" type="button" data-toy="rattle"><span class="toy-icon">♪</span><span>でんでん</span></button>
+        <button class="toy-card" type="button" data-toy="rattle"><span class="toy-icon">♪</span><span>たいこ</span></button>
         <button class="toy-card" type="button" data-toy="blocks"><span class="toy-icon">□</span><span>つみき</span></button>
         <button class="toy-card" type="button" data-toy="book"><span class="toy-icon">本</span><span>えほん</span></button>
       </div>
@@ -1917,16 +1885,16 @@ const TOY_CONFIGS = {
   },
   rattle: {
     mode: 'rhythm',
-    title: 'でんでんだいこ',
+    title: 'たいこトントン',
     label: 'たいこ',
     icon: '♪',
-    subSign: '玉が あたる ときに タップ！',
-    launchLabel: 'ここから<br>ドンドン',
+    subSign: 'たいこが ひかったら タップ！',
+    launchLabel: 'ここから<br>トントン',
     guideVerb: 'たたこう',
     movingText: 'ドンドン...',
     resultTitle: 'たいこで あそべたね！',
-    steps: ['みる', 'ドン', 'きく'],
-    rewardHint: 'ひもつきの玉が<br>たいこに あたったら<br>タップしてね',
+    steps: ['みる', 'たたく', 'きく'],
+    rewardHint: 'たいこが ひかったら<br>ドン！で タップ<br>5かいで1セット',
     actionText: 'ドン！',
     meterLabel: 'リズム',
     goodMin: 0.36,
@@ -2719,44 +2687,25 @@ function getStackDropTop(shape, success) {
   return clamp(MINI_STACK.stageH - landingBottom - shape.h, 52, MINI_STACK.stageH - shape.h - 6);
 }
 
-function getDendenMotion(config, isCountingDown) {
+function getTaikoMotion(config, isCountingDown) {
   const hitAt = config.beatHitAt || 0.68;
   const hitWindow = config.beatWindow || 0.18;
   const progress = isCountingDown ? 0 : clamp(rhythmProgress, 0, 1.08);
   const hitWave = isCountingDown ? 0 : Math.max(0, 1 - Math.abs(progress - hitAt) / hitWindow);
   const hitReady = hitWave > 0.01;
-  const swing = Math.sin((progress / Math.max(hitAt, 0.01)) * Math.PI - Math.PI / 2);
-  const looseSwing = (1 - hitWave) * swing * 48;
-  const length = 86;
-  const leftAnchor = { x: 244, y: 142 };
-  const rightAnchor = { x: 316, y: 142 };
-  const leftAngle = 180 + looseSwing;
-  const rightAngle = 0 - looseSwing;
-  const toRad = (deg) => deg * Math.PI / 180;
-  const pointFrom = (anchor, angle) => ({
-    x: anchor.x + Math.cos(toRad(angle)) * length,
-    y: anchor.y + Math.sin(toRad(angle)) * length
-  });
-  const leftBead = pointFrom(leftAnchor, leftAngle);
-  const rightBead = pointFrom(rightAnchor, rightAngle);
-  const stringStyle = (anchor, angle) => [
-    `--string-x:${anchor.x}px`,
-    `--string-y:${anchor.y}px`,
-    `--string-l:${length}px`,
-    `--string-a:${angle.toFixed(1)}deg`
-  ].join(';');
-  const beadStyle = (point) => [
-    `--bead-x:${point.x.toFixed(1)}px`,
-    `--bead-y:${point.y.toFixed(1)}px`
-  ].join(';');
+  const down = hitWave;
+  const idle = isCountingDown ? 0 : Math.sin(progress * Math.PI * 2) * 5;
+  const bachiY = 22 + down * 72 + idle * (1 - down);
   return {
     hitReady,
     hitWave,
-    tilt: isCountingDown ? 0 : Math.sin(progress * Math.PI * 4) * 7,
-    leftStringStyle: stringStyle(leftAnchor, leftAngle),
-    rightStringStyle: stringStyle(rightAnchor, rightAngle),
-    leftBeadStyle: beadStyle(leftBead),
-    rightBeadStyle: beadStyle(rightBead)
+    drumScale: 1 + hitWave * 0.05,
+    bachiStyle: [
+      `--bachi-y:${bachiY.toFixed(1)}px`,
+      `--bachi-left-angle:${(-24 + down * 14).toFixed(1)}deg`,
+      `--bachi-right-angle:${(24 - down * 14).toFixed(1)}deg`,
+      `--taiko-scale:${(1 + hitWave * 0.035).toFixed(3)}`
+    ].join(';')
   };
 }
 
@@ -2774,26 +2723,22 @@ function renderToyBoard(feedback = lastToyFeedback) {
 
   if (config.mode === 'rhythm') {
     const isCountingDown = controlPhase === 'countdown' && rattleCountdownValue;
-    const motion = getDendenMotion(config, isCountingDown);
+    const motion = getTaikoMotion(config, isCountingDown);
     const hitReady = motion.hitReady;
     toyModeBoard.innerHTML = `
-      <div class="toy-mode-card rattle-game${cardState}" style="--denden-tilt:${motion.tilt.toFixed(1)}deg;">
+      <div class="toy-mode-card rattle-game${cardState}" style="${motion.bachiStyle}">
         <div class="toy-round-label">${roundText}</div>
         ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : 'まって'}</div>`}
-        <div class="denden-toy">
-          <div class="denden-string left" style="${motion.leftStringStyle}"></div>
-          <div class="denden-string right" style="${motion.rightStringStyle}"></div>
-          <div class="denden-stick"></div>
-          <div class="denden-drum ${hitReady ? 'active' : ''}"></div>
-          <div class="denden-contact left ${hitReady ? 'active' : ''}"></div>
-          <div class="denden-contact right ${hitReady ? 'active' : ''}"></div>
-          <div class="denden-bead left ${hitReady ? 'active' : ''}" style="${motion.leftBeadStyle}"></div>
-          <div class="denden-bead right ${hitReady ? 'active' : ''}" style="${motion.rightBeadStyle}"></div>
+        <div class="taiko-toy">
+          <div class="taiko-stand"></div>
+          <div class="taiko-bachi left ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-bachi right ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-drum ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-hit-splash ${hitReady ? 'active' : ''}"></div>
         </div>
-        <div class="rattle-target-label">ひもの玉が あたったら</div>
         <div class="rattle-target">${renderMiniRoundMarks()}</div>
         <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！で タップ' : 'たいこを よくみて'}</div>
-        <div class="toy-mode-help">ひもつきの玉を見よう</div>
+        <div class="toy-mode-help">たいこを見よう</div>
       </div>
     `;
     return;
@@ -2871,7 +2816,7 @@ function startRattleCountdown() {
   rattleCountdownValue = '3';
   mainPlayBtn.textContent = 'まってね';
   guideText.textContent = '3・2・1で はじめるよ';
-  messageBar.textContent = 'ひもつきの玉がたいこに当たって、ドン！と鳴るところでタップしてね。';
+  messageBar.textContent = 'たいこが光って、ドン！と鳴るところでタップしてね。';
   powerMeter.classList.remove('active');
   renderToyBoard();
 
@@ -2959,7 +2904,7 @@ function startRhythmRound() {
   timingMarker.style.setProperty('--timing', '0%');
   mainPlayBtn.textContent = config.actionText || 'ふる！';
   guideText.textContent = `${currentRound}かいめ：ドン！で タップ`;
-  messageBar.textContent = 'ひもつきの玉がたいこに当たって、ドン！と鳴るところでタップしてね。';
+  messageBar.textContent = 'たいこが光って、ドン！と鳴るところでタップしてね。';
   renderToyBoard();
 
   const tick = (now) => {
