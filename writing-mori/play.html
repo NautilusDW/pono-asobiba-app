@@ -2142,8 +2142,8 @@ const RHYTHM_LANE = {
   startX: 830,
   hitX: 126,
   endX: 34,
-  leadMs: 980,
-  exitMs: 420
+  leadMs: 2050,
+  exitMs: 780
 };
 const TOY_CONFIGS = {
   ball: {
@@ -2167,33 +2167,34 @@ const TOY_CONFIGS = {
     title: 'たいこリズム',
     label: 'たいこ',
     icon: '♪',
-    subSign: 'たいこを たたこう！',
+    subSign: 'きょくに あわせて たたこう！',
     launchLabel: 'ここから<br>トントン',
     guideVerb: 'たたこう',
     movingText: 'ドンドン...',
     resultTitle: 'たいこで あそべたね！',
-    steps: ['はじめる', 'まるでドン', '5回リズム'],
-    rewardHint: '音符が<br>みどりの丸にきたら<br>ドン！',
+    steps: ['はじめる', '音符でドン', '5回リズム'],
+    rewardHint: '音をきいて<br>音符が丸にきたら<br>ドン！',
     actionText: 'ドン！',
     meterLabel: 'リズム',
     goodMin: 0.36,
     goodMax: 0.64,
     meterSpeed: 0.58,
-    measureMs: 2720,
-    hitWindowMs: 190,
-    passWindowMs: 245,
+    bpm: 76,
+    beatsPerRound: 8,
+    hitWindowMs: 270,
+    passWindowMs: 360,
     passRatio: 0.58,
-    patterns: [
-      [960, 1500, 2040],
-      [830, 1280, 1740, 2200],
-      [1020, 1420, 2060],
-      [760, 1120, 1680, 2160],
-      [900, 1260, 1620, 2180]
+    beatPatterns: [
+      [2.5, 4.25, 6.5],
+      [2.5, 4.0, 5.5, 7.0],
+      [2.75, 4.5, 6.75],
+      [2.25, 3.75, 5.4, 7.0],
+      [2.5, 3.75, 5.25, 6.75]
     ],
     hitBurst: 'ドンドン！',
     missBurst: 'おしい',
     completeGuide: 'たいこを ならしたよ！',
-    sideHelp: 'はじめるを おすよ。\n丸にきたら ドン！\n5回 リズムが変わるよ。'
+    sideHelp: 'はじめるを おすよ。\n音をきいて ドン！\nゆっくり 5回あそぶよ。'
   },
   blocks: {
     mode: 'stack',
@@ -2294,6 +2295,7 @@ let rhythmMeasureHits = 0;
 let rhythmPaused = false;
 let rhythmPauseStartedAt = 0;
 let rhythmBgmTimer = null;
+let rhythmBgmLastBeat = -1;
 let miniRoundStartedAt = 0;
 let stackSwingX = 144;
 let stackBlocks = [];
@@ -2491,15 +2493,15 @@ function playSfx(kind) {
       return;
     }
     if (kind === 'drum') {
-      playTone(118, 0.11, 'sine', 0.072);
-      playTone(92, 0.13, 'sine', 0.06, 0.09);
-      playTone(180, 0.045, 'triangle', 0.026);
-      playTone(150, 0.045, 'triangle', 0.022, 0.09);
+      playTone(118, 0.13, 'sine', 0.115);
+      playTone(92, 0.15, 'sine', 0.086, 0.08);
+      playTone(180, 0.055, 'triangle', 0.042);
+      playTone(150, 0.055, 'triangle', 0.032, 0.08);
       return;
     }
     if (kind === 'drumCue') {
-      playTone(128, 0.075, 'sine', 0.048);
-      playTone(190, 0.035, 'triangle', 0.018);
+      playTone(128, 0.085, 'sine', 0.076);
+      playTone(190, 0.045, 'triangle', 0.028);
       return;
     }
     if (kind === 'wood') {
@@ -2522,24 +2524,40 @@ function playSfx(kind) {
 function stopRhythmBgm() {
   clearTimeout(rhythmBgmTimer);
   rhythmBgmTimer = null;
+  rhythmBgmLastBeat = -1;
+}
+
+function playRhythmBackingBeat(beatIndex, config = getToyConfig()) {
+  const strong = beatIndex % 4 === 0;
+  const halfAccent = beatIndex % 4 === 2;
+  const chord = [196, 220, 247, 220][Math.floor((beatIndex % 8) / 2)] || 196;
+  playTone(strong ? 174 : halfAccent ? 185 : 196, strong ? 0.13 : 0.1, 'triangle', strong ? 0.05 : 0.034);
+  playTone(chord, 0.085, 'sine', strong ? 0.027 : 0.019, 0.025);
+  if (beatIndex % 2 === 1) {
+    playTone(chord * 2, 0.045, 'square', 0.014, 0.055);
+  }
 }
 
 function startRhythmBgm() {
   stopRhythmBgm();
-  if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused) return;
+  const config = getToyConfig();
+  if (config.mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused) return;
+  const beatMs = getRhythmBeatMs(config);
   const tick = () => {
-    if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) {
+    const currentConfig = getToyConfig();
+    if (currentConfig.mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) {
       stopRhythmBgm();
       return;
     }
-    const elapsed = getRhythmElapsed(getToyConfig());
-    const step = Math.floor(elapsed / 340);
-    const root = step % 4 === 0;
-    playTone(root ? 196 : 294, 0.055, 'triangle', root ? 0.018 : 0.012);
-    if (step % 2 === 1) playTone(392, 0.035, 'square', 0.009, 0.05);
-    rhythmBgmTimer = setTimeout(tick, 340);
+    const elapsed = getRhythmElapsed(currentConfig);
+    const beatIndex = Math.floor(elapsed / getRhythmBeatMs(currentConfig));
+    if (beatIndex !== rhythmBgmLastBeat && beatIndex < (currentConfig.beatsPerRound || 8)) {
+      rhythmBgmLastBeat = beatIndex;
+      playRhythmBackingBeat(beatIndex, currentConfig);
+    }
+    rhythmBgmTimer = setTimeout(tick, Math.max(70, beatMs / 6));
   };
-  rhythmBgmTimer = setTimeout(tick, 80);
+  rhythmBgmTimer = setTimeout(tick, 20);
 }
 
 function getStackSurfaceY() {
@@ -3248,13 +3266,27 @@ function getStackDropTop(shape, success) {
   return clamp(MINI_STACK.stageH - landingBottom - shape.h, 52, MINI_STACK.stageH - shape.h - 6);
 }
 
+function getRhythmBeatMs(config = getToyConfig()) {
+  return 60000 / Math.max(40, config.bpm || 76);
+}
+
+function getRhythmRoundMs(config = getToyConfig()) {
+  return (config.beatsPerRound || 8) * getRhythmBeatMs(config);
+}
+
 function getRhythmPattern(config = getToyConfig()) {
+  if (config.beatPatterns) {
+    const beatPatterns = config.beatPatterns;
+    const pattern = beatPatterns[(Math.max(1, currentRound) - 1) % beatPatterns.length];
+    const beatMs = getRhythmBeatMs(config);
+    return pattern.map((beat) => Math.round(beat * beatMs));
+  }
   const patterns = config.patterns || [[960, 1500, 2040]];
   return patterns[(Math.max(1, currentRound) - 1) % patterns.length];
 }
 
 function getRhythmElapsed(config = getToyConfig()) {
-  return clamp(rhythmProgress, 0, 1.2) * (config.measureMs || 2720);
+  return clamp(rhythmProgress, 0, 1.2) * getRhythmRoundMs(config);
 }
 
 function getHittableRhythmNote() {
@@ -3501,7 +3533,7 @@ function startRattleCountdown() {
   document.querySelector('.sub-sign').textContent = '3・2・1で はじめるよ！';
   mainPlayBtn.textContent = 'まってね';
   guideText.textContent = '3・2・1で はじめるよ';
-  messageBar.textContent = 'カウントのあと、音符がみどりの丸にきたらドン！';
+  messageBar.textContent = 'カウントのあと、音楽にあわせてドン！';
   powerMeter.classList.remove('active');
   renderToyBoard();
 
@@ -3591,10 +3623,10 @@ function startRhythmRound() {
   powerMeter.classList.remove('active');
   powerFill.style.setProperty('--power', '0%');
   timingMarker.style.setProperty('--timing', '0%');
-  document.querySelector('.sub-sign').textContent = '音符が まるにきたら タップ！';
+  document.querySelector('.sub-sign').textContent = 'きょくに あわせて ドン！';
   mainPlayBtn.textContent = config.actionText || 'ふる！';
-  guideText.textContent = `${currentRound}回目：まるにきたら ドン！`;
-  messageBar.textContent = '音符がみどりの丸に重なるところで、ドン！と押そう。';
+  guideText.textContent = `${currentRound}回目：音をきいて ドン！`;
+  messageBar.textContent = '音楽にあわせて、音符がみどりの丸に重なったらドン！';
   renderToyBoard();
   startRhythmBgm();
 
@@ -3609,11 +3641,11 @@ function startRhythmRound() {
       return;
     }
     const elapsed = now - miniRoundStartedAt;
-    const measureMs = config.measureMs || 2720;
+    const measureMs = getRhythmRoundMs(config);
     rhythmProgress = elapsed / measureMs;
     powerValue = clamp(rhythmProgress, 0, 1);
     pattern.forEach((hitMs, index) => {
-      if (!rhythmCueMarks[index] && elapsed >= hitMs - 90) {
+      if (!rhythmCueMarks[index] && elapsed >= hitMs - 120) {
         rhythmCueMarks[index] = true;
         playSfx('drumCue');
       }
@@ -3644,7 +3676,7 @@ function handleRhythmAction() {
     playSfx('mistake');
     lastToyFeedback = 'miss';
     guideText.textContent = 'まるに きたら ドン！';
-    messageBar.textContent = '音符がみどりの丸に重なるところをねらおう。';
+    messageBar.textContent = '音をきいて、音符がみどりの丸に重なるところをねらおう。';
     renderToyBoard('miss');
     setTimeout(() => {
       if (controlPhase === 'toy' && !playedThisRound) {
@@ -3681,8 +3713,8 @@ function toggleRhythmPause() {
   const pausedFor = performance.now() - rhythmPauseStartedAt;
   miniRoundStartedAt += pausedFor;
   rhythmPauseStartedAt = 0;
-  guideText.textContent = `${currentRound}回目：まるにきたら ドン！`;
-  messageBar.textContent = '音符がみどりの丸に重なるところで、ドン！と押そう。';
+  guideText.textContent = `${currentRound}回目：音をきいて ドン！`;
+  messageBar.textContent = '音楽にあわせて、音符がみどりの丸に重なったらドン！';
   renderToyBoard();
   startRhythmBgm();
   playSfx('success');
@@ -3711,14 +3743,14 @@ function finishRhythmMeasure() {
     milmaru.classList.add('catch');
     milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
     guideText.textContent = `${hits}/${pattern.length} できた！`;
-    messageBar.textContent = 'リズムよく たたけたよ。';
+    messageBar.textContent = '音にあわせて たたけたよ。';
     showGoalBurst({ x: 610, y: 250 }, 'いいリズム！', true);
   } else {
     playSfx('mistake');
     milmaru.classList.add('worried');
     milmaruSpeech.textContent = getStageSpeech('なぁい...？');
     guideText.textContent = `${hits}/${pattern.length} もういちど`;
-    messageBar.textContent = '音符がまるに重なるところを見て、次のリズムでやってみよう。';
+    messageBar.textContent = '音をきいて、次のリズムでやってみよう。';
     showGoalBurst({ x: 610, y: 250 }, config.missBurst || 'おしい', false);
   }
 
@@ -3832,8 +3864,9 @@ function resetToyMiniGame(options = {}) {
   updateRoundUi();
   milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
   if (getToyConfig().mode === 'rhythm') {
+    const config = getToyConfig();
     controlPhase = 'ready';
-    document.querySelector('.sub-sign').textContent = 'たいこを たたこう！';
+    document.querySelector('.sub-sign').textContent = config.subSign || 'たいこを たたこう！';
     mainPlayBtn.textContent = 'ドン！';
     guideText.textContent = 'はじめるを おしてね';
     messageBar.textContent = '大きい「はじめる」ボタンを押すと、3・2・1ではじまるよ。';

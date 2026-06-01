@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-02 - [batch:236-mojikko-taiko-bpm-song] DONE - Codex: `writing-mori/play.html` のたいこ遊びを BPM76 / 8拍フレーズの譜面へ変更し、1回あたり約6.3秒に減速。音符の移動時間を約2倍にし、太鼓SE/直前cue/簡易伴奏の音量を上げた。文言も「音楽にあわせてドン」へ寄せた。Playwrightで開始待ち、カウントダウン、roundMs=6315ms、5回完了、18打ヒット、JSエラーなしを確認。Codex self-review: 既存の開始ボタン導線/ポーズ/5回リザルト/他おもちゃ分岐に影響がないことを差分確認。`sw.js` は v737。 (by Codex)
 - 2026-06-01 - [batch:235-mojikko-stack-physics] DONE - Codex: `writing-mori/play.html` のつみき遊びへ旧 `stacking/index.html` と同じ Matter.js ベースの物理を導入。`assets/lib/matter.min.js` をローカル配置し、落下中/着地後の body 位置と角度をDOMブロックへ反映、端置きでは物理結果に応じてぐらぐら/崩れ/失敗へ分岐し、失敗後は投入前の塔へ戻して次ラウンドを続ける構造にした。Playwrightでローカル Matter 読み込み、物理ブロック落下、着地後配置、5回完了、JSエラーなしを確認。`sw.js` は v736。 (by Codex)
 - 2026-06-01 - [batch:234-mojikko-taiko-clarity-bgm] DONE - Codex: `writing-mori/play.html` のたいこ遊びを、中央の大きい「はじめる」ボタンだけで開始するUIへ整理し、旧「スタート」表記と「しょうせつ」表記を削除。レーン幅を拡張し、ミルマルを判定レーン外へ退避、プレイ中のポーズ/再開ボタンと簡易BGMループを追加。完了後はポーズを非表示化。Playwrightで開始表示、カウントダウン、ポーズ、5回リズム完了、JSエラーなしを確認。`sw.js` は v735。 (by Codex)
 - 2026-06-01 - [batch:233-mojikko-taiko-measures-ui] DONE - Codex: `writing-mori/play.html` のたいこ遊びを、選択直後はスタート待ちにして押下後に3・2・1開始へ変更。5回単発から5しょうせつ制にし、各小節に3〜4個の音符パターンを置いてリズム変化を追加。たいこ時は右の遊び方パネルを隠し、中央フィールドを1208pxへ拡張、左のおもちゃメニュー内に遊び方を表示。Playwrightで開始待ち、右パネル非表示、5小節完了、結果モーダル、JSエラーなしを確認。`sw.js` は v734。 (by Codex)
