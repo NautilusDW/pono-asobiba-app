@@ -1118,7 +1118,7 @@ button {
   position: absolute;
   left: 50%;
   top: 51%;
-  width: 560px;
+  width: 690px;
   height: 314px;
   transform: translate(-50%, -50%);
   z-index: 2;
@@ -1126,19 +1126,19 @@ button {
 
 .taiko-drum {
   position: absolute;
-  left: 280px;
+  left: 92px;
   top: 162px;
-  width: 232px;
-  height: 178px;
-  border: 10px solid #8b6040;
+  width: 132px;
+  height: 132px;
+  border: 8px solid #8b6040;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 34% 30%, rgba(255,255,255,0.68) 0 18px, transparent 19px),
+    radial-gradient(circle at 34% 30%, rgba(255,255,255,0.68) 0 12px, transparent 13px),
     radial-gradient(circle at 50% 50%, #fffaf0 0 48%, #ffe3a2 49% 64%, #f2b956 65% 100%);
   box-shadow:
-    inset 0 0 0 9px rgba(255,255,255,0.38),
-    inset 0 0 0 24px rgba(139,96,64,0.1),
-    0 12px 0 rgba(80,54,33,0.24);
+    inset 0 0 0 7px rgba(255,255,255,0.38),
+    inset 0 0 0 18px rgba(139,96,64,0.1),
+    0 10px 0 rgba(80,54,33,0.24);
   transform: translate(-50%, -50%) scale(var(--taiko-scale, 1));
   z-index: 5;
 }
@@ -1146,8 +1146,8 @@ button {
 .taiko-drum::before {
   content: '';
   position: absolute;
-  inset: 31px 43px;
-  border: 6px dashed rgba(139,96,64,0.24);
+  inset: 22px;
+  border: 5px dashed rgba(139,96,64,0.24);
   border-radius: 50%;
 }
 
@@ -1159,7 +1159,7 @@ button {
   transform: translate(-50%, -50%);
   color: #e97955;
   font-family: var(--pixel-font);
-  font-size: 58px;
+  font-size: 40px;
   font-weight: 900;
 }
 
@@ -1174,10 +1174,10 @@ button {
 
 .taiko-stand {
   position: absolute;
-  left: 198px;
-  top: 235px;
-  width: 164px;
-  height: 28px;
+  left: 37px;
+  top: 226px;
+  width: 110px;
+  height: 22px;
   border: 5px solid #8b6040;
   border-radius: 10px;
   background: linear-gradient(#d5b27e, #a97948);
@@ -1187,9 +1187,9 @@ button {
 
 .taiko-bachi {
   position: absolute;
-  top: var(--bachi-y, 42px);
-  width: 22px;
-  height: 142px;
+  top: var(--bachi-y, 74px);
+  width: 16px;
+  height: 88px;
   border-radius: 999px;
   border: 4px solid #8b6040;
   background: linear-gradient(#ffe69a, #d5a35a);
@@ -1202,22 +1202,22 @@ button {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -13px;
-  width: 36px;
-  height: 24px;
-  border: 4px solid #8b6040;
+  bottom: -10px;
+  width: 28px;
+  height: 20px;
+  border: 3px solid #8b6040;
   border-radius: 50%;
   background: #fff4cf;
   transform: translateX(-50%);
 }
 
 .taiko-bachi.left {
-  left: 196px;
+  left: 48px;
   transform: rotate(var(--bachi-left-angle, -26deg));
 }
 
 .taiko-bachi.right {
-  left: 342px;
+  left: 126px;
   transform: rotate(var(--bachi-right-angle, 26deg));
 }
 
@@ -1228,10 +1228,10 @@ button {
 
 .taiko-hit-splash {
   position: absolute;
-  left: 280px;
+  left: 92px;
   top: 162px;
-  width: 136px;
-  height: 102px;
+  width: 94px;
+  height: 82px;
   border-radius: 50%;
   border: 8px solid rgba(255,230,154,0.9);
   background: rgba(255,255,255,0.16);
@@ -1247,6 +1247,96 @@ button {
 
 @keyframes taikoSplash {
   50% { transform: translate(-50%, -50%) scale(1.18); }
+}
+
+.taiko-lane {
+  position: absolute;
+  left: 192px;
+  top: 132px;
+  width: 450px;
+  height: 82px;
+  border: 6px solid #8b6040;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(255,250,240,0.9), rgba(255,244,207,0.86)),
+    repeating-linear-gradient(90deg, rgba(213,178,126,0.35) 0 24px, rgba(255,255,255,0.16) 24px 48px);
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,0.34), 0 8px 0 rgba(80,54,33,0.2);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.taiko-lane-track {
+  position: absolute;
+  left: 34px;
+  right: 28px;
+  top: 50%;
+  height: 8px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #d5b27e 0 16px, transparent 16px 28px);
+  transform: translateY(-50%);
+}
+
+.taiko-hit-line {
+  position: absolute;
+  left: var(--hit-x, 118px);
+  top: 50%;
+  width: 60px;
+  height: 60px;
+  border: 6px solid #58b97a;
+  border-radius: 50%;
+  background: rgba(216,241,197,0.42);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 6px rgba(88,185,122,0.2);
+  z-index: 4;
+}
+
+.taiko-hit-line.active {
+  border-color: #e97955;
+  background: rgba(255,230,154,0.62);
+  animation: cuePop 300ms steps(2, end) infinite;
+}
+
+.taiko-note {
+  position: absolute;
+  left: var(--note-x, 404px);
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 5px solid #8b6040;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.78) 0 8px, transparent 9px),
+    linear-gradient(#ffb68a, #e97955);
+  color: #fffaf0;
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(80,54,33,0.42);
+  transform: translate(-50%, -50%) scale(var(--note-scale, 1));
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.26), 0 6px 0 rgba(80,54,33,0.22);
+  z-index: 5;
+}
+
+.taiko-note.active {
+  --note-scale: 1.16;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.88) 0 8px, transparent 9px),
+    linear-gradient(#d8f1c5, #58b97a);
+}
+
+.taiko-note-tail {
+  position: absolute;
+  left: calc(var(--note-x, 404px) + 28px);
+  top: 50%;
+  width: 96px;
+  height: 10px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(233,121,85,0.32) 0 12px, transparent 12px 22px);
+  transform: translateY(-50%);
+  z-index: 3;
 }
 
 .block-stack {
@@ -1885,27 +1975,27 @@ const TOY_CONFIGS = {
   },
   rattle: {
     mode: 'rhythm',
-    title: 'たいこトントン',
+    title: 'たいこリズム',
     label: 'たいこ',
     icon: '♪',
-    subSign: 'たいこが ひかったら タップ！',
+    subSign: '音符が まるにきたら タップ！',
     launchLabel: 'ここから<br>トントン',
     guideVerb: 'たたこう',
     movingText: 'ドンドン...',
     resultTitle: 'たいこで あそべたね！',
-    steps: ['みる', 'たたく', 'きく'],
-    rewardHint: 'たいこが ひかったら<br>ドン！で タップ<br>5かいで1セット',
+    steps: ['みる', 'ドン', 'つづく'],
+    rewardHint: '音符が まるに<br>かさなったら<br>ドン！でタップ',
     actionText: 'ドン！',
     meterLabel: 'リズム',
     goodMin: 0.36,
     goodMax: 0.64,
     meterSpeed: 0.58,
-    beatMs: 840,
-    beatHitAt: 0.70,
-    beatWindow: 0.22,
+    beatMs: 1150,
+    beatHitAt: 0.72,
+    beatWindow: 0.18,
     hitBurst: 'ドンドン！',
     missBurst: 'おしい',
-    completeGuide: 'ガラガラを ならしたよ！'
+    completeGuide: 'たいこを ならしたよ！'
   },
   blocks: {
     mode: 'stack',
@@ -2688,23 +2778,30 @@ function getStackDropTop(shape, success) {
 }
 
 function getTaikoMotion(config, isCountingDown) {
-  const hitAt = config.beatHitAt || 0.68;
+  const hitAt = config.beatHitAt || 0.72;
   const hitWindow = config.beatWindow || 0.18;
   const progress = isCountingDown ? 0 : clamp(rhythmProgress, 0, 1.08);
   const hitWave = isCountingDown ? 0 : Math.max(0, 1 - Math.abs(progress - hitAt) / hitWindow);
-  const hitReady = hitWave > 0.01;
+  const hitReady = hitWave > 0.3;
   const down = hitWave;
   const idle = isCountingDown ? 0 : Math.sin(progress * Math.PI * 2) * 5;
-  const bachiY = 22 + down * 72 + idle * (1 - down);
+  const laneStartX = 414;
+  const laneHitX = 118;
+  const laneEndX = 26;
+  const noteX = progress <= hitAt
+    ? laneStartX + (laneHitX - laneStartX) * (progress / hitAt)
+    : laneHitX + (laneEndX - laneHitX) * ((progress - hitAt) / Math.max(0.01, 1.08 - hitAt));
+  const bachiY = 44 + down * 44 + idle * (1 - down);
   return {
     hitReady,
     hitWave,
-    drumScale: 1 + hitWave * 0.05,
     bachiStyle: [
       `--bachi-y:${bachiY.toFixed(1)}px`,
-      `--bachi-left-angle:${(-24 + down * 14).toFixed(1)}deg`,
-      `--bachi-right-angle:${(24 - down * 14).toFixed(1)}deg`,
-      `--taiko-scale:${(1 + hitWave * 0.035).toFixed(3)}`
+      `--bachi-left-angle:${(-25 + down * 16).toFixed(1)}deg`,
+      `--bachi-right-angle:${(25 - down * 16).toFixed(1)}deg`,
+      `--taiko-scale:${(1 + hitWave * 0.04).toFixed(3)}`,
+      `--note-x:${noteX.toFixed(1)}px`,
+      `--hit-x:${laneHitX}px`
     ].join(';')
   };
 }
@@ -2728,17 +2825,23 @@ function renderToyBoard(feedback = lastToyFeedback) {
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card rattle-game${cardState}" style="${motion.bachiStyle}">
         <div class="toy-round-label">${roundText}</div>
-        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : 'まって'}</div>`}
+        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : '音符をみて'}</div>`}
         <div class="taiko-toy">
           <div class="taiko-stand"></div>
           <div class="taiko-bachi left ${hitReady ? 'active' : ''}"></div>
           <div class="taiko-bachi right ${hitReady ? 'active' : ''}"></div>
           <div class="taiko-drum ${hitReady ? 'active' : ''}"></div>
           <div class="taiko-hit-splash ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-lane" aria-hidden="true">
+            <div class="taiko-lane-track"></div>
+            <div class="taiko-hit-line ${hitReady ? 'active' : ''}"></div>
+            <div class="taiko-note-tail"></div>
+            <div class="taiko-note ${hitReady ? 'active' : ''}">ドン</div>
+          </div>
         </div>
         <div class="rattle-target">${renderMiniRoundMarks()}</div>
-        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！で タップ' : 'たいこを よくみて'}</div>
-        <div class="toy-mode-help">たいこを見よう</div>
+        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！で タップ' : 'まるに きたら ドン'}</div>
+        <div class="toy-mode-help">右からくる 音符</div>
       </div>
     `;
     return;
@@ -2816,7 +2919,7 @@ function startRattleCountdown() {
   rattleCountdownValue = '3';
   mainPlayBtn.textContent = 'まってね';
   guideText.textContent = '3・2・1で はじめるよ';
-  messageBar.textContent = 'たいこが光って、ドン！と鳴るところでタップしてね。';
+  messageBar.textContent = '右からくる音符が、みどりの丸に重なったらタップしてね。';
   powerMeter.classList.remove('active');
   renderToyBoard();
 
@@ -2903,8 +3006,8 @@ function startRhythmRound() {
   powerFill.style.setProperty('--power', '0%');
   timingMarker.style.setProperty('--timing', '0%');
   mainPlayBtn.textContent = config.actionText || 'ふる！';
-  guideText.textContent = `${currentRound}かいめ：ドン！で タップ`;
-  messageBar.textContent = 'たいこが光って、ドン！と鳴るところでタップしてね。';
+  guideText.textContent = `${currentRound}かいめ：まるにきたら ドン！`;
+  messageBar.textContent = '音符がみどりの丸に重なるところで、ドン！と押そう。';
   renderToyBoard();
 
   const tick = (now) => {
