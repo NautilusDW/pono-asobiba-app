@@ -2829,7 +2829,7 @@ function startRhythmBgm() {
     rhythmAudio.onended = null;
     rhythmAudio = null;
   }
-  const audio = new Audio('../assets/audio/' + song.audio);
+  const audio = new Audio('../assets/audio/' + encodeURIComponent(song.audio));
   audio.preload = 'auto';
   audio.volume = 0.6;
   audio.crossOrigin = 'anonymous';
@@ -2846,6 +2846,14 @@ function startRhythmBgm() {
   if (playPromise && typeof playPromise.catch === 'function') {
     playPromise.catch((err) => {
       console.warn('Rhythm BGM playback failed:', err);
+      // Keep rhythmAudioStartedAt so getRhythmAudioTime() falls back to the
+      // performance.now() clock and the round still progresses + ends normally
+      // even when autoplay is blocked or the file fails to decode.
+      if (rhythmAudio === audio) {
+        try { audio.pause(); } catch (_) {}
+        audio.onended = null;
+        rhythmAudio = null;
+      }
     });
   }
 }
@@ -2864,9 +2872,9 @@ function resumeRhythmBgm() {
     return;
   }
   try {
-    if (rhythmAudioPausedAt > 0) {
-      rhythmAudio.currentTime = rhythmAudioPausedAt;
-    }
+    // No explicit seek: the browser preserves currentTime across pause/play.
+    // Seeking before play() on a slow/unbuffered stream can reset currentTime
+    // to 0 (readyState < HAVE_ENOUGH_DATA), restarting the song.
     const p = rhythmAudio.play();
     if (p && typeof p.catch === 'function') p.catch(() => {});
   } catch (_) {}
@@ -2875,12 +2883,23 @@ function resumeRhythmBgm() {
 
 function getRhythmAudioTime() {
   // SINGLE AUTHORITATIVE CLOCK for visual scroll + hit detection.
-  // Returns seconds since song-start; if audio object isn't ready, returns 0.
-  if (!rhythmAudio) return 0;
+  // Returns seconds since song-start. If the <audio> element is missing or
+  // unusable (autoplay blocked, decode error, mobile WebView), fall back to
+  // the performance.now() clock seeded at startRhythmBgm() so the chart still
+  // advances and the round can end on schedule.
+  const song = getRhythmSong(getToyConfig());
+  const startOffset = song && Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const fallback = () => {
+    if (!rhythmAudioStartedAt) return 0;
+    return startOffset + Math.max(0, (performance.now() - rhythmAudioStartedAt) / 1000);
+  };
+  if (!rhythmAudio) return fallback();
   try {
-    return rhythmAudio.currentTime || 0;
+    const t = rhythmAudio.currentTime;
+    if (!Number.isFinite(t) || t <= 0) return fallback();
+    return t;
   } catch (_) {
-    return 0;
+    return fallback();
   }
 }
 
@@ -2921,7 +2940,7 @@ function createStackPhysicsWorld(resetBlocks = true) {
   if (!stackMatter) return false;
 
   const { Engine, Bodies, World } = stackMatter;
-  stackEngine = Engine.create({ gravity: { y: 1.0 } });
+  stackEngine = Engine.create({ enableSleeping: true, gravity: { y: 1.0 } });
   // Higher than Matter defaults (6/4/2) because the mini-stack drives the engine via
   // requestAnimationFrame with variable delta instead of Runner.run's fixed step.
   stackEngine.positionIterations = 10;
