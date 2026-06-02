@@ -1556,7 +1556,10 @@ button {
 .block-base-line {
   position: absolute;
   left: 176px;
-  bottom: 12px;
+  /* Lowered from 12px -> 0px so the floor sits at the very bottom of the board,
+     freeing more vertical space above for stacking blocks. baseBottom in
+     MINI_STACK is shifted in lockstep (36 -> 24) so visual + physics align. */
+  bottom: 0;
   width: 408px;
   height: 24px;
   border: 5px solid #8b6040;
@@ -1574,17 +1577,6 @@ button {
   border-radius: 999px;
   background: repeating-linear-gradient(90deg, #8b6040 0 16px, #d5b27e 16px 30px);
   opacity: 0.68;
-}
-
-.stack-target-window {
-  position: absolute;
-  left: var(--target-left, 76px);
-  bottom: var(--target-bottom, 38px);
-  width: var(--target-width, 278px);
-  height: 8px;
-  border-radius: 999px;
-  background: #58b97a;
-  box-shadow: 0 0 0 4px rgba(88,185,122,0.24);
 }
 
 .stack-block {
@@ -2177,7 +2169,10 @@ const MINI_STACK = {
   baseW: 270,
   visualBaseLeft: 176,
   visualBaseW: 408,
-  baseBottom: 36,
+  // Lowered 36 -> 24 in lockstep with .block-base-line { bottom: 0 } so the
+  // physics platform top stays aligned with the visual floor top. Net effect:
+  // ~12px more vertical room above the floor for stacking.
+  baseBottom: 24,
   minX: 44,
   maxX: 660,
   bonus: 8,
@@ -2943,8 +2938,11 @@ function createStackPhysicsWorld(resetBlocks = true) {
   stackEngine = Engine.create({ enableSleeping: true, gravity: { y: 1.0 } });
   // Higher than Matter defaults (6/4/2) because the mini-stack drives the engine via
   // requestAnimationFrame with variable delta instead of Runner.run's fixed step.
+  // velocityIterations bumped 8->12: edge-of-block hits need extra solver passes
+  // so a glancing contact resolves cleanly instead of being skipped, letting the
+  // new drop slip past the top block.
   stackEngine.positionIterations = 10;
-  stackEngine.velocityIterations = 8;
+  stackEngine.velocityIterations = 12;
   stackEngine.constraintIterations = 4;
   const platformTop = getStackSurfaceY();
   const platformLeft = getStackPlatformLeft();
@@ -3016,16 +3014,20 @@ function restoreStackSnapshot(snapshot) {
     return;
   }
   const { Body, World, Sleeping } = stackMatter;
-  stackBlocks = snapshot.map((block) => {
+  // The TOP restored block must stay awake — see stabilizeStackPhysicsBodies
+  // for why (broad-phase pairing skips sleeping bodies on glancing edge hits).
+  const topIndex = snapshot.length - 1;
+  stackBlocks = snapshot.map((block, index) => {
     const body = createStackPhysicsBody(block, block.x + block.w / 2, block.y + block.h / 2);
     if (body) {
       Body.setAngle(body, block.angle || 0);
       Body.setVelocity(body, { x: 0, y: 0 });
       Body.setAngularVelocity(body, 0);
       // Keep restored blocks dynamic so subsequent drops can tilt/topple them.
-      // Park them via the sleep system instead of forcing static.
+      // Park them via the sleep system instead of forcing static, except for
+      // the top block which must stay awake to catch edge-of-block drops.
       if (Sleeping && typeof Sleeping.set === 'function') {
-        Sleeping.set(body, true);
+        Sleeping.set(body, index !== topIndex);
       }
       World.add(stackEngine.world, body);
     }
@@ -3040,7 +3042,12 @@ function stabilizeStackPhysicsBodies(includeDropping = false) {
   const blocks = includeDropping && stackDroppingBlock
     ? [...stackBlocks, stackDroppingBlock]
     : stackBlocks;
-  blocks.forEach((block) => {
+  // The TOP block is the one a new drop will hit; keep it awake so Matter's
+  // broad-phase always pairs it with the falling body. A sleeping body's pair
+  // can be skipped when a fast new body only overlaps it at the edge/corner,
+  // letting the drop slip past unnoticed.
+  const topIndex = blocks.length - 1;
+  blocks.forEach((block, index) => {
     if (!block.body) return;
     // Zero residual motion but keep blocks DYNAMIC so a new dropping block can
     // tilt/topple the existing stack. (Forcing setStatic(true) here turned the
@@ -3049,7 +3056,9 @@ function stabilizeStackPhysicsBodies(includeDropping = false) {
     Body.setVelocity(block.body, { x: 0, y: 0 });
     Body.setAngularVelocity(block.body, 0);
     if (Sleeping && typeof Sleeping.set === 'function') {
-      Sleeping.set(block.body, true);
+      // Keep top block awake — broad-phase pairing fails on glancing edge hits
+      // with sleeping bodies, so drops near the corner would tunnel through.
+      Sleeping.set(block.body, index !== topIndex);
     }
   });
 }
@@ -3927,7 +3936,6 @@ function renderToyBoard(feedback = lastToyFeedback) {
         <div class="toy-round-label">${roundText}</div>
         <div class="block-stack ${stackWobbleActive ? 'wobble' : ''} ${stackCollapseActive ? 'collapse' : ''}">
           <div class="stack-swing-rail"></div>
-          <div class="stack-target-window" style="--target-left:${target.left}px; --target-width:${target.width}px; --target-bottom:${(target.surfaceBottom || target.bottom + target.height) + 4}px;"></div>
           <div class="block-base-line"></div>
           ${placedBlocks}
           ${ghost}
