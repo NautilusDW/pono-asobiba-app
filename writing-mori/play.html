@@ -1314,6 +1314,23 @@ button {
   z-index: 2;
 }
 
+.taiko-song-label {
+  position: absolute;
+  left: 206px;
+  top: 82px;
+  min-width: 300px;
+  padding: 7px 18px;
+  border: 4px solid #8b6040;
+  border-radius: 999px;
+  background: rgba(255,250,240,0.94);
+  color: #5b3b28;
+  font-family: var(--pixel-font);
+  font-size: 21px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(80,54,33,0.18);
+  z-index: 7;
+}
+
 .taiko-lane-track {
   position: absolute;
   left: 34px;
@@ -1374,6 +1391,14 @@ button {
   background:
     radial-gradient(circle at 33% 30%, rgba(255,255,255,0.88) 0 8px, transparent 9px),
     linear-gradient(#d8f1c5, #58b97a);
+}
+
+.taiko-note.accent {
+  width: 56px;
+  height: 56px;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.82) 0 9px, transparent 10px),
+    linear-gradient(#ffdf7e, #e97955);
 }
 
 .taiko-note.miss {
@@ -2153,6 +2178,82 @@ const RHYTHM_LANE = {
   leadMs: 2050,
   exitMs: 780
 };
+const NOTE_FREQUENCIES = {
+  C4: 261.63,
+  D4: 293.66,
+  E4: 329.63,
+  F4: 349.23,
+  G4: 392.00,
+  A4: 440.00,
+  B4: 493.88,
+  C5: 523.25,
+  D5: 587.33,
+  E5: 659.25
+};
+const RHYTHM_SONGS = {
+  sakura: {
+    title: 'さくらリズム',
+    bpm: 72,
+    beatsPerRound: 8,
+    rounds: [
+      {
+        label: 'さくら 1',
+        notes: [
+          { beat: 1, pitch: 'A4', accent: true },
+          { beat: 2, pitch: 'A4' },
+          { beat: 3, pitch: 'B4', accent: true },
+          { beat: 4.5, pitch: 'A4' },
+          { beat: 5.5, pitch: 'A4' },
+          { beat: 6.5, pitch: 'B4', accent: true }
+        ]
+      },
+      {
+        label: 'さくら 2',
+        notes: [
+          { beat: 1, pitch: 'A4', accent: true },
+          { beat: 2, pitch: 'B4' },
+          { beat: 3, pitch: 'C5', accent: true },
+          { beat: 4.5, pitch: 'B4' },
+          { beat: 5.75, pitch: 'A4' },
+          { beat: 6.75, pitch: 'B4', accent: true }
+        ]
+      },
+      {
+        label: 'はなびら',
+        notes: [
+          { beat: 1, pitch: 'C5', accent: true },
+          { beat: 2, pitch: 'B4' },
+          { beat: 3, pitch: 'A4', accent: true },
+          { beat: 4.5, pitch: 'G4' },
+          { beat: 5.75, pitch: 'A4' },
+          { beat: 6.75, pitch: 'B4', accent: true }
+        ]
+      },
+      {
+        label: 'ゆらゆら',
+        notes: [
+          { beat: 1, pitch: 'A4', accent: true },
+          { beat: 2.25, pitch: 'G4' },
+          { beat: 3.5, pitch: 'E4', accent: true },
+          { beat: 4.75, pitch: 'G4' },
+          { beat: 6, pitch: 'A4' },
+          { beat: 7, pitch: 'B4', accent: true }
+        ]
+      },
+      {
+        label: 'さいご',
+        notes: [
+          { beat: 1, pitch: 'B4', accent: true },
+          { beat: 2, pitch: 'C5' },
+          { beat: 3, pitch: 'B4', accent: true },
+          { beat: 4.5, pitch: 'A4' },
+          { beat: 5.75, pitch: 'G4' },
+          { beat: 6.75, pitch: 'A4', accent: true }
+        ]
+      }
+    ]
+  }
+};
 const TOY_CONFIGS = {
   ball: {
     mode: 'roll',
@@ -2187,22 +2288,14 @@ const TOY_CONFIGS = {
     goodMin: 0.36,
     goodMax: 0.64,
     meterSpeed: 0.58,
-    bpm: 76,
-    beatsPerRound: 8,
-    hitWindowMs: 270,
-    passWindowMs: 360,
-    passRatio: 0.58,
-    beatPatterns: [
-      [2.5, 4.25, 6.5],
-      [2.5, 4.0, 5.5, 7.0],
-      [2.75, 4.5, 6.75],
-      [2.25, 3.75, 5.4, 7.0],
-      [2.5, 3.75, 5.25, 6.75]
-    ],
+    song: 'sakura',
+    hitWindowMs: 310,
+    passWindowMs: 430,
+    passRatio: 0.5,
     hitBurst: 'ドンドン！',
     missBurst: 'おしい',
     completeGuide: 'たいこを ならしたよ！',
-    sideHelp: 'はじめるを おすよ。\n音をきいて ドン！\nゆっくり 5回あそぶよ。'
+    sideHelp: 'はじめるを おすよ。\n曲をきいて ドン！\n5つのフレーズであそぶよ。'
   },
   blocks: {
     mode: 'stack',
@@ -2304,6 +2397,7 @@ let rhythmPaused = false;
 let rhythmPauseStartedAt = 0;
 let rhythmBgmTimer = null;
 let rhythmBgmLastBeat = -1;
+let rhythmSongTimers = [];
 let miniRoundStartedAt = 0;
 let stackSwingX = 144;
 let stackBlocks = [];
@@ -2490,6 +2584,18 @@ function playTone(frequency, duration = 0.06, type = 'square', volume = 0.035, d
   osc.stop(start + duration + 0.03);
 }
 
+function getNoteFrequency(noteName) {
+  return NOTE_FREQUENCIES[noteName] || NOTE_FREQUENCIES.A4;
+}
+
+function playMelodyNote(note, config = getToyConfig()) {
+  const beatMs = getRhythmBeatMs(config);
+  const duration = Math.max(0.12, ((note.durationBeats || 0.58) * beatMs) / 1000);
+  const frequency = getNoteFrequency(note.pitch);
+  playTone(frequency, duration, 'triangle', note.accent ? 0.034 : 0.025);
+  playTone(frequency * 2, Math.min(duration, 0.28), 'sine', note.accent ? 0.014 : 0.01, 0.018);
+}
+
 function playSfx(kind) {
   try {
     if (kind === 'roll') {
@@ -2533,16 +2639,18 @@ function stopRhythmBgm() {
   clearTimeout(rhythmBgmTimer);
   rhythmBgmTimer = null;
   rhythmBgmLastBeat = -1;
+  rhythmSongTimers.forEach((timer) => clearTimeout(timer));
+  rhythmSongTimers = [];
 }
 
 function playRhythmBackingBeat(beatIndex, config = getToyConfig()) {
   const strong = beatIndex % 4 === 0;
   const halfAccent = beatIndex % 4 === 2;
   const chord = [196, 220, 247, 220][Math.floor((beatIndex % 8) / 2)] || 196;
-  playTone(strong ? 174 : halfAccent ? 185 : 196, strong ? 0.13 : 0.1, 'triangle', strong ? 0.05 : 0.034);
-  playTone(chord, 0.085, 'sine', strong ? 0.027 : 0.019, 0.025);
+  playTone(strong ? 174 : halfAccent ? 185 : 196, strong ? 0.085 : 0.06, 'triangle', strong ? 0.028 : 0.018);
+  playTone(chord, 0.075, 'sine', strong ? 0.014 : 0.01, 0.025);
   if (beatIndex % 2 === 1) {
-    playTone(chord * 2, 0.045, 'square', 0.014, 0.055);
+    playTone(chord * 2, 0.04, 'square', 0.008, 0.055);
   }
 }
 
@@ -2551,21 +2659,28 @@ function startRhythmBgm() {
   const config = getToyConfig();
   if (config.mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused) return;
   const beatMs = getRhythmBeatMs(config);
-  const tick = () => {
-    const currentConfig = getToyConfig();
-    if (currentConfig.mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) {
-      stopRhythmBgm();
-      return;
-    }
-    const elapsed = getRhythmElapsed(currentConfig);
-    const beatIndex = Math.floor(elapsed / getRhythmBeatMs(currentConfig));
-    if (beatIndex !== rhythmBgmLastBeat && beatIndex < (currentConfig.beatsPerRound || 8)) {
+  const elapsed = getRhythmElapsed(config);
+  const round = getRhythmRoundData(config);
+  const beats = getRhythmBeatsPerRound(config);
+
+  for (let beatIndex = 0; beatIndex < beats; beatIndex++) {
+    const delay = beatIndex * beatMs - elapsed;
+    if (delay < -80) continue;
+    rhythmSongTimers.push(setTimeout(() => {
+      if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
       rhythmBgmLastBeat = beatIndex;
-      playRhythmBackingBeat(beatIndex, currentConfig);
-    }
-    rhythmBgmTimer = setTimeout(tick, Math.max(70, beatMs / 6));
-  };
-  rhythmBgmTimer = setTimeout(tick, 20);
+      playRhythmBackingBeat(beatIndex, config);
+    }, Math.max(0, delay)));
+  }
+
+  (round.notes || []).forEach((note) => {
+    const delay = note.beat * beatMs - elapsed;
+    if (delay < -80) return;
+    rhythmSongTimers.push(setTimeout(() => {
+      if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
+      playMelodyNote(note, config);
+    }, Math.max(0, delay)));
+  });
 }
 
 function getStackSurfaceY() {
@@ -3286,14 +3401,55 @@ function getStackDropTop(shape, success) {
 }
 
 function getRhythmBeatMs(config = getToyConfig()) {
-  return 60000 / Math.max(40, config.bpm || 76);
+  const round = getRhythmRoundData(config);
+  const song = getRhythmSong(config);
+  return 60000 / Math.max(40, round.bpm || song?.bpm || config.bpm || 76);
+}
+
+function getRhythmSong(config = getToyConfig()) {
+  return config.song ? RHYTHM_SONGS[config.song] : null;
+}
+
+function getRhythmRoundData(config = getToyConfig()) {
+  const song = getRhythmSong(config);
+  if (!song || !Array.isArray(song.rounds) || !song.rounds.length) return { notes: [] };
+  return song.rounds[(Math.max(1, currentRound) - 1) % song.rounds.length];
+}
+
+function getRhythmBeatsPerRound(config = getToyConfig()) {
+  const round = getRhythmRoundData(config);
+  const song = getRhythmSong(config);
+  return round.beatsPerRound || song?.beatsPerRound || config.beatsPerRound || 8;
 }
 
 function getRhythmRoundMs(config = getToyConfig()) {
-  return (config.beatsPerRound || 8) * getRhythmBeatMs(config);
+  return getRhythmBeatsPerRound(config) * getRhythmBeatMs(config);
+}
+
+function getRhythmTapNotes(config = getToyConfig()) {
+  const round = getRhythmRoundData(config);
+  const beatMs = getRhythmBeatMs(config);
+  if (round && Array.isArray(round.notes) && round.notes.length) {
+    return round.notes
+      .filter((note) => note.tap !== false)
+      .map((note, index) => ({
+        ...note,
+        index,
+        timeMs: Math.round(note.beat * beatMs),
+        label: note.accent ? 'ドン!' : 'ドン'
+      }));
+  }
+  return getRhythmPattern(config).map((timeMs, index) => ({ index, timeMs, label: 'ドン' }));
 }
 
 function getRhythmPattern(config = getToyConfig()) {
+  const round = getRhythmRoundData(config);
+  if (round && Array.isArray(round.notes) && round.notes.length) {
+    const beatMs = getRhythmBeatMs(config);
+    return round.notes
+      .filter((note) => note.tap !== false)
+      .map((note) => Math.round(note.beat * beatMs));
+  }
   if (config.beatPatterns) {
     const beatPatterns = config.beatPatterns;
     const pattern = beatPatterns[(Math.max(1, currentRound) - 1) % beatPatterns.length];
@@ -3323,9 +3479,9 @@ function getHittableRhythmNote() {
   return best.index;
 }
 
-function renderRhythmBeatPips(pattern) {
-  const nextIndex = pattern.findIndex((_, index) => !rhythmNoteResults[index]);
-  return pattern.map((_, index) => {
+function renderRhythmBeatPips(tapNotes) {
+  const nextIndex = tapNotes.findIndex((_, index) => !rhythmNoteResults[index]);
+  return tapNotes.map((note, index) => {
     const result = rhythmNoteResults[index];
     const className = [
       'taiko-beat-pip',
@@ -3333,12 +3489,12 @@ function renderRhythmBeatPips(pattern) {
       result === 'miss' ? 'miss' : '',
       !result && index === nextIndex ? 'next' : ''
     ].filter(Boolean).join(' ');
-    return `<span class="${className}">${result === 'hit' ? '○' : result === 'miss' ? '×' : index + 1}</span>`;
+    return `<span class="${className}">${result === 'hit' ? '○' : result === 'miss' ? '×' : (note.accent ? '★' : index + 1)}</span>`;
   }).join('');
 }
 
 function getTaikoMotion(config, isCountingDown) {
-  const pattern = getRhythmPattern(config);
+  const tapNotes = getRhythmTapNotes(config);
   const elapsed = controlPhase === 'toy' ? getRhythmElapsed(config) : 0;
   const hitWindow = config.hitWindowMs || 190;
   const previewOnly = controlPhase === 'ready' || isCountingDown;
@@ -3346,9 +3502,10 @@ function getTaikoMotion(config, isCountingDown) {
   let hitWave = 0;
 
   if (previewOnly) {
-    notes.push({ index: 0, x: RHYTHM_LANE.startX, state: 'preview', active: false });
+    notes.push({ index: 0, x: RHYTHM_LANE.startX, state: 'preview', active: false, label: 'ドン', accent: true });
   } else {
-    pattern.forEach((hitMs, index) => {
+    tapNotes.forEach((tapNote, index) => {
+      const hitMs = tapNote.timeMs;
       const result = rhythmNoteResults[index];
       const appearAt = hitMs - RHYTHM_LANE.leadMs;
       const leaveAt = hitMs + RHYTHM_LANE.exitMs;
@@ -3363,7 +3520,9 @@ function getTaikoMotion(config, isCountingDown) {
         index,
         x: clamp(x, RHYTHM_LANE.endX, RHYTHM_LANE.startX),
         state: result || '',
-        active: proximity > 0.3 && !result
+        active: proximity > 0.3 && !result,
+        label: tapNote.label || 'ドン',
+        accent: !!tapNote.accent
       });
     });
   }
@@ -3376,7 +3535,7 @@ function getTaikoMotion(config, isCountingDown) {
     hitReady,
     hitWave,
     notes,
-    beatPips: renderRhythmBeatPips(pattern),
+    beatPips: renderRhythmBeatPips(tapNotes),
     bachiStyle: [
       `--bachi-y:${bachiY.toFixed(1)}px`,
       `--bachi-left-angle:${(-25 + down * 16).toFixed(1)}deg`,
@@ -3434,8 +3593,11 @@ function renderToyBoard(feedback = lastToyFeedback) {
       ? `<button class="taiko-pause-button" type="button" data-taiko-pause="true">${rhythmPaused ? 'つづける' : 'ポーズ'}</button>`
       : '';
     const pauseCover = rhythmPaused ? '<div class="taiko-paused-cover"><div class="taiko-paused-card">おやすみ中</div></div>' : '';
+    const roundData = getRhythmRoundData(config);
+    const song = getRhythmSong(config);
+    const songLabel = song ? `${song.title}：${roundData.label || `${currentRound}回目`}` : `${currentRound}回目`;
     const noteHtml = motion.notes.map((note) =>
-      `<div class="taiko-note ${note.active ? 'active' : ''} ${note.state === 'miss' ? 'miss' : ''}" style="--note-x:${note.x.toFixed(1)}px">ドン</div>`
+      `<div class="taiko-note ${note.accent ? 'accent' : ''} ${note.active ? 'active' : ''} ${note.state === 'miss' ? 'miss' : ''}" style="--note-x:${note.x.toFixed(1)}px">${note.label || 'ドン'}</div>`
     ).join('');
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card rattle-game${cardState}" style="${motion.bachiStyle}">
@@ -3446,6 +3608,7 @@ function renderToyBoard(feedback = lastToyFeedback) {
           <div class="taiko-bachi right ${hitReady ? 'active' : ''}"></div>
           <div class="taiko-drum ${hitReady ? 'active' : ''}"></div>
           <div class="taiko-hit-splash ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-song-label">${songLabel}</div>
           <div class="taiko-lane" aria-hidden="true">
             <div class="taiko-lane-track"></div>
             <div class="taiko-hit-line ${hitReady ? 'active' : ''}"></div>
@@ -3645,8 +3808,8 @@ function startRhythmRound() {
   timingMarker.style.setProperty('--timing', '0%');
   document.querySelector('.sub-sign').textContent = 'きょくに あわせて ドン！';
   mainPlayBtn.textContent = config.actionText || 'ふる！';
-  guideText.textContent = `${currentRound}回目：音をきいて ドン！`;
-  messageBar.textContent = '音楽にあわせて、音符がみどりの丸に重なったらドン！';
+  guideText.textContent = `${currentRound}回目：きょくに あわせて ドン！`;
+  messageBar.textContent = 'メロディをきいて、音符がみどりの丸に重なったらドン！';
   renderToyBoard();
   startRhythmBgm();
 
@@ -3696,7 +3859,7 @@ function handleRhythmAction() {
     playSfx('mistake');
     lastToyFeedback = 'miss';
     guideText.textContent = 'まるに きたら ドン！';
-    messageBar.textContent = '音をきいて、音符がみどりの丸に重なるところをねらおう。';
+    messageBar.textContent = 'メロディをきいて、音符が丸にくるところをねらおう。';
     renderToyBoard('miss');
     setTimeout(() => {
       if (controlPhase === 'toy' && !playedThisRound) {
@@ -3712,7 +3875,7 @@ function handleRhythmAction() {
   lastToyFeedback = 'hit';
   playSfx('drum');
   guideText.textContent = 'ドンドン！';
-  messageBar.textContent = `${currentRound}回目：いいリズム！`;
+  messageBar.textContent = `${currentRound}回目：曲にのれてるよ！`;
   renderToyBoard('hit');
   spawnSparkles({ x: 440, y: 266 });
 }
@@ -3733,8 +3896,8 @@ function toggleRhythmPause() {
   const pausedFor = performance.now() - rhythmPauseStartedAt;
   miniRoundStartedAt += pausedFor;
   rhythmPauseStartedAt = 0;
-  guideText.textContent = `${currentRound}回目：音をきいて ドン！`;
-  messageBar.textContent = '音楽にあわせて、音符がみどりの丸に重なったらドン！';
+  guideText.textContent = `${currentRound}回目：きょくに あわせて ドン！`;
+  messageBar.textContent = 'メロディをきいて、音符がみどりの丸に重なったらドン！';
   renderToyBoard();
   startRhythmBgm();
   playSfx('success');
@@ -3763,14 +3926,14 @@ function finishRhythmMeasure() {
     milmaru.classList.add('catch');
     milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
     guideText.textContent = `${hits}/${pattern.length} できた！`;
-    messageBar.textContent = '音にあわせて たたけたよ。';
-    showGoalBurst({ x: 610, y: 250 }, 'いいリズム！', true);
+    messageBar.textContent = '曲にあわせて たいこを ならせたよ。';
+    showGoalBurst({ x: 610, y: 250 }, 'いいえんそう！', true);
   } else {
     playSfx('mistake');
     milmaru.classList.add('worried');
     milmaruSpeech.textContent = getStageSpeech('なぁい...？');
     guideText.textContent = `${hits}/${pattern.length} もういちど`;
-    messageBar.textContent = '音をきいて、次のリズムでやってみよう。';
+    messageBar.textContent = 'メロディをきいて、次のフレーズでやってみよう。';
     showGoalBurst({ x: 610, y: 250 }, config.missBurst || 'おしい', false);
   }
 

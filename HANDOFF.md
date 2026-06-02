@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-02 - [batch:239-mojikko-taiko-song-chart] DONE - Codex: `writing-mori/play.html` のたいこを、外部ライブラリなしの Web Audio + 譜面JSON方式へ変更。`さくらリズム` 5フレーズを追加し、各フレーズ6打・BPM72・カウント後1拍余裕ありで音符レーン/曲名ラベル/アクセント音符/メロディ音/控えめ伴奏を同期。Playwrightで開始待ち、カウントダウン、曲ラベル、6打ヒット判定、5フレーズ全譜面、JSエラーなしを確認。目視スクショで開始直後に即押しにならないことも確認。`sw.js` は v740。 (by Codex)
 - 2026-06-02 - [batch:238-mojikko-sa-stroke-stack-hit] DONE - Codex: `writing-mori/index.html` で文字マスクを中心線への最近傍で画ごとに排他的分割し、現在の画だけ塗れるように変更。HanziWriter から未来の画の OK callback が来ても無視して、塗りの小ハイライト点も削除。`writing-mori/play.html` のつみきは中心距離式から必要重なり量ベースの判定へ変更。Playwrightで「さ」2画目中に3画目セルへ触れても塗れない/未来callbackで進まない、複数かなのマスク重なり0、つみき中央hit→外側miss追加なし、JSエラーなしを確認。`sw.js` は v739。 (by Codex)
 - 2026-06-02 - [batch:237-mojikko-stack-hit-warp-fix] DONE - Codex: `writing-mori/play.html` のつみきで、落下前に外しているブロックが物理でたまたま乗って成功扱いになる問題を修正。落下前判定が miss の場合は fallback miss に固定し、成功後の Matter body は static 化して次の落下で塔が動き続けないようにした。physics ブロックの transform が `.miss` / `.wobble` / `.collapse` のCSSで上書きされ左上へ飛ぶ問題も専用overrideで修正。Playwrightで中央3積み→端外し=miss追加なし、5積み完了、左上ワープなし、JSエラーなしを確認。`sw.js` は v738。 (by Codex)
 - 2026-06-02 - [batch:236-mojikko-taiko-bpm-song] DONE - Codex: `writing-mori/play.html` のたいこ遊びを BPM76 / 8拍フレーズの譜面へ変更し、1回あたり約6.3秒に減速。音符の移動時間を約2倍にし、太鼓SE/直前cue/簡易伴奏の音量を上げた。文言も「音楽にあわせてドン」へ寄せた。Playwrightで開始待ち、カウントダウン、roundMs=6315ms、5回完了、18打ヒット、JSエラーなしを確認。Codex self-review: 既存の開始ボタン導線/ポーズ/5回リザルト/他おもちゃ分岐に影響がないことを差分確認。`sw.js` は v737。 (by Codex)
