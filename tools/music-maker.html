@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ミュージックメーカー (Music Maker)</title>
+<style>
+  /* ----------------------------------------------------------------
+   * 子供向けWeb知育アプリ用・手続き型アレンジ生成ツール。
+   * 純JS / ビルド不要 / 外部CDNなし。ダークテーマは tools/ の兄弟ツール
+   * (taiko-chart-editor.html) のパレット・ボタンスタイルに合わせる。
+   *
+   * 合成は ../js/music-engine.js (window.MusicEngine) が担当。本ツールは
+   * その API を叩いてアレンジ生成・プレビュー・WAV保存・太鼓譜面出力を行う
+   * UI レイヤであり、シンセサイズは一切再実装しない。
+   * ---------------------------------------------------------------- */
+  :root {
+    --bg: #1a1d24;
+    --bg2: #14161c;
+    --bg3: #20242e;
+    --panel: #181b22;
+    --text: #e8eaf0;
+    --muted: #94a3b8;
+    --border: #2a2e3a;
+    --accent: #2563eb;
+    --accent-h: #1d4ed8;
+    --don: #ef4444;
+    --ka: #3b82f6;
+    --warn: #f59e0b;
+    --ok: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
+    font-size: 13px;
+  }
+  #app { display: flex; flex-direction: column; min-height: 100vh; width: 100vw; }
+  header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+  }
+  header h1 { font-size: 15px; margin: 0 8px 0 0; color: #f3f4f6; font-weight: 700; }
+  .banner {
+    flex: 1 1 320px; min-width: 240px; background: var(--bg3); border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0; padding: 6px 10px; font-size: 11px; line-height: 1.5; color: #cbd5e1;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field > label { font-size: 10px; color: var(--muted); }
+  input, select, button, textarea { font-family: inherit; font-size: 12px; }
+  input[type=text], input[type=number], select {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 7px; outline: none;
+  }
+  input[type=text] { min-width: 120px; }
+  input[type=number] { width: 84px; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  button { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 7px; cursor: pointer; font-weight: 600; }
+  button:hover { background: var(--accent-h); }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: #cbd5e1; font-weight: 500; }
+  button.ghost:hover { background: var(--bg3); }
+  button.big { padding: 12px 20px; font-size: 15px; border-radius: 10px; }
+  button.warn { background: var(--warn); color: #1a1d24; }
+  button.danger { background: #7f1d1d; }
+  button.danger:hover { background: #991b1b; }
+  button.active { background: var(--ok); color: #07210f; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
+
+  #main { flex: 1; display: flex; flex-wrap: wrap; min-height: 0; gap: 0; }
+  #controls { flex: 1 1 440px; min-width: 320px; padding: 12px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid var(--border); }
+  #side { flex: 1 1 360px; min-width: 300px; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .hint { background: var(--bg3); border-left: 3px solid var(--accent); padding: 8px 10px; font-size: 11px; line-height: 1.5; margin-top: 10px; border-radius: 0 6px 6px 0; color: #cbd5e1; }
+
+  /* step sequencer */
+  #seqWrap { overflow-x: auto; }
+  #seqGrid { border-collapse: collapse; user-select: none; }
+  #seqGrid td, #seqGrid th { border: 1px solid var(--border); padding: 0; }
+  #seqGrid th { font-size: 9px; color: var(--muted); font-weight: 500; padding: 2px 4px; position: sticky; left: 0; background: var(--panel); z-index: 2; text-align: right; min-width: 38px; }
+  #seqGrid th.col { position: static; text-align: center; min-width: 22px; }
+  .cell { width: 22px; height: 16px; cursor: pointer; background: var(--bg3); }
+  .cell:hover { background: #2c3340; }
+  .cell.on { background: var(--accent); }
+  .cell.beat { border-left: 2px solid #4b5566; }
+  tr.restRow th { color: var(--warn); }
+  tr.restRow .cell.on { background: var(--warn); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #status { font-size: 12px; color: var(--muted); min-height: 16px; }
+  #status.busy { color: var(--warn); }
+  #status.err { color: var(--don); }
+
+  canvas#wave { display: block; width: 100%; height: 120px; background: #0f1117; border: 1px solid var(--border); border-radius: 8px; }
+
+  #chordRead { display: flex; flex-wrap: wrap; gap: 4px; font-size: 11px; }
+  .chordBadge { background: var(--bg3); border-radius: 5px; padding: 3px 7px; font-variant-numeric: tabular-nums; }
+  .chordBadge b { color: #85b4ff; }
+
+  textarea { width: 100%; min-height: 90px; background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-family: ui-monospace,Consolas,monospace; font-size: 11px; }
+
+  .menu { position: relative; }
+  .menu .menuList { position: absolute; right: 0; top: 110%; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; min-width: 220px; display: none; z-index: 30; max-height: 300px; overflow: auto; }
+  .menu.open .menuList { display: block; }
+  .menuList .mi { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; gap: 8px; }
+  .menuList .mi .ttl { cursor: pointer; flex: 1; }
+  .menuList .mi .del { color: #ff8585; cursor: pointer; font-size: 11px; }
+  .menuList .save { padding: 7px 12px; border-bottom: 1px solid var(--border); }
+  .menuList .save input { width: 120px; }
+
+  .modalBack { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 50; }
+  .modalBack.show { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-width: 620px; width: 92%; max-height: 88vh; overflow: auto; }
+  .modal h2 { margin: 0 0 10px; font-size: 16px; }
+  .mrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ok); color: #07210f; padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 60; font-weight: 600; }
+  .toast.show { opacity: 1; }
+
+  #testPanel { position: fixed; inset: 0; background: #0d0f14; color: var(--text); z-index: 100; overflow: auto; padding: 24px; font-family: ui-monospace,Consolas,monospace; font-size: 13px; }
+  #testPanel h1 { font-size: 18px; }
+  .pass { color: var(--ok); }
+  .fail { color: var(--don); font-weight: 700; }
+  kbd { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🎵 ミュージックメーカー</h1>
+    <div class="banner">これは Suno のようなAI音声生成ではなく、メロディ＋スタイルからドラム/ベース/コードを手続き的に合成して曲を作るツールです。主旋律は一切変わりません。</div>
+    <div class="menu" id="projMenu">
+      <button class="ghost" id="projMenuBtn">プロジェクト ▾</button>
+      <div class="menuList" id="projMenuList"></div>
+    </div>
+  </header>
+
+  <div id="main">
+    <div id="controls">
+      <div class="card">
+        <h2>メロディソース</h2>
+        <div class="row">
+          <div class="field">
+            <label>プリセット曲</label>
+            <select id="melodySel"></select>
+          </div>
+          <button class="ghost" id="useMelodyBtn">この曲をシーケンサに読込</button>
+          <button class="ghost" id="importBtn">インポート JSON</button>
+        </div>
+        <div class="hint" id="srcHint">プリセット曲を選ぶか、下のステップシーケンサで新しいメロディを作れます。インポートは <code>[{note,beats}]</code> または太鼓譜面 <code>{notes:[{time,type}]}</code> を受け付けます（譜面はリズムのみ使用し、主旋律は単音を繰り返します）。</div>
+      </div>
+
+      <div class="card">
+        <h2>ステップシーケンサ（作曲）</h2>
+        <div class="row" style="margin-bottom:8px">
+          <div class="field"><label>ステップ数</label><input type="number" id="stepCount" min="4" max="64" step="1" value="16"></div>
+          <div class="field"><label>拍数/ステップ</label><input type="number" id="beatsPerStep" min="0.25" max="4" step="0.25" value="0.5"></div>
+          <button class="ghost" id="seqClearBtn">シーケンサをクリア</button>
+        </div>
+        <div id="seqWrap"><table id="seqGrid"></table></div>
+        <div class="hint">行＝音程（C4〜C6 ダイアトニック）＋休符行。各列＝1ステップ。セルをクリックで音を置く（1列1音）。空き列はその拍ぶん前の音を伸ばし、休符行は無音にします。シーケンサで作ると上のプリセットより優先されます。</div>
+      </div>
+
+      <div class="card">
+        <h2>スタイル & 設定</h2>
+        <div class="row">
+          <div class="field"><label>スタイル</label><select id="styleSel"></select></div>
+          <div class="field"><label>BPM</label><input type="number" id="bpmIn" min="40" max="240" step="1" value="120"></div>
+          <div class="field"><label>キー</label><select id="keySel"></select></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>アクション</h2>
+        <div class="actions">
+          <button class="big" id="genBtn">🎵 生成</button>
+          <button class="big ghost" id="playBtn">▶ 再生</button>
+          <button class="big ghost" id="stopBtn">⏹ 停止</button>
+          <button class="ghost" id="wavBtn" disabled>💾 WAV保存</button>
+          <button class="ghost" id="chartBtn" disabled>🥁 太鼓譜面をエクスポート</button>
+        </div>
+        <div id="status" style="margin-top:10px">準備完了。<kbd>Space</kbd> で再生/停止。</div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="card">
+        <h2>波形プレビュー（生成された samples）</h2>
+        <canvas id="wave" width="600" height="120"></canvas>
+        <div id="meta" style="font-size:11px;color:var(--muted);margin-top:6px">未生成。</div>
+      </div>
+      <div class="card">
+        <h2>検出されたコード（小節ごと）</h2>
+        <div id="chordRead"><span style="color:var(--muted)">生成すると表示されます。</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div class="modalBack" id="importModal">
+  <div class="modal">
+    <h2>インポート JSON</h2>
+    <p style="color:var(--muted);font-size:12px"><code>[{ "note":"C4", "beats":1 }]</code> 形式のメロディ、または太鼓譜面 <code>{ "notes":[{ "time":1.8, "type":"don" }] }</code> を貼り付け / ファイル選択。譜面の場合はリズムのみ使い、主旋律は単音(C4)を繰り返します。</p>
+    <textarea id="importText" placeholder='[{"note":"C4","beats":1},{"note":"E4","beats":1}]  または  {"notes":[{"time":0,"type":"don"}]}'></textarea>
+    <div class="mrow">
+      <button id="doImportBtn">読み込む</button>
+      <button class="ghost" id="importFileBtn">ファイル選択…</button>
+      <input type="file" id="importFileInput" accept="application/json,.json,.txt" style="display:none">
+      <button class="ghost" id="closeImportBtn">閉じる</button>
+    </div>
+    <div id="importMsg" style="margin-top:8px;color:var(--warn)"></div>
+  </div>
+</div>
+
+<!-- Chart export modal -->
+<div class="modalBack" id="chartModal">
+  <div class="modal">
+    <h2>🥁 太鼓譜面エクスポート</h2>
+    <div style="margin-top:4px"><strong>notes 配列のみ</strong></div>
+    <textarea id="chartNotes" readonly></textarea>
+    <div class="mrow">
+      <button id="copyNotesBtn">notes をコピー</button>
+      <button class="ghost" id="dlNotesBtn">notes.json をDL</button>
+    </div>
+    <div style="margin-top:12px"><strong>RHYTHM_SONGS エントリ（貼り付け用）</strong></div>
+    <textarea id="chartEntry" readonly style="min-height:170px"></textarea>
+    <div class="mrow">
+      <button id="copyEntryBtn">エントリをコピー</button>
+      <button class="ghost" id="dlEntryBtn">エントリ.json をDL</button>
+      <button class="ghost" id="closeChartBtn">閉じる</button>
+    </div>
+    <div class="hint" id="chartHint"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 唯一の外部スクリプト: エンジン本体とデータライブラリ（CDN無し・ローカル相対参照） -->
+<script src="../js/music-engine.js"></script>
+<script src="../js/music-library.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+ * ミュージックメーカー — 純JS / ビルド不要 / 外部CDNなし
+ *
+ * 合成は window.MusicEngine が担当（renderArrangement / encodeWav /
+ * melodyToChart / inferChords / noteToFreq 等）。本ファイルはその上の UI。
+ * プレビューは生成済み samples を AudioBuffer にコピーして鳴らすため、
+ * 「プレビュー音 == WAV出力」が常に一致する（再合成しない）。
+ * ===================================================================== */
+
+/* =========================  PURE / UTIL  ========================= */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+  });
+}
+// プロジェクト名 → 安全なファイルベース名 / localStorage キー。
+function safeKey(s) { return String(s || 'song').replace(/[^a-zA-Z0-9_\-]/g, '_'); }
+
+// 2オクターブのダイアトニック行（C4..C6, 臨時記号なし）を高い順に並べる。
+// シーケンサは上(高音)から下(低音)へ表示するのが直感的。
+const DIATONIC_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+function buildSeqRows() {
+  const rows = [];
+  // C6 を含める: C4,D4,...B4, C5,...B5, C6
+  for (let oct = 4; oct <= 6; oct++) {
+    for (const L of DIATONIC_LETTERS) {
+      rows.push(L + oct);
+      if (L === 'C' && oct === 6) break; // C6 で打ち切り
+    }
+    if (oct === 6) break;
+  }
+  rows.reverse(); // 高音が上
+  rows.push('—'); // 休符行（末尾）
+  return rows;
+}
+const SEQ_ROWS = buildSeqRows();
+const REST_ROW = '—';
+
+// シーケンサ状態 stepNotes[i] = ノート名 or REST_ROW or null(=未設定/伸ばし)
+// → melody [{note,beats}] へ変換。連続する空きは前音の beats を伸ばす。
+// 各アクティブセル = beatsPerStep。休符 = 休符ぶんだけ無音（直前音を切る）。
+// エンジンは休符を直接扱わないため、休符は「次の音までの間隔」を縮める形で
+// 単純化: 休符セルは「ごく短い無音相当」ではなく "前の音の伸ばしを止める" 役割。
+// v1 仕様（UIに明記）: 各アクティブセル=1ステップぶんの音、空き=直前音を伸ばす、
+// 休符行=その曲を区切る（直前音をそこで確定）。エンジンに rest 概念がないので
+// 休符は実装上 melody から省き、直前音がその拍ぶん伸びるのを止めるだけにする。
+function seqToMelody(stepNotes, beatsPerStep) {
+  const bps = (beatsPerStep > 0) ? beatsPerStep : 0.5;
+  const melody = [];
+  let cur = null; // {note, beats}
+  for (let i = 0; i < stepNotes.length; i++) {
+    const v = stepNotes[i];
+    if (v === REST_ROW) {
+      // 休符: 直前音を確定して終了させる（伸ばしを止める）。
+      if (cur) { melody.push(cur); cur = null; }
+      // 休符ぶんは melody に空きが出るが、エンジンは連続再生なので
+      // 「直前音を短く切る」効果として現れる。v1 はこれで十分。
+    } else if (v) {
+      // 新しい音 → 直前音を確定し、新規開始。
+      if (cur) melody.push(cur);
+      cur = { note: v, beats: bps };
+    } else {
+      // 空きセル: 直前音を1ステップぶん伸ばす。先頭の空きは無視。
+      if (cur) cur.beats += bps;
+    }
+  }
+  if (cur) melody.push(cur);
+  return melody;
+}
+
+// 太鼓譜面 {notes:[{time,type}]} → メロディ（リズムのみ; 単音 C4 繰り返し）。
+// time(秒) の差から beats を推定: beats ≈ Δtime / (60/bpm)。
+function chartToMelody(notes, bpm) {
+  if (!Array.isArray(notes) || !notes.length) return [];
+  const quarter = 60 / (bpm > 0 ? bpm : 120);
+  const sorted = notes.slice().filter(function (n) { return n && Number.isFinite(Number(n.time)); })
+    .sort(function (a, b) { return Number(a.time) - Number(b.time); });
+  const out = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const t = Number(sorted[i].time);
+    const next = (i + 1 < sorted.length) ? Number(sorted[i + 1].time) : t + quarter;
+    let beats = Math.round(((next - t) / quarter) * 2) / 2; // 0.5刻みに量子化
+    if (!(beats > 0)) beats = 0.5;
+    out.push({ note: 'C4', beats: beats });
+  }
+  return out;
+}
+
+// 既知スキーマに正規化（import 用）。メロディ配列を {note,beats} に。
+function sanitizeMelody(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const ev of arr) {
+    if (!ev || typeof ev !== 'object') continue;
+    if (typeof ev.note !== 'string') continue;
+    let beats = Number(ev.beats);
+    if (!(beats > 0)) beats = 1;
+    // note 名の妥当性をエンジンの正規表現相当で軽くチェック（不正は捨てる）。
+    if (!/^[A-G][#b]?-?\d+$/.test(ev.note)) continue;
+    out.push({ note: ev.note, beats: beats });
+  }
+  return out;
+}
+
+/* =========================  APP STATE  ========================= */
+const ME = window.MusicEngine;
+const ML = window.MusicLibrary;
+const LS_INDEX = 'musicMaker:projects';
+const LS_PROJECT = 'musicMaker:project:';
+const KEY_CHOICES = ['C', 'G', 'D', 'F', 'A'];
+
+const $ = function (id) { return document.getElementById(id); };
+
+let state = {
+  name: 'mysong',
+  melodyId: ML ? ML.MELODY_KEYS[0] : 'twinkle',
+  styleId: ML ? ML.STYLES_KEYS[0] : 'chiptune',
+  bpm: 96,
+  key: 'C',
+  stepCount: 16,
+  beatsPerStep: 0.5,
+  stepNotes: null,    // null => プリセット曲を使う。配列 => シーケンサ作曲を使う。
+  importedMelody: null, // インポートされた {note,beats}[]（あれば最優先で生成に使用）
+};
+
+// 生成結果
+let rendered = null;   // { samples:Float32Array, meta:{...} }
+let usedMelody = null; // 直近で生成に使ったメロディ（譜面エクスポート用）
+let usedBpm = 96;
+
+/* Audio playback */
+let audioCtx = null;
+let bufSource = null;
+let isPlaying = false;
+let playStartCtx = 0;   // ctx.currentTime at play start
+let rafId = null;
+
+/* =========================  AUDIO ENGINE WIRING  ========================= */
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// 現在の入力からメロディを決定する（優先順位: import > シーケンサ > プリセット）。
+function resolveMelody() {
+  if (state.importedMelody && state.importedMelody.length) return state.importedMelody.slice();
+  if (state.stepNotes) {
+    const m = seqToMelody(state.stepNotes, state.beatsPerStep);
+    if (m.length) return m;
+  }
+  const def = ML.MELODIES[state.melodyId];
+  return def ? def.melody.slice() : [];
+}
+
+async function generate() {
+  if (!ME || !ML) { setStatus('エンジン未ロード（../js/music-engine.js を確認）', 'err'); return; }
+  const melody = resolveMelody();
+  if (!melody.length) { setStatus('メロディが空です。プリセット選択かシーケンサで音を置いてください。', 'err'); return; }
+  // 長さ上限チェック: 64小節 (= 256 beats @ 4/4) を超えたら警告。
+  const totalBeats = melody.reduce(function (s, ev) { return s + (ev.beats || 0); }, 0);
+  const bars = Math.ceil(totalBeats / 4);
+  if (bars > 64) { setStatus('⚠ ' + bars + ' 小節は長すぎます（上限64小節）。短くしてください。', 'err'); return; }
+
+  stopPlayback();
+  setStatus('生成中…', 'busy');
+  $('genBtn').disabled = true;
+  // モバイルで重い同期レンダ前に一度 yield（UI更新を反映）。
+  await new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 0); }); });
+
+  try {
+    const style = ML.STYLES[state.styleId];
+    const out = ME.renderArrangement({
+      melody: melody,
+      style: style,
+      bpm: state.bpm,
+      key: state.key,
+      sampleRate: 44100,
+      seed: 0x1234,
+    });
+    rendered = out;
+    usedMelody = melody;
+    usedBpm = state.bpm;
+    drawWave();
+    renderMeta();
+    renderChords(out.meta.chords);
+    $('wavBtn').disabled = false;
+    $('chartBtn').disabled = false;
+    setStatus('生成完了: ' + out.meta.durationSec.toFixed(1) + '秒 / ' + out.meta.numBars + '小節 / ' + (melody.length) + '音');
+  } catch (e) {
+    setStatus('生成失敗: ' + (e && e.message ? e.message : e), 'err');
+  } finally {
+    $('genBtn').disabled = false;
+  }
+}
+
+// プレビュー: 生成済み samples を AudioBuffer にコピーして再生（再合成しない）。
+// → プレビュー音は WAV 出力とビット同一の波形。
+function playRendered() {
+  if (!rendered) { setStatus('先に「生成」してください。', 'err'); return; }
+  ensureCtx();
+  stopPlayback();
+  const sr = rendered.meta.sampleRate;
+  const samples = rendered.samples;
+  const buf = audioCtx.createBuffer(1, samples.length, sr);
+  buf.getChannelData(0).set(samples);
+  bufSource = audioCtx.createBufferSource();
+  bufSource.buffer = buf;
+  bufSource.connect(audioCtx.destination);
+  bufSource.onended = function () { if (isPlaying) { isPlaying = false; $('playBtn').textContent = '▶ 再生'; cancelRaf(); drawWave(); } };
+  playStartCtx = audioCtx.currentTime + 0.02;
+  bufSource.start(playStartCtx);
+  isPlaying = true;
+  $('playBtn').textContent = '⏸ 一時停止';
+  setStatus('再生中…');
+  startRaf();
+}
+function stopPlayback() {
+  if (bufSource) { try { bufSource.onended = null; bufSource.stop(); } catch (e) {} bufSource = null; }
+  isPlaying = false;
+  $('playBtn').textContent = '▶ 再生';
+  cancelRaf();
+  drawWave();
+}
+function togglePlay() { if (isPlaying) stopPlayback(); else playRendered(); }
+
+function startRaf() { if (!rafId) rafId = requestAnimationFrame(rafLoop); }
+function cancelRaf() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
+function rafLoop() {
+  rafId = null;
+  if (isPlaying) { drawWave(); startRaf(); }
+}
+
+/* =========================  WAV SAVE  ========================= */
+function saveWav() {
+  if (!rendered) { setStatus('先に「生成」してください。', 'err'); return; }
+  const sr = rendered.meta.sampleRate;
+  const ab = ME.encodeWav(rendered.samples, sr); // 44バイトヘッダ + int16 mono
+  const blob = new Blob([ab], { type: 'audio/wav' });
+  const name = safeKey(state.name) + '.wav';
+  downloadBlob(blob, name);
+  setStatus('WAV保存: ' + name + ' (' + rendered.meta.durationSec.toFixed(1) + '秒)');
+}
+
+function downloadBlob(blobOrText, filename, mime) {
+  const blob = (blobOrText instanceof Blob) ? blobOrText : new Blob([blobOrText], { type: mime || 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('コピーしました'); }
+  catch (e) { toast('コピー失敗（手動選択してください）'); }
+}
+
+/* =========================  CHART EXPORT  ========================= */
+function buildChart() {
+  if (!rendered || !usedMelody) { setStatus('先に「生成」してください。', 'err'); return; }
+  const chart = ME.melodyToChart(usedMelody, { bpm: usedBpm });
+  const notes = chart.notes;
+  $('chartNotes').value = JSON.stringify(notes, null, 2);
+
+  const key = safeKey(state.name);
+  const title = state.name || '曲名';
+  const endOffset = Math.ceil(rendered.meta.durationSec);
+  const entry = {
+    id: key,
+    title: title,
+    audio: key + '.wav',   // 保存した WAV と同名（bare filename; ランタイムが encode する）
+    startOffset: 0,
+    endOffset: endOffset,
+    notes: notes,
+    rounds: [{ label: title }],
+  };
+  $('chartEntry').value = 'RHYTHM_SONGS.' + key + ' = ' + JSON.stringify(entry, null, 2) + ';';
+
+  $('chartHint').textContent =
+    '譜面は生成した音源とペアです。WAV を assets/audio/ に配置（mp3 変換時は audio を ' + key + '.mp3 に）し、'
+    + 'RHYTHM_SONGS エントリを writing-mori/play.html に追記。play.html / 音源を更新したら sw.js の CACHE_VERSION をバンプしてください。';
+
+  $('chartModal').classList.add('show');
+}
+
+/* =========================  STEP SEQUENCER UI  ========================= */
+function ensureStepNotes() {
+  if (!state.stepNotes || state.stepNotes.length !== state.stepCount) {
+    const old = state.stepNotes || [];
+    const next = new Array(state.stepCount).fill(null);
+    for (let i = 0; i < Math.min(old.length, state.stepCount); i++) next[i] = old[i];
+    state.stepNotes = next;
+  }
+  return state.stepNotes;
+}
+function buildSeqGrid() {
+  ensureStepNotes();
+  const tbl = $('seqGrid');
+  // header row (step indices)
+  let html = '<tr><th></th>';
+  for (let c = 0; c < state.stepCount; c++) {
+    html += '<th class="col">' + (c + 1) + '</th>';
+  }
+  html += '</tr>';
+  // rows
+  for (let r = 0; r < SEQ_ROWS.length; r++) {
+    const rowName = SEQ_ROWS[r];
+    const isRest = (rowName === REST_ROW);
+    html += '<tr class="' + (isRest ? 'restRow' : '') + '"><th>' + escapeHtml(isRest ? '休符' : rowName) + '</th>';
+    for (let c = 0; c < state.stepCount; c++) {
+      const on = (state.stepNotes[c] === rowName);
+      // 拍頭マーカー: c*beatsPerStep が整数なら拍頭。% 1 は浮動小数誤差で整数の
+      // 直下（0.9999…）になると取りこぼすため、最寄り整数との差で判定する。
+      const beatPos = c * state.beatsPerStep;
+      const beat = (state.beatsPerStep > 0 && Math.abs(beatPos - Math.round(beatPos)) < 1e-6) ? ' beat' : '';
+      html += '<td class="cell' + (on ? ' on' : '') + beat + '" data-r="' + r + '" data-c="' + c + '"></td>';
+    }
+    html += '</tr>';
+  }
+  tbl.innerHTML = html;
+  tbl.querySelectorAll('.cell').forEach(function (td) {
+    td.onclick = function () {
+      const c = Number(td.dataset.c);
+      const rowName = SEQ_ROWS[Number(td.dataset.r)];
+      // トグル: すでにこの音なら消す（null）、違えばこの音に設定。
+      state.stepNotes[c] = (state.stepNotes[c] === rowName) ? null : rowName;
+      state.importedMelody = null; // シーケンサ編集はインポートを上書き
+      buildSeqGrid();
+      scheduleSave();
+    };
+  });
+}
+
+/* =========================  CHORD / META / WAVE RENDER  ========================= */
+function renderChords(chords) {
+  const el = $('chordRead');
+  if (!chords || !chords.length) { el.innerHTML = '<span style="color:var(--muted)">なし</span>'; return; }
+  let html = '';
+  chords.forEach(function (c, i) {
+    html += '<span class="chordBadge">' + (i + 1) + ': <b>' + escapeHtml(c.roman) + '</b> ' + escapeHtml(c.triad.join(' ')) + '</span>';
+  });
+  el.innerHTML = html;
+}
+function renderMeta() {
+  if (!rendered) { $('meta').textContent = '未生成。'; return; }
+  const m = rendered.meta;
+  // サンプル件数は meta ではなく rendered オブジェクト側にある。dead な m.samples
+  // 参照（"undefined" のチラつきの原因）を除去し、1 本の文字列で構築する。
+  $('meta').textContent = '長さ ' + m.durationSec.toFixed(2) + '秒 / ' + m.numBars + '小節 / ' + m.totalBeats + '拍 / '
+    + m.bpm + ' BPM / key ' + m.key + ' / ' + m.sampleRate + 'Hz / ' + rendered.samples.length + ' サンプル';
+}
+function drawWave() {
+  const cv = $('wave');
+  const ctx = cv.getContext('2d');
+  // devicePixelRatio に合わせて実描画解像度を CSS 幅に同期。
+  const cssW = cv.clientWidth || 600;
+  if (cv.width !== cssW) cv.width = cssW;
+  const w = cv.width, h = cv.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0, 0, w, h);
+  const mid = h / 2;
+  // mid line
+  ctx.strokeStyle = '#2a2e3a'; ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+  if (!rendered) {
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('生成すると波形が表示されます', w / 2, mid - 6);
+    return;
+  }
+  const samples = rendered.samples;
+  const n = samples.length;
+  // min/max peaks per pixel column
+  ctx.strokeStyle = '#3b82f6';
+  ctx.beginPath();
+  const per = n / w;
+  for (let x = 0; x < w; x++) {
+    const s = Math.floor(x * per);
+    const e = Math.min(n, Math.floor((x + 1) * per));
+    let mn = 1, mx = -1;
+    for (let j = s; j < e; j++) { const v = samples[j]; if (v < mn) mn = v; if (v > mx) mx = v; }
+    if (e <= s) { mn = 0; mx = 0; }
+    ctx.moveTo(x + 0.5, mid - mx * (mid - 2));
+    ctx.lineTo(x + 0.5, mid - mn * (mid - 2));
+  }
+  ctx.stroke();
+  // playhead during playback
+  if (isPlaying && audioCtx) {
+    const elapsed = audioCtx.currentTime - playStartCtx;
+    const frac = Math.max(0, Math.min(1, elapsed / rendered.meta.durationSec));
+    const px = frac * w;
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke(); ctx.lineWidth = 1;
+  }
+}
+
+/* =========================  PERSISTENCE  ========================= */
+let saveTimer = null;
+function scheduleSave() { if (saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(saveProject, 500); }
+function projectPayload() {
+  return {
+    name: state.name,
+    melodyId: state.melodyId,
+    styleId: state.styleId,
+    bpm: state.bpm,
+    key: state.key,
+    stepCount: state.stepCount,
+    beatsPerStep: state.beatsPerStep,
+    stepNotes: state.stepNotes,
+    importedMelody: state.importedMelody,
+  };
+}
+function saveProject() {
+  const key = safeKey(state.name);
+  try {
+    localStorage.setItem(LS_PROJECT + key, JSON.stringify(projectPayload()));
+    let index = [];
+    try { index = JSON.parse(localStorage.getItem(LS_INDEX) || '[]'); } catch (e) { index = []; }
+    if (!Array.isArray(index)) index = [];
+    index = index.filter(function (x) { return x && x.key !== key; });
+    index.push({ key: key, name: state.name || key, savedAt: Date.now() });
+    localStorage.setItem(LS_INDEX, JSON.stringify(index));
+    toastQuiet();
+  } catch (e) { /* QuotaExceeded 等は握りつぶす */ }
+}
+function loadProjectByKey(key) {
+  try {
+    const raw = localStorage.getItem(LS_PROJECT + key);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    applyProject(p);
+    setStatus('プロジェクト読込: ' + key);
+  } catch (e) { setStatus('読込失敗: ' + e.message, 'err'); }
+}
+function applyProject(p) {
+  if (!p || typeof p !== 'object') return;
+  state.name = (typeof p.name === 'string') ? p.name : 'mysong';
+  state.melodyId = (ML.MELODIES[p.melodyId]) ? p.melodyId : ML.MELODY_KEYS[0];
+  state.styleId = (ML.STYLES[p.styleId]) ? p.styleId : ML.STYLES_KEYS[0];
+  state.bpm = (Number(p.bpm) > 0) ? Number(p.bpm) : 96;
+  state.key = (KEY_CHOICES.indexOf(p.key) >= 0) ? p.key : 'C';
+  state.stepCount = (Number(p.stepCount) >= 4 && Number(p.stepCount) <= 64) ? Math.round(Number(p.stepCount)) : 16;
+  state.beatsPerStep = (Number(p.beatsPerStep) > 0) ? Number(p.beatsPerStep) : 0.5;
+  // stepNotes: 配列のみ受け入れ、各要素は既知の行名 or null に正規化。
+  if (Array.isArray(p.stepNotes)) {
+    state.stepNotes = p.stepNotes.map(function (v) { return (typeof v === 'string' && (SEQ_ROWS.indexOf(v) >= 0)) ? v : null; });
+  } else { state.stepNotes = null; }
+  state.importedMelody = Array.isArray(p.importedMelody) ? sanitizeMelody(p.importedMelody) : null;
+  if (state.importedMelody && !state.importedMelody.length) state.importedMelody = null;
+  syncInputs();
+  buildSeqGrid();
+  scheduleSave();
+}
+function refreshProjMenu() {
+  let index = [];
+  try { index = JSON.parse(localStorage.getItem(LS_INDEX) || '[]'); } catch (e) { index = []; }
+  if (!Array.isArray(index)) index = [];
+  const list = $('projMenuList');
+  let html = '<div class="save"><input type="text" id="saveNameIn" placeholder="名前" value="' + escapeHtml(state.name) + '"><button class="ghost" id="saveAsBtn">保存</button></div>';
+  if (!index.length) html += '<div style="padding:8px 12px;color:var(--muted)">保存なし</div>';
+  index.sort(function (a, b) { return b.savedAt - a.savedAt; }).forEach(function (x) {
+    html += '<div class="mi"><span class="ttl" data-load="' + encodeURIComponent(x.key) + '">' + escapeHtml(x.name) + ' <small style="color:var(--muted)">(' + escapeHtml(x.key) + ')</small></span><span class="del" data-del="' + encodeURIComponent(x.key) + '">削除</span></div>';
+  });
+  list.innerHTML = html;
+  const sIn = $('saveNameIn');
+  $('saveAsBtn').onclick = function () { state.name = sIn.value || 'mysong'; saveProject(); refreshProjMenu(); toast('保存しました'); };
+  list.querySelectorAll('[data-load]').forEach(function (el) {
+    el.onclick = function () { loadProjectByKey(decodeURIComponent(el.dataset.load)); $('projMenu').classList.remove('open'); };
+  });
+  list.querySelectorAll('[data-del]').forEach(function (el) {
+    el.onclick = function () {
+      const k = decodeURIComponent(el.dataset.del);
+      try {
+        localStorage.removeItem(LS_PROJECT + k);
+        let idx2 = JSON.parse(localStorage.getItem(LS_INDEX) || '[]').filter(function (y) { return y.key !== k; });
+        localStorage.setItem(LS_INDEX, JSON.stringify(idx2));
+      } catch (e) {}
+      refreshProjMenu();
+    };
+  });
+}
+
+/* =========================  IMPORT  ========================= */
+function doImport(text) {
+  let obj;
+  try { obj = JSON.parse(text); }   // JSON.parse のみ（eval 禁止・sanitize する）
+  catch (e) { $('importMsg').textContent = 'JSON 解析失敗: ' + e.message; return; }
+  try {
+    let melody = null;
+    if (Array.isArray(obj)) {
+      // [{note,beats}] 形式
+      melody = sanitizeMelody(obj);
+    } else if (obj && typeof obj === 'object' && Array.isArray(obj.notes)) {
+      // 太鼓譜面 {notes:[{time,type}]} → リズムのみ（単音 C4）
+      melody = chartToMelody(obj.notes, state.bpm);
+    }
+    if (!melody || !melody.length) { $('importMsg').textContent = 'メロディ([{note,beats}]) または 譜面({notes:[...]}) が見つかりません。'; return; }
+    state.importedMelody = melody;
+    state.stepNotes = null; // インポートはシーケンサより優先
+    $('importModal').classList.remove('show');
+    setStatus('インポート完了: ' + melody.length + '音（生成で反映）');
+    toast('インポート完了');
+    scheduleSave();
+  } catch (e) { $('importMsg').textContent = '読込失敗: ' + e.message; }
+}
+
+/* =========================  INPUTS  ========================= */
+function syncInputs() {
+  $('melodySel').value = state.melodyId;
+  $('styleSel').value = state.styleId;
+  $('bpmIn').value = state.bpm;
+  $('keySel').value = state.key;
+  $('stepCount').value = state.stepCount;
+  $('beatsPerStep').value = state.beatsPerStep;
+}
+function defaultBpmForSelection() {
+  // メロディ既定 BPM を優先し、なければスタイル既定。
+  const mel = ML.MELODIES[state.melodyId];
+  if (mel && mel.defaultBpm) return mel.defaultBpm;
+  const st = ML.STYLES[state.styleId];
+  return (st && st.defaultBpm) ? st.defaultBpm : 120;
+}
+
+/* =========================  STATUS / TOAST  ========================= */
+function setStatus(txt, cls) {
+  const el = $('status');
+  el.textContent = txt;
+  el.className = (cls === 'err') ? 'err' : (cls === 'busy' ? 'busy' : '');
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1600);
+}
+function toastQuiet() { /* autosave は静かに（必要なら将来ドット表示） */ }
+
+/* =========================  TEST HARNESS  ========================= */
+function runSelfTests() {
+  const results = [];
+  const assert = function (name, cond, detail) { results.push({ name: name, ok: !!cond, detail: detail || '' }); };
+  const approx = function (a, b, eps) { return Math.abs(a - b) <= (eps == null ? 1e-6 : eps); };
+
+  try {
+    // --- note math ---
+    assert("noteToFreq('A4')===440", approx(ME.noteToFreq('A4'), 440, 1e-9), 'got ' + ME.noteToFreq('A4'));
+    assert("noteToMidi('C4')===60", ME.noteToMidi('C4') === 60, 'got ' + ME.noteToMidi('C4'));
+
+    // --- renderArrangement: twinkle + chiptune non-silent + expected length ---
+    const mel = ML.MELODIES.twinkle.melody;
+    const bpm = ML.MELODIES.twinkle.defaultBpm; // 96
+    const sr = 44100;
+    const out = ME.renderArrangement({ melody: mel, style: ML.STYLES.chiptune, bpm: bpm, key: 'C', sampleRate: sr, seed: 7 });
+    const totalBeats = mel.reduce(function (s, ev) { return s + ev.beats; }, 0);
+    const expectedCore = totalBeats * (60 / bpm) * sr; // grid length (without tail)
+    // 実長は grid + tail + 端数。grid 以上・grid+1秒以内に収まればOK。
+    const lenOk = out.samples.length >= Math.floor(expectedCore) && out.samples.length <= Math.ceil(expectedCore) + sr;
+    assert('renderArrangement length ≈ totalBeats*60/bpm*sr (+tail)', lenOk,
+      'len=' + out.samples.length + ' core≈' + Math.round(expectedCore));
+    let peak = 0; for (let i = 0; i < out.samples.length; i++) { const a = Math.abs(out.samples[i]); if (a > peak) peak = a; }
+    assert('renderArrangement non-silent (peak>0.1)', peak > 0.1, 'peak=' + peak.toFixed(4));
+
+    // --- melodyToChart: sorted + all don/ka ---
+    const chart = ME.melodyToChart(mel, { bpm: bpm });
+    let sorted = true, typesOk = true;
+    for (let i = 0; i < chart.notes.length; i++) {
+      if (i > 0 && chart.notes[i].time < chart.notes[i - 1].time) sorted = false;
+      if (chart.notes[i].type !== 'don' && chart.notes[i].type !== 'ka') typesOk = false;
+    }
+    assert('melodyToChart sorted ascending', sorted, 'n=' + chart.notes.length);
+    assert('melodyToChart all don/ka', typesOk && chart.notes.length > 0);
+
+    // --- encodeWav: RIFF header + byte length ---
+    const ab = ME.encodeWav(out.samples, sr);
+    const dv = new DataView(ab);
+    const riff = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
+    assert("encodeWav first 4 bytes === 'RIFF'", riff === 'RIFF', 'got ' + riff);
+    assert('encodeWav byteLength === 44 + samples*2', ab.byteLength === 44 + out.samples.length * 2,
+      'got ' + ab.byteLength + ' want ' + (44 + out.samples.length * 2));
+
+    // --- UI pure helpers: seqToMelody / chartToMelody ---
+    const sm = seqToMelody(['C4', null, 'E4', REST_ROW, 'G4'], 0.5);
+    // C4(0.5 + 0.5伸ばし=1.0) → E4(0.5) [休符で確定] → G4(0.5)
+    const smOk = sm.length === 3 && sm[0].note === 'C4' && approx(sm[0].beats, 1.0) && sm[1].note === 'E4' && sm[2].note === 'G4';
+    assert('seqToMelody collapses extend + rest', smOk, JSON.stringify(sm));
+    const cm = chartToMelody([{ time: 0, type: 'don' }, { time: 0.5, type: 'ka' }], 120); // quarter=0.5 → beats=1 each
+    assert('chartToMelody → C4 mono melody', cm.length === 2 && cm[0].note === 'C4' && approx(cm[0].beats, 1, 0.01), JSON.stringify(cm));
+  } catch (e) {
+    assert('TEST HARNESS threw: ' + (e && e.message), false, String(e && e.stack));
+  }
+
+  // render panel
+  const pass = results.filter(function (r) { return r.ok; }).length;
+  const panel = document.createElement('div');
+  panel.id = 'testPanel';
+  let html = '<h1>Self-Test ' + (pass === results.length ? '<span class="pass">ALL PASS</span>' : '<span class="fail">FAIL</span>') + ' (' + pass + '/' + results.length + ')</h1>';
+  results.forEach(function (r) {
+    html += '<div class="' + (r.ok ? 'pass' : 'fail') + '">' + (r.ok ? 'PASS' : 'FAIL') + ' — ' + escapeHtml(r.name) + (r.detail ? '  [' + escapeHtml(r.detail) + ']' : '') + '</div>';
+    (r.ok ? console.log : console.error)((r.ok ? 'PASS' : 'FAIL') + ' — ' + r.name, r.detail);
+  });
+  html += '<p><a href="?" style="color:#85b4ff">← ツールへ戻る</a></p>';
+  panel.innerHTML = html;
+  document.body.appendChild(panel);
+  return results;
+}
+
+/* =========================  WIRING / INIT  ========================= */
+function init() {
+  if (!ME || !ML) { setStatus('エンジン未ロード: ../js/music-engine.js / music-library.js を確認してください。', 'err'); return; }
+
+  // populate dropdowns
+  $('melodySel').innerHTML = ML.MELODY_KEYS.map(function (k) {
+    return '<option value="' + escapeHtml(k) + '">' + escapeHtml(ML.MELODIES[k].label) + '</option>';
+  }).join('');
+  $('styleSel').innerHTML = ML.STYLES_KEYS.map(function (k) {
+    return '<option value="' + escapeHtml(k) + '">' + escapeHtml(ML.STYLES[k].label) + '</option>';
+  }).join('');
+  $('keySel').innerHTML = KEY_CHOICES.map(function (k) {
+    return '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + ' major</option>';
+  }).join('');
+
+  state.bpm = defaultBpmForSelection();
+  syncInputs();
+  buildSeqGrid();
+  drawWave();
+
+  // melody source
+  $('melodySel').onchange = function (e) {
+    state.melodyId = e.target.value;
+    state.bpm = defaultBpmForSelection();
+    $('bpmIn').value = state.bpm;
+    scheduleSave();
+  };
+  $('useMelodyBtn').onclick = function () {
+    // プリセット曲をシーケンサに展開（ダイアトニックな音のみ; 範囲外/休符は近似/無視）。
+    const mel = ML.MELODIES[state.melodyId];
+    if (!mel) return;
+    loadMelodyIntoSeq(mel.melody);
+    toast('シーケンサに読込みました');
+  };
+  $('importBtn').onclick = function () { $('importMsg').textContent = ''; $('importModal').classList.add('show'); };
+
+  // sequencer controls
+  $('stepCount').onchange = function (e) {
+    let v = Math.round(Number(e.target.value) || 16);
+    v = Math.max(4, Math.min(64, v));
+    state.stepCount = v; e.target.value = v;
+    ensureStepNotes(); buildSeqGrid(); scheduleSave();
+  };
+  $('beatsPerStep').onchange = function (e) {
+    let v = Number(e.target.value); if (!(v > 0)) v = 0.5;
+    state.beatsPerStep = v; e.target.value = v;
+    buildSeqGrid(); scheduleSave();
+  };
+  $('seqClearBtn').onclick = function () {
+    state.stepNotes = new Array(state.stepCount).fill(null);
+    state.importedMelody = null;
+    buildSeqGrid(); scheduleSave();
+    toast('シーケンサをクリア');
+  };
+
+  // style / bpm / key
+  $('styleSel').onchange = function (e) { state.styleId = e.target.value; scheduleSave(); };
+  $('bpmIn').onchange = function (e) { const v = Number(e.target.value); if (v > 0) state.bpm = Math.max(40, Math.min(240, v)); e.target.value = state.bpm; scheduleSave(); };
+  $('keySel').onchange = function (e) { state.key = e.target.value; scheduleSave(); };
+
+  // actions
+  $('genBtn').onclick = generate;
+  $('playBtn').onclick = togglePlay;
+  $('stopBtn').onclick = stopPlayback;
+  $('wavBtn').onclick = saveWav;
+  $('chartBtn').onclick = buildChart;
+
+  // import modal
+  $('doImportBtn').onclick = function () { doImport($('importText').value); };
+  $('closeImportBtn').onclick = function () { $('importModal').classList.remove('show'); };
+  $('importFileBtn').onclick = function () { $('importFileInput').click(); };
+  $('importFileInput').onchange = function (e) {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader(); r.onload = function () { doImport(String(r.result)); }; r.readAsText(f);
+  };
+
+  // chart modal
+  $('closeChartBtn').onclick = function () { $('chartModal').classList.remove('show'); };
+  $('copyNotesBtn').onclick = function () { copyText($('chartNotes').value); };
+  $('copyEntryBtn').onclick = function () { copyText($('chartEntry').value); };
+  $('dlNotesBtn').onclick = function () { downloadBlob($('chartNotes').value, safeKey(state.name) + '.notes.json'); };
+  $('dlEntryBtn').onclick = function () { downloadBlob($('chartEntry').value, safeKey(state.name) + '.entry.json'); };
+
+  // project menu
+  $('projMenuBtn').onclick = function () { refreshProjMenu(); $('projMenu').classList.toggle('open'); };
+  document.addEventListener('click', function (e) { if (!$('projMenu').contains(e.target)) $('projMenu').classList.remove('open'); });
+
+  // keyboard: space = play/pause (作曲フィールドにフォーカス中は無効)
+  document.addEventListener('keydown', function (e) {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  });
+
+  // redraw waveform on resize (responsive canvas)
+  window.addEventListener('resize', drawWave);
+}
+
+// プリセットメロディをシーケンサグリッドに展開。各音を beatsPerStep ステップに
+// 量子化して敷き詰める。ダイアトニック範囲(C4..C6)外や臨時記号はスキップ（休符扱い）。
+function loadMelodyIntoSeq(melody) {
+  const bps = state.beatsPerStep > 0 ? state.beatsPerStep : 0.5;
+  // 必要ステップ数を計算
+  const totalBeats = melody.reduce(function (s, ev) { return s + (ev.beats || 0); }, 0);
+  let needed = Math.ceil(totalBeats / bps);
+  needed = Math.max(4, Math.min(64, needed));
+  state.stepCount = needed;
+  $('stepCount').value = needed;
+  const steps = new Array(needed).fill(null);
+  let col = 0;
+  for (const ev of melody) {
+    const span = Math.max(1, Math.round((ev.beats || 0) / bps));
+    const valid = (SEQ_ROWS.indexOf(ev.note) >= 0); // ダイアトニックC4..C6のみ
+    if (col < needed) steps[col] = valid ? ev.note : null; // 範囲外/臨時記号は伸ばし(=休符)扱い
+    col += span; // 残りは空き(=伸ばし)で表現
+    if (col >= needed) break;
+  }
+  state.stepNotes = steps;
+  state.importedMelody = null;
+  buildSeqGrid();
+  scheduleSave();
+}
+
+/* =========================  BOOT  ========================= */
+if (/[?&]test=1/.test(location.search)) {
+  document.addEventListener('DOMContentLoaded', runSelfTests);
+} else {
+  document.addEventListener('DOMContentLoaded', init);
+}
+</script>
+</body>
+</html>
