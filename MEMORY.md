@@ -141,6 +141,58 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-02T11:59:27Z - Mary Had a Little Lamb 用の melody-lock Suno Cover プロンプト作成 (chiptune square-wave lead + bouncy pop drums) と README 更新
+- **タスク**: Mary Had a Little Lamb 用の melody-lock Suno Cover プロンプト作成 (chiptune square-wave lead + bouncy pop drums) と README 更新
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 1
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-02T11:59:26Z - 蛍の光 Suno Cover melody-locked prompt (chiptune note-for-note + kids dance beat) + README update
+- **タスク**: 蛍の光 Suno Cover melody-locked prompt (chiptune note-for-note + kids dance beat) + README update
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 1
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-02T11:59:22Z - きらきら星 Suno Cover prompt: melody-locked chiptune backing (note-for-note, forbid embellishment) + README update
+- **タスク**: きらきら星 Suno Cover prompt: melody-locked chiptune backing (note-for-note, forbid embellishment) + README update
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 1
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-02T11:57:23Z - Suno Cover メロディ忠実保持の調査（プロンプト/スライダー設定/ジャンル/フォールバック合成案）
+- **タスク**: Suno Cover メロディ忠実保持の調査（プロンプト/スライダー設定/ジャンル/フォールバック合成案）
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 1
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-02T11:34:48Z - taiko-chart-editor.html レビュー指摘6件修正(Space二重発火/dead x変数/ナッジ消失警告/escapeHtml/ファイル名サニタイズ/dead autorepeatブロック)
 - **タスク**: taiko-chart-editor.html レビュー指摘6件修正(Space二重発火/dead x変数/ナッジ消失警告/escapeHtml/ファイル名サニタイズ/dead autorepeatブロック)
 - **結果**: 成功
@@ -203,58 +255,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 4, "Bash": 22, "Grep": 5, "Agent": 16, "ToolSearch": 1, "Edit": 6, "Write": 1, "Workflow": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T10:00:16Z - 蛍の光(Auld Lang Syne)のmusic-box風インストをNode合成→MP3でSuno Coverシード生成 (C major, 76BPM, 32.8s, 非無音検証済)
-- **タスク**: 蛍の光(Auld Lang Syne)のmusic-box風インストをNode合成→MP3でSuno Coverシード生成 (C major, 76BPM, 32.8s, 非無音検証済)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 58
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Bash": 22, "Grep": 5, "Agent": 16, "ToolSearch": 1, "Edit": 6, "Write": 1, "Workflow": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T10:00:04Z - きらきら星 music-box seed を Node 加算合成で新規レンダリング (upload_seed.mp3, BPM96, C-major, 42音, mean -19.4dB) — Suno Cover シード用に指紋なし PD メロディ生成
-- **タスク**: きらきら星 music-box seed を Node 加算合成で新規レンダリング (upload_seed.mp3, BPM96, C-major, 42音, mean -19.4dB) — Suno Cover シード用に指紋なし PD メロディ生成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 58
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Bash": 22, "Grep": 5, "Agent": 16, "ToolSearch": 1, "Edit": 6, "Write": 1, "Workflow": 3}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T08:54:12Z - Adversarial verify acquisition for きらきら星 (Freesound #95614 music box, CC0)
-- **タスク**: Adversarial verify acquisition for きらきら星 (Freesound #95614 music box, CC0)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 55
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Bash": 20, "Grep": 5, "Agent": 16, "ToolSearch": 1, "Edit": 6, "Write": 1, "Workflow": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T08:53:05Z - きらきら星 instrumental seed re-sourced to CC0 Freesound music-box recording with explicit instrumental wording
-- **タスク**: きらきら星 instrumental seed re-sourced to CC0 Freesound music-box recording with explicit instrumental wording
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 55
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 4, "Bash": 20, "Grep": 5, "Agent": 16, "ToolSearch": 1, "Edit": 6, "Write": 1, "Workflow": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
