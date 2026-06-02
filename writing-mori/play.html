@@ -2206,67 +2206,70 @@ const NOTE_FREQUENCIES = {
   D5: 587.33,
   E5: 659.25
 };
+// Audio-time-based rhythm chart.
+// `notes[i].time` is ABSOLUTE seconds from audio start.
+// `type` drives both the visual color (don=red, ka=blue) and the drum sample
+// (don.mp3 / ka.mp3) on a perfect hit.
+// `rounds` is kept for backward compatibility with code that pages through rounds,
+// but for the audio-driven flow there is ONE round = ONE song play-through.
 const RHYTHM_SONGS = {
-  sakura: {
-    title: 'さくらリズム',
-    bpm: 72,
-    beatsPerRound: 8,
+  bell: {
+    id: 'kokoro_ni_poppoppo',
+    title: 'こころに ぽっぽっぽ',
+    audio: 'こころにぽっぽっぽ.mp3',
+    startOffset: 0,
+    endOffset: 40,
+    // ~110 BPM child-song feel (0.545s/beat). One don on each measure downbeat
+    // (every ~2.18s) + beat 3 of the bar. A ka on the off-beat-of-bar 2 every two bars
+    // for color. Density: ~1 hit per 1-2s, ~25 notes total across 40s.
+    // First note at 1.8s gives a clean intro. Last at ~38s leaves a clean ending.
+    notes: [
+      { time: 1.80, type: 'don' },
+      { time: 2.90, type: 'don' },
+      { time: 3.45, type: 'ka' },
+      { time: 4.00, type: 'don' },
+      { time: 5.10, type: 'don' },
+      { time: 6.20, type: 'don' },
+      { time: 6.75, type: 'ka' },
+      { time: 7.30, type: 'don' },
+      { time: 8.40, type: 'don' },
+      { time: 9.50, type: 'don' },
+      { time: 10.60, type: 'don' },
+      { time: 11.15, type: 'ka' },
+      { time: 11.70, type: 'don' },
+      { time: 12.80, type: 'don' },
+      { time: 14.00, type: 'don' },
+      { time: 15.10, type: 'don' },
+      { time: 15.65, type: 'ka' },
+      { time: 16.20, type: 'don' },
+      { time: 17.30, type: 'don' },
+      { time: 18.40, type: 'don' },
+      { time: 19.50, type: 'don' },
+      { time: 20.60, type: 'don' },
+      { time: 21.70, type: 'don' },
+      { time: 22.25, type: 'ka' },
+      { time: 22.80, type: 'don' },
+      { time: 23.90, type: 'don' },
+      { time: 25.00, type: 'don' },
+      { time: 26.10, type: 'don' },
+      { time: 26.65, type: 'ka' },
+      { time: 27.20, type: 'don' },
+      { time: 28.30, type: 'don' },
+      { time: 29.40, type: 'don' },
+      { time: 30.50, type: 'don' },
+      { time: 31.60, type: 'don' },
+      { time: 32.15, type: 'ka' },
+      { time: 32.70, type: 'don' },
+      { time: 33.80, type: 'don' },
+      { time: 35.00, type: 'don' },
+      { time: 36.20, type: 'don' },
+      { time: 37.30, type: 'ka' },
+      { time: 38.00, type: 'don' }
+    ],
+    // Legacy compatibility: code that expects `rounds[]` still works. The runtime
+    // builds the chart from `notes` directly (see getRhythmTapNotes).
     rounds: [
-      {
-        label: 'さくら 1',
-        notes: [
-          { beat: 1, pitch: 'A4', accent: true },
-          { beat: 2, pitch: 'A4' },
-          { beat: 3, pitch: 'B4', accent: true },
-          { beat: 4.5, pitch: 'A4' },
-          { beat: 5.5, pitch: 'A4' },
-          { beat: 6.5, pitch: 'B4', accent: true }
-        ]
-      },
-      {
-        label: 'さくら 2',
-        notes: [
-          { beat: 1, pitch: 'A4', accent: true },
-          { beat: 2, pitch: 'B4' },
-          { beat: 3, pitch: 'C5', accent: true },
-          { beat: 4.5, pitch: 'B4' },
-          { beat: 5.75, pitch: 'A4' },
-          { beat: 6.75, pitch: 'B4', accent: true }
-        ]
-      },
-      {
-        label: 'はなびら',
-        notes: [
-          { beat: 1, pitch: 'C5', accent: true },
-          { beat: 2, pitch: 'B4' },
-          { beat: 3, pitch: 'A4', accent: true },
-          { beat: 4.5, pitch: 'G4' },
-          { beat: 5.75, pitch: 'A4' },
-          { beat: 6.75, pitch: 'B4', accent: true }
-        ]
-      },
-      {
-        label: 'ゆらゆら',
-        notes: [
-          { beat: 1, pitch: 'A4', accent: true },
-          { beat: 2.25, pitch: 'G4' },
-          { beat: 3.5, pitch: 'E4', accent: true },
-          { beat: 4.75, pitch: 'G4' },
-          { beat: 6, pitch: 'A4' },
-          { beat: 7, pitch: 'B4', accent: true }
-        ]
-      },
-      {
-        label: 'さいご',
-        notes: [
-          { beat: 1, pitch: 'B4', accent: true },
-          { beat: 2, pitch: 'C5' },
-          { beat: 3, pitch: 'B4', accent: true },
-          { beat: 4.5, pitch: 'A4' },
-          { beat: 5.75, pitch: 'G4' },
-          { beat: 6.75, pitch: 'A4', accent: true }
-        ]
-      }
+      { label: 'こころに ぽっぽっぽ' }
     ]
   }
 };
@@ -2304,9 +2307,9 @@ const TOY_CONFIGS = {
     goodMin: 0.36,
     goodMax: 0.64,
     meterSpeed: 0.58,
-    song: 'sakura',
-    hitWindowMs: 310,
-    passWindowMs: 430,
+    song: 'bell',
+    hitWindowMs: 150,
+    passWindowMs: 220,
     passRatio: 0.5,
     hitBurst: 'ドンドン！',
     missBurst: 'おしい',
@@ -2415,6 +2418,14 @@ let rhythmBgmTimer = null;
 let rhythmBgmLastBeat = -1;
 let rhythmSongTimers = [];
 let miniRoundStartedAt = 0;
+// Rhythm v2: MP3-backed taiko. Backing track is an HTMLAudioElement and is the
+// single authoritative clock for visuals + hit detection. Drum samples are
+// pre-decoded AudioBuffers played via Web Audio (low latency, polyphonic).
+let rhythmAudio = null;
+let rhythmAudioStartedAt = 0; // performance.now() when audio.play() resolved (used as paused-fallback clock)
+let rhythmAudioPausedAt = 0;  // currentTime captured when pausing
+const drumBuffers = { don: null, ka: null };
+let drumPreloadPromise = null;
 let stackSwingX = 144;
 let stackBlocks = [];
 let currentStackShape = MINI_STACK.shapes[0];
@@ -2604,15 +2615,56 @@ function getNoteFrequency(noteName) {
   return NOTE_FREQUENCIES[noteName] || NOTE_FREQUENCIES.A4;
 }
 
-function playMelodyNote(note, config = getToyConfig()) {
-  const beatMs = getRhythmBeatMs(config);
-  const duration = Math.max(0.12, ((note.durationBeats || 0.58) * beatMs) / 1000);
-  const frequency = getNoteFrequency(note.pitch);
-  playTone(frequency, duration, 'triangle', note.accent ? 0.034 : 0.025);
-  playTone(frequency * 2, Math.min(duration, 0.28), 'sine', note.accent ? 0.014 : 0.01, 0.018);
+function preloadDrumSamples() {
+  if (drumPreloadPromise) return drumPreloadPromise;
+  const ctx = getAudioContext();
+  if (!ctx) return Promise.resolve(false);
+  drumPreloadPromise = (async () => {
+    try {
+      const [donRes, kaRes] = await Promise.all([
+        fetch('../assets/audio/sfx/quiz/don.mp3').then((r) => {
+          if (!r.ok) throw new Error('don fetch ' + r.status);
+          return r.arrayBuffer();
+        }),
+        fetch('../assets/audio/sfx/quiz/ka.mp3').then((r) => {
+          if (!r.ok) throw new Error('ka fetch ' + r.status);
+          return r.arrayBuffer();
+        })
+      ]);
+      const [donBuf, kaBuf] = await Promise.all([
+        ctx.decodeAudioData(donRes.slice(0)),
+        ctx.decodeAudioData(kaRes.slice(0))
+      ]);
+      drumBuffers.don = donBuf;
+      drumBuffers.ka = kaBuf;
+      return true;
+    } catch (err) {
+      console.warn('Drum sample preload failed; falling back to synth.', err);
+      drumPreloadPromise = null; // allow retry
+      return false;
+    }
+  })();
+  return drumPreloadPromise;
 }
 
-function playDon() {
+function playSampleBuffer(buffer, volume = 0.85) {
+  const ctx = getAudioContext();
+  if (!ctx || !buffer) return false;
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function playDonSynth() {
   const ctx = getAudioContext();
   if (!ctx) return;
   try {
@@ -2634,7 +2686,6 @@ function playDon() {
     oscGain.connect(ctx.destination);
     osc.start(start);
     osc.stop(start + 0.2);
-    // Attack click: soft 200Hz triangle
     const click = ctx.createOscillator();
     const clickGain = ctx.createGain();
     click.type = 'triangle';
@@ -2649,12 +2700,11 @@ function playDon() {
   } catch (_) {}
 }
 
-function playKa() {
+function playKaSynth() {
   const ctx = getAudioContext();
   if (!ctx) return;
   try {
     const start = ctx.currentTime;
-    // Noise burst through band-pass filter (1200-2200 Hz)
     const bufferSize = Math.floor(ctx.sampleRate * 0.12);
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -2676,7 +2726,6 @@ function playKa() {
     noiseGain.connect(ctx.destination);
     noise.start(start);
     noise.stop(start + 0.1);
-    // Tonal rim click
     const click = ctx.createOscillator();
     const clickGain = ctx.createGain();
     click.type = 'square';
@@ -2690,6 +2739,26 @@ function playKa() {
     click.start(start);
     click.stop(start + 0.08);
   } catch (_) {}
+}
+
+function playDon(volume = 0.95) {
+  // Sample-backed when available; synth fallback otherwise.
+  // Kick a preload as a side effect for the next tap.
+  if (drumBuffers.don) {
+    if (playSampleBuffer(drumBuffers.don, volume)) return;
+  } else {
+    preloadDrumSamples();
+  }
+  playDonSynth();
+}
+
+function playKa(volume = 0.9) {
+  if (drumBuffers.ka) {
+    if (playSampleBuffer(drumBuffers.ka, volume)) return;
+  } else {
+    preloadDrumSamples();
+  }
+  playKaSynth();
 }
 
 function playSfx(kind) {
@@ -2732,51 +2801,87 @@ function playSfx(kind) {
 }
 
 function stopRhythmBgm() {
+  // Legacy Web-Audio timers (no longer scheduled but cleared defensively).
   clearTimeout(rhythmBgmTimer);
   rhythmBgmTimer = null;
   rhythmBgmLastBeat = -1;
   rhythmSongTimers.forEach((timer) => clearTimeout(timer));
   rhythmSongTimers = [];
-}
-
-function playRhythmBackingBeat(beatIndex, config = getToyConfig()) {
-  const strong = beatIndex % 4 === 0;
-  const halfAccent = beatIndex % 4 === 2;
-  const chord = [196, 220, 247, 220][Math.floor((beatIndex % 8) / 2)] || 196;
-  playTone(strong ? 174 : halfAccent ? 185 : 196, strong ? 0.085 : 0.06, 'triangle', strong ? 0.028 : 0.018);
-  playTone(chord, 0.075, 'sine', strong ? 0.014 : 0.01, 0.025);
-  if (beatIndex % 2 === 1) {
-    playTone(chord * 2, 0.04, 'square', 0.008, 0.055);
+  // Stop the MP3 backing track.
+  if (rhythmAudio) {
+    try { rhythmAudio.pause(); } catch (_) {}
+    try { rhythmAudio.currentTime = 0; } catch (_) {}
+    rhythmAudio.onended = null;
+    rhythmAudio = null;
   }
+  rhythmAudioStartedAt = 0;
+  rhythmAudioPausedAt = 0;
 }
 
 function startRhythmBgm() {
-  stopRhythmBgm();
   const config = getToyConfig();
   if (config.mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused) return;
-  const beatMs = getRhythmBeatMs(config);
-  const elapsed = getRhythmElapsed(config);
-  const round = getRhythmRoundData(config);
-  const beats = getRhythmBeatsPerRound(config);
-
-  for (let beatIndex = 0; beatIndex < beats; beatIndex++) {
-    const delay = beatIndex * beatMs - elapsed;
-    if (delay < -80) continue;
-    rhythmSongTimers.push(setTimeout(() => {
-      if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
-      rhythmBgmLastBeat = beatIndex;
-      playRhythmBackingBeat(beatIndex, config);
-    }, Math.max(0, delay)));
+  const song = getRhythmSong(config);
+  if (!song || !song.audio) return;
+  // Tear down any previous instance.
+  if (rhythmAudio) {
+    try { rhythmAudio.pause(); } catch (_) {}
+    rhythmAudio.onended = null;
+    rhythmAudio = null;
   }
+  const audio = new Audio('../assets/audio/' + song.audio);
+  audio.preload = 'auto';
+  audio.volume = 0.6;
+  audio.crossOrigin = 'anonymous';
+  if (typeof song.startOffset === 'number' && song.startOffset > 0) {
+    try { audio.currentTime = song.startOffset; } catch (_) {}
+  }
+  audio.onended = () => {
+    if (rhythmAudio === audio) rhythmAudio = null;
+  };
+  rhythmAudio = audio;
+  rhythmAudioStartedAt = performance.now();
+  rhythmAudioPausedAt = 0;
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch((err) => {
+      console.warn('Rhythm BGM playback failed:', err);
+    });
+  }
+}
 
-  (round.notes || []).forEach((note) => {
-    const delay = note.beat * beatMs - elapsed;
-    if (delay < -80) return;
-    rhythmSongTimers.push(setTimeout(() => {
-      if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
-      playMelodyNote(note, config);
-    }, Math.max(0, delay)));
-  });
+function pauseRhythmBgm() {
+  if (!rhythmAudio) return;
+  try {
+    rhythmAudioPausedAt = rhythmAudio.currentTime;
+    rhythmAudio.pause();
+  } catch (_) {}
+}
+
+function resumeRhythmBgm() {
+  if (!rhythmAudio) {
+    startRhythmBgm();
+    return;
+  }
+  try {
+    if (rhythmAudioPausedAt > 0) {
+      rhythmAudio.currentTime = rhythmAudioPausedAt;
+    }
+    const p = rhythmAudio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  } catch (_) {}
+  rhythmAudioPausedAt = 0;
+}
+
+function getRhythmAudioTime() {
+  // SINGLE AUTHORITATIVE CLOCK for visual scroll + hit detection.
+  // Returns seconds since song-start; if audio object isn't ready, returns 0.
+  if (!rhythmAudio) return 0;
+  try {
+    return rhythmAudio.currentTime || 0;
+  } catch (_) {
+    return 0;
+  }
 }
 
 function getStackSurfaceY() {
@@ -2891,14 +2996,18 @@ function restoreStackSnapshot(snapshot) {
     stackBlocks = snapshot.map((block) => ({ ...block, x: block.x, body: null }));
     return;
   }
-  const { Body, World } = stackMatter;
+  const { Body, World, Sleeping } = stackMatter;
   stackBlocks = snapshot.map((block) => {
     const body = createStackPhysicsBody(block, block.x + block.w / 2, block.y + block.h / 2);
     if (body) {
       Body.setAngle(body, block.angle || 0);
       Body.setVelocity(body, { x: 0, y: 0 });
       Body.setAngularVelocity(body, 0);
-      Body.setStatic(body, true);
+      // Keep restored blocks dynamic so subsequent drops can tilt/topple them.
+      // Park them via the sleep system instead of forcing static.
+      if (Sleeping && typeof Sleeping.set === 'function') {
+        Sleeping.set(body, true);
+      }
       World.add(stackEngine.world, body);
     }
     return { ...block, body, offset: block.offset || 0 };
@@ -2908,15 +3017,21 @@ function restoreStackSnapshot(snapshot) {
 
 function stabilizeStackPhysicsBodies(includeDropping = false) {
   if (!stackMatter) return;
-  const { Body } = stackMatter;
+  const { Body, Sleeping } = stackMatter;
   const blocks = includeDropping && stackDroppingBlock
     ? [...stackBlocks, stackDroppingBlock]
     : stackBlocks;
   blocks.forEach((block) => {
     if (!block.body) return;
+    // Zero residual motion but keep blocks DYNAMIC so a new dropping block can
+    // tilt/topple the existing stack. (Forcing setStatic(true) here turned the
+    // tower into a rigid brick wall.) Allow Matter's sleep system to park the
+    // body cheaply; collisions will wake it automatically.
     Body.setVelocity(block.body, { x: 0, y: 0 });
     Body.setAngularVelocity(block.body, 0);
-    Body.setStatic(block.body, true);
+    if (Sleeping && typeof Sleeping.set === 'function') {
+      Sleeping.set(block.body, true);
+    }
   });
 }
 
@@ -3517,120 +3632,84 @@ function getStackDropTop(shape, success) {
   return clamp(MINI_STACK.stageH - landingBottom - shape.h, 52, MINI_STACK.stageH - shape.h - 6);
 }
 
-function getRhythmBeatMs(config = getToyConfig()) {
-  const round = getRhythmRoundData(config);
-  const song = getRhythmSong(config);
-  return 60000 / Math.max(40, round.bpm || song?.bpm || config.bpm || 76);
-}
-
 function getRhythmSong(config = getToyConfig()) {
   return config.song ? RHYTHM_SONGS[config.song] : null;
 }
 
 function getRhythmRoundData(config = getToyConfig()) {
+  // Backward-compatible round metadata (for UI labels only). All timing now lives
+  // on the song.notes array, not on individual rounds.
   const song = getRhythmSong(config);
-  if (!song || !Array.isArray(song.rounds) || !song.rounds.length) return { notes: [] };
-  return song.rounds[(Math.max(1, currentRound) - 1) % song.rounds.length];
+  if (!song) return { label: '' };
+  if (Array.isArray(song.rounds) && song.rounds.length) {
+    return song.rounds[(Math.max(1, currentRound) - 1) % song.rounds.length] || { label: '' };
+  }
+  return { label: song.title || '' };
 }
 
-function getRhythmBeatsPerRound(config = getToyConfig()) {
-  const round = getRhythmRoundData(config);
+function getRhythmActiveDurationMs(config = getToyConfig()) {
+  // Length of the playable window for a round, in ms.
   const song = getRhythmSong(config);
-  return round.beatsPerRound || song?.beatsPerRound || config.beatsPerRound || 8;
+  if (!song) return 30000;
+  const start = Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const end = Number.isFinite(song.endOffset) ? song.endOffset : (start + 30);
+  return Math.max(1000, (end - start) * 1000);
 }
 
-function getRhythmRoundMs(config = getToyConfig()) {
-  return getRhythmBeatsPerRound(config) * getRhythmBeatMs(config);
+function getRhythmAudioElapsedMs(config = getToyConfig()) {
+  // Audio playhead in ms, relative to the song.startOffset. Used by visuals.
+  const song = getRhythmSong(config);
+  const start = song && Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  return Math.max(0, (getRhythmAudioTime() - start) * 1000);
 }
 
-function buildDrumChart(round, config = getToyConfig()) {
-  // Generate a child-friendly drum chart from the bar/beat grid (NOT melody density).
-  // Pattern per 4-beat bar:
-  //   beat 0 -> don
-  //   beat 2 -> don
-  //   beats 1 or 3 -> ka, only when melody has an accent or strong note near that beat
-  const beats = getRhythmBeatsPerRound(config);
-  const beatsPerBar = 4;
-  const bars = Math.max(1, Math.ceil(beats / beatsPerBar));
-  // Build accent lookup: which integer beats are emphasized in the melody?
-  const melodyAccents = new Set();
-  if (round && Array.isArray(round.notes)) {
-    round.notes.forEach((note) => {
-      if (note.accent) melodyAccents.add(Math.round(note.beat));
-    });
-  }
-  const chart = [];
-  for (let bar = 0; bar < bars; bar++) {
-    const base = bar * beatsPerBar;
-    // beat 0 (downbeat) of bar -> don
-    if (base + 0 < beats) {
-      chart.push({ beat: base + 0, type: 'don' });
-    }
-    // beat 1 -> ka only if melody has an accent right there (offbeat color)
-    const beat1 = base + 1;
-    if (beat1 < beats && melodyAccents.has(beat1)) {
-      chart.push({ beat: beat1, type: 'ka' });
-    }
-    // beat 2 -> don
-    if (base + 2 < beats) {
-      chart.push({ beat: base + 2, type: 'don' });
-    }
-    // beat 3 -> ka only if melody has an accent right there
-    const beat3 = base + 3;
-    if (beat3 < beats && melodyAccents.has(beat3)) {
-      chart.push({ beat: beat3, type: 'ka' });
-    }
-  }
-  return chart;
+function buildDrumChart(_round, config = getToyConfig()) {
+  // New schema: the song already IS the chart. Round arg is kept for callers'
+  // signature compatibility but ignored — every round plays the same song-driven chart.
+  const song = getRhythmSong(config);
+  if (!song || !Array.isArray(song.notes)) return [];
+  const start = Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const end = Number.isFinite(song.endOffset) ? song.endOffset : Infinity;
+  return song.notes
+    .filter((n) => n && Number.isFinite(n.time) && n.time >= start && n.time <= end)
+    .map((n) => ({
+      time: n.time,
+      // beat kept as alias for legacy reads; equals seconds-from-audio-start.
+      beat: n.time,
+      type: n.type === 'ka' ? 'ka' : 'don'
+    }));
 }
 
 function getRhythmTapNotes(config = getToyConfig()) {
-  const round = getRhythmRoundData(config);
-  const beatMs = getRhythmBeatMs(config);
-  if (round && Array.isArray(round.notes) && round.notes.length) {
-    const drumChart = buildDrumChart(round, config);
-    return drumChart.map((drum, index) => ({
-      beat: drum.beat,
-      type: drum.type,
-      accent: drum.type === 'don',
-      index,
-      timeMs: Math.round(drum.beat * beatMs),
-      label: drum.type === 'don' ? 'ドン' : 'カッ'
-    }));
-  }
-  return getRhythmPattern(config).map((timeMs, index) => ({ index, timeMs, type: 'don', label: 'ドン' }));
+  const chart = buildDrumChart(null, config);
+  return chart.map((drum, index) => ({
+    index,
+    time: drum.time,
+    beat: drum.time, // legacy alias
+    type: drum.type,
+    accent: drum.type === 'don',
+    timeMs: Math.round(drum.time * 1000),
+    label: drum.type === 'don' ? 'ドン' : 'カッ'
+  }));
 }
 
 function getRhythmPattern(config = getToyConfig()) {
-  const round = getRhythmRoundData(config);
-  if (round && Array.isArray(round.notes) && round.notes.length) {
-    const beatMs = getRhythmBeatMs(config);
-    const drumChart = buildDrumChart(round, config);
-    return drumChart.map((drum) => Math.round(drum.beat * beatMs));
-  }
-  if (config.beatPatterns) {
-    const beatPatterns = config.beatPatterns;
-    const pattern = beatPatterns[(Math.max(1, currentRound) - 1) % beatPatterns.length];
-    const beatMs = getRhythmBeatMs(config);
-    return pattern.map((beat) => Math.round(beat * beatMs));
-  }
-  const patterns = config.patterns || [[960, 1500, 2040]];
-  return patterns[(Math.max(1, currentRound) - 1) % patterns.length];
-}
-
-function getRhythmElapsed(config = getToyConfig()) {
-  return clamp(rhythmProgress, 0, 1.2) * getRhythmRoundMs(config);
+  // Returns array of absolute-time-ms (matches legacy callers).
+  return buildDrumChart(null, config).map((d) => Math.round(d.time * 1000));
 }
 
 function getHittableRhythmNote() {
+  // Returns the index of the nearest unresolved note within the hit window
+  // measured against the audio playhead.
   const config = getToyConfig();
-  const elapsed = getRhythmElapsed(config);
-  const hitWindow = config.hitWindowMs || 190;
+  const tNow = getRhythmAudioTime();
+  const hitWindowSec = (config.hitWindowMs || 150) / 1000;
+  const tapNotes = getRhythmTapNotes(config);
   let best = { index: -1, distance: Infinity };
-  getRhythmPattern(config).forEach((hitMs, index) => {
+  tapNotes.forEach((note, index) => {
     if (rhythmNoteResults[index]) return;
-    const distance = Math.abs(elapsed - hitMs);
-    if (distance <= hitWindow && distance < best.distance) {
+    const distance = Math.abs(note.time - tNow);
+    if (distance <= hitWindowSec && distance < best.distance) {
       best = { index, distance };
     }
   });
@@ -3652,27 +3731,31 @@ function renderRhythmBeatPips(tapNotes) {
 }
 
 function getTaikoMotion(config, isCountingDown) {
+  // Audio-time-driven scroll. Pixel speed is computed so the existing CSS lane
+  // geometry (RHYTHM_LANE.startX -> hitX -> endX) maps to ~lead/exit seconds.
   const tapNotes = getRhythmTapNotes(config);
-  const elapsed = controlPhase === 'toy' ? getRhythmElapsed(config) : 0;
-  const hitWindow = config.hitWindowMs || 190;
+  const tNow = controlPhase === 'toy' ? getRhythmAudioTime() : 0;
+  const hitWindowSec = (config.hitWindowMs || 150) / 1000;
   const previewOnly = controlPhase === 'ready' || isCountingDown;
   const notes = [];
   let hitWave = 0;
+  const leadSec = (RHYTHM_LANE.leadMs || 2050) / 1000;
+  const exitSec = (RHYTHM_LANE.exitMs || 780) / 1000;
+  const approachPxPerSec = (RHYTHM_LANE.startX - RHYTHM_LANE.hitX) / Math.max(0.1, leadSec);
+  const exitPxPerSec = (RHYTHM_LANE.hitX - RHYTHM_LANE.endX) / Math.max(0.1, exitSec);
 
   if (previewOnly) {
     notes.push({ index: 0, x: RHYTHM_LANE.startX, state: 'preview', active: false, label: 'ドン', accent: true, type: 'don' });
   } else {
     tapNotes.forEach((tapNote, index) => {
-      const hitMs = tapNote.timeMs;
+      const noteTime = tapNote.time;
       const result = rhythmNoteResults[index];
-      const appearAt = hitMs - RHYTHM_LANE.leadMs;
-      const leaveAt = hitMs + RHYTHM_LANE.exitMs;
-      if (result === 'hit' || elapsed < appearAt || elapsed > leaveAt) return;
-      const beforeHit = elapsed <= hitMs;
-      const x = beforeHit
-        ? RHYTHM_LANE.startX + (RHYTHM_LANE.hitX - RHYTHM_LANE.startX) * ((elapsed - appearAt) / RHYTHM_LANE.leadMs)
-        : RHYTHM_LANE.hitX + (RHYTHM_LANE.endX - RHYTHM_LANE.hitX) * ((elapsed - hitMs) / RHYTHM_LANE.exitMs);
-      const proximity = Math.max(0, 1 - Math.abs(elapsed - hitMs) / hitWindow);
+      const delta = tNow - noteTime; // negative = upcoming, positive = past
+      if (result === 'hit' || delta < -leadSec || delta > exitSec) return;
+      const x = delta <= 0
+        ? RHYTHM_LANE.hitX + (-delta) * approachPxPerSec
+        : RHYTHM_LANE.hitX - delta * exitPxPerSec;
+      const proximity = Math.max(0, 1 - Math.abs(delta) / hitWindowSec);
       if (!result) hitWave = Math.max(hitWave, proximity);
       notes.push({
         index,
@@ -3688,7 +3771,7 @@ function getTaikoMotion(config, isCountingDown) {
 
   const hitReady = hitWave > 0.3;
   const down = hitWave;
-  const idle = previewOnly ? 0 : Math.sin((elapsed / 1000) * Math.PI * 2) * 5;
+  const idle = previewOnly ? 0 : Math.sin(tNow * Math.PI * 2) * 5;
   const bachiY = 44 + down * 44 + idle * (1 - down);
   return {
     hitReady,
@@ -3808,7 +3891,11 @@ function renderToyBoard(feedback = lastToyFeedback) {
       ? renderStackBlockHtml(
           stackDroppingBlock,
           [
-            'falling',
+            // Skip 'falling' when in physics mode: the .stack-block.falling rule
+            // pins top:42px and runs miniBlockDrop keyframes that fight the
+            // physics-driven translate(--block-x, --block-y) and cause the block
+            // to visually pierce the floor. Physics ticks animate via transform.
+            stackDroppingBlock.body ? '' : 'falling',
             stackDroppingBlock.success === false ? 'miss' : 'hit',
             stackDroppingBlock.collapse ? 'collapse' : ''
           ].filter(Boolean),
@@ -3860,6 +3947,9 @@ function clearRattleCountdown() {
 function startRattleCountdown() {
   const config = getToyConfig();
   clearRattleCountdown();
+  // Tap "はじめる" is a user gesture; safe to unlock audio + start preloading drum samples.
+  getAudioContext();
+  preloadDrumSamples();
   controlPhase = 'countdown';
   rhythmProgress = 0;
   rhythmCuePlayed = false;
@@ -3948,13 +4038,14 @@ function startToyMeter() {
 
 function startRhythmRound() {
   const config = getToyConfig();
-  const pattern = getRhythmPattern(config);
+  const song = getRhythmSong(config);
+  const tapNotes = getRhythmTapNotes(config);
   controlPhase = 'toy';
   powerValue = 0;
   rhythmProgress = 0;
   rhythmCuePlayed = false;
-  rhythmCueMarks = Array(pattern.length).fill(false);
-  rhythmNoteResults = Array(pattern.length).fill('');
+  rhythmCueMarks = Array(tapNotes.length).fill(false);
+  rhythmNoteResults = Array(tapNotes.length).fill('');
   rhythmLastHitIndex = -1;
   rhythmMeasureHits = 0;
   rhythmPaused = false;
@@ -3972,7 +4063,11 @@ function startRhythmRound() {
   renderToyBoard();
   startRhythmBgm();
 
-  const tick = (now) => {
+  const startOffset = song && Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const endOffset = song && Number.isFinite(song.endOffset) ? song.endOffset : Infinity;
+  const missWindowSec = (config.passWindowMs || 220) / 1000;
+
+  const tick = () => {
     if (controlPhase !== 'toy' || getToyConfig().mode !== 'rhythm' || gameComplete || playedThisRound) {
       stopRhythmBgm();
       stopPowerMeter();
@@ -3982,22 +4077,20 @@ function startRhythmRound() {
       powerFrame = requestAnimationFrame(tick);
       return;
     }
-    const elapsed = now - miniRoundStartedAt;
-    const measureMs = getRhythmRoundMs(config);
-    rhythmProgress = elapsed / measureMs;
+    const tNow = getRhythmAudioTime();
+    const elapsedMs = getRhythmAudioElapsedMs(config);
+    const totalMs = getRhythmActiveDurationMs(config);
+    rhythmProgress = clamp(elapsedMs / Math.max(1, totalMs), 0, 1.05);
     powerValue = clamp(rhythmProgress, 0, 1);
-    pattern.forEach((hitMs, index) => {
-      if (!rhythmCueMarks[index] && elapsed >= hitMs - 120) {
-        rhythmCueMarks[index] = true;
-        playSfx('drumCue');
-      }
-      if (!rhythmNoteResults[index] && elapsed > hitMs + (config.passWindowMs || 245)) {
+    tapNotes.forEach((tapNote, index) => {
+      if (!rhythmNoteResults[index] && tNow - tapNote.time > missWindowSec) {
         rhythmNoteResults[index] = 'miss';
         lastToyFeedback = 'miss';
       }
     });
     renderToyBoard();
-    if (elapsed >= measureMs) {
+    const audioDone = !rhythmAudio || (rhythmAudio.ended === true);
+    if (tNow >= endOffset || (audioDone && elapsedMs > 200)) {
       finishRhythmMeasure();
       return;
     }
@@ -4015,7 +4108,8 @@ function handleRhythmAction() {
   if (controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
   const noteIndex = getHittableRhythmNote();
   if (noteIndex < 0) {
-    playSfx('mistake');
+    // No note in window — quiet feedback ka so children still feel responsive.
+    playKa(0.32);
     lastToyFeedback = 'miss';
     guideText.textContent = 'まるに きたら ドン！';
     messageBar.textContent = 'メロディをきいて、音符が丸にくるところをねらおう。';
@@ -4032,7 +4126,7 @@ function handleRhythmAction() {
   rhythmLastHitIndex = noteIndex;
   rhythmMeasureHits += 1;
   lastToyFeedback = 'hit';
-  // Look up the drum note type for the hit index and play matching drum sample.
+  // Play the drum sample matching the chart note type at full volume.
   const tapNotes = getRhythmTapNotes(config);
   const hitNote = tapNotes[noteIndex];
   if (hitNote && hitNote.type === 'ka') {
@@ -4051,7 +4145,7 @@ function toggleRhythmPause() {
   if (!rhythmPaused) {
     rhythmPaused = true;
     rhythmPauseStartedAt = performance.now();
-    stopRhythmBgm();
+    pauseRhythmBgm();
     guideText.textContent = 'ポーズ中';
     messageBar.textContent = 'つづけるを押すと、またリズムが動くよ。';
     renderToyBoard();
@@ -4059,13 +4153,11 @@ function toggleRhythmPause() {
     return;
   }
   rhythmPaused = false;
-  const pausedFor = performance.now() - rhythmPauseStartedAt;
-  miniRoundStartedAt += pausedFor;
   rhythmPauseStartedAt = 0;
   guideText.textContent = `${currentRound}回目：きょくに あわせて ドン！`;
   messageBar.textContent = 'メロディをきいて、音符がみどりの丸に重なったらドン！';
   renderToyBoard();
-  startRhythmBgm();
+  resumeRhythmBgm();
   playSfx('success');
 }
 
