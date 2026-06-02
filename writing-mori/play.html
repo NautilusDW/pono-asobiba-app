@@ -2687,6 +2687,18 @@ function getStackSurfaceY() {
   return MINI_STACK.stageH - MINI_STACK.baseBottom;
 }
 
+function getStackPlatformLeft() {
+  return Number.isFinite(MINI_STACK.visualBaseLeft) ? MINI_STACK.visualBaseLeft : MINI_STACK.baseLeft;
+}
+
+function getStackPlatformWidth() {
+  return Number.isFinite(MINI_STACK.visualBaseW) ? MINI_STACK.visualBaseW : MINI_STACK.baseW;
+}
+
+function getStackTargetSurfaceY(target = getStackTarget()) {
+  return MINI_STACK.stageH - (target.surfaceBottom ?? target.bottom ?? MINI_STACK.baseBottom);
+}
+
 function getStackFlatTilt(angle = 0) {
   const normalized = Math.atan2(Math.sin(angle), Math.cos(angle));
   const abs = Math.abs(normalized);
@@ -2709,20 +2721,18 @@ function createStackPhysicsWorld(resetBlocks = true) {
 
   const { Engine, Bodies, World } = stackMatter;
   stackEngine = Engine.create({ gravity: { y: 1.05 } });
+  stackEngine.positionIterations = 10;
+  stackEngine.velocityIterations = 8;
+  stackEngine.constraintIterations = 4;
   const platformTop = getStackSurfaceY();
+  const platformLeft = getStackPlatformLeft();
+  const platformW = getStackPlatformWidth();
   const platform = Bodies.rectangle(
-    MINI_STACK.baseLeft + MINI_STACK.baseW / 2,
+    platformLeft + platformW / 2,
     platformTop + 12,
-    MINI_STACK.baseW,
+    platformW,
     24,
     { isStatic: true, label: 'stack-platform', friction: 1.2, render: { visible: false } }
-  );
-  const ground = Bodies.rectangle(
-    MINI_STACK.stageW / 2,
-    MINI_STACK.stageH + 42,
-    MINI_STACK.stageW * 2,
-    84,
-    { isStatic: true, label: 'stack-ground', render: { visible: false } }
   );
   const wallL = Bodies.rectangle(-34, MINI_STACK.stageH / 2, 68, MINI_STACK.stageH * 2, {
     isStatic: true,
@@ -2734,7 +2744,7 @@ function createStackPhysicsWorld(resetBlocks = true) {
     label: 'stack-wall',
     render: { visible: false }
   });
-  World.add(stackEngine.world, [platform, ground, wallL, wallR]);
+  World.add(stackEngine.world, [platform, wallL, wallR]);
   return true;
 }
 
@@ -2820,7 +2830,7 @@ function removeStackPhysicsBlock(block) {
 
 function isStackBodyOut(body) {
   return !body
-    || body.position.y > MINI_STACK.stageH + 84
+    || body.position.y > MINI_STACK.stageH + 112
     || body.position.x < -90
     || body.position.x > MINI_STACK.stageW + 90;
 }
@@ -2841,8 +2851,14 @@ function getStackPhysicsOutcome() {
   const allBlocks = [...stackBlocks, stackDroppingBlock].filter((block) => block.body);
   const maxTilt = allBlocks.reduce((max, block) => Math.max(max, getStackFlatTilt(block.body.angle)), 0);
   const anyCollapsed = allBlocks.some((block) => isStackBodyOut(block.body) || getStackFlatTilt(block.body.angle) > 0.95);
-  const landed = !isStackBodyOut(body) && body.position.y < MINI_STACK.stageH - 8;
-  const collapse = anyCollapsed || droppedTilt > 0.62 || edgeRatio > 1.08 || initialEdgeRatio > 1;
+  const surfaceY = getStackTargetSurfaceY(target);
+  const bodyBottom = body.bounds.max.y;
+  const surfaceError = bodyBottom - surfaceY;
+  const surfaceTolerance = Math.max(12, Math.min(20, shape.h * 0.28));
+  const restedOnSurface = Math.abs(surfaceError) <= surfaceTolerance;
+  const piercedSurface = surfaceError > surfaceTolerance;
+  const landed = !isStackBodyOut(body) && restedOnSurface;
+  const collapse = anyCollapsed || piercedSurface || droppedTilt > 0.62 || edgeRatio > 1.08 || initialEdgeRatio > 1;
   const success = stackDroppingBlock.initialDropHit !== false && landed && !collapse;
   return {
     physics: true,
@@ -2852,7 +2868,8 @@ function getStackPhysicsOutcome() {
     wobble: success && (initialEdgeRatio > 0.52 || edgeRatio > 0.42 || droppedTilt > 0.12 || maxTilt > 0.15),
     offset,
     edgeRatio,
-    initialEdgeRatio
+    initialEdgeRatio,
+    surfaceError
   };
 }
 
@@ -3395,8 +3412,9 @@ function getStackDropOutcome(landed) {
 }
 
 function getStackDropTop(shape, success) {
+  if (!success) return MINI_STACK.stageH + 18;
   const target = getStackTarget();
-  const landingBottom = success ? target.bottom : MINI_STACK.baseBottom - 8;
+  const landingBottom = target.bottom;
   return clamp(MINI_STACK.stageH - landingBottom - shape.h, 52, MINI_STACK.stageH - shape.h - 6);
 }
 
@@ -4317,7 +4335,7 @@ function resolveStackRound(landed) {
     resolveStackRoundFallback(landed);
     return;
   }
-  stackMatter.Body.setVelocity(body, { x: 0, y: 5.2 });
+  stackMatter.Body.setVelocity(body, { x: 0, y: 0 });
   stackMatter.World.add(stackEngine.world, body);
   stackDroppingBlock = {
     body,
