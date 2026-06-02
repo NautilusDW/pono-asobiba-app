@@ -382,8 +382,9 @@ button {
   display: none;
 }
 
-.playfield[data-toy="rattle"] .power-meter {
-  display: none;
+.playfield[data-toy="rattle"] .power-meter,
+.playfield[data-toy="blocks"] .power-meter {
+  display: none !important;
 }
 
 .playfield[data-toy="rattle"] .toy-mode-board {
@@ -1549,7 +1550,11 @@ button {
 .block-stack {
   position: relative;
   width: 760px;
-  height: 314px;
+  /* Raised 314 -> 364 (+50px) in lockstep with MINI_STACK.stageH. The orange
+     floor (.block-base-line) stays pinned to bottom:0 so it drops 50px lower,
+     freeing more stacking headroom above. The crane/swing is anchored to the
+     top (spawn y = 42px) so it is unaffected. */
+  height: 364px;
   overflow: hidden;
 }
 
@@ -2164,14 +2169,19 @@ const STAR_POINTS = [
 ];
 const MINI_STACK = {
   stageW: 760,
-  stageH: 314,
+  // Raised 314 -> 364 (+50px) in lockstep with .block-stack { height: 364px }.
+  // Physics platform top = stageH - baseBottom = 364 - 24 = 340; visual floor
+  // top = stageH - bottom(0) - height(24) = 340. Aligned. The +50px lands
+  // entirely below the spawn point (top y = 42px), so it is pure extra
+  // stacking room and the crane/swing stays put.
+  stageH: 364,
   baseLeft: 245,
   baseW: 270,
   visualBaseLeft: 176,
   visualBaseW: 408,
-  // Lowered 36 -> 24 in lockstep with .block-base-line { bottom: 0 } so the
-  // physics platform top stays aligned with the visual floor top. Net effect:
-  // ~12px more vertical room above the floor for stacking.
+  // 24 == .block-base-line height with bottom:0, so physics platform top
+  // (stageH - baseBottom) stays exactly aligned with the visual floor top
+  // (stageH - 0 - 24). This invariant must hold: baseBottom == floor height.
   baseBottom: 24,
   minX: 44,
   maxX: 660,
