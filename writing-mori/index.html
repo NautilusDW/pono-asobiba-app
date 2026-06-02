@@ -2458,6 +2458,11 @@ async function buildPixelLetterMask(data, item, token) {
     let mapMedianPoint = null;
     let writerOffsetX = offsetX;
     let writerOffsetY = offsetY;
+    const baseSplit = splitGuideMaskByNearestMedian(guideMask, data.medians, gridSize);
+    if (baseSplit && baseSplit.strokeMasks) {
+      strokeMasks = baseSplit.strokeMasks;
+      mapMedianPoint = baseSplit.mapMedianPoint;
+    }
     if (item && item.guideSvg) {
       try {
         const customGuide = await loadGuideSvgMask(item, gridSize);
@@ -2528,11 +2533,6 @@ function renderPixelLetter() {
         trailCtx.fillStyle = hash < 2 ? 'rgba(117, 104, 88, 0.21)' : 'rgba(105, 93, 79, 0.16)';
       }
       trailCtx.fillRect(Math.floor(x * cell), Math.floor(y * cell), Math.ceil(cell) + 0.5, Math.ceil(cell) + 0.5);
-
-      if (isFilled && hash === 0) {
-        trailCtx.fillStyle = 'rgba(255, 232, 142, 0.55)';
-        trailCtx.fillRect(Math.floor(x * cell + cell * 0.58), Math.floor(y * cell + cell * 0.1), Math.max(1, cell * 0.33), Math.max(1, cell * 0.33));
-      }
     }
   }
   trailCtx.restore();
@@ -2800,24 +2800,23 @@ function distance(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-function getAllowedStrokeLimit() {
+function getActivePaintStrokeIndex() {
   const item = getCurrentCharacter();
   if (!pixelLetter || !item || !Array.isArray(pixelLetter.strokeMasks)) return -1;
-  return Math.max(0, Math.min(item.strokes - 1, currentStrokeIndex));
+  const strokeIndex = activeAttemptStroke >= 0 ? activeAttemptStroke : currentStrokeIndex;
+  return Math.max(0, Math.min(item.strokes - 1, strokeIndex));
 }
 
-function isAllowedStrokePixel(index, limit) {
-  if (!pixelLetter || limit < 0) return false;
-  for (let strokeIndex = 0; strokeIndex <= limit; strokeIndex++) {
-    if (pixelLetter.strokeMasks[strokeIndex] && pixelLetter.strokeMasks[strokeIndex][index]) return true;
-  }
-  return false;
+function isAllowedStrokePixel(index, strokeIndex) {
+  if (!pixelLetter || strokeIndex < 0) return false;
+  const strokeMask = pixelLetter.strokeMasks[strokeIndex];
+  return !!(strokeMask && strokeMask[index]);
 }
 
 function fillLetterPixelsAt(point, radius) {
   if (!pixelLetter) return { changed: 0, touched: 0 };
   const { gridSize, mask, fill } = pixelLetter;
-  const allowedStrokeLimit = getAllowedStrokeLimit();
+  const activePaintStroke = getActivePaintStrokeIndex();
   const gx = Math.floor((point.x / 1000) * gridSize);
   const gy = Math.floor((point.y / 1000) * gridSize);
   let changed = 0;
@@ -2834,7 +2833,7 @@ function fillLetterPixelsAt(point, radius) {
       const index = y * gridSize + x;
       if (!mask[index]) continue;
       touched += 1;
-      if (!isAllowedStrokePixel(index, allowedStrokeLimit)) {
+      if (!isAllowedStrokePixel(index, activePaintStroke)) {
         blocked += 1;
         continue;
       }
@@ -3181,7 +3180,20 @@ function finishTrailAttempt() {
 }
 
 function onCorrectStroke(data) {
+  const item = getCurrentCharacter();
+  const expectedStroke = Math.min(strokesCompleted, Math.max(0, (item && item.strokes || 1) - 1));
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  if (strokeNum !== expectedStroke) {
+    if (strokeNum > expectedStroke) {
+      pendingCorrectStroke = null;
+      activeAttemptHadMistake = true;
+      clearStrokePixels(strokeNum);
+      renderPixelLetter();
+      startWriterQuiz(expectedStroke);
+      setMessage(`${expectedStroke + 1}かくめを なぞってね`, 'じゅんばんに かこう');
+    }
+    return;
+  }
   if (strokeNum >= strokesCompleted && !hasAttemptReachedStrokeEnd(strokeNum)) {
     pendingCorrectStroke = { strokeNum, data };
     setMessage(`${strokeNum + 1}かくめ、さいごの ところまで なぞってね`, 'あとすこし');
@@ -3192,7 +3204,9 @@ function onCorrectStroke(data) {
 
 function acceptCorrectStroke(data) {
   const item = getCurrentCharacter();
-  const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
+  const expectedStroke = Math.min(strokesCompleted, Math.max(0, (item && item.strokes || 1) - 1));
+  const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : expectedStroke;
+  const strokeNum = rawStrokeNum === expectedStroke ? rawStrokeNum : expectedStroke;
   playSfx('strokeOk');
   pendingCorrectStroke = null;
   fillStrokePixels(strokeNum);

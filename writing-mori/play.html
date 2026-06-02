@@ -3248,9 +3248,14 @@ function isStackDropSuccess() {
   return Math.abs(blockCenter - targetCenter) <= getStackAllowedOffset(target, shape);
 }
 
+function getStackRequiredOverlap(target, shape) {
+  return Math.min(target.width, shape.w) * 0.68;
+}
+
 function getStackAllowedOffset(target, shape) {
-  const base = Math.min(target.width, shape.w) * 0.52;
-  return Math.max(42, base + MINI_STACK.bonus);
+  const requiredOverlap = getStackRequiredOverlap(target, shape);
+  const overlapAllowed = (target.width + shape.w) / 2 - requiredOverlap;
+  return Math.max(28, overlapAllowed + MINI_STACK.bonus);
 }
 
 function getStackDropOutcome(landed) {
