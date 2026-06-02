@@ -144,11 +144,26 @@
   };
 
   // ==========================================================================
-  // STYLES — 5 arrangement presets. Drum beat positions are 0-indexed within a
-  // 4/4 bar (0,1,2,3 == beats 1,2,3,4). hat ∈ eighths|quarters|offbeats|none.
+  // STYLES — arrangement presets (v2). Drum beat positions are 0-indexed within
+  // a 4/4 bar (0,1,2,3 == beats 1,2,3,4). hat ∈ eighths|quarters|offbeats|none.
+  //
+  // v2 fields (all optional; absent => v1 behaviour for that aspect):
+  //   stereo:{on,width}                — final-stage stereo mixdown.
+  //   reverb:{on,wet,send:{lead,pad},decay,predelayMs} — Schroeder reverb send.
+  //   lead:{...,adsr,vibrato,layer}    — lead timbre depth (onset pitch exact).
+  //   comp:{mode,subdiv,gain,timbre,voicing} — comping layer (replaces pad when
+  //                                     present; mode 'auto' follows section
+  //                                     intensity). mode ∈ sustain|arp|broken|stab.
+  //   bass:{pattern,...}               — pattern ∈ none|root-half|root-quarters|
+  //                                     root-fifth-alt|octave-bounce|walking-simple.
+  //   sectionProfile:[i1,i2,i3,i4]     — per-section intensity ramp (1..4).
+  //   fills:bool                       — snare/tom fill at the last bar of a
+  //                                     section (intensity>=3).
+  //   intro:{bars}                     — bars of intro before the lead enters.
+  //   outro:{heldChord,crash}          — held tonic chord + optional crash tail.
   // ==========================================================================
   const STYLES = {
-    // chiptune — mirrors the proven Path B chiptune arrangement.
+    // chiptune — bright 8-bit; arp-8 comp, octave-bounce bass, fills, wide image.
     chiptune: {
       id: 'chiptune',
       label: 'チップチューン (Chiptune)',
@@ -158,13 +173,23 @@
         kick: [0, 2], snare: [1, 3], hat: 'eighths',
         gains: { kick: 1.0, snare: 0.7, hat: 0.32, master: 0.55 },
       },
-      bass: { style: 'root-quarters', octaveShift: 0, timbre: 'triangle', gain: 0.40 },
-      pad: { on: true, voicing: 'thin', timbre: 'square', gain: 0.10 },
-      lead: { timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.85 },
+      bass: { pattern: 'octave-bounce', octaveShift: 0, timbre: 'triangle', gain: 0.40 },
+      comp: { mode: 'auto', subdiv: 8, gain: 0.13, timbre: { kind: 'square', duty: 0.25 }, voicing: 'triad+oct' },
+      lead: {
+        timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.85,
+        vibrato: { rateHz: 6.0, depthCents: 6, delaySec: 0.10 },
+        layer: { detuneCents: 8, octave: 0, gain: 0.18 },
+      },
+      stereo: { on: true, width: 0.6 },
+      reverb: { on: true, wet: 0.22, send: { lead: 0.16, pad: 0.26 }, decay: 0.6, predelayMs: 18 },
+      sectionProfile: [1, 2, 3, 4],
+      fills: true,
+      intro: { bars: 0 },
+      outro: { heldChord: true, crash: true },
       master: { targetPeak: 0.84 },
     },
 
-    // happy-pop — bright pop with full pad and bell-ish lead.
+    // happy-pop — bright pop; arp+add9 comp, bell+octave lead layer, 1-bar intro.
     'happy-pop': {
       id: 'happy-pop',
       label: 'ハッピーポップ (Happy Pop)',
@@ -174,13 +199,23 @@
         kick: [0, 2], snare: [1, 3], hat: 'eighths',
         gains: { kick: 1.0, snare: 0.7, hat: 0.30, master: 0.55 },
       },
-      bass: { style: 'root-quarters', octaveShift: 0, timbre: 'triangle', gain: 0.42 },
-      pad: { on: true, voicing: 'triad', timbre: 'square', gain: 0.14 },
-      lead: { timbre: 'bell', duty: 0.5, peak: 0.55, gain: 0.82 },
+      bass: { pattern: 'root-quarters', octaveShift: 0, timbre: 'triangle', gain: 0.42 },
+      comp: { mode: 'auto', subdiv: 8, gain: 0.15, timbre: { kind: 'square', duty: 0.5 }, voicing: 'add9' },
+      lead: {
+        timbre: 'bell', duty: 0.5, peak: 0.55, gain: 0.82,
+        vibrato: { rateHz: 5.5, depthCents: 8, delaySec: 0.09 },
+        layer: { detuneCents: 0, octave: 1, gain: 0.16 },
+      },
+      stereo: { on: true, width: 0.65 },
+      reverb: { on: true, wet: 0.28, send: { lead: 0.20, pad: 0.30 }, decay: 0.7, predelayMs: 20 },
+      sectionProfile: [1, 2, 3, 4],
+      fills: true,
+      intro: { bars: 1 },
+      outro: { heldChord: true, crash: true },
       master: { targetPeak: 0.84 },
     },
 
-    // kids-dance — energetic four-on-the-floor dance groove.
+    // kids-dance — four-on-the-floor; stab comp, root-fifth bass, 1-bar intro.
     'kids-dance': {
       id: 'kids-dance',
       label: 'キッズダンス (Kids Dance)',
@@ -190,13 +225,24 @@
         kick: [0, 1, 2, 3], snare: [1, 3], hat: 'offbeats',
         gains: { kick: 0.95, snare: 0.68, hat: 0.32, master: 0.55 },
       },
-      bass: { style: 'root-fifth-alt', octaveShift: 0, timbre: 'triangle', gain: 0.42 },
-      pad: { on: true, voicing: 'open5', timbre: 'square', gain: 0.12 },
-      lead: { timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.82 },
+      bass: { pattern: 'root-fifth-alt', octaveShift: 0, timbre: 'triangle', gain: 0.42 },
+      comp: { mode: 'stab', subdiv: 8, gain: 0.14, timbre: { kind: 'square', duty: 0.5 }, voicing: 'open5' },
+      lead: {
+        timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.82,
+        vibrato: { rateHz: 6.5, depthCents: 5, delaySec: 0.10 },
+        layer: { detuneCents: 10, octave: 0, gain: 0.16 },
+      },
+      stereo: { on: true, width: 0.7 },
+      reverb: { on: true, wet: 0.18, send: { lead: 0.12, pad: 0.22 }, decay: 0.5, predelayMs: 14 },
+      sectionProfile: [1, 2, 3, 4],
+      fills: true,
+      intro: { bars: 1 },
+      outro: { heldChord: true, crash: true },
       master: { targetPeak: 0.84 },
     },
 
-    // lullaby — gentle, sparse, no drums.
+    // lullaby — gentle, sine timbres, broken-chord comp, NO drums, flat-low
+    // profile so it stays soft, longer reverb, no crash.
     lullaby: {
       id: 'lullaby',
       label: '子守唄 (Lullaby)',
@@ -206,13 +252,22 @@
         kick: [], snare: [], hat: 'none',
         gains: { kick: 0, snare: 0, hat: 0, master: 0 },
       },
-      bass: { style: 'root-half', octaveShift: 0, timbre: 'sine', peak: 0.5, gain: 0.34 },
-      pad: { on: true, voicing: 'triad', timbre: 'sine', gain: 0.16 },
-      lead: { timbre: 'bell', duty: 0.5, peak: 0.5, gain: 0.85 },
+      bass: { pattern: 'root-half', octaveShift: 0, timbre: 'sine', peak: 0.5, gain: 0.34 },
+      comp: { mode: 'broken', subdiv: 4, gain: 0.16, timbre: { kind: 'sine', peak: 0.7 }, voicing: 'triad' },
+      lead: {
+        timbre: 'bell', duty: 0.5, peak: 0.5, gain: 0.85,
+        vibrato: { rateHz: 5.0, depthCents: 6, delaySec: 0.12 },
+      },
+      stereo: { on: true, width: 0.5 },
+      reverb: { on: true, wet: 0.34, send: { lead: 0.24, pad: 0.30 }, decay: 0.85, predelayMs: 24 },
+      sectionProfile: [2, 2, 2, 2], // flat LOW profile — stays soft, no big ramp
+      fills: false,
+      intro: { bars: 0 },
+      outro: { heldChord: true, crash: false },
       master: { targetPeak: 0.84 },
     },
 
-    // march — steady marching feel with doubled snare and quarter hats.
+    // march — steady; doubled snare, walking bass, punchy/dry (reverb off).
     march: {
       id: 'march',
       label: 'マーチ (March)',
@@ -222,9 +277,43 @@
         kick: [0, 2], snare: [1, 3], snareDoubled: true, hat: 'quarters',
         gains: { kick: 1.0, snare: 0.66, hat: 0.30, master: 0.55 },
       },
-      bass: { style: 'root-quarters', octaveShift: 0, timbre: 'triangle', gain: 0.42 },
-      pad: { on: false, voicing: 'triad', timbre: 'square', gain: 0.10 },
-      lead: { timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.84 },
+      bass: { pattern: 'walking-simple', octaveShift: 0, timbre: 'triangle', gain: 0.42 },
+      comp: { mode: 'auto', subdiv: 8, gain: 0.11, timbre: { kind: 'square', duty: 0.5 }, voicing: 'triad' },
+      lead: {
+        timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.84,
+        vibrato: { rateHz: 5.5, depthCents: 4, delaySec: 0.10 },
+      },
+      stereo: { on: true, width: 0.45 },
+      reverb: { on: false, wet: 0, send: { lead: 0, pad: 0 }, decay: 0.5, predelayMs: 10 },
+      sectionProfile: [2, 3, 3, 4],
+      fills: true,
+      intro: { bars: 0 },
+      outro: { heldChord: true, crash: true },
+      master: { targetPeak: 0.84 },
+    },
+
+    // minimal — ROLLBACK ANCHOR. Reproduces v1-ish mono: stereo off, reverb off,
+    // comp sustain (v1 pad), bass root-quarters, flat profile [3,3,3,3] (full
+    // density everywhere, no development), no intro/outro, v1 lead envelope (no
+    // adsr/vibrato/layer).
+    minimal: {
+      id: 'minimal',
+      label: 'ミニマル (Minimal / v1)',
+      defaultBpm: 120,
+      feel: 'straight',
+      drum: {
+        kick: [0, 2], snare: [1, 3], hat: 'eighths',
+        gains: { kick: 1.0, snare: 0.7, hat: 0.32, master: 0.55 },
+      },
+      bass: { pattern: 'root-quarters', octaveShift: 0, timbre: 'triangle', gain: 0.40 },
+      comp: { mode: 'sustain', subdiv: 8, gain: 0.10, timbre: { kind: 'square', duty: 0.5 }, voicing: 'thin' },
+      lead: { timbre: 'square', duty: 0.5, peak: 0.55, gain: 0.85 },
+      stereo: { on: false, width: 0 },
+      reverb: { on: false, wet: 0, send: { lead: 0, pad: 0 }, decay: 0.5, predelayMs: 0 },
+      sectionProfile: [3, 3, 3, 3],
+      fills: false,
+      intro: { bars: 0 },
+      outro: { heldChord: false, crash: false },
       master: { targetPeak: 0.84 },
     },
   };

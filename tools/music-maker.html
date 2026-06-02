@@ -171,6 +171,25 @@
           <div class="field"><label>BPM</label><input type="number" id="bpmIn" min="40" max="240" step="1" value="120"></div>
           <div class="field"><label>キー</label><select id="keySel"></select></div>
         </div>
+        <div class="row" style="margin-top:10px">
+          <div class="field"><label>コンピング</label>
+            <select id="compSel">
+              <option value="auto">auto（スタイル既定）</option>
+              <option value="sustain">sustain（持続）</option>
+              <option value="arp">arp（分散）</option>
+              <option value="broken">broken（崩し）</option>
+              <option value="stab">stab（刻み）</option>
+            </select>
+          </div>
+          <div class="field"><label>リバーブ量 <span id="reverbVal">22%</span></label>
+            <input type="range" id="reverbRange" min="0" max="100" step="1" value="22" style="width:120px">
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="ghost" id="stereoBtn">ステレオ: ON</button>
+          <button class="ghost" id="sectionsBtn">展開 (セクション強弱): ON</button>
+        </div>
+        <div class="hint">スタイルを選ぶと既定のステレオ/リバーブ/展開が読み込まれます。ここでの上書きは選択スタイルを複製した一時設定にのみ適用され、元データは変更しません（プレビュー音 == WAV）。</div>
       </div>
 
       <div class="card">
@@ -367,6 +386,12 @@ let state = {
   beatsPerStep: 0.5,
   stepNotes: null,    // null => プリセット曲を使う。配列 => シーケンサ作曲を使う。
   importedMelody: null, // インポートされた {note,beats}[]（あれば最優先で生成に使用）
+  // v2 per-render overrides（MusicLibrary.STYLES は決して変更しない。生成時に
+  // 選択スタイルの structuredClone へ浅くマージするだけ）。
+  stereoOn: true,     // ステレオ on/off
+  sectionsOn: true,   // 展開（セクション強弱）on/off。off で flat profile [3,3,3,3]
+  reverbPct: 22,      // リバーブ量 0..100（%）。0 で reverb.on=false
+  compMode: 'auto',   // 'auto'（スタイル既定） | 'sustain' | 'arp' | 'broken' | 'stab'
 };
 
 // 生成結果
@@ -399,6 +424,29 @@ function resolveMelody() {
   return def ? def.melody.slice() : [];
 }
 
+// v2: 選択スタイルを複製し、UIの上書きを「浅く」マージした一時スタイルを返す。
+// MusicLibrary.STYLES は決して破壊的に変更しない（structuredClone で隔離）。
+// 決定論: ここで rng は一切使わない（同じ入力 => 同じ WAV）。
+function buildStyleOverride(styleId) {
+  const base = ML.STYLES[styleId] || ML.STYLES[ML.STYLES_KEYS[0]];
+  // structuredClone はモダンブラウザにあるが、念のためフォールバック。
+  const clone = (typeof structuredClone === 'function')
+    ? structuredClone(base)
+    : JSON.parse(JSON.stringify(base));
+  // ステレオ off → stereo.on=false（width 等は維持）。on のときはスタイル既定のまま。
+  if (!state.stereoOn) clone.stereo = Object.assign({}, clone.stereo, { on: false });
+  // リバーブ量: 0 で off、>0 で on + wet=pct/100。send/decay/predelay は既定維持。
+  const reverbPct = Math.max(0, Math.min(100, Number(state.reverbPct) || 0));
+  clone.reverb = Object.assign({}, clone.reverb, { wet: reverbPct / 100, on: reverbPct > 0 });
+  // コンピング: 'auto' 以外を選んだらモードを固定上書き。
+  if (state.compMode && state.compMode !== 'auto') {
+    clone.comp = Object.assign({}, clone.comp, { mode: state.compMode });
+  }
+  // 展開 off → flat profile [3,3,3,3]（強弱なし=全編フル密度）。
+  if (!state.sectionsOn) clone.sectionProfile = [3, 3, 3, 3];
+  return clone;
+}
+
 async function generate() {
   if (!ME || !ML) { setStatus('エンジン未ロード（../js/music-engine.js を確認）', 'err'); return; }
   const melody = resolveMelody();
@@ -415,7 +463,7 @@ async function generate() {
   await new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 0); }); });
 
   try {
-    const style = ML.STYLES[state.styleId];
+    const style = buildStyleOverride(state.styleId);
     const out = ME.renderArrangement({
       melody: melody,
       style: style,
@@ -432,7 +480,8 @@ async function generate() {
     renderChords(out.meta.chords);
     $('wavBtn').disabled = false;
     $('chartBtn').disabled = false;
-    setStatus('生成完了: ' + out.meta.durationSec.toFixed(1) + '秒 / ' + out.meta.numBars + '小節 / ' + (melody.length) + '音');
+    const ch = (out.channels === 2) ? 'ステレオ' : 'モノラル';
+    setStatus('生成完了: ' + out.meta.durationSec.toFixed(1) + '秒 / ' + out.meta.numBars + '小節 / ' + (melody.length) + '音 / ' + ch);
   } catch (e) {
     setStatus('生成失敗: ' + (e && e.message ? e.message : e), 'err');
   } finally {
@@ -448,8 +497,19 @@ function playRendered() {
   stopPlayback();
   const sr = rendered.meta.sampleRate;
   const samples = rendered.samples;
-  const buf = audioCtx.createBuffer(1, samples.length, sr);
-  buf.getChannelData(0).set(samples);
+  let buf;
+  if (rendered.channels === 2) {
+    // ステレオ: samples は L,R,L,R… のインターリーブ。フレーム数=length/2。
+    // L=偶数 index、R=奇数 index に分離して 2ch AudioBuffer へ。
+    const frames = samples.length / 2;
+    buf = audioCtx.createBuffer(2, frames, sr);
+    const L = buf.getChannelData(0), R = buf.getChannelData(1);
+    for (let i = 0; i < frames; i++) { L[i] = samples[2 * i]; R[i] = samples[2 * i + 1]; }
+  } else {
+    // モノラル: 従来どおり 1ch にそのままコピー（再合成しない）。
+    buf = audioCtx.createBuffer(1, samples.length, sr);
+    buf.getChannelData(0).set(samples);
+  }
   bufSource = audioCtx.createBufferSource();
   bufSource.buffer = buf;
   bufSource.connect(audioCtx.destination);
@@ -481,11 +541,13 @@ function rafLoop() {
 function saveWav() {
   if (!rendered) { setStatus('先に「生成」してください。', 'err'); return; }
   const sr = rendered.meta.sampleRate;
-  const ab = ME.encodeWav(rendered.samples, sr); // 44バイトヘッダ + int16 mono
+  // v2: チャンネル数を渡す（ステレオは samples が既にインターリーブ済み）。
+  const ab = ME.encodeWav(rendered.samples, sr, rendered.channels);
   const blob = new Blob([ab], { type: 'audio/wav' });
   const name = safeKey(state.name) + '.wav';
   downloadBlob(blob, name);
-  setStatus('WAV保存: ' + name + ' (' + rendered.meta.durationSec.toFixed(1) + '秒)');
+  const ch = (rendered.channels === 2) ? 'stereo' : 'mono';
+  setStatus('WAV保存: ' + name + ' (' + rendered.meta.durationSec.toFixed(1) + '秒 / ' + ch + ')');
 }
 
 function downloadBlob(blobOrText, filename, mime) {
@@ -510,12 +572,18 @@ function buildChart() {
 
   const key = safeKey(state.name);
   const title = state.name || '曲名';
+  // v2: meta.durationSec は intro オフセット + outro テールを含む実音源長。
+  // endOffset はその実長に合わせて切り上げる。
   const endOffset = Math.ceil(rendered.meta.durationSec);
+  // v2: lead は introOffsetBeats ぶん後ろにずれて鳴る。譜面の note time は
+  // 拍0起点なので、音源と頭出しを合わせるため startOffset に intro 秒を反映。
+  const introBeats = (rendered.meta && rendered.meta.introOffsetBeats) || 0;
+  const startOffset = Math.round((introBeats * (60 / usedBpm)) * 100) / 100;
   const entry = {
     id: key,
     title: title,
     audio: key + '.wav',   // 保存した WAV と同名（bare filename; ランタイムが encode する）
-    startOffset: 0,
+    startOffset: startOffset,
     endOffset: endOffset,
     notes: notes,
     rounds: [{ label: title }],
@@ -590,10 +658,20 @@ function renderChords(chords) {
 function renderMeta() {
   if (!rendered) { $('meta').textContent = '未生成。'; return; }
   const m = rendered.meta;
+  const stereo = (rendered.channels === 2);
+  // フレーム数（ステレオは samples.length/2）。サンプル総数はインターリーブ込み。
+  const frames = stereo ? (rendered.samples.length / 2) : rendered.samples.length;
+  const chTxt = stereo ? 'ステレオ' : 'モノラル';
   // サンプル件数は meta ではなく rendered オブジェクト側にある。dead な m.samples
   // 参照（"undefined" のチラつきの原因）を除去し、1 本の文字列で構築する。
-  $('meta').textContent = '長さ ' + m.durationSec.toFixed(2) + '秒 / ' + m.numBars + '小節 / ' + m.totalBeats + '拍 / '
-    + m.bpm + ' BPM / key ' + m.key + ' / ' + m.sampleRate + 'Hz / ' + rendered.samples.length + ' サンプル';
+  let txt = '長さ ' + m.durationSec.toFixed(2) + '秒 / ' + m.numBars + '小節 / ' + m.totalBeats + '拍 / '
+    + m.bpm + ' BPM / key ' + m.key + ' / ' + m.sampleRate + 'Hz / ' + chTxt + ' / ' + frames + ' フレーム';
+  // 展開（セクション）の可視化: 区間数と各強弱(1..4)を小さく併記。
+  if (m.sections && m.sections.length) {
+    const inten = m.sections.map(function (s) { return s.intensity; }).join(',');
+    txt += ' / セクション ' + m.sections.length + '区間 [強弱 ' + inten + ']';
+  }
+  $('meta').textContent = txt;
 }
 function drawWave() {
   const cv = $('wave');
@@ -613,7 +691,13 @@ function drawWave() {
     return;
   }
   const samples = rendered.samples;
-  const n = samples.length;
+  const stereo = (rendered.channels === 2);
+  // ピーク・バケツはフレーム数で割る（ステレオは length/2）。
+  const n = stereo ? (samples.length / 2) : samples.length;
+  // フレーム i のサンプル値を返す。ステレオは L,R をミックスダウン (L+R)/2。
+  const frameVal = stereo
+    ? function (i) { return (samples[2 * i] + samples[2 * i + 1]) / 2; }
+    : function (i) { return samples[i]; };
   // min/max peaks per pixel column
   ctx.strokeStyle = '#3b82f6';
   ctx.beginPath();
@@ -622,7 +706,7 @@ function drawWave() {
     const s = Math.floor(x * per);
     const e = Math.min(n, Math.floor((x + 1) * per));
     let mn = 1, mx = -1;
-    for (let j = s; j < e; j++) { const v = samples[j]; if (v < mn) mn = v; if (v > mx) mx = v; }
+    for (let j = s; j < e; j++) { const v = frameVal(j); if (v < mn) mn = v; if (v > mx) mx = v; }
     if (e <= s) { mn = 0; mx = 0; }
     ctx.moveTo(x + 0.5, mid - mx * (mid - 2));
     ctx.lineTo(x + 0.5, mid - mn * (mid - 2));
@@ -652,6 +736,10 @@ function projectPayload() {
     beatsPerStep: state.beatsPerStep,
     stepNotes: state.stepNotes,
     importedMelody: state.importedMelody,
+    stereoOn: state.stereoOn,
+    sectionsOn: state.sectionsOn,
+    reverbPct: state.reverbPct,
+    compMode: state.compMode,
   };
 }
 function saveProject() {
@@ -691,6 +779,11 @@ function applyProject(p) {
   } else { state.stepNotes = null; }
   state.importedMelody = Array.isArray(p.importedMelody) ? sanitizeMelody(p.importedMelody) : null;
   if (state.importedMelody && !state.importedMelody.length) state.importedMelody = null;
+  // v2 上書き設定: 型を厳しめに正規化（既定はスタイル準拠の ON / 22% / auto）。
+  state.stereoOn = (typeof p.stereoOn === 'boolean') ? p.stereoOn : true;
+  state.sectionsOn = (typeof p.sectionsOn === 'boolean') ? p.sectionsOn : true;
+  state.reverbPct = (Number.isFinite(Number(p.reverbPct))) ? Math.max(0, Math.min(100, Number(p.reverbPct))) : 22;
+  state.compMode = (['auto', 'sustain', 'arp', 'broken', 'stab'].indexOf(p.compMode) >= 0) ? p.compMode : 'auto';
   syncInputs();
   buildSeqGrid();
   scheduleSave();
@@ -756,6 +849,33 @@ function syncInputs() {
   $('keySel').value = state.key;
   $('stepCount').value = state.stepCount;
   $('beatsPerStep').value = state.beatsPerStep;
+  // v2 上書きコントロール
+  $('compSel').value = state.compMode;
+  $('reverbRange').value = state.reverbPct;
+  syncV2Controls();
+}
+// v2 トグル/スライダのラベルとアクティブ表示を state に同期。
+function syncV2Controls() {
+  $('reverbVal').textContent = state.reverbPct + '%';
+  const stereoBtn = $('stereoBtn');
+  stereoBtn.textContent = 'ステレオ: ' + (state.stereoOn ? 'ON' : 'OFF');
+  stereoBtn.classList.toggle('active', state.stereoOn);
+  const secBtn = $('sectionsBtn');
+  secBtn.textContent = '展開 (セクション強弱): ' + (state.sectionsOn ? 'ON' : 'OFF');
+  secBtn.classList.toggle('active', state.sectionsOn);
+}
+// スタイル変更時、そのスタイルの既定値を v2 上書き UI に取り込む。
+function adoptStyleDefaults() {
+  const st = ML.STYLES[state.styleId];
+  if (!st) return;
+  state.stereoOn = !!(st.stereo && st.stereo.on);
+  state.sectionsOn = true; // 既定は展開ON（スタイルの sectionProfile をそのまま使う）
+  const wet = (st.reverb && st.reverb.on && typeof st.reverb.wet === 'number') ? st.reverb.wet : 0;
+  state.reverbPct = Math.round(Math.max(0, Math.min(1, wet)) * 100);
+  state.compMode = 'auto';
+  $('compSel').value = state.compMode;
+  $('reverbRange').value = state.reverbPct;
+  syncV2Controls();
 }
 function defaultBpmForSelection() {
   // メロディ既定 BPM を優先し、なければスタイル既定。
@@ -790,21 +910,44 @@ function runSelfTests() {
     assert("noteToFreq('A4')===440", approx(ME.noteToFreq('A4'), 440, 1e-9), 'got ' + ME.noteToFreq('A4'));
     assert("noteToMidi('C4')===60", ME.noteToMidi('C4') === 60, 'got ' + ME.noteToMidi('C4'));
 
-    // --- renderArrangement: twinkle + chiptune non-silent + expected length ---
+    // --- renderArrangement (v2): twinkle + chiptune is STEREO, interleaved, ---
+    // --- non-silent, with expected interleaved length (≈ 2 * expectedFrames). ---
     const mel = ML.MELODIES.twinkle.melody;
     const bpm = ML.MELODIES.twinkle.defaultBpm; // 96
     const sr = 44100;
     const out = ME.renderArrangement({ melody: mel, style: ML.STYLES.chiptune, bpm: bpm, key: 'C', sampleRate: sr, seed: 7 });
+    assert('renderArrangement(chiptune).channels === 2 (stereo)', out.channels === 2, 'got ' + out.channels);
+    assert('meta.channels mirrors channels', out.meta && out.meta.channels === out.channels, 'meta=' + (out.meta && out.meta.channels));
     const totalBeats = mel.reduce(function (s, ev) { return s + ev.beats; }, 0);
-    const expectedCore = totalBeats * (60 / bpm) * sr; // grid length (without tail)
-    // 実長は grid + tail + 端数。grid 以上・grid+1秒以内に収まればOK。
-    const lenOk = out.samples.length >= Math.floor(expectedCore) && out.samples.length <= Math.ceil(expectedCore) + sr;
-    assert('renderArrangement length ≈ totalBeats*60/bpm*sr (+tail)', lenOk,
-      'len=' + out.samples.length + ' core≈' + Math.round(expectedCore));
+    // v2: 実音源長 = (本体グリッド + intro オフセット) ＋ outro テール ＋ 既定テール。
+    // 本体グリッドは numBars*4 拍以上。meta.introOffsetBeats / outroTailSec を使い、
+    // 「グリッド以上、グリッド + outro テール + 2秒以内」を許容範囲にする。
+    const numBars = out.meta.numBars;
+    const quarter = 60 / bpm;
+    const gridFrames = Math.max(totalBeats, numBars * 4) * quarter * sr;     // 本体（intro/outro 抜き）
+    const introFrames = (out.meta.introOffsetBeats || 0) * quarter * sr;     // intro オフセット
+    const coreFrames = gridFrames + introFrames;                            // 最低ライン
+    // outro: held-chord 4拍ぶんのグリッド延長 ＋ outroTailSec ＋ 既定テール ＋ 余白。
+    const outroGridFrames = (out.meta.outroTailSec > 0) ? 4 * quarter * sr : 0;
+    const headroomFrames = outroGridFrames + (out.meta.outroTailSec || 0) * sr + 2 * sr;
+    // stereo => samples は L,R インターリーブ。フレーム数 = length/2。
+    const frames = out.channels === 2 ? out.samples.length / 2 : out.samples.length;
+    const lenOk = frames >= Math.floor(coreFrames) && frames <= Math.ceil(coreFrames) + headroomFrames;
+    assert('renderArrangement frames within [core, core+outro+tail]', lenOk,
+      'frames=' + frames + ' core≈' + Math.round(coreFrames) + ' +head≈' + Math.round(headroomFrames));
+    // インターリーブ長は 2 * frames に一致（ステレオ）。
+    assert('stereo samples.length === 2 * frames', out.samples.length === 2 * frames,
+      'len=' + out.samples.length + ' frames=' + frames);
     let peak = 0; for (let i = 0; i < out.samples.length; i++) { const a = Math.abs(out.samples[i]); if (a > peak) peak = a; }
     assert('renderArrangement non-silent (peak>0.1)', peak > 0.1, 'peak=' + peak.toFixed(4));
 
-    // --- melodyToChart: sorted + all don/ka ---
+    // --- minimal style render is MONO (channels===1) ---
+    const outMin = ME.renderArrangement({ melody: mel, style: ML.STYLES.minimal, bpm: bpm, key: 'C', sampleRate: sr, seed: 7 });
+    assert('renderArrangement(minimal).channels === 1 (mono)', outMin.channels === 1, 'got ' + outMin.channels);
+    let peakMin = 0; for (let i = 0; i < outMin.samples.length; i++) { const a = Math.abs(outMin.samples[i]); if (a > peakMin) peakMin = a; }
+    assert('minimal render non-silent (peak>0.1)', peakMin > 0.1, 'peak=' + peakMin.toFixed(4));
+
+    // --- melodyToChart: sorted + all don/ka (UNCHANGED helper) ---
     const chart = ME.melodyToChart(mel, { bpm: bpm });
     let sorted = true, typesOk = true;
     for (let i = 0; i < chart.notes.length; i++) {
@@ -814,13 +957,31 @@ function runSelfTests() {
     assert('melodyToChart sorted ascending', sorted, 'n=' + chart.notes.length);
     assert('melodyToChart all don/ka', typesOk && chart.notes.length > 0);
 
-    // --- encodeWav: RIFF header + byte length ---
-    const ab = ME.encodeWav(out.samples, sr);
+    // --- encodeWav (v2): STEREO. RIFF + byteLength(44 + samples*2) + 2ch header. ---
+    const ab = ME.encodeWav(out.samples, sr, out.channels);
     const dv = new DataView(ab);
     const riff = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
     assert("encodeWav first 4 bytes === 'RIFF'", riff === 'RIFF', 'got ' + riff);
     assert('encodeWav byteLength === 44 + samples*2', ab.byteLength === 44 + out.samples.length * 2,
       'got ' + ab.byteLength + ' want ' + (44 + out.samples.length * 2));
+    // ステレオなので fmt チャンク byte 22（num channels）は 2 を宣言。
+    assert('encodeWav header declares 2 channels (byte 22)', dv.getUint16(22, true) === 2,
+      'got ' + dv.getUint16(22, true));
+
+    // --- buildStyleOverride: clones the style, never mutates MusicLibrary.STYLES ---
+    const beforeWet = ML.STYLES.chiptune.reverb.wet;
+    const beforeStereoOn = ML.STYLES.chiptune.stereo.on;
+    const savedState = { stereoOn: state.stereoOn, sectionsOn: state.sectionsOn, reverbPct: state.reverbPct, compMode: state.compMode, styleId: state.styleId };
+    state.styleId = 'chiptune'; state.stereoOn = false; state.sectionsOn = false; state.reverbPct = 0; state.compMode = 'stab';
+    const ov = buildStyleOverride('chiptune');
+    const overrideOk = ov !== ML.STYLES.chiptune
+      && ov.stereo.on === false && ov.reverb.on === false && ov.reverb.wet === 0
+      && ov.comp.mode === 'stab' && JSON.stringify(ov.sectionProfile) === JSON.stringify([3, 3, 3, 3]);
+    assert('buildStyleOverride applies overrides on a CLONE', overrideOk, JSON.stringify({ stereo: ov.stereo.on, rev: ov.reverb.on, comp: ov.comp.mode, prof: ov.sectionProfile }));
+    const notMutated = ML.STYLES.chiptune.reverb.wet === beforeWet && ML.STYLES.chiptune.stereo.on === beforeStereoOn;
+    assert('buildStyleOverride does NOT mutate MusicLibrary.STYLES', notMutated, 'wet=' + ML.STYLES.chiptune.reverb.wet + ' stereoOn=' + ML.STYLES.chiptune.stereo.on);
+    // restore state so the harness stays side-effect-free.
+    Object.assign(state, savedState);
 
     // --- UI pure helpers: seqToMelody / chartToMelody ---
     const sm = seqToMelody(['C4', null, 'E4', REST_ROW, 'G4'], 0.5);
@@ -904,9 +1065,23 @@ function init() {
   };
 
   // style / bpm / key
-  $('styleSel').onchange = function (e) { state.styleId = e.target.value; scheduleSave(); };
+  $('styleSel').onchange = function (e) {
+    state.styleId = e.target.value;
+    adoptStyleDefaults(); // 新スタイルの既定 stereo/reverb/comp を v2 UI へ反映
+    scheduleSave();
+  };
   $('bpmIn').onchange = function (e) { const v = Number(e.target.value); if (v > 0) state.bpm = Math.max(40, Math.min(240, v)); e.target.value = state.bpm; scheduleSave(); };
   $('keySel').onchange = function (e) { state.key = e.target.value; scheduleSave(); };
+
+  // v2 overrides: comp / reverb / stereo / sections
+  $('compSel').onchange = function (e) { state.compMode = e.target.value; scheduleSave(); };
+  $('reverbRange').oninput = function (e) {
+    state.reverbPct = Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)));
+    $('reverbVal').textContent = state.reverbPct + '%';
+  };
+  $('reverbRange').onchange = function () { scheduleSave(); };
+  $('stereoBtn').onclick = function () { state.stereoOn = !state.stereoOn; syncV2Controls(); scheduleSave(); };
+  $('sectionsBtn').onclick = function () { state.sectionsOn = !state.sectionsOn; syncV2Controls(); scheduleSave(); };
 
   // actions
   $('genBtn').onclick = generate;
