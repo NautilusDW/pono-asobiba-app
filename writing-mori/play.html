@@ -1401,6 +1401,22 @@ button {
     linear-gradient(#ffdf7e, #e97955);
 }
 
+.taiko-note.don {
+  border-color: #f6f1e2;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.85) 0 9px, transparent 10px),
+    linear-gradient(#ff6f6f, #e23a3a);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 6px 0 rgba(120,30,30,0.32);
+}
+
+.taiko-note.ka {
+  border-color: #f6f1e2;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.85) 0 9px, transparent 10px),
+    linear-gradient(#6f9bff, #3a6fe2);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 6px 0 rgba(30,55,120,0.32);
+}
+
 .taiko-note.miss {
   background:
     radial-gradient(circle at 33% 30%, rgba(255,255,255,0.5) 0 8px, transparent 9px),
@@ -2596,6 +2612,86 @@ function playMelodyNote(note, config = getToyConfig()) {
   playTone(frequency * 2, Math.min(duration, 0.28), 'sine', note.accent ? 0.014 : 0.01, 0.018);
 }
 
+function playDon() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const start = ctx.currentTime;
+    // Body: sine with pitch drop 80Hz -> 50Hz over 0.06s
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    const lpf = ctx.createBiquadFilter();
+    lpf.type = 'lowpass';
+    lpf.frequency.setValueAtTime(220, start);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, start);
+    osc.frequency.exponentialRampToValueAtTime(50, start + 0.06);
+    oscGain.gain.setValueAtTime(0.0001, start);
+    oscGain.gain.exponentialRampToValueAtTime(0.55, start + 0.012);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+    osc.connect(lpf);
+    lpf.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.2);
+    // Attack click: soft 200Hz triangle
+    const click = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    click.type = 'triangle';
+    click.frequency.setValueAtTime(200, start);
+    clickGain.gain.setValueAtTime(0.0001, start);
+    clickGain.gain.exponentialRampToValueAtTime(0.18, start + 0.005);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
+    click.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    click.start(start);
+    click.stop(start + 0.08);
+  } catch (_) {}
+}
+
+function playKa() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const start = ctx.currentTime;
+    // Noise burst through band-pass filter (1200-2200 Hz)
+    const bufferSize = Math.floor(ctx.sampleRate * 0.12);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(1700, start);
+    bpf.Q.setValueAtTime(2.2, start);
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, start);
+    noiseGain.gain.exponentialRampToValueAtTime(0.4, start + 0.006);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.08);
+    noise.connect(bpf);
+    bpf.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(start);
+    noise.stop(start + 0.1);
+    // Tonal rim click
+    const click = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    click.type = 'square';
+    click.frequency.setValueAtTime(600, start);
+    click.frequency.exponentialRampToValueAtTime(400, start + 0.05);
+    clickGain.gain.setValueAtTime(0.0001, start);
+    clickGain.gain.exponentialRampToValueAtTime(0.12, start + 0.005);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.06);
+    click.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    click.start(start);
+    click.stop(start + 0.08);
+  } catch (_) {}
+}
+
 function playSfx(kind) {
   try {
     if (kind === 'roll') {
@@ -2720,7 +2816,9 @@ function createStackPhysicsWorld(resetBlocks = true) {
   if (!stackMatter) return false;
 
   const { Engine, Bodies, World } = stackMatter;
-  stackEngine = Engine.create({ gravity: { y: 1.05 } });
+  stackEngine = Engine.create({ gravity: { y: 1.0 } });
+  // Higher than Matter defaults (6/4/2) because the mini-stack drives the engine via
+  // requestAnimationFrame with variable delta instead of Runner.run's fixed step.
   stackEngine.positionIterations = 10;
   stackEngine.velocityIterations = 8;
   stackEngine.constraintIterations = 4;
@@ -2734,12 +2832,12 @@ function createStackPhysicsWorld(resetBlocks = true) {
     24,
     { isStatic: true, label: 'stack-platform', friction: 1.2, render: { visible: false } }
   );
-  const wallL = Bodies.rectangle(-34, MINI_STACK.stageH / 2, 68, MINI_STACK.stageH * 2, {
+  const wallL = Bodies.rectangle(-25, MINI_STACK.stageH / 2, 50, MINI_STACK.stageH * 3, {
     isStatic: true,
     label: 'stack-wall',
     render: { visible: false }
   });
-  const wallR = Bodies.rectangle(MINI_STACK.stageW + 34, MINI_STACK.stageH / 2, 68, MINI_STACK.stageH * 2, {
+  const wallR = Bodies.rectangle(MINI_STACK.stageW + 25, MINI_STACK.stageH / 2, 50, MINI_STACK.stageH * 3, {
     isStatic: true,
     label: 'stack-wall',
     render: { visible: false }
@@ -2758,10 +2856,9 @@ function createStackPhysicsBody(shape, centerX, centerY) {
   const { Bodies } = stackMatter;
   return Bodies.rectangle(centerX, centerY, shape.w, shape.h, {
     restitution: 0.02,
-    friction: 1.35,
+    friction: 1.4,
     frictionStatic: 2.5,
-    frictionAir: 0.055,
-    slop: 0.015,
+    frictionAir: 0.06,
     label: 'mojikko-stack-block',
     render: { visible: false }
   });
@@ -2886,7 +2983,9 @@ function startStackPhysicsSettlement() {
       stopStackPhysicsLoop();
       return;
     }
-    const delta = stackLastPhysicsAt ? Math.min(now - stackLastPhysicsAt, 34) : 16.67;
+    // Clamp to a single fixed step (~16.67ms) to mirror Matter.Runner's fixed-timestep
+    // behaviour — variable deltas up to 34ms previously let small blocks tunnel.
+    const delta = stackLastPhysicsAt ? Math.min(now - stackLastPhysicsAt, 16.67) : 16.67;
     stackLastPhysicsAt = now;
     Engine.update(stackEngine, delta);
     renderToyBoard();
@@ -3444,29 +3543,70 @@ function getRhythmRoundMs(config = getToyConfig()) {
   return getRhythmBeatsPerRound(config) * getRhythmBeatMs(config);
 }
 
+function buildDrumChart(round, config = getToyConfig()) {
+  // Generate a child-friendly drum chart from the bar/beat grid (NOT melody density).
+  // Pattern per 4-beat bar:
+  //   beat 0 -> don
+  //   beat 2 -> don
+  //   beats 1 or 3 -> ka, only when melody has an accent or strong note near that beat
+  const beats = getRhythmBeatsPerRound(config);
+  const beatsPerBar = 4;
+  const bars = Math.max(1, Math.ceil(beats / beatsPerBar));
+  // Build accent lookup: which integer beats are emphasized in the melody?
+  const melodyAccents = new Set();
+  if (round && Array.isArray(round.notes)) {
+    round.notes.forEach((note) => {
+      if (note.accent) melodyAccents.add(Math.round(note.beat));
+    });
+  }
+  const chart = [];
+  for (let bar = 0; bar < bars; bar++) {
+    const base = bar * beatsPerBar;
+    // beat 0 (downbeat) of bar -> don
+    if (base + 0 < beats) {
+      chart.push({ beat: base + 0, type: 'don' });
+    }
+    // beat 1 -> ka only if melody has an accent right there (offbeat color)
+    const beat1 = base + 1;
+    if (beat1 < beats && melodyAccents.has(beat1)) {
+      chart.push({ beat: beat1, type: 'ka' });
+    }
+    // beat 2 -> don
+    if (base + 2 < beats) {
+      chart.push({ beat: base + 2, type: 'don' });
+    }
+    // beat 3 -> ka only if melody has an accent right there
+    const beat3 = base + 3;
+    if (beat3 < beats && melodyAccents.has(beat3)) {
+      chart.push({ beat: beat3, type: 'ka' });
+    }
+  }
+  return chart;
+}
+
 function getRhythmTapNotes(config = getToyConfig()) {
   const round = getRhythmRoundData(config);
   const beatMs = getRhythmBeatMs(config);
   if (round && Array.isArray(round.notes) && round.notes.length) {
-    return round.notes
-      .filter((note) => note.tap !== false)
-      .map((note, index) => ({
-        ...note,
-        index,
-        timeMs: Math.round(note.beat * beatMs),
-        label: note.accent ? 'ドン!' : 'ドン'
-      }));
+    const drumChart = buildDrumChart(round, config);
+    return drumChart.map((drum, index) => ({
+      beat: drum.beat,
+      type: drum.type,
+      accent: drum.type === 'don',
+      index,
+      timeMs: Math.round(drum.beat * beatMs),
+      label: drum.type === 'don' ? 'ドン' : 'カッ'
+    }));
   }
-  return getRhythmPattern(config).map((timeMs, index) => ({ index, timeMs, label: 'ドン' }));
+  return getRhythmPattern(config).map((timeMs, index) => ({ index, timeMs, type: 'don', label: 'ドン' }));
 }
 
 function getRhythmPattern(config = getToyConfig()) {
   const round = getRhythmRoundData(config);
   if (round && Array.isArray(round.notes) && round.notes.length) {
     const beatMs = getRhythmBeatMs(config);
-    return round.notes
-      .filter((note) => note.tap !== false)
-      .map((note) => Math.round(note.beat * beatMs));
+    const drumChart = buildDrumChart(round, config);
+    return drumChart.map((drum) => Math.round(drum.beat * beatMs));
   }
   if (config.beatPatterns) {
     const beatPatterns = config.beatPatterns;
@@ -3520,7 +3660,7 @@ function getTaikoMotion(config, isCountingDown) {
   let hitWave = 0;
 
   if (previewOnly) {
-    notes.push({ index: 0, x: RHYTHM_LANE.startX, state: 'preview', active: false, label: 'ドン', accent: true });
+    notes.push({ index: 0, x: RHYTHM_LANE.startX, state: 'preview', active: false, label: 'ドン', accent: true, type: 'don' });
   } else {
     tapNotes.forEach((tapNote, index) => {
       const hitMs = tapNote.timeMs;
@@ -3540,7 +3680,8 @@ function getTaikoMotion(config, isCountingDown) {
         state: result || '',
         active: proximity > 0.3 && !result,
         label: tapNote.label || 'ドン',
-        accent: !!tapNote.accent
+        accent: !!tapNote.accent,
+        type: tapNote.type || 'don'
       });
     });
   }
@@ -3615,7 +3756,7 @@ function renderToyBoard(feedback = lastToyFeedback) {
     const song = getRhythmSong(config);
     const songLabel = song ? `${song.title}：${roundData.label || `${currentRound}回目`}` : `${currentRound}回目`;
     const noteHtml = motion.notes.map((note) =>
-      `<div class="taiko-note ${note.accent ? 'accent' : ''} ${note.active ? 'active' : ''} ${note.state === 'miss' ? 'miss' : ''}" style="--note-x:${note.x.toFixed(1)}px">${note.label || 'ドン'}</div>`
+      `<div class="taiko-note ${note.type === 'ka' ? 'ka' : 'don'} ${note.active ? 'active' : ''} ${note.state === 'miss' ? 'miss' : ''}" style="--note-x:${note.x.toFixed(1)}px">${note.label || 'ドン'}</div>`
     ).join('');
     toyModeBoard.innerHTML = `
       <div class="toy-mode-card rattle-game${cardState}" style="${motion.bachiStyle}">
@@ -3891,7 +4032,14 @@ function handleRhythmAction() {
   rhythmLastHitIndex = noteIndex;
   rhythmMeasureHits += 1;
   lastToyFeedback = 'hit';
-  playSfx('drum');
+  // Look up the drum note type for the hit index and play matching drum sample.
+  const tapNotes = getRhythmTapNotes(config);
+  const hitNote = tapNotes[noteIndex];
+  if (hitNote && hitNote.type === 'ka') {
+    playKa();
+  } else {
+    playDon();
+  }
   guideText.textContent = 'ドンドン！';
   messageBar.textContent = `${currentRound}回目：曲にのれてるよ！`;
   renderToyBoard('hit');
