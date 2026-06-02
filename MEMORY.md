@@ -141,6 +141,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-02T08:38:23Z - hotaru_no_hikari Sunoシード: ボーカル入りsource.oggをPDインスト(US Navy Band Auld Lang Syne)に差し替え
+- **タスク**: hotaru_no_hikari Sunoシード: ボーカル入りsource.oggをPDインスト(US Navy Band Auld Lang Syne)に差し替え
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 54
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 4, "Bash": 20, "Grep": 5, "Agent": 16, "ToolSearch": 1, "Edit": 6, "Write": 1, "Workflow": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-02T04:21:56Z - Mojikko stack edge-collision fix + remove target-window gauge + lower floor
 - **タスク**: Mojikko stack edge-collision fix + remove target-window gauge + lower floor
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 25, "ToolSearch": 1, "Bash": 3, "Read": 11, "Write": 2, "Edit": 24}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-31T13:14:22Z - oto/index.html リズムモード時に楕円配置 rule がボタン位置を壊していたバグ修正: 3 か所の .instr-btn[data-idx] 楕円配置 rule に body:not(.rhythm-layout) ガードを付与 (line 398-405 portrait base / line 1314-1321 landscape / line 1497-1504 iPad large landscape)、sw v714→v715
-- **タスク**: oto/index.html リズムモード時に楕円配置 rule がボタン位置を壊していたバグ修正: 3 か所の .instr-btn[data-idx] 楕円配置 rule に body:not(.rhythm-layout) ガードを付与 (line 398-405 portrait base / line 1314-1321 landscape / line 1497-1504 iPad large landscape)、sw v714→v715
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 58
-- **エラー数**: 8
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 23, "ToolSearch": 1, "Bash": 3, "Read": 10, "Write": 2, "Edit": 19}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
