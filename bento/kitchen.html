@@ -3308,6 +3308,9 @@ body.layout-editor-on .egg-glass-lid {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+#grill-stage.cook-substep-salt-mode .cook-substep-banner {
+  left: 75%;
+}
 .cook-substep-shaker {
   position: absolute;
   left: 50%;
@@ -3343,6 +3346,10 @@ body.layout-editor-on .egg-glass-lid {
 .cook-substep-shaker.tilted {
   transform: translate(-50%, -50%) rotate(-32deg);
 }
+.cook-substep-oil.is-dragging:not(.pouring),
+.cook-substep-oil.tilted:not(.pouring) {
+  transform: translate(-50%, -50%) scaleX(-1);
+}
 .cook-substep-shaker.rest-lower-right {
   left: 90%;
   top: 84%;
@@ -3352,6 +3359,29 @@ body.layout-editor-on .egg-glass-lid {
 .cook-substep-shaker.is-dragging {
   cursor: grabbing;
   transition: none;
+}
+.cook-substep-shaker.done-check::after {
+  content: '✓';
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 28px;
+  height: 28px;
+  background: #4CAF50;
+  color: #fff;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 28px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  animation: doneCheckPop 0.6s ease-out;
+  z-index: 20;
+}
+@keyframes doneCheckPop {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 .cook-substep-shaker-img {
   width: 100%;
@@ -3368,7 +3398,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=762');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=764');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -3379,7 +3409,7 @@ body.layout-editor-on .egg-glass-lid {
   filter: brightness(1.05) saturate(1.2);
 }
 .cook-substep-oil-layer.show {
-  opacity: 0.92;
+  opacity: 0.45;
   animation: oilShimmer 3s ease-in-out infinite;
 }
 @keyframes oilShimmer {
@@ -3449,18 +3479,23 @@ body.layout-editor-on .egg-glass-lid {
   z-index: 11;
   animation: saltGrainsFall 0.6s ease-out forwards;
 }
-/* Intro: pull cooking-food to canvas center (over pan), scaled up, then
-   release back to plate position via class removal. */
+/* Intro: salmon + prep-plate appear together at center via opacity fade
+   (no drop-in animation, no plate slide from left). */
 #grill-stage[data-ingredient="salmon"].cook-substep-intro .cooking-food {
   left: 50%;
-  top: 50%;
-  width: 34%;
+  top: 58%;
+  width: 30%;
   transform: translate(-50%, -50%) scale(1);
-  animation: salmonIntroDrop 0.7s cubic-bezier(.18,.85,.2,1.02);
-  transition:
-    left 0.45s cubic-bezier(.18,.85,.2,1.02),
-    top 0.45s cubic-bezier(.18,.85,.2,1.02),
-    width 0.45s cubic-bezier(.18,.85,.2,1.02);
+  animation: salmonIntroFade 0.55s ease-out;
+  transition: none;
+}
+#grill-stage[data-ingredient="salmon"].cook-substep-intro .prep-plate {
+  left: 50%;
+  top: 60%;
+  width: 38%;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  animation: salmonIntroFade 0.55s ease-out;
+  transition: none;
 }
 /* Phase C: keep salmon (plus its plate) centered just below stage middle
    during salt and oil sub-steps, so the user can sprinkle / pour onto it. */
@@ -3498,16 +3533,23 @@ body.layout-editor-on .egg-glass-lid {
   70% { transform: translate(-50%, -50%) rotate(-55deg); }
   100% { transform: translate(-50%, -50%) rotate(0deg); }
 }
+@keyframes substepPourOil {
+  0% { transform: translate(-50%, -50%) scaleX(-1) rotate(0deg); }
+  30% { transform: translate(-50%, -50%) scaleX(-1) rotate(-55deg); }
+  70% { transform: translate(-50%, -50%) scaleX(-1) rotate(-55deg); }
+  100% { transform: translate(-50%, -50%) scaleX(-1) rotate(0deg); }
+}
+.cook-substep-oil.pouring {
+  animation: substepPourOil 0.7s ease-out;
+}
 @keyframes saltGrainsFall {
   0%   { opacity: 1; transform: translate(-50%, -120%) scale(0.7); }
   60%  { opacity: 0.9; transform: translate(-50%, -10%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, 60%) scale(0.85); }
 }
-@keyframes salmonIntroDrop {
-  0%   { transform: translate(-50%, -260%) scale(1.45); opacity: 0; }
-  55%  { transform: translate(-50%, -42%) scale(1.18); opacity: 1; }
-  72%  { transform: translate(-50%, -56%) scale(1.06); }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+@keyframes salmonIntroFade {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
 }
 .grill-smoke {
   position: absolute;
@@ -6327,7 +6369,7 @@ body.layout-editor-on .bowl-fill-mask::after {
           ],
           subSteps: [
             { action: 'intro', duration: 700 },
-            { action: 'salt', label: 'しおを まぶそう', container: 'salt/salt_shaker_still', tilted: 'salt/salt_shaker_sprinkling', restPos: 'lower-left', taps: 3 },
+            { action: 'salt', label: 'しおを まぶそう', container: 'salt/salt_shaker_still', tilted: 'salt/salt_shaker_sprinkling', restPos: 'lower-left', taps: 4 },
             { action: 'oil', label: 'あぶらを いれよう', container: 'oil/oil_jar_still', tilted: 'oil/oil_jar_tilted', restPos: 'lower-right', layerImg: 'oil/oil_layer' },
             { action: 'placeFood' },
             { action: 'cookFront', stage: 1 },
@@ -12130,12 +12172,12 @@ body.layout-editor-on .bowl-fill-mask::after {
         'cook-substep-flip-mode', 'cook-substep-place-mode', 'cook-substep-on-plate-center');
     }
     if (els.cookSubStepSalt) {
-      els.cookSubStepSalt.classList.remove('show', 'shaking', 'pouring', 'rest-lower-left', 'rest-lower-right', 'is-dragging', 'tilted');
+      els.cookSubStepSalt.classList.remove('show', 'shaking', 'pouring', 'rest-lower-left', 'rest-lower-right', 'is-dragging', 'tilted', 'done-check');
       els.cookSubStepSalt.style.left = '';
       els.cookSubStepSalt.style.top = '';
     }
     if (els.cookSubStepOil) {
-      els.cookSubStepOil.classList.remove('show', 'pouring', 'rest-lower-right', 'rest-lower-left', 'is-dragging', 'hint-bounce');
+      els.cookSubStepOil.classList.remove('show', 'pouring', 'rest-lower-right', 'rest-lower-left', 'is-dragging', 'hint-bounce', 'tilted');
       els.cookSubStepOil.style.left = '';
       els.cookSubStepOil.style.top = '';
     }
@@ -12253,8 +12295,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     shaker.dataset.tiltedSrc = tiltedSrc;
     const imgEl = shaker.querySelector('.cook-substep-shaker-img');
     if (imgEl) imgEl.src = containerSrc;
-    shaker.style.left = '50%';
-    shaker.style.top = '38%';
+    shaker.style.left = '75%';
+    shaker.style.top = '40%';
     requestAnimationFrame(function () { shaker.classList.add('show'); });
     showSubStepBanner(sub.label || 'しおを まぶそう');
     state.cookSaltTaps = 0;
@@ -12325,9 +12367,9 @@ body.layout-editor-on .bowl-fill-mask::after {
       const imgEl = shaker.querySelector('.cook-substep-shaker-img');
       if (imgEl && shaker.dataset.stillSrc) imgEl.src = shaker.dataset.stillSrc;
       if (!state.cookSaltApplied) {
-        // Return to home center pose so the user can pick it up again.
-        shaker.style.left = '50%';
-        shaker.style.top = '38%';
+        // Return to home right-of-plate pose so the user can pick it up again.
+        shaker.style.left = '75%';
+        shaker.style.top = '40%';
       }
     }
     shaker.addEventListener('pointermove', onMove);
@@ -12358,14 +12400,16 @@ body.layout-editor-on .bowl-fill-mask::after {
       shaker.style.left = '';
       shaker.style.top = '';
       shaker.classList.add(sub && sub.restPos === 'lower-right' ? 'rest-lower-right' : 'rest-lower-left');
+      shaker.classList.add('done-check');
     }
-    showSubStepBanner('');
+    showSubStepBanner('しお バッチリ！');
     state.pendingTimers.push(setTimeout(function () {
       const stage = els.grillStage;
       if (stage) stage.classList.remove('cook-substep-salt-mode');
+      if (shaker) shaker.classList.remove('done-check');
       state.cookSubStepLock = false;
       advanceSubStep();
-    }, 700));
+    }, 1100));
   }
 
   function spawnSaltGrains() {
@@ -12511,20 +12555,15 @@ body.layout-editor-on .bowl-fill-mask::after {
     cruet.dataset.tiltedSrc = tiltedSrc;
     const imgEl = cruet.querySelector('.cook-substep-shaker-img');
     if (imgEl) imgEl.src = containerSrc;
-    cruet.style.left = '50%';
-    cruet.style.top = '40%';
+    cruet.style.left = '';
+    cruet.style.top = '';
+    cruet.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
     requestAnimationFrame(function () { cruet.classList.add('show'); });
-    showSubStepBanner(sub.label || 'あぶらを いれよう');
-    state.pendingTimers.push(setTimeout(function () {
-      // After a brief center pause, move to the lower-right rest position
-      // so the user can drag it toward the pan center.
-      cruet.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
-    }, 900));
     state.pendingTimers.push(setTimeout(function () {
       if (state.cookOilApplied) return;
       if (els.cookSubStepOil) els.cookSubStepOil.classList.add('hint-bounce');
       showSubStepBanner('ドラッグして フライパンへ');
-    }, 1700));
+    }, 800));
   }
 
   // Oil cruet pointer flow: drag from rest position toward pan center. On release,
@@ -12684,18 +12723,18 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function cookFrontSubStep(sub) {
+    // v764: timing gauge を復活。 X/N カウンターは撤回。
+    // ゲージの good zone でタップしたら flip subStep へ advance。
     stopCookTimingGauge();
     resetCookTimingUI('grill');
-    const taps = (sub && sub.taps) || 3;
-    state.cookFrontMaxTaps = taps;
+    state.cookFrontMaxTaps = 1;
     state.cookFrontProgress = 0;
-    showSubStepBanner('おもてを やこう  (0/' + taps + ')');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして やこう';
-    setSpeech('ジュッ！ ' + taps + 'かい タップして おもてを やこう！', 'grill');
+    showSubStepBanner('タイミングよく タップ！');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
+    setSpeech('ジュッ！ ゲージの あおで タップして うらがえそう！', 'grill');
     state.cookSubStepLock = false;
     state.cookAnimating = false;
-    // user taps grill stage; handleSubStepGrillTap increments progress and only
-    // advances (= triggers flip) once taps reach maxTaps.
+    startCookTimingGauge('grill');
   }
 
   function runFlipSubStep(sub) {
@@ -12732,16 +12771,18 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function cookBackSubStep(sub) {
+    // v764: timing gauge を復活。 X/N カウンターは撤回。
+    // ゲージの good zone でタップしたら done subStep へ advance。
     stopCookTimingGauge();
     resetCookTimingUI('grill');
-    const taps = (sub && sub.taps) || 3;
-    state.cookBackMaxTaps = taps;
+    state.cookBackMaxTaps = 1;
     state.cookBackProgress = 0;
-    showSubStepBanner('うらも やこう  (0/' + taps + ')');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして やこう';
-    setSpeech('ジュッ！ ' + taps + 'かい タップして うらも やこう！', 'grill');
+    showSubStepBanner('うらも タイミングよく タップ！');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
+    setSpeech('ジュッ！ ゲージの あおで タップして しあげよう！', 'grill');
     state.cookSubStepLock = false;
     state.cookAnimating = false;
+    startCookTimingGauge('grill');
   }
 
   function runDoneSubStep(sub) {
@@ -12751,7 +12792,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookProgress = 2;
     state.cookServed = true;
     updateCookView('grill', 2, 'burst');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'おいしく できたよ！';
+    // v764: 2回のタイミングタップ結果から星を出す (既存 showCookTimingRating を流用)
+    let stars = 0;
+    try { stars = showCookTimingRating('grill') || 0; } catch (e) { /* noop */ }
+    if (els.grillActionLabel) {
+      els.grillActionLabel.textContent = stars >= 3 ? 'タイミング ばっちり！' : 'おいしく できたよ！';
+    }
     setSpeech('できたよ！ ふっくら やけた さけ！', 'grill');
     try { stopKitchenAmbient('stove', 320); } catch (e) { /* noop */ }
     state.pendingTimers.push(setTimeout(function () {
@@ -12769,22 +12815,21 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (state.cookSubStepLock || state.cookAnimating) return false;
     const sub = getCurrentSubStep();
     if (!sub) return false;
-    if (sub.action === 'cookFront') {
-      const maxTaps = state.cookFrontMaxTaps || 1;
-      state.cookFrontProgress = Math.min(maxTaps, (state.cookFrontProgress || 0) + 1);
-      showSubStepBanner('おもてを やこう  (' + state.cookFrontProgress + '/' + maxTaps + ')');
-      if (state.cookFrontProgress >= maxTaps) {
+    if (sub.action === 'cookFront' || sub.action === 'cookBack') {
+      // v764: timing gauge 経路に統合。 既存 onGrillTap と同じく
+      // recordCookTiming で zone を取り、 結果は cookTimingResults に蓄積
+      // (runDoneSubStep の showCookTimingRating で星に反映される)。
+      const timingZone = recordCookTiming('grill');
+      state.cookAnimating = true;
+      // burst エフェクトでユーザーに「ヒットした」フィードバック
+      try { showCookBurst('grill'); } catch (e) { /* noop */ }
+      const isBack = sub.action === 'cookBack';
+      setSpeech(cookTimingSpeech(timingZone, 'grill', isBack), 'grill');
+      showSubStepBanner('');
+      state.pendingTimers.push(setTimeout(function () {
+        state.cookAnimating = false;
         advanceSubStep();
-      }
-      return true;
-    }
-    if (sub.action === 'cookBack') {
-      const maxTaps = state.cookBackMaxTaps || 1;
-      state.cookBackProgress = Math.min(maxTaps, (state.cookBackProgress || 0) + 1);
-      showSubStepBanner('うらも やこう  (' + state.cookBackProgress + '/' + maxTaps + ')');
-      if (state.cookBackProgress >= maxTaps) {
-        advanceSubStep();
-      }
+      }, 420));
       return true;
     }
     return false;
@@ -12922,7 +12967,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=762';
+    return base + '?v=764';
   }
 
   function getCookImageConfig(ing, action) {
@@ -16532,6 +16577,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const layer = getBowlPieceLayer();
     [...layer.querySelectorAll('.cut-piece')].forEach(p => p.remove());
     [...document.querySelectorAll('.flying-cut-piece')].forEach(p => p.remove());
+    if (layer && layer._placedPieces) layer._placedPieces.length = 0;
   }
 
   function getBowlPieceLayer() {
@@ -16581,10 +16627,41 @@ body.layout-editor-on .bowl-fill-mask::after {
       rawX = cx + Math.cos(a) * w * 0.48 * rNorm - pieceSize / 2;
       rawY = cy + Math.sin(a) * h * 0.38 * rNorm - pieceSize / 2;
     } else {
-      const r = Math.sqrt(Math.random()) * Math.min(w, h) * 0.42;
-      const a = Math.random() * Math.PI * 2;
-      rawX = cx + Math.cos(a) * r - pieceSize / 2;
-      rawY = cy + Math.sin(a) * r - pieceSize / 2;
+      const bowlEl = layer;
+      if (!bowlEl._placedPieces) bowlEl._placedPieces = [];
+      let bestX = cx - pieceSize / 2;
+      let bestY = cy - pieceSize / 2;
+      let bestScore = -Infinity;
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const rNorm = 0.15 + 0.75 * Math.random();
+        const r = rNorm * Math.min(w, h) * 0.45;
+        const a = Math.random() * Math.PI * 2;
+        const tryX = cx + Math.cos(a) * r - pieceSize / 2;
+        const tryY = cy + Math.sin(a) * r - pieceSize / 2;
+        let minD = Infinity;
+        for (const p of bowlEl._placedPieces) {
+          const dx = tryX - p.x;
+          const dy = tryY - p.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < minD) minD = d;
+        }
+        if (!isFinite(minD)) minD = Math.min(w, h);
+        const edgeMargin = Math.min(
+          tryX - w * 0.05,
+          w - pieceSize - w * 0.05 - tryX,
+          tryY - h * 0.08,
+          h - pieceSize - h * 0.08 - tryY
+        );
+        const score = minD * 1.5 + edgeMargin * 0.5;
+        if (score > bestScore) {
+          bestScore = score;
+          bestX = tryX;
+          bestY = tryY;
+        }
+      }
+      rawX = bestX;
+      rawY = bestY;
+      bowlEl._placedPieces.push({ x: bestX, y: bestY });
     }
     let x = (isLeafy || isParticle)
       ? Math.max(w * 0.03, Math.min(w - pieceSize - w * 0.03, rawX))
