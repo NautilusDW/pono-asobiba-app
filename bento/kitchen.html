@@ -3445,7 +3445,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=773');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=775');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -6282,7 +6282,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       cookingActions: [
         { type: 'chop' },
         { type: 'prep', prepKind: 'mash_potato', label: 'じゃがいもを つぶそう' },
-        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを まぜよう' },
+        { type: 'prep', prepKind: 'mix_mince_potato', label: 'ひきにくを まぜよう' },
         { type: 'prep', prepKind: 'shape_korokke', label: 'こばんがたに しよう' },
         { type: 'prep', prepKind: 'bread_korokke', label: 'ころもを つけよう' },
         { type: 'fry', label: 'きつねいろに あげよう', stages: 2 },
@@ -6290,7 +6290,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       prepActions: [
         { type: 'chop' },
         { type: 'prep', prepKind: 'mash_potato', label: 'じゃがいもを つぶそう' },
-        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを まぜよう' },
+        { type: 'prep', prepKind: 'mix_mince_potato', label: 'ひきにくを まぜよう' },
         { type: 'prep', prepKind: 'shape_korokke', label: 'こばんがたに しよう' },
         { type: 'prep', prepKind: 'bread_korokke', label: 'ころもを つけよう' },
       ],
@@ -6704,6 +6704,39 @@ body.layout-editor-on .bowl-fill-mask::after {
           burst: 'ぐるぐる！',
         },
         { src: '../assets/images/bento/cooking/prep/knead_mince_stage_3.png', label: 'できあがり', caption: 'ひきにくが まとまったよ！', burst: 'できた！' },
+      ],
+    },
+    mix_mince_potato: {
+      kind: 'mix_mince',
+      dragPrep: true,
+      dragDistanceScale: 2.15,
+      startSpeech: 'マッシュポテトに ひきにくを まぜよう！',
+      completeSpeech: 'コロッケの たねが できたよ！ つぎは かたちを つくろう！',
+      steps: [
+        { src: '../assets/images/bento/cooking/potato/mix_mince_potato_001.png', label: 'ひきにくを いれよう', caption: 'ぐるぐるドラッグ！', burst: 'ぽん！' },
+        {
+          src: '../assets/images/bento/cooking/potato/mix_mince_potato_002.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/potato/mix_mince_potato_002.png',
+            '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
+            '../assets/images/bento/cooking/potato/mix_mince_potato_001.png',
+          ],
+          label: 'ぐるぐる まぜよう',
+          caption: 'まざってきたよ！',
+          burst: 'こねこね！',
+        },
+        {
+          src: '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
+            '../assets/images/bento/cooking/potato/mix_mince_potato_002.png',
+            '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
+          ],
+          label: 'もっと まぜよう',
+          caption: 'あとすこし！',
+          burst: 'ぎゅっ！',
+        },
+        { src: '../assets/images/bento/cooking/potato/mix_mince_potato_003.png', label: 'できあがり', caption: 'コロッケの たねが できたよ！', burst: 'できた！' },
       ],
     },
     mix_mince_onion: {
@@ -13308,7 +13341,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=773';
+    return base + '?v=775';
   }
 
   function getCookImageConfig(ing, action) {
@@ -17342,6 +17375,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       if (action.prepKind === 'marinate_chicken') return 'つぎは したあじを なじませよう！';
       if (action.prepKind === 'coat_chicken') return 'つぎは こなを まぶそう！';
       if (action.prepKind === 'mix_mince_onion') return 'つぎは たまねぎを まぜよう！';
+      if (action.prepKind === 'mix_mince_potato') return 'つぎは ひきにくを まぜよう！';
       if (action.prepKind === 'mix_mince') return 'つぎは ひきにくを こねよう！';
       if (action.prepKind && action.prepKind.indexOf('shape_') === 0) return 'つぎは かたちを つくろう！';
       if (action.prepKind && action.prepKind.indexOf('bread_') === 0) return 'つぎは ころもを つけよう！';

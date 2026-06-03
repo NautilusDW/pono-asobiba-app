@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-04 - [batch:250-bento-potato-korokke-assets] DONE - Codex: `tmp/Bento/potato_korokke_assets_brief.md` を実行。GPT Image 2 built-in 生成ルートでマッシュA/コロッケ成形C/ひき肉混ぜDを各3フレームシート、マッシャー単体を生成し、chroma-key alpha 化 + Lanczos crop/downsample で 10 PNG を配置。7 placeholder を上書きし、optional Group D `mix_mince_potato_001..003.png` も追加。`bento/kitchen.html` は potato flow を `mix_mince_potato` 専用 config へ変更し、`cookingAssetPath()` / CSS oil layer query / `sw.js` を v775 に同期。検証: contact sheet 目視、全10枚 RGBA/指定寸法/透明四隅、`git diff --check`、Playwrightで `bento/kitchen.html` ロード・JSエラーなし・10画像HTTP 200。 (by Codex)
 - 2026-06-03 - [batch:249-maze-tree-hitbox-stage1-revert] DONE - Codex: 木の障害物で両側の上下通路が塞がる問題に対し、`maze/index.html` の障害物当たり判定を種類別半径へ変更し、tree は旧 `viewBox.h/18` から `viewBox.h/36` に縮小。ステージ1は slot 1 を `ステージ1：森の入り口` へ戻し、`stage1.json` の欠けていた画像参照も同じ旧背景へ向け、`ステージ1：森の入り口.json` は `lantern: true` に変更。背景画像は `0e11309^` の旧版へ復帰済み。Playwrightでステージ1画像/ランタン輝度、stage5 tree 中心=blocked・左右=passable を確認。Codex self-review: 差分/JSON parse/画像ハッシュ/ブラウザ実行を確認。`sw.js` は v774。 (by Codex)
 - 2026-06-03 - [batch:248-maze-editor-delete-items] DONE - Codex: `tools/maze-editor.html` の削除モードで、お邪魔虫/障害物が stop node と重なっていると node 判定が先に走って item を消せない問題を修正。削除優先順を お邪魔虫 → 障害物 → ノード → 道 に変更し、Playwright で node と同座標の rock が先に消えて node が残ること、続けて mayoi が消えることを確認。`sw.js` は v771。 (by Codex)
 - 2026-06-03 - [batch:247-maze-stage1-night-map] DONE - Codex: 迷路1面の通常進行参照画像 `maze/imageStages/ステージ1：森の入り口.jpg` を、経路座標を保つため再生成ではなく既存画像の夜色変換で差し替え。森は青い夜色、道は月明かりで読める明るさに調整し、画像サイズ 1600x904 維持を確認。`sw.js` は v770。 (by Codex)
