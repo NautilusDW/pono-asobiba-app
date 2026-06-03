@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-03T04:31:56Z - 鮭シネマ Phase C 根本再実装 (egg-cue漏出ガード, 鮭中央保持, 塩ドラッグ, 油hit-test厳密化, 油・塩hide, data-ingredient defense, sw v760)
+- **タスク**: 鮭シネマ Phase C 根本再実装 (egg-cue漏出ガード, 鮭中央保持, 塩ドラッグ, 油hit-test厳密化, 油・塩hide, data-ingredient defense, sw v760)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 129
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 43, "Grep": 1, "Read": 32, "Agent": 40, "ToolSearch": 2, "Skill": 2, "Edit": 8, "Write": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-03T04:06:57Z - 迷路エディタ座標系ミスマッチ修正: _restoreFromServerDef で viewBox 優先化、sw v759 バンプ
 - **タスク**: 迷路エディタ座標系ミスマッチ修正: _restoreFromServerDef で viewBox 優先化、sw v759 バンプ
 - **結果**: 成功
@@ -245,18 +258,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 9, "Grep": 1, "Read": 8, "Agent": 17, "ToolSearch": 2, "Skill": 2, "Edit": 2, "Write": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-03T01:31:08Z - kitchen.html Phase C nit修正 (clearPendingTimers末尾にresetCookSubStepUI追加 / triggerOilPourでsub.layerImg参照)
-- **タスク**: kitchen.html Phase C nit修正 (clearPendingTimers末尾にresetCookSubStepUI追加 / triggerOilPourでsub.layerImg参照)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 0
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
-- **ツール使用統計**: {"Bash": 9, "Grep": 1, "Read": 8, "Agent": 16, "ToolSearch": 2, "Skill": 2, "Edit": 2, "Write": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

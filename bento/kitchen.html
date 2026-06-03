@@ -2989,11 +2989,16 @@ body.layout-editor-on .fry-pot {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,0.74), rgba(255,226,134,0.24) 52%, transparent 72%);
 }
-#grill-stage.food-placed .egg-target-cue,
-#grill-stage.egg-lid-ready .egg-target-cue,
-#grill-stage.egg-lid-closed .egg-target-cue {
+#grill-stage[data-ingredient="egg"].food-placed .egg-target-cue,
+#grill-stage[data-ingredient="egg"].egg-lid-ready .egg-target-cue,
+#grill-stage[data-ingredient="egg"].egg-lid-closed .egg-target-cue {
   opacity: 0 !important;
   display: none;
+}
+/* defense-in-depth: egg-target-cue must never appear for non-egg ingredients */
+#grill-stage:not([data-ingredient="egg"]) .egg-target-cue {
+  opacity: 0 !important;
+  display: none !important;
 }
 .egg-crack-shells {
   position: absolute;
@@ -3326,10 +3331,14 @@ body.layout-editor-on .egg-glass-lid {
   animation: substepPour 0.7s ease-out;
 }
 .cook-substep-shaker.rest-lower-left {
-  left: 10%;
-  top: 86%;
-  width: 8%;
+  left: 12% !important;
+  top: 86% !important;
+  width: 9% !important;
   cursor: default;
+  transition: left 0.6s ease-out, top 0.6s ease-out, width 0.6s ease-out, opacity 0.32s ease;
+}
+.cook-substep-shaker.tilted {
+  transform: translate(-50%, -50%) rotate(-32deg);
 }
 .cook-substep-shaker.rest-lower-right {
   left: 90%;
@@ -3419,6 +3428,28 @@ body.layout-editor-on .egg-glass-lid {
     left 0.45s cubic-bezier(.18,.85,.2,1.02),
     top 0.45s cubic-bezier(.18,.85,.2,1.02),
     width 0.45s cubic-bezier(.18,.85,.2,1.02);
+}
+/* Phase C: keep salmon (plus its plate) centered just below stage middle
+   during salt and oil sub-steps, so the user can sprinkle / pour onto it. */
+#grill-stage[data-ingredient="salmon"].cook-substep-on-plate-center .cooking-food {
+  left: 50%;
+  top: 58%;
+  width: 30%;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.5s cubic-bezier(.18,.85,.2,1.02),
+    top 0.5s cubic-bezier(.18,.85,.2,1.02),
+    width 0.5s cubic-bezier(.18,.85,.2,1.02);
+}
+#grill-stage[data-ingredient="salmon"].cook-substep-on-plate-center .prep-plate {
+  left: 50%;
+  top: 60%;
+  width: 38%;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  transition:
+    left 0.5s cubic-bezier(.18,.85,.2,1.02),
+    top 0.5s cubic-bezier(.18,.85,.2,1.02),
+    width 0.5s cubic-bezier(.18,.85,.2,1.02);
 }
 /* salmon flip uses the foodFlip keyframe already defined, just needs img swap at midpoint */
 @keyframes substepShake {
@@ -12054,10 +12085,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     const stage = els.grillStage;
     if (stage) {
       stage.classList.remove('cook-substep-intro', 'cook-substep-salt-mode', 'cook-substep-oil-mode',
-        'cook-substep-flip-mode', 'cook-substep-place-mode');
+        'cook-substep-flip-mode', 'cook-substep-place-mode', 'cook-substep-on-plate-center');
     }
     if (els.cookSubStepSalt) {
-      els.cookSubStepSalt.classList.remove('show', 'shaking', 'pouring', 'rest-lower-left', 'is-dragging');
+      els.cookSubStepSalt.classList.remove('show', 'shaking', 'pouring', 'rest-lower-left', 'rest-lower-right', 'is-dragging', 'tilted');
       els.cookSubStepSalt.style.left = '';
       els.cookSubStepSalt.style.top = '';
     }
@@ -12108,6 +12139,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookOilApplied = false;
     state.cookFlipped = false;
     state.cookSaltTaps = 0;
+    state.cookSaltSprinkleAt = 0;
     // Keep cookPreheated=false during intro/salt/oil so the existing drag gate
     // in onCookFoodPointerDown blocks the user from grabbing the salmon early.
     // placeFood subStep flips cookPreheated=true to enable the plate→pan drag.
@@ -12144,9 +12176,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     showSubStepBanner('さけを ながめよう！');
     const hold = Math.max(400, (sub.duration || 700));
     state.pendingTimers.push(setTimeout(function () {
-      // Release center pin → cooking-food transitions back to its plate position
-      // via the CSS transition declared on the base .cooking-food selector.
-      if (stage) stage.classList.remove('cook-substep-intro');
+      // Swap intro animation for the steady "on plate at center" pose so the
+      // salmon stays centered through salt + oil sub-steps. CSS transition on
+      // .cooking-food handles the soft easing into the new position.
+      if (stage) {
+        stage.classList.remove('cook-substep-intro');
+        stage.classList.add('cook-substep-on-plate-center');
+      }
       showSubStepBanner('');
       state.pendingTimers.push(setTimeout(function () {
         state.cookSubStepLock = false;
@@ -12173,40 +12209,112 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookSaltTaps = 0;
   }
 
+  // Phase C salt: drag the shaker over the salmon. While the shaker hovers
+  // the salmon bounds, grains spawn and a "tap" counter increments (throttled).
+  // After enough taps the shaker animates to its rest position (lower-left).
   function onSaltShakerTap(evt) {
     const sub = getCurrentSubStep();
     if (!sub || sub.action !== 'salt' || state.cookSaltApplied) return;
     if (state.cookSubStepLock) return;
+    const shaker = els.cookSubStepSalt;
+    const stage = els.grillStage;
+    if (!shaker || !stage) return;
     evt.preventDefault();
     evt.stopPropagation();
     suppressCookClickFor(160);
-    const shaker = els.cookSubStepSalt;
-    if (!shaker) return;
-    const imgEl = shaker.querySelector('.cook-substep-shaker-img');
-    if (imgEl && shaker.dataset.tiltedSrc) imgEl.src = shaker.dataset.tiltedSrc;
-    shaker.classList.remove('shaking');
-    void shaker.offsetWidth;
-    shaker.classList.add('shaking');
-    spawnSaltGrains();
-    state.cookSaltTaps = Math.min((sub.taps || 3), (state.cookSaltTaps || 0) + 1);
-    state.pendingTimers.push(setTimeout(function () {
-      if (imgEl && shaker.dataset.stillSrc) imgEl.src = shaker.dataset.stillSrc;
-      shaker.classList.remove('shaking');
-    }, 420));
-    if (state.cookSaltTaps >= (sub.taps || 3)) {
-      state.cookSaltApplied = true;
-      state.cookSubStepLock = true;
-      state.pendingTimers.push(setTimeout(function () {
-        shaker.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
-        showSubStepBanner('');
-        const stage = els.grillStage;
-        if (stage) stage.classList.remove('cook-substep-salt-mode');
-        state.pendingTimers.push(setTimeout(function () {
-          state.cookSubStepLock = false;
-          advanceSubStep();
-        }, 600));
-      }, 480));
+    const stageRect = stage.getBoundingClientRect();
+    const dragState = {
+      pointerId: evt.pointerId,
+      stageRect: stageRect,
+      sub: sub,
+      maxTaps: sub.taps || 3,
+    };
+    shaker.classList.add('is-dragging');
+    if (shaker.setPointerCapture) {
+      try { shaker.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
     }
+    function applyPos(clientX, clientY) {
+      const x = clientX - stageRect.left;
+      const y = clientY - stageRect.top;
+      shaker.style.left = (x / stageRect.width * 100) + '%';
+      shaker.style.top = (y / stageRect.height * 100) + '%';
+    }
+    function onMove(e) {
+      if (e.pointerId !== dragState.pointerId) return;
+      e.preventDefault();
+      applyPos(e.clientX, e.clientY);
+      if (state.cookSaltApplied) return;
+      if (isOverSalmonClient(e.clientX, e.clientY)) {
+        const now = performance.now();
+        if (!state.cookSaltSprinkleAt || now - state.cookSaltSprinkleAt > 260) {
+          state.cookSaltSprinkleAt = now;
+          const imgEl = shaker.querySelector('.cook-substep-shaker-img');
+          if (imgEl && shaker.dataset.tiltedSrc) imgEl.src = shaker.dataset.tiltedSrc;
+          shaker.classList.add('tilted');
+          spawnSaltGrains();
+          state.cookSaltTaps = Math.min(dragState.maxTaps, (state.cookSaltTaps || 0) + 1);
+          if (state.cookSaltTaps >= dragState.maxTaps) {
+            finishSaltSubStep(dragState.sub);
+          }
+        }
+      } else {
+        shaker.classList.remove('tilted');
+        const imgEl = shaker.querySelector('.cook-substep-shaker-img');
+        if (imgEl && shaker.dataset.stillSrc) imgEl.src = shaker.dataset.stillSrc;
+      }
+    }
+    function onEnd(e) {
+      if (e.pointerId !== dragState.pointerId) return;
+      e.preventDefault();
+      shaker.removeEventListener('pointermove', onMove);
+      shaker.removeEventListener('pointerup', onEnd);
+      shaker.removeEventListener('pointercancel', onEnd);
+      shaker.classList.remove('is-dragging');
+      shaker.classList.remove('tilted');
+      const imgEl = shaker.querySelector('.cook-substep-shaker-img');
+      if (imgEl && shaker.dataset.stillSrc) imgEl.src = shaker.dataset.stillSrc;
+      if (!state.cookSaltApplied) {
+        // Return to home center pose so the user can pick it up again.
+        shaker.style.left = '50%';
+        shaker.style.top = '38%';
+      }
+    }
+    shaker.addEventListener('pointermove', onMove);
+    shaker.addEventListener('pointerup', onEnd);
+    shaker.addEventListener('pointercancel', onEnd);
+  }
+
+  function isOverSalmonClient(clientX, clientY) {
+    const wrap = els.grillingFoodWrap;
+    if (!wrap) return false;
+    const r = wrap.getBoundingClientRect();
+    const pad = Math.min(r.width, r.height) * 0.15;
+    return clientX >= r.left - pad && clientX <= r.right + pad
+        && clientY >= r.top  - pad && clientY <= r.bottom + pad;
+  }
+
+  function finishSaltSubStep(sub) {
+    if (state.cookSaltApplied) return;
+    state.cookSaltApplied = true;
+    state.cookSubStepLock = true;
+    const shaker = els.cookSubStepSalt;
+    if (shaker) {
+      shaker.classList.remove('tilted');
+      const imgEl = shaker.querySelector('.cook-substep-shaker-img');
+      if (imgEl && shaker.dataset.stillSrc) imgEl.src = shaker.dataset.stillSrc;
+      // Clear inline drag positions so the rest-lower-left CSS rule wins
+      // (its !important values move the shaker to the corner with transition).
+      shaker.style.left = '';
+      shaker.style.top = '';
+      shaker.classList.add(sub && sub.restPos === 'lower-right' ? 'rest-lower-right' : 'rest-lower-left');
+    }
+    showSubStepBanner('');
+    state.pendingTimers.push(setTimeout(function () {
+      const stage = els.grillStage;
+      if (stage) stage.classList.remove('cook-substep-salt-mode');
+      state.cookSubStepLock = false;
+      advanceSubStep();
+    }, 700));
   }
 
   function spawnSaltGrains() {
@@ -12388,10 +12496,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       const xPct = x / stageRect.width * 100;
       const yPct = y / stageRect.height * 100;
       // Pan center is approximately --grill-food-x (58%) / --grill-food-y (52%).
-      // Accept a generous radius of 28 percentage points for child-friendly drop.
+      // Tighter hit-test (~16pp radius) plus a vertical bounding band so the
+      // cruet only "pours" when it is clearly over the pan, not over the plate
+      // or the lower rest area.
       const dx = xPct - 58;
       const dy = yPct - 52;
-      const overPan = (dx * dx + dy * dy) < (28 * 28);
+      const overPan = (dx * dx + dy * dy) < (16 * 16) && yPct >= 35 && yPct <= 68;
       if (overPan) {
         triggerOilPour(sub);
       } else {
@@ -12447,7 +12557,20 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function showPlaceFoodSubStep(sub) {
     const stage = els.grillStage;
-    if (stage) stage.classList.add('cook-substep-place-mode');
+    if (stage) {
+      // Drop the "centered on plate" pose → salmon + prep-plate transition back
+      // to the default lower-left plate position via base .cooking-food CSS.
+      stage.classList.remove('cook-substep-on-plate-center');
+      stage.classList.add('cook-substep-place-mode');
+    }
+    // Salt + oil containers are no longer needed; clear them so they don't
+    // hover over the salmon during the place / cookFront / flip steps.
+    if (els.cookSubStepSalt) {
+      els.cookSubStepSalt.classList.remove('show');
+    }
+    if (els.cookSubStepOil) {
+      els.cookSubStepOil.classList.remove('show');
+    }
     showSubStepBanner('さけを フライパンへ');
     setSpeech('さけを フライパンに のせよう！', 'grill');
     if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから フライパンへ';
@@ -12569,6 +12692,11 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function beginCookAction(ing, action) {
+    // Defense-in-depth: set data-ingredient on the active stage so ingredient-
+    // scoped CSS (e.g. egg-target-cue, salmon center-pose) keys correctly even
+    // before updateCookStageState runs below.
+    if (els.grillStage && ing && ing.id) els.grillStage.dataset.ingredient = ing.id;
+    if (els.fryStage && ing && ing.id) els.fryStage.dataset.ingredient = ing.id;
     state.prepProgress = 0;
     state.prepAnimating = false;
     state.chopProgress = 0;
@@ -12593,6 +12721,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookFlipped = false;
     state.cookSubStepLock = false;
     state.cookSaltTaps = 0;
+    state.cookSaltSprinkleAt = 0;
     resetCookSubStepUI();
     state.cookEggCrackProgress = 0;
     state.cookEggLastKnockAt = 0;
