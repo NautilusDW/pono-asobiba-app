@@ -2968,16 +2968,16 @@ body.layout-editor-on .fry-pot {
   transition: opacity 0.16s ease, left 0.18s ease, top 0.18s ease;
   animation: eggTargetPulse 1.08s ease-in-out infinite;
 }
-#grill-stage.egg-target-rim .egg-target-cue,
-#grill-stage.egg-target-center .egg-target-cue {
+#grill-stage[data-ingredient="egg"].egg-target-rim .egg-target-cue,
+#grill-stage[data-ingredient="egg"].egg-target-center .egg-target-cue {
   opacity: 1;
 }
-#grill-stage.egg-target-rim .egg-target-cue {
+#grill-stage[data-ingredient="egg"].egg-target-rim .egg-target-cue {
   --egg-target-x: var(--egg-rim-target-x, 28%);
   --egg-target-y: var(--egg-rim-target-y, 60%);
   --egg-target-w: var(--egg-rim-target-w, 12%);
 }
-#grill-stage.egg-target-center .egg-target-cue {
+#grill-stage[data-ingredient="egg"].egg-target-center .egg-target-cue {
   --egg-target-x: var(--egg-center-target-x, 58%);
   --egg-target-y: var(--egg-center-target-y, 52%);
   --egg-target-w: var(--egg-center-target-w, 21%);
@@ -12484,6 +12484,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookEggLidClosed = false;
     state.cookEggLidDragging = false;
     state.suppressCookClick = false;
+    if (els.grillStage) {
+      els.grillStage.classList.remove('egg-target-rim', 'egg-target-center');
+    }
     resetCookTimingUI(action.type);
     resetCookDrag(action.type);
     if (isMeatballCookAction(ing, action)) initCookMeatballs(action);
