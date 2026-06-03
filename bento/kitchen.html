@@ -3246,6 +3246,9 @@ body.layout-editor-on .egg-glass-lid {
 #grill-stage[data-ingredient="meatball"] .cooking-food.flip img {
   animation: meatballRoll 0.58s cubic-bezier(.18,.85,.22,1);
 }
+#grill-stage[data-ingredient="salmon"] .cooking-food.flip img {
+  animation: foodFlipEnhanced 1100ms cubic-bezier(.2,.85,.24,1);
+}
 .cooking-food.drop img,
 .cooking-food.drop .cooking-food-fallback {
   animation: foodDrop 0.52s cubic-bezier(.18,.85,.2,1.02);
@@ -3365,23 +3368,23 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=761');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  mix-blend-mode: multiply;
   z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s ease-out;
+  filter: brightness(1.05) saturate(1.2);
 }
 .cook-substep-oil-layer.show {
-  opacity: 0.7;
+  opacity: 0.92;
   animation: oilShimmer 3s ease-in-out infinite;
 }
 @keyframes oilShimmer {
-  0%, 100% { filter: brightness(1.0) saturate(1.0); }
-  50%      { filter: brightness(1.08) saturate(1.15); }
+  0%, 100% { filter: brightness(1.05) saturate(1.2); }
+  50%      { filter: brightness(1.18) saturate(1.4); }
 }
 .salt-particle {
   position: absolute;
@@ -3936,6 +3939,13 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   0%   { transform: rotateY(0deg) translateY(0); }
   42%  { transform: rotateY(88deg) translateY(-34px) scale(1.08); }
   100% { transform: rotateY(180deg) translateY(0); }
+}
+@keyframes foodFlipEnhanced {
+  0%   { transform: rotateY(0deg) translateY(0) scale(1); }
+  20%  { transform: rotateY(0deg) translateY(-22px) scale(1.1); }
+  50%  { transform: rotateY(90deg) translateY(-34px) scale(1.15); }
+  80%  { transform: rotateY(180deg) translateY(-16px) scale(1.1); }
+  100% { transform: rotateY(180deg) translateY(0) scale(1); }
 }
 @keyframes meatballRoll {
   0%   { transform: translateX(-22px) rotate(0deg) scale(1); }
@@ -12195,6 +12205,14 @@ body.layout-editor-on .bowl-fill-mask::after {
     const stage = els.grillStage;
     const shaker = els.cookSubStepSalt;
     if (!shaker) { advanceSubStep(); return; }
+    // Defensive reset: any prior substep run (replay / hot reload) can leave
+    // taps at maxTaps which would otherwise instant-finish on the first
+    // pointermove, snapping the shaker to lower-left before the user can
+    // sprinkle.
+    state.cookSaltTaps = 0;
+    state.cookSaltApplied = false;
+    state.cookSaltSprinkleAt = 0;
+    state.cookSubStepLock = false;
     if (stage) stage.classList.add('cook-substep-salt-mode');
     const containerSrc = cookingAssetPath(sub.container || 'salt/salt_shaker_still');
     const tiltedSrc = cookingAssetPath(sub.tilted || 'salt/salt_shaker_sprinkling');
@@ -12429,7 +12447,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     const stage = els.grillStage;
     const cruet = els.cookSubStepOil;
     if (!cruet) { advanceSubStep(); return; }
-    if (stage) stage.classList.add('cook-substep-oil-mode');
+    if (stage) {
+      // Move salmon + prep-plate back to their base lower-left pose so the
+      // pan center is clear for the oil cruet drag-and-pour. CSS transition on
+      // .cooking-food / .prep-plate handles the soft glide back.
+      stage.classList.remove('cook-substep-on-plate-center');
+      stage.classList.add('cook-substep-oil-mode');
+    }
     const containerSrc = cookingAssetPath(sub.container || 'oil/oil_jar_still');
     const tiltedSrc = cookingAssetPath(sub.tilted || 'oil/oil_jar_tilted');
     cruet.dataset.stillSrc = containerSrc;
@@ -12602,21 +12626,25 @@ body.layout-editor-on .bowl-fill-mask::after {
   function cookFrontSubStep(sub) {
     stopCookTimingGauge();
     resetCookTimingUI('grill');
-    showSubStepBanner('おもてを やこう');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして うらがえそう';
-    setSpeech('ジュッ！ おもてを やこう！ タップして うらがえそう！', 'grill');
+    const taps = (sub && sub.taps) || 3;
+    state.cookFrontMaxTaps = taps;
+    state.cookFrontProgress = 0;
+    showSubStepBanner('おもてを やこう  (0/' + taps + ')');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして やこう';
+    setSpeech('ジュッ！ ' + taps + 'かい タップして おもてを やこう！', 'grill');
     state.cookSubStepLock = false;
     state.cookAnimating = false;
-    // user taps grill stage to flip; onGrillTap detects subStep mode and routes to handleSubStepGrillTap
+    // user taps grill stage; handleSubStepGrillTap increments progress and only
+    // advances (= triggers flip) once taps reach maxTaps.
   }
 
   function runFlipSubStep(sub) {
     const ing = state.current;
     const action = getCurrentAction();
     state.cookSubStepLock = true;
-    showSubStepBanner('うらがえそう！');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'うらがえし中';
-    setSpeech('くるりっ！ うらがえすよ！', 'grill');
+    showSubStepBanner('ひっくり かえそう！');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'ひっくり かえし中';
+    setSpeech('くるりっ！ ひっくり かえすよ！', 'grill');
     const wrap = els.grillingFoodWrap;
     const img = els.grillingFood;
     if (wrap) {
@@ -12646,9 +12674,12 @@ body.layout-editor-on .bowl-fill-mask::after {
   function cookBackSubStep(sub) {
     stopCookTimingGauge();
     resetCookTimingUI('grill');
-    showSubStepBanner('うらも やこう');
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして できあがり';
-    setSpeech('ジュッ！ うらも やこう！ もういちど タップ！', 'grill');
+    const taps = (sub && sub.taps) || 3;
+    state.cookBackMaxTaps = taps;
+    state.cookBackProgress = 0;
+    showSubStepBanner('うらも やこう  (0/' + taps + ')');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして やこう';
+    setSpeech('ジュッ！ ' + taps + 'かい タップして うらも やこう！', 'grill');
     state.cookSubStepLock = false;
     state.cookAnimating = false;
   }
@@ -12679,13 +12710,21 @@ body.layout-editor-on .bowl-fill-mask::after {
     const sub = getCurrentSubStep();
     if (!sub) return false;
     if (sub.action === 'cookFront') {
-      // user taps to trigger flip
-      advanceSubStep();
+      const maxTaps = state.cookFrontMaxTaps || 1;
+      state.cookFrontProgress = Math.min(maxTaps, (state.cookFrontProgress || 0) + 1);
+      showSubStepBanner('おもてを やこう  (' + state.cookFrontProgress + '/' + maxTaps + ')');
+      if (state.cookFrontProgress >= maxTaps) {
+        advanceSubStep();
+      }
       return true;
     }
     if (sub.action === 'cookBack') {
-      // user taps to finish
-      advanceSubStep();
+      const maxTaps = state.cookBackMaxTaps || 1;
+      state.cookBackProgress = Math.min(maxTaps, (state.cookBackProgress || 0) + 1);
+      showSubStepBanner('うらも やこう  (' + state.cookBackProgress + '/' + maxTaps + ')');
+      if (state.cookBackProgress >= maxTaps) {
+        advanceSubStep();
+      }
       return true;
     }
     return false;
@@ -12817,10 +12856,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (/^(https?:)?\/\//.test(stagePath) || stagePath.indexOf('../') === 0 || stagePath.indexOf('/') === 0) {
       return stagePath;
     }
+    var base;
     if (/\.(png|jpe?g|webp|gif)$/i.test(stagePath)) {
-      return '../assets/images/bento/cooking/' + stagePath;
+      base = '../assets/images/bento/cooking/' + stagePath;
+    } else {
+      base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return '../assets/images/bento/cooking/' + stagePath + '.png';
+    return base + '?v=761';
   }
 
   function getCookImageConfig(ing, action) {
@@ -16479,17 +16521,17 @@ body.layout-editor-on .bowl-fill-mask::after {
       rawX = cx + Math.cos(a) * w * 0.48 * rNorm - pieceSize / 2;
       rawY = cy + Math.sin(a) * h * 0.38 * rNorm - pieceSize / 2;
     } else {
-      const r = Math.sqrt(Math.random()) * Math.min(w, h) * 0.25;
+      const r = Math.sqrt(Math.random()) * Math.min(w, h) * 0.42;
       const a = Math.random() * Math.PI * 2;
       rawX = cx + Math.cos(a) * r - pieceSize / 2;
       rawY = cy + Math.sin(a) * r - pieceSize / 2;
     }
     let x = (isLeafy || isParticle)
       ? Math.max(w * 0.03, Math.min(w - pieceSize - w * 0.03, rawX))
-      : rawX;
+      : Math.max(w * 0.05, Math.min(w - pieceSize - w * 0.05, rawX));
     let y = (isLeafy || isParticle)
       ? Math.max(h * 0.08, Math.min(h - pieceSize - h * 0.06, rawY))
-      : rawY;
+      : Math.max(h * 0.08, Math.min(h - pieceSize - h * 0.08, rawY));
     if (isChicken) {
       const minX = Math.min(w * 0.16, Math.max(0, (w - pieceSize) * 0.5));
       const maxX = Math.max(minX, w - pieceSize - minX);

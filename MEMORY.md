@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-03T05:17:06Z - kitchen.html bug fix x5: salt cache-buster (v761), salt drag pre-reset, oil pan-clear + brighter oil layer, cookFront/cookBack tap progress + enhanced salmon flip animation, chop scatter radius 0.25->0.42 + bowl clip
+- **タスク**: kitchen.html bug fix x5: salt cache-buster (v761), salt drag pre-reset, oil pan-clear + brighter oil layer, cookFront/cookBack tap progress + enhanced salmon flip animation, chop scatter radius 0.25->0.42 + bowl clip
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 139
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 46, "Grep": 1, "Read": 34, "Agent": 44, "ToolSearch": 2, "Skill": 2, "Edit": 9, "Write": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-03T04:31:56Z - 鮭シネマ Phase C 根本再実装 (egg-cue漏出ガード, 鮭中央保持, 塩ドラッグ, 油hit-test厳密化, 油・塩hide, data-ingredient defense, sw v760)
 - **タスク**: 鮭シネマ Phase C 根本再実装 (egg-cue漏出ガード, 鮭中央保持, 塩ドラッグ, 油hit-test厳密化, 油・塩hide, data-ingredient defense, sw v760)
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 9, "Grep": 1, "Read": 8, "Agent": 19, "ToolSearch": 2, "Skill": 2, "Edit": 2, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-03T01:40:30Z - トントンキッチン Phase D: .fry-oil-mask に SVG ベジェ editor を実装 (anchors/handles drag、 clip-path: path() で形状反映、 top-level __fry_oil_mask_bezier に永続化、 sw.js 751)
-- **タスク**: トントンキッチン Phase D: .fry-oil-mask に SVG ベジェ editor を実装 (anchors/handles drag、 clip-path: path() で形状反映、 top-level __fry_oil_mask_bezier に永続化、 sw.js 751)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 42
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 9, "Grep": 1, "Read": 8, "Agent": 17, "ToolSearch": 2, "Skill": 2, "Edit": 2, "Write": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
