@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-03 - [batch:242-bento-phase-b-gpt2-raw-redo] DONE - Codex: 前回 `b7721e3` の Phase B 料理素材差し替えが GPT Image 2 ではなく Pillow 直接描画だったため、GPT Image 2 built-in 生成ルートで raw を作り直し。AGENTS §5.1 に従い alpha 抜き・切り抜き・final assets 上書きはせず、白背景 raw 4枚 + review contact sheet を `tmp/alpha_pending/241_bento_phase_b_gpt2/` に納品。サーモン3段階 / 油差し2状態 / 油レイヤー / 塩入れ2状態を目視確認済み。 (by Codex)
 - 2026-06-03 - [batch:241-bento-cooking-phase-b-assets] DONE - Codex: `tmp/Bento/cooking_assets_brief.md` の Phase B 料理素材 8 枚を placeholder から透明PNG直接生成アセットへ差し替え。サーモン背面3段階、油差し2枚+油レイヤー、塩入れ2枚を指定寸法/RGBAで保存し、サーモンalpha差分・透明角・oil_layer半透明・参照パス・contact sheet/dark背景目視を確認。`sw.js` は v754。 (by Codex)
 - 2026-06-02 - [batch:240-mojikko-stack-physics-surface] DONE - Codex: `writing-mori/play.html` のつみき物理で、見えているオレンジ床幅と Matter.js の床幅を一致させ、下側の不可視 ground を削除。落下初速をゼロにして物理反復回数を上げ、床/下ブロック上面を基準にした surfaceError 判定へ変更した。Playwrightで1個目中央、2個目中央、2/3個目端寄り、miss時の画面外落下を検証し、床や下ブロックを大きく突き抜けて成功扱いにならないことを確認。`sw.js` は v741。 (by Codex)
 - 2026-06-02 - [batch:239-mojikko-taiko-song-chart] DONE - Codex: `writing-mori/play.html` のたいこを、外部ライブラリなしの Web Audio + 譜面JSON方式へ変更。`さくらリズム` 5フレーズを追加し、各フレーズ6打・BPM72・カウント後1拍余裕ありで音符レーン/曲名ラベル/アクセント音符/メロディ音/控えめ伴奏を同期。Playwrightで開始待ち、カウントダウン、曲ラベル、6打ヒット判定、5フレーズ全譜面、JSエラーなしを確認。目視スクショで開始直後に即押しにならないことも確認。`sw.js` は v740。 (by Codex)
