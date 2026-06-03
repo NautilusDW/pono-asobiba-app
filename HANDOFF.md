@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-03 - [batch:248-maze-editor-delete-items] DONE - Codex: `tools/maze-editor.html` の削除モードで、お邪魔虫/障害物が stop node と重なっていると node 判定が先に走って item を消せない問題を修正。削除優先順を お邪魔虫 → 障害物 → ノード → 道 に変更し、Playwright で node と同座標の rock が先に消えて node が残ること、続けて mayoi が消えることを確認。`sw.js` は v771。 (by Codex)
 - 2026-06-03 - [batch:247-maze-stage1-night-map] DONE - Codex: 迷路1面の通常進行参照画像 `maze/imageStages/ステージ1：森の入り口.jpg` を、経路座標を保つため再生成ではなく既存画像の夜色変換で差し替え。森は青い夜色、道は月明かりで読める明るさに調整し、画像サイズ 1600x904 維持を確認。`sw.js` は v770。 (by Codex)
 - 2026-06-03 - [batch:246-bento-shiozake-raw-wet] DONE - Codex: user 指摘「焼く前が焼いてあるようにも見える / もっとみずみずしくテカっている感じ」を受け、塩鮭シートを再生成。`tmp/alpha_pending/245_bento_shiozake_raw_wet_gpt2/shiozake_front_back_3stage_raw_wet.png` に、左列 raw の赤み・水分ハイライト・冷たい銀皮を強めた 2x3 raw を納品。旧 `244` は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
 - 2026-06-03 - [batch:245-bento-shiozake-front-back] DONE - Codex: user 指摘「そういう切り方ではなく塩鮭」を受け、サーモンを塩鮭形状で再生成。`tmp/alpha_pending/244_bento_shiozake_front_back_gpt2/shiozake_front_back_3stage_raw.png` に、参照写真に寄せた細長い塩鮭の 2x3 raw (上段=身側、下段=皮側、列=生/途中/焼き上がり) を納品。旧 `241`/`242`/`243` の salmon raw は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
