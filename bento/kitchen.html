@@ -3082,15 +3082,31 @@ body.layout-editor-on .egg-glass-lid {
 #grill-stage[data-ingredient="egg"].egg-lid-closed:not(.is-served) .grill-smoke {
   opacity: 0.38;
 }
-/* v766: glass lid auto-shown during salmon cookBack only (after flip).
+/* v767: glass lid shown during salmon cookBack only (after flip), now draggable.
    Position/size are intentionally NOT set here — base .egg-glass-lid CSS +
-   saved-layout.json inline styles drive that, so the editor adjustments stick.
-   Egg's lid-ready/closed classes are untouched. */
+   saved-layout.json inline styles drive home pose, so the editor adjustments stick.
+   Egg's lid-ready/closed classes/state are untouched (independent system).
+   Drag handler is wired only while .show-for-salmon is present and removed on done. */
 .egg-glass-lid.show-for-salmon {
   opacity: 0.92;
-  z-index: 6;
+  z-index: 7;
+  pointer-events: auto;
+  cursor: grab;
+  transition: opacity 0.45s ease, left 0.22s ease, top 0.22s ease, width 0.22s ease;
+}
+#grill-stage.salmon-lid-dragging .egg-glass-lid.show-for-salmon {
+  opacity: 1;
+  cursor: grabbing;
+  transition: none;
+  z-index: 12;
+}
+#grill-stage.salmon-lid-closed:not(.is-served) .egg-glass-lid.show-for-salmon {
+  left: var(--grill-lid-left, 43%);
+  top: var(--grill-lid-top, 32%);
+  width: var(--grill-lid-w, 53%);
+  opacity: 1;
   pointer-events: none;
-  transition: opacity 0.45s ease;
+  cursor: default;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food {
   left: var(--fry-food-x, 58%);
@@ -3423,7 +3439,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=766');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=767');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -7107,6 +7123,11 @@ body.layout-editor-on .bowl-fill-mask::after {
     cookEggLidClosed: false,
     cookEggLidDragging: false,
     cookEggLidBaseStyle: null,
+    // v767: salmon-only lid drag state (independent from egg lid system).
+    cookSalmonLidActive: false,
+    cookSalmonLidClosed: false,
+    cookSalmonLidDragging: false,
+    cookSalmonLidPointerId: null,
     cookSubStepIndex: -1,
     cookSaltApplied: false,
     cookOilApplied: false,
@@ -12247,7 +12268,15 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (els.oilDropTarget) els.oilDropTarget.classList.remove('show');
     // v765: also clear the salmon-only lid overlay in case a previous run left it on.
     if (els.eggGlassLid) els.eggGlassLid.classList.remove('show-for-salmon');
+    // v767: detach salmon lid drag handlers + reset its state/pose.
+    if (typeof detachSalmonLidHandlers === 'function') detachSalmonLidHandlers();
+    state.cookSalmonLidActive   = false;
+    state.cookSalmonLidClosed   = false;
+    state.cookSalmonLidDragging = false;
+    state.cookSalmonLidPointerId = null;
+    if (typeof resetSalmonLidToHome === 'function') resetSalmonLidToHome();
     if (els.grillStage) {
+      els.grillStage.classList.remove('salmon-lid-closed', 'salmon-lid-dragging', 'drop-ready');
       els.grillStage.querySelectorAll('.salt-particle, .oil-drop').forEach(function (p) { p.remove(); });
     }
     if (els.cookSubStepBanner) {
@@ -12842,7 +12871,15 @@ body.layout-editor-on .bowl-fill-mask::after {
     const action = getCurrentAction();
     state.cookSubStepLock = true;
     // v765: lift the lid off before flipping (chef takes lid off, flips, replaces).
+    // v767: also ensure salmon lid drag mode is fully off before the back-side cookBack starts.
     if (els.eggGlassLid) els.eggGlassLid.classList.remove('show-for-salmon');
+    detachSalmonLidHandlers();
+    state.cookSalmonLidActive   = false;
+    state.cookSalmonLidClosed   = false;
+    state.cookSalmonLidDragging = false;
+    state.cookSalmonLidPointerId = null;
+    resetSalmonLidToHome();
+    if (els.grillStage) els.grillStage.classList.remove('salmon-lid-closed', 'salmon-lid-dragging', 'drop-ready');
     showSubStepBanner('ひっくり かえそう！');
     if (els.grillActionLabel) els.grillActionLabel.textContent = 'ひっくり かえし中';
     setSpeech('くるりっ！ ひっくり かえすよ！', 'grill');
@@ -12872,22 +12909,133 @@ body.layout-editor-on .bowl-fill-mask::after {
     }, sub.duration || 1200));
   }
 
+  // v767: salmon-only lid drag (independent from egg lid handlers).
+  // Activated by cookBackSubStep, deactivated by runDoneSubStep / resetCookSubStepUI.
+  function isSalmonLidDraggable() {
+    return !!(state.cookSalmonLidActive && !state.cookSalmonLidClosed
+      && state.current && state.current.id === 'salmon'
+      && !isLayoutEditorMode());
+  }
+  function moveSalmonLidToPoint(evt) {
+    const point = getCookDragPoint('grill', evt);
+    if (!point || !els.grillStage || !els.eggGlassLid) return false;
+    const size = (typeof getEggLidDragSizePct === 'function') ? getEggLidDragSizePct() : { width: 34, height: 26 };
+    const left = Math.max(1, Math.min(99 - size.width, point.x - size.width / 2));
+    const top  = Math.max(1, Math.min(96 - size.height, point.y - size.height / 2));
+    els.eggGlassLid.dataset.lidDragInline = '1';
+    els.eggGlassLid.style.left = left.toFixed(2) + '%';
+    els.eggGlassLid.style.top  = top.toFixed(2) + '%';
+    els.eggGlassLid.style.width = size.width.toFixed(2) + '%';
+    // Pan-center test reuses the same target geometry as egg lid (visual parity),
+    // but is gated by salmon flags so egg state is never touched.
+    const target = (typeof getEggLidDropTarget === 'function') ? getEggLidDropTarget() : { x: 58, y: 38, rx: 16, ry: 10 };
+    const dx = (point.x - target.x) / Math.max(1, target.rx);
+    const dy = (point.y - target.y) / Math.max(1, target.ry);
+    const over = (dx * dx + dy * dy) <= 1;
+    els.grillStage.classList.toggle('drop-ready', over);
+    return over;
+  }
+  function resetSalmonLidToHome() {
+    if (!els.eggGlassLid) return;
+    els.eggGlassLid.style.removeProperty('left');
+    els.eggGlassLid.style.removeProperty('top');
+    els.eggGlassLid.style.removeProperty('width');
+    els.eggGlassLid.style.removeProperty('height');
+    els.eggGlassLid.style.removeProperty('transform');
+    delete els.eggGlassLid.dataset.lidDragInline;
+  }
+  function onSalmonLidPointerDown(evt) {
+    if (evt && evt.button != null && evt.button !== 0) return;
+    if (!isSalmonLidDraggable()) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(180);
+    state.cookSalmonLidDragging = true;
+    state.cookSalmonLidPointerId = evt.pointerId;
+    if (els.grillStage) els.grillStage.classList.add('salmon-lid-dragging');
+    if (els.eggGlassLid && els.eggGlassLid.setPointerCapture) {
+      try { els.eggGlassLid.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    moveSalmonLidToPoint(evt);
+  }
+  function onSalmonLidPointerMove(evt) {
+    if (!state.cookSalmonLidDragging || state.cookSalmonLidPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    moveSalmonLidToPoint(evt);
+  }
+  function onSalmonLidPointerEnd(evt) {
+    if (!state.cookSalmonLidDragging || state.cookSalmonLidPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(180);
+    const dropped = moveSalmonLidToPoint(evt);
+    if (els.eggGlassLid && els.eggGlassLid.releasePointerCapture) {
+      try { els.eggGlassLid.releasePointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    state.cookSalmonLidDragging = false;
+    state.cookSalmonLidPointerId = null;
+    if (els.grillStage) els.grillStage.classList.remove('salmon-lid-dragging', 'drop-ready');
+    if (dropped && isSalmonLidDraggable()) {
+      // Snap to closed pose + start the timing gauge for back-side cook.
+      state.cookSalmonLidClosed = true;
+      resetSalmonLidToHome();
+      if (els.grillStage) els.grillStage.classList.add('salmon-lid-closed');
+      showSubStepBanner('タイミングよく タップ！');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
+      setSpeech('ふたを しめたよ！ ゲージの あおで タップして しあげよう！', 'grill');
+      startCookTimingGauge('grill');
+      return;
+    }
+    // Missed the pan — drift home, keep waiting.
+    resetSalmonLidToHome();
+    setSpeech('ふたを フライパンの まんなかへ もっていこう！', 'grill');
+  }
+  function attachSalmonLidHandlers() {
+    if (!els.eggGlassLid) return;
+    els.eggGlassLid.addEventListener('pointerdown',  onSalmonLidPointerDown);
+    els.eggGlassLid.addEventListener('pointermove',  onSalmonLidPointerMove);
+    els.eggGlassLid.addEventListener('pointerup',    onSalmonLidPointerEnd);
+    els.eggGlassLid.addEventListener('pointercancel', onSalmonLidPointerEnd);
+  }
+  function detachSalmonLidHandlers() {
+    if (!els.eggGlassLid) return;
+    els.eggGlassLid.removeEventListener('pointerdown',   onSalmonLidPointerDown);
+    els.eggGlassLid.removeEventListener('pointermove',   onSalmonLidPointerMove);
+    els.eggGlassLid.removeEventListener('pointerup',     onSalmonLidPointerEnd);
+    els.eggGlassLid.removeEventListener('pointercancel', onSalmonLidPointerEnd);
+  }
+
   function cookBackSubStep(sub) {
-    // v764: timing gauge を復活。 X/N カウンターは撤回。
-    // ゲージの good zone でタップしたら done subStep へ advance。
+    // v767: 蓋を手動ドラッグで閉めてから timing gauge を開始する仕様に変更。
+    // (v764 までは即時 timing gauge / v766 で蓋表示のみ追加し閉操作が消えていた)
     stopCookTimingGauge();
     resetCookTimingUI('grill');
     state.cookBackMaxTaps = 1;
     state.cookBackProgress = 0;
+    state.cookSubStepLock = false;
+    state.cookAnimating = false;
+    const isSalmon = !!(state.current && state.current.id === 'salmon');
+    if (isSalmon && els.eggGlassLid) {
+      // Activate salmon lid drag mode.
+      state.cookSalmonLidActive  = true;
+      state.cookSalmonLidClosed  = false;
+      state.cookSalmonLidDragging = false;
+      state.cookSalmonLidPointerId = null;
+      resetSalmonLidToHome();
+      if (els.grillStage) els.grillStage.classList.remove('salmon-lid-closed', 'salmon-lid-dragging', 'drop-ready');
+      els.eggGlassLid.classList.add('show-for-salmon');
+      attachSalmonLidHandlers();
+      showSubStepBanner('ふたを しめよう！');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを ドラッグして しめよう';
+      setSpeech('ふたを つかんで フライパンの まんなかへ もっていこう！', 'grill');
+      // timing gauge is started by onSalmonLidPointerEnd after a successful drop.
+      return;
+    }
+    // Non-salmon fallback (defensive — current spec only enters here for salmon).
     showSubStepBanner('うらも タイミングよく タップ！');
     if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
     setSpeech('ジュッ！ ゲージの あおで タップして しあげよう！', 'grill');
-    // v765: re-cover with lid for back-side cook.
-    if (els.eggGlassLid && state.current && state.current.id === 'salmon') {
-      els.eggGlassLid.classList.add('show-for-salmon');
-    }
-    state.cookSubStepLock = false;
-    state.cookAnimating = false;
     startCookTimingGauge('grill');
   }
 
@@ -12897,6 +13045,14 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookFlipped = false; // serve image uses front-side done PNG (existing spec)
     state.cookProgress = 2;
     state.cookServed = true;
+    // v767: deactivate salmon lid drag + clean inline pose before plating.
+    detachSalmonLidHandlers();
+    state.cookSalmonLidActive   = false;
+    state.cookSalmonLidClosed   = false;
+    state.cookSalmonLidDragging = false;
+    state.cookSalmonLidPointerId = null;
+    resetSalmonLidToHome();
+    if (els.grillStage) els.grillStage.classList.remove('salmon-lid-closed', 'salmon-lid-dragging', 'drop-ready');
     // v765: lid comes off as we plate up.
     if (els.eggGlassLid) els.eggGlassLid.classList.remove('show-for-salmon');
     updateCookView('grill', 2, 'burst');
@@ -12924,6 +13080,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     const sub = getCurrentSubStep();
     if (!sub) return false;
     if (sub.action === 'cookFront' || sub.action === 'cookBack') {
+      // v767: salmon cookBack では「蓋を閉める」まで timing gauge を出さない仕様。
+      // 蓋が未閉のあいだはタップでも recordCookTiming させない (= 蓋ドラッグを待つ)。
+      if (sub.action === 'cookBack' && state.cookSalmonLidActive && !state.cookSalmonLidClosed) return false;
       // v764: timing gauge 経路に統合。 既存 onGrillTap と同じく
       // recordCookTiming で zone を取り、 結果は cookTimingResults に蓄積
       // (runDoneSubStep の showCookTimingRating で星に反映される)。
@@ -13075,7 +13234,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=766';
+    return base + '?v=767';
   }
 
   function getCookImageConfig(ing, action) {
