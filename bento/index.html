@@ -4754,6 +4754,15 @@ function undoFreeItem() {
 function getSelectedFreeItem() {
   return placedItems.find(i => i.uid === freeSelectedItemUid) || null;
 }
+function rotateSelectedItem(deltaAngle) {
+  const item = getSelectedFreeItem();
+  if (!item) return;
+  let next = ((item.rotation || 0) + deltaAngle) % 360;
+  if (next < 0) next += 360;
+  item.rotation = next;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
 function canShowLayerControlsForItem(item) {
   if (!item || item.type === 'rice') return false;
   if (item.parentId) return false;
@@ -5267,6 +5276,11 @@ function createFreeContextToolbar() {
         () => setSelectedAccessorySize(preset.key)
       ));
     });
+  }
+
+  if (!item.snapTarget) {
+    toolbar.appendChild(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
+    toolbar.appendChild(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
   }
 
   if (item.snapTarget) {

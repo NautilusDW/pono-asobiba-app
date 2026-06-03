@@ -3368,7 +3368,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=761');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=762');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -3385,6 +3385,36 @@ body.layout-editor-on .egg-glass-lid {
 @keyframes oilShimmer {
   0%, 100% { filter: brightness(1.05) saturate(1.2); }
   50%      { filter: brightness(1.18) saturate(1.4); }
+}
+.oil-drop-target {
+  position: absolute;
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
+  width: 20%;
+  aspect-ratio: 1.4 / 1;
+  border: 3px dashed rgba(255, 200, 80, 0.85);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 12;
+  animation: oilTargetPulse 1.4s ease-in-out infinite;
+}
+.oil-drop-target.show {
+  opacity: 0.85;
+}
+@keyframes oilTargetPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 200, 80, 0.5); }
+  50%      { box-shadow: 0 0 0 12px rgba(255, 200, 80, 0); }
+}
+@keyframes oilHintBounce {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -55%) scale(1.08); }
+}
+.cook-substep-oil.rest-lower-right.hint-bounce,
+.cook-substep-oil.rest-lower-left.hint-bounce {
+  animation: oilHintBounce 0.8s ease-in-out 3;
 }
 .salt-particle {
   position: absolute;
@@ -5724,6 +5754,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
         <div class="cook-stage-cue" id="grill-timing-cue" aria-hidden="true">いま！ひっくり返そう！</div>
         <div class="cook-substep-oil-layer" id="cook-substep-oil-layer" aria-hidden="true"></div>
+        <div class="oil-drop-target" id="oil-drop-target" aria-hidden="true"></div>
         <div class="cook-substep-shaker cook-substep-salt" id="cook-substep-salt" aria-hidden="true">
           <img class="cook-substep-shaker-img" alt="" draggable="false">
         </div>
@@ -7465,6 +7496,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     cookSubStepSalt:    document.getElementById('cook-substep-salt'),
     cookSubStepOil:     document.getElementById('cook-substep-oil'),
     cookSubStepOilLayer:document.getElementById('cook-substep-oil-layer'),
+    oilDropTarget:      document.getElementById('oil-drop-target'),
     cookSubStepBanner:  document.getElementById('cook-substep-banner'),
     grillBurst:    document.getElementById('grill-burst'),
     grillDots:     document.getElementById('grill-progress-dots'),
@@ -12103,11 +12135,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.cookSubStepSalt.style.top = '';
     }
     if (els.cookSubStepOil) {
-      els.cookSubStepOil.classList.remove('show', 'pouring', 'rest-lower-right', 'is-dragging');
+      els.cookSubStepOil.classList.remove('show', 'pouring', 'rest-lower-right', 'rest-lower-left', 'is-dragging', 'hint-bounce');
       els.cookSubStepOil.style.left = '';
       els.cookSubStepOil.style.top = '';
     }
     if (els.cookSubStepOilLayer) els.cookSubStepOilLayer.classList.remove('show');
+    if (els.oilDropTarget) els.oilDropTarget.classList.remove('show');
     if (els.grillStage) {
       els.grillStage.querySelectorAll('.salt-particle, .oil-drop').forEach(function (p) { p.remove(); });
     }
@@ -12354,6 +12387,13 @@ body.layout-editor-on .bowl-fill-mask::after {
       ox = (stageRect.width * 0.52) / stageScale;
       oy = (stageRect.height * 0.42) / stageScale;
     }
+    let salmonY = null;
+    if (els.grillingFoodWrap && els.grillingFoodWrap.isConnected) {
+      const sr = els.grillingFoodWrap.getBoundingClientRect();
+      if (sr.width > 0 && sr.height > 0) {
+        salmonY = (sr.top + sr.height * 0.5 - stageRect.top) / stageScale;
+      }
+    }
     const existing = stage.querySelectorAll('.salt-particle');
     if (existing.length > 50) {
       for (let i = 0; i < existing.length - 50; i++) existing[i].remove();
@@ -12372,18 +12412,29 @@ body.layout-editor-on .bowl-fill-mask::after {
       const vx = (Math.random() - 0.5) * 120;
       const vy = 60 + Math.random() * 80;
       const dur = 800 + Math.random() * 700;
-      animateSaltParticle(p, vx, vy, dur);
+      animateSaltParticle(p, vx, vy, dur, oy, salmonY);
     }
   }
 
-  function animateSaltParticle(el, vx, vy, dur) {
+  function animateSaltParticle(el, vx, vy, dur, oy, salmonY) {
     const start = performance.now();
+    let landed = false;
     function tick(now) {
       if (!el.isConnected) return;
       const t = (now - start) / dur;
       if (t >= 1) { if (el.parentElement) el.remove(); return; }
       const x = vx * t;
       const y = vy * t + 240 * t * t;
+      if (!landed && salmonY != null && (oy + y) >= salmonY) {
+        landed = true;
+        const landY = salmonY - oy;
+        el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + landY.toFixed(1) + 'px) scale(0.7)';
+        el.style.opacity = '0.85';
+        setTimeout(function () {
+          if (el.parentElement) el.remove();
+        }, 220);
+        return;
+      }
       const sc = 1 - t * 0.4;
       el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) scale(' + sc.toFixed(2) + ')';
       el.style.opacity = (1 - t).toFixed(2);
@@ -12469,6 +12520,11 @@ body.layout-editor-on .bowl-fill-mask::after {
       // so the user can drag it toward the pan center.
       cruet.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
     }, 900));
+    state.pendingTimers.push(setTimeout(function () {
+      if (state.cookOilApplied) return;
+      if (els.cookSubStepOil) els.cookSubStepOil.classList.add('hint-bounce');
+      showSubStepBanner('ドラッグして フライパンへ');
+    }, 1700));
   }
 
   // Oil cruet pointer flow: drag from rest position toward pan center. On release,
@@ -12496,6 +12552,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         : cruet.classList.contains('rest-lower-right') ? 'rest-lower-right' : null,
     };
     cruet.classList.add('is-dragging');
+    cruet.classList.remove('hint-bounce');
+    if (els.oilDropTarget) els.oilDropTarget.classList.add('show');
     if (dragState.restClass) cruet.classList.remove(dragState.restClass);
     if (cruet.setPointerCapture) {
       try { cruet.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
@@ -12515,17 +12573,17 @@ body.layout-editor-on .bowl-fill-mask::after {
       cruet.removeEventListener('pointerup', onEnd);
       cruet.removeEventListener('pointercancel', onEnd);
       cruet.classList.remove('is-dragging');
+      if (els.oilDropTarget) els.oilDropTarget.classList.remove('show');
       const x = e.clientX - stageRect.left;
       const y = e.clientY - stageRect.top;
       const xPct = x / stageRect.width * 100;
       const yPct = y / stageRect.height * 100;
       // Pan center is approximately --grill-food-x (58%) / --grill-food-y (52%).
-      // Tighter hit-test (~16pp radius) plus a vertical bounding band so the
-      // cruet only "pours" when it is clearly over the pan, not over the plate
-      // or the lower rest area.
+      // Wider hit-test (~22pp radius) tuned for small fingers; vertical band
+      // keeps pour limited to the pan area (not plate or rest zone).
       const dx = xPct - 58;
       const dy = yPct - 52;
-      const overPan = (dx * dx + dy * dy) < (16 * 16) && yPct >= 35 && yPct <= 68;
+      const overPan = (dx * dx + dy * dy) < (22 * 22) && yPct >= 30 && yPct <= 70;
       if (overPan) {
         triggerOilPour(sub);
       } else {
@@ -12545,12 +12603,14 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookSubStepLock = true;
     const cruet = els.cookSubStepOil;
     if (cruet) {
+      cruet.classList.remove('hint-bounce');
       const imgEl = cruet.querySelector('.cook-substep-shaker-img');
       if (imgEl && cruet.dataset.tiltedSrc) imgEl.src = cruet.dataset.tiltedSrc;
       cruet.classList.remove('pouring');
       void cruet.offsetWidth;
       cruet.classList.add('pouring');
     }
+    if (els.oilDropTarget) els.oilDropTarget.classList.remove('show');
     if (els.cookSubStepOilLayer) {
       requestAnimationFrame(function () {
         if (sub && sub.layerImg && els.cookSubStepOilLayer) {
@@ -12862,7 +12922,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=761';
+    return base + '?v=762';
   }
 
   function getCookImageConfig(ing, action) {
