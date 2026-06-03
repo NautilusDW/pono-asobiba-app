@@ -1,6 +1,13 @@
 {
   "type": "image",
   "name": "ステージ1：森の入り口",
+  "story": {
+    "animal": "neko",
+    "animalLabel": "ねこさん",
+    "intro": "もりの いりぐちで ねこさんが\nまよって いるよ。たすけに いこう！",
+    "cryingIconUrl": "imageStages/animals/neko_02.png",
+    "reliefIconUrl": "imageStages/animals/neko_goal.png"
+  },
   "imageUrl": "imageStages/ステージ1：森の入り口.jpg",
   "viewBox": {
     "w": 2688,

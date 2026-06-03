@@ -320,6 +320,23 @@ html, body { height: 100vh; overflow: hidden;
       画像入りで保存 (1600px JPEG 圧縮)。複数バージョン保持してリスト切り替え可能。
     </p>
 
+    <h3 style="margin-top:10px;">🌲 既存ステージから開く (サーバー)</h3>
+    <select id="serverStageSelect" style="width:100%; padding:6px 8px; margin-bottom:6px; background:#202c24; color:#cfd; border:1px solid #2a4435; border-radius:4px; font-family:inherit; font-size:0.78rem;">
+      <option value="">— ステージを選択 —</option>
+    </select>
+    <button class="mode-btn" id="loadServerStageBtn" style="width:100%; background:#2a5a3a; color:#cfd; font-size:0.78rem;">📥 読込</button>
+    <div id="serverStageStatus" style="margin-top:4px; font-size:11px; color:#9bb;"></div>
+
+    <details style="margin-top:10px; padding:8px; background:#1b2620; border:1px solid #2a4435; border-radius:6px; font-size:11px; color:#abd;">
+      <summary style="cursor:pointer; font-weight:bold; color:#cfd;">💾 保存場所について</summary>
+      <ul style="margin:6px 0 0 16px; padding:0;">
+        <li><strong>下書き (自動)</strong>: ブラウザの localStorage に保存。 ページを閉じても復元される。</li>
+        <li><strong>名前付き保存</strong>: 「💾 保存」ボタンで localStorage に複数バージョン管理。 別ブラウザからは見えない。</li>
+        <li><strong>JSON ダウンロード</strong>: 「⬇ ダウンロード」でブラウザの Downloads フォルダにファイル保存。 これを <code>maze/imageStages/</code> に配置すれば本番に反映 (要 git commit + push)。</li>
+        <li><strong>サーバー (本番)</strong>: <code>maze/imageStages/*.json</code> に直接配置されたステージはこのページから再ロード可能。</li>
+      </ul>
+    </details>
+
     <div class="instructions">
       <h3>使い方</h3>
       <ol>
@@ -2302,6 +2319,149 @@ document.getElementById('libSaveBtn').addEventListener('click', function() {
 document.getElementById('libNameInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); document.getElementById('libSaveBtn').click(); }
 });
+
+// ────────────────────────────────────────────────────────
+// 既存サーバーステージ (maze/imageStages/*.json) からの読込
+// ────────────────────────────────────────────────────────
+const SERVER_STAGES_BASE = '../maze/imageStages/';
+function _serverStageSetStatus(msg, isError) {
+  const el = document.getElementById('serverStageStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#f99' : '#9bb';
+}
+function fetchServerStageList() {
+  const sel = document.getElementById('serverStageSelect');
+  if (!sel) return;
+  _serverStageSetStatus('インデックス取得中…', false);
+  fetch(SERVER_STAGES_BASE + '_index.json', { cache: 'no-cache' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(idx) {
+      const overrides = (idx && idx.overrides) || {};
+      const keys = Object.keys(overrides).sort(function(a, b) { return Number(a) - Number(b); });
+      const metaPromises = keys.map(function(k) {
+        const fname = overrides[k];
+        return fetch(SERVER_STAGES_BASE + encodeURIComponent(fname) + '.json', { cache: 'no-cache' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(def) {
+            let label = fname;
+            if (def) {
+              const animal = def.story && def.story.animalLabel ? def.story.animalLabel : '';
+              const nm = def.name || '';
+              label = k + ': ' + (animal ? animal + ' ' : '') + (nm || fname);
+            } else {
+              label = k + ': ' + fname + ' (読込失敗)';
+            }
+            return { fname: fname, label: label };
+          })
+          .catch(function() { return { fname: fname, label: k + ': ' + fname + ' (取得エラー)' }; });
+      });
+      return Promise.all(metaPromises);
+    })
+    .then(function(items) {
+      // 既存 options を保持しつつ、 placeholder 以外をクリア
+      sel.innerHTML = '<option value="">— ステージを選択 —</option>';
+      items.forEach(function(it) {
+        const opt = document.createElement('option');
+        opt.value = it.fname;
+        opt.textContent = it.label;
+        sel.appendChild(opt);
+      });
+      _serverStageSetStatus(items.length + ' 件読込み完了', false);
+    })
+    .catch(function(err) {
+      _serverStageSetStatus('インデックス取得失敗: ' + err.message, true);
+    });
+}
+function _restoreFromServerDef(def, fname) {
+  // 既存 jsonInput handler と同等の復元ロジック (関数化せず複製: リファクタ禁止のため)
+  if (!def || def.type !== 'image' || !Array.isArray(def.nodes) || !Array.isArray(def.edges)) {
+    _serverStageSetStatus('対応していない JSON 形式 (type:"image" 必須)', true);
+    return;
+  }
+  pushHistory();
+  state.nodes = def.nodes.filter(function(n) {
+    return n && typeof n.id === 'string'
+      && Number.isFinite(n.x) && Number.isFinite(n.y)
+      && (n.kind === 'start' || n.kind === 'goal' || n.kind === 'stop');
+  }).map(function(n) {
+    const out = { id: n.id, x: Number(n.x), y: Number(n.y), kind: n.kind };
+    if (Number.isFinite(n.radius) && n.radius > 0) out.radius = Number(n.radius);
+    return out;
+  });
+  state.edges = def.edges.filter(function(e2) {
+    return e2 && typeof e2.from === 'string' && typeof e2.to === 'string'
+      && (Array.isArray(e2.polyline) || (e2._editor && Array.isArray(e2._editor.controls)));
+  }).map(function(e2) {
+    let controls;
+    if (e2._editor && Array.isArray(e2._editor.controls) && e2._editor.controls.length >= 2) {
+      controls = e2._editor.controls.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
+    } else {
+      controls = e2.polyline.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
+    }
+    return { from: e2.from, to: e2.to, controls: controls };
+  });
+  const usedIds = state.nodes.filter(function(n) { return n.kind === 'stop'; })
+    .map(function(n) { const m = n.id.match(/^stop(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
+  state.nextStopId = (usedIds.length > 0 ? Math.max.apply(null, usedIds) : 0) + 1;
+  if (def.name) stageNameInput.value = String(def.name).replace(/[^a-zA-Z0-9_-]/g, '_');
+  else stageNameInput.value = String(fname).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const libN = document.getElementById('libNameInput');
+  if (libN) libN.value = def.name || fname;
+  const lt = document.getElementById('lanternToggle');
+  if (lt) lt.checked = !!def.lantern;
+  state.obstacles = Array.isArray(def.obstacles)
+    ? def.obstacles
+        .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
+        .map(function(o) { return { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) }; })
+    : [];
+  state.creatures = Array.isArray(def.creatures)
+    ? def.creatures
+        .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
+        .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)), kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')), x: Number(c.x), y: Number(c.y) }; })
+    : [];
+  const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
+  state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
+  state.edgeInProgress = null;
+  if (typeof edgeProgressEl !== 'undefined' && edgeProgressEl) edgeProgressEl.textContent = '';
+  // 画像も同じディレクトリから取得を試みる (jpg → png の順)
+  const baseName = String(fname);
+  const tryImg = function(ext, onFail) {
+    const img = new Image();
+    img.onload = function() {
+      state.image = img;
+      state.imgW = img.naturalWidth;
+      state.imgH = img.naturalHeight;
+      state.imgFileName = baseName + '.' + ext;
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      if (typeof resizeCanvas === 'function') resizeCanvas();
+      draw();
+    };
+    img.onerror = function() { if (onFail) onFail(); };
+    img.src = SERVER_STAGES_BASE + encodeURIComponent(baseName) + '.' + ext + '?t=' + Date.now();
+  };
+  tryImg('jpg', function() { tryImg('png', function() {
+    _serverStageSetStatus('画像未取得 (jpg/png 共に無し)。 ノードのみロード', true);
+  }); });
+  draw();
+  updateStatus();
+  showBanner('🌲 サーバー読込: ' + (def.name || fname) + ' (ノード ' + state.nodes.length + '・道 ' + state.edges.length + ')');
+  _serverStageSetStatus('読込完了: ' + (def.name || fname), false);
+}
+function loadServerStage() {
+  const sel = document.getElementById('serverStageSelect');
+  if (!sel) return;
+  const fname = sel.value;
+  if (!fname) { _serverStageSetStatus('ステージを選択してください', true); return; }
+  _serverStageSetStatus('読込中: ' + fname + ' …', false);
+  fetch(SERVER_STAGES_BASE + encodeURIComponent(fname) + '.json', { cache: 'no-cache' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(def) { _restoreFromServerDef(def, fname); })
+    .catch(function(err) { _serverStageSetStatus('読込失敗: ' + err.message, true); });
+}
+document.getElementById('loadServerStageBtn').addEventListener('click', loadServerStage);
+fetchServerStageList();
+
 // ── 比較ペイン (上下分割表示) ──
 const cv2 = document.getElementById('cv2');
 const ctx2 = cv2.getContext('2d');
