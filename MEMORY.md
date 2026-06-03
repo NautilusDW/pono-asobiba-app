@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-03T09:23:20Z - kitchen.html: salt tilt reversed + Y-axis-shake detector (3 taps) + oil cruet flash-rotation fix + drag-THIS hint + salmon flip rotateX + salmon glass lid (sw v765)
+- **タスク**: kitchen.html: salt tilt reversed + Y-axis-shake detector (3 taps) + oil cruet flash-rotation fix + drag-THIS hint + salmon flip rotateX + salmon glass lid (sw v765)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 162
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 51, "Grep": 1, "Read": 40, "Agent": 53, "ToolSearch": 2, "Skill": 2, "Edit": 12, "Write": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-03T08:40:48Z - kitchen.html v764: salmon cookFront/cookBack の X/N カウンター撤回、 既存 timing gauge を復活。 直前 agent 5-fix 全件 verify (1)chop 12候補ベスト+_placedPieces (2)intro 同時 fade-in (3)塩 75%位置+バナー右 (4)塩 4振り+done-check (5)油直接右下+反転+layer 0.45 全て適用済み。 sw 763→764 bump。
 - **タスク**: kitchen.html v764: salmon cookFront/cookBack の X/N カウンター撤回、 既存 timing gauge を復活。 直前 agent 5-fix 全件 verify (1)chop 12候補ベスト+_placedPieces (2)intro 同時 fade-in (3)塩 75%位置+バナー右 (4)塩 4振り+done-check (5)油直接右下+反転+layer 0.45 全て適用済み。 sw 763→764 bump。
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 35, "Grep": 1, "Read": 23, "Agent": 33, "ToolSearch": 2, "Skill": 2, "Edit": 6, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-03T03:33:33Z - kitchen.html 鮭グリル: 油/塩アセット8枚配置 + oil-layer mix-blend-mode multiply opacity 0.7 + shimmer + spawnSaltGrains を 12-20 個パーティクル化 + spawnOilDrops 新規 + sw v756
-- **タスク**: kitchen.html 鮭グリル: 油/塩アセット8枚配置 + oil-layer mix-blend-mode multiply opacity 0.7 + shimmer + spawnSaltGrains を 12-20 個パーティクル化 + spawnOilDrops 新規 + sw v756
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 101
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 35, "Grep": 1, "Read": 23, "Agent": 31, "ToolSearch": 2, "Skill": 2, "Edit": 6, "Write": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
