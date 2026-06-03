@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-03 - [batch:245-bento-shiozake-front-back] DONE - Codex: user 指摘「そういう切り方ではなく塩鮭」を受け、サーモンを塩鮭形状で再生成。`tmp/alpha_pending/244_bento_shiozake_front_back_gpt2/shiozake_front_back_3stage_raw.png` に、参照写真に寄せた細長い塩鮭の 2x3 raw (上段=身側、下段=皮側、列=生/途中/焼き上がり) を納品。旧 `241`/`242`/`243` の salmon raw は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
 - 2026-06-03 - [batch:244-bento-salmon-tight-front-back-pair] DONE - Codex: user 指摘「上下で表裏セットに見えない / 幅が変わりすぎ」を受け、サーモンを再々生成。`tmp/alpha_pending/243_bento_salmon_front_back_tight_pair_gpt2/salmon_front_back_tight_pair_3stage_raw.png` に、各列の上下が同じ切り身の表裏に見えるよう外形・幅・厚みを揃えた 2x3 raw を納品。旧 `242` は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
 - 2026-06-03 - [batch:243-bento-salmon-front-back-redo] DONE - Codex: user 指摘「前回サーモンがサバっぽい / 必要なのは表と裏」を受け、GPT Image 2 built-in 生成ルートでサーモンのみ再生成。`tmp/alpha_pending/242_bento_salmon_front_back_gpt2_redo/salmon_front_back_3stage_pair_sheet_raw.png` に上段=表(身側)3段階、下段=裏(皮側)3段階の 2x3 raw を納品。旧 `241` の `salmon_skin_side_3stage_sheet_raw.png` は不採用扱いとして README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
 - 2026-06-03 - [batch:242-bento-phase-b-gpt2-raw-redo] DONE - Codex: 前回 `b7721e3` の Phase B 料理素材差し替えが GPT Image 2 ではなく Pillow 直接描画だったため、GPT Image 2 built-in 生成ルートで raw を作り直し。AGENTS §5.1 に従い alpha 抜き・切り抜き・final assets 上書きはせず、白背景 raw 4枚 + review contact sheet を `tmp/alpha_pending/241_bento_phase_b_gpt2/` に納品。サーモン3段階 / 油差し2状態 / 油レイヤー / 塩入れ2状態を目視確認済み。 (by Codex)
