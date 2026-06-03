@@ -3019,12 +3019,12 @@ body.layout-editor-on .fry-pot {
 }
 .egg-crack-shells i:first-child {
   left: 38%;
-  transform: translate(-50%, -50%) rotate(-118deg);
+  transform: translate(-50%, -50%) rotate(-118deg) scale(-1, -1);
   background-image: url('../assets/images/bento/cooking/egg/egg_shell_left.png');
 }
 .egg-crack-shells i:last-child {
   left: 62%;
-  transform: translate(-50%, -50%) rotate(118deg);
+  transform: translate(-50%, -50%) rotate(118deg) scale(-1, -1);
   background-image: url('../assets/images/bento/cooking/egg/egg_shell_right.png');
 }
 #grill-stage.egg-crack-split:not(.food-placed) .egg-crack-shells {
@@ -3274,6 +3274,152 @@ body.layout-editor-on .egg-glass-lid {
 }
 .cook-burst.show {
   animation: cookBurst 0.62s ease-out;
+}
+
+/* ========== Salmon Cinema Cooking SubSteps (Phase C) ========== */
+.cook-substep-banner {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  transform: translate(-50%, -50%);
+  background: rgba(255,255,255,0.92);
+  color: #5a3622;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  padding: 0.5em 1.2em;
+  border-radius: 999px;
+  box-shadow: 0 6px 14px rgba(60,30,10,0.18);
+  z-index: 14;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.cook-substep-banner.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.cook-substep-shaker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16%;
+  aspect-ratio: 1 / 1.4;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+  z-index: 13;
+  opacity: 0;
+  filter: drop-shadow(0 10px 14px rgba(50,30,10,0.22));
+  transition: opacity 0.32s ease, left 0.55s cubic-bezier(.4,.04,.3,1.1), top 0.55s cubic-bezier(.4,.04,.3,1.1), width 0.55s cubic-bezier(.4,.04,.3,1.1), transform 0.4s ease;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.cook-substep-shaker.show {
+  opacity: 1;
+}
+.cook-substep-shaker.shaking {
+  animation: substepShake 0.4s ease-in-out;
+}
+.cook-substep-shaker.pouring {
+  animation: substepPour 0.7s ease-out;
+}
+.cook-substep-shaker.rest-lower-left {
+  left: 10%;
+  top: 86%;
+  width: 8%;
+  cursor: default;
+}
+.cook-substep-shaker.rest-lower-right {
+  left: 90%;
+  top: 84%;
+  width: 12%;
+  cursor: default;
+}
+.cook-substep-shaker.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+.cook-substep-shaker-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.cook-substep-oil-layer {
+  position: absolute;
+  left: var(--grill-food-x, 58%);
+  top: var(--grill-food-y, 52%);
+  width: 28%;
+  aspect-ratio: 1.4 / 1;
+  transform: translate(-50%, -50%);
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.55s ease;
+}
+.cook-substep-oil-layer.show {
+  opacity: 1;
+}
+.cook-substep-salt-grains {
+  position: absolute;
+  left: var(--salt-x, 50%);
+  top: var(--salt-y, 50%);
+  width: 6%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 30% 30%, #fff 0%, #fff 25%, rgba(255,255,255,0) 60%),
+              radial-gradient(circle at 70% 60%, #fff 0%, #fff 22%, rgba(255,255,255,0) 55%),
+              radial-gradient(circle at 50% 80%, #fff 0%, #fff 22%, rgba(255,255,255,0) 55%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 11;
+  animation: saltGrainsFall 0.6s ease-out forwards;
+}
+/* Intro: pull cooking-food to canvas center (over pan), scaled up, then
+   release back to plate position via class removal. */
+#grill-stage[data-ingredient="salmon"].cook-substep-intro .cooking-food {
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  transform: translate(-50%, -50%) scale(1);
+  animation: salmonIntroDrop 0.7s cubic-bezier(.18,.85,.2,1.02);
+  transition:
+    left 0.45s cubic-bezier(.18,.85,.2,1.02),
+    top 0.45s cubic-bezier(.18,.85,.2,1.02),
+    width 0.45s cubic-bezier(.18,.85,.2,1.02);
+}
+/* salmon flip uses the foodFlip keyframe already defined, just needs img swap at midpoint */
+@keyframes substepShake {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  25% { transform: translate(-50%, -50%) rotate(-14deg); }
+  50% { transform: translate(-50%, -50%) rotate(12deg); }
+  75% { transform: translate(-50%, -50%) rotate(-10deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+@keyframes substepPour {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  30% { transform: translate(-50%, -50%) rotate(-55deg); }
+  70% { transform: translate(-50%, -50%) rotate(-55deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+@keyframes saltGrainsFall {
+  0%   { opacity: 1; transform: translate(-50%, -120%) scale(0.7); }
+  60%  { opacity: 0.9; transform: translate(-50%, -10%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 60%) scale(0.85); }
+}
+@keyframes salmonIntroDrop {
+  0%   { transform: translate(-50%, -260%) scale(1.45); opacity: 0; }
+  55%  { transform: translate(-50%, -42%) scale(1.18); opacity: 1; }
+  72%  { transform: translate(-50%, -56%) scale(1.06); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 .grill-smoke {
   position: absolute;
@@ -3589,7 +3735,8 @@ body.layout-editor-on .egg-glass-lid {
   width: var(--fry-oil-mask-w, 34%);
   height: var(--fry-oil-mask-h, 22%);
   transform: translate(-50%, -50%);
-  border-radius: 50%;
+  clip-path: var(--fry-oil-mask-clip, ellipse(50% 50% at 50% 50%));
+  -webkit-clip-path: var(--fry-oil-mask-clip, ellipse(50% 50% at 50% 50%));
   pointer-events: none;
   z-index: 33;
   opacity: 0;
@@ -3601,6 +3748,52 @@ body.layout-editor-on #fry-stage .fry-oil-mask {
   background: rgba(34, 197, 94, 0.12);
   outline: 4px solid rgba(34, 197, 94, 0.86);
   box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.38);
+}
+.fry-oil-bezier-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  display: none;
+  z-index: 10030;
+}
+body.layout-editor-on .fry-oil-bezier-overlay {
+  display: block;
+}
+.fry-oil-bezier-overlay .foil-path {
+  fill: none;
+  stroke: #2196F3;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.fry-oil-bezier-overlay .foil-handle-line {
+  stroke: #999;
+  stroke-width: 1;
+  pointer-events: none;
+}
+.fry-oil-bezier-overlay .foil-anchor {
+  fill: #2196F3;
+  stroke: white;
+  stroke-width: 2;
+  cursor: grab;
+  pointer-events: auto;
+}
+.fry-oil-bezier-overlay .foil-anchor:active {
+  cursor: grabbing;
+}
+.fry-oil-bezier-overlay .foil-handle-dot {
+  fill: white;
+  stroke: #2196F3;
+  stroke-width: 2;
+  cursor: grab;
+  pointer-events: auto;
+}
+.fry-oil-bezier-overlay .foil-handle-dot:active {
+  cursor: grabbing;
 }
 .oil-bubbles {
   position: absolute;
@@ -5465,6 +5658,14 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="egg-glass-lid" id="egg-glass-lid" aria-hidden="true" data-le-keep-position="1"></div>
         <div class="cook-burst" id="grill-burst">ジュッ！</div>
         <div class="cook-stage-cue" id="grill-timing-cue" aria-hidden="true">いま！ひっくり返そう！</div>
+        <div class="cook-substep-oil-layer" id="cook-substep-oil-layer" aria-hidden="true"></div>
+        <div class="cook-substep-shaker cook-substep-salt" id="cook-substep-salt" aria-hidden="true">
+          <img class="cook-substep-shaker-img" alt="" draggable="false">
+        </div>
+        <div class="cook-substep-shaker cook-substep-oil" id="cook-substep-oil" aria-hidden="true">
+          <img class="cook-substep-shaker-img" alt="" draggable="false">
+        </div>
+        <div class="cook-substep-banner" id="cook-substep-banner" aria-hidden="true"></div>
         <div class="cooking-food cooking-food--grill" id="grilling-food-wrap" data-stage="0">
           <img class="cooking-food-img" id="grilling-food" alt="" draggable="false">
           <div class="cooking-food-fallback" id="grilling-food-fallback" aria-hidden="true">🍳</div>
@@ -6019,7 +6220,26 @@ body.layout-editor-on .bowl-fill-mask::after {
       id: 'salmon', name: 'さけ', emoji: '🐟', piece: '🐟',
       chopCount: 1, implemented: true,
       cookingActions: [
-        { type: 'grill', label: 'こんがり やこう', stages: 2 },
+        {
+          type: 'grill',
+          label: 'こんがり やこう',
+          stages: 2,
+          backStages: [
+            'salmon/salmon_001_back_raw',
+            'salmon/salmon_002_back_mid',
+            'salmon/salmon_003_back_done',
+          ],
+          subSteps: [
+            { action: 'intro', duration: 700 },
+            { action: 'salt', label: 'しおを まぶそう', container: 'salt/salt_shaker_still', tilted: 'salt/salt_shaker_sprinkling', restPos: 'lower-left', taps: 3 },
+            { action: 'oil', label: 'あぶらを いれよう', container: 'oil/oil_jar_still', tilted: 'oil/oil_jar_tilted', restPos: 'lower-right', layerImg: 'oil/oil_layer' },
+            { action: 'placeFood' },
+            { action: 'cookFront', stage: 1 },
+            { action: 'flip', duration: 1200 },
+            { action: 'cookBack', stage: 2 },
+            { action: 'done', duration: 400 },
+          ],
+        },
       ],
       cookImages: {
         grill: {
@@ -6687,6 +6907,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     cookEggLidClosed: false,
     cookEggLidDragging: false,
     cookEggLidBaseStyle: null,
+    cookSubStepIndex: -1,
+    cookSaltApplied: false,
+    cookOilApplied: false,
+    cookFlipped: false,
+    cookSubStepLock: false,
+    cookSaltTaps: 0,
     suppressCookClick: false,
     suppressCookClickToken: 0,
     fryReady: false,
@@ -6736,12 +6962,14 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookEggLidReady = false;
     state.cookEggLidClosed = false;
     state.cookEggLidDragging = false;
+    state.cookSubStepLock = false;
     stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
       try { clearTimeout(id); } catch (e) { /* noop */ }
     });
     state.pendingTimers = [];
+    resetCookSubStepUI();
   }
 
   function kitchenAudioEnabled() {
@@ -7169,6 +7397,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     grillingFoodWrap: document.getElementById('grilling-food-wrap'),
     grillingFood:  document.getElementById('grilling-food'),
     grillingFoodFallback: document.getElementById('grilling-food-fallback'),
+    cookSubStepSalt:    document.getElementById('cook-substep-salt'),
+    cookSubStepOil:     document.getElementById('cook-substep-oil'),
+    cookSubStepOilLayer:document.getElementById('cook-substep-oil-layer'),
+    cookSubStepBanner:  document.getElementById('cook-substep-banner'),
     grillBurst:    document.getElementById('grill-burst'),
     grillDots:     document.getElementById('grill-progress-dots'),
     grillActionLabel: document.getElementById('grill-action-label'),
@@ -7400,6 +7632,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.eggGlassLid.addEventListener('pointerup', onEggLidPointerEnd);
       els.eggGlassLid.addEventListener('pointercancel', onEggLidPointerEnd);
     }
+    if (els.cookSubStepSalt) {
+      els.cookSubStepSalt.addEventListener('pointerdown', onSaltShakerTap);
+    }
+    if (els.cookSubStepOil) {
+      els.cookSubStepOil.addEventListener('pointerdown', onOilCruetTap);
+    }
     if (els.grillPieceBank) {
       els.grillPieceBank.addEventListener('pointerdown', onMeatballPiecePointerDown);
       els.grillPieceBank.addEventListener('pointermove', onMeatballPiecePointerMove);
@@ -7460,6 +7698,9 @@ body.layout-editor-on .bowl-fill-mask::after {
   // marker 値を明示的に反映する。通常プレイでは marker が display:none なので、
   // LayoutApplier が style を書いただけでは sync* の getBoundingClientRect 経路が動かない。
   window.BENTO_KITCHEN_ON_LAYOUT_READY = function () {
+    // bezier 関連は state.current 不要 (mask 自身は常に存在するため早めに走らせる)
+    applyFryOilMaskBezier();
+    attachFryOilMaskBezierEditor();
     if (!state.current) return;
     reapplyKnifeLayout();
     resetUnsavedPerIngredientTargets();
@@ -7476,6 +7717,358 @@ body.layout-editor-on .bowl-fill-mask::after {
     syncCookLayoutFromTools('fry');
     refreshLayoutEditorBaselineWhenClean();
   };
+
+  // ============================================================
+  //  Phase D: .fry-oil-mask イラレ風ベジェ editor
+  //  - saved-layout の top-level __fry_oil_mask_bezier に anchors 配列を保存
+  //  - clip-path: path(...) で .fry-oil-mask を任意形状にクリップ
+  //  - editor mode で SVG overlay にアンカー & コントロールハンドルを描画
+  // ============================================================
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var FRY_OIL_BEZIER_KEY = '__fry_oil_mask_bezier';
+  var fryOilBezierState = {
+    overlay: null,
+    pathEl: null,
+    anchorsLayer: null,
+    drag: null,
+    observer: null,
+  };
+
+  function defaultFryOilBezierAnchors() {
+    // kappa = 4 * (sqrt(2)-1) / 3 ≈ 0.5523、 楕円近似
+    var k = 55.22847498307933; // kappa * 100
+    return [
+      { x: 50, y: 0,   hx1: -k, hy1:  0, hx2:  k, hy2:  0 }, // 上
+      { x: 100, y: 50, hx1:  0, hy1: -k, hx2:  0, hy2:  k }, // 右
+      { x: 50, y: 100, hx1:  k, hy1:  0, hx2: -k, hy2:  0 }, // 下
+      { x: 0, y: 50,   hx1:  0, hy1:  k, hx2:  0, hy2: -k }, // 左
+    ];
+  }
+
+  function readFryOilBezierAnchors() {
+    var data = window._currentLayoutData;
+    var bz = data && data[FRY_OIL_BEZIER_KEY];
+    if (bz && Array.isArray(bz.anchors) && bz.anchors.length === 4) {
+      // sanitize
+      return bz.anchors.map(function (a) {
+        return {
+          x: clampPct(a.x, 0, 100),
+          y: clampPct(a.y, 0, 100),
+          hx1: clampPct(a.hx1, -200, 200),
+          hy1: clampPct(a.hy1, -200, 200),
+          hx2: clampPct(a.hx2, -200, 200),
+          hy2: clampPct(a.hy2, -200, 200),
+        };
+      });
+    }
+    return defaultFryOilBezierAnchors();
+  }
+
+  function clampPct(v, lo, hi) {
+    v = Number(v);
+    if (!isFinite(v)) return 0;
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
+  }
+
+  function bezierAnchorsToPath(anchors, w, h) {
+    // % -> px、 cubic Bezier で 4 アンカーを一周する閉路を生成
+    if (!anchors || anchors.length !== 4 || !w || !h) return '';
+    function px(p) { return [(p.x / 100) * w, (p.y / 100) * h]; }
+    var pts = anchors.map(px);
+    var d = 'M ' + pts[0][0].toFixed(2) + ' ' + pts[0][1].toFixed(2);
+    for (var i = 0; i < 4; i++) {
+      var cur = anchors[i];
+      var nxt = anchors[(i + 1) % 4];
+      var curPx = pts[i];
+      var nxtPx = pts[(i + 1) % 4];
+      // 出 (cur の hx2/hy2) / 入 (nxt の hx1/hy1) は % オフセット → px 換算
+      var c1x = curPx[0] + (cur.hx2 / 100) * w;
+      var c1y = curPx[1] + (cur.hy2 / 100) * h;
+      var c2x = nxtPx[0] + (nxt.hx1 / 100) * w;
+      var c2y = nxtPx[1] + (nxt.hy1 / 100) * h;
+      d += ' C ' + c1x.toFixed(2) + ' ' + c1y.toFixed(2)
+        + ' ' + c2x.toFixed(2) + ' ' + c2y.toFixed(2)
+        + ' ' + nxtPx[0].toFixed(2) + ' ' + nxtPx[1].toFixed(2);
+    }
+    d += ' Z';
+    return d;
+  }
+
+  function applyFryOilMaskBezier() {
+    var el = document.getElementById('fry-oil-mask');
+    if (!el) return;
+    // 2026-06-03 (CRITICAL fix): clip-path の座標系は要素の unscaled layout px なので、
+    //   stage の scale() 込みの getBoundingClientRect().width/height をそのまま使うと
+    //   scale != 1 の端末で clip-path が縮小・拡大される (v429 と同型バグ)。 offsetWidth/Height
+    //   は layout px のままなので正しい分母になる。
+    var w = el.offsetWidth || 0;
+    var h = el.offsetHeight || 0;
+    if (!w || !h) {
+      // フォールバック (CSS の ellipse() がそのまま使われる)
+      el.style.removeProperty('--fry-oil-mask-clip');
+      return;
+    }
+    var anchors = readFryOilBezierAnchors();
+    var d = bezierAnchorsToPath(anchors, w, h);
+    if (!d) {
+      el.style.removeProperty('--fry-oil-mask-clip');
+      return;
+    }
+    var clip = "path('" + d + "')";
+    el.style.setProperty('--fry-oil-mask-clip', clip);
+    // overlay も最新化
+    if (fryOilBezierState.overlay) {
+      renderFryOilBezierOverlay(anchors, w, h);
+    }
+  }
+
+  function ensureFryOilBezierOverlay() {
+    var el = document.getElementById('fry-oil-mask');
+    if (!el || !el.parentNode) return null;
+    if (fryOilBezierState.overlay && fryOilBezierState.overlay.isConnected) {
+      return fryOilBezierState.overlay;
+    }
+    // SVG overlay は .fry-oil-mask と同じ位置/サイズに合わせるため
+    // mask 要素自身の中に配置 (mask の clip-path 内では描画されない可能性があるので
+    // 親 = #fry-stage 直下に置き、 mask の getBoundingClientRect で位置同期させる)。
+    var stage = document.getElementById('fry-stage');
+    if (!stage) return null;
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'fry-oil-bezier-overlay');
+    svg.setAttribute('aria-hidden', 'true');
+    // viewBox は描画ごとに更新
+    var pathEl = document.createElementNS(SVG_NS, 'path');
+    pathEl.setAttribute('class', 'foil-path');
+    svg.appendChild(pathEl);
+    var anchorsLayer = document.createElementNS(SVG_NS, 'g');
+    anchorsLayer.setAttribute('class', 'foil-anchors-layer');
+    svg.appendChild(anchorsLayer);
+    stage.appendChild(svg);
+    fryOilBezierState.overlay = svg;
+    fryOilBezierState.pathEl = pathEl;
+    fryOilBezierState.anchorsLayer = anchorsLayer;
+    return svg;
+  }
+
+  function renderFryOilBezierOverlay(anchors, w, h) {
+    var st = fryOilBezierState;
+    if (!st.overlay || !st.pathEl || !st.anchorsLayer) return;
+    var el = document.getElementById('fry-oil-mask');
+    var stage = document.getElementById('fry-stage');
+    if (!el || !stage) return;
+    var eRect = el.getBoundingClientRect();
+    var sRect = stage.getBoundingClientRect();
+    if (!eRect.width || !eRect.height || !sRect.width || !sRect.height) return;
+    // overlay の左上を mask の左上に合わせる (stage 相対)
+    var left = eRect.left - sRect.left;
+    var top = eRect.top - sRect.top;
+    st.overlay.style.left = left + 'px';
+    st.overlay.style.top = top + 'px';
+    st.overlay.style.width = eRect.width + 'px';
+    st.overlay.style.height = eRect.height + 'px';
+    st.overlay.setAttribute('viewBox', '0 0 ' + eRect.width + ' ' + eRect.height);
+    var d = bezierAnchorsToPath(anchors, eRect.width, eRect.height);
+    st.pathEl.setAttribute('d', d);
+    // anchors / handles 再生成
+    while (st.anchorsLayer.firstChild) st.anchorsLayer.removeChild(st.anchorsLayer.firstChild);
+    anchors.forEach(function (a, idx) {
+      var ax = (a.x / 100) * eRect.width;
+      var ay = (a.y / 100) * eRect.height;
+      // handle 線
+      var h1x = ax + (a.hx1 / 100) * eRect.width;
+      var h1y = ay + (a.hy1 / 100) * eRect.height;
+      var h2x = ax + (a.hx2 / 100) * eRect.width;
+      var h2y = ay + (a.hy2 / 100) * eRect.height;
+      var line1 = document.createElementNS(SVG_NS, 'line');
+      line1.setAttribute('class', 'foil-handle-line');
+      line1.setAttribute('x1', ax); line1.setAttribute('y1', ay);
+      line1.setAttribute('x2', h1x); line1.setAttribute('y2', h1y);
+      st.anchorsLayer.appendChild(line1);
+      var line2 = document.createElementNS(SVG_NS, 'line');
+      line2.setAttribute('class', 'foil-handle-line');
+      line2.setAttribute('x1', ax); line2.setAttribute('y1', ay);
+      line2.setAttribute('x2', h2x); line2.setAttribute('y2', h2y);
+      st.anchorsLayer.appendChild(line2);
+      // handle dots
+      var dot1 = document.createElementNS(SVG_NS, 'circle');
+      dot1.setAttribute('class', 'foil-handle-dot');
+      dot1.setAttribute('cx', h1x); dot1.setAttribute('cy', h1y);
+      dot1.setAttribute('r', 4);
+      dot1.dataset.anchorIdx = String(idx);
+      dot1.dataset.which = 'in';
+      st.anchorsLayer.appendChild(dot1);
+      var dot2 = document.createElementNS(SVG_NS, 'circle');
+      dot2.setAttribute('class', 'foil-handle-dot');
+      dot2.setAttribute('cx', h2x); dot2.setAttribute('cy', h2y);
+      dot2.setAttribute('r', 4);
+      dot2.dataset.anchorIdx = String(idx);
+      dot2.dataset.which = 'out';
+      st.anchorsLayer.appendChild(dot2);
+      // anchor
+      var anc = document.createElementNS(SVG_NS, 'circle');
+      anc.setAttribute('class', 'foil-anchor');
+      anc.setAttribute('cx', ax); anc.setAttribute('cy', ay);
+      anc.setAttribute('r', 6);
+      anc.dataset.anchorIdx = String(idx);
+      anc.dataset.which = 'anchor';
+      st.anchorsLayer.appendChild(anc);
+    });
+  }
+
+  // 2026-06-03 (HIGH 1 fix): LayoutEditor.snapshot() に bezier データを必ず注入する monkey-patch。
+  //   common/layout/* は触らない制約のため、 ここで snapshot を wrap する。
+  //   LayoutEditor 未ロード時は静かに skip (通常プレイ path には LayoutEditor が無いため)。
+  function patchLayoutEditorSnapshot() {
+    if (!window.LayoutEditor || typeof window.LayoutEditor.snapshot !== 'function') return;
+    if (window.LayoutEditor.__fry_oil_bezier_patched) return;
+    var origSnapshot = window.LayoutEditor.snapshot.bind(window.LayoutEditor);
+    window.LayoutEditor.snapshot = function () {
+      var snap = origSnapshot();
+      if (snap && window._currentLayoutData && window._currentLayoutData[FRY_OIL_BEZIER_KEY]) {
+        snap[FRY_OIL_BEZIER_KEY] = window._currentLayoutData[FRY_OIL_BEZIER_KEY];
+      }
+      return snap;
+    };
+    window.LayoutEditor.__fry_oil_bezier_patched = true;
+  }
+
+  // 2026-06-03 (HIGH 2 fix): bezier 編集後に LayoutEditor を dirty 化する fall-back 4 経路。
+  //   公開 API (markDirty / emit) → 内部 state → save ボタン直 class の順に試す。
+  function markLayoutEditorDirty() {
+    if (!window.LayoutEditor) return;
+    try {
+      if (typeof window.LayoutEditor.markDirty === 'function') {
+        window.LayoutEditor.markDirty();
+        return;
+      }
+    } catch (e) { /* noop */ }
+    try {
+      if (typeof window.LayoutEditor.emit === 'function') {
+        window.LayoutEditor.emit('dirty', true);
+      }
+    } catch (e) { /* noop */ }
+    try {
+      var st = window.LayoutEditor._state;
+      if (st && typeof st === 'object') st._dirty = true;
+    } catch (e) { /* noop */ }
+    try {
+      var saveBtn = document.querySelector('#le-save, .le-toolbar [data-le-save], #le-save-btn, .layout-editor-save');
+      if (saveBtn) {
+        saveBtn.classList.add('dirty', 'is-dirty');
+        saveBtn.removeAttribute('disabled');
+      }
+    } catch (e) { /* noop */ }
+  }
+
+  function attachFryOilMaskBezierEditor() {
+    var stage = document.getElementById('fry-stage');
+    var el = document.getElementById('fry-oil-mask');
+    if (!stage || !el) return;
+    if (fryOilBezierState._wired) return;
+    fryOilBezierState._wired = true;
+    patchLayoutEditorSnapshot();
+    ensureFryOilBezierOverlay();
+    // body class observer
+    var bodyObs = new MutationObserver(function () {
+      if (document.body.classList.contains('layout-editor-on')) {
+        ensureFryOilBezierOverlay();
+        applyFryOilMaskBezier();
+      }
+    });
+    bodyObs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    fryOilBezierState.observer = bodyObs;
+    // mask 自身の style 変化 (layout-editor の drag/resize で位置/サイズが変わる) を監視
+    fryOilBezierState.maskObs = new MutationObserver(function () { applyFryOilMaskBezier(); });
+    fryOilBezierState.maskObs.observe(el, { attributes: true, attributeFilter: ['style'] });
+    // window resize でも追従
+    fryOilBezierState.resizeHandler = function () { applyFryOilMaskBezier(); };
+    window.addEventListener('resize', fryOilBezierState.resizeHandler);
+    // overlay の pointer 操作
+    var ov = fryOilBezierState.overlay;
+    if (ov) {
+      ov.addEventListener('pointerdown', onFryOilBezierPointerDown);
+      window.addEventListener('pointermove', onFryOilBezierPointerMove);
+      window.addEventListener('pointerup', onFryOilBezierPointerUp);
+      window.addEventListener('pointercancel', onFryOilBezierPointerUp);
+    }
+    // 初回描画
+    applyFryOilMaskBezier();
+  }
+
+  function onFryOilBezierPointerDown(evt) {
+    var target = evt.target;
+    if (!target || !target.dataset) return;
+    var idx = parseInt(target.dataset.anchorIdx, 10);
+    var which = target.dataset.which;
+    if (!(idx >= 0 && idx < 4) || !which) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    fryOilBezierState.drag = { idx: idx, which: which, anchors: readFryOilBezierAnchors() };
+  }
+
+  function onFryOilBezierPointerMove(evt) {
+    var drag = fryOilBezierState.drag;
+    if (!drag) return;
+    var el = document.getElementById('fry-oil-mask');
+    if (!el) return;
+    var eRect = el.getBoundingClientRect();
+    if (!eRect.width || !eRect.height) return;
+    var localXpct = ((evt.clientX - eRect.left) / eRect.width) * 100;
+    var localYpct = ((evt.clientY - eRect.top) / eRect.height) * 100;
+    var a = drag.anchors[drag.idx];
+    if (drag.which === 'anchor') {
+      a.x = clampPct(localXpct, 0, 100);
+      a.y = clampPct(localYpct, 0, 100);
+    } else if (drag.which === 'in') {
+      a.hx1 = clampPct(localXpct - a.x, -100, 100);
+      a.hy1 = clampPct(localYpct - a.y, -100, 100);
+    } else if (drag.which === 'out') {
+      a.hx2 = clampPct(localXpct - a.x, -100, 100);
+      a.hy2 = clampPct(localYpct - a.y, -100, 100);
+    }
+    // in-memory layout データに即時反映 (path 再描画 + editor の dirty 経路)
+    saveFryOilBezierToLayoutData(drag.anchors);
+    applyFryOilMaskBezier();
+  }
+
+  function onFryOilBezierPointerUp() {
+    if (!fryOilBezierState.drag) return;
+    fryOilBezierState.drag = null;
+    // 2026-06-03 (HIGH 1 + HIGH 2 fix): snapshot は patchLayoutEditorSnapshot() で
+    //   __fry_oil_mask_bezier を含むよう wrap 済み。 加えて dirty flag を 4 経路で fall-back 化。
+    markLayoutEditorDirty();
+  }
+
+  function saveFryOilBezierToLayoutData(anchors) {
+    if (!window._currentLayoutData || typeof window._currentLayoutData !== 'object') {
+      window._currentLayoutData = {};
+    }
+    var serialized = {
+      anchors: anchors.map(function (a) {
+        return {
+          x: +a.x.toFixed(3), y: +a.y.toFixed(3),
+          hx1: +a.hx1.toFixed(3), hy1: +a.hy1.toFixed(3),
+          hx2: +a.hx2.toFixed(3), hy2: +a.hy2.toFixed(3),
+        };
+      }),
+    };
+    window._currentLayoutData[FRY_OIL_BEZIER_KEY] = serialized;
+    // layout-editor は snapshot() で __fry_oil_mask_bezier を含めないため、
+    //   editor の localStorage merge 経路に乗せるため localStorage 側にも反映する。
+    //   storage key は layout-editor 内部の `'le_layout_' + location.pathname` と同形式。
+    try {
+      var sk = 'le_layout_' + (location.pathname || '/');
+      var raw = localStorage.getItem(sk);
+      var obj = raw ? JSON.parse(raw) : {};
+      obj[FRY_OIL_BEZIER_KEY] = serialized;
+      localStorage.setItem(sk, JSON.stringify(obj));
+    } catch (e) { /* noop */ }
+    // 2026-06-03 (HIGH 2 fix): anchor 更新ごとに dirty 化 (drag 中も save ボタンを赤くする)
+    markLayoutEditorDirty();
+  }
+
 
   function confirmLayoutEditorNavigationIfDirty() {
     if (!window.LayoutEditor || typeof window.LayoutEditor.confirmDiscardIfDirty !== 'function') {
@@ -11428,6 +12021,432 @@ body.layout-editor-on .bowl-fill-mask::after {
     }, 360));
   }
 
+  // ========== Cinema Cook SubStep System (Phase C: salmon) ==========
+  // Declarative subStep array driven by INGREDIENTS[].cookingActions[].subSteps.
+  // Stages: intro -> salt -> oil -> placeFood -> cookFront -> flip -> cookBack -> done.
+  // All visual elements outside the cooking-food wrap (salt shaker, oil cruet, oil layer,
+  // banner) live in #grill-stage and are toggled via els.cookSubStep* refs.
+  function resetCookSubStepUI() {
+    const stage = els.grillStage;
+    if (stage) {
+      stage.classList.remove('cook-substep-intro', 'cook-substep-salt-mode', 'cook-substep-oil-mode',
+        'cook-substep-flip-mode', 'cook-substep-place-mode');
+    }
+    if (els.cookSubStepSalt) {
+      els.cookSubStepSalt.classList.remove('show', 'shaking', 'pouring', 'rest-lower-left', 'is-dragging');
+      els.cookSubStepSalt.style.left = '';
+      els.cookSubStepSalt.style.top = '';
+    }
+    if (els.cookSubStepOil) {
+      els.cookSubStepOil.classList.remove('show', 'pouring', 'rest-lower-right', 'is-dragging');
+      els.cookSubStepOil.style.left = '';
+      els.cookSubStepOil.style.top = '';
+    }
+    if (els.cookSubStepOilLayer) els.cookSubStepOilLayer.classList.remove('show');
+    if (els.cookSubStepBanner) {
+      els.cookSubStepBanner.classList.remove('show');
+      els.cookSubStepBanner.textContent = '';
+    }
+  }
+
+  function getActionSubSteps(action) {
+    if (!action || !Array.isArray(action.subSteps)) return null;
+    return action.subSteps;
+  }
+
+  function getCurrentSubStep() {
+    const action = getCurrentAction();
+    const subs = getActionSubSteps(action);
+    if (!subs) return null;
+    const idx = state.cookSubStepIndex;
+    if (idx < 0 || idx >= subs.length) return null;
+    return subs[idx];
+  }
+
+  function showSubStepBanner(text) {
+    if (!els.cookSubStepBanner) return;
+    if (!text) {
+      els.cookSubStepBanner.classList.remove('show');
+      return;
+    }
+    els.cookSubStepBanner.textContent = text;
+    els.cookSubStepBanner.classList.add('show');
+  }
+
+  function startSubStepSequence(ing, action) {
+    resetCookSubStepUI();
+    state.cookSubStepIndex = -1;
+    state.cookSubStepLock = false;
+    state.cookSaltApplied = false;
+    state.cookOilApplied = false;
+    state.cookFlipped = false;
+    state.cookSaltTaps = 0;
+    // Keep cookPreheated=false during intro/salt/oil so the existing drag gate
+    // in onCookFoodPointerDown blocks the user from grabbing the salmon early.
+    // placeFood subStep flips cookPreheated=true to enable the plate→pan drag.
+    state.cookPreheated = false;
+    updateCookView('grill', 0, false);
+    updateCookStageState('grill');
+    try { startKitchenAmbient('stove'); } catch (e) { /* noop */ }
+    advanceSubStep();
+  }
+
+  function advanceSubStep() {
+    if (state.cookSubStepLock) return;
+    const action = getCurrentAction();
+    const subs = getActionSubSteps(action);
+    if (!subs) return;
+    state.cookSubStepIndex += 1;
+    if (state.cookSubStepIndex >= subs.length) return;
+    const sub = subs[state.cookSubStepIndex];
+    if (!sub || !sub.action) return;
+    if (sub.action === 'intro') return showIntroSubStep(sub);
+    if (sub.action === 'salt') return showSaltSubStep(sub);
+    if (sub.action === 'oil') return showOilSubStep(sub);
+    if (sub.action === 'placeFood') return showPlaceFoodSubStep(sub);
+    if (sub.action === 'cookFront') return cookFrontSubStep(sub);
+    if (sub.action === 'flip') return runFlipSubStep(sub);
+    if (sub.action === 'cookBack') return cookBackSubStep(sub);
+    if (sub.action === 'done') return runDoneSubStep(sub);
+  }
+
+  function showIntroSubStep(sub) {
+    const stage = els.grillStage;
+    if (stage) stage.classList.add('cook-substep-intro');
+    state.cookSubStepLock = true;
+    showSubStepBanner('さけを ながめよう！');
+    const hold = Math.max(400, (sub.duration || 700));
+    state.pendingTimers.push(setTimeout(function () {
+      // Release center pin → cooking-food transitions back to its plate position
+      // via the CSS transition declared on the base .cooking-food selector.
+      if (stage) stage.classList.remove('cook-substep-intro');
+      showSubStepBanner('');
+      state.pendingTimers.push(setTimeout(function () {
+        state.cookSubStepLock = false;
+        advanceSubStep();
+      }, 500));
+    }, hold));
+  }
+
+  function showSaltSubStep(sub) {
+    const stage = els.grillStage;
+    const shaker = els.cookSubStepSalt;
+    if (!shaker) { advanceSubStep(); return; }
+    if (stage) stage.classList.add('cook-substep-salt-mode');
+    const containerSrc = cookingAssetPath(sub.container || 'salt/salt_shaker_still');
+    const tiltedSrc = cookingAssetPath(sub.tilted || 'salt/salt_shaker_sprinkling');
+    shaker.dataset.stillSrc = containerSrc;
+    shaker.dataset.tiltedSrc = tiltedSrc;
+    const imgEl = shaker.querySelector('.cook-substep-shaker-img');
+    if (imgEl) imgEl.src = containerSrc;
+    shaker.style.left = '50%';
+    shaker.style.top = '38%';
+    requestAnimationFrame(function () { shaker.classList.add('show'); });
+    showSubStepBanner(sub.label || 'しおを まぶそう');
+    state.cookSaltTaps = 0;
+  }
+
+  function onSaltShakerTap(evt) {
+    const sub = getCurrentSubStep();
+    if (!sub || sub.action !== 'salt' || state.cookSaltApplied) return;
+    if (state.cookSubStepLock) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(160);
+    const shaker = els.cookSubStepSalt;
+    if (!shaker) return;
+    const imgEl = shaker.querySelector('.cook-substep-shaker-img');
+    if (imgEl && shaker.dataset.tiltedSrc) imgEl.src = shaker.dataset.tiltedSrc;
+    shaker.classList.remove('shaking');
+    void shaker.offsetWidth;
+    shaker.classList.add('shaking');
+    spawnSaltGrains();
+    state.cookSaltTaps = Math.min((sub.taps || 3), (state.cookSaltTaps || 0) + 1);
+    state.pendingTimers.push(setTimeout(function () {
+      if (imgEl && shaker.dataset.stillSrc) imgEl.src = shaker.dataset.stillSrc;
+      shaker.classList.remove('shaking');
+    }, 420));
+    if (state.cookSaltTaps >= (sub.taps || 3)) {
+      state.cookSaltApplied = true;
+      state.cookSubStepLock = true;
+      state.pendingTimers.push(setTimeout(function () {
+        shaker.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
+        showSubStepBanner('');
+        const stage = els.grillStage;
+        if (stage) stage.classList.remove('cook-substep-salt-mode');
+        state.pendingTimers.push(setTimeout(function () {
+          state.cookSubStepLock = false;
+          advanceSubStep();
+        }, 600));
+      }, 480));
+    }
+  }
+
+  function spawnSaltGrains() {
+    const stage = els.grillStage;
+    if (!stage) return;
+    const grains = document.createElement('div');
+    grains.className = 'cook-substep-salt-grains';
+    const xPct = 52 + (Math.random() * 16 - 8);
+    const yPct = 48 + (Math.random() * 12 - 6);
+    grains.style.setProperty('--salt-x', xPct + '%');
+    grains.style.setProperty('--salt-y', yPct + '%');
+    stage.appendChild(grains);
+    state.pendingTimers.push(setTimeout(function () {
+      if (grains && grains.parentElement) grains.parentElement.removeChild(grains);
+    }, 700));
+  }
+
+  function showOilSubStep(sub) {
+    const stage = els.grillStage;
+    const cruet = els.cookSubStepOil;
+    if (!cruet) { advanceSubStep(); return; }
+    if (stage) stage.classList.add('cook-substep-oil-mode');
+    const containerSrc = cookingAssetPath(sub.container || 'oil/oil_jar_still');
+    const tiltedSrc = cookingAssetPath(sub.tilted || 'oil/oil_jar_tilted');
+    cruet.dataset.stillSrc = containerSrc;
+    cruet.dataset.tiltedSrc = tiltedSrc;
+    const imgEl = cruet.querySelector('.cook-substep-shaker-img');
+    if (imgEl) imgEl.src = containerSrc;
+    cruet.style.left = '50%';
+    cruet.style.top = '40%';
+    requestAnimationFrame(function () { cruet.classList.add('show'); });
+    showSubStepBanner(sub.label || 'あぶらを いれよう');
+    state.pendingTimers.push(setTimeout(function () {
+      // After a brief center pause, move to the lower-right rest position
+      // so the user can drag it toward the pan center.
+      cruet.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
+    }, 900));
+  }
+
+  // Oil cruet pointer flow: drag from rest position toward pan center. On release,
+  // if the cruet ended up over the pan area (stage center-ish), trigger pour.
+  // If released outside the pan, snap back to rest position (no pour).
+  function onOilCruetTap(evt) {
+    const sub = getCurrentSubStep();
+    if (!sub || sub.action !== 'oil' || state.cookOilApplied) return;
+    if (state.cookSubStepLock) return;
+    const cruet = els.cookSubStepOil;
+    const stage = els.grillStage;
+    if (!cruet || !stage) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    suppressCookClickFor(160);
+    const stageRect = stage.getBoundingClientRect();
+    const dragState = {
+      pointerId: evt.pointerId,
+      startX: evt.clientX,
+      startY: evt.clientY,
+      stageRect: stageRect,
+      origLeft: cruet.style.left,
+      origTop: cruet.style.top,
+      restClass: cruet.classList.contains('rest-lower-left') ? 'rest-lower-left'
+        : cruet.classList.contains('rest-lower-right') ? 'rest-lower-right' : null,
+    };
+    cruet.classList.add('is-dragging');
+    if (dragState.restClass) cruet.classList.remove(dragState.restClass);
+    if (cruet.setPointerCapture) {
+      try { cruet.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    function onMove(e) {
+      if (e.pointerId !== dragState.pointerId) return;
+      e.preventDefault();
+      const x = e.clientX - stageRect.left;
+      const y = e.clientY - stageRect.top;
+      cruet.style.left = (x / stageRect.width * 100) + '%';
+      cruet.style.top = (y / stageRect.height * 100) + '%';
+    }
+    function onEnd(e) {
+      if (e.pointerId !== dragState.pointerId) return;
+      e.preventDefault();
+      cruet.removeEventListener('pointermove', onMove);
+      cruet.removeEventListener('pointerup', onEnd);
+      cruet.removeEventListener('pointercancel', onEnd);
+      cruet.classList.remove('is-dragging');
+      const x = e.clientX - stageRect.left;
+      const y = e.clientY - stageRect.top;
+      const xPct = x / stageRect.width * 100;
+      const yPct = y / stageRect.height * 100;
+      // Pan center is approximately --grill-food-x (58%) / --grill-food-y (52%).
+      // Accept a generous radius of 28 percentage points for child-friendly drop.
+      const dx = xPct - 58;
+      const dy = yPct - 52;
+      const overPan = (dx * dx + dy * dy) < (28 * 28);
+      if (overPan) {
+        triggerOilPour(sub);
+      } else {
+        // Snap back to rest
+        cruet.style.left = '';
+        cruet.style.top = '';
+        if (dragState.restClass) cruet.classList.add(dragState.restClass);
+      }
+    }
+    cruet.addEventListener('pointermove', onMove);
+    cruet.addEventListener('pointerup', onEnd);
+    cruet.addEventListener('pointercancel', onEnd);
+  }
+
+  function triggerOilPour(sub) {
+    state.cookOilApplied = true;
+    state.cookSubStepLock = true;
+    const cruet = els.cookSubStepOil;
+    if (cruet) {
+      const imgEl = cruet.querySelector('.cook-substep-shaker-img');
+      if (imgEl && cruet.dataset.tiltedSrc) imgEl.src = cruet.dataset.tiltedSrc;
+      cruet.classList.remove('pouring');
+      void cruet.offsetWidth;
+      cruet.classList.add('pouring');
+    }
+    if (els.cookSubStepOilLayer) {
+      requestAnimationFrame(function () {
+        if (sub && sub.layerImg && els.cookSubStepOilLayer) {
+          els.cookSubStepOilLayer.style.backgroundImage = 'url(' + cookingAssetPath(sub.layerImg) + ')';
+        }
+        els.cookSubStepOilLayer.classList.add('show');
+      });
+    }
+    state.pendingTimers.push(setTimeout(function () {
+      if (cruet) {
+        const imgEl = cruet.querySelector('.cook-substep-shaker-img');
+        if (imgEl && cruet.dataset.stillSrc) imgEl.src = cruet.dataset.stillSrc;
+        cruet.classList.remove('pouring');
+        cruet.style.left = '';
+        cruet.style.top = '';
+        cruet.classList.add(sub.restPos === 'lower-left' ? 'rest-lower-left' : 'rest-lower-right');
+      }
+      showSubStepBanner('');
+      const stage = els.grillStage;
+      if (stage) stage.classList.remove('cook-substep-oil-mode');
+      state.pendingTimers.push(setTimeout(function () {
+        state.cookSubStepLock = false;
+        advanceSubStep();
+      }, 500));
+    }, 720));
+  }
+
+  function showPlaceFoodSubStep(sub) {
+    const stage = els.grillStage;
+    if (stage) stage.classList.add('cook-substep-place-mode');
+    showSubStepBanner('さけを フライパンへ');
+    setSpeech('さけを フライパンに のせよう！', 'grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'おさらから フライパンへ';
+    // Enable plate→pan drag now that salt + oil are done.
+    state.cookPreheated = true;
+    updateCookStageState('grill');
+    state.cookSubStepLock = false;
+    waitForFoodPlaced();
+  }
+
+  function waitForFoodPlaced() {
+    if (state.cookFoodPlaced) {
+      const stage = els.grillStage;
+      if (stage) stage.classList.remove('cook-substep-place-mode');
+      showSubStepBanner('');
+      // Let placeFoodForGrill's internal 420ms post-drop animation settle first,
+      // then advance to cookFront. cookFrontSubStep stops the gauge again as
+      // an idempotent safety net.
+      state.pendingTimers.push(setTimeout(function () {
+        stopCookTimingGauge();
+        resetCookTimingUI('grill');
+        advanceSubStep();
+      }, 520));
+      return;
+    }
+    state.pendingTimers.push(setTimeout(waitForFoodPlaced, 180));
+  }
+
+  function cookFrontSubStep(sub) {
+    stopCookTimingGauge();
+    resetCookTimingUI('grill');
+    showSubStepBanner('おもてを やこう');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして うらがえそう';
+    setSpeech('ジュッ！ おもてを やこう！ タップして うらがえそう！', 'grill');
+    state.cookSubStepLock = false;
+    state.cookAnimating = false;
+    // user taps grill stage to flip; onGrillTap detects subStep mode and routes to handleSubStepGrillTap
+  }
+
+  function runFlipSubStep(sub) {
+    const ing = state.current;
+    const action = getCurrentAction();
+    state.cookSubStepLock = true;
+    showSubStepBanner('うらがえそう！');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'うらがえし中';
+    setSpeech('くるりっ！ うらがえすよ！', 'grill');
+    const wrap = els.grillingFoodWrap;
+    const img = els.grillingFood;
+    if (wrap) {
+      wrap.classList.remove('flip');
+      void wrap.offsetWidth;
+      wrap.classList.add('flip');
+    }
+    // Mid-flip image swap to back-side stage 1 (mid) — direct img.src swap,
+    // NOT updateCookView (which would strip the .flip class mid-animation).
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookFlipped = true;
+      state.cookProgress = 1;
+      if (img && action && Array.isArray(action.backStages) && action.backStages[1]) {
+        img.src = cookingAssetPath(action.backStages[1]);
+      }
+      if (wrap) wrap.dataset.stage = '1';
+      updateCookDots('grill', 1);
+    }, 210));
+    state.pendingTimers.push(setTimeout(function () {
+      if (wrap) wrap.classList.remove('flip');
+      showSubStepBanner('');
+      state.cookSubStepLock = false;
+      advanceSubStep();
+    }, sub.duration || 1200));
+  }
+
+  function cookBackSubStep(sub) {
+    stopCookTimingGauge();
+    resetCookTimingUI('grill');
+    showSubStepBanner('うらも やこう');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして できあがり';
+    setSpeech('ジュッ！ うらも やこう！ もういちど タップ！', 'grill');
+    state.cookSubStepLock = false;
+    state.cookAnimating = false;
+  }
+
+  function runDoneSubStep(sub) {
+    const ing = state.current;
+    state.cookSubStepLock = true;
+    state.cookFlipped = false; // serve image uses front-side done PNG (existing spec)
+    state.cookProgress = 2;
+    state.cookServed = true;
+    updateCookView('grill', 2, 'burst');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'おいしく できたよ！';
+    setSpeech('できたよ！ ふっくら やけた さけ！', 'grill');
+    try { stopKitchenAmbient('stove', 320); } catch (e) { /* noop */ }
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookSubStepLock = false;
+      completeCurrentAction(ing);
+    }, sub.duration || 400));
+  }
+
+  function isInSubStepCookMode() {
+    const sub = getCurrentSubStep();
+    return !!(sub && (sub.action === 'cookFront' || sub.action === 'cookBack'));
+  }
+
+  function handleSubStepGrillTap() {
+    if (state.cookSubStepLock || state.cookAnimating) return false;
+    const sub = getCurrentSubStep();
+    if (!sub) return false;
+    if (sub.action === 'cookFront') {
+      // user taps to trigger flip
+      advanceSubStep();
+      return true;
+    }
+    if (sub.action === 'cookBack') {
+      // user taps to finish
+      advanceSubStep();
+      return true;
+    }
+    return false;
+  }
+
   function beginCookAction(ing, action) {
     state.prepProgress = 0;
     state.prepAnimating = false;
@@ -11447,6 +12466,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookMeatballPhase = 'place';
     state.cookMeatballRollDistance = 0;
     state.cookTimingResults = [];
+    state.cookSubStepIndex = -1;
+    state.cookSaltApplied = false;
+    state.cookOilApplied = false;
+    state.cookFlipped = false;
+    state.cookSubStepLock = false;
+    state.cookSaltTaps = 0;
+    resetCookSubStepUI();
     state.cookEggCrackProgress = 0;
     state.cookEggLastKnockAt = 0;
     state.cookEggLastDragY = 0;
@@ -11476,7 +12502,11 @@ body.layout-editor-on .bowl-fill-mask::after {
         ? 'たまごを おさらのふちの 点線へ もっていって はなそう！'
         : isMeatballCookAction(ing, action) ? 'ミートボールを 1こずつ フライパンに のせよう！' : ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
-      startCookPreheat(ing, action, 'grill');
+      if (Array.isArray(action.subSteps) && action.subSteps.length) {
+        startSubStepSequence(ing, action);
+      } else {
+        startCookPreheat(ing, action, 'grill');
+      }
     } else {
       const batchText = getCookBatchText(ing, action);
       if (els.fryActionLabel) {
@@ -11882,6 +12912,14 @@ body.layout-editor-on .bowl-fill-mask::after {
         return cookingAssetPath(stages[stage]);
       }
     }
+    // Back-side image swap for subStep flip (Phase C salmon cinema).
+    // backStages comes from cookingActions[].backStages, parallel to cfg.stages.
+    // Only swap when state.cookFlipped is true AND the action declares backStages.
+    // Final 'done' frame: spec keeps the front-side PNG (handled in runDoneSubStep
+    // by clearing cookFlipped before updateCookView).
+    if (state.cookFlipped && action && Array.isArray(action.backStages) && action.backStages[stage]) {
+      return cookingAssetPath(action.backStages[stage]);
+    }
     if (cfg && Array.isArray(cfg.stages) && cfg.stages[stage]) {
       return cookingAssetPath(cfg.stages[stage]);
     }
@@ -12247,21 +13285,23 @@ body.layout-editor-on .bowl-fill-mask::after {
         ry: panBounds.height * 0.21,
       };
     }
-    const plate = els.grillStage ? els.grillStage.querySelector('.prep-plate') : null;
-    const plateBounds = getElementBoundsPct(plate, els.grillStage);
-    if (plateBounds) {
-      return {
-        x: plateBounds.left + plateBounds.width * 0.72,
-        y: plateBounds.top + plateBounds.height * 0.31,
-        rx: plateBounds.width * 0.22,
-        ry: plateBounds.height * 0.26,
-      };
+    if (isCurrentEggGrillAction()) {
+      const plate = els.grillStage ? els.grillStage.querySelector('.prep-plate') : null;
+      const plateBounds = getElementBoundsPct(plate, els.grillStage);
+      if (plateBounds) {
+        return {
+          x: plateBounds.left + plateBounds.width * 0.72,
+          y: plateBounds.top + plateBounds.height * 0.31,
+          rx: plateBounds.width * 0.22,
+          ry: plateBounds.height * 0.26,
+        };
+      }
     }
     return {
-      x: 28,
-      y: 60,
-      rx: 10,
-      ry: 7,
+      x: panBounds.left + panBounds.width * 0.50,
+      y: panBounds.top + panBounds.height * 0.50,
+      rx: panBounds.width * 0.22,
+      ry: panBounds.height * 0.22,
     };
   }
 
@@ -13640,6 +14680,9 @@ body.layout-editor-on .bowl-fill-mask::after {
       const pieceText = getCookPieceText(action);
       if (els.grillActionLabel) els.grillActionLabel.textContent = pieceText + ' ゲージの あおで ころがそう';
       setSpeech('ジュッ！ ' + pieceText + 'を フライパンで ころころ やこう！', 'grill');
+    } else if (Array.isArray(action && action.subSteps) && action.subSteps.length) {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'タップして うらがえそう';
+      setSpeech('ジュッ！ フライパンに のったよ！ タップして うらがえそう！', 'grill');
     } else {
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで うらがえそう';
       setSpeech('ジュッ！ フライパンに のったよ！ あおで タップして うらがえそう！', 'grill');
@@ -13652,6 +14695,9 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを ドラッグして しめよう';
         setSpeech('ふたを つかんで フライパンへ もっていこう！', 'grill');
         updateCookStageState('grill');
+      } else if (Array.isArray(action && action.subSteps) && action.subSteps.length) {
+        // SubStep cinema mode (salmon Phase C): skip timing gauge — flow is driven
+        // by cookFront/cookBack taps instead.
       } else {
         startCookTimingGauge('grill');
       }
@@ -13853,6 +14899,15 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'grill') return;
+    // SubStep cinema cook (salmon Phase C): cookFront / cookBack taps drive flip/done.
+    if (Array.isArray(action.subSteps) && action.subSteps.length) {
+      if (isInSubStepCookMode()) {
+        if (handleSubStepGrillTap()) return;
+      }
+      // Suppress fallthrough during intro/salt/oil/placeFood/flip/done — those
+      // subSteps have their own UI / drivers and do not respond to stage taps.
+      return;
+    }
     if (isMeatballCookAction(state.current, action)) {
       handleMeatballGrillTap();
       return;
@@ -13983,8 +15038,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       applySpriteStyle(els.ingOnBoard.querySelector('.ingredient-board-sprite'), boardSprite);
     } else if (ing.imageBase) {
       var safeAlt = String(ing.name || '').replace(/"/g, '&quot;');
+      var hasExt = /\.(png|webp|jpg|jpeg|svg|avif)$/i.test(ing.imageBase);
+      var imgPath = '../assets/images/bento/cooking/' + ing.imageBase + (hasExt ? '' : '.png');
       els.ingOnBoard.innerHTML =
-        '<img src="../assets/images/bento/cooking/' + ing.imageBase + '.png" alt="' + safeAlt + '" draggable="false">';
+        '<img src="' + imgPath + '" alt="' + safeAlt + '" draggable="false">';
     } else {
       els.ingOnBoard.textContent = ing.emoji;
     }
