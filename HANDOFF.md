@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-03 - [batch:249-maze-tree-hitbox-stage1-revert] DONE - Codex: 木の障害物で両側の上下通路が塞がる問題に対し、`maze/index.html` の障害物当たり判定を種類別半径へ変更し、tree は旧 `viewBox.h/18` から `viewBox.h/36` に縮小。ステージ1は slot 1 を `ステージ1：森の入り口` へ戻し、`stage1.json` の欠けていた画像参照も同じ旧背景へ向け、`ステージ1：森の入り口.json` は `lantern: true` に変更。背景画像は `0e11309^` の旧版へ復帰済み。Playwrightでステージ1画像/ランタン輝度、stage5 tree 中心=blocked・左右=passable を確認。Codex self-review: 差分/JSON parse/画像ハッシュ/ブラウザ実行を確認。`sw.js` は v774。 (by Codex)
 - 2026-06-03 - [batch:248-maze-editor-delete-items] DONE - Codex: `tools/maze-editor.html` の削除モードで、お邪魔虫/障害物が stop node と重なっていると node 判定が先に走って item を消せない問題を修正。削除優先順を お邪魔虫 → 障害物 → ノード → 道 に変更し、Playwright で node と同座標の rock が先に消えて node が残ること、続けて mayoi が消えることを確認。`sw.js` は v771。 (by Codex)
 - 2026-06-03 - [batch:247-maze-stage1-night-map] DONE - Codex: 迷路1面の通常進行参照画像 `maze/imageStages/ステージ1：森の入り口.jpg` を、経路座標を保つため再生成ではなく既存画像の夜色変換で差し替え。森は青い夜色、道は月明かりで読める明るさに調整し、画像サイズ 1600x904 維持を確認。`sw.js` は v770。 (by Codex)
 - 2026-06-03 - [batch:246-bento-shiozake-raw-wet] DONE - Codex: user 指摘「焼く前が焼いてあるようにも見える / もっとみずみずしくテカっている感じ」を受け、塩鮭シートを再生成。`tmp/alpha_pending/245_bento_shiozake_raw_wet_gpt2/shiozake_front_back_3stage_raw_wet.png` に、左列 raw の赤み・水分ハイライト・冷たい銀皮を強めた 2x3 raw を納品。旧 `244` は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
