@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-03T09:43:06Z - kitchen v766: salmon glass-lid v765の2つの間違いを修正 (CSS hardcode削除でeditor/saved-layout復活, cookFront add削除でcookBackからのみ表示)
+- **タスク**: kitchen v766: salmon glass-lid v765の2つの間違いを修正 (CSS hardcode削除でeditor/saved-layout復活, cookFront add削除でcookBackからのみ表示)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 167
+- **エラー数**: 7
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 52, "Grep": 1, "Read": 41, "Agent": 55, "ToolSearch": 2, "Skill": 2, "Edit": 13, "Write": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-03T09:23:20Z - kitchen.html: salt tilt reversed + Y-axis-shake detector (3 taps) + oil cruet flash-rotation fix + drag-THIS hint + salmon flip rotateX + salmon glass lid (sw v765)
 - **タスク**: kitchen.html: salt tilt reversed + Y-axis-shake detector (3 taps) + oil cruet flash-rotation fix + drag-THIS hint + salmon flip rotateX + salmon glass lid (sw v765)
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 37, "Grep": 1, "Read": 29, "Agent": 34, "ToolSearch": 2, "Skill": 2, "Edit": 6, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-03T03:42:12Z - kitchen.html spawnSaltGrains/spawnOilDrops の v429 同型パーティクル座標バグ修正 (stageScale 除算で scaled viewport px → unscaled layout px に統一) + sw v757
-- **タスク**: kitchen.html spawnSaltGrains/spawnOilDrops の v429 同型パーティクル座標バグ修正 (stageScale 除算で scaled viewport px → unscaled layout px に統一) + sw v757
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 103
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 35, "Grep": 1, "Read": 23, "Agent": 33, "ToolSearch": 2, "Skill": 2, "Edit": 6, "Write": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

@@ -3082,18 +3082,15 @@ body.layout-editor-on .egg-glass-lid {
 #grill-stage[data-ingredient="egg"].egg-lid-closed:not(.is-served) .grill-smoke {
   opacity: 0.38;
 }
-/* v765: glass lid auto-shown during salmon cookFront / cookBack
-   (not during flip or after done). Independent from egg's lid-ready/closed
-   classes so egg behaviour is untouched. */
+/* v766: glass lid auto-shown during salmon cookBack only (after flip).
+   Position/size are intentionally NOT set here — base .egg-glass-lid CSS +
+   saved-layout.json inline styles drive that, so the editor adjustments stick.
+   Egg's lid-ready/closed classes are untouched. */
 .egg-glass-lid.show-for-salmon {
-  left: var(--grill-food-x, 58%);
-  top: var(--grill-food-y, 52%);
-  width: 32%;
-  transform: translate(-50%, -50%);
   opacity: 0.92;
   z-index: 6;
   pointer-events: none;
-  transition: opacity 0.45s ease, transform 0.45s ease;
+  transition: opacity 0.45s ease;
 }
 #fry-stage.food-placed:not(.is-served) .cooking-food {
   left: var(--fry-food-x, 58%);
@@ -3426,7 +3423,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=765');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=766');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -12834,11 +12831,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     showSubStepBanner('タイミングよく タップ！');
     if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
     setSpeech('ジュッ！ ゲージの あおで タップして うらがえそう！', 'grill');
-    // v765: cover the salmon with the glass lid during front-side cook
-    // ("蒸し焼き" feel). Only attaches to salmon — egg's lid flow untouched.
-    if (els.eggGlassLid && state.current && state.current.id === 'salmon') {
-      els.eggGlassLid.classList.add('show-for-salmon');
-    }
+    // v766: 蓋は「裏返してから」が正しい仕様。 cookFront では出さない (cookBack のみ)。
     state.cookSubStepLock = false;
     state.cookAnimating = false;
     startCookTimingGauge('grill');
@@ -13082,7 +13075,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=765';
+    return base + '?v=766';
   }
 
   function getCookImageConfig(ing, action) {
