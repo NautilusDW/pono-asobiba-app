@@ -142,6 +142,58 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-03T00:30:30Z - kitchen.html レイアウト共通化: 包丁/お皿/お皿マスクを per-ingredient → 共通キーへ移行 + saved-layout.json クリーンアップ + sw.js v748
+- **タスク**: kitchen.html レイアウト共通化: 包丁/お皿/お皿マスクを per-ingredient → 共通キーへ移行 + saved-layout.json クリーンアップ + sw.js v748
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 8
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Bash": 3, "Grep": 1, "Read": 2, "Agent": 2}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-02T22:59:56Z - ACE-Step 1.5音楽生成ツールの主張を敵対的検証（content-ID/ライセンス/メロディ追従/アクセス）
+- **タスク**: ACE-Step 1.5音楽生成ツールの主張を敵対的検証（content-ID/ライセンス/メロディ追従/アクセス）
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 132
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 10, "Bash": 46, "Grep": 8, "Agent": 42, "ToolSearch": 1, "Edit": 17, "Write": 2, "Workflow": 6}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-02T22:42:27Z - 音楽生成ツール Google Magenta(classic) の主張をアドバーサリアル検証（content-ID無し/Apache2.0商用可/メロディ追従/ローカル無料）
+- **タスク**: 音楽生成ツール Google Magenta(classic) の主張をアドバーサリアル検証（content-ID無し/Apache2.0商用可/メロディ追従/ローカル無料）
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 132
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 10, "Bash": 46, "Grep": 8, "Agent": 42, "ToolSearch": 1, "Edit": 17, "Write": 2, "Workflow": 6}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-02T22:41:33Z - Stable Audio Open/3.0 の主張を敵対的検証 (content-ID, license, melody-input, access)
+- **タスク**: Stable Audio Open/3.0 の主張を敵対的検証 (content-ID, license, melody-input, access)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 132
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 10, "Bash": 46, "Grep": 8, "Agent": 42, "ToolSearch": 1, "Edit": 17, "Write": 2, "Workflow": 6}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-02T14:43:05Z - music-engine.js review fixes: halve reverb wet double-pan, deterministic drum rng fallback, intro/buildMeta cleanups
 - **タスク**: music-engine.js review fixes: halve reverb wet double-pan, deterministic drum rng fallback, intro/buildMeta cleanups
 - **結果**: 成功
@@ -205,57 +257,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Bash": 34, "Grep": 8, "Agent": 35, "ToolSearch": 1, "Edit": 11, "Write": 1, "Workflow": 5}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T13:22:09Z - tools/music-maker.html を新規作成: MusicEngine/MusicLibrary を叩く手続き型アレンジ生成ツール（生成/再生/WAV保存/波形/コード表示/太鼓譜面出力/ステップシーケンサ/localStorage/?test=1）
-- **タスク**: tools/music-maker.html を新規作成: MusicEngine/MusicLibrary を叩く手続き型アレンジ生成ツール（生成/再生/WAV保存/波形/コード表示/太鼓譜面出力/ステップシーケンサ/localStorage/?test=1）
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 101
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Bash": 34, "Grep": 8, "Agent": 33, "ToolSearch": 1, "Edit": 11, "Write": 1, "Workflow": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T13:16:00Z - music-engine.js + music-library.js + music_cli.js: procedural music-arrangement generator (ported Path B synth math, generalized to 5 styles/3 melodies, histogram chord inference, deterministic seeded noise, DataView WAV); all CLI assertions PASS, byte-length identical to pathB.wav
-- **タスク**: music-engine.js + music-library.js + music_cli.js: procedural music-arrangement generator (ported Path B synth math, generalized to 5 styles/3 melodies, histogram chord inference, deterministic seeded noise, DataView WAV); all CLI assertions PASS, byte-length identical to pathB.wav
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 100
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Bash": 34, "Grep": 8, "Agent": 32, "ToolSearch": 1, "Edit": 11, "Write": 1, "Workflow": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T11:59:27Z - Mary Had a Little Lamb 用の melody-lock Suno Cover プロンプト作成 (chiptune square-wave lead + bouncy pop drums) と README 更新
-- **タスク**: Mary Had a Little Lamb 用の melody-lock Suno Cover プロンプト作成 (chiptune square-wave lead + bouncy pop drums) と README 更新
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 1
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 1}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-02T11:59:26Z - 蛍の光 Suno Cover melody-locked prompt (chiptune note-for-note + kids dance beat) + README update
-- **タスク**: 蛍の光 Suno Cover melody-locked prompt (chiptune note-for-note + kids dance beat) + README update
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 1
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 1}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
