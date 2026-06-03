@@ -99,7 +99,7 @@ assets/zukan/frames/
 
 ---
 
-## 生成プロンプト雛形 (Codex GPT-Image 2 / Higgsfield Nano Banana Pro 兼用)
+## 生成プロンプト雛形 (Codex GPT-Image 2)
 
 ```
 antique storybook frame, sepia and warm brown ink lines, ornate corners,
@@ -125,7 +125,7 @@ aspect ratio {{ASPECT}}, resolution short side >= 1024px, output PNG with alpha.
 
 ## 生成 → 投入運用
 
-1. Codex / Higgsfield で 4 種を生成
+1. Codex (GPT-Image 2) で 4 種を生成 (gpt-image-2 のみ — このプロジェクトの確定運用)
 2. `tmp/alpha_pending/<NN>/` に raw 投入 (回ごとに連番)
 3. Claude が `assets/zukan/frames/` に最終配置 + `pngquant --quality=70-90` で最適化
 4. `index.html` の `FRAME_SRC` を `.svg` → `.png` に切り替え (1 行差分)
