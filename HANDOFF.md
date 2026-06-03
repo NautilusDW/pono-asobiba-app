@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-03 - [batch:247-maze-stage1-night-map] Codex: user 指示「迷路1面マップを夜版へ」を受領。HANDOFF / git log / `maze/imageStages/` / `_index.json` を確認し、通常進行の1面は `ステージ1：森の入り口.json` → `ステージ1：森の入り口.jpg` 参照、同件の完了済み成果物なしと判断。経路座標を保つため再生成ではなく既存画像の夜色変換で差し替え、`sw.js` をバンプして確認する。 (by Codex)
 - 2026-06-03 - [batch:246-bento-shiozake-raw-wet] DONE - Codex: user 指摘「焼く前が焼いてあるようにも見える / もっとみずみずしくテカっている感じ」を受け、塩鮭シートを再生成。`tmp/alpha_pending/245_bento_shiozake_raw_wet_gpt2/shiozake_front_back_3stage_raw_wet.png` に、左列 raw の赤み・水分ハイライト・冷たい銀皮を強めた 2x3 raw を納品。旧 `244` は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
 - 2026-06-03 - [batch:245-bento-shiozake-front-back] DONE - Codex: user 指摘「そういう切り方ではなく塩鮭」を受け、サーモンを塩鮭形状で再生成。`tmp/alpha_pending/244_bento_shiozake_front_back_gpt2/shiozake_front_back_3stage_raw.png` に、参照写真に寄せた細長い塩鮭の 2x3 raw (上段=身側、下段=皮側、列=生/途中/焼き上がり) を納品。旧 `241`/`242`/`243` の salmon raw は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
 - 2026-06-03 - [batch:244-bento-salmon-tight-front-back-pair] DONE - Codex: user 指摘「上下で表裏セットに見えない / 幅が変わりすぎ」を受け、サーモンを再々生成。`tmp/alpha_pending/243_bento_salmon_front_back_tight_pair_gpt2/salmon_front_back_tight_pair_3stage_raw.png` に、各列の上下が同じ切り身の表裏に見えるよう外形・幅・厚みを揃えた 2x3 raw を納品。旧 `242` は superseded と README に明記。alpha 抜き・切り抜き・final assets 上書きは未実施。 (by Codex)
