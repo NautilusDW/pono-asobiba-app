@@ -12,7 +12,7 @@ The earlier salmon sheet looked too much like saba/mackerel and did not clearly 
 
 This sheet was also rejected because the top/bottom pairs still did not read clearly enough as the same salmon cutlet flipped over, and the width/silhouette varied too much.
 
-Use the shiozake corrected sheet in `tmp/alpha_pending/244_bento_shiozake_front_back_gpt2/` instead.
+Use the shiozake corrected sheet in `tmp/alpha_pending/245_bento_shiozake_raw_wet_gpt2/` instead.
 
 ## File
 

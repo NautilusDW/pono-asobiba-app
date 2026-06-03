@@ -13,7 +13,7 @@ Codex did not remove alpha, crop, or overwrite the final `assets/images/...` fil
 Do not use `salmon_skin_side_3stage_sheet_raw.png` for final salmon assets.
 It was rejected because it looked too much like saba/mackerel and did not clearly show the required salmon front/back relationship.
 
-Use the shiozake corrected sheet in `tmp/alpha_pending/244_bento_shiozake_front_back_gpt2/` instead.
+Use the shiozake corrected sheet in `tmp/alpha_pending/245_bento_shiozake_raw_wet_gpt2/` instead.
 
 ## Files
 
