@@ -2430,8 +2430,8 @@ function _restoreFromServerDef(def, fname) {
     const img = new Image();
     img.onload = function() {
       state.image = img;
-      state.imgW = img.naturalWidth;
-      state.imgH = img.naturalHeight;
+      state.imgW = (def.viewBox && def.viewBox.w > 0) ? def.viewBox.w : img.naturalWidth;
+      state.imgH = (def.viewBox && def.viewBox.h > 0) ? def.viewBox.h : img.naturalHeight;
       state.imgFileName = baseName + '.' + ext;
       if (emptyMsg) emptyMsg.style.display = 'none';
       if (typeof resizeCanvas === 'function') resizeCanvas();
