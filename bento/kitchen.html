@@ -3100,12 +3100,17 @@ body.layout-editor-on .egg-glass-lid {
   transition: none;
   z-index: 12;
 }
-/* v768: closed state = visual feedback only (opacity / pointer / cursor).
-   Position & size are intentionally left to LayoutApplier inline styles
-   (saved-layout.json .egg-glass-lid|0) so editor edits stick on snap.
-   Egg lid (#grill-stage.egg-lid-closed .egg-glass-lid) is independent and untouched. */
+/* v769: closed state position/size HARDCODED.
+   Rationale: saved-layout.json `.egg-glass-lid|0` is tuned for the EGG stage
+   (tx=-445.85px等), so applying it to the salmon CLOSED pose throws the lid
+   off-screen ("閉められません" bug). Use the v767 hardcoded pose (43%/32%/53%)
+   that matches the pan center — egg lid path is independent and untouched. */
 #grill-stage.salmon-lid-closed:not(.is-served) .egg-glass-lid.show-for-salmon {
+  left: 43%;
+  top: 32%;
+  width: 53%;
   opacity: 1;
+  transform: scale(1);
   pointer-events: none;
   cursor: default;
 }
@@ -3440,7 +3445,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=768');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=769');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -12981,10 +12986,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       // Snap to closed pose + start the timing gauge for back-side cook.
       state.cookSalmonLidClosed = true;
       resetSalmonLidToHome();
-      // v768: re-apply editor saved-layout values (w/h/tx/ty) so closed pose
-      // honors editor edits. resetSalmonLidToHome cleared the drag inline styles
-      // including transform, so LayoutApplier must re-write them. apply is idempotent.
-      if (typeof reapplyKnifeLayout === 'function') reapplyKnifeLayout();
+      // v769: do NOT reapply saved-layout here — `.egg-glass-lid|0` values are
+      // tuned for the egg stage (tx=-445.85px) and would throw the lid off-screen.
+      // Position/size for the salmon CLOSED pose comes from the CSS hardcode in
+      // `.salmon-lid-closed:not(.is-served) .egg-glass-lid.show-for-salmon`.
       if (els.grillStage) els.grillStage.classList.add('salmon-lid-closed');
       showSubStepBanner('タイミングよく タップ！');
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
@@ -13239,7 +13244,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=768';
+    return base + '?v=769';
   }
 
   function getCookImageConfig(ing, action) {
