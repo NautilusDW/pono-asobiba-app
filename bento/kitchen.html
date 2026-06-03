@@ -3445,7 +3445,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=769');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=773');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -6278,11 +6278,21 @@ body.layout-editor-on .bowl-fill-mask::after {
     {
       id: 'potato', name: 'じゃがいも', emoji: '🥔', piece: '🥔',
       chopCount: 9, implemented: true,
+      cookStartActionIndex: 0,
       cookingActions: [
         { type: 'chop' },
+        { type: 'prep', prepKind: 'mash_potato', label: 'じゃがいもを つぶそう' },
+        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを まぜよう' },
+        { type: 'prep', prepKind: 'shape_korokke', label: 'こばんがたに しよう' },
+        { type: 'prep', prepKind: 'bread_korokke', label: 'ころもを つけよう' },
+        { type: 'fry', label: 'きつねいろに あげよう', stages: 2 },
       ],
       prepActions: [
         { type: 'chop' },
+        { type: 'prep', prepKind: 'mash_potato', label: 'じゃがいもを つぶそう' },
+        { type: 'prep', prepKind: 'mix_mince', label: 'ひきにくを まぜよう' },
+        { type: 'prep', prepKind: 'shape_korokke', label: 'こばんがたに しよう' },
+        { type: 'prep', prepKind: 'bread_korokke', label: 'ころもを つけよう' },
       ],
       imageBase: 'potato/potato_001',
       fridgeImage: '../assets/images/bento/cooking/potato/potato_002.png',
@@ -6525,8 +6535,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     {
       id: 'shrimp_breaded', name: 'エビフライ', emoji: '🍤', piece: '🍤',
       chopCount: 1, implemented: true,
+      cookStartActionIndex: 0,
       cookingActions: [
+        { type: 'prep', prepKind: 'bread_shrimp', label: 'ころもを つけよう' },
         { type: 'fry', label: 'サクッと あげよう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'prep', prepKind: 'bread_shrimp', label: 'ころもを つけよう' },
       ],
       cookImages: {
         fry: {
@@ -6538,8 +6553,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     {
       id: 'korokke_raw', name: 'コロッケ', emoji: '🟤', piece: '🟤',
       chopCount: 1, implemented: true,
+      cookStartActionIndex: 0,
       cookingActions: [
+        { type: 'prep', prepKind: 'bread_korokke', label: 'ころもを つけよう' },
         { type: 'fry', label: 'きつねいろに あげよう', stages: 2 },
+      ],
+      prepActions: [
+        { type: 'prep', prepKind: 'bread_korokke', label: 'ころもを つけよう' },
       ],
       cookImages: {
         fry: {
@@ -6880,6 +6900,50 @@ body.layout-editor-on .bowl-fill-mask::after {
       steps: [
         { src: '../assets/images/bento/cooking/prep/shape/shape_tsukune_001_mound.png', label: 'とりひきにくを まとめよう', caption: 'ころころ ドラッグ！', burst: 'ころころ！' },
         { src: '../assets/images/bento/cooking/prep/shape/shape_tsukune_003_shaped.png', label: 'できあがり', caption: 'つくねの かたちに なったよ！', burst: 'できた！' },
+      ],
+    },
+    mash_potato: {
+      kind: 'mash_potato',
+      dragPrep: true,
+      dragDistanceScale: 2.2,
+      startSpeech: 'じゃがいもを ぐにぐに つぶそう！',
+      completeSpeech: 'じゃがいもが なめらかに なったよ！',
+      steps: [
+        { src: '../assets/images/bento/cooking/potato/potato_boiled_001.png', label: 'じゃがいもを ボウルへ', caption: 'ぐにぐに ドラッグ！', burst: 'ぽとん！' },
+        {
+          src: '../assets/images/bento/cooking/potato/potato_mash_002.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/potato/potato_mash_002.png',
+            '../assets/images/bento/cooking/potato/potato_mash_003.png',
+          ],
+          label: 'ぐにぐに つぶそう',
+          caption: 'だんだん なめらかに！',
+          burst: 'ぐにぐに！',
+        },
+        {
+          src: '../assets/images/bento/cooking/potato/potato_mash_003.png',
+          brushSrcs: [
+            '../assets/images/bento/cooking/potato/potato_mash_003.png',
+            '../assets/images/bento/cooking/potato/potato_mash_002.png',
+          ],
+          label: 'もっと つぶそう',
+          caption: 'あとすこし！',
+          burst: 'なめらか！',
+        },
+        { src: '../assets/images/bento/cooking/potato/potato_mash_003.png', label: 'できあがり', caption: 'マッシュポテトが できたよ！', burst: 'できた！' },
+      ],
+    },
+    shape_korokke: {
+      kind: 'shape_korokke',
+      shapePrep: true,
+      shapeType: 'patty',
+      shapeDistanceScale: 1.08,
+      startSpeech: 'コロッケを こばんがたに かたちづくろう！',
+      completeSpeech: 'コロッケの かたちが できたよ！',
+      steps: [
+        { src: '../assets/images/bento/cooking/korokke/prep/korokke_dough_001.png', label: 'たねを まとめよう', caption: 'ドラッグで ぎゅっ！', burst: 'ぎゅっ！' },
+        { src: '../assets/images/bento/cooking/korokke/prep/korokke_shape_002.png', label: 'こばんに しよう', caption: 'まとまってきたよ！', burst: 'ぺたん！' },
+        { src: '../assets/images/bento/cooking/korokke/prep/korokke_shape_003.png', label: 'できあがり', caption: 'ころもを つけられるよ！', burst: 'できた！' },
       ],
     },
     bread_shrimp: {
@@ -13244,7 +13308,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=769';
+    return base + '?v=773';
   }
 
   function getCookImageConfig(ing, action) {
