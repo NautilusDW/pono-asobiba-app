@@ -2468,12 +2468,26 @@ function _checkCreatureCollision(px, py) {
 // Detect obstacle collision during a walk. Obstacles are not negotiable —
 // pono just bounces back to the node it left from.
 let _imgPauseUntil = 0;
+function _obstacleCollisionRadius(stage, obstacle) {
+  const h = stage.viewBox.h;
+  const kind = obstacle && obstacle.kind;
+  const fallback = h / 28;
+  const byKind = {
+    tree: h / 36,
+    stump: h / 30,
+    rock: h / 30,
+    pond: h / 24,
+    hole: h / 24,
+  };
+  return Math.max(h / 56, byKind[kind] || fallback);
+}
+
 function _checkObstacleCollision(px, py) {
   if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
-  const TRIGGER_R2 = (stage.viewBox.h / 18) * (stage.viewBox.h / 18);
   for (const o of stage.obstacles) {
     const dx = px - o.x, dy = py - o.y;
-    if (dx*dx + dy*dy < TRIGGER_R2) {
+    const r = _obstacleCollisionRadius(stage, o);
+    if (dx*dx + dy*dy < r*r) {
       const backNodeId = walkAnim.startNodeId;
       walkAnim = null;
       // ぶつかったところで一度静止 (戻りはしない) してから戻る
