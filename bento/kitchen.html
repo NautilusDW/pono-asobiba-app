@@ -3092,7 +3092,7 @@ body.layout-editor-on .egg-glass-lid {
   z-index: 7;
   pointer-events: auto;
   cursor: grab;
-  transition: opacity 0.45s ease, left 0.22s ease, top 0.22s ease, width 0.22s ease;
+  transition: opacity 0.45s ease;
 }
 #grill-stage.salmon-lid-dragging .egg-glass-lid.show-for-salmon {
   opacity: 1;
@@ -3100,10 +3100,11 @@ body.layout-editor-on .egg-glass-lid {
   transition: none;
   z-index: 12;
 }
+/* v768: closed state = visual feedback only (opacity / pointer / cursor).
+   Position & size are intentionally left to LayoutApplier inline styles
+   (saved-layout.json .egg-glass-lid|0) so editor edits stick on snap.
+   Egg lid (#grill-stage.egg-lid-closed .egg-glass-lid) is independent and untouched. */
 #grill-stage.salmon-lid-closed:not(.is-served) .egg-glass-lid.show-for-salmon {
-  left: var(--grill-lid-left, 43%);
-  top: var(--grill-lid-top, 32%);
-  width: var(--grill-lid-w, 53%);
   opacity: 1;
   pointer-events: none;
   cursor: default;
@@ -3439,7 +3440,7 @@ body.layout-editor-on .egg-glass-lid {
   width: 28%;
   aspect-ratio: 1.4 / 1;
   transform: translate(-50%, -50%);
-  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=767');
+  background-image: url('../assets/images/bento/cooking/oil/oil_layer.png?v=768');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -12980,6 +12981,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       // Snap to closed pose + start the timing gauge for back-side cook.
       state.cookSalmonLidClosed = true;
       resetSalmonLidToHome();
+      // v768: re-apply editor saved-layout values (w/h/tx/ty) so closed pose
+      // honors editor edits. resetSalmonLidToHome cleared the drag inline styles
+      // including transform, so LayoutApplier must re-write them. apply is idempotent.
+      if (typeof reapplyKnifeLayout === 'function') reapplyKnifeLayout();
       if (els.grillStage) els.grillStage.classList.add('salmon-lid-closed');
       showSubStepBanner('タイミングよく タップ！');
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ゲージの あおで タップ';
@@ -13234,7 +13239,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       base = '../assets/images/bento/cooking/' + stagePath + '.png';
     }
-    return base + '?v=767';
+    return base + '?v=768';
   }
 
   function getCookImageConfig(ing, action) {
