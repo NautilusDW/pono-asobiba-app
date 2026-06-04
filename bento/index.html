@@ -322,8 +322,8 @@ html, body {
 /* ===== 自由配置モード ===== */
 .bento-box.free-layout-shell {
   padding: 0;
-  background: transparent;
-  border: 0;
+  background: transparent !important;
+  border: 0 !important;
   box-shadow: none;
 }
 .bento-inner.free-layout-inner {
@@ -1149,12 +1149,36 @@ html, body {
   touch-action: none;
 }
 .free-palette-item:active { transform: scale(0.94); }
+/* ── ティアロック共通スタイル (free/book ユーザー向け) ──
+   静止画化 (transition/transform 無効) + 中央に 🔒 を疑似要素で表示。
+   タップ自体は受けて showSubscribePromo() の柔らかいモーダルへ誘導する。 */
 .tier-locked {
-  filter: saturate(0.3) brightness(0.92);
-  opacity: 0.55;
+  filter: saturate(0.35) brightness(0.94);
+  opacity: 0.6;
+  position: relative;
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
 }
-.tier-locked:hover {
-  opacity: 0.7;
+.tier-locked:hover,
+.tier-locked:active,
+.tier-locked:focus {
+  opacity: 0.6;
+  transform: none !important;
+  filter: saturate(0.35) brightness(0.94);
+}
+.tier-locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.8rem;
+  line-height: 1;
+  z-index: 5;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  opacity: 0.95;
 }
 .free-palette-item.selected {
   background-image: url('../assets/images/bento/ui/picker_card_selected.png');
@@ -1298,12 +1322,12 @@ html, body {
   padding: 4px;
 }
 .complete-bento.free-complete-bento {
-  width: min(96vw, 860px);
+  width: min(92vw, 760px);
 }
 .complete-bento.free-complete-stack {
   position: relative;
   width: min(94vw, 820px);
-  min-height: clamp(500px, 68vh, 610px);
+  min-height: var(--stack-height, 528px);
   aspect-ratio: auto;
   display: block;
   padding: 0;
@@ -1315,7 +1339,7 @@ html, body {
 .free-complete-build-stage {
   position: relative;
   width: 100%;
-  height: clamp(500px, 68vh, 610px);
+  height: var(--stack-height, 528px);
   overflow: visible;
 }
 .free-complete-tier {
@@ -2049,7 +2073,7 @@ html, body {
 }
 .complete-left .complete-bento {
   width: 100%;
-  max-width: none;
+  max-width: 820px;
 }
 .complete-right {
   width: min(92%, 760px);
@@ -2240,8 +2264,8 @@ html, body {
   .complete-right { width: 96%; flex-direction: column; }
   .complete-pono-slot { width: 126px; height: 92px; }
   .complete-pono-big { width: 126px; height: 126px; }
-  .complete-bento.free-complete-stack,
-  .free-complete-build-stage { min-height: 360px; }
+  .complete-bento.free-complete-stack { min-height: var(--stack-height-sp, 320px); }
+  .free-complete-build-stage { height: var(--stack-height-sp, 320px); min-height: var(--stack-height-sp, 320px); }
 }
 
 /* ===== Favorites header button ===== */
@@ -2711,10 +2735,10 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 163, rotation: 3 },
   { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 292, rotation: -4 },
   { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', size: 170, rotation: 0, brushItem: true, brushLevel: 1, stackTarget: true, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
-  { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 72, rotation: -4 },
+  { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 86, rotation: -4 },
   { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 136, rotation: 1 },
   { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 136, rotation: -1 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',           name: 'いちご',           cat: 'fruit', sk: 'g', size: 96,  rotation: -5 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',           name: 'いちご',           cat: 'fruit', sk: 'g', size: 116, rotation: -5 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_melon.png',            name: 'メロン',           cat: 'fruit', sk: 'g', size: 118, rotation: 2 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_mikan.png',            name: 'みかん',           cat: 'fruit', sk: 'g', size: 108, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_ringo.png',            name: 'りんご',           cat: 'fruit', sk: 'g', size: 116, rotation: 3 },
@@ -6177,7 +6201,12 @@ function loadFreeLayoutStage() {
   const app = document.getElementById('app');
   if (app) app.classList.add('free-layout-active');
   const box = document.querySelector('.bento-box');
-  if (box) box.classList.add('free-layout-shell');
+  if (box) {
+    box.classList.add('free-layout-shell');
+    // applyBentoColor() が書き込んだインラインスタイル(ピンク帯/ブルー帯)を自由配置モードでは無効化
+    box.style.background = '';
+    box.style.borderColor = '';
+  }
   const bentoInner = document.getElementById('bento-inner');
   bentoInner.className = 'bento-inner free-layout-inner';
   bentoInner.innerHTML = '<div class="free-layout-stage" id="free-layout-stage"></div>';
@@ -6271,6 +6300,12 @@ function renderFreeCompleteBento(host, items, boxId) {
   host.className = 'complete-bento free-complete-bento' + (tierCount > 1 ? ' free-complete-stack' : '');
   host.innerHTML = '';
   if (tierCount > 1) {
+    // 段数に応じてステージ高さを動的に調整 (2段=528px, 3段=576px, 4段+=608px)
+    // CSS 側の var(--stack-height) を読み、空き枠が下に固まる問題を解消する
+    const stackH = tierCount <= 2 ? 528 : (tierCount === 3 ? 576 : 608);
+    const stackHSp = tierCount <= 2 ? 320 : (tierCount === 3 ? 360 : 400);
+    host.style.setProperty('--stack-height', stackH + 'px');
+    host.style.setProperty('--stack-height-sp', stackHSp + 'px');
     const build = document.createElement('div');
     build.className = 'free-complete-build-stage';
     for (let tier = 1; tier <= tierCount; tier++) {
@@ -6980,6 +7015,7 @@ function applyBentoColor() {
     const p = JSON.parse(localStorage.getItem('pono_profile') || '{}');
     const box = document.querySelector('.bento-box');
     const cbox = document.querySelector('.complete-bento');
+    const isFreeShell = !!(box && box.classList.contains('free-layout-shell'));
     let bg, border, div1, div2;
     if (p.gender === 'girl') {
       bg = '#F9A8D4'; border = '#E879A8'; div1 = '#F472B6'; div2 = '#EC4899';
@@ -6988,7 +7024,16 @@ function applyBentoColor() {
     } else {
       return;
     }
-    if (box) { box.style.background = bg; box.style.borderColor = border; }
+    if (box) {
+      if (isFreeShell) {
+        // 自由配置モードでは外殻に色を載せない（ピンク帯/ブルー帯防止）
+        box.style.background = '';
+        box.style.borderColor = '';
+      } else {
+        box.style.background = bg;
+        box.style.borderColor = border;
+      }
+    }
     if (cbox) { cbox.style.background = bg; cbox.style.borderColor = border; }
     // 仕切りの色も統一（CSS変数で一括制御）
     document.documentElement.style.setProperty('--div-bg', `linear-gradient(180deg, ${div1}, ${div2})`);

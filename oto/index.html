@@ -1209,14 +1209,37 @@
     color: #fff;
   }
 
-  /* ── ティアロック共通グレーアウト (free/book ユーザー向け、視覚的に「使えない」と示す) ── */
-  /* TIER_POLICY.md §3: 鍵マーク・×印は禁止、グレーアウトのみで表現する */
+  /* ── ティアロック共通スタイル (free/book ユーザー向け) ──
+     TIER_POLICY.md §3: グレーアウト + 中央🔒で表現。 ×印は使わない。
+     静止画化 (transition/transform 無効) + 中央に 🔒 を疑似要素で表示。
+     タップ自体は受けて showSubscribePromo() の柔らかいモーダルへ誘導する。 */
   .tier-locked {
-    filter: saturate(0.3) brightness(0.92);
-    opacity: 0.55;
+    filter: saturate(0.35) brightness(0.94);
+    opacity: 0.6;
+    position: relative;
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
   }
-  .tier-locked:hover {
-    opacity: 0.7;
+  .tier-locked:hover,
+  .tier-locked:active,
+  .tier-locked:focus {
+    opacity: 0.6;
+    transform: none !important;
+    filter: saturate(0.35) brightness(0.94);
+  }
+  .tier-locked::after {
+    content: '🔒';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    line-height: 1;
+    z-index: 5;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+    opacity: 0.95;
   }
 
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
