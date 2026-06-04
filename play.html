@@ -483,19 +483,23 @@
     .game-card.is-coming-soon:hover .game-card__peek {
       opacity: 0;          /* don't tease previews for unreleased games */
     }
-    .game-card[data-id="oto"] .game-card__peek::after {
+    .game-card[data-id="oto"] .game-card__text::before {
       content: '';
       position: absolute;
-      inset: 0;
+      inset: -8px -28px -9px -16px;
+      border-radius: 22px;
       pointer-events: none;
       background:
         linear-gradient(
           to right,
-          rgba(250, 244, 225, 0) 0%,
-          rgba(250, 244, 225, 0) 55%,
-          rgba(250, 244, 225, 0.86) 63%,
-          rgba(250, 244, 225, 0) 73%
+          rgba(255, 249, 231, 0.97) 0%,
+          rgba(255, 249, 231, 0.92) 72%,
+          rgba(255, 249, 231, 0) 100%
         );
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.58),
+        inset 0 0 0 1px rgba(150, 105, 54, 0.12);
+      z-index: -1;
     }
     /* Make sure title/desc still sit above the peek layer.
        Round thumb (z 2) and play button (no explicit z; needs lifting)
@@ -1536,10 +1540,9 @@
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/ui/thumb_oto.webp',
         thumbPos: '34% 54%',
-        // 横長カードでは元背景のポノがテキストに重なるため、
-        // oto だけカード内プレビューを縮小して右寄せし、左側の紙面を読みやすく残す。
-        peekSize: 'auto 90%',
-        peekPos: '100% 50%',
+        // 元背景のポノがタイトル文字へ重なるため、絵の縮小ではなく
+        // テキスト側に紙色プレートを敷いて読みやすさを確保する。
+        peekPos: '39% 48%',
         tier: 'free'
       },
       {

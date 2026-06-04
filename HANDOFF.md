@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-04 - [batch:256-oto-card-peek-no-shrink] DONE - Codex: user 指摘「縮小するのはなし」を受け、`play.html` の oto カード背景プレビューを通常 `cover` 表示へ戻し、文字ブロック背面だけ紙色プレートを追加。Playwrightで oto カード hover 表示・JSエラーなし・`background-size: cover`・スクショ目視を確認。`sw.js` は v799。 (by Codex)
 - 2026-06-04 - [batch:255-oto-card-peek-readable] DONE - Codex: user 指摘「音タッチカードのテキスト背面にタイトル絵のトノ顔が被って読みにくい」を受領。`play.html` のカードプレビューに `--card-peek-size` を追加し、oto カードだけ `play_oto_title_back.webp` を `auto 90%` + 右寄せで表示、左側は紙面を残すよう調整。さらに oto のプレビュー左端に紙色グラデーションをかけ、背景の縦切れを軽減。Playwrightで oto カード hover 表示、JSエラーなし、`background-size: auto 90%`、スクショ目視を確認。`sw.js` は v798。 (by Codex)
 - 2026-06-04 - [batch:254-oto-thumb-child-hand] Codex: user 指摘「肉球がこっち向きで逆、手は人間の子供の手に」を受領。`thumb_oto.webp` をGPT Image 2 built-in生成で、人間の子どもの手の甲/指先が見える向きで音符ボタンを押すサムネへ差し替える。ローカル描画は禁止、処理は512px WebP変換のみ。 (by Codex)
 - 2026-06-04 - [batch:254-oto-thumb-child-hand] DONE - Codex: `thumb_oto.webp` をGPT Image 2 built-in生成物で丸ごと差し替え。生成元は `ig_0f728c7cffb86df9016a21589744e88191a6c2f5d398560cf1.png`、ローカル処理は512px WebP変換のみ。人間の子どもの手の甲側/指先で音符ボタンを押す構図に変更。Playwrightで `play.html` 横画面表示、`thumb_oto.webp` HTTP 200、JSエラーなし、スクショ目視を確認。`sw.js` は v794。 (by Codex)
