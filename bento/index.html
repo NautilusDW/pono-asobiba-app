@@ -931,52 +931,126 @@ html, body {
   height: 38px;
   object-fit: contain;
 }
-.free-context-toolbar {
+/* ── 下部固定ツールバー (旧 .free-context-toolbar 後継) ──
+   v804 より stage 直下に常駐する下部固定バーに置換。 構造:
+     .free-context-bar > .sel-thumb (左、 円形サムネ)
+                       > .hint-text (選択なし時)
+                       > .actions (右、 操作ボタン群)
+   状態:
+     - 選択なし時: .is-empty → ヒント文を表示、 ボタンは disabled (opacity 0.3 / pe none)
+     - cup / divider 選択時: 小/中/大 + OK/なおす
+     - それ以外: ⇺ ⇻ ↓ ↑ つぎを えらぶ */
+.free-context-bar {
   position: absolute;
-  z-index: 36;
+  z-index: 41;
+  left: clamp(18px, 3vw, 38px);
+  bottom: 8px;
+  width: calc(100% - clamp(320px, 36%, 390px) - 48px);
+  height: 64px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 3px solid #34D399;
+  border-radius: 18px;
+  background: rgba(236, 253, 245, 0.96);
+  box-shadow: 0 6px 14px rgba(34, 120, 82, 0.18);
+  color: #064E3B;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+#app.free-layout-active > .free-context-bar {
+  display: flex;
+}
+.free-context-bar.is-empty .actions { opacity: 0.3; pointer-events: none; }
+.free-context-bar.is-empty .sel-thumb { opacity: 0.3; }
+.free-context-bar .sel-thumb {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 2px solid #BBF7D0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 5px 7px;
-  border: 3px solid #34D399;
-  border-radius: 999px;
-  background: rgba(236, 253, 245, 0.96);
-  box-shadow: 0 7px 16px rgba(34, 120, 82, 0.18);
-  color: #064E3B;
-  transform: translate(-50%, 0);
-  pointer-events: auto;
+  overflow: hidden;
+  pointer-events: none;
 }
-.free-context-toolbar.above {
-  transform: translate(-50%, -100%);
+.free-context-bar .sel-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
-.free-context-toolbar button {
-  min-width: 34px;
-  height: 30px;
-  padding: 0 8px;
+.free-context-bar .sel-thumb .sel-emoji { font-size: 24px; line-height: 1; }
+.free-context-bar .hint-text {
+  flex: 1;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #047857;
+  letter-spacing: 0.02em;
+}
+.free-context-bar .actions {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.free-context-bar .actions button {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
   border: 2px solid #8AD6B6;
-  border-radius: 999px;
+  border-radius: 12px;
   background: #FFFFFF;
   color: #064E3B;
   font-family: inherit;
-  font-size: 0.55rem;
+  font-size: 0.66rem;
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
 }
-.free-context-toolbar button.active {
+.free-context-bar .actions button.active {
   background: #BBF7D0;
   border-color: #22C55E;
 }
-.free-context-toolbar button.primary {
-  min-width: 54px;
+.free-context-bar .actions button.primary {
+  min-width: 64px;
   background: #FFE1A8;
   border-color: #F2915A;
   color: #6B3E16;
 }
-.free-context-toolbar button:disabled {
+.free-context-bar .actions button.cycle {
+  background: #DCFCE7;
+  border-color: #34D399;
+  color: #064E3B;
+  font-size: 0.6rem;
+  min-width: 86px;
+}
+.free-context-bar .actions button:disabled {
   opacity: 0.38;
   cursor: default;
+}
+/* food アイテムの hit area を 12% 拡張 (透明ハロー) してタップしやすくする。
+   .free-placed-item は CSS transform で translate(-50%, -50%) しているため、
+   ::before の inset:-12% で中心アンカーを保ったままハロー領域が広がる。
+   z-index:-1 で見た目には影響しない (親の z-index は item.layer)。
+   brush-locked / cup-child-locked / mask-preview-dummy では halo も無効化する。 */
+.free-placed-item.type-food::before {
+  content: '';
+  position: absolute;
+  inset: -12%;
+  z-index: -1;
+  background: transparent;
+  pointer-events: auto;
+}
+.free-placed-item.brush-locked::before,
+.free-placed-item.cup-child-locked::before,
+.free-placed-item.free-mask-preview-dummy::before {
+  pointer-events: none;
 }
 .free-placed-item.brush-locked {
   pointer-events: none;
@@ -1581,8 +1655,11 @@ html, body {
   gap: 6px;
   pointer-events: none;
 }
+/* v804 以降は同じ下部スペースに .free-context-bar が常駐するため、
+   ポノ吹き出しは非表示にした (ポノの口頭ガイドは右の speech-bubble と
+   .free-main-guide オーバーレイで担保)。 */
 #app.free-layout-active > .free-bottom-guide {
-  display: flex;
+  display: none;
 }
 .free-bottom-pono {
   width: 94px;
@@ -2575,6 +2652,13 @@ html, body {
   <div class="free-bottom-guide" id="free-bottom-guide" aria-live="polite">
     <img src="../assets/images/bento/ui/decor_pono_peek.png" class="free-bottom-pono" id="free-pono-img" alt="ポノ">
     <div class="free-bottom-speech" id="free-speech">おなか すいたなー</div>
+  </div>
+  <!-- v804: 下部固定ツールバー (旧 .free-context-toolbar 後継、 stage 下に常駐)。
+       中身は renderFreeContextBar() が選択状態に応じて差し替える。 -->
+  <div class="free-context-bar is-empty" id="free-context-bar" aria-live="polite">
+    <div class="sel-thumb" aria-hidden="true"></div>
+    <div class="hint-text">おかずを えらんでね</div>
+    <div class="actions"></div>
   </div>
 </div>
 
@@ -4675,10 +4759,45 @@ function eventToFreePoint(e) {
 }
 function beginFreeItemDrag(e, uid) {
   if (e && e.cancelable) e.preventDefault();
+  // v804: pointerdown 時点では setFreeItemPosition を呼ばない。
+  // 「ただのタップ (= 選択のみ)」 と 「ドラッグ (= 位置変更)」 を区別するため、
+  // pointermove で 8px 以上動いた時に初めて drag を開始する。
+  // - dragStarted: false → 単純タップ (lastTap 記録 + 同位置 200ms 自動循環)
+  // - dragStarted: true  → 通常ドラッグ
   bringFreeItemForward(uid);
-  freeDragState = { uid };
-  const p = e ? eventToFreePoint(e) : null;
-  if (p) setFreeItemPosition(uid, p.x, p.y);
+  const startClientX = (e && e.clientX) || 0;
+  const startClientY = (e && e.clientY) || 0;
+  freeDragState = {
+    uid,
+    startClientX,
+    startClientY,
+    dragStarted: false,
+    DRAG_THRESHOLD_PX: 8,
+  };
+  // 同位置タップ循環 (option): freeLastTapInfo に 200ms 以内の前回タップを記録、
+  // 同 uid を同位置で連続タップしたら次候補へ循環する。
+  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  if (window.freeLastTapInfo) {
+    const last = window.freeLastTapInfo;
+    const dt = now - last.t;
+    const dx = startClientX - last.x;
+    const dy = startClientY - last.y;
+    if (dt <= 220 && Math.hypot(dx, dy) <= 10) {
+      // 同位置の連続タップ → 既に同 uid が選択されているなら循環、 違う uid なら通常選択
+      if (last.uid === uid) {
+        // 一旦 renderFreeLayoutStage で選択を反映してから循環 (UI 整合)
+        renderFreeLayoutStage();
+        renderFreeLayoutControls();
+        cycleSelectionAtSelectedPoint();
+        window.freeLastTapInfo = { t: now, x: startClientX, y: startClientY, uid: freeSelectedItemUid };
+        // pointermove/pointerup は通常通り登録 (drag-after-cycle も許容)
+        window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
+        window.addEventListener('pointerup', onFreeItemDragEnd, { once: true });
+        return;
+      }
+    }
+  }
+  window.freeLastTapInfo = { t: now, x: startClientX, y: startClientY, uid };
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
@@ -4687,6 +4806,13 @@ function beginFreeItemDrag(e, uid) {
 function onFreeItemDragMove(e) {
   if (!freeDragState) return;
   if (e.cancelable) e.preventDefault();
+  // v804: 閾値超え判定 — 8px 未満は無視 (タップ扱い、 ワープ抑止)
+  if (!freeDragState.dragStarted) {
+    const dx = e.clientX - freeDragState.startClientX;
+    const dy = e.clientY - freeDragState.startClientY;
+    if (Math.hypot(dx, dy) < freeDragState.DRAG_THRESHOLD_PX) return;
+    freeDragState.dragStarted = true;
+  }
   const p = eventToFreePoint(e);
   if (!p) return;
   setFreeItemPosition(freeDragState.uid, p.x, p.y);
@@ -4696,14 +4822,22 @@ function onFreeItemDragEnd(e) {
   if (!freeDragState) return;
   if (e && e.cancelable) e.preventDefault();
   const uid = freeDragState.uid;
+  const dragWasReal = !!freeDragState.dragStarted;
   freeDragState = null;
   window.removeEventListener('pointermove', onFreeItemDragMove);
-  finalizeFreeItemPosition(uid);
-  renderFreeLayoutStage();
-  renderFreeLayoutControls();
-  const el = document.querySelector(`[data-free-uid="${uid}"]`);
-  spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
-  playPop();
+  // v804: 単純タップ (= drag 閾値未満) では位置確定処理 (snap + pop アニメ + sparkles)
+  // を行わない。 選択状態だけ整える。
+  if (dragWasReal) {
+    finalizeFreeItemPosition(uid);
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+    const el = document.querySelector(`[data-free-uid="${uid}"]`);
+    spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
+    playPop();
+  } else {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }
   if (uid === freePendingCupEditorUid) {
     freePendingCupEditorUid = null;
     openCupEditor(uid);
@@ -5447,39 +5581,86 @@ function createFreeContextButton(label, className, onClick, disabled = false) {
   });
   return b;
 }
+// 旧浮遊式ツールバー (item の真下に float) は v804 で廃止し、
+// stage 直下の下部固定ツールバー (#free-context-bar) に置換。
+// 既存呼び出し互換のため関数名 createFreeContextToolbar は残すが、
+// 戻り値は常に null (host.appendChild する物が無い) で、 副作用として
+// renderFreeContextBar() を呼んで下部バーを更新する。
 function createFreeContextToolbar() {
+  renderFreeContextBar();
+  return null;
+}
+// 下部固定ツールバー (#free-context-bar) を選択状態に合わせて再描画する。
+function renderFreeContextBar() {
+  const bar = document.getElementById('free-context-bar');
+  if (!bar) return;
+  const thumbEl = bar.querySelector('.sel-thumb');
+  const hintEl = bar.querySelector('.hint-text');
+  const actionsEl = bar.querySelector('.actions');
+  if (!thumbEl || !hintEl || !actionsEl) return;
+  thumbEl.innerHTML = '';
+  actionsEl.innerHTML = '';
+
   const item = getSelectedFreeItem();
-  if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
-  const toolbar = document.createElement('div');
-  toolbar.className = 'free-context-toolbar';
+  const blocked = isFreeMainGuideBlocking() || freeBrushStampDef;
+  if (!item || blocked) {
+    bar.classList.add('is-empty');
+    hintEl.style.display = '';
+    hintEl.textContent = blocked
+      ? (freeBrushStampDef ? 'キャベツを しくところを タップ' : 'がめんを タップしてね！')
+      : 'おかずを えらんでね';
+    return;
+  }
+  bar.classList.remove('is-empty');
+  hintEl.style.display = 'none';
+
+  // サムネ: 画像があれば img、 無ければ emoji / 形状アイコン
+  const imgSrc = getFreeItemImage(item);
+  if (imgSrc) {
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    img.alt = item.name || '';
+    thumbEl.appendChild(img);
+  } else if (item.emoji) {
+    const sp = document.createElement('span');
+    sp.className = 'sel-emoji';
+    sp.textContent = item.emoji;
+    thumbEl.appendChild(sp);
+  } else {
+    const sp = document.createElement('span');
+    sp.className = 'sel-emoji';
+    sp.textContent = item.type === 'cup' ? '◯' : '▭';
+    thumbEl.appendChild(sp);
+  }
 
   const presets = getAccessorySizePresets(item);
   if (presets.length) {
+    // cup / divider: 小/中/大 + OK/なおす
     const current = getAccessorySizeKey(item);
     presets.forEach(preset => {
-      toolbar.appendChild(createFreeContextButton(
+      actionsEl.appendChild(createFreeContextButton(
         preset.label,
         preset.key === current ? 'active' : '',
         () => setSelectedAccessorySize(preset.key)
       ));
     });
+    if (item.snapTarget) {
+      const editingCup = getEditingCup();
+      const isEditingThisCup = editingCup && editingCup.uid === item.uid;
+      actionsEl.appendChild(createFreeContextButton(
+        isEditingThisCup ? 'OK' : 'なおす',
+        'primary',
+        () => isEditingThisCup ? closeCupEditor() : openCupEditor(item.uid)
+      ));
+    }
+    return;
   }
 
+  // 通常 food/rice/decor: ⇺ ⇻ ↓ ↑ つぎを えらぶ
   if (!item.snapTarget) {
-    toolbar.appendChild(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
-    toolbar.appendChild(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
+    actionsEl.appendChild(createFreeContextButton('⇺', '', () => rotateSelectedItem(-15)));
+    actionsEl.appendChild(createFreeContextButton('⇻', '', () => rotateSelectedItem(15)));
   }
-
-  if (item.snapTarget) {
-    const editingCup = getEditingCup();
-    const isEditingThisCup = editingCup && editingCup.uid === item.uid;
-    toolbar.appendChild(createFreeContextButton(
-      isEditingThisCup ? 'OK' : 'なおす',
-      'primary',
-      () => isEditingThisCup ? closeCupEditor() : openCupEditor(item.uid)
-    ));
-  }
-
   if (canShowLayerControlsForItem(item)) {
     const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
     if (selectedUnit && units.length >= 2 && overlapUnits.length) {
@@ -5487,23 +5668,64 @@ function createFreeContextToolbar() {
       const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
       const canDown = overlapIndexes.some(i => i >= 0 && i < index);
       const canUp = overlapIndexes.some(i => i > index);
-      toolbar.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
-      toolbar.appendChild(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
+      actionsEl.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
+      actionsEl.appendChild(createFreeContextButton('↑', '', () => moveSelectedItemLayer(1), !canUp));
     }
   }
-
-  if (!toolbar.childElementCount) return null;
-  const size = (item.size || 72) * (item.scale || 1);
-  const x = clamp(item.x || FREE_LAYOUT_W / 2, 86, FREE_LAYOUT_W - 86);
-  const belowY = (item.y || FREE_LAYOUT_H / 2) + size / 2 + 12;
-  const canShowBelow = belowY + 38 < FREE_LAYOUT_H - 8;
-  const y = canShowBelow
-    ? clamp(belowY, 8, FREE_LAYOUT_H - 42)
-    : clamp((item.y || FREE_LAYOUT_H / 2) - size / 2 - 12, 48, FREE_LAYOUT_H - 8);
-  if (!canShowBelow) toolbar.classList.add('above');
-  toolbar.style.left = toPctX(x);
-  toolbar.style.top = toPctY(y);
-  return toolbar;
+  // tap-cycle: 現在の選択点で重なっている候補が 2 個以上ある時のみ有効
+  const overlapCandidates = getOverlapCandidatesAtSelected();
+  const cycleDisabled = overlapCandidates.length < 2;
+  actionsEl.appendChild(createFreeContextButton(
+    'つぎを えらぶ',
+    'cycle',
+    () => cycleSelectionAtSelectedPoint(),
+    cycleDisabled
+  ));
+}
+// 仮想座標 (x, y) の AABB に含まれる全 placed item を layer 降順で返す。
+// snapTarget (cup/divider) と装飾 (decor/pick) も対象に含む。
+// AABB は item の中心 (x, y) と size を用い、 scale も考慮 (sqSize = size*scale)。
+function getOverlapAtPoint(x, y) {
+  const hits = placedItems.filter(item => {
+    if (!item) return false;
+    if (item.__maskPreview) return false;
+    const size = (item.size || 72) * (item.scale || 1);
+    const half = size / 2;
+    return Math.abs((item.x || 0) - x) <= half && Math.abs((item.y || 0) - y) <= half;
+  });
+  // layer 降順 (上にあるものが先)
+  return hits.slice().sort((a, b) => (b.layer || 0) - (a.layer || 0));
+}
+function getOverlapCandidatesAtSelected() {
+  const sel = getSelectedFreeItem();
+  if (!sel) return [];
+  // 重なり候補は同 tier かつ 同 parentCup スコープに絞る (異 tier 食材は循環対象外)
+  const all = getOverlapAtPoint(sel.x || 0, sel.y || 0);
+  const tier = getItemTier(sel);
+  const pcup = sel.parentCupId || null;
+  return all.filter(it => {
+    if (it.__maskPreview) return false;
+    // tier check (getItemTier が無い環境 fallback)
+    try {
+      if (typeof getItemTier === 'function' && getItemTier(it) !== tier) return false;
+    } catch (e) {}
+    if ((it.parentCupId || null) !== pcup) return false;
+    return true;
+  });
+}
+// 現在の選択点での候補を layer 降順で並べ、 次のインデックスの食材を選択する。
+function cycleSelectionAtSelectedPoint() {
+  const sel = getSelectedFreeItem();
+  if (!sel) return;
+  const candidates = getOverlapCandidatesAtSelected();
+  if (candidates.length < 2) return;
+  const curIdx = candidates.findIndex(it => it.uid === sel.uid);
+  const nextIdx = (curIdx + 1) % candidates.length;
+  const nextItem = candidates[nextIdx];
+  if (!nextItem) return;
+  freeSelectedItemUid = nextItem.uid;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
 }
 function createFreeMainGuideTapLayer() {
   const layer = document.createElement('div');
@@ -5736,8 +5958,8 @@ function renderFreeLayoutInto(host, opts = {}) {
     host.appendChild(riceLayer);
   }
   if (opts.interactive) {
-    const contextToolbar = createFreeContextToolbar();
-    if (contextToolbar) host.appendChild(contextToolbar);
+    // v804: 浮遊式 toolbar は廃止。 副作用で #free-context-bar を更新するだけ。
+    createFreeContextToolbar();
     if (freeBrushStampDef) {
       const hint = document.createElement('div');
       hint.className = 'free-brush-stamp-hint';
@@ -5761,6 +5983,24 @@ function renderFreeLayoutStage() {
   const stage = document.getElementById('free-layout-stage');
   if (!stage) return;
   renderFreeLayoutInto(stage, { interactive: true });
+  // v804: stage 自身の pointerdown で deselect (子の .free-placed-item は
+  // stopPropagation するためここまで来るのは「背景タップ」のみ)。
+  // 重複アタッチ防止: 既に __freeDeselectBound が true なら skip。
+  if (!stage.__freeDeselectBound) {
+    stage.addEventListener('pointerdown', ev => {
+      // brush mode / cup editor は別ハンドラ優先のため触らない
+      if (freeBrushStampDef) return;
+      if (isFreeMainGuideBlocking()) return;
+      // 食材 (.free-placed-item) の pointerdown は ev.stopPropagation で吸収されているため、
+      // ここに来る = stage 背景タップ。 選択をクリアする。
+      if (freeSelectedItemUid) {
+        freeSelectedItemUid = null;
+        renderFreeLayoutStage();
+        renderFreeLayoutControls();
+      }
+    });
+    stage.__freeDeselectBound = true;
+  }
 }
 function createPaletteVisual(def) {
   const wrap = document.createElement('div');
