@@ -452,7 +452,7 @@
       position: absolute;
       inset: 0;
       background-image: var(--card-peek, none);
-      background-size: cover;
+      background-size: var(--card-peek-size, cover);
       background-position: var(--card-peek-pos, center);
       background-repeat: no-repeat;
       /* Mask placement, tweakable per-card.
@@ -1522,7 +1522,10 @@
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/ui/thumb_oto.webp',
         thumbPos: '34% 54%',
-        peekPos: '39% 48%',
+        // 横長カードでは元背景のポノがテキストに重なるため、
+        // oto だけカード内プレビューを縮小して右寄せし、左側の紙面を読みやすく残す。
+        peekSize: 'auto 145%',
+        peekPos: '100% 50%',
         tier: 'free'
       },
       {
@@ -1707,7 +1710,7 @@
       // ファーストビューのカードも初回 blank になる事故 (2026-05 修正済) の再発防止。
       const loadingAttr = (rep === 0) ? 'eager' : 'lazy';
       return `
-        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
+        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
           <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
