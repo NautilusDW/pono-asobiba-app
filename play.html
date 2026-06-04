@@ -483,6 +483,20 @@
     .game-card.is-coming-soon:hover .game-card__peek {
       opacity: 0;          /* don't tease previews for unreleased games */
     }
+    .game-card[data-id="oto"] .game-card__peek::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(
+          to right,
+          rgba(250, 244, 225, 0) 0%,
+          rgba(250, 244, 225, 0) 55%,
+          rgba(250, 244, 225, 0.86) 63%,
+          rgba(250, 244, 225, 0) 73%
+        );
+    }
     /* Make sure title/desc still sit above the peek layer.
        Round thumb (z 2) and play button (no explicit z; needs lifting)
        must also sit ABOVE the peek so the peek doesn't bleed onto them. */
@@ -1524,7 +1538,7 @@
         thumbPos: '34% 54%',
         // 横長カードでは元背景のポノがテキストに重なるため、
         // oto だけカード内プレビューを縮小して右寄せし、左側の紙面を読みやすく残す。
-        peekSize: 'auto 145%',
+        peekSize: 'auto 90%',
         peekPos: '100% 50%',
         tier: 'free'
       },
