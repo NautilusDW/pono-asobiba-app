@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-04 - [batch:259-book-friends-label] DONE - Codex: user 指摘「左下の表記を『えほんをもっているおともだちへ』に変更。下のテキストボックスは文字が多くて収まらないか」を受領。`play.html` の左下ボタン aria/表示を新文言へ変更し、ボタン内ラベルを2行組み（えほんをもっている / おともだちへ）にして媒体別 font-size も調整。Playwright確認予定。`sw.js` は v803。 (by Codex)
 - 2026-06-04 - [batch:258-coming-soon-static-cards] DONE - Codex: user 指摘「もじっこファーム等の準備中カードは左サークルを ? に、hover 画像なし、文字色は濃い色で統一して hover 前後で変えない」を受領。`play.html` で comingSoon カードの丸サムネを CSS `?` 表示へ変更し、future thumbnail preload を外した。`is-debug-playable` の hover peek/zoom 特例を削除し、comingSoon hover/focus では `--card-peek: none` / opacity 0、タイトル/説明は #5b3a1e + 同一影で固定。Playwrightで comingSoon 4件の `?`・画像リクエストなし・hover 前後文字色固定・JSエラーなし・スクショ目視を確認。`PAGE_CACHE_VERSION` と `sw.js` は v802。 (by Codex)
 - 2026-06-04 - [batch:257-title-oto-sound-flow-maze-up] DONE - Codex: user 指摘「音タッチ背景を音が奏でられて流れている感じへ再生成 / 迷路は目元が隠れるので上へ」を受領。GPT Image 2 built-in 生成で `assets/ui/play_oto_title_back.webp` を音符と光の流れが主役の横長背景へ差し替え、前回追加した oto 専用文字裏プレートを削除。`play.html` の maze `peekPos` を `50% 62%` にして背景を少し上寄せ。Playwrightで oto/maze hover 表示・対象画像HTTP 200・JSエラーなし・スクショ目視を確認。`sw.js` は v801。 (by Codex)
 - 2026-06-04 - [batch:256-oto-card-peek-no-shrink] DONE - Codex: user 指摘「縮小するのはなし」を受け、`play.html` の oto カード背景プレビューを通常 `cover` 表示へ戻し、文字ブロック背面だけ紙色プレートを追加。Playwrightで oto カード hover 表示・JSエラーなし・`background-size: cover`・スクショ目視を確認。`sw.js` は v799。 (by Codex)

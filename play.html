@@ -750,7 +750,7 @@
          inside the safe area without clipping at the right edge. */
       .bottom-nav { --nav-sprite-w: 400px; }
       .for-parents { width: 340px; height: 88px; }
-      .for-parents__label { margin-left: 98px; margin-right: 28px; font-size: 23px; }
+      .for-parents__label { margin-left: 98px; margin-right: 28px; font-size: 21px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
@@ -773,7 +773,7 @@
          read as a balanced pair inside the narrower safe-area. */
       .bottom-nav { --nav-sprite-w: 300px; }
       .for-parents { width: 300px; height: 78px; }
-      .for-parents__label { margin-left: 86px; margin-right: 22px; font-size: 21px; }
+      .for-parents__label { margin-left: 86px; margin-right: 22px; font-size: 19px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
       /* 1280×1024 etc. (very rare). Visible canvas slice ≈ 1029.5px,
@@ -785,7 +785,7 @@
       .brand-ribbon { width: 282px; }
       .bottom-nav { --nav-sprite-w: 280px; }
       .for-parents { width: 280px; height: 74px; }
-      .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 20px; }
+      .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 18px; }
     }
 
     /* ===== Bottom Navigation =====
@@ -855,7 +855,7 @@
     }
     /* Stand-alone "for parents" button in the bottom-left of the safe area.
        The 005 asset is a wide ribbon-shaped button — we overlay the text
-       "本をもっている人へ" on top of the image. */
+       "えほんをもっているおともだちへ" on top of the image. */
     .for-parents {
       position: absolute;
       /* bottom-nav (96px tall, bottom: 18px) と上端を揃えるため bottom: 18 へ。
@@ -893,16 +893,26 @@
       margin-left: 104px;          /* clear the book icon on the left (was 80) */
       margin-right: 32px;          /* breathing room on the right (was 24) */
       transform: translateY(-1px); /* nudge up to optically center */
-      font-size: 25px;             /* 17px × ~1.5 */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      font-size: 22px;
       font-weight: 900;
       color: #4a2a10;              /* dark brown — readable on cream wood */
-      letter-spacing: 0.04em;
-      line-height: 1;
-      white-space: nowrap;         /* PC幅でも「本をもっている人へ」を1行に固定 */
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      white-space: normal;
+      text-align: center;
       pointer-events: none;
       text-shadow:
         0 1px 0 rgba(255, 245, 215, 0.7),
         0 2px 3px rgba(255, 245, 215, 0.4);
+    }
+    .for-parents__label span {
+      display: block;
+      white-space: nowrap;
     }
 
     /* ===== Modal ===== */
@@ -1400,9 +1410,9 @@
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
     </nav>
-    <button class="for-parents" id="forParentsBtn" type="button" aria-label="本をもっている人へ">
+    <button class="for-parents" id="forParentsBtn" type="button" aria-label="えほんをもっているおともだちへ">
       <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
-      <span class="for-parents__label">本をもっている人へ</span>
+      <span class="for-parents__label"><span>えほんをもっている</span><span>おともだちへ</span></span>
     </button>
   </div><!-- /.stage -->
 
@@ -1707,7 +1717,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 802;
+    const PAGE_CACHE_VERSION = 803;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -2020,7 +2030,7 @@
       }
     });
 
-    // ===== 「本をもっている人へ」 button → unlock flow =====
+    // ===== 「えほんをもっているおともだちへ」 button → unlock flow =====
     // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
     // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
     // パスワード検証は common/tier.js の PonoTier.verifyBookPassword に集約。
