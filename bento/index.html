@@ -3036,7 +3036,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v7';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v8';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -3044,23 +3044,28 @@ const bentoBoxes = [
     image: BENTO_UI_ASSET + 'rect_bento_box_coral.webp',
     riceImage: FREE_ASSET + 'box_rect_split_rice.webp',
     maskImage: RECT_SPLIT_BOX_INSIDE_MASK,
-    // maskBounds は弁当画像 rect_bento_box_coral.webp (1000×640) の okazu (右) コンパートメントの
-    // 実測 cream 領域 (x_image 614〜976, y_image 80〜545) を virtual 座標に変換した値。
-    // virtual = bounds.x + image_x * (bounds.w / 1000), bounds.y + image_y * (bounds.h / 640)
-    //   左壁: 50 + 614 * 0.66 = 455 → 余裕をみて 444 (リブ凸を含む)
-    //   右壁: 50 + 975 * 0.66 = 693 → 692
-    //   上壁: 22 + 85 * 0.659 = 78
-    //   下壁: 22 + 545 * 0.659 = 381 → 上から 306
-    maskBounds: { x: 444, y: 78, w: 248, h: 306 },
+    // maskBounds は ご飯あり画像 box_rect_split_rice.webp (1000×656) の okazu (右) コンパートメントを
+    // 基準に算出。 本画面では rice 画像が常時上に重なり 9 割以上の時間表示されるため、
+    // マスク基準を rice に揃える方が UX 上正しい (commit 427f568 残作業の恒久解消)。
+    //   rice aspect = 1000/656 = 1.5244 < bounds aspect 660/422 = 1.5640 → 高さ fit、 横 letterbox 8.35px
+    //   scale = 422/656 = 0.6433
+    //   変換式: virtual_x = 58.35 + image_x * 0.6433, virtual_y = 22 + image_y * 0.6433
+    //   image 内 okazu cream の保守的内側エッジ:
+    //     左壁: x_img 583 → 58.35 + 583 * 0.6433 = 433.4 → 433
+    //     右壁: x_img 965 → 58.35 + 965 * 0.6433 = 679.1 → w = 247 (右端 680)
+    //     上壁: y_img 80  → 22 + 80 * 0.6433  = 73.5  → 74 (保守的)
+    //     下壁: y_img 573 → 22 + 573 * 0.6433 = 390.6 → h = 317 (下端 391)
+    maskBounds: { x: 433, y: 74, w: 247, h: 317 },
     shape: 'box_square',
     bounds: { x: 50, y: 22, w: 660, h: 422 },
     // placeBounds は全体 (rice + okazu) の配置可能域。両方を扱う処理用に従来通り広く保持する。
-    placeBounds: { x: 78, y: 78, w: 604, h: 314 },
+    // 上端 y は新 maskBounds と整合させて 78→74 へ拡張。
+    placeBounds: { x: 78, y: 74, w: 604, h: 318 },
     // foodPlaceBounds は okazu (おかず) 専用の配置可能域。 brushItem (キャベツ等) は
     // この矩形に clamp し、マスクの可視域 (maskBounds) と一致させる。
-    foodPlaceBounds: { x: 444, y: 78, w: 248, h: 306 },
+    foodPlaceBounds: { x: 433, y: 74, w: 247, h: 317 },
     riceBounds: { x: 78, y: 76, w: 322, h: 316 },
-    clipPoints: [[78,78], [682,78], [682,392], [78,392]],
+    clipPoints: [[78,74], [682,74], [682,392], [78,392]],
     imageScale: 1,
     tierCount: 1,
     autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_rect_split.webp', x: 244, y: 235, size: 206 },
@@ -3068,33 +3073,33 @@ const bentoBoxes = [
       { x: 248, y: 230 },
     ],
     // item.x/y は CENTER アンカー (.free-placed-item の CSS transform: translate(-50%, -50%) で実装)。
-    // 新マスク maskBounds (444, 78, 248, 306) ＝ x:444..692, y:78..384, 中心 (568, 231)。
+    // 新マスク maskBounds (433, 74, 247, 317) ＝ x:433..680, y:74..391, 中心 (556.5, 232.5)。
     // size 170 食材 (キャベツ/ハンバーグ等) の完全可視中心域は
-    //   x ∈ [444+85, 692-85] = [529, 607] (幅 78)
-    //   y ∈ [78+85, 384-85]  = [163, 299] (高 136)
-    // 単列 zigzag (中央 568 を軸に ±15px) で 5 spot 全てを完全可視域内に収める。
-    // やきざけ (size 292) は中心スポット (568,235) に限定すれば上下クリップ最小化、
-    // ただし素材幅 292 > マスク幅 248 のため左右 ~22px の側面クリップは構造上不可避。
+    //   x ∈ [433+85, 680-85] = [518, 595] (幅 77)
+    //   y ∈ [74+85, 391-85]  = [159, 306] (高 147)
+    // 単列 zigzag (中央 556.5 を軸に ±15px) で 5 spot 全てを完全可視域内に収める。
+    // やきざけ (size 292) は中心スポット (556,232) に限定すれば上下クリップ最小化、
+    // ただし素材幅 292 > マスク幅 247 のため左右 ~22px の側面クリップは構造上不可避。
     foodSpots: [
-      { x: 553, y: 168 },
-      { x: 583, y: 200 },
-      { x: 568, y: 235 },
-      { x: 553, y: 270 },
-      { x: 583, y: 298 },
+      { x: 541, y: 175 },
+      { x: 572, y: 200 },
+      { x: 556, y: 232 },
+      { x: 541, y: 268 },
+      { x: 572, y: 295 },
     ],
     accessorySpots: [
-      { x: 555, y: 200 },
-      { x: 581, y: 200 },
-      { x: 555, y: 265 },
-      { x: 581, y: 265 },
+      { x: 544, y: 200 },
+      { x: 569, y: 200 },
+      { x: 544, y: 265 },
+      { x: 569, y: 265 },
     ],
     safeSpots: [
       { x: 248, y: 230 },
-      { x: 553, y: 168 },
-      { x: 583, y: 200 },
-      { x: 568, y: 235 },
-      { x: 553, y: 270 },
-      { x: 583, y: 298 },
+      { x: 541, y: 175 },
+      { x: 572, y: 200 },
+      { x: 556, y: 232 },
+      { x: 541, y: 268 },
+      { x: 572, y: 295 },
     ],
   },
   {
@@ -5670,7 +5675,13 @@ function renderFreeLayoutInto(host, opts = {}) {
   shape.style.width = toPctX(imageRect.w);
   shape.style.height = toPctY(imageRect.h);
   host.appendChild(shape);
-  if (box.image && useIntegratedRice) {
+  // ★ マスクエディター中は rice layer を強制描画 (commit 427f568 残作業の恒久解消):
+  // placedItems が空でも box.riceImage を上に重ね、 本画面 (ご飯あり) と同じ
+  // letterbox 状態 (rice 1000x656 → bounds 660x422、 横 ±8.35px) を再現する。
+  // これによりマスク矩形がユーザーが実際に見る画面と物理的に同じ位置・スケールになり、
+  // 8.5px ズレが構造的に消える。
+  const forceRiceForMaskEdit = !!(opts.interactive && freeMaskEditorMode && box.riceImage);
+  if (box.image && (useIntegratedRice || forceRiceForMaskEdit)) {
     const integratedRiceLayer = document.createElement('img');
     integratedRiceLayer.className = ['free-bento-shape', 'free-bento-rice-layer', box.shape, box.id, 'has-image'].filter(Boolean).join(' ');
     integratedRiceLayer.src = box.riceImage;
