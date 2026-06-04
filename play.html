@@ -989,36 +989,35 @@
     .modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
 
     /* ===== Password Unlock Modal (絵本シリアル入力) ===== */
-    /* 背景フレームは assets/zukan/frames/rabbit-portrait.png (1024:1344 縦長) を使う。
-       タイトル画面の配色 (--primary / --text / --bg) と統一。 */
+    /* 背景フレームは assets/images/bento/cooking/ui/recipe_card_frame.png (406x545) を使う。
+       中央まで装飾された絵本風カード。タイトル画面の配色 (--primary / --text / --bg) と統一。 */
     .password-modal-card {
       position: relative;
       width: min(360px, 90vw);
-      aspect-ratio: 1024 / 1344;
-      background-image: url('assets/zukan/frames/rabbit-portrait.png');
-      background-size: contain;
+      aspect-ratio: 406 / 545;
+      background-image: url('assets/images/bento/cooking/ui/recipe_card_frame.png');
+      background-size: 100% 100%;
       background-repeat: no-repeat;
       background-position: center center;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
+      padding-top: 8%;
     }
     .password-modal-inner {
-      /* フレームの中央透過部分に文字を載せる */
-      width: 78%;
+      /* フレーム上部〜中央のクリーム塗りに載せる (下部のリボン・葉っぱ装飾を残す) */
+      width: 80%;
       height: auto;
-      max-height: 78%;
+      max-height: 70%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 12px;
       text-align: center;
       color: var(--text);
       font-family: inherit;
-      background: rgba(255, 248, 224, 0.94);
-      border-radius: 16px;
-      padding: 16px 18px;
+      padding: 12px 10px;
       box-sizing: border-box;
     }
     .password-modal-title {
