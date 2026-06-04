@@ -1005,16 +1005,21 @@
     }
     .password-modal-inner {
       /* フレームの中央透過部分に文字を載せる */
-      width: 72%;
-      height: 72%;
+      width: 78%;
+      height: auto;
+      max-height: 78%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
       text-align: center;
       color: var(--text);
       font-family: inherit;
+      background: rgba(255, 248, 224, 0.94);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-sizing: border-box;
     }
     .password-modal-title {
       font-size: 1.15rem;
@@ -1023,8 +1028,8 @@
       margin: 0;
     }
     .password-modal-help {
-      font-size: 0.88rem;
-      font-weight: 700;
+      font-size: 0.9rem;
+      font-weight: 800;
       color: var(--text);
       line-height: 1.55;
       margin: 0;
@@ -1071,6 +1076,14 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
+    }
+    /* hidden 属性を CSS の display 指定より優先させる
+       ([hidden] のデフォルト display:none は CSS の display:flex に負けるため明示) */
+    .password-modal-success[hidden],
+    .password-modal-error[hidden],
+    .password-modal-input[hidden],
+    .password-modal-submit[hidden] {
+      display: none !important;
     }
     .password-modal-success-tag {
       font-size: 0.95rem;
