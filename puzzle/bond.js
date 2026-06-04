@@ -70,6 +70,29 @@ window.PonoBond = (function () {
     return 0;
   }
 
+  /**
+   * stageId 正規化: number | string | null → 有効な正の整数 or null
+   * 任意の type を受けるが、内部ストレージ key は常に整数文字列に揃える。
+   */
+  function normalizeStageId(stageId) {
+    if (stageId == null) return null;
+    var n = parseInt(stageId, 10);
+    if (!isFinite(n) || n <= 0) return null;
+    return n;
+  }
+
+  /**
+   * partnerId が有効か (空でない文字列であり、登録済みパートナーである) を判定。
+   * window.PonoPartners が未ロードの場合は型チェックのみ通す (テスト互換性)。
+   */
+  function isValidPartnerId(partnerId) {
+    if (!partnerId || typeof partnerId !== 'string') return false;
+    if (window.PonoPartners && typeof window.PonoPartners.get === 'function') {
+      return !!window.PonoPartners.get(partnerId);
+    }
+    return true;
+  }
+
   function bondKey(partnerId, stageId) {
     return PREFIX + String(partnerId) + '_' + String(stageId);
   }
@@ -80,10 +103,15 @@ window.PonoBond = (function () {
 
   /** ステージクリア時にハート +1 (戻り値: { hearts, level, leveledUp }) */
   function addHeart(partnerId, stageId) {
-    if (!partnerId || stageId == null) {
+    var sid = normalizeStageId(stageId);
+    if (!isValidPartnerId(partnerId) || sid == null) {
+      try {
+        console.warn('[PonoBond] addHeart: invalid partnerId or stageId',
+          { partnerId: partnerId, stageId: stageId });
+      } catch (_) { /* noop */ }
       return { hearts: 0, level: 0, leveledUp: false };
     }
-    var key = bondKey(partnerId, stageId);
+    var key = bondKey(partnerId, sid);
     var before = readNumber(key);
     var after = before + 1;
     rawSet(key, String(after));
@@ -105,19 +133,23 @@ window.PonoBond = (function () {
 
   /** ステージ別ハート数 */
   function getHearts(partnerId, stageId) {
-    if (!partnerId || stageId == null) return 0;
-    return readNumber(bondKey(partnerId, stageId));
+    var sid = normalizeStageId(stageId);
+    if (!isValidPartnerId(partnerId) || sid == null) return 0;
+    return readNumber(bondKey(partnerId, sid));
   }
 
   /** パートナー別 合計ハート */
   function getTotal(partnerId) {
-    if (!partnerId) return 0;
+    if (!isValidPartnerId(partnerId)) return 0;
     return readNumber(totalKey(partnerId));
   }
 
   /** 現在選択中のパートナーIDを保存 */
   function setSelectedPartner(partnerId) {
-    if (!partnerId) return;
+    if (!isValidPartnerId(partnerId)) {
+      try { console.warn('[PonoBond] setSelectedPartner: invalid partnerId', partnerId); } catch (_) {}
+      return;
+    }
     rawSet(KEY_SELECTED, String(partnerId));
   }
 

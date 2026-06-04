@@ -86,7 +86,9 @@
   }
 }
 
-/* --- カード --- */
+/* --- カード ---
+   tap target: 子供向け 0-6yo を想定し全幅 >=56px / 縦 260px 以上を確保。
+   極小画面 (<=400px) では 1列スタック表示 (下の media query 参照) */
 .pono-pselect__card {
   position: relative;
   display: flex;
@@ -98,11 +100,48 @@
   border-radius: 18px;
   padding: 12px 10px 14px;
   cursor: pointer;
-  min-height: 240px;
+  min-height: 260px;
+  min-width: 56px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.4);
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
   text-align: center;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 極小画面 (<=400px): カードを 1列スタックして tap target を確保 */
+@media (max-width: 400px) {
+  .pono-pselect__grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .pono-pselect__card {
+    flex-direction: row;
+    align-items: center;
+    min-height: 96px;
+    padding: 10px 12px;
+    text-align: left;
+    gap: 12px;
+  }
+  .pono-pselect__portrait {
+    width: 84px;
+    max-width: 84px;
+    min-width: 84px;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 0;
+    flex: 0 0 auto;
+  }
+  .pono-pselect__card > *:not(.pono-pselect__portrait) {
+    flex: 1 1 auto;
+    text-align: left;
+    width: auto;
+  }
+  .pono-pselect__stats {
+    border-top: none;
+    padding-top: 0;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+  }
 }
 
 .pono-pselect__card:focus-visible {
@@ -168,23 +207,30 @@
   text-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 
-/* --- カード: 名前 --- */
+/* --- カード: 名前 ---
+   tap target 兼可読性: 0-3yo でも見やすいよう 48px 以上を保証 */
 .pono-pselect__name {
-  font-size: clamp(0.95rem, 3.2vw, 1.15rem);
+  font-size: clamp(1.0rem, 3.4vw, 1.2rem);
   font-weight: 900;
   color: #5D3A00;
   margin: 2px 0 4px;
   letter-spacing: 0.04em;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
 }
 
-/* --- カード: 性格 / とくいわざ --- */
+/* --- カード: 性格 / とくいわざ ---
+   小さい画面でも読める下限 12px 程度を維持、line-height を 1.5 に上げて可読性向上 */
 .pono-pselect__trait,
 .pono-pselect__assist,
 .pono-pselect__age {
-  font-size: clamp(0.72rem, 2.4vw, 0.85rem);
-  line-height: 1.35;
+  font-size: clamp(0.85rem, 2.8vw, 0.98rem);
+  line-height: 1.5;
   color: #6B4F2A;
-  margin: 1px 0;
+  margin: 2px 0;
 }
 
 .pono-pselect__assist {
@@ -197,7 +243,7 @@
 }
 
 .pono-pselect__age {
-  font-size: clamp(0.65rem, 2.1vw, 0.78rem);
+  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
   color: #A07A4A;
   margin-top: 2px;
 }
@@ -233,13 +279,30 @@
 /* --- ロック理由 --- */
 .pono-pselect__lock-reason {
   margin-top: 6px;
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #6B4A1F;
   background: rgba(247, 201, 72, 0.7);
-  padding: 3px 8px;
-  border-radius: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
   line-height: 1.2;
+}
+
+/* --- おすすめバッジ (年齢適性マッチ時に表示) --- */
+.pono-pselect__recommend {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: linear-gradient(180deg, #FF8E5A 0%, #E25C26 100%);
+  color: #FFF6DC;
+  font-size: clamp(0.65rem, 2.2vw, 0.78rem);
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* --- フッタ: キャンセル --- */

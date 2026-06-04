@@ -51,7 +51,7 @@ window.PonoPartnerSelect = (function () {
     document.head.appendChild(link);
   }
 
-  /** 星表示 (現在ステージでの Lv 0〜3) */
+  /** 星表示 (現在ステージでの Lv 0〜3) — DOM 要素を返す (XSS 防止) */
   function renderStars(level) {
     var max = 3;
     var filled = Math.max(0, Math.min(max, level | 0));
@@ -59,12 +59,39 @@ window.PonoPartnerSelect = (function () {
     for (var i = 0; i < filled; i++) s += '★';
     var empty = '';
     for (var j = 0; j < max - filled; j++) empty += '☆';
-    return (
-      '<span class="pono-pselect__stars">' +
-      '<span class="pono-pselect__stars-filled">' + s + '</span>' +
-      '<span class="pono-pselect__stars-empty">' + empty + '</span>' +
-      '</span>'
-    );
+
+    var wrap = document.createElement('span');
+    wrap.className = 'pono-pselect__stars';
+
+    var filledEl = document.createElement('span');
+    filledEl.className = 'pono-pselect__stars-filled';
+    filledEl.textContent = s;
+    wrap.appendChild(filledEl);
+
+    var emptyEl = document.createElement('span');
+    emptyEl.className = 'pono-pselect__stars-empty';
+    emptyEl.textContent = empty;
+    wrap.appendChild(emptyEl);
+
+    return wrap;
+  }
+
+  /**
+   * 「おすすめ」判定:
+   * ageHint と stageId(=難易度の代理) を簡易マッチ。
+   *  - stage 1-7  : ageHint '3さい〜' を推奨
+   *  - stage 8-14 : ageHint '4さい〜' を推奨
+   *  - stage 15+  : ageHint '5さい〜' を推奨
+   * 該当しない場合 false。
+   */
+  function isRecommended(partner, stageId) {
+    if (!partner || !partner.ageHint) return false;
+    var sid = parseInt(stageId, 10);
+    if (!isFinite(sid) || sid <= 0) return false;
+    var hint = String(partner.ageHint);
+    if (sid <= 7) return hint.indexOf('3') === 0;
+    if (sid <= 14) return hint.indexOf('4') === 0;
+    return hint.indexOf('5') === 0;
   }
 
   /** SE 用 hook (PuzzleVoice があれば一応鳴らす。失敗しても無視) */
@@ -131,6 +158,15 @@ window.PonoPartnerSelect = (function () {
     name.textContent = p.name || p.id;
     card.appendChild(name);
 
+    // おすすめバッジ (ステージ難易度 と ageHint を簡易マッチ)
+    if (!locked && isRecommended(p, stageId)) {
+      var rec = document.createElement('div');
+      rec.className = 'pono-pselect__recommend';
+      rec.textContent = 'おすすめ';
+      rec.setAttribute('aria-label', 'このステージに おすすめ');
+      card.appendChild(rec);
+    }
+
     // 性格
     if (p.trait) {
       var trait = document.createElement('div');
@@ -156,17 +192,20 @@ window.PonoPartnerSelect = (function () {
     }
 
     if (locked) {
+      // 3-4yo 向けに認知負荷軽減: 詳細条件は省略しシンプルに「🔒 まだ」表記
       var reason = document.createElement('div');
       reason.className = 'pono-pselect__lock-reason';
-      reason.textContent = 'Stage20でかいきん';
+      reason.textContent = '🔒 まだ';
       card.appendChild(reason);
     } else {
-      // 星 + ハート合計
+      // 星 + ハート合計 — innerHTML を使わず DOM 要素で構築 (XSS 防止)
       var stats = document.createElement('div');
       stats.className = 'pono-pselect__stats';
-      stats.innerHTML =
-        renderStars(level) +
-        '<span class="pono-pselect__hearts">❤ ' + total + '</span>';
+      stats.appendChild(renderStars(level));
+      var heartsEl = document.createElement('span');
+      heartsEl.className = 'pono-pselect__hearts';
+      heartsEl.textContent = '❤ ' + (total | 0);
+      stats.appendChild(heartsEl);
       card.appendChild(stats);
     }
 
@@ -285,15 +324,16 @@ window.PonoPartnerSelect = (function () {
     if (!_root) return;
     while (_root.firstChild) _root.removeChild(_root.firstChild);
 
-    // header
+    // header — innerHTML を使わず DOM 要素で構築 (XSS 防止)
     var header = document.createElement('div');
     header.className = 'pono-pselect__header';
     var title = document.createElement('div');
     title.className = 'pono-pselect__title';
-    title.innerHTML = 'だれと あそぶ？' +
-      '<span class="pono-pselect__title-stage">ステージ ' +
-      escapeHtml(String(_stageId != null ? _stageId : '?')) +
-      '</span>';
+    title.appendChild(document.createTextNode('だれと あそぶ？'));
+    var stageBadge = document.createElement('span');
+    stageBadge.className = 'pono-pselect__title-stage';
+    stageBadge.textContent = 'ステージ ' + String(_stageId != null ? _stageId : '?');
+    title.appendChild(stageBadge);
     header.appendChild(title);
     _root.appendChild(header);
 

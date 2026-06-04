@@ -426,16 +426,36 @@ function showSuccessModal() {
 
   // === Bond: ハート加算 (必須) ===
   // partner 未選択時はスキップ。 leveledUp が true なら Lv 昇格演出フラグを保持。
+  // stageId はここで Number に正規化して PonoBond / 後続フックに渡す
+  // (bond.js は String() 変換するので number/string どちらでも動くが、型を揃えて混乱回避)
+  var normalizedStageId = parseInt(successStageId, 10);
+  if (!isFinite(normalizedStageId) || normalizedStageId <= 0) {
+    normalizedStageId = currentStageIndex + 1;
+  }
   var bondResult = null;
   try {
     if (successPartner && window.PonoBond && typeof window.PonoBond.addHeart === 'function') {
-      bondResult = window.PonoBond.addHeart(successPartner.id, successStageId);
+      bondResult = window.PonoBond.addHeart(successPartner.id, normalizedStageId);
     }
   } catch (e) {
     try { console.warn('[PonoBond] addHeart failed:', e); } catch (_) {}
   }
   // 他フックから参照できるよう公開
   window.PonoLastBondResult = bondResult;
+
+  // === Fukurou unlock: Stage 20 クリアでフクロウ解禁 ===
+  // プラン仕様: ステージ20クリア時に PonoBond.markFukurouUnlock() を呼ぶ
+  try {
+    if (normalizedStageId === 20 && window.PonoBond
+        && typeof window.PonoBond.markFukurouUnlock === 'function'
+        && typeof window.PonoBond.isFukurouUnlocked === 'function'
+        && !window.PonoBond.isFukurouUnlocked()) {
+      window.PonoBond.markFukurouUnlock();
+      window.PonoFukurouJustUnlocked = true;
+    }
+  } catch (e) {
+    try { console.warn('[PonoBond] markFukurouUnlock failed:', e); } catch (_) {}
+  }
 
   playFanfare();
   spawnConfetti();
@@ -495,6 +515,7 @@ function showSuccessModal() {
     stageIndex: currentStageIndex,
     stage: successStage,
     partner: successPartner,
+    stageId: normalizedStageId,
     bondResult: bondResult,
   }, false);
 }

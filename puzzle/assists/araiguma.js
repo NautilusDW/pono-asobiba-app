@@ -220,10 +220,17 @@
   //   ピース幅 + gap を等間隔で並べ、 帯中央に縦位置を寄せる。
   //
   // 各ピースに __araiguma.slotX / slotY を持たせる。
-  function layoutTraySlots(pieces, count, canvas, pieceSize) {
-    var trayTopRatio = 0.62;  // 上 62% より下をトレイに使う
-    var trayY0 = canvas.h * trayTopRatio;
-    var trayH = canvas.h - trayY0;
+  function layoutTraySlots(pieces, count, canvas, pieceSize, board) {
+    // 中央の盤 (board) を避けて、 盤の下に色帯トレイを置く。
+    // ピース全部が下に入りきらないステージ (16-20 ピース) の場合は盤の上下に分けても良いが、
+    // MVP では盤下に均等横並びだけで OK。
+    var safeTop = board ? (board.y + board.h + 4) : canvas.h * 0.62;
+    if (safeTop > canvas.h - pieceSize.h * 1.2) {
+      // 盤が下に張り付き気味なら、 トレイは盤上部に置く
+      safeTop = Math.max(0, (board ? board.y : 0) - count * (pieceSize.h + 6));
+    }
+    var trayY0 = safeTop;
+    var trayH = Math.max(pieceSize.h * 1.1, canvas.h - trayY0 - 4);
     var bandH = trayH / count;
 
     // クラスタごとにピース配列を組む
@@ -322,7 +329,7 @@
     // クラスタ割当
     assignClusters(ctx.pieces, count);
     // トレイの待機座標を全ピースに付与
-    layoutTraySlots(ctx.pieces, count, ctx.canvas, ctx.pieceSize);
+    layoutTraySlots(ctx.pieces, count, ctx.canvas, ctx.pieceSize, ctx.board);
 
     // 初期配置: shufflePieces 直後にトレイ位置へ瞬時に整列させる。
     // (アニメ無しで「色わけ済みの状態」を最初から見せる方が、子供の認知負荷が低い)
@@ -369,6 +376,7 @@
     // ドラッグ中 / スナップ済みは触らない。
     var ease = 0.35;
     var maxStep = Math.max(4, pieceSize.w * 0.4); // 1 フレームあたりの最大移動量 (急ぎ寄せ)
+    var stillMoving = false;
     for (var i = 0; i < pieces.length; i++) {
       var p = pieces[i];
       if (!p || p.snapped) continue;
@@ -377,20 +385,27 @@
 
       var dx = p.__araiguma.slotX - p.x;
       var dy = p.__araiguma.slotY - p.y;
+      // 距離が十分小さければスナップ的に確定
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+        p.x = p.__araiguma.slotX;
+        p.y = p.__araiguma.slotY;
+        continue;
+      }
+      stillMoving = true;
       var ax = dx * ease;
       var ay = dy * ease;
       // クランプ
       if (ax > maxStep) ax = maxStep; else if (ax < -maxStep) ax = -maxStep;
       if (ay > maxStep) ay = maxStep; else if (ay < -maxStep) ay = -maxStep;
-      // 距離が十分小さければスナップ的に確定
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
-        p.x = p.__araiguma.slotX;
-        p.y = p.__araiguma.slotY;
-      } else {
-        p.x += ax;
-        p.y += ay;
-      }
+      p.x += ax;
+      p.y += ay;
       // 回転は維持。 path は次回 redraw / hitTest で再構築されるので触らない。
+    }
+
+    // まだ目標に到達していないピースがあるなら、 もう 1 フレーム描画を要求する。
+    // (main.js は基本的にイベント駆動なので、 自前で rAF を引っ張る必要がある)
+    if (stillMoving && typeof ctx.requestRedraw === 'function') {
+      ctx.requestRedraw();
     }
 
     // -- (b) 色帯背景を「ピースの背後」に描き直す ----------------------------
