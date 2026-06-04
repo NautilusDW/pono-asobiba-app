@@ -7,7 +7,7 @@
 //   2. Lv 昇格カットイン: addHeart() の結果が leveledUp === true なら
 //        Lv2 → 「○○と なかよし になったよ！」
 //        Lv3 → 「○○と だいすき になったよ！」
-//      を 2 秒間オーバーレイで表示。
+//      を 3 秒間オーバーレイで表示。
 //   3. クリアサマリー強化: afterShowSuccess hook で別 div を append し、
 //      パートナー名 / ハート数 / Lv / クリア時間 (前回比) /
 //      ヒント使用 / 連続スナップ最大数 を表示。
@@ -152,7 +152,7 @@ window.PonoBondUI = (function () {
       el.classList.add('hidden');
       el.classList.remove('is-active');
       cutInTimer = null;
-    }, 2000);
+    }, 3000);
   }
 
   // ===== Clear Summary =====
