@@ -988,6 +988,119 @@
     }
     .modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
 
+    /* ===== Password Unlock Modal (絵本シリアル入力) ===== */
+    /* 背景フレームは assets/zukan/frames/rabbit-portrait.png (1024:1344 縦長) を使う。
+       タイトル画面の配色 (--primary / --text / --bg) と統一。 */
+    .password-modal-card {
+      position: relative;
+      width: min(360px, 90vw);
+      aspect-ratio: 1024 / 1344;
+      background-image: url('assets/zukan/frames/rabbit-portrait.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .password-modal-inner {
+      /* フレームの中央透過部分に文字を載せる */
+      width: 72%;
+      height: 72%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .password-modal-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 0;
+    }
+    .password-modal-help {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .password-modal-input {
+      width: 88%;
+      padding: 10px 14px;
+      border: 3px solid var(--primary-light);
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(255, 248, 224, 0.92);
+      color: var(--text);
+      outline: none;
+    }
+    .password-modal-input:focus {
+      border-color: var(--primary);
+    }
+    .password-modal-submit {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .password-modal-submit:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .password-modal-error {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #C04A4A;
+      background: rgba(255, 228, 228, 0.85);
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+    .password-modal-success {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .password-modal-success-tag {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #fff;
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      padding: 6px 16px;
+      border-radius: 50px;
+    }
+    .password-modal-success-body {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .password-modal-close {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .password-modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+
     /* ===== Toggle Switch ===== */
     .toggle {
       position: relative;
@@ -1199,8 +1312,8 @@
     <main class="play-main">
       <aside class="brand-col" aria-label="タイトル">
         <div class="brand-sign">
-          <img alt="ポノのあそびば" draggable="false" data-src="assets/ui/brand_sign_01.webp">
-          <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" data-src="assets/ui/brand_sign_02.webp">
+          <img alt="ポノのあそびば" draggable="false" src="assets/ui/brand_sign_01.webp" data-src="assets/ui/brand_sign_01.webp">
+          <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" src="assets/ui/brand_sign_02.webp" data-src="assets/ui/brand_sign_02.webp">
         </div>
       </aside>
 
@@ -1302,6 +1415,27 @@
       <button class="modal-close" type="button" data-close="newsModal">とじる</button>
     </div>
   </div>
+
+  <!-- ===== Password Unlock Modal (絵本パスワード入力 → premium 解錠) ===== -->
+  <div class="modal" id="passwordUnlockModal" hidden role="dialog" aria-modal="true" aria-labelledby="passwordUnlockTitle">
+    <div class="password-modal-card">
+      <div class="password-modal-inner">
+        <h3 id="passwordUnlockTitle" class="password-modal-title">えほん の パスワード</h3>
+        <p class="password-modal-help">えほんの うらに かいてある<br>パスワードを いれてね</p>
+        <input type="text" class="password-modal-input" id="passwordUnlockInput" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
+        <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">かいじょ！</button>
+        <div class="password-modal-error" id="passwordUnlockError" hidden>ちがうよ！ もういちど！</div>
+        <div class="password-modal-success" id="passwordUnlockSuccess" hidden>
+          <div class="password-modal-success-tag">✨ えほん モード が ひらいたよ ✨</div>
+          <p class="password-modal-success-body">あたらしい ゲームや ステージ、<br>たべものが あそべるように なったよ！</p>
+          <button class="password-modal-close" type="button" data-close="passwordUnlockModal">あそびに もどる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 絵本パスワード解錠ロジック (PonoTier.verifyBookPassword) を提供 -->
+  <script src="common/tier.js"></script>
 
   <script>
     'use strict';
@@ -1820,14 +1954,75 @@
 
     // ===== 「本をもっている人へ」 button → unlock flow =====
     // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
-    // 旧実装では何もバインドされていなかったので Phase 1 で play-all.html#unlock
-    // へ遷移するようにする。 #unlock anchor のハンドリングは play-all.html 側で行う。
+    // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
+    // パスワード検証は common/tier.js の PonoTier.verifyBookPassword に集約。
     const fpBtn = document.getElementById('forParentsBtn');
     if (fpBtn) {
       fpBtn.addEventListener('click', () => {
-        location.href = 'play-all.html#unlock';
+        // 既に解錠済みなら成功画面で開く、 未解錠なら入力画面で開く
+        const already = (function() {
+          try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
+        })();
+        const errEl = document.getElementById('passwordUnlockError');
+        const successEl = document.getElementById('passwordUnlockSuccess');
+        const inputEl = document.getElementById('passwordUnlockInput');
+        const submitEl = document.getElementById('passwordUnlockSubmit');
+        const helpEl = document.querySelector('.password-modal-help');
+        if (errEl) errEl.hidden = true;
+        if (successEl) successEl.hidden = !already;
+        // 入力欄+ボタンを成功時は隠す
+        if (inputEl) inputEl.style.display = already ? 'none' : '';
+        if (submitEl) submitEl.style.display = already ? 'none' : '';
+        if (helpEl) helpEl.style.display = already ? 'none' : '';
+        if (!already && inputEl) inputEl.value = '';
+        openModal('passwordUnlockModal');
       });
     }
+
+    // パスワード送信ハンドラ
+    const pwSubmit = document.getElementById('passwordUnlockSubmit');
+    if (pwSubmit) {
+      pwSubmit.addEventListener('click', () => {
+        const input = document.getElementById('passwordUnlockInput');
+        const val = (input && input.value) || '';
+        const ok = !!(window.PonoTier
+          && typeof window.PonoTier.verifyBookPassword === 'function'
+          && window.PonoTier.verifyBookPassword(val));
+        const errEl = document.getElementById('passwordUnlockError');
+        const successEl = document.getElementById('passwordUnlockSuccess');
+        const helpEl = document.querySelector('.password-modal-help');
+        if (ok) {
+          try { localStorage.setItem('pono_premium', '1'); } catch (e) {}
+          if (errEl) errEl.hidden = true;
+          if (input) input.style.display = 'none';
+          pwSubmit.style.display = 'none';
+          if (helpEl) helpEl.style.display = 'none';
+          if (successEl) successEl.hidden = false;
+        } else {
+          if (errEl) errEl.hidden = false;
+          if (input) {
+            input.value = '';
+            input.focus();
+          }
+        }
+      });
+    }
+
+    // パスワード解錠モーダルを閉じた時に、 解錠済みならリロードして
+    // メニューを book ティア状態で再描画する (カード一覧の表示更新のため)
+    document.addEventListener('click', (e) => {
+      const closer = e.target.closest('[data-close="passwordUnlockModal"]');
+      if (closer) {
+        try {
+          if (localStorage.getItem('pono_premium') === '1') {
+            setTimeout(() => location.reload(), 100);
+          }
+        } catch (e) {}
+        // 注: 汎用 [data-close] ハンドラが closeModal を呼ぶのは別 listener なので
+        // return しても event 伝播は止まらない。 ただし本 listener 内の早期離脱として明示。
+        return;
+      }
+    });
 
     // ===== Modal helpers =====
     function openModal(id) {
@@ -2115,6 +2310,16 @@
     document.querySelectorAll('img[data-src]').forEach((img) => {
       const url = img.getAttribute('data-src');
       img.src = __bustUrl(url);
+      img.addEventListener('error', () => {
+        const retries = Number(img.dataset.retries || 0);
+        if (retries < 2) {
+          img.dataset.retries = String(retries + 1);
+          setTimeout(() => {
+            img.removeAttribute('src');
+            requestAnimationFrame(() => { img.src = __bustUrl(url); });
+          }, 800);
+        }
+      });
     });
 
     function CardTweaks() {
