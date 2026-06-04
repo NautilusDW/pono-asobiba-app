@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-04T07:14:13Z - Phase 2: 全5ゲーム (quizland/maze/oto/puzzle/bento) に PonoTier 実ロック挿入 + 6ゲーム HTML に tier.js script タグ追加 + bento 30食材化 + キャラ箱 tierCount 3→2 + セーフフラグ ON (sw v777)
+- **タスク**: Phase 2: 全5ゲーム (quizland/maze/oto/puzzle/bento) に PonoTier 実ロック挿入 + 6ゲーム HTML に tier.js script タグ追加 + bento 30食材化 + キャラ箱 tierCount 3→2 + セーフフラグ ON (sw v777)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 64
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 6, "Agent": 33, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 9}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-04T07:12:31Z - Phase 2 最終ステップ: tier.js セーフフラグ ON + sw.js CACHE_VERSION 776→777 + 全 7 ファイル verification
 - **タスク**: Phase 2 最終ステップ: tier.js セーフフラグ ON + sw.js CACHE_VERSION 776→777 + 全 7 ファイル verification
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 55, "Grep": 1, "Read": 45, "Agent": 59, "ToolSearch": 2, "Skill": 2, "Edit": 17, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-03T09:57:16Z - kitchen.html v767: salmon cookBack 蓋を手動ドラッグ閉鎖→timing gauge 起動の二段化 + show-for-salmon に pointer-events:auto 復活
-- **タスク**: kitchen.html v767: salmon cookBack 蓋を手動ドラッグ閉鎖→timing gauge 起動の二段化 + show-for-salmon に pointer-events:auto 復活
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 173
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 53, "Grep": 1, "Read": 42, "Agent": 57, "ToolSearch": 2, "Skill": 2, "Edit": 15, "Write": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
