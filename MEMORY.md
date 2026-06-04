@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-04T15:54:35Z - ポノのなかよしパズル「もりのなかよし」MVP 実装 (5パートナー協力パズル+なかよし度メーター+もりのアルバム、sw v805)
+- **タスク**: ポノのなかよしパズル「もりのなかよし」MVP 実装 (5パートナー協力パズル+なかよし度メーター+もりのアルバム、sw v805)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 35
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 3, "Workflow": 7, "Write": 1, "ToolSearch": 2, "ExitPlanMode": 1, "Read": 2, "Grep": 1, "Edit": 1, "Bash": 17}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-04T15:27:40Z - bento: 下部固定ツールバー + tap-cycle 方式実装 (v804) — 浮遊版 .free-context-toolbar を撤廃して stage 直下の .free-context-bar に置換、 重なり下層循環選択 (getOverlapAtPoint + cycleSelectionAtSelectedPoint)、 stage 背景タップで deselect、 ::before halo (inset:-12%) で type-food の hit area 拡張、 beginFreeItemDrag を 8px 閾値判定でワープ抑止 + 同位置 200ms 連続タップ自動循環、 sw bump 803→804
 - **タスク**: bento: 下部固定ツールバー + tap-cycle 方式実装 (v804) — 浮遊版 .free-context-toolbar を撤廃して stage 直下の .free-context-bar に置換、 重なり下層循環選択 (getOverlapAtPoint + cycleSelectionAtSelectedPoint)、 stage 背景タップで deselect、 ::before halo (inset:-12%) で type-food の hit area 拡張、 beginFreeItemDrag を 8px 閾値判定でワープ抑止 + 同位置 200ms 連続タップ自動循環、 sw bump 803→804
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 52, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 3, "Bash": 24}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-04T09:02:09Z - TIER_POLICY.md §3 ロックUI方針を鍵マーク🔒中央配置に更新 (oto/index.html CSSコメントも同期)
-- **タスク**: TIER_POLICY.md §3 ロックUI方針を鍵マーク🔒中央配置に更新 (oto/index.html CSSコメントも同期)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 99
-- **エラー数**: 8
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 52, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 2, "Bash": 22}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
