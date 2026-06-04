@@ -20,12 +20,6 @@
   'use strict';
 
   if (typeof window === 'undefined') return;
-  if (!window.PonoAssistRegister) {
-    // main.js より先に評価された場合の保険。 main.js が後で hook を初期化するため、
-    // window が存在しない、または register API が未定義なら何もしない。
-    try { console.warn('[usagi-assist] PonoAssistRegister not ready — skip'); } catch (_) {}
-    return;
-  }
 
   // ───────────────────────────────────────────────
   // 定数
@@ -70,7 +64,7 @@
       '  pointer-events:none;z-index:9000;',
       '  display:flex;flex-direction:column;align-items:center;',
       '  opacity:0;transition:opacity ' + FADE_DURATION_MS + 'ms ease;',
-      '  filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));',
+      '  filter:drop-shadow(0 3px 6px rgba(0,0,0,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.35));',
       '}',
       '#pono-usagi-dowsing.is-active{opacity:1;}',
       '#pono-usagi-dowsing .pono-usagi-pivot{',
@@ -109,12 +103,12 @@
     var outer = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     outer.setAttribute('d', 'M16 2 C 6 8, 4 30, 8 50 C 10 60, 22 60, 24 50 C 28 30, 26 8, 16 2 Z');
     outer.setAttribute('fill', '#ffffff');
-    outer.setAttribute('stroke', 'rgba(70,40,60,.35)');
-    outer.setAttribute('stroke-width', '1.2');
+    outer.setAttribute('stroke', 'rgba(40,20,40,0.65)');
+    outer.setAttribute('stroke-width', '1.8');
     var inner = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     inner.setAttribute('d', 'M16 10 C 11 14, 10 30, 12 46 C 13 52, 19 52, 20 46 C 22 30, 21 14, 16 10 Z');
-    inner.setAttribute('fill', '#ffcfdc');
-    inner.setAttribute('opacity', '0.85');
+    inner.setAttribute('fill', '#ffb8cc');
+    inner.setAttribute('opacity', '0.95');
     svg.appendChild(outer);
     svg.appendChild(inner);
     // 後で参照しやすいよう side で覚える
@@ -271,7 +265,7 @@
   // ───────────────────────────────────────────────
 
   // ステージ開始時にレベルキャッシュ (毎フレーム localStorage を叩かない)
-  window.PonoAssistRegister('beforeStageStart', function (ctx) {
+  function hookBeforeStageStart(ctx) {
     try {
       var partner = ctx && ctx.partner;
       if (!partner || partner.id !== PARTNER_ID) return;
@@ -279,10 +273,10 @@
       currentStageId = stageId;
       currentLevel = resolveLevel(stageId);
     } catch (_) {}
-  });
+  }
 
   // ステージ準備完了でも一度更新 (パートナー切り替え直後など)
-  window.PonoAssistRegister('afterStageReady', function (ctx) {
+  function hookAfterStageReady(ctx) {
     try {
       var partner = ctx && ctx.partner;
       if (!partner || partner.id !== PARTNER_ID) return;
@@ -291,10 +285,10 @@
       currentLevel = resolveLevel(stageId);
       ensureDom();
     } catch (_) {}
-  });
+  }
 
   // ドラッグ中: 毎 pointermove で耳の向き・色を更新
-  window.PonoAssistRegister('duringDrag', function (ctx) {
+  function hookDuringDrag(ctx) {
     try {
       var partner = ctx && ctx.partner;
       if (!partner || partner.id !== PARTNER_ID) return;
@@ -318,26 +312,58 @@
         fadeTimer = 0;
       }, FADE_OUT_MS + 100);
     } catch (_) {}
-  });
+  }
 
   // スナップ成功直後にもフェードアウト指示 (move が来なくなる前に確実に消す)
-  window.PonoAssistRegister('afterSnap', function (ctx) {
+  function hookAfterSnap(ctx) {
     try {
       var partner = ctx && ctx.partner;
       if (!partner || partner.id !== PARTNER_ID) return;
       scheduleHide();
     } catch (_) {}
-  });
+  }
 
   // 成功モーダル表示時は必ず消しておく
-  window.PonoAssistRegister('beforeShowSuccess', function (ctx) {
+  function hookBeforeShowSuccess(ctx) {
     try {
       var partner = ctx && ctx.partner;
       if (!partner || partner.id !== PARTNER_ID) return;
       if (root) root.classList.remove('is-active');
       if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = 0; }
     } catch (_) {}
-  });
+  }
+
+  // === 登録 ===
+  // _hooks-init.js が先に読まれていれば即時登録できるが、万が一 script ロード順が
+  // 壊れて PonoAssistRegister が未定義だった場合に備え、 DOMContentLoaded で retry。
+  // (kojika.js と同じパターン)
+  function registerAll() {
+    if (typeof window.PonoAssistRegister !== 'function') return false;
+    window.PonoAssistRegister('beforeStageStart', hookBeforeStageStart);
+    window.PonoAssistRegister('afterStageReady', hookAfterStageReady);
+    window.PonoAssistRegister('duringDrag', hookDuringDrag);
+    window.PonoAssistRegister('afterSnap', hookAfterSnap);
+    window.PonoAssistRegister('beforeShowSuccess', hookBeforeShowSuccess);
+    return true;
+  }
+
+  if (!registerAll()) {
+    try { console.warn('[usagi-assist] PonoAssistRegister not ready — retry on DOMContentLoaded'); } catch (_) {}
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        if (!registerAll()) {
+          try { console.warn('[usagi-assist] PonoAssistRegister still missing after DOMContentLoaded'); } catch (_) {}
+        }
+      }, { once: true });
+    } else {
+      // 既に load 済みで PonoAssistRegister が無いケース (本来は起きない)
+      setTimeout(function () {
+        if (!registerAll()) {
+          try { console.warn('[usagi-assist] PonoAssistRegister still missing after setTimeout'); } catch (_) {}
+        }
+      }, 0);
+    }
+  }
 
   // 公開 (テスト/デバッグ用)
   window.PonoAssistUsagi = {

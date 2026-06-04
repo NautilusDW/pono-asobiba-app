@@ -294,9 +294,29 @@
     if (sid == null) return 2;
     var lv = 0;
     try { lv = window.PonoBond.getLevel(partnerId, sid) || 0; } catch (_) { lv = 0; }
+    // Lv0 は Lv1 と同じ扱い (子供が最低限の色わけ恩恵を必ず受けられるように)
     if (lv >= 3) return 5;
     if (lv >= 2) return 3;
     return 2;
+  }
+
+  // Lv から描画パラメータを取り出す。 Lv0 は Lv1 と同じ扱い。
+  function resolveLvStyle(stage, partnerId) {
+    var lv = 0;
+    try {
+      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function' && stage && stage.id != null) {
+        lv = window.PonoBond.getLevel(partnerId, stage.id) || 0;
+      }
+    } catch (_) { lv = 0; }
+    // Lv0 → Lv1 と同じ
+    if (lv <= 1) {
+      return { lv: 1, bandAlpha: 0.40, edgeAlpha: 0.0, edgeWidth: 0, marker: false };
+    }
+    if (lv === 2) {
+      return { lv: 2, bandAlpha: 0.50, edgeAlpha: 0.55, edgeWidth: 1, marker: false };
+    }
+    // Lv3+
+    return { lv: 3, bandAlpha: 0.60, edgeAlpha: 0.75, edgeWidth: 2.5, marker: true };
   }
 
   // ---------------------------------------------------------------------------
@@ -323,6 +343,8 @@
     state.clusterCount = count;
     state.stageId = stage.id != null ? stage.id : null;
     state.boardKey = ctx.canvas.w + 'x' + ctx.canvas.h + ':' + count;
+    // Lv に応じた描画スタイル (alpha / 境界線 / マーカー) をキャッシュ
+    state.style = resolveLvStyle(stage, 'araiguma');
 
     // 代表色キャッシュ (1 回だけ)
     computePieceColors(ctx.pieces, ctx.sourceImg, stage.cols, stage.rows);
@@ -372,10 +394,11 @@
     var pieceSize = ctx.pieceSize;
 
     // -- (a) ピースをトレイ slot に寄せる (ease) ----------------------------
-    // いきなり瞬間移動すると不自然なので 0.35 ずつ目標に補間する。
+    // いきなり瞬間移動すると不自然なので毎フレームじわっと寄せる。
+    // 体感ゼロにならないよう ease/maxStep を強化した (Lv0/1 でも引き寄せが見えるように)。
     // ドラッグ中 / スナップ済みは触らない。
-    var ease = 0.35;
-    var maxStep = Math.max(4, pieceSize.w * 0.4); // 1 フレームあたりの最大移動量 (急ぎ寄せ)
+    var ease = 0.55;
+    var maxStep = Math.max(8, pieceSize.w * 0.7); // 1 フレームあたりの最大移動量 (急ぎ寄せ)
     var stillMoving = false;
     for (var i = 0; i < pieces.length; i++) {
       var p = pieces[i];
@@ -408,24 +431,28 @@
       ctx.requestRedraw();
     }
 
-    // -- (b) 色帯背景を「ピースの背後」に描き直す ----------------------------
-    // drawOverlay はピース描画後に走るため、 ピースの上に薄く重ねる形になる。
-    // 視覚的に邪魔しないよう alpha は低めに。
+    // -- (b) 色帯背景を描画 (drawOverlay 内・ピースの上から覆う) ---------------
+    // drawOverlay はピース描画後に走るため、 ピースの上に重ねる形になる。
+    // 子供の目で「色わけが効いている」と認識できる強度まで alpha を上げる。
+    // Lv で段階強化: Lv0/1=α0.40, Lv2=α0.50+境界線細, Lv3=α0.60+境界線太+マーカー。
     if (state.bands && state.bands.length > 0) {
+      var style = state.style || { lv: 1, bandAlpha: 0.40, edgeAlpha: 0.0, edgeWidth: 0, marker: false };
+
+      // 色帯本体: 鮮やかな HSL (80% sat, 55% light) で視認性確保
       c2d.save();
-      c2d.globalAlpha = 0.18;
+      c2d.globalAlpha = style.bandAlpha;
       for (var b = 0; b < state.bands.length; b++) {
         var band = state.bands[b];
         var hue = band.hue;
-        c2d.fillStyle = 'hsl(' + Math.round(hue) + ', 60%, 70%)';
+        c2d.fillStyle = 'hsl(' + Math.round(hue) + ', 80%, 55%)';
         c2d.fillRect(0, band.y0, canvas.w, band.h);
       }
       c2d.restore();
 
-      // 帯の上端に細い区切り線
+      // 帯の上端に常時細い区切り線 (帯と帯の境目を必ず示す)
       c2d.save();
-      c2d.globalAlpha = 0.35;
-      c2d.strokeStyle = 'rgba(93,78,55,0.5)';
+      c2d.globalAlpha = 0.55;
+      c2d.strokeStyle = 'rgba(93,78,55,0.7)';
       c2d.lineWidth = 1;
       for (var bb = 0; bb < state.bands.length; bb++) {
         var bb_band = state.bands[bb];
@@ -435,6 +462,58 @@
         c2d.stroke();
       }
       c2d.restore();
+
+      // Lv2+ : 各帯の代表 hue で太めの境界線を引いて「ここからこの色」を強調
+      if (style.edgeWidth > 0 && style.edgeAlpha > 0) {
+        c2d.save();
+        c2d.globalAlpha = style.edgeAlpha;
+        c2d.lineWidth = style.edgeWidth;
+        for (var be = 0; be < state.bands.length; be++) {
+          var beBand = state.bands[be];
+          // 帯固有色で輪郭を縁取り
+          c2d.strokeStyle = 'hsl(' + Math.round(beBand.hue) + ', 85%, 35%)';
+          c2d.beginPath();
+          // 上下の境界 (帯の上端 + 下端)
+          c2d.moveTo(0, beBand.y0 + style.edgeWidth / 2);
+          c2d.lineTo(canvas.w, beBand.y0 + style.edgeWidth / 2);
+          c2d.moveTo(0, beBand.y0 + beBand.h - style.edgeWidth / 2);
+          c2d.lineTo(canvas.w, beBand.y0 + beBand.h - style.edgeWidth / 2);
+          c2d.stroke();
+        }
+        c2d.restore();
+      }
+
+      // Lv3 : 各クラスタの左端にラベル風マーカー (色玉)
+      // small screens (<480px) ではマーカーを縮小し、 左端からの位置も狭めて
+      // 色帯本体と重ならないよう配慮する (high-finding 修正)。
+      if (style.marker) {
+        c2d.save();
+        c2d.globalAlpha = 0.85;
+        var isSmall = canvas.w < 480;
+        var markerR = isSmall ? 5 : 7;
+        var markerX = isSmall ? 9 : 14;
+        // 帯高がマーカーより小さい極端ケースではさらに縮める
+        for (var bm = 0; bm < state.bands.length; bm++) {
+          var bmBand = state.bands[bm];
+          var cy = bmBand.y0 + bmBand.h / 2;
+          var rDraw = markerR;
+          // 帯高が極端に狭ければマーカーを帯高の 40% に
+          if (bmBand.h > 0 && rDraw * 2 > bmBand.h * 0.8) {
+            rDraw = Math.max(3, bmBand.h * 0.4);
+          }
+          // 外枠
+          c2d.fillStyle = 'rgba(255,255,255,0.9)';
+          c2d.beginPath();
+          c2d.arc(markerX, cy, rDraw + 1.5, 0, Math.PI * 2);
+          c2d.fill();
+          // 中の色玉
+          c2d.fillStyle = 'hsl(' + Math.round(bmBand.hue) + ', 90%, 50%)';
+          c2d.beginPath();
+          c2d.arc(markerX, cy, rDraw, 0, Math.PI * 2);
+          c2d.fill();
+        }
+        c2d.restore();
+      }
     }
   });
 
@@ -454,5 +533,6 @@
     state.active = false;
     state.bands = [];
     state.stageId = null;
+    state.style = null;
   });
 })();

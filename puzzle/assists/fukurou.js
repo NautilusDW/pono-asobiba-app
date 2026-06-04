@@ -4,9 +4,10 @@
 // 完成形のシルエット (X-Ray プレビュー) を約 2.5 秒間透過表示する補助機能。
 //
 // 段階開示 (PonoBond Lv ベース):
-//   Lv 0-1: 黒シルエットのみ
-//   Lv 2  : シルエット + ぼんやりとしたグレースケール プレビュー
-//   Lv 3  : シルエット + グレースケール + STAGES[stage].title テキスト表示
+//   Lv 0  : 発動しない (ガード)
+//   Lv 1  : 黒シルエット (α=0.78)
+//   Lv 2  : grayscale + blur 画像 (α=0.50) でぼんやりとしたプレビュー
+//   Lv 3  : 輪郭線 (dark edge) + STAGES[stage].title テキスト (α=0.65)
 //
 // 設計方針:
 //   - main.js の private 変数 (boardX/Y/W/H, sourceImg, redraw) には触らない。
@@ -171,24 +172,33 @@
 
     ctx2d.save();
     try {
-      // 1) 全体セピアオーバーレイ (微暗)
-      ctx2d.globalAlpha = 0.55 * alpha;
+      // 1) 全体セピアオーバーレイ
+      //    Lv ごとに「セピア層」の濃さを変える: Lv1 は強い影で覆い、 Lv2/Lv3 は
+      //    後段のプレビュー/輪郭が読み取れる強度まで弱める (合成の二重スケール
+      //    を回避する high-finding 修正)。
+      //    fadeAlpha (`alpha`) は 0..1 のフェードカーブ。 各層は (目標α * alpha)
+      //    で 1 回だけ乗算され、 互いに stack 加算されないように透明度を再設計した。
+      var sepiaTarget = (lv >= 3) ? 0.55 : (lv === 2 ? 0.60 : 0.78);
+      ctx2d.globalAlpha = sepiaTarget * alpha;
       ctx2d.fillStyle = 'rgba(80, 56, 32, 1)';
       ctx2d.fillRect(0, 0, cw, ch);
 
-      // 2) Lv2+ ぼんやりグレースケール プレビュー
-      if (lv >= 2) {
-        ctx2d.globalAlpha = 0.55 * alpha;
-        ctx2d.globalCompositeOperation = 'source-over';
-        try { ctx2d.filter = 'grayscale(100%) contrast(110%) brightness(95%)'; } catch (_) {}
-        ctx2d.drawImage(state.image, rect.x, rect.y, rect.w, rect.h);
-        try { ctx2d.filter = 'none'; } catch (_) {}
+      // 2) Lv 別プレビュー
+      //    Lv1: 黒シルエット (α=0.78)
+      //    Lv2: grayscale + blur 画像 (α=0.60) — high-finding により 0.50→0.60 に強化
+      //    Lv3: 輪郭線 (dark edge) + タイトル (α=0.70)
+      if (lv >= 3) {
+        // Lv3: アウトラインのみ (画像本体は隠す)
+        drawOutlineEdge(ctx2d, state.image, rect, alpha);
+      } else if (lv === 2) {
+        // Lv2: ぼんやりグレースケール (blur) プレビュー
+        drawGrayBlurPreview(ctx2d, state.image, rect, alpha);
+      } else {
+        // Lv1: シルエット (黒影)
+        drawSilhouette(ctx2d, state.image, rect, alpha);
       }
 
-      // 3) シルエット (全 Lv 共通) — Lv1 は完全黒影、 Lv2+ はアウトラインのみ
-      drawSilhouette(ctx2d, state.image, rect, lv, alpha);
-
-      // 4) Lv3: ステージタイトルテキスト
+      // 3) Lv3: ステージタイトルテキスト
       if (lv >= 3 && state.stageTitle) {
         ctx2d.globalCompositeOperation = 'source-over';
         ctx2d.globalAlpha = 0.96 * alpha;
@@ -202,8 +212,8 @@
     state.rafId = window.requestAnimationFrame(drawFrame);
   }
 
-  // 「シルエット」描画
-  function drawSilhouette(ctx2d, img, rect, lv, alpha) {
+  // Lv1: 純粋なシルエット (黒影) — α=0.78
+  function drawSilhouette(ctx2d, img, rect, alpha) {
     ctx2d.save();
     try {
       // ボード矩形でクリップ
@@ -211,22 +221,65 @@
       ctx2d.rect(rect.x, rect.y, rect.w, rect.h);
       ctx2d.clip();
 
-      if (lv >= 2) {
-        // Lv2+: モチーフ輪郭 (薄い線) — 軽量化のため矩形ボーダーのみ
-        ctx2d.globalCompositeOperation = 'source-over';
-        ctx2d.globalAlpha = 0.65 * alpha;
-        ctx2d.strokeStyle = 'rgba(40, 24, 8, 0.85)';
-        ctx2d.lineWidth = 3;
-        ctx2d.strokeRect(rect.x + 1.5, rect.y + 1.5, rect.w - 3, rect.h - 3);
-      } else {
-        // Lv1: 純粋なシルエット (黒影)
-        // 画像のあるピクセルだけを黒く塗る = 画像描画 → source-atop で黒塗り
-        ctx2d.globalCompositeOperation = 'source-over';
-        ctx2d.globalAlpha = 0.95 * alpha;
-        try { ctx2d.filter = 'none'; } catch (_) {}
-        ctx2d.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+      // 画像のあるピクセルだけを黒く塗る = 画像描画 → source-atop で黒塗り
+      ctx2d.globalCompositeOperation = 'source-over';
+      ctx2d.globalAlpha = 0.78 * alpha;
+      try { ctx2d.filter = 'none'; } catch (_) {}
+      ctx2d.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+      ctx2d.globalCompositeOperation = 'source-atop';
+      ctx2d.fillStyle = 'rgba(20, 12, 4, 1)';
+      ctx2d.fillRect(rect.x, rect.y, rect.w, rect.h);
+    } finally {
+      ctx2d.restore();
+    }
+  }
+
+  // Lv2: ぼんやりグレースケール + ブラー プレビュー — α=0.50
+  function drawGrayBlurPreview(ctx2d, img, rect, alpha) {
+    ctx2d.save();
+    try {
+      ctx2d.beginPath();
+      ctx2d.rect(rect.x, rect.y, rect.w, rect.h);
+      ctx2d.clip();
+
+      ctx2d.globalCompositeOperation = 'source-over';
+      // 3-6 才の子に手がかりが残るよう α=0.60 (high-finding 修正で 0.50→0.60)
+      ctx2d.globalAlpha = 0.60 * alpha;
+      try { ctx2d.filter = 'grayscale(100%) blur(2.5px) contrast(115%) brightness(98%)'; } catch (_) {}
+      ctx2d.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+      try { ctx2d.filter = 'none'; } catch (_) {}
+    } finally {
+      ctx2d.restore();
+    }
+  }
+
+  // Lv3: 輪郭線 (canny風 dark edge) — α=0.65
+  // CSS filter で簡易 edge を作る: grayscale → high contrast → invert → overlay
+  // 万一 filter チェーンが効かない環境では grayscale + 太線シルエットにフォールバック
+  function drawOutlineEdge(ctx2d, img, rect, alpha) {
+    ctx2d.save();
+    try {
+      ctx2d.beginPath();
+      ctx2d.rect(rect.x, rect.y, rect.w, rect.h);
+      ctx2d.clip();
+
+      // 試行: 強コントラスト + 明度反転で「擬似的なエッジ」を作る
+      ctx2d.globalCompositeOperation = 'source-over';
+      // Lv3 アウトライン: セピア層を弱めた分、 本体は α=0.70 に強化
+      ctx2d.globalAlpha = 0.70 * alpha;
+      var filterApplied = false;
+      try {
+        ctx2d.filter = 'grayscale(100%) contrast(220%) brightness(110%) invert(100%)';
+        filterApplied = true;
+      } catch (_) { /* noop */ }
+      ctx2d.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+      try { ctx2d.filter = 'none'; } catch (_) {}
+
+      // フィルタが効かなかった環境向けフォールバック (薄い暗シルエット)
+      if (!filterApplied) {
         ctx2d.globalCompositeOperation = 'source-atop';
-        ctx2d.fillStyle = 'rgba(20, 12, 4, 1)';
+        ctx2d.globalAlpha = 0.55 * alpha;
+        ctx2d.fillStyle = 'rgba(40, 24, 8, 1)';
         ctx2d.fillRect(rect.x, rect.y, rect.w, rect.h);
       }
     } finally {
@@ -270,14 +323,19 @@
       if (!stage) return;
 
       var stageIdRaw = (stage.id != null) ? stage.id : hookCtx.stageIndex;
+
+      // Lv0 ガード: 絆 Lv0 の時はまだ発動しない (初プレイ時の白紙体験を守る)
+      var lvNow = stageBondLevel('fukurou', stageIdRaw);
+      if (lvNow <= 0) return;
+
       var key = String(hookCtx.stageIndex) + ':' + String(stageIdRaw);
 
       // 同一ステージ × 同セッション内では発動しない
       if (shownStageKeys[key]) return;
       shownStageKeys[key] = true;
 
-      // 現在の Lv 取得
-      state.level = stageBondLevel('fukurou', stageIdRaw);
+      // 現在の Lv 取得 (既に計算済み)
+      state.level = lvNow;
       state.stageTitle = (typeof stage.title === 'string') ? stage.title
                        : (typeof stage.stageText === 'string') ? stage.stageText
                        : '';

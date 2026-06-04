@@ -5,10 +5,10 @@
 // 完成形画像をパズルボードに半透明でフェード表示する「ゴーストプレビュー」。
 //
 // なかよし度レベル (PonoBond.getLevel('kitsune', stageId)) によって挙動が変わる:
-//   Lv 0  : 表示しない (なかよしになる前は手助けしない)
-//   Lv 1  : α=0.15, 保持 1.0 秒
-//   Lv 2  : α=0.22, 保持 1.5 秒
-//   Lv 3  : α=0.30, 保持 2.0 秒
+//   Lv 0  : Lv 1 と同じ扱い (初プレイ時にいきなり「薄っ」とならないように)
+//   Lv 1  : α=0.30, 保持 1.5 秒
+//   Lv 2  : α=0.42, 保持 2.0 秒
+//   Lv 3  : α=0.55, 保持 2.5 秒
 //
 // 全レベル共通: フェードイン 200ms → ピーク α 保持 → フェードアウト 200ms
 //
@@ -36,12 +36,13 @@
 
   var PARTNER_ID = 'kitsune';
 
-  // Lv -> { alpha, holdMs }。Lv 0 は無効化。
+  // Lv -> { alpha, holdMs }。Lv 0 は Lv 1 と同じ扱い (初プレイ時にいきなり「薄っ」とならないように)。
+  // 明るい iPad / 屋外環境でも知覚可能にするため、 各レベルの α を底上げ (high-finding 修正)。
   var LEVEL_TABLE = {
-    0: null,
-    1: { alpha: 0.15, holdMs: 1000 },
-    2: { alpha: 0.22, holdMs: 1500 },
-    3: { alpha: 0.30, holdMs: 2000 },
+    0: { alpha: 0.38, holdMs: 1500 },
+    1: { alpha: 0.38, holdMs: 1500 },
+    2: { alpha: 0.50, holdMs: 2000 },
+    3: { alpha: 0.62, holdMs: 2500 },
   };
   var FADE_IN_MS = 200;
   var FADE_OUT_MS = 200;
@@ -205,7 +206,7 @@
     var stageId = stage.id;
     var level = getStageLevel(stageId);
     var spec = LEVEL_TABLE[level];
-    if (!spec) return; // Lv 0 は表示しない
+    if (!spec) return; // 念のため未定義 Lv はスキップ (Lv0-3 すべて LEVEL_TABLE に存在)
 
     // ステージ画像 URL を解決。BASE_STAGES の image を最優先。
     var url = (stage && stage.image) || null;

@@ -4,13 +4,18 @@
 //
 // 仕様:
 //   - duringDrag フックで、ドラッグ中のピースと「正解位置 (homeX/homeY)」の距離を計算
-//   - drawOverlay フックで、距離が閾値未満ならピース下に緑色の radial gradient グロー
+//   - drawOverlay フックで、距離が閾値未満なら:
+//       (1) ドラッグ中ピースの現在地 (piece.x/y) を中心に緑グロー
+//       (2) 現在地 → ホーム位置への soft な緑ガイドライン
+//       (3) ホーム位置 (着地点) にも控えめな緑グロー
+//     を重ねて描画 (「ピースを誘導する光」になる)。
 //   - 閾値は Lv (なかよし度) に応じて拡大:
-//       Lv1 → 1.2倍, グロー薄め
-//       Lv2 → 1.5倍, グロー中
-//       Lv3 → 2.0倍, グロー強め
+//       Lv1 → 1.3倍, グロー α=0.35
+//       Lv2 → 1.6倍, グロー α=0.50
+//       Lv3 → 2.0倍, グロー α=0.65
 //       Lv0 (未プレイ) → アシストなし (no-op)
 //   - 通常の SNAP_DIST は変えない。本体定数は不変。グロー閾値だけパートナー補正。
+//   - 手を止めても DRAG_STALE_MS=400ms はガイドが残るようにする。
 //   - partner.id !== 'kojika' なら完全 no-op。
 //
 // このスクリプトは main.js より先に読み込まれることを前提に、 PonoAssistRegister
@@ -23,9 +28,9 @@
 
   // Lv (1〜3) → { distMul, alpha } グロー設定。 Lv0 は不使用。
   var LV_PROFILE = {
-    1: { distMul: 1.2, alpha: 0.28 },
-    2: { distMul: 1.5, alpha: 0.45 },
-    3: { distMul: 2.0, alpha: 0.62 },
+    1: { distMul: 1.3, alpha: 0.35 },
+    2: { distMul: 1.6, alpha: 0.50 },
+    3: { distMul: 2.0, alpha: 0.65 },
   };
 
   // canvas 幅に対する「基準スナップ閾値」の比率。
@@ -35,7 +40,8 @@
   var BASE_THRESHOLD_RATIO = 0.05;
 
   // 直近 duringDrag からの経過がこの ms を越えたらドラッグ中ではないとみなす
-  var DRAG_STALE_MS = 120;
+  // 手を止めても 400ms はガイドが消えないように余裕を持たせる
+  var DRAG_STALE_MS = 400;
 
   // duringDrag で更新する直近ドラッグ状態
   var dragState = {
@@ -131,19 +137,28 @@
     var dist = Math.hypot(dx, dy);
     if (dist >= threshold) return;
 
-    // ピース中心 (homeX/homeY は左上隅) を中心にグロー
-    // pieceW/pieceH は main.js モジュール内変数で公開されていないため、
-    // ピース矩形の「左上 → 中心」のオフセットを homeX-piece.x の関係から
-    // 直接推定できない。 代わりに homeX/homeY を中心扱いで描く (誤差は小)。
-    // 視覚上はピースのおおむね左上付近で光るのでガイドとして十分機能する。
-    var cx = piece.homeX;
-    var cy = piece.homeY;
+    // === グロー位置: ピース現在地 (piece.x/y) を中心に光らせる ===
+    // piece.x/y, piece.homeX/homeY は同じ座標系 (canvas px, ピース左上隅)。
+    // 中心としては左上隅で描いても視覚的に「ピースの周辺が光る」ように見えるが、
+    // 出来るだけピース中央に寄せたい。 pieceW/pieceH は外部から取れないため、
+    // ピース矩形のおおよその中央を canvas 幅から推定する。
+    // (baseThreshold は canvas.width * 0.05 ≒ ピースの 1/4〜1/3 程度のスケール)
+    // ★ ピース外に光がドリフトしないよう [0.4*base, 0.8*base] にクランプ (high-finding 修正)。
+    var pieceHalfRaw = baseThreshold * 0.6;
+    var pieceHalfMin = baseThreshold * 0.4;
+    var pieceHalfMax = baseThreshold * 0.8;
+    var pieceHalf = pieceHalfRaw < pieceHalfMin ? pieceHalfMin
+                  : (pieceHalfRaw > pieceHalfMax ? pieceHalfMax : pieceHalfRaw);
+    var cx = piece.x + pieceHalf;
+    var cy = piece.y + pieceHalf;
+    var hx = piece.homeX + pieceHalf;
+    var hy = piece.homeY + pieceHalf;
 
     // dist が小さいほど不透明に (吸い寄せ感の演出)
     var nearness = 1 - (dist / threshold); // 0..1
     if (nearness < 0) nearness = 0;
     if (nearness > 1) nearness = 1;
-    var alpha = profile.alpha * (0.35 + 0.65 * nearness);
+    var alpha = profile.alpha * (0.40 + 0.60 * nearness);
 
     // glow 半径も Lv で変える
     var radius = baseThreshold * profile.distMul * 1.6;
@@ -152,6 +167,8 @@
     try {
       // 既存ピース描画と干渉しないよう、加算合成で柔らかい光に
       cctx.globalCompositeOperation = 'lighter';
+
+      // --- (1) ピース現在地 (ドラッグ中) を中心とした緑グロー ---
       var grad = cctx.createRadialGradient(cx, cy, radius * 0.05, cx, cy, radius);
       // 中心: 緑強め (柔らかい黄緑寄り) → 外周: 透明
       grad.addColorStop(0.0, 'rgba(140, 230, 130, ' + alpha.toFixed(3) + ')');
@@ -160,6 +177,34 @@
       cctx.fillStyle = grad;
       cctx.beginPath();
       cctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      cctx.fill();
+
+      // --- (2) ピース現在地 → ホーム位置への soft ガイドライン ---
+      // dist が極端に小さければラインは描かない (もう吸着寸前)
+      if (dist > baseThreshold * 0.4) {
+        var lineAlpha = profile.alpha * (0.35 + 0.45 * nearness);
+        var lineGrad = cctx.createLinearGradient(cx, cy, hx, hy);
+        lineGrad.addColorStop(0.0, 'rgba(140, 230, 130, ' + lineAlpha.toFixed(3) + ')');
+        lineGrad.addColorStop(1.0, 'rgba(140, 230, 130, 0)');
+        cctx.strokeStyle = lineGrad;
+        cctx.lineWidth = Math.max(2, baseThreshold * 0.18);
+        cctx.lineCap = 'round';
+        cctx.beginPath();
+        cctx.moveTo(cx, cy);
+        cctx.lineTo(hx, hy);
+        cctx.stroke();
+      }
+
+      // --- (3) ホーム位置 (正解地点) にも控えめな緑グロー (着地点ヒント) ---
+      var homeAlpha = profile.alpha * 0.35 * (0.5 + 0.5 * nearness);
+      var homeRadius = radius * 0.55;
+      var homeGrad = cctx.createRadialGradient(hx, hy, homeRadius * 0.05, hx, hy, homeRadius);
+      homeGrad.addColorStop(0.0, 'rgba(160, 240, 140, ' + homeAlpha.toFixed(3) + ')');
+      homeGrad.addColorStop(0.6, 'rgba(110, 210, 110, ' + (homeAlpha * 0.4).toFixed(3) + ')');
+      homeGrad.addColorStop(1.0, 'rgba(80, 180, 100, 0)');
+      cctx.fillStyle = homeGrad;
+      cctx.beginPath();
+      cctx.arc(hx, hy, homeRadius, 0, Math.PI * 2);
       cctx.fill();
     } catch (_) {
       // 万が一描画失敗しても本体に影響を出さない

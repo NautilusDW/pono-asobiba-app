@@ -46,22 +46,8 @@
 //   afterShowSuccess(ctx)   — showSuccessModal() 末尾。 ctx={ stageIndex, stage, partner, bondResult }
 //
 // window.PonoAssistRegister(hookName, fn) で登録、 window.PonoAssistHooks[hookName] が配列。
-if (typeof window !== 'undefined') {
-  window.PonoAssistHooks = window.PonoAssistHooks || {
-    beforeStageStart: [],
-    afterStageReady: [],
-    duringDrag: [],
-    beforeSnap: [],
-    afterSnap: [],
-    drawOverlay: [],
-    beforeShowSuccess: [],
-    afterShowSuccess: [],
-  };
-  window.PonoAssistRegister = window.PonoAssistRegister || function(hookName, fn) {
-    if (!window.PonoAssistHooks[hookName]) window.PonoAssistHooks[hookName] = [];
-    if (typeof fn === 'function') window.PonoAssistHooks[hookName].push(fn);
-  };
-}
+// 登録 API (PonoAssistHooks / PonoAssistRegister) は assists/_hooks-init.js が
+// main.js より前に初期化する。main.js は使う側 (runAssistHooks / getCurrentPartner) のみを保持。
 
 // 現在選択中のパートナーを取得 (未ロード時は null)。 hook context に渡すヘルパ。
 function getCurrentPartner() {

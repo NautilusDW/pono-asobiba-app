@@ -97,7 +97,8 @@
 
   <script src="voice.js"></script>
   <!-- なかよし MVP (Phase 1): partner / bond / assists / UI モジュール -->
-  <!-- 順序: データ(partners → bond) → assist 群 → UI(partner-select → bond-ui) → main.js -->
+  <!-- 順序: hooks-init(レジストリ) → データ(partners → bond) → assist 群 → UI(partner-select → bond-ui) → main.js -->
+  <script src="assists/_hooks-init.js"></script>
   <script src="partners.js"></script>
   <script src="bond.js"></script>
   <script src="assists/kitsune.js"></script>
