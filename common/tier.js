@@ -27,6 +27,12 @@
 (function() {
   'use strict';
 
+  // Phase 1: 共通5本のロックを全て無効化するセーフフラグ。 Phase 2 で true に切替。
+  if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
+    window.PONO_TIER_GAME_LOCKS_ENABLED = false;
+  }
+  function gameLocksEnabled() { return !!window.PONO_TIER_GAME_LOCKS_ENABLED; }
+
   // ---- tier 判定 ----
   function getTier() {
     try {

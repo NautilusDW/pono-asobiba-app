@@ -339,7 +339,7 @@
 
     var tag = document.createElement('div');
     tag.className = 'promo-modal-tag';
-    tag.textContent = 'えほんをかったひと だけ';
+    tag.textContent = 'えほん モード だけ';
     box.appendChild(tag);
 
     var title = document.createElement('div');
