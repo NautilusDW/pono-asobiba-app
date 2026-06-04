@@ -1857,6 +1857,61 @@ body.layout-editor-on .character img {
   text-shadow: 1px 1px 0 rgba(80,50,10,0.5);
 }
 
+/* ===== Tier lock (free/book で遊べない難易度に🔒+グレーアウト) =====
+   oto/index.html L1217-1258 と同じパターン。 子孫要素にも cascade して
+   transform / animation / transition を止め、 タップしても拡縮しない
+   見た目にする。 タップ自体は受けて showSubscribePromo() に誘導。 */
+.diff-btn.tier-locked,
+.diff-btn.tier-locked * {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  will-change: auto !important;
+}
+.diff-btn.tier-locked {
+  filter: saturate(0.35) brightness(0.94);
+  opacity: 0.6;
+  position: relative;
+  /* is-active 由来の強調を打ち消す */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2)) !important;
+  border-color: var(--wood-mid) !important;
+  color: var(--text) !important;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 14px rgba(80,50,10,0.28) !important;
+}
+.diff-btn.tier-locked:hover,
+.diff-btn.tier-locked:active,
+.diff-btn.tier-locked:focus,
+.diff-btn.tier-locked:hover *,
+.diff-btn.tier-locked:active *,
+.diff-btn.tier-locked:focus * {
+  opacity: 0.6;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+  filter: saturate(0.35) brightness(0.94);
+}
+.diff-btn.tier-locked .diff-stars,
+.diff-btn.tier-locked .diff-label {
+  color: var(--text) !important;
+  text-shadow: 1px 1px 0 rgba(80,50,10,0.25) !important;
+}
+.diff-btn.tier-locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) !important;
+  transform-origin: center center !important;
+  font-size: 1.8rem;
+  line-height: 1;
+  z-index: 5;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  opacity: 0.95;
+  animation: none !important;
+  transition: none !important;
+}
+
 /* ===== Result modal ===== */
 .overlay {
   position: fixed; inset: 0; z-index: 200;
@@ -3377,6 +3432,22 @@ const MODE_TO_CATEGORIES = {
   know:    ['trivia', 'weather', 'body', 'opposite']
 };
 let selectedMode = 'inspire';
+
+// ─── 難易度ロック判定 (free/book × mode × Lv) ───
+//   common/tier.js の PonoTier.isQuizlandDifficultyUnlocked を使う。
+//   PonoTier が無い (= 古い sw キャッシュ等) 場合は安全側で全開放。
+//   呼び出しの度に最新の selectedMode を渡すことで mode 切替が即時反映される。
+function isQuizlandDifficultyUnlockedLocal(diff) {
+  if (!window.PonoTier || typeof window.PonoTier.isQuizlandDifficultyUnlocked !== 'function') return true;
+  return window.PonoTier.isQuizlandDifficultyUnlocked(diff, selectedMode);
+}
+function applyDiffTierLockUI() {
+  document.querySelectorAll('.diff-btn').forEach(function(b) {
+    var locked = !isQuizlandDifficultyUnlockedLocal(b.dataset.diff);
+    b.classList.toggle('tier-locked', locked);
+    b.setAttribute('aria-disabled', locked ? 'true' : 'false');
+  });
+}
 
 // ═══════════════════════════════════════════════════════════
 // ふくろうはかせ セリフ (8カテゴリ: 問題/ヒント1/ヒント2/正解/レア褒め/不正解/連続ミス/クリア)
@@ -5654,7 +5725,17 @@ function initGame() {
   // Perfect 演出用クラスをクリア (次の 5/5 で再発動できるように)
   _rov.classList.remove('is-perfect', 'is-animated');
   if (playlist.length === 0) {
-    // 何らかの理由で問題が組めなかった場合 (基本的に来ない) はモード選択へ
+    // 何らかの理由で問題が組めなかった場合の保険:
+    // free × normal/hard, book × know × normal/hard のように現ティアでは
+    // 全問ロックされる組み合わせの時にここに落ちる。 黙ってモード画面に
+    // 戻すと「タイトルに戻された」と誤解されるため、 サブスク誘導モーダルで
+    // 「アプリで遊べるよ」と明示する。
+    if (window.PonoTier && window.PonoTier.showSubscribePromo) {
+      window.PonoTier.showSubscribePromo({
+        title: 'この むずかしさは アプリ で あそべるよ',
+        body: 'もっと たくさんの もんだいが まっているよ'
+      });
+    }
     document.getElementById('mode-screen').classList.remove('hidden');
     return;
   }
@@ -7264,6 +7345,14 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     ALL_CATS.forEach(function(c) {
       selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
     });
+    // モード変更で book × know の Lv2/3 がロック対象に変わるため、
+    // 現在の selectedDifficulty がロック対象なら easy に強制リセット。
+    if (!isQuizlandDifficultyUnlockedLocal(selectedDifficulty)) {
+      selectedDifficulty = 'easy';
+      try { localStorage.setItem(DIFF_STORAGE_KEY, 'easy'); } catch (e) {}
+      refreshDiffActive();
+    }
+    applyDiffTierLockUI();
     // mode-screen hide is deferred to playOpeningCinematic so the black
     // overlay shows BEFORE the underlying game UI is exposed.
     try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
@@ -7294,12 +7383,28 @@ document.querySelectorAll('.diff-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     const d = btn.dataset.diff;
     if (DIFF_LEVELS.indexOf(d) === -1) return;
+    // ティア × モードでロック中ならサブスク誘導モーダルを出し、 selectedDifficulty は変更しない
+    if (!isQuizlandDifficultyUnlockedLocal(d)) {
+      if (window.PonoTier && window.PonoTier.showSubscribePromo) {
+        window.PonoTier.showSubscribePromo({
+          title: 'むずかしい もんだいが ふえているよ！',
+          body: 'もっと たくさんの なぞなぞは アプリ で あそべるよ'
+        });
+      }
+      return;
+    }
     selectedDifficulty = d;
     try { localStorage.setItem(DIFF_STORAGE_KEY, d); } catch (e) { /* ignore */ }
     refreshDiffActive();
   });
 });
+// 起動時に保存された selectedDifficulty が現モードでロック対象なら easy に戻す。
+if (!isQuizlandDifficultyUnlockedLocal(selectedDifficulty)) {
+  selectedDifficulty = 'easy';
+  try { localStorage.setItem(DIFF_STORAGE_KEY, 'easy'); } catch (e) {}
+}
 refreshDiffActive();
+applyDiffTierLockUI();
 
 // 共通: layout-editor 中は game progression handler を全部無効化
 //   (要素を掴んで動かしたいのに、ボタンが反応してモード/結果画面が開いてしまうのを防ぐ)

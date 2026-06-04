@@ -196,6 +196,26 @@
     return FREE_QUIZLAND_QUESTION_IDS.indexOf(qid) >= 0;
   }
 
+  // ---- quizland 難易度ロック ----
+  // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を ティア × モード のペアで判定する。
+  //   free: easy のみ (Lv1)
+  //   book × inspire: 全難易度 OK (Lv1/2/3)
+  //   book × know:    easy のみ (Lv1)
+  //   sub: 全開放
+  // mode を省略すると安全側で easy のみ (book × know と同等扱い) を返す。
+  // DIFF_MIN_LEVEL は呼び出し側 (quizland) と整合: easy=1, normal=2, hard=3。
+  function isQuizlandDifficultyUnlocked(diff, mode) {
+    if (!gameLocksEnabled()) return true;
+    var lvMap = { easy: 1, normal: 2, hard: 3 };
+    var lv = lvMap[diff] || 1;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'free') return lv === 1;
+    // book: inspire のみ全 Lv 解放、 know は Lv1 まで
+    if (mode === 'inspire') return true;
+    return lv === 1;
+  }
+
   function isMazeStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
@@ -409,6 +429,7 @@
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
     BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS,
     isQuizlandQuestionUnlocked: isQuizlandQuestionUnlocked,
+    isQuizlandDifficultyUnlocked: isQuizlandDifficultyUnlocked,
     isMazeStageUnlocked: isMazeStageUnlocked,
     isPuzzleStageUnlocked: isPuzzleStageUnlocked,
     isPuzzlePonoSpecialUnlocked: isPuzzlePonoSpecialUnlocked,

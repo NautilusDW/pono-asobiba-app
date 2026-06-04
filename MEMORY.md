@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-04T10:02:15Z - quizland 難易度ロックUI実装: free=easy / book=inspire全Lv+know=easy / sub=全開放 のティア×モード判定で.diff-btnに🔒+グレーアウト+showSubscribePromo導入、initGame空配列時のフォールバック強化、tier.jsにisQuizlandDifficultyUnlocked追加、CACHE_VERSION 791
+- **タスク**: quizland 難易度ロックUI実装: free=easy / book=inspire全Lv+know=easy / sub=全開放 のティア×モード判定で.diff-btnに🔒+グレーアウト+showSubscribePromo導入、initGame空配列時のフォールバック強化、tier.jsにisQuizlandDifficultyUnlocked追加、CACHE_VERSION 791
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 116
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 12, "Agent": 53, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 5, "Bash": 31}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-04T09:52:19Z - bento box_rect_split: 中心アンカー前提でマスク拡大とfoodSpot再配置、サイズ巻き戻し撤回、誤コメント削除、CACHE_VERSION 790
 - **タスク**: bento box_rect_split: 中心アンカー前提でマスク拡大とfoodSpot再配置、サイズ巻き戻し撤回、誤コメント削除、CACHE_VERSION 790
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 45, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 16}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-04T07:46:44Z - play.html パスワード解除モーダルのバグ修正 ([hidden]属性CSS優先度問題で成功UI常時表示 + フレーム透過で背景透けて可読性低下)
-- **タスク**: play.html パスワード解除モーダルのバグ修正 ([hidden]属性CSS優先度問題で成功UI常時表示 + フレーム透過で背景透けて可読性低下)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 78
-- **エラー数**: 6
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 6, "Agent": 42, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 14}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
