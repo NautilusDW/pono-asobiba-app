@@ -1013,6 +1013,31 @@ html, body {
     drop-shadow(0 -2px 0 #22C55E);
   mix-blend-mode: multiply;
 }
+/* マスクエディターのダミー食材プレビュー (本画面で食材を置いた時の位置を可視化) */
+.free-mask-preview-dummy {
+  pointer-events: none !important;
+}
+.free-mask-preview-dummy .free-css-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #7A2E0E;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  background: rgba(251, 146, 60, 0.55);
+  border: 2px dashed #C2410C;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.75) inset;
+}
+.free-mask-preview-dummy .mask-preview-dummy-large {
+  background: rgba(248, 113, 113, 0.45);
+  border-color: #B91C1C;
+  font-size: 22px;
+}
 .free-guide-card {
   border: 2px solid #F8C36B;
   border-radius: 12px;
@@ -3426,6 +3451,9 @@ let freePendingCupEditorUid = null;
 let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
 let freeMaskEditorMode = false;
+// マスクエディター時、 mask 領域に「ダミー食材」を仮置きして実画面とのズレを目視確認するためのフラグ。
+// マスク調整時に「食材プレビュー」 ON/OFF を切り替える。
+let freeMaskEditorFoodPreview = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
@@ -4344,22 +4372,34 @@ function getNextFreeSpot(type) {
 }
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
-  // brushItem (キャベツ等) は okazu (おかず) 領域だけに配置させる。
-  // box.foodPlaceBounds が定義されている場合はそちらを優先することで、
-  // 配置画面のマスク可視域 (maskBounds) と物理的な配置可能域を一致させる。
-  const b = (item && item.brushItem && box && box.foodPlaceBounds)
+  // okazu (おかず) 領域への配置を mask 可視域に一致させる:
+  // - brushItem (キャベツ等) は従来通り foodPlaceBounds
+  // - 通常の food アイテムも foodPlaceBounds (= maskBounds) に limit することで
+  //   「マスク外に置いた食材が見えなくなる」副作用を防ぐ
+  // rice / decor / cup / divider は従来通り placeBounds (箱全体)
+  const isFood = item && (item.brushItem || item.type === 'food');
+  const b = (isFood && box && box.foodPlaceBounds)
     ? box.foodPlaceBounds
     : getPlacementBounds(box);
   return clampPointToBounds(x, y, item, b);
 }
 function clampPointToBounds(x, y, item, b) {
   const size = (item && item.size ? item.size : 70) * (item && item.scale ? item.scale : 1);
-  const margin = item && item.type === 'divider'
-    ? Math.max(40, size * 0.34)
-    : Math.max(22, size * 0.28);
+  // divider は箱の枠線として立てる物なので、はみ出さないよう従来通り大きめの margin
+  if (item && item.type === 'divider') {
+    const m = Math.max(40, size * 0.34);
+    return {
+      x: clamp(x, b.x + m, b.x + b.w - m),
+      y: clamp(y, b.y + m, b.y + b.h - m),
+    };
+  }
+  // それ以外 (food / brushItem / rice / decor / cup) は applyBoxVisualMask によって
+  // 視覚的に mask クリップされるため、中心アンカーを mask 端まで持っていけるようにする。
+  // ただし完全に端 (= 食材の半分以上が消える) は UX 上避けたいので 4px だけ安全マージン。
+  const m = 4;
   return {
-    x: clamp(x, b.x + margin, b.x + b.w - margin),
-    y: clamp(y, b.y + margin, b.y + b.h - margin),
+    x: clamp(x, b.x + m, b.x + b.w - m),
+    y: clamp(y, b.y + m, b.y + b.h - m),
   };
 }
 function clampPointToRice(x, y, item) {
@@ -5369,6 +5409,12 @@ function createFreePlacedElement(item, interactive) {
   el.style.setProperty('--rot', (item.rotation || 0) + 'deg');
   el.style.setProperty('--scale', item.scale || 1);
   el.appendChild(createFreeVisual(item));
+  // マスクエディターのダミー食材は drag 不可・選択不可 (装飾のみ)
+  if (item.__maskPreview) {
+    el.classList.add('free-mask-preview-dummy');
+    el.style.pointerEvents = 'none';
+    return el;
+  }
   if (interactive && !freeBrushStampDef) {
     el.addEventListener('pointerdown', ev => {
       ev.stopPropagation();
@@ -5506,6 +5552,64 @@ function createFreeMainGuide() {
   });
   return guide;
 }
+// マスクエディターの食材プレビュー用ダミー食材を生成する。
+// foodPlaceBounds (= mask 可視域) の中に複数サイズで配置し、
+// 「実画面で配置された食材が mask でクリップされる様子」 を再現する。
+function buildFreeMaskPreviewItems(box) {
+  if (!box) return [];
+  const b = box.foodPlaceBounds || box.maskBounds || box.placeBounds;
+  if (!b) return [];
+  // 代表的な食材サイズ: 小 (170 ハンバーグ系) / 大 (292 やきざけ系) を mask 内に置く
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  const baseLayer = 1000;
+  const dummies = [];
+  // 中央に大きめ (292 相当) — 半透明オレンジで可視化
+  dummies.push({
+    uid: '__mask_preview_large__',
+    type: 'food',
+    name: '__preview__',
+    image: '',
+    emoji: 'L',
+    css: 'mask-preview-dummy mask-preview-dummy-large',
+    x: cx,
+    y: cy,
+    size: Math.min(292, b.w * 0.95, b.h * 0.95),
+    scale: 1,
+    rotation: 0,
+    layer: baseLayer,
+    __maskPreview: true,
+  });
+  // 四隅近くに小サイズ (170 相当) を 4 個置いて、 端まで使える事を可視化
+  const small = Math.min(120, b.w * 0.32, b.h * 0.32);
+  const half = small / 2;
+  // clampPointToBounds 後の最大可動範囲を再現 (margin 4)
+  const m = 4;
+  const corners = [
+    { x: b.x + m + half * 0.6, y: b.y + m + half * 0.6 }, // 左上
+    { x: b.x + b.w - m - half * 0.6, y: b.y + m + half * 0.6 }, // 右上
+    { x: b.x + m + half * 0.6, y: b.y + b.h - m - half * 0.6 }, // 左下
+    { x: b.x + b.w - m - half * 0.6, y: b.y + b.h - m - half * 0.6 }, // 右下
+  ];
+  corners.forEach((c, i) => {
+    dummies.push({
+      uid: '__mask_preview_small_' + i + '__',
+      type: 'food',
+      name: '__preview__',
+      image: '',
+      emoji: ['LU', 'RU', 'LD', 'RD'][i],
+      css: 'mask-preview-dummy mask-preview-dummy-small',
+      x: c.x,
+      y: c.y,
+      size: small,
+      scale: 1,
+      rotation: 0,
+      layer: baseLayer + i + 1,
+      __maskPreview: true,
+    });
+  });
+  return dummies;
+}
 function renderFreeLayoutInto(host, opts = {}) {
   const box = bentoBoxes.find(b => b.id === (opts.boxId || selectedBentoBoxId)) || bentoBoxes[0];
   const items = Array.isArray(opts.items) ? opts.items : placedItems;
@@ -5521,9 +5625,19 @@ function renderFreeLayoutInto(host, opts = {}) {
     : opts.interactive && tierCount > 1
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
-  const displayItems = useIntegratedRice
+  let displayItems = useIntegratedRice
     ? visibleItems.filter(item => item.uid !== integratedRice.uid && item.parentId !== integratedRice.uid)
     : visibleItems;
+  // ★ マスクエディター時のダミー食材プレビュー (FIX-3):
+  // エディターは緑色 .free-mask-preview しか出さないため、 ユーザーが「実画面で食材を置いたら
+  // どう見えるか」 を確認できなかった。 食材プレビュー ON 時は mask 領域内に複数サイズの
+  // ダミーを並べて「実画面と同じ位置にマスクで切り出される」 ことを目視確認させる。
+  if (opts.interactive && freeMaskEditorMode && freeMaskEditorOpen && freeMaskEditorFoodPreview) {
+    const previewItems = buildFreeMaskPreviewItems(box);
+    if (previewItems.length) {
+      displayItems = displayItems.concat(previewItems);
+    }
+  }
   host.innerHTML = '';
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
@@ -5931,6 +6045,18 @@ function renderFreeMaskEditorControls() {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   }));
+  // ★ 食材プレビュー (FIX-3): mask 内に「実画面で配置される食材」をダミー表示し、
+  // エディター↔本画面の位置ズレを目視確認できるようにする
+  actions.appendChild(makeSmallControlButton(
+    freeMaskEditorFoodPreview ? '食材かくす' : '食材プレビュー',
+    freeMaskEditorFoodPreview ? 'active' : '',
+    () => {
+      freeMaskEditorFoodPreview = !freeMaskEditorFoodPreview;
+      if (freeMaskEditorFoodPreview) freeMaskEditorOpen = true;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }
+  ));
   panel.appendChild(actions);
   if (freeMaskEditorOpen) {
     panel.appendChild(makeMaskRange('X', 'x', -80, FREE_LAYOUT_W, bounds));
