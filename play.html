@@ -27,22 +27,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 
-  <!-- Preload thumbnails so they're decoded before renderCards() paints
-       the wood-card list. Without this, one of the 4 round thumbs shows
-       blank for a frame on slow networks / bfcache restore.
+  <!-- Preload released-game thumbnails so they're decoded before renderCards()
+       paints the wood-card list. Coming-soon cards render a CSS "?" mark,
+       so their future thumbnails are intentionally not preloaded.
        (Cloudflare Workers serves these fine; local preview environments
        that 404 preload requests just ignore the hint — no functional cost.) -->
-  <!-- NOTE: assets/ui/thumb_maze.webp は中身が ずかん風 (本+きのこ) で
-       めいろの絵ではないため、 maze カードでは使っていない (zukan に流用)。
-       maze カードは本物のめいろ絵 (ランタン+小道) が入っている
+  <!-- NOTE: maze カードは本物のめいろ絵 (ランタン+小道) が入っている
        assets/ui/thumb_quiz-sound.webp を流用している。 -->
   <link rel="preload" as="image" href="assets/ui/thumb_quizland_owl.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_wordmatch.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_maze.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_oto.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_bento.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_kitchen.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_puzzle.webp">
 
   <style>
@@ -316,12 +311,9 @@
     .game-card.is-coming-soon .game-card__play { opacity: 0.55; }
     /* Debug-playable coming-soon cards: cancel the desaturation/dim play
        button so devs can verify the destination game without losing the
-       じゅんびちゅう badge. Hover peek/zoom is slightly amplified to make
-       the debug-only entries visually distinct. */
+       じゅんびちゅう badge. Visual hover behavior still stays locked. */
     .game-card.is-coming-soon.is-debug-playable { filter: none; }
     .game-card.is-coming-soon.is-debug-playable .game-card__play { opacity: 1; }
-    .game-card.is-coming-soon.is-debug-playable:hover .game-card__thumb { transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12)); }
-    .game-card.is-coming-soon.is-debug-playable:hover .game-card__peek { opacity: 0.92; }
 
     .game-card {
       position: relative;
@@ -434,6 +426,32 @@
       z-index: 1;
       transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
     }
+    .game-card__thumbPlaceholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      color: #5b3a1e;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      font-family: inherit;
+      text-shadow:
+        1.6px 0 0 rgba(255, 250, 230, 0.98),
+        -1.6px 0 0 rgba(255, 250, 230, 0.98),
+        0 1.6px 0 rgba(255, 250, 230, 0.98),
+        0 -1.6px 0 rgba(255, 250, 230, 0.98),
+        1.1px 1.1px 0 rgba(255, 250, 230, 0.98),
+        -1.1px 1.1px 0 rgba(255, 250, 230, 0.98),
+        1.1px -1.1px 0 rgba(255, 250, 230, 0.98),
+        -1.1px -1.1px 0 rgba(255, 250, 230, 0.98),
+        0 3px 5px rgba(80, 50, 20, 0.35);
+    }
+    .game-card.is-coming-soon .game-card__thumbWrap {
+      background:
+        radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.88), rgba(255, 247, 222, 0.68) 34%, rgba(221, 190, 133, 0.78) 100%);
+    }
     .game-card:hover .game-card__thumb,
     .game-card:focus-visible .game-card__thumb {
       transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12));
@@ -480,7 +498,8 @@
     body.peek-always .game-card__peek {
       opacity: 0.92;
     }
-    .game-card.is-coming-soon:hover .game-card__peek {
+    .game-card.is-coming-soon:hover .game-card__peek,
+    .game-card.is-coming-soon:focus-visible .game-card__peek {
       opacity: 0;          /* don't tease previews for unreleased games */
     }
     /* Make sure title/desc still sit above the peek layer.
@@ -523,13 +542,6 @@
         -0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
         0 2px 4px rgba(0, 0, 0, 0.6);
     }
-    /* Coming-soon cards never trigger the hover transformation */
-    .game-card.is-coming-soon:hover .game-card__title,
-    .game-card.is-coming-soon:hover .game-card__desc {
-      color: inherit;       /* fall back to per-card defaults */
-      text-shadow: inherit;
-    }
-
     /* 3-5. 中央のテキスト (タイトル + 説明) */
     .game-card__text {
       position: absolute;
@@ -618,6 +630,24 @@
       overflow: hidden;
       text-overflow: ellipsis;
       letter-spacing: 0.04em;
+    }
+    .game-card.is-coming-soon .game-card__title,
+    .game-card.is-coming-soon:hover .game-card__title,
+    .game-card.is-coming-soon:focus-visible .game-card__title,
+    .game-card.is-coming-soon .game-card__desc,
+    .game-card.is-coming-soon:hover .game-card__desc,
+    .game-card.is-coming-soon:focus-visible .game-card__desc {
+      color: #5b3a1e;
+      text-shadow:
+        1.4px 0 0 rgba(255, 250, 230, 0.95),
+        -1.4px 0 0 rgba(255, 250, 230, 0.95),
+        0 1.4px 0 rgba(255, 250, 230, 0.95),
+        0 -1.4px 0 rgba(255, 250, 230, 0.95),
+        1px 1px 0 rgba(255, 250, 230, 0.95),
+        -1px 1px 0 rgba(255, 250, 230, 0.95),
+        1px -1px 0 rgba(255, 250, 230, 0.95),
+        -1px -1px 0 rgba(255, 250, 230, 0.95),
+        0 3px 4px rgba(80, 50, 20, 0.35);
     }
 
     /* 6. 右の丸再生ボタン */
@@ -1677,7 +1707,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 587;
+    const PAGE_CACHE_VERSION = 802;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -1710,12 +1740,16 @@
       // 全カードに loading="lazy" を付けると iOS Safari の intersection observer 経路で
       // ファーストビューのカードも初回 blank になる事故 (2026-05 修正済) の再発防止。
       const loadingAttr = (rep === 0) ? 'eager' : 'lazy';
+      const peekStyle = g.comingSoon ? 'none' : `url('${esc(__bust(g.bg))}')`;
+      const thumbMarkup = g.comingSoon
+        ? '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>'
+        : `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">`;
       return `
-        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
+        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
           <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
-            <img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
+            ${thumbMarkup}
           </div>
           <div class="game-card__text">
             <div class="game-card__title">${decorateKana(g.title)}</div>
