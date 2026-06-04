@@ -153,7 +153,7 @@ html, body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 0 0 78px;
+  padding: 0;
 }
 
 .pono-row {
@@ -941,12 +941,13 @@ html, body {
      - cup / divider 選択時: 小/中/大 + OK/なおす
      - それ以外: ⇺ ⇻ ↓ ↑ つぎを えらぶ */
 .free-context-bar {
-  position: absolute;
-  z-index: 41;
-  left: clamp(18px, 3vw, 38px);
-  bottom: 8px;
-  width: calc(100% - clamp(320px, 36%, 390px) - 48px);
-  height: 64px;
+  /* v805: position:absolute をやめ、 left-panel の flex item として stage 直下に配置。
+     #app > * { position:relative; z-index:1 } の詳細度バグを回避し、
+     かつ left-panel 幅に自然追従させるための再構成。 */
+  flex: 0 0 64px;
+  margin-top: 8px;
+  width: 100%;
+  align-self: stretch;
   display: none;
   align-items: center;
   gap: 10px;
@@ -958,8 +959,9 @@ html, body {
   color: #064E3B;
   pointer-events: auto;
   box-sizing: border-box;
+  z-index: 2;
 }
-#app.free-layout-active > .free-context-bar {
+#app.free-layout-active .left-panel > .free-context-bar {
   display: flex;
 }
 .free-context-bar.is-empty .actions { opacity: 0.3; pointer-events: none; }
@@ -2638,6 +2640,14 @@ html, body {
         <div class="bento-okazu" id="bento-okazu"></div>
       </div>
     </div>
+    <!-- v805: 下部固定ツールバー (旧 .free-context-toolbar 後継、 stage 真下に常駐)。
+         left-panel 内に置くことで bento-box の真下に flex で並ぶ。
+         中身は renderFreeContextBar() が選択状態に応じて差し替える。 -->
+    <div class="free-context-bar is-empty" id="free-context-bar" aria-live="polite">
+      <div class="sel-thumb" aria-hidden="true"></div>
+      <div class="hint-text">おかずを えらんでね</div>
+      <div class="actions"></div>
+    </div>
   </div>
 
   <!-- 右: ポノ + 食材選択 -->
@@ -2652,13 +2662,6 @@ html, body {
   <div class="free-bottom-guide" id="free-bottom-guide" aria-live="polite">
     <img src="../assets/images/bento/ui/decor_pono_peek.png" class="free-bottom-pono" id="free-pono-img" alt="ポノ">
     <div class="free-bottom-speech" id="free-speech">おなか すいたなー</div>
-  </div>
-  <!-- v804: 下部固定ツールバー (旧 .free-context-toolbar 後継、 stage 下に常駐)。
-       中身は renderFreeContextBar() が選択状態に応じて差し替える。 -->
-  <div class="free-context-bar is-empty" id="free-context-bar" aria-live="polite">
-    <div class="sel-thumb" aria-hidden="true"></div>
-    <div class="hint-text">おかずを えらんでね</div>
-    <div class="actions"></div>
   </div>
 </div>
 
