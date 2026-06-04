@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-04 - [batch:253-oto-thumb-gpt2-redo] Codex: user 指摘「音タッチの手をローカルで生成したでしょう」を受領。前回 `thumb_oto.webp` の手はローカル上描きだったため不採用扱いにし、GPT Image 2 built-in生成物で丸ごと差し替える。ローカル処理は512px WebP変換のみ。 (by Codex)
+- 2026-06-04 - [batch:253-oto-thumb-gpt2-redo] DONE - Codex: `thumb_oto.webp` をGPT Image 2 built-in生成物で丸ごと差し替え。生成元は `ig_0f728c7cffb86df9016a21530ef950819199fd8cdd56cabec2.png`、ローカル処理は512px WebP変換のみ。Playwrightで `play.html` 横画面表示、`thumb_oto.webp` HTTP 200、JSエラーなし、スクショ目視を確認。`sw.js` は v793。 (by Codex)
 - 2026-06-04 - [batch:252-title-card-icon-followup] Codex: user 指摘「フクロウを少し縮小して右下へ / 音タッチの手が不自然」を受領。`thumb_quizland_owl.webp` は既存生成物をレイヤー分離気味に調整、`thumb_oto.webp` はGPT Image 2 built-inでポノの丸い手が自然にタップする単純アイコンへ再生成する。`sw.js` 現在値 v790 を確認済み。 (by Codex)
 - 2026-06-04 - [batch:252-title-card-icon-followup] DONE - Codex: `thumb_quizland_owl.webp` は元画像から94%縮小 + 右下寄せで再配置し、円内でハテナが見えるよう調整。`thumb_oto.webp` は不自然な細長い手を上描きで隠し、丸いポノの肉球手が音符ボタンをタップする見え方へ修正。Playwrightで `play.html` 横画面表示、対象2画像HTTP 200、JSエラーなし、スクショ目視を確認。画像差し替え分として `sw.js` は v792。 (by Codex)
 - 2026-06-04 - [batch:251-title-card-simple-icons] Codex: `play.html` 無料5本 (quizland / maze / oto / puzzle / bento) の丸サムネを、GPT Image 2 built-in 生成ルートで一目で分かる単純アイコンへ差し替え中。既存未コミット変更 (`play.html` / `sw.js` ほか) は保持して作業。 (by Codex)
