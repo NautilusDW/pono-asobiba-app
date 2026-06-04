@@ -1,0 +1,281 @@
+/* ===== PonoPartnerSelect — パートナー選択オーバーレイ =====
+   「もりのなかよし」MVP — Phase 1 UI
+   依存: partners.js (window.PonoPartners), bond.js (window.PonoBond)
+   z-index: 9999 (最上層)
+   タップ領域: 全インタラクション要素 >= 44px (アクセシビリティ)
+=============================================================== */
+
+.pono-pselect {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  background: rgba(20, 30, 40, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  color: #F8F1E2;
+  padding: 20px 16px;
+  overflow-y: auto;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: ponoPSelectFadeIn 220ms ease-out;
+}
+
+.pono-pselect.is-hidden {
+  display: none;
+}
+
+@keyframes ponoPSelectFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* --- ヘッダ --- */
+.pono-pselect__header {
+  flex: 0 0 auto;
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.pono-pselect__title {
+  font-size: clamp(1.1rem, 4.2vw, 1.7rem);
+  font-weight: 900;
+  color: #FFF6DC;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.45), 0 0 18px rgba(247,201,72,0.35);
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+.pono-pselect__title-stage {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 12px;
+  background: rgba(247, 201, 72, 0.85);
+  color: #5D3A00;
+  border-radius: 999px;
+  font-size: 0.78em;
+  vertical-align: middle;
+  text-shadow: none;
+}
+
+/* --- カードグリッド --- */
+.pono-pselect__grid {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 4px;
+  align-items: stretch;
+}
+
+/* スマホ縦: 2列 */
+@media (max-width: 480px) {
+  .pono-pselect__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+/* --- カード --- */
+.pono-pselect__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FCEFD3 100%);
+  color: #5D4E37;
+  border: 3px solid #F2C16E;
+  border-radius: 18px;
+  padding: 12px 10px 14px;
+  cursor: pointer;
+  min-height: 240px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.4);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pono-pselect__card:focus-visible {
+  outline: 3px solid #F7C948;
+  outline-offset: 3px;
+}
+
+.pono-pselect__card:hover,
+.pono-pselect__card:active {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.42), inset 0 0 0 2px rgba(255,255,255,0.5);
+  border-color: #F2915A;
+}
+
+.pono-pselect__card.is-locked {
+  cursor: not-allowed;
+  filter: grayscale(0.7) brightness(0.78);
+  background: linear-gradient(180deg, #E5DCC9 0%, #BCB3A0 100%);
+}
+
+.pono-pselect__card.is-locked:hover,
+.pono-pselect__card.is-locked:active {
+  transform: none;
+  border-color: #8a8270;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+.pono-pselect__card.is-selected {
+  border-color: #F2915A;
+  box-shadow: 0 0 0 4px rgba(247, 201, 72, 0.55), 0 10px 22px rgba(0,0,0,0.45);
+}
+
+/* --- カード: 立ち絵 --- */
+.pono-pselect__portrait {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 130px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #DDD;
+  margin-bottom: 8px;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.08);
+  position: relative;
+}
+
+.pono-pselect__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.pono-pselect__lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40, 30, 20, 0.55);
+  font-size: 2.4rem;
+  color: #FFE9A8;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+/* --- カード: 名前 --- */
+.pono-pselect__name {
+  font-size: clamp(0.95rem, 3.2vw, 1.15rem);
+  font-weight: 900;
+  color: #5D3A00;
+  margin: 2px 0 4px;
+  letter-spacing: 0.04em;
+}
+
+/* --- カード: 性格 / とくいわざ --- */
+.pono-pselect__trait,
+.pono-pselect__assist,
+.pono-pselect__age {
+  font-size: clamp(0.72rem, 2.4vw, 0.85rem);
+  line-height: 1.35;
+  color: #6B4F2A;
+  margin: 1px 0;
+}
+
+.pono-pselect__assist {
+  color: #8a4d1a;
+  font-weight: 700;
+}
+
+.pono-pselect__assist::before {
+  content: '✨ ';
+}
+
+.pono-pselect__age {
+  font-size: clamp(0.65rem, 2.1vw, 0.78rem);
+  color: #A07A4A;
+  margin-top: 2px;
+}
+
+/* --- カード: 星 + ハート --- */
+.pono-pselect__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(140, 90, 30, 0.35);
+  width: 100%;
+}
+
+.pono-pselect__stars {
+  font-size: 1.0rem;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.pono-pselect__stars-empty {
+  opacity: 0.3;
+}
+
+.pono-pselect__hearts {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #C84A4A;
+}
+
+/* --- ロック理由 --- */
+.pono-pselect__lock-reason {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6B4A1F;
+  background: rgba(247, 201, 72, 0.7);
+  padding: 3px 8px;
+  border-radius: 8px;
+  line-height: 1.2;
+}
+
+/* --- フッタ: キャンセル --- */
+.pono-pselect__footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  padding-bottom: 4px;
+}
+
+.pono-pselect__cancel {
+  min-height: 48px;
+  min-width: 140px;
+  padding: 10px 28px;
+  background: linear-gradient(180deg, #6B5640 0%, #4A3826 100%);
+  color: #FFF6DC;
+  border: 2px solid #C9A86A;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: clamp(0.95rem, 3vw, 1.1rem);
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pono-pselect__cancel:hover,
+.pono-pselect__cancel:active {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+}
+
+.pono-pselect__cancel:focus-visible {
+  outline: 3px solid #F7C948;
+  outline-offset: 3px;
+}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>もりのアルバム | ポノのなかよしパズル</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="album.css">
+</head>
+<body class="album-body">
+  <div class="album-wrapper">
+    <header class="album-header">
+      <button type="button" id="album-back" class="album-back" aria-label="もどる">← もどる</button>
+      <h1 class="album-title">もりのアルバム</h1>
+      <div class="album-header__spacer" aria-hidden="true"></div>
+    </header>
+
+    <section class="album-summary" id="album-summary">
+      <div class="album-summary__label">ぜんマス Lv3 たっせい</div>
+      <div class="album-summary__value">
+        <span id="album-summary-current">0</span>
+        <span class="album-summary__sep"> / </span>
+        <span id="album-summary-total">100</span>
+      </div>
+      <div class="album-summary__bar">
+        <div class="album-summary__bar-fill" id="album-summary-bar"></div>
+      </div>
+    </section>
+
+    <section class="album-legend" aria-label="なかよし度の凡例">
+      <div class="album-legend__item">
+        <span class="album-legend__swatch album-cell--lv0"></span>
+        <span class="album-legend__label">Lv0 まだ</span>
+      </div>
+      <div class="album-legend__item">
+        <span class="album-legend__swatch album-cell--lv1"></span>
+        <span class="album-legend__label">Lv1 はじめまして</span>
+      </div>
+      <div class="album-legend__item">
+        <span class="album-legend__swatch album-cell--lv2"></span>
+        <span class="album-legend__label">Lv2 なかよし</span>
+      </div>
+      <div class="album-legend__item">
+        <span class="album-legend__swatch album-cell--lv3"></span>
+        <span class="album-legend__label">Lv3 だいすき</span>
+      </div>
+    </section>
+
+    <main class="album-main">
+      <div class="album-grid-scroll">
+        <table class="album-grid" id="album-grid">
+          <thead>
+            <tr id="album-grid-head"></tr>
+          </thead>
+          <tbody id="album-grid-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Cell popup -->
+  <div id="album-popup" class="album-popup hidden" role="dialog" aria-modal="true" aria-labelledby="album-popup-title">
+    <div class="album-popup__backdrop" id="album-popup-backdrop"></div>
+    <div class="album-popup__card">
+      <button type="button" id="album-popup-close" class="album-popup__close" aria-label="とじる">×</button>
+      <div class="album-popup__partner" id="album-popup-partner"></div>
+      <div class="album-popup__stage" id="album-popup-stage"></div>
+      <div class="album-popup__hearts" id="album-popup-hearts"></div>
+      <div class="album-popup__level" id="album-popup-level"></div>
+    </div>
+  </div>
+
+  <script src="partners.js"></script>
+  <script src="bond.js"></script>
+  <script src="album.js"></script>
+</body>
+</html>

@@ -27,6 +27,73 @@
 //   または localStorage.puzzle_challenge_rotation === 'on' で有効化。
 //   challengeRotationEnabled が true のステージで、 mode ON 時のみ回転状態を付与。
 
+// ===== Assist Hook Registry =====
+//
+// Phase 1 で実装される独立ファイル (assists/*.js, partner-select.js, bond-ui.js 等) が
+// main.js の主要イベントポイントに「挿入」できるようにするための薄いレジストリ。
+// 既存ロジックを破壊しないために、 main.js 側は「フックを呼ぶ」だけ。フック関数の
+// 例外は try/catch で握りつぶし、登録が無い場合は完全に no-op として動く。
+//
+// フック種別:
+//   beforeStageStart(ctx)   — loadStage() 冒頭。 ctx={ stageIndex, stage, partner }
+//   afterStageReady(ctx)    — initPuzzle() でピース配置完了直後。 ctx={ stageIndex, stage, partner }
+//   duringDrag(ctx)         — pointermove ドラッグ中。 ctx={ piece, dx, dy, partner }
+//   beforeSnap(ctx)         — trySnap() スナップ判定の手前。 false を返すとスナップキャンセル。
+//                              ctx={ piece, partner }
+//   afterSnap(ctx)          — スナップ成功後。 ctx={ piece, snappedCount, total, partner }
+//   drawOverlay(ctx)        — redraw() のピース描画後。 ctx={ ctx: CanvasRenderingContext2D, partner }
+//   beforeShowSuccess(ctx)  — showSuccessModal() 冒頭。 ctx={ stageIndex, stage, partner }
+//   afterShowSuccess(ctx)   — showSuccessModal() 末尾。 ctx={ stageIndex, stage, partner, bondResult }
+//
+// window.PonoAssistRegister(hookName, fn) で登録、 window.PonoAssistHooks[hookName] が配列。
+if (typeof window !== 'undefined') {
+  window.PonoAssistHooks = window.PonoAssistHooks || {
+    beforeStageStart: [],
+    afterStageReady: [],
+    duringDrag: [],
+    beforeSnap: [],
+    afterSnap: [],
+    drawOverlay: [],
+    beforeShowSuccess: [],
+    afterShowSuccess: [],
+  };
+  window.PonoAssistRegister = window.PonoAssistRegister || function(hookName, fn) {
+    if (!window.PonoAssistHooks[hookName]) window.PonoAssistHooks[hookName] = [];
+    if (typeof fn === 'function') window.PonoAssistHooks[hookName].push(fn);
+  };
+}
+
+// 現在選択中のパートナーを取得 (未ロード時は null)。 hook context に渡すヘルパ。
+function getCurrentPartner() {
+  try {
+    var id = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
+      ? window.PonoBond.getSelectedPartner() : null;
+    if (!id) return null;
+    if (window.PonoPartners && typeof window.PonoPartners.get === 'function') {
+      return window.PonoPartners.get(id) || null;
+    }
+  } catch (_) {}
+  return null;
+}
+
+// hook 配列を順に呼ぶ。例外は握りつぶす。
+// returnsBool=true の場合、 false を返したフックがあれば cancel=true を返す。
+function runAssistHooks(hookName, ctx, returnsBool) {
+  if (!window.PonoAssistHooks || !window.PonoAssistHooks[hookName]) return false;
+  var hooks = window.PonoAssistHooks[hookName];
+  var cancelled = false;
+  for (var i = 0; i < hooks.length; i++) {
+    try {
+      var r = hooks[i](ctx);
+      if (returnsBool && r === false) cancelled = true;
+    } catch (e) {
+      // フック例外は既存挙動に影響させない
+      try { console.warn('[PonoAssistHooks] ' + hookName + ' threw:', e); } catch (_) {}
+    }
+  }
+  return cancelled;
+}
+
 // Stage 20 のピース数はプレイテストで調整可能 (難しすぎる場合は 16 に下げる)
 const STAGE_20_PIECE_COUNT = 20; // tweakable: 16 if too hard
 
@@ -347,6 +414,29 @@ const nextNudge = {
 
 // ===== Success Modal =====
 function showSuccessModal() {
+  // === Assist hook: beforeShowSuccess ===
+  var successPartner = getCurrentPartner();
+  var successStage = STAGES[currentStageIndex] || null;
+  var successStageId = successStage ? (successStage.id != null ? successStage.id : (currentStageIndex + 1)) : (currentStageIndex + 1);
+  runAssistHooks('beforeShowSuccess', {
+    stageIndex: currentStageIndex,
+    stage: successStage,
+    partner: successPartner,
+  }, false);
+
+  // === Bond: ハート加算 (必須) ===
+  // partner 未選択時はスキップ。 leveledUp が true なら Lv 昇格演出フラグを保持。
+  var bondResult = null;
+  try {
+    if (successPartner && window.PonoBond && typeof window.PonoBond.addHeart === 'function') {
+      bondResult = window.PonoBond.addHeart(successPartner.id, successStageId);
+    }
+  } catch (e) {
+    try { console.warn('[PonoBond] addHeart failed:', e); } catch (_) {}
+  }
+  // 他フックから参照できるよう公開
+  window.PonoLastBondResult = bondResult;
+
   playFanfare();
   spawnConfetti();
   if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
@@ -399,6 +489,14 @@ function showSuccessModal() {
   } else {
     setTimeout(revealModal, 800);
   }
+
+  // === Assist hook: afterShowSuccess ===
+  runAssistHooks('afterShowSuccess', {
+    stageIndex: currentStageIndex,
+    stage: successStage,
+    partner: successPartner,
+    bondResult: bondResult,
+  }, false);
 }
 
 function hideSuccessModal() {
@@ -694,6 +792,24 @@ function redraw() {
   const sorted = [...pieces].sort((a, b) => a.zOrder - b.zOrder);
   for (const p of sorted) drawPiece(p);
 
+  // === Assist hook: drawOverlay ===
+  // ピース描画後にパートナーアニメ・ガイド線などを重ねるためのフック
+  if (puzzleCtx) {
+    runAssistHooks('drawOverlay', {
+      ctx: puzzleCtx,
+      partner: getCurrentPartner(),
+      pieces: pieces,
+      dragPiece: dragPiece,
+      sourceImg: sourceImg,
+      board: { x: boardX, y: boardY, w: boardW, h: boardH },
+      pieceSize: { w: pieceW, h: pieceH },
+      canvas: { w: canvasW, h: canvasH },
+      requestRedraw: function () {
+        // assist 側がピース座標を変えた後、 もう 1 フレーム描き直してほしい時に呼ぶ
+        try { requestAnimationFrame(redraw); } catch (_) { redraw(); }
+      },
+    }, false);
+  }
 }
 
 function hitTest(piece, px, py) {
@@ -799,6 +915,11 @@ function trySnap(piece) {
   if (Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY) >= SNAP_DIST) return false;
   if (piece.rotation && piece.rotation !== 0) return false; // 回転中はスナップ不可
 
+  // === Assist hook: beforeSnap (cancellable) ===
+  var snapPartner = getCurrentPartner();
+  var snapCancelled = runAssistHooks('beforeSnap', { piece: piece, partner: snapPartner }, true);
+  if (snapCancelled) return false;
+
   piece.x = piece.homeX; piece.y = piece.homeY;
   piece.rotation = 0;
   piece.snapped = true;
@@ -807,6 +928,15 @@ function trySnap(piece) {
   snappedCount++;
   updateProgress();
   playSnapSound();
+
+  // === Assist hook: afterSnap ===
+  runAssistHooks('afterSnap', {
+    piece: piece,
+    snappedCount: snappedCount,
+    total: stageTotalPieces,
+    partner: snapPartner,
+  }, false);
+
   if (snappedCount >= stageTotalPieces) {
     redraw();
     setTimeout(showSuccessModal, 300);
@@ -859,9 +989,22 @@ function onPointerMove(e) {
   e.preventDefault();
   const { x, y } = getPos(e);
   pointerMoveDist = Math.hypot(x - pointerDownX, y - pointerDownY);
-  dragPiece.x = Math.max(0, Math.min(canvasW - pieceW, x - dragOffX));
-  dragPiece.y = Math.max(0, Math.min(canvasH - pieceH, y - dragOffY));
+  const newX = Math.max(0, Math.min(canvasW - pieceW, x - dragOffX));
+  const newY = Math.max(0, Math.min(canvasH - pieceH, y - dragOffY));
+  const dxMove = newX - dragPiece.x;
+  const dyMove = newY - dragPiece.y;
+  dragPiece.x = newX;
+  dragPiece.y = newY;
   rebuildPath(dragPiece);
+
+  // === Assist hook: duringDrag ===
+  runAssistHooks('duringDrag', {
+    piece: dragPiece,
+    dx: dxMove,
+    dy: dyMove,
+    partner: getCurrentPartner(),
+  }, false);
+
   redraw();
 }
 
@@ -947,12 +1090,32 @@ function initPuzzle(img) {
 
   loadingEl.classList.add('hidden');
   shufflePieces();
+
+  // === Assist hook: afterStageReady ===
+  runAssistHooks('afterStageReady', {
+    stageIndex: currentStageIndex,
+    stage: STAGES[currentStageIndex] || null,
+    partner: getCurrentPartner(),
+    pieces: pieces,
+    sourceImg: sourceImg,
+    board: { x: boardX, y: boardY, w: boardW, h: boardH },
+    pieceSize: { w: pieceW, h: pieceH },
+    canvas: { w: canvasW, h: canvasH },
+  }, false);
 }
 
 // ===== Load Stage =====
 function loadStage(index) {
   currentStageIndex = index;
   const stage = STAGES[index];
+
+  // === Assist hook: beforeStageStart ===
+  runAssistHooks('beforeStageStart', {
+    stageIndex: index,
+    stage: stage,
+    partner: getCurrentPartner(),
+  }, false);
+
   stageCols              = stage.cols;
   stageRows              = stage.rows;
   stageTotalPieces       = stage.pieceCount || (stageCols * stageRows);
@@ -1189,10 +1352,36 @@ function finishOpeningAndEnterGame() {
     bgmStarted = false;
     tryStartBgm();
   }
-  if (pendingTitleTutorial) {
-    pendingTitleTutorial = false;
-    setTimeout(showTutorial, 500);
+
+  // === Partner select modal ===
+  // Phase 1 で読み込まれた partner-select.js が DOM を注入する。
+  // 未ロード時は graceful にスキップ (既存挙動を維持)。
+  function afterPartnerSelected() {
+    if (pendingTitleTutorial) {
+      pendingTitleTutorial = false;
+      setTimeout(showTutorial, 500);
+    }
   }
+  try {
+    var stage = STAGES[currentStageIndex] || null;
+    var stageId = stage ? (stage.id != null ? stage.id : (currentStageIndex + 1)) : 1;
+    if (window.PonoPartnerSelect && typeof window.PonoPartnerSelect.show === 'function') {
+      window.PonoPartnerSelect.show(stageId, function(selectedPartnerId) {
+        // partner-select.js 側で PonoBond.setSelectedPartner を呼んでいる想定だが、
+        // 念のため main.js でも保険として記録する。
+        try {
+          if (selectedPartnerId && window.PonoBond && typeof window.PonoBond.setSelectedPartner === 'function') {
+            window.PonoBond.setSelectedPartner(selectedPartnerId);
+          }
+        } catch (_) {}
+        afterPartnerSelected();
+      });
+      return;
+    }
+  } catch (e) {
+    try { console.warn('[PonoPartnerSelect] show failed:', e); } catch (_) {}
+  }
+  afterPartnerSelected();
 }
 
 // ===== Opening Cutscene (owl-doctor style: per-cut audio + wooden-frame narration + fade-to-black) =====

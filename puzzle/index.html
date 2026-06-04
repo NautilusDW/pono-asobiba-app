@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="partner-select.css">
   <script src="../common/mvp-flags.js"></script>
   <script src="../common/achievements.js"></script>
   <script src="../common/acorns.js"></script>
@@ -91,6 +92,18 @@
   <div id="confetti-container" class="confetti-container"></div>
 
   <script src="voice.js"></script>
+  <!-- なかよし MVP (Phase 1): partner / bond / assists / UI モジュール -->
+  <!-- 順序: データ(partners → bond) → assist 群 → UI(partner-select → bond-ui) → main.js -->
+  <script src="partners.js"></script>
+  <script src="bond.js"></script>
+  <script src="assists/kitsune.js"></script>
+  <script src="assists/soft-guide.js"></script>
+  <script src="assists/color-tray.js"></script>
+  <script src="assists/araiguma.js"></script>
+  <script src="assists/usagi.js"></script>
+  <script src="assists/fukurou.js"></script>
+  <script src="partner-select.js"></script>
+  <script src="bond-ui.js"></script>
   <script src="main.js"></script>
   <script>
     function updateLandscapeNotice() {

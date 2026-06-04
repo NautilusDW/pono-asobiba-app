@@ -1,0 +1,396 @@
+/* ===== もりのアルバム =====
+ * 5×20 ヒートマップ (縦=パートナー5名 / 横=ステージ20枚)
+ * Lv0=灰 / Lv1=薄ピンク / Lv2=ピンク / Lv3=濃ピンク+輝き
+ */
+
+.album-body {
+  display: block;
+  background-image: url('../assets/images/puzzle/bg_carpet_room.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100dvh;
+  padding: 16px;
+}
+
+.album-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: rgba(255, 248, 224, 0.92);
+  border-radius: 24px;
+  padding: 18px 18px 22px;
+  box-shadow: 0 8px 32px rgba(93, 78, 55, 0.18);
+}
+
+/* ===== Header ===== */
+.album-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.album-header__spacer { width: 110px; }
+
+.album-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  color: #5D4E37;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.album-back {
+  appearance: none;
+  border: none;
+  background: var(--primary, #F2915A);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 10px 18px;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(93, 78, 55, 0.18);
+  transition: transform 0.1s ease;
+  min-width: 110px;
+}
+
+.album-back:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(93, 78, 55, 0.18); }
+
+/* ===== Summary ===== */
+.album-summary {
+  background: linear-gradient(135deg, #FFF1D9, #FFE3C2);
+  border: 2px solid #F2C094;
+  border-radius: 18px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 6px 16px;
+  align-items: center;
+}
+
+.album-summary__label {
+  font-weight: 900;
+  color: #5D4E37;
+  font-size: 0.95rem;
+}
+
+.album-summary__value {
+  text-align: right;
+  font-weight: 900;
+  color: #C25A2A;
+  font-size: 1.4rem;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', monospace;
+}
+
+.album-summary__sep { color: #A89880; font-size: 1.1rem; }
+
+.album-summary__bar {
+  grid-column: 1 / -1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(93, 78, 55, 0.18);
+}
+
+.album-summary__bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #F7C948, #F2915A 60%, #E14B7A);
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 6px;
+}
+
+/* ===== Legend ===== */
+.album-legend {
+  display: flex;
+  gap: 10px 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 8px 6px 14px;
+  border-bottom: 1px dashed rgba(168, 152, 128, 0.5);
+  margin-bottom: 12px;
+}
+
+.album-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5D4E37;
+}
+
+.album-legend__swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(93, 78, 55, 0.18);
+  display: inline-block;
+}
+
+/* ===== Grid ===== */
+.album-grid-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.album-grid {
+  border-collapse: separate;
+  border-spacing: 4px;
+  margin: 0 auto;
+  min-width: 760px;
+}
+
+.album-grid th,
+.album-grid td {
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.album-grid__corner {
+  width: 92px;
+  font-size: 0.75rem;
+  color: #A89880;
+  font-weight: 700;
+  text-align: left;
+  padding-left: 4px !important;
+}
+
+.album-grid__col-head {
+  width: 32px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 0.75rem;
+  color: #5D4E37;
+  font-weight: 700;
+  padding: 4px 0 !important;
+}
+
+.album-grid__row-head {
+  width: 92px;
+  padding: 4px 8px 4px 4px !important;
+  text-align: left;
+  font-weight: 900;
+  color: #5D4E37;
+}
+
+.album-grid__row-head-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  line-height: 1.1;
+}
+
+.album-grid__row-head-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FDDCBF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(93, 78, 55, 0.18);
+}
+
+.album-grid__row-head-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.album-grid__row-head-name {
+  font-weight: 900;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Cells */
+.album-cell {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: #E8E0D6;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  padding: 0;
+  font-family: inherit;
+  position: relative;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.album-cell:focus-visible {
+  outline: 2px solid #F2915A;
+  outline-offset: 2px;
+}
+
+.album-cell:active { transform: scale(0.92); }
+
+.album-cell--lv0 { background: #E8E0D6; }
+.album-cell--lv1 { background: #FBD7E1; }
+.album-cell--lv2 { background: #F291B0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.album-cell--lv3 {
+  background: linear-gradient(135deg, #E14B7A, #C2326A);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px rgba(225, 75, 122, 0.4),
+    0 0 8px rgba(247, 201, 72, 0.6);
+  animation: albumCellShine 2.4s ease-in-out infinite;
+}
+
+.album-cell--lv3::after {
+  content: '★';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #FFF6D6;
+  font-size: 0.75rem;
+  text-shadow: 0 1px 2px rgba(93, 78, 55, 0.4);
+  pointer-events: none;
+}
+
+@keyframes albumCellShine {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.18); }
+}
+
+/* Locked row (フクロウ未解禁) */
+.album-row--locked .album-cell {
+  background: #DBD3C7;
+  cursor: not-allowed;
+  position: relative;
+  opacity: 0.55;
+}
+
+.album-row--locked .album-grid__row-head-icon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.album-row--locked .album-grid__row-head-name {
+  color: #A89880;
+}
+
+.album-row--locked .album-grid__row-head-name::after {
+  content: ' 🔒';
+  font-size: 0.85rem;
+}
+
+/* ===== Popup ===== */
+.album-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.album-popup.hidden { display: none; }
+
+.album-popup__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(93, 78, 55, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.album-popup__card {
+  position: relative;
+  background: #FFF8F0;
+  border-radius: 24px;
+  padding: 24px 22px 20px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(93, 78, 55, 0.35);
+  animation: albumPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes albumPopIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.album-popup__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  color: #A89880;
+  cursor: pointer;
+  font-family: inherit;
+  width: 36px;
+  height: 36px;
+  line-height: 1;
+}
+
+.album-popup__partner {
+  font-weight: 900;
+  font-size: 1.15rem;
+  color: #5D4E37;
+  margin-bottom: 4px;
+}
+
+.album-popup__stage {
+  font-size: 0.95rem;
+  color: #8A7A5A;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.album-popup__hearts {
+  font-family: 'DotGothic16', monospace;
+  font-size: 1.05rem;
+  color: #C44A2A;
+  margin-bottom: 8px;
+}
+
+.album-popup__level {
+  font-size: 1.4rem;
+  color: #E14B7A;
+  letter-spacing: 0.1em;
+  font-weight: 900;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 720px) {
+  .album-wrapper { padding: 14px 10px 18px; border-radius: 18px; }
+  .album-header__spacer { display: none; }
+  .album-back { min-width: 88px; padding: 8px 12px; font-size: 0.9rem; }
+  .album-title { font-size: 1.2rem; }
+  .album-grid { min-width: 720px; }
+  .album-grid__row-head { width: 80px; }
+  .album-grid__row-head-name { font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+  .album-summary__value { font-size: 1.2rem; }
+  .album-summary__label { font-size: 0.85rem; }
+  .album-cell { width: 28px; height: 28px; border-radius: 6px; }
+  .album-grid { border-spacing: 3px; min-width: 660px; }
+  .album-grid__col-head { width: 28px; font-size: 0.7rem; }
+}
