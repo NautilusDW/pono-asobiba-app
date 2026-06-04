@@ -328,7 +328,9 @@ html, body {
 }
 .bento-inner.free-layout-inner {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: visible;
   background: transparent;
   padding: 0;
@@ -341,6 +343,21 @@ html, body {
   border-radius: 10px;
   overflow: visible;
   touch-action: none;
+}
+/* 配置画面 (free-layout-inner 内) では完成画面と同じ aspect-ratio 760/460 を強制する。
+   これにより mask-position/size の % 値が virtual 座標系 (FREE_LAYOUT_W=760, FREE_LAYOUT_H=460)
+   と一致し、配置画面でマスクが弁当画像の letterbox 外に広がる現象を防ぐ。
+   親 (.bento-inner.free-layout-inner) は flex で center 配置になっており、
+   stage は height を 100% に固定し width は aspect 比から逆算 (高さ基準のフィット)。
+   横幅が親より大きくなる場合 (狭い高さ) は親 flex の min/max 制約で自然に縮む。 */
+.bento-inner.free-layout-inner > .free-layout-stage {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 760 / 460;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  flex: 0 0 auto;
 }
 .free-bento-shape {
   position: absolute;
@@ -2994,7 +3011,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v6';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v7';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -3002,10 +3019,21 @@ const bentoBoxes = [
     image: BENTO_UI_ASSET + 'rect_bento_box_coral.webp',
     riceImage: FREE_ASSET + 'box_rect_split_rice.webp',
     maskImage: RECT_SPLIT_BOX_INSIDE_MASK,
-    maskBounds: { x: 407, y: 43, w: 260, h: 353 },
+    // maskBounds は弁当画像 rect_bento_box_coral.webp (1000×640) の okazu (右) コンパートメントの
+    // 実測 cream 領域 (x_image 614〜976, y_image 80〜545) を virtual 座標に変換した値。
+    // virtual = bounds.x + image_x * (bounds.w / 1000), bounds.y + image_y * (bounds.h / 640)
+    //   左壁: 50 + 614 * 0.66 = 455 → 余裕をみて 444 (リブ凸を含む)
+    //   右壁: 50 + 975 * 0.66 = 693 → 692
+    //   上壁: 22 + 85 * 0.659 = 78
+    //   下壁: 22 + 545 * 0.659 = 381 → 上から 306
+    maskBounds: { x: 444, y: 78, w: 248, h: 306 },
     shape: 'box_square',
     bounds: { x: 50, y: 22, w: 660, h: 422 },
+    // placeBounds は全体 (rice + okazu) の配置可能域。両方を扱う処理用に従来通り広く保持する。
     placeBounds: { x: 78, y: 78, w: 604, h: 314 },
+    // foodPlaceBounds は okazu (おかず) 専用の配置可能域。 brushItem (キャベツ等) は
+    // この矩形に clamp し、マスクの可視域 (maskBounds) と一致させる。
+    foodPlaceBounds: { x: 444, y: 78, w: 248, h: 306 },
     riceBounds: { x: 78, y: 76, w: 322, h: 316 },
     clipPoints: [[78,78], [682,78], [682,392], [78,392]],
     imageScale: 1,
@@ -3016,10 +3044,9 @@ const bentoBoxes = [
     ],
     // item.x/y は CENTER アンカー (.free-placed-item の CSS transform: translate(-50%, -50%) で実装)。
     // clampPointToBounds (~L4323) も両側から margin を引いており中心前提。
-    // ※ 329eb72 が誤って「左上アンカー」と書いたコメントは事実誤認だったため削除。
-    // 表示可視域は maskBounds (407, 43, 260, 353) の右側 okazu コンパートメント。
-    // 右端 = 407+260 = 667。 size 170 食材 (キャベツ/ハンバーグ) の center 上限 = 667-85 = 582 付近、
-    // 弁当画像 okazu 実寸 (~680) には収まる安全マージン設計。
+    // 表示可視域は maskBounds (444, 78, 248, 306) の右側 okazu コンパートメント (実測一致)。
+    // 右端 = 444+248 = 692。 size 170 食材 (キャベツ/ハンバーグ) の center 上限 = 692 - max(22, 170*0.28)≈ 644。
+    // foodSpots/foodPlaceBounds はこの可視域内に収まる前提。
     foodSpots: [
       { x: 475, y: 168 },
       { x: 595, y: 168 },
@@ -4313,7 +4340,12 @@ function getNextFreeSpot(type) {
 }
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
-  const b = getPlacementBounds(box);
+  // brushItem (キャベツ等) は okazu (おかず) 領域だけに配置させる。
+  // box.foodPlaceBounds が定義されている場合はそちらを優先することで、
+  // 配置画面のマスク可視域 (maskBounds) と物理的な配置可能域を一致させる。
+  const b = (item && item.brushItem && box && box.foodPlaceBounds)
+    ? box.foodPlaceBounds
+    : getPlacementBounds(box);
   return clampPointToBounds(x, y, item, b);
 }
 function clampPointToBounds(x, y, item, b) {
@@ -5126,10 +5158,19 @@ function addBrushStampAtPoint(point) {
   const sizeByLevel = [128, 170, 220];
   const level = clamp(Math.round(freeBrushStampLevel || 0), 0, (freeBrushStampDef.brushImages || []).length - 1);
   const tier = getGuideTierForStep();
+  // タップ位置を okazu (foodPlaceBounds) に clamp してから配置する。
+  // これによりキャベツ等 brushItem が弁当画像の外側に飛び出すことを防ぐ。
+  const box = getSelectedBentoBox();
+  const brushSize = sizeByLevel[level] || freeBrushStampDef.size || 170;
+  const clampItem = { type: 'food', brushItem: true, size: brushSize, scale: 1 };
+  const placeBounds = (box && box.foodPlaceBounds) || (box && box.placeBounds) || null;
+  const clamped = placeBounds
+    ? clampPointToBounds(point.x, point.y, clampItem, placeBounds)
+    : { x: point.x, y: point.y };
   const item = addFreeLayoutItem(freeBrushStampDef, {
-    x: point.x,
-    y: point.y,
-    size: sizeByLevel[level] || freeBrushStampDef.size || 170,
+    x: clamped.x,
+    y: clamped.y,
+    size: brushSize,
     tier,
     brushLevel: level,
     layerGroup: getCabbageLayerGroup(tier),

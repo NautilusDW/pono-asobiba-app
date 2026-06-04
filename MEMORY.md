@@ -143,6 +143,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-04T11:01:05Z - 弁当配置画面と完成画面のマスク一致 (Fix-A aspect-ratio強制 + Fix-B maskBounds実測値 + Fix-C foodPlaceBounds導入)
+- **タスク**: 弁当配置画面と完成画面のマスク一致 (Fix-A aspect-ratio強制 + Fix-B maskBounds実測値 + Fix-C foodPlaceBounds導入)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 121
+- **エラー数**: 8
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 13, "Agent": 53, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 6, "Bash": 34}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-04T10:02:15Z - quizland 難易度ロックUI実装: free=easy / book=inspire全Lv+know=easy / sub=全開放 のティア×モード判定で.diff-btnに🔒+グレーアウト+showSubscribePromo導入、initGame空配列時のフォールバック強化、tier.jsにisQuizlandDifficultyUnlocked追加、CACHE_VERSION 791
 - **タスク**: quizland 難易度ロックUI実装: free=easy / book=inspire全Lv+know=easy / sub=全開放 のティア×モード判定で.diff-btnに🔒+グレーアウト+showSubscribePromo導入、initGame空配列時のフォールバック強化、tier.jsにisQuizlandDifficultyUnlocked追加、CACHE_VERSION 791
 - **結果**: 成功
@@ -244,19 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 7, "Agent": 47, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 18}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-04T08:02:27Z - play.html パスワード解除モーダルの背景フレームを rabbit-portrait.png から recipe_card_frame.png へ差し替え (aspect-ratio 406/545, 上寄せ配置, inner背景除去) + sw.js CACHE_VERSION 779→780
-- **タスク**: play.html パスワード解除モーダルの背景フレームを rabbit-portrait.png から recipe_card_frame.png へ差し替え (aspect-ratio 406/545, 上寄せ配置, inner背景除去) + sw.js CACHE_VERSION 779→780
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 84
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 7, "Agent": 45, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 16}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
