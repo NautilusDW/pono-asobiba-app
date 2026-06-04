@@ -1212,34 +1212,49 @@
   /* ── ティアロック共通スタイル (free/book ユーザー向け) ──
      TIER_POLICY.md §3: グレーアウト + 中央🔒で表現。 ×印は使わない。
      静止画化 (transition/transform 無効) + 中央に 🔒 を疑似要素で表示。
-     タップ自体は受けて showSubscribePromo() の柔らかいモーダルへ誘導する。 */
+     タップ自体は受けて showSubscribePromo() の柔らかいモーダルへ誘導する。
+     ※ 子孫要素にも cascade して止める (子セレクタアニメ・タップ拡縮対策)。 */
+  .tier-locked,
+  .tier-locked * {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
   .tier-locked {
     filter: saturate(0.35) brightness(0.94);
     opacity: 0.6;
     position: relative;
-    transition: none !important;
-    transform: none !important;
-    animation: none !important;
   }
   .tier-locked:hover,
   .tier-locked:active,
-  .tier-locked:focus {
+  .tier-locked:focus,
+  .tier-locked:hover *,
+  .tier-locked:active *,
+  .tier-locked:focus * {
     opacity: 0.6;
     transform: none !important;
+    animation: none !important;
+    transition: none !important;
     filter: saturate(0.35) brightness(0.94);
   }
+  /* ::after は鍵中央配置に transform が必須なので、子セレクタの transform:none を
+     個別 !important で上書きする (詳細度は同じだが宣言順で後勝ち + 個別宣言)。 */
   .tier-locked::after {
     content: '🔒';
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) !important;
+    transform-origin: center center !important;
     font-size: 1.8rem;
     line-height: 1;
     z-index: 5;
     pointer-events: none;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
     opacity: 0.95;
+    animation: none !important;
+    transition: none !important;
   }
 
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
