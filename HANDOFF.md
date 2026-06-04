@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-04 - [batch:257-title-oto-sound-flow-maze-up] DONE - Codex: user 指摘「音タッチ背景を音が奏でられて流れている感じへ再生成 / 迷路は目元が隠れるので上へ」を受領。GPT Image 2 built-in 生成で `assets/ui/play_oto_title_back.webp` を音符と光の流れが主役の横長背景へ差し替え、前回追加した oto 専用文字裏プレートを削除。`play.html` の maze `peekPos` を `50% 62%` にして背景を少し上寄せ。Playwrightで oto/maze hover 表示・対象画像HTTP 200・JSエラーなし・スクショ目視を確認。`sw.js` は v801。 (by Codex)
 - 2026-06-04 - [batch:256-oto-card-peek-no-shrink] DONE - Codex: user 指摘「縮小するのはなし」を受け、`play.html` の oto カード背景プレビューを通常 `cover` 表示へ戻し、文字ブロック背面だけ紙色プレートを追加。Playwrightで oto カード hover 表示・JSエラーなし・`background-size: cover`・スクショ目視を確認。`sw.js` は v799。 (by Codex)
 - 2026-06-04 - [batch:255-oto-card-peek-readable] DONE - Codex: user 指摘「音タッチカードのテキスト背面にタイトル絵のトノ顔が被って読みにくい」を受領。`play.html` のカードプレビューに `--card-peek-size` を追加し、oto カードだけ `play_oto_title_back.webp` を `auto 90%` + 右寄せで表示、左側は紙面を残すよう調整。さらに oto のプレビュー左端に紙色グラデーションをかけ、背景の縦切れを軽減。Playwrightで oto カード hover 表示、JSエラーなし、`background-size: auto 90%`、スクショ目視を確認。`sw.js` は v798。 (by Codex)
 - 2026-06-04 - [batch:254-oto-thumb-child-hand] Codex: user 指摘「肉球がこっち向きで逆、手は人間の子供の手に」を受領。`thumb_oto.webp` をGPT Image 2 built-in生成で、人間の子どもの手の甲/指先が見える向きで音符ボタンを押すサムネへ差し替える。ローカル描画は禁止、処理は512px WebP変換のみ。 (by Codex)

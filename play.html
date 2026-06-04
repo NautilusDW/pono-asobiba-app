@@ -483,24 +483,6 @@
     .game-card.is-coming-soon:hover .game-card__peek {
       opacity: 0;          /* don't tease previews for unreleased games */
     }
-    .game-card[data-id="oto"] .game-card__text::before {
-      content: '';
-      position: absolute;
-      inset: -8px -28px -9px -16px;
-      border-radius: 22px;
-      pointer-events: none;
-      background:
-        linear-gradient(
-          to right,
-          rgba(255, 249, 231, 0.97) 0%,
-          rgba(255, 249, 231, 0.92) 72%,
-          rgba(255, 249, 231, 0) 100%
-        );
-      box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.58),
-        inset 0 0 0 1px rgba(150, 105, 54, 0.12);
-      z-index: -1;
-    }
     /* Make sure title/desc still sit above the peek layer.
        Round thumb (z 2) and play button (no explicit z; needs lifting)
        must also sit ABOVE the peek so the peek doesn't bleed onto them. */
@@ -1528,6 +1510,8 @@
         // 入っているのでこちらを流用。 thumb_maze.webp は中身が
         // ずかん風 (本+きのこ) なので zukan カードで使用する。
         thumb: 'assets/ui/thumb_quiz-sound.webp',
+        // 文字で顔の目元が隠れやすいため、背景を少し上へ寄せる。
+        peekPos: '50% 62%',
         tier: 'free'
       },
       {
@@ -1540,9 +1524,9 @@
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/ui/thumb_oto.webp',
         thumbPos: '34% 54%',
-        // 元背景のポノがタイトル文字へ重なるため、絵の縮小ではなく
-        // テキスト側に紙色プレートを敷いて読みやすさを確保する。
-        peekPos: '39% 48%',
+        // 音符と光の流れが主役の新背景。文字が多少重なっても
+        // 全体の雰囲気でゲーム内容が伝わるように中央寄せで見せる。
+        peekPos: '50% 50%',
         tier: 'free'
       },
       {
