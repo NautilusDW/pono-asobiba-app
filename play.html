@@ -1112,6 +1112,22 @@
       box-shadow: 0 3px 0 #B87200;
     }
     .password-modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .password-modal-reset {
+      margin-top: 6px;
+      padding: 4px 12px;
+      border: 1px dashed rgba(93, 78, 55, 0.4);
+      border-radius: 16px;
+      background: transparent;
+      color: rgba(93, 78, 55, 0.6);
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .password-modal-reset:hover {
+      background: rgba(255, 248, 224, 0.5);
+      color: var(--text);
+    }
 
     /* ===== Toggle Switch ===== */
     .toggle {
@@ -1441,6 +1457,7 @@
           <div class="password-modal-success-tag">✨ えほん モード が ひらいたよ ✨</div>
           <p class="password-modal-success-body">あたらしい ゲームや ステージ、<br>たべものが あそべるように なったよ！</p>
           <button class="password-modal-close" type="button" data-close="passwordUnlockModal">あそびに もどる</button>
+          <button class="password-modal-reset" id="passwordUnlockReset" type="button">🔄 デバッグ: フリーに もどす</button>
         </div>
       </div>
     </div>
@@ -2017,6 +2034,20 @@
             input.focus();
           }
         }
+      });
+    }
+
+    // デバッグ用リセットボタン: 解錠状態を解除して free に戻す
+    // (success div 内に存在するため、success が hidden の間は表示されない)
+    const pwReset = document.getElementById('passwordUnlockReset');
+    if (pwReset) {
+      pwReset.addEventListener('click', () => {
+        try {
+          localStorage.removeItem('pono_premium');
+          localStorage.removeItem('pono_sub_active');
+          localStorage.removeItem('pono_welcome_book_seen');
+        } catch (e) {}
+        setTimeout(() => location.reload(), 100);
       });
     }
 
