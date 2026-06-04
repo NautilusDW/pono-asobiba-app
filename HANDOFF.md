@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-04 - [batch:254-oto-thumb-child-hand] Codex: user 指摘「肉球がこっち向きで逆、手は人間の子供の手に」を受領。`thumb_oto.webp` をGPT Image 2 built-in生成で、人間の子どもの手の甲/指先が見える向きで音符ボタンを押すサムネへ差し替える。ローカル描画は禁止、処理は512px WebP変換のみ。 (by Codex)
+- 2026-06-04 - [batch:254-oto-thumb-child-hand] DONE - Codex: `thumb_oto.webp` をGPT Image 2 built-in生成物で丸ごと差し替え。生成元は `ig_0f728c7cffb86df9016a21589744e88191a6c2f5d398560cf1.png`、ローカル処理は512px WebP変換のみ。人間の子どもの手の甲側/指先で音符ボタンを押す構図に変更。Playwrightで `play.html` 横画面表示、`thumb_oto.webp` HTTP 200、JSエラーなし、スクショ目視を確認。`sw.js` は v794。 (by Codex)
 - 2026-06-04 - [batch:253-oto-thumb-gpt2-redo] Codex: user 指摘「音タッチの手をローカルで生成したでしょう」を受領。前回 `thumb_oto.webp` の手はローカル上描きだったため不採用扱いにし、GPT Image 2 built-in生成物で丸ごと差し替える。ローカル処理は512px WebP変換のみ。 (by Codex)
 - 2026-06-04 - [batch:253-oto-thumb-gpt2-redo] DONE - Codex: `thumb_oto.webp` をGPT Image 2 built-in生成物で丸ごと差し替え。生成元は `ig_0f728c7cffb86df9016a21530ef950819199fd8cdd56cabec2.png`、ローカル処理は512px WebP変換のみ。Playwrightで `play.html` 横画面表示、`thumb_oto.webp` HTTP 200、JSエラーなし、スクショ目視を確認。`sw.js` は v793。 (by Codex)
 - 2026-06-04 - [batch:252-title-card-icon-followup] Codex: user 指摘「フクロウを少し縮小して右下へ / 音タッチの手が不自然」を受領。`thumb_quizland_owl.webp` は既存生成物をレイヤー分離気味に調整、`thumb_oto.webp` はGPT Image 2 built-inでポノの丸い手が自然にタップする単純アイコンへ再生成する。`sw.js` 現在値 v790 を確認済み。 (by Codex)
