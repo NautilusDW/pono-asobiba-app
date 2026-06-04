@@ -28,8 +28,21 @@
   'use strict';
 
   // Phase 1: 共通5本のロックを全て無効化するセーフフラグ。 Phase 2 で true に切替。
+  // DevTools / 後から読み込まれる任意のスクリプト / 旧 sw キャッシュ等による誤上書きを避けるため
+  // Object.defineProperty で writable:false にする。 Phase 2 で恒久的に true 動作へ移行する時は
+  // configurable:true なので再定義で切替可能。
   if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
-    window.PONO_TIER_GAME_LOCKS_ENABLED = false;
+    try {
+      Object.defineProperty(window, 'PONO_TIER_GAME_LOCKS_ENABLED', {
+        value: false,
+        writable: false,
+        configurable: true,
+        enumerable: true
+      });
+    } catch (e) {
+      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Phase 1 は false 維持が最優先)
+      window.PONO_TIER_GAME_LOCKS_ENABLED = false;
+    }
   }
   function gameLocksEnabled() { return !!window.PONO_TIER_GAME_LOCKS_ENABLED; }
 
@@ -75,6 +88,55 @@
     'deco_rug_pink'      // ピンクラグ (girl)
   ];
 
+  // ---- quizland ----
+  var FREE_QUIZLAND_QUESTION_IDS = []; // Phase 2 で実際の qid を埋める (各カテゴリ Lv1 から3問 + trivia 5問 = 26問)
+  var BOOK_QUIZLAND_KNOW_MAX_LEVEL = 1; // book は know モード Lv1 まで (inspire は全部解放)
+  var BOOK_QUIZLAND_INSPIRE_CATEGORIES = ['order_color','count_total','shape_name','number_sequence'];
+  var KNOW_QUIZLAND_CATEGORIES = ['trivia','weather','body','opposite'];
+
+  // ---- maze ----
+  var FREE_MAZE_MAX_STAGE = 3;
+  var BOOK_MAZE_MAX_STAGE = 7;
+
+  // ---- puzzle ----
+  var FREE_PUZZLE_MAX_STAGE = 3;
+  var BOOK_PUZZLE_MAX_STAGE = 9;
+  var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05']; // book に解放するポノ特別枠 (sub は #5/10/15/20 全部)
+
+  // ---- oto ----
+  var FREE_OTO_SETS = ['doremi','kira'];
+  var BOOK_OTO_SETS = ['doremi','kira','marimba','animal'];
+  var FREE_OTO_MODES = ['free'];
+  var BOOK_OTO_MODES = ['free','rhythm'];
+  var FREE_OTO_SCALES = ['major'];
+  var BOOK_OTO_SCALES = ['major','penta'];
+  var FREE_OTO_RHYTHM_SONGS = [];
+  var BOOK_OTO_RHYTHM_SONGS = ['kaeru'];
+  var FREE_OTO_CHORD_MODES = ['off'];
+  var BOOK_OTO_CHORD_MODES = ['off','on'];
+
+  // ---- bento: 30食材 / お弁当箱 / NPC ----
+  var FREE_BENTO_FOOD_NAMES = [
+    'タコウインナー','ハンバーグ','たまごやき',
+    'キャベツ','プチトマト','ブロッコリー',
+    'いちご','バナナ'
+  ];  // 8食材
+
+  var BOOK_BENTO_FOOD_NAMES = FREE_BENTO_FOOD_NAMES.concat([
+    'からあげ','コロッケ','エビフライ','やきざけ','ミートボール',
+    'にんじんいんげん','コーンほうれんそう'
+  ]);  // +7 = 15累計
+
+  var ALL_BENTO_FOOD_NAMES = BOOK_BENTO_FOOD_NAMES.concat([
+    'ナポリタン','ぎょうざ','はるまき','ベーコンまき',
+    'きんぴらごぼう','えだまめ','ポテトサラダ','ハムサラダ',
+    'みかん','メロン','りんご','パイナップル','もも','ぶどう','キウイ'
+  ]);  // +15 = 30累計
+  var FREE_BENTO_BOX_IDS = ['rectangle_bento_00'];
+  var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['round_bento_02tier_00','square_bento_02tier_00']);
+  var FREE_BENTO_NPCS = [];
+  var BOOK_BENTO_NPCS = ['risu','inu','shika'];
+
   // ---- 各ゲームごとの解放判定 ----
   function isAquariumCreatureUnlocked(id) {
     var t = getTier();
@@ -94,6 +156,125 @@
 
   function isKatakanaUnlocked() {
     return getTier() === 'sub';
+  }
+
+  // ---- Phase 1: 共通5本のロック判定 (セーフフラグ OFF の間は常に true) ----
+  // NOTE: プラン本文見出しでは「判定関数14個」と書かれているが、 同セクションの仕様列挙は
+  // 12 関数 (下記) のみ。 ここでは列挙された 12 関数だけを実装し、 残り 2 関数 (もし必要なら)
+  // は Phase 2 wiring 時に planner と仕様合意の上で追加する方針。
+  // 既存の verifyBookPassword + showSubscribePromo を含めて 14 と数える解釈もありえる。
+  function isQuizlandQuestionUnlocked(qid, category, level) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') {
+      if (BOOK_QUIZLAND_INSPIRE_CATEGORIES.indexOf(category) >= 0) return true;
+      if (KNOW_QUIZLAND_CATEGORIES.indexOf(category) >= 0) return (level || 1) <= BOOK_QUIZLAND_KNOW_MAX_LEVEL;
+      // 既知カテゴリ集合に無い文字列が来た場合は安全側に通す (Phase 2 wiring 時に
+      // カテゴリ命名がプラン §A と一致しないと全 book ロックされる事故を避けるため)。
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[PonoTier] unknown quizland category for book tier:', category, '— defaulting to unlocked');
+      }
+      return true;
+    }
+    // free: 固定リスト (Phase 2 で qid 埋める)。
+    // 空配列の間はフェイルセーフで true (= 全開放) を返し、 セーフフラグを ON にした瞬間に
+    // free ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
+    // Phase 2 で FREE_QUIZLAND_QUESTION_IDS に 26問の qid を埋めた時点で自動的に
+    // 通常の indexOf 判定に切り替わる。
+    if (FREE_QUIZLAND_QUESTION_IDS.length === 0) return true;
+    return FREE_QUIZLAND_QUESTION_IDS.indexOf(qid) >= 0;
+  }
+
+  function isMazeStageUnlocked(stageNum) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return stageNum <= BOOK_MAZE_MAX_STAGE;
+    return stageNum <= FREE_MAZE_MAX_STAGE;
+  }
+
+  function isPuzzleStageUnlocked(stageNum) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return stageNum <= BOOK_PUZZLE_MAX_STAGE;
+    return stageNum <= FREE_PUZZLE_MAX_STAGE;
+  }
+
+  function isPuzzlePonoSpecialUnlocked(stageId) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_PUZZLE_PONO_SPECIAL_IDS.indexOf(stageId) >= 0;
+    return false;
+  }
+
+  function isOtoSoundSetUnlocked(setId) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_OTO_SETS.indexOf(setId) >= 0;
+    return FREE_OTO_SETS.indexOf(setId) >= 0;
+  }
+
+  function isOtoModeUnlocked(mode) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_OTO_MODES.indexOf(mode) >= 0;
+    return FREE_OTO_MODES.indexOf(mode) >= 0;
+  }
+
+  function isOtoScaleUnlocked(scale) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_OTO_SCALES.indexOf(scale) >= 0;
+    return FREE_OTO_SCALES.indexOf(scale) >= 0;
+  }
+
+  function isOtoRhythmSongUnlocked(songId) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
+    return FREE_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
+  }
+
+  function isOtoChordModeUnlocked(mode) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_OTO_CHORD_MODES.indexOf(mode) >= 0;
+    return FREE_OTO_CHORD_MODES.indexOf(mode) >= 0;
+  }
+
+  function isBentoFoodUnlocked(foodNameOrObj) {
+    if (!gameLocksEnabled()) return true;
+    var name = typeof foodNameOrObj === 'string' ? foodNameOrObj : (foodNameOrObj && foodNameOrObj.name);
+    if (!name) return false;
+    var t = getTier();
+    if (t === 'sub') return ALL_BENTO_FOOD_NAMES.indexOf(name) >= 0;
+    if (t === 'book') return BOOK_BENTO_FOOD_NAMES.indexOf(name) >= 0;
+    return FREE_BENTO_FOOD_NAMES.indexOf(name) >= 0;
+  }
+
+  function isBentoBoxUnlocked(boxId) {
+    if (!gameLocksEnabled()) return true;
+    if (!boxId) return false;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_BENTO_BOX_IDS.indexOf(boxId) >= 0;
+    return FREE_BENTO_BOX_IDS.indexOf(boxId) >= 0;
+  }
+
+  function isBentoNpcUnlocked(npcId) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    if (t === 'book') return BOOK_BENTO_NPCS.indexOf(npcId) >= 0;
+    return FREE_BENTO_NPCS.indexOf(npcId) >= 0;
   }
 
   // ---- 絵本印字パスワード検証 ----
@@ -163,7 +344,7 @@
 
     var body = document.createElement('div');
     body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#5D4E37;line-height:1.6;margin-bottom:16px';
-    body.textContent = opts.body || 'サブスクで あたらしい なかまが まいつき ふえていくよ！';
+    body.textContent = opts.body || 'アプリ で あたらしい なかまが まいつき ふえていくよ！';
     box.appendChild(body);
 
     var btn = document.createElement('button');
@@ -216,6 +397,22 @@
     verifyBookPassword: verifyBookPassword,
     showSubscribePromo: showSubscribePromo,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
-    BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS
+    BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS,
+    isQuizlandQuestionUnlocked: isQuizlandQuestionUnlocked,
+    isMazeStageUnlocked: isMazeStageUnlocked,
+    isPuzzleStageUnlocked: isPuzzleStageUnlocked,
+    isPuzzlePonoSpecialUnlocked: isPuzzlePonoSpecialUnlocked,
+    isOtoSoundSetUnlocked: isOtoSoundSetUnlocked,
+    isOtoModeUnlocked: isOtoModeUnlocked,
+    isOtoScaleUnlocked: isOtoScaleUnlocked,
+    isOtoRhythmSongUnlocked: isOtoRhythmSongUnlocked,
+    isOtoChordModeUnlocked: isOtoChordModeUnlocked,
+    isBentoFoodUnlocked: isBentoFoodUnlocked,
+    isBentoBoxUnlocked: isBentoBoxUnlocked,
+    isBentoNpcUnlocked: isBentoNpcUnlocked,
+    FREE_QUIZLAND_QUESTION_IDS: FREE_QUIZLAND_QUESTION_IDS,
+    ALL_BENTO_FOOD_NAMES: ALL_BENTO_FOOD_NAMES,
+    BOOK_BENTO_FOOD_NAMES: BOOK_BENTO_FOOD_NAMES,
+    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_NAMES
   };
 })();

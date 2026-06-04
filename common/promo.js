@@ -402,7 +402,7 @@
 
     var hint = document.createElement('div');
     hint.className = 'promo-modal-hint';
-    hint.textContent = 'ごほうびパック で あそべる ように なるよ';
+    hint.textContent = 'アプリ で ぜんぶ あそべる ように なるよ';
     box.appendChild(hint);
 
     var btn = document.createElement('button');
@@ -461,7 +461,7 @@
     var tag = document.createElement('div');
     tag.className = 'promo-modal-tag';
     tag.style.background = 'linear-gradient(135deg,#F59E0B,#EF4444)';
-    tag.textContent = 'えほんをかったひと だけ';
+    tag.textContent = 'えほん モード で あそべる';
     box.appendChild(tag);
 
     var title = document.createElement('div');

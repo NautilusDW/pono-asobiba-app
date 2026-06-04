@@ -314,6 +314,14 @@
     }
     .game-card.is-coming-soon { filter: saturate(0.85) brightness(0.97); }
     .game-card.is-coming-soon .game-card__play { opacity: 0.55; }
+    /* Debug-playable coming-soon cards: cancel the desaturation/dim play
+       button so devs can verify the destination game without losing the
+       じゅんびちゅう badge. Hover peek/zoom is slightly amplified to make
+       the debug-only entries visually distinct. */
+    .game-card.is-coming-soon.is-debug-playable { filter: none; }
+    .game-card.is-coming-soon.is-debug-playable .game-card__play { opacity: 1; }
+    .game-card.is-coming-soon.is-debug-playable:hover .game-card__thumb { transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12)); }
+    .game-card.is-coming-soon.is-debug-playable:hover .game-card__peek { opacity: 0.92; }
 
     .game-card {
       position: relative;
@@ -1301,6 +1309,15 @@
     // ===== Game catalog (free MVP set) =====
     // panel: カード木枠の背景 (各ゲームで違う木目バリエーション)
     // thumb: カード左の丸サムネ (各ゲーム個別)
+    // ----- Phase 1 launch ordering -----
+    // 上段 5 本 (quizland → maze → oto → puzzle → bento) は無料公開済みの
+    // 本実装ゲーム (tier:'free')。
+    // 下段 4 本 (writing-mori / wordmatch / zukan / kitchen) は本リリースでは
+    // 準備中扱いだが、開発者がリンク経由で挙動を確認できるよう
+    // debugPlayable:true を付与して startGame ガードをすり抜けられるようにする。
+    // (badge と is-coming-soon クラスは残るので一般ユーザーには「じゅんびちゅう」
+    //  として見える)
+    // quiz-sound は MENU_GAMES.filter で除外されるため順番は問わない。
     const GAMES = [
       {
         id: 'quizland',
@@ -1314,39 +1331,8 @@
         // 旧 thumb_quizland.png (教室シーン) はテーマと合わないため不使用。
         thumb: 'assets/ui/thumb_quizland_owl.webp',
         thumbPos: '50% 50%',
-        peekPos: '67% 55%'
-      },
-      {
-        id: 'quiz-sound',
-        title: 'こだまのもりのこえさがし',
-        subtitle: 'どうぶつのこえを きいて さがそう',
-        icon: '🐦',
-        bg: 'assets/ui/play_quiz_sound_title_back.webp',
-        href: 'quiz-sound/index.html',
-        panel: 'assets/ui/menu_card_base_02.webp',
-        thumb: 'assets/ui/thumb_quiz-sound.webp'
-      },
-      {
-        id: 'wordmatch',
-        title: 'あつめよう！ポノのもりのずかん',
-        subtitle: 'えと ことばを つなげよう',
-        icon: '📖',
-        bg: 'assets/ui/play_wordmatch_title_back.webp',
-        href: 'wordmatch/index.html',
-        panel: 'assets/ui/menu_card_base_03.webp',
-        thumb: 'assets/ui/thumb_wordmatch.webp'
-      },
-      {
-        id: 'writing-mori',
-        title: 'もじっこファーム',
-        subtitle: 'ひらがなを なぞって ミルマルと そだとう',
-        icon: '✏️',
-        bg: 'assets/ui/play_wordmatch_title_back.webp',
-        href: 'writing-mori/index.html',
-        panel: 'assets/ui/menu_card_base_04.webp',
-        thumb: 'assets/ui/thumb_wordmatch.webp',
-        thumbPos: '45% 52%',
-        peekPos: '50% 50%'
+        peekPos: '67% 55%',
+        tier: 'free'
       },
       {
         id: 'maze',
@@ -1359,9 +1345,9 @@
         // 本物の迷路絵 (ランタン+夜の小道) は thumb_quiz-sound.webp 側に
         // 入っているのでこちらを流用。 thumb_maze.webp は中身が
         // ずかん風 (本+きのこ) なので zukan カードで使用する。
-        thumb: 'assets/ui/thumb_quiz-sound.webp'
+        thumb: 'assets/ui/thumb_quiz-sound.webp',
+        tier: 'free'
       },
-      // ----- Newly promoted from coming-soon → real games -----
       {
         id: 'oto',
         title: 'ポノのおとタッチ',
@@ -1372,31 +1358,8 @@
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/ui/thumb_oto.webp',
         thumbPos: '34% 54%',
-        peekPos: '39% 48%'
-      },
-      {
-        id: 'bento',
-        title: 'ポノとつくろう いろどりべんとう',
-        subtitle: 'すきな おかずを つめよう',
-        icon: '🍱',
-        bg: 'assets/ui/play_bento_title_back.webp',
-        href: 'bento/index.html',
-        panel: 'assets/ui/menu_card_base_02.webp',
-        thumb: 'assets/ui/thumb_bento.webp',
-        thumbPos: '31% 58%',
-        peekPos: '36% 52%'
-      },
-      {
-        id: 'kitchen',
-        title: 'ポノのトントンキッチン',
-        subtitle: 'おかずを つくって べんとうへ',
-        icon: '🍳',
-        bg: 'assets/images/bento/cooking/kitchen_bg.webp',
-        href: 'bento/kitchen.html',
-        panel: 'assets/ui/menu_card_base_04.webp',
-        thumb: 'assets/ui/thumb_kitchen.webp',
-        thumbPos: '27% 52%',
-        peekPos: '50% 70%'
+        peekPos: '39% 48%',
+        tier: 'free'
       },
       {
         id: 'puzzle',
@@ -1408,7 +1371,50 @@
         panel: 'assets/ui/menu_card_base_03.webp',
         thumb: 'assets/ui/thumb_puzzle.webp',
         thumbPos: '36% 52%',
-        peekPos: '39% 49%'
+        peekPos: '39% 49%',
+        tier: 'free'
+      },
+      {
+        id: 'bento',
+        title: 'ポノとつくろう いろどりべんとう',
+        subtitle: 'すきな おかずを つめよう',
+        icon: '🍱',
+        bg: 'assets/ui/play_bento_title_back.webp',
+        href: 'bento/index.html',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        thumb: 'assets/ui/thumb_bento.webp',
+        thumbPos: '31% 58%',
+        peekPos: '36% 52%',
+        tier: 'free'
+      },
+      // ----- Coming-soon (debug-playable for devs) -----
+      {
+        id: 'writing-mori',
+        title: 'もじっこファーム',
+        subtitle: 'ひらがなを なぞって ミルマルと そだとう',
+        icon: '✏️',
+        bg: 'assets/ui/play_wordmatch_title_back.webp',
+        href: 'writing-mori/index.html',
+        panel: 'assets/ui/menu_card_base_04.webp',
+        thumb: 'assets/ui/thumb_wordmatch.webp',
+        thumbPos: '45% 52%',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'sub'
+      },
+      {
+        id: 'wordmatch',
+        title: 'あつめよう！ポノのもりのずかん',
+        subtitle: 'えと ことばを つなげよう',
+        icon: '📖',
+        bg: 'assets/ui/play_wordmatch_title_back.webp',
+        href: 'wordmatch/index.html',
+        panel: 'assets/ui/menu_card_base_03.webp',
+        thumb: 'assets/ui/thumb_wordmatch.webp',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'book'
       },
       {
         id: 'zukan',
@@ -1420,7 +1426,36 @@
         panel: 'assets/ui/menu_card_base_04.webp',
         // thumb_maze.webp は実際は ずかん風 (本+葉+きのこ+まつぼっくり)
         // の絵なので、 ずかんカードで正しく使う。
-        thumb: 'assets/ui/thumb_maze.webp'
+        thumb: 'assets/ui/thumb_maze.webp',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'sub'
+      },
+      {
+        id: 'kitchen',
+        title: 'ポノのトントンキッチン',
+        subtitle: 'おかずを つくって べんとうへ',
+        icon: '🍳',
+        bg: 'assets/images/bento/cooking/kitchen_bg.webp',
+        href: 'bento/kitchen.html',
+        panel: 'assets/ui/menu_card_base_04.webp',
+        thumb: 'assets/ui/thumb_kitchen.webp',
+        thumbPos: '27% 52%',
+        peekPos: '50% 70%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'sub'
+      },
+      // ----- Hidden from menu (filtered out by MENU_GAMES) -----
+      {
+        id: 'quiz-sound',
+        title: 'こだまのもりのこえさがし',
+        subtitle: 'どうぶつのこえを きいて さがそう',
+        icon: '🐦',
+        bg: 'assets/ui/play_quiz_sound_title_back.webp',
+        href: 'quiz-sound/index.html',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        thumb: 'assets/ui/thumb_quiz-sound.webp'
       }
     ];
     const MENU_GAMES = GAMES.filter((game) => game.id !== 'quiz-sound');
@@ -1485,7 +1520,12 @@
     const LOOP_COPIES = 3;
 
     function cardMarkup(g, i, rep) {
-      const comingClass = g.comingSoon ? ' is-coming-soon' : '';
+      // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
+      // is-debug-playable: 上の彩度フィルタを打ち消して開発者だけが遷移できる扱い。
+      //   バッジ自体は残す (一般ユーザーには「じゅんびちゅう」のまま見える)。
+      const comingClass = g.comingSoon
+        ? (g.debugPlayable ? ' is-coming-soon is-debug-playable' : ' is-coming-soon')
+        : '';
       const comingBadge = g.comingSoon
         ? '<div class="game-card__soon">じゅんびちゅう</div>'
         : '';
@@ -1691,8 +1731,11 @@
     function startGame(idx) {
       const game = MENU_GAMES[idx];
       if (!game) return;
-      // Coming-soon entries have href '#' — do nothing yet.
-      if (game.comingSoon || !game.href || game.href === '#') return;
+      // Coming-soon entries are normally blocked. debugPlayable:true lets
+      // devs still tap through to the real href so QA can verify destinations
+      // without flipping comingSoon off (which would also hide the badge).
+      const blocked = game.comingSoon && !game.debugPlayable;
+      if (blocked || !game.href || game.href === '#') return;
       try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
       location.href = game.href;
     }
@@ -1774,6 +1817,17 @@
         openModal('settingsModal');
       }
     });
+
+    // ===== 「本をもっている人へ」 button → unlock flow =====
+    // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
+    // 旧実装では何もバインドされていなかったので Phase 1 で play-all.html#unlock
+    // へ遷移するようにする。 #unlock anchor のハンドリングは play-all.html 側で行う。
+    const fpBtn = document.getElementById('forParentsBtn');
+    if (fpBtn) {
+      fpBtn.addEventListener('click', () => {
+        location.href = 'play-all.html#unlock';
+      });
+    }
 
     // ===== Modal helpers =====
     function openModal(id) {

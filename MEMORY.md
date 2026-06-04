@@ -143,6 +143,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-04T04:57:05Z - bento食材ティア配分を8/15/30で統一 (tier.js 3配列 + TIER_POLICY.md §E/§12 表)
+- **タスク**: bento食材ティア配分を8/15/30で統一 (tier.js 3配列 + TIER_POLICY.md §E/§12 表)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 38
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 6, "Agent": 13, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 3}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-04T04:54:12Z - common/tier.js bento食材配分修正: やきざけをbookに移動、プラン§E表を真値として全配列再構成
+- **タスク**: common/tier.js bento食材配分修正: やきざけをbookに移動、プラン§E表を真値として全配列再構成
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 37
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 6, "Agent": 12, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 5, "Workflow": 1, "Bash": 3}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-03T13:51:04Z - トントンキッチン: コロッケ/エビフライ下ごしらえチェーン完成 (mash_potato + shape_korokke 新規, potato/shrimp/korokke の prepActions 接続, placeholder PNG 7枚生成, sw v773)
 - **タスク**: トントンキッチン: コロッケ/エビフライ下ごしらえチェーン完成 (mash_potato + shape_korokke 新規, potato/shrimp/korokke の prepActions 接続, placeholder PNG 7枚生成, sw v773)
 - **結果**: 成功
@@ -231,32 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 49, "Grep": 1, "Read": 38, "Agent": 49, "ToolSearch": 2, "Skill": 2, "Edit": 11, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-03T06:14:31Z - bento おかず回転ボタン追加 + kitchen 塩collision/油ターゲット円ヒント (sw v762)
-- **タスク**: bento おかず回転ボタン追加 + kitchen 塩collision/油ターゲット円ヒント (sw v762)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 147
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 48, "Grep": 1, "Read": 36, "Agent": 47, "ToolSearch": 2, "Skill": 2, "Edit": 10, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-03T05:17:06Z - kitchen.html bug fix x5: salt cache-buster (v761), salt drag pre-reset, oil pan-clear + brighter oil layer, cookFront/cookBack tap progress + enhanced salmon flip animation, chop scatter radius 0.25->0.42 + bowl clip
-- **タスク**: kitchen.html bug fix x5: salt cache-buster (v761), salt drag pre-reset, oil pan-clear + brighter oil layer, cookFront/cookBack tap progress + enhanced salmon flip animation, chop scatter radius 0.25->0.42 + bowl clip
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 139
-- **エラー数**: 6
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 46, "Grep": 1, "Read": 34, "Agent": 44, "ToolSearch": 2, "Skill": 2, "Edit": 9, "Write": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
