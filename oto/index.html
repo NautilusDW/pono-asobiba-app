@@ -1209,6 +1209,16 @@
     color: #fff;
   }
 
+  /* ── ティアロック共通グレーアウト (free/book ユーザー向け、視覚的に「使えない」と示す) ── */
+  /* TIER_POLICY.md §3: 鍵マーク・×印は禁止、グレーアウトのみで表現する */
+  .tier-locked {
+    filter: saturate(0.3) brightness(0.92);
+    opacity: 0.55;
+  }
+  .tier-locked:hover {
+    opacity: 0.7;
+  }
+
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
   .intro {
     position: fixed;
@@ -2776,7 +2786,8 @@ function _renderRhythmSongMenu() {
   if (!list) return;
   list.innerHTML = RHYTHM_SONGS.map(function(song) {
     var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
-    return '<button class="rhythm-song-choice' + active + '" data-song="' + song.id + '"><span class="rhythm-song-name">' + song.name + '</span><span class="rhythm-song-note">' + song.note + '</span></button>';
+    var locked = (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(song.id)) ? ' tier-locked' : '';
+    return '<button class="rhythm-song-choice' + active + locked + '" data-song="' + song.id + '"><span class="rhythm-song-name">' + song.name + '</span><span class="rhythm-song-note">' + song.note + '</span></button>';
   }).join('');
   list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -5183,6 +5194,40 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     setChord(savedC === 'on' ? 'on' : 'off');
   } catch(e) {}
 })();
+
+// ════════════════════════════════════════════════════════════
+// ティアロック UI グレーアウト (free/book ユーザー向け視覚化)
+// タップ時の挙動 (showSubscribePromo) は各クリックハンドラ側で維持。
+// ここでは見た目だけグレーアウトして「使えない」と分かるようにする。
+// ════════════════════════════════════════════════════════════
+function applyTierLockUI() {
+  if (!window.PonoTier) return;
+  // 音色 (ねいろ)
+  document.querySelectorAll('.sound-sets .set-btn').forEach(function(b) {
+    var locked = !window.PonoTier.isOtoSoundSetUnlocked(b.dataset.set);
+    b.classList.toggle('tier-locked', locked);
+  });
+  // スケール (ふつう / ペンタ)
+  var sMajor = document.getElementById('scale-major');
+  var sPenta = document.getElementById('scale-penta');
+  if (sMajor) sMajor.classList.toggle('tier-locked', !window.PonoTier.isOtoScaleUnlocked('major'));
+  if (sPenta) sPenta.classList.toggle('tier-locked', !window.PonoTier.isOtoScaleUnlocked('penta'));
+  // モード (じゆう / リズム)
+  document.querySelectorAll('.mode-btn').forEach(function(b) {
+    b.classList.toggle('tier-locked', !window.PonoTier.isOtoModeUnlocked(b.dataset.mode));
+  });
+  // コードモード (たんおん / コード)
+  var cOff = document.getElementById('chord-off');
+  var cOn  = document.getElementById('chord-on');
+  if (cOff) cOff.classList.toggle('tier-locked', !window.PonoTier.isOtoChordModeUnlocked('off'));
+  if (cOn)  cOn.classList.toggle('tier-locked', !window.PonoTier.isOtoChordModeUnlocked('on'));
+}
+// PonoTier が遅延ロードの可能性もあるため、即時 + DOMContentLoaded + 少し遅延の3段で実行
+applyTierLockUI();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyTierLockUI);
+}
+setTimeout(applyTierLockUI, 500);
 
 // 初回レンダ + localStorage 復元
 _loadSaved();

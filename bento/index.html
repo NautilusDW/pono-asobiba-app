@@ -1149,6 +1149,13 @@ html, body {
   touch-action: none;
 }
 .free-palette-item:active { transform: scale(0.94); }
+.tier-locked {
+  filter: saturate(0.3) brightness(0.92);
+  opacity: 0.55;
+}
+.tier-locked:hover {
+  opacity: 0.7;
+}
 .free-palette-item.selected {
   background-image: url('../assets/images/bento/ui/picker_card_selected.png');
 }
@@ -3881,20 +3888,20 @@ function getOkazuRole(def) {
   return 'side';
 }
 function getFreeFoodCatalog() {
-  return FREE_COOKED_OKAZU
-    .filter(f => !window.PonoTier || window.PonoTier.isBentoFoodUnlocked(f.name))
-    .map(f => {
-      const base = (f.img || f.name || 'food').split('/').pop().replace(/\.[^.]+$/, '');
-      return {
-        ...f,
-        id: 'food_' + base,
-        type: 'food',
-        okazuRole: getOkazuRole(f),
-        size: f.size || 176,
-        layerBase: 30,
-        rotation: f.rotation != null ? f.rotation : Math.round((Math.random() * 8) - 4),
-      };
-    });
+  return FREE_COOKED_OKAZU.map(f => {
+    const base = (f.img || f.name || 'food').split('/').pop().replace(/\.[^.]+$/, '');
+    const locked = !!(window.PonoTier && !window.PonoTier.isBentoFoodUnlocked(f.name));
+    return {
+      ...f,
+      id: 'food_' + base,
+      type: 'food',
+      okazuRole: getOkazuRole(f),
+      size: f.size || 176,
+      layerBase: 30,
+      rotation: f.rotation != null ? f.rotation : Math.round((Math.random() * 8) - 4),
+      tierLocked: locked,
+    };
+  });
 }
 function getFreeGuideTabs() {
   if (freeGuideStep === 'box') return FREE_TABS.filter(t => t.id === 'box');
@@ -5586,6 +5593,9 @@ function makeFreePaletteButton(def) {
   if (shouldHighlightFreeChoice(def)) {
     btn.classList.add('guide-target');
   }
+  if (def.tierLocked) {
+    btn.classList.add('tier-locked');
+  }
   btn.appendChild(createPaletteVisual(def));
   if (freeLayoutTab !== 'box') {
     const name = document.createElement('span');
@@ -5596,6 +5606,13 @@ function makeFreePaletteButton(def) {
   if (freeLayoutTab === 'box') {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      if (def.tierLocked && window.PonoTier) {
+        window.PonoTier.showSubscribePromo({
+          title: 'おべんとうばこ が ふえているよ！',
+          body: 'えほん モード や アプリ で あたらしい かたちが あそべるよ'
+        });
+        return;
+      }
       if (isFreeMainGuideBlocking()) {
         showToast('がめんを タップしてね！');
         return;
@@ -5605,6 +5622,13 @@ function makeFreePaletteButton(def) {
   } else {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      if (def.tierLocked && window.PonoTier) {
+        window.PonoTier.showSubscribePromo({
+          title: 'この たべもの は ふえているよ！',
+          body: 'えほん モード や アプリ で あそべるよ'
+        });
+        return;
+      }
       if (def.type === 'food' && getEditingCup()) {
         if (!canAddFoodToCup(def)) {
           showToast('カップには 小さいおかずを いれよう！');
@@ -6085,9 +6109,15 @@ function renderFreeLayoutControls() {
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
 
-  const items = guideTabs.length
+  let items = guideTabs.length
     ? (freeLayoutTab === 'box' ? bentoBoxes : getFreePaletteItems(freeLayoutTab))
     : [];
+  if (freeLayoutTab === 'box') {
+    items = items.map(box => ({
+      ...box,
+      tierLocked: !!(window.PonoTier && !window.PonoTier.isBentoBoxUnlocked(box.id))
+    }));
+  }
   if (items.length) {
     const list = document.createElement('div');
     list.className = 'free-item-list';
