@@ -1023,8 +1023,30 @@ btnHint.addEventListener('click', () => {
 });
 
 btnNextStage.addEventListener('click', () => {
+  const nextIndex = currentStageIndex + 1;
+  // 配列範囲外なら現状動作 (loadStage がエラーハンドリングする可能性)
+  if (nextIndex < STAGES.length && window.PonoTier) {
+    const nextStage = STAGES[nextIndex];
+    const stageNum = nextStage.id;
+    // user drawing stages (id >= 1000) はティアロック対象外 (自作コンテンツ)
+    if (stageNum < 1000) {
+      // ポノ特別枠 (id = 5/10/15/20) は別判定
+      const isSpecial = [5, 10, 15, 20].indexOf(stageNum) >= 0;
+      const stageIdStr = 'stage_' + String(stageNum).padStart(2, '0');
+      const unlocked = isSpecial
+        ? window.PonoTier.isPuzzlePonoSpecialUnlocked(stageIdStr)
+        : window.PonoTier.isPuzzleStageUnlocked(stageNum);
+      if (!unlocked) {
+        window.PonoTier.showSubscribePromo({
+          title: 'つぎの えは まだ あそべないよ',
+          body: 'えほん モード や アプリ で あたらしい えが ふえていくよ！'
+        });
+        return;
+      }
+    }
+  }
   hideSuccessModal();
-  loadStage(currentStageIndex + 1);
+  loadStage(nextIndex);
 });
 
 if (btnPlayAgain) btnPlayAgain.addEventListener('click', () => {

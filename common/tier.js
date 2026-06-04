@@ -34,14 +34,14 @@
   if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
     try {
       Object.defineProperty(window, 'PONO_TIER_GAME_LOCKS_ENABLED', {
-        value: false,
+        value: true,  // Phase 2: 実ロック発動
         writable: false,
         configurable: true,
         enumerable: true
       });
     } catch (e) {
-      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Phase 1 は false 維持が最優先)
-      window.PONO_TIER_GAME_LOCKS_ENABLED = false;
+      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Phase 2 は true 維持が最優先)
+      window.PONO_TIER_GAME_LOCKS_ENABLED = true;
     }
   }
   function gameLocksEnabled() { return !!window.PONO_TIER_GAME_LOCKS_ENABLED; }
@@ -89,7 +89,16 @@
   ];
 
   // ---- quizland ----
-  var FREE_QUIZLAND_QUESTION_IDS = []; // Phase 2 で実際の qid を埋める (各カテゴリ Lv1 から3問 + trivia 5問 = 26問)
+  var FREE_QUIZLAND_QUESTION_IDS = [
+    'order_color|0','order_color|1','order_color|2',
+    'count_total|0','count_total|1','count_total|2',
+    'shape_name|0','shape_name|1','shape_name|2',
+    'number_sequence|0','number_sequence|1','number_sequence|2',
+    'weather|0','weather|1','weather|2',
+    'opposite|0','opposite|1','opposite|2',
+    'body|0','body|1','body|2',
+    'trivia|0','trivia|1','trivia|2','trivia|3','trivia|4'
+  ]; // Phase 2: 各カテゴリ Lv1 から3問 + trivia 5問 = 26問
   var BOOK_QUIZLAND_KNOW_MAX_LEVEL = 1; // book は know モード Lv1 まで (inspire は全部解放)
   var BOOK_QUIZLAND_INSPIRE_CATEGORIES = ['order_color','count_total','shape_name','number_sequence'];
   var KNOW_QUIZLAND_CATEGORIES = ['trivia','weather','body','opposite'];
@@ -132,8 +141,9 @@
     'きんぴらごぼう','えだまめ','ポテトサラダ','ハムサラダ',
     'みかん','メロン','りんご','パイナップル','もも','ぶどう','キウイ'
   ]);  // +15 = 30累計
-  var FREE_BENTO_BOX_IDS = ['rectangle_bento_00'];
-  var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['round_bento_02tier_00','square_bento_02tier_00']);
+  var FREE_BENTO_BOX_IDS = ['box_rect_split'];
+  var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['box_square','box_round']);
+  // sub は判定 (isBentoBoxUnlocked) で常 true 返却 = 全箱解放
   var FREE_BENTO_NPCS = [];
   var BOOK_BENTO_NPCS = ['risu','inu','shika'];
 

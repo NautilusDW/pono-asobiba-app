@@ -14,6 +14,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
+<script src="../common/tier.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -2705,6 +2706,14 @@ function _rhythmTargetTimeFor(seqIndex) {
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
   if (!found) return;
+  // ティアロック判定
+  if (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(id)) {
+    window.PonoTier.showSubscribePromo({
+      title: 'きょくが ふえているよ！',
+      body: found.name + ' は アプリ で あそべるよ'
+    });
+    return;
+  }
   RHYTHM_BASE_SONG = found;
   RHYTHM_SECTION_INDEX = 0;
   _refreshRhythmSong();
@@ -3738,7 +3747,17 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     e.preventDefault();
     e.stopPropagation();
     unlockAudio();
-    if (btn.dataset.mode === 'rhythm') _showRhythmMenu();
+    if (btn.dataset.mode === 'rhythm') {
+      // ティアロック判定
+      if (window.PonoTier && !window.PonoTier.isOtoModeUnlocked('rhythm')) {
+        window.PonoTier.showSubscribePromo({
+          title: 'リズム モード が ふえているよ！',
+          body: 'リズムに あわせて えんそう できるよ。 アプリ で あそべるよ'
+        });
+        return;
+      }
+      _showRhythmMenu();
+    }
     else {
       _hideRhythmMenu();
       setPlayMode('free');
@@ -5098,6 +5117,14 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   document.querySelectorAll('.sound-sets .set-btn').forEach(function(b) {
     b.addEventListener('click', function(e) {
       e.stopPropagation();
+      // ティアロック判定
+      if (window.PonoTier && !window.PonoTier.isOtoSoundSetUnlocked(b.dataset.set)) {
+        window.PonoTier.showSubscribePromo({
+          title: 'おとが ふえているよ！',
+          body: 'アプリ で もっと たくさんの おとが あそべるよ'
+        });
+        return;
+      }
       document.querySelectorAll('.sound-sets .set-btn').forEach(function(x) { x.classList.remove('active'); });
       b.classList.add('active');
       currentSet = b.dataset.set;
@@ -5110,6 +5137,14 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var sMajor = document.getElementById('scale-major');
   var sPenta = document.getElementById('scale-penta');
   function setScale(mode) {
+    // ティアロック判定
+    if (window.PonoTier && !window.PonoTier.isOtoScaleUnlocked(mode)) {
+      window.PonoTier.showSubscribePromo({
+        title: 'スケール が ふえているよ！',
+        body: 'ペンタトニック は アプリ で あそべるよ'
+      });
+      return;
+    }
     SCALE_MODE = mode;
     try { localStorage.setItem('pono_oto_scale', mode); } catch(e) {}
     sMajor.classList.toggle('active', mode === 'major');
@@ -5128,6 +5163,14 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var cOff = document.getElementById('chord-off');
   var cOn  = document.getElementById('chord-on');
   function setChord(mode) {
+    // ティアロック判定
+    if (window.PonoTier && !window.PonoTier.isOtoChordModeUnlocked(mode)) {
+      window.PonoTier.showSubscribePromo({
+        title: 'コードモード が ふえているよ！',
+        body: '和音 で えんそう できるよ。 アプリ で あそべるよ'
+      });
+      return;
+    }
     CHORD_MODE = mode;
     try { localStorage.setItem('pono_oto_chord', mode); } catch(e) {}
     cOff.classList.toggle('active', mode === 'off');

@@ -11,6 +11,7 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/first-clear.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/tier.js"></script>
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
 <script src="../js/animation-player.js"></script>
@@ -4147,7 +4148,8 @@ function buildPlaylist() {
   cats.forEach(cat => {
     const pool = (QUIZLAND_QUESTIONS[cat] || [])
       .map((q, idx) => Object.assign({ _cat: cat, _idx: idx }, q))
-      .filter(q => q.level >= minLv && q.level <= maxLv);
+      .filter(q => q.level >= minLv && q.level <= maxLv)
+      .filter(q => !window.PonoTier || window.PonoTier.isQuizlandQuestionUnlocked(cat + '|' + q._idx, cat, q.level));
     if (pool.length > 0) list.push(...shuffle(pool).slice(0, perCat));
   });
   return shuffle(list).slice(0, DEFAULT_TOTAL_Q);

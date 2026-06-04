@@ -11,6 +11,7 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/tier.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2713,6 +2714,19 @@ const FREE_COOKED_OKAZU = [
   { img: FREE_LAYOUT_ASSET_P+'fruit_pineapple.png',        name: 'パイナップル',     cat: 'fruit', sk: 'g', size: 112, rotation: -3 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_momo.png',             name: 'もも',             cat: 'fruit', sk: 'g', size: 116, rotation: 4 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_kiwi.png',             name: 'キウイ',           cat: 'fruit', sk: 'g', size: 104, rotation: -1 },
+  // Phase 2 追加分 (主菜系から既存 OKAZU_MEAT 行 L2635-2655 の画像パスを参考)
+  { img: P+'broccoli2.webp',     name: 'ブロッコリー',       cat: 'veg',  sk: 'g', size: 130, rotation: -2 },
+  { img: P+'meatball2.webp',     name: 'ミートボール',       cat: 'meat', sk: 'r', size: 140, rotation: 1 },
+  { img: P+'napolitan2.webp',    name: 'ナポリタン',         cat: 'meat', sk: 'y', size: 165, rotation: -1 },
+  { img: P+'gyoza.webp',         name: 'ぎょうざ',           cat: 'meat', sk: 'r', size: 130, rotation: 3 },
+  { img: P+'harumaki.webp',      name: 'はるまき',           cat: 'meat', sk: 'y', size: 145, rotation: -4 },
+  { img: P+'bacon_maki.webp',    name: 'ベーコンまき',       cat: 'meat', sk: 'r', size: 155, rotation: 2 },
+  { img: P+'corn_spinach2.webp', name: 'コーンほうれんそう', cat: 'veg',  sk: 'g', size: 140, rotation: -2 },
+  { img: P+'edamame2.webp',      name: 'えだまめ',           cat: 'veg',  sk: 'g', size: 125, rotation: 0 },
+  { img: P+'potato_salad2.webp', name: 'ポテトサラダ',       cat: 'veg',  sk: 'g', size: 155, rotation: 1 },
+  { img: P+'ham_salad.webp',     name: 'ハムサラダ',         cat: 'veg',  sk: 'g', size: 145, rotation: -3 },
+  { img: P+'banana2.webp',       name: 'バナナ',             cat: 'fruit',sk: 'y', size: 110, rotation: -2 },
+  { img: P+'budou2.webp',        name: 'ぶどう',             cat: 'fruit',sk: 'g', size: 105, rotation: 2 },
 ];
 const FREE_MAIN_OKAZU_NAMES = ['タコウインナー', 'ハンバーグ', 'からあげ', 'エビフライ', 'コロッケ', 'やきざけ'];
 const FREE_SIDE_OKAZU_NAMES = ['キャベツ', 'プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'いちご', 'メロン', 'みかん', 'りんご', 'パイナップル', 'もも', 'キウイ'];
@@ -2759,7 +2773,7 @@ const NPC_REQUESTERS = [
     portraitNormal: NPC_PORTRAIT_BASE + 'shika_01.png',
     portraitHappy:  NPC_PORTRAIT_BASE + 'shika_goal.png',
     portraitSad:    NPC_PORTRAIT_BASE + 'shika_02.png',
-    wantedFoods: ['にんじんいんげん', 'きんぴらごぼう'],
+    wantedFoods: ['にんじんいんげん', 'コーンほうれんそう'],
     intro:    'やさいの おかずが すきなの',
     happyMsg: 'みどり いっぱい！ ありがとう！',
     sadMsg:   'みどりの おやさい たべたかったな',
@@ -3062,7 +3076,7 @@ const bentoBoxes = [
     riceBounds: { x: 164, y: 82, w: 432, h: 302 },
     clipPoints: [[166,116], [188,70], [260,54], [300,96], [380,84], [460,96], [500,54], [572,70], [594,116], [590,250], [568,338], [500,386], [380,406], [260,386], [192,338], [170,250]],
     imageScale: 1,
-    tierCount: 3,
+    tierCount: 2,
     autoRice: { baseRice: 'rice_base_bear', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
@@ -3103,7 +3117,7 @@ const bentoBoxes = [
     riceBounds: { x: 164, y: 82, w: 432, h: 302 },
     clipPoints: [[166,116], [188,70], [260,54], [300,96], [380,84], [460,96], [500,54], [572,70], [594,116], [590,250], [568,338], [500,386], [380,406], [260,386], [192,338], [170,250]],
     imageScale: 1,
-    tierCount: 3,
+    tierCount: 2,
     autoRice: { baseRice: 'rice_base_bear', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
@@ -3144,7 +3158,7 @@ const bentoBoxes = [
     riceBounds: { x: 166, y: 90, w: 428, h: 300 },
     clipPoints: [[164,124], [190,54], [292,118], [380,94], [468,118], [570,54], [596,124], [586,252], [564,338], [496,390], [380,408], [264,390], [196,338], [174,252]],
     imageScale: 1.02,
-    tierCount: 3,
+    tierCount: 2,
     autoRice: { baseRice: 'rice_base_cat', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
@@ -3185,7 +3199,7 @@ const bentoBoxes = [
     riceBounds: { x: 166, y: 90, w: 428, h: 300 },
     clipPoints: [[164,124], [190,54], [292,118], [380,94], [468,118], [570,54], [596,124], [586,252], [564,338], [496,390], [380,408], [264,390], [196,338], [174,252]],
     imageScale: 1.02,
-    tierCount: 3,
+    tierCount: 2,
     autoRice: { baseRice: 'rice_base_cat', x: 380, y: 230, size: 470 },
     riceSpots: [
       { x: 380, y: 230 },
@@ -3351,6 +3365,13 @@ function getFreeMaskEditRequest() {
   }
 }
 
+// Phase 2: ティア判定で NPC をフィルタリング。 セーフフラグ OFF 中は全 NPC 返す = 既存挙動維持。
+function getEligibleNpcRequesters() {
+  if (!window.PonoTier) return NPC_REQUESTERS.slice();
+  const eligible = NPC_REQUESTERS.filter(r => window.PonoTier.isBentoNpcUnlocked(r.id));
+  return eligible.length > 0 ? eligible : NPC_REQUESTERS.slice();
+}
+
 function decideNpcMode() {
   // ----- テスト用 URL パラメータ (?npc=...) -----
   // ?npc=0           → 強制 自由モード (動物来ない)
@@ -3366,7 +3387,8 @@ function decideNpcMode() {
         return;
       }
       if (force === '1' || force === 'random' || force === 'on') {
-        currentRequester = NPC_REQUESTERS[Math.floor(Math.random() * NPC_REQUESTERS.length)];
+        const pool = getEligibleNpcRequesters();
+        currentRequester = pool[Math.floor(Math.random() * pool.length)];
         return;
       }
       const found = NPC_REQUESTERS.find(r => r.id === force);
@@ -3386,7 +3408,8 @@ function decideNpcMode() {
   } catch (_) { /* private mode 等で sessionStorage 不可 → 一回限り判定 */ }
 
   if (Math.random() < NPC_REQUEST_RATE) {
-    currentRequester = NPC_REQUESTERS[Math.floor(Math.random() * NPC_REQUESTERS.length)];
+    const pool = getEligibleNpcRequesters();
+    currentRequester = pool[Math.floor(Math.random() * pool.length)];
     try { sessionStorage.setItem(NPC_SESSION_KEY, currentRequester.id); } catch (_) {}
   } else {
     currentRequester = null;
@@ -3858,18 +3881,20 @@ function getOkazuRole(def) {
   return 'side';
 }
 function getFreeFoodCatalog() {
-  return FREE_COOKED_OKAZU.map(f => {
-    const base = (f.img || f.name || 'food').split('/').pop().replace(/\.[^.]+$/, '');
-    return {
-      ...f,
-      id: 'food_' + base,
-      type: 'food',
-      okazuRole: getOkazuRole(f),
-      size: f.size || 176,
-      layerBase: 30,
-      rotation: f.rotation != null ? f.rotation : Math.round((Math.random() * 8) - 4),
-    };
-  });
+  return FREE_COOKED_OKAZU
+    .filter(f => !window.PonoTier || window.PonoTier.isBentoFoodUnlocked(f.name))
+    .map(f => {
+      const base = (f.img || f.name || 'food').split('/').pop().replace(/\.[^.]+$/, '');
+      return {
+        ...f,
+        id: 'food_' + base,
+        type: 'food',
+        okazuRole: getOkazuRole(f),
+        size: f.size || 176,
+        layerBase: 30,
+        rotation: f.rotation != null ? f.rotation : Math.round((Math.random() * 8) - 4),
+      };
+    });
 }
 function getFreeGuideTabs() {
   if (freeGuideStep === 'box') return FREE_TABS.filter(t => t.id === 'box');
@@ -5169,6 +5194,13 @@ function addAutoRiceForSelectedBox(opts = {}) {
   return rice;
 }
 function selectFreeBentoBox(id) {
+  if (window.PonoTier && !window.PonoTier.isBentoBoxUnlocked(id)) {
+    window.PonoTier.showSubscribePromo({
+      title: 'おべんとうばこ が ふえているよ！',
+      body: 'えほん モード や アプリ で あたらしい かたちが あそべるよ'
+    });
+    return;
+  }
   selectedBentoBoxId = id;
   freeActiveTier = 1;
   freeActiveCupUid = null;
