@@ -94,6 +94,48 @@ window.PonoPartnerSelect = (function () {
     return hint.indexOf('5') === 0;
   }
 
+  /**
+   * 難易度ラベル生成。
+   * partner.difficulty が以下のいずれかである想定:
+   *   'easy'   → やさしい★
+   *   'normal' → ふつう★★
+   *   'tricky' → ちょっとずるい★★★
+   * 未設定の場合は ageHint からフォールバック (3→easy / 4→normal / 5→tricky)。
+   */
+  function resolveDifficulty(partner) {
+    if (!partner) return null;
+    var raw = partner.difficulty;
+    if (raw === 'easy' || raw === 'normal' || raw === 'tricky') return raw;
+    var hint = partner && partner.ageHint ? String(partner.ageHint) : '';
+    if (hint.indexOf('3') === 0) return 'easy';
+    if (hint.indexOf('4') === 0) return 'normal';
+    if (hint.indexOf('5') === 0) return 'tricky';
+    return null;
+  }
+
+  function buildDifficultyBadge(difficulty) {
+    if (!difficulty) return null;
+    var label = '';
+    var stars = '';
+    if (difficulty === 'easy')        { label = 'やさしい';        stars = '★';   }
+    else if (difficulty === 'normal') { label = 'ふつう';          stars = '★★';  }
+    else if (difficulty === 'tricky') { label = 'ちょっとずるい';  stars = '★★★'; }
+    else return null;
+
+    var badge = document.createElement('div');
+    badge.className = 'pono-pselect__difficulty pono-pselect__difficulty--' + difficulty;
+    var labelEl = document.createElement('span');
+    labelEl.className = 'pono-pselect__difficulty-label';
+    labelEl.textContent = label;
+    badge.appendChild(labelEl);
+    var starsEl = document.createElement('span');
+    starsEl.className = 'pono-pselect__difficulty-stars';
+    starsEl.textContent = stars;
+    badge.appendChild(starsEl);
+    badge.setAttribute('aria-label', 'むずかしさ ' + label);
+    return badge;
+  }
+
   /** SE 用 hook (PuzzleVoice があれば一応鳴らす。失敗しても無視) */
   function tryPlayTap() {
     try {
@@ -133,6 +175,13 @@ window.PonoPartnerSelect = (function () {
       p.name + (locked ? ' (ロック中)' : '') + ' — ' + (p.trait || '')
     );
     if (locked) card.setAttribute('aria-disabled', 'true');
+
+    // 難易度ラベル (やさしい / ふつう / ちょっとずるい) — カード最上部
+    var difficulty = resolveDifficulty(p);
+    var diffBadge = buildDifficultyBadge(difficulty);
+    if (diffBadge) {
+      card.appendChild(diffBadge);
+    }
 
     // 立ち絵
     var portrait = document.createElement('div');
@@ -345,14 +394,41 @@ window.PonoPartnerSelect = (function () {
     header.appendChild(title);
     _root.appendChild(header);
 
-    // grid
-    var grid = document.createElement('div');
-    grid.className = 'pono-pselect__grid';
+    // 横スクロールリスト (1行 + scroll-snap)
+    var scroller = document.createElement('div');
+    scroller.className = 'pono-pselect__scroller';
+    scroller.setAttribute('role', 'group');
+    scroller.setAttribute('aria-label', 'パートナー一覧 (横にスクロール)');
+
+    var track = document.createElement('div');
+    track.className = 'pono-pselect__track';
     var list = window.PonoPartners.list || [];
     for (var i = 0; i < list.length; i++) {
-      grid.appendChild(buildCard(list[i], _stageId));
+      track.appendChild(buildCard(list[i], _stageId));
     }
-    _root.appendChild(grid);
+    scroller.appendChild(track);
+
+    // スクロールヒント (3枚以上ある場合のみ表示)
+    if (list.length > 3) {
+      var hint = document.createElement('div');
+      hint.className = 'pono-pselect__scroll-hint';
+      hint.setAttribute('aria-hidden', 'true');
+      var hintLeft = document.createElement('span');
+      hintLeft.className = 'pono-pselect__scroll-hint-arrow';
+      hintLeft.textContent = '←';
+      var hintText = document.createElement('span');
+      hintText.className = 'pono-pselect__scroll-hint-text';
+      hintText.textContent = 'よこに スクロールで もっと みえるよ';
+      var hintRight = document.createElement('span');
+      hintRight.className = 'pono-pselect__scroll-hint-arrow';
+      hintRight.textContent = '→';
+      hint.appendChild(hintLeft);
+      hint.appendChild(hintText);
+      hint.appendChild(hintRight);
+      _root.appendChild(hint);
+    }
+
+    _root.appendChild(scroller);
 
     // footer
     var footer = document.createElement('div');

@@ -27,6 +27,7 @@ window.PonoPartners = (function () {
       locked: false,
       unlockCondition: null,
       ageHint: '5さい〜',
+      difficulty: 'ちょっとずるい',
     },
     {
       id: 'kojika',
@@ -40,6 +41,7 @@ window.PonoPartners = (function () {
       locked: false,
       unlockCondition: null,
       ageHint: '3さい〜',
+      difficulty: 'やさしい',
     },
     {
       id: 'araiguma',
@@ -53,6 +55,7 @@ window.PonoPartners = (function () {
       locked: false,
       unlockCondition: null,
       ageHint: '4さい〜',
+      difficulty: 'やさしい',
     },
     {
       id: 'usagi',
@@ -66,6 +69,7 @@ window.PonoPartners = (function () {
       locked: false,
       unlockCondition: null,
       ageHint: '3さい〜',
+      difficulty: 'ふつう',
     },
     {
       id: 'fukurou',
@@ -79,6 +83,7 @@ window.PonoPartners = (function () {
       locked: true,
       unlockCondition: 'stage20_clear',
       ageHint: '5さい〜',
+      difficulty: 'ふつう',
     },
   ];
 

@@ -1234,23 +1234,53 @@ let hintFlashPiece = null;              // 金色星演出の対象ピース
 let hintAnimRafHandle = null;           // 黄 pulse / 金 star 用 rAF
 let hintNoticeTimeout = null;           // 「ピースを えらんで〜」吹き出しの非表示タイマー
 
-const HINT_FLASH_DURATION_MS = 2000;    // 金色星 + radial glow 表示時間
+const HINT_FLASH_DURATION_MS = 1500;    // 金色星 + radial glow 表示時間 (Phase 3c: 2000→1500)
 
-// ステージ毎の初期回数を計算 (パートナー無し or stageId=null → 1)
+// Phase 3c 確定テーブル: パートナー / Lv / Stage に応じてヒント初期回数を計算
+//   - 装備なし: base + (Lv3 で +1)、上限 3
+//       base = {Stage 1-5: 1, Stage 6-12: 2, Stage 13-20: 3}
+//   - キツネ装備: 3 + (Stage13以降で +1) + (Lv3 で +1)、上限 5
+//   - user drawing stage (id >= 1000) は安全策として「装備なし base=3」相当扱い
+function computeHintUses(stageNum, partnerId, level) {
+  var lv = (typeof level === 'number' && isFinite(level)) ? level : 0;
+  var lv3Bonus = (lv >= 3) ? 1 : 0;
+  var sNum = (typeof stageNum === 'number' && isFinite(stageNum)) ? stageNum : 1;
+  var isKitsune = (partnerId === 'kitsune');
+  if (isKitsune) {
+    var stageBonus = (sNum >= 13) ? 1 : 0;
+    return Math.min(5, 3 + stageBonus + lv3Bonus);
+  }
+  // 装備なし / 他パートナー (現状はキツネだけがヒント特化)
+  var base;
+  if (sNum <= 5) base = 1;
+  else if (sNum <= 12) base = 2;
+  else base = 3;
+  return Math.min(3, base + lv3Bonus);
+}
+
+// stageId (built-in: 1..20, user drawing: 1000+) → 計算用 stageNum
+//   user drawing は上限ステージ (20) 相当として扱い、ベース base=3 を与える
+function hintStageNumFor(stageId) {
+  if (stageId == null) return 1;
+  var n = Number(stageId);
+  if (!isFinite(n)) return 1;
+  if (n >= 1000) return 20; // user drawing → 最高難度扱い
+  return n;
+}
+
+// 旧 API 互換: getHintUsesRemaining / 旧呼び出し元用ラッパー
 function computeHintInitialUses(stageId) {
   try {
     var partnerId = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
       ? window.PonoBond.getSelectedPartner() : null;
-    if (!partnerId || stageId == null) return 1;
-    if (window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
-      var lv = window.PonoBond.getLevel(partnerId, stageId) || 0;
-      // Lv0 → 1, Lv1 → 2, Lv2 → 3, Lv3 → 5
-      if (lv >= 3) return 5;
-      if (lv === 2) return 3;
-      if (lv === 1) return 2;
+    var lv = 0;
+    if (partnerId && window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
+      lv = window.PonoBond.getLevel(partnerId, stageId) || 0;
     }
-  } catch (_) {}
-  return 1;
+    return computeHintUses(hintStageNumFor(stageId), partnerId, lv);
+  } catch (_) {
+    return 1;
+  }
 }
 
 // localStorage 名前空間 (puzzle/ もりのなかよし 専用ヒント残数ストレージ)
@@ -1348,13 +1378,18 @@ function refreshHintButtonState() {
   if (!btnHint) return;
   var sid = getCurrentStageIdForHint();
   var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
-  // 残数バッジを ::after 風に DOM 化 (textContent を分解)
-  var label = 'ヒント';
+  // Phase 3c: キツネ装備時はラベルを「ヒント🦊」に切り替えて視覚差別化
+  var partnerIdForLabel = null;
+  try {
+    partnerIdForLabel = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
+      ? window.PonoBond.getSelectedPartner() : null;
+  } catch (_) { partnerIdForLabel = null; }
+  var label = (partnerIdForLabel === 'kitsune') ? 'ヒント🦊' : 'ヒント';
   if (dragPiece) {
     // ドラッグ中は無効化 + 😴 マーク
     btnHint.classList.add('is-disabled', 'is-sleeping');
     btnHint.classList.remove('is-empty');
-    btnHint.textContent = '😴 ヒント';
+    btnHint.textContent = '😴 ' + label;
     btnHint.setAttribute('aria-disabled', 'true');
     return;
   }
@@ -1452,27 +1487,29 @@ function drawHintOverlay(ctx) {
     ctx.restore();
   }
 
-  // ── 金色星 + radial glow (ヒント発火後 2 秒) ──
+  // ── 金色星 + radial glow (ヒント発火後 1.5 秒) ──
+  // Phase 3c: 「正解そのもの」感を抑える: 星 -20% / glow 半径 -30% / 表示時間 1500ms / 枠点滅は維持
   if (hintFlashPiece && now < hintFlashUntil
       && pieces && pieces.indexOf(hintFlashPiece) >= 0) {
     var t = (hintFlashUntil - now) / HINT_FLASH_DURATION_MS; // 1 → 0
     var phase = 1 - t;                                       // 0 → 1
     var slot = pieceCenter(hintFlashPiece, true);
     var blink = 0.5 + 0.5 * Math.sin(now / 120);             // 0..1
-    var glowR = Math.max(pieceW, pieceH) * (0.4 + 0.5 * phase);
+    // glow 半径 30% 縮小: 旧 0.4 + 0.5*phase → 0.28 + 0.35*phase
+    var glowR = Math.max(pieceW, pieceH) * (0.28 + 0.35 * phase);
 
     ctx.save();
-    // radial glow
+    // radial glow (alpha も少し控えめに)
     var grad = ctx.createRadialGradient(slot.cx, slot.cy, 4, slot.cx, slot.cy, glowR);
-    grad.addColorStop(0,   'rgba(255, 215, 64, ' + (0.55 * (1 - phase * 0.4)).toFixed(3) + ')');
-    grad.addColorStop(0.6, 'rgba(255, 200, 0, 0.18)');
+    grad.addColorStop(0,   'rgba(255, 215, 64, ' + (0.42 * (1 - phase * 0.4)).toFixed(3) + ')');
+    grad.addColorStop(0.6, 'rgba(255, 200, 0, 0.12)');
     grad.addColorStop(1,   'rgba(255, 200, 0, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(slot.cx, slot.cy, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    // 枠点滅
+    // 枠点滅 (どこか分かる程度 → 維持)
     ctx.lineWidth = 3 + 2 * blink;
     ctx.strokeStyle = 'rgba(255, 215, 64, ' + (0.6 + 0.35 * blink).toFixed(3) + ')';
     ctx.shadowColor = 'rgba(255, 215, 64, 0.9)';
@@ -1481,12 +1518,12 @@ function drawHintOverlay(ctx) {
     buildPiecePath(ctx, hintFlashPiece.homeX, hintFlashPiece.homeY, pieceW, pieceH, hintFlashPiece.tabs);
     ctx.stroke();
 
-    // 金色星 (5 つ尖りの星)
-    ctx.shadowBlur = 24;
+    // 金色星 (5 つ尖り) — サイズ 20% 縮小: 0.32 → 0.256
+    ctx.shadowBlur = 20;
     ctx.fillStyle = 'rgba(255, 224, 102, ' + (0.85 + 0.15 * blink).toFixed(3) + ')';
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.95)';
     ctx.lineWidth = 2.5;
-    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.32, 5, 0.45);
+    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.256, 5, 0.45);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -1968,10 +2005,24 @@ btnHint.addEventListener('click', () => {
 
   if (window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
 
-  // 金色星演出: 2 秒間 hintFlashPiece に対して描画
+  // 金色星演出: 1.5 秒間 hintFlashPiece に対して描画 (Phase 3c: 2000→1500ms)
   hintFlashPiece = selectedPieceForHint;
   hintFlashUntil = Date.now() + HINT_FLASH_DURATION_MS;
   ensureHintAnimLoop();
+
+  // Phase 3c: キツネ装備時はピース絵柄の grayscale シルエットを「手元」スロットへ追加転写
+  //   - 実装は assists/kitsune.js 側 (window.PonoAssistKitsune.fireHintShape(piece, ctx))
+  //   - 未ロード / 未実装でもヒント本体は機能するよう try/catch で隔離
+  try {
+    var partnerIdForFx = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
+      ? window.PonoBond.getSelectedPartner() : null;
+    if (partnerIdForFx === 'kitsune'
+        && window.PonoAssistKitsune
+        && typeof window.PonoAssistKitsune.fireHintShape === 'function') {
+      var fxCtx = (puzzleCanvas && puzzleCanvas.getContext) ? puzzleCanvas.getContext('2d') : null;
+      window.PonoAssistKitsune.fireHintShape(selectedPieceForHint, fxCtx);
+    }
+  } catch (_) { /* assist 側の例外で本体を止めない */ }
 
   // 残数を 1 消費
   setHintUsesRemaining(sid, Math.max(0, remaining - 1));

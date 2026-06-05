@@ -115,28 +115,44 @@
   function ensureCss() {
     if (cssInjected) return;
     cssInjected = true;
+    // 設計メモ (Phase 3c 修正):
+    //   ユーザー実機FB「アライグマの能力ボタンが見えない」を根本対応するため、
+    //     (a) z-index を 9999 に引き上げ (success-modal / cutin / partner-select
+    //         / どのオーバーレイよりも前面)
+    //     (b) bond-badge (bottom:14 + 高さ~52) の上 10px に確実に配置
+    //         → desktop: bottom = 14 + 52 + 10 = 76px
+    //         → mobile : bottom = 10 + 44 + 10 = 64px
+    //     (c) 最小タップ領域 64x64px を保証 (min-width / min-height)
+    //     (d) ラベルを「🦝 ぴかっと のこり N」の 1 行構成に変更し
+    //         可視性とタップ面積を確保
     var css =
       '#' + BTN_ID + '{' +
         'position:fixed;' +
         'right:14px;' +
-        'bottom:78px;' +              // bond-badge (bottom:14, height~52) の真上
-        'z-index:225;' +              // バッジ(220)より前面
+        'bottom:76px;' +              // bond-badge (bottom:14, height~52) の上 10px
+        'z-index:9999;' +             // どのオーバーレイ (cutin z=400 等) よりも前面
         'display:flex;' +
         'align-items:center;' +
-        'gap:6px;' +
-        'padding:8px 14px 8px 10px;' +
-        'border:none;' +
+        'justify-content:center;' +
+        'gap:8px;' +
+        'min-width:64px;' +
+        'min-height:64px;' +
+        'padding:10px 18px;' +
+        'border:3px solid #FFFFFF;' + // 高コントラスト白枠で背景に埋もれない
         'border-radius:999px;' +
         'background:linear-gradient(135deg,#F7C948 0%,#F2915A 100%);' +
         'color:#5D3A00;' +
         'font-family:"Zen Maru Gothic","Hiragino Maru Gothic Pro",sans-serif;' +
         'font-weight:700;' +
-        'font-size:15px;' +
-        'box-shadow:0 4px 12px rgba(93,78,55,0.28),inset 0 1px 0 rgba(255,255,255,0.6);' +
+        'font-size:16px;' +
+        'line-height:1.1;' +
+        'box-shadow:0 6px 16px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.6);' +
         'cursor:pointer;' +
         '-webkit-tap-highlight-color:transparent;' +
         'transition:transform .12s ease, filter .25s ease;' +
         'touch-action:manipulation;' +
+        'user-select:none;' +
+        '-webkit-user-select:none;' +
       '}' +
       '#' + BTN_ID + '.hidden{display:none!important;}' +
       '#' + BTN_ID + ':active{transform:scale(0.95);}' +
@@ -146,15 +162,15 @@
         'pointer-events:none;' +
         'opacity:0.7;' +
       '}' +
-      '#' + BTN_ID + ' .pono-araiguma-btn__icon{font-size:22px;line-height:1;}' +
-      '#' + BTN_ID + ' .pono-araiguma-btn__label{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;}' +
-      '#' + BTN_ID + ' .pono-araiguma-btn__title{font-size:13px;letter-spacing:0.02em;}' +
-      '#' + BTN_ID + ' .pono-araiguma-btn__count{font-size:11px;color:#5D3A00;opacity:0.85;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__icon{font-size:26px;line-height:1;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__label{display:flex;flex-direction:row;align-items:center;gap:6px;line-height:1.1;white-space:nowrap;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__title{font-size:15px;letter-spacing:0.02em;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__count{font-size:13px;color:#5D3A00;opacity:0.9;font-weight:700;}' +
       '@media (max-width:480px){' +
-        '#' + BTN_ID + '{bottom:64px;right:10px;padding:6px 10px 6px 8px;font-size:13px;}' +
-        '#' + BTN_ID + ' .pono-araiguma-btn__icon{font-size:18px;}' +
-        '#' + BTN_ID + ' .pono-araiguma-btn__title{font-size:11px;}' +
-        '#' + BTN_ID + ' .pono-araiguma-btn__count{font-size:10px;}' +
+        '#' + BTN_ID + '{bottom:64px;right:10px;padding:8px 14px;font-size:14px;min-width:64px;min-height:64px;}' +
+        '#' + BTN_ID + ' .pono-araiguma-btn__icon{font-size:22px;}' +
+        '#' + BTN_ID + ' .pono-araiguma-btn__title{font-size:13px;}' +
+        '#' + BTN_ID + ' .pono-araiguma-btn__count{font-size:12px;}' +
       '}' +
       '@keyframes ponoAraigumaPulse{' +
         '0%{box-shadow:0 4px 12px rgba(93,78,55,0.28),0 0 0 0 rgba(247,201,72,0.7);}' +
@@ -191,11 +207,12 @@
     //   onButtonClick 内で state.usesLeft とこの data-uses-left の両方を検証し、
     //   仮に DevTools で textContent を書き換えられても実回数を超えるスナップは起きない。
     btn.setAttribute('data-uses-left', '0');
+    // ラベルは「🦝 ぴかっと のこり N」を 1 行で表示 (タップ面積と可視性確保)
     btn.innerHTML =
       '<span class="pono-araiguma-btn__icon" aria-hidden="true">🦝</span>' +
       '<span class="pono-araiguma-btn__label">' +
         '<span class="pono-araiguma-btn__title">ぴかっと</span>' +
-        '<span class="pono-araiguma-btn__count">のこり 0かい</span>' +
+        '<span class="pono-araiguma-btn__count">のこり0</span>' +
       '</span>';
     btn.addEventListener('click', onButtonClick);
     // pointer 系: タッチ環境でも素早く反応
@@ -216,7 +233,7 @@
     }
     btn.classList.remove('hidden');
     var countEl = btn.querySelector('.pono-araiguma-btn__count');
-    if (countEl) countEl.textContent = 'のこり ' + state.usesLeft + 'かい';
+    if (countEl) countEl.textContent = 'のこり' + state.usesLeft;
     // ★ canonical state を data-uses-left にミラー (high finding 修正)。
     //   onButtonClick は state.usesLeft (closure) と data-uses-left (DOM) の両方を
     //   見て、 一致しなければ DOM 改ざんとみなして強制リジェクトする。
