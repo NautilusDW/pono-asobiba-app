@@ -27,6 +27,9 @@
 }
 
 html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
   height: 100dvh;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   background: linear-gradient(135deg, #FFF8F0 0%, #FFEEDD 100%);
@@ -114,33 +117,34 @@ html, body {
 
 /* ===== タイトル ===== */
 .game-title {
-  position: fixed;
-  top: 6px; left: 50%; transform: translateX(-50%);
-  font-size: 1.3rem; font-weight: 900;
+  position: absolute;
+  top: 12px; left: 50%; transform: translateX(-50%);
+  font-size: 2.1rem; font-weight: 900;
   color: var(--primary);
-  text-shadow: 2px 2px 0 var(--primary-light);
+  text-shadow: 3px 3px 0 var(--primary-light);
   z-index: 5;
   pointer-events: none;
   white-space: nowrap;
 }
 
 /* ===== 横向きメインレイアウト =====
-   背景は 21:9 で作り、重要な操作 UI は中央 16:9 セーフエリアに収める。
-   タイトル画面と
-   オーバーレイモーダル (sk-intro / portrait-notice / complete-overlay /
-   npc-*) は別レイヤーで全画面のまま。 */
+   16:9 完全固定 (1600x900) の仮想キャンバス。
+   ビューポート差は JS の fitStage で transform:scale + translate のみで吸収し、
+   内部レイアウトはアスペクト比帯に応じて一切変えない (quizland と同じ設計)。
+   背景画像が 21:9 のままなので 16:9 に対しては cover で上下クリップされる。 */
 #app {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1600px;
+  height: 900px;
   display: flex;
-  height: 100dvh;
-  width: 100%;
-  max-width: calc(100dvh * 21 / 9);
-  margin: 0 auto;
-  padding: 32px 14px 12px 22px;
-  gap: 12px;
+  padding: 64px 28px 24px 44px;
+  gap: 24px;
   background: center / cover no-repeat url('../assets/images/bento/ui/free_layout_background_21x9.webp');
   overflow: hidden;
   isolation: isolate;
+  transform-origin: 0 0;
 }
 #app > * {
   position: relative;
@@ -198,17 +202,6 @@ html, body {
   box-shadow: 0 4px 20px rgba(93,78,55,0.25);
   display: flex;
   min-height: 0;
-}
-@media (hover: hover) and (pointer: fine) {
-  html, body { overflow: hidden;
-  overscroll-behavior: none; }
-  body { display: flex; align-items: center; justify-content: center; }
-  #app {
-    width: 1027px; height: 440px;
-    flex-shrink: 0;
-    transform-origin: center center;
-  }
-  .game-title { position: absolute; }
 }
 .bento-inner {
   background:
@@ -1605,14 +1598,14 @@ html, body {
 
 /* ── 右: 食材選択パネル ── */
 .right-panel {
-  flex: 0 0 clamp(286px, 32%, 342px);
+  flex: 0 0 clamp(440px, 32%, 540px);
   width: auto;
   max-width: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
   min-height: 0;
-  padding: 14px 14px 12px;
+  padding: 22px 22px 18px;
   background: center / 100% 100% no-repeat url('../assets/images/bento/ui/picker_panel_blank.webp');
   box-sizing: border-box;
 }
@@ -2730,17 +2723,23 @@ html, body {
 <div id="confetti"></div>
 
 <script>
-// PC: 固定サイズの#appをscaleでウィンドウにフィット
+// 全環境共通: 固定 1600x900 (16:9) キャンバスを translate + scale で contain-fit。
+// quizland と同じパターン。タッチ/PC を分岐させない。
 (function() {
-  if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-  var BASE_W = 1027, BASE_H = 440;
+  var BASE_W = 1600, BASE_H = 900;
   function fit() {
     var el = document.getElementById('app');
     if (!el) return;
-    var s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    el.style.transform = 'scale(' + s + ')';
+    var w = window.innerWidth, h = window.innerHeight;
+    var s = Math.min(w / BASE_W, h / BASE_H);
+    var sw = BASE_W * s, sh = BASE_H * s;
+    var ox = (w - sw) / 2, oy = (h - sh) / 2;
+    el.style.transformOrigin = '0 0';
+    el.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + s + ')';
   }
   window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', function() { setTimeout(fit, 100); });
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) fit(); });
   fit();
 })();
 
