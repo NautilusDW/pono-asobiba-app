@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-06-05 - [batch:267-puzzle-partner-thumbnails] Codex: user 追加 `D:\ポノのおへや\Puzzle\Tumbnails` のパートナーサムネ5枚を確認。各 1672x941 PNG をカード用 512x512 WebP に変換し、`puzzle/partners.js` の画像参照と正方形サムネ表示CSSを更新する。 (by Codex)
+- 2026-06-05 - [batch:267-puzzle-partner-thumbnails] DONE - Codex: `assets/images/puzzle/partners/partner_{kitsune,kojika,araiguma,usagi,fukurou}.webp` を追加。5枚とも 512x512 WebP / 23〜45KB。`puzzle/partners.js` を専用サムネ参照へ変更し、`partner-select.css` は正方形サムネ枠へ調整。Playwrightで 1220x430 / 858x401 / 1024x768 / 667x375 / 430x932 のパートナー選択を確認し、全画像 200 / natural 512x512 / WebP参照5件 / JSエラーなし / 縦切れなし。`sw.js` は v828。 (by Codex)
 - 2026-06-05 - [batch:266-bento-mask-decimal] DONE - Codex: user 指摘「数値的にどうやっても合わないので、もっと細かく制御したい。せめて小数点1位まで」を受領。`bento/index.html` のマスク調整 X/Y/W/H スライダーを 1% 刻みから 0.1% 刻みに変更し、表示も小数1位 (`53.7%` など) に変更。パネル表示は「0.1%刻みで自動保存」。`sw.js` は v827。 (by Codex)
 - 2026-06-05 - [batch:266-bento-mask-decimal] DONE - Codex: Playwrightで `box_rect_split` に `53.7 / 22.4 / 43.6 / 55.2` を入力し、step `0.1`、表示 `53.7%` 等、保存 JSON `x:0.537,y:0.224,w:0.436,h:0.552`、JSエラーなしを確認。667x375 → 1365x768 → 1024x768 の切替後も保存 JSON 完全一致。 (by Codex)
 - 2026-06-05 - [batch:265-bento-mask-percent-ui] DONE - Codex: user 指摘「ハードリロード後も画角変更で同じに見えない / 保存が分かりづらい / 数値を動かすと自動保存なのか」を受領。`ふつうのおべんとう` は空箱とご飯入り箱の画像アスペクトが違うため、マスク基準を `maskBaseAspect` (ご飯入り画像側) へ変更。保存キーを `bento_free_mask_bounds_v9` に更新し、X/Y/W/H スライダーを箱基準の % 表示に変更、パネルに「数値を動かすと自動保存」「自動保存しました」を表示。`sw.js` は v826。 (by Codex)

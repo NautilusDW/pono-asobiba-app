@@ -7,14 +7,11 @@
 //
 // 各エントリのスキーマは README およびプラン
 // (misty-kindling-rainbow.md) の「パートナー仕様」を参照。
-// 画像は当面オープニングのカット画像 (cut01-03.jpg) を流用し、
-// imagePosition で各キャラの顔位置にクロップする。
-// 配分: kitsune→cut01(左) / kojika→cut02(右) / araiguma→cut03(中央)
-//      usagi→cut01(右端) / fukurou→cut03 (暫定・ロック中)
+// 画像はパートナー選択カード用の専用 512px 正方形サムネイルを使う。
 window.PonoPartners = (function () {
   'use strict';
 
-  var OPENING = '../assets/images/puzzle/opening/';
+  var PARTNER_IMAGES = '../assets/images/puzzle/partners/';
 
   /** 配列順 = パートナー選択画面の並び順 */
   var PARTNERS = [
@@ -28,13 +25,7 @@ window.PonoPartners = (function () {
       assistName: 'さきよみゴースト',
       assistDesc: 'もってる ピースの しるしを ばしょに みせてくれる',
       voiceTag: 'partner_kitsune',
-      // cut01.jpg: 森の入り口シーン。キツネは画面左で全身が大きく描かれている。
-      // 縦長 (4:5) クロップでも顔〜上半身が中央に収まるよう x=18% / y=58%。
-      // imagePositionWide: 16:9 ラップトップ画面で portrait 枠の左右トリミング比が
-      // 大きくなる際の補正値 (キャラ顔がより中央に来るよう微調整)。
-      image: OPENING + 'cut01.jpg',
-      imagePosition: '18% 58%',
-      imagePositionWide: '18% 60%',
+      image: PARTNER_IMAGES + 'partner_kitsune.webp',
       locked: false,
       unlockCondition: null,
       ageHint: '5さい〜',
@@ -48,11 +39,7 @@ window.PonoPartners = (function () {
       assistName: 'そうっとガイド',
       assistDesc: 'ピースを ただしい ばしょに ちかづけると ひかるよ',
       voiceTag: 'partner_kojika',
-      // cut02.jpg: コジカは画面右寄り (アライグマの右隣) に立っている。
-      // 単独で見えるよう x=80% / y=50%。
-      image: OPENING + 'cut02.jpg',
-      imagePosition: '80% 50%',
-      imagePositionWide: '78% 55%',
+      image: PARTNER_IMAGES + 'partner_kojika.webp',
       locked: false,
       unlockCondition: null,
       ageHint: '3さい〜',
@@ -66,11 +53,7 @@ window.PonoPartners = (function () {
       assistName: 'ぴかっとおてつだい',
       assistDesc: 'ボタンを おすと ピースを すこし はめてくれるよ',
       voiceTag: 'partner_araiguma',
-      // cut03.jpg: アライグマは画面中央 (パズルに手を出している) で
-      // 縞しっぽも見えるので識別しやすい。x=50% / y=50%。
-      image: OPENING + 'cut03.jpg',
-      imagePosition: '50% 50%',
-      imagePositionWide: '50% 60%',
+      image: PARTNER_IMAGES + 'partner_araiguma.webp',
       locked: false,
       unlockCondition: null,
       ageHint: '4さい〜',
@@ -84,11 +67,7 @@ window.PonoPartners = (function () {
       assistName: 'みみダウジング',
       assistDesc: 'みみが ピースの こっち！ を おしえてくれる',
       voiceTag: 'partner_usagi',
-      // cut01.jpg: ウサギは画面右端で1匹だけ後ろ姿で跳ねている。
-      // 単独で見えるので識別しやすい。x=88% / y=65%。
-      image: OPENING + 'cut01.jpg',
-      imagePosition: '88% 65%',
-      imagePositionWide: '85% 75%',
+      image: PARTNER_IMAGES + 'partner_usagi.webp',
       locked: false,
       unlockCondition: null,
       ageHint: '3さい〜',
@@ -102,12 +81,7 @@ window.PonoPartners = (function () {
       assistName: 'なかまはっけん',
       assistDesc: 'ピースを ながおしすると、となりに なる ピースを おしえてくれる',
       voiceTag: 'partner_fukurou',
-      // フクロウは opening カットに未登場 (Stage20 解禁の後付けキャラ)。
-      // ロック中はカード全体が暗転 + 🔒 オーバーレイで表示されるため、
-      // 暫定で cut03 を流用。専用立ち絵は後続フェーズで差し替え予定。
-      image: OPENING + 'cut03.jpg',
-      imagePosition: '50% 40%',
-      imagePositionWide: '50% 40%',
+      image: PARTNER_IMAGES + 'partner_fukurou.webp',
       locked: true,
       unlockCondition: 'stage20_clear',
       ageHint: '5さい〜',

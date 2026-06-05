@@ -216,19 +216,15 @@
 }
 
 /* --- カード: 立ち絵 ---
-   ユーザーFB (2026-06-05): 16:9 ラップトップ画面ではキャラが切れていた。
-   aspect-ratio 方式を廃止して **固定高さ (180px)** に変更し、
-   object-fit:cover + object-position で確実に中央キャラが映るようにする。
-   元画像 cut01-03.jpg は 16:9 (1920x1080) なので、portrait 枠を縦長 3:4 風 (135x180) にし、
-   横方向の左右トリミングで character を中央に保つ。
-   object-position は partners.js の imagePosition から各カードに個別適用される。 */
+   専用の 512px 正方形サムネイルを、画角に応じた正方形枠で表示する。 */
 .pono-pselect__portrait {
-  width: 100%;
-  height: clamp(132px, 31dvh, 180px);
-  max-width: clamp(99px, 23.25dvh, 135px);
+  width: clamp(112px, 32dvh, 156px);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
   border-radius: 14px;
   overflow: hidden;
-  background: #DDD;
+  background: #FFF8E8;
   margin-bottom: 8px;
   box-shadow: inset 0 0 0 2px rgba(0,0,0,0.08);
   position: relative;
@@ -237,8 +233,7 @@
 /* 狭い画面 (<=480px): 高さも縮める */
 @media (max-width: 480px) {
   .pono-pselect__portrait {
-    height: clamp(116px, 30dvh, 160px);
-    max-width: clamp(87px, 22.5dvh, 120px);
+    width: clamp(104px, 31dvh, 136px);
   }
 }
 
@@ -246,22 +241,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* object-position はインライン style で各キャラごとに個別指定 (partner-select.js 参照)。
-     さらに CSS 変数 --pos-default / --pos-wide で 4:3 と 16:9 を出し分ける。
-     未定義時は 50% 50% にフォールバック。 */
   object-position: var(--pos-default, 50% 50%);
   display: block;
   pointer-events: none;
-}
-
-/* 16:9 系 (ラップトップ / 横長デスクトップ) では portrait 枠の左右トリミング比が
-   大きくなるので、キャラ顔の位置を画像中心寄りに補正する。
-   aspect-ratio >= 1.5 (3:2 以上) を「横長画面」と判定 (16:9 = 1.78)。
-   4:3 (=1.33) や iPad mini 系は --pos-default のまま使う。 */
-@media (min-aspect-ratio: 3 / 2) {
-  .pono-pselect__portrait img {
-    object-position: var(--pos-wide, var(--pos-default, 50% 50%));
-  }
 }
 
 .pono-pselect__lock {
@@ -502,8 +484,7 @@
   }
 
   .pono-pselect__portrait {
-    height: clamp(76px, 20dvh, 102px);
-    max-width: clamp(74px, 18dvh, 96px);
+    width: clamp(112px, 30dvh, 140px);
     border-radius: 10px;
     margin-bottom: 4px;
   }
@@ -605,8 +586,7 @@
   }
 
   .pono-pselect__portrait {
-    height: clamp(64px, 18dvh, 78px);
-    max-width: clamp(62px, 15dvh, 74px);
+    width: clamp(90px, 28dvh, 116px);
     margin-bottom: 3px;
   }
 
