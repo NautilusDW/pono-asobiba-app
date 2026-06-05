@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-05 - [batch:268-puzzle-sidebar-badge] DONE - Codex: user 指摘「パズル開始後、右下パートナーバッジが右サイドバー下部に被る / ヒントの『のこり』表記が長い」を受領。`puzzle/main.js` のヒントボタン文言を `ヒント×N` / `ヒント×0` に短縮し、`puzzle/style.css` の横向きタッチ画面でサイドバーを上寄せ + 下余白確保、バッジを低い横画面では小さめに調整。Playwrightで 667x375 / 858x401 / 1024x768 touch と 1220x430 desktop を確認し、ヒント1行・横幅overflowなし・バッジと進捗/ボタンの重なりなし・JSエラーなし。`sw.js` は v829。 (by Codex)
 - 2026-06-05 - [batch:267-puzzle-partner-thumbnails] Codex: user 追加 `D:\ポノのおへや\Puzzle\Tumbnails` のパートナーサムネ5枚を確認。各 1672x941 PNG をカード用 512x512 WebP に変換し、`puzzle/partners.js` の画像参照と正方形サムネ表示CSSを更新する。 (by Codex)
 - 2026-06-05 - [batch:267-puzzle-partner-thumbnails] DONE - Codex: `assets/images/puzzle/partners/partner_{kitsune,kojika,araiguma,usagi,fukurou}.webp` を追加。5枚とも 512x512 WebP / 23〜45KB。`puzzle/partners.js` を専用サムネ参照へ変更し、`partner-select.css` は正方形サムネ枠へ調整。Playwrightで 1220x430 / 858x401 / 1024x768 / 667x375 / 430x932 のパートナー選択を確認し、全画像 200 / natural 512x512 / WebP参照5件 / JSエラーなし / 縦切れなし。`sw.js` は v828。 (by Codex)
 - 2026-06-05 - [batch:266-bento-mask-decimal] DONE - Codex: user 指摘「数値的にどうやっても合わないので、もっと細かく制御したい。せめて小数点1位まで」を受領。`bento/index.html` のマスク調整 X/Y/W/H スライダーを 1% 刻みから 0.1% 刻みに変更し、表示も小数1位 (`53.7%` など) に変更。パネル表示は「0.1%刻みで自動保存」。`sw.js` は v827。 (by Codex)

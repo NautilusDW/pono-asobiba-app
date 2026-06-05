@@ -1378,13 +1378,7 @@ function refreshHintButtonState() {
   if (!btnHint) return;
   var sid = getCurrentStageIdForHint();
   var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
-  // Phase 3c: キツネ装備時はラベルを「ヒント🦊」に切り替えて視覚差別化
-  var partnerIdForLabel = null;
-  try {
-    partnerIdForLabel = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
-      ? window.PonoBond.getSelectedPartner() : null;
-  } catch (_) { partnerIdForLabel = null; }
-  var label = (partnerIdForLabel === 'kitsune') ? 'ヒント🦊' : 'ヒント';
+  var label = 'ヒント';
   if (dragPiece) {
     // ドラッグ中は無効化 + 😴 マーク
     btnHint.classList.add('is-disabled', 'is-sleeping');
@@ -1396,12 +1390,12 @@ function refreshHintButtonState() {
   btnHint.classList.remove('is-sleeping');
   if (remaining <= 0) {
     btnHint.classList.add('is-disabled', 'is-empty');
-    btnHint.textContent = label + ' (0)';
+    btnHint.textContent = label + '×0';
     btnHint.setAttribute('aria-disabled', 'true');
     return;
   }
   btnHint.classList.remove('is-disabled', 'is-empty');
-  btnHint.textContent = label + ' (のこり ' + remaining + ')';
+  btnHint.textContent = label + '×' + remaining;
   btnHint.setAttribute('aria-disabled', 'false');
 }
 

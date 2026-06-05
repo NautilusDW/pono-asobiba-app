@@ -228,6 +228,10 @@ body {
     align-items: stretch;
     gap: 8px;
     width: 180px;
+    align-self: stretch;
+    justify-content: flex-start;
+    padding-top: clamp(10px, 7dvh, 34px);
+    padding-bottom: 70px;
     flex-shrink: 0;
   }
   .controls {
@@ -237,6 +241,34 @@ body {
     justify-content: center;
   }
   .progress-bar { width: 100%; max-width: none; }
+
+  .sidebar .btn {
+    min-height: 48px;
+    white-space: nowrap;
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 430px) {
+  .sidebar {
+    gap: 7px;
+    padding-top: 6px;
+    padding-bottom: 62px;
+  }
+
+  .controls {
+    gap: 6px;
+  }
+
+  .sidebar .btn {
+    min-height: 46px;
+    padding: 9px 20px;
+    font-size: 1rem;
+    letter-spacing: 0.03em;
+  }
+
+  .progress-bar {
+    height: 24px;
+  }
 }
 
 /* ===== Landscape modal compaction (short viewports) ===== */
@@ -938,6 +970,30 @@ body {
   }
   .pono-bond-summary__line2 {
     font-size: 12px;
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) {
+  .pono-bond-badge {
+    right: 12px;
+    bottom: 10px;
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 430px) {
+  .pono-bond-badge {
+    right: 10px;
+    bottom: 8px;
+    padding: 4px 9px 4px 4px;
+  }
+
+  .pono-bond-badge__img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .pono-bond-badge__stars {
+    font-size: 16px;
   }
 }
 
