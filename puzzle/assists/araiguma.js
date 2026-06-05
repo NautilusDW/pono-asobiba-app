@@ -305,6 +305,12 @@
   function onButtonClick(e) {
     if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (_) {} }
     if (!state.active || state.busy || state.usesLeft <= 0) return;
+    // Phase 4 修正: 念のためタイトル/オープニング/partner-select/prestart/scatter 中の
+    //   誤発火を最終ゲートで遮断 (タイミング上 button が一瞬見えてしまった場合の保険)
+    if (!isPlayActive()) {
+      updateButtonUI();
+      return;
+    }
 
     // ★ DOM 改ざん検知 (high finding 修正 / 多層防御):
     //   data-uses-left は updateButtonUI で常に state.usesLeft と同期している。
@@ -396,6 +402,45 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Visibility watchers (Phase 4 修正)
+  // ---------------------------------------------------------------------------
+  // タイトル / オープニング / partner-select / prestart / scatter / success-modal の
+  // 表示状態は main.js から直接通知されないため、 (a) MutationObserver で body と
+  // puzzle-container の DOM/class 変化を監視しつつ、 (b) 250ms ポーリングで保険を
+  // 掛けて、 ボタン表示を自動で再評価する。 state.active=false の間は停止する。
+  var _mo = null;
+  var _poll = null;
+  function startWatchers() {
+    stopWatchers();
+    try {
+      if (typeof MutationObserver === 'function') {
+        _mo = new MutationObserver(function () { updateButtonUI(); });
+        var targets = [document.body];
+        var pc = document.getElementById('puzzle-container');
+        if (pc) targets.push(pc);
+        var ts = document.getElementById('title-screen');
+        if (ts) targets.push(ts);
+        var po = document.getElementById('puzzle-opening');
+        if (po) targets.push(po);
+        var sm = document.getElementById('success-modal');
+        if (sm) targets.push(sm);
+        targets.forEach(function (t) {
+          try {
+            _mo.observe(t, { attributes: true, attributeFilter: ['class'], childList: (t === document.body) });
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
+    try {
+      _poll = setInterval(function () { updateButtonUI(); }, 250);
+    } catch (_) {}
+  }
+  function stopWatchers() {
+    if (_mo) { try { _mo.disconnect(); } catch (_) {} _mo = null; }
+    if (_poll) { try { clearInterval(_poll); } catch (_) {} _poll = null; }
+  }
+
+  // ---------------------------------------------------------------------------
   // Hook: afterStageReady — ボタン表示 + 回数リセット
   // ---------------------------------------------------------------------------
   window.PonoAssistRegister('afterStageReady', function (ctx) {
@@ -403,6 +448,7 @@
     state.glowQueue = [];
     state.busy = false;
     if (!isAraiguma(ctx && ctx.partner)) {
+      stopWatchers();
       updateButtonUI();
       return;
     }
@@ -411,6 +457,7 @@
 
     var stage = ctx && ctx.stage;
     if (!stage) {
+      stopWatchers();
       updateButtonUI();
       return;
     }
@@ -420,6 +467,9 @@
     state.profile = profileFor(lv);
     state.usesLeft = state.profile.uses;
     state.active = true;
+    // Phase 4 修正: タイトル/オープニング/prestart/scatter 等の表示状態を継続監視し
+    //   isPlayActive 切り替わりに追随してボタンを出し入れする。
+    startWatchers();
     updateButtonUI();
   });
 
@@ -432,6 +482,8 @@
     state.busy = false;
     state.usesLeft = 0;
     state.stageId = null;
+    // active=false の間は watcher を止める (無駄なポーリング/MutationObserver を防ぐ)
+    stopWatchers();
     updateButtonUI();
   });
 
