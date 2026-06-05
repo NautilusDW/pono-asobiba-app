@@ -85,19 +85,17 @@ window.PonoBondUI = (function () {
     return filled + empty;
   }
 
-  // パートナー有無に応じて #btn-hint の表示を切替。
-  // - パートナー選択済み → assist がヒント役を果たすのでヒントボタンは非表示
-  // - パートナー無し (フォールバック起動 / partner-select キャンセル等) → 保険機能として表示
-  function syncHintBtnVisibility(hasPartner) {
+  // Phase 3b Step 3 新仕様:
+  // ヒントボタンはパートナー有無に関わらず常に表示する。
+  // 旧仕様では partner 選択時は assist がヒント役を果たすので非表示にしていたが、
+  // 新仕様ではヒントボタンが「選択ピース → 金色星」演出を提供する独立機能となり、
+  // パートナー有無に依らず常時利用可能とする。 残回数は main.js 側で localStorage 管理。
+  function syncHintBtnVisibility(_hasPartner) {
     try {
       var hintBtn = document.getElementById('btn-hint');
       if (!hintBtn) return;
-      if (hasPartner) {
-        hintBtn.style.display = 'none';
-      } else {
-        // 元のスタイル (CSS デフォルト) に戻す
-        hintBtn.style.display = '';
-      }
+      // 常に表示 (display プロパティをクリア)
+      hintBtn.style.display = '';
     } catch (_) {}
   }
 

@@ -290,6 +290,7 @@ const puzzleContainer = document.getElementById('puzzle-container');
 const loadingEl       = document.getElementById('loading');
 const btnShuffle      = document.getElementById('btn-shuffle');
 const btnHint         = document.getElementById('btn-hint');
+const btnPeek         = document.getElementById('btn-peek');
 const progressFill    = document.getElementById('progress-fill');
 const progressText    = document.getElementById('progress-text');
 const stageLabel      = document.getElementById('stage-label');
@@ -328,6 +329,37 @@ function playSnapSound() {
     gain.gain.setValueAtTime(0.3, actx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.2);
     osc.start(actx.currentTime); osc.stop(actx.currentTime + 0.2);
+  });
+}
+
+// ===== Audio: Scatter Shimmer (散布時の「シャラララ」) =====
+// 4 つの高音サイン波を 60ms 間隔でかすかな triangle ノイズと共に重ねる。
+// 子供にとって耳に痛くないよう gain は控えめ。 voice.js は使わず簡易 Web Audio API のみ。
+function playScatterSfx() {
+  withAudio(actx => {
+    const base = actx.currentTime;
+    const notes = [1568, 1976, 2349, 2794, 2093]; // G6, B6, D7, F7, C7 (キラキラ感)
+    notes.forEach((freq, i) => {
+      const t = base + i * 0.06;
+      const osc = actx.createOscillator(), gain = actx.createGain();
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      osc.start(t); osc.stop(t + 0.32);
+    });
+    // 上に triangle 波の短いブラシ感
+    const brush = actx.createOscillator(), bg = actx.createGain();
+    brush.connect(bg); bg.connect(actx.destination);
+    brush.type = 'triangle';
+    brush.frequency.setValueAtTime(4200, base);
+    brush.frequency.exponentialRampToValueAtTime(2400, base + 0.45);
+    bg.gain.setValueAtTime(0.0001, base);
+    bg.gain.exponentialRampToValueAtTime(0.06, base + 0.04);
+    bg.gain.exponentialRampToValueAtTime(0.001, base + 0.5);
+    brush.start(base); brush.stop(base + 0.52);
   });
 }
 
@@ -926,6 +958,168 @@ function shufflePieces() {
   redraw();
 }
 
+// ===== Scatter Animation (prestart 専用) =====
+//
+// 「完成形 (homeX, homeY) から shuffled positions へ 1200ms で rAF 補間散布」する。
+// 既存 shufflePieces() は即時シャッフル (まぜるボタン用) のため、本関数では
+// 「ターゲット座標 (+回転) を先に計算 → ピース位置は homeX/Y のまま据え置き →
+//  rAF ループで補間 → 完了時に正規ターゲットへ着地」のフローを行う。
+//
+// 進行中は scatterAnimating=true を立て、 puzzle-container に scatter-on を
+// 付与してパズル canvas 入力を CSS で殺す (dragPiece=null も冒頭で念押し)。
+let scatterAnimating = false;
+
+function computeScatterTargets() {
+  const zones = computePlacementZones();
+  const placed = [];
+  const targets = [];
+  pieces.forEach(p => {
+    // 散布後の回転 (チャレンジモード有効時のみランダム、なければ 0)
+    let targetRot = 0;
+    if (stageRotationActive) {
+      const opts = stageAllowedRotations.filter(r => r !== 0);
+      if (Math.random() < 0.75 && opts.length > 0) {
+        targetRot = opts[Math.floor(Math.random() * opts.length)];
+      }
+    }
+    const pos = placePieceInZone(zones, pieceW, pieceH, placed);
+    placed.push({ x: pos.x, y: pos.y });
+    targets.push({ x: pos.x, y: pos.y, rotation: targetRot });
+  });
+  return targets;
+}
+
+function animateShuffleScatter(onDone) {
+  if (!pieces || !pieces.length) { if (onDone) onDone(); return; }
+  if (scatterAnimating) return; // 二重起動防止
+
+  // 全ピースを homeX/Y + rotation=0 + snapped=false に戻す (完成形配置)
+  snappedCount = 0;
+  pieces.forEach((p, i) => {
+    p.snapped = false;
+    p.rotation = 0;
+    p.x = p.homeX;
+    p.y = p.homeY;
+    p.zOrder = i;
+    rebuildPath(p);
+  });
+  updateProgress();
+
+  // ターゲット位置・回転を先に計算 (ピース位置は据え置き)
+  const targets = computeScatterTargets();
+  const fromStates = pieces.map(p => ({ x: p.x, y: p.y, rotation: p.rotation || 0 }));
+
+  // アニメ準備: 操作ロック
+  scatterAnimating = true;
+  dragPiece = null;
+  if (puzzleContainer) puzzleContainer.classList.add('scatter-on');
+
+  // 効果音
+  try { playScatterSfx(); } catch (_) {}
+
+  const DURATION = 1200;
+  const startT = performance.now();
+
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function step(now) {
+    const elapsed = now - startT;
+    const t = Math.min(1, Math.max(0, elapsed / DURATION));
+    const e = easeOutCubic(t);
+    for (let i = 0; i < pieces.length; i++) {
+      const p = pieces[i];
+      const from = fromStates[i];
+      const to = targets[i];
+      p.x = from.x + (to.x - from.x) * e;
+      p.y = from.y + (to.y - from.y) * e;
+      // 回転は最終フレームでだけ反映 (途中は 0 のまま) — 子供向けに視覚混乱を抑える
+      // 必要なら以下を有効化して途中で少し回す (今は無効):
+      // p.rotation = from.rotation + (to.rotation - from.rotation) * e;
+      rebuildPath(p);
+    }
+    redraw();
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      // 完全着地 + 回転確定
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        const to = targets[i];
+        p.x = to.x;
+        p.y = to.y;
+        p.rotation = to.rotation;
+        rebuildPath(p);
+      }
+      redraw();
+      scatterAnimating = false;
+      if (puzzleContainer) puzzleContainer.classList.remove('scatter-on');
+      if (typeof onDone === 'function') onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// ===== Prestart Overlay (完成形 → スタートボタン → 散布アニメ) =====
+//
+// initPuzzle() の末尾でこれを呼ぶと、 ピースは homeX/Y に並んだ「完成形」のまま
+// 半透明の暗幕 + 中央の大きな「スタート」ボタンを puzzle-container に重ねる。
+// ボタンタップで overlay を消し、 animateShuffleScatter() でプレイ可能状態へ遷移する。
+let prestartOverlayEl = null;
+
+function removePrestartOverlay() {
+  if (prestartOverlayEl && prestartOverlayEl.parentNode) {
+    prestartOverlayEl.parentNode.removeChild(prestartOverlayEl);
+  }
+  prestartOverlayEl = null;
+  if (puzzleContainer) puzzleContainer.classList.remove('prestart-on');
+}
+
+function showPrestartOverlay() {
+  if (!puzzleContainer) return;
+  removePrestartOverlay(); // 古い overlay が残っていれば破棄
+
+  // ピースを完成形に固定 (initPuzzle 直後の状態を保証)
+  // buildPieces 後でピースは既に homeX/Y にあるはずだが、 念のため snapped=true 扱いせず
+  // x/y/rotation を home 状態に正規化しておく。
+  pieces.forEach(p => {
+    p.x = p.homeX;
+    p.y = p.homeY;
+    p.rotation = 0;
+    p.snapped = false;
+    rebuildPath(p);
+  });
+  snappedCount = 0;
+  updateProgress();
+  redraw();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'prestart-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-label', 'スタート');
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'prestart-overlay__btn';
+  btn.textContent = 'スタート';
+  overlay.appendChild(btn);
+
+  function onStart(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    btn.removeEventListener('pointerdown', onStart);
+    // フェードアウト後に DOM 除去 → 散布アニメ起動
+    overlay.classList.add('is-hide');
+    setTimeout(() => {
+      removePrestartOverlay();
+      animateShuffleScatter();
+    }, 200);
+  }
+  btn.addEventListener('pointerdown', onStart);
+
+  puzzleContainer.appendChild(overlay);
+  puzzleContainer.classList.add('prestart-on');
+  prestartOverlayEl = overlay;
+}
+
 // ===== Snap =====
 // チャレンジモードでは rotation === 0 (正位置) でないとスナップしない
 function trySnap(piece) {
@@ -1021,6 +1215,332 @@ window.PonoPuzzleRequestRedraw = function () {
   try { requestAnimationFrame(redraw); } catch (_) { try { redraw(); } catch (__) {} }
 };
 
+// ===== Hint System (Phase 3b Step 3) =====
+//
+// 旧仕様: ヒントボタン押下 → 完成形を全体表示。
+// 新仕様: ① 盤外の未スナップピースをタップ → 黄色 pulse ring で選択
+//         ② ヒントボタン押下 → 選択ピースのスロットに金色星 + radial glow を 2 秒
+//         ③ 回数管理: ステージ毎に localStorage 保存
+//         ④ パートナーのなかよし度に応じて初期回数 1/2/3/5
+//
+// PonoHintActive フラグ: ヒント選択中 (yellow pulse 表示中) は他アシスト発光を
+// 30% 透明度に下げてもらうための共有フラグ。 assist 側は drawOverlay 内で
+// window.PonoHintActive をチェックし、 true なら ctx.globalAlpha *= 0.3 する。
+// (assist 各 .js への介入は Phase 3c 予定。 ここではフラグ供給のみ。)
+
+let selectedPieceForHint = null;        // 現在ヒント対象として選択中のピース or null
+let hintFlashUntil = 0;                 // 金色星演出の終了時刻 (Date.now ms)
+let hintFlashPiece = null;              // 金色星演出の対象ピース
+let hintAnimRafHandle = null;           // 黄 pulse / 金 star 用 rAF
+let hintNoticeTimeout = null;           // 「ピースを えらんで〜」吹き出しの非表示タイマー
+
+const HINT_FLASH_DURATION_MS = 2000;    // 金色星 + radial glow 表示時間
+
+// ステージ毎の初期回数を計算 (パートナー無し or stageId=null → 1)
+function computeHintInitialUses(stageId) {
+  try {
+    var partnerId = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
+      ? window.PonoBond.getSelectedPartner() : null;
+    if (!partnerId || stageId == null) return 1;
+    if (window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
+      var lv = window.PonoBond.getLevel(partnerId, stageId) || 0;
+      // Lv0 → 1, Lv1 → 2, Lv2 → 3, Lv3 → 5
+      if (lv >= 3) return 5;
+      if (lv === 2) return 3;
+      if (lv === 1) return 2;
+    }
+  } catch (_) {}
+  return 1;
+}
+
+// localStorage 名前空間 (puzzle/ もりのなかよし 専用ヒント残数ストレージ)
+// - 旧 key 'pono_hint_uses_<id>' は他コンポーネントとの衝突リスクがあるため
+//   'pono_puzzle_hint_uses_v1_<bucket>_<id>' に置き換え。
+// - bucket: built-in stage(id<1000) と user drawing stage(id>=1000) を分離し、
+//   万一 id 重複や領域の意味変更があっても汚染しないようにする。
+// - スキーマバージョン key で他コードが同じ prefix を踏んだ際に検出できるようにする。
+var PUZZLE_HINT_USES_KEY_PREFIX = 'pono_puzzle_hint_uses_v1_';
+var PUZZLE_HINT_USES_SCHEMA_KEY = 'pono_puzzle_hint_uses_schema';
+var PUZZLE_HINT_USES_SCHEMA_VERSION = '1';
+var PUZZLE_HINT_USES_MIGRATION_FLAG = 'pono_puzzle_hint_uses_migrated_v1';
+
+function isUserDrawingStageId(stageId) {
+  // user drawing stages は id >= 1000 (main.js 内 既存規約)
+  var n = (stageId == null) ? NaN : Number(stageId);
+  return isFinite(n) && n >= 1000;
+}
+
+function hintUsesStorageKey(stageId) {
+  var idPart = (stageId != null ? String(stageId) : 'unknown');
+  var bucket = isUserDrawingStageId(stageId) ? 'u' : 'b';
+  return PUZZLE_HINT_USES_KEY_PREFIX + bucket + '_' + idPart;
+}
+
+// 旧 key 'pono_hint_uses_<id>' から 新 key へ一度だけ移行 (既存ユーザのヒント残数を保持)
+function migrateLegacyHintUsesKeysOnce() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem(PUZZLE_HINT_USES_MIGRATION_FLAG) === '1') return;
+    var legacyPrefix = 'pono_hint_uses_';
+    var legacyKeys = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf(legacyPrefix) === 0) legacyKeys.push(k);
+    }
+    for (var j = 0; j < legacyKeys.length; j++) {
+      var oldKey = legacyKeys[j];
+      var idStr = oldKey.substring(legacyPrefix.length);
+      // 旧 key は 'unknown' を含むことがあるので numeric 以外は捨てる
+      var idNum = parseInt(idStr, 10);
+      var sid = isFinite(idNum) ? idNum : idStr;
+      var newKey = hintUsesStorageKey(sid);
+      try {
+        var val = localStorage.getItem(oldKey);
+        if (val != null && localStorage.getItem(newKey) == null) {
+          localStorage.setItem(newKey, val);
+        }
+        localStorage.removeItem(oldKey);
+      } catch (_) {}
+    }
+    // スキーマバージョン記録 + 二重移行防止フラグ
+    try { localStorage.setItem(PUZZLE_HINT_USES_SCHEMA_KEY, PUZZLE_HINT_USES_SCHEMA_VERSION); } catch (_) {}
+    try { localStorage.setItem(PUZZLE_HINT_USES_MIGRATION_FLAG, '1'); } catch (_) {}
+  } catch (_) {}
+}
+
+// 初回呼び出し時に旧形式からの移行を試みる
+try { migrateLegacyHintUsesKeysOnce(); } catch (_) {}
+
+// 残回数を読み取り (未保存なら初期回数で初期化して書き込む)
+function getHintUsesRemaining(stageId) {
+  if (stageId == null) return 1;
+  try {
+    var key = hintUsesStorageKey(stageId);
+    var raw = localStorage.getItem(key);
+    if (raw == null) {
+      var init = computeHintInitialUses(stageId);
+      try { localStorage.setItem(key, String(init)); } catch (_) {}
+      return init;
+    }
+    var n = parseInt(raw, 10);
+    if (!isFinite(n) || n < 0) return 0;
+    return n;
+  } catch (_) {
+    return computeHintInitialUses(stageId);
+  }
+}
+
+function setHintUsesRemaining(stageId, n) {
+  if (stageId == null) return;
+  try {
+    localStorage.setItem(hintUsesStorageKey(stageId), String(Math.max(0, n | 0)));
+  } catch (_) {}
+}
+
+function getCurrentStageIdForHint() {
+  var stage = STAGES[currentStageIndex];
+  if (!stage) return null;
+  return (stage.id != null ? stage.id : (currentStageIndex + 1));
+}
+
+// ヒントボタンの状態 (有効/グレーアウト/残数表示/😴) を更新
+function refreshHintButtonState() {
+  if (!btnHint) return;
+  var sid = getCurrentStageIdForHint();
+  var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
+  // 残数バッジを ::after 風に DOM 化 (textContent を分解)
+  var label = 'ヒント';
+  if (dragPiece) {
+    // ドラッグ中は無効化 + 😴 マーク
+    btnHint.classList.add('is-disabled', 'is-sleeping');
+    btnHint.classList.remove('is-empty');
+    btnHint.textContent = '😴 ヒント';
+    btnHint.setAttribute('aria-disabled', 'true');
+    return;
+  }
+  btnHint.classList.remove('is-sleeping');
+  if (remaining <= 0) {
+    btnHint.classList.add('is-disabled', 'is-empty');
+    btnHint.textContent = label + ' (0)';
+    btnHint.setAttribute('aria-disabled', 'true');
+    return;
+  }
+  btnHint.classList.remove('is-disabled', 'is-empty');
+  btnHint.textContent = label + ' (のこり ' + remaining + ')';
+  btnHint.setAttribute('aria-disabled', 'false');
+}
+
+// ヒントボタンを軽く震わせる (残数 0 で押された時)
+function shakeHintButton() {
+  if (!btnHint) return;
+  btnHint.classList.remove('is-shake');
+  // 強制 reflow で animation 再起動
+  void btnHint.offsetWidth;
+  btnHint.classList.add('is-shake');
+  setTimeout(function () { if (btnHint) btnHint.classList.remove('is-shake'); }, 400);
+}
+
+// 「ピースを えらんで からおしてね」吹き出しを表示
+function showHintNotice() {
+  if (!puzzleContainer) return;
+  var existing = document.getElementById('hint-notice-bubble');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+  if (hintNoticeTimeout) { clearTimeout(hintNoticeTimeout); hintNoticeTimeout = null; }
+  var el = document.createElement('div');
+  el.id = 'hint-notice-bubble';
+  el.className = 'hint-notice-bubble';
+  el.textContent = 'ピースを えらんで からおしてね';
+  puzzleContainer.appendChild(el);
+  hintNoticeTimeout = setTimeout(function () {
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    hintNoticeTimeout = null;
+  }, 1600);
+}
+
+// 黄色 pulse ring + 金色星 演出の rAF ループ。 必要時のみ起動・停止。
+function ensureHintAnimLoop() {
+  if (hintAnimRafHandle != null) return;
+  function loop() {
+    hintAnimRafHandle = null;
+    var now = Date.now();
+    var needYellow = !!(selectedPieceForHint && !selectedPieceForHint.snapped);
+    var needGold   = !!(hintFlashPiece && now < hintFlashUntil);
+    // 共有フラグ: ヒント選択中は assist の発光を抑えてもらう
+    window.PonoHintActive = needYellow;
+    if (!needYellow && !needGold) {
+      window.PonoHintActive = false;
+      // overlay クリアのため 1 回だけ redraw して終了
+      try { redraw(); } catch (_) {}
+      // hintFlashPiece の参照も解放
+      if (now >= hintFlashUntil) hintFlashPiece = null;
+      return;
+    }
+    try { redraw(); } catch (_) {}
+    hintAnimRafHandle = requestAnimationFrame(loop);
+  }
+  hintAnimRafHandle = requestAnimationFrame(loop);
+}
+
+// ピース中心座標
+function pieceCenter(piece, useHome) {
+  if (useHome) {
+    return { cx: piece.homeX + pieceW / 2, cy: piece.homeY + pieceH / 2 };
+  }
+  return { cx: piece.x + pieceW / 2, cy: piece.y + pieceH / 2 };
+}
+
+// drawOverlay フックから呼ばれる: 黄色 pulse ring + 金色星 + radial glow を描画
+function drawHintOverlay(ctx) {
+  if (!ctx) return;
+  var now = Date.now();
+
+  // ── 黄色 pulse ring (選択中ピース) ──
+  if (selectedPieceForHint && !selectedPieceForHint.snapped
+      && pieces && pieces.indexOf(selectedPieceForHint) >= 0) {
+    var c = pieceCenter(selectedPieceForHint, false);
+    var r = Math.max(pieceW, pieceH) * 0.62;
+    var pulse = 0.5 + 0.5 * Math.sin(now / 220);  // 0..1
+    var alpha = 0.55 + 0.35 * pulse;               // 0.55..0.90
+    ctx.save();
+    ctx.lineWidth = 4 + 2 * pulse;
+    ctx.strokeStyle = 'rgba(250, 204, 21, ' + alpha.toFixed(3) + ')'; // amber-400
+    ctx.shadowColor = 'rgba(250, 204, 21, 0.85)';
+    ctx.shadowBlur = 18 + 10 * pulse;
+    ctx.beginPath();
+    ctx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── 金色星 + radial glow (ヒント発火後 2 秒) ──
+  if (hintFlashPiece && now < hintFlashUntil
+      && pieces && pieces.indexOf(hintFlashPiece) >= 0) {
+    var t = (hintFlashUntil - now) / HINT_FLASH_DURATION_MS; // 1 → 0
+    var phase = 1 - t;                                       // 0 → 1
+    var slot = pieceCenter(hintFlashPiece, true);
+    var blink = 0.5 + 0.5 * Math.sin(now / 120);             // 0..1
+    var glowR = Math.max(pieceW, pieceH) * (0.4 + 0.5 * phase);
+
+    ctx.save();
+    // radial glow
+    var grad = ctx.createRadialGradient(slot.cx, slot.cy, 4, slot.cx, slot.cy, glowR);
+    grad.addColorStop(0,   'rgba(255, 215, 64, ' + (0.55 * (1 - phase * 0.4)).toFixed(3) + ')');
+    grad.addColorStop(0.6, 'rgba(255, 200, 0, 0.18)');
+    grad.addColorStop(1,   'rgba(255, 200, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(slot.cx, slot.cy, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 枠点滅
+    ctx.lineWidth = 3 + 2 * blink;
+    ctx.strokeStyle = 'rgba(255, 215, 64, ' + (0.6 + 0.35 * blink).toFixed(3) + ')';
+    ctx.shadowColor = 'rgba(255, 215, 64, 0.9)';
+    ctx.shadowBlur = 16 + 10 * blink;
+    ctx.beginPath();
+    buildPiecePath(ctx, hintFlashPiece.homeX, hintFlashPiece.homeY, pieceW, pieceH, hintFlashPiece.tabs);
+    ctx.stroke();
+
+    // 金色星 (5 つ尖りの星)
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = 'rgba(255, 224, 102, ' + (0.85 + 0.15 * blink).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.95)';
+    ctx.lineWidth = 2.5;
+    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.32, 5, 0.45);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// 5 角星を path に描く (fill / stroke は呼び出し側)
+function drawStar(ctx, cx, cy, outerR, points, innerRatio) {
+  var step = Math.PI / points;
+  var innerR = outerR * innerRatio;
+  ctx.beginPath();
+  for (var i = 0; i < points * 2; i++) {
+    var r = (i % 2 === 0) ? outerR : innerR;
+    var a = -Math.PI / 2 + i * step;
+    var px = cx + Math.cos(a) * r;
+    var py = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+// drawOverlay フック登録 (assist と同じ薄いフレームに乗せる)
+if (window.PonoAssistRegister) {
+  window.PonoAssistRegister('drawOverlay', function (ctx) {
+    if (!ctx || !ctx.ctx) return;
+    drawHintOverlay(ctx.ctx);
+  });
+} else {
+  // _hooks-init.js が未ロードでも動くよう、 PonoAssistHooks に直接 push
+  try {
+    window.PonoAssistHooks = window.PonoAssistHooks || {};
+    window.PonoAssistHooks.drawOverlay = window.PonoAssistHooks.drawOverlay || [];
+    window.PonoAssistHooks.drawOverlay.push(function (ctx) {
+      if (!ctx || !ctx.ctx) return;
+      drawHintOverlay(ctx.ctx);
+    });
+  } catch (_) {}
+}
+
+// 公開: クリックで選択を変更/解除する
+function setSelectedPieceForHint(piece) {
+  // null / 別ピースで上書き / 同一なら無変化
+  if (piece === selectedPieceForHint) return;
+  selectedPieceForHint = (piece && !piece.snapped) ? piece : null;
+  if (selectedPieceForHint) {
+    ensureHintAnimLoop();
+  } else {
+    // 解除時も 1 フレーム redraw して overlay を消す
+    window.PonoHintActive = false;
+    try { redraw(); } catch (_) {}
+  }
+}
+
 // ===== Pointer Events =====
 function getPos(e) {
   const rect = puzzleCanvas.getBoundingClientRect();
@@ -1041,25 +1561,43 @@ const TAP_MAX_DURATION = 300; // ms — これ以下の時間ならタップ
 
 function onPointerDown(e) {
   e.preventDefault();
+  // 散布アニメ中・prestart 表示中は一切のドラッグを拒否 (CSS pointer-events と二重防御)
+  if (scatterAnimating || prestartOverlayEl) return;
   const { x, y } = getPos(e);
   let found = null;
   for (const p of pieces) {
     if (p.snapped) continue;
     if (hitTest(p, x, y) && (!found || p.zOrder > found.zOrder)) found = p;
   }
-  if (!found) return;
-  dragPiece = found;
-  dragOffX = x - found.x; dragOffY = y - found.y;
-  dragPiece.zOrder = Math.max(...pieces.map(p => p.zOrder)) + 1;
-
-  // タップ検出用の初期値
+  // タップ検出用の初期値はピース有無に関わらず常に記録 (空タップで選択解除のため)
   pointerDownTime = Date.now();
   pointerDownX = x;
   pointerDownY = y;
   pointerMoveDist = 0;
 
+  if (!found) {
+    // 空タップの可能性: pointerup で判定して selectedPieceForHint をクリアする。
+    // dragPiece は立てないが、 pointerup ハンドラを通すため down ハンドラの中で
+    // emptyTapPending フラグを立てておく。
+    emptyTapPending = true;
+    return;
+  }
+  emptyTapPending = false;
+  dragPiece = found;
+  dragOffX = x - found.x; dragOffY = y - found.y;
+  dragPiece.zOrder = Math.max(...pieces.map(p => p.zOrder)) + 1;
+
+  // ドラッグ開始時はヒントボタンを 😴 に
+  refreshHintButtonState();
+
   redraw();
 }
+
+// onPointerDown で何もヒットしなかった時に立てる「空タップ判定保留」フラグ。
+// canvas は capture を取らないので、 空タップ時は pointerup が来ない経路もあり得る。
+// → puzzleCanvas に pointerup を別途バインドして、 emptyTapPending && 短距離・短時間
+//   なら selectedPieceForHint = null にする (下の initPuzzle 内で登録)。
+let emptyTapPending = false;
 
 function onPointerMove(e) {
   if (!dragPiece) return;
@@ -1086,13 +1624,35 @@ function onPointerMove(e) {
 }
 
 function onPointerUp(e) {
-  if (!dragPiece) return;
+  // 空タップ (どのピースにも当たらず pointerdown が始まった) のクリア処理
+  if (!dragPiece) {
+    if (emptyTapPending) {
+      emptyTapPending = false;
+      // 短距離・短時間なら選択解除 (盤面の何もない所をタップ)
+      try {
+        const { x: ex, y: ey } = getPos(e);
+        const distNow = Math.hypot(ex - pointerDownX, ey - pointerDownY);
+        const elapsedEmpty = Date.now() - pointerDownTime;
+        if (distNow < TAP_MAX_DIST && elapsedEmpty < TAP_MAX_DURATION) {
+          if (selectedPieceForHint) setSelectedPieceForHint(null);
+        }
+      } catch (_) {}
+    }
+    return;
+  }
   e.preventDefault();
   const piece = dragPiece;
   dragPiece = null;
+  emptyTapPending = false;
 
   const elapsed = Date.now() - pointerDownTime;
   const isTap = pointerMoveDist < TAP_MAX_DIST && elapsed < TAP_MAX_DURATION;
+
+  // タップ判定 (移動 ≦ 8px / 300ms 以内) で 未スナップピース → ヒント対象として選択。
+  // 回転モードが ON ならその後ろで rotation も行う (両立)。
+  if (isTap && !piece.snapped) {
+    setSelectedPieceForHint(piece);
+  }
 
   // チャレンジモード有効 + タップ + スナップ済みでない → 90度時計回り回転
   if (isTap && stageRotationActive && !piece.snapped) {
@@ -1103,11 +1663,17 @@ function onPointerUp(e) {
     piece.y = Math.max(0, Math.min(canvasH - pieceH, piece.y));
     piece.rotation = ((piece.rotation || 0) + 90) % 360;
     rebuildPath(piece);
+    refreshHintButtonState();
     redraw();
     return;
   }
 
   trySnap(piece);
+  // スナップで選択中ピースが固定された場合は選択解除
+  if (selectedPieceForHint && selectedPieceForHint.snapped) {
+    setSelectedPieceForHint(null);
+  }
+  refreshHintButtonState();
   redraw();
 }
 
@@ -1122,7 +1688,13 @@ function initPuzzle(img) {
   lastInitH = canvasH;
 
   // Remove old canvas & listeners
+  // innerHTML='' で旧 prestart overlay / peek canvas も巻き込んで除去されるので、
+  // 対応する参照変数もクリアし、 残留クラスを念のため外す。
   puzzleContainer.innerHTML = '';
+  prestartOverlayEl = null;
+  peekCanvas = null;
+  puzzleContainer.classList.remove('prestart-on', 'scatter-on', 'peek-on');
+  scatterAnimating = false;
 
   puzzleCanvas = document.createElement('canvas');
   puzzleCanvas.width  = canvasW;
@@ -1166,7 +1738,14 @@ function initPuzzle(img) {
   puzzleCanvas.addEventListener('lostpointercapture', onPointerUp);
 
   loadingEl.classList.add('hidden');
-  shufflePieces();
+
+  // ピースは buildPieces() で既に homeX/Y (完成形) に配置済み。
+  // 即時シャッフルせず、 完成形を 1 フレーム描いてからプレスタートオーバーレイを表示する。
+  // ユーザーが「スタート」を押した時点で散布アニメ → プレイ可能。
+  snappedCount = 0;
+  updateProgress();
+  redraw();
+  showPrestartOverlay();
 
   // === Assist hook: afterStageReady ===
   runAssistHooks('afterStageReady', {
@@ -1183,8 +1762,38 @@ function initPuzzle(img) {
 
 // ===== Load Stage =====
 function loadStage(index) {
+  // ステージ切替時は peek (いつでも みる) を必ず OFF にする
+  // 旧ステージの完成形が新ステージに残らないように、画像差し替え前に閉じる。
+  try { if (typeof setPeekOverlay === 'function') setPeekOverlay(false); } catch (_) {}
+  // 旧ステージの prestart overlay が残っていれば破棄 (initPuzzle で innerHTML='' されるが二重防御)
+  try { if (typeof removePrestartOverlay === 'function') removePrestartOverlay(); } catch (_) {}
+  // 散布アニメ中フラグもリセット (新ステージ初期化で混入しないように)
+  scatterAnimating = false;
+  if (puzzleContainer) puzzleContainer.classList.remove('scatter-on');
+
+  // ヒント関連 state リセット (前ステージの選択ピース・残数表示が混じらないように)
+  selectedPieceForHint = null;
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  window.PonoHintActive = false;
+  if (hintAnimRafHandle != null) {
+    try { cancelAnimationFrame(hintAnimRafHandle); } catch (_) {}
+    hintAnimRafHandle = null;
+  }
+  if (hintNoticeTimeout) { clearTimeout(hintNoticeTimeout); hintNoticeTimeout = null; }
+  var oldNotice = document.getElementById('hint-notice-bubble');
+  if (oldNotice && oldNotice.parentNode) oldNotice.parentNode.removeChild(oldNotice);
+
   currentStageIndex = index;
   const stage = STAGES[index];
+
+  // ステージ毎のヒント回数を初期化 → ボタン表示を更新
+  try {
+    var sidForReset = (stage && stage.id != null) ? stage.id : (index + 1);
+    localStorage.removeItem(hintUsesStorageKey(sidForReset));
+    setHintUsesRemaining(sidForReset, computeHintInitialUses(sidForReset));
+  } catch (_) {}
+  refreshHintButtonState();
 
   // ★ 二重報酬防止フラグのリセット (showSuccessModal idempotency 用 — high finding 修正)
   //   新ステージに入る度に「報酬未付与」状態へ戻す。
@@ -1235,37 +1844,138 @@ function loadStage(index) {
   };
 }
 
+// ===== Peek Overlay (いつでも みる) =====
+//
+// 半透明の完成形画像を puzzle-container に独立 canvas として重ねるトグル機能。
+// redraw() ループには介入しない (独立 canvas + CSS で重ねるだけ)。
+// peek ON 中はパズル canvas の pointer-events を CSS で殺して誤ドラッグを防ぐ。
+let peekOn = false;
+let peekCanvas = null;
+
+function ensurePeekCanvas() {
+  if (peekCanvas && peekCanvas.isConnected) return peekCanvas;
+  if (!puzzleContainer) return null;
+  peekCanvas = document.createElement('canvas');
+  peekCanvas.className = 'peek-overlay';
+  // canvas の論理解像度は本体 puzzleCanvas に合わせる (なければコンテナ実寸)
+  const w = (puzzleCanvas && puzzleCanvas.width)  || puzzleContainer.clientWidth  || 600;
+  const h = (puzzleCanvas && puzzleCanvas.height) || puzzleContainer.clientHeight || 400;
+  peekCanvas.width  = w;
+  peekCanvas.height = h;
+  puzzleContainer.appendChild(peekCanvas);
+  return peekCanvas;
+}
+
+function drawPeekOverlay() {
+  if (!peekCanvas || !sourceImg) return;
+  const ctx = peekCanvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, peekCanvas.width, peekCanvas.height);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  // 既存 boardX/Y/W/H に合わせて完成形画像を描画 (ピース盤面と一致)
+  ctx.drawImage(sourceImg, boardX, boardY, boardW, boardH);
+  ctx.restore();
+}
+
+function setPeekOverlay(on) {
+  const next = !!on;
+  if (next === peekOn) return;
+  peekOn = next;
+
+  if (peekOn) {
+    // ドラッグ中だった場合は確実にキャンセル
+    dragPiece = null;
+    const cv = ensurePeekCanvas();
+    if (!cv) { peekOn = false; return; }
+    drawPeekOverlay();
+    if (puzzleContainer) puzzleContainer.classList.add('peek-on');
+    if (btnPeek) {
+      btnPeek.classList.add('is-active');
+      btnPeek.setAttribute('aria-pressed', 'true');
+      btnPeek.textContent = '× とじる';
+    }
+  } else {
+    if (peekCanvas && peekCanvas.parentNode) {
+      peekCanvas.parentNode.removeChild(peekCanvas);
+    }
+    peekCanvas = null;
+    if (puzzleContainer) puzzleContainer.classList.remove('peek-on');
+    if (btnPeek) {
+      btnPeek.classList.remove('is-active');
+      btnPeek.setAttribute('aria-pressed', 'false');
+      btnPeek.textContent = '👁 みる';
+    }
+  }
+}
+
+function togglePeekOverlay() {
+  setPeekOverlay(!peekOn);
+}
+
 // ===== Button Handlers =====
 btnShuffle.addEventListener('click', () => {
   if (!puzzleCanvas) return;
+  // 散布アニメ実行中は無効化 (二重起動防止)
+  if (scatterAnimating) return;
+  // peek ON のままシャッフルすると操作不能に見えるので OFF にしてから実行
+  if (peekOn) setPeekOverlay(false);
+  // prestart overlay 表示中にまぜるが押された場合は overlay を破棄してから即時シャッフル
+  if (prestartOverlayEl) removePrestartOverlay();
   dragPiece = null;
   shufflePieces();
 });
 
+if (btnPeek) {
+  btnPeek.addEventListener('click', () => {
+    if (!puzzleCanvas) return;
+    // 散布アニメ中・prestart 表示中は peek 無効 (完成形が既に見えている / アニメ中)
+    if (scatterAnimating || prestartOverlayEl) return;
+    togglePeekOverlay();
+  });
+}
+
+// ===== Hint Button (Phase 3b Step 3 — 新仕様) =====
+// 旧: 完成形を全体表示 → 散布
+// 新: 選択中ピースのスロットに金色星+radial glow+枠点滅を 2 秒表示
 btnHint.addEventListener('click', () => {
   if (!puzzleCanvas) return;
+  // 散布アニメ中・prestart 表示中はヒント無効
+  if (scatterAnimating || prestartOverlayEl) return;
+  // ドラッグ中は 😴 状態 → 無効
+  if (dragPiece) return;
+
+  var sid = getCurrentStageIdForHint();
+  var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
+
+  // 残数 0 → 震えるアニメ + 早期 return
+  if (remaining <= 0) {
+    shakeHintButton();
+    return;
+  }
+
+  // 選択ピースが無い → 注意吹き出し + 早期 return (残数消費しない)
+  if (!selectedPieceForHint || selectedPieceForHint.snapped
+      || !pieces || pieces.indexOf(selectedPieceForHint) < 0) {
+    selectedPieceForHint = null;
+    showHintNotice();
+    refreshHintButtonState();
+    return;
+  }
+
+  // peek ON のままヒントを発動すると overlay が前面に残るので OFF
+  if (peekOn) setPeekOverlay(false);
+
   if (window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
-  dragPiece = null;
-  // ヒント: 一時的に完成形を見せる (回転モード時は正位置に戻して表示)
-  const savedRotations = pieces.map(p => p.rotation || 0);
-  pieces.forEach(p => { p.x = p.homeX; p.y = p.homeY; p.rotation = 0; rebuildPath(p); });
-  redraw();
-  setTimeout(() => {
-    if (snappedCount < stageTotalPieces) {
-      const zones = computePlacementZones();
-      const placed = [];
-      // 既にスナップ済みのピースは現在位置を「占有」として登録し、被りを避ける
-      pieces.forEach(p => { if (p.snapped) placed.push({ x: p.x, y: p.y }); });
-      pieces.forEach((p, i) => {
-        if (!p.snapped) {
-          scatterPiece(p, i, zones, placed);
-          p.rotation = savedRotations[i]; // 回転状態を復元
-          rebuildPath(p);
-        }
-      });
-      redraw();
-    }
-  }, 1200);
+
+  // 金色星演出: 2 秒間 hintFlashPiece に対して描画
+  hintFlashPiece = selectedPieceForHint;
+  hintFlashUntil = Date.now() + HINT_FLASH_DURATION_MS;
+  ensureHintAnimLoop();
+
+  // 残数を 1 消費
+  setHintUsesRemaining(sid, Math.max(0, remaining - 1));
+  refreshHintButtonState();
 });
 
 btnNextStage.addEventListener('click', () => {
@@ -1346,6 +2056,8 @@ let resizeTimer = null;
 let lastInitW = 0, lastInitH = 0;
 const resizeObserver = new ResizeObserver(() => {
   if (!sourceImg) return;
+  // 散布アニメ実行中は canvas 再生成で破綻するので resize 由来の再初期化を抑止
+  if (scatterAnimating) return;
   const rect = puzzleContainer.getBoundingClientRect();
   // ピース 1 つ以上スナップ済 + サイズ差 ±20% 以内 なら 再初期化 skip
   // (子供向けで進捗を消したくないため、 微小 resize では CSS スケールに任せる)

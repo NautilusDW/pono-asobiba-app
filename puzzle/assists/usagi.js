@@ -53,7 +53,9 @@
   // state.lastAngle: 前フレームで適用した最終角度 (degrees, -180..180)
   // state.hasLast: 初回フレーム判定
   var state = { lastAngle: 0, hasLast: false };
-  var hintLabel = null;   // 「↑ こっち」テキスト要素 (耳の sibling として inject)
+  var hintLabel = null;   // 「↑ こっち」テキスト要素 (耳の sibling として inject) — 互換用 (現在は外側コンテナ)
+  var hintArrowEl = null; // 「↑」だけの span (耳と同じ rotate を適用)
+  var hintTextEl = null;  // 「こっち」だけの span (rotate なし、水平固定)
 
   // ───────────────────────────────────────────────
   // DOM / CSS 注入
@@ -90,11 +92,14 @@
       '  box-shadow:0 1px 0 rgba(0,0,0,.08) inset;',
       '}',
       // 「↑ こっち」ヒントテキスト
-      // ★ 旧仕様: 耳の sibling かつ rotate(...) で耳と一緒に回していたため、耳が下を
+      // ★ 旧仕様 (rev1): 耳の sibling かつ rotate(...) で耳と一緒に回していたため、耳が下を
       //   向くとテキストが上下逆さまになり 0-6 歳児が読めなかった (ユーザー実機FB)。
-      // ★ 新仕様 (本修正): テキストは「耳の親 (root) 直下の絶対配置」とし、
-      //   transform 無し = 常に水平固定。JS で耳先端の x,y を計算して left/top のみ
-      //   毎フレーム更新する。これにより耳がどの方向を指してもテキストは常に正立する。
+      // ★ 旧仕様 (rev2): テキスト全体を水平固定したが「↑」も水平のままになり、
+      //   耳の指し示す方向と矢印がズレるケースが発生した。
+      // ★ 新仕様 (rev3 / 本修正): DOM を 2 つの span に分割。
+      //   - .pono-usagi-hint-arrow (「↑」): 耳と同じ角度で rotate
+      //   - .pono-usagi-hint-text  (「こっち」): rotate なし、常に水平
+      //   外側 .pono-usagi-hint は「耳先端付近に left/top で配置されるだけのコンテナ」。
       '#pono-usagi-dowsing .pono-usagi-hint{',
       '  position:absolute;',
       '  left:50%;top:0;',
@@ -109,6 +114,18 @@
       '  pointer-events:none;',
       '  opacity:0.95;',
       '  will-change:left,top;',
+      '  display:inline-flex;align-items:center;gap:2px;',
+      '}',
+      '#pono-usagi-dowsing .pono-usagi-hint-arrow{',
+      '  display:inline-block;',
+      '  transform:rotate(0deg);',
+      '  transform-origin:center;',
+      '  transition:transform 120ms cubic-bezier(.4,.2,.2,1);',
+      '  will-change:transform;',
+      '}',
+      '#pono-usagi-dowsing .pono-usagi-hint-text{',
+      '  display:inline-block;',
+      '  transform:none;',
       '}',
       // 縦長画面では小さく
       '@media (max-width: 520px){',
@@ -162,11 +179,23 @@
     var base = document.createElement('div');
     base.className = 'pono-usagi-base';
 
-    // 「↑ こっち」ヒント (耳の sibling として inject、耳と同じ角度で回転)
+    // 「↑ こっち」ヒント (root 直下に絶対配置、内部で 2 spans に分割)
+    // - hintArrowEl (「↑」): 耳と同じ角度で rotate
+    // - hintTextEl  (「こっち」): rotate なし、常に水平
     hintLabel = document.createElement('div');
     hintLabel.className = 'pono-usagi-hint';
-    hintLabel.textContent = '↑ こっち';
     hintLabel.setAttribute('aria-hidden', 'true');
+
+    hintArrowEl = document.createElement('span');
+    hintArrowEl.className = 'pono-usagi-hint-arrow';
+    hintArrowEl.textContent = '↑';
+
+    hintTextEl = document.createElement('span');
+    hintTextEl.className = 'pono-usagi-hint-text';
+    hintTextEl.textContent = 'こっち';
+
+    hintLabel.appendChild(hintArrowEl);
+    hintLabel.appendChild(hintTextEl);
 
     root.appendChild(pivot);
     root.appendChild(base);
@@ -309,13 +338,16 @@
     if (pivot) {
       pivot.style.transform = 'rotate(' + smoothed.toFixed(2) + 'deg)';
     }
-    // 「↑ こっち」テキストは常に水平固定 (transform 不変 = translate(-50%,-100%))。
-    // ★ ユーザー実機 FB (2026-06): 旧実装は耳と同じ角度で回しており、 耳が下を向くと
-    //   文字が上下逆さま → 0-6 歳児が読めない問題があった。
-    // ★ 本修正: テキスト本体の transform は固定 (CSS 側で translate のみ)。
-    //   耳の先端 (回転後) の x,y を計算し、テキストの left/top のみ JS で更新する。
-    //   これにより耳がどの方向を指してもテキストは常に正立し、 矢印 ↑ も含めて
-    //   「自分の真上から耳の先端を覗き込むラベル」として一貫した読みやすさを保つ。
+    // ヒント表示 (Phase 3b): DOM を 2 つに分割して個別制御。
+    //   - hintArrowEl (「↑」): 耳と同じ角度で rotate (= smoothed)
+    //   - hintTextEl  (「こっち」): rotate なし、常に水平 (CSS で transform:none 固定)
+    //   - hintLabel (コンテナ): 耳先端付近に left/top で配置 (translate のみ)
+    // ★ rev2 までは hintLabel 全体を水平固定にしていたため、「↑」も水平のままで
+    //   耳の指し示す方向と矢印が一致しないケースがあった。本修正で「↑」だけが
+    //   耳と一緒に回転する形に統一。
+    if (hintArrowEl) {
+      hintArrowEl.style.transform = 'rotate(' + smoothed.toFixed(2) + 'deg)';
+    }
     if (hintLabel && pivot) {
       // 耳の先端 (回転前のローカル座標) = pivot 中央上端付近。
       // pivot の transform-origin は CSS 上 '50% 90%' で固定 (ensureCSS 参照)。
