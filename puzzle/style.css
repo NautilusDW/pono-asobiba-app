@@ -121,39 +121,6 @@ body {
 /* ===== Header ===== */
 .header { text-align: center; position: relative; }
 
-/* ===== もりのアルバム へのショートカット ===== */
-.btn-album {
-  position: absolute;
-  top: 2px;
-  right: 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #FDDCBF 0%, #F2915A 100%);
-  color: #fff;
-  font-weight: 900;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  text-decoration: none;
-  box-shadow: 0 2px 6px rgba(93, 78, 55, 0.25);
-  border: 2px solid #fff;
-  min-height: 36px;
-  z-index: 5;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-.btn-album:hover,
-.btn-album:focus-visible { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(93, 78, 55, 0.3); outline: none; }
-.btn-album:active { transform: translateY(0); }
-.btn-album__icon { font-size: 1.05rem; line-height: 1; }
-.btn-album__label { line-height: 1; }
-@media (max-width: 480px) {
-  .btn-album { padding: 4px 8px; font-size: 0.72rem; min-height: 32px; }
-  .btn-album__label { display: none; }
-}
-
 .title {
   font-size: 1.4rem;
   font-weight: 900;
@@ -230,8 +197,8 @@ body {
     width: 180px;
     align-self: stretch;
     justify-content: flex-start;
-    padding-top: clamp(10px, 7dvh, 34px);
-    padding-bottom: 70px;
+    padding-top: 0;
+    padding-bottom: 108px;
     flex-shrink: 0;
   }
   .controls {
@@ -251,8 +218,8 @@ body {
 @media (orientation: landscape) and (pointer: coarse) and (max-height: 430px) {
   .sidebar {
     gap: 7px;
-    padding-top: 6px;
-    padding-bottom: 62px;
+    padding-top: 0;
+    padding-bottom: 92px;
   }
 
   .controls {
@@ -977,6 +944,18 @@ body {
   .pono-bond-badge {
     right: 12px;
     bottom: 10px;
+    gap: 10px;
+    padding: 7px 14px 7px 7px;
+  }
+
+  .pono-bond-badge__img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .pono-bond-badge__stars {
+    font-size: 23px;
+    letter-spacing: 1px;
   }
 }
 
@@ -984,16 +963,16 @@ body {
   .pono-bond-badge {
     right: 10px;
     bottom: 8px;
-    padding: 4px 9px 4px 4px;
+    gap: 9px;
+    padding: 6px 12px 6px 6px;
   }
 
   .pono-bond-badge__img {
-    width: 34px;
-    height: 34px;
+    width: 58px;
+    height: 58px;
   }
 
   .pono-bond-badge__stars {
-    font-size: 16px;
+    font-size: 22px;
   }
 }
-

@@ -2425,6 +2425,23 @@ function runOpeningCutscene(onDone) {
 }
 
 // ===== Start =====
+function installAlbumMenuItem() {
+  var dropdown = document.querySelector('.pono-dropdown');
+  if (!dropdown || dropdown.querySelector('[data-puzzle-album-menu]')) return;
+
+  var item = document.createElement('button');
+  item.type = 'button';
+  item.className = 'pono-dd-item';
+  item.setAttribute('data-puzzle-album-menu', '1');
+  item.innerHTML = '<span class="pono-dd-icon">📖</span><span class="pono-dd-label">もりのアルバム</span>';
+  item.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    location.href = 'album.html';
+  });
+  dropdown.insertBefore(item, dropdown.firstChild);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   // Merge fixed stages with any saved drawings
   const drawingStages = loadDrawingStages();
@@ -2454,8 +2471,9 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
           bgm.pause();
         }
-              },
+      },
       tutorial: showTutorial
     });
+    installAlbumMenuItem();
   }
 });
