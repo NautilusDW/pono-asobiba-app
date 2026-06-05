@@ -15,6 +15,8 @@
 //   standard-jigsaw-v2   (D) — pos 0.40-0.60 ランダム
 //   advanced-jigsaw      (E) — pos 0.32-0.68 ランダム
 //   advanced-jigsaw-v2   (F) — pos 0.28-0.72 ランダム (最多様化)
+//   organic-jigsaw       (G) — 深さ/くびれもランダムな有機的カーブ
+//   handcut-jigsaw       (H) — 手切り風の大きなずれと不均一カーブ
 //
 // snapAssist (SNAP_DIST スケール、pieceW 比率):
 //   very-strong   — pieceW * 0.55
@@ -56,7 +58,12 @@ function getCurrentPartner() {
       ? window.PonoBond.getSelectedPartner() : null;
     if (!id) return null;
     if (window.PonoPartners && typeof window.PonoPartners.get === 'function') {
-      return window.PonoPartners.get(id) || null;
+      var partner = window.PonoPartners.get(id) || null;
+      if (partner && typeof window.PonoPartners.isUnlocked === 'function'
+          && !window.PonoPartners.isUnlocked(partner)) {
+        return null;
+      }
+      return partner;
     }
   } catch (_) {}
   return null;
@@ -153,55 +160,55 @@ const BASE_STAGES = [
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
 
-  // ── Stage 09-12: 12 pieces / standard-jigsaw-v2 / medium-strong ──
+  // ── Stage 09-12: 12 pieces / offset-jigsaw / medium-strong ──
   { id: 9,  title: 'みずべの ぼうけん',  rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(9),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+    pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
   { id: 10, title: '✨ みずあそび ポノ', rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(10),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+    pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
   { id: 11, title: 'そらの くもさん',    rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(11),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+    pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
   { id: 12, title: 'やまの ハイキング',  rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(12),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'standard-jigsaw-v2', snapAssist: 'medium-strong' },
+    pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
 
-  // ── Stage 13-16: 16 pieces / advanced-jigsaw / normal ──
+  // ── Stage 13-16: 16 pieces / organic-jigsaw / normal ──
   { id: 13, title: 'うみの なかま',      rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(13),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+    pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
   { id: 14, title: 'よるの ほしぞら',    rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(14),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+    pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
   { id: 15, title: '✨ きらきら ポノ',   rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(15),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+    pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
   { id: 16, title: 'ふゆの けしき',      rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(16),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw', snapAssist: 'normal' },
+    pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
 
-  // ── Stage 17-20: 20 pieces / advanced-jigsaw-v2 / normal ──
+  // ── Stage 17-20: 20 pieces / handcut-jigsaw / light ──
   { id: 17, title: 'もりの ピクニック',  rows: 4, cols: 5, pieceCount: 20,
     image: resolveStageImage(17),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw-v2', snapAssist: 'normal' },
+    pieceShapeStyle: 'handcut-jigsaw', snapAssist: 'light' },
   { id: 18, title: 'まちの たんけん',    rows: 4, cols: 5, pieceCount: 20,
     image: resolveStageImage(18),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw-v2', snapAssist: 'normal' },
+    pieceShapeStyle: 'handcut-jigsaw', snapAssist: 'light' },
   { id: 19, title: 'おまつり よる',      rows: 4, cols: 5, pieceCount: 20,
     image: resolveStageImage(19),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-    pieceShapeStyle: 'advanced-jigsaw-v2', snapAssist: 'normal' },
+    pieceShapeStyle: 'handcut-jigsaw', snapAssist: 'light' },
   // Stage 20: ピース数は STAGE_20_PIECE_COUNT で可変
   (function() {
     const pc = STAGE_20_PIECE_COUNT;
@@ -212,8 +219,8 @@ const BASE_STAGES = [
       id: 20, title: '✨ ポノと さいごのぼうけん', rows, cols, pieceCount: pc,
       image: resolveStageImage(20),
       rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
-      pieceShapeStyle: pc === 16 ? 'advanced-jigsaw' : 'advanced-jigsaw-v2',
-      snapAssist: 'normal',
+      pieceShapeStyle: pc === 16 ? 'organic-jigsaw' : 'handcut-jigsaw',
+      snapAssist: pc === 16 ? 'normal' : 'light',
     };
   })(),
 ];
@@ -254,6 +261,7 @@ const SNAP_ASSIST_RATIO = {
   'strong':        0.45,
   'medium-strong': 0.38,
   'normal':        0.30,
+  'light':         0.25,
 };
 
 // チャレンジモード判定 (グローバル設定または localStorage)
@@ -272,6 +280,7 @@ let stageSnapAssist = 'very-strong';
 let stageChallengeRotationEnabled = false;
 let stageAllowedRotations = [0, 90, 180, 270];
 let stageRotationActive = false;  // 現在のステージで実際に回転モードが有効か (challenge ON × stage allows)
+let stageRotationRate = 0.75;
 let SNAP_DIST = 55;               // pieceW * ratio で毎ロード更新
 
 // ===== Puzzle State =====
@@ -296,11 +305,310 @@ const progressText    = document.getElementById('progress-text');
 const stageLabel      = document.getElementById('stage-label');
 const successModal    = document.getElementById('success-modal');
 const modalStageInfo  = document.getElementById('modal-stage-info');
+const modalChallengeInfo = document.getElementById('modal-challenge-info');
 const modalDailyAcorn = document.getElementById('modal-daily-acorn');
 const btnNextStage    = document.getElementById('btn-next-stage');
 const btnPlayAgain    = document.getElementById('btn-play-again');
 const confettiContainer = document.getElementById('confetti-container');
 const titleScreen     = document.getElementById('title-screen');
+const challengeStatusEl = document.getElementById('challenge-status');
+
+// ===== Partner Challenge State =====
+const RISU_TIME_LIMITS = [
+  { max: 2,  sec: [35, 30, 25] },
+  { max: 5,  sec: [50, 42, 35] },
+  { max: 8,  sec: [75, 62, 50] },
+  { max: 12, sec: [105, 88, 70] },
+  { max: 16, sec: [145, 120, 95] },
+  { max: 20, sec: [190, 155, 125] },
+];
+
+let activeChallenge = {
+  type: null,
+  partnerId: null,
+  stageId: null,
+  started: false,
+  expired: false,
+  limitMs: 0,
+  startMs: 0,
+  raf: null,
+  resultText: '',
+};
+
+function challengeRankFor(partnerId, stageId) {
+  var level = 0;
+  try {
+    if (partnerId && stageId != null && window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
+      level = window.PonoBond.getLevel(partnerId, stageId) | 0;
+    }
+  } catch (_) {}
+  return Math.max(1, Math.min(3, level || 1));
+}
+
+function stageNumForChallenge(stageId) {
+  var n = Number(stageId);
+  if (!isFinite(n) || n <= 0) return 1;
+  if (n >= 1000) return 20;
+  return n;
+}
+
+function risuLimitSeconds(stageId, rank) {
+  var stageNum = stageNumForChallenge(stageId);
+  var row = RISU_TIME_LIMITS[RISU_TIME_LIMITS.length - 1];
+  for (var i = 0; i < RISU_TIME_LIMITS.length; i++) {
+    if (stageNum <= RISU_TIME_LIMITS[i].max) {
+      row = RISU_TIME_LIMITS[i];
+      break;
+    }
+  }
+  return row.sec[Math.max(0, Math.min(2, (rank | 0) - 1))];
+}
+
+function harinezumiHintUses(stageNum, rank) {
+  var sNum = stageNumForChallenge(stageNum);
+  var r = Math.max(1, Math.min(3, rank | 0));
+  if (sNum <= 5) return 0;
+  if (sNum <= 12) return r <= 1 ? 1 : 0;
+  if (r <= 1) return 2;
+  if (r === 2) return 1;
+  return 0;
+}
+
+function karasuRotationConfig(rank) {
+  var r = Math.max(1, Math.min(3, rank | 0));
+  if (r <= 1) return { rate: 0.28, rotations: [0, 90] };
+  if (r === 2) return { rate: 0.52, rotations: [0, 90, 180] };
+  return { rate: 0.78, rotations: [0, 90, 180, 270] };
+}
+
+function stopChallengeTimer() {
+  if (activeChallenge.raf != null) {
+    try { cancelAnimationFrame(activeChallenge.raf); } catch (_) {}
+  }
+  activeChallenge.raf = null;
+}
+
+function hideChallengeStatus() {
+  if (!challengeStatusEl) return;
+  challengeStatusEl.classList.add('hidden');
+  challengeStatusEl.classList.remove('is-expired');
+  challengeStatusEl.textContent = '';
+}
+
+function resetPartnerChallenge(stageId) {
+  stopChallengeTimer();
+  activeChallenge = {
+    type: null,
+    partnerId: null,
+    stageId: stageId,
+    started: false,
+    expired: false,
+    limitMs: 0,
+    startMs: 0,
+    raf: null,
+    resultText: '',
+  };
+  hideChallengeStatus();
+}
+
+function setupPartnerChallenge(stageId, partner) {
+  resetPartnerChallenge(stageId);
+  if (!partner || !partner.challengeType) return;
+  var rank = challengeRankFor(partner.id, stageId);
+  activeChallenge.type = partner.challengeType;
+  activeChallenge.partnerId = partner.id;
+  activeChallenge.stageId = stageId;
+
+  if (!challengeStatusEl) return;
+  challengeStatusEl.classList.remove('hidden', 'is-expired');
+  if (partner.challengeType === 'time') {
+    activeChallenge.limitMs = risuLimitSeconds(stageId, rank) * 1000;
+    challengeStatusEl.textContent = '⏱ ' + Math.ceil(activeChallenge.limitMs / 1000) + 'びょう';
+  } else if (partner.challengeType === 'less-hints') {
+    challengeStatusEl.textContent = 'ヒントすくなめ';
+  } else if (partner.challengeType === 'rotation') {
+    challengeStatusEl.textContent = 'くるりチャレンジ';
+  }
+}
+
+function startPartnerChallengeAfterScatter() {
+  if (activeChallenge.type !== 'time' || activeChallenge.started || !challengeStatusEl) return;
+  activeChallenge.started = true;
+  activeChallenge.expired = false;
+  activeChallenge.startMs = performance.now();
+  challengeStatusEl.classList.remove('hidden', 'is-expired');
+
+  function tick(now) {
+    var remain = Math.max(0, activeChallenge.limitMs - (now - activeChallenge.startMs));
+    if (!challengeStatusEl || activeChallenge.type !== 'time') return;
+    if (remain <= 0) {
+      activeChallenge.expired = true;
+      challengeStatusEl.classList.add('is-expired');
+      challengeStatusEl.textContent = '⏱ じかんを すぎたよ';
+      activeChallenge.raf = null;
+      return;
+    }
+    challengeStatusEl.textContent = '⏱ ' + Math.ceil(remain / 1000) + 'びょう';
+    activeChallenge.raf = requestAnimationFrame(tick);
+  }
+  activeChallenge.raf = requestAnimationFrame(tick);
+}
+
+function currentChallengeResultText() {
+  if (!activeChallenge.type) return '';
+  if (activeChallenge.type === 'time') {
+    return activeChallenge.expired
+      ? 'リスチャレンジ: じかんを すぎたよ'
+      : 'リスチャレンジ せいこう！';
+  }
+  if (activeChallenge.type === 'less-hints') {
+    return 'ハリネズミチャレンジ せいこう！';
+  }
+  if (activeChallenge.type === 'rotation') {
+    return 'カラスチャレンジ せいこう！';
+  }
+  return '';
+}
+
+// ===== Puzzle-local stamps =====
+const PUZZLE_STAMP_KEY = 'pono_puzzle_partner_stamps_v1';
+const PUZZLE_PARTNER_CLEAR_KEY = 'pono_puzzle_partner_clears_v1';
+const PUZZLE_STAGE_CLEAR_KEY = 'pono_puzzle_stage_clears_v1';
+
+function readLocalJson(key, fallback) {
+  try {
+    var raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) || fallback) : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function writeLocalJson(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+}
+
+let puzzleStampToastQueue = [];
+let puzzleStampToastShowing = false;
+
+function showPuzzleStampToast(title, desc) {
+  puzzleStampToastQueue.push({ title: title, desc: desc });
+  drainPuzzleStampToastQueue();
+}
+
+function drainPuzzleStampToastQueue() {
+  if (puzzleStampToastShowing || !puzzleStampToastQueue.length) return;
+  puzzleStampToastShowing = true;
+  var item = puzzleStampToastQueue.shift();
+  try {
+    var toast = document.createElement('div');
+    toast.className = 'puzzle-stamp-toast';
+    toast.innerHTML =
+      '<div class="puzzle-stamp-toast__mark">★</div>' +
+      '<div class="puzzle-stamp-toast__body">' +
+        '<div class="puzzle-stamp-toast__title"></div>' +
+        '<div class="puzzle-stamp-toast__desc"></div>' +
+      '</div>';
+    toast.querySelector('.puzzle-stamp-toast__title').textContent = item.title;
+    toast.querySelector('.puzzle-stamp-toast__desc').textContent = item.desc || 'スタンプを もらったよ';
+    document.body.appendChild(toast);
+    setTimeout(function () {
+      toast.classList.add('is-hide');
+      setTimeout(function () {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+        puzzleStampToastShowing = false;
+        drainPuzzleStampToastQueue();
+      }, 360);
+    }, 2800);
+  } catch (_) {
+    puzzleStampToastShowing = false;
+    drainPuzzleStampToastQueue();
+  }
+}
+
+function grantPuzzleStamp(id, title, desc) {
+  if (!id) return false;
+  var stamps = readLocalJson(PUZZLE_STAMP_KEY, {});
+  if (stamps[id]) return false;
+  stamps[id] = { title: title, desc: desc || '', ts: Date.now() };
+  writeLocalJson(PUZZLE_STAMP_KEY, stamps);
+  showPuzzleStampToast(title, desc);
+  return true;
+}
+
+function markPartnerClear(partnerId) {
+  if (!partnerId) return;
+  var clears = readLocalJson(PUZZLE_PARTNER_CLEAR_KEY, {});
+  clears[partnerId] = true;
+  writeLocalJson(PUZZLE_PARTNER_CLEAR_KEY, clears);
+}
+
+function markStageClear(stageId) {
+  var sid = Number(stageId);
+  if (!isFinite(sid) || sid <= 0 || sid >= 1000) return;
+  var clears = readLocalJson(PUZZLE_STAGE_CLEAR_KEY, {});
+  clears[String(sid)] = true;
+  writeLocalJson(PUZZLE_STAGE_CLEAR_KEY, clears);
+}
+
+function allPartnersCleared() {
+  if (!window.PonoPartners || !window.PonoPartners.list) return false;
+  var clears = readLocalJson(PUZZLE_PARTNER_CLEAR_KEY, {});
+  for (var i = 0; i < window.PonoPartners.list.length; i++) {
+    if (!clears[window.PonoPartners.list[i].id]) return false;
+  }
+  return true;
+}
+
+function allBuiltInStagesCleared() {
+  var clears = readLocalJson(PUZZLE_STAGE_CLEAR_KEY, {});
+  for (var i = 1; i <= 20; i++) {
+    if (!clears[String(i)]) return false;
+  }
+  return true;
+}
+
+function processPuzzleStamps(partner, stageId, bondResult) {
+  markStageClear(stageId);
+  if (!partner) {
+    if (allBuiltInStagesCleared()) {
+      grantPuzzleStamp('stage_all_20', 'ぜんステージクリア', '20この えを クリアしたよ');
+    }
+    return;
+  }
+
+  markPartnerClear(partner.id);
+  grantPuzzleStamp('partner_clear_' + partner.id, partner.name + 'と クリア', partner.name + 'と パズルを クリアしたよ');
+
+  var level = bondResult && typeof bondResult.level === 'number' ? bondResult.level : 0;
+  if (level >= 3) {
+    grantPuzzleStamp('partner_star3_' + partner.id, partner.name + 'と なかよし', '星3つに なったよ');
+  }
+
+  if (partner.id === 'risu' && activeChallenge.type === 'time' && !activeChallenge.expired) {
+    grantPuzzleStamp('challenge_risu_time', 'リスの はやわざ', 'じかんの なかで クリアしたよ');
+  }
+  if (partner.id === 'harinezumi' && activeChallenge.type === 'less-hints') {
+    grantPuzzleStamp('challenge_harinezumi_clear', 'ハリネズミの がんばり', 'ヒントすくなめで クリアしたよ');
+    if (stageHintUsesActual === 0) {
+      grantPuzzleStamp('challenge_harinezumi_no_hint', 'ヒントなし チャレンジ', 'ヒントを つかわず クリアしたよ');
+    }
+  }
+  if (partner.id === 'karasu' && activeChallenge.type === 'rotation') {
+    grantPuzzleStamp('challenge_karasu_rotation', 'くるりマスター', 'まわった ピースを クリアしたよ');
+  }
+  if (allPartnersCleared()) {
+    grantPuzzleStamp('all_partners_clear', 'パズルマスター', 'ぜんぶの パートナーと クリアしたよ');
+  }
+  if (allBuiltInStagesCleared()) {
+    grantPuzzleStamp('stage_all_20', 'ぜんステージクリア', '20この えを クリアしたよ');
+  }
+}
+
+window.PonoPuzzleStamps = {
+  grant: grantPuzzleStamp,
+  all: function () { return readLocalJson(PUZZLE_STAMP_KEY, {}); },
+};
 
 // ===== Audio Context (shared, iOS-safe) =====
 let sfxCtx = null;
@@ -460,6 +768,8 @@ function showSuccessModal() {
   }
   // 他フックから参照できるよう公開
   window.PonoLastBondResult = bondResult;
+  stopChallengeTimer();
+  activeChallenge.resultText = currentChallengeResultText();
 
   // === Fukurou unlock: Stage 20 クリアでフクロウ解禁 ===
   // プラン仕様: ステージ20クリア時に PonoBond.markFukurouUnlock() を呼ぶ
@@ -488,6 +798,7 @@ function showSuccessModal() {
     window[__rewardKey] = true;
     if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
     if (window.addAcornsDaily) window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear' });
+    processPuzzleStamps(successPartner, normalizedStageId, bondResult);
 
     // スタンプラリー: プレイ記録 (1ステージ 1 回でよいので報酬付与時にまとめる)
     (function() {
@@ -504,6 +815,15 @@ function showSuccessModal() {
   } else {
     modalStageInfo.textContent = `ステージ ${currentStageIndex + 1} クリア！`;
     btnNextStage.classList.remove('hidden');
+  }
+  if (modalChallengeInfo) {
+    if (activeChallenge.resultText) {
+      modalChallengeInfo.textContent = activeChallenge.resultText;
+      modalChallengeInfo.classList.remove('hidden');
+    } else {
+      modalChallengeInfo.textContent = '';
+      modalChallengeInfo.classList.add('hidden');
+    }
   }
 
   // クリア音声: fanfare と被らないよう ~800ms 遅延。isLast は全クリア専用ボイス。
@@ -613,25 +933,29 @@ function buildPiecePath(target, px, py, pw, ph, tabs) {
 
     // Advanced irregular knob: two-Bézier mushroom shape (stage 5+)
     const { dir, pos, hw } = edge;
-    const tabH  = len * 0.30 * dir;   // knob height (signed)
+    const depth = (typeof edge.depth === 'number') ? edge.depth : 0.30;
+    const neck = (typeof edge.neck === 'number') ? edge.neck : 0.55;
+    const shoulder = (typeof edge.shoulder === 'number') ? edge.shoulder : 0.8;
+    const skew = (typeof edge.skew === 'number') ? edge.skew : 0;
+    const tabH  = len * depth * dir;  // knob height (signed)
     const tabHW = hw * len;            // half-width of tab mouth
-    const neckH = tabH * 0.55;        // neck control height
+    const neckH = tabH * neck;         // neck control height
 
     const psx = x1 + ux * (pos - hw) * len;  // mouth start
     const psy = y1 + uy * (pos - hw) * len;
     const pex = x1 + ux * (pos + hw) * len;  // mouth end
     const pey = y1 + uy * (pos + hw) * len;
-    const topX = x1 + ux * pos * len + nx * tabH;  // knob top center
-    const topY = y1 + uy * pos * len + ny * tabH;
+    const topX = x1 + ux * (pos + skew) * len + nx * tabH;  // knob top center
+    const topY = y1 + uy * (pos + skew) * len + ny * tabH;
 
     target.lineTo(psx, psy);
     target.bezierCurveTo(
       psx + nx * neckH,          psy + ny * neckH,
-      topX - ux * tabHW * 0.8,  topY - uy * tabHW * 0.8,
+      topX - ux * tabHW * shoulder,  topY - uy * tabHW * shoulder,
       topX, topY
     );
     target.bezierCurveTo(
-      topX + ux * tabHW * 0.8,  topY + uy * tabHW * 0.8,
+      topX + ux * tabHW * shoulder,  topY + uy * tabHW * shoulder,
       pex + nx * neckH,          pey + ny * neckH,
       pex, pey
     );
@@ -660,6 +984,9 @@ function buildPiecePath(target, px, py, pw, ph, tabs) {
 //   standard-jigsaw-v2 : { dir, pos: 0.40-0.60, hw: 0.15-0.18 }
 //   advanced-jigsaw    : { dir, pos: 0.32-0.68, hw: 0.14-0.21 }
 //   advanced-jigsaw-v2 : { dir, pos: 0.28-0.72, hw: 0.13-0.22 }
+//   offset-jigsaw      : { dir, pos: 0.34-0.66, hw/depth/neck ランダム }
+//   organic-jigsaw     : { dir, pos: 0.25-0.75, hw/depth/neck/skew ランダム }
+//   handcut-jigsaw     : { dir, pos: 0.20-0.80, さらに不均一な曲線 }
 function buildPieces() {
   function makeEdge() {
     const dir = Math.random() < 0.5 ? 1 : -1;
@@ -675,10 +1002,43 @@ function buildPieces() {
         return { dir, pos: 0.5, hw: 0.16, style: 'standard' };
       case 'standard-jigsaw-v2':
         return { dir, pos: 0.40 + Math.random() * 0.20, hw: 0.15 + Math.random() * 0.03, style: 'standard' }; // pos 0.40-0.60
+      case 'offset-jigsaw':
+        return {
+          dir,
+          pos: 0.34 + Math.random() * 0.32,
+          hw: 0.14 + Math.random() * 0.06,
+          depth: 0.24 + Math.random() * 0.10,
+          neck: 0.48 + Math.random() * 0.20,
+          shoulder: 0.72 + Math.random() * 0.24,
+          skew: (Math.random() - 0.5) * 0.04,
+          style: 'offset',
+        };
       case 'advanced-jigsaw':
         return { dir, pos: 0.32 + Math.random() * 0.36, hw: 0.14 + Math.random() * 0.07, style: 'standard' }; // pos 0.32-0.68
       case 'advanced-jigsaw-v2':
         return { dir, pos: 0.28 + Math.random() * 0.44, hw: 0.13 + Math.random() * 0.09, style: 'standard' }; // pos 0.28-0.72
+      case 'organic-jigsaw':
+        return {
+          dir,
+          pos: 0.25 + Math.random() * 0.50,
+          hw: 0.12 + Math.random() * 0.10,
+          depth: 0.22 + Math.random() * 0.16,
+          neck: 0.42 + Math.random() * 0.28,
+          shoulder: 0.60 + Math.random() * 0.38,
+          skew: (Math.random() - 0.5) * 0.08,
+          style: 'organic',
+        };
+      case 'handcut-jigsaw':
+        return {
+          dir,
+          pos: 0.20 + Math.random() * 0.60,
+          hw: 0.10 + Math.random() * 0.13,
+          depth: 0.20 + Math.random() * 0.20,
+          neck: 0.35 + Math.random() * 0.35,
+          shoulder: 0.52 + Math.random() * 0.46,
+          skew: (Math.random() - 0.5) * 0.12,
+          style: 'handcut',
+        };
       default:
         return dir;
     }
@@ -708,8 +1068,7 @@ function buildPieces() {
       let rotation = 0;
       if (stageRotationActive) {
         const opts = stageAllowedRotations.filter(r => r !== 0);
-        // 全ピース回転なしだとチャレンジ要素が薄れるため、 約 75% で非ゼロにする
-        if (Math.random() < 0.75 && opts.length > 0) {
+        if (Math.random() < stageRotationRate && opts.length > 0) {
           rotation = opts[Math.floor(Math.random() * opts.length)];
         }
       }
@@ -944,7 +1303,7 @@ function shufflePieces() {
     // チャレンジモード有効時は回転もランダム再設定
     if (stageRotationActive) {
       const opts = stageAllowedRotations.filter(r => r !== 0);
-      p.rotation = (Math.random() < 0.75 && opts.length > 0)
+      p.rotation = (Math.random() < stageRotationRate && opts.length > 0)
         ? opts[Math.floor(Math.random() * opts.length)]
         : 0;
     } else {
@@ -978,7 +1337,7 @@ function computeScatterTargets() {
     let targetRot = 0;
     if (stageRotationActive) {
       const opts = stageAllowedRotations.filter(r => r !== 0);
-      if (Math.random() < 0.75 && opts.length > 0) {
+      if (Math.random() < stageRotationRate && opts.length > 0) {
         targetRot = opts[Math.floor(Math.random() * opts.length)];
       }
     }
@@ -1053,6 +1412,7 @@ function animateShuffleScatter(onDone) {
       redraw();
       scatterAnimating = false;
       if (puzzleContainer) puzzleContainer.classList.remove('scatter-on');
+      startPartnerChallengeAfterScatter();
       if (typeof onDone === 'function') onDone();
     }
   }
@@ -1233,6 +1593,7 @@ let hintFlashUntil = 0;                 // 金色星演出の終了時刻 (Date.
 let hintFlashPiece = null;              // 金色星演出の対象ピース
 let hintAnimRafHandle = null;           // 黄 pulse / 金 star 用 rAF
 let hintNoticeTimeout = null;           // 「ピースを えらんで〜」吹き出しの非表示タイマー
+let stageHintUsesActual = 0;            // 今ステージで実際に使ったヒント回数
 
 const HINT_FLASH_DURATION_MS = 1500;    // 金色星 + radial glow 表示時間 (Phase 3c: 2000→1500)
 
@@ -1246,6 +1607,10 @@ function computeHintUses(stageNum, partnerId, level) {
   var lv3Bonus = (lv >= 3) ? 1 : 0;
   var sNum = (typeof stageNum === 'number' && isFinite(stageNum)) ? stageNum : 1;
   var isKitsune = (partnerId === 'kitsune');
+  var isHarinezumi = (partnerId === 'harinezumi');
+  if (isHarinezumi) {
+    return harinezumiHintUses(sNum, challengeRankFor(partnerId, sNum));
+  }
   if (isKitsune) {
     var stageBonus = (sNum >= 13) ? 1 : 0;
     return Math.min(5, 3 + stageBonus + lv3Bonus);
@@ -1806,6 +2171,7 @@ function loadStage(index) {
   selectedPieceForHint = null;
   hintFlashPiece = null;
   hintFlashUntil = 0;
+  stageHintUsesActual = 0;
   window.PonoHintActive = false;
   if (hintAnimRafHandle != null) {
     try { cancelAnimationFrame(hintAnimRafHandle); } catch (_) {}
@@ -1817,10 +2183,12 @@ function loadStage(index) {
 
   currentStageIndex = index;
   const stage = STAGES[index];
+  var currentPartnerForStage = getCurrentPartner();
 
   // ステージ毎のヒント回数を初期化 → ボタン表示を更新
+  var sidForReset = (stage && stage.id != null) ? stage.id : (index + 1);
+  setupPartnerChallenge(sidForReset, currentPartnerForStage);
   try {
-    var sidForReset = (stage && stage.id != null) ? stage.id : (index + 1);
     localStorage.removeItem(hintUsesStorageKey(sidForReset));
     setHintUsesRemaining(sidForReset, computeHintInitialUses(sidForReset));
   } catch (_) {}
@@ -1846,8 +2214,16 @@ function loadStage(index) {
   stageSnapAssist        = stage.snapAssist || 'normal';
   stageChallengeRotationEnabled = !!stage.challengeRotationEnabled;
   stageAllowedRotations  = stage.allowedRotations || [0, 90, 180, 270];
-  // チャレンジモードが ON で、 かつステージ側も許可していれば回転モード有効
-  stageRotationActive    = isChallengeRotationOn() && stageChallengeRotationEnabled;
+  stageRotationRate = 0.75;
+  if (currentPartnerForStage && currentPartnerForStage.challengeType === 'rotation') {
+    var rotationConfig = karasuRotationConfig(challengeRankFor(currentPartnerForStage.id, sidForReset));
+    stageAllowedRotations = rotationConfig.rotations;
+    stageRotationRate = rotationConfig.rate;
+    stageRotationActive = true;
+  } else {
+    // チャレンジモードが ON で、 かつステージ側も許可していれば回転モード有効
+    stageRotationActive = isChallengeRotationOn() && stageChallengeRotationEnabled;
+  }
 
   // ステージタイトル
   const title = stage.title || stage.stageText;
@@ -1952,9 +2328,11 @@ btnShuffle.addEventListener('click', () => {
   // peek ON のままシャッフルすると操作不能に見えるので OFF にしてから実行
   if (peekOn) setPeekOverlay(false);
   // prestart overlay 表示中にまぜるが押された場合は overlay を破棄してから即時シャッフル
+  var wasPrestart = !!prestartOverlayEl;
   if (prestartOverlayEl) removePrestartOverlay();
   dragPiece = null;
   shufflePieces();
+  if (wasPrestart) startPartnerChallengeAfterScatter();
 });
 
 if (btnPeek) {
@@ -2019,6 +2397,7 @@ btnHint.addEventListener('click', () => {
   } catch (_) { /* assist 側の例外で本体を止めない */ }
 
   // 残数を 1 消費
+  stageHintUsesActual++;
   setHintUsesRemaining(sid, Math.max(0, remaining - 1));
   refreshHintButtonState();
 });

@@ -69,6 +69,8 @@
           <button id="btn-peek" class="btn btn-peek" aria-pressed="false">👁 みる</button>
         </div>
 
+        <div id="challenge-status" class="challenge-status hidden" aria-live="polite"></div>
+
         <div class="progress-bar">
           <div class="progress-fill" id="progress-fill"></div>
           <span class="progress-text" id="progress-text">0 / 4</span>
@@ -84,6 +86,7 @@
       <div class="modal-emoji">🎉</div>
       <h2 class="modal-title">できたね!</h2>
       <p id="modal-stage-info" class="modal-stage-info">ステージ 1 クリア！</p>
+      <p id="modal-challenge-info" class="modal-challenge-info hidden"></p>
       <p id="modal-daily-acorn" class="modal-daily-acorn"></p>
       <button id="btn-next-stage" class="btn btn-next">つぎへ →</button>
     </div>

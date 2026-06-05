@@ -215,6 +215,16 @@
   box-shadow: 0 0 0 4px rgba(247, 201, 72, 0.55), 0 10px 22px rgba(0,0,0,0.45);
 }
 
+.pono-pselect__card.is-challenge {
+  border-color: #D08B42;
+  background: linear-gradient(180deg, #FFF8EA 0%, #F9E1BD 100%);
+}
+
+.pono-pselect__card.is-challenge.is-selected {
+  border-color: #B45F33;
+  box-shadow: 0 0 0 4px rgba(242, 145, 90, 0.5), 0 10px 22px rgba(0,0,0,0.45);
+}
+
 /* --- カード: 立ち絵 ---
    専用の 512px 正方形サムネイルを、画角に応じた正方形枠で表示する。 */
 .pono-pselect__portrait {
@@ -290,6 +300,11 @@
   margin: 2px 0 4px;
   word-break: keep-all;
   white-space: nowrap;
+}
+
+.pono-pselect__card.is-challenge .pono-pselect__assist-label {
+  background: rgba(242, 145, 90, 0.22);
+  color: #9A4B22;
 }
 
 /* --- とくぎ説明 (子供向け 1〜3行のひらがな) --- */

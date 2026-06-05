@@ -131,11 +131,12 @@ window.PonoPartnerSelect = (function () {
   /** カード DOM 生成 */
   function buildCard(p, stageId) {
     var Bond = window.PonoBond;
-    var locked = !!p.locked;
-    // フクロウは PonoBond.isFukurouUnlocked() が真なら解禁扱い
-    if (p.id === 'fukurou' && Bond && typeof Bond.isFukurouUnlocked === 'function') {
-      if (Bond.isFukurouUnlocked()) locked = false;
-    }
+    var locked = (window.PonoPartners && typeof window.PonoPartners.isUnlocked === 'function')
+      ? !window.PonoPartners.isUnlocked(p)
+      : !!p.locked;
+    var lockLabel = (window.PonoPartners && typeof window.PonoPartners.getUnlockLabel === 'function')
+      ? window.PonoPartners.getUnlockLabel(p)
+      : '🔒 まだ';
 
     var level = 0;
     var total = 0;
@@ -151,6 +152,7 @@ window.PonoPartnerSelect = (function () {
     card.type = 'button';
     card.className = 'pono-pselect__card' +
       (locked ? ' is-locked' : '') +
+      (p.challengeType ? ' is-challenge' : '') +
       (!locked && currentSel === p.id ? ' is-selected' : '');
     card.setAttribute('data-partner-id', p.id);
     card.setAttribute('aria-label',
@@ -199,11 +201,11 @@ window.PonoPartnerSelect = (function () {
     name.textContent = p.name || p.id;
     card.appendChild(name);
 
-    // とくぎの説明。技名や性格文はカード上に出さず、説明だけを読ませる。
+    // 説明。補助キャラは「とくぎ」、難化キャラは「チャレンジ」。
     if (p.assistDesc) {
       var assistLabel = document.createElement('div');
       assistLabel.className = 'pono-pselect__assist-label';
-      assistLabel.textContent = 'とくぎ';
+      assistLabel.textContent = p.challengeType ? 'チャレンジ' : 'とくぎ';
       card.appendChild(assistLabel);
 
       var assistDesc = document.createElement('div');
@@ -213,10 +215,9 @@ window.PonoPartnerSelect = (function () {
     }
 
     if (locked) {
-      // 3-4yo 向けに認知負荷軽減: 詳細条件は省略しシンプルに「🔒 まだ」表記
       var reason = document.createElement('div');
       reason.className = 'pono-pselect__lock-reason';
-      reason.textContent = '🔒 まだ';
+      reason.textContent = lockLabel;
       card.appendChild(reason);
     } else {
       // 星 + ハート合計 — innerHTML を使わず DOM 要素で構築 (XSS 防止)
@@ -257,6 +258,12 @@ window.PonoPartnerSelect = (function () {
   /** 選択確定 */
   function selectPartner(partnerId) {
     if (!_open) return;
+    var partner = (window.PonoPartners && typeof window.PonoPartners.get === 'function')
+      ? window.PonoPartners.get(partnerId) : null;
+    if (window.PonoPartners && typeof window.PonoPartners.isUnlocked === 'function'
+        && !window.PonoPartners.isUnlocked(partner)) {
+      return;
+    }
     try {
       if (window.PonoBond && typeof window.PonoBond.setSelectedPartner === 'function') {
         window.PonoBond.setSelectedPartner(partnerId);

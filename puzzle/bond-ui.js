@@ -101,6 +101,10 @@ window.PonoBondUI = (function () {
 
   function refreshBadge(partner, stageId) {
     var el = ensureBadge();
+    if (partner && window.PonoPartners && typeof window.PonoPartners.isUnlocked === 'function'
+        && !window.PonoPartners.isUnlocked(partner)) {
+      partner = null;
+    }
     if (!partner) {
       el.classList.add('hidden');
       syncHintBtnVisibility(false);
