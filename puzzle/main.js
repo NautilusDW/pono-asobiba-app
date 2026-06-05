@@ -381,6 +381,13 @@ function karasuRotationConfig(rank) {
   return { rate: 0.78, rotations: [0, 90, 180, 270] };
 }
 
+function formatChallengeTime(ms) {
+  var total = Math.max(0, Math.ceil(ms / 1000));
+  var min = Math.floor(total / 60);
+  var sec = total % 60;
+  return min + ':' + String(sec).padStart(2, '0');
+}
+
 function stopChallengeTimer() {
   if (activeChallenge.raf != null) {
     try { cancelAnimationFrame(activeChallenge.raf); } catch (_) {}
@@ -391,7 +398,7 @@ function stopChallengeTimer() {
 function hideChallengeStatus() {
   if (!challengeStatusEl) return;
   challengeStatusEl.classList.add('hidden');
-  challengeStatusEl.classList.remove('is-expired');
+  challengeStatusEl.classList.remove('is-expired', 'is-time');
   challengeStatusEl.textContent = '';
 }
 
@@ -421,9 +428,11 @@ function setupPartnerChallenge(stageId, partner) {
 
   if (!challengeStatusEl) return;
   challengeStatusEl.classList.remove('hidden', 'is-expired');
+  challengeStatusEl.classList.remove('is-time');
   if (partner.challengeType === 'time') {
     activeChallenge.limitMs = risuLimitSeconds(stageId, rank) * 1000;
-    challengeStatusEl.textContent = '⏱ ' + Math.ceil(activeChallenge.limitMs / 1000) + 'びょう';
+    challengeStatusEl.classList.add('is-time');
+    challengeStatusEl.textContent = 'タイム ' + formatChallengeTime(activeChallenge.limitMs);
   } else if (partner.challengeType === 'less-hints') {
     challengeStatusEl.textContent = 'ヒントすくなめ';
   } else if (partner.challengeType === 'rotation') {
@@ -444,11 +453,11 @@ function startPartnerChallengeAfterScatter() {
     if (remain <= 0) {
       activeChallenge.expired = true;
       challengeStatusEl.classList.add('is-expired');
-      challengeStatusEl.textContent = '⏱ じかんを すぎたよ';
+      challengeStatusEl.textContent = 'タイム 0:00';
       activeChallenge.raf = null;
       return;
     }
-    challengeStatusEl.textContent = '⏱ ' + Math.ceil(remain / 1000) + 'びょう';
+    challengeStatusEl.textContent = 'タイム ' + formatChallengeTime(remain);
     activeChallenge.raf = requestAnimationFrame(tick);
   }
   activeChallenge.raf = requestAnimationFrame(tick);

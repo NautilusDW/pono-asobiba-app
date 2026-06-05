@@ -566,6 +566,16 @@ body {
   box-shadow: 0 3px 8px rgba(93, 78, 55, 0.18);
 }
 
+.challenge-status.is-time {
+  width: min(92%, 190px);
+  background: rgba(255, 244, 196, 0.98);
+  border-color: rgba(217, 147, 32, 0.78);
+  color: #5A3511;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 10px rgba(126, 86, 22, 0.22);
+}
+
 .challenge-status.hidden {
   display: none;
 }
@@ -573,6 +583,10 @@ body {
 .challenge-status.is-expired {
   background: rgba(255, 231, 213, 0.95);
   color: #9A3D20;
+}
+
+.challenge-status.is-time.is-expired {
+  border-color: rgba(196, 75, 45, 0.82);
 }
 
 /* ===== Modal ===== */
