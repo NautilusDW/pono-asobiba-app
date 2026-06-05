@@ -133,14 +133,16 @@
 }
 
 /* --- カード ---
-   横スクロール前提: 一度に約3枚見える固定幅で、scroll-snap-align: start */
+   横スクロール前提: 一度に約3-4枚見える固定幅で、scroll-snap-align: start
+   ユーザーFB (2026-06-05): カード幅を縮小して横スクロール時の見えやすさを優先。
+   max-width 150px → 130px (3-4枚画面に入るように) */
 .pono-pselect__card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 0 0 auto;
-  width: clamp(140px, 28vw, 180px);
+  width: clamp(120px, 24vw, 150px);
   scroll-snap-align: start;
   background: linear-gradient(180deg, #FFFDF5 0%, #FCEFD3 100%);
   color: #5D4E37;
@@ -159,7 +161,7 @@
 /* 狭い画面 (<=480px): カードをやや小さめに */
 @media (max-width: 480px) {
   .pono-pselect__card {
-    width: clamp(128px, 38vw, 160px);
+    width: clamp(110px, 32vw, 140px);
     min-height: 240px;
   }
   .pono-pselect__track {
@@ -200,12 +202,16 @@
 }
 
 /* --- カード: 立ち絵 ---
-   aspect-ratio: 4 / 5 (縦長) によりキャラの顔〜上半身がより大きく見える。
+   ユーザーFB (2026-06-05): 16:9 ラップトップ画面ではキャラが切れていた。
+   aspect-ratio 方式を廃止して **固定高さ (180px)** に変更し、
+   object-fit:cover + object-position で確実に中央キャラが映るようにする。
+   元画像 cut01-03.jpg は 16:9 (1920x1080) なので、portrait 枠を縦長 3:4 風 (135x180) にし、
+   横方向の左右トリミングで character を中央に保つ。
    object-position は partners.js の imagePosition から各カードに個別適用される。 */
 .pono-pselect__portrait {
   width: 100%;
-  aspect-ratio: 4 / 5;
-  max-width: 150px;
+  height: 180px;
+  max-width: 135px;
   border-radius: 14px;
   overflow: hidden;
   background: #DDD;
@@ -214,14 +220,34 @@
   position: relative;
 }
 
+/* 狭い画面 (<=480px): 高さも縮める */
+@media (max-width: 480px) {
+  .pono-pselect__portrait {
+    height: 160px;
+    max-width: 120px;
+  }
+}
+
 .pono-pselect__portrait img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* object-position はインライン style で各キャラごとに個別指定 (partner-select.js 参照) */
-  object-position: 50% 50%;
+  /* object-position はインライン style で各キャラごとに個別指定 (partner-select.js 参照)。
+     さらに CSS 変数 --pos-default / --pos-wide で 4:3 と 16:9 を出し分ける。
+     未定義時は 50% 50% にフォールバック。 */
+  object-position: var(--pos-default, 50% 50%);
   display: block;
   pointer-events: none;
+}
+
+/* 16:9 系 (ラップトップ / 横長デスクトップ) では portrait 枠の左右トリミング比が
+   大きくなるので、キャラ顔の位置を画像中心寄りに補正する。
+   aspect-ratio >= 1.5 (3:2 以上) を「横長画面」と判定 (16:9 = 1.78)。
+   4:3 (=1.33) や iPad mini 系は --pos-default のまま使う。 */
+@media (min-aspect-ratio: 3 / 2) {
+  .pono-pselect__portrait img {
+    object-position: var(--pos-wide, var(--pos-default, 50% 50%));
+  }
 }
 
 .pono-pselect__lock {

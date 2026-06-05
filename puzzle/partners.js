@@ -30,8 +30,11 @@ window.PonoPartners = (function () {
       voiceTag: 'partner_kitsune',
       // cut01.jpg: 森の入り口シーン。キツネは画面左で全身が大きく描かれている。
       // 縦長 (4:5) クロップでも顔〜上半身が中央に収まるよう x=18% / y=58%。
+      // imagePositionWide: 16:9 ラップトップ画面で portrait 枠の左右トリミング比が
+      // 大きくなる際の補正値 (キャラ顔がより中央に来るよう微調整)。
       image: OPENING + 'cut01.jpg',
       imagePosition: '18% 58%',
+      imagePositionWide: '18% 60%',
       locked: false,
       unlockCondition: null,
       ageHint: '5さい〜',
@@ -49,6 +52,7 @@ window.PonoPartners = (function () {
       // 単独で見えるよう x=80% / y=50%。
       image: OPENING + 'cut02.jpg',
       imagePosition: '80% 50%',
+      imagePositionWide: '78% 55%',
       locked: false,
       unlockCondition: null,
       ageHint: '3さい〜',
@@ -66,6 +70,7 @@ window.PonoPartners = (function () {
       // 縞しっぽも見えるので識別しやすい。x=50% / y=50%。
       image: OPENING + 'cut03.jpg',
       imagePosition: '50% 50%',
+      imagePositionWide: '50% 60%',
       locked: false,
       unlockCondition: null,
       ageHint: '4さい〜',
@@ -83,6 +88,7 @@ window.PonoPartners = (function () {
       // 単独で見えるので識別しやすい。x=88% / y=65%。
       image: OPENING + 'cut01.jpg',
       imagePosition: '88% 65%',
+      imagePositionWide: '85% 75%',
       locked: false,
       unlockCondition: null,
       ageHint: '3さい〜',
@@ -101,6 +107,7 @@ window.PonoPartners = (function () {
       // 暫定で cut03 を流用。専用立ち絵は後続フェーズで差し替え予定。
       image: OPENING + 'cut03.jpg',
       imagePosition: '50% 40%',
+      imagePositionWide: '50% 40%',
       locked: true,
       unlockCondition: 'stage20_clear',
       ageHint: '5さい〜',

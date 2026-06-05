@@ -174,7 +174,18 @@ window.PonoPartnerSelect = (function () {
     img.decoding = 'async';
     // 各キャラの顔位置に合わせて object-position を個別適用
     // (cut01-03 を使い回しても主役が中央に来るように)
+    // ユーザーFB (2026-06-05): 16:9 画面ではキャラが切れる問題があったので
+    // CSS変数 (--pos-default / --pos-wide) を使い、CSS 側のメディアクエリで
+    // 画面アスペクトに応じて出し分ける仕組みに変更。
+    // partners.js に imagePositionWide があれば 16:9 用に上書き、
+    // 無ければ imagePosition を両方に流用する。
     if (p.imagePosition && typeof p.imagePosition === 'string') {
+      img.style.setProperty('--pos-default', p.imagePosition);
+      img.style.setProperty('--pos-wide',
+        (p.imagePositionWide && typeof p.imagePositionWide === 'string')
+          ? p.imagePositionWide
+          : p.imagePosition);
+      // 互換: 古いブラウザでも従来通り動くよう object-position 直書きも残す
       img.style.objectPosition = p.imagePosition;
     }
     portrait.appendChild(img);

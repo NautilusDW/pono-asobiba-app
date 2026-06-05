@@ -109,6 +109,56 @@
   }
 
   // ---------------------------------------------------------------------------
+  // 「プレイ可能状態か?」判定 (Phase 4 修正)
+  // ---------------------------------------------------------------------------
+  // 実機FB: タイトル画面でアライグマボタンが見えてしまうバグの根本対応。
+  // パートナーが araiguma で active=true でも、 以下のいずれかが真ならボタンは隠す:
+  //   - タイトル画面 (#title-screen) が表示中 (hidden クラス無し)
+  //   - オープニングカットシーン (#puzzle-opening) が表示中
+  //   - パートナー選択モーダル (#pono-pselect-root) が DOM に存在
+  //   - スクリーン上で prestart オーバーレイが出ている (puzzle-container.prestart-on)
+  //   - 散布アニメ進行中 (puzzle-container.scatter-on)
+  //   - クリア後の success-modal が表示中
+  // main.js から expose されてない状態は document.body.classList / DOM プレゼンスで
+  // 直接判定する (DOM 状態を信頼境界として参照)。
+  function isPlayActive() {
+    try {
+      var title = document.getElementById('title-screen');
+      if (title && !title.classList.contains('hidden')) return false;
+
+      var opening = document.getElementById('puzzle-opening');
+      if (opening && !opening.classList.contains('hidden')) return false;
+
+      // パートナー選択モーダルが開いている間は不可
+      if (document.getElementById('pono-pselect-root')) return false;
+
+      var container = document.getElementById('puzzle-container');
+      if (container) {
+        if (container.classList.contains('prestart-on')) return false;
+        if (container.classList.contains('scatter-on')) return false;
+      } else {
+        // puzzle-container が未生成ならまだプレイに入っていない
+        return false;
+      }
+
+      var success = document.getElementById('success-modal');
+      if (success && !success.classList.contains('hidden')) return false;
+    } catch (_) {
+      // DOM 取得失敗時は安全側 (非表示) に倒す
+      return false;
+    }
+    return true;
+  }
+
+  // 「ボタンを表示してよいか?」 — state.active かつ isPlayActive かつ usesLeft>0
+  function shouldShowButton() {
+    if (!state.active) return false;
+    if (state.usesLeft <= 0) return false;
+    if (!isPlayActive()) return false;
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------
   // CSS injection (1 回だけ)
   // ---------------------------------------------------------------------------
   var cssInjected = false;
@@ -224,11 +274,13 @@
   function updateButtonUI() {
     var btn = document.getElementById(BTN_ID);
     if (!btn) return;
-    if (!state.active) {
+    // Phase 4 修正: タイトル / オープニング / partner-select / prestart / scatter /
+    //   success-modal 表示中は state.active でも強制的に隠す。
+    if (!shouldShowButton()) {
       btn.classList.add('hidden');
       btn.classList.remove('pulse');
-      // 非アクティブ時もミラー属性をリセット (state と DOM の整合)
-      try { btn.setAttribute('data-uses-left', '0'); } catch (_) {}
+      // 非表示時もミラー属性は canonical state と同期
+      try { btn.setAttribute('data-uses-left', String(state.usesLeft || 0)); } catch (_) {}
       return;
     }
     btn.classList.remove('hidden');
