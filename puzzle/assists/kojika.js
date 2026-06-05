@@ -27,11 +27,23 @@
   var PARTNER_ID = 'kojika';
 
   // Lv (1〜3) → { distMul, alpha } グロー設定。 Lv0 は不使用。
+  // ユーザー実機 FB: 「光が弱い」「枠線も緑/青に変化してほしい」「太さ2倍」
+  //   → alpha を一段強化 (Lv1 0.35→0.55, Lv2 0.50→0.70, Lv3 0.65→0.85)
+  //   → drawOverlay 内でピース枠線を緑で上書き (太さ ~2x = ドラッグ通常 2.5 → 5.0)
   var LV_PROFILE = {
-    1: { distMul: 1.3, alpha: 0.35 },
-    2: { distMul: 1.6, alpha: 0.50 },
-    3: { distMul: 2.0, alpha: 0.65 },
+    1: { distMul: 1.3, alpha: 0.55 },
+    2: { distMul: 1.6, alpha: 0.70 },
+    3: { distMul: 2.0, alpha: 0.85 },
   };
+
+  // main.js drawPiece 側のピース枠線設定 (参考値):
+  //   dragPiece の strokeStyle = '#F2915A' (オレンジ), lineWidth = 2.5
+  //   その他 piece は '#5D4E37' (こげ茶), lineWidth = 1.8
+  // 仕様: 閾値内に入ったら緑 (#22c55e) でストロークを上書き、太さ 2 倍。
+  var OUTLINE_BASE_WIDTH = 2.5;     // dragPiece 通常時の lineWidth
+  var OUTLINE_MULTIPLIER = 2.0;     // 仕様: 「太さを 2 倍」
+  // 通常 (遠い時) のオレンジ — 描画スキップで main.js のオレンジが透けて見える
+  var OUTLINE_NEAR_COLOR = { r: 34, g: 197, b: 94 }; // #22c55e (緑)
 
   // canvas 幅に対する「基準スナップ閾値」の比率。
   // main.js 側 SNAP_DIST = pieceW * (0.30〜0.55)。pieceW はおおむね

@@ -89,19 +89,26 @@
       '  background:#fff;border-radius:50%/40%;',
       '  box-shadow:0 1px 0 rgba(0,0,0,.08) inset;',
       '}',
-      // 「↑ こっち」ヒントテキスト (耳の sibling、耳と同じ角度で回転)
+      // 「↑ こっち」ヒントテキスト
+      // ★ 旧仕様: 耳の sibling かつ rotate(...) で耳と一緒に回していたため、耳が下を
+      //   向くとテキストが上下逆さまになり 0-6 歳児が読めなかった (ユーザー実機FB)。
+      // ★ 新仕様 (本修正): テキストは「耳の親 (root) 直下の絶対配置」とし、
+      //   transform 無し = 常に水平固定。JS で耳先端の x,y を計算して left/top のみ
+      //   毎フレーム更新する。これにより耳がどの方向を指してもテキストは常に正立する。
       '#pono-usagi-dowsing .pono-usagi-hint{',
-      '  margin-top:6px;',
+      '  position:absolute;',
+      '  left:50%;top:0;',
+      '  transform:translate(-50%, -100%);', // 自身の中心 X、底辺基準で配置原点を補正
       '  font-size:16px;font-weight:700;line-height:1;',
       '  color:#ff5599;',
       '  background:rgba(255,255,255,0.72);',
       '  padding:3px 8px;border-radius:10px;',
       '  white-space:nowrap;',
       '  text-shadow:0 1px 0 rgba(255,255,255,.9);',
-      '  transform:rotate(0deg);transform-origin:50% 50%;',
-      '  transition:transform 120ms cubic-bezier(.4,.2,.2,1), opacity ' + FADE_DURATION_MS + 'ms ease;',
+      '  transition:left 120ms cubic-bezier(.4,.2,.2,1), top 120ms cubic-bezier(.4,.2,.2,1), opacity ' + FADE_DURATION_MS + 'ms ease;',
       '  pointer-events:none;',
       '  opacity:0.95;',
+      '  will-change:left,top;',
       '}',
       // 縦長画面では小さく
       '@media (max-width: 520px){',
