@@ -85,10 +85,27 @@ window.PonoBondUI = (function () {
     return filled + empty;
   }
 
+  // パートナー有無に応じて #btn-hint の表示を切替。
+  // - パートナー選択済み → assist がヒント役を果たすのでヒントボタンは非表示
+  // - パートナー無し (フォールバック起動 / partner-select キャンセル等) → 保険機能として表示
+  function syncHintBtnVisibility(hasPartner) {
+    try {
+      var hintBtn = document.getElementById('btn-hint');
+      if (!hintBtn) return;
+      if (hasPartner) {
+        hintBtn.style.display = 'none';
+      } else {
+        // 元のスタイル (CSS デフォルト) に戻す
+        hintBtn.style.display = '';
+      }
+    } catch (_) {}
+  }
+
   function refreshBadge(partner, stageId) {
     var el = ensureBadge();
     if (!partner) {
       el.classList.add('hidden');
+      syncHintBtnVisibility(false);
       return;
     }
     var imgEl = el.querySelector('.pono-bond-badge__img');
@@ -107,6 +124,7 @@ window.PonoBondUI = (function () {
     } catch (_) {}
     if (starsEl) starsEl.textContent = starsForLevel(level);
     el.classList.remove('hidden');
+    syncHintBtnVisibility(true);
   }
 
   // ===== Level-Up Cut-In =====

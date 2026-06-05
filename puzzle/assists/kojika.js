@@ -127,32 +127,34 @@
     var canvas = cctx.canvas;
     if (!canvas) return;
 
-    // 基準閾値 (canvas 幅ベース) を Lv 倍率で拡大
-    var baseThreshold = canvas.width * BASE_THRESHOLD_RATIO;
+    // === ピース実寸を main.js から取得 (推定をやめる) ===
+    // main.js は drawOverlay フック呼出し時に ctx.pieceSize = { w: pieceW, h: pieceH }
+    // を渡している。 piece.x / piece.y / piece.homeX / piece.homeY は全て
+    // 「ピース矩形の左上隅 (canvas px)」基準なので、中央は + pieceW/2, + pieceH/2 で得る。
+    var pieceSize = ctx.pieceSize || null;
+    var pieceW = pieceSize && pieceSize.w > 0 ? pieceSize.w : 0;
+    var pieceH = pieceSize && pieceSize.h > 0 ? pieceSize.h : 0;
+    if (pieceW <= 0 || pieceH <= 0) return; // 不明な場合は安全側で何もしない
+
+    var halfW = pieceW / 2;
+    var halfH = pieceH / 2;
+
+    // 基準閾値: ピース幅ベース (canvas 幅ベース推定を捨て、実寸に追従)
+    // ピース幅の半分を「通常スナップ相当」のグロー基準とする (main.js SNAP_DIST と整合)。
+    var baseThreshold = pieceW * 0.5;
     var threshold = baseThreshold * profile.distMul;
 
-    // ピース現在位置と homeX/homeY の距離
+    // ピース現在位置と homeX/homeY の距離 (どちらも左上隅基準なので差は中央同士の差に等しい)
     var dx = piece.x - piece.homeX;
     var dy = piece.y - piece.homeY;
     var dist = Math.hypot(dx, dy);
     if (dist >= threshold) return;
 
-    // === グロー位置: ピース現在地 (piece.x/y) を中心に光らせる ===
-    // piece.x/y, piece.homeX/homeY は同じ座標系 (canvas px, ピース左上隅)。
-    // 中心としては左上隅で描いても視覚的に「ピースの周辺が光る」ように見えるが、
-    // 出来るだけピース中央に寄せたい。 pieceW/pieceH は外部から取れないため、
-    // ピース矩形のおおよその中央を canvas 幅から推定する。
-    // (baseThreshold は canvas.width * 0.05 ≒ ピースの 1/4〜1/3 程度のスケール)
-    // ★ ピース外に光がドリフトしないよう [0.4*base, 0.8*base] にクランプ (high-finding 修正)。
-    var pieceHalfRaw = baseThreshold * 0.6;
-    var pieceHalfMin = baseThreshold * 0.4;
-    var pieceHalfMax = baseThreshold * 0.8;
-    var pieceHalf = pieceHalfRaw < pieceHalfMin ? pieceHalfMin
-                  : (pieceHalfRaw > pieceHalfMax ? pieceHalfMax : pieceHalfRaw);
-    var cx = piece.x + pieceHalf;
-    var cy = piece.y + pieceHalf;
-    var hx = piece.homeX + pieceHalf;
-    var hy = piece.homeY + pieceHalf;
+    // === グロー中心: ピース中央 (左上 + 半幅) ===
+    var cx = piece.x + halfW;
+    var cy = piece.y + halfH;
+    var hx = piece.homeX + halfW;
+    var hy = piece.homeY + halfH;
 
     // dist が小さいほど不透明に (吸い寄せ感の演出)
     var nearness = 1 - (dist / threshold); // 0..1
@@ -160,8 +162,14 @@
     if (nearness > 1) nearness = 1;
     var alpha = profile.alpha * (0.40 + 0.60 * nearness);
 
-    // glow 半径も Lv で変える
-    var radius = baseThreshold * profile.distMul * 1.6;
+    // glow 半径: ピース幅ベース。 Lv プロファイル維持 (Lv1=1.3/0.35, Lv2=1.6/0.50, Lv3=2.0/0.65)。
+    // glowRadius = pieceW * 0.6 * (1 + Lv * 0.2) → Lv1 1.2x, Lv2 1.4x, Lv3 1.6x の自然な拡大
+    // ★ high finding 修正: 2列 (320px 等) の小さい canvas で Lv3 半径が canvas 幅を
+    //   大きく超えて隣接タイルに光被りする問題を防ぐため、 canvas 幅の 15% を上限にクランプ。
+    //   これで Lv 進化感は保ちつつ、 0-3 歳児が「どこに置くか」を見失わない。
+    var canvasW = canvas.width || 0;
+    var rawRadius = pieceW * 0.6 * (1 + lv * 0.2);
+    var radius = canvasW > 0 ? Math.min(rawRadius, canvasW * 0.15) : rawRadius;
 
     cctx.save();
     try {

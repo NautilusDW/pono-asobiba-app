@@ -1381,6 +1381,19 @@ function finishOpeningAndEnterGame() {
             window.PonoBond.setSelectedPartner(selectedPartnerId);
           }
         } catch (_) {}
+        // パートナー確定直後にバッジ + ヒントボタン表示を更新。
+        // (afterStageReady 経由でも refreshBadge は走るが、ステージ開始前から
+        //  ヒントボタンを非表示にしておくため即時呼び出しする)
+        try {
+          if (selectedPartnerId && window.PonoBondUI && typeof window.PonoBondUI.refreshBadge === 'function') {
+            var partnerObj = (window.PonoPartners && window.PonoPartners.get)
+              ? window.PonoPartners.get(selectedPartnerId)
+              : null;
+            if (partnerObj) {
+              window.PonoBondUI.refreshBadge(partnerObj, stageId);
+            }
+          }
+        } catch (_) {}
         afterPartnerSelected();
       });
       return;

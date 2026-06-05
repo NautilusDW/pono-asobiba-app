@@ -224,13 +224,37 @@
     // 中央の盤 (board) を避けて、 盤の下に色帯トレイを置く。
     // ピース全部が下に入りきらないステージ (16-20 ピース) の場合は盤の上下に分けても良いが、
     // MVP では盤下に均等横並びだけで OK。
-    var safeTop = board ? (board.y + board.h + 4) : canvas.h * 0.62;
-    if (safeTop > canvas.h - pieceSize.h * 1.2) {
-      // 盤が下に張り付き気味なら、 トレイは盤上部に置く
-      safeTop = Math.max(0, (board ? board.y : 0) - count * (pieceSize.h + 6));
+    //
+    // trayH はピース数 (cluster count) に依らず常に「ピース約2個分」の固定値にする。
+    // 旧実装は trayH = canvas.h - trayY0 - 4 で残り余白を全部使っていたため、
+    // ピース数が少ないステージ (= board が画面上半分に小さく配置されるケース) では
+    // トレイが画面下半分を覆ってしまい色帯背景の青矩形バグになっていた。
+    // 固定 trayH なら count が 2/3/5 のいずれでも見た目が一定で、 子供の視覚負荷も低い。
+    var trayHIdeal = pieceSize.h * 2.0 + 12; // ピース2個分 + パディング
+    var trayHMin = pieceSize.h * 1.5;        // 極小ピースでも見やすい下限
+    var trayHMax = canvas.h * 0.30;          // 画面の 30% を超えない安全弁
+    var trayH = Math.min(trayHMax, Math.max(trayHMin, trayHIdeal));
+    // 画面下端ぴったりから上に貼り付ける (8px 下マージン)
+    var trayY0 = canvas.h - trayH - 8;
+    // 盤と重ならないように最低限の安全マージンも確保 (board がトレイに食い込んだら下げる)
+    if (board && trayY0 < board.y + board.h + 4) {
+      // 盤が画面下に張り付いてトレイと衝突するなら trayY0 を盤の直下に押し下げる。
+      // それでも canvas 下端を超えないようクランプ。
+      trayY0 = Math.min(canvas.h - trayH - 4, board.y + board.h + 4);
     }
-    var trayY0 = safeTop;
-    var trayH = Math.max(pieceSize.h * 1.1, canvas.h - trayY0 - 4);
+    // ★ high finding 修正: 極端な縦長 canvas (board.h ≈ canvas.h 等) では上の clamp が
+    //   実質効かず、 trayY0 + trayH が canvas.h を超えてバンドが画面外に描画されてしまう。
+    //   20 ピースステージで「色帯がまったく見えない」リスクを防ぐため、 ここで明示的に
+    //   trayH を canvas 内に収まるよう再計算し、 最低限 trayHMin は保証する。
+    //   さらにそれでも収まらない場合は trayY0 自体を押し上げて最低限の表示領域を確保する。
+    if (trayY0 + trayH > canvas.h) {
+      trayH = Math.max(trayHMin, canvas.h - trayY0);
+    }
+    if (trayY0 + trayH > canvas.h) {
+      // trayHMin すら収まらない極端ケース: trayY0 を強制的に押し上げる
+      trayY0 = Math.max(0, canvas.h - trayHMin);
+      trayH = Math.max(0, canvas.h - trayY0);
+    }
     var bandH = trayH / count;
 
     // クラスタごとにピース配列を組む

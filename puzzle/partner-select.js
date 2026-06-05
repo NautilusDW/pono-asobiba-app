@@ -183,6 +183,14 @@ window.PonoPartnerSelect = (function () {
       card.appendChild(assist);
     }
 
+    // とくいわざの説明 (子供向け 1〜2行のひらがな)
+    if (p.assistDesc) {
+      var assistDesc = document.createElement('div');
+      assistDesc.className = 'pono-pselect__assist-desc';
+      assistDesc.textContent = p.assistDesc;
+      card.appendChild(assistDesc);
+    }
+
     // 年齢ガイド
     if (p.ageHint) {
       var age = document.createElement('div');

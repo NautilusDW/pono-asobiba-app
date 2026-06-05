@@ -1,29 +1,34 @@
 // puzzle/assists/kitsune.js
-// キツネ / さきよみゴースト アシスト。
+// キツネ / つぎはここ アシスト (B案: 次のピース光らせ)。
 //
-// パートナーが 'kitsune' のときだけ発火する。ステージ開始直後に、
-// 完成形画像をパズルボードに半透明でフェード表示する「ゴーストプレビュー」。
+// パートナーが 'kitsune' のときだけ発火する。
+// ステージ開始時、未スナップピースのうち先頭 1 個を「ターゲット」として選び、
+// その slot 位置 (piece.homeX, piece.homeY) に暖色系の光輪 (radial gradient) を
+// 毎フレーム pulse させながら描画する。
 //
-// なかよし度レベル (PonoBond.getLevel('kitsune', stageId)) によって挙動が変わる:
-//   Lv 0  : Lv 1 と同じ扱い (初プレイ時にいきなり「薄っ」とならないように)
-//   Lv 1  : α=0.30, 保持 1.5 秒
-//   Lv 2  : α=0.42, 保持 2.0 秒
-//   Lv 3  : α=0.55, 保持 2.5 秒
+// ユーザーがそのピースを snap したら、次の未スナップピースに自動切替。
+// 全ピース snap されたら自動終了 (light を消す)。
 //
-// 全レベル共通: フェードイン 200ms → ピーク α 保持 → フェードアウト 200ms
+// なかよし度レベル (PonoBond.getLevel('kitsune', stageId)) による差分:
+//   Lv 0 : Lv 1 と同じ扱い (初プレイ時にいきなり「薄っ」とならないように)
+//   Lv 1 : maxAlpha 0.50, pulse 控えめ
+//   Lv 2 : maxAlpha 0.65, pulse 大きく (呼吸)
+//   Lv 3 : maxAlpha 0.80, pulse 大きく + 矢印アイコン「ここ↓」
 //
-// 描画は puzzleCanvas に重ねるだけで、外部 DOM 要素や追加スタイルは作らない。
-// メインの描画 (main.js: redraw) には乗らず、自前の rAF ループで puzzleCanvas に
-// 直接描画する。なお drawOverlay フックでも保険的に描画することで、main.js が
-// 入力イベントで redraw を呼んでも overlay がワンフレーム飛ばないようにする。
+// 描画は drawOverlay フックで puzzleCtx に重ねる。redraw() の rAF に乗るので
+// 自前 rAF ループは持たない。ただし入力が無いステージ開始直後にも pulse を
+// 進めたいので、 軽量な rAF を 1 本だけ走らせて requestRedraw() を呼ぶ。
+//
+// 旧仕様 (完成形画像を半透明オーバーレイ) は廃止。
 //
 // 依存:
 //   - window.PonoAssistRegister (main.js が定義)
 //   - window.PonoBond.getLevel  (bond.js)
 //
 // 登録するフック:
-//   - afterStageReady : Lv とステージ画像を解決し、画像 preload と rAF 開始。
-//   - drawOverlay     : redraw() に乗ったタイミングでも同じ overlay を重ねる。
+//   - afterStageReady : pieces 参照を保持、最初のターゲットを決定、 rAF 開始。
+//   - afterSnap       : 現ターゲットが snap されたら次のターゲットに切替。
+//   - drawOverlay     : 毎フレーム slot 位置に光輪 + (Lv3 のみ) 矢印を描画。
 
 (function () {
   'use strict';
@@ -36,30 +41,36 @@
 
   var PARTNER_ID = 'kitsune';
 
-  // Lv -> { alpha, holdMs }。Lv 0 は Lv 1 と同じ扱い (初プレイ時にいきなり「薄っ」とならないように)。
-  // 明るい iPad / 屋外環境でも知覚可能にするため、 各レベルの α を底上げ (high-finding 修正)。
+  // Lv -> { maxAlpha, pulseAmp, showArrow }
+  //   maxAlpha : pulse 振動の上限 α
+  //   pulseAmp : 振動振幅 (maxAlpha - pulseAmp が下限)
+  //   showArrow: 矢印アイコンを描くか
   var LEVEL_TABLE = {
-    0: { alpha: 0.38, holdMs: 1500 },
-    1: { alpha: 0.38, holdMs: 1500 },
-    2: { alpha: 0.50, holdMs: 2000 },
-    3: { alpha: 0.62, holdMs: 2500 },
+    0: { maxAlpha: 0.50, pulseAmp: 0.10, showArrow: false },
+    1: { maxAlpha: 0.50, pulseAmp: 0.10, showArrow: false },
+    2: { maxAlpha: 0.65, pulseAmp: 0.18, showArrow: false },
+    3: { maxAlpha: 0.80, pulseAmp: 0.22, showArrow: true  },
   };
-  var FADE_IN_MS = 200;
-  var FADE_OUT_MS = 200;
 
-  // 画像キャッシュ (URL -> HTMLImageElement)。
-  var imageCache = {};
+  // pulse 周期 (ms)。 sin の 1 周期。
+  var PULSE_PERIOD_MS = 1400;
 
-  // 現在進行中のアニメ状態。
+  // 暖色系 (オレンジ〜黄色、キツネ感) のグラデーション色。
+  // 中心: 明るい黄、外: オレンジ → 透明。
+  var COLOR_INNER = 'rgba(255, 236, 150, ALPHA)';   // 明るい黄
+  var COLOR_MID   = 'rgba(255, 178,  82, ALPHA)';   // オレンジ
+  var COLOR_OUTER = 'rgba(255, 140,  40, 0)';       // 完全透明 (外周)
+
+  // 現在のステージ状態。
   // {
-  //   img: HTMLImageElement|null,
-  //   ready: boolean,
-  //   stageId: any,
-  //   alphaPeak: number,
-  //   holdMs: number,
-  //   startedAt: number|null,   // performance.now() 時刻
-  //   rafId: number|null,       // 自前 rAF ハンドル
-  //   token: number,            // 取り消し用トークン
+  //   stageId, level, spec,
+  //   pieces: Array,            // main.js の pieces 参照
+  //   pieceW, pieceH,           // ピースサイズ
+  //   targetIndex: number|null, // 現ターゲットの pieces 配列 index、 完了で null
+  //   startedAt: number,        // pulse 起点
+  //   rafId: number|null,
+  //   requestRedraw: Function|null,
+  //   token: number,
   // }
   var current = null;
   var nextToken = 1;
@@ -68,29 +79,6 @@
     return (typeof performance !== 'undefined' && performance.now)
       ? performance.now()
       : Date.now();
-  }
-
-  function loadImage(url, onReady) {
-    if (!url) { onReady(null); return; }
-    var cached = imageCache[url];
-    if (cached && cached.complete && cached.naturalWidth > 0) {
-      onReady(cached);
-      return;
-    }
-    if (cached) {
-      cached.addEventListener('load', function () { onReady(cached); }, { once: true });
-      cached.addEventListener('error', function () { onReady(null); }, { once: true });
-      return;
-    }
-    var img = new Image();
-    img.decoding = 'async';
-    img.addEventListener('load', function () { onReady(img); }, { once: true });
-    img.addEventListener('error', function () {
-      try { console.warn('[kitsune-assist] image load failed: ' + url); } catch (_) {}
-      onReady(null);
-    }, { once: true });
-    img.src = url;
-    imageCache[url] = img;
   }
 
   function isActivePartner(partner) {
@@ -108,85 +96,19 @@
     return 0;
   }
 
-  /** puzzleCanvas を DOM から探す。initPuzzle で #puzzle に動的追加される。 */
-  function findPuzzleCanvas() {
-    try {
-      var host = document.getElementById('puzzle');
-      if (!host) return null;
-      var c = host.querySelector('canvas');
-      return c || null;
-    } catch (_) { return null; }
-  }
-
-  /** 与えられた canvas/ctx 上にゴースト画像を描画 (alpha 適用)。 */
-  function paintGhost(ctx, img, alpha) {
-    if (!ctx || !img || alpha <= 0) return;
-    var canvas = ctx.canvas;
-    if (!canvas) return;
-    var cw = canvas.width || 0;
-    var ch = canvas.height || 0;
-    if (cw <= 0 || ch <= 0) return;
-
-    // ボード位置の再現: main.js の initPuzzle と同じく
-    //   - boardMaxW = canvasW * 0.50, boardMaxH = canvasH * 0.60
-    //   - 画像アスペクトに合わせ最大サイズで中央配置
-    var natW = img.naturalWidth || 0;
-    var natH = img.naturalHeight || 0;
-    var aspect = (natW > 0 && natH > 0) ? (natW / natH) : 1;
-
-    var maxW = cw * 0.50;
-    var maxH = ch * 0.60;
-    var bw = Math.min(maxW, maxH * aspect);
-    var bh = bw / aspect;
-    if (bh > maxH) { bh = maxH; bw = bh * aspect; }
-    var bx = (cw - bw) / 2;
-    var by = (ch - bh) / 2;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    try {
-      ctx.drawImage(img, bx, by, bw, bh);
-    } catch (e) {
-      try { console.warn('[kitsune-assist] drawImage failed:', e); } catch (_) {}
+  /** 与えられた pieces 配列から最初の未スナップピースの index を返す。なければ -1。 */
+  function findNextUnsnappedIndex(pieces, startIndex) {
+    if (!pieces || !pieces.length) return -1;
+    var from = (typeof startIndex === 'number' && startIndex >= 0) ? startIndex : 0;
+    // まず from 以降を探す
+    for (var i = from; i < pieces.length; i++) {
+      if (pieces[i] && !pieces[i].snapped) return i;
     }
-    ctx.restore();
-  }
-
-  /** 経過時間から表示中アルファを算出。完了なら -1 を返す。 */
-  function computeAlpha(st, elapsed) {
-    var total = FADE_IN_MS + st.holdMs + FADE_OUT_MS;
-    if (elapsed >= total) return -1;
-    if (elapsed < FADE_IN_MS) {
-      return st.alphaPeak * (elapsed / FADE_IN_MS);
+    // 見つからなければ先頭から from 未満を探す
+    for (var j = 0; j < from; j++) {
+      if (pieces[j] && !pieces[j].snapped) return j;
     }
-    if (elapsed < FADE_IN_MS + st.holdMs) {
-      return st.alphaPeak;
-    }
-    var outT = elapsed - FADE_IN_MS - st.holdMs;
-    return st.alphaPeak * (1 - outT / FADE_OUT_MS);
-  }
-
-  /** 自前 rAF ループ。canvas 直書きでアニメを駆動する。 */
-  function tick(token) {
-    var st = current;
-    if (!st || st.token !== token) return; // すでに別ステージに切り替わった
-    if (!st.ready || !st.img || st.startedAt == null) {
-      st.rafId = requestAnimationFrame(function () { tick(token); });
-      return;
-    }
-    var canvas = findPuzzleCanvas();
-    var ctx = canvas ? canvas.getContext('2d') : null;
-    var elapsed = now() - st.startedAt;
-    var alpha = computeAlpha(st, elapsed);
-    if (alpha < 0) {
-      // 完了。状態を解放。
-      current = null;
-      return;
-    }
-    if (ctx && alpha > 0) {
-      paintGhost(ctx, st.img, alpha);
-    }
-    st.rafId = requestAnimationFrame(function () { tick(token); });
+    return -1;
   }
 
   function cancelCurrent() {
@@ -196,63 +118,214 @@
     current = null;
   }
 
-  // ── afterStageReady: アニメ開始 ───────────────────────────────────────
-  window.PonoAssistRegister('afterStageReady', function (ctx) {
-    cancelCurrent();
-    if (!ctx || !isActivePartner(ctx.partner)) return;
+  /** rAF ループ。 ステージ開始直後など入力が無くても pulse を進める。 */
+  function tick(token) {
+    var st = current;
+    if (!st || st.token !== token) return;
+    if (st.targetIndex == null) return; // 完了済み
+    // main.js の redraw を呼ぶ (drawOverlay フック経由で halo が再描画される)
+    if (typeof st.requestRedraw === 'function') {
+      try { st.requestRedraw(); } catch (_) {}
+    }
+    st.rafId = requestAnimationFrame(function () { tick(token); });
+  }
 
-    var stage = ctx.stage || null;
+  /** alpha = maxAlpha - pulseAmp + pulseAmp * (1 + sin(...)) / 2 で 0..maxAlpha 内を行き来。 */
+  function computePulseAlpha(spec, elapsed) {
+    var phase = (elapsed % PULSE_PERIOD_MS) / PULSE_PERIOD_MS; // 0..1
+    var s = Math.sin(phase * Math.PI * 2); // -1..1
+    var base = spec.maxAlpha - spec.pulseAmp;
+    return base + spec.pulseAmp * (1 + s) / 2;
+  }
+
+  /** スロット位置に光輪を描画。 piece は main.js の piece オブジェクト。 */
+  function paintHalo(ctx, piece, pieceW, pieceH, spec, elapsed) {
+    if (!ctx || !piece) return;
+    var cx = piece.homeX + pieceW / 2;
+    var cy = piece.homeY + pieceH / 2;
+
+    var alpha = computePulseAlpha(spec, elapsed);
+    if (alpha <= 0) return;
+
+    // 光輪サイズ: ピースの最大辺の 0.9 倍を半径に (slot 全体を包む)。
+    // Lv2 以上は pulse に合わせて半径自体も微妙に呼吸させる。
+    var maxSide = Math.max(pieceW, pieceH);
+    var baseR = maxSide * 0.9;
+    var pulseR = baseR;
+    if (spec.pulseAmp > 0.12) {
+      // pulse 大きいレベル: ±8% で呼吸
+      var phase = (elapsed % PULSE_PERIOD_MS) / PULSE_PERIOD_MS;
+      var s = Math.sin(phase * Math.PI * 2);
+      pulseR = baseR * (1 + 0.08 * s);
+    }
+
+    ctx.save();
+    try {
+      var grad = ctx.createRadialGradient(cx, cy, pulseR * 0.05, cx, cy, pulseR);
+      grad.addColorStop(0.00, COLOR_INNER.replace('ALPHA', String(alpha)));
+      grad.addColorStop(0.40, COLOR_MID.replace('ALPHA', String(alpha * 0.75)));
+      grad.addColorStop(1.00, COLOR_OUTER);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+      ctx.fill();
+    } catch (e) {
+      try { console.warn('[kitsune-assist] halo paint failed:', e); } catch (_) {}
+    }
+    ctx.restore();
+
+    // Lv3 のみ矢印「ここ↓」: スロット上部の少し外側に下向き三角形 + 文字 'ここ'。
+    if (spec.showArrow) {
+      paintArrow(ctx, cx, piece.homeY, pieceW, pieceH, alpha);
+    }
+  }
+
+  /** 矢印 (下向き三角) を slot の真上に描画。 alpha は halo と同期。 */
+  function paintArrow(ctx, cx, slotTopY, pieceW, pieceH, alpha) {
+    var size = Math.min(pieceW, pieceH) * 0.32;
+    if (size < 8) size = 8;
+    var gap = Math.max(6, pieceH * 0.10);
+    var tipY = slotTopY - gap;            // 三角形の頂点 (下向きなので一番下)
+    var topY = tipY - size;               // 三角形の上辺
+    var halfW = size * 0.55;
+
+    ctx.save();
+    try {
+      ctx.globalAlpha = Math.min(1, alpha + 0.10); // 矢印は少し強めに見せる
+      // 黒の細い縁取り (視認性向上)
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(2, size * 0.10);
+      ctx.strokeStyle = 'rgba(40, 22, 0, 0.85)';
+      ctx.fillStyle   = '#FFB74D'; // 暖色オレンジ
+      ctx.beginPath();
+      ctx.moveTo(cx - halfW, topY);
+      ctx.lineTo(cx + halfW, topY);
+      ctx.lineTo(cx, tipY);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+    } catch (_) {}
+    ctx.restore();
+  }
+
+  // ── afterStageReady: ターゲット決定 + rAF 開始 ─────────────────────────
+  window.PonoAssistRegister('afterStageReady', function (hookCtx) {
+    cancelCurrent();
+    if (!hookCtx || !isActivePartner(hookCtx.partner)) return;
+    var stage = hookCtx.stage || null;
     if (!stage) return;
+    var pieces = hookCtx.pieces;
+    if (!pieces || !pieces.length) return;
+    var pieceSize = hookCtx.pieceSize || {};
+    var pieceW = pieceSize.w || 0;
+    var pieceH = pieceSize.h || 0;
+    if (pieceW <= 0 || pieceH <= 0) return;
+
     var stageId = stage.id;
     var level = getStageLevel(stageId);
-    var spec = LEVEL_TABLE[level];
-    if (!spec) return; // 念のため未定義 Lv はスキップ (Lv0-3 すべて LEVEL_TABLE に存在)
+    var spec = LEVEL_TABLE[level] || LEVEL_TABLE[1];
 
-    // ステージ画像 URL を解決。BASE_STAGES の image を最優先。
-    var url = (stage && stage.image) || null;
-    if (!url && typeof window.resolveStageImage === 'function') {
-      try { url = window.resolveStageImage(stageId); } catch (_) { url = null; }
-    }
-    if (!url) return;
+    var targetIndex = findNextUnsnappedIndex(pieces, 0);
+    if (targetIndex < 0) return; // 全 snap 済み (再開ケース等)
 
     var token = nextToken++;
-    var pending = {
+    current = {
       stageId: stageId,
-      alphaPeak: spec.alpha,
-      holdMs: spec.holdMs,
-      img: null,
-      ready: false,
-      startedAt: null,
+      level: level,
+      spec: spec,
+      pieces: pieces,
+      pieceW: pieceW,
+      pieceH: pieceH,
+      targetIndex: targetIndex,
+      startedAt: now(),
       rafId: null,
+      requestRedraw: null, // drawOverlay 時に hookCtx.requestRedraw を捕まえる
       token: token,
     };
-    current = pending;
 
-    loadImage(url, function (img) {
-      if (current !== pending) return; // 既に別ステージ
-      if (!img) { current = null; return; }
-      pending.img = img;
-      pending.ready = true;
-      pending.startedAt = now();
-    });
-
-    // 自前 rAF ループ開始 (画像 ready 前でも待機ループに入る)。
-    pending.rafId = requestAnimationFrame(function () { tick(token); });
+    // 軽量 rAF: 入力が無くても pulse を進めるために 1 本だけ走らせる。
+    current.rafId = requestAnimationFrame(function () { tick(token); });
   });
 
-  // ── drawOverlay: main.js の redraw に乗ったときも同じ overlay を描く ──
-  // (rAF ループだけだと main.js が pointer 操作で redraw を呼んだ瞬間に
-  //  overlay が一瞬消えるため、保険として drawOverlay でも重ねる。)
+  // ── afterSnap: ターゲットが snap されたら次の未スナップピースへ ───────
+  window.PonoAssistRegister('afterSnap', function (hookCtx) {
+    if (!hookCtx) return;
+    var st = current;
+    if (!st) return;
+    if (!isActivePartner(hookCtx.partner)) return;
+    var pieces = st.pieces;
+    if (!pieces) return;
+
+    // 現ターゲットがまだ未スナップなら何もしない (別ピースが先に snap された)
+    var cur = (st.targetIndex != null) ? pieces[st.targetIndex] : null;
+    var snappedPiece = hookCtx.piece || null;
+
+    // ターゲット以外が snap された場合でも、念のため「現ターゲットがまだ未スナップか」確認。
+    if (cur && !cur.snapped) {
+      // ターゲット自体は健在 → 何もしない
+      return;
+    }
+
+    // ターゲットが snap された (もしくは既に消失) → 次の未スナップを探す。
+    // 探索開始 index は「直前ターゲット + 1」が自然 (順序感を保つ)。
+    var startFrom = (st.targetIndex != null) ? (st.targetIndex + 1) : 0;
+    var nextIndex = findNextUnsnappedIndex(pieces, startFrom);
+
+    if (nextIndex < 0) {
+      // 全 snap 完了 → 終了。
+      st.targetIndex = null;
+      cancelCurrent();
+      return;
+    }
+
+    st.targetIndex = nextIndex;
+    // pulse 起点はリセットせず、 連続感を保つ (好みでリセットしても OK)。
+    // requestRedraw を呼んで即座に再描画。
+    if (typeof st.requestRedraw === 'function') {
+      try { st.requestRedraw(); } catch (_) {}
+    }
+  });
+
+  // ── drawOverlay: redraw に乗って halo を描画 ──────────────────────────
   window.PonoAssistRegister('drawOverlay', function (hookCtx) {
     if (!hookCtx) return;
     if (!isActivePartner(hookCtx.partner)) return;
     var st = current;
-    if (!st || !st.ready || !st.img || st.startedAt == null) return;
+    if (!st || st.targetIndex == null) return;
+    var ctx = hookCtx.ctx;
+    if (!ctx) return;
+
+    // requestRedraw を捕まえておく (rAF tick が使う)。
+    if (typeof hookCtx.requestRedraw === 'function') {
+      st.requestRedraw = hookCtx.requestRedraw;
+    }
+
+    // pieces 参照は hookCtx 側を優先 (main.js の最新参照)。
+    var pieces = hookCtx.pieces || st.pieces;
+    if (!pieces) return;
+    var piece = pieces[st.targetIndex];
+    if (!piece) return;
+
+    // 念のためターゲットが既に snap されていたら次を探す (afterSnap を取り逃した保険)。
+    if (piece.snapped) {
+      var nextIndex = findNextUnsnappedIndex(pieces, st.targetIndex + 1);
+      if (nextIndex < 0) {
+        st.targetIndex = null;
+        return;
+      }
+      st.targetIndex = nextIndex;
+      piece = pieces[nextIndex];
+      if (!piece) return;
+    }
+
+    // pieceSize は hookCtx 側を優先 (リサイズ対応の保険)。
+    var ps = hookCtx.pieceSize || {};
+    var pieceW = ps.w || st.pieceW;
+    var pieceH = ps.h || st.pieceH;
+    if (pieceW <= 0 || pieceH <= 0) return;
+
     var elapsed = now() - st.startedAt;
-    var alpha = computeAlpha(st, elapsed);
-    if (alpha <= 0) return;
-    var ccx = hookCtx.ctx;
-    if (!ccx) return;
-    paintGhost(ccx, st.img, alpha);
+    paintHalo(ctx, piece, pieceW, pieceH, st.spec, elapsed);
   });
 })();

@@ -49,6 +49,11 @@
   var injectedCSS = false;
   var currentLevel = 3;   // 既定: 最高精度 (なかよし情報が取れなかった時の安全側)
   var currentStageId = null;
+  // 角度の指数平滑化用 (フレーム間ジッタ抑制)
+  // state.lastAngle: 前フレームで適用した最終角度 (degrees, -180..180)
+  // state.hasLast: 初回フレーム判定
+  var state = { lastAngle: 0, hasLast: false };
+  var hintLabel = null;   // 「↑ こっち」テキスト要素 (耳の sibling として inject)
 
   // ───────────────────────────────────────────────
   // DOM / CSS 注入
@@ -84,10 +89,25 @@
       '  background:#fff;border-radius:50%/40%;',
       '  box-shadow:0 1px 0 rgba(0,0,0,.08) inset;',
       '}',
+      // 「↑ こっち」ヒントテキスト (耳の sibling、耳と同じ角度で回転)
+      '#pono-usagi-dowsing .pono-usagi-hint{',
+      '  margin-top:6px;',
+      '  font-size:16px;font-weight:700;line-height:1;',
+      '  color:#ff5599;',
+      '  background:rgba(255,255,255,0.72);',
+      '  padding:3px 8px;border-radius:10px;',
+      '  white-space:nowrap;',
+      '  text-shadow:0 1px 0 rgba(255,255,255,.9);',
+      '  transform:rotate(0deg);transform-origin:50% 50%;',
+      '  transition:transform 120ms cubic-bezier(.4,.2,.2,1), opacity ' + FADE_DURATION_MS + 'ms ease;',
+      '  pointer-events:none;',
+      '  opacity:0.95;',
+      '}',
       // 縦長画面では小さく
       '@media (max-width: 520px){',
       '  #pono-usagi-dowsing .pono-usagi-ear{width:24px;height:48px;}',
       '  #pono-usagi-dowsing .pono-usagi-pivot{width:62px;height:48px;}',
+      '  #pono-usagi-dowsing .pono-usagi-hint{font-size:14px;padding:2px 6px;}',
       '}',
       ''
     ].join('\n');
@@ -135,8 +155,15 @@
     var base = document.createElement('div');
     base.className = 'pono-usagi-base';
 
+    // 「↑ こっち」ヒント (耳の sibling として inject、耳と同じ角度で回転)
+    hintLabel = document.createElement('div');
+    hintLabel.className = 'pono-usagi-hint';
+    hintLabel.textContent = '↑ こっち';
+    hintLabel.setAttribute('aria-hidden', 'true');
+
     root.appendChild(pivot);
     root.appendChild(base);
+    root.appendChild(hintLabel);
 
     document.body.appendChild(root);
   }
@@ -177,11 +204,15 @@
     return 'hsl(' + h.toFixed(1) + ',' + s.toFixed(1) + '%,' + l.toFixed(1) + '%)';
   }
 
-  /** なかよしレベル -> 角度ノイズ振幅 (度) */
+  /** なかよしレベル -> 角度ノイズ振幅 (度)
+   *  Phase 2 改善: ノイズを大幅削減 + updateEarsForPiece 側で指数平滑化を併用する。
+   *  Lv0/Lv1: 8° (旧 15°) — 「ふらつくけど方向は分かる」レベル
+   *  Lv2:     3° (旧 5°)
+   *  Lv3:     0° (現状維持) */
   function noiseAmplitudeForLevel(level) {
     if (level >= 3) return 0;
-    if (level === 2) return 5;
-    return 15; // Lv0/Lv1
+    if (level === 2) return 3;
+    return 8; // Lv0/Lv1
   }
 
   /** ノイズ加算 (ランダム ±amp) */
@@ -229,6 +260,8 @@
     if (fadeTimer) clearTimeout(fadeTimer);
     fadeTimer = setTimeout(function () {
       if (root) root.classList.remove('is-active');
+      // 次回ドラッグ開始時に初期角度から滑らかに合わせるため平滑化状態をリセット
+      state.hasLast = false;
       fadeTimer = 0;
     }, FADE_OUT_MS);
   }
@@ -247,11 +280,39 @@
     while (angleDeg > 180) angleDeg -= 360;
     while (angleDeg < -180) angleDeg += 360;
 
-    // なかよしレベルに応じてノイズ
-    var noisy = applyAngleNoise(angleDeg, noiseAmplitudeForLevel(currentLevel));
+    // なかよしレベルに応じてノイズを乗せた raw 角度
+    var rawAngle = applyAngleNoise(angleDeg, noiseAmplitudeForLevel(currentLevel));
+
+    // 指数平滑化 (EMA): smoothed = 0.7 * lastAngle + 0.3 * rawAngle
+    // ※ 角度の循環性 (例: +179° と -179° は隣接) を扱うため、差分を -180..180 に正規化してから補間
+    var smoothed;
+    if (!state.hasLast) {
+      smoothed = rawAngle;
+      state.hasLast = true;
+    } else {
+      var delta = rawAngle - state.lastAngle;
+      while (delta > 180) delta -= 360;
+      while (delta < -180) delta += 360;
+      smoothed = state.lastAngle + 0.3 * delta;
+      while (smoothed > 180) smoothed -= 360;
+      while (smoothed < -180) smoothed += 360;
+    }
+    state.lastAngle = smoothed;
 
     if (pivot) {
-      pivot.style.transform = 'rotate(' + noisy.toFixed(2) + 'deg)';
+      pivot.style.transform = 'rotate(' + smoothed.toFixed(2) + 'deg)';
+    }
+    // 「↑ こっち」テキストは常に読みやすい向きを保つ。
+    // ★ high finding 修正: 旧実装は耳と同じ角度で回しており、 ピースが真下にある時
+    //   (smoothed ≈ ±180°) にテキストが上下逆さまになり 0-6 歳児が方向ヒントを
+    //   読めなくなる問題があった。
+    //   対応: 角度が ±90° を超える領域に入ったら scaleY(-1) を併用して文字を
+    //   上下反転 → 結果として常に「人間の目で正立して読める」向きを維持する。
+    //   矢印 (↑) も同じ反転で「正解方向 (耳の指す向き)」を指し続ける。
+    if (hintLabel) {
+      var absA = Math.abs(smoothed);
+      var flip = absA > 90 ? ' scaleY(-1)' : '';
+      hintLabel.style.transform = 'rotate(' + smoothed.toFixed(2) + 'deg)' + flip;
     }
 
     // 色 (距離依存)
@@ -309,6 +370,7 @@
       // 200ms 以上 move が来なければ pointerup 相当と見なす
       fadeTimer = setTimeout(function () {
         if (root) root.classList.remove('is-active');
+        state.hasLast = false; // 次回ドラッグ開始で平滑化を再初期化
         fadeTimer = 0;
       }, FADE_OUT_MS + 100);
     } catch (_) {}
@@ -330,6 +392,7 @@
       if (!partner || partner.id !== PARTNER_ID) return;
       if (root) root.classList.remove('is-active');
       if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = 0; }
+      state.hasLast = false; // 平滑化リセット
     } catch (_) {}
   }
 
