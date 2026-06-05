@@ -358,17 +358,6 @@
           setTimeout(updateVH, 500);
         });
 
-        // ── opt-out: 固定キャンバス + transform:scale でレイアウトを完成させる
-        //    ゲーム (bento 等) では #app の height を vh で !important 上書きされると
-        //    fitStage の仮想キャンバス高 (例 900px) と実描画ボックス高が食い違い、
-        //    中央寄せが破綻する。 <body class="no-vh-clamp"> を付けたページでは
-        //    --vh の更新だけ行い、 高さ強制 CSS の注入は丸ごとスキップする。
-        //    quizland のように #app セレクタを使わないページは元から影響なし。
-        if (document.body && document.body.classList &&
-            document.body.classList.contains('no-vh-clamp')) {
-          return;
-        }
-
         var appH = 'calc(var(--vh) * 100)';
         var s = document.createElement('style');
         s.textContent =
