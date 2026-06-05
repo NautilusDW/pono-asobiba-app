@@ -33,6 +33,7 @@ window.PonoPartnerSelect = (function () {
   var _callback = null;
   var _stageId = null;
   var _keyHandler = null;
+  var _resizeHandler = null;
   var _previouslyFocused = null;
 
   /** CSS ファイルを <head> に link 注入 (重複防止) */
@@ -314,6 +315,13 @@ window.PonoPartnerSelect = (function () {
     }
   }
 
+  function clearResizeHandler() {
+    if (_resizeHandler) {
+      window.removeEventListener('resize', _resizeHandler);
+      _resizeHandler = null;
+    }
+  }
+
   /** show */
   function show(stageId, callback) {
     if (_open) {
@@ -367,6 +375,7 @@ window.PonoPartnerSelect = (function () {
   /** 中身だけ作り直し (stageId が変わった時用) */
   function rebuild() {
     if (!_root) return;
+    clearResizeHandler();
     while (_root.firstChild) _root.removeChild(_root.firstChild);
 
     // header — innerHTML を使わず DOM 要素で構築 (XSS 防止)
@@ -396,9 +405,10 @@ window.PonoPartnerSelect = (function () {
     }
     scroller.appendChild(track);
 
-    // スクロールヒント (3枚以上ある場合のみ表示)
+    // スクロールヒント (実際に横 overflow がある場合だけ表示)
+    var hint = null;
     if (list.length > 3) {
-      var hint = document.createElement('div');
+      hint = document.createElement('div');
       hint.className = 'pono-pselect__scroll-hint';
       hint.setAttribute('aria-hidden', 'true');
       var hintLeft = document.createElement('span');
@@ -417,6 +427,14 @@ window.PonoPartnerSelect = (function () {
     }
 
     _root.appendChild(scroller);
+    if (hint) {
+      _resizeHandler = function () {
+        var hasOverflow = scroller.scrollWidth > scroller.clientWidth + 2;
+        hint.classList.toggle('is-hidden', !hasOverflow);
+      };
+      requestAnimationFrame(_resizeHandler);
+      window.addEventListener('resize', _resizeHandler, { passive: true });
+    }
 
     // footer
     var footer = document.createElement('div');
@@ -437,6 +455,7 @@ window.PonoPartnerSelect = (function () {
 
   /** hide (callback は呼ばない: 呼び出し側で制御) */
   function hide() {
+    clearResizeHandler();
     if (_keyHandler) {
       document.removeEventListener('keydown', _keyHandler, true);
       _keyHandler = null;

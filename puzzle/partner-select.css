@@ -12,18 +12,26 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(20, 30, 40, 0.85);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   color: #F8F1E2;
-  padding: 20px 12px;
+  padding: clamp(8px, 2.3dvh, 20px) clamp(8px, 1.8vw, 14px);
+  gap: clamp(4px, 1.3dvh, 12px);
   overflow: hidden; /* 縦方向のはみ出しを禁止、横スクロールはトラックに委譲 */
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
   animation: ponoPSelectFadeIn 220ms ease-out;
+}
+
+.pono-pselect * {
+  box-sizing: border-box;
 }
 
 .pono-pselect.is-hidden {
@@ -39,7 +47,6 @@
 .pono-pselect__header {
   flex: 0 0 auto;
   text-align: center;
-  margin-bottom: 16px;
   padding: 0 12px;
   pointer-events: none;
 }
@@ -49,8 +56,8 @@
   font-weight: 900;
   color: #FFF6DC;
   text-shadow: 2px 2px 0 rgba(0,0,0,0.45), 0 0 18px rgba(247,201,72,0.35);
-  letter-spacing: 0.04em;
-  line-height: 1.3;
+  letter-spacing: 0;
+  line-height: 1.18;
 }
 
 .pono-pselect__title-stage {
@@ -72,7 +79,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin: 0 auto 6px;
+  margin: 0 auto;
   padding: 4px 12px;
   font-size: clamp(0.78rem, 2.6vw, 0.95rem);
   font-weight: 700;
@@ -87,6 +94,10 @@
   color: #F7C948;
 }
 
+.pono-pselect__scroll-hint.is-hidden {
+  display: none;
+}
+
 @keyframes ponoPSelectHintPulse {
   0%, 100% { opacity: 0.55; }
   50%      { opacity: 0.95; }
@@ -94,7 +105,8 @@
 
 /* --- カード横スクロール (1行 + scroll-snap) --- */
 .pono-pselect__scroller {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
@@ -125,24 +137,27 @@
 .pono-pselect__track {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: center;
   gap: 12px;
+  height: 100%;
+  min-height: 0;
   padding: 0 16px;
   /* 末尾カードの右にも余白を確保 (scroll-snap 末端の見切れ防止) */
   padding-right: 24px;
 }
 
 /* --- カード ---
-   横スクロール前提: 一度に約3-4枚見える固定幅で、scroll-snap-align: start
-   ユーザーFB (2026-06-05): カード幅を縮小して横スクロール時の見えやすさを優先。
-   max-width 150px → 130px (3-4枚画面に入るように) */
+   横スクロール前提: カードは1行に固定し、高さは scroller の残り領域へ収める。
+   低い横長画面では下の media query で情報量を段階的に減らす。 */
 .pono-pselect__card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 0 0 auto;
-  width: clamp(120px, 24vw, 150px);
+  width: clamp(128px, 20vw, 168px);
+  height: min(100%, 520px);
+  min-height: 0;
   scroll-snap-align: start;
   background: linear-gradient(180deg, #FFFDF5 0%, #FCEFD3 100%);
   color: #5D4E37;
@@ -151,7 +166,7 @@
   padding: 12px 10px 14px;
   padding-top: 32px; /* 難易度バッジ用余白 */
   cursor: pointer;
-  min-height: 260px;
+  overflow: hidden;
   box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.4);
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
   text-align: center;
@@ -161,8 +176,7 @@
 /* 狭い画面 (<=480px): カードをやや小さめに */
 @media (max-width: 480px) {
   .pono-pselect__card {
-    width: clamp(110px, 32vw, 140px);
-    min-height: 240px;
+    width: clamp(112px, 32vw, 140px);
   }
   .pono-pselect__track {
     gap: 10px;
@@ -210,8 +224,8 @@
    object-position は partners.js の imagePosition から各カードに個別適用される。 */
 .pono-pselect__portrait {
   width: 100%;
-  height: 180px;
-  max-width: 135px;
+  height: clamp(132px, 31dvh, 180px);
+  max-width: clamp(99px, 23.25dvh, 135px);
   border-radius: 14px;
   overflow: hidden;
   background: #DDD;
@@ -223,8 +237,8 @@
 /* 狭い画面 (<=480px): 高さも縮める */
 @media (max-width: 480px) {
   .pono-pselect__portrait {
-    height: 160px;
-    max-width: 120px;
+    height: clamp(116px, 30dvh, 160px);
+    max-width: clamp(87px, 22.5dvh, 120px);
   }
 }
 
@@ -404,7 +418,7 @@
   flex: 0 0 auto;
   display: flex;
   justify-content: center;
-  margin-top: 18px;
+  margin-top: 8px;
   padding-bottom: 4px;
 }
 
@@ -435,4 +449,184 @@
 .pono-pselect__cancel:focus-visible {
   outline: 3px solid #F7C948;
   outline-offset: 3px;
+}
+
+/* 低い横長画面: カード下端が切れないよう情報量と余白を圧縮する。 */
+@media (max-height: 560px) {
+  .pono-pselect {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .pono-pselect__header {
+    padding: 0 6px;
+  }
+
+  .pono-pselect__title {
+    font-size: clamp(0.98rem, 3.2vw, 1.25rem);
+    line-height: 1.12;
+  }
+
+  .pono-pselect__title-stage {
+    margin-left: 6px;
+    padding: 1px 8px;
+  }
+
+  .pono-pselect__scroll-hint {
+    padding: 2px 10px;
+    font-size: clamp(0.72rem, 2.2vw, 0.86rem);
+    line-height: 1.1;
+  }
+
+  .pono-pselect__scroller {
+    padding: 3px 4px 8px;
+  }
+
+  .pono-pselect__track {
+    gap: 10px;
+    padding-left: 10px;
+    padding-right: 16px;
+  }
+
+  .pono-pselect__card {
+    width: clamp(116px, 18vw, 148px);
+    height: 100%;
+    border-width: 2px;
+    border-radius: 14px;
+    padding: 8px 8px 8px;
+    padding-top: 24px;
+  }
+
+  .pono-pselect__card:hover,
+  .pono-pselect__card:active {
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  .pono-pselect__portrait {
+    height: clamp(96px, 25dvh, 132px);
+    max-width: clamp(72px, 18.75dvh, 100px);
+    border-radius: 10px;
+    margin-bottom: 5px;
+  }
+
+  .pono-pselect__name {
+    min-height: 0;
+    font-size: clamp(0.82rem, 2.1vw, 0.98rem);
+    line-height: 1.12;
+    margin: 0 0 2px;
+  }
+
+  .pono-pselect__trait,
+  .pono-pselect__assist,
+  .pono-pselect__age {
+    font-size: clamp(0.66rem, 1.7vw, 0.78rem);
+    line-height: 1.22;
+    margin: 1px 0;
+  }
+
+  .pono-pselect__assist-desc,
+  .pono-pselect__age {
+    display: none;
+  }
+
+  .pono-pselect__stats {
+    gap: 1px;
+    margin-top: 3px;
+    padding-top: 3px;
+  }
+
+  .pono-pselect__stars {
+    font-size: 0.74rem;
+  }
+
+  .pono-pselect__hearts {
+    font-size: 0.68rem;
+  }
+
+  .pono-pselect__difficulty {
+    top: 5px;
+    left: 5px;
+    padding: 2px 7px;
+    font-size: 0.62rem;
+  }
+
+  .pono-pselect__footer {
+    margin-top: 2px;
+    padding-bottom: 0;
+  }
+
+  .pono-pselect__cancel {
+    min-height: 40px;
+    min-width: 118px;
+    padding: 6px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+/* さらに低い画面: キャラ選択に必要な最低情報だけ残す。 */
+@media (max-height: 420px) {
+  .pono-pselect {
+    padding: 6px 8px;
+    gap: 3px;
+  }
+
+  .pono-pselect__title {
+    font-size: 0.96rem;
+  }
+
+  .pono-pselect__scroll-hint {
+    padding: 1px 8px;
+    font-size: 0.7rem;
+  }
+
+  .pono-pselect__scroller {
+    padding: 2px 2px 6px;
+  }
+
+  .pono-pselect__card {
+    width: clamp(104px, 16vw, 128px);
+    border-radius: 12px;
+    padding: 6px 6px 6px;
+    padding-top: 20px;
+  }
+
+  .pono-pselect__portrait {
+    height: clamp(78px, 24dvh, 102px);
+    max-width: clamp(58px, 18dvh, 78px);
+    margin-bottom: 3px;
+  }
+
+  .pono-pselect__trait {
+    display: none;
+  }
+
+  .pono-pselect__assist {
+    font-size: 0.66rem;
+    line-height: 1.15;
+  }
+
+  .pono-pselect__stats {
+    display: none;
+  }
+
+  .pono-pselect__difficulty {
+    top: 4px;
+    left: 4px;
+    padding: 2px 6px;
+    font-size: 0.56rem;
+  }
+
+  .pono-pselect__cancel {
+    min-height: 34px;
+    min-width: 104px;
+    padding: 4px 16px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-height: 340px) {
+  .pono-pselect__scroll-hint,
+  .pono-pselect__footer {
+    display: none;
+  }
 }
