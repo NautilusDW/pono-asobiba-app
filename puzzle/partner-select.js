@@ -98,8 +98,8 @@ window.PonoPartnerSelect = (function () {
    * 難易度ラベル生成。
    * partner.difficulty が以下のいずれかである想定:
    *   'easy'   → やさしい★
-   *   'normal' → ふつう★★
-   *   'tricky' → ちょっとずるい★★★
+   *   'normal' → できる★★
+   *   'tricky' → ものしり★★★ (キツネキャラ性「ものしりで すこし おませ」に合致)
    * 未設定の場合は ageHint からフォールバック (3→easy / 4→normal / 5→tricky)。
    */
   function resolveDifficulty(partner) {
@@ -117,9 +117,9 @@ window.PonoPartnerSelect = (function () {
     if (!difficulty) return null;
     var label = '';
     var stars = '';
-    if (difficulty === 'easy')        { label = 'やさしい';        stars = '★';   }
-    else if (difficulty === 'normal') { label = 'ふつう';          stars = '★★';  }
-    else if (difficulty === 'tricky') { label = 'ちょっとずるい';  stars = '★★★'; }
+    if (difficulty === 'easy')        { label = 'やさしい';      stars = '★';   }
+    else if (difficulty === 'normal') { label = 'できる';        stars = '★★';  }
+    else if (difficulty === 'tricky') { label = 'ものしり';      stars = '★★★'; }
     else return null;
 
     var badge = document.createElement('div');
@@ -176,7 +176,7 @@ window.PonoPartnerSelect = (function () {
     );
     if (locked) card.setAttribute('aria-disabled', 'true');
 
-    // 難易度ラベル (やさしい / ふつう / ちょっとずるい) — カード最上部
+    // 難易度ラベル (やさしい / できる / ものしり) — カード最上部
     var difficulty = resolveDifficulty(p);
     var diffBadge = buildDifficultyBadge(difficulty);
     if (diffBadge) {
@@ -191,6 +191,11 @@ window.PonoPartnerSelect = (function () {
     img.alt = p.name || '';
     img.loading = 'lazy';
     img.decoding = 'async';
+    // 各キャラの顔位置に合わせて object-position を個別適用
+    // (cut01-03 を使い回しても主役が中央に来るように)
+    if (p.imagePosition && typeof p.imagePosition === 'string') {
+      img.style.objectPosition = p.imagePosition;
+    }
     portrait.appendChild(img);
     if (locked) {
       var lockBadge = document.createElement('div');
