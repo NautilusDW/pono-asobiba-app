@@ -35,7 +35,7 @@ window.PonoPartners = (function () {
       locked: false,
       unlockCondition: null,
       ageHint: '5さい〜',
-      difficulty: 'tricky',
+      difficulty: 'normal',
     },
     {
       id: 'kojika',
