@@ -309,17 +309,42 @@
     if (pivot) {
       pivot.style.transform = 'rotate(' + smoothed.toFixed(2) + 'deg)';
     }
-    // 「↑ こっち」テキストは常に読みやすい向きを保つ。
-    // ★ high finding 修正: 旧実装は耳と同じ角度で回しており、 ピースが真下にある時
-    //   (smoothed ≈ ±180°) にテキストが上下逆さまになり 0-6 歳児が方向ヒントを
-    //   読めなくなる問題があった。
-    //   対応: 角度が ±90° を超える領域に入ったら scaleY(-1) を併用して文字を
-    //   上下反転 → 結果として常に「人間の目で正立して読める」向きを維持する。
-    //   矢印 (↑) も同じ反転で「正解方向 (耳の指す向き)」を指し続ける。
-    if (hintLabel) {
-      var absA = Math.abs(smoothed);
-      var flip = absA > 90 ? ' scaleY(-1)' : '';
-      hintLabel.style.transform = 'rotate(' + smoothed.toFixed(2) + 'deg)' + flip;
+    // 「↑ こっち」テキストは常に水平固定 (transform 不変 = translate(-50%,-100%))。
+    // ★ ユーザー実機 FB (2026-06): 旧実装は耳と同じ角度で回しており、 耳が下を向くと
+    //   文字が上下逆さま → 0-6 歳児が読めない問題があった。
+    // ★ 本修正: テキスト本体の transform は固定 (CSS 側で translate のみ)。
+    //   耳の先端 (回転後) の x,y を計算し、テキストの left/top のみ JS で更新する。
+    //   これにより耳がどの方向を指してもテキストは常に正立し、 矢印 ↑ も含めて
+    //   「自分の真上から耳の先端を覗き込むラベル」として一貫した読みやすさを保つ。
+    if (hintLabel && pivot) {
+      // 耳の先端 (回転前のローカル座標) = pivot 中央上端付近。
+      // pivot の transform-origin は CSS 上 '50% 90%' で固定 (ensureCSS 参照)。
+      // → 回転中心から見た先端のオフセットは (0, -pivotHeight * 0.9)。
+      // 回転後の先端位置 = 回転中心 + rotate(θ) * (0, -0.9 * pivotHeight)
+      //                  = 回転中心 + (sinθ * 0.9 * H, -cosθ * 0.9 * H)
+      // ※ CSS の rotate は時計回り正、 sin/cos も同じ符号系で OK。
+      var rad = smoothed * Math.PI / 180;
+      // pivot の rect は回転後の外接矩形になるが、 回転中心は CSS で固定 '50% 90%' のため
+      // 「未回転時の pivot のサイズ + offset」を使うのが正しい。 offsetWidth/Height/Top/Left は
+      // transform 適用前のレイアウト寸/位置を返すのでこちらを使う。
+      var H = pivot.offsetHeight || EAR_HEIGHT;
+      var W = pivot.offsetWidth || (EAR_WIDTH * 2 + 14);
+      var pivotTopInRoot = pivot.offsetTop || 0;   // root 内での未回転 top
+      var pivotLeftInRoot = pivot.offsetLeft || 0; // root 内での未回転 left
+      // pivot の回転中心 (root 座標系) — CSS transform-origin '50% 90%' (ensureCSS 参照)
+      var cx = pivotLeftInRoot + W / 2;
+      var cy = pivotTopInRoot + H * 0.9;
+      // 回転後の耳先端
+      var tipX = cx + Math.sin(rad) * 0.9 * H;
+      var tipY = cy - Math.cos(rad) * 0.9 * H;
+      // テキストはルート (position:fixed) からの相対位置で配置 = root の origin (top-left) 基準。
+      // CSS で transform: translate(-50%, -100%) を当てているので、 (tipX, tipY) は
+      // テキスト bottom-center が来る点になる → 耳先端のちょい上にラベルが乗る。
+      // 真下を指すケースだと耳先端が root 内座標で下方向に出るため、 ラベルが
+      // 画面端を超えないよう最低 0 でクランプ。
+      var safeY = Math.max(0, tipY - 4); // 4px の余白
+      hintLabel.style.left = tipX.toFixed(1) + 'px';
+      hintLabel.style.top = safeY.toFixed(1) + 'px';
     }
 
     // 色 (距離依存)

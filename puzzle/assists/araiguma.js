@@ -1,562 +1,483 @@
-// PonoAssist: アライグマ「いろわけトレイ」
+// PonoAssist: アライグマ「ぴかっとおてつだい」(One-shot Auto-Snap)
 // =============================================================================
-// パートナー 'araiguma' を選択中のときだけ動作する。
-// 未スナップピースを HSL の Hue でクラスタ分けし、画面下部に「色帯トレイ」と
-// して並べて待機させる。子供が見た目（色）でピースを選び取りやすくする補助。
+// パートナー 'araiguma' を選択中のときだけ動作する特技ボタン型アシスト。
 //
-//   なかよし Lv1 (もしくは Lv0): 2 クラスタ (warm / cool)
-//   なかよし Lv2:                3 クラスタ
-//   なかよし Lv3:                5 クラスタ
+// 旧仕様「いろわけトレイ」(ピース下部に色帯を作って待機させる) は子供に伝わら
+// なかったため全廃。代わりに**ワンショット式のおてつだいボタン**を画面右下に
+// 出して、押すたびに未スナップピースの一部をランダムに自動スナップする
+// シンプルな「お助けスキル」型に再設計した。
+//
+// 仕様:
+//   なかよし Lv1 (or 未プレイ Lv0): 1ステージ につき 1回 / スナップ率 5%
+//   なかよし Lv2:                    1ステージ につき 2回 / スナップ率 12%
+//   なかよし Lv3:                    1ステージ につき 2回 / スナップ率 20%
+//                                    (Lv3 はピース間スナップ間隔も短くする)
+//   最低1個は必ず助ける (Math.max(1, Math.floor(unsnapped * pct)))
+//
+//   ボタン押下 → 未スナップピースから N 個ランダム選出 → 順番に
+//     (1) ピース上に「ぴかっ」グロー演出 (0.30秒 / Lv3 のみ 0.18秒)
+//     (2) アライグマ絵文字 🦝 がピースの隣に一瞬出現
+//     (3) window.PonoPuzzleForceSnapPiece(piece) で強制スナップ
+//         (= ホーム位置に瞬時に戻る + snappedCount++ + playSnapSound + 完了判定)
+//   ボタンには「のこり N かい」表示。 残 0 で grayscale + tap 無効。
+//   ステージ切替 (beforeStageStart) で使用回数をリセット。
+//   ボタンは afterStageReady で出現、 アライグマ選択時のみ表示。
 //
 // 連携:
-//   - 既存の drag フロー (dragPiece) は何も書き換えない。トレイから掴むとそのまま動く。
-//   - スナップ済みピース、ドラッグ中ピースは座標上書きの対象外。
-//   - 代表色は afterStageReady で 1 回計算して __araiguma メタにキャッシュする。
+//   既存 drag / snap フローは触らない。 ボタンクリック時のみ強制スナップ。
+//   main.js 側に追加した
+//     window.PonoPuzzleForceSnapPiece(piece)   — 距離無視でスナップ確定
+//     window.PonoPuzzleGetUnsnappedPieces()    — 未スナップピース列挙
+//     window.PonoPuzzleRequestRedraw()         — overlay 即時再描画
+//   を利用する。 これらが無い古い main.js では graceful にスキップ。
 //
 // 依存:
-//   window.PonoAssistRegister  (main.js Phase 0 で提供)
-//   window.PonoBond            (なかよし度メーター)
-//   ctx.pieces / ctx.dragPiece / ctx.sourceImg / ctx.board / ctx.pieceSize
-//     ・・・main.js が afterStageReady / drawOverlay に渡している補強コンテキスト
+//   window.PonoAssistRegister
+//   window.PonoBond.getLevel(partnerId, stageId)
+//   window.PonoPuzzleForceSnapPiece / GetUnsnappedPieces / RequestRedraw
+//   ctx.canvas / ctx.pieceSize / ctx.pieces (drawOverlay context)
 // =============================================================================
 (function () {
   'use strict';
 
   if (typeof window === 'undefined' || typeof window.PonoAssistRegister !== 'function') {
-    // hooks が無い環境では何もしない (テスト・古い main.js 等)
     return;
   }
 
+  var PARTNER_ID = 'araiguma';
+  var BTN_ID = 'pono-araiguma-btn';
+
+  // Lv 別パラメータ
+  //   uses  : 1ステージあたりの使用可能回数
+  //   pct   : 押下 1 回で助けるピース割合 (未スナップピース数に対して)
+  //   stepMs: 各ピース演出の間隔 (Lv3 は短く・テンポ良く)
+  var LV_PROFILES = {
+    1: { uses: 1, pct: 0.05, stepMs: 320 },
+    2: { uses: 2, pct: 0.12, stepMs: 280 },
+    3: { uses: 2, pct: 0.20, stepMs: 180 },
+  };
+  // Lv0 (なかよし度ゼロ) は Lv1 と同じ扱い (最低限の救済を必ず提供)
+  function profileFor(lv) {
+    if (lv >= 3) return LV_PROFILES[3];
+    if (lv >= 2) return LV_PROFILES[2];
+    return LV_PROFILES[1];
+  }
+
   // ---------------------------------------------------------------------------
-  // 1. 状態
+  // State
   // ---------------------------------------------------------------------------
-  // ステージ単位で「いまトレイをどう組むか」をここに保持する。
-  // afterStageReady で書き換え、 drawOverlay で参照する。
   var state = {
-    active: false,        // 現ステージでアライグマ assist が動くか
-    clusterCount: 2,      // 2 / 3 / 5
-    stageId: null,        // 現ステージ id (キャッシュ無効化用)
-    boardKey: '',         // 盤サイズが変わったら再計算するためのキー
-    // piece -> { hue, sat, light, cluster, slotX, slotY } をマップで保持しない。
-    // ピース自身に __araiguma を生やしてキャッシュする (GC されやすい)。
+    active: false,           // アライグマ選択中 + 環境 OK
+    stageId: null,
+    usesLeft: 0,
+    profile: LV_PROFILES[1],
+    // overlay 演出用キュー: 残った "光らせ中" のピース描画情報
+    // [{ piece, untilTs, peakTs }]
+    glowQueue: [],
+    // 演出中フラグ (連打防止)
+    busy: false,
+    // 最新の overlay 描画コンテキスト保持 (canvas size / ctx)
+    lastDrawCtx: null,
   };
 
   // ---------------------------------------------------------------------------
-  // 2. 色サンプリング
+  // Bond Lv 取得
   // ---------------------------------------------------------------------------
-  // sourceImg からピース中央領域の平均色を取得する。 1 ステージにつき 1 回だけ呼ぶ。
-  // canvas は使い回す。
-  var sampleCanvas = null;
-  var sampleCtx = null;
-  function ensureSampleCtx() {
-    if (sampleCanvas) return;
+  function resolveLevel(stage) {
     try {
-      sampleCanvas = document.createElement('canvas');
-      sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
-    } catch (_) {
-      sampleCanvas = null;
-      sampleCtx = null;
+      if (!stage) return 0;
+      var sid = stage.id != null ? stage.id : null;
+      if (sid == null) return 0;
+      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
+        var lv = window.PonoBond.getLevel(PARTNER_ID, sid) || 0;
+        if (lv < 0) lv = 0;
+        if (lv > 3) lv = 3;
+        return lv;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  function isAraiguma(partner) {
+    if (partner && partner.id === PARTNER_ID) return true;
+    try {
+      if (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function') {
+        return window.PonoBond.getSelectedPartner() === PARTNER_ID;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CSS injection (1 回だけ)
+  // ---------------------------------------------------------------------------
+  var cssInjected = false;
+  function ensureCss() {
+    if (cssInjected) return;
+    cssInjected = true;
+    var css =
+      '#' + BTN_ID + '{' +
+        'position:fixed;' +
+        'right:14px;' +
+        'bottom:78px;' +              // bond-badge (bottom:14, height~52) の真上
+        'z-index:225;' +              // バッジ(220)より前面
+        'display:flex;' +
+        'align-items:center;' +
+        'gap:6px;' +
+        'padding:8px 14px 8px 10px;' +
+        'border:none;' +
+        'border-radius:999px;' +
+        'background:linear-gradient(135deg,#F7C948 0%,#F2915A 100%);' +
+        'color:#5D3A00;' +
+        'font-family:"Zen Maru Gothic","Hiragino Maru Gothic Pro",sans-serif;' +
+        'font-weight:700;' +
+        'font-size:15px;' +
+        'box-shadow:0 4px 12px rgba(93,78,55,0.28),inset 0 1px 0 rgba(255,255,255,0.6);' +
+        'cursor:pointer;' +
+        '-webkit-tap-highlight-color:transparent;' +
+        'transition:transform .12s ease, filter .25s ease;' +
+        'touch-action:manipulation;' +
+      '}' +
+      '#' + BTN_ID + '.hidden{display:none!important;}' +
+      '#' + BTN_ID + ':active{transform:scale(0.95);}' +
+      '#' + BTN_ID + '.disabled{' +
+        'filter:grayscale(1) brightness(0.85);' +
+        'cursor:not-allowed;' +
+        'pointer-events:none;' +
+        'opacity:0.7;' +
+      '}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__icon{font-size:22px;line-height:1;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__label{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__title{font-size:13px;letter-spacing:0.02em;}' +
+      '#' + BTN_ID + ' .pono-araiguma-btn__count{font-size:11px;color:#5D3A00;opacity:0.85;}' +
+      '@media (max-width:480px){' +
+        '#' + BTN_ID + '{bottom:64px;right:10px;padding:6px 10px 6px 8px;font-size:13px;}' +
+        '#' + BTN_ID + ' .pono-araiguma-btn__icon{font-size:18px;}' +
+        '#' + BTN_ID + ' .pono-araiguma-btn__title{font-size:11px;}' +
+        '#' + BTN_ID + ' .pono-araiguma-btn__count{font-size:10px;}' +
+      '}' +
+      '@keyframes ponoAraigumaPulse{' +
+        '0%{box-shadow:0 4px 12px rgba(93,78,55,0.28),0 0 0 0 rgba(247,201,72,0.7);}' +
+        '70%{box-shadow:0 4px 12px rgba(93,78,55,0.28),0 0 0 12px rgba(247,201,72,0);}' +
+        '100%{box-shadow:0 4px 12px rgba(93,78,55,0.28),0 0 0 0 rgba(247,201,72,0);}' +
+      '}' +
+      '#' + BTN_ID + '.pulse{animation:ponoAraigumaPulse 1.6s ease-out infinite;}';
+    try {
+      var tag = document.createElement('style');
+      tag.setAttribute('data-pono-araiguma', '1');
+      tag.appendChild(document.createTextNode(css));
+      document.head.appendChild(tag);
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  // Button DOM
+  // ---------------------------------------------------------------------------
+  // NOTE (high finding 修正 / 設計メモ):
+  //   main.js は initPuzzle で puzzleContainer.innerHTML = '' して全子要素を破棄する。
+  //   この button は document.body 直下に append しているため innerHTML='' の影響は
+  //   受けないが、 ensureButton() は呼ばれる度に document.getElementById で取り直し
+  //   キャッシュしない設計にしてある (= 万一外部から remove されても自己復旧する)。
+  //   将来的に何があっても「ステージ間で生き残った button 参照を信用しない」方針。
+  function ensureButton() {
+    var btn = document.getElementById(BTN_ID);
+    if (btn) return btn;
+    btn = document.createElement('button');
+    btn.id = BTN_ID;
+    btn.type = 'button';
+    btn.className = 'hidden';
+    btn.setAttribute('aria-label', 'ぴかっとおてつだい');
+    // ★ canonical state.usesLeft の DOM ミラー (high finding 修正 / 防御的検証用)。
+    //   onButtonClick 内で state.usesLeft とこの data-uses-left の両方を検証し、
+    //   仮に DevTools で textContent を書き換えられても実回数を超えるスナップは起きない。
+    btn.setAttribute('data-uses-left', '0');
+    btn.innerHTML =
+      '<span class="pono-araiguma-btn__icon" aria-hidden="true">🦝</span>' +
+      '<span class="pono-araiguma-btn__label">' +
+        '<span class="pono-araiguma-btn__title">ぴかっと</span>' +
+        '<span class="pono-araiguma-btn__count">のこり 0かい</span>' +
+      '</span>';
+    btn.addEventListener('click', onButtonClick);
+    // pointer 系: タッチ環境でも素早く反応
+    btn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    try { document.body.appendChild(btn); } catch (_) {}
+    return btn;
+  }
+
+  function updateButtonUI() {
+    var btn = document.getElementById(BTN_ID);
+    if (!btn) return;
+    if (!state.active) {
+      btn.classList.add('hidden');
+      btn.classList.remove('pulse');
+      // 非アクティブ時もミラー属性をリセット (state と DOM の整合)
+      try { btn.setAttribute('data-uses-left', '0'); } catch (_) {}
+      return;
+    }
+    btn.classList.remove('hidden');
+    var countEl = btn.querySelector('.pono-araiguma-btn__count');
+    if (countEl) countEl.textContent = 'のこり ' + state.usesLeft + 'かい';
+    // ★ canonical state を data-uses-left にミラー (high finding 修正)。
+    //   onButtonClick は state.usesLeft (closure) と data-uses-left (DOM) の両方を
+    //   見て、 一致しなければ DOM 改ざんとみなして強制リジェクトする。
+    try { btn.setAttribute('data-uses-left', String(state.usesLeft)); } catch (_) {}
+    if (state.usesLeft <= 0 || state.busy) {
+      btn.classList.add('disabled');
+      btn.classList.remove('pulse');
+    } else {
+      btn.classList.remove('disabled');
+      btn.classList.add('pulse');
     }
   }
 
-  // sourceImg を一度オフスクリーンに描いて、 各ピースの矩形領域から平均色を取る。
-  // 失敗時 (CORS など) は中庸グレーを返す。
-  function computePieceColors(pieces, sourceImg, cols, rows) {
-    ensureSampleCtx();
-    if (!sampleCtx || !sourceImg) {
-      // フォールバック: グレー
-      for (var i = 0; i < pieces.length; i++) {
-        cachePieceColor(pieces[i], { r: 128, g: 128, b: 128 });
-      }
-      return;
-    }
+  // ---------------------------------------------------------------------------
+  // Click handler — 自動スナップ実行
+  // ---------------------------------------------------------------------------
+  function onButtonClick(e) {
+    if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (_) {} }
+    if (!state.active || state.busy || state.usesLeft <= 0) return;
 
-    // sourceImg を 256px 程度の小さい canvas に縮小して読む (パフォーマンス)
-    var iw = sourceImg.naturalWidth || sourceImg.width || 256;
-    var ih = sourceImg.naturalHeight || sourceImg.height || 256;
-    var targetW = 256;
-    var scale = targetW / iw;
-    var sw = Math.max(cols * 4, Math.round(iw * scale));
-    var sh = Math.max(rows * 4, Math.round(ih * scale));
-    sampleCanvas.width = sw;
-    sampleCanvas.height = sh;
+    // ★ DOM 改ざん検知 (high finding 修正 / 多層防御):
+    //   data-uses-left は updateButtonUI で常に state.usesLeft と同期している。
+    //   万一 DevTools 等から残回数表示や属性が書き換えられても、 closure 上の
+    //   canonical state.usesLeft とミラー DOM 値が食い違ったらリジェクトする。
+    //   (closure 値が常に正なので機能的な悪用は元々不可能だが、 完了モーダルや
+    //    なかよし加算がアシスト発火経由なので明示的なゲートを入れて将来の
+    //    レイヤリング変更でも安全に倒れるようにする)
     try {
-      sampleCtx.clearRect(0, 0, sw, sh);
-      sampleCtx.drawImage(sourceImg, 0, 0, sw, sh);
-    } catch (_) {
-      for (var k = 0; k < pieces.length; k++) {
-        cachePieceColor(pieces[k], { r: 128, g: 128, b: 128 });
-      }
-      return;
-    }
-
-    var cellW = sw / cols;
-    var cellH = sh / rows;
-
-    for (var j = 0; j < pieces.length; j++) {
-      var p = pieces[j];
-      // 各ピースの中央 60% 領域を平均する
-      var cx0 = Math.floor(p.col * cellW + cellW * 0.2);
-      var cy0 = Math.floor(p.row * cellH + cellH * 0.2);
-      var cw = Math.max(1, Math.floor(cellW * 0.6));
-      var ch = Math.max(1, Math.floor(cellH * 0.6));
-      // 端でクリップ
-      if (cx0 + cw > sw) cw = sw - cx0;
-      if (cy0 + ch > sh) ch = sh - cy0;
-      if (cw <= 0 || ch <= 0) { cachePieceColor(p, { r: 128, g: 128, b: 128 }); continue; }
-
-      var data;
-      try {
-        data = sampleCtx.getImageData(cx0, cy0, cw, ch).data;
-      } catch (_) {
-        cachePieceColor(p, { r: 128, g: 128, b: 128 });
-        continue;
-      }
-
-      // 平均色 (アルファ無視)
-      var rs = 0, gs = 0, bs = 0, n = 0;
-      // 4 ピクセル間隔でサンプリング (高速化)
-      for (var dy = 0; dy < ch; dy += 2) {
-        for (var dx = 0; dx < cw; dx += 2) {
-          var idx = (dy * cw + dx) * 4;
-          rs += data[idx];
-          gs += data[idx + 1];
-          bs += data[idx + 2];
-          n++;
+      var btn = document.getElementById(BTN_ID);
+      if (btn) {
+        var domUses = parseInt(btn.getAttribute('data-uses-left') || '0', 10);
+        if (!isFinite(domUses) || domUses !== state.usesLeft) {
+          try { console.warn('[araiguma] data-uses-left mismatch — reset & ignore'); } catch (_) {}
+          updateButtonUI(); // canonical state で DOM を強制再同期
+          return;
         }
       }
-      if (n === 0) { cachePieceColor(p, { r: 128, g: 128, b: 128 }); continue; }
-      cachePieceColor(p, {
-        r: Math.round(rs / n),
-        g: Math.round(gs / n),
-        b: Math.round(bs / n),
-      });
-    }
-  }
+    } catch (_) { /* DOM 取得失敗時は closure 検証だけ通す */ }
 
-  function cachePieceColor(piece, rgb) {
-    var hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-    piece.__araiguma = piece.__araiguma || {};
-    piece.__araiguma.r = rgb.r;
-    piece.__araiguma.g = rgb.g;
-    piece.__araiguma.b = rgb.b;
-    piece.__araiguma.h = hsl.h;
-    piece.__araiguma.s = hsl.s;
-    piece.__araiguma.l = hsl.l;
-  }
-
-  // RGB (0-255) -> HSL (h: 0-360, s/l: 0-1)
-  function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h = 0, s = 0, l = (max + min) / 2;
-    var d = max - min;
-    if (d !== 0) {
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
-      else if (max === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
-      h *= 60;
+    // main.js に強制スナップ API があるか確認 (古い main.js 互換性)
+    if (typeof window.PonoPuzzleForceSnapPiece !== 'function' ||
+        typeof window.PonoPuzzleGetUnsnappedPieces !== 'function') {
+      try { console.warn('[araiguma] PonoPuzzleForceSnapPiece API missing — assist disabled'); } catch (_) {}
+      state.active = false;
+      updateButtonUI();
+      return;
     }
-    return { h: h, s: s, l: l };
-  }
 
-  // ---------------------------------------------------------------------------
-  // 3. クラスタリング
-  // ---------------------------------------------------------------------------
-  // 彩度がほぼ無い (グレー寄り) ピースは別バケットへ寄せる。
-  // それ以外は Hue 帯で N 等分する。
-  //
-  // Lv1 = 2 クラスタ: warm (0-180) / cool (180-360) のシンプル 2 分割
-  // Lv2 = 3 クラスタ: warm / green / cool (0-90, 90-180, 180-360 を粗く)
-  // Lv3 = 5 クラスタ: 0-72, 72-144, ... (5 等分)
-  function assignClusters(pieces, count) {
-    for (var i = 0; i < pieces.length; i++) {
-      var p = pieces[i];
-      if (!p.__araiguma) {
-        cachePieceColor(p, { r: 128, g: 128, b: 128 });
-      }
-      p.__araiguma.cluster = pickCluster(p.__araiguma.h, p.__araiguma.s, count);
-    }
-  }
+    var unsnapped = window.PonoPuzzleGetUnsnappedPieces() || [];
+    if (unsnapped.length === 0) return; // 全部はまってるなら何もしない
 
-  function pickCluster(hue, sat, count) {
-    // 彩度極小はクラスタ「中庸」: 最後のバケットに寄せる
-    if (sat < 0.08) return count - 1;
-    var h = ((hue % 360) + 360) % 360;
-    if (count === 2) {
-      // warm (赤〜黄〜緑手前)  vs cool (緑〜青〜紫)
-      return (h < 90 || h >= 300) ? 0 : 1;
-    }
-    if (count === 3) {
-      // 赤系 (300-60), 緑系 (60-180), 青紫系 (180-300)
-      if (h >= 300 || h < 60) return 0;
-      if (h < 180) return 1;
-      return 2;
-    }
-    // count >= 4: 等分
-    var bandSize = 360 / count;
-    var c = Math.floor(h / bandSize);
-    if (c >= count) c = count - 1;
-    if (c < 0) c = 0;
-    return c;
-  }
+    var pct = state.profile.pct;
+    var pickCount = Math.max(1, Math.floor(unsnapped.length * pct));
+    // 残り少ないケースで割合計算が unsnapped 上回らないようクランプ
+    if (pickCount > unsnapped.length) pickCount = unsnapped.length;
 
-  // クラスタごとの代表 (中心) Hue 値: 帯背景の色付け用
-  function clusterCenterHue(cluster, count) {
-    if (count === 2) return cluster === 0 ? 30 : 220;
-    if (count === 3) return cluster === 0 ? 0 : (cluster === 1 ? 120 : 240);
-    return (cluster + 0.5) * (360 / count);
+    // ランダム選択 (Fisher-Yates の先頭 pickCount 個)
+    var pool = unsnapped.slice();
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    var picked = pool.slice(0, pickCount);
+
+    state.usesLeft--;
+    state.busy = true;
+    updateButtonUI();
+
+    var stepMs = state.profile.stepMs;
+    picked.forEach(function (piece, idx) {
+      setTimeout(function () {
+        runSnapEffect(piece, stepMs);
+        // 演出開始と同じタイミングで強制スナップ確定
+        // (見た目: ピースの現在位置で「ぴかっ」と光る → 一瞬でホーム位置にスナップ)
+        try {
+          window.PonoPuzzleForceSnapPiece(piece);
+        } catch (err) {
+          try { console.warn('[araiguma] forceSnap failed:', err); } catch (_) {}
+        }
+      }, idx * stepMs);
+    });
+
+    // 全演出完了後に busy 解除
+    setTimeout(function () {
+      state.busy = false;
+      updateButtonUI();
+    }, picked.length * stepMs + 200);
   }
 
   // ---------------------------------------------------------------------------
-  // 4. トレイレイアウト
+  // Glow effect — 選ばれたピースのホーム位置に光リング
   // ---------------------------------------------------------------------------
-  // 画面下部にクラスタ数 N 本の色帯を縦に積み上げ、 各帯にそのクラスタの
-  // ピースを横一列に並べる。
-  //
-  //   canvas.h の下から trayHeightRatio % を使う。
-  //   1 帯あたり trayHeightRatio / N。
-  //   ピース幅 + gap を等間隔で並べ、 帯中央に縦位置を寄せる。
-  //
-  // 各ピースに __araiguma.slotX / slotY を持たせる。
-  function layoutTraySlots(pieces, count, canvas, pieceSize, board) {
-    // 中央の盤 (board) を避けて、 盤の下に色帯トレイを置く。
-    // ピース全部が下に入りきらないステージ (16-20 ピース) の場合は盤の上下に分けても良いが、
-    // MVP では盤下に均等横並びだけで OK。
-    //
-    // trayH はピース数 (cluster count) に依らず常に「ピース約2個分」の固定値にする。
-    // 旧実装は trayH = canvas.h - trayY0 - 4 で残り余白を全部使っていたため、
-    // ピース数が少ないステージ (= board が画面上半分に小さく配置されるケース) では
-    // トレイが画面下半分を覆ってしまい色帯背景の青矩形バグになっていた。
-    // 固定 trayH なら count が 2/3/5 のいずれでも見た目が一定で、 子供の視覚負荷も低い。
-    var trayHIdeal = pieceSize.h * 2.0 + 12; // ピース2個分 + パディング
-    var trayHMin = pieceSize.h * 1.5;        // 極小ピースでも見やすい下限
-    var trayHMax = canvas.h * 0.30;          // 画面の 30% を超えない安全弁
-    var trayH = Math.min(trayHMax, Math.max(trayHMin, trayHIdeal));
-    // 画面下端ぴったりから上に貼り付ける (8px 下マージン)
-    var trayY0 = canvas.h - trayH - 8;
-    // 盤と重ならないように最低限の安全マージンも確保 (board がトレイに食い込んだら下げる)
-    if (board && trayY0 < board.y + board.h + 4) {
-      // 盤が画面下に張り付いてトレイと衝突するなら trayY0 を盤の直下に押し下げる。
-      // それでも canvas 下端を超えないようクランプ。
-      trayY0 = Math.min(canvas.h - trayH - 4, board.y + board.h + 4);
-    }
-    // ★ high finding 修正: 極端な縦長 canvas (board.h ≈ canvas.h 等) では上の clamp が
-    //   実質効かず、 trayY0 + trayH が canvas.h を超えてバンドが画面外に描画されてしまう。
-    //   20 ピースステージで「色帯がまったく見えない」リスクを防ぐため、 ここで明示的に
-    //   trayH を canvas 内に収まるよう再計算し、 最低限 trayHMin は保証する。
-    //   さらにそれでも収まらない場合は trayY0 自体を押し上げて最低限の表示領域を確保する。
-    if (trayY0 + trayH > canvas.h) {
-      trayH = Math.max(trayHMin, canvas.h - trayY0);
-    }
-    if (trayY0 + trayH > canvas.h) {
-      // trayHMin すら収まらない極端ケース: trayY0 を強制的に押し上げる
-      trayY0 = Math.max(0, canvas.h - trayHMin);
-      trayH = Math.max(0, canvas.h - trayY0);
-    }
-    var bandH = trayH / count;
-
-    // クラスタごとにピース配列を組む
-    var buckets = new Array(count);
-    for (var i = 0; i < count; i++) buckets[i] = [];
-    for (var j = 0; j < pieces.length; j++) {
-      var p = pieces[j];
-      if (!p.__araiguma) continue;
-      var c = p.__araiguma.cluster;
-      if (c < 0 || c >= count) c = count - 1;
-      buckets[c].push(p);
-    }
-
-    // 各バケットは Hue 昇順 → 同色内ではグラデーション順に並ぶ
-    for (var k = 0; k < buckets.length; k++) {
-      buckets[k].sort(function (a, b) {
-        return a.__araiguma.h - b.__araiguma.h;
-      });
-    }
-
-    var sideMargin = 12;
-    for (var b = 0; b < count; b++) {
-      var bucket = buckets[b];
-      if (bucket.length === 0) continue;
-      var bandCenterY = trayY0 + bandH * (b + 0.5) - pieceSize.h / 2;
-      var totalW = bucket.length * pieceSize.w;
-      // 入りきらなければ重ねて表示 (gap を負に)
-      var availW = canvas.w - sideMargin * 2;
-      var gap;
-      if (totalW + (bucket.length - 1) * 6 <= availW) {
-        gap = 6;
-      } else {
-        // ぴったり収める (gap が負になり得る = ピースが重なるが手前ほど可視)
-        gap = (availW - bucket.length * pieceSize.w) / Math.max(1, bucket.length - 1);
-      }
-      var startX = sideMargin + (availW - (bucket.length * pieceSize.w + (bucket.length - 1) * gap)) / 2;
-      for (var n = 0; n < bucket.length; n++) {
-        var pp = bucket[n];
-        pp.__araiguma.slotX = startX + n * (pieceSize.w + gap);
-        pp.__araiguma.slotY = bandCenterY;
-      }
-    }
-
-    // 帯描画用にバケット情報をエクスポート
-    state.bands = [];
-    for (var bb = 0; bb < count; bb++) {
-      state.bands.push({
-        y0: trayY0 + bandH * bb,
-        h: bandH,
-        hue: clusterCenterHue(bb, count),
-      });
+  function runSnapEffect(piece, stepMs) {
+    if (!piece) return;
+    var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    // glow 持続は stepMs の 1.4 倍 (次のピースとちょっと重なる)
+    var dur = Math.max(220, Math.floor(stepMs * 1.4));
+    state.glowQueue.push({
+      piece: piece,
+      startTs: now,
+      endTs: now + dur,
+      peakTs: now + dur * 0.35,
+    });
+    // overlay を即時再描画して光らせ始める
+    if (typeof window.PonoPuzzleRequestRedraw === 'function') {
+      try { window.PonoPuzzleRequestRedraw(); } catch (_) {}
     }
   }
 
   // ---------------------------------------------------------------------------
-  // 5. なかよし Lv 判定
+  // Hook: afterStageReady — ボタン表示 + 回数リセット
   // ---------------------------------------------------------------------------
-  function resolveClusterCount(stage, partnerId) {
-    if (!stage || !window.PonoBond || typeof window.PonoBond.getLevel !== 'function') return 2;
-    var sid = stage.id != null ? stage.id : null;
-    if (sid == null) return 2;
-    var lv = 0;
-    try { lv = window.PonoBond.getLevel(partnerId, sid) || 0; } catch (_) { lv = 0; }
-    // Lv0 は Lv1 と同じ扱い (子供が最低限の色わけ恩恵を必ず受けられるように)
-    if (lv >= 3) return 5;
-    if (lv >= 2) return 3;
-    return 2;
-  }
-
-  // Lv から描画パラメータを取り出す。 Lv0 は Lv1 と同じ扱い。
-  function resolveLvStyle(stage, partnerId) {
-    var lv = 0;
-    try {
-      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function' && stage && stage.id != null) {
-        lv = window.PonoBond.getLevel(partnerId, stage.id) || 0;
-      }
-    } catch (_) { lv = 0; }
-    // Lv0 → Lv1 と同じ
-    if (lv <= 1) {
-      return { lv: 1, bandAlpha: 0.40, edgeAlpha: 0.0, edgeWidth: 0, marker: false };
-    }
-    if (lv === 2) {
-      return { lv: 2, bandAlpha: 0.50, edgeAlpha: 0.55, edgeWidth: 1, marker: false };
-    }
-    // Lv3+
-    return { lv: 3, bandAlpha: 0.60, edgeAlpha: 0.75, edgeWidth: 2.5, marker: true };
-  }
-
-  // ---------------------------------------------------------------------------
-  // 6. Hooks
-  // ---------------------------------------------------------------------------
-
-  // パートナー判定: 'araiguma' のみアクティブ
-  function isAraiguma(partner) {
-    return !!(partner && partner.id === 'araiguma');
-  }
-
-  // afterStageReady — 代表色キャッシュ + クラスタ + トレイ slot 計算
   window.PonoAssistRegister('afterStageReady', function (ctx) {
     state.active = false;
-    state.bands = [];
-    if (!isAraiguma(ctx && ctx.partner)) return;
-    if (!ctx || !Array.isArray(ctx.pieces) || ctx.pieces.length === 0) return;
-    if (!ctx.board || !ctx.pieceSize || !ctx.canvas) return;
+    state.glowQueue = [];
+    state.busy = false;
+    if (!isAraiguma(ctx && ctx.partner)) {
+      updateButtonUI();
+      return;
+    }
+    ensureCss();
+    ensureButton();
 
-    var stage = ctx.stage || null;
-    if (!stage || !stage.cols || !stage.rows) return;
-
-    var count = resolveClusterCount(stage, 'araiguma');
-    state.clusterCount = count;
+    var stage = ctx && ctx.stage;
+    if (!stage) {
+      updateButtonUI();
+      return;
+    }
     state.stageId = stage.id != null ? stage.id : null;
-    state.boardKey = ctx.canvas.w + 'x' + ctx.canvas.h + ':' + count;
-    // Lv に応じた描画スタイル (alpha / 境界線 / マーカー) をキャッシュ
-    state.style = resolveLvStyle(stage, 'araiguma');
 
-    // 代表色キャッシュ (1 回だけ)
-    computePieceColors(ctx.pieces, ctx.sourceImg, stage.cols, stage.rows);
-    // クラスタ割当
-    assignClusters(ctx.pieces, count);
-    // トレイの待機座標を全ピースに付与
-    layoutTraySlots(ctx.pieces, count, ctx.canvas, ctx.pieceSize, ctx.board);
-
-    // 初期配置: shufflePieces 直後にトレイ位置へ瞬時に整列させる。
-    // (アニメ無しで「色わけ済みの状態」を最初から見せる方が、子供の認知負荷が低い)
-    for (var i = 0; i < ctx.pieces.length; i++) {
-      var pp = ctx.pieces[i];
-      if (!pp || pp.snapped) continue;
-      if (!pp.__araiguma || pp.__araiguma.slotX == null) continue;
-      pp.x = pp.__araiguma.slotX;
-      pp.y = pp.__araiguma.slotY;
-    }
-
+    var lv = resolveLevel(stage);
+    state.profile = profileFor(lv);
+    state.usesLeft = state.profile.uses;
     state.active = true;
+    updateButtonUI();
   });
 
-  // drawOverlay — 帯背景を描画 + 未スナップ・非ドラッグピースをトレイ位置に
-  // 「毎フレーム上書き」する。 これで shuffle 直後の散らばりからも徐々に整列する。
-  //
-  // ※ ピースの x/y を直接書き換えるが、 main.js 側で次のフレームに rebuildPath が
-  //   呼ばれるのは「ユーザー操作 (onPointerMove) / shuffle / trySnap / hint」時のみ。
-  //   そのため、 path が更新されないと hitTest が古い座標基準のままになる。
-  //   → 我々が x/y を変えたら自分で rebuildPath 相当をする必要があるが、
-  //     rebuildPath は main.js に閉じている。 代替として、 x/y を書き換えると
-  //     次に redraw() が drawPiece(piece) を呼んで piece.path は古いまま。
-  //     hitTest は redraw 直後の onPointerDown でしか走らないため、 古い path のままだと
-  //     掴めない。
-  //     ★ 対応: 我々はピースを「移動」ではなく「ゆっくり寄せる」+ 自前で path を再構築する
-  //       のではなく、 動きを大きくしすぎないようにし、 hitTest 用の path は次の
-  //       onPointerDown 直前 redraw で再生成されることに依存する。
-  //       実際 main.js の onPointerDown は hitTest(p, x, y) で `rebuildPath(piece)` を
-  //       内部的に呼ぶ (parse 確認済み)。 よって x/y 上書きだけで掴める。
-  window.PonoAssistRegister('drawOverlay', function (ctx) {
-    if (!state.active) return;
-    if (!isAraiguma(ctx && ctx.partner)) return;
-    if (!ctx.ctx || !Array.isArray(ctx.pieces)) return;
-
-    var c2d = ctx.ctx;
-    var pieces = ctx.pieces;
-    var drag = ctx.dragPiece;
-    var canvas = ctx.canvas;
-    var pieceSize = ctx.pieceSize;
-
-    // -- (a) ピースをトレイ slot に寄せる (ease) ----------------------------
-    // いきなり瞬間移動すると不自然なので毎フレームじわっと寄せる。
-    // 体感ゼロにならないよう ease/maxStep を強化した (Lv0/1 でも引き寄せが見えるように)。
-    // ドラッグ中 / スナップ済みは触らない。
-    var ease = 0.55;
-    var maxStep = Math.max(8, pieceSize.w * 0.7); // 1 フレームあたりの最大移動量 (急ぎ寄せ)
-    var stillMoving = false;
-    for (var i = 0; i < pieces.length; i++) {
-      var p = pieces[i];
-      if (!p || p.snapped) continue;
-      if (p === drag) continue;
-      if (!p.__araiguma || p.__araiguma.slotX == null) continue;
-
-      var dx = p.__araiguma.slotX - p.x;
-      var dy = p.__araiguma.slotY - p.y;
-      // 距離が十分小さければスナップ的に確定
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
-        p.x = p.__araiguma.slotX;
-        p.y = p.__araiguma.slotY;
-        continue;
-      }
-      stillMoving = true;
-      var ax = dx * ease;
-      var ay = dy * ease;
-      // クランプ
-      if (ax > maxStep) ax = maxStep; else if (ax < -maxStep) ax = -maxStep;
-      if (ay > maxStep) ay = maxStep; else if (ay < -maxStep) ay = -maxStep;
-      p.x += ax;
-      p.y += ay;
-      // 回転は維持。 path は次回 redraw / hitTest で再構築されるので触らない。
-    }
-
-    // まだ目標に到達していないピースがあるなら、 もう 1 フレーム描画を要求する。
-    // (main.js は基本的にイベント駆動なので、 自前で rAF を引っ張る必要がある)
-    if (stillMoving && typeof ctx.requestRedraw === 'function') {
-      ctx.requestRedraw();
-    }
-
-    // -- (b) 色帯背景を描画 (drawOverlay 内・ピースの上から覆う) ---------------
-    // drawOverlay はピース描画後に走るため、 ピースの上に重ねる形になる。
-    // 子供の目で「色わけが効いている」と認識できる強度まで alpha を上げる。
-    // Lv で段階強化: Lv0/1=α0.40, Lv2=α0.50+境界線細, Lv3=α0.60+境界線太+マーカー。
-    if (state.bands && state.bands.length > 0) {
-      var style = state.style || { lv: 1, bandAlpha: 0.40, edgeAlpha: 0.0, edgeWidth: 0, marker: false };
-
-      // 色帯本体: 鮮やかな HSL (80% sat, 55% light) で視認性確保
-      c2d.save();
-      c2d.globalAlpha = style.bandAlpha;
-      for (var b = 0; b < state.bands.length; b++) {
-        var band = state.bands[b];
-        var hue = band.hue;
-        c2d.fillStyle = 'hsl(' + Math.round(hue) + ', 80%, 55%)';
-        c2d.fillRect(0, band.y0, canvas.w, band.h);
-      }
-      c2d.restore();
-
-      // 帯の上端に常時細い区切り線 (帯と帯の境目を必ず示す)
-      c2d.save();
-      c2d.globalAlpha = 0.55;
-      c2d.strokeStyle = 'rgba(93,78,55,0.7)';
-      c2d.lineWidth = 1;
-      for (var bb = 0; bb < state.bands.length; bb++) {
-        var bb_band = state.bands[bb];
-        c2d.beginPath();
-        c2d.moveTo(0, bb_band.y0);
-        c2d.lineTo(canvas.w, bb_band.y0);
-        c2d.stroke();
-      }
-      c2d.restore();
-
-      // Lv2+ : 各帯の代表 hue で太めの境界線を引いて「ここからこの色」を強調
-      if (style.edgeWidth > 0 && style.edgeAlpha > 0) {
-        c2d.save();
-        c2d.globalAlpha = style.edgeAlpha;
-        c2d.lineWidth = style.edgeWidth;
-        for (var be = 0; be < state.bands.length; be++) {
-          var beBand = state.bands[be];
-          // 帯固有色で輪郭を縁取り
-          c2d.strokeStyle = 'hsl(' + Math.round(beBand.hue) + ', 85%, 35%)';
-          c2d.beginPath();
-          // 上下の境界 (帯の上端 + 下端)
-          c2d.moveTo(0, beBand.y0 + style.edgeWidth / 2);
-          c2d.lineTo(canvas.w, beBand.y0 + style.edgeWidth / 2);
-          c2d.moveTo(0, beBand.y0 + beBand.h - style.edgeWidth / 2);
-          c2d.lineTo(canvas.w, beBand.y0 + beBand.h - style.edgeWidth / 2);
-          c2d.stroke();
-        }
-        c2d.restore();
-      }
-
-      // Lv3 : 各クラスタの左端にラベル風マーカー (色玉)
-      // small screens (<480px) ではマーカーを縮小し、 左端からの位置も狭めて
-      // 色帯本体と重ならないよう配慮する (high-finding 修正)。
-      if (style.marker) {
-        c2d.save();
-        c2d.globalAlpha = 0.85;
-        var isSmall = canvas.w < 480;
-        var markerR = isSmall ? 5 : 7;
-        var markerX = isSmall ? 9 : 14;
-        // 帯高がマーカーより小さい極端ケースではさらに縮める
-        for (var bm = 0; bm < state.bands.length; bm++) {
-          var bmBand = state.bands[bm];
-          var cy = bmBand.y0 + bmBand.h / 2;
-          var rDraw = markerR;
-          // 帯高が極端に狭ければマーカーを帯高の 40% に
-          if (bmBand.h > 0 && rDraw * 2 > bmBand.h * 0.8) {
-            rDraw = Math.max(3, bmBand.h * 0.4);
-          }
-          // 外枠
-          c2d.fillStyle = 'rgba(255,255,255,0.9)';
-          c2d.beginPath();
-          c2d.arc(markerX, cy, rDraw + 1.5, 0, Math.PI * 2);
-          c2d.fill();
-          // 中の色玉
-          c2d.fillStyle = 'hsl(' + Math.round(bmBand.hue) + ', 90%, 50%)';
-          c2d.beginPath();
-          c2d.arc(markerX, cy, rDraw, 0, Math.PI * 2);
-          c2d.fill();
-        }
-        c2d.restore();
-      }
-    }
+  // ---------------------------------------------------------------------------
+  // Hook: beforeStageStart — ボタン隠す & クリア
+  // ---------------------------------------------------------------------------
+  window.PonoAssistRegister('beforeStageStart', function (ctx) {
+    state.active = false;
+    state.glowQueue = [];
+    state.busy = false;
+    state.usesLeft = 0;
+    state.stageId = null;
+    updateButtonUI();
   });
 
-  // afterSnap — スナップ後はトレイ残りメンバーを詰め直す (見た目の隙間を埋める)
+  // ---------------------------------------------------------------------------
+  // Hook: afterSnap — 全部はまったら自動でボタン無効化
+  // ---------------------------------------------------------------------------
   window.PonoAssistRegister('afterSnap', function (ctx) {
     if (!state.active) return;
     if (!isAraiguma(ctx && ctx.partner)) return;
-    // 単純に再レイアウト。 ピース集合は main.js から取れないので、 ctx.piece の所属
-    // クラスタだけ無効化し、 残りピースは次の drawOverlay で順次寄っていく。
-    // 全体再レイアウトには pieces 配列が要るが、 ここでは取れない。
-    // → afterSnap では何もせず、 trayレイアウトは次の afterStageReady まで固定。
-    //   (子供向け UX として「ハマったピースの空きは埋めない」方が混乱が少ない)
+    // 完全クリアでボタン無効
+    if (ctx && ctx.snappedCount >= ctx.total) {
+      state.usesLeft = 0;
+      updateButtonUI();
+    }
   });
 
-  // beforeStageStart — 旧ステージのキャッシュをクリア
-  window.PonoAssistRegister('beforeStageStart', function (ctx) {
-    state.active = false;
-    state.bands = [];
-    state.stageId = null;
-    state.style = null;
+  // ---------------------------------------------------------------------------
+  // Hook: drawOverlay — 光リング + アライグマアイコン
+  // ---------------------------------------------------------------------------
+  window.PonoAssistRegister('drawOverlay', function (ctx) {
+    if (!state.active) {
+      // 残った glow も非アクティブ時はクリア
+      if (state.glowQueue.length) state.glowQueue = [];
+      return;
+    }
+    if (!isAraiguma(ctx && ctx.partner)) return;
+    if (!ctx || !ctx.ctx || !ctx.pieceSize) return;
+    var queue = state.glowQueue;
+    if (!queue || queue.length === 0) return;
+
+    var c2d = ctx.ctx;
+    var pw = ctx.pieceSize.w;
+    var ph = ctx.pieceSize.h;
+    var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+
+    // queue を歩いて期限切れを除去 + 描画
+    var nextQueue = [];
+    var hasLive = false;
+    for (var i = 0; i < queue.length; i++) {
+      var item = queue[i];
+      if (!item || !item.piece) continue;
+      if (now >= item.endTs) continue; // 期限切れ
+      hasLive = true;
+      nextQueue.push(item);
+
+      // 進捗 0〜1
+      var t = (now - item.startTs) / Math.max(1, item.endTs - item.startTs);
+      if (t < 0) t = 0; else if (t > 1) t = 1;
+      // 0 →peak で立ち上がり→ 1 で消える 形状 (sin)
+      var alpha = Math.sin(t * Math.PI); // 0..1..0
+      if (alpha <= 0.01) continue;
+
+      // ピースの中心 (snap 後はホーム位置にいる)
+      var piece = item.piece;
+      var cx = piece.x + pw / 2;
+      var cy = piece.y + ph / 2;
+
+      // 外側のソフトリング (黄色)
+      c2d.save();
+      c2d.globalAlpha = 0.85 * alpha;
+      var ringR = Math.max(pw, ph) * (0.55 + 0.35 * t); // 広がりつつ
+      var grad;
+      try {
+        grad = c2d.createRadialGradient(cx, cy, ringR * 0.15, cx, cy, ringR);
+        grad.addColorStop(0, 'rgba(255,245,180,0.95)');
+        grad.addColorStop(0.55, 'rgba(247,201,72,0.55)');
+        grad.addColorStop(1, 'rgba(247,201,72,0)');
+        c2d.fillStyle = grad;
+      } catch (_) {
+        c2d.fillStyle = 'rgba(247,201,72,0.5)';
+      }
+      c2d.beginPath();
+      c2d.arc(cx, cy, ringR, 0, Math.PI * 2);
+      c2d.fill();
+      c2d.restore();
+
+      // 中央のシャープな白光 (ぴかっ)
+      c2d.save();
+      c2d.globalAlpha = 0.9 * alpha;
+      var coreR = Math.max(pw, ph) * 0.22 * (0.8 + 0.4 * Math.sin(t * Math.PI));
+      c2d.fillStyle = '#FFFFFF';
+      c2d.beginPath();
+      c2d.arc(cx, cy, coreR, 0, Math.PI * 2);
+      c2d.fill();
+      c2d.restore();
+
+      // ピース輪郭を黄金で縁取り (どのピースが助けられたか分かる)
+      c2d.save();
+      c2d.globalAlpha = 0.9 * alpha;
+      c2d.strokeStyle = '#F7C948';
+      c2d.lineWidth = Math.max(3, pw * 0.08);
+      c2d.beginPath();
+      c2d.rect(piece.x + 2, piece.y + 2, pw - 4, ph - 4);
+      c2d.stroke();
+      c2d.restore();
+
+      // アライグマ絵文字 🦝 をピース右上に配置 (フェード)
+      c2d.save();
+      c2d.globalAlpha = alpha;
+      var emojiSize = Math.max(20, Math.floor(Math.min(pw, ph) * 0.55));
+      c2d.font = emojiSize + 'px serif';
+      c2d.textAlign = 'center';
+      c2d.textBaseline = 'middle';
+      // 影 (読みやすさのため)
+      c2d.fillStyle = 'rgba(0,0,0,0.35)';
+      c2d.fillText('🦝', cx + 2, cy - ph * 0.5 + 2);
+      c2d.fillStyle = '#FFFFFF';
+      c2d.fillText('🦝', cx, cy - ph * 0.5);
+      c2d.restore();
+    }
+    state.glowQueue = nextQueue;
+
+    // まだ生きてる演出があるなら次フレームも描画要求
+    if (hasLive && typeof ctx.requestRedraw === 'function') {
+      try { ctx.requestRedraw(); } catch (_) {}
+    }
   });
 })();

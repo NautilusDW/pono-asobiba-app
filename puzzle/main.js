@@ -445,15 +445,25 @@ function showSuccessModal() {
 
   playFanfare();
   spawnConfetti();
-  if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
-  if (window.addAcornsDaily) window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear' });
 
-  // スタンプラリー: プレイ記録
-  (function() {
-    var k = 'pono_played_' + new Date().toDateString();
-    var a = JSON.parse(localStorage.getItem(k) || '[]');
-    if (a.indexOf('puzzle') === -1) { a.push('puzzle'); localStorage.setItem(k, JSON.stringify(a)); }
-  })();
+  // ★ 二重報酬防止 (high finding 修正):
+  //   PonoPuzzleForceSnapPiece (アライグマ assist 等) が連続スナップで完了させた場合、
+  //   showSuccessModal が複数回呼ばれる可能性がある。 incrementStat / addAcornsDaily は
+  //   現状 idempotent ではないため、 ステージ単位で「報酬付与済みフラグ」を立てて
+  //   2 回目以降の付与をスキップする。 フラグは loadStage() でリセット。
+  var __rewardKey = '__pono_puzzle_reward_granted_' + (currentStageIndex);
+  if (!window[__rewardKey]) {
+    window[__rewardKey] = true;
+    if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
+    if (window.addAcornsDaily) window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear' });
+
+    // スタンプラリー: プレイ記録 (1ステージ 1 回でよいので報酬付与時にまとめる)
+    (function() {
+      var k = 'pono_played_' + new Date().toDateString();
+      var a = JSON.parse(localStorage.getItem(k) || '[]');
+      if (a.indexOf('puzzle') === -1) { a.push('puzzle'); localStorage.setItem(k, JSON.stringify(a)); }
+    })();
+  }
 
   const isLast = currentStageIndex >= STAGES.length - 1;
   if (isLast) {
@@ -951,6 +961,66 @@ function trySnap(piece) {
   return true;
 }
 
+// ===== Assist external helper: Force-snap a piece =====
+//
+// アシスト (araiguma 「ぴかっとおてつだい」等) が、 指定ピースを強制的に
+// スナップ済み状態にするための public ヘルパ。
+//
+// 通常の trySnap() は「homeX/homeY との距離 < SNAP_DIST」を要求するが、
+// この関数は距離判定をスキップしてそのままホーム位置にスナップする。
+// beforeSnap フックも呼ばないので、 他アシストがキャンセルすることはない。
+// (アライグマの自動スナップは「ボタン明示操作」なので、 他補助に拒否権を
+//  与えると UX 上不自然なため)
+//
+// 戻り値: 実際にスナップした場合 true。 既にスナップ済み / 不正引数なら false。
+window.PonoPuzzleForceSnapPiece = function (piece) {
+  if (!piece || piece.snapped) return false;
+  if (!pieces || pieces.indexOf(piece) < 0) return false;
+  piece.x = piece.homeX;
+  piece.y = piece.homeY;
+  piece.rotation = 0;
+  piece.snapped = true;
+  piece.zOrder = -1;
+  rebuildPath(piece);
+  snappedCount++;
+  updateProgress();
+  playSnapSound();
+
+  // === Assist hook: afterSnap ===
+  runAssistHooks('afterSnap', {
+    piece: piece,
+    snappedCount: snappedCount,
+    total: stageTotalPieces,
+    partner: getCurrentPartner(),
+  }, false);
+
+  if (snappedCount >= stageTotalPieces) {
+    redraw();
+    setTimeout(showSuccessModal, 300);
+  } else {
+    redraw();
+  }
+  return true;
+};
+
+// 未スナップピースの read-only スナップショットを返す (アシスト向け)。
+// 配列自体は新規生成し中身は参照共有 (assist 側からピース x/y を弄っても
+// main 内部 pieces 配列の同じピース要素を指すので OK)。
+window.PonoPuzzleGetUnsnappedPieces = function () {
+  if (!pieces || !pieces.length) return [];
+  var out = [];
+  for (var i = 0; i < pieces.length; i++) {
+    var p = pieces[i];
+    if (p && !p.snapped) out.push(p);
+  }
+  return out;
+};
+
+// アシストが overlay を即時再描画したい時用。
+window.PonoPuzzleRequestRedraw = function () {
+  try { requestAnimationFrame(redraw); } catch (_) { try { redraw(); } catch (__) {} }
+};
+
 // ===== Pointer Events =====
 function getPos(e) {
   const rect = puzzleCanvas.getBoundingClientRect();
@@ -1115,6 +1185,12 @@ function initPuzzle(img) {
 function loadStage(index) {
   currentStageIndex = index;
   const stage = STAGES[index];
+
+  // ★ 二重報酬防止フラグのリセット (showSuccessModal idempotency 用 — high finding 修正)
+  //   新ステージに入る度に「報酬未付与」状態へ戻す。
+  try { delete window['__pono_puzzle_reward_granted_' + index]; } catch (_) {
+    window['__pono_puzzle_reward_granted_' + index] = false;
+  }
 
   // === Assist hook: beforeStageStart ===
   runAssistHooks('beforeStageStart', {

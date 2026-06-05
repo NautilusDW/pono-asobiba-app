@@ -230,6 +230,50 @@
       // 万が一描画失敗しても本体に影響を出さない
     }
     cctx.restore();
+
+    // === (4) ピース枠線の上書き描画 (緑、太さ 2 倍) ===
+    // main.js drawPiece では強くオレンジ (#F2915A) で描いているので、 source-over で
+    // 上から重ねれば「枠線が緑に変わった」ように見える。 nearness が高いほど鮮やかに。
+    // - 仕様: ピース矩形 (piece.x, piece.y, pieceW, pieceH) と同じ位置に strokeRect
+    // - 太さ: 通常 dragPiece の 2.5 → 2.0 倍 = 5.0 (nearness 補間で更に滑らかに)
+    // - 色: nearness 0 で透明 (描画スキップ) → nearness 1 で鮮やか緑 #22c55e
+    // - rotation 付きピースに追従するため、 中心回転 transform を再現する
+    try {
+      // nearness が 0 近辺なら描画意味なし (オレンジのまま見える) → ノイズ防止
+      if (nearness > 0.05) {
+        cctx.save();
+        // 仕様通り source-over (デフォルト) で「枠線色を上書き」する
+        cctx.globalCompositeOperation = 'source-over';
+
+        // 回転ピース対応: piece.rotation (deg) があれば中心回転する
+        var rot = piece.rotation || 0;
+        if (rot) {
+          cctx.translate(cx, cy);
+          cctx.rotate(rot * Math.PI / 180);
+          cctx.translate(-cx, -cy);
+        }
+
+        // 線色: 緑 (鮮やかさを nearness で 0.6 → 1.0 に補間して、 近づくほど鮮明に)
+        var outlineAlpha = 0.6 + 0.4 * nearness;
+        cctx.strokeStyle = 'rgba(' + OUTLINE_NEAR_COLOR.r + ',' + OUTLINE_NEAR_COLOR.g + ',' + OUTLINE_NEAR_COLOR.b + ',' + outlineAlpha.toFixed(3) + ')';
+
+        // 太さ: 仕様「2 倍」。 main.js の dragPiece 通常 2.5 → 5.0 を基準に nearness で
+        //       薄く始まり、 近づくほど 1.0x の重さに乗せる (0.7 → 1.0)
+        var widthScale = 0.7 + 0.3 * nearness;
+        cctx.lineWidth = OUTLINE_BASE_WIDTH * OUTLINE_MULTIPLIER * widthScale;
+        cctx.lineJoin = 'round';
+        cctx.lineCap = 'round';
+
+        // ピース矩形をそのまま strokeRect (タブの凹凸まで再現する API は kojika 側に
+        // 公開されていないため、 仕様どおり bounding rect で重ねる。 短手の角は
+        // round で滑らかに見える)
+        cctx.strokeRect(piece.x, piece.y, pieceW, pieceH);
+
+        cctx.restore();
+      }
+    } catch (_) {
+      // 枠線描画失敗時もグロー部の描画は維持済み
+    }
   }
 
   // === 登録 ===
