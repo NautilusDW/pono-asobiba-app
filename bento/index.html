@@ -39,6 +39,13 @@ html, body {
   overflow: hidden;
   overscroll-behavior: none;
 }
+/* bento は #app を固定キャンバス(1600x900 / 1200x1500) + transform scale で扱う
+   特殊レイアウト。 body には display:flex 等を入れず、 純粋な block コンテナと
+   して fitStage に幾何計算を委ねる (quizland と同じ設計)。 */
+body {
+  display: block;
+  position: relative;
+}
 
 #title-screen {
   position: fixed;
@@ -165,6 +172,8 @@ html, body {
   gap: 16px;
   padding: 76px 32px 28px;
   background: center / cover no-repeat url('../assets/images/bento/ui/free_layout_background_21x9.webp');
+  /* 親 #app から継承されるが、 デバッグ時の混乱回避と将来の CSS 競合保険で明示 */
+  transform-origin: 0 0;
 }
 #app.layout-vertical .left-panel {
   /* display:contents で bento-box と free-context-bar を #app の grid item に昇格させる。
@@ -2650,7 +2659,12 @@ body.bento-vertical .game-title {
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
-<body>
+<!-- no-vh-clamp: common/menu.js が touch デバイスに inject する
+     `#app { height: calc(var(--vh)*100) !important }` をスキップさせる opt-out フラグ。
+     bento は #app を 1600x900 / 1200x1500 の固定キャンバスとして使い、
+     viewport 差は transform:scale で吸収するため、 高さを vh で上書きされると
+     fitStage の geometry が破綻する。 -->
+<body class="no-vh-clamp">
 
 <!-- BGM (loop) -->
 <audio id="bgm" loop preload="auto" src="../assets/audio/bento_bgm.mp3"></audio>
@@ -2860,8 +2874,16 @@ body.bento-vertical .game-title {
     }
     // JS が inline で width/height を打って CSS の固定値 (1600/900) を上書き。
     // CSS @media と二重管理にならないよう、 サイズは JS 一本化。
-    el.style.width  = LAYOUTS[mode].w + 'px';
-    el.style.height = LAYOUTS[mode].h + 'px';
+    //
+    // 重要 (v815): common/menu.js が touch デバイス検出時に
+    //   @media (pointer: coarse) { #app { height: calc(var(--vh)*100) !important; } }
+    // を <head> に動的注入する。 これは inline style (no-important) より強いため、
+    // fitStage が前提とする仮想キャンバス高 (BH=900/1500) と実描画ボックス高が
+    // 食い違い、 中央寄せが破綻する (画面上 1/4 に圧縮 → 下に巨大空白)。
+    // setProperty(..., 'important') で inline !important として書き、 author origin 内
+    // 最強の優先度 (inline !important > CSS !important) を確保する。
+    el.style.setProperty('width',  LAYOUTS[mode].w + 'px', 'important');
+    el.style.setProperty('height', LAYOUTS[mode].h + 'px', 'important');
     // 切替直後 1 frame は transform transition を切る (scale ジャンプを即時化)
     var prevTransition = el.style.transition;
     el.style.transition = 'none';
