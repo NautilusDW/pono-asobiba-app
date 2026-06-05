@@ -154,7 +154,7 @@ window.PonoPartnerSelect = (function () {
       (!locked && currentSel === p.id ? ' is-selected' : '');
     card.setAttribute('data-partner-id', p.id);
     card.setAttribute('aria-label',
-      p.name + (locked ? ' (ロック中)' : '') + ' — ' + (p.trait || '')
+      p.name + (locked ? ' (ロック中)' : '') + ' — ' + (p.assistDesc || p.trait || '')
     );
     if (locked) card.setAttribute('aria-disabled', 'true');
 
@@ -199,24 +199,13 @@ window.PonoPartnerSelect = (function () {
     name.textContent = p.name || p.id;
     card.appendChild(name);
 
-    // 性格
-    if (p.trait) {
-      var trait = document.createElement('div');
-      trait.className = 'pono-pselect__trait';
-      trait.textContent = p.trait;
-      card.appendChild(trait);
-    }
-
-    // とくいわざ
-    if (p.assistName) {
-      var assist = document.createElement('div');
-      assist.className = 'pono-pselect__assist';
-      assist.textContent = p.assistName;
-      card.appendChild(assist);
-    }
-
-    // とくいわざの説明 (子供向け 1〜2行のひらがな)
+    // とくぎの説明。技名や性格文はカード上に出さず、説明だけを読ませる。
     if (p.assistDesc) {
+      var assistLabel = document.createElement('div');
+      assistLabel.className = 'pono-pselect__assist-label';
+      assistLabel.textContent = 'とくぎ';
+      card.appendChild(assistLabel);
+
       var assistDesc = document.createElement('div');
       assistDesc.className = 'pono-pselect__assist-desc';
       assistDesc.textContent = p.assistDesc;

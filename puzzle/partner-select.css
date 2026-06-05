@@ -273,35 +273,31 @@
   line-height: 1.2;
 }
 
-/* --- カード: 性格 / とくいわざ ---
-   小さい画面でも読める下限 12px 程度を維持、line-height を 1.5 に上げて可読性向上 */
-.pono-pselect__trait,
-.pono-pselect__assist {
-  font-size: clamp(0.85rem, 2.8vw, 0.98rem);
-  line-height: 1.5;
-  color: #6B4F2A;
-  margin: 2px 0;
-  word-break: keep-all;
-  overflow-wrap: normal;
-  line-break: strict;
-  text-wrap: balance;
-}
-
-.pono-pselect__assist {
+/* --- カード: とくぎ ---
+   技名は出さず、見出し + 子ども向けの短い説明だけを表示する。 */
+.pono-pselect__assist-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(247, 201, 72, 0.28);
   color: #8a4d1a;
-  font-weight: 700;
+  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+  font-weight: 900;
+  line-height: 1.15;
+  margin: 2px 0 4px;
+  word-break: keep-all;
+  white-space: nowrap;
 }
 
-.pono-pselect__assist::before {
-  content: '✨ ';
-}
-
-/* --- とくいわざ説明 (子供向け 1〜2行のひらがな) --- */
+/* --- とくぎ説明 (子供向け 1〜3行のひらがな) --- */
 .pono-pselect__assist-desc {
   font-size: 14px;
-  color: #555;
+  color: #5d4e37;
   line-height: 1.4;
-  margin-top: 4px;
+  margin-top: 2px;
   max-width: 200px;
   margin-left: auto;
   margin-right: auto;
@@ -496,8 +492,7 @@
     margin: 0 0 2px;
   }
 
-  .pono-pselect__trait,
-  .pono-pselect__assist,
+  .pono-pselect__assist-label,
   .pono-pselect__assist-desc,
   .pono-pselect__lock-reason {
     font-size: clamp(0.64rem, 1.55vw, 0.76rem);
@@ -505,17 +500,17 @@
     margin: 1px 0;
   }
 
-  .pono-pselect__trait,
-  .pono-pselect__assist,
+  .pono-pselect__assist-label,
   .pono-pselect__assist-desc {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  .pono-pselect__trait,
-  .pono-pselect__assist {
-    -webkit-line-clamp: 2;
+  .pono-pselect__assist-label {
+    min-height: 18px;
+    padding: 1px 8px;
+    -webkit-line-clamp: 1;
   }
 
   .pono-pselect__assist-desc {
@@ -595,8 +590,7 @@
     line-height: 1.08;
   }
 
-  .pono-pselect__trait,
-  .pono-pselect__assist,
+  .pono-pselect__assist-label,
   .pono-pselect__assist-desc {
     font-size: 0.6rem;
     line-height: 1.12;
