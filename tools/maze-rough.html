@@ -3390,12 +3390,21 @@ function _paramsForDifficulty(d) {
   const ch = Math.floor((GRID_H - 2) / cellStride);
   let straightBias, creatureCount;
   let loopFraction = 0;
+  // narrow/2-panel 専用: 行き止まり延伸 + braid のパラメータ。
+  // wide では未使用 (= 触らない方針) なので undefined のまま返す。
+  let minBranchLen, minTurns, maxExtendOps, braidRate, minDetour, maxShortDeadEndRatio;
   if (twoPanel) {
     // d=75..100: 2 panels。tier-2 末端 (d=74, bias=0) からなだらかに増やすが、
     // 30% 以上にはしない (大きい盤面で snake にすると「ただ長い」になる)。
     const t = (v - 75) / 25;
     straightBias  = 0.30 * (1 - t);         // 0.30 → 0
     creatureCount = Math.round(5 + 5 * t);  // 5 → 10
+    minBranchLen           = Math.round(4 + 2 * t);  // 4 → 6
+    minTurns               = Math.round(1 + t);      // 1 → 2
+    maxExtendOps           = 20;
+    braidRate              = 0.20 + 0.25 * t;        // 0.20 → 0.45
+    minDetour              = Math.round(10 + 6 * t); // 10 → 16
+    maxShortDeadEndRatio   = 0.20;
   } else if (wideMode) {
     // d=1..49: 2-tile 路幅 (stride=3)。50 セル (10×5)。pure spanning tree
     // (= ループなし、start→goal 一意経路)。ループは戦略的意味がないので使わない。
@@ -3414,6 +3423,12 @@ function _paramsForDifficulty(d) {
     const t = (v - 50) / 24;
     straightBias  = 0.40 * (1 - t);         // 0.40 → 0
     creatureCount = Math.round(2 + 3 * t);  // 2 → 5
+    minBranchLen           = Math.round(4 + 2 * t);  // 4 → 6
+    minTurns               = 1;
+    maxExtendOps           = 20;
+    braidRate              = 0.15 + 0.20 * t;        // 0.15 → 0.35
+    minDetour              = Math.round(6 + 4 * t);  // 6 → 10
+    maxShortDeadEndRatio   = 0.20;
   }
   return {
     difficulty: v,
@@ -3426,6 +3441,13 @@ function _paramsForDifficulty(d) {
     loopFraction: loopFraction, // wide mode で d>0 のとき余分な壁を抜く (多経路 = 判断点増)
     deadEndPrune: 0,            // never prune — always full maze
     creatureCount: creatureCount,
+    wideMode: wideMode,
+    minBranchLen: minBranchLen,
+    minTurns: minTurns,
+    maxExtendOps: maxExtendOps,
+    braidRate: braidRate,
+    minDetour: minDetour,
+    maxShortDeadEndRatio: maxShortDeadEndRatio,
   };
 }
 
@@ -3690,6 +3712,210 @@ function _addLoops(maze, cw, ch, offX, offY, cellStride, loopFraction) {
   return target;
 }
 
+// 行き止まり (degree=1) から親方向のみ走査し、分岐点 (degree>=3) または
+// 別 dead-end まで cell 列を返す。各 cell は "ci,cj" 文字列。
+// 設計案A 用ヘルパ (narrow/2-panel 専用)。
+function _enumerateDeadEndBranches(adj) {
+  const branches = [];
+  const keys = Object.keys(adj);
+  for (const k of keys) {
+    const nb = adj[k] ? Object.keys(adj[k]) : [];
+    if (nb.length !== 1) continue;
+    const cells = [k];
+    let prev = k;
+    let cur = nb[0];
+    let safety = 0;
+    while (safety++ < 2000) {
+      const cnb = adj[cur] ? Object.keys(adj[cur]) : [];
+      if (cnb.length >= 3) { cells.push(cur); break; } // 分岐点で停止 (合流先も枝末尾として含める)
+      if (cnb.length <= 1) { cells.push(cur); break; } // 別 dead-end / 孤立で停止
+      const nxt = cnb.find(function(x) { return x !== prev; });
+      if (!nxt) break; // cnb.length === 2 で nxt が取れない退化ケース (cur は push しない)
+      cells.push(cur);
+      prev = cur;
+      cur = nxt;
+    }
+    branches.push({ cells: cells });
+  }
+  return branches;
+}
+
+// 連続 cell 列 (key 配列) の方向差分が変化した回数を返す。
+// 設計案A 用ヘルパ (narrow/2-panel 専用)。
+function _countTurns(cells) {
+  if (!cells || cells.length < 3) return 0;
+  let turns = 0;
+  let prevDX = null, prevDY = null;
+  for (let i = 1; i < cells.length; i++) {
+    const a = cells[i - 1].split(',').map(Number);
+    const b = cells[i].split(',').map(Number);
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    if (prevDX != null && (dx !== prevDX || dy !== prevDY)) turns++;
+    prevDX = dx; prevDY = dy;
+  }
+  return turns;
+}
+
+// 設計案A: 短すぎる行き止まり枝を carve で延伸して「ちゃんと迷う」枝にする。
+// wide tier では呼ばない。連結性は新規 carve のみなので保たれる。
+function _extendDeadEnds(maze, cw, ch, cellStride, params) {
+  try {
+    const adj = maze.adj;
+    const tiles = maze.tiles;
+    const cellRowX = maze.cellRowX, cellRowY = maze.cellRowY;
+    const minBL = params.minBranchLen || 3;
+    const minT  = params.minTurns || 1;
+    let budget  = params.maxExtendOps || 12;
+    // 周辺 cell が全部 alive で延伸できなかった tip を覚えておき、 次 iteration 以降は
+    // 候補から除外する。 これをしないと毎 iteration 同じ枝が選ばれて budget だけ削られる。
+    const skipTips = new Set();
+    function key(i, j) { return i + ',' + j; }
+    function addEdge(a, b) {
+      if (!adj[a]) adj[a] = {};
+      if (!adj[b]) adj[b] = {};
+      adj[a][b] = true; adj[b][a] = true;
+    }
+    while (budget-- > 0) {
+      const branches = _enumerateDeadEndBranches(adj).filter(function(b) {
+        if (skipTips.has(b.cells[b.cells.length - 1])) return false;
+        return b.cells.length < minBL || _countTurns(b.cells) < minT;
+      });
+      if (branches.length === 0) break;
+      branches.sort(function(a, b) { return a.cells.length - b.cells.length; });
+      const b = branches[0];
+      let tipKey = b.cells[b.cells.length - 1];
+      // dead-end の枝先 (degree=1) を確実に取得
+      const tipNb = adj[tipKey] ? Object.keys(adj[tipKey]) : [];
+      if (tipNb.length !== 1) {
+        tipKey = b.cells[0];
+        if (!adj[tipKey] || Object.keys(adj[tipKey]).length !== 1) break;
+      }
+      // 枝末尾の進行方向 (= 最後の 2 cell の差分) を取る
+      let lastDX = 0, lastDY = 0;
+      if (b.cells.length >= 2) {
+        const p0 = b.cells[b.cells.length - 2].split(',').map(Number);
+        const p1 = b.cells[b.cells.length - 1].split(',').map(Number);
+        lastDX = p1[0] - p0[0]; lastDY = p1[1] - p0[1];
+      }
+      // 連続延伸 (最大 minBL 回) — 枝を太くしない、carve のみ
+      let carved = 0;
+      while (carved < minBL) {
+        const tipParts = tipKey.split(',').map(Number);
+        const ci = tipParts[0], cj = tipParts[1];
+        const candidates = [];
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        for (const dir of dirs) {
+          const ni = ci + dir[0], nj = cj + dir[1];
+          if (ni < 0 || ni >= cw || nj < 0 || nj >= ch) continue;
+          const nk = key(ni, nj);
+          if (adj[nk]) continue;
+          const perpendicular = (lastDX !== 0 || lastDY !== 0)
+            ? (dir[0] * lastDX + dir[1] * lastDY === 0) ? 1 : 0
+            : 1;
+          candidates.push({ dx: dir[0], dy: dir[1], ni: ni, nj: nj, nk: nk, perp: perpendicular });
+        }
+        if (candidates.length === 0) break;
+        _shuffle(candidates);
+        candidates.sort(function(a, b) { return b.perp - a.perp; });
+        // perpendicular 優先は子供が直感的に "曲がり角の方が迷う" 体験を持つため。
+        const head = candidates.filter(function(c) { return c.perp === candidates[0].perp; });
+        const pick = head[Math.floor(Math.random() * head.length)];
+        // carve corridor (east/south のみ対応 — 反対方向は隣接側から carve する)
+        if (pick.dx === 1 || pick.dy === 1) {
+          _carveCorridor(tiles, ci, cj, pick.dx, pick.dy, cellRowX, cellRowY, cellStride, cw, ch);
+        } else {
+          // west/north は隣接 cell から逆方向で carve
+          _carveCorridor(tiles, pick.ni, pick.nj, -pick.dx, -pick.dy, cellRowX, cellRowY, cellStride, cw, ch);
+        }
+        // 新規 cell の interior も明示的に carve しておく (= 端点が確実に path)
+        _carveCellInterior(tiles, pick.ni, pick.nj, cellRowX, cellRowY, cellStride, cw, ch);
+        addEdge(tipKey, pick.nk);
+        tipKey = pick.nk;
+        lastDX = pick.dx; lastDY = pick.dy;
+        carved++;
+      }
+      if (carved === 0) {
+        skipTips.add(tipKey);
+        continue;
+      }
+    }
+  } catch (err) {
+    console.warn('[maze-rough] _extendDeadEnds skipped:', err);
+  }
+}
+
+// 設計案B: dead-end を遠方の alive cell と合流させてループ化する (braid)。
+// minDetour 未満 (= ショートカット) の合流は避けて、迂回路としての価値を保つ。
+// wide tier では呼ばない。
+function _braidDeadEnds(maze, cw, ch, cellStride, params) {
+  try {
+    const adj = maze.adj;
+    const tiles = maze.tiles;
+    const cellRowX = maze.cellRowX, cellRowY = maze.cellRowY;
+    const braidRate = params.braidRate || 0;
+    const minDetour = params.minDetour || 6;
+    if (braidRate <= 0) return 0;
+    function key(i, j) { return i + ',' + j; }
+    function addEdge(a, b) {
+      if (!adj[a]) adj[a] = {};
+      if (!adj[b]) adj[b] = {};
+      adj[a][b] = true; adj[b][a] = true;
+    }
+    const deadEnds = Object.keys(adj).filter(function(k) {
+      return adj[k] && Object.keys(adj[k]).length === 1;
+    });
+    _shuffle(deadEnds);
+    const target = Math.floor(deadEnds.length * braidRate);
+    let removed = 0;
+    for (const dk of deadEnds) {
+      if (removed >= target) break;
+      const parts = dk.split(',').map(Number);
+      const ci = parts[0], cj = parts[1];
+      const candidates = [];
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      for (const dir of dirs) {
+        const ni = ci + dir[0], nj = cj + dir[1];
+        if (ni < 0 || ni >= cw || nj < 0 || nj >= ch) continue;
+        const nk = key(ni, nj);
+        if (!adj[nk]) continue;
+        if (adj[dk] && adj[dk][nk]) continue;
+        const dPre = _bfsCellDistance(adj, dk, nk);
+        if (dPre >= minDetour) {
+          candidates.push({ nk: nk, dx: dir[0], dy: dir[1], ni: ni, nj: nj, dPre: dPre });
+        }
+      }
+      if (candidates.length === 0) continue;
+      candidates.sort(function(a, b) { return b.dPre - a.dPre; });
+      const pick = candidates[0];
+      if (pick.dx === 1 || pick.dy === 1) {
+        _carveCorridor(tiles, ci, cj, pick.dx, pick.dy, cellRowX, cellRowY, cellStride, cw, ch);
+      } else {
+        _carveCorridor(tiles, pick.ni, pick.nj, -pick.dx, -pick.dy, cellRowX, cellRowY, cellStride, cw, ch);
+      }
+      addEdge(dk, pick.nk);
+      removed++;
+    }
+    return removed;
+  } catch (err) {
+    console.warn('[maze-rough] _braidDeadEnds skipped:', err);
+    return 0;
+  }
+}
+
+// 設計案C ヘルパ: dead-end branch のうち長さが minBranchLen 未満のものの割合 (0..1)。
+// 値が小さいほど「ちゃんと迷う」枝が多い、 = 良い迷路。 wide では使わない。
+function _shortDeadEndRatio(maze, minBranchLen) {
+  try {
+    const branches = _enumerateDeadEndBranches(maze.adj);
+    if (branches.length === 0) return 0;
+    const shortCount = branches.filter(function(b) { return b.cells.length < minBranchLen; }).length;
+    return shortCount / branches.length;
+  } catch (err) {
+    console.warn('[maze-rough] _shortDeadEndRatio failed:', err);
+    return 0;
+  }
+}
+
 // BFS in the cell adjacency graph. Returns parent map for path reconstruction.
 function _bfsCellPath(adj, fromKey, toKey) {
   const parent = {}; parent[fromKey] = null;
@@ -3710,6 +3936,25 @@ function _bfsCellPath(adj, fromKey, toKey) {
     }
   }
   return [];
+}
+
+// 隣接グラフでの cell 距離のみを返す BFS (path 不要時用)。 見つからなければ Infinity。
+// 設計案B braid の minDetour 判定で使う。
+function _bfsCellDistance(adj, fromKey, toKey) {
+  if (fromKey === toKey) return 0;
+  const dist = {}; dist[fromKey] = 0;
+  const queue = [fromKey];
+  while (queue.length) {
+    const k = queue.shift();
+    const nb = adj[k] ? Object.keys(adj[k]) : [];
+    for (const n of nb) {
+      if (n in dist) continue;
+      dist[n] = dist[k] + 1;
+      if (n === toKey) return dist[n];
+      queue.push(n);
+    }
+  }
+  return Infinity;
 }
 
 function _farthestCellPair(adj, cw, ch) {
@@ -3936,10 +4181,25 @@ function generateMazeForDifficulty(d) {
   // (centering の Math.floor の影響) が、最終セル拡張で右と下は 1 タイル確定。
   const offX = Math.floor((GRID_W - cw * cellStride) / 2);
   const offY = Math.floor((GRID_H - ch * cellStride) / 2);
-  const maze = _buildMazeCells(cw, ch, offX, offY, cellStride, params.straightBias);
-  // Add loops first (extra walls knocked down → multiple solution paths)
-  if (params.loopFraction > 0) {
-    _addLoops(maze, cw, ch, offX, offY, cellStride, params.loopFraction);
+  // narrow / 2-panel では DFS 直後に「行き止まり延伸 + 合流ループ braid」 を挟み、
+  // 短すぎる行き止まり比率が閾値以下になるまで最大 2 回まで再生成 (= 軽量 sanity check)。
+  // wide tier はシンプルな迷路を維持する方針なので一切手を入れない。
+  let maze;
+  let attempts = 0;
+  while (true) {
+    maze = _buildMazeCells(cw, ch, offX, offY, cellStride, params.straightBias);
+    if (!params.wideMode) {
+      _extendDeadEnds(maze, cw, ch, cellStride, params);
+      _braidDeadEnds(maze, cw, ch, cellStride, params);
+    }
+    if (params.loopFraction > 0) {
+      _addLoops(maze, cw, ch, offX, offY, cellStride, params.loopFraction);
+    }
+    if (params.wideMode) break;
+    const shortRatio = _shortDeadEndRatio(maze, params.minBranchLen);
+    if (shortRatio <= params.maxShortDeadEndRatio) break;
+    attempts++;
+    if (attempts >= 2) break;
   }
   // Find the diameter pair before pruning so it's preserved
   const pair = _farthestCellPair(maze.adj, cw, ch);
