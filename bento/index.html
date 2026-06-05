@@ -1513,6 +1513,21 @@ html, body {
 #app.free-layout-active > .free-bottom-guide {
   display: flex;
 }
+#app.free-layout-active .left-panel {
+  align-items: center;
+  justify-content: center;
+}
+.bento-box.free-layout-shell {
+  aspect-ratio: 760 / 460;
+  flex: 0 0 auto;
+  align-self: center;
+}
+.bento-inner.free-layout-inner {
+  aspect-ratio: 760 / 460;
+  width: 100%;
+  height: 100%;
+  flex: 0 0 auto;
+}
 .free-bottom-pono {
   width: 94px;
   height: 78px;
@@ -4223,6 +4238,57 @@ function boxRelativeToMaskBounds(box, rel) {
     h: rel.h * visual.h,
   };
 }
+function fitAspectRect(rect, aspect) {
+  if (!rect || !aspect || !Number.isFinite(aspect) || aspect <= 0) return rect ? { ...rect } : null;
+  const current = rect.w / rect.h;
+  if (current > aspect) {
+    const w = rect.h * aspect;
+    return { x: rect.x + (rect.w - w) / 2, y: rect.y, w, h: rect.h };
+  }
+  const h = rect.w / aspect;
+  return { x: rect.x, y: rect.y + (rect.h - h) / 2, w: rect.w, h };
+}
+function scaleRectAroundCenter(rect, center, scale) {
+  if (!rect || !center || !scale || scale === 1) return rect ? { ...rect } : null;
+  return {
+    x: center.x + (rect.x - center.x) * scale,
+    y: center.y + (rect.y - center.y) * scale,
+    w: rect.w * scale,
+    h: rect.h * scale,
+  };
+}
+function getBoxMaskBoundsCss(box, layer, host = null) {
+  const stage = host && host.classList && host.classList.contains('free-layout-stage')
+    ? host
+    : layer && layer.parentElement && layer.parentElement.classList.contains('free-layout-stage')
+    ? layer.parentElement
+    : document.getElementById('free-layout-stage');
+  if (!stage || !box) return null;
+  const stageRect = stage.getBoundingClientRect();
+  if (!stageRect.width || !stageRect.height) return null;
+  const imageRect = getBoxImageRect(box);
+  const elementRect = {
+    x: imageRect.x / FREE_LAYOUT_W * stageRect.width,
+    y: imageRect.y / FREE_LAYOUT_H * stageRect.height,
+    w: imageRect.w / FREE_LAYOUT_W * stageRect.width,
+    h: imageRect.h / FREE_LAYOUT_H * stageRect.height,
+  };
+  const baseAspect = box.maskBaseAspect || box.imageAspect || (imageRect.w / imageRect.h);
+  const contentRect = fitAspectRect(elementRect, baseAspect);
+  const scale = box && box.imageScale ? Number(box.imageScale) || 1 : 1;
+  const visualRect = scaleRectAroundCenter(contentRect, {
+    x: elementRect.x + elementRect.w / 2,
+    y: elementRect.y + elementRect.h / 2,
+  }, scale);
+  const rel = getBoxMaskRelative(box);
+  if (!rel || !visualRect || !visualRect.w || !visualRect.h) return null;
+  return {
+    x: visualRect.x + rel.x * visualRect.w,
+    y: visualRect.y + rel.y * visualRect.h,
+    w: rel.w * visualRect.w,
+    h: rel.h * visualRect.h,
+  };
+}
 function getDefaultBoxMaskRelative(box) {
   return maskBoundsToBoxRelative(box, box && box.maskBounds);
 }
@@ -4288,11 +4354,16 @@ function getMaskPositionPct(pos, maskSize, stageSize) {
   if (available <= 0) return '50%';
   return (pos / available * 100).toFixed(4) + '%';
 }
-function applyBoxVisualMask(layer, box) {
+function applyBoxVisualMask(layer, box, host = null) {
   const b = getBoxMaskBounds(box);
   if (!layer || !box || !box.maskImage || !b) return false;
-  const maskSize = `${toPctX(b.w)} ${toPctY(b.h)}`;
-  const maskPosition = `${getMaskPositionPct(b.x, b.w, FREE_LAYOUT_W)} ${getMaskPositionPct(b.y, b.h, FREE_LAYOUT_H)}`;
+  const cssBounds = getBoxMaskBoundsCss(box, layer, host);
+  const maskSize = cssBounds
+    ? `${cssBounds.w.toFixed(3)}px ${cssBounds.h.toFixed(3)}px`
+    : `${toPctX(b.w)} ${toPctY(b.h)}`;
+  const maskPosition = cssBounds
+    ? `${cssBounds.x.toFixed(3)}px ${cssBounds.y.toFixed(3)}px`
+    : `${getMaskPositionPct(b.x, b.w, FREE_LAYOUT_W)} ${getMaskPositionPct(b.y, b.h, FREE_LAYOUT_H)}`;
   const maskUrl = `url("${box.maskImage}")`;
   layer.style.setProperty('-webkit-mask-image', maskUrl);
   layer.style.setProperty('mask-image', maskUrl);
@@ -5584,14 +5655,14 @@ function renderFreeLayoutInto(host, opts = {}) {
   if (opts.interactive && freeMaskEditorOpen && freeMaskEditorMode && box.maskImage) {
     const preview = document.createElement('div');
     preview.className = 'free-mask-preview';
-    applyBoxVisualMask(preview, box);
+    applyBoxVisualMask(preview, box, host);
     host.appendChild(preview);
   }
   const noriItems = displayItems.filter(isNoriDecorItem);
   const regularItems = displayItems.filter(item => !isNoriDecorItem(item));
   const layer = document.createElement('div');
   layer.className = 'free-layout-items';
-  if (!applyBoxVisualMask(layer, box)) {
+  if (!applyBoxVisualMask(layer, box, host)) {
     const clipPath = getBoxClipPath(box);
     if (clipPath) layer.style.clipPath = clipPath;
   }
@@ -5631,9 +5702,29 @@ function renderFreeLayoutInto(host, opts = {}) {
     }
   }
 }
+function fitFreeLayoutShell() {
+  const box = document.querySelector('.bento-box.free-layout-shell');
+  const inner = box ? box.querySelector('.free-layout-inner') : null;
+  const panel = box ? box.closest('.left-panel') : null;
+  if (!box || !inner || !panel) return;
+  const panelStyle = getComputedStyle(panel);
+  const padX = parseFloat(panelStyle.paddingLeft || '0') + parseFloat(panelStyle.paddingRight || '0');
+  const padY = parseFloat(panelStyle.paddingTop || '0') + parseFloat(panelStyle.paddingBottom || '0');
+  const maxW = Math.max(0, panel.clientWidth - padX);
+  const maxH = Math.max(0, panel.clientHeight - padY);
+  if (!maxW || !maxH) return;
+  const aspect = FREE_LAYOUT_W / FREE_LAYOUT_H;
+  const w = Math.min(maxW, maxH * aspect);
+  const h = w / aspect;
+  box.style.width = w.toFixed(3) + 'px';
+  box.style.height = h.toFixed(3) + 'px';
+  inner.style.width = '100%';
+  inner.style.height = '100%';
+}
 function renderFreeLayoutStage() {
   const stage = document.getElementById('free-layout-stage');
   if (!stage) return;
+  fitFreeLayoutShell();
   renderFreeLayoutInto(stage, { interactive: true });
 }
 function createPaletteVisual(def) {
@@ -7344,7 +7435,8 @@ updateNotice();
 window.addEventListener('orientationchange', () => { setTimeout(updateNotice, 100); setTimeout(updateNotice, 500); });
 window.addEventListener('resize', updateNotice);
 window.addEventListener('resize', () => {
-  if (!freeMaskEditorMode) return;
+  const stage = document.getElementById('free-layout-stage');
+  if (!stage || !document.getElementById('app')?.classList.contains('free-layout-active')) return;
   clearTimeout(freeMaskResizeRefreshTimer);
   freeMaskResizeRefreshTimer = setTimeout(() => {
     renderFreeLayoutStage();

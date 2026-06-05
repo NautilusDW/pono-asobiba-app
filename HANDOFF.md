@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-05 - [batch:269-bento-mask-stage-aspect] DONE - Codex: user 指摘「ステージング反映はOKだが、画角を変えると右側がズレる。iPad Air が最悪」を受領。原因は自由配置ステージの論理座標 `760x460` に対し、実DOMが iPad Air 相当で `760x365` などに潰れ、箱画像の `object-fit: contain` レターボックスと mask 座標が混ざっていたこと。`bento/index.html` で自由配置シェルを左パネル内最大の `760:460` に JS fit し、mask はご飯入り箱の実描画矩形から px 指定で算出、通常プレイ中の resize でも再描画するよう変更。`sw.js` は v830。 (by Codex)
+- 2026-06-05 - [batch:269-bento-mask-stage-aspect] DONE - Codex: Playwrightで mask editor / 通常プレイ双方を 667x375 → 1180x820 → 1365x768 に切替確認。stage aspect は常に約 1.652 (`760:460`)、保存 JSON は不変、mask CSS は px size/position で再計算、JSエラーなし。iPad Air 相当スクショ目視も確認。 (by Codex)
 - 2026-06-05 - [batch:268-puzzle-sidebar-badge] DONE - Codex: user 指摘「パズル開始後、右下パートナーバッジが右サイドバー下部に被る / ヒントの『のこり』表記が長い」を受領。`puzzle/main.js` のヒントボタン文言を `ヒント×N` / `ヒント×0` に短縮し、`puzzle/style.css` の横向きタッチ画面でサイドバーを上寄せ + 下余白確保、バッジを低い横画面では小さめに調整。Playwrightで 667x375 / 858x401 / 1024x768 touch と 1220x430 desktop を確認し、ヒント1行・横幅overflowなし・バッジと進捗/ボタンの重なりなし・JSエラーなし。`sw.js` は v829。 (by Codex)
 - 2026-06-05 - [batch:267-puzzle-partner-thumbnails] Codex: user 追加 `D:\ポノのおへや\Puzzle\Tumbnails` のパートナーサムネ5枚を確認。各 1672x941 PNG をカード用 512x512 WebP に変換し、`puzzle/partners.js` の画像参照と正方形サムネ表示CSSを更新する。 (by Codex)
 - 2026-06-05 - [batch:267-puzzle-partner-thumbnails] DONE - Codex: `assets/images/puzzle/partners/partner_{kitsune,kojika,araiguma,usagi,fukurou}.webp` を追加。5枚とも 512x512 WebP / 23〜45KB。`puzzle/partners.js` を専用サムネ参照へ変更し、`partner-select.css` は正方形サムネ枠へ調整。Playwrightで 1220x430 / 858x401 / 1024x768 / 667x375 / 430x932 のパートナー選択を確認し、全画像 200 / natural 512x512 / WebP参照5件 / JSエラーなし / 縦切れなし。`sw.js` は v828。 (by Codex)
