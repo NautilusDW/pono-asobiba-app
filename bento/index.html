@@ -2727,6 +2727,19 @@ html, body {
 // quizland と同じパターン。タッチ/PC を分岐させない。
 (function() {
   var BASE_W = 1600, BASE_H = 900;
+  // ?diag=1 で viewport 実寸 / scale / offset をオーバーレイ表示 (quizland パターン流用)
+  var DIAG = (function() {
+    try { return /[?&]diag=1\b/.test(location.search); } catch (_) { return false; }
+  })();
+  var diagEl = null;
+  if (DIAG) {
+    diagEl = document.createElement('div');
+    diagEl.id = 'fit-diag-overlay';
+    diagEl.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,0.75);color:#0f0;font:12px/1.4 monospace;padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre;';
+    // body 未準備の可能性に備えて DOMContentLoaded で append
+    if (document.body) document.body.appendChild(diagEl);
+    else document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(diagEl); });
+  }
   function fit() {
     var el = document.getElementById('app');
     if (!el) return;
@@ -2736,10 +2749,27 @@ html, body {
     var ox = (w - sw) / 2, oy = (h - sh) / 2;
     el.style.transformOrigin = '0 0';
     el.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + s + ')';
+    if (DIAG && diagEl) {
+      diagEl.textContent =
+        'vp: ' + w + ' x ' + h + ' (ratio ' + (w / h).toFixed(3) + ')\n' +
+        'scale: ' + s.toFixed(4) + '\n' +
+        'stage: ' + sw.toFixed(1) + ' x ' + sh.toFixed(1) + '\n' +
+        'offset: ox=' + ox.toFixed(1) + ' oy=' + oy.toFixed(1) + '\n' +
+        'dpr: ' + (window.devicePixelRatio || 1).toFixed(2);
+    }
   }
+  // 初回 + 再計算 hook を多重化:
+  //   resize / orientationchange / visibilitychange に加え、
+  //   load (webfont/画像確定後) と pageshow (BFcache 復帰) と requestAnimationFrame×2 (次フレーム保険)
+  //   を追加。 iOS Safari の URL bar 動的高さ変化や初回 inline 実行時の viewport 未確定に対応。
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', function() { setTimeout(fit, 100); });
   document.addEventListener('visibilitychange', function() { if (!document.hidden) fit(); });
+  window.addEventListener('load', fit);
+  window.addEventListener('pageshow', fit);
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function() { requestAnimationFrame(fit); });
+  }
   fit();
 })();
 
