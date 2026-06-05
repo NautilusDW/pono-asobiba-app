@@ -229,14 +229,6 @@ window.PonoPartnerSelect = (function () {
       card.appendChild(assistDesc);
     }
 
-    // 年齢ガイド
-    if (p.ageHint) {
-      var age = document.createElement('div');
-      age.className = 'pono-pselect__age';
-      age.textContent = p.ageHint;
-      card.appendChild(age);
-    }
-
     if (locked) {
       // 3-4yo 向けに認知負荷軽減: 詳細条件は省略しシンプルに「🔒 まだ」表記
       var reason = document.createElement('div');

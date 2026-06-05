@@ -138,7 +138,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   height: 100%;
   min-height: 0;
   padding: 0 16px;
@@ -155,7 +155,7 @@
   flex-direction: column;
   align-items: center;
   flex: 0 0 auto;
-  width: clamp(128px, 20vw, 168px);
+  width: clamp(176px, 22vw, 220px);
   height: min(100%, 520px);
   min-height: 0;
   scroll-snap-align: start;
@@ -176,10 +176,10 @@
 /* 狭い画面 (<=480px): カードをやや小さめに */
 @media (max-width: 480px) {
   .pono-pselect__card {
-    width: clamp(112px, 32vw, 140px);
+    width: clamp(152px, 42vw, 172px);
   }
   .pono-pselect__track {
-    gap: 10px;
+    gap: 12px;
     padding: 0 12px 0 12px;
     padding-right: 18px;
   }
@@ -294,12 +294,15 @@
 /* --- カード: 性格 / とくいわざ ---
    小さい画面でも読める下限 12px 程度を維持、line-height を 1.5 に上げて可読性向上 */
 .pono-pselect__trait,
-.pono-pselect__assist,
-.pono-pselect__age {
+.pono-pselect__assist {
   font-size: clamp(0.85rem, 2.8vw, 0.98rem);
   line-height: 1.5;
   color: #6B4F2A;
   margin: 2px 0;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  text-wrap: balance;
 }
 
 .pono-pselect__assist {
@@ -321,13 +324,9 @@
   margin-left: auto;
   margin-right: auto;
   word-break: keep-all;
-  overflow-wrap: break-word;
-}
-
-.pono-pselect__age {
-  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
-  color: #A07A4A;
-  margin-top: 2px;
+  overflow-wrap: normal;
+  line-break: strict;
+  text-wrap: balance;
 }
 
 /* --- カード: 星 + ハート --- */
@@ -483,13 +482,13 @@
   }
 
   .pono-pselect__track {
-    gap: 10px;
+    gap: 12px;
     padding-left: 10px;
     padding-right: 16px;
   }
 
   .pono-pselect__card {
-    width: clamp(136px, 18vw, 160px);
+    width: clamp(168px, 22vw, 196px);
     height: 100%;
     border-width: 2px;
     border-radius: 14px;
@@ -519,10 +518,9 @@
   .pono-pselect__trait,
   .pono-pselect__assist,
   .pono-pselect__assist-desc,
-  .pono-pselect__age,
   .pono-pselect__lock-reason {
-    font-size: clamp(0.62rem, 1.55vw, 0.74rem);
-    line-height: 1.18;
+    font-size: clamp(0.64rem, 1.55vw, 0.76rem);
+    line-height: 1.2;
     margin: 1px 0;
   }
 
@@ -600,7 +598,7 @@
   }
 
   .pono-pselect__card {
-    width: clamp(128px, 19vw, 146px);
+    width: clamp(154px, 24vw, 178px);
     border-radius: 12px;
     padding: 5px 6px 5px;
     padding-top: 20px;
@@ -620,13 +618,12 @@
   .pono-pselect__trait,
   .pono-pselect__assist,
   .pono-pselect__assist-desc {
-    font-size: 0.58rem;
-    line-height: 1.1;
+    font-size: 0.6rem;
+    line-height: 1.12;
     margin: 1px 0;
     -webkit-line-clamp: 2;
   }
 
-  .pono-pselect__age,
   .pono-pselect__stats {
     display: none;
   }
