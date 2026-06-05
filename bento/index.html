@@ -4236,9 +4236,17 @@ function getFreeMaskRelativeOverride(key) {
   if (!entry || typeof entry !== 'object') return null;
   return entry.rel || null;
 }
+function normalizeMaskRelative(rel) {
+  const normalized = {};
+  ['x', 'y', 'w', 'h'].forEach(prop => {
+    const n = Number(rel && rel[prop]);
+    normalized[prop] = Number.isFinite(n) ? Math.round(n * 10000) / 10000 : 0;
+  });
+  return normalized;
+}
 function setFreeMaskRelativeOverride(key, rel) {
   if (!key || !rel) return;
-  freeMaskBoundsOverrides[key] = { rel };
+  freeMaskBoundsOverrides[key] = { rel: normalizeMaskRelative(rel) };
 }
 function resetFreeMaskRelativeOverride(key) {
   if (!key || !freeMaskBoundsOverrides[key]) return;
@@ -5843,6 +5851,12 @@ function renderSelectedLayerControls() {
   panel.appendChild(actions);
   return panel;
 }
+function formatMaskPercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0.0';
+  const rounded = Math.round(n * 10) / 10;
+  return Object.is(rounded, -0) ? '0.0' : rounded.toFixed(1);
+}
 function makeMaskRange(label, prop, min, max, rel) {
   const row = document.createElement('label');
   row.className = 'free-mask-row';
@@ -5852,13 +5866,13 @@ function makeMaskRange(label, prop, min, max, rel) {
   input.type = 'range';
   input.min = String(min);
   input.max = String(max);
-  input.step = '1';
-  input.value = String(Math.round((rel[prop] || 0) * 100));
+  input.step = '0.1';
+  input.value = formatMaskPercent((rel[prop] || 0) * 100);
   const value = document.createElement('span');
-  value.textContent = input.value + '%';
+  value.textContent = formatMaskPercent(input.value) + '%';
   input.addEventListener('input', e => {
     updateSelectedBoxMaskRelative(prop, e.currentTarget.value);
-    value.textContent = String(Math.round(Number(e.currentTarget.value) || 0)) + '%';
+    value.textContent = formatMaskPercent(e.currentTarget.value) + '%';
     const status = document.querySelector('.free-mask-save-status');
     if (status) status.textContent = '自動保存しました';
     renderFreeLayoutStage();
@@ -5915,7 +5929,7 @@ function renderFreeMaskEditorControls() {
   panel.appendChild(viewportLabel);
   const saveStatus = document.createElement('div');
   saveStatus.className = 'free-mask-save-status';
-  saveStatus.textContent = '数値を動かすと自動保存';
+  saveStatus.textContent = '0.1%刻みで自動保存';
   panel.appendChild(saveStatus);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
