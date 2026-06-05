@@ -27,9 +27,6 @@
 }
 
 html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
   height: 100dvh;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   background: linear-gradient(135deg, #FFF8F0 0%, #FFEEDD 100%);
@@ -117,34 +114,33 @@ html, body {
 
 /* ===== タイトル ===== */
 .game-title {
-  position: absolute;
-  top: 12px; left: 50%; transform: translateX(-50%);
-  font-size: 2.1rem; font-weight: 900;
+  position: fixed;
+  top: 6px; left: 50%; transform: translateX(-50%);
+  font-size: 1.3rem; font-weight: 900;
   color: var(--primary);
-  text-shadow: 3px 3px 0 var(--primary-light);
+  text-shadow: 2px 2px 0 var(--primary-light);
   z-index: 5;
   pointer-events: none;
   white-space: nowrap;
 }
 
 /* ===== 横向きメインレイアウト =====
-   16:9 完全固定 (1600x900) の仮想キャンバス。
-   ビューポート差は JS の fitStage で transform:scale + translate のみで吸収し、
-   内部レイアウトはアスペクト比帯に応じて一切変えない (quizland と同じ設計)。
-   背景画像が 21:9 のままなので 16:9 に対しては cover で上下クリップされる。 */
+   背景は 21:9 で作り、重要な操作 UI は中央 16:9 セーフエリアに収める。
+   タイトル画面と
+   オーバーレイモーダル (sk-intro / portrait-notice / complete-overlay /
+   npc-*) は別レイヤーで全画面のまま。 */
 #app {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1600px;
-  height: 900px;
+  position: relative;
   display: flex;
-  padding: 64px 28px 24px 44px;
-  gap: 24px;
+  height: 100dvh;
+  width: 100%;
+  max-width: calc(100dvh * 21 / 9);
+  margin: 0 auto;
+  padding: 32px 14px 12px 22px;
+  gap: 12px;
   background: center / cover no-repeat url('../assets/images/bento/ui/free_layout_background_21x9.webp');
   overflow: hidden;
   isolation: isolate;
-  transform-origin: 0 0;
 }
 #app > * {
   position: relative;
@@ -157,7 +153,7 @@ html, body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 0;
+  padding: 0 0 78px;
 }
 
 .pono-row {
@@ -202,6 +198,17 @@ html, body {
   box-shadow: 0 4px 20px rgba(93,78,55,0.25);
   display: flex;
   min-height: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  html, body { overflow: hidden;
+  overscroll-behavior: none; }
+  body { display: flex; align-items: center; justify-content: center; }
+  #app {
+    width: 1027px; height: 440px;
+    flex-shrink: 0;
+    transform-origin: center center;
+  }
+  .game-title { position: absolute; }
 }
 .bento-inner {
   background:
@@ -934,13 +941,12 @@ html, body {
      - cup / divider 選択時: 小/中/大 + OK/なおす
      - それ以外: ⇺ ⇻ ↓ ↑ つぎを えらぶ */
 .free-context-bar {
-  /* v805: position:absolute をやめ、 left-panel の flex item として stage 直下に配置。
-     #app > * { position:relative; z-index:1 } の詳細度バグを回避し、
-     かつ left-panel 幅に自然追従させるための再構成。 */
-  flex: 0 0 64px;
-  margin-top: 8px;
-  width: 100%;
-  align-self: stretch;
+  position: absolute;
+  z-index: 41;
+  left: clamp(18px, 3vw, 38px);
+  bottom: 8px;
+  width: calc(100% - clamp(320px, 36%, 390px) - 48px);
+  height: 64px;
   display: none;
   align-items: center;
   gap: 10px;
@@ -952,9 +958,8 @@ html, body {
   color: #064E3B;
   pointer-events: auto;
   box-sizing: border-box;
-  z-index: 2;
 }
-#app.free-layout-active .left-panel > .free-context-bar {
+#app.free-layout-active > .free-context-bar {
   display: flex;
 }
 .free-context-bar.is-empty .actions { opacity: 0.3; pointer-events: none; }
@@ -1598,14 +1603,14 @@ html, body {
 
 /* ── 右: 食材選択パネル ── */
 .right-panel {
-  flex: 0 0 clamp(440px, 32%, 540px);
+  flex: 0 0 clamp(286px, 32%, 342px);
   width: auto;
   max-width: none;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   min-height: 0;
-  padding: 22px 22px 18px;
+  padding: 14px 14px 12px;
   background: center / 100% 100% no-repeat url('../assets/images/bento/ui/picker_panel_blank.webp');
   box-sizing: border-box;
 }
@@ -2633,14 +2638,6 @@ html, body {
         <div class="bento-okazu" id="bento-okazu"></div>
       </div>
     </div>
-    <!-- v805: 下部固定ツールバー (旧 .free-context-toolbar 後継、 stage 真下に常駐)。
-         left-panel 内に置くことで bento-box の真下に flex で並ぶ。
-         中身は renderFreeContextBar() が選択状態に応じて差し替える。 -->
-    <div class="free-context-bar is-empty" id="free-context-bar" aria-live="polite">
-      <div class="sel-thumb" aria-hidden="true"></div>
-      <div class="hint-text">おかずを えらんでね</div>
-      <div class="actions"></div>
-    </div>
   </div>
 
   <!-- 右: ポノ + 食材選択 -->
@@ -2655,6 +2652,13 @@ html, body {
   <div class="free-bottom-guide" id="free-bottom-guide" aria-live="polite">
     <img src="../assets/images/bento/ui/decor_pono_peek.png" class="free-bottom-pono" id="free-pono-img" alt="ポノ">
     <div class="free-bottom-speech" id="free-speech">おなか すいたなー</div>
+  </div>
+  <!-- v804: 下部固定ツールバー (旧 .free-context-toolbar 後継、 stage 下に常駐)。
+       中身は renderFreeContextBar() が選択状態に応じて差し替える。 -->
+  <div class="free-context-bar is-empty" id="free-context-bar" aria-live="polite">
+    <div class="sel-thumb" aria-hidden="true"></div>
+    <div class="hint-text">おかずを えらんでね</div>
+    <div class="actions"></div>
   </div>
 </div>
 
@@ -2723,53 +2727,17 @@ html, body {
 <div id="confetti"></div>
 
 <script>
-// 全環境共通: 固定 1600x900 (16:9) キャンバスを translate + scale で contain-fit。
-// quizland と同じパターン。タッチ/PC を分岐させない。
+// PC: 固定サイズの#appをscaleでウィンドウにフィット
 (function() {
-  var BASE_W = 1600, BASE_H = 900;
-  // ?diag=1 で viewport 実寸 / scale / offset をオーバーレイ表示 (quizland パターン流用)
-  var DIAG = (function() {
-    try { return /[?&]diag=1\b/.test(location.search); } catch (_) { return false; }
-  })();
-  var diagEl = null;
-  if (DIAG) {
-    diagEl = document.createElement('div');
-    diagEl.id = 'fit-diag-overlay';
-    diagEl.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,0.75);color:#0f0;font:12px/1.4 monospace;padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre;';
-    // body 未準備の可能性に備えて DOMContentLoaded で append
-    if (document.body) document.body.appendChild(diagEl);
-    else document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(diagEl); });
-  }
+  if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  var BASE_W = 1027, BASE_H = 440;
   function fit() {
     var el = document.getElementById('app');
     if (!el) return;
-    var w = window.innerWidth, h = window.innerHeight;
-    var s = Math.min(w / BASE_W, h / BASE_H);
-    var sw = BASE_W * s, sh = BASE_H * s;
-    var ox = (w - sw) / 2, oy = (h - sh) / 2;
-    el.style.transformOrigin = '0 0';
-    el.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + s + ')';
-    if (DIAG && diagEl) {
-      diagEl.textContent =
-        'vp: ' + w + ' x ' + h + ' (ratio ' + (w / h).toFixed(3) + ')\n' +
-        'scale: ' + s.toFixed(4) + '\n' +
-        'stage: ' + sw.toFixed(1) + ' x ' + sh.toFixed(1) + '\n' +
-        'offset: ox=' + ox.toFixed(1) + ' oy=' + oy.toFixed(1) + '\n' +
-        'dpr: ' + (window.devicePixelRatio || 1).toFixed(2);
-    }
+    var s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    el.style.transform = 'scale(' + s + ')';
   }
-  // 初回 + 再計算 hook を多重化:
-  //   resize / orientationchange / visibilitychange に加え、
-  //   load (webfont/画像確定後) と pageshow (BFcache 復帰) と requestAnimationFrame×2 (次フレーム保険)
-  //   を追加。 iOS Safari の URL bar 動的高さ変化や初回 inline 実行時の viewport 未確定に対応。
   window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', function() { setTimeout(fit, 100); });
-  document.addEventListener('visibilitychange', function() { if (!document.hidden) fit(); });
-  window.addEventListener('load', fit);
-  window.addEventListener('pageshow', fit);
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(function() { requestAnimationFrame(fit); });
-  }
   fit();
 })();
 
