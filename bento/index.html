@@ -803,6 +803,13 @@ html, body {
   font-weight: 900;
   line-height: 1.15;
 }
+.free-mask-viewport {
+  margin-top: 2px;
+  color: #047857;
+  font-size: 0.46rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
 .free-mask-box-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1296,6 +1303,9 @@ html, body {
 .fav-mini-bento.free-mini-bento {
   aspect-ratio: 760 / 460;
   padding: 4px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 .complete-bento.free-complete-bento {
   width: min(96vw, 860px);
@@ -2948,7 +2958,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v6';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v7';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -3000,10 +3010,9 @@ const bentoBoxes = [
     bounds: { x: 76, y: 54, w: 608, h: 354 },
     placeBounds: { x: 124, y: 92, w: 512, h: 276 },
     riceBounds: { x: 150, y: 104, w: 460, h: 250 },
-    riceOnly: true,
     clipPoints: [[124,92], [636,92], [636,368], [124,368]],
     imageScale: 1.18,
-    tierCount: 1,
+    tierCount: 2,
     autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_square.webp', x: 380, y: 230, size: 292 },
     riceSpots: [
       { x: 380, y: 230 },
@@ -3039,10 +3048,9 @@ const bentoBoxes = [
     bounds: { x: 92, y: 62, w: 576, h: 338 },
     placeBounds: { x: 136, y: 92, w: 488, h: 276 },
     riceBounds: { x: 162, y: 104, w: 436, h: 250 },
-    riceOnly: true,
     clipPoints: [[380,86], [536,98], [622,190], [616,318], [514,372], [380,382], [246,372], [144,318], [138,190], [224,98]],
     imageScale: 1.18,
-    tierCount: 1,
+    tierCount: 2,
     autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_round.webp', x: 382, y: 230, size: 292 },
     riceSpots: [
       { x: 382, y: 230 },
@@ -3344,6 +3352,7 @@ let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
 let freeMaskEditorMode = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
+let freeMaskViewportRefreshTimer = 0;
 let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 
@@ -4161,14 +4170,66 @@ function saveFreeMaskBoundsOverrides() {
     localStorage.setItem(FREE_MASK_EDITOR_STORAGE_KEY, JSON.stringify(freeMaskBoundsOverrides || {}));
   } catch (e) {}
 }
+function getFreeMaskViewportProfile() {
+  const fallback = { id: 'landscape', label: '16:9' };
+  if (typeof window === 'undefined') return fallback;
+  let w = window.innerWidth || 0;
+  let h = window.innerHeight || 0;
+  const app = document.getElementById('app');
+  if (app) {
+    const r = app.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      w = r.width;
+      h = r.height;
+    }
+  }
+  if (!w || !h) return fallback;
+  const ratio = w / h;
+  if (ratio >= 2.05) return { id: 'wide', label: '21:9' };
+  if (ratio >= 1.58) return { id: 'landscape', label: '16:9' };
+  if (ratio >= 1.18) return { id: 'standard', label: '4:3' };
+  return { id: 'portrait', label: 'たて' };
+}
+function getFreeMaskViewportProfileId() {
+  return getFreeMaskViewportProfile().id;
+}
+function getFreeMaskOverrideForProfile(key) {
+  if (!key || !freeMaskBoundsOverrides) return null;
+  const entry = freeMaskBoundsOverrides[key];
+  if (!entry || typeof entry !== 'object') return null;
+  const profileId = getFreeMaskViewportProfileId();
+  return entry.profiles && entry.profiles[profileId] ? entry.profiles[profileId] : null;
+}
+function setFreeMaskOverrideForProfile(key, bounds) {
+  if (!key) return;
+  const profileId = getFreeMaskViewportProfileId();
+  const entry = freeMaskBoundsOverrides[key] && freeMaskBoundsOverrides[key].profiles
+    ? { ...freeMaskBoundsOverrides[key], profiles: { ...freeMaskBoundsOverrides[key].profiles } }
+    : { profiles: {} };
+  entry.profiles[profileId] = bounds;
+  freeMaskBoundsOverrides[key] = entry;
+}
+function resetFreeMaskOverrideForProfile(key) {
+  if (!key || !freeMaskBoundsOverrides[key]) return;
+  const profileId = getFreeMaskViewportProfileId();
+  const entry = freeMaskBoundsOverrides[key];
+  if (!entry.profiles) {
+    delete freeMaskBoundsOverrides[key];
+    return;
+  }
+  delete entry.profiles[profileId];
+  if (!Object.keys(entry.profiles).length) {
+    delete freeMaskBoundsOverrides[key];
+  }
+}
 function getBoxMaskKey(box) {
   return box && (box.maskKey || box.id || '');
 }
 function getBoxMaskBounds(box) {
   if (!box || !box.maskBounds) return null;
   const key = getBoxMaskKey(box);
-  // Editor overrides must reflect immediately so mask calibration can be checked in the game flow.
-  const override = key && freeMaskBoundsOverrides ? freeMaskBoundsOverrides[key] : null;
+  // Editor overrides are scoped per viewport profile so each camera angle can be calibrated independently.
+  const override = getFreeMaskOverrideForProfile(key);
   return override ? { ...box.maskBounds, ...override } : { ...box.maskBounds };
 }
 function updateSelectedBoxMaskBound(prop, value) {
@@ -4181,14 +4242,13 @@ function updateSelectedBoxMaskBound(prop, value) {
   next.h = clamp(next.h, 120, FREE_LAYOUT_H);
   next.x = clamp(next.x, -160, FREE_LAYOUT_W);
   next.y = clamp(next.y, -120, FREE_LAYOUT_H);
-  freeMaskBoundsOverrides[key] = next;
+  setFreeMaskOverrideForProfile(key, next);
   saveFreeMaskBoundsOverrides();
 }
 function resetSelectedBoxMaskBounds() {
   const box = getSelectedBentoBox();
   const key = getBoxMaskKey(box);
-  if (!key || !freeMaskBoundsOverrides[key]) return;
-  delete freeMaskBoundsOverrides[key];
+  resetFreeMaskOverrideForProfile(key);
   saveFreeMaskBoundsOverrides();
 }
 function getMaskPositionPct(pos, maskSize, stageSize) {
@@ -5415,16 +5475,20 @@ function renderFreeLayoutInto(host, opts = {}) {
   const tierCount = getBoxTierCount(box);
   const activeTier = opts.tier || freeActiveTier;
   const tierFilter = opts.tierFilter || null;
+  const maskRiceUnderlay = !!(opts.interactive && freeMaskEditorMode && box.riceImage);
   const integratedRice = box.riceImage
     ? items.find(item => item.type === 'rice' && getItemTier(item) === 1)
     : null;
-  const useIntegratedRice = !!integratedRice && (!tierFilter || tierFilter === 1) && (!opts.interactive || activeTier === 1);
+  const useIntegratedRice = !!box.riceImage && (
+    (!!integratedRice && (!tierFilter || tierFilter === 1) && (!opts.interactive || activeTier === 1)) ||
+    maskRiceUnderlay
+  );
   const visibleItems = tierFilter
     ? items.filter(item => getItemTier(item) === tierFilter)
     : opts.interactive && tierCount > 1
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
-  const displayItems = useIntegratedRice
+  const displayItems = useIntegratedRice && integratedRice
     ? visibleItems.filter(item => item.uid !== integratedRice.uid && item.parentId !== integratedRice.uid)
     : visibleItems;
   host.innerHTML = '';
@@ -5818,6 +5882,11 @@ function renderFreeMaskEditorControls() {
   title.className = 'free-mask-title';
   title.textContent = box.name ? 'マスク調整: ' + box.name : 'マスク調整';
   panel.appendChild(title);
+  const viewport = getFreeMaskViewportProfile();
+  const viewportLabel = document.createElement('div');
+  viewportLabel.className = 'free-mask-viewport';
+  viewportLabel.textContent = '保存先: ' + viewport.label;
+  panel.appendChild(viewportLabel);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
   actions.className = 'free-mask-actions';
@@ -6177,7 +6246,11 @@ function loadFreeLayoutStage() {
   const app = document.getElementById('app');
   if (app) app.classList.add('free-layout-active');
   const box = document.querySelector('.bento-box');
-  if (box) box.classList.add('free-layout-shell');
+  if (box) {
+    box.classList.add('free-layout-shell');
+    box.style.background = 'transparent';
+    box.style.borderColor = 'transparent';
+  }
   const bentoInner = document.getElementById('bento-inner');
   bentoInner.className = 'bento-inner free-layout-inner';
   bentoInner.innerHTML = '<div class="free-layout-stage" id="free-layout-stage"></div>';
@@ -6988,8 +7061,24 @@ function applyBentoColor() {
     } else {
       return;
     }
-    if (box) { box.style.background = bg; box.style.borderColor = border; }
-    if (cbox) { cbox.style.background = bg; cbox.style.borderColor = border; }
+    if (box) {
+      if (box.classList.contains('free-layout-shell')) {
+        box.style.background = 'transparent';
+        box.style.borderColor = 'transparent';
+      } else {
+        box.style.background = bg;
+        box.style.borderColor = border;
+      }
+    }
+    if (cbox) {
+      if (cbox.classList.contains('free-complete-bento')) {
+        cbox.style.background = '';
+        cbox.style.borderColor = '';
+      } else {
+        cbox.style.background = bg;
+        cbox.style.borderColor = border;
+      }
+    }
     // 仕切りの色も統一（CSS変数で一括制御）
     document.documentElement.style.setProperty('--div-bg', `linear-gradient(180deg, ${div1}, ${div2})`);
   } catch {}
@@ -7210,6 +7299,14 @@ function updateNotice() {
 updateNotice();
 window.addEventListener('orientationchange', () => { setTimeout(updateNotice, 100); setTimeout(updateNotice, 500); });
 window.addEventListener('resize', updateNotice);
+window.addEventListener('resize', () => {
+  if (!freeMaskEditorMode) return;
+  clearTimeout(freeMaskViewportRefreshTimer);
+  freeMaskViewportRefreshTimer = setTimeout(() => {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }, 120);
+});
 </script>
 </body>
 </html>
