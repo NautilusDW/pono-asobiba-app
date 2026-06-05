@@ -77,30 +77,16 @@ window.PonoPartnerSelect = (function () {
   }
 
   /**
-   * 「おすすめ」判定:
-   * ageHint と stageId(=難易度の代理) を簡易マッチ。
-   *  - stage 1-7  : ageHint '3さい〜' を推奨
-   *  - stage 8-14 : ageHint '4さい〜' を推奨
-   *  - stage 15+  : ageHint '5さい〜' を推奨
-   * 該当しない場合 false。
-   */
-  function isRecommended(partner, stageId) {
-    if (!partner || !partner.ageHint) return false;
-    var sid = parseInt(stageId, 10);
-    if (!isFinite(sid) || sid <= 0) return false;
-    var hint = String(partner.ageHint);
-    if (sid <= 7) return hint.indexOf('3') === 0;
-    if (sid <= 14) return hint.indexOf('4') === 0;
-    return hint.indexOf('5') === 0;
-  }
-
-  /**
    * 難易度ラベル生成。
    * partner.difficulty が以下のいずれかである想定:
-   *   'easy'   → やさしい★
-   *   'normal' → できる★★
-   *   'tricky' → ものしり★★★ (キツネキャラ性「ものしりで すこし おませ」に合致)
+   *   'easy'   → かんたん
+   *   'normal' → ふつう
+   *   'tricky' → むずかしい (現状未使用だが将来の追加キャラ用に残置)
    * 未設定の場合は ageHint からフォールバック (3→easy / 4→normal / 5→tricky)。
+   *
+   * 注: 星マーク (★★★) と「おすすめ」バッジは
+   *     ユーザーFB (2026-06-05) により基準不明・誤解を招くため廃止。
+   *     性格 (trait) と難易度ラベルは別軸として分離した。
    */
   function resolveDifficulty(partner) {
     if (!partner) return null;
@@ -116,10 +102,9 @@ window.PonoPartnerSelect = (function () {
   function buildDifficultyBadge(difficulty) {
     if (!difficulty) return null;
     var label = '';
-    var stars = '';
-    if (difficulty === 'easy')        { label = 'やさしい';      stars = '★';   }
-    else if (difficulty === 'normal') { label = 'できる';        stars = '★★';  }
-    else if (difficulty === 'tricky') { label = 'ものしり';      stars = '★★★'; }
+    if (difficulty === 'easy')        { label = 'かんたん';   }
+    else if (difficulty === 'normal') { label = 'ふつう';     }
+    else if (difficulty === 'tricky') { label = 'むずかしい'; }
     else return null;
 
     var badge = document.createElement('div');
@@ -128,10 +113,6 @@ window.PonoPartnerSelect = (function () {
     labelEl.className = 'pono-pselect__difficulty-label';
     labelEl.textContent = label;
     badge.appendChild(labelEl);
-    var starsEl = document.createElement('span');
-    starsEl.className = 'pono-pselect__difficulty-stars';
-    starsEl.textContent = stars;
-    badge.appendChild(starsEl);
     badge.setAttribute('aria-label', 'むずかしさ ' + label);
     return badge;
   }
@@ -176,7 +157,7 @@ window.PonoPartnerSelect = (function () {
     );
     if (locked) card.setAttribute('aria-disabled', 'true');
 
-    // 難易度ラベル (やさしい / できる / ものしり) — カード最上部
+    // 難易度ラベル (かんたん / ふつう / むずかしい) — カード最上部
     var difficulty = resolveDifficulty(p);
     var diffBadge = buildDifficultyBadge(difficulty);
     if (diffBadge) {
@@ -211,15 +192,6 @@ window.PonoPartnerSelect = (function () {
     name.className = 'pono-pselect__name';
     name.textContent = p.name || p.id;
     card.appendChild(name);
-
-    // おすすめバッジ (ステージ難易度 と ageHint を簡易マッチ)
-    if (!locked && isRecommended(p, stageId)) {
-      var rec = document.createElement('div');
-      rec.className = 'pono-pselect__recommend';
-      rec.textContent = 'おすすめ';
-      rec.setAttribute('aria-label', 'このステージに おすすめ');
-      card.appendChild(rec);
-    }
 
     // 性格
     if (p.trait) {

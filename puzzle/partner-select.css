@@ -330,26 +330,11 @@
   line-height: 1.2;
 }
 
-/* --- おすすめバッジ (年齢適性マッチ時に表示) --- */
-.pono-pselect__recommend {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: linear-gradient(180deg, #FF8E5A 0%, #E25C26 100%);
-  color: #FFF6DC;
-  font-size: clamp(0.65rem, 2.2vw, 0.78rem);
-  font-weight: 900;
-  padding: 3px 9px;
-  border-radius: 999px;
-  letter-spacing: 0.04em;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* --- 難易度ラベル (やさしい / できる / ものしり) ---
-   カード最上部に横一文で表示。色は緑/黄/紫系で直感的に
-   (ものしり=賢者イメージで紫、ネガティブな赤は廃止)。 */
+/* --- 難易度ラベル (かんたん / ふつう / むずかしい) ---
+   カード最上部に横一文で表示。色は緑/黄/紫系で直感的に。
+   ユーザーFB (2026-06-05) により星マーク (★★★) と「おすすめ」バッジは廃止。
+   性格 (trait) と難易度ラベルは別軸として分離した。
+   tricky は現状未使用だが将来の追加キャラ用に残置。 */
 .pono-pselect__difficulty {
   position: absolute;
   top: 6px;
@@ -368,11 +353,6 @@
   z-index: 2;
   max-width: calc(100% - 12px);
   white-space: nowrap;
-}
-
-.pono-pselect__difficulty-stars {
-  font-size: 0.95em;
-  letter-spacing: 1px;
 }
 
 .pono-pselect__difficulty--easy {
