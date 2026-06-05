@@ -2958,7 +2958,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v7';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v8';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -3352,7 +3352,7 @@ let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
 let freeMaskEditorMode = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
-let freeMaskViewportRefreshTimer = 0;
+let freeMaskResizeRefreshTimer = 0;
 let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 
@@ -4170,67 +4170,70 @@ function saveFreeMaskBoundsOverrides() {
     localStorage.setItem(FREE_MASK_EDITOR_STORAGE_KEY, JSON.stringify(freeMaskBoundsOverrides || {}));
   } catch (e) {}
 }
-function getFreeMaskViewportProfile() {
-  const fallback = { id: 'landscape', label: '16:9' };
-  if (typeof window === 'undefined') return fallback;
-  let w = window.innerWidth || 0;
-  let h = window.innerHeight || 0;
-  const app = document.getElementById('app');
-  if (app) {
-    const r = app.getBoundingClientRect();
-    if (r.width > 0 && r.height > 0) {
-      w = r.width;
-      h = r.height;
-    }
-  }
-  if (!w || !h) return fallback;
-  const ratio = w / h;
-  if (ratio >= 2.05) return { id: 'wide', label: '21:9' };
-  if (ratio >= 1.58) return { id: 'landscape', label: '16:9' };
-  if (ratio >= 1.18) return { id: 'standard', label: '4:3' };
-  return { id: 'portrait', label: 'たて' };
+function getBoxMaskKey(box) {
+  return box && (box.maskKey || box.id || '');
 }
-function getFreeMaskViewportProfileId() {
-  return getFreeMaskViewportProfile().id;
+function getBoxVisualRect(box) {
+  const rect = getBoxImageRect(box);
+  const scale = box && box.imageScale ? Number(box.imageScale) || 1 : 1;
+  if (!scale || scale === 1) return rect;
+  const w = rect.w * scale;
+  const h = rect.h * scale;
+  return {
+    x: rect.x + (rect.w - w) / 2,
+    y: rect.y + (rect.h - h) / 2,
+    w,
+    h,
+  };
 }
-function getFreeMaskOverrideForProfile(key) {
+function maskBoundsToBoxRelative(box, bounds) {
+  const visual = getBoxVisualRect(box);
+  if (!bounds || !visual.w || !visual.h) return null;
+  return {
+    x: (bounds.x - visual.x) / visual.w,
+    y: (bounds.y - visual.y) / visual.h,
+    w: bounds.w / visual.w,
+    h: bounds.h / visual.h,
+  };
+}
+function boxRelativeToMaskBounds(box, rel) {
+  const visual = getBoxVisualRect(box);
+  if (!rel || !visual.w || !visual.h) return null;
+  return {
+    x: visual.x + rel.x * visual.w,
+    y: visual.y + rel.y * visual.h,
+    w: rel.w * visual.w,
+    h: rel.h * visual.h,
+  };
+}
+function getDefaultBoxMaskRelative(box) {
+  return maskBoundsToBoxRelative(box, box && box.maskBounds);
+}
+function getFreeMaskRelativeOverride(key) {
   if (!key || !freeMaskBoundsOverrides) return null;
   const entry = freeMaskBoundsOverrides[key];
   if (!entry || typeof entry !== 'object') return null;
-  const profileId = getFreeMaskViewportProfileId();
-  return entry.profiles && entry.profiles[profileId] ? entry.profiles[profileId] : null;
+  return entry.rel || null;
 }
-function setFreeMaskOverrideForProfile(key, bounds) {
-  if (!key) return;
-  const profileId = getFreeMaskViewportProfileId();
-  const entry = freeMaskBoundsOverrides[key] && freeMaskBoundsOverrides[key].profiles
-    ? { ...freeMaskBoundsOverrides[key], profiles: { ...freeMaskBoundsOverrides[key].profiles } }
-    : { profiles: {} };
-  entry.profiles[profileId] = bounds;
-  freeMaskBoundsOverrides[key] = entry;
+function setFreeMaskRelativeOverride(key, rel) {
+  if (!key || !rel) return;
+  freeMaskBoundsOverrides[key] = { rel };
 }
-function resetFreeMaskOverrideForProfile(key) {
+function resetFreeMaskRelativeOverride(key) {
   if (!key || !freeMaskBoundsOverrides[key]) return;
-  const profileId = getFreeMaskViewportProfileId();
-  const entry = freeMaskBoundsOverrides[key];
-  if (!entry.profiles) {
-    delete freeMaskBoundsOverrides[key];
-    return;
-  }
-  delete entry.profiles[profileId];
-  if (!Object.keys(entry.profiles).length) {
-    delete freeMaskBoundsOverrides[key];
-  }
-}
-function getBoxMaskKey(box) {
-  return box && (box.maskKey || box.id || '');
+  delete freeMaskBoundsOverrides[key];
 }
 function getBoxMaskBounds(box) {
   if (!box || !box.maskBounds) return null;
   const key = getBoxMaskKey(box);
-  // Editor overrides are scoped per viewport profile so each camera angle can be calibrated independently.
-  const override = getFreeMaskOverrideForProfile(key);
-  return override ? { ...box.maskBounds, ...override } : { ...box.maskBounds };
+  const rel = getFreeMaskRelativeOverride(key) || getDefaultBoxMaskRelative(box);
+  const bounds = boxRelativeToMaskBounds(box, rel);
+  return bounds ? {
+    x: Math.round(bounds.x),
+    y: Math.round(bounds.y),
+    w: Math.round(bounds.w),
+    h: Math.round(bounds.h),
+  } : null;
 }
 function updateSelectedBoxMaskBound(prop, value) {
   const box = getSelectedBentoBox();
@@ -4242,13 +4245,13 @@ function updateSelectedBoxMaskBound(prop, value) {
   next.h = clamp(next.h, 120, FREE_LAYOUT_H);
   next.x = clamp(next.x, -160, FREE_LAYOUT_W);
   next.y = clamp(next.y, -120, FREE_LAYOUT_H);
-  setFreeMaskOverrideForProfile(key, next);
+  setFreeMaskRelativeOverride(key, maskBoundsToBoxRelative(box, next));
   saveFreeMaskBoundsOverrides();
 }
 function resetSelectedBoxMaskBounds() {
   const box = getSelectedBentoBox();
   const key = getBoxMaskKey(box);
-  resetFreeMaskOverrideForProfile(key);
+  resetFreeMaskRelativeOverride(key);
   saveFreeMaskBoundsOverrides();
 }
 function getMaskPositionPct(pos, maskSize, stageSize) {
@@ -5882,10 +5885,9 @@ function renderFreeMaskEditorControls() {
   title.className = 'free-mask-title';
   title.textContent = box.name ? 'マスク調整: ' + box.name : 'マスク調整';
   panel.appendChild(title);
-  const viewport = getFreeMaskViewportProfile();
   const viewportLabel = document.createElement('div');
   viewportLabel.className = 'free-mask-viewport';
-  viewportLabel.textContent = '保存先: ' + viewport.label;
+  viewportLabel.textContent = '保存: おべんとうばこ基準';
   panel.appendChild(viewportLabel);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
@@ -7301,8 +7303,8 @@ window.addEventListener('orientationchange', () => { setTimeout(updateNotice, 10
 window.addEventListener('resize', updateNotice);
 window.addEventListener('resize', () => {
   if (!freeMaskEditorMode) return;
-  clearTimeout(freeMaskViewportRefreshTimer);
-  freeMaskViewportRefreshTimer = setTimeout(() => {
+  clearTimeout(freeMaskResizeRefreshTimer);
+  freeMaskResizeRefreshTimer = setTimeout(() => {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   }, 120);
