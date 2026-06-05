@@ -151,6 +151,97 @@ html, body {
   z-index: 1;
 }
 
+/* ===== 縦並び (4:3) レイアウト (v814) =====
+   1200x1500 の仮想キャンバスに 4 段 (タイトル / 弁当 / パレット / ツールバー) を grid で配置。
+   ・width/height は JS (fit()) が inline で書くため CSS 側は最小限。
+   ・.left-panel に display:contents を当て、 .bento-box と .free-context-bar を
+     #app 直下の grid item として並べる。 .right-panel は full width 化、 食材グリッドは 4 列に。
+   ・内部仮想座標系 (FREE_LAYOUT_W=760, FREE_LAYOUT_H=460) と mask 座標は不変。
+   ・aspect ratio < ~1.4 (4:3 系) でのみ有効。 JS の class 切替に一本化 (CSS @media は使わない)。 */
+#app.layout-vertical {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 80px 1fr auto 72px;
+  gap: 16px;
+  padding: 76px 32px 28px;
+  background: center / cover no-repeat url('../assets/images/bento/ui/free_layout_background_21x9.webp');
+}
+#app.layout-vertical .left-panel {
+  /* display:contents で bento-box と free-context-bar を #app の grid item に昇格させる。
+     left-panel 自体に装飾はなく、 flex 子配置のみだったので副作用なし。 */
+  display: contents;
+}
+#app.layout-vertical .bento-box {
+  grid-row: 2;
+  grid-column: 1;
+  flex: none;
+  width: 100%;
+  height: auto;
+  /* 弁当 stage は内部で aspect-ratio:760/460 を守る。 外側はそれに追従。 */
+  aspect-ratio: 760 / 460;
+  max-height: 100%;
+  align-self: start;
+  justify-self: center;
+  max-width: 1136px; /* 1200 - padding 32*2 */
+}
+#app.layout-vertical .bento-inner.free-layout-inner > .free-layout-stage {
+  /* 横が制約になるケースが多いので width 基準で高さを逆算 (元は height 基準)。 */
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+#app.layout-vertical .right-panel {
+  grid-row: 3;
+  grid-column: 1;
+  flex: none;
+  width: 100%;
+  max-width: 1136px;
+  justify-self: center;
+  padding: 18px 22px 18px;
+  /* 4:3 では right-panel 背景画像 (picker_panel_blank.webp = 縦長) を 100% 100% で
+     横長に引き伸ばすと崩れるため、 半透明の優しい背景に差し替える。 */
+  background:
+    linear-gradient(180deg, rgba(255, 249, 224, 0.95), rgba(255, 232, 189, 0.95));
+  border: 4px solid #F2B36A;
+  border-radius: 24px;
+  box-shadow: 0 6px 18px rgba(120, 80, 45, 0.18);
+}
+#app.layout-vertical .right-panel .pono-row {
+  display: none;
+}
+#app.layout-vertical .right-panel .food-tray {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  max-height: 420px;
+  align-content: start;
+}
+#app.layout-vertical .right-panel .food-tray.free-layout-controls {
+  /* free-layout 側は flex-column のままタブ + tier + grid 構造を維持。
+     ただし内部の .free-tier-grid / .free-bento-grid 等は別途子セレクタで 4 列化される。 */
+  max-height: 440px;
+}
+#app.layout-vertical .free-context-bar {
+  grid-row: 4;
+  grid-column: 1;
+  width: 100%;
+  max-width: 1136px;
+  justify-self: center;
+  margin-top: 0;
+  flex: none;
+  height: 64px;
+}
+#app.layout-vertical > .free-bottom-guide {
+  /* 縦並びでは旧 free-bottom-guide は表示しない (free-context-bar が同役割)。 */
+  display: none !important;
+}
+/* タイトルは縦並びでも viewport 上部固定だが、 #app 内 absolute のままだと
+   grid に乗らないので、 #app 内子要素として top:24px に押し下げて表示。
+   (.game-title は #app の外にあるため、 #app 外の絶対位置はそのまま使える) */
+body.bento-vertical .game-title {
+  top: 22px;
+  font-size: 1.7rem;
+}
+
 /* ── 左: お弁当箱（できるだけ大きく） ── */
 .left-panel {
   flex: 1;
@@ -2723,10 +2814,20 @@ html, body {
 <div id="confetti"></div>
 
 <script>
-// 全環境共通: 固定 1600x900 (16:9) キャンバスを translate + scale で contain-fit。
-// quizland と同じパターン。タッチ/PC を分岐させない。
+// 全環境共通: 固定キャンバスを translate + scale で contain-fit。
+// v814: 16:9 (1600x900 横並び) / 4:3 (1200x1500 縦並び) の 2 系統に対応。
+//        viewport aspect ratio で動的に切替 (ヒステリシス付きで境界振動を抑制)。
 (function() {
-  var BASE_W = 1600, BASE_H = 900;
+  var LAYOUTS = {
+    horizontal: { w: 1600, h: 900 },   // 既存 16:9
+    vertical:   { w: 1200, h: 1500 }   // 新規 4:3 縦並び (タイトル/弁当/パレット/ツールバー)
+  };
+  // 切替しきい値: ratio >= 1.4 で horizontal、 < 1.4 で vertical。
+  // ヒステリシス: vertical -> horizontal は 1.42 超、 horizontal -> vertical は 1.38 未満で発火。
+  var ASPECT_HI = 1.42;
+  var ASPECT_LO = 1.38;
+  var currentMode = null;
+
   // ?diag=1 で viewport 実寸 / scale / offset をオーバーレイ表示 (quizland パターン流用)
   var DIAG = (function() {
     try { return /[?&]diag=1\b/.test(location.search); } catch (_) { return false; }
@@ -2736,33 +2837,72 @@ html, body {
     diagEl = document.createElement('div');
     diagEl.id = 'fit-diag-overlay';
     diagEl.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,0.75);color:#0f0;font:12px/1.4 monospace;padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre;';
-    // body 未準備の可能性に備えて DOMContentLoaded で append
     if (document.body) document.body.appendChild(diagEl);
     else document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(diagEl); });
   }
+
+  function pickMode(w, h) {
+    var ratio = w / h;
+    if (currentMode === null) return ratio >= 1.4 ? 'horizontal' : 'vertical';
+    if (currentMode === 'vertical'   && ratio > ASPECT_HI) return 'horizontal';
+    if (currentMode === 'horizontal' && ratio < ASPECT_LO) return 'vertical';
+    return currentMode; // dead zone 内は維持 (チラつき防止)
+  }
+
+  function applyMode(el, mode) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+    el.classList.toggle('layout-vertical',   mode === 'vertical');
+    el.classList.toggle('layout-horizontal', mode === 'horizontal');
+    if (document.body) {
+      document.body.classList.toggle('bento-vertical',   mode === 'vertical');
+      document.body.classList.toggle('bento-horizontal', mode === 'horizontal');
+    }
+    // JS が inline で width/height を打って CSS の固定値 (1600/900) を上書き。
+    // CSS @media と二重管理にならないよう、 サイズは JS 一本化。
+    el.style.width  = LAYOUTS[mode].w + 'px';
+    el.style.height = LAYOUTS[mode].h + 'px';
+    // 切替直後 1 frame は transform transition を切る (scale ジャンプを即時化)
+    var prevTransition = el.style.transition;
+    el.style.transition = 'none';
+    requestAnimationFrame(function() { el.style.transition = prevTransition || ''; });
+  }
+
   function fit() {
     var el = document.getElementById('app');
     if (!el) return;
     var w = window.innerWidth, h = window.innerHeight;
-    var s = Math.min(w / BASE_W, h / BASE_H);
-    var sw = BASE_W * s, sh = BASE_H * s;
+    var mode = pickMode(w, h);
+    applyMode(el, mode);
+    var BW = LAYOUTS[mode].w, BH = LAYOUTS[mode].h;
+    var s = Math.min(w / BW, h / BH);
+    var sw = BW * s, sh = BH * s;
     var ox = (w - sw) / 2, oy = (h - sh) / 2;
     el.style.transformOrigin = '0 0';
     el.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + s + ')';
     if (DIAG && diagEl) {
       diagEl.textContent =
         'vp: ' + w + ' x ' + h + ' (ratio ' + (w / h).toFixed(3) + ')\n' +
+        'mode: ' + mode + ' (' + BW + 'x' + BH + ')\n' +
         'scale: ' + s.toFixed(4) + '\n' +
         'stage: ' + sw.toFixed(1) + ' x ' + sh.toFixed(1) + '\n' +
         'offset: ox=' + ox.toFixed(1) + ' oy=' + oy.toFixed(1) + '\n' +
         'dpr: ' + (window.devicePixelRatio || 1).toFixed(2);
     }
   }
+
+  // resize は連続発火するので 1 frame debounce (CSS 切替 + transform 再計算をまとめる)
+  var rafId = 0;
+  function scheduleFit() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(function() { rafId = 0; fit(); });
+  }
+
   // 初回 + 再計算 hook を多重化:
   //   resize / orientationchange / visibilitychange に加え、
   //   load (webfont/画像確定後) と pageshow (BFcache 復帰) と requestAnimationFrame×2 (次フレーム保険)
   //   を追加。 iOS Safari の URL bar 動的高さ変化や初回 inline 実行時の viewport 未確定に対応。
-  window.addEventListener('resize', fit);
+  window.addEventListener('resize', scheduleFit);
   window.addEventListener('orientationchange', function() { setTimeout(fit, 100); });
   document.addEventListener('visibilitychange', function() { if (!document.hidden) fit(); });
   window.addEventListener('load', fit);
@@ -2770,6 +2910,14 @@ html, body {
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(function() { requestAnimationFrame(fit); });
   }
+  // matchMedia でも aspect 境界変化を拾う (resize より精密)
+  try {
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(min-aspect-ratio: 7/5)'); // 7/5 = 1.4
+      if (mq.addEventListener) mq.addEventListener('change', fit);
+      else if (mq.addListener) mq.addListener(fit);
+    }
+  } catch (_) {}
   fit();
 })();
 
