@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-05 - [batch:265-bento-mask-percent-ui] DONE - Codex: user 指摘「ハードリロード後も画角変更で同じに見えない / 保存が分かりづらい / 数値を動かすと自動保存なのか」を受領。`ふつうのおべんとう` は空箱とご飯入り箱の画像アスペクトが違うため、マスク基準を `maskBaseAspect` (ご飯入り画像側) へ変更。保存キーを `bento_free_mask_bounds_v9` に更新し、X/Y/W/H スライダーを箱基準の % 表示に変更、パネルに「数値を動かすと自動保存」「自動保存しました」を表示。`sw.js` は v826。 (by Codex)
+- 2026-06-05 - [batch:265-bento-mask-percent-ui] DONE - Codex: Playwrightで `box_rect_split` の 667x375 → 1365x768 → 1024x768 切替後も保存 `rel` が不変、表示ラベルが `保存: ごはん入り箱基準` / `%` / `自動保存しました`、JSエラーなしを確認。`box_square` / `box_round` も v9 storage への % 保存と自動保存表示を確認。 (by Codex)
 - 2026-06-05 - [batch:264-puzzle-partner-copy-width] DONE - Codex: user 指摘「画像生成を再試行 / 年齢表示不要 / 変な位置で改行されるので画角ごとに整えたい、カード横幅を広げても良い」を受領。GPT Image 2 built-in 生成を再試行したが `TooManyRequests` で未納品、他モデル切替は未実施。`puzzle/partner-select.js` は年齢DOM生成を削除、`puzzle/partner-select.css` はカード幅を拡大し、trait/assist/assist-desc に `word-break: keep-all` 等を追加して語中割れを抑制。1220x430 / 858x401 / 1024x768 / 667x375 / 430x932 で年齢0件、説明表示、縦切れなし、スクショ目視を確認。`sw.js` は v824。 (by Codex)
 - 2026-06-05 - [batch:263-bento-mask-relative] DONE - Codex: `batch:261` の画角別 `profiles` 方式を廃止し、`bento/index.html` のマスク保存を `bento_free_mask_bounds_v8` + 箱画像の見た目矩形に対する `rel` 1設定へ変更。編集パネル表示も「保存: おべんとうばこ基準」に変更。Playwrightで四角箱 1365x768 → 1024x768 → 667x375、丸箱 1024x768 → 1365x768 の寸法変更後も `rel` が不変、保存値が書き換わらないこと、米入り下敷き、JSエラーなし、book 四角/丸二段導線を確認。`sw.js` は v825。Codex self-review: diff / `git diff --check` / LF 改行を確認。 (by Codex)
 - 2026-06-05 - [batch:262-puzzle-partner-desc-consistency] Codex: user 指摘「パズルのパートナー選択カードで、キャラクター説明文が画角によって見える/見えないになっている」を受領。前回 `batch:260` の低高さ対応で `assist-desc` / `age` / `trait` を高さ別に `display:none` していたことが原因と判断。説明文は全画角で見せ、低い画角ではカード幅・画像高さ・line-clamp で吸収する方向に修正する。 (by Codex)

@@ -810,6 +810,13 @@ html, body {
   font-weight: 900;
   line-height: 1.15;
 }
+.free-mask-save-status {
+  margin-top: 2px;
+  color: #15803D;
+  font-size: 0.44rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
 .free-mask-box-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2958,7 +2965,7 @@ const RECT_SPLIT_BOX_INSIDE_MASK = FREE_ASSET + 'box_rect_split_inside_mask.png'
 const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
-const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v8';
+const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v9';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -2967,6 +2974,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_rect_split_rice.webp',
     maskImage: RECT_SPLIT_BOX_INSIDE_MASK,
     maskBounds: { x: 407, y: 43, w: 217, h: 353 },
+    maskBaseAspect: 1000 / 656,
     shape: 'box_square',
     bounds: { x: 50, y: 22, w: 660, h: 422 },
     placeBounds: { x: 78, y: 78, w: 604, h: 314 },
@@ -3006,6 +3014,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_square_rice.webp',
     maskImage: SQUARE_BOX_INSIDE_MASK,
     maskBounds: { x: 216, y: 39, w: 327, h: 329 },
+    maskBaseAspect: 801 / 730,
     shape: 'box_square',
     bounds: { x: 76, y: 54, w: 608, h: 354 },
     placeBounds: { x: 124, y: 92, w: 512, h: 276 },
@@ -3044,6 +3053,7 @@ const bentoBoxes = [
     riceImage: FREE_ASSET + 'box_round_rice.webp',
     maskImage: ROUND_BOX_INSIDE_MASK,
     maskBounds: { x: 239, y: 45, w: 284, h: 311 },
+    maskBaseAspect: 741 / 758,
     shape: 'box_round',
     bounds: { x: 92, y: 62, w: 576, h: 338 },
     placeBounds: { x: 136, y: 92, w: 488, h: 276 },
@@ -3084,6 +3094,7 @@ const bentoBoxes = [
     maskImage: CHARACTER_BOX_INSIDE_MASK,
     maskKey: 'box_bear',
     maskBounds: { x: 206, y: 17, w: 351, h: 387 },
+    maskBaseAspect: 462 / 430,
     shape: 'box_bear',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 462 / 430,
@@ -3125,6 +3136,7 @@ const bentoBoxes = [
     maskImage: CHARACTER_BOX_INSIDE_MASK,
     maskKey: 'box_bear',
     maskBounds: { x: 206, y: 17, w: 351, h: 387 },
+    maskBaseAspect: 461 / 433,
     shape: 'box_bear',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 462 / 430,
@@ -3166,6 +3178,7 @@ const bentoBoxes = [
     maskImage: CAT_BOX_INSIDE_MASK,
     maskKey: 'box_cat_blue',
     maskBounds: { x: 197, y: 10, w: 365, h: 402 },
+    maskBaseAspect: 575 / 515,
     shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 561 / 516,
@@ -3207,6 +3220,7 @@ const bentoBoxes = [
     maskImage: CAT_BOX_INSIDE_MASK,
     maskKey: 'box_cat_blue',
     maskBounds: { x: 197, y: 10, w: 365, h: 402 },
+    maskBaseAspect: 575 / 515,
     shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 561 / 516,
@@ -4174,7 +4188,10 @@ function getBoxMaskKey(box) {
   return box && (box.maskKey || box.id || '');
 }
 function getBoxVisualRect(box) {
-  const rect = getBoxImageRect(box);
+  const source = box && box.maskBaseAspect
+    ? { bounds: (box && box.bounds) || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H }, imageAspect: box.maskBaseAspect }
+    : box;
+  const rect = getBoxImageRect(source);
   const scale = box && box.imageScale ? Number(box.imageScale) || 1 : 1;
   if (!scale || scale === 1) return rect;
   const w = rect.w * scale;
@@ -4209,6 +4226,10 @@ function boxRelativeToMaskBounds(box, rel) {
 function getDefaultBoxMaskRelative(box) {
   return maskBoundsToBoxRelative(box, box && box.maskBounds);
 }
+function getBoxMaskRelative(box) {
+  const key = getBoxMaskKey(box);
+  return getFreeMaskRelativeOverride(key) || getDefaultBoxMaskRelative(box);
+}
 function getFreeMaskRelativeOverride(key) {
   if (!key || !freeMaskBoundsOverrides) return null;
   const entry = freeMaskBoundsOverrides[key];
@@ -4225,8 +4246,7 @@ function resetFreeMaskRelativeOverride(key) {
 }
 function getBoxMaskBounds(box) {
   if (!box || !box.maskBounds) return null;
-  const key = getBoxMaskKey(box);
-  const rel = getFreeMaskRelativeOverride(key) || getDefaultBoxMaskRelative(box);
+  const rel = getBoxMaskRelative(box);
   const bounds = boxRelativeToMaskBounds(box, rel);
   return bounds ? {
     x: Math.round(bounds.x),
@@ -4235,17 +4255,18 @@ function getBoxMaskBounds(box) {
     h: Math.round(bounds.h),
   } : null;
 }
-function updateSelectedBoxMaskBound(prop, value) {
+function updateSelectedBoxMaskRelative(prop, value) {
   const box = getSelectedBentoBox();
-  const base = getBoxMaskBounds(box);
   const key = getBoxMaskKey(box);
+  const base = getBoxMaskRelative(box);
   if (!box || !base || !key) return;
-  const next = { ...base, [prop]: Math.round(Number(value) || 0) };
-  next.w = clamp(next.w, 120, FREE_LAYOUT_W);
-  next.h = clamp(next.h, 120, FREE_LAYOUT_H);
-  next.x = clamp(next.x, -160, FREE_LAYOUT_W);
-  next.y = clamp(next.y, -120, FREE_LAYOUT_H);
-  setFreeMaskRelativeOverride(key, maskBoundsToBoxRelative(box, next));
+  const raw = Number(value);
+  const next = { ...base, [prop]: Number.isFinite(raw) ? raw / 100 : base[prop] };
+  next.x = clamp(next.x, -0.5, 1.5);
+  next.y = clamp(next.y, -0.5, 1.5);
+  next.w = clamp(next.w, 0.05, 1.5);
+  next.h = clamp(next.h, 0.05, 1.5);
+  setFreeMaskRelativeOverride(key, next);
   saveFreeMaskBoundsOverrides();
 }
 function resetSelectedBoxMaskBounds() {
@@ -5822,7 +5843,7 @@ function renderSelectedLayerControls() {
   panel.appendChild(actions);
   return panel;
 }
-function makeMaskRange(label, prop, min, max, bounds) {
+function makeMaskRange(label, prop, min, max, rel) {
   const row = document.createElement('label');
   row.className = 'free-mask-row';
   const labelText = document.createElement('span');
@@ -5832,12 +5853,14 @@ function makeMaskRange(label, prop, min, max, bounds) {
   input.min = String(min);
   input.max = String(max);
   input.step = '1';
-  input.value = String(Math.round(bounds[prop] || 0));
+  input.value = String(Math.round((rel[prop] || 0) * 100));
   const value = document.createElement('span');
-  value.textContent = input.value;
+  value.textContent = input.value + '%';
   input.addEventListener('input', e => {
-    updateSelectedBoxMaskBound(prop, e.currentTarget.value);
-    value.textContent = String(Math.round(Number(e.currentTarget.value) || 0));
+    updateSelectedBoxMaskRelative(prop, e.currentTarget.value);
+    value.textContent = String(Math.round(Number(e.currentTarget.value) || 0)) + '%';
+    const status = document.querySelector('.free-mask-save-status');
+    if (status) status.textContent = '自動保存しました';
     renderFreeLayoutStage();
   });
   row.appendChild(labelText);
@@ -5878,7 +5901,8 @@ function renderFreeMaskBoxSelector(activeBox) {
 function renderFreeMaskEditorControls() {
   const box = getSelectedBentoBox();
   const bounds = getBoxMaskBounds(box);
-  if (!freeMaskEditorMode || !box || !box.maskImage || !bounds) return null;
+  const rel = getBoxMaskRelative(box);
+  if (!freeMaskEditorMode || !box || !box.maskImage || !bounds || !rel) return null;
   const panel = document.createElement('div');
   panel.className = 'free-mask-panel';
   const title = document.createElement('div');
@@ -5887,8 +5911,12 @@ function renderFreeMaskEditorControls() {
   panel.appendChild(title);
   const viewportLabel = document.createElement('div');
   viewportLabel.className = 'free-mask-viewport';
-  viewportLabel.textContent = '保存: おべんとうばこ基準';
+  viewportLabel.textContent = '保存: ごはん入り箱基準';
   panel.appendChild(viewportLabel);
+  const saveStatus = document.createElement('div');
+  saveStatus.className = 'free-mask-save-status';
+  saveStatus.textContent = '数値を動かすと自動保存';
+  panel.appendChild(saveStatus);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   const actions = document.createElement('div');
   actions.className = 'free-mask-actions';
@@ -5905,10 +5933,10 @@ function renderFreeMaskEditorControls() {
   }));
   panel.appendChild(actions);
   if (freeMaskEditorOpen) {
-    panel.appendChild(makeMaskRange('X', 'x', -80, FREE_LAYOUT_W, bounds));
-    panel.appendChild(makeMaskRange('Y', 'y', -80, FREE_LAYOUT_H, bounds));
-    panel.appendChild(makeMaskRange('W', 'w', 160, FREE_LAYOUT_W, bounds));
-    panel.appendChild(makeMaskRange('H', 'h', 140, FREE_LAYOUT_H, bounds));
+    panel.appendChild(makeMaskRange('X', 'x', -20, 120, rel));
+    panel.appendChild(makeMaskRange('Y', 'y', -20, 120, rel));
+    panel.appendChild(makeMaskRange('W', 'w', 5, 140, rel));
+    panel.appendChild(makeMaskRange('H', 'h', 5, 140, rel));
   }
   return panel;
 }
