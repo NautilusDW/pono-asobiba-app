@@ -1513,21 +1513,6 @@ html, body {
 #app.free-layout-active > .free-bottom-guide {
   display: flex;
 }
-#app.free-layout-active .left-panel {
-  align-items: center;
-  justify-content: center;
-}
-.bento-box.free-layout-shell {
-  aspect-ratio: 760 / 460;
-  flex: 0 0 auto;
-  align-self: center;
-}
-.bento-inner.free-layout-inner {
-  aspect-ratio: 760 / 460;
-  width: 100%;
-  height: 100%;
-  flex: 0 0 auto;
-}
 .free-bottom-pono {
   width: 94px;
   height: 78px;
@@ -2990,6 +2975,7 @@ const bentoBoxes = [
     maskImage: RECT_SPLIT_BOX_INSIDE_MASK,
     maskBounds: { x: 407, y: 43, w: 217, h: 353 },
     maskBaseAspect: 1000 / 656,
+    maskCanvas: { w: 1000, h: 656 },
     shape: 'box_square',
     bounds: { x: 50, y: 22, w: 660, h: 422 },
     placeBounds: { x: 78, y: 78, w: 604, h: 314 },
@@ -3030,6 +3016,7 @@ const bentoBoxes = [
     maskImage: SQUARE_BOX_INSIDE_MASK,
     maskBounds: { x: 216, y: 39, w: 327, h: 329 },
     maskBaseAspect: 801 / 730,
+    maskCanvas: { w: 801, h: 730 },
     shape: 'box_square',
     bounds: { x: 76, y: 54, w: 608, h: 354 },
     placeBounds: { x: 124, y: 92, w: 512, h: 276 },
@@ -3069,6 +3056,7 @@ const bentoBoxes = [
     maskImage: ROUND_BOX_INSIDE_MASK,
     maskBounds: { x: 239, y: 45, w: 284, h: 311 },
     maskBaseAspect: 741 / 758,
+    maskCanvas: { w: 741, h: 758 },
     shape: 'box_round',
     bounds: { x: 92, y: 62, w: 576, h: 338 },
     placeBounds: { x: 136, y: 92, w: 488, h: 276 },
@@ -3110,6 +3098,7 @@ const bentoBoxes = [
     maskKey: 'box_bear',
     maskBounds: { x: 206, y: 17, w: 351, h: 387 },
     maskBaseAspect: 462 / 430,
+    maskCanvas: { w: 462, h: 430 },
     shape: 'box_bear',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 462 / 430,
@@ -3152,6 +3141,7 @@ const bentoBoxes = [
     maskKey: 'box_bear',
     maskBounds: { x: 206, y: 17, w: 351, h: 387 },
     maskBaseAspect: 461 / 433,
+    maskCanvas: { w: 461, h: 433 },
     shape: 'box_bear',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 462 / 430,
@@ -3194,6 +3184,7 @@ const bentoBoxes = [
     maskKey: 'box_cat_blue',
     maskBounds: { x: 197, y: 10, w: 365, h: 402 },
     maskBaseAspect: 575 / 515,
+    maskCanvas: { w: 575, h: 515 },
     shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 561 / 516,
@@ -3236,6 +3227,7 @@ const bentoBoxes = [
     maskKey: 'box_cat_blue',
     maskBounds: { x: 197, y: 10, w: 365, h: 402 },
     maskBaseAspect: 575 / 515,
+    maskCanvas: { w: 575, h: 515 },
     shape: 'box_cat',
     bounds: { x: 30, y: 0, w: 700, h: 456 },
     imageAspect: 561 / 516,
@@ -3382,6 +3374,9 @@ let freeMaskEditorOpen = false;
 let freeMaskEditorMode = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 let freeMaskResizeRefreshTimer = 0;
+const freeFullMaskCache = new Map();
+const freeFullMaskPending = new Map();
+let freeFullMaskRefreshTimer = 0;
 let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 
@@ -4257,37 +4252,100 @@ function scaleRectAroundCenter(rect, center, scale) {
     h: rect.h * scale,
   };
 }
-function getBoxMaskBoundsCss(box, layer, host = null) {
+function getBoxMaskCanvasSize(box) {
+  const size = box && box.maskCanvas;
+  if (size && Number(size.w) > 0 && Number(size.h) > 0) {
+    return { w: Number(size.w), h: Number(size.h) };
+  }
+  const aspect = box && (box.maskBaseAspect || box.imageAspect);
+  if (aspect && Number.isFinite(aspect) && aspect > 0) return { w: Math.round(aspect * 1000), h: 1000 };
+  return { w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
+}
+function getFullMaskCacheKey(box, rel, size) {
+  return [
+    getBoxMaskKey(box),
+    box && box.maskImage,
+    size.w,
+    size.h,
+    rel.x,
+    rel.y,
+    rel.w,
+    rel.h,
+  ].join('|');
+}
+function scheduleFullMaskRefresh() {
+  clearTimeout(freeFullMaskRefreshTimer);
+  freeFullMaskRefreshTimer = setTimeout(() => {
+    renderFreeLayoutStage();
+  }, 0);
+}
+function queueFullCanvasMaskBuild(box, key, size, rel) {
+  if (!box || !box.maskImage || freeFullMaskPending.has(key)) return;
+  const img = new Image();
+  const pending = new Promise(resolve => {
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(size.w));
+        canvas.height = Math.max(1, Math.round(size.h));
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          img,
+          rel.x * canvas.width,
+          rel.y * canvas.height,
+          rel.w * canvas.width,
+          rel.h * canvas.height
+        );
+        freeFullMaskCache.set(key, canvas.toDataURL('image/png'));
+      } catch (e) {}
+      freeFullMaskPending.delete(key);
+      scheduleFullMaskRefresh();
+      resolve();
+    };
+    img.onerror = () => {
+      freeFullMaskPending.delete(key);
+      resolve();
+    };
+  });
+  freeFullMaskPending.set(key, pending);
+  img.src = box.maskImage;
+}
+function getFullCanvasMaskUrl(box) {
+  if (!box || !box.maskImage) return '';
+  const rel = normalizeMaskRelative(getBoxMaskRelative(box));
+  const size = getBoxMaskCanvasSize(box);
+  const key = getFullMaskCacheKey(box, rel, size);
+  const cached = freeFullMaskCache.get(key);
+  if (cached) return cached;
+  queueFullCanvasMaskBuild(box, key, size, rel);
+  return '';
+}
+function getBoxMaskCanvasRectCss(box, layer, host = null) {
   const stage = host && host.classList && host.classList.contains('free-layout-stage')
     ? host
     : layer && layer.parentElement && layer.parentElement.classList.contains('free-layout-stage')
     ? layer.parentElement
     : document.getElementById('free-layout-stage');
   if (!stage || !box) return null;
-  const stageRect = stage.getBoundingClientRect();
-  if (!stageRect.width || !stageRect.height) return null;
+  const stageW = stage.clientWidth || stage.offsetWidth;
+  const stageH = stage.clientHeight || stage.offsetHeight;
+  if (!stageW || !stageH) return null;
   const imageRect = getBoxImageRect(box);
   const elementRect = {
-    x: imageRect.x / FREE_LAYOUT_W * stageRect.width,
-    y: imageRect.y / FREE_LAYOUT_H * stageRect.height,
-    w: imageRect.w / FREE_LAYOUT_W * stageRect.width,
-    h: imageRect.h / FREE_LAYOUT_H * stageRect.height,
+    x: imageRect.x / FREE_LAYOUT_W * stageW,
+    y: imageRect.y / FREE_LAYOUT_H * stageH,
+    w: imageRect.w / FREE_LAYOUT_W * stageW,
+    h: imageRect.h / FREE_LAYOUT_H * stageH,
   };
-  const baseAspect = box.maskBaseAspect || box.imageAspect || (imageRect.w / imageRect.h);
+  const size = getBoxMaskCanvasSize(box);
+  const baseAspect = size.w / size.h;
   const contentRect = fitAspectRect(elementRect, baseAspect);
   const scale = box && box.imageScale ? Number(box.imageScale) || 1 : 1;
-  const visualRect = scaleRectAroundCenter(contentRect, {
+  return scaleRectAroundCenter(contentRect, {
     x: elementRect.x + elementRect.w / 2,
     y: elementRect.y + elementRect.h / 2,
   }, scale);
-  const rel = getBoxMaskRelative(box);
-  if (!rel || !visualRect || !visualRect.w || !visualRect.h) return null;
-  return {
-    x: visualRect.x + rel.x * visualRect.w,
-    y: visualRect.y + rel.y * visualRect.h,
-    w: rel.w * visualRect.w,
-    h: rel.h * visualRect.h,
-  };
 }
 function getDefaultBoxMaskRelative(box) {
   return maskBoundsToBoxRelative(box, box && box.maskBounds);
@@ -4349,22 +4407,14 @@ function resetSelectedBoxMaskBounds() {
   resetFreeMaskRelativeOverride(key);
   saveFreeMaskBoundsOverrides();
 }
-function getMaskPositionPct(pos, maskSize, stageSize) {
-  const available = stageSize - maskSize;
-  if (available <= 0) return '50%';
-  return (pos / available * 100).toFixed(4) + '%';
-}
 function applyBoxVisualMask(layer, box, host = null) {
-  const b = getBoxMaskBounds(box);
-  if (!layer || !box || !box.maskImage || !b) return false;
-  const cssBounds = getBoxMaskBoundsCss(box, layer, host);
-  const maskSize = cssBounds
-    ? `${cssBounds.w.toFixed(3)}px ${cssBounds.h.toFixed(3)}px`
-    : `${toPctX(b.w)} ${toPctY(b.h)}`;
-  const maskPosition = cssBounds
-    ? `${cssBounds.x.toFixed(3)}px ${cssBounds.y.toFixed(3)}px`
-    : `${getMaskPositionPct(b.x, b.w, FREE_LAYOUT_W)} ${getMaskPositionPct(b.y, b.h, FREE_LAYOUT_H)}`;
-  const maskUrl = `url("${box.maskImage}")`;
+  if (!layer || !box || !box.maskImage || !getBoxMaskBounds(box)) return false;
+  const cssBounds = getBoxMaskCanvasRectCss(box, layer, host);
+  const fullMaskUrl = getFullCanvasMaskUrl(box);
+  if (!cssBounds || !fullMaskUrl) return false;
+  const maskSize = `${cssBounds.w.toFixed(3)}px ${cssBounds.h.toFixed(3)}px`;
+  const maskPosition = `${cssBounds.x.toFixed(3)}px ${cssBounds.y.toFixed(3)}px`;
+  const maskUrl = `url("${fullMaskUrl}")`;
   layer.style.setProperty('-webkit-mask-image', maskUrl);
   layer.style.setProperty('mask-image', maskUrl);
   layer.style.setProperty('-webkit-mask-size', maskSize);
@@ -5702,29 +5752,9 @@ function renderFreeLayoutInto(host, opts = {}) {
     }
   }
 }
-function fitFreeLayoutShell() {
-  const box = document.querySelector('.bento-box.free-layout-shell');
-  const inner = box ? box.querySelector('.free-layout-inner') : null;
-  const panel = box ? box.closest('.left-panel') : null;
-  if (!box || !inner || !panel) return;
-  const panelStyle = getComputedStyle(panel);
-  const padX = parseFloat(panelStyle.paddingLeft || '0') + parseFloat(panelStyle.paddingRight || '0');
-  const padY = parseFloat(panelStyle.paddingTop || '0') + parseFloat(panelStyle.paddingBottom || '0');
-  const maxW = Math.max(0, panel.clientWidth - padX);
-  const maxH = Math.max(0, panel.clientHeight - padY);
-  if (!maxW || !maxH) return;
-  const aspect = FREE_LAYOUT_W / FREE_LAYOUT_H;
-  const w = Math.min(maxW, maxH * aspect);
-  const h = w / aspect;
-  box.style.width = w.toFixed(3) + 'px';
-  box.style.height = h.toFixed(3) + 'px';
-  inner.style.width = '100%';
-  inner.style.height = '100%';
-}
 function renderFreeLayoutStage() {
   const stage = document.getElementById('free-layout-stage');
   if (!stage) return;
-  fitFreeLayoutShell();
   renderFreeLayoutInto(stage, { interactive: true });
 }
 function createPaletteVisual(def) {
