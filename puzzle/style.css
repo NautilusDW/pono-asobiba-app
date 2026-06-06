@@ -172,8 +172,10 @@ body {
     gap: 4px;
   }
   .header { padding: 0; text-align: center; }
-  .header .title { font-size: 1.1rem; margin: 0; }
-  .header .subtitle,
+  .header .title {
+    font-size: clamp(1.08rem, 4.1dvh, 1.45rem);
+    margin: 0;
+  }
   .header .stage-label { font-size: 0.8rem; margin: 0; }
   .main {
     display: flex;
@@ -216,25 +218,89 @@ body {
 }
 
 @media (orientation: landscape) and (pointer: coarse) and (max-height: 430px) {
+  .main {
+    gap: 8px;
+  }
+
+  .puzzle-frame {
+    width: min(calc(100vw - 184px), calc((100dvh - 84px) * 16 / 9));
+  }
+
   .sidebar {
-    gap: 7px;
+    gap: 5px;
     padding-top: 0;
-    padding-bottom: 92px;
+    padding-bottom: 72px;
+    width: 154px;
   }
 
   .controls {
-    gap: 6px;
+    gap: 5px;
   }
 
   .sidebar .btn {
-    min-height: 46px;
-    padding: 9px 20px;
-    font-size: 1rem;
-    letter-spacing: 0.03em;
+    min-height: 38px;
+    padding: 7px 14px;
+    font-size: 0.92rem;
+    letter-spacing: 0.02em;
   }
 
   .progress-bar {
-    height: 24px;
+    height: 22px;
+  }
+
+  .challenge-status {
+    min-height: 25px;
+    padding: 3px 9px;
+    font-size: 0.76rem;
+  }
+}
+
+/* ===== 4:3-ish landscape: top toolbar + larger board ===== */
+@media (orientation: landscape) and (max-aspect-ratio: 3 / 2) {
+  body {
+    overflow: hidden;
+  }
+
+  .page-wrapper {
+    max-width: none;
+    height: 100dvh;
+    padding: 8px 14px 10px;
+    gap: 6px;
+  }
+
+  .header {
+    flex: 0 0 auto;
+    padding: 0;
+  }
+
+  .header .title {
+    font-size: clamp(1.22rem, 3.1dvh, 1.65rem);
+    margin: 0;
+  }
+
+  .header .stage-label {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: clamp(0.78rem, 1.8dvh, 0.96rem);
+    padding: 2px 16px;
+  }
+
+  .main {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .puzzle-frame {
+    width: min(calc(100vw - 36px), calc((100dvh - 122px) * 16 / 9));
+    max-height: calc(100dvh - 122px);
+    min-width: 0;
+    flex: 0 1 auto;
   }
 }
 
@@ -620,6 +686,57 @@ body {
 
 .challenge-status.is-time.is-expired {
   border-color: rgba(196, 75, 45, 0.82);
+}
+
+@media (orientation: landscape) and (max-aspect-ratio: 3 / 2) {
+  .sidebar {
+    order: -1;
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-areas: "controls challenge progress";
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: min(100%, 860px);
+    align-self: center;
+    padding: 0;
+  }
+
+  .controls {
+    grid-area: controls;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .sidebar .btn {
+    min-height: 42px;
+    padding: 9px 18px;
+    font-size: 0.96rem;
+    white-space: nowrap;
+  }
+
+  .challenge-status {
+    grid-area: challenge;
+    width: 158px;
+    min-width: 158px;
+    min-height: 30px;
+    margin: 0;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+  }
+
+  .challenge-status.is-time {
+    width: 158px;
+    min-width: 158px;
+  }
+
+  .progress-bar {
+    grid-area: progress;
+    width: 126px;
+    max-width: none;
+    height: 28px;
+    margin: 0;
+  }
 }
 
 /* ===== Modal ===== */
@@ -1140,11 +1257,31 @@ body {
   }
 
   .pono-bond-badge__img {
-    width: 58px;
-    height: 58px;
+    width: 50px;
+    height: 50px;
   }
 
   .pono-bond-badge__stars {
-    font-size: 22px;
+    font-size: 20px;
+  }
+}
+
+@media (orientation: landscape) and (max-aspect-ratio: 3 / 2) {
+  .pono-bond-badge {
+    top: 8px;
+    right: 12px;
+    bottom: auto;
+    gap: 8px;
+    padding: 5px 11px 5px 5px;
+    transform: none;
+  }
+
+  .pono-bond-badge__img {
+    width: 46px;
+    height: 46px;
+  }
+
+  .pono-bond-badge__stars {
+    font-size: 20px;
   }
 }

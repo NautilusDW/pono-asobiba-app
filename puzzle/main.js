@@ -2121,9 +2121,12 @@ function initPuzzle(img) {
   puzzleContainer.appendChild(puzzleCanvas);
   puzzleCtx = puzzleCanvas.getContext('2d');
 
-  // 16:9 フレーム化に伴いボード幅を 50% に抑え、フレーム全域をピース散布エリアとして利用する
-  const boardMaxW = canvasW * 0.50;
-  const boardMaxH = canvasH * 0.60;
+  // フレーム全域をピース散布エリアとして残しつつ、画角ごとに完成絵の見え方を調整する。
+  // 4:3寄りは外側に余白が出やすいため、完成絵を大きめにしてアンバランスさを抑える。
+  const isFourThreeLike = !!(window.matchMedia && window.matchMedia('(orientation: landscape) and (max-aspect-ratio: 3 / 2)').matches);
+  const isShortLandscape = !!(window.matchMedia && window.matchMedia('(orientation: landscape) and (max-height: 430px)').matches);
+  const boardMaxW = canvasW * (isFourThreeLike ? 0.66 : (isShortLandscape ? 0.58 : 0.56));
+  const boardMaxH = canvasH * (isFourThreeLike ? 0.74 : (isShortLandscape ? 0.66 : 0.64));
   // Use the image's natural aspect ratio to avoid stretching
   const imgAspect = (img.naturalWidth && img.naturalHeight)
     ? img.naturalWidth / img.naturalHeight
