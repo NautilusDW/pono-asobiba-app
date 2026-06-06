@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-06 - [batch:285-puzzle-partner-first-tutorials] DONE - Codex: user 依頼「それぞれのパートナーを最初に使うとき、絵で見せながら詳しく説明する時間を設けたい」を受領。`puzzle/partner-tutorial.js` / `.css` を追加し、8体（キツネ/コジカ/リス/ハリネズミ/アライグマ/ウサギ/フクロウ/カラス）それぞれに初回だけ出る説明モーダルを実装。既存パートナー画像 + CSSミニ盤面アニメで、アライグマは15ピース相当のトレイと自動はめ込みデモ、リスはタイマー、ハリネズミはヒント少なめ、カラスは回転などを視覚化。`main.js` はパートナー選択後に `showIfNeeded` を挟む導線へ変更。Playwrightで 1280x720 / 667x375 / 1024x768 の全8体表示、初回導線、seen保存、2回目スキップ、JSエラーなしを確認。`sw.js` は v846。 (by Codex)
 - 2026-06-06 - [batch:284-bento-tablet-picker-scale] DONE - Codex: user 指摘「iPad/タブレットでは解像度が高く、メニュー文字やおかずイラストが小さい」を受領。`bento/index.html` に `pointer: coarse` + `min-height: 640px` のタブレット向け media query を追加し、右パネル幅/余白、タブ・操作ボタン文字、食材カード、食材名、食材画像を拡大。iPhone横相当の低高さ端末には適用しない。`sw.js` は v845。 (by Codex)
 - 2026-06-06 - [batch:284-bento-tablet-picker-scale] DONE - Codex: Playwright WebKit iPad portrait 768x1024 / landscape 1024x768 で tablet query true、食材画像枠が約60→約77px、食材名 8→9.92px、タブ 8.96→10.88px、操作ボタン 9.92→11.52px へ拡大。Chromium iPhone横 932x430 は query false で従来サイズ。iPad横で食材名/タブ/操作ボタンの `scrollWidth <= clientWidth`、JSエラーなし、スクショ目視確認。 (by Codex)
 - 2026-06-06 - [batch:283-bento-rect-mask-visible-out] DONE - Codex: user 指摘「まだ1本内側。変わっていない」を受領。前回 `maskBounds.w=260` は画像座標 x≈946 で差が小さすぎたため、さらに `box_rect_split.maskBounds.w` を 260→270 に上げて右端を x≈962 へ移動。保存キーは `bento_free_mask_bounds_v14`、`sw.js` は v844。 (by Codex)

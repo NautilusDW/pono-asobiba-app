@@ -2613,11 +2613,20 @@ function finishOpeningAndEnterGame() {
   // === Partner select modal ===
   // Phase 1 で読み込まれた partner-select.js が DOM を注入する。
   // 未ロード時は graceful にスキップ (既存挙動を維持)。
-  function afterPartnerSelected() {
-    if (pendingTitleTutorial) {
-      pendingTitleTutorial = false;
-      setTimeout(showTutorial, 500);
+  function afterPartnerSelected(selectedPartnerId) {
+    function afterPartnerTutorial() {
+      if (pendingTitleTutorial) {
+        pendingTitleTutorial = false;
+        setTimeout(showTutorial, 500);
+      }
     }
+    if (selectedPartnerId
+        && window.PonoPartnerTutorial
+        && typeof window.PonoPartnerTutorial.showIfNeeded === 'function') {
+      window.PonoPartnerTutorial.showIfNeeded(selectedPartnerId, stageId, afterPartnerTutorial);
+      return;
+    }
+    afterPartnerTutorial();
   }
   try {
     var stage = STAGES[currentStageIndex] || null;
@@ -2644,14 +2653,14 @@ function finishOpeningAndEnterGame() {
             }
           }
         } catch (_) {}
-        afterPartnerSelected();
+        afterPartnerSelected(selectedPartnerId);
       });
       return;
     }
   } catch (e) {
     try { console.warn('[PonoPartnerSelect] show failed:', e); } catch (_) {}
   }
-  afterPartnerSelected();
+  afterPartnerSelected(null);
 }
 
 // ===== Opening Cutscene (owl-doctor style: per-cut audio + wooden-frame narration + fade-to-black) =====
