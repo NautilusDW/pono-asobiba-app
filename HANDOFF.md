@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-06 - [batch:281-bento-rect-mask-right-inset] DONE - Codex: user 指摘「だいぶよいが右が弁当ギリギリ。ピンク外枠より中、ベージュ壁より内側へ」を受領。前回 `maskBounds.w=295` はご飯入り画像の x=1000 近くまで届き外枠寄りだったため、右室の床/壁境界に近い x≈930 相当へ戻す目的で `box_rect_split.maskBounds.w` を 295→250 に調整。合わせて通常弁当の `placeBounds` 右端と右側 food/accessory/safe spots を内側へ寄せ、保存キーを `bento_free_mask_bounds_v12` に更新。`sw.js` は v842。 (by Codex)
+- 2026-06-06 - [batch:281-bento-rect-mask-right-inset] DONE - Codex: Playwright WebKit / Chromium 932x430 DPR3 の `?maskedit=1&box=box_rect_split` で、保存キー v12、`maskBounds {x:407,y:43,w:250,h:353}`、ご飯入り画像座標で右端 x=930.6、右側 spots x=572、`mask-size:100% 100%`、JSエラーなしを確認。 (by Codex)
 - 2026-06-06 - [batch:280-bento-rect-mask-right-edge] DONE - Codex: user 指摘「実機スクショでもまだ右側が切れる」を受領。原因は storage ではなく、`box_rect_split` の初期 `maskBounds` 右端が stage x=624 相当で、ハンバーグ右スポット x=612 + size 170 に対して短すぎることと判断。`maskBounds.w` を 217→295 に広げ、右室のご飯入り画像キャンバス右端までマスクが届くよう変更。保存キーは `bento_free_mask_bounds_v11` に更新し、実機の v10 保存値も切り離し。`sw.js` は v841。 (by Codex)
 - 2026-06-06 - [batch:280-bento-rect-mask-right-edge] DONE - Codex: Playwright WebKit 932x430 DPR3 / 844x390 DPR3 と Chromium 932x430 DPR3 で、`box_rect_split` のマスク不透明右端が右ハンバーグ要素の右端より右側に来ること、JS エラーなしを確認。`git diff --check` 済み。 (by Codex)
 - 2026-06-06 - [batch:279-bento-mask-storage-v10] DONE - Codex: user 指摘「PC Chrome F12 Dimensions では合うが、実機 iPad mini / iPhone 17 では右側が切れる」を受領。WebKit Playwright を追加インストールして iPhone横相当 932x430 で確認したところ、frame/layer 構造と `100% 100% / 0 0` mask は数値・スクショ上正常。実機だけ残る差分は、PC Chrome と iOS 実機の `localStorage` が別で、かつ方式変更後も保存キーが `bento_free_mask_bounds_v9` のままだったため、実機に過去方式の古い保存値が残る可能性が高いと判断。保存キーを `bento_free_mask_bounds_v10` に更新し、古い実機保存値を切り離し。`sw.js` は v840。 (by Codex)
