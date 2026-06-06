@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-07 - [batch:289-puzzle-freeform-handcut-shapes] DONE - Codex: user 共有「後半に欲しいランダムなピース形状は、タブ型ではなく境界線がくねる自由曲線タイプ」を受領。`puzzle/main.js` の `handcut-jigsaw` を単一タブ/くぼみ生成から `freeform` 共有辺に変更し、後半ステージ17-20で1つの大きなふくらみ/ゆるいS字/非対称の手切り風曲線を生成するよう変更。Playwrightでステージ17完成表示・散布表示を確認し、自由曲線 edge 生成、JSエラーなしを確認。`sw.js` は v850。 (by Codex)
 - 2026-06-07 - [batch:288-puzzle-edge-flip-consistency] DONE - Codex: user 指摘「なんでこんな形が微妙に違うの？」を受領。原因は `puzzle/main.js` の `flipEdge()` が object edge 反転時に `depth/neck/shoulder/skew/style` を落としており、共有辺の片側だけ簡略形状で描かれていたこと。`flipEdge()` を spread ベースに変更し、`skew` は反転方向に合わせて符号反転。Playwrightでリス練習12ピースを表示し、`flipEdge()` の preserve/restoredSame true、JSエラーなし、スクショ目視確認。`sw.js` は v849。 (by Codex)
 - 2026-06-07 - [batch:287-bento-complete-tier-layout] DONE - Codex: user 指摘「完成品の絵が作成中と違う / 1段目と2段目がずれる / 箱ごとに完成版を調整したい」を受領。`bento/index.html` に完成版2段目の X/Y/W 保存 (`bento_free_complete_layout_v1`) と `?maskedit=1` の「完成版調整」パネル + 完成プレビューを追加。初期値は 2段目 `X=0px / Y=32px / W=104%` で、箱ごと・段ごとに localStorage 自動保存。完成描画は上段ラッパーごと拡大/移動するため中のおかずも同じ比率で追従。Node 構文解析、Playwright で `box_square` の UI/初期値/自動保存を確認。`sw.js` は v848。 (by Codex)
 - 2026-06-07 - [batch:286-puzzle-real-ui-partner-tutorials] DONE - Codex: `puzzle/partner-tutorial.js` / `.css` を削除し、`main.js` 内の実UI練習ステージ方式へ置換。10〜12ピース優先の実ステージを一時ロードし、全8体で実ボタン/タイマー/ピース挙動を見せて `本番へ` で元ステージへ戻る。Playwrightで全8体の練習→本番復帰、タイトル→パートナー選択→リス練習導線、1280x720 / 667x375 / 1024x768 の収まり、JSエラーなしを確認。`node --check` / `git diff --check` / UTF-8 LF 確認済み。`sw.js` は v847。 (by Codex)

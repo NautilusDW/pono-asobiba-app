@@ -940,12 +940,49 @@ function createPlaceholderImage(width, height) {
 function flipEdge(e) {
   if (typeof e === 'number') return -e;
   if (!e || typeof e !== 'object') return e;
+  if (e.type === 'freeform') {
+    const points = Array.isArray(e.points) ? e.points : [];
+    return {
+      ...e,
+      points: points
+        .map(function (pt) {
+          return { t: 1 - pt.t, o: -pt.o };
+        })
+        .reverse(),
+    };
+  }
   const flipped = { ...e, dir: -e.dir, pos: 1 - e.pos };
   if (typeof e.skew === 'number') flipped.skew = -e.skew;
   return flipped;
 }
 
 function buildPiecePath(target, px, py, pw, ph, tabs) {
+  function traceFreeformEdgeTo(x1, y1, x2, y2, edge, ux, uy, nx, ny, len) {
+    const points = [{ x: x1, y: y1 }];
+    const mids = Array.isArray(edge.points) ? edge.points : [];
+    for (let i = 0; i < mids.length; i++) {
+      const t = Math.max(0.06, Math.min(0.94, Number(mids[i].t) || 0));
+      const o = Math.max(-0.32, Math.min(0.32, Number(mids[i].o) || 0));
+      points.push({
+        x: x1 + ux * t * len + nx * o * len,
+        y: y1 + uy * t * len + ny * o * len,
+      });
+    }
+    points.push({ x: x2, y: y2 });
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+      target.bezierCurveTo(
+        p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+        p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+        p2.x, p2.y
+      );
+    }
+  }
+
   function traceEdgeTo(x1, y1, x2, y2, edge) {
     if (edge === 0) { target.lineTo(x2, y2); return; }
 
@@ -953,6 +990,11 @@ function buildPiecePath(target, px, py, pw, ph, tabs) {
     const len = Math.sqrt(dx * dx + dy * dy);
     const ux = dx / len, uy = dy / len;
     const nx = -uy, ny = ux;
+
+    if (edge && edge.type === 'freeform') {
+      traceFreeformEdgeTo(x1, y1, x2, y2, edge, ux, uy, nx, ny, len);
+      return;
+    }
 
     if (typeof edge === 'number') {
       // Simple single-Bézier centered tab (stages 1-4)
@@ -1020,8 +1062,48 @@ function buildPiecePath(target, px, py, pw, ph, tabs) {
 //   advanced-jigsaw-v2 : { dir, pos: 0.28-0.72, hw: 0.13-0.22 }
 //   offset-jigsaw      : { dir, pos: 0.34-0.66, hw/depth/neck ランダム }
 //   organic-jigsaw     : { dir, pos: 0.25-0.75, hw/depth/neck/skew ランダム }
-//   handcut-jigsaw     : { dir, pos: 0.20-0.80, さらに不均一な曲線 }
+//   handcut-jigsaw     : { type:'freeform', points:[...] }  境界線自体がくねる自由曲線
 function buildPieces() {
+  function clamp01(v) {
+    return Math.max(0, Math.min(1, v));
+  }
+
+  function makeFreeformEdge() {
+    const sign = Math.random() < 0.5 ? 1 : -1;
+    const amp = 0.10 + Math.random() * 0.11;
+    const jitter = function (amount) { return (Math.random() - 0.5) * amount; };
+    const mode = Math.random();
+    let points;
+    if (mode < 0.56) {
+      // One broad lobe, like hand-cut cardboard puzzle edges.
+      points = [
+        { t: 0.22 + jitter(0.06), o: sign * amp * 0.18 },
+        { t: 0.50 + jitter(0.08), o: sign * amp },
+        { t: 0.78 + jitter(0.06), o: sign * amp * 0.18 },
+      ];
+    } else if (mode < 0.86) {
+      // Gentle S curve, not a repeated wave.
+      points = [
+        { t: 0.22 + jitter(0.06), o: sign * amp * 0.70 },
+        { t: 0.50 + jitter(0.08), o: -sign * amp * 0.36 },
+        { t: 0.78 + jitter(0.06), o: -sign * amp * 0.66 },
+      ];
+    } else {
+      // A slightly pinched asymmetric edge for the last few stages.
+      points = [
+        { t: 0.18 + jitter(0.04), o: sign * amp * 0.16 },
+        { t: 0.38 + jitter(0.06), o: sign * amp * 0.95 },
+        { t: 0.62 + jitter(0.06), o: -sign * amp * 0.48 },
+        { t: 0.84 + jitter(0.04), o: -sign * amp * 0.14 },
+      ];
+    }
+    points = points.map(function (pt) {
+      return { t: clamp01(pt.t), o: pt.o };
+    });
+    points.sort(function (a, b) { return a.t - b.t; });
+    return { type: 'freeform', points, style: 'handcut' };
+  }
+
   function makeEdge() {
     const dir = Math.random() < 0.5 ? 1 : -1;
     switch (stagePieceShapeStyle) {
@@ -1063,16 +1145,7 @@ function buildPieces() {
           style: 'organic',
         };
       case 'handcut-jigsaw':
-        return {
-          dir,
-          pos: 0.20 + Math.random() * 0.60,
-          hw: 0.10 + Math.random() * 0.13,
-          depth: 0.20 + Math.random() * 0.20,
-          neck: 0.35 + Math.random() * 0.35,
-          shoulder: 0.52 + Math.random() * 0.46,
-          skew: (Math.random() - 0.5) * 0.12,
-          style: 'handcut',
-        };
+        return makeFreeformEdge();
       default:
         return dir;
     }
