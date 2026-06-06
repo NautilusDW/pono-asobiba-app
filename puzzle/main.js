@@ -388,13 +388,22 @@ function formatChallengeTime(ms) {
   return min + ':' + String(sec).padStart(2, '0');
 }
 
+function toFullWidthDigits(text) {
+  var digits = '０１２３４５６７８９';
+  return String(text).replace(/[0-9]/g, function (d) {
+    return digits.charAt(Number(d));
+  });
+}
+
 function setTimeChallengeStatus(remainMs) {
   if (!challengeStatusEl) return;
   var remain = Math.max(0, remainMs | 0);
   var ratio = activeChallenge.limitMs > 0
     ? Math.max(0, Math.min(1, remain / activeChallenge.limitMs))
     : 0;
-  challengeStatusEl.textContent = 'タイム ' + formatChallengeTime(remain);
+  challengeStatusEl.innerHTML =
+    '<span class="challenge-status__label">のこり</span>' +
+    '<span class="challenge-status__time">' + toFullWidthDigits(formatChallengeTime(remain)) + '</span>';
   challengeStatusEl.style.setProperty('--challenge-fill', Math.round(ratio * 100) + '%');
   challengeStatusEl.classList.toggle('is-low', ratio <= 0.45 && ratio > 0.2);
   challengeStatusEl.classList.toggle('is-critical', ratio <= 0.2);
@@ -412,7 +421,7 @@ function hideChallengeStatus() {
   challengeStatusEl.classList.add('hidden');
   challengeStatusEl.classList.remove('is-expired', 'is-time', 'is-low', 'is-critical');
   challengeStatusEl.style.removeProperty('--challenge-fill');
-  challengeStatusEl.textContent = '';
+  challengeStatusEl.innerHTML = '';
 }
 
 function resetPartnerChallenge(stageId) {
@@ -2346,19 +2355,21 @@ function togglePeekOverlay() {
 }
 
 // ===== Button Handlers =====
-btnShuffle.addEventListener('click', () => {
-  if (!puzzleCanvas) return;
-  // 散布アニメ実行中は無効化 (二重起動防止)
-  if (scatterAnimating) return;
-  // peek ON のままシャッフルすると操作不能に見えるので OFF にしてから実行
-  if (peekOn) setPeekOverlay(false);
-  // prestart overlay 表示中にまぜるが押された場合は overlay を破棄してから即時シャッフル
-  var wasPrestart = !!prestartOverlayEl;
-  if (prestartOverlayEl) removePrestartOverlay();
-  dragPiece = null;
-  shufflePieces();
-  if (wasPrestart) startPartnerChallengeAfterScatter();
-});
+if (btnShuffle) {
+  btnShuffle.addEventListener('click', () => {
+    if (!puzzleCanvas) return;
+    // 散布アニメ実行中は無効化 (二重起動防止)
+    if (scatterAnimating) return;
+    // peek ON のままシャッフルすると操作不能に見えるので OFF にしてから実行
+    if (peekOn) setPeekOverlay(false);
+    // prestart overlay 表示中にまぜるが押された場合は overlay を破棄してから即時シャッフル
+    var wasPrestart = !!prestartOverlayEl;
+    if (prestartOverlayEl) removePrestartOverlay();
+    dragPiece = null;
+    shufflePieces();
+    if (wasPrestart) startPartnerChallengeAfterScatter();
+  });
+}
 
 if (btnPeek) {
   btnPeek.addEventListener('click', () => {
@@ -2372,60 +2383,62 @@ if (btnPeek) {
 // ===== Hint Button (Phase 3b Step 3 — 新仕様) =====
 // 旧: 完成形を全体表示 → 散布
 // 新: 選択中ピースのスロットに金色星+radial glow+枠点滅を 2 秒表示
-btnHint.addEventListener('click', () => {
-  if (!puzzleCanvas) return;
-  // 散布アニメ中・prestart 表示中はヒント無効
-  if (scatterAnimating || prestartOverlayEl) return;
-  // ドラッグ中は 😴 状態 → 無効
-  if (dragPiece) return;
+if (btnHint) {
+  btnHint.addEventListener('click', () => {
+    if (!puzzleCanvas) return;
+    // 散布アニメ中・prestart 表示中はヒント無効
+    if (scatterAnimating || prestartOverlayEl) return;
+    // ドラッグ中は 😴 状態 → 無効
+    if (dragPiece) return;
 
-  var sid = getCurrentStageIdForHint();
-  var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
+    var sid = getCurrentStageIdForHint();
+    var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
 
-  // 残数 0 → 震えるアニメ + 早期 return
-  if (remaining <= 0) {
-    shakeHintButton();
-    return;
-  }
-
-  // 選択ピースが無い → 注意吹き出し + 早期 return (残数消費しない)
-  if (!selectedPieceForHint || selectedPieceForHint.snapped
-      || !pieces || pieces.indexOf(selectedPieceForHint) < 0) {
-    selectedPieceForHint = null;
-    showHintNotice();
-    refreshHintButtonState();
-    return;
-  }
-
-  // peek ON のままヒントを発動すると overlay が前面に残るので OFF
-  if (peekOn) setPeekOverlay(false);
-
-  if (window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
-
-  // 金色星演出: 1.5 秒間 hintFlashPiece に対して描画 (Phase 3c: 2000→1500ms)
-  hintFlashPiece = selectedPieceForHint;
-  hintFlashUntil = Date.now() + HINT_FLASH_DURATION_MS;
-  ensureHintAnimLoop();
-
-  // Phase 3c: キツネ装備時はピース絵柄の grayscale シルエットを「手元」スロットへ追加転写
-  //   - 実装は assists/kitsune.js 側 (window.PonoAssistKitsune.fireHintShape(piece, ctx))
-  //   - 未ロード / 未実装でもヒント本体は機能するよう try/catch で隔離
-  try {
-    var partnerIdForFx = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
-      ? window.PonoBond.getSelectedPartner() : null;
-    if (partnerIdForFx === 'kitsune'
-        && window.PonoAssistKitsune
-        && typeof window.PonoAssistKitsune.fireHintShape === 'function') {
-      var fxCtx = (puzzleCanvas && puzzleCanvas.getContext) ? puzzleCanvas.getContext('2d') : null;
-      window.PonoAssistKitsune.fireHintShape(selectedPieceForHint, fxCtx);
+    // 残数 0 → 震えるアニメ + 早期 return
+    if (remaining <= 0) {
+      shakeHintButton();
+      return;
     }
-  } catch (_) { /* assist 側の例外で本体を止めない */ }
 
-  // 残数を 1 消費
-  stageHintUsesActual++;
-  setHintUsesRemaining(sid, Math.max(0, remaining - 1));
-  refreshHintButtonState();
-});
+    // 選択ピースが無い → 注意吹き出し + 早期 return (残数消費しない)
+    if (!selectedPieceForHint || selectedPieceForHint.snapped
+        || !pieces || pieces.indexOf(selectedPieceForHint) < 0) {
+      selectedPieceForHint = null;
+      showHintNotice();
+      refreshHintButtonState();
+      return;
+    }
+
+    // peek ON のままヒントを発動すると overlay が前面に残るので OFF
+    if (peekOn) setPeekOverlay(false);
+
+    if (window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
+
+    // 金色星演出: 1.5 秒間 hintFlashPiece に対して描画 (Phase 3c: 2000→1500ms)
+    hintFlashPiece = selectedPieceForHint;
+    hintFlashUntil = Date.now() + HINT_FLASH_DURATION_MS;
+    ensureHintAnimLoop();
+
+    // Phase 3c: キツネ装備時はピース絵柄の grayscale シルエットを「手元」スロットへ追加転写
+    //   - 実装は assists/kitsune.js 側 (window.PonoAssistKitsune.fireHintShape(piece, ctx))
+    //   - 未ロード / 未実装でもヒント本体は機能するよう try/catch で隔離
+    try {
+      var partnerIdForFx = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
+        ? window.PonoBond.getSelectedPartner() : null;
+      if (partnerIdForFx === 'kitsune'
+          && window.PonoAssistKitsune
+          && typeof window.PonoAssistKitsune.fireHintShape === 'function') {
+        var fxCtx = (puzzleCanvas && puzzleCanvas.getContext) ? puzzleCanvas.getContext('2d') : null;
+        window.PonoAssistKitsune.fireHintShape(selectedPieceForHint, fxCtx);
+      }
+    } catch (_) { /* assist 側の例外で本体を止めない */ }
+
+    // 残数を 1 消費
+    stageHintUsesActual++;
+    setHintUsesRemaining(sid, Math.max(0, remaining - 1));
+    refreshHintButtonState();
+  });
+}
 
 btnNextStage.addEventListener('click', () => {
   const nextIndex = currentStageIndex + 1;

@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-06 - [batch:278-puzzle-unified-controls] DONE - Codex: user 指摘「4:3は横並び、16:9以上は同じ順番で縦並び。まぜる不要、みる→ヒント→のこり時間→進捗に統一」を受領。`puzzle/index.html` から `まぜる` ボタンを削除し、操作順を `みる`→`ヒント` に変更。`puzzle/main.js` はタイム表示を `のこり` + 全角数字 span に変更し、削除ボタン参照を null-safe 化。`puzzle/style.css` は操作/タイム/進捗を統一カプセルUIに整理し、16:9以上は縦、4:3寄りは横並びで同じ順序に調整。Playwright 1280x720 / 667x375 / 1024x768 touch で順序、全角タイム、重なりなし、JSエラーなしを確認。`sw.js` は v839。 (by Codex)
 - 2026-06-06 - [batch:277-bento-mask-frame-layer] DONE - Codex: user 指摘「iPhone 17で縦はOKだが右側が切れる / 小さいマスクを位置指定するのでなく、弁当画像と同じキャンバス想定で重ねるべき」を受領。前回 full-canvas data URL でも `mask-position` で置いていたため、さらに `free-layout-mask-frame` を弁当画像と同じ矩形にし、その中にステージ全体のアイテム層を負方向オフセットで入れる構造へ変更。mask は frame に `100% 100% / 0 0` で貼るため右端は frame 右端で固定。`sw.js` は v838。 (by Codex)
 - 2026-06-06 - [batch:277-bento-mask-frame-layer] DONE - Codex: Playwright Chromiumで iPhone横相当 932x430、PC resize 1542x1020 → 900x615 → 1920x1080、通常プレイ editor=false、全対象箱 (`box_rect_split` / square / round / bear / cat) の data URL mask 適用を確認。PC resize では `#app` transform が変化しても frame/layer ローカル座標と保存 JSON は不変、JSエラーなし。WebKit本体はローカル未インストールで直接起動不可。 (by Codex)
 - 2026-06-05 - [batch:270-bento-full-canvas-mask] DONE - Codex: user 指摘「CSS位置合わせではなく、ご飯入り弁当画像と同じ縦横比・同じキャンバスの中にマスクを入れて、弁当箱と同じ位置/スケールで重ねれば良いのでは」を受領。前回の px 補正は PC の `#app` transform scale と `getBoundingClientRect()` が混ざり、window resize で悪化すると判断。`bento/index.html` は前回の自由配置ステージ固定を外し、既存小マスクPNGをブラウザ内 canvas でご飯入り弁当画像と同じキャンバスサイズへ合成した data URL にして、弁当画像の実コンテンツ矩形へ `mask-size/position` する方式へ変更。`sw.js` は v831。 (by Codex)
