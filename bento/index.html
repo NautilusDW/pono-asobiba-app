@@ -1621,6 +1621,89 @@ html, body {
   opacity: 0.2; pointer-events: none; transform: scale(0.85);
 }
 
+@media (pointer: coarse) and (min-height: 640px) {
+  #app {
+    padding: 34px 18px 14px 24px;
+    gap: 14px;
+  }
+  .right-panel {
+    flex-basis: clamp(328px, 34%, 410px);
+    padding: 18px 18px 14px;
+    gap: 10px;
+  }
+  .right-panel.free-layout-panel {
+    padding-top: 22px;
+  }
+  .right-panel .pono-row {
+    min-height: 42px;
+    margin-inline: 14px;
+  }
+  .right-panel .speech-bubble {
+    font-size: 0.74rem;
+  }
+  .food-tray.free-layout-controls {
+    gap: 8px;
+  }
+  .free-tabs,
+  .free-action-row,
+  .free-size-row,
+  .free-tier-row {
+    gap: 6px;
+  }
+  .free-tab,
+  .free-size-btn,
+  .free-tier-btn {
+    min-height: 38px;
+    border-radius: 12px;
+    font-size: 0.68rem;
+  }
+  .free-action-row button,
+  .free-complete-btn {
+    min-height: 40px;
+    border-radius: 13px;
+    font-size: 0.72rem;
+  }
+  .free-guide-actions button,
+  .free-cup-list button {
+    min-height: 40px;
+    font-size: 0.7rem;
+  }
+  .free-item-list {
+    gap: 8px;
+    flex-basis: 96px;
+    min-height: 96px;
+  }
+  .free-palette-item {
+    min-height: 106px;
+    padding: 8px 6px 7px;
+    gap: 3px;
+  }
+  .free-palette-visual {
+    width: min(76px, 74%);
+    height: 72px;
+  }
+  .free-palette-name {
+    font-size: 0.62rem;
+    line-height: 1.08;
+  }
+  .food-tray {
+    gap: 9px;
+  }
+  .food-item {
+    min-height: 96px;
+    padding: 9px 5px;
+    gap: 4px;
+  }
+  .food-item .food-img {
+    width: 82px;
+    height: 82px;
+  }
+  .food-item .food-name {
+    font-size: 0.68rem;
+    font-weight: 900;
+  }
+}
+
 @keyframes correctPop {
   0%  { transform: scale(1); }
   30% { transform: scale(1.15); }

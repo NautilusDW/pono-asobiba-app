@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-06 - [batch:284-bento-tablet-picker-scale] DONE - Codex: user 指摘「iPad/タブレットでは解像度が高く、メニュー文字やおかずイラストが小さい」を受領。`bento/index.html` に `pointer: coarse` + `min-height: 640px` のタブレット向け media query を追加し、右パネル幅/余白、タブ・操作ボタン文字、食材カード、食材名、食材画像を拡大。iPhone横相当の低高さ端末には適用しない。`sw.js` は v845。 (by Codex)
+- 2026-06-06 - [batch:284-bento-tablet-picker-scale] DONE - Codex: Playwright WebKit iPad portrait 768x1024 / landscape 1024x768 で tablet query true、食材画像枠が約60→約77px、食材名 8→9.92px、タブ 8.96→10.88px、操作ボタン 9.92→11.52px へ拡大。Chromium iPhone横 932x430 は query false で従来サイズ。iPad横で食材名/タブ/操作ボタンの `scrollWidth <= clientWidth`、JSエラーなし、スクショ目視確認。 (by Codex)
 - 2026-06-06 - [batch:283-bento-rect-mask-visible-out] DONE - Codex: user 指摘「まだ1本内側。変わっていない」を受領。前回 `maskBounds.w=260` は画像座標 x≈946 で差が小さすぎたため、さらに `box_rect_split.maskBounds.w` を 260→270 に上げて右端を x≈962 へ移動。保存キーは `bento_free_mask_bounds_v14`、`sw.js` は v844。 (by Codex)
 - 2026-06-06 - [batch:282-bento-rect-mask-one-line-out] DONE - Codex: user 指摘「惜しい。ちょっと内側に1本入りすぎ」を受領。前回 v12 の右端 x≈930 は内側すぎたため、spots は維持したまま `box_rect_split.maskBounds.w` を 250→260 に微調整し、右端を画像座標 x≈946 へ 1本分だけ外へ戻す。保存キーは `bento_free_mask_bounds_v13`、`sw.js` は v843。 (by Codex)
 - 2026-06-06 - [batch:281-bento-rect-mask-right-inset] DONE - Codex: user 指摘「だいぶよいが右が弁当ギリギリ。ピンク外枠より中、ベージュ壁より内側へ」を受領。前回 `maskBounds.w=295` はご飯入り画像の x=1000 近くまで届き外枠寄りだったため、右室の床/壁境界に近い x≈930 相当へ戻す目的で `box_rect_split.maskBounds.w` を 295→250 に調整。合わせて通常弁当の `placeBounds` 右端と右側 food/accessory/safe spots を内側へ寄せ、保存キーを `bento_free_mask_bounds_v12` に更新。`sw.js` は v842。 (by Codex)
