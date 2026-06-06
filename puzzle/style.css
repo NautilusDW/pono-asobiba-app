@@ -328,8 +328,239 @@ body {
 
 /* prestart オーバーレイ表示中・散布アニメ中はパズル canvas 入力を完全ロック */
 #puzzle-container.prestart-on > canvas,
-#puzzle-container.scatter-on > canvas {
+#puzzle-container.scatter-on > canvas,
+#puzzle-container.partner-practice-on > canvas {
   pointer-events: none;
+}
+
+/* ===== Partner practice: real puzzle UI tutorial ===== */
+.partner-practice-active .controls .btn,
+.partner-practice-active .challenge-status,
+.partner-practice-active .progress-bar {
+  pointer-events: none;
+}
+
+.partner-practice-highlight {
+  position: relative;
+  z-index: 82;
+  animation: partnerPracticePulse 0.92s ease-in-out infinite;
+  box-shadow:
+    0 0 0 5px rgba(255, 255, 255, 0.92),
+    0 0 0 11px rgba(242, 145, 90, 0.42),
+    0 8px 20px rgba(80, 50, 18, 0.28) !important;
+}
+
+@keyframes partnerPracticePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.055); }
+}
+
+.partner-practice-coach {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 88;
+  width: min(720px, calc(100vw - 28px));
+  min-height: 98px;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 244, 0.97) 0%, rgba(255, 236, 198, 0.97) 100%);
+  box-shadow:
+    0 12px 28px rgba(54, 36, 16, 0.30),
+    inset 0 -3px 0 rgba(212, 164, 84, 0.20);
+  color: var(--text);
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+}
+
+.partner-practice-coach__face {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  padding: 4px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(242, 145, 90, 0.55);
+  overflow: hidden;
+}
+
+.partner-practice-coach__face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.partner-practice-coach__text {
+  min-width: 0;
+  text-align: left;
+}
+
+.partner-practice-coach__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-bottom: 2px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(139, 196, 138, 0.22);
+  color: #4F7D43;
+  font-size: 0.74rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.partner-practice-coach__title {
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.22;
+  color: #4C3318;
+}
+
+.partner-practice-coach__body {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #745B36;
+}
+
+.partner-practice-coach__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.partner-practice-coach__btn {
+  min-width: 104px;
+  min-height: 36px;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+  cursor: pointer;
+  color: #5A3A18;
+  box-shadow:
+    inset 0 -2px 0 rgba(120, 82, 30, 0.18),
+    0 4px 10px rgba(93, 78, 55, 0.16);
+}
+
+.partner-practice-coach__btn--replay {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF0D2 100%);
+}
+
+.partner-practice-coach__btn--start {
+  color: #fff;
+  background: linear-gradient(180deg, #8BC48A 0%, #68B96B 100%);
+  text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
+}
+
+.partner-practice-coach__btn:active {
+  transform: scale(0.96);
+}
+
+@media (orientation: landscape) {
+  .partner-practice-coach {
+    left: 12px;
+    bottom: 12px;
+    width: min(58vw, 640px);
+    transform: none;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .partner-practice-coach {
+    grid-template-columns: 50px minmax(0, 1fr) auto;
+    min-height: 72px;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 18px;
+  }
+
+  .partner-practice-coach__face {
+    width: 48px;
+    height: 48px;
+    padding: 3px;
+  }
+
+  .partner-practice-coach__eyebrow {
+    display: none;
+  }
+
+  .partner-practice-coach__title {
+    font-size: 0.82rem;
+    line-height: 1.18;
+  }
+
+  .partner-practice-coach__body {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    line-height: 1.24;
+  }
+
+  .partner-practice-coach__actions {
+    gap: 4px;
+  }
+
+  .partner-practice-coach__btn {
+    min-width: 82px;
+    min-height: 30px;
+    padding: 4px 10px;
+    font-size: 0.76rem;
+  }
+}
+
+@media (orientation: landscape) and (max-aspect-ratio: 3 / 2) {
+  .partner-practice-coach {
+    left: 50%;
+    width: min(760px, calc(100vw - 36px));
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 520px) {
+  .partner-practice-coach {
+    grid-template-columns: 54px minmax(0, 1fr);
+    grid-template-areas:
+      "face text"
+      "actions actions";
+    gap: 8px 10px;
+    padding: 9px 10px;
+    border-radius: 18px;
+  }
+
+  .partner-practice-coach__face {
+    grid-area: face;
+    width: 52px;
+    height: 52px;
+  }
+
+  .partner-practice-coach__text {
+    grid-area: text;
+  }
+
+  .partner-practice-coach__title {
+    font-size: 0.9rem;
+  }
+
+  .partner-practice-coach__body {
+    font-size: 0.76rem;
+  }
+
+  .partner-practice-coach__actions {
+    grid-area: actions;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 }
 
 /* ===== Prestart Overlay (完成形 → スタート → 散布アニメ) ===== */

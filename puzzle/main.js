@@ -1968,6 +1968,428 @@ function setSelectedPieceForHint(piece) {
   }
 }
 
+// ===== Partner Practice Tutorial (real puzzle UI) =====
+//
+// パートナー初回時は独立した説明絵ではなく、実際のパズル画面に一時的な
+// 9〜12ピース程度の練習ステージをロードし、既存ボタン/タイマー/ピースを
+// 動かして特徴を見せる。終了後は元のステージを再ロードして本番に戻す。
+const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
+let pendingStageReadyCallbacks = [];
+let partnerPracticeState = null;
+
+const PARTNER_PRACTICE_COPY = {
+  kitsune: {
+    title: 'キツネは、えらんだピースの場所を見せてくれる',
+    body: 'ほんもののヒントボタンを使って、選んだピースの行き先を光らせるよ。',
+  },
+  kojika: {
+    title: 'コジカは、近い場所をやさしく光らせる',
+    body: 'ピースを正しい場所に近づけると、実際の盤面でふわっと反応するよ。',
+  },
+  araiguma: {
+    title: 'アライグマは、少しだけピースをはめてくれる',
+    body: 'たくさんのピースがある練習ステージで、いくつかのピースが実際にはまるところを見るよ。',
+  },
+  usagi: {
+    title: 'ウサギは、進む方向を教えてくれる',
+    body: 'ピースを動かすと、実際の画面に耳と矢印が出て、正しい方向を示すよ。',
+  },
+  fukurou: {
+    title: 'フクロウは、となりのピースを見つける',
+    body: '長押しで、今のピースとつながるとなりの場所が光るイメージを実際の盤面で見るよ。',
+  },
+  risu: {
+    title: 'リスは、のこり時間を見ながら進める',
+    body: '画面の「のこり」が本当に動くよ。時間を見ながらすばやくはめよう。',
+  },
+  harinezumi: {
+    title: 'ハリネズミは、ヒント少なめで挑戦する',
+    body: '実際のヒントボタンの残り数が少なくなるよ。よく見て進めよう。',
+  },
+  karasu: {
+    title: 'カラスは、回転したピースを直して進める',
+    body: '実際のピースがくるっと回っているよ。向きを見て戻してからはめよう。',
+  },
+};
+
+function queueStageReadyCallback(cb) {
+  if (typeof cb !== 'function') return;
+  pendingStageReadyCallbacks.push(cb);
+}
+
+function flushStageReadyCallbacks() {
+  if (!pendingStageReadyCallbacks.length) return;
+  var callbacks = pendingStageReadyCallbacks.slice();
+  pendingStageReadyCallbacks.length = 0;
+  setTimeout(function () {
+    for (var i = 0; i < callbacks.length; i++) {
+      try { callbacks[i](); } catch (e) {
+        try { console.warn('[PartnerPractice] callback failed:', e); } catch (_) {}
+      }
+    }
+  }, 0);
+}
+
+function loadStageAndThen(index, cb) {
+  queueStageReadyCallback(cb);
+  loadStage(index);
+}
+
+function partnerPracticeKey(partnerId) {
+  return PARTNER_PRACTICE_SEEN_PREFIX + String(partnerId || 'unknown');
+}
+
+function hasSeenPartnerPractice(partnerId) {
+  try { return localStorage.getItem(partnerPracticeKey(partnerId)) === '1'; }
+  catch (_) { return false; }
+}
+
+function markPartnerPracticeSeen(partnerId) {
+  try { localStorage.setItem(partnerPracticeKey(partnerId), '1'); } catch (_) {}
+}
+
+function choosePartnerPracticeStageIndex() {
+  for (var i = 0; i < STAGES.length; i++) {
+    var pc = STAGES[i] && (STAGES[i].pieceCount || (STAGES[i].rows * STAGES[i].cols));
+    if (pc >= 10 && pc <= 12) return i;
+  }
+  for (var j = 0; j < STAGES.length; j++) {
+    var fallbackPc = STAGES[j] && (STAGES[j].pieceCount || (STAGES[j].rows * STAGES[j].cols));
+    if (fallbackPc >= 9 && fallbackPc <= 12) return j;
+  }
+  return Math.max(0, Math.min(STAGES.length - 1, 7));
+}
+
+function clearPartnerPracticeTimers() {
+  if (!partnerPracticeState) return;
+  var timers = partnerPracticeState.timers || [];
+  for (var i = 0; i < timers.length; i++) {
+    try { clearTimeout(timers[i]); } catch (_) {}
+  }
+  partnerPracticeState.timers = [];
+  var rafs = partnerPracticeState.rafs || [];
+  for (var j = 0; j < rafs.length; j++) {
+    try { cancelAnimationFrame(rafs[j]); } catch (_) {}
+  }
+  partnerPracticeState.rafs = [];
+}
+
+function practiceSetTimeout(fn, ms) {
+  if (!partnerPracticeState) return 0;
+  var id = setTimeout(function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    fn();
+  }, ms);
+  partnerPracticeState.timers.push(id);
+  return id;
+}
+
+function practiceAddHighlight(el) {
+  if (!el || !partnerPracticeState) return;
+  el.classList.add('partner-practice-highlight');
+  partnerPracticeState.highlighted.push(el);
+}
+
+function clearPracticeHighlights() {
+  if (!partnerPracticeState) return;
+  var list = partnerPracticeState.highlighted || [];
+  for (var i = 0; i < list.length; i++) {
+    try { list[i].classList.remove('partner-practice-highlight'); } catch (_) {}
+  }
+  partnerPracticeState.highlighted = [];
+}
+
+function createPartnerPracticeCoach(partnerId, partner) {
+  var copy = PARTNER_PRACTICE_COPY[partnerId] || {
+    title: (partner ? partner.name : 'パートナー') + 'のれんしゅう',
+    body: 'ほんもののパズル画面で、パートナーの動きを見てみよう。',
+  };
+  var coach = document.createElement('div');
+  coach.className = 'partner-practice-coach partner-practice-coach--' + partnerId;
+  coach.setAttribute('role', 'dialog');
+  coach.setAttribute('aria-live', 'polite');
+
+  var face = document.createElement('div');
+  face.className = 'partner-practice-coach__face';
+  var img = document.createElement('img');
+  img.src = partner && partner.image ? partner.image : '';
+  img.alt = partner && partner.name ? partner.name : '';
+  face.appendChild(img);
+  coach.appendChild(face);
+
+  var text = document.createElement('div');
+  text.className = 'partner-practice-coach__text';
+  var eyebrow = document.createElement('div');
+  eyebrow.className = 'partner-practice-coach__eyebrow';
+  eyebrow.textContent = 'ほんもののパズルでれんしゅう';
+  var title = document.createElement('div');
+  title.className = 'partner-practice-coach__title';
+  title.textContent = copy.title;
+  var body = document.createElement('div');
+  body.className = 'partner-practice-coach__body';
+  body.textContent = copy.body;
+  text.appendChild(eyebrow);
+  text.appendChild(title);
+  text.appendChild(body);
+  coach.appendChild(text);
+
+  var actions = document.createElement('div');
+  actions.className = 'partner-practice-coach__actions';
+  var replay = document.createElement('button');
+  replay.type = 'button';
+  replay.className = 'partner-practice-coach__btn partner-practice-coach__btn--replay';
+  replay.textContent = 'もういちど';
+  replay.addEventListener('click', function () { replayPartnerPracticeDemo(); });
+  var start = document.createElement('button');
+  start.type = 'button';
+  start.className = 'partner-practice-coach__btn partner-practice-coach__btn--start';
+  start.textContent = '本番へ';
+  start.addEventListener('click', finishPartnerPractice);
+  actions.appendChild(replay);
+  actions.appendChild(start);
+  coach.appendChild(actions);
+
+  document.body.appendChild(coach);
+  return coach;
+}
+
+function getPracticePieces() {
+  if (!pieces || !pieces.length) return [];
+  return pieces.filter(function (p) { return p && !p.snapped; });
+}
+
+function placePieceForPractice(piece, x, y, rotation) {
+  if (!piece) return;
+  piece.x = Math.max(0, Math.min(canvasW - pieceW, x));
+  piece.y = Math.max(0, Math.min(canvasH - pieceH, y));
+  piece.rotation = rotation || 0;
+  piece.snapped = false;
+  piece.zOrder = Math.max(1, piece.zOrder || 0) + 20;
+  rebuildPath(piece);
+}
+
+function resetPracticeBoard() {
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  stageHintUsesActual = 0;
+  dragPiece = null;
+  clearPracticeHighlights();
+  shufflePieces();
+  if (partnerPracticeState && partnerPracticeState.partnerId === 'risu') {
+    activeChallenge.started = false;
+    activeChallenge.expired = false;
+    stopChallengeTimer();
+    setTimeChallengeStatus(activeChallenge.limitMs || 35000);
+    startPartnerChallengeAfterScatter();
+  }
+  if (partnerPracticeState && partnerPracticeState.partnerId === 'harinezumi') {
+    try {
+      var sid = getCurrentStageIdForHint();
+      setHintUsesRemaining(sid, Math.min(1, computeHintInitialUses(sid)));
+      refreshHintButtonState();
+    } catch (_) {}
+  }
+}
+
+function replayPartnerPracticeDemo() {
+  if (!partnerPracticeState || !partnerPracticeState.active) return;
+  clearPartnerPracticeTimers();
+  resetPracticeBoard();
+  runPartnerPracticeDemo(partnerPracticeState.partnerId);
+}
+
+function animatePracticePiece(piece, from, to, duration, onDone) {
+  if (!partnerPracticeState || !piece) return;
+  var start = performance.now();
+  function frame(now) {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    var t = Math.max(0, Math.min(1, (now - start) / duration));
+    var ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    piece.x = from.x + (to.x - from.x) * ease;
+    piece.y = from.y + (to.y - from.y) * ease;
+    piece.rotation = from.rotation + (to.rotation - from.rotation) * ease;
+    rebuildPath(piece);
+    dragPiece = piece;
+    runAssistHooks('duringDrag', { piece: piece, dx: to.x - from.x, dy: to.y - from.y, partner: getCurrentPartner() }, false);
+    redraw();
+    if (t < 1) {
+      var raf = requestAnimationFrame(frame);
+      if (partnerPracticeState) partnerPracticeState.rafs.push(raf);
+    } else {
+      dragPiece = null;
+      if (onDone) onDone();
+      redraw();
+    }
+  }
+  var raf = requestAnimationFrame(frame);
+  partnerPracticeState.rafs.push(raf);
+}
+
+function runPartnerPracticeDemo(partnerId) {
+  var list = getPracticePieces();
+  if (!list.length) return;
+  var p = list[Math.min(2, list.length - 1)];
+
+  if (partnerId === 'kitsune') {
+    practiceAddHighlight(btnHint);
+    setSelectedPieceForHint(p);
+    practiceSetTimeout(function () {
+      if (btnHint) btnHint.click();
+    }, 700);
+    return;
+  }
+
+  if (partnerId === 'kojika') {
+    var near = { x: p.homeX + pieceW * 0.92, y: p.homeY + pieceH * 0.35, rotation: 0 };
+    var closer = { x: p.homeX + pieceW * 0.24, y: p.homeY + pieceH * 0.12, rotation: 0 };
+    placePieceForPractice(p, near.x, near.y, 0);
+    animatePracticePiece(p, near, closer, 1600);
+    return;
+  }
+
+  if (partnerId === 'araiguma') {
+    var araigumaBtn = document.getElementById('pono-araiguma-btn');
+    practiceAddHighlight(araigumaBtn);
+    practiceSetTimeout(function () {
+      var btn = document.getElementById('pono-araiguma-btn');
+      if (btn && !btn.classList.contains('hidden')) {
+        btn.click();
+        return;
+      }
+      var targets = getPracticePieces().slice(0, 4);
+      for (var i = 0; i < targets.length; i++) {
+        (function (piece, delay) {
+          practiceSetTimeout(function () { window.PonoPuzzleForceSnapPiece(piece); }, delay);
+        })(targets[i], i * 260);
+      }
+    }, 800);
+    return;
+  }
+
+  if (partnerId === 'usagi') {
+    var from = { x: Math.max(10, boardX - pieceW * 1.15), y: Math.max(10, boardY + boardH * 0.18), rotation: 0 };
+    var to = { x: p.homeX + pieceW * 0.4, y: p.homeY + pieceH * 0.25, rotation: 0 };
+    placePieceForPractice(p, from.x, from.y, 0);
+    animatePracticePiece(p, from, to, 2100);
+    return;
+  }
+
+  if (partnerId === 'fukurou') {
+    var centerPiece = pieces.find(function (x) { return x && x.row === 1 && x.col === 1; }) || p;
+    var neighbor = pieces.find(function (x) {
+      return x && x !== centerPiece && x.row === centerPiece.row && x.col === centerPiece.col + 1;
+    }) || list[0];
+    setSelectedPieceForHint(centerPiece);
+    practiceSetTimeout(function () {
+      hintFlashPiece = neighbor;
+      hintFlashUntil = Date.now() + 2600;
+      ensureHintAnimLoop();
+    }, 450);
+    return;
+  }
+
+  if (partnerId === 'risu') {
+    practiceAddHighlight(challengeStatusEl);
+    startPartnerChallengeAfterScatter();
+    return;
+  }
+
+  if (partnerId === 'harinezumi') {
+    practiceAddHighlight(btnHint);
+    setSelectedPieceForHint(p);
+    practiceSetTimeout(function () {
+      if (btnHint) btnHint.click();
+    }, 650);
+    return;
+  }
+
+  if (partnerId === 'karasu') {
+    var targets = list.slice(0, 4);
+    for (var k = 0; k < targets.length; k++) {
+      targets[k].rotation = (k % 2 === 0) ? 90 : 180;
+      rebuildPath(targets[k]);
+    }
+    redraw();
+    var rotPiece = targets[0] || p;
+    practiceSetTimeout(function () {
+      animatePracticePiece(rotPiece,
+        { x: rotPiece.x, y: rotPiece.y, rotation: rotPiece.rotation || 90 },
+        { x: rotPiece.x, y: rotPiece.y, rotation: 0 },
+        1200
+      );
+    }, 650);
+  }
+}
+
+function beginPartnerPractice(partnerId, returnIndex, done) {
+  var partner = (window.PonoPartners && typeof window.PonoPartners.get === 'function')
+    ? window.PonoPartners.get(partnerId)
+    : null;
+  if (!partner) {
+    if (typeof done === 'function') done();
+    return;
+  }
+
+  partnerPracticeState = {
+    active: true,
+    partnerId: partnerId,
+    returnIndex: returnIndex,
+    done: done,
+    timers: [],
+    rafs: [],
+    highlighted: [],
+    coach: null,
+  };
+
+  document.body.classList.add('partner-practice-active');
+  if (puzzleContainer) puzzleContainer.classList.add('partner-practice-on');
+  removePrestartOverlay();
+  resetPracticeBoard();
+  var originalTitle = stageLabel.textContent;
+  stageLabel.textContent = partner.name + 'の れんしゅう';
+  partnerPracticeState.originalTitle = originalTitle;
+  partnerPracticeState.coach = createPartnerPracticeCoach(partnerId, partner);
+  runPartnerPracticeDemo(partnerId);
+}
+
+function finishPartnerPractice() {
+  if (!partnerPracticeState) return;
+  var partnerId = partnerPracticeState.partnerId;
+  var returnIndex = partnerPracticeState.returnIndex;
+  var done = partnerPracticeState.done;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  stopChallengeTimer();
+  if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
+    partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
+  }
+  document.body.classList.remove('partner-practice-active');
+  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on');
+  partnerPracticeState.active = false;
+  partnerPracticeState = null;
+  markPartnerPracticeSeen(partnerId);
+  loadStageAndThen(returnIndex, function () {
+    if (typeof done === 'function') done();
+  });
+}
+
+function showPartnerPracticeIfNeeded(partnerId, stageId, done) {
+  if (!partnerId || !PARTNER_PRACTICE_COPY[partnerId] || hasSeenPartnerPractice(partnerId)) {
+    if (typeof done === 'function') done();
+    return;
+  }
+  var returnIndex = currentStageIndex;
+  var practiceIndex = choosePartnerPracticeStageIndex();
+  loadStageAndThen(practiceIndex, function () {
+    beginPartnerPractice(partnerId, returnIndex, done);
+  });
+}
+
 // ===== Pointer Events =====
 function getPos(e) {
   const rect = puzzleCanvas.getBoundingClientRect();
@@ -2188,6 +2610,7 @@ function initPuzzle(img) {
     pieceSize: { w: pieceW, h: pieceH },
     canvas: { w: canvasW, h: canvasH },
   }, false);
+  flushStageReadyCallbacks();
 }
 
 // ===== Load Stage =====
@@ -2620,10 +3043,8 @@ function finishOpeningAndEnterGame() {
         setTimeout(showTutorial, 500);
       }
     }
-    if (selectedPartnerId
-        && window.PonoPartnerTutorial
-        && typeof window.PonoPartnerTutorial.showIfNeeded === 'function') {
-      window.PonoPartnerTutorial.showIfNeeded(selectedPartnerId, stageId, afterPartnerTutorial);
+    if (selectedPartnerId) {
+      showPartnerPracticeIfNeeded(selectedPartnerId, stageId, afterPartnerTutorial);
       return;
     }
     afterPartnerTutorial();
