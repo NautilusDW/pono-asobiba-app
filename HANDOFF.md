@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-06 - [batch:283-bento-rect-mask-visible-out] DONE - Codex: user 指摘「まだ1本内側。変わっていない」を受領。前回 `maskBounds.w=260` は画像座標 x≈946 で差が小さすぎたため、さらに `box_rect_split.maskBounds.w` を 260→270 に上げて右端を x≈962 へ移動。保存キーは `bento_free_mask_bounds_v14`、`sw.js` は v844。 (by Codex)
 - 2026-06-06 - [batch:282-bento-rect-mask-one-line-out] DONE - Codex: user 指摘「惜しい。ちょっと内側に1本入りすぎ」を受領。前回 v12 の右端 x≈930 は内側すぎたため、spots は維持したまま `box_rect_split.maskBounds.w` を 250→260 に微調整し、右端を画像座標 x≈946 へ 1本分だけ外へ戻す。保存キーは `bento_free_mask_bounds_v13`、`sw.js` は v843。 (by Codex)
 - 2026-06-06 - [batch:281-bento-rect-mask-right-inset] DONE - Codex: user 指摘「だいぶよいが右が弁当ギリギリ。ピンク外枠より中、ベージュ壁より内側へ」を受領。前回 `maskBounds.w=295` はご飯入り画像の x=1000 近くまで届き外枠寄りだったため、右室の床/壁境界に近い x≈930 相当へ戻す目的で `box_rect_split.maskBounds.w` を 295→250 に調整。合わせて通常弁当の `placeBounds` 右端と右側 food/accessory/safe spots を内側へ寄せ、保存キーを `bento_free_mask_bounds_v12` に更新。`sw.js` は v842。 (by Codex)
 - 2026-06-06 - [batch:281-bento-rect-mask-right-inset] DONE - Codex: Playwright WebKit / Chromium 932x430 DPR3 の `?maskedit=1&box=box_rect_split` で、保存キー v12、`maskBounds {x:407,y:43,w:250,h:353}`、ご飯入り画像座標で右端 x=930.6、右側 spots x=572、`mask-size:100% 100%`、JSエラーなしを確認。 (by Codex)
