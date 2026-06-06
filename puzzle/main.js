@@ -939,7 +939,10 @@ function createPlaceholderImage(width, height) {
 // Flip an edge for traversal in the opposite direction (bottom/left edges)
 function flipEdge(e) {
   if (typeof e === 'number') return -e;
-  return { dir: -e.dir, pos: 1 - e.pos, hw: e.hw };
+  if (!e || typeof e !== 'object') return e;
+  const flipped = { ...e, dir: -e.dir, pos: 1 - e.pos };
+  if (typeof e.skew === 'number') flipped.skew = -e.skew;
+  return flipped;
 }
 
 function buildPiecePath(target, px, py, pw, ph, tabs) {
