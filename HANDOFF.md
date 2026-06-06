@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-07 - [batch:287-bento-complete-tier-layout] DONE - Codex: user 指摘「完成品の絵が作成中と違う / 1段目と2段目がずれる / 箱ごとに完成版を調整したい」を受領。`bento/index.html` に完成版2段目の X/Y/W 保存 (`bento_free_complete_layout_v1`) と `?maskedit=1` の「完成版調整」パネル + 完成プレビューを追加。初期値は 2段目 `X=0px / Y=32px / W=104%` で、箱ごと・段ごとに localStorage 自動保存。完成描画は上段ラッパーごと拡大/移動するため中のおかずも同じ比率で追従。Node 構文解析、Playwright で `box_square` の UI/初期値/自動保存を確認。`sw.js` は v848。 (by Codex)
 - 2026-06-07 - [batch:286-puzzle-real-ui-partner-tutorials] Codex: user 指摘「チュートリアルは実際のパズルUI上で。画像生成不要。実際の10ピース程度のステージで作り直して」を受領。前回追加した独立モーダル `puzzle/partner-tutorial.*` を廃止し、パートナー初回選択後に実際の練習ステージへ一度入り、実ボタン/タイマー/ピース挙動をハイライトしてから本番ステージへ戻す導線へ差し替え中。`sw.js` は v847。 (by Codex)
 - 2026-06-07 - [batch:286-puzzle-real-ui-partner-tutorials] DONE - Codex: `puzzle/partner-tutorial.js` / `.css` を削除し、`main.js` 内の実UI練習ステージ方式へ置換。10〜12ピース優先の実ステージを一時ロードし、全8体で実ボタン/タイマー/ピース挙動を見せて `本番へ` で元ステージへ戻る。Playwrightで全8体の練習→本番復帰、タイトル→パートナー選択→リス練習導線、1280x720 / 667x375 / 1024x768 の収まり、JSエラーなしを確認。`node --check` / `git diff --check` / UTF-8 LF 確認済み。`sw.js` は v847。 (by Codex)
 - 2026-06-06 - [batch:285-puzzle-partner-first-tutorials] DONE - Codex: user 依頼「それぞれのパートナーを最初に使うとき、絵で見せながら詳しく説明する時間を設けたい」を受領。`puzzle/partner-tutorial.js` / `.css` を追加し、8体（キツネ/コジカ/リス/ハリネズミ/アライグマ/ウサギ/フクロウ/カラス）それぞれに初回だけ出る説明モーダルを実装。既存パートナー画像 + CSSミニ盤面アニメで、アライグマは15ピース相当のトレイと自動はめ込みデモ、リスはタイマー、ハリネズミはヒント少なめ、カラスは回転などを視覚化。`main.js` はパートナー選択後に `showIfNeeded` を挟む導線へ変更。Playwrightで 1280x720 / 667x375 / 1024x768 の全8体表示、初回導線、seen保存、2回目スキップ、JSエラーなしを確認。`sw.js` は v846。 (by Codex)

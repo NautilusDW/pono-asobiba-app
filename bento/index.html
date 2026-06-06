@@ -826,6 +826,14 @@ html, body {
   font-weight: 900;
   line-height: 1.1;
 }
+.free-complete-editor-section {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 2px solid rgba(34, 197, 94, 0.26);
+}
+.free-complete-editor-section .free-mask-actions {
+  grid-template-columns: 1fr;
+}
 .free-mask-box-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -989,7 +997,7 @@ html, body {
 }
 .free-mask-row {
   display: grid;
-  grid-template-columns: 1.4em 1fr 3em;
+  grid-template-columns: 1.4em 1fr 4.2em;
   align-items: center;
   gap: 4px;
   margin-top: 5px;
@@ -1349,7 +1357,7 @@ html, body {
   top: var(--tier-y, 0px);
   width: min(100%, 820px);
   opacity: 0;
-  transform: translateX(-50%) translateY(-18px) scale(0.92);
+  transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(-18px) scale(0.92);
   z-index: var(--tier-z, 1);
   border: 0;
   border-radius: 0;
@@ -1368,6 +1376,37 @@ html, body {
   height: auto;
   overflow: visible;
   background: transparent;
+}
+.free-complete-editor-preview {
+  margin-top: 8px;
+  padding: 5px;
+  border: 2px solid #A7F3D0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+}
+.free-complete-editor-preview-label {
+  margin-bottom: 4px;
+  color: #047857;
+  font-size: 0.46rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.free-complete-editor-preview .complete-bento.free-complete-stack {
+  width: 100%;
+  min-height: 168px;
+  margin: 0;
+}
+.free-complete-editor-preview .free-complete-build-stage {
+  height: 168px;
+}
+.free-complete-editor-preview .free-complete-tier {
+  opacity: 1;
+  animation: none;
+  filter: drop-shadow(0 5px 8px rgba(93, 78, 55, 0.15));
+}
+.free-complete-editor-preview .free-complete-lid-stage,
+.free-complete-editor-preview .free-complete-sparkle {
+  display: none;
 }
 .free-complete-lid-stage {
   position: absolute;
@@ -1406,15 +1445,15 @@ html, body {
 @keyframes completeTierIn {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(-24px) scale(0.88);
+    transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(-24px) scale(0.88);
   }
   72% {
     opacity: 1;
-    transform: translateX(-50%) translateY(5px) scale(1.02);
+    transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(5px) scale(1.02);
   }
   100% {
     opacity: 1;
-    transform: translateX(-50%) translateY(var(--lid-final-y, 0px)) scale(1);
+    transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(var(--lid-final-y, 0px)) scale(1);
   }
 }
 @keyframes completeLidClose {
@@ -3057,6 +3096,7 @@ const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
 const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
+const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v1';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -3464,6 +3504,7 @@ let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
 let freeMaskEditorMode = false;
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
+let freeCompleteLayoutOverrides = loadFreeCompleteLayoutOverrides();
 let freeMaskResizeRefreshTimer = 0;
 const freeFullMaskCache = new Map();
 const freeFullMaskPending = new Map();
@@ -4284,6 +4325,62 @@ function saveFreeMaskBoundsOverrides() {
   try {
     localStorage.setItem(FREE_MASK_EDITOR_STORAGE_KEY, JSON.stringify(freeMaskBoundsOverrides || {}));
   } catch (e) {}
+}
+function loadFreeCompleteLayoutOverrides() {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(FREE_COMPLETE_LAYOUT_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveFreeCompleteLayoutOverrides() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(FREE_COMPLETE_LAYOUT_STORAGE_KEY, JSON.stringify(freeCompleteLayoutOverrides || {}));
+  } catch (e) {}
+}
+function roundFreeCompleteValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  const rounded = Math.round(n * 10) / 10;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+function normalizeFreeCompleteLayout(layout) {
+  return {
+    x: roundFreeCompleteValue(clamp(Number(layout && layout.x) || 0, -120, 120)),
+    y: roundFreeCompleteValue(clamp(Number(layout && layout.y) || 0, -120, 160)),
+    w: roundFreeCompleteValue(clamp(Number(layout && layout.w) || 100, 80, 120)),
+  };
+}
+function getDefaultFreeCompleteLayout(box, tier = 2) {
+  if (!box || tier <= 1) return { x: 0, y: 0, w: 100 };
+  return { x: 0, y: 32, w: 104 };
+}
+function getFreeCompleteLayoutKey(box, tier = 2) {
+  const key = getBoxMaskKey(box);
+  return key ? `${key}:tier${tier}` : '';
+}
+function getBoxCompleteLayout(box, tier = 2) {
+  const base = getDefaultFreeCompleteLayout(box, tier);
+  const key = getFreeCompleteLayoutKey(box, tier);
+  const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
+  const overrideLayout = override && (override.layout || override);
+  return normalizeFreeCompleteLayout({ ...base, ...(overrideLayout || {}) });
+}
+function setBoxCompleteLayoutOverride(box, tier, layout) {
+  const key = getFreeCompleteLayoutKey(box, tier);
+  if (!key) return;
+  freeCompleteLayoutOverrides[key] = { layout: normalizeFreeCompleteLayout(layout) };
+  saveFreeCompleteLayoutOverrides();
+}
+function resetBoxCompleteLayoutOverride(box, tier) {
+  const key = getFreeCompleteLayoutKey(box, tier);
+  if (!key || !freeCompleteLayoutOverrides[key]) return;
+  delete freeCompleteLayoutOverrides[key];
+  saveFreeCompleteLayoutOverrides();
 }
 function getBoxMaskKey(box) {
   return box && (box.maskKey || box.id || '');
@@ -6125,6 +6222,76 @@ function makeMaskRange(label, prop, min, max, rel) {
   row.appendChild(value);
   return row;
 }
+function formatCompleteLayoutValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0.0';
+  const rounded = Math.round(n * 10) / 10;
+  return (Object.is(rounded, -0) ? 0 : rounded).toFixed(1);
+}
+function updateSelectedBoxCompleteLayout(tier, prop, value) {
+  const box = getSelectedBentoBox();
+  if (!box || getBoxTierCount(box) <= 1) return null;
+  const current = getBoxCompleteLayout(box, tier);
+  const raw = Number(value);
+  const next = { ...current, [prop]: Number.isFinite(raw) ? raw : current[prop] };
+  setBoxCompleteLayoutOverride(box, tier, next);
+  return getBoxCompleteLayout(box, tier);
+}
+function resetSelectedBoxCompleteLayout(tier) {
+  const box = getSelectedBentoBox();
+  if (!box) return;
+  resetBoxCompleteLayoutOverride(box, tier);
+}
+function refreshFreeCompleteEditorPreview(panel, box, tier) {
+  const slot = panel && panel.querySelector('.free-complete-editor-preview-slot');
+  if (!slot || !box) return;
+  renderFreeCompleteBento(slot, [], box.id, {
+    forceTierCount: Math.min(tier, getBoxTierCount(box)),
+    preview: true,
+  });
+}
+function makeCompleteLayoutRange(label, prop, min, max, layout, unit, tier) {
+  const row = document.createElement('label');
+  row.className = 'free-mask-row';
+  const labelText = document.createElement('span');
+  labelText.textContent = label;
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.min = String(min);
+  input.max = String(max);
+  input.step = '0.1';
+  input.value = formatCompleteLayoutValue(layout[prop]);
+  const value = document.createElement('span');
+  value.textContent = formatCompleteLayoutValue(input.value) + unit;
+  input.addEventListener('input', e => {
+    const next = updateSelectedBoxCompleteLayout(tier, prop, e.currentTarget.value);
+    value.textContent = formatCompleteLayoutValue(e.currentTarget.value) + unit;
+    const panel = row.closest('.free-mask-panel');
+    const status = panel && panel.querySelector('.free-complete-save-status');
+    if (status) status.textContent = '完成版も自動保存';
+    if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+  });
+  row.appendChild(labelText);
+  row.appendChild(input);
+  row.appendChild(value);
+  return row;
+}
+function renderFreeCompleteEditorPreview(box, tier) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'free-complete-editor-preview';
+  const label = document.createElement('div');
+  label.className = 'free-complete-editor-preview-label';
+  label.textContent = '完成プレビュー';
+  wrapper.appendChild(label);
+  const slot = document.createElement('div');
+  slot.className = 'free-complete-editor-preview-slot';
+  wrapper.appendChild(slot);
+  renderFreeCompleteBento(slot, [], box.id, {
+    forceTierCount: Math.min(tier, getBoxTierCount(box)),
+    preview: true,
+  });
+  return wrapper;
+}
 function selectFreeMaskEditorBox(boxId) {
   if (!boxId) return;
   selectedBentoBoxId = boxId;
@@ -6194,6 +6361,36 @@ function renderFreeMaskEditorControls() {
     panel.appendChild(makeMaskRange('Y', 'y', -20, 120, rel));
     panel.appendChild(makeMaskRange('W', 'w', 5, 140, rel));
     panel.appendChild(makeMaskRange('H', 'h', 5, 140, rel));
+  }
+  const completeTier = Math.min(2, getBoxTierCount(box));
+  if (completeTier > 1) {
+    const section = document.createElement('div');
+    section.className = 'free-complete-editor-section';
+    const completeTitle = document.createElement('div');
+    completeTitle.className = 'free-mask-title';
+    completeTitle.textContent = '完成版調整: 2だんめ';
+    section.appendChild(completeTitle);
+    const completeNote = document.createElement('div');
+    completeNote.className = 'free-mask-viewport';
+    completeNote.textContent = '完成画面の上段だけ調整';
+    section.appendChild(completeNote);
+    const completeStatus = document.createElement('div');
+    completeStatus.className = 'free-mask-save-status free-complete-save-status';
+    completeStatus.textContent = 'X/Yはpx、Wは%で自動保存';
+    section.appendChild(completeStatus);
+    const completeLayout = getBoxCompleteLayout(box, completeTier);
+    const completeActions = document.createElement('div');
+    completeActions.className = 'free-mask-actions';
+    completeActions.appendChild(makeSmallControlButton('完成リセット', '', () => {
+      resetSelectedBoxCompleteLayout(completeTier);
+      renderFreeLayoutControls();
+    }));
+    section.appendChild(completeActions);
+    section.appendChild(makeCompleteLayoutRange('X', 'x', -80, 80, completeLayout, 'px', completeTier));
+    section.appendChild(makeCompleteLayoutRange('Y', 'y', -80, 120, completeLayout, 'px', completeTier));
+    section.appendChild(makeCompleteLayoutRange('W', 'w', 80, 120, completeLayout, '%', completeTier));
+    section.appendChild(renderFreeCompleteEditorPreview(box, completeTier));
+    panel.appendChild(section);
   }
   return panel;
 }
@@ -6625,10 +6822,22 @@ function createFreeCompleteLidStage(box, delay, tierCount = 1) {
   stage.appendChild(lid);
   return stage;
 }
-function renderFreeCompleteBento(host, items, boxId) {
+function renderFreeCompleteBento(host, items, boxId, options = {}) {
   const box = bentoBoxes.find(b => b.id === (boxId || selectedBentoBoxId)) || getSelectedBentoBox();
-  const tierCount = getFreeCompletedTierCount(items, box);
-  host.className = 'complete-bento free-complete-bento' + (tierCount > 1 ? ' free-complete-stack' : '');
+  const sourceItems = Array.isArray(items) ? items : [];
+  const forcedTierCount = Number(options.forceTierCount);
+  const tierCount = Math.max(1, Math.min(
+    getBoxTierCount(box),
+    Number.isFinite(forcedTierCount) && forcedTierCount > 0
+      ? Math.round(forcedTierCount)
+      : getFreeCompletedTierCount(sourceItems, box)
+  ));
+  const isPreview = !!options.preview;
+  const keepPreviewSlotClass = host.classList && host.classList.contains('free-complete-editor-preview-slot');
+  host.className = 'complete-bento free-complete-bento'
+    + (tierCount > 1 ? ' free-complete-stack' : '')
+    + (isPreview ? ' free-complete-preview-mode' : '')
+    + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '');
   host.innerHTML = '';
   if (tierCount > 1) {
     const build = document.createElement('div');
@@ -6636,9 +6845,15 @@ function renderFreeCompleteBento(host, items, boxId) {
     for (let tier = 1; tier <= tierCount; tier++) {
       const wrap = document.createElement('div');
       wrap.className = 'free-complete-tier';
-      wrap.style.setProperty('--tier-y', `${(tierCount - tier) * 32}px`);
+      const baseY = (tierCount - tier) * 32;
+      const completeLayout = tier > 1 ? getBoxCompleteLayout(box, tier) : { x: 0, y: 0, w: 100 };
+      wrap.style.setProperty('--tier-x', `${completeLayout.x}px`);
+      wrap.style.setProperty('--tier-y', `${baseY + completeLayout.y}px`);
       wrap.style.setProperty('--tier-z', `${tier}`);
       wrap.style.setProperty('--tier-delay', `${(tier - 1) * 0.58}s`);
+      if (tier > 1) {
+        wrap.style.width = `min(${completeLayout.w}%, ${Math.round(820 * completeLayout.w / 100)}px)`;
+      }
       const labelText = getTierLabel(tier, box);
       if (labelText) {
         const label = document.createElement('div');
@@ -6649,7 +6864,7 @@ function renderFreeCompleteBento(host, items, boxId) {
       const stage = document.createElement('div');
       stage.className = 'free-layout-stage';
       renderFreeLayoutInto(stage, {
-        items: items.map(i => ({ ...i })),
+        items: sourceItems.map(i => ({ ...i })),
         boxId: box.id,
         tier,
         tierFilter: tier,
@@ -6658,17 +6873,19 @@ function renderFreeCompleteBento(host, items, boxId) {
       wrap.appendChild(stage);
       build.appendChild(wrap);
     }
-    const lidDelay = tierCount * 0.58 + 0.16;
-    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount);
-    if (lidStage) build.appendChild(lidStage);
-    addFreeCompletionSparkles(build, lidDelay + (box.lidImage ? 0.72 : 0.18));
+    if (!isPreview) {
+      const lidDelay = tierCount * 0.58 + 0.16;
+      const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount);
+      if (lidStage) build.appendChild(lidStage);
+      addFreeCompletionSparkles(build, lidDelay + (box.lidImage ? 0.72 : 0.18));
+    }
     host.appendChild(build);
     return;
   }
   const stage = document.createElement('div');
   stage.className = 'free-layout-stage';
   renderFreeLayoutInto(stage, {
-    items: items.map(i => ({ ...i })),
+    items: sourceItems.map(i => ({ ...i })),
     boxId: boxId || selectedBentoBoxId,
     interactive: false,
   });
