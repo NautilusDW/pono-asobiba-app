@@ -176,51 +176,13 @@ window.PonoBondUI = (function () {
   }
 
   // ===== Clear Summary =====
-  function formatMs(ms) {
-    if (!isFinite(ms) || ms <= 0) return '--';
-    var sec = Math.round(ms / 1000);
-    var m = Math.floor(sec / 60);
-    var s = sec % 60;
-    if (m <= 0) return s + 'びょう';
-    return m + 'ふん' + (s < 10 ? '0' + s : s) + 'びょう';
-  }
-
   function buildSummaryHtml(opts) {
     var partner = opts.partner;
-    var stageNum = opts.stageNum;
-    var hearts = opts.hearts;
     var level = opts.level;
-    var elapsedMs = opts.elapsedMs;
-    var prevMs = opts.prevMs;
-    var hints = opts.hints;
-    var maxCombo = opts.maxCombo;
 
-    var line1 = (partner.name || '') + ' と ステージ' + stageNum +
-      ' で ' + hearts + 'かい あそんだよ / Lv: ' + starsForLevel(level);
+    var line1 = (partner.name || '') + 'と なかよし ' + starsForLevel(level);
 
-    var diffText = '';
-    if (elapsedMs > 0 && prevMs > 0) {
-      var diff = elapsedMs - prevMs;
-      if (diff < -500) {
-        diffText = ' (まえより ' + formatMs(-diff) + ' はやい！)';
-      } else if (diff > 500) {
-        diffText = ' (まえより ' + formatMs(diff) + ' おそい)';
-      } else {
-        diffText = ' (まえと おなじくらい)';
-      }
-    } else if (elapsedMs > 0) {
-      diffText = ' (はじめての きろく)';
-    }
-
-    var line2parts = [];
-    if (elapsedMs > 0) line2parts.push('じかん: ' + formatMs(elapsedMs) + diffText);
-    line2parts.push('ヒント: ' + (hints | 0) + 'かい');
-    line2parts.push('れんぞくスナップ: ' + (maxCombo | 0));
-
-    return (
-      '<p class="pono-bond-summary__line1">' + escapeHtml(line1) + '</p>' +
-      '<p class="pono-bond-summary__line2">' + line2parts.map(escapeHtml).join(' / ') + '</p>'
-    );
+    return '<p class="pono-bond-summary__line1">' + escapeHtml(line1) + '</p>';
   }
 
   function escapeHtml(s) {

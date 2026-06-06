@@ -388,6 +388,18 @@ function formatChallengeTime(ms) {
   return min + ':' + String(sec).padStart(2, '0');
 }
 
+function setTimeChallengeStatus(remainMs) {
+  if (!challengeStatusEl) return;
+  var remain = Math.max(0, remainMs | 0);
+  var ratio = activeChallenge.limitMs > 0
+    ? Math.max(0, Math.min(1, remain / activeChallenge.limitMs))
+    : 0;
+  challengeStatusEl.textContent = 'タイム ' + formatChallengeTime(remain);
+  challengeStatusEl.style.setProperty('--challenge-fill', Math.round(ratio * 100) + '%');
+  challengeStatusEl.classList.toggle('is-low', ratio <= 0.45 && ratio > 0.2);
+  challengeStatusEl.classList.toggle('is-critical', ratio <= 0.2);
+}
+
 function stopChallengeTimer() {
   if (activeChallenge.raf != null) {
     try { cancelAnimationFrame(activeChallenge.raf); } catch (_) {}
@@ -398,7 +410,8 @@ function stopChallengeTimer() {
 function hideChallengeStatus() {
   if (!challengeStatusEl) return;
   challengeStatusEl.classList.add('hidden');
-  challengeStatusEl.classList.remove('is-expired', 'is-time');
+  challengeStatusEl.classList.remove('is-expired', 'is-time', 'is-low', 'is-critical');
+  challengeStatusEl.style.removeProperty('--challenge-fill');
   challengeStatusEl.textContent = '';
 }
 
@@ -432,7 +445,7 @@ function setupPartnerChallenge(stageId, partner) {
   if (partner.challengeType === 'time') {
     activeChallenge.limitMs = risuLimitSeconds(stageId, rank) * 1000;
     challengeStatusEl.classList.add('is-time');
-    challengeStatusEl.textContent = 'タイム ' + formatChallengeTime(activeChallenge.limitMs);
+    setTimeChallengeStatus(activeChallenge.limitMs);
   } else if (partner.challengeType === 'less-hints') {
     challengeStatusEl.textContent = 'ヒントすくなめ';
   } else if (partner.challengeType === 'rotation') {
@@ -453,11 +466,11 @@ function startPartnerChallengeAfterScatter() {
     if (remain <= 0) {
       activeChallenge.expired = true;
       challengeStatusEl.classList.add('is-expired');
-      challengeStatusEl.textContent = 'タイム 0:00';
+      setTimeChallengeStatus(0);
       activeChallenge.raf = null;
       return;
     }
-    challengeStatusEl.textContent = 'タイム ' + formatChallengeTime(remain);
+    setTimeChallengeStatus(remain);
     activeChallenge.raf = requestAnimationFrame(tick);
   }
   activeChallenge.raf = requestAnimationFrame(tick);
