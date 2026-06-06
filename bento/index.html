@@ -412,6 +412,15 @@ html, body {
   inset: 0;
   z-index: 2;
 }
+.free-layout-mask-frame {
+  position: absolute;
+  z-index: 2;
+  overflow: visible;
+}
+.free-layout-mask-space {
+  position: absolute;
+  inset: auto;
+}
 .free-rice-decor-layer {
   z-index: 3;
 }
@@ -993,7 +1002,6 @@ html, body {
 }
 .free-mask-preview {
   position: absolute;
-  inset: 0;
   z-index: 18;
   pointer-events: none;
   background:
@@ -4412,8 +4420,12 @@ function applyBoxVisualMask(layer, box, host = null) {
   const cssBounds = getBoxMaskCanvasRectCss(box, layer, host);
   const fullMaskUrl = getFullCanvasMaskUrl(box);
   if (!cssBounds || !fullMaskUrl) return false;
-  const maskSize = `${cssBounds.w.toFixed(3)}px ${cssBounds.h.toFixed(3)}px`;
-  const maskPosition = `${cssBounds.x.toFixed(3)}px ${cssBounds.y.toFixed(3)}px`;
+  layer.style.left = cssBounds.x.toFixed(3) + 'px';
+  layer.style.top = cssBounds.y.toFixed(3) + 'px';
+  layer.style.width = cssBounds.w.toFixed(3) + 'px';
+  layer.style.height = cssBounds.h.toFixed(3) + 'px';
+  const maskSize = '100% 100%';
+  const maskPosition = '0 0';
   const maskUrl = `url("${fullMaskUrl}")`;
   layer.style.setProperty('-webkit-mask-image', maskUrl);
   layer.style.setProperty('mask-image', maskUrl);
@@ -4425,7 +4437,23 @@ function applyBoxVisualMask(layer, box, host = null) {
   layer.style.setProperty('mask-repeat', 'no-repeat');
   layer.style.setProperty('-webkit-mask-mode', 'alpha');
   layer.style.setProperty('mask-mode', 'alpha');
+  layer.style.setProperty('-webkit-mask-origin', 'border-box');
+  layer.style.setProperty('mask-origin', 'border-box');
+  layer.style.setProperty('-webkit-mask-clip', 'border-box');
+  layer.style.setProperty('mask-clip', 'border-box');
   return true;
+}
+function positionMaskedStageSpace(layer, frame, host) {
+  const stage = host && host.classList && host.classList.contains('free-layout-stage')
+    ? host
+    : document.getElementById('free-layout-stage');
+  if (!layer || !frame || !stage) return;
+  const left = parseFloat(frame.style.left || '0') || 0;
+  const top = parseFloat(frame.style.top || '0') || 0;
+  layer.style.left = (-left).toFixed(3) + 'px';
+  layer.style.top = (-top).toFixed(3) + 'px';
+  layer.style.width = (stage.clientWidth || stage.offsetWidth || 0) + 'px';
+  layer.style.height = (stage.clientHeight || stage.offsetHeight || 0) + 'px';
 }
 function getPlacementBounds(box) {
   return (box && box.placeBounds) || (box && box.bounds) || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
@@ -5711,15 +5739,26 @@ function renderFreeLayoutInto(host, opts = {}) {
   const noriItems = displayItems.filter(isNoriDecorItem);
   const regularItems = displayItems.filter(item => !isNoriDecorItem(item));
   const layer = document.createElement('div');
-  layer.className = 'free-layout-items';
-  if (!applyBoxVisualMask(layer, box, host)) {
+  layer.className = 'free-layout-items free-layout-mask-space';
+  const maskFrame = document.createElement('div');
+  maskFrame.className = 'free-layout-mask-frame';
+  const hasVisualMask = applyBoxVisualMask(maskFrame, box, host);
+  if (hasVisualMask) {
+    positionMaskedStageSpace(layer, maskFrame, host);
+  } else {
+    layer.className = 'free-layout-items';
     const clipPath = getBoxClipPath(box);
     if (clipPath) layer.style.clipPath = clipPath;
   }
   regularItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
     layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
   });
-  host.appendChild(layer);
+  if (hasVisualMask) {
+    maskFrame.appendChild(layer);
+    host.appendChild(maskFrame);
+  } else {
+    host.appendChild(layer);
+  }
   if (noriItems.length) {
     const riceLayer = document.createElement('div');
     riceLayer.className = 'free-layout-items free-rice-decor-layer';
