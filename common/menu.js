@@ -33,6 +33,12 @@
 
   const style = document.createElement('style');
   style.textContent = `
+    :root {
+      --pono-display-brightness: 1;
+    }
+    body.pono-brightness-active > :not(.pono-menu-toggle):not(.pono-dropdown):not(.pono-confirm-overlay) {
+      filter: brightness(var(--pono-display-brightness));
+    }
     .pono-menu-toggle {
       position: fixed; z-index: 9990;
       top: max(12px, env(safe-area-inset-top));
@@ -85,6 +91,31 @@
     .pono-dd-item.bgm-off .pono-dd-icon { opacity: 0.35; filter: grayscale(1); }
     .pono-dd-item.bgm-off .pono-dd-label { opacity: 0.5; }
     .pono-dd-label { white-space: nowrap; }
+
+    .pono-brightness-control {
+      display: flex; flex-direction: column; gap: 7px;
+      padding: 10px 14px 12px;
+      border-radius: 12px;
+      background: rgba(255, 246, 214, 0.8);
+      color: #5D4E37;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pono-brightness-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      font-size: 0.82rem; font-weight: 900;
+      white-space: nowrap;
+    }
+    .pono-brightness-value {
+      color: #8A6F45;
+      font-variant-numeric: tabular-nums;
+    }
+    .pono-brightness-slider {
+      width: 100%;
+      margin: 0;
+      accent-color: #f2915a;
+      cursor: pointer;
+    }
 
     /* ── Confirm overlay ── */
     .pono-confirm-overlay {
@@ -141,6 +172,13 @@
 
   // ── State ──
   let menuOpen = false;
+  const BRIGHTNESS_KEY = 'pono_display_brightness';
+  const BRIGHTNESS_MIN = 70;
+  const BRIGHTNESS_MAX = 120;
+  const BRIGHTNESS_STEP = 5;
+  const BRIGHTNESS_DEFAULT = 100;
+  let brightnessSliderEl = null;
+  let brightnessValueEl = null;
 
   // ── Create elements ──
   const toggle = document.createElement('button');
@@ -234,9 +272,67 @@
     return item;
   }
 
+  function normalizeBrightness(raw) {
+    let pct = parseInt(raw, 10);
+    if (!Number.isFinite(pct)) pct = BRIGHTNESS_DEFAULT;
+    pct = Math.round(pct / BRIGHTNESS_STEP) * BRIGHTNESS_STEP;
+    return Math.max(BRIGHTNESS_MIN, Math.min(BRIGHTNESS_MAX, pct));
+  }
+
+  function readStoredBrightness() {
+    try {
+      const raw = localStorage.getItem(BRIGHTNESS_KEY);
+      if (raw != null) return normalizeBrightness(raw);
+    } catch (_) {}
+    return BRIGHTNESS_DEFAULT;
+  }
+
+  function applyDisplayBrightness(value, persist) {
+    const pct = normalizeBrightness(value);
+    document.documentElement.style.setProperty('--pono-display-brightness', String(pct / 100));
+    if (document.body) {
+      document.body.classList.toggle('pono-brightness-active', pct !== BRIGHTNESS_DEFAULT);
+    }
+    if (brightnessSliderEl) brightnessSliderEl.value = String(pct);
+    if (brightnessValueEl) brightnessValueEl.textContent = pct + '%';
+    if (persist) {
+      try { localStorage.setItem(BRIGHTNESS_KEY, String(pct)); } catch (_) {}
+    }
+    return pct;
+  }
+
+  function createBrightnessControl() {
+    const control = document.createElement('div');
+    control.className = 'pono-brightness-control';
+    control.innerHTML = `
+      <div class="pono-brightness-head">
+        <span>☀️ あかるさ</span>
+        <span class="pono-brightness-value">100%</span>
+      </div>
+      <input class="pono-brightness-slider" type="range" min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" step="${BRIGHTNESS_STEP}" value="${BRIGHTNESS_DEFAULT}" aria-label="あかるさ">
+    `;
+    control.addEventListener('pointerdown', e => e.stopPropagation());
+    control.addEventListener('click', e => e.stopPropagation());
+    brightnessSliderEl = control.querySelector('.pono-brightness-slider');
+    brightnessValueEl = control.querySelector('.pono-brightness-value');
+    brightnessSliderEl.addEventListener('input', function() {
+      applyDisplayBrightness(brightnessSliderEl.value, true);
+    });
+    applyDisplayBrightness(readStoredBrightness(), false);
+    return control;
+  }
+
+  function shouldShowBrightnessControl(options) {
+    if (options && options.brightness === true) return true;
+    if (options && options.displayBrightness === true) return true;
+    if (options && (options.brightness === false || options.displayBrightness === false)) return false;
+    return /\/maze(?:\/|$)/.test(location.pathname.replace(/\\/g, '/'));
+  }
+
   // ── Public API ──
   window.initMenu = function(options) {
     options = options || {};
+    const showBrightness = shouldShowBrightnessControl(options);
 
     // Clear previous items
     dropdown.innerHTML = '';
@@ -283,6 +379,13 @@
       dropdown.appendChild(narrItem);
     }
 
+    if (showBrightness) {
+      dropdown.appendChild(createBrightnessControl());
+    } else {
+      brightnessSliderEl = null;
+      brightnessValueEl = null;
+    }
+
     // ❓ Tutorial
     if (options.tutorial) {
       dropdown.appendChild(createItem('❓', 'あそびかた', () => {
@@ -313,6 +416,9 @@
     document.body.appendChild(toggle);
     document.body.appendChild(dropdown);
     document.body.appendChild(overlay);
+    if (showBrightness) {
+      applyDisplayBrightness(readStoredBrightness(), false);
+    }
 
     // ── iOS Safari: 画面回転後にposition:fixedのヒットテスト領域がずれるバグ対策 ──
     function forceMenuRelayout() {

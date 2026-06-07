@@ -54,7 +54,6 @@
       --shadow: rgba(93, 78, 55, 0.18);
       --radius: 22px;
       --nav-h: 64px;
-      --display-brightness: 1;
     }
 
     html, body {
@@ -93,7 +92,6 @@
       height: var(--canvas-h);
       flex-shrink: 0;
       transform-origin: center center;
-      filter: brightness(var(--display-brightness));
       overflow: hidden;
     }
 
@@ -963,27 +961,6 @@
       font-weight: 700;
       color: var(--text);
     }
-    .setting-row--brightness {
-      align-items: stretch;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .setting-row__head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .setting-row__value {
-      min-width: 3.5em;
-      text-align: right;
-      color: var(--primary);
-      font-weight: 900;
-    }
-    .brightness-slider {
-      width: 100%;
-      accent-color: var(--primary);
-    }
     .modal-divider {
       border: none;
       border-top: 2px dashed var(--primary-light);
@@ -1478,14 +1455,6 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
-      <div class="setting-row setting-row--brightness">
-        <div class="setting-row__head">
-          <span>あかるさ</span>
-          <span class="setting-row__value" id="brightnessValue">100%</span>
-        </div>
-        <input class="brightness-slider" id="brightnessSlider" type="range" min="70" max="120" step="5" value="100" aria-label="あかるさ">
-      </div>
-      <hr class="modal-divider">
       <a href="play-all.html" class="dev-link">📋 ぜんぶみる（開発用）</a>
 
       <div class="dev-section">
@@ -1747,7 +1716,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 852;
+    const PAGE_CACHE_VERSION = 857;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -2169,10 +2138,7 @@
 
     // ===== Sound toggle (persisted) =====
     const SOUND_KEY = 'pono_sound_off';
-    const BRIGHTNESS_KEY = 'pono_display_brightness';
     const soundToggle = $('soundToggle');
-    const brightnessSlider = $('brightnessSlider');
-    const brightnessValue = $('brightnessValue');
     function loadSoundPref() {
       let off = false;
       try { off = localStorage.getItem(SOUND_KEY) === '1'; } catch(_) {}
@@ -2183,35 +2149,6 @@
       try { localStorage.setItem(SOUND_KEY, on ? '0' : '1'); } catch(_) {}
     });
     loadSoundPref();
-
-    // ===== Display brightness (persisted) =====
-    function normalizeBrightness(raw) {
-      const n = Number(raw);
-      if (!Number.isFinite(n)) return 100;
-      return Math.min(120, Math.max(70, Math.round(n / 5) * 5));
-    }
-    function applyBrightness(value) {
-      const pct = normalizeBrightness(value);
-      document.documentElement.style.setProperty('--display-brightness', String(pct / 100));
-      if (brightnessSlider) brightnessSlider.value = String(pct);
-      if (brightnessValue) brightnessValue.textContent = `${pct}%`;
-      return pct;
-    }
-    function loadBrightnessPref() {
-      let saved = 100;
-      try {
-        const raw = localStorage.getItem(BRIGHTNESS_KEY);
-        if (raw != null) saved = raw;
-      } catch (_) {}
-      applyBrightness(saved);
-    }
-    if (brightnessSlider) {
-      brightnessSlider.addEventListener('input', () => {
-        const pct = applyBrightness(brightnessSlider.value);
-        try { localStorage.setItem(BRIGHTNESS_KEY, String(pct)); } catch (_) {}
-      });
-    }
-    loadBrightnessPref();
 
     // ===== BGM + tap-to-start intro =====
     // iOS Safari requires a user gesture to start <audio>. We show the

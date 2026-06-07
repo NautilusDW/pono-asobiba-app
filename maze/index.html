@@ -677,6 +677,14 @@ body.image-stage-mode .game-wrap {
   animation: encPop 0.35s ease-out;
   overflow: hidden;
 }
+.encounter-modal .enc-card.is-janken {
+  width: min(96vw, 1080px);
+  grid-template-columns: 1fr;
+  padding: 18px 20px;
+}
+.encounter-modal .enc-card.is-janken .enc-left {
+  display: none;
+}
 @keyframes encPop {
   0%   { transform: scale(0.6); opacity: 0; }
   100% { transform: scale(1);   opacity: 1; }
@@ -696,6 +704,14 @@ body.image-stage-mode .game-wrap {
   margin: 0;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   animation: encWiggle 1.2s ease-in-out infinite;
+}
+.enc-creature img {
+  height: 1em;
+  width: auto;
+  max-width: 1.6em;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 @keyframes encWiggle {
   0%, 100% { transform: rotate(-6deg); }
@@ -750,6 +766,28 @@ body.image-stage-mode .game-wrap {
 .enc-btn:active { transform: scale(0.95); }
 .enc-btn.primary { background: linear-gradient(135deg, #6C8E3F, #A4C76D); color: #fff; }
 .enc-btn.choice { font-size: clamp(1.6rem, 5vw, 2.2rem); padding: 12px 18px; min-width: 0; background: #FFF; border: 3px solid #A4C76D; }
+.enc-btn.choice.has-img {
+  min-height: 82px;
+  padding: 6px 10px;
+  display: grid;
+  place-items: center;
+}
+.enc-choice-img {
+  width: min(18vw, 72px);
+  height: min(18vw, 72px);
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.14));
+}
+.simon-dot {
+  width: min(11vw, 54px);
+  height: min(11vw, 54px);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: inset 0 4px 9px rgba(255,255,255,0.55), inset 0 -6px 10px rgba(0,0,0,0.18), 0 4px 9px rgba(0,0,0,0.12);
+}
 .enc-btn.win    { background: linear-gradient(135deg, #F5A623, #FFCB5C); color: #fff; }
 .enc-btn.lose   { background: linear-gradient(135deg, #B05050, #C66767); color: #fff; }
 
@@ -771,8 +809,157 @@ body.image-stage-mode .game-wrap {
 .enc-result { font-size: clamp(1.1rem, 2.8vw, 1.5rem); font-weight: 900; margin: 4px 0; }
 .enc-result.win  { color: #6C8E3F; }
 .enc-result.lose { color: #B05050; }
+.enc-result__icon {
+  width: min(17vw, 78px);
+  height: min(17vw, 78px);
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 6px;
+  filter: drop-shadow(0 3px 7px rgba(0,0,0,0.14));
+}
 .enc-vs { font-size: clamp(1.1rem, 2.6vw, 1.4rem); color: #888; margin: 4px 0; }
 .enc-hand { font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1; }
+
+.janken-arena {
+  display: grid;
+  grid-template-columns: minmax(120px, 170px) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 170px);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+.janken-side {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  min-width: 0;
+}
+.janken-side__img {
+  width: min(15vw, 130px);
+  height: min(18vw, 150px);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.2));
+}
+.janken-side__name {
+  font-size: clamp(0.78rem, 1.8vw, 1rem);
+  font-weight: 900;
+  color: #5D4E37;
+  white-space: nowrap;
+}
+.janken-call {
+  grid-column: 2 / 4;
+  min-height: 2.4em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.45rem, 4vw, 2.7rem);
+  font-weight: 900;
+  color: #5D4E37;
+  text-shadow: 0 2px 0 #FFF8E0;
+}
+.janken-slot {
+  min-height: min(28dvh, 190px);
+  border: 4px solid #BFD88A;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.92);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 0 4px 14px rgba(0,0,0,0.12);
+  transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+}
+.janken-slot--pono { grid-column: 2 / 3; }
+.janken-slot--bug { grid-column: 3 / 4; }
+.janken-slot.is-win {
+  border-color: #5AA7FF;
+  background: #EEF7FF;
+  box-shadow: 0 0 0 5px rgba(90,167,255,0.35), 0 0 24px rgba(90,167,255,0.72);
+}
+.janken-slot.is-lose {
+  border-color: #F0A0A0;
+  background: #FFF0F0;
+}
+.janken-hand {
+  display: inline-block;
+  font-size: clamp(3rem, 10vw, 5.8rem);
+  line-height: 1;
+  transform-origin: center center;
+}
+.janken-hand--pono { transform: rotate(90deg); }
+.janken-hand--bug { transform: rotate(-90deg) scaleX(-1); }
+.janken-hand.is-ready {
+  animation: jankenReady 0.42s ease-in-out infinite alternate;
+}
+.janken-result {
+  grid-column: 1 / -1;
+  min-height: 1.7em;
+  font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+  font-weight: 900;
+  color: #5D4E37;
+}
+.janken-result.win { color: #2F79D5; }
+.janken-result.lose { color: #B05050; }
+.janken-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.janken-controls .enc-btn {
+  min-width: 120px;
+}
+@keyframes jankenReady {
+  from { translate: 0 -6px; rotate: -6deg; }
+  to   { translate: 0  6px; rotate:  6deg; }
+}
+
+@media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
+  .encounter-modal .enc-card.is-janken {
+    padding: 8px 10px;
+    width: min(96vw, 650px);
+    max-height: calc(100dvh - 18px);
+  }
+  .encounter-modal .enc-card.is-janken .enc-stage {
+    gap: 6px;
+    max-height: none;
+    overflow: visible;
+  }
+  .janken-arena {
+    grid-template-columns: minmax(56px, 74px) minmax(76px, 1fr) minmax(76px, 1fr) minmax(56px, 74px);
+    gap: 6px;
+  }
+  .janken-side { gap: 2px; }
+  .janken-side__img {
+    width: min(11vw, 52px);
+    height: min(13vw, 58px);
+  }
+  .janken-side__name {
+    font-size: 0.68rem;
+  }
+  .janken-call {
+    min-height: 1.55em;
+    font-size: clamp(1.15rem, 5vw, 1.7rem);
+  }
+  .janken-slot {
+    min-height: 68px;
+    border-width: 3px;
+    border-radius: 14px;
+  }
+  .janken-hand {
+    font-size: clamp(2.25rem, 9vw, 3.15rem);
+  }
+  .janken-result {
+    min-height: 1.2em;
+    font-size: 0.95rem;
+  }
+  .janken-controls {
+    gap: 6px;
+  }
+  .janken-controls .enc-btn {
+    min-width: 76px;
+    padding: 7px 10px;
+    font-size: 0.86rem;
+    border-radius: 11px;
+  }
+}
 
 /* Portrait fallback: 縦積みでも 1 画面に収める */
 @media (orientation: portrait) {
@@ -784,6 +971,19 @@ body.image-stage-mode .game-wrap {
   .enc-stage img { max-height: 28dvh; }
   .enc-dialog { max-height: 14dvh; }
   .enc-stage { max-height: 45dvh; }
+  .janken-arena {
+    grid-template-columns: 1fr 1fr;
+  }
+  .janken-side {
+    display: none;
+  }
+  .janken-call,
+  .janken-result,
+  .janken-controls {
+    grid-column: 1 / -1;
+  }
+  .janken-slot--pono { grid-column: 1 / 2; }
+  .janken-slot--bug { grid-column: 2 / 3; }
 }
 
 /* ===== Title Screen (タップしてスタート) =====
@@ -872,7 +1072,7 @@ body.image-stage-mode .game-wrap {
 /* ===== Maze OP Overlay (タイトル → OP → loadStage) =====
    タイトル画面タップ後に再生される導入アニメーション。
    op-layout.json を fetch して BG (op_scale.png) + frame + ビート毎テキスト + ナレーション再生。
-   ビート進行はフレーム右下の▼ (明滅) をタップ。 スキップ無し (子供は全ビート視聴必須)。 */
+   ビート進行はフレーム右下の▼ (明滅) をタップ。右上のボタンでスキップ可能。 */
 #maze-op-overlay {
   position: fixed; inset: 0;
   z-index: 300;
@@ -892,6 +1092,29 @@ body.image-stage-mode .game-wrap {
   background: url('../assets/images/maze/OP/op_scale.png') center / cover no-repeat #000;
   overflow: hidden;
   flex-shrink: 0;
+}
+#maze-op-skip {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  z-index: 3;
+  min-width: 96px;
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 2px solid rgba(255,255,255,0.82);
+  border-radius: 999px;
+  background: rgba(44, 36, 28, 0.62);
+  color: #fff8e7;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#maze-op-skip:active {
+  transform: scale(0.96);
 }
 #maze-op-frame-box {
   position: absolute;
@@ -2307,6 +2530,7 @@ const encNameEl = document.getElementById('encName');
 const encDialogEl = document.getElementById('encDialog');
 const encStageEl = document.getElementById('encStage');
 const encStartBtn = document.getElementById('encStartBtn');
+const encCardEl = encModal ? encModal.querySelector('.enc-card') : null;
 
 const CREATURE_KIND_DATA = {
   mayoi:  { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
@@ -2324,6 +2548,10 @@ function _creatureData(c) {
   // alias it to 'mayoi' so old stages keep working without JSON edits.
   const k = (c && c.kind === 'nemuri') ? 'mayoi' : (c && c.kind);
   return CREATURE_KIND_DATA[k] || CREATURE_KIND_DATA.mayoi;
+}
+
+function _setEncounterMode(mode) {
+  if (encCardEl) encCardEl.classList.toggle('is-janken', mode === 'janken');
 }
 
 const OBSTACLE_KIND_IMG = {
@@ -2595,6 +2823,7 @@ function _gameForCreature(c) {
 }
 
 function _showEncounterStart() {
+  _setEncounterMode(null);
   const c = _currentCreature;
   const game = _currentGame || _gameForCreature(c);
   encStageEl.innerHTML = '<button class="enc-btn primary" id="encStartBtn2">' +
@@ -2606,19 +2835,49 @@ function _showEncounterStart() {
 }
 
 function _showJankenChoices() {
+  _setEncounterMode('janken');
+  const c = _currentCreature || {};
+  const data = _creatureData(c);
+  const creatureImg = data.imageUrl || data.emoji || '';
   encStageEl.innerHTML =
-    '<div class="enc-result">じゃんけん…</div>' +
-    '<div class="row">' +
-      '<button class="enc-btn choice" data-hand="rock">✊</button>' +
-      '<button class="enc-btn choice" data-hand="paper">✋</button>' +
-      '<button class="enc-btn choice" data-hand="scissors">✌️</button>' +
+    '<div class="janken-arena">' +
+      '<div class="janken-side janken-side--pono">' +
+        '<img class="janken-side__img" src="../assets/images/characters/pono/pono_lantan.png" alt="ポノ">' +
+        '<div class="janken-side__name">ポノ</div>' +
+      '</div>' +
+      '<div class="janken-call" id="jankenCall">どの てで いく？</div>' +
+      '<div class="janken-side janken-side--bug">' +
+        (data.imageUrl
+          ? '<img class="janken-side__img" src="' + creatureImg + '" alt="' + data.name + '">'
+          : '<div class="janken-side__img" aria-hidden="true" style="font-size:5rem;display:grid;place-items:center;">' + creatureImg + '</div>') +
+        '<div class="janken-side__name">' + data.name + '</div>' +
+      '</div>' +
+      '<div class="janken-slot janken-slot--pono" id="jankenPonoSlot"><span class="janken-hand janken-hand--pono">✊</span></div>' +
+      '<div class="janken-slot janken-slot--bug" id="jankenBugSlot"><span class="janken-hand janken-hand--bug">✊</span></div>' +
+      '<div class="janken-result" id="jankenResult">グー・チョキ・パーを えらんでね</div>' +
+      '<div class="janken-controls" id="jankenControls">' +
+        '<button class="enc-btn choice" data-hand="rock">グー</button>' +
+        '<button class="enc-btn choice" data-hand="scissors">チョキ</button>' +
+        '<button class="enc-btn choice" data-hand="paper">パー</button>' +
+      '</div>' +
     '</div>';
-  encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
-    b.addEventListener('click', function() { _resolveJanken(b.dataset.hand); });
+  encStageEl.querySelectorAll('.janken-controls .enc-btn.choice').forEach(function(b) {
+    b.addEventListener('click', function() { _resolveJanken(b.dataset.hand); }, { once: true });
   });
 }
 
 function _resolveJanken(playerHand) {
+  const callEl = document.getElementById('jankenCall');
+  const resultEl = document.getElementById('jankenResult');
+  const controlsEl = document.getElementById('jankenControls');
+  const ponoSlot = document.getElementById('jankenPonoSlot');
+  const bugSlot = document.getElementById('jankenBugSlot');
+  if (!callEl || !resultEl || !controlsEl || !ponoSlot || !bugSlot) return;
+  controlsEl.querySelectorAll('button').forEach(function(btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.55';
+  });
+
   const hands = ['rock', 'paper', 'scissors'];
   const emojiOf = { rock: '✊', paper: '✋', scissors: '✌️' };
   const cpuHand = hands[Math.floor(Math.random() * 3)];
@@ -2629,42 +2888,49 @@ function _resolveJanken(playerHand) {
   else if (beats[playerHand] === cpuHand) outcome = 'win';
   else outcome = 'lose';
 
-  encStageEl.innerHTML =
-    '<div class="enc-vs">' +
-      '<span class="enc-hand">' + emojiOf[playerHand] + '</span>' +
-      ' vs ' +
-      '<span class="enc-hand">' + emojiOf[cpuHand] + '</span>' +
-    '</div>' +
-    '<div class="enc-result ' + (outcome === 'win' ? 'win' : (outcome === 'lose' ? 'lose' : '')) + '">' +
-      (outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！') +
-    '</div>' +
-    '<div class="row">' +
-      (outcome === 'draw'
-        ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
-        : '<button class="enc-btn ' + (outcome === 'win' ? 'win' : 'lose') + '" id="encNext">' +
-            (outcome === 'win' ? 'すすむ ▶' : 'もどる ▶') +
-          '</button>') +
-    '</div>';
-
-  if (outcome === 'draw') {
-    document.getElementById('encRetry').addEventListener('click', _showJankenChoices);
-  } else {
-    document.getElementById('encNext').addEventListener('click', function() {
-      if (outcome === 'win') {
-        // 勝利時のみ: 他ミニゲーム (_resolveQuiz) と同じ「うーん、まけちゃった！」演出を挟んでから
-        // 1.6秒後に _closeEncounter(true) する。timer id は _creatureDefeatTimer に保存し、
-        // 新しいエンカウンター開始/ステージリロード等で確実にキャンセルできるようにする。
-        _showCreatureDefeatDialog();
-        _creatureDefeatTimer = setTimeout(function() {
-          _creatureDefeatTimer = null;
-          if (_encounterActive) _closeEncounter(true);
-        }, 1600);
-      } else {
-        // 敗北時は従来通り即バウンスバック
-        _closeEncounter(false);
-      }
-    });
+  function setHands(handPono, handBug, ready) {
+    ponoSlot.innerHTML = '<span class="janken-hand janken-hand--pono' + (ready ? ' is-ready' : '') + '">' + emojiOf[handPono] + '</span>';
+    bugSlot.innerHTML = '<span class="janken-hand janken-hand--bug' + (ready ? ' is-ready' : '') + '">' + emojiOf[handBug] + '</span>';
   }
+  setHands('rock', 'rock', true);
+  resultEl.textContent = '';
+  callEl.textContent = 'ジャン';
+  setTimeout(function() {
+    if (!_encounterActive) return;
+    callEl.textContent = 'ケン';
+  }, 520);
+  setTimeout(function() {
+    if (!_encounterActive) return;
+    callEl.textContent = 'ポン！';
+    setHands(playerHand, cpuHand, false);
+    ponoSlot.classList.toggle('is-win', outcome === 'win');
+    ponoSlot.classList.toggle('is-lose', outcome === 'lose');
+    bugSlot.classList.toggle('is-win', outcome === 'lose');
+    bugSlot.classList.toggle('is-lose', outcome === 'win');
+    resultEl.className = 'janken-result' + (outcome === 'win' ? ' win' : (outcome === 'lose' ? ' lose' : ''));
+    resultEl.textContent = outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！';
+    controlsEl.innerHTML = outcome === 'draw'
+      ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
+      : '<button class="enc-btn ' + (outcome === 'win' ? 'win' : 'lose') + '" id="encNext">' +
+          (outcome === 'win' ? 'すすむ ▶' : 'もどる ▶') +
+        '</button>';
+    if (outcome === 'draw') {
+      document.getElementById('encRetry').addEventListener('click', _showJankenChoices);
+    } else {
+      document.getElementById('encNext').addEventListener('click', function() {
+        if (outcome === 'win') {
+          _setEncounterMode(null);
+          _showCreatureDefeatDialog();
+          _creatureDefeatTimer = setTimeout(function() {
+            _creatureDefeatTimer = null;
+            if (_encounterActive) _closeEncounter(true);
+          }, 1600);
+        } else {
+          _closeEncounter(false);
+        }
+      });
+    }
+  }, 1120);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2694,70 +2960,75 @@ const PEEK_QUIZ_POOL = [
   { id: 'ika',    label: 'いか',    src: '../assets/images/word/ika.png' },
 ];
 
-// ○×クイズ: q=問い, a=true|false, emoji=絵
+const MAZE_WORD_IMG = '../assets/images/word/';
+const MAZE_QUIZ_IMG = '../assets/images/quizland/illust/choice/';
+const MAZE_CREATURE_IMG = '../assets/images/maze/creatures/';
+function _mzAsset(src, label) {
+  return { src: src, label: label };
+}
+function _mzWord(name, label) {
+  return _mzAsset(MAZE_WORD_IMG + name + '.png', label);
+}
+function _mzQuiz(name, label) {
+  return _mzAsset(MAZE_QUIZ_IMG + name + '.png', label);
+}
+function _mzCreature(name, label) {
+  return _mzAsset(MAZE_CREATURE_IMG + name + '.png', label);
+}
+
+// ○×クイズ: q=問い, a=true|false, icon=既存生成イラスト
 const QUIZ_TRUEFALSE = [
-  { q: 'うさぎは そらを とぶ？', a: false, emoji: '🐰' },
-  { q: 'ちょうちょには はねが ある？', a: true, emoji: '🦋' },
-  { q: 'ひまわりは あおい？', a: false, emoji: '🌻' },
-  { q: 'たいようは つきより おおきい？', a: true, emoji: '☀️' },
-  { q: 'いぬは ニャーと なく？', a: false, emoji: '🐶' },
-  { q: 'りんごは くだもの？', a: true, emoji: '🍎' },
-  { q: 'みずは つめたい ことが ある？', a: true, emoji: '💧' },
-  { q: 'ぞうは とても ちいさい？', a: false, emoji: '🐘' },
-  { q: 'さかなは みずの なかで くらす？', a: true, emoji: '🐟' },
-  { q: 'くるまは そらを とぶ？', a: false, emoji: '🚗' },
-  { q: 'ほしは よるに みえる？', a: true, emoji: '⭐' },
-  { q: 'にんじんは あかい？', a: false, emoji: '🥕' },
-  { q: 'ペンギンは こおりが すき？', a: true, emoji: '🐧' },
-  { q: 'たまごから ひよこが うまれる？', a: true, emoji: '🐣' },
-  { q: 'ねこは みずが だいすき？', a: false, emoji: '🐱' },
-  { q: 'ふゆは あつい？', a: false, emoji: '⛄' },
-  { q: 'はなは つちから うまれる？', a: true, emoji: '🌷' },
-  { q: 'はちは はちみつを つくる？', a: true, emoji: '🐝' },
-  { q: 'バナナは はじめは みどりいろ？', a: true, emoji: '🍌' },
-  { q: 'にじは あめの あとに でる？', a: true, emoji: '🌈' },
-  { q: 'きょうりゅうは いま いきている？', a: false, emoji: '🦖' },
-  { q: 'ピアノは ふいて ならす？', a: false, emoji: '🎹' },
-  { q: 'おひさまは よるも かがやく？', a: false, emoji: '☀️' },
-  { q: 'カメは ながいきする？', a: true, emoji: '🐢' },
-  { q: 'ふうせんは おもい？', a: false, emoji: '🎈' },
-  { q: 'はが ない あかちゃんが いる？', a: true, emoji: '👶' },
-  { q: 'こおりは あつくなると とける？', a: true, emoji: '🧊' },
-  { q: 'みかんは あおい？', a: false, emoji: '🍊' },
-  { q: 'ロケットは うちゅうへ いく？', a: true, emoji: '🚀' },
-  { q: 'コアラは オーストラリアに いる？', a: true, emoji: '🐨' },
+  { q: 'うさぎは そらを とぶ？', a: false, icon: _mzWord('usagi', 'うさぎ') },
+  { q: 'ちょうちょには はねが ある？', a: true, icon: _mzQuiz('chocho', 'ちょうちょ') },
+  { q: 'はなは つちから うまれる？', a: true, icon: _mzWord('hana', 'はな') },
+  { q: 'たいようは つきより おおきい？', a: true, icon: _mzWord('taiyou', 'たいよう') },
+  { q: 'いぬは ニャーと なく？', a: false, icon: _mzWord('inu', 'いぬ') },
+  { q: 'りんごは くだもの？', a: true, icon: _mzWord('ringo', 'りんご') },
+  { q: 'あめの しずくは みず？', a: true, icon: _mzQuiz('rain_drop', 'あめのしずく') },
+  { q: 'ぞうは とても ちいさい？', a: false, icon: _mzWord('zou', 'ぞう') },
+  { q: 'さかなは みずの なかで くらす？', a: true, icon: _mzQuiz('sakana', 'さかな') },
+  { q: 'くるまは そらを とぶ？', a: false, icon: _mzWord('kuruma', 'くるま') },
+  { q: 'ほしは よるに みえる？', a: true, icon: _mzWord('hoshi', 'ほし') },
+  { q: 'にんじんは あかい？', a: false, icon: _mzWord('ninjin', 'にんじん') },
+  { q: 'ペンギンは こおりが すき？', a: true, icon: _mzQuiz('penguin', 'ペンギン') },
+  { q: 'たまごから ひよこが うまれる？', a: true, icon: _mzWord('tamago', 'たまご') },
+  { q: 'ねこは みずが だいすき？', a: false, icon: _mzWord('neko', 'ねこ') },
+  { q: 'ふゆは あつい？', a: false, icon: _mzQuiz('snowy_time', 'ゆき') },
+  { q: 'はちは はちみつを つくる？', a: true, icon: _mzCreature('hachi', 'はち') },
+  { q: 'バナナは はじめは みどりいろ？', a: true, icon: _mzWord('banana', 'バナナ') },
+  { q: 'にじは あめの あとに でる？', a: true, icon: _mzWord('niji', 'にじ') },
+  { q: 'おひさまは よるも かがやく？', a: false, icon: _mzWord('taiyou', 'たいよう') },
+  { q: 'こおりは あつくなると とける？', a: true, icon: _mzQuiz('ice', 'こおり') },
+  { q: 'みかんは あおい？', a: false, icon: _mzWord('mikan', 'みかん') },
+  { q: 'ロケットは うちゅうへ いく？', a: true, icon: _mzWord('rocket', 'ロケット') },
+  { q: 'くまは どうぶつ？', a: true, icon: _mzWord('kuma', 'くま') },
 ];
 
 // なかまはずれ: items 4つ、odd は items のうち仲間外れの index
 const QUIZ_ODDONE = [
-  { items: ['🍎','🍌','🍊','🐶'], odd: 3, hint: 'くだもの と どうぶつ' },
-  { items: ['🚗','🚕','🚌','🐄'], odd: 3, hint: 'のりもの' },
-  { items: ['🐱','🐶','🐰','🍓'], odd: 3, hint: 'どうぶつ' },
-  { items: ['⚽','🏀','🏐','🍰'], odd: 3, hint: 'スポーツ ボール' },
-  { items: ['🌳','🌴','🌵','🐠'], odd: 3, hint: 'しょくぶつ' },
-  { items: ['☀️','🌙','⭐','🍌'], odd: 3, hint: 'そら' },
-  { items: ['🥕','🍅','🥦','🐟'], odd: 3, hint: 'やさい' },
-  { items: ['🦁','🐯','🐘','🚀'], odd: 3, hint: 'どうぶつ' },
-  { items: ['🍎','🐶','🍊','🍌'], odd: 1, hint: 'くだもの' },
-  { items: ['🚗','🐱','🚕','🚌'], odd: 1, hint: 'のりもの' },
-  { items: ['⚽','🏀','🍌','🏐'], odd: 2, hint: 'スポーツ' },
-  { items: ['🌙','⭐','🌻','☀️'], odd: 2, hint: 'そらに あるもの' },
-  { items: ['🐠','🐟','🐡','🦒'], odd: 3, hint: 'さかな' },
-  { items: ['🍓','🍇','🍒','🥕'], odd: 3, hint: 'あかい くだもの' },
-  { items: ['🐝','🦋','🐞','🐢'], odd: 3, hint: 'むし' },
-  { items: ['🚲','🛴','🛵','🍎'], odd: 3, hint: 'のりもの' },
-  { items: ['🌷','🌹','🌻','🐱'], odd: 3, hint: 'はな' },
-  { items: ['🍰','🍪','🍩','🥕'], odd: 3, hint: 'あまい おかし' },
-  { items: ['👕','👖','👟','🍕'], odd: 3, hint: 'みにつけるもの' },
-  { items: ['📚','✏️','🎒','🍦'], odd: 3, hint: 'がっこうで つかうもの' },
+  { items: [_mzWord('ringo','りんご'), _mzWord('banana','バナナ'), _mzWord('mikan','みかん'), _mzWord('inu','いぬ')], odd: 3, hint: 'くだもの' },
+  { items: [_mzWord('kuruma','くるま'), _mzWord('taxi','タクシー'), _mzWord('bus','バス'), _mzWord('kirin','きりん')], odd: 3, hint: 'のりもの' },
+  { items: [_mzWord('neko','ねこ'), _mzWord('inu','いぬ'), _mzWord('usagi','うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('ki','き'), _mzWord('kusa','くさ'), _mzWord('kinoko','きのこ'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'もりに あるもの' },
+  { items: [_mzWord('taiyou','たいよう'), _mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('banana','バナナ')], odd: 3, hint: 'そら' },
+  { items: [_mzWord('ninjin','にんじん'), _mzWord('tomato','トマト'), _mzWord('kyuuri','きゅうり'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'やさい' },
+  { items: [_mzWord('lion','らいおん'), _mzWord('kirin','きりん'), _mzWord('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('ringo','りんご'), _mzWord('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
+  { items: [_mzWord('kuruma','くるま'), _mzWord('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
+  { items: [_mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('hana','はな'), _mzWord('taiyou','たいよう')], odd: 2, hint: 'そらに あるもの' },
+  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzWord('iruka','いるか'), _mzWord('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
+  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzWord('kuma','くま')], odd: 3, hint: 'むし' },
+  { items: [_mzWord('jitensha','じてんしゃ'), _mzWord('helicopter','ヘリコプター'), _mzWord('fune','ふね'), _mzWord('ringo','りんご')], odd: 3, hint: 'のりもの' },
+  { items: [_mzWord('hana','はな'), _mzWord('sakura','さくら'), _mzQuiz('snow_flake','ゆき'), _mzQuiz('chocho','ちょうちょ')], odd: 3, hint: 'はな' },
+  { items: [_mzWord('cake','ケーキ'), _mzWord('cake2','ケーキ'), _mzWord('okashi','おかし'), _mzWord('ninjin','にんじん')], odd: 3, hint: 'あまいもの' },
 ];
 
 // Simon-says: 4 色固定、レベル (=フラッシュ数)
 const SIMON_COLORS = [
-  { id: 'r', emoji: '🔴', color: '#ee5a5a', freq: 440 }, // A4
-  { id: 'b', emoji: '🔵', color: '#5a8aee', freq: 523 }, // C5
-  { id: 'g', emoji: '🟢', color: '#5aee7a', freq: 659 }, // E5
-  { id: 'y', emoji: '🟡', color: '#eece5a', freq: 784 }, // G5
+  { id: 'r', color: '#ee5a5a', freq: 440 }, // A4
+  { id: 'b', color: '#5a8aee', freq: 523 }, // C5
+  { id: 'g', color: '#5aee7a', freq: 659 }, // E5
+  { id: 'y', color: '#eece5a', freq: 784 }, // G5
 ];
 const SIMON_LENGTH = 3;
 
@@ -2776,6 +3047,7 @@ function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 // 1 回間違えると別の場所に穴が増えてヒント追加。2 回間違えるとアウト。
 let _peekState = null;
 function _showPeekChoices() {
+  _setEncounterMode(null);
   const ans = _pick(PEEK_QUIZ_POOL);
   // 別カテゴリにならないよう、PEEK_QUIZ_POOL から ans 以外を 2 つランダム抽出
   const others = _shuffleArray(PEEK_QUIZ_POOL.filter(function(p) { return p.id !== ans.id; })).slice(0, 2);
@@ -2925,15 +3197,51 @@ function _peekRender(canv, img, holes) {
 }
 
 // ── ○×クイズ ──
+function _appendQuizImage(parent, item, className) {
+  const img = document.createElement('img');
+  img.className = className || 'enc-choice-img';
+  img.src = item.src;
+  img.alt = item.label || '';
+  img.loading = 'eager';
+  img.decoding = 'async';
+  parent.appendChild(img);
+  return img;
+}
+
+function _createImageChoiceButton(item, index) {
+  const btn = document.createElement('button');
+  btn.className = 'enc-btn choice has-img';
+  btn.dataset.i = String(index);
+  _appendQuizImage(btn, item, 'enc-choice-img');
+  return btn;
+}
+
 function _showTrueFalseChoices() {
+  _setEncounterMode(null);
   const q = _pick(QUIZ_TRUEFALSE);
-  encStageEl.innerHTML =
-    '<div class="enc-vs"><span class="enc-hand">' + q.emoji + '</span></div>' +
-    '<div class="enc-result" style="font-size:1.1rem;">' + q.q + '</div>' +
-    '<div class="row">' +
-      '<button class="enc-btn choice" data-ans="t" style="font-size:2.5rem;">⭕</button>' +
-      '<button class="enc-btn choice" data-ans="f" style="font-size:2.5rem;">❌</button>' +
-    '</div>';
+  encStageEl.textContent = '';
+  const result = document.createElement('div');
+  result.className = 'enc-result';
+  result.style.fontSize = '1.1rem';
+  _appendQuizImage(result, q.icon, 'enc-result__icon');
+  result.appendChild(document.createTextNode(q.q));
+  encStageEl.appendChild(result);
+
+  const row = document.createElement('div');
+  row.className = 'row';
+  const yes = document.createElement('button');
+  yes.className = 'enc-btn choice';
+  yes.dataset.ans = 't';
+  yes.style.fontSize = '2.5rem';
+  yes.textContent = '○';
+  const no = document.createElement('button');
+  no.className = 'enc-btn choice';
+  no.dataset.ans = 'f';
+  no.style.fontSize = '2.5rem';
+  no.textContent = '×';
+  row.appendChild(yes);
+  row.appendChild(no);
+  encStageEl.appendChild(row);
   encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
     b.addEventListener('click', function() {
       const playerSaid = b.dataset.ans === 't';
@@ -2944,14 +3252,28 @@ function _showTrueFalseChoices() {
 
 // ── なかまはずれ ──
 function _showOddOneOutChoices() {
+  _setEncounterMode(null);
   const q = _pick(QUIZ_ODDONE);
-  encStageEl.innerHTML =
-    '<div class="enc-result" style="font-size:1rem;">なかま はずれ は どれ？<br><small style="color:#888;">(' + q.hint + ')</small></div>' +
-    '<div class="row" style="flex-wrap:wrap; max-width:280px;">' +
-    q.items.map(function(em, i) {
-      return '<button class="enc-btn choice" data-i="' + i + '" style="flex:1 1 calc(50% - 4px); margin:2px;">' + em + '</button>';
-    }).join('') +
-    '</div>';
+  encStageEl.textContent = '';
+  const title = document.createElement('div');
+  title.className = 'enc-result';
+  title.style.fontSize = '1rem';
+  title.appendChild(document.createTextNode('なかま はずれ は どれ？'));
+  title.appendChild(document.createElement('br'));
+  const small = document.createElement('small');
+  small.style.color = '#888';
+  small.textContent = '(' + q.hint + ')';
+  title.appendChild(small);
+  encStageEl.appendChild(title);
+
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.style.flexWrap = 'wrap';
+  row.style.maxWidth = '320px';
+  q.items.forEach(function(item, i) {
+    row.appendChild(_createImageChoiceButton(item, i));
+  });
+  encStageEl.appendChild(row);
   encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
     b.addEventListener('click', function() {
       _resolveQuiz(parseInt(b.dataset.i, 10) === q.odd);
@@ -2980,6 +3302,7 @@ function _simonPlayTone(freq, ms) {
 }
 
 function _showSimonGame() {
+  _setEncounterMode(null);
   // Generate a random sequence
   _simonSeq = [];
   for (let i = 0; i < SIMON_LENGTH; i++) _simonSeq.push(_pick(SIMON_COLORS));
@@ -2990,8 +3313,8 @@ function _showSimonGame() {
     '<div class="row" id="simonGrid">' +
     SIMON_COLORS.map(function(c) {
       return '<button class="enc-btn choice simon-cell" data-id="' + c.id + '" ' +
-        'style="background:' + c.color + '; opacity:0.4; pointer-events:none; font-size:2.5rem;">' +
-        c.emoji + '</button>';
+        'style="background:#fff; opacity:0.4; pointer-events:none;">' +
+        '<span class="simon-dot" style="background:' + c.color + '"></span></button>';
     }).join('') +
     '</div>';
   // Play sequence
@@ -3108,6 +3431,7 @@ const _GAME_STARTERS = {
 
 function _closeEncounter(playerWon) {
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
+  _setEncounterMode(null);
   // 念のため: 別経路で _closeEncounter が呼ばれた場合に備え、未発火の defeat-dialog timer をキャンセル
   if (_creatureDefeatTimer) {
     clearTimeout(_creatureDefeatTimer);
@@ -3914,11 +4238,12 @@ async function playMazeOpening(onDone) {
   }
 
   // overlay を動的生成 (CSS は <style> で定義済)
-  // 注: スキップボタンは廃止。 #maze-op-next (▼) を #maze-op-frame-box の子として
-  //     右下に絶対配置し明滅アニメで「次に進む」ヒントを出す。 子供は全ビート視聴必須。
+  // #maze-op-next (▼) は #maze-op-frame-box の子として右下に絶対配置し、
+  // 明滅アニメで「次に進む」ヒントを出す。
   const tpl = ''
     + '<div id="maze-op-overlay">'
     +   '<div id="maze-op-stage">'
+    +     '<button id="maze-op-skip" type="button" aria-label="オープニングをスキップ">スキップ ▶</button>'
     +     '<div id="maze-op-frame-box">'
     +       '<div id="maze-op-text"></div>'
     +       '<button id="maze-op-next" type="button" aria-label="つづける">▼</button>'
@@ -3932,6 +4257,7 @@ async function playMazeOpening(onDone) {
   const fbox    = document.getElementById('maze-op-frame-box');
   const textEl  = document.getElementById('maze-op-text');
   const nextBtn = document.getElementById('maze-op-next');
+  const skipBtn = document.getElementById('maze-op-skip');
   const stepInd = document.getElementById('maze-op-step-ind');
 
   // layout 設定を box / text / frame / bg に反映
@@ -4042,6 +4368,8 @@ async function playMazeOpening(onDone) {
     _finished = true;
     stopAudio();
     document.removeEventListener('visibilitychange', _onVisChange);
+    if (nextBtn) nextBtn.removeEventListener('click', advance);
+    if (skipBtn) skipBtn.removeEventListener('pointerdown', skipOpening);
     overlay.classList.remove('is-active');
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
     if (typeof onDone === 'function') onDone();
@@ -4061,16 +4389,25 @@ async function playMazeOpening(onDone) {
     }
   }
 
+  function skipOpening(e) {
+    if (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    finish();
+  }
+
   // ▼ ボタン (視覚ヒント) のクリック → stopPropagation で overlay へ届かない
   nextBtn.addEventListener('click', advance);
+  skipBtn.addEventListener('pointerdown', skipOpening);
 
   // overlay 全体のクリックでも進む (画面のどこをタップしても OK)
   overlay.addEventListener('click', function(e) {
     // 保険: stopPropagation が効かないケースに備えて e.target チェックで dedupe
     if (e.target === nextBtn || (nextBtn && nextBtn.contains && nextBtn.contains(e.target))) return;
+    if (e.target === skipBtn || (skipBtn && skipBtn.contains && skipBtn.contains(e.target))) return;
     advance(e);
   });
-  // スキップボタンは廃止 (子供は全ビート視聴必須)
 
   // 初回ビート表示
   showBeat(0);
