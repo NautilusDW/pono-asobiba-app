@@ -1438,7 +1438,7 @@ html, body {
   left: 50%;
   top: 0;
   width: 700px;
-  height: 560px;
+  height: var(--complete-preview-logical-height, 560px);
   transform: translateX(-50%) scale(var(--complete-preview-scale, 0.48));
   transform-origin: top center;
 }
@@ -4485,19 +4485,37 @@ function getFreeCompleteLayoutScale(host, isPreview = false) {
   const basis = width || 700;
   return basis / 700;
 }
-function applyFreeCompletePreviewScale(host, isPreview) {
+function getFreeCompletePreviewLogicalHeight(host, box, tierCount) {
+  const count = Math.max(1, Math.round(Number(tierCount) || 1));
+  if (count <= 1) return 560;
+  const tierGap = getFreeCompleteTierGap(host, true);
+  let bottom = 560;
+  for (let tier = 1; tier <= count; tier++) {
+    const layout = tier > 1 ? getBoxCompleteLayout(box, tier) : { x: 0, y: 0, w: 96 };
+    const baseY = (count - tier) * tierGap;
+    const stageW = 700 * ((layout && Number(layout.w)) || 100) / 100;
+    const stageH = stageW * FREE_LAYOUT_H / FREE_LAYOUT_W;
+    const y = baseY + ((layout && Number(layout.y)) || 0);
+    bottom = Math.max(bottom, y + stageH);
+  }
+  return Math.ceil(bottom + 18);
+}
+function applyFreeCompletePreviewScale(host, isPreview, box, tierCount) {
   if (!host || !isPreview) {
     if (host) {
       host.style.removeProperty('--complete-preview-scale');
       host.style.removeProperty('--complete-preview-height');
+      host.style.removeProperty('--complete-preview-logical-height');
     }
     return;
   }
   const width = getFreeCompleteHostWidth(host) || 340;
   const scale = clamp(width / 700, 0.34, 0.72);
   const preciseScale = Math.round(scale * 1000) / 1000;
+  const logicalHeight = getFreeCompletePreviewLogicalHeight(host, box, tierCount);
   host.style.setProperty('--complete-preview-scale', String(preciseScale));
-  host.style.setProperty('--complete-preview-height', `${Math.ceil(560 * preciseScale) + 8}px`);
+  host.style.setProperty('--complete-preview-logical-height', `${logicalHeight}px`);
+  host.style.setProperty('--complete-preview-height', `${Math.ceil(logicalHeight * preciseScale) + 8}px`);
 }
 function setBoxCompleteLayoutOverride(box, tier, layout) {
   const key = getFreeCompleteLayoutKey(box, tier);
@@ -7053,7 +7071,7 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     + (tierCount > 1 ? ' free-complete-stack' : '')
     + (isPreview ? ' free-complete-preview-mode' : '')
     + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '');
-  applyFreeCompletePreviewScale(host, isPreview);
+  applyFreeCompletePreviewScale(host, isPreview, box, tierCount);
   host.innerHTML = '';
   if (tierCount > 1) {
     const build = document.createElement('div');
