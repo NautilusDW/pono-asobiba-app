@@ -4465,7 +4465,29 @@ function scheduleFullMaskRefresh() {
   clearTimeout(freeFullMaskRefreshTimer);
   freeFullMaskRefreshTimer = setTimeout(() => {
     renderFreeLayoutStage();
+    refreshFreeCompletionMaskViews();
   }, 0);
+}
+function refreshFreeCompletionMaskViews() {
+  if (!freeLayoutMode) return;
+  const completeBento = document.getElementById('complete-bento');
+  if (completeBento && completeBento.classList.contains('free-complete-bento')) {
+    renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId);
+  }
+  document.querySelectorAll('.free-complete-editor-preview-slot.free-complete-bento').forEach(slot => {
+    const box = getSelectedBentoBox();
+    const tier = Math.min(2, getBoxTierCount(box));
+    if (tier > 1) {
+      renderFreeCompleteBento(slot, [], box.id, {
+        forceTierCount: tier,
+        preview: true,
+      });
+    }
+  });
+  const favOverlay = document.getElementById('fav-overlay');
+  if (favOverlay && !favOverlay.classList.contains('hidden')) {
+    renderFavoritesList();
+  }
 }
 function queueFullCanvasMaskBuild(box, key, size, rel) {
   if (!box || !box.maskImage || freeFullMaskPending.has(key)) return;
@@ -6842,6 +6864,7 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
   if (tierCount > 1) {
     const build = document.createElement('div');
     build.className = 'free-complete-build-stage';
+    host.appendChild(build);
     for (let tier = 1; tier <= tierCount; tier++) {
       const wrap = document.createElement('div');
       wrap.className = 'free-complete-tier';
@@ -6863,6 +6886,8 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
       }
       const stage = document.createElement('div');
       stage.className = 'free-layout-stage';
+      wrap.appendChild(stage);
+      build.appendChild(wrap);
       renderFreeLayoutInto(stage, {
         items: sourceItems.map(i => ({ ...i })),
         boxId: box.id,
@@ -6870,8 +6895,6 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
         tierFilter: tier,
         interactive: false,
       });
-      wrap.appendChild(stage);
-      build.appendChild(wrap);
     }
     if (!isPreview) {
       const lidDelay = tierCount * 0.58 + 0.16;
@@ -6879,17 +6902,16 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
       if (lidStage) build.appendChild(lidStage);
       addFreeCompletionSparkles(build, lidDelay + (box.lidImage ? 0.72 : 0.18));
     }
-    host.appendChild(build);
     return;
   }
   const stage = document.createElement('div');
   stage.className = 'free-layout-stage';
+  host.appendChild(stage);
   renderFreeLayoutInto(stage, {
     items: sourceItems.map(i => ({ ...i })),
     boxId: boxId || selectedBentoBoxId,
     interactive: false,
   });
-  host.appendChild(stage);
 }
 
 // ===== Game =====
@@ -7283,6 +7305,12 @@ function stageComplete() {
   // 自由モード (currentRequester == null) の時は従来通りすぐ完成画面。
   const _showCompleteOverlay = () => {
     document.getElementById('complete-overlay').classList.remove('hidden');
+    if (freeLayoutMode) {
+      requestAnimationFrame(() => {
+        const completeBento = document.getElementById('complete-bento');
+        if (completeBento) renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId);
+      });
+    }
     revealReactionWithDrama(reaction);
   };
   if (currentRequester) {
@@ -7429,9 +7457,9 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 function openFavorites() {
-  renderFavoritesList();
   const ov = document.getElementById('fav-overlay');
   if (ov) ov.classList.remove('hidden');
+  renderFavoritesList();
 }
 function closeFavorites() {
   const ov = document.getElementById('fav-overlay');
