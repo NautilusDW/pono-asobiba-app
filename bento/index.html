@@ -1352,6 +1352,7 @@ html, body {
 }
 .complete-bento.free-complete-bento,
 .fav-mini-bento.free-mini-bento {
+  position: relative;
   aspect-ratio: 760 / 460;
   padding: 4px;
   background: transparent;
@@ -3177,6 +3178,7 @@ const bentoBoxes = [
     name: 'ふつうの おべんとう',
     image: BENTO_UI_ASSET + 'rect_bento_box_coral.webp',
     riceImage: FREE_ASSET + 'box_rect_split_rice.webp',
+    lidImage: FREE_ASSET + 'box_rect_split_lid.png',
     maskImage: RECT_SPLIT_BOX_INSIDE_MASK,
     maskBounds: { x: 407, y: 43, w: 270, h: 353 },
     maskBaseAspect: 1000 / 656,
@@ -3218,6 +3220,7 @@ const bentoBoxes = [
     name: 'しかくい おべんとう',
     image: FREE_ASSET + 'box_square.webp',
     riceImage: FREE_ASSET + 'box_square_rice.webp',
+    lidImage: FREE_ASSET + 'box_square_lid.png',
     maskImage: SQUARE_BOX_INSIDE_MASK,
     maskBounds: { x: 216, y: 39, w: 327, h: 329 },
     maskBaseAspect: 801 / 730,
@@ -3258,6 +3261,7 @@ const bentoBoxes = [
     name: 'まるい おべんとう',
     image: FREE_ASSET + 'box_round.webp',
     riceImage: FREE_ASSET + 'box_round_rice.webp',
+    lidImage: FREE_ASSET + 'box_round_lid.png',
     maskImage: ROUND_BOX_INSIDE_MASK,
     maskBounds: { x: 239, y: 45, w: 284, h: 311 },
     maskBaseAspect: 741 / 758,
@@ -7129,6 +7133,12 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     boxId: boxId || selectedBentoBoxId,
     interactive: false,
   });
+  if (!isPreview) {
+    const lidDelay = 0.74;
+    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount);
+    if (lidStage) host.appendChild(lidStage);
+    addFreeCompletionSparkles(host, lidDelay + (box.lidImage ? 0.72 : 0.18));
+  }
 }
 
 // ===== Game =====
