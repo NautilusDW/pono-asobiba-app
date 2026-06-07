@@ -19,7 +19,8 @@
 //   - 全画面オーバーレイ (rgba 20,30,40,0.85) + 5パートナーカード
 //   - フクロウは locked なら鍵 + 「Stage20でかいきん」表示 → タップ不可
 //   - Esc キー / 背景クリック / キャンセルボタン で cancel
-//   - 選択時: PonoBond.setSelectedPartner(id) → hide() → callback(id)
+//   - カードタップ時: hide() → callback({ action:'preview', partnerId, scrollLeft })
+//   - 確定は main.js の実UIチュートリアル後に行う
 //   - 全タップ領域 >= 44px / vanilla JS / 動的 DOM
 window.PonoPartnerSelect = (function () {
   'use strict';
@@ -35,6 +36,8 @@ window.PonoPartnerSelect = (function () {
   var _keyHandler = null;
   var _resizeHandler = null;
   var _previouslyFocused = null;
+  var _initialScrollLeft = 0;
+  var _focusPartnerId = null;
 
   /** CSS ファイルを <head> に link 注入 (重複防止) */
   function ensureStylesheet() {
@@ -255,7 +258,7 @@ window.PonoPartnerSelect = (function () {
     return card;
   }
 
-  /** 選択確定 */
+  /** カード選択: まだ確定せず、実UIプレビューへ進む */
   function selectPartner(partnerId) {
     if (!_open) return;
     var partner = (window.PonoPartners && typeof window.PonoPartners.get === 'function')
@@ -264,16 +267,20 @@ window.PonoPartnerSelect = (function () {
         && !window.PonoPartners.isUnlocked(partner)) {
       return;
     }
-    try {
-      if (window.PonoBond && typeof window.PonoBond.setSelectedPartner === 'function') {
-        window.PonoBond.setSelectedPartner(partnerId);
-      }
-    } catch (_) { /* noop */ }
     var cb = _callback;
+    var scrollLeft = 0;
+    try {
+      var scroller = _root && _root.querySelector('.pono-pselect__scroller');
+      scrollLeft = scroller ? scroller.scrollLeft : 0;
+    } catch (_) {}
     _callback = null; // hide で重複呼びを防ぐ
     hide();
-    try { if (typeof cb === 'function') cb(partnerId); } catch (e) {
-      console.error('[PonoPartnerSelect] callback threw:', e);
+    try {
+      if (typeof cb === 'function') {
+        cb({ action: 'preview', partnerId: partnerId, scrollLeft: scrollLeft });
+      }
+    } catch (e2) {
+      console.error('[PonoPartnerSelect] callback threw:', e2);
     }
   }
 
@@ -283,7 +290,7 @@ window.PonoPartnerSelect = (function () {
     var cb = _callback;
     _callback = null;
     hide();
-    try { if (typeof cb === 'function') cb(null); } catch (e) {
+    try { if (typeof cb === 'function') cb({ action: 'cancel' }); } catch (e) {
       console.error('[PonoPartnerSelect] cancel callback threw:', e);
     }
   }
@@ -305,11 +312,14 @@ window.PonoPartnerSelect = (function () {
   }
 
   /** show */
-  function show(stageId, callback) {
+  function show(stageId, callback, options) {
+    options = options || {};
     if (_open) {
       // 既に開いている場合は callback を更新して再描画
       _callback = (typeof callback === 'function') ? callback : null;
       _stageId = stageId;
+      _initialScrollLeft = Math.max(0, Number(options.initialScrollLeft || 0) || 0);
+      _focusPartnerId = options.focusPartnerId || null;
       rebuild();
       return;
     }
@@ -324,6 +334,8 @@ window.PonoPartnerSelect = (function () {
     ensureStylesheet();
     _stageId = stageId;
     _callback = (typeof callback === 'function') ? callback : null;
+    _initialScrollLeft = Math.max(0, Number(options.initialScrollLeft || 0) || 0);
+    _focusPartnerId = options.focusPartnerId || null;
     _previouslyFocused = (document.activeElement && document.activeElement.blur)
       ? document.activeElement : null;
 
@@ -349,7 +361,10 @@ window.PonoPartnerSelect = (function () {
 
     // フォーカスを最初の有効カードに移して a11y を整える
     try {
-      var firstEnabled = _root.querySelector('.pono-pselect__card:not(.is-locked)');
+      var firstEnabled = _focusPartnerId
+        ? _root.querySelector('.pono-pselect__card[data-partner-id="' + _focusPartnerId + '"]:not(.is-locked)')
+        : null;
+      if (!firstEnabled) firstEnabled = _root.querySelector('.pono-pselect__card:not(.is-locked)');
       if (firstEnabled && firstEnabled.focus) firstEnabled.focus({ preventScroll: true });
     } catch (_) { /* noop */ }
   }
@@ -417,6 +432,11 @@ window.PonoPartnerSelect = (function () {
       requestAnimationFrame(_resizeHandler);
       window.addEventListener('resize', _resizeHandler, { passive: true });
     }
+    if (_initialScrollLeft > 0) {
+      requestAnimationFrame(function () {
+        try { scroller.scrollLeft = _initialScrollLeft; } catch (_) {}
+      });
+    }
 
     // footer
     var footer = document.createElement('div');
@@ -448,6 +468,8 @@ window.PonoPartnerSelect = (function () {
     _root = null;
     _open = false;
     _stageId = null;
+    _initialScrollLeft = 0;
+    _focusPartnerId = null;
     // フォーカスを戻す (任意)
     try {
       if (_previouslyFocused && typeof _previouslyFocused.focus === 'function') {

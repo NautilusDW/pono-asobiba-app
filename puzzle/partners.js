@@ -5,7 +5,7 @@
 //   PonoPartners.get(id)             - 単一定義、未知IDなら null
 //   PonoPartners.defaultId           - 既定パートナーID ('kitsune')
 //   PonoPartners.getTier             - 現在の利用ティア ('free'|'book'|'sub')
-//   PonoPartners.isUnlocked(partner) - パートナーが現在ティアで使えるか
+//   PonoPartners.isUnlocked(partner) - パートナーが現在ティアと進行度で使えるか
 //   PonoPartners.getUnlockLabel(partner) - ロック表示文言
 //
 // 各エントリのスキーマは README およびプラン
@@ -15,6 +15,7 @@ window.PonoPartners = (function () {
   'use strict';
 
   var PARTNER_IMAGES = '../assets/images/puzzle/partners/';
+  var STAGE_CLEAR_KEY = 'pono_puzzle_stage_clears_v1';
 
   var TIER_RANK = { free: 1, book: 2, sub: 3 };
 
@@ -32,7 +33,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_kitsune.webp',
       tier: 'free',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 2,
       ageHint: '5さい〜',
       difficulty: 'normal',
     },
@@ -46,7 +47,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_kojika.webp',
       tier: 'free',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 1,
       ageHint: '3さい〜',
       difficulty: 'easy',
     },
@@ -60,7 +61,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_risu.webp',
       tier: 'book',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 4,
       ageHint: '5さい〜',
       difficulty: 'tricky',
       challengeType: 'time',
@@ -75,7 +76,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_harinezumi.webp',
       tier: 'book',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 5,
       ageHint: '5さい〜',
       difficulty: 'tricky',
       challengeType: 'less-hints',
@@ -90,7 +91,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_araiguma.webp',
       tier: 'sub',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 8,
       ageHint: '4さい〜',
       difficulty: 'easy',
     },
@@ -104,7 +105,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_usagi.webp',
       tier: 'sub',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 7,
       ageHint: '3さい〜',
       difficulty: 'normal',
     },
@@ -117,8 +118,8 @@ window.PonoPartners = (function () {
       voiceTag: 'partner_fukurou',
       image: PARTNER_IMAGES + 'partner_fukurou.webp',
       tier: 'sub',
-      locked: true,
-      unlockCondition: 'stage20_clear',
+      locked: false,
+      unlockAfterStage: 12,
       ageHint: '5さい〜',
       difficulty: 'normal',
     },
@@ -132,7 +133,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_karasu.webp',
       tier: 'sub',
       locked: false,
-      unlockCondition: null,
+      unlockAfterStage: 10,
       ageHint: '6さい〜',
       difficulty: 'tricky',
       challengeType: 'rotation',
@@ -155,19 +156,33 @@ window.PonoPartners = (function () {
     return cur >= req;
   }
 
+  function readClears() {
+    try {
+      var raw = localStorage.getItem(STAGE_CLEAR_KEY);
+      return raw ? (JSON.parse(raw) || {}) : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function isStageCleared(stageNum) {
+    var n = Number(stageNum);
+    if (!isFinite(n) || n <= 0) return false;
+    var clears = readClears();
+    return !!clears[String(n)];
+  }
+
+  function progressAllows(partner) {
+    if (!partner) return false;
+    var after = Number(partner.unlockAfterStage || 0);
+    if (!isFinite(after) || after <= 0) return true;
+    return isStageCleared(after);
+  }
+
   function isUnlocked(partner) {
     if (!partner) return false;
     if (!tierAllows(partner.tier)) return false;
-    if (partner.id === 'fukurou' && partner.locked) {
-      if (getTier() === 'sub') return true;
-      try {
-        return !!(window.PonoBond
-          && typeof window.PonoBond.isFukurouUnlocked === 'function'
-          && window.PonoBond.isFukurouUnlocked());
-      } catch (_) {
-        return false;
-      }
-    }
+    if (!progressAllows(partner)) return false;
     return !partner.locked;
   }
 
@@ -176,10 +191,17 @@ window.PonoPartners = (function () {
     if (!tierAllows(partner.tier)) {
       return partner.tier === 'book' ? '📖 えほん' : '⭐ サブスク';
     }
-    if (partner.id === 'fukurou' && partner.locked && !isUnlocked(partner)) {
-      return '🔒 さいごに';
+    if (!progressAllows(partner)) {
+      return 'ステージ' + String(partner.unlockAfterStage || '?') + ' クリアで';
     }
     return '🔒 まだ';
+  }
+
+  function hasAnyUnlocked() {
+    for (var i = 0; i < PARTNERS.length; i++) {
+      if (isUnlocked(PARTNERS[i])) return true;
+    }
+    return false;
   }
 
   /** id 検索 (未知IDなら null) */
@@ -196,6 +218,7 @@ window.PonoPartners = (function () {
     getTier: getTier,
     isUnlocked: isUnlocked,
     getUnlockLabel: getUnlockLabel,
+    hasAnyUnlocked: hasAnyUnlocked,
     defaultId: 'kitsune',
   };
 })();

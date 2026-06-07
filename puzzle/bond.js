@@ -12,7 +12,7 @@
 //   getLevel(partnerId, stageId) -> 0|1|2|3
 //   getHearts(partnerId, stageId) -> Number
 //   getTotal(partnerId) -> Number
-//   setSelectedPartner(partnerId), getSelectedPartner()
+//   setSelectedPartner(partnerId), clearSelectedPartner(), getSelectedPartner()
 //   isFukurouUnlocked(), markFukurouUnlock()
 //   getAllBonds() -> { partnerId: { stageId: hearts } }
 //   LEVEL_THRESHOLDS                  - [0, 1, 3, 7]
@@ -52,6 +52,14 @@ window.PonoBond = (function () {
       try { window.localStorage.setItem(key, val); return; } catch (_) { /* fall through */ }
     }
     memStore[key] = String(val);
+  }
+
+  /** 生 remove */
+  function rawRemove(key) {
+    if (lsAvailable) {
+      try { window.localStorage.removeItem(key); return; } catch (_) { /* fall through */ }
+    }
+    delete memStore[key];
   }
 
   /** 数値 parse (失敗時 0) */
@@ -153,6 +161,11 @@ window.PonoBond = (function () {
     rawSet(KEY_SELECTED, String(partnerId));
   }
 
+  /** 現在選択中のパートナーを外す */
+  function clearSelectedPartner() {
+    rawRemove(KEY_SELECTED);
+  }
+
   /** 現在選択中のパートナーID (未設定なら null) */
   function getSelectedPartner() {
     var v = rawGet(KEY_SELECTED);
@@ -208,6 +221,7 @@ window.PonoBond = (function () {
     getHearts: getHearts,
     getTotal: getTotal,
     setSelectedPartner: setSelectedPartner,
+    clearSelectedPartner: clearSelectedPartner,
     getSelectedPartner: getSelectedPartner,
     isFukurouUnlocked: isFukurouUnlocked,
     markFukurouUnlock: markFukurouUnlock,

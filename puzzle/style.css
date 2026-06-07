@@ -334,10 +334,20 @@ body {
 }
 
 /* ===== Partner practice: real puzzle UI tutorial ===== */
-.partner-practice-active:not(.partner-practice-hint-on) .controls .btn,
-.partner-practice-active:not(.partner-practice-hint-on) .challenge-status,
-.partner-practice-active:not(.partner-practice-hint-on) .progress-bar,
+.partner-practice-active:not(.partner-practice-hint-on):not(.partner-practice-peek-on) .controls .btn,
+.partner-practice-active:not(.partner-practice-hint-on):not(.partner-practice-peek-on) .challenge-status,
+.partner-practice-active:not(.partner-practice-hint-on):not(.partner-practice-peek-on) .progress-bar,
+.partner-practice-active.partner-practice-peek-on .controls .btn:not(.btn-peek),
 .partner-practice-active.partner-practice-hint-on .controls .btn:not(.btn-hint) {
+  pointer-events: none;
+}
+
+.partner-practice-active.partner-practice-peek-on .btn-peek {
+  pointer-events: auto;
+}
+
+.partner-practice-active.partner-practice-peek-on .challenge-status,
+.partner-practice-active.partner-practice-peek-on .progress-bar {
   pointer-events: none;
 }
 
@@ -349,6 +359,23 @@ body {
     0 0 0 5px rgba(255, 255, 255, 0.92),
     0 0 0 11px rgba(242, 145, 90, 0.42),
     0 8px 20px rgba(80, 50, 18, 0.28) !important;
+}
+
+.btn.partner-practice-count-demo {
+  box-shadow:
+    0 0 0 5px rgba(255, 255, 255, 0.96),
+    0 0 0 12px rgba(247, 201, 72, 0.58),
+    0 10px 24px rgba(80, 50, 18, 0.34) !important;
+}
+
+.btn.partner-practice-count-demo.is-count-pop {
+  animation: partnerPracticeCountPop 0.62s cubic-bezier(.18, .92, .24, 1.25);
+}
+
+@keyframes partnerPracticeCountPop {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
 }
 
 @keyframes partnerPracticePulse {
@@ -400,6 +427,14 @@ body {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.partner-practice-coach__icon {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2.5rem;
 }
 
 .partner-practice-coach__text {

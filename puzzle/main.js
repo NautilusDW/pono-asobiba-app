@@ -1820,8 +1820,8 @@ function hintStageNumFor(stageId) {
 // 旧 API 互換: getHintUsesRemaining / 旧呼び出し元用ラッパー
 function computeHintInitialUses(stageId) {
   try {
-    var partnerId = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
-      ? window.PonoBond.getSelectedPartner() : null;
+    var currentPartner = getCurrentPartner();
+    var partnerId = currentPartner ? currentPartner.id : null;
     var lv = 0;
     if (partnerId && window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
       lv = window.PonoBond.getLevel(partnerId, stageId) || 0;
@@ -2128,6 +2128,7 @@ function setSelectedPieceForHint(piece) {
 // 9〜12ピース程度の練習ステージをロードし、既存ボタン/タイマー/ピースを
 // 動かして特徴を見せる。終了後は元のステージを再ロードして本番に戻す。
 const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
+const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 
@@ -2202,6 +2203,15 @@ function markPartnerPracticeSeen(partnerId) {
   try { localStorage.setItem(partnerPracticeKey(partnerId), '1'); } catch (_) {}
 }
 
+function hasSeenBasicPractice() {
+  try { return localStorage.getItem(BASIC_PRACTICE_SEEN_KEY) === '1'; }
+  catch (_) { return false; }
+}
+
+function markBasicPracticeSeen() {
+  try { localStorage.setItem(BASIC_PRACTICE_SEEN_KEY, '1'); } catch (_) {}
+}
+
 function choosePartnerPracticeStageIndex() {
   for (var i = 0; i < STAGES.length; i++) {
     var pc = STAGES[i] && (STAGES[i].pieceCount || (STAGES[i].rows * STAGES[i].cols));
@@ -2262,6 +2272,7 @@ function createPartnerPracticeCoach(partnerId, partner) {
     title: (partner ? partner.name : 'パートナー') + 'のれんしゅう',
     body: 'ほんもののパズルで、なかまの うごきを みてみよう。',
   };
+  var state = partnerPracticeState || {};
   var coach = document.createElement('div');
   coach.className = 'partner-practice-coach partner-practice-coach--' + partnerId;
   coach.setAttribute('role', 'dialog');
@@ -2269,10 +2280,17 @@ function createPartnerPracticeCoach(partnerId, partner) {
 
   var face = document.createElement('div');
   face.className = 'partner-practice-coach__face';
-  var img = document.createElement('img');
-  img.src = partner && partner.image ? partner.image : '';
-  img.alt = partner && partner.name ? partner.name : '';
-  face.appendChild(img);
+  if (partner && partner.image) {
+    var img = document.createElement('img');
+    img.src = partner.image;
+    img.alt = partner.name || '';
+    face.appendChild(img);
+  } else {
+    var icon = document.createElement('span');
+    icon.className = 'partner-practice-coach__icon';
+    icon.textContent = '🧩';
+    face.appendChild(icon);
+  }
   coach.appendChild(face);
 
   var text = document.createElement('div');
@@ -2296,12 +2314,18 @@ function createPartnerPracticeCoach(partnerId, partner) {
   var replay = document.createElement('button');
   replay.type = 'button';
   replay.className = 'partner-practice-coach__btn partner-practice-coach__btn--replay';
-  replay.textContent = 'もういちど';
-  replay.addEventListener('click', function () { replayPartnerPracticeDemo(); });
+  replay.textContent = state.backLabel || 'もういちど';
+  replay.addEventListener('click', function () {
+    if (partnerPracticeState && partnerPracticeState.backAction === 'return') {
+      returnPartnerPracticeToSelect();
+      return;
+    }
+    replayPartnerPracticeDemo();
+  });
   var start = document.createElement('button');
   start.type = 'button';
   start.className = 'partner-practice-coach__btn partner-practice-coach__btn--start';
-  start.textContent = 'ほんばんへ';
+  start.textContent = state.startLabel || 'ほんばんへ';
   start.addEventListener('click', finishPartnerPractice);
   actions.appendChild(replay);
   actions.appendChild(start);
@@ -2346,6 +2370,7 @@ function resetPracticeBoard() {
   hintFlashUntil = 0;
   stageHintUsesActual = 0;
   dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (partnerPracticeState) {
     partnerPracticeState.phase = 'reset';
     partnerPracticeState.targetPiece = null;
@@ -2354,6 +2379,7 @@ function resetPracticeBoard() {
     partnerPracticeState.hintIntroDone = false;
   }
   document.body.classList.remove('partner-practice-hint-on');
+  document.body.classList.remove('partner-practice-peek-on');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-input-on');
   clearPracticeHighlights();
   shufflePieces();
@@ -2387,6 +2413,10 @@ function setPartnerPracticeInput(on) {
   if (puzzleContainer) puzzleContainer.classList.toggle('partner-practice-input-on', !!on);
 }
 
+function setPartnerPracticePeekInput(on) {
+  document.body.classList.toggle('partner-practice-peek-on', !!on);
+}
+
 function pickHintPracticePiece() {
   var list = getPracticePieces();
   if (!list.length) return null;
@@ -2406,6 +2436,7 @@ function startCommonHintPractice(partnerId) {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTimers();
   clearPracticeHighlights();
+  setPartnerPracticePeekInput(false);
   setSelectedPieceForHint(null);
   hintFlashPiece = null;
   hintFlashUntil = 0;
@@ -2427,6 +2458,46 @@ function startCommonHintPractice(partnerId) {
   );
   refreshHintButtonState();
   redraw();
+}
+
+function startBasicPeekPractice() {
+  if (!partnerPracticeState) return;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  if (peekOn) setPeekOverlay(false);
+  partnerPracticeState.phase = 'peek-press';
+  partnerPracticeState.cue = null;
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(true);
+  practiceAddHighlight(btnPeek);
+  setPartnerPracticeCoachCopy(
+    'まずは みる の れんしゅう',
+    'みるを おすと、えの ぜんぶが みえるよ。',
+    'なかまが いなくても つかえるよ'
+  );
+  redraw();
+}
+
+function onPartnerPracticePeekUsed() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
+  if (!peekOn) return;
+  partnerPracticeState.phase = 'peek-done';
+  clearPracticeHighlights();
+  setPartnerPracticePeekInput(false);
+  setPartnerPracticeCoachCopy(
+    'えが みえたね',
+    'こまったら、みるで えを かくにんできるよ。',
+    'みるの れんしゅう できたね'
+  );
+  practiceSetTimeout(function () {
+    if (peekOn) setPeekOverlay(false);
+    startCommonHintPractice(null);
+  }, 1000);
 }
 
 function onPartnerPracticePieceSelected(piece) {
@@ -2468,6 +2539,10 @@ function onPartnerPracticeHintUsed() {
     'えらんだ ピースの ばしょが ひかったね。',
     'ヒントの れんしゅう できたね'
   );
+  if (partnerPracticeState.mode === 'basic') {
+    partnerPracticeState.phase = 'basic-done';
+    return;
+  }
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
   }, 1200);
@@ -2475,7 +2550,11 @@ function onPartnerPracticeHintUsed() {
 
 function startPartnerPracticeFlow(partnerId) {
   resetPracticeBoard();
-  startCommonHintPractice(partnerId);
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    startBasicPeekPractice();
+    return;
+  }
+  startPartnerSpecificPractice(partnerId);
 }
 
 function startPartnerSpecificPractice(partnerId) {
@@ -2483,6 +2562,7 @@ function startPartnerSpecificPractice(partnerId) {
   clearPartnerPracticeTimers();
   clearPracticeHighlights();
   setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
   setSelectedPieceForHint(null);
   hintFlashPiece = null;
   hintFlashUntil = 0;
@@ -2493,10 +2573,27 @@ function startPartnerSpecificPractice(partnerId) {
     partnerId === 'kitsune' ? 'キツネの とくぎ' : 'なかまの とくぎ'
   );
   partnerPracticeState.phase = 'partner-demo';
-  if (partnerId === 'kitsune') return;
   practiceSetTimeout(function () {
     runPartnerPracticeDemo(partnerId);
   }, 450);
+}
+
+function runKitsuneHintCountDemo() {
+  if (!btnHint) return;
+  practiceAddHighlight(btnHint);
+  btnHint.classList.add('partner-practice-count-demo');
+  btnHint.textContent = 'ヒント×2';
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || !btnHint) return;
+    btnHint.textContent = 'ヒント×3';
+    btnHint.classList.remove('is-count-pop');
+    void btnHint.offsetWidth;
+    btnHint.classList.add('is-count-pop');
+  }, 760);
+  practiceSetTimeout(function () {
+    if (!btnHint) return;
+    btnHint.classList.remove('is-count-pop');
+  }, 1800);
 }
 
 function animatePracticePiece(piece, from, to, duration, onDone) {
@@ -2532,6 +2629,7 @@ function runPartnerPracticeDemo(partnerId) {
   var p = list[Math.min(2, list.length - 1)];
 
   if (partnerId === 'kitsune') {
+    runKitsuneHintCountDemo();
     return;
   }
 
@@ -2614,11 +2712,12 @@ function runPartnerPracticeDemo(partnerId) {
   }
 }
 
-function beginPartnerPractice(partnerId, returnIndex, done) {
+function beginPartnerPractice(partnerId, returnIndex, done, options) {
+  options = options || {};
   var partner = (window.PonoPartners && typeof window.PonoPartners.get === 'function')
     ? window.PonoPartners.get(partnerId)
     : null;
-  if (!partner) {
+  if (!partner && options.mode !== 'basic') {
     if (typeof done === 'function') done();
     return;
   }
@@ -2628,6 +2727,12 @@ function beginPartnerPractice(partnerId, returnIndex, done) {
     partnerId: partnerId,
     returnIndex: returnIndex,
     done: done,
+    mode: options.mode || 'partner',
+    onBack: options.onBack || null,
+    onConfirm: options.onConfirm || null,
+    backAction: options.backAction || 'replay',
+    backLabel: options.backLabel || 'もういちど',
+    startLabel: options.startLabel || 'ほんばんへ',
     phase: 'start',
     timers: [],
     rafs: [],
@@ -2645,7 +2750,7 @@ function beginPartnerPractice(partnerId, returnIndex, done) {
   removePrestartOverlay();
   resetPracticeBoard();
   var originalTitle = stageLabel.textContent;
-  stageLabel.textContent = partner.name + 'の れんしゅう';
+  stageLabel.textContent = partner ? (partner.name + 'の れんしゅう') : 'はじめての れんしゅう';
   partnerPracticeState.originalTitle = originalTitle;
   partnerPracticeState.coach = createPartnerPracticeCoach(partnerId, partner);
   startPartnerPracticeFlow(partnerId);
@@ -2656,24 +2761,59 @@ function finishPartnerPractice() {
   var partnerId = partnerPracticeState.partnerId;
   var returnIndex = partnerPracticeState.returnIndex;
   var done = partnerPracticeState.done;
+  var mode = partnerPracticeState.mode;
+  var onConfirm = partnerPracticeState.onConfirm;
   clearPartnerPracticeTimers();
   clearPracticeHighlights();
   setSelectedPieceForHint(null);
   hintFlashPiece = null;
   hintFlashUntil = 0;
   dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  if (peekOn) setPeekOverlay(false);
   stopChallengeTimer();
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
   }
   document.body.classList.remove('partner-practice-active');
   document.body.classList.remove('partner-practice-hint-on');
+  document.body.classList.remove('partner-practice-peek-on');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
   partnerPracticeState.active = false;
   partnerPracticeState = null;
-  markPartnerPracticeSeen(partnerId);
+  if (mode === 'basic') markBasicPracticeSeen();
+  else markPartnerPracticeSeen(partnerId);
+  if (typeof onConfirm === 'function') {
+    try { onConfirm(partnerId); } catch (_) {}
+  }
   loadStageAndThen(returnIndex, function () {
     if (typeof done === 'function') done();
+  });
+}
+
+function returnPartnerPracticeToSelect() {
+  if (!partnerPracticeState) return;
+  var returnIndex = partnerPracticeState.returnIndex;
+  var onBack = partnerPracticeState.onBack;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (peekOn) setPeekOverlay(false);
+  stopChallengeTimer();
+  if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
+    partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
+  }
+  document.body.classList.remove('partner-practice-active');
+  document.body.classList.remove('partner-practice-hint-on');
+  document.body.classList.remove('partner-practice-peek-on');
+  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
+  partnerPracticeState.active = false;
+  partnerPracticeState = null;
+  loadStageAndThen(returnIndex, function () {
+    if (typeof onBack === 'function') onBack();
   });
 }
 
@@ -2686,6 +2826,38 @@ function showPartnerPracticeIfNeeded(partnerId, stageId, done) {
   var practiceIndex = choosePartnerPracticeStageIndex();
   loadStageAndThen(practiceIndex, function () {
     beginPartnerPractice(partnerId, returnIndex, done);
+  });
+}
+
+function showBasicPracticeIfNeeded(done, force) {
+  if (!force && hasSeenBasicPractice()) {
+    if (typeof done === 'function') done();
+    return;
+  }
+  var returnIndex = currentStageIndex;
+  var practiceIndex = choosePartnerPracticeStageIndex();
+  loadStageAndThen(practiceIndex, function () {
+    beginPartnerPractice(null, returnIndex, done, {
+      mode: 'basic',
+      backLabel: 'もういちど',
+      startLabel: 'あそぶ',
+    });
+  });
+}
+
+function showPartnerPracticeForChoice(partnerId, opts) {
+  opts = opts || {};
+  var returnIndex = currentStageIndex;
+  var practiceIndex = choosePartnerPracticeStageIndex();
+  loadStageAndThen(practiceIndex, function () {
+    beginPartnerPractice(partnerId, returnIndex, opts.onDone, {
+      mode: 'partner-choice',
+      backAction: 'return',
+      backLabel: 'もどる',
+      startLabel: 'このこにする',
+      onBack: opts.onBack,
+      onConfirm: opts.onConfirm,
+    });
   });
 }
 
@@ -3100,6 +3272,7 @@ if (btnPeek) {
     // 散布アニメ中・prestart 表示中は peek 無効 (完成形が既に見えている / アニメ中)
     if (scatterAnimating || prestartOverlayEl) return;
     togglePeekOverlay();
+    onPartnerPracticePeekUsed();
   });
 }
 
@@ -3146,8 +3319,8 @@ if (btnHint) {
     //   - 実装は assists/kitsune.js 側 (window.PonoAssistKitsune.fireHintShape(piece, ctx))
     //   - 未ロード / 未実装でもヒント本体は機能するよう try/catch で隔離
     try {
-      var partnerIdForFx = (window.PonoBond && typeof window.PonoBond.getSelectedPartner === 'function')
-        ? window.PonoBond.getSelectedPartner() : null;
+      var partnerForFx = getCurrentPartner();
+      var partnerIdForFx = partnerForFx ? partnerForFx.id : null;
       if (partnerIdForFx === 'kitsune'
           && window.PonoAssistKitsune
           && typeof window.PonoAssistKitsune.fireHintShape === 'function') {
@@ -3188,7 +3361,9 @@ btnNextStage.addEventListener('click', () => {
     }
   }
   hideSuccessModal();
-  loadStage(nextIndex);
+  loadStageAndThen(nextIndex, function () {
+    maybeShowPartnerChoiceForCurrentStage();
+  });
 });
 
 if (btnPlayAgain) btnPlayAgain.addEventListener('click', () => {
@@ -3319,7 +3494,7 @@ function showTutorial() {
   steps[0]();
 }
 
-let pendingTitleTutorial = false;
+let partnerChoiceDismissedStageId = null;
 
 function startFromTitleScreen() {
   if (titleScreen) titleScreen.classList.add('hidden');
@@ -3334,55 +3509,116 @@ function finishOpeningAndEnterGame() {
     tryStartBgm();
   }
 
-  // === Partner select modal ===
-  // Phase 1 で読み込まれた partner-select.js が DOM を注入する。
-  // 未ロード時は graceful にスキップ (既存挙動を維持)。
-  function afterPartnerSelected(selectedPartnerId) {
-    function afterPartnerTutorial() {
-      if (pendingTitleTutorial) {
-        pendingTitleTutorial = false;
-        setTimeout(showTutorial, 500);
+  if (!hasSeenBasicPractice()) {
+    clearCurrentPartnerSelection();
+    showBasicPracticeIfNeeded(function () {
+      maybeShowPartnerChoiceForCurrentStage();
+    });
+    return;
+  }
+
+  maybeShowPartnerChoiceForCurrentStage();
+}
+
+function getCurrentStageId() {
+  var stage = STAGES[currentStageIndex] || null;
+  return stage ? (stage.id != null ? stage.id : (currentStageIndex + 1)) : 1;
+}
+
+function hasAnyUnlockedPartner() {
+  try {
+    if (window.PonoPartners && typeof window.PonoPartners.hasAnyUnlocked === 'function') {
+      return window.PonoPartners.hasAnyUnlocked();
+    }
+    if (window.PonoPartners && Array.isArray(window.PonoPartners.list)) {
+      for (var i = 0; i < window.PonoPartners.list.length; i++) {
+        if (window.PonoPartners.isUnlocked(window.PonoPartners.list[i])) return true;
       }
     }
-    if (selectedPartnerId) {
-      showPartnerPracticeIfNeeded(selectedPartnerId, stageId, afterPartnerTutorial);
-      return;
+  } catch (_) {}
+  return false;
+}
+
+function clearCurrentPartnerSelection() {
+  try {
+    if (window.PonoBond && typeof window.PonoBond.clearSelectedPartner === 'function') {
+      window.PonoBond.clearSelectedPartner();
     }
-    afterPartnerTutorial();
+  } catch (_) {}
+  try {
+    if (window.PonoBondUI && typeof window.PonoBondUI.refreshBadge === 'function') {
+      window.PonoBondUI.refreshBadge(null, getCurrentStageId());
+    }
+  } catch (_) {}
+}
+
+function confirmPartnerSelection(partnerId) {
+  try {
+    if (partnerId && window.PonoBond && typeof window.PonoBond.setSelectedPartner === 'function') {
+      window.PonoBond.setSelectedPartner(partnerId);
+    }
+  } catch (_) {}
+  try {
+    var stageId = getCurrentStageId();
+    if (partnerId && window.PonoBondUI && typeof window.PonoBondUI.refreshBadge === 'function') {
+      var partnerObj = (window.PonoPartners && window.PonoPartners.get)
+        ? window.PonoPartners.get(partnerId)
+        : null;
+      if (partnerObj) window.PonoBondUI.refreshBadge(partnerObj, stageId);
+    }
+  } catch (_) {}
+}
+
+function maybeShowPartnerChoiceForCurrentStage(options) {
+  options = options || {};
+  var stageId = getCurrentStageId();
+  if (getCurrentPartner()) return;
+  if (partnerChoiceDismissedStageId === stageId && !options.force) return;
+  if (!hasAnyUnlockedPartner()) {
+    clearCurrentPartnerSelection();
+    return;
   }
   try {
-    var stage = STAGES[currentStageIndex] || null;
-    var stageId = stage ? (stage.id != null ? stage.id : (currentStageIndex + 1)) : 1;
     if (window.PonoPartnerSelect && typeof window.PonoPartnerSelect.show === 'function') {
-      window.PonoPartnerSelect.show(stageId, function(selectedPartnerId) {
-        // partner-select.js 側で PonoBond.setSelectedPartner を呼んでいる想定だが、
-        // 念のため main.js でも保険として記録する。
-        try {
-          if (selectedPartnerId && window.PonoBond && typeof window.PonoBond.setSelectedPartner === 'function') {
-            window.PonoBond.setSelectedPartner(selectedPartnerId);
-          }
-        } catch (_) {}
-        // パートナー確定直後にバッジ + ヒントボタン表示を更新。
-        // (afterStageReady 経由でも refreshBadge は走るが、ステージ開始前から
-        //  ヒントボタンを非表示にしておくため即時呼び出しする)
-        try {
-          if (selectedPartnerId && window.PonoBondUI && typeof window.PonoBondUI.refreshBadge === 'function') {
-            var partnerObj = (window.PonoPartners && window.PonoPartners.get)
-              ? window.PonoPartners.get(selectedPartnerId)
-              : null;
-            if (partnerObj) {
-              window.PonoBondUI.refreshBadge(partnerObj, stageId);
-            }
-          }
-        } catch (_) {}
-        afterPartnerSelected(selectedPartnerId);
-      });
+      var openSelect = function (openOptions) {
+        window.PonoPartnerSelect.show(stageId, handleChoice, {
+          initialScrollLeft: (openOptions && openOptions.initialScrollLeft) || 0,
+          focusPartnerId: (openOptions && openOptions.focusPartnerId) || null,
+        });
+      };
+      var handleChoice = function(result) {
+        if (!result || result.action === 'cancel') {
+          partnerChoiceDismissedStageId = stageId;
+          clearCurrentPartnerSelection();
+          return;
+        }
+        var selectedPartnerId = (typeof result === 'string') ? result : result.partnerId;
+        if (!selectedPartnerId) {
+          partnerChoiceDismissedStageId = stageId;
+          clearCurrentPartnerSelection();
+          return;
+        }
+        var scrollLeft = result.scrollLeft || 0;
+        showPartnerPracticeForChoice(selectedPartnerId, {
+          onConfirm: function () {
+            partnerChoiceDismissedStageId = null;
+            confirmPartnerSelection(selectedPartnerId);
+          },
+          onDone: function () {},
+          onBack: function () {
+            openSelect({
+              initialScrollLeft: scrollLeft,
+              focusPartnerId: selectedPartnerId,
+            });
+          },
+        });
+      };
+      openSelect(options);
       return;
     }
   } catch (e) {
     try { console.warn('[PonoPartnerSelect] show failed:', e); } catch (_) {}
   }
-  afterPartnerSelected(null);
 }
 
 // ===== Opening Cutscene (owl-doctor style: per-cut audio + wooden-frame narration + fade-to-black) =====
@@ -3597,12 +3833,6 @@ window.addEventListener('DOMContentLoaded', () => {
   resizeObserver.observe(puzzleContainer);
   loadStage(0);
 
-  // Show tutorial on first visit
-  localStorage.removeItem('puzzle_tut_seen'); // テスト用: 毎回表示
-  if (!localStorage.getItem('puzzle_tut_seen')) {
-    pendingTitleTutorial = true;
-  }
-
   if (titleScreen) {
     titleScreen.addEventListener('click', startFromTitleScreen);
   }
@@ -3620,7 +3850,9 @@ window.addEventListener('DOMContentLoaded', () => {
           bgm.pause();
         }
       },
-      tutorial: showTutorial
+      tutorial: function () {
+        showBasicPracticeIfNeeded(function () {}, true);
+      }
     });
     installAlbumMenuItem();
   }
