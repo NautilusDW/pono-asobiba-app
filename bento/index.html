@@ -2853,15 +2853,15 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 132, rotation: -6 },
   { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 170, rotation: 2 },
   { img: KARAAGE_DONE_VARIANTS[0],                         name: 'からあげ',         cat: 'meat', sk: 'r', size: 118, rotation: -5, variantGroup: 'karaage_done', variantImages: KARAAGE_DONE_VARIANTS },
-  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 185, rotation: 8 },
+  { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 222, rotation: 8 },
   { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', size: 170, rotation: -3 },
-  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 163, rotation: 3 },
+  { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 130, rotation: 3 },
   { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 292, rotation: -4 },
   { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', size: 170, rotation: 0, brushItem: true, brushLevel: 1, stackTarget: true, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
   { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 72, rotation: -4 },
   { img: COOKING_P+'ninjin_ingen/ninjin_ingen_mid.png',    name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 136, rotation: 1 },
   { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 136, rotation: -1 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',           name: 'いちご',           cat: 'fruit', sk: 'g', size: 96,  rotation: -5 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',           name: 'いちご',           cat: 'fruit', sk: 'g', size: 115, rotation: -5 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_melon.png',            name: 'メロン',           cat: 'fruit', sk: 'g', size: 118, rotation: 2 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_mikan.png',            name: 'みかん',           cat: 'fruit', sk: 'g', size: 108, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_ringo.png',            name: 'りんご',           cat: 'fruit', sk: 'g', size: 116, rotation: 3 },
@@ -3097,6 +3097,7 @@ const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
 const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
 const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v2';
+const FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS = ['bento_free_complete_layout_v1'];
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -4328,13 +4329,24 @@ function saveFreeMaskBoundsOverrides() {
 }
 function loadFreeCompleteLayoutOverrides() {
   if (typeof localStorage === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(FREE_COMPLETE_LAYOUT_STORAGE_KEY);
+  const parseStoredLayouts = raw => {
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (e) {
-    return {};
+  };
+  try {
+    const current = parseStoredLayouts(localStorage.getItem(FREE_COMPLETE_LAYOUT_STORAGE_KEY));
+    if (Object.keys(current).length) return current;
+  } catch (e) {}
+  for (const legacyKey of FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS) {
+    try {
+      const legacy = parseStoredLayouts(localStorage.getItem(legacyKey));
+      if (Object.keys(legacy).length) {
+        localStorage.setItem(FREE_COMPLETE_LAYOUT_STORAGE_KEY, JSON.stringify(legacy));
+        return legacy;
+      }
+    } catch (e) {}
   }
+  return {};
 }
 function saveFreeCompleteLayoutOverrides() {
   if (typeof localStorage === 'undefined') return;
