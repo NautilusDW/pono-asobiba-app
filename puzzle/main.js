@@ -2129,6 +2129,7 @@ function setSelectedPieceForHint(piece) {
 // 動かして特徴を見せる。終了後は元のステージを再ロードして本番に戻す。
 const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
 const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
+const BASIC_PEEK_HOLD_MS = 850;
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 
@@ -2274,7 +2275,7 @@ function createPartnerPracticeCoach(partnerId, partner) {
   };
   var state = partnerPracticeState || {};
   var coach = document.createElement('div');
-  coach.className = 'partner-practice-coach partner-practice-coach--' + partnerId;
+  coach.className = 'partner-practice-coach partner-practice-coach--' + (partnerId || 'basic');
   coach.setAttribute('role', 'dialog');
   coach.setAttribute('aria-live', 'polite');
 
@@ -2335,15 +2336,114 @@ function createPartnerPracticeCoach(partnerId, partner) {
   return coach;
 }
 
+function clearPartnerPracticeCoachBubble() {
+  if (!partnerPracticeState || !partnerPracticeState.coach) return;
+  var coach = partnerPracticeState.coach;
+  coach.classList.remove('is-bubble', 'is-actions-hidden');
+  coach.removeAttribute('data-side');
+  coach.style.removeProperty('--partner-bubble-left');
+  coach.style.removeProperty('--partner-bubble-top');
+}
+
+function clampPartnerBubble(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function positionPartnerPracticeBubble(targetRect, preferredSide) {
+  if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
+  var coach = partnerPracticeState.coach;
+  var gap = 14;
+  var margin = 10;
+  var side = preferredSide || '';
+  var viewportW = window.innerWidth || document.documentElement.clientWidth || 800;
+  var viewportH = window.innerHeight || document.documentElement.clientHeight || 600;
+  var rect = coach.getBoundingClientRect();
+  var bubbleW = rect.width || Math.min(320, viewportW - margin * 2);
+  var bubbleH = rect.height || 90;
+  var centerX = targetRect.left + targetRect.width / 2;
+  var centerY = targetRect.top + targetRect.height / 2;
+
+  if (!side) {
+    side = targetRect.left > viewportW * 0.58 ? 'left'
+      : (targetRect.top < bubbleH + gap + margin ? 'below' : 'above');
+  }
+
+  var left;
+  var top;
+  if (side === 'left') {
+    left = targetRect.left - bubbleW - gap;
+    top = centerY - bubbleH / 2;
+    if (left < margin) side = targetRect.top < bubbleH + gap + margin ? 'below' : 'above';
+  }
+  if (side === 'right') {
+    left = targetRect.right + gap;
+    top = centerY - bubbleH / 2;
+    if (left + bubbleW > viewportW - margin) side = targetRect.top < bubbleH + gap + margin ? 'below' : 'above';
+  }
+  if (side === 'below') {
+    left = centerX - bubbleW / 2;
+    top = targetRect.bottom + gap;
+    if (top + bubbleH > viewportH - margin) side = 'above';
+  }
+  if (side === 'above') {
+    left = centerX - bubbleW / 2;
+    top = targetRect.top - bubbleH - gap;
+    if (top < margin) {
+      side = 'below';
+      top = targetRect.bottom + gap;
+    }
+  }
+  if (side === 'below') {
+    left = centerX - bubbleW / 2;
+    top = targetRect.bottom + gap;
+  }
+
+  left = clampPartnerBubble(left, margin, Math.max(margin, viewportW - bubbleW - margin));
+  top = clampPartnerBubble(top, margin, Math.max(margin, viewportH - bubbleH - margin));
+  coach.dataset.side = side;
+  coach.style.setProperty('--partner-bubble-left', left.toFixed(1) + 'px');
+  coach.style.setProperty('--partner-bubble-top', top.toFixed(1) + 'px');
+}
+
+function setPartnerPracticeCoachBubbleForRect(targetRect, preferredSide, showActions) {
+  if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
+  var coach = partnerPracticeState.coach;
+  coach.classList.add('is-bubble');
+  coach.classList.toggle('is-actions-hidden', !showActions);
+  requestAnimationFrame(function () {
+    positionPartnerPracticeBubble(targetRect, preferredSide);
+  });
+}
+
+function setPartnerPracticeCoachBubble(targetEl, preferredSide, showActions) {
+  if (!targetEl || !targetEl.getBoundingClientRect) return;
+  setPartnerPracticeCoachBubbleForRect(targetEl.getBoundingClientRect(), preferredSide, showActions);
+}
+
+function getPieceScreenRect(piece) {
+  if (!piece || !puzzleCanvas || !canvasW || !canvasH) return null;
+  var rect = puzzleCanvas.getBoundingClientRect();
+  var sx = rect.width / canvasW;
+  var sy = rect.height / canvasH;
+  return {
+    left: rect.left + piece.x * sx,
+    top: rect.top + piece.y * sy,
+    right: rect.left + (piece.x + pieceW) * sx,
+    bottom: rect.top + (piece.y + pieceH) * sy,
+    width: pieceW * sx,
+    height: pieceH * sy,
+  };
+}
+
 function setPartnerPracticeCoachCopy(titleText, bodyText, eyebrowText) {
   if (!partnerPracticeState || !partnerPracticeState.coach) return;
   var coach = partnerPracticeState.coach;
   var eyebrow = coach.querySelector('.partner-practice-coach__eyebrow');
   var title = coach.querySelector('.partner-practice-coach__title');
   var body = coach.querySelector('.partner-practice-coach__body');
-  if (eyebrow && eyebrowText) eyebrow.textContent = eyebrowText;
+  if (eyebrow && eyebrowText != null) eyebrow.textContent = eyebrowText;
   if (title && titleText) title.textContent = titleText;
-  if (body && bodyText) body.textContent = bodyText;
+  if (body && bodyText != null) body.textContent = bodyText;
 }
 
 function getPracticePieces() {
@@ -2452,10 +2552,11 @@ function startCommonHintPractice(partnerId) {
   setPartnerPracticeInput(true);
   placeHintPracticePiece(piece);
   setPartnerPracticeCoachCopy(
-    'まずは ヒントの れんしゅう',
-    'この ひかっている ピースを タッチしてね。',
-    'ヒントは どの なかまでも つかえるよ'
+    'この ピースを タッチ',
+    '',
+    ''
   );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
   refreshHintButtonState();
   redraw();
 }
@@ -2472,32 +2573,77 @@ function startBasicPeekPractice() {
   if (peekOn) setPeekOverlay(false);
   partnerPracticeState.phase = 'peek-press';
   partnerPracticeState.cue = null;
+  partnerPracticeState.peekHoldStart = 0;
+  partnerPracticeState.peekHoldReady = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(true);
   practiceAddHighlight(btnPeek);
   setPartnerPracticeCoachCopy(
-    'まずは みる の れんしゅう',
-    'みるを おすと、えの ぜんぶが みえるよ。',
-    'なかまが いなくても つかえるよ'
+    'みる を おしてみよう',
+    '',
+    ''
   );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
   redraw();
 }
 
-function onPartnerPracticePeekUsed() {
+function onPartnerPracticePeekPressed() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
   if (!peekOn) return;
+  clearPartnerPracticeTimers();
+  partnerPracticeState.phase = 'peek-hold';
+  partnerPracticeState.peekHoldStart = performance.now();
+  partnerPracticeState.peekHoldReady = false;
+  setPartnerPracticeCoachCopy(
+    'そのまま みてね',
+    'おしている あいだ みえるよ',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold') return;
+    partnerPracticeState.peekHoldReady = true;
+    setPartnerPracticeCoachCopy(
+      'はなすと もどるよ',
+      'わからなくなったら ながく おしてね',
+      ''
+    );
+    setPartnerPracticeCoachBubble(btnPeek, null, false);
+  }, BASIC_PEEK_HOLD_MS);
+}
+
+function onPartnerPracticePeekReleased(heldMs, cancelled) {
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.phase !== 'peek-hold' && partnerPracticeState.phase !== 'peek-press') return;
+  clearPartnerPracticeTimers();
+  var enough = !cancelled && heldMs >= BASIC_PEEK_HOLD_MS;
+  if (!enough) {
+    partnerPracticeState.phase = 'peek-press';
+    partnerPracticeState.peekHoldStart = 0;
+    partnerPracticeState.peekHoldReady = false;
+    clearPracticeHighlights();
+    practiceAddHighlight(btnPeek);
+    setPartnerPracticeCoachCopy(
+      'ながく おしてね',
+      'おしている あいだだけ みえるよ',
+      ''
+    );
+    setPartnerPracticeCoachBubble(btnPeek, null, false);
+    return;
+  }
   partnerPracticeState.phase = 'peek-done';
   clearPracticeHighlights();
   setPartnerPracticePeekInput(false);
   setPartnerPracticeCoachCopy(
-    'えが みえたね',
-    'こまったら、みるで えを かくにんできるよ。',
-    'みるの れんしゅう できたね'
+    'みえたね',
+    'わからなくなったら ながく おしてね',
+    ''
   );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
   practiceSetTimeout(function () {
     if (peekOn) setPeekOverlay(false);
     startCommonHintPractice(null);
-  }, 1000);
+  }, 900);
 }
 
 function onPartnerPracticePieceSelected(piece) {
@@ -2507,10 +2653,11 @@ function onPartnerPracticePieceSelected(piece) {
     selectedPieceForHint = null;
     window.PonoHintActive = false;
     setPartnerPracticeCoachCopy(
-      'この ピースを タッチしてね',
-      'ひかっている ピースで、ヒントを れんしゅうするよ。',
-      'ヒントは どの なかまでも つかえるよ'
+      'ひかる ピースだよ',
+      '',
+      ''
     );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(partnerPracticeState.targetPiece), 'right', false);
     refreshHintButtonState();
     redraw();
     return;
@@ -2520,10 +2667,11 @@ function onPartnerPracticePieceSelected(piece) {
   partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
   practiceAddHighlight(btnHint);
   setPartnerPracticeCoachCopy(
-    'つぎは ヒントを おしてね',
-    'ヒントは、えらんだ ピースの ばしょを ひかって おしえてくれるよ。',
-    'ピースを えらんだよ'
+    'ヒントを おしてみよう',
+    'ばしょが ひかるよ',
+    ''
   );
+  setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
 }
 
@@ -2535,14 +2683,16 @@ function onPartnerPracticeHintUsed() {
   setPartnerPracticeInput(false);
   partnerPracticeState.cue = null;
   setPartnerPracticeCoachCopy(
-    'ヒントは こうやって つかうよ',
-    'えらんだ ピースの ばしょが ひかったね。',
-    'ヒントの れんしゅう できたね'
+    'ひかったね',
+    'こまったら つかってね',
+    ''
   );
   if (partnerPracticeState.mode === 'basic') {
     partnerPracticeState.phase = 'basic-done';
+    setPartnerPracticeCoachBubble(btnHint, null, true);
     return;
   }
+  setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
   }, 1200);
@@ -2561,6 +2711,7 @@ function startPartnerSpecificPractice(partnerId) {
   if (!partnerPracticeState || !partnerPracticeState.active) return;
   clearPartnerPracticeTimers();
   clearPracticeHighlights();
+  clearPartnerPracticeCoachBubble();
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
   setSelectedPieceForHint(null);
@@ -2742,6 +2893,8 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
     cue: null,
     allowCanvasInput: false,
     hintIntroDone: false,
+    peekHoldStart: 0,
+    peekHoldReady: false,
     coach: null,
   };
 
@@ -3187,6 +3340,9 @@ function loadStage(index) {
 // peek ON 中はパズル canvas の pointer-events を CSS で殺して誤ドラッグを防ぐ。
 let peekOn = false;
 let peekCanvas = null;
+let peekPressActive = false;
+let peekPressPointerId = null;
+let peekPressStartedAt = 0;
 
 function ensurePeekCanvas() {
   if (peekCanvas && peekCanvas.isConnected) return peekCanvas;
@@ -3229,7 +3385,7 @@ function setPeekOverlay(on) {
     if (btnPeek) {
       btnPeek.classList.add('is-active');
       btnPeek.setAttribute('aria-pressed', 'true');
-      btnPeek.textContent = '× とじる';
+      btnPeek.textContent = '👁 みる';
     }
   } else {
     if (peekCanvas && peekCanvas.parentNode) {
@@ -3247,6 +3403,53 @@ function setPeekOverlay(on) {
 
 function togglePeekOverlay() {
   setPeekOverlay(!peekOn);
+}
+
+function canUsePeekButton() {
+  if (!puzzleCanvas) return false;
+  if (scatterAnimating || prestartOverlayEl) return false;
+  return true;
+}
+
+function startPeekPress(e) {
+  if (!canUsePeekButton()) return;
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (peekPressActive) return;
+  peekPressActive = true;
+  peekPressPointerId = e && typeof e.pointerId === 'number' ? e.pointerId : null;
+  peekPressStartedAt = performance.now();
+  try {
+    if (e && btnPeek && typeof btnPeek.setPointerCapture === 'function') {
+      btnPeek.setPointerCapture(e.pointerId);
+    }
+  } catch (_) {}
+  setPeekOverlay(true);
+  onPartnerPracticePeekPressed();
+}
+
+function finishPeekPress(e, cancelled) {
+  if (!peekPressActive) return;
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  var heldMs = Math.max(0, performance.now() - peekPressStartedAt);
+  var pointerId = peekPressPointerId;
+  peekPressActive = false;
+  peekPressPointerId = null;
+  peekPressStartedAt = 0;
+  try {
+    if (e && btnPeek && typeof btnPeek.releasePointerCapture === 'function') {
+      btnPeek.releasePointerCapture(e.pointerId);
+    } else if (pointerId != null && btnPeek && typeof btnPeek.releasePointerCapture === 'function') {
+      btnPeek.releasePointerCapture(pointerId);
+    }
+  } catch (_) {}
+  setPeekOverlay(false);
+  onPartnerPracticePeekReleased(heldMs, !!cancelled);
 }
 
 // ===== Button Handlers =====
@@ -3267,12 +3470,27 @@ if (btnShuffle) {
 }
 
 if (btnPeek) {
-  btnPeek.addEventListener('click', () => {
-    if (!puzzleCanvas) return;
-    // 散布アニメ中・prestart 表示中は peek 無効 (完成形が既に見えている / アニメ中)
-    if (scatterAnimating || prestartOverlayEl) return;
-    togglePeekOverlay();
-    onPartnerPracticePeekUsed();
+  btnPeek.addEventListener('pointerdown', startPeekPress, { passive: false });
+  btnPeek.addEventListener('pointerup', function (e) {
+    if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
+    finishPeekPress(e, false);
+  }, { passive: false });
+  btnPeek.addEventListener('pointercancel', function (e) {
+    if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
+    finishPeekPress(e, true);
+  }, { passive: false });
+  btnPeek.addEventListener('lostpointercapture', function (e) {
+    if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
+    finishPeekPress(e, true);
+  });
+  btnPeek.addEventListener('keydown', function (e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    if (peekPressActive) return;
+    startPeekPress(e);
+  });
+  btnPeek.addEventListener('keyup', function (e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    finishPeekPress(e, false);
   });
 }
 
