@@ -3830,9 +3830,11 @@ function showHint(msg, ms) {
 
 // ====== Stage loading ======
 function loadStage(idx) {
-  // Phase 2 ティアロック判定: idx は 0始まり、 isMazeStageUnlocked は 1始まり想定
+  // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
+  // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
   // セーフフラグ OFF の間は true 返却 → 実ロックは発動しない（保険として window.PonoTier の存在もチェック）
-  var stageNum = (idx | 0) + 1;
+  var requestedIdx = idx | 0;
+  var stageNum = requestedIdx > 0 ? requestedIdx : 1;
   if (window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
       && !window.PonoTier.isMazeStageUnlocked(stageNum)) {
     if (typeof window.PonoTier.showSubscribePromo === 'function') {
@@ -3843,8 +3845,8 @@ function loadStage(idx) {
     }
     return;
   }
-  stageIdx = idx;
-  let def = STAGES[idx];
+  stageIdx = requestedIdx;
+  let def = STAGES[requestedIdx];
   // null/undefined slot fallback: 最初の有効なステージを探して移動
   if (!def) {
     let fallbackIdx = -1;
