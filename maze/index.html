@@ -862,6 +862,7 @@ body.image-stage-mode .game-wrap {
   background: #fff;
   display: grid;
   place-items: center;
+  overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 0 4px 14px rgba(0,0,0,0.12);
   transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
 }
@@ -878,14 +879,14 @@ body.image-stage-mode .game-wrap {
 }
 .janken-hand {
   display: block;
-  width: clamp(125px, 18vw, 190px);
+  width: min(clamp(104px, 14vw, 154px), calc(100% - 28px));
   aspect-ratio: 701 / 747;
   background-image: url('../assets/images/maze/janken_hands_sheet.png');
   background-repeat: no-repeat;
   background-size: 450% 150%;
   background-position-y: center;
   line-height: 1;
-  transform-origin: 18% 50%;
+  transform-origin: 50% 50%;
 }
 .janken-hand--rock { background-position-x: 8%; }
 .janken-hand--scissors { background-position-x: 50%; }
@@ -893,7 +894,7 @@ body.image-stage-mode .game-wrap {
 .janken-hand--pono { transform: rotate(0deg); }
 .janken-hand--bug {
   transform: scaleX(-1);
-  transform-origin: 82% 50%;
+  transform-origin: 50% 50%;
 }
 .janken-hand--pono.is-ready {
   animation: jankenReadyPono 0.42s ease-in-out infinite alternate;
@@ -975,7 +976,7 @@ body.image-stage-mode .game-wrap {
     border-radius: 14px;
   }
   .janken-hand {
-    width: clamp(56px, 12vw, 72px);
+    width: min(clamp(46px, 9vw, 58px), calc(100% - 14px));
   }
   .janken-result {
     min-height: 1.2em;
