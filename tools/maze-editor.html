@@ -415,7 +415,7 @@ const state = {
   imgFileName: '',      // e.g. "map.png"
   imgW: 0, imgH: 0,
   nodes: [],            // { id, x, y, kind: 'start'|'goal'|'stop' }
-  edges: [],            // { from, to, polyline: [{x,y}] }
+  edges: [],            // { from, to, controls: [{x,y}], shape?: 'curve'|'polyline' }
   obstacles: [],        // { kind, x, y }
   creatures: [],        // { id, kind, x, y }
   nextStopId: 1,
@@ -526,7 +526,7 @@ jsonInput.addEventListener('change', function(e) {
         } else {
           controls = e2.polyline.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
         }
-        return { from: e2.from, to: e2.to, controls: controls };
+        return { from: e2.from, to: e2.to, controls: controls, shape: _edgeShapeFromDef(e2) };
       });
       // Bump nextStopId past any existing stop ids
       const usedIds = state.nodes.filter(function(n) { return n.kind === 'stop'; })
@@ -622,6 +622,27 @@ function crPoint(p0, p1, p2, p3, t) {
   const b1 = _crLerp(a1, a2, t0, t2, u);
   const b2 = _crLerp(a2, a3, t1, t3, u);
   return _crLerp(b1, b2, t1, t2, u);
+}
+
+function _edgeShape(edge) {
+  return edge && edge.shape === 'polyline' ? 'polyline' : 'curve';
+}
+function _edgeShapeFromDef(edgeDef) {
+  if (edgeDef && edgeDef._editor) {
+    if (edgeDef._editor.shape === 'polyline') return 'polyline';
+    if (edgeDef._editor.shape === 'curve') return 'curve';
+  }
+  if (edgeDef && edgeDef.shape === 'polyline') return 'polyline';
+  // JSON without _editor.controls already contains the runtime polyline.
+  // Preserve it as a literal line instead of treating every point as a curve anchor.
+  return (edgeDef && edgeDef._editor && Array.isArray(edgeDef._editor.controls)) ? 'curve' : 'polyline';
+}
+function edgeDisplayPolyline(edge) {
+  if (!edge || !Array.isArray(edge.controls)) return [];
+  if (_edgeShape(edge) === 'polyline') {
+    return edge.controls.map(function(p) { return { x: p.x, y: p.y }; });
+  }
+  return densifyCatmullRom(edge.controls);
 }
 
 // ────────────────────────────────────────────────────────
@@ -1064,18 +1085,16 @@ function findEdgeForAnchorInsert(p) {
   for (let i = 0; i < state.edges.length; i++) {
     const ed = state.edges[i];
     if (!ed.controls || ed.controls.length < 2) continue;
-    const dense = densifyCatmullRom(ed.controls);
+    const dense = edgeDisplayPolyline(ed);
     let bestSeg = -1, bestD = Infinity;
     for (let j = 1; j < dense.length; j++) {
       const d = pointToSegment(p, dense[j-1], dense[j]);
       if (d < bestD) { bestD = d; bestSeg = j - 1; }
     }
     if (bestD < tol) {
-      // densified の bestSeg が controls のどの区間に属するかを算出
-      // densifyCatmullRom は controls の連続するペアごとに CR_SAMPLES_PER_SEG 個のサンプル
-      // を出すので、controls 区間 K = floor(bestSeg / CR_SAMPLES_PER_SEG)
-      // 新アンカーは controls[K+1] の位置に挿入 (= K と K+1 の間)
-      const ctrlSeg = Math.floor(bestSeg / CR_SAMPLES_PER_SEG);
+      const ctrlSeg = (_edgeShape(ed) === 'polyline')
+        ? bestSeg
+        : Math.floor(bestSeg / CR_SAMPLES_PER_SEG);
       const insertAt = Math.max(1, Math.min(ed.controls.length - 1, ctrlSeg + 1));
       return { edgeIdx: i, insertAt: insertAt };
     }
@@ -1307,7 +1326,7 @@ function handleDeleteClick(p) {
   const r = 12 / canvasScale;
   for (let i = state.edges.length - 1; i >= 0; i--) {
     const ed = state.edges[i];
-    const dense = densifyCatmullRom(ed.controls);
+    const dense = edgeDisplayPolyline(ed);
     if (pointNearPolyline(p, dense, r)) {
       state.edges.splice(i, 1);
       showBanner('道を削除: ' + ed.from + ' → ' + ed.to);
@@ -1350,10 +1369,10 @@ function draw() {
   // hold the original PNG dimensions — coords stay consistent.
   ctx.drawImage(state.image, 0, 0, state.imgW, state.imgH);
 
-  // Edges (densify Catmull-Rom from controls before drawing)
+  // Edges
   const isEditMode = state.mode === 'edit-points';
   for (const ed of state.edges) {
-    drawEdge(densifyCatmullRom(ed.controls), '#FF8855', 0.65);
+    drawEdge(edgeDisplayPolyline(ed), '#FF8855', 0.65);
     // Anchor dots — bigger + cyan ring in edit mode for grabbability
     for (let j = 0; j < ed.controls.length; j++) {
       const a = ed.controls[j];
@@ -1699,12 +1718,13 @@ function buildExportDef() {
       edges: state.edges.map(function(e) {
         // Runtime uses `polyline` (densified curve). `_editor.controls` preserves
         // anchor points so the editor can re-curve identically on reload.
-        const dense = densifyCatmullRom(e.controls);
+        const dense = edgeDisplayPolyline(e);
         return {
           from: e.from, to: e.to,
           polyline: dense.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
           _editor: {
             controls: e.controls.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
+            shape: _edgeShape(e),
           },
         };
       }),
@@ -2398,7 +2418,7 @@ function _restoreFromServerDef(def, fname) {
     } else {
       controls = e2.polyline.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
     }
-    return { from: e2.from, to: e2.to, controls: controls };
+    return { from: e2.from, to: e2.to, controls: controls, shape: _edgeShapeFromDef(e2) };
   });
   const usedIds = state.nodes.filter(function(n) { return n.kind === 'stop'; })
     .map(function(n) { const m = n.id.match(/^stop(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
@@ -2514,7 +2534,7 @@ function drawCompare() {
     ctx2.lineWidth = 8;
     ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
     for (const e of snap.edges) {
-      const poly = (e.controls && e.controls.length >= 2) ? densifyCatmullRom(e.controls)
+      const poly = (e.controls && e.controls.length >= 2) ? edgeDisplayPolyline(e)
                   : (Array.isArray(e.polyline) ? e.polyline : null);
       if (!poly || poly.length < 2) continue;
       ctx2.beginPath();
@@ -2774,7 +2794,8 @@ function _applyHandoff(h, opts) {
       return out;
     });
 
-    // Edges: polyline → controls (内部表現)
+    // Edges: rough polyline → controls (内部表現)
+    // shape:'polyline' はラフ由来の折れ線を曲線化せず、直線連結のまま描くための印。
     state.edges = h.edges.filter(function(e2) {
       return e2 && typeof e2.from === 'string' && typeof e2.to === 'string'
         && Array.isArray(e2.polyline) && e2.polyline.length >= 2;
@@ -2782,7 +2803,7 @@ function _applyHandoff(h, opts) {
       const controls = e2.polyline
         .filter(function(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y); })
         .map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
-      return { from: e2.from, to: e2.to, controls: controls };
+      return { from: e2.from, to: e2.to, controls: controls, shape: 'polyline' };
     });
 
     // nextStopId を既存 stop の最大番号+1 に

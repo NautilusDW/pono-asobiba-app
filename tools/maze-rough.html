@@ -2585,19 +2585,68 @@ function _doAutoSaveHandoff() {
 }
 
 // ラフの state を合意済み handoff JSON (version:1) に変換する。
-// tiles → polyline 変換は _buildHandoffPolyline() (BFS + 方向重複除去) で行う。
+// 生成/再計算済みの全 graph edge を渡す。 古い/手動データで edge が無い場合だけ
+// start→goal の最短経路 1 本にフォールバックする。
 function _buildHandoff() {
   if (!state.start || !state.goal) return null;
   const panels = (state.panels === 2) ? 2 : 1;
   const viewBox = { w: panels === 2 ? 3840 : 1920, h: 1080 };
-  const polyline = _buildHandoffPolyline(state.tiles, state.start, state.goal);
   const nodes = [
     { id: 'start', x: state.start.x, y: state.start.y, kind: 'start' },
     { id: 'goal',  x: state.goal.x,  y: state.goal.y,  kind: 'goal'  },
   ];
-  const edges = [
-    { from: 'start', to: 'goal', polyline: polyline },
-  ];
+  const srcW = Array.isArray(state.waypoints) ? state.waypoints : [];
+  let stopIdx = 1;
+  for (let i = 0; i < srcW.length; i++) {
+    const w = srcW[i];
+    if (!w || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
+    nodes.push({ id: 'stop' + stopIdx, x: w.x, y: w.y, kind: 'stop' });
+    stopIdx++;
+  }
+
+  function cleanPolyline(poly) {
+    if (!Array.isArray(poly) || poly.length < 2) return null;
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i];
+      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+      if (out.length > 0) {
+        const prev = out[out.length - 1];
+        if (Math.abs(prev.x - p.x) < 0.001 && Math.abs(prev.y - p.y) < 0.001) continue;
+      }
+      out.push({ x: p.x, y: p.y });
+    }
+    return out.length >= 2 ? out : null;
+  }
+  function nearestNodeId(pt) {
+    let best = null, bestD2 = Infinity;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      const dx = n.x - pt.x, dy = n.y - pt.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD2) { bestD2 = d2; best = n; }
+    }
+    return best ? best.id : null;
+  }
+
+  const edges = [];
+  const srcE = Array.isArray(state.edges) ? state.edges : [];
+  for (let i = 0; i < srcE.length; i++) {
+    const poly = cleanPolyline(srcE[i] && srcE[i].polyline);
+    if (!poly) continue;
+    const from = nearestNodeId(poly[0]);
+    const to = nearestNodeId(poly[poly.length - 1]);
+    if (!from || !to || from === to) continue;
+    edges.push({ from: from, to: to, polyline: poly, shape: 'polyline' });
+  }
+  if (edges.length === 0) {
+    edges.push({
+      from: 'start',
+      to: 'goal',
+      polyline: _buildHandoffPolyline(state.tiles, state.start, state.goal),
+      shape: 'polyline',
+    });
+  }
   // creatures: kind 必須、 id を付与
   // 'nemuri' は廃止された旧 kind。 後方互換のため load/handoff 時は無音で 'mayoi' へ alias。
   const validCKinds = { mayoi: 1, odoke: 1, pyon: 1, kabuto: 1, hachi: 1 };
@@ -4464,6 +4513,7 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
 draw();
 recomputeStats();
 refreshSaveList();
+try { _doAutoSaveHandoff(); } catch (e) {}
 if (_autoLoadName) {
   showBanner('📂 「' + _autoLoadName + '」を読み込み (URL指定)');
 } else if (restored) {
