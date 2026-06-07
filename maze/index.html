@@ -73,14 +73,14 @@ html, body {
 #arrowLayer { position: absolute; inset: 0; pointer-events: none; }
 .maze-arrow {
   position: absolute;
-  width: 42px; height: 42px;
+  width: 50px; height: 50px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(108,142,63,0.72), rgba(164,199,109,0.72));
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   color: white;
   border: 3px solid rgba(255,255,255,0.85);
-  font-size: 1.4rem; font-weight: 900;
+  font-size: 1.65rem; font-weight: 900;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(0,0,0,0.25);
@@ -823,9 +823,11 @@ body.image-stage-mode .game-wrap {
 .janken-arena {
   display: grid;
   grid-template-columns: minmax(120px, 170px) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 170px);
+  grid-template-rows: minmax(2.4em, auto) minmax(128px, 1fr) minmax(1.7em, auto) minmax(58px, auto);
   gap: 12px;
   align-items: center;
   width: 100%;
+  min-height: min(72dvh, 430px);
 }
 .janken-side {
   display: grid;
@@ -886,7 +888,7 @@ body.image-stage-mode .game-wrap {
   background-size: 300% 100%;
   background-position-y: center;
   line-height: 1;
-  transform-origin: 50% 50%;
+  transform-origin: 22% 54%;
 }
 .janken-hand--rock { background-position-x: 0%; }
 .janken-hand--scissors { background-position-x: 50%; }
@@ -894,7 +896,7 @@ body.image-stage-mode .game-wrap {
 .janken-hand--pono { transform: rotate(0deg); }
 .janken-hand--bug {
   transform: scaleX(-1);
-  transform-origin: 50% 50%;
+  transform-origin: 22% 54%;
 }
 .janken-hand--pono.is-ready {
   animation: jankenReadyPono 0.42s ease-in-out infinite alternate;
@@ -916,7 +918,9 @@ body.image-stage-mode .game-wrap {
   display: flex;
   gap: 10px;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
+  min-height: 58px;
 }
 .janken-controls .enc-btn {
   min-width: 120px;
@@ -926,8 +930,8 @@ body.image-stage-mode .game-wrap {
   to   { transform: translateY( 6px) rotate(7deg); }
 }
 @keyframes jankenReadyBug {
-  from { transform: translateY(-6px) scaleX(-1) rotate(7deg); }
-  to   { transform: translateY( 6px) scaleX(-1) rotate(-7deg); }
+  from { transform: translateY(-6px) scaleX(-1) rotate(-7deg); }
+  to   { transform: translateY( 6px) scaleX(-1) rotate(7deg); }
 }
 
 .simon-cell {
@@ -956,7 +960,9 @@ body.image-stage-mode .game-wrap {
   }
   .janken-arena {
     grid-template-columns: minmax(56px, 74px) minmax(76px, 1fr) minmax(76px, 1fr) minmax(56px, 74px);
+    grid-template-rows: minmax(1.55em, auto) minmax(68px, 1fr) minmax(1.2em, auto) minmax(44px, auto);
     gap: 6px;
+    min-height: min(68dvh, 230px);
   }
   .janken-side { gap: 2px; }
   .janken-side__img {
@@ -984,6 +990,7 @@ body.image-stage-mode .game-wrap {
   }
   .janken-controls {
     gap: 6px;
+    min-height: 44px;
   }
   .janken-controls .enc-btn {
     min-width: 76px;
@@ -1944,7 +1951,7 @@ function showArrows() {
   if (cleared || walkAnim) return;
   const fx = gridOX + pono.c * cellSize + cellSize / 2;
   const fy = gridOY + pono.r * cellSize + cellSize / 2;
-  const offset = Math.max(56, cellSize * 0.95);
+  const offset = Math.max(64, cellSize * 1.02);
 
   // Collect direction set:
   //  - normal walkable neighbors
@@ -2184,7 +2191,7 @@ function imgRepositionArrows() {
   if (!stage || stage.type !== 'image' || !stage._scale) return;
   const w = stage._viewW, h = stage._viewH;
   const sp = window.MazeImage.worldToScreen(stage, pono.x, pono.y, w, h, stage._scale);
-  const offset = 56;
+  const offset = 64;
   const kids = arrowLayer.children;
   for (let i = 0; i < kids.length; i++) {
     const btn = kids[i];

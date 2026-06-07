@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-07 - [batch:313-maze-janken-bug-wrist-arrows] DONE - Codex: user 指摘「迷い虫側の手の回転が逆 / 手首を軸にしたい / ポン時にウィンドウがずれる / ポノ進行方向矢印が小さい」を受領。`maze/index.html` はじゃんけん手の transform-origin を手首寄りにし、迷い虫側 ready 回転を反転、janken arena/controls の高さを安定化、矢印を 42→50px + offset 56→64px に拡大。Playwrightで 1083x574 / 667x375 の choice→ジャン→ケン→ポンで card rect 不変、overflow 0、JSエラーなし、矢印表示サイズ確認。`play.html` と `sw.js` は v880。 (by Codex)
 - 2026-06-07 - [batch:312-maze-stage-story-fallbacks] DONE - Codex: user 指摘「ステージ3以降の助け出す動物が出てこない。モーダルも含めて」を受領。`maze/index.html` に公式ステージ1〜5の救出ストーリーフォールバックを追加し、エディタ保存JSONに `story` が無くてもステージ3〜5の開始モーダルと救出モーダルが出るよう修正。Playwrightでステージ3/4/5の intro/rescue がすべて表示されることを確認。`sw.js` は v878。 (by Codex)
 - 2026-06-07 - [batch:311-maze-janken-sprite-oddone-flower] DONE - Codex: user 指摘「じゃんけん手画像そのものが切れている / 仲間外れの花問題で雪の結晶が花扱い」を受領。`maze/index.html` はじゃんけん CSS sprite を `300% 100%` + `0/50/100%` 表示へ戻し、チョキ/パーの端が切れないよう修正。仲間外れの該当問題は `はな/さくら/くさ/ちょうちょ` + hint `しょくぶつ` へ変更し、雪の結晶を除外。Playwrightでチョキ/パー表示、該当問題の画像ロード、snow なし、overflow 0、JSエラーなしを確認。`play.html` と `sw.js` は v875。 (by Codex)
 - 2026-06-07 - [batch:310-puzzle-bond-success-modal-sequence] DONE - Codex: user 指摘「こじかと仲良しになったよモーダルとステージクリアモーダルが被る」を受領。`puzzle/main.js` にクリアモーダル閉じ後キューを追加し、`puzzle/bond-ui.js` のなかよしレベルアップカットインだけを閉じた後に遅延表示するよう修正。Playwrightで、クリアモーダル表示中はカットインなし、閉じた後に `こじかと なかよし になったよ！` が出ることを確認。`sw.js` は v874。 (by Codex)
