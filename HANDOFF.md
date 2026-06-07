@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-08 - [batch:319-maze-quiz-assets-apply] DONE - Codex: user provided `D:\ポノのおへや\Maze\New\Quiz` の alpha 済み PNG 39枚を `assets/images/maze/quiz/` に semantic name で追加し、`maze/index.html` の `_mzWord` / `_mzQuiz` / `_mzCreature` / イルカ・クジラ参照が迷路専用素材を優先するよう実装。指定フォルダに無かった動物12枚は既存参照のまま。Playwrightで迷路クイズプール51画像中39件が新素材へ切替、全画像 200、JSエラーなしを確認。`sw.js` / `PAGE_CACHE_VERSION` は v887。 (by Codex)
 - 2026-06-07 - [batch:317-bento-lid-editor-complete-finish] DONE - Codex: user 依頼「蓋もエディターで編集 / 中身をもう少し長く見せる / 最後に蓋が閉まり中央から外側へキラキラ」を受領。`bento/index.html` は完成版調整に `ふたX/Y/W` を追加し、`bento_free_complete_layout_v3` で箱ごとに自動保存。1段箱にも完成プレビューを出し、蓋をプレビュー表示。完成演出は段表示を 1.05s 間隔に伸ばし、蓋閉じ後に中央から放射状 sparkles を出すよう変更。Playwrightで `?maskedit=1` の蓋スライダー表示/保存/プレビュー蓋、1段と2段の蓋・キラキラタイミング、JSエラーなしを確認。`sw.js` は v886。 (by Codex)
 - 2026-06-07 - [batch:316-bento-lid-assets] DONE - Codex: user provided `D:\ポノのおへや\Bento\cooking\弁当箱` の蓋PNG3枚を確認し、`box_rect_split_lid.png` / `box_square_lid.png` / `box_round_lid.png` として `assets/images/bento/free-layout/` に追加。`bento/index.html` の普通・四角・丸の弁当箱定義に `lidImage` を接続し、普通の1段完成でも蓋アニメーションが出るよう `renderFreeCompleteBento()` の1段分岐にも蓋表示を追加。Playwrightで3種類すべての蓋画像ロード・閉じた後のスクショ・JSエラーなしを確認。`sw.js` は v884。 (by Codex)
 - 2026-06-07 - [batch:316-bento-lid-assets] DONE - Codex: staging確認で `assets/images/bento/free-layout/` 配下の新規クエリ取得が既存画像も含め404になる一方、`assets/images/bento/ui/` 配下は200だったため、蓋PNG3枚を `assets/images/bento/ui/free_box_*_lid.png` へ移動し、`lidImage` 参照も `BENTO_UI_ASSET` に切替。`sw.js` は v885。 (by Codex)

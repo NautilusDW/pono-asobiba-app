@@ -3076,25 +3076,70 @@ const MAZE_WORD_IMG = '../assets/images/word/';
 const MAZE_QUIZ_IMG = '../assets/images/quizland/illust/choice/';
 const MAZE_QUIZ_STAGE_IMG = '../assets/images/quizland/illust/stage/';
 const MAZE_CREATURE_IMG = '../assets/images/maze/creatures/';
+const MAZE_LOCAL_QUIZ_IMG = '../assets/images/maze/quiz/';
+const MAZE_LOCAL_QUIZ_ASSETS = {
+  banana: true,
+  batta: true,
+  bus: true,
+  cake: true,
+  cake2: true,
+  chocho: true,
+  fukuro: true,
+  fune: true,
+  hachi: true,
+  hana: true,
+  helicopter: true,
+  hoshi: true,
+  ice: true,
+  ichigo: true,
+  ika: true,
+  iruka: true,
+  jitensha: true,
+  kani: true,
+  ki: true,
+  kinoko: true,
+  kujira: true,
+  kuruma: true,
+  kusa: true,
+  kyuuri: true,
+  mikan: true,
+  niji: true,
+  ninjin: true,
+  okashi: true,
+  rain_drop: true,
+  ringo: true,
+  rocket: true,
+  sakana: true,
+  sakura: true,
+  snowy_time: true,
+  taiyou: true,
+  tamago: true,
+  taxi: true,
+  tomato: true,
+  tsuki: true,
+};
 function _mzAsset(src, label) {
   return { src: src, label: label };
 }
+function _mzLocalQuizSrc(name) {
+  return MAZE_LOCAL_QUIZ_ASSETS[name] ? (MAZE_LOCAL_QUIZ_IMG + name + '.png') : '';
+}
 function _mzWord(name, label) {
-  return _mzAsset(MAZE_WORD_IMG + name + '.png', label);
+  return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_WORD_IMG + name + '.png'), label);
 }
 function _mzQuiz(name, label) {
-  return _mzAsset(MAZE_QUIZ_IMG + name + '.png', label);
+  return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_QUIZ_IMG + name + '.png'), label);
 }
 function _mzCreature(name, label) {
-  return _mzAsset(MAZE_CREATURE_IMG + name + '.png', label);
+  return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_CREATURE_IMG + name + '.png'), label);
 }
 function _mzMazeAnimal(name, label) {
   const assets = {
     usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
-    iruka: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png',
+    iruka: _mzLocalQuizSrc('iruka') || (MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png'),
     kirin: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_giraffe_full.png',
     kuma: MAZE_QUIZ_IMG + 'kuma.png',
-    kujira: MAZE_QUIZ_IMG + 'kujira.png',
+    kujira: _mzLocalQuizSrc('kujira') || (MAZE_QUIZ_IMG + 'kujira.png'),
   };
   return _mzAsset(assets[name] || (MAZE_WORD_IMG + name + '.png'), label);
 }
