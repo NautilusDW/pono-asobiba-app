@@ -1426,12 +1426,21 @@ html, body {
   line-height: 1.15;
 }
 .free-complete-editor-preview .complete-bento.free-complete-stack {
+  position: relative;
   width: 100%;
-  min-height: 216px;
+  min-height: var(--complete-preview-height, 276px);
+  height: var(--complete-preview-height, 276px);
   margin: 0;
+  overflow: hidden;
 }
 .free-complete-editor-preview .free-complete-build-stage {
-  height: 216px;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 700px;
+  height: 560px;
+  transform: translateX(-50%) scale(var(--complete-preview-scale, 0.48));
+  transform-origin: top center;
 }
 .free-complete-editor-preview .free-complete-tier {
   opacity: 1;
@@ -4461,19 +4470,34 @@ function getFreeCompleteHostWidth(host) {
 }
 function getFreeCompleteTierGap(host, isPreview) {
   const width = getFreeCompleteHostWidth(host);
-  const fallback = isPreview ? 260 : 700;
-  const basis = width || fallback;
+  const fallback = 700;
+  const basis = isPreview ? fallback : (width || fallback);
   const compactLandscape = !isPreview && window.innerHeight <= 560 && window.innerWidth > window.innerHeight;
   return Math.round(clamp(
-    basis * (isPreview ? 0.32 : 0.30),
-    isPreview ? 76 : compactLandscape ? 110 : 170,
-    isPreview ? 108 : compactLandscape ? 150 : 230
+    basis * 0.30,
+    compactLandscape ? 110 : 170,
+    compactLandscape ? 150 : 230
   ));
 }
-function getFreeCompleteLayoutScale(host) {
+function getFreeCompleteLayoutScale(host, isPreview = false) {
+  if (isPreview) return 1;
   const width = getFreeCompleteHostWidth(host);
   const basis = width || 700;
   return basis / 700;
+}
+function applyFreeCompletePreviewScale(host, isPreview) {
+  if (!host || !isPreview) {
+    if (host) {
+      host.style.removeProperty('--complete-preview-scale');
+      host.style.removeProperty('--complete-preview-height');
+    }
+    return;
+  }
+  const width = getFreeCompleteHostWidth(host) || 340;
+  const scale = clamp(width / 700, 0.34, 0.72);
+  const preciseScale = Math.round(scale * 1000) / 1000;
+  host.style.setProperty('--complete-preview-scale', String(preciseScale));
+  host.style.setProperty('--complete-preview-height', `${Math.ceil(560 * preciseScale) + 8}px`);
 }
 function setBoxCompleteLayoutOverride(box, tier, layout) {
   const key = getFreeCompleteLayoutKey(box, tier);
@@ -7029,13 +7053,14 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     + (tierCount > 1 ? ' free-complete-stack' : '')
     + (isPreview ? ' free-complete-preview-mode' : '')
     + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '');
+  applyFreeCompletePreviewScale(host, isPreview);
   host.innerHTML = '';
   if (tierCount > 1) {
     const build = document.createElement('div');
     build.className = 'free-complete-build-stage';
     host.appendChild(build);
     const tierGap = getFreeCompleteTierGap(host, isPreview);
-    const layoutScale = getFreeCompleteLayoutScale(host);
+    const layoutScale = getFreeCompleteLayoutScale(host, isPreview);
     for (let tier = 1; tier <= tierCount; tier++) {
       const wrap = document.createElement('div');
       wrap.className = 'free-complete-tier' + (tier === tierCount ? ' is-upper-tier' : ' is-lower-tier');
