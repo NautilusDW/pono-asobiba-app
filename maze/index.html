@@ -869,21 +869,32 @@ body.image-stage-mode .game-wrap {
 .janken-slot--bug { grid-column: 3 / 4; }
 .janken-slot.is-win {
   border-color: #5AA7FF;
-  background: #EEF7FF;
+  background: rgba(255,255,255,0.96);
   box-shadow: 0 0 0 5px rgba(90,167,255,0.35), 0 0 24px rgba(90,167,255,0.72);
 }
 .janken-slot.is-lose {
   border-color: #F0A0A0;
-  background: #FFF0F0;
+  background: rgba(255,255,255,0.94);
 }
 .janken-hand {
-  display: inline-block;
-  font-size: clamp(3rem, 10vw, 5.8rem);
+  display: block;
+  width: clamp(125px, 18vw, 190px);
+  aspect-ratio: 701 / 747;
+  background-image: url('../assets/images/maze/janken_hands_sheet.png');
+  background-repeat: no-repeat;
+  background-size: 450% 150%;
+  background-position-y: center;
   line-height: 1;
-  transform-origin: center center;
+  transform-origin: 18% 50%;
 }
-.janken-hand--pono { transform: rotate(270deg) scaleY(-1); }
-.janken-hand--bug { transform: rotate(90deg) scaleX(-1) scaleY(-1); }
+.janken-hand--rock { background-position-x: 8%; }
+.janken-hand--scissors { background-position-x: 50%; }
+.janken-hand--paper { background-position-x: 92%; }
+.janken-hand--pono { transform: rotate(0deg); }
+.janken-hand--bug {
+  transform: scaleX(-1);
+  transform-origin: 82% 50%;
+}
 .janken-hand--pono.is-ready {
   animation: jankenReadyPono 0.42s ease-in-out infinite alternate;
 }
@@ -910,12 +921,12 @@ body.image-stage-mode .game-wrap {
   min-width: 120px;
 }
 @keyframes jankenReadyPono {
-  from { transform: translateY(-6px) rotate(262deg) scaleY(-1); }
-  to   { transform: translateY( 6px) rotate(278deg) scaleY(-1); }
+  from { transform: translateY(-6px) rotate(-7deg); }
+  to   { transform: translateY( 6px) rotate(7deg); }
 }
 @keyframes jankenReadyBug {
-  from { transform: translateY(-6px) rotate(98deg) scaleX(-1) scaleY(-1); }
-  to   { transform: translateY( 6px) rotate(82deg) scaleX(-1) scaleY(-1); }
+  from { transform: translateY(-6px) scaleX(-1) rotate(7deg); }
+  to   { transform: translateY( 6px) scaleX(-1) rotate(-7deg); }
 }
 
 .simon-cell {
@@ -964,7 +975,7 @@ body.image-stage-mode .game-wrap {
     border-radius: 14px;
   }
   .janken-hand {
-    font-size: clamp(2.25rem, 9vw, 3.15rem);
+    width: clamp(56px, 12vw, 72px);
   }
   .janken-result {
     min-height: 1.2em;
@@ -2873,8 +2884,8 @@ function _showJankenChoices() {
           : '<div class="janken-side__img" aria-hidden="true" style="font-size:5rem;display:grid;place-items:center;">' + creatureImg + '</div>') +
         '<div class="janken-side__name">' + data.name + '</div>' +
       '</div>' +
-      '<div class="janken-slot janken-slot--pono" id="jankenPonoSlot"><span class="janken-hand janken-hand--pono">✊</span></div>' +
-      '<div class="janken-slot janken-slot--bug" id="jankenBugSlot"><span class="janken-hand janken-hand--bug">✊</span></div>' +
+      '<div class="janken-slot janken-slot--pono" id="jankenPonoSlot">' + _jankenHandMarkup('pono', 'rock', false) + '</div>' +
+      '<div class="janken-slot janken-slot--bug" id="jankenBugSlot">' + _jankenHandMarkup('bug', 'rock', false) + '</div>' +
       '<div class="janken-result" id="jankenResult">グー・チョキ・パーを えらんでね</div>' +
       '<div class="janken-controls" id="jankenControls">' +
         '<button class="enc-btn choice" data-hand="rock">グー</button>' +
@@ -2885,6 +2896,14 @@ function _showJankenChoices() {
   encStageEl.querySelectorAll('.janken-controls .enc-btn.choice').forEach(function(b) {
     b.addEventListener('click', function() { _resolveJanken(b.dataset.hand); }, { once: true });
   });
+}
+
+function _jankenHandMarkup(side, hand, ready) {
+  const safeSide = side === 'bug' ? 'bug' : 'pono';
+  const safeHand = hand === 'paper' ? 'paper' : (hand === 'scissors' ? 'scissors' : 'rock');
+  return '<span class="janken-hand janken-hand--' + safeSide +
+    ' janken-hand--' + safeHand + (ready ? ' is-ready' : '') +
+    '" role="img" aria-label="' + ({ rock: 'グー', scissors: 'チョキ', paper: 'パー' }[safeHand]) + '"></span>';
 }
 
 function _resolveJanken(playerHand) {
@@ -2900,7 +2919,6 @@ function _resolveJanken(playerHand) {
   });
 
   const hands = ['rock', 'paper', 'scissors'];
-  const emojiOf = { rock: '✊', paper: '✋', scissors: '✌️' };
   const cpuHand = hands[Math.floor(Math.random() * 3)];
   // wins[a] beats b
   const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
@@ -2910,8 +2928,8 @@ function _resolveJanken(playerHand) {
   else outcome = 'lose';
 
   function setHands(handPono, handBug, ready) {
-    ponoSlot.innerHTML = '<span class="janken-hand janken-hand--pono' + (ready ? ' is-ready' : '') + '">' + emojiOf[handPono] + '</span>';
-    bugSlot.innerHTML = '<span class="janken-hand janken-hand--bug' + (ready ? ' is-ready' : '') + '">' + emojiOf[handBug] + '</span>';
+    ponoSlot.innerHTML = _jankenHandMarkup('pono', handPono, ready);
+    bugSlot.innerHTML = _jankenHandMarkup('bug', handBug, ready);
   }
   setHands('rock', 'rock', true);
   resultEl.textContent = '';
@@ -2974,6 +2992,16 @@ function _mzQuiz(name, label) {
 function _mzCreature(name, label) {
   return _mzAsset(MAZE_CREATURE_IMG + name + '.png', label);
 }
+function _mzMazeAnimal(name, label) {
+  const assets = {
+    usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
+    iruka: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png',
+    kirin: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_giraffe_full.png',
+    kuma: MAZE_QUIZ_IMG + 'kuma.png',
+    kujira: MAZE_QUIZ_IMG + 'kujira.png',
+  };
+  return _mzAsset(assets[name] || (MAZE_WORD_IMG + name + '.png'), label);
+}
 function _mzPeek(id, label, asset) {
   return { id: id, label: label, src: asset.src };
 }
@@ -2983,25 +3011,25 @@ function _mzPeek(id, label, asset) {
 const PEEK_QUIZ_POOL = [
   _mzPeek('inu',    'いぬ',    _mzWord('inu', 'いぬ')),
   _mzPeek('neko',   'ねこ',    _mzWord('neko', 'ねこ')),
-  _mzPeek('usagi',  'うさぎ',  _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png', 'うさぎ')),
+  _mzPeek('usagi',  'うさぎ',  _mzMazeAnimal('usagi', 'うさぎ')),
   _mzPeek('risu',   'りす',    _mzWord('risu', 'りす')),
-  _mzPeek('kuma',   'くま',    _mzQuiz('kuma', 'くま')),
+  _mzPeek('kuma',   'くま',    _mzMazeAnimal('kuma', 'くま')),
   _mzPeek('panda',  'ぱんだ',  _mzWord('panda', 'ぱんだ')),
-  _mzPeek('kirin',  'きりん',  _mzWord('kirin', 'きりん')),
+  _mzPeek('kirin',  'きりん',  _mzMazeAnimal('kirin', 'きりん')),
   _mzPeek('lion',   'らいおん', _mzWord('lion', 'らいおん')),
   _mzPeek('saru',   'さる',    _mzWord('saru', 'さる')),
   _mzPeek('shika',  'しか',    _mzWord('shika', 'しか')),
   _mzPeek('zou',    'ぞう',    _mzWord('zou', 'ぞう')),
   _mzPeek('fukuro', 'ふくろ',  _mzWord('fukuro', 'ふくろ')),
-  _mzPeek('kujira', 'くじら',  _mzQuiz('kujira', 'くじら')),
-  _mzPeek('iruka',  'いるか',  _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png', 'いるか')),
+  _mzPeek('kujira', 'くじら',  _mzMazeAnimal('kujira', 'くじら')),
+  _mzPeek('iruka',  'いるか',  _mzMazeAnimal('iruka', 'いるか')),
   _mzPeek('kani',   'かに',    _mzWord('kani', 'かに')),
   _mzPeek('ika',    'いか',    _mzWord('ika', 'いか')),
 ];
 
 // ○×クイズ: q=問い, a=true|false, icon=既存生成イラスト
 const QUIZ_TRUEFALSE = [
-  { q: 'うさぎは そらを とぶ？', a: false, icon: _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png', 'うさぎ') },
+  { q: 'うさぎは そらを とぶ？', a: false, icon: _mzMazeAnimal('usagi', 'うさぎ') },
   { q: 'ちょうちょには はねが ある？', a: true, icon: _mzQuiz('chocho', 'ちょうちょ') },
   { q: 'はなは つちから うまれる？', a: true, icon: _mzWord('hana', 'はな') },
   { q: 'たいようは つきより おおきい？', a: true, icon: _mzWord('taiyou', 'たいよう') },
@@ -3024,23 +3052,23 @@ const QUIZ_TRUEFALSE = [
   { q: 'こおりは あつくなると とける？', a: true, icon: _mzQuiz('ice', 'こおり') },
   { q: 'みかんは あおい？', a: false, icon: _mzWord('mikan', 'みかん') },
   { q: 'ロケットは うちゅうへ いく？', a: true, icon: _mzWord('rocket', 'ロケット') },
-  { q: 'くまは どうぶつ？', a: true, icon: _mzQuiz('kuma', 'くま') },
+  { q: 'くまは どうぶつ？', a: true, icon: _mzMazeAnimal('kuma', 'くま') },
 ];
 
 // なかまはずれ: items 4つ、odd は items のうち仲間外れの index
 const QUIZ_ODDONE = [
   { items: [_mzWord('ringo','りんご'), _mzWord('banana','バナナ'), _mzWord('mikan','みかん'), _mzWord('inu','いぬ')], odd: 3, hint: 'くだもの' },
-  { items: [_mzWord('kuruma','くるま'), _mzWord('taxi','タクシー'), _mzWord('bus','バス'), _mzWord('kirin','きりん')], odd: 3, hint: 'のりもの' },
-  { items: [_mzWord('neko','ねこ'), _mzWord('inu','いぬ'), _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png', 'うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('kuruma','くるま'), _mzWord('taxi','タクシー'), _mzWord('bus','バス'), _mzMazeAnimal('kirin','きりん')], odd: 3, hint: 'のりもの' },
+  { items: [_mzWord('neko','ねこ'), _mzWord('inu','いぬ'), _mzMazeAnimal('usagi', 'うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
   { items: [_mzWord('ki','き'), _mzWord('kusa','くさ'), _mzWord('kinoko','きのこ'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'もりに あるもの' },
   { items: [_mzWord('taiyou','たいよう'), _mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('banana','バナナ')], odd: 3, hint: 'そら' },
   { items: [_mzWord('ninjin','にんじん'), _mzWord('tomato','トマト'), _mzWord('kyuuri','きゅうり'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'やさい' },
-  { items: [_mzWord('lion','らいおん'), _mzWord('kirin','きりん'), _mzWord('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('lion','らいおん'), _mzMazeAnimal('kirin','きりん'), _mzWord('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
   { items: [_mzWord('ringo','りんご'), _mzWord('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
   { items: [_mzWord('kuruma','くるま'), _mzWord('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
   { items: [_mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('hana','はな'), _mzWord('taiyou','たいよう')], odd: 2, hint: 'そらに あるもの' },
-  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png', 'いるか'), _mzWord('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
-  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzQuiz('kuma','くま')], odd: 3, hint: 'むし' },
+  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzMazeAnimal('iruka', 'いるか'), _mzMazeAnimal('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
+  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzMazeAnimal('kuma','くま')], odd: 3, hint: 'むし' },
   { items: [_mzWord('jitensha','じてんしゃ'), _mzWord('helicopter','ヘリコプター'), _mzWord('fune','ふね'), _mzWord('ringo','りんご')], odd: 3, hint: 'のりもの' },
   { items: [_mzWord('hana','はな'), _mzWord('sakura','さくら'), _mzQuiz('snow_flake','ゆき'), _mzQuiz('chocho','ちょうちょ')], odd: 3, hint: 'はな' },
   { items: [_mzWord('cake','ケーキ'), _mzWord('cake2','ケーキ'), _mzWord('okashi','おかし'), _mzWord('ninjin','にんじん')], odd: 3, hint: 'あまいもの' },

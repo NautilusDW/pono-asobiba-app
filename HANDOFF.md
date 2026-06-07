@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-07 - [batch:305-maze-quiz-aspect-janken-sheet] DONE - Codex: user 指摘「お邪魔虫クイズのイラストが縦長 / キリンのマスク切りがおかしい / 画像フォルダ確認 / じゃんけんを生成画像へ」を受領。`maze/index.html` は迷路クイズ用に `word/` の縦長動物素材を避ける `_mzMazeAnimal()` を追加し、うさぎ/いるか/キリン/くま/くじらを既存生成イラストへ差し替え。じゃんけんは GPT Image 2 built-in 生成の3コマ手シート `assets/images/maze/janken_hands_sheet.png` を追加し、絵文字からCSS sprite表示へ変更。`sw.js` / `PAGE_CACHE_VERSION` は v868。 (by Codex)
 - 2026-06-07 - [batch:304-puzzle-kojika-glow-snap] DONE - Codex: user 指摘「こじか練習で青く光ったから離したのに、もう少し近くへと言われる。光ったら吸着してほしい」を受領。`puzzle/main.js` はこじか練習の発光判定とドロップ時吸着判定を同一化し、青く光る範囲内で離した場合は `PonoPuzzleForceSnapPiece` で確実に吸着するよう修正。案内文も `はなすと はまるよ` に変更。Playwrightで通常 snap 距離外かつ glow 距離内で離しても `kojika-done` / snapped / ボタン有効化になることを確認。`sw.js` は v867。 (by Codex)
 - 2026-06-07 - [batch:303-puzzle-kojika-interactive-practice] DONE - Codex: user 指摘「こじかの説明は自動で動かすのではなく、ユーザーが選択して指定位置へ移動する工程にしたい」を受領。`puzzle/main.js` はこじか練習を自動デモから実操作へ変更し、指定ピースと青い移動先を表示、対象ピースだけドラッグ可能、近づくと青く発光、置けたら `このこにする` が有効になる流れへ変更。`puzzle/style.css` は未完了時の開始ボタン disabled 表示を追加。Playwrightで指定外ピース拒否、ドラッグ中発光、ドロップ後 snap/ボタン有効化、16:9/4:3 スクショを確認。`sw.js` は v866。 (by Codex)
 - 2026-06-07 - [batch:302-maze-janken-hand-180] DONE - Codex: user 指摘「じゃんけんの手の方向が違う。180度回転」を受領。`maze/index.html` のじゃんけん手表示と左右別readyアニメーションを前回状態から180度回転。Playwrightで開始時/ポン後の transform と勝利表示を確認。`sw.js` と `PAGE_CACHE_VERSION` は v865。 (by Codex)
