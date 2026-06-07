@@ -1418,6 +1418,52 @@ function parseCell(ch) {
 // Note: `let` (was const) to allow `?image=<name>` URL param to override STAGES.
 let STAGES = []; // grid ステージ完全削除済み (image ステージのみで構成)
 
+const MAZE_STAGE_STORY_FALLBACKS = {
+  1: {
+    animal: 'neko',
+    animalLabel: 'ねこさん',
+    intro: 'もりの いりぐちで ねこさんが\nまよって いるよ。たすけに いこう！',
+    cryingIconUrl: 'imageStages/animals/neko_02.png',
+    reliefIconUrl: 'imageStages/animals/neko_goal.png'
+  },
+  2: {
+    animal: 'inu',
+    animalLabel: 'わんちゃん',
+    intro: 'はなの こみちで わんちゃんが\nまよって いるよ。たすけに いこう！',
+    cryingIconUrl: 'imageStages/animals/inu_02.png',
+    reliefIconUrl: 'imageStages/animals/inu_goal.png'
+  },
+  3: {
+    animal: 'risu',
+    animalLabel: 'りすちゃん',
+    intro: 'しずくいけで りすちゃんが\nどんぐりを なくしたって。たすけに いこう！',
+    cryingIconUrl: 'imageStages/animals/risu_02.png',
+    reliefIconUrl: 'imageStages/animals/risu_goal.png'
+  },
+  4: {
+    animal: 'shika',
+    animalLabel: 'しかさん',
+    intro: 'キノコの こみちで しかさんが\nまいごに なってるよ。たすけに いこう！',
+    cryingIconUrl: 'imageStages/animals/shika_02.png',
+    reliefIconUrl: 'imageStages/animals/shika_goal.png'
+  },
+  5: {
+    animal: 'lesser_panda',
+    animalLabel: 'レッサーパンダ',
+    intro: 'このはあかりの もりで レッサーパンダが\nまいごに なってるよ。たすけに いこう！',
+    cryingIconUrl: 'imageStages/animals/lesser_panda_02.png',
+    reliefIconUrl: 'imageStages/animals/lesser_panda_goal.png'
+  }
+};
+
+function applyMazeStageStoryFallback(stageDef, slot) {
+  if (!stageDef || stageDef.type !== 'image') return stageDef;
+  const fallback = MAZE_STAGE_STORY_FALLBACKS[slot | 0];
+  if (!fallback) return stageDef;
+  stageDef.story = Object.assign({}, fallback, stageDef.story || {});
+  return stageDef;
+}
+
 function buildStage(stageDef) {
   const rows = stageDef.grid.length;
   const cols = stageDef.grid[0].length;
@@ -1471,6 +1517,7 @@ function _loadImageStageIndex() {
           })
           .then(function(def) {
             if (!def || def.type !== 'image') throw new Error(safe + ' invalid');
+            applyMazeStageStoryFallback(def, pos);
             def._official = true; // eligible for rewards
             // Auto-pad: STAGES が空 or 短い時は null で穴を埋めて push
             while (STAGES.length < pos) STAGES.push(null);
@@ -3814,6 +3861,7 @@ function loadStage(idx) {
     def = STAGES[fallbackIdx];
   }
   if (def && def.type === 'image') {
+    applyMazeStageStoryFallback(def, stageIdx);
     imgLoadStage(def);
     return;
   }
