@@ -649,6 +649,15 @@ body.partner-practice-active .prestart-overlay {
   transform: scale(0.96);
 }
 
+.partner-practice-coach__btn:disabled,
+.partner-practice-coach__btn.is-disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+  transform: none;
+  box-shadow: none;
+}
+
 @media (orientation: landscape) {
   .partner-practice-coach {
     top: 50%;

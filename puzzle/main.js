@@ -1396,6 +1396,42 @@ function drawPartnerPracticeCue(ctx) {
     return;
   }
 
+  if (cue.kind === 'kojika-move-target') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath();
+    buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.76 + pulse * 0.20).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.04);
+    ctx.stroke();
+
+    ctx.beginPath();
+    buildPiecePath(ctx, piece.homeX, piece.homeY, pieceW, pieceH, piece.tabs);
+    ctx.strokeStyle = 'rgba(59, 130, 246,' + (0.72 + pulse * 0.24).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(5, Math.min(pieceW, pieceH) * 0.052);
+    ctx.setLineDash([Math.max(8, pieceW * 0.08), Math.max(5, pieceW * 0.05)]);
+    ctx.lineDashOffset = -now / 55;
+    ctx.shadowColor = 'rgba(96, 165, 250, 0.72)';
+    ctx.shadowBlur = 12 + pulse * 8;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+
+    var hr = Math.min(pieceW, pieceH) * (0.54 + pulse * 0.08);
+    var hx = piece.homeX + pieceW / 2;
+    var hy = piece.homeY + pieceH / 2;
+    var hGrad = ctx.createRadialGradient(hx, hy, 4, hx, hy, hr);
+    hGrad.addColorStop(0, 'rgba(125, 190, 255, 0.22)');
+    hGrad.addColorStop(1, 'rgba(37, 99, 235, 0)');
+    ctx.fillStyle = hGrad;
+    ctx.beginPath();
+    ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ensurePartnerPracticeCueLoop();
+    return;
+  }
+
   if (cue.kind === 'kojika-glow') {
     var hx = piece.homeX + pieceW / 2;
     var hy = piece.homeY + pieceH / 2;
@@ -2487,6 +2523,14 @@ function setPartnerPracticeCoachBubble(targetEl, preferredSide, showActions) {
   setPartnerPracticeCoachBubbleForRect(targetEl.getBoundingClientRect(), preferredSide, showActions);
 }
 
+function setPartnerPracticeStartEnabled(on) {
+  if (!partnerPracticeState || !partnerPracticeState.coach) return;
+  var btn = partnerPracticeState.coach.querySelector('.partner-practice-coach__btn--start');
+  if (!btn) return;
+  btn.disabled = !on;
+  btn.classList.toggle('is-disabled', !on);
+}
+
 function getPieceScreenRect(piece) {
   if (!piece || !puzzleCanvas || !canvasW || !canvasH) return null;
   var rect = puzzleCanvas.getBoundingClientRect();
@@ -2497,6 +2541,21 @@ function getPieceScreenRect(piece) {
     top: rect.top + piece.y * sy,
     right: rect.left + (piece.x + pieceW) * sx,
     bottom: rect.top + (piece.y + pieceH) * sy,
+    width: pieceW * sx,
+    height: pieceH * sy,
+  };
+}
+
+function getPieceHomeScreenRect(piece) {
+  if (!piece || !puzzleCanvas || !canvasW || !canvasH) return null;
+  var rect = puzzleCanvas.getBoundingClientRect();
+  var sx = rect.width / canvasW;
+  var sy = rect.height / canvasH;
+  return {
+    left: rect.left + piece.homeX * sx,
+    top: rect.top + piece.homeY * sy,
+    right: rect.left + (piece.homeX + pieceW) * sx,
+    bottom: rect.top + (piece.homeY + pieceH) * sy,
     width: pieceW * sx,
     height: pieceH * sy,
   };
@@ -2841,6 +2900,105 @@ function animatePracticePiece(piece, from, to, duration, onDone) {
   partnerPracticeState.rafs.push(raf);
 }
 
+function pickKojikaPracticeStart(piece) {
+  var farCandidates = [
+    { x: 10, y: 10, rotation: 0 },
+    { x: Math.max(10, canvasW - pieceW - 10), y: 10, rotation: 0 },
+    { x: 10, y: Math.max(10, canvasH - pieceH - 10), rotation: 0 },
+    { x: Math.max(10, canvasW - pieceW - 10), y: Math.max(10, canvasH - pieceH - 10), rotation: 0 },
+    { x: Math.max(10, boardX - pieceW * 1.65), y: Math.max(10, Math.min(canvasH - pieceH - 10, boardY + boardH * 0.52)), rotation: 0 },
+    { x: Math.max(10, Math.min(canvasW - pieceW - 10, boardX + boardW + pieceW * 0.65)), y: Math.max(10, Math.min(canvasH - pieceH - 10, boardY + boardH * 0.52)), rotation: 0 },
+  ];
+  return farCandidates.reduce(function (best, candidate) {
+    var bestD = Math.hypot(best.x - piece.homeX, best.y - piece.homeY);
+    var d = Math.hypot(candidate.x - piece.homeX, candidate.y - piece.homeY);
+    return d > bestD ? candidate : best;
+  }, farCandidates[0]);
+}
+
+function startKojikaInteractivePractice(piece) {
+  if (!partnerPracticeState || !piece) return;
+  var from = pickKojikaPracticeStart(piece);
+  placePieceForPractice(piece, from.x, from.y, 0);
+  partnerPracticeState.phase = 'kojika-drag';
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  partnerPracticeState.kojikaGlowShown = false;
+  setPartnerPracticeInput(true);
+  setPartnerPracticeStartEnabled(false);
+  setPartnerPracticeCoachCopy(
+    'この ピースを もってね',
+    'あおい ばしょへ うごかそう',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', true);
+  redraw();
+}
+
+function onKojikaPracticeDragStart(piece) {
+  if (!partnerPracticeState || partnerPracticeState.partnerId !== 'kojika') return;
+  if (partnerPracticeState.phase !== 'kojika-drag') return;
+  if (piece !== partnerPracticeState.targetPiece) return;
+  partnerPracticeState.phase = 'kojika-moving';
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setPartnerPracticeCoachCopy(
+    'あおい ばしょへ',
+    'ちかづくと ひかるよ',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', true);
+}
+
+function updateKojikaPracticeDrag(piece) {
+  if (!partnerPracticeState || partnerPracticeState.partnerId !== 'kojika') return;
+  if (partnerPracticeState.phase !== 'kojika-moving' && partnerPracticeState.phase !== 'kojika-drag') return;
+  if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
+  var dist = Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY);
+  var glowDist = Math.max(SNAP_DIST * 1.65, pieceW * 0.62);
+  if (dist < glowDist) {
+    partnerPracticeState.cue = { kind: 'kojika-glow', piece: piece };
+    if (!partnerPracticeState.kojikaGlowShown) {
+      partnerPracticeState.kojikaGlowShown = true;
+      setPartnerPracticeCoachCopy(
+        'ひかったね',
+        'そこで はなしてみよう',
+        ''
+      );
+      setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'below', true);
+    }
+  } else {
+    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  }
+}
+
+function onKojikaPracticePieceDropped(piece, didSnap) {
+  if (!partnerPracticeState || partnerPracticeState.partnerId !== 'kojika') return;
+  if (partnerPracticeState.phase !== 'kojika-moving' && partnerPracticeState.phase !== 'kojika-drag') return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  if (didSnap || piece.snapped) {
+    partnerPracticeState.phase = 'kojika-done';
+    partnerPracticeState.cue = null;
+    setPartnerPracticeInput(false);
+    setPartnerPracticeStartEnabled(true);
+    setPartnerPracticeCoachCopy(
+      'できたね',
+      'ちかいと ひかるよ',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece) || getPieceHomeScreenRect(piece), 'below', true);
+    redraw();
+    return;
+  }
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setPartnerPracticeCoachCopy(
+    partnerPracticeState.kojikaGlowShown ? 'もうすこし ちかくへ' : 'あおい ばしょへ',
+    'ピースを うごかしてね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', true);
+  redraw();
+}
+
 function runPartnerPracticeDemo(partnerId) {
   var list = getPracticePieces();
   if (!list.length) return;
@@ -2852,27 +3010,7 @@ function runPartnerPracticeDemo(partnerId) {
   }
 
   if (partnerId === 'kojika') {
-    var farCandidates = [
-      { x: 10, y: 10, rotation: 0 },
-      { x: Math.max(10, canvasW - pieceW - 10), y: 10, rotation: 0 },
-      { x: 10, y: Math.max(10, canvasH - pieceH - 10), rotation: 0 },
-      { x: Math.max(10, canvasW - pieceW - 10), y: Math.max(10, canvasH - pieceH - 10), rotation: 0 },
-      { x: Math.max(10, boardX - pieceW * 1.65), y: Math.max(10, Math.min(canvasH - pieceH - 10, boardY + boardH * 0.52)), rotation: 0 },
-      { x: Math.max(10, Math.min(canvasW - pieceW - 10, boardX + boardW + pieceW * 0.65)), y: Math.max(10, Math.min(canvasH - pieceH - 10, boardY + boardH * 0.52)), rotation: 0 },
-    ];
-    var from = farCandidates.reduce(function (best, candidate) {
-      var bestD = Math.hypot(best.x - p.homeX, best.y - p.homeY);
-      var d = Math.hypot(candidate.x - p.homeX, candidate.y - p.homeY);
-      return d > bestD ? candidate : best;
-    }, farCandidates[0]);
-    var close = { x: p.homeX + pieceW * 0.18, y: p.homeY + pieceH * 0.10, rotation: 0 };
-    placePieceForPractice(p, from.x, from.y, 0);
-    if (partnerPracticeState) partnerPracticeState.cue = null;
-    practiceSetTimeout(function () {
-      if (partnerPracticeState) partnerPracticeState.cue = { kind: 'kojika-glow', piece: p };
-      redraw();
-    }, 1320);
-    animatePracticePiece(p, from, close, 2200);
+    startKojikaInteractivePractice(p);
     return;
   }
 
@@ -3139,10 +3277,30 @@ function onPointerDown(e) {
     emptyTapPending = true;
     return;
   }
+
+  if (partnerPracticeState && partnerPracticeState.active
+      && partnerPracticeState.partnerId === 'kojika'
+      && (partnerPracticeState.phase === 'kojika-drag' || partnerPracticeState.phase === 'kojika-moving')
+      && partnerPracticeState.targetPiece
+      && found !== partnerPracticeState.targetPiece) {
+    emptyTapPending = false;
+    dragPiece = null;
+    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setPartnerPracticeCoachCopy(
+      'こっちの ピースだよ',
+      '',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(partnerPracticeState.targetPiece), 'above', true);
+    redraw();
+    return;
+  }
+
   emptyTapPending = false;
   dragPiece = found;
   dragOffX = x - found.x; dragOffY = y - found.y;
   dragPiece.zOrder = Math.max(...pieces.map(p => p.zOrder)) + 1;
+  onKojikaPracticeDragStart(found);
 
   // ドラッグ開始時はヒントボタンを 😴 に
   refreshHintButtonState();
@@ -3176,6 +3334,7 @@ function onPointerMove(e) {
     dy: dyMove,
     partner: getCurrentPartner(),
   }, false);
+  updateKojikaPracticeDrag(dragPiece);
 
   redraw();
 }
@@ -3207,7 +3366,10 @@ function onPointerUp(e) {
 
   // タップ判定 (移動 ≦ 8px / 300ms 以内) で 未スナップピース → ヒント対象として選択。
   // 回転モードが ON ならその後ろで rotation も行う (両立)。
-  if (isTap && !piece.snapped) {
+  var isKojikaPracticeMove = !!(partnerPracticeState && partnerPracticeState.active
+    && partnerPracticeState.partnerId === 'kojika'
+    && (partnerPracticeState.phase === 'kojika-drag' || partnerPracticeState.phase === 'kojika-moving'));
+  if (isTap && !piece.snapped && !isKojikaPracticeMove) {
     setSelectedPieceForHint(piece);
   }
 
@@ -3225,7 +3387,8 @@ function onPointerUp(e) {
     return;
   }
 
-  trySnap(piece);
+  var didSnap = trySnap(piece);
+  onKojikaPracticePieceDropped(piece, didSnap);
   // スナップで選択中ピースが固定された場合は選択解除
   if (selectedPieceForHint && selectedPieceForHint.snapped) {
     setSelectedPieceForHint(null);
