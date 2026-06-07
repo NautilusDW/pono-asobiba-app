@@ -4355,6 +4355,10 @@ function saveFreeMaskBoundsOverrides() {
     localStorage.setItem(FREE_MASK_EDITOR_STORAGE_KEY, JSON.stringify(freeMaskBoundsOverrides || {}));
   } catch (e) {}
 }
+function refreshFreeMaskBoundsOverrides() {
+  freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
+  return freeMaskBoundsOverrides;
+}
 function loadFreeCompleteLayoutOverrides() {
   if (typeof localStorage === 'undefined') return {};
   const parseStoredLayouts = raw => {
@@ -4382,6 +4386,10 @@ function saveFreeCompleteLayoutOverrides() {
     localStorage.setItem(FREE_COMPLETE_LAYOUT_STORAGE_KEY, JSON.stringify(freeCompleteLayoutOverrides || {}));
   } catch (e) {}
 }
+function refreshFreeCompleteLayoutOverrides() {
+  freeCompleteLayoutOverrides = loadFreeCompleteLayoutOverrides();
+  return freeCompleteLayoutOverrides;
+}
 function roundFreeCompleteValue(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
@@ -4404,6 +4412,7 @@ function getFreeCompleteLayoutKey(box, tier = 2) {
   return key ? `${key}:tier${tier}` : '';
 }
 function getBoxCompleteLayout(box, tier = 2) {
+  refreshFreeCompleteLayoutOverrides();
   const base = getDefaultFreeCompleteLayout(box, tier);
   const key = getFreeCompleteLayoutKey(box, tier);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
@@ -4518,7 +4527,7 @@ function refreshFreeCompletionMaskViews() {
     const box = getSelectedBentoBox();
     const tier = Math.min(2, getBoxTierCount(box));
     if (tier > 1) {
-      renderFreeCompleteBento(slot, [], box.id, {
+      renderFreeCompleteBento(slot, makeCompleteEditorPreviewItems(box, tier), box.id, {
         forceTierCount: tier,
         preview: true,
       });
@@ -4601,6 +4610,7 @@ function getDefaultBoxMaskRelative(box) {
   return maskBoundsToBoxRelative(box, box && box.maskBounds);
 }
 function getBoxMaskRelative(box) {
+  refreshFreeMaskBoundsOverrides();
   const key = getBoxMaskKey(box);
   return getFreeMaskRelativeOverride(key) || getDefaultBoxMaskRelative(box);
 }
@@ -6313,10 +6323,35 @@ function resetSelectedBoxCompleteLayout(tier) {
   if (!box) return;
   resetBoxCompleteLayoutOverride(box, tier);
 }
+function makeCompleteEditorPreviewItems(box, tier) {
+  if (!box || tier <= 1) return [];
+  const spots = Array.isArray(box.foodSpots) && box.foodSpots.length
+    ? box.foodSpots
+    : [{ x: box.bounds.x + box.bounds.w / 2, y: box.bounds.y + box.bounds.h / 2 }];
+  const samples = FREE_COOKED_OKAZU
+    .filter(f => f && f.img)
+    .slice(0, Math.min(4, spots.length));
+  return samples.map((food, index) => {
+    const spot = spots[index % spots.length];
+    return {
+      ...food,
+      uid: 'complete_preview_' + tier + '_' + index,
+      id: 'complete_preview_' + tier + '_' + index,
+      type: 'food',
+      x: spot.x,
+      y: spot.y,
+      size: food.size || 150,
+      rotation: food.rotation != null ? food.rotation : 0,
+      layer: 40 + index,
+      tier,
+      pop: false,
+    };
+  });
+}
 function refreshFreeCompleteEditorPreview(panel, box, tier) {
   const slot = panel && panel.querySelector('.free-complete-editor-preview-slot');
   if (!slot || !box) return;
-  renderFreeCompleteBento(slot, [], box.id, {
+  renderFreeCompleteBento(slot, makeCompleteEditorPreviewItems(box, tier), box.id, {
     forceTierCount: Math.min(tier, getBoxTierCount(box)),
     preview: true,
   });
@@ -6357,7 +6392,7 @@ function renderFreeCompleteEditorPreview(box, tier) {
   const slot = document.createElement('div');
   slot.className = 'free-complete-editor-preview-slot';
   wrapper.appendChild(slot);
-  renderFreeCompleteBento(slot, [], box.id, {
+  renderFreeCompleteBento(slot, makeCompleteEditorPreviewItems(box, tier), box.id, {
     forceTierCount: Math.min(tier, getBoxTierCount(box)),
     preview: true,
   });
