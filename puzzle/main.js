@@ -2204,6 +2204,10 @@ function markPartnerPracticeSeen(partnerId) {
   try { localStorage.setItem(partnerPracticeKey(partnerId), '1'); } catch (_) {}
 }
 
+function clearPartnerPracticeSeen(partnerId) {
+  try { localStorage.removeItem(partnerPracticeKey(partnerId)); } catch (_) {}
+}
+
 function hasSeenBasicPractice() {
   try { return localStorage.getItem(BASIC_PRACTICE_SEEN_KEY) === '1'; }
   catch (_) { return false; }
@@ -2211,6 +2215,29 @@ function hasSeenBasicPractice() {
 
 function markBasicPracticeSeen() {
   try { localStorage.setItem(BASIC_PRACTICE_SEEN_KEY, '1'); } catch (_) {}
+}
+
+function clearBasicPracticeSeen() {
+  try { localStorage.removeItem(BASIC_PRACTICE_SEEN_KEY); } catch (_) {}
+}
+
+function resetPuzzlePracticeSeenFlags() {
+  clearBasicPracticeSeen();
+  try {
+    if (window.PonoPartners && Array.isArray(window.PonoPartners.list)) {
+      for (var i = 0; i < window.PonoPartners.list.length; i++) {
+        var partner = window.PonoPartners.list[i];
+        if (partner && partner.id) clearPartnerPracticeSeen(partner.id);
+      }
+    }
+  } catch (_) {}
+}
+
+function resetPuzzlePracticeAndReplay() {
+  resetPuzzlePracticeSeenFlags();
+  clearCurrentPartnerSelection();
+  partnerChoiceDismissedStageId = null;
+  showBasicPracticeIfNeeded(function () {}, true);
 }
 
 function choosePartnerPracticeStageIndex() {
@@ -4060,6 +4087,42 @@ function installAlbumMenuItem() {
   dropdown.insertBefore(item, dropdown.firstChild);
 }
 
+function closePuzzleMenuDropdown() {
+  var dropdown = document.querySelector('.pono-dropdown');
+  var toggle = document.querySelector('.pono-menu-toggle');
+  if (dropdown) dropdown.classList.remove('show');
+  if (toggle) {
+    toggle.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function installPracticeResetMenuItem() {
+  var dropdown = document.querySelector('.pono-dropdown');
+  if (!dropdown || dropdown.querySelector('[data-puzzle-practice-reset-menu]')) return;
+
+  var item = document.createElement('button');
+  item.type = 'button';
+  item.className = 'pono-dd-item';
+  item.setAttribute('data-puzzle-practice-reset-menu', '1');
+  item.innerHTML = '<span class="pono-dd-icon">🔁</span><span class="pono-dd-label">れんしゅうリセット</span>';
+  item.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closePuzzleMenuDropdown();
+    resetPuzzlePracticeAndReplay();
+  });
+
+  var tutorialItem = Array.from(dropdown.querySelectorAll('.pono-dd-item')).find(function (button) {
+    return button.textContent.indexOf('あそびかた') >= 0;
+  });
+  if (tutorialItem && tutorialItem.nextSibling) {
+    dropdown.insertBefore(item, tutorialItem.nextSibling);
+  } else {
+    dropdown.appendChild(item);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   // Merge fixed stages with any saved drawings
   const drawingStages = loadDrawingStages();
@@ -4089,5 +4152,6 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
     installAlbumMenuItem();
+    installPracticeResetMenuItem();
   }
 });
