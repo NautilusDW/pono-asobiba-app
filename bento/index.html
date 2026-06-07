@@ -3096,7 +3096,7 @@ const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
 const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
-const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v1';
+const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v2';
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -4357,7 +4357,7 @@ function normalizeFreeCompleteLayout(layout) {
 }
 function getDefaultFreeCompleteLayout(box, tier = 2) {
   if (!box || tier <= 1) return { x: 0, y: 0, w: 100 };
-  return { x: 0, y: 32, w: 104 };
+  return { x: 0, y: 32, w: 100 };
 }
 function getFreeCompleteLayoutKey(box, tier = 2) {
   const key = getBoxMaskKey(box);
