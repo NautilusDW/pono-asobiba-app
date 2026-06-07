@@ -882,8 +882,8 @@ body.image-stage-mode .game-wrap {
   line-height: 1;
   transform-origin: center center;
 }
-.janken-hand--pono { transform: rotate(90deg) scaleY(-1); }
-.janken-hand--bug { transform: rotate(-90deg) scaleX(-1) scaleY(-1); }
+.janken-hand--pono { transform: rotate(270deg) scaleY(-1); }
+.janken-hand--bug { transform: rotate(90deg) scaleX(-1) scaleY(-1); }
 .janken-hand--pono.is-ready {
   animation: jankenReadyPono 0.42s ease-in-out infinite alternate;
 }
@@ -910,12 +910,12 @@ body.image-stage-mode .game-wrap {
   min-width: 120px;
 }
 @keyframes jankenReadyPono {
-  from { transform: translateY(-6px) rotate(82deg) scaleY(-1); }
-  to   { transform: translateY( 6px) rotate(98deg) scaleY(-1); }
+  from { transform: translateY(-6px) rotate(262deg) scaleY(-1); }
+  to   { transform: translateY( 6px) rotate(278deg) scaleY(-1); }
 }
 @keyframes jankenReadyBug {
-  from { transform: translateY(-6px) rotate(-82deg) scaleX(-1) scaleY(-1); }
-  to   { transform: translateY( 6px) rotate(-98deg) scaleX(-1) scaleY(-1); }
+  from { transform: translateY(-6px) rotate(98deg) scaleX(-1) scaleY(-1); }
+  to   { transform: translateY( 6px) rotate(82deg) scaleX(-1) scaleY(-1); }
 }
 
 .simon-cell {

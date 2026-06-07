@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-07 - [batch:302-maze-janken-hand-180] DONE - Codex: user 指摘「じゃんけんの手の方向が違う。180度回転」を受領。`maze/index.html` のじゃんけん手表示と左右別readyアニメーションを前回状態から180度回転。Playwrightで開始時/ポン後の transform と勝利表示を確認。`sw.js` と `PAGE_CACHE_VERSION` は v865。 (by Codex)
 - 2026-06-07 - [batch:301-puzzle-partner-unlock-tier-cues] DONE - Codex: user 指摘「ピースタッチ前後の輪っかが同じで選択できたか分かりづらい / 仲間解禁時に演出が欲しい / フリー・えほん・サブスクの区分を暗に見せたい」を受領。`puzzle/main.js` はヒント練習のタッチ前 cue を細いオレンジ、選択後 cue を太い青+チェックに分離し、新規解禁パートナーの短い導入演出を選択画面前に追加。`partner-select.js/css` はカード右上タグ+下端色帯で `フリー/えほん/サブスク` を表示。`style.css` は解禁演出、選択/練習中の prestart 非表示を追加。Playwrightで解禁演出、区分タグ、free tier の book/sub ロック、ヒント cue 遷移、16:9/4:3 スクショを確認。`sw.js` は v864。 (by Codex)
 - 2026-06-07 - [batch:300-maze-encounter-followup] DONE - Codex: user 指摘「じゃんけんの手向き/振り角度、ちらっとクイズ素材比率、ふくろ表記、虫ごとの出題固定、リズムまねの拡大時スクロールバー」を受領。`maze/index.html` はじゃんけん手を上下反転し左右別アニメーションへ変更、`ちらっと`/`○×`/`なかまはずれ` の `うさぎ/くま/いるか/くじら/ふくろ` 周辺素材を比率確認済みの既存画像へ差し替え、`ふくろう`→`ふくろ`、虫種ごとの固定ゲーム割り当て、Simon はセルでなくドットだけ拡大してスクロールを出さないよう変更。Playwrightで固定割り当て、素材ロード/表記、じゃんけん勝利、667x375 Simon overflow なしを確認。`sw.js` は v863。 (by Codex)
 - 2026-06-07 - [batch:299-bento-complete-layout-migrate-food-scale] DONE - Codex: user 指摘「完成版が設定通りにならない / 卵焼き0.8、いちご1.2、エビフライ1.2」を受領。完成版調整の保存キーを v2 に変えたことで v1 に保存済みの調整値が切れていたため、v2 が空なら `bento_free_complete_layout_v1` から自動移行して v2 に保存する処理を追加。標準サイズはエビフライ 185→222、たまごやき 163→130、いちご 96→115。Playwrightで v1→v2 移行と調整パネル値反映、3食材サイズを確認。`sw.js` は v861 予定。 (by Codex)
