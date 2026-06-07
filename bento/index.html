@@ -1393,7 +1393,7 @@ html, body {
   background: transparent;
   padding: 0;
   filter: drop-shadow(0 12px 18px rgba(93, 78, 55, 0.22));
-  animation: completeTierIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: completeTierIn 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   animation-delay: var(--tier-delay, 0s);
 }
 .free-complete-tier.is-lower-tier {
@@ -1437,6 +1437,12 @@ html, body {
   margin: 0;
   overflow: hidden;
 }
+.free-complete-editor-preview .complete-bento.free-complete-bento:not(.free-complete-stack) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+}
 .free-complete-editor-preview .free-complete-build-stage {
   position: absolute;
   left: 50%;
@@ -1452,9 +1458,14 @@ html, body {
   transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(0) scale(1);
   filter: drop-shadow(0 5px 8px rgba(93, 78, 55, 0.15));
 }
-.free-complete-editor-preview .free-complete-lid-stage,
 .free-complete-editor-preview .free-complete-sparkle {
   display: none;
+}
+.free-complete-editor-preview .free-complete-lid-stage {
+  opacity: 1;
+  animation: none;
+  transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(var(--lid-y, 0px)) scale(1);
+  filter: drop-shadow(0 6px 8px rgba(93, 78, 55, 0.18));
 }
 .free-complete-lid-stage {
   position: absolute;
@@ -1464,11 +1475,11 @@ html, body {
   width: min(100%, 820px);
   aspect-ratio: 760 / 460;
   opacity: 0;
-  transform: translateX(-50%) translateY(-190px) scale(1.06);
+  transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(calc(-190px + var(--lid-y, 0px))) scale(1.06);
   transform-origin: center bottom;
   pointer-events: none;
   filter: drop-shadow(0 16px 18px rgba(93, 78, 55, 0.28));
-  animation: completeLidClose 0.8s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+  animation: completeLidClose var(--lid-duration, 0.95s) cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
   animation-delay: var(--lid-delay, 1.3s);
 }
 .free-complete-lid-img {
@@ -1487,7 +1498,8 @@ html, body {
   opacity: 0;
   pointer-events: none;
   text-shadow: 0 2px 0 #FFFFFF, 0 0 12px rgba(255, 213, 74, 0.95);
-  animation: completeSparklePop 1.05s ease-out forwards;
+  transform: translate(-50%, -50%);
+  animation: completeSparklePop 1.05s cubic-bezier(0.16, 0.9, 0.26, 1) forwards;
   animation-delay: var(--spark-delay, 1.9s);
 }
 @keyframes completeTierIn {
@@ -1501,32 +1513,36 @@ html, body {
   }
   100% {
     opacity: 1;
-    transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(var(--lid-final-y, 0px)) scale(1);
+    transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(0) scale(1);
   }
 }
 @keyframes completeLidClose {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(-190px) scale(1.06);
+    transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(calc(-190px + var(--lid-y, 0px))) scale(1.06);
   }
   24% { opacity: 1; }
   100% {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(var(--lid-y, 0px)) scale(1);
   }
 }
 @keyframes completeSparklePop {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.2) rotate(-18deg);
+    transform: translate(-50%, -50%) scale(0.18) rotate(-18deg);
   }
-  36% {
+  22% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.35) rotate(8deg);
+    transform: translate(-50%, -50%) scale(1.18) rotate(6deg);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--spark-mid-dx, 0px)), calc(-50% + var(--spark-mid-dy, 0px))) scale(1.1) rotate(132deg);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -62%) scale(0.78) rotate(24deg);
+    transform: translate(calc(-50% + var(--spark-dx, 0px)), calc(-50% + var(--spark-dy, 0px))) scale(0.78) rotate(220deg);
   }
 }
 .complete-bento.free-complete-bento .free-layout-stage,
@@ -3170,8 +3186,11 @@ const SQUARE_BOX_INSIDE_MASK = FREE_ASSET + 'box_square_inside_mask.png';
 const ROUND_BOX_INSIDE_MASK = FREE_ASSET + 'box_round_inside_mask.png';
 const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
 const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
-const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v2';
-const FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS = ['bento_free_complete_layout_v1'];
+const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v3';
+const FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS = ['bento_free_complete_layout_v2', 'bento_free_complete_layout_v1'];
+const FREE_COMPLETE_TIER_STEP_SECONDS = 1.05;
+const FREE_COMPLETE_LID_AFTER_LAST_SECONDS = 0.48;
+const FREE_COMPLETE_LID_CLOSE_SECONDS = 0.95;
 const bentoBoxes = [
   {
     id: 'box_rect_split',
@@ -4452,13 +4471,27 @@ function normalizeFreeCompleteLayout(layout) {
     w: roundFreeCompleteValue(clamp(Number(layout && layout.w) || 100, 80, 120)),
   };
 }
+function normalizeFreeCompleteLidLayout(layout) {
+  return {
+    x: roundFreeCompleteValue(clamp(Number(layout && layout.x) || 0, -160, 160)),
+    y: roundFreeCompleteValue(clamp(Number(layout && layout.y) || 0, -180, 240)),
+    w: roundFreeCompleteValue(clamp(Number(layout && layout.w) || 100, 70, 130)),
+  };
+}
 function getDefaultFreeCompleteLayout(box, tier = 2) {
   if (!box || tier <= 1) return { x: 0, y: 0, w: 100 };
+  return { x: 0, y: 0, w: 100 };
+}
+function getDefaultFreeCompleteLidLayout(box) {
   return { x: 0, y: 0, w: 100 };
 }
 function getFreeCompleteLayoutKey(box, tier = 2) {
   const key = getBoxMaskKey(box);
   return key ? `${key}:tier${tier}` : '';
+}
+function getFreeCompleteLidLayoutKey(box) {
+  const key = getBoxMaskKey(box);
+  return key ? `${key}:lid` : '';
 }
 function getBoxCompleteLayout(box, tier = 2) {
   refreshFreeCompleteLayoutOverrides();
@@ -4467,6 +4500,14 @@ function getBoxCompleteLayout(box, tier = 2) {
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
   const overrideLayout = override && (override.layout || override);
   return normalizeFreeCompleteLayout({ ...base, ...(overrideLayout || {}) });
+}
+function getBoxCompleteLidLayout(box) {
+  refreshFreeCompleteLayoutOverrides();
+  const base = getDefaultFreeCompleteLidLayout(box);
+  const key = getFreeCompleteLidLayoutKey(box);
+  const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
+  const overrideLayout = override && (override.lid || override.layout || override);
+  return normalizeFreeCompleteLidLayout({ ...base, ...(overrideLayout || {}) });
 }
 function getFreeCompleteHostWidth(host) {
   if (!host) return 0;
@@ -4494,7 +4535,11 @@ function getFreeCompleteLayoutScale(host, isPreview = false) {
 }
 function getFreeCompletePreviewLogicalHeight(host, box, tierCount) {
   const count = Math.max(1, Math.round(Number(tierCount) || 1));
-  if (count <= 1) return 560;
+  if (count <= 1) {
+    const lidLayout = box && box.lidImage ? getBoxCompleteLidLayout(box) : null;
+    const lidBottom = lidLayout ? 460 * (lidLayout.w / 100) + Math.max(0, lidLayout.y || 0) : 560;
+    return Math.ceil(Math.max(560, lidBottom + 18));
+  }
   const tierGap = getFreeCompleteTierGap(host, true);
   let bottom = 560;
   for (let tier = 1; tier <= count; tier++) {
@@ -4504,6 +4549,12 @@ function getFreeCompletePreviewLogicalHeight(host, box, tierCount) {
     const stageH = stageW * FREE_LAYOUT_H / FREE_LAYOUT_W;
     const y = baseY + ((layout && Number(layout.y)) || 0);
     bottom = Math.max(bottom, y + stageH);
+  }
+  if (box && box.lidImage) {
+    const lidLayout = getBoxCompleteLidLayout(box);
+    const stageW = 700 * ((lidLayout && Number(lidLayout.w)) || 100) / 100;
+    const stageH = stageW * FREE_LAYOUT_H / FREE_LAYOUT_W;
+    bottom = Math.max(bottom, Math.max(0, (lidLayout && Number(lidLayout.y)) || 0) + stageH);
   }
   return Math.ceil(bottom + 18);
 }
@@ -4532,6 +4583,18 @@ function setBoxCompleteLayoutOverride(box, tier, layout) {
 }
 function resetBoxCompleteLayoutOverride(box, tier) {
   const key = getFreeCompleteLayoutKey(box, tier);
+  if (!key || !freeCompleteLayoutOverrides[key]) return;
+  delete freeCompleteLayoutOverrides[key];
+  saveFreeCompleteLayoutOverrides();
+}
+function setBoxCompleteLidLayoutOverride(box, layout) {
+  const key = getFreeCompleteLidLayoutKey(box);
+  if (!key) return;
+  freeCompleteLayoutOverrides[key] = { lid: normalizeFreeCompleteLidLayout(layout) };
+  saveFreeCompleteLayoutOverrides();
+}
+function resetBoxCompleteLidLayoutOverride(box) {
+  const key = getFreeCompleteLidLayoutKey(box);
   if (!key || !freeCompleteLayoutOverrides[key]) return;
   delete freeCompleteLayoutOverrides[key];
   saveFreeCompleteLayoutOverrides();
@@ -6428,8 +6491,23 @@ function resetSelectedBoxCompleteLayout(tier) {
   if (!box) return;
   resetBoxCompleteLayoutOverride(box, tier);
 }
+function updateSelectedBoxCompleteLidLayout(prop, value) {
+  const box = getSelectedBentoBox();
+  if (!box || !box.lidImage) return null;
+  const current = getBoxCompleteLidLayout(box);
+  const raw = Number(value);
+  const next = { ...current, [prop]: Number.isFinite(raw) ? raw : current[prop] };
+  setBoxCompleteLidLayoutOverride(box, next);
+  return getBoxCompleteLidLayout(box);
+}
+function resetSelectedBoxCompleteLidLayout() {
+  const box = getSelectedBentoBox();
+  if (!box) return;
+  resetBoxCompleteLidLayoutOverride(box);
+}
 function makeCompleteEditorPreviewItems(box, tier) {
-  if (!box || tier <= 1) return [];
+  if (!box) return [];
+  const previewTier = Math.max(1, Math.round(Number(tier) || 1));
   const items = [];
   const auto = box.autoRice || { baseRice: 'rice_base_round' };
   const baseRice = riceBases.find(r => r.id === auto.baseRice) || riceBases[0];
@@ -6458,15 +6536,15 @@ function makeCompleteEditorPreviewItems(box, tier) {
     const spot = spots[index % spots.length];
     items.push({
       ...food,
-      uid: 'complete_preview_' + tier + '_' + index,
-      id: 'complete_preview_' + tier + '_' + index,
+      uid: 'complete_preview_' + previewTier + '_' + index,
+      id: 'complete_preview_' + previewTier + '_' + index,
       type: 'food',
       x: spot.x,
       y: spot.y,
       size: food.size || 150,
       rotation: food.rotation != null ? food.rotation : 0,
       layer: 40 + index,
-      tier,
+      tier: previewTier,
       pop: false,
     });
   });
@@ -6505,6 +6583,32 @@ function makeCompleteLayoutRange(label, prop, min, max, layout, unit, tier) {
     const panel = row.closest('.free-mask-panel');
     const status = panel && panel.querySelector('.free-complete-save-status');
     if (status) status.textContent = '完成版も自動保存';
+    if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+  });
+  row.appendChild(labelText);
+  row.appendChild(input);
+  row.appendChild(value);
+  return row;
+}
+function makeCompleteLidLayoutRange(label, prop, min, max, layout, unit, tier) {
+  const row = document.createElement('label');
+  row.className = 'free-mask-row';
+  const labelText = document.createElement('span');
+  labelText.textContent = label;
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.min = String(min);
+  input.max = String(max);
+  input.step = '0.1';
+  input.value = formatCompleteLayoutValue(layout[prop]);
+  const value = document.createElement('span');
+  value.textContent = formatCompleteLayoutValue(input.value) + unit;
+  input.addEventListener('input', e => {
+    const next = updateSelectedBoxCompleteLidLayout(prop, e.currentTarget.value);
+    value.textContent = formatCompleteLayoutValue(e.currentTarget.value) + unit;
+    const panel = row.closest('.free-mask-panel');
+    const status = panel && panel.querySelector('.free-complete-save-status');
+    if (status) status.textContent = 'ふたも自動保存';
     if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
   });
   row.appendChild(labelText);
@@ -6603,32 +6707,57 @@ function renderFreeMaskEditorControls() {
     panel.appendChild(makeMaskRange('H', 'h', 5, 140, rel));
   }
   const completeTier = Math.min(2, getBoxTierCount(box));
-  if (completeTier > 1) {
+  const hasCompleteTierControls = completeTier > 1;
+  const hasLidControls = !!(box && box.lidImage);
+  if (hasCompleteTierControls || hasLidControls) {
     const section = document.createElement('div');
     section.className = 'free-complete-editor-section';
     const completeTitle = document.createElement('div');
     completeTitle.className = 'free-mask-title';
-    completeTitle.textContent = '完成版調整: 2だんめ';
+    completeTitle.textContent = '完成版調整';
     section.appendChild(completeTitle);
     const completeNote = document.createElement('div');
     completeNote.className = 'free-mask-viewport';
-    completeNote.textContent = '完成画面の上段だけ調整';
+    completeNote.textContent = hasCompleteTierControls ? '2だんめと ふたを調整' : 'ふたを調整';
     section.appendChild(completeNote);
     const completeStatus = document.createElement('div');
     completeStatus.className = 'free-mask-save-status free-complete-save-status';
     completeStatus.textContent = 'X/Yはpx、Wは%で自動保存';
     section.appendChild(completeStatus);
-    const completeLayout = getBoxCompleteLayout(box, completeTier);
-    const completeActions = document.createElement('div');
-    completeActions.className = 'free-mask-actions';
-    completeActions.appendChild(makeSmallControlButton('完成リセット', '', () => {
-      resetSelectedBoxCompleteLayout(completeTier);
-      renderFreeLayoutControls();
-    }));
-    section.appendChild(completeActions);
-    section.appendChild(makeCompleteLayoutRange('X', 'x', -80, 80, completeLayout, 'px', completeTier));
-    section.appendChild(makeCompleteLayoutRange('Y', 'y', -160, 280, completeLayout, 'px', completeTier));
-    section.appendChild(makeCompleteLayoutRange('W', 'w', 80, 120, completeLayout, '%', completeTier));
+    if (hasCompleteTierControls) {
+      const tierLabel = document.createElement('div');
+      tierLabel.className = 'free-mask-viewport';
+      tierLabel.textContent = '2だんめ';
+      section.appendChild(tierLabel);
+      const completeLayout = getBoxCompleteLayout(box, completeTier);
+      const completeActions = document.createElement('div');
+      completeActions.className = 'free-mask-actions';
+      completeActions.appendChild(makeSmallControlButton('2だんめリセット', '', () => {
+        resetSelectedBoxCompleteLayout(completeTier);
+        renderFreeLayoutControls();
+      }));
+      section.appendChild(completeActions);
+      section.appendChild(makeCompleteLayoutRange('2だんX', 'x', -80, 80, completeLayout, 'px', completeTier));
+      section.appendChild(makeCompleteLayoutRange('2だんY', 'y', -160, 280, completeLayout, 'px', completeTier));
+      section.appendChild(makeCompleteLayoutRange('2だんW', 'w', 80, 120, completeLayout, '%', completeTier));
+    }
+    if (hasLidControls) {
+      const lidLabel = document.createElement('div');
+      lidLabel.className = 'free-mask-viewport';
+      lidLabel.textContent = 'ふた';
+      section.appendChild(lidLabel);
+      const lidLayout = getBoxCompleteLidLayout(box);
+      const lidActions = document.createElement('div');
+      lidActions.className = 'free-mask-actions';
+      lidActions.appendChild(makeSmallControlButton('ふたリセット', '', () => {
+        resetSelectedBoxCompleteLidLayout();
+        renderFreeLayoutControls();
+      }));
+      section.appendChild(lidActions);
+      section.appendChild(makeCompleteLidLayoutRange('ふたX', 'x', -160, 160, lidLayout, 'px', completeTier));
+      section.appendChild(makeCompleteLidLayoutRange('ふたY', 'y', -180, 240, lidLayout, 'px', completeTier));
+      section.appendChild(makeCompleteLidLayoutRange('ふたW', 'w', 70, 130, lidLayout, '%', completeTier));
+    }
     section.appendChild(renderFreeCompleteEditorPreview(box, completeTier));
     panel.appendChild(section);
   }
@@ -7020,34 +7149,54 @@ function getFreeCompletedTierCount(items, box) {
 }
 function addFreeCompletionSparkles(host, delayStart) {
   const sparkles = [
-    { x: 11, y: 16, size: 1.38, d: 0.00 },
-    { x: 88, y: 14, size: 1.14, d: 0.08 },
-    { x: 18, y: 72, size: 1.08, d: 0.16 },
-    { x: 82, y: 74, size: 1.42, d: 0.24 },
-    { x: 50, y: 7, size: 1.02, d: 0.32 },
-    { x: 36, y: 20, size: 0.88, d: 0.40 },
-    { x: 64, y: 24, size: 0.94, d: 0.48 },
-    { x: 28, y: 52, size: 1.22, d: 0.56 },
-    { x: 70, y: 54, size: 1.26, d: 0.64 },
-    { x: 50, y: 84, size: 1.06, d: 0.72 },
+    { a: -92, r: 172, size: 1.38, d: 0.00 },
+    { a: -48, r: 154, size: 1.10, d: 0.05 },
+    { a: -12, r: 182, size: 1.28, d: 0.10 },
+    { a: 28, r: 150, size: 0.98, d: 0.15 },
+    { a: 58, r: 190, size: 1.42, d: 0.20 },
+    { a: 96, r: 164, size: 1.05, d: 0.25 },
+    { a: 132, r: 184, size: 1.22, d: 0.30 },
+    { a: 170, r: 148, size: 1.00, d: 0.35 },
+    { a: 210, r: 176, size: 1.34, d: 0.40 },
+    { a: 248, r: 156, size: 0.94, d: 0.45 },
+    { a: 292, r: 188, size: 1.18, d: 0.50 },
+    { a: 326, r: 152, size: 1.06, d: 0.55 },
+    { a: -74, r: 102, size: 0.86, d: 0.18 },
+    { a: 18, r: 112, size: 0.90, d: 0.28 },
+    { a: 112, r: 108, size: 0.84, d: 0.38 },
+    { a: 198, r: 116, size: 0.88, d: 0.48 },
   ];
   sparkles.forEach((s, idx) => {
+    const rad = s.a * Math.PI / 180;
+    const dx = Math.round(Math.cos(rad) * s.r);
+    const dy = Math.round(Math.sin(rad) * s.r);
     const sparkle = document.createElement('span');
     sparkle.className = 'free-complete-sparkle';
     sparkle.textContent = idx % 2 ? '★' : '✦';
-    sparkle.style.setProperty('--spark-x', `${s.x}%`);
-    sparkle.style.setProperty('--spark-y', `${s.y}%`);
+    sparkle.style.setProperty('--spark-x', '50%');
+    sparkle.style.setProperty('--spark-y', '50%');
+    sparkle.style.setProperty('--spark-dx', `${dx}px`);
+    sparkle.style.setProperty('--spark-dy', `${dy}px`);
+    sparkle.style.setProperty('--spark-mid-dx', `${Math.round(dx * 0.82)}px`);
+    sparkle.style.setProperty('--spark-mid-dy', `${Math.round(dy * 0.82)}px`);
     sparkle.style.setProperty('--spark-size', `${s.size}rem`);
     sparkle.style.setProperty('--spark-delay', `${delayStart + s.d}s`);
     host.appendChild(sparkle);
   });
 }
-function createFreeCompleteLidStage(box, delay, tierCount = 1) {
+function createFreeCompleteLidStage(box, delay, tierCount = 1, options = {}) {
   if (!box || !box.lidImage || !box.bounds) return null;
+  const layoutScale = Number(options.layoutScale) || 1;
+  const lidLayout = getBoxCompleteLidLayout(box);
+  const scaledX = roundFreeCompleteValue(lidLayout.x * layoutScale);
+  const scaledY = roundFreeCompleteValue(lidLayout.y * layoutScale);
   const stage = document.createElement('div');
   stage.className = 'free-complete-lid-stage';
   stage.style.setProperty('--lid-delay', `${delay}s`);
-  stage.style.setProperty('--lid-final-y', `${tierCount > 1 ? 0 : 0}px`);
+  stage.style.setProperty('--lid-duration', `${FREE_COMPLETE_LID_CLOSE_SECONDS}s`);
+  stage.style.setProperty('--lid-x', `${scaledX}px`);
+  stage.style.setProperty('--lid-y', `${scaledY}px`);
+  stage.style.width = `min(${lidLayout.w}%, ${Math.round(820 * lidLayout.w / 100)}px)`;
   const lid = document.createElement('img');
   lid.className = 'free-complete-lid-img';
   lid.src = box.lidImage;
@@ -7096,7 +7245,7 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
       wrap.style.setProperty('--tier-x', `${scaledX}px`);
       wrap.style.setProperty('--tier-y', `${roundFreeCompleteValue(baseY + scaledY)}px`);
       wrap.style.setProperty('--tier-z', `${tier}`);
-      wrap.style.setProperty('--tier-delay', `${(tier - 1) * 0.58}s`);
+      wrap.style.setProperty('--tier-delay', `${(tier - 1) * FREE_COMPLETE_TIER_STEP_SECONDS}s`);
       wrap.style.width = `min(${completeLayout.w}%, ${Math.round(700 * completeLayout.w / 100)}px)`;
       const labelText = getTierLabel(tier, box);
       if (labelText) {
@@ -7117,12 +7266,10 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
         interactive: false,
       });
     }
-    if (!isPreview) {
-      const lidDelay = tierCount * 0.58 + 0.16;
-      const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount);
-      if (lidStage) build.appendChild(lidStage);
-      addFreeCompletionSparkles(build, lidDelay + (box.lidImage ? 0.72 : 0.18));
-    }
+    const lidDelay = isPreview ? 0 : ((tierCount - 1) * FREE_COMPLETE_TIER_STEP_SECONDS + 0.65 + FREE_COMPLETE_LID_AFTER_LAST_SECONDS);
+    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, { layoutScale });
+    if (lidStage) build.appendChild(lidStage);
+    if (!isPreview) addFreeCompletionSparkles(build, lidDelay + (lidStage ? FREE_COMPLETE_LID_CLOSE_SECONDS + 0.12 : 0.18));
     return;
   }
   const stage = document.createElement('div');
@@ -7133,12 +7280,11 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     boxId: boxId || selectedBentoBoxId,
     interactive: false,
   });
-  if (!isPreview) {
-    const lidDelay = 0.74;
-    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount);
-    if (lidStage) host.appendChild(lidStage);
-    addFreeCompletionSparkles(host, lidDelay + (box.lidImage ? 0.72 : 0.18));
-  }
+  const layoutScale = getFreeCompleteLayoutScale(host, isPreview);
+  const lidDelay = isPreview ? 0 : 1.05;
+  const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, { layoutScale });
+  if (lidStage) host.appendChild(lidStage);
+  if (!isPreview) addFreeCompletionSparkles(host, lidDelay + (lidStage ? FREE_COMPLETE_LID_CLOSE_SECONDS + 0.12 : 0.18));
 }
 
 // ===== Game =====
