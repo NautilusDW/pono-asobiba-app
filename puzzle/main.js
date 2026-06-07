@@ -1319,6 +1319,7 @@ function redraw() {
       board: { x: boardX, y: boardY, w: boardW, h: boardH },
       pieceSize: { w: pieceW, h: pieceH },
       canvas: { w: canvasW, h: canvasH },
+      buildPiecePath: buildPiecePath,
       requestRedraw: function () {
         // assist 側がピース座標を変えた後、 もう 1 フレーム描き直してほしい時に呼ぶ
         try { requestAnimationFrame(redraw); } catch (_) { redraw(); }

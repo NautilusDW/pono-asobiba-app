@@ -3,11 +3,12 @@
 // パートナー 'kojika' を選択しているときだけ動作する、ピースのドラッグ補助アシスト。
 //
 // === Phase 3c 仕様 ===
-// 1. **Stage 4 以降で使えないバグ修正**:
+// 1. **新しいステージで使えないバグ修正**:
 //    - currentStageId が beforeStageStart で取得失敗するケース (ctx.stage が
 //      未定義 / id 欠落) があり得たため、 drawOverlay/duringDrag 側でも
 //      フォールバック取得 (window.PonoBond.getSelectedPartner と組み合わせ) を行う。
 //    - Lv 取得時に partner.id ではなく PARTNER_ID 定数を直接使う (取り違え防止)。
+//    - ステージ別なかよし度が未記録でも、 こじか選択中なら Lv1 として能力を出す。
 //    - rotation が 0 でないピース (Stage 9+ challenge mode) でも glow は出すが、
 //      magnetic snap は rotation === 0 のときのみ (main.js trySnap と整合)。
 //
@@ -16,18 +17,18 @@
 //    - 副カラー   #60A5FA (R96, G165, B250)
 //    - 枠線上書き色も青系へ統一。
 //
-// 3. **反応範囲を狭く + 最近接スロットのみ反応**:
-//    - Lv1: distMul 1.0 (通常スナップ閾値と同じ)
-//    - Lv2: distMul 1.2
-//    - Lv3: distMul 1.4
+// 3. **青ガイドを通常スナップより先に表示 + 最近接スロットのみ反応**:
+//    - Lv1: 通常 snapDist × 1.25 以上
+//    - Lv2: 通常 snapDist × 1.45 以上
+//    - Lv3: 通常 snapDist × 1.65 以上
 //    - ドラッグ中ピース自身のホームが「全未スナップピースのホームのうち最近接」で
 //      ある場合のみ glow を出す (他のスロットが近い時は反応しない)。
 //
 // 4. **離した時の magnetic snap (吸い付き)**:
 //    - kojika 装備時は pointerup 時点でホーム距離が拡張閾値内なら強制 snap。
-//    - Lv1: SNAP_DIST × 1.5
-//    - Lv2: SNAP_DIST × 1.7
-//    - Lv3: SNAP_DIST × 1.9
+//    - Lv1: SNAP_DIST × 1.45
+//    - Lv2: SNAP_DIST × 1.65
+//    - Lv3: SNAP_DIST × 1.85
 //    - 実装: afterStageReady で puzzleCanvas を取得し、 我々の pointerup を
 //      main.js のものより後に登録する。 main.js の trySnap が距離超過で失敗した後、
 //      我々が距離をチェックし window.PonoPuzzleForceSnapPiece(piece) を呼ぶ。
@@ -41,14 +42,14 @@
 
   var PARTNER_ID = 'kojika';
 
-  // Lv (1〜3) → { distMul, alpha, magnetMul } 設定。 Lv0 は no-op。
-  // distMul:    glow 反応範囲 (= pieceW * 0.5 * distMul) — 通常 SNAP_DIST に揃える
+  // Lv (1〜3) → { guideMul, alpha, magnetMul } 設定。 Lv0 は no-op。
+  // guideMul:   glow 反応範囲 (= 通常 snapDist * guideMul)
   // alpha:      glow 不透明度の基準
   // magnetMul:  pointerup 時の吸い付き拡張倍率 (= SNAP_DIST * magnetMul)
   var LV_PROFILE = {
-    1: { distMul: 1.0, alpha: 0.55, magnetMul: 1.5 },
-    2: { distMul: 1.2, alpha: 0.70, magnetMul: 1.7 },
-    3: { distMul: 1.4, alpha: 0.85, magnetMul: 1.9 },
+    1: { guideMul: 1.25, alpha: 0.58, magnetMul: 1.45 },
+    2: { guideMul: 1.45, alpha: 0.72, magnetMul: 1.65 },
+    3: { guideMul: 1.65, alpha: 0.88, magnetMul: 1.85 },
   };
 
   // main.js drawPiece 側のピース枠線設定 (参考値):
@@ -112,9 +113,11 @@
       if (window.PonoBond && typeof window.PonoBond.getLevel === 'function' && currentStageId != null) {
         var lv = window.PonoBond.getLevel(PARTNER_ID, currentStageId);
         if (lv >= 1 && lv <= 3) return lv;
-        return 0;
       }
     } catch (_) {}
+    // 仲良し度はステージ別に保存されるため、初めてのステージでは lv=0 になる。
+    // パートナー選択中なら能力自体は Lv1 として出し、仲良し度は強さだけに使う。
+    if (isKojika(null)) return 1;
     return 0;
   }
 
@@ -239,9 +242,11 @@
     var halfW = pieceW / 2;
     var halfH = pieceH / 2;
 
-    // 基準閾値: ピース幅ベース。 Phase 3c で distMul を狭める (Lv1=1.0, Lv2=1.2, Lv3=1.4)。
-    var baseThreshold = pieceW * 0.5;
-    var threshold = baseThreshold * profile.distMul;
+    // 基準閾値: 通常スナップ距離より先に青いガイドを見せる。
+    // これにより「こじかを使っている時だけ違う」ことが目で分かる。
+    var snapDist = pieceW * (currentSnapRatio || DEFAULT_SNAP_RATIO);
+    var baseThreshold = Math.max(snapDist, pieceW * 0.38);
+    var threshold = Math.max(snapDist * profile.guideMul, pieceW * 0.48);
 
     // ピース現在位置と homeX/homeY の距離
     var dx = piece.x - piece.homeX;
@@ -343,7 +348,13 @@
         cctx.lineJoin = 'round';
         cctx.lineCap = 'round';
 
-        cctx.strokeRect(piece.x, piece.y, pieceW, pieceH);
+        cctx.beginPath();
+        if (typeof ctx.buildPiecePath === 'function') {
+          ctx.buildPiecePath(cctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+        } else {
+          cctx.rect(piece.x, piece.y, pieceW, pieceH);
+        }
+        cctx.stroke();
 
         cctx.restore();
       }
