@@ -1436,6 +1436,7 @@ html, body {
 .free-complete-editor-preview .free-complete-tier {
   opacity: 1;
   animation: none;
+  transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(0) scale(1);
   filter: drop-shadow(0 5px 8px rgba(93, 78, 55, 0.15));
 }
 .free-complete-editor-preview .free-complete-lid-stage,
@@ -2232,6 +2233,10 @@ html, body {
   width: 100%;
   max-width: none;
 }
+.complete-left .complete-bento.free-complete-stack {
+  width: min(90vw, 700px);
+  max-width: 700px;
+}
 .complete-right {
   width: min(92%, 760px);
   display: flex;
@@ -2436,6 +2441,7 @@ html, body {
   }
   .complete-bento.free-complete-stack {
     width: min(48vw, 360px);
+    max-width: 360px;
     min-height: 330px;
   }
   .free-complete-build-stage {
@@ -4446,8 +4452,15 @@ function getBoxCompleteLayout(box, tier = 2) {
   const overrideLayout = override && (override.layout || override);
   return normalizeFreeCompleteLayout({ ...base, ...(overrideLayout || {}) });
 }
+function getFreeCompleteHostWidth(host) {
+  if (!host) return 0;
+  return host.clientWidth
+    || host.offsetWidth
+    || (host.parentElement && (host.parentElement.clientWidth || host.parentElement.offsetWidth))
+    || 0;
+}
 function getFreeCompleteTierGap(host, isPreview) {
-  const width = host && (host.clientWidth || host.offsetWidth);
+  const width = getFreeCompleteHostWidth(host);
   const fallback = isPreview ? 260 : 700;
   const basis = width || fallback;
   const compactLandscape = !isPreview && window.innerHeight <= 560 && window.innerWidth > window.innerHeight;
@@ -4456,6 +4469,11 @@ function getFreeCompleteTierGap(host, isPreview) {
     isPreview ? 76 : compactLandscape ? 110 : 170,
     isPreview ? 108 : compactLandscape ? 150 : 230
   ));
+}
+function getFreeCompleteLayoutScale(host) {
+  const width = getFreeCompleteHostWidth(host);
+  const basis = width || 700;
+  return basis / 700;
 }
 function setBoxCompleteLayoutOverride(box, tier, layout) {
   const key = getFreeCompleteLayoutKey(box, tier);
@@ -4565,7 +4583,7 @@ function refreshFreeCompletionMaskViews() {
     const box = getSelectedBentoBox();
     const tier = Math.min(2, getBoxTierCount(box));
     if (tier > 1) {
-      renderFreeCompleteBento(slot, makeCompleteEditorPreviewItems(box, tier), box.id, {
+      renderFreeCompleteBento(slot, getCompleteEditorPreviewItems(box, tier), box.id, {
         forceTierCount: tier,
         preview: true,
       });
@@ -6405,10 +6423,16 @@ function makeCompleteEditorPreviewItems(box, tier) {
   });
   return items;
 }
+function getCompleteEditorPreviewItems(box, tier) {
+  if (Array.isArray(placedItems) && placedItems.some(item => getItemTier(item) === tier)) {
+    return placedItems.map(item => ({ ...item, pop: false }));
+  }
+  return makeCompleteEditorPreviewItems(box, tier);
+}
 function refreshFreeCompleteEditorPreview(panel, box, tier) {
   const slot = panel && panel.querySelector('.free-complete-editor-preview-slot');
   if (!slot || !box) return;
-  renderFreeCompleteBento(slot, makeCompleteEditorPreviewItems(box, tier), box.id, {
+  renderFreeCompleteBento(slot, getCompleteEditorPreviewItems(box, tier), box.id, {
     forceTierCount: Math.min(tier, getBoxTierCount(box)),
     preview: true,
   });
@@ -6449,9 +6473,13 @@ function renderFreeCompleteEditorPreview(box, tier) {
   const slot = document.createElement('div');
   slot.className = 'free-complete-editor-preview-slot';
   wrapper.appendChild(slot);
-  renderFreeCompleteBento(slot, makeCompleteEditorPreviewItems(box, tier), box.id, {
+  const renderPreview = () => renderFreeCompleteBento(slot, getCompleteEditorPreviewItems(box, tier), box.id, {
     forceTierCount: Math.min(tier, getBoxTierCount(box)),
     preview: true,
+  });
+  renderPreview();
+  requestAnimationFrame(() => {
+    if (wrapper.isConnected) renderPreview();
   });
   return wrapper;
 }
@@ -7007,13 +7035,16 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     build.className = 'free-complete-build-stage';
     host.appendChild(build);
     const tierGap = getFreeCompleteTierGap(host, isPreview);
+    const layoutScale = getFreeCompleteLayoutScale(host);
     for (let tier = 1; tier <= tierCount; tier++) {
       const wrap = document.createElement('div');
       wrap.className = 'free-complete-tier' + (tier === tierCount ? ' is-upper-tier' : ' is-lower-tier');
       const baseY = (tierCount - tier) * tierGap;
       const completeLayout = tier > 1 ? getBoxCompleteLayout(box, tier) : { x: 0, y: 0, w: 96 };
-      wrap.style.setProperty('--tier-x', `${completeLayout.x}px`);
-      wrap.style.setProperty('--tier-y', `${baseY + completeLayout.y}px`);
+      const scaledX = roundFreeCompleteValue(completeLayout.x * layoutScale);
+      const scaledY = roundFreeCompleteValue(completeLayout.y * layoutScale);
+      wrap.style.setProperty('--tier-x', `${scaledX}px`);
+      wrap.style.setProperty('--tier-y', `${roundFreeCompleteValue(baseY + scaledY)}px`);
       wrap.style.setProperty('--tier-z', `${tier}`);
       wrap.style.setProperty('--tier-delay', `${(tier - 1) * 0.58}s`);
       wrap.style.width = `min(${completeLayout.w}%, ${Math.round(700 * completeLayout.w / 100)}px)`;
