@@ -2949,19 +2949,24 @@ function onKojikaPracticeDragStart(piece) {
   setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', true);
 }
 
+function isKojikaPracticeNearHome(piece) {
+  if (!piece) return false;
+  var dist = Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY);
+  var glowDist = Math.max(SNAP_DIST * 1.65, pieceW * 0.62);
+  return dist <= glowDist;
+}
+
 function updateKojikaPracticeDrag(piece) {
   if (!partnerPracticeState || partnerPracticeState.partnerId !== 'kojika') return;
   if (partnerPracticeState.phase !== 'kojika-moving' && partnerPracticeState.phase !== 'kojika-drag') return;
   if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
-  var dist = Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY);
-  var glowDist = Math.max(SNAP_DIST * 1.65, pieceW * 0.62);
-  if (dist < glowDist) {
+  if (isKojikaPracticeNearHome(piece)) {
     partnerPracticeState.cue = { kind: 'kojika-glow', piece: piece };
     if (!partnerPracticeState.kojikaGlowShown) {
       partnerPracticeState.kojikaGlowShown = true;
       setPartnerPracticeCoachCopy(
         'ひかったね',
-        'そこで はなしてみよう',
+        'はなすと はまるよ',
         ''
       );
       setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'below', true);
@@ -2975,6 +2980,10 @@ function onKojikaPracticePieceDropped(piece, didSnap) {
   if (!partnerPracticeState || partnerPracticeState.partnerId !== 'kojika') return;
   if (partnerPracticeState.phase !== 'kojika-moving' && partnerPracticeState.phase !== 'kojika-drag') return;
   if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  if (!didSnap && !piece.snapped && isKojikaPracticeNearHome(piece)
+      && typeof window.PonoPuzzleForceSnapPiece === 'function') {
+    didSnap = window.PonoPuzzleForceSnapPiece(piece);
+  }
   if (didSnap || piece.snapped) {
     partnerPracticeState.phase = 'kojika-done';
     partnerPracticeState.cue = null;
