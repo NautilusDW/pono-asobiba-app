@@ -2785,11 +2785,27 @@ function runPartnerPracticeDemo(partnerId) {
   }
 
   if (partnerId === 'kojika') {
-    var near = { x: p.homeX + pieceW * 0.62, y: p.homeY + pieceH * 0.28, rotation: 0 };
-    var closer = { x: p.homeX + pieceW * 0.18, y: p.homeY + pieceH * 0.10, rotation: 0 };
-    placePieceForPractice(p, near.x, near.y, 0);
-    if (partnerPracticeState) partnerPracticeState.cue = { kind: 'kojika-glow', piece: p };
-    animatePracticePiece(p, near, closer, 1600);
+    var farCandidates = [
+      { x: 10, y: 10, rotation: 0 },
+      { x: Math.max(10, canvasW - pieceW - 10), y: 10, rotation: 0 },
+      { x: 10, y: Math.max(10, canvasH - pieceH - 10), rotation: 0 },
+      { x: Math.max(10, canvasW - pieceW - 10), y: Math.max(10, canvasH - pieceH - 10), rotation: 0 },
+      { x: Math.max(10, boardX - pieceW * 1.65), y: Math.max(10, Math.min(canvasH - pieceH - 10, boardY + boardH * 0.52)), rotation: 0 },
+      { x: Math.max(10, Math.min(canvasW - pieceW - 10, boardX + boardW + pieceW * 0.65)), y: Math.max(10, Math.min(canvasH - pieceH - 10, boardY + boardH * 0.52)), rotation: 0 },
+    ];
+    var from = farCandidates.reduce(function (best, candidate) {
+      var bestD = Math.hypot(best.x - p.homeX, best.y - p.homeY);
+      var d = Math.hypot(candidate.x - p.homeX, candidate.y - p.homeY);
+      return d > bestD ? candidate : best;
+    }, farCandidates[0]);
+    var close = { x: p.homeX + pieceW * 0.18, y: p.homeY + pieceH * 0.10, rotation: 0 };
+    placePieceForPractice(p, from.x, from.y, 0);
+    if (partnerPracticeState) partnerPracticeState.cue = null;
+    practiceSetTimeout(function () {
+      if (partnerPracticeState) partnerPracticeState.cue = { kind: 'kojika-glow', piece: p };
+      redraw();
+    }, 1320);
+    animatePracticePiece(p, from, close, 2200);
     return;
   }
 
@@ -3481,7 +3497,7 @@ if (btnPeek) {
   }, { passive: false });
   btnPeek.addEventListener('lostpointercapture', function (e) {
     if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
-    finishPeekPress(e, true);
+    finishPeekPress(e, false);
   });
   btnPeek.addEventListener('keydown', function (e) {
     if (e.key !== ' ' && e.key !== 'Enter') return;
