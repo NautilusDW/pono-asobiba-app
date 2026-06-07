@@ -850,7 +850,36 @@ const nextNudge = {
 };
 
 // ===== Success Modal =====
+let successModalLifecycleActive = false;
+let successModalAfterHideQueue = [];
+
+function runAfterSuccessModalClosed(callback) {
+  if (typeof callback !== 'function') return;
+  if (!successModalLifecycleActive && (!successModal || successModal.classList.contains('hidden'))) {
+    setTimeout(callback, 0);
+    return;
+  }
+  successModalAfterHideQueue.push(callback);
+}
+
+function flushAfterSuccessModalClosedQueue() {
+  if (!successModalAfterHideQueue.length) return;
+  const queue = successModalAfterHideQueue.splice(0);
+  setTimeout(() => {
+    queue.forEach((callback) => {
+      try { callback(); }
+      catch (e) {
+        try { console.warn('[PonoPuzzle] after success modal callback failed:', e); } catch (_) {}
+      }
+    });
+  }, 180);
+}
+
+window.PonoPuzzleRunAfterSuccessModalClosed = runAfterSuccessModalClosed;
+
 function showSuccessModal() {
+  successModalLifecycleActive = true;
+
   // === Assist hook: beforeShowSuccess ===
   var successPartner = getCurrentPartner();
   var successStage = STAGES[currentStageIndex] || null;
@@ -1004,6 +1033,10 @@ function showSuccessModal() {
 function hideSuccessModal() {
   successModal.classList.add('hidden');
   nextNudge.stop();
+  if (successModalLifecycleActive) {
+    successModalLifecycleActive = false;
+    flushAfterSuccessModalClosedQueue();
+  }
 }
 
 // ===== Placeholder Image =====

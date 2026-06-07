@@ -175,6 +175,16 @@ window.PonoBondUI = (function () {
     }, 3000);
   }
 
+  function showLevelUpCutInAfterSuccessModal(partner, level) {
+    if (typeof window.PonoPuzzleRunAfterSuccessModalClosed === 'function') {
+      window.PonoPuzzleRunAfterSuccessModalClosed(function () {
+        showLevelUpCutIn(partner, level);
+      });
+      return;
+    }
+    showLevelUpCutIn(partner, level);
+  }
+
   // ===== Clear Summary =====
   function buildSummaryHtml(opts) {
     var partner = opts.partner;
@@ -257,7 +267,7 @@ window.PonoBondUI = (function () {
 
     // Lv 昇格カットイン
     if (bondResult.leveledUp && level >= 2) {
-      showLevelUpCutIn(partner, level);
+      showLevelUpCutInAfterSuccessModal(partner, level);
     }
 
     // バッジ更新
