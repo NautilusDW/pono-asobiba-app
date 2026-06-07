@@ -234,6 +234,84 @@ BASE_STAGES.forEach((s, i) => {
 
 let STAGES = [...BASE_STAGES];
 
+// えほん版は序盤が平坦に感じにくいよう、built-in ステージを一つ飛びで進める。
+// common/tier.js のロック定義は触らず、パズル内の進行順だけを変える。
+const BOOK_PUZZLE_STAGE_SEQUENCE = [0, 2, 4, 6, 8, 10, 12, 14, 16];
+
+function getPuzzleTier() {
+  try {
+    if (window.PonoTier && typeof window.PonoTier.getTier === 'function') {
+      var t = window.PonoTier.getTier();
+      if (t === 'free' || t === 'book' || t === 'sub') return t;
+    }
+  } catch (_) {}
+  return 'free';
+}
+
+function isBuiltInPuzzleStage(stage) {
+  if (!stage) return false;
+  var id = stage.id != null ? Number(stage.id) : NaN;
+  return isFinite(id) && id > 0 && id < 1000;
+}
+
+function getBookStageSequencePosition(index) {
+  for (var i = 0; i < BOOK_PUZZLE_STAGE_SEQUENCE.length; i++) {
+    if (BOOK_PUZZLE_STAGE_SEQUENCE[i] === index) return i;
+  }
+  return -1;
+}
+
+function getStageDisplayMeta(index) {
+  var tier = getPuzzleTier();
+  var stage = STAGES[index] || null;
+  if (tier === 'book' && isBuiltInPuzzleStage(stage)) {
+    var pos = getBookStageSequencePosition(index);
+    if (pos >= 0) {
+      return { num: pos + 1, total: BOOK_PUZZLE_STAGE_SEQUENCE.length };
+    }
+  }
+  return { num: index + 1, total: STAGES.length };
+}
+
+function getNextStageIndexForFlow(index) {
+  var current = (typeof index === 'number') ? index : currentStageIndex;
+  var tier = getPuzzleTier();
+  var stage = STAGES[current] || null;
+  if (tier === 'book' && isBuiltInPuzzleStage(stage)) {
+    var pos = getBookStageSequencePosition(current);
+    if (pos >= 0 && pos < BOOK_PUZZLE_STAGE_SEQUENCE.length - 1) {
+      return BOOK_PUZZLE_STAGE_SEQUENCE[pos + 1];
+    }
+    if (pos === BOOK_PUZZLE_STAGE_SEQUENCE.length - 1) {
+      return current + 2;
+    }
+  }
+  return current + 1;
+}
+
+function isStageUnlockedForCurrentFlow(index) {
+  var stage = STAGES[index] || null;
+  if (!stage) return false;
+  if (!isBuiltInPuzzleStage(stage)) return true; // user drawing stages
+  var tier = getPuzzleTier();
+  if (tier === 'sub') return true;
+  if (tier === 'book') {
+    return getBookStageSequencePosition(index) >= 0;
+  }
+  if (!window.PonoTier) return true;
+  var stageNum = stage.id != null ? Number(stage.id) : (index + 1);
+  var isSpecial = [5, 10, 15, 20].indexOf(stageNum) >= 0;
+  var stageIdStr = 'stage_' + String(stageNum).padStart(2, '0');
+  return isSpecial
+    ? window.PonoTier.isPuzzlePonoSpecialUnlocked(stageIdStr)
+    : window.PonoTier.isPuzzleStageUnlocked(stageNum);
+}
+
+function canAdvanceToNextStage() {
+  var nextIndex = getNextStageIndexForFlow(currentStageIndex);
+  return nextIndex < STAGES.length && isStageUnlockedForCurrentFlow(nextIndex);
+}
+
 function loadDrawingStages() {
   try {
     const drawings = JSON.parse(localStorage.getItem('pono_drawings')) || [];
@@ -578,7 +656,9 @@ function markStageClear(stageId) {
   var sid = Number(stageId);
   if (!isFinite(sid) || sid <= 0 || sid >= 1000) return;
   var clears = readLocalJson(PUZZLE_STAGE_CLEAR_KEY, {});
-  clears[String(sid)] = true;
+  for (var i = 1; i <= sid; i++) {
+    clears[String(i)] = true;
+  }
   writeLocalJson(PUZZLE_STAGE_CLEAR_KEY, clears);
 }
 
@@ -790,6 +870,13 @@ function showSuccessModal() {
     normalizedStageId = currentStageIndex + 1;
   }
   var bondResult = null;
+  var previousPartnerLevel = 0;
+  var previousHintUses = null;
+  if (successPartner && window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
+    try { previousPartnerLevel = window.PonoBond.getLevel(successPartner.id, normalizedStageId) | 0; }
+    catch (_) { previousPartnerLevel = 0; }
+    previousHintUses = computeHintUses(hintStageNumFor(normalizedStageId), successPartner.id, previousPartnerLevel);
+  }
   try {
     if (successPartner && window.PonoBond && typeof window.PonoBond.addHeart === 'function') {
       bondResult = window.PonoBond.addHeart(successPartner.id, normalizedStageId);
@@ -799,6 +886,15 @@ function showSuccessModal() {
   }
   // 他フックから参照できるよう公開
   window.PonoLastBondResult = bondResult;
+  var hintIncreaseNotice = null;
+  if (successPartner && successPartner.id === 'kitsune'
+      && previousHintUses != null
+      && bondResult && bondResult.leveledUp) {
+    var nextHintUses = computeHintUses(hintStageNumFor(normalizedStageId), successPartner.id, bondResult.level || 0);
+    if (nextHintUses > previousHintUses) {
+      hintIncreaseNotice = { from: previousHintUses, to: nextHintUses };
+    }
+  }
   stopChallengeTimer();
   activeChallenge.resultText = currentChallengeResultText();
 
@@ -839,12 +935,13 @@ function showSuccessModal() {
     })();
   }
 
+  const displayMeta = getStageDisplayMeta(currentStageIndex);
   const isLast = currentStageIndex >= STAGES.length - 1;
   if (isLast) {
     modalStageInfo.textContent = 'ぜんぶ クリア！！';
     btnNextStage.classList.add('hidden');
   } else {
-    modalStageInfo.textContent = `ステージ ${currentStageIndex + 1} クリア！`;
+    modalStageInfo.textContent = `ステージ ${displayMeta.num} クリア！`;
     btnNextStage.classList.remove('hidden');
   }
   if (modalChallengeInfo) {
@@ -875,7 +972,12 @@ function showSuccessModal() {
   // モーダルが実際に表示された後で nudge を開始 (isLast 時はスキップ: 次へボタンが無い)
   function revealModal() {
     successModal.classList.remove('hidden');
-    if (!isLast) nextNudge.start();
+    if (hintIncreaseNotice) {
+      setTimeout(function () {
+        showHintIncreaseModal(hintIncreaseNotice.from, hintIncreaseNotice.to);
+      }, 420);
+    }
+    if (!isLast && canAdvanceToNextStage()) nextNudge.start();
   }
 
   // ★ 全ステージクリア時は宝箱演出を先に表示、閉じたら成功モーダル
@@ -1861,7 +1963,7 @@ const HINT_FLASH_DURATION_MS = 1500;    // 金色星 + radial glow 表示時間 
 // Phase 3c 確定テーブル: パートナー / Lv / Stage に応じてヒント初期回数を計算
 //   - 装備なし: base + (Lv3 で +1)、上限 3
 //       base = {Stage 1-5: 1, Stage 6-12: 2, Stage 13-20: 3}
-//   - キツネ装備: 3 + (Stage13以降で +1) + (Lv3 で +1)、上限 5
+//   - キツネ装備: base + なかよし Lv、上限 5
 //   - user drawing stage (id >= 1000) は安全策として「装備なし base=3」相当扱い
 function computeHintUses(stageNum, partnerId, level) {
   var lv = (typeof level === 'number' && isFinite(level)) ? level : 0;
@@ -1872,15 +1974,14 @@ function computeHintUses(stageNum, partnerId, level) {
   if (isHarinezumi) {
     return harinezumiHintUses(sNum, challengeRankFor(partnerId, sNum));
   }
-  if (isKitsune) {
-    var stageBonus = (sNum >= 13) ? 1 : 0;
-    return Math.min(5, 3 + stageBonus + lv3Bonus);
-  }
-  // 装備なし / 他パートナー (現状はキツネだけがヒント特化)
   var base;
   if (sNum <= 5) base = 1;
   else if (sNum <= 12) base = 2;
   else base = 3;
+  if (isKitsune) {
+    return Math.min(5, base + Math.max(0, Math.min(3, lv)));
+  }
+  // 装備なし / 他パートナー (現状はキツネだけがヒント特化)
   return Math.min(3, base + lv3Bonus);
 }
 
@@ -1991,6 +2092,71 @@ function setHintUsesRemaining(stageId, n) {
   try {
     localStorage.setItem(hintUsesStorageKey(stageId), String(Math.max(0, n | 0)));
   } catch (_) {}
+}
+
+function showHintIncreaseModal(fromCount, toCount, opts) {
+  opts = opts || {};
+  var from = Math.max(0, fromCount | 0);
+  var to = Math.max(from + 1, toCount | 0);
+  var existing = document.getElementById('hint-increase-modal');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+  var overlay = document.createElement('div');
+  overlay.id = 'hint-increase-modal';
+  overlay.className = 'hint-increase-modal';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-live', 'assertive');
+
+  var card = document.createElement('div');
+  card.className = 'hint-increase-card';
+
+  var badge = document.createElement('div');
+  badge.className = 'hint-increase-card__badge';
+  badge.textContent = 'ヒントが';
+
+  var title = document.createElement('div');
+  title.className = 'hint-increase-card__title';
+  title.textContent = 'ふえたよ';
+
+  var meter = document.createElement('div');
+  meter.className = 'hint-increase-card__meter';
+  var before = document.createElement('span');
+  before.className = 'hint-increase-card__count hint-increase-card__count--before';
+  before.textContent = 'ヒント×' + from;
+  var arrow = document.createElement('span');
+  arrow.className = 'hint-increase-card__arrow';
+  arrow.textContent = '→';
+  var after = document.createElement('span');
+  after.className = 'hint-increase-card__count hint-increase-card__count--after';
+  after.textContent = 'ヒント×' + to;
+  meter.appendChild(before);
+  meter.appendChild(arrow);
+  meter.appendChild(after);
+
+  card.appendChild(badge);
+  card.appendChild(title);
+  card.appendChild(meter);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(function () {
+    overlay.classList.add('is-visible');
+    setTimeout(function () {
+      overlay.classList.add('is-after');
+    }, 520);
+  });
+
+  var closeDelay = opts.closeDelay || 1900;
+  var close = function () {
+    overlay.classList.remove('is-visible');
+    overlay.classList.add('is-leaving');
+    setTimeout(function () {
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }, 260);
+  };
+  overlay.addEventListener('click', close);
+  setTimeout(close, closeDelay);
 }
 
 function getCurrentStageIdForHint() {
@@ -2860,13 +3026,14 @@ function runKitsuneHintCountDemo() {
   if (!btnHint) return;
   practiceAddHighlight(btnHint);
   btnHint.classList.add('partner-practice-count-demo');
-  btnHint.textContent = 'ヒント×2';
+  btnHint.textContent = 'ヒント×1';
   practiceSetTimeout(function () {
     if (!partnerPracticeState || !btnHint) return;
-    btnHint.textContent = 'ヒント×3';
+    btnHint.textContent = 'ヒント×2';
     btnHint.classList.remove('is-count-pop');
     void btnHint.offsetWidth;
     btnHint.classList.add('is-count-pop');
+    showHintIncreaseModal(1, 2, { closeDelay: 1700 });
   }, 760);
   practiceSetTimeout(function () {
     if (!btnHint) return;
@@ -3565,9 +3732,10 @@ function loadStage(index) {
 
   // ステージタイトル
   const title = stage.title || stage.stageText;
+  const displayMeta = getStageDisplayMeta(index);
   stageLabel.textContent = title
-    ? `${title} (${index + 1}/${STAGES.length})`
-    : `ステージ ${index + 1} / ${STAGES.length}`;
+    ? `${title} (${displayMeta.num}/${displayMeta.total})`
+    : `ステージ ${displayMeta.num} / ${displayMeta.total}`;
 
   loadingEl.classList.remove('hidden');
   dragPiece = null;
@@ -3812,27 +3980,17 @@ if (btnHint) {
 }
 
 btnNextStage.addEventListener('click', () => {
-  const nextIndex = currentStageIndex + 1;
-  // 配列範囲外なら現状動作 (loadStage がエラーハンドリングする可能性)
-  if (nextIndex < STAGES.length && window.PonoTier) {
-    const nextStage = STAGES[nextIndex];
-    const stageNum = nextStage.id;
-    // user drawing stages (id >= 1000) はティアロック対象外 (自作コンテンツ)
-    if (stageNum < 1000) {
-      // ポノ特別枠 (id = 5/10/15/20) は別判定
-      const isSpecial = [5, 10, 15, 20].indexOf(stageNum) >= 0;
-      const stageIdStr = 'stage_' + String(stageNum).padStart(2, '0');
-      const unlocked = isSpecial
-        ? window.PonoTier.isPuzzlePonoSpecialUnlocked(stageIdStr)
-        : window.PonoTier.isPuzzleStageUnlocked(stageNum);
-      if (!unlocked) {
-        window.PonoTier.showSubscribePromo({
-          title: 'つぎの えは まだ あそべないよ',
-          body: 'えほん モード や アプリ で あたらしい えが ふえていくよ！'
-        });
-        return;
-      }
+  const nextIndex = getNextStageIndexForFlow(currentStageIndex);
+  if (nextIndex >= STAGES.length) return;
+  if (!isStageUnlockedForCurrentFlow(nextIndex)) {
+    nextNudge.stop();
+    if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+      window.PonoTier.showSubscribePromo({
+        title: 'つぎの えは まだ あそべないよ',
+        body: 'えほん モード や アプリ で あたらしい えが ふえていくよ！'
+      });
     }
+    return;
   }
   hideSuccessModal();
   loadStageAndThen(nextIndex, function () {
