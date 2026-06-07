@@ -1363,8 +1363,8 @@ html, body {
 }
 .complete-bento.free-complete-stack {
   position: relative;
-  width: min(94vw, 820px);
-  min-height: clamp(500px, 68vh, 610px);
+  width: min(90vw, 700px);
+  min-height: clamp(560px, 72vh, 660px);
   aspect-ratio: auto;
   display: block;
   padding: 0;
@@ -1376,7 +1376,7 @@ html, body {
 .free-complete-build-stage {
   position: relative;
   width: 100%;
-  height: clamp(500px, 68vh, 610px);
+  height: clamp(560px, 72vh, 660px);
   overflow: visible;
 }
 .free-complete-tier {
@@ -1394,6 +1394,12 @@ html, body {
   filter: drop-shadow(0 12px 18px rgba(93, 78, 55, 0.22));
   animation: completeTierIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   animation-delay: var(--tier-delay, 0s);
+}
+.free-complete-tier.is-lower-tier {
+  filter: drop-shadow(0 15px 22px rgba(93, 78, 55, 0.18));
+}
+.free-complete-tier.is-upper-tier {
+  filter: drop-shadow(0 16px 22px rgba(93, 78, 55, 0.24));
 }
 .free-complete-tier-label {
   display: none;
@@ -1421,11 +1427,11 @@ html, body {
 }
 .free-complete-editor-preview .complete-bento.free-complete-stack {
   width: 100%;
-  min-height: 168px;
+  min-height: 216px;
   margin: 0;
 }
 .free-complete-editor-preview .free-complete-build-stage {
-  height: 168px;
+  height: 216px;
 }
 .free-complete-editor-preview .free-complete-tier {
   opacity: 1;
@@ -2417,6 +2423,27 @@ html, body {
   .complete-pono-big { width: 126px; height: 126px; }
   .complete-bento.free-complete-stack,
   .free-complete-build-stage { min-height: 360px; }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .complete-overlay {
+    padding: 6px;
+  }
+  .complete-card-wide {
+    padding: 4px 8px 8px;
+  }
+  .complete-main {
+    gap: 3px;
+  }
+  .complete-bento.free-complete-stack {
+    width: min(48vw, 360px);
+    min-height: 330px;
+  }
+  .free-complete-build-stage {
+    height: 330px;
+  }
+  .complete-right {
+    padding: 4px 8px;
+  }
 }
 
 /* ===== Favorites header button ===== */
@@ -4405,7 +4432,7 @@ function normalizeFreeCompleteLayout(layout) {
 }
 function getDefaultFreeCompleteLayout(box, tier = 2) {
   if (!box || tier <= 1) return { x: 0, y: 0, w: 100 };
-  return { x: 0, y: 32, w: 100 };
+  return { x: 0, y: 0, w: 100 };
 }
 function getFreeCompleteLayoutKey(box, tier = 2) {
   const key = getBoxMaskKey(box);
@@ -4418,6 +4445,17 @@ function getBoxCompleteLayout(box, tier = 2) {
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
   const overrideLayout = override && (override.layout || override);
   return normalizeFreeCompleteLayout({ ...base, ...(overrideLayout || {}) });
+}
+function getFreeCompleteTierGap(host, isPreview) {
+  const width = host && (host.clientWidth || host.offsetWidth);
+  const fallback = isPreview ? 260 : 700;
+  const basis = width || fallback;
+  const compactLandscape = !isPreview && window.innerHeight <= 560 && window.innerWidth > window.innerHeight;
+  return Math.round(clamp(
+    basis * (isPreview ? 0.32 : 0.30),
+    isPreview ? 76 : compactLandscape ? 110 : 170,
+    isPreview ? 108 : compactLandscape ? 150 : 230
+  ));
 }
 function setBoxCompleteLayoutOverride(box, tier, layout) {
   const key = getFreeCompleteLayoutKey(box, tier);
@@ -6325,15 +6363,33 @@ function resetSelectedBoxCompleteLayout(tier) {
 }
 function makeCompleteEditorPreviewItems(box, tier) {
   if (!box || tier <= 1) return [];
+  const items = [];
+  const auto = box.autoRice || { baseRice: 'rice_base_round' };
+  const baseRice = riceBases.find(r => r.id === auto.baseRice) || riceBases[0];
+  if (baseRice) {
+    items.push({
+      ...baseRice,
+      uid: 'complete_preview_rice_1',
+      id: 'complete_preview_rice_1',
+      type: 'rice',
+      x: auto.x != null ? auto.x : (box.bounds.x + box.bounds.w / 2),
+      y: auto.y != null ? auto.y : (box.bounds.y + box.bounds.h / 2),
+      size: auto.size || baseRice.size,
+      rotation: 0,
+      layer: 20,
+      tier: 1,
+      pop: false,
+    });
+  }
   const spots = Array.isArray(box.foodSpots) && box.foodSpots.length
     ? box.foodSpots
     : [{ x: box.bounds.x + box.bounds.w / 2, y: box.bounds.y + box.bounds.h / 2 }];
   const samples = FREE_COOKED_OKAZU
     .filter(f => f && f.img)
     .slice(0, Math.min(4, spots.length));
-  return samples.map((food, index) => {
+  samples.forEach((food, index) => {
     const spot = spots[index % spots.length];
-    return {
+    items.push({
       ...food,
       uid: 'complete_preview_' + tier + '_' + index,
       id: 'complete_preview_' + tier + '_' + index,
@@ -6345,8 +6401,9 @@ function makeCompleteEditorPreviewItems(box, tier) {
       layer: 40 + index,
       tier,
       pop: false,
-    };
+    });
   });
+  return items;
 }
 function refreshFreeCompleteEditorPreview(panel, box, tier) {
   const slot = panel && panel.querySelector('.free-complete-editor-preview-slot');
@@ -6949,18 +7006,17 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     const build = document.createElement('div');
     build.className = 'free-complete-build-stage';
     host.appendChild(build);
+    const tierGap = getFreeCompleteTierGap(host, isPreview);
     for (let tier = 1; tier <= tierCount; tier++) {
       const wrap = document.createElement('div');
-      wrap.className = 'free-complete-tier';
-      const baseY = (tierCount - tier) * 32;
-      const completeLayout = tier > 1 ? getBoxCompleteLayout(box, tier) : { x: 0, y: 0, w: 100 };
+      wrap.className = 'free-complete-tier' + (tier === tierCount ? ' is-upper-tier' : ' is-lower-tier');
+      const baseY = (tierCount - tier) * tierGap;
+      const completeLayout = tier > 1 ? getBoxCompleteLayout(box, tier) : { x: 0, y: 0, w: 96 };
       wrap.style.setProperty('--tier-x', `${completeLayout.x}px`);
       wrap.style.setProperty('--tier-y', `${baseY + completeLayout.y}px`);
       wrap.style.setProperty('--tier-z', `${tier}`);
       wrap.style.setProperty('--tier-delay', `${(tier - 1) * 0.58}s`);
-      if (tier > 1) {
-        wrap.style.width = `min(${completeLayout.w}%, ${Math.round(820 * completeLayout.w / 100)}px)`;
-      }
+      wrap.style.width = `min(${completeLayout.w}%, ${Math.round(700 * completeLayout.w / 100)}px)`;
       const labelText = getTierLabel(tier, box);
       if (labelText) {
         const label = document.createElement('div');
