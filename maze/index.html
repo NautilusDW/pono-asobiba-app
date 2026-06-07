@@ -882,10 +882,13 @@ body.image-stage-mode .game-wrap {
   line-height: 1;
   transform-origin: center center;
 }
-.janken-hand--pono { transform: rotate(90deg); }
-.janken-hand--bug { transform: rotate(-90deg) scaleX(-1); }
-.janken-hand.is-ready {
-  animation: jankenReady 0.42s ease-in-out infinite alternate;
+.janken-hand--pono { transform: rotate(90deg) scaleY(-1); }
+.janken-hand--bug { transform: rotate(-90deg) scaleX(-1) scaleY(-1); }
+.janken-hand--pono.is-ready {
+  animation: jankenReadyPono 0.42s ease-in-out infinite alternate;
+}
+.janken-hand--bug.is-ready {
+  animation: jankenReadyBug 0.42s ease-in-out infinite alternate;
 }
 .janken-result {
   grid-column: 1 / -1;
@@ -906,9 +909,26 @@ body.image-stage-mode .game-wrap {
 .janken-controls .enc-btn {
   min-width: 120px;
 }
-@keyframes jankenReady {
-  from { translate: 0 -6px; rotate: -6deg; }
-  to   { translate: 0  6px; rotate:  6deg; }
+@keyframes jankenReadyPono {
+  from { transform: translateY(-6px) rotate(82deg) scaleY(-1); }
+  to   { transform: translateY( 6px) rotate(98deg) scaleY(-1); }
+}
+@keyframes jankenReadyBug {
+  from { transform: translateY(-6px) rotate(-82deg) scaleX(-1) scaleY(-1); }
+  to   { transform: translateY( 6px) rotate(-98deg) scaleX(-1) scaleY(-1); }
+}
+
+.simon-cell {
+  min-height: 74px;
+  padding: 8px 10px !important;
+  overflow: hidden;
+}
+.simon-cell .simon-dot {
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.simon-cell.is-flashing .simon-dot {
+  transform: scale(1.14);
+  box-shadow: inset 0 4px 9px rgba(255,255,255,0.65), inset 0 -6px 10px rgba(0,0,0,0.18), 0 0 0 5px rgba(255,255,255,0.62), 0 5px 12px rgba(0,0,0,0.18);
 }
 
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
@@ -2536,8 +2556,8 @@ const CREATURE_KIND_DATA = {
   mayoi:  { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
   odoke:  { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse', imageUrl: '../assets/images/maze/creatures/odoke.png' },
   pyon:   { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon', imageUrl: '../assets/images/maze/creatures/pyon.png' },
-  kabuto: { emoji: '🪲', color: '#8B5A3C', name: 'コツコツムシ', dialog: '', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/kabuto.png' },
-  hachi:  { emoji: '🐝', color: '#E6B800', name: 'ブンブンムシ', dialog: '', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/hachi.png' },
+  kabuto: { emoji: '🪲', color: '#8B5A3C', name: 'コツコツムシ', dialog: 'ちらっと だけ みえてるぞ！<br>なにか わかるかな？', defaultGame: 'silhouette', imageUrl: '../assets/images/maze/creatures/kabuto.png' },
+  hachi:  { emoji: '🐝', color: '#E6B800', name: 'ブンブンムシ', dialog: 'なかまはずれを さがしてね！<br>ブンブン！', defaultGame: 'oddone', imageUrl: '../assets/images/maze/creatures/hachi.png' },
 };
 // 全お邪魔虫共通の台詞 (出会った瞬間 / プレイヤーが勝った瞬間)。
 // c.dialog (ステージ JSON での明示指定) があれば encounter ではそちらを優先。
@@ -2809,17 +2829,18 @@ const _GAME_LABELS = {
 
 const _GAME_DIALOGS = {
   janken:     'じゃんけん してあげる〜<br>かったら とおしてあげるよ',
-  silhouette: 'ちらっと だけ みえてるよ〜<br>なんの どうぶつ かな？',
+  silhouette: 'ちらっと だけ みえてるよ〜<br>なんの え かな？',
   truefalse:  '○×クイズ で あそぼう！<br>こたえられる かな？',
   oddone:     'なかまはずれ さがし！<br>どれが ちがうかな？',
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
 };
 
 function _gameForCreature(c) {
-  // c.minigame (作者指定) > 種類関係なくランダム
+  // c.minigame (作者指定) > 虫の種類ごとの固定ミニゲーム。
   if (c && c.minigame && _GAME_LABELS[c.minigame]) return c.minigame;
-  const games = Object.keys(_GAME_LABELS);
-  return games[Math.floor(Math.random() * games.length)];
+  const data = _creatureData(c);
+  if (data && data.defaultGame && _GAME_LABELS[data.defaultGame]) return data.defaultGame;
+  return 'janken';
 }
 
 function _showEncounterStart() {
@@ -2937,31 +2958,9 @@ function _resolveJanken(playerHand) {
 // ミニゲーム データプール (ランダムに 1 問選んで出題)
 // ════════════════════════════════════════════════════════════
 
-// シルエットクイズ: 答えと選択肢 3 つ (答え含む)。シャッフルして表示
-// ちらっとクイズ用プール (assets/images/word/ の自前イラスト)。
-// 同じカテゴリ (どうぶつ) で揃えて選択肢が紛らわしくなりすぎないように
-// 動物のみピックアップ。
-const PEEK_QUIZ_POOL = [
-  { id: 'inu',    label: 'いぬ',    src: '../assets/images/word/inu.png' },
-  { id: 'neko',   label: 'ねこ',    src: '../assets/images/word/neko.png' },
-  { id: 'usagi',  label: 'うさぎ',  src: '../assets/images/word/usagi.png' },
-  { id: 'risu',   label: 'りす',    src: '../assets/images/word/risu.png' },
-  { id: 'kuma',   label: 'くま',    src: '../assets/images/word/kuma.png' },
-  { id: 'panda',  label: 'ぱんだ',  src: '../assets/images/word/panda.png' },
-  { id: 'kirin',  label: 'きりん',  src: '../assets/images/word/kirin.png' },
-  { id: 'lion',   label: 'らいおん', src: '../assets/images/word/lion.png' },
-  { id: 'saru',   label: 'さる',    src: '../assets/images/word/saru.png' },
-  { id: 'shika',  label: 'しか',    src: '../assets/images/word/shika.png' },
-  { id: 'zou',    label: 'ぞう',    src: '../assets/images/word/zou.png' },
-  { id: 'fukuro', label: 'ふくろう', src: '../assets/images/word/fukuro.png' },
-  { id: 'kujira', label: 'くじら',  src: '../assets/images/word/kujira.png' },
-  { id: 'iruka',  label: 'いるか',  src: '../assets/images/word/iruka.png' },
-  { id: 'kani',   label: 'かに',    src: '../assets/images/word/kani.png' },
-  { id: 'ika',    label: 'いか',    src: '../assets/images/word/ika.png' },
-];
-
 const MAZE_WORD_IMG = '../assets/images/word/';
 const MAZE_QUIZ_IMG = '../assets/images/quizland/illust/choice/';
+const MAZE_QUIZ_STAGE_IMG = '../assets/images/quizland/illust/stage/';
 const MAZE_CREATURE_IMG = '../assets/images/maze/creatures/';
 function _mzAsset(src, label) {
   return { src: src, label: label };
@@ -2975,10 +2974,34 @@ function _mzQuiz(name, label) {
 function _mzCreature(name, label) {
   return _mzAsset(MAZE_CREATURE_IMG + name + '.png', label);
 }
+function _mzPeek(id, label, asset) {
+  return { id: id, label: label, src: asset.src };
+}
+
+// ちらっとクイズ: 答えと選択肢 3 つ (答え含む)。シャッフルして表示。
+// 迷路の選択肢枠で縦長/横長に見えすぎない既存生成イラストを優先して使う。
+const PEEK_QUIZ_POOL = [
+  _mzPeek('inu',    'いぬ',    _mzWord('inu', 'いぬ')),
+  _mzPeek('neko',   'ねこ',    _mzWord('neko', 'ねこ')),
+  _mzPeek('usagi',  'うさぎ',  _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png', 'うさぎ')),
+  _mzPeek('risu',   'りす',    _mzWord('risu', 'りす')),
+  _mzPeek('kuma',   'くま',    _mzQuiz('kuma', 'くま')),
+  _mzPeek('panda',  'ぱんだ',  _mzWord('panda', 'ぱんだ')),
+  _mzPeek('kirin',  'きりん',  _mzWord('kirin', 'きりん')),
+  _mzPeek('lion',   'らいおん', _mzWord('lion', 'らいおん')),
+  _mzPeek('saru',   'さる',    _mzWord('saru', 'さる')),
+  _mzPeek('shika',  'しか',    _mzWord('shika', 'しか')),
+  _mzPeek('zou',    'ぞう',    _mzWord('zou', 'ぞう')),
+  _mzPeek('fukuro', 'ふくろ',  _mzWord('fukuro', 'ふくろ')),
+  _mzPeek('kujira', 'くじら',  _mzQuiz('kujira', 'くじら')),
+  _mzPeek('iruka',  'いるか',  _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png', 'いるか')),
+  _mzPeek('kani',   'かに',    _mzWord('kani', 'かに')),
+  _mzPeek('ika',    'いか',    _mzWord('ika', 'いか')),
+];
 
 // ○×クイズ: q=問い, a=true|false, icon=既存生成イラスト
 const QUIZ_TRUEFALSE = [
-  { q: 'うさぎは そらを とぶ？', a: false, icon: _mzWord('usagi', 'うさぎ') },
+  { q: 'うさぎは そらを とぶ？', a: false, icon: _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png', 'うさぎ') },
   { q: 'ちょうちょには はねが ある？', a: true, icon: _mzQuiz('chocho', 'ちょうちょ') },
   { q: 'はなは つちから うまれる？', a: true, icon: _mzWord('hana', 'はな') },
   { q: 'たいようは つきより おおきい？', a: true, icon: _mzWord('taiyou', 'たいよう') },
@@ -3001,14 +3024,14 @@ const QUIZ_TRUEFALSE = [
   { q: 'こおりは あつくなると とける？', a: true, icon: _mzQuiz('ice', 'こおり') },
   { q: 'みかんは あおい？', a: false, icon: _mzWord('mikan', 'みかん') },
   { q: 'ロケットは うちゅうへ いく？', a: true, icon: _mzWord('rocket', 'ロケット') },
-  { q: 'くまは どうぶつ？', a: true, icon: _mzWord('kuma', 'くま') },
+  { q: 'くまは どうぶつ？', a: true, icon: _mzQuiz('kuma', 'くま') },
 ];
 
 // なかまはずれ: items 4つ、odd は items のうち仲間外れの index
 const QUIZ_ODDONE = [
   { items: [_mzWord('ringo','りんご'), _mzWord('banana','バナナ'), _mzWord('mikan','みかん'), _mzWord('inu','いぬ')], odd: 3, hint: 'くだもの' },
   { items: [_mzWord('kuruma','くるま'), _mzWord('taxi','タクシー'), _mzWord('bus','バス'), _mzWord('kirin','きりん')], odd: 3, hint: 'のりもの' },
-  { items: [_mzWord('neko','ねこ'), _mzWord('inu','いぬ'), _mzWord('usagi','うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('neko','ねこ'), _mzWord('inu','いぬ'), _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png', 'うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
   { items: [_mzWord('ki','き'), _mzWord('kusa','くさ'), _mzWord('kinoko','きのこ'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'もりに あるもの' },
   { items: [_mzWord('taiyou','たいよう'), _mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('banana','バナナ')], odd: 3, hint: 'そら' },
   { items: [_mzWord('ninjin','にんじん'), _mzWord('tomato','トマト'), _mzWord('kyuuri','きゅうり'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'やさい' },
@@ -3016,8 +3039,8 @@ const QUIZ_ODDONE = [
   { items: [_mzWord('ringo','りんご'), _mzWord('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
   { items: [_mzWord('kuruma','くるま'), _mzWord('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
   { items: [_mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('hana','はな'), _mzWord('taiyou','たいよう')], odd: 2, hint: 'そらに あるもの' },
-  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzWord('iruka','いるか'), _mzWord('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
-  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzWord('kuma','くま')], odd: 3, hint: 'むし' },
+  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzAsset(MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png', 'いるか'), _mzWord('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
+  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzQuiz('kuma','くま')], odd: 3, hint: 'むし' },
   { items: [_mzWord('jitensha','じてんしゃ'), _mzWord('helicopter','ヘリコプター'), _mzWord('fune','ふね'), _mzWord('ringo','りんご')], odd: 3, hint: 'のりもの' },
   { items: [_mzWord('hana','はな'), _mzWord('sakura','さくら'), _mzQuiz('snow_flake','ゆき'), _mzQuiz('chocho','ちょうちょ')], odd: 3, hint: 'はな' },
   { items: [_mzWord('cake','ケーキ'), _mzWord('cake2','ケーキ'), _mzWord('okashi','おかし'), _mzWord('ninjin','にんじん')], odd: 3, hint: 'あまいもの' },
@@ -3060,7 +3083,7 @@ function _showPeekChoices() {
   titleEl.className = 'enc-result';
   titleEl.appendChild(document.createTextNode('ちらっと だけ みえてるよ〜'));
   titleEl.appendChild(document.createElement('br'));
-  titleEl.appendChild(document.createTextNode('なんの どうぶつ かな？'));
+  titleEl.appendChild(document.createTextNode('なんの え かな？'));
   encStageEl.appendChild(titleEl);
   const peekWrap = document.createElement('div');
   peekWrap.className = 'peek-wrap';
@@ -3336,10 +3359,13 @@ function _showSimonGame() {
     const cell = encStageEl.querySelector('.simon-cell[data-id="' + c.id + '"]');
     if (cell) {
       cell.style.opacity = '1';
-      cell.style.transform = 'scale(1.1)';
+      cell.classList.add('is-flashing');
       _simonPlayTone(c.freq, 400);
       setTimeout(function() {
-        if (cell) { cell.style.opacity = '0.4'; cell.style.transform = 'scale(1)'; }
+        if (cell) {
+          cell.style.opacity = '0.4';
+          cell.classList.remove('is-flashing');
+        }
         step++;
         setTimeout(flashNext, 200);
       }, 500);
