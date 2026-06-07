@@ -38,7 +38,7 @@ window.PonoPartners = (function () {
     },
     {
       id: 'kojika',
-      name: 'コジカ',
+      name: 'こじか',
       trait: 'やさしくて てれや',
       assistId: 'soft-magnet',
       assistDesc: 'ただしい ばしょに ちかいと ひかって おしえてくれる',

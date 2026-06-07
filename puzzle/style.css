@@ -329,14 +329,15 @@ body {
 /* prestart オーバーレイ表示中・散布アニメ中はパズル canvas 入力を完全ロック */
 #puzzle-container.prestart-on > canvas,
 #puzzle-container.scatter-on > canvas,
-#puzzle-container.partner-practice-on > canvas {
+#puzzle-container.partner-practice-on:not(.partner-practice-input-on) > canvas {
   pointer-events: none;
 }
 
 /* ===== Partner practice: real puzzle UI tutorial ===== */
-.partner-practice-active .controls .btn,
-.partner-practice-active .challenge-status,
-.partner-practice-active .progress-bar {
+.partner-practice-active:not(.partner-practice-hint-on) .controls .btn,
+.partner-practice-active:not(.partner-practice-hint-on) .challenge-status,
+.partner-practice-active:not(.partner-practice-hint-on) .progress-bar,
+.partner-practice-active.partner-practice-hint-on .controls .btn:not(.btn-hint) {
   pointer-events: none;
 }
 
@@ -357,31 +358,35 @@ body {
 
 .partner-practice-coach {
   position: fixed;
+  top: 50%;
   left: 50%;
-  bottom: max(14px, env(safe-area-inset-bottom));
+  bottom: auto;
   z-index: 88;
-  width: min(720px, calc(100vw - 28px));
-  min-height: 98px;
-  transform: translateX(-50%);
+  width: min(680px, calc(100vw - 44px));
+  min-height: 132px;
+  max-height: calc(100dvh - 34px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr) auto;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 16px;
+  padding: 16px 18px;
   border: 3px solid rgba(255, 255, 255, 0.92);
-  border-radius: 22px;
+  border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 253, 244, 0.97) 0%, rgba(255, 236, 198, 0.97) 100%);
+    linear-gradient(180deg, rgba(255, 253, 244, 0.96) 0%, rgba(255, 236, 198, 0.96) 100%);
   box-shadow:
     0 12px 28px rgba(54, 36, 16, 0.30),
     inset 0 -3px 0 rgba(212, 164, 84, 0.20);
   color: var(--text);
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  pointer-events: none;
 }
 
 .partner-practice-coach__face {
-  width: 66px;
-  height: 66px;
+  width: 82px;
+  height: 82px;
   border-radius: 50%;
   padding: 4px;
   background: #fff;
@@ -411,22 +416,22 @@ body {
   border-radius: 999px;
   background: rgba(139, 196, 138, 0.22);
   color: #4F7D43;
-  font-size: 0.74rem;
+  font-size: 0.88rem;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
 }
 
 .partner-practice-coach__title {
-  font-size: 1.02rem;
+  font-size: clamp(1.18rem, 2.4vw, 1.42rem);
   font-weight: 900;
   line-height: 1.22;
   color: #4C3318;
 }
 
 .partner-practice-coach__body {
-  margin-top: 4px;
-  font-size: 0.86rem;
+  margin-top: 7px;
+  font-size: clamp(1rem, 1.85vw, 1.16rem);
   font-weight: 700;
   line-height: 1.35;
   color: #745B36;
@@ -439,16 +444,17 @@ body {
 }
 
 .partner-practice-coach__btn {
-  min-width: 104px;
-  min-height: 36px;
+  min-width: 118px;
+  min-height: 44px;
   border: 2px solid rgba(255, 255, 255, 0.88);
   border-radius: 999px;
   padding: 6px 16px;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 1rem;
   font-weight: 900;
   cursor: pointer;
   color: #5A3A18;
+  pointer-events: auto;
   box-shadow:
     inset 0 -2px 0 rgba(120, 82, 30, 0.18),
     0 4px 10px rgba(93, 78, 55, 0.16);
@@ -470,41 +476,45 @@ body {
 
 @media (orientation: landscape) {
   .partner-practice-coach {
-    left: 12px;
-    bottom: 12px;
-    width: min(58vw, 640px);
-    transform: none;
+    top: 50%;
+    left: 50%;
+    bottom: auto;
+    width: min(680px, calc(100vw - 44px));
+    transform: translate(-50%, -50%);
   }
 }
 
 @media (orientation: landscape) and (max-height: 430px) {
   .partner-practice-coach {
-    grid-template-columns: 50px minmax(0, 1fr) auto;
-    min-height: 72px;
-    gap: 8px;
-    padding: 7px 8px;
+    grid-template-columns: 58px minmax(0, 1fr) auto;
+    min-height: 108px;
+    gap: 10px;
+    padding: 10px 12px;
     border-radius: 18px;
+    width: min(600px, calc(100vw - 34px));
   }
 
   .partner-practice-coach__face {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     padding: 3px;
   }
 
   .partner-practice-coach__eyebrow {
-    display: none;
+    font-size: 0.8rem;
+    min-height: 18px;
+    padding: 2px 8px;
   }
 
   .partner-practice-coach__title {
-    font-size: 0.82rem;
-    line-height: 1.18;
+    font-size: 1.08rem;
+    line-height: 1.2;
   }
 
   .partner-practice-coach__body {
-    margin-top: 2px;
-    font-size: 0.72rem;
-    line-height: 1.24;
+    margin-top: 3px;
+    font-size: 0.94rem;
+    line-height: 1.28;
   }
 
   .partner-practice-coach__actions {
@@ -512,18 +522,17 @@ body {
   }
 
   .partner-practice-coach__btn {
-    min-width: 82px;
-    min-height: 30px;
-    padding: 4px 10px;
-    font-size: 0.76rem;
+    min-width: 92px;
+    min-height: 34px;
+    padding: 5px 12px;
+    font-size: 0.84rem;
   }
 }
 
 @media (orientation: landscape) and (max-aspect-ratio: 3 / 2) {
   .partner-practice-coach {
-    left: 50%;
-    width: min(760px, calc(100vw - 36px));
-    transform: translateX(-50%);
+    width: min(680px, calc(100vw - 44px));
+    transform: translate(-50%, -50%);
   }
 }
 
@@ -549,11 +558,12 @@ body {
   }
 
   .partner-practice-coach__title {
-    font-size: 0.9rem;
+    font-size: 1.08rem;
   }
 
   .partner-practice-coach__body {
-    font-size: 0.76rem;
+    font-size: 0.92rem;
+    line-height: 1.3;
   }
 
   .partner-practice-coach__actions {

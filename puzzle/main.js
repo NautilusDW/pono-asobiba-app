@@ -1325,6 +1325,83 @@ function redraw() {
       },
     }, false);
   }
+  drawPartnerPracticeCue(puzzleCtx);
+}
+
+function drawPartnerPracticeCue(ctx) {
+  if (!ctx || !partnerPracticeState || !partnerPracticeState.cue) return;
+  var cue = partnerPracticeState.cue;
+  var piece = cue.piece;
+  if (!piece || piece.snapped) return;
+  var now = performance.now();
+  var cx = piece.x + pieceW / 2;
+  var cy = piece.y + pieceH / 2;
+  var pulse = 0.5 + 0.5 * Math.sin(now / 180);
+
+  if (cue.kind === 'tap-piece') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath();
+    buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.82 + pulse * 0.18).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.045);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(pieceW, pieceH) * (0.58 + pulse * 0.10), 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 215, 102,' + (0.30 + pulse * 0.26).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.03);
+    ctx.stroke();
+    ctx.restore();
+    ensurePartnerPracticeCueLoop();
+    return;
+  }
+
+  if (cue.kind === 'kojika-glow') {
+    var hx = piece.homeX + pieceW / 2;
+    var hy = piece.homeY + pieceH / 2;
+    var r = Math.min(pieceW, pieceH) * (0.78 + pulse * 0.08);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    var grad = ctx.createRadialGradient(cx, cy, r * 0.08, cx, cy, r);
+    grad.addColorStop(0, 'rgba(125, 190, 255, 0.72)');
+    grad.addColorStop(0.42, 'rgba(59, 130, 246, 0.42)');
+    grad.addColorStop(1, 'rgba(37, 99, 235, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    var homeR = r * 0.72;
+    var homeGrad = ctx.createRadialGradient(hx, hy, homeR * 0.08, hx, hy, homeR);
+    homeGrad.addColorStop(0, 'rgba(125, 190, 255, 0.54)');
+    homeGrad.addColorStop(1, 'rgba(37, 99, 235, 0)');
+    ctx.fillStyle = homeGrad;
+    ctx.beginPath();
+    ctx.arc(hx, hy, homeR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.92)';
+    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.04);
+    ctx.stroke();
+    ctx.restore();
+    ensurePartnerPracticeCueLoop();
+  }
+}
+
+function ensurePartnerPracticeCueLoop() {
+  if (!partnerPracticeState || partnerPracticeState.cueRaf) return;
+  partnerPracticeState.cueRaf = requestAnimationFrame(function tick() {
+    if (!partnerPracticeState || !partnerPracticeState.active || !partnerPracticeState.cue) {
+      if (partnerPracticeState) partnerPracticeState.cueRaf = null;
+      return;
+    }
+    partnerPracticeState.cueRaf = null;
+    redraw();
+  });
 }
 
 function hitTest(piece, px, py) {
@@ -2037,6 +2114,7 @@ function setSelectedPieceForHint(piece) {
   selectedPieceForHint = (piece && !piece.snapped) ? piece : null;
   if (selectedPieceForHint) {
     ensureHintAnimLoop();
+    onPartnerPracticePieceSelected(selectedPieceForHint);
   } else {
     // 解除時も 1 フレーム redraw して overlay を消す
     window.PonoHintActive = false;
@@ -2055,36 +2133,36 @@ let partnerPracticeState = null;
 
 const PARTNER_PRACTICE_COPY = {
   kitsune: {
-    title: 'キツネは、えらんだピースの場所を見せてくれる',
-    body: 'ほんもののヒントボタンを使って、選んだピースの行き先を光らせるよ。',
+    title: 'キツネは、ヒントが ふえる',
+    body: 'キツネと なかよくなると、ヒントの かいすうが ふえるよ。',
   },
   kojika: {
-    title: 'コジカは、近い場所をやさしく光らせる',
-    body: 'ピースを正しい場所に近づけると、実際の盤面でふわっと反応するよ。',
+    title: 'こじかは、ちかいと ひかる',
+    body: 'ピースが ちかづくと、あおく ひかるよ。',
   },
   araiguma: {
-    title: 'アライグマは、少しだけピースをはめてくれる',
-    body: 'たくさんのピースがある練習ステージで、いくつかのピースが実際にはまるところを見るよ。',
+    title: 'アライグマは、すこし はめてくれる',
+    body: 'ボタンを おすと、ピースを すこし はめてくれるよ。',
   },
   usagi: {
-    title: 'ウサギは、進む方向を教えてくれる',
-    body: 'ピースを動かすと、実際の画面に耳と矢印が出て、正しい方向を示すよ。',
+    title: 'ウサギは、むきを おしえてくれる',
+    body: 'ピースを うごかすと、みみと やじるしで むきを おしえてくれるよ。',
   },
   fukurou: {
-    title: 'フクロウは、となりのピースを見つける',
-    body: '長押しで、今のピースとつながるとなりの場所が光るイメージを実際の盤面で見るよ。',
+    title: 'フクロウは、となりを みつける',
+    body: 'ピースを ながおしすると、となりの ピースを おしえてくれるよ。',
   },
   risu: {
-    title: 'リスは、のこり時間を見ながら進める',
-    body: '画面の「のこり」が本当に動くよ。時間を見ながらすばやくはめよう。',
+    title: 'リスは、じかん チャレンジ',
+    body: '「のこり」を みながら、すばやく クリアを めざすよ。',
   },
   harinezumi: {
-    title: 'ハリネズミは、ヒント少なめで挑戦する',
-    body: '実際のヒントボタンの残り数が少なくなるよ。よく見て進めよう。',
+    title: 'ハリネズミは、ヒント すくなめ',
+    body: 'ヒントが すくない まま、クリアに ちょうせんするよ。',
   },
   karasu: {
-    title: 'カラスは、回転したピースを直して進める',
-    body: '実際のピースがくるっと回っているよ。向きを見て戻してからはめよう。',
+    title: 'カラスは、ピースが まわる',
+    body: 'ピースの むきを みて、タッチで なおしてから はめるよ。',
   },
 };
 
@@ -2148,6 +2226,10 @@ function clearPartnerPracticeTimers() {
     try { cancelAnimationFrame(rafs[j]); } catch (_) {}
   }
   partnerPracticeState.rafs = [];
+  if (partnerPracticeState.cueRaf) {
+    try { cancelAnimationFrame(partnerPracticeState.cueRaf); } catch (_) {}
+    partnerPracticeState.cueRaf = null;
+  }
 }
 
 function practiceSetTimeout(fn, ms) {
@@ -2178,7 +2260,7 @@ function clearPracticeHighlights() {
 function createPartnerPracticeCoach(partnerId, partner) {
   var copy = PARTNER_PRACTICE_COPY[partnerId] || {
     title: (partner ? partner.name : 'パートナー') + 'のれんしゅう',
-    body: 'ほんもののパズル画面で、パートナーの動きを見てみよう。',
+    body: 'ほんもののパズルで、なかまの うごきを みてみよう。',
   };
   var coach = document.createElement('div');
   coach.className = 'partner-practice-coach partner-practice-coach--' + partnerId;
@@ -2219,7 +2301,7 @@ function createPartnerPracticeCoach(partnerId, partner) {
   var start = document.createElement('button');
   start.type = 'button';
   start.className = 'partner-practice-coach__btn partner-practice-coach__btn--start';
-  start.textContent = '本番へ';
+  start.textContent = 'ほんばんへ';
   start.addEventListener('click', finishPartnerPractice);
   actions.appendChild(replay);
   actions.appendChild(start);
@@ -2227,6 +2309,17 @@ function createPartnerPracticeCoach(partnerId, partner) {
 
   document.body.appendChild(coach);
   return coach;
+}
+
+function setPartnerPracticeCoachCopy(titleText, bodyText, eyebrowText) {
+  if (!partnerPracticeState || !partnerPracticeState.coach) return;
+  var coach = partnerPracticeState.coach;
+  var eyebrow = coach.querySelector('.partner-practice-coach__eyebrow');
+  var title = coach.querySelector('.partner-practice-coach__title');
+  var body = coach.querySelector('.partner-practice-coach__body');
+  if (eyebrow && eyebrowText) eyebrow.textContent = eyebrowText;
+  if (title && titleText) title.textContent = titleText;
+  if (body && bodyText) body.textContent = bodyText;
 }
 
 function getPracticePieces() {
@@ -2240,7 +2333,10 @@ function placePieceForPractice(piece, x, y, rotation) {
   piece.y = Math.max(0, Math.min(canvasH - pieceH, y));
   piece.rotation = rotation || 0;
   piece.snapped = false;
-  piece.zOrder = Math.max(1, piece.zOrder || 0) + 20;
+  var maxZ = pieces && pieces.length
+    ? Math.max.apply(null, pieces.map(function (p) { return p && p.zOrder ? p.zOrder : 0; }))
+    : 0;
+  piece.zOrder = Math.max(1, maxZ) + 20;
   rebuildPath(piece);
 }
 
@@ -2250,6 +2346,15 @@ function resetPracticeBoard() {
   hintFlashUntil = 0;
   stageHintUsesActual = 0;
   dragPiece = null;
+  if (partnerPracticeState) {
+    partnerPracticeState.phase = 'reset';
+    partnerPracticeState.targetPiece = null;
+    partnerPracticeState.cue = null;
+    partnerPracticeState.allowCanvasInput = false;
+    partnerPracticeState.hintIntroDone = false;
+  }
+  document.body.classList.remove('partner-practice-hint-on');
+  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-input-on');
   clearPracticeHighlights();
   shufflePieces();
   if (partnerPracticeState && partnerPracticeState.partnerId === 'risu') {
@@ -2272,7 +2377,126 @@ function replayPartnerPracticeDemo() {
   if (!partnerPracticeState || !partnerPracticeState.active) return;
   clearPartnerPracticeTimers();
   resetPracticeBoard();
-  runPartnerPracticeDemo(partnerPracticeState.partnerId);
+  startPartnerPracticeFlow(partnerPracticeState.partnerId);
+}
+
+function setPartnerPracticeInput(on) {
+  if (!partnerPracticeState) return;
+  partnerPracticeState.allowCanvasInput = !!on;
+  document.body.classList.toggle('partner-practice-hint-on', !!on);
+  if (puzzleContainer) puzzleContainer.classList.toggle('partner-practice-input-on', !!on);
+}
+
+function pickHintPracticePiece() {
+  var list = getPracticePieces();
+  if (!list.length) return null;
+  return list.find(function (piece) {
+    return piece && piece.row >= 1 && piece.col >= 1 && !piece.snapped;
+  }) || list[Math.min(2, list.length - 1)];
+}
+
+function placeHintPracticePiece(piece) {
+  if (!piece) return;
+  var x = Math.max(10, Math.min(canvasW - pieceW - 10, boardX - pieceW * 1.05));
+  var y = Math.max(10, Math.min(canvasH - pieceH - 10, boardY - pieceH * 0.35));
+  placePieceForPractice(piece, x, y, 0);
+}
+
+function startCommonHintPractice(partnerId) {
+  if (!partnerPracticeState) return;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  var piece = pickHintPracticePiece();
+  if (!piece) {
+    startPartnerSpecificPractice(partnerId);
+    return;
+  }
+  partnerPracticeState.phase = 'hint-select';
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  setPartnerPracticeInput(true);
+  placeHintPracticePiece(piece);
+  setPartnerPracticeCoachCopy(
+    'まずは ヒントの れんしゅう',
+    'この ひかっている ピースを タッチしてね。',
+    'ヒントは どの なかまでも つかえるよ'
+  );
+  refreshHintButtonState();
+  redraw();
+}
+
+function onPartnerPracticePieceSelected(piece) {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+  if (!piece || piece.snapped) return;
+  if (partnerPracticeState.targetPiece && piece !== partnerPracticeState.targetPiece) {
+    selectedPieceForHint = null;
+    window.PonoHintActive = false;
+    setPartnerPracticeCoachCopy(
+      'この ピースを タッチしてね',
+      'ひかっている ピースで、ヒントを れんしゅうするよ。',
+      'ヒントは どの なかまでも つかえるよ'
+    );
+    refreshHintButtonState();
+    redraw();
+    return;
+  }
+  partnerPracticeState.phase = 'hint-press';
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+  practiceAddHighlight(btnHint);
+  setPartnerPracticeCoachCopy(
+    'つぎは ヒントを おしてね',
+    'ヒントは、えらんだ ピースの ばしょを ひかって おしえてくれるよ。',
+    'ピースを えらんだよ'
+  );
+  refreshHintButtonState();
+}
+
+function onPartnerPracticeHintUsed() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
+  partnerPracticeState.phase = 'hint-done';
+  partnerPracticeState.hintIntroDone = true;
+  clearPracticeHighlights();
+  setPartnerPracticeInput(false);
+  partnerPracticeState.cue = null;
+  setPartnerPracticeCoachCopy(
+    'ヒントは こうやって つかうよ',
+    'えらんだ ピースの ばしょが ひかったね。',
+    'ヒントの れんしゅう できたね'
+  );
+  practiceSetTimeout(function () {
+    startPartnerSpecificPractice(partnerPracticeState.partnerId);
+  }, 1200);
+}
+
+function startPartnerPracticeFlow(partnerId) {
+  resetPracticeBoard();
+  startCommonHintPractice(partnerId);
+}
+
+function startPartnerSpecificPractice(partnerId) {
+  if (!partnerPracticeState || !partnerPracticeState.active) return;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setPartnerPracticeInput(false);
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  var copy = PARTNER_PRACTICE_COPY[partnerId] || {};
+  setPartnerPracticeCoachCopy(
+    copy.title || 'なかまの れんしゅう',
+    copy.body || 'なかまの うごきを みてみよう。',
+    partnerId === 'kitsune' ? 'キツネの とくぎ' : 'なかまの とくぎ'
+  );
+  partnerPracticeState.phase = 'partner-demo';
+  if (partnerId === 'kitsune') return;
+  practiceSetTimeout(function () {
+    runPartnerPracticeDemo(partnerId);
+  }, 450);
 }
 
 function animatePracticePiece(piece, from, to, duration, onDone) {
@@ -2308,18 +2532,14 @@ function runPartnerPracticeDemo(partnerId) {
   var p = list[Math.min(2, list.length - 1)];
 
   if (partnerId === 'kitsune') {
-    practiceAddHighlight(btnHint);
-    setSelectedPieceForHint(p);
-    practiceSetTimeout(function () {
-      if (btnHint) btnHint.click();
-    }, 700);
     return;
   }
 
   if (partnerId === 'kojika') {
-    var near = { x: p.homeX + pieceW * 0.92, y: p.homeY + pieceH * 0.35, rotation: 0 };
-    var closer = { x: p.homeX + pieceW * 0.24, y: p.homeY + pieceH * 0.12, rotation: 0 };
+    var near = { x: p.homeX + pieceW * 0.62, y: p.homeY + pieceH * 0.28, rotation: 0 };
+    var closer = { x: p.homeX + pieceW * 0.18, y: p.homeY + pieceH * 0.10, rotation: 0 };
     placePieceForPractice(p, near.x, near.y, 0);
+    if (partnerPracticeState) partnerPracticeState.cue = { kind: 'kojika-glow', piece: p };
     animatePracticePiece(p, near, closer, 1600);
     return;
   }
@@ -2373,10 +2593,6 @@ function runPartnerPracticeDemo(partnerId) {
 
   if (partnerId === 'harinezumi') {
     practiceAddHighlight(btnHint);
-    setSelectedPieceForHint(p);
-    practiceSetTimeout(function () {
-      if (btnHint) btnHint.click();
-    }, 650);
     return;
   }
 
@@ -2412,9 +2628,15 @@ function beginPartnerPractice(partnerId, returnIndex, done) {
     partnerId: partnerId,
     returnIndex: returnIndex,
     done: done,
+    phase: 'start',
     timers: [],
     rafs: [],
+    cueRaf: null,
     highlighted: [],
+    targetPiece: null,
+    cue: null,
+    allowCanvasInput: false,
+    hintIntroDone: false,
     coach: null,
   };
 
@@ -2426,7 +2648,7 @@ function beginPartnerPractice(partnerId, returnIndex, done) {
   stageLabel.textContent = partner.name + 'の れんしゅう';
   partnerPracticeState.originalTitle = originalTitle;
   partnerPracticeState.coach = createPartnerPracticeCoach(partnerId, partner);
-  runPartnerPracticeDemo(partnerId);
+  startPartnerPracticeFlow(partnerId);
 }
 
 function finishPartnerPractice() {
@@ -2445,7 +2667,8 @@ function finishPartnerPractice() {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
   }
   document.body.classList.remove('partner-practice-active');
-  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on');
+  document.body.classList.remove('partner-practice-hint-on');
+  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
   partnerPracticeState.active = false;
   partnerPracticeState = null;
   markPartnerPracticeSeen(partnerId);
@@ -2488,6 +2711,7 @@ function onPointerDown(e) {
   e.preventDefault();
   // 散布アニメ中・prestart 表示中は一切のドラッグを拒否 (CSS pointer-events と二重防御)
   if (scatterAnimating || prestartOverlayEl) return;
+  if (partnerPracticeState && partnerPracticeState.active && !partnerPracticeState.allowCanvasInput) return;
   const { x, y } = getPos(e);
   let found = null;
   for (const p of pieces) {
@@ -2936,6 +3160,7 @@ if (btnHint) {
     stageHintUsesActual++;
     setHintUsesRemaining(sid, Math.max(0, remaining - 1));
     refreshHintButtonState();
+    onPartnerPracticeHintUsed();
   });
 }
 
