@@ -4432,7 +4432,7 @@ function roundFreeCompleteValue(value) {
 function normalizeFreeCompleteLayout(layout) {
   return {
     x: roundFreeCompleteValue(clamp(Number(layout && layout.x) || 0, -120, 120)),
-    y: roundFreeCompleteValue(clamp(Number(layout && layout.y) || 0, -120, 160)),
+    y: roundFreeCompleteValue(clamp(Number(layout && layout.y) || 0, -160, 280)),
     w: roundFreeCompleteValue(clamp(Number(layout && layout.w) || 100, 80, 120)),
   };
 }
@@ -6578,7 +6578,7 @@ function renderFreeMaskEditorControls() {
     }));
     section.appendChild(completeActions);
     section.appendChild(makeCompleteLayoutRange('X', 'x', -80, 80, completeLayout, 'px', completeTier));
-    section.appendChild(makeCompleteLayoutRange('Y', 'y', -80, 120, completeLayout, 'px', completeTier));
+    section.appendChild(makeCompleteLayoutRange('Y', 'y', -160, 280, completeLayout, 'px', completeTier));
     section.appendChild(makeCompleteLayoutRange('W', 'w', 80, 120, completeLayout, '%', completeTier));
     section.appendChild(renderFreeCompleteEditorPreview(box, completeTier));
     panel.appendChild(section);
