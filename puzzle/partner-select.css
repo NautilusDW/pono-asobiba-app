@@ -225,6 +225,30 @@
   box-shadow: 0 0 0 4px rgba(242, 145, 90, 0.5), 0 10px 22px rgba(0,0,0,0.45);
 }
 
+.pono-pselect__card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 9px;
+  background: var(--tier-color, #68B96B);
+  opacity: 0.88;
+  pointer-events: none;
+}
+
+.pono-pselect__card.is-tier-free {
+  --tier-color: #68B96B;
+}
+
+.pono-pselect__card.is-tier-book {
+  --tier-color: #5FA4E8;
+}
+
+.pono-pselect__card.is-tier-sub {
+  --tier-color: #B77AE7;
+}
+
 /* --- カード: 立ち絵 ---
    専用の 512px 正方形サムネイルを、画角に応じた正方形枠で表示する。 */
 .pono-pselect__portrait {
@@ -405,6 +429,51 @@
   border: 1px solid #6E2DA0;
 }
 
+/* --- 利用区分タグ ---
+   右上のタグとカード下端の色帯で、フリー / えほん / サブスクを視覚的に分ける。 */
+.pono-pselect__tier {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 47%;
+  min-height: 20px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: clamp(0.56rem, 1.7vw, 0.68rem);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.24);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pono-pselect__tier-icon {
+  font-size: 1.06em;
+  line-height: 1;
+}
+
+.pono-pselect__tier--free {
+  color: #1E4622;
+  background: linear-gradient(180deg, #DFF7CF 0%, #83D780 100%);
+  border: 1px solid #5AAA55;
+}
+
+.pono-pselect__tier--book {
+  color: #123F66;
+  background: linear-gradient(180deg, #E5F6FF 0%, #8DCBF6 100%);
+  border: 1px solid #5897CA;
+}
+
+.pono-pselect__tier--sub {
+  color: #3A175B;
+  background: linear-gradient(180deg, #F8E9FF 0%, #D6A7F4 100%);
+  border: 1px solid #9E62C9;
+}
+
 /* --- フッタ: キャンセル --- */
 .pono-pselect__footer {
   flex: 0 0 auto;
@@ -555,6 +624,14 @@
     font-size: 0.62rem;
   }
 
+  .pono-pselect__tier {
+    top: 5px;
+    right: 5px;
+    min-height: 18px;
+    padding: 2px 6px;
+    font-size: 0.58rem;
+  }
+
   .pono-pselect__footer {
     margin-top: 2px;
     padding-bottom: 0;
@@ -622,6 +699,19 @@
     left: 4px;
     padding: 2px 6px;
     font-size: 0.56rem;
+  }
+
+  .pono-pselect__tier {
+    top: 4px;
+    right: 4px;
+    max-width: 52%;
+    min-height: 16px;
+    padding: 2px 5px;
+    font-size: 0.52rem;
+  }
+
+  .pono-pselect__tier-icon {
+    display: none;
   }
 
   .pono-pselect__cancel {

@@ -121,6 +121,38 @@ window.PonoPartnerSelect = (function () {
     return badge;
   }
 
+  function resolveTier(partner) {
+    var tier = partner && partner.tier ? String(partner.tier) : 'free';
+    if (tier === 'book' || tier === 'sub') return tier;
+    return 'free';
+  }
+
+  function buildTierBadge(tier) {
+    var label = 'フリー';
+    var icon = '🌱';
+    if (tier === 'book') {
+      label = 'えほん';
+      icon = '📖';
+    } else if (tier === 'sub') {
+      label = 'サブスク';
+      icon = '⭐';
+    }
+
+    var badge = document.createElement('div');
+    badge.className = 'pono-pselect__tier pono-pselect__tier--' + tier;
+    var iconEl = document.createElement('span');
+    iconEl.className = 'pono-pselect__tier-icon';
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.textContent = icon;
+    var labelEl = document.createElement('span');
+    labelEl.className = 'pono-pselect__tier-label';
+    labelEl.textContent = label;
+    badge.appendChild(iconEl);
+    badge.appendChild(labelEl);
+    badge.setAttribute('aria-label', 'つかえる くぶん ' + label);
+    return badge;
+  }
+
   /** SE 用 hook (PuzzleVoice があれば一応鳴らす。失敗しても無視) */
   function tryPlayTap() {
     try {
@@ -150,10 +182,12 @@ window.PonoPartnerSelect = (function () {
 
     var currentSel = (Bond && typeof Bond.getSelectedPartner === 'function')
       ? Bond.getSelectedPartner() : null;
+    var tier = resolveTier(p);
 
     var card = document.createElement('button');
     card.type = 'button';
     card.className = 'pono-pselect__card' +
+      ' is-tier-' + tier +
       (locked ? ' is-locked' : '') +
       (p.challengeType ? ' is-challenge' : '') +
       (!locked && currentSel === p.id ? ' is-selected' : '');
@@ -169,6 +203,7 @@ window.PonoPartnerSelect = (function () {
     if (diffBadge) {
       card.appendChild(diffBadge);
     }
+    card.appendChild(buildTierBadge(tier));
 
     // 立ち絵
     var portrait = document.createElement('div');
@@ -314,6 +349,7 @@ window.PonoPartnerSelect = (function () {
   /** show */
   function show(stageId, callback, options) {
     options = options || {};
+    try { document.body.classList.add('partner-choice-ui-open'); } catch (_) {}
     if (_open) {
       // 既に開いている場合は callback を更新して再描画
       _callback = (typeof callback === 'function') ? callback : null;
@@ -470,6 +506,7 @@ window.PonoPartnerSelect = (function () {
     _stageId = null;
     _initialScrollLeft = 0;
     _focusPartnerId = null;
+    try { document.body.classList.remove('partner-choice-ui-open'); } catch (_) {}
     // フォーカスを戻す (任意)
     try {
       if (_previouslyFocused && typeof _previouslyFocused.focus === 'function') {

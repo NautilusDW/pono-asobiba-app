@@ -1343,13 +1343,53 @@ function drawPartnerPracticeCue(ctx) {
     ctx.globalCompositeOperation = 'source-over';
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
-    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.82 + pulse * 0.18).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.045);
+    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.78 + pulse * 0.18).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.032);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(cx, cy, Math.min(pieceW, pieceH) * (0.58 + pulse * 0.10), 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 215, 102,' + (0.30 + pulse * 0.26).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.03);
+    ctx.arc(cx, cy, Math.min(pieceW, pieceH) * (0.62 + pulse * 0.12), 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 170, 64,' + (0.28 + pulse * 0.22).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(2, Math.min(pieceW, pieceH) * 0.018);
+    ctx.stroke();
+    ctx.restore();
+    ensurePartnerPracticeCueLoop();
+    return;
+  }
+
+  if (cue.kind === 'selected-piece') {
+    var selectedR = Math.min(pieceW, pieceH) * (0.58 + pulse * 0.05);
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath();
+    buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
+    ctx.strokeStyle = 'rgba(35, 127, 232,' + (0.90 + pulse * 0.10).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(7, Math.min(pieceW, pieceH) * 0.072);
+    ctx.shadowColor = 'rgba(48, 166, 255, 0.85)';
+    ctx.shadowBlur = 18 + pulse * 12;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(cx, cy, selectedR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.96)';
+    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.032);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, selectedR * 1.16, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(33, 211, 238,' + (0.40 + pulse * 0.26).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.025);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(31, 111, 214, 0.94)';
+    ctx.beginPath();
+    ctx.arc(cx + selectedR * 0.48, cy - selectedR * 0.48, Math.max(11, selectedR * 0.22), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = Math.max(3, selectedR * 0.07);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx + selectedR * 0.39, cy - selectedR * 0.49);
+    ctx.lineTo(cx + selectedR * 0.47, cy - selectedR * 0.40);
+    ctx.lineTo(cx + selectedR * 0.62, cy - selectedR * 0.58);
     ctx.stroke();
     ctx.restore();
     ensurePartnerPracticeCueLoop();
@@ -3756,6 +3796,7 @@ function showTutorial() {
 }
 
 let partnerChoiceDismissedStageId = null;
+const PARTNER_UNLOCK_NOTICE_KEY = 'pono_partner_unlock_notice_seen_v1';
 
 function startFromTitleScreen() {
   if (titleScreen) titleScreen.classList.add('hidden');
@@ -3800,6 +3841,153 @@ function hasAnyUnlockedPartner() {
   return false;
 }
 
+function readPartnerUnlockNoticeSeen() {
+  try {
+    var raw = localStorage.getItem(PARTNER_UNLOCK_NOTICE_KEY);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writePartnerUnlockNoticeSeen(seen) {
+  try { localStorage.setItem(PARTNER_UNLOCK_NOTICE_KEY, JSON.stringify(seen || {})); } catch (_) {}
+}
+
+function getUnlockedPartnersForNotice() {
+  var out = [];
+  try {
+    if (window.PonoPartners && Array.isArray(window.PonoPartners.list)) {
+      for (var i = 0; i < window.PonoPartners.list.length; i++) {
+        var partner = window.PonoPartners.list[i];
+        if (window.PonoPartners.isUnlocked(partner)) out.push(partner);
+      }
+    }
+  } catch (_) {}
+  return out;
+}
+
+function getNewPartnerUnlocksForNotice() {
+  var seen = readPartnerUnlockNoticeSeen();
+  return getUnlockedPartnersForNotice().filter(function (partner) {
+    return partner && partner.id && !seen[partner.id];
+  });
+}
+
+function markPartnerUnlockNoticeSeen(partners) {
+  var seen = readPartnerUnlockNoticeSeen();
+  for (var i = 0; i < (partners || []).length; i++) {
+    var partner = partners[i];
+    if (partner && partner.id) seen[partner.id] = 1;
+  }
+  writePartnerUnlockNoticeSeen(seen);
+}
+
+function removePartnerUnlockIntro(overlay) {
+  if (!overlay) return;
+  overlay.classList.add('is-hide');
+  setTimeout(function () {
+    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    try {
+      if (!document.querySelector('.pono-pselect')) {
+        document.body.classList.remove('partner-choice-ui-open');
+      }
+    } catch (_) {}
+  }, 180);
+}
+
+function showPartnerUnlockIntro(partners, done) {
+  partners = (partners || []).filter(Boolean);
+  if (!partners.length) {
+    if (typeof done === 'function') done();
+    return;
+  }
+  try { document.body.classList.add('partner-choice-ui-open'); } catch (_) {}
+
+  var overlay = document.createElement('div');
+  overlay.className = 'partner-unlock-intro';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'あたらしい なかま');
+
+  var panel = document.createElement('div');
+  panel.className = 'partner-unlock-intro__panel';
+  overlay.appendChild(panel);
+
+  var burst = document.createElement('div');
+  burst.className = 'partner-unlock-intro__burst';
+  burst.setAttribute('aria-hidden', 'true');
+  burst.textContent = '✦';
+  panel.appendChild(burst);
+
+  var title = document.createElement('div');
+  title.className = 'partner-unlock-intro__title';
+  title.textContent = partners.length > 1 ? 'なかまが ふえたよ' : (partners[0].name + 'が きたよ');
+  panel.appendChild(title);
+
+  var body = document.createElement('div');
+  body.className = 'partner-unlock-intro__body';
+  body.textContent = 'すすむと もっと なかまが ふえるよ';
+  panel.appendChild(body);
+
+  var list = document.createElement('div');
+  list.className = 'partner-unlock-intro__list';
+  for (var i = 0; i < partners.length; i++) {
+    var partner = partners[i];
+    var item = document.createElement('div');
+    item.className = 'partner-unlock-intro__friend partner-unlock-intro__friend--' + (partner.tier || 'free');
+    item.style.setProperty('--intro-delay', String(i * 95) + 'ms');
+    var img = document.createElement('img');
+    img.src = partner.image || '';
+    img.alt = partner.name || '';
+    item.appendChild(img);
+    var name = document.createElement('span');
+    name.textContent = partner.name || '';
+    item.appendChild(name);
+    list.appendChild(item);
+  }
+  panel.appendChild(list);
+
+  var hint = document.createElement('div');
+  hint.className = 'partner-unlock-intro__tiers';
+  hint.innerHTML = '<span class="is-free">フリー</span><span class="is-book">えほん</span><span class="is-sub">サブスク</span>';
+  panel.appendChild(hint);
+
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'partner-unlock-intro__button';
+  button.textContent = 'えらぶ';
+  button.addEventListener('click', function (e) {
+    e.preventDefault();
+    markPartnerUnlockNoticeSeen(partners);
+    removePartnerUnlockIntro(overlay);
+    if (typeof done === 'function') {
+      setTimeout(done, 150);
+    }
+  });
+  panel.appendChild(button);
+
+  document.body.appendChild(overlay);
+  try { playFanfare(); } catch (_) {}
+  setTimeout(function () {
+    try { button.focus({ preventScroll: true }); } catch (_) {}
+  }, 250);
+}
+
+function maybeShowPartnerUnlockIntro(stageId, done, options) {
+  options = options || {};
+  if (options.skipUnlockIntro) {
+    if (typeof done === 'function') done();
+    return;
+  }
+  var partners = getNewPartnerUnlocksForNotice();
+  if (!partners.length) {
+    if (typeof done === 'function') done();
+    return;
+  }
+  showPartnerUnlockIntro(partners, done);
+}
+
 function clearCurrentPartnerSelection() {
   try {
     if (window.PonoBond && typeof window.PonoBond.clearSelectedPartner === 'function') {
@@ -3841,11 +4029,16 @@ function maybeShowPartnerChoiceForCurrentStage(options) {
   }
   try {
     if (window.PonoPartnerSelect && typeof window.PonoPartnerSelect.show === 'function') {
-      var openSelect = function (openOptions) {
+      var launchSelect = function (openOptions) {
         window.PonoPartnerSelect.show(stageId, handleChoice, {
           initialScrollLeft: (openOptions && openOptions.initialScrollLeft) || 0,
           focusPartnerId: (openOptions && openOptions.focusPartnerId) || null,
         });
+      };
+      var openSelect = function (openOptions) {
+        maybeShowPartnerUnlockIntro(stageId, function () {
+          launchSelect(openOptions);
+        }, openOptions || {});
       };
       var handleChoice = function(result) {
         if (!result || result.action === 'cancel') {
@@ -3870,6 +4063,7 @@ function maybeShowPartnerChoiceForCurrentStage(options) {
             openSelect({
               initialScrollLeft: scrollLeft,
               focusPartnerId: selectedPartnerId,
+              skipUnlockIntro: true,
             });
           },
         });
