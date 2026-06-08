@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-08 - [batch:326-maze-editor-creature-kind-change] DONE - Codex: user 依頼「エディターでマップ上のおじゃま虫を選択し、別の種類のおじゃま虫に変更できるように」を受領。`tools/maze-editor.html` に `selectedCreatureId` を追加し、マップ上のお邪魔虫をクリック/ドラッグ開始で選択、種類ボタン押下時に選択中があれば既存 creature の `kind` を変更、未選択なら次に置く種類変更、選択中リング表示、JSON/export の `creatures[].kind` 反映を実装。HTML内script構文チェック、`git diff --check`、Playwrightで選択→`mayoi` から `odoke` へ変更→export kind反映/JSエラーなしを確認。`sw.js` / `PAGE_CACHE_VERSION` は v896。 (by Codex)
 - 2026-06-08 - [batch:325-quiz-shape-retake-assets] DONE - Codex: user provided `D:\ポノのおへや\Maze\New\Quiz\Image_retake` の出し直しPNG 7枚を確認。内容は図形素材だったため、`assets/images/quizland/illust/shape/shape_triangle/star/square/rectangle/oval/heart/diamond.png` に対応付けて差し替え。`sw.js` / `PAGE_CACHE_VERSION` は v895。 (by Codex)
 - 2026-06-08 - [batch:325-quiz-shape-retake-assets] DONE - Codex: ローカル検証で差し替え7ファイルのURL 200、Quizland `?debug=all` の shape_name 先頭12問で新しい natural size の `shape_square/triangle/heart/star/oval/diamond` 読み込み、JSエラーなしを確認。`shape_rectangle` は現行問題から削除済みだがファイル差し替え済み。 (by Codex)
 - 2026-06-08 - [batch:324-maze-editor-multipoint-edit] DONE - Codex: user 依頼「ポイント編集でポイント削除 / 複数選択 / Shift でX軸またはY軸固定移動」を受領。`tools/maze-editor.html` の edit-points に一時選択状態を追加し、単独クリック選択、Ctrl/Cmdクリックでトグル、Shiftクリックで追加選択、選択ポイントのまとめドラッグ、ドラッグ中Shiftで優勢方向だけ移動、Delete/Backspaceで選択ポイント一括削除、Escapeで選択解除を実装。右クリック/ダブルクリック削除も選択済みなら複数削除へ対応。HTML内script構文チェック、`git diff --check`、Playwrightで複数選択→Shift横固定ドラッグ→Delete一括削除/JSエラーなしを確認。`sw.js` / `PAGE_CACHE_VERSION` は v894。 (by Codex)

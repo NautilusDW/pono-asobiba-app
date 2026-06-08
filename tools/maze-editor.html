@@ -454,6 +454,7 @@ const state = {
   draggingCreature: null, // 現在 drag 中の creature 参照 (state.creatures 内の要素)
   draggingAnchor: null,   // 現在 drag 中の edge control point
   selectedAnchors: new Set(), // edit-points 用: "edgeIdx:controlIdx"
+  selectedCreatureId: null, // 種類変更対象のお邪魔虫 id
   hover: null,          // {x, y} mouse pos in image coords
   handoffViewBox: null, // { w, h } — ラフ側 viewBox。 画像読み込み時 rescale 用に保持し、 適用後 null クリア
 };
@@ -506,9 +507,24 @@ document.querySelectorAll('#obstacleKindRow .kind-btn').forEach(function(btn) {
 // Creature kind sub-buttons
 document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
-    state.creatureKind = btn.dataset.ckind;
-    document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
+    const nextKind = btn.dataset.ckind;
+    const selected = selectedCreature();
+    if (selected) {
+      if (selected.kind !== nextKind) {
+        pushHistory();
+        selected.kind = nextKind;
+        state.creatureKind = nextKind;
+        _syncCreatureKindButtons();
+        draw();
+        scheduleAutoSave();
+        showBanner('選択中のお邪魔虫を変更: ' + btn.textContent.trim());
+      } else {
+        showBanner('選択中のお邪魔虫: ' + btn.textContent.trim());
+      }
+      return;
+    }
+    state.creatureKind = nextKind;
+    _syncCreatureKindButtons();
     showBanner('お邪魔虫: ' + btn.textContent.trim());
   });
 });
@@ -581,6 +597,7 @@ jsonInput.addEventListener('change', function(e) {
       // Bump nextCreatureId past any existing
       const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
       state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
+      state.selectedCreatureId = null;
       state.edgeInProgress = null;
       edgeProgressEl.textContent = '';
       draw();
@@ -849,11 +866,13 @@ cv.addEventListener('click', function(e) {
   } else if (state.mode === 'obstacle') {
     state.obstacles.push({ kind: state.obstacleKind, x: p.x, y: p.y });
   } else if (state.mode === 'creature') {
-    state.creatures.push({
+    const c = {
       id: 'c' + state.nextCreatureId,
       kind: state.creatureKind, x: p.x, y: p.y
-    });
+    };
+    state.creatures.push(c);
     state.nextCreatureId++;
+    selectCreature(c, false);
   } else if (state.mode === 'delete') {
     handleDeleteClick(p);
   }
@@ -1066,6 +1085,39 @@ function findCreatureAt(p) {
   }
   return best;
 }
+
+function selectedCreature() {
+  if (!state.selectedCreatureId) return null;
+  return state.creatures.find(function(c) { return c && c.id === state.selectedCreatureId; }) || null;
+}
+
+function _syncCreatureKindButtons() {
+  document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(b) {
+    if (b.dataset.ckind === state.creatureKind) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+}
+
+function selectCreature(c, shouldDraw) {
+  if (!c) {
+    if (state.selectedCreatureId) {
+      state.selectedCreatureId = null;
+      if (shouldDraw) draw();
+    }
+    return;
+  }
+  if (!c.id) {
+    c.id = 'c' + state.nextCreatureId;
+    state.nextCreatureId++;
+  }
+  state.selectedCreatureId = c.id || null;
+  if (c.kind) {
+    state.creatureKind = c.kind;
+    _syncCreatureKindButtons();
+  }
+  if (shouldDraw) draw();
+}
+
 function findObstacleAt(p) {
   const r = Math.max(36 / canvasScale, state.imgH / 24);
   const r2 = r * r;
@@ -1154,6 +1206,7 @@ cv.addEventListener('pointerdown', function(e) {
     const creatureHit = findCreatureAt(p);
     if (creatureHit) {
       pushHistory();
+      selectCreature(creatureHit, false);
       state.draggingCreature = creatureHit;
       _grabbedItemOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1211,6 +1264,7 @@ cv.addEventListener('pointerdown', function(e) {
     const creatureHit = findCreatureAt(p);
     if (creatureHit) {
       pushHistory();
+      selectCreature(creatureHit, false);
       state.draggingCreature = creatureHit;
       _grabbedItemOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1475,6 +1529,7 @@ function handleDeleteClick(p) {
     const idx = state.creatures.indexOf(creatureHit);
     if (idx >= 0) {
       state.creatures.splice(idx, 1);
+      if (state.selectedCreatureId === creatureHit.id) state.selectedCreatureId = null;
       showBanner('お邪魔虫を削除: ' + (creatureHit.id || creatureHit.kind || ''));
       return;
     }
@@ -1621,6 +1676,7 @@ const CREATURE_VIS = {
 function drawCreature(c) {
   const sz = state.imgH / 11;
   const v = CREATURE_VIS[c.kind] || CREATURE_VIS.mayoi;
+  const isSelected = !!(c && c.id && c.id === state.selectedCreatureId);
   ctx.save();
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = v.color;
@@ -1640,6 +1696,12 @@ function drawCreature(c) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff';
     ctx.fillText(v.emoji, c.x, c.y);
+  }
+  if (isSelected) {
+    ctx.strokeStyle = '#FFE066';
+    ctx.lineWidth = Math.max(5, 5 / canvasScale);
+    ctx.setLineDash([12 / canvasScale, 8 / canvasScale]);
+    ctx.beginPath(); ctx.arc(c.x, c.y, sz/2 + 10 / canvasScale, 0, Math.PI * 2); ctx.stroke();
   }
   ctx.restore();
 }
@@ -1863,6 +1925,7 @@ function _applySnapshot(snap) {
   state.nextCreatureId = snap.nextCreatureId || 1;
   state.edgeInProgress = snap.edgeInProgress;
   state.draggingAnchor = null;
+  state.selectedCreatureId = null;
   _clearAnchorSelection(false);
   edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
 }
@@ -1918,6 +1981,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.creatures = [];
   state.nextStopId = 1;
   state.nextCreatureId = 1;
+  state.selectedCreatureId = null;
   state.edgeInProgress = null;
   edgeProgressEl.textContent = '';
   draw();
@@ -2344,6 +2408,7 @@ function _restoreDraft() {
     state.edges = Array.isArray(draft.edges) ? draft.edges : [];
     state.obstacles = Array.isArray(draft.obstacles) ? draft.obstacles : [];
     state.creatures = Array.isArray(draft.creatures) ? draft.creatures : [];
+    state.selectedCreatureId = null;
     state.nextStopId = draft.nextStopId || 1;
     state.nextCreatureId = draft.nextCreatureId || 1;
     state.imgFileName = draft.imgFileName || '';
@@ -2516,6 +2581,7 @@ function libLoadByName(name) {
   state.edges = Array.isArray(snap.edges) ? snap.edges : [];
   state.obstacles = Array.isArray(snap.obstacles) ? snap.obstacles : [];
   state.creatures = Array.isArray(snap.creatures) ? snap.creatures : [];
+  state.selectedCreatureId = null;
   state.nextStopId = snap.nextStopId || 1;
   state.nextCreatureId = snap.nextCreatureId || 1;
   state.imgFileName = snap.imgFileName || '';
@@ -2703,6 +2769,7 @@ function _restoreFromServerDef(def, fname) {
     : [];
   const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
   state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
+  state.selectedCreatureId = null;
   state.edgeInProgress = null;
   if (typeof edgeProgressEl !== 'undefined' && edgeProgressEl) edgeProgressEl.textContent = '';
   // 画像も同じディレクトリから取得を試みる (jpg → png の順)
@@ -3095,6 +3162,7 @@ function _applyHandoff(h, opts) {
       return m ? parseInt(m[1], 10) : 0;
     });
     state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
+    state.selectedCreatureId = null;
 
     state.edgeInProgress = null;
     if (edgeProgressEl) edgeProgressEl.textContent = '';
