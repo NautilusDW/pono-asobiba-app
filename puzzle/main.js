@@ -2503,13 +2503,27 @@ function clearBasicPracticeSeen() {
   try { localStorage.removeItem(BASIC_PRACTICE_SEEN_KEY); } catch (_) {}
 }
 
-function playBasicPracticeVoice(stepIndex) {
+function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  var audio = null;
   try {
     if (window.PuzzleVoice && typeof window.PuzzleVoice.playBasicTut === 'function') {
-      window.PuzzleVoice.playBasicTut(stepIndex);
+      audio = window.PuzzleVoice.playBasicTut(stepIndex);
     }
   } catch (_) {}
+  if (typeof onDone === 'function') {
+    var done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      onDone();
+    };
+    if (audio && typeof audio.addEventListener === 'function') {
+      try { audio.addEventListener('ended', finish, { once: true }); } catch (_) {}
+    }
+    practiceSetTimeout(finish, fallbackMs || 4300);
+  }
+  return audio;
 }
 
 function stopPuzzleVoice() {
@@ -3029,6 +3043,36 @@ function startCommonHintPractice(partnerId) {
   redraw();
 }
 
+function startBasicIntroPractice() {
+  if (!partnerPracticeState) return;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  if (peekOn) setPeekOverlay(false);
+  partnerPracticeState.phase = 'basic-intro';
+  partnerPracticeState.cue = null;
+  partnerPracticeState.peekHoldStart = 0;
+  partnerPracticeState.peekHoldReady = false;
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
+  clearPartnerPracticeCoachBubble();
+  if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
+  setPartnerPracticeCoachCopy(
+    'れんしゅうするよ',
+    '',
+    ''
+  );
+  playBasicPracticeVoice(0, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
+    startBasicPeekPractice();
+  }, 4300);
+  redraw();
+}
+
 function startBasicPeekPractice() {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTimers();
@@ -3047,11 +3091,11 @@ function startBasicPeekPractice() {
   setPartnerPracticePeekInput(true);
   practiceAddHighlight(btnPeek);
   setPartnerPracticeCoachCopy(
-    'みる を おしてみよう',
+    'ながく おしてね',
     '',
     ''
   );
-  playBasicPracticeVoice(0);
+  playBasicPracticeVoice(1);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   redraw();
 }
@@ -3068,7 +3112,7 @@ function onPartnerPracticePeekPressed() {
     'おしている あいだ みえるよ',
     ''
   );
-  playBasicPracticeVoice(1);
+  playBasicPracticeVoice(2);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold') return;
@@ -3078,7 +3122,7 @@ function onPartnerPracticePeekPressed() {
       'わからなくなったら ながく おしてね',
       ''
     );
-    playBasicPracticeVoice(2);
+    playBasicPracticeVoice(3);
     setPartnerPracticeCoachBubble(btnPeek, null, false);
   }, BASIC_PEEK_HOLD_MS);
 }
@@ -3099,7 +3143,7 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
       'おしている あいだだけ みえるよ',
       ''
     );
-    playBasicPracticeVoice(3);
+    playBasicPracticeVoice(1);
     setPartnerPracticeCoachBubble(btnPeek, null, false);
     return;
   }
@@ -3176,7 +3220,7 @@ function onPartnerPracticeHintUsed() {
 function startPartnerPracticeFlow(partnerId) {
   resetPracticeBoard();
   if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
-    startBasicPeekPractice();
+    startBasicIntroPractice();
     return;
   }
   startPartnerSpecificPractice(partnerId);

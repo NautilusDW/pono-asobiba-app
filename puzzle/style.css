@@ -730,6 +730,11 @@ body.partner-practice-active .prestart-overlay {
   color: #745B36;
 }
 
+.partner-practice-coach__eyebrow:empty,
+.partner-practice-coach__body:empty {
+  display: none;
+}
+
 .partner-practice-coach__actions {
   display: flex;
   flex-direction: column;
