@@ -3,6 +3,8 @@
 //
 // Public API:
 //   PuzzleVoice.playTut(stepIndex)   - play tutorial line by 0-based step
+//   PuzzleVoice.playBasicTut(stepIndex)
+//                                    - play real-UI basic tutorial line by 0-based step
 //   PuzzleVoice.playRandom(group)    - play a random line from group
 //                                      ('clear' | 'all_clear' | 'hint' | 'next_nudge')
 //   PuzzleVoice.stop()               - stop whichever audio is currently playing
@@ -20,6 +22,16 @@ window.PuzzleVoice = (function () {
 
   var REGISTRY = {
     tut:        ['tut_01.mp3', 'tut_02.mp3', 'tut_03.mp3'],
+    basic_tut:  [
+      'basic_tut_01.mp3',
+      'basic_tut_02.mp3',
+      'basic_tut_03.mp3',
+      'basic_tut_04.mp3',
+      'basic_tut_05.mp3',
+      'basic_tut_06.mp3',
+      'basic_tut_07.mp3',
+      'basic_tut_08.mp3',
+    ],
     clear:      ['clear_01.mp3', 'clear_02.mp3', 'clear_03.mp3', 'clear_04.mp3', 'clear_05.mp3'],
     all_clear:  ['all_clear_01.mp3', 'all_clear_02.mp3'],
     hint:       ['hint.mp3'],
@@ -42,7 +54,7 @@ window.PuzzleVoice = (function () {
     return a;
   }
 
-  // Preload one Audio per file (cheap, ~14 elements total).
+  // Preload one Audio per file (cheap, ~22 elements total).
   Object.keys(REGISTRY).forEach(function (group) {
     REGISTRY[group].forEach(function (file) {
       if (!pool[file]) pool[file] = makeAudio(file);
@@ -69,6 +81,15 @@ window.PuzzleVoice = (function () {
     if (i < 0 || i >= list.length) return null;
     var file = list[i];
     lastPlayedId.tut = file;
+    return playFile(file);
+  }
+
+  function playBasicTut(stepIndex) {
+    var list = REGISTRY.basic_tut;
+    var i = stepIndex | 0;
+    if (i < 0 || i >= list.length) return null;
+    var file = list[i];
+    lastPlayedId.basic_tut = file;
     return playFile(file);
   }
 
@@ -101,6 +122,7 @@ window.PuzzleVoice = (function () {
 
   return {
     playTut: playTut,
+    playBasicTut: playBasicTut,
     playRandom: playRandom,
     stop: stop,
     // Exposed for debugging / tests only.

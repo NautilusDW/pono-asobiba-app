@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-08 - [batch:334-puzzle-tutorial-na-apply] Codex: user 依頼「`D:\ポノのおへや\Puzzle\Tutorial` に順番通り入れた NA をパズルチュートリアルへ実装」を受領。HANDOFF / git log / source folder / 既存 `puzzle/voice.js` と基本れんしゅう導線を確認。wav 8 本を既存音声形式に合わせて mp3 化し、基本れんしゅうの `みる` 長押し〜ヒント使用までの各状態に順番で割り当てる方針。 (by Codex)
+- 2026-06-08 - [batch:334-puzzle-tutorial-na-apply] DONE - Codex: source wav 8 本を `assets/audio/puzzle/voice/basic_tut_01.mp3`〜`basic_tut_08.mp3` に変換し、`puzzle/voice.js` に `playBasicTut()` を追加。`puzzle/main.js` は基本れんしゅうの `みる` 短押し失敗/長押し成功/ピース選択/ヒント使用に順番再生を接続し、基本れんしゅう中は既存 `hint.mp3` を鳴らさないよう調整。`docs/PUZZLE_TUTORIAL_VOICE.md` に実装済みファイル表を追記。`sw.js` / `PAGE_CACHE_VERSION` は v904。Node構文、`git diff --check`、ffprobe、Playwrightで再生順 `01,02,04,02,03,05,06,07,08` と generic hint 0 件、JS error/request failure 0 件を確認。 (by Codex)
 - 2026-06-08 - [batch:333-puzzle-tutorial-voice-memo] Codex: user 依頼「Google AI Studio で作るパズルチュートリアル音声の女性 speaker / Scene / Sample Context をメモ」を受領。既存 puzzle 音声メタデータに speaker 名が残っていないこと、ユーザー確認ではオープニングが女性声であることを確認し、パズル専用メモ作成に着手。 (by Codex)
 - 2026-06-08 - [batch:333-puzzle-tutorial-voice-memo] DONE - Codex: `docs/PUZZLE_TUTORIAL_VOICE.md` を追加。speaker 第一候補 `Aoede`、第二候補 `Leda`、第三候補 `Kore`、Google AI Studio の `Scene` / `Sample Context`、試聴用短文、基本れんしゅう用ナレーション案 6 本、音声系画面は通常チャット履歴と同様に残らない可能性があるため本ファイルを正本にする旨を記録。コード変更なし。 (by Codex)
 - 2026-06-08 - [batch:332-maze-flag-gimmick-assets-simon-center] DONE - Codex: user 依頼「Simon色丸を長方形中央へ / しかけ障害物用に縄梯子・紅白旗・鍵・錠前・ハタハタ虫通常/旗上げ4ポーズを生成」を受領。`maze/index.html` は `.simon-cell` を grid 中央配置にして Playwright で丸中心Y差 0px を確認。画像は built-in image generation tool で白背景 raw 3枚を生成し、`.gitignore` 対象のローカル納品先 `tmp/alpha_pending/330_maze_gimmick_assets/` にコピー。alpha 抜き・切り抜きは未実施。`sw.js` / `PAGE_CACHE_VERSION` は v903。 (by Codex)

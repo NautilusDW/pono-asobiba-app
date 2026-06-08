@@ -2503,6 +2503,23 @@ function clearBasicPracticeSeen() {
   try { localStorage.removeItem(BASIC_PRACTICE_SEEN_KEY); } catch (_) {}
 }
 
+function playBasicPracticeVoice(stepIndex) {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  try {
+    if (window.PuzzleVoice && typeof window.PuzzleVoice.playBasicTut === 'function') {
+      window.PuzzleVoice.playBasicTut(stepIndex);
+    }
+  } catch (_) {}
+}
+
+function stopPuzzleVoice() {
+  try {
+    if (window.PuzzleVoice && typeof window.PuzzleVoice.stop === 'function') {
+      window.PuzzleVoice.stop();
+    }
+  } catch (_) {}
+}
+
 function isTitleGuideChoiceEnabled() {
   try { return localStorage.getItem(TITLE_GUIDE_CHOICE_KEY) !== 'off'; }
   catch (_) { return true; }
@@ -3006,6 +3023,7 @@ function startCommonHintPractice(partnerId) {
     '',
     ''
   );
+  playBasicPracticeVoice(5);
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
   refreshHintButtonState();
   redraw();
@@ -3033,6 +3051,7 @@ function startBasicPeekPractice() {
     '',
     ''
   );
+  playBasicPracticeVoice(0);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   redraw();
 }
@@ -3049,6 +3068,7 @@ function onPartnerPracticePeekPressed() {
     'おしている あいだ みえるよ',
     ''
   );
+  playBasicPracticeVoice(1);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold') return;
@@ -3058,6 +3078,7 @@ function onPartnerPracticePeekPressed() {
       'わからなくなったら ながく おしてね',
       ''
     );
+    playBasicPracticeVoice(2);
     setPartnerPracticeCoachBubble(btnPeek, null, false);
   }, BASIC_PEEK_HOLD_MS);
 }
@@ -3078,6 +3099,7 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
       'おしている あいだだけ みえるよ',
       ''
     );
+    playBasicPracticeVoice(3);
     setPartnerPracticeCoachBubble(btnPeek, null, false);
     return;
   }
@@ -3089,6 +3111,7 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     'わからなくなったら ながく おしてね',
     ''
   );
+  playBasicPracticeVoice(4);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   practiceSetTimeout(function () {
     if (peekOn) setPeekOverlay(false);
@@ -3121,6 +3144,7 @@ function onPartnerPracticePieceSelected(piece) {
     'ばしょが ひかるよ',
     ''
   );
+  playBasicPracticeVoice(6);
   setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
 }
@@ -3137,6 +3161,7 @@ function onPartnerPracticeHintUsed() {
     'こまったら つかってね',
     ''
   );
+  playBasicPracticeVoice(7);
   if (partnerPracticeState.mode === 'basic') {
     partnerPracticeState.phase = 'basic-done';
     setPartnerPracticeCoachBubble(btnHint, null, true);
@@ -3479,6 +3504,7 @@ function finishPartnerPractice() {
   dragPiece = null;
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (peekOn) setPeekOverlay(false);
+  stopPuzzleVoice();
   stopChallengeTimer();
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
@@ -3510,6 +3536,7 @@ function returnPartnerPracticeToSelect() {
   hintFlashUntil = 0;
   dragPiece = null;
   if (peekOn) setPeekOverlay(false);
+  stopPuzzleVoice();
   stopChallengeTimer();
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
@@ -4107,7 +4134,10 @@ if (btnHint) {
     // peek ON のままヒントを発動すると overlay が前面に残るので OFF
     if (peekOn) setPeekOverlay(false);
 
-    if (window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
+    var isBasicPracticeHint = !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'hint-press');
+    if (!isBasicPracticeHint && window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
 
     // 金色星演出: 1.5 秒間 hintFlashPiece に対して描画 (Phase 3c: 2000→1500ms)
     hintFlashPiece = selectedPieceForHint;
