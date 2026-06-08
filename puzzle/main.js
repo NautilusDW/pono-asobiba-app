@@ -1479,26 +1479,38 @@ function drawPartnerPracticeCue(ctx) {
   var pulse = 0.5 + 0.5 * Math.sin(now / 180);
 
   if (cue.kind === 'tap-piece') {
-    var tapR = Math.min(pieceW, pieceH) * (0.64 + pulse * 0.12);
+    var minSide = Math.min(pieceW, pieceH);
+    var tapR = minSide * (0.66 + pulse * 0.12);
+    var glowR = tapR * (1.32 + pulse * 0.08);
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.shadowColor = 'rgba(255, 176, 58, 0.68)';
-    ctx.shadowBlur = 14 + pulse * 10;
+    var glow = ctx.createRadialGradient(cx, cy, tapR * 0.55, cx, cy, glowR);
+    glow.addColorStop(0, 'rgba(255, 180, 60, 0)');
+    glow.addColorStop(0.58, 'rgba(255, 180, 60,' + (0.22 + pulse * 0.14).toFixed(3) + ')');
+    glow.addColorStop(1, 'rgba(255, 220, 135, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowColor = 'rgba(255, 176, 58, 0.92)';
+    ctx.shadowBlur = 24 + pulse * 16;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
     ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.86 + pulse * 0.14).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.042);
+    ctx.lineWidth = Math.max(5, minSide * 0.048);
+    ctx.stroke();
+    ctx.shadowColor = 'rgba(255, 186, 60, 0.86)';
+    ctx.shadowBlur = 18 + pulse * 14;
+    ctx.beginPath();
+    ctx.arc(cx, cy, tapR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 176, 58,' + (0.62 + pulse * 0.30).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(4, minSide * 0.032);
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.beginPath();
-    ctx.arc(cx, cy, tapR, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 176, 58,' + (0.46 + pulse * 0.28).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.024);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, cy, tapR * 1.12, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 215, 120,' + (0.20 + pulse * 0.22).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(2, Math.min(pieceW, pieceH) * 0.016);
+    ctx.arc(cx, cy, tapR * 1.16, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 222, 138,' + (0.34 + pulse * 0.24).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(3, minSide * 0.018);
     ctx.stroke();
     ctx.restore();
     ensurePartnerPracticeCueLoop();
@@ -2432,8 +2444,8 @@ const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
-const BASIC_HINT_SELECT_VOICE_DELAY_MS = 360;
-const BASIC_HINT_DONE_VOICE_DELAY_MS = 260;
+const BASIC_HINT_SELECT_VOICE_DELAY_MS = 1100;
+const BASIC_HINT_DONE_VOICE_DELAY_MS = 700;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -2673,7 +2685,11 @@ function practiceAfterPaint(fn, ms) {
   }
   var raf = requestAnimationFrame(function () {
     if (!partnerPracticeState || !partnerPracticeState.active) return;
-    practiceSetTimeout(fn, ms || 0);
+    var nextRaf = requestAnimationFrame(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      practiceSetTimeout(fn, ms || 0);
+    });
+    if (partnerPracticeState) partnerPracticeState.rafs.push(nextRaf);
   });
   partnerPracticeState.rafs.push(raf);
   return raf;
