@@ -107,6 +107,124 @@ body {
   }
 }
 
+.title-guide-choice {
+  position: fixed;
+  inset: 0;
+  z-index: 310;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(32, 22, 12, 0.35);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.title-guide-choice.hidden {
+  display: none;
+}
+
+body.title-guide-choice-open .pono-menu-toggle,
+body.title-guide-choice-open .pono-dropdown {
+  display: none !important;
+}
+
+.title-guide-choice__panel {
+  width: min(520px, calc(100vw - 36px));
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: 22px 22px 18px;
+  border: 4px solid #F7C948;
+  border-radius: 18px;
+  background: rgba(255, 252, 236, 0.97);
+  box-shadow: 0 18px 44px rgba(52, 31, 10, 0.34);
+  text-align: center;
+  color: #5D3A00;
+}
+
+.title-guide-choice__eyebrow {
+  font-size: clamp(0.86rem, 2.2vw, 1rem);
+  font-weight: 900;
+  color: #8A6F45;
+  line-height: 1.2;
+}
+
+.title-guide-choice__title {
+  margin-top: 6px;
+  font-size: clamp(1.25rem, 3.8vw, 1.85rem);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.title-guide-choice__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.title-guide-choice__btn {
+  min-height: 58px;
+  border: 0;
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: clamp(0.98rem, 2.7vw, 1.18rem);
+  font-weight: 900;
+  line-height: 1.2;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(93, 78, 55, 0.18), 0 10px 20px rgba(93, 78, 55, 0.18);
+  touch-action: manipulation;
+}
+
+.title-guide-choice__btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 rgba(93, 78, 55, 0.18), 0 6px 12px rgba(93, 78, 55, 0.16);
+}
+
+.title-guide-choice__btn--learn {
+  background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
+}
+
+.title-guide-choice__btn--play {
+  background: linear-gradient(180deg, #8BC48A 0%, #43A86D 100%);
+}
+
+.title-guide-choice__skip {
+  width: fit-content;
+  max-width: 100%;
+  margin: 16px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: clamp(0.9rem, 2.4vw, 1rem);
+  font-weight: 900;
+  line-height: 1.2;
+  color: #6E5A37;
+  cursor: pointer;
+}
+
+.title-guide-choice__skip input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  accent-color: #43A86D;
+}
+
+@media (max-width: 540px) {
+  .title-guide-choice__panel {
+    padding: 18px 16px 16px;
+  }
+  .title-guide-choice__actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .title-guide-choice__btn {
+    min-height: 52px;
+  }
+}
+
 /* ===== Layout ===== */
 .page-wrapper {
   width: 100%;

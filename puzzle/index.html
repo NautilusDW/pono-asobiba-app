@@ -31,6 +31,20 @@
       <div class="title-screen__start">▶ タップしてスタート</div>
     </div>
   </div>
+  <div id="title-guide-choice" class="title-guide-choice hidden" role="dialog" aria-modal="true" aria-labelledby="title-guide-choice-title" aria-hidden="true">
+    <div class="title-guide-choice__panel">
+      <p class="title-guide-choice__eyebrow">はじめに どうする？</p>
+      <h2 id="title-guide-choice-title" class="title-guide-choice__title">パズルの やりかたを みる？</h2>
+      <div class="title-guide-choice__actions">
+        <button type="button" id="title-guide-show" class="title-guide-choice__btn title-guide-choice__btn--learn">やりかたを みる</button>
+        <button type="button" id="title-guide-start" class="title-guide-choice__btn title-guide-choice__btn--play">すぐに あそぶ</button>
+      </div>
+      <label class="title-guide-choice__skip">
+        <input type="checkbox" id="title-guide-skip">
+        <span>つぎから ここを とばす</span>
+      </label>
+    </div>
+  </div>
 
   <!-- Opening cutscene overlay (owl-doctor style: wooden-frame narration + per-cut audio) -->
   <div id="puzzle-opening" class="puzzle-op hidden" aria-hidden="true">

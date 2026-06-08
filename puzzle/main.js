@@ -389,6 +389,10 @@ const btnNextStage    = document.getElementById('btn-next-stage');
 const btnPlayAgain    = document.getElementById('btn-play-again');
 const confettiContainer = document.getElementById('confetti-container');
 const titleScreen     = document.getElementById('title-screen');
+const titleGuideChoice = document.getElementById('title-guide-choice');
+const titleGuideShowBtn = document.getElementById('title-guide-show');
+const titleGuideStartBtn = document.getElementById('title-guide-start');
+const titleGuideSkipCheck = document.getElementById('title-guide-skip');
 const challengeStatusEl = document.getElementById('challenge-status');
 
 // ===== Partner Challenge State =====
@@ -2405,9 +2409,11 @@ function setSelectedPieceForHint(piece) {
 // 動かして特徴を見せる。終了後は元のステージを再ロードして本番に戻す。
 const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
 const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
+const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
+let titleGuideChoiceOpen = false;
 
 const PARTNER_PRACTICE_COPY = {
   kitsune: {
@@ -2495,6 +2501,16 @@ function markBasicPracticeSeen() {
 
 function clearBasicPracticeSeen() {
   try { localStorage.removeItem(BASIC_PRACTICE_SEEN_KEY); } catch (_) {}
+}
+
+function isTitleGuideChoiceEnabled() {
+  try { return localStorage.getItem(TITLE_GUIDE_CHOICE_KEY) !== 'off'; }
+  catch (_) { return true; }
+}
+
+function setTitleGuideChoiceEnabled(on) {
+  try { localStorage.setItem(TITLE_GUIDE_CHOICE_KEY, on ? 'on' : 'off'); } catch (_) {}
+  refreshTitleGuideChoiceMenuItem();
 }
 
 function resetPuzzlePracticeSeenFlags() {
@@ -4162,24 +4178,60 @@ function showTutorial() {
 let partnerChoiceDismissedStageId = null;
 const PARTNER_UNLOCK_NOTICE_KEY = 'pono_partner_unlock_notice_seen_v1';
 
-function startFromTitleScreen() {
-  if (titleScreen) titleScreen.classList.add('hidden');
-  getSfxCtx().resume().catch(() => {});
-  // BGM はオープニング再生中に被るので、終了後に開始する
-  runOpeningCutscene(finishOpeningAndEnterGame);
+function showTitleGuideChoice() {
+  if (!titleGuideChoice || !isTitleGuideChoiceEnabled()) return false;
+  titleGuideChoiceOpen = true;
+  if (titleGuideSkipCheck) titleGuideSkipCheck.checked = false;
+  document.body.classList.add('title-guide-choice-open');
+  titleGuideChoice.classList.remove('hidden');
+  titleGuideChoice.setAttribute('aria-hidden', 'false');
+  setTimeout(function () {
+    try { if (titleGuideShowBtn) titleGuideShowBtn.focus(); } catch (_) {}
+  }, 0);
+  return true;
 }
 
-function finishOpeningAndEnterGame() {
+function hideTitleGuideChoice() {
+  titleGuideChoiceOpen = false;
+  document.body.classList.remove('title-guide-choice-open');
+  if (!titleGuideChoice) return;
+  titleGuideChoice.classList.add('hidden');
+  titleGuideChoice.setAttribute('aria-hidden', 'true');
+}
+
+function enterPuzzleAfterTitle(options) {
+  options = options || {};
+  hideTitleGuideChoice();
+  if (titleScreen) titleScreen.classList.add('hidden');
+  finishOpeningAndEnterGame(options);
+}
+
+function chooseTitleGuideAction(showPractice) {
+  var skipNext = !!(titleGuideSkipCheck && titleGuideSkipCheck.checked);
+  if (skipNext) setTitleGuideChoiceEnabled(false);
+  enterPuzzleAfterTitle(showPractice ? { forceBasicPractice: true } : { skipBasicPractice: true });
+}
+
+function startFromTitleScreen(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (titleGuideChoiceOpen) return;
+  getSfxCtx().resume().catch(() => {});
+  if (showTitleGuideChoice()) return;
+  enterPuzzleAfterTitle({ skipBasicPractice: true });
+}
+
+function finishOpeningAndEnterGame(options) {
+  options = options || {};
   if (bgmEnabled) {
     bgmStarted = false;
     tryStartBgm();
   }
 
-  if (!hasSeenBasicPractice()) {
+  if (options.forceBasicPractice || (!options.skipBasicPractice && isTitleGuideChoiceEnabled() && !hasSeenBasicPractice())) {
     clearCurrentPartnerSelection();
     showBasicPracticeIfNeeded(function () {
       maybeShowPartnerChoiceForCurrentStage();
-    });
+    }, !!options.forceBasicPractice);
     return;
   }
 
@@ -4655,6 +4707,44 @@ function closePuzzleMenuDropdown() {
   }
 }
 
+function refreshTitleGuideChoiceMenuItem() {
+  var item = document.querySelector('[data-puzzle-title-guide-choice-menu]');
+  if (!item) return;
+  var on = isTitleGuideChoiceEnabled();
+  var icon = item.querySelector('.pono-dd-icon');
+  var label = item.querySelector('.pono-dd-label');
+  if (icon) icon.textContent = on ? '🧩' : '⏭';
+  if (label) label.textContent = on ? 'はじめの あそびかた ON' : 'はじめの あそびかた OFF';
+  item.classList.toggle('bgm-off', !on);
+}
+
+function installTitleGuideChoiceMenuItem() {
+  var dropdown = document.querySelector('.pono-dropdown');
+  if (!dropdown || dropdown.querySelector('[data-puzzle-title-guide-choice-menu]')) return;
+
+  var item = document.createElement('button');
+  item.type = 'button';
+  item.className = 'pono-dd-item';
+  item.setAttribute('data-puzzle-title-guide-choice-menu', '1');
+  item.innerHTML = '<span class="pono-dd-icon">🧩</span><span class="pono-dd-label">はじめの あそびかた ON</span>';
+  item.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setTitleGuideChoiceEnabled(!isTitleGuideChoiceEnabled());
+    closePuzzleMenuDropdown();
+  });
+
+  var tutorialItem = Array.from(dropdown.querySelectorAll('.pono-dd-item')).find(function (button) {
+    return button.textContent.indexOf('あそびかた') >= 0;
+  });
+  if (tutorialItem && tutorialItem.nextSibling) {
+    dropdown.insertBefore(item, tutorialItem.nextSibling);
+  } else {
+    dropdown.appendChild(item);
+  }
+  refreshTitleGuideChoiceMenuItem();
+}
+
 function installPracticeResetMenuItem() {
   var dropdown = document.querySelector('.pono-dropdown');
   if (!dropdown || dropdown.querySelector('[data-puzzle-practice-reset-menu]')) return;
@@ -4691,6 +4781,18 @@ window.addEventListener('DOMContentLoaded', () => {
   if (titleScreen) {
     titleScreen.addEventListener('click', startFromTitleScreen);
   }
+  if (titleGuideShowBtn) {
+    titleGuideShowBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      chooseTitleGuideAction(true);
+    });
+  }
+  if (titleGuideStartBtn) {
+    titleGuideStartBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      chooseTitleGuideAction(false);
+    });
+  }
 
   // Shared menu (gear icon) with BGM toggle
   if (window.initMenu) {
@@ -4710,6 +4812,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
     installAlbumMenuItem();
+    installTitleGuideChoiceMenuItem();
     installPracticeResetMenuItem();
   }
 });
