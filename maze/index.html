@@ -394,8 +394,44 @@ body.image-stage-mode #hint {
   letter-spacing: 0.5px;
   border: 1.5px solid rgba(164,199,109,0.4);
 }
+#flagInventoryHud {
+  position: fixed;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border-radius: 18px;
+  background: rgba(14, 23, 20, 0.42);
+  border: 1.5px solid rgba(255, 242, 138, 0.48);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+  z-index: 101;
+  pointer-events: none;
+}
+body.image-stage-mode #flagInventoryHud.show {
+  display: flex;
+}
+.flag-inventory-item {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.88);
+  border: 2px solid rgba(255, 242, 138, 0.95);
+  box-shadow: 0 0 13px rgba(255, 237, 132, 0.58), inset 0 0 0 1px rgba(255,255,255,0.8);
+}
+.flag-inventory-item img {
+  max-width: 25px;
+  max-height: 25px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.18));
+}
 /* 旧 grid モードのみ非表示。image-stage-mode (デフォ) では出る */
 body:not(.image-stage-mode) #imgStageLabel { display: none; }
+body:not(.image-stage-mode) #flagInventoryHud { display: none; }
 body.image-stage-mode .game-wrap {
   border-radius: 0;
   box-shadow: none;
@@ -1532,6 +1568,7 @@ body.image-stage-mode .game-wrap {
 
   <!-- ステージ番号/名前ラベル (image-stage-mode のみ表示、CSS で制御) -->
   <div id="imgStageLabel">ステージ ?</div>
+  <div id="flagInventoryHud" aria-hidden="true"></div>
 
   <!-- ステージ開始時のストーリー紹介モーダル (animal が定義された image stage で初回のみ) -->
   <div class="story-intro" id="storyIntro" aria-hidden="true">
@@ -1979,6 +2016,7 @@ const hudMoves = document.getElementById('hud-moves');
 const hudApples = document.getElementById('hud-apples');
 const hint = document.getElementById('hint');
 const voice = document.getElementById('voice');
+const flagInventoryHud = document.getElementById('flagInventoryHud');
 const encounter = document.getElementById('encounter');
 const arrowLayer = document.getElementById('arrowLayer');
 const gameWrap = document.getElementById('gameWrap');
@@ -2680,6 +2718,7 @@ function imgDraw(now) {
     const ponoScreenY = hidePonoForTunnel ? h / 2 : h / 2 + (py - stage.camera.y) * drawScale;
     imgDrawLantern(now, ponoScreenX, ponoScreenY, w, h, stage.lantern);
   }
+  imgDrawFlagTunnelScreenGlow(stage, now, w, h, drawScale);
 
   // Pono on top of the lantern overlay
   if (!hidePonoForTunnel) {
@@ -2975,6 +3014,23 @@ function _flagTunnelSetTimeout(fn, ms) {
   return t;
 }
 
+function _updateFlagInventoryHud() {
+  if (!flagInventoryHud) return;
+  const st = _flagTunnelState;
+  const items = [];
+  if (st && st.ladderCollected) {
+    items.push({ src: MAZE_FLAG_ASSET_BASE + 'rope_ladder.png', alt: 'なわばしご' });
+  }
+  if (st && st.keyCollected) {
+    items.push({ src: MAZE_FLAG_ASSET_BASE + 'gold_key.png', alt: 'かぎ' });
+  }
+  flagInventoryHud.innerHTML = items.map(function(item) {
+    return '<div class="flag-inventory-item"><img src="' + item.src + '" alt="' + item.alt + '"></div>';
+  }).join('');
+  flagInventoryHud.classList.toggle('show', items.length > 0);
+  flagInventoryHud.setAttribute('aria-hidden', items.length > 0 ? 'false' : 'true');
+}
+
 function _flagEaseInOut(t) {
   t = Math.max(0, Math.min(1, t));
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -3048,6 +3104,7 @@ function _initFlagTunnelForStage(stageObj) {
   if (stage) stage._flagZoom = 1;
   if (!stageObj || !stageObj.flagGimmick) {
     _flagTunnelState = null;
+    _updateFlagInventoryHud();
     return;
   }
   _flagTunnelState = {
@@ -3058,6 +3115,7 @@ function _initFlagTunnelForStage(stageObj) {
     travelling: false,
     anim: null,
   };
+  _updateFlagInventoryHud();
 }
 
 function _flagTunnelCfg() {
@@ -3095,6 +3153,75 @@ function _drawWorldImage(img, x, y, h, alpha) {
   return true;
 }
 
+function _drawFlagHoleGlow(x, y, radius, pulse, alphaScale) {
+  const warm = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  warm.addColorStop(0, 'rgba(255, 235, 136, 0.62)');
+  warm.addColorStop(0.36, 'rgba(255, 218, 95, 0.34)');
+  warm.addColorStop(0.72, 'rgba(180, 247, 255, 0.16)');
+  warm.addColorStop(1, 'rgba(255, 242, 138, 0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = (alphaScale || 1) * (0.64 + pulse * 0.24);
+  ctx.fillStyle = warm;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = (alphaScale || 1) * (0.62 + pulse * 0.28);
+  ctx.strokeStyle = 'rgba(255, 247, 165, 0.86)';
+  ctx.lineWidth = Math.max(7, radius / 13);
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 0.48, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function _drawFlagScreenGlow(sx, sy, radius, pulse, alphaScale) {
+  const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+  glow.addColorStop(0, 'rgba(255, 244, 168, 0.78)');
+  glow.addColorStop(0.28, 'rgba(255, 220, 94, 0.48)');
+  glow.addColorStop(0.62, 'rgba(164, 239, 255, 0.22)');
+  glow.addColorStop(1, 'rgba(255, 244, 168, 0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = (alphaScale || 1) * (0.72 + pulse * 0.24);
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = (alphaScale || 1) * (0.44 + pulse * 0.22);
+  ctx.strokeStyle = 'rgba(255, 249, 183, 0.92)';
+  ctx.lineWidth = Math.max(5, radius / 11);
+  ctx.beginPath();
+  ctx.arc(sx, sy, radius * 0.38, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function imgDrawFlagTunnelScreenGlow(stageObj, now, viewportW, viewportH, scale) {
+  const cfg = _flagTunnelCfg();
+  const st = _flagTunnelState;
+  if (!cfg || !st || !stageObj || !scale) return;
+  const entrance = _flagEntranceObstacle();
+  if (entrance && !st.unlocked) {
+    const pulse = 0.5 + Math.sin(now / 240) * 0.5;
+    const sx = viewportW / 2 + (entrance.x - stageObj.camera.x) * scale;
+    const sy = viewportH / 2 + (entrance.y - stageObj.camera.y) * scale;
+    const radius = (cfg.encounterRadius || stageObj.viewBox.h / 16) * scale * 1.8;
+    _drawFlagScreenGlow(sx, sy, radius, pulse, 1);
+  }
+  if (st.anim) {
+    const exit = _flagExitObstacle();
+    const elapsed = now - st.anim.t0;
+    if (exit && elapsed > 2700) {
+      const p = Math.min(1, (elapsed - 2700) / 720);
+      const sx = viewportW / 2 + (exit.x - stageObj.camera.x) * scale;
+      const sy = viewportH / 2 + (exit.y - stageObj.camera.y) * scale;
+      _drawFlagScreenGlow(sx, sy, stageObj.viewBox.h * scale / 8.5, p, 0.9);
+    }
+  }
+}
+
 function imgDrawFlagTunnelGimmick(stageObj, now) {
   const cfg = _flagTunnelCfg();
   const st = _flagTunnelState;
@@ -3102,20 +3229,8 @@ function imgDrawFlagTunnelGimmick(stageObj, now) {
   const entrance = _flagEntranceObstacle();
   if (entrance && !st.unlocked) {
     const pulse = 0.5 + Math.sin(now / 240) * 0.5;
-    const r = (cfg.encounterRadius || stageObj.viewBox.h / 16) * (0.55 + pulse * 0.12);
-    ctx.save();
-    ctx.globalAlpha = 0.28 + pulse * 0.22;
-    ctx.strokeStyle = '#FFF28A';
-    ctx.lineWidth = Math.max(5, stageObj.viewBox.h / 220);
-    ctx.beginPath();
-    ctx.arc(entrance.x, entrance.y, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = 0.18 + pulse * 0.16;
-    ctx.fillStyle = '#FFF28A';
-    ctx.beginPath();
-    ctx.arc(entrance.x, entrance.y, r * 0.78, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    const r = (cfg.encounterRadius || stageObj.viewBox.h / 16) * (1.05 + pulse * 0.12);
+    _drawFlagHoleGlow(entrance.x, entrance.y, r * 1.45, pulse, 1);
   }
   const ladder = cfg.ladder;
   if (ladder && !st.ladderCollected) {
@@ -3139,6 +3254,7 @@ function imgDrawFlagTunnelGimmick(stageObj, now) {
     const exit = _flagExitObstacle();
     if (exit && elapsed > 2700) {
       const p = Math.min(1, (elapsed - 2700) / 720);
+      _drawFlagHoleGlow(exit.x, exit.y, (stageObj.viewBox.h / 15) * (0.9 + p * 0.28), p, 0.9);
       ctx.save();
       ctx.globalAlpha = 0.25 + p * 0.35;
       ctx.strokeStyle = '#B7F7FF';
@@ -3160,6 +3276,7 @@ function _checkFlagLadderPickup(px, py) {
   const dy = py - cfg.ladder.y;
   if (dx * dx + dy * dy > r * r) return false;
   st.ladderCollected = true;
+  _updateFlagInventoryHud();
   playApple();
   imgShowBubble('なわばしごを ひろったよ！', { x: cfg.ladder.x, y: cfg.ladder.y }, 1900);
   showHint('🪜 なわばしごを ひろったよ。ひかる あなに いってみよう！', 3000);
@@ -3753,7 +3870,7 @@ function _mzMazeAnimal(name, label) {
   const assets = {
     usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
     iruka: _mzLocalQuizSrc('iruka') || (MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png'),
-    kirin: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_giraffe_full.png',
+    kirin: MAZE_QUIZ_IMG + 'kirin.png',
     kuma: MAZE_QUIZ_IMG + 'kuma.png',
     kujira: _mzLocalQuizSrc('kujira') || (MAZE_QUIZ_IMG + 'kujira.png'),
   };
@@ -4337,6 +4454,7 @@ function _showFlagRewardSequence() {
   if (st) {
     st.keyCollected = true;
     st.unlocked = true;
+    _updateFlagInventoryHud();
   }
   encStageEl.innerHTML =
     '<div class="flag-reward">' +
