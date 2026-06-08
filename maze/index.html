@@ -988,6 +988,110 @@ body.image-stage-mode .game-wrap {
   box-shadow: inset 0 4px 9px rgba(255,255,255,0.65), inset 0 -6px 10px rgba(0,0,0,0.18), 0 0 0 5px rgba(255,255,255,0.62), 0 5px 12px rgba(0,0,0,0.18);
 }
 
+.flag-game {
+  display: grid;
+  grid-template-rows: auto minmax(128px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: min(54dvh, 360px);
+  overflow: hidden;
+}
+.flag-command {
+  min-height: 2.4em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-weight: 900;
+  color: #5D4E37;
+  line-height: 1.2;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.8);
+}
+.flag-bug-stage {
+  display: grid;
+  place-items: center;
+  min-height: 128px;
+  border: 4px solid #BFD88A;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 0 4px 14px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.flag-bug-img {
+  max-width: min(34vw, 190px);
+  max-height: min(34dvh, 210px) !important;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.18));
+}
+.flag-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.flag-controls .enc-btn {
+  min-height: 54px;
+  font-size: clamp(1.1rem, 2.8vw, 1.45rem);
+}
+.flag-controls .flag-red {
+  background: linear-gradient(135deg, #E94E4E, #FF8A7A);
+  color: #fff;
+}
+.flag-controls .flag-white {
+  background: linear-gradient(135deg, #FFFFFF, #F3E8D5);
+  color: #5D4E37;
+  border: 3px solid #D7C9AD;
+}
+.flag-reward {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  align-items: center;
+  min-height: min(54dvh, 350px);
+  overflow: hidden;
+}
+.flag-reward__title {
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  font-weight: 900;
+  color: #6C8E3F;
+}
+.flag-lock-stage {
+  position: relative;
+  width: min(58vw, 360px);
+  height: min(36dvh, 210px);
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+}
+.flag-lock-img {
+  width: min(30vw, 150px);
+  max-height: min(32dvh, 180px) !important;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.18));
+}
+.flag-key-img {
+  position: absolute;
+  left: 4%;
+  top: 50%;
+  width: min(25vw, 128px);
+  max-height: min(18dvh, 110px) !important;
+  object-fit: contain;
+  transform: translateY(-50%) rotate(-18deg);
+  filter: drop-shadow(0 5px 8px rgba(0,0,0,0.16));
+  animation: flagKeyTurn 1.05s ease-in-out forwards;
+}
+.flag-lock-stage.is-open .flag-lock-img {
+  animation: flagLockPop 0.38s ease-out;
+}
+@keyframes flagKeyTurn {
+  0%   { left: 4%;  transform: translateY(-50%) rotate(-18deg) scale(0.95); }
+  62%  { left: 43%; transform: translateY(-50%) rotate(-4deg) scale(1.02); }
+  100% { left: 43%; transform: translateY(-50%) rotate(22deg) scale(1.02); }
+}
+@keyframes flagLockPop {
+  0%   { transform: scale(0.92); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
   .encounter-modal .enc-card.is-janken {
     padding: 8px 10px;
@@ -1025,6 +1129,47 @@ body.image-stage-mode .game-wrap {
   }
   .janken-hand {
     width: min(clamp(46px, 9vw, 58px), calc(100% - 14px));
+  }
+  .flag-game {
+    grid-template-rows: 1.7em minmax(82px, 1fr) 44px;
+    gap: 6px;
+    min-height: min(64dvh, 220px);
+  }
+  .flag-command {
+    min-height: 1.6em;
+    font-size: clamp(1rem, 4vw, 1.35rem);
+  }
+  .flag-bug-stage {
+    min-height: 82px;
+    border-width: 3px;
+    border-radius: 13px;
+  }
+  .flag-bug-img {
+    max-width: min(23vw, 96px);
+    max-height: min(28dvh, 110px) !important;
+  }
+  .flag-controls {
+    gap: 8px;
+  }
+  .flag-controls .enc-btn {
+    min-height: 42px;
+    padding: 5px 12px;
+    font-size: clamp(0.95rem, 3.8vw, 1.2rem);
+  }
+  .flag-reward {
+    min-height: min(64dvh, 220px);
+    gap: 6px;
+  }
+  .flag-lock-stage {
+    height: min(42dvh, 145px);
+    min-height: 112px;
+  }
+  .flag-lock-img {
+    width: min(20vw, 86px);
+    max-height: min(34dvh, 125px) !important;
+  }
+  .flag-key-img {
+    width: min(18vw, 72px);
   }
   .janken-result {
     height: 1.45em;
@@ -1432,6 +1577,23 @@ const imgHole  = new Image(); imgHole.src  = '../assets/images/maze/hole.png';
 const imgStump = new Image(); imgStump.src = '../assets/images/maze/stump.png';
 const imgRock  = new Image(); imgRock.src  = '../assets/images/maze/rock.png';
 const imgApple = new Image(); imgApple.src = '../assets/images/word/ringo.png';
+const MAZE_FLAG_ASSET_BASE = '../assets/images/maze/flag/';
+function _mazeLoadImage(src) {
+  const img = new Image();
+  img.src = src;
+  return img;
+}
+const MAZE_FLAG_ASSETS = {
+  hatahataPose: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_pose.png'),
+  hatahataBothDown: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_both_down.png'),
+  hatahataRedUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_red_up.png'),
+  hatahataWhiteUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_white_up.png'),
+  hatahataBothUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_both_up.png'),
+  ropeLadder: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'rope_ladder.png'),
+  key: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'gold_key.png'),
+  lockClosed: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'padlock_closed.png'),
+  lockOpen: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'padlock_open.png'),
+};
 // Start / Goal markers for image stages
 const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
 const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/marker_goal.png';
@@ -2071,6 +2233,7 @@ function imgLoadStage(def) {
   // Switch body to image-stage layout (full viewport landscape, hide grid UI)
   document.body.classList.add('image-stage-mode');
   stage = window.MazeImage.buildStage(def);
+  _initFlagTunnelForStage(stage);
   pono = {
     type: 'image',
     x: stage.start.x, y: stage.start.y,
@@ -2348,6 +2511,7 @@ function imgFinishWalk() {
   moves++;
   hudMoves.textContent = 'てかず: ' + moves;
   walkAnim = null;
+  _checkFlagLadderPickup(pono.x, pono.y);
   if (pono.nodeId === stage.goal.id) {
     onClear();
   } else {
@@ -2382,6 +2546,7 @@ function imgDraw(now) {
       const r = window.MazeImage.interpolate(walkAnim.plan.polyline, walkAnim.plan.cumLengths, t);
       px = r.x; py = r.y; ftx = r.tx; fty = r.ty;
       isWalking = true;
+      _checkFlagLadderPickup(px, py);
       // Obstacle hit → bounce back (no minigame). Creatures take priority via encounter.
       if (!_checkObstacleCollision(px, py)) {
         _checkCreatureCollision(px, py);
@@ -2440,6 +2605,7 @@ function imgDraw(now) {
   imgDrawMarkers(stage);
   // Obstacles (decoration only — placed by editor on top of the maze image)
   if (stage.obstacles && stage.obstacles.length) imgDrawObstacles(stage);
+  imgDrawFlagTunnelGimmick(stage, now);
   // Creatures (お邪魔虫 — block path until defeated via mini-game)
   if (stage.creatures && stage.creatures.length) imgDrawCreatures(stage, now);
   ctx.restore();
@@ -2694,6 +2860,12 @@ const CREATURE_KIND_DATA = {
     defeatDialog: 'ブンブン、すごいね！\nとおって いいよ。',
     defaultGame: 'oddone', imageUrl: '../assets/images/maze/creatures/hachi.png'
   },
+  hatahata: {
+    emoji: '🦗', color: '#8BBF3D', name: 'ハタハタムシ',
+    dialog: 'ここは とおれないよ。<br>はたあげ しょうぶで あそぼう！',
+    defeatDialog: 'やるね！ かぎを あげるよ。',
+    defaultGame: 'flag', imageUrl: '../assets/images/maze/flag/hatahata_pose.png'
+  },
 };
 // お邪魔虫共通のフォールバック台詞。
 // c.dialog / c.defeatDialog (ステージ JSON での明示指定) があればそちらを最優先。
@@ -2717,6 +2889,147 @@ const OBSTACLE_KIND_IMG = {
   stump: imgStump,
   rock:  imgRock,
 };
+
+let _flagTunnelState = null;
+let _flagGameState = null;
+let _flagTunnelTimers = [];
+
+function _clearFlagTunnelTimers() {
+  _flagTunnelTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
+  _flagTunnelTimers = [];
+}
+
+function _flagTunnelSetTimeout(fn, ms) {
+  const t = setTimeout(function() {
+    _flagTunnelTimers = _flagTunnelTimers.filter(function(x) { return x !== t; });
+    fn();
+  }, ms);
+  _flagTunnelTimers.push(t);
+  return t;
+}
+
+function _initFlagTunnelForStage(stageObj) {
+  _clearFlagTunnelTimers();
+  _flagGameState = null;
+  if (!stageObj || !stageObj.flagGimmick) {
+    _flagTunnelState = null;
+    return;
+  }
+  _flagTunnelState = {
+    id: stageObj.flagGimmick.id || 'flag-tunnel',
+    ladderCollected: false,
+    keyCollected: false,
+    unlocked: false,
+    travelling: false,
+    anim: null,
+  };
+}
+
+function _flagTunnelCfg() {
+  return stage && stage.flagGimmick && _flagTunnelState ? stage.flagGimmick : null;
+}
+
+function _flagObstacleById(id) {
+  if (!id || !stage || !Array.isArray(stage.obstacles)) return null;
+  return stage.obstacles.find(function(o) { return o && o.id === id; }) || null;
+}
+
+function _flagEntranceObstacle() {
+  const cfg = _flagTunnelCfg();
+  return cfg ? _flagObstacleById(cfg.entranceObstacleId) : null;
+}
+
+function _flagExitObstacle() {
+  const cfg = _flagTunnelCfg();
+  return cfg ? _flagObstacleById(cfg.exitObstacleId) : null;
+}
+
+function _isFlagTunnelEntranceObstacle(o) {
+  const cfg = _flagTunnelCfg();
+  return !!(cfg && o && o.id && o.id === cfg.entranceObstacleId);
+}
+
+function _drawWorldImage(img, x, y, h, alpha) {
+  if (!img || !img.complete || img.naturalWidth <= 0) return false;
+  const ratio = img.naturalWidth / img.naturalHeight;
+  const w = h * ratio;
+  ctx.save();
+  if (alpha != null) ctx.globalAlpha = alpha;
+  ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
+  ctx.restore();
+  return true;
+}
+
+function imgDrawFlagTunnelGimmick(stageObj, now) {
+  const cfg = _flagTunnelCfg();
+  const st = _flagTunnelState;
+  if (!cfg || !st) return;
+  const entrance = _flagEntranceObstacle();
+  if (entrance && !st.unlocked) {
+    const pulse = 0.5 + Math.sin(now / 240) * 0.5;
+    const r = (cfg.encounterRadius || stageObj.viewBox.h / 16) * (0.55 + pulse * 0.12);
+    ctx.save();
+    ctx.globalAlpha = 0.28 + pulse * 0.22;
+    ctx.strokeStyle = '#FFF28A';
+    ctx.lineWidth = Math.max(5, stageObj.viewBox.h / 220);
+    ctx.beginPath();
+    ctx.arc(entrance.x, entrance.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 0.18 + pulse * 0.16;
+    ctx.fillStyle = '#FFF28A';
+    ctx.beginPath();
+    ctx.arc(entrance.x, entrance.y, r * 0.78, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  const ladder = cfg.ladder;
+  if (ladder && !st.ladderCollected) {
+    const bob = Math.sin(now / 360) * (stageObj.viewBox.h / 120);
+    const glow = 0.5 + Math.sin(now / 300) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.22 + glow * 0.18;
+    ctx.fillStyle = '#FFF8A8';
+    ctx.beginPath();
+    ctx.arc(ladder.x, ladder.y + bob, (ladder.radius || 86) * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    _drawWorldImage(MAZE_FLAG_ASSETS.ropeLadder, ladder.x, ladder.y + bob, stageObj.viewBox.h / 9, 1);
+  }
+  if (st.anim) {
+    const elapsed = now - st.anim.t0;
+    const entranceAlpha = Math.max(0, 1 - Math.max(0, elapsed - 650) / 400);
+    if (entrance && entranceAlpha > 0) {
+      _drawWorldImage(MAZE_FLAG_ASSETS.ropeLadder, entrance.x, entrance.y - stageObj.viewBox.h / 30, stageObj.viewBox.h / 8.5, entranceAlpha);
+    }
+    const exit = _flagExitObstacle();
+    if (exit && elapsed > 620) {
+      const p = Math.min(1, (elapsed - 620) / 520);
+      ctx.save();
+      ctx.globalAlpha = 0.25 + p * 0.35;
+      ctx.strokeStyle = '#B7F7FF';
+      ctx.lineWidth = Math.max(5, stageObj.viewBox.h / 240);
+      ctx.beginPath();
+      ctx.arc(exit.x, exit.y, (stageObj.viewBox.h / 20) * (0.7 + p * 0.45), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+function _checkFlagLadderPickup(px, py) {
+  const cfg = _flagTunnelCfg();
+  const st = _flagTunnelState;
+  if (!cfg || !st || st.ladderCollected || !cfg.ladder) return false;
+  const r = cfg.ladder.radius || 88;
+  const dx = px - cfg.ladder.x;
+  const dy = py - cfg.ladder.y;
+  if (dx * dx + dy * dy > r * r) return false;
+  st.ladderCollected = true;
+  playApple();
+  imgShowBubble('なわばしごを ひろったよ！', { x: cfg.ladder.x, y: cfg.ladder.y }, 1900);
+  showHint('🪜 なわばしごを ひろったよ。ひかる あなに いってみよう！', 3000);
+  return true;
+}
 
 // Resolve a node's rendered marker height (world units) from optional `radius`.
 // `radius` は描画高さ (px)。エディタ (tools/maze-editor.html) の slider 値と 1:1 対応。
@@ -2867,12 +3180,61 @@ function _obstacleCollisionRadius(stage, obstacle) {
   return Math.max(h / 56, byKind[kind] || fallback);
 }
 
+function _bounceFromFlagTunnelObstacle(o, px, py, message, hintText) {
+  const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
+  walkAnim = null;
+  pono.x = px;
+  pono.y = py;
+  pono.nodeId = backNodeId;
+  const PAUSE_MS = 1050;
+  _imgPauseUntil = performance.now() + PAUSE_MS;
+  hideArrows();
+  imgShowBubble(message || 'まだ とおれないよ', 'pono', PAUSE_MS + 650);
+  showHint(hintText || 'この あなは しかけが ありそう。', 2600);
+  const _stageRef = stage;
+  setTimeout(function() {
+    if (_stageRef !== stage) return;
+    if (_encounterActive || cleared) return;
+    const backNode = stage.nodesById[backNodeId] || stage.start;
+    pono.x = backNode.x;
+    pono.y = backNode.y;
+    pono.nodeId = backNode.id;
+    imgShowArrows();
+  }, PAUSE_MS);
+}
+
+function _handleFlagTunnelObstacle(o, px, py) {
+  const cfg = _flagTunnelCfg();
+  const st = _flagTunnelState;
+  if (!cfg || !st || !_isFlagTunnelEntranceObstacle(o)) return false;
+  if (st.travelling) return true;
+  if (!st.ladderCollected) {
+    _bounceFromFlagTunnelObstacle(
+      o, px, py,
+      'あなが ふかいよ！',
+      '🪜 なわばしごが あれば おりられそう。さきに さがしてみよう！'
+    );
+    return true;
+  }
+  if (!st.unlocked) {
+    const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
+    pono.x = px;
+    pono.y = py;
+    pono.nodeId = backNodeId;
+    _triggerFlagTunnelEncounter(o);
+    return true;
+  }
+  _startFlagTunnelTravel(o);
+  return true;
+}
+
 function _checkObstacleCollision(px, py) {
   if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
   for (const o of stage.obstacles) {
     const dx = px - o.x, dy = py - o.y;
     const r = _obstacleCollisionRadius(stage, o);
     if (dx*dx + dy*dy < r*r) {
+      if (_handleFlagTunnelObstacle(o, px, py)) return true;
       const backNodeId = walkAnim.startNodeId;
       walkAnim = null;
       // ぶつかったところで一度静止 (戻りはしない) してから戻る
@@ -2951,6 +3313,76 @@ function _triggerEncounter(c) {
   encModal.setAttribute('aria-hidden', 'false');
 }
 
+function _triggerFlagTunnelEncounter(obstacle) {
+  const c = {
+    id: 'stage4-flag-tunnel-hatahata',
+    kind: 'hatahata',
+    minigame: 'flag',
+    x: obstacle.x,
+    y: obstacle.y,
+    dialog: 'ここは とおれないよ。<br>なわばしごを もってるね。<br>はたあげで かったら かぎを あげるよ！',
+    defeatDialog: 'やるね！ かぎを あげるよ。'
+  };
+  _triggerEncounter(c);
+}
+
+function _closeFlagEncounterModalOnly() {
+  _simonCancelled = true;
+  _setEncounterMode(null);
+  if (_creatureDefeatTimer) {
+    clearTimeout(_creatureDefeatTimer);
+    _creatureDefeatTimer = null;
+  }
+  encModal.classList.remove('show');
+  encModal.setAttribute('aria-hidden', 'true');
+  _encounterActive = false;
+  _encounteringCreatureId = null;
+}
+
+function _startFlagTunnelTravel(obstacle) {
+  const cfg = _flagTunnelCfg();
+  const st = _flagTunnelState;
+  if (!cfg || !st || st.travelling) return;
+  const entrance = obstacle || _flagEntranceObstacle();
+  const exit = _flagExitObstacle();
+  const exitNode = cfg.exitNodeId && stage.nodesById ? stage.nodesById[cfg.exitNodeId] : null;
+  if (!entrance || !exitNode) {
+    _closeEncounter(false);
+    return;
+  }
+  const _stageRef = stage;
+  st.travelling = true;
+  st.anim = { t0: performance.now() };
+  walkAnim = null;
+  hideArrows();
+  _imgPauseUntil = performance.now() + 1900;
+  pono.x = entrance.x;
+  pono.y = entrance.y;
+  imgShowBubble('なわばしごを かけたよ！', { x: entrance.x, y: entrance.y }, 1200);
+  showHint('🪜 なわばしごで あなに おりるよ。', 1700);
+  _flagTunnelSetTimeout(function() {
+    if (_stageRef !== stage || !st.travelling) return;
+    const out = exit || exitNode;
+    pono.x = out.x;
+    pono.y = out.y;
+    imgShowBubble('でぐちが ひかった！', { x: out.x, y: out.y }, 900);
+  }, 760);
+  _flagTunnelSetTimeout(function() {
+    if (_stageRef !== stage || !st.travelling) return;
+    pono.x = exitNode.x;
+    pono.y = exitNode.y;
+    pono.nodeId = exitNode.id;
+    st.travelling = false;
+    st.anim = null;
+    moves++;
+    hudMoves.textContent = 'てかず: ' + moves;
+    imgShowBubble('ちがう でぐちに でたよ！', 'pono', 1700);
+    showHint('🔓 かぎが あいたよ。あなの トンネルを とおれた！', 2600);
+    if (pono.nodeId === stage.goal.id) onClear();
+    else imgShowArrows();
+  }, 1450);
+}
+
 // 各ミニゲームの開始関数を登録 (登場順)
 const _GAME_LABELS = {
   janken:     'じゃんけん',
@@ -2958,6 +3390,7 @@ const _GAME_LABELS = {
   truefalse:  '○×クイズ',
   oddone:     'なかまはずれ',
   simon:      'リズムまね',
+  flag:       '旗あげ',
 };
 
 const _GAME_DIALOGS = {
@@ -2966,6 +3399,7 @@ const _GAME_DIALOGS = {
   truefalse:  '○×クイズ で あそぼう！<br>こたえられる かな？',
   oddone:     'なかまはずれ さがし！<br>どれが ちがうかな？',
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
+  flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
 };
 
 function _gameForCreature(c) {
@@ -3588,6 +4022,138 @@ function _onSimonTap(e) {
   }
 }
 
+// ── 旗あげ ──
+const FLAG_POSE_SRC = {
+  down: MAZE_FLAG_ASSET_BASE + 'hatahata_both_down.png',
+  red: MAZE_FLAG_ASSET_BASE + 'hatahata_red_up.png',
+  white: MAZE_FLAG_ASSET_BASE + 'hatahata_white_up.png',
+  both: MAZE_FLAG_ASSET_BASE + 'hatahata_both_up.png',
+};
+const FLAG_GAME_STEPS = [
+  { text: 'あか あげて！', flag: 'red', next: 'red' },
+  { text: 'しろ あげて！', flag: 'white', next: 'both' },
+  { text: 'しろは そのまま、あか さげて！', flag: 'red', next: 'white' },
+  { text: 'あか あげて！', flag: 'red', next: 'both' },
+  { text: 'あかは そのまま、しろ さげて！', flag: 'white', next: 'red' },
+];
+
+function _showFlagGame() {
+  _setEncounterMode(null);
+  _flagGameState = { step: 0, pose: 'down', locked: false };
+  encStageEl.textContent = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'flag-game';
+  const cmd = document.createElement('div');
+  cmd.className = 'flag-command';
+  cmd.id = 'flagCommand';
+  wrap.appendChild(cmd);
+  const stageEl = document.createElement('div');
+  stageEl.className = 'flag-bug-stage';
+  const img = document.createElement('img');
+  img.className = 'flag-bug-img';
+  img.id = 'flagBugPose';
+  img.alt = 'ハタハタムシ';
+  stageEl.appendChild(img);
+  wrap.appendChild(stageEl);
+  const controls = document.createElement('div');
+  controls.className = 'flag-controls';
+  const red = document.createElement('button');
+  red.className = 'enc-btn flag-red';
+  red.dataset.flag = 'red';
+  red.textContent = 'あか';
+  const white = document.createElement('button');
+  white.className = 'enc-btn flag-white';
+  white.dataset.flag = 'white';
+  white.textContent = 'しろ';
+  controls.appendChild(red);
+  controls.appendChild(white);
+  wrap.appendChild(controls);
+  encStageEl.appendChild(wrap);
+  controls.querySelectorAll('button').forEach(function(btn) {
+    btn.addEventListener('click', function() { _onFlagTap(btn.dataset.flag); });
+  });
+  _renderFlagStep();
+}
+
+function _renderFlagStep() {
+  if (!_flagGameState) return;
+  const step = FLAG_GAME_STEPS[_flagGameState.step];
+  const cmd = document.getElementById('flagCommand');
+  const img = document.getElementById('flagBugPose');
+  if (cmd) cmd.textContent = step ? step.text : '';
+  if (img) img.src = FLAG_POSE_SRC[_flagGameState.pose] || FLAG_POSE_SRC.down;
+}
+
+function _onFlagTap(flag) {
+  if (!_flagGameState || _flagGameState.locked) return;
+  const step = FLAG_GAME_STEPS[_flagGameState.step];
+  if (!step) return;
+  if (flag !== step.flag) {
+    _resolveFlagGame(false);
+    return;
+  }
+  _flagGameState.locked = true;
+  _flagGameState.pose = step.next;
+  _renderFlagStep();
+  _flagTunnelSetTimeout(function() {
+    if (!_flagGameState) return;
+    _flagGameState.step++;
+    _flagGameState.locked = false;
+    if (_flagGameState.step >= FLAG_GAME_STEPS.length) {
+      _resolveFlagGame(true);
+    } else {
+      _renderFlagStep();
+    }
+  }, 420);
+}
+
+function _resolveFlagGame(won) {
+  _flagGameState = null;
+  playMzSe(won ? 'correct' : 'wrong');
+  if (!won) {
+    encStageEl.innerHTML =
+      '<div class="enc-result lose">ちがった…</div>' +
+      '<div class="row"><button class="enc-btn lose" id="flagBackBtn">もどる ▶</button></div>';
+    const back = document.getElementById('flagBackBtn');
+    if (back) back.addEventListener('click', function() { _closeEncounter(false); });
+    return;
+  }
+  _showFlagRewardSequence();
+}
+
+function _showFlagRewardSequence() {
+  const st = _flagTunnelState;
+  if (st) {
+    st.keyCollected = true;
+    st.unlocked = true;
+  }
+  encStageEl.innerHTML =
+    '<div class="flag-reward">' +
+      '<div class="flag-reward__title">かった！ かぎを もらったよ</div>' +
+      '<div class="flag-lock-stage" id="flagLockStage">' +
+        '<img class="flag-lock-img" id="flagLockImg" src="' + MAZE_FLAG_ASSET_BASE + 'padlock_closed.png" alt="しまった じょうまえ">' +
+        '<img class="flag-key-img" src="' + MAZE_FLAG_ASSET_BASE + 'gold_key.png" alt="かぎ">' +
+      '</div>' +
+      '<div class="enc-result win" id="flagRewardText">じょうまえを あけるよ</div>' +
+    '</div>';
+  _flagTunnelSetTimeout(function() {
+    const lockStage = document.getElementById('flagLockStage');
+    const lockImg = document.getElementById('flagLockImg');
+    const rewardText = document.getElementById('flagRewardText');
+    if (lockStage) lockStage.classList.add('is-open');
+    if (lockImg) {
+      lockImg.src = MAZE_FLAG_ASSET_BASE + 'padlock_open.png';
+      lockImg.alt = 'あいた じょうまえ';
+    }
+    if (rewardText) rewardText.textContent = 'あいた！ あなに はしごを かけよう';
+  }, 1050);
+  _flagTunnelSetTimeout(function() {
+    if (!_encounterActive) return;
+    _closeFlagEncounterModalOnly();
+    _startFlagTunnelTravel(_flagEntranceObstacle());
+  }, 1900);
+}
+
 // ── 共通: クイズ系の正解判定後の結果表示 → 次へ進むボタン ──
 function _resolveQuiz(correct) {
   _simonCancelled = true; // 進行中の simon タイマーがあれば停止
@@ -3651,10 +4217,15 @@ const _GAME_STARTERS = {
   truefalse:  _showTrueFalseChoices,
   oddone:     _showOddOneOutChoices,
   simon:      _showSimonGame,
+  flag:       _showFlagGame,
 };
 
 function _closeEncounter(playerWon) {
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
+  if (_currentGame === 'flag') {
+    _flagGameState = null;
+    _clearFlagTunnelTimers();
+  }
   _setEncounterMode(null);
   // 念のため: 別経路で _closeEncounter が呼ばれた場合に備え、未発火の defeat-dialog timer をキャンセル
   if (_creatureDefeatTimer) {
@@ -3990,6 +4561,7 @@ function loadStage(idx) {
     return;
   }
   // Grid stage: revert from image-stage mode if previously set
+  _initFlagTunnelForStage(null);
   document.body.classList.remove('image-stage-mode');
   const charmsEl = document.getElementById('charms');
   if (charmsEl) charmsEl.style.display = '';

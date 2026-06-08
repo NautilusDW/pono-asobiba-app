@@ -21,16 +21,19 @@
       "y": 1405
     },
     {
+      "id": "stage4-left-hole",
       "kind": "hole",
       "x": 1389,
       "y": 564
     },
     {
+      "id": "stage4-mid-hole",
       "kind": "hole",
       "x": 877,
       "y": 454
     },
     {
+      "id": "stage4-flag-tunnel-exit",
       "kind": "hole",
       "x": 2483,
       "y": 293
@@ -56,6 +59,18 @@
       "y": 1066
     }
   ],
+  "flagGimmick": {
+    "id": "stage4-flag-tunnel",
+    "ladder": {
+      "x": 1140,
+      "y": 987,
+      "radius": 92
+    },
+    "entranceObstacleId": "stage4-left-hole",
+    "exitObstacleId": "stage4-flag-tunnel-exit",
+    "exitNodeId": "stop12",
+    "encounterRadius": 94
+  },
   "nodes": [
     {
       "id": "goal",

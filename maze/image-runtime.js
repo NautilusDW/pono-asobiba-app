@@ -101,6 +101,7 @@
       orientation: stageDef.orientation || 'landscape',
       lantern: stageDef.lantern || false, // boolean or { innerRadius, outerRadius, ... }
       story: stageDef.story || null, // { animal, intro, cryingIconUrl, reliefIconUrl }
+      flagGimmick: stageDef.flagGimmick || null,
       obstacles: obstacles,
       creatures: creatures,
       nodesById: nodesById,
