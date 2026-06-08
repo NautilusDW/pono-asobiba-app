@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-08 - [batch:333-puzzle-tutorial-voice-memo] Codex: user 依頼「Google AI Studio で作るパズルチュートリアル音声の女性 speaker / Scene / Sample Context をメモ」を受領。既存 puzzle 音声メタデータに speaker 名が残っていないこと、ユーザー確認ではオープニングが女性声であることを確認し、パズル専用メモ作成に着手。 (by Codex)
+- 2026-06-08 - [batch:333-puzzle-tutorial-voice-memo] DONE - Codex: `docs/PUZZLE_TUTORIAL_VOICE.md` を追加。speaker 第一候補 `Aoede`、第二候補 `Leda`、第三候補 `Kore`、Google AI Studio の `Scene` / `Sample Context`、試聴用短文、基本れんしゅう用ナレーション案 6 本、音声系画面は通常チャット履歴と同様に残らない可能性があるため本ファイルを正本にする旨を記録。コード変更なし。 (by Codex)
 - 2026-06-08 - [batch:332-maze-flag-gimmick-assets-simon-center] DONE - Codex: user 依頼「Simon色丸を長方形中央へ / しかけ障害物用に縄梯子・紅白旗・鍵・錠前・ハタハタ虫通常/旗上げ4ポーズを生成」を受領。`maze/index.html` は `.simon-cell` を grid 中央配置にして Playwright で丸中心Y差 0px を確認。画像は built-in image generation tool で白背景 raw 3枚を生成し、`.gitignore` 対象のローカル納品先 `tmp/alpha_pending/330_maze_gimmick_assets/` にコピー。alpha 抜き・切り抜きは未実施。`sw.js` / `PAGE_CACHE_VERSION` は v903。 (by Codex)
 - 2026-06-08 - [batch:331-puzzle-tutorial-button-colors] Codex: user 指摘「チュートリアルの吹き出し内ボタンや下部ボタンが背景/吹き出しと同色で見づらい」を受領。HANDOFF / git log / puzzle CSS検索で同一修正なしを確認し、`puzzle/style.css` のボタン色調整に着手。作業外 `maze/index.html` 差分は非接触。 (by Codex)
 - 2026-06-08 - [batch:331-puzzle-tutorial-button-colors] DONE - Codex: `puzzle/style.css` でチュートリアル吹き出し内の `もういちど` を淡いピーチ、`あそぶ` を明るめグリーン、下部操作の `みる` を水色、`ヒント` を薄紫に調整。スマホ横で吹き出し内ボタンが 34px まで縮んでいたため最小 38px に補正。`sw.js` は v902。`git diff --check`、Playwright 1280x720 / 667x375 でヒント完了状態のスクショと computed style を確認。クロスレビュー観点: 背景/吹き出しとの分離、ボタン文字の視認性、小画面高さ、作業外 `maze/index.html` 差分非接触をセルフ確認。 (by Codex)
