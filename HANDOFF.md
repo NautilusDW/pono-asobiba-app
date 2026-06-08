@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:359-puzzle-partner-practice-tap-gate] DONE - Codex: パートナー練習の初期説明を自動進行から `がめんを タップしてね` のタップ待ちに変更。キツネ/ハリネズミは説明を隠してからヒント数モーダルを表示し、閉じた後に結果説明へ戻すよう調整。リスはタップ後に時間ゲージを表示して減る見本アニメに変更。`sw.js` / `PAGE_CACHE_VERSION` は v933。Node構文、`git diff --check`、Playwrightでコジカ停止/タップ開始、キツネ・ハリネズミの非重なり、リスの fill 98%→61% を確認。作業外 play.html のカード操作差分は非接触。 (by Codex)
 - 2026-06-08 - [batch:358-quiz-editor-answer-stage-preview] DONE - Codex: Quizland エディターの上部ツールバーへ `正解のステージング画像をオン/オフ` ボタンを追加。`img_answer` がある問題では通常進行を進めずに正解ステージ画像へ切替え、`.emoji-display.phase-answer` として位置・サイズ調整できるようにした。OFF で問題画像と `phase-question` へ戻る。`sw.js` / `PAGE_CACHE_VERSION` は v931。Playwright `?debug=all&edit=1` でボタン表示、正解画像 src 切替、pending 解除、resizable ハンドル付与、OFF 復帰、JS error 0 を確認。 (by Codex)
 - 2026-06-08 - [batch:357-puzzle-kojika-practice-intro-delay] Codex: user 指摘「パートナー選択後のチュートリアルで、コジカの場合だけ最初のモーダルが一瞬で消える」を受領。`puzzle/main.js` のパートナー別 practice 初期説明からデモ開始へのタイマーを調査し、コジカだけ 450ms で操作案内へ進んでいたため待ち時間を延ばす方針で着手。 (by Codex)
 - 2026-06-08 - [batch:357-puzzle-kojika-practice-intro-delay] DONE - Codex: `puzzle/main.js` に `PARTNER_PRACTICE_INTRO_DELAY_MS` / `KOJIKA_PRACTICE_INTRO_DELAY_MS` を追加し、コジカだけ初期説明から操作案内への切替を 2600ms に延長。他パートナーは従来 450ms 維持。`sw.js` / `PAGE_CACHE_VERSION` は v930。Node構文、`git diff --check`、Playwrightで開始直後と1秒後は `こじかは、ちかいと ひかる`、約2.9秒後に `この ピースを もってね` / `kojika-drag` へ切替、JS error 0 を確認。 (by Codex)

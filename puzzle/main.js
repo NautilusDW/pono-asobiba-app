@@ -2159,13 +2159,15 @@ function setHintUsesRemaining(stageId, n) {
 function showHintIncreaseModal(fromCount, toCount, opts) {
   opts = opts || {};
   var from = Math.max(0, fromCount | 0);
-  var to = Math.max(from + 1, toCount | 0);
+  var toRaw = Math.max(0, toCount | 0);
+  var to = opts.allowDecrease ? toRaw : Math.max(from + 1, toRaw);
   var existing = document.getElementById('hint-increase-modal');
   if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
   var overlay = document.createElement('div');
   overlay.id = 'hint-increase-modal';
   overlay.className = 'hint-increase-modal';
+  overlay.classList.toggle('is-decrease', to < from);
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
   overlay.setAttribute('aria-live', 'assertive');
@@ -2175,11 +2177,11 @@ function showHintIncreaseModal(fromCount, toCount, opts) {
 
   var badge = document.createElement('div');
   badge.className = 'hint-increase-card__badge';
-  badge.textContent = 'ヒントが';
+  badge.textContent = opts.badgeText || 'ヒントが';
 
   var title = document.createElement('div');
   title.className = 'hint-increase-card__title';
-  title.textContent = 'ふえたよ';
+  title.textContent = opts.titleText || 'ふえたよ';
 
   var meter = document.createElement('div');
   meter.className = 'hint-increase-card__meter';
@@ -2210,11 +2212,17 @@ function showHintIncreaseModal(fromCount, toCount, opts) {
   });
 
   var closeDelay = opts.closeDelay || 1900;
+  var didClose = false;
   var close = function () {
+    if (didClose) return;
+    didClose = true;
     overlay.classList.remove('is-visible');
     overlay.classList.add('is-leaving');
     setTimeout(function () {
       if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if (typeof opts.onClose === 'function') {
+        try { opts.onClose(); } catch (_) {}
+      }
     }, 260);
   };
   overlay.addEventListener('click', close);
@@ -2460,8 +2468,9 @@ const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
 const BASIC_HINT_AUTO_SNAP_DELAY_MS = 2200;
 const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
 const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
-const PARTNER_PRACTICE_INTRO_DELAY_MS = 450;
-const KOJIKA_PRACTICE_INTRO_DELAY_MS = 2600;
+const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
+const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
+const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -2668,6 +2677,7 @@ function choosePartnerPracticeStageIndex() {
 
 function clearPartnerPracticeTimers() {
   if (!partnerPracticeState) return;
+  clearPartnerPracticeTapToStart();
   var timers = partnerPracticeState.timers || [];
   for (var i = 0; i < timers.length; i++) {
     try { clearTimeout(timers[i]); } catch (_) {}
@@ -2880,6 +2890,112 @@ function setPartnerPracticeStartEnabled(on) {
   btn.classList.toggle('is-disabled', !on);
 }
 
+function clearPartnerPracticeTapToStart() {
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.tapPromptEl && partnerPracticeState.tapPromptEl.parentNode) {
+    partnerPracticeState.tapPromptEl.parentNode.removeChild(partnerPracticeState.tapPromptEl);
+  }
+  partnerPracticeState.tapPromptEl = null;
+  if (partnerPracticeState.tapStartHandler) {
+    try { document.removeEventListener('pointerdown', partnerPracticeState.tapStartHandler, true); } catch (_) {}
+  }
+  partnerPracticeState.tapStartHandler = null;
+  if (partnerPracticeState.tapPromptResizeHandler) {
+    try { window.removeEventListener('resize', partnerPracticeState.tapPromptResizeHandler); } catch (_) {}
+  }
+  partnerPracticeState.tapPromptResizeHandler = null;
+  if (partnerPracticeState.tapPromptRaf) {
+    try { cancelAnimationFrame(partnerPracticeState.tapPromptRaf); } catch (_) {}
+  }
+  partnerPracticeState.tapPromptRaf = null;
+}
+
+function positionPartnerPracticeTapPrompt() {
+  if (!partnerPracticeState || !partnerPracticeState.tapPromptEl || !partnerPracticeState.coach) return;
+  var prompt = partnerPracticeState.tapPromptEl;
+  var coach = partnerPracticeState.coach;
+  if (coach.classList.contains('is-quiet') || coach.classList.contains('is-bubble')) {
+    prompt.classList.add('hidden');
+    return;
+  }
+  var rect = coach.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    prompt.classList.add('hidden');
+    return;
+  }
+  var viewportW = window.innerWidth || document.documentElement.clientWidth || 800;
+  var viewportH = window.innerHeight || document.documentElement.clientHeight || 600;
+  var promptRect = prompt.getBoundingClientRect();
+  var promptW = promptRect.width || 190;
+  var promptH = promptRect.height || 42;
+  var margin = 10;
+  var gap = 9;
+  var left = Math.max(margin + promptW / 2, Math.min(viewportW - margin - promptW / 2, rect.left + rect.width / 2));
+  var top = rect.bottom + gap;
+  if (top + promptH > viewportH - margin) top = Math.max(margin, rect.top - promptH - gap);
+  prompt.style.left = left.toFixed(1) + 'px';
+  prompt.style.top = top.toFixed(1) + 'px';
+  prompt.classList.remove('hidden');
+}
+
+function schedulePartnerPracticeTapPromptPosition() {
+  if (!partnerPracticeState || !partnerPracticeState.tapPromptEl) return;
+  if (partnerPracticeState.tapPromptRaf) {
+    try { cancelAnimationFrame(partnerPracticeState.tapPromptRaf); } catch (_) {}
+  }
+  partnerPracticeState.tapPromptRaf = requestAnimationFrame(function () {
+    if (!partnerPracticeState) return;
+    partnerPracticeState.tapPromptRaf = null;
+    positionPartnerPracticeTapPrompt();
+  });
+}
+
+function showPartnerPracticeTapPrompt() {
+  if (!partnerPracticeState || partnerPracticeState.tapPromptEl) return;
+  var prompt = document.createElement('div');
+  prompt.className = 'partner-practice-tap-prompt hidden';
+  prompt.textContent = 'がめんを タップしてね';
+  document.body.appendChild(prompt);
+  partnerPracticeState.tapPromptEl = prompt;
+  partnerPracticeState.tapPromptResizeHandler = schedulePartnerPracticeTapPromptPosition;
+  window.addEventListener('resize', partnerPracticeState.tapPromptResizeHandler);
+  schedulePartnerPracticeTapPromptPosition();
+}
+
+function isPartnerPracticeIntroControl(target) {
+  if (!target || !target.closest) return false;
+  return !!target.closest(
+    '.partner-practice-coach__actions, .partner-practice-coach__btn, ' +
+    '#hint-increase-modal, .pono-menu-toggle, .pono-dropdown, .modal-overlay'
+  );
+}
+
+function startPartnerPracticeDemoFromTap(partnerId) {
+  if (!partnerPracticeState || !partnerPracticeState.active) return;
+  if (partnerPracticeState.phase !== 'partner-intro-wait') return;
+  if (partnerPracticeState.introDemoStarted) return;
+  partnerPracticeState.introDemoStarted = true;
+  clearPartnerPracticeTapToStart();
+  partnerPracticeState.phase = 'partner-demo';
+  practiceSetTimeout(function () {
+    runPartnerPracticeDemo(partnerId);
+  }, PARTNER_PRACTICE_AFTER_TAP_DELAY_MS);
+}
+
+function armPartnerPracticeIntroTap(partnerId) {
+  if (!partnerPracticeState || !partnerPracticeState.active) return;
+  partnerPracticeState.phase = 'partner-intro-wait';
+  partnerPracticeState.introPartnerId = partnerId;
+  partnerPracticeState.introDemoStarted = false;
+  showPartnerPracticeTapPrompt();
+  partnerPracticeState.tapStartHandler = function (ev) {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'partner-intro-wait') return;
+    if (isPartnerPracticeIntroControl(ev.target)) return;
+    startPartnerPracticeDemoFromTap(partnerId);
+  };
+  document.addEventListener('pointerdown', partnerPracticeState.tapStartHandler, true);
+}
+
 function getPieceScreenRect(piece) {
   if (!piece || !puzzleCanvas || !canvasW || !canvasH) return null;
   var rect = puzzleCanvas.getBoundingClientRect();
@@ -2962,8 +3078,7 @@ function resetPracticeBoard() {
     activeChallenge.started = false;
     activeChallenge.expired = false;
     stopChallengeTimer();
-    setTimeChallengeStatus(activeChallenge.limitMs || 35000);
-    startPartnerChallengeAfterScatter();
+    hideChallengeStatus();
   }
   if (partnerPracticeState && partnerPracticeState.partnerId === 'harinezumi') {
     try {
@@ -3551,32 +3666,110 @@ function startPartnerSpecificPractice(partnerId) {
     copy.body || 'なかまの うごきを みてみよう。',
     partnerId === 'kitsune' ? 'キツネの とくぎ' : 'なかまの とくぎ'
   );
-  partnerPracticeState.phase = 'partner-demo';
-  var introDelay = partnerId === 'kojika'
-    ? KOJIKA_PRACTICE_INTRO_DELAY_MS
-    : PARTNER_PRACTICE_INTRO_DELAY_MS;
-  practiceSetTimeout(function () {
-    runPartnerPracticeDemo(partnerId);
-  }, introDelay);
+  setPartnerPracticeStartEnabled(true);
+  showPartnerPracticeCoach();
+  armPartnerPracticeIntroTap(partnerId);
 }
 
 function runKitsuneHintCountDemo() {
   if (!btnHint) return;
-  practiceAddHighlight(btnHint);
-  btnHint.classList.add('partner-practice-count-demo');
-  btnHint.textContent = 'ヒント×1';
+  clearPartnerPracticeCoachBubble();
+  hidePartnerPracticeCoach();
   practiceSetTimeout(function () {
     if (!partnerPracticeState || !btnHint) return;
-    btnHint.textContent = 'ヒント×2';
-    btnHint.classList.remove('is-count-pop');
-    void btnHint.offsetWidth;
-    btnHint.classList.add('is-count-pop');
-    showHintIncreaseModal(1, 2, { closeDelay: 1700 });
-  }, 760);
+    practiceAddHighlight(btnHint);
+    btnHint.classList.add('partner-practice-count-demo');
+    btnHint.textContent = 'ヒント×1';
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !btnHint) return;
+      btnHint.textContent = 'ヒント×2';
+      btnHint.classList.remove('is-count-pop');
+      void btnHint.offsetWidth;
+      btnHint.classList.add('is-count-pop');
+      showHintIncreaseModal(1, 2, {
+        closeDelay: 1700,
+        onClose: function () {
+          showPartnerPracticeResultCoach(
+            'ヒントが ふえたよ',
+            'キツネと いると ヒントが ふえるよ'
+          );
+        },
+      });
+    }, 760);
+  }, PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS);
   practiceSetTimeout(function () {
     if (!btnHint) return;
     btnHint.classList.remove('is-count-pop');
-  }, 1800);
+  }, PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS + 1800);
+}
+
+function showPartnerPracticeResultCoach(titleText, bodyText) {
+  if (!partnerPracticeState || !partnerPracticeState.active) return;
+  clearPartnerPracticeCoachBubble();
+  showPartnerPracticeCoach();
+  setPartnerPracticeStartEnabled(true);
+  setPartnerPracticeCoachCopy(titleText, bodyText, '');
+}
+
+function runHarinezumiHintLimitDemo() {
+  if (!btnHint) return;
+  clearPartnerPracticeCoachBubble();
+  hidePartnerPracticeCoach();
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || !btnHint) return;
+    practiceAddHighlight(btnHint);
+    btnHint.classList.add('partner-practice-count-demo');
+    btnHint.textContent = 'ヒント×1';
+    showHintIncreaseModal(2, 1, {
+      allowDecrease: true,
+      closeDelay: 1700,
+      titleText: 'すくないよ',
+      onClose: function () {
+        showPartnerPracticeResultCoach(
+          'ヒントは すくなめ',
+          'ハリネズミと いると すくない ヒントで ちょうせんするよ'
+        );
+      },
+    });
+  }, PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS);
+}
+
+function runRisuTimerDemo() {
+  if (!challengeStatusEl) return;
+  clearPartnerPracticeCoachBubble();
+  hidePartnerPracticeCoach();
+  activeChallenge.type = 'time';
+  activeChallenge.limitMs = activeChallenge.limitMs || 35000;
+  activeChallenge.started = false;
+  activeChallenge.expired = false;
+  stopChallengeTimer();
+  hideChallengeStatus();
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || !challengeStatusEl) return;
+    challengeStatusEl.classList.remove('hidden', 'is-expired');
+    challengeStatusEl.classList.add('is-time');
+    practiceAddHighlight(challengeStatusEl);
+    var limit = activeChallenge.limitMs || 35000;
+    var start = performance.now();
+    function frame(now) {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      var t = Math.max(0, Math.min(1, (now - start) / RISU_PRACTICE_TIMER_DEMO_MS));
+      var remain = Math.max(0, limit * (1 - t * 0.74));
+      setTimeChallengeStatus(remain);
+      if (t < 1) {
+        var raf = requestAnimationFrame(frame);
+        if (partnerPracticeState) partnerPracticeState.rafs.push(raf);
+        return;
+      }
+      showPartnerPracticeResultCoach(
+        'じかんが へるよ',
+        'のこりを みながら、すばやく クリアを めざそう'
+      );
+    }
+    setTimeChallengeStatus(limit);
+    var raf = requestAnimationFrame(frame);
+    partnerPracticeState.rafs.push(raf);
+  }, PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS);
 }
 
 function animatePracticePiece(piece, from, to, duration, onDone) {
@@ -3771,13 +3964,12 @@ function runPartnerPracticeDemo(partnerId) {
   }
 
   if (partnerId === 'risu') {
-    practiceAddHighlight(challengeStatusEl);
-    startPartnerChallengeAfterScatter();
+    runRisuTimerDemo();
     return;
   }
 
   if (partnerId === 'harinezumi') {
-    practiceAddHighlight(btnHint);
+    runHarinezumiHintLimitDemo();
     return;
   }
 
@@ -3831,6 +4023,12 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
     hintIntroDone: false,
     peekHoldStart: 0,
     peekHoldReady: false,
+    introPartnerId: null,
+    introDemoStarted: false,
+    tapPromptEl: null,
+    tapStartHandler: null,
+    tapPromptResizeHandler: null,
+    tapPromptRaf: null,
     coach: null,
   };
 

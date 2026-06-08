@@ -639,6 +639,40 @@ body.partner-practice-active .prestart-overlay {
   display: none;
 }
 
+.partner-practice-tap-prompt {
+  position: fixed;
+  z-index: 89;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 18px 8px;
+  border-radius: 999px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(255, 253, 244, 0.98) 0%, rgba(255, 233, 184, 0.98) 100%);
+  box-shadow:
+    0 8px 18px rgba(54, 36, 16, 0.24),
+    0 0 0 5px rgba(255, 207, 67, 0.18),
+    inset 0 -3px 0 rgba(212, 164, 84, 0.18);
+  color: #5A3A18;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  animation: partnerPracticeTapPrompt 0.88s ease-in-out infinite;
+}
+
+.partner-practice-tap-prompt.hidden {
+  display: none;
+}
+
+@keyframes partnerPracticeTapPrompt {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(5px); }
+}
+
 .partner-practice-coach.is-bubble {
   top: var(--partner-bubble-top, 50%);
   left: var(--partner-bubble-left, 50%);
@@ -860,6 +894,12 @@ body.partner-practice-active .prestart-overlay {
 }
 
 @media (orientation: landscape) and (max-height: 430px) {
+  .partner-practice-tap-prompt {
+    min-height: 30px;
+    padding: 4px 14px 6px;
+    font-size: 0.88rem;
+  }
+
   .partner-practice-coach {
     grid-template-columns: 58px minmax(0, 1fr) auto;
     min-height: 108px;
@@ -912,6 +952,13 @@ body.partner-practice-active .prestart-overlay {
 }
 
 @media (max-width: 520px) {
+  .partner-practice-tap-prompt {
+    max-width: calc(100vw - 28px);
+    min-height: 32px;
+    padding: 5px 15px 7px;
+    font-size: 0.92rem;
+  }
+
   .partner-practice-coach {
     grid-template-columns: 54px minmax(0, 1fr);
     grid-template-areas:
@@ -1941,6 +1988,11 @@ body.partner-practice-active .prestart-overlay {
   box-shadow: 0 3px 0 rgba(75, 126, 74, 0.55);
 }
 
+.hint-increase-modal.is-decrease .hint-increase-card__badge {
+  background: #E8A55D;
+  box-shadow: 0 3px 0 rgba(143, 91, 34, 0.48);
+}
+
 .hint-increase-card__title {
   margin-top: 8px;
   color: #7A3F12;
@@ -1988,6 +2040,11 @@ body.partner-practice-active .prestart-overlay {
   transform: scale(1.14);
   background: #FFD45C;
   box-shadow: 0 0 0 6px rgba(255, 210, 92, 0.22);
+}
+
+.hint-increase-modal.is-decrease.is-after .hint-increase-card__count--after {
+  background: #FFDCA8;
+  box-shadow: 0 0 0 6px rgba(232, 165, 93, 0.20);
 }
 
 .hint-increase-card__arrow {
