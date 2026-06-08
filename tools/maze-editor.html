@@ -229,6 +229,30 @@ html, body { height: 100vh; overflow: hidden;
       </p>
     </div>
 
+    <div id="roughAlignRow" style="margin-top:8px; padding:8px;
+         background:#222a35; border:1px solid #4a5870; border-radius:4px;">
+      <div style="font-size:0.78rem; color:#dce8ff; font-weight:700; margin-bottom:6px;">
+        🎯 ラフ座標の微調整
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; max-width:150px; margin:0 auto 6px;">
+        <span></span>
+        <button type="button" class="mode-btn" data-align-dx="0" data-align-dy="-6" style="padding:5px;">↑</button>
+        <span></span>
+        <button type="button" class="mode-btn" data-align-dx="-6" data-align-dy="0" style="padding:5px;">←</button>
+        <button type="button" class="mode-btn" data-align-dx="0" data-align-dy="6" style="padding:5px;">↓</button>
+        <button type="button" class="mode-btn" data-align-dx="6" data-align-dy="0" style="padding:5px;">→</button>
+      </div>
+      <div style="display:flex; gap:4px;">
+        <button type="button" class="mode-btn" data-align-scale="0.995"
+                style="flex:1; padding:5px; font-size:0.72rem;">少し縮める</button>
+        <button type="button" class="mode-btn" data-align-scale="1.005"
+                style="flex:1; padding:5px; font-size:0.72rem;">少し広げる</button>
+      </div>
+      <p style="font-size:0.65rem; color:#9ab; margin-top:4px;">
+        取り込んだノード・線・障害物・お邪魔虫をまとめて補正
+      </p>
+    </div>
+
     <h3>3. モード</h3>
     <div class="modes">
       <button class="mode-btn active" data-mode="start">🟠 スタート</button>
@@ -1568,6 +1592,89 @@ function updateStatus() {
   hasGoalEl.textContent = state.nodes.some(function(n) { return n.kind === 'goal'; }) ? 'あり' : 'なし';
   stopCountEl.textContent = state.nodes.filter(function(n) { return n.kind === 'stop'; }).length;
 }
+
+// ────────────────────────────────────────────────────────
+// Imported rough alignment helpers
+// ────────────────────────────────────────────────────────
+function _layoutPointLists() {
+  const lists = [];
+  if (Array.isArray(state.nodes)) lists.push(state.nodes);
+  if (Array.isArray(state.edges)) {
+    state.edges.forEach(function(e) {
+      if (e && Array.isArray(e.controls)) lists.push(e.controls);
+      if (e && Array.isArray(e.polyline)) lists.push(e.polyline);
+    });
+  }
+  if (Array.isArray(state.obstacles)) lists.push(state.obstacles);
+  if (Array.isArray(state.creatures)) lists.push(state.creatures);
+  return lists;
+}
+
+function _layoutBounds() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, count = 0;
+  _layoutPointLists().forEach(function(list) {
+    list.forEach(function(p) {
+      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+      count++;
+    });
+  });
+  return count > 0 ? { minX: minX, minY: minY, maxX: maxX, maxY: maxY, count: count } : null;
+}
+
+function _transformImportedLayout(dx, dy, scale) {
+  const bounds = _layoutBounds();
+  if (!bounds) {
+    showBanner('補正するラフ座標がありません');
+    return;
+  }
+  pushHistory();
+  const s = Number.isFinite(scale) ? scale : 1;
+  const hasImageSize = Number.isFinite(state.imgW) && state.imgW > 0
+    && Number.isFinite(state.imgH) && state.imgH > 0;
+  const ox = hasImageSize ? state.imgW / 2 : (bounds.minX + bounds.maxX) / 2;
+  const oy = hasImageSize ? state.imgH / 2 : (bounds.minY + bounds.maxY) / 2;
+  _layoutPointLists().forEach(function(list) {
+    list.forEach(function(p) {
+      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+      let nx = ox + (p.x - ox) * s + dx;
+      let ny = oy + (p.y - oy) * s + dy;
+      if (hasImageSize) {
+        nx = Math.max(0, Math.min(state.imgW, nx));
+        ny = Math.max(0, Math.min(state.imgH, ny));
+      }
+      p.x = Math.round(nx * 10) / 10;
+      p.y = Math.round(ny * 10) / 10;
+    });
+  });
+  state.edgeInProgress = null;
+  edgeProgressEl.textContent = '';
+  draw();
+  updateStatus();
+  scheduleAutoSave();
+  const msg = (s !== 1)
+    ? 'ラフ座標を ' + Math.round(s * 1000) / 10 + '% に補正'
+    : 'ラフ座標を ' + dx + ', ' + dy + ' px 移動';
+  showBanner(msg);
+}
+
+document.querySelectorAll('[data-align-dx][data-align-dy]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const dx = Number(btn.dataset.alignDx) || 0;
+    const dy = Number(btn.dataset.alignDy) || 0;
+    _transformImportedLayout(dx, dy, 1);
+  });
+});
+
+document.querySelectorAll('[data-align-scale]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const scale = Number(btn.dataset.alignScale);
+    _transformImportedLayout(0, 0, Number.isFinite(scale) ? scale : 1);
+  });
+});
 
 // ────────────────────────────────────────────────────────
 // Banner / toast
