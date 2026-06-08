@@ -2015,6 +2015,7 @@ let selectedPieceForHint = null;        // 現在ヒント対象として選択�
 let hintFlashUntil = 0;                 // 金色星演出の終了時刻 (Date.now ms)
 let hintFlashPiece = null;              // 金色星演出の対象ピース
 let hintAnimRafHandle = null;           // 黄 pulse / 金 star 用 rAF
+let hintFlashVisibleAt = 0;             // 正解位置のヒント演出が実際に描画された時刻
 let hintNoticeTimeout = null;           // 「ピースを えらんで〜」吹き出しの非表示タイマー
 let stageHintUsesActual = 0;            // 今ステージで実際に使ったヒント回数
 
@@ -2304,7 +2305,10 @@ function ensureHintAnimLoop() {
       // overlay クリアのため 1 回だけ redraw して終了
       try { redraw(); } catch (_) {}
       // hintFlashPiece の参照も解放
-      if (now >= hintFlashUntil) hintFlashPiece = null;
+      if (now >= hintFlashUntil) {
+        hintFlashPiece = null;
+        hintFlashVisibleAt = 0;
+      }
       return;
     }
     try { redraw(); } catch (_) {}
@@ -2348,6 +2352,10 @@ function drawHintOverlay(ctx) {
   // Phase 3c: 「正解そのもの」感を抑える: 星 -20% / glow 半径 -30% / 表示時間 1500ms / 枠点滅は維持
   if (hintFlashPiece && now < hintFlashUntil
       && pieces && pieces.indexOf(hintFlashPiece) >= 0) {
+    if (!hintFlashVisibleAt) {
+      hintFlashVisibleAt = now;
+      scheduleBasicHintDoneAfterFlashVisible();
+    }
     var t = (hintFlashUntil - now) / HINT_FLASH_DURATION_MS; // 1 → 0
     var phase = 1 - t;                                       // 0 → 1
     var slot = pieceCenter(hintFlashPiece, true);
@@ -2447,7 +2455,7 @@ const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
 const BASIC_HINT_SELECT_VOICE_DELAY_MS = 1100;
-const BASIC_HINT_DONE_VOICE_DELAY_MS = 1250;
+const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -3382,6 +3390,32 @@ function onPartnerPracticePieceSelected(piece) {
   refreshHintButtonState();
 }
 
+function showBasicHintDoneNarration() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
+  if (partnerPracticeState.mode !== 'basic') return;
+  showPartnerPracticeCoach();
+  setPartnerPracticeCoachCopy(
+    'ひかったね',
+    'こまったら つかってね',
+    ''
+  );
+  playBasicPracticeVoice(7);
+  partnerPracticeState.phase = 'basic-done';
+  setPartnerPracticeCoachBubble(btnHint, null, true);
+}
+
+function scheduleBasicHintDoneAfterFlashVisible() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (partnerPracticeState.phase !== 'hint-done') return;
+  if (!partnerPracticeState.waitingForHintFlashDone) return;
+  if (partnerPracticeState.hintFlashDoneScheduled) return;
+  if (!hintFlashVisibleAt) return;
+  partnerPracticeState.hintFlashDoneScheduled = true;
+  practiceSetTimeout(function () {
+    showBasicHintDoneNarration();
+  }, BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS);
+}
+
 function onPartnerPracticeHintUsed() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
   var isBasicPracticeHint = partnerPracticeState.mode === 'basic';
@@ -3396,18 +3430,9 @@ function onPartnerPracticeHintUsed() {
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');
     hidePartnerPracticeCoach();
-    practiceAfterPaint(function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
-      showPartnerPracticeCoach();
-      setPartnerPracticeCoachCopy(
-        'ひかったね',
-        'こまったら つかってね',
-        ''
-      );
-      playBasicPracticeVoice(7);
-      partnerPracticeState.phase = 'basic-done';
-      setPartnerPracticeCoachBubble(btnHint, null, true);
-    }, BASIC_HINT_DONE_VOICE_DELAY_MS);
+    partnerPracticeState.waitingForHintFlashDone = true;
+    partnerPracticeState.hintFlashDoneScheduled = false;
+    scheduleBasicHintDoneAfterFlashVisible();
     return;
   }
   setPartnerPracticeCoachCopy(
@@ -4396,6 +4421,7 @@ if (btnHint) {
     if (!isBasicPracticeHint && window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
 
     // 金色星演出: 1.5 秒間 hintFlashPiece に対して描画 (Phase 3c: 2000→1500ms)
+    hintFlashVisibleAt = 0;
     hintFlashPiece = selectedPieceForHint;
     hintFlashUntil = Date.now() + HINT_FLASH_DURATION_MS;
     ensureHintAnimLoop();
