@@ -2455,9 +2455,9 @@ const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
-const BASIC_HINT_SELECT_AFTER_CUE_VISIBLE_MS = 1000;
+const BASIC_SELECT_PIECE_AFTER_CUE_VISIBLE_MS = 1000;
 const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
-const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
+const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -3249,14 +3249,11 @@ function playBasicPeekHoldNarration() {
 
 function playBasicPeekSuccessThenHint() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-  playBasicPracticeVoice(4, function () {
+  practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-    practiceSetTimeout(function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-      if (peekOn) setPeekOverlay(false);
-      startCommonHintPractice(null);
-    }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
-  });
+    if (peekOn) setPeekOverlay(false);
+    startCommonHintPractice(null);
+  }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
 }
 
 function playBasicPeekReturnThenSuccess() {
@@ -3354,7 +3351,7 @@ function onPartnerPracticePieceSelected(piece) {
     '',
     ''
   );
-  playBasicPracticeVoice(6, function () {
+  playBasicPracticeVoice(5, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
     partnerPracticeState.hintPressReady = true;
     refreshHintButtonState();
@@ -3385,7 +3382,7 @@ function showBasicHintSelectNarration() {
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
-  playBasicPracticeVoice(5, function () {
+  playBasicPracticeVoice(4, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
     partnerPracticeState.hintSelectReady = true;
     setPartnerPracticeInput(true);
@@ -3401,7 +3398,7 @@ function scheduleBasicHintSelectAfterCueVisible() {
   partnerPracticeState.hintSelectCueNarrationScheduled = true;
   practiceSetTimeout(function () {
     showBasicHintSelectNarration();
-  }, BASIC_HINT_SELECT_AFTER_CUE_VISIBLE_MS);
+  }, BASIC_SELECT_PIECE_AFTER_CUE_VISIBLE_MS);
 }
 
 function showBasicHintDoneNarration() {
@@ -3410,10 +3407,10 @@ function showBasicHintDoneNarration() {
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'ひかったね',
-    'こまったら つかってね',
+    'ばしょが わからない ときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(7);
+  playBasicPracticeVoice(6);
   partnerPracticeState.phase = 'basic-done';
   setPartnerPracticeCoachBubble(btnHint, null, true);
 }
@@ -3451,10 +3448,10 @@ function onPartnerPracticeHintUsed() {
   }
   setPartnerPracticeCoachCopy(
     'ひかったね',
-    'こまったら つかってね',
+    'ばしょが わからない ときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(7);
+  playBasicPracticeVoice(6);
   setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
