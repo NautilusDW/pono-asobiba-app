@@ -2874,6 +2874,113 @@ function placeHintPracticePiece(piece) {
   placePieceForPractice(piece, x, y, 0);
 }
 
+function makePieceRect(x, y, marginX, marginY) {
+  var mx = marginX || 0;
+  var my = marginY == null ? mx : marginY;
+  return {
+    left: x - mx,
+    top: y - my,
+    right: x + pieceW + mx,
+    bottom: y + pieceH + my,
+  };
+}
+
+function pieceRect(piece, marginX, marginY) {
+  return makePieceRect(piece.x, piece.y, marginX, marginY);
+}
+
+function rectsOverlap(a, b) {
+  return !!(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
+}
+
+function clampPracticePiecePos(x, y) {
+  var pad = Math.max(8, pieceW * 0.10);
+  return {
+    x: Math.max(pad, Math.min(canvasW - pieceW - pad, x)),
+    y: Math.max(pad, Math.min(canvasH - pieceH - pad, y)),
+  };
+}
+
+function isHintPracticePosClear(pos, avoidRect, placed, zones) {
+  if (!pos) return false;
+  var rect = makePieceRect(pos.x, pos.y, 0, 0);
+  if (rectsOverlap(rect, avoidRect)) return false;
+  var cx = pos.x + pieceW / 2;
+  var cy = pos.y + pieceH / 2;
+  if (cx > zones.bx0 && cx < zones.bx1 && cy > zones.by0 && cy < zones.by1) return false;
+  for (var i = 0; i < placed.length; i++) {
+    if (Math.hypot(pos.x - placed[i].x, pos.y - placed[i].y) < Math.max(pieceW, pieceH) * 0.72) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function findHintPracticeAwayPos(avoidRect, placed) {
+  var zones = computePlacementZones();
+  var pad = zones.pad;
+  var rightX = Math.max(zones.bx1 + pieceW * 0.35, canvasW - pieceW - pad);
+  var leftX = pad;
+  var topY = pad;
+  var midY = Math.max(pad, Math.min(canvasH - pieceH - pad, boardY + boardH * 0.46));
+  var lowY = Math.max(pad, Math.min(canvasH - pieceH - pad, canvasH - pieceH - pad));
+  var candidates = [
+    clampPracticePiecePos(rightX, topY),
+    clampPracticePiecePos(rightX, midY),
+    clampPracticePiecePos(rightX, lowY),
+    clampPracticePiecePos(leftX, lowY),
+    clampPracticePiecePos(boardX + boardW * 0.35, pad),
+    clampPracticePiecePos(boardX + boardW * 0.55, lowY),
+  ];
+  for (var i = 0; i < candidates.length; i++) {
+    if (isHintPracticePosClear(candidates[i], avoidRect, placed, zones)) return candidates[i];
+  }
+
+  var best = null;
+  var bestScore = -Infinity;
+  for (var attempt = 0; attempt < 72; attempt++) {
+    var pos = placePieceInZone(zones, pieceW, pieceH, placed);
+    if (!isHintPracticePosClear(pos, avoidRect, placed, zones)) continue;
+    var nearest = Infinity;
+    for (var j = 0; j < placed.length; j++) {
+      var d = Math.hypot(pos.x - placed[j].x, pos.y - placed[j].y);
+      if (d < nearest) nearest = d;
+    }
+    var score = nearest + Math.hypot(
+      pos.x + pieceW / 2 - (avoidRect.left + avoidRect.right) / 2,
+      pos.y + pieceH / 2 - (avoidRect.top + avoidRect.bottom) / 2
+    ) * 0.18;
+    if (score > bestScore) {
+      bestScore = score;
+      best = pos;
+    }
+  }
+  return best || clampPracticePiecePos(canvasW - pieceW - pad, canvasH - pieceH - pad);
+}
+
+function clearHintPracticeTargetArea(targetPiece) {
+  if (!targetPiece || !pieces || !pieces.length) return;
+  var avoidRect = pieceRect(targetPiece, Math.max(24, pieceW * 0.55), Math.max(18, pieceH * 0.42));
+  var placed = [{ x: targetPiece.x, y: targetPiece.y }];
+  for (var i = 0; i < pieces.length; i++) {
+    var p = pieces[i];
+    if (!p || p === targetPiece || p.snapped) continue;
+    if (!rectsOverlap(pieceRect(p, 0, 0), avoidRect)) placed.push({ x: p.x, y: p.y });
+  }
+  for (var j = 0; j < pieces.length; j++) {
+    var piece = pieces[j];
+    if (!piece || piece === targetPiece || piece.snapped) continue;
+    if (!rectsOverlap(pieceRect(piece, 0, 0), avoidRect)) continue;
+    var pos = findHintPracticeAwayPos(avoidRect, placed);
+    piece.x = pos.x;
+    piece.y = pos.y;
+    piece.rotation = piece.rotation || 0;
+    rebuildPath(piece);
+    placed.push({ x: piece.x, y: piece.y });
+  }
+  rebuildPath(targetPiece);
+}
+
 function startCommonHintPractice(partnerId) {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTimers();
@@ -2893,6 +3000,7 @@ function startCommonHintPractice(partnerId) {
   partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
   setPartnerPracticeInput(true);
   placeHintPracticePiece(piece);
+  clearHintPracticeTargetArea(piece);
   setPartnerPracticeCoachCopy(
     'この ピースを タッチ',
     '',
