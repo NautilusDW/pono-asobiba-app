@@ -452,6 +452,8 @@ const state = {
   redoStack: [],        // shallow snapshots for redo (cleared on any new pushHistory)
   draggingObstacle: null, // 現在 drag 中の obstacle 参照 (state.obstacles 内の要素)
   draggingCreature: null, // 現在 drag 中の creature 参照 (state.creatures 内の要素)
+  draggingAnchor: null,   // 現在 drag 中の edge control point
+  selectedAnchors: new Set(), // edit-points 用: "edgeIdx:controlIdx"
   hover: null,          // {x, y} mouse pos in image coords
   handoffViewBox: null, // { w, h } — ラフ側 viewBox。 画像読み込み時 rescale 用に保持し、 適用後 null クリア
 };
@@ -873,6 +875,17 @@ window.addEventListener('keydown', function(e) {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
   if (e.key === 'Escape' && state.edgeInProgress) { cancelEdgeInProgress(); return; }
+  if (e.key === 'Escape' && state.mode === 'edit-points' && state.selectedAnchors && state.selectedAnchors.size > 0) {
+    e.preventDefault();
+    _clearAnchorSelection(true);
+    showBanner('ポイント選択を解除');
+    return;
+  }
+  if (state.mode === 'edit-points' && (e.key === 'Delete' || e.key === 'Backspace')) {
+    e.preventDefault();
+    _deleteSelectedAnchors('選択ポイント');
+    return;
+  }
   const mod = e.ctrlKey || e.metaKey;
   if (!mod) return;
   const k = (e.key || '').toLowerCase();
@@ -916,6 +929,93 @@ function findAnchorAt(p) {
     }
   }
   return null;
+}
+
+function _anchorKey(edgeIdx, controlIdx) {
+  return edgeIdx + ':' + controlIdx;
+}
+
+function _anchorFromKey(key) {
+  const parts = String(key).split(':');
+  const edgeIdx = parseInt(parts[0], 10);
+  const controlIdx = parseInt(parts[1], 10);
+  if (!Number.isInteger(edgeIdx) || !Number.isInteger(controlIdx)) return null;
+  return { edgeIdx: edgeIdx, controlIdx: controlIdx };
+}
+
+function _isAnchorSelectable(edgeIdx, controlIdx) {
+  const ed = state.edges[edgeIdx];
+  return !!(ed && Array.isArray(ed.controls)
+    && controlIdx > 0 && controlIdx < ed.controls.length - 1);
+}
+
+function _isAnchorSelected(edgeIdx, controlIdx) {
+  return state.selectedAnchors && state.selectedAnchors.has(_anchorKey(edgeIdx, controlIdx));
+}
+
+function _clearAnchorSelection(shouldDraw) {
+  if (!state.selectedAnchors) state.selectedAnchors = new Set();
+  state.selectedAnchors.clear();
+  if (shouldDraw) draw();
+}
+
+function _selectAnchor(hit, opts) {
+  opts = opts || {};
+  if (!hit || !_isAnchorSelectable(hit.edgeIdx, hit.controlIdx)) return;
+  if (!state.selectedAnchors) state.selectedAnchors = new Set();
+  const key = _anchorKey(hit.edgeIdx, hit.controlIdx);
+  if (!opts.additive) state.selectedAnchors.clear();
+  if (opts.toggle && state.selectedAnchors.has(key)) state.selectedAnchors.delete(key);
+  else state.selectedAnchors.add(key);
+}
+
+function _selectedAnchorRefs() {
+  if (!state.selectedAnchors) state.selectedAnchors = new Set();
+  const refs = [];
+  state.selectedAnchors.forEach(function(key) {
+    const ref = _anchorFromKey(key);
+    if (!ref || !_isAnchorSelectable(ref.edgeIdx, ref.controlIdx)) return;
+    refs.push(ref);
+  });
+  return refs;
+}
+
+function _selectedAnchorSnapshots() {
+  return _selectedAnchorRefs().map(function(ref) {
+    const p = state.edges[ref.edgeIdx].controls[ref.controlIdx];
+    return { edgeIdx: ref.edgeIdx, controlIdx: ref.controlIdx, x: p.x, y: p.y };
+  });
+}
+
+function _deleteSelectedAnchors(sourceLabel) {
+  const refs = _selectedAnchorRefs();
+  if (refs.length === 0) {
+    showBanner('削除するポイントを選択してね');
+    return false;
+  }
+  pushHistory();
+  const byEdge = {};
+  refs.forEach(function(ref) {
+    if (!byEdge[ref.edgeIdx]) byEdge[ref.edgeIdx] = [];
+    byEdge[ref.edgeIdx].push(ref.controlIdx);
+  });
+  Object.keys(byEdge).forEach(function(edgeKey) {
+    const edgeIdx = parseInt(edgeKey, 10);
+    const ed = state.edges[edgeIdx];
+    if (!ed || !Array.isArray(ed.controls)) return;
+    byEdge[edgeIdx].sort(function(a, b) { return b - a; }).forEach(function(controlIdx) {
+      if (controlIdx > 0 && controlIdx < ed.controls.length - 1) {
+        ed.controls.splice(controlIdx, 1);
+      }
+    });
+  });
+  state.draggingAnchor = null;
+  _clearAnchorSelection(false);
+  draw();
+  updateStatus();
+  scheduleAutoSave();
+  showBanner((sourceLabel || 'アンカー') + 'を削除: ' + refs.length + ' 個');
+  return true;
 }
 
 // Default radius (image-px) for each node kind. Used as fallback when n.radius is unset.
@@ -989,10 +1089,32 @@ cv.addEventListener('pointerdown', function(e) {
   if (state.mode === 'edit-points') {
     const anchorHit = findAnchorAt(p);
     if (anchorHit) {
-      pushHistory();
-      state.draggingAnchor = anchorHit;
+      const additive = !!(e.shiftKey || e.ctrlKey || e.metaKey);
+      const toggle = !!(e.ctrlKey || e.metaKey);
+      const alreadySelected = _isAnchorSelected(anchorHit.edgeIdx, anchorHit.controlIdx);
+      if (toggle && alreadySelected) {
+        _selectAnchor(anchorHit, { additive: true, toggle: true });
+        draw();
+        e.preventDefault();
+        return;
+      }
+      if (!alreadySelected || additive) {
+        _selectAnchor(anchorHit, { additive: additive, toggle: false });
+      }
+      const originals = _selectedAnchorSnapshots();
+      state.draggingAnchor = {
+        edgeIdx: anchorHit.edgeIdx,
+        controlIdx: anchorHit.controlIdx,
+        startX: p.x,
+        startY: p.y,
+        originals: originals,
+        historyPushed: false,
+        moved: false,
+        inserted: false,
+      };
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       cv.style.cursor = 'grabbing';
+      draw();
       e.preventDefault();
       return;
     }
@@ -1001,12 +1123,26 @@ cv.addEventListener('pointerdown', function(e) {
       pushHistory();
       const ed = state.edges[insertHit.edgeIdx];
       ed.controls.splice(insertHit.insertAt, 0, { x: p.x, y: p.y });
-      state.draggingAnchor = { edgeIdx: insertHit.edgeIdx, controlIdx: insertHit.insertAt };
+      _clearAnchorSelection(false);
+      _selectAnchor({ edgeIdx: insertHit.edgeIdx, controlIdx: insertHit.insertAt }, { additive: false });
+      state.draggingAnchor = {
+        edgeIdx: insertHit.edgeIdx,
+        controlIdx: insertHit.insertAt,
+        startX: p.x,
+        startY: p.y,
+        originals: _selectedAnchorSnapshots(),
+        historyPushed: true,
+        moved: false,
+        inserted: true,
+      };
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       cv.style.cursor = 'grabbing';
       showBanner('アンカー追加 → ドラッグで形を調整');
       draw();
       e.preventDefault();
+    }
+    if (!insertHit && state.selectedAnchors && state.selectedAnchors.size > 0 && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      _clearAnchorSelection(true);
     }
     return;
   }
@@ -1133,16 +1269,10 @@ cv.addEventListener('contextmenu', function(e) {
   const hit = findAnchorAt(p);
   if (!hit) return;
   e.preventDefault();
-  const ed = state.edges[hit.edgeIdx];
-  if (hit.controlIdx <= 0 || hit.controlIdx >= ed.controls.length - 1) {
-    showBanner('端点 (ノード位置) は削除できないよ');
-    return;
+  if (!_isAnchorSelected(hit.edgeIdx, hit.controlIdx)) {
+    _selectAnchor(hit, { additive: false });
   }
-  pushHistory();
-  ed.controls.splice(hit.controlIdx, 1);
-  draw();
-  updateStatus();
-  showBanner('アンカーを削除');
+  _deleteSelectedAnchors('アンカー');
 });
 
 // touch / Mac 向け: ダブルクリックでも削除
@@ -1151,16 +1281,10 @@ cv.addEventListener('dblclick', function(e) {
   const p = mouseToImage(e);
   const hit = findAnchorAt(p);
   if (!hit) return;
-  const ed = state.edges[hit.edgeIdx];
-  if (hit.controlIdx <= 0 || hit.controlIdx >= ed.controls.length - 1) {
-    showBanner('端点 (ノード位置) は削除できないよ');
-    return;
+  if (!_isAnchorSelected(hit.edgeIdx, hit.controlIdx)) {
+    _selectAnchor(hit, { additive: false });
   }
-  pushHistory();
-  ed.controls.splice(hit.controlIdx, 1);
-  draw();
-  updateStatus();
-  showBanner('アンカーを削除 (ダブルクリック)');
+  _deleteSelectedAnchors('アンカー');
 });
 
 cv.addEventListener('pointermove', function(e) {
@@ -1205,11 +1329,26 @@ cv.addEventListener('pointermove', function(e) {
   // edit-points のアンカー drag
   if (state.mode === 'edit-points') {
     if (state.draggingAnchor) {
-      const ed = state.edges[state.draggingAnchor.edgeIdx];
-      if (!ed) return;
-      const cx = Math.max(0, Math.min(state.imgW, p.x));
-      const cy = Math.max(0, Math.min(state.imgH, p.y));
-      ed.controls[state.draggingAnchor.controlIdx] = { x: cx, y: cy };
+      const drag = state.draggingAnchor;
+      if (!drag.historyPushed) {
+        pushHistory();
+        drag.historyPushed = true;
+      }
+      let dx = p.x - drag.startX;
+      let dy = p.y - drag.startY;
+      if (e.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
+      const originals = Array.isArray(drag.originals) ? drag.originals : [];
+      originals.forEach(function(orig) {
+        const ed = state.edges[orig.edgeIdx];
+        if (!ed || !Array.isArray(ed.controls) || !ed.controls[orig.controlIdx]) return;
+        const cx = Math.max(0, Math.min(state.imgW, orig.x + dx));
+        const cy = Math.max(0, Math.min(state.imgH, orig.y + dy));
+        ed.controls[orig.controlIdx] = { x: cx, y: cy };
+      });
+      drag.moved = drag.moved || Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1;
       draw();
       return;
     }
@@ -1265,10 +1404,22 @@ cv.addEventListener('pointerup', function(e) {
   }
   if (state.mode !== 'edit-points') return;
   if (state.draggingAnchor) {
+    const drag = state.draggingAnchor;
     state.draggingAnchor = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
     cv.style.cursor = 'crosshair';
-    showBanner('アンカーを移動しました');
+    if (drag.moved) {
+      showBanner((state.selectedAnchors && state.selectedAnchors.size > 1)
+        ? '選択ポイントを移動しました'
+        : 'アンカーを移動しました');
+    } else if (drag.inserted) {
+      showBanner('アンカーを追加しました');
+    } else if (state.selectedAnchors && state.selectedAnchors.size > 1) {
+      showBanner('ポイントを複数選択: ' + state.selectedAnchors.size + ' 個');
+    } else {
+      showBanner('ポイントを選択');
+    }
+    if (drag.moved || drag.inserted) scheduleAutoSave();
     updateStatus();
   }
 });
@@ -1395,17 +1546,19 @@ function draw() {
 
   // Edges
   const isEditMode = state.mode === 'edit-points';
-  for (const ed of state.edges) {
+  for (let edgeIdx = 0; edgeIdx < state.edges.length; edgeIdx++) {
+    const ed = state.edges[edgeIdx];
     drawEdge(edgeDisplayPolyline(ed), '#FF8855', 0.65);
     // Anchor dots — bigger + cyan ring in edit mode for grabbability
     for (let j = 0; j < ed.controls.length; j++) {
       const a = ed.controls[j];
       const isEndpoint = j === 0 || j === ed.controls.length - 1;
       if (isEditMode && !isEndpoint) {
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = '#00cccc';
-        ctx.lineWidth = 3 / canvasScale;
-        ctx.beginPath(); ctx.arc(a.x, a.y, 12 / canvasScale, 0, Math.PI * 2);
+        const selected = _isAnchorSelected(edgeIdx, j);
+        ctx.fillStyle = selected ? '#33CCFF' : '#fff';
+        ctx.strokeStyle = selected ? '#FFE066' : '#00cccc';
+        ctx.lineWidth = (selected ? 5 : 3) / canvasScale;
+        ctx.beginPath(); ctx.arc(a.x, a.y, (selected ? 14 : 12) / canvasScale, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
       } else {
         ctx.fillStyle = 'rgba(255,136,85,0.55)';
@@ -1709,6 +1862,8 @@ function _applySnapshot(snap) {
   state.nextStopId = snap.nextStopId;
   state.nextCreatureId = snap.nextCreatureId || 1;
   state.edgeInProgress = snap.edgeInProgress;
+  state.draggingAnchor = null;
+  _clearAnchorSelection(false);
   edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
 }
 function _updateRedoBtn() {
