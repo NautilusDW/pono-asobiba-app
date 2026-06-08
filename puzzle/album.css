@@ -47,21 +47,25 @@
 
 .album-back {
   appearance: none;
-  border: none;
-  background: var(--primary, #F2915A);
-  color: #fff;
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
+  border: 3px solid var(--puzzle-btn-border);
+  background: var(--puzzle-btn-bg);
+  color: var(--puzzle-btn-color);
   font-family: inherit;
   font-weight: 900;
   font-size: 1rem;
   padding: 10px 18px;
-  border-radius: 50px;
+  border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(93, 78, 55, 0.18);
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
   transition: transform 0.1s ease;
   min-width: 110px;
 }
 
-.album-back:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(93, 78, 55, 0.18); }
+.album-back:active { transform: translateY(2px); box-shadow: var(--puzzle-btn-shadow-pressed); }
 
 /* ===== Summary ===== */
 .album-summary {
@@ -337,15 +341,21 @@
   position: absolute;
   top: 8px;
   right: 10px;
-  background: transparent;
-  border: none;
+  --puzzle-btn-bg: var(--puzzle-btn-peach);
+  --puzzle-btn-color: #623D16;
+  --puzzle-btn-border: rgba(255, 244, 224, 0.95);
+  background: var(--puzzle-btn-bg);
+  border: 3px solid var(--puzzle-btn-border);
+  border-radius: 999px;
   font-size: 1.6rem;
-  color: #A89880;
+  color: var(--puzzle-btn-color);
   cursor: pointer;
   font-family: inherit;
   width: 36px;
   height: 36px;
   line-height: 1;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
 }
 
 .album-popup__partner {

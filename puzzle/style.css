@@ -12,6 +12,17 @@
   --text-light: #A89880;
   --shadow: rgba(93, 78, 55, 0.12);
   --radius: 20px;
+  --puzzle-btn-cream: linear-gradient(180deg, #FFF8E8 0%, #F5DCA8 100%);
+  --puzzle-btn-peach: linear-gradient(180deg, #FFE9CE 0%, #FFC98F 100%);
+  --puzzle-btn-green: linear-gradient(180deg, #A7DFAE 0%, #74C982 100%);
+  --puzzle-btn-blue: linear-gradient(180deg, #8DCBFF 0%, #5BA9F1 100%);
+  --puzzle-btn-purple: linear-gradient(180deg, #F0E6FF 0%, #D3BDF8 100%);
+  --puzzle-btn-shadow-soft: inset 0 -3px 0 rgba(93, 78, 55, 0.18), 0 5px 12px rgba(93, 78, 55, 0.20);
+  --puzzle-btn-shadow-pressed: inset 0 -1px 0 rgba(93, 78, 55, 0.16), 0 2px 6px rgba(93, 78, 55, 0.18);
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
 html {
@@ -127,6 +138,38 @@ body.title-guide-choice-open .pono-dropdown {
   display: none !important;
 }
 
+body .pono-menu-toggle {
+  background: var(--puzzle-btn-cream);
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  color: #5A3A18;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+}
+
+body .pono-menu-toggle.open {
+  background: var(--puzzle-btn-peach);
+}
+
+body .pono-dropdown {
+  border: 3px solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 252, 236, 0.98);
+  box-shadow: 0 10px 26px rgba(93, 78, 55, 0.22);
+}
+
+body .pono-dropdown .pono-dd-item {
+  min-height: 42px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: var(--puzzle-btn-cream);
+  color: #5A3A18;
+  font-weight: 900;
+  box-shadow: inset 0 -2px 0 rgba(93, 78, 55, 0.10);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+body .pono-dropdown .pono-dd-item:active {
+  background: var(--puzzle-btn-peach);
+}
+
 .title-guide-choice__panel {
   width: min(520px, calc(100vw - 36px));
   max-height: calc(100dvh - 36px);
@@ -163,31 +206,43 @@ body.title-guide-choice-open .pono-dropdown {
 }
 
 .title-guide-choice__btn {
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
   min-height: 58px;
-  border: 0;
-  border-radius: 16px;
+  border: 3px solid var(--puzzle-btn-border);
+  border-radius: 999px;
   padding: 10px 12px;
   font-family: inherit;
   font-size: clamp(0.98rem, 2.7vw, 1.18rem);
   font-weight: 900;
   line-height: 1.2;
-  color: #fff;
+  color: var(--puzzle-btn-color);
+  background: var(--puzzle-btn-bg);
   cursor: pointer;
-  box-shadow: 0 6px 0 rgba(93, 78, 55, 0.18), 0 10px 20px rgba(93, 78, 55, 0.18);
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
   touch-action: manipulation;
 }
 
 .title-guide-choice__btn:active {
   transform: translateY(3px);
-  box-shadow: 0 3px 0 rgba(93, 78, 55, 0.18), 0 6px 12px rgba(93, 78, 55, 0.16);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
 }
 
 .title-guide-choice__btn--learn {
-  background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
+  --puzzle-btn-bg: var(--puzzle-btn-blue);
+  --puzzle-btn-color: #FFFFFF;
+  --puzzle-btn-border: rgba(238, 249, 255, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(31, 90, 139, 0.36);
 }
 
 .title-guide-choice__btn--play {
-  background: linear-gradient(180deg, #8BC48A 0%, #43A86D 100%);
+  --puzzle-btn-bg: var(--puzzle-btn-green);
+  --puzzle-btn-color: #FFFFFF;
+  --puzzle-btn-border: rgba(235, 255, 237, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
 }
 
 .title-guide-choice__skip {
@@ -746,38 +801,43 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .partner-practice-coach__btn {
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
   min-width: 118px;
   min-height: 44px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
+  border: 3px solid var(--puzzle-btn-border);
   border-radius: 999px;
   padding: 6px 16px;
   font: inherit;
   font-size: 1rem;
   font-weight: 900;
   cursor: pointer;
-  color: #5A3A18;
+  color: var(--puzzle-btn-color);
+  background: var(--puzzle-btn-bg);
   pointer-events: auto;
-  box-shadow:
-    inset 0 -2px 0 rgba(120, 82, 30, 0.18),
-    0 4px 10px rgba(93, 78, 55, 0.16);
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
 }
 
 .partner-practice-coach__btn--replay {
-  background: linear-gradient(180deg, #FFEBC9 0%, #FFC98F 100%);
-  color: #623D16;
-  border-color: rgba(255, 244, 224, 0.95);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  --puzzle-btn-bg: var(--puzzle-btn-peach);
+  --puzzle-btn-color: #623D16;
+  --puzzle-btn-border: rgba(255, 244, 224, 0.95);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .partner-practice-coach__btn--start {
-  color: #fff;
-  background: linear-gradient(180deg, #8FD99B 0%, #52B96A 100%);
-  border-color: rgba(224, 255, 229, 0.92);
-  text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
+  --puzzle-btn-bg: var(--puzzle-btn-green);
+  --puzzle-btn-color: #fff;
+  --puzzle-btn-border: rgba(224, 255, 229, 0.92);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
 }
 
 .partner-practice-coach__btn:active {
   transform: scale(0.96);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
 }
 
 .partner-practice-coach__btn:disabled,
@@ -1048,20 +1108,24 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .partner-unlock-intro__button {
+  --puzzle-btn-bg: var(--puzzle-btn-green);
+  --puzzle-btn-color: #FFFFFF;
+  --puzzle-btn-border: rgba(235, 255, 237, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
   min-width: 142px;
   min-height: 52px;
   margin-top: 4px;
   padding: 10px 28px;
-  border: 3px solid #FFFFFF;
+  border: 3px solid var(--puzzle-btn-border);
   border-radius: 999px;
-  color: #FFFFFF;
-  background: linear-gradient(180deg, #8BC48A 0%, #68B96B 100%);
+  color: var(--puzzle-btn-color);
+  background: var(--puzzle-btn-bg);
   font-family: inherit;
   font-size: 1.2rem;
   font-weight: 900;
   letter-spacing: 0.04em;
-  text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
-  box-shadow: 0 7px 16px rgba(75, 100, 54, 0.34);
+  text-shadow: var(--puzzle-btn-text-shadow);
+  box-shadow: var(--puzzle-btn-shadow-soft);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -1073,6 +1137,7 @@ body.partner-practice-active .prestart-overlay {
 
 .partner-unlock-intro__button:active {
   transform: scale(0.96);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
 }
 
 @keyframes partnerUnlockFadeIn {
@@ -1198,20 +1263,28 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .prestart-overlay__btn {
+  --puzzle-btn-bg: var(--puzzle-btn-green);
+  --puzzle-btn-color: #FFFFFF;
+  --puzzle-btn-border: rgba(235, 255, 237, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   font-weight: 900;
   font-size: 2rem;
-  letter-spacing: 0.12em;
-  color: #fff;
-  background: linear-gradient(180deg, #8BC48A 0%, #6DBF6D 100%);
-  border: 4px solid #fff;
+  letter-spacing: 0.06em;
+  color: var(--puzzle-btn-color);
+  background: var(--puzzle-btn-bg);
+  border: 5px solid var(--puzzle-btn-border);
   border-radius: 999px;
   padding: 18px 56px;
-  min-width: 200px;
+  width: min(300px, calc(100vw - 72px));
+  min-width: 0;
   min-height: 80px;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-shadow: var(--puzzle-btn-text-shadow);
   box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.35),
-    0 0 0 6px rgba(139, 196, 138, 0.35);
+    var(--puzzle-btn-shadow-soft),
+    0 0 0 6px rgba(139, 196, 138, 0.24);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   animation: prestartBtnPulse 1.2s ease-in-out infinite;
@@ -1219,7 +1292,7 @@ body.partner-practice-active .prestart-overlay {
 }
 .prestart-overlay__btn:active {
   transform: scale(0.96);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
 }
 @keyframes prestartBtnPulse {
   0%, 100% { transform: scale(1); }
@@ -1230,7 +1303,8 @@ body.partner-practice-active .prestart-overlay {
   .prestart-overlay__btn {
     font-size: 1.5rem;
     padding: 14px 40px;
-    min-width: 160px;
+    width: min(240px, calc(100vw - 48px));
+    min-width: 0;
     min-height: 64px;
   }
 }
@@ -1286,13 +1360,15 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .controls .btn {
-  border-color: rgba(255, 255, 255, 0.9);
-  box-shadow:
-    inset 0 -3px 0 rgba(84, 112, 150, 0.18),
-    0 4px 10px rgba(93, 78, 55, 0.20);
+  border-color: var(--puzzle-btn-border);
+  box-shadow: var(--puzzle-btn-shadow-soft);
 }
 
 .btn {
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
   font-family: inherit;
   font-size: 1rem;
   font-weight: 900;
@@ -1301,38 +1377,33 @@ body.partner-practice-active .prestart-overlay {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid rgba(255, 255, 255, 0.86);
+  border: 3px solid var(--puzzle-btn-border);
   border-radius: 999px;
   padding: 10px 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 253, 242, 0.98) 0%, rgba(255, 231, 184, 0.96) 100%);
-  color: #5A3A18;
+  background: var(--puzzle-btn-bg);
+  color: var(--puzzle-btn-color);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow:
-    inset 0 -3px 0 rgba(212, 164, 84, 0.28),
-    0 4px 10px rgba(93, 78, 55, 0.18);
+  box-shadow: var(--puzzle-btn-shadow-soft);
   letter-spacing: 0.04em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.86);
+  text-shadow: var(--puzzle-btn-text-shadow);
 }
 
 .btn:active {
   transform: scale(0.95);
-  box-shadow: 0 1px 4px var(--shadow);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
 }
 
 .btn-shuffle {
-  background:
-    linear-gradient(180deg, rgba(255, 253, 242, 0.98) 0%, rgba(255, 231, 184, 0.96) 100%);
-  color: #5A3A18;
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
 }
 
 .btn-hint {
   position: relative;
-  background:
-    linear-gradient(180deg, #F0E6FF 0%, #D9C6FF 100%);
-  color: #4A316F;
-  border-color: rgba(252, 247, 255, 0.95);
+  --puzzle-btn-bg: var(--puzzle-btn-purple);
+  --puzzle-btn-color: #4A316F;
+  --puzzle-btn-border: rgba(252, 247, 255, 0.95);
 }
 
 /* ヒントボタン: ドラッグ中の 😴 状態 (タップ無効) */
@@ -1391,15 +1462,13 @@ body.partner-practice-active .prestart-overlay {
 
 /* 「いつでも みる」 = 半透明完成形を盤面に重ねるトグルボタン */
 .btn-peek {
-  background:
-    linear-gradient(180deg, #DDF5FF 0%, #A9E0F7 100%);
-  color: #24566A;
-  border-color: rgba(244, 253, 255, 0.95);
+  --puzzle-btn-bg: linear-gradient(180deg, #DDF5FF 0%, #A9E0F7 100%);
+  --puzzle-btn-color: #24566A;
+  --puzzle-btn-border: rgba(244, 253, 255, 0.95);
 }
 .btn-peek.is-active {
-  background:
-    linear-gradient(180deg, #C6ECF9 0%, #82CCE8 100%);
-  color: #1F4D61;
+  --puzzle-btn-bg: linear-gradient(180deg, #C6ECF9 0%, #82CCE8 100%);
+  --puzzle-btn-color: #1F4D61;
 }
 
 /* 完成形オーバーレイ canvas — puzzle-container に重ねる */
@@ -1418,15 +1487,19 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .btn-primary {
-  background: var(--primary);
-  color: #fff;
+  --puzzle-btn-bg: var(--puzzle-btn-green);
+  --puzzle-btn-color: #fff;
+  --puzzle-btn-border: rgba(235, 255, 237, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
   font-size: 1.2rem;
   padding: 14px 36px;
 }
 
 .btn-next {
-  background: linear-gradient(135deg, #60A5FA, #818CF8);
-  color: #fff;
+  --puzzle-btn-bg: var(--puzzle-btn-blue);
+  --puzzle-btn-color: #fff;
+  --puzzle-btn-border: rgba(238, 249, 255, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(31, 90, 139, 0.36);
   font-size: 1.05rem;
   padding: 12px 30px;
   width: 100%;
@@ -1441,8 +1514,9 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .btn-play-again {
-  background: var(--primary-light);
-  color: var(--text);
+  --puzzle-btn-bg: var(--puzzle-btn-peach);
+  --puzzle-btn-color: #623D16;
+  --puzzle-btn-border: rgba(255, 244, 224, 0.95);
   font-size: 0.95rem;
   padding: 10px 24px;
 }
@@ -2068,7 +2142,29 @@ body.partner-practice-active .prestart-overlay {
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
-.tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-next-btn {
+  --puzzle-btn-bg: var(--puzzle-btn-blue);
+  --puzzle-btn-color: #FFFFFF;
+  --puzzle-btn-border: rgba(238, 249, 255, 0.96);
+  --puzzle-btn-text-shadow: 0 1px 0 rgba(31, 90, 139, 0.36);
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 24px;
+  border: 3px solid var(--puzzle-btn-border);
+  border-radius: 999px;
+  background: var(--puzzle-btn-bg);
+  color: var(--puzzle-btn-color);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
+}
+.tut-next-btn:active {
+  transform: scale(0.96);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
+}
 
 /* ===== Opening cutscene (owl-doctor wooden-frame style) ===== */
 .puzzle-op {
@@ -2126,25 +2222,38 @@ body.partner-practice-active .prestart-overlay {
 }
 .puzzle-op__narration.is-hide { opacity: 0; }
 .puzzle-op__skip {
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
   position: absolute;
   top: max(16px, env(safe-area-inset-top));
   right: max(20px, env(safe-area-inset-right));
   min-width: 64px;
   min-height: 44px;
   padding: 10px 16px;
-  border: 1px solid rgba(255,255,255,0.55);
-  border-radius: 10px;
-  background: rgba(0,0,0,0.35);
-  color: #fff;
+  border: 3px solid var(--puzzle-btn-border);
+  border-radius: 999px;
+  background: var(--puzzle-btn-bg);
+  color: var(--puzzle-btn-color);
   font-family: inherit;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 900;
   letter-spacing: 0.04em;
   cursor: pointer;
   z-index: 3;
   touch-action: manipulation;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
 }
-.puzzle-op__skip:hover, .puzzle-op__skip:focus { background: rgba(0,0,0,0.7); outline: none; }
+.puzzle-op__skip:hover,
+.puzzle-op__skip:focus {
+  filter: brightness(1.03);
+  outline: none;
+}
+.puzzle-op__skip:active {
+  transform: scale(0.96);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
+}
 .puzzle-op__fade {
   position: absolute;
   inset: 0;

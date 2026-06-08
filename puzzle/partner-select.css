@@ -484,19 +484,23 @@
 }
 
 .pono-pselect__cancel {
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
   min-height: 48px;
   min-width: 140px;
   padding: 10px 28px;
-  background: linear-gradient(180deg, #6B5640 0%, #4A3826 100%);
-  color: #FFF6DC;
-  border: 2px solid #C9A86A;
+  background: var(--puzzle-btn-bg);
+  color: var(--puzzle-btn-color);
+  border: 3px solid var(--puzzle-btn-border);
   border-radius: 999px;
   font-family: inherit;
   font-size: clamp(0.95rem, 3vw, 1.1rem);
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
   letter-spacing: 0.06em;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
   transition: transform 120ms ease, box-shadow 120ms ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -504,7 +508,7 @@
 .pono-pselect__cancel:hover,
 .pono-pselect__cancel:active {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
 }
 
 .pono-pselect__cancel:focus-visible {
