@@ -2411,6 +2411,7 @@ const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
 const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
+const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -2503,27 +2504,66 @@ function clearBasicPracticeSeen() {
   try { localStorage.removeItem(BASIC_PRACTICE_SEEN_KEY); } catch (_) {}
 }
 
+function getBasicTutFallbackMs(stepIndex, fallbackMs) {
+  if (fallbackMs) return fallbackMs;
+  return BASIC_TUT_FALLBACK_MS[stepIndex | 0] || 4300;
+}
+
 function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (partnerPracticeState.basicVoiceTimer) {
+    try { clearTimeout(partnerPracticeState.basicVoiceTimer); } catch (_) {}
+    partnerPracticeState.basicVoiceTimer = null;
+  }
+  var token = ((partnerPracticeState.basicVoiceToken || 0) + 1);
+  partnerPracticeState.basicVoiceToken = token;
+  partnerPracticeState.basicVoiceBusy = true;
+  partnerPracticeState.basicVoiceStepIndex = stepIndex | 0;
   var audio = null;
   try {
     if (window.PuzzleVoice && typeof window.PuzzleVoice.playBasicTut === 'function') {
       audio = window.PuzzleVoice.playBasicTut(stepIndex);
     }
   } catch (_) {}
-  if (typeof onDone === 'function') {
-    var done = false;
-    var finish = function () {
-      if (done) return;
-      done = true;
-      onDone();
-    };
-    if (audio && typeof audio.addEventListener === 'function') {
-      try { audio.addEventListener('ended', finish, { once: true }); } catch (_) {}
-    }
-    practiceSetTimeout(finish, fallbackMs || 4300);
+  var done = false;
+  var finish = function () {
+    if (done) return;
+    if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+    done = true;
+    partnerPracticeState.basicVoiceBusy = false;
+    partnerPracticeState.basicVoiceStepIndex = null;
+    partnerPracticeState.basicVoiceTimer = null;
+    var queued = partnerPracticeState.basicVoiceQueued;
+    partnerPracticeState.basicVoiceQueued = null;
+    if (typeof onDone === 'function') onDone();
+    if (typeof queued === 'function') queued();
+  };
+  if (audio && typeof audio.addEventListener === 'function') {
+    try { audio.addEventListener('ended', finish, { once: true }); } catch (_) {}
   }
+  partnerPracticeState.basicVoiceTimer = setTimeout(finish, getBasicTutFallbackMs(stepIndex, fallbackMs));
   return audio;
+}
+
+function queueBasicPracticeAfterVoice(fn) {
+  if (!partnerPracticeState || typeof fn !== 'function') return;
+  if (partnerPracticeState.basicVoiceBusy) {
+    partnerPracticeState.basicVoiceQueued = fn;
+    return;
+  }
+  fn();
+}
+
+function clearBasicPracticeVoiceQueue() {
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.basicVoiceTimer) {
+    try { clearTimeout(partnerPracticeState.basicVoiceTimer); } catch (_) {}
+  }
+  partnerPracticeState.basicVoiceTimer = null;
+  partnerPracticeState.basicVoiceQueued = null;
+  partnerPracticeState.basicVoiceBusy = false;
+  partnerPracticeState.basicVoiceStepIndex = null;
+  partnerPracticeState.basicVoiceToken = ((partnerPracticeState.basicVoiceToken || 0) + 1);
 }
 
 function stopPuzzleVoice() {
@@ -3029,7 +3069,8 @@ function startCommonHintPractice(partnerId) {
   partnerPracticeState.phase = 'hint-select';
   partnerPracticeState.targetPiece = piece;
   partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
-  setPartnerPracticeInput(true);
+  partnerPracticeState.hintSelectReady = false;
+  setPartnerPracticeInput(false);
   placeHintPracticePiece(piece);
   clearHintPracticeTargetArea(piece);
   setPartnerPracticeCoachCopy(
@@ -3037,7 +3078,16 @@ function startCommonHintPractice(partnerId) {
     '',
     ''
   );
-  playBasicPracticeVoice(5);
+  if (partnerPracticeState.mode === 'basic') {
+    playBasicPracticeVoice(5, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+      partnerPracticeState.hintSelectReady = true;
+      setPartnerPracticeInput(true);
+    });
+  } else {
+    partnerPracticeState.hintSelectReady = true;
+    setPartnerPracticeInput(true);
+  }
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
   refreshHintButtonState();
   redraw();
@@ -3100,6 +3150,27 @@ function startBasicPeekPractice() {
   redraw();
 }
 
+function playBasicPeekHoldNarration() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
+  setPartnerPracticeCoachCopy(
+    'そのまま みてね',
+    'おしている あいだ みえるよ',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
+  playBasicPracticeVoice(2, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
+    partnerPracticeState.peekHoldReady = true;
+    setPartnerPracticeCoachCopy(
+      'はなすと もどるよ',
+      'わからなくなったら ながく おしてね',
+      ''
+    );
+    setPartnerPracticeCoachBubble(btnPeek, null, false);
+    playBasicPracticeVoice(3);
+  });
+}
+
 function onPartnerPracticePeekPressed() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
   if (!peekOn) return;
@@ -3107,24 +3178,7 @@ function onPartnerPracticePeekPressed() {
   partnerPracticeState.phase = 'peek-hold';
   partnerPracticeState.peekHoldStart = performance.now();
   partnerPracticeState.peekHoldReady = false;
-  setPartnerPracticeCoachCopy(
-    'そのまま みてね',
-    'おしている あいだ みえるよ',
-    ''
-  );
-  playBasicPracticeVoice(2);
-  setPartnerPracticeCoachBubble(btnPeek, null, false);
-  practiceSetTimeout(function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold') return;
-    partnerPracticeState.peekHoldReady = true;
-    setPartnerPracticeCoachCopy(
-      'はなすと もどるよ',
-      'わからなくなったら ながく おしてね',
-      ''
-    );
-    playBasicPracticeVoice(3);
-    setPartnerPracticeCoachBubble(btnPeek, null, false);
-  }, BASIC_PEEK_HOLD_MS);
+  queueBasicPracticeAfterVoice(playBasicPeekHoldNarration);
 }
 
 function onPartnerPracticePeekReleased(heldMs, cancelled) {
@@ -3143,7 +3197,12 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
       'おしている あいだだけ みえるよ',
       ''
     );
-    playBasicPracticeVoice(1);
+    if (!(partnerPracticeState.basicVoiceBusy && partnerPracticeState.basicVoiceStepIndex === 1)) {
+      queueBasicPracticeAfterVoice(function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
+        playBasicPracticeVoice(1);
+      });
+    }
     setPartnerPracticeCoachBubble(btnPeek, null, false);
     return;
   }
@@ -3155,16 +3214,20 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     'わからなくなったら ながく おしてね',
     ''
   );
-  playBasicPracticeVoice(4);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  practiceSetTimeout(function () {
-    if (peekOn) setPeekOverlay(false);
-    startCommonHintPractice(null);
-  }, 900);
+  queueBasicPracticeAfterVoice(function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+    playBasicPracticeVoice(4, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+      if (peekOn) setPeekOverlay(false);
+      startCommonHintPractice(null);
+    });
+  });
 }
 
 function onPartnerPracticePieceSelected(piece) {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+  if (!partnerPracticeState.hintSelectReady) return;
   if (!piece || piece.snapped) return;
   if (partnerPracticeState.targetPiece && piece !== partnerPracticeState.targetPiece) {
     selectedPieceForHint = null;
@@ -3548,6 +3611,7 @@ function finishPartnerPractice() {
   dragPiece = null;
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (peekOn) setPeekOverlay(false);
+  clearBasicPracticeVoiceQueue();
   stopPuzzleVoice();
   stopChallengeTimer();
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
@@ -3580,6 +3644,7 @@ function returnPartnerPracticeToSelect() {
   hintFlashUntil = 0;
   dragPiece = null;
   if (peekOn) setPeekOverlay(false);
+  clearBasicPracticeVoiceQueue();
   stopPuzzleVoice();
   stopChallengeTimer();
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
