@@ -110,7 +110,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:2, choices:['まる','しかく','ほし','さんかく'] },
     /* Q111 rectangle: 「ながしかく」「ダイヤ」「しかく」全て他問題と重複 or 不適切のため削除 (2026-05-06 ユーザー判断) */
     { level:1, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:0, choices:['たまごがた','まる','しかく','ハート'] },
-    { level:1, type:'shape_name', shape:'heart',     q:'ハートは どんな きもちの しるし？', answer:1, choices:['うれしい','だいすき','ねむい','おこった'], detail:'ハートは だいすきの しるしとして よく つかわれるよ！' },
+    { level:1, type:'shape_name', shape:'heart',     q:'ハートは どんな きもちの しるし？', answer:1, choices:['かなしい','だいすき','おこった','こわい'], detail:'ハートは だいすきの しるしとして よく つかわれるよ！' },
 
     // Level 2 (名前当て＋性質問題)
     { level:2, type:'shape_name', shape:'star',      q:'ほしの かどは なんこ？', answer:0, choices:['5こ','4こ','6こ','3こ'] },
@@ -125,7 +125,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 3 (性質・知識問題)
     { level:3, type:'shape_name', shape:'circle',    q:'このかたちに かどは いくつ？', answer:1, choices:['2こ','0こ（ない）','4こ','1こ'] },
-    { level:3, type:'shape_name', shape:'square',    q:'しかくの へんは ぜんぶで いくつ？', answer:2, choices:['3ほん','5ほん','4ほん','6ぽん'], detail:'しかくは まわりの へんも 4ほん あるよ！' },
+    { level:3, type:'shape_name', shape:'square',    q:'しかくの まわりは どんな せん？', answer:0, choices:['まっすぐ','ぐにゃぐにゃ','まるい','ぎざぎざ'], detail:'しかくの まわりは まっすぐな せんで できているよ！' },
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
     /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
@@ -136,7 +136,7 @@ const QUIZLAND_QUESTIONS = {
         { text:'さんかく' },
         { text:'しかく' }
       ], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
-    { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', framed:true, q:'ノートの かたちは？', answer:0, choices:['しかく','まる','さんかく','ほし'], detail:'ノートは しかくい かたち！' },
+    { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', framed:true, q:'ノートの かたちは？', answer:0, choices:['ながしかく','まる','さんかく','ほし'], detail:'ノートは ながい しかくの かたち！' },
     { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', framed:true, q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
   ],
 

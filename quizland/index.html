@@ -891,6 +891,38 @@ body.sheet-on .hdr-right .ctrl-btn {
   object-fit: contain;
   filter: var(--stage-shadow);
 }
+.stage-img-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+.shape-img-wrap {
+  width: 240px;
+  height: 240px;
+}
+.emoji-img-wrap {
+  width: 360px;
+  height: 360px;
+}
+.stage-img-wrap > .shape-img,
+.stage-img-wrap > .emoji-main-img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+body.layout-editor-on .stage-img-wrap {
+  pointer-events: auto;
+}
+body.layout-editor-on .stage-img-wrap > img.resizable {
+  pointer-events: none;
+  outline: none;
+}
 /* 旧 CSS 描画 shape-* は素材欠損時のフォールバック保険として残置。
    将来的には削除予定 (HTML から CSS 描画は呼び出さない方針)。
    stage 統一ソフトシャドウ: shape-* は不透明 CSS shape のため filter: drop-shadow と
@@ -941,9 +973,7 @@ body.sheet-on .hdr-right .ctrl-btn {
   line-height: 1;
 }
 .number-display-blank {
-  /* 答えの位置を示す ◯ (sw v974+) — v976 で Unicode `◯` を SVG circle に置換、
-     dashed stroke + stroke-linecap:round でやさしい点線円に。 fill 色は SVG 内で指定するため
-     ここでは inline-flex でベースライン揃え + 1em 正方形のサイズ確保のみ。 */
+  /* 答えの位置を示す ?。以前の点線丸は「空欄」感が強く、数字の次問題では不要だったため ? に統一。 */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -951,12 +981,8 @@ body.sheet-on .hdr-right .ctrl-btn {
   height: 1em;
   vertical-align: middle;
   line-height: 1;
-}
-.number-display-blank svg {
-  width: 1em;
-  height: 1em;
-  display: block;
-  overflow: visible;
+  color: var(--wood-dark);
+  font-weight: 900;
 }
 
 /* ===== Emoji / Trivia / Opposite ===== */
@@ -1023,6 +1049,18 @@ body.sheet-on .hdr-right .ctrl-btn {
   min-height: 0;
   min-width: 0;
   object-fit: contain;
+}
+.emoji-display[style*="width"] .emoji-img-wrap:not([style*="width"]):not([style*="height"]),
+.emoji-display[style*="height"] .emoji-img-wrap:not([style*="width"]):not([style*="height"]),
+.shape-display[style*="width"] .shape-img-wrap:not([style*="width"]):not([style*="height"]),
+.shape-display[style*="height"] .shape-img-wrap:not([style*="width"]):not([style*="height"]) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 .emoji-hint {
   font-size: 18px;
@@ -1577,6 +1615,10 @@ body.sheet-on .chip.wrong.reading-active[data-idx="3"] {
   padding: 0;
   margin: 0;
   text-align: center;
+}
+.chip.chip-number-sequence {
+  font-size: 72px;
+  letter-spacing: 0;
 }
 @keyframes popIn {
   0% { transform: scale(1); }
@@ -3141,6 +3183,7 @@ body.layout-editor-on .op-skip {
 }
 .qno-plate-overlay.hidden { display: none; }
 .qno-plate-overlay.is-tap-skip { pointer-events: auto; cursor: pointer; }
+body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 .qno-plate-img {
   max-width: 70vw;
   max-height: 50vh;
@@ -3958,6 +4001,7 @@ const QZ_RESIZABLE_SELECTORS = [
   // 今後の編集は全部 phase 別キーへ)。
   ['.emoji-display.phase-question', 'wh', 'ステージ枠 [問題]'],
   ['.emoji-display.phase-answer',   'wh', 'ステージ枠 [答え]'],
+  ['.stage-img-wrap',          'wh', 'ステージ画像枠'],
   ['.emoji-main-img',          'wh', 'ステージ画像 (挿絵)'],
   ['.shape-display',           'wh', 'ステージ枠 (かたち)'],
   ['.shape-img',               'wh', 'ステージ画像 (かたち)'],
@@ -3982,6 +4026,7 @@ const QZ_PER_QUESTION_SELECTORS = [
   '.emoji-display.phase-question',
   '.emoji-display.phase-answer',
   '.emoji-display',
+  '.stage-img-wrap',
   '.emoji-main-img',
   '.shape-display',
   '.shape-img',
@@ -4417,6 +4462,12 @@ function renderCountTotal(stage, q) {
   }
   stage.appendChild(container);
 }
+function createStageImageWrap(imgEl, extraClass) {
+  const wrap = document.createElement('div');
+  wrap.className = 'stage-img-wrap' + (extraClass ? ' ' + extraClass : '');
+  wrap.appendChild(imgEl);
+  return wrap;
+}
 function renderShapeName(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'shape-display';
@@ -4441,7 +4492,7 @@ function renderShapeName(stage, q) {
     if (q.shape === 'heart') fallback.textContent = '♥';
     img.replaceWith(fallback);
   };
-  wrap.appendChild(img);
+  wrap.appendChild(createStageImageWrap(img, 'shape-img-wrap'));
   stage.appendChild(wrap);
 }
 function renderNumberSequence(stage, q) {
@@ -4464,15 +4515,9 @@ function renderNumberSequence(stage, q) {
       }
       const span = document.createElement('span');
       if (tok === '◯' || tok === '○') {
-        // sw v976+: ◯ は Unicode 文字ではなく SVG circle (点線 + stroke-linecap:round) で描画。
-        // paper/wood テーマ整合のオレンジ系 stroke (#c98443)。 viewBox は 100x100、 r=42 で stroke-width=10 まで
-        // 余裕がありクリップされない。 stroke-dasharray の 14 16 は「点線が短すぎず詰まりすぎない」 視認性で調整済。
         span.className = 'number-display-blank';
         span.setAttribute('aria-label', '答えの位置');
-        span.innerHTML = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
-          + '<circle cx="50" cy="50" r="42" fill="none" stroke="#c98443" stroke-width="10" '
-          + 'stroke-dasharray="14 16" stroke-linecap="round" />'
-          + '</svg>';
+        span.textContent = '？';
       } else {
         span.className = 'number-display-num';
         span.textContent = tok;
@@ -4514,7 +4559,7 @@ function renderEmojiName(stage, q) {
     if (q.framed) imgEl.classList.add('is-framed');
     imgEl.src = '../assets/images/ocean/' + q.img + '?v=' + (window._imgCacheBust || '');
     imgEl.alt = '';
-    wrap.appendChild(imgEl);
+    wrap.appendChild(createStageImageWrap(imgEl, 'emoji-img-wrap'));
   } else {
     const emojiEl = document.createElement('div');
     emojiEl.className = 'emoji-main';
@@ -4558,7 +4603,7 @@ function renderOpposite(stage, q) {
         imgEl.src = fb;
       }
     });
-    container.appendChild(imgEl);
+    container.appendChild(createStageImageWrap(imgEl, 'emoji-img-wrap'));
   } else {
     const wrap = document.createElement('div');
     wrap.id = 'opposite-word-text';
@@ -4965,7 +5010,7 @@ function renderTrivia(stage, q) {
         imgEl.src = fb;
       }
     });
-    wrap.appendChild(imgEl);
+    wrap.appendChild(createStageImageWrap(imgEl, 'emoji-img-wrap'));
     stage.appendChild(wrap);
     return;
   }
@@ -5035,6 +5080,7 @@ function renderChoices(q) {
     const hasImage = (q.type === 'order_color') ||
                      (choice && typeof choice === 'object' && choice.image);
     btn.classList.add(hasImage ? 'chip-type-with-image' : 'chip-type-text-only');
+    if (q.type === 'number_sequence') btn.classList.add('chip-number-sequence');
     if (q.type === 'order_color') {
       btn.dataset.color = choice;
       btn.classList.add('has-image'); // 丸 + ラベル のレイアウト
@@ -5108,7 +5154,7 @@ function renderChoices(q) {
       // chip 本体の回答処理より優先する。選択肢全体を押した通常プレイは従来どおり残す。
       if (document.body && document.body.classList.contains('layout-editor-on') &&
           e.target && e.target.closest &&
-          e.target.closest('.chip-label, .chip-illust-label, .chip-count-num')) {
+          e.target.closest('.chip-label, .chip-illust-label, .chip-count-num, .chip-illust-wrap, .circle')) {
         return;
       }
       // chip タップは ?edit=1 でも通常進行させる (= 普通にプレイしながら編集できる v1035 方針)。
