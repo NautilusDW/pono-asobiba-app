@@ -4040,6 +4040,30 @@ function _qzApplyChipText(el, originalText, qKey, slot) {
   }
 }
 
+function _qzPickFreshLayoutData(serverData) {
+  var DEPLOY_LAG_WINDOW_MS = 10 * 60 * 1000;
+  var candidates = [
+    'le_layout_' + (location.pathname || '/'),
+    'le_layout_/quizland/',
+    'le_layout_/quizland/index.html'
+  ];
+  var newest = null;
+  for (var i = 0; i < candidates.length; i++) {
+    try {
+      var raw = localStorage.getItem(candidates[i]);
+      if (!raw) continue;
+      var localData = JSON.parse(raw);
+      if (!localData || typeof localData.__savedAt !== 'number') continue;
+      if ((Date.now() - localData.__savedAt) > DEPLOY_LAG_WINDOW_MS) continue;
+      if (!newest || localData.__savedAt > newest.__savedAt) newest = localData;
+    } catch (_) { /* ignore invalid local layout cache */ }
+  }
+  if (!newest) return serverData;
+  var out = Object.assign({}, newest);
+  delete out.__savedAt;
+  return out;
+}
+
 /* Layout editor: append ?edit=1 to URL for visual layout editing.
    Saves to quizland/saved-layout.json via /api/gh/ proxy.
    preview/full/ remains as legacy sandbox (untouched).
@@ -4063,8 +4087,9 @@ window.EditorBootstrapConfig = {
   ghPath: 'quizland/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   // Future (Phase 2): aspect-aware layout fork
-  // beforeApply: (data) => matchMedia('(max-aspect-ratio: 4/3)').matches
-  //   ? mergeLayout(data, fourThreeOverrides) : data
+  // エディター保存直後は GitHub commit → staging deploy の反映ラグがあるため、
+  // 同じ端末では短時間だけ localStorage の保存済み layout を通常表示にも優先する。
+  beforeApply: function(data) { return _qzPickFreshLayoutData(data); },
 
   // E2 (2026-05-13): saved-layout.json 内の `__hakase_dialogue_text_size`
   // (= { base, '14:9', '4:3' } 形式) を初期ロード完了時に CSS へ反映する。
@@ -7536,11 +7561,11 @@ function updateDebugNav() {
 }
 function _qzDebugGoto(targetIdx) {
   // QZ_DEBUG_ALL もしくは QZ_PLAYTEST_IN_EDITOR で許可。
-  // editor mode のとき、 旧仕様では `_isEditMode()` で全停止していたが
-  // playtest mode 中は editor mode でも正常に動かしたいので、 editor mode + playtest OFF
-  // のときだけ抑止する。
+  // editor mode のとき、 旧仕様では `_isEditMode()` で全停止していたが、
+  // ?debug=all または playtest mode 中は editor mode でも正常にジャンプさせる。
+  // ここを止めると select の表示値だけが変わり、 currentQ が古いまま保存される。
   if (!QZ_DEBUG_ALL && !isPlaytestInEditor()) return;
-  if (_isEditMode() && !isPlaytestInEditor()) return;
+  if (_isEditMode() && !QZ_DEBUG_ALL && !isPlaytestInEditor()) return;
   if (!playlist || playlist.length === 0) return;
   var idx = Math.max(0, Math.min(playlist.length - 1, targetIdx));
   // 進行中の自動ヒント / pose interval / lock を全部リセット
@@ -8101,7 +8126,7 @@ function _qzBuildDebugNavDOM() {
   _qzRefreshDebugJumpSelect();
 
   document.getElementById('qz-debug-prev').addEventListener('click', function (e) {
-    if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
+    if (_isEditMode() && !QZ_DEBUG_ALL && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
     // Phase 2 / impl-B: 未保存 per-Q レイアウト変更があれば確認 (impl-A 公開 API)
     try {
       if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
@@ -8112,7 +8137,7 @@ function _qzBuildDebugNavDOM() {
     });
   });
   document.getElementById('qz-debug-next').addEventListener('click', function (e) {
-    if (_isEditMode() && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
+    if (_isEditMode() && !QZ_DEBUG_ALL && !isPlaytestInEditor()) { e.preventDefault(); e.stopPropagation(); return; }
     // Phase 2 / impl-B: 未保存 per-Q レイアウト変更があれば確認 (impl-A 公開 API)
     try {
       if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
@@ -8145,7 +8170,7 @@ function _qzRefreshDebugJumpSelect() {
   if (!sel._qzWired) {
     sel._qzWired = true;
     sel.addEventListener('change', function () {
-      if (_isEditMode() && !isPlaytestInEditor()) return;
+      if (_isEditMode() && !QZ_DEBUG_ALL && !isPlaytestInEditor()) return;
       // Phase 2 / impl-B: 未保存 per-Q レイアウト変更があれば確認 (impl-A 公開 API)
       try {
         if (window.LayoutEditor && typeof window.LayoutEditor.confirmDiscardIfDirty === 'function'
