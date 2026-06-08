@@ -4226,6 +4226,7 @@ window.EditorBootstrapConfig = {
       }
     } catch (e) { /* non-fatal */ }
     try { _qzScheduleStageLayoutRestore(); } catch (e) { /* non-fatal */ }
+    try { _qzScheduleAnswerStagePreviewToolbarInit(); } catch (e) { /* non-fatal */ }
   },
 };
 
@@ -4619,7 +4620,8 @@ function renderOpposite(stage, q) {
 // 正解時の画像リビール (opposite + trivia 共通)。
 // renderOpposite / renderTrivia で付与した ID を辿って img.src を差し替える。
 // opposite の場合は word テキストも正解語に書き換える (trivia は word なし)。
-function revealAnswer(q) {
+function revealAnswer(q, opts) {
+  opts = opts || {};
   const imgEl = document.getElementById('opposite-stage-img')
              || document.getElementById('trivia-stage-img');
   if (imgEl && q.img_answer) {
@@ -4627,16 +4629,22 @@ function revealAnswer(q) {
     const stagePath = '../assets/images/quizland/illust/stage/' + q.img_answer + (v ? '?v=' + v : '');
     const choicePath = '../assets/images/quizland/illust/choice/' + q.img_answer + (v ? '?v=' + v : '');
     imgEl.dataset.fallback = choicePath;
-    // alpha-removed reveal animation: 一瞬フェード
-    imgEl.style.transition = 'opacity 0.3s';
-    imgEl.style.opacity = '0';
-    setTimeout(() => {
+    const applyAnswerImage = () => {
       imgEl.src = stagePath;
       // リビール後の画像も枠付きなら drop-shadow を消す (questions.js の framed_answer)。
       if (q.framed_answer) imgEl.classList.add('is-framed');
       else if (!q.framed) imgEl.classList.remove('is-framed');
       imgEl.style.opacity = '1';
-    }, 60);
+    };
+    if (opts.instant) {
+      imgEl.style.transition = '';
+      applyAnswerImage();
+    } else {
+      // alpha-removed reveal animation: 一瞬フェード
+      imgEl.style.transition = 'opacity 0.3s';
+      imgEl.style.opacity = '0';
+      setTimeout(applyAnswerImage, 60);
+    }
   }
   // opposite のみ: word テキストを正解語に書き換え
   const txtEl = document.getElementById('opposite-word-text');
@@ -4650,6 +4658,145 @@ function revealAnswer(q) {
   // 切り替え、 答えフェーズ専用のレイアウト (位置・スケール) を適用する。
   // 何も保存されていなければ applier の fallback で問題フェーズの値が使われる (= 連動)。
   setPhase('answer');
+}
+
+let _qzAnswerStagePreviewOn = false;
+
+function _qzCurrentStageImageEl() {
+  return document.getElementById('opposite-stage-img')
+      || document.getElementById('trivia-stage-img');
+}
+
+function _qzRevealStageAreaForEditorPreview() {
+  const stage = document.getElementById('stage-area');
+  if (!stage) return;
+  const list = [stage].concat(Array.prototype.slice.call(stage.querySelectorAll('.q-stage-pending')));
+  list.forEach(function (el) {
+    if (!el || !el.classList) return;
+    el.classList.remove('q-stage-pending');
+    el.classList.add('q-stage-revealed');
+  });
+}
+
+function _qzRestoreQuestionStageImage(q, opts) {
+  opts = opts || {};
+  const imgEl = _qzCurrentStageImageEl();
+  if (!imgEl || !q) {
+    setPhase('question');
+    return false;
+  }
+  const initialImg = q.img_word || q.img;
+  if (!initialImg) {
+    setPhase('question');
+    return false;
+  }
+  const v = (window._imgCacheBust || '');
+  const stagePath = '../assets/images/quizland/illust/stage/' + initialImg + (v ? '?v=' + v : '');
+  const choicePath = '../assets/images/quizland/illust/choice/' + initialImg + (v ? '?v=' + v : '');
+  imgEl.dataset.fallback = choicePath;
+  const applyQuestionImage = function () {
+    imgEl.src = stagePath;
+    if (q.framed) imgEl.classList.add('is-framed');
+    else imgEl.classList.remove('is-framed');
+    imgEl.style.opacity = '1';
+  };
+  if (opts.instant) {
+    imgEl.style.transition = '';
+    applyQuestionImage();
+  } else {
+    imgEl.style.transition = 'opacity 0.2s';
+    imgEl.style.opacity = '0';
+    setTimeout(applyQuestionImage, 40);
+  }
+  const txtEl = document.getElementById('opposite-word-text');
+  if (txtEl && q.type === 'opposite') {
+    txtEl.textContent = toFullWidth(q.word || '');
+  }
+  setPhase('question');
+  return true;
+}
+
+function _qzSyncAnswerStagePreviewToolbarButton(btn) {
+  btn = btn || document.getElementById('le-answer-stage-preview');
+  if (!btn) return;
+  const hasAnswerImage = !!(currentQ && currentQ.img_answer && _qzCurrentStageImageEl());
+  btn.style.display = '';
+  btn.disabled = !hasAnswerImage;
+  btn.classList.toggle('active', _qzAnswerStagePreviewOn && hasAnswerImage);
+  btn.textContent = _qzAnswerStagePreviewOn
+    ? '🖼 正解のステージング画像をオフ'
+    : '🖼 正解のステージング画像をオン';
+  btn.title = hasAnswerImage
+    ? '現在の問題の img_answer をステージングに表示し、答えフェーズの位置・サイズを調整します'
+    : 'この問題には正解のステージング画像 (img_answer) がありません';
+}
+
+function _qzApplyAnswerStagePreviewState(opts) {
+  opts = opts || {};
+  if (!_qzAnswerStagePreviewOn) {
+    _qzRestoreQuestionStageImage(currentQ, { instant: !!opts.instant });
+    _qzSyncAnswerStagePreviewToolbarButton();
+    return false;
+  }
+  if (!currentQ || !currentQ.img_answer || !_qzCurrentStageImageEl()) {
+    _qzSyncAnswerStagePreviewToolbarButton();
+    return false;
+  }
+  _qzRevealStageAreaForEditorPreview();
+  revealAnswer(currentQ, { instant: true, editorPreview: true });
+  _qzSyncAnswerStagePreviewToolbarButton();
+  return true;
+}
+
+window.QUIZLAND_TOGGLE_ANSWER_STAGE_PREVIEW = function () {
+  _qzAnswerStagePreviewOn = !_qzAnswerStagePreviewOn;
+  return _qzApplyAnswerStagePreviewState({ instant: true });
+};
+window.QUIZLAND_IS_ANSWER_STAGE_PREVIEW_ON = function () {
+  return !!_qzAnswerStagePreviewOn;
+};
+window.QUIZLAND_SYNC_ANSWER_STAGE_PREVIEW_BUTTON = _qzSyncAnswerStagePreviewToolbarButton;
+
+function _qzEnsureAnswerStagePreviewToolbarButton() {
+  if (!document.body || !document.body.classList.contains('layout-editor-on')) return;
+  const toolbar = document.getElementById('le-toolbar');
+  if (!toolbar) return;
+  let btn = document.getElementById('le-answer-stage-preview');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'le-answer-stage-preview';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', '正解のステージング画像を切り替え');
+    const nextBtn = toolbar.querySelector('#le-next-question');
+    const group = nextBtn ? nextBtn.parentElement : toolbar.querySelector('.le-tb-group');
+    if (group && nextBtn) group.insertBefore(btn, nextBtn.nextSibling);
+    else if (group) group.appendChild(btn);
+    else toolbar.appendChild(btn);
+    btn.addEventListener('click', function () {
+      window.QUIZLAND_TOGGLE_ANSWER_STAGE_PREVIEW();
+    });
+  }
+  _qzSyncAnswerStagePreviewToolbarButton(btn);
+}
+
+function _qzScheduleAnswerStagePreviewToolbarInit() {
+  const run = function () {
+    try { _qzEnsureAnswerStagePreviewToolbarButton(); } catch (_) {}
+  };
+  requestAnimationFrame(run);
+  setTimeout(run, 120);
+  setTimeout(run, 400);
+}
+
+function _qzNudgeLayoutEditorDynamicScan() {
+  if (!document.body || !document.body.classList.contains('layout-editor-on')) return;
+  const stage = document.getElementById('stage-area');
+  if (!stage) return;
+  const marker = document.createComment('qz-answer-stage-preview-rescan');
+  stage.appendChild(marker);
+  setTimeout(function () {
+    if (marker.parentNode) marker.parentNode.removeChild(marker);
+  }, 0);
 }
 
 // `.emoji-display` の phase クラス (`phase-question` / `phase-answer`) を切替し、
@@ -4679,6 +4826,7 @@ function setPhase(phase) {
       );
     } catch (e) { /* noop */ }
   }
+  _qzNudgeLayoutEditorDynamicScan();
 }
 
 // reveal/正解後の「つぎへ」ボタン。 stage 中央下の #next-btn-area に
@@ -5272,6 +5420,7 @@ function loadQuestion(q) {
     case 'opposite':    renderOpposite(stage, q); break;
     case 'trivia':      renderTrivia(stage, q); break;
   }
+  setPhase('question');
   // trivia 中央ポノが居る間は左下ポノを CSS で隠す。 それ以外は左下ポノを起動。
   // 出題切替時は前問の thinking ループを必ず停止 (= 出題タイプ問わず)
   stopStagePonoThinking();
@@ -5337,6 +5486,14 @@ function loadQuestion(q) {
   //   Q1-5: hideQuestionNumberPlate() で reveal される (kurumi ended +300ms = plate fade-out 同期)
   //   Q6+:  _runPlateAndType() で typewriter 開始時に reveal される (plate 無いため即時)
   if (_qTextEl) _qTextEl.classList.add('q-stage-pending');
+  _qzScheduleAnswerStagePreviewToolbarInit();
+  if (_qzAnswerStagePreviewOn) {
+    setTimeout(function () {
+      _qzApplyAnswerStagePreviewState({ instant: true });
+    }, 0);
+  } else {
+    _qzSyncAnswerStagePreviewToolbarButton();
+  }
   updateHUD();
   // F2 (2026-05-12): Q1-5 は kurumi_dai{N}mon mp3 (= 「だい N もん」) が鳴る間
   // ナレーション (= 問題文読み上げ) を遅延させる。 mp3 ended 後に
