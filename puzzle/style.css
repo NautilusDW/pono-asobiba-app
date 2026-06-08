@@ -580,6 +580,10 @@ body.partner-practice-active .prestart-overlay {
   pointer-events: none;
 }
 
+.partner-practice-coach.is-quiet {
+  display: none;
+}
+
 .partner-practice-coach.is-bubble {
   top: var(--partner-bubble-top, 50%);
   left: var(--partner-bubble-left, 50%);

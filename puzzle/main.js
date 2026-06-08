@@ -1483,17 +1483,19 @@ function drawPartnerPracticeCue(ctx) {
     var tapR = minSide * (0.66 + pulse * 0.12);
     var glowR = tapR * (1.32 + pulse * 0.08);
     ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = 'lighter';
     var glow = ctx.createRadialGradient(cx, cy, tapR * 0.55, cx, cy, glowR);
-    glow.addColorStop(0, 'rgba(255, 180, 60, 0)');
-    glow.addColorStop(0.58, 'rgba(255, 180, 60,' + (0.22 + pulse * 0.14).toFixed(3) + ')');
-    glow.addColorStop(1, 'rgba(255, 220, 135, 0)');
+    glow.addColorStop(0, 'rgba(255, 186, 60, 0.08)');
+    glow.addColorStop(0.45, 'rgba(255, 176, 55,' + (0.20 + pulse * 0.10).toFixed(3) + ')');
+    glow.addColorStop(0.74, 'rgba(255, 170, 48,' + (0.44 + pulse * 0.22).toFixed(3) + ')');
+    glow.addColorStop(1, 'rgba(255, 226, 135, 0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
     ctx.shadowColor = 'rgba(255, 176, 58, 0.92)';
-    ctx.shadowBlur = 24 + pulse * 16;
+    ctx.shadowBlur = 30 + pulse * 18;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
     ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.86 + pulse * 0.14).toFixed(3) + ')';
@@ -1509,7 +1511,7 @@ function drawPartnerPracticeCue(ctx) {
     ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.arc(cx, cy, tapR * 1.16, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 222, 138,' + (0.34 + pulse * 0.24).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(255, 222, 138,' + (0.48 + pulse * 0.30).toFixed(3) + ')';
     ctx.lineWidth = Math.max(3, minSide * 0.018);
     ctx.stroke();
     ctx.restore();
@@ -2445,7 +2447,7 @@ const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
 const BASIC_HINT_SELECT_VOICE_DELAY_MS = 1100;
-const BASIC_HINT_DONE_VOICE_DELAY_MS = 700;
+const BASIC_HINT_DONE_VOICE_DELAY_MS = 1250;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -2781,10 +2783,20 @@ function createPartnerPracticeCoach(partnerId, partner) {
 function clearPartnerPracticeCoachBubble() {
   if (!partnerPracticeState || !partnerPracticeState.coach) return;
   var coach = partnerPracticeState.coach;
-  coach.classList.remove('is-bubble', 'is-actions-hidden');
+  coach.classList.remove('is-bubble', 'is-actions-hidden', 'is-quiet');
   coach.removeAttribute('data-side');
   coach.style.removeProperty('--partner-bubble-left');
   coach.style.removeProperty('--partner-bubble-top');
+}
+
+function hidePartnerPracticeCoach() {
+  if (!partnerPracticeState || !partnerPracticeState.coach) return;
+  partnerPracticeState.coach.classList.add('is-quiet');
+}
+
+function showPartnerPracticeCoach() {
+  if (!partnerPracticeState || !partnerPracticeState.coach) return;
+  partnerPracticeState.coach.classList.remove('is-quiet');
 }
 
 function clampPartnerBubble(value, min, max) {
@@ -2794,6 +2806,7 @@ function clampPartnerBubble(value, min, max) {
 function positionPartnerPracticeBubble(targetRect, preferredSide) {
   if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
   var coach = partnerPracticeState.coach;
+  showPartnerPracticeCoach();
   var gap = 14;
   var margin = 10;
   var side = preferredSide || '';
@@ -3127,17 +3140,21 @@ function startCommonHintPractice(partnerId) {
   setPartnerPracticeInput(false);
   placeHintPracticePiece(piece);
   clearHintPracticeTargetArea(piece);
-  setPartnerPracticeCoachCopy(
-    'この ピースを タッチ',
-    '',
-    ''
-  );
-  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
   refreshHintButtonState();
-  redraw();
   if (partnerPracticeState.mode === 'basic') {
+    clearPartnerPracticeCoachBubble();
+    setPartnerPracticeCoachCopy('', '', '');
+    hidePartnerPracticeCoach();
+    redraw();
     practiceAfterPaint(function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+      showPartnerPracticeCoach();
+      setPartnerPracticeCoachCopy(
+        'この ピースを タッチ',
+        '',
+        ''
+      );
+      setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
       playBasicPracticeVoice(5, function () {
         if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
         partnerPracticeState.hintSelectReady = true;
@@ -3145,6 +3162,13 @@ function startCommonHintPractice(partnerId) {
       });
     }, BASIC_HINT_SELECT_VOICE_DELAY_MS);
   } else {
+    setPartnerPracticeCoachCopy(
+      'この ピースを タッチ',
+      '',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
+    redraw();
     partnerPracticeState.hintSelectReady = true;
     setPartnerPracticeInput(true);
   }
@@ -3369,8 +3393,12 @@ function onPartnerPracticeHintUsed() {
   setPartnerPracticeInput(false);
   partnerPracticeState.cue = null;
   if (isBasicPracticeHint) {
+    clearPartnerPracticeCoachBubble();
+    setPartnerPracticeCoachCopy('', '', '');
+    hidePartnerPracticeCoach();
     practiceAfterPaint(function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
+      showPartnerPracticeCoach();
       setPartnerPracticeCoachCopy(
         'ひかったね',
         'こまったら つかってね',
