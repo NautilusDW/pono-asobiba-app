@@ -1515,6 +1515,7 @@ function drawPartnerPracticeCue(ctx) {
     ctx.lineWidth = Math.max(3, minSide * 0.018);
     ctx.stroke();
     ctx.restore();
+    recordBasicHintSelectCueVisible(now);
     ensurePartnerPracticeCueLoop();
     return;
   }
@@ -2454,7 +2455,7 @@ const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
-const BASIC_HINT_SELECT_VOICE_DELAY_MS = 1100;
+const BASIC_HINT_SELECT_AFTER_CUE_VISIBLE_MS = 1000;
 const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
 let pendingStageReadyCallbacks = [];
@@ -2686,23 +2687,6 @@ function practiceSetTimeout(fn, ms) {
   }, ms);
   partnerPracticeState.timers.push(id);
   return id;
-}
-
-function practiceAfterPaint(fn, ms) {
-  if (!partnerPracticeState) return 0;
-  if (typeof requestAnimationFrame !== 'function') {
-    return practiceSetTimeout(fn, ms || 0);
-  }
-  var raf = requestAnimationFrame(function () {
-    if (!partnerPracticeState || !partnerPracticeState.active) return;
-    var nextRaf = requestAnimationFrame(function () {
-      if (!partnerPracticeState || !partnerPracticeState.active) return;
-      practiceSetTimeout(fn, ms || 0);
-    });
-    if (partnerPracticeState) partnerPracticeState.rafs.push(nextRaf);
-  });
-  partnerPracticeState.rafs.push(raf);
-  return raf;
 }
 
 function practiceAddHighlight(el) {
@@ -3145,6 +3129,9 @@ function startCommonHintPractice(partnerId) {
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
+  partnerPracticeState.hintSelectCueVisibleAt = 0;
+  partnerPracticeState.waitingForHintSelectCueNarration = false;
+  partnerPracticeState.hintSelectCueNarrationScheduled = false;
   setPartnerPracticeInput(false);
   placeHintPracticePiece(piece);
   clearHintPracticeTargetArea(piece);
@@ -3153,22 +3140,8 @@ function startCommonHintPractice(partnerId) {
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');
     hidePartnerPracticeCoach();
+    partnerPracticeState.waitingForHintSelectCueNarration = true;
     redraw();
-    practiceAfterPaint(function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
-      showPartnerPracticeCoach();
-      setPartnerPracticeCoachCopy(
-        'この ピースを タッチ',
-        '',
-        ''
-      );
-      setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
-      playBasicPracticeVoice(5, function () {
-        if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
-        partnerPracticeState.hintSelectReady = true;
-        setPartnerPracticeInput(true);
-      });
-    }, BASIC_HINT_SELECT_VOICE_DELAY_MS);
   } else {
     setPartnerPracticeCoachCopy(
       'この ピースを タッチ',
@@ -3388,6 +3361,47 @@ function onPartnerPracticePieceSelected(piece) {
   });
   setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
+}
+
+function recordBasicHintSelectCueVisible(now) {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (partnerPracticeState.phase !== 'hint-select') return;
+  if (!partnerPracticeState.waitingForHintSelectCueNarration) return;
+  if (partnerPracticeState.hintSelectCueVisibleAt) return;
+  partnerPracticeState.hintSelectCueVisibleAt = now || performance.now();
+  scheduleBasicHintSelectAfterCueVisible();
+}
+
+function showBasicHintSelectNarration() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+  if (partnerPracticeState.mode !== 'basic') return;
+  var piece = partnerPracticeState.targetPiece;
+  if (!piece || piece.snapped) return;
+  partnerPracticeState.waitingForHintSelectCueNarration = false;
+  showPartnerPracticeCoach();
+  setPartnerPracticeCoachCopy(
+    'この ピースを タッチ',
+    '',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
+  playBasicPracticeVoice(5, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+    partnerPracticeState.hintSelectReady = true;
+    setPartnerPracticeInput(true);
+  });
+}
+
+function scheduleBasicHintSelectAfterCueVisible() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (partnerPracticeState.phase !== 'hint-select') return;
+  if (!partnerPracticeState.waitingForHintSelectCueNarration) return;
+  if (partnerPracticeState.hintSelectCueNarrationScheduled) return;
+  if (!partnerPracticeState.hintSelectCueVisibleAt) return;
+  partnerPracticeState.hintSelectCueNarrationScheduled = true;
+  practiceSetTimeout(function () {
+    showBasicHintSelectNarration();
+  }, BASIC_HINT_SELECT_AFTER_CUE_VISIBLE_MS);
 }
 
 function showBasicHintDoneNarration() {
