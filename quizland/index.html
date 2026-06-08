@@ -4064,6 +4064,51 @@ function _qzPickFreshLayoutData(serverData) {
   return out;
 }
 
+function _qzRememberAuthoritativeLayoutData(data) {
+  if (!data || typeof data !== 'object') return data;
+  try {
+    window._qzAuthoritativeLayoutData = JSON.parse(JSON.stringify(data));
+  } catch (_) {
+    window._qzAuthoritativeLayoutData = data;
+  }
+  return data;
+}
+
+function _qzRestoreStageLayoutFromAuthoritative() {
+  var src = _qzRememberAuthoritativeLayoutData(
+    _qzPickFreshLayoutData(window._qzAuthoritativeLayoutData || window._currentLayoutData)
+  );
+  if (!src || !window.LayoutApplier) return;
+  var stage = document.getElementById('stage-area');
+  if (!stage) return;
+  var qid = (typeof window.QUIZLAND_GET_CURRENT_QID === 'function')
+    ? window.QUIZLAND_GET_CURRENT_QID() : null;
+  var cur = window._currentLayoutData || {};
+  QZ_PER_QUESTION_SELECTORS.forEach(function(sel) {
+    Object.keys(src).forEach(function(key) {
+      if (key.indexOf(sel + '|') !== 0) return;
+      if (key.indexOf('@') !== -1 && key.slice(-1 * (qid || '').length) !== qid) return;
+      cur[key] = src[key];
+    });
+  });
+  window._currentLayoutData = cur;
+  window.LayoutApplier.apply(cur, stage, {
+    selectors: QZ_RESIZABLE_SELECTORS,
+    perQuestionSelectors: QZ_PER_QUESTION_SELECTORS,
+    qid: qid,
+  });
+}
+
+function _qzScheduleStageLayoutRestore() {
+  if (!window._qzAuthoritativeLayoutData) return;
+  var run = function() {
+    try { _qzRestoreStageLayoutFromAuthoritative(); } catch (_) { /* noop */ }
+  };
+  requestAnimationFrame(run);
+  setTimeout(run, 120);
+  setTimeout(run, 320);
+}
+
 /* Layout editor: append ?edit=1 to URL for visual layout editing.
    Saves to quizland/saved-layout.json via /api/gh/ proxy.
    preview/full/ remains as legacy sandbox (untouched).
@@ -4089,7 +4134,9 @@ window.EditorBootstrapConfig = {
   // Future (Phase 2): aspect-aware layout fork
   // エディター保存直後は GitHub commit → staging deploy の反映ラグがあるため、
   // 同じ端末では短時間だけ localStorage の保存済み layout を通常表示にも優先する。
-  beforeApply: function(data) { return _qzPickFreshLayoutData(data); },
+  beforeApply: function(data) {
+    return _qzRememberAuthoritativeLayoutData(_qzPickFreshLayoutData(data));
+  },
 
   // E2 (2026-05-13): saved-layout.json 内の `__hakase_dialogue_text_size`
   // (= { base, '14:9', '4:3' } 形式) を初期ロード完了時に CSS へ反映する。
@@ -4102,6 +4149,7 @@ window.EditorBootstrapConfig = {
         window._applyInitialHakaseTextSize();
       }
     } catch (e) { /* non-fatal */ }
+    try { _qzScheduleStageLayoutRestore(); } catch (e) { /* non-fatal */ }
   },
 };
 
@@ -5171,6 +5219,7 @@ function loadQuestion(q) {
   // manifest 取得失敗時は内部で flip-book 復帰するので fallback 安全。
   playStagePonoThinking();
   renderChoices(q);
+  _qzScheduleStageLayoutRestore();
   // Staged reveal: 挿絵 (.emoji-display) と 4択 (#answer-panel) を pending に
   // 落としておき、 _runPlateAndType が typewriter の進行に合わせて revealed
   // へ切替える。 typewriter が走らないケースの救済として、 短い fallback で
