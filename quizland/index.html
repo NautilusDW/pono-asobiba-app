@@ -4034,7 +4034,8 @@ const QZ_PER_QUESTION_SELECTORS = [
   '.number-display',
   '.count-item',
   '.item-row',
-  '.color-chip'
+  '.color-chip',
+  '.chip .chip-illust-wrap'
 ];
 
 /* per-Q layout (Phase 2 / impl-B) ─────────────────────────────────────
@@ -4062,13 +4063,14 @@ function formatQuizQid(q) {
 window.QUIZLAND_GET_CURRENT_QID = function () { return formatQuizQid(currentQ); };
 
 /* 4 択 chip テキストの per-question override 用キー (Phase 2: __chip_text_overrides)。
-   debug nav と揃えた `${_cat}|${level}|${_idx}` 形式。 buildPlaylist /
-   buildDebugPlaylist が両方 _cat / _idx を Object.assign で付与するので、
-   どちらの経路でも欠損しない前提。 万一欠けたら null を返して override を諦める。 */
+   debug nav と揃えた `${_cat}|${level}|${_idx}` 形式。問題データ変更で古い
+   override を切り離したい場合のみ choiceTextRevision を末尾に足す。 */
 function formatQuizQKey(q) {
   if (!q) return null;
   if (q._cat == null || q.level == null || q._idx == null) return null;
-  return q._cat + '|' + q.level + '|' + q._idx;
+  var key = q._cat + '|' + q.level + '|' + q._idx;
+  if (q.choiceTextRevision) key += '|' + q.choiceTextRevision;
+  return key;
 }
 window.QUIZLAND_GET_CURRENT_QKEY = function () { return formatQuizQKey(currentQ); };
 // chip エディタ (layout-editor.js) から「いま開いてる問題の currentQ」を読むための公開窓。

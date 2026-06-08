@@ -129,14 +129,8 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
     /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
-    // sprint-13 結線済み (2026-05-08): pizza_whole/half を image-based に、quarter/eighth は text-image mismatch のため text-only 据え置き
-    { level:3, type:'shape_name', shape:'circle', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:[
-        { text:'はんぶんの まる', image:'pizza_half.png' },
-        { text:'まんまるい',     image:'pizza_whole.png' },
-        { text:'さんかく' },
-        { text:'しかく' }
-      ], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
-    { level:3, type:'shape_name', shape:'square', img:'stage_shape_notebook.png', framed:true, q:'ノートの かたちは？', answer:0, choices:['ながしかく','まる','さんかく','ほし'], detail:'ノートは ながい しかくの かたち！' },
+    { level:3, type:'shape_name', shape:'circle', choiceTextRevision:'20260608-no-choice-images', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:['はんぶんの まる','まんまるい','さんかく','しかく'], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
+    { level:3, type:'shape_name', shape:'square', choiceTextRevision:'20260608-no-choice-images', img:'stage_shape_notebook.png', framed:true, q:'ノートの かたちは？', answer:0, choices:['ながしかく','まる','さんかく','ほし'], detail:'ノートは ながい しかくの かたち！' },
     { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', framed:true, q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
   ],
 
@@ -236,18 +230,13 @@ const QUIZLAND_QUESTIONS = {
       q:'ふゆに いきが しろく みえるのは なぜ？',
       answer:0, choices:['いきの なかの みずが ひえて つぶになるから','くちの なかが しろいから','ゆきが ふっているから','さむくて こおっているから'] ,
       detail:'あったかい いきが つめたい くうきで ひえて、ちいさな みずの つぶに なるよ！'},
-    // sprint-14 結線済み (2026-05-08): 既存 _sheets/choice_weather_snowflake_shapes_set.png を切り出した 4 タイルで image-based 選択肢化 (Codex 発注不要)
     { level:3, type:'trivia', category:'weather',
+      choiceTextRevision:'20260608-no-choice-images',
       img:'stage_weather_snowflake_big.png',
       q:'ゆきの けっしょうは どんな かたち？',
       hint:'とても ちいさい こおりの かたち！',
       answer:2,
-      choices:[
-        { text:'まる',                  image:'snowflake_oval.png'      },
-        { text:'ほし',                  image:'snowflake_star.png'      },
-        { text:'つの が 6つ ある かたち', image:'snowflake_hexagon.png'   },
-        { text:'しかく',                image:'snowflake_rectangle.png' }
-      ],
+      choices:['まる','ほし','つの が 6つ ある かたち','しかく'],
       detail:'ゆきの つぶは とても ちいさい けど 6つの かどが ある かたちを しているよ！'}
   ],
 
@@ -374,31 +363,21 @@ const QUIZLAND_QUESTIONS = {
       detail:'たねから ちいさな みどりの めが でて、 だんだん おおきく そだっていくよ！'},
 
     // Level 2
-    // 画像入り選択肢サンプル: choices に { text, image } 形式の object を混在可。
-    // 画像は assets/images/quizland/illust/choice/ から名前指定で読み込む。
     // sprint-14 結線済み (2026-05-08): reveal pair で出題=虫シルエット集合 → 正解後=蜘蛛アップ
     { level:2, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
       img:'stage_trivia_bug_silhouettes.png', framed:true,
       img_answer:'stage_trivia_spider_eyes.png',
       q:'あしが 8ぽん あるのは どれ？',
       answer:0,
-      choices:[
-        { text:'クモ',      image:'kumo.png' },
-        { text:'カブトムシ', image:'kabutomushi.png' },
-        { text:'チョウチョ', image:'chocho.png' },
-        { text:'バッタ',    image:'batta.png' }
-      ],
+      choices:['クモ','カブトムシ','チョウチョ','バッタ'],
       detail:'クモは あしが 8ぽん あるよ。 こんちゅうの なかまの カブトムシ・チョウチョ・バッタは 6ぽん だよ！'},
     { level:2, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
       img:'stage_trivia_four_birds_silhouette.png',
       q:'そらを とべない とりは どれ？',
       answer:1,
-      choices:[
-        { text:'タカ',    image:'taka.png' },
-        { text:'ペンギン', image:'penguin.png' },
-        { text:'ハト',    image:'hato.png' },
-        { text:'ツバメ',  image:'tsubame.png' }
-      ],
+      choices:['タカ','ペンギン','ハト','ツバメ'],
       detail:'ペンギンは とべないけど うみを およぐのが とくいだよ！'},
     { level:2, type:'trivia', category:'trivia',
       img:'tako.png',
@@ -459,15 +438,11 @@ const QUIZLAND_QUESTIONS = {
       answer:2, choices:['さかな','サメ','クジラ','タコ'] ,
       detail:'イルカは ちいさい クジラの なかまで、おなじ ほにゅうるいだよ！'},
     { level:3, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
       img:'stage_trivia_huge_creatures_compare.png',
       q:'ちきゅうで いちばん おおきい いきものは？',
       answer:2,
-      choices:[
-        { text:'ゾウ',          image:'zou.png' },
-        { text:'ジンベイザメ',  image:'jinbeizame.png' },
-        { text:'シロナガスクジラ', image:'shironagasukujira.png' },
-        { text:'ダイオウイカ',  image:'daiouika.png' }
-      ],
+      choices:['ゾウ','ジンベイザメ','シロナガスクジラ','ダイオウイカ'],
       detail:'シロナガスクジラは ながさ 30メートルにも なるよ！'},
     // sprint-14 結線済み (2026-05-08): #81 と画像共用 (reveal pair: 虫シルエット集合 → 蜘蛛)
     { level:3, type:'trivia', category:'trivia',
@@ -503,18 +478,14 @@ const QUIZLAND_QUESTIONS = {
       detail:'フラミンゴは あかい エビや ミジンコを たべるから ピンクに なるんだよ！'},
     // sprint-13 結線済み (2026-05-08): silhouette → compare reveal pair + kiba/hige choice tiles 配置済
     { level:3, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
       img:'stage_trivia_lion_osu_silhouette.png', framed:true,
       img_word:'stage_trivia_lion_osu_silhouette.png',
       img_answer:'stage_trivia_lion_osu_mesu_compare.png', framed_answer:true,
       q:'ライオンの オスにだけ ある ものは？',
       hint:'かおの まわりに もこもこ！',
       answer:0,
-      choices:[
-        { text:'たてがみ', image:'tategami.png' },
-        { text:'きば',     image:'kiba.png'     },
-        { text:'ひげ',     image:'hige.png'     },
-        { text:'つの',     image:'tsuno.png'    }
-      ],
+      choices:['たてがみ','きば','ひげ','つの'],
       detail:'オスの ライオンには かおの まわりに たてがみが あるよ！メスには ないんだ！'}
   ],
 
