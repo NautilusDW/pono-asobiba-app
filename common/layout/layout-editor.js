@@ -450,8 +450,11 @@
         //   子要素 (.chip .X|N) は明示的に individualOverrides に入ってる場合のみ保存。
         // override 判定は base key (qid 無し) で行う — chip preset は per-Q 化対象外なので
         // 通常 frozenQid と無関係に base key になる。
+        // ただし per-Q selector として明示された chip 子要素は、問題別保存が目的なので
+        // 「個別保存」ボタンなしでも通常の保存 snapshot に含める。
         var baseKey = sel + '|' + i;
-        if (isChipScoped && !isChipSelfSel && !state.individualOverrides.has(baseKey)) return;
+        var isPerQChipChild = isChipScoped && !isChipSelfSel && _isPerQSelector(sel);
+        if (isChipScoped && !isChipSelfSel && !isPerQChipChild && !state.individualOverrides.has(baseKey)) return;
         var key = makeElKey(sel, i, { qid: frozenQid });
         data[key] = {
           w: el.style.width || '',
