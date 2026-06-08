@@ -1367,19 +1367,7 @@ body.layout-editor-on #char-hint-bubble {
 .answer-speaker:hover, .answer-speaker:focus-visible { transform: translate(-50%, -50%) scale(1.05); }
 .answer-speaker:active { transform: translate(-50%, -50%) scale(0.95); }
 .answer-speaker.reading { pointer-events: none; opacity: 0.6; }
-/* 順次読み上げ時に各 chip を「押した状態」風にハイライト。
-   2026-05-12 修正(T3): ユーザー希望 = 通常タップ時と同じ黄色いハロー (= .chip.pressed
-   の挙動) を再現したい。 sheet-on モードは pressed 画像が出るので、 既存
-   .chip.pressed セレクタの効果 (黄色グラデ + translateY+scale, sheet-on では
-   pressed 画像) を流用するため renderChoices で .pressed を併用付与する。
-   ここでは fallback として独立した強調も残し、 sheet-off 環境で確実に黄色く光る
-   ようにする。 */
-.chip.reading-active {
-  transform: translateY(3px) scale(0.97);
-  background: linear-gradient(180deg, #FDE68A, #FCD34D) !important;
-  box-shadow: 0 2px 0 var(--wood-dark), 0 0 0 5px #ffcf6b, 0 6px 16px rgba(0,0,0,0.25);
-  transition: transform 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
-}
+/* 順次読み上げ時の chip ハイライトは、タップ/誤答の黄色・赤と区別するため水色にする。 */
 .bottom-right {
   display: flex;
   align-items: center;
@@ -1535,6 +1523,20 @@ body.layout-editor-on .chip-illust-wrap {
   background: linear-gradient(180deg, #FED7D7, #F19999) !important;
   border-color: var(--danger) !important;
   animation: shake 0.4s;
+}
+.chip.reading-active,
+.chip.correct.reading-active,
+.chip.wrong.reading-active,
+body.sheet-on .chip.reading-active[data-idx],
+body.sheet-on .chip.correct.reading-active[data-idx],
+body.sheet-on .chip.wrong.reading-active[data-idx] {
+  transform: translateY(3px) scale(0.97);
+  background: linear-gradient(180deg, #CFFAFE, #67E8F9) !important;
+  border-color: #0891B2 !important;
+  color: #0F3A4A !important;
+  box-shadow: 0 2px 0 var(--wood-dark), 0 0 0 5px rgba(34, 211, 238, 0.72), 0 6px 16px rgba(0,0,0,0.25) !important;
+  animation: none !important;
+  transition: transform 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
 }
 /* count_total 用: 数字を確実にチップ中央に配置
    - line-height:1 で descender 余白を排除
@@ -3241,7 +3243,7 @@ body.layout-editor-on .op-skip {
         <div class="a-col">
           <div class="answer-tray">
             <div class="answer-panel" id="answer-panel"></div>
-            <!-- 4 択中央のスピーカー (押すと a→b→c→d を順次読み上げ + 該当 chip を pressed 表示)。
+            <!-- 4 択中央のスピーカー (押すと a→b→c→d を順次読み上げ + 該当 chip を水色表示)。
                  .answer-tray は position: relative なので、 ここに absolute で 4 chip の中央間隙へ。
                  data-le-keep-position で layout-editor (?edit=1) では動かない。 -->
             <button id="answer-speaker" type="button" class="answer-speaker" data-le-keep-position aria-label="せんたくしを じゅんに よむ" title="せんたくしを じゅんに よむ" style="display:none"><img src="../assets/ui/icon_speaker.png" alt="" width="60" height="60"></button>
@@ -3947,6 +3949,19 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.char-hint',               'wh', 'キャラ吹き出し'],
   ['.stage-pono',              'wh', 'ステージポノ (左下)'],
 ];
+const QZ_PER_QUESTION_SELECTORS = [
+  '.emoji-display.phase-question',
+  '.emoji-display.phase-answer',
+  '.emoji-display',
+  '.emoji-main-img',
+  '.shape-display',
+  '.shape-img',
+  '.count-stack',
+  '.number-display',
+  '.count-item',
+  '.item-row',
+  '.color-chip'
+];
 
 /* per-Q layout (Phase 2 / impl-B) ─────────────────────────────────────
    問題ごとにステージ絵 (.emoji-display / .emoji-main-img) のレイアウトを
@@ -4042,7 +4057,9 @@ window.EditorBootstrapConfig = {
   // phase-question / phase-answer は .emoji-display の状態クラスで、 問題出題中・
   // 答え合わせ中にそれぞれ別の位置・スケールを保存できるようにする (連動: 答えフェーズで
   // 何も保存されていなければ問題フェーズの値が使われる、 fallback chain は applier 側で実装)。
-  perQuestionSelectors: ['.emoji-display.phase-question', '.emoji-display.phase-answer', '.emoji-display', '.emoji-main-img'],
+  // 色・数・形などのステージ要素も問題ごとに保存し、 別問題の保存で共通キーが上書き
+  // されて「見直すと元に戻る」状態にならないようにする。
+  perQuestionSelectors: QZ_PER_QUESTION_SELECTORS,
   ghPath: 'quizland/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   // Future (Phase 2): aspect-aware layout fork
@@ -4507,7 +4524,7 @@ function setPhase(phase) {
         document.getElementById('stage-area') || null,
         {
           selectors: QZ_RESIZABLE_SELECTORS,
-          perQuestionSelectors: ['.emoji-display', '.emoji-display.phase-question', '.emoji-display.phase-answer', '.emoji-main-img'],
+          perQuestionSelectors: QZ_PER_QUESTION_SELECTORS,
           qid: _qid,
         }
       );
@@ -5059,7 +5076,7 @@ function renderChoices(q) {
       document.getElementById('answer-panel'),
       {
         selectors: QZ_RESIZABLE_SELECTORS,
-        perQuestionSelectors: ['.emoji-display.phase-question', '.emoji-display.phase-answer', '.emoji-display', '.emoji-main-img'],
+        perQuestionSelectors: QZ_PER_QUESTION_SELECTORS,
         qid: _qid,
       }
     );
@@ -5277,7 +5294,7 @@ function setupNarration(q, opts) {
 }
 
 // 4 択中央のスピーカー: a→b→c→d (= data-idx 0..3) の順に音声を再生しつつ
-// 各 chip を .reading-active で「押した状態」表示する。
+// 各 chip を .reading-active で水色表示する。
 // - Narration.play は再生開始時に resolve するので、 完了は別途独自に Audio を
 //   起こして ended イベントで待つ (narration.js は外部に Audio を露出しないため)。
 //   manifest 自体は再 fetch せず、 軽量な独自マップ (_choiceUrlCache) に保存。
@@ -5397,7 +5414,6 @@ async function playAllChoices() {
       // を読み上げる fallback を実行する。
       if (chip) {
         chip.classList.add('reading-active');
-        chip.classList.add('pressed'); // sheet-on モードの pressed 画像も発火させる
       }
       try {
         let played = false;
@@ -5424,14 +5440,12 @@ async function playAllChoices() {
       } catch (_) { /* 個別失敗は無視して次へ */ }
       if (chip) {
         chip.classList.remove('reading-active');
-        chip.classList.remove('pressed');
       }
     }
   } finally {
     if (speaker) speaker.classList.remove('reading');
     panel.querySelectorAll('.chip.reading-active').forEach(function(c){
       c.classList.remove('reading-active');
-      c.classList.remove('pressed');
     });
     _playAllChoicesRunning = false;
     _playAllChoicesAudio = null;
@@ -6115,9 +6129,11 @@ async function _runPlateAndType(qIdx) {
   const text = el.dataset.pendingText;
   if (text == null) return;
 
-  // 挿絵 / 4択 ハンドル (staged reveal 用)
-  const _illustEls = Array.prototype.slice.call(
-    document.querySelectorAll('#stage-area .emoji-display.q-stage-pending')
+  // ステージ絵 / 4択 ハンドル (staged reveal 用)。
+  // #stage-area 自体も pending にしているため、 色・数・形のように
+  // .emoji-display を持たない問題でも必ず reveal 対象に含める。
+  const _stagePendingEls = Array.prototype.slice.call(
+    document.querySelectorAll('#stage-area.q-stage-pending, #stage-area .emoji-display.q-stage-pending, #stage-area .emoji-main-img.q-stage-pending')
   );
   const _ansPanel = document.getElementById('answer-panel');
 
@@ -6127,13 +6143,13 @@ async function _runPlateAndType(qIdx) {
   //   tap-to-skip 経路 (_revealAllPendingStages / plate onTap) のみ早期 reveal 可。
   const _qzPlateActive = (qIdx >= 0 && qIdx < 5);
 
-  // typewriter ~50% のタイミングで挿絵を fade in (タップ skip 済みなら no-op)
+  // typewriter ~50% のタイミングでステージ絵を fade in (タップ skip 済みなら no-op)
   // Q1-5 では plate 同期 reveal なのでこのタイマは起動しない (上記 _qzPlateActive)。
   let _illustTimer = 0;
-  if (!_qzPlateActive && _illustEls.length) {
+  if (!_qzPlateActive && _stagePendingEls.length) {
     const halfwayMs = Math.max(0, Math.floor((text.length / 2) * 70));
     _illustTimer = setTimeout(function() {
-      _illustEls.forEach(function(elIll) {
+      _stagePendingEls.forEach(function(elIll) {
         if (elIll.classList.contains('q-stage-pending')) {
           elIll.classList.remove('q-stage-pending');
           elIll.classList.add('q-stage-revealed');
@@ -6155,9 +6171,9 @@ async function _runPlateAndType(qIdx) {
     //   hideQuestionNumberPlate() が plate fade-out 同期で全 pending を reveal する。
     //   Q6+ (plate 無し) は従来通り typewriter 完了時に挿絵 / 4 択を reveal。
     if (!_qzPlateActive) {
-      // 念のため: 挿絵がまだ pending なら reveal (短い問題文で halfway timer が
+      // 念のため: ステージ絵がまだ pending なら reveal (短い問題文で halfway timer が
       // 既に発火済みのはずだが、 タップ skip 経路と整合させる)
-      _illustEls.forEach(function(elIll) {
+      _stagePendingEls.forEach(function(elIll) {
         if (elIll.classList.contains('q-stage-pending')) {
           elIll.classList.remove('q-stage-pending');
           elIll.classList.add('q-stage-revealed');
