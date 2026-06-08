@@ -125,7 +125,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 3 (性質・知識問題)
     { level:3, type:'shape_name', shape:'circle',    q:'このかたちに かどは いくつ？', answer:1, choices:['2こ','0こ（ない）','4こ','1こ'] },
-    { level:3, type:'shape_name', shape:'square',    q:'しかくの まわりは どんな せん？', answer:0, choices:['まっすぐ','ぐにゃぐにゃ','まるい','ぎざぎざ'], detail:'しかくの まわりは まっすぐな せんで できているよ！' },
+    { level:3, type:'shape_name', shape:'square',    q:'この かたち、どれに にている？', answer:0, choices:['まど','ボール','ほし','たまご'], detail:'しかくは まどに にているね！' },
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
     /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
