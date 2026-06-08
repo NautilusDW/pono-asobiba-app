@@ -407,6 +407,35 @@
     return !!(list && list.length && list.indexOf(sel) !== -1);
   }
 
+  function _phaseInfo(sel) {
+    var m = sel.match(/^(.*?)\.phase-(question|answer)$/);
+    if (!m) return { base: sel, phase: null };
+    return { base: m[1], phase: m[2] };
+  }
+
+  function _hasAnyPhaseClass(el) {
+    try {
+      return !!(el && el.classList && (
+        el.classList.contains('phase-question') ||
+        el.classList.contains('phase-answer')
+      ));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _hasPhaseSiblingSelector(sel) {
+    var info = _phaseInfo(sel);
+    if (info.phase !== null) return false;
+    for (var i = 0; i < state.spec.length; i++) {
+      var other = state.spec[i] && state.spec[i][0];
+      if (!other || other === sel) continue;
+      var otherInfo = _phaseInfo(other);
+      if (otherInfo.base === info.base && otherInfo.phase) return true;
+    }
+    return false;
+  }
+
   // 2026-05-07: LayoutApplier.apply に渡す共通 cfg を構築 (Phase 2 / impl-A)。
   //   editor 内の apply 呼び出しは selectors / qid / perQuestionSelectors を毎回揃える。
   //   extra はマージ対象 (selectors を上書きしたいとき等)。
@@ -443,9 +472,11 @@
     state.spec.forEach(function (entry) {
       var sel = entry[0];
       if (sel === '.userbox') return; // userbox saved in __userboxes
+      var shouldSkipPhaseElementsForBase = _hasPhaseSiblingSelector(sel);
       var isChipScoped = _isChipScopedSelector(sel);
       var isChipSelfSel = (sel === '.chip'); // chip 自体 (子要素 .chip .X は含まない)
       $$(sel).forEach(function (el, i) {
+        if (shouldSkipPhaseElementsForBase && _hasAnyPhaseClass(el)) return;
         // 2026-05-06 改: chip 自体 (.chip|N) は cell 配置として常に保存。
         //   子要素 (.chip .X|N) は明示的に individualOverrides に入ってる場合のみ保存。
         // override 判定は base key (qid 無し) で行う — chip preset は per-Q 化対象外なので

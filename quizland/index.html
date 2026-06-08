@@ -1544,6 +1544,14 @@ body.layout-editor-on .chip-illust-wrap {
   overflow: hidden;
 }
 
+.chip .chip-label-condensed-x {
+  display: inline-block;
+  transform: scaleX(0.9);
+  transform-origin: center;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+}
+
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
 .chip:active,
 .chip.pressed {
@@ -4001,6 +4009,10 @@ const QZ_RESIZABLE_SELECTORS = [
   // 今後の編集は全部 phase 別キーへ)。
   ['.emoji-display.phase-question', 'wh', 'ステージ枠 [問題]'],
   ['.emoji-display.phase-answer',   'wh', 'ステージ枠 [答え]'],
+  ['.stage-img-wrap.phase-question', 'wh', 'ステージ画像枠 [問題]'],
+  ['.stage-img-wrap.phase-answer',   'wh', 'ステージ画像枠 [答え]'],
+  ['.emoji-main-img.phase-question', 'wh', 'ステージ画像 (挿絵) [問題]'],
+  ['.emoji-main-img.phase-answer',   'wh', 'ステージ画像 (挿絵) [答え]'],
   ['.stage-img-wrap',          'wh', 'ステージ画像枠'],
   ['.emoji-main-img',          'wh', 'ステージ画像 (挿絵)'],
   ['.shape-display',           'wh', 'ステージ枠 (かたち)'],
@@ -4026,7 +4038,11 @@ const QZ_PER_QUESTION_SELECTORS = [
   '.emoji-display.phase-question',
   '.emoji-display.phase-answer',
   '.emoji-display',
+  '.stage-img-wrap.phase-question',
+  '.stage-img-wrap.phase-answer',
   '.stage-img-wrap',
+  '.emoji-main-img.phase-question',
+  '.emoji-main-img.phase-answer',
   '.emoji-main-img',
   '.shape-display',
   '.shape-img',
@@ -4108,7 +4124,11 @@ function _qzApplyChipText(el, originalText, qKey, slot) {
   // MEDIUM 3: resolved が null / undefined の場合に "null" / "undefined" を描画してしまうのを防ぐ。
   var safeText = (resolved == null) ? '' : String(resolved);
   var fullWidthText = (typeof toFullWidth === 'function') ? toFullWidth(safeText) : safeText;
-  el.innerHTML = _qzEscapeHtml(fullWidthText).replace(/\n/g, '<br>');
+  var escapedText = _qzEscapeHtml(fullWidthText).replace(/\n/g, '<br>');
+  var shouldCondenseX = fullWidthText.indexOf('シロナガスクジラ') !== -1;
+  el.innerHTML = shouldCondenseX
+    ? '<span class="chip-label-condensed-x">' + escapedText + '</span>'
+    : escapedText;
   if (hasOverride) {
     el.setAttribute('data-chip-text-override', '1');
   } else {
@@ -4468,6 +4488,10 @@ function renderCountTotal(stage, q) {
 function createStageImageWrap(imgEl, extraClass) {
   const wrap = document.createElement('div');
   wrap.className = 'stage-img-wrap' + (extraClass ? ' ' + extraClass : '');
+  if (imgEl && imgEl.classList && imgEl.classList.contains('emoji-main-img')) {
+    wrap.classList.add('phase-question');
+    imgEl.classList.add('phase-question');
+  }
   wrap.appendChild(imgEl);
   return wrap;
 }
@@ -4805,9 +4829,16 @@ function _qzNudgeLayoutEditorDynamicScan() {
 // ので no-op に近いが、 安全のため毎回呼んでよい (applier 側の selector 不一致で skip)。
 function setPhase(phase) {
   const stageWrap = document.querySelector('#stage-area .emoji-display');
+  const phaseClass = phase === 'answer' ? 'phase-answer' : 'phase-question';
   if (stageWrap) {
-    stageWrap.classList.remove('phase-question', 'phase-answer');
-    stageWrap.classList.add(phase === 'answer' ? 'phase-answer' : 'phase-question');
+    const phaseTargets = [stageWrap].concat(
+      Array.prototype.slice.call(stageWrap.querySelectorAll('.stage-img-wrap, .emoji-main-img'))
+    );
+    phaseTargets.forEach(function (el) {
+      if (!el || !el.classList) return;
+      el.classList.remove('phase-question', 'phase-answer');
+      el.classList.add(phaseClass);
+    });
   }
   // LayoutApplier 再 apply: phase 切替で別 key の値を読みに行かせる。
   // _currentLayoutData が無い (= ?edit=1 でもない・layout JSON 未配信) なら no-op。
