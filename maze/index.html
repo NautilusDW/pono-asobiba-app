@@ -2660,14 +2660,39 @@ const encStartBtn = document.getElementById('encStartBtn');
 const encCardEl = encModal ? encModal.querySelector('.enc-card') : null;
 
 const CREATURE_KIND_DATA = {
-  mayoi:  { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png' },
-  odoke:  { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse', imageUrl: '../assets/images/maze/creatures/odoke.png' },
-  pyon:   { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon', imageUrl: '../assets/images/maze/creatures/pyon.png' },
-  kabuto: { emoji: '🪲', color: '#8B5A3C', name: 'コツコツムシ', dialog: 'ちらっと だけ みえてるぞ！<br>なにか わかるかな？', defaultGame: 'silhouette', imageUrl: '../assets/images/maze/creatures/kabuto.png' },
-  hachi:  { emoji: '🐝', color: '#E6B800', name: 'ブンブンムシ', dialog: 'なかまはずれを さがしてね！<br>ブンブン！', defaultGame: 'oddone', imageUrl: '../assets/images/maze/creatures/hachi.png' },
+  mayoi: {
+    emoji: '🐛', color: '#7AB540', name: 'まよいムシ',
+    dialog: 'みちに まよった ぼくと<br>じゃんけん しょうぶだよ！',
+    defeatDialog: 'まよわず すすめるね！\nとおって いいよ。',
+    defaultGame: 'janken', imageUrl: '../assets/images/maze/creatures/mayoi.png'
+  },
+  odoke: {
+    emoji: '🐞', color: '#D7553A', name: 'おどけムシ',
+    dialog: 'いたずら ○×クイズ！<br>ほんとうか うそか わかるかな？',
+    defeatDialog: 'えへへ、せいかい！\nとおって いいよ。',
+    defaultGame: 'truefalse', imageUrl: '../assets/images/maze/creatures/odoke.png'
+  },
+  pyon: {
+    emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ',
+    dialog: 'ぴょんぴょん リズムだよ！<br>おなじ じゅんで タップしてね',
+    defeatDialog: 'リズム ぴったり！\nとおって いいよ。',
+    defaultGame: 'simon', imageUrl: '../assets/images/maze/creatures/pyon.png'
+  },
+  kabuto: {
+    emoji: '🪲', color: '#8B5A3C', name: 'コツコツムシ',
+    dialog: 'こつこつ かくしたよ！<br>ちらっと みて あててね',
+    defeatDialog: 'みつかっちゃった！\nとおって いいよ。',
+    defaultGame: 'silhouette', imageUrl: '../assets/images/maze/creatures/kabuto.png'
+  },
+  hachi: {
+    emoji: '🐝', color: '#E6B800', name: 'ブンブンムシ',
+    dialog: 'ブンブン みつけて！<br>なかまはずれは どれかな？',
+    defeatDialog: 'ブンブン、すごいね！\nとおって いいよ。',
+    defaultGame: 'oddone', imageUrl: '../assets/images/maze/creatures/hachi.png'
+  },
 };
-// 全お邪魔虫共通の台詞 (出会った瞬間 / プレイヤーが勝った瞬間)。
-// c.dialog (ステージ JSON での明示指定) があれば encounter ではそちらを優先。
+// お邪魔虫共通のフォールバック台詞。
+// c.dialog / c.defeatDialog (ステージ JSON での明示指定) があればそちらを最優先。
 const CREATURE_ENCOUNTER_DIALOG = 'ここは とおさないぞ！\nぼくに かったら、とおしてあげる！';
 const CREATURE_DEFEAT_DIALOG    = 'うーん、まけちゃった！\nとおって いいよ。';
 function _creatureData(c) {
@@ -2911,10 +2936,7 @@ function _triggerEncounter(c) {
     encCreatureEl.textContent = data.emoji;
   }
   encNameEl.textContent = data.name;
-  // dialog: 全お邪魔虫共通の固定セリフ。
-  // 作者が c.dialog を明示指定している場合のみそれを尊重 (escape hatch)。
-  // _GAME_DIALOGS は当面そのまま残置 (将来用 / 互換性のため)。
-  const _dialogText = (c.dialog || CREATURE_ENCOUNTER_DIALOG).replace(/<br\s*\/?\s*>/gi, '\n');
+  const _dialogText = (c.dialog || data.dialog || CREATURE_ENCOUNTER_DIALOG).replace(/<br\s*\/?\s*>/gi, '\n');
   encDialogEl.textContent = '';
   _dialogText.split('\n').forEach(function(line, i) {
     if (i > 0) encDialogEl.appendChild(document.createElement('br'));
@@ -3579,7 +3601,7 @@ function _resolveQuiz(correct) {
     if (correct) {
       // 勝利時のみ: お邪魔虫が観念するセリフを encStageEl に表示してから、
       // 1.6秒で自動的に _closeEncounter(true) へ進む。
-      // (ミニゲーム共通 / 全種類共通の固定文)
+      // (ミニゲーム共通 / 虫の種類ごとに文言を切り替え)
       // timer id は _creatureDefeatTimer に保存し、新しいエンカウンター開始や
       // ステージリロード等で確実にキャンセルできるようにする。
       _showCreatureDefeatDialog();
@@ -3596,7 +3618,7 @@ function _resolveQuiz(correct) {
   });
 }
 
-// 勝利後の「うーん、まけちゃった！…」セリフ表示。
+// 勝利後のお邪魔虫のセリフ表示。
 // encStageEl の中身をこのセリフだけに差し替える (ボタンなし、自動進行)。
 // XSS 対策で textContent + <br> DOM 構築。
 function _showCreatureDefeatDialog() {
@@ -3608,7 +3630,10 @@ function _showCreatureDefeatDialog() {
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'enc-result win';
-  CREATURE_DEFEAT_DIALOG.split('\n').forEach(function(line, i) {
+  const data = _creatureData(_currentCreature);
+  const defeatText = ((_currentCreature && _currentCreature.defeatDialog) || data.defeatDialog || CREATURE_DEFEAT_DIALOG)
+    .replace(/<br\s*\/?\s*>/gi, '\n');
+  defeatText.split('\n').forEach(function(line, i) {
     if (i > 0) wrap.appendChild(document.createElement('br'));
     wrap.appendChild(document.createTextNode(line));
   });
