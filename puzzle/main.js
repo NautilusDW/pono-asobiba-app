@@ -1479,17 +1479,26 @@ function drawPartnerPracticeCue(ctx) {
   var pulse = 0.5 + 0.5 * Math.sin(now / 180);
 
   if (cue.kind === 'tap-piece') {
+    var tapR = Math.min(pieceW, pieceH) * (0.64 + pulse * 0.12);
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = 'rgba(255, 176, 58, 0.68)';
+    ctx.shadowBlur = 14 + pulse * 10;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
-    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.78 + pulse * 0.18).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.032);
+    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.86 + pulse * 0.14).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(4, Math.min(pieceW, pieceH) * 0.042);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(cx, cy, tapR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 176, 58,' + (0.46 + pulse * 0.28).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.024);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(cx, cy, Math.min(pieceW, pieceH) * (0.62 + pulse * 0.12), 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 170, 64,' + (0.28 + pulse * 0.22).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(2, Math.min(pieceW, pieceH) * 0.018);
+    ctx.arc(cx, cy, tapR * 1.12, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 215, 120,' + (0.20 + pulse * 0.22).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(2, Math.min(pieceW, pieceH) * 0.016);
     ctx.stroke();
     ctx.restore();
     ensurePartnerPracticeCueLoop();
@@ -2423,6 +2432,8 @@ const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
+const BASIC_HINT_SELECT_VOICE_DELAY_MS = 360;
+const BASIC_HINT_DONE_VOICE_DELAY_MS = 260;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -2653,6 +2664,19 @@ function practiceSetTimeout(fn, ms) {
   }, ms);
   partnerPracticeState.timers.push(id);
   return id;
+}
+
+function practiceAfterPaint(fn, ms) {
+  if (!partnerPracticeState) return 0;
+  if (typeof requestAnimationFrame !== 'function') {
+    return practiceSetTimeout(fn, ms || 0);
+  }
+  var raf = requestAnimationFrame(function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    practiceSetTimeout(fn, ms || 0);
+  });
+  partnerPracticeState.rafs.push(raf);
+  return raf;
 }
 
 function practiceAddHighlight(el) {
@@ -3092,19 +3116,22 @@ function startCommonHintPractice(partnerId) {
     '',
     ''
   );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
+  refreshHintButtonState();
+  redraw();
   if (partnerPracticeState.mode === 'basic') {
-    playBasicPracticeVoice(5, function () {
+    practiceAfterPaint(function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
-      partnerPracticeState.hintSelectReady = true;
-      setPartnerPracticeInput(true);
-    });
+      playBasicPracticeVoice(5, function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+        partnerPracticeState.hintSelectReady = true;
+        setPartnerPracticeInput(true);
+      });
+    }, BASIC_HINT_SELECT_VOICE_DELAY_MS);
   } else {
     partnerPracticeState.hintSelectReady = true;
     setPartnerPracticeInput(true);
   }
-  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
-  refreshHintButtonState();
-  redraw();
 }
 
 function startBasicIntroPractice() {
@@ -3325,17 +3352,26 @@ function onPartnerPracticeHintUsed() {
   clearPracticeHighlights();
   setPartnerPracticeInput(false);
   partnerPracticeState.cue = null;
+  if (isBasicPracticeHint) {
+    practiceAfterPaint(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
+      setPartnerPracticeCoachCopy(
+        'ひかったね',
+        'こまったら つかってね',
+        ''
+      );
+      playBasicPracticeVoice(7);
+      partnerPracticeState.phase = 'basic-done';
+      setPartnerPracticeCoachBubble(btnHint, null, true);
+    }, BASIC_HINT_DONE_VOICE_DELAY_MS);
+    return;
+  }
   setPartnerPracticeCoachCopy(
     'ひかったね',
     'こまったら つかってね',
     ''
   );
   playBasicPracticeVoice(7);
-  if (partnerPracticeState.mode === 'basic') {
-    partnerPracticeState.phase = 'basic-done';
-    setPartnerPracticeCoachBubble(btnHint, null, true);
-    return;
-  }
   setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
