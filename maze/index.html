@@ -975,8 +975,12 @@ body.image-stage-mode .game-wrap {
   min-height: 74px;
   padding: 8px 10px !important;
   overflow: hidden;
+  display: grid !important;
+  place-items: center;
+  line-height: 0;
 }
 .simon-cell .simon-dot {
+  display: block;
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 .simon-cell.is-flashing .simon-dot {
