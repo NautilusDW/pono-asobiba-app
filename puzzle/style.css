@@ -739,7 +739,7 @@ body.partner-practice-active .prestart-overlay {
 .partner-practice-coach__btn {
   min-width: 118px;
   min-height: 44px;
-  border: 2px solid rgba(255, 255, 255, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.92);
   border-radius: 999px;
   padding: 6px 16px;
   font: inherit;
@@ -754,12 +754,16 @@ body.partner-practice-active .prestart-overlay {
 }
 
 .partner-practice-coach__btn--replay {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFF0D2 100%);
+  background: linear-gradient(180deg, #FFEBC9 0%, #FFC98F 100%);
+  color: #623D16;
+  border-color: rgba(255, 244, 224, 0.95);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .partner-practice-coach__btn--start {
   color: #fff;
-  background: linear-gradient(180deg, #8BC48A 0%, #68B96B 100%);
+  background: linear-gradient(180deg, #8FD99B 0%, #52B96A 100%);
+  border-color: rgba(224, 255, 229, 0.92);
   text-shadow: 0 1px 0 rgba(45, 102, 45, 0.36);
 }
 
@@ -825,9 +829,9 @@ body.partner-practice-active .prestart-overlay {
 
   .partner-practice-coach__btn {
     min-width: 92px;
-    min-height: 34px;
+    min-height: 38px;
     padding: 5px 12px;
-    font-size: 0.84rem;
+    font-size: 0.86rem;
   }
 }
 
@@ -1272,6 +1276,13 @@ body.partner-practice-active .prestart-overlay {
   justify-content: center;
 }
 
+.controls .btn {
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 -3px 0 rgba(84, 112, 150, 0.18),
+    0 4px 10px rgba(93, 78, 55, 0.20);
+}
+
 .btn {
   font-family: inherit;
   font-size: 1rem;
@@ -1309,6 +1320,10 @@ body.partner-practice-active .prestart-overlay {
 
 .btn-hint {
   position: relative;
+  background:
+    linear-gradient(180deg, #F0E6FF 0%, #D9C6FF 100%);
+  color: #4A316F;
+  border-color: rgba(252, 247, 255, 0.95);
 }
 
 /* ヒントボタン: ドラッグ中の 😴 状態 (タップ無効) */
@@ -1367,12 +1382,15 @@ body.partner-practice-active .prestart-overlay {
 
 /* 「いつでも みる」 = 半透明完成形を盤面に重ねるトグルボタン */
 .btn-peek {
-  color: #5A3A18;
+  background:
+    linear-gradient(180deg, #DDF5FF 0%, #A9E0F7 100%);
+  color: #24566A;
+  border-color: rgba(244, 253, 255, 0.95);
 }
 .btn-peek.is-active {
   background:
-    linear-gradient(180deg, rgba(239, 236, 226, 0.98) 0%, rgba(204, 198, 185, 0.96) 100%);
-  color: #4B4336;
+    linear-gradient(180deg, #C6ECF9 0%, #82CCE8 100%);
+  color: #1F4D61;
 }
 
 /* 完成形オーバーレイ canvas — puzzle-container に重ねる */

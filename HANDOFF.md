@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-08 - [batch:331-puzzle-tutorial-button-colors] Codex: user 指摘「チュートリアルの吹き出し内ボタンや下部ボタンが背景/吹き出しと同色で見づらい」を受領。HANDOFF / git log / puzzle CSS検索で同一修正なしを確認し、`puzzle/style.css` のボタン色調整に着手。作業外 `maze/index.html` 差分は非接触。 (by Codex)
+- 2026-06-08 - [batch:331-puzzle-tutorial-button-colors] DONE - Codex: `puzzle/style.css` でチュートリアル吹き出し内の `もういちど` を淡いピーチ、`あそぶ` を明るめグリーン、下部操作の `みる` を水色、`ヒント` を薄紫に調整。スマホ横で吹き出し内ボタンが 34px まで縮んでいたため最小 38px に補正。`sw.js` は v902。`git diff --check`、Playwright 1280x720 / 667x375 でヒント完了状態のスクショと computed style を確認。クロスレビュー観点: 背景/吹き出しとの分離、ボタン文字の視認性、小画面高さ、作業外 `maze/index.html` 差分非接触をセルフ確認。 (by Codex)
 - 2026-06-08 - [batch:330-puzzle-tutorial-hint-spacing] Codex: user 指摘「チュートリアルのヒントで最初にピースを選ぶところ、近くに他ピースがないように」を受領。HANDOFF / git log / `puzzle/main.js` 検索で同一修正なしを確認し、ヒントれんしゅうの対象ピース周辺退避に着手。作業外 `maze/index.html` 差分は非接触。 (by Codex)
 - 2026-06-08 - [batch:330-puzzle-tutorial-hint-spacing] DONE - Codex: `puzzle/main.js` の基本ヒントれんしゅうで、対象ピース配置後に安全エリアを作り、その範囲へ入った他ピースだけ右側/下側などの空き候補へ退避する処理を追加。対象ピースの z-order は維持し、既存のヒント選択/ヒントボタン手順は変更なし。`sw.js` は v901。Node構文、`git diff --check`、Playwrightで 1280x720 と 667x375 の「このピースをタッチ」段階まで進め、対象周辺安全エリアの衝突 0 件、最寄り距離がピース幅以上相当であることを確認。クロスレビュー観点: 対象ピース以外のみ退避、ボード中央への退避禁止、作業外 `maze/index.html` 差分非接触をセルフ確認。 (by Codex)
 - 2026-06-08 - [batch:329-puzzle-tutorial-choice-settings] Codex: user 依頼「パズルのタイトル後に、やり方を見る / すぐ始める選択、次回省略チェック、ゲーム内設定でチュートリアル表示をオンオフ」を受領。HANDOFF / git log / puzzle 内検索で同一導線の過去成果物なしを確認し、既存チュートリアル導線に沿って実装に着手。 (by Codex)
