@@ -110,13 +110,13 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:2, choices:['まる','しかく','ほし','さんかく'] },
     /* Q111 rectangle: 「ながしかく」「ダイヤ」「しかく」全て他問題と重複 or 不適切のため削除 (2026-05-06 ユーザー判断) */
     { level:1, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:0, choices:['たまごがた','まる','しかく','ハート'] },
-    { level:1, type:'shape_name', shape:'heart',     q:'これは なんの かたち？', answer:1, choices:['まる','ハート','ほし','しかく'] },
+    { level:1, type:'shape_name', shape:'heart',     q:'ハートは どんな きもちの しるし？', answer:1, choices:['うれしい','だいすき','ねむい','おこった'], detail:'ハートは だいすきの しるしとして よく つかわれるよ！' },
 
     // Level 2 (名前当て＋性質問題)
     { level:2, type:'shape_name', shape:'star',      q:'ほしの かどは なんこ？', answer:0, choices:['5こ','4こ','6こ','3こ'] },
-    { level:2, type:'shape_name', shape:'heart',     q:'これは なんの かたち？', answer:1, choices:['ほし','ハート','さんかく','まる'] },
+    { level:2, type:'shape_name', shape:'heart',     q:'ハートの したは どう なっている？', answer:1, choices:['まるい','とがっている','しかくい','ぎざぎざ'], detail:'ハートの したは すこし とがっているね！' },
     { level:2, type:'shape_name', shape:'diamond',   q:'これは どんな かたち？', answer:0, choices:['ダイヤのかたち','まる','さんかく','しかく'] },
-    { level:2, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','たまごがた'] },
+    { level:2, type:'shape_name', shape:'oval',      q:'たまごがたは まるより どんな かたち？', answer:3, choices:['しかくい','とがっている','まるい','ながい'], detail:'たまごがたは、まるより すこし ながい かたちだよ！' },
     { level:2, type:'shape_name', shape:'triangle',  q:'このかたちの かどは なんこ？', answer:1, choices:['2こ','3こ','4こ','5こ'] },
     { level:2, type:'shape_name', shape:'square',    q:'このかたちの かどは なんこ？', answer:2, choices:['3こ','5こ','4こ','2こ'] },
     // sprint-13 結線済み (2026-05-08): img=stage_shape_leaf.png
@@ -125,7 +125,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 3 (性質・知識問題)
     { level:3, type:'shape_name', shape:'circle',    q:'このかたちに かどは いくつ？', answer:1, choices:['2こ','0こ（ない）','4こ','1こ'] },
-    { level:3, type:'shape_name', shape:'square',    q:'このかたちの かどは ぜんぶで いくつ？', answer:2, choices:['3こ','5こ','4こ','6こ'] },
+    { level:3, type:'shape_name', shape:'square',    q:'しかくの へんは ぜんぶで いくつ？', answer:2, choices:['3ほん','5ほん','4ほん','6ぽん'], detail:'しかくは まわりの へんも 4ほん あるよ！' },
     { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
     /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },

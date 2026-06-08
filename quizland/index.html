@@ -5104,6 +5104,13 @@ function renderChoices(q) {
       if (sizeCls) btn.classList.add(sizeCls);
     }
     btn.addEventListener('pointerdown', function(e) {
+      // layout-editor 中に chip テキストを選択 / dblclick 編集する操作は、
+      // chip 本体の回答処理より優先する。選択肢全体を押した通常プレイは従来どおり残す。
+      if (document.body && document.body.classList.contains('layout-editor-on') &&
+          e.target && e.target.closest &&
+          e.target.closest('.chip-label, .chip-illust-label, .chip-count-num')) {
+        return;
+      }
       // chip タップは ?edit=1 でも通常進行させる (= 普通にプレイしながら編集できる v1035 方針)。
       // Pause トグル ON のときだけ chip 反応を抑止して、 編集中の意図しない進行を防ぐ。
       // nextQuestion / _doNextQuestion の pause guard と同じ OR 判定で統一。
