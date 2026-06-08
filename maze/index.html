@@ -1006,6 +1006,39 @@ body.image-stage-mode .game-wrap {
   line-height: 1.2;
   text-shadow: 0 2px 0 rgba(255,255,255,0.8);
 }
+.flag-timer {
+  width: min(72vw, 420px);
+  justify-self: center;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: -4px;
+}
+.flag-timer__track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(93, 78, 55, 0.16);
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.85);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.18);
+}
+.flag-timer__bar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #7CCB65, #F7D55B, #F57A6C);
+  box-shadow: 0 0 12px rgba(255, 225, 110, 0.55);
+}
+.flag-timer__text {
+  min-width: 4.2em;
+  text-align: right;
+  font-size: clamp(0.9rem, 2.2vw, 1.05rem);
+  font-weight: 900;
+  color: #6B5A3F;
+  white-space: nowrap;
+}
 .flag-bug-stage {
   display: grid;
   place-items: center;
@@ -1138,6 +1171,18 @@ body.image-stage-mode .game-wrap {
   .flag-command {
     min-height: 1.6em;
     font-size: clamp(1rem, 4vw, 1.35rem);
+  }
+  .flag-timer {
+    width: min(70vw, 330px);
+    gap: 6px;
+  }
+  .flag-timer__track {
+    height: 10px;
+    border-width: 1px;
+  }
+  .flag-timer__text {
+    min-width: 3.4em;
+    font-size: 0.78rem;
   }
   .flag-bug-stage {
     min-height: 82px;
@@ -2365,10 +2410,22 @@ function imgComputeLayout(w, h) {
   stage._viewH = h;
 }
 
+function _isFlagTunnelTravelling() {
+  return !!(_flagTunnelState && _flagTunnelState.travelling);
+}
+
+function imgCameraZoom() {
+  return stage && stage._flagZoom ? stage._flagZoom : 1;
+}
+
+function imgEffectiveScale() {
+  return (stage && stage._scale ? stage._scale : 1) * imgCameraZoom();
+}
+
 function imgShowArrows() {
   hideArrows();
   if (!stage || stage.type !== 'image') return;
-  if (cleared || walkAnim) return;
+  if (cleared || walkAnim || _isFlagTunnelTravelling()) return;
   const dirs = [
     { dx: 0,  dy: -1, char: '↑' },
     { dx: 0,  dy: 1,  char: '↓' },
@@ -2398,7 +2455,7 @@ function imgShowArrows() {
 function imgRepositionArrows() {
   if (!stage || stage.type !== 'image' || !stage._scale) return;
   const w = stage._viewW, h = stage._viewH;
-  const sp = window.MazeImage.worldToScreen(stage, pono.x, pono.y, w, h, stage._scale);
+  const sp = window.MazeImage.worldToScreen(stage, pono.x, pono.y, w, h, imgEffectiveScale());
   const offset = 64;
   const kids = arrowLayer.children;
   for (let i = 0; i < kids.length; i++) {
@@ -2429,7 +2486,7 @@ function imgStartWalk(plan) {
 let _imgPanState = null;
 canvas.addEventListener('pointerdown', function(e) {
   if (!stage || stage.type !== 'image') return;
-  if (_encounterActive || cleared) return;
+  if (_encounterActive || cleared || _isFlagTunnelTravelling()) return;
   if (e.target !== canvas) return;
   // Hit-test the off-screen goal indicator: tap to auto-scroll to goal.
   if (stage._goalIndicator && stage.goal) {
@@ -2485,7 +2542,7 @@ canvas.addEventListener('pointerup', _imgEndPan);
 canvas.addEventListener('pointercancel', _imgEndPan);
 canvas.addEventListener('wheel', function(e) {
   if (!stage || stage.type !== 'image') return;
-  if (_encounterActive || cleared) return;
+  if (_encounterActive || cleared || _isFlagTunnelTravelling()) return;
   e.preventDefault();
   stage._camAnim = null; // wheel-scroll overrides auto-scroll
   stage._manualCam = true;
@@ -2558,10 +2615,13 @@ function imgDraw(now) {
   const w = stage._viewW || canvas.clientWidth;
   const h = stage._viewH || canvas.clientHeight;
   if (!stage._scale) imgComputeLayout(w, h);
-  // Camera animation (e.g. "scroll to goal" on indicator tap) takes priority
-  // over manual / auto-follow.
+  // Flag tunnel camera takes priority, then generic camera animation
+  // (e.g. "scroll to goal" on indicator tap), then manual / auto-follow.
   const _nowMs = now;
-  if (stage._camAnim) {
+  if (_applyFlagTunnelCamera(now, w, h)) {
+    // handled by the tunnel sequence
+  } else if (stage._camAnim) {
+    stage._flagZoom = 1;
     const a = stage._camAnim;
     const elapsed = _nowMs - a.t0;
     if (elapsed < a.panDur) {
@@ -2578,6 +2638,7 @@ function imgDraw(now) {
     }
     imgClampCameraToBounds(stage, w, h);
   } else {
+    stage._flagZoom = 1;
     // Manual pan mode: skip lerp, just clamp. Auto-revert after timeout.
     if (stage._manualCam && _nowMs - (stage._manualSince || 0) > 4000) {
       stage._manualCam = false;
@@ -2588,6 +2649,8 @@ function imgDraw(now) {
       imgClampCameraToBounds(stage, w, h);
     }
   }
+  const drawScale = imgEffectiveScale();
+  const hidePonoForTunnel = _shouldHideFlagTunnelPono(now);
 
   // Background fill (in case image hasn't loaded or letterbox visible)
   ctx.fillStyle = '#A4C76D';
@@ -2596,7 +2659,7 @@ function imgDraw(now) {
   // Draw with camera transform
   ctx.save();
   ctx.translate(w / 2, h / 2);
-  ctx.scale(stage._scale, stage._scale);
+  ctx.scale(drawScale, drawScale);
   ctx.translate(-stage.camera.x, -stage.camera.y);
   if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
     ctx.drawImage(stage.image, 0, 0, stage.viewBox.w, stage.viewBox.h);
@@ -2613,30 +2676,32 @@ function imgDraw(now) {
   // Lantern overlay (in screen space — applied AFTER image, BEFORE pono so
   // pono is fully bright in the lantern's center)
   if (stage.lantern) {
-    const ponoScreenX = w / 2 + (px - stage.camera.x) * stage._scale;
-    const ponoScreenY = h / 2 + (py - stage.camera.y) * stage._scale;
+    const ponoScreenX = hidePonoForTunnel ? w / 2 : w / 2 + (px - stage.camera.x) * drawScale;
+    const ponoScreenY = hidePonoForTunnel ? h / 2 : h / 2 + (py - stage.camera.y) * drawScale;
     imgDrawLantern(now, ponoScreenX, ponoScreenY, w, h, stage.lantern);
   }
 
   // Pono on top of the lantern overlay
-  ctx.save();
-  ctx.translate(w / 2, h / 2);
-  ctx.scale(stage._scale, stage._scale);
-  ctx.translate(-stage.camera.x, -stage.camera.y);
-  imgDrawPono(now, px, py, ftx, fty, isWalking);
-  ctx.restore();
+  if (!hidePonoForTunnel) {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(drawScale, drawScale);
+    ctx.translate(-stage.camera.x, -stage.camera.y);
+    imgDrawPono(now, px, py, ftx, fty, isWalking);
+    ctx.restore();
+  }
 
   // Off-screen goal direction indicator (HUD, screen-space)
-  if (stage.goal && !cleared) {
-    imgDrawGoalIndicator(stage.goal, w, h, stage.camera, stage._scale);
+  if (stage.goal && !cleared && !_isFlagTunnelTravelling()) {
+    imgDrawGoalIndicator(stage.goal, w, h, stage.camera, drawScale);
   } else {
     stage._goalIndicator = null;
   }
 
   // Speech bubble (one-liner) anchored to pono or a world point
   if (_imgBubble) {
-    const _ponoSx = w / 2 + (px - stage.camera.x) * stage._scale;
-    const _ponoSy = h / 2 + (py - stage.camera.y) * stage._scale;
+    const _ponoSx = w / 2 + (px - stage.camera.x) * drawScale;
+    const _ponoSy = h / 2 + (py - stage.camera.y) * drawScale;
     imgDrawBubble(now, _ponoSx, _ponoSy, w, h);
   }
 
@@ -2739,8 +2804,9 @@ function imgDrawBubble(now, ponoSx, ponoSy, w, h) {
   if (_imgBubble.anchorKind === 'pono') {
     sx = ponoSx; sy = ponoSy;
   } else {
-    sx = w / 2 + (_imgBubble.anchorX - stage.camera.x) * stage._scale;
-    sy = h / 2 + (_imgBubble.anchorY - stage.camera.y) * stage._scale;
+    const scale = imgEffectiveScale();
+    sx = w / 2 + (_imgBubble.anchorX - stage.camera.x) * scale;
+    sy = h / 2 + (_imgBubble.anchorY - stage.camera.y) * scale;
   }
   ctx.save();
   ctx.font = 'bold 22px sans-serif';
@@ -2797,8 +2863,8 @@ function imgDrawBubble(now, ponoSx, ponoSy, w, h) {
   ctx.restore();
 }
 
-function imgClampCameraToBounds(stage, viewportW, viewportH) {
-  const scale = stage._scale || 1;
+function imgClampCameraToBounds(stage, viewportW, viewportH, scaleOverride) {
+  const scale = scaleOverride || imgEffectiveScale();
   const halfW = (viewportW / scale) / 2;
   const halfH = (viewportH / scale) / 2;
   if (stage.viewBox.w * scale >= viewportW) {
@@ -2879,7 +2945,7 @@ function _creatureData(c) {
 }
 
 function _setEncounterMode(mode) {
-  if (encCardEl) encCardEl.classList.toggle('is-janken', mode === 'janken');
+  if (encCardEl) encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag');
 }
 
 const OBSTACLE_KIND_IMG = {
@@ -2897,6 +2963,7 @@ let _flagTunnelTimers = [];
 function _clearFlagTunnelTimers() {
   _flagTunnelTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
   _flagTunnelTimers = [];
+  _clearFlagRoundTimer();
 }
 
 function _flagTunnelSetTimeout(fn, ms) {
@@ -2908,9 +2975,77 @@ function _flagTunnelSetTimeout(fn, ms) {
   return t;
 }
 
+function _flagEaseInOut(t) {
+  t = Math.max(0, Math.min(1, t));
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+function _flagLerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function _applyFlagTunnelCamera(now, viewportW, viewportH) {
+  const st = _flagTunnelState;
+  const anim = st && st.anim;
+  const cam = anim && anim.camera;
+  if (!cam || !stage) return false;
+  const elapsed = Math.max(0, now - cam.t0);
+  const enterDur = 850;
+  const enterHold = 420;
+  const panDur = 1900;
+  const exitHold = 520;
+  const settleDur = 560;
+  const panStart = enterDur + enterHold;
+  const exitStart = panStart + panDur;
+  const settleStart = exitStart + exitHold;
+  const total = settleStart + settleDur;
+  let x, y, zoom;
+  if (elapsed < enterDur) {
+    const p = _flagEaseInOut(elapsed / enterDur);
+    x = _flagLerp(cam.fromX, cam.entranceX, p);
+    y = _flagLerp(cam.fromY, cam.entranceY, p);
+    zoom = _flagLerp(cam.fromZoom || 1, 1.55, p);
+  } else if (elapsed < panStart) {
+    x = cam.entranceX;
+    y = cam.entranceY;
+    zoom = 1.55;
+  } else if (elapsed < exitStart) {
+    const p = (elapsed - panStart) / panDur;
+    x = _flagLerp(cam.entranceX, cam.exitX, p);
+    y = _flagLerp(cam.entranceY, cam.exitY, p);
+    zoom = _flagLerp(1.62, 2.15, p);
+  } else if (elapsed < settleStart) {
+    x = cam.exitX;
+    y = cam.exitY;
+    zoom = 2.15;
+  } else if (elapsed < total) {
+    const p = _flagEaseInOut((elapsed - settleStart) / settleDur);
+    x = _flagLerp(cam.exitX, cam.exitNodeX, p);
+    y = _flagLerp(cam.exitY, cam.exitNodeY, p);
+    zoom = _flagLerp(2.15, 1, p);
+  } else {
+    stage._flagZoom = 1;
+    return false;
+  }
+  stage.camera.x = x;
+  stage.camera.y = y;
+  stage._flagZoom = zoom;
+  imgClampCameraToBounds(stage, viewportW, viewportH, imgEffectiveScale());
+  return true;
+}
+
+function _shouldHideFlagTunnelPono(now) {
+  const st = _flagTunnelState;
+  const anim = st && st.anim;
+  if (!anim || !st.travelling) return false;
+  const elapsed = now - anim.t0;
+  return elapsed >= 1050 && elapsed < 3900;
+}
+
 function _initFlagTunnelForStage(stageObj) {
   _clearFlagTunnelTimers();
   _flagGameState = null;
+  if (stage) stage._flagZoom = 1;
   if (!stageObj || !stageObj.flagGimmick) {
     _flagTunnelState = null;
     return;
@@ -3002,8 +3137,8 @@ function imgDrawFlagTunnelGimmick(stageObj, now) {
       _drawWorldImage(MAZE_FLAG_ASSETS.ropeLadder, entrance.x, entrance.y - stageObj.viewBox.h / 30, stageObj.viewBox.h / 8.5, entranceAlpha);
     }
     const exit = _flagExitObstacle();
-    if (exit && elapsed > 620) {
-      const p = Math.min(1, (elapsed - 620) / 520);
+    if (exit && elapsed > 2700) {
+      const p = Math.min(1, (elapsed - 2700) / 720);
       ctx.save();
       ctx.globalAlpha = 0.25 + p * 0.35;
       ctx.strokeStyle = '#B7F7FF';
@@ -3282,6 +3417,7 @@ function _triggerEncounter(c) {
   _currentGame = _gameForCreature(c);
   // Pause the walk animation by stashing it
   if (walkAnim) walkAnim._pausedAt = performance.now();
+  _imgBubble = null;
   hideArrows();
   // Set up modal content
   const data = _creatureData(c);
@@ -3346,41 +3482,61 @@ function _startFlagTunnelTravel(obstacle) {
   const entrance = obstacle || _flagEntranceObstacle();
   const exit = _flagExitObstacle();
   const exitNode = cfg.exitNodeId && stage.nodesById ? stage.nodesById[cfg.exitNodeId] : null;
-  if (!entrance || !exitNode) {
+  if (!entrance || !exit || !exitNode) {
     _closeEncounter(false);
     return;
   }
   const _stageRef = stage;
+  const startTime = performance.now();
   st.travelling = true;
-  st.anim = { t0: performance.now() };
+  st.anim = {
+    t0: startTime,
+    camera: {
+      t0: startTime,
+      fromX: stage.camera.x,
+      fromY: stage.camera.y,
+      fromZoom: imgCameraZoom(),
+      entranceX: entrance.x,
+      entranceY: entrance.y,
+      exitX: exit.x,
+      exitY: exit.y,
+      exitNodeX: exitNode.x,
+      exitNodeY: exitNode.y,
+    },
+  };
   walkAnim = null;
+  stage._manualCam = false;
+  stage._camAnim = null;
+  _imgPanState = null;
   hideArrows();
-  _imgPauseUntil = performance.now() + 1900;
+  _imgPauseUntil = startTime + 4700;
   pono.x = entrance.x;
   pono.y = entrance.y;
   imgShowBubble('なわばしごを かけたよ！', { x: entrance.x, y: entrance.y }, 1200);
-  showHint('🪜 なわばしごで あなに おりるよ。', 1700);
+  showHint('🪜 なわばしごで あなに おりるよ。', 2200);
   _flagTunnelSetTimeout(function() {
     if (_stageRef !== stage || !st.travelling) return;
-    const out = exit || exitNode;
-    pono.x = out.x;
-    pono.y = out.y;
-    imgShowBubble('でぐちが ひかった！', { x: out.x, y: out.y }, 900);
-  }, 760);
+    imgShowBubble('あなの なかを とおっているよ…', { x: entrance.x, y: entrance.y }, 1300);
+  }, 950);
   _flagTunnelSetTimeout(function() {
     if (_stageRef !== stage || !st.travelling) return;
     pono.x = exitNode.x;
     pono.y = exitNode.y;
     pono.nodeId = exitNode.id;
+    imgShowBubble('でぐちが ひかった！', { x: exit.x, y: exit.y }, 900);
+  }, 3420);
+  _flagTunnelSetTimeout(function() {
+    if (_stageRef !== stage || !st.travelling) return;
     st.travelling = false;
     st.anim = null;
+    stage._flagZoom = 1;
     moves++;
     hudMoves.textContent = 'てかず: ' + moves;
     imgShowBubble('ちがう でぐちに でたよ！', 'pono', 1700);
     showHint('🔓 かぎが あいたよ。あなの トンネルを とおれた！', 2600);
     if (pono.nodeId === stage.goal.id) onClear();
     else imgShowArrows();
-  }, 1450);
+  }, 4380);
 }
 
 // 各ミニゲームの開始関数を登録 (登場順)
@@ -4036,9 +4192,52 @@ const FLAG_GAME_STEPS = [
   { text: 'あか あげて！', flag: 'red', next: 'both' },
   { text: 'あかは そのまま、しろ さげて！', flag: 'white', next: 'red' },
 ];
+const FLAG_ROUND_MS = 6500;
+
+function _clearFlagRoundTimer() {
+  const gs = _flagGameState;
+  if (!gs) return;
+  if (gs.timeoutId) {
+    clearTimeout(gs.timeoutId);
+    gs.timeoutId = null;
+  }
+  if (gs.rafId) {
+    cancelAnimationFrame(gs.rafId);
+    gs.rafId = null;
+  }
+}
+
+function _paintFlagTimer(remainingMs) {
+  const bar = document.getElementById('flagTimerBar');
+  const txt = document.getElementById('flagTimerText');
+  const remain = Math.max(0, Math.min(FLAG_ROUND_MS, remainingMs));
+  const ratio = remain / FLAG_ROUND_MS;
+  if (bar) bar.style.transform = 'scaleX(' + ratio.toFixed(3) + ')';
+  if (txt) txt.textContent = 'あと ' + Math.ceil(remain / 1000);
+}
+
+function _startFlagRoundTimer() {
+  if (!_flagGameState) return;
+  _clearFlagRoundTimer();
+  const gs = _flagGameState;
+  gs.deadline = performance.now() + FLAG_ROUND_MS;
+  gs.timeoutId = setTimeout(function() {
+    if (gs !== _flagGameState || gs.locked) return;
+    _resolveFlagGame(false, 'time');
+  }, FLAG_ROUND_MS);
+  function tick() {
+    if (gs !== _flagGameState || gs.locked) return;
+    const remaining = gs.deadline - performance.now();
+    _paintFlagTimer(remaining);
+    if (remaining > 0) {
+      gs.rafId = requestAnimationFrame(tick);
+    }
+  }
+  tick();
+}
 
 function _showFlagGame() {
-  _setEncounterMode(null);
+  _setEncounterMode('flag');
   _flagGameState = { step: 0, pose: 'down', locked: false };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
@@ -4047,6 +4246,12 @@ function _showFlagGame() {
   cmd.className = 'flag-command';
   cmd.id = 'flagCommand';
   wrap.appendChild(cmd);
+  const timer = document.createElement('div');
+  timer.className = 'flag-timer';
+  timer.innerHTML =
+    '<div class="flag-timer__track"><div class="flag-timer__bar" id="flagTimerBar"></div></div>' +
+    '<div class="flag-timer__text" id="flagTimerText">あと 7</div>';
+  wrap.appendChild(timer);
   const stageEl = document.createElement('div');
   stageEl.className = 'flag-bug-stage';
   const img = document.createElement('img');
@@ -4072,29 +4277,33 @@ function _showFlagGame() {
   controls.querySelectorAll('button').forEach(function(btn) {
     btn.addEventListener('click', function() { _onFlagTap(btn.dataset.flag); });
   });
-  _renderFlagStep();
+  _renderFlagStep(true);
 }
 
-function _renderFlagStep() {
+function _renderFlagStep(startTimer) {
   if (!_flagGameState) return;
   const step = FLAG_GAME_STEPS[_flagGameState.step];
   const cmd = document.getElementById('flagCommand');
   const img = document.getElementById('flagBugPose');
   if (cmd) cmd.textContent = step ? step.text : '';
   if (img) img.src = FLAG_POSE_SRC[_flagGameState.pose] || FLAG_POSE_SRC.down;
+  if (startTimer !== false && !_flagGameState.locked && step) {
+    _startFlagRoundTimer();
+  }
 }
 
 function _onFlagTap(flag) {
   if (!_flagGameState || _flagGameState.locked) return;
   const step = FLAG_GAME_STEPS[_flagGameState.step];
   if (!step) return;
+  _clearFlagRoundTimer();
   if (flag !== step.flag) {
     _resolveFlagGame(false);
     return;
   }
   _flagGameState.locked = true;
   _flagGameState.pose = step.next;
-  _renderFlagStep();
+  _renderFlagStep(false);
   _flagTunnelSetTimeout(function() {
     if (!_flagGameState) return;
     _flagGameState.step++;
@@ -4102,17 +4311,19 @@ function _onFlagTap(flag) {
     if (_flagGameState.step >= FLAG_GAME_STEPS.length) {
       _resolveFlagGame(true);
     } else {
-      _renderFlagStep();
+      _renderFlagStep(true);
     }
   }, 420);
 }
 
-function _resolveFlagGame(won) {
+function _resolveFlagGame(won, reason) {
+  _clearFlagRoundTimer();
   _flagGameState = null;
   playMzSe(won ? 'correct' : 'wrong');
   if (!won) {
+    const text = reason === 'time' ? 'じかんぎれ…' : 'ちがった…';
     encStageEl.innerHTML =
-      '<div class="enc-result lose">ちがった…</div>' +
+      '<div class="enc-result lose">' + text + '</div>' +
       '<div class="row"><button class="enc-btn lose" id="flagBackBtn">もどる ▶</button></div>';
     const back = document.getElementById('flagBackBtn');
     if (back) back.addEventListener('click', function() { _closeEncounter(false); });
