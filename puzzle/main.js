@@ -2208,6 +2208,10 @@ function refreshHintButtonState() {
   var sid = getCurrentStageIdForHint();
   var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
   var label = 'ヒント';
+  var basicHintPressWaiting = !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.phase === 'hint-press'
+    && !partnerPracticeState.hintPressReady);
   if (dragPiece) {
     // ドラッグ中は無効化 + 😴 マーク
     btnHint.classList.add('is-disabled', 'is-sleeping');
@@ -2217,6 +2221,13 @@ function refreshHintButtonState() {
     return;
   }
   btnHint.classList.remove('is-sleeping');
+  if (basicHintPressWaiting) {
+    btnHint.classList.add('is-disabled');
+    btnHint.classList.remove('is-empty');
+    btnHint.textContent = label + '×' + Math.max(0, remaining);
+    btnHint.setAttribute('aria-disabled', 'true');
+    return;
+  }
   if (remaining <= 0) {
     btnHint.classList.add('is-disabled', 'is-empty');
     btnHint.textContent = label + '×0';
@@ -2411,6 +2422,7 @@ const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
 const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
+const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -3070,6 +3082,7 @@ function startCommonHintPractice(partnerId) {
   partnerPracticeState.targetPiece = piece;
   partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
   partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = false;
   setPartnerPracticeInput(false);
   placeHintPracticePiece(piece);
   clearHintPracticeTargetArea(piece);
@@ -3107,6 +3120,10 @@ function startBasicIntroPractice() {
   partnerPracticeState.cue = null;
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
+  partnerPracticeState.peekReturnNarrationStarted = false;
+  partnerPracticeState.peekReturnNarrationDone = false;
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
   clearPartnerPracticeCoachBubble();
@@ -3137,6 +3154,10 @@ function startBasicPeekPractice() {
   partnerPracticeState.cue = null;
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
+  partnerPracticeState.peekReturnNarrationStarted = false;
+  partnerPracticeState.peekReturnNarrationDone = false;
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(true);
   practiceAddHighlight(btnPeek);
@@ -3167,7 +3188,43 @@ function playBasicPeekHoldNarration() {
       ''
     );
     setPartnerPracticeCoachBubble(btnPeek, null, false);
-    playBasicPracticeVoice(3);
+    partnerPracticeState.peekReturnNarrationStarted = true;
+    playBasicPracticeVoice(3, function () {
+      if (!partnerPracticeState) return;
+      partnerPracticeState.peekReturnNarrationDone = true;
+    });
+  });
+}
+
+function playBasicPeekSuccessThenHint() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+  playBasicPracticeVoice(4, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+      if (peekOn) setPeekOverlay(false);
+      startCommonHintPractice(null);
+    }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
+  });
+}
+
+function playBasicPeekReturnThenSuccess() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+  if (partnerPracticeState.peekReturnNarrationDone) {
+    playBasicPeekSuccessThenHint();
+    return;
+  }
+  partnerPracticeState.peekReturnNarrationStarted = true;
+  setPartnerPracticeCoachCopy(
+    'はなすと もどるよ',
+    'わからなくなったら ながく おしてね',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
+  playBasicPracticeVoice(3, function () {
+    if (!partnerPracticeState) return;
+    partnerPracticeState.peekReturnNarrationDone = true;
+    if (partnerPracticeState.phase === 'peek-done') playBasicPeekSuccessThenHint();
   });
 }
 
@@ -3215,14 +3272,7 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  queueBasicPracticeAfterVoice(function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-    playBasicPracticeVoice(4, function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-      if (peekOn) setPeekOverlay(false);
-      startCommonHintPractice(null);
-    });
-  });
+  queueBasicPracticeAfterVoice(playBasicPeekReturnThenSuccess);
 }
 
 function onPartnerPracticePieceSelected(piece) {
@@ -3245,13 +3295,18 @@ function onPartnerPracticePieceSelected(piece) {
   partnerPracticeState.phase = 'hint-press';
   partnerPracticeState.targetPiece = piece;
   partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+  partnerPracticeState.hintPressReady = false;
   practiceAddHighlight(btnHint);
   setPartnerPracticeCoachCopy(
     'ヒントを おしてみよう',
     'ばしょが ひかるよ',
     ''
   );
-  playBasicPracticeVoice(6);
+  playBasicPracticeVoice(6, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
+    partnerPracticeState.hintPressReady = true;
+    refreshHintButtonState();
+  });
   setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
 }
@@ -4221,6 +4276,13 @@ if (btnHint) {
     if (scatterAnimating || prestartOverlayEl) return;
     // ドラッグ中は 😴 状態 → 無効
     if (dragPiece) return;
+
+    if (partnerPracticeState
+        && partnerPracticeState.mode === 'basic'
+        && partnerPracticeState.phase === 'hint-press'
+        && !partnerPracticeState.hintPressReady) {
+      return;
+    }
 
     var sid = getCurrentStageIdForHint();
     var remaining = sid != null ? getHintUsesRemaining(sid) : 0;

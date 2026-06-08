@@ -81,8 +81,10 @@ speaker の聴き比べは、まずこの短文で確認する。
 実装メモ:
 
 - `basic_tut_02.mp3` の再生中にすぐ `みる` を長押ししても、`basic_tut_02.mp3` が終わるまで次の案内へ進めない。
-- 長押し中/長押し後の案内も、現在の音声が終わってから次の `basic_tut_03.mp3` / `basic_tut_05.mp3` を再生する。
+- 長押し中/長押し後の案内も、現在の音声が終わってから次の `basic_tut_03.mp3` / `basic_tut_04.mp3` / `basic_tut_05.mp3` を再生する。
+- 長押し成功後は `basic_tut_04.mp3` を必ず再生してから `basic_tut_05.mp3` へ進み、そのあと少し間を置いて `basic_tut_06.mp3` へ進む。
 - `basic_tut_06.mp3` が終わるまでは、光っているピースをタッチしても `basic_tut_07.mp3` へ進まない。
+- `basic_tut_07.mp3` が終わるまでは、ヒントボタンを押しても `basic_tut_08.mp3` へ進まない。
 
 ### `tut_basic_01_intro`
 
