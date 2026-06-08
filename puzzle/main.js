@@ -2423,7 +2423,7 @@ const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
-const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
+const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 4300, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -3083,6 +3083,7 @@ function startCommonHintPractice(partnerId) {
   partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
   placeHintPracticePiece(piece);
   clearHintPracticeTargetArea(piece);
@@ -3124,6 +3125,7 @@ function startBasicIntroPractice() {
   partnerPracticeState.peekReturnNarrationDone = false;
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
   clearPartnerPracticeCoachBubble();
@@ -3158,6 +3160,7 @@ function startBasicPeekPractice() {
   partnerPracticeState.peekReturnNarrationDone = false;
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(true);
   practiceAddHighlight(btnPeek);
@@ -3296,10 +3299,11 @@ function onPartnerPracticePieceSelected(piece) {
   partnerPracticeState.targetPiece = piece;
   partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
   partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
   practiceAddHighlight(btnHint);
   setPartnerPracticeCoachCopy(
     'ヒントを おしてみよう',
-    'ばしょが ひかるよ',
+    '',
     ''
   );
   playBasicPracticeVoice(6, function () {
@@ -3313,8 +3317,11 @@ function onPartnerPracticePieceSelected(piece) {
 
 function onPartnerPracticeHintUsed() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
+  var isBasicPracticeHint = partnerPracticeState.mode === 'basic';
+  if (isBasicPracticeHint && !partnerPracticeState.hintActivatedByButton) return;
   partnerPracticeState.phase = 'hint-done';
   partnerPracticeState.hintIntroDone = true;
+  partnerPracticeState.hintActivatedByButton = false;
   clearPracticeHighlights();
   setPartnerPracticeInput(false);
   partnerPracticeState.cue = null;
@@ -4277,10 +4284,10 @@ if (btnHint) {
     // ドラッグ中は 😴 状態 → 無効
     if (dragPiece) return;
 
-    if (partnerPracticeState
-        && partnerPracticeState.mode === 'basic'
-        && partnerPracticeState.phase === 'hint-press'
-        && !partnerPracticeState.hintPressReady) {
+    var isBasicPracticeHint = !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'hint-press');
+    if (isBasicPracticeHint && !partnerPracticeState.hintPressReady) {
       return;
     }
 
@@ -4305,9 +4312,7 @@ if (btnHint) {
     // peek ON のままヒントを発動すると overlay が前面に残るので OFF
     if (peekOn) setPeekOverlay(false);
 
-    var isBasicPracticeHint = !!(partnerPracticeState
-      && partnerPracticeState.mode === 'basic'
-      && partnerPracticeState.phase === 'hint-press');
+    if (isBasicPracticeHint) partnerPracticeState.hintActivatedByButton = true;
     if (!isBasicPracticeHint && window.PuzzleVoice) window.PuzzleVoice.playRandom('hint');
 
     // 金色星演出: 1.5 秒間 hintFlashPiece に対して描画 (Phase 3c: 2000→1500ms)
