@@ -2457,6 +2457,9 @@ const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
 const BASIC_SELECT_PIECE_AFTER_CUE_VISIBLE_MS = 1000;
 const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
+const BASIC_HINT_AUTO_SNAP_DELAY_MS = 850;
+const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
+const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -3295,6 +3298,8 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     partnerPracticeState.phase = 'peek-press';
     partnerPracticeState.peekHoldStart = 0;
     partnerPracticeState.peekHoldReady = false;
+    partnerPracticeState.basicVoiceQueued = null;
+    setPartnerPracticePeekInput(true);
     clearPracticeHighlights();
     practiceAddHighlight(btnPeek);
     setPartnerPracticeCoachCopy(
@@ -3404,15 +3409,76 @@ function scheduleBasicHintSelectAfterCueVisible() {
 function showBasicHintDoneNarration() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
   if (partnerPracticeState.mode !== 'basic') return;
+  partnerPracticeState.basicDoneVoiceDone = false;
+  partnerPracticeState.basicDoneSnapDone = false;
+  partnerPracticeState.basicDoneFinishScheduled = false;
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'ひかったね',
     'ばしょが わからない ときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(6);
+  playBasicPracticeVoice(6, function () {
+    if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+    partnerPracticeState.basicDoneVoiceDone = true;
+    maybeFinishBasicPracticeAfterSnap();
+  });
   partnerPracticeState.phase = 'basic-done';
-  setPartnerPracticeCoachBubble(btnHint, null, true);
+  setPartnerPracticeCoachBubble(btnHint, null, false);
+  practiceSetTimeout(function () {
+    animateBasicHintPieceIntoPlace();
+  }, BASIC_HINT_AUTO_SNAP_DELAY_MS);
+}
+
+function markBasicPracticePieceSnapped(piece) {
+  if (!piece || piece.snapped) return false;
+  piece.x = piece.homeX;
+  piece.y = piece.homeY;
+  piece.rotation = 0;
+  piece.snapped = true;
+  piece.zOrder = -1;
+  rebuildPath(piece);
+  snappedCount++;
+  selectedPieceForHint = null;
+  window.PonoHintActive = false;
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  updateProgress();
+  playSnapSound();
+  redraw();
+  return true;
+}
+
+function animateBasicHintPieceIntoPlace() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (partnerPracticeState.basicDoneSnapDone) return;
+  var piece = partnerPracticeState.targetPiece;
+  if (!piece || piece.snapped) {
+    partnerPracticeState.basicDoneSnapDone = true;
+    maybeFinishBasicPracticeAfterSnap();
+    return;
+  }
+  partnerPracticeState.phase = 'basic-auto-snap';
+  partnerPracticeState.cue = null;
+  var from = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
+  var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+  animatePracticePiece(piece, from, to, BASIC_HINT_AUTO_SNAP_DURATION_MS, function () {
+    if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+    markBasicPracticePieceSnapped(piece);
+    partnerPracticeState.basicDoneSnapDone = true;
+    maybeFinishBasicPracticeAfterSnap();
+  });
+}
+
+function maybeFinishBasicPracticeAfterSnap() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (!partnerPracticeState.basicDoneVoiceDone || !partnerPracticeState.basicDoneSnapDone) return;
+  if (partnerPracticeState.basicDoneFinishScheduled) return;
+  partnerPracticeState.basicDoneFinishScheduled = true;
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+    finishPartnerPractice();
+  }, BASIC_AFTER_AUTO_SNAP_FINISH_MS);
 }
 
 function scheduleBasicHintDoneAfterFlashVisible() {
