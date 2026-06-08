@@ -2460,6 +2460,8 @@ const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
 const BASIC_HINT_AUTO_SNAP_DELAY_MS = 2200;
 const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
 const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
+const PARTNER_PRACTICE_INTRO_DELAY_MS = 450;
+const KOJIKA_PRACTICE_INTRO_DELAY_MS = 2600;
 const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
@@ -3550,9 +3552,12 @@ function startPartnerSpecificPractice(partnerId) {
     partnerId === 'kitsune' ? 'キツネの とくぎ' : 'なかまの とくぎ'
   );
   partnerPracticeState.phase = 'partner-demo';
+  var introDelay = partnerId === 'kojika'
+    ? KOJIKA_PRACTICE_INTRO_DELAY_MS
+    : PARTNER_PRACTICE_INTRO_DELAY_MS;
   practiceSetTimeout(function () {
     runPartnerPracticeDemo(partnerId);
-  }, 450);
+  }, introDelay);
 }
 
 function runKitsuneHintCountDemo() {
