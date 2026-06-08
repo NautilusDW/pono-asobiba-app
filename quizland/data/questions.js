@@ -130,7 +130,7 @@ const QUIZLAND_QUESTIONS = {
     /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
     { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
     { level:3, type:'shape_name', shape:'circle', choiceTextRevision:'20260608-no-choice-images', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:['はんぶんの まる','まんまるい','さんかく','しかく'], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
-    { level:3, type:'shape_name', shape:'square', choiceTextRevision:'20260608-no-choice-images', img:'stage_shape_notebook.png', framed:true, q:'ノートの かたちは？', answer:0, choices:['ながしかく','まる','さんかく','ほし'], detail:'ノートは ながい しかくの かたち！' },
+    { level:3, type:'shape_name', shape:'square', choiceTextRevision:'20260608-note-pencil-question', img:'stage_shape_notebook.png', framed:true, q:'ノートの となりに あるものは？', answer:0, choices:['えんぴつ','ボール','くつ','コップ'], detail:'ノートの となりに えんぴつが あるね！' },
     { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', framed:true, q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
   ],
 
@@ -142,7 +142,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'weather', img:'Sun/Sun_normal_1.png', q:'この てんきは？', answer:0, choices:['はれ','くもり','あめ','ゆき'] },
     { level:1, type:'emoji_name', category:'weather', img:'Rain/Rain_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','くもり','あめ','ゆき'] },
     { level:1, type:'emoji_name', category:'weather', img:'Cloud/Cloud_normal_1.png', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','ゆき'] },
-    { level:1, type:'emoji_name', category:'weather', img:'Snow/Snow_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','あめ','ゆき','くもり'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Snow_cloud/Snow_cloud_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','あめ','ゆき','くもり'] },
     { level:1, type:'emoji_name', category:'weather', img:'Rainbow/Rainbow_normal_1.png', q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
     { level:1, type:'emoji_name', category:'weather', img:'Thunder/Thunder_normal_1.png', q:'これは なに？', answer:0, choices:['かみなり','はれ','くもり','にじ'] },
     { level:1, type:'emoji_name', category:'weather', img:'Wind/Wind_normal_1.png', q:'これは なに？', answer:2, choices:['あめ','くもり','かぜ','ゆき'] },
@@ -373,11 +373,16 @@ const QUIZLAND_QUESTIONS = {
       choices:['クモ','カブトムシ','チョウチョ','バッタ'],
       detail:'クモは あしが 8ぽん あるよ。 こんちゅうの なかまの カブトムシ・チョウチョ・バッタは 6ぽん だよ！'},
     { level:2, type:'trivia', category:'trivia',
-      choiceTextRevision:'20260608-no-choice-images',
+      choiceTextRevision:'20260608-bird-choice-images-restored',
       img:'stage_trivia_four_birds_silhouette.png',
       q:'そらを とべない とりは どれ？',
       answer:1,
-      choices:['タカ','ペンギン','ハト','ツバメ'],
+      choices:[
+        { text:'タカ',    image:'taka.png' },
+        { text:'ペンギン', image:'penguin.png' },
+        { text:'ハト',    image:'hato.png' },
+        { text:'ツバメ',  image:'tsubame.png' }
+      ],
       detail:'ペンギンは とべないけど うみを およぐのが とくいだよ！'},
     { level:2, type:'trivia', category:'trivia',
       img:'tako.png',
