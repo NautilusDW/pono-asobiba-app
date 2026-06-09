@@ -1466,6 +1466,11 @@ html, body {
   animation: none;
   transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(var(--lid-y, 0px)) scale(1);
   filter: drop-shadow(0 6px 8px rgba(93, 78, 55, 0.18));
+  pointer-events: none;
+  cursor: default;
+}
+.free-complete-editor-preview .free-complete-lid-stage::after {
+  display: none;
 }
 .free-complete-lid-stage {
   position: absolute;
@@ -1474,13 +1479,44 @@ html, body {
   z-index: 30;
   width: min(100%, 820px);
   aspect-ratio: 760 / 460;
-  opacity: 0;
-  transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(calc(-190px + var(--lid-y, 0px))) scale(1.06);
+  opacity: 1;
+  transform: translateX(calc(-50% + var(--lid-rest-x, 230px))) translateY(var(--lid-rest-y, 126px)) rotate(var(--lid-rest-rotate, -8deg)) scale(var(--lid-rest-scale, 0.76));
   transform-origin: center bottom;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   filter: drop-shadow(0 16px 18px rgba(93, 78, 55, 0.28));
+  animation: none;
+}
+.free-complete-lid-stage::after {
+  content: 'タップで ふた';
+  position: absolute;
+  left: 50%;
+  bottom: -1.45rem;
+  transform: translateX(-50%);
+  padding: 0.18rem 0.46rem;
+  border-radius: 999px;
+  background: rgba(255, 248, 231, 0.94);
+  border: 2px solid #F8C36B;
+  color: #6B3410;
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+  box-shadow: 0 5px 10px rgba(93, 78, 55, 0.12);
+}
+.free-complete-lid-stage.is-ready {
+  animation: completeLidTapPulse 1.45s ease-in-out infinite;
+}
+.free-complete-lid-stage.is-pending-close::after {
+  content: 'さいごに しめるよ';
+}
+.free-complete-lid-stage.is-closing {
+  pointer-events: none;
+  cursor: default;
   animation: completeLidClose var(--lid-duration, 0.95s) cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
-  animation-delay: var(--lid-delay, 1.3s);
+}
+.free-complete-lid-stage.is-closing::after {
+  display: none;
 }
 .free-complete-lid-img {
   position: absolute;
@@ -1518,13 +1554,24 @@ html, body {
 }
 @keyframes completeLidClose {
   0% {
-    opacity: 0;
-    transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(calc(-190px + var(--lid-y, 0px))) scale(1.06);
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--lid-rest-x, 230px))) translateY(var(--lid-rest-y, 126px)) rotate(var(--lid-rest-rotate, -8deg)) scale(var(--lid-rest-scale, 0.76));
   }
-  24% { opacity: 1; }
+  58% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(calc(-46px + var(--lid-y, 0px))) rotate(1.5deg) scale(1.03);
+  }
   100% {
     opacity: 1;
     transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(var(--lid-y, 0px)) scale(1);
+  }
+}
+@keyframes completeLidTapPulse {
+  0%, 100% {
+    transform: translateX(calc(-50% + var(--lid-rest-x, 230px))) translateY(var(--lid-rest-y, 126px)) rotate(var(--lid-rest-rotate, -8deg)) scale(var(--lid-rest-scale, 0.76));
+  }
+  50% {
+    transform: translateX(calc(-50% + var(--lid-rest-x, 230px))) translateY(calc(var(--lid-rest-y, 126px) - 7px)) rotate(var(--lid-rest-rotate, -8deg)) scale(var(--lid-rest-pop-scale, 0.78));
   }
 }
 @keyframes completeSparklePop {
@@ -4493,6 +4540,10 @@ function getFreeCompleteLidLayoutKey(box) {
   const key = getBoxMaskKey(box);
   return key ? `${key}:lid` : '';
 }
+function getFreeCompleteMaskLayoutKey(box, tier = 2) {
+  const key = getBoxMaskKey(box);
+  return key ? `${key}:tier${tier}:mask` : '';
+}
 function getBoxCompleteLayout(box, tier = 2) {
   refreshFreeCompleteLayoutOverrides();
   const base = getDefaultFreeCompleteLayout(box, tier);
@@ -4508,6 +4559,14 @@ function getBoxCompleteLidLayout(box) {
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
   const overrideLayout = override && (override.lid || override.layout || override);
   return normalizeFreeCompleteLidLayout({ ...base, ...(overrideLayout || {}) });
+}
+function getBoxCompleteMaskRelative(box, tier = 2) {
+  refreshFreeCompleteLayoutOverrides();
+  const base = getBoxMaskRelative(box);
+  const key = getFreeCompleteMaskLayoutKey(box, tier);
+  const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
+  const overrideRel = override && (override.rel || override.mask || override);
+  return normalizeMaskRelative(overrideRel || base);
 }
 function getFreeCompleteHostWidth(host) {
   if (!host) return 0;
@@ -4599,6 +4658,18 @@ function resetBoxCompleteLidLayoutOverride(box) {
   delete freeCompleteLayoutOverrides[key];
   saveFreeCompleteLayoutOverrides();
 }
+function setBoxCompleteMaskRelativeOverride(box, tier, rel) {
+  const key = getFreeCompleteMaskLayoutKey(box, tier);
+  if (!key || !rel) return;
+  freeCompleteLayoutOverrides[key] = { rel: normalizeMaskRelative(rel) };
+  saveFreeCompleteLayoutOverrides();
+}
+function resetBoxCompleteMaskRelativeOverride(box, tier) {
+  const key = getFreeCompleteMaskLayoutKey(box, tier);
+  if (!key || !freeCompleteLayoutOverrides[key]) return;
+  delete freeCompleteLayoutOverrides[key];
+  saveFreeCompleteLayoutOverrides();
+}
 function getBoxMaskKey(box) {
   return box && (box.maskKey || box.id || '');
 }
@@ -4666,9 +4737,10 @@ function getBoxMaskCanvasSize(box) {
   if (aspect && Number.isFinite(aspect) && aspect > 0) return { w: Math.round(aspect * 1000), h: 1000 };
   return { w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
 }
-function getFullMaskCacheKey(box, rel, size) {
+function getFullMaskCacheKey(box, rel, size, variant = '') {
   return [
     getBoxMaskKey(box),
+    variant,
     box && box.maskImage,
     size.w,
     size.h,
@@ -4738,11 +4810,11 @@ function queueFullCanvasMaskBuild(box, key, size, rel) {
   freeFullMaskPending.set(key, pending);
   img.src = box.maskImage;
 }
-function getFullCanvasMaskUrl(box) {
+function getFullCanvasMaskUrl(box, relOverride = null, variant = '') {
   if (!box || !box.maskImage) return '';
-  const rel = normalizeMaskRelative(getBoxMaskRelative(box));
+  const rel = normalizeMaskRelative(relOverride || getBoxMaskRelative(box));
   const size = getBoxMaskCanvasSize(box);
-  const key = getFullMaskCacheKey(box, rel, size);
+  const key = getFullMaskCacheKey(box, rel, size, variant);
   const cached = freeFullMaskCache.get(key);
   if (cached) return cached;
   queueFullCanvasMaskBuild(box, key, size, rel);
@@ -4835,10 +4907,11 @@ function resetSelectedBoxMaskBounds() {
   resetFreeMaskRelativeOverride(key);
   saveFreeMaskBoundsOverrides();
 }
-function applyBoxVisualMask(layer, box, host = null) {
-  if (!layer || !box || !box.maskImage || !getBoxMaskBounds(box)) return false;
+function applyBoxVisualMask(layer, box, host = null, options = {}) {
+  if (!layer || !box || !box.maskImage || !box.maskBounds) return false;
+  const maskRel = normalizeMaskRelative(options.maskRel || getBoxMaskRelative(box));
   const cssBounds = getBoxMaskCanvasRectCss(box, layer, host);
-  const fullMaskUrl = getFullCanvasMaskUrl(box);
+  const fullMaskUrl = getFullCanvasMaskUrl(box, maskRel, options.maskVariant || '');
   if (!cssBounds || !fullMaskUrl) return false;
   layer.style.left = cssBounds.x.toFixed(3) + 'px';
   layer.style.top = cssBounds.y.toFixed(3) + 'px';
@@ -6076,6 +6149,9 @@ function renderFreeLayoutInto(host, opts = {}) {
   const tierCount = getBoxTierCount(box);
   const activeTier = opts.tier || freeActiveTier;
   const tierFilter = opts.tierFilter || null;
+  const visualMaskOptions = opts.maskRel
+    ? { maskRel: opts.maskRel, maskVariant: opts.maskVariant || '' }
+    : {};
   const maskRiceUnderlay = !!(opts.interactive && freeMaskEditorMode && box.riceImage);
   const integratedRice = box.riceImage
     ? items.find(item => item.type === 'rice' && getItemTier(item) === 1)
@@ -6153,7 +6229,7 @@ function renderFreeLayoutInto(host, opts = {}) {
   if (opts.interactive && freeMaskEditorOpen && freeMaskEditorMode && box.maskImage) {
     const preview = document.createElement('div');
     preview.className = 'free-mask-preview';
-    applyBoxVisualMask(preview, box, host);
+    applyBoxVisualMask(preview, box, host, visualMaskOptions);
     host.appendChild(preview);
   }
   const noriItems = displayItems.filter(isNoriDecorItem);
@@ -6162,7 +6238,7 @@ function renderFreeLayoutInto(host, opts = {}) {
   layer.className = 'free-layout-items free-layout-mask-space';
   const maskFrame = document.createElement('div');
   maskFrame.className = 'free-layout-mask-frame';
-  const hasVisualMask = applyBoxVisualMask(maskFrame, box, host);
+  const hasVisualMask = applyBoxVisualMask(maskFrame, box, host, visualMaskOptions);
   if (hasVisualMask) {
     positionMaskedStageSpace(layer, maskFrame, host);
   } else {
@@ -6505,6 +6581,24 @@ function resetSelectedBoxCompleteLidLayout() {
   if (!box) return;
   resetBoxCompleteLidLayoutOverride(box);
 }
+function updateSelectedBoxCompleteMaskRelative(tier, prop, value) {
+  const box = getSelectedBentoBox();
+  if (!box || getBoxTierCount(box) <= 1) return null;
+  const current = getBoxCompleteMaskRelative(box, tier);
+  const raw = Number(value);
+  const next = { ...current, [prop]: Number.isFinite(raw) ? raw / 100 : current[prop] };
+  next.x = clamp(next.x, -0.5, 1.5);
+  next.y = clamp(next.y, -0.5, 1.5);
+  next.w = clamp(next.w, 0.05, 1.5);
+  next.h = clamp(next.h, 0.05, 1.5);
+  setBoxCompleteMaskRelativeOverride(box, tier, next);
+  return getBoxCompleteMaskRelative(box, tier);
+}
+function resetSelectedBoxCompleteMaskRelative(tier) {
+  const box = getSelectedBentoBox();
+  if (!box) return;
+  resetBoxCompleteMaskRelativeOverride(box, tier);
+}
 function makeCompleteEditorPreviewItems(box, tier) {
   if (!box) return [];
   const previewTier = Math.max(1, Math.round(Number(tier) || 1));
@@ -6609,6 +6703,32 @@ function makeCompleteLidLayoutRange(label, prop, min, max, layout, unit, tier) {
     const panel = row.closest('.free-mask-panel');
     const status = panel && panel.querySelector('.free-complete-save-status');
     if (status) status.textContent = 'ふたも自動保存';
+    if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+  });
+  row.appendChild(labelText);
+  row.appendChild(input);
+  row.appendChild(value);
+  return row;
+}
+function makeCompleteMaskRange(label, prop, min, max, rel, tier) {
+  const row = document.createElement('label');
+  row.className = 'free-mask-row';
+  const labelText = document.createElement('span');
+  labelText.textContent = label;
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.min = String(min);
+  input.max = String(max);
+  input.step = '0.1';
+  input.value = formatMaskPercent((rel[prop] || 0) * 100);
+  const value = document.createElement('span');
+  value.textContent = formatMaskPercent(input.value) + '%';
+  input.addEventListener('input', e => {
+    const next = updateSelectedBoxCompleteMaskRelative(tier, prop, e.currentTarget.value);
+    value.textContent = formatMaskPercent(e.currentTarget.value) + '%';
+    const panel = row.closest('.free-mask-panel');
+    const status = panel && panel.querySelector('.free-complete-save-status');
+    if (status) status.textContent = '2だんめマスクも自動保存';
     if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
   });
   row.appendChild(labelText);
@@ -6740,6 +6860,22 @@ function renderFreeMaskEditorControls() {
       section.appendChild(makeCompleteLayoutRange('2だんX', 'x', -80, 80, completeLayout, 'px', completeTier));
       section.appendChild(makeCompleteLayoutRange('2だんY', 'y', -160, 280, completeLayout, 'px', completeTier));
       section.appendChild(makeCompleteLayoutRange('2だんW', 'w', 80, 120, completeLayout, '%', completeTier));
+      const tierMaskLabel = document.createElement('div');
+      tierMaskLabel.className = 'free-mask-viewport';
+      tierMaskLabel.textContent = '2だんめマスク';
+      section.appendChild(tierMaskLabel);
+      const completeMaskRel = getBoxCompleteMaskRelative(box, completeTier);
+      const completeMaskActions = document.createElement('div');
+      completeMaskActions.className = 'free-mask-actions';
+      completeMaskActions.appendChild(makeSmallControlButton('2だんマスクリセット', '', () => {
+        resetSelectedBoxCompleteMaskRelative(completeTier);
+        renderFreeLayoutControls();
+      }));
+      section.appendChild(completeMaskActions);
+      section.appendChild(makeCompleteMaskRange('2だんMX', 'x', -20, 120, completeMaskRel, completeTier));
+      section.appendChild(makeCompleteMaskRange('2だんMY', 'y', -20, 120, completeMaskRel, completeTier));
+      section.appendChild(makeCompleteMaskRange('2だんMW', 'w', 5, 140, completeMaskRel, completeTier));
+      section.appendChild(makeCompleteMaskRange('2だんMH', 'h', 5, 140, completeMaskRel, completeTier));
     }
     if (hasLidControls) {
       const lidLabel = document.createElement('div');
@@ -7187,15 +7323,22 @@ function addFreeCompletionSparkles(host, delayStart) {
 function createFreeCompleteLidStage(box, delay, tierCount = 1, options = {}) {
   if (!box || !box.lidImage || !box.bounds) return null;
   const layoutScale = Number(options.layoutScale) || 1;
+  const isPreview = !!options.preview;
+  const waitsForTap = !!options.waitForTap && !isPreview;
   const lidLayout = getBoxCompleteLidLayout(box);
   const scaledX = roundFreeCompleteValue(lidLayout.x * layoutScale);
   const scaledY = roundFreeCompleteValue(lidLayout.y * layoutScale);
   const stage = document.createElement('div');
   stage.className = 'free-complete-lid-stage';
+  if (waitsForTap) stage.classList.add('is-waiting-tap');
   stage.style.setProperty('--lid-delay', `${delay}s`);
   stage.style.setProperty('--lid-duration', `${FREE_COMPLETE_LID_CLOSE_SECONDS}s`);
   stage.style.setProperty('--lid-x', `${scaledX}px`);
   stage.style.setProperty('--lid-y', `${scaledY}px`);
+  stage.style.setProperty('--lid-rest-x', `${roundFreeCompleteValue((tierCount > 1 ? 330 : 300) * layoutScale)}px`);
+  stage.style.setProperty('--lid-rest-y', `${roundFreeCompleteValue((tierCount > 1 ? 170 : 135) * layoutScale)}px`);
+  stage.style.setProperty('--lid-rest-scale', tierCount > 1 ? '0.56' : '0.62');
+  stage.style.setProperty('--lid-rest-pop-scale', tierCount > 1 ? '0.58' : '0.64');
   stage.style.width = `min(${lidLayout.w}%, ${Math.round(820 * lidLayout.w / 100)}px)`;
   const lid = document.createElement('img');
   lid.className = 'free-complete-lid-img';
@@ -7210,6 +7353,48 @@ function createFreeCompleteLidStage(box, delay, tierCount = 1, options = {}) {
   if (box.imageScale) lid.style.transform = `scale(${box.imageScale})`;
   stage.appendChild(lid);
   return stage;
+}
+function bindFreeCompleteLidTapClose(target, lidStage, sparkleHost, readyDelaySeconds = 0) {
+  if (!target || !lidStage) return;
+  let ready = readyDelaySeconds <= 0;
+  let pending = false;
+  let closed = false;
+  const markReady = () => {
+    ready = true;
+    lidStage.classList.add('is-ready');
+    if (pending) closeLid();
+  };
+  const closeLid = () => {
+    if (closed) return;
+    if (!ready) {
+      pending = true;
+      lidStage.classList.add('is-pending-close');
+      return;
+    }
+    closed = true;
+    lidStage.classList.remove('is-ready', 'is-pending-close', 'is-waiting-tap');
+    lidStage.classList.add('is-closing');
+    playPop();
+    addFreeCompletionSparkles(sparkleHost || target, FREE_COMPLETE_LID_CLOSE_SECONDS + 0.12);
+  };
+  target.tabIndex = 0;
+  target.setAttribute('role', 'button');
+  target.setAttribute('aria-label', 'ふたをしめる');
+  target.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeLid();
+  });
+  target.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    closeLid();
+  });
+  if (ready) {
+    markReady();
+  } else {
+    setTimeout(markReady, Math.max(0, readyDelaySeconds) * 1000);
+  }
 }
 function renderFreeCompleteBento(host, items, boxId, options = {}) {
   const box = bentoBoxes.find(b => b.id === (boxId || selectedBentoBoxId)) || getSelectedBentoBox();
@@ -7264,12 +7449,22 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
         tier,
         tierFilter: tier,
         interactive: false,
+        maskRel: tier > 1 ? getBoxCompleteMaskRelative(box, tier) : null,
+        maskVariant: tier > 1 ? getFreeCompleteMaskLayoutKey(box, tier) : '',
       });
     }
     const lidDelay = isPreview ? 0 : ((tierCount - 1) * FREE_COMPLETE_TIER_STEP_SECONDS + 0.65 + FREE_COMPLETE_LID_AFTER_LAST_SECONDS);
-    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, { layoutScale });
+    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, {
+      layoutScale,
+      preview: isPreview,
+      waitForTap: !isPreview,
+    });
     if (lidStage) build.appendChild(lidStage);
-    if (!isPreview) addFreeCompletionSparkles(build, lidDelay + (lidStage ? FREE_COMPLETE_LID_CLOSE_SECONDS + 0.12 : 0.18));
+    if (!isPreview && lidStage) {
+      bindFreeCompleteLidTapClose(build, lidStage, build, lidDelay);
+    } else if (!isPreview) {
+      addFreeCompletionSparkles(build, 0.18);
+    }
     return;
   }
   const stage = document.createElement('div');
@@ -7282,9 +7477,17 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
   });
   const layoutScale = getFreeCompleteLayoutScale(host, isPreview);
   const lidDelay = isPreview ? 0 : 1.05;
-  const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, { layoutScale });
+  const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, {
+    layoutScale,
+    preview: isPreview,
+    waitForTap: !isPreview,
+  });
   if (lidStage) host.appendChild(lidStage);
-  if (!isPreview) addFreeCompletionSparkles(host, lidDelay + (lidStage ? FREE_COMPLETE_LID_CLOSE_SECONDS + 0.12 : 0.18));
+  if (!isPreview && lidStage) {
+    bindFreeCompleteLidTapClose(host, lidStage, host, lidDelay);
+  } else if (!isPreview) {
+    addFreeCompletionSparkles(host, 0.18);
+  }
 }
 
 // ===== Game =====
