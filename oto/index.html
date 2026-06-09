@@ -39,6 +39,21 @@
     position: absolute; inset: 0;
     overflow: hidden;
   }
+  body.rhythm-layout #app {
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(15,23,42,0.2) 0%, rgba(2,6,23,0.78) 72%),
+      #020617;
+  }
+  body.rhythm-layout .stage {
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    height: min(100dvh, calc(100vw * 9 / 16));
+    aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 48px rgba(0,0,0,0.36);
+  }
   /* 背景 Canvas (最下層): グラデ / 環境バブル / 波紋 / パーティクル */
   #bgCanvas {
     position: absolute; inset: 0;
@@ -3865,8 +3880,9 @@ function _runRhythmDemoSequence(thenStart) {
         var rect = btn.getBoundingClientRect();
         var cx = rect.left + rect.width / 2;
         var cy = rect.top + rect.height / 2;
+        var p = _viewportPointToStage(cx, cy);
         spawnRipples(cx, cy);
-        spawnParticles(cx, cy, 6);
+        spawnParticles(p.x, p.y, 6);
       }
       bumpPono();
       _playRhythmDemoTone(noteIdx, noteMs * 0.86);
@@ -4044,6 +4060,9 @@ function _setModeButtons(mode) {
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
+  if (typeof resizeBg === 'function') {
+    requestAnimationFrame(resizeBg);
+  }
 }
 function setPlayMode(mode) {
   mode = mode === 'rhythm' ? 'rhythm' : 'free';
@@ -4262,8 +4281,9 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
     var rect = btn.getBoundingClientRect();
     var cx = rect.left + rect.width / 2;
     var cy = rect.top  + rect.height / 2;
+    var p = _viewportPointToStage(cx, cy);
     spawnRipples(cx, cy);
-    spawnParticles(cx, cy, 8);
+    spawnParticles(p.x, p.y, 8);
     bumpPono();
     handleRhythmTap(idx, btn);
 
@@ -4325,7 +4345,8 @@ _stageEl.addEventListener('pointerdown', function(e) {
     return;
   }
   if (_isOnButton(e)) return;
-  var x = e.clientX, y = e.clientY;
+  var p = _viewportPointToStage(e.clientX, e.clientY);
+  var x = p.x, y = p.y;
   if (popBubbleAt(x, y)) {
     if (window.incrementStat) window.incrementStat('oto_taps', 1);
     markPlayedToday();
@@ -4349,7 +4370,8 @@ _stageEl.addEventListener('pointermove', function(e) {
   }
   if (!_drag.active) return;
   if (_isOnButton(e)) return;
-  var x = e.clientX, y = e.clientY;
+  var p = _viewportPointToStage(e.clientX, e.clientY);
+  var x = p.x, y = p.y;
   var dx = x - _drag.lastX, dy = y - _drag.lastY;
   if (dx * dx + dy * dy < DRAG_SPAWN_DIST * DRAG_SPAWN_DIST) return;
   // 既存シャボン玉に当たれば破裂、そうでなければ生成
@@ -4394,8 +4416,10 @@ var DPR = 1;
 var bgW = 0, bgH = 0;
 function resizeBg() {
   DPR = Math.min(window.devicePixelRatio || 1, 2); // 毎回最新 DPR
-  bgW = window.innerWidth;
-  bgH = window.innerHeight;
+  var stage = document.getElementById('stage');
+  var rect = stage ? stage.getBoundingClientRect() : null;
+  bgW = Math.max(1, Math.round(rect && rect.width ? rect.width : window.innerWidth));
+  bgH = Math.max(1, Math.round(rect && rect.height ? rect.height : window.innerHeight));
   bgCanvas.width  = Math.round(bgW * DPR);
   bgCanvas.height = Math.round(bgH * DPR);
   bgCanvas.style.width  = bgW + 'px';
@@ -4417,7 +4441,17 @@ var SPARK_EMOJIS = ['✨', '⭐', '💖', '🎵', '🎶', '💫', '🌟'];
 // ─ 波紋 ─
 var ripples = [];
 var MAX_RIPPLES = 40;
+function _viewportPointToStage(x, y) {
+  var stage = document.getElementById('stage');
+  if (!stage) return { x: x, y: y };
+  var rect = stage.getBoundingClientRect();
+  return { x: x - rect.left, y: y - rect.top };
+}
 function spawnRipples(cx, cy) {
+  var p = _viewportPointToStage(cx, cy);
+  spawnRipplesLocal(p.x, p.y);
+}
+function spawnRipplesLocal(cx, cy) {
   // 3層を時差で
   for (var i = 0; i < 3; i++) {
     ripples.push({ cx: cx, cy: cy, r: 0, maxR: 260, delay: i * 0.08, elapsed: 0 });
@@ -4586,7 +4620,7 @@ function popBubbleAt(x, y) {
   // パーティクルも一緒に
   spawnParticles(b2.x, b2.y, 6);
   // 軽い波紋も
-  spawnRipples(b2.x, b2.y);
+  spawnRipplesLocal(b2.x, b2.y);
   // ポップ音 (WebAudio 合成: 短い sine 降下)
   playPopSound();
   return true;
@@ -4657,9 +4691,10 @@ function triggerFinale() {
     var rect = b.getBoundingClientRect();
     var cx = rect.left + rect.width / 2;
     var cy = rect.top  + rect.height / 2;
-    spawnParticles(cx, cy, 12);
+    var p = _viewportPointToStage(cx, cy);
+    spawnParticles(p.x, p.y, 12);
     spawnRipples(cx, cy);
-    spawnBubbleAt(cx, cy - 30, Math.floor(Math.random() * BUBBLE_COLORS.length));
+    spawnBubbleAt(p.x, p.y - 30, Math.floor(Math.random() * BUBBLE_COLORS.length));
   });
   // アルペジオで現セットの5音
   for (var i = 0; i < 5; i++) {
