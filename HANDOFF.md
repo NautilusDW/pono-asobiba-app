@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:364-oto-touch-button-assets] DONE - Codex: 先に誤ってローカル生成した `tmp/alpha_pending/364_oto_touch_buttons_raw/` は commit `92ad0a7` で取り消し済み。改めて Image 2 で raw シート 3 枚を生成し、`tmp/alpha_pending/364_oto_touch_buttons_image2_raw/` に保存。内容はカタカナ(ドレミファソラシド)、ローマ字(CDEFGABC)、オトタッチ animal 音色順 cat/dog/cow/pig/horse/lion/frog/crow。ローカル加工・alpha抜き・切り出し・後描きなし。目視で文字順と動物順を確認。 (by Codex)
+- 2026-06-09 - [batch:365-maze-title-strength-tap-rock] Codex: user 依頼「迷路タイトル表示時に旧CSS迷路が一瞬見えるので削除 / ステージ3の力の手袋を黄色ゲージではなく連打で岩を壊す演出へ変更」を受領。タイトル中は旧 `#app` を隠し、段階的に崩れる岩画像を追加して連打ミニゲームへ差し替え中。 (by Codex)
 - 2026-06-09 - [batch:363-maze-janken-strength-rock] Codex: user 依頼「じゃんけん連敗補正 / ステージ3の石を力の手袋で動かす」を受領。既存 stage3 rock を strengthGimmick 対象にし、手袋拾得、力ゲージ、岩移動、じゃんけん連敗時の勝率補正を実装中。 (by Codex)
 - 2026-06-09 - [batch:363-maze-janken-strength-rock] DONE - Codex: じゃんけんは連敗数に応じて次回のポノ勝ち抽選率を 1/3 から +10pt/敗・最大72% まで上げ、勝利でリセットする補正を追加。ステージ3は `strengthGimmick` を追加し、仮アルファ抜き手袋素材 `assets/images/maze/gimmicks/strength/`、手袋拾得HUD、力ゲージミニゲーム、成功後の岩移動/通行可を実装。Cache v940。JS parse、stage3 JSON、Playwrightで手袋取得→岩押し成功→stop4到達、じゃんけん補正分岐を確認。 (by Codex)
 - 2026-06-09 - [batch:362-maze-water-puddle-gimmick] DONE - Codex: Implemented prototype water puddle gimmick on maze stage4. Created provisional alpha/cropped water assets from batch361 raw sheet under `assets/images/maze/gimmicks/water/`. Added plank pickup, inventory HUD item, amenbo encounter, "place 3 planks while amenbo moves" mini-game, bridge-built pass-through state, and stage4 waterGimmick JSON. Cache v938. Verified with JS parse, JSON check, Playwright flow and screenshots. (by Codex)
