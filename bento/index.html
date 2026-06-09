@@ -1510,6 +1510,40 @@ html, body {
 .free-complete-editor-preview .free-complete-lid-stage::after {
   display: none;
 }
+.complete-bento.free-mask-main-complete-preview.free-complete-stack {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  overflow: visible;
+}
+.free-mask-main-complete-preview .free-complete-build-stage {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  width: 700px;
+  height: var(--complete-preview-logical-height, 560px);
+  transform: translate(-50%, -50%) scale(calc(var(--complete-preview-scale, 0.7) * 0.86));
+  transform-origin: center center;
+}
+.free-mask-main-complete-preview .free-complete-tier {
+  opacity: 1;
+  animation: none;
+  transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(0) scale(1);
+}
+.free-mask-main-complete-preview .free-complete-sparkle {
+  display: none;
+}
+.free-mask-main-complete-preview .free-complete-lid-stage {
+  opacity: 1;
+  animation: none;
+  transform: translateX(calc(-50% + var(--lid-x, 0px))) translateY(var(--lid-y, 0px)) scale(1);
+  pointer-events: none;
+  cursor: default;
+}
+.free-mask-main-complete-preview .free-complete-lid-stage::after {
+  display: none;
+}
 .free-complete-lid-stage {
   position: absolute;
   left: 50%;
@@ -4086,8 +4120,16 @@ document.addEventListener('pointerdown', () => getAC().resume(), { once: true, p
 const bgmEl = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 if (bgmEl) bgmEl.volume = 0.25;
+function isMaskEditorAudioMuted() {
+  try {
+    const sp = new URLSearchParams(window.location.search || '');
+    return sp.has('maskedit') || sp.has('editmask');
+  } catch (e) {
+    return false;
+  }
+}
 function tryPlayBgm() {
-  if (!bgmEl || !bgmEnabled) return;
+  if (!bgmEl || !bgmEnabled || isMaskEditorAudioMuted()) return;
   var p = bgmEl.play();
   if (p && typeof p.catch === 'function') p.catch(function(){});
 }
@@ -4105,7 +4147,7 @@ if (bgmEnabled) tryPlayBgm();
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) {
     stopBgm();
-  } else if (bgmEnabled) {
+  } else if (bgmEnabled && !isMaskEditorAudioMuted()) {
     tryPlayBgm();
   }
 });
@@ -6356,6 +6398,33 @@ function renderFreeLayoutInto(host, opts = {}) {
 function renderFreeLayoutStage() {
   const stage = document.getElementById('free-layout-stage');
   if (!stage) return;
+  if (freeMaskEditorMode) {
+    const box = getSelectedBentoBox();
+    const view = getActiveFreeMaskEditorView(box);
+    const completeTier = Math.min(2, getBoxTierCount(box));
+    if (view === 'tier2' && completeTier > 1) {
+      stage.className = 'free-layout-stage';
+      renderFreeLayoutInto(stage, {
+        items: getCompleteEditorPreviewItems(box, completeTier),
+        boxId: box.id,
+        tier: completeTier,
+        tierFilter: completeTier,
+        interactive: false,
+        maskRel: getBoxCompleteMaskRelative(box, completeTier),
+        maskVariant: getFreeCompleteMaskLayoutKey(box, completeTier),
+        maskPreview: true,
+      });
+      return;
+    }
+    if (view === 'complete' && (completeTier > 1 || (box && box.lidImage))) {
+      renderFreeCompleteBento(stage, getCompleteEditorPreviewItems(box, completeTier), box.id, {
+        forceTierCount: Math.min(completeTier, getBoxTierCount(box)),
+        preview: true,
+      });
+      return;
+    }
+  }
+  stage.className = 'free-layout-stage';
   renderFreeLayoutInto(stage, { interactive: true });
 }
 function createPaletteVisual(def) {
@@ -6746,7 +6815,10 @@ function makeCompleteLayoutRange(label, prop, min, max, layout, unit, tier) {
     const panel = row.closest('.free-mask-panel');
     const status = panel && panel.querySelector('.free-complete-save-status');
     if (status) status.textContent = '完成版も自動保存';
-    if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+    if (next) {
+      renderFreeLayoutStage();
+      refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+    }
   });
   row.appendChild(labelText);
   row.appendChild(input);
@@ -6772,7 +6844,10 @@ function makeCompleteLidLayoutRange(label, prop, min, max, layout, unit, tier) {
     const panel = row.closest('.free-mask-panel');
     const status = panel && panel.querySelector('.free-complete-save-status');
     if (status) status.textContent = 'ふたも自動保存';
-    if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+    if (next) {
+      renderFreeLayoutStage();
+      refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+    }
   });
   row.appendChild(labelText);
   row.appendChild(input);
@@ -6798,7 +6873,10 @@ function makeCompleteMaskRange(label, prop, min, max, rel, tier) {
     const panel = row.closest('.free-mask-panel');
     const status = panel && panel.querySelector('.free-complete-save-status');
     if (status) status.textContent = '2段目マスクを自動保存';
-    if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+    if (next) {
+      renderFreeLayoutStage();
+      refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
+    }
   });
   row.appendChild(labelText);
   row.appendChild(input);
@@ -6945,17 +7023,13 @@ function renderFreeMaskEditorControls() {
   if (view === 'tier2' && hasCompleteTierControls) {
     const section = document.createElement('div');
     section.className = 'free-complete-editor-section';
-    section.appendChild(renderFreeCompleteEditorPreview(box, completeTier, {
-      label: '2段目マスクプレビュー',
-      maskPreviewTier: completeTier,
-      hideLid: true,
-    }));
-    const group = makeFreeMaskEditGroup('2段目の中身マスク', '上の完成プレビューに緑で表示', 'free-complete-save-status');
+    const group = makeFreeMaskEditGroup('2段目の中身マスク', '左の大きい画面に緑で表示', 'free-complete-save-status');
     const completeMaskRel = getBoxCompleteMaskRelative(box, completeTier);
     const completeMaskActions = document.createElement('div');
     completeMaskActions.className = 'free-mask-actions';
     completeMaskActions.appendChild(makeSmallControlButton('2段目リセット', '', () => {
       resetSelectedBoxCompleteMaskRelative(completeTier);
+      renderFreeLayoutStage();
       renderFreeLayoutControls();
     }));
     group.appendChild(completeMaskActions);
@@ -6970,16 +7044,14 @@ function renderFreeMaskEditorControls() {
   if (view === 'complete' && (hasCompleteTierControls || hasLidControls)) {
     const section = document.createElement('div');
     section.className = 'free-complete-editor-section';
-    section.appendChild(renderFreeCompleteEditorPreview(box, completeTier, {
-      label: '完成プレビュー',
-    }));
     if (hasCompleteTierControls) {
-      const tierGroup = makeFreeMaskEditGroup('2段目の箱位置', '箱全体の位置と大きさ', 'free-complete-save-status');
+      const tierGroup = makeFreeMaskEditGroup('2段目の箱位置', '左の大きい画面で確認', 'free-complete-save-status');
       const completeLayout = getBoxCompleteLayout(box, completeTier);
       const completeActions = document.createElement('div');
       completeActions.className = 'free-mask-actions';
       completeActions.appendChild(makeSmallControlButton('箱位置リセット', '', () => {
         resetSelectedBoxCompleteLayout(completeTier);
+        renderFreeLayoutStage();
         renderFreeLayoutControls();
       }));
       tierGroup.appendChild(completeActions);
@@ -6989,12 +7061,13 @@ function renderFreeMaskEditorControls() {
       section.appendChild(tierGroup);
     }
     if (hasLidControls) {
-      const lidGroup = makeFreeMaskEditGroup('ふたの閉まる位置', '最後に閉じる蓋の位置と大きさ', 'free-complete-save-status');
+      const lidGroup = makeFreeMaskEditGroup('ふたの閉まる位置', '左の大きい画面で確認', 'free-complete-save-status');
       const lidLayout = getBoxCompleteLidLayout(box);
       const lidActions = document.createElement('div');
       lidActions.className = 'free-mask-actions';
       lidActions.appendChild(makeSmallControlButton('ふたリセット', '', () => {
         resetSelectedBoxCompleteLidLayout();
+        renderFreeLayoutStage();
         renderFreeLayoutControls();
       }));
       lidGroup.appendChild(lidActions);
@@ -7521,10 +7594,12 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
   ));
   const isPreview = !!options.preview;
   const keepPreviewSlotClass = host.classList && host.classList.contains('free-complete-editor-preview-slot');
+  const keepMainStageClass = host.id === 'free-layout-stage';
   host.className = 'complete-bento free-complete-bento'
     + (tierCount > 1 ? ' free-complete-stack' : '')
     + (isPreview ? ' free-complete-preview-mode' : '')
-    + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '');
+    + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '')
+    + (keepMainStageClass ? ' free-layout-stage free-mask-main-complete-preview' : '');
   applyFreeCompletePreviewScale(host, isPreview, box, tierCount);
   host.innerHTML = '';
   if (tierCount > 1) {
