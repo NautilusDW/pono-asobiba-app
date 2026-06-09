@@ -518,6 +518,11 @@
     if (window._currentLayoutData && window._currentLayoutData.__chip_text_overrides) {
       data.__chip_text_overrides = window._currentLayoutData.__chip_text_overrides;
     }
+    // Quizland 4 択 chip 内テキストの個別スタイルを保全。
+    // schema: { "<qKey>": { "<slot>": { fontSizePx, trackingPx, scaleXPercent } } }
+    if (window._currentLayoutData && window._currentLayoutData.__chip_text_styles) {
+      data.__chip_text_styles = window._currentLayoutData.__chip_text_styles;
+    }
     // 2026-05-06: 個別 override の明示リストを保存 (再ロード時の復元用)
     if (state.individualOverrides && state.individualOverrides.size > 0) {
       data.__individual_chip_overrides = Array.from(state.individualOverrides);
@@ -1329,6 +1334,173 @@
       try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text clear failed', e); }
     }
     showToast('テキスト override クリア: slot ' + slot, 'success');
+  }
+
+  function _getChipTextStyleControls() {
+    if (!state.toolbarEl) return null;
+    return {
+      font: state.toolbarEl.querySelector('#le-chip-font-size'),
+      tracking: state.toolbarEl.querySelector('#le-chip-tracking'),
+      scale: state.toolbarEl.querySelector('#le-chip-scale-x'),
+      clear: state.toolbarEl.querySelector('#le-chip-text-style-clear'),
+    };
+  }
+
+  function _selectedChipTextTarget(chip) {
+    if (!chip || !chip.querySelector) return null;
+    return chip.querySelector('.chip-label, .chip-illust-label, .chip-count-num');
+  }
+
+  function _getChipTextStyle(qKey, slot) {
+    var bucket = window._currentLayoutData && window._currentLayoutData.__chip_text_styles;
+    var byQ = bucket && qKey ? bucket[qKey] : null;
+    var st = byQ ? byQ[String(slot)] : null;
+    return (st && typeof st === 'object') ? st : null;
+  }
+
+  function _hasChipTextStyle(st) {
+    return !!(st && (
+      Number.isFinite(Number(st.fontSizePx)) ||
+      Number.isFinite(Number(st.trackingPx)) ||
+      Number.isFinite(Number(st.scaleXPercent))
+    ));
+  }
+
+  function _applyChipTextStyleToEl(el, qKey, slot) {
+    if (!el) return;
+    if (typeof window._qzApplyChipTextStyle === 'function') {
+      try { window._qzApplyChipTextStyle(el, qKey, slot); return; } catch (e) {}
+    }
+    var st = _getChipTextStyle(qKey, slot);
+    if (!st) {
+      el.style.removeProperty('--chip-text-font-size');
+      el.style.removeProperty('--chip-text-letter-spacing');
+      el.style.removeProperty('--chip-text-scale-x');
+      el.removeAttribute('data-chip-text-style');
+      return;
+    }
+    var has = false;
+    if (Number.isFinite(Number(st.fontSizePx)) && Number(st.fontSizePx) > 0) {
+      el.style.setProperty('--chip-text-font-size', Number(st.fontSizePx) + 'px');
+      has = true;
+    } else {
+      el.style.removeProperty('--chip-text-font-size');
+    }
+    if (Number.isFinite(Number(st.trackingPx))) {
+      el.style.setProperty('--chip-text-letter-spacing', Number(st.trackingPx) + 'px');
+      has = true;
+    } else {
+      el.style.removeProperty('--chip-text-letter-spacing');
+    }
+    if (Number.isFinite(Number(st.scaleXPercent)) && Number(st.scaleXPercent) > 0) {
+      el.style.setProperty('--chip-text-scale-x', Number(st.scaleXPercent) / 100);
+      has = true;
+    } else {
+      el.style.removeProperty('--chip-text-scale-x');
+    }
+    if (has) el.setAttribute('data-chip-text-style', '1');
+    else el.removeAttribute('data-chip-text-style');
+  }
+
+  function _readChipTextStyleInputs() {
+    var c = _getChipTextStyleControls();
+    if (!c) return null;
+    function readNumber(input) {
+      if (!input || input.value === '') return null;
+      var n = Number(input.value);
+      return Number.isFinite(n) ? n : null;
+    }
+    var st = {};
+    var fs = readNumber(c.font);
+    var tr = readNumber(c.tracking);
+    var sx = readNumber(c.scale);
+    if (fs != null && fs > 0) st.fontSizePx = fs;
+    if (tr != null) st.trackingPx = tr;
+    if (sx != null && sx > 0) st.scaleXPercent = sx;
+    return st;
+  }
+
+  function saveChipTextStyleForSelected() {
+    if (state._chipTextStyleRefreshing) return;
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('文字設定する chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    var qKey = _getCurrentQKey();
+    if (slot == null || !qKey) {
+      showToast('現在の問題 ID / slot が取得できません', 'warn');
+      return;
+    }
+    var st = _readChipTextStyleInputs();
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    if (!window._currentLayoutData.__chip_text_styles) window._currentLayoutData.__chip_text_styles = {};
+    var bucket = window._currentLayoutData.__chip_text_styles;
+    if (!bucket[qKey]) bucket[qKey] = {};
+    if (_hasChipTextStyle(st)) {
+      bucket[qKey][String(slot)] = st;
+    } else {
+      delete bucket[qKey][String(slot)];
+      if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    }
+    _applyChipTextStyleToEl(_selectedChipTextTarget(chip), qKey, slot);
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text style failed', e); }
+    }
+  }
+
+  function clearChipTextStyleForSelected() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('文字設定をクリアする chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    var qKey = _getCurrentQKey();
+    if (slot == null || !qKey) {
+      showToast('現在の問題 ID / slot が取得できません', 'warn');
+      return;
+    }
+    var bucket = window._currentLayoutData && window._currentLayoutData.__chip_text_styles;
+    if (bucket && bucket[qKey]) {
+      delete bucket[qKey][String(slot)];
+      if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    }
+    _applyChipTextStyleToEl(_selectedChipTextTarget(chip), qKey, slot);
+    refreshChipTextStyleControls();
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text style clear failed', e); }
+    }
+    showToast('文字設定クリア: slot ' + slot, 'success');
+  }
+
+  function refreshChipTextStyleControls() {
+    var c = _getChipTextStyleControls();
+    if (!c) return;
+    var chip = _findSelectedChip();
+    var slot = chip ? _findChipSlot(chip) : null;
+    var qKey = _getCurrentQKey();
+    var enabled = !!(chip && slot != null && qKey);
+    var target = enabled ? _selectedChipTextTarget(chip) : null;
+    var st = enabled ? _getChipTextStyle(qKey, slot) : null;
+    state._chipTextStyleRefreshing = true;
+    [c.font, c.tracking, c.scale, c.clear].forEach(function (el) {
+      if (el) el.disabled = !enabled;
+    });
+    if (c.font) {
+      c.font.value = (st && Number.isFinite(Number(st.fontSizePx))) ? String(st.fontSizePx) : '';
+      c.font.placeholder = target ? String(Math.round(parseFloat(getComputedStyle(target).fontSize) || 32)) : '';
+    }
+    if (c.tracking) {
+      c.tracking.value = (st && Number.isFinite(Number(st.trackingPx))) ? String(st.trackingPx) : '';
+      c.tracking.placeholder = '0';
+    }
+    if (c.scale) {
+      c.scale.value = (st && Number.isFinite(Number(st.scaleXPercent))) ? String(st.scaleXPercent) : '';
+      c.scale.placeholder = '100';
+    }
+    state._chipTextStyleRefreshing = false;
   }
 
   // 全 chip を walk して、 override を持つラベルに data-chip-text-override="1" を付ける。
@@ -2497,6 +2669,7 @@
     refreshTopToolbarAlign();
     // Lima-2 修正B/C: src 差し替え / 取り出すボタンの enable 状態を選択に応じて更新
     refreshSelectionDependentButtons();
+    refreshChipTextStyleControls();
     emit('select', Array.from(state.selectedElements));
   }
 
@@ -6274,6 +6447,10 @@
       '<button id="le-chip-individual-save" title="選択中の chip 関連要素 (chip 自体 / circle / illust / label / countNum) を個別設定 (override) として保存。 個別設定された要素は preset を上書きする" aria-label="個別保存">💾 個別保存</button>' +
       '<button id="le-chip-preset-clear-overrides" title="選択 chip と同種別の個別設定エントリを削除し、 preset 値を全 chip に強制反映 (preset 未定義のパーツはスキップ)" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
       '<button id="le-chip-text-clear" title="選択 chip のテキスト override (__chip_text_overrides) を削除し、 元テキストに戻す。 chip-label / chip-illust-label / chip-count-num の dblclick で編集された改行入りテキストをリセット" aria-label="テキスト初期化">🔡 テキスト初期化</button>' +
+      '<label class="le-chip-text-style" title="選択中 chip の文字サイズをこの問題・この選択肢だけに保存 (px)">文字 <input id="le-chip-font-size" type="number" min="8" max="140" step="1" aria-label="選択肢文字サイズ" disabled></label>' +
+      '<label class="le-chip-text-style" title="選択中 chip のトラッキングをこの問題・この選択肢だけに保存 (px)">字間 <input id="le-chip-tracking" type="number" min="-12" max="20" step="0.5" aria-label="選択肢トラッキング" disabled></label>' +
+      '<label class="le-chip-text-style" title="選択中 chip の長体/平体をこの問題・この選択肢だけに保存 (100=等倍、90=横90%)">長体 <input id="le-chip-scale-x" type="number" min="50" max="140" step="1" aria-label="選択肢長体" disabled></label>' +
+      '<button id="le-chip-text-style-clear" title="選択 chip の文字サイズ・字間・長体を初期化" aria-label="文字設定クリア" disabled>🔤 文字設定クリア</button>' +
       '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
       // ⏸ 一時停止 / ▶ 再開: editor 中も普通にプレイ可能にしつつ、
       //   調整したい瞬間 (例: 正解画面の位置を確認したい) だけ任意に
@@ -6363,6 +6540,20 @@
     //   元テキスト (questions.js) に戻す (renderChoices 再実行)。
     var chipTextClearBtn = tb.querySelector('#le-chip-text-clear');
     if (chipTextClearBtn) chipTextClearBtn.addEventListener('click', clearChipTextOverrideForSelected);
+    ['#le-chip-font-size', '#le-chip-tracking', '#le-chip-scale-x'].forEach(function (sel) {
+      var input = tb.querySelector(sel);
+      if (!input) return;
+      input.addEventListener('change', saveChipTextStyleForSelected);
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          saveChipTextStyleForSelected();
+          try { input.blur(); } catch (e) {}
+        }
+      });
+    });
+    var chipTextStyleClearBtn = tb.querySelector('#le-chip-text-style-clear');
+    if (chipTextStyleClearBtn) chipTextStyleClearBtn.addEventListener('click', clearChipTextStyleForSelected);
     // ⏭ 次の問題へ: editor 中でも quizland の nextQuestion() を呼んで問題切替。
     //   chip 種別 (with-image / text-only) を切り替えて preset を 2 種類保存可能に。
     var nextQBtn = tb.querySelector('#le-next-question');
@@ -7980,6 +8171,7 @@
     refreshElementList();
     updateNumericPanel();
     refreshTopToolbarAlign();
+    refreshChipTextStyleControls();
 
     // R1: restore persisted element list panel open/closed state. Default = closed.
     try {

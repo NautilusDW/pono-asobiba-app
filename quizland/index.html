@@ -1544,11 +1544,19 @@ body.layout-editor-on .chip-illust-wrap {
   overflow: hidden;
 }
 
+.chip .chip-label-text-inner {
+  display: inline-block;
+  max-width: 100%;
+  font-size: var(--chip-text-font-size, inherit);
+  letter-spacing: var(--chip-text-letter-spacing, var(--chip-text-default-letter-spacing, inherit));
+  transform: scaleX(var(--chip-text-scale-x, var(--chip-text-default-scale-x, 1)));
+  transform-origin: center center;
+}
+
 .chip .chip-label-condensed-x {
   display: inline-block;
-  transform: scaleX(0.9);
-  transform-origin: center;
-  letter-spacing: -0.06em;
+  --chip-text-default-scale-x: 0.9;
+  --chip-text-default-letter-spacing: -0.06em;
   white-space: nowrap;
 }
 
@@ -4114,6 +4122,58 @@ function _qzGetChipTextWithOverride(originalText, qKey, slot) {
   var ov = byQ[String(slot)];
   return (typeof ov === 'string' && ov.length > 0) ? ov : originalText;
 }
+/* chip テキストの per-question style 解決。
+   schema: __chip_text_styles[qKey][slot] =
+   { fontSizePx?: number, trackingPx?: number, scaleXPercent?: number } */
+function _qzGetChipTextStyle(qKey, slot) {
+  if (!qKey) return null;
+  var data = window._currentLayoutData;
+  if (!data || !data.__chip_text_styles) return null;
+  var byQ = data.__chip_text_styles[qKey];
+  if (!byQ) return null;
+  var st = byQ[String(slot)];
+  return (st && typeof st === 'object') ? st : null;
+}
+function _qzApplyChipTextStyle(el, qKey, slot) {
+  if (!el || !el.style) return;
+  var st = _qzGetChipTextStyle(qKey, slot);
+  var hasStyle = false;
+  function finiteNumber(v) {
+    var n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (st) {
+    var fs = finiteNumber(st.fontSizePx);
+    var tr = finiteNumber(st.trackingPx);
+    var sx = finiteNumber(st.scaleXPercent);
+    if (fs != null && fs > 0) {
+      el.style.setProperty('--chip-text-font-size', fs + 'px');
+      hasStyle = true;
+    } else {
+      el.style.removeProperty('--chip-text-font-size');
+    }
+    if (tr != null) {
+      el.style.setProperty('--chip-text-letter-spacing', tr + 'px');
+      hasStyle = true;
+    } else {
+      el.style.removeProperty('--chip-text-letter-spacing');
+    }
+    if (sx != null && sx > 0) {
+      el.style.setProperty('--chip-text-scale-x', (sx / 100));
+      hasStyle = true;
+    } else {
+      el.style.removeProperty('--chip-text-scale-x');
+    }
+  } else {
+    el.style.removeProperty('--chip-text-font-size');
+    el.style.removeProperty('--chip-text-letter-spacing');
+    el.style.removeProperty('--chip-text-scale-x');
+  }
+  if (hasStyle) el.setAttribute('data-chip-text-style', '1');
+  else el.removeAttribute('data-chip-text-style');
+}
+window._qzApplyChipTextStyle = _qzApplyChipTextStyle;
+
 /* chip ラベル要素に override 適用済みテキストを innerHTML で書き込む。
    - originalText を toFullWidth に通してから escape → \n を <br> に変換。
    - override 適用時のみ data-chip-text-override="1" を付け、 editor が
@@ -4126,14 +4186,14 @@ function _qzApplyChipText(el, originalText, qKey, slot) {
   var fullWidthText = (typeof toFullWidth === 'function') ? toFullWidth(safeText) : safeText;
   var escapedText = _qzEscapeHtml(fullWidthText).replace(/\n/g, '<br>');
   var shouldCondenseX = fullWidthText.indexOf('シロナガスクジラ') !== -1;
-  el.innerHTML = shouldCondenseX
-    ? '<span class="chip-label-condensed-x">' + escapedText + '</span>'
-    : escapedText;
+  var innerCls = 'chip-label-text-inner' + (shouldCondenseX ? ' chip-label-condensed-x' : '');
+  el.innerHTML = '<span class="' + innerCls + '">' + escapedText + '</span>';
   if (hasOverride) {
     el.setAttribute('data-chip-text-override', '1');
   } else {
     el.removeAttribute('data-chip-text-override');
   }
+  _qzApplyChipTextStyle(el, qKey, slot);
 }
 
 function _qzPickFreshLayoutData(serverData) {
@@ -5418,6 +5478,7 @@ function renderChoices(q) {
     );
   }
 }
+window.renderChoices = renderChoices;
 
 function loadQuestion(q) {
   currentQ = q;
