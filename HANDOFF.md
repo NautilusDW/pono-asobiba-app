@@ -17,6 +17,10 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:372-oto-rhythm-force-piano] Codex: user 依頼「リズムモードの時はドラムと動物の鳴き声を選択してた場合は、ピアノに変更」を受領。`oto/index.html` でリズム開始時に `taiko` / `animal` のみ `doremi` へ戻す追修正を実装・検証中。 (by Codex)
+- 2026-06-09 - [batch:372-oto-rhythm-force-piano] DONE - Codex: `oto/index.html` に音色選択ヘルパーを追加し、リズムメニュー表示時と直接リズム開始時に `taiko` / `animal` 選択だけ `doremi` へ自動切替。音色ボタン active 状態、ドレミ/animal ボタン画像、ABC/ドレミ表記反映も `_applyScaleLabels()` 経由で同期。`sw.js` は v948。Node inline script、`git diff --check`、Playwright で taiko→rhythm / animal→rhythm / direct start を確認。 (by Codex)
+- 2026-06-09 - [batch:373-oto-rhythm-arcade-bg] Codex: user 依頼「リズム背景をもう少し濃く、見やすく楽しげ、アーケード感を残して他ゲームと差別化」を受領。`oto/index.html` の rhythm-layout 背景、レーン、ヒットラインを調整中。 (by Codex)
+- 2026-06-09 - [batch:373-oto-rhythm-arcade-bg] DONE - Codex: リズムモード全体を濃いインディゴ/青緑ベースへ変更し、レーン背景に細いネオンライン/走査線、ヒットラインに青緑・黄・青の発光を追加。通常の明るい自然色とは分けたアーケード調にしつつ、ボタン/ノート視認性を維持。Node inline script、`git diff --check`、Playwright 1024x768 / 667x375 スクショ、実プレイ状態の computed style・ボタン overflow 0、taiko/animal rhythm 回帰を確認。セルフレビュー: 背景が濃くなっても Pono・ドレミボタン・メニュー文字が読めることをスクショで確認。 (by Codex)
 - 2026-06-09 - [batch:371-maze-flag-exit-focus] Codex: user 指摘「ステージ4旗ワープ出口のアップフォーカスが左下にずれ、ポノが stop12 から出てくる」を受領。右上出口穴を演出中心にし、出現座標を穴へ分離する追修正中。 (by Codex)
 - 2026-06-09 - [batch:371-maze-flag-exit-focus] DONE - Codex: ステージ4旗ワープのカメラクランプを演出中だけ外し、出口フォーカスを右上穴 `stage4-flag-tunnel-exit` (`2483,293`) に一致させた。ポノも出現時は穴座標から表示し、ワープ完了時だけ操作ノード `stop12` (`2490,723`) に戻す。`sw.js` / `PAGE_CACHE_VERSION` は v947。Node構文、`git diff --check`、Playwrightで旗あげ勝利→出口表示時 camera/pono=`2483,293`、最終 `stop12`、鍵文言なし、Canvas error 0 を確認。 (by Codex)
 - 2026-06-09 - [batch:370-oto-alpha-buttons-notation-toggle] Codex: user 指定 `D:\ポノのおへや\OtoTouch\Button\NEW` のアルファ付きボタンを実装中。ドレミファソラシドを通常表示、animal 音色選択時は動物シルエットボタンへ差し替え、設定メニューからドレミ/ABC 表記を切替できるよう `oto/index.html` と `assets/images/oto/buttons/` を対象に作業。別件の bento/maze/play/sw 未コミット差分は巻き込まない。 (by Codex)

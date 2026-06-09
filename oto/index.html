@@ -44,6 +44,15 @@
     position: absolute; inset: 0;
     z-index: 0; pointer-events: none;
   }
+  body.rhythm-layout .stage {
+    background:
+      linear-gradient(115deg, rgba(217,70,239,0.16) 0%, rgba(217,70,239,0) 24%),
+      linear-gradient(245deg, rgba(20,184,166,0.2) 0%, rgba(20,184,166,0) 32%),
+      linear-gradient(180deg, #17082d 0%, #08142d 46%, #031a22 100%);
+  }
+  body.rhythm-layout #bgCanvas {
+    opacity: 0.16;
+  }
   /* ポノ ラッパー: 固定サイズ 200×200 の箱を画面中央に置く
      → 画像の読み込み前後で位置がブレない */
   .pono-wrap {
@@ -246,8 +255,16 @@
     right: 0;
     z-index: 1; /* #bgCanvas(0) より上、.pono-wrap(2)/#instruments(3) より下 */
     pointer-events: none;
-    background: linear-gradient(180deg, #050814 0%, #0a0f1f 50%, #121a33 100%);
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.55);
+    background:
+      repeating-linear-gradient(90deg, rgba(103,232,249,0.16) 0 1px, transparent 1px 12.5%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 28px),
+      linear-gradient(122deg, rgba(236,72,153,0.18) 0%, rgba(236,72,153,0) 36%),
+      linear-gradient(242deg, rgba(45,212,191,0.18) 0%, rgba(45,212,191,0) 42%),
+      linear-gradient(180deg, #0f0624 0%, #07142f 48%, #031b22 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      inset 28px 0 46px rgba(0,0,0,0.42),
+      inset 0 0 82px rgba(0,0,0,0.66);
   }
   #rhythm-lanes {
     /* v713+: 左メニューを 11% 中心・幅 160px に縮めたため、レーン領域を 22% から開始。
@@ -293,9 +310,11 @@
     height: var(--gh-hit-y, 100%);
     /* v709: 暗背景に合わせてレーン内も濃紺グラデ。下端にいくほど少し明るく
        (ヒットラインへの誘目)。境界線は薄白の点線で視認性を確保。 */
-    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(120,150,220,0.05) 70%, rgba(150,180,255,0.12) 100%);
-    border-left: 1px dashed rgba(180,200,255,0.22);
-    border-right: 1px dashed rgba(180,200,255,0.22);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(56,189,248,0.055) 68%, rgba(250,204,21,0.09) 100%);
+    border-left: 1px solid rgba(103,232,249,0.22);
+    border-right: 1px solid rgba(244,114,182,0.14);
+    box-shadow: inset 0 -28px 34px rgba(45,212,191,0.08);
     pointer-events: none;
     transition: background-color 0.18s;
   }
@@ -313,8 +332,10 @@
     height: 4px;
     top: var(--gh-hit-y, 80%);
     transform: translateY(-2px);
-    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%);
-    box-shadow: 0 0 8px rgba(255,255,255,0.35);
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(45,212,191,0.9) 34%, rgba(253,224,71,0.96) 50%, rgba(56,189,248,0.9) 66%, rgba(255,255,255,0) 100%);
+    box-shadow:
+      0 0 10px rgba(45,212,191,0.52),
+      0 0 22px rgba(250,204,21,0.36);
     border-radius: 999px;
     pointer-events: none;
     z-index: 5;
@@ -2552,6 +2573,18 @@ var currentSet = 'doremi';
 _preloadInstrumentButtonImages();
 // (旧 .set-btn 一律ハンドラは廃止 — popover 内 .set-btn の専用ハンドラで処理)
 
+function _selectSoundSet(set) {
+  currentSet = set || 'doremi';
+  document.querySelectorAll('.sound-sets .set-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.set === currentSet);
+  });
+  _applyScaleLabels();
+}
+function _forcePianoSoundForRhythm() {
+  if (currentSet !== 'taiko' && currentSet !== 'animal') return;
+  _selectSoundSet('doremi');
+}
+
 function playSetSound(idx) {
   var ac = getAC();
   // トーン系 (doremi/kira/marimba/blip) — コードモードと単音対応
@@ -3425,6 +3458,7 @@ function _rhythmTick() {
 function _startRhythmMode() {
   if (_rhythm.enabled) return;
   _hideRhythmComplete();
+  _forcePianoSoundForRhythm();
   // v719: 譜面 (RHYTHM_SONGS) は C メジャー idx0-7 前提のため、リズム中は penta を強制的に解除する。
   // 復帰時のためにユーザー設定を一時退避し、_stopRhythmMode で復元する。
   _rhythm._savedScale = SCALE_MODE;
@@ -3709,6 +3743,7 @@ function _showRhythmMenu() {
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
   _hideRhythmComplete();
+  _forcePianoSoundForRhythm();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
   _setModeButtons('rhythm');
@@ -5266,10 +5301,7 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
         });
         return;
       }
-      document.querySelectorAll('.sound-sets .set-btn').forEach(function(x) { x.classList.remove('active'); });
-      b.classList.add('active');
-      currentSet = b.dataset.set;
-      _applyScaleLabels();
+      _selectSoundSet(b.dataset.set);
       unlockAudio();
       _ensureAnimalDecoded();
       playSetSound(0);
