@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-06-09 - [batch:370-oto-alpha-buttons-notation-toggle] Codex: user 指定 `D:\ポノのおへや\OtoTouch\Button\NEW` のアルファ付きボタンを実装中。ドレミファソラシドを通常表示、animal 音色選択時は動物シルエットボタンへ差し替え、設定メニューからドレミ/ABC 表記を切替できるよう `oto/index.html` と `assets/images/oto/buttons/` を対象に作業。別件の bento/maze/play/sw 未コミット差分は巻き込まない。 (by Codex)
+- 2026-06-09 - [batch:370-oto-alpha-buttons-notation-toggle] DONE - Codex: `D:\ポノのおへや\OtoTouch\Button\NEW` のアルファ付き PNG 48 枚を `assets/images/oto/buttons/btn_note_{kana,abc,animal}_*.png` として配置。`oto/index.html` は通常ドレミ/ABC/animal と押下 `_pressed` 画像を JS で切替、設定メニューに `おんぷ ABCに` / `おんぷ ドレミに` を追加。`sw.js` は v946。Node inline script 構文、PNG 48 枚 alpha、Playwright 1024x768 で通常/押下/animal/ABC/ドレミ復帰、1024x768・667x375 スクショ目視を確認。 (by Codex)
 - 2026-06-09 - [batch:369-bento-lid-editor-mask-close] Codex: user 依頼「お弁当の蓋をエディター画面で位置/スケール調整、2段目マスクも調整、完成品表示では蓋を横に置きタップ後に最後に閉まる演出」を受領。HANDOFF と `git log -- bento/index.html assets/images/bento/*` で過去の蓋エディター実装は確認済みだが、2段目専用マスクとタップ後クローズ演出を追修正する。 (by Codex)
 - 2026-06-09 - [batch:369-bento-lid-editor-mask-close] DONE - Codex: `bento/index.html` に完成版2段目専用マスク調整 (`2だんMX/MY/MW/MH`) を追加し、完成プレビュー/完成表示の2段目へ適用。蓋は完成表示で横置き待機し、弁当側タップ後に段表示完了を待って最後に閉まる演出へ変更。`sw.js` は v945。inline script 構文、`git diff --check`、Playwrightでエディター保存/preview/完成時tier2 mask/タップ後close/small viewport overflowなし、スクショ目視確認済み。 (by Codex)
 - 2026-06-09 - [batch:368-maze-rock-se-flag-cleanup] Codex: user 依頼「岩破壊SE / 連打回数増加 / 個別破片を飛ばす演出 / 岩破壊後そのまま先へ進む / ステージ4旗お題ランダム化 / 出口をゴール手前へ / 鍵削除」を受領。個別破片スプライトを生成・分割し、迷路実装を修正中。 (by Codex)
