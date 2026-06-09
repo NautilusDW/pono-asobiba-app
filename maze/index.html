@@ -361,6 +361,9 @@ html, body {
 /* ── Image-stage mode: full viewport landscape takeover ──
    Default app is locked to 540px (portrait mobile) for the grid maze.
    When body has .image-stage-mode we override for full landscape. */
+body:not(.maze-started) #app {
+  display: none;
+}
 body.image-stage-mode #app {
   max-width: none;
   width: 100vw;
@@ -1276,7 +1279,7 @@ body.image-stage-mode .game-wrap {
 
 .strength-game {
   display: grid;
-  grid-template-rows: auto minmax(140px, 1fr) auto auto auto;
+  grid-template-rows: auto minmax(150px, 1fr) 24px 16px 1.8em;
   gap: 9px;
   align-items: center;
   min-height: min(55dvh, 390px);
@@ -1293,75 +1296,100 @@ body.image-stage-mode .game-wrap {
 }
 .strength-game__stage {
   position: relative;
-  min-height: 135px;
+  min-height: 160px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
+  place-items: center;
   border: 4px solid #BFD88A;
   border-radius: 20px;
   background: linear-gradient(180deg, #FFF7DF, #F8E8C7);
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65), 0 4px 14px rgba(0,0,0,0.12);
 }
-.strength-game__glove,
-.strength-game__rock,
-.strength-game__spark {
-  width: min(29vw, 160px);
-  max-height: min(22dvh, 128px) !important;
+.strength-rock-btn {
+  position: relative;
+  width: 100%;
+  min-height: 145px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.strength-rock-btn:active {
+  transform: scale(0.985);
+}
+.strength-game__rock {
+  width: min(42vw, 230px);
+  max-height: min(31dvh, 175px) !important;
   object-fit: contain;
-  justify-self: center;
-  filter: drop-shadow(0 6px 9px rgba(0,0,0,0.18));
+  filter: drop-shadow(0 7px 10px rgba(0,0,0,0.2));
+  pointer-events: none;
+  transition: transform 0.08s ease, opacity 0.12s ease;
+}
+.strength-rock-btn.is-hit .strength-game__rock {
+  animation: strengthRockHit 0.18s ease-out;
+}
+.strength-game__glove,
+.strength-game__spark {
+  position: absolute;
   pointer-events: none;
 }
 .strength-game__glove {
+  right: 9%;
+  bottom: 7%;
+  width: min(24vw, 130px);
+  max-height: min(22dvh, 128px) !important;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 9px rgba(0,0,0,0.18));
   transform: rotate(8deg);
-  animation: strengthGlovePush 0.74s ease-in-out infinite alternate;
-}
-.strength-game__rock {
-  width: min(27vw, 145px);
+  opacity: 0.92;
 }
 .strength-game__spark {
-  position: absolute;
   left: 50%;
   top: 50%;
-  width: min(22vw, 120px);
-  opacity: 0.48;
+  width: min(24vw, 135px);
+  opacity: 0;
   transform: translate(-50%, -50%);
-  animation: strengthSparkPulse 0.9s ease-in-out infinite alternate;
 }
-.strength-meter {
+.strength-rock-btn.is-hit .strength-game__glove {
+  animation: strengthPunchHit 0.18s ease-out;
+}
+.strength-rock-btn.is-hit .strength-game__spark {
+  animation: strengthSparkHit 0.2s ease-out;
+}
+.strength-tap-progress {
+  min-height: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+.strength-tap-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(138, 111, 70, 0.24);
+  border: 2px solid rgba(138, 111, 70, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45);
+}
+.strength-tap-dot.is-on {
+  background: #F4CE5F;
+  border-color: #B5852E;
+  box-shadow: 0 0 10px rgba(244,206,95,0.6), inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+.strength-time {
   position: relative;
-  height: 28px;
+  height: 16px;
   border-radius: 999px;
   overflow: hidden;
-  background: linear-gradient(90deg, #EF8484, #F6DB6B 50%, #8BD58D);
-  border: 3px solid #BFD88A;
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.42);
+  background: rgba(95, 72, 43, 0.18);
+  border: 2px solid rgba(191, 216, 138, 0.9);
 }
-.strength-meter__target {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 48%;
-  width: 28%;
-  background: rgba(255,255,255,0.5);
-  border-left: 3px solid rgba(255,255,255,0.86);
-  border-right: 3px solid rgba(255,255,255,0.86);
-}
-.strength-meter__marker {
-  position: absolute;
-  top: -6px;
-  width: 8px;
-  height: 40px;
-  border-radius: 999px;
-  background: #5D4E37;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.78), 0 3px 8px rgba(0,0,0,0.22);
-  transform: translateX(-50%);
-}
-.strength-hit-btn {
-  min-height: 48px;
-  justify-self: center;
-  min-width: min(48vw, 210px);
+.strength-time__bar {
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #8AD86B, #F1D56D);
+  box-shadow: 0 0 10px rgba(241,213,109,0.45);
 }
 .strength-game__status {
   min-height: 1.8em;
@@ -1373,12 +1401,23 @@ body.image-stage-mode .game-wrap {
   line-height: 1.2;
 }
 @keyframes strengthGlovePush {
-  0%   { transform: translateX(-4%) rotate(8deg); }
-  100% { transform: translateX(8%) rotate(3deg); }
+  0%   { transform: translateX(-2%) rotate(8deg); }
+  100% { transform: translateX(6%) rotate(3deg); }
 }
-@keyframes strengthSparkPulse {
-  0%   { opacity: 0.24; transform: translate(-50%, -50%) scale(0.88); }
-  100% { opacity: 0.6;  transform: translate(-50%, -50%) scale(1.08); }
+@keyframes strengthPunchHit {
+  0%   { transform: translateX(0) rotate(8deg) scale(1); }
+  45%  { transform: translateX(-24%) rotate(-4deg) scale(1.05); }
+  100% { transform: translateX(0) rotate(8deg) scale(1); }
+}
+@keyframes strengthRockHit {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  30%      { transform: translateX(-4px) rotate(-2deg); }
+  65%      { transform: translateX(4px) rotate(2deg); }
+}
+@keyframes strengthSparkHit {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
+  35%  { opacity: 0.72; transform: translate(-50%, -50%) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28); }
 }
 
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
@@ -1497,7 +1536,7 @@ body.image-stage-mode .game-wrap {
     font-size: 0.86rem;
   }
   .strength-game {
-    grid-template-rows: 1.55em minmax(82px, 1fr) 24px 38px 1.35em;
+    grid-template-rows: 1.55em minmax(82px, 1fr) 18px 10px 1.3em;
     gap: 5px;
     min-height: min(64dvh, 228px);
   }
@@ -1510,28 +1549,33 @@ body.image-stage-mode .game-wrap {
     border-width: 3px;
     border-radius: 14px;
   }
-  .strength-game__glove,
+  .strength-rock-btn {
+    min-height: 82px;
+  }
   .strength-game__rock {
-    width: min(17vw, 78px);
+    width: min(24vw, 110px);
     max-height: min(22dvh, 64px) !important;
   }
+  .strength-game__glove {
+    width: min(15vw, 68px);
+    max-height: min(22dvh, 58px) !important;
+  }
   .strength-game__spark {
-    width: min(14vw, 60px);
+    width: min(14vw, 62px);
     max-height: min(20dvh, 54px) !important;
   }
-  .strength-meter {
-    height: 22px;
-    border-width: 2px;
+  .strength-tap-progress {
+    min-height: 18px;
+    gap: 5px;
   }
-  .strength-meter__marker {
-    height: 32px;
-    top: -5px;
+  .strength-tap-dot {
+    width: 12px;
+    height: 12px;
+    border-width: 1.5px;
   }
-  .strength-hit-btn {
-    min-height: 36px;
-    min-width: min(42vw, 150px);
-    padding: 4px 12px;
-    font-size: 0.95rem;
+  .strength-time {
+    height: 10px;
+    border-width: 1.5px;
   }
   .strength-game__status {
     min-height: 1.3em;
@@ -1987,6 +2031,10 @@ const MAZE_STRENGTH_ASSETS = {
   glovePair: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png'),
   glovePush: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_push.png'),
   powerSpark: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'power_spark.png'),
+  rockBreak0: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png'),
+  rockBreak1: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_1.png'),
+  rockBreak2: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_2.png'),
+  rockBreak3: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png'),
 };
 // Start / Goal markers for image stages
 const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
@@ -3751,10 +3799,9 @@ function imgDrawStrengthGimmick(stageObj, now) {
   const rock = _strengthRockObstacle();
   const rockSize = (rock && rock.size && Number.isFinite(rock.size)) ? rock.size : stageObj.viewBox.h / 10.5;
   if (rock && st.rockMoved) {
-    const moved = cfg.movedTo || { x: rock.x + rockSize * 0.78, y: rock.y };
-    _drawWorldImage(imgRock, moved.x, moved.y, rockSize, 1);
+    _drawWorldImage(MAZE_STRENGTH_ASSETS.rockBreak3, rock.x, rock.y + rockSize * 0.08, rockSize * 0.86, 0.92);
     const sparkle = 0.5 + Math.sin(now / 260) * 0.5;
-    _drawWorldImage(MAZE_STRENGTH_ASSETS.powerSpark, rock.x, rock.y - rockSize * 0.08, rockSize * 0.85, 0.35 + sparkle * 0.18);
+    _drawWorldImage(MAZE_STRENGTH_ASSETS.powerSpark, rock.x, rock.y - rockSize * 0.18, rockSize * 0.62, 0.22 + sparkle * 0.14);
   }
   const glove = cfg.glove;
   if (glove && !st.gloveCollected) {
@@ -4060,6 +4107,7 @@ function _handleStrengthGimmickObstacle(o, px, py) {
     return true;
   }
   const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
+  walkAnim = null;
   pono.x = px;
   pono.y = py;
   pono.nodeId = backNodeId;
@@ -4190,8 +4238,8 @@ function _triggerStrengthGimmickEncounter(obstacle) {
     minigame: 'strength_push',
     x: obstacle.x,
     y: obstacle.y,
-    dialog: 'てぶくろを はめたね！<br>ゲージの まんなかで タップして<br>いわを うごかそう！',
-    defeatDialog: 'ぐぐっと うごいた！<br>とおって いいよ。'
+    dialog: 'てぶくろを はめたね！<br>いわを れんだして<br>くだいてみよう！',
+    defeatDialog: 'いわが くだけた！<br>とおって いいよ。'
   };
   _triggerEncounter(c);
 }
@@ -4293,7 +4341,7 @@ const _GAME_DIALOGS = {
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
   water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
-  strength_push: 'ちからを あわせて！<br>ゲージの まんなかで タップしてね',
+  strength_push: 'ちからを あわせて！<br>いわを れんだして くだこう',
 };
 
 function _gameForCreature(c) {
@@ -5298,45 +5346,43 @@ function _showCreatureDefeatDialog() {
   encStageEl.appendChild(wrap);
 }
 
-// ── 力の手袋: 岩押し ──
-const STRENGTH_METER_MS = 1700;
-const STRENGTH_TARGET_MIN = 0.48;
-const STRENGTH_TARGET_MAX = 0.76;
+// ── 力の手袋: 岩くだき ──
+const STRENGTH_TAP_REQUIRED = 8;
+const STRENGTH_TAP_MS = 6000;
 
-function _strengthMeterValue(now) {
-  const gs = _strengthGameState;
-  if (!gs) return 0;
-  const phase = ((now - gs.t0) % STRENGTH_METER_MS) / STRENGTH_METER_MS;
-  return phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+function _strengthRockStageIndex(count) {
+  if (count >= STRENGTH_TAP_REQUIRED) return 3;
+  return Math.min(3, Math.floor((count / STRENGTH_TAP_REQUIRED) * 4));
 }
 
 function _showStrengthPushGame() {
   _setEncounterMode('strength_push');
   _clearStrengthGimmickTimers();
   _strengthGameState = {
-    t0: performance.now(),
+    tapCount: 0,
+    required: STRENGTH_TAP_REQUIRED,
+    deadline: performance.now() + STRENGTH_TAP_MS,
     locked: false,
-    status: 'きいろの ところで タップ！',
+    status: 'いわを れんだして くだこう！',
   };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'strength-game';
   wrap.innerHTML =
-    '<div class="strength-game__title">いわを おそう！</div>' +
+    '<div class="strength-game__title">いわを れんだ！</div>' +
     '<div class="strength-game__stage">' +
-      '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_push.png" alt="ちからの てぶくろ">' +
-      '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
-      '<img class="strength-game__rock" src="../assets/images/maze/rock.png" alt="いわ">' +
+      '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく">' +
+        '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
+        '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
+        '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_push.png" alt="ちからの てぶくろ">' +
+      '</button>' +
     '</div>' +
-    '<div class="strength-meter" aria-hidden="true">' +
-      '<div class="strength-meter__target"></div>' +
-      '<div class="strength-meter__marker" id="strengthMarker"></div>' +
-    '</div>' +
-    '<button class="enc-btn primary strength-hit-btn" id="strengthHitBtn">ここだ！</button>' +
+    '<div class="strength-tap-progress" id="strengthTapProgress"></div>' +
+    '<div class="strength-time" aria-hidden="true"><div class="strength-time__bar" id="strengthTimeBar"></div></div>' +
     '<div class="strength-game__status" id="strengthStatus"></div>';
   encStageEl.appendChild(wrap);
-  const hit = document.getElementById('strengthHitBtn');
-  if (hit) hit.addEventListener('click', _onStrengthPushTap);
+  const rockBtn = document.getElementById('strengthRockBtn');
+  if (rockBtn) rockBtn.addEventListener('click', _onStrengthRockTap);
   _renderStrengthPushGame();
   const intervalId = setInterval(_renderStrengthPushGame, 45);
   _strengthGameState.intervalId = intervalId;
@@ -5346,32 +5392,55 @@ function _showStrengthPushGame() {
 function _renderStrengthPushGame() {
   const gs = _strengthGameState;
   if (!gs) return;
-  const marker = document.getElementById('strengthMarker');
+  const rockImg = document.getElementById('strengthRockImg');
+  const progress = document.getElementById('strengthTapProgress');
+  const bar = document.getElementById('strengthTimeBar');
   const status = document.getElementById('strengthStatus');
-  const value = _strengthMeterValue(performance.now());
-  if (marker) marker.style.left = (value * 100).toFixed(1) + '%';
+  const stageIdx = _strengthRockStageIndex(gs.tapCount);
+  if (rockImg) rockImg.src = MAZE_STRENGTH_ASSET_BASE + 'rock_break_' + stageIdx + '.png';
+  if (progress) {
+    let html = '';
+    for (let i = 0; i < gs.required; i++) {
+      html += '<span class="strength-tap-dot' + (i < gs.tapCount ? ' is-on' : '') + '"></span>';
+    }
+    progress.innerHTML = html;
+  }
+  const remain = Math.max(0, gs.deadline - performance.now());
+  if (bar) bar.style.transform = 'scaleX(' + (remain / STRENGTH_TAP_MS).toFixed(3) + ')';
   if (status) status.textContent = gs.status || '';
+  if (!gs.locked && remain <= 0) _failStrengthPushGame();
 }
 
-function _onStrengthPushTap() {
+function _onStrengthRockTap() {
   const gs = _strengthGameState;
   if (!gs || gs.locked) return;
-  const value = _strengthMeterValue(performance.now());
-  if (value >= STRENGTH_TARGET_MIN && value <= STRENGTH_TARGET_MAX) {
-    _resolveStrengthPushGame();
-    return;
+  gs.tapCount = Math.min(gs.required, gs.tapCount + 1);
+  gs.status = gs.tapCount >= gs.required ? 'くだけた！' : 'そのちょうし！';
+  const btn = document.getElementById('strengthRockBtn');
+  if (btn) {
+    btn.classList.remove('is-hit');
+    void btn.offsetWidth;
+    btn.classList.add('is-hit');
   }
+  _renderStrengthPushGame();
+  if (gs.tapCount >= gs.required) _resolveStrengthPushGame();
+}
+
+function _failStrengthPushGame() {
+  const gs = _strengthGameState;
+  if (!gs || gs.locked) return;
   gs.locked = true;
-  gs.status = 'おしい！ もういちど';
+  gs.status = 'もういちど やってみよう';
   playMzSe('wrong');
   _renderStrengthPushGame();
   _strengthGimmickSetTimeout(function() {
     if (!_strengthGameState) return;
+    _strengthGameState.tapCount = 0;
+    _strengthGameState.deadline = performance.now() + STRENGTH_TAP_MS;
     _strengthGameState.locked = false;
-    _strengthGameState.t0 = performance.now();
-    _strengthGameState.status = 'きいろの ところで タップ！';
+    _strengthGameState.status = 'いわを れんだして くだこう！';
     _renderStrengthPushGame();
-  }, 720);
+  }, 900);
 }
 
 function _resolveStrengthPushGame() {
@@ -5383,8 +5452,8 @@ function _resolveStrengthPushGame() {
   playMzSe('correct');
   encStageEl.innerHTML =
     '<div class="enc-result win">' +
-      '<img class="enc-result__icon" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="ちからのてぶくろ">' +
-      'いわが うごいた！' +
+      '<img class="enc-result__icon" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png" alt="くだけたいわ">' +
+      'いわが くだけた！' +
     '</div>';
   _strengthGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
@@ -5405,6 +5474,7 @@ const _GAME_STARTERS = {
 
 function _closeEncounter(playerWon) {
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
+  const wasStrengthPush = _currentGame === 'strength_push';
   if (_currentGame === 'flag') {
     _flagGameState = null;
     _clearFlagTunnelTimers();
@@ -5438,6 +5508,14 @@ function _closeEncounter(playerWon) {
         walkAnim.t0 += pausedDuration;
         delete walkAnim._pausedAt;
       }
+    } else if (wasStrengthPush && stage && stage.type === 'image') {
+      const backNode = stage.nodesById[pono.nodeId] || stage.start;
+      if (backNode) {
+        pono.x = backNode.x;
+        pono.y = backNode.y;
+        pono.nodeId = backNode.id;
+      }
+      imgShowArrows();
     }
   } else {
     // Lose: cancel the walk and bounce back to the node pono left from
@@ -5707,6 +5785,7 @@ function showHint(msg, ms) {
 
 // ====== Stage loading ======
 function loadStage(idx) {
+  document.body.classList.add('maze-started');
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
   // セーフフラグ OFF の間は true 返却 → 実ロックは発動しない（保険として window.PonoTier の存在もチェック）
