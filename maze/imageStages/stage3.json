@@ -11,23 +11,13 @@
   "lantern": true,
   "obstacles": [
     {
-      "id": "stage3-strength-rock",
       "kind": "rock",
       "x": 998,
       "y": 129,
+      "id": "stage3-strength-rock",
       "size": 148
     }
   ],
-  "strengthGimmick": {
-    "id": "stage3-strength-glove-rock",
-    "glove": {
-      "x": 760,
-      "y": 210,
-      "radius": 90
-    },
-    "obstacleId": "stage3-strength-rock",
-    "encounterRadius": 78
-  },
   "creatures": [
     {
       "id": "c3",
@@ -396,7 +386,8 @@
             "x": 394,
             "y": 890
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -422,7 +413,8 @@
             "x": 401,
             "y": 717
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -448,7 +440,8 @@
             "x": 815,
             "y": 717
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -646,7 +639,8 @@
             "x": 1586,
             "y": 643
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -904,7 +898,8 @@
             "x": 1923,
             "y": 472
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -1342,7 +1337,8 @@
             "x": 2078,
             "y": 829
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -1780,7 +1776,8 @@
             "x": 2416,
             "y": 1311
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -2758,7 +2755,8 @@
             "x": 1159,
             "y": 1071
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -3196,7 +3194,8 @@
             "x": 639,
             "y": 1147
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -3222,7 +3221,8 @@
             "x": 978,
             "y": 1151
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -3600,7 +3600,8 @@
             "x": 1159,
             "y": 1071
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -3858,7 +3859,8 @@
             "x": 394,
             "y": 890
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -4776,7 +4778,8 @@
             "x": 1240,
             "y": 131
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -4802,7 +4805,8 @@
             "x": 1545,
             "y": 133
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -5240,7 +5244,8 @@
             "x": 1586,
             "y": 643
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -5498,7 +5503,8 @@
             "x": 2157,
             "y": 209
           }
-        ]
+        ],
+        "shape": "curve"
       }
     },
     {
@@ -5696,8 +5702,19 @@
             "x": 984,
             "y": 465
           }
-        ]
+        ],
+        "shape": "curve"
       }
     }
-  ]
+  ],
+  "strengthGimmick": {
+    "id": "stage3-strength-glove-rock",
+    "glove": {
+      "x": 976,
+      "y": 1148,
+      "radius": 90
+    },
+    "obstacleId": "stage3-strength-rock",
+    "encounterRadius": 78
+  }
 }
