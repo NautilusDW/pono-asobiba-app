@@ -1,6 +1,7 @@
 {
   "type": "image",
   "name": "stage6",
+  "stageOrder": 6,
   "imageUrl": "imageStages/stage6.jpg",
   "viewBox": {
     "w": 2688,
@@ -13,17 +14,22 @@
     {
       "kind": "hole",
       "x": 197,
-      "y": 1292
+      "y": 1292,
+      "id": "hole-2",
+      "eventEnabled": true
     },
     {
       "kind": "hole",
       "x": 2509,
-      "y": 161
+      "y": 161,
+      "id": "hole-3",
+      "eventEnabled": true
     },
     {
       "kind": "hole",
       "x": 818,
-      "y": 128
+      "y": 128,
+      "id": "hole-1"
     },
     {
       "kind": "pond",
@@ -33,28 +39,28 @@
   ],
   "creatures": [
     {
-      "id": "c1",
-      "kind": "mayoi",
-      "x": 2122,
-      "y": 773
-    },
-    {
-      "id": "c2",
-      "kind": "mayoi",
-      "x": 308,
-      "y": 1103
-    },
-    {
       "id": "c3",
       "kind": "mayoi",
       "x": 1654,
       "y": 1150
     },
     {
-      "id": "c4",
-      "kind": "mayoi",
-      "x": 877,
-      "y": 1103
+      "id": "c5",
+      "kind": "kabuto",
+      "x": 1929,
+      "y": 781
+    },
+    {
+      "id": "c6",
+      "kind": "hachi",
+      "x": 632,
+      "y": 967
+    },
+    {
+      "id": "c8",
+      "kind": "odoke",
+      "x": 886,
+      "y": 282
     }
   ],
   "nodes": [
@@ -1299,5 +1305,21 @@
         "shape": "polyline"
       }
     }
-  ]
+  ],
+  "flagGimmick": {
+    "id": "flag-tunnel",
+    "entranceObstacleId": "hole-2",
+    "exitObstacleId": "hole-3",
+    "exitNodeId": "stop20",
+    "encounterRadius": 94,
+    "exitFocus": {
+      "x": 2509,
+      "y": 161
+    },
+    "ladder": {
+      "x": 2492,
+      "y": 810,
+      "radius": 92
+    }
+  }
 }
