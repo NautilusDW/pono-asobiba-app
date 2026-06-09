@@ -37,6 +37,13 @@
       "kind": "hole",
       "x": 2483,
       "y": 293
+    },
+    {
+      "id": "stage4-water-puddle",
+      "kind": "pond",
+      "x": 212,
+      "y": 710,
+      "size": 190
     }
   ],
   "creatures": [
@@ -70,6 +77,16 @@
     "exitObstacleId": "stage4-mid-hole",
     "exitNodeId": "stop3",
     "encounterRadius": 94
+  },
+  "waterGimmick": {
+    "id": "stage4-water-bridge",
+    "plank": {
+      "x": 212,
+      "y": 386,
+      "radius": 90
+    },
+    "obstacleId": "stage4-water-puddle",
+    "encounterRadius": 104
   },
   "nodes": [
     {

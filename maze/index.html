@@ -1161,6 +1161,119 @@ body.image-stage-mode .game-wrap {
   100% { transform: scale(1); }
 }
 
+.water-game {
+  display: grid;
+  grid-template-rows: auto minmax(160px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: min(54dvh, 380px);
+  overflow: hidden;
+}
+.water-game__title {
+  min-height: 2em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 900;
+  color: #5D4E37;
+  line-height: 1.2;
+}
+.water-game__stage {
+  position: relative;
+  min-height: 168px;
+  border: 4px solid #BFD88A;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #E9FBFF, #D8F4FF 64%, #F9FFF0);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.7), 0 4px 14px rgba(0,0,0,0.12);
+}
+.water-game__puddle {
+  position: absolute;
+  inset: 2% 4%;
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  opacity: 0.82;
+  pointer-events: none;
+}
+.water-slots {
+  position: absolute;
+  inset: 18% 7% 17%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  align-items: center;
+  z-index: 2;
+}
+.water-slot {
+  position: relative;
+  min-height: 92px;
+  border: 3px dashed rgba(255,255,255,0.92);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.34);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-family: inherit;
+  color: #5D4E37;
+  font-weight: 900;
+  font-size: clamp(0.86rem, 2vw, 1.05rem);
+  line-height: 1.2;
+  box-shadow: inset 0 0 12px rgba(80,160,210,0.18);
+}
+.water-slot.is-next {
+  border-style: solid;
+  border-color: #FFE27A;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 0 0 4px rgba(255,226,122,0.25), inset 0 0 12px rgba(255,226,122,0.24);
+}
+.water-slot.is-placed {
+  border-style: solid;
+  border-color: rgba(125, 98, 55, 0.28);
+  background: rgba(255,255,255,0.5);
+}
+.water-slot.is-danger {
+  border-color: #F58C8C;
+  box-shadow: 0 0 0 4px rgba(245,140,140,0.28), inset 0 0 12px rgba(245,140,140,0.2);
+}
+.water-slot img {
+  width: min(94%, 150px);
+  max-height: 78px !important;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(0,0,0,0.18));
+  pointer-events: none;
+}
+.water-amenbo {
+  position: absolute;
+  z-index: 3;
+  top: 6%;
+  left: 50%;
+  width: min(28vw, 150px);
+  max-height: min(22dvh, 110px) !important;
+  object-fit: contain;
+  transform: translateX(-50%);
+  transition: left 0.28s ease-in-out, top 0.18s ease;
+  filter: drop-shadow(0 5px 8px rgba(0,0,0,0.2));
+  pointer-events: none;
+}
+.water-amenbo.is-splashing {
+  animation: waterBugSplash 0.42s ease-in-out;
+}
+.water-game__status {
+  min-height: 2.2em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(0.98rem, 2.4vw, 1.25rem);
+  font-weight: 900;
+  color: #4F8A9C;
+  line-height: 1.2;
+}
+@keyframes waterBugSplash {
+  0%, 100% { transform: translateX(-50%) rotate(0deg) scale(1); }
+  42%      { transform: translateX(-50%) rotate(-8deg) scale(1.08); }
+  70%      { transform: translateX(-50%) rotate(8deg) scale(1.04); }
+}
+
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
   .encounter-modal .enc-card.is-janken {
     padding: 8px 10px;
@@ -1240,6 +1353,41 @@ body.image-stage-mode .game-wrap {
   .flag-reward {
     min-height: min(64dvh, 220px);
     gap: 6px;
+  }
+  .water-game {
+    grid-template-rows: 1.7em minmax(86px, 1fr) 1.6em;
+    gap: 6px;
+    min-height: min(64dvh, 230px);
+  }
+  .water-game__title {
+    min-height: 1.5em;
+    font-size: clamp(1rem, 4vw, 1.3rem);
+  }
+  .water-game__stage {
+    min-height: 86px;
+    border-width: 3px;
+    border-radius: 14px;
+  }
+  .water-slots {
+    inset: 18% 6% 14%;
+    gap: 6px;
+  }
+  .water-slot {
+    min-height: 58px;
+    border-width: 2px;
+    border-radius: 12px;
+    font-size: 0.76rem;
+  }
+  .water-slot img {
+    max-height: 46px !important;
+  }
+  .water-amenbo {
+    width: min(18vw, 82px);
+    max-height: min(22dvh, 66px) !important;
+  }
+  .water-game__status {
+    min-height: 1.45em;
+    font-size: 0.86rem;
   }
   .flag-lock-stage {
     height: min(42dvh, 145px);
@@ -1660,6 +1808,7 @@ const imgStump = new Image(); imgStump.src = '../assets/images/maze/stump.png';
 const imgRock  = new Image(); imgRock.src  = '../assets/images/maze/rock.png';
 const imgApple = new Image(); imgApple.src = '../assets/images/word/ringo.png';
 const MAZE_FLAG_ASSET_BASE = '../assets/images/maze/flag/';
+const MAZE_WATER_ASSET_BASE = '../assets/images/maze/gimmicks/water/';
 function _mazeLoadImage(src) {
   const img = new Image();
   img.src = src;
@@ -1675,6 +1824,15 @@ const MAZE_FLAG_ASSETS = {
   key: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'gold_key.png'),
   lockClosed: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'padlock_closed.png'),
   lockOpen: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'padlock_open.png'),
+};
+const MAZE_WATER_ASSETS = {
+  plankItem: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'plank_item.png'),
+  bridgeComplete: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'plank_bridge_complete.png'),
+  puddle: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png'),
+  splash: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'water_splash.png'),
+  amenboPose: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_pose.png'),
+  amenboSkate: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_skate.png'),
+  amenboSplash: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_splash.png'),
 };
 // Start / Goal markers for image stages
 const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
@@ -2317,6 +2475,7 @@ function imgLoadStage(def) {
   document.body.classList.add('image-stage-mode');
   stage = window.MazeImage.buildStage(def);
   _initFlagTunnelForStage(stage);
+  _initWaterGimmickForStage(stage);
   pono = {
     type: 'image',
     x: stage.start.x, y: stage.start.y,
@@ -2607,6 +2766,7 @@ function imgFinishWalk() {
   hudMoves.textContent = 'てかず: ' + moves;
   walkAnim = null;
   _checkFlagLadderPickup(pono.x, pono.y);
+  _checkWaterPlankPickup(pono.x, pono.y);
   if (pono.nodeId === stage.goal.id) {
     onClear();
   } else {
@@ -2642,6 +2802,7 @@ function imgDraw(now) {
       px = r.x; py = r.y; ftx = r.tx; fty = r.ty;
       isWalking = true;
       _checkFlagLadderPickup(px, py);
+      _checkWaterPlankPickup(px, py);
       // Obstacle hit → bounce back (no minigame). Creatures take priority via encounter.
       if (!_checkObstacleCollision(px, py)) {
         _checkCreatureCollision(px, py);
@@ -2706,6 +2867,7 @@ function imgDraw(now) {
   imgDrawMarkers(stage);
   // Obstacles (decoration only — placed by editor on top of the maze image)
   if (stage.obstacles && stage.obstacles.length) imgDrawObstacles(stage);
+  imgDrawWaterGimmick(stage, now);
   imgDrawFlagTunnelGimmick(stage, now);
   // Creatures (お邪魔虫 — block path until defeated via mini-game)
   if (stage.creatures && stage.creatures.length) imgDrawCreatures(stage, now);
@@ -2971,6 +3133,12 @@ const CREATURE_KIND_DATA = {
     defeatDialog: 'やるね！ かぎを あげるよ。',
     defaultGame: 'flag', imageUrl: '../assets/images/maze/flag/hatahata_pose.png'
   },
+  amenbo: {
+    emoji: '💧', color: '#4F9AB0', name: 'アメンボムシ',
+    dialog: 'すいすい じゃまするよ！<br>いたを ならべられるかな？',
+    defeatDialog: 'じょうずに ならべたね！\nとおって いいよ。',
+    defaultGame: 'water_bridge', imageUrl: '../assets/images/maze/gimmicks/water/amenbo_pose.png'
+  },
 };
 // お邪魔虫共通のフォールバック台詞。
 // c.dialog / c.defeatDialog (ステージ JSON での明示指定) があればそちらを最優先。
@@ -2984,7 +3152,8 @@ function _creatureData(c) {
 }
 
 function _setEncounterMode(mode) {
-  if (encCardEl) encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag');
+  if (!encCardEl) return;
+  encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge');
 }
 
 const OBSTACLE_KIND_IMG = {
@@ -2998,11 +3167,32 @@ const OBSTACLE_KIND_IMG = {
 let _flagTunnelState = null;
 let _flagGameState = null;
 let _flagTunnelTimers = [];
+let _waterGimmickState = null;
+let _waterGameState = null;
+let _waterGimmickTimers = [];
 
 function _clearFlagTunnelTimers() {
   _flagTunnelTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
   _flagTunnelTimers = [];
   _clearFlagRoundTimer();
+}
+
+function _clearWaterGimmickTimers() {
+  _waterGimmickTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
+  _waterGimmickTimers = [];
+  if (_waterGameState && _waterGameState.intervalId) {
+    clearInterval(_waterGameState.intervalId);
+    _waterGameState.intervalId = null;
+  }
+}
+
+function _waterGimmickSetTimeout(fn, ms) {
+  const t = setTimeout(function() {
+    _waterGimmickTimers = _waterGimmickTimers.filter(function(x) { return x !== t; });
+    fn();
+  }, ms);
+  _waterGimmickTimers.push(t);
+  return t;
 }
 
 function _flagTunnelSetTimeout(fn, ms) {
@@ -3023,6 +3213,9 @@ function _updateFlagInventoryHud() {
   }
   if (st && st.keyCollected) {
     items.push({ src: MAZE_FLAG_ASSET_BASE + 'gold_key.png', alt: 'かぎ' });
+  }
+  if (_waterGimmickState && _waterGimmickState.plankCollected && !_waterGimmickState.bridgeBuilt) {
+    items.push({ src: MAZE_WATER_ASSET_BASE + 'plank_item.png', alt: 'まるたのいた' });
   }
   flagInventoryHud.innerHTML = items.map(function(item) {
     return '<div class="flag-inventory-item"><img src="' + item.src + '" alt="' + item.alt + '"></div>';
@@ -3118,8 +3311,28 @@ function _initFlagTunnelForStage(stageObj) {
   _updateFlagInventoryHud();
 }
 
+function _initWaterGimmickForStage(stageObj) {
+  _clearWaterGimmickTimers();
+  _waterGameState = null;
+  if (!stageObj || !stageObj.waterGimmick) {
+    _waterGimmickState = null;
+    _updateFlagInventoryHud();
+    return;
+  }
+  _waterGimmickState = {
+    id: stageObj.waterGimmick.id || 'water-bridge',
+    plankCollected: false,
+    bridgeBuilt: false,
+  };
+  _updateFlagInventoryHud();
+}
+
 function _flagTunnelCfg() {
   return stage && stage.flagGimmick && _flagTunnelState ? stage.flagGimmick : null;
+}
+
+function _waterGimmickCfg() {
+  return stage && stage.waterGimmick && _waterGimmickState ? stage.waterGimmick : null;
 }
 
 function _flagObstacleById(id) {
@@ -3140,6 +3353,16 @@ function _flagExitObstacle() {
 function _isFlagTunnelEntranceObstacle(o) {
   const cfg = _flagTunnelCfg();
   return !!(cfg && o && o.id && o.id === cfg.entranceObstacleId);
+}
+
+function _waterObstacle() {
+  const cfg = _waterGimmickCfg();
+  return cfg ? _flagObstacleById(cfg.obstacleId) : null;
+}
+
+function _isWaterGimmickObstacle(o) {
+  const cfg = _waterGimmickCfg();
+  return !!(cfg && o && o.id && o.id === cfg.obstacleId);
 }
 
 function _drawWorldImage(img, x, y, h, alpha) {
@@ -3267,6 +3490,38 @@ function imgDrawFlagTunnelGimmick(stageObj, now) {
   }
 }
 
+function imgDrawWaterGimmick(stageObj, now) {
+  const cfg = _waterGimmickCfg();
+  const st = _waterGimmickState;
+  if (!cfg || !st || !stageObj) return;
+  const water = _waterObstacle();
+  if (water) {
+    const size = (water.size && Number.isFinite(water.size)) ? water.size : stageObj.viewBox.h / 9;
+    if (st.bridgeBuilt) {
+      _drawWorldImage(MAZE_WATER_ASSETS.bridgeComplete, water.x, water.y, size * 1.05, 1);
+    } else {
+      _drawWorldImage(MAZE_WATER_ASSETS.puddle, water.x, water.y, size * 0.85, 1);
+      if (st.plankCollected) {
+        const bob = Math.sin(now / 320) * (stageObj.viewBox.h / 180);
+        _drawWorldImage(MAZE_WATER_ASSETS.amenboSkate, water.x + Math.sin(now / 520) * (size * 0.28), water.y - size * 0.14 + bob, size * 0.38, 0.92);
+      }
+    }
+  }
+  const plank = cfg.plank;
+  if (plank && !st.plankCollected) {
+    const bob = Math.sin(now / 360) * (stageObj.viewBox.h / 140);
+    const glow = 0.5 + Math.sin(now / 300) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.18 + glow * 0.16;
+    ctx.fillStyle = '#FFF8A8';
+    ctx.beginPath();
+    ctx.arc(plank.x, plank.y + bob, (plank.radius || 86) * 0.78, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    _drawWorldImage(MAZE_WATER_ASSETS.plankItem, plank.x, plank.y + bob, stageObj.viewBox.h / 11, 1);
+  }
+}
+
 function _checkFlagLadderPickup(px, py) {
   const cfg = _flagTunnelCfg();
   const st = _flagTunnelState;
@@ -3280,6 +3535,22 @@ function _checkFlagLadderPickup(px, py) {
   playApple();
   imgShowBubble('なわばしごを ひろったよ！', { x: cfg.ladder.x, y: cfg.ladder.y }, 1900);
   showHint('🪜 なわばしごを ひろったよ。ひかる あなに いってみよう！', 3000);
+  return true;
+}
+
+function _checkWaterPlankPickup(px, py) {
+  const cfg = _waterGimmickCfg();
+  const st = _waterGimmickState;
+  if (!cfg || !st || st.plankCollected || !cfg.plank) return false;
+  const r = cfg.plank.radius || 88;
+  const dx = px - cfg.plank.x;
+  const dy = py - cfg.plank.y;
+  if (dx * dx + dy * dy > r * r) return false;
+  st.plankCollected = true;
+  _updateFlagInventoryHud();
+  playApple();
+  imgShowBubble('まるたの いたを ひろったよ！', { x: cfg.plank.x, y: cfg.plank.y }, 1900);
+  showHint('🪵 いたを ひろったよ。みずたまりに ならべてみよう！', 3000);
   return true;
 }
 
@@ -3421,6 +3692,10 @@ let _imgPauseUntil = 0;
 function _obstacleCollisionRadius(stage, obstacle) {
   const h = stage.viewBox.h;
   const kind = obstacle && obstacle.kind;
+  const waterCfg = _waterGimmickCfg();
+  if (waterCfg && obstacle && obstacle.id === waterCfg.obstacleId) {
+    return waterCfg.encounterRadius || h / 20;
+  }
   const fallback = h / 28;
   const byKind = {
     tree: h / 36,
@@ -3480,12 +3755,35 @@ function _handleFlagTunnelObstacle(o, px, py) {
   return true;
 }
 
+function _handleWaterGimmickObstacle(o, px, py) {
+  const cfg = _waterGimmickCfg();
+  const st = _waterGimmickState;
+  if (!cfg || !st || !_isWaterGimmickObstacle(o)) return false;
+  if (st.bridgeBuilt) return false;
+  if (!st.plankCollected) {
+    _bounceFromFlagTunnelObstacle(
+      o, px, py,
+      'みずたまりだよ！',
+      '🪵 まるたの いたが あれば わたれそう。さきに さがしてみよう！'
+    );
+    return true;
+  }
+  const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
+  pono.x = px;
+  pono.y = py;
+  pono.nodeId = backNodeId;
+  _triggerWaterGimmickEncounter(o);
+  return true;
+}
+
 function _checkObstacleCollision(px, py) {
   if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
   for (const o of stage.obstacles) {
+    if (_isWaterGimmickObstacle(o) && _waterGimmickState && _waterGimmickState.bridgeBuilt) continue;
     const dx = px - o.x, dy = py - o.y;
     const r = _obstacleCollisionRadius(stage, o);
     if (dx*dx + dy*dy < r*r) {
+      if (_handleWaterGimmickObstacle(o, px, py)) return true;
       if (_handleFlagTunnelObstacle(o, px, py)) return true;
       const backNodeId = walkAnim.startNodeId;
       walkAnim = null;
@@ -3579,6 +3877,19 @@ function _triggerFlagTunnelEncounter(obstacle) {
   _triggerEncounter(c);
 }
 
+function _triggerWaterGimmickEncounter(obstacle) {
+  const c = {
+    id: 'stage4-water-amenbo',
+    kind: 'amenbo',
+    minigame: 'water_bridge',
+    x: obstacle.x,
+    y: obstacle.y,
+    dialog: 'すいすい じゃまするよ！<br>アメンボが いない ときに<br>いたを おいてみて！',
+    defeatDialog: 'いたの はし、できたね！<br>とおって いいよ。'
+  };
+  _triggerEncounter(c);
+}
+
 function _closeFlagEncounterModalOnly() {
   _simonCancelled = true;
   _setEncounterMode(null);
@@ -3664,6 +3975,7 @@ const _GAME_LABELS = {
   oddone:     'なかまはずれ',
   simon:      'リズムまね',
   flag:       '旗あげ',
+  water_bridge: 'いたならべ',
 };
 
 const _GAME_DIALOGS = {
@@ -3673,6 +3985,7 @@ const _GAME_DIALOGS = {
   oddone:     'なかまはずれ さがし！<br>どれが ちがうかな？',
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
+  water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
 };
 
 function _gameForCreature(c) {
@@ -4311,6 +4624,131 @@ const FLAG_GAME_STEPS = [
 ];
 const FLAG_ROUND_MS = 6500;
 
+const WATER_BRIDGE_STEPS = 3;
+const WATER_BUG_PATH = [0, 1, 2, 1];
+const WATER_BUG_LEFTS = ['17%', '50%', '83%'];
+
+function _showWaterBridgeGame() {
+  _setEncounterMode('water_bridge');
+  _clearWaterGimmickTimers();
+  _waterGameState = {
+    step: 0,
+    placed: [false, false, false],
+    bugPathIndex: 0,
+    bugSlot: WATER_BUG_PATH[0],
+    locked: false,
+    status: 'アメンボが いない ときに タップ！',
+    splashing: false,
+  };
+  encStageEl.textContent = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'water-game';
+  wrap.innerHTML =
+    '<div class="water-game__title">いたを ならべよう</div>' +
+    '<div class="water-game__stage">' +
+      '<img class="water-game__puddle" src="' + MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png" alt="みずたまり">' +
+      '<div class="water-slots" id="waterSlots"></div>' +
+      '<img class="water-amenbo" id="waterAmenbo" src="' + MAZE_WATER_ASSET_BASE + 'amenbo_skate.png" alt="アメンボムシ">' +
+    '</div>' +
+    '<div class="water-game__status" id="waterStatus"></div>';
+  encStageEl.appendChild(wrap);
+  _renderWaterBridgeGame();
+  _waterGameState.intervalId = setInterval(_advanceWaterBug, 720);
+}
+
+function _advanceWaterBug() {
+  const gs = _waterGameState;
+  if (!gs || gs.locked) return;
+  gs.bugPathIndex = (gs.bugPathIndex + 1) % WATER_BUG_PATH.length;
+  gs.bugSlot = WATER_BUG_PATH[gs.bugPathIndex];
+  _renderWaterBridgeGame();
+}
+
+function _renderWaterBridgeGame() {
+  const gs = _waterGameState;
+  if (!gs) return;
+  const slots = document.getElementById('waterSlots');
+  const bug = document.getElementById('waterAmenbo');
+  const status = document.getElementById('waterStatus');
+  if (slots) {
+    slots.textContent = '';
+    for (let i = 0; i < WATER_BRIDGE_STEPS; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'water-slot';
+      btn.type = 'button';
+      btn.dataset.index = String(i);
+      if (gs.placed[i]) {
+        btn.classList.add('is-placed');
+        btn.innerHTML = '<img src="' + MAZE_WATER_ASSET_BASE + 'plank_item.png" alt="いた">';
+      } else if (i === gs.step) {
+        btn.classList.add('is-next');
+        if (gs.bugSlot === i && !gs.locked) btn.classList.add('is-danger');
+        btn.textContent = 'ここに おく';
+      } else {
+        btn.textContent = '';
+      }
+      btn.addEventListener('click', function() { _onWaterSlotTap(i); });
+      slots.appendChild(btn);
+    }
+  }
+  if (bug) {
+    bug.style.left = WATER_BUG_LEFTS[gs.bugSlot] || '50%';
+    bug.src = gs.splashing ? (MAZE_WATER_ASSET_BASE + 'amenbo_splash.png') : (MAZE_WATER_ASSET_BASE + 'amenbo_skate.png');
+    bug.classList.toggle('is-splashing', !!gs.splashing);
+  }
+  if (status) status.textContent = gs.status || '';
+}
+
+function _onWaterSlotTap(index) {
+  const gs = _waterGameState;
+  if (!gs || gs.locked) return;
+  if (index !== gs.step) {
+    gs.status = 'ひかっている ところから ならべてね';
+    _renderWaterBridgeGame();
+    return;
+  }
+  if (gs.bugSlot === index) {
+    gs.locked = true;
+    gs.splashing = true;
+    gs.status = 'アメンボが じゃました！ もういちど';
+    playMzSe('wrong');
+    _renderWaterBridgeGame();
+    _waterGimmickSetTimeout(function() {
+      if (!_waterGameState) return;
+      _waterGameState.locked = false;
+      _waterGameState.splashing = false;
+      _waterGameState.status = 'アメンボが はなれたら タップ！';
+      _renderWaterBridgeGame();
+    }, 620);
+    return;
+  }
+  gs.placed[index] = true;
+  gs.step++;
+  playMzSe('correct');
+  if (gs.step >= WATER_BRIDGE_STEPS) {
+    _resolveWaterBridgeGame();
+    return;
+  }
+  gs.status = 'いいね！ つぎの いたを おこう';
+  _renderWaterBridgeGame();
+}
+
+function _resolveWaterBridgeGame() {
+  const st = _waterGimmickState;
+  if (st) st.bridgeBuilt = true;
+  _updateFlagInventoryHud();
+  _clearWaterGimmickTimers();
+  _waterGameState = null;
+  encStageEl.innerHTML =
+    '<div class="enc-result win">' +
+      '<img class="enc-result__icon" src="' + MAZE_WATER_ASSET_BASE + 'plank_bridge_complete.png" alt="いたの はし">' +
+      'いたの はしが できた！' +
+    '</div>';
+  _waterGimmickSetTimeout(function() {
+    if (_encounterActive) _closeEncounter(true);
+  }, 900);
+}
+
 function _clearFlagRoundTimer() {
   const gs = _flagGameState;
   if (!gs) return;
@@ -4547,6 +4985,7 @@ const _GAME_STARTERS = {
   oddone:     _showOddOneOutChoices,
   simon:      _showSimonGame,
   flag:       _showFlagGame,
+  water_bridge: _showWaterBridgeGame,
 };
 
 function _closeEncounter(playerWon) {
@@ -4554,6 +4993,10 @@ function _closeEncounter(playerWon) {
   if (_currentGame === 'flag') {
     _flagGameState = null;
     _clearFlagTunnelTimers();
+  }
+  if (_currentGame === 'water_bridge') {
+    _waterGameState = null;
+    _clearWaterGimmickTimers();
   }
   _setEncounterMode(null);
   // 念のため: 別経路で _closeEncounter が呼ばれた場合に備え、未発火の defeat-dialog timer をキャンセル
@@ -4891,6 +5334,7 @@ function loadStage(idx) {
   }
   // Grid stage: revert from image-stage mode if previously set
   _initFlagTunnelForStage(null);
+  _initWaterGimmickForStage(null);
   document.body.classList.remove('image-stage-mode');
   const charmsEl = document.getElementById('charms');
   if (charmsEl) charmsEl.style.display = '';
