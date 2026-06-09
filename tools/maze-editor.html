@@ -666,6 +666,73 @@ document.querySelectorAll('#gimmickItemKindRow .kind-btn').forEach(function(btn)
   });
 });
 
+function _coerceStageOrder(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  if (Number.isInteger(n) && n >= 0 && n <= 99) return n;
+  return null;
+}
+
+function _readStageOrderInput(defaultValue) {
+  const input = document.getElementById('stageOrderInput');
+  const n = _coerceStageOrder(input && input.value);
+  return n === null ? defaultValue : n;
+}
+
+function _asciiDigits(text) {
+  return String(text || '').replace(/[０-９]/g, function(ch) {
+    return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+  });
+}
+
+function _stageOrderFromText(text) {
+  if (!text) return null;
+  const s = _asciiDigits(text);
+  const patterns = [
+    /ステージ\s*(\d{1,2})/,
+    /\bstage[\s_-]*(\d{1,2})\b/i,
+    /^(\d{1,2})(?:\D|$)/,
+  ];
+  for (const pattern of patterns) {
+    const m = s.match(pattern);
+    if (!m) continue;
+    const n = _coerceStageOrder(m[1]);
+    if (n !== null) return n;
+  }
+  return null;
+}
+
+function _inferStageOrderFromDef(def, fileName, explicitStageOrder) {
+  const explicit = _coerceStageOrder(explicitStageOrder);
+  if (explicit !== null) return explicit;
+  const numericKeys = ['stageOrder', 'stageNumber', 'stageNo', 'stageIndex', 'stage'];
+  for (const key of numericKeys) {
+    if (!def || !Object.prototype.hasOwnProperty.call(def, key)) continue;
+    const n = _coerceStageOrder(def[key]);
+    if (n !== null) return n;
+  }
+  const textCandidates = [
+    fileName,
+    def && def.name,
+    def && def.stage,
+    def && def.imageUrl,
+  ];
+  for (const candidate of textCandidates) {
+    const n = _stageOrderFromText(candidate);
+    if (n !== null) return n;
+  }
+  return null;
+}
+
+function _applyLoadedStageOrder(def, fileName, explicitStageOrder) {
+  const n = _inferStageOrderFromDef(def, fileName, explicitStageOrder);
+  const input = document.getElementById('stageOrderInput');
+  if (!input || n === null) return null;
+  input.value = String(n);
+  if (typeof updateStageNamePlaceholder === 'function') updateStageNamePlaceholder();
+  return n;
+}
+
 // ────────────────────────────────────────────────────────
 // JSON loading (resume editing a previously-saved stage)
 // ────────────────────────────────────────────────────────
@@ -717,6 +784,7 @@ jsonInput.addEventListener('change', function(e) {
         const m = String(def.imageUrl).match(/([^/]+?)\.[a-zA-Z]+$/);
         if (m) stageNameInput.value = m[1];
       }
+      _applyLoadedStageOrder(def, f.name);
       // Restore lantern toggle
       const lt = document.getElementById('lanternToggle');
       if (lt) lt.checked = !!def.lantern;
@@ -2306,6 +2374,7 @@ function buildExportDef() {
   const ext = (state.imgFileName.match(/\.([^.]+)$/) || [, 'png'])[1].toLowerCase();
   const imageRef = 'imageStages/' + safeName + '.' + ext;
   const lanternEnabled = !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked);
+  const stageOrder = _readStageOrderInput(1);
   const r = {
     rawName: rawName,
     safeName: safeName,
@@ -2313,6 +2382,7 @@ function buildExportDef() {
     def: {
       type: 'image',
       name: rawName,
+      stageOrder: stageOrder,
       imageUrl: imageRef,
       viewBox: { w: state.imgW, h: state.imgH },
       orientation: 'landscape',
@@ -2654,7 +2724,7 @@ function _doAutoSave() {
       version: 1,
       savedAt: Date.now(),
       stageName: stageNameInput.value || '',
-      stageOrder: parseInt((document.getElementById('stageOrderInput') || {}).value, 10) || 1,
+      stageOrder: _readStageOrderInput(1),
       lantern: !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked),
       imgFileName: state.imgFileName,
       imgW: state.imgW,
@@ -2821,7 +2891,7 @@ function libBuildSnapshot() {
   const snap = {
     savedAt: Date.now(),
     stageName: stageNameInput.value || '',
-    stageOrder: orderInput ? (parseInt(orderInput.value, 10) || 1) : 1,
+    stageOrder: orderInput ? _readStageOrderInput(1) : 1,
     lantern: !!(ltEl && ltEl.checked),
     imgFileName: state.imgFileName || '',
     imgW: state.imgW || 0,
@@ -2986,6 +3056,7 @@ function fetchServerStageList() {
       const keys = Object.keys(overrides).sort(function(a, b) { return Number(a) - Number(b); });
       const metaPromises = keys.map(function(k) {
         const fname = overrides[k];
+        const stageOrder = _coerceStageOrder(k);
         return fetch(SERVER_STAGES_BASE + encodeURIComponent(fname) + '.json', { cache: 'no-cache' })
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(def) {
@@ -2997,9 +3068,9 @@ function fetchServerStageList() {
             } else {
               label = k + ': ' + fname + ' (読込失敗)';
             }
-            return { fname: fname, label: label };
+            return { fname: fname, label: label, stageOrder: stageOrder };
           })
-          .catch(function() { return { fname: fname, label: k + ': ' + fname + ' (取得エラー)' }; });
+          .catch(function() { return { fname: fname, label: k + ': ' + fname + ' (取得エラー)', stageOrder: stageOrder }; });
       });
       return Promise.all(metaPromises);
     })
@@ -3010,6 +3081,7 @@ function fetchServerStageList() {
         const opt = document.createElement('option');
         opt.value = it.fname;
         opt.textContent = it.label;
+        if (it.stageOrder !== null) opt.dataset.stageOrder = String(it.stageOrder);
         sel.appendChild(opt);
       });
       _serverStageSetStatus(items.length + ' 件読込み完了', false);
@@ -3018,7 +3090,7 @@ function fetchServerStageList() {
       _serverStageSetStatus('インデックス取得失敗: ' + err.message, true);
     });
 }
-function _restoreFromServerDef(def, fname) {
+function _restoreFromServerDef(def, fname, stageOrder) {
   // 既存 jsonInput handler と同等の復元ロジック (関数化せず複製: リファクタ禁止のため)
   if (!def || def.type !== 'image' || !Array.isArray(def.nodes) || !Array.isArray(def.edges)) {
     _serverStageSetStatus('対応していない JSON 形式 (type:"image" 必須)', true);
@@ -3051,6 +3123,7 @@ function _restoreFromServerDef(def, fname) {
   state.nextStopId = (usedIds.length > 0 ? Math.max.apply(null, usedIds) : 0) + 1;
   if (def.name) stageNameInput.value = String(def.name).replace(/[^a-zA-Z0-9_-]/g, '_');
   else stageNameInput.value = String(fname).replace(/[^a-zA-Z0-9_-]/g, '_');
+  _applyLoadedStageOrder(def, fname, stageOrder);
   const libN = document.getElementById('libNameInput');
   if (libN) libN.value = def.name || fname;
   const lt = document.getElementById('lanternToggle');
@@ -3092,10 +3165,12 @@ function loadServerStage() {
   if (!sel) return;
   const fname = sel.value;
   if (!fname) { _serverStageSetStatus('ステージを選択してください', true); return; }
+  const opt = sel.options[sel.selectedIndex];
+  const stageOrder = opt && opt.dataset ? opt.dataset.stageOrder : null;
   _serverStageSetStatus('読込中: ' + fname + ' …', false);
   fetch(SERVER_STAGES_BASE + encodeURIComponent(fname) + '.json', { cache: 'no-cache' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(def) { _restoreFromServerDef(def, fname); })
+    .then(function(def) { _restoreFromServerDef(def, fname, stageOrder); })
     .catch(function(err) { _serverStageSetStatus('読込失敗: ' + err.message, true); });
 }
 document.getElementById('loadServerStageBtn').addEventListener('click', loadServerStage);
@@ -3446,6 +3521,7 @@ function _applyHandoff(h, opts) {
 
     // ステージ名
     if (h.name) stageNameInput.value = String(h.name).replace(/[^a-zA-Z0-9_-]/g, '_');
+    _applyLoadedStageOrder(h, h && h.name);
 
     // Obstacles / Creatures (kind 値はラフ側と同じ語彙: tree/pond/hole/stump/rock,
     //                                                mayoi/odoke/pyon/kabuto/hachi; 旧 nemuri は mayoi にエイリアス)
