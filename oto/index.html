@@ -3333,9 +3333,10 @@ var _gh3d = {
   lastNotesH: 0
 };
 var GH3D_NEAR_Z = 1.25;
-var GH3D_FAR_Z = -27.5;
+var GH3D_FAR_Z = -56;
 var GH3D_HALF_W = 4.0;
 var GH3D_LANE_W = 1.0;
+var GH3D_RAMP_RISE = 24;
 
 function _gh3DGetContext(canvas) {
   if (!canvas) return null;
@@ -3503,9 +3504,15 @@ function _gh3DMat4Mul(a, b) {
 function _gh3DMvp(canvas) {
   var rect = canvas.getBoundingClientRect();
   var aspect = Math.max(0.2, rect.width / Math.max(1, rect.height));
-  var proj = _gh3DMat4Perspective(44 * Math.PI / 180, aspect, 0.1, 80);
-  var view = _gh3DMat4LookAt([0, 5.6, 9.6], [0, 2.4, -18.5], [0, 1, 0]);
+  var proj = _gh3DMat4Perspective(34 * Math.PI / 180, aspect, 0.1, 120);
+  var view = _gh3DMat4LookAt([0, 1.8, 10.5], [0, 16, -36], [0, 1, 0]);
   return _gh3DMat4Mul(proj, view);
+}
+function _gh3DRoadT(z) {
+  return Math.max(0, Math.min(1, (GH3D_NEAR_Z - z) / (GH3D_NEAR_Z - GH3D_FAR_Z)));
+}
+function _gh3DRoadY(z) {
+  return _gh3DRoadT(z) * GH3D_RAMP_RISE;
 }
 function _gh3DHexToRgb(hex) {
   var m = String(hex || '').match(/^#?([0-9a-f]{6})$/i);
@@ -3572,23 +3579,40 @@ function _gh3DDrawRoad() {
     var rgb = _gh3DLaneRgb(lane);
     var cNear = [rgb[0], rgb[1], rgb[2], 0.34];
     var cFar = [rgb[0], rgb[1], rgb[2], 0.08];
-    _gh3DPushColorTri(tris, [x0, 0, zNear], cNear, [x1, 0, zNear], cNear, [x1, 0, zFar], cFar);
-    _gh3DPushColorTri(tris, [x0, 0, zNear], cNear, [x1, 0, zFar], cFar, [x0, 0, zFar], cFar);
+    _gh3DPushColorTri(tris, [x0, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zFar), zFar], cFar);
+    _gh3DPushColorTri(tris, [x0, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zFar), zFar], cFar, [x0, _gh3DRoadY(zFar), zFar], cFar);
   }
   _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, tris, gl.TRIANGLES, mvp);
+  var beams = [];
+  var beamC = [0.24, 1.0, 0.92, 0.72];
+  var edgeBeamC = [1.0, 0.36, 0.78, 0.54];
+  for (var b = 0; b <= 8; b++) {
+    var bx = -GH3D_HALF_W + b * GH3D_LANE_W;
+    var bw = (b === 0 || b === 8) ? 0.022 : 0.016;
+    var bc = (b === 0 || b === 8) ? edgeBeamC : beamC;
+    _gh3DPushColorQuad(
+      beams,
+      [bx - bw, _gh3DRoadY(zNear) + 0.07, zNear],
+      [bx + bw, _gh3DRoadY(zNear) + 0.07, zNear],
+      [bx + bw, _gh3DRoadY(zFar) + 0.07, zFar],
+      [bx - bw, _gh3DRoadY(zFar) + 0.07, zFar],
+      bc
+    );
+  }
+  _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, beams, gl.TRIANGLES, mvp);
   var lines = [];
-  var lineC = [0.62, 0.92, 1.0, 0.34];
-  var farLineC = [0.62, 0.92, 1.0, 0.10];
+  var lineC = [0.62, 0.92, 1.0, 0.5];
+  var farLineC = [0.62, 0.92, 1.0, 0.22];
   for (var i = 0; i <= 8; i++) {
     var x = -GH3D_HALF_W + i * GH3D_LANE_W;
-    _gh3DPushColorLine(lines, [x, 0.025, zNear], lineC, [x, 0.025, zFar], farLineC);
+    _gh3DPushColorLine(lines, [x, _gh3DRoadY(zNear) + 0.025, zNear], lineC, [x, _gh3DRoadY(zFar) + 0.025, zFar], farLineC);
   }
   for (var z = 0; z >= zFar; z -= 2) {
     var t = Math.max(0, Math.min(1, (z - zFar) / (zNear - zFar)));
     var a = 0.08 + 0.22 * t;
-    _gh3DPushColorLine(lines, [-GH3D_HALF_W, 0.03, z], [1, 1, 1, a], [GH3D_HALF_W, 0.03, z], [1, 1, 1, a]);
+    _gh3DPushColorLine(lines, [-GH3D_HALF_W, _gh3DRoadY(z) + 0.03, z], [1, 1, 1, a], [GH3D_HALF_W, _gh3DRoadY(z) + 0.03, z], [1, 1, 1, a]);
   }
-  _gh3DPushColorLine(lines, [-GH3D_HALF_W, 0.055, GH3D_NEAR_Z - 0.25], [0.25, 1, 0.9, 0.9], [GH3D_HALF_W, 0.055, GH3D_NEAR_Z - 0.25], [0.25, 0.75, 1, 0.9]);
+  _gh3DPushColorLine(lines, [-GH3D_HALF_W, _gh3DRoadY(GH3D_NEAR_Z - 0.25) + 0.055, GH3D_NEAR_Z - 0.25], [0.25, 1, 0.9, 0.9], [GH3D_HALF_W, _gh3DRoadY(GH3D_NEAR_Z - 0.25) + 0.055, GH3D_NEAR_Z - 0.25], [0.25, 0.75, 1, 0.9]);
   _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.lineBuffer, lines, gl.LINES, mvp);
 }
 function _gh3DRoundRectPath(ctx, x, y, w, h, r) {
@@ -3655,7 +3679,7 @@ function _gh3DTextureFor(lane, label) {
 function _gh3DDrawOneNote(note, mvp) {
   var gl = _gh3d.notesGl;
   if (!note || note.consumed) return;
-  var p = Math.max(0, Math.min(0.94, note._gh3dProgress || 0));
+  var p = Math.max(0, Math.min(0.9, note._gh3dProgress || 0));
   var lane = note.lane || 0;
   var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
   var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
@@ -3664,9 +3688,7 @@ function _gh3DDrawOneNote(note, mvp) {
   var d = 1.0;
   var bevel = 0.08;
   var bevelH = 0.08;
-  var yBottom = 0.055;
-  var yTop = yBottom + h;
-  var yBevel = yTop - bevelH;
+  var yLift = 0.055;
   var a = Math.max(0.16, Math.min(1, 0.28 + p * 1.15));
   var label = _rhythmNoteLabel(lane);
   var tex = _gh3DTextureFor(lane, label);
@@ -3676,6 +3698,12 @@ function _gh3DDrawOneNote(note, mvp) {
   var xi0 = x0 + bevel, xi1 = x1 - bevel;
   var ziNear = zNear - bevel;
   var ziFar = zFar + bevel;
+  var yNearBase = _gh3DRoadY(zNear) + yLift;
+  var yFarBase = _gh3DRoadY(zFar) + yLift;
+  var yNearBevel = yNearBase + h - bevelH;
+  var yFarBevel = yFarBase + h - bevelH;
+  var yInnerNearTop = _gh3DRoadY(ziNear) + yLift + h;
+  var yInnerFarTop = _gh3DRoadY(ziFar) + yLift + h;
   var rgb = _gh3DLaneRgb(lane);
   var sideVerts = [];
   var nearC = _gh3DShadeRgb(rgb, 0.92, a * 0.82);
@@ -3687,9 +3715,9 @@ function _gh3DDrawOneNote(note, mvp) {
   var bevelFarC = _gh3DShadeRgb(rgb, 0.66, a * 0.62);
   var bevelLeftC = _gh3DShadeRgb(rgb, 0.84, a * 0.68);
   var bevelRightC = _gh3DShadeRgb(rgb, 0.72, a * 0.66);
-  var nbl = [x0, yBottom, zNear], nbr = [x1, yBottom, zNear], ntr = [x1, yBevel, zNear], ntl = [x0, yBevel, zNear];
-  var fbl = [x0, yBottom, zFar], fbr = [x1, yBottom, zFar], ftr = [x1, yBevel, zFar], ftl = [x0, yBevel, zFar];
-  var itnl = [xi0, yTop, ziNear], itnr = [xi1, yTop, ziNear], itfr = [xi1, yTop, ziFar], itfl = [xi0, yTop, ziFar];
+  var nbl = [x0, yNearBase, zNear], nbr = [x1, yNearBase, zNear], ntr = [x1, yNearBevel, zNear], ntl = [x0, yNearBevel, zNear];
+  var fbl = [x0, yFarBase, zFar], fbr = [x1, yFarBase, zFar], ftr = [x1, yFarBevel, zFar], ftl = [x0, yFarBevel, zFar];
+  var itnl = [xi0, yInnerNearTop, ziNear], itnr = [xi1, yInnerNearTop, ziNear], itfr = [xi1, yInnerFarTop, ziFar], itfl = [xi0, yInnerFarTop, ziFar];
   _gh3DPushColorQuad(sideVerts, nbl, nbr, ntr, ntl, nearC);
   _gh3DPushColorQuad(sideVerts, fbr, fbl, ftl, ftr, farC);
   _gh3DPushColorQuad(sideVerts, fbl, nbl, ntl, ftl, leftC);
@@ -3701,12 +3729,12 @@ function _gh3DDrawOneNote(note, mvp) {
   _gh3DPushColorQuad(sideVerts, ntr, ftr, itfr, itnr, bevelRightC);
   _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, sideVerts, gl.TRIANGLES, mvp);
   var verts = [
-    xi0, yTop + 0.006, ziNear, 0, 1, a,
-    xi1, yTop + 0.006, ziNear, 1, 1, a,
-    xi1, yTop + 0.006, ziFar, 1, 0, a,
-    xi0, yTop + 0.006, ziNear, 0, 1, a,
-    xi1, yTop + 0.006, ziFar, 1, 0, a,
-    xi0, yTop + 0.006, ziFar, 0, 0, a
+    xi0, yInnerNearTop + 0.006, ziNear, 0, 1, a,
+    xi1, yInnerNearTop + 0.006, ziNear, 1, 1, a,
+    xi1, yInnerFarTop + 0.006, ziFar, 1, 0, a,
+    xi0, yInnerNearTop + 0.006, ziNear, 0, 1, a,
+    xi1, yInnerFarTop + 0.006, ziFar, 1, 0, a,
+    xi0, yInnerFarTop + 0.006, ziFar, 0, 0, a
   ];
   gl.useProgram(_gh3d.notesProgram);
   gl.bindBuffer(gl.ARRAY_BUFFER, _gh3d.noteBuffer);
