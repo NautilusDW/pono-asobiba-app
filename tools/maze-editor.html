@@ -18,10 +18,13 @@ html, body { height: 100vh; overflow: hidden;
 .sidebar h1 { font-size: 1.05rem; margin-bottom: 10px; color: #A4C76D; }
 .sidebar h3 { font-size: 0.85rem; margin: 14px 0 6px; color: #ccc; }
 .sidebar p { font-size: 0.78rem; color: #aaa; margin-bottom: 6px; line-height: 1.4; }
-.sidebar input[type=text], .sidebar input[type=file] {
+.sidebar input[type=text], .sidebar input[type=file], .sidebar select {
   width: 100%; padding: 6px 8px; font-family: inherit;
   background: #333; color: #eee; border: 1px solid #555; border-radius: 4px;
   font-size: 0.85rem; margin-bottom: 8px;
+}
+.sidebar input[type=checkbox] {
+  accent-color: #A4C76D;
 }
 .modes { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
 .mode-btn {
@@ -75,6 +78,51 @@ html, body { height: 100vh; overflow: hidden;
   cursor: pointer;
 }
 .param-row .param-val { color: #cf8; font-weight: 700; }
+.obstacle-settings {
+  margin: 8px 0 10px;
+  padding: 8px;
+  background: #242424;
+  border: 1px solid #3f3f3f;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  color: #bbb;
+}
+.obstacle-settings.is-active {
+  border-color: #8a6a40;
+  background: #2b271f;
+}
+.obstacle-settings__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: #f1d6a6;
+  font-weight: 700;
+}
+.obstacle-settings label {
+  display: block;
+  margin: 6px 0 4px;
+  color: #ddd;
+}
+.obstacle-settings .check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+}
+.obstacle-settings .hint {
+  margin: 5px 0 0;
+  color: #9c9c9c;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.obstacle-settings .mini {
+  color: #d8a070;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
 .actions button {
   padding: 10px; font-family: inherit; font-size: 0.85rem;
   background: #6C8E3F; color: #fff; border: 0; border-radius: 4px;
@@ -273,6 +321,32 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn" data-okind="hole">🕳️ 穴</button>
       <button class="kind-btn" data-okind="stump">🪵 切株</button>
       <button class="kind-btn" data-okind="rock">🪨 石</button>
+    </div>
+    <div id="obstacleSettings" class="obstacle-settings">
+      <div id="obstacleSettingsEmpty">障害物を選択すると、イベント設定を編集できます。</div>
+      <div id="obstacleSettingsFields" style="display:none;">
+        <div class="obstacle-settings__title">
+          <span id="selectedObstacleLabel">障害物</span>
+          <span id="selectedObstacleIdLabel" class="mini"></span>
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="obstacleEventToggle">
+          <span id="obstacleEventToggleLabel">イベントを起こす</span>
+        </label>
+        <div id="obstacleEventNote" class="hint"></div>
+        <div id="holeLinkControls" style="display:none;">
+          <label>入口の穴
+            <select id="holeEntranceSelect"></select>
+          </label>
+          <label>出口の穴
+            <select id="holeExitSelect"></select>
+          </label>
+          <label>出た後に立つノード
+            <select id="holeExitNodeSelect"></select>
+          </label>
+          <div class="hint">穴ワープは現在1組だけ設定できます。入口の穴でイベントが起き、出口の穴へ移動します。</div>
+        </div>
+      </div>
     </div>
     <div id="creatureKindRow" class="modes" style="display:none; margin-top:6px;">
       <button class="kind-btn active" data-ckind="mayoi"><img src="../assets/images/maze/creatures/mayoi.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> まよい</button>
@@ -504,6 +578,7 @@ const state = {
   draggingAnchor: null,   // 現在 drag 中の edge control point
   selectedAnchors: new Set(), // edit-points 用: "edgeIdx:controlIdx"
   selectedCreatureId: null, // 種類変更対象のお邪魔虫 id
+  selectedObstacleId: null, // イベント設定対象の障害物 id
   hover: null,          // {x, y} mouse pos in image coords
   handoffViewBox: null, // { w, h } — ラフ側 viewBox。 画像読み込み時 rescale 用に保持し、 適用後 null クリア
 };
@@ -539,6 +614,7 @@ function _normalizeObstacles(list) {
           const out = { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) };
           if (o.id) out.id = String(o.id);
           if (Number.isFinite(o.size) && o.size > 0) out.size = Number(o.size);
+          if (o.eventEnabled === true) out.eventEnabled = true;
           return out;
         })
     : [];
@@ -600,6 +676,318 @@ function _copyGimmickStateFromSnapshot(snap) {
   if (!state.gimmickConfigs.strengthGimmick) state.gimmickConfigs.strengthGimmick = null;
 }
 
+const OBSTACLE_KIND_LABELS = {
+  tree: '木',
+  pond: '池',
+  hole: '穴',
+  stump: '切株',
+  rock: '石',
+};
+
+function _sanitizeObstacleIdPart(text) {
+  return String(text || 'obstacle').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '') || 'obstacle';
+}
+
+function _obstacleById(id) {
+  if (!id || !Array.isArray(state.obstacles)) return null;
+  return state.obstacles.find(function(o) { return o && o.id === id; }) || null;
+}
+
+function _ensureObstacleId(o) {
+  if (!o) return '';
+  if (o.id) return String(o.id);
+  const base = _sanitizeObstacleIdPart(o.kind || 'obstacle');
+  const used = new Set((state.obstacles || []).map(function(x) { return x && x.id ? String(x.id) : ''; }));
+  let n = 1;
+  let id = base + '-' + n;
+  while (used.has(id)) {
+    n++;
+    id = base + '-' + n;
+  }
+  o.id = id;
+  return id;
+}
+
+function _obstacleLabel(o) {
+  if (!o) return '障害物';
+  const kind = OBSTACLE_KIND_LABELS[o.kind] || o.kind || '障害物';
+  const id = o.id ? String(o.id) : '(idなし)';
+  return kind + ' / ' + id;
+}
+
+function selectedObstacle() {
+  return _obstacleById(state.selectedObstacleId);
+}
+
+function _syncObstacleKindButtons() {
+  document.querySelectorAll('#obstacleKindRow .kind-btn').forEach(function(b) {
+    if (b.dataset.okind === state.obstacleKind) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+}
+
+function selectObstacle(o, shouldDraw) {
+  if (!o) {
+    if (state.selectedObstacleId) {
+      state.selectedObstacleId = null;
+      updateObstacleEventPanel();
+      if (shouldDraw) draw();
+    }
+    return;
+  }
+  _ensureObstacleId(o);
+  state.selectedObstacleId = o.id;
+  state.selectedCreatureId = null;
+  if (o.kind) {
+    state.obstacleKind = o.kind;
+    _syncObstacleKindButtons();
+  }
+  updateObstacleEventPanel();
+  if (shouldDraw) draw();
+}
+
+function _holesWithIds() {
+  return (state.obstacles || [])
+    .filter(function(o) { return o && o.kind === 'hole'; })
+    .map(function(o) {
+      _ensureObstacleId(o);
+      return o;
+    });
+}
+
+function _nodesForExitSelect() {
+  return (state.nodes || []).filter(function(n) {
+    return n && n.id && (n.kind === 'stop' || n.kind === 'goal' || n.kind === 'start');
+  });
+}
+
+function _nearestNodeToObstacle(o) {
+  if (!o) return null;
+  let best = null;
+  let bestD2 = Infinity;
+  _nodesForExitSelect().forEach(function(n) {
+    const dx = Number(n.x) - Number(o.x);
+    const dy = Number(n.y) - Number(o.y);
+    const d2 = dx * dx + dy * dy;
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      best = n;
+    }
+  });
+  return best;
+}
+
+function _ensureFlagGimmickConfig(selectedHole) {
+  const cfg = _jsonClone(state.gimmickConfigs.flagGimmick) || _defaultGimmickConfig('flagGimmick');
+  const holes = _holesWithIds();
+  const selectedId = selectedHole ? _ensureObstacleId(selectedHole) : '';
+  if (!cfg.entranceObstacleId && selectedId) cfg.entranceObstacleId = selectedId;
+  const entrance = _obstacleById(cfg.entranceObstacleId) || selectedHole || holes[0] || null;
+  if (entrance) cfg.entranceObstacleId = _ensureObstacleId(entrance);
+  let exit = _obstacleById(cfg.exitObstacleId);
+  if (!exit || exit.id === cfg.entranceObstacleId) {
+    exit = holes.find(function(h) { return h.id !== cfg.entranceObstacleId; }) || null;
+    cfg.exitObstacleId = exit ? exit.id : '';
+  }
+  if (!cfg.exitNodeId || !state.nodes.find(function(n) { return n.id === cfg.exitNodeId; })) {
+    const node = _nearestNodeToObstacle(exit || entrance);
+    cfg.exitNodeId = node ? node.id : '';
+  }
+  if (exit && (!cfg.exitFocus || !Number.isFinite(cfg.exitFocus.x) || !Number.isFinite(cfg.exitFocus.y))) {
+    cfg.exitFocus = { x: Math.round(exit.x), y: Math.round(exit.y) };
+  }
+  state.gimmickConfigs.flagGimmick = cfg;
+  return cfg;
+}
+
+function _syncFlagExitFocusToExitHole() {
+  const cfg = state.gimmickConfigs.flagGimmick;
+  const exit = cfg && _obstacleById(cfg.exitObstacleId);
+  if (!cfg || !exit) return;
+  cfg.exitFocus = { x: Math.round(exit.x), y: Math.round(exit.y) };
+}
+
+function _obstacleHasConfiguredEvent(o) {
+  if (!o) return false;
+  const id = o.id;
+  if (!id) return false;
+  const flag = state.gimmickConfigs.flagGimmick;
+  if (o.kind === 'hole' && flag && (flag.entranceObstacleId === id || flag.exitObstacleId === id)) return true;
+  const water = state.gimmickConfigs.waterGimmick;
+  if (o.kind === 'pond' && water && water.obstacleId === id) return true;
+  const strength = state.gimmickConfigs.strengthGimmick;
+  if (o.kind === 'rock' && strength && strength.obstacleId === id) return true;
+  return !!o.eventEnabled;
+}
+
+function _setSelectedObstacleEventEnabled(enabled) {
+  const o = selectedObstacle();
+  if (!o) return;
+  _ensureObstacleId(o);
+  if (o.kind === 'hole') {
+    if (enabled) {
+      const cfg = _ensureFlagGimmickConfig(o);
+      cfg.entranceObstacleId = o.id;
+      if (cfg.exitObstacleId === cfg.entranceObstacleId) {
+        const exit = _holesWithIds().find(function(h) { return h.id !== cfg.entranceObstacleId; });
+        cfg.exitObstacleId = exit ? exit.id : '';
+        if (exit) _syncFlagExitFocusToExitHole();
+      }
+    } else {
+      state.gimmickConfigs.flagGimmick = null;
+    }
+  } else if (o.kind === 'pond') {
+    if (enabled) {
+      const cfg = _jsonClone(state.gimmickConfigs.waterGimmick) || _defaultGimmickConfig('waterGimmick');
+      cfg.obstacleId = o.id;
+      state.gimmickConfigs.waterGimmick = cfg;
+    } else if (state.gimmickConfigs.waterGimmick && state.gimmickConfigs.waterGimmick.obstacleId === o.id) {
+      state.gimmickConfigs.waterGimmick = null;
+    }
+  } else if (o.kind === 'rock') {
+    if (enabled) {
+      const cfg = _jsonClone(state.gimmickConfigs.strengthGimmick) || _defaultGimmickConfig('strengthGimmick');
+      cfg.obstacleId = o.id;
+      state.gimmickConfigs.strengthGimmick = cfg;
+    } else if (state.gimmickConfigs.strengthGimmick && state.gimmickConfigs.strengthGimmick.obstacleId === o.id) {
+      state.gimmickConfigs.strengthGimmick = null;
+    }
+  }
+  updateObstacleEventPanel();
+  draw();
+  scheduleAutoSave();
+}
+
+function _setFlagTunnelEntrance(id) {
+  const o = _obstacleById(id);
+  if (!o || o.kind !== 'hole') return;
+  const cfg = _ensureFlagGimmickConfig(o);
+  cfg.entranceObstacleId = _ensureObstacleId(o);
+  if (cfg.exitObstacleId === cfg.entranceObstacleId) {
+    const exit = _holesWithIds().find(function(h) { return h.id !== cfg.entranceObstacleId; });
+    cfg.exitObstacleId = exit ? exit.id : '';
+    if (exit) _syncFlagExitFocusToExitHole();
+  }
+  updateObstacleEventPanel();
+  draw();
+  scheduleAutoSave();
+}
+
+function _setFlagTunnelExit(id) {
+  const o = _obstacleById(id);
+  if (!o || o.kind !== 'hole') return;
+  const cfg = _ensureFlagGimmickConfig(selectedObstacle());
+  cfg.exitObstacleId = _ensureObstacleId(o);
+  if (cfg.entranceObstacleId === cfg.exitObstacleId) {
+    const entrance = _holesWithIds().find(function(h) { return h.id !== cfg.exitObstacleId; });
+    cfg.entranceObstacleId = entrance ? entrance.id : '';
+  }
+  const node = _nearestNodeToObstacle(o);
+  if (node) cfg.exitNodeId = node.id;
+  _syncFlagExitFocusToExitHole();
+  updateObstacleEventPanel();
+  draw();
+  scheduleAutoSave();
+}
+
+function _setFlagTunnelExitNode(id) {
+  const cfg = _ensureFlagGimmickConfig(selectedObstacle());
+  cfg.exitNodeId = id || '';
+  updateObstacleEventPanel();
+  draw();
+  scheduleAutoSave();
+}
+
+function updateObstacleEventPanel() {
+  const box = document.getElementById('obstacleSettings');
+  const empty = document.getElementById('obstacleSettingsEmpty');
+  const fields = document.getElementById('obstacleSettingsFields');
+  if (!box || !empty || !fields) return;
+  const o = selectedObstacle();
+  box.classList.toggle('is-active', !!o);
+  empty.style.display = o ? 'none' : '';
+  fields.style.display = o ? '' : 'none';
+  if (!o) return;
+
+  const id = _ensureObstacleId(o);
+  const labelEl = document.getElementById('selectedObstacleLabel');
+  const idEl = document.getElementById('selectedObstacleIdLabel');
+  const toggle = document.getElementById('obstacleEventToggle');
+  const toggleLabel = document.getElementById('obstacleEventToggleLabel');
+  const note = document.getElementById('obstacleEventNote');
+  const holeControls = document.getElementById('holeLinkControls');
+  if (labelEl) labelEl.textContent = (OBSTACLE_EMOJI[o.kind] || '■') + ' ' + (OBSTACLE_KIND_LABELS[o.kind] || o.kind || '障害物');
+  if (idEl) idEl.textContent = id;
+
+  const supported = o.kind === 'hole' || o.kind === 'pond' || o.kind === 'rock';
+  if (toggle) {
+    toggle.disabled = !supported;
+    toggle.checked = _obstacleHasConfiguredEvent(o);
+  }
+  if (toggleLabel) {
+    toggleLabel.textContent = o.kind === 'hole'
+      ? '穴ワープイベントを使う'
+      : (o.kind === 'pond' ? '水たまりイベントを使う' : (o.kind === 'rock' ? '力の手袋イベントを使う' : 'イベントを起こす'));
+  }
+  if (note) {
+    if (!supported) {
+      note.textContent = 'この種類の障害物は、今の迷路では通常の通れない障害物として使います。';
+    } else if (o.kind === 'hole') {
+      const cfg = state.gimmickConfigs.flagGimmick;
+      if (!cfg) note.textContent = 'チェックを入れると、このステージの穴ワープ入口/出口を設定できます。';
+      else if (cfg.entranceObstacleId === id) note.textContent = 'この穴は入口です。近づくとイベントが始まります。';
+      else if (cfg.exitObstacleId === id) note.textContent = 'この穴は出口です。入口の穴からここへ出ます。';
+      else note.textContent = 'この穴は通常の穴です。下の入口/出口に選ぶとワープに使えます。';
+    } else if (o.kind === 'pond') {
+      note.textContent = _obstacleHasConfiguredEvent(o) ? '丸太の板を使う水たまりイベントに接続されています。' : 'チェックを入れると水たまりミニゲームの対象になります。';
+    } else if (o.kind === 'rock') {
+      note.textContent = _obstacleHasConfiguredEvent(o) ? '力の手袋で壊す岩イベントに接続されています。' : 'チェックを入れると力の手袋ミニゲームの対象になります。';
+    }
+  }
+
+  if (holeControls) {
+    holeControls.style.display = o.kind === 'hole' && !!state.gimmickConfigs.flagGimmick ? '' : 'none';
+  }
+  if (o.kind === 'hole' && state.gimmickConfigs.flagGimmick) {
+    const cfg = _ensureFlagGimmickConfig(o);
+    const holes = _holesWithIds();
+    const entranceSelect = document.getElementById('holeEntranceSelect');
+    const exitSelect = document.getElementById('holeExitSelect');
+    const exitNodeSelect = document.getElementById('holeExitNodeSelect');
+    if (entranceSelect) {
+      entranceSelect.innerHTML = '';
+      holes.forEach(function(h) {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = _obstacleLabel(h);
+        entranceSelect.appendChild(opt);
+      });
+      entranceSelect.value = cfg.entranceObstacleId || '';
+    }
+    if (exitSelect) {
+      exitSelect.innerHTML = '';
+      holes.forEach(function(h) {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = _obstacleLabel(h);
+        opt.disabled = h.id === cfg.entranceObstacleId;
+        exitSelect.appendChild(opt);
+      });
+      exitSelect.value = cfg.exitObstacleId || '';
+    }
+    if (exitNodeSelect) {
+      exitNodeSelect.innerHTML = '';
+      _nodesForExitSelect().forEach(function(n) {
+        const opt = document.createElement('option');
+        opt.value = n.id;
+        opt.textContent = n.id + ' / ' + n.kind;
+        exitNodeSelect.appendChild(opt);
+      });
+      exitNodeSelect.value = cfg.exitNodeId || '';
+    }
+  }
+}
+
 // ────────────────────────────────────────────────────────
 // Mode switching
 // ────────────────────────────────────────────────────────
@@ -624,11 +1012,36 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
 document.querySelectorAll('#obstacleKindRow .kind-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     state.obstacleKind = btn.dataset.okind;
-    document.querySelectorAll('#obstacleKindRow .kind-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
+    _syncObstacleKindButtons();
     showBanner('障害物: ' + btn.textContent.trim());
   });
 });
+
+const _obstacleEventToggle = document.getElementById('obstacleEventToggle');
+if (_obstacleEventToggle) {
+  _obstacleEventToggle.addEventListener('change', function() {
+    _setSelectedObstacleEventEnabled(!!_obstacleEventToggle.checked);
+  });
+}
+const _holeEntranceSelect = document.getElementById('holeEntranceSelect');
+if (_holeEntranceSelect) {
+  _holeEntranceSelect.addEventListener('change', function() {
+    _setFlagTunnelEntrance(_holeEntranceSelect.value);
+  });
+}
+const _holeExitSelect = document.getElementById('holeExitSelect');
+if (_holeExitSelect) {
+  _holeExitSelect.addEventListener('change', function() {
+    _setFlagTunnelExit(_holeExitSelect.value);
+  });
+}
+const _holeExitNodeSelect = document.getElementById('holeExitNodeSelect');
+if (_holeExitNodeSelect) {
+  _holeExitNodeSelect.addEventListener('change', function() {
+    _setFlagTunnelExitNode(_holeExitNodeSelect.value);
+  });
+}
+
 // Creature kind sub-buttons
 document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
@@ -796,6 +1209,8 @@ jsonInput.addEventListener('change', function(e) {
       const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
       state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
       state.selectedCreatureId = null;
+      state.selectedObstacleId = null;
+      updateObstacleEventPanel();
       state.edgeInProgress = null;
       edgeProgressEl.textContent = '';
       draw();
@@ -1062,7 +1477,9 @@ cv.addEventListener('click', function(e) {
   } else if (state.mode === 'edge') {
     handleEdgeClick(p);
   } else if (state.mode === 'obstacle') {
-    state.obstacles.push({ kind: state.obstacleKind, x: p.x, y: p.y });
+    const o = { kind: state.obstacleKind, x: p.x, y: p.y };
+    state.obstacles.push(o);
+    selectObstacle(o, false);
   } else if (state.mode === 'creature') {
     const c = {
       id: 'c' + state.nextCreatureId,
@@ -1320,6 +1737,10 @@ function selectCreature(c, shouldDraw) {
     state.nextCreatureId++;
   }
   state.selectedCreatureId = c.id || null;
+  if (state.selectedObstacleId) {
+    state.selectedObstacleId = null;
+    updateObstacleEventPanel();
+  }
   if (c.kind) {
     state.creatureKind = c.kind;
     _syncCreatureKindButtons();
@@ -1453,6 +1874,7 @@ cv.addEventListener('pointerdown', function(e) {
     const obstacleHit = findObstacleAt(p);
     if (obstacleHit) {
       pushHistory();
+      selectObstacle(obstacleHit, false);
       state.draggingObstacle = obstacleHit;
       _grabbedItemOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1524,6 +1946,7 @@ cv.addEventListener('pointerdown', function(e) {
     const obstacleHit = findObstacleAt(p);
     if (obstacleHit) {
       pushHistory();
+      selectObstacle(obstacleHit, false);
       state.draggingObstacle = obstacleHit;
       _grabbedItemOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1616,6 +2039,11 @@ cv.addEventListener('pointermove', function(e) {
     const cy = Math.max(0, Math.min(state.imgH, p.y));
     state.draggingObstacle.x = cx;
     state.draggingObstacle.y = cy;
+    if (state.gimmickConfigs.flagGimmick
+        && state.draggingObstacle.id
+        && state.gimmickConfigs.flagGimmick.exitObstacleId === state.draggingObstacle.id) {
+      _syncFlagExitFocusToExitHole();
+    }
     draw();
     return;
   }
@@ -1706,6 +2134,7 @@ cv.addEventListener('pointerup', function(e) {
     state.draggingObstacle = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
     cv.style.cursor = restCursor;
+    updateObstacleEventPanel();
     showBanner('障害物を移動しました');
     scheduleAutoSave();
     updateStatus();
@@ -1814,6 +2243,19 @@ function handleDeleteClick(p) {
     const idx = state.obstacles.indexOf(obstacleHit);
     if (idx >= 0) {
       state.obstacles.splice(idx, 1);
+      if (state.selectedObstacleId === obstacleHit.id) selectObstacle(null, false);
+      if (state.gimmickConfigs.flagGimmick
+          && (state.gimmickConfigs.flagGimmick.entranceObstacleId === obstacleHit.id
+              || state.gimmickConfigs.flagGimmick.exitObstacleId === obstacleHit.id)) {
+        state.gimmickConfigs.flagGimmick = null;
+      }
+      if (state.gimmickConfigs.waterGimmick && state.gimmickConfigs.waterGimmick.obstacleId === obstacleHit.id) {
+        state.gimmickConfigs.waterGimmick = null;
+      }
+      if (state.gimmickConfigs.strengthGimmick && state.gimmickConfigs.strengthGimmick.obstacleId === obstacleHit.id) {
+        state.gimmickConfigs.strengthGimmick = null;
+      }
+      updateObstacleEventPanel();
       showBanner('障害物を削除: ' + (obstacleHit.kind || ''));
       return;
     }
@@ -1912,6 +2354,8 @@ function draw() {
     }
   }
 
+  // Obstacle links (draw before obstacles so icons stay readable)
+  drawObstacleEventLinks();
   // Obstacles (rendered before nodes so nodes show on top)
   for (const o of state.obstacles) drawObstacle(o);
   // Gimmick pickup items
@@ -1932,16 +2376,64 @@ function draw() {
 }
 
 const OBSTACLE_EMOJI = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' };
+function drawObstacleEventLinks() {
+  const cfg = state.gimmickConfigs && state.gimmickConfigs.flagGimmick;
+  if (!cfg || !cfg.entranceObstacleId || !cfg.exitObstacleId) return;
+  const entrance = _obstacleById(cfg.entranceObstacleId);
+  const exit = _obstacleById(cfg.exitObstacleId);
+  if (!entrance || !exit) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(105, 210, 255, 0.9)';
+  ctx.lineWidth = Math.max(4, 5 / canvasScale);
+  ctx.setLineDash([18 / canvasScale, 12 / canvasScale]);
+  ctx.beginPath();
+  ctx.moveTo(entrance.x, entrance.y);
+  ctx.lineTo(exit.x, exit.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(105, 210, 255, 0.92)';
+  ctx.font = Math.max(18, state.imgH / 60) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('IN', entrance.x, entrance.y - state.imgH / 20);
+  ctx.fillText('OUT', exit.x, exit.y - state.imgH / 20);
+  ctx.restore();
+}
+
 function drawObstacle(o) {
   const sz = state.imgH / 12;
+  const selected = !!(o && o.id && o.id === state.selectedObstacleId);
+  const eventOn = _obstacleHasConfiguredEvent(o);
   ctx.save();
   // Background tint to show it's editable
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillStyle = eventOn ? 'rgba(170,230,120,0.62)' : 'rgba(255,255,255,0.55)';
   ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 4 / canvasScale, 0, Math.PI * 2); ctx.fill();
+  if (eventOn) {
+    ctx.strokeStyle = '#A4C76D';
+    ctx.lineWidth = Math.max(3, 4 / canvasScale);
+    ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 10 / canvasScale, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (selected) {
+    ctx.strokeStyle = '#FFE066';
+    ctx.lineWidth = Math.max(5, 5 / canvasScale);
+    ctx.setLineDash([12 / canvasScale, 8 / canvasScale]);
+    ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 18 / canvasScale, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.font = (sz * 0.85) + 'px serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#000';
   ctx.fillText(OBSTACLE_EMOJI[o.kind] || '🌳', o.x, o.y);
+  if (eventOn) {
+    ctx.fillStyle = '#24410f';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(2, 2 / canvasScale);
+    const badgeR = Math.max(12 / canvasScale, sz * 0.17);
+    ctx.beginPath(); ctx.arc(o.x + sz * 0.38, o.y - sz * 0.38, badgeR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = (badgeR * 1.1) + 'px sans-serif';
+    ctx.fillText('!', o.x + sz * 0.38, o.y - sz * 0.38 + badgeR * 0.05);
+  }
   ctx.restore();
 }
 
@@ -2239,6 +2731,8 @@ function _applySnapshot(snap) {
   state.draggingAnchor = null;
   state.draggingGimmickItem = null;
   state.selectedCreatureId = null;
+  state.selectedObstacleId = null;
+  updateObstacleEventPanel();
   _clearAnchorSelection(false);
   edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
 }
@@ -2296,6 +2790,8 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.nextStopId = 1;
   state.nextCreatureId = 1;
   state.selectedCreatureId = null;
+  state.selectedObstacleId = null;
+  updateObstacleEventPanel();
   state.edgeInProgress = null;
   edgeProgressEl.textContent = '';
   draw();
@@ -2325,6 +2821,7 @@ function _exportObstacle(o) {
   const out = { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y) };
   if (o.id) out.id = String(o.id);
   if (Number.isFinite(o.size) && o.size > 0) out.size = Math.round(o.size);
+  if (_obstacleHasConfiguredEvent(o)) out.eventEnabled = true;
   return out;
 }
 
@@ -2346,7 +2843,7 @@ function _applyGimmickItemsToDef(def) {
     const meta = GIMMICK_ITEM_DEFS[kind];
     const item = (state.gimmickItems || []).find(function(x) { return x && x.kind === kind; });
     const existing = state.gimmickConfigs && state.gimmickConfigs[meta.configKey];
-    if (!existing && !item) return;
+    if (!existing) return;
     const cfg = _jsonClone(existing) || _defaultGimmickConfig(meta.configKey);
     if (item) {
       cfg[meta.itemKey] = {
@@ -2774,6 +3271,8 @@ function _restoreDraft() {
     state.creatures = Array.isArray(draft.creatures) ? draft.creatures : [];
     _copyGimmickStateFromSnapshot(draft);
     state.selectedCreatureId = null;
+    state.selectedObstacleId = null;
+    updateObstacleEventPanel();
     state.nextStopId = draft.nextStopId || 1;
     state.nextCreatureId = draft.nextCreatureId || 1;
     state.imgFileName = draft.imgFileName || '';
@@ -2950,6 +3449,8 @@ function libLoadByName(name) {
   state.creatures = Array.isArray(snap.creatures) ? snap.creatures : [];
   _copyGimmickStateFromSnapshot(snap);
   state.selectedCreatureId = null;
+  state.selectedObstacleId = null;
+  updateObstacleEventPanel();
   state.nextStopId = snap.nextStopId || 1;
   state.nextCreatureId = snap.nextCreatureId || 1;
   state.imgFileName = snap.imgFileName || '';
@@ -3134,6 +3635,8 @@ function _restoreFromServerDef(def, fname, stageOrder) {
   const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
   state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
   state.selectedCreatureId = null;
+  state.selectedObstacleId = null;
+  updateObstacleEventPanel();
   state.edgeInProgress = null;
   if (typeof edgeProgressEl !== 'undefined' && edgeProgressEl) edgeProgressEl.textContent = '';
   // 画像も同じディレクトリから取得を試みる (jpg → png の順)
@@ -3534,6 +4037,8 @@ function _applyHandoff(h, opts) {
     });
     state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
     state.selectedCreatureId = null;
+    state.selectedObstacleId = null;
+    updateObstacleEventPanel();
 
     state.edgeInProgress = null;
     if (edgeProgressEl) edgeProgressEl.textContent = '';
