@@ -2758,6 +2758,7 @@ var _rhythm = {
   countdownTimers: [],
   demoActive: false,
   demoTimers: [],
+  demoRaf: 0,
   demoNoteBtn: null,
   completeTimers: [],
   hits: 0,
@@ -3112,7 +3113,7 @@ function _ensureRhythmBand() {
 }
 // ── Guitar Hero 風 ノート落下: ヘルパ群 ──
 function _ghIsActive() {
-  return _rhythm.enabled && document.body.classList.contains('rhythm-layout');
+  return (_rhythm.enabled || _rhythm.demoActive) && document.body.classList.contains('rhythm-layout');
 }
 function _ghLanesEl() {
   return document.getElementById('rhythm-lanes');
@@ -3253,7 +3254,7 @@ function _ghUpdateFallingNotes(now) {
   if (!lanes) return;
   // v705+: startPerfTime 未確定 (=0) のうちは判定に入らない。
   // 「スタート!」表示中などに古い活性ノートが残っていても miss-flash (赤) を出さない。
-  if (!_rhythm.enabled || !_rhythm.startPerfTime) return;
+  if ((!_rhythm.enabled && !_rhythm.demoActive) || !_rhythm.startPerfTime) return;
   // キャッシュ未初期化なら 1 度だけジオメトリ計算
   if (_rhythm._ghHitY == null) {
     _ghUpdateLanesGeometry();
@@ -3270,6 +3271,10 @@ function _ghUpdateFallingNotes(now) {
     note.el.style.transform = 'translate3d(0, ' + y.toFixed(1) + 'px, 0)';
     // ミス判定 (ターゲット時刻を MISS_MS 超過)
     if (until < -RHYTHM_MISS_MS) {
+      if (_rhythm.demoActive && !_rhythm.enabled) {
+        _ghRemoveNote(note);
+        continue;
+      }
       _rhythm.streak = 0;
       _rhythm.misses++;
       _setRhythmStatus('つぎいこう', 'miss');
@@ -3303,6 +3308,22 @@ function _scheduleRhythmNote() {
   // Guitar Hero モード時は ring ベースのターゲット表示をスキップ
   if (document.body.classList.contains('rhythm-layout')) return;
   _renderRhythmTarget();
+}
+function _rhythmDemoTick() {
+  if (!_rhythm.demoActive) {
+    _rhythm.demoRaf = 0;
+    return;
+  }
+  var now = performance.now();
+  if (document.body.classList.contains('rhythm-layout')) {
+    _ghSpawnDueNotes(now);
+    _ghUpdateFallingNotes(now);
+  }
+  _rhythm.demoRaf = requestAnimationFrame(_rhythmDemoTick);
+}
+function _startRhythmDemoVisualLoop() {
+  if (_rhythm.demoRaf) cancelAnimationFrame(_rhythm.demoRaf);
+  _rhythm.demoRaf = requestAnimationFrame(_rhythmDemoTick);
 }
 function _clearRhythmCompleteTimers() {
   _rhythm.completeTimers.forEach(function(id) { clearTimeout(id); });
@@ -3590,11 +3611,21 @@ function _playRhythmDemoTone(idx, durationMs) {
 function _clearRhythmDemo(keepHud) {
   _rhythm.demoTimers.forEach(function(id) { clearTimeout(id); });
   _rhythm.demoTimers = [];
+  if (_rhythm.demoRaf) {
+    cancelAnimationFrame(_rhythm.demoRaf);
+    _rhythm.demoRaf = 0;
+  }
   _rhythm.demoActive = false;
   _rhythm.demoNoteBtn = null;
   _hideOverlay();
   _clearRhythmButtonState();
   if (!_rhythm.enabled) {
+    _ghClearActiveNotes();
+    _ghClearLaneFlashes();
+    _rhythm.nextSpawnSeq = 0;
+    _rhythm.startPerfTime = 0;
+    _rhythm.startAcTime = 0;
+    _rhythm._ghHitY = null;
     var queue = document.getElementById('rhythm-queue');
     if (queue) queue.innerHTML = '';
   }
@@ -3615,6 +3646,14 @@ function _runRhythmDemoSequence(thenStart) {
   _ensureRhythmBand();
   _setRhythmStatus('おてほんを みてね', null);
   var beatMs = 60000 / RHYTHM_SONG.bpm;
+  _ghClearActiveNotes();
+  _ghClearLaneFlashes();
+  _rhythm.nextSpawnSeq = 0;
+  _rhythm.startAcTime = 0;
+  _rhythm.startPerfTime = performance.now() + RHYTHM_FALL_MS;
+  _rhythm._ghHitY = null;
+  _ghUpdateLanesGeometry();
+  _startRhythmDemoVisualLoop();
   var elapsed = 0;
   RHYTHM_SONG.notes.forEach(function(noteIdx, seqIndex) {
     var noteMs = _rhythmBeatLengthAt(seqIndex) * beatMs;
@@ -3623,6 +3662,15 @@ function _runRhythmDemoSequence(thenStart) {
       _rhythm.idx = seqIndex;
       _renderRhythmTarget();
       _setRhythmStatus('おてほん ' + _rhythmNoteLabel(noteIdx), null);
+      var laneIdx = _ghBtnIdxToLaneIdx(noteIdx);
+      for (var i = _rhythm.activeNotes.length - 1; i >= 0; i--) {
+        var activeNote = _rhythm.activeNotes[i];
+        if (activeNote && activeNote.seq === seqIndex) {
+          _ghRemoveNote(activeNote);
+          break;
+        }
+      }
+      _ghSpawnHitFlash(laneIdx);
       var btn = _rhythmButton(noteIdx);
       if (btn) {
         _pulseRhythmButton(btn, 'rhythm-hit');
@@ -3634,7 +3682,7 @@ function _runRhythmDemoSequence(thenStart) {
       }
       bumpPono();
       _playRhythmDemoTone(noteIdx, noteMs * 0.86);
-    }, elapsed));
+    }, RHYTHM_FALL_MS + elapsed));
     elapsed += noteMs;
   });
   _rhythm.demoTimers.push(setTimeout(function() {
@@ -3644,7 +3692,7 @@ function _runRhythmDemoSequence(thenStart) {
     _updateRhythmMenuActions();
     if (thenStart) _beginRhythmCountdown();
     else _showRhythmMenu();
-  }, elapsed + 360));
+  }, RHYTHM_FALL_MS + elapsed + 360));
 }
 function _startRhythmDemo(thenStart) {
   if (_rhythm.enabled) _stopRhythmMode();
