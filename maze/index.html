@@ -1170,34 +1170,88 @@ body.image-stage-mode .game-wrap {
   min-height: 168px;
   border: 4px solid #BFD88A;
   border-radius: 20px;
-  background: linear-gradient(180deg, #E9FBFF, #D8F4FF 64%, #F9FFF0);
+  background:
+    linear-gradient(90deg, rgba(132,190,111,0.85) 0 12%, transparent 12% 88%, rgba(132,190,111,0.85) 88% 100%),
+    radial-gradient(ellipse at 50% 54%, rgba(88, 177, 215, 0.88) 0 58%, rgba(63, 139, 188, 0.82) 72%, rgba(231, 249, 255, 0.86) 100%);
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.7), 0 4px 14px rgba(0,0,0,0.12);
 }
 .water-game__puddle {
   position: absolute;
-  inset: 2% 4%;
-  width: 92%;
-  height: 92%;
+  inset: -9% 8%;
+  width: 84%;
+  height: 118%;
   object-fit: contain;
-  opacity: 0.82;
+  opacity: 0.48;
+  filter: saturate(1.12) contrast(1.06);
   pointer-events: none;
 }
+.water-game__stage::before,
+.water-game__stage::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 18%;
+  height: 48%;
+  transform: translateY(-50%);
+  border-radius: 42% 58% 58% 42%;
+  background: linear-gradient(180deg, #D3B878, #B9975F);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.25), 0 5px 12px rgba(67,82,42,0.2);
+  z-index: 1;
+}
+.water-game__stage::before { left: -7%; }
+.water-game__stage::after {
+  right: -7%;
+  transform: translateY(-50%) scaleX(-1);
+}
+.water-bridge-route {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  height: 34%;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 12px, rgba(255,255,255,0.06) 12px 24px),
+    rgba(255, 247, 209, 0.26);
+  border: 3px dashed rgba(255,255,255,0.76);
+  box-shadow: 0 0 0 7px rgba(75,147,181,0.16), inset 0 0 18px rgba(255,255,255,0.24);
+  z-index: 1;
+}
+.water-bank-label {
+  position: absolute;
+  z-index: 3;
+  top: 8%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.82);
+  color: #5D4E37;
+  font-size: clamp(0.72rem, 1.8vw, 0.92rem);
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.water-bank-label--start { left: 5%; }
+.water-bank-label--goal { right: 5%; }
 .water-slots {
   position: absolute;
-  inset: 18% 7% 17%;
+  left: 12%;
+  right: 12%;
+  top: 50%;
+  height: 40%;
+  transform: translateY(-50%);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
+  gap: 12px;
   align-items: center;
   z-index: 2;
 }
 .water-slot {
   position: relative;
-  min-height: 92px;
-  border: 3px dashed rgba(255,255,255,0.92);
-  border-radius: 16px;
-  background: rgba(255,255,255,0.34);
+  min-height: 74px;
+  border: 3px dashed rgba(255,255,255,0.94);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.22);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -1206,7 +1260,19 @@ body.image-stage-mode .game-wrap {
   font-weight: 900;
   font-size: clamp(0.86rem, 2vw, 1.05rem);
   line-height: 1.2;
-  box-shadow: inset 0 0 12px rgba(80,160,210,0.18);
+  box-shadow: inset 0 0 12px rgba(80,160,210,0.18), 0 6px 12px rgba(38,91,116,0.13);
+}
+.water-slot::before {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.28);
+  pointer-events: none;
 }
 .water-slot.is-next {
   border-style: solid;
@@ -1224,16 +1290,17 @@ body.image-stage-mode .game-wrap {
   box-shadow: 0 0 0 4px rgba(245,140,140,0.28), inset 0 0 12px rgba(245,140,140,0.2);
 }
 .water-slot img {
-  width: min(94%, 150px);
-  max-height: 78px !important;
+  width: min(96%, 170px);
+  max-height: 82px !important;
   object-fit: contain;
   filter: drop-shadow(0 4px 7px rgba(0,0,0,0.18));
   pointer-events: none;
+  z-index: 1;
 }
 .water-amenbo {
   position: absolute;
   z-index: 3;
-  top: 6%;
+  top: 12%;
   left: 50%;
   width: min(28vw, 150px);
   max-height: min(22dvh, 110px) !important;
@@ -3575,6 +3642,7 @@ function _applyFlagTunnelCamera(now, viewportW, viewportH) {
   stage.camera.x = x;
   stage.camera.y = y;
   stage._flagZoom = zoom;
+  imgClampCameraToBounds(stage, viewportW, viewportH, (stage._scale || 1) * zoom);
   return true;
 }
 
@@ -3662,6 +3730,15 @@ function _flagEntranceObstacle() {
 function _flagExitObstacle() {
   const cfg = _flagTunnelCfg();
   return cfg ? _flagObstacleById(cfg.exitObstacleId) : null;
+}
+
+function _flagExitFocusPoint(exitObstacle) {
+  const cfg = _flagTunnelCfg();
+  const p = cfg && cfg.exitFocus;
+  if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
+    return { x: Number(p.x), y: Number(p.y) };
+  }
+  return exitObstacle || null;
 }
 
 function _isFlagTunnelEntranceObstacle(o) {
@@ -3761,11 +3838,12 @@ function imgDrawFlagTunnelScreenGlow(stageObj, now, viewportW, viewportH, scale)
   }
   if (st.anim) {
     const exit = _flagExitObstacle();
+    const exitFocus = _flagExitFocusPoint(exit);
     const elapsed = now - st.anim.t0;
-    if (exit && elapsed > 2700) {
+    if (exitFocus && elapsed > 2700) {
       const p = Math.min(1, (elapsed - 2700) / 720);
-      const sx = viewportW / 2 + (exit.x - stageObj.camera.x) * scale;
-      const sy = viewportH / 2 + (exit.y - stageObj.camera.y) * scale;
+      const sx = viewportW / 2 + (exitFocus.x - stageObj.camera.x) * scale;
+      const sy = viewportH / 2 + (exitFocus.y - stageObj.camera.y) * scale;
       _drawFlagScreenGlow(sx, sy, stageObj.viewBox.h * scale / 8.5, p, 0.9);
     }
   }
@@ -4318,8 +4396,9 @@ function _startFlagTunnelTravel(obstacle) {
   if (!cfg || !st || st.travelling) return;
   const entrance = obstacle || _flagEntranceObstacle();
   const exit = _flagExitObstacle();
+  const exitFocus = _flagExitFocusPoint(exit);
   const exitNode = cfg.exitNodeId && stage.nodesById ? stage.nodesById[cfg.exitNodeId] : null;
-  if (!entrance || !exit || !exitNode) {
+  if (!entrance || !exit || !exitFocus || !exitNode) {
     _closeEncounter(false);
     return;
   }
@@ -4343,8 +4422,8 @@ function _startFlagTunnelTravel(obstacle) {
       fromZoom: camFromZoom,
       entranceX: entrance.x,
       entranceY: entrance.y,
-      exitX: exit.x,
-      exitY: exit.y,
+      exitX: exitFocus.x,
+      exitY: exitFocus.y,
       exitNodeX: exitNode.x,
       exitNodeY: exitNode.y,
     },
@@ -4365,11 +4444,11 @@ function _startFlagTunnelTravel(obstacle) {
   }, 950);
   _flagTunnelSetTimeout(function() {
     if (_stageRef !== stage || !st.travelling) return;
-    pono.x = exit.x;
-    pono.y = exit.y;
+    pono.x = exitFocus.x;
+    pono.y = exitFocus.y;
     pono.nodeId = exitNode.id;
     st.exitShown = true;
-    imgShowBubble('でぐちが ひかった！', { x: exit.x, y: exit.y }, 900);
+    imgShowBubble('でぐちが ひかった！', { x: exitFocus.x, y: exitFocus.y }, 900);
   }, 3420);
   _flagTunnelSetTimeout(function() {
     if (_stageRef !== stage || !st.travelling) return;
@@ -5126,9 +5205,12 @@ function _showWaterBridgeGame() {
   const wrap = document.createElement('div');
   wrap.className = 'water-game';
   wrap.innerHTML =
-    '<div class="water-game__title">いたを ならべよう</div>' +
+    '<div class="water-game__title">いたを ならべて わたろう！</div>' +
     '<div class="water-game__stage">' +
       '<img class="water-game__puddle" src="' + MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png" alt="みずたまり">' +
+      '<div class="water-bridge-route" aria-hidden="true"></div>' +
+      '<div class="water-bank-label water-bank-label--start">こっち</div>' +
+      '<div class="water-bank-label water-bank-label--goal">むこう</div>' +
       '<div class="water-slots" id="waterSlots"></div>' +
       '<img class="water-amenbo" id="waterAmenbo" src="' + MAZE_WATER_ASSET_BASE + 'amenbo_skate.png" alt="アメンボムシ">' +
     '</div>' +
@@ -5479,7 +5561,7 @@ function _showStrengthPushGame() {
         '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
         '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
         '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
-        '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_push.png" alt="ちからの てぶくろ">' +
+        '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="ちからの てぶくろ">' +
       '</button>' +
     '</div>' +
     '<div class="strength-tap-progress" id="strengthTapProgress"></div>' +

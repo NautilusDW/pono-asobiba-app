@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:378-maze-item-editor-water-exit] Codex: user 依頼「力の手袋ミニゲームのグローブをマップアイテムと同じボクシンググローブへ統一、ステージ4旗ワープ出口フォーカス/出現位置補正、エディターでアイテム位置編集、板並べゲームの水たまりと橋ルートを分かりやすく」を受領。`maze/index.html` / `maze/imageStages/stage4.json` / `tools/maze-editor.html` を対象に実装・検証中。 (by Codex)
 - 2026-06-09 - [batch:374-bento-mask-editor-ui-redesign] Codex: user 依頼「1段目/2段目マスクと完成プレビューがわかりやすい UI へ整理、マスク表示切替ボタン追加」を受領。`bento/index.html` のマスクエディターを表示タブ式に再設計中。 (by Codex)
 - 2026-06-09 - [batch:374-bento-mask-editor-ui-redesign] DONE - Codex: `bento/index.html` のマスクエディターを `1段目マスク` / `2段目マスク` / `完成プレビュー` のタブ式へ整理。1段目は大きい編集面、2段目は蓋を隠した完成プレビュー上、完成プレビューは蓋/2段目箱位置だけを表示するよう分離。`sw.js` は v949。Node構文、Playwrightで各タブ表示/保存先/URL view/tier2蓋非表示/mobile tab overflow なし、スクショ目視を確認。 (by Codex)
 - 2026-06-09 - [batch:372-oto-rhythm-force-piano] Codex: user 依頼「リズムモードの時はドラムと動物の鳴き声を選択してた場合は、ピアノに変更」を受領。`oto/index.html` でリズム開始時に `taiko` / `animal` のみ `doremi` へ戻す追修正を実装・検証中。 (by Codex)

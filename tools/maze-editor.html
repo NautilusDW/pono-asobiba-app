@@ -263,6 +263,7 @@ html, body { height: 100vh; overflow: hidden;
       <button class="mode-btn" data-mode="move" style="background:#1f3a3a; color:#9ee;">✋ 移動</button>
       <button class="mode-btn" data-mode="obstacle" style="background:#3a2c1a; color:#fc8;">🌳 障害物</button>
       <button class="mode-btn" data-mode="creature" style="background:#2c3a1a; color:#cf8;">🐛 お邪魔虫</button>
+      <button class="mode-btn" data-mode="gimmick-item" style="background:#3a2c5a; color:#dcf;">🎒 アイテム</button>
       <button class="mode-btn" data-mode="delete" style="background: #5a3030; color: #fcc;">🗑 削除</button>
     </div>
     <!-- Sub-selectors (shown only when respective mode is active) -->
@@ -279,6 +280,11 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn" data-ckind="pyon"><img src="../assets/images/maze/creatures/pyon.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> ぴょん</button>
       <button class="kind-btn" data-ckind="kabuto"><img src="../assets/images/maze/creatures/kabuto.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> コツコツ</button>
       <button class="kind-btn" data-ckind="hachi"><img src="../assets/images/maze/creatures/hachi.png" alt="" style="width:1.6em;height:1.6em;vertical-align:middle;object-fit:contain;"> ブンブン</button>
+    </div>
+    <div id="gimmickItemKindRow" class="modes" style="display:none; margin-top:6px;">
+      <button class="kind-btn active" data-ikind="ladder">🪜 なわばしご</button>
+      <button class="kind-btn" data-ikind="plank">🪵 まるたの板</button>
+      <button class="kind-btn" data-ikind="glove">🥊 力の手袋</button>
     </div>
 
     <h3>3b. スタート / ゴールの大きさ</h3>
@@ -419,6 +425,41 @@ const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/
 imgMarkerStart.onload = function() { try { draw(); } catch (e) {} };
 imgMarkerGoal.onload  = function() { try { draw(); } catch (e) {} };
 
+function _editorLoadImage(src) {
+  const im = new Image();
+  im.onload = function() { try { draw(); } catch (e) {} };
+  im.src = src;
+  return im;
+}
+
+const GIMMICK_ITEM_DEFS = {
+  ladder: {
+    label: 'なわばしご',
+    imageUrl: '../assets/images/maze/flag/rope_ladder.png',
+    radius: 92,
+    configKey: 'flagGimmick',
+    itemKey: 'ladder',
+  },
+  plank: {
+    label: 'まるたの板',
+    imageUrl: '../assets/images/maze/gimmicks/water/plank_item.png',
+    radius: 90,
+    configKey: 'waterGimmick',
+    itemKey: 'plank',
+  },
+  glove: {
+    label: '力の手袋',
+    imageUrl: '../assets/images/maze/gimmicks/strength/glove_pair_item.png',
+    radius: 90,
+    configKey: 'strengthGimmick',
+    itemKey: 'glove',
+  },
+};
+
+Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
+  GIMMICK_ITEM_DEFS[kind].image = _editorLoadImage(GIMMICK_ITEM_DEFS[kind].imageUrl);
+});
+
 // Creature image cache (kinds without an entry fall back to emoji)
 const _editorCreatureImgCache = {};
 function _getCreatureImg(url) {
@@ -442,16 +483,24 @@ const state = {
   edges: [],            // { from, to, controls: [{x,y}], shape?: 'curve'|'polyline' }
   obstacles: [],        // { kind, x, y }
   creatures: [],        // { id, kind, x, y }
+  gimmickItems: [],      // { kind:'ladder'|'plank'|'glove', x, y, radius }
+  gimmickConfigs: {      // original stage gimmick settings, with item positions overridden on export
+    flagGimmick: null,
+    waterGimmick: null,
+    strengthGimmick: null,
+  },
   nextStopId: 1,
   nextCreatureId: 1,
   mode: 'start',
   obstacleKind: 'tree',
   creatureKind: 'mayoi',
+  gimmickItemKind: 'ladder',
   edgeInProgress: null, // { fromId, points: [{x,y}] }
   history: [],          // shallow snapshots for undo
   redoStack: [],        // shallow snapshots for redo (cleared on any new pushHistory)
   draggingObstacle: null, // 現在 drag 中の obstacle 参照 (state.obstacles 内の要素)
   draggingCreature: null, // 現在 drag 中の creature 参照 (state.creatures 内の要素)
+  draggingGimmickItem: null, // 現在 drag 中の gimmick item 参照
   draggingAnchor: null,   // 現在 drag 中の edge control point
   selectedAnchors: new Set(), // edit-points 用: "edgeIdx:controlIdx"
   selectedCreatureId: null, // 種類変更対象のお邪魔虫 id
@@ -476,6 +525,81 @@ const stopCountEl = document.getElementById('stopCount');
 const edgeCountEl = document.getElementById('edgeCount');
 const edgeProgressEl = document.getElementById('edgeProgress');
 
+function _jsonClone(obj) {
+  if (!obj || typeof obj !== 'object') return null;
+  try { return JSON.parse(JSON.stringify(obj)); }
+  catch (_) { return null; }
+}
+
+function _normalizeObstacles(list) {
+  return Array.isArray(list)
+    ? list
+        .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
+        .map(function(o) {
+          const out = { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) };
+          if (o.id) out.id = String(o.id);
+          if (Number.isFinite(o.size) && o.size > 0) out.size = Number(o.size);
+          return out;
+        })
+    : [];
+}
+
+function _normalizeCreatures(list) {
+  return Array.isArray(list)
+    ? list
+        .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
+        .map(function(c) {
+          const out = {
+            id: c.id || ('c' + (state.nextCreatureId++)),
+            kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')),
+            x: Number(c.x),
+            y: Number(c.y),
+          };
+          if (c.minigame) out.minigame = c.minigame;
+          return out;
+        })
+    : [];
+}
+
+function _resetGimmickState() {
+  state.gimmickItems = [];
+  state.gimmickConfigs = {
+    flagGimmick: null,
+    waterGimmick: null,
+    strengthGimmick: null,
+  };
+}
+
+function _restoreGimmicksFromDef(def) {
+  _resetGimmickState();
+  if (!def || typeof def !== 'object') return;
+  state.gimmickConfigs.flagGimmick = _jsonClone(def.flagGimmick);
+  state.gimmickConfigs.waterGimmick = _jsonClone(def.waterGimmick);
+  state.gimmickConfigs.strengthGimmick = _jsonClone(def.strengthGimmick);
+  Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
+    const meta = GIMMICK_ITEM_DEFS[kind];
+    const cfg = state.gimmickConfigs[meta.configKey];
+    const src = cfg && cfg[meta.itemKey];
+    if (!src || !Number.isFinite(src.x) || !Number.isFinite(src.y)) return;
+    state.gimmickItems.push({
+      kind: kind,
+      x: Number(src.x),
+      y: Number(src.y),
+      radius: Number.isFinite(src.radius) && src.radius > 0 ? Number(src.radius) : meta.radius,
+    });
+  });
+}
+
+function _copyGimmickStateFromSnapshot(snap) {
+  state.gimmickItems = Array.isArray(snap && snap.gimmickItems) ? snap.gimmickItems : [];
+  state.gimmickConfigs = (snap && snap.gimmickConfigs && typeof snap.gimmickConfigs === 'object')
+    ? snap.gimmickConfigs
+    : { flagGimmick: null, waterGimmick: null, strengthGimmick: null };
+  if (!state.gimmickConfigs.flagGimmick) state.gimmickConfigs.flagGimmick = null;
+  if (!state.gimmickConfigs.waterGimmick) state.gimmickConfigs.waterGimmick = null;
+  if (!state.gimmickConfigs.strengthGimmick) state.gimmickConfigs.strengthGimmick = null;
+}
+
 // ────────────────────────────────────────────────────────
 // Mode switching
 // ────────────────────────────────────────────────────────
@@ -488,6 +612,7 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     // Toggle sub-rows
     document.getElementById('obstacleKindRow').style.display = state.mode === 'obstacle' ? 'flex' : 'none';
     document.getElementById('creatureKindRow').style.display = state.mode === 'creature' ? 'flex' : 'none';
+    document.getElementById('gimmickItemKindRow').style.display = state.mode === 'gimmick-item' ? 'flex' : 'none';
     // 移動モードに切り替えた瞬間のカーソルを 'move' にプリセット (pointermove で grab/grabbing に上書きされる)
     if (cv) cv.style.cursor = (state.mode === 'move') ? 'move' : 'crosshair';
     showBanner('モード: ' + btn.textContent.trim());
@@ -526,6 +651,18 @@ document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(btn) {
     state.creatureKind = nextKind;
     _syncCreatureKindButtons();
     showBanner('お邪魔虫: ' + btn.textContent.trim());
+  });
+});
+
+// Gimmick item kind sub-buttons
+document.querySelectorAll('#gimmickItemKindRow .kind-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const nextKind = btn.dataset.ikind;
+    if (!GIMMICK_ITEM_DEFS[nextKind]) return;
+    state.gimmickItemKind = nextKind;
+    document.querySelectorAll('#gimmickItemKindRow .kind-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    showBanner('アイテム: ' + btn.textContent.trim());
   });
 });
 
@@ -584,16 +721,9 @@ jsonInput.addEventListener('change', function(e) {
       const lt = document.getElementById('lanternToggle');
       if (lt) lt.checked = !!def.lantern;
       // Restore obstacles + creatures
-      state.obstacles = Array.isArray(def.obstacles)
-        ? def.obstacles
-            .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
-            .map(function(o) { return { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) }; })
-        : [];
-      state.creatures = Array.isArray(def.creatures)
-        ? def.creatures
-            .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
-            .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)), kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')), x: Number(c.x), y: Number(c.y) }; })
-        : [];
+      state.obstacles = _normalizeObstacles(def.obstacles);
+      state.creatures = _normalizeCreatures(def.creatures);
+      _restoreGimmicksFromDef(def);
       // Bump nextCreatureId past any existing
       const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
       state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
@@ -873,6 +1003,17 @@ cv.addEventListener('click', function(e) {
     state.creatures.push(c);
     state.nextCreatureId++;
     selectCreature(c, false);
+  } else if (state.mode === 'gimmick-item') {
+    const kind = GIMMICK_ITEM_DEFS[state.gimmickItemKind] ? state.gimmickItemKind : 'ladder';
+    const meta = GIMMICK_ITEM_DEFS[kind];
+    state.gimmickItems = state.gimmickItems.filter(function(item) { return item.kind !== kind; });
+    state.gimmickItems.push({
+      kind: kind,
+      x: p.x,
+      y: p.y,
+      radius: meta.radius,
+    });
+    showBanner(meta.label + 'を配置しました');
   } else if (state.mode === 'delete') {
     handleDeleteClick(p);
   }
@@ -1131,6 +1272,22 @@ function findObstacleAt(p) {
   return best;
 }
 
+function findGimmickItemAt(p) {
+  const r = Math.max(36 / canvasScale, state.imgH / 24);
+  const r2 = r * r;
+  let best = null, bestD2 = Infinity;
+  const items = Array.isArray(state.gimmickItems) ? state.gimmickItems : [];
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (!item || !Number.isFinite(item.x) || !Number.isFinite(item.y)) continue;
+    const dx = p.x - item.x, dy = p.y - item.y;
+    const rr = Math.max(r, (item.radius || 80) * 0.7);
+    const d2 = dx*dx + dy*dy;
+    if (d2 < Math.max(r2, rr * rr) && d2 < bestD2) { bestD2 = d2; best = item; }
+  }
+  return best;
+}
+
 cv.addEventListener('pointerdown', function(e) {
   if (!state.image) return;
   const p = mouseToImage(e);
@@ -1200,9 +1357,19 @@ cv.addEventListener('pointerdown', function(e) {
   }
 
   // === move モード === (node / creature / obstacle を区別なく drag。新規配置なし)
-  // hit-test 順序は既存 generic パス (下記 line 983 付近) と揃える: creature → obstacle → node
-  // (描画上 creature がノードより上にいるため先に hit-test)
+  // hit-test 順序は描画上に見える順: item → creature → obstacle → node
   if (state.mode === 'move') {
+    const itemHit = findGimmickItemAt(p);
+    if (itemHit) {
+      pushHistory();
+      state.draggingGimmickItem = itemHit;
+      _grabbedItemOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
     const creatureHit = findCreatureAt(p);
     if (creatureHit) {
       pushHistory();
@@ -1254,6 +1421,18 @@ cv.addEventListener('pointerdown', function(e) {
       state.selectedNodeId = nodeHit.id;
       _wasNodeDragging = false;
       _grabbedNodeOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+    // === gimmick item drag ===
+    const itemHit = findGimmickItemAt(p);
+    if (itemHit) {
+      pushHistory();
+      state.draggingGimmickItem = itemHit;
+      _grabbedItemOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       cv.style.cursor = 'grabbing';
       draw();
@@ -1345,6 +1524,15 @@ cv.addEventListener('pointermove', function(e) {
   if (!state.image) return;
   const p = mouseToImage(e);
   state.hover = p;
+  // gimmick item drag リアルタイム移動
+  if (state.draggingGimmickItem) {
+    const cx = Math.max(0, Math.min(state.imgW, p.x));
+    const cy = Math.max(0, Math.min(state.imgH, p.y));
+    state.draggingGimmickItem.x = cx;
+    state.draggingGimmickItem.y = cy;
+    draw();
+    return;
+  }
   // creature drag リアルタイム移動
   if (state.draggingCreature) {
     const cx = Math.max(0, Math.min(state.imgW, p.x));
@@ -1417,8 +1605,8 @@ cv.addEventListener('pointermove', function(e) {
     draw();
   }
   if (state.mode === 'move') {
-    // 移動モード: node / creature / obstacle のいずれかに hover していれば 'grab'、そうでなければ 'move'
-    const overGrabbable = hovered || findCreatureAt(p) || findObstacleAt(p);
+    // 移動モード: node / item / creature / obstacle のいずれかに hover していれば 'grab'
+    const overGrabbable = hovered || findGimmickItemAt(p) || findCreatureAt(p) || findObstacleAt(p);
     cv.style.cursor = overGrabbable ? 'grab' : 'move';
   } else {
     cv.style.cursor = hovered ? 'grab' : 'crosshair';
@@ -1428,6 +1616,15 @@ cv.addEventListener('pointermove', function(e) {
 cv.addEventListener('pointerup', function(e) {
   // 移動モードでは drag 終了後のカーソルは 'move' に戻す (それ以外は 'crosshair')
   const restCursor = (state.mode === 'move') ? 'move' : 'crosshair';
+  if (state.draggingGimmickItem) {
+    state.draggingGimmickItem = null;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = restCursor;
+    showBanner('アイテムを移動しました');
+    scheduleAutoSave();
+    updateStatus();
+    return;
+  }
   if (state.draggingCreature) {
     state.draggingCreature = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -1524,6 +1721,16 @@ function handleDeleteClick(p) {
   // Items are drawn above the path graph and are often placed directly on top
   // of a stop node. Prefer deleting the visible item under the cursor before
   // falling back to node snapping.
+  const itemHit = findGimmickItemAt(p);
+  if (itemHit) {
+    const idx = state.gimmickItems.indexOf(itemHit);
+    if (idx >= 0) {
+      const meta = GIMMICK_ITEM_DEFS[itemHit.kind] || { label: itemHit.kind || 'アイテム' };
+      state.gimmickItems.splice(idx, 1);
+      showBanner('アイテムを削除: ' + meta.label);
+      return;
+    }
+  }
   const creatureHit = findCreatureAt(p);
   if (creatureHit) {
     const idx = state.creatures.indexOf(creatureHit);
@@ -1639,6 +1846,10 @@ function draw() {
 
   // Obstacles (rendered before nodes so nodes show on top)
   for (const o of state.obstacles) drawObstacle(o);
+  // Gimmick pickup items
+  if (Array.isArray(state.gimmickItems)) {
+    for (const item of state.gimmickItems) drawGimmickItem(item);
+  }
   // Creatures
   for (const c of state.creatures) drawCreature(c);
   // Nodes
@@ -1663,6 +1874,35 @@ function drawObstacle(o) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#000';
   ctx.fillText(OBSTACLE_EMOJI[o.kind] || '🌳', o.x, o.y);
+  ctx.restore();
+}
+
+function drawGimmickItem(item) {
+  const meta = GIMMICK_ITEM_DEFS[item && item.kind] || GIMMICK_ITEM_DEFS.ladder;
+  const r = item.radius || meta.radius || (state.imgH / 18);
+  const img = meta.image;
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = 'rgba(255,248,170,0.32)';
+  ctx.strokeStyle = 'rgba(255,224,102,0.86)';
+  ctx.lineWidth = Math.max(3, r * 0.06);
+  ctx.beginPath();
+  ctx.arc(item.x, item.y, r * 0.72, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  if (img && img.complete && img.naturalWidth > 0) {
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const drawH = r * 1.25;
+    const drawW = drawH * ratio;
+    ctx.drawImage(img, item.x - drawW/2, item.y - drawH/2, drawW, drawH);
+  } else {
+    const fallback = item.kind === 'glove' ? '🥊' : (item.kind === 'plank' ? '🪵' : '🪜');
+    ctx.font = (r * 0.8) + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#5D4E37';
+    ctx.fillText(fallback, item.x, item.y);
+  }
   ctx.restore();
 }
 
@@ -1822,6 +2062,7 @@ function _layoutPointLists() {
   }
   if (Array.isArray(state.obstacles)) lists.push(state.obstacles);
   if (Array.isArray(state.creatures)) lists.push(state.creatures);
+  if (Array.isArray(state.gimmickItems)) lists.push(state.gimmickItems);
   return lists;
 }
 
@@ -1911,6 +2152,8 @@ function _snapshotJSON() {
     edges: state.edges,
     obstacles: state.obstacles,
     creatures: state.creatures,
+    gimmickItems: state.gimmickItems,
+    gimmickConfigs: state.gimmickConfigs,
     nextStopId: state.nextStopId,
     nextCreatureId: state.nextCreatureId,
     edgeInProgress: state.edgeInProgress,
@@ -1921,10 +2164,12 @@ function _applySnapshot(snap) {
   state.edges = snap.edges;
   state.obstacles = snap.obstacles || [];
   state.creatures = snap.creatures || [];
+  _copyGimmickStateFromSnapshot(snap);
   state.nextStopId = snap.nextStopId;
   state.nextCreatureId = snap.nextCreatureId || 1;
   state.edgeInProgress = snap.edgeInProgress;
   state.draggingAnchor = null;
+  state.draggingGimmickItem = null;
   state.selectedCreatureId = null;
   _clearAnchorSelection(false);
   edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
@@ -1979,6 +2224,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.edges = [];
   state.obstacles = [];
   state.creatures = [];
+  _resetGimmickState();
   state.nextStopId = 1;
   state.nextCreatureId = 1;
   state.selectedCreatureId = null;
@@ -2007,6 +2253,46 @@ document.getElementById('clearEdgesBtn').addEventListener('click', function() {
 // ────────────────────────────────────────────────────────
 // Export
 // Build the export def used by both download and draft preview.
+function _exportObstacle(o) {
+  const out = { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y) };
+  if (o.id) out.id = String(o.id);
+  if (Number.isFinite(o.size) && o.size > 0) out.size = Math.round(o.size);
+  return out;
+}
+
+function _defaultGimmickConfig(configKey) {
+  if (configKey === 'flagGimmick') {
+    return { id: 'flag-tunnel', entranceObstacleId: '', exitObstacleId: '', exitNodeId: '', encounterRadius: 94 };
+  }
+  if (configKey === 'waterGimmick') {
+    return { id: 'water-bridge', obstacleId: '', encounterRadius: 104 };
+  }
+  if (configKey === 'strengthGimmick') {
+    return { id: 'strength-rock', obstacleId: '', encounterRadius: 96 };
+  }
+  return {};
+}
+
+function _applyGimmickItemsToDef(def) {
+  Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
+    const meta = GIMMICK_ITEM_DEFS[kind];
+    const item = (state.gimmickItems || []).find(function(x) { return x && x.kind === kind; });
+    const existing = state.gimmickConfigs && state.gimmickConfigs[meta.configKey];
+    if (!existing && !item) return;
+    const cfg = _jsonClone(existing) || _defaultGimmickConfig(meta.configKey);
+    if (item) {
+      cfg[meta.itemKey] = {
+        x: Math.round(item.x),
+        y: Math.round(item.y),
+        radius: Math.round(item.radius || meta.radius),
+      };
+    } else {
+      delete cfg[meta.itemKey];
+    }
+    def[meta.configKey] = cfg;
+  });
+}
+
 function buildExportDef() {
   const rawName = (stageNameInput.value || 'stage').trim();
   // 日本語/英数字を残し、ファイル名で危ない文字 (パストラバーサル系) だけ除去
@@ -2020,7 +2306,7 @@ function buildExportDef() {
   const ext = (state.imgFileName.match(/\.([^.]+)$/) || [, 'png'])[1].toLowerCase();
   const imageRef = 'imageStages/' + safeName + '.' + ext;
   const lanternEnabled = !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked);
-  return {
+  const r = {
     rawName: rawName,
     safeName: safeName,
     ext: ext,
@@ -2032,8 +2318,12 @@ function buildExportDef() {
       orientation: 'landscape',
       cameraFollow: true,
       lantern: lanternEnabled,
-      obstacles: state.obstacles.map(function(o) { return { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y) }; }),
-      creatures: state.creatures.map(function(c) { return { id: c.id, kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) }; }),
+      obstacles: state.obstacles.map(_exportObstacle),
+      creatures: state.creatures.map(function(c) {
+        const out = { id: c.id, kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) };
+        if (c.minigame) out.minigame = c.minigame;
+        return out;
+      }),
       nodes: state.nodes.map(function(n) {
         const out = { id: n.id, x: n.x, y: n.y, kind: n.kind };
         if (Number.isFinite(n.radius) && n.radius > 0) {
@@ -2056,6 +2346,8 @@ function buildExportDef() {
       }),
     },
   };
+  _applyGimmickItemsToDef(r.def);
+  return r;
 }
 
 function validateForExport() {
@@ -2371,6 +2663,8 @@ function _doAutoSave() {
       edges: state.edges,
       obstacles: state.obstacles,
       creatures: state.creatures,
+      gimmickItems: state.gimmickItems,
+      gimmickConfigs: state.gimmickConfigs,
       nextStopId: state.nextStopId,
       nextCreatureId: state.nextCreatureId,
     };
@@ -2408,6 +2702,7 @@ function _restoreDraft() {
     state.edges = Array.isArray(draft.edges) ? draft.edges : [];
     state.obstacles = Array.isArray(draft.obstacles) ? draft.obstacles : [];
     state.creatures = Array.isArray(draft.creatures) ? draft.creatures : [];
+    _copyGimmickStateFromSnapshot(draft);
     state.selectedCreatureId = null;
     state.nextStopId = draft.nextStopId || 1;
     state.nextCreatureId = draft.nextCreatureId || 1;
@@ -2535,6 +2830,8 @@ function libBuildSnapshot() {
     edges: state.edges,
     obstacles: state.obstacles,
     creatures: state.creatures,
+    gimmickItems: state.gimmickItems,
+    gimmickConfigs: state.gimmickConfigs,
     nextStopId: state.nextStopId,
     nextCreatureId: state.nextCreatureId,
   };
@@ -2581,6 +2878,7 @@ function libLoadByName(name) {
   state.edges = Array.isArray(snap.edges) ? snap.edges : [];
   state.obstacles = Array.isArray(snap.obstacles) ? snap.obstacles : [];
   state.creatures = Array.isArray(snap.creatures) ? snap.creatures : [];
+  _copyGimmickStateFromSnapshot(snap);
   state.selectedCreatureId = null;
   state.nextStopId = snap.nextStopId || 1;
   state.nextCreatureId = snap.nextCreatureId || 1;
@@ -2757,16 +3055,9 @@ function _restoreFromServerDef(def, fname) {
   if (libN) libN.value = def.name || fname;
   const lt = document.getElementById('lanternToggle');
   if (lt) lt.checked = !!def.lantern;
-  state.obstacles = Array.isArray(def.obstacles)
-    ? def.obstacles
-        .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
-        .map(function(o) { return { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) }; })
-    : [];
-  state.creatures = Array.isArray(def.creatures)
-    ? def.creatures
-        .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
-        .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)), kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')), x: Number(c.x), y: Number(c.y) }; })
-    : [];
+  state.obstacles = _normalizeObstacles(def.obstacles);
+  state.creatures = _normalizeCreatures(def.creatures);
+  _restoreGimmicksFromDef(def);
   const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
   state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
   state.selectedCreatureId = null;
@@ -3077,6 +3368,17 @@ function _rescaleFromHandoffViewBox(opts) {
       if (Number.isFinite(c.y)) c.y = Math.round(c.y * sy);
     });
   }
+  // Gimmick pickup items
+  if (Array.isArray(state.gimmickItems)) {
+    state.gimmickItems.forEach(function(item) {
+      if (!item) return;
+      if (Number.isFinite(item.x)) item.x = Math.round(item.x * sx);
+      if (Number.isFinite(item.y)) item.y = Math.round(item.y * sy);
+      if (Number.isFinite(item.radius) && item.radius > 0) {
+        item.radius = Math.round(item.radius * sRadius);
+      }
+    });
+  }
   // 二重 rescale 防止
   state.handoffViewBox = null;
   // 直前に pushHistory() で積まれた生座標スナップショットを rescale 後の座標で上書きする。
@@ -3088,6 +3390,8 @@ function _rescaleFromHandoffViewBox(opts) {
       edges: state.edges,
       obstacles: state.obstacles,
       creatures: state.creatures,
+      gimmickItems: state.gimmickItems,
+      gimmickConfigs: state.gimmickConfigs,
       nextStopId: state.nextStopId,
       nextCreatureId: state.nextCreatureId,
       edgeInProgress: state.edgeInProgress,
@@ -3145,18 +3449,9 @@ function _applyHandoff(h, opts) {
 
     // Obstacles / Creatures (kind 値はラフ側と同じ語彙: tree/pond/hole/stump/rock,
     //                                                mayoi/odoke/pyon/kabuto/hachi; 旧 nemuri は mayoi にエイリアス)
-    state.obstacles = Array.isArray(h.obstacles)
-      ? h.obstacles
-          .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
-          .map(function(o) { return { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) }; })
-      : [];
-    state.creatures = Array.isArray(h.creatures)
-      ? h.creatures
-          .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
-          .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)),
-                                        kind: (c.kind === 'nemuri' ? 'mayoi' : (c.kind || 'mayoi')),
-                                        x: Number(c.x), y: Number(c.y) }; })
-      : [];
+    state.obstacles = _normalizeObstacles(h.obstacles);
+    state.creatures = _normalizeCreatures(h.creatures);
+    _restoreGimmicksFromDef(h);
     const usedCIds = state.creatures.map(function(c) {
       const m = c.id.match(/^c(\d+)$/);
       return m ? parseInt(m[1], 10) : 0;
