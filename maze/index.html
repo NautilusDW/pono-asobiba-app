@@ -3575,7 +3575,6 @@ function _applyFlagTunnelCamera(now, viewportW, viewportH) {
   stage.camera.x = x;
   stage.camera.y = y;
   stage._flagZoom = zoom;
-  imgClampCameraToBounds(stage, viewportW, viewportH, imgEffectiveScale());
   return true;
 }
 
@@ -3584,7 +3583,7 @@ function _shouldHideFlagTunnelPono(now) {
   const anim = st && st.anim;
   if (!anim || !st.travelling) return false;
   const elapsed = now - anim.t0;
-  return elapsed >= 1050 && elapsed < 3900;
+  return elapsed >= 1050 && !st.exitShown;
 }
 
 function _initFlagTunnelForStage(stageObj) {
@@ -4334,6 +4333,7 @@ function _startFlagTunnelTravel(obstacle) {
     : (Number.isFinite(pono && pono.y) ? pono.y : entrance.y);
   const camFromZoom = Number.isFinite(imgCameraZoom()) ? imgCameraZoom() : 1;
   st.travelling = true;
+  st.exitShown = false;
   st.anim = {
     t0: startTime,
     camera: {
@@ -4365,16 +4365,21 @@ function _startFlagTunnelTravel(obstacle) {
   }, 950);
   _flagTunnelSetTimeout(function() {
     if (_stageRef !== stage || !st.travelling) return;
-    pono.x = exitNode.x;
-    pono.y = exitNode.y;
+    pono.x = exit.x;
+    pono.y = exit.y;
     pono.nodeId = exitNode.id;
+    st.exitShown = true;
     imgShowBubble('でぐちが ひかった！', { x: exit.x, y: exit.y }, 900);
   }, 3420);
   _flagTunnelSetTimeout(function() {
     if (_stageRef !== stage || !st.travelling) return;
     st.travelling = false;
     st.anim = null;
+    st.exitShown = false;
     stage._flagZoom = 1;
+    pono.x = exitNode.x;
+    pono.y = exitNode.y;
+    pono.nodeId = exitNode.id;
     moves++;
     hudMoves.textContent = 'てかず: ' + moves;
     imgShowBubble('ちがう でぐちに でたよ！', 'pono', 1700);
