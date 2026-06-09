@@ -1716,7 +1716,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 938;
+    const PAGE_CACHE_VERSION = 939;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -1780,7 +1780,10 @@
         }
       }
       cardList.innerHTML = html;
+      cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
+      cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
       cardList.addEventListener('click', onCardClick);
+      cardList.addEventListener('keydown', onCardKeyDown);
 
       // Mark broken images so CSS fallbacks kick in (local preview without assets).
       // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
@@ -1919,24 +1922,60 @@
 
     function pulseStartBtn() { /* removed: start button no longer exists */ }
 
+    const CARD_TAP_MOVE_TOLERANCE = 12;
+    const CARD_TAP_STATE_TTL_MS = 800;
+    let cardPointerDown = null;
+    let cardPointerDownTimer = 0;
+
+    function onCardPointerDown(e) {
+      const card = e.target.closest('.game-card');
+      if (!card || (typeof e.button === 'number' && e.button > 0)) return;
+      clearTimeout(cardPointerDownTimer);
+      cardPointerDown = {
+        x: e.clientX,
+        y: e.clientY,
+        scrollTop: cardList.scrollTop,
+        idx: card.dataset.idx,
+        rep: card.dataset.rep
+      };
+      cardPointerDownTimer = setTimeout(clearCardPointerDown, CARD_TAP_STATE_TTL_MS);
+    }
+
+    function clearCardPointerDown() {
+      clearTimeout(cardPointerDownTimer);
+      cardPointerDownTimer = 0;
+      cardPointerDown = null;
+    }
+
+    function isCardTap(e, card) {
+      if (!cardPointerDown) return true;
+      const dx = Math.abs(e.clientX - cardPointerDown.x);
+      const dy = Math.abs(e.clientY - cardPointerDown.y);
+      const ds = Math.abs(cardList.scrollTop - cardPointerDown.scrollTop);
+      const sameCard = card.dataset.idx === cardPointerDown.idx && card.dataset.rep === cardPointerDown.rep;
+      clearCardPointerDown();
+      return sameCard && dx <= CARD_TAP_MOVE_TOLERANCE && dy <= CARD_TAP_MOVE_TOLERANCE && ds <= CARD_TAP_MOVE_TOLERANCE;
+    }
+
     function onCardClick(e) {
       const card = e.target.closest('.game-card');
       if (!card) return;
+      if (!isCardTap(e, card)) return;
       const idx = Number(card.dataset.idx);
       if (Number.isNaN(idx)) return;
-      const isPlayBtn = !!e.target.closest('[data-action="start"]');
-      if (isPlayBtn) {
-        // 右の再生ボタン: 未選択なら選択してから即開始、選択済みなら即開始
-        if (idx !== currentIdx) selectGame(idx);
-        startGame(idx);
-        return;
-      }
-      if (idx === currentIdx) {
-        // Same card re-tapped: nudge attention to はじめる button
-        pulseStartBtn();
-        return;
-      }
-      selectGame(idx);
+      if (idx !== currentIdx) selectGame(idx);
+      startGame(idx);
+    }
+
+    function onCardKeyDown(e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const card = e.target.closest('.game-card');
+      if (!card || e.target !== card) return;
+      const idx = Number(card.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      e.preventDefault();
+      if (idx !== currentIdx) selectGame(idx);
+      startGame(idx);
     }
 
     function startGame(idx) {
