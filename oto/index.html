@@ -3659,19 +3659,23 @@ function _gh3DDrawOneNote(note, mvp) {
   var lane = note.lane || 0;
   var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
   var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
-  var sizeBoost = 1 + (1 - p) * 0.7;
-  var w = 0.86 * sizeBoost;
-  var h = 0.22;
-  var d = 0.94 * sizeBoost;
-  var yBottom = 1.35;
+  var w = 0.92;
+  var h = 0.32;
+  var d = 1.0;
+  var bevel = 0.08;
+  var bevelH = 0.08;
+  var yBottom = 0.055;
   var yTop = yBottom + h;
-  var yTopFar = yTop + 0.38;
+  var yBevel = yTop - bevelH;
   var a = Math.max(0.16, Math.min(1, 0.28 + p * 1.15));
   var label = _rhythmNoteLabel(lane);
   var tex = _gh3DTextureFor(lane, label);
   var x0 = centerX - w / 2, x1 = centerX + w / 2;
   var zNear = z + d / 2;
   var zFar = z - d / 2;
+  var xi0 = x0 + bevel, xi1 = x1 - bevel;
+  var ziNear = zNear - bevel;
+  var ziFar = zFar + bevel;
   var rgb = _gh3DLaneRgb(lane);
   var sideVerts = [];
   var nearC = _gh3DShadeRgb(rgb, 0.92, a * 0.82);
@@ -3679,21 +3683,30 @@ function _gh3DDrawOneNote(note, mvp) {
   var leftC = _gh3DShadeRgb(rgb, 0.68, a * 0.72);
   var rightC = _gh3DShadeRgb(rgb, 0.52, a * 0.68);
   var bottomC = _gh3DShadeRgb(rgb, 0.46, a * 0.62);
-  var ntl = [x0, yTop, zNear], ntr = [x1, yTop, zNear], nbl = [x0, yBottom, zNear], nbr = [x1, yBottom, zNear];
-  var ftl = [x0, yTopFar, zFar], ftr = [x1, yTopFar, zFar], fbl = [x0, yBottom, zFar], fbr = [x1, yBottom, zFar];
+  var bevelNearC = _gh3DShadeRgb(rgb, 1.12, a * 0.78);
+  var bevelFarC = _gh3DShadeRgb(rgb, 0.66, a * 0.62);
+  var bevelLeftC = _gh3DShadeRgb(rgb, 0.84, a * 0.68);
+  var bevelRightC = _gh3DShadeRgb(rgb, 0.72, a * 0.66);
+  var nbl = [x0, yBottom, zNear], nbr = [x1, yBottom, zNear], ntr = [x1, yBevel, zNear], ntl = [x0, yBevel, zNear];
+  var fbl = [x0, yBottom, zFar], fbr = [x1, yBottom, zFar], ftr = [x1, yBevel, zFar], ftl = [x0, yBevel, zFar];
+  var itnl = [xi0, yTop, ziNear], itnr = [xi1, yTop, ziNear], itfr = [xi1, yTop, ziFar], itfl = [xi0, yTop, ziFar];
   _gh3DPushColorQuad(sideVerts, nbl, nbr, ntr, ntl, nearC);
   _gh3DPushColorQuad(sideVerts, fbr, fbl, ftl, ftr, farC);
   _gh3DPushColorQuad(sideVerts, fbl, nbl, ntl, ftl, leftC);
   _gh3DPushColorQuad(sideVerts, nbr, fbr, ftr, ntr, rightC);
   _gh3DPushColorQuad(sideVerts, fbl, fbr, nbr, nbl, bottomC);
+  _gh3DPushColorQuad(sideVerts, ntl, ntr, itnr, itnl, bevelNearC);
+  _gh3DPushColorQuad(sideVerts, ftr, ftl, itfl, itfr, bevelFarC);
+  _gh3DPushColorQuad(sideVerts, ftl, ntl, itnl, itfl, bevelLeftC);
+  _gh3DPushColorQuad(sideVerts, ntr, ftr, itfr, itnr, bevelRightC);
   _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, sideVerts, gl.TRIANGLES, mvp);
   var verts = [
-    x0, yTop + 0.006, zNear, 0, 1, a,
-    x1, yTop + 0.006, zNear, 1, 1, a,
-    x1, yTopFar + 0.006, zFar, 1, 0, a,
-    x0, yTop + 0.006, zNear, 0, 1, a,
-    x1, yTopFar + 0.006, zFar, 1, 0, a,
-    x0, yTopFar + 0.006, zFar, 0, 0, a
+    xi0, yTop + 0.006, ziNear, 0, 1, a,
+    xi1, yTop + 0.006, ziNear, 1, 1, a,
+    xi1, yTop + 0.006, ziFar, 1, 0, a,
+    xi0, yTop + 0.006, ziNear, 0, 1, a,
+    xi1, yTop + 0.006, ziFar, 1, 0, a,
+    xi0, yTop + 0.006, ziFar, 0, 0, a
   ];
   gl.useProgram(_gh3d.notesProgram);
   gl.bindBuffer(gl.ARRAY_BUFFER, _gh3d.noteBuffer);
