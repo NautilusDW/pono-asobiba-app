@@ -266,6 +266,103 @@
       inset 28px 0 46px rgba(0,0,0,0.42),
       inset 0 0 82px rgba(0,0,0,0.66);
   }
+  #rhythm-road {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 22%;
+    right: 0;
+    pointer-events: none;
+    z-index: 1;
+    display: none;
+    overflow: hidden;
+    background: transparent;
+    perspective: clamp(430px, 58vw, 960px);
+    perspective-origin: 50% calc(var(--gh-hit-y, 80%) + 110px);
+    transform-style: preserve-3d;
+  }
+  body.rhythm-layout #rhythm-road { display: block; }
+  #rhythm-road::before,
+  #rhythm-road::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  #rhythm-road::before {
+    inset: 0;
+    background:
+      repeating-radial-gradient(ellipse at 50% var(--gh-road-top, 54px), rgba(255,255,255,0.09) 0 1px, transparent 1px 34px),
+      conic-gradient(from 238deg at 50% var(--gh-road-top, 54px),
+        transparent 0deg,
+        rgba(103,232,249,0.56) 0.5deg,
+        transparent 1deg 9.4deg,
+        rgba(125,211,252,0.38) 9.9deg,
+        transparent 10.4deg 19.8deg,
+        rgba(244,114,182,0.34) 20.3deg,
+        transparent 20.8deg 30.5deg,
+        rgba(253,224,71,0.34) 31deg,
+        transparent 31.5deg 41.4deg,
+        rgba(45,212,191,0.38) 41.9deg,
+        transparent 42.4deg 52.6deg,
+        rgba(56,189,248,0.42) 53.1deg,
+        transparent 53.6deg 63.8deg,
+        rgba(96,165,250,0.42) 64.3deg,
+        transparent 64.8deg 75.2deg,
+        rgba(167,139,250,0.42) 75.7deg,
+        transparent 76.2deg 86.6deg,
+        rgba(244,114,182,0.54) 87.1deg,
+        transparent 87.6deg 360deg),
+      radial-gradient(ellipse at 50% 100%, rgba(45,212,191,0.2) 0%, rgba(45,212,191,0) 58%);
+    clip-path: polygon(50% var(--gh-road-top, 54px), 100% 100%, 0 100%);
+    filter: drop-shadow(0 0 16px rgba(56,189,248,0.22));
+    opacity: 0.82;
+    z-index: 0;
+  }
+  #rhythm-road::after {
+    left: -10%;
+    width: 120%;
+    top: calc(var(--gh-road-top, 54px) + 28px);
+    height: calc(var(--gh-hit-y, 80%) - var(--gh-road-top, 54px) + 190px);
+    transform-origin: 50% 100%;
+    transform: translateY(-110px) rotateX(66deg) translateZ(-78px);
+    border-radius: 28px 28px 8px 8px;
+    background:
+      repeating-linear-gradient(90deg, rgba(125,211,252,0.12) 0 1px, transparent 1px 12.5%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0 1px, transparent 1px 42px),
+      linear-gradient(90deg, rgba(244,114,182,0.14) 0%, rgba(45,212,191,0.12) 50%, rgba(96,165,250,0.14) 100%),
+      linear-gradient(180deg, rgba(15,23,42,0.1) 0%, rgba(8,47,73,0.54) 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      inset 0 -34px 58px rgba(45,212,191,0.14),
+      0 42px 80px rgba(0,0,0,0.3);
+    opacity: 0.64;
+    z-index: 1;
+  }
+  .gh-road-lane {
+    position: absolute;
+    top: 0;
+    left: 0 !important;
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(var(--lane-top-l, 49%) var(--gh-road-top, 54px), var(--lane-top-r, 51%) var(--gh-road-top, 54px), var(--lane-bottom-r, 100%) 100%, var(--lane-bottom-l, 0%) 100%);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02) 0%, var(--lane-glow, rgba(56,189,248,0.12)) 52%, var(--lane-floor, rgba(250,204,21,0.22)) 100%);
+    box-shadow:
+      inset 1px 0 0 rgba(255,255,255,0.08),
+      inset -1px 0 0 rgba(255,255,255,0.04),
+      inset 0 -44px 58px var(--lane-floor, rgba(56,189,248,0.16)),
+      0 0 16px var(--lane-line, rgba(56,189,248,0.18));
+    opacity: 0.62;
+    z-index: 2;
+  }
+  .gh-road-lane[data-lane="0"] { --lane-top-l: 49.00%; --lane-top-r: 49.26%; --lane-bottom-l: 0%; --lane-bottom-r: 12.5%; --lane-glow: rgba(248,113,113,0.13); --lane-floor: rgba(248,113,113,0.25); --lane-line: rgba(248,113,113,0.24); }
+  .gh-road-lane[data-lane="1"] { --lane-top-l: 49.25%; --lane-top-r: 49.50%; --lane-bottom-l: 12.5%; --lane-bottom-r: 25%; --lane-glow: rgba(251,146,60,0.13); --lane-floor: rgba(251,146,60,0.24); --lane-line: rgba(251,146,60,0.24); }
+  .gh-road-lane[data-lane="2"] { --lane-top-l: 49.50%; --lane-top-r: 49.75%; --lane-bottom-l: 25%; --lane-bottom-r: 37.5%; --lane-glow: rgba(250,204,21,0.13); --lane-floor: rgba(250,204,21,0.23); --lane-line: rgba(250,204,21,0.24); }
+  .gh-road-lane[data-lane="3"] { --lane-top-l: 49.75%; --lane-top-r: 50.00%; --lane-bottom-l: 37.5%; --lane-bottom-r: 50%; --lane-glow: rgba(74,222,128,0.13); --lane-floor: rgba(74,222,128,0.23); --lane-line: rgba(74,222,128,0.24); }
+  .gh-road-lane[data-lane="4"] { --lane-top-l: 50.00%; --lane-top-r: 50.25%; --lane-bottom-l: 50%; --lane-bottom-r: 62.5%; --lane-glow: rgba(56,189,248,0.13); --lane-floor: rgba(56,189,248,0.25); --lane-line: rgba(56,189,248,0.26); }
+  .gh-road-lane[data-lane="5"] { --lane-top-l: 50.25%; --lane-top-r: 50.50%; --lane-bottom-l: 62.5%; --lane-bottom-r: 75%; --lane-glow: rgba(96,165,250,0.13); --lane-floor: rgba(96,165,250,0.25); --lane-line: rgba(96,165,250,0.26); }
+  .gh-road-lane[data-lane="6"] { --lane-top-l: 50.50%; --lane-top-r: 50.75%; --lane-bottom-l: 75%; --lane-bottom-r: 87.5%; --lane-glow: rgba(167,139,250,0.13); --lane-floor: rgba(167,139,250,0.24); --lane-line: rgba(167,139,250,0.24); }
+  .gh-road-lane[data-lane="7"] { --lane-top-l: 50.74%; --lane-top-r: 51.00%; --lane-bottom-l: 87.5%; --lane-bottom-r: 100%; --lane-glow: rgba(244,114,182,0.13); --lane-floor: rgba(244,114,182,0.25); --lane-line: rgba(244,114,182,0.24); }
   #rhythm-lanes {
     /* v713+: 左メニューを 11% 中心・幅 160px に縮めたため、レーン領域を 22% から開始。
        内側 100% = 画面右 78% にマッピングされ、内側 12.5% 等間隔 (.gh-note / .gh-lane / .gh-flash) は
@@ -281,48 +378,9 @@
     display: none;
     overflow: hidden;
     background: transparent;
-  }
-  #rhythm-lanes::before,
-  #rhythm-lanes::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-  #rhythm-lanes::before {
-    background:
-      conic-gradient(from 239deg at 50% 7%,
-        transparent 0deg,
-        rgba(103,232,249,0.58) 0.45deg,
-        transparent 0.9deg 9.4deg,
-        rgba(103,232,249,0.42) 9.85deg,
-        transparent 10.3deg 19.8deg,
-        rgba(125,211,252,0.34) 20.25deg,
-        transparent 20.7deg 30.5deg,
-        rgba(244,114,182,0.34) 30.95deg,
-        transparent 31.4deg 41.4deg,
-        rgba(253,224,71,0.36) 41.85deg,
-        transparent 42.3deg 52.6deg,
-        rgba(45,212,191,0.42) 53.05deg,
-        transparent 53.5deg 63.8deg,
-        rgba(96,165,250,0.44) 64.25deg,
-        transparent 64.7deg 75.2deg,
-        rgba(167,139,250,0.42) 75.65deg,
-        transparent 76.1deg 86.6deg,
-        rgba(103,232,249,0.58) 87.05deg,
-        transparent 87.5deg 360deg);
-    clip-path: polygon(50% 6%, 100% 100%, 0 100%);
-    opacity: 0.72;
-    filter: drop-shadow(0 0 12px rgba(56,189,248,0.26));
-    z-index: 0;
-  }
-  #rhythm-lanes::after {
-    background:
-      repeating-radial-gradient(ellipse at 50% 7%, rgba(255,255,255,0.08) 0 1px, transparent 1px 36px),
-      radial-gradient(ellipse at 50% 100%, rgba(250,204,21,0.12) 0%, rgba(250,204,21,0) 36%);
-    clip-path: polygon(50% 6%, 100% 100%, 0 100%);
-    opacity: 0.56;
-    z-index: 2;
+    perspective: clamp(520px, 62vw, 1040px);
+    perspective-origin: 50% calc(var(--gh-hit-y, 80%) + 80px);
+    transform-style: preserve-3d;
   }
   body.rhythm-layout #rhythm-lanes { display: block; }
   /* v717 CRITICAL FIX: リズムモードでは 8 鍵盤を画面下端 (bottom:28px) に横一列で出すが、
@@ -351,17 +409,14 @@
     left: 0 !important;
     width: 100%;
     height: var(--gh-hit-y, 100%);
-    /* v709: 暗背景に合わせてレーン内も濃紺グラデ。下端にいくほど少し明るく
-       (ヒットラインへの誘目)。境界線は薄白の点線で視認性を確保。 */
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.025) 0%, var(--lane-glow, rgba(56,189,248,0.12)) 72%, var(--lane-floor, rgba(250,204,21,0.18)) 100%);
+    background: transparent;
     border: 0;
     clip-path: polygon(var(--lane-top-l, 49%) 7%, var(--lane-top-r, 51%) 7%, var(--lane-bottom-r, 100%) 100%, var(--lane-bottom-l, 0%) 100%);
-    box-shadow: inset 0 -28px 34px rgba(45,212,191,0.05);
-    opacity: 0.92;
-    filter: drop-shadow(0 0 5px var(--lane-line, rgba(103,232,249,0.32)));
+    box-shadow: none;
+    opacity: 0;
+    filter: none;
     pointer-events: none;
-    transition: background-color 0.18s;
+    transition: opacity 0.18s, background-color 0.18s, filter 0.18s;
     z-index: 1;
   }
   .gh-lane[data-lane="0"] { --lane-top-l: 49.00%; --lane-top-r: 49.26%; --lane-bottom-l: 0%; --lane-bottom-r: 12.5%; --lane-glow: rgba(248,113,113,0.12); --lane-floor: rgba(248,113,113,0.22); --lane-line: rgba(248,113,113,0.34); }
@@ -373,7 +428,10 @@
   .gh-lane[data-lane="6"] { --lane-top-l: 50.50%; --lane-top-r: 50.75%; --lane-bottom-l: 75%; --lane-bottom-r: 87.5%; --lane-glow: rgba(167,139,250,0.12); --lane-floor: rgba(167,139,250,0.21); --lane-line: rgba(167,139,250,0.34); }
   .gh-lane[data-lane="7"] { --lane-top-l: 50.74%; --lane-top-r: 51.00%; --lane-bottom-l: 87.5%; --lane-bottom-r: 100%; --lane-glow: rgba(244,114,182,0.12); --lane-floor: rgba(244,114,182,0.22); --lane-line: rgba(244,114,182,0.34); }
   .gh-lane.miss-flash {
-    background-color: rgba(248,113,113,0.42);
+    background:
+      linear-gradient(180deg, rgba(248,113,113,0.08) 0%, rgba(248,113,113,0.42) 78%, rgba(248,113,113,0.58) 100%);
+    filter: drop-shadow(0 0 16px rgba(248,113,113,0.42));
+    opacity: 1;
   }
   /* v705+: ヒットラインは中立色 (白〜薄金) に。
      以前は黄色いグラデ+黄色グロー だったが、ユーザーから「赤くチカチカ光る」と誤読される
@@ -1868,6 +1926,18 @@
       <button class="mode-btn" data-mode="rhythm" role="tab" aria-selected="false">リズム</button>
     </div>
 
+    <!-- Guitar Hero 風 3D床レーン (リズムモード時のみ表示) -->
+    <div id="rhythm-road" aria-hidden="true">
+      <div class="gh-road-lane" data-lane="0" style="left:0%;"></div>
+      <div class="gh-road-lane" data-lane="1" style="left:12.5%;"></div>
+      <div class="gh-road-lane" data-lane="2" style="left:25%;"></div>
+      <div class="gh-road-lane" data-lane="3" style="left:37.5%;"></div>
+      <div class="gh-road-lane" data-lane="4" style="left:50%;"></div>
+      <div class="gh-road-lane" data-lane="5" style="left:62.5%;"></div>
+      <div class="gh-road-lane" data-lane="6" style="left:75%;"></div>
+      <div class="gh-road-lane" data-lane="7" style="left:87.5%;"></div>
+    </div>
+
     <!-- Guitar Hero 風 ノート落下レーン (リズムモード時のみ表示) -->
     <div id="rhythm-lanes" aria-hidden="true">
       <div class="gh-lane" data-lane="0" style="left:0%;"></div>
@@ -3210,6 +3280,9 @@ function _ghIsActive() {
 function _ghLanesEl() {
   return document.getElementById('rhythm-lanes');
 }
+function _ghRoadEl() {
+  return document.getElementById('rhythm-road');
+}
 function _ghLaneIdxToBtnIdx(laneIdx) {
   // 既存対応はない。レーン番号 0-7 = data-idx 0-7 のまま使う。
   return laneIdx;
@@ -3230,11 +3303,18 @@ function _ghUpdateLanesGeometry() {
   var btnTopInStage = rect.top - stageRect.top;
   // ボタン上端の少し上 (ノートが鍵盤に重なる位置) をヒットラインに
   var hitY = Math.max(40, btnTopInStage - 6);
-  lanes.style.setProperty('--gh-hit-y', hitY + 'px');
-  lanes.style.setProperty('--gh-lane-w', '12.5%');
+  var vanishY = Math.max(34, Math.min(82, hitY * 0.105));
+  var roadTop = Math.max(18, vanishY - 20);
+  [lanes, _ghRoadEl()].forEach(function(el) {
+    if (!el) return;
+    el.style.setProperty('--gh-hit-y', hitY + 'px');
+    el.style.setProperty('--gh-vanish-y', vanishY + 'px');
+    el.style.setProperty('--gh-road-top', roadTop + 'px');
+    el.style.setProperty('--gh-lane-w', '12.5%');
+  });
   // 毎フレーム getComputedStyle を回避するため hitY をキャッシュ
   _rhythm._ghHitY = hitY;
-  _rhythm._ghTopY = 0;
+  _rhythm._ghTopY = vanishY;
 }
 function _ghClearActiveNotes() {
   if (!_rhythm.activeNotes) return;
@@ -3352,9 +3432,12 @@ function _ghUpdateFallingNotes(now) {
     _ghUpdateLanesGeometry();
   }
   var hitY = _rhythm._ghHitY || 0;
+  var vanishY = _rhythm._ghTopY || 44;
   var fall = RHYTHM_FALL_MS;
   var lanesWidth = lanes.clientWidth || 1;
   var vanishX = 50;
+  var perspectivePush = 2.35;
+  var perspectiveDenom = Math.exp(perspectivePush) - 1;
   for (var i = _rhythm.activeNotes.length - 1; i >= 0; i--) {
     var note = _rhythm.activeNotes[i];
     if (!note || !note.el) continue;
@@ -3363,15 +3446,17 @@ function _ghUpdateFallingNotes(now) {
     if (progress < 0) progress = 0;
     if (progress > 1.12) progress = 1.12;
     var visualProgress = Math.max(0, Math.min(1, progress));
-    var eased = Math.pow(visualProgress, 1.18);
+    var depth = (Math.exp(perspectivePush * visualProgress) - 1) / perspectiveDenom;
+    var spread = Math.pow(visualProgress, 1.52);
     var laneCenter = (note.lane + 0.5) * 12.5;
-    var xShift = ((vanishX - laneCenter) / 100) * lanesWidth * (1 - eased) * 0.94;
-    var y = hitY * eased;
-    var scale = 0.38 + 0.68 * eased;
-    var opacity = 0.48 + 0.52 * eased;
+    var xShift = ((vanishX - laneCenter) / 100) * lanesWidth * (1 - spread) * 0.98;
+    var y = vanishY + (hitY - vanishY) * depth;
+    var z = -520 * (1 - visualProgress);
+    var scale = 0.52 + 0.58 * Math.pow(visualProgress, 1.12);
+    var opacity = 0.34 + 0.66 * Math.max(depth, visualProgress * 0.42);
     note.el.style.opacity = opacity.toFixed(3);
-    note.el.style.zIndex = String(3 + Math.round(eased * 3));
-    note.el.style.transform = 'translate3d(' + xShift.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, 0) scale(' + scale.toFixed(3) + ')';
+    note.el.style.zIndex = String(3 + Math.round(depth * 4));
+    note.el.style.transform = 'translate3d(' + xShift.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, ' + z.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
     // ミス判定 (ターゲット時刻を MISS_MS 超過)
     if (until < -RHYTHM_MISS_MS) {
       if (_rhythm.demoActive && !_rhythm.enabled) {
