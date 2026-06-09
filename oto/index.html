@@ -297,6 +297,25 @@
     transform-style: preserve-3d;
   }
   body.rhythm-layout #rhythm-road { display: block; }
+  #rhythm3d-road,
+  #rhythm3d-notes {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 22%;
+    right: 0;
+    width: 78%;
+    height: 100%;
+    display: none;
+    pointer-events: none;
+    background: transparent;
+  }
+  #rhythm3d-road { z-index: 1; }
+  #rhythm3d-notes { z-index: 4; }
+  body.rhythm-layout.webgl-rhythm #rhythm3d-road,
+  body.rhythm-layout.webgl-rhythm #rhythm3d-notes { display: block; }
+  body.rhythm-layout.webgl-rhythm #rhythm-road { display: none; }
+  body.rhythm-layout.webgl-rhythm .gh-note { display: none !important; }
   #rhythm-road::before,
   #rhythm-road::after {
     content: '';
@@ -1941,6 +1960,10 @@
       <button class="mode-btn" data-mode="rhythm" role="tab" aria-selected="false">リズム</button>
     </div>
 
+    <!-- WebGL 3D レーン / ノーツ (対応環境で使用。DOM版はフォールバック) -->
+    <canvas id="rhythm3d-road" aria-hidden="true"></canvas>
+    <canvas id="rhythm3d-notes" aria-hidden="true"></canvas>
+
     <!-- Guitar Hero 風 3D床レーン (リズムモード時のみ表示) -->
     <div id="rhythm-road" aria-hidden="true">
       <div class="gh-road-lane" data-lane="0" style="left:0%;"></div>
@@ -3288,6 +3311,389 @@ function _ensureRhythmBand() {
   _startSongClock();
   _renderSpeedBtns();
 }
+// ── WebGL 3D リズムレーン: レーンとノーツを同じカメラ空間で描く ──
+var _gh3d = {
+  ready: false,
+  failed: false,
+  roadCanvas: null,
+  notesCanvas: null,
+  roadGl: null,
+  notesGl: null,
+  roadProgram: null,
+  notesProgram: null,
+  roadBuffer: null,
+  lineBuffer: null,
+  noteBuffer: null,
+  textureCache: {},
+  lastRoadW: 0,
+  lastRoadH: 0,
+  lastNotesW: 0,
+  lastNotesH: 0
+};
+var GH3D_NEAR_Z = 1.25;
+var GH3D_FAR_Z = -27.5;
+var GH3D_HALF_W = 4.0;
+var GH3D_LANE_W = 1.0;
+
+function _gh3DGetContext(canvas) {
+  if (!canvas) return null;
+  try {
+    return canvas.getContext('webgl', {
+      alpha: true,
+      antialias: true,
+      depth: true,
+      preserveDrawingBuffer: true,
+      premultipliedAlpha: false
+    }) || canvas.getContext('experimental-webgl');
+  } catch (_) {
+    return null;
+  }
+}
+function _gh3DShader(gl, type, src) {
+  var shader = gl.createShader(type);
+  gl.shaderSource(shader, src);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(shader) || 'shader compile failed');
+  }
+  return shader;
+}
+function _gh3DProgram(gl, vs, fs) {
+  var program = gl.createProgram();
+  gl.attachShader(program, _gh3DShader(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(program, _gh3DShader(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    throw new Error(gl.getProgramInfoLog(program) || 'program link failed');
+  }
+  return program;
+}
+function _gh3DCreatePrograms(gl, textured) {
+  if (textured) {
+    return _gh3DProgram(gl,
+      'attribute vec3 aPos;\n' +
+      'attribute vec2 aUv;\n' +
+      'attribute float aAlpha;\n' +
+      'uniform mat4 uMvp;\n' +
+      'varying vec2 vUv;\n' +
+      'varying float vAlpha;\n' +
+      'void main(){ vUv=aUv; vAlpha=aAlpha; gl_Position=uMvp*vec4(aPos,1.0); }',
+      'precision mediump float;\n' +
+      'uniform sampler2D uTex;\n' +
+      'varying vec2 vUv;\n' +
+      'varying float vAlpha;\n' +
+      'void main(){ vec4 c=texture2D(uTex,vUv); gl_FragColor=vec4(c.rgb,c.a*vAlpha); }'
+    );
+  }
+  return _gh3DProgram(gl,
+    'attribute vec3 aPos;\n' +
+    'attribute vec4 aColor;\n' +
+    'uniform mat4 uMvp;\n' +
+    'varying vec4 vColor;\n' +
+    'void main(){ vColor=aColor; gl_Position=uMvp*vec4(aPos,1.0); }',
+    'precision mediump float;\n' +
+    'varying vec4 vColor;\n' +
+    'void main(){ gl_FragColor=vColor; }'
+  );
+}
+function _gh3DResizeCanvas(canvas, gl, which) {
+  if (!canvas || !gl) return false;
+  var rect = canvas.getBoundingClientRect();
+  var w = Math.max(1, Math.round(rect.width));
+  var h = Math.max(1, Math.round(rect.height));
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var pixelW = Math.max(1, Math.round(w * dpr));
+  var pixelH = Math.max(1, Math.round(h * dpr));
+  var changed = canvas.width !== pixelW || canvas.height !== pixelH;
+  if (changed) {
+    canvas.width = pixelW;
+    canvas.height = pixelH;
+  }
+  if (which === 'road') {
+    _gh3d.lastRoadW = w;
+    _gh3d.lastRoadH = h;
+  } else {
+    _gh3d.lastNotesW = w;
+    _gh3d.lastNotesH = h;
+  }
+  gl.viewport(0, 0, pixelW, pixelH);
+  return changed;
+}
+function _gh3DEnsure() {
+  if (_gh3d.ready) return true;
+  if (_gh3d.failed) return false;
+  try {
+    _gh3d.roadCanvas = document.getElementById('rhythm3d-road');
+    _gh3d.notesCanvas = document.getElementById('rhythm3d-notes');
+    _gh3d.roadGl = _gh3DGetContext(_gh3d.roadCanvas);
+    _gh3d.notesGl = _gh3DGetContext(_gh3d.notesCanvas);
+    if (!_gh3d.roadGl || !_gh3d.notesGl) throw new Error('webgl unavailable');
+    _gh3d.roadProgram = _gh3DCreatePrograms(_gh3d.roadGl, false);
+    _gh3d.notesProgram = _gh3DCreatePrograms(_gh3d.notesGl, true);
+    _gh3d.roadBuffer = _gh3d.roadGl.createBuffer();
+    _gh3d.lineBuffer = _gh3d.roadGl.createBuffer();
+    _gh3d.noteBuffer = _gh3d.notesGl.createBuffer();
+    _gh3DResizeCanvas(_gh3d.roadCanvas, _gh3d.roadGl, 'road');
+    _gh3DResizeCanvas(_gh3d.notesCanvas, _gh3d.notesGl, 'notes');
+    _gh3d.ready = true;
+    document.body.classList.add('webgl-rhythm');
+    return true;
+  } catch (err) {
+    console.warn('[oto rhythm] WebGL rhythm renderer disabled:', err && err.message ? err.message : err);
+    _gh3d.failed = true;
+    document.body.classList.remove('webgl-rhythm');
+    return false;
+  }
+}
+function _gh3DMat4Perspective(fovy, aspect, near, far) {
+  var f = 1 / Math.tan(fovy / 2);
+  var out = new Float32Array(16);
+  out[0] = f / aspect;
+  out[5] = f;
+  out[10] = (far + near) / (near - far);
+  out[11] = -1;
+  out[14] = (2 * far * near) / (near - far);
+  return out;
+}
+function _gh3DNormalize(v) {
+  var l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+}
+function _gh3DCross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
+function _gh3DDot(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+function _gh3DMat4LookAt(eye, center, up) {
+  var z = _gh3DNormalize([eye[0] - center[0], eye[1] - center[1], eye[2] - center[2]]);
+  var x = _gh3DNormalize(_gh3DCross(up, z));
+  var y = _gh3DCross(z, x);
+  var out = new Float32Array(16);
+  out[0] = x[0]; out[1] = y[0]; out[2] = z[0]; out[3] = 0;
+  out[4] = x[1]; out[5] = y[1]; out[6] = z[1]; out[7] = 0;
+  out[8] = x[2]; out[9] = y[2]; out[10] = z[2]; out[11] = 0;
+  out[12] = -_gh3DDot(x, eye);
+  out[13] = -_gh3DDot(y, eye);
+  out[14] = -_gh3DDot(z, eye);
+  out[15] = 1;
+  return out;
+}
+function _gh3DMat4Mul(a, b) {
+  var out = new Float32Array(16);
+  for (var i = 0; i < 4; i++) {
+    for (var j = 0; j < 4; j++) {
+      out[i + j * 4] =
+        a[i] * b[j * 4] +
+        a[i + 4] * b[j * 4 + 1] +
+        a[i + 8] * b[j * 4 + 2] +
+        a[i + 12] * b[j * 4 + 3];
+    }
+  }
+  return out;
+}
+function _gh3DMvp(canvas) {
+  var rect = canvas.getBoundingClientRect();
+  var aspect = Math.max(0.2, rect.width / Math.max(1, rect.height));
+  var proj = _gh3DMat4Perspective(48 * Math.PI / 180, aspect, 0.1, 80);
+  var view = _gh3DMat4LookAt([0, 4.25, 8.8], [0, 0.22, -15.8], [0, 1, 0]);
+  return _gh3DMat4Mul(proj, view);
+}
+function _gh3DHexToRgb(hex) {
+  var m = String(hex || '').match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return [1, 1, 1];
+  var n = parseInt(m[1], 16);
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+function _gh3DLaneRgb(lane) {
+  var color = RHYTHM_LANE_COLORS[lane] || { hi: '#FDE68A', lo: '#F59E0B' };
+  return _gh3DHexToRgb(color.lo || color.hi);
+}
+function _gh3DPushColorTri(out, p1, c1, p2, c2, p3, c3) {
+  out.push(p1[0], p1[1], p1[2], c1[0], c1[1], c1[2], c1[3]);
+  out.push(p2[0], p2[1], p2[2], c2[0], c2[1], c2[2], c2[3]);
+  out.push(p3[0], p3[1], p3[2], c3[0], c3[1], c3[2], c3[3]);
+}
+function _gh3DPushColorLine(out, p1, c1, p2, c2) {
+  out.push(p1[0], p1[1], p1[2], c1[0], c1[1], c1[2], c1[3]);
+  out.push(p2[0], p2[1], p2[2], c2[0], c2[1], c2[2], c2[3]);
+}
+function _gh3DDrawColor(gl, program, buffer, verts, primitive, mvp) {
+  if (!verts.length) return;
+  gl.useProgram(program);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STREAM_DRAW);
+  var stride = 7 * 4;
+  var aPos = gl.getAttribLocation(program, 'aPos');
+  var aColor = gl.getAttribLocation(program, 'aColor');
+  gl.enableVertexAttribArray(aPos);
+  gl.enableVertexAttribArray(aColor);
+  gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, stride, 0);
+  gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, stride, 3 * 4);
+  gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uMvp'), false, mvp);
+  gl.drawArrays(primitive, 0, verts.length / 7);
+}
+function _gh3DDrawRoad() {
+  if (!_gh3DEnsure()) return;
+  var gl = _gh3d.roadGl;
+  _gh3DResizeCanvas(_gh3d.roadCanvas, gl, 'road');
+  var mvp = _gh3DMvp(_gh3d.roadCanvas);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.disable(gl.DEPTH_TEST);
+  var tris = [];
+  var zNear = GH3D_NEAR_Z;
+  var zFar = GH3D_FAR_Z;
+  for (var lane = 0; lane < 8; lane++) {
+    var x0 = -GH3D_HALF_W + lane * GH3D_LANE_W;
+    var x1 = x0 + GH3D_LANE_W;
+    var rgb = _gh3DLaneRgb(lane);
+    var cNear = [rgb[0], rgb[1], rgb[2], 0.34];
+    var cFar = [rgb[0], rgb[1], rgb[2], 0.08];
+    _gh3DPushColorTri(tris, [x0, 0, zNear], cNear, [x1, 0, zNear], cNear, [x1, 0, zFar], cFar);
+    _gh3DPushColorTri(tris, [x0, 0, zNear], cNear, [x1, 0, zFar], cFar, [x0, 0, zFar], cFar);
+  }
+  _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, tris, gl.TRIANGLES, mvp);
+  var lines = [];
+  var lineC = [0.62, 0.92, 1.0, 0.34];
+  var farLineC = [0.62, 0.92, 1.0, 0.10];
+  for (var i = 0; i <= 8; i++) {
+    var x = -GH3D_HALF_W + i * GH3D_LANE_W;
+    _gh3DPushColorLine(lines, [x, 0.025, zNear], lineC, [x, 0.025, zFar], farLineC);
+  }
+  for (var z = 0; z >= zFar; z -= 2) {
+    var t = Math.max(0, Math.min(1, (z - zFar) / (zNear - zFar)));
+    var a = 0.08 + 0.22 * t;
+    _gh3DPushColorLine(lines, [-GH3D_HALF_W, 0.03, z], [1, 1, 1, a], [GH3D_HALF_W, 0.03, z], [1, 1, 1, a]);
+  }
+  _gh3DPushColorLine(lines, [-GH3D_HALF_W, 0.055, GH3D_NEAR_Z - 0.25], [0.25, 1, 0.9, 0.9], [GH3D_HALF_W, 0.055, GH3D_NEAR_Z - 0.25], [0.25, 0.75, 1, 0.9]);
+  _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.lineBuffer, lines, gl.LINES, mvp);
+}
+function _gh3DRoundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function _gh3DTextureFor(lane, label) {
+  var gl = _gh3d.notesGl;
+  var key = lane + ':' + label;
+  if (_gh3d.textureCache[key]) return _gh3d.textureCache[key];
+  var color = RHYTHM_LANE_COLORS[lane] || { hi: '#FDE68A', lo: '#F59E0B' };
+  var c = document.createElement('canvas');
+  c.width = 192;
+  c.height = 192;
+  var ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.shadowColor = 'rgba(0,0,0,0.34)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 8;
+  _gh3DRoundRectPath(ctx, 25, 24, 142, 142, 30);
+  var grad = ctx.createLinearGradient(25, 24, 167, 166);
+  grad.addColorStop(0, color.hi || '#FDE68A');
+  grad.addColorStop(0.58, color.lo || '#F59E0B');
+  grad.addColorStop(1, '#172554');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.beginPath();
+  ctx.arc(62, 56, 19, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.font = '900 58px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(255,255,255,0.58)';
+  ctx.strokeText(label, 101, 108);
+  ctx.fillStyle = 'rgba(15,23,42,0.82)';
+  ctx.fillText(label, 101, 108);
+  var tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+  _gh3d.textureCache[key] = tex;
+  return tex;
+}
+function _gh3DDrawOneNote(note, mvp) {
+  var gl = _gh3d.notesGl;
+  if (!note || note.consumed) return;
+  var p = Math.max(0, Math.min(1, note._gh3dProgress || 0));
+  var lane = note.lane || 0;
+  var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
+  var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
+  var y = 0.72;
+  var w = 0.78;
+  var h = 0.78;
+  var a = Math.max(0.16, Math.min(1, 0.28 + p * 1.15));
+  var label = _rhythmNoteLabel(lane);
+  var tex = _gh3DTextureFor(lane, label);
+  var x0 = centerX - w / 2, x1 = centerX + w / 2;
+  var y0 = y - h / 2, y1 = y + h / 2;
+  var verts = [
+    x0, y0, z, 0, 1, a,
+    x1, y0, z, 1, 1, a,
+    x1, y1, z, 1, 0, a,
+    x0, y0, z, 0, 1, a,
+    x1, y1, z, 1, 0, a,
+    x0, y1, z, 0, 0, a
+  ];
+  gl.useProgram(_gh3d.notesProgram);
+  gl.bindBuffer(gl.ARRAY_BUFFER, _gh3d.noteBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STREAM_DRAW);
+  var stride = 6 * 4;
+  var aPos = gl.getAttribLocation(_gh3d.notesProgram, 'aPos');
+  var aUv = gl.getAttribLocation(_gh3d.notesProgram, 'aUv');
+  var aAlpha = gl.getAttribLocation(_gh3d.notesProgram, 'aAlpha');
+  gl.enableVertexAttribArray(aPos);
+  gl.enableVertexAttribArray(aUv);
+  gl.enableVertexAttribArray(aAlpha);
+  gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, stride, 0);
+  gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, stride, 3 * 4);
+  gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, stride, 5 * 4);
+  gl.uniformMatrix4fv(gl.getUniformLocation(_gh3d.notesProgram, 'uMvp'), false, mvp);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.uniform1i(gl.getUniformLocation(_gh3d.notesProgram, 'uTex'), 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+function _gh3DDrawNotes() {
+  if (!_gh3DEnsure()) return;
+  var gl = _gh3d.notesGl;
+  _gh3DResizeCanvas(_gh3d.notesCanvas, gl, 'notes');
+  var mvp = _gh3DMvp(_gh3d.notesCanvas);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  var notes = (_rhythm.activeNotes || []).slice().sort(function(a, b) {
+    return (a._gh3dProgress || 0) - (b._gh3dProgress || 0);
+  });
+  for (var i = 0; i < notes.length; i++) _gh3DDrawOneNote(notes[i], mvp);
+}
+function _gh3DRender() {
+  if (!_gh3DEnsure()) return;
+  _gh3DDrawRoad();
+  _gh3DDrawNotes();
+}
 // ── Guitar Hero 風 ノート落下: ヘルパ群 ──
 function _ghIsActive() {
   return (_rhythm.enabled || _rhythm.demoActive) && document.body.classList.contains('rhythm-layout');
@@ -3330,6 +3736,7 @@ function _ghUpdateLanesGeometry() {
   // 毎フレーム getComputedStyle を回避するため hitY をキャッシュ
   _rhythm._ghHitY = hitY;
   _rhythm._ghTopY = vanishY;
+  if (document.body.classList.contains('rhythm-layout')) _gh3DRender();
 }
 function _ghClearActiveNotes() {
   if (!_rhythm.activeNotes) return;
@@ -3337,6 +3744,7 @@ function _ghClearActiveNotes() {
     if (note && note.el && note.el.parentNode) note.el.parentNode.removeChild(note.el);
   });
   _rhythm.activeNotes = [];
+  if (_gh3d.ready) _gh3DRender();
 }
 function _ghClearLaneFlashes() {
   if (!_rhythm.laneFlashTimers) return;
@@ -3461,6 +3869,7 @@ function _ghUpdateFallingNotes(now) {
     if (progress < 0) progress = 0;
     if (progress > 1.12) progress = 1.12;
     var visualProgress = Math.max(0, Math.min(1, progress));
+    note._gh3dProgress = visualProgress;
     var depth = (Math.exp(perspectivePush * visualProgress) - 1) / perspectiveDenom;
     var spread = Math.pow(visualProgress, 1.52);
     var laneCenter = (note.lane + 0.5) * 12.5;
@@ -3487,6 +3896,7 @@ function _ghUpdateFallingNotes(now) {
       if (!_rhythm.enabled) return;
     }
   }
+  _gh3DRender();
 }
 function _ghSpawnDueNotes(now) {
   if (!_ghIsActive()) return;
@@ -4055,6 +4465,7 @@ function _stopRhythmMode() {
 }
 function _setModeButtons(mode) {
   document.body.classList.toggle('rhythm-layout', mode === 'rhythm');
+  if (mode === 'rhythm') _gh3DEnsure();
   document.querySelectorAll('.mode-btn').forEach(function(btn) {
     var active = btn.dataset.mode === mode;
     btn.classList.toggle('active', active);
