@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:374-bento-mask-editor-ui-redesign] Codex: user 依頼「1段目/2段目マスクと完成プレビューがわかりやすい UI へ整理、マスク表示切替ボタン追加」を受領。`bento/index.html` のマスクエディターを表示タブ式に再設計中。 (by Codex)
+- 2026-06-09 - [batch:374-bento-mask-editor-ui-redesign] DONE - Codex: `bento/index.html` のマスクエディターを `1段目マスク` / `2段目マスク` / `完成プレビュー` のタブ式へ整理。1段目は大きい編集面、2段目は蓋を隠した完成プレビュー上、完成プレビューは蓋/2段目箱位置だけを表示するよう分離。`sw.js` は v949。Node構文、Playwrightで各タブ表示/保存先/URL view/tier2蓋非表示/mobile tab overflow なし、スクショ目視を確認。 (by Codex)
 - 2026-06-09 - [batch:372-oto-rhythm-force-piano] Codex: user 依頼「リズムモードの時はドラムと動物の鳴き声を選択してた場合は、ピアノに変更」を受領。`oto/index.html` でリズム開始時に `taiko` / `animal` のみ `doremi` へ戻す追修正を実装・検証中。 (by Codex)
 - 2026-06-09 - [batch:372-oto-rhythm-force-piano] DONE - Codex: `oto/index.html` に音色選択ヘルパーを追加し、リズムメニュー表示時と直接リズム開始時に `taiko` / `animal` 選択だけ `doremi` へ自動切替。音色ボタン active 状態、ドレミ/animal ボタン画像、ABC/ドレミ表記反映も `_applyScaleLabels()` 経由で同期。`sw.js` は v948。Node inline script、`git diff --check`、Playwright で taiko→rhythm / animal→rhythm / direct start を確認。 (by Codex)
 - 2026-06-09 - [batch:373-oto-rhythm-arcade-bg] Codex: user 依頼「リズム背景をもう少し濃く、見やすく楽しげ、アーケード感を残して他ゲームと差別化」を受領。`oto/index.html` の rhythm-layout 背景、レーン、ヒットラインを調整中。 (by Codex)

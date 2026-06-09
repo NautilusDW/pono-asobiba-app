@@ -896,6 +896,44 @@ html, body {
   opacity: 0.38;
   cursor: default;
 }
+.free-mask-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  gap: 5px;
+  margin-top: 7px;
+}
+.free-mask-mode-tab {
+  min-height: 32px;
+  border: 2px solid #8AD6B6;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: #174B2C;
+  font-family: inherit;
+  font-size: 0.5rem;
+  font-weight: 900;
+  line-height: 1.12;
+  padding: 4px 5px;
+  cursor: pointer;
+  text-align: center;
+}
+.free-mask-mode-tab.active {
+  background: #BBF7D0;
+  border-color: #22C55E;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12);
+}
+.free-mask-edit-group {
+  margin-top: 8px;
+  padding: 7px;
+  border: 2px solid rgba(34, 197, 94, 0.22);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.62);
+}
+.free-mask-edit-group .free-mask-title {
+  color: #065F46;
+}
+.free-mask-edit-group .free-mask-actions {
+  grid-template-columns: 1fr;
+}
 .free-brush-stamp-panel {
   border-color: #A7F3D0;
   background: #ECFDF5;
@@ -3647,6 +3685,7 @@ let freePendingCupEditorUid = null;
 let freeGuideDismissedKey = '';
 let freeMaskEditorOpen = false;
 let freeMaskEditorMode = false;
+let freeMaskEditorView = 'tier1';
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 let freeCompleteLayoutOverrides = loadFreeCompleteLayoutOverrides();
 let freeMaskResizeRefreshTimer = 0;
@@ -3675,6 +3714,7 @@ function getFreeMaskEditRequest() {
       boxId: bentoBoxes.some(b => b.id === boxId && b.maskImage)
         ? boxId
         : ((bentoBoxes.find(b => b.maskImage) || {}).id || ''),
+      view: sp.get('view') || sp.get('maskview') || '',
     };
   } catch (_) {
     return null;
@@ -4670,6 +4710,23 @@ function resetBoxCompleteMaskRelativeOverride(box, tier) {
   delete freeCompleteLayoutOverrides[key];
   saveFreeCompleteLayoutOverrides();
 }
+function normalizeFreeMaskEditorView(view, box = getSelectedBentoBox()) {
+  const raw = String(view || '').toLowerCase();
+  const tierCount = getBoxTierCount(box);
+  if ((raw === 'tier2' || raw === '2' || raw === 'second') && tierCount > 1) return 'tier2';
+  if (raw === 'complete' || raw === 'preview' || raw === 'lid') return 'complete';
+  return 'tier1';
+}
+function getActiveFreeMaskEditorView(box = getSelectedBentoBox()) {
+  return normalizeFreeMaskEditorView(freeMaskEditorView, box);
+}
+function setFreeMaskEditorView(view) {
+  const box = getSelectedBentoBox();
+  freeMaskEditorView = normalizeFreeMaskEditorView(view, box);
+  freeMaskEditorOpen = freeMaskEditorView === 'tier1';
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
 function getBoxMaskKey(box) {
   return box && (box.maskKey || box.id || '');
 }
@@ -4770,6 +4827,8 @@ function refreshFreeCompletionMaskViews() {
       renderFreeCompleteBento(slot, getCompleteEditorPreviewItems(box, tier), box.id, {
         forceTierCount: tier,
         preview: true,
+        maskPreviewTier: getActiveFreeMaskEditorView(box) === 'tier2' ? tier : 0,
+        hideLid: getActiveFreeMaskEditorView(box) === 'tier2',
       });
     }
   });
@@ -6226,7 +6285,14 @@ function renderFreeLayoutInto(host, opts = {}) {
     badge.textContent = getTierLabel(activeTier, box);
     host.appendChild(badge);
   }
-  if (opts.interactive && freeMaskEditorOpen && freeMaskEditorMode && box.maskImage) {
+  const showMaskPreview = !!(
+    box.maskImage &&
+    (
+      opts.maskPreview ||
+      (opts.interactive && freeMaskEditorMode && getActiveFreeMaskEditorView(box) === 'tier1')
+    )
+  );
+  if (showMaskPreview) {
     const preview = document.createElement('div');
     preview.className = 'free-mask-preview';
     applyBoxVisualMask(preview, box, host, visualMaskOptions);
@@ -6653,9 +6719,12 @@ function getCompleteEditorPreviewItems(box, tier) {
 function refreshFreeCompleteEditorPreview(panel, box, tier) {
   const slot = panel && panel.querySelector('.free-complete-editor-preview-slot');
   if (!slot || !box) return;
+  const view = getActiveFreeMaskEditorView(box);
   renderFreeCompleteBento(slot, getCompleteEditorPreviewItems(box, tier), box.id, {
     forceTierCount: Math.min(tier, getBoxTierCount(box)),
     preview: true,
+    maskPreviewTier: view === 'tier2' ? tier : 0,
+    hideLid: view === 'tier2',
   });
 }
 function makeCompleteLayoutRange(label, prop, min, max, layout, unit, tier) {
@@ -6728,7 +6797,7 @@ function makeCompleteMaskRange(label, prop, min, max, rel, tier) {
     value.textContent = formatMaskPercent(e.currentTarget.value) + '%';
     const panel = row.closest('.free-mask-panel');
     const status = panel && panel.querySelector('.free-complete-save-status');
-    if (status) status.textContent = '2だんめマスクも自動保存';
+    if (status) status.textContent = '2段目マスクを自動保存';
     if (next) refreshFreeCompleteEditorPreview(panel, getSelectedBentoBox(), tier);
   });
   row.appendChild(labelText);
@@ -6736,12 +6805,12 @@ function makeCompleteMaskRange(label, prop, min, max, rel, tier) {
   row.appendChild(value);
   return row;
 }
-function renderFreeCompleteEditorPreview(box, tier) {
+function renderFreeCompleteEditorPreview(box, tier, options = {}) {
   const wrapper = document.createElement('div');
   wrapper.className = 'free-complete-editor-preview';
   const label = document.createElement('div');
   label.className = 'free-complete-editor-preview-label';
-  label.textContent = '完成プレビュー';
+  label.textContent = options.label || '完成プレビュー';
   wrapper.appendChild(label);
   const slot = document.createElement('div');
   slot.className = 'free-complete-editor-preview-slot';
@@ -6749,6 +6818,8 @@ function renderFreeCompleteEditorPreview(box, tier) {
   const renderPreview = () => renderFreeCompleteBento(slot, getCompleteEditorPreviewItems(box, tier), box.id, {
     forceTierCount: Math.min(tier, getBoxTierCount(box)),
     preview: true,
+    maskPreviewTier: options.maskPreviewTier || 0,
+    hideLid: !!options.hideLid,
   });
   renderPreview();
   requestAnimationFrame(() => {
@@ -6759,10 +6830,11 @@ function renderFreeCompleteEditorPreview(box, tier) {
 function selectFreeMaskEditorBox(boxId) {
   if (!boxId) return;
   selectedBentoBoxId = boxId;
+  freeMaskEditorView = normalizeFreeMaskEditorView(freeMaskEditorView, getSelectedBentoBox());
   freeActiveTier = 1;
   freeSelectedItemUid = null;
   freeLayoutTab = 'box';
-  freeMaskEditorOpen = true;
+  freeMaskEditorOpen = freeMaskEditorView === 'tier1';
   resetFreeMainGuide();
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -6783,105 +6855,141 @@ function renderFreeMaskBoxSelector(activeBox) {
         selectFreeMaskEditorBox(candidate.id);
       });
       list.appendChild(button);
-    });
+  });
   return list;
+}
+function renderFreeMaskModeTabs(box) {
+  const tabs = document.createElement('div');
+  tabs.className = 'free-mask-mode-tabs';
+  const view = getActiveFreeMaskEditorView(box);
+  const options = [
+    { id: 'tier1', label: '1段目マスク' },
+  ];
+  if (getBoxTierCount(box) > 1) options.push({ id: 'tier2', label: '2段目マスク' });
+  if (getBoxTierCount(box) > 1 || (box && box.lidImage)) {
+    options.push({ id: 'complete', label: '完成プレビュー' });
+  }
+  options.forEach(opt => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'free-mask-mode-tab' + (view === opt.id ? ' active' : '');
+    button.textContent = opt.label;
+    button.setAttribute('aria-pressed', view === opt.id ? 'true' : 'false');
+    button.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      setFreeMaskEditorView(opt.id);
+    });
+    tabs.appendChild(button);
+  });
+  return tabs;
+}
+function makeFreeMaskEditGroup(titleText, noteText, statusClass = '') {
+  const group = document.createElement('div');
+  group.className = 'free-mask-edit-group';
+  const title = document.createElement('div');
+  title.className = 'free-mask-title';
+  title.textContent = titleText;
+  group.appendChild(title);
+  if (noteText) {
+    const note = document.createElement('div');
+    note.className = 'free-mask-viewport';
+    note.textContent = noteText;
+    group.appendChild(note);
+  }
+  const status = document.createElement('div');
+  status.className = ['free-mask-save-status', statusClass].filter(Boolean).join(' ');
+  status.textContent = '0.1刻みで自動保存';
+  group.appendChild(status);
+  return group;
 }
 function renderFreeMaskEditorControls() {
   const box = getSelectedBentoBox();
   const bounds = getBoxMaskBounds(box);
   const rel = getBoxMaskRelative(box);
   if (!freeMaskEditorMode || !box || !box.maskImage || !bounds || !rel) return null;
+  const view = getActiveFreeMaskEditorView(box);
+  freeMaskEditorOpen = view === 'tier1';
   const panel = document.createElement('div');
   panel.className = 'free-mask-panel';
   const title = document.createElement('div');
   title.className = 'free-mask-title';
-  title.textContent = box.name ? 'マスク調整: ' + box.name : 'マスク調整';
+  title.textContent = box.name ? '箱調整: ' + box.name : '箱調整';
   panel.appendChild(title);
   const viewportLabel = document.createElement('div');
   viewportLabel.className = 'free-mask-viewport';
-  viewportLabel.textContent = '保存: ごはん入り箱基準';
+  viewportLabel.textContent = '表示を切り替えて、必要な場所だけ調整';
   panel.appendChild(viewportLabel);
-  const saveStatus = document.createElement('div');
-  saveStatus.className = 'free-mask-save-status';
-  saveStatus.textContent = '0.1%刻みで自動保存';
-  panel.appendChild(saveStatus);
   panel.appendChild(renderFreeMaskBoxSelector(box));
-  const actions = document.createElement('div');
-  actions.className = 'free-mask-actions';
-  actions.appendChild(makeSmallControlButton(freeMaskEditorOpen ? 'マスク非表示' : 'マスク表示', 'primary', () => {
-    freeMaskEditorOpen = !freeMaskEditorOpen;
-    renderFreeLayoutStage();
-    renderFreeLayoutControls();
-  }));
-  actions.appendChild(makeSmallControlButton('リセット', '', () => {
-    resetSelectedBoxMaskBounds();
-    freeMaskEditorOpen = true;
-    renderFreeLayoutStage();
-    renderFreeLayoutControls();
-  }));
-  panel.appendChild(actions);
-  if (freeMaskEditorOpen) {
-    panel.appendChild(makeMaskRange('X', 'x', -20, 120, rel));
-    panel.appendChild(makeMaskRange('Y', 'y', -20, 120, rel));
-    panel.appendChild(makeMaskRange('W', 'w', 5, 140, rel));
-    panel.appendChild(makeMaskRange('H', 'h', 5, 140, rel));
-  }
+  panel.appendChild(renderFreeMaskModeTabs(box));
   const completeTier = Math.min(2, getBoxTierCount(box));
   const hasCompleteTierControls = completeTier > 1;
   const hasLidControls = !!(box && box.lidImage);
-  if (hasCompleteTierControls || hasLidControls) {
+  if (view === 'tier1') {
+    const group = makeFreeMaskEditGroup('1段目の中身マスク', '左の大きい画面に緑で表示');
+    const actions = document.createElement('div');
+    actions.className = 'free-mask-actions';
+    actions.appendChild(makeSmallControlButton('1段目リセット', '', () => {
+      resetSelectedBoxMaskBounds();
+      freeMaskEditorOpen = true;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }));
+    group.appendChild(actions);
+    group.appendChild(makeMaskRange('X', 'x', -20, 120, rel));
+    group.appendChild(makeMaskRange('Y', 'y', -20, 120, rel));
+    group.appendChild(makeMaskRange('W', 'w', 5, 140, rel));
+    group.appendChild(makeMaskRange('H', 'h', 5, 140, rel));
+    panel.appendChild(group);
+    return panel;
+  }
+  if (view === 'tier2' && hasCompleteTierControls) {
     const section = document.createElement('div');
     section.className = 'free-complete-editor-section';
-    const completeTitle = document.createElement('div');
-    completeTitle.className = 'free-mask-title';
-    completeTitle.textContent = '完成版調整';
-    section.appendChild(completeTitle);
-    const completeNote = document.createElement('div');
-    completeNote.className = 'free-mask-viewport';
-    completeNote.textContent = hasCompleteTierControls ? '2だんめと ふたを調整' : 'ふたを調整';
-    section.appendChild(completeNote);
-    const completeStatus = document.createElement('div');
-    completeStatus.className = 'free-mask-save-status free-complete-save-status';
-    completeStatus.textContent = 'X/Yはpx、Wは%で自動保存';
-    section.appendChild(completeStatus);
+    section.appendChild(renderFreeCompleteEditorPreview(box, completeTier, {
+      label: '2段目マスクプレビュー',
+      maskPreviewTier: completeTier,
+      hideLid: true,
+    }));
+    const group = makeFreeMaskEditGroup('2段目の中身マスク', '上の完成プレビューに緑で表示', 'free-complete-save-status');
+    const completeMaskRel = getBoxCompleteMaskRelative(box, completeTier);
+    const completeMaskActions = document.createElement('div');
+    completeMaskActions.className = 'free-mask-actions';
+    completeMaskActions.appendChild(makeSmallControlButton('2段目リセット', '', () => {
+      resetSelectedBoxCompleteMaskRelative(completeTier);
+      renderFreeLayoutControls();
+    }));
+    group.appendChild(completeMaskActions);
+    group.appendChild(makeCompleteMaskRange('X', 'x', -20, 120, completeMaskRel, completeTier));
+    group.appendChild(makeCompleteMaskRange('Y', 'y', -20, 120, completeMaskRel, completeTier));
+    group.appendChild(makeCompleteMaskRange('W', 'w', 5, 140, completeMaskRel, completeTier));
+    group.appendChild(makeCompleteMaskRange('H', 'h', 5, 140, completeMaskRel, completeTier));
+    section.appendChild(group);
+    panel.appendChild(section);
+    return panel;
+  }
+  if (view === 'complete' && (hasCompleteTierControls || hasLidControls)) {
+    const section = document.createElement('div');
+    section.className = 'free-complete-editor-section';
+    section.appendChild(renderFreeCompleteEditorPreview(box, completeTier, {
+      label: '完成プレビュー',
+    }));
     if (hasCompleteTierControls) {
-      const tierLabel = document.createElement('div');
-      tierLabel.className = 'free-mask-viewport';
-      tierLabel.textContent = '2だんめ';
-      section.appendChild(tierLabel);
+      const tierGroup = makeFreeMaskEditGroup('2段目の箱位置', '箱全体の位置と大きさ', 'free-complete-save-status');
       const completeLayout = getBoxCompleteLayout(box, completeTier);
       const completeActions = document.createElement('div');
       completeActions.className = 'free-mask-actions';
-      completeActions.appendChild(makeSmallControlButton('2だんめリセット', '', () => {
+      completeActions.appendChild(makeSmallControlButton('箱位置リセット', '', () => {
         resetSelectedBoxCompleteLayout(completeTier);
         renderFreeLayoutControls();
       }));
-      section.appendChild(completeActions);
-      section.appendChild(makeCompleteLayoutRange('2だんX', 'x', -80, 80, completeLayout, 'px', completeTier));
-      section.appendChild(makeCompleteLayoutRange('2だんY', 'y', -160, 280, completeLayout, 'px', completeTier));
-      section.appendChild(makeCompleteLayoutRange('2だんW', 'w', 80, 120, completeLayout, '%', completeTier));
-      const tierMaskLabel = document.createElement('div');
-      tierMaskLabel.className = 'free-mask-viewport';
-      tierMaskLabel.textContent = '2だんめマスク';
-      section.appendChild(tierMaskLabel);
-      const completeMaskRel = getBoxCompleteMaskRelative(box, completeTier);
-      const completeMaskActions = document.createElement('div');
-      completeMaskActions.className = 'free-mask-actions';
-      completeMaskActions.appendChild(makeSmallControlButton('2だんマスクリセット', '', () => {
-        resetSelectedBoxCompleteMaskRelative(completeTier);
-        renderFreeLayoutControls();
-      }));
-      section.appendChild(completeMaskActions);
-      section.appendChild(makeCompleteMaskRange('2だんMX', 'x', -20, 120, completeMaskRel, completeTier));
-      section.appendChild(makeCompleteMaskRange('2だんMY', 'y', -20, 120, completeMaskRel, completeTier));
-      section.appendChild(makeCompleteMaskRange('2だんMW', 'w', 5, 140, completeMaskRel, completeTier));
-      section.appendChild(makeCompleteMaskRange('2だんMH', 'h', 5, 140, completeMaskRel, completeTier));
+      tierGroup.appendChild(completeActions);
+      tierGroup.appendChild(makeCompleteLayoutRange('X', 'x', -80, 80, completeLayout, 'px', completeTier));
+      tierGroup.appendChild(makeCompleteLayoutRange('Y', 'y', -160, 280, completeLayout, 'px', completeTier));
+      tierGroup.appendChild(makeCompleteLayoutRange('W', 'w', 80, 120, completeLayout, '%', completeTier));
+      section.appendChild(tierGroup);
     }
     if (hasLidControls) {
-      const lidLabel = document.createElement('div');
-      lidLabel.className = 'free-mask-viewport';
-      lidLabel.textContent = 'ふた';
-      section.appendChild(lidLabel);
+      const lidGroup = makeFreeMaskEditGroup('ふたの閉まる位置', '最後に閉じる蓋の位置と大きさ', 'free-complete-save-status');
       const lidLayout = getBoxCompleteLidLayout(box);
       const lidActions = document.createElement('div');
       lidActions.className = 'free-mask-actions';
@@ -6889,14 +6997,17 @@ function renderFreeMaskEditorControls() {
         resetSelectedBoxCompleteLidLayout();
         renderFreeLayoutControls();
       }));
-      section.appendChild(lidActions);
-      section.appendChild(makeCompleteLidLayoutRange('ふたX', 'x', -160, 160, lidLayout, 'px', completeTier));
-      section.appendChild(makeCompleteLidLayoutRange('ふたY', 'y', -180, 240, lidLayout, 'px', completeTier));
-      section.appendChild(makeCompleteLidLayoutRange('ふたW', 'w', 70, 130, lidLayout, '%', completeTier));
+      lidGroup.appendChild(lidActions);
+      lidGroup.appendChild(makeCompleteLidLayoutRange('X', 'x', -160, 160, lidLayout, 'px', completeTier));
+      lidGroup.appendChild(makeCompleteLidLayoutRange('Y', 'y', -180, 240, lidLayout, 'px', completeTier));
+      lidGroup.appendChild(makeCompleteLidLayoutRange('W', 'w', 70, 130, lidLayout, '%', completeTier));
+      section.appendChild(lidGroup);
     }
-    section.appendChild(renderFreeCompleteEditorPreview(box, completeTier));
     panel.appendChild(section);
+    return panel;
   }
+  const fallback = makeFreeMaskEditGroup('この箱で調整できる項目がありません', '');
+  panel.appendChild(fallback);
   return panel;
 }
 function makeSmallControlButton(label, className, onClick, disabled = false) {
@@ -7224,9 +7335,11 @@ function loadFreeLayoutStage() {
   const maskEdit = getFreeMaskEditRequest();
   freeMaskEditorMode = !!maskEdit;
   freeMaskEditorOpen = false;
+  freeMaskEditorView = 'tier1';
   if (maskEdit && maskEdit.boxId) {
     selectedBentoBoxId = maskEdit.boxId;
-    freeMaskEditorOpen = true;
+    freeMaskEditorView = normalizeFreeMaskEditorView(maskEdit.view || 'tier1', getSelectedBentoBox());
+    freeMaskEditorOpen = freeMaskEditorView === 'tier1';
     const titleScreen = document.getElementById('title-screen');
     if (titleScreen) titleScreen.classList.add('hidden');
   }
@@ -7451,17 +7564,22 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
         interactive: false,
         maskRel: tier > 1 ? getBoxCompleteMaskRelative(box, tier) : null,
         maskVariant: tier > 1 ? getFreeCompleteMaskLayoutKey(box, tier) : '',
+        maskPreview: Number(options.maskPreviewTier) === tier,
       });
     }
-    const lidDelay = isPreview ? 0 : ((tierCount - 1) * FREE_COMPLETE_TIER_STEP_SECONDS + 0.65 + FREE_COMPLETE_LID_AFTER_LAST_SECONDS);
-    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, {
-      layoutScale,
-      preview: isPreview,
-      waitForTap: !isPreview,
-    });
-    if (lidStage) build.appendChild(lidStage);
-    if (!isPreview && lidStage) {
-      bindFreeCompleteLidTapClose(build, lidStage, build, lidDelay);
+    if (!options.hideLid) {
+      const lidDelay = isPreview ? 0 : ((tierCount - 1) * FREE_COMPLETE_TIER_STEP_SECONDS + 0.65 + FREE_COMPLETE_LID_AFTER_LAST_SECONDS);
+      const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, {
+        layoutScale,
+        preview: isPreview,
+        waitForTap: !isPreview,
+      });
+      if (lidStage) build.appendChild(lidStage);
+      if (!isPreview && lidStage) {
+        bindFreeCompleteLidTapClose(build, lidStage, build, lidDelay);
+      } else if (!isPreview) {
+        addFreeCompletionSparkles(build, 0.18);
+      }
     } else if (!isPreview) {
       addFreeCompletionSparkles(build, 0.18);
     }
@@ -7476,15 +7594,19 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     interactive: false,
   });
   const layoutScale = getFreeCompleteLayoutScale(host, isPreview);
-  const lidDelay = isPreview ? 0 : 1.05;
-  const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, {
-    layoutScale,
-    preview: isPreview,
-    waitForTap: !isPreview,
-  });
-  if (lidStage) host.appendChild(lidStage);
-  if (!isPreview && lidStage) {
-    bindFreeCompleteLidTapClose(host, lidStage, host, lidDelay);
+  if (!options.hideLid) {
+    const lidDelay = isPreview ? 0 : 1.05;
+    const lidStage = createFreeCompleteLidStage(box, lidDelay, tierCount, {
+      layoutScale,
+      preview: isPreview,
+      waitForTap: !isPreview,
+    });
+    if (lidStage) host.appendChild(lidStage);
+    if (!isPreview && lidStage) {
+      bindFreeCompleteLidTapClose(host, lidStage, host, lidDelay);
+    } else if (!isPreview) {
+      addFreeCompletionSparkles(host, 0.18);
+    }
   } else if (!isPreview) {
     addFreeCompletionSparkles(host, 0.18);
   }
