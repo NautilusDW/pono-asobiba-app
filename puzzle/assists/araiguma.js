@@ -356,6 +356,12 @@
     }
     var picked = pool.slice(0, pickCount);
 
+    try {
+      if (typeof window.PonoPartnerAbilityCutin === 'function') {
+        window.PonoPartnerAbilityCutin(PARTNER_ID, { label: 'ぴかっと!' });
+      }
+    } catch (_) {}
+
     state.usesLeft--;
     state.busy = true;
     updateButtonUI();

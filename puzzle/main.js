@@ -87,6 +87,97 @@ function runAssistHooks(hookName, ctx, returnsBool) {
   return cancelled;
 }
 
+const PARTNER_ABILITY_CUTIN_DURATION_MS = 1080;
+const PARTNER_ABILITY_CUTIN_COOLDOWN_MS = 1500;
+let partnerAbilityCutinEl = null;
+let partnerAbilityCutinTimer = null;
+let partnerAbilityCutinLast = { id: null, at: 0 };
+
+function resolvePartnerForAbilityCutin(partnerOrId) {
+  if (partnerOrId && typeof partnerOrId === 'object' && partnerOrId.id) {
+    return partnerOrId;
+  }
+  var id = typeof partnerOrId === 'string' ? partnerOrId : null;
+  if (!id) {
+    var current = getCurrentPartner();
+    if (current && current.id) return current;
+  }
+  try {
+    if (id && window.PonoPartners && typeof window.PonoPartners.get === 'function') {
+      return window.PonoPartners.get(id) || null;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function clearPartnerAbilityCutin() {
+  if (partnerAbilityCutinTimer) {
+    clearTimeout(partnerAbilityCutinTimer);
+    partnerAbilityCutinTimer = null;
+  }
+  if (partnerAbilityCutinEl && partnerAbilityCutinEl.parentNode) {
+    partnerAbilityCutinEl.parentNode.removeChild(partnerAbilityCutinEl);
+  }
+  partnerAbilityCutinEl = null;
+}
+
+function showPartnerAbilityCutin(partnerOrId, options) {
+  var opts = options || {};
+  var partner = resolvePartnerForAbilityCutin(partnerOrId);
+  if (!partner || !partner.id) return false;
+
+  var now = Date.now();
+  if (!opts.force
+      && partnerAbilityCutinLast.id === partner.id
+      && now - partnerAbilityCutinLast.at < PARTNER_ABILITY_CUTIN_COOLDOWN_MS) {
+    return false;
+  }
+  partnerAbilityCutinLast = { id: partner.id, at: now };
+
+  clearPartnerAbilityCutin();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'partner-ability-cutin partner-ability-cutin--' + partner.id;
+  overlay.setAttribute('aria-hidden', 'true');
+
+  var veil = document.createElement('div');
+  veil.className = 'partner-ability-cutin__veil';
+  overlay.appendChild(veil);
+
+  var rays = document.createElement('div');
+  rays.className = 'partner-ability-cutin__rays';
+  overlay.appendChild(rays);
+
+  var burst = document.createElement('div');
+  burst.className = 'partner-ability-cutin__burst';
+  overlay.appendChild(burst);
+
+  var imageWrap = document.createElement('div');
+  imageWrap.className = 'partner-ability-cutin__image-wrap';
+  var img = document.createElement('img');
+  img.className = 'partner-ability-cutin__image';
+  img.src = partner.image || '';
+  img.alt = '';
+  imageWrap.appendChild(img);
+  overlay.appendChild(imageWrap);
+
+  var label = document.createElement('div');
+  label.className = 'partner-ability-cutin__label';
+  label.textContent = opts.label || ((partner.name || 'なかま') + 'の とくぎ!');
+  overlay.appendChild(label);
+
+  document.body.appendChild(overlay);
+  partnerAbilityCutinEl = overlay;
+  partnerAbilityCutinTimer = setTimeout(clearPartnerAbilityCutin, PARTNER_ABILITY_CUTIN_DURATION_MS + 140);
+
+  try {
+    if (navigator && navigator.vibrate) navigator.vibrate([22, 35, 22]);
+  } catch (_) {}
+  return true;
+}
+
+window.PonoPartnerAbilityCutin = showPartnerAbilityCutin;
+
 // Stage 20 のピース数はプレイテストで調整可能 (難しすぎる場合は 16 に下げる)
 const STAGE_20_PIECE_COUNT = 20; // tweakable: 16 if too hard
 
@@ -4715,6 +4806,7 @@ if (btnHint) {
       if (partnerIdForFx === 'kitsune'
           && window.PonoAssistKitsune
           && typeof window.PonoAssistKitsune.fireHintShape === 'function') {
+        showPartnerAbilityCutin(partnerForFx, { label: 'さきよみ!' });
         var fxCtx = (puzzleCanvas && puzzleCanvas.getContext) ? puzzleCanvas.getContext('2d') : null;
         window.PonoAssistKitsune.fireHintShape(selectedPieceForHint, fxCtx);
       }

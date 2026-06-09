@@ -425,7 +425,15 @@
         currentStageId = pickStageId(piece);
         currentLevel = resolveLevel(currentStageId);
       }
+      var wasActive = !!(root && root.classList.contains('is-active'));
       show();
+      if (!wasActive) {
+        try {
+          if (typeof window.PonoPartnerAbilityCutin === 'function') {
+            window.PonoPartnerAbilityCutin(PARTNER_ID, { label: 'こっち!' });
+          }
+        } catch (_) {}
+      }
       updateEarsForPiece(piece);
       // 次の onPointerUp までに新たな move が来なければ自動でフェードアウト
       // (onPointerUp フックは無いので debounce で代用)

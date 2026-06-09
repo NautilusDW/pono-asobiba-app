@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:380-puzzle-partner-ability-cutin] Codex: user 依頼「パズルでパートナー能力を使うときに、キャラクターが大きく出てきて光る大げさなアクション」を受領。HANDOFF / `git log -- puzzle` / `puzzle/` 既存ファイル確認で同一演出の過去成果物なし。`puzzle/main.js` / `puzzle/style.css` / 必要に応じて partner assist まわりを対象に実装・検証する。 (by Codex)
+- 2026-06-09 - [batch:380-puzzle-partner-ability-cutin] DONE - Codex: パートナー能力カットイン共通APIとCSSを追加し、キツネ/コジカ/アライグマ/ウサギ/フクロウの発動点へ接続。`sw.js` は v960。Node構文、`git diff --check`、Playwrightで単体カットイン 1024x768/667x375、キツネヒント発動、アライグマボタン発動、console/page error 0 を確認。セルフレビュー: 演出は pointer-events none + cooldown 付きで既存操作と能力処理を遅延させない。 (by Codex)
 - 2026-06-09 - [batch:378-maze-item-editor-water-exit] Codex: user 依頼「力の手袋ミニゲームのグローブをマップアイテムと同じボクシンググローブへ統一、ステージ4旗ワープ出口フォーカス/出現位置補正、エディターでアイテム位置編集、板並べゲームの水たまりと橋ルートを分かりやすく」を受領。`maze/index.html` / `maze/imageStages/stage4.json` / `tools/maze-editor.html` を対象に実装・検証中。 (by Codex)
 - 2026-06-09 - [batch:374-bento-mask-editor-ui-redesign] Codex: user 依頼「1段目/2段目マスクと完成プレビューがわかりやすい UI へ整理、マスク表示切替ボタン追加」を受領。`bento/index.html` のマスクエディターを表示タブ式に再設計中。 (by Codex)
 - 2026-06-09 - [batch:374-bento-mask-editor-ui-redesign] DONE - Codex: `bento/index.html` のマスクエディターを `1段目マスク` / `2段目マスク` / `完成プレビュー` のタブ式へ整理。1段目は大きい編集面、2段目は蓋を隠した完成プレビュー上、完成プレビューは蓋/2段目箱位置だけを表示するよう分離。`sw.js` は v949。Node構文、Playwrightで各タブ表示/保存先/URL view/tier2蓋非表示/mobile tab overflow なし、スクショ目視を確認。 (by Codex)

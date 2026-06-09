@@ -416,6 +416,12 @@
     var neighbors = collectNeighbors(piece, ctx.pieces, cap);
     if (!neighbors.length) return; // 角ピースで隣接 0 (理論上は起こらないが安全側)
 
+    try {
+      if (typeof window.PonoPartnerAbilityCutin === 'function') {
+        window.PonoPartnerAbilityCutin(PARTNER_ID, { label: 'みつけた!' });
+      }
+    } catch (_) {}
+
     state.activeTarget = piece;
     state.activeNeighbors = neighbors;
     var t = now();

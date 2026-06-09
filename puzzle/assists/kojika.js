@@ -86,6 +86,7 @@
     lastTs: 0,
     lastPieceW: 0,
     lastPieces: null,
+    cutinPiece: null,
   };
 
   // beforeStageStart で更新する現在のステージ情報
@@ -164,6 +165,7 @@
     dragState.lastTs = 0;
     dragState.lastPieceW = 0;
     dragState.lastPieces = null;
+    dragState.cutinPiece = null;
   }
 
   // === Hook: afterStageReady ===
@@ -194,7 +196,11 @@
     if (!ctx || !ctx.piece) return;
     if (!isKojika(ctx.partner)) {
       dragState.piece = null;
+      dragState.cutinPiece = null;
       return;
+    }
+    if (dragState.piece !== ctx.piece) {
+      dragState.cutinPiece = null;
     }
     dragState.piece = ctx.piece;
     dragState.lastTs = Date.now();
@@ -258,6 +264,15 @@
 
     // 「最近接スロット」確認: 他ピースのホームの方が近ければ glow を出さない
     if (!isOwnHomeNearest(piece, ctx.pieces)) return;
+
+    if (dragState.cutinPiece !== piece) {
+      dragState.cutinPiece = piece;
+      try {
+        if (typeof window.PonoPartnerAbilityCutin === 'function') {
+          window.PonoPartnerAbilityCutin(PARTNER_ID, { label: 'ここだよ!' });
+        }
+      } catch (_) {}
+    }
 
     // === グロー中心: ピース中央 (左上 + 半幅) ===
     var cx = piece.x + halfW;
@@ -379,6 +394,7 @@
       var piece = dragState.piece;
       // 一度処理したらピース参照を消す (同じピースで二重発火防止)
       dragState.piece = null;
+      dragState.cutinPiece = null;
       if (!piece || piece.snapped) return;
       if (piece.rotation) return; // 回転中ピースは snap 不可
 
