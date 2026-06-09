@@ -1559,6 +1559,10 @@ html, body {
   filter: drop-shadow(0 16px 18px rgba(93, 78, 55, 0.28));
   animation: none;
 }
+.complete-bento.free-complete-stack.no-stack-drop-shadow .free-complete-tier.is-upper-tier,
+.complete-bento.free-complete-stack.no-stack-drop-shadow .free-complete-lid-stage:not(.is-waiting-tap) {
+  filter: none;
+}
 .free-complete-lid-stage::after {
   content: 'タップで ふた';
   position: absolute;
@@ -7595,11 +7599,13 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
   const isPreview = !!options.preview;
   const keepPreviewSlotClass = host.classList && host.classList.contains('free-complete-editor-preview-slot');
   const keepMainStageClass = host.id === 'free-layout-stage';
+  const noStackDropShadow = tierCount > 1 && box && box.id === 'box_round';
   host.className = 'complete-bento free-complete-bento'
     + (tierCount > 1 ? ' free-complete-stack' : '')
     + (isPreview ? ' free-complete-preview-mode' : '')
     + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '')
-    + (keepMainStageClass ? ' free-layout-stage free-mask-main-complete-preview' : '');
+    + (keepMainStageClass ? ' free-layout-stage free-mask-main-complete-preview' : '')
+    + (noStackDropShadow ? ' no-stack-drop-shadow' : '');
   applyFreeCompletePreviewScale(host, isPreview, box, tierCount);
   host.innerHTML = '';
   if (tierCount > 1) {
