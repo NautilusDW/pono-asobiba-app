@@ -29,6 +29,7 @@ window.PonoBondUI = (function () {
   var BADGE_ID = 'pono-bond-badge';
   var CUTIN_ID = 'pono-bond-cutin';
   var SUMMARY_ID = 'pono-bond-summary';
+  var panelActionTimer = null;
 
   // 計測ステート (ステージ開始 → クリア間で保持)
   var stageStartMs = null;
@@ -70,7 +71,14 @@ window.PonoBondUI = (function () {
     el.id = BADGE_ID;
     el.className = 'pono-bond-badge hidden';
     el.innerHTML =
-      '<img class="pono-bond-badge__img" alt="">' +
+      '<div class="pono-bond-badge__sparkles" aria-hidden="true"></div>' +
+      '<div class="pono-bond-badge__bubble" aria-hidden="true">' +
+        '<span class="pono-bond-badge__bubble-main">がんばれ!</span>' +
+        '<span class="pono-bond-badge__bubble-sub"></span>' +
+      '</div>' +
+      '<div class="pono-bond-badge__portrait">' +
+        '<img class="pono-bond-badge__img" alt="">' +
+      '</div>' +
       '<span class="pono-bond-badge__stars" aria-label="なかよし度"></span>';
     document.body.appendChild(el);
     return el;
@@ -125,8 +133,47 @@ window.PonoBondUI = (function () {
       }
     } catch (_) {}
     if (starsEl) starsEl.textContent = starsForLevel(level);
+    el.setAttribute('data-partner-id', partner.id || '');
+    setBadgeSpeech(el, 'がんばれ!', LEVEL_LABELS[level] || '');
     el.classList.remove('hidden');
     syncHintBtnVisibility(true);
+  }
+
+  function setBadgeSpeech(el, main, sub) {
+    if (!el) return;
+    var mainEl = el.querySelector('.pono-bond-badge__bubble-main');
+    var subEl = el.querySelector('.pono-bond-badge__bubble-sub');
+    if (mainEl) mainEl.textContent = main || 'がんばれ!';
+    if (subEl) {
+      subEl.textContent = sub || '';
+      subEl.classList.toggle('hidden', !sub);
+    }
+  }
+
+  function playPartnerPanelAction(partner, opts) {
+    opts = opts || {};
+    if (!partner) return false;
+    var el = ensureBadge();
+    refreshBadge(partner, opts.stageId);
+    var type = opts.type === 'celebrate' ? 'celebrate' : 'ability';
+    var message = opts.message || (type === 'celebrate' ? 'やったね!' : 'がんばれ!');
+    var label = opts.label || '';
+    setBadgeSpeech(el, message, label);
+
+    el.classList.remove('is-ability', 'is-celebrate');
+    void el.offsetWidth;
+    el.classList.add(type === 'celebrate' ? 'is-celebrate' : 'is-ability');
+
+    if (panelActionTimer) {
+      clearTimeout(panelActionTimer);
+      panelActionTimer = null;
+    }
+    panelActionTimer = setTimeout(function () {
+      el.classList.remove('is-ability', 'is-celebrate');
+      setBadgeSpeech(el, 'がんばれ!', '');
+      panelActionTimer = null;
+    }, type === 'celebrate' ? 2200 : 1500);
+    return true;
   }
 
   // ===== Level-Up Cut-In =====
@@ -272,6 +319,12 @@ window.PonoBondUI = (function () {
 
     // バッジ更新
     refreshBadge(partner, stageId);
+    playPartnerPanelAction(partner, {
+      type: 'celebrate',
+      stageId: stageId,
+      message: 'やったね!',
+      label: 'クリア!',
+    });
   }
 
   // ===== Stage tracking (時間 / コンボ計測) =====
@@ -346,5 +399,6 @@ window.PonoBondUI = (function () {
     init: init,
     showLevelUpCutIn: showLevelUpCutIn,
     refreshBadge: refreshBadge,
+    playPartnerPanelAction: playPartnerPanelAction,
   };
 })();

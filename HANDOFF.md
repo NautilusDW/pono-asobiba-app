@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:381-puzzle-partner-sidekick-panel] Codex: user 指摘「中央カットインがヒント位置を隠す。右下パートナー枠を縦長応援枠にして、能力時はそこがキラーン、完成時も枠内で喜ぶ演出へ」を受領。`46eb211` の中央カットインを置換し、パズルを覆わないサイド応援パネルに再設計する。画像は既存パートナー画像で足りる見込み、必要時のみ GPT Image 2 raw 生成。 (by Codex)
+- 2026-06-10 - [batch:381-puzzle-partner-sidekick-panel] DONE - Codex: 中央カットインを廃止し、右下パートナー表示を縦長応援パネルへ再設計。能力発動時はパネル内の吹き出し/キラキラ/ポートレートだけが反応し、ヒント位置を覆わない。完成時も同パネルで喜ぶ演出を追加。既存パートナー画像で対応し新規画像生成なし。`sw.js` は v962。Node構文、`git diff --check`、Playwrightでスマホ横キツネヒント時の中央オーバーレイなし/操作UI重なり0、デスクトップ完成時の喜び演出を確認。セルフレビュー: 放射状中央演出はCSSごと削除し、既存能力処理は遅延させない。 (by Codex)
 - 2026-06-09 - [batch:380-puzzle-partner-ability-cutin] Codex: user 依頼「パズルでパートナー能力を使うときに、キャラクターが大きく出てきて光る大げさなアクション」を受領。HANDOFF / `git log -- puzzle` / `puzzle/` 既存ファイル確認で同一演出の過去成果物なし。`puzzle/main.js` / `puzzle/style.css` / 必要に応じて partner assist まわりを対象に実装・検証する。 (by Codex)
 - 2026-06-09 - [batch:380-puzzle-partner-ability-cutin] DONE - Codex: パートナー能力カットイン共通APIとCSSを追加し、キツネ/コジカ/アライグマ/ウサギ/フクロウの発動点へ接続。`sw.js` は v960。Node構文、`git diff --check`、Playwrightで単体カットイン 1024x768/667x375、キツネヒント発動、アライグマボタン発動、console/page error 0 を確認。セルフレビュー: 演出は pointer-events none + cooldown 付きで既存操作と能力処理を遅延させない。 (by Codex)
 - 2026-06-09 - [batch:378-maze-item-editor-water-exit] Codex: user 依頼「力の手袋ミニゲームのグローブをマップアイテムと同じボクシンググローブへ統一、ステージ4旗ワープ出口フォーカス/出現位置補正、エディターでアイテム位置編集、板並べゲームの水たまりと橋ルートを分かりやすく」を受領。`maze/index.html` / `maze/imageStages/stage4.json` / `tools/maze-editor.html` を対象に実装・検証中。 (by Codex)

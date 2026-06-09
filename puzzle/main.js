@@ -87,10 +87,7 @@ function runAssistHooks(hookName, ctx, returnsBool) {
   return cancelled;
 }
 
-const PARTNER_ABILITY_CUTIN_DURATION_MS = 1080;
 const PARTNER_ABILITY_CUTIN_COOLDOWN_MS = 1500;
-let partnerAbilityCutinEl = null;
-let partnerAbilityCutinTimer = null;
 let partnerAbilityCutinLast = { id: null, at: 0 };
 
 function resolvePartnerForAbilityCutin(partnerOrId) {
@@ -110,17 +107,6 @@ function resolvePartnerForAbilityCutin(partnerOrId) {
   return null;
 }
 
-function clearPartnerAbilityCutin() {
-  if (partnerAbilityCutinTimer) {
-    clearTimeout(partnerAbilityCutinTimer);
-    partnerAbilityCutinTimer = null;
-  }
-  if (partnerAbilityCutinEl && partnerAbilityCutinEl.parentNode) {
-    partnerAbilityCutinEl.parentNode.removeChild(partnerAbilityCutinEl);
-  }
-  partnerAbilityCutinEl = null;
-}
-
 function showPartnerAbilityCutin(partnerOrId, options) {
   var opts = options || {};
   var partner = resolvePartnerForAbilityCutin(partnerOrId);
@@ -134,41 +120,13 @@ function showPartnerAbilityCutin(partnerOrId, options) {
   }
   partnerAbilityCutinLast = { id: partner.id, at: now };
 
-  clearPartnerAbilityCutin();
-
-  var overlay = document.createElement('div');
-  overlay.className = 'partner-ability-cutin partner-ability-cutin--' + partner.id;
-  overlay.setAttribute('aria-hidden', 'true');
-
-  var veil = document.createElement('div');
-  veil.className = 'partner-ability-cutin__veil';
-  overlay.appendChild(veil);
-
-  var rays = document.createElement('div');
-  rays.className = 'partner-ability-cutin__rays';
-  overlay.appendChild(rays);
-
-  var burst = document.createElement('div');
-  burst.className = 'partner-ability-cutin__burst';
-  overlay.appendChild(burst);
-
-  var imageWrap = document.createElement('div');
-  imageWrap.className = 'partner-ability-cutin__image-wrap';
-  var img = document.createElement('img');
-  img.className = 'partner-ability-cutin__image';
-  img.src = partner.image || '';
-  img.alt = '';
-  imageWrap.appendChild(img);
-  overlay.appendChild(imageWrap);
-
-  var label = document.createElement('div');
-  label.className = 'partner-ability-cutin__label';
-  label.textContent = opts.label || ((partner.name || 'なかま') + 'の とくぎ!');
-  overlay.appendChild(label);
-
-  document.body.appendChild(overlay);
-  partnerAbilityCutinEl = overlay;
-  partnerAbilityCutinTimer = setTimeout(clearPartnerAbilityCutin, PARTNER_ABILITY_CUTIN_DURATION_MS + 140);
+  if (window.PonoBondUI && typeof window.PonoBondUI.playPartnerPanelAction === 'function') {
+    window.PonoBondUI.playPartnerPanelAction(partner, {
+      type: 'ability',
+      message: opts.message || 'がんばれ!',
+      label: opts.label || '',
+    });
+  }
 
   try {
     if (navigator && navigator.vibrate) navigator.vibrate([22, 35, 22]);
