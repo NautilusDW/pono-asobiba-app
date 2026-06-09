@@ -11,11 +11,27 @@
   "lantern": true,
   "obstacles": [
     {
+      "id": "stage3-strength-rock",
       "kind": "rock",
       "x": 998,
-      "y": 129
+      "y": 129,
+      "size": 148
     }
   ],
+  "strengthGimmick": {
+    "id": "stage3-strength-glove-rock",
+    "glove": {
+      "x": 760,
+      "y": 210,
+      "radius": 90
+    },
+    "obstacleId": "stage3-strength-rock",
+    "encounterRadius": 78,
+    "movedTo": {
+      "x": 1136,
+      "y": 129
+    }
+  },
   "creatures": [
     {
       "id": "c3",

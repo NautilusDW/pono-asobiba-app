@@ -1274,6 +1274,113 @@ body.image-stage-mode .game-wrap {
   70%      { transform: translateX(-50%) rotate(8deg) scale(1.04); }
 }
 
+.strength-game {
+  display: grid;
+  grid-template-rows: auto minmax(140px, 1fr) auto auto auto;
+  gap: 9px;
+  align-items: center;
+  min-height: min(55dvh, 390px);
+  overflow: hidden;
+}
+.strength-game__title {
+  min-height: 1.7em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 900;
+  color: #5D4E37;
+  line-height: 1.2;
+}
+.strength-game__stage {
+  position: relative;
+  min-height: 135px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  border: 4px solid #BFD88A;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #FFF7DF, #F8E8C7);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65), 0 4px 14px rgba(0,0,0,0.12);
+}
+.strength-game__glove,
+.strength-game__rock,
+.strength-game__spark {
+  width: min(29vw, 160px);
+  max-height: min(22dvh, 128px) !important;
+  object-fit: contain;
+  justify-self: center;
+  filter: drop-shadow(0 6px 9px rgba(0,0,0,0.18));
+  pointer-events: none;
+}
+.strength-game__glove {
+  transform: rotate(8deg);
+  animation: strengthGlovePush 0.74s ease-in-out infinite alternate;
+}
+.strength-game__rock {
+  width: min(27vw, 145px);
+}
+.strength-game__spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(22vw, 120px);
+  opacity: 0.48;
+  transform: translate(-50%, -50%);
+  animation: strengthSparkPulse 0.9s ease-in-out infinite alternate;
+}
+.strength-meter {
+  position: relative;
+  height: 28px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(90deg, #EF8484, #F6DB6B 50%, #8BD58D);
+  border: 3px solid #BFD88A;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.42);
+}
+.strength-meter__target {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 48%;
+  width: 28%;
+  background: rgba(255,255,255,0.5);
+  border-left: 3px solid rgba(255,255,255,0.86);
+  border-right: 3px solid rgba(255,255,255,0.86);
+}
+.strength-meter__marker {
+  position: absolute;
+  top: -6px;
+  width: 8px;
+  height: 40px;
+  border-radius: 999px;
+  background: #5D4E37;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.78), 0 3px 8px rgba(0,0,0,0.22);
+  transform: translateX(-50%);
+}
+.strength-hit-btn {
+  min-height: 48px;
+  justify-self: center;
+  min-width: min(48vw, 210px);
+}
+.strength-game__status {
+  min-height: 1.8em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(0.98rem, 2.4vw, 1.25rem);
+  font-weight: 900;
+  color: #8D6C36;
+  line-height: 1.2;
+}
+@keyframes strengthGlovePush {
+  0%   { transform: translateX(-4%) rotate(8deg); }
+  100% { transform: translateX(8%) rotate(3deg); }
+}
+@keyframes strengthSparkPulse {
+  0%   { opacity: 0.24; transform: translate(-50%, -50%) scale(0.88); }
+  100% { opacity: 0.6;  transform: translate(-50%, -50%) scale(1.08); }
+}
+
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
   .encounter-modal .enc-card.is-janken {
     padding: 8px 10px;
@@ -1388,6 +1495,47 @@ body.image-stage-mode .game-wrap {
   .water-game__status {
     min-height: 1.45em;
     font-size: 0.86rem;
+  }
+  .strength-game {
+    grid-template-rows: 1.55em minmax(82px, 1fr) 24px 38px 1.35em;
+    gap: 5px;
+    min-height: min(64dvh, 228px);
+  }
+  .strength-game__title {
+    min-height: 1.4em;
+    font-size: clamp(1rem, 4vw, 1.28rem);
+  }
+  .strength-game__stage {
+    min-height: 82px;
+    border-width: 3px;
+    border-radius: 14px;
+  }
+  .strength-game__glove,
+  .strength-game__rock {
+    width: min(17vw, 78px);
+    max-height: min(22dvh, 64px) !important;
+  }
+  .strength-game__spark {
+    width: min(14vw, 60px);
+    max-height: min(20dvh, 54px) !important;
+  }
+  .strength-meter {
+    height: 22px;
+    border-width: 2px;
+  }
+  .strength-meter__marker {
+    height: 32px;
+    top: -5px;
+  }
+  .strength-hit-btn {
+    min-height: 36px;
+    min-width: min(42vw, 150px);
+    padding: 4px 12px;
+    font-size: 0.95rem;
+  }
+  .strength-game__status {
+    min-height: 1.3em;
+    font-size: 0.82rem;
   }
   .flag-lock-stage {
     height: min(42dvh, 145px);
@@ -1809,6 +1957,7 @@ const imgRock  = new Image(); imgRock.src  = '../assets/images/maze/rock.png';
 const imgApple = new Image(); imgApple.src = '../assets/images/word/ringo.png';
 const MAZE_FLAG_ASSET_BASE = '../assets/images/maze/flag/';
 const MAZE_WATER_ASSET_BASE = '../assets/images/maze/gimmicks/water/';
+const MAZE_STRENGTH_ASSET_BASE = '../assets/images/maze/gimmicks/strength/';
 function _mazeLoadImage(src) {
   const img = new Image();
   img.src = src;
@@ -1833,6 +1982,11 @@ const MAZE_WATER_ASSETS = {
   amenboPose: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_pose.png'),
   amenboSkate: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_skate.png'),
   amenboSplash: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_splash.png'),
+};
+const MAZE_STRENGTH_ASSETS = {
+  glovePair: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png'),
+  glovePush: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_push.png'),
+  powerSpark: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'power_spark.png'),
 };
 // Start / Goal markers for image stages
 const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
@@ -2476,6 +2630,7 @@ function imgLoadStage(def) {
   stage = window.MazeImage.buildStage(def);
   _initFlagTunnelForStage(stage);
   _initWaterGimmickForStage(stage);
+  _initStrengthGimmickForStage(stage);
   pono = {
     type: 'image',
     x: stage.start.x, y: stage.start.y,
@@ -2767,6 +2922,7 @@ function imgFinishWalk() {
   walkAnim = null;
   _checkFlagLadderPickup(pono.x, pono.y);
   _checkWaterPlankPickup(pono.x, pono.y);
+  _checkStrengthGlovePickup(pono.x, pono.y);
   if (pono.nodeId === stage.goal.id) {
     onClear();
   } else {
@@ -2803,6 +2959,7 @@ function imgDraw(now) {
       isWalking = true;
       _checkFlagLadderPickup(px, py);
       _checkWaterPlankPickup(px, py);
+      _checkStrengthGlovePickup(px, py);
       // Obstacle hit → bounce back (no minigame). Creatures take priority via encounter.
       if (!_checkObstacleCollision(px, py)) {
         _checkCreatureCollision(px, py);
@@ -2868,6 +3025,7 @@ function imgDraw(now) {
   // Obstacles (decoration only — placed by editor on top of the maze image)
   if (stage.obstacles && stage.obstacles.length) imgDrawObstacles(stage);
   imgDrawWaterGimmick(stage, now);
+  imgDrawStrengthGimmick(stage, now);
   imgDrawFlagTunnelGimmick(stage, now);
   // Creatures (お邪魔虫 — block path until defeated via mini-game)
   if (stage.creatures && stage.creatures.length) imgDrawCreatures(stage, now);
@@ -3139,6 +3297,12 @@ const CREATURE_KIND_DATA = {
     defeatDialog: 'じょうずに ならべたね！\nとおって いいよ。',
     defaultGame: 'water_bridge', imageUrl: '../assets/images/maze/gimmicks/water/amenbo_pose.png'
   },
+  strengthRock: {
+    emoji: '🪨', color: '#7C6A57', name: 'おもい いわ',
+    dialog: 'ちからの てぶくろで<br>いわを おしてみよう！',
+    defeatDialog: 'ぐぐっと うごいた！\nとおれるよ。',
+    defaultGame: 'strength_push', imageUrl: '../assets/images/maze/rock.png'
+  },
 };
 // お邪魔虫共通のフォールバック台詞。
 // c.dialog / c.defeatDialog (ステージ JSON での明示指定) があればそちらを最優先。
@@ -3153,7 +3317,7 @@ function _creatureData(c) {
 
 function _setEncounterMode(mode) {
   if (!encCardEl) return;
-  encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge');
+  encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'strength_push');
 }
 
 const OBSTACLE_KIND_IMG = {
@@ -3170,6 +3334,10 @@ let _flagTunnelTimers = [];
 let _waterGimmickState = null;
 let _waterGameState = null;
 let _waterGimmickTimers = [];
+let _strengthGimmickState = null;
+let _strengthGameState = null;
+let _strengthGimmickTimers = [];
+let _jankenLossStreak = 0;
 
 function _clearFlagTunnelTimers() {
   _flagTunnelTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
@@ -3186,12 +3354,33 @@ function _clearWaterGimmickTimers() {
   }
 }
 
+function _clearStrengthGimmickTimers() {
+  _strengthGimmickTimers.forEach(function(t) {
+    try { clearTimeout(t); } catch (_) {}
+    try { clearInterval(t); } catch (_) {}
+  });
+  _strengthGimmickTimers = [];
+  if (_strengthGameState && _strengthGameState.intervalId) {
+    clearInterval(_strengthGameState.intervalId);
+    _strengthGameState.intervalId = null;
+  }
+}
+
 function _waterGimmickSetTimeout(fn, ms) {
   const t = setTimeout(function() {
     _waterGimmickTimers = _waterGimmickTimers.filter(function(x) { return x !== t; });
     fn();
   }, ms);
   _waterGimmickTimers.push(t);
+  return t;
+}
+
+function _strengthGimmickSetTimeout(fn, ms) {
+  const t = setTimeout(function() {
+    _strengthGimmickTimers = _strengthGimmickTimers.filter(function(x) { return x !== t; });
+    fn();
+  }, ms);
+  _strengthGimmickTimers.push(t);
   return t;
 }
 
@@ -3216,6 +3405,9 @@ function _updateFlagInventoryHud() {
   }
   if (_waterGimmickState && _waterGimmickState.plankCollected && !_waterGimmickState.bridgeBuilt) {
     items.push({ src: MAZE_WATER_ASSET_BASE + 'plank_item.png', alt: 'まるたのいた' });
+  }
+  if (_strengthGimmickState && _strengthGimmickState.gloveCollected && !_strengthGimmickState.rockMoved) {
+    items.push({ src: MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png', alt: 'ちからのてぶくろ' });
   }
   flagInventoryHud.innerHTML = items.map(function(item) {
     return '<div class="flag-inventory-item"><img src="' + item.src + '" alt="' + item.alt + '"></div>';
@@ -3327,12 +3519,32 @@ function _initWaterGimmickForStage(stageObj) {
   _updateFlagInventoryHud();
 }
 
+function _initStrengthGimmickForStage(stageObj) {
+  _clearStrengthGimmickTimers();
+  _strengthGameState = null;
+  if (!stageObj || !stageObj.strengthGimmick) {
+    _strengthGimmickState = null;
+    _updateFlagInventoryHud();
+    return;
+  }
+  _strengthGimmickState = {
+    id: stageObj.strengthGimmick.id || 'strength-rock',
+    gloveCollected: false,
+    rockMoved: false,
+  };
+  _updateFlagInventoryHud();
+}
+
 function _flagTunnelCfg() {
   return stage && stage.flagGimmick && _flagTunnelState ? stage.flagGimmick : null;
 }
 
 function _waterGimmickCfg() {
   return stage && stage.waterGimmick && _waterGimmickState ? stage.waterGimmick : null;
+}
+
+function _strengthGimmickCfg() {
+  return stage && stage.strengthGimmick && _strengthGimmickState ? stage.strengthGimmick : null;
 }
 
 function _flagObstacleById(id) {
@@ -3362,6 +3574,16 @@ function _waterObstacle() {
 
 function _isWaterGimmickObstacle(o) {
   const cfg = _waterGimmickCfg();
+  return !!(cfg && o && o.id && o.id === cfg.obstacleId);
+}
+
+function _strengthRockObstacle() {
+  const cfg = _strengthGimmickCfg();
+  return cfg ? _flagObstacleById(cfg.obstacleId) : null;
+}
+
+function _isStrengthRockObstacle(o) {
+  const cfg = _strengthGimmickCfg();
   return !!(cfg && o && o.id && o.id === cfg.obstacleId);
 }
 
@@ -3522,6 +3744,33 @@ function imgDrawWaterGimmick(stageObj, now) {
   }
 }
 
+function imgDrawStrengthGimmick(stageObj, now) {
+  const cfg = _strengthGimmickCfg();
+  const st = _strengthGimmickState;
+  if (!cfg || !st || !stageObj) return;
+  const rock = _strengthRockObstacle();
+  const rockSize = (rock && rock.size && Number.isFinite(rock.size)) ? rock.size : stageObj.viewBox.h / 10.5;
+  if (rock && st.rockMoved) {
+    const moved = cfg.movedTo || { x: rock.x + rockSize * 0.78, y: rock.y };
+    _drawWorldImage(imgRock, moved.x, moved.y, rockSize, 1);
+    const sparkle = 0.5 + Math.sin(now / 260) * 0.5;
+    _drawWorldImage(MAZE_STRENGTH_ASSETS.powerSpark, rock.x, rock.y - rockSize * 0.08, rockSize * 0.85, 0.35 + sparkle * 0.18);
+  }
+  const glove = cfg.glove;
+  if (glove && !st.gloveCollected) {
+    const bob = Math.sin(now / 360) * (stageObj.viewBox.h / 145);
+    const glow = 0.5 + Math.sin(now / 310) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.2 + glow * 0.18;
+    ctx.fillStyle = '#FFF4A8';
+    ctx.beginPath();
+    ctx.arc(glove.x, glove.y + bob, (glove.radius || 90) * 0.78, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    _drawWorldImage(MAZE_STRENGTH_ASSETS.glovePair, glove.x, glove.y + bob, stageObj.viewBox.h / 10.5, 1);
+  }
+}
+
 function _checkFlagLadderPickup(px, py) {
   const cfg = _flagTunnelCfg();
   const st = _flagTunnelState;
@@ -3551,6 +3800,22 @@ function _checkWaterPlankPickup(px, py) {
   playApple();
   imgShowBubble('まるたの いたを ひろったよ！', { x: cfg.plank.x, y: cfg.plank.y }, 1900);
   showHint('🪵 いたを ひろったよ。みずたまりに ならべてみよう！', 3000);
+  return true;
+}
+
+function _checkStrengthGlovePickup(px, py) {
+  const cfg = _strengthGimmickCfg();
+  const st = _strengthGimmickState;
+  if (!cfg || !st || st.gloveCollected || !cfg.glove) return false;
+  const r = cfg.glove.radius || 90;
+  const dx = px - cfg.glove.x;
+  const dy = py - cfg.glove.y;
+  if (dx * dx + dy * dy > r * r) return false;
+  st.gloveCollected = true;
+  _updateFlagInventoryHud();
+  playApple();
+  imgShowBubble('ちからの てぶくろを ひろったよ！', { x: cfg.glove.x, y: cfg.glove.y }, 1900);
+  showHint('💪 てぶくろを はめたよ。おもい いわを おしてみよう！', 3000);
   return true;
 }
 
@@ -3606,6 +3871,7 @@ function imgDrawObstacles(stage) {
   // Default size relative to viewBox height
   const defaultSize = stage.viewBox.h / 12;
   for (const o of stage.obstacles) {
+    if (_isStrengthRockObstacle(o) && _strengthGimmickState && _strengthGimmickState.rockMoved) continue;
     const img = OBSTACLE_KIND_IMG[o.kind];
     const sz = (o.size && Number.isFinite(o.size)) ? o.size : defaultSize;
     if (img && img.complete && img.naturalWidth > 0) {
@@ -3696,6 +3962,10 @@ function _obstacleCollisionRadius(stage, obstacle) {
   if (waterCfg && obstacle && obstacle.id === waterCfg.obstacleId) {
     return waterCfg.encounterRadius || h / 20;
   }
+  const strengthCfg = _strengthGimmickCfg();
+  if (strengthCfg && obstacle && obstacle.id === strengthCfg.obstacleId) {
+    return strengthCfg.encounterRadius || h / 22;
+  }
   const fallback = h / 28;
   const byKind = {
     tree: h / 36,
@@ -3776,14 +4046,37 @@ function _handleWaterGimmickObstacle(o, px, py) {
   return true;
 }
 
+function _handleStrengthGimmickObstacle(o, px, py) {
+  const cfg = _strengthGimmickCfg();
+  const st = _strengthGimmickState;
+  if (!cfg || !st || !_isStrengthRockObstacle(o)) return false;
+  if (st.rockMoved) return false;
+  if (!st.gloveCollected) {
+    _bounceFromFlagTunnelObstacle(
+      o, px, py,
+      'おもい いわだよ！',
+      '💪 ちからの てぶくろが あれば うごかせそう。さきに さがしてみよう！'
+    );
+    return true;
+  }
+  const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
+  pono.x = px;
+  pono.y = py;
+  pono.nodeId = backNodeId;
+  _triggerStrengthGimmickEncounter(o);
+  return true;
+}
+
 function _checkObstacleCollision(px, py) {
   if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
   for (const o of stage.obstacles) {
     if (_isWaterGimmickObstacle(o) && _waterGimmickState && _waterGimmickState.bridgeBuilt) continue;
+    if (_isStrengthRockObstacle(o) && _strengthGimmickState && _strengthGimmickState.rockMoved) continue;
     const dx = px - o.x, dy = py - o.y;
     const r = _obstacleCollisionRadius(stage, o);
     if (dx*dx + dy*dy < r*r) {
       if (_handleWaterGimmickObstacle(o, px, py)) return true;
+      if (_handleStrengthGimmickObstacle(o, px, py)) return true;
       if (_handleFlagTunnelObstacle(o, px, py)) return true;
       const backNodeId = walkAnim.startNodeId;
       walkAnim = null;
@@ -3890,6 +4183,19 @@ function _triggerWaterGimmickEncounter(obstacle) {
   _triggerEncounter(c);
 }
 
+function _triggerStrengthGimmickEncounter(obstacle) {
+  const c = {
+    id: 'stage3-strength-rock',
+    kind: 'strengthRock',
+    minigame: 'strength_push',
+    x: obstacle.x,
+    y: obstacle.y,
+    dialog: 'てぶくろを はめたね！<br>ゲージの まんなかで タップして<br>いわを うごかそう！',
+    defeatDialog: 'ぐぐっと うごいた！<br>とおって いいよ。'
+  };
+  _triggerEncounter(c);
+}
+
 function _closeFlagEncounterModalOnly() {
   _simonCancelled = true;
   _setEncounterMode(null);
@@ -3976,6 +4282,7 @@ const _GAME_LABELS = {
   simon:      'リズムまね',
   flag:       '旗あげ',
   water_bridge: 'いたならべ',
+  strength_push: 'いわおし',
 };
 
 const _GAME_DIALOGS = {
@@ -3986,6 +4293,7 @@ const _GAME_DIALOGS = {
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
   water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
+  strength_push: 'ちからを あわせて！<br>ゲージの まんなかで タップしてね',
 };
 
 function _gameForCreature(c) {
@@ -4048,6 +4356,18 @@ function _jankenHandMarkup(side, hand, ready) {
     '" role="img" aria-label="' + ({ rock: 'グー', scissors: 'チョキ', paper: 'パー' }[safeHand]) + '"></span>';
 }
 
+function _chooseJankenCpuHand(playerHand) {
+  const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+  const losesTo = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+  const safePlayer = beats[playerHand] ? playerHand : 'rock';
+  const winChance = Math.min(0.72, (1 / 3) + Math.max(0, _jankenLossStreak) * 0.1);
+  const drawChance = (1 - winChance) / 2;
+  const roll = Math.random();
+  if (roll < winChance) return beats[safePlayer];
+  if (roll < winChance + drawChance) return safePlayer;
+  return losesTo[safePlayer];
+}
+
 function _resolveJanken(playerHand) {
   const callEl = document.getElementById('jankenCall');
   const resultEl = document.getElementById('jankenResult');
@@ -4060,8 +4380,7 @@ function _resolveJanken(playerHand) {
     btn.style.opacity = '0.55';
   });
 
-  const hands = ['rock', 'paper', 'scissors'];
-  const cpuHand = hands[Math.floor(Math.random() * 3)];
+  const cpuHand = _chooseJankenCpuHand(playerHand);
   // wins[a] beats b
   const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
   let outcome;
@@ -4090,6 +4409,8 @@ function _resolveJanken(playerHand) {
     bugSlot.classList.toggle('is-lose', outcome === 'win');
     resultEl.className = 'janken-result' + (outcome === 'win' ? ' win' : (outcome === 'lose' ? ' lose' : ''));
     resultEl.textContent = outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！';
+    if (outcome === 'win') _jankenLossStreak = 0;
+    else if (outcome === 'lose') _jankenLossStreak = Math.min(5, _jankenLossStreak + 1);
     controlsEl.innerHTML = outcome === 'draw'
       ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
       : '<button class="enc-btn ' + (outcome === 'win' ? 'win' : 'lose') + '" id="encNext">' +
@@ -4977,6 +5298,99 @@ function _showCreatureDefeatDialog() {
   encStageEl.appendChild(wrap);
 }
 
+// ── 力の手袋: 岩押し ──
+const STRENGTH_METER_MS = 1700;
+const STRENGTH_TARGET_MIN = 0.48;
+const STRENGTH_TARGET_MAX = 0.76;
+
+function _strengthMeterValue(now) {
+  const gs = _strengthGameState;
+  if (!gs) return 0;
+  const phase = ((now - gs.t0) % STRENGTH_METER_MS) / STRENGTH_METER_MS;
+  return phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+}
+
+function _showStrengthPushGame() {
+  _setEncounterMode('strength_push');
+  _clearStrengthGimmickTimers();
+  _strengthGameState = {
+    t0: performance.now(),
+    locked: false,
+    status: 'きいろの ところで タップ！',
+  };
+  encStageEl.textContent = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'strength-game';
+  wrap.innerHTML =
+    '<div class="strength-game__title">いわを おそう！</div>' +
+    '<div class="strength-game__stage">' +
+      '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_push.png" alt="ちからの てぶくろ">' +
+      '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
+      '<img class="strength-game__rock" src="../assets/images/maze/rock.png" alt="いわ">' +
+    '</div>' +
+    '<div class="strength-meter" aria-hidden="true">' +
+      '<div class="strength-meter__target"></div>' +
+      '<div class="strength-meter__marker" id="strengthMarker"></div>' +
+    '</div>' +
+    '<button class="enc-btn primary strength-hit-btn" id="strengthHitBtn">ここだ！</button>' +
+    '<div class="strength-game__status" id="strengthStatus"></div>';
+  encStageEl.appendChild(wrap);
+  const hit = document.getElementById('strengthHitBtn');
+  if (hit) hit.addEventListener('click', _onStrengthPushTap);
+  _renderStrengthPushGame();
+  const intervalId = setInterval(_renderStrengthPushGame, 45);
+  _strengthGameState.intervalId = intervalId;
+  _strengthGimmickTimers.push(intervalId);
+}
+
+function _renderStrengthPushGame() {
+  const gs = _strengthGameState;
+  if (!gs) return;
+  const marker = document.getElementById('strengthMarker');
+  const status = document.getElementById('strengthStatus');
+  const value = _strengthMeterValue(performance.now());
+  if (marker) marker.style.left = (value * 100).toFixed(1) + '%';
+  if (status) status.textContent = gs.status || '';
+}
+
+function _onStrengthPushTap() {
+  const gs = _strengthGameState;
+  if (!gs || gs.locked) return;
+  const value = _strengthMeterValue(performance.now());
+  if (value >= STRENGTH_TARGET_MIN && value <= STRENGTH_TARGET_MAX) {
+    _resolveStrengthPushGame();
+    return;
+  }
+  gs.locked = true;
+  gs.status = 'おしい！ もういちど';
+  playMzSe('wrong');
+  _renderStrengthPushGame();
+  _strengthGimmickSetTimeout(function() {
+    if (!_strengthGameState) return;
+    _strengthGameState.locked = false;
+    _strengthGameState.t0 = performance.now();
+    _strengthGameState.status = 'きいろの ところで タップ！';
+    _renderStrengthPushGame();
+  }, 720);
+}
+
+function _resolveStrengthPushGame() {
+  const st = _strengthGimmickState;
+  if (st) st.rockMoved = true;
+  _updateFlagInventoryHud();
+  _clearStrengthGimmickTimers();
+  _strengthGameState = null;
+  playMzSe('correct');
+  encStageEl.innerHTML =
+    '<div class="enc-result win">' +
+      '<img class="enc-result__icon" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="ちからのてぶくろ">' +
+      'いわが うごいた！' +
+    '</div>';
+  _strengthGimmickSetTimeout(function() {
+    if (_encounterActive) _closeEncounter(true);
+  }, 900);
+}
+
 // ゲーム starter のディスパッチ表
 const _GAME_STARTERS = {
   janken:     _showJankenChoices,
@@ -4986,6 +5400,7 @@ const _GAME_STARTERS = {
   simon:      _showSimonGame,
   flag:       _showFlagGame,
   water_bridge: _showWaterBridgeGame,
+  strength_push: _showStrengthPushGame,
 };
 
 function _closeEncounter(playerWon) {
@@ -4997,6 +5412,10 @@ function _closeEncounter(playerWon) {
   if (_currentGame === 'water_bridge') {
     _waterGameState = null;
     _clearWaterGimmickTimers();
+  }
+  if (_currentGame === 'strength_push') {
+    _strengthGameState = null;
+    _clearStrengthGimmickTimers();
   }
   _setEncounterMode(null);
   // 念のため: 別経路で _closeEncounter が呼ばれた場合に備え、未発火の defeat-dialog timer をキャンセル
@@ -5335,6 +5754,7 @@ function loadStage(idx) {
   // Grid stage: revert from image-stage mode if previously set
   _initFlagTunnelForStage(null);
   _initWaterGimmickForStage(null);
+  _initStrengthGimmickForStage(null);
   document.body.classList.remove('image-stage-mode');
   const charmsEl = document.getElementById('charms');
   if (charmsEl) charmsEl.style.display = '';

@@ -103,6 +103,7 @@
       story: stageDef.story || null, // { animal, intro, cryingIconUrl, reliefIconUrl }
       flagGimmick: stageDef.flagGimmick || null,
       waterGimmick: stageDef.waterGimmick || null,
+      strengthGimmick: stageDef.strengthGimmick || null,
       obstacles: obstacles,
       creatures: creatures,
       nodesById: nodesById,
