@@ -9,17 +9,38 @@
   "orientation": "landscape",
   "cameraFollow": true,
   "lantern": true,
-  "obstacles": [],
+  "obstacles": [
+    {
+      "kind": "hole",
+      "x": 197,
+      "y": 1292
+    },
+    {
+      "kind": "hole",
+      "x": 2509,
+      "y": 161
+    },
+    {
+      "kind": "hole",
+      "x": 818,
+      "y": 128
+    },
+    {
+      "kind": "pond",
+      "x": 914,
+      "y": 610
+    }
+  ],
   "creatures": [
     {
       "id": "c1",
-      "kind": "odoke",
-      "x": 2156,
-      "y": 814
+      "kind": "mayoi",
+      "x": 2122,
+      "y": 773
     },
     {
       "id": "c2",
-      "kind": "kabuto",
+      "kind": "mayoi",
       "x": 308,
       "y": 1103
     },
@@ -31,21 +52,9 @@
     },
     {
       "id": "c4",
-      "kind": "pyon",
+      "kind": "mayoi",
       "x": 877,
       "y": 1103
-    },
-    {
-      "id": "c5",
-      "kind": "kabuto",
-      "x": 2492,
-      "y": 974
-    },
-    {
-      "id": "c6",
-      "kind": "kabuto",
-      "x": 1598,
-      "y": 610
     }
   ],
   "nodes": [
@@ -201,8 +210,8 @@
     },
     {
       "id": "stop24",
-      "x": 207,
-      "y": 1305,
+      "x": 199,
+      "y": 1308,
       "kind": "stop"
     }
   ],
@@ -922,8 +931,8 @@
           "y": 1304
         },
         {
-          "x": 207,
-          "y": 1305
+          "x": 199,
+          "y": 1308
         }
       ],
       "_editor": {
@@ -933,8 +942,8 @@
             "y": 1304
           },
           {
-            "x": 207,
-            "y": 1305
+            "x": 199,
+            "y": 1308
           }
         ],
         "shape": "polyline"
