@@ -3628,7 +3628,12 @@ function _gh3DTextureFor(lane, label) {
   ctx.beginPath();
   ctx.arc(62, 56, 19, 0, Math.PI * 2);
   ctx.fill();
-  ctx.font = '900 58px "Zen Maru Gothic", sans-serif';
+  var fontSize = 70;
+  do {
+    ctx.font = '900 ' + fontSize + 'px "Zen Maru Gothic", sans-serif';
+    if (ctx.measureText(label).width <= 108 || fontSize <= 52) break;
+    fontSize -= 2;
+  } while (fontSize > 52);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineWidth = 8;
@@ -3654,11 +3659,13 @@ function _gh3DDrawOneNote(note, mvp) {
   var lane = note.lane || 0;
   var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
   var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
-  var w = 0.78;
-  var h = 0.2;
-  var d = 0.88;
-  var yBottom = 0.045;
+  var sizeBoost = 1 + (1 - p) * 0.7;
+  var w = 0.86 * sizeBoost;
+  var h = 0.22;
+  var d = 0.94 * sizeBoost;
+  var yBottom = 1.35;
   var yTop = yBottom + h;
+  var yTopFar = yTop + 0.38;
   var a = Math.max(0.16, Math.min(1, 0.28 + p * 1.15));
   var label = _rhythmNoteLabel(lane);
   var tex = _gh3DTextureFor(lane, label);
@@ -3673,7 +3680,7 @@ function _gh3DDrawOneNote(note, mvp) {
   var rightC = _gh3DShadeRgb(rgb, 0.52, a * 0.68);
   var bottomC = _gh3DShadeRgb(rgb, 0.46, a * 0.62);
   var ntl = [x0, yTop, zNear], ntr = [x1, yTop, zNear], nbl = [x0, yBottom, zNear], nbr = [x1, yBottom, zNear];
-  var ftl = [x0, yTop, zFar], ftr = [x1, yTop, zFar], fbl = [x0, yBottom, zFar], fbr = [x1, yBottom, zFar];
+  var ftl = [x0, yTopFar, zFar], ftr = [x1, yTopFar, zFar], fbl = [x0, yBottom, zFar], fbr = [x1, yBottom, zFar];
   _gh3DPushColorQuad(sideVerts, nbl, nbr, ntr, ntl, nearC);
   _gh3DPushColorQuad(sideVerts, fbr, fbl, ftl, ftr, farC);
   _gh3DPushColorQuad(sideVerts, fbl, nbl, ntl, ftl, leftC);
@@ -3683,10 +3690,10 @@ function _gh3DDrawOneNote(note, mvp) {
   var verts = [
     x0, yTop + 0.006, zNear, 0, 1, a,
     x1, yTop + 0.006, zNear, 1, 1, a,
-    x1, yTop + 0.006, zFar, 1, 0, a,
+    x1, yTopFar + 0.006, zFar, 1, 0, a,
     x0, yTop + 0.006, zNear, 0, 1, a,
-    x1, yTop + 0.006, zFar, 1, 0, a,
-    x0, yTop + 0.006, zFar, 0, 0, a
+    x1, yTopFar + 0.006, zFar, 1, 0, a,
+    x0, yTopFar + 0.006, zFar, 0, 0, a
   ];
   gl.useProgram(_gh3d.notesProgram);
   gl.bindBuffer(gl.ARRAY_BUFFER, _gh3d.noteBuffer);
@@ -4313,7 +4320,11 @@ function _runRhythmDemoSequence(thenStart) {
       for (var i = _rhythm.activeNotes.length - 1; i >= 0; i--) {
         var activeNote = _rhythm.activeNotes[i];
         if (activeNote && activeNote.seq === seqIndex) {
-          _ghRemoveNote(activeNote);
+          (function(noteToRemove) {
+            _rhythm.demoTimers.push(setTimeout(function() {
+              if (_rhythm.demoActive && noteToRemove && !noteToRemove.consumed) _ghRemoveNote(noteToRemove);
+            }, 520));
+          })(activeNote);
           break;
         }
       }
