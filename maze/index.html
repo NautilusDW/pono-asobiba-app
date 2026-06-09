@@ -1125,7 +1125,7 @@ body.image-stage-mode .game-wrap {
   font-weight: 900;
   color: #6C8E3F;
 }
-.flag-lock-stage {
+.flag-ladder-stage {
   position: relative;
   width: min(58vw, 360px);
   height: min(36dvh, 210px);
@@ -1133,32 +1133,16 @@ body.image-stage-mode .game-wrap {
   display: grid;
   place-items: center;
 }
-.flag-lock-img {
+.flag-ladder-img {
   width: min(30vw, 150px);
   max-height: min(32dvh, 180px) !important;
   object-fit: contain;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.18));
 }
-.flag-key-img {
-  position: absolute;
-  left: 4%;
-  top: 50%;
-  width: min(25vw, 128px);
-  max-height: min(18dvh, 110px) !important;
-  object-fit: contain;
-  transform: translateY(-50%) rotate(-18deg);
-  filter: drop-shadow(0 5px 8px rgba(0,0,0,0.16));
-  animation: flagKeyTurn 1.05s ease-in-out forwards;
+.flag-ladder-stage.is-open .flag-ladder-img {
+  animation: flagLadderPop 0.38s ease-out;
 }
-.flag-lock-stage.is-open .flag-lock-img {
-  animation: flagLockPop 0.38s ease-out;
-}
-@keyframes flagKeyTurn {
-  0%   { left: 4%;  transform: translateY(-50%) rotate(-18deg) scale(0.95); }
-  62%  { left: 43%; transform: translateY(-50%) rotate(-4deg) scale(1.02); }
-  100% { left: 43%; transform: translateY(-50%) rotate(22deg) scale(1.02); }
-}
-@keyframes flagLockPop {
+@keyframes flagLadderPop {
   0%   { transform: scale(0.92); }
   60%  { transform: scale(1.08); }
   100% { transform: scale(1); }
@@ -1279,7 +1263,7 @@ body.image-stage-mode .game-wrap {
 
 .strength-game {
   display: grid;
-  grid-template-rows: auto minmax(150px, 1fr) 24px 16px 1.8em;
+  grid-template-rows: auto minmax(150px, 1fr) auto 16px 1.8em;
   gap: 9px;
   align-items: center;
   min-height: min(55dvh, 390px);
@@ -1352,6 +1336,25 @@ body.image-stage-mode .game-wrap {
   opacity: 0;
   transform: translate(-50%, -50%);
 }
+.strength-debris-layer {
+  position: absolute;
+  inset: -26%;
+  overflow: visible;
+  pointer-events: none;
+}
+.strength-chip {
+  position: absolute;
+  left: calc(50% + var(--ox, 0px));
+  top: calc(50% + var(--oy, 0px));
+  width: var(--size, 34px);
+  height: var(--size, 34px);
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.24));
+  transform: translate(-50%, -50%) scale(0.55) rotate(0deg);
+  animation: strengthChipFly var(--dur, 560ms) cubic-bezier(0.14, 0.74, 0.32, 1) forwards;
+}
 .strength-rock-btn.is-hit .strength-game__glove {
   animation: strengthPunchHit 0.18s ease-out;
 }
@@ -1362,7 +1365,10 @@ body.image-stage-mode .game-wrap {
   min-height: 24px;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 7px;
+  max-width: min(88%, 420px);
+  justify-self: center;
 }
 .strength-tap-dot {
   width: 16px;
@@ -1418,6 +1424,23 @@ body.image-stage-mode .game-wrap {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
   35%  { opacity: 0.72; transform: translate(-50%, -50%) scale(1.08); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28); }
+}
+@keyframes strengthChipFly {
+  0% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.5) rotate(0deg);
+  }
+  24% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--dx, 90px), var(--dy, -90px))
+      scale(var(--scale, 0.92))
+      rotate(var(--rot, 180deg));
+  }
 }
 
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
@@ -1536,7 +1559,7 @@ body.image-stage-mode .game-wrap {
     font-size: 0.86rem;
   }
   .strength-game {
-    grid-template-rows: 1.55em minmax(82px, 1fr) 18px 10px 1.3em;
+    grid-template-rows: 1.55em minmax(82px, 1fr) auto 10px 1.3em;
     gap: 5px;
     min-height: min(64dvh, 228px);
   }
@@ -1581,16 +1604,13 @@ body.image-stage-mode .game-wrap {
     min-height: 1.3em;
     font-size: 0.82rem;
   }
-  .flag-lock-stage {
+  .flag-ladder-stage {
     height: min(42dvh, 145px);
     min-height: 112px;
   }
-  .flag-lock-img {
+  .flag-ladder-img {
     width: min(20vw, 86px);
     max-height: min(34dvh, 125px) !important;
-  }
-  .flag-key-img {
-    width: min(18vw, 72px);
   }
   .janken-result {
     height: 1.45em;
@@ -2014,9 +2034,6 @@ const MAZE_FLAG_ASSETS = {
   hatahataWhiteUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_white_up.png'),
   hatahataBothUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_both_up.png'),
   ropeLadder: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'rope_ladder.png'),
-  key: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'gold_key.png'),
-  lockClosed: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'padlock_closed.png'),
-  lockOpen: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'padlock_open.png'),
 };
 const MAZE_WATER_ASSETS = {
   plankItem: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'plank_item.png'),
@@ -2036,6 +2053,10 @@ const MAZE_STRENGTH_ASSETS = {
   rockBreak2: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_2.png'),
   rockBreak3: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png'),
 };
+const MAZE_STRENGTH_CHIP_SRCS = Array.from({ length: 12 }, function(_, i) {
+  return MAZE_STRENGTH_ASSET_BASE + 'rock_chip_' + i + '.png';
+});
+MAZE_STRENGTH_CHIP_SRCS.forEach(function(src) { _mazeLoadImage(src); });
 // Start / Goal markers for image stages
 const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
 const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/marker_goal.png';
@@ -2320,6 +2341,41 @@ function playApple() {
     g.gain.exponentialRampToValueAtTime(0.001, s + 0.2);
     o.start(s); o.stop(s + 0.2);
   });
+}
+function playRockHit(finalHit) {
+  var ac = _mzGetAC(); if (!ac) return;
+  var t = ac.currentTime;
+  var dur = finalHit ? 0.34 : 0.13;
+  var baseGain = finalHit ? 0.24 : 0.14;
+  try {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(finalHit ? 135 : 175, t);
+    o.frequency.exponentialRampToValueAtTime(finalHit ? 44 : 84, t + dur);
+    g.gain.setValueAtTime(baseGain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + dur);
+
+    var frames = Math.max(1, Math.floor(ac.sampleRate * dur));
+    var buffer = ac.createBuffer(1, frames, ac.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < frames; i++) {
+      var env = 1 - (i / frames);
+      data[i] = (Math.random() * 2 - 1) * env * env;
+    }
+    var src = ac.createBufferSource();
+    var filter = ac.createBiquadFilter();
+    var ng = ac.createGain();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(finalHit ? 520 : 760, t);
+    filter.Q.value = finalHit ? 0.8 : 1.3;
+    ng.gain.setValueAtTime(finalHit ? 0.22 : 0.08, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.buffer = buffer;
+    src.connect(filter); filter.connect(ng); ng.connect(ac.destination);
+    src.start(t); src.stop(t + dur);
+  } catch (_) {}
 }
 function playStageClearMz() { playMzSe('mazeClear'); }
 
@@ -2676,6 +2732,9 @@ function imgLoadStage(def) {
   // Switch body to image-stage layout (full viewport landscape, hide grid UI)
   document.body.classList.add('image-stage-mode');
   stage = window.MazeImage.buildStage(def);
+  if (!stage.camera) stage.camera = {};
+  if (!Number.isFinite(stage.camera.x)) stage.camera.x = stage.start.x;
+  if (!Number.isFinite(stage.camera.y)) stage.camera.y = stage.start.y;
   _initFlagTunnelForStage(stage);
   _initWaterGimmickForStage(stage);
   _initStrengthGimmickForStage(stage);
@@ -3336,7 +3395,7 @@ const CREATURE_KIND_DATA = {
   hatahata: {
     emoji: '🦗', color: '#8BBF3D', name: 'ハタハタムシ',
     dialog: 'ここは とおれないよ。<br>はたあげ しょうぶで あそぼう！',
-    defeatDialog: 'やるね！ かぎを あげるよ。',
+    defeatDialog: 'やるね！ はしごを かけよう。',
     defaultGame: 'flag', imageUrl: '../assets/images/maze/flag/hatahata_pose.png'
   },
   amenbo: {
@@ -3448,9 +3507,6 @@ function _updateFlagInventoryHud() {
   if (st && st.ladderCollected) {
     items.push({ src: MAZE_FLAG_ASSET_BASE + 'rope_ladder.png', alt: 'なわばしご' });
   }
-  if (st && st.keyCollected) {
-    items.push({ src: MAZE_FLAG_ASSET_BASE + 'gold_key.png', alt: 'かぎ' });
-  }
   if (_waterGimmickState && _waterGimmickState.plankCollected && !_waterGimmickState.bridgeBuilt) {
     items.push({ src: MAZE_WATER_ASSET_BASE + 'plank_item.png', alt: 'まるたのいた' });
   }
@@ -3543,7 +3599,6 @@ function _initFlagTunnelForStage(stageObj) {
   _flagTunnelState = {
     id: stageObj.flagGimmick.id || 'flag-tunnel',
     ladderCollected: false,
-    keyCollected: false,
     unlocked: false,
     travelling: false,
     anim: null,
@@ -3647,6 +3702,7 @@ function _drawWorldImage(img, x, y, h, alpha) {
 }
 
 function _drawFlagHoleGlow(x, y, radius, pulse, alphaScale) {
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(radius) || radius <= 0) return;
   const warm = ctx.createRadialGradient(x, y, 0, x, y, radius);
   warm.addColorStop(0, 'rgba(255, 235, 136, 0.62)');
   warm.addColorStop(0.36, 'rgba(255, 218, 95, 0.34)');
@@ -3669,6 +3725,7 @@ function _drawFlagHoleGlow(x, y, radius, pulse, alphaScale) {
 }
 
 function _drawFlagScreenGlow(sx, sy, radius, pulse, alphaScale) {
+  if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(radius) || radius <= 0) return;
   const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
   glow.addColorStop(0, 'rgba(255, 244, 168, 0.78)');
   glow.addColorStop(0.28, 'rgba(255, 220, 94, 0.48)');
@@ -4107,7 +4164,6 @@ function _handleStrengthGimmickObstacle(o, px, py) {
     return true;
   }
   const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
-  walkAnim = null;
   pono.x = px;
   pono.y = py;
   pono.nodeId = backNodeId;
@@ -4212,8 +4268,8 @@ function _triggerFlagTunnelEncounter(obstacle) {
     minigame: 'flag',
     x: obstacle.x,
     y: obstacle.y,
-    dialog: 'ここは とおれないよ。<br>なわばしごを もってるね。<br>はたあげで かったら かぎを あげるよ！',
-    defeatDialog: 'やるね！ かぎを あげるよ。'
+    dialog: 'ここは とおれないよ。<br>なわばしごを もってるね。<br>はたあげで かったら とおしてあげる！',
+    defeatDialog: 'やるね！ はしごを かけよう。'
   };
   _triggerEncounter(c);
 }
@@ -4270,14 +4326,21 @@ function _startFlagTunnelTravel(obstacle) {
   }
   const _stageRef = stage;
   const startTime = performance.now();
+  const camFromX = Number.isFinite(stage.camera && stage.camera.x)
+    ? stage.camera.x
+    : (Number.isFinite(pono && pono.x) ? pono.x : entrance.x);
+  const camFromY = Number.isFinite(stage.camera && stage.camera.y)
+    ? stage.camera.y
+    : (Number.isFinite(pono && pono.y) ? pono.y : entrance.y);
+  const camFromZoom = Number.isFinite(imgCameraZoom()) ? imgCameraZoom() : 1;
   st.travelling = true;
   st.anim = {
     t0: startTime,
     camera: {
       t0: startTime,
-      fromX: stage.camera.x,
-      fromY: stage.camera.y,
-      fromZoom: imgCameraZoom(),
+      fromX: camFromX,
+      fromY: camFromY,
+      fromZoom: camFromZoom,
       entranceX: entrance.x,
       entranceY: entrance.y,
       exitX: exit.x,
@@ -4315,7 +4378,7 @@ function _startFlagTunnelTravel(obstacle) {
     moves++;
     hudMoves.textContent = 'てかず: ' + moves;
     imgShowBubble('ちがう でぐちに でたよ！', 'pono', 1700);
-    showHint('🔓 かぎが あいたよ。あなの トンネルを とおれた！', 2600);
+    showHint('🪜 なわばしごで あなの トンネルを とおれた！', 2600);
     if (pono.nodeId === stage.goal.id) onClear();
     else imgShowArrows();
   }, 4380);
@@ -4330,7 +4393,7 @@ const _GAME_LABELS = {
   simon:      'リズムまね',
   flag:       '旗あげ',
   water_bridge: 'いたならべ',
-  strength_push: 'いわおし',
+  strength_push: 'いわくだき',
 };
 
 const _GAME_DIALOGS = {
@@ -4984,14 +5047,59 @@ const FLAG_POSE_SRC = {
   white: MAZE_FLAG_ASSET_BASE + 'hatahata_white_up.png',
   both: MAZE_FLAG_ASSET_BASE + 'hatahata_both_up.png',
 };
-const FLAG_GAME_STEPS = [
-  { text: 'あか あげて！', flag: 'red', next: 'red' },
-  { text: 'しろ あげて！', flag: 'white', next: 'both' },
-  { text: 'しろは そのまま、あか さげて！', flag: 'red', next: 'white' },
-  { text: 'あか あげて！', flag: 'red', next: 'both' },
-  { text: 'あかは そのまま、しろ さげて！', flag: 'white', next: 'red' },
-];
+const FLAG_GAME_STEP_COUNT = 5;
 const FLAG_ROUND_MS = 6500;
+
+function _flagPoseHas(pose, flag) {
+  return pose === 'both' || pose === flag;
+}
+
+function _flagPoseAfter(pose, flag, up) {
+  const redUp = flag === 'red' ? up : _flagPoseHas(pose, 'red');
+  const whiteUp = flag === 'white' ? up : _flagPoseHas(pose, 'white');
+  if (redUp && whiteUp) return 'both';
+  if (redUp) return 'red';
+  if (whiteUp) return 'white';
+  return 'down';
+}
+
+function _flagCommandText(pose, flag, up) {
+  if (up) return flag === 'red' ? 'あか あげて！' : 'しろ あげて！';
+  if (pose === 'both') {
+    return flag === 'red'
+      ? 'しろは そのまま、あか さげて！'
+      : 'あかは そのまま、しろ さげて！';
+  }
+  return flag === 'red' ? 'あか さげて！' : 'しろ さげて！';
+}
+
+function _buildFlagGameSteps() {
+  const steps = [];
+  let pose = 'down';
+  let lastKey = '';
+  for (let i = 0; i < FLAG_GAME_STEP_COUNT; i++) {
+    const options = [];
+    ['red', 'white'].forEach(function(flag) {
+      const isUp = _flagPoseHas(pose, flag);
+      options.push({ flag: flag, up: !isUp });
+      if (isUp) options.push({ flag: flag, up: false });
+    });
+    let filtered = options.filter(function(opt) {
+      return opt.flag + ':' + opt.up !== lastKey;
+    });
+    if (!filtered.length) filtered = options;
+    const chosen = filtered[Math.floor(Math.random() * filtered.length)];
+    const next = _flagPoseAfter(pose, chosen.flag, chosen.up);
+    steps.push({
+      text: _flagCommandText(pose, chosen.flag, chosen.up),
+      flag: chosen.flag,
+      next: next,
+    });
+    pose = next;
+    lastKey = chosen.flag + ':' + chosen.up;
+  }
+  return steps;
+}
 
 const WATER_BRIDGE_STEPS = 3;
 const WATER_BUG_PATH = [0, 1, 2, 1];
@@ -5162,7 +5270,7 @@ function _startFlagRoundTimer() {
 
 function _showFlagGame() {
   _setEncounterMode('flag');
-  _flagGameState = { step: 0, pose: 'down', locked: false };
+  _flagGameState = { step: 0, pose: 'down', locked: false, steps: _buildFlagGameSteps() };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'flag-game';
@@ -5206,7 +5314,7 @@ function _showFlagGame() {
 
 function _renderFlagStep(startTimer) {
   if (!_flagGameState) return;
-  const step = FLAG_GAME_STEPS[_flagGameState.step];
+  const step = _flagGameState.steps[_flagGameState.step];
   const cmd = document.getElementById('flagCommand');
   const img = document.getElementById('flagBugPose');
   if (cmd) cmd.textContent = step ? step.text : '';
@@ -5218,7 +5326,7 @@ function _renderFlagStep(startTimer) {
 
 function _onFlagTap(flag) {
   if (!_flagGameState || _flagGameState.locked) return;
-  const step = FLAG_GAME_STEPS[_flagGameState.step];
+  const step = _flagGameState.steps[_flagGameState.step];
   if (!step) return;
   _clearFlagRoundTimer();
   if (flag !== step.flag) {
@@ -5232,7 +5340,7 @@ function _onFlagTap(flag) {
     if (!_flagGameState) return;
     _flagGameState.step++;
     _flagGameState.locked = false;
-    if (_flagGameState.step >= FLAG_GAME_STEPS.length) {
+    if (_flagGameState.step >= _flagGameState.steps.length) {
       _resolveFlagGame(true);
     } else {
       _renderFlagStep(true);
@@ -5259,35 +5367,26 @@ function _resolveFlagGame(won, reason) {
 function _showFlagRewardSequence() {
   const st = _flagTunnelState;
   if (st) {
-    st.keyCollected = true;
     st.unlocked = true;
     _updateFlagInventoryHud();
   }
   encStageEl.innerHTML =
     '<div class="flag-reward">' +
-      '<div class="flag-reward__title">かった！ かぎを もらったよ</div>' +
-      '<div class="flag-lock-stage" id="flagLockStage">' +
-        '<img class="flag-lock-img" id="flagLockImg" src="' + MAZE_FLAG_ASSET_BASE + 'padlock_closed.png" alt="しまった じょうまえ">' +
-        '<img class="flag-key-img" src="' + MAZE_FLAG_ASSET_BASE + 'gold_key.png" alt="かぎ">' +
+      '<div class="flag-reward__title">かった！ はしごを かけるよ</div>' +
+      '<div class="flag-ladder-stage is-open" id="flagLadderStage">' +
+        '<img class="flag-ladder-img" id="flagLadderImg" src="' + MAZE_FLAG_ASSET_BASE + 'rope_ladder.png" alt="なわばしご">' +
       '</div>' +
-      '<div class="enc-result win" id="flagRewardText">じょうまえを あけるよ</div>' +
+      '<div class="enc-result win" id="flagRewardText">あなに おりてみよう</div>' +
     '</div>';
   _flagTunnelSetTimeout(function() {
-    const lockStage = document.getElementById('flagLockStage');
-    const lockImg = document.getElementById('flagLockImg');
     const rewardText = document.getElementById('flagRewardText');
-    if (lockStage) lockStage.classList.add('is-open');
-    if (lockImg) {
-      lockImg.src = MAZE_FLAG_ASSET_BASE + 'padlock_open.png';
-      lockImg.alt = 'あいた じょうまえ';
-    }
-    if (rewardText) rewardText.textContent = 'あいた！ あなに はしごを かけよう';
-  }, 1050);
+    if (rewardText) rewardText.textContent = 'はしごを つかって ワープ！';
+  }, 720);
   _flagTunnelSetTimeout(function() {
     if (!_encounterActive) return;
     _closeFlagEncounterModalOnly();
     _startFlagTunnelTravel(_flagEntranceObstacle());
-  }, 1900);
+  }, 1350);
 }
 
 // ── 共通: クイズ系の正解判定後の結果表示 → 次へ進むボタン ──
@@ -5347,8 +5446,8 @@ function _showCreatureDefeatDialog() {
 }
 
 // ── 力の手袋: 岩くだき ──
-const STRENGTH_TAP_REQUIRED = 8;
-const STRENGTH_TAP_MS = 6000;
+const STRENGTH_TAP_REQUIRED = 18;
+const STRENGTH_TAP_MS = 10000;
 
 function _strengthRockStageIndex(count) {
   if (count >= STRENGTH_TAP_REQUIRED) return 3;
@@ -5373,6 +5472,7 @@ function _showStrengthPushGame() {
     '<div class="strength-game__stage">' +
       '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく">' +
         '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
+        '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
         '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
         '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_push.png" alt="ちからの てぶくろ">' +
       '</button>' +
@@ -5407,15 +5507,50 @@ function _renderStrengthPushGame() {
   }
   const remain = Math.max(0, gs.deadline - performance.now());
   if (bar) bar.style.transform = 'scaleX(' + (remain / STRENGTH_TAP_MS).toFixed(3) + ')';
-  if (status) status.textContent = gs.status || '';
+  if (status) {
+    const left = Math.max(0, gs.required - gs.tapCount);
+    status.textContent = gs.status || (left > 0 ? 'あと ' + left + ' かい！' : '');
+  }
   if (!gs.locked && remain <= 0) _failStrengthPushGame();
+}
+
+function _spawnStrengthDebrisBurst(finalHit) {
+  const layer = document.getElementById('strengthDebrisLayer');
+  if (!layer) return;
+  const count = finalHit ? 18 : 7;
+  for (let i = 0; i < count; i++) {
+    const img = document.createElement('img');
+    img.className = 'strength-chip';
+    img.src = MAZE_STRENGTH_CHIP_SRCS[Math.floor(Math.random() * MAZE_STRENGTH_CHIP_SRCS.length)];
+    img.alt = '';
+    const angle = (-Math.PI * 0.9) + Math.random() * (Math.PI * 1.8);
+    const distance = (finalHit ? 118 : 58) + Math.random() * (finalHit ? 122 : 72);
+    const lift = finalHit ? -26 : -16;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance + lift;
+    const size = (finalHit ? 24 : 15) + Math.random() * (finalHit ? 34 : 22);
+    const duration = (finalHit ? 620 : 420) + Math.random() * (finalHit ? 280 : 180);
+    img.style.setProperty('--dx', dx.toFixed(1) + 'px');
+    img.style.setProperty('--dy', dy.toFixed(1) + 'px');
+    img.style.setProperty('--ox', ((Math.random() - 0.5) * 34).toFixed(1) + 'px');
+    img.style.setProperty('--oy', ((Math.random() - 0.5) * 24).toFixed(1) + 'px');
+    img.style.setProperty('--size', size.toFixed(1) + 'px');
+    img.style.setProperty('--rot', ((Math.random() > 0.5 ? 1 : -1) * (160 + Math.random() * 420)).toFixed(1) + 'deg');
+    img.style.setProperty('--dur', duration.toFixed(0) + 'ms');
+    img.style.setProperty('--scale', (0.72 + Math.random() * 0.46).toFixed(2));
+    layer.appendChild(img);
+    setTimeout(function() { img.remove(); }, duration + 80);
+  }
 }
 
 function _onStrengthRockTap() {
   const gs = _strengthGameState;
   if (!gs || gs.locked) return;
   gs.tapCount = Math.min(gs.required, gs.tapCount + 1);
-  gs.status = gs.tapCount >= gs.required ? 'くだけた！' : 'そのちょうし！';
+  const finalHit = gs.tapCount >= gs.required;
+  gs.status = finalHit ? 'くだけた！' : 'あと ' + (gs.required - gs.tapCount) + ' かい！';
+  playRockHit(finalHit);
+  _spawnStrengthDebrisBurst(finalHit);
   const btn = document.getElementById('strengthRockBtn');
   if (btn) {
     btn.classList.remove('is-hit');
@@ -5538,6 +5673,10 @@ function _closeEncounter(playerWon) {
 // 「夜の演出」であって真っ暗ではない: 迷路全体はうっすら青く透けて見える状態を保つ。
 // ランタン周辺だけ明るく、それ以外は青い夜のフィルター越しに見える。
 function imgDrawLantern(now, cx, cy, w, h, opts) {
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) {
+    cx = w / 2;
+    cy = h / 2;
+  }
   // Allow `lantern: true` (use defaults) or `lantern: { ... }` (custom).
   const cfg = (opts && typeof opts === 'object') ? opts : {};
   const minDim = Math.min(w, h);
@@ -5545,6 +5684,7 @@ function imgDrawLantern(now, cx, cy, w, h, opts) {
   const pulse = 1 + Math.sin(now / 400) * 0.04;
   const inner = (cfg.innerRadius || minDim * 0.06) * pulse; // 光円は前回サイズキープ
   const outer = (cfg.outerRadius || minDim * 0.18) * pulse;
+  if (!Number.isFinite(inner) || !Number.isFinite(outer) || outer <= 0) return;
   // 「だいぶ暗く + 青みを強く乗せる」: tintA を一気に上げて青を支配的に
   const tintR = cfg.tintR != null ? cfg.tintR : 4;
   const tintG = cfg.tintG != null ? cfg.tintG : 14;

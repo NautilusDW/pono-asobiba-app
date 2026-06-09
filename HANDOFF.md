@@ -17,7 +17,10 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-09 - [batch:370-oto-alpha-buttons-notation-toggle] Codex: user 指定 `D:\ポノのおへや\OtoTouch\Button\NEW` のアルファ付きボタンを実装中。ドレミファソラシドを通常表示、animal 音色選択時は動物シルエットボタンへ差し替え、設定メニューからドレミ/ABC 表記を切替できるよう `oto/index.html` と `assets/images/oto/buttons/` を対象に作業。別件の bento/maze/play/sw 未コミット差分は巻き込まない。 (by Codex)
+- 2026-06-09 - [batch:369-bento-lid-editor-mask-close] Codex: user 依頼「お弁当の蓋をエディター画面で位置/スケール調整、2段目マスクも調整、完成品表示では蓋を横に置きタップ後に最後に閉まる演出」を受領。HANDOFF と `git log -- bento/index.html assets/images/bento/*` で過去の蓋エディター実装は確認済みだが、2段目専用マスクとタップ後クローズ演出を追修正する。 (by Codex)
 - 2026-06-09 - [batch:368-maze-rock-se-flag-cleanup] Codex: user 依頼「岩破壊SE / 連打回数増加 / 個別破片を飛ばす演出 / 岩破壊後そのまま先へ進む / ステージ4旗お題ランダム化 / 出口をゴール手前へ / 鍵削除」を受領。個別破片スプライトを生成・分割し、迷路実装を修正中。 (by Codex)
+- 2026-06-09 - [batch:368-maze-rock-se-flag-cleanup] DONE - Codex: 岩くだきを18連打/10秒に延長し、WebAudioの岩打撃SEと12個の個別破片スプライト飛散を追加。岩破壊後は中断した移動を再開して先のノードへ進む。ステージ4旗あげは毎回5手をランダム生成し、勝利演出を縄ばしごだけに変更して鍵/錠前を削除、出口を `stage4-flag-tunnel-exit` / `stop12` に修正。Cache v944。Node構文・JSON・stage3 Playwright岩くだき・stage4 Playwright旗あげ/ワープ/鍵なし/Canvas error 0 を確認。 (by Codex)
 - 2026-06-09 - [batch:367-oto-pressed-size-match] Codex: user 指摘「押下版は元画像参照のようだが大きさ・形が通常版と違う」を受領。前回 `366_oto_touch_buttons_pressed_image2_raw` は誤版として使わず、通常版 `364_oto_touch_buttons_image2_raw` を編集元に、Image 2 edit でセル位置・ボタン径・形状を固定した押下版を作り直し中。ローカル生成/加工はしない。 (by Codex)
 - 2026-06-09 - [batch:367-oto-pressed-size-match] DONE - Codex: `364_oto_touch_buttons_image2_raw` を参照元に Image 2 edit で押下版 3 枚を作り直し、`tmp/alpha_pending/367_oto_touch_buttons_pressed_matched_image2_raw/` に保存。`366_oto_touch_buttons_pressed_image2_raw` はサイズ・形状ズレが大きい誤版として削除対象。最終外接差はカタカナ `-5px/+8px`、ローマ字 `-4px/-2px`、動物シルエット `-3px/-4px`。ローカル生成/描画/リサイズ/切り抜き/alpha 抜きなし、Image 2 raw を保存のみ。 (by Codex)
 - 2026-06-09 - [batch:366-oto-touch-pressed-buttons] Codex: user 依頼「オトタッチの押したときのボタンも作成」を受領。ローカル生成は使わず Image 2 raw シートとして、通常状態 batch:364 と同じカタカナ/ローマ字/animal 3系統の押下状態を作成中。 (by Codex)
