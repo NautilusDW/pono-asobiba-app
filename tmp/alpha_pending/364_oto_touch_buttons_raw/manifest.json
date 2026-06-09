@@ -1,0 +1,94 @@
+{
+  "batch": "364-oto-touch-button-assets",
+  "styleReference": "assets/images/oto/buttons existing stitch-style circular buttons",
+  "cellSize": 512,
+  "sheets": [
+    "sheet_katakana_doremi_4x2.png",
+    "sheet_roman_cdefgabc_4x2.png",
+    "sheet_animal_silhouettes_4x2.png"
+  ],
+  "katakana": [
+    "btn_note_katakana_do.png",
+    "btn_note_katakana_re.png",
+    "btn_note_katakana_mi.png",
+    "btn_note_katakana_fa.png",
+    "btn_note_katakana_so.png",
+    "btn_note_katakana_la.png",
+    "btn_note_katakana_si.png",
+    "btn_note_katakana_do_high.png"
+  ],
+  "roman": [
+    "btn_note_roman_c.png",
+    "btn_note_roman_d.png",
+    "btn_note_roman_e.png",
+    "btn_note_roman_f.png",
+    "btn_note_roman_g.png",
+    "btn_note_roman_a.png",
+    "btn_note_roman_b.png",
+    "btn_note_roman_c_high.png"
+  ],
+  "animalNoteMapping": [
+    {
+      "idx": 0,
+      "note": "ド",
+      "animal": "cat",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Cat\\Cat_normal_1.png"
+    },
+    {
+      "idx": 1,
+      "note": "レ",
+      "animal": "dog",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Dog\\Dog_normal_1.png"
+    },
+    {
+      "idx": 2,
+      "note": "ミ",
+      "animal": "cow",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Cow\\Cow_normal_1.png"
+    },
+    {
+      "idx": 3,
+      "note": "ファ",
+      "animal": "pig",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Pig\\Pig_normal_1.png"
+    },
+    {
+      "idx": 4,
+      "note": "ソ",
+      "animal": "horse",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Horse\\Horse_normal_1.png"
+    },
+    {
+      "idx": 5,
+      "note": "ラ",
+      "animal": "lion",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Lion\\Lion_normal_1.png"
+    },
+    {
+      "idx": 6,
+      "note": "シ",
+      "animal": "frog",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Frog\\Frog_normal_1.png"
+    },
+    {
+      "idx": 7,
+      "note": "ド",
+      "animal": "crow",
+      "source": "D:\\AppDevelopment\\pono-asobiba-app\\assets\\images\\ocean\\Crow\\Crow_normal_1.png"
+    }
+  ],
+  "animals": [
+    "btn_note_animal_cat.png",
+    "btn_note_animal_dog.png",
+    "btn_note_animal_cow.png",
+    "btn_note_animal_pig.png",
+    "btn_note_animal_horse.png",
+    "btn_note_animal_lion.png",
+    "btn_note_animal_frog.png",
+    "btn_note_animal_crow.png"
+  ],
+  "notes": [
+    "Text was rendered locally for exact katakana/roman output.",
+    "Animal silhouettes use existing oto ANIMAL_FILES order: cat, dog, cow, pig, horse, lion, frog, crow."
+  ]
+}
