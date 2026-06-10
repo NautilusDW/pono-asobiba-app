@@ -2965,9 +2965,9 @@ html, body {
         <div class="sk-intro-label">あかの グループ</div>
         <div class="sk-intro-sublabel">おにく・おさかな・たまご<br>からだを つくる</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/Bento_parts/hamburg2.webp" alt="ハンバーグ">
+          <img src="../assets/images/bento/cooking/mince_patty/patty_003_done.png" alt="ハンバーグ">
           <img src="../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png" alt="からあげ">
-          <img src="../assets/images/Bento_parts/ebi_fry2.webp" alt="エビフライ">
+          <img src="../assets/images/bento/cooking/shrimp/shrimp_003_done.png" alt="エビフライ">
         </div>
       </div>
       <!-- 黄 -->
@@ -3102,10 +3102,11 @@ html, body {
 (function() {
   if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
   var BASE_W = 1027, BASE_H = 440;
+  var MAX_SCALE = 1.28;
   function fit() {
     var el = document.getElementById('app');
     if (!el) return;
-    var s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    var s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H, MAX_SCALE);
     el.style.transform = 'scale(' + s + ')';
   }
   window.addEventListener('resize', fit);
@@ -3192,9 +3193,9 @@ const RICE_SMALL = [];
 
 const OKAZU_MEAT = [
   { img: P+'tako_wiener2.webp', name: 'タコウインナー', cat: 'meat', sk: 'r' },
-  { img: P+'hamburg2.webp',    name: 'ハンバーグ',     cat: 'meat', sk: 'r' },
+  { img: '../assets/images/bento/cooking/mince_patty/patty_003_done.png', name: 'ハンバーグ', cat: 'meat', sk: 'r' },
   { img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', name: 'からあげ', cat: 'meat', sk: 'r' },
-  { img: P+'ebi_fry2.webp',    name: 'エビフライ',     cat: 'meat', sk: 'r' },
+  { img: '../assets/images/bento/cooking/shrimp/shrimp_003_done.png', name: 'エビフライ', cat: 'meat', sk: 'r' },
   { img: P+'fries2.webp',      name: 'フライドポテト', cat: 'meat', sk: 'y' },
   { img: P+'tamagoyaki2.webp', name: 'たまごやき',     cat: 'meat', sk: 'r' },
   { img: FREE_LAYOUT_ASSET_P+'okazu_meatball.png', name: 'ミートボール', cat: 'meat', sk: 'r' },
@@ -3484,6 +3485,8 @@ let challengeCorrect = 0;
 const freeLayoutMode = true;
 const FREE_LAYOUT_W = 760;
 const FREE_LAYOUT_H = 460;
+const FREE_LAYOUT_PC_MAX_STAGE_W = 640;
+const FREE_LAYOUT_PC_MAX_STAGE_H = 388;
 const FREE_TABS = [
   { id: 'box', label: 'おべんとうばこ' },
   { id: 'accessory', label: 'カップ・しきり' },
@@ -5537,10 +5540,11 @@ function fitMainFreeLayoutStage(stage = document.getElementById('free-layout-sta
   const maxH = rect.height || host.clientHeight || host.offsetHeight;
   if (!maxW || !maxH) return false;
   const ratio = FREE_LAYOUT_W / FREE_LAYOUT_H;
-  let w = maxW;
+  const capPcStage = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  let w = capPcStage ? Math.min(maxW, FREE_LAYOUT_PC_MAX_STAGE_W) : maxW;
   let h = w / ratio;
   if (h > maxH) {
-    h = maxH;
+    h = capPcStage ? Math.min(maxH, FREE_LAYOUT_PC_MAX_STAGE_H) : maxH;
     w = h * ratio;
   }
   stage.style.width = Math.max(1, Math.floor(w)) + 'px';
