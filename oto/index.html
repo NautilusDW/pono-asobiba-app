@@ -3465,15 +3465,19 @@ function _songIndexById(id) {
   }
   return -1;
 }
-function _ensureRhythmBand() {
+function _ensureRhythmBand(startAtAc) {
   var songIdx = _songIndexById(RHYTHM_SONG.bandSongId);
   if (songIdx < 0) songIdx = SPEED_TO_SONG_IDX.normal;
   var stems = RHYTHM_SONG.bandStems || ['drums'];
   _bandVolume = RHYTHM_SONG.bandVolume || 1;
+  var resetSynthClock = startAtAc && isFinite(startAtAc);
   var alreadyOn = _curSongIdx === songIdx && stems.every(function(stem) {
     return !!_activeStems[stem];
   });
   if (alreadyOn) {
+    if (_currentSong().type === 'synth' && resetSynthClock) {
+      _startSongClock(startAtAc);
+    }
     return;
   }
   _rhythm.ownsBand = true;
@@ -3483,7 +3487,7 @@ function _ensureRhythmBand() {
   stems.forEach(function(stem) {
     if (stem in _activeStems) _activeStems[stem] = true;
   });
-  _startSongClock();
+  _startSongClock(startAtAc);
   _renderSpeedBtns();
 }
 // ── WebGL 3D リズムレーン: レーンとノーツを同じカメラ空間で描く ──
@@ -4724,7 +4728,6 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
     _hideOverlay();
   }
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
-  _ensureRhythmBand();
   _setRhythmStatus('おてほんを みてね', null);
   _rhythm.demoBeatScale = RHYTHM_DEMO_TIME_SCALE;
   _rhythm.demoFallMs = RHYTHM_DEMO_FALL_MS;
@@ -4742,6 +4745,7 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
     _rhythm.startAcTime = 0;
     _rhythm.startPerfTime = performance.now() + demoFirstLeadMs;
   }
+  _ensureRhythmBand(_rhythm.startAcTime);
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
   _scheduleRhythmMelody(0.18);
@@ -4812,11 +4816,8 @@ function _beginRhythmCountdown() {
   _setModeButtons('rhythm');
   // 1ノート目の速度は変えず、遠すぎる非表示区間だけ省いて「スタート!」直後から見せる。
   _rhythm.prevBandVolume = _bandVolume;
-  _ensureRhythmBand();
   var ac = getAC();
-  var beatSec = _rhythmBeatMs() / 1000;
   var countBeats = RHYTHM_COUNTDOWN_BEATS;
-  var bandStartACVal = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
   var pendingAc = 0;
   var nowPerf = performance.now();
   var t3Perf = nowPerf + 120;
@@ -4825,15 +4826,14 @@ function _beginRhythmCountdown() {
   var playLeadMs = Math.max(900, Math.min(RHYTHM_FALL_MS, RHYTHM_DEMO_FIRST_NOTE_LEAD_MS));
   var desiredStartEnginePerf = countdownDonePerf;
   var targetPerfMs = desiredStartEnginePerf + playLeadMs;
-  if (ac && bandStartACVal && beatSec > 0) {
-    // T は近い拍頭へ寄せる。起動時点ではすでにブロックが見える進行度にする。
-    var desiredTargetAC = ac.currentTime + Math.max(0.05, (targetPerfMs - nowPerf) / 1000);
-    var deltaSec = desiredTargetAC - bandStartACVal;
-    var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
-    pendingAc = bandStartACVal + nBeats * beatSec;
+  if (ac) {
+    // 最初のドの AC 時刻を先に確定し、その同じ時刻を合成ドラムの step0 にする。
+    // step0 の DRUM_PATTERN は kick を含むため「最初のバスドラ = 最初のド」になる。
+    pendingAc = ac.currentTime + Math.max(0.05, (targetPerfMs - nowPerf) / 1000);
     targetPerfMs = nowPerf + (pendingAc - ac.currentTime) * 1000;
   }
   _rhythm._pendingStartAcTime = pendingAc;
+  _ensureRhythmBand(pendingAc);
   var startEnginePerf = targetPerfMs - playLeadMs;
   function schedule(absPerfMs, fn) {
     var delay = Math.max(0, absPerfMs - performance.now());
@@ -6028,10 +6028,16 @@ function _stemStop(name) {
 // ════════════════════════════════════════════════════════════
 // 合成バンド (ドラム + ベース + キーボード)
 // ════════════════════════════════════════════════════════════
-function _startSongClock() {
+function _startSongClock(startAtAc) {
   var ac = getAC(); if (!ac) return;
-  if (_schedulerInterval) return;
-  _bandClockStart = ac.currentTime + 0.05;
+  if (_schedulerInterval) {
+    if (!(startAtAc && isFinite(startAtAc))) return;
+    clearInterval(_schedulerInterval);
+    _schedulerInterval = null;
+  }
+  _bandClockStart = (startAtAc && isFinite(startAtAc))
+    ? Math.max(ac.currentTime + 0.05, startAtAc)
+    : ac.currentTime + 0.05;
   _scheduledStep = -1;
   _schedulerInterval = setInterval(_synthScheduler, 25);
   _synthScheduler();
