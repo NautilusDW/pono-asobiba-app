@@ -3154,7 +3154,7 @@ body.layout-editor-on .op-skip {
   position: fixed;
   inset: 0;
   z-index: 310;                                  /* above cinematic (300) */
-  background: radial-gradient(ellipse at center, #2a1f10 0%, #050200 75%);
+  background: #050200;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3165,13 +3165,13 @@ body.layout-editor-on .op-skip {
 .quiz-start-card.hidden { display: none; }
 .quiz-start-card.is-revealed { opacity: 1; }
 .quiz-start-card-img {
-  /* The card is 1024x1536 (2:3 portrait) — fit comfortably without clipping */
+  /* The card is 1024x1024 — fit comfortably without clipping */
   width: auto;
   height: 86vh;
   max-width: 92vw;
   max-height: 92vh;
   object-fit: contain;
-  filter: drop-shadow(0 12px 32px rgba(255, 230, 100, 0.25));
+  filter: none;
   /* Subtle "pop in" scale animation reveals the card */
   transform: scale(0.92);
   transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
@@ -3435,7 +3435,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <!-- ===== Quiz Start Title Card (cinematic → start card → initGame) ===== -->
 <div id="quiz-start-card" class="quiz-start-card hidden" aria-hidden="true">
   <img class="quiz-start-card-img" id="quiz-start-card-img"
-       src="../assets/images/quizland/OP/quiz_start_card.webp" alt="ふくろう博士の なぞなぞスタート">
+       src="../assets/images/quizland/OP/quiz_start_card.webp" alt="ふくろうはかせの なぞなぞスタート">
 </div>
 
 <!-- ===== Question Number Plate (shows at start of Q1-Q5) =====
