@@ -2926,8 +2926,11 @@ var RHYTHM_MISS_MS = 760;
 var RHYTHM_PREVIEW_STEPS = 4;
 var RHYTHM_RING_LEAD_MS = 1400;
 // Guitar Hero 風 ノート落下: 画面上端→ヒットライン到達までの時間
-// 2-5歳には8レーン同時識別が間に合わないため、3200ms に余裕を持たせる
-var RHYTHM_FALL_MS = 3200;
+// 2-5歳には8レーン同時識別が間に合わないため、従来の半分の移動速度にする
+var RHYTHM_FALL_MS = 6400;
+var RHYTHM_NOTE_PASS_PROGRESS = 1.14;
+var RHYTHM_NOTE_FADE_IN_START = 0.28;
+var RHYTHM_NOTE_FADE_IN_END = 0.46;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -3506,7 +3509,7 @@ function _gh3DMvp(canvas) {
   var rect = canvas.getBoundingClientRect();
   var aspect = Math.max(0.2, rect.width / Math.max(1, rect.height));
   var proj = _gh3DMat4Perspective(34 * Math.PI / 180, aspect, 0.1, 140);
-  var view = _gh3DMat4LookAt([0, 1.8, 10.5], [0, 8, -36], [0, 1, 0]);
+  var view = _gh3DMat4LookAt([0, 1.8, 10.5], [0, 6, -36], [0, 1, 0]);
   return _gh3DMat4Mul(proj, view);
 }
 function _gh3DRoadT(z) {
@@ -3537,6 +3540,10 @@ function _gh3DPushColorLine(out, p1, c1, p2, c2) {
 function _gh3DPushColorQuad(out, p1, p2, p3, p4, c) {
   _gh3DPushColorTri(out, p1, c, p2, c, p3, c);
   _gh3DPushColorTri(out, p1, c, p3, c, p4, c);
+}
+function _gh3DPushColorQuadGradient(out, p1, c1, p2, c2, p3, c3, p4, c4) {
+  _gh3DPushColorTri(out, p1, c1, p2, c2, p3, c3);
+  _gh3DPushColorTri(out, p1, c1, p3, c3, p4, c4);
 }
 function _gh3DShadeRgb(rgb, scale, alpha) {
   return [
@@ -3579,31 +3586,33 @@ function _gh3DDrawRoad() {
     var x1 = x0 + GH3D_LANE_W;
     var rgb = _gh3DLaneRgb(lane);
     var cNear = [rgb[0], rgb[1], rgb[2], 0.34];
-    var cFar = [rgb[0], rgb[1], rgb[2], 0.08];
+    var cFar = [rgb[0], rgb[1], rgb[2], 0.02];
     _gh3DPushColorTri(tris, [x0, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zFar), zFar], cFar);
     _gh3DPushColorTri(tris, [x0, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zFar), zFar], cFar, [x0, _gh3DRoadY(zFar), zFar], cFar);
   }
   _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, tris, gl.TRIANGLES, mvp);
   var beams = [];
-  var beamC = [0.24, 1.0, 0.92, 0.72];
-  var edgeBeamC = [1.0, 0.36, 0.78, 0.54];
+  var beamNearC = [0.24, 1.0, 0.92, 0.72];
+  var beamFarC = [0.24, 1.0, 0.92, 0.08];
+  var edgeBeamNearC = [1.0, 0.36, 0.78, 0.5];
+  var edgeBeamFarC = [1.0, 0.36, 0.78, 0.04];
   for (var b = 0; b <= 8; b++) {
     var bx = -GH3D_HALF_W + b * GH3D_LANE_W;
     var bw = (b === 0 || b === 8) ? 0.022 : 0.016;
-    var bc = (b === 0 || b === 8) ? edgeBeamC : beamC;
-    _gh3DPushColorQuad(
+    var bcNear = (b === 0 || b === 8) ? edgeBeamNearC : beamNearC;
+    var bcFar = (b === 0 || b === 8) ? edgeBeamFarC : beamFarC;
+    _gh3DPushColorQuadGradient(
       beams,
-      [bx - bw, _gh3DRoadY(zNear) + 0.07, zNear],
-      [bx + bw, _gh3DRoadY(zNear) + 0.07, zNear],
-      [bx + bw, _gh3DRoadY(zFar) + 0.07, zFar],
-      [bx - bw, _gh3DRoadY(zFar) + 0.07, zFar],
-      bc
+      [bx - bw, _gh3DRoadY(zNear) + 0.07, zNear], bcNear,
+      [bx + bw, _gh3DRoadY(zNear) + 0.07, zNear], bcNear,
+      [bx + bw, _gh3DRoadY(zFar) + 0.07, zFar], bcFar,
+      [bx - bw, _gh3DRoadY(zFar) + 0.07, zFar], bcFar
     );
   }
   _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, beams, gl.TRIANGLES, mvp);
   var lines = [];
   var lineC = [0.62, 0.92, 1.0, 0.5];
-  var farLineC = [0.62, 0.92, 1.0, 0.22];
+  var farLineC = [0.62, 0.92, 1.0, 0.05];
   for (var i = 0; i <= 8; i++) {
     var x = -GH3D_HALF_W + i * GH3D_LANE_W;
     _gh3DPushColorLine(lines, [x, _gh3DRoadY(zNear) + 0.025, zNear], lineC, [x, _gh3DRoadY(zFar) + 0.025, zFar], farLineC);
@@ -3680,7 +3689,7 @@ function _gh3DTextureFor(lane, label) {
 function _gh3DDrawOneNote(note, mvp) {
   var gl = _gh3d.notesGl;
   if (!note || note.consumed) return;
-  var p = Math.max(0, Math.min(0.96, note._gh3dProgress || 0));
+  var p = Math.max(0, Math.min(RHYTHM_NOTE_PASS_PROGRESS, note._gh3dProgress || 0));
   var lane = note.lane || 0;
   var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
   var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
@@ -3690,7 +3699,10 @@ function _gh3DDrawOneNote(note, mvp) {
   var bevel = 0.08;
   var bevelH = 0.08;
   var yLift = 0.055;
-  var a = Math.max(0.16, Math.min(1, 0.28 + p * 1.15));
+  var fadeIn = Math.max(0, Math.min(1, (p - RHYTHM_NOTE_FADE_IN_START) / (RHYTHM_NOTE_FADE_IN_END - RHYTHM_NOTE_FADE_IN_START)));
+  var passFade = p <= 1 ? 1 : Math.max(0, 1 - (p - 1) / (RHYTHM_NOTE_PASS_PROGRESS - 1));
+  var a = Math.max(0, Math.min(1, (0.28 + p * 1.15) * fadeIn * passFade));
+  if (a <= 0.01) return;
   var label = _rhythmNoteLabel(lane);
   var tex = _gh3DTextureFor(lane, label);
   var x0 = centerX - w / 2, x1 = centerX + w / 2;
@@ -3950,34 +3962,37 @@ function _ghUpdateFallingNotes(now) {
     var until = note.targetTime - now; // 残り時間 (ms)
     var progress = 1 - (until / fall); // 0=スポーン直後, 1=ヒットライン
     if (progress < 0) progress = 0;
-    if (progress > 1.12) progress = 1.12;
-    var visualProgress = Math.max(0, Math.min(1, progress));
-    note._gh3dProgress = visualProgress;
-    var depth = (Math.exp(perspectivePush * visualProgress) - 1) / perspectiveDenom;
-    var spread = Math.pow(visualProgress, 1.52);
-    var laneCenter = (note.lane + 0.5) * 12.5;
-    var xShift = ((vanishX - laneCenter) / 100) * lanesWidth * (1 - spread) * 0.98;
-    var y = vanishY + (hitY - vanishY) * depth;
-    var z = -520 * (1 - visualProgress);
-    var scale = 0.52 + 0.58 * Math.pow(visualProgress, 1.12);
-    var opacity = 0.34 + 0.66 * Math.max(depth, visualProgress * 0.42);
-    note.el.style.opacity = opacity.toFixed(3);
-    note.el.style.zIndex = String(3 + Math.round(depth * 4));
-    note.el.style.transform = 'translate3d(' + xShift.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, ' + z.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
     // ミス判定 (ターゲット時刻を MISS_MS 超過)
-    if (until < -RHYTHM_MISS_MS) {
-      if (_rhythm.demoActive && !_rhythm.enabled) {
-        _ghRemoveNote(note);
-        continue;
-      }
+    if (until < -RHYTHM_MISS_MS && !note.missed && !_rhythm.demoActive) {
+      note.missed = true;
       _rhythm.streak = 0;
       _rhythm.misses++;
       _setRhythmStatus('つぎいこう', 'miss');
       _ghFlashLane(note.lane, 'miss');
-      _ghRemoveNote(note);
       _advanceRhythm(false);
       if (!_rhythm.enabled) return;
     }
+    if (progress > RHYTHM_NOTE_PASS_PROGRESS) {
+      _ghRemoveNote(note);
+      continue;
+    }
+    var visualProgress = Math.max(0, Math.min(RHYTHM_NOTE_PASS_PROGRESS, progress));
+    note._gh3dProgress = visualProgress;
+    var hitProgress = Math.max(0, Math.min(1, visualProgress));
+    var passAmount = Math.max(0, visualProgress - 1);
+    var depth = (Math.exp(perspectivePush * hitProgress) - 1) / perspectiveDenom + passAmount * 1.15;
+    var spread = Math.pow(hitProgress, 1.52);
+    var laneCenter = (note.lane + 0.5) * 12.5;
+    var xShift = ((vanishX - laneCenter) / 100) * lanesWidth * (1 - spread) * 0.98;
+    var y = vanishY + (hitY - vanishY) * depth;
+    var z = -520 * (1 - hitProgress) + passAmount * 280;
+    var scale = 0.52 + 0.58 * Math.pow(hitProgress, 1.12) + passAmount * 0.5;
+    var passFade = visualProgress <= 1 ? 1 : Math.max(0, 1 - passAmount / (RHYTHM_NOTE_PASS_PROGRESS - 1));
+    var fadeIn = Math.max(0, Math.min(1, (visualProgress - RHYTHM_NOTE_FADE_IN_START) / (RHYTHM_NOTE_FADE_IN_END - RHYTHM_NOTE_FADE_IN_START)));
+    var opacity = (0.34 + 0.66 * Math.max(depth, hitProgress * 0.42)) * fadeIn * passFade;
+    note.el.style.opacity = opacity.toFixed(3);
+    note.el.style.zIndex = String(3 + Math.round(depth * 4));
+    note.el.style.transform = 'translate3d(' + xShift.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, ' + z.toFixed(1) + ') scale(' + scale.toFixed(3) + ')';
   }
   _gh3DRender();
 }
@@ -4359,17 +4374,6 @@ function _runRhythmDemoSequence(thenStart) {
       _renderRhythmTarget();
       _setRhythmStatus('おてほん ' + _rhythmNoteLabel(noteIdx), null);
       var laneIdx = _ghBtnIdxToLaneIdx(noteIdx);
-      for (var i = _rhythm.activeNotes.length - 1; i >= 0; i--) {
-        var activeNote = _rhythm.activeNotes[i];
-        if (activeNote && activeNote.seq === seqIndex) {
-          (function(noteToRemove) {
-            _rhythm.demoTimers.push(setTimeout(function() {
-              if (_rhythm.demoActive && noteToRemove && !noteToRemove.consumed) _ghRemoveNote(noteToRemove);
-            }, 520));
-          })(activeNote);
-          break;
-        }
-      }
       _ghSpawnHitFlash(laneIdx);
       var btn = _rhythmButton(noteIdx);
       if (btn) {
@@ -4580,7 +4584,7 @@ function handleRhythmTap(idx, btn) {
     var bestAbs = Infinity;
     for (var i = 0; i < _rhythm.activeNotes.length; i++) {
       var n = _rhythm.activeNotes[i];
-      if (!n || n.consumed || n.lane !== laneIdx) continue;
+      if (!n || n.consumed || n.missed || n.lane !== laneIdx) continue;
       var d = Math.abs(n.targetTime - now);
       if (d < bestAbs) { bestAbs = d; best = n; }
     }
