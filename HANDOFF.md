@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:394-oto-rhythm-demo-lead-count-sfx] DONE - Codex: OtoTouch リズムのお手本で、落下速度 `11500ms` は維持したまま初回ノートのリードを `7600ms` にして、3/2/1後にブロックがすぐ流れ始めるよう調整。本番カウントはチュートリアルと同じ `720ms` 間隔に固定。成功/ミス時に短いWebAudio合成SEを追加し、成功は軽いキラッ、ミスは控えめなクリックにした。`sw.js` は v980。Node inline script、`git diff --check`、Playwright timing/SFX call smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:393-oto-rhythm-gap-only] DONE - Codex: OtoTouch リズムの前回追修正で速くしてしまったお手本/本番初動を戻した。`RHYTHM_DEMO_FALL_MS` は本番 `RHYTHM_FALL_MS 11500ms` と同一、`RHYTHM_DEMO_TIME_SCALE` は `1`、お手本カウント間隔も従来 720ms + `スタート!` 後420msへ復帰。本番カウントはチュートリアル後すぐ「3」を出すが、1音目の到達時刻は落下時間を確保した未来に置くためノート速度は変えない。`sw.js` は v978。Node inline script、`git diff --check`、Playwright timing/effect smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:392-maze-strength-glove-punch] DONE - Codex: 岩くだきミニゲームを中央の岩＋左右グローブ構成へ変更し、1回目右手・2回目左手の交互パンチが手前から奥へ入るCSSアニメーションを追加。新しい左右グローブ raw シートを `tmp/alpha_pending/392_maze_strength_glove_punch_raw/` に納品。alpha抜き/切り出しは未実施。`sw.js` / `PAGE_CACHE_VERSION` は v978。Node構文、`git diff --check`、Playwrightで交互パンチクラスと画像参照エラーなしを確認。 (by Codex)
 - 2026-06-10 - [batch:391-oto-rhythm-feedback-polish] DONE - Codex: OtoTouch リズム3Dでミス赤マスクをDOM 2DクリップからWebGLレーン面描画へ移して角度を一致。ノート通過後も床傾きを外挿してヒットライン付近の角度変化を抑制。成功は白金＋レーン色の破裂、失敗はレーン色の小破裂を追加。お手本カウントを約1.5秒へ短縮し、お手本落下/譜面進行を短縮。本番カウントは落下時間待ちをやめ即時寄りに開始。`sw.js` は v975。Node inline script、`git diff --check`、Playwright desktop/mobile/tap/demo timing、LF確認済み。 (by Codex)

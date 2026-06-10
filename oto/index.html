@@ -3035,6 +3035,7 @@ var RHYTHM_COUNTDOWN_LEAD_BEATS = 2;
 var RHYTHM_DEMO_FALL_MS = RHYTHM_FALL_MS;
 var RHYTHM_DEMO_TIME_SCALE = 1;
 var RHYTHM_DEMO_COUNT_STEP_MS = 720;
+var RHYTHM_DEMO_FIRST_NOTE_LEAD_MS = 7600;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -4186,6 +4187,7 @@ function _ghUpdateFallingNotes(now) {
       _rhythm.misses++;
       _setRhythmStatus('つぎいこう', 'miss');
       _ghSpawnNoteBurst(note, 'miss');
+      _playRhythmBlockSfx('miss', note.lane);
       _ghFlashLane(note.lane, 'miss');
       _advanceRhythm(false);
       if (!_rhythm.enabled) return;
@@ -4537,6 +4539,49 @@ function _playRhythmDemoTone(idx, durationMs) {
     try { g.disconnect(); } catch(e) {}
   });
 }
+function _playRhythmBlockSfx(kind, laneIdx) {
+  var ac = getAC();
+  if (!ac) return;
+  var now = ac.currentTime;
+  var isMiss = kind === 'miss';
+  var base = (_doremiFreqs()[laneIdx] || 440) * (isMiss ? 0.5 : 2);
+  var master = ac.createGain();
+  master.gain.setValueAtTime(0, now);
+  master.gain.linearRampToValueAtTime(isMiss ? 0.055 : 0.095, now + 0.012);
+  master.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.16 : 0.22));
+  master.connect(ac.destination);
+
+  var click = ac.createBufferSource();
+  click.buffer = _makeNoiseBuffer(ac, 0.06);
+  var filter = ac.createBiquadFilter();
+  filter.type = isMiss ? 'bandpass' : 'highpass';
+  filter.frequency.setValueAtTime(isMiss ? 850 : 5200, now);
+  filter.Q.setValueAtTime(isMiss ? 0.8 : 0.55, now);
+  click.connect(filter);
+  filter.connect(master);
+  click.start(now);
+  click.stop(now + 0.055);
+
+  var osc = ac.createOscillator();
+  var toneGain = ac.createGain();
+  osc.type = isMiss ? 'triangle' : 'sine';
+  osc.frequency.setValueAtTime(Math.max(140, base), now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(90, base * (isMiss ? 0.62 : 1.58)), now + (isMiss ? 0.12 : 0.18));
+  toneGain.gain.setValueAtTime(0, now);
+  toneGain.gain.linearRampToValueAtTime(isMiss ? 0.05 : 0.075, now + 0.018);
+  toneGain.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.14 : 0.2));
+  osc.connect(toneGain);
+  toneGain.connect(master);
+  osc.start(now);
+  osc.stop(now + (isMiss ? 0.16 : 0.22));
+
+  var cleanupDelay = isMiss ? 260 : 320;
+  setTimeout(function() {
+    [click, filter, osc, toneGain, master].forEach(function(node) {
+      try { node.disconnect(); } catch(e) {}
+    });
+  }, cleanupDelay);
+}
 function _clearRhythmDemo(keepHud) {
   _rhythm.demoTimers.forEach(function(id) { clearTimeout(id); });
   _rhythm.demoTimers = [];
@@ -4584,7 +4629,8 @@ function _runRhythmDemoSequence(thenStart) {
   _ghClearLaneFlashes();
   _rhythm.nextSpawnSeq = 0;
   _rhythm.startAcTime = 0;
-  _rhythm.startPerfTime = performance.now() + demoFallMs;
+  var demoFirstLeadMs = Math.max(900, Math.min(demoFallMs, RHYTHM_DEMO_FIRST_NOTE_LEAD_MS));
+  _rhythm.startPerfTime = performance.now() + demoFirstLeadMs;
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
   _startRhythmDemoVisualLoop();
@@ -4611,7 +4657,7 @@ function _runRhythmDemoSequence(thenStart) {
       }
       bumpPono();
       _playRhythmDemoTone(noteIdx, noteMs * 0.86);
-    }, demoFallMs + elapsed));
+    }, demoFirstLeadMs + elapsed));
     elapsed += noteMs;
   });
   _rhythm.demoTimers.push(setTimeout(function() {
@@ -4621,7 +4667,7 @@ function _runRhythmDemoSequence(thenStart) {
     _updateRhythmMenuActions();
     if (thenStart) _beginRhythmCountdown();
     else _showRhythmMenu();
-  }, demoFallMs + elapsed + 260));
+  }, demoFirstLeadMs + elapsed + 260));
 }
 function _startRhythmDemo(thenStart) {
   if (_rhythm.enabled) _stopRhythmMode();
@@ -4677,12 +4723,10 @@ function _beginRhythmCountdown() {
     pendingAc = 0;
   }
   _rhythm._pendingStartAcTime = pendingAc;
-  var beatStepMs = (pendingAc && ac) ? beatSec * 1000 : 720;
-  // カウントダウン「3」の表示時刻 (perf 絶対 ms)。負になりうるが setTimeout でガード。
+  // カウントダウン「3」の表示時刻 (perf 絶対 ms)。
   var t3Perf = performance.now() + 120;
-  var totalCountdownMs = Math.max((countBeats + leadBeats) * beatStepMs, targetPerfMs - t3Perf);
-  var stepMs = totalCountdownMs / (countBeats + leadBeats);
-  var countdownDonePerf = targetPerfMs - leadBeats * stepMs;
+  var stepMs = RHYTHM_DEMO_COUNT_STEP_MS;
+  var countdownDonePerf = t3Perf + countBeats * stepMs;
   // _startRhythmMode はノート落下時間 fallSec 確保のため T - fallSec で起動。
   var startEnginePerf = targetPerfMs - fallSec * 1000;
   function schedule(absPerfMs, fn) {
@@ -4703,7 +4747,7 @@ function _beginRhythmCountdown() {
     if (_rhythm.enabled) return;
     setPlayMode('rhythm');
   });
-  // 「スタート!」表示後、leadBeats 相当の余裕を残してから 1ノート目がヒットラインに来る。
+  // 「スタート!」はカウントの締めとして表示し、ノート側は別途落下時間を維持する。
   schedule(countdownDonePerf, function() { _showOverlay('スタート!', ''); });
   // 少し見せてから overlay クリア
   schedule(countdownDonePerf + 380, function() { _clearRhythmCountdown(); });
@@ -4814,6 +4858,7 @@ function handleRhythmTap(idx, btn) {
         _rhythm.misses++;
         _setRhythmStatus('ちがうレーン', 'miss');
         _ghSpawnNoteBurst(laneIdx, 'miss');
+        _playRhythmBlockSfx('miss', laneIdx);
         _ghFlashLane(laneIdx, 'miss');
         _pulseRhythmButton(btn, 'rhythm-miss');
       }
@@ -4844,6 +4889,7 @@ function handleRhythmTap(idx, btn) {
     }
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNoteBurst(best, 'success');
+    _playRhythmBlockSfx('success', laneIdx);
     _pulseRhythmButton(btn, 'rhythm-hit');
     _ghRemoveNote(best);
     _advanceRhythm(true);
