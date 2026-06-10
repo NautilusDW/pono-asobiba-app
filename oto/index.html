@@ -2926,8 +2926,8 @@ var RHYTHM_MISS_MS = 760;
 var RHYTHM_PREVIEW_STEPS = 4;
 var RHYTHM_RING_LEAD_MS = 1400;
 // Guitar Hero 風 ノート落下: 画面上端→ヒットライン到達までの時間
-// 2-5歳には8レーン同時識別が間に合わないため、v970 の約70%の移動速度にする
-var RHYTHM_FALL_MS = 9200;
+// 2-5歳には8レーン同時識別が間に合わないため、ゆっくり視認できる速度にする
+var RHYTHM_FALL_MS = 11500;
 var RHYTHM_NOTE_PASS_PROGRESS = 1.14;
 var RHYTHM_NOTE_FADE_IN_START = 0.28;
 var RHYTHM_NOTE_FADE_IN_END = 0.46;
@@ -3342,7 +3342,7 @@ var GH3D_NEAR_Z = 1.25;
 var GH3D_FAR_Z = -56;
 var GH3D_HALF_W = 4.0;
 var GH3D_LANE_W = 1.0;
-var GH3D_RAMP_RISE = 32;
+var GH3D_RAMP_RISE = 38;
 
 function _gh3DGetContext(canvas) {
   if (!canvas) return null;

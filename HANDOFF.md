@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:389-oto-rhythm-more-angle-slower] DONE - Codex: user 指摘「もうちょっと角度をつけ、速度ももうちょっとゆっくり」を受領。OtoTouch リズム3Dの床面上昇量を `GH3D_RAMP_RISE 32→38` にして奥側がさらに上へ抜ける見え方に調整し、落下時間を `9200ms→11500ms` にして v971 比速度を 0.8 へ低下。`sw.js` は v973。Node inline script、`git diff --check`、Playwright desktop/mobile 16:9、速度比 0.8、ボタン overflow 0 を確認。作業外 `bento/index.html` 差分は非接触。 (by Codex)
 - 2026-06-10 - [batch:388-oto-rhythm-70-speed-countdown-lead] DONE - Codex: OtoTouch リズム3Dの落下時間を 6400ms→9200ms にして v970 比の移動速度を約70%へ低下。カウントダウンは 3/2/1 表示を維持しつつ `スタート!` 後に2拍分の余白を入れ、カウント開始から1音目まで約3.33秒に延長。`sw.js` は v971。Node inline script、`git diff --check`、Playwright desktop/mobile 16:9、速度比 0.696、ボタン overflow 0 を確認。 (by Codex)
 - 2026-06-10 - [batch:387-oto-rhythm-slow-pass-through] DONE - Codex: OtoTouch リズム3Dでノート落下時間を 3200ms→6400ms にして移動速度を半分へ変更。奥側のレーン/ノートを薄くし、カメラ注視点をさらに下げて奥が見え続ける距離感を抑制。ノートはヒットラインで止めず `progress 1.14` まで通過してから消滅、ミスは1回だけ計上。`sw.js` は v970。Node inline script、`git diff --check`、Playwright desktop/mobile、ミス通過/お手本通過を確認。 (by Codex)
 - 2026-06-10 - [batch:386-bento-redesign-okazu-implement] DONE - Codex: user 指定 `D:\ポノのおへや\Bento\bento_redesign\おかず` のアルファ付きPNG10枚を `assets/images/bento/free-layout/okazu_*.png` に配置し、`bento/index.html` の旧 `Bento_parts` 参照を差し替え。自由配置のメインおかずを10種、小さいおかずをフルーツ抜き10種へ更新し、ミートボール/ブロッコリー等のカップ内用 `cupSize` も設定。`sw.js` は v968。Node構文、`git diff --check`、Playwrightでメイン10/小さいおかず10/カップ投入可能10/画像ロード10/カップ投入スクショを確認。 (by Codex)
