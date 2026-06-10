@@ -467,10 +467,13 @@
     filter: drop-shadow(0 0 16px rgba(248,113,113,0.42));
     opacity: 1;
   }
+  body.webgl-rhythm .gh-lane.miss-flash {
+    opacity: 0;
+  }
   /* v705+: ヒットラインは中立色 (白〜薄金) に。
      以前は黄色いグラデ+黄色グロー だったが、ユーザーから「赤くチカチカ光る」と誤読される
      報告があったため、ベース表示は静的・無色寄りに。
-     ヒット時は .gh-flash (白〜金) で、ミス時は .gh-lane.miss-flash (赤) で別途光らせる。 */
+     ヒット時は .gh-flash / .gh-burst (白〜金) で、ミス時は WebGL 3D レーン面で別途光らせる。 */
   .gh-hitline {
     position: absolute;
     left: 0;
@@ -549,13 +552,109 @@
     40%  { opacity: 0.9; transform: translate(-50%, -50%) scale(1.4); }
     100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
   }
+  .gh-burst {
+    position: absolute;
+    left: var(--gh-burst-x, 50%);
+    top: var(--gh-hit-y, 80%);
+    width: min(15vw, 142px);
+    height: min(15vw, 142px);
+    min-width: 88px;
+    min-height: 88px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 8;
+    --burst-main: #fff7ad;
+    --burst-soft: #67e8f9;
+    --burst-glow: rgba(254,240,138,0.85);
+  }
+  .gh-burst::before,
+  .gh-burst::after {
+    content: "";
+    position: absolute;
+    inset: 24%;
+    border-radius: 999px;
+    pointer-events: none;
+  }
+  .gh-burst::before {
+    border: 3px solid rgba(255,255,255,0.92);
+    box-shadow:
+      0 0 14px var(--burst-glow),
+      0 0 34px var(--burst-glow);
+    animation: ghBurstRing 0.52s cubic-bezier(.12,.78,.22,1) forwards;
+  }
+  .gh-burst::after {
+    background:
+      radial-gradient(circle, rgba(255,255,255,0.94) 0 12%, var(--burst-main) 13% 34%, transparent 68%);
+    filter: blur(0.2px);
+    animation: ghBurstCore 0.42s ease-out forwards;
+  }
+  .gh-burst.miss {
+    filter: saturate(0.9);
+  }
+  .gh-burst.miss::before {
+    border-color: rgba(255,255,255,0.72);
+    box-shadow:
+      0 0 12px var(--burst-glow),
+      0 0 26px var(--burst-glow);
+  }
+  .gh-burst.miss::after {
+    background:
+      radial-gradient(circle, rgba(255,255,255,0.62) 0 11%, var(--burst-soft) 12% 32%, transparent 66%);
+  }
+  .gh-burst i {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 8px;
+    height: 22px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fff, var(--burst-main) 40%, var(--burst-soft));
+    box-shadow: 0 0 12px var(--burst-glow);
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+    opacity: 0;
+    animation: ghBurstShard 0.58s cubic-bezier(.08,.74,.18,1) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+  .gh-burst.miss i {
+    width: 7px;
+    height: 17px;
+    opacity: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.72), var(--burst-soft) 48%, var(--burst-main));
+    box-shadow: 0 0 9px var(--burst-glow);
+  }
+  @keyframes ghBurstRing {
+    0%   { opacity: 0.95; transform: scale(0.42); }
+    58%  { opacity: 0.84; transform: scale(1.55); }
+    100% { opacity: 0; transform: scale(2.08); }
+  }
+  @keyframes ghBurstCore {
+    0%   { opacity: 0.98; transform: scale(0.4); }
+    36%  { opacity: 0.9; transform: scale(1.0); }
+    100% { opacity: 0; transform: scale(1.55); }
+  }
+  @keyframes ghBurstShard {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(0.46);
+    }
+    18% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform:
+        translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+        rotate(calc(var(--rot, 0deg) + 92deg))
+        scale(0.22);
+    }
+  }
   .instr-btn.rhythm-hit::before {
     opacity: 1;
-    background: radial-gradient(circle, rgba(167,243,208,0.9) 0%, rgba(52,211,153,0.54) 52%, rgba(52,211,153,0) 74%);
+    background: radial-gradient(circle, rgba(255,255,255,0.96) 0%, rgba(254,240,138,0.68) 42%, rgba(45,212,191,0.18) 62%, rgba(45,212,191,0) 76%);
   }
   .instr-btn.rhythm-miss::before {
-    opacity: 0.86;
-    background: radial-gradient(circle, rgba(254,202,202,0.84) 0%, rgba(248,113,113,0.5) 50%, rgba(248,113,113,0) 74%);
+    opacity: 0.72;
+    background: radial-gradient(circle, rgba(255,255,255,0.58) 0%, var(--key-glow, rgba(248,113,113,0.45)) 52%, rgba(255,255,255,0) 74%);
   }
   @keyframes rhythmTargetGlow {
     0%, 100% { filter: drop-shadow(0 0 8px rgba(255,216,77,0.8)); }
@@ -2933,6 +3032,9 @@ var RHYTHM_NOTE_FADE_IN_START = 0.28;
 var RHYTHM_NOTE_FADE_IN_END = 0.46;
 var RHYTHM_COUNTDOWN_BEATS = 3;
 var RHYTHM_COUNTDOWN_LEAD_BEATS = 2;
+var RHYTHM_DEMO_FALL_MS = 5600;
+var RHYTHM_DEMO_TIME_SCALE = 0.58;
+var RHYTHM_DEMO_COUNT_STEP_MS = 420;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -2963,6 +3065,8 @@ var _rhythm = {
   prevBandVolume: 1,
   countdownTimers: [],
   demoActive: false,
+  demoBeatScale: 0,
+  demoFallMs: 0,
   demoTimers: [],
   demoRaf: 0,
   demoNoteBtn: null,
@@ -2976,6 +3080,7 @@ var _rhythm = {
   activeNotes: [],
   nextSpawnSeq: 0,
   laneFlashTimers: {},
+  lane3dFlashes: [],
   // ヒットフラッシュの setTimeout を追跡 (リズムモードを離れた時に確実にクリア)
   flashTimers: [],
   // _ghUpdateLanesGeometry で算出したヒットライン Y / レーン上端 Y のキャッシュ
@@ -3025,10 +3130,22 @@ function _refreshRhythmSong() {
 }
 function _rhythmBeatMs() {
   var song = _currentSong();
+  var base;
   if (song && song.type === 'synth' && _synthActive() && song.bpm) {
-    return 60000 / song.bpm;
+    base = 60000 / song.bpm;
+  } else {
+    base = 60000 / RHYTHM_SONG.bpm;
   }
-  return 60000 / RHYTHM_SONG.bpm;
+  if (_rhythm.demoActive && !_rhythm.enabled && _rhythm.demoBeatScale) {
+    return base * _rhythm.demoBeatScale;
+  }
+  return base;
+}
+function _rhythmVisualFallMs() {
+  if (_rhythm.demoActive && !_rhythm.enabled && _rhythm.demoFallMs) {
+    return _rhythm.demoFallMs;
+  }
+  return RHYTHM_FALL_MS;
 }
 function _rhythmRingLeadMs() {
   return RHYTHM_RING_LEAD_MS;
@@ -3343,6 +3460,8 @@ var GH3D_FAR_Z = -56;
 var GH3D_HALF_W = 4.0;
 var GH3D_LANE_W = 1.0;
 var GH3D_RAMP_RISE = 38;
+var GH3D_NOTE_ROAD_T_MIN = -0.08;
+var GH3D_LANE_FLASH_MS = 430;
 
 function _gh3DGetContext(canvas) {
   if (!canvas) return null;
@@ -3520,6 +3639,11 @@ function _gh3DRoadT(z) {
 function _gh3DRoadY(z) {
   return _gh3DRoadT(z) * GH3D_RAMP_RISE;
 }
+function _gh3DRoadYForNote(z) {
+  var t = (GH3D_NEAR_Z - z) / (GH3D_NEAR_Z - GH3D_FAR_Z);
+  t = Math.max(GH3D_NOTE_ROAD_T_MIN, Math.min(1, t));
+  return t * GH3D_RAMP_RISE;
+}
 function _gh3DHexToRgb(hex) {
   var m = String(hex || '').match(/^#?([0-9a-f]{6})$/i);
   if (!m) return [1, 1, 1];
@@ -3593,6 +3717,33 @@ function _gh3DDrawRoad() {
     _gh3DPushColorTri(tris, [x0, _gh3DRoadY(zNear), zNear], cNear, [x1, _gh3DRoadY(zFar), zFar], cFar, [x0, _gh3DRoadY(zFar), zFar], cFar);
   }
   _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, tris, gl.TRIANGLES, mvp);
+  if (_rhythm.lane3dFlashes && _rhythm.lane3dFlashes.length) {
+    var nowMs = performance.now();
+    var flashTris = [];
+    _rhythm.lane3dFlashes = _rhythm.lane3dFlashes.filter(function(flash) {
+      if (!flash || flash.lane == null) return false;
+      return nowMs - flash.start < flash.duration;
+    });
+    _rhythm.lane3dFlashes.forEach(function(flash) {
+      var age = Math.max(0, Math.min(1, (nowMs - flash.start) / flash.duration));
+      var strength = Math.pow(1 - age, 1.15);
+      var laneIdx = Math.max(0, Math.min(7, flash.lane | 0));
+      var fx0 = -GH3D_HALF_W + laneIdx * GH3D_LANE_W + 0.035;
+      var fx1 = fx0 + GH3D_LANE_W - 0.07;
+      var fyNear = _gh3DRoadY(zNear) + 0.09;
+      var fyFar = _gh3DRoadY(zFar) + 0.09;
+      var nearC = [1.0, 0.14, 0.12, 0.16 + 0.42 * strength];
+      var farC = [1.0, 0.08, 0.14, 0.02 + 0.12 * strength];
+      _gh3DPushColorQuadGradient(
+        flashTris,
+        [fx0, fyNear, zNear], nearC,
+        [fx1, fyNear, zNear], nearC,
+        [fx1, fyFar, zFar], farC,
+        [fx0, fyFar, zFar], farC
+      );
+    });
+    _gh3DDrawColor(gl, _gh3d.roadProgram, _gh3d.roadBuffer, flashTris, gl.TRIANGLES, mvp);
+  }
   var beams = [];
   var beamNearC = [0.24, 1.0, 0.92, 0.72];
   var beamFarC = [0.24, 1.0, 0.92, 0.08];
@@ -3713,12 +3864,12 @@ function _gh3DDrawOneNote(note, mvp) {
   var xi0 = x0 + bevel, xi1 = x1 - bevel;
   var ziNear = zNear - bevel;
   var ziFar = zFar + bevel;
-  var yNearBase = _gh3DRoadY(zNear) + yLift;
-  var yFarBase = _gh3DRoadY(zFar) + yLift;
+  var yNearBase = _gh3DRoadYForNote(zNear) + yLift;
+  var yFarBase = _gh3DRoadYForNote(zFar) + yLift;
   var yNearBevel = yNearBase + h - bevelH;
   var yFarBevel = yFarBase + h - bevelH;
-  var yInnerNearTop = _gh3DRoadY(ziNear) + yLift + h;
-  var yInnerFarTop = _gh3DRoadY(ziFar) + yLift + h;
+  var yInnerNearTop = _gh3DRoadYForNote(ziNear) + yLift + h;
+  var yInnerFarTop = _gh3DRoadYForNote(ziFar) + yLift + h;
   var rgb = _gh3DLaneRgb(lane);
   var sideVerts = [];
   var nearC = _gh3DShadeRgb(rgb, 0.92, a * 0.82);
@@ -3850,6 +4001,7 @@ function _ghClearLaneFlashes() {
     if (t) clearTimeout(t);
   });
   _rhythm.laneFlashTimers = {};
+  _rhythm.lane3dFlashes = [];
   var lanes = _ghLanesEl();
   if (lanes) {
     lanes.querySelectorAll('.gh-lane.miss-flash').forEach(function(el) {
@@ -3866,12 +4018,23 @@ function _ghClearFlashTimers() {
   _rhythm.flashTimers = [];
   var lanes = _ghLanesEl();
   if (lanes) {
-    lanes.querySelectorAll('.gh-flash').forEach(function(el) {
+    lanes.querySelectorAll('.gh-flash, .gh-burst').forEach(function(el) {
       if (el.parentNode) el.parentNode.removeChild(el);
     });
   }
 }
 function _ghFlashLane(laneIdx, kind) {
+  if (kind === 'miss') {
+    if (!_rhythm.lane3dFlashes) _rhythm.lane3dFlashes = [];
+    _rhythm.lane3dFlashes.push({
+      lane: laneIdx,
+      kind: kind,
+      start: performance.now(),
+      duration: GH3D_LANE_FLASH_MS
+    });
+    if (_gh3d.ready) _gh3DRender();
+  }
+  if (kind === 'miss' && document.body.classList.contains('webgl-rhythm')) return;
   var lanes = _ghLanesEl();
   if (!lanes) return;
   var laneEl = lanes.querySelector('.gh-lane[data-lane="' + laneIdx + '"]');
@@ -3903,6 +4066,58 @@ function _ghSpawnHitFlash(laneIdx) {
       if (i >= 0) _rhythm.flashTimers.splice(i, 1);
     }
   }, 600);
+  _rhythm.flashTimers.push(timerId);
+}
+function _ghNoteBurstColor(laneIdx, kind) {
+  var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
+  var main = kind === 'miss' ? (color.lo || color.hi) : '#fff7ad';
+  var soft = kind === 'miss' ? (color.hi || color.lo) : (color.lo || '#67e8f9');
+  var rgb = _gh3DHexToRgb(kind === 'miss' ? main : (color.hi || '#FDE68A'));
+  var alpha = kind === 'miss' ? 0.46 : 0.86;
+  return {
+    main: main,
+    soft: soft,
+    glow: 'rgba(' + Math.round(rgb[0] * 255) + ',' + Math.round(rgb[1] * 255) + ',' + Math.round(rgb[2] * 255) + ',' + alpha + ')'
+  };
+}
+function _ghSpawnNoteBurst(noteOrLane, kind) {
+  var lanes = _ghLanesEl();
+  if (!lanes) return;
+  var laneIdx = 0;
+  if (typeof noteOrLane === 'number') laneIdx = noteOrLane;
+  else if (noteOrLane && typeof noteOrLane.lane === 'number') laneIdx = noteOrLane.lane;
+  laneIdx = Math.max(0, Math.min(7, laneIdx | 0));
+  var burstKind = kind === 'miss' ? 'miss' : 'success';
+  var colors = _ghNoteBurstColor(laneIdx, burstKind);
+  var burst = document.createElement('div');
+  burst.className = 'gh-burst ' + burstKind;
+  burst.style.setProperty('--gh-burst-x', ((laneIdx + 0.5) * 12.5) + '%');
+  burst.style.setProperty('--burst-main', colors.main);
+  burst.style.setProperty('--burst-soft', colors.soft);
+  burst.style.setProperty('--burst-glow', colors.glow);
+  var count = burstKind === 'miss' ? 8 : 12;
+  var radius = burstKind === 'miss' ? 42 : 62;
+  for (var i = 0; i < count; i++) {
+    var shard = document.createElement('i');
+    var angle = (-96 + (192 / Math.max(1, count - 1)) * i) * Math.PI / 180;
+    var spread = radius * (0.76 + (i % 3) * 0.12);
+    var dx = Math.cos(angle) * spread;
+    var dy = Math.sin(angle) * spread - (burstKind === 'miss' ? 2 : 8);
+    shard.style.setProperty('--dx', dx.toFixed(1) + 'px');
+    shard.style.setProperty('--dy', dy.toFixed(1) + 'px');
+    shard.style.setProperty('--rot', Math.round(angle * 180 / Math.PI + 90) + 'deg');
+    shard.style.setProperty('--delay', (i % 4) * 12 + 'ms');
+    burst.appendChild(shard);
+  }
+  lanes.appendChild(burst);
+  if (!_rhythm.flashTimers) _rhythm.flashTimers = [];
+  var timerId = setTimeout(function() {
+    if (burst.parentNode) burst.parentNode.removeChild(burst);
+    if (_rhythm.flashTimers) {
+      var idx = _rhythm.flashTimers.indexOf(timerId);
+      if (idx >= 0) _rhythm.flashTimers.splice(idx, 1);
+    }
+  }, burstKind === 'miss' ? 520 : 680);
   _rhythm.flashTimers.push(timerId);
 }
 function _ghSpawnNote(seqIndex) {
@@ -3953,7 +4168,7 @@ function _ghUpdateFallingNotes(now) {
   }
   var hitY = _rhythm._ghHitY || 0;
   var vanishY = _rhythm._ghTopY || 44;
-  var fall = RHYTHM_FALL_MS;
+  var fall = _rhythmVisualFallMs();
   var lanesWidth = lanes.clientWidth || 1;
   var vanishX = 50;
   var perspectivePush = 2.35;
@@ -3970,6 +4185,7 @@ function _ghUpdateFallingNotes(now) {
       _rhythm.streak = 0;
       _rhythm.misses++;
       _setRhythmStatus('つぎいこう', 'miss');
+      _ghSpawnNoteBurst(note, 'miss');
       _ghFlashLane(note.lane, 'miss');
       _advanceRhythm(false);
       if (!_rhythm.enabled) return;
@@ -4009,7 +4225,7 @@ function _ghSpawnDueNotes(now) {
   while (_rhythm.nextSpawnSeq < notes.length) {
     var seq = _rhythm.nextSpawnSeq;
     var targetTime = _rhythmTargetTimeFor(seq);
-    if (targetTime - now > RHYTHM_FALL_MS) break;
+    if (targetTime - now > _rhythmVisualFallMs()) break;
     _ghSpawnNote(seq);
     _rhythm.nextSpawnSeq++;
   }
@@ -4329,6 +4545,8 @@ function _clearRhythmDemo(keepHud) {
     _rhythm.demoRaf = 0;
   }
   _rhythm.demoActive = false;
+  _rhythm.demoBeatScale = 0;
+  _rhythm.demoFallMs = 0;
   _rhythm.demoNoteBtn = null;
   _hideOverlay();
   _clearRhythmButtonState();
@@ -4358,12 +4576,15 @@ function _runRhythmDemoSequence(thenStart) {
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   _setRhythmStatus('おてほんを みてね', null);
-  var beatMs = 60000 / RHYTHM_SONG.bpm;
+  _rhythm.demoBeatScale = RHYTHM_DEMO_TIME_SCALE;
+  _rhythm.demoFallMs = RHYTHM_DEMO_FALL_MS;
+  var beatMs = _rhythmBeatMs();
+  var demoFallMs = _rhythmVisualFallMs();
   _ghClearActiveNotes();
   _ghClearLaneFlashes();
   _rhythm.nextSpawnSeq = 0;
   _rhythm.startAcTime = 0;
-  _rhythm.startPerfTime = performance.now() + RHYTHM_FALL_MS;
+  _rhythm.startPerfTime = performance.now() + demoFallMs;
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
   _startRhythmDemoVisualLoop();
@@ -4377,6 +4598,7 @@ function _runRhythmDemoSequence(thenStart) {
       _setRhythmStatus('おてほん ' + _rhythmNoteLabel(noteIdx), null);
       var laneIdx = _ghBtnIdxToLaneIdx(noteIdx);
       _ghSpawnHitFlash(laneIdx);
+      _ghSpawnNoteBurst(laneIdx, 'success');
       var btn = _rhythmButton(noteIdx);
       if (btn) {
         _pulseRhythmButton(btn, 'rhythm-hit');
@@ -4389,7 +4611,7 @@ function _runRhythmDemoSequence(thenStart) {
       }
       bumpPono();
       _playRhythmDemoTone(noteIdx, noteMs * 0.86);
-    }, RHYTHM_FALL_MS + elapsed));
+    }, demoFallMs + elapsed));
     elapsed += noteMs;
   });
   _rhythm.demoTimers.push(setTimeout(function() {
@@ -4399,7 +4621,7 @@ function _runRhythmDemoSequence(thenStart) {
     _updateRhythmMenuActions();
     if (thenStart) _beginRhythmCountdown();
     else _showRhythmMenu();
-  }, RHYTHM_FALL_MS + elapsed + 360));
+  }, demoFallMs + elapsed + 260));
 }
 function _startRhythmDemo(thenStart) {
   if (_rhythm.enabled) _stopRhythmMode();
@@ -4415,29 +4637,23 @@ function _startRhythmDemo(thenStart) {
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
   _setRhythmStatus('おてほん 3,2,1', null);
-  var stepMs = 720;
+  var stepMs = RHYTHM_DEMO_COUNT_STEP_MS;
   _showOverlay(3, 'おてほん');
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay(2, 'おてほん'); }, stepMs));
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay(1, 'おてほん'); }, stepMs * 2));
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay('スタート!', ''); }, stepMs * 3));
   _rhythm.demoTimers.push(setTimeout(function() {
     _runRhythmDemoSequence(thenStart);
-  }, stepMs * 3 + 420));
+  }, stepMs * 3 + 240));
 }
 function _beginRhythmCountdown() {
   _clearRhythmCountdown();
   _clearRhythmDemo(true);
   _hideRhythmComplete();
   _setModeButtons('rhythm');
-  // v722: 「ベースの最初の音 = 主旋律の最初の音」を完璧に揃えるため、
-  //   (1) カウントダウン開始前に伴奏を起動 → bandStartAC を確定。
-  //   (2) 主旋律 1 ノート目のヒットライン到達時刻 T を「次の小節線」(= ドラム kick の拍頭) に固定。
-  //   (3) 3 / 2 / 1 のカウントダウン UI を beat 単位 (= 60/bpm 秒) で早めに表示。
-  //       「スタート!」の後にも RHYTHM_COUNTDOWN_LEAD_BEATS 拍の余裕を残してから、
-  //       T = 伴奏の拍頭 = 1ノート目がヒットライン到達。
-  //   (4) T を _pendingStartAcTime として保存し、_startRhythmMode 側はこれを採用する
-  //       (= 再計算による拍ズレを排除)。
-  //   (5) _startRhythmMode は「ノート落下時間 fallSec」確保のため T - fallSec で起動。
+  // カウント開始まで長く待たせないため、1ノート目の到達時刻 T は
+  // 「3 / 2 / 1 + スタート後の余白」の直後に置き、AC が取れる場合だけ次の拍頭へ寄せる。
+  // _startRhythmMode は T - fallSec が過去なら即時起動し、初回ノートを途中位置から見せる。
   _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   var ac = getAC();
@@ -4449,24 +4665,22 @@ function _beginRhythmCountdown() {
   var pendingAc = 0;
   var targetPerfMs;
   if (ac && bandStartACVal && beatSec > 0) {
-    // 1 小節 = 4 拍 (合成バンドの DRUM_PATTERN は subBeatSec×8 = 4 拍周期)
-    var barSec = 4 * beatSec;
-    // T は ac.currentTime + max(fallSec, (count+lead)*beatSec) + バッファ より先の最初の小節線。
-    // これでカウント開始時刻もノートスポーン時刻 T - fallSec も 0 以上になる。
-    var requiredAheadSec = Math.max(fallSec, (countBeats + leadBeats) * beatSec) + 0.15;
+    // T は「3,2,1 + スタート後の余白」の直後に置き、次の拍頭へ寄せる。
+    // 落下時間ぶん待ってからカウントを出すと開始が重すぎるため、エンジンは即時起動し、
+    // 初回ノートは途中位置から見せてプレイ開始までの待ちを短くする。
+    var requiredAheadSec = (countBeats + leadBeats) * beatSec + 0.1;
     var requiredAnchorAC = ac.currentTime + requiredAheadSec;
     var deltaSec = requiredAnchorAC - bandStartACVal;
-    var nBars = Math.max(1, Math.ceil(deltaSec / barSec));
-    pendingAc = bandStartACVal + nBars * barSec;
+    var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
+    pendingAc = bandStartACVal + nBeats * beatSec;
     targetPerfMs = performance.now() + (pendingAc - ac.currentTime) * 1000;
   } else {
-    // フォールバック (AC 不在 / 伴奏未開始): 従来通り固定 720ms 刻みで進める
-    targetPerfMs = performance.now() + 720 * (countBeats + leadBeats + 1);
+    // フォールバック (AC 不在 / 伴奏未開始): カウントがすぐ始まる固定刻みで進める
+    targetPerfMs = performance.now() + 720 * (countBeats + leadBeats);
     pendingAc = 0;
   }
   _rhythm._pendingStartAcTime = pendingAc;
   var stepMs = (pendingAc && ac) ? beatSec * 1000 : 720;
-  var now = performance.now();
   // カウントダウン「3」の表示時刻 (perf 絶対 ms)。負になりうるが setTimeout でガード。
   var countdownDonePerf = targetPerfMs - leadBeats * stepMs;
   var t3Perf = countdownDonePerf - countBeats * stepMs;
@@ -4600,6 +4814,7 @@ function handleRhythmTap(idx, btn) {
         _rhythm.streak = 0;
         _rhythm.misses++;
         _setRhythmStatus('ちがうレーン', 'miss');
+        _ghSpawnNoteBurst(laneIdx, 'miss');
         _ghFlashLane(laneIdx, 'miss');
         _pulseRhythmButton(btn, 'rhythm-miss');
       }
@@ -4629,6 +4844,7 @@ function handleRhythmTap(idx, btn) {
       _setRhythmStatus('おしい', 'warn');
     }
     _ghSpawnHitFlash(laneIdx);
+    _ghSpawnNoteBurst(best, 'success');
     _pulseRhythmButton(btn, 'rhythm-hit');
     _ghRemoveNote(best);
     _advanceRhythm(true);
