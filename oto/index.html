@@ -19,7 +19,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: 100%; height: 100dvh; overflow: hidden;
-    font-family: 'Zen Maru Gothic', sans-serif;
+    font-family: 'DotGothic16', 'Zen Maru Gothic', monospace;
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
@@ -2996,7 +2996,7 @@ var RHYTHM_SONGS = [
       {
         name: '1',
         note: 'うたがきこえ',
-        notes: [0, 1, 2, 3, 2, 1, 0, 2, 3, 4, 5, 4, 3, 0],
+        notes: [0, 1, 2, 3, 2, 1, 0, 2, 3, 4, 5, 4, 3, 2],
         beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
       },
       {
@@ -3081,6 +3081,7 @@ var RHYTHM_DEMO_FALL_MS = RHYTHM_FALL_MS;
 var RHYTHM_DEMO_TIME_SCALE = 1;
 var RHYTHM_DEMO_COUNT_STEP_MS = 720;
 var RHYTHM_DEMO_FIRST_NOTE_LEAD_MS = 7600;
+var RHYTHM_START_OVERLAY_MS = 1200;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -3863,7 +3864,7 @@ function _gh3DTextureFor(lane, label) {
   ctx.fill();
   var fontSize = 70;
   do {
-    ctx.font = '900 ' + fontSize + 'px "Zen Maru Gothic", sans-serif';
+    ctx.font = '900 ' + fontSize + 'px "DotGothic16", "Zen Maru Gothic", monospace';
     if (ctx.measureText(label).width <= 108 || fontSize <= 52) break;
     fontSize -= 2;
   } while (fontSize > 52);
@@ -4660,9 +4661,15 @@ function _clearRhythmDemo(keepHud) {
     if (hud) hud.classList.remove('show');
   }
 }
-function _runRhythmDemoSequence(thenStart) {
+function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   if (!_rhythm.demoActive) return;
-  _hideOverlay();
+  if (overlayHoldMs > 0) {
+    _rhythm.demoTimers.push(setTimeout(function() {
+      if (_rhythm.demoActive) _hideOverlay();
+    }, overlayHoldMs));
+  } else {
+    _hideOverlay();
+  }
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   _setRhythmStatus('おてほんを みてね', null);
@@ -4729,13 +4736,14 @@ function _startRhythmDemo(thenStart) {
   if (hud) hud.classList.add('show');
   _setRhythmStatus('おてほん 3,2,1', null);
   var stepMs = RHYTHM_DEMO_COUNT_STEP_MS;
+  var demoStartDelayMs = 420;
   _showOverlay(3, 'おてほん');
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay(2, 'おてほん'); }, stepMs));
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay(1, 'おてほん'); }, stepMs * 2));
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay('スタート!', ''); }, stepMs * 3));
   _rhythm.demoTimers.push(setTimeout(function() {
-    _runRhythmDemoSequence(thenStart);
-  }, stepMs * 3 + 420));
+    _runRhythmDemoSequence(thenStart, Math.max(0, RHYTHM_START_OVERLAY_MS - demoStartDelayMs));
+  }, stepMs * 3 + demoStartDelayMs));
 }
 function _beginRhythmCountdown() {
   _clearRhythmCountdown();
@@ -4788,7 +4796,7 @@ function _beginRhythmCountdown() {
   // 「スタート!」はカウントの締めとして表示し、ノート側は別途落下時間を維持する。
   schedule(countdownDonePerf, function() { _showOverlay('スタート!', ''); });
   // 少し見せてから overlay クリア
-  schedule(countdownDonePerf + 380, function() { _clearRhythmCountdown(); });
+  schedule(countdownDonePerf + RHYTHM_START_OVERLAY_MS, function() { _clearRhythmCountdown(); });
 }
 function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();

@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:398-oto-rhythm-kaeru-font-start] DONE - Codex: OtoTouch リズムのかえる譜面前半末尾を `ソ・ファ・ミ` に修正。`スタート!` 表示はノート開始を遅らせず約 `1200ms` 残すよう調整し、OtoTouch 全体のベースフォントと3Dブロック上面の描画フォントを `DotGothic16` 優先に変更。`sw.js` / `play.html` cache は v985。Node inline script、targeted value check、`git diff --check`、Playwright font/song smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:397-oto-rhythm-start-layout-kaeru] DONE - Codex: OtoTouch リズム本番の初回ノート待ちを短縮し、3/2/1後すぐブロックが見えるように本番初回リードを `7600ms` へ揃えた。リズム時の左下バンドUIを縦積みコンパクト化し、縦長画面ではリズムHUDを隠してボタン被りを解消。かえるのうた前半は末尾を `ソ・ファ・ド` に修正。`sw.js` / `play.html` cache は v983。Node inline script、`git diff --check`、Playwright timing/layout smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:396-bento-free-stage-aspect-fit] DONE - Codex: user 指摘「iPad mini 4:3 など画角でおかずが小さくなる」を受領。自由配置のメイン編集ステージが親枠いっぱいに縦伸びしていたため、`bento/index.html` で `.free-layout-inner` を中央寄せにし、`#free-layout-stage` を親枠内で常に `760:460` にフィットさせる処理を追加。4:3 / 667x375 / 1366x768 でステージ比率とおかず正方形比率を確認。`sw.js` は v982。 (by Codex)
 - 2026-06-10 - [batch:395-bento-mask-server-sync] DONE - Codex: 管理者用の弁当マスク共通同期を実装。Cloudflare KV `BENTO_MASK_CONFIG` を本番/staging に作成し、`wrangler.toml` に binding を追加。`src/worker.js` に `GET/POST /api/bento/mask-defaults` を追加し、GET は共通値読込、POST は既存 Basic Auth で管理者保存。`bento/index.html` は起動時にサーバー値を自動取得し、通常表示はサーバー共通値優先、マスクエディター中だけローカル未保存値優先。エディターに `サーバー保存` / `サーバー再読込` を追加。初期KVには現行4箱の値を投入済み。`sw.js` は v981。Node構文、Worker module check、Worker API mock、Playwright mobile normal/editor/save、Wrangler dry-run(binding確認)を確認。 (by Codex)
