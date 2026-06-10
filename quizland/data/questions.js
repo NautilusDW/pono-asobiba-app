@@ -255,7 +255,7 @@ const QUIZLAND_QUESTIONS = {
       img_word:'opposite/tatsu.png', img_answer:'opposite/suwaru.png' },
     { level:1, type:'opposite', category:'opposite', word:'あける',   q:'「あける」の はんたいは？',   answer:2, choices:['おす','ひく','しめる','まわす'],
       img_word:'opposite/akeru.png', img_answer:'opposite/shimeru.png' },
-    { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','いい','わるい','おもしろい'],
+    { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','よい','わるい','おもしろい'],
       img_word:'opposite/suki.png', img_answer:'opposite/kirai.png' },
     { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の つぎは どれ？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
       img_word:'opposite/yoru.png', img_answer:'opposite/asa.png',

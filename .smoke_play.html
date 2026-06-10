@@ -1,0 +1,2528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>あそびば｜ポノのあそびば</title>
+  <meta name="description" content="ポノと一緒にひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
+  <meta name="author" content="こだまのもり出版">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://pono-asobiba-app.ndw.workers.dev/play.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pono-asobiba-app.ndw.workers.dev/play.html">
+  <meta property="og:site_name" content="ポノのあそびば">
+  <meta property="og:title" content="ポノのあそびば">
+  <meta property="og:description" content="ひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
+  <meta property="og:image" content="https://pono-asobiba-app.ndw.workers.dev/assets/images/A+用ヘッダー.jpg">
+  <meta property="og:locale" content="ja_JP">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ポノあそびば">
+  <meta name="theme-color" content="#F2915A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <!-- Preload released-game thumbnails so they're decoded before renderCards()
+       paints the wood-card list. Coming-soon cards render a CSS "?" mark,
+       so their future thumbnails are intentionally not preloaded.
+       (Cloudflare Workers serves these fine; local preview environments
+       that 404 preload requests just ignore the hint — no functional cost.) -->
+  <!-- NOTE: maze カードは本物のめいろ絵 (ランタン+小道) が入っている
+       assets/ui/thumb_quiz-sound.webp を流用している。 -->
+  <link rel="preload" as="image" href="assets/ui/thumb_quizland_owl.webp">
+  <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.webp">
+  <link rel="preload" as="image" href="assets/ui/thumb_oto.webp">
+  <link rel="preload" as="image" href="assets/ui/thumb_bento.webp">
+  <link rel="preload" as="image" href="assets/ui/thumb_puzzle.webp">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #FFF8F0;
+      --primary: #F2915A;
+      --primary-light: #FDDCBF;
+      --accent-green: #6C8E3F;
+      --accent-cream: #FFF8E1;
+      --text: #5D4E37;
+      --text-light: #A89880;
+      --shadow: rgba(93, 78, 55, 0.18);
+      --radius: 22px;
+      --nav-h: 64px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+      background: #000;
+      color: var(--text);
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    body {
+      position: relative;
+      min-height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== 21:9 fixed canvas =====
+       The whole title screen is laid out at 1920×823 (21:9).
+       JS scales the canvas to fit the viewport (letterbox on black).
+       Every size below is in *canvas pixels* — no clamp(), no vw/vh.
+       This way the look is identical on phone / tablet / PC.
+    */
+    :root {
+      --canvas-w: 1920px;
+      --canvas-h: 823px;        /* 21:9 outer canvas */
+      --safe-w: 1463px;          /* 16:9 inner safe area at canvas-h */
+    }
+    .stage {
+      position: relative;
+      width: var(--canvas-w);
+      height: var(--canvas-h);
+      flex-shrink: 0;
+      transform-origin: center center;
+      overflow: hidden;
+    }
+
+    /* ===== Full-bleed background (selected game) — fills the canvas ===== */
+    .preview-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 0.45s ease;
+      z-index: 0;
+    }
+    .preview-bg.is-active { opacity: 1 !important; }
+    .bg-veil {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.0) 30%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.35) 100%),
+        linear-gradient(180deg, rgba(0,0,0,0.0) 60%, rgba(0,0,0,0.35) 100%);
+    }
+
+    /* ===== Old header hidden (brand sign now lives over the bg) ===== */
+    .top-header,
+    .preview-overlay,
+    .preview-title,
+    .preview-desc,
+    .start-btn { display: none !important; }
+
+    /* ===== Main layout: brand column + cards column =====
+       Important UI lives inside the 16:9 safe area (var(--safe-w))
+       centered horizontally, so iPhone-landscape (≈21:9) shows the full
+       21:9 canvas while iPad/PC (16:9) only crops the side background art.
+    */
+    .play-main {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: var(--safe-w);
+      z-index: 5;
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      /* 右パディングを 24px に詰めて、cards-col の右端を bottom-nav の
+         右端 (calc(safe-gutter + 24px)) と揃える。同時に column-gap を
+         80px に広げて、左の看板とカードの間に余白を作る。 */
+      gap: 80px;
+      padding: 30px 24px 100px 40px;
+      align-items: start;
+    }
+
+    /* ===== Brand (left) — sign + ribbon stacked. */
+    .brand-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;                     /* spacing handled per-element */
+      padding-top: 30px;
+    }
+    /* The sign is the moving group: it animates, and the ribbon below
+       is its child so it sways together as one rigid object. */
+    .brand-sign {
+      position: relative;
+      width: 480px;
+      display: block;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,0.5));
+      animation: signSway 5s ease-in-out infinite;
+      transform-origin: top center;
+    }
+    .brand-sign > img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    /* Ribbon at 52% of its 800px natural width = 416px.
+       More specific selector wins over `.brand-sign > img { width: 100% }`. */
+    .brand-sign > img.brand-ribbon {
+      width: 437px;
+    }
+    @keyframes signSway {
+      0%, 100% { transform: rotate(-1.2deg); }
+      50%      { transform: rotate(1.2deg); }
+    }
+    .brand-ribbon {
+      width: 437px;
+      height: auto;
+      display: block;
+      margin: -50px auto 0 auto;
+      transform: translateX(18px);
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
+      /* No own animation — moves with the parent .brand-sign */
+    }
+
+    /* ===== Cards column (right) ===== */
+    .cards-col {
+      position: relative;          /* arrow hints anchor against this */
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      max-width: 1120px;
+      height: 100%;
+      /* Tightened up so 4 cards fit comfortably in the visible window. */
+      padding-top: 36px;
+      padding-bottom: 70px;
+      box-sizing: border-box;
+    }
+
+    /* ===== Scroll-hint chevrons (decorative) =====
+       Two stacked roof-shaped lines pointing up at the top and down at the
+       bottom of the card list, with a soft bob to suggest scrollability. */
+    .scroll-hint {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 64px;
+      height: 28px;
+      pointer-events: none;
+      z-index: 12;
+      opacity: 0.85;
+      filter: drop-shadow(0 2px 4px rgba(40, 24, 8, 0.5));
+    }
+    .scroll-hint--up   { top: 0px;     animation: hintBobUp 2.4s ease-in-out infinite; }
+    .scroll-hint--down { bottom: 64px; animation: hintBobDown 2.4s ease-in-out infinite; }
+    .scroll-hint svg { width: 100%; height: 100%; display: block; }
+    .scroll-hint path {
+      fill: none;
+      stroke: #fff8e2;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    @keyframes hintBobUp {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, -6px); }
+    }
+    @keyframes hintBobDown {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, 6px); }
+    }
+
+    /* ===== Card List (wood-card layout) =====
+       Infinite-scroll: contents are tripled in JS so the user can scroll
+       up/down forever; we silently teleport scrollTop when they cross a
+       boundary. Top/bottom edges are masked to a soft fade (no harsh cut),
+       and the scrollbar is hidden on every engine. */
+    .card-list {
+      flex: 0 0 auto;                    /* size set by JS to exactly 4 cards */
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      /* Custom snap (JS-driven) — see setupLoopScroll. CSS scroll-snap
+         fights with the loop teleport, so we don't use it here. */
+      scroll-behavior: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      /* Horizontal padding still needed for shadow room; vertical padding
+         removed so the visible viewport equals exactly 4 cards + 3 gaps. */
+      padding: 0 32px 0 24px;
+      /* Soft 1-line fade at top + bottom so the snap edges feel less harsh.
+         The visible window is exactly 4 cards (set by JS) so no 5th card
+         peeks through; the fade only softens the cut. */
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        transparent 0%,
+        #000 2%,
+        #000 98%,
+        transparent 100%
+      );
+              mask-image: linear-gradient(
+        180deg,
+        transparent 0%,
+        #000 2%,
+        #000 98%,
+        transparent 100%
+      );
+      /* Hide scrollbar everywhere */
+      scrollbar-width: none;             /* Firefox */
+      -ms-overflow-style: none;          /* old Edge / IE */
+      /* CSS variables: 画像比率に合わせて微調整可能
+         サムネ・ボタンは card 高さ基準 (h-pct)、左右パディング・テキスト枠は card 幅基準 (w-pct) */
+      --gc-aspect: 5.5 / 1;
+      --gc-radius: 22px;
+      --gc-thumb-h-pct: 78%;
+      --gc-play-h-pct: 72%;
+      --gc-side-w-pct: 2%;
+      --gc-text-left-w-pct: 17%;
+      --gc-text-right-w-pct: 16%;
+    }
+    .card-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    .card-list::-webkit-scrollbar-thumb { background: transparent; }
+
+    /* ===== Coming-soon badge ===== */
+    .game-card__soon {
+      position: absolute;
+      top: 8px;
+      right: 14%;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffd97a, #d99320);
+      color: #4a2a08;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      border: 1.5px solid #6b4218;
+      box-shadow: 0 2px 4px rgba(40, 24, 8, 0.4);
+      pointer-events: none;
+      z-index: 4;
+    }
+    .game-card.is-coming-soon { filter: saturate(0.85) brightness(0.97); }
+    .game-card.is-coming-soon .game-card__play { opacity: 0.55; }
+    /* Debug-playable coming-soon cards: cancel the desaturation/dim play
+       button so devs can verify the destination game without losing the
+       じゅんびちゅう badge. Visual hover behavior still stays locked. */
+    .game-card.is-coming-soon.is-debug-playable { filter: none; }
+    .game-card.is-coming-soon.is-debug-playable .game-card__play { opacity: 1; }
+
+    .game-card {
+      position: relative;
+      flex-shrink: 0;
+      width: 100%;
+      aspect-ratio: var(--gc-aspect);
+      /* Cap card height in canvas pixels (1920×823 canvas) */
+      max-height: 130px;
+      align-self: stretch;
+      border: none;
+      background: transparent;
+      /* Horizontal padding adds a transparent buffer on the left/right of
+         the wood-plank PNG so its drop-shadow has room to render before
+         hitting the parent's overflow clip. The padded area sits on the
+         absolute children's containing block so the bg image + thumb +
+         text + play button all stay inside the padded area automatically. */
+      padding: 0 16px;
+      box-sizing: border-box;
+      cursor: pointer;
+      font-family: inherit;
+      transform-origin: center;
+      transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+      /* Layered drop-shadow so it follows the PNG's rounded silhouette
+         instead of a square box. Two stacked shadows give a soft ambient
+         shadow + a tighter contact shadow for real lift off the scene.
+         Blur kept under the card's horizontal transparent buffer (~16px)
+         so the shadow renders fully before the list's overflow clip. */
+      filter:
+        drop-shadow(0 2px 2px rgba(20, 10, 0, 0.55))
+        drop-shadow(0 5px 8px rgba(20, 10, 0, 0.7));
+    }
+    .game-card:hover {
+      filter:
+        drop-shadow(0 3px 3px rgba(20, 10, 0, 0.6))
+        drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
+    }
+    .game-card:active { transform: scale(0.985); }
+    /* "Selected" used to add a yellow halo + swap the play button to a
+       different PNG, which made the top card look different from the rest.
+       The user wants all 4 cards to read identically — keep the class for
+       a11y/aria-pressed, but make it visually a no-op. */
+    .game-card.is-selected {
+      /* intentionally empty */
+    }
+
+    /* 1. 木枠の背景画像 (絶対配置で全面) */
+    .game-card__bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* 2. 左の丸サムネイル (枠は CSS で作る) */
+    .game-card__thumbWrap {
+      position: absolute;
+      left: var(--gc-side-w-pct);
+      top: 50%;
+      height: var(--gc-thumb-h-pct);
+      aspect-ratio: 1 / 1;
+      width: auto;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      padding: 0;
+      background: #f7edd0;
+      border: 2px solid rgba(120, 78, 34, 0.85);
+      /* Layered shadows: a soft ambient drop, a tighter contact shadow,
+         plus an inner highlight rim to make the disc feel like a real
+         polished button sitting on the wood plank. */
+      box-shadow:
+        0 1px 0 rgba(255, 245, 215, 0.6),
+        0 6px 14px rgba(60, 35, 10, 0.32),
+        0 2px 4px rgba(60, 35, 10, 0.28),
+        inset 0 2px 3px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 6px rgba(120, 70, 25, 0.18);
+      box-sizing: border-box;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    /* Subtle top-light gloss on the disc */
+    .game-card__thumbWrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(
+        circle at 32% 22%,
+        rgba(255, 255, 255, 0.32) 0%,
+        rgba(255, 255, 255, 0.08) 28%,
+        rgba(255, 255, 255, 0) 55%
+      );
+      z-index: 2;
+    }
+    .game-card__thumb {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: var(--gc-thumb-pos, center);
+      transform: scale(var(--gc-thumb-zoom, 1.15));
+      transform-origin: center;
+      position: relative;
+      z-index: 1;
+      transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+    .game-card__thumbPlaceholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      color: #5b3a1e;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      font-family: inherit;
+      text-shadow:
+        1.6px 0 0 rgba(255, 250, 230, 0.98),
+        -1.6px 0 0 rgba(255, 250, 230, 0.98),
+        0 1.6px 0 rgba(255, 250, 230, 0.98),
+        0 -1.6px 0 rgba(255, 250, 230, 0.98),
+        1.1px 1.1px 0 rgba(255, 250, 230, 0.98),
+        -1.1px 1.1px 0 rgba(255, 250, 230, 0.98),
+        1.1px -1.1px 0 rgba(255, 250, 230, 0.98),
+        -1.1px -1.1px 0 rgba(255, 250, 230, 0.98),
+        0 3px 5px rgba(80, 50, 20, 0.35);
+    }
+    .game-card.is-coming-soon .game-card__thumbWrap {
+      background:
+        radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.88), rgba(255, 247, 222, 0.68) 34%, rgba(221, 190, 133, 0.78) 100%);
+    }
+    .game-card:hover .game-card__thumb,
+    .game-card:focus-visible .game-card__thumb {
+      transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12));
+    }
+    /* Coming-soon: don't zoom either */
+    .game-card.is-coming-soon:hover .game-card__thumb {
+      transform: scale(var(--gc-thumb-zoom, 1.15));
+    }
+
+    /* Hover-peek layer: a snapshot of the game's title background that
+       fades in over the cream paper area when the card is hovered.
+       Clipped to the wood-panel paper shape via mask-image (per-card).
+       Position/size are tweakable per-card via CSS custom props so the
+       paper shape can be aligned visually inside the wood-frame canvas. */
+    .game-card__peek {
+      position: absolute;
+      inset: 0;
+      background-image: var(--card-peek, none);
+      background-size: var(--card-peek-size, cover);
+      background-position: var(--card-peek-pos, center);
+      background-repeat: no-repeat;
+      /* Mask placement, tweakable per-card.
+           --mask-w / --mask-h : size in % of card.   default 100% / 100%
+           --mask-x / --mask-y : position in % of card. default 0% / 0% */
+      -webkit-mask-image: var(--card-mask, none);
+      -webkit-mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
+              mask-image: var(--card-mask, none);
+              mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
+              mask-repeat: no-repeat;
+              mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .game-card:hover .game-card__peek,
+    .game-card:focus-visible .game-card__peek {
+      opacity: 0.92;
+    }
+    /* Tweak mode: keep all peek layers visible so the user can adjust
+       mask alignment without having to hover each card. */
+    body.peek-always .game-card__peek {
+      opacity: 0.92;
+    }
+    .game-card.is-coming-soon:hover .game-card__peek,
+    .game-card.is-coming-soon:focus-visible .game-card__peek {
+      opacity: 0;          /* don't tease previews for unreleased games */
+    }
+    /* Make sure title/desc still sit above the peek layer.
+       Round thumb (z 2) and play button (no explicit z; needs lifting)
+       must also sit ABOVE the peek so the peek doesn't bleed onto them. */
+    .game-card__text { z-index: 3; }
+    .game-card__thumbWrap { z-index: 3; }
+    .game-card__play { z-index: 3; }
+    .game-card__soon { z-index: 4; }
+
+    /* Hover text style: bright cream with a strong dark outline +
+       drop-shadow so titles stay legible on top of any photo bg. */
+    .game-card:hover .game-card__title,
+    .game-card:focus-visible .game-card__title {
+      color: #fff5d6;
+      /* Same 8-direction vector pattern as the default title outline,
+         so swapping cream→dark on hover doesn't shift any glyph edges. */
+      text-shadow:
+        1.4px 0 0 rgba(20, 10, 0, 0.95),
+        -1.4px 0 0 rgba(20, 10, 0, 0.95),
+        0 1.4px 0 rgba(20, 10, 0, 0.95),
+        0 -1.4px 0 rgba(20, 10, 0, 0.95),
+        1px 1px 0 rgba(20, 10, 0, 0.95),
+        -1px 1px 0 rgba(20, 10, 0, 0.95),
+        1px -1px 0 rgba(20, 10, 0, 0.95),
+        -1px -1px 0 rgba(20, 10, 0, 0.95),
+        0 4px 8px rgba(0, 0, 0, 0.6);
+    }
+    .game-card:hover .game-card__desc,
+    .game-card:focus-visible .game-card__desc {
+      color: #fff5d6;
+      text-shadow:
+        1px 0 0 rgba(20, 10, 0, 0.95),
+        -1px 0 0 rgba(20, 10, 0, 0.95),
+        0 1px 0 rgba(20, 10, 0, 0.95),
+        0 -1px 0 rgba(20, 10, 0, 0.95),
+        0.7px 0.7px 0 rgba(20, 10, 0, 0.95),
+        -0.7px 0.7px 0 rgba(20, 10, 0, 0.95),
+        0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
+        -0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
+        0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+    /* 3-5. 中央のテキスト (タイトル + 説明) */
+    .game-card__text {
+      position: absolute;
+      left: var(--gc-text-left-w-pct);
+      right: var(--gc-text-right-w-pct);
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      min-width: 0;
+      pointer-events: none;
+      text-align: left;
+    }
+    /* Smooth 8-direction outline. Same vector pattern is reused for hover
+       (just with different colors) so the outline doesn't shift or jitter
+       against antialiasing when hover toggles. */
+    .game-card__title {
+      font-size: 32px;
+      line-height: 1.1;
+      font-weight: 900;
+      color: #5a8a3a;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
+      /* 8-way cream halo for readability, then warm shadow underneath. */
+      text-shadow:
+        1.4px 0 0 rgba(255, 250, 230, 0.95),
+        -1.4px 0 0 rgba(255, 250, 230, 0.95),
+        0 1.4px 0 rgba(255, 250, 230, 0.95),
+        0 -1.4px 0 rgba(255, 250, 230, 0.95),
+        1px 1px 0 rgba(255, 250, 230, 0.95),
+        -1px 1px 0 rgba(255, 250, 230, 0.95),
+        1px -1px 0 rgba(255, 250, 230, 0.95),
+        -1px -1px 0 rgba(255, 250, 230, 0.95),
+        0 3px 4px rgba(80, 50, 20, 0.35);
+    }
+    /* Hiragana (and kana iteration marks) sit a notch smaller than the
+       katakana / kanji around them — gives a children's-book rhythm where
+       the meaning-bearing glyphs visually lead, particles recede.
+       Vertical-align nudge keeps them on the same baseline as siblings. */
+    .game-card__title .hira,
+    .game-card__desc  .hira {
+      font-size: 0.78em;
+      letter-spacing: 0;
+      vertical-align: baseline;
+    }
+    /* Per-game title color (id is on the card root) */
+    .game-card[data-id="quizland"]   .game-card__title { color: #6b4a18; }   /* deep amber/owl */
+    .game-card[data-id="quiz-sound"] .game-card__title { color: #2f6aa3; }   /* forest blue */
+    .game-card[data-id="maze"]       .game-card__title { color: #f5d76a; }   /* lantern yellow */
+    .game-card[data-id="oto"]        .game-card__title { color: #d38a2c; }   /* playful music amber */
+    .game-card[data-id="bento"]      .game-card__title { color: #d7712d; }   /* carrot orange */
+    .game-card[data-id="puzzle"]     .game-card__title { color: #5a89bf; }   /* gentle puzzle blue */
+    /* On the dark "maze" card the cream halo would clash — switch to a
+       warm dark halo so the yellow title still pops on the night panel. */
+    .game-card[data-id="maze"] .game-card__title {
+      text-shadow:
+        1.4px 0 0 rgba(40, 24, 8, 0.95),
+        -1.4px 0 0 rgba(40, 24, 8, 0.95),
+        0 1.4px 0 rgba(40, 24, 8, 0.95),
+        0 -1.4px 0 rgba(40, 24, 8, 0.95),
+        1px 1px 0 rgba(40, 24, 8, 0.95),
+        -1px 1px 0 rgba(40, 24, 8, 0.95),
+        1px -1px 0 rgba(40, 24, 8, 0.95),
+        -1px -1px 0 rgba(40, 24, 8, 0.95),
+        0 3px 6px rgba(0, 0, 0, 0.5);
+    }
+    .game-card__desc {
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: #6a4a2b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.04em;
+    }
+    .game-card.is-coming-soon .game-card__title,
+    .game-card.is-coming-soon:hover .game-card__title,
+    .game-card.is-coming-soon:focus-visible .game-card__title,
+    .game-card.is-coming-soon .game-card__desc,
+    .game-card.is-coming-soon:hover .game-card__desc,
+    .game-card.is-coming-soon:focus-visible .game-card__desc {
+      color: #5b3a1e;
+      text-shadow:
+        1.4px 0 0 rgba(255, 250, 230, 0.95),
+        -1.4px 0 0 rgba(255, 250, 230, 0.95),
+        0 1.4px 0 rgba(255, 250, 230, 0.95),
+        0 -1.4px 0 rgba(255, 250, 230, 0.95),
+        1px 1px 0 rgba(255, 250, 230, 0.95),
+        -1px 1px 0 rgba(255, 250, 230, 0.95),
+        1px -1px 0 rgba(255, 250, 230, 0.95),
+        -1px -1px 0 rgba(255, 250, 230, 0.95),
+        0 3px 4px rgba(80, 50, 20, 0.35);
+    }
+
+    /* 6. 右の丸再生ボタン */
+    .game-card__play {
+      position: absolute;
+      right: var(--gc-side-w-pct);
+      top: 50%;
+      height: var(--gc-play-h-pct);
+      aspect-ratio: 1 / 1;
+      width: auto;
+      transform: translateY(-50%);
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      /* drop-shadow on the button so the PNG's circular silhouette gets
+         the shadow (not a square box-shadow around its bounding box). */
+      filter:
+        drop-shadow(0 5px 8px rgba(60, 35, 10, 0.38))
+        drop-shadow(0 1px 2px rgba(60, 35, 10, 0.28));
+      transition: filter 0.15s ease, transform 0.1s ease;
+    }
+    .game-card.is-selected .game-card__play {
+      /* visual no-op — keep all cards identical */
+    }
+    .game-card__play:active {
+      filter:
+        drop-shadow(0 2px 3px rgba(60, 35, 10, 0.4));
+      transform: translateY(calc(-50% + 2px)) scale(0.97);
+    }
+    .game-card__playImg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      pointer-events: none;
+      transition: transform 0.1s ease;
+    }
+    .game-card.is-selected .game-card__playImg {
+      /* visual no-op — keep all cards identical */
+    }
+    .game-card__play:active .game-card__playImg {
+      content: url('assets/ui/play_button_pressed.webp');
+    }
+
+    /* ===== Landscape (21:9 etc): cards column gets a wider thumb if room ===== */
+    @media (orientation: landscape) and (min-aspect-ratio: 16/10) {
+      .play-main {
+        grid-template-columns: minmax(240px, 28%) 1fr;
+      }
+    }
+
+    /* ===== iPad 4:3 / narrow-landscape defensive rules =====
+       JS cover-fit (Math.max) snaps the canvas to the *taller* axis on
+       narrow viewports (e.g. iPad 1024×768 = 4:3, iPad Pro 12.9
+       2048×1536 = 4:3, 5:4 displays). At those aspect ratios the
+       1463px 16:9 safe-area is wider than the visible canvas slice
+       (≈ vw × 823/vh canvas-px), so bottom-nav (anchored to right
+       edge of safe-w) and for-parents (anchored to left edge of safe-w)
+       get clipped off the screen. We narrow --safe-w to match the
+       visible slice — every offset that uses calc((canvas-w - safe-w)/2)
+       follows automatically, and grid columns inside .play-main reflow.
+
+       16:9 viewports (PCs / iPhone landscape) are unaffected because
+       max-aspect-ratio: 16/9 doesn't match them.
+    */
+    @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
+      /* Strictly narrower than 16:9 (1599/900 ≈ 1.7767 < 16/9 = 1.7778)
+         so true 1920×1080 / 16:9 PCs stay on the 1463 safe-area path.
+         16:10 visible canvas slice ≈ 1316.8px → safe-w 1310 leaves ~7px buffer. */
+      :root {
+        --safe-w: 1310px;          /* ~16:10 viewport visible slice (S2: -10px buffer) */
+      }
+      .play-main {
+        grid-template-columns: 420px 1fr;
+        gap: 56px;
+        padding: 30px 24px 100px 32px;
+      }
+      .brand-sign { width: 420px; }
+      .brand-sign > img.brand-ribbon { width: 380px; }
+      .brand-ribbon { width: 380px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 14/9) {
+      /* Catches 14:10-ish iPad Pro 11" (1668×1194 ≈ 1.397) and 1366×1024
+         (ratio 1.334, just over 4/3 — visible canvas slice ≈ 1098.1px).
+         safe-w 1080 stays inside the tightest slice with ~18px buffer. */
+      :root {
+        --safe-w: 1080px;          /* tighter than visible 14/10..1366×1024 slices */
+      }
+      .play-main {
+        grid-template-columns: 380px 1fr;
+        gap: 48px;
+        padding: 30px 20px 100px 28px;
+      }
+      .brand-sign { width: 380px; }
+      .brand-sign > img.brand-ribbon { width: 345px; }
+      .brand-ribbon { width: 345px; }
+      /* Shrink bottom-nav + for-parents so 4 buttons (incl. せってい) fit
+         inside the safe area without clipping at the right edge. */
+      .bottom-nav { --nav-sprite-w: 400px; }
+      .for-parents { width: 340px; height: 88px; }
+      .for-parents__label { margin-left: 98px; margin-right: 28px; font-size: 21px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+      /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
+         At 4:3 the visible canvas slice is vw × 823/vh ≈ 1097.3 canvas-px,
+         so safe-w must drop well below that. 1020 leaves ~77px buffer
+         so the 300px-wide bottom-nav (4 buttons incl. せってい) is fully visible. */
+      :root {
+        --safe-w: 1020px;
+      }
+      .play-main {
+        grid-template-columns: 320px 1fr;
+        gap: 32px;
+        padding: 24px 18px 100px 24px;
+      }
+      .brand-sign { width: 320px; }
+      .brand-sign > img.brand-ribbon { width: 290px; }
+      .brand-ribbon { width: 290px; margin-top: -42px; }
+      .brand-col { padding-top: 20px; }
+      /* bottom-nav and for-parents stay side-by-side; nudge them so they
+         read as a balanced pair inside the narrower safe-area. */
+      .bottom-nav { --nav-sprite-w: 300px; }
+      .for-parents { width: 300px; height: 78px; }
+      .for-parents__label { margin-left: 86px; margin-right: 22px; font-size: 19px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
+      /* 1280×1024 etc. (very rare). Visible canvas slice ≈ 1029.5px,
+         so safe-w 980 leaves ~49px buffer. */
+      :root { --safe-w: 980px; }
+      .play-main { grid-template-columns: 310px 1fr; gap: 28px; }
+      .brand-sign { width: 310px; }
+      .brand-sign > img.brand-ribbon { width: 282px; }
+      .brand-ribbon { width: 282px; }
+      .bottom-nav { --nav-sprite-w: 280px; }
+      .for-parents { width: 280px; height: 74px; }
+      .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 18px; }
+    }
+
+    /* ===== Bottom Navigation =====
+       Shared wooden base sprite + four transparent hit areas so the actions
+       stay independent while the visuals read as one grouped control. */
+    .bottom-nav {
+      --nav-sprite-w: 412px;
+      --nav-sprite-h: calc(var(--nav-sprite-w) * 380 / 1426);
+      position: absolute;
+      bottom: 18px;
+      /* Offset by the canvas→safe-area gutter so the cluster sits inside
+         the 16:9 safe area (iPad/PC crops away the 21:9 side margins). */
+      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px);
+      left: auto;
+      transform: none;
+      width: var(--nav-sprite-w);
+      height: var(--nav-sprite-h);
+      z-index: 90;
+      display: grid;
+      grid-template-columns:
+        calc(var(--nav-sprite-w) * 385 / 1426)
+        calc(var(--nav-sprite-w) * 342 / 1426)
+        calc(var(--nav-sprite-w) * 331 / 1426)
+        calc(var(--nav-sprite-w) * 368 / 1426);
+      align-items: stretch;
+      justify-content: stretch;
+      background-image: url('assets/ui/bottom_nav_group_normal.webp');
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-position: center center;
+      filter: drop-shadow(0 6px 14px rgba(20, 10, 0, 0.45));
+      border-radius: 20px;
+      overflow: hidden;
+      padding: 0;
+    }
+    .bottom-nav::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: var(--press-opacity, 0);
+      pointer-events: none;
+      background-image: url('assets/ui/bottom_nav_group_pressed.webp');
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-position: center center;
+      clip-path: inset(0 calc(100% - var(--press-right, 0%)) 0 var(--press-left, 0%));
+      transition: opacity 0.08s ease;
+    }
+    .bn-item {
+      position: relative;
+      flex: 1 1 25%;
+      height: 100%;
+      display: block;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.08s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      overflow: hidden;
+    }
+    .bn-item:focus-visible {
+      outline: 3px solid rgba(255, 235, 170, 0.95);
+      outline-offset: 4px;
+    }
+    /* Stand-alone "for parents" button in the bottom-left of the safe area.
+       The 005 asset is a wide ribbon-shaped button — we overlay the text
+       "えほんをもっているおともだちへ" on top of the image. */
+    .for-parents {
+      position: absolute;
+      /* bottom-nav (96px tall, bottom: 18px) と上端を揃えるため bottom: 18 へ。
+         枠は 1.3 倍 (280→364, 72→94)、文字は 1.5 倍 (下記 .for-parents__label)。 */
+      bottom: 18px;
+      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
+      width: 364px;
+      height: 94px;
+      z-index: 90;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: transform 0.1s ease, filter 0.1s ease;
+      filter: drop-shadow(0 4px 8px rgba(20, 10, 0, 0.5));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .for-parents:hover { filter: drop-shadow(0 5px 10px rgba(20, 10, 0, 0.6)) brightness(1.05); }
+    .for-parents:active { transform: translateY(2px); }
+    .for-parents img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+    }
+    .for-parents__label {
+      position: relative;          /* sit above the absolute img */
+      z-index: 1;
+      /* Frame scaled 1.3x, label 1.5x — margins/font bumped to match. */
+      margin-left: 104px;          /* clear the book icon on the left (was 80) */
+      margin-right: 32px;          /* breathing room on the right (was 24) */
+      transform: translateY(-1px); /* nudge up to optically center */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #4a2a10;              /* dark brown — readable on cream wood */
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      white-space: normal;
+      text-align: center;
+      pointer-events: none;
+      text-shadow:
+        0 1px 0 rgba(255, 245, 215, 0.7),
+        0 2px 3px rgba(255, 245, 215, 0.4);
+    }
+    .for-parents__label span {
+      display: block;
+      white-space: nowrap;
+    }
+
+    /* ===== Modal ===== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+      padding: 20px;
+    }
+    .modal[hidden] { display: none; }
+    .modal-card {
+      background: var(--accent-cream);
+      border: 4px solid var(--primary-light);
+      border-radius: var(--radius);
+      padding: 22px 22px 18px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+    }
+    .modal-card h3 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .modal-card p {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+      text-align: center;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 6px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .modal-divider {
+      border: none;
+      border-top: 2px dashed var(--primary-light);
+      margin: 10px 0;
+    }
+    .dev-link {
+      display: block;
+      text-align: center;
+      padding: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-light);
+      text-decoration: none;
+      border: 2px dashed var(--text-light);
+      border-radius: 10px;
+      margin: 8px 0;
+    }
+    .dev-link:active { background: rgba(0,0,0,0.05); }
+    .dev-section {
+      margin-top: 8px;
+      padding: 10px 8px 6px;
+      border: 2px dashed var(--primary-light);
+      border-radius: 12px;
+      background: rgba(255, 248, 225, 0.5);
+    }
+    .dev-section h4 {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--text-light);
+      letter-spacing: 0.04em;
+      margin: 0 0 6px;
+      text-align: center;
+    }
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .dev-grid a {
+      display: block;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      background: #fff;
+      border: 1.5px solid var(--primary-light);
+      border-radius: 8px;
+    }
+    .dev-grid a:active { background: var(--primary-light); }
+    .modal-close {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+
+    /* ===== Password Unlock Modal (絵本シリアル入力) ===== */
+    /* 背景フレームは assets/images/bento/cooking/ui/recipe_card_frame.png (406x545) を使う。
+       中央まで装飾された絵本風カード。タイトル画面の配色 (--primary / --text / --bg) と統一。 */
+    .password-modal-card {
+      position: relative;
+      width: min(360px, 90vw);
+      aspect-ratio: 406 / 545;
+      background-image: url('assets/images/bento/cooking/ui/recipe_card_frame.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center center;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 8%;
+    }
+    .password-modal-inner {
+      /* フレーム上部〜中央のクリーム塗りに載せる (下部のリボン・葉っぱ装飾を残す) */
+      width: 80%;
+      height: auto;
+      max-height: 70%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      text-align: center;
+      color: var(--text);
+      font-family: inherit;
+      padding: 12px 10px;
+      box-sizing: border-box;
+    }
+    .password-modal-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 0;
+    }
+    .password-modal-help {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .password-modal-input {
+      width: 88%;
+      padding: 10px 14px;
+      border: 3px solid var(--primary-light);
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(255, 248, 224, 0.92);
+      color: var(--text);
+      outline: none;
+    }
+    .password-modal-input:focus {
+      border-color: var(--primary);
+    }
+    .password-modal-submit {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .password-modal-submit:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .password-modal-error {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #C04A4A;
+      background: rgba(255, 228, 228, 0.85);
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+    .password-modal-success {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    /* hidden 属性を CSS の display 指定より優先させる
+       ([hidden] のデフォルト display:none は CSS の display:flex に負けるため明示) */
+    .password-modal-success[hidden],
+    .password-modal-error[hidden],
+    .password-modal-input[hidden],
+    .password-modal-submit[hidden] {
+      display: none !important;
+    }
+    .password-modal-success-tag {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #fff;
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      padding: 6px 16px;
+      border-radius: 50px;
+    }
+    .password-modal-success-body {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .password-modal-close {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .password-modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .password-modal-reset {
+      margin-top: 6px;
+      padding: 4px 12px;
+      border: 1px dashed rgba(93, 78, 55, 0.4);
+      border-radius: 16px;
+      background: transparent;
+      color: rgba(93, 78, 55, 0.6);
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .password-modal-reset:hover {
+      background: rgba(255, 248, 224, 0.5);
+      color: var(--text);
+    }
+
+    /* ===== Toggle Switch ===== */
+    .toggle {
+      position: relative;
+      width: 56px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #D0C8BE;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 24px; height: 24px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(26px); }
+
+    /* MVP: hide acorn / thankyou / stamp UI if any module tries to show it */
+    .acorn-badge-play, .thankyou-badge-play { display: none !important; }
+    /* Web MVP: 絵本パスワード解錠導線を一時的に休眠 (BOOK_PASSWORDS=[] と整合) */
+    .for-parents, #forParentsBtn { display: none !important; }
+    /* Web MVP: 開発用 UI は ?dev=1 のときだけ表示 */
+    .dev-link, .dev-section, #passwordUnlockReset { display: none; }
+    body.dev-mode .dev-link,
+    body.dev-mode .dev-section { display: block; }
+    body.dev-mode #passwordUnlockReset { display: inline-block; }
+
+    /* ===== Portrait warning overlay =====
+       Shown when the viewport is taller than wide. Tells user to rotate.
+    */
+    .portrait-warn {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #5a3a1c 0%, #2c1a08 100%);
+      color: #fff8e1;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      padding: 20px;
+    }
+    .portrait-warn[hidden] { display: none !important; }
+    .pw-card {
+      text-align: center;
+      max-width: 360px;
+    }
+    .pw-icon {
+      font-size: 96px;
+      line-height: 1;
+      margin-bottom: 24px;
+      animation: pwRotate 2.4s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes pwRotate {
+      0%, 100% { transform: rotate(0deg); }
+      40%, 60% { transform: rotate(-90deg); }
+    }
+    .pw-msg {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      color: #FFE680;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+    }
+    .pw-sub {
+      font-size: 16px;
+      font-weight: 700;
+      opacity: 0.85;
+    }
+
+    /* ===== Tap-to-start intro overlay =====
+       Shown only on the first session entry (sessionStorage gated) when the
+       device is held in landscape. Single tap unlocks BGM and dismisses.
+       Suppressed if portrait-warn is up, or if the user muted in Settings. */
+    .tap-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 9500;          /* below portrait-warn (9999), above modals (100) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(80, 50, 18, 0.88) 0%, rgba(20, 10, 0, 0.95) 75%);
+      color: #fff8e1;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      padding: 32px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      animation: tapIntroFadeIn 0.35s ease;
+    }
+    .tap-intro[hidden] { display: none !important; }
+    .tap-intro.is-closing {
+      animation: tapIntroFadeOut 0.4s ease forwards;
+      pointer-events: none;
+    }
+    .tap-intro-card {
+      text-align: center;
+      max-width: 720px;
+      padding: 24px 48px;
+    }
+    .tap-intro-pono {
+      font-size: clamp(80px, 14vw, 140px);
+      line-height: 1;
+      margin-bottom: 18px;
+      animation: tapIntroBounce 1.6s ease-in-out infinite;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
+    }
+    .tap-intro-title {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 900;
+      color: #FFE680;
+      letter-spacing: 0.05em;
+      margin: 12px 0 18px;
+      text-shadow:
+        3px 3px 0 #5a3a1c,
+        0 0 24px rgba(255, 200, 80, 0.4),
+        0 6px 12px rgba(0, 0, 0, 0.5);
+    }
+    .tap-intro-sub {
+      font-size: clamp(20px, 3.4vw, 32px);
+      font-weight: 700;
+      color: #fff8e1;
+      letter-spacing: 0.08em;
+      animation: tapIntroPulse 1.2s ease-in-out infinite;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+    }
+    @keyframes tapIntroBounce {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-14px); }
+    }
+    @keyframes tapIntroPulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.55; }
+    }
+    @keyframes tapIntroFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes tapIntroFadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+    /* Portrait fallback — keep the CTA readable on phones held vertically
+       (rare since portrait-warn covers this, but defensive). */
+    @media (orientation: portrait) {
+      .tap-intro-card { padding: 20px 24px; }
+      .tap-intro-title { letter-spacing: 0.02em; }
+    }
+
+    /* ===== Local-preview fallbacks (when image assets are missing) =====
+       These let the --gc-* layout tweaks be visible without the production
+       art. They are visual-only — production builds with assets render
+       normally and these rules effectively no-op (images cover them). */
+    .preview-pane {
+      background: transparent;
+    }
+    /* Fallback chrome — only paints when the wood-panel PNG failed to load.
+       Previously this was unconditional, so the rectangular gradient + shadow
+       leaked through the PNG's rounded transparent corners and looked like a
+       second card sitting under the real one. */
+    .game-card:has(.game-card__bg.is-broken) {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.18), rgba(0,0,0,0.05)),
+        repeating-linear-gradient(90deg,
+          #C68A4D 0px, #B47A3D 6px, #C68A4D 12px, #BE8244 18px);
+      border-radius: var(--gc-radius);
+      box-shadow:
+        0 6px 14px rgba(80,50,20,0.25),
+        inset 0 2px 0 rgba(255,255,255,0.35),
+        inset 0 -3px 0 rgba(0,0,0,0.18);
+    }
+    .game-card__bg[src=""],
+    .game-card__bg:not([src]) { display: none; }
+    .game-card__thumb[src=""],
+    .game-card__thumb:not([src]),
+    .game-card__thumb.is-broken {
+      background: radial-gradient(circle at 35% 30%, #FFE4A8, #E89D4A 70%);
+    }
+    .game-card__playImg.is-broken {
+      content: none;
+      background: radial-gradient(circle at 35% 30%, #FFE680, #F5A800 65%);
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 3px 0 #B87200, 0 6px 12px rgba(0,0,0,0.25);
+    }
+  </style>
+  <!-- common/mvp-flags.js is part of the production app shell, not the preview.
+       Skip it here so the preview sandbox doesn't 404 on every reload. -->
+
+  <!-- The tweaks panel JSX below is kept inert during normal app loads. -->
+</head>
+<body>
+
+  <!-- 21:9 fixed canvas — JS scales to fit viewport -->
+  <div class="stage" id="stage">
+
+    <!-- Full-bleed selected-game background -->
+    <div class="preview-bg" id="previewBgA"></div>
+    <div class="preview-bg" id="previewBgB"></div>
+    <div class="bg-veil"></div>
+
+    <main class="play-main">
+      <aside class="brand-col" aria-label="タイトル">
+        <div class="brand-sign">
+          <img alt="ポノのあそびば" draggable="false" src="assets/ui/brand_sign_01.webp" data-src="assets/ui/brand_sign_01.webp">
+          <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" src="assets/ui/brand_sign_02.webp" data-src="assets/ui/brand_sign_02.webp">
+        </div>
+      </aside>
+
+      <section class="cards-col" aria-label="ゲーム一覧">
+        <!-- Scroll hint: roof-shaped chevrons (decorative, no clicks) -->
+        <div class="scroll-hint scroll-hint--up" aria-hidden="true">
+          <svg viewBox="0 0 64 28" preserveAspectRatio="none">
+            <path d="M6 22 L32 6 L58 22"></path>
+            <path d="M14 26 L32 14 L50 26"></path>
+          </svg>
+        </div>
+        <section class="card-list" id="cardList" aria-label="ゲーム一覧"></section>
+        <div class="scroll-hint scroll-hint--down" aria-hidden="true">
+          <svg viewBox="0 0 64 28" preserveAspectRatio="none">
+            <path d="M6 6 L32 22 L58 6"></path>
+            <path d="M14 2 L32 14 L50 2"></path>
+          </svg>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
+      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
+      <button class="bn-item" data-action="top" type="button" aria-label="トップ"></button>
+      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
+    </nav>
+    <button class="for-parents" id="forParentsBtn" type="button" aria-label="えほんをもっているおともだちへ">
+      <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
+      <span class="for-parents__label"><span>えほんをもっている</span><span>おともだちへ</span></span>
+    </button>
+  </div><!-- /.stage -->
+
+  <!-- ===== Top BGM (initial-touch unlock; no modal needed) =====
+       The audio element lives outside .stage so it isn't affected by the
+       canvas transform. Playback is started inside the first user gesture
+       (see the IIFE near the bottom of the main <script>) to satisfy iOS
+       Safari's autoplay restriction without showing a tap-to-start screen. -->
+  <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
+
+  <!-- ===== Tap-to-start intro overlay (first session only; landscape only) =====
+       Single tap dismisses, unlocks BGM autoplay, and reveals the title screen
+       behind. Suppressed automatically if Settings has muted audio or if the
+       user has already entered the title in this browser session. -->
+  <div class="tap-intro" id="tapIntro" hidden role="button" tabindex="0" aria-label="タップしてはじめる">
+    <div class="tap-intro-card">
+      <div class="tap-intro-pono" aria-hidden="true">🐻</div>
+      <div class="tap-intro-title">ポノのあそびば</div>
+      <div class="tap-intro-sub">タップして はじめよう</div>
+    </div>
+  </div>
+
+  <!-- ===== Portrait warning overlay (shown when device is held vertically) ===== -->
+  <div class="portrait-warn" id="portraitWarn" hidden>
+    <div class="pw-card">
+      <div class="pw-icon">📱↻</div>
+      <div class="pw-msg">よこむきに してね</div>
+      <div class="pw-sub">きかいを よこに まわすと あそべるよ</div>
+    </div>
+  </div>
+
+  <!-- ===== Settings Modal ===== -->
+  <div class="modal" id="settingsModal" hidden role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card">
+      <h3 id="settingsTitle">せってい</h3>
+      <div class="setting-row">
+        <span>おとを ながす</span>
+        <label class="toggle">
+          <input type="checkbox" id="soundToggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <a href="play-all.html" class="dev-link">📋 ぜんぶみる（開発用）</a>
+
+      <div class="dev-section">
+        <h4>🍱 弁当 NPC テスト（開発用）</h4>
+        <div class="dev-grid">
+          <a href="bento/?npc=risu">🐿 りすちゃん</a>
+          <a href="bento/?npc=inu">🐶 わんちゃん</a>
+          <a href="bento/?npc=ahiru">🦆 あひる</a>
+          <a href="bento/?npc=shika">🦌 しかさん</a>
+          <a href="bento/?npc=lesser_panda">🐼 パンダ</a>
+          <a href="bento/?npc=neko">🐱 ねこさん</a>
+          <a href="bento/?npc=1">🎲 ランダム</a>
+          <a href="bento/?npc=0">⏸ 自由モード</a>
+        </div>
+      </div>
+
+      <button class="modal-close" type="button" data-close="settingsModal">とじる</button>
+    </div>
+  </div>
+
+  <!-- ===== News Modal ===== -->
+  <div class="modal" id="newsModal" hidden role="dialog" aria-modal="true" aria-labelledby="newsTitle">
+    <div class="modal-card">
+      <h3 id="newsTitle">おしらせ</h3>
+      <p>あたらしい おしらせは ありません。</p>
+      <button class="modal-close" type="button" data-close="newsModal">とじる</button>
+    </div>
+  </div>
+
+  <!-- ===== Password Unlock Modal (絵本パスワード入力 → premium 解錠) ===== -->
+  <div class="modal" id="passwordUnlockModal" hidden role="dialog" aria-modal="true" aria-labelledby="passwordUnlockTitle">
+    <div class="password-modal-card">
+      <div class="password-modal-inner">
+        <h3 id="passwordUnlockTitle" class="password-modal-title">えほん の パスワード</h3>
+        <p class="password-modal-help">えほんの うらに かいてある<br>パスワードを いれてね</p>
+        <input type="text" class="password-modal-input" id="passwordUnlockInput" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
+        <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">かいじょ！</button>
+        <div class="password-modal-error" id="passwordUnlockError" hidden>ちがうよ！ もういちど！</div>
+        <div class="password-modal-success" id="passwordUnlockSuccess" hidden>
+          <div class="password-modal-success-tag">✨ えほん モード が ひらいたよ ✨</div>
+          <p class="password-modal-success-body">あたらしい ゲームや ステージ、<br>たべものが あそべるように なったよ！</p>
+          <button class="password-modal-close" type="button" data-close="passwordUnlockModal">あそびに もどる</button>
+          <button class="password-modal-reset" id="passwordUnlockReset" type="button">🔄 デバッグ: フリーに もどす</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 絵本パスワード解錠ロジック (PonoTier.verifyBookPassword) を提供 -->
+  <script src="common/tier.js"></script>
+
+  <script>
+    'use strict';
+
+    // Web MVP: ?dev=1 のとき開発用 UI (ぜんぶみる / NPC テスト / フリーに もどす) を表示
+    try {
+      if (new URLSearchParams(location.search).get('dev') === '1') {
+        document.body.classList.add('dev-mode');
+      }
+    } catch (_) {}
+
+    // ===== Game catalog (free MVP set) =====
+    // panel: カード木枠の背景 (各ゲームで違う木目バリエーション)
+    // thumb: カード左の丸サムネ (各ゲーム個別)
+    // ----- Phase 1 launch ordering -----
+    // 上段 5 本 (quizland → maze → oto → puzzle → bento) は無料公開済みの
+    // 本実装ゲーム (tier:'free')。
+    // 下段 4 本 (writing-mori / wordmatch / zukan / kitchen) は本リリースでは
+    // 準備中扱いだが、開発者がリンク経由で挙動を確認できるよう
+    // debugPlayable:true を付与して startGame ガードをすり抜けられるようにする。
+    // (badge と is-coming-soon クラスは残るので一般ユーザーには「じゅんびちゅう」
+    //  として見える)
+    // quiz-sound は MENU_GAMES.filter で除外されるため順番は問わない。
+    const GAMES = [
+      {
+        id: 'quizland',
+        title: 'フクロウはかせのなぞなぞ',
+        subtitle: 'ひらめき・ものしりクイズ',
+        icon: '🦉',
+        bg: 'assets/ui/play_quizland_title_back.webp',
+        href: 'quizland/index.html',
+        panel: 'assets/ui/menu_card_base_01.webp',
+        // owl_professor_guide.png はフクロウ博士の単体立ち絵 (透過)。
+        // 旧 thumb_quizland.png (教室シーン) はテーマと合わないため不使用。
+        thumb: 'assets/ui/thumb_quizland_owl.webp',
+        thumbPos: '50% 50%',
+        peekPos: '67% 55%',
+        tier: 'free'
+      },
+      {
+        id: 'maze',
+        title: 'ポノとランタンのめいろ',
+        subtitle: 'ランタンをもって まいごさがし',
+        icon: '🏮',
+        bg: 'assets/ui/play_maze_title_back.webp',
+        href: 'maze/index.html',
+        panel: 'assets/ui/menu_card_base_04.webp',
+        // 本物の迷路絵 (ランタン+夜の小道) は thumb_quiz-sound.webp 側に
+        // 入っているのでこちらを流用。 thumb_maze.webp は中身が
+        // ずかん風 (本+きのこ) なので zukan カードで使用する。
+        thumb: 'assets/ui/thumb_quiz-sound.webp',
+        // 文字で顔の目元が隠れやすいため、背景を少し上へ寄せる。
+        peekPos: '50% 62%',
+        tier: 'free'
+      },
+      {
+        id: 'oto',
+        title: 'ポノのおとタッチ',
+        subtitle: 'タップして おとを ならそう',
+        icon: '🎵',
+        bg: 'assets/ui/play_oto_title_back.webp',
+        href: 'oto/index.html',
+        panel: 'assets/ui/menu_card_base_01.webp',
+        thumb: 'assets/ui/thumb_oto.webp',
+        thumbPos: '34% 54%',
+        // 音符と光の流れが主役の新背景。文字が多少重なっても
+        // 全体の雰囲気でゲーム内容が伝わるように中央寄せで見せる。
+        peekPos: '50% 50%',
+        tier: 'free'
+      },
+      {
+        id: 'puzzle',
+        title: 'ポノのなかよしパズル',
+        subtitle: 'ピースを あわせて えを かんせい',
+        icon: '🧩',
+        bg: 'assets/ui/play_puzzle_title_back.webp',
+        href: 'puzzle/index.html',
+        panel: 'assets/ui/menu_card_base_03.webp',
+        thumb: 'assets/ui/thumb_puzzle.webp',
+        thumbPos: '36% 52%',
+        peekPos: '39% 49%',
+        tier: 'free'
+      },
+      {
+        id: 'bento',
+        title: 'ポノとつくろう いろどりべんとう',
+        subtitle: 'すきな おかずを つめよう',
+        icon: '🍱',
+        bg: 'assets/ui/play_bento_title_back.webp',
+        href: 'bento/index.html',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        thumb: 'assets/ui/thumb_bento.webp',
+        thumbPos: '31% 58%',
+        peekPos: '36% 52%',
+        tier: 'free'
+      },
+      // ----- Coming-soon (debug-playable for devs) -----
+      {
+        id: 'writing-mori',
+        title: 'もじっこファーム',
+        subtitle: 'ひらがなを なぞって ミルマルと そだとう',
+        icon: '✏️',
+        bg: 'assets/ui/play_wordmatch_title_back.webp',
+        href: 'writing-mori/index.html',
+        panel: 'assets/ui/menu_card_base_04.webp',
+        thumb: 'assets/ui/thumb_wordmatch.webp',
+        thumbPos: '45% 52%',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'free'
+      },
+      {
+        id: 'zukan',
+        title: 'ポノのもりのずかん',
+        subtitle: 'もりを たんけんして どうぶつを みつけよう',
+        icon: '📕',
+        bg: 'assets/ui/play_zukan_outer_bg_21x9.webp',
+        href: 'zukan/index.html',
+        panel: 'assets/ui/menu_card_base_04.webp',
+        // thumb_maze.webp は実際は ずかん風 (本+葉+きのこ+まつぼっくり)
+        // の絵なので、 ずかんカードで正しく使う。
+        thumb: 'assets/ui/thumb_maze.webp',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'free'
+      },
+      // ----- Hidden from menu (filtered out by MENU_GAMES) -----
+      {
+        id: 'quiz-sound',
+        title: 'こだまのもりのこえさがし',
+        subtitle: 'どうぶつのこえを きいて さがそう',
+        icon: '🐦',
+        bg: 'assets/ui/play_quiz_sound_title_back.webp',
+        href: 'quiz-sound/index.html',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        thumb: 'assets/ui/thumb_quiz-sound.webp'
+      }
+    ];
+    const MENU_GAMES = GAMES.filter((game) => game.id !== 'quiz-sound');
+
+    let currentIdx = 0;
+    let activeBgEl = 'A';
+
+    const $ = (id) => document.getElementById(id);
+    const previewBgA = $('previewBgA');
+    const previewBgB = $('previewBgB');
+    const cardList = $('cardList');
+
+    // ===== HTML escape (defensive: GAMES may become external in future) =====
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Children's-book typography rhythm: shrink ONLY one-letter hiragana
+    // particles (の, と, は, を, に, へ, が, も, で, や, か) that sit
+    // *between* katakana / kanji words. Multi-character hiragana runs
+    // (verbs, names) stay full size — only the connector particles recede.
+    //
+    // We don't try to fully parse Japanese; we just look for a single
+    // hiragana letter sandwiched between non-hiragana glyphs.
+    const PARTICLE_HIRA = /[のとはをにへがもでやかよりからまで]/;
+    function decorateKana(rawTitle) {
+      const escaped = esc(rawTitle);
+      const withPonoParticles = escaped.replace(
+        /(ポノ)([のと])/g,
+        (_, head, particle) => `${head}<span class="hira">${particle}</span>`
+      );
+      // Match a single hiragana char preceded & followed by a non-hiragana
+      // (katakana / kanji / latin / digit / punctuation). Use a lookbehind /
+      // lookahead so we only wrap the one character itself.
+      // The class "hira" is a leftover name; semantically these are particles.
+      return withPonoParticles.replace(
+        /(?<=[\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9F\u3005\w])([\u3041-\u3096])(?=[\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9F\u3005\w])/g,
+        (m, ch) => PARTICLE_HIRA.test(ch) ? `<span class="hira">${ch}</span>` : ch
+      );
+    }
+
+    // ===== Render cards =====
+    // Cache-buster for Claude preview only (skirts a stale service worker
+    // that returns broken responses for <img> while fetch() works).
+    const __isPreview = /claudeusercontent\.com$/.test(location.hostname);
+    // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
+    // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
+    // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
+    const PAGE_CACHE_VERSION = 994;
+    const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
+
+    // Infinite-scroll loop: render the catalog 3× and silently teleport
+    // scrollTop when the user crosses a set boundary. data-idx stays the
+    // canonical 0..GAMES.length-1 index; data-rep is just the copy number.
+    // NOTE: 3 → 2 への削減は scroll teleport 計算 (start = oneSetH() の中央コピー基準、
+    // 境界 set*0.5 / set*1.5) を壊すので変更しない (2026-05-14 リスク回避)。
+    const LOOP_COPIES = 3;
+
+    function cardMarkup(g, i, rep) {
+      // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
+      // is-debug-playable: 上の彩度フィルタを打ち消して開発者だけが遷移できる扱い。
+      //   バッジ自体は残す (一般ユーザーには「じゅんびちゅう」のまま見える)。
+      const comingClass = g.comingSoon
+        ? (g.debugPlayable ? ' is-coming-soon is-debug-playable' : ' is-coming-soon')
+        : '';
+      const comingBadge = g.comingSoon
+        ? '<div class="game-card__soon">じゅんびちゅう</div>'
+        : '';
+      // Pair each panel image with its matching alpha mask. The mask cuts
+      // the hover-peek layer to the cream paper region of the wood frame.
+      // The actual mask file + offsets are applied via applyTweaks() so
+      // they can be tuned at runtime; here we just stamp the panel number
+      // on the card and provide a sensible default --card-mask.
+      const panelMatch = String(g.panel || '').match(/menu_card_base_0?(\d+)\.(?:png|webp)/i);
+      const panelN = panelMatch ? parseInt(panelMatch[1], 10) : ((i % 4) + 1);
+      const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
+      // LOOP_COPIES の最初のコピー (rep===0) はファーストビュー上に必ず存在するため eager 読み込み。
+      // 残り 2 コピー (rep 1,2 = scroll loop teleport 用の予備) は lazy のままで memory を節約。
+      // 全カードに loading="lazy" を付けると iOS Safari の intersection observer 経路で
+      // ファーストビューのカードも初回 blank になる事故 (2026-05 修正済) の再発防止。
+      const loadingAttr = (rep === 0) ? 'eager' : 'lazy';
+      const peekStyle = g.comingSoon ? 'none' : `url('${esc(__bust(g.bg))}')`;
+      const thumbMarkup = g.comingSoon
+        ? '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>'
+        : `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">`;
+      return `
+        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
+          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
+          <div class="game-card__peek" aria-hidden="true"></div>
+          <div class="game-card__thumbWrap">
+            ${thumbMarkup}
+          </div>
+          <div class="game-card__text">
+            <div class="game-card__title">${decorateKana(g.title)}</div>
+            <div class="game-card__desc">${decorateKana(g.subtitle)}</div>
+          </div>
+          ${comingBadge}
+          <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
+            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.webp'))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
+          </button>
+        </div>
+      `;
+    }
+
+    function renderCards() {
+      let html = '';
+      for (let rep = 0; rep < LOOP_COPIES; rep++) {
+        for (let i = 0; i < MENU_GAMES.length; i++) {
+          html += cardMarkup(MENU_GAMES[i], i, rep);
+        }
+      }
+      cardList.innerHTML = html;
+      cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
+      cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
+      cardList.addEventListener('click', onCardClick);
+      cardList.addEventListener('keydown', onCardKeyDown);
+
+      // Mark broken images so CSS fallbacks kick in (local preview without assets).
+      // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
+      // 最大 2 回まで自動 retry を試みてからフォールバックする (2026-05-14 トップページ
+      // 画像部分読込バグ対策)。retry は同 URL を一旦外してから次フレームで再代入する
+      // ことでブラウザに再リクエストを強制させる。
+      cardList.querySelectorAll('img').forEach((img) => {
+        img.addEventListener('error', () => {
+          const retries = Number(img.dataset.retries || 0);
+          if (retries < 2) {
+            img.dataset.retries = String(retries + 1);
+            const src = img.src;
+            setTimeout(() => {
+              img.removeAttribute('src');
+              requestAnimationFrame(() => { img.src = src; });
+            }, 800);
+          } else {
+            img.classList.add('is-broken');
+          }
+        });
+      });
+
+      // Wire the infinite-loop scroll teleport. Defer one frame so layout
+      // is committed and we can measure one set's height.
+      requestAnimationFrame(setupLoopScroll);
+    }
+
+    function setupLoopScroll() {
+      const cards = cardList.querySelectorAll('.game-card');
+      if (cards.length < MENU_GAMES.length * LOOP_COPIES) return;
+
+      // Lock the list's visible height to exactly 4 cards + 3 gaps so
+      // no 5th card peeks through the top/bottom edges. Recompute when
+      // images finish loading (their natural size pushes the card height
+      // up after layout) and on viewport resize.
+      const VISIBLE = 4;
+      // Reserve a few px of vertical padding inside the list so sub-pixel
+      // rounding doesn't let prev/next cards peek through at the top/bottom
+      // edges. The padding extends the clip box; cards still snap to the
+      // same step-based boundaries.
+      const CLIP_PAD = 6;
+      cardList.style.paddingTop = CLIP_PAD + 'px';
+      cardList.style.paddingBottom = CLIP_PAD + 'px';
+      const recomputeHeight = () => {
+        // Use offsetHeight (unscaled layout height), not getBoundingClientRect
+        // which returns the post-transform value when an ancestor is scaled.
+        const cardH = cards[0].offsetHeight;
+        if (!cardH) return;
+        const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+        const visibleH = cardH * VISIBLE + gap * (VISIBLE - 1) + CLIP_PAD * 2;
+        cardList.style.height = visibleH + 'px';
+      };
+      recomputeHeight();
+      // Re-measure after every image finishes loading (panel + thumb + play)
+      cardList.querySelectorAll('img').forEach((img) => {
+        if (!img.complete) {
+          img.addEventListener('load', recomputeHeight, { once: true });
+        }
+      });
+      window.addEventListener('resize', recomputeHeight);
+      // Final safety pass after layout settles
+      setTimeout(recomputeHeight, 300);
+      setTimeout(recomputeHeight, 1000);
+
+      // One set's height = N cards + N gaps (the gap *after* the last card
+      // of a set is what separates it from the next set's first card).
+      // Computing this from scrollHeight/LOOP_COPIES is wrong because the
+      // very last set has no trailing gap, so the division leaks ~gap/COPIES
+      // px per set and accumulates drift each loop teleport. Use the
+      // step-based formula so every teleport lands on an exact card boundary.
+      const oneSetH = () => {
+        const cardH = cards[0].offsetHeight;
+        const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+        return (cardH + gap) * MENU_GAMES.length;
+      };
+      // Start positioned at the middle copy so user can scroll either way.
+      cardList.scrollTop = oneSetH();
+
+      let teleporting = false;
+      let snapTimer = null;
+      let snapping = false;     // true while we're animating to a snap target
+
+      // Custom easing animation — feels softer than browser smooth-scroll.
+      const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+      const animateScrollTo = (targetTop, duration = 380) => {
+        const start = cardList.scrollTop;
+        const dist = targetTop - start;
+        if (Math.abs(dist) < 0.5) return;
+        snapping = true;
+        const t0 = performance.now();
+        const tick = (now) => {
+          const p = Math.min(1, (now - t0) / duration);
+          cardList.scrollTop = start + dist * easeOutCubic(p);
+          if (p < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            snapping = false;
+          }
+        };
+        requestAnimationFrame(tick);
+      };
+
+      // After scrolling stops, glide to the nearest card boundary.
+      const snapToNearest = () => {
+        if (teleporting || snapping) return;
+        const cardH = cards[0].offsetHeight;
+        const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+        const step = cardH + gap;
+        if (!step) return;
+        const t = cardList.scrollTop;
+        const target = Math.round(t / step) * step;
+        animateScrollTo(target);
+      };
+
+      cardList.addEventListener('scroll', () => {
+        if (teleporting) return;
+        const set = oneSetH();
+        const t = cardList.scrollTop;
+        if (t < set * 0.5) {
+          teleporting = true;
+          cardList.scrollTop = t + set;
+          requestAnimationFrame(() => { teleporting = false; });
+          return;
+        } else if (t > set * 1.5) {
+          teleporting = true;
+          cardList.scrollTop = t - set;
+          requestAnimationFrame(() => { teleporting = false; });
+          return;
+        }
+        // Debounced snap: wait for the user to stop scrolling.
+        if (snapping) return;
+        clearTimeout(snapTimer);
+        snapTimer = setTimeout(snapToNearest, 140);
+      }, { passive: true });
+    }
+
+    function pulseStartBtn() { /* removed: start button no longer exists */ }
+
+    const CARD_TAP_MOVE_TOLERANCE = 12;
+    const CARD_TAP_STATE_TTL_MS = 800;
+    let cardPointerDown = null;
+    let cardPointerDownTimer = 0;
+
+    function onCardPointerDown(e) {
+      const card = e.target.closest('.game-card');
+      if (!card || (typeof e.button === 'number' && e.button > 0)) return;
+      clearTimeout(cardPointerDownTimer);
+      cardPointerDown = {
+        x: e.clientX,
+        y: e.clientY,
+        scrollTop: cardList.scrollTop,
+        idx: card.dataset.idx,
+        rep: card.dataset.rep
+      };
+      cardPointerDownTimer = setTimeout(clearCardPointerDown, CARD_TAP_STATE_TTL_MS);
+    }
+
+    function clearCardPointerDown() {
+      clearTimeout(cardPointerDownTimer);
+      cardPointerDownTimer = 0;
+      cardPointerDown = null;
+    }
+
+    function isCardTap(e, card) {
+      if (!cardPointerDown) return true;
+      const dx = Math.abs(e.clientX - cardPointerDown.x);
+      const dy = Math.abs(e.clientY - cardPointerDown.y);
+      const ds = Math.abs(cardList.scrollTop - cardPointerDown.scrollTop);
+      const sameCard = card.dataset.idx === cardPointerDown.idx && card.dataset.rep === cardPointerDown.rep;
+      clearCardPointerDown();
+      return sameCard && dx <= CARD_TAP_MOVE_TOLERANCE && dy <= CARD_TAP_MOVE_TOLERANCE && ds <= CARD_TAP_MOVE_TOLERANCE;
+    }
+
+    function onCardClick(e) {
+      const card = e.target.closest('.game-card');
+      if (!card) return;
+      if (!isCardTap(e, card)) return;
+      const idx = Number(card.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      if (idx !== currentIdx) selectGame(idx);
+      startGame(idx);
+    }
+
+    function onCardKeyDown(e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const card = e.target.closest('.game-card');
+      if (!card || e.target !== card) return;
+      const idx = Number(card.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      e.preventDefault();
+      if (idx !== currentIdx) selectGame(idx);
+      startGame(idx);
+    }
+
+    function startGame(idx) {
+      const game = MENU_GAMES[idx];
+      if (!game) return;
+      // Coming-soon entries are normally blocked. debugPlayable:true lets
+      // devs still tap through to the real href so QA can verify destinations
+      // without flipping comingSoon off (which would also hide the badge).
+      const blocked = game.comingSoon && !game.debugPlayable;
+      if (blocked || !game.href || game.href === '#') return;
+      try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
+      location.href = game.href;
+    }
+
+    // ===== Select / preview crossfade =====
+    function selectGame(idx) {
+      const game = MENU_GAMES[idx];
+      if (!game) return;
+      currentIdx = idx;
+
+      // Update card highlight + aria-pressed
+      const cards = cardList.querySelectorAll('.game-card');
+      cards.forEach((c, i) => {
+        const sel = (i === idx);
+        c.classList.toggle('is-selected', sel);
+        c.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      });
+
+      // Crossfade backgrounds — encode URI to keep CSS url() value safe
+      const incoming = activeBgEl === 'A' ? previewBgB : previewBgA;
+      const outgoing = activeBgEl === 'A' ? previewBgA : previewBgB;
+      const safeBg = encodeURI(__bust(game.bg)).replace(/'/g, '%27');
+      incoming.style.backgroundImage = `url('${safeBg}')`;
+      // Double rAF: first frame commits the bg-image, second frame triggers opacity transition reliably
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          incoming.classList.add('is-active');
+          outgoing.classList.remove('is-active');
+        });
+      });
+      activeBgEl = activeBgEl === 'A' ? 'B' : 'A';
+
+      // Fade text labels (preview overlay removed; no-op now)
+      // previewTitle / previewDesc no longer exist — title is on each card.
+    }
+
+    // ===== Start button removed (each card has its own play button) =====
+
+    // ===== Bottom nav =====
+    const bottomNav = $('bottomNav');
+    const BOTTOM_NAV_PRESS_AREAS = [
+      { left: '0.35%', right: '27.21%' },
+      { left: '27.21%', right: '51.02%' },
+      { left: '51.02%', right: '74.47%' },
+      { left: '74.47%', right: '99.93%' }
+    ];
+    function clearBottomNavPressed() {
+      bottomNav.querySelectorAll('.bn-item.is-pressed').forEach((btn) => btn.classList.remove('is-pressed'));
+      bottomNav.style.setProperty('--press-opacity', '0');
+    }
+    bottomNav.addEventListener('pointerdown', (e) => {
+      const btn = e.target.closest('.bn-item');
+      if (!btn) return;
+      clearBottomNavPressed();
+      btn.classList.add('is-pressed');
+      const buttons = Array.from(bottomNav.querySelectorAll('.bn-item'));
+      const idx = buttons.indexOf(btn);
+      const area = BOTTOM_NAV_PRESS_AREAS[idx];
+      if (area) {
+        bottomNav.style.setProperty('--press-left', area.left);
+        bottomNav.style.setProperty('--press-right', area.right);
+        bottomNav.style.setProperty('--press-opacity', '1');
+      }
+    });
+    bottomNav.addEventListener('pointerleave', clearBottomNavPressed);
+    document.addEventListener('pointerup', clearBottomNavPressed);
+    document.addEventListener('pointercancel', clearBottomNavPressed);
+    bottomNav.addEventListener('click', (e) => {
+      const btn = e.target.closest('.bn-item');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'help') {
+        location.href = 'help.html';
+      } else if (action === 'top') {
+        location.href = 'index.html';
+      } else if (action === 'news') {
+        openModal('newsModal');
+      } else if (action === 'settings') {
+        openModal('settingsModal');
+      }
+    });
+
+    // ===== 「えほんをもっているおともだちへ」 button → unlock flow =====
+    // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
+    // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
+    // パスワード検証は common/tier.js の PonoTier.verifyBookPassword に集約。
+    const fpBtn = document.getElementById('forParentsBtn');
+    if (fpBtn) {
+      fpBtn.addEventListener('click', () => {
+        // 既に解錠済みなら成功画面で開く、 未解錠なら入力画面で開く
+        const already = (function() {
+          try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
+        })();
+        const errEl = document.getElementById('passwordUnlockError');
+        const successEl = document.getElementById('passwordUnlockSuccess');
+        const inputEl = document.getElementById('passwordUnlockInput');
+        const submitEl = document.getElementById('passwordUnlockSubmit');
+        const helpEl = document.querySelector('.password-modal-help');
+        if (errEl) errEl.hidden = true;
+        if (successEl) successEl.hidden = !already;
+        // 入力欄+ボタンを成功時は隠す
+        if (inputEl) inputEl.style.display = already ? 'none' : '';
+        if (submitEl) submitEl.style.display = already ? 'none' : '';
+        if (helpEl) helpEl.style.display = already ? 'none' : '';
+        if (!already && inputEl) inputEl.value = '';
+        openModal('passwordUnlockModal');
+      });
+    }
+
+    // パスワード送信ハンドラ
+    const pwSubmit = document.getElementById('passwordUnlockSubmit');
+    if (pwSubmit) {
+      pwSubmit.addEventListener('click', () => {
+        const input = document.getElementById('passwordUnlockInput');
+        const val = (input && input.value) || '';
+        const ok = !!(window.PonoTier
+          && typeof window.PonoTier.verifyBookPassword === 'function'
+          && window.PonoTier.verifyBookPassword(val));
+        const errEl = document.getElementById('passwordUnlockError');
+        const successEl = document.getElementById('passwordUnlockSuccess');
+        const helpEl = document.querySelector('.password-modal-help');
+        if (ok) {
+          try { localStorage.setItem('pono_premium', '1'); } catch (e) {}
+          if (errEl) errEl.hidden = true;
+          if (input) input.style.display = 'none';
+          pwSubmit.style.display = 'none';
+          if (helpEl) helpEl.style.display = 'none';
+          if (successEl) successEl.hidden = false;
+        } else {
+          if (errEl) errEl.hidden = false;
+          if (input) {
+            input.value = '';
+            input.focus();
+          }
+        }
+      });
+    }
+
+    // デバッグ用リセットボタン: 解錠状態を解除して free に戻す
+    // (success div 内に存在するため、success が hidden の間は表示されない)
+    const pwReset = document.getElementById('passwordUnlockReset');
+    if (pwReset) {
+      pwReset.addEventListener('click', () => {
+        try {
+          localStorage.removeItem('pono_premium');
+          localStorage.removeItem('pono_sub_active');
+          localStorage.removeItem('pono_welcome_book_seen');
+        } catch (e) {}
+        setTimeout(() => location.reload(), 100);
+      });
+    }
+
+    // パスワード解錠モーダルを閉じた時に、 解錠済みならリロードして
+    // メニューを book ティア状態で再描画する (カード一覧の表示更新のため)
+    document.addEventListener('click', (e) => {
+      const closer = e.target.closest('[data-close="passwordUnlockModal"]');
+      if (closer) {
+        try {
+          if (localStorage.getItem('pono_premium') === '1') {
+            setTimeout(() => location.reload(), 100);
+          }
+        } catch (e) {}
+        // 注: 汎用 [data-close] ハンドラが closeModal を呼ぶのは別 listener なので
+        // return しても event 伝播は止まらない。 ただし本 listener 内の早期離脱として明示。
+        return;
+      }
+    });
+
+    // ===== Modal helpers =====
+    function openModal(id) {
+      const m = $(id);
+      if (m) m.hidden = false;
+    }
+    function closeModal(id) {
+      const m = $(id);
+      if (m) m.hidden = true;
+    }
+    document.addEventListener('click', (e) => {
+      const closeBtn = e.target.closest('[data-close]');
+      if (closeBtn) {
+        closeModal(closeBtn.dataset.close);
+        return;
+      }
+      // Click on backdrop closes
+      if (e.target.classList && e.target.classList.contains('modal')) {
+        e.target.hidden = true;
+      }
+    });
+
+    // ===== Sound toggle (persisted) =====
+    const SOUND_KEY = 'pono_sound_off';
+    const soundToggle = $('soundToggle');
+    function loadSoundPref() {
+      let off = false;
+      try { off = localStorage.getItem(SOUND_KEY) === '1'; } catch(_) {}
+      soundToggle.checked = !off;
+    }
+    soundToggle.addEventListener('change', () => {
+      const on = soundToggle.checked;
+      try { localStorage.setItem(SOUND_KEY, on ? '0' : '1'); } catch(_) {}
+    });
+    loadSoundPref();
+
+    // ===== BGM + tap-to-start intro =====
+    // iOS Safari requires a user gesture to start <audio>. We show the
+    // tap-intro overlay only on a fresh session (sessionStorage-gated) so
+    // that returning from a child game doesn't re-prompt. The single tap
+    // both starts BGM and dismisses the overlay → user lands on the title.
+    (function () {
+      const bgm = document.getElementById('play-bgm');
+      const intro = document.getElementById('tapIntro');
+      if (!bgm) return;
+      bgm.volume = 0.25;
+
+      function isMuted() {
+        try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }
+      }
+      function isUnlocked() {
+        try { return sessionStorage.getItem('pono_audio_unlocked') === '1'; } catch (_) { return false; }
+      }
+      function markUnlocked() {
+        try {
+          sessionStorage.setItem('pono_audio_unlocked', '1');
+          sessionStorage.setItem('pono_audio_primed_ts', String(Date.now()));
+        } catch (_) {}
+      }
+
+      function tryPlay() {
+        if (isMuted()) return;
+        if (!bgm.paused) return;
+        const p = bgm.play();
+        if (p && p.then) p.then(markUnlocked).catch(() => {});
+      }
+
+      // ----- Tap-intro overlay control -----
+      function showIntroIfNeeded() {
+        if (!intro) return false;
+        // Don't show if: muted in Settings, already unlocked this session,
+        // or device held in portrait (portrait-warn takes priority anyway).
+        if (isMuted() || isUnlocked()) return false;
+        if (window.innerHeight > window.innerWidth) return false;
+        intro.hidden = false;
+        return true;
+      }
+
+      function dismissIntro() {
+        if (!intro || intro.hidden) return;
+        // We're inside a user gesture → playing is allowed by iOS.
+        if (!isMuted()) {
+          const p = bgm.play();
+          if (p && p.then) p.then(markUnlocked).catch(() => { markUnlocked(); });
+          else markUnlocked();
+        } else {
+          markUnlocked();
+        }
+        intro.classList.add('is-closing');
+        setTimeout(() => {
+          intro.hidden = true;
+          intro.classList.remove('is-closing');
+        }, 380);
+      }
+
+      if (intro) {
+        intro.addEventListener('pointerdown', dismissIntro);
+        intro.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dismissIntro(); }
+        });
+      }
+
+      // ----- Wire-up at startup -----
+      const introShown = showIntroIfNeeded();
+      if (!introShown) {
+        // Returning from a child game (already unlocked) — try to resume
+        // immediately. iOS keeps the audio session warm in many cases.
+        tryPlay();
+      }
+
+      // Settings toggle: pause/resume on the spot.
+      soundToggle.addEventListener('change', () => {
+        if (isMuted()) bgm.pause();
+        else tryPlay();
+      });
+
+      // Tab hidden → pause; returning → resume (only if already unlocked).
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) bgm.pause();
+        else if (isUnlocked()) tryPlay();
+      });
+    })();
+
+    // ===== Init =====
+    renderCards();
+    selectGame(0);
+
+    // ===== Service worker =====
+    // In Claude preview (claudeusercontent.com), skip SW + purge any caches it
+    // already installed so stale 404s for assets don't persist.
+    const __isClaudePreview = /claudeusercontent\.com$/.test(location.hostname);
+    if ('serviceWorker' in navigator) {
+      if (__isClaudePreview) {
+        navigator.serviceWorker.getRegistrations()
+          .then((rs) => rs.forEach((r) => r.unregister()))
+          .catch(() => {});
+        if (window.caches && caches.keys) {
+          caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+        }
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    }
+  </script>
+
+  <!-- ===== Stage scale-to-fit + portrait detection ===== -->
+  <script>
+    (function () {
+      'use strict';
+      const stage = document.getElementById('stage');
+      const portraitWarn = document.getElementById('portraitWarn');
+      const CANVAS_W = 1920;
+      const CANVAS_H = 823;
+
+      function fit() {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        // Show portrait warning if the viewport is taller than wide
+        // (pure orientation detection — works on all devices/browsers).
+        const isPortrait = vh > vw;
+        portraitWarn.hidden = !isPortrait;
+
+        if (isPortrait) {
+          // No need to scale the stage while it's hidden.
+          stage.style.transform = 'scale(1)';
+          return;
+        }
+        // Cover-fit: pick the LARGER scale so one axis snaps to the viewport
+        // edge and the other (the 21:9 side decoration) overflows + clips.
+        // This kills letterbox black bars and gives ~1.1–1.3x more size on
+        // typical phone landscapes vs. the previous Math.min letterbox.
+        // Safe: all UI lives inside the 16:9 safe-area, only the side
+        // decoration art gets cropped on tall viewports.
+        const baseScale = Math.max(vw / CANVAS_W, vh / CANVAS_H);
+        // Optional extra zoom (>1.0 grows further; main UI may start to
+        // crop into the 16:9 safe-area if pushed too high). 1.0 keeps
+        // safe-area fully visible.
+        const SCALE_MULTIPLY = 1.0;
+        stage.style.transform = `scale(${baseScale * SCALE_MULTIPLY})`;
+      }
+
+      fit();
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', fit);
+
+      // bfcache 復元時の表示崩れ対策:
+      // ゲームページから戻るボタンで戻ってきた時、ブラウザが page-state
+      // memory snapshot をそのまま再表示することがある (event.persisted = true)。
+      // その状態だと scale 計算 / SW更新後の最新アセットがどちらも適用されず、
+      // 黒帯が出たり一部画像 (例: 図鑑サムネ) が抜けたりする。検出して 1回だけリロード。
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) location.reload();
+      });
+    })();
+  </script>
+
+  <!-- ===== Tweaks panel mount ===== -->
+  <div id="tweaksRoot"></div>
+  <script type="text/babel">
+    'use strict';
+
+    // Defaults mirror the original CSS (.card-list custom properties).
+    // Aspect is stored as width:height numbers so we can drive a slider.
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "aspectW": 3.7,
+      "aspectH": 1.6,
+      "radius": 22,
+      "thumbHPct": 82,
+      "thumbZoom": 1.15,
+      "playHPct": 47,
+      "sideWPct": 4.6,
+      "textLeftWPct": 30.5,
+      "textRightWPct": 13,
+      "maskFile1": 1,
+      "maskX1": 50,
+      "maskY1": 50,
+      "maskW1": 94.5,
+      "maskH1": 77,
+      "maskFile2": 4,
+      "maskX2": 44.9,
+      "maskY2": 47.5,
+      "maskW2": 94.5,
+      "maskH2": 73.5,
+      "maskFile3": 2,
+      "maskX3": 46.6,
+      "maskY3": 53.4,
+      "maskW3": 94.5,
+      "maskH3": 75,
+      "maskFile4": 3,
+      "maskX4": 46.6,
+      "maskY4": 61,
+      "maskW4": 94.5,
+      "maskH4": 78.5,
+      "peekAlways": false
+    }/*EDITMODE-END*/;
+
+    function applyTweaks(t) {
+      const el = document.getElementById('cardList');
+      if (!el) return;
+      el.style.setProperty('--gc-aspect',         `${t.aspectW} / ${t.aspectH}`);
+      el.style.setProperty('--gc-radius',         `${t.radius}px`);
+      el.style.setProperty('--gc-thumb-h-pct',    `${t.thumbHPct}%`);
+      el.style.setProperty('--gc-thumb-zoom',     `${t.thumbZoom}`);
+      el.style.setProperty('--gc-play-h-pct',     `${t.playHPct}%`);
+      el.style.setProperty('--gc-side-w-pct',     `${t.sideWPct}%`);
+      el.style.setProperty('--gc-text-left-w-pct',  `${t.textLeftWPct}%`);
+      el.style.setProperty('--gc-text-right-w-pct', `${t.textRightWPct}%`);
+
+      // Toggle "always show peek" body class for live mask alignment.
+      document.body.classList.toggle('peek-always', !!t.peekAlways);
+
+      // Apply per-panel mask tweaks. Each card's panel number (1..4) is
+      // encoded in data-panel-n on the card root; we set the mask vars on
+      // every card matching that panel.
+      for (let n = 1; n <= 4; n++) {
+        const fileN = t[`maskFile${n}`] ?? n;
+        const x = t[`maskX${n}`] ?? 0;
+        const y = t[`maskY${n}`] ?? 0;
+        const w = t[`maskW${n}`] ?? 100;
+        const h = t[`maskH${n}`] ?? 100;
+        const url = `assets/ui/wood_panel_mask${fileN}.png`;
+        document.querySelectorAll(`.game-card[data-panel-n="${n}"]`).forEach((card) => {
+          card.style.setProperty('--card-mask', `url('${url}')`);
+          card.style.setProperty('--mask-x', `${x}%`);
+          card.style.setProperty('--mask-y', `${y}%`);
+          card.style.setProperty('--mask-w', `${w}%`);
+          card.style.setProperty('--mask-h', `${h}%`);
+        });
+      }
+    }
+
+    // Apply once on first paint so the initial render uses tweak values
+    // (covers the case where Tweaks panel hasn't been toggled open yet).
+    applyTweaks(TWEAK_DEFAULTS);
+
+    // Apply cache-busted src to brand images (preview SW workaround).
+    // Date.now() ベースだと iOS Safari の HTTP キャッシュが効かず毎回再取得されて
+    // 部分的に画像読込が止まる原因になる。PAGE_CACHE_VERSION (sw.js と揃った値) を
+    // バスターに使うことで、同一バージョン中は HTTP キャッシュが効き、デプロイ時の
+    // バンプで自動的に新しい URL になる。
+    const __isPv = /claudeusercontent\.com$/.test(location.hostname);
+    const __bustUrl = (url) => __isPv ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
+    document.querySelectorAll('img[data-src]').forEach((img) => {
+      const url = img.getAttribute('data-src');
+      img.src = __bustUrl(url);
+      img.addEventListener('error', () => {
+        const retries = Number(img.dataset.retries || 0);
+        if (retries < 2) {
+          img.dataset.retries = String(retries + 1);
+          setTimeout(() => {
+            img.removeAttribute('src');
+            requestAnimationFrame(() => { img.src = __bustUrl(url); });
+          }, 800);
+        }
+      });
+    });
+
+    function CardTweaks() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [maskCard, setMaskCard] = React.useState(1);   // which panel# we're tuning
+
+      React.useEffect(() => { applyTweaks(t); }, [t]);
+
+      const reset = () => setTweak({ ...TWEAK_DEFAULTS });
+
+      const cardLabels = {
+        1: 'カード1: なぞなぞ',
+        2: 'カード2: こだまの森',
+        3: 'カード3: ポノのもりずかん',
+        4: 'カード4: ランタンめいろ',
+      };
+      const n = maskCard;
+      const fileKey = `maskFile${n}`, xKey = `maskX${n}`, yKey = `maskY${n}`,
+            wKey = `maskW${n}`, hKey = `maskH${n}`;
+
+      return (
+        <TweaksPanel title="カードのレイアウト">
+          <TweakSection label="カードのかたち" />
+          <TweakSlider label="よこ:たて (横)" value={t.aspectW}
+                       min={2} max={10} step={0.1}
+                       onChange={(v) => setTweak('aspectW', v)} />
+          <TweakSlider label="よこ:たて (縦)" value={t.aspectH}
+                       min={0.5} max={3} step={0.1}
+                       onChange={(v) => setTweak('aspectH', v)} />
+          <TweakSlider label="角丸 (radius)" value={t.radius}
+                       min={0} max={60} step={1} unit="px"
+                       onChange={(v) => setTweak('radius', v)} />
+
+          <TweakSection label="サムネ・再生ボタン (高さ%)" />
+          <TweakSlider label="左サムネ" value={t.thumbHPct}
+                       min={30} max={100} step={1} unit="%"
+                       onChange={(v) => setTweak('thumbHPct', v)} />
+          <TweakSlider label="サムネ拡大" value={t.thumbZoom}
+                       min={1} max={2} step={0.01} unit="×"
+                       onChange={(v) => setTweak('thumbZoom', v)} />
+          <TweakSlider label="右ボタン" value={t.playHPct}
+                       min={30} max={100} step={1} unit="%"
+                       onChange={(v) => setTweak('playHPct', v)} />
+
+          <TweakSection label="左右の余白 (幅%)" />
+          <TweakSlider label="サイド余白" value={t.sideWPct}
+                       min={0} max={10} step={0.1} unit="%"
+                       onChange={(v) => setTweak('sideWPct', v)} />
+          <TweakSlider label="テキスト左" value={t.textLeftWPct}
+                       min={5} max={40} step={0.5} unit="%"
+                       onChange={(v) => setTweak('textLeftWPct', v)} />
+          <TweakSlider label="テキスト右" value={t.textRightWPct}
+                       min={5} max={40} step={0.5} unit="%"
+                       onChange={(v) => setTweak('textRightWPct', v)} />
+
+          <TweakSection label="紙マスクの調整" />
+          <TweakToggle label="ホバーなしで常時表示" value={!!t.peekAlways}
+                       onChange={(v) => setTweak('peekAlways', v)} />
+          <TweakSelect label="調整するカード" value={String(n)}
+                       options={[
+                         { value: '1', label: cardLabels[1] },
+                         { value: '2', label: cardLabels[2] },
+                         { value: '3', label: cardLabels[3] },
+                         { value: '4', label: cardLabels[4] },
+                       ]}
+                       onChange={(v) => setMaskCard(parseInt(v, 10))} />
+          <TweakSelect label="マスクファイル" value={String(t[fileKey])}
+                       options={[
+                         { value: '1', label: 'mask1.png' },
+                         { value: '2', label: 'mask2.png' },
+                         { value: '3', label: 'mask3.png' },
+                         { value: '4', label: 'mask4.png' },
+                       ]}
+                       onChange={(v) => setTweak(fileKey, parseInt(v, 10))} />
+          <TweakSlider label="左右位置 X" value={t[xKey]}
+                       min={-100} max={100} step={0.1} unit="%"
+                       onChange={(v) => setTweak(xKey, v)} />
+          <TweakSlider label="上下位置 Y" value={t[yKey]}
+                       min={-100} max={100} step={0.1} unit="%"
+                       onChange={(v) => setTweak(yKey, v)} />
+          <TweakSlider label="幅" value={t[wKey]}
+                       min={20} max={200} step={0.5} unit="%"
+                       onChange={(v) => setTweak(wKey, v)} />
+          <TweakSlider label="高さ" value={t[hKey]}
+                       min={10} max={200} step={0.5} unit="%"
+                       onChange={(v) => setTweak(hKey, v)} />
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+            <TweakButton label="リセット" onClick={reset} secondary />
+          </div>
+        </TweaksPanel>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('tweaksRoot')).render(<CardTweaks />);
+  </script>
+</body>
+</html>
