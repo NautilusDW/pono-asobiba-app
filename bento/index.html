@@ -2414,14 +2414,16 @@ html, body {
 .complete-main {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 10px;
   align-items: center;
+  justify-content: center;
   width: 100%;
   margin-top: 2px;
 }
 .complete-left {
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2437,13 +2439,14 @@ html, body {
   max-width: none;
 }
 .complete-left .complete-bento.free-complete-stack {
-  width: min(90vw, 700px);
-  max-width: 700px;
+  width: min(58vw, 640px);
+  max-width: 640px;
 }
 .complete-right {
-  width: min(92%, 760px);
+  flex: 0 0 clamp(250px, 34vw, 360px);
+  width: clamp(250px, 34vw, 360px);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -2452,6 +2455,20 @@ html, body {
   padding: 6px 10px;
   min-width: 0;
   box-shadow: 0 4px 18px rgba(93,78,55,0.12);
+}
+.complete-right .balance-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.complete-right .balance-item {
+  min-width: 0;
+  padding: 4px 5px;
+  gap: 4px;
+}
+.complete-right .balance-item-role {
+  font-size: 0.54rem;
 }
 .complete-pono-slot {
   width: 96px; height: 78px;
@@ -2589,18 +2606,18 @@ html, body {
   white-space: pre-line;
 }
 .complete-checklist {
-  width: min(96%, 760px);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
   margin: 2px 0 4px;
 }
 .complete-check {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 44px;
-  padding: 6px 8px;
+  min-height: 42px;
+  padding: 5px 6px;
   border-radius: 12px;
   background: rgba(255,255,255,0.86);
   border: 2px solid rgba(93,78,55,0.12);
@@ -2608,9 +2625,9 @@ html, body {
   text-align: left;
 }
 .complete-check-mark {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
@@ -2630,15 +2647,17 @@ html, body {
 }
 .complete-check-title {
   color: var(--text);
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 900;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 .complete-check-desc {
   color: var(--text-light);
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 .complete-trivia {
   font-size: 0.68rem;
@@ -2679,7 +2698,7 @@ html, body {
 @media (max-width: 520px) {
   .complete-card-wide { width: 98%; padding: 8px 8px 12px; }
   .complete-main { flex-direction: column; }
-  .complete-right { width: 96%; flex-direction: column; }
+  .complete-right { width: 96%; flex: 0 0 auto; flex-direction: column; }
   .complete-checklist { grid-template-columns: 1fr; width: 96%; }
   .complete-pono-slot { width: 126px; height: 92px; }
   .complete-pono-big { width: 126px; height: 126px; }
@@ -2688,24 +2707,77 @@ html, body {
 }
 @media (max-height: 560px) and (orientation: landscape) {
   .complete-overlay {
-    padding: 6px;
+    padding: 2px 6px;
   }
   .complete-card-wide {
-    padding: 4px 8px 8px;
+    padding: 2px 8px 4px;
+    gap: 2px;
+  }
+  .complete-title {
+    font-size: 1rem;
+    line-height: 1.1;
+    margin: 0 0 2px;
   }
   .complete-main {
     gap: 3px;
   }
   .complete-left .complete-bento.free-complete-stack {
-    width: min(48vw, 360px);
-    max-width: 360px;
-    min-height: 330px;
+    width: min(52vw, 340px);
+    max-width: 340px;
+    min-height: 300px;
   }
   .free-complete-build-stage {
-    height: 330px;
+    height: 300px;
   }
   .complete-right {
     padding: 4px 8px;
+    gap: 4px;
+    flex-basis: clamp(240px, 40vw, 310px);
+    width: clamp(240px, 40vw, 310px);
+  }
+  .complete-right .balance-item {
+    padding: 3px 4px;
+  }
+  .complete-right .balance-item-role,
+  .complete-check-desc {
+    display: none;
+  }
+  .complete-check {
+    min-height: 30px;
+    padding: 4px 5px;
+  }
+  .complete-check-mark {
+    flex-basis: 20px;
+    width: 20px;
+    height: 20px;
+  }
+  .complete-pono-slot {
+    width: 78px;
+    height: 58px;
+  }
+  .complete-pono-big {
+    width: 78px;
+    height: 78px;
+  }
+  .complete-pono-bubble {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+  .complete-stars {
+    gap: 3px;
+    margin-top: 0;
+  }
+  .complete-stars .star {
+    width: 26px;
+    height: 26px;
+  }
+  .complete-trivia {
+    display: none;
+  }
+  .save-fav-btn {
+    margin-top: 2px;
+    padding: 6px 14px;
+    font-size: 0.74rem;
   }
 }
 
@@ -2991,11 +3063,11 @@ html, body {
     <div class="complete-main">
       <div class="complete-left">
         <div class="complete-bento" id="complete-bento"></div>
-        <div class="balance-row" id="balance-row"></div>
-        <div class="complete-checklist" id="complete-checklist"></div>
         <button id="save-fav-btn" class="save-fav-btn">⭐ おきにいりに いれる</button>
       </div>
       <div class="complete-right" id="complete-right">
+        <div class="balance-row" id="balance-row"></div>
+        <div class="complete-checklist" id="complete-checklist"></div>
         <div class="complete-pono-slot" id="complete-pono-slot">
           <img id="complete-pono-big" class="complete-pono-big" src="../assets/images/characters/pono/dance/dance_hooray.webp" alt="ポノ">
         </div>
@@ -3201,10 +3273,10 @@ const FREE_COOKED_OKAZU = [
   { img: FREE_LAYOUT_ASSET_P+'fruit_kiwi.png',             name: 'キウイ',           cat: 'fruit', sk: 'g', size: 104, rotation: -1 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_broccoli.png',          name: 'ブロッコリー',       cat: 'veg',  sk: 'g', size: 108, cupSize: 88, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_meatball.png',          name: 'ミートボール',       cat: 'meat', sk: 'r', size: 118, cupSize: 94, rotation: 1 },
-  { img: FREE_LAYOUT_ASSET_P+'okazu_napolitan.png',         name: 'ナポリタン',         cat: 'meat', sk: 'y', size: 150, rotation: -1 },
-  { img: FREE_LAYOUT_ASSET_P+'okazu_gyoza.png',             name: 'ぎょうざ',           cat: 'meat', sk: 'r', size: 132, rotation: 3 },
-  { img: FREE_LAYOUT_ASSET_P+'okazu_harumaki.png',          name: 'はるまき',           cat: 'meat', sk: 'y', size: 128, rotation: -4 },
-  { img: FREE_LAYOUT_ASSET_P+'okazu_bacon_maki.png',        name: 'ベーコンまき',       cat: 'meat', sk: 'r', size: 134, rotation: 2 },
+  { img: FREE_LAYOUT_ASSET_P+'okazu_napolitan.png',         name: 'ナポリタン',         cat: 'meat', sk: 'y', size: 150, cupSize: 110, cupAllowed: true, rotation: -1 },
+  { img: FREE_LAYOUT_ASSET_P+'okazu_gyoza.png',             name: 'ぎょうざ',           cat: 'meat', sk: 'r', size: 198, rotation: 3 },
+  { img: FREE_LAYOUT_ASSET_P+'okazu_harumaki.png',          name: 'はるまき',           cat: 'meat', sk: 'y', size: 256, rotation: -4 },
+  { img: FREE_LAYOUT_ASSET_P+'okazu_bacon_maki.png',        name: 'ベーコンまき',       cat: 'meat', sk: 'r', size: 161, rotation: 2 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_corn_spinach.png',      name: 'コーンほうれんそう', cat: 'veg',  sk: 'g', size: 118, cupSize: 96, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_edamame.png',           name: 'えだまめ',           cat: 'veg',  sk: 'g', size: 108, cupSize: 90, rotation: 0 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_potato_salad.png',      name: 'ポテトサラダ',       cat: 'veg',  sk: 'g', size: 126, cupSize: 98, rotation: 1 },
@@ -4833,7 +4905,7 @@ function canAddFoodForCurrentStep(def) {
   return true;
 }
 function canAddFoodToCup(def) {
-  return !!def && def.type === 'food' && (def.okazuRole || getOkazuRole(def)) === 'side';
+  return !!def && def.type === 'food' && (((def.okazuRole || getOkazuRole(def)) === 'side') || !!def.cupAllowed);
 }
 function getCupEditorFoodItems() {
   return getFreeFoodCatalog().filter(canAddFoodToCup);
@@ -6984,6 +7056,36 @@ function createFreeMainGuide() {
   });
   return guide;
 }
+function commitFreeLayoutRender(host, renderRoot) {
+  const token = (host.__freeLayoutRenderToken || 0) + 1;
+  host.__freeLayoutRenderToken = token;
+  const pendingImages = Array.from(renderRoot.querySelectorAll('img')).filter(img => !img.complete || !img.naturalWidth);
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    if (host.__freeLayoutRenderToken !== token) return;
+    committed = true;
+    host.replaceChildren(renderRoot);
+  };
+  if (!pendingImages.length) {
+    commit();
+    return;
+  }
+  let remaining = pendingImages.length;
+  const done = () => {
+    remaining -= 1;
+    if (remaining <= 0) commit();
+  };
+  pendingImages.forEach(img => {
+    if (typeof img.decode === 'function') {
+      img.decode().then(done, done);
+    } else {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    }
+  });
+  setTimeout(commit, 900);
+}
 function renderFreeLayoutInto(host, opts = {}) {
   const box = bentoBoxes.find(b => b.id === (opts.boxId || selectedBentoBoxId)) || bentoBoxes[0];
   const items = Array.isArray(opts.items) ? opts.items : placedItems;
@@ -7009,10 +7111,10 @@ function renderFreeLayoutInto(host, opts = {}) {
   const displayItems = useIntegratedRice && integratedRice
     ? visibleItems.filter(item => item.uid !== integratedRice.uid && item.parentId !== integratedRice.uid)
     : visibleItems;
-  host.innerHTML = '';
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
   host.classList.toggle('free-brush-stamp-on', !!(opts.interactive && freeBrushStampDef));
+  const renderRoot = document.createDocumentFragment();
   if (opts.interactive && freeBrushStampDef) {
     host.onpointerdown = e => {
       if (isFreeMainGuideBlocking()) return;
@@ -7040,7 +7142,7 @@ function renderFreeLayoutInto(host, opts = {}) {
   shape.style.top = toPctY(imageRect.y);
   shape.style.width = toPctX(imageRect.w);
   shape.style.height = toPctY(imageRect.h);
-  host.appendChild(shape);
+  renderRoot.appendChild(shape);
   if (box.image && useIntegratedRice) {
     const integratedRiceLayer = document.createElement('img');
     integratedRiceLayer.className = ['free-bento-shape', 'free-bento-rice-layer', box.shape, box.id, 'has-image'].filter(Boolean).join(' ');
@@ -7059,13 +7161,13 @@ function renderFreeLayoutInto(host, opts = {}) {
     };
     integratedRiceLayer.addEventListener('load', revealIntegratedRice, { once: true });
     if (integratedRiceLayer.complete) setTimeout(revealIntegratedRice, 0);
-    host.appendChild(integratedRiceLayer);
+    renderRoot.appendChild(integratedRiceLayer);
   }
   if (opts.interactive && freeGuideStep !== 'box' && tierCount > 1 && getTierLabel(activeTier, box)) {
     const badge = document.createElement('div');
     badge.className = 'free-tier-badge';
     badge.textContent = getTierLabel(activeTier, box);
-    host.appendChild(badge);
+    renderRoot.appendChild(badge);
   }
   const showMaskPreview = !!(
     box.maskImage &&
@@ -7078,7 +7180,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     const preview = document.createElement('div');
     preview.className = 'free-mask-preview';
     applyBoxVisualMask(preview, box, host, visualMaskOptions);
-    host.appendChild(preview);
+    renderRoot.appendChild(preview);
   }
   const noriItems = displayItems.filter(isNoriDecorItem);
   const regularItems = displayItems.filter(item => !isNoriDecorItem(item));
@@ -7099,9 +7201,9 @@ function renderFreeLayoutInto(host, opts = {}) {
   });
   if (hasVisualMask) {
     maskFrame.appendChild(layer);
-    host.appendChild(maskFrame);
+    renderRoot.appendChild(maskFrame);
   } else {
-    host.appendChild(layer);
+    renderRoot.appendChild(layer);
   }
   if (noriItems.length) {
     const riceLayer = document.createElement('div');
@@ -7111,11 +7213,11 @@ function renderFreeLayoutInto(host, opts = {}) {
     noriItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
       riceLayer.appendChild(createFreePlacedElement(item, !!opts.interactive));
     });
-    host.appendChild(riceLayer);
+    renderRoot.appendChild(riceLayer);
   }
   if (opts.interactive) {
     const contextToolbar = createFreeContextToolbar();
-    if (contextToolbar) host.appendChild(contextToolbar);
+    if (contextToolbar) renderRoot.appendChild(contextToolbar);
     if (freeBrushStampDef) {
       const hint = document.createElement('div');
       hint.className = 'free-brush-stamp-hint';
@@ -7126,14 +7228,15 @@ function renderFreeLayoutInto(host, opts = {}) {
       const text = document.createElement('span');
       text.textContent = 'タップで しく';
       hint.appendChild(text);
-      host.appendChild(hint);
+      renderRoot.appendChild(hint);
     }
     const guide = createFreeMainGuide();
     if (guide) {
-      host.appendChild(createFreeMainGuideTapLayer());
-      host.appendChild(guide);
+      renderRoot.appendChild(createFreeMainGuideTapLayer());
+      renderRoot.appendChild(guide);
     }
   }
+  commitFreeLayoutRender(host, renderRoot);
 }
 function renderFreeLayoutStage() {
   const stage = document.getElementById('free-layout-stage');
