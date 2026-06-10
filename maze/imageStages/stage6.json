@@ -13,8 +13,8 @@
   "obstacles": [
     {
       "kind": "hole",
-      "x": 197,
-      "y": 1292,
+      "x": 191,
+      "y": 1294,
       "id": "hole-2",
       "eventEnabled": true
     },
@@ -222,8 +222,8 @@
     },
     {
       "id": "stop24",
-      "x": 199,
-      "y": 1308,
+      "x": 191,
+      "y": 1301,
       "kind": "stop"
     }
   ],
@@ -943,8 +943,8 @@
           "y": 1304
         },
         {
-          "x": 199,
-          "y": 1308
+          "x": 191,
+          "y": 1301
         }
       ],
       "_editor": {
@@ -954,8 +954,8 @@
             "y": 1304
           },
           {
-            "x": 199,
-            "y": 1308
+            "x": 191,
+            "y": 1301
           }
         ],
         "shape": "polyline"
@@ -1314,13 +1314,13 @@
   ],
   "flagGimmick": {
     "id": "flag-tunnel",
-    "entranceObstacleId": "hole-2",
-    "exitObstacleId": "hole-3",
+    "entranceObstacleId": "hole-3",
+    "exitObstacleId": "hole-2",
     "exitNodeId": "stop20",
     "encounterRadius": 94,
     "exitFocus": {
-      "x": 2509,
-      "y": 161
+      "x": 191,
+      "y": 1294
     },
     "ladder": {
       "x": 2492,
