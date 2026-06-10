@@ -664,6 +664,50 @@
         scale(0.22);
     }
   }
+  .gh-note-pop {
+    position: absolute;
+    left: var(--gh-pop-x, 50%);
+    top: var(--gh-hit-y, 80%);
+    min-width: 58px;
+    height: 42px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    border: 3px solid rgba(255,255,255,0.9);
+    background: linear-gradient(180deg, var(--pop-hi, #fff7ad), var(--pop-lo, #38bdf8));
+    color: rgba(15,23,42,0.86);
+    font-size: 1.08rem;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow:
+      0 0 0 3px rgba(255,255,255,0.26),
+      0 0 22px var(--pop-glow, rgba(254,240,138,0.72)),
+      0 8px 18px rgba(0,0,0,0.24);
+    pointer-events: none;
+    z-index: 9;
+    transform: translate(-50%, -50%) scale(1);
+    animation: ghNotePopAway 0.46s cubic-bezier(.12,.78,.22,1) forwards;
+  }
+  .gh-note-pop::after {
+    content: "";
+    position: absolute;
+    inset: -9px;
+    border-radius: 18px;
+    border: 2px solid rgba(255,255,255,0.72);
+    opacity: 0.72;
+    animation: ghNotePopRing 0.46s ease-out forwards;
+  }
+  @keyframes ghNotePopAway {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: brightness(1.08); }
+    34%  { opacity: 0.98; transform: translate(-50%, -57%) scale(1.15); filter: brightness(1.18); }
+    100% { opacity: 0; transform: translate(-50%, -78%) scale(0.52); filter: brightness(1.28); }
+  }
+  @keyframes ghNotePopRing {
+    0%   { opacity: 0.8; transform: scale(0.7); }
+    100% { opacity: 0; transform: scale(1.75); }
+  }
   .instr-btn.rhythm-hit::before {
     opacity: 1;
     background: radial-gradient(circle, rgba(255,255,255,0.96) 0%, rgba(254,240,138,0.68) 42%, rgba(45,212,191,0.18) 62%, rgba(45,212,191,0) 76%);
@@ -3173,6 +3217,8 @@ var RHYTHM_SONG = _buildRhythmSong(RHYTHM_BASE_SONG);
 var RHYTHM_GOOD_MS = 220;
 var RHYTHM_OK_MS = 430;
 var RHYTHM_MISS_MS = 760;
+var RHYTHM_FINAL_NOTE_GRACE_MS = 680;
+var RHYTHM_FINISH_DELAY_MS = 820;
 var RHYTHM_PREVIEW_STEPS = 4;
 var RHYTHM_RING_LEAD_MS = 1400;
 // Guitar Hero 風 ノート落下: 画面上端→ヒットライン到達までの時間
@@ -3225,6 +3271,7 @@ var _rhythm = {
   demoRaf: 0,
   demoNoteBtn: null,
   completeTimers: [],
+  finishTimer: 0,
   hits: 0,
   goodHits: 0,
   okHits: 0,
@@ -3317,6 +3364,12 @@ function _rhythmIdxAt(seqIndex) {
 function _rhythmBeatLengthAt(index) {
   var beats = RHYTHM_SONG.beats || [];
   return beats[index % RHYTHM_SONG.notes.length] || 1;
+}
+function _rhythmIsLastSeq(seqIndex) {
+  return seqIndex >= Math.max(0, RHYTHM_SONG.notes.length - 1);
+}
+function _rhythmHitWindowMsForSeq(seqIndex) {
+  return RHYTHM_MISS_MS + (_rhythmIsLastSeq(seqIndex) ? RHYTHM_FINAL_NOTE_GRACE_MS : 0);
 }
 function _rhythmVisualActive() {
   return _rhythm.enabled || _rhythm.demoActive;
@@ -4201,7 +4254,7 @@ function _ghClearFlashTimers() {
   _rhythm.flashTimers = [];
   var lanes = _ghLanesEl();
   if (lanes) {
-    lanes.querySelectorAll('.gh-flash, .gh-burst').forEach(function(el) {
+    lanes.querySelectorAll('.gh-flash, .gh-burst, .gh-note-pop').forEach(function(el) {
       if (el.parentNode) el.parentNode.removeChild(el);
     });
   }
@@ -4303,6 +4356,33 @@ function _ghSpawnNoteBurst(noteOrLane, kind) {
   }, burstKind === 'miss' ? 520 : 680);
   _rhythm.flashTimers.push(timerId);
 }
+function _ghSpawnNotePop(noteOrLane) {
+  var lanes = _ghLanesEl();
+  if (!lanes) return;
+  var laneIdx = 0;
+  if (typeof noteOrLane === 'number') laneIdx = noteOrLane;
+  else if (noteOrLane && typeof noteOrLane.lane === 'number') laneIdx = noteOrLane.lane;
+  laneIdx = Math.max(0, Math.min(7, laneIdx | 0));
+  var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FEF08A', lo: '#0EA5E9' };
+  var rgb = _gh3DHexToRgb(color.hi || '#FEF08A');
+  var pop = document.createElement('div');
+  pop.className = 'gh-note-pop';
+  pop.style.setProperty('--gh-pop-x', ((laneIdx + 0.5) * 12.5) + '%');
+  pop.style.setProperty('--pop-hi', color.hi || '#FEF08A');
+  pop.style.setProperty('--pop-lo', color.lo || '#0EA5E9');
+  pop.style.setProperty('--pop-glow', 'rgba(' + Math.round(rgb[0] * 255) + ',' + Math.round(rgb[1] * 255) + ',' + Math.round(rgb[2] * 255) + ',0.72)');
+  pop.textContent = _rhythmNoteLabel(laneIdx);
+  lanes.appendChild(pop);
+  if (!_rhythm.flashTimers) _rhythm.flashTimers = [];
+  var timerId = setTimeout(function() {
+    if (pop.parentNode) pop.parentNode.removeChild(pop);
+    if (_rhythm.flashTimers) {
+      var idx = _rhythm.flashTimers.indexOf(timerId);
+      if (idx >= 0) _rhythm.flashTimers.splice(idx, 1);
+    }
+  }, 520);
+  _rhythm.flashTimers.push(timerId);
+}
 function _ghSpawnNote(seqIndex) {
   if (!_ghIsActive()) return;
   var lanes = _ghLanesEl();
@@ -4362,8 +4442,8 @@ function _ghUpdateFallingNotes(now) {
     var until = note.targetTime - now; // 残り時間 (ms)
     var progress = 1 - (until / fall); // 0=スポーン直後, 1=ヒットライン
     if (progress < 0) progress = 0;
-    // ミス判定 (ターゲット時刻を MISS_MS 超過)
-    if (until < -RHYTHM_MISS_MS && !note.missed && !_rhythm.demoActive) {
+    // ミス判定。最後の1音だけ、押す直前に完了へ流れないよう少し長めに待つ。
+    if (until < -_rhythmHitWindowMsForSeq(note.seq) && !note.missed && !_rhythm.demoActive) {
       note.missed = true;
       _rhythm.streak = 0;
       _rhythm.misses++;
@@ -4446,8 +4526,15 @@ function _clearRhythmCompleteTimers() {
   _rhythm.completeTimers.forEach(function(id) { clearTimeout(id); });
   _rhythm.completeTimers = [];
 }
+function _clearRhythmFinishTimer() {
+  if (_rhythm.finishTimer) {
+    clearTimeout(_rhythm.finishTimer);
+    _rhythm.finishTimer = 0;
+  }
+}
 function _hideRhythmComplete() {
   _clearRhythmCompleteTimers();
+  _clearRhythmFinishTimer();
   var complete = document.getElementById('rhythm-complete');
   if (complete) complete.classList.remove('show');
   var actions = document.getElementById('rhythm-complete-actions');
@@ -4493,8 +4580,17 @@ function _showRhythmComplete(result) {
     if (actions) actions.classList.remove('hidden');
   }, 900));
 }
+function _scheduleRhythmFinish() {
+  if (!_rhythm.enabled || _rhythm.finishTimer) return;
+  _setRhythmStatus('よくできたね', 'good');
+  _rhythm.finishTimer = setTimeout(function() {
+    _rhythm.finishTimer = 0;
+    _finishRhythmLoop();
+  }, RHYTHM_FINISH_DELAY_MS);
+}
 function _finishRhythmLoop() {
   if (!_rhythm.enabled) return;
+  _clearRhythmFinishTimer();
   _clearRhythmMelodySchedule();
   _rhythm.enabled = false;
   if (_rhythm.raf) {
@@ -4573,7 +4669,7 @@ function _rhythmTick() {
     // 全ノートをスポーン済みかつ activeNotes が空 → 終了
     var notes = RHYTHM_SONG.notes;
     if (_rhythm.nextSpawnSeq >= notes.length && _rhythm.activeNotes.length === 0) {
-      _finishRhythmLoop();
+      _scheduleRhythmFinish();
       return;
     }
   } else {
@@ -5045,6 +5141,7 @@ function _hideRhythmMenu() {
 function _stopRhythmMode() {
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
+  _clearRhythmFinishTimer();
   _clearRhythmMelodySchedule();
   _hideRhythmComplete();
   // v721: リズム中に major にフォースしていたスケールを復元
@@ -5124,7 +5221,8 @@ function handleRhythmTap(idx, btn) {
       var d = Math.abs(n.targetTime - now);
       if (d < bestAbs) { bestAbs = d; best = n; }
     }
-    if (!best || bestAbs > RHYTHM_MISS_MS) {
+    var hitWindow = best ? _rhythmHitWindowMsForSeq(best.seq) : RHYTHM_MISS_MS;
+    if (!best || bestAbs > hitWindow) {
       // v708: 画面に判定対象のノートが何も無いタップ (曲開始直後の素振り等) では
       //       赤フラッシュを出さない。何かが落ちている時 / 同レーンで明確に過ぎている時のみ赤。
       var hasAnyActiveNote = _rhythm.activeNotes && _rhythm.activeNotes.length > 0;
@@ -5163,7 +5261,7 @@ function handleRhythmTap(idx, btn) {
       _setRhythmStatus('おしい', 'warn');
     }
     _ghSpawnHitFlash(laneIdx);
-    _ghSpawnNoteBurst(best, 'success');
+    _ghSpawnNotePop(best);
     _playRhythmBlockSfx('success', laneIdx);
     _pulseRhythmButton(btn, 'rhythm-hit');
     _ghRemoveNote(best);

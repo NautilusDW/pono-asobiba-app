@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:408-oto-rhythm-last-note-hit-pop] DONE - Codex: OtoTouch リズムで最後の1音だけタップ猶予を `760ms→1440ms` に延長し、全ノート終了後も `820ms` 待ってから完了モーダルを出すよう変更。成功時は流れてきたノートが小さなノート型ポップ + リングで上へ消える演出に変更し、成功時の大きめ burst は使わない。`sw.js` は v1000。inline script parse、`git diff --check`、Playwrightで通常ノート猶予/最終ノート猶予/最終遅めタップ成功/通常遅めタップmiss/ポップ生成/完了遅延を確認。 (by Codex)
 - 2026-06-10 - [batch:407-oto-rhythm-backing-chords] DONE - Codex: OtoTouch リズム本番/お手本だけで鳴る、ミュート弦/ピチカート寄りの薄い刻みコード伴奏を追加。既存 `SONGS` のコード進行を使い、各拍に短い三和音を小音量で重ねる。自由演奏や通常速度伴奏には混ぜず、デモ停止/バンド停止時は予約済みノードもクリア。コードON時は主旋律和音と被りすぎないようバッキング音量を自動で抑える。`sw.js` は v999。inline script parse、`git diff --check`、Playwrightでリズム中/デモ中のみ予約、通常時非予約、triad、cleanup、実WebAudioヘルパー予約/クリアを確認。 (by Codex)
 - 2026-06-10 - [batch:406-oto-rhythm-songs-stars-chords] DONE - Codex: OtoTouch リズムで `きらきらぼし` を 90BPM + `twinkle90` 伴奏へ減速し、簡単曲 `メリーさん` / `ちょうちょう` / `ロンドンばし` と難しめ `よろこびのうた` を選択肢に整理。採点は1ミス程度でも3つ星になるよう緩和し、リズム主旋律はコードON時に音名ベースの三和音で鳴るよう接続、リズム画面でもコード切替を表示。`sw.js` は v998。inline script parse、`git diff --check`、Playwrightで譜面長/曲ID/1ミス3星/和音ON/OFF/切替クリック/演奏中再予約を確認。 (by Codex)
 - 2026-06-10 - [batch:405-quiz-balloon-kanji-hiragana] DONE - Codex: `assets/images/quizland/balloons/ballon_01.png` の中央テキストを GPT Image 2 生成文字ベースで `何だろう` → `なんだろう` に修正。元の吹き出し形状/葉/透過を維持し、他 balloon は漢字なしと確認。`ballon_01` は候補から除外せず通常ローテーション維持。`sw.js` は v996。コンタクトシート目視、PNG alpha corners 0、`git diff --check` 確認済み。 (by Codex)
