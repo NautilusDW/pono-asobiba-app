@@ -3032,9 +3032,9 @@ var RHYTHM_NOTE_FADE_IN_START = 0.28;
 var RHYTHM_NOTE_FADE_IN_END = 0.46;
 var RHYTHM_COUNTDOWN_BEATS = 3;
 var RHYTHM_COUNTDOWN_LEAD_BEATS = 2;
-var RHYTHM_DEMO_FALL_MS = 5600;
-var RHYTHM_DEMO_TIME_SCALE = 0.58;
-var RHYTHM_DEMO_COUNT_STEP_MS = 420;
+var RHYTHM_DEMO_FALL_MS = RHYTHM_FALL_MS;
+var RHYTHM_DEMO_TIME_SCALE = 1;
+var RHYTHM_DEMO_COUNT_STEP_MS = 720;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -4644,16 +4644,15 @@ function _startRhythmDemo(thenStart) {
   _rhythm.demoTimers.push(setTimeout(function() { _showOverlay('スタート!', ''); }, stepMs * 3));
   _rhythm.demoTimers.push(setTimeout(function() {
     _runRhythmDemoSequence(thenStart);
-  }, stepMs * 3 + 240));
+  }, stepMs * 3 + 420));
 }
 function _beginRhythmCountdown() {
   _clearRhythmCountdown();
   _clearRhythmDemo(true);
   _hideRhythmComplete();
   _setModeButtons('rhythm');
-  // カウント開始まで長く待たせないため、1ノート目の到達時刻 T は
-  // 「3 / 2 / 1 + スタート後の余白」の直後に置き、AC が取れる場合だけ次の拍頭へ寄せる。
-  // _startRhythmMode は T - fallSec が過去なら即時起動し、初回ノートを途中位置から見せる。
+  // 1ノート目の落下速度は変えず、T は落下時間を確保した未来に置く。
+  // ただしチュートリアル後の空白を作らないため、カウント表示だけはすぐ開始する。
   _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   var ac = getAC();
@@ -4665,32 +4664,32 @@ function _beginRhythmCountdown() {
   var pendingAc = 0;
   var targetPerfMs;
   if (ac && bandStartACVal && beatSec > 0) {
-    // T は「3,2,1 + スタート後の余白」の直後に置き、次の拍頭へ寄せる。
-    // 落下時間ぶん待ってからカウントを出すと開始が重すぎるため、エンジンは即時起動し、
-    // 初回ノートは途中位置から見せてプレイ開始までの待ちを短くする。
-    var requiredAheadSec = (countBeats + leadBeats) * beatSec + 0.1;
+    // T は落下時間ぶん先の拍頭へ寄せる。これでノート自体の速度は変わらない。
+    var requiredAheadSec = Math.max(fallSec, (countBeats + leadBeats) * beatSec) + 0.15;
     var requiredAnchorAC = ac.currentTime + requiredAheadSec;
     var deltaSec = requiredAnchorAC - bandStartACVal;
     var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
     pendingAc = bandStartACVal + nBeats * beatSec;
     targetPerfMs = performance.now() + (pendingAc - ac.currentTime) * 1000;
   } else {
-    // フォールバック (AC 不在 / 伴奏未開始): カウントがすぐ始まる固定刻みで進める
-    targetPerfMs = performance.now() + 720 * (countBeats + leadBeats);
+    // フォールバック (AC 不在 / 伴奏未開始): AC 同期なしでも落下時間は変えない
+    targetPerfMs = performance.now() + Math.max(fallSec * 1000, 720 * (countBeats + leadBeats));
     pendingAc = 0;
   }
   _rhythm._pendingStartAcTime = pendingAc;
-  var stepMs = (pendingAc && ac) ? beatSec * 1000 : 720;
+  var beatStepMs = (pendingAc && ac) ? beatSec * 1000 : 720;
   // カウントダウン「3」の表示時刻 (perf 絶対 ms)。負になりうるが setTimeout でガード。
+  var t3Perf = performance.now() + 120;
+  var totalCountdownMs = Math.max((countBeats + leadBeats) * beatStepMs, targetPerfMs - t3Perf);
+  var stepMs = totalCountdownMs / (countBeats + leadBeats);
   var countdownDonePerf = targetPerfMs - leadBeats * stepMs;
-  var t3Perf = countdownDonePerf - countBeats * stepMs;
   // _startRhythmMode はノート落下時間 fallSec 確保のため T - fallSec で起動。
   var startEnginePerf = targetPerfMs - fallSec * 1000;
   function schedule(absPerfMs, fn) {
     var delay = Math.max(0, absPerfMs - performance.now());
     _rhythm.countdownTimers.push(setTimeout(fn, delay));
   }
-  // 「3」表示 (T - 3拍)。t3Perf が現在より前なら即時。
+  // 「3」表示はチュートリアル後すぐ出す。間隔だけを伸ばしてノート速度は変えない。
   schedule(t3Perf, function() { _showOverlay(countBeats, 'リズム スタート'); });
   for (var k = 1; k < countBeats; k++) {
     (function(kk) {
@@ -4704,7 +4703,7 @@ function _beginRhythmCountdown() {
     if (_rhythm.enabled) return;
     setPlayMode('rhythm');
   });
-  // 「スタート!」表示後、少し余裕を残してから 1ノート目がヒットラインに来る。
+  // 「スタート!」表示後、leadBeats 相当の余裕を残してから 1ノート目がヒットラインに来る。
   schedule(countdownDonePerf, function() { _showOverlay('スタート!', ''); });
   // 少し見せてから overlay クリア
   schedule(countdownDonePerf + 380, function() { _clearRhythmCountdown(); });
