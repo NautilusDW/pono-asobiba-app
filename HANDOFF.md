@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:406-oto-rhythm-songs-stars-chords] DONE - Codex: OtoTouch リズムで `きらきらぼし` を 90BPM + `twinkle90` 伴奏へ減速し、簡単曲 `メリーさん` / `ちょうちょう` / `ロンドンばし` と難しめ `よろこびのうた` を選択肢に整理。採点は1ミス程度でも3つ星になるよう緩和し、リズム主旋律はコードON時に音名ベースの三和音で鳴るよう接続、リズム画面でもコード切替を表示。`sw.js` は v998。inline script parse、`git diff --check`、Playwrightで譜面長/曲ID/1ミス3星/和音ON/OFF/切替クリック/演奏中再予約を確認。 (by Codex)
 - 2026-06-10 - [batch:405-quiz-balloon-kanji-hiragana] DONE - Codex: `assets/images/quizland/balloons/ballon_01.png` の中央テキストを GPT Image 2 生成文字ベースで `何だろう` → `なんだろう` に修正。元の吹き出し形状/葉/透過を維持し、他 balloon は漢字なしと確認。`ballon_01` は候補から除外せず通常ローテーション維持。`sw.js` は v996。コンタクトシート目視、PNG alpha corners 0、`git diff --check` 確認済み。 (by Codex)
 - 2026-06-10 - [batch:404-quiz-start-card-hakase-hiragana] DONE - Codex: Quizland のオープニング後スタートカードを GPT Image 2 版に差し替え、上段ロゴを `ふくろうはかせの` に修正。`quiz_start_card.png/webp` を 1024x1024 に更新し、黒バックで正方形シャドウが出ないよう start-card 背景/画像 filter/alt を調整。`sw.js` は v993。Playwright 862x659 で画像ロード、alt、背景、JS error 0、目視確認済み。 (by Codex)
 - 2026-06-10 - [batch:403-oto-rhythm-drum-intro] DONE - Codex: OtoTouch リズムで `スタート!` 後の無音待ちを減らすため、合成ドラム clock を先行開始し、その clock 上の次のバスドラ位置へ最初のドを置く方式へ変更。最初のバスドラ=最初のドの同期は維持しつつ、メロディ前にリズムだけが鳴る。`sw.js` / `play.html` cache は v991。Node inline script、`git diff --check`、Playwright で drumStart < firstMelody かつ firstMelody が kick grid 上にあることを確認。 (by Codex)

@@ -429,6 +429,22 @@
   body.rhythm-layout .sound-sets-box,
   body.rhythm-layout .mode-switch,
   body.rhythm-layout .chord-pill { z-index: 2; }
+  body.rhythm-layout .chord-pill {
+    top: max(14px, calc(env(safe-area-inset-top) + 14px));
+    left: max(16px, calc(env(safe-area-inset-left) + 16px));
+    transform: none;
+    width: 122px;
+    padding: 3px;
+    gap: 3px;
+    border-width: 2px;
+    box-sizing: border-box;
+  }
+  body.rhythm-layout .chord-pill-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 0.68rem;
+  }
   /* v718 LANDSCAPE FIX: #rhythm-lanes(z:4) は left:22%~right:0 で画面下端まで広がり、
      その子 .gh-lane(高さ var(--gh-hit-y,100%) → 初期表示で 100%) が 8 鍵盤(#instruments z:3)を
      視覚的に覆っていた。landscape 大画面では (--gh-hit-y を JS で px 値に更新する前の) 初期描画で
@@ -1184,13 +1200,13 @@
   }
   .rhythm-song-list {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    width: min(100%, 340px);
+    width: min(100%, 430px);
   }
   .rhythm-song-choice {
-    min-height: 50px;
-    border-radius: 16px;
+    min-height: 48px;
+    border-radius: 15px;
     border: 3px solid rgba(255,255,255,0.68);
     background: rgba(255,255,255,0.12);
     color: #fff;
@@ -1218,6 +1234,12 @@
     background: linear-gradient(135deg, #FFD84D, #F59E0B);
     color: #5D4E37;
     border-color: #fff;
+  }
+  @media (max-width: 540px) {
+    .rhythm-song-list {
+      grid-template-columns: 1fr;
+      width: min(100%, 340px);
+    }
   }
   .rhythm-practice {
     width: min(100%, 420px);
@@ -1798,10 +1820,25 @@
       font-size: 1.28rem;
     }
 
-    /* v713: リズムモード時は左メニューを 11% 中心・幅 160px に縮めてレーン領域を確保。
-       コード/単音ピルはメロディ譜面では不要なので非表示。
-       (詳細度を base @media (orientation: landscape) と揃えるため同ブロック末尾に配置) */
-    body.rhythm-layout .chord-pill { display: none !important; }
+    /* v713+: リズムモード時は左メニューを 11% 中心・幅 160px に縮めてレーン領域を確保。
+       コード/単音ピルも使えるように、横画面では同じ左メニュー内へ収める。 */
+    body.rhythm-layout .chord-pill {
+      display: flex !important;
+      top: calc(max(8px, env(safe-area-inset-top)) + 52px);
+      left: max(14px, calc(env(safe-area-inset-left) + 14px));
+      transform: none;
+      width: 132px;
+      padding: 3px;
+      gap: 3px;
+      border-width: 2px;
+      box-sizing: border-box;
+    }
+    body.rhythm-layout .chord-pill-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 4px;
+      font-size: 0.68rem;
+    }
     body.rhythm-layout .mode-switch,
     body.rhythm-layout .sound-sets-box,
     body.rhythm-layout .band-group,
@@ -2987,7 +3024,7 @@ var RHYTHM_SONGS = [
   {
     id: 'kaeru',
     name: 'かえるのうた',
-    note: '2ブロック',
+    note: 'かんたん',
     bpm: 90,
     bandSongId: 'kaeru90',
     bandStems: ['drums'],
@@ -3010,9 +3047,9 @@ var RHYTHM_SONGS = [
   {
     id: 'twinkle',
     name: 'きらきらぼし',
-    note: '3ブロック',
-    bpm: 100,
-    bandSongId: 'twinkle100',
+    note: 'かんたん',
+    bpm: 90,
+    bandSongId: 'twinkle90',
     bandStems: ['drums'],
     bandVolume: 0.32,
     sections: [
@@ -3037,9 +3074,78 @@ var RHYTHM_SONGS = [
     ]
   },
   {
+    id: 'mary',
+    name: 'メリーさん',
+    note: 'かんたん',
+    bpm: 90,
+    bandSongId: 'mary90',
+    bandStems: ['drums'],
+    bandVolume: 0.3,
+    sections: [
+      {
+        name: '1',
+        note: 'こひつじ',
+        notes: [2, 1, 0, 1, 2, 2, 2, 1, 1, 1, 2, 4, 4],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2]
+      },
+      {
+        name: '2',
+        note: 'かわいいね',
+        notes: [2, 1, 0, 1, 2, 2, 2, 2, 1, 1, 2, 1, 0],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2]
+      }
+    ]
+  },
+  {
+    id: 'choucho',
+    name: 'ちょうちょう',
+    note: 'かんたん',
+    bpm: 90,
+    bandSongId: 'choucho90',
+    bandStems: ['drums'],
+    bandVolume: 0.3,
+    sections: [
+      {
+        name: '1',
+        note: 'ひらひら',
+        notes: [4, 2, 2, 3, 1, 1, 0, 1, 2, 3, 4, 4, 4],
+        beats: [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+      },
+      {
+        name: '2',
+        note: 'はなへ',
+        notes: [4, 2, 2, 3, 1, 1, 0, 2, 4, 4, 2, 2, 2],
+        beats: [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
+      }
+    ]
+  },
+  {
+    id: 'london',
+    name: 'ロンドンばし',
+    note: 'かんたん',
+    bpm: 90,
+    bandSongId: 'london90',
+    bandStems: ['drums'],
+    bandVolume: 0.3,
+    sections: [
+      {
+        name: '1',
+        note: 'おちる',
+        notes: [4, 5, 4, 3, 2, 3, 4, 1, 2, 3, 2, 3, 4],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2]
+      },
+      {
+        name: '2',
+        note: 'さあなおそ',
+        notes: [4, 5, 4, 3, 2, 3, 4, 1, 4, 2, 0],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2]
+      }
+    ]
+  },
+  {
     id: 'ode',
     name: 'よろこびのうた',
-    note: '2ブロック',
+    note: 'むずかしめ',
     bpm: 100,
     bandSongId: 'ode100',
     bandStems: ['drums'],
@@ -4350,11 +4456,13 @@ function _hideRhythmComplete() {
 }
 function _rhythmScoreStars() {
   var total = Math.max(1, RHYTHM_SONG.notes.length);
-  var missLimit = Math.max(1, Math.ceil(total * 0.2));
-  var goodRate = _rhythm.goodHits / total;
+  var missLimit = Math.max(2, Math.ceil(total * 0.28));
   var okRate = _rhythm.okHits / total;
-  if (_rhythm.misses === 0 && goodRate >= 0.65) return 3;
-  if (_rhythm.misses <= missLimit && okRate >= 0.55) return 2;
+  var roughAllowance = Math.max(1, Math.ceil(total * 0.08));
+  var okEnoughForThree = _rhythm.okHits >= Math.max(0, total - _rhythm.misses - roughAllowance);
+  if (_rhythm.misses <= 1 && okEnoughForThree) return 3;
+  if (_rhythm.misses === 0 && okRate >= 0.65) return 3;
+  if (_rhythm.misses <= missLimit && okRate >= 0.45) return 2;
   return 1;
 }
 function _renderRhythmResultStars(stars) {
@@ -4609,10 +4717,27 @@ function _clearRhythmCountdown() {
 function _rhythmNoteFreq(idx) {
   return DOREMI_FREQS[idx] || DOREMI_FREQS[0] || 440;
 }
+var RHYTHM_CHORD_FREQS = [
+  [261.63, 329.63, 392.00],
+  [293.66, 349.23, 440.00],
+  [329.63, 392.00, 493.88],
+  [349.23, 440.00, 523.25],
+  [392.00, 493.88, 587.33],
+  [440.00, 523.25, 659.25],
+  [493.88, 587.33, 698.46],
+  [523.25, 659.25, 783.99]
+];
+function _rhythmNoteFreqs(idx) {
+  if (CHORD_MODE === 'on') return RHYTHM_CHORD_FREQS[idx] || [_rhythmNoteFreq(idx)];
+  return [_rhythmNoteFreq(idx)];
+}
 function _clearRhythmMelodySchedule() {
   (_rhythm.melodyNodes || []).forEach(function(node) {
-    try { if (node.osc) node.osc.stop(0); } catch(e) {}
-    try { if (node.osc) node.osc.disconnect(); } catch(e) {}
+    var oscillators = node.oscillators || (node.osc ? [node.osc] : []);
+    oscillators.forEach(function(osc) {
+      try { osc.stop(0); } catch(e) {}
+      try { osc.disconnect(); } catch(e) {}
+    });
     try { if (node.gain) node.gain.disconnect(); } catch(e) {}
   });
   _rhythm.melodyNodes = [];
@@ -4620,7 +4745,8 @@ function _clearRhythmMelodySchedule() {
 function _playRhythmToneAt(idx, whenAc, durationMs, peakGain) {
   var ac = getAC();
   if (!ac) return;
-  var f = _rhythmNoteFreq(idx);
+  var freqs = _rhythmNoteFreqs(idx);
+  if (!freqs.length) return;
   var now = ac.currentTime;
   var dur = Math.max(0.18, durationMs / 1000);
   if (!whenAc || !isFinite(whenAc)) whenAc = now;
@@ -4628,26 +4754,38 @@ function _playRhythmToneAt(idx, whenAc, durationMs, peakGain) {
   var t = Math.max(now + 0.006, whenAc);
   var release = Math.min(0.12, dur * 0.3);
   var sustainEnd = Math.max(t + 0.05, t + dur - release);
-  var o = ac.createOscillator();
   var g = ac.createGain();
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(f, t);
   var peak = peakGain == null ? 0.18 : peakGain;
+  if (freqs.length > 1) peak *= 0.58;
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(peak, t + 0.018);
   g.gain.setValueAtTime(peak * 0.86, sustainEnd);
   g.gain.linearRampToValueAtTime(0, t + dur);
-  o.connect(g);
+  var oscillators = freqs.map(function(f, fi) {
+    var o = ac.createOscillator();
+    o.type = fi === 0 ? 'triangle' : 'sine';
+    o.frequency.setValueAtTime(f, t);
+    o.connect(g);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+    return o;
+  });
   g.connect(ac.destination);
-  o.start(t);
-  o.stop(t + dur + 0.02);
-  var record = { osc: o, gain: g };
+  var record = { oscillators: oscillators, gain: g };
   _rhythm.melodyNodes.push(record);
-  o.addEventListener('ended', function() {
-    try { o.disconnect(); } catch(e) {}
+  var cleanupDone = false;
+  function cleanup() {
+    if (cleanupDone) return;
+    cleanupDone = true;
+    oscillators.forEach(function(osc) {
+      try { osc.disconnect(); } catch(e) {}
+    });
     try { g.disconnect(); } catch(e) {}
     var idxInList = _rhythm.melodyNodes.indexOf(record);
     if (idxInList >= 0) _rhythm.melodyNodes.splice(idxInList, 1);
+  }
+  oscillators.forEach(function(osc) {
+    osc.addEventListener('ended', cleanup);
   });
 }
 function _scheduleRhythmMelody(peakGain) {
@@ -5958,7 +6096,11 @@ var SONGS = [
   { id: 's120', name: '🏃 120',   type: 'synth', bpm: 120, bars: 4, chords: ['C','F','Am','G'] },
   { id: 'kaeru90',    name: 'かえる',   type: 'synth', bpm: 90,  bars: 4, chords: ['C','F','C','G'] },
   { id: 'twinkle80',  name: 'きらきら', type: 'synth', bpm: 80,  bars: 4, chords: ['C','F','C','G'] },
+  { id: 'twinkle90',  name: 'きらきら', type: 'synth', bpm: 90,  bars: 4, chords: ['C','F','C','G'] },
   { id: 'twinkle100', name: 'きらきら', type: 'synth', bpm: 100, bars: 4, chords: ['C','F','C','G'] },
+  { id: 'mary90',     name: 'メリー',   type: 'synth', bpm: 90,  bars: 4, chords: ['C','G','C','G'] },
+  { id: 'choucho90',  name: 'ちょうちょう', type: 'synth', bpm: 90, bars: 4, chords: ['C','G','C','G'] },
+  { id: 'london90',   name: 'ロンドン', type: 'synth', bpm: 90,  bars: 4, chords: ['C','G','C','G'] },
   { id: 'ode100',     name: 'よろこび', type: 'synth', bpm: 100, bars: 8, chords: ['C','G','C','G','C','F','G','C'] }
 ];
 var _curSongIdx = 0;
@@ -6537,6 +6679,9 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     try { localStorage.setItem('pono_oto_chord', mode); } catch(e) {}
     cOff.classList.toggle('active', mode === 'off');
     cOn.classList.toggle('active',  mode === 'on');
+    if ((_rhythm.enabled || _rhythm.demoActive) && _rhythm.startAcTime) {
+      _scheduleRhythmMelody(_rhythm.demoActive && !_rhythm.enabled ? 0.18 : 0.16);
+    }
   }
   if (cOff) cOff.addEventListener('click', function(e) { e.stopPropagation(); setChord('off'); });
   if (cOn)  cOn.addEventListener('click',  function(e) { e.stopPropagation(); setChord('on');  });
