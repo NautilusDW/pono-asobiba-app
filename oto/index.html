@@ -4851,6 +4851,7 @@ function _clearRhythmDemo(keepHud) {
     _rhythm.demoRaf = 0;
   }
   _clearRhythmMelodySchedule();
+  _clearRhythmBackingSchedule();
   _rhythm.demoActive = false;
   _rhythm.demoBeatScale = 0;
   _rhythm.demoFallMs = 0;
@@ -6129,12 +6130,32 @@ var _bandVolume = 1;
 var _bandClockStart = 0;    // 合成バンドの AC time 開始時刻
 var _scheduledStep = -1;
 var _schedulerInterval = null;
+var RHYTHM_BACKING_ENABLED = true;
+var RHYTHM_BACKING_PATTERN = [1, 0, 0.62, 0, 0.84, 0, 0.56, 0];
+var _rhythmBackingNodes = [];
 function _bandLevel(value) {
   return value * _bandVolume;
 }
 
 function _synthActive() {
   return _activeStems.drums || _activeStems.bass || _activeStems.keyboard;
+}
+function _rhythmBackingActive() {
+  return !!(RHYTHM_BACKING_ENABLED &&
+    document.body.classList.contains('rhythm-layout') &&
+    (_rhythm.enabled || _rhythm.demoActive));
+}
+function _clearRhythmBackingSchedule() {
+  (_rhythmBackingNodes || []).forEach(function(record) {
+    (record.oscillators || []).forEach(function(osc) {
+      try { osc.stop(0); } catch(e) {}
+      try { osc.disconnect(); } catch(e) {}
+    });
+    (record.nodes || []).forEach(function(node) {
+      try { node.disconnect(); } catch(e) {}
+    });
+  });
+  _rhythmBackingNodes = [];
 }
 function _bandActive() {
   if (_currentSong().type === 'mp3') {
@@ -6216,6 +6237,7 @@ function _startSongClock(startAtAc) {
 }
 function _stopSongClock() {
   if (_schedulerInterval) { clearInterval(_schedulerInterval); _schedulerInterval = null; }
+  _clearRhythmBackingSchedule();
   _bandClockStart = 0;
   _scheduledStep = -1;
 }
@@ -6255,6 +6277,12 @@ function _synthScheduler() {
     // キーボード: 各小節の頭で和音を1小節分
     if (_activeStems.keyboard && subInBar === 0 && chord) {
       _playKbdAt(ac, chord.triad, stepTime, subPerBar * subBeatSec * 0.95);
+    }
+    if (_rhythmBackingActive() && chord) {
+      var backingLevel = RHYTHM_BACKING_PATTERN[subInBar] || 0;
+      if (backingLevel > 0) {
+        _playRhythmBackingChordAt(ac, chord.triad, stepTime, subBeatSec * 0.78, backingLevel);
+      }
     }
     _scheduledStep = nextStep;
   }
@@ -6325,6 +6353,58 @@ function _playKbdAt(ac, freqs, t, dur) {
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g); g.connect(ac.destination);
     o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+
+function _playRhythmBackingChordAt(ac, freqs, t, dur, level) {
+  if (!freqs || !freqs.length) return;
+  if (t + dur < ac.currentTime - 0.02) return;
+  var hp = ac.createBiquadFilter();
+  var lp = ac.createBiquadFilter();
+  var g = ac.createGain();
+  var start = Math.max(ac.currentTime + 0.006, t);
+  var end = start + Math.max(0.1, dur);
+  var chordModeScale = CHORD_MODE === 'on' ? 0.66 : 1;
+  hp.type = 'highpass';
+  hp.frequency.setValueAtTime(180, start);
+  hp.Q.setValueAtTime(0.55, start);
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(1850, start);
+  lp.Q.setValueAtTime(0.7, start);
+  var peak = _bandLevel(0.08 * level * chordModeScale);
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(peak, start + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.001, end);
+  hp.connect(lp);
+  lp.connect(g);
+  g.connect(ac.destination);
+  var oscillators = freqs.map(function(f, i) {
+    var o = ac.createOscillator();
+    o.type = i === 0 ? 'sawtooth' : 'triangle';
+    o.frequency.setValueAtTime(f, start);
+    if (o.detune) o.detune.setValueAtTime((i - 1) * 4, start);
+    o.connect(hp);
+    o.start(start);
+    o.stop(end + 0.02);
+    return o;
+  });
+  var record = { oscillators: oscillators, nodes: [hp, lp, g] };
+  _rhythmBackingNodes.push(record);
+  var cleaned = false;
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    oscillators.forEach(function(osc) {
+      try { osc.disconnect(); } catch(e) {}
+    });
+    [hp, lp, g].forEach(function(node) {
+      try { node.disconnect(); } catch(e) {}
+    });
+    var idx = _rhythmBackingNodes.indexOf(record);
+    if (idx >= 0) _rhythmBackingNodes.splice(idx, 1);
+  }
+  oscillators.forEach(function(osc) {
+    osc.addEventListener('ended', cleanup);
   });
 }
 
