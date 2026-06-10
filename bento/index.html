@@ -3313,6 +3313,8 @@ const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
 const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
 const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v3';
 const FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS = ['bento_free_complete_layout_v2', 'bento_free_complete_layout_v1'];
+const FREE_MASK_SYNC_API = '/api/bento/mask-defaults';
+const FREE_MASK_ADMIN_PASSWORD_SESSION_KEY = 'bento_mask_admin_password';
 // マスクエディターで確定した値はここに貼る。localStorage は端末ごとの一時上書き。
 const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {
   box_bear: {
@@ -3837,6 +3839,10 @@ let freeMaskEditorMode = false;
 let freeMaskEditorView = 'tier1';
 let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 let freeCompleteLayoutOverrides = loadFreeCompleteLayoutOverrides();
+let freeMaskBoundsServerDefaults = {};
+let freeCompleteLayoutServerDefaults = {};
+let freeMaskServerDefaultsUpdatedAt = '';
+let freeMaskServerDefaultsFetchPromise = null;
 let freeMaskResizeRefreshTimer = 0;
 const freeFullMaskCache = new Map();
 const freeFullMaskPending = new Map();
@@ -4689,15 +4695,30 @@ function getFreeEditorEntryValue(entry, aliases = []) {
     ? entry
     : null;
 }
+function getMergedFreeEditorEntry(primary, secondary) {
+  if (primary && typeof primary === 'object' && secondary && typeof secondary === 'object') {
+    return { ...cloneFreeEditorMap(primary), ...cloneFreeEditorMap(secondary) };
+  }
+  return secondary && typeof secondary === 'object'
+    ? secondary
+    : (primary && typeof primary === 'object' ? primary : null);
+}
+function shouldUseFreeLocalEditorOverrides() {
+  return !!freeMaskEditorMode;
+}
 function getFreeMaskDefaultEntry(key) {
-  if (!key || !FREE_MASK_BOUNDS_DEFAULT_OVERRIDES) return null;
-  const entry = FREE_MASK_BOUNDS_DEFAULT_OVERRIDES[key];
-  return entry && typeof entry === 'object' ? entry : null;
+  if (!key) return null;
+  return getMergedFreeEditorEntry(
+    FREE_MASK_BOUNDS_DEFAULT_OVERRIDES && FREE_MASK_BOUNDS_DEFAULT_OVERRIDES[key],
+    freeMaskBoundsServerDefaults && freeMaskBoundsServerDefaults[key]
+  );
 }
 function getFreeCompleteDefaultEntry(key) {
-  if (!key || !FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES) return null;
-  const entry = FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES[key];
-  return entry && typeof entry === 'object' ? entry : null;
+  if (!key) return null;
+  return getMergedFreeEditorEntry(
+    FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES && FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES[key],
+    freeCompleteLayoutServerDefaults && freeCompleteLayoutServerDefaults[key]
+  );
 }
 function saveFreeMaskBoundsOverrides() {
   if (typeof localStorage === 'undefined') return;
@@ -4787,7 +4808,8 @@ function getBoxCompleteLayout(box, tier = 2) {
   const defaultLayout = getFreeEditorEntryValue(defaultEntry, ['layout']);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
   const overrideLayout = getFreeEditorEntryValue(override, ['layout']);
-  return normalizeFreeCompleteLayout({ ...base, ...(defaultLayout || {}), ...(overrideLayout || {}) });
+  const localLayout = shouldUseFreeLocalEditorOverrides() || !defaultLayout ? overrideLayout : null;
+  return normalizeFreeCompleteLayout({ ...base, ...(defaultLayout || {}), ...(localLayout || {}) });
 }
 function getBoxCompleteLidLayout(box) {
   refreshFreeCompleteLayoutOverrides();
@@ -4797,7 +4819,8 @@ function getBoxCompleteLidLayout(box) {
   const defaultLayout = getFreeEditorEntryValue(defaultEntry, ['lid', 'layout']);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
   const overrideLayout = getFreeEditorEntryValue(override, ['lid', 'layout']);
-  return normalizeFreeCompleteLidLayout({ ...base, ...(defaultLayout || {}), ...(overrideLayout || {}) });
+  const localLayout = shouldUseFreeLocalEditorOverrides() || !defaultLayout ? overrideLayout : null;
+  return normalizeFreeCompleteLidLayout({ ...base, ...(defaultLayout || {}), ...(localLayout || {}) });
 }
 function getBoxCompleteMaskRelative(box, tier = 2) {
   refreshFreeCompleteLayoutOverrides();
@@ -4807,7 +4830,8 @@ function getBoxCompleteMaskRelative(box, tier = 2) {
   const defaultRel = getFreeEditorEntryValue(defaultEntry, ['rel', 'mask']);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
   const overrideRel = getFreeEditorEntryValue(override, ['rel', 'mask']);
-  return normalizeMaskRelative({ ...(base || {}), ...(defaultRel || {}), ...(overrideRel || {}) });
+  const localRel = shouldUseFreeLocalEditorOverrides() || !defaultRel ? overrideRel : null;
+  return normalizeMaskRelative({ ...(base || {}), ...(defaultRel || {}), ...(localRel || {}) });
 }
 function getFreeCompleteHostWidth(host) {
   if (!host) return 0;
@@ -5115,12 +5139,12 @@ function getBoxMaskRelative(box) {
   return getFreeMaskRelativeOverride(key) || getDefaultBoxMaskRelative(box);
 }
 function getFreeMaskRelativeOverride(key) {
-  if (!key || !freeMaskBoundsOverrides) return null;
-  const entry = freeMaskBoundsOverrides[key];
+  if (!key) return null;
+  const entry = freeMaskBoundsOverrides && freeMaskBoundsOverrides[key];
   const localRel = getFreeEditorEntryValue(entry, ['rel']);
-  if (localRel) return localRel;
   const defaultEntry = getFreeMaskDefaultEntry(key);
-  return getFreeEditorEntryValue(defaultEntry, ['rel']);
+  const defaultRel = getFreeEditorEntryValue(defaultEntry, ['rel']);
+  return shouldUseFreeLocalEditorOverrides() || !defaultRel ? (localRel || defaultRel) : defaultRel;
 }
 function normalizeMaskRelative(rel) {
   const normalized = {};
@@ -5163,7 +5187,8 @@ function normalizeFreeCompleteDefaultExportEntry(key, entry) {
   return layout ? { layout: normalizeFreeCompleteLayout(layout) } : null;
 }
 function getFreeMaskDefaultOverridesForExport() {
-  const merged = mergeFreeEditorMaps(FREE_MASK_BOUNDS_DEFAULT_OVERRIDES, freeMaskBoundsOverrides);
+  const mergedDefaults = mergeFreeEditorMaps(FREE_MASK_BOUNDS_DEFAULT_OVERRIDES, freeMaskBoundsServerDefaults);
+  const merged = mergeFreeEditorMaps(mergedDefaults, freeMaskBoundsOverrides);
   const normalized = {};
   Object.keys(merged).forEach(key => {
     const entry = normalizeFreeMaskDefaultExportEntry(merged[key]);
@@ -5172,7 +5197,8 @@ function getFreeMaskDefaultOverridesForExport() {
   return sortFreeEditorMap(normalized);
 }
 function getFreeCompleteDefaultOverridesForExport() {
-  const merged = mergeFreeEditorMaps(FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES, freeCompleteLayoutOverrides);
+  const mergedDefaults = mergeFreeEditorMaps(FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES, freeCompleteLayoutServerDefaults);
+  const merged = mergeFreeEditorMaps(mergedDefaults, freeCompleteLayoutOverrides);
   const normalized = {};
   Object.keys(merged).forEach(key => {
     const entry = normalizeFreeCompleteDefaultExportEntry(key, merged[key]);
@@ -5214,6 +5240,103 @@ async function copyFreeMaskDefaultsForCode() {
   } catch (e) {
     console.info(code);
     showToast('コピーできないのでコンソールに出しました');
+  }
+}
+function applyFreeMaskServerDefaults(data) {
+  if (!data || data.ok === false) return false;
+  freeMaskBoundsServerDefaults = cloneFreeEditorMap(data.maskBounds || {});
+  freeCompleteLayoutServerDefaults = cloneFreeEditorMap(data.completeLayout || {});
+  freeMaskServerDefaultsUpdatedAt = data.updatedAt || '';
+  freeFullMaskCache.clear();
+  scheduleFullMaskRefresh();
+  if (document.getElementById('app')?.classList.contains('free-layout-active')) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }
+  return true;
+}
+async function fetchFreeMaskServerDefaults(options = {}) {
+  const announce = !!options.announce;
+  const force = !!options.force;
+  if (!force && freeMaskServerDefaultsFetchPromise) return freeMaskServerDefaultsFetchPromise;
+  freeMaskServerDefaultsFetchPromise = (async () => {
+    try {
+      const resp = await fetch(FREE_MASK_SYNC_API + '?_=' + Date.now(), {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!resp.ok) throw new Error('server ' + resp.status);
+      const data = await resp.json();
+      applyFreeMaskServerDefaults(data);
+      if (announce) showToast(data && data.exists === false ? 'サーバー設定はまだ空です' : 'サーバー設定を読み込みました');
+      return data;
+    } catch (e) {
+      if (announce) showToast('サーバー設定を読めませんでした');
+      return null;
+    } finally {
+      freeMaskServerDefaultsFetchPromise = null;
+    }
+  })();
+  return freeMaskServerDefaultsFetchPromise;
+}
+function getFreeMaskAdminPassword() {
+  try {
+    const saved = sessionStorage.getItem(FREE_MASK_ADMIN_PASSWORD_SESSION_KEY);
+    if (saved) return saved;
+  } catch (e) {}
+  const pass = window.prompt('管理パスワード');
+  if (!pass) return '';
+  try {
+    sessionStorage.setItem(FREE_MASK_ADMIN_PASSWORD_SESSION_KEY, pass);
+  } catch (e) {}
+  return pass;
+}
+function clearFreeMaskAdminPassword() {
+  try {
+    sessionStorage.removeItem(FREE_MASK_ADMIN_PASSWORD_SESSION_KEY);
+  } catch (e) {}
+}
+function makeFreeMaskBasicAuth(password) {
+  try {
+    return 'Basic ' + btoa('admin:' + password);
+  } catch (e) {
+    return '';
+  }
+}
+async function saveFreeMaskDefaultsToServer(retry = true) {
+  const password = getFreeMaskAdminPassword();
+  if (!password) {
+    showToast('保存をキャンセルしました');
+    return;
+  }
+  refreshFreeMaskBoundsOverrides();
+  refreshFreeCompleteLayoutOverrides();
+  const body = {
+    maskBounds: getFreeMaskDefaultOverridesForExport(),
+    completeLayout: getFreeCompleteDefaultOverridesForExport(),
+  };
+  try {
+    const resp = await fetch(FREE_MASK_SYNC_API, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': makeFreeMaskBasicAuth(password),
+      },
+      body: JSON.stringify(body),
+    });
+    if (resp.status === 401 && retry) {
+      clearFreeMaskAdminPassword();
+      showToast('パスワードを確認してね');
+      setTimeout(() => saveFreeMaskDefaultsToServer(false), 80);
+      return;
+    }
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok || !data || data.ok === false) throw new Error((data && data.error) || ('server ' + resp.status));
+    applyFreeMaskServerDefaults(data);
+    showToast('サーバーに保存しました');
+  } catch (e) {
+    showToast('サーバー保存に失敗しました');
   }
 }
 function getBoxMaskBounds(box) {
@@ -7238,6 +7361,17 @@ function renderFreeMaskEditorControls() {
   panel.appendChild(viewportLabel);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   panel.appendChild(renderFreeMaskModeTabs(box));
+  const syncActions = document.createElement('div');
+  syncActions.className = 'free-mask-actions free-mask-sync-actions';
+  syncActions.appendChild(makeSmallControlButton('サーバー保存', 'primary', saveFreeMaskDefaultsToServer));
+  syncActions.appendChild(makeSmallControlButton('サーバー再読込', '', () => fetchFreeMaskServerDefaults({ force: true, announce: true })));
+  panel.appendChild(syncActions);
+  const syncStatus = document.createElement('div');
+  syncStatus.className = 'free-mask-viewport';
+  syncStatus.textContent = freeMaskServerDefaultsUpdatedAt
+    ? 'サーバー: ' + freeMaskServerDefaultsUpdatedAt.replace('T', ' ').replace(/\.\d+Z$/, 'Z')
+    : 'サーバー: 未読込';
+  panel.appendChild(syncStatus);
   const exportActions = document.createElement('div');
   exportActions.className = 'free-mask-actions free-mask-export-actions';
   exportActions.appendChild(makeSmallControlButton('コード用コピー', '', copyFreeMaskDefaultsForCode));
@@ -8802,6 +8936,7 @@ function showTutorial() {
 // ===== Init =====
 applyBentoColor();
 loadStage();
+if (freeLayoutMode) fetchFreeMaskServerDefaults();
 
 (function() {
   const titleScreen = document.getElementById('title-screen');

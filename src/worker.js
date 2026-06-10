@@ -15,6 +15,8 @@ const PROTECTED_PREFIXES = [
   '/room/yard_adjuster'
 ];
 
+const BENTO_MASK_CONFIG_KEY = 'bento-mask-defaults-v1';
+
 function requiresAuth(path) {
   return PROTECTED_PREFIXES.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p + '.'));
 }
@@ -52,6 +54,9 @@ export default {
     }
     if (path === '/.netlify/functions/ai-tts' || path === '/api/ai-tts') {
       return handleAiTts(request, env);
+    }
+    if (path === '/api/bento/mask-defaults') {
+      return handleBentoMaskDefaults(request, env);
     }
 
     if (path.startsWith('/api/gh/')) {
@@ -111,8 +116,8 @@ function applyCacheHeaders(request, response) {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
 };
 
 function json(status, obj, extraHeaders) {
@@ -120,6 +125,159 @@ function json(status, obj, extraHeaders) {
     status,
     headers: { 'Content-Type': 'application/json', ...CORS, ...(extraHeaders || {}) }
   });
+}
+
+function noStoreHeaders() {
+  return {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'CDN-Cache-Control': 'no-store',
+    'Cloudflare-CDN-Cache-Control': 'no-store',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  };
+}
+
+function roundBentoMaskNumber(value, fallback = 0, digits = 4) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  const scale = Math.pow(10, digits);
+  const rounded = Math.round(n * scale) / scale;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+function clampBentoMaskNumber(value, min, max, fallback, digits = 4) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return roundBentoMaskNumber(Math.min(max, Math.max(min, n)), fallback, digits);
+}
+
+function normalizeBentoMaskRel(rel) {
+  return {
+    x: clampBentoMaskNumber(rel && rel.x, -0.5, 1.5, 0),
+    y: clampBentoMaskNumber(rel && rel.y, -0.5, 1.5, 0),
+    w: clampBentoMaskNumber(rel && rel.w, 0.05, 1.5, 1),
+    h: clampBentoMaskNumber(rel && rel.h, 0.05, 1.5, 1)
+  };
+}
+
+function normalizeBentoCompleteLayout(layout) {
+  return {
+    x: clampBentoMaskNumber(layout && layout.x, -120, 120, 0, 1),
+    y: clampBentoMaskNumber(layout && layout.y, -160, 280, 0, 1),
+    w: clampBentoMaskNumber(layout && layout.w, 80, 120, 100, 1)
+  };
+}
+
+function normalizeBentoCompleteLid(lid) {
+  return {
+    x: clampBentoMaskNumber(lid && lid.x, -160, 160, 0, 1),
+    y: clampBentoMaskNumber(lid && lid.y, -180, 240, 0, 1),
+    w: clampBentoMaskNumber(lid && lid.w, 70, 130, 100, 1)
+  };
+}
+
+function getBentoEntryValue(entry, aliases) {
+  if (!entry || typeof entry !== 'object') return null;
+  for (const alias of aliases) {
+    if (entry[alias] && typeof entry[alias] === 'object') return entry[alias];
+  }
+  return ['x', 'y', 'w', 'h'].some(prop => Object.prototype.hasOwnProperty.call(entry, prop))
+    ? entry
+    : null;
+}
+
+function normalizeBentoMaskBoundsMap(map) {
+  const normalized = {};
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
+  Object.keys(map).sort().forEach(key => {
+    if (!/^[a-z0-9_:-]{1,80}$/i.test(key)) return;
+    const rel = getBentoEntryValue(map[key], ['rel']);
+    if (rel) normalized[key] = { rel: normalizeBentoMaskRel(rel) };
+  });
+  return normalized;
+}
+
+function normalizeBentoCompleteLayoutMap(map) {
+  const normalized = {};
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
+  Object.keys(map).sort().forEach(key => {
+    if (!/^[a-z0-9_:-]{1,100}$/i.test(key)) return;
+    const entry = map[key];
+    if (key.endsWith(':mask')) {
+      const rel = getBentoEntryValue(entry, ['rel', 'mask']);
+      if (rel) normalized[key] = { rel: normalizeBentoMaskRel(rel) };
+      return;
+    }
+    if (key.endsWith(':lid')) {
+      const lid = getBentoEntryValue(entry, ['lid', 'layout']);
+      if (lid) normalized[key] = { lid: normalizeBentoCompleteLid(lid) };
+      return;
+    }
+    const layout = getBentoEntryValue(entry, ['layout']);
+    if (layout) normalized[key] = { layout: normalizeBentoCompleteLayout(layout) };
+  });
+  return normalized;
+}
+
+async function handleBentoMaskDefaults(request, env) {
+  if (request.method === 'OPTIONS') {
+    return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+  }
+  if (!env.BENTO_MASK_CONFIG) {
+    return json(503, { ok: false, error: 'BENTO_MASK_CONFIG is not configured' }, noStoreHeaders());
+  }
+  if (request.method === 'GET') {
+    try {
+      const stored = await env.BENTO_MASK_CONFIG.get(BENTO_MASK_CONFIG_KEY, 'json');
+      return json(200, stored || {
+        ok: true,
+        exists: false,
+        version: 1,
+        updatedAt: null,
+        maskBounds: {},
+        completeLayout: {}
+      }, noStoreHeaders());
+    } catch (e) {
+      return json(500, { ok: false, error: e.message }, noStoreHeaders());
+    }
+  }
+  if (request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+  }
+  if (!checkBasicAuth(request, env)) return authChallenge();
+
+  let text = '';
+  try {
+    text = await request.text();
+  } catch {
+    return json(400, { ok: false, error: 'Invalid request body' }, noStoreHeaders());
+  }
+  if (text.length > 120000) {
+    return json(413, { ok: false, error: 'Payload too large' }, noStoreHeaders());
+  }
+
+  let body;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    return json(400, { ok: false, error: 'Invalid JSON' }, noStoreHeaders());
+  }
+
+  const payload = {
+    ok: true,
+    exists: true,
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    maskBounds: normalizeBentoMaskBoundsMap(body.maskBounds || body.mask || {}),
+    completeLayout: normalizeBentoCompleteLayoutMap(body.completeLayout || body.complete || {})
+  };
+
+  try {
+    await env.BENTO_MASK_CONFIG.put(BENTO_MASK_CONFIG_KEY, JSON.stringify(payload));
+    return json(200, payload, noStoreHeaders());
+  } catch (e) {
+    return json(500, { ok: false, error: e.message }, noStoreHeaders());
+  }
 }
 
 async function handleAiName(request, env) {

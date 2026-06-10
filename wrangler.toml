@@ -31,6 +31,10 @@ run_worker_first = ["/*"]
 [observability]
 enabled = true
 
+[[kv_namespaces]]
+binding = "BENTO_MASK_CONFIG"
+id = "45b26dbf2d7a4f40907517e826e48ed8"
+
 # Staging (確認用) = develop branch からのデプロイ。
 # 独自ドメインは付けない。workers.dev サブドメインだけで十分。
 # URL: https://pono-asobiba-staging.ndw.workers.dev/
@@ -39,3 +43,7 @@ enabled = true
 [env.staging]
 name = "pono-asobiba-staging"
 routes = []
+
+[[env.staging.kv_namespaces]]
+binding = "BENTO_MASK_CONFIG"
+id = "0c58144b7fe9479e9781ddb1d9b44dc9"
