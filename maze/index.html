@@ -1355,6 +1355,7 @@ body.image-stage-mode .game-wrap {
   background: linear-gradient(180deg, #FFF7DF, #F8E8C7);
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65), 0 4px 14px rgba(0,0,0,0.12);
+  perspective: 520px;
 }
 .strength-rock-btn {
   position: relative;
@@ -1370,6 +1371,14 @@ body.image-stage-mode .game-wrap {
 .strength-rock-btn:active {
   transform: scale(0.985);
 }
+.strength-game__impact-zone {
+  position: relative;
+  width: min(86vw, 520px);
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+}
 .strength-game__rock {
   width: min(42vw, 230px);
   max-height: min(31dvh, 175px) !important;
@@ -1377,6 +1386,8 @@ body.image-stage-mode .game-wrap {
   filter: drop-shadow(0 7px 10px rgba(0,0,0,0.2));
   pointer-events: none;
   transition: transform 0.08s ease, opacity 0.12s ease;
+  position: relative;
+  z-index: 3;
 }
 .strength-rock-btn.is-hit .strength-game__rock {
   animation: strengthRockHit 0.18s ease-out;
@@ -1387,14 +1398,40 @@ body.image-stage-mode .game-wrap {
   pointer-events: none;
 }
 .strength-game__glove {
-  right: 9%;
-  bottom: 7%;
-  width: min(24vw, 130px);
-  max-height: min(22dvh, 128px) !important;
-  object-fit: contain;
+  z-index: 4;
+  bottom: 0%;
+  width: min(25vw, 142px);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
   filter: drop-shadow(0 6px 9px rgba(0,0,0,0.18));
-  transform: rotate(8deg);
   opacity: 0.92;
+  transform-style: preserve-3d;
+  will-change: transform, opacity, filter;
+}
+.strength-game__glove img {
+  position: absolute;
+  top: 0;
+  width: 204%;
+  height: 100%;
+  max-height: none !important;
+  object-fit: contain;
+  pointer-events: none;
+}
+.strength-game__glove--left {
+  left: 7%;
+  transform: translate3d(0, 0, 36px) rotate(-17deg) rotateX(16deg) rotateY(13deg) scale(1.03);
+  transform-origin: 78% 62%;
+}
+.strength-game__glove--left img {
+  left: 0;
+}
+.strength-game__glove--right {
+  right: 7%;
+  transform: translate3d(0, 0, 36px) rotate(17deg) rotateX(16deg) rotateY(-13deg) scale(1.03);
+  transform-origin: 22% 62%;
+}
+.strength-game__glove--right img {
+  right: 0;
 }
 .strength-game__spark {
   left: 50%;
@@ -1402,12 +1439,14 @@ body.image-stage-mode .game-wrap {
   width: min(24vw, 135px);
   opacity: 0;
   transform: translate(-50%, -50%);
+  z-index: 6;
 }
 .strength-debris-layer {
   position: absolute;
   inset: -26%;
   overflow: visible;
   pointer-events: none;
+  z-index: 7;
 }
 .strength-chip {
   position: absolute;
@@ -1423,7 +1462,13 @@ body.image-stage-mode .game-wrap {
   animation: strengthChipFly var(--dur, 560ms) cubic-bezier(0.14, 0.74, 0.32, 1) forwards;
 }
 .strength-rock-btn.is-hit .strength-game__glove {
-  animation: strengthPunchHit 0.18s ease-out;
+  opacity: 0.72;
+}
+.strength-rock-btn.is-hit-left .strength-game__glove--left {
+  animation: strengthPunchLeft 0.22s cubic-bezier(0.16, 0.82, 0.28, 1) both;
+}
+.strength-rock-btn.is-hit-right .strength-game__glove--right {
+  animation: strengthPunchRight 0.22s cubic-bezier(0.16, 0.82, 0.28, 1) both;
 }
 .strength-rock-btn.is-hit .strength-game__spark {
   animation: strengthSparkHit 0.2s ease-out;
@@ -1473,14 +1518,41 @@ body.image-stage-mode .game-wrap {
   color: #8D6C36;
   line-height: 1.2;
 }
-@keyframes strengthGlovePush {
-  0%   { transform: translateX(-2%) rotate(8deg); }
-  100% { transform: translateX(6%) rotate(3deg); }
+@keyframes strengthPunchLeft {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(0, 0, 42px) rotate(-17deg) rotateX(16deg) rotateY(13deg) scale(1.06);
+  }
+  48% {
+    opacity: 1;
+    filter: drop-shadow(0 12px 13px rgba(0,0,0,0.22)) brightness(1.05);
+    transform: translate3d(112%, -34%, -42px) rotate(-4deg) rotateX(2deg) rotateY(7deg) scale(0.88);
+  }
+  62% {
+    transform: translate3d(122%, -38%, -50px) rotate(-2deg) rotateX(0deg) rotateY(4deg) scale(0.84);
+  }
+  100% {
+    opacity: 0.92;
+    transform: translate3d(0, 0, 36px) rotate(-17deg) rotateX(16deg) rotateY(13deg) scale(1.03);
+  }
 }
-@keyframes strengthPunchHit {
-  0%   { transform: translateX(0) rotate(8deg) scale(1); }
-  45%  { transform: translateX(-24%) rotate(-4deg) scale(1.05); }
-  100% { transform: translateX(0) rotate(8deg) scale(1); }
+@keyframes strengthPunchRight {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(0, 0, 42px) rotate(17deg) rotateX(16deg) rotateY(-13deg) scale(1.06);
+  }
+  48% {
+    opacity: 1;
+    filter: drop-shadow(0 12px 13px rgba(0,0,0,0.22)) brightness(1.05);
+    transform: translate3d(-112%, -34%, -42px) rotate(4deg) rotateX(2deg) rotateY(-7deg) scale(0.88);
+  }
+  62% {
+    transform: translate3d(-122%, -38%, -50px) rotate(2deg) rotateX(0deg) rotateY(-4deg) scale(0.84);
+  }
+  100% {
+    opacity: 0.92;
+    transform: translate3d(0, 0, 36px) rotate(17deg) rotateX(16deg) rotateY(-13deg) scale(1.03);
+  }
 }
 @keyframes strengthRockHit {
   0%, 100% { transform: translateX(0) rotate(0deg); }
@@ -1642,13 +1714,23 @@ body.image-stage-mode .game-wrap {
   .strength-rock-btn {
     min-height: 82px;
   }
+  .strength-game__impact-zone {
+    width: min(82vw, 310px);
+    min-height: 82px;
+  }
   .strength-game__rock {
     width: min(24vw, 110px);
     max-height: min(22dvh, 64px) !important;
   }
   .strength-game__glove {
-    width: min(15vw, 68px);
-    max-height: min(22dvh, 58px) !important;
+    width: min(17vw, 70px);
+    bottom: -3%;
+  }
+  .strength-game__glove--left {
+    left: 4%;
+  }
+  .strength-game__glove--right {
+    right: 4%;
   }
   .strength-game__spark {
     width: min(14vw, 62px);
@@ -5549,6 +5631,7 @@ function _showStrengthPushGame() {
     required: STRENGTH_TAP_REQUIRED,
     deadline: performance.now() + STRENGTH_TAP_MS,
     locked: false,
+    lastPunchHand: 'left',
     status: 'いわを れんだして くだこう！',
   };
   encStageEl.textContent = '';
@@ -5558,10 +5641,17 @@ function _showStrengthPushGame() {
     '<div class="strength-game__title">いわを れんだ！</div>' +
     '<div class="strength-game__stage">' +
       '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく">' +
-        '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
-        '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
-        '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
-        '<img class="strength-game__glove" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="ちからの てぶくろ">' +
+        '<div class="strength-game__impact-zone">' +
+          '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
+          '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
+          '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
+          '<span class="strength-game__glove strength-game__glove--left" aria-hidden="true">' +
+            '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="">' +
+          '</span>' +
+          '<span class="strength-game__glove strength-game__glove--right" aria-hidden="true">' +
+            '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="">' +
+          '</span>' +
+        '</div>' +
       '</button>' +
     '</div>' +
     '<div class="strength-tap-progress" id="strengthTapProgress"></div>' +
@@ -5634,15 +5724,21 @@ function _onStrengthRockTap() {
   const gs = _strengthGameState;
   if (!gs || gs.locked) return;
   gs.tapCount = Math.min(gs.required, gs.tapCount + 1);
+  const punchHand = (gs.tapCount % 2 === 1) ? 'right' : 'left';
+  gs.lastPunchHand = punchHand;
   const finalHit = gs.tapCount >= gs.required;
   gs.status = finalHit ? 'くだけた！' : 'あと ' + (gs.required - gs.tapCount) + ' かい！';
   playRockHit(finalHit);
   _spawnStrengthDebrisBurst(finalHit);
   const btn = document.getElementById('strengthRockBtn');
   if (btn) {
-    btn.classList.remove('is-hit');
+    btn.classList.remove('is-hit', 'is-hit-left', 'is-hit-right');
     void btn.offsetWidth;
-    btn.classList.add('is-hit');
+    const hitClass = punchHand === 'right' ? 'is-hit-right' : 'is-hit-left';
+    btn.classList.add('is-hit', hitClass);
+    setTimeout(function() {
+      btn.classList.remove('is-hit', hitClass);
+    }, 260);
   }
   _renderStrengthPushGame();
   if (gs.tapCount >= gs.required) _resolveStrengthPushGame();
