@@ -4961,14 +4961,11 @@ function hideNextButton() {
 }
 
 // バルーンランダム選択 (連続で同じ画像を出さない)
-// NOTE: ballon_01.png は漢字「なんだろう」が焼き込まれているため候補から除外。
-//       他は全てひらがな表記。将来 ballon_01.png をひらがな版に差し替えたら復活可。
-const _BALLOON_IDX_POOL = [2, 3, 4, 5, 6];
 let _lastBalloonIdx = -1;
 function pickBalloonSrc() {
   let idx;
   do {
-    idx = _BALLOON_IDX_POOL[Math.floor(Math.random() * _BALLOON_IDX_POOL.length)];
+    idx = 1 + Math.floor(Math.random() * 6);  // 1-6
   } while (idx === _lastBalloonIdx);
   _lastBalloonIdx = idx;
   return '../assets/images/quizland/balloons/ballon_' + String(idx).padStart(2, '0') + '.png';
@@ -5011,7 +5008,7 @@ function stopTriviaPoseAnimation() {
 //   loadQuestion で trivia 出題時は body.has-trivia-pono を付けて
 //   CSS で自動非表示 (中央ポノとの重複回避)。
 // ═══════════════════════════════════════════════════════════
-// 吹き出しは PNG 焼き込み (ballon_02〜06、01 は漢字版のため除外) を pickBalloonSrc() で選ぶ。
+// 吹き出しは PNG 焼き込み (ballon_01〜06) を pickBalloonSrc() で選ぶ。
 // テキストは PNG に既に焼かれているので JS 側で文字列を持たない。
 const STAGE_PONO_POSE_INTERVAL_MS = 3000; // 3秒/枚 (やや穏やか)
 const STAGE_PONO_BUBBLE_SHOW_MS = 4000;   // 4秒表示

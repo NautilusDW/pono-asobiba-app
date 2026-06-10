@@ -17,7 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-06-10 - [batch:405-quiz-balloon-kanji-hiragana] DONE - Codex: `assets/images/quizland/balloons/ballon_01.png` の中央テキストを GPT Image 2 生成文字ベースで `何だろう` → `なんだろう` に修正。元の吹き出し形状/葉/透過を維持し、他 balloon は漢字なしと確認。`sw.js` は v995。コンタクトシート目視、PNG alpha corners 0、`git diff --check` 確認予定。 (by Codex)
+- 2026-06-10 - [batch:405-quiz-balloon-kanji-hiragana] DONE - Codex: `assets/images/quizland/balloons/ballon_01.png` の中央テキストを GPT Image 2 生成文字ベースで `何だろう` → `なんだろう` に修正。元の吹き出し形状/葉/透過を維持し、他 balloon は漢字なしと確認。`ballon_01` は候補から除外せず通常ローテーション維持。`sw.js` は v996。コンタクトシート目視、PNG alpha corners 0、`git diff --check` 確認済み。 (by Codex)
 - 2026-06-10 - [batch:404-quiz-start-card-hakase-hiragana] DONE - Codex: Quizland のオープニング後スタートカードを GPT Image 2 版に差し替え、上段ロゴを `ふくろうはかせの` に修正。`quiz_start_card.png/webp` を 1024x1024 に更新し、黒バックで正方形シャドウが出ないよう start-card 背景/画像 filter/alt を調整。`sw.js` は v993。Playwright 862x659 で画像ロード、alt、背景、JS error 0、目視確認済み。 (by Codex)
 - 2026-06-10 - [batch:403-oto-rhythm-drum-intro] DONE - Codex: OtoTouch リズムで `スタート!` 後の無音待ちを減らすため、合成ドラム clock を先行開始し、その clock 上の次のバスドラ位置へ最初のドを置く方式へ変更。最初のバスドラ=最初のドの同期は維持しつつ、メロディ前にリズムだけが鳴る。`sw.js` / `play.html` cache は v991。Node inline script、`git diff --check`、Playwright で drumStart < firstMelody かつ firstMelody が kick grid 上にあることを確認。 (by Codex)
 - 2026-06-10 - [batch:402-oto-rhythm-first-kick-lock] DONE - Codex: OtoTouch リズムの合成ドラム clock を最初のノート AC 時刻から開始するよう変更し、`DRUM_PATTERN[0]` の kick と note0 の `ド` を同一 `AudioContext` 秒へ固定。カウントダウン側では旧バンド clock の任意拍への丸めを廃止し、デモ側も最初のノート時刻でドラム clock を開始。`sw.js` / `play.html` cache は v990。Node inline script、`git diff --check`、Playwright で `pendingAc === _bandClockStart === startAcTime === firstMelodyWhen` を確認。 (by Codex)
