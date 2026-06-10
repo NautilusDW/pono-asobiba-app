@@ -3314,8 +3314,114 @@ const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
 const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v3';
 const FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS = ['bento_free_complete_layout_v2', 'bento_free_complete_layout_v1'];
 // マスクエディターで確定した値はここに貼る。localStorage は端末ごとの一時上書き。
-const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {};
-const FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES = {};
+const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {
+  box_bear: {
+    rel: {
+      x: 0.036,
+      y: 0.0373,
+      w: 0.921,
+      h: 0.8487,
+    },
+  },
+  box_cat_blue: {
+    rel: {
+      x: 0.043,
+      y: 0.0313,
+      w: 0.91,
+      h: 0.8643,
+    },
+  },
+  box_round: {
+    rel: {
+      x: 0.043,
+      y: 0.0336,
+      w: 0.91,
+      h: 0.7798,
+    },
+  },
+  box_square: {
+    rel: {
+      x: 0.039,
+      y: 0.0404,
+      w: 0.914,
+      h: 0.7876,
+    },
+  },
+};
+const FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES = {
+  'box_bear:lid': {
+    lid: {
+      x: 0,
+      y: 136.4,
+      w: 100,
+    },
+  },
+  'box_bear:tier2': {
+    layout: {
+      x: 0,
+      y: 164.1,
+      w: 100,
+    },
+  },
+  'box_cat_blue:lid': {
+    lid: {
+      x: 0,
+      y: 147.1,
+      w: 100,
+    },
+  },
+  'box_cat_blue:tier2': {
+    layout: {
+      x: 0,
+      y: 169.1,
+      w: 100,
+    },
+  },
+  'box_round:lid': {
+    lid: {
+      x: 0,
+      y: 70.3,
+      w: 104.4,
+    },
+  },
+  'box_round:tier2': {
+    layout: {
+      x: 0,
+      y: 140.6,
+      w: 100.3,
+    },
+  },
+  'box_round:tier2:mask': {
+    rel: {
+      x: 0.047,
+      y: 0.0336,
+      w: 0.91,
+      h: 0.7798,
+    },
+  },
+  'box_square:lid': {
+    lid: {
+      x: 0,
+      y: 56.1,
+      w: 109.8,
+    },
+  },
+  'box_square:tier2': {
+    layout: {
+      x: 0,
+      y: 138.1,
+      w: 101.9,
+    },
+  },
+  'box_square:tier2:mask': {
+    rel: {
+      x: 0.051,
+      y: 0.0404,
+      w: 0.9,
+      h: 0.7876,
+    },
+  },
+};
 const FREE_COMPLETE_TIER_STEP_SECONDS = 1.05;
 const FREE_COMPLETE_LID_AFTER_LAST_SECONDS = 0.48;
 const FREE_COMPLETE_LID_CLOSE_SECONDS = 0.95;
