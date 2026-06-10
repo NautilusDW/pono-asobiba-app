@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:388-oto-rhythm-70-speed-countdown-lead] DONE - Codex: OtoTouch リズム3Dの落下時間を 6400ms→9200ms にして v970 比の移動速度を約70%へ低下。カウントダウンは 3/2/1 表示を維持しつつ `スタート!` 後に2拍分の余白を入れ、カウント開始から1音目まで約3.33秒に延長。`sw.js` は v971。Node inline script、`git diff --check`、Playwright desktop/mobile 16:9、速度比 0.696、ボタン overflow 0 を確認。 (by Codex)
 - 2026-06-10 - [batch:387-oto-rhythm-slow-pass-through] DONE - Codex: OtoTouch リズム3Dでノート落下時間を 3200ms→6400ms にして移動速度を半分へ変更。奥側のレーン/ノートを薄くし、カメラ注視点をさらに下げて奥が見え続ける距離感を抑制。ノートはヒットラインで止めず `progress 1.14` まで通過してから消滅、ミスは1回だけ計上。`sw.js` は v970。Node inline script、`git diff --check`、Playwright desktop/mobile、ミス通過/お手本通過を確認。 (by Codex)
 - 2026-06-10 - [batch:386-bento-redesign-okazu-implement] DONE - Codex: user 指定 `D:\ポノのおへや\Bento\bento_redesign\おかず` のアルファ付きPNG10枚を `assets/images/bento/free-layout/okazu_*.png` に配置し、`bento/index.html` の旧 `Bento_parts` 参照を差し替え。自由配置のメインおかずを10種、小さいおかずをフルーツ抜き10種へ更新し、ミートボール/ブロッコリー等のカップ内用 `cupSize` も設定。`sw.js` は v968。Node構文、`git diff --check`、Playwrightでメイン10/小さいおかず10/カップ投入可能10/画像ロード10/カップ投入スクショを確認。 (by Codex)
 - 2026-06-10 - [batch:385-bento-npc-per-animal-circle-raw] DONE - Codex: user 指摘「1枚にまとめすぎて円が楕円/潰れた」を受領。batch 384 の 6x5 1枚シートを置き換えるため、動物ごとに5状態横並びの正円バッジ raw シート6枚を `tmp/alpha_pending/385_bento_npc_per_animal_circle_raw/` に生成・保存。列=request/happy/super_happy/almost/sad。alpha抜き/切り抜き/最終配置/コード反映は未実施。 (by Codex)

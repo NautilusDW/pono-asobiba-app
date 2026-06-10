@@ -2926,11 +2926,13 @@ var RHYTHM_MISS_MS = 760;
 var RHYTHM_PREVIEW_STEPS = 4;
 var RHYTHM_RING_LEAD_MS = 1400;
 // Guitar Hero 風 ノート落下: 画面上端→ヒットライン到達までの時間
-// 2-5歳には8レーン同時識別が間に合わないため、従来の半分の移動速度にする
-var RHYTHM_FALL_MS = 6400;
+// 2-5歳には8レーン同時識別が間に合わないため、v970 の約70%の移動速度にする
+var RHYTHM_FALL_MS = 9200;
 var RHYTHM_NOTE_PASS_PROGRESS = 1.14;
 var RHYTHM_NOTE_FADE_IN_START = 0.28;
 var RHYTHM_NOTE_FADE_IN_END = 0.46;
+var RHYTHM_COUNTDOWN_BEATS = 3;
+var RHYTHM_COUNTDOWN_LEAD_BEATS = 2;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -4430,9 +4432,9 @@ function _beginRhythmCountdown() {
   // v722: 「ベースの最初の音 = 主旋律の最初の音」を完璧に揃えるため、
   //   (1) カウントダウン開始前に伴奏を起動 → bandStartAC を確定。
   //   (2) 主旋律 1 ノート目のヒットライン到達時刻 T を「次の小節線」(= ドラム kick の拍頭) に固定。
-  //   (3) 3 / 2 / 1 のカウントダウン UI を beat 単位 (= 60/bpm 秒) で
-  //       T - 3拍 / T - 2拍 / T - 1拍 のタイミングに合わせて表示。
-  //       「スタート!」が出る瞬間 = T = 伴奏の拍頭 = 1ノート目がヒットライン到達。
+  //   (3) 3 / 2 / 1 のカウントダウン UI を beat 単位 (= 60/bpm 秒) で早めに表示。
+  //       「スタート!」の後にも RHYTHM_COUNTDOWN_LEAD_BEATS 拍の余裕を残してから、
+  //       T = 伴奏の拍頭 = 1ノート目がヒットライン到達。
   //   (4) T を _pendingStartAcTime として保存し、_startRhythmMode 側はこれを採用する
   //       (= 再計算による拍ズレを排除)。
   //   (5) _startRhythmMode は「ノート落下時間 fallSec」確保のため T - fallSec で起動。
@@ -4441,16 +4443,17 @@ function _beginRhythmCountdown() {
   var ac = getAC();
   var beatSec = _rhythmBeatMs() / 1000;
   var fallSec = RHYTHM_FALL_MS / 1000;
-  var countBeats = 3;
+  var countBeats = RHYTHM_COUNTDOWN_BEATS;
+  var leadBeats = RHYTHM_COUNTDOWN_LEAD_BEATS;
   var bandStartACVal = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
   var pendingAc = 0;
   var targetPerfMs;
   if (ac && bandStartACVal && beatSec > 0) {
     // 1 小節 = 4 拍 (合成バンドの DRUM_PATTERN は subBeatSec×8 = 4 拍周期)
     var barSec = 4 * beatSec;
-    // T は ac.currentTime + max(fallSec, countBeats*beatSec) + バッファ より先の最初の小節線。
-    // これで「カウント開始時刻 T - 3拍」も「ノートスポーン時刻 T - fallSec」も 0 以上になる。
-    var requiredAheadSec = Math.max(fallSec, countBeats * beatSec) + 0.15;
+    // T は ac.currentTime + max(fallSec, (count+lead)*beatSec) + バッファ より先の最初の小節線。
+    // これでカウント開始時刻もノートスポーン時刻 T - fallSec も 0 以上になる。
+    var requiredAheadSec = Math.max(fallSec, (countBeats + leadBeats) * beatSec) + 0.15;
     var requiredAnchorAC = ac.currentTime + requiredAheadSec;
     var deltaSec = requiredAnchorAC - bandStartACVal;
     var nBars = Math.max(1, Math.ceil(deltaSec / barSec));
@@ -4458,14 +4461,15 @@ function _beginRhythmCountdown() {
     targetPerfMs = performance.now() + (pendingAc - ac.currentTime) * 1000;
   } else {
     // フォールバック (AC 不在 / 伴奏未開始): 従来通り固定 720ms 刻みで進める
-    targetPerfMs = performance.now() + 720 * (countBeats + 1);
+    targetPerfMs = performance.now() + 720 * (countBeats + leadBeats + 1);
     pendingAc = 0;
   }
   _rhythm._pendingStartAcTime = pendingAc;
   var stepMs = (pendingAc && ac) ? beatSec * 1000 : 720;
   var now = performance.now();
   // カウントダウン「3」の表示時刻 (perf 絶対 ms)。負になりうるが setTimeout でガード。
-  var t3Perf = targetPerfMs - countBeats * stepMs;
+  var countdownDonePerf = targetPerfMs - leadBeats * stepMs;
+  var t3Perf = countdownDonePerf - countBeats * stepMs;
   // _startRhythmMode はノート落下時間 fallSec 確保のため T - fallSec で起動。
   var startEnginePerf = targetPerfMs - fallSec * 1000;
   function schedule(absPerfMs, fn) {
@@ -4486,10 +4490,10 @@ function _beginRhythmCountdown() {
     if (_rhythm.enabled) return;
     setPlayMode('rhythm');
   });
-  // 「スタート!」表示 (= T = 1ノート目ヒットライン到達 = 伴奏の拍頭)
-  schedule(targetPerfMs, function() { _showOverlay('スタート!', ''); });
+  // 「スタート!」表示後、少し余裕を残してから 1ノート目がヒットラインに来る。
+  schedule(countdownDonePerf, function() { _showOverlay('スタート!', ''); });
   // 少し見せてから overlay クリア
-  schedule(targetPerfMs + 380, function() { _clearRhythmCountdown(); });
+  schedule(countdownDonePerf + 380, function() { _clearRhythmCountdown(); });
 }
 function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();
