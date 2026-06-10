@@ -172,21 +172,21 @@ function resolveStageImage(stageNum) {
 // 20 ステージ定義
 const BASE_STAGES = [
   // ── Stage 01-02: 4 pieces / soft-rounded / very-strong ──
-  { id: 1,  title: 'はじめての なかま',  rows: 2, cols: 2, pieceCount: 4,
+  { id: 1,  title: 'あかい りんご',      rows: 2, cols: 2, pieceCount: 4,
     image: resolveStageImage(1),
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'soft-rounded', snapAssist: 'very-strong' },
-  { id: 2,  title: 'もりの どうぶつ',    rows: 2, cols: 2, pieceCount: 4,
+  { id: 2,  title: 'そらの ふうせん',    rows: 2, cols: 2, pieceCount: 4,
     image: resolveStageImage(2),
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'soft-rounded', snapAssist: 'very-strong' },
 
   // ── Stage 03-05: 6 pieces / large-jigsaw / strong ──
-  { id: 3,  title: 'たのしい おさんぽ',  rows: 2, cols: 3, pieceCount: 6,
+  { id: 3,  title: 'おはなと ちょうちょ', rows: 2, cols: 3, pieceCount: 6,
     image: resolveStageImage(3),
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong' },
-  { id: 4,  title: 'おひさま いっぱい',  rows: 2, cols: 3, pieceCount: 6,
+  { id: 4,  title: 'みずの なかの きんぎょ', rows: 2, cols: 3, pieceCount: 6,
     image: resolveStageImage(4),
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong' },
@@ -196,11 +196,11 @@ const BASE_STAGES = [
     pieceShapeStyle: 'large-jigsaw', snapAssist: 'strong' },
 
   // ── Stage 06-08: 9 pieces / standard-jigsaw / strong ──
-  { id: 6,  title: 'なかよし ピクニック', rows: 3, cols: 3, pieceCount: 9,
+  { id: 6,  title: 'くだものの かご',    rows: 3, cols: 3, pieceCount: 9,
     image: resolveStageImage(6),
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
-  { id: 7,  title: 'はらっぱで かけっこ', rows: 3, cols: 3, pieceCount: 9,
+  { id: 7,  title: 'おもちゃの がっき',  rows: 3, cols: 3, pieceCount: 9,
     image: resolveStageImage(7),
     rotationEnabled: false, challengeRotationEnabled: false, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
@@ -210,7 +210,7 @@ const BASE_STAGES = [
     pieceShapeStyle: 'standard-jigsaw', snapAssist: 'strong' },
 
   // ── Stage 09-12: 12 pieces / offset-jigsaw / medium-strong ──
-  { id: 9,  title: 'みずべの ぼうけん',  rows: 3, cols: 4, pieceCount: 12,
+  { id: 9,  title: 'うみの せかい',      rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(9),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
@@ -218,21 +218,21 @@ const BASE_STAGES = [
     image: resolveStageImage(10),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
-  { id: 11, title: 'そらの くもさん',    rows: 3, cols: 4, pieceCount: 12,
+  { id: 11, title: 'あめあがりの にじ',  rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(11),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
-  { id: 12, title: 'やまの ハイキング',  rows: 3, cols: 4, pieceCount: 12,
+  { id: 12, title: 'ゆめの よぞら',      rows: 3, cols: 4, pieceCount: 12,
     image: resolveStageImage(12),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'offset-jigsaw', snapAssist: 'medium-strong' },
 
   // ── Stage 13-16: 16 pieces / organic-jigsaw / normal ──
-  { id: 13, title: 'うみの なかま',      rows: 4, cols: 4, pieceCount: 16,
+  { id: 13, title: 'あまい おやつ',      rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(13),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
-  { id: 14, title: 'よるの ほしぞら',    rows: 4, cols: 4, pieceCount: 16,
+  { id: 14, title: 'もりの おんがくかい', rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(14),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
@@ -240,7 +240,7 @@ const BASE_STAGES = [
     image: resolveStageImage(15),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
-  { id: 16, title: 'ふゆの けしき',      rows: 4, cols: 4, pieceCount: 16,
+  { id: 16, title: 'のりものの まち',    rows: 4, cols: 4, pieceCount: 16,
     image: resolveStageImage(16),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'organic-jigsaw', snapAssist: 'normal' },
@@ -250,11 +250,11 @@ const BASE_STAGES = [
     image: resolveStageImage(17),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'handcut-jigsaw', snapAssist: 'light' },
-  { id: 18, title: 'まちの たんけん',    rows: 4, cols: 5, pieceCount: 20,
+  { id: 18, title: 'まほうの ほんだな',  rows: 4, cols: 5, pieceCount: 20,
     image: resolveStageImage(18),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'handcut-jigsaw', snapAssist: 'light' },
-  { id: 19, title: 'おまつり よる',      rows: 4, cols: 5, pieceCount: 20,
+  { id: 19, title: 'おもちゃの テーブル', rows: 4, cols: 5, pieceCount: 20,
     image: resolveStageImage(19),
     rotationEnabled: false, challengeRotationEnabled: true, allowedRotations: [0, 90, 180, 270],
     pieceShapeStyle: 'handcut-jigsaw', snapAssist: 'light' },
@@ -4783,6 +4783,9 @@ btnNextStage.addEventListener('click', () => {
   if (nextIndex >= STAGES.length) return;
   if (!isStageUnlockedForCurrentFlow(nextIndex)) {
     nextNudge.stop();
+    // NOTE: MVP では common/tier.js が PONO_TIER_GAME_LOCKS_ENABLED=false を設定するため、
+    // isStageUnlockedForCurrentFlow() は常に true を返し、この分岐は到達しない。
+    // Phase 2 でロック機能を再有効化する際に、本ブランチが復活する想定。
     if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
       window.PonoTier.showSubscribePromo({
         title: 'つぎの えは まだ あそべないよ',

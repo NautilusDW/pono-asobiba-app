@@ -2284,7 +2284,7 @@ function parseCell(ch) {
 //  - solvable, no dead-state, no stranded path, no spam-solve
 //  - obstacles are real blockers (removing any obstacle changes optimal solution)
 //  - tall layout (rows >= cols) so cells stay big enough for arrow buttons
-// 10 stages: 1..10, progressive difficulty (チュートリアル削除済み)
+// 6 image stages: 1..6 (loaded from imageStages/_index.json)
 // Note: `let` (was const) to allow `?image=<name>` URL param to override STAGES.
 let STAGES = []; // grid ステージ完全削除済み (image ステージのみで構成)
 
@@ -2323,6 +2323,13 @@ const MAZE_STAGE_STORY_FALLBACKS = {
     intro: 'このはあかりの もりで レッサーパンダが\nまいごに なってるよ。たすけに いこう！',
     cryingIconUrl: 'imageStages/animals/lesser_panda_02.png',
     reliefIconUrl: 'imageStages/animals/lesser_panda_goal.png'
+  },
+  6: {
+    animal: 'ahiru',
+    animalLabel: 'あひるさん',
+    intro: 'みずべの もりで あひるさんが\nまよって いるよ。たすけに いこう！',
+    cryingIconUrl: 'imageStages/animals/ahiru_02.png',
+    reliefIconUrl: 'imageStages/animals/ahiru_goal.png'
   }
 };
 
@@ -6237,6 +6244,9 @@ function loadStage(idx) {
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
   // セーフフラグ OFF の間は true 返却 → 実ロックは発動しない（保険として window.PonoTier の存在もチェック）
+  // NOTE (MVP): common/tier.js の PONO_TIER_GAME_LOCKS_ENABLED=false 中は
+  // isMazeStageUnlocked() が常に true を返すため、以下の showSubscribePromo 分岐は
+  // 到達しない dead code。Phase 2 (有料ロック有効化時) のために保持。
   var requestedIdx = idx | 0;
   var stageNum = requestedIdx > 0 ? requestedIdx : 1;
   if (window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'

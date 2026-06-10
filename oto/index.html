@@ -3244,7 +3244,8 @@ function _rhythmTargetAcTimeFor(seqIndex) {
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
   if (!found) return;
-  // ティアロック判定
+  // Phase 2 future-use: rhythm song tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+  // isOtoRhythmSongUnlocked() always returns true so this branch is unreachable.
   if (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(id)) {
     window.PonoTier.showSubscribePromo({
       title: 'きょくが ふえているよ！',
@@ -5069,7 +5070,8 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     e.stopPropagation();
     unlockAudio();
     if (btn.dataset.mode === 'rhythm') {
-      // ティアロック判定
+      // Phase 2 future-use: rhythm mode tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+      // isOtoModeUnlocked() always returns true so this branch is unreachable.
       if (window.PonoTier && !window.PonoTier.isOtoModeUnlocked('rhythm')) {
         window.PonoTier.showSubscribePromo({
           title: 'リズム モード が ふえているよ！',
@@ -6476,7 +6478,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   document.querySelectorAll('.sound-sets .set-btn').forEach(function(b) {
     b.addEventListener('click', function(e) {
       e.stopPropagation();
-      // ティアロック判定
+      // Phase 2 future-use: sound set tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+      // isOtoSoundSetUnlocked() always returns true so this branch is unreachable.
       if (window.PonoTier && !window.PonoTier.isOtoSoundSetUnlocked(b.dataset.set)) {
         window.PonoTier.showSubscribePromo({
           title: 'おとが ふえているよ！',
@@ -6494,7 +6497,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var sMajor = document.getElementById('scale-major');
   var sPenta = document.getElementById('scale-penta');
   function setScale(mode) {
-    // ティアロック判定
+    // Phase 2 future-use: scale tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+    // isOtoScaleUnlocked() always returns true so this branch is unreachable.
     if (window.PonoTier && !window.PonoTier.isOtoScaleUnlocked(mode)) {
       window.PonoTier.showSubscribePromo({
         title: 'スケール が ふえているよ！',
@@ -6520,7 +6524,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var cOff = document.getElementById('chord-off');
   var cOn  = document.getElementById('chord-on');
   function setChord(mode) {
-    // ティアロック判定
+    // Phase 2 future-use: chord mode tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+    // isOtoChordModeUnlocked() always returns true so this branch is unreachable.
     if (window.PonoTier && !window.PonoTier.isOtoChordModeUnlocked(mode)) {
       window.PonoTier.showSubscribePromo({
         title: 'コードモード が ふえているよ！',

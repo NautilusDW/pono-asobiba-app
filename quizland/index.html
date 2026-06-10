@@ -6151,6 +6151,10 @@ function initGame() {
     // 全問ロックされる組み合わせの時にここに落ちる。 黙ってモード画面に
     // 戻すと「タイトルに戻された」と誤解されるため、 サブスク誘導モーダルで
     // 「アプリで遊べるよ」と明示する。
+    // [Phase 2 future-use] MVP (PONO_TIER_GAME_LOCKS_ENABLED=false) では
+    //   isQuizlandQuestionUnlocked が常に true を返すため、 ここの
+    //   showSubscribePromo 分岐は実質到達しない (買い切り全機能開放方針)。
+    //   Phase 2 でサブスク制を再開する場合に備えて残置している。
     if (window.PonoTier && window.PonoTier.showSubscribePromo) {
       window.PonoTier.showSubscribePromo({
         title: 'この むずかしさは アプリ で あそべるよ',
@@ -7807,6 +7811,10 @@ document.querySelectorAll('.diff-btn').forEach(function(btn) {
     const d = btn.dataset.diff;
     if (DIFF_LEVELS.indexOf(d) === -1) return;
     // ティア × モードでロック中ならサブスク誘導モーダルを出し、 selectedDifficulty は変更しない
+    // [Phase 2 future-use] MVP (PONO_TIER_GAME_LOCKS_ENABLED=false) では
+    //   isQuizlandDifficultyUnlockedLocal が常に true を返すため、 この分岐は
+    //   実質到達しない (買い切り全機能開放方針)。 Phase 2 でサブスク制を
+    //   再開する場合に備えて残置している。
     if (!isQuizlandDifficultyUnlockedLocal(d)) {
       if (window.PonoTier && window.PonoTier.showSubscribePromo) {
         window.PonoTier.showSubscribePromo({

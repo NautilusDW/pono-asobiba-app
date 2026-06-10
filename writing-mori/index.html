@@ -9,6 +9,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="../manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<script src="../common/achievements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
 
@@ -3329,6 +3330,7 @@ function completeWriting(manual, summary) {
   const result = {
     characterId: item.id,
     char: item.char,
+    group: item.group,
     success: true,
     accuracy: calculateAccuracy(item),
     strokesCompleted: Math.min(item.strokes, Math.max(strokesCompleted, summary && summary.totalStrokes || 0)),
@@ -3358,6 +3360,21 @@ function onWritingComplete(result) {
   }
   saveCareState();
   updateCompanionCard();
+  // ─── ポノのおへや 実績アンロック (writing 系) ────────────────────────
+  // 「はじめてのもじかき」「もじもじ がんばった」「ひらがなマスター」「カタカナマスター」
+  try {
+    if (typeof window.incrementStat === 'function') {
+      window.incrementStat('writing_chars', 1);
+      const group = (result && result.group) || (typeof getCurrentCharacter === 'function' ? (getCurrentCharacter() || {}).group : '');
+      if (group === 'hiragana') {
+        window.incrementStat('writing_hiragana', 1);
+      } else if (group === 'katakana') {
+        window.incrementStat('writing_katakana', 1);
+      }
+    }
+  } catch (error) {
+    console.warn('incrementStat failed for writing achievement:', error);
+  }
 }
 
 function launchBurst() {

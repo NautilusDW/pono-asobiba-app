@@ -6774,6 +6774,8 @@ function addAutoRiceForSelectedBox(opts = {}) {
   return rice;
 }
 function selectFreeBentoBox(id) {
+  // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+  // isBentoBoxUnlocked() always returns true so this branch is unreachable.
   if (window.PonoTier && !window.PonoTier.isBentoBoxUnlocked(id)) {
     window.PonoTier.showSubscribePromo({
       title: 'おべんとうばこ が ふえているよ！',
@@ -7243,6 +7245,8 @@ function makeFreePaletteButton(def) {
   if (freeLayoutTab === 'box') {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+      // def.tierLocked is always false so this branch is unreachable.
       if (def.tierLocked && window.PonoTier) {
         window.PonoTier.showSubscribePromo({
           title: 'おべんとうばこ が ふえているよ！',
@@ -7259,6 +7263,8 @@ function makeFreePaletteButton(def) {
   } else {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
+      // def.tierLocked is always false so this branch is unreachable.
       if (def.tierLocked && window.PonoTier) {
         window.PonoTier.showSubscribePromo({
           title: 'この たべもの は ふえているよ！',

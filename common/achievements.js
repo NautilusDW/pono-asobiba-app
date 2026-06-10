@@ -53,14 +53,14 @@
     { id: 'fossil_quiz_perfect', game:'fossil',name: 'クイズ まんてん',     desc: 'かせきクイズで ぜんもん せいかい', target: 1, stat: 'fossil_quiz_perfect', tier: 2, reward: { type: 'furn', id: 'ach_quiz_medal' } },
 
     // ── マスター ─────────────────────────────────────────────────
-    { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 6,  stat: 'puzzle_clears',     tier: 3, reward: { type: 'furn', id: 'ach_quiz_crown' } },
+    { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 20, stat: 'puzzle_clears',     tier: 3, reward: { type: 'furn', id: 'ach_quiz_crown' } },
     { id: 'writing_hira',  game: 'writing',   name: 'ひらがなマスター',     desc: 'ひらがな ぜんぶ かこう',           target: 46, stat: 'writing_hiragana',  tier: 3, reward: { type: 'furn', id: 'ach_quiz_star' } },
     { id: 'writing_kata',  game: 'writing',   name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46, stat: 'writing_katakana',  tier: 3, reward: { type: 'furn', id: 'ach_quiz_medal' } },
     { id: 'bowling_50',    game: 'bowling',   name: 'ボウリングマスター',   desc: '50ラウンド あそぼう',              target: 50, stat: 'bowling_rounds',    tier: 3, reward: { type: 'bg',   id: 'bg_bowling_space_boy01' } },
     { id: 'breakout_all',  game: 'breakout',  name: 'ブロックマスター',     desc: 'ぜんぶ クリアしよう',              target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' } },
     { id: 'breakout_all_bg', game: 'breakout', name: 'ブロックぜんせい',    desc: 'ぜんぶの ステージを クリアしよう', target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'bg',   id: 'bg_breakout_night_sky' } },
     { id: 'slide_all',     game: 'slide',     name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',              target: 8,  stat: 'slide_clears',      tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
-    { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 10, stat: 'maze_clears',       tier: 3, reward: { type: 'furn', id: 'ach_quiz_trophy' } },
+    { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 6,  stat: 'maze_clears',       tier: 3, reward: { type: 'furn', id: 'ach_quiz_trophy' } },
     { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' } },
     { id: 'wordmatch_all', game: 'wordmatch', name: 'ことばマスター',       desc: 'ぜんもん せいかいしよう',          target: 30, stat: 'wordmatch_correct', tier: 3, reward: { type: 'furn', id: 'ach_easel' } },
     { id: 'quizland_all',  game: 'quizland',  name: 'クイズマスター',       desc: '50もん せいかいしよう',            target: 50, stat: 'quizland_correct',  tier: 3, reward: { type: 'furn', id: 'ach_quiz_crown' } },
