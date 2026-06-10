@@ -17,7 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-06-10 - [batch:400-oto-rhythm-melody-lock] Codex: user 指摘「実際のメロディとリズムが全然合ってない」を受領。OtoTouch リズムの主旋律を `RHYTHM_SONG.notes/beats` から AudioContext の同一 AC 時刻で予約し、ブロック到達時刻とメロディをロックする。 (by Codex)
+- 2026-06-10 - [batch:400-oto-rhythm-melody-lock] DONE - Codex: OtoTouch リズムの主旋律を `RHYTHM_SONG.notes/beats` から AudioContext の同一 AC 時刻で予約する方式へ変更。デモ/本番ともブロック到達時刻とメロディ予約時刻を同じ `startAcTime + beatOffset` から算出し、リズム本番中の通常タップ音は抑えて早押し/遅押し音がメロディずれとして聞こえないようにした。`sw.js` / `play.html` cache は v988。Node inline script、`git diff --check`、Playwright melody schedule/direct mode smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:399-maze-item-rock-polish] DONE - Codex: user 指定 `D:\ポノのおへや\Maze\New\asset` のアルファ付き左右グローブを `assets/images/maze/gimmicks/strength/glove_punch_left.png` / `glove_punch_right.png` に配置し、岩くだきミニゲームの左右パンチへ反映。岩くだきはドット回数表示から耐久力ゲージへ変更し、進捗セリフと成功時の火花/岩ポップ演出を追加。ステージ2最初のお邪魔虫は一度負けたら次回じゃんけん必勝。アイテム取得時の説明モーダル、取得直後の行き止まり泡抑制、各イベント障害物の未所持ヒント文言を追加。`sw.js` / `PAGE_CACHE_VERSION` は v986。Node構文、`git diff --check`、Playwright strength/janken/item modal/success smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:398-oto-rhythm-kaeru-font-start] DONE - Codex: OtoTouch リズムのかえる譜面前半末尾を `ソ・ファ・ミ` に修正。`スタート!` 表示はノート開始を遅らせず約 `1200ms` 残すよう調整し、OtoTouch 全体のベースフォントと3Dブロック上面の描画フォントを `DotGothic16` 優先に変更。`sw.js` / `play.html` cache は v985。Node inline script、targeted value check、`git diff --check`、Playwright font/song smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:397-oto-rhythm-start-layout-kaeru] DONE - Codex: OtoTouch リズム本番の初回ノート待ちを短縮し、3/2/1後すぐブロックが見えるように本番初回リードを `7600ms` へ揃えた。リズム時の左下バンドUIを縦積みコンパクト化し、縦長画面ではリズムHUDを隠してボタン被りを解消。かえるのうた前半は末尾を `ソ・ファ・ド` に修正。`sw.js` / `play.html` cache は v983。Node inline script、`git diff --check`、Playwright timing/layout smoke を確認。 (by Codex)

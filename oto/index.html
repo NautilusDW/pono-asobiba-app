@@ -3128,6 +3128,7 @@ var _rhythm = {
   nextSpawnSeq: 0,
   laneFlashTimers: {},
   lane3dFlashes: [],
+  melodyNodes: [],
   // ヒットフラッシュの setTimeout を追跡 (リズムモードを離れた時に確実にクリア)
   flashTimers: [],
   // _ghUpdateLanesGeometry で算出したヒットライン Y / レーン上端 Y のキャッシュ
@@ -3234,6 +3235,10 @@ function _rhythmBeatOffsetFor(seqIndex) {
 }
 function _rhythmTargetTimeFor(seqIndex) {
   return _rhythm.startPerfTime + _rhythmBeatOffsetFor(seqIndex) * _rhythmBeatMs();
+}
+function _rhythmTargetAcTimeFor(seqIndex) {
+  if (!_rhythm.startAcTime) return 0;
+  return _rhythm.startAcTime + _rhythmBeatOffsetFor(seqIndex) * (_rhythmBeatMs() / 1000);
 }
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
@@ -4292,6 +4297,10 @@ function _rhythmDemoTick() {
     return;
   }
   var now = performance.now();
+  if (_rhythm.startAcTime) {
+    var ac = getAC();
+    if (ac) _rhythm.startPerfTime = now + (_rhythm.startAcTime - ac.currentTime) * 1000;
+  }
   if (document.body.classList.contains('rhythm-layout')) {
     _ghSpawnDueNotes(now);
     _ghUpdateFallingNotes(now);
@@ -4353,6 +4362,7 @@ function _showRhythmComplete(result) {
 }
 function _finishRhythmLoop() {
   if (!_rhythm.enabled) return;
+  _clearRhythmMelodySchedule();
   _rhythm.enabled = false;
   if (_rhythm.raf) {
     cancelAnimationFrame(_rhythm.raf);
@@ -4455,6 +4465,7 @@ function _rhythmTick() {
 }
 function _startRhythmMode() {
   if (_rhythm.enabled) return;
+  _clearRhythmMelodySchedule();
   _hideRhythmComplete();
   _forcePianoSoundForRhythm();
   // v719: 譜面 (RHYTHM_SONGS) は C メジャー idx0-7 前提のため、リズム中は penta を強制的に解除する。
@@ -4525,15 +4536,25 @@ function _startRhythmMode() {
     _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
   } else {
     // AC 不在時 (オフライン) または bandStartAC===0 (伴奏未開始) のフォールバック:
-    // perf 時計のみで startPerfTime を組み立て、AC ドリフト補正は無効化する (startAcTime=0)。
-    // _rhythmTick の `if (_rhythm.startAcTime)` ガードで AC 再同期がスキップされる。
+    // AC がある場合は主旋律同期のため AC 基準で startPerfTime を組み立てる。
     _rhythm.startAcTime = 0;
     if (isGH) {
-      _rhythm.startPerfTime = performance.now() + RHYTHM_FALL_MS;
+      if (ac) {
+        _rhythm.startAcTime = ac.currentTime + RHYTHM_FALL_MS / 1000;
+        _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
+      } else {
+        _rhythm.startPerfTime = performance.now() + RHYTHM_FALL_MS;
+      }
     } else {
-      _rhythm.startPerfTime = performance.now() + _rhythmRingLeadMs();
+      if (ac) {
+        _rhythm.startAcTime = ac.currentTime + _rhythmRingLeadMs() / 1000;
+        _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
+      } else {
+        _rhythm.startPerfTime = performance.now() + _rhythmRingLeadMs();
+      }
     }
   }
+  _scheduleRhythmMelody(0.16);
   // レーンジオメトリ更新 (次フレームで再計算もする)
   if (document.body.classList.contains('rhythm-layout')) {
     _ghUpdateLanesGeometry();
@@ -4560,30 +4581,61 @@ function _clearRhythmCountdown() {
   // v722: 取り消し時は予約していた小節線アンカーも破棄 (次回開始時に再計算)
   _rhythm._pendingStartAcTime = 0;
 }
-function _playRhythmDemoTone(idx, durationMs) {
+function _rhythmNoteFreq(idx) {
+  return DOREMI_FREQS[idx] || DOREMI_FREQS[0] || 440;
+}
+function _clearRhythmMelodySchedule() {
+  (_rhythm.melodyNodes || []).forEach(function(node) {
+    try { if (node.osc) node.osc.stop(0); } catch(e) {}
+    try { if (node.osc) node.osc.disconnect(); } catch(e) {}
+    try { if (node.gain) node.gain.disconnect(); } catch(e) {}
+  });
+  _rhythm.melodyNodes = [];
+}
+function _playRhythmToneAt(idx, whenAc, durationMs, peakGain) {
   var ac = getAC();
   if (!ac) return;
-  var f = _doremiFreqs()[idx] || 440;
+  var f = _rhythmNoteFreq(idx);
   var now = ac.currentTime;
   var dur = Math.max(0.18, durationMs / 1000);
+  if (!whenAc || !isFinite(whenAc)) whenAc = now;
+  if (whenAc + dur < now - 0.03) return;
+  var t = Math.max(now + 0.006, whenAc);
   var release = Math.min(0.12, dur * 0.3);
-  var sustainEnd = Math.max(now + 0.05, now + dur - release);
+  var sustainEnd = Math.max(t + 0.05, t + dur - release);
   var o = ac.createOscillator();
   var g = ac.createGain();
   o.type = 'triangle';
-  o.frequency.setValueAtTime(f, now);
-  g.gain.setValueAtTime(0, now);
-  g.gain.linearRampToValueAtTime(0.22, now + 0.018);
-  g.gain.setValueAtTime(0.2, sustainEnd);
-  g.gain.linearRampToValueAtTime(0, now + dur);
+  o.frequency.setValueAtTime(f, t);
+  var peak = peakGain == null ? 0.18 : peakGain;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.018);
+  g.gain.setValueAtTime(peak * 0.86, sustainEnd);
+  g.gain.linearRampToValueAtTime(0, t + dur);
   o.connect(g);
   g.connect(ac.destination);
-  o.start(now);
-  o.stop(now + dur + 0.02);
+  o.start(t);
+  o.stop(t + dur + 0.02);
+  var record = { osc: o, gain: g };
+  _rhythm.melodyNodes.push(record);
   o.addEventListener('ended', function() {
     try { o.disconnect(); } catch(e) {}
     try { g.disconnect(); } catch(e) {}
+    var idxInList = _rhythm.melodyNodes.indexOf(record);
+    if (idxInList >= 0) _rhythm.melodyNodes.splice(idxInList, 1);
   });
+}
+function _scheduleRhythmMelody(peakGain) {
+  var ac = getAC();
+  if (!ac || !_rhythm.startAcTime) return false;
+  _clearRhythmMelodySchedule();
+  var beatMs = _rhythmBeatMs();
+  RHYTHM_SONG.notes.forEach(function(noteIdx, seqIndex) {
+    var whenAc = _rhythmTargetAcTimeFor(seqIndex);
+    var durMs = _rhythmBeatLengthAt(seqIndex) * beatMs * 0.86;
+    _playRhythmToneAt(noteIdx, whenAc, durMs, peakGain);
+  });
+  return true;
 }
 function _playRhythmBlockSfx(kind, laneIdx) {
   var ac = getAC();
@@ -4635,6 +4687,7 @@ function _clearRhythmDemo(keepHud) {
     cancelAnimationFrame(_rhythm.demoRaf);
     _rhythm.demoRaf = 0;
   }
+  _clearRhythmMelodySchedule();
   _rhythm.demoActive = false;
   _rhythm.demoBeatScale = 0;
   _rhythm.demoFallMs = 0;
@@ -4680,15 +4733,23 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   _ghClearActiveNotes();
   _ghClearLaneFlashes();
   _rhythm.nextSpawnSeq = 0;
-  _rhythm.startAcTime = 0;
   var demoFirstLeadMs = Math.max(900, Math.min(demoFallMs, RHYTHM_DEMO_FIRST_NOTE_LEAD_MS));
-  _rhythm.startPerfTime = performance.now() + demoFirstLeadMs;
+  var ac = getAC();
+  if (ac) {
+    _rhythm.startAcTime = ac.currentTime + demoFirstLeadMs / 1000;
+    _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
+  } else {
+    _rhythm.startAcTime = 0;
+    _rhythm.startPerfTime = performance.now() + demoFirstLeadMs;
+  }
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
+  _scheduleRhythmMelody(0.18);
   _startRhythmDemoVisualLoop();
   var elapsed = 0;
   RHYTHM_SONG.notes.forEach(function(noteIdx, seqIndex) {
     var noteMs = _rhythmBeatLengthAt(seqIndex) * beatMs;
+    var targetPerf = _rhythmTargetTimeFor(seqIndex);
     _rhythm.demoTimers.push(setTimeout(function() {
       if (!_rhythm.demoActive) return;
       _rhythm.idx = seqIndex;
@@ -4708,8 +4769,7 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
         spawnParticles(p.x, p.y, 6);
       }
       bumpPono();
-      _playRhythmDemoTone(noteIdx, noteMs * 0.86);
-    }, demoFirstLeadMs + elapsed));
+    }, Math.max(0, targetPerf - performance.now())));
     elapsed += noteMs;
   });
   _rhythm.demoTimers.push(setTimeout(function() {
@@ -4817,6 +4877,7 @@ function _hideRhythmMenu() {
 function _stopRhythmMode() {
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
+  _clearRhythmMelodySchedule();
   _hideRhythmComplete();
   // v721: リズム中に major にフォースしていたスケールを復元
   // (v719 のガード `!== SCALE_MODE` だと、リズム中に scale-btn でトグルされ
@@ -5081,14 +5142,18 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
     btn.classList.add('press');
     _setInstrumentButtonPressed(btn, true);
 
-    // 音: トーン系セット (doremi/kira) は ホールド対応
-    //     パーカッション系 (taiko/animal) は従来通りワンショット
-    if (_supportsHold(currentSet)) {
-      startHeldNote(btn, currentSet, idx);
-      // 録音中はイベントとして記録 (再生時はタップ風に短く鳴る)
-      recordEvent('set', { idx: idx, set: currentSet, chord: CHORD_MODE === 'on' });
-    } else {
-      playSetSound(idx);
+    // リズム本番中の主旋律は譜面時刻に AudioContext で予約して鳴らす。
+    // 押した瞬間の通常音を重ねると、プレイヤーの早押し/遅押しがメロディずれとして聞こえる。
+    if (!_rhythm.enabled) {
+      // 音: トーン系セット (doremi/kira) は ホールド対応
+      //     パーカッション系 (taiko/animal) は従来通りワンショット
+      if (_supportsHold(currentSet)) {
+        startHeldNote(btn, currentSet, idx);
+        // 録音中はイベントとして記録 (再生時はタップ風に短く鳴る)
+        recordEvent('set', { idx: idx, set: currentSet, chord: CHORD_MODE === 'on' });
+      } else {
+        playSetSound(idx);
+      }
     }
 
     var rect = btn.getBoundingClientRect();
