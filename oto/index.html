@@ -1811,7 +1811,8 @@
       drop-shadow(0 6px 7px rgba(0,0,0,0.3));
   }
   body.rhythm-layout .pono-wrap {
-    top: 33%;
+    left: 61%;
+    top: 29%;
   }
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, -50%) translateY(4px) scale(0.98);
@@ -3336,7 +3337,7 @@ var GH3D_NEAR_Z = 1.25;
 var GH3D_FAR_Z = -56;
 var GH3D_HALF_W = 4.0;
 var GH3D_LANE_W = 1.0;
-var GH3D_RAMP_RISE = 24;
+var GH3D_RAMP_RISE = 32;
 
 function _gh3DGetContext(canvas) {
   if (!canvas) return null;
@@ -3504,8 +3505,8 @@ function _gh3DMat4Mul(a, b) {
 function _gh3DMvp(canvas) {
   var rect = canvas.getBoundingClientRect();
   var aspect = Math.max(0.2, rect.width / Math.max(1, rect.height));
-  var proj = _gh3DMat4Perspective(34 * Math.PI / 180, aspect, 0.1, 120);
-  var view = _gh3DMat4LookAt([0, 1.8, 10.5], [0, 16, -36], [0, 1, 0]);
+  var proj = _gh3DMat4Perspective(34 * Math.PI / 180, aspect, 0.1, 140);
+  var view = _gh3DMat4LookAt([0, 1.8, 10.5], [0, 8, -36], [0, 1, 0]);
   return _gh3DMat4Mul(proj, view);
 }
 function _gh3DRoadT(z) {
@@ -3679,7 +3680,7 @@ function _gh3DTextureFor(lane, label) {
 function _gh3DDrawOneNote(note, mvp) {
   var gl = _gh3d.notesGl;
   if (!note || note.consumed) return;
-  var p = Math.max(0, Math.min(0.9, note._gh3dProgress || 0));
+  var p = Math.max(0, Math.min(0.96, note._gh3dProgress || 0));
   var lane = note.lane || 0;
   var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
   var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
