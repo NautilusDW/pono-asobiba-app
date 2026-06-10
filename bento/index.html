@@ -328,7 +328,9 @@ html, body {
 }
 .bento-inner.free-layout-inner {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: visible;
   background: transparent;
   padding: 0;
@@ -5104,6 +5106,29 @@ function getFullCanvasMaskUrl(box, relOverride = null, variant = '') {
   queueFullCanvasMaskBuild(box, key, size, rel);
   return '';
 }
+function fitMainFreeLayoutStage(stage = document.getElementById('free-layout-stage')) {
+  const host = stage && stage.parentElement;
+  if (!stage || !host || !host.classList || !host.classList.contains('free-layout-inner')) return false;
+  const rect = host.getBoundingClientRect();
+  const maxW = rect.width || host.clientWidth || host.offsetWidth;
+  const maxH = rect.height || host.clientHeight || host.offsetHeight;
+  if (!maxW || !maxH) return false;
+  const ratio = FREE_LAYOUT_W / FREE_LAYOUT_H;
+  let w = maxW;
+  let h = w / ratio;
+  if (h > maxH) {
+    h = maxH;
+    w = h * ratio;
+  }
+  stage.style.width = Math.max(1, Math.floor(w)) + 'px';
+  stage.style.height = Math.max(1, Math.floor(h)) + 'px';
+  return true;
+}
+function clearMainFreeLayoutStageFit(stage = document.getElementById('free-layout-stage')) {
+  if (!stage) return;
+  stage.style.removeProperty('width');
+  stage.style.removeProperty('height');
+}
 function getBoxMaskCanvasRectCss(box, layer, host = null) {
   const stage = host && host.classList && host.classList.contains('free-layout-stage')
     ? host
@@ -6766,6 +6791,7 @@ function renderFreeLayoutStage() {
     const completeTier = Math.min(2, getBoxTierCount(box));
     if (view === 'tier2' && completeTier > 1) {
       stage.className = 'free-layout-stage';
+      fitMainFreeLayoutStage(stage);
       renderFreeLayoutInto(stage, {
         items: getCompleteEditorPreviewItems(box, completeTier),
         boxId: box.id,
@@ -6779,6 +6805,7 @@ function renderFreeLayoutStage() {
       return;
     }
     if (view === 'complete' && (completeTier > 1 || (box && box.lidImage))) {
+      clearMainFreeLayoutStageFit(stage);
       renderFreeCompleteBento(stage, getCompleteEditorPreviewItems(box, completeTier), box.id, {
         forceTierCount: Math.min(completeTier, getBoxTierCount(box)),
         preview: true,
@@ -6787,6 +6814,7 @@ function renderFreeLayoutStage() {
     }
   }
   stage.className = 'free-layout-stage';
+  fitMainFreeLayoutStage(stage);
   renderFreeLayoutInto(stage, { interactive: true });
 }
 function createPaletteVisual(def) {
