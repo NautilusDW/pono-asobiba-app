@@ -1402,16 +1402,13 @@ body.image-stage-mode .game-wrap {
   bottom: 0%;
   width: min(25vw, 142px);
   aspect-ratio: 1 / 1;
-  overflow: hidden;
   filter: drop-shadow(0 6px 9px rgba(0,0,0,0.18));
   opacity: 0.92;
   transform-style: preserve-3d;
   will-change: transform, opacity, filter;
 }
 .strength-game__glove img {
-  position: absolute;
-  top: 0;
-  width: 204%;
+  width: 100%;
   height: 100%;
   max-height: none !important;
   object-fit: contain;
@@ -1422,16 +1419,10 @@ body.image-stage-mode .game-wrap {
   transform: translate3d(0, 0, 36px) rotate(-17deg) rotateX(16deg) rotateY(13deg) scale(1.03);
   transform-origin: 78% 62%;
 }
-.strength-game__glove--left img {
-  left: 0;
-}
 .strength-game__glove--right {
   right: 7%;
   transform: translate3d(0, 0, 36px) rotate(17deg) rotateX(16deg) rotateY(-13deg) scale(1.03);
   transform-origin: 22% 62%;
-}
-.strength-game__glove--right img {
-  right: 0;
 }
 .strength-game__spark {
   left: 50%;
@@ -1473,27 +1464,39 @@ body.image-stage-mode .game-wrap {
 .strength-rock-btn.is-hit .strength-game__spark {
   animation: strengthSparkHit 0.2s ease-out;
 }
-.strength-tap-progress {
-  min-height: 24px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 7px;
-  max-width: min(88%, 420px);
+.strength-durability {
+  width: min(86%, 430px);
   justify-self: center;
+  display: grid;
+  gap: 4px;
 }
-.strength-tap-dot {
-  width: 16px;
-  height: 16px;
+.strength-durability__label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: clamp(0.78rem, 1.9vw, 0.98rem);
+  font-weight: 900;
+  color: #6C5536;
+  line-height: 1.1;
+}
+.strength-durability__track {
+  height: 20px;
   border-radius: 999px;
-  background: rgba(138, 111, 70, 0.24);
-  border: 2px solid rgba(138, 111, 70, 0.35);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45);
+  overflow: hidden;
+  background: rgba(95, 72, 43, 0.16);
+  border: 2px solid rgba(138, 111, 70, 0.34);
+  box-shadow: inset 0 2px 5px rgba(95,72,43,0.18), 0 2px 8px rgba(255,255,255,0.5);
 }
-.strength-tap-dot.is-on {
-  background: #F4CE5F;
-  border-color: #B5852E;
-  box-shadow: 0 0 10px rgba(244,206,95,0.6), inset 0 0 0 1px rgba(255,255,255,0.6);
+.strength-durability__bar {
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #D46B4D 0%, #F1C45B 52%, #8AD86B 100%);
+  box-shadow: 0 0 12px rgba(241,196,91,0.45);
+  transition: transform 0.12s ease-out, filter 0.12s ease-out;
+}
+.strength-durability__bar.is-low {
+  filter: brightness(1.12) saturate(1.18);
+  animation: strengthDurabilityPulse 0.42s ease-in-out infinite alternate;
 }
 .strength-time {
   position: relative;
@@ -1517,6 +1520,33 @@ body.image-stage-mode .game-wrap {
   font-weight: 900;
   color: #8D6C36;
   line-height: 1.2;
+}
+.strength-clear {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: min(44dvh, 260px);
+  font-size: clamp(1.25rem, 3.2vw, 1.9rem);
+  font-weight: 900;
+  color: #6C8E3F;
+}
+.strength-clear .enc-result__icon {
+  width: min(34vw, 190px);
+  max-height: min(30dvh, 170px) !important;
+  animation: strengthClearRockPop 0.72s cubic-bezier(0.14, 0.92, 0.3, 1.1) both;
+}
+.strength-clear__burst {
+  position: absolute;
+  width: min(42vw, 240px);
+  max-height: min(36dvh, 210px) !important;
+  opacity: 0;
+  pointer-events: none;
+  animation: strengthClearBurst 0.92s ease-out both;
+}
+@keyframes strengthDurabilityPulse {
+  from { transform: scaleX(var(--hp, 1)); }
+  to   { transform: scaleX(var(--hp, 1)) scaleY(1.18); }
 }
 @keyframes strengthPunchLeft {
   0% {
@@ -1563,6 +1593,16 @@ body.image-stage-mode .game-wrap {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
   35%  { opacity: 0.72; transform: translate(-50%, -50%) scale(1.08); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28); }
+}
+@keyframes strengthClearRockPop {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.72) rotate(-7deg); }
+  58%  { opacity: 1; transform: translateY(-6px) scale(1.12) rotate(4deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+@keyframes strengthClearBurst {
+  0%   { opacity: 0; transform: scale(0.2) rotate(-20deg); }
+  28%  { opacity: 0.95; transform: scale(0.9) rotate(8deg); }
+  100% { opacity: 0; transform: scale(1.45) rotate(24deg); }
 }
 @keyframes strengthChipFly {
   0% {
@@ -1736,12 +1776,14 @@ body.image-stage-mode .game-wrap {
     width: min(14vw, 62px);
     max-height: min(20dvh, 54px) !important;
   }
-  .strength-tap-progress {
-    min-height: 18px;
-    gap: 5px;
+  .strength-durability {
+    width: min(88%, 300px);
+    gap: 2px;
   }
-  .strength-tap-dot {
-    width: 12px;
+  .strength-durability__label {
+    font-size: 0.7rem;
+  }
+  .strength-durability__track {
     height: 12px;
     border-width: 1.5px;
   }
@@ -2196,6 +2238,8 @@ const MAZE_WATER_ASSETS = {
 const MAZE_STRENGTH_ASSETS = {
   glovePair: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png'),
   glovePush: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_push.png'),
+  glovePunchLeft: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_punch_left.png'),
+  glovePunchRight: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_punch_right.png'),
   powerSpark: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'power_spark.png'),
   rockBreak0: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png'),
   rockBreak1: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_1.png'),
@@ -2905,6 +2949,7 @@ function imgLoadStage(def) {
   hintActiveUntil = 0;
   hintCells.clear();
   _imgLastFrameTs = 0;
+  _jankenGuaranteedWinKeys = Object.create(null);
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
   hudApples.textContent = ''; // PoC: no apples yet
@@ -3176,15 +3221,16 @@ function imgFinishWalk() {
   moves++;
   hudMoves.textContent = 'てかず: ' + moves;
   walkAnim = null;
-  _checkFlagLadderPickup(pono.x, pono.y);
-  _checkWaterPlankPickup(pono.x, pono.y);
-  _checkStrengthGlovePickup(pono.x, pono.y);
+  const pickedUpItem =
+    _checkFlagLadderPickup(pono.x, pono.y) ||
+    _checkWaterPlankPickup(pono.x, pono.y) ||
+    _checkStrengthGlovePickup(pono.x, pono.y);
   if (pono.nodeId === stage.goal.id) {
     onClear();
   } else {
-    imgShowArrows();
+    if (!overlay.classList.contains('show')) imgShowArrows();
     // Dead-end: only one edge from this node and it leads back where we came from
-    if (pono.nodeId !== stage.start.id) {
+    if (!pickedUpItem && performance.now() >= _suppressDeadEndBubbleUntil && pono.nodeId !== stage.start.id) {
       const adj = stage.adjacency[pono.nodeId] || [];
       if (adj.length === 1 && adj[0].otherId === fromNodeId) {
         imgShowBubble('あれ？ いきどまり…', 'pono', 1800);
@@ -3594,6 +3640,44 @@ let _strengthGimmickState = null;
 let _strengthGameState = null;
 let _strengthGimmickTimers = [];
 let _jankenLossStreak = 0;
+let _jankenGuaranteedWinKeys = Object.create(null);
+let _suppressDeadEndBubbleUntil = 0;
+
+const MAZE_ITEM_HINTS = {
+  ladder: {
+    title: 'なわばしごを てにいれた！',
+    body: 'ふかい あなでも\nおりられるかも。\nひかっている あなを\nさがしてみよう。',
+  },
+  plank: {
+    title: 'まるたの いたを てにいれた！',
+    body: 'みずたまりに ならべたら\nちいさな はしが\nできるかも。',
+  },
+  glove: {
+    title: 'ちからの てぶくろを てにいれた！',
+    body: 'ふつうでは こわせない いわも\nこれなら くだけるかも。',
+  },
+};
+
+function _markRecentItemPickup() {
+  _suppressDeadEndBubbleUntil = performance.now() + 2600;
+}
+
+function _showItemHintModal(kind) {
+  const info = MAZE_ITEM_HINTS[kind];
+  if (!info || !overlay || !ovTitle || !ovMsg || !ovBtn) return;
+  _setOverlayAnimalIcon(null);
+  ovTitle.textContent = info.title;
+  ovMsg.textContent = info.body;
+  ovBtn.textContent = 'わかった ▶';
+  ovBtn.onclick = function() {
+    hideOverlay();
+    if (stage && stage.type === 'image' && !walkAnim && !cleared && !_encounterActive) {
+      imgShowArrows();
+    }
+  };
+  hideArrows();
+  showOverlay();
+}
 
 function _clearFlagTunnelTimers() {
   _flagTunnelTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
@@ -4043,10 +4127,12 @@ function _checkFlagLadderPickup(px, py) {
   const dy = py - cfg.ladder.y;
   if (dx * dx + dy * dy > r * r) return false;
   st.ladderCollected = true;
+  _markRecentItemPickup();
   _updateFlagInventoryHud();
   playApple();
   imgShowBubble('なわばしごを ひろったよ！', { x: cfg.ladder.x, y: cfg.ladder.y }, 1900);
   showHint('🪜 なわばしごを ひろったよ。ひかる あなに いってみよう！', 3000);
+  _showItemHintModal('ladder');
   return true;
 }
 
@@ -4059,10 +4145,12 @@ function _checkWaterPlankPickup(px, py) {
   const dy = py - cfg.plank.y;
   if (dx * dx + dy * dy > r * r) return false;
   st.plankCollected = true;
+  _markRecentItemPickup();
   _updateFlagInventoryHud();
   playApple();
   imgShowBubble('まるたの いたを ひろったよ！', { x: cfg.plank.x, y: cfg.plank.y }, 1900);
   showHint('🪵 いたを ひろったよ。みずたまりに ならべてみよう！', 3000);
+  _showItemHintModal('plank');
   return true;
 }
 
@@ -4075,10 +4163,12 @@ function _checkStrengthGlovePickup(px, py) {
   const dy = py - cfg.glove.y;
   if (dx * dx + dy * dy > r * r) return false;
   st.gloveCollected = true;
+  _markRecentItemPickup();
   _updateFlagInventoryHud();
   playApple();
   imgShowBubble('ちからの てぶくろを ひろったよ！', { x: cfg.glove.x, y: cfg.glove.y }, 1900);
-  showHint('💪 てぶくろを はめたよ。おもい いわを おしてみよう！', 3000);
+  showHint('💪 てぶくろを はめたよ。おもい いわを くだけるかも！', 3000);
+  _showItemHintModal('glove');
   return true;
 }
 
@@ -4271,8 +4361,8 @@ function _handleFlagTunnelObstacle(o, px, py) {
   if (!st.ladderCollected) {
     _bounceFromFlagTunnelObstacle(
       o, px, py,
-      'あなが ふかいよ！',
-      '🪜 なわばしごが あれば おりられそう。さきに さがしてみよう！'
+      'あなが ふかくて とおれないよ！',
+      '🪜 ひとりでは おりられないね。なわばしごが あれば いけるかも。'
     );
     return true;
   }
@@ -4296,8 +4386,8 @@ function _handleWaterGimmickObstacle(o, px, py) {
   if (!st.plankCollected) {
     _bounceFromFlagTunnelObstacle(
       o, px, py,
-      'みずたまりだよ！',
-      '🪵 まるたの いたが あれば わたれそう。さきに さがしてみよう！'
+      'みずたまりで とおれないよ！',
+      '🪵 まるたの いたが あれば、ちいさな はしを つくれるかも。'
     );
     return true;
   }
@@ -4317,8 +4407,8 @@ function _handleStrengthGimmickObstacle(o, px, py) {
   if (!st.gloveCollected) {
     _bounceFromFlagTunnelObstacle(
       o, px, py,
-      'おもい いわだよ！',
-      '💪 ちからの てぶくろが あれば うごかせそう。さきに さがしてみよう！'
+      'いわが ふさいで とおれないよ！',
+      '💪 ふつうの ちからでは こわせないね。ちからが つよくなる どうぐが ないかな？'
     );
     return true;
   }
@@ -4633,10 +4723,22 @@ function _jankenHandMarkup(side, hand, ready) {
     '" role="img" aria-label="' + ({ rock: 'グー', scissors: 'チョキ', paper: 'パー' }[safeHand]) + '"></span>';
 }
 
+function _jankenEncounterKey(c) {
+  if (!c) return '';
+  return String(stageIdx) + ':' + (c.id || (c.x + ',' + c.y));
+}
+
+function _isStage2FirstJankenCreature(c) {
+  return !!(stageIdx === 2 && c && (c.id === 'c1' || (!c.id && c.kind === 'mayoi')) && _gameForCreature(c) === 'janken');
+}
+
 function _chooseJankenCpuHand(playerHand) {
   const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
   const losesTo = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
   const safePlayer = beats[playerHand] ? playerHand : 'rock';
+  if (_jankenGuaranteedWinKeys[_jankenEncounterKey(_currentCreature)]) {
+    return beats[safePlayer];
+  }
   const winChance = Math.min(0.72, (1 / 3) + Math.max(0, _jankenLossStreak) * 0.1);
   const drawChance = (1 - winChance) / 2;
   const roll = Math.random();
@@ -4686,8 +4788,16 @@ function _resolveJanken(playerHand) {
     bugSlot.classList.toggle('is-lose', outcome === 'win');
     resultEl.className = 'janken-result' + (outcome === 'win' ? ' win' : (outcome === 'lose' ? ' lose' : ''));
     resultEl.textContent = outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！';
-    if (outcome === 'win') _jankenLossStreak = 0;
-    else if (outcome === 'lose') _jankenLossStreak = Math.min(5, _jankenLossStreak + 1);
+    const encounterKey = _jankenEncounterKey(_currentCreature);
+    if (outcome === 'win') {
+      _jankenLossStreak = 0;
+      if (encounterKey) delete _jankenGuaranteedWinKeys[encounterKey];
+    } else if (outcome === 'lose') {
+      _jankenLossStreak = Math.min(5, _jankenLossStreak + 1);
+      if (_isStage2FirstJankenCreature(_currentCreature) && encounterKey) {
+        _jankenGuaranteedWinKeys[encounterKey] = true;
+      }
+    }
     controlsEl.innerHTML = outcome === 'draw'
       ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
       : '<button class="enc-btn ' + (outcome === 'win' ? 'win' : 'lose') + '" id="encNext">' +
@@ -5632,7 +5742,7 @@ function _showStrengthPushGame() {
     deadline: performance.now() + STRENGTH_TAP_MS,
     locked: false,
     lastPunchHand: 'left',
-    status: 'いわを れんだして くだこう！',
+    status: 'いわを れんだして たいりょくを けずろう！',
   };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
@@ -5646,15 +5756,22 @@ function _showStrengthPushGame() {
           '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
           '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
           '<span class="strength-game__glove strength-game__glove--left" aria-hidden="true">' +
-            '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="">' +
+            '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_punch_left.png" alt="">' +
           '</span>' +
           '<span class="strength-game__glove strength-game__glove--right" aria-hidden="true">' +
-            '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png" alt="">' +
+            '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_punch_right.png" alt="">' +
           '</span>' +
         '</div>' +
       '</button>' +
     '</div>' +
-    '<div class="strength-tap-progress" id="strengthTapProgress"></div>' +
+    '<div class="strength-durability" id="strengthDurability" aria-label="いわの たいりょく">' +
+      '<div class="strength-durability__label">' +
+        '<span>いわの たいりょく</span><span id="strengthHpText">100%</span>' +
+      '</div>' +
+      '<div class="strength-durability__track">' +
+        '<div class="strength-durability__bar" id="strengthDurabilityBar"></div>' +
+      '</div>' +
+    '</div>' +
     '<div class="strength-time" aria-hidden="true"><div class="strength-time__bar" id="strengthTimeBar"></div></div>' +
     '<div class="strength-game__status" id="strengthStatus"></div>';
   encStageEl.appendChild(wrap);
@@ -5670,23 +5787,26 @@ function _renderStrengthPushGame() {
   const gs = _strengthGameState;
   if (!gs) return;
   const rockImg = document.getElementById('strengthRockImg');
-  const progress = document.getElementById('strengthTapProgress');
+  const durabilityBar = document.getElementById('strengthDurabilityBar');
+  const hpText = document.getElementById('strengthHpText');
   const bar = document.getElementById('strengthTimeBar');
   const status = document.getElementById('strengthStatus');
   const stageIdx = _strengthRockStageIndex(gs.tapCount);
   if (rockImg) rockImg.src = MAZE_STRENGTH_ASSET_BASE + 'rock_break_' + stageIdx + '.png';
-  if (progress) {
-    let html = '';
-    for (let i = 0; i < gs.required; i++) {
-      html += '<span class="strength-tap-dot' + (i < gs.tapCount ? ' is-on' : '') + '"></span>';
-    }
-    progress.innerHTML = html;
+  const damageRatio = Math.max(0, Math.min(1, gs.tapCount / gs.required));
+  const hpRatio = Math.max(0, 1 - damageRatio);
+  if (durabilityBar) {
+    durabilityBar.style.setProperty('--hp', hpRatio.toFixed(3));
+    durabilityBar.style.transform = 'scaleX(' + hpRatio.toFixed(3) + ')';
+    durabilityBar.classList.toggle('is-low', hpRatio > 0 && hpRatio <= 0.3);
+  }
+  if (hpText) {
+    hpText.textContent = Math.ceil(hpRatio * 100) + '%';
   }
   const remain = Math.max(0, gs.deadline - performance.now());
   if (bar) bar.style.transform = 'scaleX(' + (remain / STRENGTH_TAP_MS).toFixed(3) + ')';
   if (status) {
-    const left = Math.max(0, gs.required - gs.tapCount);
-    status.textContent = gs.status || (left > 0 ? 'あと ' + left + ' かい！' : '');
+    status.textContent = gs.status || 'いわを れんだして たいりょくを けずろう！';
   }
   if (!gs.locked && remain <= 0) _failStrengthPushGame();
 }
@@ -5727,7 +5847,10 @@ function _onStrengthRockTap() {
   const punchHand = (gs.tapCount % 2 === 1) ? 'right' : 'left';
   gs.lastPunchHand = punchHand;
   const finalHit = gs.tapCount >= gs.required;
-  gs.status = finalHit ? 'くだけた！' : 'あと ' + (gs.required - gs.tapCount) + ' かい！';
+  const damageRatio = Math.max(0, Math.min(1, gs.tapCount / gs.required));
+  gs.status = finalHit
+    ? 'くだけた！'
+    : (damageRatio >= 0.7 ? 'あと もうすこし！' : (damageRatio >= 0.4 ? 'ひびが はいってきた！' : 'れんだして くだこう！'));
   playRockHit(finalHit);
   _spawnStrengthDebrisBurst(finalHit);
   const btn = document.getElementById('strengthRockBtn');
@@ -5756,7 +5879,7 @@ function _failStrengthPushGame() {
     _strengthGameState.tapCount = 0;
     _strengthGameState.deadline = performance.now() + STRENGTH_TAP_MS;
     _strengthGameState.locked = false;
-    _strengthGameState.status = 'いわを れんだして くだこう！';
+    _strengthGameState.status = 'いわを れんだして たいりょくを けずろう！';
     _renderStrengthPushGame();
   }, 900);
 }
@@ -5769,13 +5892,15 @@ function _resolveStrengthPushGame() {
   _strengthGameState = null;
   playMzSe('correct');
   encStageEl.innerHTML =
-    '<div class="enc-result win">' +
+    '<div class="enc-result win strength-clear">' +
+      '<img class="strength-clear__burst" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="">' +
       '<img class="enc-result__icon" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png" alt="くだけたいわ">' +
-      'いわが くだけた！' +
+      '<div>いわが くだけた！</div>' +
+      '<div class="strength-game__status">みちが ひらいたよ！</div>' +
     '</div>';
   _strengthGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
-  }, 900);
+  }, 1300);
 }
 
 // ゲーム starter のディスパッチ表
