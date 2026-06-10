@@ -3082,6 +3082,7 @@ var RHYTHM_DEMO_TIME_SCALE = 1;
 var RHYTHM_DEMO_COUNT_STEP_MS = 720;
 var RHYTHM_DEMO_FIRST_NOTE_LEAD_MS = 7600;
 var RHYTHM_START_OVERLAY_MS = 1200;
+var RHYTHM_DRUM_INTRO_START_DELAY_MS = 120;
 // レーン別 ノート色 (ド/レ/ミ/ファ/ソ/ラ/シ/ド')
 var RHYTHM_LANE_COLORS = [
   { hi: '#FECACA', lo: '#EF4444' }, // ド (赤)
@@ -3464,6 +3465,25 @@ function _songIndexById(id) {
     if (SONGS[i].id === id) return i;
   }
   return -1;
+}
+function _rhythmBandSong() {
+  var songIdx = _songIndexById(RHYTHM_SONG.bandSongId);
+  if (songIdx < 0) songIdx = SPEED_TO_SONG_IDX.normal;
+  return SONGS[songIdx] || SONGS[SPEED_TO_SONG_IDX.normal] || null;
+}
+function _rhythmKickIntervalSec() {
+  var song = _rhythmBandSong();
+  var bpm = song && song.bpm ? song.bpm : RHYTHM_SONG.bpm;
+  // DRUM_PATTERN は 8分グリッドで kick が step0/step4。つまり2拍ごとにバスドラが来る。
+  return (60 / bpm) * 2;
+}
+function _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc) {
+  var interval = _rhythmKickIntervalSec();
+  if (!drumStartAc || !desiredFirstNoteAc || !isFinite(drumStartAc) || !isFinite(desiredFirstNoteAc) || interval <= 0) {
+    return desiredFirstNoteAc;
+  }
+  var steps = Math.max(1, Math.ceil((desiredFirstNoteAc - drumStartAc) / interval));
+  return drumStartAc + steps * interval;
 }
 function _ensureRhythmBand(startAtAc) {
   var songIdx = _songIndexById(RHYTHM_SONG.bandSongId);
@@ -4738,14 +4758,18 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   _rhythm.nextSpawnSeq = 0;
   var demoFirstLeadMs = Math.max(900, Math.min(demoFallMs, RHYTHM_DEMO_FIRST_NOTE_LEAD_MS));
   var ac = getAC();
+  var drumStartAc = 0;
   if (ac) {
-    _rhythm.startAcTime = ac.currentTime + demoFirstLeadMs / 1000;
+    drumStartAc = ac.currentTime + RHYTHM_DRUM_INTRO_START_DELAY_MS / 1000;
+    var desiredFirstNoteAc = ac.currentTime + demoFirstLeadMs / 1000;
+    _rhythm.startAcTime = _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc);
+    demoFirstLeadMs = (_rhythm.startAcTime - ac.currentTime) * 1000;
     _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
   } else {
     _rhythm.startAcTime = 0;
     _rhythm.startPerfTime = performance.now() + demoFirstLeadMs;
   }
-  _ensureRhythmBand(_rhythm.startAcTime);
+  _ensureRhythmBand(drumStartAc || _rhythm.startAcTime);
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
   _scheduleRhythmMelody(0.18);
@@ -4826,14 +4850,18 @@ function _beginRhythmCountdown() {
   var playLeadMs = Math.max(900, Math.min(RHYTHM_FALL_MS, RHYTHM_DEMO_FIRST_NOTE_LEAD_MS));
   var desiredStartEnginePerf = countdownDonePerf;
   var targetPerfMs = desiredStartEnginePerf + playLeadMs;
+  var drumStartAc = 0;
   if (ac) {
-    // 最初のドの AC 時刻を先に確定し、その同じ時刻を合成ドラムの step0 にする。
-    // step0 の DRUM_PATTERN は kick を含むため「最初のバスドラ = 最初のド」になる。
-    pendingAc = ac.currentTime + Math.max(0.05, (targetPerfMs - nowPerf) / 1000);
+    // 「スタート!」直後からリズムだけ先に鳴らし、その clock 上の次のバスドラへ最初のドを置く。
+    // これで待ち時間はドラムで埋まりつつ、最初のドは必ず kick と同時になる。
+    var countdownDoneAc = ac.currentTime + Math.max(0.05, (countdownDonePerf - nowPerf) / 1000);
+    drumStartAc = countdownDoneAc + RHYTHM_DRUM_INTRO_START_DELAY_MS / 1000;
+    var desiredFirstNoteAc = ac.currentTime + Math.max(0.05, (targetPerfMs - nowPerf) / 1000);
+    pendingAc = _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc);
     targetPerfMs = nowPerf + (pendingAc - ac.currentTime) * 1000;
   }
   _rhythm._pendingStartAcTime = pendingAc;
-  _ensureRhythmBand(pendingAc);
+  _ensureRhythmBand(drumStartAc || pendingAc);
   var startEnginePerf = targetPerfMs - playLeadMs;
   function schedule(absPerfMs, fn) {
     var delay = Math.max(0, absPerfMs - performance.now());
