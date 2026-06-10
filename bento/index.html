@@ -896,6 +896,9 @@ html, body {
   opacity: 0.38;
   cursor: default;
 }
+.free-mask-export-actions {
+  grid-template-columns: 1fr;
+}
 .free-mask-mode-tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
@@ -3310,6 +3313,9 @@ const CAT_BOX_INSIDE_MASK = FREE_ASSET + 'box_cat_inside_mask.png';
 const FREE_MASK_EDITOR_STORAGE_KEY = 'bento_free_mask_bounds_v14';
 const FREE_COMPLETE_LAYOUT_STORAGE_KEY = 'bento_free_complete_layout_v3';
 const FREE_COMPLETE_LAYOUT_LEGACY_STORAGE_KEYS = ['bento_free_complete_layout_v2', 'bento_free_complete_layout_v1'];
+// マスクエディターで確定した値はここに貼る。localStorage は端末ごとの一時上書き。
+const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {};
+const FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES = {};
 const FREE_COMPLETE_TIER_STEP_SECONDS = 1.05;
 const FREE_COMPLETE_LID_AFTER_LAST_SECONDS = 0.48;
 const FREE_COMPLETE_LID_CLOSE_SECONDS = 0.95;
@@ -4549,6 +4555,44 @@ function loadFreeMaskBoundsOverrides() {
     return {};
   }
 }
+function cloneFreeEditorMap(map) {
+  if (!map || typeof map !== 'object') return {};
+  try {
+    return JSON.parse(JSON.stringify(map));
+  } catch (e) {
+    return {};
+  }
+}
+function mergeFreeEditorMaps(base, override) {
+  const next = cloneFreeEditorMap(base);
+  if (!override || typeof override !== 'object') return next;
+  Object.keys(override).forEach(key => {
+    const value = override[key];
+    if (value && typeof value === 'object') {
+      next[key] = cloneFreeEditorMap(value);
+    }
+  });
+  return next;
+}
+function getFreeEditorEntryValue(entry, aliases = []) {
+  if (!entry || typeof entry !== 'object') return null;
+  for (const alias of aliases) {
+    if (entry[alias] && typeof entry[alias] === 'object') return entry[alias];
+  }
+  return ['x', 'y', 'w', 'h'].some(prop => Object.prototype.hasOwnProperty.call(entry, prop))
+    ? entry
+    : null;
+}
+function getFreeMaskDefaultEntry(key) {
+  if (!key || !FREE_MASK_BOUNDS_DEFAULT_OVERRIDES) return null;
+  const entry = FREE_MASK_BOUNDS_DEFAULT_OVERRIDES[key];
+  return entry && typeof entry === 'object' ? entry : null;
+}
+function getFreeCompleteDefaultEntry(key) {
+  if (!key || !FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES) return null;
+  const entry = FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES[key];
+  return entry && typeof entry === 'object' ? entry : null;
+}
 function saveFreeMaskBoundsOverrides() {
   if (typeof localStorage === 'undefined') return;
   try {
@@ -4633,25 +4677,31 @@ function getBoxCompleteLayout(box, tier = 2) {
   refreshFreeCompleteLayoutOverrides();
   const base = getDefaultFreeCompleteLayout(box, tier);
   const key = getFreeCompleteLayoutKey(box, tier);
+  const defaultEntry = key ? getFreeCompleteDefaultEntry(key) : null;
+  const defaultLayout = getFreeEditorEntryValue(defaultEntry, ['layout']);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
-  const overrideLayout = override && (override.layout || override);
-  return normalizeFreeCompleteLayout({ ...base, ...(overrideLayout || {}) });
+  const overrideLayout = getFreeEditorEntryValue(override, ['layout']);
+  return normalizeFreeCompleteLayout({ ...base, ...(defaultLayout || {}), ...(overrideLayout || {}) });
 }
 function getBoxCompleteLidLayout(box) {
   refreshFreeCompleteLayoutOverrides();
   const base = getDefaultFreeCompleteLidLayout(box);
   const key = getFreeCompleteLidLayoutKey(box);
+  const defaultEntry = key ? getFreeCompleteDefaultEntry(key) : null;
+  const defaultLayout = getFreeEditorEntryValue(defaultEntry, ['lid', 'layout']);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
-  const overrideLayout = override && (override.lid || override.layout || override);
-  return normalizeFreeCompleteLidLayout({ ...base, ...(overrideLayout || {}) });
+  const overrideLayout = getFreeEditorEntryValue(override, ['lid', 'layout']);
+  return normalizeFreeCompleteLidLayout({ ...base, ...(defaultLayout || {}), ...(overrideLayout || {}) });
 }
 function getBoxCompleteMaskRelative(box, tier = 2) {
   refreshFreeCompleteLayoutOverrides();
   const base = getBoxMaskRelative(box);
   const key = getFreeCompleteMaskLayoutKey(box, tier);
+  const defaultEntry = key ? getFreeCompleteDefaultEntry(key) : null;
+  const defaultRel = getFreeEditorEntryValue(defaultEntry, ['rel', 'mask']);
   const override = key && freeCompleteLayoutOverrides ? freeCompleteLayoutOverrides[key] : null;
-  const overrideRel = override && (override.rel || override.mask || override);
-  return normalizeMaskRelative(overrideRel || base);
+  const overrideRel = getFreeEditorEntryValue(override, ['rel', 'mask']);
+  return normalizeMaskRelative({ ...(base || {}), ...(defaultRel || {}), ...(overrideRel || {}) });
 }
 function getFreeCompleteHostWidth(host) {
   if (!host) return 0;
@@ -4961,8 +5011,10 @@ function getBoxMaskRelative(box) {
 function getFreeMaskRelativeOverride(key) {
   if (!key || !freeMaskBoundsOverrides) return null;
   const entry = freeMaskBoundsOverrides[key];
-  if (!entry || typeof entry !== 'object') return null;
-  return entry.rel || null;
+  const localRel = getFreeEditorEntryValue(entry, ['rel']);
+  if (localRel) return localRel;
+  const defaultEntry = getFreeMaskDefaultEntry(key);
+  return getFreeEditorEntryValue(defaultEntry, ['rel']);
 }
 function normalizeMaskRelative(rel) {
   const normalized = {};
@@ -4979,6 +5031,84 @@ function setFreeMaskRelativeOverride(key, rel) {
 function resetFreeMaskRelativeOverride(key) {
   if (!key || !freeMaskBoundsOverrides[key]) return;
   delete freeMaskBoundsOverrides[key];
+}
+function sortFreeEditorMap(map) {
+  const sorted = {};
+  Object.keys(map || {}).sort().forEach(key => {
+    sorted[key] = map[key];
+  });
+  return sorted;
+}
+function normalizeFreeMaskDefaultExportEntry(entry) {
+  const rel = getFreeEditorEntryValue(entry, ['rel']);
+  return rel ? { rel: normalizeMaskRelative(rel) } : null;
+}
+function normalizeFreeCompleteDefaultExportEntry(key, entry) {
+  if (!key || !entry) return null;
+  if (key.endsWith(':mask')) {
+    const rel = getFreeEditorEntryValue(entry, ['rel', 'mask']);
+    return rel ? { rel: normalizeMaskRelative(rel) } : null;
+  }
+  if (key.endsWith(':lid')) {
+    const lid = getFreeEditorEntryValue(entry, ['lid', 'layout']);
+    return lid ? { lid: normalizeFreeCompleteLidLayout(lid) } : null;
+  }
+  const layout = getFreeEditorEntryValue(entry, ['layout']);
+  return layout ? { layout: normalizeFreeCompleteLayout(layout) } : null;
+}
+function getFreeMaskDefaultOverridesForExport() {
+  const merged = mergeFreeEditorMaps(FREE_MASK_BOUNDS_DEFAULT_OVERRIDES, freeMaskBoundsOverrides);
+  const normalized = {};
+  Object.keys(merged).forEach(key => {
+    const entry = normalizeFreeMaskDefaultExportEntry(merged[key]);
+    if (entry) normalized[key] = entry;
+  });
+  return sortFreeEditorMap(normalized);
+}
+function getFreeCompleteDefaultOverridesForExport() {
+  const merged = mergeFreeEditorMaps(FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES, freeCompleteLayoutOverrides);
+  const normalized = {};
+  Object.keys(merged).forEach(key => {
+    const entry = normalizeFreeCompleteDefaultExportEntry(key, merged[key]);
+    if (entry) normalized[key] = entry;
+  });
+  return sortFreeEditorMap(normalized);
+}
+function serializeFreeMaskDefaultsForCode() {
+  refreshFreeMaskBoundsOverrides();
+  refreshFreeCompleteLayoutOverrides();
+  return [
+    'const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = ' + JSON.stringify(getFreeMaskDefaultOverridesForExport(), null, 2) + ';',
+    'const FREE_COMPLETE_LAYOUT_DEFAULT_OVERRIDES = ' + JSON.stringify(getFreeCompleteDefaultOverridesForExport(), null, 2) + ';',
+  ].join('\n');
+}
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const ok = document.execCommand('copy');
+  textarea.remove();
+  if (!ok) throw new Error('copy failed');
+  return true;
+}
+async function copyFreeMaskDefaultsForCode() {
+  const code = serializeFreeMaskDefaultsForCode();
+  try {
+    await copyTextToClipboard(code);
+    showToast('コード用の調整値をコピーしました');
+  } catch (e) {
+    console.info(code);
+    showToast('コピーできないのでコンソールに出しました');
+  }
 }
 function getBoxMaskBounds(box) {
   if (!box || !box.maskBounds) return null;
@@ -7002,6 +7132,10 @@ function renderFreeMaskEditorControls() {
   panel.appendChild(viewportLabel);
   panel.appendChild(renderFreeMaskBoxSelector(box));
   panel.appendChild(renderFreeMaskModeTabs(box));
+  const exportActions = document.createElement('div');
+  exportActions.className = 'free-mask-actions free-mask-export-actions';
+  exportActions.appendChild(makeSmallControlButton('コード用コピー', '', copyFreeMaskDefaultsForCode));
+  panel.appendChild(exportActions);
   const completeTier = Math.min(2, getBoxTierCount(box));
   const hasCompleteTierControls = completeTier > 1;
   const hasLidControls = !!(box && box.lidImage);
