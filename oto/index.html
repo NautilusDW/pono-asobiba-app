@@ -1844,6 +1844,51 @@
     }
   }
 
+  body.rhythm-layout .band-group {
+    left: max(16px, calc(env(safe-area-inset-left) + 16px));
+    transform: none;
+    width: 122px;
+    max-width: 122px;
+    padding: 5px 8px 7px;
+    box-sizing: border-box;
+  }
+  body.rhythm-layout .speed-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+  body.rhythm-layout .band-group .speed-btn {
+    width: 104px;
+    min-height: 40px;
+    padding: 5px 6px 5px 4px;
+    font-size: 0.72rem;
+    justify-content: flex-start;
+  }
+  body.rhythm-layout .band-group .speed-btn .btn-img {
+    width: 30px;
+    height: 30px;
+  }
+  body.rhythm-layout .rhythm-hud {
+    left: 61%;
+    top: max(72px, calc(env(safe-area-inset-top) + 72px));
+    bottom: auto;
+    width: min(44vw, 340px);
+    transform: translateX(-50%);
+  }
+  body.rhythm-layout .rhythm-status {
+    width: auto;
+    min-width: 180px;
+    max-width: 100%;
+    font-size: 0.92rem;
+  }
+  body.rhythm-layout .rhythm-queue {
+    display: none;
+  }
+  @media (orientation: portrait) {
+    body.rhythm-layout .rhythm-hud.show {
+      display: none;
+    }
+  }
+
   /* iPad など 4:3 付近の横画面: 演奏ボタンを通常横画面の約2倍へ
      リズムモード時は譲る (横一列配置を勝たせるため body:not(.rhythm-layout) ガード) */
   @media (orientation: landscape) and (min-width: 900px) and (min-height: 700px) {
@@ -2951,8 +2996,8 @@ var RHYTHM_SONGS = [
       {
         name: '1',
         note: 'うたがきこえ',
-        notes: [0, 1, 2, 3, 2, 1, 0, 2, 3, 4, 5, 4, 3],
-        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1]
+        notes: [0, 1, 2, 3, 2, 1, 0, 2, 3, 4, 5, 4, 3, 0],
+        beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]
       },
       {
         name: '2',
@@ -4697,38 +4742,31 @@ function _beginRhythmCountdown() {
   _clearRhythmDemo(true);
   _hideRhythmComplete();
   _setModeButtons('rhythm');
-  // 1ノート目の落下速度は変えず、T は落下時間を確保した未来に置く。
-  // ただしチュートリアル後の空白を作らないため、カウント表示だけはすぐ開始する。
+  // 1ノート目の速度は変えず、遠すぎる非表示区間だけ省いて「スタート!」直後から見せる。
   _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   var ac = getAC();
   var beatSec = _rhythmBeatMs() / 1000;
-  var fallSec = RHYTHM_FALL_MS / 1000;
   var countBeats = RHYTHM_COUNTDOWN_BEATS;
-  var leadBeats = RHYTHM_COUNTDOWN_LEAD_BEATS;
   var bandStartACVal = _currentSong().type === 'synth' ? _bandClockStart : _bandStartAC;
   var pendingAc = 0;
-  var targetPerfMs;
-  if (ac && bandStartACVal && beatSec > 0) {
-    // T は落下時間ぶん先の拍頭へ寄せる。これでノート自体の速度は変わらない。
-    var requiredAheadSec = Math.max(fallSec, (countBeats + leadBeats) * beatSec) + 0.15;
-    var requiredAnchorAC = ac.currentTime + requiredAheadSec;
-    var deltaSec = requiredAnchorAC - bandStartACVal;
-    var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
-    pendingAc = bandStartACVal + nBeats * beatSec;
-    targetPerfMs = performance.now() + (pendingAc - ac.currentTime) * 1000;
-  } else {
-    // フォールバック (AC 不在 / 伴奏未開始): AC 同期なしでも落下時間は変えない
-    targetPerfMs = performance.now() + Math.max(fallSec * 1000, 720 * (countBeats + leadBeats));
-    pendingAc = 0;
-  }
-  _rhythm._pendingStartAcTime = pendingAc;
-  // カウントダウン「3」の表示時刻 (perf 絶対 ms)。
-  var t3Perf = performance.now() + 120;
+  var nowPerf = performance.now();
+  var t3Perf = nowPerf + 120;
   var stepMs = RHYTHM_DEMO_COUNT_STEP_MS;
   var countdownDonePerf = t3Perf + countBeats * stepMs;
-  // _startRhythmMode はノート落下時間 fallSec 確保のため T - fallSec で起動。
-  var startEnginePerf = targetPerfMs - fallSec * 1000;
+  var playLeadMs = Math.max(900, Math.min(RHYTHM_FALL_MS, RHYTHM_DEMO_FIRST_NOTE_LEAD_MS));
+  var desiredStartEnginePerf = countdownDonePerf;
+  var targetPerfMs = desiredStartEnginePerf + playLeadMs;
+  if (ac && bandStartACVal && beatSec > 0) {
+    // T は近い拍頭へ寄せる。起動時点ではすでにブロックが見える進行度にする。
+    var desiredTargetAC = ac.currentTime + Math.max(0.05, (targetPerfMs - nowPerf) / 1000);
+    var deltaSec = desiredTargetAC - bandStartACVal;
+    var nBeats = Math.max(1, Math.ceil(deltaSec / beatSec));
+    pendingAc = bandStartACVal + nBeats * beatSec;
+    targetPerfMs = nowPerf + (pendingAc - ac.currentTime) * 1000;
+  }
+  _rhythm._pendingStartAcTime = pendingAc;
+  var startEnginePerf = targetPerfMs - playLeadMs;
   function schedule(absPerfMs, fn) {
     var delay = Math.max(0, absPerfMs - performance.now());
     _rhythm.countdownTimers.push(setTimeout(fn, delay));

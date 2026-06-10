@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-10 - [batch:397-oto-rhythm-start-layout-kaeru] DONE - Codex: OtoTouch リズム本番の初回ノート待ちを短縮し、3/2/1後すぐブロックが見えるように本番初回リードを `7600ms` へ揃えた。リズム時の左下バンドUIを縦積みコンパクト化し、縦長画面ではリズムHUDを隠してボタン被りを解消。かえるのうた前半は末尾を `ソ・ファ・ド` に修正。`sw.js` / `play.html` cache は v983。Node inline script、`git diff --check`、Playwright timing/layout smoke を確認。 (by Codex)
 - 2026-06-10 - [batch:396-bento-free-stage-aspect-fit] DONE - Codex: user 指摘「iPad mini 4:3 など画角でおかずが小さくなる」を受領。自由配置のメイン編集ステージが親枠いっぱいに縦伸びしていたため、`bento/index.html` で `.free-layout-inner` を中央寄せにし、`#free-layout-stage` を親枠内で常に `760:460` にフィットさせる処理を追加。4:3 / 667x375 / 1366x768 でステージ比率とおかず正方形比率を確認。`sw.js` は v982。 (by Codex)
 - 2026-06-10 - [batch:395-bento-mask-server-sync] DONE - Codex: 管理者用の弁当マスク共通同期を実装。Cloudflare KV `BENTO_MASK_CONFIG` を本番/staging に作成し、`wrangler.toml` に binding を追加。`src/worker.js` に `GET/POST /api/bento/mask-defaults` を追加し、GET は共通値読込、POST は既存 Basic Auth で管理者保存。`bento/index.html` は起動時にサーバー値を自動取得し、通常表示はサーバー共通値優先、マスクエディター中だけローカル未保存値優先。エディターに `サーバー保存` / `サーバー再読込` を追加。初期KVには現行4箱の値を投入済み。`sw.js` は v981。Node構文、Worker module check、Worker API mock、Playwright mobile normal/editor/save、Wrangler dry-run(binding確認)を確認。 (by Codex)
 - 2026-06-10 - [batch:394-oto-rhythm-demo-lead-count-sfx] DONE - Codex: OtoTouch リズムのお手本で、落下速度 `11500ms` は維持したまま初回ノートのリードを `7600ms` にして、3/2/1後にブロックがすぐ流れ始めるよう調整。本番カウントはチュートリアルと同じ `720ms` 間隔に固定。成功/ミス時に短いWebAudio合成SEを追加し、成功は軽いキラッ、ミスは控えめなクリックにした。`sw.js` は v980。Node inline script、`git diff --check`、Playwright timing/SFX call smoke を確認。 (by Codex)
