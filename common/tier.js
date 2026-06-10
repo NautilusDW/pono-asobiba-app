@@ -34,14 +34,14 @@
   if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
     try {
       Object.defineProperty(window, 'PONO_TIER_GAME_LOCKS_ENABLED', {
-        value: true,  // Phase 2: 実ロック発動
+        value: false,  // Web MVP: 全機能無料公開 (Amazon 絵本購入者向け)
         writable: false,
         configurable: true,
         enumerable: true
       });
     } catch (e) {
-      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Phase 2 は true 維持が最優先)
-      window.PONO_TIER_GAME_LOCKS_ENABLED = true;
+      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Web MVP: ロック無効。Phase 2 復活時は true に戻すこと)
+      window.PONO_TIER_GAME_LOCKS_ENABLED = false;
     }
   }
   function gameLocksEnabled() { return !!window.PONO_TIER_GAME_LOCKS_ENABLED; }
@@ -313,9 +313,7 @@
   // 大文字/小文字どちらでも通るよう両方試す (子供/保護者が手入力するため)。
   // Closure に閉じるので window.PonoTier からは見えず、DevTools 経由で
   // 覗き見されにくい (完全な秘匿ではないが casual friction を維持)。
-  var BOOK_PASSWORDS = [
-    '1234'  // 初期のテスト用。実絵本印刷時にシリアルコードへ置換 (例: 'PONO-BOOK1-2026')
-  ];
+  var BOOK_PASSWORDS = [];  // Web MVP: 全機能無料公開のため book/sub 区分は休眠。将来 IAP 復活時にここを埋める
   function verifyBookPassword(val) {
     if (val == null) return false;
     var raw = String(val).trim();

@@ -595,18 +595,10 @@
     /* Per-game title color (id is on the card root) */
     .game-card[data-id="quizland"]   .game-card__title { color: #6b4a18; }   /* deep amber/owl */
     .game-card[data-id="quiz-sound"] .game-card__title { color: #2f6aa3; }   /* forest blue */
-    .game-card[data-id="wordmatch"]  .game-card__title { color: #b56d12; }   /* warm orange */
     .game-card[data-id="maze"]       .game-card__title { color: #f5d76a; }   /* lantern yellow */
     .game-card[data-id="oto"]        .game-card__title { color: #d38a2c; }   /* playful music amber */
     .game-card[data-id="bento"]      .game-card__title { color: #d7712d; }   /* carrot orange */
-    .game-card[data-id="kitchen"]    .game-card__title { color: #21846b; }   /* kitchen green */
     .game-card[data-id="puzzle"]     .game-card__title { color: #5a89bf; }   /* gentle puzzle blue */
-    /* Wordmatch's title is the longest ("あつめよう！ポノのもりのずかん").
-       Tighten letter spacing + nudge font-size so it fits without ellipsis. */
-    .game-card[data-id="wordmatch"] .game-card__title {
-      font-size: 28px;
-      letter-spacing: -0.02em;
-    }
     /* On the dark "maze" card the cream halo would clash — switch to a
        warm dark halo so the yellow title still pops on the night panel. */
     .game-card[data-id="maze"] .game-card__title {
@@ -1202,6 +1194,13 @@
 
     /* MVP: hide acorn / thankyou / stamp UI if any module tries to show it */
     .acorn-badge-play, .thankyou-badge-play { display: none !important; }
+    /* Web MVP: 絵本パスワード解錠導線を一時的に休眠 (BOOK_PASSWORDS=[] と整合) */
+    .for-parents, #forParentsBtn { display: none !important; }
+    /* Web MVP: 開発用 UI は ?dev=1 のときだけ表示 */
+    .dev-link, .dev-section, #passwordUnlockReset { display: none; }
+    body.dev-mode .dev-link,
+    body.dev-mode .dev-section { display: block; }
+    body.dev-mode #passwordUnlockReset { display: inline-block; }
 
     /* ===== Portrait warning overlay =====
        Shown when the viewport is taller than wide. Tells user to rotate.
@@ -1509,6 +1508,13 @@
   <script>
     'use strict';
 
+    // Web MVP: ?dev=1 のとき開発用 UI (ぜんぶみる / NPC テスト / フリーに もどす) を表示
+    try {
+      if (new URLSearchParams(location.search).get('dev') === '1') {
+        document.body.classList.add('dev-mode');
+      }
+    } catch (_) {}
+
     // ===== Game catalog (free MVP set) =====
     // panel: カード木枠の背景 (各ゲームで違う木目バリエーション)
     // thumb: カード左の丸サムネ (各ゲーム個別)
@@ -1608,20 +1614,7 @@
         peekPos: '50% 50%',
         comingSoon: true,
         debugPlayable: true,
-        tier: 'sub'
-      },
-      {
-        id: 'wordmatch',
-        title: 'あつめよう！ポノのもりのずかん',
-        subtitle: 'えと ことばを つなげよう',
-        icon: '📖',
-        bg: 'assets/ui/play_wordmatch_title_back.webp',
-        href: 'wordmatch/index.html',
-        panel: 'assets/ui/menu_card_base_03.webp',
-        thumb: 'assets/ui/thumb_wordmatch.webp',
-        comingSoon: true,
-        debugPlayable: true,
-        tier: 'book'
+        tier: 'free'
       },
       {
         id: 'zukan',
@@ -1636,22 +1629,7 @@
         thumb: 'assets/ui/thumb_maze.webp',
         comingSoon: true,
         debugPlayable: true,
-        tier: 'sub'
-      },
-      {
-        id: 'kitchen',
-        title: 'ポノのトントンキッチン',
-        subtitle: 'おかずを つくって べんとうへ',
-        icon: '🍳',
-        bg: 'assets/images/bento/cooking/kitchen_bg.webp',
-        href: 'bento/kitchen.html',
-        panel: 'assets/ui/menu_card_base_04.webp',
-        thumb: 'assets/ui/thumb_kitchen.webp',
-        thumbPos: '27% 52%',
-        peekPos: '50% 70%',
-        comingSoon: true,
-        debugPlayable: true,
-        tier: 'sub'
+        tier: 'free'
       },
       // ----- Hidden from menu (filtered out by MENU_GAMES) -----
       {
