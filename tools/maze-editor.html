@@ -630,6 +630,17 @@ function _jsonClone(obj) {
   catch (_) { return null; }
 }
 
+function _defaultObstacleSize(kind) {
+  if (kind === 'web') return Math.round((state.imgH || 1080) / 6.35);
+  return 0;
+}
+
+function _createObstacle(kind, p) {
+  const o = { kind: kind || 'tree', x: p.x, y: p.y };
+  if (o.kind === 'web') o.size = _defaultObstacleSize('web');
+  return o;
+}
+
 function _normalizeObstacles(list) {
   return Array.isArray(list)
     ? list
@@ -638,6 +649,9 @@ function _normalizeObstacles(list) {
           const out = { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) };
           if (o.id) out.id = String(o.id);
           if (Number.isFinite(o.size) && o.size > 0) out.size = Number(o.size);
+          if (out.kind === 'web' && !(Number.isFinite(out.size) && out.size > 0)) {
+            out.size = _defaultObstacleSize('web');
+          }
           if (o.eventEnabled === true) out.eventEnabled = true;
           return out;
         })
@@ -894,6 +908,19 @@ function _setSelectedObstacleEventEnabled(enabled) {
   updateObstacleEventPanel();
   draw();
   scheduleAutoSave();
+}
+
+function _autoAttachPlacedObstacleEvent(o) {
+  if (!o || o.kind !== 'web') return false;
+  const id = _ensureObstacleId(o);
+  const current = state.gimmickConfigs.webGimmick;
+  if (current && current.obstacleId && _obstacleById(current.obstacleId)) return false;
+  const cfg = _jsonClone(current) || _defaultGimmickConfig('webGimmick');
+  cfg.id = cfg.id || 'web-gate';
+  cfg.obstacleId = id;
+  state.gimmickConfigs.webGimmick = cfg;
+  o.eventEnabled = true;
+  return true;
 }
 
 function _setFlagTunnelEntrance(id) {
@@ -1624,9 +1651,11 @@ cv.addEventListener('click', function(e) {
   } else if (state.mode === 'edge') {
     handleEdgeClick(p);
   } else if (state.mode === 'obstacle') {
-    const o = { kind: state.obstacleKind, x: p.x, y: p.y };
+    const o = _createObstacle(state.obstacleKind, p);
     state.obstacles.push(o);
+    const attached = _autoAttachPlacedObstacleEvent(o);
     selectObstacle(o, false);
+    if (attached) showBanner('クモの巣イベントを配置しました。移動モードでドラッグできます。');
   } else if (state.mode === 'creature') {
     const c = {
       id: 'c' + state.nextCreatureId,
@@ -1898,11 +1927,11 @@ function selectCreature(c, shouldDraw) {
 }
 
 function findObstacleAt(p) {
-  const r = Math.max(36 / canvasScale, state.imgH / 24);
-  const r2 = r * r;
   let best = null, bestD2 = Infinity;
   for (let i = state.obstacles.length - 1; i >= 0; i--) {
     const o = state.obstacles[i];
+    const r = _editorObstacleHitRadius(o);
+    const r2 = r * r;
     const dx = p.x - o.x, dy = p.y - o.y;
     const d2 = dx*dx + dy*dy;
     if (d2 < r2 && d2 < bestD2) { bestD2 = d2; best = o; }
@@ -2544,6 +2573,18 @@ function draw() {
 }
 
 const OBSTACLE_EMOJI = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨', web:'🕸️' };
+function _editorObstacleDrawRadius(o) {
+  if (o && o.kind === 'web') {
+    return ((Number.isFinite(o.size) && o.size > 0) ? o.size : _defaultObstacleSize('web')) / 2;
+  }
+  return state.imgH / 24;
+}
+
+function _editorObstacleHitRadius(o) {
+  const minR = Math.max(36 / canvasScale, state.imgH / 24);
+  return Math.max(minR, _editorObstacleDrawRadius(o));
+}
+
 function drawObstacleEventLinks() {
   const cfg = state.gimmickConfigs && state.gimmickConfigs.flagGimmick;
   if (!cfg || !cfg.entranceObstacleId || !cfg.exitObstacleId) return;
@@ -2569,29 +2610,34 @@ function drawObstacleEventLinks() {
 }
 
 function drawObstacle(o) {
-  const sz = state.imgH / 12;
+  const r = _editorObstacleDrawRadius(o);
+  const sz = r * 2;
   const selected = !!(o && o.id && o.id === state.selectedObstacleId);
   const eventOn = _obstacleHasConfiguredEvent(o);
   ctx.save();
   // Background tint to show it's editable
   ctx.fillStyle = eventOn ? 'rgba(170,230,120,0.62)' : 'rgba(255,255,255,0.55)';
-  ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 4 / canvasScale, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(o.x, o.y, r + 4 / canvasScale, 0, Math.PI * 2); ctx.fill();
   if (eventOn) {
     ctx.strokeStyle = '#A4C76D';
     ctx.lineWidth = Math.max(3, 4 / canvasScale);
-    ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 10 / canvasScale, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(o.x, o.y, r + 10 / canvasScale, 0, Math.PI * 2); ctx.stroke();
   }
   if (selected) {
     ctx.strokeStyle = '#FFE066';
     ctx.lineWidth = Math.max(5, 5 / canvasScale);
     ctx.setLineDash([12 / canvasScale, 8 / canvasScale]);
-    ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 18 / canvasScale, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(o.x, o.y, r + 18 / canvasScale, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
   }
-  ctx.font = (sz * 0.85) + 'px serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#000';
-  ctx.fillText(OBSTACLE_EMOJI[o.kind] || '🌳', o.x, o.y);
+  if (o.kind === 'web') {
+    _drawEditorSpiderWeb(o.x, o.y, r, eventOn);
+  } else {
+    ctx.font = (sz * 0.85) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';
+    ctx.fillText(OBSTACLE_EMOJI[o.kind] || '🌳', o.x, o.y);
+  }
   if (eventOn) {
     ctx.fillStyle = '#24410f';
     ctx.strokeStyle = '#fff';
@@ -2602,6 +2648,37 @@ function drawObstacle(o) {
     ctx.font = (badgeR * 1.1) + 'px sans-serif';
     ctx.fillText('!', o.x + sz * 0.38, o.y - sz * 0.38 + badgeR * 0.05);
   }
+  ctx.restore();
+}
+
+function _drawEditorSpiderWeb(x, y, r, eventOn) {
+  ctx.save();
+  ctx.strokeStyle = eventOn ? 'rgba(40,70,55,0.95)' : 'rgba(45,45,58,0.9)';
+  ctx.lineWidth = Math.max(2.5, r * 0.035);
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 8; i++) {
+    const a = (Math.PI * 2 * i) / 8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * r * 0.78, y + Math.sin(a) * r * 0.78);
+    ctx.stroke();
+  }
+  for (let ring = 1; ring <= 3; ring++) {
+    const rr = r * (0.18 + ring * 0.18);
+    ctx.beginPath();
+    for (let i = 0; i <= 8; i++) {
+      const a = (Math.PI * 2 * i) / 8 + ring * 0.08;
+      const px = x + Math.cos(a) * rr * (1 + (i % 2) * 0.08);
+      const py = y + Math.sin(a) * rr * (1 - (i % 2) * 0.05);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.fillStyle = eventOn ? '#24410f' : '#2d2d3a';
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(5, r * 0.08), 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 

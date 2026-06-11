@@ -20,8 +20,26 @@
       "kind": "hole",
       "x": 2490,
       "y": 210
+    },
+    {
+      "id": "stage7-web-gate",
+      "kind": "web",
+      "x": 3690,
+      "y": 750,
+      "size": 170,
+      "eventEnabled": true
     }
   ],
+  "webGimmick": {
+    "id": "stage7-spider-web",
+    "obstacleId": "stage7-web-gate",
+    "broom": {
+      "x": 330,
+      "y": 930,
+      "radius": 105
+    },
+    "encounterRadius": 84
+  },
   "creatures": [
     {
       "id": "c1",
