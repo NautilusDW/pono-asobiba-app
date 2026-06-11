@@ -1111,13 +1111,31 @@ function _distPointToSegment(px, py, ax, ay, bx, by) {
   return { dist: Math.sqrt(ex * ex + ey * ey), t: t };
 }
 
+// 全エッジ polyline の中で、 (p.x, p.y) に最も近いセグメント上の射影点を探す。
+// 最近距離が threshold 以内なら { x, y } を返し、 そうでなければ null。
+function _snapToNearestPolyline(p, threshold) {
+  let best = null;
+  for (let ei = 0; ei < state.edges.length; ei++) {
+    const ed = state.edges[ei];
+    if (!ed || !Array.isArray(ed.polyline) || ed.polyline.length < 2) continue;
+    for (let i = 0; i < ed.polyline.length - 1; i++) {
+      const A = ed.polyline[i], B = ed.polyline[i + 1];
+      const r = _distPointToSegment(p.x, p.y, A.x, A.y, B.x, B.y);
+      if (r.dist <= threshold && (!best || r.dist < best.dist)) {
+        best = { x: A.x + r.t * (B.x - A.x), y: A.y + r.t * (B.y - A.y), dist: r.dist };
+      }
+    }
+  }
+  return best ? { x: best.x, y: best.y } : null;
+}
+
 // ✂️ 道を消す: クリック点が乗る polyline 区間 (= 両側の最寄りノード境界に挟まれた
 // 部分) だけを削除。 削除したら true を返す。 該当なしなら false。
 // 境界候補ノード: state.start / state.goal / state.waypoints[*] のうち、当該
 // polyline 上の最近点距離が NODE_THRESHOLD 以下のもの + polyline 両端 (s=0, s=L)。
 function _handleDeleteEdgeClick(p) {
   const HIT_LIMIT = CELL * 0.5;     // クリック→polyline ヒット判定半径
-  const NODE_THRESHOLD = CELL * 0.4; // ノード→polyline 同一線上判定半径
+  const NODE_THRESHOLD = CELL * 0.9; // ノード→polyline 同一線上判定半径
   const SNAP_EPS = 1e-3;             // s が頂点と一致したとみなす許容
   // ---- 1. クリックに最も近い polyline 上の点 (= edge + s_click) を特定 ----
   let best = null; // { ei, segIdx, t, dist, sClick }
@@ -1560,7 +1578,8 @@ cv.addEventListener('pointerdown', function(e) {
     return;
   }
   if (state.mode === 'waypoint') {
-    const snap = _snapMarker(p.x, p.y);
+    const polySnap = _snapToNearestPolyline(p, CELL * 0.6);
+    const snap = polySnap || _snapMarker(p.x, p.y);
     state.waypoints.push({ x: snap.x, y: snap.y, kind: 'manual' });
     afterEdit();
     return;
@@ -1692,8 +1711,12 @@ cv.addEventListener('pointerup', function(e) {
       const idx = dm.index;
       if (idx >= 0 && idx < state.waypoints.length) {
         const w = state.waypoints[idx];
-        snappedPos = _snapMarker(w.x, w.y);
-        state.waypoints[idx] = { x: snappedPos.x, y: snappedPos.y, kind: w.kind || 'manual' };
+        const kind = w.kind || 'manual';
+        // manual waypoint は polyline 上に吸着 (配置時と対称)。 branch/deadend は
+        // 自動生成由来なので従来通りグリッドスナップのみ。
+        const polySnap = (kind === 'manual') ? _snapToNearestPolyline(w, CELL * 0.6) : null;
+        snappedPos = polySnap || _snapMarker(w.x, w.y);
+        state.waypoints[idx] = { x: snappedPos.x, y: snappedPos.y, kind: kind };
       }
     } else if (dm.type === 'obstacle') {
       const idx = dm.index;
