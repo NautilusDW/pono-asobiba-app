@@ -1061,12 +1061,19 @@ function drawEdge(e) {
   ctx.stroke();
   // Polyline ハンドル — ノード (start/goal/waypoint) と重なる頂点はスキップ。
   // = 端点はノードに固結合扱いなので別ハンドルを出さない。中間角点だけ表示。
+  // 端点 (index 0 / length-1) は本来 node 座標と一致するはずだが、
+  // データ生成タイミングのズレで _polyPointOverlapsNode の閾値外に出ると
+  // 「描画はされるが drag できない (= _edgePointHitAt は端点除外)」白い丸になる。
+  // 端点ハンドルは常に node 側に任せ、ここでは中間頂点だけ描画する。
   ctx.setLineDash([]);
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#666';
   ctx.lineWidth = 1.5;
   const r = CELL * 0.18;
-  for (const p of e.polyline) {
+  const last = e.polyline.length - 1;
+  for (let i = 0; i < e.polyline.length; i++) {
+    if (i === 0 || i === last) continue; // 端点は node 側で描画
+    const p = e.polyline[i];
     if (_polyPointOverlapsNode(p)) continue;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
