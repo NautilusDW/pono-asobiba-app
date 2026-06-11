@@ -1,29 +1,22 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1007;
+const CACHE_VERSION = 1008;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
-  // 新しいSWが見つかったら即座にアクティブ化
-  self.skipWaiting();
+  // 開いているゲームへ新しいSWを即時適用すると、controllerchange経由で
+  // ページがリロードされ、ゲームがタイトル状態へ戻ってしまう。
+  // 待機状態にして、次回起動/遷移時に自然に切り替える。
 });
 
 self.addEventListener('activate', event => {
-  // 全キャッシュを削除して最新状態にする + 既存クライアントに通知して強制リロード
-  // iOS ホーム画面 PWA では controllerchange が発火しにくいケースがあるため
-  // postMessage でも通知し、ページ側の message リスナーが reload() する
+  // 旧キャッシュを削除する。既存クライアントは claim せず、プレイ中の
+  // ページを中断しない。新しいSWは次回のページ読み込みから担当する。
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-    .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-    .then(clients => {
-      for (const client of clients) {
-        try { client.postMessage({ type: 'sw-updated', version: CACHE_VERSION }); }
-        catch (e) { /* ignore */ }
-      }
-    })
+    )
   );
 });
 
