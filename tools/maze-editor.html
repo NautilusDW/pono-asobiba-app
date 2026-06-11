@@ -241,8 +241,8 @@ html, body { height: 100vh; overflow: hidden;
     <p style="font-size: 0.7rem; color: #888;">画像をドロップ → ノードと道をクリックで定義 → JSON 書き出し</p>
 
     <h3>1. 画像を読み込む</h3>
-    <input type="file" id="fileInput" accept="image/*">
-    <p style="font-size: 0.7rem; color: #888;">またはキャンバスにドラッグ&ドロップ</p>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <p style="font-size: 0.7rem; color: #888;">またはキャンバスにドラッグ&ドロップ<br>本番画像 2枚 (各1920×1080, 末尾 _L/_R) を同時選択すると横並び合成して 2画面ステージに</p>
 
     <h3>2. ステージ名</h3>
     <input type="text" id="stageName" placeholder="例: forest_entrance" value="">
@@ -394,6 +394,13 @@ html, body { height: 100vh; overflow: hidden;
       🌙 夜モード (ランタンの灯)
     </label>
     <p style="font-size:0.7rem; color:#888; margin-top:4px;">ポノの周りだけ明るく、外は夜の暗さ</p>
+
+    <h3>5b. カメラ</h3>
+    <select id="cameraModeSelect">
+      <option value="follow" selected>追従 (なめらか)</option>
+      <option value="screen">画面切替 (境界でスナップ)</option>
+    </select>
+    <p style="font-size:0.7rem; color:#888; margin-top:4px;">画面切替: プレイヤーが画面境界を跨いだらカメラがその画面へ切り替わる (2画面ステージ向け)</p>
 
     <div class="actions">
       <button id="commitBtn" style="background:#3a6c1f;">💾 本番に保存 (commit)</button>
@@ -552,8 +559,9 @@ function _getCreatureImg(url) {
 // State
 // ────────────────────────────────────────────────────────
 const state = {
-  image: null,          // HTMLImageElement
+  image: null,          // HTMLImageElement (2枚読込時は横並び合成済みの単一画像)
   imgFileName: '',      // e.g. "map.png"
+  sourceImages: null,   // [dataURL_L, dataURL_R] | null — 本番画像 2枚読込時のみ。 undo/draft 対象外。 export/commit で imageUrls として 2枚出力
   imgW: 0, imgH: 0,
   nodes: [],            // { id, x, y, kind: 'start'|'goal'|'stop' }
   edges: [],            // { from, to, controls: [{x,y}], shape?: 'curve'|'polyline' }
@@ -1307,8 +1315,10 @@ function edgeDisplayPolyline(edge) {
 // Image loading (file input + drag/drop)
 // ────────────────────────────────────────────────────────
 fileInput.addEventListener('change', function(e) {
-  const f = e.target.files[0];
-  if (f) loadImageFile(f);
+  const files = Array.prototype.slice.call(e.target.files || []);
+  if (files.length === 2) loadImagePair(files);
+  else if (files.length > 2) showBanner('⚠ 画像は 1枚 または 2枚 (本番 2画面) を選択してね — 中断しました');
+  else if (files[0]) loadImageFile(files[0]);
 });
 
 ['dragenter', 'dragover'].forEach(function(ev) {
@@ -1318,8 +1328,11 @@ fileInput.addEventListener('change', function(e) {
   canvasWrap.addEventListener(ev, function(e) { e.preventDefault(); cv.classList.remove('dragover'); });
 });
 canvasWrap.addEventListener('drop', function(e) {
-  const f = e.dataTransfer.files[0];
-  if (f && f.type.startsWith('image/')) loadImageFile(f);
+  const files = Array.prototype.slice.call(e.dataTransfer.files || [])
+    .filter(function(f) { return f.type.startsWith('image/'); });
+  if (files.length === 2) loadImagePair(files);
+  else if (files.length > 2) showBanner('⚠ 画像は 1枚 または 2枚 (本番 2画面) をドロップしてね — 中断しました');
+  else if (files[0]) loadImageFile(files[0]);
 });
 
 function loadImageFile(file) {
@@ -1329,6 +1342,7 @@ function loadImageFile(file) {
     const img = new Image();
     img.onload = function() {
       state.image = img;
+      state.sourceImages = null; // 1枚読込は従来通り単一 imageUrl 出力
       state.imgW = img.naturalWidth;
       state.imgH = img.naturalHeight;
       emptyMsg.style.display = 'none';
@@ -1352,6 +1366,91 @@ function loadImageFile(file) {
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+// ────────────────────────────────────────────────────────
+// 本番画像 2枚読込 (2画面ステージ用)
+// ファイル名末尾 _L/_R で左右を決定 (無ければ名前順で 左→右)。
+// 各 1920×1080 前提 — 違えば警告バナーを出して中断。
+// 2枚を off-canvas で横並び合成して従来の単一 state.image (3840×1080) にし、
+// 元の 2枚は state.sourceImages に保持 → export/commit 時に imageUrls として出力。
+// ────────────────────────────────────────────────────────
+const PAIR_PANEL_W = 1920, PAIR_PANEL_H = 1080;
+
+function _pairSideFromName(name) {
+  const m = String(name || '').match(/_([LR])\.[^.]+$/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+function loadImagePair(files) {
+  let ordered = files.slice(0, 2);
+  const s0 = _pairSideFromName(ordered[0].name);
+  const s1 = _pairSideFromName(ordered[1].name);
+  if (s0 === 'R' && s1 === 'L') {
+    ordered = [ordered[1], ordered[0]];
+  } else if (!(s0 === 'L' && s1 === 'R')) {
+    // _L/_R が揃っていなければ名前順 (左→右)
+    ordered = ordered.slice().sort(function(a, b) {
+      return String(a.name).localeCompare(String(b.name));
+    });
+  }
+  Promise.all(ordered.map(function(f) {
+    return new Promise(function(resolve, reject) {
+      const reader = new FileReader();
+      reader.onerror = function() { reject(new Error(f.name + ' の読み込みに失敗')); };
+      reader.onload = function(ev) {
+        const img = new Image();
+        img.onload = function() { resolve({ file: f, dataURL: ev.target.result, img: img }); };
+        img.onerror = function() { reject(new Error(f.name + ' を画像として読み込めません')); };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(f);
+    });
+  })).then(function(loaded) {
+    // サイズ検証: 各 1920×1080 前提。 違えば警告して中断 (state は触らない)
+    const bad = loaded.filter(function(o) {
+      return o.img.naturalWidth !== PAIR_PANEL_W || o.img.naturalHeight !== PAIR_PANEL_H;
+    });
+    if (bad.length > 0) {
+      showBanner('⚠ 2枚読込は各 ' + PAIR_PANEL_W + '×' + PAIR_PANEL_H + ' 前提です: '
+        + bad.map(function(o) { return o.file.name + ' (' + o.img.naturalWidth + '×' + o.img.naturalHeight + ')'; }).join(', ')
+        + ' — 中断しました');
+      return;
+    }
+    // off-canvas で横並び合成 → 従来通り単一 state.image にセット (ノード座標はグローバル 0..3840)
+    const c = document.createElement('canvas');
+    c.width = PAIR_PANEL_W * 2;
+    c.height = PAIR_PANEL_H;
+    const cctx = c.getContext('2d');
+    cctx.drawImage(loaded[0].img, 0, 0);
+    cctx.drawImage(loaded[1].img, PAIR_PANEL_W, 0);
+    const composite = new Image();
+    composite.onload = function() {
+      state.image = composite;
+      state.sourceImages = [loaded[0].dataURL, loaded[1].dataURL];
+      state.imgW = composite.naturalWidth;
+      state.imgH = composite.naturalHeight;
+      state.imgFileName = loaded[0].file.name; // 拡張子参照用 (2枚時の export は imageUrls 優先)
+      emptyMsg.style.display = 'none';
+      let rescaled = false;
+      if (state.handoffViewBox
+          && Number.isFinite(state.handoffViewBox.w)
+          && Number.isFinite(state.handoffViewBox.h)
+          && state.handoffViewBox.w > 0 && state.handoffViewBox.h > 0) {
+        rescaled = _rescaleFromHandoffViewBox({ silent: true });
+      }
+      resizeCanvas();
+      draw();
+      let msg = '🖼 2枚を合成: ' + loaded[0].file.name + ' (左) + ' + loaded[1].file.name + ' (右) → ' + state.imgW + ' × ' + state.imgH;
+      if (rescaled) msg += ' (ラフ座標を自動スケール)';
+      showBanner(msg);
+      setTimeout(function() { try { scheduleAutoSave(); } catch (e) {} }, 600);
+    };
+    composite.src = c.toDataURL('image/png');
+  }).catch(function(err) {
+    console.warn('pair image load failed:', err);
+    showBanner('⚠ 2枚読込に失敗: ' + ((err && err.message) || err));
+  });
 }
 
 // ────────────────────────────────────────────────────────
@@ -2878,6 +2977,15 @@ function _applyGimmickItemsToDef(def) {
   });
 }
 
+function _readCameraMode() {
+  const el = document.getElementById('cameraModeSelect');
+  return (el && el.value === 'screen') ? 'screen' : 'follow';
+}
+function _setCameraModeSelect(mode) {
+  const el = document.getElementById('cameraModeSelect');
+  if (el) el.value = (mode === 'screen') ? 'screen' : 'follow';
+}
+
 function buildExportDef() {
   const rawName = (stageNameInput.value || 'stage').trim();
   // 日本語/英数字を残し、ファイル名で危ない文字 (パストラバーサル系) だけ除去
@@ -2892,6 +3000,7 @@ function buildExportDef() {
   const imageRef = 'imageStages/' + safeName + '.' + ext;
   const lanternEnabled = !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked);
   const stageOrder = _readStageOrderInput(1);
+  const hasPair = !!(state.sourceImages && state.sourceImages.length === 2);
   const r = {
     rawName: rawName,
     safeName: safeName,
@@ -2900,7 +3009,6 @@ function buildExportDef() {
       type: 'image',
       name: rawName,
       stageOrder: stageOrder,
-      imageUrl: imageRef,
       viewBox: { w: state.imgW, h: state.imgH },
       orientation: 'landscape',
       cameraFollow: true,
@@ -2933,6 +3041,18 @@ function buildExportDef() {
       }),
     },
   };
+  // 画像参照: 2枚読込時は imageUrls (imageUrl は省略)、 従来は imageUrl 単一 (完全後方互換)。
+  // commit 時は 2枚とも JPEG 圧縮して PUT するため、 拡張子は .jpg 固定。
+  if (hasPair) {
+    r.def.imageUrls = [
+      'imageStages/' + safeName + '_L.jpg',
+      'imageStages/' + safeName + '_R.jpg',
+    ];
+  } else {
+    r.def.imageUrl = imageRef;
+  }
+  // カメラモード: 'screen' 選択時のみ出力 (既定 follow は省略 → 既存 stage と同一出力)
+  if (_readCameraMode() === 'screen') r.def.cameraMode = 'screen';
   _applyGimmickItemsToDef(r.def);
   return r;
 }

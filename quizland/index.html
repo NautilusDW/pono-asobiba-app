@@ -737,11 +737,14 @@ body.sheet-on .hdr-right .ctrl-btn {
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
-  padding: 22px 112px 22px 32px;
+  /* 2026-06-11: padding-right 112→96 で長文質問 (q175 等 24文字) を 1 行に収める */
+  padding: 22px 96px 22px 32px;
   display: flex; align-items: center; justify-content: center; gap: 16px;
   color: var(--text);
   font-weight: 800;
-  font-size: 32px;
+  /* 2026-06-11: font-size 32→28 で長文質問 (q175 等) を 1 行に収める。
+     短文質問は inline-block + text-align:center で違和感を抑制。 */
+  font-size: 28px;
   min-height: 170px;
   line-height: 1.4;
   position: relative;
@@ -766,7 +769,9 @@ body.sheet-on .hdr-right .ctrl-btn {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   position: absolute;
-  right: 18px;
+  /* 2026-06-11: right 18→8 でカード右端に近づけ、 padding-right 縮小と合わせて
+     質問テキスト領域を確保 (q175 等の長文質問 1 行収まり対応)。 */
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   transition: transform 0.2s ease;

@@ -319,6 +319,10 @@ input[type="file"]::file-selector-button {
 
     <div class="actions">
       <button class="btn" id="undoBtn">⤺ 取り消し (1ステップ前に戻す)</button>
+      <label class="toggle-row" id="pngFormatRow" style="display:none;"
+             title="チェックすると 2画面ラフを横並びのまま 1枚の PNG (3840×1080) で保存します。オフなら従来通り _L / _R の 2枚に分割します。">
+        <input type="checkbox" id="pngSingleToggle"> PNG を1枚 (3840×1080) で出力
+      </label>
       <button class="btn primary" id="exportPngBtn">🖼 PNG ダウンロード</button>
       <button class="btn" id="exportJsonBtn">💾 JSON 保存</button>
       <button class="btn" id="copyPromptBtn">📋 AIプロンプト雛形をコピー</button>
@@ -943,6 +947,8 @@ function _obstacleRadius(stride) {
 // Drawing
 // ────────────────────────────────────────────────────────
 function draw() {
+  // PNG 出力形式の選択 UI (2画面時のみ表示) を panels に同期
+  _syncPngFormatRow();
   // 参考画像 (drag-drop で読込んだ下絵) があれば最背面に描画
   if (state.refImage && state.refImage.complete && state.refImage.naturalWidth > 0) {
     ctx.drawImage(state.refImage, 0, 0, CANVAS_W, CANVAS_H);
@@ -2004,8 +2010,18 @@ function showBanner(msg) {
 
 // ────────────────────────────────────────────────────────
 // Export PNG (1-panel: single 1920×1080 PNG;
-//             2-panel: two 1920×1080 PNGs split at the midline, _L / _R)
+//             2-panel: 「2枚 (_L/_R 各1920×1080)」(既定) or
+//                      「1枚 (3840×1080)」 — #pngSingleToggle で選択)
 // ────────────────────────────────────────────────────────
+// 出力形式の選択 UI は panels===2 のときだけ表示する。
+// panels は生成/JSON読込/undo/復元など多数の経路で変わるが、
+// いずれも最後に draw() を通るので draw() 先頭から同期する。
+function _syncPngFormatRow() {
+  const row = document.getElementById('pngFormatRow');
+  if (!row) return;
+  const want = (state.panels === 2) ? 'flex' : 'none';
+  if (row.style.display !== want) row.style.display = want;
+}
 function _cropMainCanvas(srcX) {
   // Returns a Promise<Blob> of a 1920×1080 PNG cropped from the main canvas.
   const off = document.createElement('canvas');
@@ -2053,7 +2069,10 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
     state.edges = prevEdges;
     draw();
   };
-  if (state.panels === 2) {
+  const _singleToggle = document.getElementById('pngSingleToggle');
+  const _exportSingle = state.panels !== 2 || !!(_singleToggle && _singleToggle.checked);
+  if (!_exportSingle) {
+    // 2-panel「2枚 (_L/_R)」(既定)。
     // Always two separate downloads (showSaveFilePicker would prompt twice).
     const left  = await _cropMainCanvas(0);
     const right = await _cropMainCanvas(1920);
@@ -2063,7 +2082,9 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
     restore();
     return;
   }
-  // 1-panel — preserve the existing showSaveFilePicker UX
+  // Single file — 1-panel (1920×1080) or 2-panel「1枚」(3840×1080)。
+  // cv.toBlob は canvas 全幅を出力するのでどちらもそのまま使える。
+  // preserve the existing showSaveFilePicker UX
   const filename = baseName + '.png';
   if (window.showSaveFilePicker) {
     try {

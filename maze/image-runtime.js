@@ -76,13 +76,31 @@
     }
 
     var imageEl = null;
-    if (stageDef.imageUrl) {
+    var imageEls = null;
+    if (Array.isArray(stageDef.imageUrls) && stageDef.imageUrls.length > 0) {
+      // Multi-image stage: N images laid out side by side, each viewBox.w/N wide.
+      // Draw loop checks .complete per image, so no onload bookkeeping needed.
+      imageEls = stageDef.imageUrls.map(function (url) {
+        var img = new Image();
+        img.onerror = function () {
+          try { console.warn('[MazeImage] image failed to load:', url); } catch (e) {}
+        };
+        img.src = url;
+        return img;
+      });
+    } else if (stageDef.imageUrl) {
       imageEl = new Image();
       imageEl.onerror = function () {
         try { console.warn('[MazeImage] image failed to load:', stageDef.imageUrl); } catch (e) {}
       };
       imageEl.src = stageDef.imageUrl;
     }
+
+    // Screen count for cameraMode 'screen': one screen per image,
+    // or round(viewBox.w / 1920) clamped to >= 1 for single-image stages.
+    var screenCount = imageEls
+      ? imageEls.length
+      : Math.max(1, Math.round(vb.w / 1920));
 
     // Obstacles and creatures: pass through, validate coords if present.
     const obstacles = Array.isArray(stageDef.obstacles)
@@ -96,8 +114,11 @@
       type: 'image',
       name: stageDef.name || '',
       image: imageEl,
+      images: imageEls, // null unless stageDef.imageUrls is used
       viewBox: vb,
       cameraFollow: stageDef.cameraFollow !== false,
+      cameraMode: stageDef.cameraMode === 'screen' ? 'screen' : 'follow',
+      screenCount: screenCount,
       orientation: stageDef.orientation || 'landscape',
       lantern: stageDef.lantern || false, // boolean or { innerRadius, outerRadius, ... }
       story: stageDef.story || null, // { animal, intro, cryingIconUrl, reliefIconUrl }
@@ -192,6 +213,32 @@
 
   // dt: seconds since last frame. Time-independent smoothing.
   function updateCamera(stage, targetX, targetY, viewportW, viewportH, dt, scale) {
+    if (stage.cameraMode === 'screen') {
+      // Discrete screen camera: snap camera.x to the left edge of the screen
+      // the player is on (screenW = viewBox.w / screenCount). No horizontal lerp:
+      // crossing the right edge of screen i shows screen i+1 from its left edge.
+      var count = stage.screenCount || 1;
+      var screenW = stage.viewBox.w / count;
+      var idx = Math.floor(targetX / screenW);
+      if (idx < 0) idx = 0;
+      if (idx > count - 1) idx = count - 1;
+      var halfVw = (viewportW / scale) / 2;
+      if (stage.viewBox.w * scale >= viewportW) {
+        stage.camera.x = Math.max(halfVw, Math.min(stage.viewBox.w - halfVw, idx * screenW + halfVw));
+      } else {
+        stage.camera.x = stage.viewBox.w / 2;
+      }
+      // Vertical: keep existing follow behavior (lerp + clamp).
+      var lerpY = 1 - Math.exp(-dt * 8);
+      stage.camera.y += (targetY - stage.camera.y) * lerpY;
+      var halfVh = (viewportH / scale) / 2;
+      if (stage.viewBox.h * scale >= viewportH) {
+        stage.camera.y = Math.max(halfVh, Math.min(stage.viewBox.h - halfVh, stage.camera.y));
+      } else {
+        stage.camera.y = stage.viewBox.h / 2;
+      }
+      return;
+    }
     if (!stage.cameraFollow) {
       stage.camera.x = stage.viewBox.w / 2;
       stage.camera.y = stage.viewBox.h / 2;

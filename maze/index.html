@@ -3326,7 +3326,16 @@ function imgDraw(now) {
   ctx.translate(w / 2, h / 2);
   ctx.scale(drawScale, drawScale);
   ctx.translate(-stage.camera.x, -stage.camera.y);
-  if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
+  if (stage.images && stage.images.length) {
+    // Multi-image stage (imageUrls): each image is viewBox.w/N wide, laid out left to right.
+    const segW = stage.viewBox.w / stage.images.length;
+    for (let si = 0; si < stage.images.length; si++) {
+      const seg = stage.images[si];
+      if (seg && seg.complete && seg.naturalWidth > 0) {
+        ctx.drawImage(seg, si * segW, 0, segW, stage.viewBox.h);
+      }
+    }
+  } else if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
     ctx.drawImage(stage.image, 0, 0, stage.viewBox.w, stage.viewBox.h);
   }
   // Start / Goal markers (decorative, drawn under obstacles & creatures)
