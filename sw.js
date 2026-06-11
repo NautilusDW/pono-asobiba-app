@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1013; // v1013: quizland カレントドット グロー明滅 + 最終問題バッジ
+const CACHE_VERSION = 1014; // v1014: maze screen カメラを iPad 横等の非16:9で画面内追従に修正
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

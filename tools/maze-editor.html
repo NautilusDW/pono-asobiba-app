@@ -3504,7 +3504,9 @@ function _restoreDraft() {
     }
     updateStatus();
     const ago = Math.max(1, Math.floor((Date.now() - (draft.savedAt || 0)) / 60000));
-    showBanner('💾 前回の編集状態を復元 (約 ' + ago + ' 分前)');
+    showBanner(state.wasMultiScreen
+      ? '💾 前回の編集状態を復元 (約 ' + ago + ' 分前) — ⚠ 2画面の画像2枚は復元できません。 本番画像2枚 (_L/_R) を読み込み直してください'
+      : '💾 前回の編集状態を復元 (約 ' + ago + ' 分前)');
     return true;
   } catch (e) {
     console.warn('draft restore failed:', e);
@@ -3607,6 +3609,7 @@ function libBuildSnapshot() {
     stageOrder: orderInput ? _readStageOrderInput(1) : 1,
     lantern: !!(ltEl && ltEl.checked),
     cameraMode: _readCameraMode(),
+    wasPair: !!state.wasMultiScreen, // 2画面ステージ印 — 復元時の劣化 commit ガードに使う
     imgFileName: state.imgFileName || '',
     imgW: state.imgW || 0,
     imgH: state.imgH || 0,
@@ -3619,10 +3622,10 @@ function libBuildSnapshot() {
     nextStopId: state.nextStopId,
     nextCreatureId: state.nextCreatureId,
   };
-  // Image (compressed for size)
+  // Image (compressed for size) — 高さ基準 1080px (3840×1080 合成の縦解像度を維持)
   if (state.image && state.image.complete && state.image.naturalWidth > 0) {
     try {
-      const c = compressImageToDataURL(state.image, 1600, 0.7);
+      const c = compressImageToDataURL(state.image, 1080, 0.7, 'height');
       if (c.length < 4 * 1024 * 1024) snap.image = c;
     } catch (e) { /* skip image if compress fails */ }
   }
@@ -3673,7 +3676,9 @@ function libLoadByName(name) {
   state.imgW = snap.imgW || 0;
   state.imgH = snap.imgH || 0;
   // Restore image
-  state.sourceImages = null; // 2枚読込はライブラリ保存対象外 → 復元時は単一画像扱い
+  state.sourceImages = null; // 元画像 2枚の dataURL はライブラリ非保存 → 復元不可
+  state.wasMultiScreen = !!snap.wasPair; // 2画面印は復元 → _pairGuardOk が劣化 commit をブロック
+  _updatePairWarning();
   if (snap.image) {
     const img = new Image();
     img.onload = function() {
@@ -4401,6 +4406,8 @@ function _applyHandoff(h, opts) {
         if (!composed) return;
         state.image = composed;
         state.sourceImages = null; // ラフ合成はラフ画像 — 本番 2枚は別途読み込む
+        state.wasMultiScreen = false; // ラフは新規ステージ作成フロー (本番 imageUrls 未確定)
+        _updatePairWarning();
         state.imgW = composed.naturalWidth;
         state.imgH = composed.naturalHeight;
         state.imgFileName = (h.name ? String(h.name).replace(/[^a-zA-Z0-9_-]/g, '_') : 'rough_composite') + '_composite.png';
