@@ -563,6 +563,7 @@ const state = {
   image: null,          // HTMLImageElement (2枚読込時は横並び合成済みの単一画像)
   imgFileName: '',      // e.g. "map.png"
   sourceImages: null,   // [dataURL_L, dataURL_R] | null — 本番画像 2枚読込時のみ。 undo/draft 対象外。 export/commit で imageUrls として 2枚出力
+  wasMultiScreen: false, // このステージが 2画面 (imageUrls) ステージかどうか。 sourceImages 無しのまま export/commit すると imageUrls が単一 imageUrl に退化するためガードに使う
   imgW: 0, imgH: 0,
   nodes: [],            // { id, x, y, kind: 'start'|'goal'|'stop' }
   edges: [],            // { from, to, controls: [{x,y}], shape?: 'curve'|'polyline' }
@@ -1213,6 +1214,11 @@ jsonInput.addEventListener('change', function(e) {
       const lt = document.getElementById('lanternToggle');
       if (lt) lt.checked = !!def.lantern;
       _setCameraModeSelect(def.cameraMode);
+      // 2画面ステージ (imageUrls) の検出: 読み込み側でも必ず解釈する。
+      // sourceImages 未読のまま export/commit すると imageUrls が単一 imageUrl に
+      // 退化して本番背景が壊れるため、フラグを立てて _pairGuardOk でブロックする。
+      state.wasMultiScreen = !!(Array.isArray(def.imageUrls) && def.imageUrls.length >= 2);
+      _updatePairWarning();
       // Restore obstacles + creatures
       state.obstacles = _normalizeObstacles(def.obstacles);
       state.creatures = _normalizeCreatures(def.creatures);
@@ -1228,7 +1234,9 @@ jsonInput.addEventListener('change', function(e) {
       draw();
       updateStatus();
       showBanner('JSON 読み込み: ノード ' + state.nodes.length + '・道 ' + state.edges.length);
-      if (!state.image) {
+      if (state.wasMultiScreen && !(state.sourceImages && state.sourceImages.length === 2)) {
+        showBanner('⚠ 2画面ステージ JSON: 本番画像2枚 (_L/_R) を読み込んでね (読み込むまで 保存/書き出し はブロック)');
+      } else if (!state.image) {
         showBanner('画像も読み込んでね (上の「画像を読み込む」)');
       }
     } catch (err) {
@@ -1343,8 +1351,11 @@ function loadImageFile(file) {
   reader.onload = function(ev) {
     const img = new Image();
     img.onload = function() {
+      const wasMulti = !!state.wasMultiScreen;
       state.image = img;
       state.sourceImages = null; // 1枚読込は従来通り単一 imageUrl 出力
+      state.wasMultiScreen = false; // ユーザー明示の 1枚読込 → 単一画像ステージに切替
+      _updatePairWarning();
       state.imgW = img.naturalWidth;
       state.imgH = img.naturalHeight;
       emptyMsg.style.display = 'none';
@@ -1363,6 +1374,7 @@ function loadImageFile(file) {
       draw();
       let msg = '画像を読み込みました: ' + state.imgW + ' × ' + state.imgH;
       if (rescaled) msg += ' (ラフ座標を画像サイズに自動スケール)';
+      if (wasMulti) msg += ' ⚠ 2画面 (imageUrls) → 1枚画像 (imageUrl) に切替わりました';
       showBanner(msg);
     };
     img.src = ev.target.result;
@@ -1430,6 +1442,8 @@ function loadImagePair(files) {
     composite.onload = function() {
       state.image = composite;
       state.sourceImages = [loaded[0].dataURL, loaded[1].dataURL];
+      state.wasMultiScreen = true;
+      _updatePairWarning();
       state.imgW = composite.naturalWidth;
       state.imgH = composite.naturalHeight;
       state.imgFileName = loaded[0].file.name; // 拡張子参照用 (2枚時の export は imageUrls 優先)
@@ -3067,8 +3081,23 @@ function validateForExport() {
   return true;
 }
 
+// 2画面ステージ整合ガード: imageUrls 付きステージ (wasMultiScreen) を
+// sourceImages 無しで export/commit すると buildExportDef が単一 imageUrl
+// (サーバーに存在しない {name}.jpg) を出力し、本番 JSON の imageUrls を
+// 無警告で破壊する。 allowOverride=true (プレビュー等) のみ confirm で続行可。
+function _pairGuardOk(actionLabel, allowOverride) {
+  const hasPair = !!(state.sourceImages && state.sourceImages.length === 2);
+  if (!state.wasMultiScreen || hasPair) return true;
+  if (allowOverride) {
+    return confirm('⚠ このステージは2画面 (imageUrls) ですが、本番画像2枚 (_L/_R) が未読込です。\n「' + actionLabel + '」は合成済みの単一画像で行われます。続けますか?');
+  }
+  alert('⚠ このステージは2画面 (imageUrls 付き) です。\n本番画像2枚 (_L/_R) を読み込み直してから「' + actionLabel + '」してください。\n(このまま保存すると imageUrls が単一 imageUrl に退化し、本番の背景が壊れます)');
+  return false;
+}
+
 document.getElementById('exportBtn').addEventListener('click', function() {
   if (!validateForExport()) return;
+  if (!_pairGuardOk('JSON ダウンロード')) return;
   const r = buildExportDef();
   if (!r.safeName) { alert('ステージ名が無効です'); return; }
 
@@ -3146,6 +3175,7 @@ function trySetSessionImage(img) {
 
 document.getElementById('testBtn').addEventListener('click', function() {
   if (!validateForExport()) return;
+  if (!_pairGuardOk('プレビュー (迷路で試す)', true)) return;
   const r = buildExportDef();
   // Try to stash the image first (with progressive compression fallback).
   // If all levels fail, the runtime will fetch from r.def.imageUrl(s) on the server.
@@ -3183,6 +3213,7 @@ document.getElementById('testBtn').addEventListener('click', function() {
 
 document.getElementById('commitBtn').addEventListener('click', async function() {
   if (!validateForExport()) return;
+  if (!_pairGuardOk('本番に保存 (commit)')) return;
   const r = buildExportDef();
   if (!r.safeName) { alert('ステージ名を入力してね'); return; }
   // 日本語等が _ に置換された場合は警告
@@ -3363,6 +3394,18 @@ if (statusContainer) {
   statusContainer.appendChild(lineDiv);
 }
 
+// 2画面ステージ (imageUrls) で本番画像 2枚が未読込の間は、
+// showBanner (自動で消える) ではなく消えない警告行を常時表示する。
+const pairWarnEl = document.createElement('div');
+pairWarnEl.id = 'pairWarnLine';
+pairWarnEl.style.cssText = 'display:none; font-size:0.75rem; color:#d33; font-weight:bold; margin-top:2px;';
+pairWarnEl.textContent = '⚠ 2画面ステージ: 本番画像2枚 (_L/_R) が未読込 — 読み込み直すまで JSONダウンロード / commit はブロックされます';
+if (statusContainer) statusContainer.appendChild(pairWarnEl);
+function _updatePairWarning() {
+  const need = !!state.wasMultiScreen && !(state.sourceImages && state.sourceImages.length === 2);
+  pairWarnEl.style.display = need ? '' : 'none';
+}
+
 function _setAutoSaveStatus(text, color) {
   if (autoSaveStatusEl) {
     autoSaveStatusEl.textContent = text;
@@ -3385,6 +3428,7 @@ function _doAutoSave() {
       stageOrder: _readStageOrderInput(1),
       lantern: !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked),
       cameraMode: _readCameraMode(),
+      wasPair: !!state.wasMultiScreen, // 2画面ステージ印 — 復元時の劣化 commit ガードに使う
       imgFileName: state.imgFileName,
       imgW: state.imgW,
       imgH: state.imgH,
@@ -3401,7 +3445,9 @@ function _doAutoSave() {
     // Skip if too large for localStorage (~5MB budget).
     if (state.image && state.image.complete && state.image.naturalWidth > 0) {
       try {
-        const c = compressImageToDataURL(state.image, 1600, 0.7);
+        // 高さ基準 1080px: 長辺基準 1600 だと 3840×1080 合成が 1600×450 に劣化し、
+        // 復元後の commit で低解像度のまま本番 PUT される。 4MB ガードは維持。
+        const c = compressImageToDataURL(state.image, 1080, 0.7, 'height');
         if (c.length < 4 * 1024 * 1024) draft.image = c;
       } catch (e) { /* skip image */ }
     }
@@ -3441,7 +3487,9 @@ function _restoreDraft() {
     state.imgFileName = draft.imgFileName || '';
     state.imgW = draft.imgW || 0;
     state.imgH = draft.imgH || 0;
-    state.sourceImages = null; // 2枚読込は draft 対象外 → 復元時は単一画像扱い
+    state.sourceImages = null; // 元画像 2枚の dataURL は draft 非保存 (容量) → 復元不可
+    state.wasMultiScreen = !!draft.wasPair; // 2画面印は復元 → _pairGuardOk が劣化 commit をブロック
+    _updatePairWarning(); // 消えない警告行 (banner は数秒で消えるため)
     if (draft.image) {
       const img = new Image();
       img.onload = function() {
@@ -3809,30 +3857,102 @@ function _restoreFromServerDef(def, fname, stageOrder) {
   updateObstacleEventPanel();
   state.edgeInProgress = null;
   if (typeof edgeProgressEl !== 'undefined' && edgeProgressEl) edgeProgressEl.textContent = '';
-  // 画像も同じディレクトリから取得を試みる (jpg → png の順)
+  // 画像取得: imageUrls (2画面) があれば両画像を fetch して loadImagePair と同じ
+  // 合成で sourceImages ごと復元する。 無ければ従来通り {name}.jpg → {name}.png。
   const baseName = String(fname);
-  const tryImg = function(ext, onFail) {
-    const img = new Image();
-    img.onload = function() {
-      state.image = img;
-      state.sourceImages = null; // サーバー読込は単一画像扱い (2枚再出力する場合は画像 2枚を読み直す)
-      state.imgW = (def.viewBox && def.viewBox.w > 0) ? def.viewBox.w : img.naturalWidth;
-      state.imgH = (def.viewBox && def.viewBox.h > 0) ? def.viewBox.h : img.naturalHeight;
-      state.imgFileName = baseName + '.' + ext;
-      if (emptyMsg) emptyMsg.style.display = 'none';
-      if (typeof resizeCanvas === 'function') resizeCanvas();
-      draw();
+  state.wasMultiScreen = !!(Array.isArray(def.imageUrls) && def.imageUrls.length >= 2);
+  _updatePairWarning();
+  if (state.wasMultiScreen) {
+    _restoreServerImagePair(def, baseName);
+  } else {
+    const tryImg = function(ext, onFail) {
+      const img = new Image();
+      img.onload = function() {
+        state.image = img;
+        state.sourceImages = null; // サーバー読込 (単一 imageUrl) は単一画像扱い
+        state.imgW = (def.viewBox && def.viewBox.w > 0) ? def.viewBox.w : img.naturalWidth;
+        state.imgH = (def.viewBox && def.viewBox.h > 0) ? def.viewBox.h : img.naturalHeight;
+        state.imgFileName = baseName + '.' + ext;
+        if (emptyMsg) emptyMsg.style.display = 'none';
+        if (typeof resizeCanvas === 'function') resizeCanvas();
+        draw();
+      };
+      img.onerror = function() { if (onFail) onFail(); };
+      img.src = SERVER_STAGES_BASE + encodeURIComponent(baseName) + '.' + ext + '?t=' + Date.now();
     };
-    img.onerror = function() { if (onFail) onFail(); };
-    img.src = SERVER_STAGES_BASE + encodeURIComponent(baseName) + '.' + ext + '?t=' + Date.now();
-  };
-  tryImg('jpg', function() { tryImg('png', function() {
-    _serverStageSetStatus('画像未取得 (jpg/png 共に無し)。 ノードのみロード', true);
-  }); });
+    tryImg('jpg', function() { tryImg('png', function() {
+      // stale 画像での誤 commit 防止: 直前に読み込んでいた別画像を state に残さない
+      state.image = null;
+      state.sourceImages = null;
+      state.imgFileName = '';
+      if (emptyMsg) emptyMsg.style.display = '';
+      draw();
+      _serverStageSetStatus('画像未取得 (jpg/png 共に無し)。 ノードのみロード — 画像を読み込み直してください', true);
+    }); });
+  }
   draw();
   updateStatus();
   showBanner('🌲 サーバー読込: ' + (def.name || fname) + ' (ノード ' + state.nodes.length + '・道 ' + state.edges.length + ')');
   _serverStageSetStatus('読込完了: ' + (def.name || fname), false);
+}
+// 2画面ステージのサーバー読込: imageUrls の 2枚を fetch → loadImagePair と同じ
+// 横並び合成で state.image を作り、 各画像の dataURL を state.sourceImages に復元する
+// (これで再 commit しても imageUrls 構成が保たれる)。 取得失敗時は stale 画像を
+// 破棄して null にし、 _pairGuardOk が export/commit をブロックする。
+function _restoreServerImagePair(def, baseName) {
+  const toSrc = function(u) {
+    u = String(u || '');
+    if (/^(https?:)?\/\//.test(u) || u.charAt(0) === '/') {
+      return u + (u.indexOf('?') < 0 ? '?t=' + Date.now() : '');
+    }
+    // 'imageStages/xxx_L.jpg' は maze/ 相対 → tools/ からは ../maze/ を前置
+    return '../maze/' + u.replace(/^(\.\/)+/, '') + '?t=' + Date.now();
+  };
+  Promise.all(def.imageUrls.slice(0, 2).map(function(u) {
+    return new Promise(function(resolve, reject) {
+      const img = new Image();
+      img.onload = function() { resolve(img); };
+      img.onerror = function() { reject(new Error(String(u) + ' の取得に失敗')); };
+      img.src = toSrc(u);
+    });
+  })).then(function(imgs) {
+    const c = document.createElement('canvas');
+    c.width = imgs[0].naturalWidth + imgs[1].naturalWidth;
+    c.height = Math.max(imgs[0].naturalHeight, imgs[1].naturalHeight);
+    const cctx = c.getContext('2d');
+    cctx.drawImage(imgs[0], 0, 0);
+    cctx.drawImage(imgs[1], imgs[0].naturalWidth, 0);
+    // sourceImages は PNG dataURL (JPEG 再圧縮の世代劣化を避ける。 commit 時に h=1080 Q70 で再 JPEG 化)
+    const dataURLs = imgs.map(function(im) {
+      const cc = document.createElement('canvas');
+      cc.width = im.naturalWidth; cc.height = im.naturalHeight;
+      cc.getContext('2d').drawImage(im, 0, 0);
+      return cc.toDataURL('image/png');
+    });
+    const composite = new Image();
+    composite.onload = function() {
+      state.image = composite;
+      state.sourceImages = dataURLs;
+      state.imgW = (def.viewBox && def.viewBox.w > 0) ? def.viewBox.w : composite.naturalWidth;
+      state.imgH = (def.viewBox && def.viewBox.h > 0) ? def.viewBox.h : composite.naturalHeight;
+      state.imgFileName = baseName + '_L.jpg';
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      if (typeof resizeCanvas === 'function') resizeCanvas();
+      draw();
+      _updatePairWarning();
+      _serverStageSetStatus('読込完了 (2画面: 画像2枚を復元): ' + baseName, false);
+    };
+    composite.src = c.toDataURL('image/png');
+  }).catch(function(err) {
+    // stale 画像での誤 commit 防止: 画像を破棄して再読込まで保存をブロック
+    state.image = null;
+    state.sourceImages = null;
+    state.imgFileName = '';
+    if (emptyMsg) emptyMsg.style.display = '';
+    draw();
+    _updatePairWarning();
+    _serverStageSetStatus('2画面画像の取得失敗: ' + ((err && err.message) || err) + ' — 画像2枚 (_L/_R) を読み込み直すまで 保存/書き出し 不可', true);
+  });
 }
 function loadServerStage() {
   const sel = document.getElementById('serverStageSelect');

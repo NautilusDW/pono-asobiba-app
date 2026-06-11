@@ -214,17 +214,25 @@
   // dt: seconds since last frame. Time-independent smoothing.
   function updateCamera(stage, targetX, targetY, viewportW, viewportH, dt, scale) {
     if (stage.cameraMode === 'screen') {
-      // Discrete screen camera: snap camera.x to the left edge of the screen
-      // the player is on (screenW = viewBox.w / screenCount). No horizontal lerp:
-      // crossing the right edge of screen i shows screen i+1 from its left edge.
+      // Discrete screen camera: the camera stays inside the screen the player
+      // is on (screenW = viewBox.w / screenCount) and snaps instantly (no
+      // horizontal lerp) when a boundary is crossed. Within a screen the
+      // camera follows the player horizontally when the visible world width
+      // (viewportW / scale) is narrower than screenW (e.g. iPad landscape
+      // 4:3 / 16:10), so the player can never leave the viewport.
       var count = stage.screenCount || 1;
       var screenW = stage.viewBox.w / count;
       var idx = Math.floor(targetX / screenW);
       if (idx < 0) idx = 0;
       if (idx > count - 1) idx = count - 1;
       var halfVw = (viewportW / scale) / 2;
+      var lo = idx * screenW + halfVw;        // camera.x at screen-left alignment
+      var hi = (idx + 1) * screenW - halfVw;  // camera.x at screen-right alignment
+      // hi < lo: visible width >= screenW (whole screen fits) → keep the
+      // original screen-left alignment. Otherwise clamp-follow inside screen.
+      var cx = (hi >= lo) ? Math.max(lo, Math.min(hi, targetX)) : lo;
       if (stage.viewBox.w * scale >= viewportW) {
-        stage.camera.x = Math.max(halfVw, Math.min(stage.viewBox.w - halfVw, idx * screenW + halfVw));
+        stage.camera.x = Math.max(halfVw, Math.min(stage.viewBox.w - halfVw, cx));
       } else {
         stage.camera.x = stage.viewBox.w / 2;
       }
