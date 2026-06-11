@@ -1130,6 +1130,20 @@
     background: linear-gradient(135deg, #A7F3D0, #10B981);
     color: #064E3B;
   }
+  body.rhythm-layout .rhythm-special-bubble {
+    left: calc(61% + 78px);
+    top: calc(29% - 36px);
+    transform: translate(0, -50%);
+    z-index: 8;
+    min-width: 152px;
+    max-width: min(34vw, 240px);
+  }
+  body.rhythm-layout .rhythm-special-bubble::after {
+    left: -12px;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%) rotate(135deg);
+  }
   .rhythm-queue {
     display: none;
     align-items: center;
@@ -1705,6 +1719,76 @@
       width: 100%;
     }
   }
+  .start-mode-choice {
+    position: fixed;
+    inset: 0;
+    z-index: 980;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    background:
+      radial-gradient(circle at 50% 18%, rgba(255,248,224,0.18), transparent 36%),
+      rgba(7,19,49,0.62);
+    pointer-events: auto;
+  }
+  .start-mode-choice.show { display: flex; }
+  .start-mode-panel {
+    width: min(90vw, 500px);
+    padding: 24px 24px 26px;
+    border-radius: 24px;
+    border: 3px solid rgba(255,255,255,0.86);
+    background: rgba(18,35,86,0.94);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.34);
+    text-align: center;
+  }
+  .start-mode-title {
+    color: #FDE68A;
+    font-size: clamp(1.7rem, 5vw, 2.45rem);
+    font-weight: 900;
+    line-height: 1.1;
+    text-shadow: 0 3px 8px rgba(0,0,0,0.34);
+  }
+  .start-mode-text {
+    margin-top: 10px;
+    color: rgba(255,255,255,0.92);
+    font-size: clamp(0.95rem, 2.8vw, 1.18rem);
+    font-weight: 900;
+    line-height: 1.45;
+  }
+  .start-mode-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .start-mode-btn {
+    min-height: 82px;
+    border: 3px solid rgba(255,255,255,0.86);
+    border-radius: 20px;
+    padding: 12px 10px;
+    font-family: inherit;
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.24);
+  }
+  .start-mode-btn.free {
+    background: linear-gradient(135deg, #FDE68A, #F59E0B);
+    color: #5D3A00;
+  }
+  .start-mode-btn.rhythm {
+    background: linear-gradient(135deg, #A7F3D0, #34D399);
+    color: #064E3B;
+  }
+  .start-mode-btn:active {
+    transform: translateY(3px) scale(0.98);
+  }
+  @media (max-width: 540px) {
+    .start-mode-actions { grid-template-columns: 1fr; }
+    .start-mode-btn { min-height: 62px; }
+  }
 
   /* ── チュートリアル (bento のスタイルを踏襲) ── */
   .tut-dim { position:fixed; inset:0; z-index:9995; background:rgba(93,78,55,0.6); pointer-events:auto; }
@@ -2177,6 +2261,17 @@
   </div>
 </div>
 
+<div class="start-mode-choice" id="start-mode-choice" role="dialog" aria-modal="true" aria-label="あそびかたをえらぶ">
+  <div class="start-mode-panel">
+    <div class="start-mode-title">どっちで あそぶ？</div>
+    <div class="start-mode-text">あとで いつでも きりかえられるよ</div>
+    <div class="start-mode-actions">
+      <button class="start-mode-btn free" data-start-mode="free">じゆう</button>
+      <button class="start-mode-btn rhythm" data-start-mode="rhythm">リズム</button>
+    </div>
+  </div>
+</div>
+
 <div id="app">
   <div class="stage" id="stage">
     <!-- 最下層: 背景 Canvas (グラデ + 環境バブル + 波紋 + パーティクル) -->
@@ -2273,8 +2368,8 @@
     <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
       <div class="rhythm-menu-panel">
         <div class="rhythm-menu-title">リズムでえんそう</div>
-        <div class="rhythm-menu-text">ブロックが下のラインに来たらタッチ。<br>光るボタンの列で あわせよう。</div>
-        <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>奥から来るブロックを見て押そう</span></div>
+        <div class="rhythm-menu-text">ブロックが したの ラインに きたら タッチ。</div>
+        <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>おくから くる ブロックを みて おそう</span></div>
         <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
         <div class="rhythm-song-list" id="rhythm-song-list"></div>
         <div class="rhythm-practice" id="rhythm-practice">
@@ -3137,8 +3232,8 @@ var RHYTHM_SONGS = [
       {
         name: '2',
         note: 'るよ グワッ',
-        notes: [2, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 2, 1, 0],
-        beats: [2, 2, 2, 2, 2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 1, 2]
+        notes: [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 2, 1, 0],
+        beats: [2, 2, 2, 2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 1, 2]
       }
     ]
   },
@@ -6304,20 +6399,47 @@ setupOtoMenu();
 (function() {
   var intro = document.getElementById('intro');
   var introBtn = document.getElementById('introBtn');
+  var startChoice = document.getElementById('start-mode-choice');
   if (!intro || !introBtn) return;
-  function startIntro() {
-    unlockAudio();
-    _ensureAnimalDecoded();
-    document.body.classList.add('app-started');
-    if (intro) intro.style.display = 'none';
-    // 初回だけチュートリアルを自動表示
+  function maybeShowInitialTutorial() {
     try {
       if (!localStorage.getItem(TUT_SEEN_KEY)) {
         setTimeout(showTutorial, 500);
       }
     } catch (e) {}
   }
+  function hideStartChoice() {
+    if (startChoice) startChoice.classList.remove('show');
+  }
+  function showStartChoice() {
+    if (startChoice) startChoice.classList.add('show');
+  }
+  function startIntro() {
+    unlockAudio();
+    _ensureAnimalDecoded();
+    document.body.classList.add('app-started');
+    if (intro) intro.style.display = 'none';
+    _hideRhythmMenu();
+    setPlayMode('free');
+    showStartChoice();
+  }
   intro.addEventListener('click', startIntro);
+  if (startChoice) {
+    startChoice.querySelectorAll('.start-mode-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        unlockAudio();
+        hideStartChoice();
+        if (btn.dataset.startMode === 'rhythm') {
+          _showRhythmMenu();
+        } else {
+          setPlayMode('free');
+          maybeShowInitialTutorial();
+        }
+      });
+    });
+  }
 })();
 
 // ════════════════════════════════════════════════════════════
