@@ -1246,10 +1246,20 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    width: min(100%, 430px);
+    width: min(100%, 470px);
+  }
+  .rhythm-stage-status {
+    min-height: 1.25rem;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.88);
+    font-size: 0.82rem;
+    font-weight: 900;
+    line-height: 1.2;
   }
   .rhythm-song-choice {
-    min-height: 48px;
+    min-height: 64px;
     border-radius: 15px;
     border: 3px solid rgba(255,255,255,0.68);
     background: rgba(255,255,255,0.12);
@@ -1264,6 +1274,36 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
+    position: relative;
+  }
+  .rhythm-song-choice.locked {
+    opacity: 0.46;
+    filter: grayscale(0.8);
+    cursor: default;
+  }
+  .rhythm-song-choice:disabled {
+    pointer-events: none;
+  }
+  .rhythm-song-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    font-size: 0.64rem;
+    line-height: 1;
+  }
+  .rhythm-stage-badge,
+  .rhythm-clear-badge {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.9);
+  }
+  .rhythm-song-choice.active .rhythm-stage-badge,
+  .rhythm-song-choice.active .rhythm-clear-badge {
+    background: rgba(93,78,55,0.14);
+    color: #5D4E37;
   }
   .rhythm-song-name {
     font-size: 1.05rem;
@@ -1370,7 +1410,7 @@
   }
   .rhythm-complete.show { display: flex; }
   .rhythm-complete-panel {
-    width: min(86vw, 420px);
+    width: min(90vw, 480px);
     padding: 22px 24px 24px;
     border: 3px solid rgba(255,255,255,0.88);
     border-radius: 20px;
@@ -1446,6 +1486,14 @@
   .rhythm-complete-btn.next {
     background: linear-gradient(180deg, #B7F7D2, #34D399);
     color: #064E3B;
+  }
+  .rhythm-complete-btn.select {
+    background: linear-gradient(180deg, #BAE6FD, #38BDF8);
+    color: #082F49;
+  }
+  .rhythm-complete-btn.demo {
+    background: linear-gradient(180deg, #DDD6FE, #A78BFA);
+    color: #3B0764;
   }
   .rhythm-complete-btn.hidden {
     display: none;
@@ -2225,8 +2273,9 @@
     <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
       <div class="rhythm-menu-panel">
         <div class="rhythm-menu-title">リズムでえんそう</div>
-        <div class="rhythm-menu-text">輪っかがボタンに重なったらタッチ。<br>小さい番号が つぎのじゅんばんだよ。</div>
-        <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>同じ速さで小さくなる輪っかを見て押そう</span></div>
+        <div class="rhythm-menu-text">ブロックが下のラインに来たらタッチ。<br>光るボタンの列で あわせよう。</div>
+        <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>奥から来るブロックを見て押そう</span></div>
+        <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
         <div class="rhythm-song-list" id="rhythm-song-list"></div>
         <div class="rhythm-practice" id="rhythm-practice">
           <div class="rhythm-practice-row">
@@ -2255,6 +2304,8 @@
         <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
           <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
           <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
+          <button class="rhythm-complete-btn demo" id="rhythm-complete-demo">おてほん</button>
+          <button class="rhythm-complete-btn select" id="rhythm-complete-select">きょくをえらぶ</button>
           <button class="rhythm-complete-btn next hidden" id="rhythm-complete-next">つぎのパート</button>
         </div>
       </div>
@@ -3070,6 +3121,8 @@ var RHYTHM_SONGS = [
     id: 'kaeru',
     name: 'かえるのうた',
     note: 'かんたん',
+    stage: 1,
+    difficulty: 'かんたん',
     bpm: 90,
     bandSongId: 'kaeru90',
     bandStems: ['drums'],
@@ -3093,6 +3146,8 @@ var RHYTHM_SONGS = [
     id: 'twinkle',
     name: 'きらきらぼし',
     note: 'かんたん',
+    stage: 3,
+    difficulty: 'かんたん',
     bpm: 90,
     bandSongId: 'twinkle90',
     bandStems: ['drums'],
@@ -3122,6 +3177,8 @@ var RHYTHM_SONGS = [
     id: 'mary',
     name: 'メリーさん',
     note: 'かんたん',
+    stage: 2,
+    difficulty: 'かんたん',
     bpm: 90,
     bandSongId: 'mary90',
     bandStems: ['drums'],
@@ -3145,6 +3202,8 @@ var RHYTHM_SONGS = [
     id: 'choucho',
     name: 'ちょうちょう',
     note: 'かんたん',
+    stage: 4,
+    difficulty: 'ふつう',
     bpm: 90,
     bandSongId: 'choucho90',
     bandStems: ['drums'],
@@ -3168,6 +3227,8 @@ var RHYTHM_SONGS = [
     id: 'london',
     name: 'ロンドンばし',
     note: 'かんたん',
+    stage: 5,
+    difficulty: 'ふつう',
     bpm: 90,
     bandSongId: 'london90',
     bandStems: ['drums'],
@@ -3191,6 +3252,8 @@ var RHYTHM_SONGS = [
     id: 'ode',
     name: 'よろこびのうた',
     note: 'むずかしめ',
+    stage: 6,
+    difficulty: 'むずかしめ',
     bpm: 100,
     bandSongId: 'ode100',
     bandStems: ['drums'],
@@ -3212,7 +3275,7 @@ var RHYTHM_SONGS = [
   }
 ];
 var RHYTHM_BASE_SONG = RHYTHM_SONGS[0];
-var RHYTHM_PRACTICE_MODE = 'block';
+var RHYTHM_PRACTICE_MODE = 'full';
 var RHYTHM_SECTION_INDEX = 0;
 var RHYTHM_SONG = _buildRhythmSong(RHYTHM_BASE_SONG);
 var RHYTHM_GOOD_MS = 220;
@@ -3294,6 +3357,92 @@ var _rhythm = {
 };
 
 var RHYTHM_DEMO_SEEN_KEY = 'pono_oto_rhythm_demo_seen_v1';
+var RHYTHM_PROGRESS_KEY = 'pono_oto_rhythm_progress_v1';
+
+function _rhythmSongStage(song) {
+  if (!song) return 1;
+  if (song.stage) return song.stage;
+  var idx = RHYTHM_SONGS.indexOf(song);
+  return idx >= 0 ? idx + 1 : 1;
+}
+function _rhythmSongsByStage() {
+  return RHYTHM_SONGS.slice().sort(function(a, b) {
+    return _rhythmSongStage(a) - _rhythmSongStage(b);
+  });
+}
+function _rhythmProgressDefault() {
+  return { unlockedStage: 1, cleared: {}, stars: {} };
+}
+function _loadRhythmProgress() {
+  var progress = _rhythmProgressDefault();
+  try {
+    var parsed = JSON.parse(localStorage.getItem(RHYTHM_PROGRESS_KEY) || '{}');
+    if (parsed && typeof parsed === 'object') {
+      progress.unlockedStage = Math.max(1, parsed.unlockedStage || 1);
+      progress.cleared = parsed.cleared && typeof parsed.cleared === 'object' ? parsed.cleared : {};
+      progress.stars = parsed.stars && typeof parsed.stars === 'object' ? parsed.stars : {};
+    }
+  } catch(e) {}
+  return progress;
+}
+function _saveRhythmProgress(progress) {
+  try { localStorage.setItem(RHYTHM_PROGRESS_KEY, JSON.stringify(progress)); } catch(e) {}
+}
+function _rhythmSongCleared(song, progress) {
+  progress = progress || _loadRhythmProgress();
+  return !!(song && progress.cleared && progress.cleared[song.id]);
+}
+function _rhythmSongStars(song, progress) {
+  progress = progress || _loadRhythmProgress();
+  var value = song && progress.stars ? parseInt(progress.stars[song.id], 10) : 0;
+  return Math.max(0, Math.min(3, value || 0));
+}
+function _rhythmSongUnlocked(song, progress) {
+  progress = progress || _loadRhythmProgress();
+  if (!song) return false;
+  return _rhythmSongStage(song) <= Math.max(1, progress.unlockedStage || 1) || _rhythmSongCleared(song, progress);
+}
+function _markRhythmSongCleared(stars) {
+  if (RHYTHM_PRACTICE_MODE !== 'full' || !RHYTHM_BASE_SONG) return false;
+  var progress = _loadRhythmProgress();
+  var stage = _rhythmSongStage(RHYTHM_BASE_SONG);
+  var id = RHYTHM_BASE_SONG.id;
+  progress.cleared[id] = true;
+  progress.stars[id] = Math.max(_rhythmSongStars(RHYTHM_BASE_SONG, progress), Math.max(1, Math.min(3, stars || 1)));
+  progress.unlockedStage = Math.max(Math.max(1, progress.unlockedStage || 1), stage + 1);
+  _saveRhythmProgress(progress);
+  return true;
+}
+function _nextRhythmStageSong(song) {
+  var progress = _loadRhythmProgress();
+  var currentStage = _rhythmSongStage(song || RHYTHM_BASE_SONG);
+  var sorted = _rhythmSongsByStage();
+  for (var i = 0; i < sorted.length; i++) {
+    if (_rhythmSongStage(sorted[i]) > currentStage && _rhythmSongUnlocked(sorted[i], progress)) {
+      return sorted[i];
+    }
+  }
+  return null;
+}
+function _goToNextRhythmStage() {
+  var next = _nextRhythmStageSong(RHYTHM_BASE_SONG);
+  if (!next) return false;
+  RHYTHM_BASE_SONG = next;
+  RHYTHM_SECTION_INDEX = 0;
+  RHYTHM_PRACTICE_MODE = 'full';
+  _refreshRhythmSong();
+  _renderRhythmSongMenu();
+  _updateRhythmMenuActions();
+  return true;
+}
+function _rhythmStageSummary() {
+  var progress = _loadRhythmProgress();
+  var total = RHYTHM_SONGS.length;
+  var unlocked = Math.min(total, Math.max(1, progress.unlockedStage || 1));
+  var current = _rhythmSongStage(RHYTHM_BASE_SONG);
+  var clearedCount = RHYTHM_SONGS.filter(function(song) { return _rhythmSongCleared(song, progress); }).length;
+  return 'ステージ ' + current + ' / ' + total + '　クリア ' + clearedCount + ' / ' + total + '　あそべる ' + unlocked + ' まで';
+}
 
 function _rhythmSections(song) {
   return (song && song.sections && song.sections.length) ? song.sections : [];
@@ -3404,6 +3553,10 @@ function _rhythmTargetAcTimeFor(seqIndex) {
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
   if (!found) return;
+  if (!_rhythmSongUnlocked(found)) {
+    _setRhythmStatus('まえのステージを クリアしてね', 'warn');
+    return;
+  }
   // Phase 2 future-use: rhythm song tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
   // isOtoRhythmSongUnlocked() always returns true so this branch is unreachable.
   if (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(id)) {
@@ -3473,10 +3626,21 @@ function _updateRhythmMenuActions() {
 function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
   if (!list) return;
-  list.innerHTML = RHYTHM_SONGS.map(function(song) {
+  var status = document.getElementById('rhythm-stage-status');
+  if (status) status.textContent = _rhythmStageSummary();
+  var progress = _loadRhythmProgress();
+  list.innerHTML = _rhythmSongsByStage().map(function(song) {
     var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
     var locked = (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(song.id)) ? ' tier-locked' : '';
-    return '<button class="rhythm-song-choice' + active + locked + '" data-song="' + song.id + '"><span class="rhythm-song-name">' + song.name + '</span><span class="rhythm-song-note">' + song.note + '</span></button>';
+    var stageLocked = !_rhythmSongUnlocked(song, progress);
+    var cleared = _rhythmSongCleared(song, progress);
+    var stars = _rhythmSongStars(song, progress);
+    var statusText = stageLocked ? 'ロック' : (cleared ? ('★'.repeat(Math.max(1, stars))) : 'NEW');
+    var disabled = stageLocked ? ' disabled aria-disabled="true"' : '';
+    var stageClass = stageLocked ? ' locked' : '';
+    return '<button class="rhythm-song-choice' + active + locked + stageClass + '" data-song="' + song.id + '"' + disabled + '>' +
+      '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span></span>' +
+      '<span class="rhythm-song-name">' + song.name + '</span><span class="rhythm-song-note">' + (song.difficulty || song.note) + '</span></button>';
   }).join('');
   list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -4564,20 +4728,34 @@ function _showRhythmComplete(result) {
   result = result || {};
   var stars = Math.max(1, Math.min(3, result.stars || 1));
   var hasNextPart = !!result.hasNextPart;
+  var clearedFullSong = RHYTHM_PRACTICE_MODE === 'full';
+  if (clearedFullSong) _markRhythmSongCleared(stars);
+  var nextStageSong = !hasNextPart ? _nextRhythmStageSong(RHYTHM_BASE_SONG) : null;
   var complete = document.getElementById('rhythm-complete');
   var title = document.getElementById('rhythm-complete-title');
   var text = document.getElementById('rhythm-complete-text');
   var actions = document.getElementById('rhythm-complete-actions');
   var next = document.getElementById('rhythm-complete-next');
+  var select = document.getElementById('rhythm-complete-select');
+  var demo = document.getElementById('rhythm-complete-demo');
   if (!complete) return;
   if (title) title.textContent = stars >= 3 ? 'よくできたね' : (stars === 2 ? 'いいね' : 'さいごまで できたね');
   _renderRhythmResultStars(stars);
-  if (text) text.textContent = 'リズムだけ きいてね';
+  if (text) text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
   if (actions) actions.classList.add('hidden');
-  if (next) next.classList.toggle('hidden', !hasNextPart);
+  if (next) {
+    next.textContent = hasNextPart ? 'つぎのパート' : 'つぎのステージ';
+    next.classList.toggle('hidden', !(hasNextPart || nextStageSong));
+  }
+  if (select) select.classList.remove('hidden');
+  if (demo) demo.classList.remove('hidden');
   complete.classList.add('show');
   _rhythm.completeTimers.push(setTimeout(function() {
-    if (text) text.textContent = hasNextPart ? 'つぎのパートへ いけるよ' : 'もっと れんしゅうする？';
+    if (text) {
+      text.textContent = hasNextPart
+        ? 'つぎのパートへ いけるよ'
+        : (nextStageSong ? 'つぎのステージも あそべるよ' : 'べつのきょくも えらべるよ');
+    }
     if (actions) actions.classList.remove('hidden');
   }, 900));
 }
@@ -5355,6 +5533,22 @@ if (rhythmCompleteAgain) rhythmCompleteAgain.addEventListener('click', function(
   _hideRhythmComplete();
   _beginRhythmCountdown();
 });
+var rhythmCompleteDemo = document.getElementById('rhythm-complete-demo');
+if (rhythmCompleteDemo) rhythmCompleteDemo.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  _hideRhythmComplete();
+  _startRhythmDemo(false);
+});
+var rhythmCompleteSelect = document.getElementById('rhythm-complete-select');
+if (rhythmCompleteSelect) rhythmCompleteSelect.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  _hideRhythmComplete();
+  _showRhythmMenu();
+});
 var rhythmCompleteDone = document.getElementById('rhythm-complete-done');
 if (rhythmCompleteDone) rhythmCompleteDone.addEventListener('click', function(e) {
   e.preventDefault();
@@ -5367,7 +5561,7 @@ if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e)
   e.preventDefault();
   e.stopPropagation();
   unlockAudio();
-  if (!_goToNextRhythmSection()) return;
+  if (!_goToNextRhythmSection() && !_goToNextRhythmStage()) return;
   _hideRhythmComplete();
   _beginRhythmCountdown();
 });
