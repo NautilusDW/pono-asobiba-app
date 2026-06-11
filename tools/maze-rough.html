@@ -523,13 +523,8 @@ const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 // ラフ→エディタ handoff: ラフを編集している裏で常時 localStorage に書き出しておき、
 // エディタ (tools/maze-editor.html) を開いた時にそのまま state を復元させる。
 // 合意済みフォーマット (version:1) — 詳しくは _buildHandoff() / _doAutoSaveHandoff() を参照。
-const HANDOFF_KEY = 'pono_maze_rough_handoff_v1';
-// 2画面ラフ (panels===2) の canvas snapshot を編集側へ受け渡す IndexedDB のキー。
-// 1920×1080 PNG dataURL を 2 枚保持するため localStorage の 5MB 制限を回避。
-// 詳しくは _handoffIdbPut / maze-editor.html の _handoffIdbGet を参照。
-const HANDOFF_IDB_NAME = 'pono_maze_handoff_v1';
-const HANDOFF_IDB_STORE = 'images';
-const HANDOFF_IDB_KEY = 'rough_handoff_images';
+// HANDOFF_KEY / HANDOFF_IDB_NAME / HANDOFF_IDB_STORE / HANDOFF_IDB_KEY は
+// maze-shared.js で定義 (エディタ側と共通)。
 
 // ────────────────────────────────────────────────────────
 // State
@@ -2244,39 +2239,8 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
 // Phase 4: 本番保存 — ラフ → image-stage 形式変換 + GitHub commit
 // ────────────────────────────────────────────────────────
 (function () {
-  const REPO_OWNER = 'NautilusDW';
-  const REPO_NAME  = 'pono-asobiba-app';
-  const REPO_BRANCH = 'develop';
-
-  // UTF-8 セーフな btoa (日本語ステージ名対応)
-  function utf8Btoa(str) {
-    return btoa(unescape(encodeURIComponent(str)));
-  }
-
-  async function ghGet(path) {
-    const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' +
-                encodeURI(path) + '?ref=' + REPO_BRANCH;
-    const resp = await fetch(url, {
-      method: 'GET', credentials: 'include',
-      headers: { 'Accept': 'application/vnd.github+json' },
-    });
-    if (resp.status === 404) return null;
-    if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
-    return await resp.json();
-  }
-
-  async function ghPut(path, contentB64, message, sha) {
-    const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' + encodeURI(path);
-    const body = { message: message, content: contentB64, branch: REPO_BRANCH };
-    if (sha) body.sha = sha;
-    const resp = await fetch(url, {
-      method: 'PUT', credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
-      body: JSON.stringify(body),
-    });
-    if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 300));
-    return await resp.json();
-  }
+  // REPO_OWNER / REPO_NAME / REPO_BRANCH と utf8Btoa / ghGet / ghPut は
+  // maze-shared.js で定義 (エディタ側と共通)。
 
   // 本番画像を 1600w / Q70 JPEG に圧縮し data URL を返す
   function compressImageToDataURL(img, maxW, quality) {
@@ -2780,21 +2744,7 @@ function _doAutoSave() {
 // ────────────────────────────────────────────────────────
 // 2画面ラフ用 IndexedDB ヘルパ: localStorage の 5MB 制限を超える PNG dataURL を
 // 別ストアに置き、 localStorage の handoff payload には imagesKey 参照だけを残す。
-function _handoffIdbOpen() {
-  return new Promise(function(res, rej) {
-    try {
-      const r = indexedDB.open(HANDOFF_IDB_NAME, 1);
-      r.onupgradeneeded = function() {
-        const db = r.result;
-        if (!db.objectStoreNames.contains(HANDOFF_IDB_STORE)) {
-          db.createObjectStore(HANDOFF_IDB_STORE);
-        }
-      };
-      r.onsuccess = function() { res(r.result); };
-      r.onerror = function() { rej(r.error); };
-    } catch (e) { rej(e); }
-  });
-}
+// _handoffIdbOpen は maze-shared.js で定義 (エディタ側と共通)。
 function _handoffIdbPut(images) {
   return _handoffIdbOpen().then(function(db) {
     return new Promise(function(res, rej) {

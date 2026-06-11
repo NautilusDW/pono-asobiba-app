@@ -496,6 +496,7 @@ html, body { height: 100vh; overflow: hidden;
   </main>
 </div>
 
+<script src="maze-shared.js"></script>
 <script>
 'use strict';
 
@@ -3177,41 +3178,8 @@ document.getElementById('testBtn').addEventListener('click', function() {
 // ────────────────────────────────────────────────────────
 // Commit to project (via /api/gh/ — Cloudflare Worker GitHub proxy)
 // ────────────────────────────────────────────────────────
-const REPO_OWNER = 'NautilusDW';
-const REPO_NAME = 'pono-asobiba-app';
-const REPO_BRANCH = 'develop';
-
-// btoa with UTF-8 safety: handles JSON containing non-ASCII (Japanese stage names)
-function utf8Btoa(str) {
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-async function ghGet(path) {
-  const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' +
-              encodeURI(path) + '?ref=' + REPO_BRANCH;
-  const resp = await fetch(url, {
-    method: 'GET',
-    credentials: 'include',
-    headers: { 'Accept': 'application/vnd.github+json' },
-  });
-  if (resp.status === 404) return null;
-  if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
-  return await resp.json();
-}
-
-async function ghPut(path, contentB64, message, sha) {
-  const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' + encodeURI(path);
-  const body = { message: message, content: contentB64, branch: REPO_BRANCH };
-  if (sha) body.sha = sha;
-  const resp = await fetch(url, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 300));
-  return await resp.json();
-}
+// REPO_OWNER / REPO_NAME / REPO_BRANCH と utf8Btoa / ghGet / ghPut は
+// maze-shared.js で定義 (ラフ側と共通)。
 
 document.getElementById('commitBtn').addEventListener('click', async function() {
   if (!validateForExport()) return;
