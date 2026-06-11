@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:426-maze-peek-quiz-animal-raw] DONE - Codex: チラッとクイズ用の `lion` / `kuma` / `kujira` / `neko` 4点を GPT Image 2 raw として再生成し、`tmp/alpha_pending/426_maze_peek_quiz_animals_raw/` に `lion_raw.png` / `kuma_raw.png` / `kujira_raw.png` / `neko_raw.png` で保存。アルファ抜き・切り抜き・最終 `assets/` 差し替えは未実施。 (by Codex)
 - 2026-06-11 - [batch:425-oto-rhythm-thin-cylinder-webgl-keys] DONE - Codex: OtoTouchリズムの移動ノードをより薄い平面寄りの円柱コインへ調整し、下のドレミファソラシドはDOM/CSS傾きではなくWebGL描画の薄い3D角丸キーへ差し替え。DOMボタンは透明なタップ領域として残し、WebGLキーは押下中に沈む・ヒット時に光る・ターゲット時に軽く強調される。`sw.js` / `PAGE_CACHE_VERSION` は v1029。Node inline script parse、`git diff --check`、UTF-8/LF確認、Playwrightでdesktop/mobileのWebGLキー表示、押下中/解放後の再描画、横overflow 0を確認。 (by Codex)
 - 2026-06-11 - [batch:424-oto-rhythm-cylinder-notes-3d-keys] DONE - Codex: OtoTouchリズムの移動ノードを四角ブロックからWebGL円柱コインへ変更し、落下ノートは参考画像寄りの丸い音符メダル + 薄い厚みにした。下のドレミファソラシドはリズム画面でCSS 3D角度を付け、レーン面に近い見え方へ調整。画像生成は未使用。`sw.js` / `PAGE_CACHE_VERSION` は v1025。Node inline script parse、`git diff --check`、UTF-8/LF確認、PlaywrightでWebGL円柱ノート非空描画とスクショ目視を確認。作業外 `maze/*` 差分は非接触。 (by Codex)
 - 2026-06-11 - [batch:423-maze-stage7-web-gimmick] DONE - Codex: ステージ7に Canvas/CSS ベースのクモの巣ギミックを実装。ほうき拾得→クモの巣接近→クモムシの「くものすはらい」ミニゲーム→通行可の流れを追加し、エディターにも `web` 障害物イベントと `broom` アイテム配置を追加。`maze/imageStages/stage7.json` はゴール手前に `stage7-web-gate`、スタート側にほうきを設定。`sw.js` / `PAGE_CACHE_VERSION` は v1020。Node構文/JSON/Playwright stage7 smoke を確認。ステージ6/8/9動物 raw シートは `tmp/alpha_pending/390_maze_stage_animals_raw/` に保存。 (by Codex)
