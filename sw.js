@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1021; // v1021: maze stage6 ワープループ修正 + 出口 hole の通過対応
+const CACHE_VERSION = 1022; // v1022: oto SE assets 追加 (just/nice/good/ok/close/miss-hit + game-start/clear)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
