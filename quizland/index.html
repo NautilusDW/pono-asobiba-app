@@ -537,6 +537,8 @@ body.layout-editor-on.show-safe .q-text-card::after {
   padding: 6px 18px 6px 8px;
   width: 100%;
   justify-content: flex-start;
+  /* v1013: #final-q-badge (絶対配置の子) のアンカー基準。視覚影響なし */
+  position: relative;
 }
 .hdr-left .owl-icon {
   width: 64px; height: 64px;
@@ -664,6 +666,82 @@ body.sheet-on .hdr-left .title-card span {
 /* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
 body.sheet-on .hdr-left .dots {
   background-image: url('../assets/images/quizland/progress-mark.png') !important;
+}
+
+/* ===== v1013: カレントドット グロー明滅 + 最終問題バッジ ===== */
+/* v1013: 現在解いている問題のドットだけ柔らかくグロー明滅 (子供向け・低刺激)。
+   box-shadow ではなく drop-shadow を使い dot.png のアルファ形状 (真円) に沿って光らせる。
+   既存の transform: scale(1.18) (.dot.current) とはプロパティが独立なので干渉しない。 */
+@keyframes qz-dot-glow {
+  from { filter: drop-shadow(0 0 2px rgba(255, 190, 80, 0.4)) brightness(1); }
+  to   { filter: drop-shadow(0 0 9px rgba(255, 165, 40, 0.85)) brightness(1.1); }
+}
+.hdr-left .dot.current {
+  animation: qz-dot-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* v1013: 「さいごの もんだい！」バッジ。 hdr-left ピルの右隣の空きスペース
+   (ピル右端 x≈994 〜 おしらせボタン左端 x≈1219) に絶対配置で吊るす。
+   saved-layout.json は .hdr-left|0 全体を transform で動かすだけなのでバッジも追従する。
+   layout-editor whitelist 非対象 (= #next-btn-area と同じ扱い)。
+   表示/非表示は updateHUD() が questionIdx === totalQuestions - 1 で切替。 */
+#final-q-badge {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  width: max-content;
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 3px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 6px 14px;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+  pointer-events: none;
+  z-index: 5;
+  transform: translateY(-50%) scale(0);
+  opacity: 0;
+}
+#final-q-badge.hidden { display: none; }
+#final-q-badge.is-pop {
+  animation: finalq-bounce-in 0.7s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+@keyframes finalq-bounce-in {
+  0%   { transform: translateY(-50%) scale(0);    opacity: 0; }
+  60%  { transform: translateY(-50%) scale(1.18); opacity: 1; }
+  80%  { transform: translateY(-50%) scale(0.94); opacity: 1; }
+  100% { transform: translateY(-50%) scale(1);    opacity: 1; }
+}
+/* v1013: グラデ文字 + 縁取りの 2 層構造。
+   下層 (.final-q-text 本体) = 太い text-stroke で縁取り、
+   上層 (::before, data-text 複製) = background-clip: text のグラデ塗り。
+   text-shadow は transparent fill を透過して見える既知問題があるため不使用。 */
+.final-q-text {
+  position: relative;
+  display: inline-block;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.04em;
+  color: #5a3413;
+  -webkit-text-stroke: 6px #5a3413;
+  /* 出現後もゆったり光が明滅 (カレントドットと同系の柔らかさ) */
+  animation: finalq-soft-pulse 1.6s ease-in-out infinite alternate;
+}
+.final-q-text::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  white-space: pre;       /* data-text 内の改行 (&#10;) を <br> と同じ位置で折る */
+  -webkit-text-stroke: 0;
+  background: linear-gradient(180deg, #ffb347 0%, #f07818 55%, #d4520e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@keyframes finalq-soft-pulse {
+  from { filter: drop-shadow(0 0 2px rgba(255, 180, 70, 0)); }
+  to   { filter: drop-shadow(0 0 8px rgba(255, 165, 40, 0.7)); }
 }
 
 .hdr-right {
@@ -3313,6 +3391,10 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
             <span class="dot"></span>
             <span class="dot"></span>
           </div>
+          <!-- v1013: 最終問題バッジ。 updateHUD() が表示/非表示を切替 (絶対配置・flex 非干渉) -->
+          <div id="final-q-badge" class="hidden" aria-hidden="true">
+            <span class="final-q-text" data-text="さいごの&#10;もんだい！">さいごの<br>もんだい！</span>
+          </div>
         </div>
 
         <div class="hdr-right">
@@ -5937,6 +6019,26 @@ function updateHUD() {
     if (i < currentDotIdx) dot.classList.add('done');
     if (i === currentDotIdx) dot.classList.add('current');
     prog.appendChild(dot);
+  }
+  // v1013: 「さいごの もんだい！」バッジ。 最終問題 (idx === total - 1) の間だけ表示。
+  //   - 問題数可変対応: totalQuestions を真値として参照 (QZ_DEBUG_ALL でも実際の最終問題で発火)
+  //   - totalQuestions > 1 ガード: 1 問だけのモードで開幕から出るのは不自然なので抑止
+  //   - 既に表示中の再呼び出しでは bounce-in を再発火させない (updateHUD 多重呼び出し対策)
+  const finalBadge = document.getElementById('final-q-badge');
+  if (finalBadge) {
+    const isFinalQ = totalQuestions > 1 && questionIdx === totalQuestions - 1;
+    if (isFinalQ) {
+      if (finalBadge.classList.contains('hidden')) {
+        finalBadge.classList.remove('hidden');
+        finalBadge.setAttribute('aria-hidden', 'false');
+        void finalBadge.offsetWidth;  // reflow で scale(0) 初期状態を確定させてからアニメ開始
+        finalBadge.classList.add('is-pop');
+      }
+    } else {
+      finalBadge.classList.add('hidden');
+      finalBadge.classList.remove('is-pop');
+      finalBadge.setAttribute('aria-hidden', 'true');
+    }
   }
   // デバッグナビ更新 (DOM があれば)
   if (typeof updateDebugNav === 'function') updateDebugNav();
