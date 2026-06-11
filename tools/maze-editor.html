@@ -3146,17 +3146,21 @@ function trySetSessionImage(img) {
 document.getElementById('testBtn').addEventListener('click', function() {
   if (!validateForExport()) return;
   const r = buildExportDef();
+  // Try to stash the image first (with progressive compression fallback).
+  // If all levels fail, the runtime will fetch from r.def.imageUrl(s) on the server.
+  let imgResult = { ok: false, label: 'no image' };
+  if (state.image && state.image.complete && state.image.naturalWidth > 0) {
+    imgResult = trySetSessionImage(state.image);
+  }
+  // 2枚読込 + 合成画像の stash 成功時: draft def から imageUrls を落とす。
+  // (imageUrls は imageUrl より優先される契約のため、未コミットの本番パスを
+  //  参照してプレビューが壊れるのを防ぐ。合成画像が両画面をカバーする)
+  if (imgResult.ok && r.def.imageUrls) delete r.def.imageUrls;
   try {
     sessionStorage.setItem('pono_maze_draft_stage', JSON.stringify(r.def));
   } catch (e) {
     alert('プレビュー用の def 保存に失敗: ' + e.message);
     return;
-  }
-  // Try to also stash the image (with progressive compression fallback).
-  // If all levels fail, the runtime will fetch from r.def.imageUrl on the server.
-  let imgResult = { ok: false, label: 'no image' };
-  if (state.image && state.image.complete && state.image.naturalWidth > 0) {
-    imgResult = trySetSessionImage(state.image);
   }
   // Open in new tab. NOTE: do NOT use noopener — that breaks sessionStorage
   // inheritance in some browsers.
@@ -3166,7 +3170,7 @@ document.getElementById('testBtn').addEventListener('click', function() {
     const kb = (imgResult.bytes / 1024).toFixed(0);
     showBanner('▶ プレビューを開きました (画像: ' + imgResult.label + ', ' + kb + ' KB)');
   } else {
-    showBanner('▶ プレビューを開きました (画像はサーバーの ' + r.def.imageUrl + ' を使うよ)');
+    showBanner('▶ プレビューを開きました (画像はサーバーの ' + (r.def.imageUrl || (r.def.imageUrls || []).join(' / ')) + ' を使うよ)');
   }
 });
 

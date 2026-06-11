@@ -742,9 +742,9 @@ body.sheet-on .hdr-right .ctrl-btn {
   display: flex; align-items: center; justify-content: center; gap: 16px;
   color: var(--text);
   font-weight: 800;
-  /* 2026-06-11: font-size 32→28 で長文質問 (q175 等) を 1 行に収める。
-     短文質問は inline-block + text-align:center で違和感を抑制。 */
-  font-size: 28px;
+  /* v1012: 長文クラス q-long(28px) / q-xlong(24px) で動的縮小、base 32px は chip-label と統一維持
+     (v795 の chip-label 32px との設計ポリシーを維持しつつ、長文のみ #q-text 側で縮小)。 */
+  font-size: 32px;
   min-height: 170px;
   line-height: 1.4;
   position: relative;
@@ -755,6 +755,12 @@ body.sheet-on .hdr-right .ctrl-btn {
   padding: 4px 8px;
   text-align: center;
 }
+/* v1012: 質問文の動的縮小クラス。 JS が #q-text の文字数で付与する。
+   - 25-28 文字 → q-long  (28px)
+   - 29 文字以上 → q-xlong (24px)
+   - それ未満は base 32px のまま (chip-label と統一)。 */
+#q-text.q-long  { font-size: 28px; }
+#q-text.q-xlong { font-size: 24px; }
 .q-text-card .audio {
   width: 80px; height: 80px;
   border-radius: 0;
@@ -5504,6 +5510,18 @@ function loadQuestion(q) {
     const _fullText = toFullWidth(q.q || '');
     _qTextEl.dataset.pendingText = _fullText;
     _qTextEl.textContent = '';
+    // v1012: 質問文の文字数に応じて q-long / q-xlong クラスを付与し動的に縮小。
+    //   - 29 文字以上 → q-xlong (24px)
+    //   - 25-28 文字 → q-long  (28px)
+    //   - それ未満は base 32px (chip-label と統一)。
+    //   全角/半角混在は length で十分実用 (全角1=半角1)。
+    _qTextEl.classList.remove('q-long', 'q-xlong');
+    const _qLen = _fullText.length;
+    if (_qLen >= 29) {
+      _qTextEl.classList.add('q-xlong');
+    } else if (_qLen >= 25) {
+      _qTextEl.classList.add('q-long');
+    }
   }
   const stage = document.getElementById('stage-area');
   stage.dataset.qtype = q.type;
