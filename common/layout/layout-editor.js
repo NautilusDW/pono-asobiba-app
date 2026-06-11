@@ -182,6 +182,12 @@
                                      // enable(cfg.perQuestionSelectors) で受け取る。
                                      // 含まれるセレクタは保存キーが `${sel}|${i}@${qid}` になる。
                                      // フクロウ (.character) のような「全問共通」要素は含めない。
+    _perQScopeToggleSelectors: [],   // 2026-06-11: 「🎯 この質問だけ / 🌐 すべての質問」 トグル対象
+                                     // (enable(cfg.perQuestionScopeToggleSelectors))。 ここに含まれる
+                                     // セレクタは perQScopeThisQ=true のときだけ per-Q キーで保存され、
+                                     // false (既定) では従来通り共通キー `${sel}|${i}` で保存される。
+    perQScopeThisQ: false,           // true = この質問だけ (per-Q 保存) / false = すべての質問 (共通保存)。
+                                     // enable 毎に false へ戻す (暗黙の per-Q 化事故を防ぐ)。
     _dirty: false,                   // 2026-05-07: 編集モードでの未保存変更フラグ。
                                      // pushHistory / scheduleDirtyUpdate で更新。 save 成功で false。
                                      // confirmDiscardIfDirty() の判定に使用 (impl-B から呼ばれる)。
@@ -402,7 +408,14 @@
   }
 
   // 2026-05-07: per-Q whitelist 判定。 sel が perQuestionSelectors に含まれていれば true。
+  // 2026-06-11: scope トグル対応 — _perQScopeToggleSelectors に含まれるセレクタ
+  //   (質問バナー .q-text-card / 音声ボタン 等) は 「🎯 この質問だけ」 が ON
+  //   (state.perQScopeThisQ=true) のときだけ per-Q 保存し、 OFF (既定) では
+  //   従来通り共通キーで保存する。 読み取り側 (applier) は常に per-Q → 共通の
+  //   2 段 lookup なので、 ここは書き込みキーの形式だけを左右する。
   function _isPerQSelector(sel) {
+    var tList = state._perQScopeToggleSelectors;
+    if (tList && tList.length && tList.indexOf(sel) !== -1) return !!state.perQScopeThisQ;
     var list = state._perQuestionSelectors;
     return !!(list && list.length && list.indexOf(sel) !== -1);
   }
@@ -6459,6 +6472,10 @@
       //   状態は body.layout-editor-paused class + window._quizlandPaused で
       //   外部 (quizland/index.html 側) に同期 expose。
       '<button id="le-pause-toggle" title="問題進行を一時停止 / 再開 (chip タップ・正解判定・SE は継続、 次問題への自動遷移のみ止まる)" aria-label="一時停止トグル">⏸ 一時停止</button>' +
+      // 🎯/🌐 per-Q 保存範囲トグル (2026-06-11): perQuestionScopeToggleSelectors 対象
+      //   (質問バナー / 音声ボタン) の保存先を 「この質問だけ (@qid キー)」 ⇔
+      //   「すべての質問 (共通キー)」 で切替。 対象セレクタ未設定のページでは非表示。
+      '<button id="le-perq-scope" title="質問カード・音声ボタンの保存範囲を切替&#10;🌐 すべての質問: 全問題共通の位置として保存 (従来動作)&#10;🎯 この質問だけ: いま表示中の問題だけの位置として保存 (他の問題は共通位置のまま)&#10;※ 個別保存済みの問題では個別値が共通値より優先表示されます" aria-label="保存範囲トグル" style="display:none;">🌐 すべての質問</button>' +
       // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
       //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
       //   他ページでは非表示。
@@ -6596,6 +6613,32 @@
           try { localStorage.setItem('le-quiz-paused', next ? '1' : '0'); } catch (_) {}
         });
       }
+    }
+
+    // 🎯/🌐 per-Q 保存範囲トグル (2026-06-11)
+    //   enable(cfg.perQuestionScopeToggleSelectors) が空のページでは非表示のまま。
+    //   切替は書き込みキー形式のみに作用 (geometry は不変) なので、 未編集なら
+    //   dirty baseline をトグル後のキー形式で取り直し、 誤 dirty 検知を防ぐ。
+    var perqScopeBtn = tb.querySelector('#le-perq-scope');
+    if (perqScopeBtn && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
+      perqScopeBtn.style.display = '';
+      perqScopeBtn.addEventListener('click', function () {
+        state.perQScopeThisQ = !state.perQScopeThisQ;
+        perqScopeBtn.textContent = state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問';
+        perqScopeBtn.classList.toggle('active', state.perQScopeThisQ);
+        if (!state._dirty) {
+          try {
+            state.lastSavedJson = JSON.stringify(snapshot());
+            state.lastSavedQid = getCurrentQid();
+          } catch (e) { /* noop */ }
+        }
+        // 選択ラベル / 要素一覧の [qid] 表示を最新化
+        try { refreshSelectionUI(); } catch (e) { /* noop */ }
+        try { refreshElementList(); } catch (e) { /* noop */ }
+        showToast(state.perQScopeThisQ
+          ? '🎯 質問カード・音声ボタンを「この質問だけ」に保存します'
+          : '🌐 質問カード・音声ボタンを「すべての質問」共通で保存します', 'success');
+      });
     }
 
     // 🧪 Playtest toggle: editor 内 playtest UI (debug=all モードと同じ playtest UI:
@@ -8099,6 +8142,15 @@
     //   ここに無いセレクタは従来通り `${sel}|${i}` で base 保存される (フクロウ等)。
     state._perQuestionSelectors = Array.isArray(config.perQuestionSelectors)
       ? config.perQuestionSelectors.slice() : [];
+    // 2026-06-11: 保存範囲トグル対象 (質問バナー / 音声ボタン等)。
+    //   perQuestionSelectors に含まれるものだけ有効化する — applier の読み取り whitelist に
+    //   無いセレクタを per-Q 書き込みすると誰も読まないキーが生まれるため、 設定ミスを弾く。
+    state._perQScopeToggleSelectors = Array.isArray(config.perQuestionScopeToggleSelectors)
+      ? config.perQuestionScopeToggleSelectors.filter(function (s) {
+          return typeof s === 'string' && state._perQuestionSelectors.indexOf(s) !== -1;
+        })
+      : [];
+    state.perQScopeThisQ = false; // 既定は 「🌐 すべての質問」 (従来挙動)
     state.selectedElements = new Set();
     state.locked = new Set();
     state.unlinkedChildren = new Set(); // Papa-2 修正2
@@ -8356,6 +8408,8 @@
     state._dirty = false;            // 2026-05-07: edit セッション終了時はクリア
     state.lastSavedQid = null;       // Phase 3.5 Fix 2: 次回 enable で取り直す
     state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
+    state._perQScopeToggleSelectors = []; // 2026-06-11: 保存範囲トグルも次回 enable で受け取り直す
+    state.perQScopeThisQ = false;
     state.toolbarEl = null;
     state.numericPanelEl = null;
     state.listPanelEl = null;

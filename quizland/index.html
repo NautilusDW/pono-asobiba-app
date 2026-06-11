@@ -4152,8 +4152,16 @@ const QZ_PER_QUESTION_SELECTORS = [
   '.count-item',
   '.item-row',
   '.color-chip',
-  '.chip .chip-illust-wrap'
+  '.chip .chip-illust-wrap',
+  // 2026-06-11: 質問バナーと音声ボタン。 読み取りは常に per-Q (@qid) → 共通 (|i) fallback。
+  // 書き込みは editor の 「🎯 この質問だけ / 🌐 すべての質問」 トグル
+  // (QZ_PER_QUESTION_SCOPE_TOGGLE) が 🎯 のときだけ @qid キーになる (既定 🌐 = 従来の共通保存)。
+  '.q-text-card',
+  '.q-text-card .audio'
 ];
+// editor の保存範囲トグル対象。 ここに列挙したセレクタは常時 per-Q 化されず、
+// toolbar の 「🎯 この質問だけ」 を ON にした保存だけが問題個別キーになる。
+const QZ_PER_QUESTION_SCOPE_TOGGLE = ['.q-text-card', '.q-text-card .audio'];
 
 /* per-Q layout (Phase 2 / impl-B) ─────────────────────────────────────
    問題ごとにステージ絵 (.emoji-display / .emoji-main-img) のレイアウトを
