@@ -313,6 +313,7 @@ html, body { height: 100vh; overflow: hidden;
       <button class="mode-btn" data-mode="creature" style="background:#2c3a1a; color:#cf8;">🐛 お邪魔虫</button>
       <button class="mode-btn" data-mode="gimmick-item" style="background:#3a2c5a; color:#dcf;">🎒 アイテム</button>
       <button class="mode-btn" data-mode="delete" style="background: #5a3030; color: #fcc;">🗑 削除</button>
+      <button class="mode-btn" data-mode="delete-edge" style="background: #5a3030; color: #fcc;">✂️ 道を消す</button>
     </div>
     <!-- Sub-selectors (shown only when respective mode is active) -->
     <div id="obstacleKindRow" class="modes" style="display:none; margin-top:6px;">
@@ -1002,7 +1003,7 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     document.getElementById('creatureKindRow').style.display = state.mode === 'creature' ? 'flex' : 'none';
     document.getElementById('gimmickItemKindRow').style.display = state.mode === 'gimmick-item' ? 'flex' : 'none';
     // 移動モードに切り替えた瞬間のカーソルを 'move' にプリセット (pointermove で grab/grabbing に上書きされる)
-    if (cv) cv.style.cursor = (state.mode === 'move') ? 'move' : 'crosshair';
+    if (cv) cv.style.cursor = (state.mode === 'move') ? 'move' : ((state.mode === 'delete-edge') ? 'not-allowed' : 'crosshair');
     showBanner('モード: ' + btn.textContent.trim());
     draw();
   });
@@ -1501,6 +1502,8 @@ cv.addEventListener('click', function(e) {
     showBanner(meta.label + 'を配置しました');
   } else if (state.mode === 'delete') {
     handleDeleteClick(p);
+  } else if (state.mode === 'delete-edge') {
+    handleDeleteEdgeClick(p);
   }
   draw();
   updateStatus();
@@ -1903,7 +1906,7 @@ cv.addEventListener('pointerdown', function(e) {
 
   // === ノード drag === (他モード)
   // edge モード中はノード click を handleEdgeClick に通すため drag に入らない
-  if (state.mode !== 'delete' && state.mode !== 'edge') {
+  if (state.mode !== 'delete' && state.mode !== 'delete-edge' && state.mode !== 'edge') {
     const nodeHit = findNodeAt(p);
     if (nodeHit) {
       pushHistory();
@@ -1957,7 +1960,7 @@ cv.addEventListener('pointerdown', function(e) {
     }
   }
   // 何も無い場所で押下 → 選択解除
-  if (state.mode !== 'delete' && state.selectedNodeId) {
+  if (state.mode !== 'delete' && state.mode !== 'delete-edge' && state.selectedNodeId) {
     state.selectedNodeId = null;
     draw();
   }
@@ -2104,6 +2107,8 @@ cv.addEventListener('pointermove', function(e) {
     // 移動モード: node / item / creature / obstacle のいずれかに hover していれば 'grab'
     const overGrabbable = hovered || findGimmickItemAt(p) || findCreatureAt(p) || findObstacleAt(p);
     cv.style.cursor = overGrabbable ? 'grab' : 'move';
+  } else if (state.mode === 'delete-edge') {
+    cv.style.cursor = 'not-allowed';
   } else {
     cv.style.cursor = hovered ? 'grab' : 'crosshair';
   }
@@ -2111,7 +2116,7 @@ cv.addEventListener('pointermove', function(e) {
 
 cv.addEventListener('pointerup', function(e) {
   // 移動モードでは drag 終了後のカーソルは 'move' に戻す (それ以外は 'crosshair')
-  const restCursor = (state.mode === 'move') ? 'move' : 'crosshair';
+  const restCursor = (state.mode === 'move') ? 'move' : ((state.mode === 'delete-edge') ? 'not-allowed' : 'crosshair');
   if (state.draggingGimmickItem) {
     state.draggingGimmickItem = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -2281,6 +2286,20 @@ function handleDeleteClick(p) {
     }
   }
   showBanner('近くに削除対象が見つからないよ');
+}
+
+function handleDeleteEdgeClick(p) {
+  const r = 12 / canvasScale;
+  for (let i = state.edges.length - 1; i >= 0; i--) {
+    const ed = state.edges[i];
+    const dense = edgeDisplayPolyline(ed);
+    if (pointNearPolyline(p, dense, r)) {
+      state.edges.splice(i, 1);
+      showBanner('道を削除: ' + ed.from + ' → ' + ed.to);
+      return;
+    }
+  }
+  showBanner('道が見つからないよ (道の線に近づいてクリックしてね)');
 }
 
 function pointNearPolyline(p, poly, r) {
