@@ -572,7 +572,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 3
     { level:3, type:'trivia', category:'body',
-      img:'pose_sleep.png',
+      img:'pose_sleep.png', framed:true,
       q:'ねむっているとき からだは どうなっている？',
       answer:0, choices:['やすんでいる','たべている','はしっている','うごけない'] ,
       detail:'ねている あいだに からだは げんきを ためなおして、おおきく なっていくよ！'},
