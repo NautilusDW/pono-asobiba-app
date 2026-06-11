@@ -2996,6 +2996,78 @@ function playBuffer(buf) {
   } catch(e) { return false; }
 }
 
+// ────────────────────────────────
+// リズムモード サンプル SE バッファ
+// voice バッファと同じ二段デコード方式 (fetch → ArrayBuffer キャッシュ → AC 作成後にデコード)
+// 失敗時は無音 (= synth 単独) フォールバック
+// ────────────────────────────────
+var _rhythmSampleSeBuffers = {};      // decoded AudioBuffer cache (scenario → AudioBuffer)
+var _rhythmSampleSeRawBuffers = {};   // raw ArrayBuffer cache (AC 未作成時の保険)
+var _rhythmSampleSeLoading = false;
+var RHYTHM_SAMPLE_SE_MAP = {
+  just:      { file: 'just-hit.mp3',   volume: 0.6  },
+  nice:      { file: 'nice-hit.mp3',   volume: 0.45 },
+  good:      { file: 'good-hit.mp3',   volume: 0.5  },
+  ok:        { file: 'ok-hit.mp3',     volume: 0.35 },
+  close:     { file: 'close-hit.mp3',  volume: 0.4  },
+  miss:      { file: 'miss-hit.mp3',   volume: 0.55 },
+  gameStart: { file: 'game-start.mp3', volume: 0.7  },
+  gameClear: { file: 'game-clear.mp3', volume: 0.65 }
+};
+function preloadRhythmSampleSeBuffers() {
+  if (_rhythmSampleSeLoading) return;
+  _rhythmSampleSeLoading = true;
+  Object.keys(RHYTHM_SAMPLE_SE_MAP).forEach(function(scenario) {
+    if (_rhythmSampleSeBuffers[scenario]) return; // 既に decode 済み
+    var meta = RHYTHM_SAMPLE_SE_MAP[scenario];
+    var url = '../assets/audio/sfx/oto/' + meta.file;
+    fetch(url).then(function(r){
+      if (!r || !r.ok) throw new Error('fetch failed');
+      return r.arrayBuffer();
+    }).then(function(buf){
+      _rhythmSampleSeRawBuffers[scenario] = buf;
+      var ac = getAC();
+      if (!ac) return null;
+      return ac.decodeAudioData(buf.slice(0));
+    }).then(function(decoded){
+      if (decoded) _rhythmSampleSeBuffers[scenario] = decoded;
+    }).catch(function(){ /* 失敗時は synth 単独にフォールバック */ });
+  });
+}
+// AC が後から作られるケース (iOS) 用に未デコード分を再デコード
+function _ensureRhythmSampleSeDecoded() {
+  var ac = getAC(); if (!ac) return;
+  Object.keys(_rhythmSampleSeRawBuffers).forEach(function(scenario) {
+    var raw = _rhythmSampleSeRawBuffers[scenario];
+    if (raw && !_rhythmSampleSeBuffers[scenario]) {
+      try {
+        ac.decodeAudioData(raw.slice(0)).then(function(decoded){
+          if (decoded) _rhythmSampleSeBuffers[scenario] = decoded;
+        }).catch(function(){});
+      } catch(e) {}
+    }
+  });
+}
+// 単発再生ヘルパ。バッファ未ロード時は何もしないで false (synth 単独でフォールバック)
+function _playRhythmSampleSe(scenario) {
+  var meta = RHYTHM_SAMPLE_SE_MAP[scenario];
+  if (!meta) return false;
+  var buf = _rhythmSampleSeBuffers[scenario];
+  if (!buf) return false;
+  var ac = getAC();
+  if (!ac) return false;
+  try {
+    var src = ac.createBufferSource();
+    src.buffer = buf;
+    var g = ac.createGain();
+    g.gain.setValueAtTime(meta.volume, ac.currentTime);
+    src.connect(g);
+    g.connect(ac.destination);
+    src.start(0);
+    return true;
+  } catch(e) { return false; }
+}
+
 // voice セットは廃止したのでフェッチしない
 
 // ────────────────────────────────
@@ -5975,7 +6047,13 @@ function _startRhythmMode() {
   _setRhythmStatus('おちてくるノートを いま！でタッチ', null);
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
+  // リズム用サンプル SE: 未ロードならフェッチ開始、AC 作成後に再デコードを試みる。
+  // 非同期なので startup はブロックしない (バッファが間に合わない hit は synth 単独)。
+  _ensureRhythmSampleSeDecoded();
+  preloadRhythmSampleSeBuffers();
   var ac = getAC();
+  // ゲーム開始スティンガ。バッファが間に合っていれば 1 回だけ鳴らす (失敗時無音)。
+  _playRhythmSampleSe('gameStart');
   // v709: 「拍同期は AC 時刻 (秒) で計算 → 毎フレーム perf 時刻に変換」方式に統一。
   // 旧 v708: bandStartPerf を 1 回スナップショットしてから startPerfTime を固定 → 数秒で
   //          AC↔perf がドリフトして「だんだんノートが伴奏とずれる」と報告された。
@@ -6222,11 +6300,16 @@ function _playRhythmBlockSfx(kind, laneIdx, judge) {
     sparkleOsc.frequency.setValueAtTime(base * (judge && judge.key === 'just' ? 1.72 : 1.42), now + 0.014);
     sparkleGain.gain.setValueAtTime(0, now + 0.018);
     sparkleGain.gain.linearRampToValueAtTime(sparklePower, now + 0.035);
-    sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
     sparkleOsc.connect(sparkleGain);
     sparkleGain.connect(master);
     sparkleOsc.start(now + 0.014);
     sparkleOsc.stop(now + 0.24);
+  }
+
+  // サンプル SE 重ね (just / nice のみ — 爽快感を perfect timing に集中させる)。
+  // バッファ未ロード時は no-op で synth 単独になるため安全。
+  if (!isMiss && judge && (judge.key === 'just' || judge.key === 'nice')) {
+    _playRhythmSampleSe(judge.key);
   }
 
   var cleanupDelay = isMiss ? 260 : 420;
@@ -6248,6 +6331,8 @@ function _playRhythmClearSfx(stars) {
   master.gain.linearRampToValueAtTime(peak, now + 0.025);
   master.gain.exponentialRampToValueAtTime(0.001, now + 0.92);
   master.connect(ac.destination);
+  // ゲームクリア サンプル SE を重ね (バッファ未ロード時は no-op で synth 単独)
+  _playRhythmSampleSe('gameClear');
   [523.25, 659.25, 783.99, 1046.5].forEach(function(freq, i) {
     var t = now + i * 0.075;
     var o = ac.createOscillator();
