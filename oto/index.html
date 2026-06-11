@@ -708,9 +708,94 @@
     0%   { opacity: 0.8; transform: scale(0.7); }
     100% { opacity: 0; transform: scale(1.75); }
   }
+  .rhythm-judge-pop {
+    position: absolute;
+    left: var(--judge-left, 50%);
+    top: var(--judge-top, calc(var(--gh-hit-y, 80%) - 72px));
+    min-width: 92px;
+    padding: 7px 12px 8px;
+    border-radius: 16px;
+    border: 3px solid rgba(255,255,255,0.94);
+    background:
+      radial-gradient(circle at 22% 18%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 13%),
+      linear-gradient(135deg, var(--judge-hi, #FEF08A), var(--judge-lo, #38BDF8));
+    color: var(--judge-fg, #0F172A);
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 2px 3px rgba(255,255,255,0.46);
+    box-shadow:
+      0 0 0 3px rgba(255,255,255,0.24),
+      0 0 24px var(--judge-glow, rgba(254,240,138,0.72)),
+      0 8px 18px rgba(0,0,0,0.24);
+    pointer-events: none;
+    z-index: 12;
+    transform: translate(-50%, -50%) scale(0.8);
+    animation: rhythmJudgePop 0.72s cubic-bezier(.12,.82,.18,1) forwards;
+  }
+  .rhythm-judge-pop b {
+    font-size: clamp(1.02rem, 3vw, 1.32rem);
+    letter-spacing: 0;
+  }
+  .rhythm-judge-pop small {
+    font-size: 0.68rem;
+    color: rgba(15,23,42,0.74);
+  }
+  .rhythm-judge-pop.just {
+    --judge-hi: #FFFFFF;
+    --judge-lo: #FACC15;
+    --judge-glow: rgba(250,204,21,0.92);
+    --judge-fg: #78350F;
+    min-width: 112px;
+  }
+  .rhythm-judge-pop.nice {
+    --judge-hi: #CCFBF1;
+    --judge-lo: #22D3EE;
+    --judge-glow: rgba(45,212,191,0.82);
+    --judge-fg: #083344;
+  }
+  .rhythm-judge-pop.good {
+    --judge-hi: #DBEAFE;
+    --judge-lo: #60A5FA;
+    --judge-glow: rgba(96,165,250,0.74);
+    --judge-fg: #172554;
+  }
+  .rhythm-judge-pop.ok {
+    --judge-hi: #E9D5FF;
+    --judge-lo: #A78BFA;
+    --judge-glow: rgba(167,139,250,0.72);
+    --judge-fg: #3B0764;
+  }
+  .rhythm-judge-pop.close {
+    --judge-hi: #FED7AA;
+    --judge-lo: #FB923C;
+    --judge-glow: rgba(251,146,60,0.68);
+    --judge-fg: #7C2D12;
+  }
+  .rhythm-judge-pop.miss {
+    --judge-hi: #FECACA;
+    --judge-lo: #EF4444;
+    --judge-glow: rgba(239,68,68,0.62);
+    --judge-fg: #7F1D1D;
+  }
+  @keyframes rhythmJudgePop {
+    0%   { opacity: 0; transform: translate(-50%, -32%) scale(0.58) rotate(-2deg); filter: brightness(1.25); }
+    20%  { opacity: 1; transform: translate(-50%, -58%) scale(1.14) rotate(1deg); filter: brightness(1.2); }
+    54%  { opacity: 1; transform: translate(-50%, -76%) scale(1); filter: brightness(1.03); }
+    100% { opacity: 0; transform: translate(-50%, -126%) scale(0.72); filter: brightness(1.08); }
+  }
   .instr-btn.rhythm-hit::before {
     opacity: 1;
     background: radial-gradient(circle, rgba(255,255,255,0.96) 0%, rgba(254,240,138,0.68) 42%, rgba(45,212,191,0.18) 62%, rgba(45,212,191,0) 76%);
+  }
+  .instr-btn.rhythm-hit-just::before {
+    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(250,204,21,0.86) 38%, rgba(45,212,191,0.34) 62%, rgba(45,212,191,0) 78%);
+    filter: blur(0);
+  }
+  .instr-btn.rhythm-hit-nice::before {
+    background: radial-gradient(circle, rgba(255,255,255,0.98) 0%, rgba(125,211,252,0.76) 42%, rgba(45,212,191,0.26) 62%, rgba(45,212,191,0) 76%);
   }
   .instr-btn.rhythm-miss::before {
     opacity: 0.72;
@@ -1578,8 +1663,10 @@
   }
   .rhythm-complete.show { display: flex; }
   .rhythm-complete-panel {
-    width: min(90vw, 480px);
-    padding: 22px 24px 24px;
+    width: min(92vw, 560px);
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    padding: 20px 24px 22px;
     border: 3px solid rgba(255,255,255,0.88);
     border-radius: 20px;
     background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(226,244,255,0.94));
@@ -1602,12 +1689,145 @@
     font-weight: 900;
     color: #31506F;
   }
+  .rhythm-score-summary {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+  .rhythm-score-main {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 10px;
+    color: #0F3A5C;
+    font-weight: 900;
+  }
+  .rhythm-score-main span {
+    font-size: 0.96rem;
+    color: #42637F;
+  }
+  .rhythm-score-main strong {
+    font-size: clamp(2rem, 7vw, 3rem);
+    line-height: 0.92;
+    color: #0E7490;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.8);
+  }
+  .rhythm-score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .rhythm-score-breakdown span {
+    display: grid;
+    gap: 2px;
+    min-height: 42px;
+    align-content: center;
+    border-radius: 12px;
+    background: rgba(15,58,92,0.08);
+    color: #42637F;
+    font-size: 0.68rem;
+    font-weight: 900;
+  }
+  .rhythm-score-breakdown b {
+    color: #0F3A5C;
+    font-size: 1rem;
+  }
+  .rhythm-name-form {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(254,240,138,0.76), rgba(186,230,253,0.82));
+    border: 2px solid rgba(255,255,255,0.9);
+    display: grid;
+    gap: 8px;
+  }
+  .rhythm-name-form.hidden { display: none; }
+  .rhythm-name-label {
+    color: #0F3A5C;
+    font-size: 0.92rem;
+    font-weight: 900;
+  }
+  .rhythm-name-row {
+    display: flex;
+    gap: 8px;
+  }
+  .rhythm-name-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 42px;
+    border: 2px solid rgba(15,58,92,0.28);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0F3A5C;
+    background: rgba(255,255,255,0.94);
+  }
+  .rhythm-name-save {
+    min-width: 86px;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 0.96rem;
+    font-weight: 900;
+    color: #064E3B;
+    background: linear-gradient(135deg, #86EFAC, #22C55E);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.16);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .rhythm-ranking {
+    margin-top: 12px;
+    display: grid;
+    gap: 6px;
+  }
+  .rhythm-ranking.hidden { display: none; }
+  .rhythm-ranking-title {
+    color: #31506F;
+    font-size: 0.88rem;
+    font-weight: 900;
+  }
+  .rhythm-ranking-list {
+    display: grid;
+    gap: 4px;
+  }
+  .rhythm-ranking-row {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 86px;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    background: rgba(15,58,92,0.07);
+    color: #31506F;
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+  .rhythm-ranking-row.current {
+    background: linear-gradient(135deg, rgba(250,204,21,0.34), rgba(45,212,191,0.24));
+    color: #0F3A5C;
+  }
+  .rhythm-ranking-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+  }
+  .rhythm-ranking-empty {
+    color: #5B7690;
+    font-size: 0.82rem;
+    font-weight: 900;
+  }
   .rhythm-result-stars {
     display: flex;
     justify-content: center;
     gap: 8px;
     min-height: 48px;
-    margin-top: 12px;
+    margin-top: 10px;
   }
   .rhythm-result-star {
     width: 44px;
@@ -1628,7 +1848,7 @@
     flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
-    margin-top: 18px;
+    margin-top: 14px;
   }
   .rhythm-complete-actions.hidden {
     visibility: hidden;
@@ -1669,6 +1889,25 @@
   .rhythm-complete-btn.done {
     background: rgba(255,255,255,0.94);
     color: #334155;
+  }
+  @media (max-width: 540px), (orientation: landscape) and (max-height: 520px) {
+    .rhythm-complete-panel {
+      padding: 14px 16px 16px;
+    }
+    .rhythm-score-breakdown {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .rhythm-ranking-row {
+      grid-template-columns: 34px minmax(0, 1fr) 74px;
+      font-size: 0.7rem;
+      gap: 6px;
+    }
+    .rhythm-name-row {
+      flex-direction: column;
+    }
+    .rhythm-name-save {
+      min-height: 42px;
+    }
   }
 
   /* (rec-bar / 録音 UI は復活させない方針で削除) */
@@ -2551,6 +2790,21 @@
           <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
         </div>
         <div class="rhythm-complete-text" id="rhythm-complete-text">リズムだけ きいてね</div>
+        <div class="rhythm-score-summary" id="rhythm-score-summary">
+          <div class="rhythm-score-main"><span>スコア</span><strong id="rhythm-score-value">0</strong></div>
+          <div class="rhythm-score-breakdown" id="rhythm-score-breakdown"></div>
+        </div>
+        <form class="rhythm-name-form hidden" id="rhythm-name-form">
+          <label class="rhythm-name-label" for="rhythm-name-input" id="rhythm-name-label">10いに はいったよ</label>
+          <div class="rhythm-name-row">
+            <input class="rhythm-name-input" id="rhythm-name-input" type="text" maxlength="8" autocomplete="off" inputmode="text" placeholder="なまえ">
+            <button class="rhythm-name-save" type="submit">のこす</button>
+          </div>
+        </form>
+        <div class="rhythm-ranking" id="rhythm-ranking">
+          <div class="rhythm-ranking-title" id="rhythm-ranking-title">ハイスコア</div>
+          <div class="rhythm-ranking-list" id="rhythm-ranking-list"></div>
+        </div>
         <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
           <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
           <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
@@ -3531,6 +3785,8 @@ var RHYTHM_SONG = _buildRhythmSong(RHYTHM_BASE_SONG);
 var RHYTHM_GOOD_MS = 220;
 var RHYTHM_OK_MS = 430;
 var RHYTHM_MISS_MS = 760;
+var RHYTHM_JUST_MS = 70;
+var RHYTHM_NICE_MS = 150;
 var RHYTHM_FINAL_NOTE_GRACE_MS = 680;
 var RHYTHM_FINISH_DELAY_MS = 820;
 var RHYTHM_PREVIEW_STEPS = 4;
@@ -3566,6 +3822,20 @@ var RHYTHM_FEVER_STEPS = [
   { streak: 5, level: 2, text: 'れんぞく!', duration: 1300 },
   { streak: 8, level: 3, text: 'フィーバー!', duration: 2600 }
 ];
+var RHYTHM_JUDGE_STEPS = [
+  { key: 'just',  label: 'ジャスト!', short: 'ジャスト', limit: RHYTHM_JUST_MS, points: 1000, power: 1.35, tone: 'good' },
+  { key: 'nice',  label: 'ナイス!',   short: 'ナイス',   limit: RHYTHM_NICE_MS, points: 820,  power: 1.18, tone: 'good' },
+  { key: 'good',  label: 'グッド!',   short: 'グッド',   limit: RHYTHM_GOOD_MS, points: 650, power: 1.05, tone: 'good' },
+  { key: 'ok',    label: 'オッケー!', short: 'オッケー', limit: RHYTHM_OK_MS,   points: 430, power: 0.9,  tone: 'good' },
+  { key: 'close', label: 'おしい',    short: 'おしい',   limit: Infinity,      points: 180, power: 0.72, tone: 'warn' }
+];
+var RHYTHM_SCORE_COMBO_STEP = 18;
+var RHYTHM_SCORE_COMBO_CAP = 400;
+var RHYTHM_SCORE_FEVER_BONUS = 120;
+var RHYTHM_SCORE_STAR_BONUS = 1000;
+var RHYTHM_SCORE_NOMISS_BONUS = 1500;
+var RHYTHM_SCORE_FULL_BONUS = 1000;
+var RHYTHM_SCORE_MAX_COMBO_BONUS = 50;
 var _playMode = 'free';
 var _rhythm = {
   enabled: false,
@@ -3596,6 +3866,14 @@ var _rhythm = {
   goodHits: 0,
   okHits: 0,
   misses: 0,
+  justHits: 0,
+  niceHits: 0,
+  goodJudgeHits: 0,
+  okJudgeHits: 0,
+  closeHits: 0,
+  maxStreak: 0,
+  score: 0,
+  pendingScoreEntry: null,
   feverLevel: 0,
   feverTimer: 0,
   feverBubbleTimer: 0,
@@ -3617,6 +3895,8 @@ var _rhythm = {
 
 var RHYTHM_DEMO_SEEN_KEY = 'pono_oto_rhythm_demo_seen_v1';
 var RHYTHM_PROGRESS_KEY = 'pono_oto_rhythm_progress_v1';
+var RHYTHM_SCORE_KEY = 'pono_oto_rhythm_scores_v1';
+var RHYTHM_SCORE_NAME_KEY = 'pono_oto_rhythm_score_name_v1';
 
 function _rhythmSongStage(song) {
   if (!song) return 1;
@@ -3646,6 +3926,77 @@ function _loadRhythmProgress() {
 }
 function _saveRhythmProgress(progress) {
   try { localStorage.setItem(RHYTHM_PROGRESS_KEY, JSON.stringify(progress)); } catch(e) {}
+}
+function _loadRhythmScores() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(RHYTHM_SCORE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch(e) {
+    return {};
+  }
+}
+function _saveRhythmScores(scores) {
+  try { localStorage.setItem(RHYTHM_SCORE_KEY, JSON.stringify(scores || {})); } catch(e) {}
+}
+function _formatRhythmScore(score) {
+  score = Math.max(0, Math.round(score || 0));
+  return String(score).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function _sanitizeRhythmName(name) {
+  var text = String(name || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
+  if (!text) text = 'ポノ';
+  return Array.from(text).slice(0, 8).join('');
+}
+function _compareRhythmScoreEntries(a, b) {
+  var scoreDiff = (b.score || 0) - (a.score || 0);
+  if (scoreDiff) return scoreDiff;
+  var missDiff = (a.misses || 0) - (b.misses || 0);
+  if (missDiff) return missDiff;
+  var justDiff = (b.just || 0) - (a.just || 0);
+  if (justDiff) return justDiff;
+  return String(a.date || '').localeCompare(String(b.date || ''));
+}
+function _rhythmScoreKey() {
+  return RHYTHM_SONG && RHYTHM_SONG.id ? RHYTHM_SONG.id : 'unknown';
+}
+function _rhythmScoreTitle() {
+  var part = RHYTHM_PRACTICE_MODE === 'full' ? 'ぜんぶ' : ('ブロック' + (RHYTHM_SECTION_INDEX + 1));
+  return (RHYTHM_BASE_SONG ? RHYTHM_BASE_SONG.name : 'リズム') + ' ' + part;
+}
+function _rhythmLeaderboard(key) {
+  var scores = _loadRhythmScores();
+  var list = Array.isArray(scores[key]) ? scores[key].slice() : [];
+  list.sort(_compareRhythmScoreEntries);
+  return list.slice(0, 10);
+}
+function _rhythmScoreQualifies(key, score) {
+  var list = _rhythmLeaderboard(key);
+  if (list.length < 10) return true;
+  var candidate = {
+    score: Math.max(0, Math.round(score || 0)),
+    misses: _rhythm.misses || 0,
+    just: _rhythm.justHits || 0,
+    date: new Date().toISOString()
+  };
+  return _compareRhythmScoreEntries(candidate, list[list.length - 1]) < 0;
+}
+function _saveRhythmScoreEntry(entry, name) {
+  if (!entry || !entry.key) return 0;
+  var scores = _loadRhythmScores();
+  var key = entry.key;
+  var list = Array.isArray(scores[key]) ? scores[key].slice() : [];
+  if (!entry.id) entry.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  var saved = Object.assign({}, entry, {
+    name: _sanitizeRhythmName(name),
+    date: entry.date || new Date().toISOString()
+  });
+  list.push(saved);
+  list.sort(_compareRhythmScoreEntries);
+  scores[key] = list.slice(0, 10);
+  _saveRhythmScores(scores);
+  try { localStorage.setItem(RHYTHM_SCORE_NAME_KEY, saved.name); } catch(e) {}
+  var rank = scores[key].findIndex(function(item) { return item.id === saved.id; });
+  return rank >= 0 ? rank + 1 : 0;
 }
 function _rhythmSongCleared(song, progress) {
   progress = progress || _loadRhythmProgress();
@@ -3957,8 +4308,12 @@ function _clearRhythmRings() {
 }
 function _pulseRhythmButton(btn, className) {
   if (!btn) return;
-  btn.classList.add(className);
-  setTimeout(function() { btn.classList.remove(className); }, 180);
+  var classes = String(className || '').split(/\s+/).filter(Boolean);
+  if (!classes.length) return;
+  btn.classList.add.apply(btn.classList, classes);
+  setTimeout(function() {
+    btn.classList.remove.apply(btn.classList, classes);
+  }, 180);
 }
 function _setRhythmStatus(text, tone) {
   var el = document.getElementById('rhythm-status');
@@ -3966,6 +4321,79 @@ function _setRhythmStatus(text, tone) {
   el.textContent = text;
   el.classList.remove('good', 'warn', 'miss');
   if (tone) el.classList.add(tone);
+}
+function _rhythmJudgeForAbs(absMs) {
+  for (var i = 0; i < RHYTHM_JUDGE_STEPS.length; i++) {
+    if (absMs <= RHYTHM_JUDGE_STEPS[i].limit) return RHYTHM_JUDGE_STEPS[i];
+  }
+  return RHYTHM_JUDGE_STEPS[RHYTHM_JUDGE_STEPS.length - 1];
+}
+function _rhythmComboBonusFor(streak) {
+  return Math.min(RHYTHM_SCORE_COMBO_CAP, Math.max(0, (streak || 0) - 1) * RHYTHM_SCORE_COMBO_STEP);
+}
+function _recordRhythmHit(absMs) {
+  var judge = _rhythmJudgeForAbs(Math.max(0, absMs || 0));
+  _rhythm.streak++;
+  _rhythm.hits++;
+  _rhythm.maxStreak = Math.max(_rhythm.maxStreak || 0, _rhythm.streak);
+  if (absMs <= RHYTHM_GOOD_MS) _rhythm.goodHits++;
+  if (absMs <= RHYTHM_OK_MS) _rhythm.okHits++;
+  if (judge.key === 'just') _rhythm.justHits++;
+  else if (judge.key === 'nice') _rhythm.niceHits++;
+  else if (judge.key === 'good') _rhythm.goodJudgeHits++;
+  else if (judge.key === 'ok') _rhythm.okJudgeHits++;
+  else _rhythm.closeHits++;
+  var comboBonus = _rhythmComboBonusFor(_rhythm.streak);
+  var feverBonus = _rhythm.streak >= 8 ? RHYTHM_SCORE_FEVER_BONUS : 0;
+  var added = judge.points + comboBonus + feverBonus;
+  _rhythm.score += added;
+  return { judge: judge, added: added };
+}
+function _recordRhythmMiss() {
+  _rhythm.streak = 0;
+  _rhythm.misses++;
+  _clearRhythmFever();
+}
+function _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn) {
+  judge = judge || { key: 'miss', label: 'ミス', points: 0 };
+  var host = null;
+  var left = '50%';
+  var top = null;
+  if (document.body.classList.contains('rhythm-layout')) {
+    host = _ghLanesEl();
+    left = ((Math.max(0, Math.min(7, laneIdx | 0)) + 0.5) * 12.5) + '%';
+  } else {
+    host = document.getElementById('stage');
+    var rect = btn ? btn.getBoundingClientRect() : null;
+    if (rect) {
+      var p = _viewportPointToStage(rect.left + rect.width / 2, rect.top - rect.height * 0.16);
+      left = p.x + 'px';
+      top = p.y + 'px';
+    }
+  }
+  if (!host) return;
+  var pop = document.createElement('div');
+  pop.className = 'rhythm-judge-pop ' + (judge.key || 'miss');
+  pop.style.setProperty('--judge-left', left);
+  if (top) pop.style.setProperty('--judge-top', top);
+  var label = document.createElement('b');
+  label.textContent = judge.label || 'ミス';
+  pop.appendChild(label);
+  if (addedScore > 0) {
+    var score = document.createElement('small');
+    score.textContent = '+' + _formatRhythmScore(addedScore);
+    pop.appendChild(score);
+  }
+  host.appendChild(pop);
+  if (!_rhythm.flashTimers) _rhythm.flashTimers = [];
+  var timerId = setTimeout(function() {
+    if (pop.parentNode) pop.parentNode.removeChild(pop);
+    if (_rhythm.flashTimers) {
+      var idx = _rhythm.flashTimers.indexOf(timerId);
+      if (idx >= 0) _rhythm.flashTimers.splice(idx, 1);
+    }
+  }, 760);
+  _rhythm.flashTimers.push(timerId);
 }
 function _removeRhythmFeverClasses() {
   RHYTHM_FEVER_CLASSES.forEach(function(cls) {
@@ -4800,7 +5228,7 @@ function _ghClearFlashTimers() {
   _rhythm.flashTimers = [];
   var lanes = _ghLanesEl();
   if (lanes) {
-    lanes.querySelectorAll('.gh-flash, .gh-burst, .gh-note-pop').forEach(function(el) {
+    lanes.querySelectorAll('.gh-flash, .gh-burst, .gh-note-pop, .rhythm-judge-pop').forEach(function(el) {
       if (el.parentNode) el.parentNode.removeChild(el);
     });
   }
@@ -4991,10 +5419,9 @@ function _ghUpdateFallingNotes(now) {
     // ミス判定。最後の1音だけ、押す直前に完了へ流れないよう少し長めに待つ。
     if (until < -_rhythmHitWindowMsForSeq(note.seq) && !note.missed && !_rhythm.demoActive) {
       note.missed = true;
-      _rhythm.streak = 0;
-      _rhythm.misses++;
-      _clearRhythmFever();
+      _recordRhythmMiss();
       _setRhythmStatus('つぎいこう', 'miss');
+      _spawnRhythmJudgePop(note.lane, { key: 'miss', label: 'ミス' }, 0);
       _ghSpawnNoteBurst(note, 'miss');
       _playRhythmBlockSfx('miss', note.lane);
       _ghFlashLane(note.lane, 'miss');
@@ -5086,6 +5513,9 @@ function _hideRhythmComplete() {
   if (complete) complete.classList.remove('show');
   var actions = document.getElementById('rhythm-complete-actions');
   if (actions) actions.classList.add('hidden');
+  var form = document.getElementById('rhythm-name-form');
+  if (form) form.classList.add('hidden');
+  _rhythm.pendingScoreEntry = null;
   _renderRhythmResultStars(0);
 }
 function _rhythmScoreStars() {
@@ -5104,11 +5534,108 @@ function _renderRhythmResultStars(stars) {
     star.classList.toggle('lit', index < stars);
   });
 }
+function _rhythmFinalScore(stars) {
+  var total = Math.max(0, _rhythm.score || 0);
+  total += Math.max(1, Math.min(3, stars || 1)) * RHYTHM_SCORE_STAR_BONUS;
+  total += Math.max(0, _rhythm.maxStreak || 0) * RHYTHM_SCORE_MAX_COMBO_BONUS;
+  if ((_rhythm.misses || 0) === 0) total += RHYTHM_SCORE_NOMISS_BONUS;
+  if (RHYTHM_PRACTICE_MODE === 'full') total += RHYTHM_SCORE_FULL_BONUS;
+  return Math.max(0, Math.round(total));
+}
+function _rhythmScoreEntry(score, stars) {
+  return {
+    key: _rhythmScoreKey(),
+    title: _rhythmScoreTitle(),
+    score: Math.max(0, Math.round(score || 0)),
+    stars: Math.max(1, Math.min(3, stars || 1)),
+    just: _rhythm.justHits || 0,
+    nice: _rhythm.niceHits || 0,
+    good: _rhythm.goodJudgeHits || 0,
+    ok: _rhythm.okJudgeHits || 0,
+    close: _rhythm.closeHits || 0,
+    misses: _rhythm.misses || 0,
+    maxStreak: _rhythm.maxStreak || 0,
+    hits: _rhythm.hits || 0,
+    mode: RHYTHM_PRACTICE_MODE,
+    songId: RHYTHM_BASE_SONG ? RHYTHM_BASE_SONG.id : '',
+    sectionIndex: RHYTHM_SECTION_INDEX,
+    date: new Date().toISOString()
+  };
+}
+function _renderRhythmScoreSummary(entry) {
+  entry = entry || _rhythmScoreEntry(0, 1);
+  var value = document.getElementById('rhythm-score-value');
+  if (value) value.textContent = _formatRhythmScore(entry.score);
+  var breakdown = document.getElementById('rhythm-score-breakdown');
+  if (!breakdown) return;
+  var parts = [
+    ['ジャスト', entry.just || 0],
+    ['ナイス', entry.nice || 0],
+    ['グッド', entry.good || 0],
+    ['オッケー', entry.ok || 0],
+    ['おしい', entry.close || 0],
+    ['ミス', entry.misses || 0]
+  ];
+  breakdown.innerHTML = parts.map(function(part) {
+    return '<span>' + part[0] + '<b>' + part[1] + '</b></span>';
+  }).join('');
+}
+function _renderRhythmLeaderboard(key, currentId) {
+  var box = document.getElementById('rhythm-ranking');
+  var title = document.getElementById('rhythm-ranking-title');
+  var listEl = document.getElementById('rhythm-ranking-list');
+  if (!box || !listEl) return;
+  var list = _rhythmLeaderboard(key || _rhythmScoreKey());
+  box.classList.remove('hidden');
+  if (title) title.textContent = 'ハイスコア ' + _rhythmScoreTitle();
+  if (!list.length) {
+    listEl.innerHTML = '<div class="rhythm-ranking-empty">まだ きろくが ないよ</div>';
+    return;
+  }
+  listEl.innerHTML = list.map(function(item, index) {
+    var current = currentId && item.id === currentId ? ' current' : '';
+    return '<div class="rhythm-ranking-row' + current + '">' +
+      '<span>' + (index + 1) + 'い</span>' +
+      '<span class="rhythm-ranking-name">' + _escapeHtml(item.name || 'ポノ') + '</span>' +
+      '<span>' + _formatRhythmScore(item.score) + '</span>' +
+    '</div>';
+  }).join('');
+}
+function _escapeHtml(text) {
+  return String(text == null ? '' : text).replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
+}
+function _prepareRhythmNameForm(entry) {
+  var form = document.getElementById('rhythm-name-form');
+  var input = document.getElementById('rhythm-name-input');
+  var label = document.getElementById('rhythm-name-label');
+  if (!form || !input) return;
+  if (!entry || !_rhythmScoreQualifies(entry.key, entry.score)) {
+    form.classList.add('hidden');
+    _rhythm.pendingScoreEntry = null;
+    return;
+  }
+  _rhythm.pendingScoreEntry = entry;
+  form.classList.remove('hidden');
+  if (label) label.textContent = '10いに はいったよ';
+  try {
+    input.value = localStorage.getItem(RHYTHM_SCORE_NAME_KEY) || '';
+  } catch(e) {
+    input.value = '';
+  }
+  if (!input.value) input.value = 'ポノ';
+  setTimeout(function() {
+    try { input.focus(); input.select(); } catch(e) {}
+  }, 120);
+}
 function _showRhythmComplete(result) {
   _hideRhythmMenu();
   _clearRhythmCompleteTimers();
   result = result || {};
   var stars = Math.max(1, Math.min(3, result.stars || 1));
+  var finalScore = result.score == null ? _rhythmFinalScore(stars) : Math.max(0, Math.round(result.score || 0));
+  var scoreEntry = _rhythmScoreEntry(finalScore, stars);
   var hasNextPart = !!result.hasNextPart;
   var clearedFullSong = RHYTHM_PRACTICE_MODE === 'full';
   if (clearedFullSong) _markRhythmSongCleared(stars);
@@ -5123,6 +5650,9 @@ function _showRhythmComplete(result) {
   if (!complete) return;
   if (title) title.textContent = stars >= 3 ? 'よくできたね' : (stars === 2 ? 'いいね' : 'さいごまで できたね');
   _renderRhythmResultStars(stars);
+  _renderRhythmScoreSummary(scoreEntry);
+  _renderRhythmLeaderboard(scoreEntry.key, null);
+  _prepareRhythmNameForm(scoreEntry);
   if (text) text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
   if (actions) actions.classList.add('hidden');
   if (next) {
@@ -5274,6 +5804,14 @@ function _startRhythmMode() {
   _rhythm.goodHits = 0;
   _rhythm.okHits = 0;
   _rhythm.misses = 0;
+  _rhythm.justHits = 0;
+  _rhythm.niceHits = 0;
+  _rhythm.goodJudgeHits = 0;
+  _rhythm.okJudgeHits = 0;
+  _rhythm.closeHits = 0;
+  _rhythm.maxStreak = 0;
+  _rhythm.score = 0;
+  _rhythm.pendingScoreEntry = null;
   _clearRhythmFever();
   _rhythm.nowCue = false;
   // v705+: 古い startPerfTime が残っていると、ジオメトリ計算前に
@@ -5460,15 +5998,16 @@ function _scheduleRhythmMelody(peakGain) {
   });
   return true;
 }
-function _playRhythmBlockSfx(kind, laneIdx) {
+function _playRhythmBlockSfx(kind, laneIdx, judge) {
   var ac = getAC();
   if (!ac) return;
   var now = ac.currentTime;
   var isMiss = kind === 'miss';
+  var hitPower = isMiss ? 1 : Math.max(0.65, Math.min(1.45, (judge && judge.power) || 1));
   var base = (_doremiFreqs()[laneIdx] || 440) * (isMiss ? 0.5 : 2);
   var master = ac.createGain();
   master.gain.setValueAtTime(0, now);
-  master.gain.linearRampToValueAtTime(isMiss ? 0.055 : 0.095, now + 0.012);
+  master.gain.linearRampToValueAtTime(isMiss ? 0.055 : 0.095 * hitPower, now + 0.012);
   master.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.16 : 0.22));
   master.connect(ac.destination);
 
@@ -5489,16 +6028,33 @@ function _playRhythmBlockSfx(kind, laneIdx) {
   osc.frequency.setValueAtTime(Math.max(140, base), now);
   osc.frequency.exponentialRampToValueAtTime(Math.max(90, base * (isMiss ? 0.62 : 1.58)), now + (isMiss ? 0.12 : 0.18));
   toneGain.gain.setValueAtTime(0, now);
-  toneGain.gain.linearRampToValueAtTime(isMiss ? 0.05 : 0.075, now + 0.018);
+  toneGain.gain.linearRampToValueAtTime(isMiss ? 0.05 : 0.075 * hitPower, now + 0.018);
   toneGain.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.14 : 0.2));
   osc.connect(toneGain);
   toneGain.connect(master);
   osc.start(now);
   osc.stop(now + (isMiss ? 0.16 : 0.22));
 
+  var sparkleOsc = null;
+  var sparkleGain = null;
+  if (!isMiss && judge && (judge.key === 'just' || judge.key === 'nice')) {
+    sparkleOsc = ac.createOscillator();
+    sparkleGain = ac.createGain();
+    sparkleOsc.type = 'sine';
+    sparkleOsc.frequency.setValueAtTime(base * (judge.key === 'just' ? 1.5 : 1.25), now + 0.018);
+    sparkleGain.gain.setValueAtTime(0, now + 0.018);
+    sparkleGain.gain.linearRampToValueAtTime(judge.key === 'just' ? 0.052 : 0.034, now + 0.035);
+    sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    sparkleOsc.connect(sparkleGain);
+    sparkleGain.connect(master);
+    sparkleOsc.start(now + 0.018);
+    sparkleOsc.stop(now + 0.19);
+  }
+
   var cleanupDelay = isMiss ? 260 : 320;
   setTimeout(function() {
-    [click, filter, osc, toneGain, master].forEach(function(node) {
+    [click, filter, osc, toneGain, sparkleOsc, sparkleGain, master].forEach(function(node) {
+      if (!node) return;
       try { node.disconnect(); } catch(e) {}
     });
   }, cleanupDelay);
@@ -5740,7 +6296,7 @@ function _stopRhythmMode() {
   _rhythm.nextSpawnSeq = 0;
   _clearRhythmButtonState();
   document.querySelectorAll('.instr-btn').forEach(function(btn) {
-    btn.classList.remove('rhythm-hit', 'rhythm-miss');
+    btn.classList.remove('rhythm-hit', 'rhythm-hit-just', 'rhythm-hit-nice', 'rhythm-miss');
   });
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.remove('show');
@@ -5793,10 +6349,9 @@ function handleRhythmTap(idx, btn) {
       //       赤フラッシュを出さない。何かが落ちている時 / 同レーンで明確に過ぎている時のみ赤。
       var hasAnyActiveNote = _rhythm.activeNotes && _rhythm.activeNotes.length > 0;
       if (hasAnyActiveNote) {
-        _rhythm.streak = 0;
-        _rhythm.misses++;
-        _clearRhythmFever();
+        _recordRhythmMiss();
         _setRhythmStatus('ちがうレーン', 'miss');
+        _spawnRhythmJudgePop(laneIdx, { key: 'miss', label: 'ミス' }, 0, btn);
         _ghSpawnNoteBurst(laneIdx, 'miss');
         _playRhythmBlockSfx('miss', laneIdx);
         _ghFlashLane(laneIdx, 'miss');
@@ -5811,26 +6366,30 @@ function handleRhythmTap(idx, btn) {
       return;
     }
     var abs = Math.abs(delta);
-    _rhythm.streak++;
-    _rhythm.hits++;
+    var hitResult = _recordRhythmHit(abs);
+    var judge = hitResult.judge;
+    var addedScore = hitResult.added;
     var rect = btn ? btn.getBoundingClientRect() : null;
     var cx = rect ? rect.left + rect.width / 2 : 0;
     var cy = rect ? rect.top + rect.height / 2 : 0;
-    if (abs <= RHYTHM_GOOD_MS) {
-      _rhythm.goodHits++;
-      _rhythm.okHits++;
-      _setRhythmStatus(_rhythm.streak >= 4 ? 'れんぞく！' : 'ぴったり！', 'good');
+    if (judge.key === 'just' || judge.key === 'nice') {
+      _setRhythmStatus(_rhythm.streak >= 4 ? judge.short + ' ' + _rhythm.streak + 'れん' : judge.label, 'good');
       if (rect) spawnRipples(cx, cy);
-    } else if (abs <= RHYTHM_OK_MS) {
-      _rhythm.okHits++;
-      _setRhythmStatus('いいね', 'good');
+      if (judge.key === 'just') {
+        var pJust = _viewportPointToStage(cx, cy);
+        spawnParticles(pJust.x, pJust.y, 12);
+      }
+    } else if (judge.key === 'good' || judge.key === 'ok') {
+      _setRhythmStatus(_rhythm.streak >= 4 ? judge.short + ' ' + _rhythm.streak + 'れん' : judge.label, 'good');
+      if (judge.key === 'good' && rect) spawnRipples(cx, cy);
     } else {
-      _setRhythmStatus('おしい', 'warn');
+      _setRhythmStatus(judge.label, 'warn');
     }
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNotePop(best);
-    _playRhythmBlockSfx('success', laneIdx);
-    _pulseRhythmButton(btn, 'rhythm-hit');
+    _playRhythmBlockSfx('success', laneIdx, judge);
+    _pulseRhythmButton(btn, 'rhythm-hit' + (judge.key === 'just' ? ' rhythm-hit-just' : (judge.key === 'nice' ? ' rhythm-hit-nice' : '')));
+    _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn);
     _updateRhythmFever(laneIdx);
     _ghRemoveNote(best);
     _advanceRhythm(true);
@@ -5843,10 +6402,9 @@ function handleRhythmTap(idx, btn) {
   var expected = _rhythmExpectedIdx(0);
   var deltaL = performance.now() - _rhythm.targetTime;
   if (idx !== expected) {
-    _rhythm.streak = 0;
-    _rhythm.misses++;
-    _clearRhythmFever();
+    _recordRhythmMiss();
     _setRhythmStatus('ひかるボタンだよ', 'miss');
+    _spawnRhythmJudgePop(idx, { key: 'miss', label: 'ミス' }, 0, btn);
     _pulseRhythmButton(btn, 'rhythm-miss');
     return;
   }
@@ -5855,19 +6413,16 @@ function handleRhythmTap(idx, btn) {
     return;
   }
   var absL = Math.abs(deltaL);
-  _rhythm.streak++;
-  _rhythm.hits++;
-  if (absL <= RHYTHM_GOOD_MS) {
-    _rhythm.goodHits++;
-    _rhythm.okHits++;
-    _setRhythmStatus(_rhythm.streak >= 4 ? 'れんぞく！' : 'ぴったり！', 'good');
-  } else if (absL <= RHYTHM_OK_MS) {
-    _rhythm.okHits++;
-    _setRhythmStatus('いいね', 'good');
+  var ringHit = _recordRhythmHit(absL);
+  var ringJudge = ringHit.judge;
+  if (ringJudge.key === 'just' || ringJudge.key === 'nice' || ringJudge.key === 'good' || ringJudge.key === 'ok') {
+    _setRhythmStatus(_rhythm.streak >= 4 ? ringJudge.short + ' ' + _rhythm.streak + 'れん' : ringJudge.label, 'good');
   } else {
-    _setRhythmStatus('おしい', 'warn');
+    _setRhythmStatus(ringJudge.label, 'warn');
   }
-  _pulseRhythmButton(btn, 'rhythm-hit');
+  _playRhythmBlockSfx('success', idx, ringJudge);
+  _pulseRhythmButton(btn, 'rhythm-hit' + (ringJudge.key === 'just' ? ' rhythm-hit-just' : (ringJudge.key === 'nice' ? ' rhythm-hit-nice' : '')));
+  _spawnRhythmJudgePop(idx, ringJudge, ringHit.added, btn);
   _updateRhythmFever(idx);
   _advanceRhythm(true);
 }
@@ -5955,6 +6510,20 @@ if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e)
   if (!_goToNextRhythmSection() && !_goToNextRhythmStage()) return;
   _hideRhythmComplete();
   _beginRhythmCountdown();
+});
+var rhythmNameForm = document.getElementById('rhythm-name-form');
+if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  var entry = _rhythm.pendingScoreEntry;
+  if (!entry) return;
+  var input = document.getElementById('rhythm-name-input');
+  var rank = _saveRhythmScoreEntry(entry, input ? input.value : 'ポノ');
+  _rhythm.pendingScoreEntry = null;
+  rhythmNameForm.classList.add('hidden');
+  var label = document.getElementById('rhythm-name-label');
+  if (label && rank) label.textContent = rank + 'いに のこったよ';
+  _renderRhythmLeaderboard(entry.key, entry.id);
 });
 _renderRhythmSongMenu();
 _updateRhythmMenuActions();
