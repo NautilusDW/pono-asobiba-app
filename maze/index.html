@@ -691,7 +691,7 @@ body.image-stage-mode .game-wrap {
 }
 
 /* ── Encounter modal (creature mini-game) ── */
-/* 横画面: 左に creature/絵、右に問題文 + 選択肢の2カラム。常に1画面に収める。 */
+/* エンカウンター紹介: キャラを主役にした縦積み。ミニゲーム中は .is-janken 側で上書き。 */
 .encounter-modal {
   position: fixed; inset: 0;
   background: rgba(20, 30, 15, 0.78);
@@ -709,14 +709,15 @@ body.image-stage-mode .game-wrap {
   background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDE 100%);
   border: 4px solid #6C8E3F;
   border-radius: 22px;
-  padding: 14px 18px;
+  padding: 18px 20px 20px;
   width: min(92vw, 720px);
   max-height: 94dvh;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   display: grid;
-  grid-template-columns: minmax(160px, 42%) 1fr;
-  column-gap: 18px;
+  grid-template-columns: 1fr;
+  row-gap: 14px;
   align-items: center;
+  justify-items: center;
   text-align: center;
   animation: encPop 0.35s ease-out;
   overflow: hidden;
@@ -737,22 +738,24 @@ body.image-stage-mode .game-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
   min-width: 0;
+  width: 100%;
   max-height: 88dvh;
 }
 .enc-creature {
-  font-size: clamp(3.6rem, 16vw, 6.5rem);
+  order: 1;
+  font-size: clamp(6.5rem, 24vh, 10rem);
   line-height: 1;
   margin: 0;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   animation: encWiggle 1.2s ease-in-out infinite;
 }
 .enc-creature img {
-  height: 1em;
+  height: clamp(120px, 28vh, 200px);
   width: auto;
-  max-width: 1.6em;
+  max-width: min(72vw, 280px);
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -762,28 +765,67 @@ body.image-stage-mode .game-wrap {
   50%      { transform: rotate(6deg); }
 }
 .enc-name {
+  order: 3;
   font-size: clamp(1rem, 2.4vw, 1.2rem);
   font-weight: 900;
   color: #6C8E3F;
   margin: 0;
 }
 .enc-dialog {
+  order: 2;
+  position: relative;
+  background: #FFFAE6;
+  border: 2px solid #F5C842;
+  border-radius: 18px;
+  padding: 12px 18px;
   font-size: clamp(0.82rem, 1.9vw, 1rem);
   color: #5D4E37;
-  margin: 0;
+  margin: 2px 0 0;
   line-height: 1.45;
-  max-height: 22dvh;
+  width: min(100%, 520px);
+  max-width: min(100%, 520px);
+  max-height: 24dvh;
   overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(118,88,34,0.12);
+}
+.enc-dialog::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 12px solid #F5C842;
+}
+.enc-dialog::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 9px solid #FFFAE6;
+  z-index: 1;
 }
 .enc-stage {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   min-width: 0;
+  width: 100%;
   max-height: 84dvh;
   overflow-y: auto;
+}
+.encounter-modal .enc-card.is-janken .enc-stage {
+  align-items: stretch;
 }
 /* Strict 2-col grid for choice rows — overrides inline flex/max-width set by JS */
 .enc-stage .row {
@@ -808,7 +850,13 @@ body.image-stage-mode .game-wrap {
   transition: transform 0.1s;
 }
 .enc-btn:active { transform: scale(0.95); }
-.enc-btn.primary { background: linear-gradient(135deg, #6C8E3F, #A4C76D); color: #fff; }
+.enc-btn.primary {
+  width: auto;
+  align-self: center;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, #6C8E3F, #A4C76D);
+  color: #fff;
+}
 .enc-btn.choice { font-size: clamp(1.6rem, 5vw, 2.2rem); padding: 12px 18px; min-width: 0; background: #FFF; border: 3px solid #A4C76D; }
 .enc-btn.choice.has-img {
   min-height: 82px;
@@ -1100,22 +1148,56 @@ body.image-stage-mode .game-wrap {
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.18));
 }
 .flag-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(28px, 8vw, 56px);
+  margin-top: 12px;
 }
 .flag-controls .enc-btn {
-  min-height: 54px;
-  font-size: clamp(1.1rem, 2.8vw, 1.45rem);
+  position: relative;
+  width: clamp(88px, 22vw, 132px);
+  height: clamp(88px, 22vw, 132px);
+  min-width: 88px;
+  min-height: 88px;
+  padding: 0;
+  border-radius: 50%;
+  overflow: visible;
+  outline: 14px solid transparent;
+  outline-offset: 0;
+  color: transparent;
+  font-size: 0;
+  transition: transform 0.06s ease-out, box-shadow 0.06s ease-out;
+}
+.flag-controls .enc-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.72);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.25);
+}
+.flag-controls .enc-btn:active,
+.flag-controls .enc-btn.is-pressing {
+  transform: scale(0.88);
+  box-shadow: inset 0 6px 12px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
+}
+.flag-controls .enc-btn:active::after,
+.flag-controls .enc-btn.is-rippling::after {
+  animation: flagBtnRipple 0.45s ease-out;
 }
 .flag-controls .flag-red {
   background: linear-gradient(135deg, #E94E4E, #FF8A7A);
-  color: #fff;
 }
 .flag-controls .flag-white {
   background: linear-gradient(135deg, #FFFFFF, #F3E8D5);
-  color: #5D4E37;
   border: 3px solid #D7C9AD;
+}
+@keyframes flagBtnRipple {
+  0%   { opacity: 0.72; transform: scale(0.25); }
+  100% { opacity: 0; transform: scale(1.6); }
 }
 .flag-reward {
   display: grid;
@@ -1837,12 +1919,17 @@ body.image-stage-mode .game-wrap {
     max-height: min(28dvh, 110px) !important;
   }
   .flag-controls {
-    gap: 8px;
+    gap: clamp(20px, 7vw, 34px);
+    margin-top: 4px;
   }
   .flag-controls .enc-btn {
-    min-height: 42px;
-    padding: 5px 12px;
-    font-size: clamp(0.95rem, 3.8vw, 1.2rem);
+    width: clamp(64px, 17vw, 86px);
+    height: clamp(64px, 17vw, 86px);
+    min-width: 64px;
+    min-height: 64px;
+    padding: 0;
+    border-radius: 50%;
+    outline-width: 10px;
   }
   .flag-reward {
     min-height: min(64dvh, 220px);
@@ -2001,14 +2088,9 @@ body.image-stage-mode .game-wrap {
 
 /* Portrait fallback: 縦積みでも 1 画面に収める */
 @media (orientation: portrait) {
-  .encounter-modal .enc-card {
-    grid-template-columns: 1fr;
-  }
-  .enc-creature { font-size: clamp(2.6rem, 12vw, 4rem); }
-  .enc-stage canvas,
-  .enc-stage img { max-height: 28dvh; }
-  .enc-dialog { max-height: 14dvh; }
-  .enc-stage { max-height: 45dvh; }
+  .encounter-modal .enc-card { width: min(94vw, 720px); }
+  .enc-creature img { height: clamp(120px, 24vh, 180px); }
+  .enc-dialog { max-height: 22dvh; }
   .janken-arena {
     grid-template-columns: 1fr 1fr;
   }
@@ -6033,17 +6115,29 @@ function _showFlagGame() {
   const red = document.createElement('button');
   red.className = 'enc-btn flag-red';
   red.dataset.flag = 'red';
-  red.textContent = 'あか';
+  red.setAttribute('aria-label', '赤');
   const white = document.createElement('button');
   white.className = 'enc-btn flag-white';
   white.dataset.flag = 'white';
-  white.textContent = 'しろ';
+  white.setAttribute('aria-label', '白');
   controls.appendChild(red);
   controls.appendChild(white);
   wrap.appendChild(controls);
   encStageEl.appendChild(wrap);
   controls.querySelectorAll('button').forEach(function(btn) {
-    btn.addEventListener('click', function() { _onFlagTap(btn.dataset.flag); });
+    const stopPress = function() { btn.classList.remove('is-pressing'); };
+    btn.addEventListener('pointerdown', function() { btn.classList.add('is-pressing'); });
+    btn.addEventListener('pointerup', stopPress);
+    btn.addEventListener('pointercancel', stopPress);
+    btn.addEventListener('pointerleave', stopPress);
+    btn.addEventListener('blur', stopPress);
+    btn.addEventListener('click', function() {
+      btn.classList.remove('is-rippling');
+      void btn.offsetWidth;
+      btn.classList.add('is-rippling');
+      setTimeout(function() { btn.classList.remove('is-rippling'); }, 460);
+      _onFlagTap(btn.dataset.flag);
+    });
   });
   _renderFlagStep(true);
 }

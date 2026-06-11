@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:428-maze-encounter-flag-ui] DONE - Codex: `docs/maze-codex-prompts/encounter-modal-and-flag-buttons-20260612.md` に従い、迷路エンカウンター紹介モーダルをキャラ大きめの縦積み + 吹き出し台詞 + 内容幅の開始ボタンへ変更。旗あげミニゲームの赤/白ボタンを文字なし円形ボタンにし、`aria-label`、押下縮小、インナーシャドウ、リップルクラスを追加。`sw.js` は v1031。Node inline script parse、`git diff --check`、Playwrightで320/1024幅の紹介モーダル、旗ボタン円形/aria/横overflowなし、9種キャラ高さ、低横画面、押下feedbackを確認。 (by Codex)
 - 2026-06-12 - [batch:427-maze-editor-web-position] DONE - Codex: 迷路エディターでクモの巣障害物を置いた時に自動で `webGimmick` へ接続し、`size` 付きの簡易クモの巣描画と大きさに合ったドラッグ判定を追加。最新 `maze/imageStages/stage7.json` に落ちていた `stage7-web-gate` / `webGimmick` / ほうき位置を復元し、移動モードで位置編集できる状態に戻した。`sw.js` は v1030。JSON parse、editor inline script parse、Playwright で web 追加→イベント接続→export を確認。 (by Codex)
 - 2026-06-12 - [batch:426-maze-peek-quiz-animal-raw] DONE - Codex: チラッとクイズ用の `lion` / `kuma` / `kujira` / `neko` 4点を GPT Image 2 raw として再生成し、`tmp/alpha_pending/426_maze_peek_quiz_animals_raw/` に `lion_raw.png` / `kuma_raw.png` / `kujira_raw.png` / `neko_raw.png` で保存。アルファ抜き・切り抜き・最終 `assets/` 差し替えは未実施。 (by Codex)
 - 2026-06-11 - [batch:425-oto-rhythm-thin-cylinder-webgl-keys] DONE - Codex: OtoTouchリズムの移動ノードをより薄い平面寄りの円柱コインへ調整し、下のドレミファソラシドはDOM/CSS傾きではなくWebGL描画の薄い3D角丸キーへ差し替え。DOMボタンは透明なタップ領域として残し、WebGLキーは押下中に沈む・ヒット時に光る・ターゲット時に軽く強調される。`sw.js` / `PAGE_CACHE_VERSION` は v1029。Node inline script parse、`git diff --check`、UTF-8/LF確認、Playwrightでdesktop/mobileのWebGLキー表示、押下中/解放後の再描画、横overflow 0を確認。 (by Codex)
