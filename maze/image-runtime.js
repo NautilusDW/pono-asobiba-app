@@ -125,6 +125,7 @@
       flagGimmick: stageDef.flagGimmick || null,
       waterGimmick: stageDef.waterGimmick || null,
       strengthGimmick: stageDef.strengthGimmick || null,
+      webGimmick: stageDef.webGimmick || null,
       obstacles: obstacles,
       creatures: creatures,
       nodesById: nodesById,

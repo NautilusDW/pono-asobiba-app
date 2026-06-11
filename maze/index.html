@@ -432,6 +432,11 @@ body.image-stage-mode #flagInventoryHud.show {
   object-fit: contain;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.18));
 }
+.flag-inventory-emoji {
+  font-size: 23px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.18));
+}
 /* 旧 grid モードのみ非表示。image-stage-mode (デフォ) では出る */
 body:not(.image-stage-mode) #imgStageLabel { display: none; }
 body:not(.image-stage-mode) #flagInventoryHud { display: none; }
@@ -1622,6 +1627,147 @@ body.image-stage-mode .game-wrap {
   }
 }
 
+.web-game {
+  display: grid;
+  grid-template-rows: auto minmax(170px, 1fr) 1.8em;
+  gap: 10px;
+  align-items: center;
+  min-height: min(55dvh, 390px);
+  overflow: hidden;
+}
+.web-game__title {
+  min-height: 1.7em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.15rem, 3vw, 1.75rem);
+  font-weight: 900;
+  color: #5D4E37;
+  line-height: 1.2;
+}
+.web-game__stage {
+  position: relative;
+  min-height: 170px;
+  border: 4px solid #BFD88A;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255,255,255,0.92) 0 28%, rgba(222,242,248,0.68) 29% 52%, rgba(171,213,218,0.26) 53% 100%),
+    linear-gradient(180deg, #FFF7EA, #ECF8F6);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.68), 0 4px 14px rgba(0,0,0,0.12);
+  touch-action: none;
+}
+.web-game__stage::before,
+.web-game__stage::after {
+  content: "";
+  position: absolute;
+  inset: 13% 10%;
+  border-radius: 50%;
+  border: 2px dashed rgba(120, 161, 169, 0.34);
+  pointer-events: none;
+}
+.web-game__stage::after {
+  inset: 27% 24%;
+  opacity: 0.7;
+}
+.web-spider {
+  position: absolute;
+  top: 8%;
+  right: 8%;
+  width: clamp(58px, 12vw, 92px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(80, 67, 70, 0.9);
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 5px 13px rgba(0,0,0,0.2);
+  color: #FFFFFF;
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  z-index: 4;
+  animation: webSpiderBob 1.6s ease-in-out infinite;
+}
+.web-broom {
+  position: absolute;
+  left: 5%;
+  bottom: 6%;
+  width: clamp(64px, 15vw, 112px);
+  height: clamp(64px, 15vw, 112px);
+  display: grid;
+  place-items: center;
+  font-size: clamp(2.4rem, 7vw, 4.1rem);
+  transform: rotate(-18deg);
+  filter: drop-shadow(0 5px 7px rgba(0,0,0,0.18));
+  z-index: 4;
+  pointer-events: none;
+}
+.web-strand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(180px, 54vw, 420px);
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(189,228,236,0.86)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.8) 0 14px, rgba(150,201,210,0.55) 14px 24px);
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.52),
+    0 5px 12px rgba(67,103,112,0.18);
+  cursor: pointer;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--rot, 0deg))
+    translateY(var(--offset, 0px))
+    scaleX(1);
+  transform-origin: center;
+  z-index: 3;
+  transition: opacity 0.2s ease, transform 0.24s ease, filter 0.2s ease;
+}
+.web-strand::before,
+.web-strand::after {
+  content: "";
+  position: absolute;
+  inset: 6px 10px;
+  border-top: 2px solid rgba(90,139,150,0.42);
+  border-radius: 999px;
+}
+.web-strand::after {
+  inset: 13px 28px 0;
+  border-top-color: rgba(255,255,255,0.72);
+}
+.web-strand.is-next {
+  filter: brightness(1.08);
+  animation: webStrandPulse 0.72s ease-in-out infinite alternate;
+}
+.web-strand.is-cut {
+  opacity: 0;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--rot, 0deg))
+    translateY(var(--offset, 0px))
+    translateX(var(--cut-x, 36px))
+    scaleX(0.2);
+  pointer-events: none;
+}
+.web-game__status {
+  min-height: 1.8em;
+  display: grid;
+  place-items: center;
+  font-size: clamp(0.98rem, 2.4vw, 1.25rem);
+  font-weight: 900;
+  color: #6C8E3F;
+  line-height: 1.2;
+}
+@keyframes webStrandPulse {
+  from { box-shadow: 0 0 0 3px rgba(255,255,255,0.52), 0 5px 12px rgba(67,103,112,0.18); }
+  to   { box-shadow: 0 0 0 7px rgba(250,255,186,0.62), 0 6px 16px rgba(67,103,112,0.24); }
+}
+@keyframes webSpiderBob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(8px) rotate(3deg); }
+}
+
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
   .encounter-modal .enc-card.is-janken {
     padding: 8px 10px;
@@ -1792,6 +1938,37 @@ body.image-stage-mode .game-wrap {
     border-width: 1.5px;
   }
   .strength-game__status {
+    min-height: 1.3em;
+    font-size: 0.82rem;
+  }
+  .web-game {
+    grid-template-rows: 1.55em minmax(92px, 1fr) 1.35em;
+    gap: 5px;
+    min-height: min(64dvh, 225px);
+  }
+  .web-game__title {
+    min-height: 1.4em;
+    font-size: clamp(1rem, 4vw, 1.28rem);
+  }
+  .web-game__stage {
+    min-height: 92px;
+    border-width: 3px;
+    border-radius: 14px;
+  }
+  .web-strand {
+    width: min(58vw, 300px);
+    height: 16px;
+  }
+  .web-spider {
+    width: min(12vw, 58px);
+    font-size: min(6vw, 2.2rem);
+  }
+  .web-broom {
+    width: min(14vw, 68px);
+    height: min(14vw, 68px);
+    font-size: min(7vw, 2.7rem);
+  }
+  .web-game__status {
     min-height: 1.3em;
     font-size: 0.82rem;
   }
@@ -2938,6 +3115,7 @@ function imgLoadStage(def) {
   _initFlagTunnelForStage(stage);
   _initWaterGimmickForStage(stage);
   _initStrengthGimmickForStage(stage);
+  _initWebGimmickForStage(stage);
   pono = {
     type: 'image',
     x: stage.start.x, y: stage.start.y,
@@ -3231,7 +3409,8 @@ function imgFinishWalk() {
   const pickedUpItem =
     _checkFlagLadderPickup(pono.x, pono.y) ||
     _checkWaterPlankPickup(pono.x, pono.y) ||
-    _checkStrengthGlovePickup(pono.x, pono.y);
+    _checkStrengthGlovePickup(pono.x, pono.y) ||
+    _checkWebBroomPickup(pono.x, pono.y);
   if (pono.nodeId === stage.goal.id) {
     onClear();
   } else {
@@ -3269,6 +3448,7 @@ function imgDraw(now) {
       _checkFlagLadderPickup(px, py);
       _checkWaterPlankPickup(px, py);
       _checkStrengthGlovePickup(px, py);
+      _checkWebBroomPickup(px, py);
       // Obstacle hit → bounce back (no minigame). Creatures take priority via encounter.
       if (!_checkObstacleCollision(px, py)) {
         _checkCreatureCollision(px, py);
@@ -3344,6 +3524,7 @@ function imgDraw(now) {
   if (stage.obstacles && stage.obstacles.length) imgDrawObstacles(stage);
   imgDrawWaterGimmick(stage, now);
   imgDrawStrengthGimmick(stage, now);
+  imgDrawWebGimmick(stage, now);
   imgDrawFlagTunnelGimmick(stage, now);
   // Creatures (お邪魔虫 — block path until defeated via mini-game)
   if (stage.creatures && stage.creatures.length) imgDrawCreatures(stage, now);
@@ -3621,6 +3802,12 @@ const CREATURE_KIND_DATA = {
     defeatDialog: 'ぐぐっと うごいた！\nとおれるよ。',
     defaultGame: 'strength_push', imageUrl: '../assets/images/maze/rock.png'
   },
+  kumo: {
+    emoji: '🕷️', color: '#5C5D78', name: 'クモムシ',
+    dialog: 'くものすで とおせんぼ！<br>ほうきで いとを ほどけるかな？',
+    defeatDialog: 'いとが ほどけたね！\nとおって いいよ。',
+    defaultGame: 'web_sweep'
+  },
 };
 // お邪魔虫共通のフォールバック台詞。
 // c.dialog / c.defeatDialog (ステージ JSON での明示指定) があればそちらを最優先。
@@ -3635,7 +3822,7 @@ function _creatureData(c) {
 
 function _setEncounterMode(mode) {
   if (!encCardEl) return;
-  encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'strength_push');
+  encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'strength_push' || mode === 'web_sweep');
 }
 
 const OBSTACLE_KIND_IMG = {
@@ -3655,6 +3842,9 @@ let _waterGimmickTimers = [];
 let _strengthGimmickState = null;
 let _strengthGameState = null;
 let _strengthGimmickTimers = [];
+let _webGimmickState = null;
+let _webGameState = null;
+let _webGimmickTimers = [];
 let _jankenLossStreak = 0;
 let _jankenGuaranteedWinKeys = Object.create(null);
 let _suppressDeadEndBubbleUntil = 0;
@@ -3671,6 +3861,10 @@ const MAZE_ITEM_HINTS = {
   glove: {
     title: 'ちからの てぶくろを てにいれた！',
     body: 'ふつうでは こわせない いわも\nこれなら くだけるかも。',
+  },
+  broom: {
+    title: 'ほうきを てにいれた！',
+    body: 'からまった いとを\nやさしく はらえるかも。\nくものすを さがしてみよう。',
   },
 };
 
@@ -3722,6 +3916,11 @@ function _clearStrengthGimmickTimers() {
   }
 }
 
+function _clearWebGimmickTimers() {
+  _webGimmickTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
+  _webGimmickTimers = [];
+}
+
 function _waterGimmickSetTimeout(fn, ms) {
   const t = setTimeout(function() {
     _waterGimmickTimers = _waterGimmickTimers.filter(function(x) { return x !== t; });
@@ -3737,6 +3936,15 @@ function _strengthGimmickSetTimeout(fn, ms) {
     fn();
   }, ms);
   _strengthGimmickTimers.push(t);
+  return t;
+}
+
+function _webGimmickSetTimeout(fn, ms) {
+  const t = setTimeout(function() {
+    _webGimmickTimers = _webGimmickTimers.filter(function(x) { return x !== t; });
+    fn();
+  }, ms);
+  _webGimmickTimers.push(t);
   return t;
 }
 
@@ -3762,8 +3970,14 @@ function _updateFlagInventoryHud() {
   if (_strengthGimmickState && _strengthGimmickState.gloveCollected && !_strengthGimmickState.rockMoved) {
     items.push({ src: MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png', alt: 'ちからのてぶくろ' });
   }
+  if (_webGimmickState && _webGimmickState.broomCollected && !_webGimmickState.webCleared) {
+    items.push({ emoji: '🧹', alt: 'ほうき' });
+  }
   flagInventoryHud.innerHTML = items.map(function(item) {
-    return '<div class="flag-inventory-item"><img src="' + item.src + '" alt="' + item.alt + '"></div>';
+    if (item.src) {
+      return '<div class="flag-inventory-item"><img src="' + item.src + '" alt="' + item.alt + '"></div>';
+    }
+    return '<div class="flag-inventory-item"><span class="flag-inventory-emoji" role="img" aria-label="' + item.alt + '">' + item.emoji + '</span></div>';
   }).join('');
   flagInventoryHud.classList.toggle('show', items.length > 0);
   flagInventoryHud.setAttribute('aria-hidden', items.length > 0 ? 'false' : 'true');
@@ -3887,6 +4101,22 @@ function _initStrengthGimmickForStage(stageObj) {
   _updateFlagInventoryHud();
 }
 
+function _initWebGimmickForStage(stageObj) {
+  _clearWebGimmickTimers();
+  _webGameState = null;
+  if (!stageObj || !stageObj.webGimmick) {
+    _webGimmickState = null;
+    _updateFlagInventoryHud();
+    return;
+  }
+  _webGimmickState = {
+    id: stageObj.webGimmick.id || 'web-gate',
+    broomCollected: false,
+    webCleared: false,
+  };
+  _updateFlagInventoryHud();
+}
+
 function _flagTunnelCfg() {
   return stage && stage.flagGimmick && _flagTunnelState ? stage.flagGimmick : null;
 }
@@ -3897,6 +4127,10 @@ function _waterGimmickCfg() {
 
 function _strengthGimmickCfg() {
   return stage && stage.strengthGimmick && _strengthGimmickState ? stage.strengthGimmick : null;
+}
+
+function _webGimmickCfg() {
+  return stage && stage.webGimmick && _webGimmickState ? stage.webGimmick : null;
 }
 
 function _flagObstacleById(id) {
@@ -3945,6 +4179,16 @@ function _strengthRockObstacle() {
 
 function _isStrengthRockObstacle(o) {
   const cfg = _strengthGimmickCfg();
+  return !!(cfg && o && o.id && o.id === cfg.obstacleId);
+}
+
+function _webObstacle() {
+  const cfg = _webGimmickCfg();
+  return cfg ? _flagObstacleById(cfg.obstacleId) : null;
+}
+
+function _isWebGimmickObstacle(o) {
+  const cfg = _webGimmickCfg();
   return !!(cfg && o && o.id && o.id === cfg.obstacleId);
 }
 
@@ -4134,6 +4378,133 @@ function imgDrawStrengthGimmick(stageObj, now) {
   }
 }
 
+function _drawBroomIcon(x, y, size, now, alpha) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  const s = size || 92;
+  const bob = Math.sin(now / 360) * (s * 0.06);
+  ctx.save();
+  ctx.translate(x, y + bob);
+  ctx.rotate(-0.42 + Math.sin(now / 520) * 0.06);
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  ctx.shadowColor = 'rgba(255, 244, 157, 0.58)';
+  ctx.shadowBlur = s * 0.28;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#8A5B34';
+  ctx.lineWidth = Math.max(8, s * 0.09);
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.32, -s * 0.28);
+  ctx.lineTo(s * 0.32, s * 0.28);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#E4B56E';
+  ctx.strokeStyle = '#8A5B34';
+  ctx.lineWidth = Math.max(2, s * 0.025);
+  ctx.beginPath();
+  ctx.moveTo(s * 0.18, s * 0.18);
+  ctx.quadraticCurveTo(s * 0.56, s * 0.24, s * 0.5, s * 0.56);
+  ctx.lineTo(s * 0.15, s * 0.52);
+  ctx.quadraticCurveTo(s * 0.02, s * 0.32, s * 0.18, s * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(133, 82, 42, 0.55)';
+  ctx.lineWidth = Math.max(1.4, s * 0.018);
+  for (let i = 0; i < 4; i++) {
+    const t = -0.12 + i * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(s * (0.22 + t), s * 0.24);
+    ctx.lineTo(s * (0.19 + t), s * 0.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _drawAnimatedSpiderWeb(cx, cy, size, now, alphaScale) {
+  const s = size || 150;
+  const pulse = Math.sin(now / 420) * 0.5 + 0.5;
+  const sway = Math.sin(now / 520) * (s * 0.025);
+  ctx.save();
+  ctx.translate(cx + sway, cy);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = alphaScale == null ? 1 : alphaScale;
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.72);
+  glow.addColorStop(0, 'rgba(255,255,255,0.18)');
+  glow.addColorStop(0.58, 'rgba(166,225,238,0.12)');
+  glow.addColorStop(1, 'rgba(166,225,238,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, s * (0.72 + pulse * 0.05), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const spokes = 8;
+  for (let i = 0; i < spokes; i++) {
+    const a = (Math.PI * 2 * i) / spokes + Math.sin(now / 780 + i) * 0.045;
+    ctx.strokeStyle = 'rgba(229, 252, 255, 0.86)';
+    ctx.lineWidth = Math.max(2.8, s * 0.025);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    const ex = Math.cos(a) * s * 0.5;
+    const ey = Math.sin(a) * s * 0.5;
+    const cx1 = Math.cos(a + 0.22) * s * 0.25;
+    const cy1 = Math.sin(a + 0.22) * s * 0.25;
+    ctx.quadraticCurveTo(cx1, cy1, ex, ey);
+    ctx.stroke();
+  }
+  for (let ring = 1; ring <= 4; ring++) {
+    const r = s * (0.12 + ring * 0.095);
+    ctx.strokeStyle = ring === 4 ? 'rgba(255,255,255,0.92)' : 'rgba(207,244,250,0.82)';
+    ctx.lineWidth = Math.max(2.2, s * (0.018 - ring * 0.001));
+    ctx.beginPath();
+    for (let i = 0; i <= spokes; i++) {
+      const a = (Math.PI * 2 * i) / spokes;
+      const wob = Math.sin(now / 620 + ring * 1.7 + i) * s * 0.012;
+      const x = Math.cos(a) * (r + wob);
+      const y = Math.sin(a) * (r + wob * 0.7);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.quadraticCurveTo(
+        Math.cos(a - Math.PI / spokes) * (r + s * 0.02),
+        Math.sin(a - Math.PI / spokes) * (r + s * 0.02),
+        x,
+        y
+      );
+    }
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(68, 70, 96, 0.78)';
+  ctx.beginPath();
+  ctx.arc(s * 0.22, -s * 0.24 + Math.sin(now / 360) * s * 0.015, s * 0.14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function imgDrawWebGimmick(stageObj, now) {
+  const cfg = _webGimmickCfg();
+  const st = _webGimmickState;
+  if (!cfg || !st || !stageObj) return;
+  const web = _webObstacle();
+  if (web && !st.webCleared) {
+    const sz = (web.size && Number.isFinite(web.size)) ? web.size : stageObj.viewBox.h / 7;
+    _drawAnimatedSpiderWeb(web.x, web.y, sz, now, st.broomCollected ? 1 : 0.82);
+  } else if (web && st.webCleared && st.clearedAt) {
+    const fade = Math.max(0, 1 - (performance.now() - st.clearedAt) / 1200);
+    if (fade > 0) _drawAnimatedSpiderWeb(web.x, web.y, ((web.size || stageObj.viewBox.h / 7) * (0.8 + (1 - fade) * 0.45)), now, fade * 0.45);
+  }
+  const broom = cfg.broom;
+  if (broom && !st.broomCollected) {
+    const glow = 0.5 + Math.sin(now / 300) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.18 + glow * 0.16;
+    ctx.fillStyle = '#FFF8A8';
+    ctx.beginPath();
+    ctx.arc(broom.x, broom.y, (broom.radius || 86) * 0.78, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    _drawBroomIcon(broom.x, broom.y, stageObj.viewBox.h / 12, now, 1);
+  }
+}
+
 function _checkFlagLadderPickup(px, py) {
   const cfg = _flagTunnelCfg();
   const st = _flagTunnelState;
@@ -4185,6 +4556,24 @@ function _checkStrengthGlovePickup(px, py) {
   imgShowBubble('ちからの てぶくろを ひろったよ！', { x: cfg.glove.x, y: cfg.glove.y }, 1900);
   showHint('💪 てぶくろを はめたよ。おもい いわを くだけるかも！', 3000);
   _showItemHintModal('glove');
+  return true;
+}
+
+function _checkWebBroomPickup(px, py) {
+  const cfg = _webGimmickCfg();
+  const st = _webGimmickState;
+  if (!cfg || !st || st.broomCollected || !cfg.broom) return false;
+  const r = cfg.broom.radius || 88;
+  const dx = px - cfg.broom.x;
+  const dy = py - cfg.broom.y;
+  if (dx * dx + dy * dy > r * r) return false;
+  st.broomCollected = true;
+  _markRecentItemPickup();
+  _updateFlagInventoryHud();
+  playApple();
+  imgShowBubble('ほうきを ひろったよ！', { x: cfg.broom.x, y: cfg.broom.y }, 1900);
+  showHint('🧹 ほうきを ひろったよ。からまった くものすを はらえるかも！', 3000);
+  _showItemHintModal('broom');
   return true;
 }
 
@@ -4241,13 +4630,14 @@ function imgDrawObstacles(stage) {
   const defaultSize = stage.viewBox.h / 12;
   for (const o of stage.obstacles) {
     if (_isStrengthRockObstacle(o) && _strengthGimmickState && _strengthGimmickState.rockMoved) continue;
+    if (_isWebGimmickObstacle(o)) continue;
     const img = OBSTACLE_KIND_IMG[o.kind];
     const sz = (o.size && Number.isFinite(o.size)) ? o.size : defaultSize;
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, o.x - sz/2, o.y - sz/2, sz, sz);
     } else {
       // Fallback emoji if image not yet loaded
-      const fallbackEmoji = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' }[o.kind] || '🌳';
+      const fallbackEmoji = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨', web:'🕸️' }[o.kind] || '🌳';
       ctx.font = (sz * 0.8) + 'px serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(fallbackEmoji, o.x, o.y);
@@ -4335,6 +4725,10 @@ function _obstacleCollisionRadius(stage, obstacle) {
   if (strengthCfg && obstacle && obstacle.id === strengthCfg.obstacleId) {
     return strengthCfg.encounterRadius || h / 22;
   }
+  const webCfg = _webGimmickCfg();
+  if (webCfg && obstacle && obstacle.id === webCfg.obstacleId) {
+    return webCfg.encounterRadius || h / 22;
+  }
   const fallback = h / 28;
   const byKind = {
     tree: h / 36,
@@ -4342,6 +4736,7 @@ function _obstacleCollisionRadius(stage, obstacle) {
     rock: h / 30,
     pond: h / 24,
     hole: h / 24,
+    web: h / 22,
   };
   return Math.max(h / 56, byKind[kind] || fallback);
 }
@@ -4436,16 +4831,39 @@ function _handleStrengthGimmickObstacle(o, px, py) {
   return true;
 }
 
+function _handleWebGimmickObstacle(o, px, py) {
+  const cfg = _webGimmickCfg();
+  const st = _webGimmickState;
+  if (!cfg || !st || !_isWebGimmickObstacle(o)) return false;
+  if (st.webCleared) return false;
+  if (!st.broomCollected) {
+    _bounceFromFlagTunnelObstacle(
+      o, px, py,
+      'くものすが からまって とおれないよ！',
+      '🧹 いとを はらえる どうぐが あれば、とおれるかも。'
+    );
+    return true;
+  }
+  const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
+  pono.x = px;
+  pono.y = py;
+  pono.nodeId = backNodeId;
+  _triggerWebGimmickEncounter(o);
+  return true;
+}
+
 function _checkObstacleCollision(px, py) {
   if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
   for (const o of stage.obstacles) {
     if (_isWaterGimmickObstacle(o) && _waterGimmickState && _waterGimmickState.bridgeBuilt) continue;
     if (_isStrengthRockObstacle(o) && _strengthGimmickState && _strengthGimmickState.rockMoved) continue;
+    if (_isWebGimmickObstacle(o) && _webGimmickState && _webGimmickState.webCleared) continue;
     const dx = px - o.x, dy = py - o.y;
     const r = _obstacleCollisionRadius(stage, o);
     if (dx*dx + dy*dy < r*r) {
       if (_handleWaterGimmickObstacle(o, px, py)) return true;
       if (_handleStrengthGimmickObstacle(o, px, py)) return true;
+      if (_handleWebGimmickObstacle(o, px, py)) return true;
       if (_handleFlagTunnelObstacle(o, px, py)) return true;
       const backNodeId = walkAnim.startNodeId;
       walkAnim = null;
@@ -4473,7 +4891,7 @@ function _checkObstacleCollision(px, py) {
   return false;
 }
 function _obstacleHintFor(kind) {
-  return ({ tree:'木が', pond:'みずたまりが', hole:'あなが', stump:'きりかぶが', rock:'いわが' }[kind] || '');
+  return ({ tree:'木が', pond:'みずたまりが', hole:'あなが', stump:'きりかぶが', rock:'いわが', web:'くものすが' }[kind] || '');
 }
 
 // 現在のエンカウンター対象 (どのミニゲームに分岐するかの判断に使う)
@@ -4561,6 +4979,19 @@ function _triggerStrengthGimmickEncounter(obstacle) {
     y: obstacle.y,
     dialog: 'てぶくろを はめたね！<br>いわを れんだして<br>くだいてみよう！',
     defeatDialog: 'いわが くだけた！<br>とおって いいよ。'
+  };
+  _triggerEncounter(c);
+}
+
+function _triggerWebGimmickEncounter(obstacle) {
+  const c = {
+    id: 'stage7-web-kumo',
+    kind: 'kumo',
+    minigame: 'web_sweep',
+    x: obstacle.x,
+    y: obstacle.y,
+    dialog: 'くものすで とおせんぼ！<br>ほうきを もってるね。<br>いとを ほどけたら とおしてあげる！',
+    defeatDialog: 'いとが ほどけたね！<br>とおって いいよ。'
   };
   _triggerEncounter(c);
 }
@@ -4666,6 +5097,7 @@ const _GAME_LABELS = {
   flag:       '旗あげ',
   water_bridge: 'いたならべ',
   strength_push: 'いわくだき',
+  web_sweep: 'くものすはらい',
 };
 
 const _GAME_DIALOGS = {
@@ -4677,6 +5109,7 @@ const _GAME_DIALOGS = {
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
   water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
   strength_push: 'ちからを あわせて！<br>いわを れんだして くだこう',
+  web_sweep: 'からまった いとを<br>ほうきで やさしく はらおう',
 };
 
 function _gameForCreature(c) {
@@ -5919,6 +6352,121 @@ function _resolveStrengthPushGame() {
   }, 1300);
 }
 
+// ── ほうき: クモの巣はらい ──
+const WEB_SWEEP_STRANDS = [
+  { rot: -24, offset: -58 },
+  { rot: 16, offset: -28 },
+  { rot: -8, offset: 0 },
+  { rot: 26, offset: 30 },
+  { rot: -18, offset: 58 },
+];
+
+function _showWebSweepGame() {
+  _setEncounterMode('web_sweep');
+  _clearWebGimmickTimers();
+  _webGameState = {
+    cut: WEB_SWEEP_STRANDS.map(function() { return false; }),
+    dragging: false,
+    locked: false,
+    status: 'ひかっている いとを なぞってね',
+  };
+  encStageEl.textContent = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'web-game';
+  wrap.innerHTML =
+    '<div class="web-game__title">くものすを はらおう！</div>' +
+    '<div class="web-game__stage" id="webSweepStage">' +
+      '<div class="web-spider" aria-hidden="true">🕷️</div>' +
+      '<div class="web-broom" aria-hidden="true">🧹</div>' +
+    '</div>' +
+    '<div class="web-game__status" id="webStatus"></div>';
+  encStageEl.appendChild(wrap);
+  const stageEl = document.getElementById('webSweepStage');
+  if (stageEl) {
+    stageEl.addEventListener('pointerdown', function(e) {
+      if (!_webGameState || _webGameState.locked) return;
+      _webGameState.dragging = true;
+      if (e.target && e.target.classList && e.target.classList.contains('web-strand')) {
+        _onWebStrandHit(Number(e.target.dataset.index));
+      }
+    });
+    stageEl.addEventListener('pointerup', function() {
+      if (_webGameState) _webGameState.dragging = false;
+    });
+    stageEl.addEventListener('pointercancel', function() {
+      if (_webGameState) _webGameState.dragging = false;
+    });
+    stageEl.addEventListener('pointerleave', function() {
+      if (_webGameState) _webGameState.dragging = false;
+    });
+  }
+  _renderWebSweepGame();
+}
+
+function _renderWebSweepGame() {
+  const gs = _webGameState;
+  const stageEl = document.getElementById('webSweepStage');
+  const status = document.getElementById('webStatus');
+  if (!gs || !stageEl) return;
+  stageEl.querySelectorAll('.web-strand').forEach(function(el) { el.remove(); });
+  const nextIndex = gs.cut.findIndex(function(done) { return !done; });
+  WEB_SWEEP_STRANDS.forEach(function(strand, i) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'web-strand';
+    if (gs.cut[i]) btn.classList.add('is-cut');
+    if (i === nextIndex) btn.classList.add('is-next');
+    btn.dataset.index = String(i);
+    btn.style.setProperty('--rot', strand.rot + 'deg');
+    btn.style.setProperty('--offset', strand.offset + 'px');
+    btn.style.setProperty('--cut-x', (i % 2 === 0 ? -46 : 46) + 'px');
+    btn.setAttribute('aria-label', 'くものすの いと');
+    btn.addEventListener('click', function() { _onWebStrandHit(i); });
+    btn.addEventListener('pointerenter', function() {
+      if (_webGameState && _webGameState.dragging) _onWebStrandHit(i);
+    });
+    stageEl.appendChild(btn);
+  });
+  if (status) status.textContent = gs.status || '';
+}
+
+function _onWebStrandHit(index) {
+  const gs = _webGameState;
+  if (!gs || gs.locked || !Number.isInteger(index) || index < 0 || index >= gs.cut.length) return;
+  if (gs.cut[index]) return;
+  const nextIndex = gs.cut.findIndex(function(done) { return !done; });
+  if (index !== nextIndex) {
+    gs.status = 'ひかっている いとから はらってね';
+    playMzSe('wrong');
+    _renderWebSweepGame();
+    return;
+  }
+  gs.cut[index] = true;
+  gs.status = gs.cut.every(Boolean) ? 'くものすが ほどけた！' : 'いいね！ つぎの いとへ';
+  playMzSe('correct');
+  _renderWebSweepGame();
+  if (gs.cut.every(Boolean)) _resolveWebSweepGame();
+}
+
+function _resolveWebSweepGame() {
+  const st = _webGimmickState;
+  if (st) {
+    st.webCleared = true;
+    st.clearedAt = performance.now();
+  }
+  _updateFlagInventoryHud();
+  _clearWebGimmickTimers();
+  _webGameState = null;
+  encStageEl.innerHTML =
+    '<div class="enc-result win">' +
+      '<div style="font-size:clamp(3rem,12vw,5rem);line-height:1;">🧹</div>' +
+      'くものすが ほどけた！' +
+    '</div>';
+  _webGimmickSetTimeout(function() {
+    if (_encounterActive) _closeEncounter(true);
+  }, 950);
+}
+
 // ゲーム starter のディスパッチ表
 const _GAME_STARTERS = {
   janken:     _showJankenChoices,
@@ -5929,6 +6477,7 @@ const _GAME_STARTERS = {
   flag:       _showFlagGame,
   water_bridge: _showWaterBridgeGame,
   strength_push: _showStrengthPushGame,
+  web_sweep: _showWebSweepGame,
 };
 
 function _closeEncounter(playerWon) {
@@ -5945,6 +6494,10 @@ function _closeEncounter(playerWon) {
   if (_currentGame === 'strength_push') {
     _strengthGameState = null;
     _clearStrengthGimmickTimers();
+  }
+  if (_currentGame === 'web_sweep') {
+    _webGameState = null;
+    _clearWebGimmickTimers();
   }
   _setEncounterMode(null);
   // 念のため: 別経路で _closeEncounter が呼ばれた場合に備え、未発火の defeat-dialog timer をキャンセル
@@ -6301,6 +6854,7 @@ function loadStage(idx) {
   _initFlagTunnelForStage(null);
   _initWaterGimmickForStage(null);
   _initStrengthGimmickForStage(null);
+  _initWebGimmickForStage(null);
   document.body.classList.remove('image-stage-mode');
   const charmsEl = document.getElementById('charms');
   if (charmsEl) charmsEl.style.display = '';

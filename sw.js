@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1019; // v1019: Quizland 0611修正イラスト反映
+const CACHE_VERSION = 1020; // v1020: Maze stage7 spider web gimmick
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

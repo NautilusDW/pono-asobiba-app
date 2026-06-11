@@ -323,6 +323,7 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn" data-okind="hole">🕳️ 穴</button>
       <button class="kind-btn" data-okind="stump">🪵 切株</button>
       <button class="kind-btn" data-okind="rock">🪨 石</button>
+      <button class="kind-btn" data-okind="web">🕸️ クモの巣</button>
     </div>
     <div id="obstacleSettings" class="obstacle-settings">
       <div id="obstacleSettingsEmpty">障害物を選択すると、イベント設定を編集できます。</div>
@@ -361,6 +362,7 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn active" data-ikind="ladder">🪜 なわばしご</button>
       <button class="kind-btn" data-ikind="plank">🪵 まるたの板</button>
       <button class="kind-btn" data-ikind="glove">🥊 力の手袋</button>
+      <button class="kind-btn" data-ikind="broom">🧹 ほうき</button>
     </div>
 
     <h3>3b. スタート / ゴールの大きさ</h3>
@@ -538,10 +540,19 @@ const GIMMICK_ITEM_DEFS = {
     configKey: 'strengthGimmick',
     itemKey: 'glove',
   },
+  broom: {
+    label: 'ほうき',
+    emoji: '🧹',
+    radius: 90,
+    configKey: 'webGimmick',
+    itemKey: 'broom',
+  },
 };
 
 Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
-  GIMMICK_ITEM_DEFS[kind].image = _editorLoadImage(GIMMICK_ITEM_DEFS[kind].imageUrl);
+  if (GIMMICK_ITEM_DEFS[kind].imageUrl) {
+    GIMMICK_ITEM_DEFS[kind].image = _editorLoadImage(GIMMICK_ITEM_DEFS[kind].imageUrl);
+  }
 });
 
 // Creature image cache (kinds without an entry fall back to emoji)
@@ -569,11 +580,12 @@ const state = {
   edges: [],            // { from, to, controls: [{x,y}], shape?: 'curve'|'polyline' }
   obstacles: [],        // { kind, x, y }
   creatures: [],        // { id, kind, x, y }
-  gimmickItems: [],      // { kind:'ladder'|'plank'|'glove', x, y, radius }
+  gimmickItems: [],      // { kind:'ladder'|'plank'|'glove'|'broom', x, y, radius }
   gimmickConfigs: {      // original stage gimmick settings, with item positions overridden on export
     flagGimmick: null,
     waterGimmick: null,
     strengthGimmick: null,
+    webGimmick: null,
   },
   nextStopId: 1,
   nextCreatureId: 1,
@@ -655,6 +667,7 @@ function _resetGimmickState() {
     flagGimmick: null,
     waterGimmick: null,
     strengthGimmick: null,
+    webGimmick: null,
   };
 }
 
@@ -664,6 +677,7 @@ function _restoreGimmicksFromDef(def) {
   state.gimmickConfigs.flagGimmick = _jsonClone(def.flagGimmick);
   state.gimmickConfigs.waterGimmick = _jsonClone(def.waterGimmick);
   state.gimmickConfigs.strengthGimmick = _jsonClone(def.strengthGimmick);
+  state.gimmickConfigs.webGimmick = _jsonClone(def.webGimmick);
   Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
     const meta = GIMMICK_ITEM_DEFS[kind];
     const cfg = state.gimmickConfigs[meta.configKey];
@@ -682,10 +696,11 @@ function _copyGimmickStateFromSnapshot(snap) {
   state.gimmickItems = Array.isArray(snap && snap.gimmickItems) ? snap.gimmickItems : [];
   state.gimmickConfigs = (snap && snap.gimmickConfigs && typeof snap.gimmickConfigs === 'object')
     ? snap.gimmickConfigs
-    : { flagGimmick: null, waterGimmick: null, strengthGimmick: null };
+    : { flagGimmick: null, waterGimmick: null, strengthGimmick: null, webGimmick: null };
   if (!state.gimmickConfigs.flagGimmick) state.gimmickConfigs.flagGimmick = null;
   if (!state.gimmickConfigs.waterGimmick) state.gimmickConfigs.waterGimmick = null;
   if (!state.gimmickConfigs.strengthGimmick) state.gimmickConfigs.strengthGimmick = null;
+  if (!state.gimmickConfigs.webGimmick) state.gimmickConfigs.webGimmick = null;
 }
 
 const OBSTACLE_KIND_LABELS = {
@@ -694,6 +709,7 @@ const OBSTACLE_KIND_LABELS = {
   hole: '穴',
   stump: '切株',
   rock: '石',
+  web: 'クモの巣',
 };
 
 function _sanitizeObstacleIdPart(text) {
@@ -829,6 +845,8 @@ function _obstacleHasConfiguredEvent(o) {
   if (o.kind === 'pond' && water && water.obstacleId === id) return true;
   const strength = state.gimmickConfigs.strengthGimmick;
   if (o.kind === 'rock' && strength && strength.obstacleId === id) return true;
+  const web = state.gimmickConfigs.webGimmick;
+  if (o.kind === 'web' && web && web.obstacleId === id) return true;
   return !!o.eventEnabled;
 }
 
@@ -863,6 +881,14 @@ function _setSelectedObstacleEventEnabled(enabled) {
       state.gimmickConfigs.strengthGimmick = cfg;
     } else if (state.gimmickConfigs.strengthGimmick && state.gimmickConfigs.strengthGimmick.obstacleId === o.id) {
       state.gimmickConfigs.strengthGimmick = null;
+    }
+  } else if (o.kind === 'web') {
+    if (enabled) {
+      const cfg = _jsonClone(state.gimmickConfigs.webGimmick) || _defaultGimmickConfig('webGimmick');
+      cfg.obstacleId = o.id;
+      state.gimmickConfigs.webGimmick = cfg;
+    } else if (state.gimmickConfigs.webGimmick && state.gimmickConfigs.webGimmick.obstacleId === o.id) {
+      state.gimmickConfigs.webGimmick = null;
     }
   }
   updateObstacleEventPanel();
@@ -931,7 +957,7 @@ function updateObstacleEventPanel() {
   if (labelEl) labelEl.textContent = (OBSTACLE_EMOJI[o.kind] || '■') + ' ' + (OBSTACLE_KIND_LABELS[o.kind] || o.kind || '障害物');
   if (idEl) idEl.textContent = id;
 
-  const supported = o.kind === 'hole' || o.kind === 'pond' || o.kind === 'rock';
+  const supported = o.kind === 'hole' || o.kind === 'pond' || o.kind === 'rock' || o.kind === 'web';
   if (toggle) {
     toggle.disabled = !supported;
     toggle.checked = _obstacleHasConfiguredEvent(o);
@@ -939,7 +965,9 @@ function updateObstacleEventPanel() {
   if (toggleLabel) {
     toggleLabel.textContent = o.kind === 'hole'
       ? '穴ワープイベントを使う'
-      : (o.kind === 'pond' ? '水たまりイベントを使う' : (o.kind === 'rock' ? '力の手袋イベントを使う' : 'イベントを起こす'));
+      : (o.kind === 'pond'
+        ? '水たまりイベントを使う'
+        : (o.kind === 'rock' ? '力の手袋イベントを使う' : (o.kind === 'web' ? 'クモの巣イベントを使う' : 'イベントを起こす')));
   }
   if (note) {
     if (!supported) {
@@ -954,6 +982,8 @@ function updateObstacleEventPanel() {
       note.textContent = _obstacleHasConfiguredEvent(o) ? '丸太の板を使う水たまりイベントに接続されています。' : 'チェックを入れると水たまりミニゲームの対象になります。';
     } else if (o.kind === 'rock') {
       note.textContent = _obstacleHasConfiguredEvent(o) ? '力の手袋で壊す岩イベントに接続されています。' : 'チェックを入れると力の手袋ミニゲームの対象になります。';
+    } else if (o.kind === 'web') {
+      note.textContent = _obstacleHasConfiguredEvent(o) ? 'ほうきで払うクモの巣イベントに接続されています。' : 'チェックを入れるとクモの巣ミニゲームの対象になります。';
     }
   }
 
@@ -2376,6 +2406,9 @@ function handleDeleteClick(p) {
       if (state.gimmickConfigs.strengthGimmick && state.gimmickConfigs.strengthGimmick.obstacleId === obstacleHit.id) {
         state.gimmickConfigs.strengthGimmick = null;
       }
+      if (state.gimmickConfigs.webGimmick && state.gimmickConfigs.webGimmick.obstacleId === obstacleHit.id) {
+        state.gimmickConfigs.webGimmick = null;
+      }
       updateObstacleEventPanel();
       showBanner('障害物を削除: ' + (obstacleHit.kind || ''));
       return;
@@ -2510,7 +2543,7 @@ function draw() {
   }
 }
 
-const OBSTACLE_EMOJI = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' };
+const OBSTACLE_EMOJI = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨', web:'🕸️' };
 function drawObstacleEventLinks() {
   const cfg = state.gimmickConfigs && state.gimmickConfigs.flagGimmick;
   if (!cfg || !cfg.entranceObstacleId || !cfg.exitObstacleId) return;
@@ -2591,7 +2624,7 @@ function drawGimmickItem(item) {
     const drawW = drawH * ratio;
     ctx.drawImage(img, item.x - drawW/2, item.y - drawH/2, drawW, drawH);
   } else {
-    const fallback = item.kind === 'glove' ? '🥊' : (item.kind === 'plank' ? '🪵' : '🪜');
+    const fallback = meta.emoji || (item.kind === 'glove' ? '🥊' : (item.kind === 'plank' ? '🪵' : '🪜'));
     ctx.font = (r * 0.8) + 'px serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -2969,6 +3002,9 @@ function _defaultGimmickConfig(configKey) {
   }
   if (configKey === 'strengthGimmick') {
     return { id: 'strength-rock', obstacleId: '', encounterRadius: 96 };
+  }
+  if (configKey === 'webGimmick') {
+    return { id: 'web-gate', obstacleId: '', encounterRadius: 84 };
   }
   return {};
 }
@@ -4059,7 +4095,7 @@ function drawCompare() {
   if (Array.isArray(snap.obstacles)) {
     const sz = (snap.imgH || cv2.height) / 12;
     for (const o of snap.obstacles) {
-      const emoji = ({ tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' })[o.kind] || '🌳';
+      const emoji = ({ tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨', web:'🕸️' })[o.kind] || '🌳';
       ctx2.font = (sz * 0.85) + 'px serif';
       ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
       ctx2.fillText(emoji, o.x, o.y);
