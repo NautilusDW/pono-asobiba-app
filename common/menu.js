@@ -43,17 +43,20 @@
       position: fixed; z-index: 9990;
       top: max(12px, env(safe-area-inset-top));
       left: max(16px, env(safe-area-inset-left));
-      width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(255,255,255,0.7); border: none;
-      font-size: 20px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      width: 56px; height: 56px;
+      background: url('/assets/_legacy/preview-placeholders/ctrl-btn-settings.png') center / contain no-repeat;
+      border: none;
+      padding: 0;
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: transform 0.2s, background 0.2s;
+      transition: transform 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
     .pono-menu-toggle.open {
-      background: rgba(255,255,255,0.95);
-      transform: rotate(90deg);
+      transform: scale(1.08);
+    }
+    .pono-menu-toggle:active {
+      transform: scale(0.94);
     }
 
     /* ── Dropdown ── */
