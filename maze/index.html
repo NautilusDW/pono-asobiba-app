@@ -4162,6 +4162,11 @@ function _isFlagTunnelEntranceObstacle(o) {
   return !!(cfg && o && o.id && o.id === cfg.entranceObstacleId);
 }
 
+function _isFlagTunnelExitObstacle(o) {
+  const cfg = _flagTunnelCfg();
+  return !!(cfg && o && o.id && o.id === cfg.exitObstacleId);
+}
+
 function _waterObstacle() {
   const cfg = _waterGimmickCfg();
   return cfg ? _flagObstacleById(cfg.obstacleId) : null;
@@ -4858,6 +4863,7 @@ function _checkObstacleCollision(px, py) {
     if (_isWaterGimmickObstacle(o) && _waterGimmickState && _waterGimmickState.bridgeBuilt) continue;
     if (_isStrengthRockObstacle(o) && _strengthGimmickState && _strengthGimmickState.rockMoved) continue;
     if (_isWebGimmickObstacle(o) && _webGimmickState && _webGimmickState.webCleared) continue;
+    if (_isFlagTunnelExitObstacle(o) && _flagTunnelState && _flagTunnelState.ladderCollected) continue;
     const dx = px - o.x, dy = py - o.y;
     const r = _obstacleCollisionRadius(stage, o);
     if (dx*dx + dy*dy < r*r) {
