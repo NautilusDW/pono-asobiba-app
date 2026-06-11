@@ -188,6 +188,11 @@
                                      // false (既定) では従来通り共通キー `${sel}|${i}` で保存される。
     perQScopeThisQ: false,           // true = この質問だけ (per-Q 保存) / false = すべての質問 (共通保存)。
                                      // enable 毎に false へ戻す (暗黙の per-Q 化事故を防ぐ)。
+    _perQDeletedKeys: new Set(),     // 2026-06-11 (critical fix): 🧹 「この質問の個別設定を削除」で
+                                     // 削除予約された @qid キー。 save() の GET→merge 後に適用して
+                                     // PUT する (merge が削除を打ち消すのを防ぐ)。 PUT 成功でクリア。
+    _perQWarnedQid: null,            // 2026-06-11: 🌐 モードで個別設定済み要素を選択した際の
+                                     // 「編集が反映されない」警告 toast を qid ごとに 1 回に抑えるガード。
     _dirty: false,                   // 2026-05-07: 編集モードでの未保存変更フラグ。
                                      // pushHistory / scheduleDirtyUpdate で更新。 save 成功で false。
                                      // confirmDiscardIfDirty() の判定に使用 (impl-B から呼ばれる)。
@@ -371,6 +376,19 @@
     return out;
   }
 
+  // 2026-06-11 (critical fix): 🧹 「この質問の個別設定を削除」で削除予約されたキーを
+  //   merge 結果から取り除く。 save() は GET→merge→PUT のため、 snapshot に無いキーは
+  //   merge で復活してしまう — 削除リストを merge **後** に適用して打ち消しを防ぐ。
+  function _applyPendingPerQDeletions(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    var setRef = state._perQDeletedKeys;
+    if (!setRef || !setRef.size) return obj;
+    setRef.forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) delete obj[k];
+    });
+    return obj;
+  }
+
   // 2026-05-08: server (assets バンドル) と local の新旧を判定。
   //   - local が __savedAt を持ち、5 分以内なら local 優先（deploy ラグ想定）
   //   - それ以外は server 優先（別端末更新の伝播を尊重）
@@ -418,6 +436,71 @@
     if (tList && tList.length && tList.indexOf(sel) !== -1) return !!state.perQScopeThisQ;
     var list = state._perQuestionSelectors;
     return !!(list && list.length && list.indexOf(sel) !== -1);
+  }
+
+  // 2026-06-11 (critical fix): toggle 対象セレクタ (sel, i) に対し、 現在 qid の
+  //   per-Q オーバーライドキー `${sel}|${i}@${qid}` が保存データ
+  //   (window._currentLayoutData) に存在すればそのキーを返す。 applier は per-Q キーを
+  //   優先適用するため、 存在する場合 DOM のジオメトリは「共通値」ではなく
+  //   「この質問の個別値」を反映している — snapshot の base キー出力可否判定に使う。
+  function _perQOverrideKeyIfAny(sel, i, qid) {
+    var tList = state._perQScopeToggleSelectors;
+    if (!tList || !tList.length || tList.indexOf(sel) === -1) return null;
+    var q = (qid !== undefined) ? qid : getCurrentQid();
+    if (!q) return null;
+    var key = sel + '|' + i + '@' + q;
+    try {
+      var d = window._currentLayoutData;
+      if (d && typeof d === 'object' && Object.prototype.hasOwnProperty.call(d, key)) return key;
+    } catch (e) { /* noop */ }
+    return null;
+  }
+
+  // 2026-06-11: 現在質問の toggle 対象 per-Q キーを保存データから全列挙する
+  //   (🧹 削除ボタンの対象収集 / 「⚠個別あり」バッジ判定に使用)。
+  function _collectPerQOverrideKeysForCurrentQ() {
+    var out = [];
+    var tList = state._perQScopeToggleSelectors;
+    var qid = getCurrentQid();
+    var d = window._currentLayoutData;
+    if (!tList || !tList.length || !qid || !d || typeof d !== 'object') return out;
+    var suffix = '@' + qid;
+    Object.keys(d).forEach(function (k) {
+      if (k.length <= suffix.length || k.slice(-suffix.length) !== suffix) return;
+      var prefix = k.slice(0, k.length - suffix.length); // `${sel}|${i}`
+      var pipe = prefix.lastIndexOf('|');
+      if (pipe === -1) return;
+      if (tList.indexOf(prefix.slice(0, pipe)) !== -1) out.push(k);
+    });
+    return out;
+  }
+
+  // 2026-06-11 (critical fix): 🎯/🌐 トグルと 🧹 ボタンの表示を、 現在質問の per-Q キー
+  //   保存状況に追従させる。 個別設定が存在する質問では「⚠個別あり」を表示し、
+  //   🌐 のままの編集がこの質問の表示に反映されないことを画面上で判別可能にする。
+  function updatePerQScopeUI() {
+    var tb = state.toolbarEl;
+    if (!tb) return;
+    if (!state._perQScopeToggleSelectors || !state._perQScopeToggleSelectors.length) return;
+    var btn = tb.querySelector('#le-perq-scope');
+    if (!btn) return;
+    var keys = _collectPerQOverrideKeysForCurrentQ();
+    var has = keys.length > 0;
+    if (!btn.dataset.baseTitle) btn.dataset.baseTitle = btn.title || '';
+    btn.textContent = (state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問') +
+                      (has ? ' ⚠個別あり' : '');
+    btn.classList.toggle('active', state.perQScopeThisQ);
+    btn.title = btn.dataset.baseTitle + ((has && !state.perQScopeThisQ)
+      ? '\n\n⚠ この質問は個別レイアウト適用中です。🌐 のままの質問カード・音声ボタン編集は保存されません (個別値が優先表示)。🎯 に切替えて編集するか、🧹 で個別設定を削除してください'
+      : '');
+    var clearBtn = tb.querySelector('#le-perq-clear');
+    if (clearBtn) {
+      clearBtn.style.display = '';
+      clearBtn.disabled = !has;
+      clearBtn.title = has
+        ? 'この質問の個別レイアウト (' + keys.length + ' 件) を削除して共通位置に戻し、そのまま保存します'
+        : 'この質問に個別レイアウト設定はありません';
+    }
   }
 
   function _phaseInfo(sel) {
@@ -499,6 +582,13 @@
         var baseKey = sel + '|' + i;
         var isPerQChipChild = isChipScoped && !isChipSelfSel && _isPerQSelector(sel);
         if (isChipScoped && !isChipSelfSel && !isPerQChipChild && !state.individualOverrides.has(baseKey)) return;
+        // 2026-06-11 (critical fix): 🌐 モードで per-Q オーバーライド適用中の toggle 対象
+        //   要素は base キーへ書き出さない。 applier が `@qid` 値を DOM に当てているため
+        //   画面上のジオメトリは個別値であり共通値ではない — これを共通キーで snapshot
+        //   すると 💾 保存 (GET→merge→PUT) や動的再スキャン (mergeSnapshotOver) 経由で
+        //   全質問の共通値が個別値に汚染される。 skip しても merge により既存の
+        //   共通キーは保持される。
+        if (!state.perQScopeThisQ && _perQOverrideKeyIfAny(sel, i, frozenQid)) return;
         var key = makeElKey(sel, i, { qid: frozenQid });
         data[key] = {
           w: el.style.width || '',
@@ -1576,6 +1666,7 @@
     var existingLocalForMerge = existingLocal ? Object.assign({}, existingLocal) : null;
     if (existingLocalForMerge) delete existingLocalForMerge.__savedAt;
     var mergedLocal = mergeSnapshotOver(existingLocalForMerge, data);
+    _applyPendingPerQDeletions(mergedLocal); // 2026-06-11: 🧹 削除予約を merge 後に適用
     var localData = Object.assign({}, mergedLocal, { __savedAt: Date.now() });
     localSave(localData);
     // 2026-05-07 fix: 保存した data で window._currentLayoutData を即時に上書きする。
@@ -1599,6 +1690,8 @@
       state.lastSavedJson = compact;
       state.lastSavedQid = frozenQid; // Phase 3.5 Fix 2
       state._dirty = false;
+      // 2026-06-11: GH path 無し = local が真実。 削除予約は localSave で反映済みなのでクリア。
+      if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
       updateDirtyUI();
       showToast('ローカルに保存しました (GH path 未設定)', 'error');
       emit('save:success', { local: true, remote: false });
@@ -1626,6 +1719,7 @@
       // 2026-05-07: 既存 JSON と snapshot を merge してから PUT (他問題の per-Q キーを保持)。
       //   __savedAt は GitHub 用 payload には書き込まない (差分最小化のため)。
       var mergedRemote = mergeSnapshotOver(existingRemote, data);
+      _applyPendingPerQDeletions(mergedRemote); // 2026-06-11: 🧹 削除予約を merge 後・PUT 前に適用
       if (mergedRemote && Object.prototype.hasOwnProperty.call(mergedRemote, '__savedAt')) {
         delete mergedRemote.__savedAt;
       }
@@ -1637,6 +1731,8 @@
       state.lastSavedJson = compact;
       state.lastSavedQid = frozenQid; // Phase 3.5 Fix 2
       state._dirty = false;
+      // 2026-06-11: 削除予約は PUT 成功で確定 (失敗時は保持され、 retry で再適用される)。
+      if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
       // 2026-05-07 (Phase 3.5 Fix 3): PUT 成功後、 window._currentLayoutData を
       //   remote merge 結果で再同期する。 ローカル merge と remote merge は
       //   存在キー集合が divergent しうるため (= localStorage には無いが remote にはある別タブ
@@ -2660,7 +2756,25 @@
       // 2026-05-07: individualOverrides は base key で管理されているので baseOnly で問い合わせる。
       var key = getElKey(e, { baseOnly: true });
       var isOverridden = !!(key && state.individualOverrides && state.individualOverrides.has(key));
-      e.classList.toggle('le-individual-override', isOverridden);
+      // 2026-06-11 (critical fix): toggle 対象要素にこの質問の per-Q キーが保存されている
+      //   場合も .le-individual-override (赤い選択枠) を流用して個別設定の存在を可視化する。
+      var perQOverrideKey = null;
+      if (key) {
+        var km = key.match(/^(.*)\|(\d+)$/);
+        if (km) {
+          try { perQOverrideKey = _perQOverrideKeyIfAny(km[1], parseInt(km[2], 10)); }
+          catch (err) { perQOverrideKey = null; }
+        }
+      }
+      e.classList.toggle('le-individual-override', isOverridden || !!perQOverrideKey);
+      // 🌐 モード中に個別設定済み要素を選択したら、 編集が反映されない旨を qid ごとに 1 回警告
+      if (perQOverrideKey && sel && !state.perQScopeThisQ) {
+        var warnQid = getCurrentQid();
+        if (warnQid && state._perQWarnedQid !== warnQid) {
+          state._perQWarnedQid = warnQid;
+          showToast('⚠ この質問は個別レイアウト適用中 — 🌐 のままの編集は保存に反映されません (🎯 に切替 or 🧹 で個別設定を削除)', 'warn');
+        }
+      }
       // Juliet-2 修正A: ハンドル個別にもクラスを付与し、子孫/specificity 競合に
       // 依らず確実に青化する。CSS 子孫セレクタが効かないケース(stacking context・
       // 別ルールの specificity 上書き等) のフォールバック。
@@ -4771,6 +4885,16 @@
         labelSpan.title = label + ' (ダブルクリックで名前変更)';
       }
       if (keySpan) keySpan.textContent = key;
+      // 2026-06-11 (critical fix): この質問の per-Q オーバーライドが保存済みの要素に
+      //   🎯 バッジを表示し、 個別設定の存在を要素一覧から判別可能にする。
+      if (!re.dynamic && _perQOverrideKeyIfAny(sel, idx)) {
+        var perqBadge = document.createElement('span');
+        perqBadge.className = 'le-row-perq-badge';
+        perqBadge.textContent = '🎯';
+        perqBadge.title = 'この質問の個別レイアウトが保存されています (個別値が共通値より優先表示)。🧹 ボタンで削除できます';
+        if (keySpan) keySpan.insertAdjacentElement('afterend', perqBadge);
+        else row.appendChild(perqBadge);
+      }
       // Mike-2 修正B: dblclick → インライン rename
       if (labelSpan) {
         labelSpan.addEventListener('dblclick', function (e) {
@@ -4867,6 +4991,9 @@
       );
       if (!still) state.lastClickedListKey = null;
     }
+    // 2026-06-11: 問題遷移 (DOM 変異 → rescan → refreshElementList) でも 🎯/🌐 トグルと
+    //   🧹 ボタンの「⚠個別あり」表示を現在質問の per-Q キー有無に追従させる。
+    try { updatePerQScopeUI(); } catch (e) { /* noop */ }
   }
 
   // ====================================================================
@@ -6476,6 +6603,10 @@
       //   (質問バナー / 音声ボタン) の保存先を 「この質問だけ (@qid キー)」 ⇔
       //   「すべての質問 (共通キー)」 で切替。 対象セレクタ未設定のページでは非表示。
       '<button id="le-perq-scope" title="質問カード・音声ボタンの保存範囲を切替&#10;🌐 すべての質問: 全問題共通の位置として保存 (従来動作)&#10;🎯 この質問だけ: いま表示中の問題だけの位置として保存 (他の問題は共通位置のまま)&#10;※ 個別保存済みの問題では個別値が共通値より優先表示されます" aria-label="保存範囲トグル" style="display:none;">🌐 すべての質問</button>' +
+      // 🧹 この質問の個別設定を削除 (2026-06-11 critical fix: 🎯 保存の片道ドア解消)。
+      //   @qid キーを保存データから削除し、 共通位置へ戻して即保存する。
+      //   個別設定が無い質問では disabled (updatePerQScopeUI が管理)。
+      '<button id="le-perq-clear" title="この質問の個別レイアウト設定 (@qid キー) を削除し、共通位置に戻して保存します" aria-label="この質問の個別設定を削除" style="display:none;" disabled>🧹 この質問の個別設定を削除</button>' +
       // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
       //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
       //   他ページでは非表示。
@@ -6620,25 +6751,66 @@
     //   切替は書き込みキー形式のみに作用 (geometry は不変) なので、 未編集なら
     //   dirty baseline をトグル後のキー形式で取り直し、 誤 dirty 検知を防ぐ。
     var perqScopeBtn = tb.querySelector('#le-perq-scope');
+    var perqClearBtn = tb.querySelector('#le-perq-clear');
     if (perqScopeBtn && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
       perqScopeBtn.style.display = '';
       perqScopeBtn.addEventListener('click', function () {
         state.perQScopeThisQ = !state.perQScopeThisQ;
-        perqScopeBtn.textContent = state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問';
-        perqScopeBtn.classList.toggle('active', state.perQScopeThisQ);
         if (!state._dirty) {
           try {
             state.lastSavedJson = JSON.stringify(snapshot());
             state.lastSavedQid = getCurrentQid();
           } catch (e) { /* noop */ }
         }
-        // 選択ラベル / 要素一覧の [qid] 表示を最新化
+        // ボタン表示 (⚠個別あり バッジ含む) と選択ラベル / 要素一覧の [qid]・🎯 バッジを最新化
+        updatePerQScopeUI();
         try { refreshSelectionUI(); } catch (e) { /* noop */ }
         try { refreshElementList(); } catch (e) { /* noop */ }
         showToast(state.perQScopeThisQ
           ? '🎯 質問カード・音声ボタンを「この質問だけ」に保存します'
           : '🌐 質問カード・音声ボタンを「すべての質問」共通で保存します', 'success');
       });
+      // 🧹 この質問の個別設定を削除 (2026-06-11 critical fix: 片道ドア解消)
+      if (perqClearBtn) {
+        perqClearBtn.addEventListener('click', function () {
+          var keys = _collectPerQOverrideKeysForCurrentQ();
+          if (!keys.length) { showToast('この質問に個別レイアウト設定はありません'); return; }
+          if (!confirm('この質問の個別レイアウト (' + keys.length + ' 件) を削除して、共通位置に戻しますか？\n\n削除はこのまま保存されます。')) return;
+          var d = window._currentLayoutData;
+          keys.forEach(function (k) {
+            if (d && Object.prototype.hasOwnProperty.call(d, k)) delete d[k];
+            if (state._perQDeletedKeys) state._perQDeletedKeys.add(k);
+          });
+          // per-Q 値で当たっていたジオメトリを一旦素に戻してから共通値を再適用する
+          // (applyOne は w/h が falsy だと style を残すため、 wipe しないと
+          //  per-Q の width/height が残留する)。
+          (state._perQScopeToggleSelectors || []).forEach(function (sel) {
+            $$(sel).forEach(function (el) {
+              el.style.width = ''; el.style.height = ''; el.style.transform = '';
+              el._tx = 0; el._ty = 0;
+              if (el._resizeUpdateLabel) { try { el._resizeUpdateLabel(); } catch (e) {} }
+            });
+          });
+          try {
+            if (window.LayoutApplier && d) {
+              window.LayoutApplier.apply(d, document, _applierCfg({
+                selectors: state.spec.map(function (e2) { return e2[0]; })
+              }));
+            }
+          } catch (e) { /* noop */ }
+          // 🎯 のまま 💾 すると snapshot が @qid キーを即再生成してしまうため 🌐 に戻す
+          state.perQScopeThisQ = false;
+          updatePerQScopeUI();
+          try { refreshSelectionUI(); } catch (e) { /* noop */ }
+          try { refreshElementList(); } catch (e) { /* noop */ }
+          save(); // GET→merge→削除キー適用→PUT で削除を永続化
+        });
+      }
+      // 保存成功 (🎯 保存で @qid キーが増えた / 🧹 で減った) に ⚠個別あり バッジを追従
+      var perqSaveListener = function () { updatePerQScopeUI(); };
+      on('save:success', perqSaveListener);
+      registerCleanup(function () { off('save:success', perqSaveListener); });
+      updatePerQScopeUI();
     }
 
     // 🧪 Playtest toggle: editor 内 playtest UI (debug=all モードと同じ playtest UI:
@@ -8151,6 +8323,8 @@
         })
       : [];
     state.perQScopeThisQ = false; // 既定は 「🌐 すべての質問」 (従来挙動)
+    state._perQDeletedKeys = new Set(); // 2026-06-11: 削除予約は enable 毎にリセット
+    state._perQWarnedQid = null;        // 2026-06-11: 警告 toast ガードもリセット
     state.selectedElements = new Set();
     state.locked = new Set();
     state.unlinkedChildren = new Set(); // Papa-2 修正2
@@ -8410,6 +8584,8 @@
     state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
     state._perQScopeToggleSelectors = []; // 2026-06-11: 保存範囲トグルも次回 enable で受け取り直す
     state.perQScopeThisQ = false;
+    state._perQDeletedKeys = new Set(); // 2026-06-11: 未保存の削除予約はセッション終了で破棄
+    state._perQWarnedQid = null;
     state.toolbarEl = null;
     state.numericPanelEl = null;
     state.listPanelEl = null;
