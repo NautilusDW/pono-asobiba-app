@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1017; // v1017: quizland カレントドットのグロー濃色化 (焦げオレンジ) + 本体opacity明滅
+const CACHE_VERSION = 1018; // v1018: OtoTouch リズム成功タップの音階アタック + 爽快SE強化
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

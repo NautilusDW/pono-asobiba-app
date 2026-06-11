@@ -6145,60 +6145,91 @@ function _scheduleRhythmMelody(peakGain) {
   });
   return true;
 }
+function _playRhythmTapPitch(idx, judge) {
+  var ac = getAC();
+  if (!ac) return;
+  var freqs = _rhythmNoteFreqs(idx);
+  if (!freqs.length) return;
+  var now = ac.currentTime;
+  var power = judge && judge.key === 'just' ? 1.22 : (judge && judge.key === 'nice' ? 1.08 : 0.92);
+  var dur = 0.13;
+  var g = ac.createGain();
+  var peak = 0.082 * power / Math.max(1, Math.sqrt(freqs.length));
+  var nodes = [g];
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peak, now + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+  freqs.forEach(function(freq, i) {
+    var o = ac.createOscillator();
+    o.type = i === 0 ? 'triangle' : 'sine';
+    o.frequency.setValueAtTime(freq, now);
+    o.connect(g);
+    o.start(now);
+    o.stop(now + dur + 0.02);
+    nodes.push(o);
+  });
+  g.connect(ac.destination);
+  setTimeout(function() {
+    nodes.forEach(function(node) {
+      try { node.disconnect(); } catch(e) {}
+    });
+  }, 220);
+}
 function _playRhythmBlockSfx(kind, laneIdx, judge) {
   var ac = getAC();
   if (!ac) return;
   var now = ac.currentTime;
   var isMiss = kind === 'miss';
-  var hitPower = isMiss ? 1 : Math.max(0.65, Math.min(1.45, (judge && judge.power) || 1));
+  var hitPower = isMiss ? 1 : Math.max(0.75, Math.min(1.7, (judge && judge.power) || 1));
   var base = (_doremiFreqs()[laneIdx] || 440) * (isMiss ? 0.5 : 2);
   var master = ac.createGain();
   master.gain.setValueAtTime(0, now);
-  master.gain.linearRampToValueAtTime(isMiss ? 0.055 : 0.095 * hitPower, now + 0.012);
-  master.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.16 : 0.22));
+  master.gain.linearRampToValueAtTime(isMiss ? 0.06 : 0.155 * hitPower, now + 0.01);
+  master.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.16 : 0.28));
   master.connect(ac.destination);
 
   var click = ac.createBufferSource();
-  click.buffer = _makeNoiseBuffer(ac, 0.06);
+  click.buffer = _makeNoiseBuffer(ac, isMiss ? 0.06 : 0.085);
   var filter = ac.createBiquadFilter();
   filter.type = isMiss ? 'bandpass' : 'highpass';
-  filter.frequency.setValueAtTime(isMiss ? 850 : 5200, now);
-  filter.Q.setValueAtTime(isMiss ? 0.8 : 0.55, now);
+  filter.frequency.setValueAtTime(isMiss ? 850 : 6400, now);
+  filter.Q.setValueAtTime(isMiss ? 0.8 : 0.62, now);
   click.connect(filter);
   filter.connect(master);
   click.start(now);
-  click.stop(now + 0.055);
+  click.stop(now + (isMiss ? 0.055 : 0.078));
 
   var osc = ac.createOscillator();
   var toneGain = ac.createGain();
   osc.type = isMiss ? 'triangle' : 'sine';
   osc.frequency.setValueAtTime(Math.max(140, base), now);
-  osc.frequency.exponentialRampToValueAtTime(Math.max(90, base * (isMiss ? 0.62 : 1.58)), now + (isMiss ? 0.12 : 0.18));
+  osc.frequency.exponentialRampToValueAtTime(Math.max(90, base * (isMiss ? 0.62 : 1.82)), now + (isMiss ? 0.12 : 0.22));
   toneGain.gain.setValueAtTime(0, now);
-  toneGain.gain.linearRampToValueAtTime(isMiss ? 0.05 : 0.075 * hitPower, now + 0.018);
-  toneGain.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.14 : 0.2));
+  toneGain.gain.linearRampToValueAtTime(isMiss ? 0.05 : 0.12 * hitPower, now + 0.014);
+  toneGain.gain.exponentialRampToValueAtTime(0.001, now + (isMiss ? 0.14 : 0.24));
   osc.connect(toneGain);
   toneGain.connect(master);
   osc.start(now);
-  osc.stop(now + (isMiss ? 0.16 : 0.22));
+  osc.stop(now + (isMiss ? 0.16 : 0.26));
 
   var sparkleOsc = null;
   var sparkleGain = null;
-  if (!isMiss && judge && (judge.key === 'just' || judge.key === 'nice')) {
+  if (!isMiss) {
+    var sparklePower = judge && judge.key === 'just' ? 0.105 : (judge && judge.key === 'nice' ? 0.078 : 0.052);
     sparkleOsc = ac.createOscillator();
     sparkleGain = ac.createGain();
     sparkleOsc.type = 'sine';
-    sparkleOsc.frequency.setValueAtTime(base * (judge.key === 'just' ? 1.5 : 1.25), now + 0.018);
+    sparkleOsc.frequency.setValueAtTime(base * (judge && judge.key === 'just' ? 1.72 : 1.42), now + 0.014);
     sparkleGain.gain.setValueAtTime(0, now + 0.018);
-    sparkleGain.gain.linearRampToValueAtTime(judge.key === 'just' ? 0.052 : 0.034, now + 0.035);
-    sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    sparkleGain.gain.linearRampToValueAtTime(sparklePower, now + 0.035);
+    sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
     sparkleOsc.connect(sparkleGain);
     sparkleGain.connect(master);
-    sparkleOsc.start(now + 0.018);
-    sparkleOsc.stop(now + 0.19);
+    sparkleOsc.start(now + 0.014);
+    sparkleOsc.stop(now + 0.24);
   }
 
-  var cleanupDelay = isMiss ? 260 : 320;
+  var cleanupDelay = isMiss ? 260 : 420;
   setTimeout(function() {
     [click, filter, osc, toneGain, sparkleOsc, sparkleGain, master].forEach(function(node) {
       if (!node) return;
@@ -6581,6 +6612,7 @@ function handleRhythmTap(idx, btn) {
     }
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNotePop(best);
+    _playRhythmTapPitch(laneIdx, judge);
     _playRhythmBlockSfx('success', laneIdx, judge);
     _pulseRhythmButton(btn, 'rhythm-hit' + (judge.key === 'just' ? ' rhythm-hit-just' : (judge.key === 'nice' ? ' rhythm-hit-nice' : '')));
     _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn);
@@ -6614,6 +6646,7 @@ function handleRhythmTap(idx, btn) {
   } else {
     _setRhythmStatus(ringJudge.label, 'warn');
   }
+  _playRhythmTapPitch(idx, ringJudge);
   _playRhythmBlockSfx('success', idx, ringJudge);
   _pulseRhythmButton(btn, 'rhythm-hit' + (ringJudge.key === 'just' ? ' rhythm-hit-just' : (ringJudge.key === 'nice' ? ' rhythm-hit-nice' : '')));
   _spawnRhythmJudgePop(idx, ringJudge, ringHit.added, btn);
