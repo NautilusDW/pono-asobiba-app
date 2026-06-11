@@ -671,10 +671,21 @@ body.sheet-on .hdr-left .dots {
 /* ===== v1013: カレントドット グロー明滅 + 最終問題バッジ ===== */
 /* v1013: 現在解いている問題のドットだけ柔らかくグロー明滅 (子供向け・低刺激)。
    box-shadow ではなく drop-shadow を使い dot.png のアルファ形状 (真円) に沿って光らせる。
-   既存の transform: scale(1.18) (.dot.current) とはプロパティが独立なので干渉しない。 */
+   既存の transform: scale(1.18) (.dot.current) とはプロパティが独立なので干渉しない。
+   v1017: グロー濃色化 + 本体opacity明滅。明るい羊皮紙背景 (#f5e9d0系) では白っぽい光が
+   埋もれてほぼ見えなかったため、brightness アップを廃止し、影色を濃い焦げオレンジ
+   rgba(178,60,0) に変更 (明るくする方向ではなく濃くする方向で目立たせる)。
+   ドット本体の opacity も 1 ↔ 0.5 でグローと同期して脈動させる。
+   グロー最大を opacity 1 側に置くことで、要素全体の opacity によるグロー減衰を回避。 */
 @keyframes qz-dot-glow {
-  from { filter: drop-shadow(0 0 2px rgba(255, 190, 80, 0.4)) brightness(1); }
-  to   { filter: drop-shadow(0 0 9px rgba(255, 165, 40, 0.85)) brightness(1.1); }
+  from {
+    filter: drop-shadow(0 0 10px rgba(178, 60, 0, 0.95));
+    opacity: 1;
+  }
+  to {
+    filter: drop-shadow(0 0 3px rgba(178, 60, 0, 0.4));
+    opacity: 0.5;
+  }
 }
 .hdr-left .dot.current {
   animation: qz-dot-glow 1.2s ease-in-out infinite alternate;

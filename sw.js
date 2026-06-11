@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1016; // v1016: per-Q トグルの critical fix (🌐 snapshot 汚染防止 / 🧹 個別設定削除 / ⚠個別あり 可視化)
+const CACHE_VERSION = 1017; // v1017: quizland カレントドットのグロー濃色化 (焦げオレンジ) + 本体opacity明滅
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
