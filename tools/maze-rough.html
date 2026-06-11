@@ -239,6 +239,7 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="waypoint" style="background:#1e5a3e; color:#caf3d8;">📍 中継地点</button>
       <button class="btn" data-mode="obstacle" style="background:#5a3e1f; color:#e6cca8;">🪨 障害物</button>
       <button class="btn" data-mode="lineedit" style="background:#3e3e5a; color:#cfcfff;">✏️ ライン編集</button>
+      <button class="btn" data-mode="delete-edge" style="background:#5a3030; color:#fcc;">✂️ 道を消す</button>
     </div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
 
@@ -1110,6 +1111,28 @@ function _distPointToSegment(px, py, ax, ay, bx, by) {
   return { dist: Math.sqrt(ex * ex + ey * ey), t: t };
 }
 
+// ✂️ 道を消す: クリック点に最も近い (= 半径 0.5 タイル以内の) エッジを末尾から
+// 線形探索して削除。 削除したら true を返す。 該当なしなら false。
+// maze-editor.html の handleDeleteEdgeClick と同じ「polyline 近傍ヒット」方式。
+function _handleDeleteEdgeClick(p) {
+  const limit = CELL * 0.5;
+  for (let ei = state.edges.length - 1; ei >= 0; ei--) {
+    const ed = state.edges[ei];
+    if (!ed || !Array.isArray(ed.polyline) || ed.polyline.length < 2) continue;
+    for (let i = 0; i < ed.polyline.length - 1; i++) {
+      const A = ed.polyline[i], B = ed.polyline[i + 1];
+      const r = _distPointToSegment(p.x, p.y, A.x, A.y, B.x, B.y);
+      if (r.dist < limit) {
+        state.edges.splice(ei, 1);
+        showBanner('道を削除しました (' + state.edges.length + ' 本残り)');
+        return true;
+      }
+    }
+  }
+  showBanner('道が見つからないよ (道の線に近づいてクリックしてね)');
+  return false;
+}
+
 // エッジ polyline の **中間点のみ** hit detection (端点はノード hit 経由)。
 // ノード (waypoint/start/goal) よりも優先度が低いので、_markerHitAt の末尾で呼ぶ。
 // ノードと重なる中間点もスキップ (= ノード hit に任せる)。
@@ -1354,6 +1377,17 @@ function eventToPixel(e) {
 cv.addEventListener('pointerdown', function(e) {
   const t = eventToTile(e);
   const p = eventToPixel(e);
+  // ✂️ 道を消すモード: マーカーヒットやノードドラッグより前にエッジ削除を試みる。
+  // マーカーに当たっても無視 (= 線そのものを狙ったクリックを優先)。
+  if (state.mode === 'delete-edge') {
+    pushHistory();
+    if (_handleDeleteEdgeClick(p)) {
+      afterEdit();
+    } else {
+      state.history.pop(); // 操作なし → 履歴巻き戻し
+    }
+    return;
+  }
   // Marker / midpoint click → select + start drag (works regardless of mode).
   // 削除は ↖ 選択モード + Delete/Backspace キー専用 (= 誤削除を防ぐ)。
   const hit = _markerHitAt(p.x, p.y);
@@ -1519,6 +1553,9 @@ cv.addEventListener('pointermove', function(e) {
   }
   if (state.isPainting) {
     paintAt(t.x, t.y, p.x, p.y);
+  } else if (state.mode === 'delete-edge') {
+    // ✂️ 道を消す: マーカー上でも常に not-allowed (= 削除専用) で他モードに誤発火させない
+    cv.style.cursor = 'not-allowed';
   } else {
     // Cursor hint when hovering over a draggable marker
     const baseCursor = (state.mode === 'select') ? 'default' : 'crosshair';
@@ -1582,7 +1619,9 @@ cv.addEventListener('pointerup', function(e) {
     }
     state.draggingMarker = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
-    cv.style.cursor = (state.mode === 'select') ? 'default' : 'crosshair';
+    cv.style.cursor = (state.mode === 'select') ? 'default'
+      : (state.mode === 'delete-edge') ? 'not-allowed'
+      : 'crosshair';
     afterEdit();
     return;
   }
@@ -1615,8 +1654,10 @@ document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
     state.mode = b.dataset.mode;
     document.querySelectorAll('.btn[data-mode]').forEach(function(x) { x.classList.remove('active'); });
     b.classList.add('active');
-    // 選択モードのときは普通の矢印カーソル、それ以外は crosshair
-    cv.style.cursor = (state.mode === 'select') ? 'default' : 'crosshair';
+    // 選択モードのときは普通の矢印カーソル、 ✂️道を消すは not-allowed、 それ以外は crosshair
+    cv.style.cursor = (state.mode === 'select') ? 'default'
+      : (state.mode === 'delete-edge') ? 'not-allowed'
+      : 'crosshair';
     // 選択モード以外に切り替えたら選択を解除
     if (state.mode !== 'select' && state.selection !== null) {
       state.selection = null;
