@@ -186,7 +186,7 @@
   // ── Create elements ──
   const toggle = document.createElement('button');
   toggle.className = 'pono-menu-toggle';
-  toggle.textContent = '⚙️';
+  // Visual is provided by the wooden settings PNG background (see .pono-menu-toggle CSS)
   toggle.setAttribute('aria-label', 'メニュー');
 
   const dropdown = document.createElement('div');

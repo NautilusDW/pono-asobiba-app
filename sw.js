@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1022; // v1022: oto SE assets 追加 (just/nice/good/ok/close/miss-hit + game-start/clear)
+const CACHE_VERSION = 1023; // v1023: common/menu.js, writing-mori/index.html, writing-mori/care.html, quizland/preview/full/index.html 更新
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
