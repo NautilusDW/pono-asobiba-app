@@ -6206,7 +6206,35 @@ function onFreeItemDragMove(e) {
   const p = eventToFreePoint(e);
   if (!p) return;
   setFreeItemPosition(freeDragState.uid, p.x, p.y);
-  renderFreeLayoutStage();
+  const item = placedItems.find(i => i.uid === freeDragState.uid);
+  if (!item) return;
+  const el = document.querySelector(`[data-free-uid="${freeDragState.uid}"]`);
+  if (el) {
+    el.style.left = toPctX(item.x);
+    el.style.top = toPctY(item.y);
+  }
+  if (item.type === 'rice') {
+    placedItems.forEach(child => {
+      if (child.parentId === item.uid) {
+        const cel = document.querySelector(`[data-free-uid="${child.uid}"]`);
+        if (cel) {
+          cel.style.left = toPctX(child.x);
+          cel.style.top = toPctY(child.y);
+        }
+      }
+    });
+  }
+  if (item.snapTarget) {
+    placedItems.forEach(child => {
+      if (child.parentCupId === item.uid) {
+        const cel = document.querySelector(`[data-free-uid="${child.uid}"]`);
+        if (cel) {
+          cel.style.left = toPctX(child.x);
+          cel.style.top = toPctY(child.y);
+        }
+      }
+    });
+  }
 }
 function onFreeItemDragEnd(e) {
   if (!freeDragState) return;
@@ -6968,7 +6996,7 @@ function createFreeContextToolbar() {
     });
   }
 
-  if (!item.snapTarget) {
+  if (item.type !== 'rice' && !item.snapTarget) {
     toolbar.appendChild(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
     toolbar.appendChild(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
   }

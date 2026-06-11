@@ -2981,9 +2981,13 @@ document.getElementById('exportBtn').addEventListener('click', function() {
 // We scale down to maxDim and re-encode as JPEG to get to ~200-800 KB.
 // The viewBox in the def stays at the ORIGINAL dimensions (coordinates unchanged),
 // so the runtime's drawImage scales the compressed preview back to fill the maze.
-function compressImageToDataURL(img, maxDim, quality) {
+function compressImageToDataURL(img, maxDim, quality, mode) {
   const w = img.naturalWidth, h = img.naturalHeight;
-  const scale = Math.min(1, maxDim / Math.max(w, h));
+  // mode='height' は短辺(高さ)基準。 横長 (3840×1080 など) の縦解像度を維持するため、
+  // 本番 commit でのみ使う。 既定は従来通り長辺基準 (sessionStorage / 自動保存)。
+  const scale = (mode === 'height')
+    ? Math.min(1, maxDim / h)
+    : Math.min(1, maxDim / Math.max(w, h));
   const dw = Math.max(1, Math.floor(w * scale));
   const dh = Math.max(1, Math.floor(h * scale));
   const c = document.createElement('canvas');
@@ -3116,12 +3120,15 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
       } catch (e) { /* parse 失敗 → 続行 */ }
     }
 
-    // ① 画像を 1600px Q70 JPEG に圧縮 (本番に PUT する直前の必須ステップ)。
+    // ① 画像を JPEG に圧縮 (本番に PUT する直前の必須ステップ)。
     //    原画像 (PNG, 数 MB〜) をそのまま GitHub に push すると配信が遅くなる。
     //    extension も .jpg に切り替えて、JSON の imageUrl も合わせる。
+    //    高さ基準 1080px Q70: 3840×1080 (2画面ラフ) の縦解像度を維持するため、
+    //    長辺基準 (1600px) ではなく高さ基準にする。 通常の 16:9 (1920×1080) は変化なし、
+    //    3840×1080 は 3840×1080 (= 等倍) で出力される。
     let compressedImgB64 = null;
     if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
-      const compressedDataURL = compressImageToDataURL(state.image, 1600, 0.7);
+      const compressedDataURL = compressImageToDataURL(state.image, 1080, 0.7, 'height');
       if (compressedDataURL && compressedDataURL.indexOf('data:image/jpeg') === 0) {
         compressedImgB64 = compressedDataURL.split(',', 2)[1];
         // r.def.imageUrl と r.ext を .jpg に書き換え
@@ -3145,7 +3152,7 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
       const existingImg = await ghGet(imgPath);
       showBanner('② 画像を保存中 (圧縮 JPEG)…');
       await ghPut(imgPath, compressedImgB64,
-        'maze: image stage ' + r.safeName + ' の画像更新 (1600px Q70)',
+        'maze: image stage ' + r.safeName + ' の画像更新 (h=1080 Q70)',
         existingImg ? existingImg.sha : null);
     } else if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
       // 圧縮失敗時のフォールバック (極小画像など)

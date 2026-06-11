@@ -2817,19 +2817,33 @@ function _handoffStateSig() {
 }
 function _captureHandoffImages() {
   if (state.panels !== 2) { _lastHandoffSig = ''; _lastHandoffImages = null; return null; }
+  // 背景画像 (refImage / prodImage) が無い時は handoff に画像を載せない。
+  // editor は従来通り「画像を差し替えてください」経路で動く。 これにより
+  // タイル fill / グリッド / 解答軌跡 / S/G ラベル / waypoint / obstacle / creature 等の
+  // 装飾が editor に baked-in されるのを防ぐ。
+  const ref = (state.refImage && state.refImage.complete && state.refImage.naturalWidth > 0) ? state.refImage : null;
+  const prod = (state.prodImage && state.prodImage.complete && state.prodImage.naturalWidth > 0) ? state.prodImage : null;
+  if (!ref && !prod) { _lastHandoffSig = ''; _lastHandoffImages = null; return null; }
   // シグネチャが前回と同一なら再キャプチャ不要 (toDataURL は 100ms 級で重いため)
   const sig = _handoffStateSig();
   if (sig === _lastHandoffSig && _lastHandoffImages) return _lastHandoffImages;
   try {
-    const cv = document.getElementById('cv');
-    if (!cv || cv.width < 3840 || cv.height < 1080) return null;
+    // 両方ある場合は prodImage を優先 (production が完成形)。
+    const srcImg = prod || ref;
+    if (srcImg.naturalWidth < 3840 || srcImg.naturalHeight < 1080) {
+      // 横 2 画面想定 (3840×1080) でない素材は handoff スキップ。
+      _lastHandoffSig = ''; _lastHandoffImages = null; return null;
+    }
     const off = document.createElement('canvas');
     off.width = 1920; off.height = 1080;
     const octx = off.getContext('2d');
-    octx.drawImage(cv, 0, 0, 1920, 1080, 0, 0, 1920, 1080);
-    const left = off.toDataURL('image/png');
+    // 左パネル
     octx.clearRect(0, 0, 1920, 1080);
-    octx.drawImage(cv, 1920, 0, 1920, 1080, 0, 0, 1920, 1080);
+    octx.drawImage(srcImg, 0, 0, 1920, 1080, 0, 0, 1920, 1080);
+    const left = off.toDataURL('image/png');
+    // 右パネル
+    octx.clearRect(0, 0, 1920, 1080);
+    octx.drawImage(srcImg, 1920, 0, 1920, 1080, 0, 0, 1920, 1080);
     const right = off.toDataURL('image/png');
     _lastHandoffSig = sig;
     _lastHandoffImages = [left, right];
