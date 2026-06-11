@@ -1080,7 +1080,10 @@ function drawEdge(e) {
 // 一致する頂点はハンドル描画も hit detection も行わない (= ノードが端点の役)。
 function _polyPointOverlapsNode(p) {
   if (!p) return false;
-  const eps2 = 4; // 2px 以内なら一致とみなす (snap 誤差吸収)
+  // ~12px (= sqrt(CELL*CELL*0.04)) 以内なら一致とみなす。 waypoint と polyline
+  // 中間点がほぼ重なるとき、中間点ハンドルを描画 & hit detection から除外して
+  // waypoint をドラッグできるようにする。
+  const eps2 = CELL * CELL * 0.04;
   if (state.start) {
     const dx = p.x - state.start.x, dy = p.y - state.start.y;
     if (dx * dx + dy * dy < eps2) return true;
@@ -1711,12 +1714,10 @@ cv.addEventListener('pointerup', function(e) {
       const idx = dm.index;
       if (idx >= 0 && idx < state.waypoints.length) {
         const w = state.waypoints[idx];
-        const kind = w.kind || 'manual';
-        // manual waypoint は polyline 上に吸着 (配置時と対称)。 branch/deadend は
-        // 自動生成由来なので従来通りグリッドスナップのみ。
-        const polySnap = (kind === 'manual') ? _snapToNearestPolyline(w, CELL * 0.6) : null;
-        snappedPos = polySnap || _snapMarker(w.x, w.y);
-        state.waypoints[idx] = { x: snappedPos.x, y: snappedPos.y, kind: kind };
+        // ドラッグ後はユーザーの意図位置を尊重するため、 _snapMarker のみ呼ぶ。
+        // (配置時の polyline スナップは pointerdown 側で別途実施)
+        snappedPos = _snapMarker(w.x, w.y);
+        state.waypoints[idx] = { x: snappedPos.x, y: snappedPos.y, kind: w.kind || 'manual' };
       }
     } else if (dm.type === 'obstacle') {
       const idx = dm.index;

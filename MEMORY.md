@@ -144,6 +144,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-11T01:30:21Z - tools/maze-rough.html waypointドラッグ不能バグ修正: pointerupのpolylineスナップ撤去とeps緩和
+- **タスク**: tools/maze-rough.html waypointドラッグ不能バグ修正: pointerupのpolylineスナップ撤去とeps緩和
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 15
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Workflow": 6, "Read": 2, "ToolSearch": 1, "Agent": 5, "Bash": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-11T01:07:39Z - maze-rough.html: NODE_THRESHOLD緩和 + 配置/ドラッグ時 polyline スナップ + _snapToNearestPolylineヘルパー追加
 - **タスク**: maze-rough.html: NODE_THRESHOLD緩和 + 配置/ドラッグ時 polyline スナップ + _snapToNearestPolylineヘルパー追加
 - **結果**: 成功
@@ -237,19 +250,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-05T07:45:44Z - アライグマボタン表示制御バグ修正 (タイトル/prestart/scatter/partner-select/success-modal 中は非表示) + sw v819
 - **タスク**: アライグマボタン表示制御バグ修正 (タイトル/prestart/scatter/partner-select/success-modal 中は非表示) + sw v819
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 183
-- **エラー数**: 12
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 25, "Agent": 53, "Write": 3, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 1, "Edit": 9, "Workflow": 16, "Bash": 70}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-05T07:44:53Z - partner-select カード画像の 16:9 アスペクト対応 (fixed-height 180px + CSS変数によるwide位置補正 + カード幅縮小 + sw v818)
-- **タスク**: partner-select カード画像の 16:9 アスペクト対応 (fixed-height 180px + CSS変数によるwide位置補正 + カード幅縮小 + sw v818)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 183
