@@ -4038,7 +4038,9 @@ function _applyFlagTunnelCamera(now, viewportW, viewportH) {
   stage.camera.x = x;
   stage.camera.y = y;
   stage._flagZoom = zoom;
-  imgClampCameraToBounds(stage, viewportW, viewportH, (stage._scale || 1) * zoom);
+  // v1022: Skip camera clamp during flag tunnel animation so the exit halo
+  // does not stall at the viewBox boundary when exitFocus.x is near the edge.
+  // Normal camera updates resume after the animation ends and will re-clamp.
   return true;
 }
 
