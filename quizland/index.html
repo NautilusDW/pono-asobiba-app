@@ -4378,6 +4378,9 @@ window.EditorBootstrapConfig = {
   // 色・数・形などのステージ要素も問題ごとに保存し、 別問題の保存で共通キーが上書き
   // されて「見直すと元に戻る」状態にならないようにする。
   perQuestionSelectors: QZ_PER_QUESTION_SELECTORS,
+  // 2026-06-11: 質問バナー / 音声ボタンは常時 per-Q 化せず、 editor toolbar の
+  // 「🎯 この質問だけ / 🌐 すべての質問」 トグルで保存範囲を選ぶ (既定 🌐 = 共通保存)。
+  perQuestionScopeToggleSelectors: QZ_PER_QUESTION_SCOPE_TOGGLE,
   ghPath: 'quizland/saved-layout.json',
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   // Future (Phase 2): aspect-aware layout fork
