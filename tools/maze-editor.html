@@ -1211,6 +1211,7 @@ jsonInput.addEventListener('change', function(e) {
       // Restore lantern toggle
       const lt = document.getElementById('lanternToggle');
       if (lt) lt.checked = !!def.lantern;
+      _setCameraModeSelect(def.cameraMode);
       // Restore obstacles + creatures
       state.obstacles = _normalizeObstacles(def.obstacles);
       state.creatures = _normalizeCreatures(def.creatures);
@@ -3079,11 +3080,14 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
 
   showBanner('💾 ' + r.safeName + '.json をダウンロードしました');
+  const imgStep = (r.def.imageUrls)
+    ? '2. 画像 2枚 (JPEG) を maze/imageStages/' + r.safeName + '_L.jpg / ' + r.safeName + '_R.jpg として配置\n'
+    : '2. 画像 (' + state.imgFileName + ') を maze/imageStages/' + r.safeName + '.' + r.ext + ' として配置\n';
   alert(
     '✅ ' + r.safeName + '.json を保存しました!\n\n' +
     '次のステップ (本番反映):\n' +
     '1. JSON を maze/imageStages/ に配置\n' +
-    '2. 画像 (' + state.imgFileName + ') を maze/imageStages/' + r.safeName + '.' + r.ext + ' として配置\n' +
+    imgStep +
     '3. ブラウザで maze/?image=' + r.safeName + ' を開く\n\n' +
     '※ コミット/デプロイ前に動作確認したい場合は、下の「▶ 迷路で試す」ボタンを使ってね (sessionStorage 経由のドラフトプレビュー)'
   );
@@ -3246,8 +3250,35 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
     //    高さ基準 1080px Q70: 3840×1080 (2画面ラフ) の縦解像度を維持するため、
     //    長辺基準 (1600px) ではなく高さ基準にする。 通常の 16:9 (1920×1080) は変化なし、
     //    3840×1080 は 3840×1080 (= 等倍) で出力される。
-    let compressedImgB64 = null;
-    if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
+    let compressedImgB64 = null;       // 単一画像 (従来)
+    let compressedPairB64 = null;      // [L, R] — 2枚読込 (state.sourceImages) 時のみ
+    if (state.sourceImages && state.sourceImages.length === 2) {
+      // ①' 2枚読込: 各画像を個別に JPEG 圧縮 (h=1080 Q70)。
+      //    失敗時は中断 (JSON は imageUrls=.jpg を参照するため、混在出力を防ぐ)。
+      showBanner('① 画像 2枚を圧縮中…');
+      const pairImgs = await Promise.all(state.sourceImages.map(function(src) {
+        return new Promise(function(resolve, reject) {
+          const im = new Image();
+          im.onload = function() { resolve(im); };
+          im.onerror = function() { reject(new Error('2枚読込の元画像をデコードできません')); };
+          im.src = src;
+        });
+      }));
+      compressedPairB64 = pairImgs.map(function(im, i) {
+        const d = compressImageToDataURL(im, 1080, 0.7, 'height');
+        if (!d || d.indexOf('data:image/jpeg') !== 0) {
+          throw new Error('画像圧縮に失敗 (' + (i === 0 ? '_L' : '_R') + ')');
+        }
+        return d.split(',', 2)[1];
+      });
+      // buildExportDef が既に imageUrls (.jpg) を出力済みだが、念のため整合させる
+      r.def.imageUrls = [
+        'imageStages/' + r.safeName + '_L.jpg',
+        'imageStages/' + r.safeName + '_R.jpg',
+      ];
+      delete r.def.imageUrl;
+      r.ext = 'jpg';
+    } else if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
       const compressedDataURL = compressImageToDataURL(state.image, 1080, 0.7, 'height');
       if (compressedDataURL && compressedDataURL.indexOf('data:image/jpeg') === 0) {
         compressedImgB64 = compressedDataURL.split(',', 2)[1];
@@ -3267,7 +3298,18 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
       existingJson ? existingJson.sha : null);
 
     // 2) Image file: 圧縮済み JPEG を PUT。フォールバックで原画像 PNG。
-    if (compressedImgB64) {
+    //    2枚読込時は {safeName}_L.jpg / {safeName}_R.jpg を個別 PUT。
+    if (compressedPairB64) {
+      const sides = ['_L', '_R'];
+      for (let i = 0; i < sides.length; i++) {
+        const imgPath = 'maze/imageStages/' + r.safeName + sides[i] + '.jpg';
+        const existingImg = await ghGet(imgPath);
+        showBanner('② 画像を保存中 (' + (i + 1) + '/2 ' + sides[i] + '.jpg 圧縮 JPEG)…');
+        await ghPut(imgPath, compressedPairB64[i],
+          'maze: image stage ' + r.safeName + ' の画像更新 (' + sides[i] + ', h=1080 Q70)',
+          existingImg ? existingImg.sha : null);
+      }
+    } else if (compressedImgB64) {
       const imgPath = 'maze/imageStages/' + r.safeName + '.jpg';
       const existingImg = await ghGet(imgPath);
       showBanner('② 画像を保存中 (圧縮 JPEG)…');
@@ -3370,6 +3412,7 @@ function _doAutoSave() {
       stageName: stageNameInput.value || '',
       stageOrder: _readStageOrderInput(1),
       lantern: !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked),
+      cameraMode: _readCameraMode(),
       imgFileName: state.imgFileName,
       imgW: state.imgW,
       imgH: state.imgH,
@@ -3412,6 +3455,7 @@ function _restoreDraft() {
     }
     const lt = document.getElementById('lanternToggle');
     if (lt) lt.checked = !!draft.lantern;
+    _setCameraModeSelect(draft.cameraMode);
     state.nodes = Array.isArray(draft.nodes) ? draft.nodes : [];
     state.edges = Array.isArray(draft.edges) ? draft.edges : [];
     state.obstacles = Array.isArray(draft.obstacles) ? draft.obstacles : [];
@@ -3425,6 +3469,7 @@ function _restoreDraft() {
     state.imgFileName = draft.imgFileName || '';
     state.imgW = draft.imgW || 0;
     state.imgH = draft.imgH || 0;
+    state.sourceImages = null; // 2枚読込は draft 対象外 → 復元時は単一画像扱い
     if (draft.image) {
       const img = new Image();
       img.onload = function() {
@@ -3500,6 +3545,8 @@ const _stageOrderInput = document.getElementById('stageOrderInput');
 if (_stageOrderInput) _stageOrderInput.addEventListener('input', scheduleAutoSave);
 const _lanternToggle = document.getElementById('lanternToggle');
 if (_lanternToggle) _lanternToggle.addEventListener('change', scheduleAutoSave);
+const _cameraModeSelect = document.getElementById('cameraModeSelect');
+if (_cameraModeSelect) _cameraModeSelect.addEventListener('change', scheduleAutoSave);
 
 // Reset button should also clear the draft
 const _origReset = document.getElementById('resetBtn').onclick;
@@ -3539,6 +3586,7 @@ function libBuildSnapshot() {
     stageName: stageNameInput.value || '',
     stageOrder: orderInput ? _readStageOrderInput(1) : 1,
     lantern: !!(ltEl && ltEl.checked),
+    cameraMode: _readCameraMode(),
     imgFileName: state.imgFileName || '',
     imgW: state.imgW || 0,
     imgH: state.imgH || 0,
@@ -3589,6 +3637,7 @@ function libLoadByName(name) {
   }
   const ltEl = document.getElementById('lanternToggle');
   if (ltEl) ltEl.checked = !!snap.lantern;
+  _setCameraModeSelect(snap.cameraMode);
   // Restore state
   state.nodes = Array.isArray(snap.nodes) ? snap.nodes : [];
   state.edges = Array.isArray(snap.edges) ? snap.edges : [];
@@ -3604,6 +3653,7 @@ function libLoadByName(name) {
   state.imgW = snap.imgW || 0;
   state.imgH = snap.imgH || 0;
   // Restore image
+  state.sourceImages = null; // 2枚読込はライブラリ保存対象外 → 復元時は単一画像扱い
   if (snap.image) {
     const img = new Image();
     img.onload = function() {
@@ -3776,6 +3826,7 @@ function _restoreFromServerDef(def, fname, stageOrder) {
   if (libN) libN.value = def.name || fname;
   const lt = document.getElementById('lanternToggle');
   if (lt) lt.checked = !!def.lantern;
+  _setCameraModeSelect(def.cameraMode);
   state.obstacles = _normalizeObstacles(def.obstacles);
   state.creatures = _normalizeCreatures(def.creatures);
   _restoreGimmicksFromDef(def);
@@ -3792,6 +3843,7 @@ function _restoreFromServerDef(def, fname, stageOrder) {
     const img = new Image();
     img.onload = function() {
       state.image = img;
+      state.sourceImages = null; // サーバー読込は単一画像扱い (2枚再出力する場合は画像 2枚を読み直す)
       state.imgW = (def.viewBox && def.viewBox.w > 0) ? def.viewBox.w : img.naturalWidth;
       state.imgH = (def.viewBox && def.viewBox.h > 0) ? def.viewBox.h : img.naturalHeight;
       state.imgFileName = baseName + '.' + ext;
@@ -4273,6 +4325,7 @@ function _applyHandoff(h, opts) {
       }).then(function(composed) {
         if (!composed) return;
         state.image = composed;
+        state.sourceImages = null; // ラフ合成はラフ画像 — 本番 2枚は別途読み込む
         state.imgW = composed.naturalWidth;
         state.imgH = composed.naturalHeight;
         state.imgFileName = (h.name ? String(h.name).replace(/[^a-zA-Z0-9_-]/g, '_') : 'rough_composite') + '_composite.png';
