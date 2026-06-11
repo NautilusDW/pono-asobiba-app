@@ -452,7 +452,11 @@
      → リズムモード時は #instruments を #rhythm-lanes より上 (z:5) に昇格して
         鍵盤を常に最前面に保つ。ノート(.gh-note z:4)は鍵盤の後ろを落ちるが、
         ヒットライン(.gh-hitline z:5)はボタン上端より上にあるため重なり面積は実質ゼロ。 */
-  body.rhythm-layout #instruments { z-index: 5; }
+  body.rhythm-layout #instruments {
+    z-index: 5;
+    perspective: 780px;
+    transform-style: preserve-3d;
+  }
   .gh-lane {
     position: absolute;
     top: 0;
@@ -512,14 +516,15 @@
     width: var(--gh-sz, 96px);
     height: var(--gh-sz, 96px);
     margin-left: calc(var(--gh-sz, 96px) * -0.5);
-    border-radius: 22px;
+    border-radius: 50%;
     background:
-      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.92) 0 14%, rgba(255,255,255,0.32) 14% 24%, transparent 25%),
-      linear-gradient(160deg, var(--gh-hi, #FDE68A), var(--gh-lo, #F59E0B));
+      radial-gradient(circle at 32% 25%, rgba(255,255,255,0.94) 0 13%, rgba(255,255,255,0.3) 14% 22%, transparent 24%),
+      radial-gradient(circle at 50% 42%, rgba(255,255,255,0.2), transparent 52%),
+      linear-gradient(160deg, var(--gh-hi, #FDE68A), var(--gh-lo, #F59E0B) 64%, #172554);
     border: 4px solid rgba(255,255,255,0.92);
     box-shadow:
       0 6px 18px rgba(0,0,0,0.35),
-      inset 0 -8px 14px rgba(0,0,0,0.16),
+      inset 0 -10px 14px rgba(0,0,0,0.18),
       inset 0 4px 10px rgba(255,255,255,0.5);
     color: rgba(0,0,0,0.78);
     font-weight: 900;
@@ -2623,6 +2628,8 @@
       0 16px 24px rgba(0,0,0,0.34),
       0 0 24px var(--key-glow);
     font-size: calc(var(--sz, 82px) * 0.34);
+    transform-style: preserve-3d;
+    transform-origin: center 78%;
   }
   body.rhythm-layout .instr-btn .btn-img {
     inset: 8px 7px 13px;
@@ -2662,10 +2669,10 @@
     position: absolute !important;
     top: auto !important;
     bottom: var(--gh-row-bottom) !important;
-    transform: translate(-50%, 0) !important;
+    transform: translate(-50%, 0) rotateX(42deg) translateZ(0) !important;
   }
   body.rhythm-layout .instr-btn.press {
-    transform: translate(-50%, 0) translateY(4px) scale(0.98) !important;
+    transform: translate(-50%, 0) rotateX(42deg) translateY(5px) scale(0.98) !important;
   }
   /* v713+: 左 22% は左メニュー帯 (モード切替 / ねいろ / ばんそう, 中心 11% / 幅 160px) を
      避けるため空ける。8 ボタンは画面右 78% の中で等間隔配置。1 区間 = 78% / 8 = 9.75%。
@@ -5027,6 +5034,11 @@ function _gh3DPushColorQuadGradient(out, p1, c1, p2, c2, p3, c3, p4, c4) {
   _gh3DPushColorTri(out, p1, c1, p2, c2, p3, c3);
   _gh3DPushColorTri(out, p1, c1, p3, c3, p4, c4);
 }
+function _gh3DPushTexTri(out, p1, u1, v1, p2, u2, v2, p3, u3, v3, alpha) {
+  out.push(p1[0], p1[1], p1[2], u1, v1, alpha);
+  out.push(p2[0], p2[1], p2[2], u2, v2, alpha);
+  out.push(p3[0], p3[1], p3[2], u3, v3, alpha);
+}
 function _gh3DShadeRgb(rgb, scale, alpha) {
   return [
     Math.max(0, Math.min(1, rgb[0] * scale)),
@@ -5153,37 +5165,55 @@ function _gh3DTextureFor(lane, label) {
   c.height = 192;
   var ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);
-  ctx.shadowColor = 'rgba(0,0,0,0.34)';
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 8;
-  _gh3DRoundRectPath(ctx, 25, 24, 142, 142, 30);
-  var grad = ctx.createLinearGradient(25, 24, 167, 166);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(96, 96, 76, 0, Math.PI * 2);
+  ctx.clip();
+  var grad = ctx.createRadialGradient(68, 54, 8, 96, 96, 82);
   grad.addColorStop(0, color.hi || '#FDE68A');
-  grad.addColorStop(0.58, color.lo || '#F59E0B');
+  grad.addColorStop(0.52, color.lo || '#F59E0B');
   grad.addColorStop(1, '#172554');
   ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.fillRect(20, 20, 152, 152);
+  ctx.restore();
+
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
   ctx.beginPath();
-  ctx.arc(62, 56, 19, 0, Math.PI * 2);
+  ctx.arc(96, 96, 74, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 5;
+  ctx.setLineDash([8, 7]);
+  ctx.strokeStyle = 'rgba(255,247,210,0.64)';
+  ctx.beginPath();
+  ctx.arc(96, 96, 58, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.86)';
+  ctx.beginPath();
+  ctx.arc(63, 54, 17, 0, Math.PI * 2);
   ctx.fill();
-  var fontSize = 70;
-  do {
-    ctx.font = '900 ' + fontSize + 'px "DotGothic16", "Zen Maru Gothic", monospace';
-    if (ctx.measureText(label).width <= 108 || fontSize <= 52) break;
-    fontSize -= 2;
-  } while (fontSize > 52);
+
+  var icon = '♪';
+  var fontSize = 88;
+  ctx.font = '900 ' + fontSize + 'px "DotGothic16", "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineWidth = 8;
-  ctx.strokeStyle = 'rgba(255,255,255,0.58)';
-  ctx.strokeText(label, 101, 108);
-  ctx.fillStyle = 'rgba(15,23,42,0.82)';
-  ctx.fillText(label, 101, 108);
+  ctx.strokeStyle = 'rgba(255,255,255,0.54)';
+  ctx.strokeText(icon, 96, 101);
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.fillText(icon, 96, 101);
+
+  if (label) {
+    ctx.font = '900 24px "DotGothic16", "Zen Maru Gothic", sans-serif';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(15,23,42,0.34)';
+    ctx.strokeText(label, 96, 145);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(label, 96, 145);
+  }
   var tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -5265,11 +5295,9 @@ function _gh3DDrawOneNote(note, mvp) {
   var lane = note.lane || 0;
   var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
   var z = GH3D_FAR_Z + (GH3D_NEAR_Z - GH3D_FAR_Z) * p;
-  var w = 0.92;
-  var h = 0.32;
-  var d = 1.0;
-  var bevel = 0.08;
-  var bevelH = 0.08;
+  var radiusX = 0.44;
+  var radiusZ = 0.48;
+  var h = 0.26;
   var yLift = 0.055;
   var fadeIn = Math.max(0, Math.min(1, (p - RHYTHM_NOTE_FADE_IN_START) / (RHYTHM_NOTE_FADE_IN_END - RHYTHM_NOTE_FADE_IN_START)));
   var passFade = p <= 1 ? 1 : Math.max(0, 1 - (p - 1) / (RHYTHM_NOTE_PASS_PROGRESS - 1));
@@ -5277,54 +5305,42 @@ function _gh3DDrawOneNote(note, mvp) {
   if (a <= 0.01) return;
   var label = _rhythmNoteLabel(lane);
   var tex = _gh3DTextureFor(lane, label);
-  var x0 = centerX - w / 2, x1 = centerX + w / 2;
-  var zNear = z + d / 2;
-  var zFar = z - d / 2;
-  var xi0 = x0 + bevel, xi1 = x1 - bevel;
-  var ziNear = zNear - bevel;
-  var ziFar = zFar + bevel;
-  var yNearBase = _gh3DRoadYForNote(zNear) + yLift;
-  var yFarBase = _gh3DRoadYForNote(zFar) + yLift;
-  var yNearBevel = yNearBase + h - bevelH;
-  var yFarBevel = yFarBase + h - bevelH;
-  var yInnerNearTop = _gh3DRoadYForNote(ziNear) + yLift + h;
-  var yInnerFarTop = _gh3DRoadYForNote(ziFar) + yLift + h;
   var rgb = _gh3DLaneRgb(lane);
   var sideVerts = [];
-  var nearC = _gh3DShadeRgb(rgb, 0.92, a * 0.82);
-  var farC = _gh3DShadeRgb(rgb, 0.38, a * 0.48);
-  var leftC = _gh3DShadeRgb(rgb, 0.68, a * 0.72);
-  var rightC = _gh3DShadeRgb(rgb, 0.52, a * 0.68);
-  var bottomC = _gh3DShadeRgb(rgb, 0.46, a * 0.62);
-  var bevelNearC = _gh3DShadeRgb(rgb, 1.12, a * 0.78);
-  var bevelFarC = _gh3DShadeRgb(rgb, 0.66, a * 0.62);
-  var bevelLeftC = _gh3DShadeRgb(rgb, 0.84, a * 0.68);
-  var bevelRightC = _gh3DShadeRgb(rgb, 0.72, a * 0.66);
-  _gh3DPushHoldTail(sideVerts, centerX, zFar, w, note.beatLen || 1, yLift, rgb, a);
-  var nbl = [x0, yNearBase, zNear], nbr = [x1, yNearBase, zNear], ntr = [x1, yNearBevel, zNear], ntl = [x0, yNearBevel, zNear];
-  var fbl = [x0, yFarBase, zFar], fbr = [x1, yFarBase, zFar], ftr = [x1, yFarBevel, zFar], ftl = [x0, yFarBevel, zFar];
-  var itnl = [xi0, yInnerNearTop, ziNear], itnr = [xi1, yInnerNearTop, ziNear], itfr = [xi1, yInnerFarTop, ziFar], itfl = [xi0, yInnerFarTop, ziFar];
-  _gh3DPushColorQuad(sideVerts, nbl, nbr, ntr, ntl, nearC);
-  _gh3DPushColorQuad(sideVerts, fbr, fbl, ftl, ftr, farC);
-  _gh3DPushColorQuad(sideVerts, fbl, nbl, ntl, ftl, leftC);
-  _gh3DPushColorQuad(sideVerts, nbr, fbr, ftr, ntr, rightC);
-  _gh3DPushColorQuad(sideVerts, fbl, fbr, nbr, nbl, bottomC);
-  _gh3DPushColorQuad(sideVerts, ntl, ntr, itnr, itnl, bevelNearC);
-  _gh3DPushColorQuad(sideVerts, ftr, ftl, itfl, itfr, bevelFarC);
-  _gh3DPushColorQuad(sideVerts, ftl, ntl, itnl, itfl, bevelLeftC);
-  _gh3DPushColorQuad(sideVerts, ntr, ftr, itfr, itnr, bevelRightC);
+  var topVerts = [];
+  var topCenter = [centerX, _gh3DRoadYForNote(z) + yLift + h, z];
+  var segments = 36;
+  _gh3DPushHoldTail(sideVerts, centerX, z - radiusZ * 0.92, radiusX * 2.1, note.beatLen || 1, yLift, rgb, a);
+  for (var seg = 0; seg < segments; seg++) {
+    var a0 = (Math.PI * 2 * seg) / segments;
+    var a1 = (Math.PI * 2 * (seg + 1)) / segments;
+    var c0 = Math.cos(a0), s0 = Math.sin(a0);
+    var c1 = Math.cos(a1), s1 = Math.sin(a1);
+    var x0 = centerX + c0 * radiusX;
+    var x1 = centerX + c1 * radiusX;
+    var z0 = z + s0 * radiusZ;
+    var z1 = z + s1 * radiusZ;
+    var p0b = [x0, _gh3DRoadYForNote(z0) + yLift, z0];
+    var p1b = [x1, _gh3DRoadYForNote(z1) + yLift, z1];
+    var p0t = [x0, _gh3DRoadYForNote(z0) + yLift + h, z0];
+    var p1t = [x1, _gh3DRoadYForNote(z1) + yLift + h, z1];
+    var mid = (a0 + a1) * 0.5;
+    var light = 0.62 + 0.32 * Math.max(0, Math.cos(mid - Math.PI * 0.35));
+    var sideC = _gh3DShadeRgb(rgb, light, a * 0.78);
+    var sideBottomC = _gh3DShadeRgb(rgb, light * 0.58, a * 0.58);
+    _gh3DPushColorQuadGradient(sideVerts, p0b, sideBottomC, p1b, sideBottomC, p1t, sideC, p0t, sideC);
+    _gh3DPushTexTri(
+      topVerts,
+      topCenter, 0.5, 0.5,
+      p0t, 0.5 + c0 * 0.48, 0.5 + s0 * 0.48,
+      p1t, 0.5 + c1 * 0.48, 0.5 + s1 * 0.48,
+      a
+    );
+  }
   _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, sideVerts, gl.TRIANGLES, mvp);
-  var verts = [
-    xi0, yInnerNearTop + 0.006, ziNear, 0, 1, a,
-    xi1, yInnerNearTop + 0.006, ziNear, 1, 1, a,
-    xi1, yInnerFarTop + 0.006, ziFar, 1, 0, a,
-    xi0, yInnerNearTop + 0.006, ziNear, 0, 1, a,
-    xi1, yInnerFarTop + 0.006, ziFar, 1, 0, a,
-    xi0, yInnerFarTop + 0.006, ziFar, 0, 0, a
-  ];
   gl.useProgram(_gh3d.notesProgram);
   gl.bindBuffer(gl.ARRAY_BUFFER, _gh3d.noteBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STREAM_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(topVerts), gl.STREAM_DRAW);
   var stride = 6 * 4;
   var aPos = gl.getAttribLocation(_gh3d.notesProgram, 'aPos');
   var aUv = gl.getAttribLocation(_gh3d.notesProgram, 'aUv');
@@ -5339,7 +5355,7 @@ function _gh3DDrawOneNote(note, mvp) {
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.uniform1i(gl.getUniformLocation(_gh3d.notesProgram, 'uTex'), 0);
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.drawArrays(gl.TRIANGLES, 0, topVerts.length / 6);
 }
 function _gh3DDrawNotes() {
   if (!_gh3DEnsure()) return;
