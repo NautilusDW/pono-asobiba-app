@@ -541,6 +541,25 @@
       inset 0 4px 10px rgba(255,255,255,0.5),
       0 0 0 4px rgba(45,212,191,0.5);
   }
+  .gh-note.hold::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: calc(100% - 4px);
+    width: 56%;
+    height: calc(58px + var(--gh-hold-tail, 1) * 46px);
+    transform: translateX(-50%);
+    border-radius: 0 0 999px 999px;
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.5) 0 8px, rgba(255,255,255,0) 8px 28px),
+      linear-gradient(180deg, rgba(240,253,250,0.96), rgba(45,212,191,0.52) 54%, rgba(14,165,233,0));
+    box-shadow:
+      0 0 14px rgba(45,212,191,0.66),
+      0 0 28px rgba(14,165,233,0.36);
+    opacity: 0.86;
+    pointer-events: none;
+    z-index: -1;
+  }
   .gh-note.repeat {
     border-color: rgba(255,247,237,1);
     box-shadow:
@@ -1660,9 +1679,32 @@
     padding: 24px;
     background: rgba(8,19,43,0.24);
     pointer-events: auto;
+    overflow: hidden;
   }
   .rhythm-complete.show { display: flex; }
+  .rhythm-clear-art {
+    position: absolute;
+    inset: max(8px, 1.2vw);
+    width: calc(100% - max(16px, 2.4vw));
+    height: calc(100% - max(16px, 2.4vw));
+    object-fit: cover;
+    border-radius: 28px;
+    opacity: 0;
+    transform: scale(1.04);
+    filter: saturate(1.12) contrast(1.04);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .rhythm-complete.stage-clear {
+    background: radial-gradient(circle at 50% 44%, rgba(255,247,173,0.18), rgba(8,19,43,0.44) 56%, rgba(4,8,24,0.72));
+  }
+  .rhythm-complete.stage-clear .rhythm-clear-art {
+    opacity: 1;
+    animation: rhythmClearArtIn 900ms cubic-bezier(0.2, 0.9, 0.22, 1) both;
+  }
   .rhythm-complete-panel {
+    position: relative;
+    z-index: 2;
     width: min(92vw, 560px);
     max-height: calc(100dvh - 32px);
     overflow: auto;
@@ -1673,6 +1715,17 @@
     color: #17324F;
     text-align: center;
     box-shadow: 0 14px 34px rgba(0,0,0,0.28);
+  }
+  .rhythm-complete.stage-clear .rhythm-complete-panel {
+    border-color: rgba(255,247,173,0.96);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.92), rgba(219,244,255,0.84)),
+      radial-gradient(circle at 50% -12%, rgba(254,240,138,0.66), rgba(254,240,138,0) 46%);
+    box-shadow:
+      0 0 0 6px rgba(255,247,173,0.16),
+      0 18px 44px rgba(0,0,0,0.38),
+      0 0 48px rgba(250,204,21,0.26);
+    animation: rhythmClearPanelPop 620ms cubic-bezier(0.28, 1.55, 0.5, 1) both;
   }
   .rhythm-complete-title {
     min-height: 2.5rem;
@@ -1842,6 +1895,25 @@
     opacity: 1;
     filter: drop-shadow(0 0 9px rgba(255,201,60,0.72)) drop-shadow(0 3px 0 rgba(142,91,0,0.28));
     transform: scale(1);
+  }
+  .rhythm-complete.stage-clear .rhythm-result-star.lit {
+    animation: rhythmClearStarPop 780ms cubic-bezier(0.28, 1.75, 0.48, 1) both;
+  }
+  .rhythm-complete.stage-clear .rhythm-result-star.lit:nth-child(2) { animation-delay: 90ms; }
+  .rhythm-complete.stage-clear .rhythm-result-star.lit:nth-child(3) { animation-delay: 180ms; }
+  @keyframes rhythmClearArtIn {
+    0% { opacity: 0; transform: scale(1.1); filter: saturate(1.3) brightness(1.15); }
+    100% { opacity: 1; transform: scale(1); filter: saturate(1.12) contrast(1.04); }
+  }
+  @keyframes rhythmClearPanelPop {
+    0% { opacity: 0; transform: translateY(16px) scale(0.92); }
+    72% { opacity: 1; transform: translateY(-2px) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes rhythmClearStarPop {
+    0% { opacity: 0; transform: translateY(12px) scale(0.36) rotate(-18deg); }
+    62% { opacity: 1; transform: translateY(-5px) scale(1.22) rotate(8deg); }
+    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
   }
   .rhythm-complete-actions {
     display: flex;
@@ -2782,6 +2854,7 @@
     </div>
 
     <div class="rhythm-complete" id="rhythm-complete" role="dialog" aria-modal="true" aria-label="リズムおしまい">
+      <img class="rhythm-clear-art" id="rhythm-clear-art" src="../assets/images/oto/rhythm/stage_clear_burst.png" alt="" draggable="false">
       <div class="rhythm-complete-panel">
         <div class="rhythm-complete-title" id="rhythm-complete-title">よくできたね</div>
         <div class="rhythm-result-stars" id="rhythm-result-stars" aria-label="ひょうか">
@@ -5049,6 +5122,69 @@ function _gh3DTextureFor(lane, label) {
   _gh3d.textureCache[key] = tex;
   return tex;
 }
+function _gh3DPushHoldTail(out, centerX, zAttach, w, beatLen, yLift, rgb, alpha) {
+  if (!out || beatLen <= 1) return;
+  var tailLen = Math.min(7.2, 0.95 + (beatLen - 1) * 1.42);
+  var zNear = zAttach + 0.06;
+  var zFar = zAttach - tailLen;
+  var bodyW = w * 0.58;
+  var x0 = centerX - bodyW / 2;
+  var x1 = centerX + bodyW / 2;
+  var yn = _gh3DRoadYForNote(zNear) + yLift + 0.13;
+  var yf = _gh3DRoadYForNote(zFar) + yLift + 0.13;
+  var cNear = [Math.min(1, rgb[0] * 1.25), Math.min(1, rgb[1] * 1.25), Math.min(1, rgb[2] * 1.25), alpha * 0.5];
+  var cFar = [Math.min(1, rgb[0] * 0.75 + 0.12), Math.min(1, rgb[1] * 0.75 + 0.18), Math.min(1, rgb[2] * 0.75 + 0.26), alpha * 0.12];
+  _gh3DPushColorQuadGradient(
+    out,
+    [x0, yn, zNear], cNear,
+    [x1, yn, zNear], cNear,
+    [x1, yf, zFar], cFar,
+    [x0, yf, zFar], cFar
+  );
+
+  var shadowW = w * 0.76;
+  var sx0 = centerX - shadowW / 2;
+  var sx1 = centerX + shadowW / 2;
+  var sn = _gh3DRoadYForNote(zNear) + yLift + 0.055;
+  var sf = _gh3DRoadYForNote(zFar) + yLift + 0.055;
+  _gh3DPushColorQuadGradient(
+    out,
+    [sx0, sn, zNear], [0, 0, 0, alpha * 0.18],
+    [sx1, sn, zNear], [0, 0, 0, alpha * 0.18],
+    [sx1, sf, zFar], [0, 0, 0, alpha * 0.02],
+    [sx0, sf, zFar], [0, 0, 0, alpha * 0.02]
+  );
+
+  var railW = 0.045;
+  var railC = [0.92, 1.0, 0.98, alpha * 0.48];
+  var railFarC = [0.58, 0.92, 1.0, alpha * 0.1];
+  [x0, x1].forEach(function(rx) {
+    _gh3DPushColorQuadGradient(
+      out,
+      [rx - railW, yn + 0.014, zNear], railC,
+      [rx + railW, yn + 0.014, zNear], railC,
+      [rx + railW, yf + 0.014, zFar], railFarC,
+      [rx - railW, yf + 0.014, zFar], railFarC
+    );
+  });
+
+  var ticks = Math.max(1, Math.min(5, Math.round(beatLen) - 1));
+  for (var i = 1; i <= ticks; i++) {
+    var t = i / (ticks + 1);
+    var z = zNear + (zFar - zNear) * t;
+    var y = _gh3DRoadYForNote(z) + yLift + 0.155;
+    var dz = 0.055;
+    var tickAlpha = alpha * (0.36 * (1 - t) + 0.12);
+    _gh3DPushColorQuad(
+      out,
+      [centerX - bodyW * 0.42, y, z + dz],
+      [centerX + bodyW * 0.42, y, z + dz],
+      [centerX + bodyW * 0.42, y, z - dz],
+      [centerX - bodyW * 0.42, y, z - dz],
+      [1, 1, 0.92, tickAlpha]
+    );
+  }
+}
 function _gh3DDrawOneNote(note, mvp) {
   var gl = _gh3d.notesGl;
   if (!note || note.consumed) return;
@@ -5091,6 +5227,7 @@ function _gh3DDrawOneNote(note, mvp) {
   var bevelFarC = _gh3DShadeRgb(rgb, 0.66, a * 0.62);
   var bevelLeftC = _gh3DShadeRgb(rgb, 0.84, a * 0.68);
   var bevelRightC = _gh3DShadeRgb(rgb, 0.72, a * 0.66);
+  _gh3DPushHoldTail(sideVerts, centerX, zFar, w, note.beatLen || 1, yLift, rgb, a);
   var nbl = [x0, yNearBase, zNear], nbr = [x1, yNearBase, zNear], ntr = [x1, yNearBevel, zNear], ntl = [x0, yNearBevel, zNear];
   var fbl = [x0, yFarBase, zFar], fbr = [x1, yFarBase, zFar], ftr = [x1, yFarBevel, zFar], ftl = [x0, yFarBevel, zFar];
   var itnl = [xi0, yInnerNearTop, ziNear], itnr = [xi1, yInnerNearTop, ziNear], itfr = [xi1, yInnerFarTop, ziFar], itfl = [xi0, yInnerFarTop, ziFar];
@@ -5368,12 +5505,15 @@ function _ghSpawnNote(seqIndex) {
   var targetTime = _rhythmTargetTimeFor(seqIndex);
   var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
   var cue = _rhythmSpecialCueAt(seqIndex);
+  var beatLen = _rhythmBeatLengthAt(seqIndex);
   var el = document.createElement('div');
   el.className = 'gh-note' + (cue ? ' ' + cue.type : '');
   el.dataset.lane = String(laneIdx);
   el.dataset.seq = String(seqIndex);
+  el.dataset.beats = String(beatLen);
   el.style.setProperty('--gh-hi', color.hi);
   el.style.setProperty('--gh-lo', color.lo);
+  if (beatLen > 1) el.style.setProperty('--gh-hold-tail', Math.min(5, beatLen - 1).toFixed(2));
   var center = (laneIdx + 0.5) * 12.5;
   el.style.setProperty('--gh-note-x', center + '%');
   el.textContent = _rhythmNoteLabel(laneIdx);
@@ -5383,6 +5523,7 @@ function _ghSpawnNote(seqIndex) {
     lane: laneIdx,
     targetTime: targetTime,
     el: el,
+    beatLen: beatLen,
     consumed: false
   });
 }
@@ -5510,7 +5651,7 @@ function _hideRhythmComplete() {
   _clearRhythmCompleteTimers();
   _clearRhythmFinishTimer();
   var complete = document.getElementById('rhythm-complete');
-  if (complete) complete.classList.remove('show');
+  if (complete) complete.classList.remove('show', 'stage-clear');
   var actions = document.getElementById('rhythm-complete-actions');
   if (actions) actions.classList.add('hidden');
   var form = document.getElementById('rhythm-name-form');
@@ -5648,7 +5789,12 @@ function _showRhythmComplete(result) {
   var select = document.getElementById('rhythm-complete-select');
   var demo = document.getElementById('rhythm-complete-demo');
   if (!complete) return;
-  if (title) title.textContent = stars >= 3 ? 'よくできたね' : (stars === 2 ? 'いいね' : 'さいごまで できたね');
+  complete.classList.toggle('stage-clear', clearedFullSong);
+  if (title) {
+    title.textContent = clearedFullSong
+      ? 'ステージ クリア!'
+      : (stars >= 3 ? 'よくできたね' : (stars === 2 ? 'いいね' : 'さいごまで できたね'));
+  }
   _renderRhythmResultStars(stars);
   _renderRhythmScoreSummary(scoreEntry);
   _renderRhythmLeaderboard(scoreEntry.key, null);
@@ -5662,6 +5808,7 @@ function _showRhythmComplete(result) {
   if (select) select.classList.remove('hidden');
   if (demo) demo.classList.remove('hidden');
   complete.classList.add('show');
+  if (clearedFullSong) _playRhythmClearSfx(stars);
   _rhythm.completeTimers.push(setTimeout(function() {
     if (text) {
       text.textContent = hasNextPart
@@ -6058,6 +6205,53 @@ function _playRhythmBlockSfx(kind, laneIdx, judge) {
       try { node.disconnect(); } catch(e) {}
     });
   }, cleanupDelay);
+}
+function _playRhythmClearSfx(stars) {
+  var ac = getAC();
+  if (!ac) return;
+  var now = ac.currentTime;
+  var master = ac.createGain();
+  var peak = stars >= 3 ? 0.085 : 0.065;
+  var nodes = [master];
+  master.gain.setValueAtTime(0, now);
+  master.gain.linearRampToValueAtTime(peak, now + 0.025);
+  master.gain.exponentialRampToValueAtTime(0.001, now + 0.92);
+  master.connect(ac.destination);
+  [523.25, 659.25, 783.99, 1046.5].forEach(function(freq, i) {
+    var t = now + i * 0.075;
+    var o = ac.createOscillator();
+    var g = ac.createGain();
+    o.type = i === 3 ? 'triangle' : 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(i === 3 ? 0.06 : 0.04, t + 0.025);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    o.connect(g);
+    g.connect(master);
+    o.start(t);
+    o.stop(t + 0.42);
+    nodes.push(o, g);
+  });
+  var shimmer = ac.createBufferSource();
+  var filter = ac.createBiquadFilter();
+  var shimmerGain = ac.createGain();
+  shimmer.buffer = _makeNoiseBuffer(ac, 0.36);
+  filter.type = 'highpass';
+  filter.frequency.setValueAtTime(5200, now);
+  shimmerGain.gain.setValueAtTime(0, now + 0.08);
+  shimmerGain.gain.linearRampToValueAtTime(0.018, now + 0.12);
+  shimmerGain.gain.exponentialRampToValueAtTime(0.001, now + 0.56);
+  shimmer.connect(filter);
+  filter.connect(shimmerGain);
+  shimmerGain.connect(master);
+  shimmer.start(now + 0.08);
+  shimmer.stop(now + 0.48);
+  nodes.push(shimmer, filter, shimmerGain);
+  setTimeout(function() {
+    nodes.forEach(function(node) {
+      try { node.disconnect(); } catch(e) {}
+    });
+  }, 1100);
 }
 function _clearRhythmDemo(keepHud) {
   _rhythm.demoTimers.forEach(function(id) { clearTimeout(id); });

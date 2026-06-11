@@ -519,6 +519,12 @@ const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 // エディタ (tools/maze-editor.html) を開いた時にそのまま state を復元させる。
 // 合意済みフォーマット (version:1) — 詳しくは _buildHandoff() / _doAutoSaveHandoff() を参照。
 const HANDOFF_KEY = 'pono_maze_rough_handoff_v1';
+// 2画面ラフ (panels===2) の canvas snapshot を編集側へ受け渡す IndexedDB のキー。
+// 1920×1080 PNG dataURL を 2 枚保持するため localStorage の 5MB 制限を回避。
+// 詳しくは _handoffIdbPut / maze-editor.html の _handoffIdbGet を参照。
+const HANDOFF_IDB_NAME = 'pono_maze_handoff_v1';
+const HANDOFF_IDB_STORE = 'images';
+const HANDOFF_IDB_KEY = 'rough_handoff_images';
 
 // ────────────────────────────────────────────────────────
 // State
@@ -2750,6 +2756,89 @@ function _doAutoSave() {
 // ────────────────────────────────────────────────────────
 // Editor handoff (always-on background export)
 // ────────────────────────────────────────────────────────
+// 2画面ラフ用 IndexedDB ヘルパ: localStorage の 5MB 制限を超える PNG dataURL を
+// 別ストアに置き、 localStorage の handoff payload には imagesKey 参照だけを残す。
+function _handoffIdbOpen() {
+  return new Promise(function(res, rej) {
+    try {
+      const r = indexedDB.open(HANDOFF_IDB_NAME, 1);
+      r.onupgradeneeded = function() {
+        const db = r.result;
+        if (!db.objectStoreNames.contains(HANDOFF_IDB_STORE)) {
+          db.createObjectStore(HANDOFF_IDB_STORE);
+        }
+      };
+      r.onsuccess = function() { res(r.result); };
+      r.onerror = function() { rej(r.error); };
+    } catch (e) { rej(e); }
+  });
+}
+function _handoffIdbPut(images) {
+  return _handoffIdbOpen().then(function(db) {
+    return new Promise(function(res, rej) {
+      const tx = db.transaction(HANDOFF_IDB_STORE, 'readwrite');
+      tx.objectStore(HANDOFF_IDB_STORE).put(images, HANDOFF_IDB_KEY);
+      tx.oncomplete = function() { res(true); };
+      tx.onerror = function() { rej(tx.error); };
+    });
+  });
+}
+
+// 2画面ラフ canvas を 1920×1080 ごとに dataURL (PNG) 化して 2 枚返す。
+// 失敗時 (panels!==2, canvas 未準備など) は null。 同期だが画像 1 枚あたり ~50-150ms。
+// 直前の auto-save から canvas 内容が変化していない場合は同じ images を再利用するため
+// 軽量シグネチャ (_lastHandoffSig) を比較して skip する。
+let _lastHandoffSig = '';
+let _lastHandoffImages = null;
+function _handoffStateSig() {
+  // tiles + start + goal + waypoints + edges 概要を文字列化する軽量ハッシュ。
+  // JSON.stringify(state.tiles) は重いため tile 数だけ拾い、 残りの構造で差分判定。
+  try {
+    const n = (Array.isArray(state.tiles) && state.tiles[0]) ? state.tiles[0].length : 0;
+    let pathCount = 0;
+    if (Array.isArray(state.tiles)) {
+      for (let r = 0; r < state.tiles.length; r++) {
+        const row = state.tiles[r];
+        if (!row) continue;
+        for (let c = 0; c < row.length; c++) if (row[c] === 'path') pathCount++;
+      }
+    }
+    return [
+      state.panels,
+      n, pathCount,
+      state.start ? (state.start.x + ',' + state.start.y) : '-',
+      state.goal ? (state.goal.x + ',' + state.goal.y) : '-',
+      Array.isArray(state.waypoints) ? state.waypoints.length : 0,
+      Array.isArray(state.edges) ? state.edges.length : 0,
+      Array.isArray(state.obstacles) ? state.obstacles.length : 0,
+      Array.isArray(state.creatures) ? state.creatures.length : 0,
+    ].join('|');
+  } catch (e) { return String(Date.now()); }
+}
+function _captureHandoffImages() {
+  if (state.panels !== 2) { _lastHandoffSig = ''; _lastHandoffImages = null; return null; }
+  // シグネチャが前回と同一なら再キャプチャ不要 (toDataURL は 100ms 級で重いため)
+  const sig = _handoffStateSig();
+  if (sig === _lastHandoffSig && _lastHandoffImages) return _lastHandoffImages;
+  try {
+    const cv = document.getElementById('cv');
+    if (!cv || cv.width < 3840 || cv.height < 1080) return null;
+    const off = document.createElement('canvas');
+    off.width = 1920; off.height = 1080;
+    const octx = off.getContext('2d');
+    octx.drawImage(cv, 0, 0, 1920, 1080, 0, 0, 1920, 1080);
+    const left = off.toDataURL('image/png');
+    octx.clearRect(0, 0, 1920, 1080);
+    octx.drawImage(cv, 1920, 0, 1920, 1080, 0, 0, 1920, 1080);
+    const right = off.toDataURL('image/png');
+    _lastHandoffSig = sig;
+    _lastHandoffImages = [left, right];
+    return _lastHandoffImages;
+  } catch (e) {
+    return null;
+  }
+}
+
 // ラフ→エディタ handoff の中核。 _doAutoSave() から並列に呼ばれる前提で、
 // state.start / state.goal が揃った時だけ書き出す。 失敗しても呼び出し元の
 // auto-save 本体に影響を与えないよう、 全体を try/catch で必ず囲む。
@@ -2762,6 +2851,21 @@ function _doAutoSaveHandoff() {
     payload = _buildHandoff();
   } catch (e) { return; }
   if (!payload) return;
+  // 2画面ラフは canvas snapshot を IndexedDB に置き、 payload には参照キーだけ残す。
+  // localStorage の 5MB 制限を超えないため。 画像保存は best-effort。
+  // _captureHandoffImages 内でシグネチャ判定により実 capture 回数は最小化される。
+  if (state.panels === 2) {
+    const prevSig = _lastHandoffSig;
+    const images = _captureHandoffImages();
+    if (images && images.length === 2) {
+      payload.imagesKey = HANDOFF_IDB_KEY;
+      payload.imagesCount = 2;
+      // 同一シグネチャなら IDB は既に最新 — 余分な put をスキップ
+      if (_lastHandoffSig !== prevSig) {
+        _handoffIdbPut(images).catch(function() { /* swallow */ });
+      }
+    }
+  }
   try {
     localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
   } catch (e) { /* quota — ignore */ }

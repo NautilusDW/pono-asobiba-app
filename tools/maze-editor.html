@@ -274,6 +274,7 @@ html, body { height: 100vh; overflow: hidden;
       </button>
       <p style="font-size:0.65rem; color:#8a8; margin-top:4px;">
         ラフで描いた迷路グラフを取り込み (画像は別途差し替え)
+        <br>2画面ラフは自動で 3840×1080 に合成されます
       </p>
     </div>
 
@@ -3867,6 +3868,68 @@ document.getElementById('libCompareBtn').addEventListener('click', function() {
 //  - 既存 draft に編集中のデータがあれば自動取り込みせず、 ボタンだけ出す
 const HANDOFF_KEY = 'pono_maze_rough_handoff_v1';
 const HANDOFF_SESSION_FLAG = 'pono_maze_rough_handoff_loaded_v1';
+// 2画面ラフ (panels===2) 用 IndexedDB の所在。 ラフ側 maze-rough.html が同名キーで書き込む。
+const HANDOFF_IDB_NAME = 'pono_maze_handoff_v1';
+const HANDOFF_IDB_STORE = 'images';
+const HANDOFF_IDB_KEY = 'rough_handoff_images';
+
+// IndexedDB から 2画面ラフの canvas snapshot (1920×1080 PNG dataURL × 2) を取り出す。
+// 不在/失敗時は null。 同期的 fail-safe (catch swallow) — 画像が無くてもグラフ取込は続行可能。
+function _handoffIdbOpen() {
+  return new Promise(function(res, rej) {
+    try {
+      const r = indexedDB.open(HANDOFF_IDB_NAME, 1);
+      r.onupgradeneeded = function() {
+        const db = r.result;
+        if (!db.objectStoreNames.contains(HANDOFF_IDB_STORE)) {
+          db.createObjectStore(HANDOFF_IDB_STORE);
+        }
+      };
+      r.onsuccess = function() { res(r.result); };
+      r.onerror = function() { rej(r.error); };
+    } catch (e) { rej(e); }
+  });
+}
+function _handoffIdbGet(key) {
+  return _handoffIdbOpen().then(function(db) {
+    return new Promise(function(res, rej) {
+      const tx = db.transaction(HANDOFF_IDB_STORE, 'readonly');
+      const req = tx.objectStore(HANDOFF_IDB_STORE).get(key);
+      req.onsuccess = function() { res(req.result || null); };
+      req.onerror = function() { rej(req.error); };
+    });
+  });
+}
+
+// dataURL 配列を 1 枚の画像に横並び合成 (1920 × N × 1080)。 Promise<HTMLImageElement> を返す。
+// 各 dataURL は 1920×1080 前提。 合成後の natural size は (N*1920) × 1080 となり、
+// state.imgW === handoffViewBox.w (= panels*1920) が整数で一致 → _rescaleFromHandoffViewBox が
+// 等倍 no-op で抜けるため、 ラフ座標が圧縮されることなく取り込まれる。
+function _composeScreensToSingleImage(dataURLs) {
+  return Promise.all(dataURLs.map(function(d) {
+    return new Promise(function(res, rej) {
+      const im = new Image();
+      im.onload = function() { res(im); };
+      im.onerror = function() { rej(new Error('image decode failed')); };
+      im.src = d;
+    });
+  })).then(function(imgs) {
+    const N = imgs.length;
+    const off = document.createElement('canvas');
+    off.width = N * 1920;
+    off.height = 1080;
+    const octx = off.getContext('2d');
+    for (let i = 0; i < N; i++) {
+      octx.drawImage(imgs[i], i * 1920, 0, 1920, 1080);
+    }
+    return new Promise(function(res, rej) {
+      const final = new Image();
+      final.onload = function() { res(final); };
+      final.onerror = function() { rej(new Error('composite decode failed')); };
+      final.src = off.toDataURL('image/png');
+    });
+  });
+}
 
 function _readHandoff() {
   try {
@@ -4072,12 +4135,38 @@ function _applyHandoff(h, opts) {
       state.handoffViewBox = null;
     }
 
-    // すでに画像が読み込まれていれば、 その場で rescale を走らせる
-    // (image なし or サイズ未取得なら次回 loadImageFile で rescale される)
-    if (state.handoffViewBox
+    // 2画面ラフ (imagesKey 付き) の場合は IndexedDB から canvas snapshot を取り出し、
+    // 横並び合成して単一画像 (例 3840×1080) として state.image にセットする。
+    // 合成後 imgW === handoffViewBox.w (= panels*1920) なので _rescaleFromHandoffViewBox は
+    // 等倍 no-op で抜け、 座標圧縮が起きない。
+    if (h.imagesKey === HANDOFF_IDB_KEY) {
+      _handoffIdbGet(HANDOFF_IDB_KEY).then(function(images) {
+        if (!Array.isArray(images) || images.length < 2) return null;
+        return _composeScreensToSingleImage(images);
+      }).then(function(composed) {
+        if (!composed) return;
+        state.image = composed;
+        state.imgW = composed.naturalWidth;
+        state.imgH = composed.naturalHeight;
+        state.imgFileName = (h.name ? String(h.name).replace(/[^a-zA-Z0-9_-]/g, '_') : 'rough_composite') + '_composite.png';
+        if (emptyMsg) emptyMsg.style.display = 'none';
+        // handoffViewBox は合成後画像の natural サイズと一致する想定なので
+        // _rescaleFromHandoffViewBox は等倍判定で no-op になり座標圧縮しない。
+        if (state.handoffViewBox) _rescaleFromHandoffViewBox({ silent: true });
+        try { resizeCanvas(); } catch (e) {}
+        try { draw(); } catch (e) {}
+        if (!opts.silent) {
+          showBanner('🖼 ラフ画像を ' + state.imgW + '×' + state.imgH + ' に合成しました (' + images.length + '画面)');
+        }
+      }).catch(function(err) {
+        console.warn('handoff image compose failed:', err);
+      });
+    } else if (state.handoffViewBox
         && state.image
         && Number.isFinite(state.imgW) && state.imgW > 0
         && Number.isFinite(state.imgH) && state.imgH > 0) {
+      // 1画面ラフ (imagesKey 無し) で、 すでに画像が読み込まれていれば その場で rescale
+      // (画像未読の場合は次回 loadImageFile で rescale される)
       _rescaleFromHandoffViewBox();
     }
 
@@ -4090,8 +4179,11 @@ function _applyHandoff(h, opts) {
     try { sessionStorage.setItem(HANDOFF_SESSION_FLAG, '1'); } catch (e) {}
 
     const msg = (opts.silent ? '' :
-      '📥 ラフ作成から取り込みました — 画像を差し替えて作業を続けてください'
-      + ' (ノード ' + state.nodes.length + ' / 道 ' + state.edges.length + ')');
+      (h.imagesKey === HANDOFF_IDB_KEY
+        ? '📥 ラフ作成から取り込みました — 画像を合成中…'
+          + ' (ノード ' + state.nodes.length + ' / 道 ' + state.edges.length + ')'
+        : '📥 ラフ作成から取り込みました — 画像を差し替えて作業を続けてください'
+          + ' (ノード ' + state.nodes.length + ' / 道 ' + state.edges.length + ')'));
     if (!opts.silent) showBanner(msg);
 
     // 再取り込みボタンを表示
