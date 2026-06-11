@@ -3009,6 +3009,7 @@ function buildExportDef() {
       type: 'image',
       name: rawName,
       stageOrder: stageOrder,
+      imageUrl: imageRef,
       viewBox: { w: state.imgW, h: state.imgH },
       orientation: 'landscape',
       cameraFollow: true,
@@ -3044,12 +3045,11 @@ function buildExportDef() {
   // 画像参照: 2枚読込時は imageUrls (imageUrl は省略)、 従来は imageUrl 単一 (完全後方互換)。
   // commit 時は 2枚とも JPEG 圧縮して PUT するため、 拡張子は .jpg 固定。
   if (hasPair) {
+    delete r.def.imageUrl;
     r.def.imageUrls = [
       'imageStages/' + safeName + '_L.jpg',
       'imageStages/' + safeName + '_R.jpg',
     ];
-  } else {
-    r.def.imageUrl = imageRef;
   }
   // カメラモード: 'screen' 選択時のみ出力 (既定 follow は省略 → 既存 stage と同一出力)
   if (_readCameraMode() === 'screen') r.def.cameraMode = 'screen';
