@@ -309,6 +309,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
   <button class="tab" data-panel="writing">✏️ 文字書き</button>
+  <button class="tab" data-panel="maze">🦔 めいろ</button>
   <button class="tab" data-panel="monsters">👾 モンスター</button>
   <button class="tab" data-panel="walls">🧱 壁紙・床</button>
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
@@ -1012,6 +1013,56 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div><!-- /panel-writing -->
 
+<!-- ===== 🦔 めいろ ===== -->
+<div class="panel" id="panel-maze">
+  <div class="section">
+    <div class="section-title">🎯 ステージへジャンプ</div>
+    <div style="font-size:0.75rem;color:#8B7355;margin:-6px 0 12px;line-height:1.5;">
+      クリックで各ステージを別タブで開きます。ステージ名は <code>maze/imageStages/_index.json</code> の overrides を参照。<br>
+      <strong>ドラフトを試す</strong> は、画像ピボットツールで一時保存した下書き (<code>sessionStorage.pono_maze_draft_stage</code>) を直接プレビューします。
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button id="maze-open-draft" class="btn btn-pink" onclick="mazeOpenDraft()" disabled style="opacity:0.4;" title="画像ピボットツールで下書きを保存した同じタブで開いてください (sessionStorage はタブごとに別管理のため)">📝 ドラフトを試す</button>
+      <button class="btn btn-gold btn-sm" onclick="mazeRefreshStageLabels()">🔄 ステージ名を再取得</button>
+    </div>
+    <!-- 将来ステージが 8 以上に増えたら、ここの maze-stage-grid に追記する。
+         ボタン文言は _index.json の overrides を fetch して動的に上書きされる。 -->
+    <div id="maze-stage-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=1','_blank')" data-stage="1">ステージ 1</button>
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=2','_blank')" data-stage="2">ステージ 2</button>
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=3','_blank')" data-stage="3">ステージ 3</button>
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=4','_blank')" data-stage="4">ステージ 4</button>
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=5','_blank')" data-stage="5">ステージ 5</button>
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=6','_blank')" data-stage="6">ステージ 6</button>
+      <button class="btn btn-blue" onclick="window.open('../maze/?stage=7','_blank')" data-stage="7">ステージ 7</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔄 進行・チャームリセット</div>
+    <div style="font-size:0.75rem;color:#8B7355;margin:-6px 0 12px;line-height:1.5;">
+      プレイヤーの累計リンゴ数・ヒント使用数、または「初めて見た」チャーム既読フラグを消去します。<br>
+      <strong>この操作は元に戻せません。</strong> 動作確認用に使ってください。
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-pink" onclick="mazeResetProgress()">🍎 リンゴ・ヒント使用数をリセット</button>
+      <button class="btn btn-pink" onclick="mazeResetCharms()">✨ チャーム既読をリセット</button>
+    </div>
+    <div style="font-size:0.72rem;color:#8B7355;margin-top:10px;line-height:1.6;">
+      <div>• <code>pono_maze_total_apples</code> / <code>pono_maze_used_hint</code> / <code>pono_maze_used_breeze</code> / <code>pono_maze_used_warp</code></div>
+      <div>• <code>pono_maze_charm_seen_*</code> (prefix 一致で複数削除)</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📂 参考リンク</div>
+    <a class="tool-link" href="../maze/" target="_blank"><span class="tool-icon">🦔</span> めいろ本体を開く</a>
+    <a class="tool-link" href="../maze/imageStages/_index.json" target="_blank"><span class="tool-icon">📄</span> _index.json (raw)</a>
+    <a class="tool-link" href="../maze/?image=__draft__" target="_blank"><span class="tool-icon">📝</span> ドラフト直リンク</a>
+    <div style="font-size:0.75rem;color:#8B7355;margin-top:6px;line-height:1.5;">※ ドラフトがない場合は空白ステージが開きます</div>
+  </div>
+</div><!-- /panel-maze -->
+
 <!-- ===== 👾 モンスター ===== -->
 <div class="panel" id="panel-monsters">
   <div class="section">
@@ -1226,8 +1277,94 @@ function switchTab(panelId) {
   if (panelId === 'bento')    renderBentoIllust();
   if (panelId === 'writing')  renderWritingIllust();
   if (panelId === 'monsters') renderMonsterIllust();
+  if (panelId === 'maze')     mazeInitPanel();
   if (panelId === 'roadmap') renderRoadmap();
   if (panelId === 'home')    renderHome();
+}
+
+/* ===== 🦔 めいろ 管理パネル ===== */
+// ステージ名キャッシュ（_index.json の overrides を取得して上書き表示）
+var MAZE_STAGE_LABEL_CACHE = null;
+
+function mazeInitPanel() {
+  // 初回表示時にステージ名と draft 状態を反映
+  mazeRefreshStageLabels();
+  mazeUpdateDraftButton();
+}
+
+function mazeRefreshStageLabels() {
+  // _index.json から overrides を取得してボタン文言を上書き
+  // 失敗してもボタン自体は触らない（フォールバック = "ステージ N"）
+  fetch('../maze/imageStages/_index.json?_=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (!data || !data.overrides) return;
+      MAZE_STAGE_LABEL_CACHE = data.overrides;
+      document.querySelectorAll('#maze-stage-grid button[data-stage]').forEach(function(btn) {
+        var n = btn.dataset.stage;
+        var label = data.overrides[n];
+        // ファイル名っぽいもの (英数字_のみ) はそのまま表示しても情報量低いので
+        // 日本語っぽいラベルだけ「ステージ N: <label>」に整形する。
+        if (label && /[ぁ-んァ-ヶ一-龯]/.test(label)) {
+          btn.textContent = 'ステージ ' + n + '：' + label;
+        } else {
+          btn.textContent = 'ステージ ' + n;
+        }
+      });
+    })
+    .catch(function() { /* フォールバック維持 */ });
+}
+
+function mazeUpdateDraftButton() {
+  // sessionStorage はタブ単位だが、admin と maze は別タブなので
+  // ここでの判定は同タブで一度でも draft を作った場合のみ true になる。
+  // それ以外でも「直リンク」セクションから手動で開けるよう案内している。
+  var btn = document.getElementById('maze-open-draft');
+  if (!btn) return;
+  var hasDraft = false;
+  try { hasDraft = !!sessionStorage.getItem('pono_maze_draft_stage'); } catch(e) {}
+  btn.disabled = !hasDraft;
+  btn.style.opacity = hasDraft ? '1' : '0.4';
+}
+
+function mazeOpenDraft() {
+  var hasDraft = false;
+  try { hasDraft = !!sessionStorage.getItem('pono_maze_draft_stage'); } catch(e) {}
+  if (!hasDraft) {
+    alert('このタブの sessionStorage にドラフトが見つかりません。\n画像ピボットツールでドラフト保存した後に再度押すか、「ドラフト直リンク」を使ってください。');
+    return;
+  }
+  window.open('../maze/?image=__draft__', '_blank');
+}
+
+function mazeResetProgress() {
+  if (!confirm('リンゴ累計とヒント使用数をリセットしますか？\n（pono_maze_total_apples / used_hint / used_breeze / used_warp）\n\nこの操作は元に戻せません。')) return;
+  try {
+    localStorage.removeItem('pono_maze_total_apples');
+    localStorage.removeItem('pono_maze_used_hint');
+    localStorage.removeItem('pono_maze_used_breeze');
+    localStorage.removeItem('pono_maze_used_warp');
+    alert('リセットしました。');
+  } catch(e) {
+    alert('リセットに失敗しました: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function mazeResetCharms() {
+  if (!confirm('チャーム既読フラグ (pono_maze_charm_seen_*) を全消去しますか？\n次のプレイで「初めて見た」演出が再生されます。\n\nこの操作は元に戻せません。')) return;
+  var removed = 0;
+  try {
+    // localStorage のキーを startsWith で厳密に絞り込み（他ゲームの key と誤マッチ防止）
+    var keys = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('pono_maze_charm_seen_') === 0) keys.push(k);
+    }
+    keys.forEach(function(k) { localStorage.removeItem(k); removed++; });
+    alert('チャーム既読を ' + removed + ' 件削除しました。');
+  } catch(e) {
+    alert('リセットに失敗しました: ' + (e && e.message ? e.message : e));
+  }
 }
 
 // メインタブ

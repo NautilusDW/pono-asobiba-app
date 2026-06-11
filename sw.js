@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1025; // v1025: OtoTouch リズムの円柱ノート + 3D角度付きキー
+const CACHE_VERSION = 1028; // v1028: admin maze panel UX fixes (tooltip, btn-pink for reset, draft direct-link note, confirm warnings)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
