@@ -1144,6 +1144,160 @@
     bottom: auto;
     transform: translateY(-50%) rotate(135deg);
   }
+  .rhythm-fever-bubble {
+    position: absolute;
+    left: calc(50% + 96px);
+    top: calc(50% - 176px);
+    transform: translate(0, -50%) scale(0.88);
+    z-index: 16;
+    display: none;
+    min-width: 132px;
+    max-width: min(44vw, 260px);
+    padding: 10px 18px 12px;
+    border: 3px solid rgba(255,255,255,0.96);
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 26% 22%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 13%),
+      linear-gradient(135deg, #FEF08A 0%, #FACC15 48%, #FB923C 100%);
+    color: #5A2D00;
+    font-size: clamp(1.16rem, 3.4vw, 1.76rem);
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.46);
+    box-shadow:
+      0 0 0 5px rgba(250,204,21,0.24),
+      0 0 28px rgba(250,204,21,0.58),
+      0 10px 20px rgba(0,0,0,0.28);
+    pointer-events: none;
+    letter-spacing: 0;
+  }
+  .rhythm-fever-bubble.show {
+    display: block;
+    animation: rhythmFeverBubblePop 0.9s cubic-bezier(.13,.82,.18,1) both;
+  }
+  .rhythm-fever-bubble::before,
+  .rhythm-fever-bubble::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  .rhythm-fever-bubble::before {
+    inset: -16px;
+    border-radius: 999px;
+    background:
+      conic-gradient(from 0deg,
+        transparent 0 18deg,
+        rgba(255,255,255,0.92) 18deg 26deg,
+        transparent 26deg 52deg,
+        rgba(45,212,191,0.82) 52deg 60deg,
+        transparent 60deg 88deg,
+        rgba(244,114,182,0.86) 88deg 96deg,
+        transparent 96deg 130deg,
+        rgba(255,255,255,0.92) 130deg 138deg,
+        transparent 138deg 176deg,
+        rgba(250,204,21,0.9) 176deg 184deg,
+        transparent 184deg 228deg,
+        rgba(56,189,248,0.82) 228deg 236deg,
+        transparent 236deg 360deg);
+    opacity: 0.74;
+    filter: blur(0.4px);
+    z-index: -1;
+    animation: rhythmFeverSpark 0.9s ease-out both;
+  }
+  .rhythm-fever-bubble::after {
+    left: -10px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    border-left: 3px solid rgba(255,255,255,0.96);
+    border-bottom: 3px solid rgba(255,255,255,0.96);
+    background: inherit;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .rhythm-fever-bubble.level-2 {
+    background:
+      radial-gradient(circle at 26% 22%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 13%),
+      linear-gradient(135deg, #A7F3D0 0%, #2DD4BF 46%, #38BDF8 100%);
+    color: #063A46;
+    box-shadow:
+      0 0 0 5px rgba(45,212,191,0.24),
+      0 0 32px rgba(45,212,191,0.62),
+      0 10px 20px rgba(0,0,0,0.28);
+  }
+  .rhythm-fever-bubble.level-3 {
+    background:
+      radial-gradient(circle at 26% 22%, rgba(255,255,255,0.96) 0 12%, rgba(255,255,255,0) 13%),
+      linear-gradient(135deg, #FBCFE8 0%, #FACC15 42%, #22D3EE 100%);
+    color: #3B0764;
+    font-size: clamp(1.26rem, 3.9vw, 2.04rem);
+    box-shadow:
+      0 0 0 6px rgba(255,255,255,0.18),
+      0 0 44px rgba(250,204,21,0.68),
+      0 0 64px rgba(34,211,238,0.34),
+      0 12px 24px rgba(0,0,0,0.3);
+  }
+  body.rhythm-layout .rhythm-fever-bubble {
+    left: calc(61% + 78px);
+    top: calc(29% - 110px);
+    max-width: min(32vw, 260px);
+  }
+  body.rhythm-layout.rhythm-fever-1 .stage {
+    box-shadow: 0 0 56px rgba(250,204,21,0.22), 0 0 48px rgba(0,0,0,0.36);
+  }
+  body.rhythm-layout.rhythm-fever-2 .stage {
+    box-shadow: 0 0 70px rgba(45,212,191,0.25), 0 0 52px rgba(0,0,0,0.36);
+  }
+  body.rhythm-layout.rhythm-fever-3 .stage {
+    box-shadow: 0 0 84px rgba(250,204,21,0.34), 0 0 72px rgba(34,211,238,0.24), 0 0 48px rgba(0,0,0,0.36);
+  }
+  body.rhythm-layout.rhythm-fever-1 #rhythm3d-road,
+  body.rhythm-layout.rhythm-fever-1 #rhythm3d-notes,
+  body.rhythm-layout.rhythm-fever-1 #rhythm-road,
+  body.rhythm-layout.rhythm-fever-1 #rhythm-lanes {
+    filter: brightness(1.08) saturate(1.14);
+  }
+  body.rhythm-layout.rhythm-fever-2 #rhythm3d-road,
+  body.rhythm-layout.rhythm-fever-2 #rhythm3d-notes,
+  body.rhythm-layout.rhythm-fever-2 #rhythm-road,
+  body.rhythm-layout.rhythm-fever-2 #rhythm-lanes {
+    filter: brightness(1.14) saturate(1.24);
+  }
+  body.rhythm-layout.rhythm-fever-3 #rhythm3d-road,
+  body.rhythm-layout.rhythm-fever-3 #rhythm3d-notes,
+  body.rhythm-layout.rhythm-fever-3 #rhythm-road,
+  body.rhythm-layout.rhythm-fever-3 #rhythm-lanes {
+    filter: brightness(1.2) saturate(1.34) drop-shadow(0 0 16px rgba(250,204,21,0.24));
+  }
+  body.rhythm-layout.rhythm-fever-1 .instr-btn::before { opacity: 0.16; }
+  body.rhythm-layout.rhythm-fever-2 .instr-btn::before { opacity: 0.24; }
+  body.rhythm-layout.rhythm-fever-3 .instr-btn::before {
+    opacity: 0.34;
+    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(250,204,21,0.52) 42%, rgba(34,211,238,0.2) 62%, rgba(34,211,238,0) 76%);
+  }
+  body.rhythm-layout.rhythm-fever-3 .gh-hitline {
+    box-shadow:
+      0 0 18px rgba(250,204,21,0.82),
+      0 0 34px rgba(45,212,191,0.52),
+      0 0 56px rgba(244,114,182,0.34);
+  }
+  body.rhythm-layout.rhythm-fever-1 .instr-btn.rhythm-hit::before,
+  body.rhythm-layout.rhythm-fever-2 .instr-btn.rhythm-hit::before,
+  body.rhythm-layout.rhythm-fever-3 .instr-btn.rhythm-hit::before {
+    opacity: 1;
+    background: radial-gradient(circle, rgba(255,255,255,0.96) 0%, rgba(254,240,138,0.72) 42%, rgba(45,212,191,0.22) 62%, rgba(45,212,191,0) 76%);
+  }
+  @keyframes rhythmFeverBubblePop {
+    0%   { opacity: 0; transform: translate(0, -50%) scale(0.62) rotate(-3deg); filter: brightness(1.25); }
+    22%  { opacity: 1; transform: translate(0, -58%) scale(1.18) rotate(2deg); filter: brightness(1.3); }
+    48%  { opacity: 1; transform: translate(0, -50%) scale(1) rotate(0deg); filter: brightness(1.06); }
+    100% { opacity: 1; transform: translate(0, -50%) scale(1); filter: brightness(1); }
+  }
+  @keyframes rhythmFeverSpark {
+    0%   { opacity: 0; transform: scale(0.68) rotate(0deg); }
+    34%  { opacity: 0.9; transform: scale(1.12) rotate(18deg); }
+    100% { opacity: 0.28; transform: scale(1.2) rotate(36deg); }
+  }
   .rhythm-queue {
     display: none;
     align-items: center;
@@ -2364,6 +2518,7 @@
       <div class="rhythm-queue" id="rhythm-queue"></div>
     </div>
     <div class="rhythm-special-bubble" id="rhythm-special-bubble" aria-live="polite"></div>
+    <div class="rhythm-fever-bubble" id="rhythm-fever-bubble" aria-live="polite"></div>
 
     <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
       <div class="rhythm-menu-panel">
@@ -3405,6 +3560,12 @@ var RHYTHM_LANE_COLORS = [
   { hi: '#DDD6FE', lo: '#8B5CF6' }, // シ (紫)
   { hi: '#FBCFE8', lo: '#EC4899' }  // 高ド (ピンク)
 ];
+var RHYTHM_FEVER_CLASSES = ['rhythm-fever-1', 'rhythm-fever-2', 'rhythm-fever-3'];
+var RHYTHM_FEVER_STEPS = [
+  { streak: 3, level: 1, text: 'いいね!', duration: 900 },
+  { streak: 5, level: 2, text: 'れんぞく!', duration: 1300 },
+  { streak: 8, level: 3, text: 'フィーバー!', duration: 2600 }
+];
 var _playMode = 'free';
 var _rhythm = {
   enabled: false,
@@ -3435,6 +3596,9 @@ var _rhythm = {
   goodHits: 0,
   okHits: 0,
   misses: 0,
+  feverLevel: 0,
+  feverTimer: 0,
+  feverBubbleTimer: 0,
   nowCue: false,
   // Guitar Hero 風: 落下中ノート / 次にスポーンする seqIndex / レーン miss-flash timer
   activeNotes: [],
@@ -3802,6 +3966,128 @@ function _setRhythmStatus(text, tone) {
   el.textContent = text;
   el.classList.remove('good', 'warn', 'miss');
   if (tone) el.classList.add(tone);
+}
+function _removeRhythmFeverClasses() {
+  RHYTHM_FEVER_CLASSES.forEach(function(cls) {
+    document.body.classList.remove(cls);
+  });
+}
+function _clearRhythmFever() {
+  if (_rhythm.feverTimer) {
+    clearTimeout(_rhythm.feverTimer);
+    _rhythm.feverTimer = 0;
+  }
+  if (_rhythm.feverBubbleTimer) {
+    clearTimeout(_rhythm.feverBubbleTimer);
+    _rhythm.feverBubbleTimer = 0;
+  }
+  _rhythm.feverLevel = 0;
+  _removeRhythmFeverClasses();
+  var bubble = document.getElementById('rhythm-fever-bubble');
+  if (bubble) {
+    bubble.textContent = '';
+    bubble.className = 'rhythm-fever-bubble';
+  }
+}
+function _playRhythmFeverSfx(level) {
+  var ac = getAC();
+  if (!ac) return;
+  var now = ac.currentTime;
+  var master = ac.createGain();
+  var peak = level >= 3 ? 0.12 : (level === 2 ? 0.095 : 0.075);
+  master.gain.setValueAtTime(0, now);
+  master.gain.linearRampToValueAtTime(peak, now + 0.018);
+  master.gain.exponentialRampToValueAtTime(0.001, now + (level >= 3 ? 0.46 : 0.28));
+  master.connect(ac.destination);
+
+  var freqs = level >= 3 ? [523.25, 659.25, 783.99, 1046.5] : (level === 2 ? [392.0, 523.25, 659.25] : [329.63, 392.0, 523.25]);
+  var nodes = [master];
+  freqs.forEach(function(freq, index) {
+    var t = now + index * (level >= 3 ? 0.045 : 0.035);
+    var osc = ac.createOscillator();
+    var g = ac.createGain();
+    osc.type = index % 2 ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(freq, t);
+    if (level >= 3) osc.frequency.exponentialRampToValueAtTime(freq * 1.22, t + 0.16);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(t);
+    osc.stop(t + 0.2);
+    nodes.push(osc, g);
+  });
+  var sparkle = ac.createBufferSource();
+  var filter = ac.createBiquadFilter();
+  sparkle.buffer = _makeNoiseBuffer(ac, level >= 3 ? 0.12 : 0.075);
+  filter.type = 'highpass';
+  filter.frequency.setValueAtTime(level >= 3 ? 4600 : 5200, now);
+  filter.Q.setValueAtTime(0.5, now);
+  sparkle.connect(filter);
+  filter.connect(master);
+  sparkle.start(now);
+  sparkle.stop(now + (level >= 3 ? 0.11 : 0.07));
+  nodes.push(sparkle, filter);
+  setTimeout(function() {
+    nodes.forEach(function(node) {
+      try { node.disconnect(); } catch(e) {}
+    });
+  }, level >= 3 ? 560 : 380);
+}
+function _showRhythmFever(info, laneIdx) {
+  if (!info) return;
+  if (_rhythm.feverTimer) clearTimeout(_rhythm.feverTimer);
+  if (_rhythm.feverBubbleTimer) clearTimeout(_rhythm.feverBubbleTimer);
+  _rhythm.feverLevel = info.level;
+  _removeRhythmFeverClasses();
+  document.body.classList.add('rhythm-fever-' + info.level);
+
+  var bubble = document.getElementById('rhythm-fever-bubble');
+  if (bubble) {
+    bubble.textContent = info.text;
+    bubble.className = 'rhythm-fever-bubble level-' + info.level;
+    // animation を連続成功ごとに確実に再スタートさせる
+    void bubble.offsetWidth;
+    bubble.classList.add('show');
+    _rhythm.feverBubbleTimer = setTimeout(function() {
+      bubble.classList.remove('show');
+      _rhythm.feverBubbleTimer = 0;
+    }, Math.min(info.duration, info.level >= 3 ? 1700 : 980));
+  }
+
+  if (laneIdx != null) {
+    _ghSpawnHitFlash(laneIdx);
+    if (info.level >= 2) _ghSpawnNoteBurst(laneIdx, 'success');
+  }
+  var pono = document.querySelector('.pono-wrap');
+  if (pono) {
+    var rect = pono.getBoundingClientRect();
+    var p = _viewportPointToStage(rect.left + rect.width * 0.5, rect.top + rect.height * 0.46);
+    spawnParticles(p.x, p.y, info.level >= 3 ? 18 : (info.level === 2 ? 12 : 8));
+    if (info.level >= 3) spawnRipples(rect.left + rect.width * 0.5, rect.top + rect.height * 0.46);
+  }
+  bumpPono();
+  _playRhythmFeverSfx(info.level);
+  _rhythm.feverTimer = setTimeout(function() {
+    _removeRhythmFeverClasses();
+    _rhythm.feverLevel = 0;
+    _rhythm.feverTimer = 0;
+  }, info.duration);
+}
+function _updateRhythmFever(laneIdx) {
+  if (!_rhythm.enabled || _rhythm.streak <= 0) return;
+  var match = null;
+  for (var i = 0; i < RHYTHM_FEVER_STEPS.length; i++) {
+    if (_rhythm.streak === RHYTHM_FEVER_STEPS[i].streak) {
+      match = RHYTHM_FEVER_STEPS[i];
+      break;
+    }
+  }
+  if (!match && _rhythm.streak > 8 && _rhythm.streak % 4 === 0) {
+    match = RHYTHM_FEVER_STEPS[RHYTHM_FEVER_STEPS.length - 1];
+  }
+  if (match) _showRhythmFever(match, laneIdx);
 }
 function _renderRhythmQueue() {
   var queue = document.getElementById('rhythm-queue');
@@ -4707,6 +4993,7 @@ function _ghUpdateFallingNotes(now) {
       note.missed = true;
       _rhythm.streak = 0;
       _rhythm.misses++;
+      _clearRhythmFever();
       _setRhythmStatus('つぎいこう', 'miss');
       _ghSpawnNoteBurst(note, 'miss');
       _playRhythmBlockSfx('miss', note.lane);
@@ -4867,6 +5154,7 @@ function _finishRhythmLoop() {
   _clearRhythmFinishTimer();
   _clearRhythmMelodySchedule();
   _rhythm.enabled = false;
+  _clearRhythmFever();
   if (_rhythm.raf) {
     cancelAnimationFrame(_rhythm.raf);
     _rhythm.raf = 0;
@@ -4958,6 +5246,7 @@ function _rhythmTick() {
     if (until < -RHYTHM_MISS_MS) {
       _rhythm.streak = 0;
       _rhythm.misses++;
+      _clearRhythmFever();
       _setRhythmStatus('つぎいこう', 'miss');
       _pulseRhythmButton(btn, 'rhythm-miss');
       _advanceRhythm(false);
@@ -4985,6 +5274,7 @@ function _startRhythmMode() {
   _rhythm.goodHits = 0;
   _rhythm.okHits = 0;
   _rhythm.misses = 0;
+  _clearRhythmFever();
   _rhythm.nowCue = false;
   // v705+: 古い startPerfTime が残っていると、ジオメトリ計算前に
   // _rhythmTick が走った場合に大量 miss-flash の原因になる。
@@ -5243,6 +5533,7 @@ function _clearRhythmDemo(keepHud) {
     specialCue.textContent = '';
     specialCue.classList.remove('show', 'repeat', 'hold');
   }
+  if (!_rhythm.enabled) _clearRhythmFever();
   if (!keepHud && !_rhythm.enabled) {
     var hud = document.getElementById('rhythm-hud');
     if (hud) hud.classList.remove('show');
@@ -5418,6 +5709,7 @@ function _stopRhythmMode() {
   _clearRhythmFinishTimer();
   _clearRhythmMelodySchedule();
   _hideRhythmComplete();
+  _clearRhythmFever();
   // v721: リズム中に major にフォースしていたスケールを復元
   // (v719 のガード `!== SCALE_MODE` だと、リズム中に scale-btn でトグルされ
   //  _savedScale と一致した場合にラベル再適用が走らず major のまま残る race を起こす)
@@ -5503,6 +5795,7 @@ function handleRhythmTap(idx, btn) {
       if (hasAnyActiveNote) {
         _rhythm.streak = 0;
         _rhythm.misses++;
+        _clearRhythmFever();
         _setRhythmStatus('ちがうレーン', 'miss');
         _ghSpawnNoteBurst(laneIdx, 'miss');
         _playRhythmBlockSfx('miss', laneIdx);
@@ -5538,6 +5831,7 @@ function handleRhythmTap(idx, btn) {
     _ghSpawnNotePop(best);
     _playRhythmBlockSfx('success', laneIdx);
     _pulseRhythmButton(btn, 'rhythm-hit');
+    _updateRhythmFever(laneIdx);
     _ghRemoveNote(best);
     _advanceRhythm(true);
     return;
@@ -5551,6 +5845,7 @@ function handleRhythmTap(idx, btn) {
   if (idx !== expected) {
     _rhythm.streak = 0;
     _rhythm.misses++;
+    _clearRhythmFever();
     _setRhythmStatus('ひかるボタンだよ', 'miss');
     _pulseRhythmButton(btn, 'rhythm-miss');
     return;
@@ -5573,6 +5868,7 @@ function handleRhythmTap(idx, btn) {
     _setRhythmStatus('おしい', 'warn');
   }
   _pulseRhythmButton(btn, 'rhythm-hit');
+  _updateRhythmFever(idx);
   _advanceRhythm(true);
 }
 document.querySelectorAll('.mode-btn').forEach(function(btn) {
