@@ -6514,7 +6514,7 @@ function _resolveStrengthPushGame() {
 // v1056: 手前中央から奥へ3D球体風どんぐりを転がし、
 //        既存のお邪魔虫スプライトをピンとして倒す shortform。
 // - 視点: OtoTouch 3D寄りの奥行きがあるレーン (Canvas perspective)
-// - 操作: タップした奥方向へどんぐりが転がる
+// - 操作: 手前から奥へなぞって離すと、どんぐりが飛び出す
 // - ピン: 既存 maze/creatures PNG をビルボード表示
 // - 難度: 手前は静止、奥の一部だけ左右に動く
 // - 衝突: お邪魔虫に当たるとボウリング球のように反射して跳ね返る
@@ -6522,13 +6522,16 @@ const BOWL_THROW_COOLDOWN_MS = 600;
 const BOWL_FLIGHT_MS         = 1600;   // donguri max lifetime
 const BOWL_PIN_FALL_MS       = 380;
 const BOWL_PIN_R_REL         = 0.052;  // pin radius (relative to min(w,h))
-const BOWL_HIT_R_REL         = 0.062;  // collision radius (forgiving)
+const BOWL_HIT_R_REL         = 0.046;  // collision radius, kept close to the visible body
 const BOWL_CHAIN_R_REL       = 0.13;   // domino chain radius
 const BOWL_CHAIN_DOT_MIN     = -0.20;  // chain dot-gate (more permissive for shortform play)
 const BOWL_CHAIN_MAX_DEPTH   = 5;
 const BOWL_CHAIN_DELAY_MS    = 70;
 const BOWL_DONGURI_R_REL     = 0.052;
 const BOWL_DONGURI_SPEED_REL = 1.05;   // travel distance per second, relative to min(w,h)
+const BOWL_SWIPE_MIN_REL     = 0.095;
+const BOWL_SWIPE_MAX_REL     = 0.56;
+const BOWL_SWIPE_START_Y_REL = 0.52;
 const BOWL_BOUNCE_RESTITUTION = 0.84;
 const BOWL_BOUNCE_TANGENT_KICK = 0.18;
 const BOWL_HEDGE_RESTITUTION  = 0.88;
@@ -6639,9 +6642,9 @@ function _bowlPinMetrics(gs, pin) {
     drawH: drawH,
     drawW: drawW,
     hitX: pin.x,
-    hitY: pin.y - drawH * 0.50,
-    hitRx: Math.max(minHit, drawW * 0.46),
-    hitRy: Math.max(minHit, drawH * 0.50),
+    hitY: pin.y - drawH * 0.48,
+    hitRx: Math.max(minHit, drawW * 0.34),
+    hitRy: Math.max(minHit * 0.92, drawH * 0.38),
   };
 }
 
@@ -6703,9 +6706,28 @@ function _detachBowlListeners(gs) {
     }
   } catch (_) {}
   try {
+    if (gs._onPointerMove && gs.stageEl) {
+      gs.stageEl.removeEventListener('pointermove', gs._onPointerMove);
+    }
+  } catch (_) {}
+  try {
+    if (gs._onPointerUp && gs.stageEl) {
+      gs.stageEl.removeEventListener('pointerup', gs._onPointerUp);
+      gs.stageEl.removeEventListener('lostpointercapture', gs._onPointerUp);
+    }
+  } catch (_) {}
+  try {
+    if (gs._onPointerCancel && gs.stageEl) {
+      gs.stageEl.removeEventListener('pointercancel', gs._onPointerCancel);
+    }
+  } catch (_) {}
+  try {
     if (gs._onResize) window.removeEventListener('resize', gs._onResize);
   } catch (_) {}
   gs._onPointerDown = null;
+  gs._onPointerMove = null;
+  gs._onPointerUp = null;
+  gs._onPointerCancel = null;
   gs._onResize = null;
   if (gs.rafId) { try { cancelAnimationFrame(gs.rafId); } catch (_) {} gs.rafId = null; }
 }
@@ -6803,7 +6825,7 @@ function _showBowlGame(c) {
     '<div class="bowl-game__stage" id="bowlStage">' +
       '<canvas class="bowl-game__canvas" id="bowlCanvas" aria-label="どんぐりを ころがして おじゃま虫を たおすゲーム"></canvas>' +
     '</div>' +
-    '<div class="bowl-game__stage-note">奥のおじゃま虫を ねらおう！</div>';
+    '<div class="bowl-game__stage-note">下から上へ なぞって はなそう！</div>';
   encStageEl.innerHTML = '';
   encStageEl.appendChild(wrap);
 
@@ -6825,6 +6847,7 @@ function _showBowlGame(c) {
     rafId: null, lastTs: 0,
     bgSeed: (_bowlEncounterCount * 1013904223) | 0,
     reducedMotion: reducedMotion,
+    aimDrag: null,
   };
   _bowlGameState = gs;
 
@@ -6845,11 +6868,11 @@ function _showBowlGame(c) {
   const onPointerDown = function(e) {
     if (gs !== _bowlGameState || gs.locked) return;
     const now = performance.now();
-    const cooldown = (gs.phase === 'boss') ? BOWL_BOSS_THROW_COOLDOWN_MS : BOWL_THROW_COOLDOWN_MS;
-    if (now - gs.lastThrowAt < cooldown) return;
     try { e.preventDefault(); } catch (_) {}
     const p = _bowlPointer(canvasEl, e);
     if (gs.phase === 'boss') {
+      const cooldown = BOWL_BOSS_THROW_COOLDOWN_MS;
+      if (now - gs.lastThrowAt < cooldown) return;
       if (gs.reducedMotion) {
         _registerBowlBossHit(gs, now, (gs.boss && gs.boss.x) || p.x, (gs.boss && gs.boss.y) || p.y);
         gs.lastThrowAt = now;
@@ -6862,13 +6885,54 @@ function _showBowlGame(c) {
         _applyBowlBossShot(gs, p.x, p.y);
       }
     } else {
-      _applyBowlSweep(gs, p.x, p.y);
+      if (p.y < gs.h * BOWL_SWIPE_START_Y_REL) {
+        if (gs.noteEl) gs.noteEl.textContent = '手前から なぞって はなそう！';
+        return;
+      }
+      gs.aimDrag = {
+        pointerId: e.pointerId,
+        startX: p.x,
+        startY: p.y,
+        currentX: p.x,
+        currentY: p.y,
+        startedAt: now,
+      };
+      if (gs.noteEl) gs.noteEl.textContent = '上へ なぞって はなそう！';
+      try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
     }
-    // prefers-reduced-motion: rAF を回さず、タップ毎に同期で land/fall を解決し 1 パス描画する
+  };
+  const onPointerMove = function(e) {
+    if (gs !== _bowlGameState || !gs.aimDrag || gs.aimDrag.pointerId !== e.pointerId) return;
+    try { e.preventDefault(); } catch (_) {}
+    const p = _bowlPointer(canvasEl, e);
+    gs.aimDrag.currentX = p.x;
+    gs.aimDrag.currentY = p.y;
+    if (gs.reducedMotion) _drawBowlScene(gs, performance.now());
+  };
+  const onPointerUp = function(e) {
+    if (gs !== _bowlGameState || !gs.aimDrag || gs.aimDrag.pointerId !== e.pointerId) return;
+    try { e.preventDefault(); } catch (_) {}
+    const p = _bowlPointer(canvasEl, e);
+    gs.aimDrag.currentX = p.x;
+    gs.aimDrag.currentY = p.y;
+    try { stageEl.releasePointerCapture(e.pointerId); } catch (_) {}
+    _finishBowlSwipe(gs, false);
     if (gs.reducedMotion && gs.phase !== 'boss') _stepBowlReducedMotion(gs);
   };
+  const onPointerCancel = function(e) {
+    if (gs !== _bowlGameState || !gs.aimDrag || gs.aimDrag.pointerId !== e.pointerId) return;
+    try { stageEl.releasePointerCapture(e.pointerId); } catch (_) {}
+    _finishBowlSwipe(gs, true);
+  };
   stageEl.addEventListener('pointerdown', onPointerDown);
+  stageEl.addEventListener('pointermove', onPointerMove);
+  stageEl.addEventListener('pointerup', onPointerUp);
+  stageEl.addEventListener('pointercancel', onPointerCancel);
+  stageEl.addEventListener('lostpointercapture', onPointerUp);
   gs._onPointerDown = onPointerDown;
+  gs._onPointerMove = onPointerMove;
+  gs._onPointerUp = onPointerUp;
+  gs._onPointerCancel = onPointerCancel;
 
   const onResize = function() {
     if (gs !== _bowlGameState) { window.removeEventListener('resize', onResize); return; }
@@ -6923,26 +6987,53 @@ function _stepBowlReducedMotion(gs) {
   }
 }
 
-function _applyBowlSweep(gs, tapX, tapY) {
+function _finishBowlSwipe(gs, cancelled) {
+  const drag = gs && gs.aimDrag;
+  if (!drag) return;
+  gs.aimDrag = null;
+  if (cancelled || gs.phase === 'boss') return;
+  const dx = drag.currentX - drag.startX;
+  const dy = drag.currentY - drag.startY;
+  const minDim = Math.min(gs.w, gs.h);
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const minDist = Math.max(22, minDim * BOWL_SWIPE_MIN_REL);
+  const upwardEnough = dy < -minDim * 0.055;
+  if (dist < minDist || !upwardEnough) {
+    if (gs.noteEl) gs.noteEl.textContent = '下から上へ なぞって はなそう！';
+    _drawBowlScene(gs, performance.now());
+    return;
+  }
+  const now = performance.now();
+  if (now - gs.lastThrowAt < BOWL_THROW_COOLDOWN_MS) {
+    if (gs.noteEl) gs.noteEl.textContent = 'すこし まってね';
+    _drawBowlScene(gs, now);
+    return;
+  }
+  _applyBowlSwipeThrow(gs, dx, dy, dist);
+}
+
+function _applyBowlSwipeThrow(gs, dragDx, dragDy, dragDist) {
   const ponoX = BOWL_PONO_X_REL * gs.w;
   const ponoY = BOWL_PONO_Y_REL * gs.h;
-  const dx = tapX - ponoX;
-  const dy = tapY - ponoY;
+  const dx = dragDx;
+  const dy = dragDy;
   const len = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
   let nx = dx / len;
   let ny = dy / len;
-  // Bikkuri-style: clamp to upward hemisphere (no downward shots toward pono)
+  // Swipe launch: keep shots in the upward lane even if the finger curves near release.
   if (ny > -0.05) ny = -0.05;
   const renorm = Math.max(0.001, Math.sqrt(nx * nx + ny * ny));
   nx /= renorm; ny /= renorm;
-  const speed = BOWL_DONGURI_SPEED_REL * Math.min(gs.w, gs.h);
+  const minDim = Math.min(gs.w, gs.h);
+  const strength = _bowlClamp(dragDist / Math.max(1, minDim * BOWL_SWIPE_MAX_REL), 0.45, 1);
+  const speed = BOWL_DONGURI_SPEED_REL * minDim * (0.82 + strength * 0.38);
   const now = performance.now();
   gs.donguris.push({
     x: ponoX,
     y: ponoY - BOWL_PONO_HEIGHT_REL * gs.h * 0.4, // launch from pono's hand
     vx: nx * speed,
     vy: ny * speed,
-    r: BOWL_DONGURI_R_REL * Math.min(gs.w, gs.h),
+    r: BOWL_DONGURI_R_REL * minDim,
     bornAt: now,
     deadAt: now + BOWL_FLIGHT_MS,
     theta: 0,
@@ -6953,6 +7044,7 @@ function _applyBowlSweep(gs, tapX, tapY) {
     bumpPower: 0,
   });
   gs.lastThrowAt = now;
+  if (gs.noteEl) gs.noteEl.textContent = 'はねかえりを ねらおう！';
   try { playTap(); } catch (_) {}
 }
 
@@ -7139,8 +7231,8 @@ function _updateBowlPhysics(gs, dt, now) {
         const metrics = _bowlPinMetrics(gs, pin);
         const fromPinX = d.x - metrics.hitX;
         const fromPinY = d.y - metrics.hitY;
-        const ellX = fromPinX / Math.max(1, metrics.hitRx + d.r * 0.28);
-        const ellY = fromPinY / Math.max(1, metrics.hitRy + d.r * 0.28);
+        const ellX = fromPinX / Math.max(1, metrics.hitRx + d.r * 0.12);
+        const ellY = fromPinY / Math.max(1, metrics.hitRy + d.r * 0.12);
         if (ellX * ellX + ellY * ellY <= 1) {
           const speed = Math.max(1, Math.sqrt(d.vx * d.vx + d.vy * d.vy));
           let nx = 0;
@@ -7162,7 +7254,7 @@ function _updateBowlPhysics(gs, dt, now) {
 
           // Move the ball outside the visual hit shape before applying the reflected
           // velocity, preventing repeated overlap from looking like a straight pass.
-          const separateR = Math.max(metrics.hitRx, metrics.hitRy) + d.r * 0.36;
+          const separateR = Math.max(metrics.hitRx, metrics.hitRy) + d.r * 0.24;
           d.x = metrics.hitX + nx * separateR;
           d.y = metrics.hitY + ny * separateR;
 
@@ -7322,6 +7414,8 @@ function _drawBowlScene(gs, now) {
   // Donguris in flight
   for (let i = 0; i < gs.donguris.length; i++) _drawBowlDonguri(gs, gs.donguris[i], now);
 
+  _drawBowlAimGuide(gs);
+
   // Pono (bottom-center launcher)
   _drawBowlPono(gs, now);
 
@@ -7338,6 +7432,68 @@ function _drawBowlScene(gs, now) {
   ctx.restore();
 
   if (gs.phase === 'boss') _drawBowlBossHud(gs, now);
+}
+
+function _drawBowlAimGuide(gs) {
+  const drag = gs && gs.aimDrag;
+  if (!drag || gs.phase === 'boss') return;
+  const ctx = gs.ctx;
+  const minDim = Math.min(gs.w, gs.h);
+  const dx = drag.currentX - drag.startX;
+  const dy = drag.currentY - drag.startY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 2) return;
+  const minDist = Math.max(22, minDim * BOWL_SWIPE_MIN_REL);
+  const valid = dist >= minDist && dy < -minDim * 0.055;
+  const len = Math.max(0.001, dist);
+  let nx = dx / len;
+  let ny = dy / len;
+  if (ny > -0.05) ny = -0.05;
+  const renorm = Math.max(0.001, Math.sqrt(nx * nx + ny * ny));
+  nx /= renorm;
+  ny /= renorm;
+  const startX = BOWL_PONO_X_REL * gs.w;
+  const startY = BOWL_PONO_Y_REL * gs.h - BOWL_PONO_HEIGHT_REL * gs.h * 0.4;
+  const arrowLen = _bowlClamp(dist * 0.78, minDim * 0.12, minDim * 0.36);
+  const endX = startX + nx * arrowLen;
+  const endY = startY + ny * arrowLen;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.globalAlpha = 0.36;
+  ctx.strokeStyle = valid ? '#fff4a8' : '#ff9d75';
+  ctx.lineWidth = Math.max(4, minDim * 0.018);
+  ctx.beginPath();
+  ctx.moveTo(drag.startX, drag.startY);
+  ctx.lineTo(drag.currentX, drag.currentY);
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.92;
+  ctx.strokeStyle = valid ? '#ffd84d' : '#ff7a5c';
+  ctx.lineWidth = Math.max(3, minDim * 0.012);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+
+  const head = Math.max(8, minDim * 0.04);
+  const ang = Math.atan2(ny, nx);
+  ctx.fillStyle = valid ? '#ffd84d' : '#ff7a5c';
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(endX - Math.cos(ang - 0.55) * head, endY - Math.sin(ang - 0.55) * head);
+  ctx.lineTo(endX - Math.cos(ang + 0.55) * head, endY - Math.sin(ang + 0.55) * head);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = valid ? '#fff7b9' : '#ffc0a8';
+  ctx.beginPath();
+  ctx.arc(startX, startY, Math.max(12, minDim * 0.035), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function _drawBowl3dWorld(gs, now) {
