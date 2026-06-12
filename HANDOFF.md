@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:438-maze-donguri-bowl-icons-v3-existing-ojama] Codex: user 指摘「お邪魔虫、だいぶ変わってないか？」を受領。batch 437 の虫が既存 `mayoi/odoke/hachi` から外れていたため、既存寄せの緑/茶/黄系お邪魔虫ゲート + 丸いどんぐりぶくろの raw シートを GPT Image 2 built-in imagegen で再生成。アルファ抜き・切り抜きはしない。 (by Codex)
+- 2026-06-12 - [batch:438-maze-donguri-bowl-icons-v3-existing-ojama] DONE - Codex: 修正版 raw シート `tmp/alpha_pending/438_maze_donguri_bowl_icons_v3_existing_ojama_raw/donguri_bowl_event_item_icons_sheet_v3_existing_ojama_raw.png` を生成。左=既存 `mayoi` 風の緑、`odoke` 風の茶、`hachi` 風の黄に寄せた小さいお邪魔虫+葉/丸太バリケード、どんぐり要素なし。右=丸く転がせるどんぐり入りのどんぐりぶくろ。RGB 1682x935 / 1.92MB、白背景、テキストなし、アルファ抜き・切り抜きなし。Pillow寸法/容量確認、目視で既存お邪魔虫寄せを確認。 (by Codex)
 - 2026-06-12 - [batch:437-maze-donguri-bowl-icons-v2-raw] Codex: user 指摘「虫のバリケードにどんぐりが付いているのはおかしい。転がすので丸めのどんぐりが良い」を受領。batch 436 の修正版として、左=どんぐり要素なしのお邪魔虫ゲート、右=丸い転がせるどんぐり入りのどんぐりぶくろ raw シートを GPT Image 2 built-in imagegen で再生成予定。アルファ抜き・切り抜きはしない。 (by Codex)
 - 2026-06-12 - [batch:437-maze-donguri-bowl-icons-v2-raw] DONE - Codex: GPT Image 2 built-in imagegen で修正版 raw シート `tmp/alpha_pending/437_maze_donguri_bowl_icons_v2_raw/donguri_bowl_event_item_icons_sheet_v2_raw.png` を生成。左=どんぐり要素なしの小さいお邪魔虫+葉/丸太バリケード、右=丸く転がせるどんぐり入りのどんぐりぶくろ。RGB 1690x931 / 1.55MB、白背景、テキストなし、アルファ抜き・切り抜きなし。Pillow寸法/容量確認、目視で左パネルにどんぐり印なし・右パネルのどんぐり丸めを確認。 (by Codex)
 - 2026-06-12 - [batch:436-maze-donguri-bowl-icons-raw] Codex: user 依頼「迷路上のイベントアイコンとどんぐりぶくろアイコンを画像生成」を受領。HANDOFF/git log/tmp で同用途の既存 raw は見当たらず。GPT Image 2 built-in imagegen で2パネルの raw アセットシートを生成し、`tmp/alpha_pending/436_maze_donguri_bowl_icons_raw/` に納品予定。アルファ抜き・切り抜きはしない。 (by Codex)
