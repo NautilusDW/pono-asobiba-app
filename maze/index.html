@@ -901,6 +901,23 @@ body.image-stage-mode .game-wrap {
 .enc-result { font-size: clamp(1.1rem, 2.8vw, 1.5rem); font-weight: 900; margin: 4px 0; }
 .enc-result.win  { color: #6C8E3F; }
 .enc-result.lose { color: #B05050; }
+.enc-result-title {
+  font-size: clamp(1.1rem, 4vw, 1.4rem);
+}
+.enc-result-body {
+  font-size: clamp(0.9rem, 3vw, 1.05rem);
+  margin-top: 8px;
+}
+.enc-result-emoji {
+  font-size: clamp(2.5rem, 10vw, 4.2rem);
+  line-height: 1;
+  margin-top: 4px;
+}
+.enc-result-meta {
+  font-size: 0.78rem;
+  opacity: 0.8;
+  margin-top: 6px;
+}
 .enc-result__icon {
   width: min(17vw, 78px);
   height: min(17vw, 78px);
@@ -2811,6 +2828,33 @@ function playMzSe(name) {
   }
   try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
 }
+function _playMzSePitch(name, semitones) {
+  try {
+    const url = _MZ_SE_PATHS[name];
+    if (!url) {
+      playMzSe(name);
+      return;
+    }
+    const ctx = _mzGetAC();
+    if (!ctx) {
+      playMzSe(name);
+      return;
+    }
+    fetch(url)
+      .then(function(r) { return r.arrayBuffer(); })
+      .then(function(b) { return ctx.decodeAudioData(b); })
+      .then(function(buf) {
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.playbackRate.value = Math.pow(2, (semitones || 0) / 12);
+        src.connect(ctx.destination);
+        src.start();
+      })
+      .catch(function() { playMzSe(name); });
+  } catch (_) {
+    playMzSe(name);
+  }
+}
 
 // ── Charm system (りんごでアンロックするおまもり) ──
 // totalApples = 累計収集数 (永続)
@@ -3841,9 +3885,9 @@ const CREATURE_KIND_DATA = {
     defaultGame: 'strength_push', imageUrl: '../assets/images/maze/rock.png'
   },
   kumo: {
-    emoji: '🕷️', color: '#5C5D78', name: 'クモムシ',
-    dialog: 'くものすで とおせんぼ！<br>ほうきで いとを ほどけるかな？',
-    defeatDialog: 'いとが ほどけたね！\nとおって いいよ。',
+    emoji: '🕷️', color: '#5C5D78', name: 'クモさん',
+    dialog: 'あ、 クモさんが じぶんで はった<br>くものすに からまっちゃった！<br>ほうきで そっと はらって、 たすけてあげよう。',
+    defeatDialog: 'たすけてくれて ありがとう！\nちょうど さんぽに いきたかったの！',
     defaultGame: 'web_sweep'
   },
 };
@@ -4921,8 +4965,8 @@ function _handleWebGimmickObstacle(o, px, py) {
   if (!st.broomCollected) {
     _bounceFromFlagTunnelObstacle(
       o, px, py,
-      'くものすが からまって とおれないよ！',
-      '🧹 いとを はらえる どうぐが あれば、とおれるかも。'
+      'クモさんが くものすに からまって こまってる！',
+      '🧹 ほうきが あれば たすけられるかも。'
     );
     return true;
   }
@@ -5073,8 +5117,8 @@ function _triggerWebGimmickEncounter(obstacle) {
     minigame: 'web_sweep',
     x: obstacle.x,
     y: obstacle.y,
-    dialog: 'くものすで とおせんぼ！<br>ほうきを もってるね。<br>いとを ほどけたら とおしてあげる！',
-    defeatDialog: 'いとが ほどけたね！<br>とおって いいよ。'
+    dialog: 'クモさんが じぶんの くものすに からまっちゃった！<br>ほうきが あるね。<br>そっと はらって たすけてあげよう！',
+    defeatDialog: 'たすけてくれて ありがとう！<br>ちょうど さんぽに いきたかったの！'
   };
   _triggerEncounter(c);
 }
@@ -5180,7 +5224,7 @@ const _GAME_LABELS = {
   flag:       '旗あげ',
   water_bridge: 'いたならべ',
   strength_push: 'いわくだき',
-  web_sweep: 'くものすはらい',
+  web_sweep: 'クモさん きゅうしゅつ',
 };
 
 const _GAME_DIALOGS = {
@@ -5192,7 +5236,7 @@ const _GAME_DIALOGS = {
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
   water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
   strength_push: 'ちからを あわせて！<br>いわを れんだして くだこう',
-  web_sweep: 'からまった いとを<br>ほうきで やさしく はらおう',
+  web_sweep: 'クモさんを たすけよう！<br>ほうきで そっと はらってね',
 };
 
 function _gameForCreature(c) {
@@ -6448,45 +6492,56 @@ function _resolveStrengthPushGame() {
 }
 
 // ── ほうき: クモの巣はらい ──
+const WEB_SWEEP_LAYERS = [
+  { layer: 0, count: 8, color: '#8a8a8a', thickRatio: 0.020, threshold: 1.1, sparkleColor: '#bbb' },
+  { layer: 1, count: 6, color: '#ffffff', thickRatio: 0.014, threshold: 1.0, sparkleColor: '#e8e8ff' },
+  { layer: 2, count: 4, color: '#fff6c8', thickRatio: 0.008, threshold: 0.9, sparkleColor: '#ffe89a' },
+];
+const LAYER_SPRING_DRAG = [6.5, 8.5, 10.5];
+const LAYER_SPRING_REST = [8.5, 10.5, 12.5];
+const WEB_SWEEP_BUTTERFLY_SRC = '../assets/images/quizland/illust/choice/chocho.png';
 const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
   const out = [];
   const cx = 0.5;
   const cy = 0.5;
   const rx = 0.39;
   const ry = 0.34;
-  const spokes = 11;
   function pt(angle, radius, wobble) {
     return [
       cx + Math.cos(angle) * rx * radius + Math.sin(angle * 2.3) * (wobble || 0),
       cy + Math.sin(angle) * ry * radius + Math.cos(angle * 1.7) * (wobble || 0),
     ];
   }
-  for (let i = 0; i < spokes; i++) {
-    const a = -Math.PI * 0.92 + i * Math.PI * 2 / spokes;
-    const inner = pt(a + 0.05, 0.07, 0.006);
-    const outer = pt(a, 1.03, 0.01);
-    const mid = pt(a + (i % 2 ? 0.08 : -0.07), 0.52, 0.018);
-    out.push({ a: inner, b: outer, c: mid, thick: 0.95, threshold: 1.0 + (i % 3) * 0.08, phase: i * 0.73 });
-  }
-  [0.26, 0.42, 0.59, 0.76, 0.92].forEach(function(radius, ring) {
-    for (let i = 0; i < spokes; i++) {
-      const a1 = -Math.PI * 0.92 + i * Math.PI * 2 / spokes + ring * 0.055;
-      const a2 = -Math.PI * 0.92 + (i + 1) * Math.PI * 2 / spokes + ring * 0.055;
-      const m = (a1 + a2) / 2 + Math.sin(i + ring) * 0.035;
+  WEB_SWEEP_LAYERS.forEach(function(layerDef, layerIndex) {
+    for (let i = 0; i < layerDef.count; i++) {
+      const step = Math.PI * 2 / layerDef.count;
+      const a1 = -Math.PI * 0.94 + i * step + layerIndex * 0.18;
+      const a2 = a1 + Math.PI * (0.82 - layerIndex * 0.08);
+      const inner = 0.18 + layerIndex * 0.15;
+      const outer = 0.98 - layerIndex * 0.12;
+      const midAngle = (a1 + a2) / 2 + Math.sin(i * 1.7 + layerIndex) * 0.2;
       out.push({
-        a: pt(a1, radius, 0.01),
-        b: pt(a2, radius * (0.98 + ((i + ring) % 3) * 0.012), 0.01),
-        c: pt(m, radius * (1.05 + (ring % 2) * 0.035), 0.018),
-        thick: 0.72 - ring * 0.045,
-        threshold: 1.04 + ring * 0.08 + (i % 2) * 0.05,
-        phase: 10 + ring * 1.7 + i * 0.41,
+        a: pt(a1, outer, 0.012),
+        b: pt(a2, inner + (i % 2) * 0.06, 0.012),
+        c: pt(midAngle, 0.46 + layerIndex * 0.07, 0.028),
+        layer: layerDef.layer,
+        color: layerDef.color,
+        thickRatio: layerDef.thickRatio,
+        threshold: layerDef.threshold,
+        phase: layerIndex * 10 + i * 0.73,
       });
     }
   });
   return out;
 })();
-const WEB_SWEEP_CLEAR_TARGET = 16;
-const WEB_SWEEP_MAX_DETACH_PER_STROKE = 2;
+
+function _webSweepReducedMotion() {
+  try {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  } catch (_) {
+    return false;
+  }
+}
 
 function _showWebSweepGame() {
   _setEncounterMode('web_sweep');
@@ -6495,10 +6550,10 @@ function _showWebSweepGame() {
   const wrap = document.createElement('div');
   wrap.className = 'web-game';
   wrap.innerHTML =
-    '<div class="web-game__title">くものすを はらおう！</div>' +
+    '<div class="web-game__title">クモさんを たすけよう！</div>' +
     '<div class="web-game__stage" id="webSweepStage">' +
       '<canvas class="web-game__canvas" id="webSweepCanvas" aria-label="ほうきでくものすをはらうゲーム"></canvas>' +
-      '<div class="web-game__stage-note">ほうきを すーっと うごかしてね</div>' +
+      '<div class="web-game__stage-note">ほうきを ひだり みぎに うごかして いとを はらってね</div>' +
     '</div>' +
     '<div class="web-game__status" id="webStatus"></div>';
   encStageEl.appendChild(wrap);
@@ -6518,13 +6573,27 @@ function _showWebSweepGame() {
     locked: false,
     pointerId: null,
     lastPointer: null,
-    strokeDistance: 0,
-    strokeDetachCount: 0,
-    detachedCount: 0,
-    lastSfxAt: 0,
+    strokeDistance: 0,     // legacy, not used in layer logic
+    strokeDetachCount: 0,  // legacy, not used in layer logic
+    detachedCount: 0,      // legacy, not used in layer logic
+    lastSfxAt: 0,          // legacy, still used only to throttle sticky SFX
     lastTs: performance.now(),
     rafId: null,
-    status: 'ほうきを ひっぱるように うごかしてね',
+    status: 'クモさんの まわりを やさしく はらってね',
+    currentLayer: 0,
+    strokeCounter: [0, 0, 0],
+    lastDirX: null,
+    butterflies: [
+      { asset: 'chocho.png', initX: -0.08, targetX: 0.25, scale: 0.9, sway: 0.0, visible: true },
+      { asset: 'chocho.png', initX: 1.08, targetX: 0.55, scale: 1.0, sway: 1.2, visible: true },
+      { asset: 'chocho.png', initX: -0.05, targetX: 0.78, scale: 0.85, sway: 2.4, visible: true },
+    ],
+    butterflyImg: null,
+    spiderEmotion: 0,
+    layerClearAt: [0, 0, 0],
+    lastVibrateAt: 0,
+    pointerTrail: [],
+    finishStartedAt: 0,
     broom: { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0, angle: -0.35 },
     threads: WEB_SWEEP_THREAD_BLUEPRINTS.map(function(def, i) {
       return {
@@ -6537,12 +6606,22 @@ function _showWebSweepGame() {
         stick: 0,
         detached: false,
         detachAge: 0,
+        layerFadeStart: 0,
         opacity: 1,
         phase: def.phase || i,
       };
     }),
     particles: [],
     ripples: [],
+  };
+  gs.butterflyImg = new Image();
+  gs.butterflyImg.src = WEB_SWEEP_BUTTERFLY_SRC;
+  gs.vibrate = function(ms) {
+    if (_webSweepReducedMotion()) return;
+    const now = performance.now();
+    if (now - gs.lastVibrateAt < 100) return;
+    gs.lastVibrateAt = now;
+    try { if (navigator.vibrate) navigator.vibrate(ms); } catch (_) {}
   };
   _webGameState = gs;
   _resizeWebSweepCanvas(gs);
@@ -6556,12 +6635,14 @@ function _showWebSweepGame() {
     gs.pointerId = e.pointerId;
     gs.strokeDistance = 0;
     gs.strokeDetachCount = 0;
+    gs.lastDirX = null;
+    gs.pointerTrail = [{ x: p.x, y: p.y, t: performance.now() }];
     gs.lastPointer = { x: p.x, y: p.y, t: performance.now() };
     gs.broom.x = gs.broom.tx = p.x;
     gs.broom.y = gs.broom.ty = p.y;
     stageEl.classList.add('is-dragging');
     try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
-    _setWebSweepStatus(gs, 'そのまま すーっと はらってね');
+    _setWebSweepStatus(gs, 'クモさんの まわりを やさしく はらってね');
   });
   stageEl.addEventListener('pointermove', function(e) {
     if (gs !== _webGameState || !gs.dragging || gs.locked) return;
@@ -6573,11 +6654,21 @@ function _showWebSweepGame() {
     const dt = Math.max(16, now - prev.t);
     const dx = p.x - prev.x;
     const dy = p.y - prev.y;
+    const currentDir = dx > 0.3 ? 1 : dx < -0.3 ? -1 : 0;
+    if (currentDir !== 0 && gs.lastDirX !== null && currentDir !== gs.lastDirX) {
+      gs.strokeCounter[gs.currentLayer] = (gs.strokeCounter[gs.currentLayer] || 0) + 1;
+      if (gs.strokeCounter[gs.currentLayer] >= 5) _onWebSweepLayerCleared(gs);
+    }
+    if (currentDir !== 0) gs.lastDirX = currentDir;
     gs.strokeDistance += Math.hypot(dx, dy);
     gs.broom.tx = p.x;
     gs.broom.ty = p.y;
     gs.broom.vx = dx / dt * 16;
     gs.broom.vy = dy / dt * 16;
+    if (!_webSweepReducedMotion()) {
+      gs.pointerTrail.push({ x: p.x, y: p.y, t: now });
+      if (gs.pointerTrail.length > 12) gs.pointerTrail.shift();
+    }
     if (Math.hypot(dx, dy) > 1.2) {
       gs.broom.angle = Math.atan2(dy, dx) + 0.72;
       _applyWebBroomSweep(gs, p.x, p.y, dx, dy, dt);
@@ -6589,10 +6680,10 @@ function _showWebSweepGame() {
     if (e && gs.pointerId !== null && e.pointerId !== gs.pointerId) return;
     if (e) e.preventDefault();
     if (gs.strokeDistance < 18 && !gs.locked) {
-      _setWebSweepStatus(gs, 'タップより、ほうきを うごかしてね');
+      _setWebSweepStatus(gs, 'ちょんちょんじゃなくて、 すーっと はらってね');
       _playWebStickySfx('soft');
     } else if (!gs.locked) {
-      _setWebSweepStatus(gs, 'からまった ところを もういちど');
+      _setWebSweepStatus(gs, 'もう いちど やさしく ふきとってあげて');
     }
     gs.dragging = false;
     gs.pointerId = null;
@@ -6636,14 +6727,19 @@ function _resizeWebSweepCanvas(gs) {
 function _layoutWebSweepThreads(gs) {
   gs.threads.forEach(function(t) {
     const def = t.def;
+    if (!Number.isFinite(def.layer)) {
+      def.layer = t.index < 8 ? 0 : (t.index < 14 ? 1 : 2);
+    }
+    const layerDef = WEB_SWEEP_LAYERS[def.layer] || WEB_SWEEP_LAYERS[0];
     t.ax = def.a[0] * gs.w;
     t.ay = def.a[1] * gs.h;
     t.bx = def.b[0] * gs.w;
     t.by = def.b[1] * gs.h;
     t.cx = def.c[0] * gs.w;
     t.cy = def.c[1] * gs.h;
-    t.thickness = Math.max(1.15, Math.min(gs.w, gs.h) * 0.0056 * (def.thick || 1));
-    t.threshold = def.threshold || 0.72;
+    t.thickness = Math.max(1.1, Math.min(gs.w, gs.h) * (def.thickRatio || layerDef.thickRatio));
+    t.threshold = def.threshold || layerDef.threshold;
+    t.color = def.color || layerDef.color;
   });
 }
 
@@ -6683,7 +6779,11 @@ function _updateWebSweepPhysics(gs, dt) {
       t.opacity = Math.max(0, 1 - t.detachAge / 900);
       return;
     }
-    const spring = gs.dragging ? 7.5 : 12.5;
+    if (t.layerFadeStart) {
+      t.opacity = Math.max(0, 1 - (performance.now() - t.layerFadeStart) / 300);
+    }
+    const layer = Math.max(0, Math.min(2, gs.currentLayer || 0));
+    const spring = gs.dragging ? LAYER_SPRING_DRAG[layer] : LAYER_SPRING_REST[layer];
     t.vx += -t.pullX * spring * sec;
     t.vy += -t.pullY * spring * sec;
     t.vx *= Math.pow(0.72, dt / 16);
@@ -6746,9 +6846,13 @@ function _applyWebBroomSweep(gs, x, y, dx, dy, dt) {
   const drag = Math.hypot(dx, dy);
   if (drag < 1.4) return;
   const speed = drag / Math.max(16, dt) * 1000;
-  const radius = Math.max(30, Math.min(gs.w, gs.h) * 0.105);
+  gs.speed = speed / 1000;
+  const radius = Math.max(34, Math.min(gs.w, gs.h) * 0.13);
   let hitAny = false;
-  gs.threads.forEach(function(t) {
+  const targets = gs.threads.filter(function(t) {
+    return !t.detached && t.def.layer === gs.currentLayer;
+  });
+  targets.forEach(function(t) {
     if (t.detached) return;
     const hit = _webDistanceToThread(t, x, y);
     const reach = radius + t.thickness * 4.5;
@@ -6769,18 +6873,16 @@ function _applyWebBroomSweep(gs, x, y, dx, dy, dt) {
     t.sweep += Math.min(0.055, (drag / 190 + speed / 9300) * weight);
     t.stick = 1;
     if (Math.random() < 0.1) _spawnWebGlob(gs, hit.point.x, hit.point.y, dx, dy, weight);
-    if (t.sweep >= t.threshold && gs.strokeDetachCount < WEB_SWEEP_MAX_DETACH_PER_STROKE) {
-      _detachWebThread(gs, t, hit.point.x, hit.point.y, dx, dy);
-    }
+    if (gs.vibrate) gs.vibrate(8);
   });
   if (hitAny) {
     if (performance.now() - gs.lastSfxAt > 120) {
       _playWebStickySfx('stretch');
       gs.lastSfxAt = performance.now();
     }
-    const remain = Math.max(0, WEB_SWEEP_CLEAR_TARGET - gs.detachedCount);
-    if (remain <= 2) _setWebSweepStatus(gs, 'あと すこし！ びよーんとはらおう');
-    else _setWebSweepStatus(gs, 'いいね！ いとが のびてるよ');
+    if (gs.currentLayer === 0) _setWebSweepStatus(gs, 'クモさんの まわりを やさしく はらってね');
+    else if (gs.currentLayer === 1) _setWebSweepStatus(gs, 'もう ちょっと! キラキラ のこってる');
+    else _setWebSweepStatus(gs, 'そう、 そのちょうし! いとが ゆるんできた');
   }
 }
 
@@ -6796,12 +6898,46 @@ function _detachWebThread(gs, t, x, y, dx, dy) {
   _spawnWebRipple(gs, x, y);
   for (let i = 0; i < 7; i++) _spawnWebGlob(gs, x, y, dx, dy, 1.2);
   _playWebStickySfx('snap');
-  if (gs.detachedCount >= WEB_SWEEP_CLEAR_TARGET) {
+  if (gs.vibrate) gs.vibrate(8);
+}
+
+function _onWebSweepLayerCleared(gs) {
+  if (!gs || gs.locked || gs.currentLayer >= WEB_SWEEP_LAYERS.length) return;
+  const layer = gs.currentLayer;
+  const now = performance.now();
+  gs.layerClearAt[layer] = now;
+  gs.strokeCounter[layer] = 0;
+  gs.lastDirX = null;
+  gs.threads.forEach(function(t) {
+    if (t.def.layer !== layer || t.detached) return;
+    t.layerFadeStart = now;
+    t.vx += (Math.random() - 0.5) * 70;
+    t.vy += -34 + Math.random() * 42;
+  });
+  _spawnLayerSparkle(gs, layer);
+  gs.spiderEmotion = Math.min(2, gs.spiderEmotion + 1);
+  _playMzSePitch('correct', 2 * layer);
+  if (gs.vibrate) gs.vibrate(30);
+  _webGimmickSetTimeout(function() {
+    if (gs !== _webGameState) return;
+    gs.threads.forEach(function(t) {
+      if (t.def.layer !== layer || t.detached) return;
+      t.detached = true;
+      t.detachAge = 0;
+      t.opacity = 1;
+    });
+  }, 300);
+  if (layer === 0) _setWebSweepStatus(gs, 'いいね！ ふとい いとが ほどけた');
+  else if (layer === 1) _setWebSweepStatus(gs, 'あと すこし！ クモさん もう ちょっとだよ');
+  else _setWebSweepStatus(gs, 'クモさん、 でられたよ！');
+  gs.currentLayer++;
+  if (gs.currentLayer >= WEB_SWEEP_LAYERS.length) {
     _finishWebSweepGame(gs);
   }
 }
 
 function _spawnWebGlob(gs, x, y, dx, dy, weight) {
+  if (_webSweepReducedMotion()) return;
   gs.particles.push({
     x: x + (Math.random() - 0.5) * 12,
     y: y + (Math.random() - 0.5) * 12,
@@ -6810,7 +6946,41 @@ function _spawnWebGlob(gs, x, y, dx, dy, weight) {
     r: Math.max(2.2, 4.5 * (weight || 1) * (0.55 + Math.random())),
     age: 0,
     life: 620 + Math.random() * 360,
+    color: 'rgba(240,255,246,0.82)',
   });
+  if (gs.particles.length > 80) gs.particles.splice(0, gs.particles.length - 80);
+}
+
+function _webSweepColorToRgba(color, alpha) {
+  const map = {
+    '#bbb': '187,187,187',
+    '#e8e8ff': '232,232,255',
+    '#ffe89a': '255,232,154',
+    '#ffffff': '255,255,255',
+    '#fff6c8': '255,246,200',
+    '#8a8a8a': '138,138,138',
+  };
+  return 'rgba(' + (map[color] || '240,255,246') + ',' + alpha + ')';
+}
+
+function _spawnLayerSparkle(gs, layerIdx) {
+  if (!gs || _webSweepReducedMotion()) return;
+  const layer = WEB_SWEEP_LAYERS[layerIdx] || WEB_SWEEP_LAYERS[0];
+  const x = gs.w * 0.5;
+  const y = gs.h * 0.5;
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2;
+    gs.particles.push({
+      x: x,
+      y: y,
+      vx: Math.cos(a) * 210,
+      vy: Math.sin(a) * 210,
+      r: 4 + Math.random() * 2.5,
+      age: 0,
+      life: 600,
+      color: _webSweepColorToRgba(layer.sparkleColor, 0.85),
+    });
+  }
   if (gs.particles.length > 80) gs.particles.splice(0, gs.particles.length - 80);
 }
 
@@ -6847,13 +7017,31 @@ function _drawWebSweepGame(gs, now) {
     g.restore();
   });
 
+  if (!_webSweepReducedMotion() && gs.pointerTrail.length > 1) {
+    g.save();
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(255, 240, 180, 0.5)';
+    g.lineWidth = 8;
+    for (let i = 1; i < gs.pointerTrail.length; i++) {
+      const a = gs.pointerTrail[i - 1];
+      const b = gs.pointerTrail[i];
+      g.globalAlpha = Math.min(0.4, i / 12 * 0.4);
+      g.beginPath();
+      g.moveTo(a.x, a.y);
+      g.lineTo(b.x, b.y);
+      g.stroke();
+    }
+    g.restore();
+  }
+
   gs.threads.forEach(function(t) { _drawWebSweepThread(g, t, now, gs); });
 
   gs.particles.forEach(function(p) {
     const ratio = p.age / p.life;
     g.save();
     g.globalAlpha = Math.max(0, 1 - ratio);
-    g.fillStyle = 'rgba(240, 255, 246, 0.82)';
+    g.fillStyle = p.color || 'rgba(240, 255, 246, 0.82)';
     g.shadowColor = 'rgba(203, 248, 241, 0.62)';
     g.shadowBlur = 8;
     g.beginPath();
@@ -6862,7 +7050,11 @@ function _drawWebSweepGame(gs, now) {
     g.restore();
   });
 
-  _drawWebSpider(g, w, h, now);
+  _drawWebButterflies(g, gs, now);
+  const flight = gs.finishStartedAt && !_webSweepReducedMotion()
+    ? Math.min(1, (now - gs.finishStartedAt) / 800)
+    : 0;
+  _drawWebSpider(g, w, h, now, gs.spiderEmotion, flight);
   _drawWebBroom(g, gs.broom.x, gs.broom.y, gs.broom.angle, Math.min(w, h));
 }
 
@@ -6878,14 +7070,14 @@ function _drawWebSweepThread(g, t, now, gs) {
   g.globalAlpha = alpha;
   g.shadowColor = 'rgba(104, 136, 144, 0.28)';
   g.shadowBlur = 5 + t.tension * 10;
-  g.strokeStyle = 'rgba(54, 80, 98, 0.2)';
+  g.strokeStyle = t.def.layer === 0 ? 'rgba(72, 72, 80, 0.33)' : 'rgba(54, 80, 98, 0.2)';
   g.lineWidth = Math.max(1.7, t.thickness * 1.75 * extra);
   g.beginPath();
   g.moveTo(c.ax, c.ay);
   g.quadraticCurveTo(c.cx, c.cy, c.bx, c.by);
   g.stroke();
   g.shadowBlur = 0;
-  g.strokeStyle = 'rgba(250, 255, 248, 0.94)';
+  g.strokeStyle = t.color || 'rgba(250, 255, 248, 0.94)';
   g.lineWidth = Math.max(0.85, t.thickness * 0.9 * extra);
   g.beginPath();
   g.moveTo(c.ax, c.ay);
@@ -6923,12 +7115,50 @@ function _drawWebSweepThread(g, t, now, gs) {
   g.restore();
 }
 
-function _drawWebSpider(g, w, h, now) {
+function _drawWebButterflies(g, gs, now) {
+  if (!gs || _webSweepReducedMotion()) return;
+  const w = gs.w;
+  const h = gs.h;
+  const img = gs.butterflyImg;
+  const progress = gs.finishStartedAt
+    ? Math.max(0, Math.min(1, (now - gs.finishStartedAt - 200) / 800))
+    : 0;
+  const ease = progress < 0.5
+    ? 2 * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+  const targetYs = [0.2, 0.3, 0.18];
+  gs.butterflies.forEach(function(b, i) {
+    if (!b.visible) return;
+    const xRatio = b.initX + (b.targetX - b.initX) * ease;
+    const y = h * targetYs[i] + Math.sin(now * 0.006 + b.sway) * 4;
+    const size = Math.max(28, Math.min(w, h) * 0.105) * b.scale;
+    g.save();
+    g.globalAlpha = 0.62 + ease * 0.28;
+    g.translate(w * xRatio, y);
+    g.rotate(Math.sin(now / 520 + b.sway) * 0.12);
+    if (img && img.complete && img.naturalWidth) {
+      g.drawImage(img, -size / 2, -size / 2, size, size);
+    } else {
+      g.fillStyle = 'rgba(255, 224, 118, 0.86)';
+      g.beginPath();
+      g.ellipse(-size * 0.16, 0, size * 0.22, size * 0.32, -0.35, 0, Math.PI * 2);
+      g.ellipse(size * 0.16, 0, size * 0.22, size * 0.32, 0.35, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = 'rgba(96, 75, 50, 0.9)';
+      g.fillRect(-size * 0.035, -size * 0.24, size * 0.07, size * 0.48);
+    }
+    g.restore();
+  });
+}
+
+function _drawWebSpider(g, w, h, now, emotion = 0, flight = 0) {
   const x = w * 0.83;
-  const y = h * 0.23 + Math.sin(now / 520) * 5;
+  const lift = flight ? (1 - Math.pow(1 - flight, 3)) : 0;
+  const y = h * 0.23 + Math.sin(now / 520) * 5 - 120 * lift;
   const s = Math.max(22, Math.min(w, h) * 0.105);
   g.save();
   g.translate(x, y);
+  g.scale(1 + lift * 0.4, 1 + lift * 0.4);
   g.rotate(Math.sin(now / 700) * 0.08);
   g.strokeStyle = 'rgba(56, 50, 74, 0.82)';
   g.lineWidth = Math.max(2, s * 0.08);
@@ -6954,6 +7184,51 @@ function _drawWebSpider(g, w, h, now) {
   g.arc(-s * 0.08, -s * 0.38, s * 0.035, 0, Math.PI * 2);
   g.arc(s * 0.08, -s * 0.38, s * 0.035, 0, Math.PI * 2);
   g.fill();
+  g.strokeStyle = 'rgba(248, 241, 212, 0.88)';
+  g.lineWidth = Math.max(1.3, s * 0.035);
+  g.lineCap = 'round';
+  if (emotion <= 0) {
+    g.beginPath();
+    g.moveTo(-s * 0.15, -s * 0.47);
+    g.lineTo(-s * 0.04, -s * 0.43);
+    g.moveTo(s * 0.15, -s * 0.47);
+    g.lineTo(s * 0.04, -s * 0.43);
+    g.stroke();
+    g.beginPath();
+    g.arc(0, -s * 0.25, s * 0.045, Math.PI * 1.1, Math.PI * 1.9);
+    g.stroke();
+    g.fillStyle = 'rgba(149, 211, 255, 0.86)';
+    g.beginPath();
+    g.ellipse(s * 0.13, -s * 0.3, s * 0.035, s * 0.06, 0.3, 0, Math.PI * 2);
+    g.fill();
+  } else if (emotion === 1) {
+    g.beginPath();
+    g.moveTo(-s * 0.15, -s * 0.46);
+    g.lineTo(-s * 0.03, -s * 0.46);
+    g.moveTo(s * 0.03, -s * 0.46);
+    g.lineTo(s * 0.15, -s * 0.46);
+    g.stroke();
+    g.beginPath();
+    g.arc(0, -s * 0.29, s * 0.07, 0.12 * Math.PI, 0.88 * Math.PI);
+    g.stroke();
+  } else {
+    g.beginPath();
+    g.moveTo(-s * 0.15, -s * 0.43);
+    g.lineTo(-s * 0.03, -s * 0.48);
+    g.moveTo(s * 0.03, -s * 0.48);
+    g.lineTo(s * 0.15, -s * 0.43);
+    g.stroke();
+    g.fillStyle = 'rgba(255,180,200,0.4)';
+    g.beginPath();
+    g.arc(-s * 0.17, -s * 0.29, s * 0.055, 0, Math.PI * 2);
+    g.arc(s * 0.17, -s * 0.29, s * 0.055, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = 'rgba(248, 241, 212, 0.92)';
+    g.lineWidth = Math.max(1.5, s * 0.045);
+    g.beginPath();
+    g.arc(0, -s * 0.3, s * 0.085, 0.1 * Math.PI, 0.9 * Math.PI);
+    g.stroke();
+  }
   g.restore();
 }
 
@@ -7008,11 +7283,12 @@ function _playWebStickySfx(kind) {
     const o = ac.createOscillator();
     const g = ac.createGain();
     const f = ac.createBiquadFilter();
+    const sp = Math.min(1, ((_webGameState && _webGameState.speed) || 0) / 1.5);
     o.type = kind === 'snap' ? 'triangle' : 'sine';
     f.type = 'lowpass';
     f.frequency.setValueAtTime(kind === 'snap' ? 1100 : 760, t);
-    o.frequency.setValueAtTime(kind === 'snap' ? 210 : 360, t);
-    o.frequency.exponentialRampToValueAtTime(kind === 'snap' ? 560 : 210, t + (kind === 'snap' ? 0.12 : 0.16));
+    o.frequency.setValueAtTime(kind === 'snap' ? 220 + sp * 660 : 360, t);
+    o.frequency.exponentialRampToValueAtTime(kind === 'snap' ? 520 + sp * 420 : 210, t + (kind === 'snap' ? 0.12 : 0.16));
     g.gain.setValueAtTime(kind === 'snap' ? 0.12 : 0.045, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + (kind === 'snap' ? 0.18 : 0.2));
     o.connect(f); f.connect(g); g.connect(ac.destination);
@@ -7024,18 +7300,21 @@ function _finishWebSweepGame(gs) {
   if (!gs || gs.locked) return;
   gs.locked = true;
   gs.dragging = false;
+  gs.finishStartedAt = performance.now();
+  gs.spiderEmotion = 2;
   if (gs.stageEl) gs.stageEl.classList.remove('is-dragging');
-  _setWebSweepStatus(gs, 'くものすが ほどけた！');
+  _setWebSweepStatus(gs, 'クモさん、 でられたよ！');
   gs.threads.forEach(function(t) {
     if (!t.detached) {
-      t.detached = true;
-      t.detachAge = 0;
+      t.layerFadeStart = t.layerFadeStart || performance.now();
       t.vx += (Math.random() - 0.5) * 160;
       t.vy += -80 + Math.random() * 70;
     }
   });
-  playMzSe('correct');
-  _webGimmickSetTimeout(_resolveWebSweepGame, 720);
+  _webGimmickSetTimeout(function() {
+    if (gs === _webGameState) _playMzSePitch('correct', 2);
+  }, 1100);
+  _webGimmickSetTimeout(_resolveWebSweepGame, 2500);
 }
 
 function _resolveWebSweepGame() {
@@ -7049,8 +7328,10 @@ function _resolveWebSweepGame() {
   _webGameState = null;
   encStageEl.innerHTML =
     '<div class="enc-result win">' +
-      '<div style="font-size:clamp(3rem,12vw,5rem);line-height:1;">🧹</div>' +
-      'くものすが ほどけた！' +
+      '<div class="enc-result-title">クモさん、たすかった！</div>' +
+      '<div class="enc-result-emoji">🕷️</div>' +
+      '<div class="enc-result-body">「ありがとう、 ちょうど さんぽに いきたかったの！」</div>' +
+      '<div class="enc-result-meta">クモの おともだち (蝶) が むかえに きたよ</div>' +
     '</div>';
   _webGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);

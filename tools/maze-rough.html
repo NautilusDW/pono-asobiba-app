@@ -27,6 +27,7 @@ html, body { height: 100vh; overflow: hidden;
 }
 .btn:hover { background: #404040; }
 .btn.active { background: #6C8E3F; color: #fff; border-color: #A4C76D; }
+.btn.active[data-mode="connect"] { outline: 3px solid #FFD83A; outline-offset: 2px; }
 .btn.brush { flex: 1 1 calc(33% - 4px); font-size: 0.78rem; padding: 6px 4px; }
 .btn.danger { background: #5a2a2a; color: #fcc; border-color: #844; }
 .btn.danger:hover { background: #6f3535; }
@@ -239,9 +240,12 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="waypoint" style="background:#1e5a3e; color:#caf3d8;">📍 中継地点</button>
       <button class="btn" data-mode="obstacle" style="background:#5a3e1f; color:#e6cca8;">🪨 障害物</button>
       <button class="btn" data-mode="lineedit" style="background:#3e3e5a; color:#cfcfff;">✏️ ライン編集</button>
+      <button class="btn" data-mode="connect" style="background:#3a4a7a; color:#fff;">🔗 つなぐ</button>
       <button class="btn" data-mode="delete-edge" style="background:#5a3030; color:#fcc;">✂️ 道を消す</button>
     </div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
+    <div style="font-size:0.75rem; color:#9aa; margin-top:2px;">🔗 つなぐ モードで、 マーカー A → B の順にクリックすると、 間に道を 自動で 引きます</div>
+    <div style="font-size:0.72rem; color:#cfa; margin-top:2px;">※ 「🔗 つなぐ」 は 途中の 壁タイル も 道に 変えます (Undo 可)。</div>
 
     <!-- Phase 3.5: お邪魔虫の種類 (creature モード時のみ表示) -->
     <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
@@ -564,6 +568,7 @@ const state = {
   isPainting: false,
   hoverTile: null,        // { x, y } currently hovered tile (for brush preview)
   draggingMarker: null,   // 'start' | 'goal' | { type:'creature', index:N } | null
+  connectAnchor: null,    // 🔗 つなぐ モード: 1 つ目に選ばれたマーカー { type, index?, tileX, tileY } | null
   history: [],            // snapshots for undo
   refImage: null,         // HTMLImageElement: 参考用に下絵として表示する画像 (drag-drop で読込)
 };
@@ -1023,6 +1028,54 @@ function draw() {
   // Brush hover preview — show exactly which tiles will be affected
   if (state.hoverTile) drawBrushPreview();
   drawSelectionHighlight();
+  drawConnectAnchorHighlight();
+}
+
+// 🔗 つなぐモードで 1 つ目に選ばれたマーカーに、 パルスする光彩リングを描画。
+function drawConnectAnchorHighlight() {
+  if (!state.connectAnchor) return;
+  const a = state.connectAnchor;
+  const cx = a.tileX * CELL + CELL / 2;
+  const cy = a.tileY * CELL + CELL / 2;
+  const r = CELL * 0.55;
+  ctx.save();
+  // outer pulse halo
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 280);
+  ctx.globalAlpha = 0.35 + pulse * 0.25;
+  ctx.strokeStyle = '#FFD83A';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
+  ctx.stroke();
+  // inner dashed ring
+  ctx.globalAlpha = 0.95;
+  ctx.setLineDash([8, 5]);
+  ctx.strokeStyle = '#FFE57A';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 🔗 つなぐ モード中だけ、 アンカーをパルスさせるための再描画ループ。
+// アンカー設定時に start、 解除/モード退出時に stop する。
+let _connectPulseTimer = null;
+function _startConnectPulse() {
+  if (_connectPulseTimer) return;
+  _connectPulseTimer = setInterval(function() {
+    if (state.connectAnchor) {
+      draw();
+    } else {
+      _stopConnectPulse();
+    }
+  }, 60);
+}
+function _stopConnectPulse() {
+  if (_connectPulseTimer) {
+    clearInterval(_connectPulseTimer);
+    _connectPulseTimer = null;
+  }
 }
 
 // 選択中のマーカー/中間点に黄色破線リングを描画。クリックで選択した直後 + ドラッグ後も表示。
@@ -1532,6 +1585,15 @@ cv.addEventListener('pointerdown', function(e) {
     }
     return;
   }
+  // 🔗 つなぐモード: マーカー A → B の順クリックで、 BFS (wall を無視) によって
+  // 最短経路を計算し path タイルで塗装する。 ここはマーカー drag/select より前に処理
+  // することで、 つなぐモード中はマーカーをドラッグしない (= 誤操作防止)。
+  if (state.mode === 'connect') {
+    if (_handleConnectClick(p)) return;
+    // マーカー外クリックは何もしない (誤操作防止)
+    showBanner('マーカー (スタート/ゴール/中継地点/障害物/おじゃま虫) を選んでね');
+    return;
+  }
   // Marker / midpoint click → select + start drag (works regardless of mode).
   // 削除は ↖ 選択モード + Delete/Backspace キー専用 (= 誤削除を防ぐ)。
   const hit = _markerHitAt(p.x, p.y);
@@ -1703,7 +1765,9 @@ cv.addEventListener('pointermove', function(e) {
     cv.style.cursor = 'not-allowed';
   } else {
     // Cursor hint when hovering over a draggable marker
-    const baseCursor = (state.mode === 'select') ? 'default' : 'crosshair';
+    const baseCursor = (state.mode === 'select') ? 'default'
+      : (state.mode === 'connect') ? (state.connectAnchor ? 'crosshair' : 'cell')
+      : 'crosshair';
     cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : baseCursor;
   }
   draw();
@@ -1768,6 +1832,7 @@ cv.addEventListener('pointerup', function(e) {
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
     cv.style.cursor = (state.mode === 'select') ? 'default'
       : (state.mode === 'delete-edge') ? 'not-allowed'
+      : (state.mode === 'connect') ? (state.connectAnchor ? 'crosshair' : 'cell')
       : 'crosshair';
     afterEdit();
     return;
@@ -1801,18 +1866,38 @@ document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
     state.mode = b.dataset.mode;
     document.querySelectorAll('.btn[data-mode]').forEach(function(x) { x.classList.remove('active'); });
     b.classList.add('active');
-    // 選択モードのときは普通の矢印カーソル、 ✂️道を消すは not-allowed、 それ以外は crosshair
+    // 選択モードのときは普通の矢印カーソル、 ✂️道を消すは not-allowed、
+    // 🔗 つなぐ は アンカー未選択=cell / 選択中=crosshair、 それ以外は crosshair
     cv.style.cursor = (state.mode === 'select') ? 'default'
       : (state.mode === 'delete-edge') ? 'not-allowed'
+      : (state.mode === 'connect') ? (state.connectAnchor ? 'crosshair' : 'cell')
       : 'crosshair';
     // 選択モード以外に切り替えたら選択を解除
     if (state.mode !== 'select' && state.selection !== null) {
       state.selection = null;
       draw();
     }
+    // 🔗 つなぐモード以外に切り替えたら、 進行中のアンカーをクリア
+    if (state.mode !== 'connect' && state.connectAnchor !== null) {
+      state.connectAnchor = null;
+      _stopConnectPulse();
+      draw();
+    }
     _updateKindPanelVisibility();
     showBanner('モード: ' + b.textContent.trim());
   });
+});
+
+// Esc キーで 🔗 つなぐモードの 1 つ目選択をキャンセル
+window.addEventListener('keydown', function(ev) {
+  if (ev.key !== 'Escape') return;
+  if (state.mode === 'connect' && state.connectAnchor !== null) {
+    state.connectAnchor = null;
+    _stopConnectPulse();
+    draw();
+    showBanner('キャンセルしました');
+    ev.preventDefault();
+  }
 });
 
 // Phase 3.5: 種類サブボタンのクリックで selectedXxxKind を更新 + active クラス切替
@@ -1947,6 +2032,132 @@ function bfsShortest(from, to) {
     }
   }
   return null;
+}
+
+// 🔗 つなぐモード専用 BFS: wall を含む全タイルを通過可能として最短経路を返す。
+// 既存 bfsShortest は path タイルのみを通る (= 接続判定用)。 こちらは
+// 「マーカー A → B を結ぶ路線を新規に引きたい」 ためのバリアント。
+function bfsShortestIgnoreWalls(from, to) {
+  if (!from || !to) return null;
+  if (from.x < 0 || from.x >= GRID_W || from.y < 0 || from.y >= GRID_H) return null;
+  if (to.x   < 0 || to.x   >= GRID_W || to.y   < 0 || to.y   >= GRID_H) return null;
+  const seen = new Array(GRID_H);
+  for (let y = 0; y < GRID_H; y++) seen[y] = new Array(GRID_W).fill(null);
+  const queue = [from];
+  seen[from.y][from.x] = { x: -1, y: -1 };
+  while (queue.length) {
+    const p = queue.shift();
+    if (p.x === to.x && p.y === to.y) {
+      const path = [];
+      let cur = p;
+      while (cur && (cur.x !== -1 || cur.y !== -1)) {
+        path.push(cur);
+        const prev = seen[cur.y][cur.x];
+        if (!prev || (prev.x === -1 && prev.y === -1)) break;
+        cur = prev;
+      }
+      return path.reverse();
+    }
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (const d of dirs) {
+      const nx = p.x + d[0], ny = p.y + d[1];
+      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+      if (seen[ny][nx]) continue;
+      seen[ny][nx] = p;
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  return null;
+}
+
+// マーカーヒット (_markerHitAt の戻り値) から { type, index, tileX, tileY } を作る。
+// 失敗時は null。
+function _markerHitToAnchor(hit) {
+  if (!hit) return null;
+  let px = null, py = null;
+  let type, index;
+  if (hit === 'start') {
+    if (!state.start) return null;
+    px = state.start.x; py = state.start.y; type = 'start';
+  } else if (hit === 'goal') {
+    if (!state.goal) return null;
+    px = state.goal.x; py = state.goal.y; type = 'goal';
+  } else if (typeof hit === 'object' && hit.type === 'creature') {
+    const c = state.creatures[hit.index]; if (!c) return null;
+    px = c.x; py = c.y; type = 'creature'; index = hit.index;
+  } else if (typeof hit === 'object' && hit.type === 'waypoint') {
+    const w = state.waypoints[hit.index]; if (!w) return null;
+    px = w.x; py = w.y; type = 'waypoint'; index = hit.index;
+  } else if (typeof hit === 'object' && hit.type === 'obstacle') {
+    const o = state.obstacles[hit.index]; if (!o) return null;
+    px = o.x; py = o.y; type = 'obstacle'; index = hit.index;
+  } else {
+    return null;
+  }
+  const tx = Math.max(0, Math.min(GRID_W - 1, Math.floor(px / CELL)));
+  const ty = Math.max(0, Math.min(GRID_H - 1, Math.floor(py / CELL)));
+  return { type: type, index: index, tileX: tx, tileY: ty };
+}
+
+// 🔗 つなぐ用タイル塗装: ブラシサイズ (1/2/3) を反映して path を置く。
+function _paintConnectTile(tx, ty, size) {
+  const sz = Math.max(1, size | 0);
+  const half = Math.floor(sz / 2);
+  const x0 = Math.max(0, tx - half);
+  const y0 = Math.max(0, ty - half);
+  const x1 = Math.min(GRID_W, x0 + sz);
+  const y1 = Math.min(GRID_H, y0 + sz);
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    state.tiles[y][x] = 'path';
+  }
+}
+
+// 🔗 つなぐモードのクリック処理。 マーカーに当たれば true、 外れなら false。
+function _handleConnectClick(p) {
+  const hit = _markerHitAt(p.x, p.y);
+  if (!hit) return false;
+  // edgePoint (= ライン上の中間点) はマーカーとは別物なので除外
+  if (typeof hit === 'object' && hit.type === 'edgePoint') return false;
+  const anchor = _markerHitToAnchor(hit);
+  if (!anchor) return false;
+  // 1 つ目の選択
+  if (!state.connectAnchor) {
+    state.connectAnchor = anchor;
+    _startConnectPulse();
+    draw();
+    showBanner('もう 1 つの マーカー を タップしてね (キャンセル: Esc)');
+    return true;
+  }
+  // 同じマーカーをもう一度 → キャンセル
+  const a = state.connectAnchor;
+  if (a.type === anchor.type && a.index === anchor.index && a.tileX === anchor.tileX && a.tileY === anchor.tileY) {
+    state.connectAnchor = null;
+    _stopConnectPulse();
+    draw();
+    showBanner('キャンセルしました');
+    return true;
+  }
+  // 2 つ目の選択 → BFS (wall 無視) で経路計算 → path で塗装
+  const fromTile = { x: a.tileX, y: a.tileY };
+  const toTile   = { x: anchor.tileX, y: anchor.tileY };
+  const path = bfsShortestIgnoreWalls(fromTile, toTile);
+  if (!path) {
+    showBanner('ここまで 道を つくれないよ');
+    state.connectAnchor = null;
+    _stopConnectPulse();
+    draw();
+    return true;
+  }
+  pushHistory();
+  const brush = state.brushSize || 1;
+  for (const tile of path) {
+    _paintConnectTile(tile.x, tile.y, brush);
+  }
+  state.connectAnchor = null;
+  _stopConnectPulse();
+  afterEdit();
+  showBanner('つながったよ！ ' + path.length + ' マス');
+  return true;
 }
 
 function countNeighbors(x, y) {
