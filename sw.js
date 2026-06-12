@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1048; // v1048: play.html splash - 広告ゾーン背景を solid #2a1c12 に変更（透明感をなくしカード感を出す）
+const CACHE_VERSION = 1049; // v1049: oto/index.html - 16:9 layout fixes + top-10 high score list
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

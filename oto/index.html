@@ -1710,8 +1710,12 @@
   .rhythm-complete-panel {
     position: relative;
     z-index: 2;
-    width: min(92vw, 560px);
-    max-height: calc(100dvh - 32px);
+    /* v(16:9-fix): width を vw ではなく 親 .rhythm-complete (= stage と同サイズ) 相対に。
+       max-height も parent 相対 (calc(100% - 48px)) にすることで、rhythm-layout で
+       stage が 16:9 に圧縮されていてもモーダルが stage 内に確実に収まる。 */
+    width: min(92%, 560px);
+    max-width: min(92vw, 560px);
+    max-height: calc(100% - 48px);
     overflow: auto;
     padding: 20px 24px 22px;
     border: 3px solid rgba(255,255,255,0.88);
@@ -2811,6 +2815,86 @@
     }
     /* 横向き低背端末ではノートをさらに縮小 */
     body.rhythm-layout #rhythm-lanes { --gh-sz: 56px; }
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     v(16:9-fix): 16:9 (前後 ±5%) のアスペクト比で
+     左右端のドレミファ ボタン / 左パネル / クリアモーダル が
+     はみ出す問題を一括対策。
+     - 1.70 ≤ aspect ≤ 1.85 (≈ 16:9) を狙い撃ち
+     - 21:9 / 32:9 (aspect ≥ 2.0) と 4:3 (aspect ≈ 1.33) は対象外
+     - portrait は別の base / max-width:420 ルールで対応済み
+     ────────────────────────────────────────────────────────────── */
+  @media (orientation: landscape) and (min-aspect-ratio: 17/10) and (max-aspect-ratio: 19/10) {
+    /* 自由モード: 左右端ボタン (idx 0/3/4/7) を内側へ。
+       元値 48% / 84% (差 36%) を 50% / 82% (差 32%) に詰めて、
+       --sz: 84px 想定で 16:9 viewport (1366～1920px) でも安全マージン確保。 */
+    body:not(.rhythm-layout) .instr-btn[data-idx="0"] { left: 50%; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="3"] { left: 82%; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="4"] { left: 50%; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 82%; }
+
+    /* ボタン外周のグロー (::after の box-shadow + scale 1.8) が
+       16:9 narrow で stage 外にはみ出すため scale を 1.6 に縮小、
+       glow radius も 22px → 16px に減らす。 */
+    body:not(.rhythm-layout) .instr-btn::after {
+      --rhythm-ring-scale: 1.6;
+      box-shadow:
+        0 0 0 4px var(--rhythm-ring-halo, rgba(255,216,77,0.45)),
+        0 0 16px var(--rhythm-ring-glow, rgba(255,216,77,0.8));
+    }
+    body:not(.rhythm-layout) .rhythm-ring {
+      --rhythm-ring-scale: 1.6;
+      box-shadow:
+        0 0 0 4px var(--rhythm-ring-halo, rgba(255,216,77,0.45)),
+        0 0 16px var(--rhythm-ring-glow, rgba(255,216,77,0.8));
+    }
+
+    /* リズムモード: HUD を 16:9 の安全幅に圧縮し、
+       左パネル (band-group / sound-sets-box / mode-switch) の幅も控えめに。 */
+    body.rhythm-layout .rhythm-hud {
+      width: min(36vw, 300px);
+    }
+    body.rhythm-layout .band-group {
+      width: min(11vw, 122px);
+      max-width: min(11vw, 122px);
+    }
+
+    /* クリアモーダル: 16:9 narrow では幅をさらに詰めて確実に親 stage 内へ。 */
+    .rhythm-complete-panel {
+      width: min(78%, 520px);
+      max-width: min(85vw, 520px);
+    }
+    .rhythm-complete {
+      padding: 16px;
+    }
+    /* クリア演出の背景アート: inset を緩めて外周余白を確保 */
+    .rhythm-clear-art {
+      inset: max(12px, 1.6vw);
+      width: calc(100% - max(24px, 3.2vw));
+      height: calc(100% - max(24px, 3.2vw));
+    }
+  }
+
+  /* 16:9 portrait (9:16) — 縦長スマホ 16:9。ベース 12% / 88% は
+     viewport <= 420 で --sz=22vw (≈21vw/2=10.5vw) のためギリギリ。
+     421 ～ 520 (中サイズ portrait) は --sz=108px のままで 12% にいるとはみ出すので、
+     ここでは 縦長 (aspect ≤ 9/16) でも --sz を vw-clamp に切り替えて確実に収める。 */
+  @media (orientation: portrait) and (max-aspect-ratio: 10/16) and (min-width: 421px) and (max-width: 540px) {
+    body:not(.rhythm-layout) .instr-btn[data-idx="0"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="1"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="2"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="3"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="4"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="5"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="6"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="7"] {
+      --sz: min(22vw, 108px);
+    }
+    body:not(.rhythm-layout) .instr-btn[data-idx="0"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="4"] { left: 14%; }
+    body:not(.rhythm-layout) .instr-btn[data-idx="3"],
+    body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 86%; }
   }
 </style>
 </head>
