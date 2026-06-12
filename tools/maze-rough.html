@@ -246,6 +246,7 @@ input[type="file"]::file-selector-button {
     <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:2px;">🔗 つなぐ は 2 つの マーカー を 順にクリックで 黒線で結びます (AI への ヒント)</div>
     <div style="font-size:0.72rem; color:#cfa; margin-top:2px;">※ 「🔗 つなぐ」 モード中に 既存の 黒線の 中点 (×印) を クリックで 削除します</div>
+    <div style="font-size:0.72rem; color:#fcc; margin-top:2px;">※ 「✂️ 道を消す」 は クリックした 位置から 一番近い 区間 だけを 消します (中間ノードが無ければ 自動で 頂点を 挿入)</div>
 
     <!-- Phase 3.5: お邪魔虫の種類 (creature モード時のみ表示) -->
     <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
@@ -573,6 +574,8 @@ const state = {
   draggingMarker: null,   // 'start' | 'goal' | { type:'creature', index:N } | null
   connectAnchor: null,    // 🔗 つなぐ モード: 1 つ目に選ばれたマーカー { type, index?, tileX, tileY } | null
   hoveringConnectorIdx: null, // 🔗 つなぐ モード中、中点マーカー上にカーソルがある connector の index | null
+  hoveringDeleteSegment: null, // ✂️ 道を消す モード中、 hover 中の削除予定セグメント情報 { points:[{x,y},...] } | null
+                              //   - 描画専用 (削除予定区間を 赤太線でプレビュー)。 クリックで実削除。
   history: [],            // snapshots for undo
   refImage: null,         // HTMLImageElement: 参考用に下絵として表示する画像 (drag-drop で読込)
 };
@@ -1055,6 +1058,29 @@ function draw() {
     ctx.restore();
   }
   drawConnectAnchorHighlight();
+  drawDeleteHoverPreview();
+}
+
+// ✂️ 道を消す モード中、 hover している削除予定セグメントを 赤太線でプレビュー描画。
+// 半透明の太い線 + 細い実線の二重描きで 「これが消える」 と直感させる。
+function drawDeleteHoverPreview() {
+  const seg = state.hoveringDeleteSegment;
+  if (!seg || !Array.isArray(seg.points) || seg.points.length < 2) return;
+  if (state.mode !== 'delete-edge') return;
+  ctx.save();
+  // 太い半透明レイヤー (= 削除範囲のハイライト)
+  ctx.strokeStyle = '#FF5050';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(seg.points[0].x, seg.points[0].y);
+  for (let i = 1; i < seg.points.length; i++) {
+    ctx.lineTo(seg.points[i].x, seg.points[i].y);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 // 🔗 つなぐモードで 1 つ目に選ばれたマーカーに、 パルスする光彩リングを描画。
@@ -1338,133 +1364,134 @@ function _snapToNearestPolyline(p, threshold) {
   return best ? { x: best.x, y: best.y } : null;
 }
 
-// ✂️ 道を消す: クリック点が乗る polyline 区間 (= 両側の最寄りノード境界に挟まれた
-// 部分) だけを削除。 削除したら true を返す。 該当なしなら false。
-// 境界候補ノード: state.start / state.goal / state.waypoints[*] のうち、当該
-// polyline 上の最近点距離が NODE_THRESHOLD 以下のもの + polyline 両端 (s=0, s=L)。
-function _handleDeleteEdgeClick(p) {
-  const HIT_LIMIT = CELL * 0.5;     // クリック→polyline ヒット判定半径
-  const NODE_THRESHOLD = CELL * 0.9; // ノード→polyline 同一線上判定半径
-  const SNAP_EPS = 1e-3;             // s が頂点と一致したとみなす許容
-  // ---- 1. クリックに最も近い polyline 上の点 (= edge + s_click) を特定 ----
-  let best = null; // { ei, segIdx, t, dist, sClick }
+// ✂️ 道を消す (部分削除 仕様):
+//   クリックに最も近い 「セグメント (polyline の隣接 2 頂点間)」 を 1 つだけ削除する。
+//   - polyline.length === 2 (中間頂点なし) の場合は クリック位置に頂点を 自動挿入してから、
+//     クリック寄りの 片側だけを削除 (= 元 polyline は 反対側だけ残って 短くなる)。
+//   - 中間頂点が複数あって 削除したセグメントが polyline の 中間にあれば、
+//     polyline は 2 本に分割されて それぞれ別 edge として再登録される。
+//   - 端のセグメント削除なら polyline 短縮 (頂点 1 つ削除)。
+//   全削除の従来挙動は 完全に廃止。
+//
+// 削除予定 (= プレビュー対象) のセグメント情報を計算するヘルパ。
+// クリック / ホバー 両方から呼ばれる。 該当なしなら null。
+// 返り値: {
+//   ei,                  // 対象 edge index
+//   segIdx,              // クリックに最も近いセグメント (polyline[segIdx] - polyline[segIdx+1])
+//   t,                   // セグメント内の正規化位置 (0..1)
+//   needInsert,          // true = polyline.length===2 で 中間頂点を自動挿入する必要あり
+//   insertPoint,         // needInsert=true のとき 挿入する点 { x, y }
+//   removeSide,          // needInsert=true のとき 'head' (前半) | 'tail' (後半) どちらを消すか
+//   previewPoints,       // 赤プレビュー用の頂点列 [{x,y},{x,y}]
+// }
+function _computeDeleteEdgeTarget(p) {
+  const HIT_LIMIT = CELL * 0.5;
+  let best = null; // { ei, segIdx, t, dist }
   for (let ei = state.edges.length - 1; ei >= 0; ei--) {
     const ed = state.edges[ei];
     if (!ed || !Array.isArray(ed.polyline) || ed.polyline.length < 2) continue;
-    let sAccum = 0;
     for (let i = 0; i < ed.polyline.length - 1; i++) {
       const A = ed.polyline[i], B = ed.polyline[i + 1];
-      const segLen = Math.hypot(B.x - A.x, B.y - A.y);
       const r = _distPointToSegment(p.x, p.y, A.x, A.y, B.x, B.y);
       if (r.dist < HIT_LIMIT && (!best || r.dist < best.dist)) {
-        best = { ei: ei, segIdx: i, t: r.t, dist: r.dist, sClick: sAccum + segLen * r.t };
+        best = { ei: ei, segIdx: i, t: r.t, dist: r.dist };
       }
-      sAccum += segLen;
     }
   }
-  if (!best) {
+  if (!best) return null;
+  const poly = state.edges[best.ei].polyline;
+  // 中間頂点なし (直線 polyline) は クリック位置に頂点を挿入してから 片側削除。
+  if (poly.length === 2) {
+    const A = poly[0], B = poly[1];
+    const ix = A.x + (B.x - A.x) * best.t;
+    const iy = A.y + (B.y - A.y) * best.t;
+    // クリックが セグメントの前半 (t<0.5) なら 前半を消す → A..insert を削除し insert..B が残る
+    // 後半 (t>=0.5) なら 後半を消す → insert..B を削除し A..insert が残る
+    const removeSide = (best.t < 0.5) ? 'head' : 'tail';
+    const previewPoints = (removeSide === 'head')
+      ? [{ x: A.x, y: A.y }, { x: ix, y: iy }]
+      : [{ x: ix, y: iy }, { x: B.x, y: B.y }];
+    return {
+      ei: best.ei,
+      segIdx: 0,
+      t: best.t,
+      needInsert: true,
+      insertPoint: { x: ix, y: iy },
+      removeSide: removeSide,
+      previewPoints: previewPoints,
+    };
+  }
+  // 中間頂点ありなら 当たったセグメント [segIdx..segIdx+1] を そのまま削除対象に。
+  const A = poly[best.segIdx], B = poly[best.segIdx + 1];
+  return {
+    ei: best.ei,
+    segIdx: best.segIdx,
+    t: best.t,
+    needInsert: false,
+    insertPoint: null,
+    removeSide: null,
+    previewPoints: [{ x: A.x, y: A.y }, { x: B.x, y: B.y }],
+  };
+}
+
+// クリック時に 1 セグメント分だけ削除。 削除したら true。 該当なしなら false。
+function _handleDeleteEdgeClick(p) {
+  const target = _computeDeleteEdgeTarget(p);
+  if (!target) {
     showBanner('道が見つからないよ (道の線に近づいてクリックしてね)');
     return false;
   }
-  const poly = state.edges[best.ei].polyline;
-  // ---- 2. polyline の累積弧長配列 ----
-  const cum = [0];
-  for (let i = 0; i < poly.length - 1; i++) {
-    cum.push(cum[i] + Math.hypot(poly[i + 1].x - poly[i].x, poly[i + 1].y - poly[i].y));
-  }
-  const totalLen = cum[cum.length - 1];
-  // ---- 3. polyline 上にノードを投影 (距離が閾値以下なら境界候補に採用) ----
-  const projectOnPoly = function(q) {
-    let bestProj = null;
-    for (let i = 0; i < poly.length - 1; i++) {
-      const A = poly[i], B = poly[i + 1];
-      const segLen = cum[i + 1] - cum[i];
-      const r = _distPointToSegment(q.x, q.y, A.x, A.y, B.x, B.y);
-      if (!bestProj || r.dist < bestProj.dist) {
-        bestProj = { dist: r.dist, s: cum[i] + segLen * r.t };
-      }
+  const edge = state.edges[target.ei];
+  if (!edge || !Array.isArray(edge.polyline) || edge.polyline.length < 2) return false;
+  // ---- 1. 中間頂点なしケース: クリック点を挿入してから 片側 (A..insert か insert..B) を削除 ----
+  if (target.needInsert) {
+    const poly = edge.polyline;
+    const A = poly[0], B = poly[1];
+    const ins = target.insertPoint;
+    // removeSide='head' → A..insert 区間を消す ⇒ 残るのは insert..B (= 新 polyline の 0,1)
+    // removeSide='tail' → insert..B 区間を消す ⇒ 残るのは A..insert
+    if (target.removeSide === 'head') {
+      edge.polyline = [{ x: ins.x, y: ins.y }, { x: B.x, y: B.y }];
+    } else {
+      edge.polyline = [{ x: A.x, y: A.y }, { x: ins.x, y: ins.y }];
     }
-    return bestProj;
-  };
-  const candidates = [];
-  if (state.start) candidates.push(state.start);
-  if (state.goal)  candidates.push(state.goal);
-  for (const w of state.waypoints) candidates.push(w);
-  const boundarySet = new Set();
-  boundarySet.add(0);
-  boundarySet.add(totalLen);
-  for (const n of candidates) {
-    const pr = projectOnPoly(n);
-    if (pr && pr.dist <= NODE_THRESHOLD) boundarySet.add(pr.s);
-  }
-  const boundaries = Array.from(boundarySet).sort(function(a, b){ return a - b; });
-  // ---- 4. クリック s を挟む境界 s_before / s_after を求める ----
-  let sBefore = 0, sAfter = totalLen;
-  for (const s of boundaries) {
-    if (s < best.sClick - SNAP_EPS) sBefore = s;
-    if (s > best.sClick + SNAP_EPS) { sAfter = s; break; }
-  }
-  // クリックがちょうど境界ノード上だった場合 (sBefore == sAfter) → 直近の隣接区間を削除。
-  // 既存のセグメント中央 (best.segIdx, t) を見て、 ノードの左右どちらの区間を消すか判定。
-  if (sAfter <= sBefore + SNAP_EPS) {
-    const segMidS = (best.t < 0.5)
-      ? best.sClick - 1e-6  // セグメント前半クリック → 一つ手前の境界まで削除
-      : best.sClick + 1e-6; // セグメント後半クリック → 一つ先の境界まで削除
-    sBefore = 0; sAfter = totalLen;
-    for (const s of boundaries) {
-      if (s < segMidS - SNAP_EPS) sBefore = s;
-      if (s > segMidS + SNAP_EPS) { sAfter = s; break; }
-    }
-  }
-  // 内部境界 (端点を除く中間ノード) が無ければ従来通り polyline 全体を削除
-  const hasInteriorBoundary = boundaries.length > 2;
-  if (!hasInteriorBoundary) {
-    state.edges.splice(best.ei, 1);
-    showBanner('道を削除しました (' + state.edges.length + ' 本残り)');
+    showBanner('区間を消したよ (' + state.edges.length + ' 本)');
     return true;
   }
-  // ---- 5. s 位置で polyline を分割するヘルパ ----
-  // polyline と累積長 cum から、頭側 [0..s] / 尾側 [s..L] の頂点列を返す。
-  // s が既存頂点に一致するならその頂点を再利用し、 間なら線形補間点を挿入。
-  const splitAt = function(s) {
-    if (s <= SNAP_EPS) return { head: [], tail: poly.map(function(v){ return { x: v.x, y: v.y }; }) };
-    if (s >= totalLen - SNAP_EPS) return { head: poly.map(function(v){ return { x: v.x, y: v.y }; }), tail: [] };
-    for (let i = 0; i < poly.length - 1; i++) {
-      const s0 = cum[i], s1 = cum[i + 1];
-      if (s <= s0 + SNAP_EPS) {
-        const head = poly.slice(0, i + 1).map(function(v){ return { x: v.x, y: v.y }; });
-        const tail = poly.slice(i).map(function(v){ return { x: v.x, y: v.y }; });
-        return { head: head, tail: tail };
-      }
-      if (s < s1 - SNAP_EPS) {
-        const t = (s - s0) / (s1 - s0);
-        const px = poly[i].x + (poly[i + 1].x - poly[i].x) * t;
-        const py = poly[i].y + (poly[i + 1].y - poly[i].y) * t;
-        const mid = { x: px, y: py };
-        const head = poly.slice(0, i + 1).map(function(v){ return { x: v.x, y: v.y }; });
-        head.push({ x: mid.x, y: mid.y });
-        const tail = [{ x: mid.x, y: mid.y }].concat(poly.slice(i + 1).map(function(v){ return { x: v.x, y: v.y }; }));
-        return { head: head, tail: tail };
-      }
-      // s が頂点 s1 と一致
-      if (s <= s1 + SNAP_EPS) {
-        const head = poly.slice(0, i + 2).map(function(v){ return { x: v.x, y: v.y }; });
-        const tail = poly.slice(i + 1).map(function(v){ return { x: v.x, y: v.y }; });
-        return { head: head, tail: tail };
-      }
+  // ---- 2. 中間頂点ありケース: poly[segIdx..segIdx+1] のセグメントを削除 ----
+  const poly = edge.polyline;
+  const i0 = target.segIdx;
+  const i1 = target.segIdx + 1;
+  const last = poly.length - 1;
+  if (i0 === 0) {
+    // 先頭セグメントを消す → 残り [i1..last]
+    const tail = poly.slice(i1).map(function(v){ return { x: v.x, y: v.y }; });
+    if (tail.length >= 2) {
+      edge.polyline = tail;
+    } else {
+      // 残りが 1 点しか無い (= 元 polyline.length===2 のケースだが、 ここは中間頂点ありの分岐
+      // なので通常通らない。安全のため edge ごと除去)
+      state.edges.splice(target.ei, 1);
     }
-    // 数値誤差で抜けた場合は安全側 (全 head)
-    return { head: poly.map(function(v){ return { x: v.x, y: v.y }; }), tail: [] };
-  };
-  const a = splitAt(sBefore);   // head = 残す前半, tail = 不要
-  const b = splitAt(sAfter);    // head = 不要, tail = 残す後半
-  const newEdges = [];
-  if (a.head.length >= 2) newEdges.push({ polyline: a.head });
-  if (b.tail.length >= 2) newEdges.push({ polyline: b.tail });
-  // ---- 6. 元エッジを取り除き、 新エッジを挿入 ----
-  state.edges.splice(best.ei, 1);
-  for (const ne of newEdges) state.edges.push(ne);
-  showBanner('道を区間削除しました (' + state.edges.length + ' 本残り)');
+  } else if (i1 === last) {
+    // 末尾セグメントを消す → 残り [0..i0]
+    const head = poly.slice(0, i0 + 1).map(function(v){ return { x: v.x, y: v.y }; });
+    if (head.length >= 2) {
+      edge.polyline = head;
+    } else {
+      state.edges.splice(target.ei, 1);
+    }
+  } else {
+    // 中間セグメントを消す → polyline が 2 本に分かれる
+    const head = poly.slice(0, i0 + 1).map(function(v){ return { x: v.x, y: v.y }; });
+    const tail = poly.slice(i1).map(function(v){ return { x: v.x, y: v.y }; });
+    const newEdges = [];
+    if (head.length >= 2) newEdges.push({ polyline: head });
+    if (tail.length >= 2) newEdges.push({ polyline: tail });
+    state.edges.splice(target.ei, 1);
+    for (const ne of newEdges) state.edges.push(ne);
+  }
+  showBanner('区間を消したよ (' + state.edges.length + ' 本)');
   return true;
 }
 
@@ -1717,6 +1744,8 @@ cv.addEventListener('pointerdown', function(e) {
   if (state.mode === 'delete-edge') {
     pushHistory();
     if (_handleDeleteEdgeClick(p)) {
+      // 削除した瞬間は プレビュー (= 既に消えた区間) を残すと幽霊が表示されるのでクリア
+      state.hoveringDeleteSegment = null;
       afterEdit();
     } else {
       state.history.pop(); // 操作なし → 履歴巻き戻し
@@ -1901,6 +1930,9 @@ cv.addEventListener('pointermove', function(e) {
   } else if (state.mode === 'delete-edge') {
     // ✂️ 道を消す: マーカー上でも常に not-allowed (= 削除専用) で他モードに誤発火させない
     cv.style.cursor = 'not-allowed';
+    // hover プレビュー: クリック予定セグメントを赤太線で事前表示
+    const target = _computeDeleteEdgeTarget(p);
+    state.hoveringDeleteSegment = target ? { points: target.previewPoints } : null;
   } else if (state.mode === 'connect') {
     // 修正2: connect モード時、 1 つ目未選択 かつ 中点 24px 内にカーソルがあれば
     // pointer + 中点マーカー hover 状態を出す (削除可インジケーター)。
@@ -1920,6 +1952,8 @@ cv.addEventListener('pointermove', function(e) {
     if (prevHoverIdx !== state.hoveringConnectorIdx) {
       // no-op: draw() 下で反映される
     }
+    // connect モード中も delete-edge プレビューは出さない
+    if (state.hoveringDeleteSegment !== null) state.hoveringDeleteSegment = null;
   } else {
     // Cursor hint when hovering over a draggable marker
     const baseCursor = (state.mode === 'select') ? 'default'
@@ -1927,12 +1961,15 @@ cv.addEventListener('pointermove', function(e) {
     cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : baseCursor;
     // 修正2: connect モード以外では hover index をクリア
     if (state.hoveringConnectorIdx !== null) state.hoveringConnectorIdx = null;
+    // delete-edge モード以外では 削除予定セグメントの hover プレビューもクリア
+    if (state.hoveringDeleteSegment !== null) state.hoveringDeleteSegment = null;
   }
   draw();
 });
 cv.addEventListener('pointerleave', function() {
   state.hoverTile = null;
   state.hoveringConnectorIdx = null;
+  state.hoveringDeleteSegment = null;
   draw();
 });
 cv.addEventListener('pointerup', function(e) {
@@ -2057,6 +2094,11 @@ document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
       if (state.hoveringConnectorIdx !== null) {
         state.hoveringConnectorIdx = null;
       }
+      draw();
+    }
+    // ✂️ 道を消す モード以外に切り替えたら hover プレビューをクリア
+    if (state.mode !== 'delete-edge' && state.hoveringDeleteSegment !== null) {
+      state.hoveringDeleteSegment = null;
       draw();
     }
     _updateKindPanelVisibility();
