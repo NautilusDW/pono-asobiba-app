@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1047; // v1047: play.html splash redesign - 🐻絵文字+テキスト「ポノのあそびば」を brand_sign_01.webp 木製看板ロゴ画像に置換、PR広告ゾーンは維持
+const CACHE_VERSION = 1048; // v1048: play.html splash - 広告ゾーン背景を solid #2a1c12 に変更（透明感をなくしカード感を出す）
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
