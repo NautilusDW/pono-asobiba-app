@@ -1726,7 +1726,7 @@ body.image-stage-mode .game-wrap {
   }
 }
 
-/* ===== Bikkuri Bowling Mini-Game (kumo encounter, 2.5D lane) v1055 ===== */
+/* ===== Bikkuri Bowling Mini-Game (kumo encounter, perspective lane + 3D acorn ball) v1056 ===== */
 .bowl-game {
   display: grid;
   grid-template-rows: auto minmax(300px, 1fr) auto;
@@ -6490,12 +6490,13 @@ function _resolveStrengthPushGame() {
 }
 
 // ── びっくりボーリング (Bikkuri Bowling) — kumo encounter ──
-// v1055: 2.5D lane. 手前中央から奥へ丸いどんぐりを転がし、
+// v1056: 手前中央から奥へ3D球体風どんぐりを転がし、
 //        既存のお邪魔虫スプライトをピンとして倒す shortform。
-// - 視点: OtoTouch 3D寄りの奥行きがあるレーン (Canvas 2.5D)
+// - 視点: OtoTouch 3D寄りの奥行きがあるレーン (Canvas perspective)
 // - 操作: タップした奥方向へどんぐりが転がる
 // - ピン: 既存 maze/creatures PNG をビルボード表示
 // - 難度: 手前は静止、奥の一部だけ左右に動く
+// - 衝突: お邪魔虫に当たるとボウリング球のように反射して跳ね返る
 const BOWL_THROW_COOLDOWN_MS = 600;
 const BOWL_FLIGHT_MS         = 1600;   // donguri max lifetime
 const BOWL_PIN_FALL_MS       = 380;
@@ -6505,8 +6506,12 @@ const BOWL_CHAIN_R_REL       = 0.13;   // domino chain radius
 const BOWL_CHAIN_DOT_MIN     = -0.20;  // chain dot-gate (more permissive for shortform play)
 const BOWL_CHAIN_MAX_DEPTH   = 5;
 const BOWL_CHAIN_DELAY_MS    = 70;
-const BOWL_DONGURI_R_REL     = 0.038;
+const BOWL_DONGURI_R_REL     = 0.052;
 const BOWL_DONGURI_SPEED_REL = 1.05;   // travel distance per second, relative to min(w,h)
+const BOWL_BOUNCE_RESTITUTION = 0.84;
+const BOWL_BOUNCE_TANGENT_KICK = 0.18;
+const BOWL_BALL_MAX_HITS      = 6;
+const BOWL_BUMP_MS            = 260;
 const BOWL_PONO_HEIGHT_REL   = 0.16;
 const BOWL_PONO_Y_REL        = 0.88;   // bottom-center launcher
 const BOWL_PONO_X_REL        = 0.50;
@@ -6825,6 +6830,10 @@ function _applyBowlSweep(gs, tapX, tapY) {
     deadAt: now + BOWL_FLIGHT_MS,
     theta: 0,
     spin: ((gs.donguris.length + (gs.bgSeed | 0)) % 2 === 0) ? 1 : -1,
+    hitPins: Object.create(null),
+    hitCount: 0,
+    bumpAt: 0,
+    bumpPower: 0,
   });
   gs.lastThrowAt = now;
   try { playTap(); } catch (_) {}
@@ -6853,7 +6862,8 @@ function _updateBowlPhysics(gs, dt, now) {
     const d = gs.donguris[i];
     d.x += d.vx * dt;
     d.y += d.vy * dt;
-    d.theta += 8 * dt * (d.spin || 1);
+    const speedNow = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
+    d.theta += (speedNow / Math.max(1, d.r)) * 0.55 * dt * (d.spin || 1);
     // wall bounce (cheerful)
     const pad = d.r;
     if (d.x < pad)        { d.x = pad; d.vx = Math.abs(d.vx) * 0.85; }
@@ -6863,18 +6873,64 @@ function _updateBowlPhysics(gs, dt, now) {
     if (d.y > gs.h + pad) { gs.donguris.splice(i, 1); continue; }
     // timeout
     if (now > d.deadAt) { gs.donguris.splice(i, 1); continue; }
-    // pin collision
+    // pin collision: reflect the donguri velocity so it ricochets instead of
+    // continuing along the original straight line.
     for (let pi = 0; pi < gs.pins.length; pi++) {
       const pin = gs.pins[pi];
       if (pin.fallen) continue;
-      const ddx = pin.x - d.x;
-      const ddy = pin.y - d.y;
-      if (ddx * ddx + ddy * ddy < hitR2) {
-        const inv = 1 / Math.max(0.001, Math.sqrt(ddx * ddx + ddy * ddy));
-        _bowlFellPin(gs, pin, ddx * inv, ddy * inv, 0, now);
-        // donguri deflects, slows
-        d.vx = d.vx * 0.4 + ddx * inv * 80;
-        d.vy = d.vy * 0.4 + ddy * inv * 80;
+      if (d.hitPins && d.hitPins[pin.id]) continue;
+      const fromPinX = d.x - pin.x;
+      const fromPinY = d.y - pin.y;
+      const dist2 = fromPinX * fromPinX + fromPinY * fromPinY;
+      if (dist2 < hitR2) {
+        const speed = Math.max(1, Math.sqrt(d.vx * d.vx + d.vy * d.vy));
+        let dist = Math.sqrt(dist2);
+        let nx = 0;
+        let ny = 1;
+        if (dist > 0.001) {
+          nx = fromPinX / dist;
+          ny = fromPinY / dist;
+        } else {
+          nx = -d.vx / speed;
+          ny = -d.vy / speed;
+          dist = 0.001;
+        }
+
+        _bowlFellPin(gs, pin, d.vx / speed, d.vy / speed, 0, now);
+        if (d.hitPins) d.hitPins[pin.id] = true;
+        d.hitCount = (d.hitCount || 0) + 1;
+
+        // Move the ball outside the hit circle before applying the reflected
+        // velocity, preventing repeated overlap from looking like a straight pass.
+        const separateR = hitR + d.r * 0.35;
+        d.x = pin.x + nx * separateR;
+        d.y = pin.y + ny * separateR;
+
+        const dot = d.vx * nx + d.vy * ny;
+        let rvx = d.vx;
+        let rvy = d.vy;
+        if (dot < 0) {
+          rvx = d.vx - 2 * dot * nx;
+          rvy = d.vy - 2 * dot * ny;
+        } else {
+          rvx = nx * speed;
+          rvy = ny * speed;
+        }
+
+        const tangentX = -ny;
+        const tangentY = nx;
+        const tangentKick = Math.min(130, speed * BOWL_BOUNCE_TANGENT_KICK) * (d.spin || 1);
+        rvx += tangentX * tangentKick;
+        rvy += tangentY * tangentKick;
+
+        const reflectedSpeed = Math.max(90, speed * BOWL_BOUNCE_RESTITUTION);
+        const reflectedLen = Math.max(0.001, Math.sqrt(rvx * rvx + rvy * rvy));
+        d.vx = rvx / reflectedLen * reflectedSpeed;
+        d.vy = rvy / reflectedLen * reflectedSpeed;
+        d.bumpAt = now;
+        d.bumpPower = Math.min(d.r * 0.95, Math.min(gs.w, gs.h) * 0.035);
+        d.deadAt = Math.max(d.deadAt, now + 620);
+        if (d.hitCount >= BOWL_BALL_MAX_HITS) d.deadAt = Math.min(d.deadAt, now + BOWL_BUMP_MS);
         break;
       }
     }
@@ -6988,7 +7044,7 @@ function _checkBowlCleared(gs) {
   return true;
 }
 
-// ─── drawing (2.5D lane) ───
+// ─── drawing (perspective lane + 3D-shaded acorn ball) ───
 function _drawBowlScene(gs, now) {
   const ctx = gs.ctx, W = gs.w, H = gs.h;
   const horizonY = H * BOWL_HORIZON_REL;
@@ -7175,39 +7231,121 @@ function _drawBowlPin(gs, pin, now) {
 
 function _drawBowlDonguri(gs, d, now) {
   const ctx = gs.ctx;
-  ctx.save();
-  ctx.translate(d.x, d.y);
-  ctx.rotate(d.theta || 0);
+  const r = d.r;
+  const bumpElapsed = d.bumpAt ? (now - d.bumpAt) : (BOWL_BUMP_MS + 1);
+  const bumpProgress = (bumpElapsed >= 0 && bumpElapsed < BOWL_BUMP_MS)
+    ? _bowlClamp(bumpElapsed / BOWL_BUMP_MS, 0, 1)
+    : 1;
+  const lift = bumpElapsed < BOWL_BUMP_MS
+    ? Math.sin(bumpProgress * Math.PI) * (d.bumpPower || r * 0.75)
+    : 0;
+  const drawY = d.y - lift;
 
-  // Shadow
+  // Cast shadow stays on the lane while the ball pops upward on impact.
   ctx.save();
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = 0.34 * Math.max(0.32, 1 - lift / Math.max(1, r * 2.2));
   ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(2, 3, d.r * 1.0, d.r * 0.55, 0, 0, Math.PI * 2);
+  ctx.ellipse(d.x + r * 0.12, d.y + r * 0.42, r * (1.05 - bumpProgress * 0.06), r * 0.45, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // Body (golden brown radial)
-  const grad = ctx.createRadialGradient(-d.r * 0.3, -d.r * 0.3, d.r * 0.1, 0, 0, d.r);
-  grad.addColorStop(0, '#d9a55c');
-  grad.addColorStop(1, '#7a4a1c');
+  ctx.save();
+  ctx.translate(d.x, drawY);
+  ctx.rotate(d.theta || 0);
+
+  // Spherical body: radial light, darker rim, and soft lower shadow.
+  const grad = ctx.createRadialGradient(-r * 0.38, -r * 0.42, r * 0.08, r * 0.18, r * 0.12, r * 1.18);
+  grad.addColorStop(0, '#f3c979');
+  grad.addColorStop(0.38, '#c88439');
+  grad.addColorStop(0.76, '#8a511f');
+  grad.addColorStop(1, '#3f230b');
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.arc(0, 0, d.r, 0, Math.PI * 2);
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();
 
-  // Cap stripe (darker inner ring, viewed from above)
-  ctx.fillStyle = '#4a2a0a';
+  ctx.save();
   ctx.beginPath();
-  ctx.arc(0, 0, d.r * 0.55, 0, Math.PI * 2);
+  ctx.arc(0, 0, r * 0.98, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.globalAlpha = 0.26;
+  ctx.strokeStyle = '#4c2b0e';
+  ctx.lineWidth = Math.max(1.2, r * 0.055);
+  for (let k = -2; k <= 2; k++) {
+    ctx.beginPath();
+    ctx.ellipse(k * r * 0.20, r * 0.08, r * 0.55, r * (0.15 + Math.abs(k) * 0.035), 0.26, 0.12 * Math.PI, 0.88 * Math.PI);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Acorn cap as a curved patch on the sphere, rotating with the ball.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.clip();
+  const capGrad = ctx.createLinearGradient(0, -r * 0.92, 0, r * 0.10);
+  capGrad.addColorStop(0, '#5b3511');
+  capGrad.addColorStop(0.46, '#7a4616');
+  capGrad.addColorStop(1, '#2f1a08');
+  ctx.fillStyle = capGrad;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.88, -r * 0.30);
+  ctx.bezierCurveTo(-r * 0.58, -r * 0.76, r * 0.58, -r * 0.76, r * 0.88, -r * 0.30);
+  ctx.bezierCurveTo(r * 0.62, r * 0.02, -r * 0.62, r * 0.02, -r * 0.88, -r * 0.30);
+  ctx.closePath();
   ctx.fill();
 
-  // Highlight
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.strokeStyle = 'rgba(45,24,6,0.62)';
+  ctx.lineWidth = Math.max(1.1, r * 0.045);
+  for (let k = -3; k <= 3; k++) {
+    ctx.beginPath();
+    ctx.moveTo(k * r * 0.22, -r * 0.65);
+    ctx.bezierCurveTo(k * r * 0.28, -r * 0.46, k * r * 0.22, -r * 0.18, k * r * 0.10, r * 0.02);
+    ctx.stroke();
+  }
+  for (let k = 0; k < 3; k++) {
+    ctx.beginPath();
+    ctx.ellipse(0, -r * (0.48 - k * 0.16), r * (0.66 - k * 0.10), r * 0.10, 0, 0.04 * Math.PI, 0.96 * Math.PI);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = '#3a210b';
   ctx.beginPath();
-  ctx.arc(-d.r * 0.25, -d.r * 0.25, d.r * 0.18, 0, Math.PI * 2);
+  ctx.ellipse(0, -r * 0.88, r * 0.12, r * 0.28, -0.18, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.strokeStyle = 'rgba(38,21,7,0.36)';
+  ctx.lineWidth = Math.max(1, r * 0.06);
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.97, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Screen-space highlight keeps the ball reading as a lit 3D object while it rolls.
+  ctx.save();
+  ctx.rotate(-(d.theta || 0));
+  ctx.fillStyle = 'rgba(255,255,255,0.42)';
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.34, -r * 0.38, r * 0.18, r * 0.12, -0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,243,190,0.22)';
+  ctx.beginPath();
+  ctx.arc(-r * 0.12, -r * 0.18, r * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  if (lift > 1) {
+    ctx.save();
+    ctx.rotate(-(d.theta || 0));
+    ctx.globalAlpha = Math.max(0, 0.28 * (1 - bumpProgress));
+    ctx.strokeStyle = '#fff4ad';
+    ctx.lineWidth = Math.max(2, r * 0.08);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   ctx.restore();
 }

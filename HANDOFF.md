@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:434-maze-donguri-bowl-ricochet] Codex: user 指摘「ボールは3D、敵に当たったらボウリングみたいに跳ね返るべき。今は一直線」を受領。`maze/index.html` のどんぐり描画を3D球体風に強化し、敵衝突時の反射ベクトル・横回転キック・衝突浮き演出を追加。`sw.js` バンプ予定。 (by Codex)
+- 2026-06-12 - [batch:434-maze-donguri-bowl-ricochet] DONE - Codex: `maze/index.html` のどんぐりボールを陰影/帽子模様/固定ハイライト/衝突時浮き上がりつきの3D球体風に変更し、敵衝突時は法線反射 + 横回転キックで `vx/vy` が変わる跳ね返りへ修正。`BOWL_DONGURI_R_REL` も 0.052 に拡大。`sw.js` は v1056。Node inline script parse、`git diff --check`、UTF-8/LF、Playwright で衝突前 `vy<0` → 衝突後 `vy>0` + `vx` 発生、Canvas 非空、低横画面 overflow 0、スクショ目視を確認。クロスレビュー代替として実装者セルフレビュー + Playwright挙動/視覚検証を実施。 (by Codex)
 - 2026-06-12 - [batch:433-maze-donguri-bowl-3d] Codex: 既存 `maze/index.html` のどんぐりボウリングを重複新規実装せず、OtoTouch 3D寄りの奥行き視点・丸いどんぐりボール・既存お邪魔虫スプライトのピン化・左右移動する妨害虫へ改修開始。過去成果物は `bowling/` と maze 内 `web_sweep` で確認済み。 (by Codex)
 - 2026-06-12 - [batch:433-maze-donguri-bowl-3d] DONE - Codex: `maze/index.html` の web_sweep/どんぐりボーリングを Canvas 2.5D レーン、丸いどんぐりボール、既存 `assets/images/maze/creatures/*.png` のお邪魔虫ピン、奥側ピンの左右移動つきに変更。`sw.js` は v1055。Node inline script parse、`git diff --check`、UTF-8/LF、Playwright desktop/低横画面で canvas 非空・横overflowなし・移動ピン・投球ヒット・スクショ目視を確認。クロスレビュー代替として実装者セルフレビュー + Playwright視覚/挙動検証を実施。 (by Codex)
 - 2026-06-12 - [batch:432-maze-kumo-rescue-game] DONE - Codex: `docs/maze-codex-prompts/kumo-rescue-game-20260612.md` に従い、web_sweep を「クモさん救出」物語へリメイク。クモムシ/とおせんぼ文言を撤去し、3層構造の絡まり糸、層ごとの左右スワイプ進行、クモ表情3段階、sparkle、スワイプ軌跡、蝶3匹の迎え演出、結果モーダル三段構造、reduced-motion 対応を追加。実装本体は自動コミット `a23204d` に入り、`sw.js` は v1035。Node構文、旧語/旧定数/失敗語 grep、Playwrightで3層進行・結果表示・reduced-motion・低横画面overflowなしを確認。 (by Codex)
