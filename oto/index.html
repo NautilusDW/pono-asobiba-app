@@ -1935,15 +1935,22 @@
     font-variant-numeric: tabular-nums;
   }
   .rhythm-ranking-current-badge {
-    display: inline-block;
-    margin-left: 4px;
-    padding: 1px 6px;
-    border-radius: 8px;
+    /* Absolutely positioned so it never gets clipped by the
+       .rhythm-ranking-name ellipsis (overflow:hidden) on long names. */
+    position: absolute;
+    top: -8px;
+    right: 8px;
+    padding: 2px 8px;
+    border-radius: 10px;
     background: #FBBF24;
     color: #5D3A00;
-    font-size: 0.72em;
+    font-size: clamp(0.62rem, 1.8vw, 0.74rem);
     font-weight: 900;
-    vertical-align: middle;
+    line-height: 1.2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 1;
   }
   .rhythm-ranking-empty {
     color: #5B7690;
@@ -4287,7 +4294,11 @@ function _compareRhythmScoreEntries(a, b) {
   if (missDiff) return missDiff;
   var justDiff = (b.just || 0) - (a.just || 0);
   if (justDiff) return justDiff;
-  return String(a.date || '').localeCompare(String(b.date || ''));
+  // Tie-break: newer run wins (so a brand-new entry that ties an older one
+  // ranks ABOVE the existing entry and gets the highlighted "今回!" slot).
+  var dateDiff = String(b.date || '').localeCompare(String(a.date || ''));
+  if (dateDiff) return dateDiff;
+  return 0;
 }
 function _rhythmScoreKey() {
   return RHYTHM_SONG && RHYTHM_SONG.id ? RHYTHM_SONG.id : 'unknown';
@@ -4311,6 +4322,12 @@ function _rhythmScoreQualifies(key, score) {
     just: _rhythm.justHits || 0,
     date: new Date().toISOString()
   };
+  // Tie behavior: after the FIX-1 comparator, a brand-new run that ties the
+  // last (#10) entry on score/misses/just will outrank it because the newer
+  // ISO date wins the tiebreaker. _compareRhythmScoreEntries(candidate, last)
+  // therefore returns a negative number on tie, and the `< 0` check below
+  // accepts it. (If both date strings are also identical -> 0 -> rejected,
+  // which is fine: the existing entry stays in #10.)
   return _compareRhythmScoreEntries(candidate, list[list.length - 1]) < 0;
 }
 function _saveRhythmScoreEntry(entry, name) {
@@ -6198,10 +6215,13 @@ function _renderRhythmLeaderboard(key, currentId, options) {
   var list = _rhythmLeaderboard(lookupKey);
   box.classList.remove('hidden');
   if (title) title.textContent = 'ハイスコア ' + _rhythmScoreTitle();
-  // Outside-top-10 callout: current run did not qualify
+  // Outside-top-10 callout: current run did not qualify.
+  // The actual rank number is meaningless here (preview only has top-10 + 1
+  // candidate, so it would always read "11い"), so we just show a friendly
+  // "keep going" message instead.
   if (outside) {
     if (options.outsideRank && options.outsideRank > 10) {
-      outside.textContent = '今回 ' + options.outsideRank + 'い (10い まで のこせるよ)';
+      outside.textContent = 'あと すこし! 10いに のこせるよ';
       outside.classList.add('show');
     } else {
       outside.textContent = '';
@@ -6217,9 +6237,11 @@ function _renderRhythmLeaderboard(key, currentId, options) {
     var isCurrent = !!(currentId && item && item.id === currentId);
     var rankClass = ' rank-' + rank;
     if (!item) {
+      // Empty placeholder: suppress medal emoji so 🥇/🥈/🥉 don't appear next
+      // to "— — —" rows (was confusing kids — looked like an unclaimed medal).
       rows.push(
         '<div class="rhythm-ranking-row empty">' +
-          '<span class="rhythm-ranking-medal">' + (medal || '') + '</span>' +
+          '<span class="rhythm-ranking-medal"></span>' +
           '<span class="rhythm-ranking-rank">' + rank + 'い</span>' +
           '<span class="rhythm-ranking-name">— — —</span>' +
           '<span class="rhythm-ranking-score">—</span>' +
@@ -6228,13 +6250,16 @@ function _renderRhythmLeaderboard(key, currentId, options) {
       continue;
     }
     var currentClass = isCurrent ? ' current' : '';
+    // Badge is rendered as a sibling of the cells (absolutely positioned via CSS)
+    // so the long name ellipsis never clips it.
     var badge = isCurrent ? '<span class="rhythm-ranking-current-badge">今回!</span>' : '';
     rows.push(
       '<div class="rhythm-ranking-row' + rankClass + currentClass + '">' +
         '<span class="rhythm-ranking-medal">' + (medal || '') + '</span>' +
         '<span class="rhythm-ranking-rank">' + rank + 'い</span>' +
-        '<span class="rhythm-ranking-name">' + _escapeHtml(item.name || 'ポノ') + badge + '</span>' +
+        '<span class="rhythm-ranking-name">' + _escapeHtml(item.name || 'ポノ') + '</span>' +
         '<span class="rhythm-ranking-score">' + _formatRhythmScore(item.score) + '</span>' +
+        badge +
       '</div>'
     );
   }
