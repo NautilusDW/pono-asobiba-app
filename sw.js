@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1064; // v1064: donguri bowling uses generated lane and hedge background
+const CACHE_VERSION = 1066; // v1066: restore tier system (free/book/sub) for IAP gating
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -2412,7 +2412,7 @@ imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgBowlBoss = new Image();
 imgBowlBoss.src = '../assets/images/maze/creatures/ojama_boss.png?v=1060';
 const imgBowlLaneBg = new Image();
-imgBowlLaneBg.src = '../assets/images/maze/gimmicks/donguri/bowl_lane_bg.png?v=1064';
+imgBowlLaneBg.src = '../assets/images/maze/gimmicks/donguri/bowl_lane_bg.png?v=1065';
 // Image-stage 用の常時表示アイコン (歩きアニメ無し、ランタンを持っている版)
 const imgPonoLantern = new Image();
 imgPonoLantern.src = '../assets/images/characters/pono/pono_lantan.png';
@@ -7679,7 +7679,68 @@ function _drawBowlGeneratedLaneBg(gs) {
   ctx.fillStyle = sideShade;
   ctx.fillRect(0, 0, W, H);
   ctx.restore();
+  _drawBowlDirtPathGuideLines(gs);
   return true;
+}
+
+function _drawBowlDirtPathGuideLines(gs) {
+  const ctx = gs.ctx, W = gs.w, H = gs.h;
+  const minDim = Math.min(W, H);
+  const horizonY = H * BOWL_HORIZON_REL;
+  const bottomY = H * BOWL_LANE_BOTTOM_REL;
+  const top = _bowlLaneBoundsAt(gs, horizonY);
+  const bottom = _bowlLaneBoundsAt(gs, bottomY);
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Soft inner grooves: these are dirt-path guide marks, not plank/tile seams.
+  const guideLines = [0.34, 0.50, 0.66];
+  for (let i = 0; i < guideLines.length; i++) {
+    const laneX = guideLines[i];
+    const grad = ctx.createLinearGradient(0, horizonY, 0, bottomY);
+    grad.addColorStop(0, 'rgba(91, 62, 30, 0.04)');
+    grad.addColorStop(0.55, 'rgba(91, 62, 30, 0.11)');
+    grad.addColorStop(1, 'rgba(91, 62, 30, 0.18)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = Math.max(1.1, minDim * (i === 1 ? 0.0032 : 0.0046));
+    ctx.beginPath();
+    ctx.moveTo(_bowlLanePoint(gs, laneX, horizonY + minDim * 0.022), horizonY + minDim * 0.022);
+    for (let s = 1; s <= 7; s++) {
+      const t = s / 7;
+      const y = horizonY + Math.pow(t, 1.22) * (bottomY - horizonY);
+      const drift = Math.sin(t * Math.PI * 2 + i * 1.7) * minDim * 0.0032;
+      ctx.lineTo(_bowlLanePoint(gs, laneX, y) + drift, y);
+    }
+    ctx.stroke();
+  }
+
+  // A few shallow cross scuffs help the child read depth while staying like soil.
+  for (let i = 1; i <= 4; i++) {
+    const t = i / 5;
+    const y = horizonY + Math.pow(t, 1.55) * (bottomY - horizonY);
+    const b = _bowlLaneBoundsAt(gs, y);
+    ctx.strokeStyle = 'rgba(97, 67, 34, ' + (0.05 + t * 0.07) + ')';
+    ctx.lineWidth = Math.max(1, minDim * (0.0024 + t * 0.002));
+    ctx.beginPath();
+    ctx.moveTo(b.left + (b.right - b.left) * 0.09, y);
+    ctx.quadraticCurveTo(W * 0.5, y + H * 0.010, b.right - (b.right - b.left) * 0.09, y);
+    ctx.stroke();
+  }
+
+  // Subtle collision boundary highlight, aligned to the invisible hedge physics.
+  ctx.strokeStyle = 'rgba(232, 196, 105, 0.18)';
+  ctx.lineWidth = Math.max(1.2, minDim * 0.0042);
+  ctx.beginPath();
+  ctx.moveTo(bottom.left, bottomY);
+  ctx.lineTo(top.left, horizonY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(bottom.right, bottomY);
+  ctx.lineTo(top.right, horizonY);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function _drawBowl3dWorld(gs, now) {
