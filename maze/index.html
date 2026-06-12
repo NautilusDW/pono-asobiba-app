@@ -1726,7 +1726,7 @@ body.image-stage-mode .game-wrap {
   }
 }
 
-/* ===== Bikkuri Bowling Mini-Game (kumo encounter, perspective lane + 3D acorn ball) v1056 ===== */
+/* ===== Bikkuri Bowling Mini-Game (kumo encounter, perspective lane + boss rush) v1057 ===== */
 .bowl-game {
   display: grid;
   grid-template-rows: auto minmax(300px, 1fr) auto;
@@ -2409,6 +2409,8 @@ const HEDGEHOG_HAPPY = '../assets/images/characters/headgehog/headgehog_smilewav
 
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
+const imgBowlBoss = new Image();
+imgBowlBoss.src = '../assets/images/maze/creatures/ojama_boss.png';
 // Image-stage 用の常時表示アイコン (歩きアニメ無し、ランタンを持っている版)
 const imgPonoLantern = new Image();
 imgPonoLantern.src = '../assets/images/characters/pono/pono_lantan.png';
@@ -6512,6 +6514,12 @@ const BOWL_BOUNCE_RESTITUTION = 0.84;
 const BOWL_BOUNCE_TANGENT_KICK = 0.18;
 const BOWL_BALL_MAX_HITS      = 6;
 const BOWL_BUMP_MS            = 260;
+const BOWL_BOSS_PHASE_MS      = 8500;
+const BOWL_BOSS_INTRO_MS      = 560;
+const BOWL_BOSS_THROW_COOLDOWN_MS = 85;
+const BOWL_BOSS_R_REL         = 0.205;
+const BOWL_BOSS_HIT_R_REL     = 0.145;
+const BOWL_BOSS_DONGURI_SPEED_REL = 1.55;
 const BOWL_PONO_HEIGHT_REL   = 0.16;
 const BOWL_PONO_Y_REL        = 0.88;   // bottom-center launcher
 const BOWL_PONO_X_REL        = 0.50;
@@ -6670,7 +6678,11 @@ function _syncBowlCanvasSize(gs) {
   const r = gs.stageEl.getBoundingClientRect();
   if (Math.abs(r.width - gs.w) <= 1 && Math.abs(r.height - gs.h) <= 1) return;
   _resizeBowlCanvas(gs);
-  if (gs.layoutId) _layoutBowlPins(gs, gs.layoutId);
+  if (gs.layoutId && gs.phase !== 'boss') {
+    _layoutBowlPins(gs, gs.layoutId);
+  } else if (gs.phase === 'boss') {
+    _updateBowlBossMotion(gs, performance.now());
+  }
 }
 
 function _layoutBowlPins(gs, layoutId) {
@@ -6724,9 +6736,15 @@ function _showBowlGame(c) {
   const ctx = canvasEl.getContext('2d');
   const gs = {
     stageEl: stageEl, canvas: canvasEl, ctx: ctx,
+    noteEl: wrap.querySelector('.bowl-game__stage-note'),
     w: 0, h: 0, dpr: 1,
     layoutId: null, pins: [], donguris: [],
     particles: [],
+    phase: 'pins',
+    boss: null,
+    bossHits: 0,
+    lastBossHitAt: 0,
+    bossHitCombo: 0,
     lastThrowAt: 0, locked: false,
     rafId: null, lastTs: 0,
     bgSeed: (_bowlEncounterCount * 1013904223) | 0,
@@ -6736,6 +6754,11 @@ function _showBowlGame(c) {
 
   _resizeBowlCanvas(gs);
   _preloadBowlBugPins(gs);
+  if (imgBowlBoss && !(imgBowlBoss.complete && imgBowlBoss.naturalWidth > 0)) {
+    imgBowlBoss.addEventListener('load', function() {
+      if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
+    }, { once: true });
+  }
   _layoutBowlPins(gs, _pickBowlLayoutId(c));
   requestAnimationFrame(function() {
     if (gs !== _bowlGameState) return;
@@ -6746,12 +6769,27 @@ function _showBowlGame(c) {
   const onPointerDown = function(e) {
     if (gs !== _bowlGameState || gs.locked) return;
     const now = performance.now();
-    if (now - gs.lastThrowAt < BOWL_THROW_COOLDOWN_MS) return;
+    const cooldown = (gs.phase === 'boss') ? BOWL_BOSS_THROW_COOLDOWN_MS : BOWL_THROW_COOLDOWN_MS;
+    if (now - gs.lastThrowAt < cooldown) return;
     try { e.preventDefault(); } catch (_) {}
     const p = _bowlPointer(canvasEl, e);
-    _applyBowlSweep(gs, p.x, p.y);
+    if (gs.phase === 'boss') {
+      if (gs.reducedMotion) {
+        _registerBowlBossHit(gs, now, (gs.boss && gs.boss.x) || p.x, (gs.boss && gs.boss.y) || p.y);
+        gs.lastThrowAt = now;
+        _drawBowlScene(gs, now);
+        if (gs.boss && now >= gs.boss.endsAt && !gs.locked) {
+          gs.locked = true;
+          _finishBowlGame(gs);
+        }
+      } else {
+        _applyBowlBossShot(gs, p.x, p.y);
+      }
+    } else {
+      _applyBowlSweep(gs, p.x, p.y);
+    }
     // prefers-reduced-motion: rAF を回さず、タップ毎に同期で land/fall を解決し 1 パス描画する
-    if (gs.reducedMotion) _stepBowlReducedMotion(gs);
+    if (gs.reducedMotion && gs.phase !== 'boss') _stepBowlReducedMotion(gs);
   };
   stageEl.addEventListener('pointerdown', onPointerDown);
   gs._onPointerDown = onPointerDown;
@@ -6759,7 +6797,11 @@ function _showBowlGame(c) {
   const onResize = function() {
     if (gs !== _bowlGameState) { window.removeEventListener('resize', onResize); return; }
     _resizeBowlCanvas(gs);
-    _layoutBowlPins(gs, gs.layoutId);
+    if (gs.phase !== 'boss') {
+      _layoutBowlPins(gs, gs.layoutId);
+    } else {
+      _updateBowlBossMotion(gs, performance.now());
+    }
     if (gs.reducedMotion) _drawBowlScene(gs, performance.now());
   };
   window.addEventListener('resize', onResize);
@@ -6801,8 +6843,7 @@ function _stepBowlReducedMotion(gs) {
   gs.particles.length = 0;
   _drawBowlScene(gs, now);
   if (!gs.locked && _checkBowlCleared(gs)) {
-    gs.locked = true;
-    _finishBowlGame(gs);
+    _startBowlBossPhase(gs, now);
   }
 }
 
@@ -6839,6 +6880,112 @@ function _applyBowlSweep(gs, tapX, tapY) {
   try { playTap(); } catch (_) {}
 }
 
+function _applyBowlBossShot(gs, tapX, tapY) {
+  if (!gs || gs.phase !== 'boss' || !gs.boss) return;
+  _updateBowlBossMotion(gs, performance.now());
+  const boss = gs.boss;
+  const ponoX = BOWL_PONO_X_REL * gs.w;
+  const ponoY = BOWL_PONO_Y_REL * gs.h;
+  const minDim = Math.min(gs.w, gs.h);
+  const aimBias = _bowlClamp((tapX - gs.w * 0.5) / Math.max(1, gs.w), -0.16, 0.16) * boss.r * 0.55;
+  const targetX = boss.x + aimBias;
+  const targetY = boss.y + boss.r * 0.08;
+  const dx = targetX - ponoX;
+  const dy = targetY - (ponoY - BOWL_PONO_HEIGHT_REL * gs.h * 0.4);
+  const len = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
+  const speed = BOWL_BOSS_DONGURI_SPEED_REL * minDim;
+  const now = performance.now();
+  gs.donguris.push({
+    x: ponoX,
+    y: ponoY - BOWL_PONO_HEIGHT_REL * gs.h * 0.4,
+    vx: dx / len * speed,
+    vy: dy / len * speed,
+    r: BOWL_DONGURI_R_REL * minDim * 0.74,
+    bornAt: now,
+    deadAt: now + 1050,
+    theta: 0,
+    spin: ((gs.donguris.length + (gs.bossHits | 0)) % 2 === 0) ? 1 : -1,
+    isBossShot: true,
+    hitPins: Object.create(null),
+    hitCount: 0,
+    bumpAt: 0,
+    bumpPower: 0,
+  });
+  gs.lastThrowAt = now;
+  try { playTap(); } catch (_) {}
+}
+
+function _startBowlBossPhase(gs, now) {
+  if (!gs || gs.phase === 'boss') return;
+  gs.phase = 'boss';
+  gs.locked = false;
+  gs.donguris.length = 0;
+  gs.bossHits = 0;
+  gs.lastBossHitAt = 0;
+  gs.bossHitCombo = 0;
+  const minDim = Math.min(gs.w, gs.h);
+  gs.boss = {
+    x: gs.w * 0.5,
+    y: gs.h * 0.28,
+    r: BOWL_BOSS_R_REL * minDim,
+    startAt: now,
+    endsAt: now + BOWL_BOSS_PHASE_MS,
+    lastHitAt: 0,
+    flashUntil: 0,
+    wobbleSeed: ((gs.bgSeed >>> 3) & 255) / 37,
+  };
+  for (let i = 0; i < gs.pins.length; i++) {
+    if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
+  }
+  if (gs.noteEl) gs.noteEl.textContent = 'れんだで ボスに あてよう！';
+  _bowlFloatText(gs, 'ボスだ！', gs.w * 0.5, gs.h * 0.32);
+  try { _playMzSePitch('correct', 3); } catch (_) { try { playTap(); } catch (__) {} }
+  _updateBowlBossMotion(gs, now);
+}
+
+function _updateBowlBossMotion(gs, now) {
+  const boss = gs && gs.boss;
+  if (!boss) return;
+  const minDim = Math.min(gs.w, gs.h);
+  const introT = _bowlClamp((now - boss.startAt) / BOWL_BOSS_INTRO_MS, 0, 1);
+  const ease = 1 - Math.pow(1 - introT, 3);
+  boss.r = BOWL_BOSS_R_REL * minDim;
+  const sway = Math.sin(now / 780 + boss.wobbleSeed) * gs.w * 0.18;
+  boss.x = _bowlClamp(gs.w * 0.5 + sway, gs.w * 0.23, gs.w * 0.77);
+  boss.y = gs.h * 0.31 - (1 - ease) * gs.h * 0.28 + Math.sin(now / 310 + boss.wobbleSeed) * minDim * 0.008;
+}
+
+function _checkBowlBossHit(gs, d, now) {
+  const boss = gs && gs.boss;
+  if (!boss || !d) return false;
+  const dx = d.x - boss.x;
+  const dy = d.y - (boss.y + boss.r * 0.04);
+  const hitR = Math.max(BOWL_BOSS_HIT_R_REL * Math.min(gs.w, gs.h), boss.r * 0.72) + d.r;
+  if (dx * dx + dy * dy > hitR * hitR) return false;
+  _registerBowlBossHit(gs, now, boss.x, boss.y);
+  return true;
+}
+
+function _registerBowlBossHit(gs, now, x, y) {
+  if (!gs || !gs.boss) return;
+  const boss = gs.boss;
+  const chained = gs.lastBossHitAt && (now - gs.lastBossHitAt < 520);
+  gs.bossHitCombo = chained ? (gs.bossHitCombo + 1) : 1;
+  gs.lastBossHitAt = now;
+  gs.bossHits = (gs.bossHits || 0) + 1;
+  boss.lastHitAt = now;
+  boss.flashUntil = now + 130;
+  _spawnBowlGlob(gs, x, y, false);
+  if (gs.bossHits % 10 === 0) {
+    _bowlFloatText(gs, gs.bossHits + ' HIT!', x, y - boss.r * 0.35);
+    try { _playMzSePitch('correct', 4); } catch (_) {}
+  } else if (gs.bossHitCombo >= 4) {
+    _bowlFloatText(gs, 'れんだ！', x, y - boss.r * 0.28);
+  } else {
+    _bowlFloatText(gs, '+1', x, y - boss.r * 0.18);
+  }
+}
+
 function _startBowlLoop(gs) {
   const tick = function(ts) {
     if (gs !== _bowlGameState) return;
@@ -6855,6 +7002,7 @@ function _startBowlLoop(gs) {
 
 function _updateBowlPhysics(gs, dt, now) {
   _updateBowlPinMotion(gs, now);
+  if (gs.phase === 'boss') _updateBowlBossMotion(gs, now);
   // donguri movement + pin collision (canvas-space circle-circle)
   const hitR = BOWL_HIT_R_REL * Math.min(gs.w, gs.h);
   const hitR2 = hitR * hitR;
@@ -6873,65 +7021,71 @@ function _updateBowlPhysics(gs, dt, now) {
     if (d.y > gs.h + pad) { gs.donguris.splice(i, 1); continue; }
     // timeout
     if (now > d.deadAt) { gs.donguris.splice(i, 1); continue; }
+    if (gs.phase === 'boss' && _checkBowlBossHit(gs, d, now)) {
+      gs.donguris.splice(i, 1);
+      continue;
+    }
     // pin collision: reflect the donguri velocity so it ricochets instead of
     // continuing along the original straight line.
-    for (let pi = 0; pi < gs.pins.length; pi++) {
-      const pin = gs.pins[pi];
-      if (pin.fallen) continue;
-      if (d.hitPins && d.hitPins[pin.id]) continue;
-      const fromPinX = d.x - pin.x;
-      const fromPinY = d.y - pin.y;
-      const dist2 = fromPinX * fromPinX + fromPinY * fromPinY;
-      if (dist2 < hitR2) {
-        const speed = Math.max(1, Math.sqrt(d.vx * d.vx + d.vy * d.vy));
-        let dist = Math.sqrt(dist2);
-        let nx = 0;
-        let ny = 1;
-        if (dist > 0.001) {
-          nx = fromPinX / dist;
-          ny = fromPinY / dist;
-        } else {
-          nx = -d.vx / speed;
-          ny = -d.vy / speed;
-          dist = 0.001;
+    if (gs.phase !== 'boss') {
+      for (let pi = 0; pi < gs.pins.length; pi++) {
+        const pin = gs.pins[pi];
+        if (pin.fallen) continue;
+        if (d.hitPins && d.hitPins[pin.id]) continue;
+        const fromPinX = d.x - pin.x;
+        const fromPinY = d.y - pin.y;
+        const dist2 = fromPinX * fromPinX + fromPinY * fromPinY;
+        if (dist2 < hitR2) {
+          const speed = Math.max(1, Math.sqrt(d.vx * d.vx + d.vy * d.vy));
+          let dist = Math.sqrt(dist2);
+          let nx = 0;
+          let ny = 1;
+          if (dist > 0.001) {
+            nx = fromPinX / dist;
+            ny = fromPinY / dist;
+          } else {
+            nx = -d.vx / speed;
+            ny = -d.vy / speed;
+            dist = 0.001;
+          }
+
+          _bowlFellPin(gs, pin, d.vx / speed, d.vy / speed, 0, now);
+          if (d.hitPins) d.hitPins[pin.id] = true;
+          d.hitCount = (d.hitCount || 0) + 1;
+
+          // Move the ball outside the hit circle before applying the reflected
+          // velocity, preventing repeated overlap from looking like a straight pass.
+          const separateR = hitR + d.r * 0.35;
+          d.x = pin.x + nx * separateR;
+          d.y = pin.y + ny * separateR;
+
+          const dot = d.vx * nx + d.vy * ny;
+          let rvx = d.vx;
+          let rvy = d.vy;
+          if (dot < 0) {
+            rvx = d.vx - 2 * dot * nx;
+            rvy = d.vy - 2 * dot * ny;
+          } else {
+            rvx = nx * speed;
+            rvy = ny * speed;
+          }
+
+          const tangentX = -ny;
+          const tangentY = nx;
+          const tangentKick = Math.min(130, speed * BOWL_BOUNCE_TANGENT_KICK) * (d.spin || 1);
+          rvx += tangentX * tangentKick;
+          rvy += tangentY * tangentKick;
+
+          const reflectedSpeed = Math.max(90, speed * BOWL_BOUNCE_RESTITUTION);
+          const reflectedLen = Math.max(0.001, Math.sqrt(rvx * rvx + rvy * rvy));
+          d.vx = rvx / reflectedLen * reflectedSpeed;
+          d.vy = rvy / reflectedLen * reflectedSpeed;
+          d.bumpAt = now;
+          d.bumpPower = Math.min(d.r * 0.95, Math.min(gs.w, gs.h) * 0.035);
+          d.deadAt = Math.max(d.deadAt, now + 620);
+          if (d.hitCount >= BOWL_BALL_MAX_HITS) d.deadAt = Math.min(d.deadAt, now + BOWL_BUMP_MS);
+          break;
         }
-
-        _bowlFellPin(gs, pin, d.vx / speed, d.vy / speed, 0, now);
-        if (d.hitPins) d.hitPins[pin.id] = true;
-        d.hitCount = (d.hitCount || 0) + 1;
-
-        // Move the ball outside the hit circle before applying the reflected
-        // velocity, preventing repeated overlap from looking like a straight pass.
-        const separateR = hitR + d.r * 0.35;
-        d.x = pin.x + nx * separateR;
-        d.y = pin.y + ny * separateR;
-
-        const dot = d.vx * nx + d.vy * ny;
-        let rvx = d.vx;
-        let rvy = d.vy;
-        if (dot < 0) {
-          rvx = d.vx - 2 * dot * nx;
-          rvy = d.vy - 2 * dot * ny;
-        } else {
-          rvx = nx * speed;
-          rvy = ny * speed;
-        }
-
-        const tangentX = -ny;
-        const tangentY = nx;
-        const tangentKick = Math.min(130, speed * BOWL_BOUNCE_TANGENT_KICK) * (d.spin || 1);
-        rvx += tangentX * tangentKick;
-        rvy += tangentY * tangentKick;
-
-        const reflectedSpeed = Math.max(90, speed * BOWL_BOUNCE_RESTITUTION);
-        const reflectedLen = Math.max(0.001, Math.sqrt(rvx * rvx + rvy * rvy));
-        d.vx = rvx / reflectedLen * reflectedSpeed;
-        d.vy = rvy / reflectedLen * reflectedSpeed;
-        d.bumpAt = now;
-        d.bumpPower = Math.min(d.r * 0.95, Math.min(gs.w, gs.h) * 0.035);
-        d.deadAt = Math.max(d.deadAt, now + 620);
-        if (d.hitCount >= BOWL_BALL_MAX_HITS) d.deadAt = Math.min(d.deadAt, now + BOWL_BUMP_MS);
-        break;
       }
     }
   }
@@ -6953,7 +7107,10 @@ function _updateBowlPhysics(gs, dt, now) {
     if (p.age >= p.life) gs.particles.splice(i, 1);
   }
   // Clear check
-  if (!gs.locked && _checkBowlCleared(gs)) {
+  if (gs.phase !== 'boss' && !gs.locked && _checkBowlCleared(gs)) {
+    _startBowlBossPhase(gs, now);
+  }
+  if (gs.phase === 'boss' && gs.boss && now >= gs.boss.endsAt && !gs.locked) {
     gs.locked = true;
     _finishBowlGame(gs);
   }
@@ -7112,6 +7269,8 @@ function _drawBowlScene(gs, now) {
   const sorted = gs.pins.slice().sort(function(a, b){ return a.y - b.y; });
   for (let i = 0; i < sorted.length; i++) _drawBowlPin(gs, sorted[i], now);
 
+  if (gs.phase === 'boss') _drawBowlBoss(gs, now);
+
   // Donguris in flight
   for (let i = 0; i < gs.donguris.length; i++) _drawBowlDonguri(gs, gs.donguris[i], now);
 
@@ -7129,6 +7288,8 @@ function _drawBowlScene(gs, now) {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
+
+  if (gs.phase === 'boss') _drawBowlBossHud(gs, now);
 }
 
 function _drawBowlForestBorder(gs) {
@@ -7157,6 +7318,139 @@ function _drawBowlForestBorder(gs) {
     ctx.arc(W * 0.96 - wobR, cy, W * 0.05, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
+}
+
+function _bowlRoundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.moveTo(x + rr, y);
+  ctx.lineTo(x + w - rr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+  ctx.lineTo(x + w, y + h - rr);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+  ctx.lineTo(x + rr, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+  ctx.lineTo(x, y + rr);
+  ctx.quadraticCurveTo(x, y, x + rr, y);
+}
+
+function _drawBowlBoss(gs, now) {
+  const boss = gs.boss;
+  if (!boss) return;
+  const ctx = gs.ctx;
+  const r = boss.r;
+  const hitT = boss.lastHitAt ? _bowlClamp(1 - (now - boss.lastHitAt) / 220, 0, 1) : 0;
+  const flash = boss.flashUntil && now < boss.flashUntil;
+  const shakeX = hitT > 0 ? Math.sin(now * 0.13) * r * 0.055 * hitT : 0;
+  const shakeY = hitT > 0 ? Math.cos(now * 0.11) * r * 0.035 * hitT : 0;
+  const cardW = r * 2.42;
+  const cardH = r * 2.16;
+  const x = boss.x + shakeX;
+  const y = boss.y + shakeY;
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(0, r * 1.10, r * 0.92, r * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  const aura = ctx.createRadialGradient(0, 0, r * 0.22, 0, 0, r * 1.38);
+  aura.addColorStop(0, 'rgba(255,234,92,0.52)');
+  aura.addColorStop(0.56, 'rgba(255,196,49,0.18)');
+  aura.addColorStop(1, 'rgba(255,196,49,0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.38, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();
+  _bowlRoundRectPath(ctx, -cardW / 2, -cardH / 2, cardW, cardH, r * 0.28);
+  ctx.fillStyle = flash ? '#fff6bf' : '#fffdf3';
+  ctx.fill();
+  ctx.lineWidth = Math.max(3, r * 0.07);
+  ctx.strokeStyle = flash ? '#ffde3d' : '#6ba846';
+  ctx.stroke();
+  ctx.clip();
+
+  if (imgBowlBoss && imgBowlBoss.complete && imgBowlBoss.naturalWidth > 0) {
+    const drawSize = cardH * 1.10;
+    ctx.drawImage(imgBowlBoss, -drawSize / 2, -drawSize * 0.55, drawSize, drawSize);
+  } else {
+    const grad = ctx.createRadialGradient(-r * 0.28, -r * 0.28, r * 0.08, 0, 0, r);
+    grad.addColorStop(0, '#f7cf78');
+    grad.addColorStop(1, '#7b4618');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.78, r * 0.92, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2f1a08';
+    ctx.beginPath(); ctx.arc(-r * 0.22, -r * 0.18, r * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.22, -r * 0.18, r * 0.07, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  if (flash) {
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = '#fff7a8';
+    ctx.lineWidth = Math.max(2, r * 0.04);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (1.18 + hitT * 0.12), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function _drawBowlBossHud(gs, now) {
+  const boss = gs.boss;
+  if (!boss) return;
+  const ctx = gs.ctx;
+  const W = gs.w;
+  const H = gs.h;
+  const remain = _bowlClamp((boss.endsAt - now) / BOWL_BOSS_PHASE_MS, 0, 1);
+  const boxW = Math.min(W * 0.78, 420);
+  const boxH = Math.max(30, H * 0.085);
+  const x = (W - boxW) / 2;
+  const y = Math.max(8, H * 0.035);
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 252, 232, 0.92)';
+  ctx.strokeStyle = 'rgba(99, 142, 60, 0.86)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  _bowlRoundRectPath(ctx, x, y, boxW, boxH, boxH * 0.36);
+  ctx.fill();
+  ctx.stroke();
+
+  const barX = x + boxH * 0.38;
+  const barY = y + boxH * 0.58;
+  const barW = boxW - boxH * 0.76;
+  const barH = Math.max(5, boxH * 0.18);
+  ctx.fillStyle = 'rgba(105, 88, 50, 0.16)';
+  ctx.beginPath();
+  _bowlRoundRectPath(ctx, barX, barY, barW, barH, barH / 2);
+  ctx.fill();
+  const fillW = Math.max(barH, barW * remain);
+  const barGrad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+  barGrad.addColorStop(0, '#ffcc45');
+  barGrad.addColorStop(1, '#ef6b4d');
+  ctx.fillStyle = barGrad;
+  ctx.beginPath();
+  _bowlRoundRectPath(ctx, barX, barY, fillW, barH, barH / 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#55422d';
+  ctx.font = '900 ' + Math.max(12, boxH * 0.34) + 'px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const sec = Math.max(0, Math.ceil((boss.endsAt - now) / 1000));
+  ctx.fillText('ボスに ' + (gs.bossHits || 0) + ' HIT  /  あと ' + sec + 'びょう', W * 0.5, y + boxH * 0.31);
   ctx.restore();
 }
 
@@ -7370,6 +7664,7 @@ function _drawBowlPono(gs, now) {
 
 function _finishBowlGame(gs) {
   if (gs !== _bowlGameState) return;
+  if (gs.noteEl) gs.noteEl.textContent = 'ボスも びっくり！';
   try { _playMzSePitch('correct', 2); } catch (_) {}
   _webGimmickSetTimeout(function() {
     if (gs !== _bowlGameState) return;
@@ -7378,6 +7673,7 @@ function _finishBowlGame(gs) {
 }
 
 function _resolveBowlGame() {
+  const bossHits = (_bowlGameState && _bowlGameState.bossHits) || 0;
   const st = _webGimmickState;
   if (st) {
     st.webCleared = true;
@@ -7391,7 +7687,11 @@ function _resolveBowlGame() {
     '<div class="enc-result win">' +
       '<div class="enc-result-title">みちが ひらいた！</div>' +
       '<div class="enc-result-emoji">🌰</div>' +
-      '<div class="enc-result-body">おじゃま虫が どいてくれたよ！</div>' +
+      '<div class="enc-result-body">' +
+        (bossHits > 0
+          ? 'ボスに ' + bossHits + 'かい あたったよ！<br>おじゃま虫が どいてくれたよ！'
+          : 'おじゃま虫が どいてくれたよ！') +
+      '</div>' +
     '</div>';
   _webGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);

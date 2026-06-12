@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1056; // v1056: donguri bowl uses 3D-shaded acorn ball and ricochet bounce off ojama-mushi pins
+const CACHE_VERSION = 1057; // v1057: donguri bowl adds generated ojama boss image and rapid-fire boss HIT phase after all pins fall
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

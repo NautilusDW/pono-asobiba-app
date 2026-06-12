@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:435-maze-donguri-bowl-boss] Codex: user 依頼「全員倒した後にボスが出て、連打で何発当てられるか。ボス画像も生成して実装」を受領。既存ボス素材なしを確認し、GPT Image 2 built-in imagegen でボスっぽい大きいお邪魔虫 raw を生成。`assets/images/maze/creatures/ojama_boss.png` に配置し、`maze/index.html` のどんぐりボウリングへボス連打フェーズを追加する。 (by Codex)
+- 2026-06-12 - [batch:435-maze-donguri-bowl-boss] DONE - Codex: GPT Image 2 built-in imagegen 生成の `ojama_boss.png` (RGB 1254x1254 / 2.0MB / 透過処理なし) を `assets/images/maze/creatures/` に配置。全ピン撃破後に `boss` フェーズへ遷移し、8.5秒の連打タイム、85msクールダウンの自動照準どんぐり、ボスHITカウント、連打テキスト、時間バー、結果画面の「ボスにNかい」表示を追加。`sw.js` は v1057。Node inline script parse、Playwrightで boss phase開始/画像ロード/連打HIT増加/時間切れ結果/Canvas非空/スクショ目視を確認。クロスレビュー代替として実装者セルフレビュー + Playwright挙動/視覚検証を実施。 (by Codex)
 - 2026-06-12 - [batch:434-maze-donguri-bowl-ricochet] Codex: user 指摘「ボールは3D、敵に当たったらボウリングみたいに跳ね返るべき。今は一直線」を受領。`maze/index.html` のどんぐり描画を3D球体風に強化し、敵衝突時の反射ベクトル・横回転キック・衝突浮き演出を追加。`sw.js` バンプ予定。 (by Codex)
 - 2026-06-12 - [batch:434-maze-donguri-bowl-ricochet] DONE - Codex: `maze/index.html` のどんぐりボールを陰影/帽子模様/固定ハイライト/衝突時浮き上がりつきの3D球体風に変更し、敵衝突時は法線反射 + 横回転キックで `vx/vy` が変わる跳ね返りへ修正。`BOWL_DONGURI_R_REL` も 0.052 に拡大。`sw.js` は v1056。Node inline script parse、`git diff --check`、UTF-8/LF、Playwright で衝突前 `vy<0` → 衝突後 `vy>0` + `vx` 発生、Canvas 非空、低横画面 overflow 0、スクショ目視を確認。クロスレビュー代替として実装者セルフレビュー + Playwright挙動/視覚検証を実施。 (by Codex)
 - 2026-06-12 - [batch:433-maze-donguri-bowl-3d] Codex: 既存 `maze/index.html` のどんぐりボウリングを重複新規実装せず、OtoTouch 3D寄りの奥行き視点・丸いどんぐりボール・既存お邪魔虫スプライトのピン化・左右移動する妨害虫へ改修開始。過去成果物は `bowling/` と maze 内 `web_sweep` で確認済み。 (by Codex)
