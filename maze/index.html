@@ -2410,7 +2410,7 @@ const HEDGEHOG_HAPPY = '../assets/images/characters/headgehog/headgehog_smilewav
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgBowlBoss = new Image();
-imgBowlBoss.src = '../assets/images/maze/creatures/ojama_boss.png';
+imgBowlBoss.src = '../assets/images/maze/creatures/ojama_boss.png?v=1060';
 // Image-stage 用の常時表示アイコン (歩きアニメ無し、ランタンを持っている版)
 const imgPonoLantern = new Image();
 imgPonoLantern.src = '../assets/images/characters/pono/pono_lantan.png';
@@ -7532,8 +7532,6 @@ function _drawBowlBoss(gs, now) {
   const flash = boss.flashUntil && now < boss.flashUntil;
   const shakeX = hitT > 0 ? Math.sin(now * 0.13) * r * 0.055 * hitT : 0;
   const shakeY = hitT > 0 ? Math.cos(now * 0.11) * r * 0.035 * hitT : 0;
-  const cardW = r * 2.42;
-  const cardH = r * 2.16;
   const x = boss.x + shakeX;
   const y = boss.y + shakeY;
 
@@ -7557,19 +7555,16 @@ function _drawBowlBoss(gs, now) {
   ctx.arc(0, 0, r * 1.38, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.save();
-  ctx.beginPath();
-  _bowlRoundRectPath(ctx, -cardW / 2, -cardH / 2, cardW, cardH, r * 0.28);
-  ctx.fillStyle = flash ? '#fff6bf' : '#fffdf3';
-  ctx.fill();
-  ctx.lineWidth = Math.max(3, r * 0.07);
-  ctx.strokeStyle = flash ? '#ffde3d' : '#6ba846';
-  ctx.stroke();
-  ctx.clip();
-
   if (imgBowlBoss && imgBowlBoss.complete && imgBowlBoss.naturalWidth > 0) {
-    const drawSize = cardH * 1.10;
-    ctx.drawImage(imgBowlBoss, -drawSize / 2, -drawSize * 0.55, drawSize, drawSize);
+    const drawH = r * 2.86;
+    const drawW = drawH * (imgBowlBoss.naturalWidth / Math.max(1, imgBowlBoss.naturalHeight));
+    ctx.save();
+    if (flash) {
+      ctx.shadowColor = 'rgba(255, 238, 90, 0.85)';
+      ctx.shadowBlur = r * 0.34;
+    }
+    ctx.drawImage(imgBowlBoss, -drawW / 2, -drawH * 0.56, drawW, drawH);
+    ctx.restore();
   } else {
     const grad = ctx.createRadialGradient(-r * 0.28, -r * 0.28, r * 0.08, 0, 0, r);
     grad.addColorStop(0, '#f7cf78');
@@ -7582,7 +7577,6 @@ function _drawBowlBoss(gs, now) {
     ctx.beginPath(); ctx.arc(-r * 0.22, -r * 0.18, r * 0.07, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(r * 0.22, -r * 0.18, r * 0.07, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.restore();
 
   if (flash) {
     ctx.globalAlpha = 0.45;
