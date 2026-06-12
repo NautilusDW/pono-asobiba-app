@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:436-maze-donguri-bowl-icons-raw] Codex: user 依頼「迷路上のイベントアイコンとどんぐりぶくろアイコンを画像生成」を受領。HANDOFF/git log/tmp で同用途の既存 raw は見当たらず。GPT Image 2 built-in imagegen で2パネルの raw アセットシートを生成し、`tmp/alpha_pending/436_maze_donguri_bowl_icons_raw/` に納品予定。アルファ抜き・切り抜きはしない。 (by Codex)
+- 2026-06-12 - [batch:436-maze-donguri-bowl-icons-raw] DONE - Codex: GPT Image 2 built-in imagegen で2パネル raw シート `tmp/alpha_pending/436_maze_donguri_bowl_icons_raw/donguri_bowl_event_item_icons_sheet_raw.png` を生成。左=小さいお邪魔虫2〜3匹+葉/丸太バリケード+どんぐり印のイベントゲート、右=どんぐりぶくろ。RGB 1774x887 / 1.6MB、白背景、テキストなし、アルファ抜き・切り抜きなし。目視・Pillow寸法/容量確認済み。 (by Codex)
 - 2026-06-12 - [batch:435-maze-donguri-bowl-boss] Codex: user 依頼「全員倒した後にボスが出て、連打で何発当てられるか。ボス画像も生成して実装」を受領。既存ボス素材なしを確認し、GPT Image 2 built-in imagegen でボスっぽい大きいお邪魔虫 raw を生成。`assets/images/maze/creatures/ojama_boss.png` に配置し、`maze/index.html` のどんぐりボウリングへボス連打フェーズを追加する。 (by Codex)
 - 2026-06-12 - [batch:435-maze-donguri-bowl-boss] DONE - Codex: GPT Image 2 built-in imagegen 生成の `ojama_boss.png` (RGB 1254x1254 / 2.0MB / 透過処理なし) を `assets/images/maze/creatures/` に配置。全ピン撃破後に `boss` フェーズへ遷移し、8.5秒の連打タイム、85msクールダウンの自動照準どんぐり、ボスHITカウント、連打テキスト、時間バー、結果画面の「ボスにNかい」表示を追加。`sw.js` は v1057。Node inline script parse、Playwrightで boss phase開始/画像ロード/連打HIT増加/時間切れ結果/Canvas非空/スクショ目視を確認。クロスレビュー代替として実装者セルフレビュー + Playwright挙動/視覚検証を実施。 (by Codex)
 - 2026-06-12 - [batch:434-maze-donguri-bowl-ricochet] Codex: user 指摘「ボールは3D、敵に当たったらボウリングみたいに跳ね返るべき。今は一直線」を受領。`maze/index.html` のどんぐり描画を3D球体風に強化し、敵衝突時の反射ベクトル・横回転キック・衝突浮き演出を追加。`sw.js` バンプ予定。 (by Codex)
