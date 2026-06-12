@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1045; // v1045: stickiness pass - long lag follow, clingy release hysteresis with grace, visible sticky strand draw, brush-past sticky touch, mochi elastic release
+const CACHE_VERSION = 1047; // v1047: play.html splash redesign - 🐻絵文字+テキスト「ポノのあそびば」を brand_sign_01.webp 木製看板ロゴ画像に置換、PR広告ゾーンは維持
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

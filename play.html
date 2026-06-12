@@ -1276,12 +1276,16 @@
       max-width: 720px;
       padding: 24px 48px;
     }
-    .tap-intro-pono {
-      font-size: clamp(80px, 14vw, 140px);
-      line-height: 1;
-      margin-bottom: 12px;
+    .tap-intro-logo {
+      display: block;
+      width: min(72vw, 480px);
+      height: auto;
+      margin: 0 auto 16px;
       animation: tapIntroBounce 1.6s ease-in-out infinite;
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.35));
+      filter: drop-shadow(0 8px 22px rgba(0,0,0,0.35));
+      -webkit-user-drag: none;
+      user-select: none;
+      pointer-events: none; /* ロゴ自体はタップ対象ではなく親オーバーレイがゲーム開始を受ける */
     }
     .tap-intro-ad {
       margin: 28px auto 0;
@@ -1328,17 +1332,6 @@
       width: 100%;
       height: auto;
     }
-    .tap-intro-title {
-      font-size: clamp(36px, 6vw, 64px);
-      font-weight: 900;
-      color: #FFE680;
-      letter-spacing: 0.05em;
-      margin: 12px 0 18px;
-      text-shadow:
-        3px 3px 0 #5a3a1c,
-        0 0 24px rgba(255, 200, 80, 0.4),
-        0 6px 12px rgba(0, 0, 0, 0.5);
-    }
     .tap-intro-sub {
       font-size: clamp(20px, 3.4vw, 32px);
       font-weight: 700;
@@ -1367,7 +1360,6 @@
        (rare since portrait-warn covers this, but defensive). */
     @media (orientation: portrait) {
       .tap-intro-card { padding: 20px 24px; }
-      .tap-intro-title { letter-spacing: 0.02em; }
     }
 
     /* ===== Local-preview fallbacks (when image assets are missing) =====
@@ -1473,8 +1465,7 @@
        user has already entered the title in this browser session. -->
   <div class="tap-intro" id="tapIntro" hidden role="button" tabindex="0" aria-label="タップしてはじめる">
     <div class="tap-intro-card">
-      <div class="tap-intro-pono" aria-hidden="true">🐻</div>
-      <div class="tap-intro-title">ポノのあそびば</div>
+      <img class="tap-intro-logo" src="assets/ui/brand_sign_01.webp" alt="ポノのあそびば" draggable="false">
       <div class="tap-intro-sub">タップして はじめよう</div>
       <div class="tap-intro-ad" aria-label="広告">
         <div class="tap-intro-ad-label"><span class="tap-intro-ad-badge">PR</span> ポノの絵本 はつばいちゅう</div>

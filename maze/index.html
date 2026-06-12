@@ -7135,7 +7135,12 @@ function _updateWebSweepPhysics(gs, dt) {
     _accumulateGrabPath(gs, t, dt);
 
     // 4) Constraint relaxation.
+    // v1045: lower weight for the two points ADJACENT to a grabbed point so they
+    // resist the solver more — neighbors stay closer to rest, generating chain
+    // tension that pulls back on the grabbed point. Applies only when a grab is
+    // active on this thread; otherwise behaves identically to v1044.
     const iters = (dt > 26) ? WEB_CONSTRAINT_ITERS_LOW_FPS : WEB_CONSTRAINT_ITERS;
+    const gIdx = t.grabbedIdx;
     for (let it = 0; it < iters; it++) {
       for (const c of t.constraints) {
         if (c.broken) continue;
@@ -7143,8 +7148,10 @@ function _updateWebSweepPhysics(gs, dt) {
         const dx = pj.x - pi.x, dy = pj.y - pi.y;
         const d = Math.hypot(dx, dy) || 0.0001;
         const diff = (d - c.rest) / d;
-        const wi = pi.pinned ? 0 : (pi.grabbed ? WEB_GRAB_WEIGHT : WEB_FREE_WEIGHT);
-        const wj = pj.pinned ? 0 : (pj.grabbed ? WEB_GRAB_WEIGHT : WEB_FREE_WEIGHT);
+        const iNeighbor = (gIdx >= 0) && (c.i === gIdx - 1 || c.i === gIdx + 1);
+        const jNeighbor = (gIdx >= 0) && (c.j === gIdx - 1 || c.j === gIdx + 1);
+        const wi = pi.pinned ? 0 : (pi.grabbed ? WEB_GRAB_WEIGHT : (iNeighbor ? WEB_GRAB_NEIGHBOR_WEIGHT : WEB_FREE_WEIGHT));
+        const wj = pj.pinned ? 0 : (pj.grabbed ? WEB_GRAB_WEIGHT : (jNeighbor ? WEB_GRAB_NEIGHBOR_WEIGHT : WEB_FREE_WEIGHT));
         const wsum = wi + wj;
         if (wsum === 0) continue;
         pi.x += dx * diff * (wi / wsum);
@@ -7169,6 +7176,26 @@ function _updateWebSweepPhysics(gs, dt) {
 
     // 7) Break evaluation.
     _evaluateBreak(gs, t, broomSpeed, minDim);
+  }
+
+  // v1045: sustained 'stretch' SFX while ANY grab has visible lag > threshold.
+  // Throttled via WEB_STRETCH_SFX_INTERVAL_MS. Re-uses 'soft' kind at very low
+  // volume (handled by _playWebStickySfx kind='soft' already — sufficient).
+  const nowStretch = performance.now();
+  if (gs.activeGrabs > 0 && (!gs._lastStretchSfxAt || (nowStretch - gs._lastStretchSfxAt) > WEB_STRETCH_SFX_INTERVAL_MS)) {
+    let maxLag2 = 0;
+    for (const tt of gs.threads) {
+      if (tt.grabbedIdx < 0) continue;
+      const gp = tt.points && tt.points[tt.grabbedIdx];
+      if (!gp) continue;
+      const lx = gp.x - gs.broom.x, ly = gp.y - gs.broom.y;
+      const lag2 = lx * lx + ly * ly;
+      if (lag2 > maxLag2) maxLag2 = lag2;
+    }
+    if (maxLag2 > WEB_STRETCH_SFX_LAG_PX * WEB_STRETCH_SFX_LAG_PX) {
+      _playWebStickySfx('soft');
+      gs._lastStretchSfxAt = nowStretch;
+    }
   }
 
   gs.particles.forEach(function(p) {
@@ -7219,6 +7246,45 @@ function _detachedOpacity(detachAge) {
 // solver later partially restores rest — produces a transient sway, not a
 // permanent displacement. Rings on non-current layers stay unbreakable (the
 // layer gate in _captureRopeGrabs is preserved), they just visibly react now.
+
+// v1045: mochi-bounce. Compute a rest-position target for the released point as
+// the stored restX/restY, then inject Verlet prev so the next integration
+// overshoots rest and oscillates once.
+function _applyMochiReleaseImpulse(t, idx) {
+  const pts = t && t.points;
+  if (!pts || pts.length !== WEB_CHAIN_N) return;
+  const p = pts[idx];
+  if (!p) return;
+  const tx = p.restX, ty = p.restY;
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) return;
+  const dx = tx - p.x, dy = ty - p.y;
+  const dlen = Math.hypot(dx, dy);
+  if (dlen < 0.5) return;
+  const ux = dx / dlen, uy = dy / dlen;
+  // In Verlet, velocity = (current - prev). To push +V toward rest, set
+  // prev = current - V * unit_toward_rest.
+  p.prevX = p.x - ux * WEB_RELEASE_MOCHI_IMPULSE_PX;
+  p.prevY = p.y - uy * WEB_RELEASE_MOCHI_IMPULSE_PX;
+}
+
+// v1045: spawn a single small white globlet at the release point (release silk
+// residue OR sticky-tag brush-by). Suppressed under reduced motion.
+function _spawnReleaseDewdrop(gs, x, y, thickness) {
+  if (!gs || !gs.particles) return;
+  if (_webSweepReducedMotion()) return;
+  // Deterministic micro-jitter via existing broom velocity so two simultaneous
+  // dewdrops don't perfectly overlap. No Math.random.
+  const bias = ((gs.broom && gs.broom.vx) || 0) * 0.02;
+  gs.particles.push({
+    x: x, y: y,
+    vx: bias * 0.5,
+    vy: -22,
+    age: 0, life: 460,
+    r: Math.max(1.5, (thickness || 4) * 0.55),
+    kind: 'releaseDew',
+  });
+}
+
 function _applyAdjacentWake(gs, dt) {
   if (!gs || !gs.broom) return;
   if (_webSweepReducedMotion()) return;
@@ -7245,6 +7311,11 @@ function _applyAdjacentWake(gs, dt) {
     if (t.frozenLayout === 1) continue;
     const pts = t.points;
     if (!pts || pts.length < 3) continue;
+    // v1045: split wake into outer-wake (motion-direction push, unchanged behaviour)
+    // and inner sticky-tag zone (toward-broom pull + transient state + dewdrop).
+    const stickyR = minDim * WEB_STICKY_TAG_RADIUS_FACTOR;
+    const stickyR2 = stickyR * stickyR;
+    const nowTag = performance.now();
     for (let i = 1; i < pts.length - 1; i++) {
       const p = pts[i];
       if (p.pinned || p.grabbed) continue;
@@ -7256,11 +7327,26 @@ function _applyAdjacentWake(gs, dt) {
       if (d2 > R2) continue;
       const d = Math.sqrt(d2);
       const falloff = 1 - d / R;
-      const mag = baseMag * falloff;
-      // Push in the direction the broom is MOVING (not toward the broom). Constraint
-      // relaxation will pull the point back next pass, leaving only a brief ripple.
-      p.x += ux * mag;
-      p.y += uy * mag;
+      if (d2 < stickyR2) {
+        // Sticky-tag zone: pull TOWARD broom (anti-motion semantics), tag the point,
+        // spawn a dewdrop ONCE per tag activation.
+        const k = WEB_STICKY_TAG_LERP_K * falloff;
+        p.x += dx * k;
+        p.y += dy * k;
+        if (!p._stickyTagStartAt || (nowTag - p._stickyTagStartAt) > WEB_STICKY_TAG_MS) {
+          _spawnReleaseDewdrop(gs, p.x, p.y, t.thickness * 0.7);
+          if (nowTag - (gs.lastTagSfxAt || 0) > 180) {
+            _playWebStickySfx('soft');
+            gs.lastTagSfxAt = nowTag;
+          }
+        }
+        p._stickyTagStartAt = nowTag;
+      } else {
+        // Outer wake: original motion-direction push (gentler magnitude in v1045).
+        const mag = baseMag * falloff;
+        p.x += ux * mag;
+        p.y += uy * mag;
+      }
     }
   }
 }
@@ -7293,20 +7379,44 @@ function _captureRopeGrabs(gs) {
   const bx = gs.broom.x, by = gs.broom.y;
 
   const nowRelease = performance.now();
+  const RELEASE_HARD = R * WEB_GRAB_RELEASE_HARD;
+  const RELEASE_HARD2 = RELEASE_HARD * RELEASE_HARD;
   // (a) Maintain existing grabs: release if broom drifts beyond hysteresis.
+  // v1045: clinging release. Once distance exceeds RELEASE2 we START a grace
+  // window (WEB_GRAB_RELEASE_GRACE_MS) during which the grab continues to hold.
+  // This produces the 'stretching to its limit' feel — silk hangs on visibly.
+  // The grab dies only if (a) grace expires OR (b) distance exceeds the hard cap.
   for (const t of gs.threads) {
     if (t.grabbedIdx < 0 || t.detached || t.broken) continue;
     const p = t.points[t.grabbedIdx];
     if (!p) { t.grabbedIdx = -1; continue; }
     const dxg = p.x - bx, dyg = p.y - by;
     const d2 = dxg * dxg + dyg * dyg;
-    if (d2 > RELEASE2) {
+    let shouldRelease = false;
+    if (d2 > RELEASE_HARD2) {
+      shouldRelease = true;
+    } else if (d2 > RELEASE2) {
+      if (!p._releaseGraceStartAt) p._releaseGraceStartAt = nowRelease;
+      if (nowRelease - p._releaseGraceStartAt > WEB_GRAB_RELEASE_GRACE_MS) shouldRelease = true;
+    } else {
+      // Re-entered hysteresis envelope — reset grace.
+      p._releaseGraceStartAt = 0;
+    }
+    if (shouldRelease) {
       // v1043: remember release timestamp + index so a quick re-grab within
       // WEB_REGRAB_CONTINUITY_MS preserves grabStartAt + grabPathPx — forgiveness
       // for the micro-releases produced by toddler hand wobble.
       t.lastGrabReleaseAt = nowRelease;
       t.lastGrabIdx = t.grabbedIdx;
+      // v1045: mochi-bounce + 'tearing-off' VFX/SFX. Silk RELEASED, didn't vanish.
+      _applyMochiReleaseImpulse(t, t.grabbedIdx);
+      _spawnReleaseDewdrop(gs, p.x, p.y, t.thickness);
+      if (nowRelease - (gs.lastSfxAt || 0) > 140) {
+        _playWebStickySfx('soft');
+        gs.lastSfxAt = nowRelease;
+      }
       p.grabbed = 0;
+      p._releaseGraceStartAt = 0;
       // Intentionally do NOT zero p.grabStartAt / p.grabPathPx / p._lastGrabBroomX
       // here — they're consulted by the continuity branch in section (b).
       t.grabbedIdx = -1;
@@ -7374,12 +7484,17 @@ function _releaseAllRopeGrabs(gs) {
     if (t.grabbedIdx >= 0) {
       const p = t.points && t.points[t.grabbedIdx];
       if (p) {
+        // v1045: mochi-bounce on pointerup release too — without this, lifting the
+        // finger makes the silk silently vanish from the broom. Every release feels alive.
+        _applyMochiReleaseImpulse(t, t.grabbedIdx);
+        _spawnReleaseDewdrop(gs, p.x, p.y, t.thickness);
         p.grabbed = 0;
         p.grabStartAt = 0;
         // v1043: clear path accumulator so a fresh drag after pointerup starts from 0.
         p.grabPathPx = 0;
         p._lastGrabBroomX = undefined;
         p._lastGrabBroomY = undefined;
+        p._releaseGraceStartAt = 0;
       }
       t.grabbedIdx = -1;
     }
@@ -7770,6 +7885,23 @@ function _drawWebSweepGame(gs, now) {
   gs.threads.forEach(function(t) { _drawWebSweepThread(g, t, now, gs); });
 
   gs.particles.forEach(function(p) {
+    // v1045: releaseDew — small white droplet for sticky-release / sticky-tag
+    // events. Rendered early-return so it doesn't pick up the default ellipse
+    // styling intended for break-glob particles.
+    if (p.kind === 'releaseDew') {
+      const t01 = p.age / p.life;
+      const alpha = Math.max(0, (1 - t01) * 0.85);
+      g.save();
+      g.globalAlpha = alpha;
+      g.fillStyle = 'rgba(255,255,255,0.9)';
+      g.shadowColor = 'rgba(220,240,255,0.6)';
+      g.shadowBlur = 5;
+      g.beginPath();
+      g.arc(p.x, p.y, p.r * (1 - t01 * 0.4), 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+      return;
+    }
     const ratio = p.age / p.life;
     g.save();
     g.globalAlpha = Math.max(0, 1 - ratio);
@@ -7926,24 +8058,83 @@ function _drawWebSweepThread(g, t, now, gs) {
     }
   }
 
-  // Grab drool: quadratic from grabbed point to broom.
+  // v1045: sticky stretch strand. Replaces the v1044 fixed-sag quadratic with a
+  // distance-sensitive strand that visibly communicates STRETCH:
+  //   - width tapers thinner as separation grows (silk under tension thins)
+  //   - color whitens with separation
+  //   - perpendicular wobble via sin(now/120) — alive, not pinned
+  //   - dewdrop 'glob' at the broom-end (sticky residue on broom)
+  //   - short over-broom 'tail' in broom-motion direction (adhered, not pinned)
   if (!t.detached && t.grabbedIdx >= 0 && gs && gs.dragging) {
     const gp = pts[t.grabbedIdx];
     if (gp) {
-      const midX = (gp.x + gs.broom.x) / 2;
-      const midY = (gp.y + gs.broom.y) / 2;
       const dxg = gs.broom.x - gp.x;
       const dyg = gs.broom.y - gp.y;
       const dlen = Math.hypot(dxg, dyg) || 1;
+      const minDim = Math.min(gs.w, gs.h);
+      const stretchRef = Math.max(60, minDim * 0.35);
+      const stretchN = Math.min(1, dlen / stretchRef);
       const perpX = -dyg / dlen;
       const perpY = dxg / dlen;
-      const sag = thickness * 4 * (1 + tension * 0.6);
-      g.strokeStyle = 'rgba(250, 255, 248, 0.9)';
-      g.lineWidth = Math.max(0.65, thickness * 0.42 * (1 + tension * 0.6));
+      const sag = thickness * 4 * (1 - stretchN * 0.7) * (1 + tension * 0.4);
+      const wobble = Math.sin(now / 120 + (t.phase || 0)) * (1.5 + stretchN * 2.5);
+      const midX = (gp.x + gs.broom.x) / 2 + perpX * (sag + wobble);
+      const midY = (gp.y + gs.broom.y) / 2 + perpY * (sag + wobble) + sag * 0.4;
+      const baseR = 250, baseG = 255, baseB = 248;
+      const whiteAmt = stretchN * 0.5;
+      const cr = Math.round(baseR + (255 - baseR) * whiteAmt);
+      const cg = Math.round(baseG + (255 - baseG) * whiteAmt);
+      const cb = Math.round(baseB + (255 - baseB) * whiteAmt);
+      const alphaTop = 0.92 - stretchN * 0.18;
+      const baseW = thickness * 0.55 * (1 + tension * 0.5);
+      const tipW = thickness * 0.28 * (1 - stretchN * 0.35) * (1 + tension * 0.3);
+      // Segment 1: gp -> mid (thicker)
+      g.strokeStyle = 'rgba(' + cr + ',' + cg + ',' + cb + ',' + alphaTop.toFixed(3) + ')';
+      g.lineWidth = Math.max(0.55, baseW);
       g.beginPath();
       g.moveTo(gp.x, gp.y);
-      g.quadraticCurveTo(midX + perpX * sag * 0.3, midY + perpY * sag * 0.3 + sag, gs.broom.x, gs.broom.y);
+      g.quadraticCurveTo(midX, midY, (midX + gs.broom.x) * 0.5, (midY + gs.broom.y) * 0.5);
       g.stroke();
+      // Segment 2: mid -> broom (thinner) + short tail past broom
+      g.lineWidth = Math.max(0.45, tipW);
+      const broomVx = gs.broom.vx || 0;
+      const broomVy = gs.broom.vy || 0;
+      const bSpeed = Math.hypot(broomVx, broomVy);
+      let tx = gs.broom.x, ty = gs.broom.y;
+      if (bSpeed > 1) {
+        const tailLen = Math.min(14, 4 + stretchN * 12);
+        tx = gs.broom.x + (broomVx / bSpeed) * tailLen;
+        ty = gs.broom.y + (broomVy / bSpeed) * tailLen;
+      }
+      g.beginPath();
+      g.moveTo((midX + gs.broom.x) * 0.5, (midY + gs.broom.y) * 0.5);
+      g.quadraticCurveTo(gs.broom.x, gs.broom.y, tx, ty);
+      g.stroke();
+      // Sticky glob at the broom end — small white droplet that scales with stretch.
+      g.fillStyle = 'rgba(255,255,255,' + (0.65 + stretchN * 0.3).toFixed(3) + ')';
+      g.shadowColor = 'rgba(220,240,255,0.6)';
+      g.shadowBlur = Math.min(6, 3 + stretchN * 3);
+      g.beginPath();
+      g.arc(gs.broom.x, gs.broom.y, thickness * (0.45 + stretchN * 0.35), 0, Math.PI * 2);
+      g.fill();
+      g.shadowBlur = 0;
+    }
+  }
+
+  // v1045: sticky-tag whitening — briefly mark sticky-tagged points by drawing a
+  // tiny white dot overlay during WEB_STICKY_TAG_MS. Keeps the visual cost low.
+  // Naturally gated by reduced-motion (function early-returned above).
+  if (!t.detached && pts.length === WEB_CHAIN_N) {
+    for (let i = 1; i < pts.length - 1; i++) {
+      const pp = pts[i];
+      if (!pp._stickyTagStartAt) continue;
+      const age = now - pp._stickyTagStartAt;
+      if (age < 0 || age > WEB_STICKY_TAG_MS) continue;
+      const tagAlpha = (1 - age / WEB_STICKY_TAG_MS) * 0.55;
+      g.fillStyle = 'rgba(255,255,255,' + tagAlpha.toFixed(3) + ')';
+      g.beginPath();
+      g.arc(pp.x, pp.y, Math.max(1.0, thickness * 0.55), 0, Math.PI * 2);
+      g.fill();
     }
   }
 
