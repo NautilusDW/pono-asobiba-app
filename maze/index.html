@@ -2411,6 +2411,8 @@ const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgBowlBoss = new Image();
 imgBowlBoss.src = '../assets/images/maze/creatures/ojama_boss.png?v=1060';
+const imgBowlLaneBg = new Image();
+imgBowlLaneBg.src = '../assets/images/maze/gimmicks/donguri/bowl_lane_bg.png?v=1064';
 // Image-stage 用の常時表示アイコン (歩きアニメ無し、ランタンを持っている版)
 const imgPonoLantern = new Image();
 imgPonoLantern.src = '../assets/images/characters/pono/pono_lantan.png';
@@ -6901,6 +6903,11 @@ function _showBowlGame(c) {
       if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
     }, { once: true });
   }
+  if (imgBowlLaneBg && !(imgBowlLaneBg.complete && imgBowlLaneBg.naturalWidth > 0)) {
+    imgBowlLaneBg.addEventListener('load', function() {
+      if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
+    }, { once: true });
+  }
   _layoutBowlPins(gs, _pickBowlLayoutId(c));
   requestAnimationFrame(function() {
     if (gs !== _bowlGameState) return;
@@ -7647,8 +7654,37 @@ function _drawBowlAimGuide(gs) {
   ctx.restore();
 }
 
+function _drawBowlGeneratedLaneBg(gs) {
+  const ctx = gs.ctx, W = gs.w, H = gs.h;
+  const img = imgBowlLaneBg;
+  if (!(img && img.complete && img.naturalWidth > 0)) return false;
+  ctx.save();
+  ctx.drawImage(img, 0, 0, W, H);
+
+  // Keep characters readable over the richer generated plate without redrawing
+  // the lane/hedges themselves.
+  const topShade = ctx.createLinearGradient(0, 0, 0, H);
+  topShade.addColorStop(0, 'rgba(5, 35, 18, 0.20)');
+  topShade.addColorStop(0.26, 'rgba(5, 35, 18, 0.00)');
+  topShade.addColorStop(0.74, 'rgba(55, 31, 8, 0.00)');
+  topShade.addColorStop(1, 'rgba(55, 31, 8, 0.12)');
+  ctx.fillStyle = topShade;
+  ctx.fillRect(0, 0, W, H);
+
+  const sideShade = ctx.createLinearGradient(0, 0, W, 0);
+  sideShade.addColorStop(0, 'rgba(0, 31, 15, 0.16)');
+  sideShade.addColorStop(0.20, 'rgba(0, 31, 15, 0.00)');
+  sideShade.addColorStop(0.80, 'rgba(0, 31, 15, 0.00)');
+  sideShade.addColorStop(1, 'rgba(0, 31, 15, 0.16)');
+  ctx.fillStyle = sideShade;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  return true;
+}
+
 function _drawBowl3dWorld(gs, now) {
   const ctx = gs.ctx, W = gs.w, H = gs.h;
+  if (_drawBowlGeneratedLaneBg(gs)) return;
   const horizonY = H * BOWL_HORIZON_REL;
   const bottomY = H * BOWL_LANE_BOTTOM_REL;
   const top = _bowlLaneBoundsAt(gs, horizonY);

@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1063; // v1063: donguri bowling strengthens bug pin wobble and chain impact
+const CACHE_VERSION = 1064; // v1064: donguri bowling uses generated lane and hedge background
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
