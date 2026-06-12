@@ -238,7 +238,7 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="goal" style="background:#7d2e2e; color:#fcc;">🟥 ゴール</button>
       <button class="btn" data-mode="creature" style="background:#5a3a7a; color:#e6c8ff;">🐛 おじゃま虫</button>
       <button class="btn" data-mode="waypoint" style="background:#1e5a3e; color:#caf3d8;">📍 中継地点</button>
-      <button class="btn" data-mode="obstacle" style="background:#5a3e1f; color:#e6cca8;">🪨 障害物</button>
+      <button class="btn" data-mode="obstacle" style="background:#2e4a6a; color:#cfe7ff;">💧 湖</button>
       <button class="btn" data-mode="lineedit" style="background:#3e3e5a; color:#cfcfff;">✏️ ライン編集</button>
       <button class="btn" data-mode="connect" style="background:#3a4a7a; color:#fff;">🔗 つなぐ</button>
       <button class="btn" data-mode="delete-edge" style="background:#5a3030; color:#fcc;">✂️ 道を消す</button>
@@ -263,15 +263,15 @@ input[type="file"]::file-selector-button {
       </div>
     </div>
 
-    <!-- Phase 3.5: 障害物の種類 (obstacle モード時のみ表示) -->
+    <!-- Phase 3.5: 障害物の種類 (obstacle モード時のみ表示) — 既定は 湖 (pond) -->
     <div class="kind-panel" id="kindPanelObstacle" style="display:none; margin-top:6px;">
-      <div style="font-size:0.78rem; color:#fca; margin-bottom:3px;">障害物の しゅるい:</div>
+      <div style="font-size:0.78rem; color:#cfe7ff; margin-bottom:3px;">しょうがいぶつの しゅるい:</div>
       <div class="mode-row">
-        <button class="btn kind-btn active" data-obstacle-kind="rock"  style="background:#5a3e1f; color:#e6cca8;">🪨 いし</button>
+        <button class="btn kind-btn active" data-obstacle-kind="pond"  style="background:#2e4a6a; color:#cfe7ff;">💧 みずうみ</button>
+        <button class="btn kind-btn"        data-obstacle-kind="rock"  style="background:#5a3e1f; color:#e6cca8;">🪨 いし</button>
         <button class="btn kind-btn"        data-obstacle-kind="tree"  style="background:#5a3e1f; color:#e6cca8;">🌳 き</button>
         <button class="btn kind-btn"        data-obstacle-kind="stump" style="background:#5a3e1f; color:#e6cca8;">🪵 きりかぶ</button>
         <button class="btn kind-btn"        data-obstacle-kind="hole"  style="background:#5a3e1f; color:#e6cca8;">⚫ あな</button>
-        <button class="btn kind-btn"        data-obstacle-kind="pond"  style="background:#5a3e1f; color:#e6cca8;">💧 みずうみ</button>
       </div>
     </div>
 
@@ -523,6 +523,33 @@ const COLOR_WP_DEADEND = '#56CCF2'; // 中継ノード: 行き止まり (水色)
 const COLOR_WP_MANUAL  = '#27AE60'; // 中継ノード: 手動配置 (緑)
 const COLOR_EDGE       = 'rgba(80, 80, 80, 0.5)'; // ノード間のエッジ (薄グレー、画面上のみ)
 const COLOR_OBSTACLE   = '#8B5A2B';               // 障害物 (茶色、岩・木・切り株のメタ表示)
+const COLOR_POND_FILL   = '#5BA8D6';              // 湖の水色 (canvas fallback fill)
+const COLOR_POND_STROKE = '#2B6A9C';              // 湖の縁取り (canvas fallback stroke)
+
+// 障害物の見た目用 PNG (湖をメインに、 旧 kind も同じ仕組みで PNG 化)。
+// 描画側 (drawObstacleMarker) は画像があれば青/茶リングの上に重ね、
+// 無ければ canvas 描画 (水色楕円 or 茶色丸) にフォールバック。
+const OBSTACLE_IMAGE_URL = {
+  pond:  '../assets/images/maze/pond.png',
+  rock:  '../assets/images/maze/rock.png',
+  tree:  '../assets/images/maze/tree.png',
+  stump: '../assets/images/maze/stump.png',
+  hole:  '../assets/images/maze/hole.png',
+};
+const _roughObstacleImgCache = {};
+function _getObstacleImg(kind) {
+  const url = OBSTACLE_IMAGE_URL[kind];
+  if (!url) return null;
+  let img = _roughObstacleImgCache[kind];
+  if (!img) {
+    img = new Image();
+    img.onload = function() { try { draw(); } catch (_) {} };
+    img.src = url;
+    _roughObstacleImgCache[kind] = img;
+  }
+  if (img.complete && img.naturalWidth > 0) return img;
+  return null;
+}
 
 const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 // ラフ→エディタ handoff: ラフを編集している裏で常時 localStorage に書き出しておき、
@@ -549,7 +576,7 @@ const state = {
   obstacles: [],          // [{ x, y, kind:'rock'|'tree'|'stump'|'hole'|'pond' }] 障害物 (PIXEL coords)
                           // Phase 3: maze runtime の obstacles[] に対応
   selectedCreatureKind: 'mayoi',  // Phase 3.5: お邪魔虫モードでの配置時の種類
-  selectedObstacleKind: 'rock',   // Phase 3.5: 障害物モードでの配置時の種類
+  selectedObstacleKind: 'pond',   // Phase 3.5: 障害物モードでの配置時の種類 (既定は 湖)
   // Phase 4: 本番画像。 AI 生成画像を <img> として持ち、 ラフキャンバスに重ねて表示。
   // 本番保存時はこの画像を 1600w Q70 JPEG に圧縮して maze/imageStages/<name>.jpg に PUT、
   // viewBox は naturalWidth × naturalHeight。 マーカー座標はラフ canvas px → image px に変換。
@@ -1527,17 +1554,44 @@ function _waypointColor(kind) {
 function drawObstacleMarker(pos) {
   const cx = pos.x, cy = pos.y;
   const r = _obstacleRadius();
-  const kind = pos.kind || 'rock';
+  // 後方互換: 旧データの kind=null / 'obstacle' / 未知 kind は 湖 (pond) として表示。
+  const rawKind = pos && pos.kind;
+  const validKinds = { pond: 1, rock: 1, tree: 1, stump: 1, hole: 1 };
+  const kind = (rawKind && validKinds[rawKind]) ? rawKind : 'pond';
+  const isPond = (kind === 'pond');
+  const img = _getObstacleImg(kind);
   ctx.save();
-  ctx.fillStyle = COLOR_OBSTACLE;
+  // ベースリング (アフォーダンス) — 湖は水色、その他は茶色。 画像有無に関わらず描く。
+  ctx.fillStyle = isPond ? COLOR_POND_FILL : COLOR_OBSTACLE;
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 3;
-  // 簡易 icon — 全 kind 茶色丸 + kind 別の中身マーク
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#fff'; ctx.font = (r * 1.2) + 'px sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const sym = kind === 'tree' ? '🌳' : kind === 'stump' ? '🪵' : kind === 'hole' ? '⚫' : '🪨';
-  ctx.fillText(sym, cx, cy);
+  if (img) {
+    // PNG あり: リングの直径を基準にアスペクト比を保って中央配置 (drawCreatureMarker と同パターン)。
+    const d = r * 2;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const dh = d;
+    const dw = d * ratio;
+    ctx.drawImage(img, cx - dw/2, cy - dh/2, dw, dh);
+  } else if (isPond) {
+    // PNG 未ロード時の湖フォールバック: 水色の楕円 + 縁取り + 中央に小さな白いハイライト。
+    ctx.fillStyle = COLOR_POND_FILL;
+    ctx.strokeStyle = COLOR_POND_STROKE;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * 0.85, r * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.25, cy - r * 0.22, r * 0.22, r * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // 他 kind のフォールバック: 従来通り絵文字 1 文字。
+    ctx.fillStyle = '#fff'; ctx.font = (r * 1.2) + 'px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const sym = kind === 'tree' ? '🌳' : kind === 'stump' ? '🪵' : kind === 'hole' ? '⚫' : '🪨';
+    ctx.fillText(sym, cx, cy);
+  }
   ctx.restore();
 }
 
@@ -1833,7 +1887,7 @@ cv.addEventListener('pointerdown', function(e) {
   }
   if (state.mode === 'obstacle') {
     const snap = _snapMarker(p.x, p.y);
-    state.obstacles.push({ x: snap.x, y: snap.y, kind: state.selectedObstacleKind || 'rock' });
+    state.obstacles.push({ x: snap.x, y: snap.y, kind: state.selectedObstacleKind || 'pond' });
     afterEdit();
     return;
   }
@@ -1904,7 +1958,7 @@ cv.addEventListener('pointermove', function(e) {
       const idx = dm.index;
       if (idx >= 0 && idx < state.obstacles.length) {
         const prev = state.obstacles[idx];
-        state.obstacles[idx] = { x: p.x, y: p.y, kind: prev.kind || 'rock' };
+        state.obstacles[idx] = { x: p.x, y: p.y, kind: prev.kind || 'pond' };
       }
     }
     else if (dm.type === 'edgePoint') {
@@ -1999,7 +2053,7 @@ cv.addEventListener('pointerup', function(e) {
       if (idx >= 0 && idx < state.obstacles.length) {
         const o = state.obstacles[idx];
         snappedPos = _snapMarker(o.x, o.y);
-        state.obstacles[idx] = { x: snappedPos.x, y: snappedPos.y, kind: o.kind || 'rock' };
+        state.obstacles[idx] = { x: snappedPos.x, y: snappedPos.y, kind: o.kind || 'pond' };
       }
     } else if (dm.type === 'start' && state.start) {
       snappedPos = _snapMarker(state.start.x, state.start.y);
@@ -3082,16 +3136,17 @@ function _loadConnectors(arr) {
 }
 
 // Validate obstacles array — same shape as waypoints with a kind discriminator.
+// 合意済み kind 集合: tree / pond / hole / stump / rock。 後方互換で 'obstacle' や未知 kind は 'pond' に矯正する。
 function _loadObstacles(arr) {
   if (!Array.isArray(arr)) return [];
   const out = [];
-  const validKinds = { rock: 1, tree: 1, stump: 1, hole: 1 };
+  const validKinds = { pond: 1, rock: 1, tree: 1, stump: 1, hole: 1 };
   for (let i = 0; i < arr.length; i++) {
     const o = arr[i];
     if (!o || !Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
     const x = Math.max(0, Math.min(CANVAS_W, o.x));
     const y = Math.max(0, Math.min(CANVAS_H, o.y));
-    const kind = (o.kind && validKinds[o.kind]) ? o.kind : 'rock';
+    const kind = (o.kind && validKinds[o.kind]) ? o.kind : 'pond';
     out.push({ x: x, y: y, kind: kind });
   }
   return out;
@@ -3128,6 +3183,7 @@ document.getElementById('copyPromptBtn').addEventListener('click', function() {
 '- 青い丸 = スタート広場 (絵本風の看板や柵で装飾OK、形は維持)\n' +
 '- 赤い丸 = ゴール広場 (絵本風のアーチや看板で装飾OK、形は維持)\n' +
 '- 紫の小さい丸 = お邪魔虫の出現位置 (ここに小さなキャラを置く想定。装飾は控えめでOK、位置は維持)\n' +
+'- 水色の小さい丸/楕円 = 湖 (pond) の障害物。 ぷっくりした小さな水たまり/池として描き、 位置とサイズは維持。 道の脇に自然になじませる\n' +
 '- 比率は 16:9、サイズは 1920×1080\n\n' +
 '**スタイル:**\n' +
 '- 子ども向けのやわらかい絵本タッチ\n' +
