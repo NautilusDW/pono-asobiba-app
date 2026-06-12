@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1044; // v1044: resistance tuning - harder per-thread break, global cooldown, slower grab follow, gentler recoil
+const CACHE_VERSION = 1045; // v1045: stickiness pass - long lag follow, clingy release hysteresis with grace, visible sticky strand draw, brush-past sticky touch, mochi elastic release
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
