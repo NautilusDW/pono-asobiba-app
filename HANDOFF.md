@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:432-maze-kumo-rescue-game] DONE - Codex: `docs/maze-codex-prompts/kumo-rescue-game-20260612.md` に従い、web_sweep を「クモさん救出」物語へリメイク。クモムシ/とおせんぼ文言を撤去し、3層構造の絡まり糸、層ごとの左右スワイプ進行、クモ表情3段階、sparkle、スワイプ軌跡、蝶3匹の迎え演出、結果モーダル三段構造、reduced-motion 対応を追加。実装本体は自動コミット `a23204d` に入り、`sw.js` は v1035。Node構文、旧語/旧定数/失敗語 grep、Playwrightで3層進行・結果表示・reduced-motion・低横画面overflowなしを確認。 (by Codex)
 - 2026-06-12 - [batch:431-oto-rhythm-note-angle-fix] DONE - Codex: OtoTouchリズムの移動ノード上面を床水平からカメラ側へ起こす角度補正へ変更。奥のノードほど少し強く起こし、薄い線ではなく参考画像寄りのメダル面が見えるよう調整。`sw.js` / `PAGE_CACHE_VERSION` は v1034。Node inline script parse、`git diff --check`、Playwright desktop WebGL smoke + スクショ目視を確認。 (by Codex)
 - 2026-06-12 - [batch:430-maze-web-sweep-fine-physics] DONE - Codex: ユーザー指摘を受け、クモの巣はらいミニゲームの画面比率を縦方向に拡大し、低い横画面でも横長の帯になりにくい幅へ調整。クモの巣は66本の細い放射/輪状ラインで再構成し、1ストローク最大2本までしか外れないため最低8回、実測では10ストローク程度でクリアする粘る操作に変更。ドラッグ中は糸がほうきへ伸び、物理的に揺れ戻るよう pull/tension/stick 表現を強化。`sw.js` は v1033。Node inline script parse、Playwrightでタップ非クリア/複数ストローククリア/desktop 720x537表示/低横画面overflowなしを確認。 (by Codex)
 - 2026-06-12 - [batch:429-maze-web-sweep-redesign] DONE - Codex: クモの巣ミニゲームを Canvas ベースのドラッグ操作へ作り直し、タップでは進まず、ほうきで糸を引っ張ると粘って伸び、一定量はらうと反動・粒子・リップル付きでほどける挙動に変更。マップ上のクモの巣も白い粘る糸として読めるよう視認性を追加調整し、`sw.js` は v1032。Node inline script parse、`git diff --check`、Playwrightでタップ非クリア/ドラッグクリア/低横画面overflowなし/マップ表示スクショを確認。大きい Canvas 化本体は自動コミット `eac360f` に入っており、残差分は視認性調整。 (by Codex)
