@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1057; // v1057: donguri bowl adds generated ojama boss image and rapid-fire boss HIT phase after all pins fall
+const CACHE_VERSION = 1058; // v1058: maze donguri bowl uses alpha ojama gate, acorn bag, and transparent boss assets
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

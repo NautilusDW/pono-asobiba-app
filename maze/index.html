@@ -2434,6 +2434,7 @@ const imgApple = new Image(); imgApple.src = '../assets/images/word/ringo.png';
 const MAZE_FLAG_ASSET_BASE = '../assets/images/maze/flag/';
 const MAZE_WATER_ASSET_BASE = '../assets/images/maze/gimmicks/water/';
 const MAZE_STRENGTH_ASSET_BASE = '../assets/images/maze/gimmicks/strength/';
+const MAZE_DONGURI_ASSET_BASE = '../assets/images/maze/gimmicks/donguri/';
 function _mazeLoadImage(src) {
   const img = new Image();
   img.src = src;
@@ -2466,6 +2467,10 @@ const MAZE_STRENGTH_ASSETS = {
   rockBreak1: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_1.png'),
   rockBreak2: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_2.png'),
   rockBreak3: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png'),
+};
+const MAZE_DONGURI_ASSETS = {
+  ojamaGate: _mazeLoadImage(MAZE_DONGURI_ASSET_BASE + 'ojama_gate.png'),
+  acornBag: _mazeLoadImage(MAZE_DONGURI_ASSET_BASE + 'acorn_bag.png'),
 };
 const MAZE_STRENGTH_CHIP_SRCS = Array.from({ length: 12 }, function(_, i) {
   return MAZE_STRENGTH_ASSET_BASE + 'rock_chip_' + i + '.png';
@@ -4047,7 +4052,7 @@ function _updateFlagInventoryHud() {
     items.push({ src: MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png', alt: 'ちからのてぶくろ' });
   }
   if (_webGimmickState && _webGimmickState.broomCollected && !_webGimmickState.webCleared) {
-    items.push({ emoji: '🌰', alt: 'どんぐりぶくろ' });
+    items.push({ src: MAZE_DONGURI_ASSET_BASE + 'acorn_bag.png', alt: 'どんぐりぶくろ' });
   }
   flagInventoryHud.innerHTML = items.map(function(item) {
     if (item.src) {
@@ -4597,10 +4602,22 @@ function imgDrawWebGimmick(stageObj, now) {
   const web = _webObstacle();
   if (web && !st.webCleared) {
     const sz = (web.size && Number.isFinite(web.size)) ? web.size : stageObj.viewBox.h / 7;
-    _drawAnimatedSpiderWeb(web.x, web.y, sz, now, st.broomCollected ? 1 : 0.82);
+    const bob = Math.sin(now / 520) * Math.max(3, sz * 0.028);
+    ctx.save();
+    const glow = 0.5 + Math.sin(now / 360) * 0.5;
+    ctx.globalAlpha = (st.broomCollected ? 0.24 : 0.15) + glow * 0.10;
+    ctx.fillStyle = st.broomCollected ? '#FFF1A3' : '#FFF7C8';
+    ctx.beginPath();
+    ctx.ellipse(web.x, web.y + bob + sz * 0.08, sz * 0.95, sz * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    _drawWorldImage(MAZE_DONGURI_ASSETS.ojamaGate, web.x, web.y + bob, sz * 0.92, st.broomCollected ? 1 : 0.92);
   } else if (web && st.webCleared && st.clearedAt) {
     const fade = Math.max(0, 1 - (performance.now() - st.clearedAt) / 1200);
-    if (fade > 0) _drawAnimatedSpiderWeb(web.x, web.y, ((web.size || stageObj.viewBox.h / 7) * (0.8 + (1 - fade) * 0.45)), now, fade * 0.45);
+    if (fade > 0) {
+      const sz = (web.size || stageObj.viewBox.h / 7) * (0.84 + (1 - fade) * 0.16);
+      _drawWorldImage(MAZE_DONGURI_ASSETS.ojamaGate, web.x, web.y, sz * 0.92, fade * 0.38);
+    }
   }
   const broom = cfg.broom;
   if (broom && !st.broomCollected) {
@@ -4612,7 +4629,7 @@ function imgDrawWebGimmick(stageObj, now) {
     ctx.arc(broom.x, broom.y, (broom.radius || 86) * 0.78, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-    _drawBroomIcon(broom.x, broom.y, stageObj.viewBox.h / 12, now, 1);
+    _drawWorldImage(MAZE_DONGURI_ASSETS.acornBag, broom.x, broom.y + Math.sin(now / 420) * 5, stageObj.viewBox.h / 10.8, 1);
   }
 }
 

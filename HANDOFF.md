@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:439-maze-donguri-alpha-assets-implement] Codex: user が `D:\ポノのおへや\Maze\New\asset\お邪魔虫` に配置したアルファ付きお邪魔虫/どんぐり素材を実装。実パスは指定の「お邪魔虫　アルファ付き」ではなく `お邪魔虫` フォルダ。`ojama_boss.png` を透過版で上書きし、`ojama_gate.png` / `acorn_bag.png` を `assets/images/maze/gimmicks/donguri/` に配置、迷路上の webGimmick 表示をお邪魔虫ゲート/どんぐりぶくろ画像へ差し替える。`sw.js` v1058予定。 (by Codex)
+- 2026-06-12 - [batch:439-maze-donguri-alpha-assets-implement] DONE - Codex: `ojama_boss.png` をユーザー納品の透過ボスに差し替え、`ojama_gate.png` / `acorn_bag.png` を `assets/images/maze/gimmicks/donguri/` に配置。`maze/index.html` はステージ7の迷路上イベント表示をお邪魔虫ゲート/どんぐりぶくろ画像へ変更し、所持HUDもどんぐりぶくろ画像に更新。`sw.js` は v1058。画像寸法/alpha、Node inline script parse、`git diff --check`、UTF-8/LF、Playwright stage7 + boss phase smoke を確認。 (by Codex)
 - 2026-06-12 - [batch:438-maze-donguri-bowl-icons-v3-existing-ojama] Codex: user 指摘「お邪魔虫、だいぶ変わってないか？」を受領。batch 437 の虫が既存 `mayoi/odoke/hachi` から外れていたため、既存寄せの緑/茶/黄系お邪魔虫ゲート + 丸いどんぐりぶくろの raw シートを GPT Image 2 built-in imagegen で再生成。アルファ抜き・切り抜きはしない。 (by Codex)
 - 2026-06-12 - [batch:438-maze-donguri-bowl-icons-v3-existing-ojama] DONE - Codex: 修正版 raw シート `tmp/alpha_pending/438_maze_donguri_bowl_icons_v3_existing_ojama_raw/donguri_bowl_event_item_icons_sheet_v3_existing_ojama_raw.png` を生成。左=既存 `mayoi` 風の緑、`odoke` 風の茶、`hachi` 風の黄に寄せた小さいお邪魔虫+葉/丸太バリケード、どんぐり要素なし。右=丸く転がせるどんぐり入りのどんぐりぶくろ。RGB 1682x935 / 1.92MB、白背景、テキストなし、アルファ抜き・切り抜きなし。Pillow寸法/容量確認、目視で既存お邪魔虫寄せを確認。 (by Codex)
 - 2026-06-12 - [batch:437-maze-donguri-bowl-icons-v2-raw] Codex: user 指摘「虫のバリケードにどんぐりが付いているのはおかしい。転がすので丸めのどんぐりが良い」を受領。batch 436 の修正版として、左=どんぐり要素なしのお邪魔虫ゲート、右=丸い転がせるどんぐり入りのどんぐりぶくろ raw シートを GPT Image 2 built-in imagegen で再生成予定。アルファ抜き・切り抜きはしない。 (by Codex)
