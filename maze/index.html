@@ -1711,10 +1711,13 @@ body.image-stage-mode .game-wrap {
 
 .web-game {
   display: grid;
-  grid-template-rows: auto minmax(190px, 1fr) auto;
+  grid-template-rows: auto minmax(320px, 1fr) auto;
   gap: 10px;
   align-items: center;
-  min-height: min(55dvh, 390px);
+  justify-self: center;
+  width: min(92vw, 720px);
+  max-width: 100%;
+  min-height: min(76dvh, 560px);
   overflow: hidden;
 }
 .web-game__title {
@@ -1728,7 +1731,8 @@ body.image-stage-mode .game-wrap {
 }
 .web-game__stage {
   position: relative;
-  min-height: 190px;
+  min-height: 320px;
+  aspect-ratio: 1.34 / 1;
   border: 4px solid #BFD88A;
   border-radius: 20px;
   background:
@@ -1777,6 +1781,7 @@ body.image-stage-mode .game-wrap {
   display: block;
   width: 100%;
   height: 100%;
+  max-height: none !important;
   touch-action: none;
 }
 .web-game__stage-note {
@@ -1984,16 +1989,19 @@ body.image-stage-mode .game-wrap {
     font-size: 0.82rem;
   }
   .web-game {
-    grid-template-rows: 1.55em minmax(92px, 1fr) 1.35em;
+    grid-template-rows: 1.45em minmax(180px, 1fr) 1.3em;
     gap: 5px;
-    min-height: min(64dvh, 225px);
+    width: min(78vw, 360px);
+    min-height: min(82dvh, 300px);
   }
   .web-game__title {
     min-height: 1.4em;
     font-size: clamp(1rem, 4vw, 1.28rem);
   }
   .web-game__stage {
-    min-height: 92px;
+    min-height: 180px;
+    height: min(54dvh, 210px);
+    aspect-ratio: auto;
     border-width: 3px;
     border-radius: 14px;
   }
@@ -6440,19 +6448,45 @@ function _resolveStrengthPushGame() {
 }
 
 // ── ほうき: クモの巣はらい ──
-const WEB_SWEEP_THREAD_BLUEPRINTS = [
-  { a: [0.12, 0.33], b: [0.86, 0.25], c: [0.42, 0.12], thick: 1.22, threshold: 0.82, phase: 0.3 },
-  { a: [0.13, 0.48], b: [0.88, 0.43], c: [0.46, 0.27], thick: 1.08, threshold: 0.74, phase: 1.7 },
-  { a: [0.16, 0.66], b: [0.82, 0.62], c: [0.46, 0.47], thick: 0.95, threshold: 0.7, phase: 2.5 },
-  { a: [0.23, 0.19], b: [0.67, 0.78], c: [0.33, 0.5], thick: 0.92, threshold: 0.76, phase: 3.2 },
-  { a: [0.75, 0.18], b: [0.29, 0.79], c: [0.66, 0.48], thick: 0.9, threshold: 0.76, phase: 4.4 },
-  { a: [0.1, 0.75], b: [0.9, 0.18], c: [0.55, 0.4], thick: 0.82, threshold: 0.7, phase: 5.1 },
-  { a: [0.28, 0.35], b: [0.72, 0.32], c: [0.5, 0.2], thick: 0.72, threshold: 0.62, phase: 6.2 },
-  { a: [0.29, 0.58], b: [0.75, 0.56], c: [0.52, 0.41], thick: 0.74, threshold: 0.62, phase: 7.1 },
-  { a: [0.38, 0.19], b: [0.39, 0.8], c: [0.3, 0.51], thick: 0.68, threshold: 0.64, phase: 8.2 },
-  { a: [0.61, 0.18], b: [0.62, 0.8], c: [0.72, 0.5], thick: 0.68, threshold: 0.64, phase: 9.3 },
-];
-const WEB_SWEEP_CLEAR_TARGET = 8;
+const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
+  const out = [];
+  const cx = 0.5;
+  const cy = 0.5;
+  const rx = 0.39;
+  const ry = 0.34;
+  const spokes = 11;
+  function pt(angle, radius, wobble) {
+    return [
+      cx + Math.cos(angle) * rx * radius + Math.sin(angle * 2.3) * (wobble || 0),
+      cy + Math.sin(angle) * ry * radius + Math.cos(angle * 1.7) * (wobble || 0),
+    ];
+  }
+  for (let i = 0; i < spokes; i++) {
+    const a = -Math.PI * 0.92 + i * Math.PI * 2 / spokes;
+    const inner = pt(a + 0.05, 0.07, 0.006);
+    const outer = pt(a, 1.03, 0.01);
+    const mid = pt(a + (i % 2 ? 0.08 : -0.07), 0.52, 0.018);
+    out.push({ a: inner, b: outer, c: mid, thick: 0.95, threshold: 1.0 + (i % 3) * 0.08, phase: i * 0.73 });
+  }
+  [0.26, 0.42, 0.59, 0.76, 0.92].forEach(function(radius, ring) {
+    for (let i = 0; i < spokes; i++) {
+      const a1 = -Math.PI * 0.92 + i * Math.PI * 2 / spokes + ring * 0.055;
+      const a2 = -Math.PI * 0.92 + (i + 1) * Math.PI * 2 / spokes + ring * 0.055;
+      const m = (a1 + a2) / 2 + Math.sin(i + ring) * 0.035;
+      out.push({
+        a: pt(a1, radius, 0.01),
+        b: pt(a2, radius * (0.98 + ((i + ring) % 3) * 0.012), 0.01),
+        c: pt(m, radius * (1.05 + (ring % 2) * 0.035), 0.018),
+        thick: 0.72 - ring * 0.045,
+        threshold: 1.04 + ring * 0.08 + (i % 2) * 0.05,
+        phase: 10 + ring * 1.7 + i * 0.41,
+      });
+    }
+  });
+  return out;
+})();
+const WEB_SWEEP_CLEAR_TARGET = 16;
+const WEB_SWEEP_MAX_DETACH_PER_STROKE = 2;
 
 function _showWebSweepGame() {
   _setEncounterMode('web_sweep');
@@ -6485,6 +6519,7 @@ function _showWebSweepGame() {
     pointerId: null,
     lastPointer: null,
     strokeDistance: 0,
+    strokeDetachCount: 0,
     detachedCount: 0,
     lastSfxAt: 0,
     lastTs: performance.now(),
@@ -6520,6 +6555,7 @@ function _showWebSweepGame() {
     gs.dragging = true;
     gs.pointerId = e.pointerId;
     gs.strokeDistance = 0;
+    gs.strokeDetachCount = 0;
     gs.lastPointer = { x: p.x, y: p.y, t: performance.now() };
     gs.broom.x = gs.broom.tx = p.x;
     gs.broom.y = gs.broom.ty = p.y;
@@ -6606,7 +6642,7 @@ function _layoutWebSweepThreads(gs) {
     t.by = def.b[1] * gs.h;
     t.cx = def.c[0] * gs.w;
     t.cy = def.c[1] * gs.h;
-    t.thickness = Math.max(3.5, Math.min(gs.w, gs.h) * 0.018 * (def.thick || 1));
+    t.thickness = Math.max(1.15, Math.min(gs.w, gs.h) * 0.0056 * (def.thick || 1));
     t.threshold = def.threshold || 0.72;
   });
 }
@@ -6710,30 +6746,30 @@ function _applyWebBroomSweep(gs, x, y, dx, dy, dt) {
   const drag = Math.hypot(dx, dy);
   if (drag < 1.4) return;
   const speed = drag / Math.max(16, dt) * 1000;
-  const radius = Math.max(48, Math.min(gs.w, gs.h) * 0.18);
+  const radius = Math.max(30, Math.min(gs.w, gs.h) * 0.105);
   let hitAny = false;
   gs.threads.forEach(function(t) {
     if (t.detached) return;
     const hit = _webDistanceToThread(t, x, y);
-    const reach = radius + t.thickness * 1.8;
+    const reach = radius + t.thickness * 4.5;
     if (hit.distance > reach) return;
-    const weight = Math.max(0.14, 1 - hit.distance / reach);
+    const weight = Math.max(0.06, 1 - hit.distance / reach);
     hitAny = true;
-    t.pullX += (dx * 0.9 + (x - hit.point.x) * 0.12) * weight;
-    t.pullY += (dy * 0.9 + (y - hit.point.y) * 0.12) * weight;
-    const maxPull = Math.min(gs.w, gs.h) * 0.32;
+    t.pullX += (dx * 0.46 + (x - hit.point.x) * 0.1) * weight;
+    t.pullY += (dy * 0.46 + (y - hit.point.y) * 0.1) * weight;
+    const maxPull = Math.min(gs.w, gs.h) * 0.22;
     const pullLen = Math.hypot(t.pullX, t.pullY);
     if (pullLen > maxPull) {
       t.pullX = t.pullX / pullLen * maxPull;
       t.pullY = t.pullY / pullLen * maxPull;
     }
-    t.vx += dx * 9 * weight;
-    t.vy += dy * 9 * weight;
-    t.tension = Math.min(1.6, t.tension + (drag / 55 + speed / 3600) * weight);
-    t.sweep += Math.min(0.3, (drag / 88 + speed / 5200) * weight);
+    t.vx += dx * 5.4 * weight;
+    t.vy += dy * 5.4 * weight;
+    t.tension = Math.min(1.8, t.tension + (drag / 82 + speed / 6200) * weight);
+    t.sweep += Math.min(0.055, (drag / 190 + speed / 9300) * weight);
     t.stick = 1;
-    if (Math.random() < 0.22) _spawnWebGlob(gs, hit.point.x, hit.point.y, dx, dy, weight);
-    if (t.sweep >= t.threshold) {
+    if (Math.random() < 0.1) _spawnWebGlob(gs, hit.point.x, hit.point.y, dx, dy, weight);
+    if (t.sweep >= t.threshold && gs.strokeDetachCount < WEB_SWEEP_MAX_DETACH_PER_STROKE) {
       _detachWebThread(gs, t, hit.point.x, hit.point.y, dx, dy);
     }
   });
@@ -6756,6 +6792,7 @@ function _detachWebThread(gs, t, x, y, dx, dy) {
   t.vx += dx * 22 + (Math.random() - 0.5) * 120;
   t.vy += dy * 22 - 70 + (Math.random() - 0.5) * 90;
   gs.detachedCount++;
+  gs.strokeDetachCount = (gs.strokeDetachCount || 0) + 1;
   _spawnWebRipple(gs, x, y);
   for (let i = 0; i < 7; i++) _spawnWebGlob(gs, x, y, dx, dy, 1.2);
   _playWebStickySfx('snap');
@@ -6810,7 +6847,7 @@ function _drawWebSweepGame(gs, now) {
     g.restore();
   });
 
-  gs.threads.forEach(function(t) { _drawWebSweepThread(g, t, now); });
+  gs.threads.forEach(function(t) { _drawWebSweepThread(g, t, now, gs); });
 
   gs.particles.forEach(function(p) {
     const ratio = p.age / p.life;
@@ -6829,7 +6866,7 @@ function _drawWebSweepGame(gs, now) {
   _drawWebBroom(g, gs.broom.x, gs.broom.y, gs.broom.angle, Math.min(w, h));
 }
 
-function _drawWebSweepThread(g, t, now) {
+function _drawWebSweepThread(g, t, now, gs) {
   if (t.opacity <= 0.02) return;
   const c = _webThreadCoords(t, now);
   const alpha = t.opacity;
@@ -6839,35 +6876,46 @@ function _drawWebSweepThread(g, t, now) {
   g.lineJoin = 'round';
   g.globalCompositeOperation = 'source-over';
   g.globalAlpha = alpha;
-  g.shadowColor = 'rgba(90, 125, 136, 0.32)';
-  g.shadowBlur = 14 + t.tension * 11;
-  g.strokeStyle = 'rgba(70, 103, 116, 0.27)';
-  g.lineWidth = t.thickness * 3.0 * extra;
+  g.shadowColor = 'rgba(104, 136, 144, 0.28)';
+  g.shadowBlur = 5 + t.tension * 10;
+  g.strokeStyle = 'rgba(54, 80, 98, 0.2)';
+  g.lineWidth = Math.max(1.7, t.thickness * 1.75 * extra);
   g.beginPath();
   g.moveTo(c.ax, c.ay);
   g.quadraticCurveTo(c.cx, c.cy, c.bx, c.by);
   g.stroke();
   g.shadowBlur = 0;
-  g.strokeStyle = 'rgba(249, 255, 244, 0.94)';
-  g.lineWidth = t.thickness * 1.45 * extra;
+  g.strokeStyle = 'rgba(250, 255, 248, 0.94)';
+  g.lineWidth = Math.max(0.85, t.thickness * 0.9 * extra);
   g.beginPath();
   g.moveTo(c.ax, c.ay);
   g.quadraticCurveTo(c.cx, c.cy, c.bx, c.by);
   g.stroke();
-  g.strokeStyle = 'rgba(165, 218, 229, 0.68)';
-  g.lineWidth = Math.max(1.2, t.thickness * 0.38);
+  g.strokeStyle = 'rgba(159, 212, 226, 0.58)';
+  g.lineWidth = Math.max(0.55, t.thickness * 0.26);
   g.beginPath();
   g.moveTo(c.ax + 1, c.ay - 1);
   g.quadraticCurveTo(c.cx + 2, c.cy - 2, c.bx + 1, c.by - 1);
   g.stroke();
+  if (!t.detached && t.stick > 0.08 && gs && gs.dragging) {
+    const stickAlpha = Math.min(0.45, t.stick * 0.42);
+    g.globalAlpha = alpha * stickAlpha;
+    g.strokeStyle = 'rgba(250, 255, 248, 0.9)';
+    g.lineWidth = Math.max(0.65, t.thickness * 0.42);
+    g.beginPath();
+    g.moveTo(c.cx, c.cy);
+    g.quadraticCurveTo((c.cx + gs.broom.x) / 2, (c.cy + gs.broom.y) / 2 - t.thickness * 5, gs.broom.x, gs.broom.y);
+    g.stroke();
+    g.globalAlpha = alpha;
+  }
   if (!t.detached) {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 1; i++) {
       const p = _webQuadPoint(c, 0.32 + i * 0.28 + Math.sin(now / 700 + t.phase + i) * 0.03);
-      g.fillStyle = 'rgba(244, 255, 241, 0.86)';
-      g.shadowColor = 'rgba(189, 241, 227, 0.65)';
-      g.shadowBlur = 5;
+      g.fillStyle = 'rgba(244, 255, 241, 0.74)';
+      g.shadowColor = 'rgba(189, 241, 227, 0.42)';
+      g.shadowBlur = 3;
       g.beginPath();
-      g.ellipse(p.x, p.y, t.thickness * 0.92, t.thickness * 0.52, Math.sin(now / 400 + i), 0, Math.PI * 2);
+      g.ellipse(p.x, p.y, t.thickness * 0.72, t.thickness * 0.42, Math.sin(now / 400 + i), 0, Math.PI * 2);
       g.fill();
       g.shadowBlur = 0;
     }
