@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1051; // v1051: oto/index.html - final polish (Japanese copy fix + badge clipping fix)
+const CACHE_VERSION = 1053; // v1053: maze - Donguri Bowl alias 'donguri_bowl' added (primary token), 'web_sweep' kept as legacy alias; reduced-motion bypasses rAF; explicit pointer/resize listener cleanup; kumo dialog/inventory item updated to donguri narrative for consistency
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
