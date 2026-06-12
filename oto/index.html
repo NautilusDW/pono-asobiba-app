@@ -1839,34 +1839,85 @@
   .rhythm-ranking {
     margin-top: 12px;
     display: grid;
-    gap: 6px;
+    gap: 8px;
   }
   .rhythm-ranking.hidden { display: none; }
   .rhythm-ranking-title {
     color: #31506F;
-    font-size: 0.88rem;
+    font-size: clamp(0.9rem, 2.6vw, 1.05rem);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .rhythm-ranking-outside {
+    display: none;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(167,139,250,0.22));
+    border-radius: 12px;
+    padding: 6px 10px;
+    color: #0F3A5C;
+    font-size: clamp(0.85rem, 2.6vw, 1rem);
     font-weight: 900;
   }
+  .rhythm-ranking-outside.show { display: block; }
   .rhythm-ranking-list {
     display: grid;
-    gap: 4px;
+    gap: 5px;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding-right: 2px;
   }
   .rhythm-ranking-row {
     display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) 86px;
+    grid-template-columns: 30px 44px minmax(0, 1fr) 96px;
     align-items: center;
     gap: 8px;
-    min-height: 30px;
-    padding: 4px 8px;
-    border-radius: 10px;
+    min-height: 34px;
+    padding: 5px 10px;
+    border-radius: 12px;
     background: rgba(15,58,92,0.07);
     color: #31506F;
-    font-size: 0.78rem;
+    font-size: clamp(0.85rem, 2.6vw, 1rem);
     font-weight: 900;
+    position: relative;
+  }
+  .rhythm-ranking-row.empty {
+    background: rgba(15,58,92,0.04);
+    color: rgba(49,80,111,0.45);
+  }
+  .rhythm-ranking-row.rank-1 {
+    background: linear-gradient(135deg, rgba(255,215,0,0.42), rgba(255,193,7,0.28));
+    color: #5D3A00;
+    box-shadow: 0 2px 6px rgba(255,170,0,0.18);
+  }
+  .rhythm-ranking-row.rank-2 {
+    background: linear-gradient(135deg, rgba(203,213,225,0.55), rgba(148,163,184,0.32));
+    color: #1E293B;
+  }
+  .rhythm-ranking-row.rank-3 {
+    background: linear-gradient(135deg, rgba(205,127,50,0.40), rgba(180,83,9,0.24));
+    color: #4A2305;
   }
   .rhythm-ranking-row.current {
-    background: linear-gradient(135deg, rgba(250,204,21,0.34), rgba(45,212,191,0.24));
+    background: linear-gradient(135deg, rgba(250,204,21,0.55), rgba(45,212,191,0.34));
     color: #0F3A5C;
+    box-shadow: 0 0 0 2px rgba(250,204,21,0.7), 0 4px 10px rgba(250,204,21,0.28);
+    animation: rhythmRankPulse 1.6s ease-in-out infinite;
+  }
+  .rhythm-ranking-row.current.rank-1 {
+    background: linear-gradient(135deg, rgba(255,215,0,0.62), rgba(250,204,21,0.42));
+  }
+  .rhythm-ranking-medal {
+    font-size: 1.3em;
+    text-align: center;
+    line-height: 1;
+  }
+  .rhythm-ranking-rank {
+    text-align: right;
+    font-weight: 900;
+    font-size: 1.05em;
   }
   .rhythm-ranking-name {
     min-width: 0;
@@ -1875,10 +1926,29 @@
     white-space: nowrap;
     text-align: left;
   }
+  .rhythm-ranking-score {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .rhythm-ranking-current-badge {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #FBBF24;
+    color: #5D3A00;
+    font-size: 0.72em;
+    font-weight: 900;
+    vertical-align: middle;
+  }
   .rhythm-ranking-empty {
     color: #5B7690;
     font-size: 0.82rem;
     font-weight: 900;
+  }
+  @keyframes rhythmRankPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(250,204,21,0.7), 0 4px 10px rgba(250,204,21,0.28); }
+    50% { box-shadow: 0 0 0 3px rgba(250,204,21,0.95), 0 6px 16px rgba(250,204,21,0.45); }
   }
   .rhythm-result-stars {
     display: flex;
@@ -1975,9 +2045,17 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .rhythm-ranking-row {
-      grid-template-columns: 34px minmax(0, 1fr) 74px;
-      font-size: 0.7rem;
+      grid-template-columns: 26px 36px minmax(0, 1fr) 78px;
+      font-size: 0.78rem;
       gap: 6px;
+      min-height: 28px;
+      padding: 4px 7px;
+    }
+    .rhythm-ranking-medal {
+      font-size: 1.1em;
+    }
+    .rhythm-ranking-list {
+      max-height: 38vh;
     }
     .rhythm-name-row {
       flex-direction: column;
@@ -2900,6 +2978,7 @@
         </form>
         <div class="rhythm-ranking" id="rhythm-ranking">
           <div class="rhythm-ranking-title" id="rhythm-ranking-title">ハイスコア</div>
+          <div class="rhythm-ranking-outside" id="rhythm-ranking-outside"></div>
           <div class="rhythm-ranking-list" id="rhythm-ranking-list"></div>
         </div>
         <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
@@ -6010,26 +6089,79 @@ function _renderRhythmScoreSummary(entry) {
     return '<span>' + part[0] + '<b>' + part[1] + '</b></span>';
   }).join('');
 }
-function _renderRhythmLeaderboard(key, currentId) {
+function _rhythmMedalFor(rank) {
+  if (rank === 1) return '🥇'; // 🥇
+  if (rank === 2) return '🥈'; // 🥈
+  if (rank === 3) return '🥉'; // 🥉
+  return '';
+}
+function _rhythmPreviewRank(key, candidate) {
+  if (!candidate) return 0;
+  var list = _rhythmLeaderboard(key || _rhythmScoreKey()).slice();
+  list.push(candidate);
+  list.sort(_compareRhythmScoreEntries);
+  var idx = list.findIndex(function(item) { return item === candidate; });
+  return idx >= 0 ? idx + 1 : 0;
+}
+function _renderRhythmLeaderboard(key, currentId, options) {
   var box = document.getElementById('rhythm-ranking');
   var title = document.getElementById('rhythm-ranking-title');
   var listEl = document.getElementById('rhythm-ranking-list');
+  var outside = document.getElementById('rhythm-ranking-outside');
   if (!box || !listEl) return;
-  var list = _rhythmLeaderboard(key || _rhythmScoreKey());
+  options = options || {};
+  var lookupKey = key || _rhythmScoreKey();
+  var list = _rhythmLeaderboard(lookupKey);
   box.classList.remove('hidden');
   if (title) title.textContent = 'ハイスコア ' + _rhythmScoreTitle();
-  if (!list.length) {
-    listEl.innerHTML = '<div class="rhythm-ranking-empty">まだ きろくが ないよ</div>';
-    return;
+  // Outside-top-10 callout: current run did not qualify
+  if (outside) {
+    if (options.outsideRank && options.outsideRank > 10) {
+      outside.textContent = '今回 ' + options.outsideRank + 'い (10い まで のこせるよ)';
+      outside.classList.add('show');
+    } else {
+      outside.textContent = '';
+      outside.classList.remove('show');
+    }
   }
-  listEl.innerHTML = list.map(function(item, index) {
-    var current = currentId && item.id === currentId ? ' current' : '';
-    return '<div class="rhythm-ranking-row' + current + '">' +
-      '<span>' + (index + 1) + 'い</span>' +
-      '<span class="rhythm-ranking-name">' + _escapeHtml(item.name || 'ポノ') + '</span>' +
-      '<span>' + _formatRhythmScore(item.score) + '</span>' +
-    '</div>';
-  }).join('');
+  // Render exactly 10 rows: real entries + empty placeholders to fill up to 10
+  var rows = [];
+  for (var i = 0; i < 10; i++) {
+    var item = list[i];
+    var rank = i + 1;
+    var medal = _rhythmMedalFor(rank);
+    var isCurrent = !!(currentId && item && item.id === currentId);
+    var rankClass = ' rank-' + rank;
+    if (!item) {
+      rows.push(
+        '<div class="rhythm-ranking-row empty">' +
+          '<span class="rhythm-ranking-medal">' + (medal || '') + '</span>' +
+          '<span class="rhythm-ranking-rank">' + rank + 'い</span>' +
+          '<span class="rhythm-ranking-name">— — —</span>' +
+          '<span class="rhythm-ranking-score">—</span>' +
+        '</div>'
+      );
+      continue;
+    }
+    var currentClass = isCurrent ? ' current' : '';
+    var badge = isCurrent ? '<span class="rhythm-ranking-current-badge">今回!</span>' : '';
+    rows.push(
+      '<div class="rhythm-ranking-row' + rankClass + currentClass + '">' +
+        '<span class="rhythm-ranking-medal">' + (medal || '') + '</span>' +
+        '<span class="rhythm-ranking-rank">' + rank + 'い</span>' +
+        '<span class="rhythm-ranking-name">' + _escapeHtml(item.name || 'ポノ') + badge + '</span>' +
+        '<span class="rhythm-ranking-score">' + _formatRhythmScore(item.score) + '</span>' +
+      '</div>'
+    );
+  }
+  listEl.innerHTML = rows.join('');
+  // If a current row is rendered, scroll it into view (kid-friendly: make sure they can see their score)
+  if (currentId) {
+    var currentEl = listEl.querySelector('.rhythm-ranking-row.current');
+    if (currentEl && typeof currentEl.scrollIntoView === 'function') {
+      try { currentEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) {}
+    }
+  }
 }
 function _escapeHtml(text) {
   return String(text == null ? '' : text).replace(/[&<>"']/g, function(ch) {
@@ -6086,7 +6218,19 @@ function _showRhythmComplete(result) {
   }
   _renderRhythmResultStars(stars);
   _renderRhythmScoreSummary(scoreEntry);
-  _renderRhythmLeaderboard(scoreEntry.key, null);
+  // If the current run does not qualify for top-10, preview its rank so kids see
+  // where they would have landed (e.g. "今回 12い").
+  var qualifies = _rhythmScoreQualifies(scoreEntry.key, scoreEntry.score);
+  var outsideRank = 0;
+  if (!qualifies) {
+    outsideRank = _rhythmPreviewRank(scoreEntry.key, {
+      score: scoreEntry.score,
+      misses: scoreEntry.misses,
+      just: scoreEntry.just,
+      date: scoreEntry.date
+    });
+  }
+  _renderRhythmLeaderboard(scoreEntry.key, null, { outsideRank: outsideRank });
   _prepareRhythmNameForm(scoreEntry);
   if (text) text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
   if (actions) actions.classList.add('hidden');
