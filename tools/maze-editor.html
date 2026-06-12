@@ -363,6 +363,14 @@ html, body { height: 100vh; overflow: hidden;
       <button class="kind-btn" data-ikind="plank">🪵 まるたの板</button>
       <button class="kind-btn" data-ikind="glove">🥊 力の手袋</button>
       <button class="kind-btn" data-ikind="broom">🧹 ほうき</button>
+      <button class="kind-btn" data-ikind="web">🕸️ クモの巣を動かす</button>
+    </div>
+    <div id="gimmickItemHint" style="display:none; margin-top:6px; padding:8px; background:#2b271f; border:1px solid #8a6a40; border-radius:6px; font-size:0.82rem; color:#f1d6a6; line-height:1.45;">
+      <!-- updated by JS when web kind is selected -->
+    </div>
+    <div id="gimmickItemSize" class="param-row" style="display:none; margin-top:6px;">
+      <label>🕸️ クモの巣の大きさ: <span id="webObstacleSizeVal" class="param-val">340</span>px</label>
+      <input type="range" id="webObstacleSizeSlider" min="80" max="800" step="10" value="340">
     </div>
 
     <h3>3b. スタート / ゴールの大きさ</h3>
@@ -463,6 +471,13 @@ html, body { height: 100vh; overflow: hidden;
         <li><b>「▶ 迷路で試す」</b> ボタンで<b>すぐ試遊</b> (デプロイ不要、sessionStorage 経由)</li>
         <li>OK なら「💾 JSON ダウンロード」→ <code style="color:#A4C76D">maze/imageStages/&lt;name&gt;.json</code> に配置 + 画像コピー → コミットで本番反映</li>
       </ol>
+      <p style="margin-top: 8px;"><b>🕸️ クモの巣ステージ:</b></p>
+      <ol style="margin: 4px 0 0 18px; padding: 0;">
+        <li>「🚧 障害物」モードで 🕸️ クモの巣 を配置</li>
+        <li>「🎒 アイテム」モード →「🕸️ クモの巣を動かす」を選択</li>
+        <li>黄色い破線リングをドラッグで位置調整、 サイズはスライダー</li>
+        <li>(任意)「🧹 ほうき」で 拾うアイテムも配置</li>
+      </ol>
       <p style="margin-top: 8px;"><b>カーブのコツ:</b><br>
         ・道は<b>クリックしたアンカー点を通る滑らかなカーブ</b> (Catmull-Rom)<br>
         ・<b>直線</b>: 中間点を打たず、ノード A → ノード B だけクリック<br>
@@ -546,6 +561,20 @@ const GIMMICK_ITEM_DEFS = {
     radius: 90,
     configKey: 'webGimmick',
     itemKey: 'broom',
+  },
+  web: {
+    // 「アイテム」ではなく、 obstacles[] 内の web エントリ (クモの巣本体)
+    // の位置/サイズを編集するための proxy ハンドル。
+    // export 時は obstacles[] への直接反映に任せ、webGimmick への書き込みはスキップ。
+    // NOTE: isObstacleProxy: true のため、 configKey/itemKey は export で参照されない。
+    //       obstacles[] への直接同期で完結する (将来の混乱防止コメント)。
+    label: 'クモの巣の位置',
+    emoji: '🕸️',
+    radius: 170, // 初期表示半径 (size/2 相当)。実際は obstacle.size から導出する。
+    configKey: 'webGimmick',
+    itemKey: 'webObstacle',
+    isObstacleProxy: true,
+    obstacleKind: 'web',
   },
 };
 
@@ -694,6 +723,9 @@ function _restoreGimmicksFromDef(def) {
   state.gimmickConfigs.webGimmick = _jsonClone(def.webGimmick);
   Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
     const meta = GIMMICK_ITEM_DEFS[kind];
+    // isObstacleProxy (例: web): 「アイテム」ではなく obstacles[] への proxy。
+    // _syncObstacleProxyItems で別途同期するためここではスキップ。
+    if (meta.isObstacleProxy) return;
     const cfg = state.gimmickConfigs[meta.configKey];
     const src = cfg && cfg[meta.itemKey];
     if (!src || !Number.isFinite(src.x) || !Number.isFinite(src.y)) return;
@@ -704,6 +736,37 @@ function _restoreGimmicksFromDef(def) {
       radius: Number.isFinite(src.radius) && src.radius > 0 ? Number(src.radius) : meta.radius,
     });
   });
+  _syncObstacleProxyItems();
+}
+
+// state.gimmickItems の中の isObstacleProxy エントリを obstacles[] と双方向同期させる。
+// stage ロード時 / undo 等で obstacles[] が差し替わったタイミングで呼ぶ。
+function _syncObstacleProxyItems() {
+  if (!Array.isArray(state.gimmickItems)) state.gimmickItems = [];
+  Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
+    const meta = GIMMICK_ITEM_DEFS[kind];
+    if (!meta.isObstacleProxy) return;
+    // 既存の proxy item を一旦取り除いてから obstacles[] を見て付け直す
+    state.gimmickItems = state.gimmickItems.filter(function(it) { return it && it.kind !== kind; });
+    const obstacles = Array.isArray(state.obstacles) ? state.obstacles : [];
+    obstacles.forEach(function(o) {
+      if (!o || o.kind !== meta.obstacleKind) return;
+      if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) return;
+      _ensureObstacleId(o);
+      const size = (Number.isFinite(o.size) && o.size > 0)
+        ? Number(o.size)
+        : _defaultObstacleSize(meta.obstacleKind);
+      state.gimmickItems.push({
+        kind: kind,
+        x: Number(o.x),
+        y: Number(o.y),
+        radius: size / 2,
+        obstacleId: o.id,
+        isObstacleProxy: true,
+      });
+    });
+  });
+  try { _updateGimmickItemSidePanels(); } catch (_) {}
 }
 
 function _copyGimmickStateFromSnapshot(snap) {
@@ -1070,6 +1133,7 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     document.getElementById('obstacleKindRow').style.display = state.mode === 'obstacle' ? 'flex' : 'none';
     document.getElementById('creatureKindRow').style.display = state.mode === 'creature' ? 'flex' : 'none';
     document.getElementById('gimmickItemKindRow').style.display = state.mode === 'gimmick-item' ? 'flex' : 'none';
+    try { _updateGimmickItemSidePanels(); } catch (_) {}
     // 移動モードに切り替えた瞬間のカーソルを 'move' にプリセット (pointermove で grab/grabbing に上書きされる)
     if (cv) cv.style.cursor = (state.mode === 'move') ? 'move' : ((state.mode === 'delete-edge') ? 'not-allowed' : 'crosshair');
     showBanner('モード: ' + btn.textContent.trim());
@@ -1144,9 +1208,76 @@ document.querySelectorAll('#gimmickItemKindRow .kind-btn').forEach(function(btn)
     state.gimmickItemKind = nextKind;
     document.querySelectorAll('#gimmickItemKindRow .kind-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
+    _updateGimmickItemSidePanels();
+    draw();
     showBanner('アイテム: ' + btn.textContent.trim());
   });
 });
+
+// アイテムモード補助 UI (hint メッセージ + クモの巣サイズ slider) の表示/同期
+function _updateGimmickItemSidePanels() {
+  const hintEl = document.getElementById('gimmickItemHint');
+  const sizeRow = document.getElementById('gimmickItemSize');
+  const slider = document.getElementById('webObstacleSizeSlider');
+  const sizeVal = document.getElementById('webObstacleSizeVal');
+  const meta = GIMMICK_ITEM_DEFS[state.gimmickItemKind];
+  const showWebControls = !!(meta && meta.isObstacleProxy && state.mode === 'gimmick-item');
+  if (hintEl) {
+    if (showWebControls) {
+      const proxyItem = (state.gimmickItems || []).find(function(it) { return it && it.kind === state.gimmickItemKind; });
+      if (proxyItem) {
+        hintEl.textContent = '🕸️ クモの巣本体を任意の場所にドラッグして移動できるよ。 サイズは下のスライダーで調整。';
+      } else {
+        hintEl.textContent = '🕸️ クモの巣本体が見つからないよ。 まず「🌳 障害物」モードで 🕸️ クモの巣 を 1 つ配置してね。';
+      }
+      hintEl.style.display = 'block';
+    } else {
+      hintEl.style.display = 'none';
+    }
+  }
+  if (sizeRow && slider && sizeVal) {
+    if (showWebControls) {
+      // NOTE: 現状 stage7 は web obstacle が 1 個前提。 size スライダーは obstacles.filter(kind==='web')[0]
+      //       を表示、 input ハンドラは全 web obstacle に同じ size を書き込む。
+      //       将来複数 web obstacle に対応する場合、 表示と書き込みの整合性 (どれを編集対象とするか) を再設計する必要あり。
+      const obstacles = (state.obstacles || []).filter(function(o) { return o && o.kind === 'web'; });
+      if (obstacles.length > 0) {
+        const o = obstacles[0];
+        const size = (Number.isFinite(o.size) && o.size > 0) ? Math.round(o.size) : _defaultObstacleSize('web');
+        if (slider.value !== String(size)) slider.value = String(size);
+        sizeVal.textContent = size;
+        sizeRow.style.display = 'block';
+      } else {
+        sizeRow.style.display = 'none';
+      }
+    } else {
+      sizeRow.style.display = 'none';
+    }
+  }
+}
+
+// クモの巣サイズ slider: obstacle.size と proxy item.radius を同期
+const _webObstacleSizeSlider = document.getElementById('webObstacleSizeSlider');
+if (_webObstacleSizeSlider) {
+  let _webSliderHistoryPushed = false;
+  _webObstacleSizeSlider.addEventListener('pointerdown', function() { _webSliderHistoryPushed = false; });
+  _webObstacleSizeSlider.addEventListener('input', function() {
+    const size = parseInt(_webObstacleSizeSlider.value, 10);
+    if (!Number.isFinite(size) || size <= 0) return;
+    const obstacles = (state.obstacles || []).filter(function(o) { return o && o.kind === 'web'; });
+    if (obstacles.length === 0) return;
+    if (!_webSliderHistoryPushed) {
+      pushHistory();
+      _webSliderHistoryPushed = true;
+    }
+    obstacles.forEach(function(o) { o.size = size; });
+    _syncObstacleProxyItems();
+    const sizeVal = document.getElementById('webObstacleSizeVal');
+    if (sizeVal) sizeVal.textContent = size;
+    draw();
+    scheduleAutoSave();
+  });
+}
 
 function _coerceStageOrder(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -1655,7 +1786,14 @@ cv.addEventListener('click', function(e) {
     state.obstacles.push(o);
     const attached = _autoAttachPlacedObstacleEvent(o);
     selectObstacle(o, false);
-    if (attached) showBanner('クモの巣イベントを配置しました。移動モードでドラッグできます。');
+    // web obstacle を新規配置したら proxy item を再同期 (アイテムパネルから動かせるようにする)
+    if (o.kind === 'web') {
+      _syncObstacleProxyItems();
+      // webGimmick 設定の有無に関わらず誘導バナー (ユーザーが次の手順を迷わないように)
+      showBanner('🕸️ クモの巣を配置しました。 アイテムモード → クモの巣本体 で位置とサイズを調整できます。');
+    } else if (attached) {
+      showBanner('クモの巣イベントを配置しました。移動モードでドラッグできます。');
+    }
   } else if (state.mode === 'creature') {
     const c = {
       id: 'c' + state.nextCreatureId,
@@ -1667,14 +1805,33 @@ cv.addEventListener('click', function(e) {
   } else if (state.mode === 'gimmick-item') {
     const kind = GIMMICK_ITEM_DEFS[state.gimmickItemKind] ? state.gimmickItemKind : 'ladder';
     const meta = GIMMICK_ITEM_DEFS[kind];
-    state.gimmickItems = state.gimmickItems.filter(function(item) { return item.kind !== kind; });
-    state.gimmickItems.push({
-      kind: kind,
-      x: p.x,
-      y: p.y,
-      radius: meta.radius,
-    });
-    showBanner(meta.label + 'を配置しました');
+    if (meta.isObstacleProxy) {
+      // クモの巣本体 (obstacle) の proxy。 新規配置はせず obstacle 本体を直接動かす。
+      const obstacles = (state.obstacles || []).filter(function(o) { return o && o.kind === meta.obstacleKind; });
+      if (obstacles.length === 0) {
+        showBanner(meta.label + ': まず「🌳 障害物」モードで 🕸️ クモの巣 を 1 つ配置してね');
+      } else if (obstacles.length === 1) {
+        // 既に1つだけ web obstacle があれば、 クリック位置にワープ移動 (ドラッグでも可)
+        const target = obstacles[0];
+        target.x = Math.max(0, Math.min(state.imgW, p.x));
+        target.y = Math.max(0, Math.min(state.imgH, p.y));
+        _syncObstacleProxyItems();
+        selectObstacle(target, false);
+        showBanner(meta.label + 'をここに移動しました (ドラッグでも調整できます)');
+      } else {
+        // 複数ある場合はワープせず案内 (誤操作で全部動かさないため)
+        showBanner(meta.label + ': クモの巣本体が複数あります。 動かしたい本体をドラッグで指定してね');
+      }
+    } else {
+      state.gimmickItems = state.gimmickItems.filter(function(item) { return item.kind !== kind; });
+      state.gimmickItems.push({
+        kind: kind,
+        x: p.x,
+        y: p.y,
+        radius: meta.radius,
+      });
+      showBanner(meta.label + 'を配置しました');
+    }
   } else if (state.mode === 'delete') {
     handleDeleteClick(p);
   } else if (state.mode === 'delete-edge') {
@@ -2199,6 +2356,14 @@ cv.addEventListener('pointermove', function(e) {
     const cy = Math.max(0, Math.min(state.imgH, p.y));
     state.draggingGimmickItem.x = cx;
     state.draggingGimmickItem.y = cy;
+    // isObstacleProxy: 対応する obstacle 本体も同期して動かす
+    if (state.draggingGimmickItem.isObstacleProxy && state.draggingGimmickItem.obstacleId) {
+      const target = _obstacleById(state.draggingGimmickItem.obstacleId);
+      if (target) {
+        target.x = cx;
+        target.y = cy;
+      }
+    }
     draw();
     return;
   }
@@ -2221,6 +2386,13 @@ cv.addEventListener('pointermove', function(e) {
         && state.draggingObstacle.id
         && state.gimmickConfigs.flagGimmick.exitObstacleId === state.draggingObstacle.id) {
       _syncFlagExitFocusToExitHole();
+    }
+    // web obstacle を直接 drag した場合は、 並走している proxy gimmick item の座標もリアルタイム同期
+    if (state.draggingObstacle.kind === 'web' && state.draggingObstacle.id && Array.isArray(state.gimmickItems)) {
+      const proxy = state.gimmickItems.find(function(it) {
+        return it && it.isObstacleProxy && it.obstacleId === state.draggingObstacle.id;
+      });
+      if (proxy) { proxy.x = cx; proxy.y = cy; }
     }
     draw();
     return;
@@ -2284,6 +2456,10 @@ cv.addEventListener('pointermove', function(e) {
     cv.style.cursor = overGrabbable ? 'grab' : 'move';
   } else if (state.mode === 'delete-edge') {
     cv.style.cursor = 'not-allowed';
+  } else if (state.mode === 'gimmick-item') {
+    // アイテムモードでも proxy ハンドル (黄色い破線リング) の上は grab に
+    // (move モード相当の挙動。 ノードに hover した時も grab)
+    cv.style.cursor = (hovered || findGimmickItemAt(p)) ? 'grab' : 'crosshair';
   } else {
     cv.style.cursor = hovered ? 'grab' : 'crosshair';
   }
@@ -2293,10 +2469,11 @@ cv.addEventListener('pointerup', function(e) {
   // 移動モードでは drag 終了後のカーソルは 'move' に戻す (それ以外は 'crosshair')
   const restCursor = (state.mode === 'move') ? 'move' : ((state.mode === 'delete-edge') ? 'not-allowed' : 'crosshair');
   if (state.draggingGimmickItem) {
+    const wasProxy = !!state.draggingGimmickItem.isObstacleProxy;
     state.draggingGimmickItem = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
     cv.style.cursor = restCursor;
-    showBanner('アイテムを移動しました');
+    showBanner(wasProxy ? '🕸️ クモの巣の位置を移動しました' : 'アイテムを移動しました');
     scheduleAutoSave();
     updateStatus();
     return;
@@ -2403,6 +2580,43 @@ function handleDeleteClick(p) {
     const idx = state.gimmickItems.indexOf(itemHit);
     if (idx >= 0) {
       const meta = GIMMICK_ITEM_DEFS[itemHit.kind] || { label: itemHit.kind || 'アイテム' };
+      // proxy item (例: web) を削除する場合は、 backing obstacle も同時に削除しないと
+      // 次フレームの _syncObstacleProxyItems で proxy が即座に再生成され、 ユーザーは
+      // 「削除した」と思っても obstacle が残るバグになる。
+      if (itemHit.isObstacleProxy && itemHit.obstacleId) {
+        const targetId = itemHit.obstacleId;
+        // 1) proxy item を splice
+        state.gimmickItems.splice(idx, 1);
+        // 2) 紐づく obstacle を obstacles[] から remove (+関連 gimmickConfig を解除)
+        const oIdx = state.obstacles.findIndex(function(o) { return o && o.id === targetId; });
+        if (oIdx >= 0) {
+          const removed = state.obstacles[oIdx];
+          state.obstacles.splice(oIdx, 1);
+          if (state.selectedObstacleId === targetId) selectObstacle(null, false);
+          if (state.gimmickConfigs.webGimmick && state.gimmickConfigs.webGimmick.obstacleId === targetId) {
+            state.gimmickConfigs.webGimmick = null;
+          }
+          // 他種 (water/strength/flag) も将来 proxy 化された時のために念のため
+          if (state.gimmickConfigs.waterGimmick && state.gimmickConfigs.waterGimmick.obstacleId === targetId) {
+            state.gimmickConfigs.waterGimmick = null;
+          }
+          if (state.gimmickConfigs.strengthGimmick && state.gimmickConfigs.strengthGimmick.obstacleId === targetId) {
+            state.gimmickConfigs.strengthGimmick = null;
+          }
+          if (state.gimmickConfigs.flagGimmick
+              && (state.gimmickConfigs.flagGimmick.entranceObstacleId === targetId
+                  || state.gimmickConfigs.flagGimmick.exitObstacleId === targetId)) {
+            state.gimmickConfigs.flagGimmick = null;
+          }
+          // void hint (removed は eslint-ignore 用)
+          void removed;
+        }
+        // 3) proxy 状態を再同期 (これで「削除したのに残る」を防ぐ)
+        _syncObstacleProxyItems();
+        updateObstacleEventPanel();
+        showBanner('🕸️ クモの巣を削除しました');
+        return;
+      }
       state.gimmickItems.splice(idx, 1);
       showBanner('アイテムを削除: ' + meta.label);
       return;
@@ -2438,6 +2652,8 @@ function handleDeleteClick(p) {
       if (state.gimmickConfigs.webGimmick && state.gimmickConfigs.webGimmick.obstacleId === obstacleHit.id) {
         state.gimmickConfigs.webGimmick = null;
       }
+      // web obstacle が消えた場合は proxy gimmick item も同期して取り除く
+      if (obstacleHit.kind === 'web') _syncObstacleProxyItems();
       updateObstacleEventPanel();
       showBanner('障害物を削除: ' + (obstacleHit.kind || ''));
       return;
@@ -2684,6 +2900,29 @@ function _drawEditorSpiderWeb(x, y, r, eventOn) {
 
 function drawGimmickItem(item) {
   const meta = GIMMICK_ITEM_DEFS[item && item.kind] || GIMMICK_ITEM_DEFS.ladder;
+  // isObstacleProxy: 描画は obstacle 本体に任せ、ここでは「ドラッグ可能ハンドル」 を示す薄いリングだけ重ねる
+  if (meta.isObstacleProxy) {
+    const isDragging = !!(state.draggingGimmickItem && state.draggingGimmickItem === item);
+    const rProxy = (item.radius || meta.radius || (state.imgH / 12));
+    ctx.save();
+    ctx.lineWidth = Math.max(3, rProxy * 0.05);
+    ctx.setLineDash([14 / canvasScale, 9 / canvasScale]);
+    ctx.strokeStyle = isDragging ? 'rgba(255, 224, 102, 0.95)' : 'rgba(255, 224, 102, 0.65)';
+    ctx.beginPath();
+    ctx.arc(item.x, item.y, rProxy + 18 / canvasScale, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 小さなラベル: アイテムモード時のみ表示
+    if (state.mode === 'gimmick-item' && state.gimmickItemKind === item.kind) {
+      ctx.fillStyle = 'rgba(255, 224, 102, 0.95)';
+      ctx.font = Math.max(14, state.imgH / 50) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('🕸️ クモの巣 (ドラッグで移動)', item.x, item.y - rProxy - 22 / canvasScale);
+    }
+    ctx.restore();
+    return;
+  }
   const r = item.radius || meta.radius || (state.imgH / 18);
   const img = meta.image;
   ctx.save();
@@ -2952,12 +3191,19 @@ function showBanner(msg) {
 // History (undo)
 // ────────────────────────────────────────────────────────
 function _snapshotJSON() {
+  // proxy item (isObstacleProxy: true) は obstacles[] の派生情報のため、
+  // 履歴/復元時は除外。 復元時に _syncObstacleProxyItems で再生成されるので、
+  // シリアライズ側はクリーンな (proxy なし) gimmickItems のみ保持する。
+  // これがないと _applySnapshot 復元時の呼び出し順依存で proxy が二重追加されうる。
+  const cleanGimmickItems = Array.isArray(state.gimmickItems)
+    ? state.gimmickItems.filter(function(it) { return it && !it.isObstacleProxy; })
+    : [];
   return JSON.stringify({
     nodes: state.nodes,
     edges: state.edges,
     obstacles: state.obstacles,
     creatures: state.creatures,
-    gimmickItems: state.gimmickItems,
+    gimmickItems: cleanGimmickItems,
     gimmickConfigs: state.gimmickConfigs,
     nextStopId: state.nextStopId,
     nextCreatureId: state.nextCreatureId,
@@ -2970,6 +3216,8 @@ function _applySnapshot(snap) {
   state.obstacles = snap.obstacles || [];
   state.creatures = snap.creatures || [];
   _copyGimmickStateFromSnapshot(snap);
+  // proxy gimmick item を obstacles[] と整合させる (undo/redo 時)
+  try { _syncObstacleProxyItems(); } catch (_) {}
   state.nextStopId = snap.nextStopId;
   state.nextCreatureId = snap.nextCreatureId || 1;
   state.edgeInProgress = snap.edgeInProgress;
@@ -3089,6 +3337,9 @@ function _defaultGimmickConfig(configKey) {
 function _applyGimmickItemsToDef(def) {
   Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
     const meta = GIMMICK_ITEM_DEFS[kind];
+    // isObstacleProxy: 位置/サイズの正本は obstacles[] にあるので webGimmick への書き込み不要。
+    // (def.obstacles は state.obstacles.map(_exportObstacle) で既に最新が反映されている)
+    if (meta.isObstacleProxy) return;
     const item = (state.gimmickItems || []).find(function(x) { return x && x.kind === kind; });
     const existing = state.gimmickConfigs && state.gimmickConfigs[meta.configKey];
     if (!existing) return;
@@ -3592,6 +3843,8 @@ function _restoreDraft() {
     state.obstacles = Array.isArray(draft.obstacles) ? draft.obstacles : [];
     state.creatures = Array.isArray(draft.creatures) ? draft.creatures : [];
     _copyGimmickStateFromSnapshot(draft);
+    // 念のため: obstacles[] と proxy gimmickItems の整合を取り直す (古い draft で proxy 未生成のケースに備える)
+    try { _syncObstacleProxyItems(); } catch (_) {}
     state.selectedCreatureId = null;
     state.selectedObstacleId = null;
     updateObstacleEventPanel();
