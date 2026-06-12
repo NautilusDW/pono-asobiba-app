@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1039; // v1039: remove dead .tap-intro-pono CSS, improve Amazon banner alt text
+const CACHE_VERSION = 1041; // v1041: kumo-rescue fixes — layer-clear softlock (frozen sub-chains excluded), sub-chain physics (detached=true), halo shadowBlur cap, hub-vs-spider spec clarification, activeGrabs resize leak
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

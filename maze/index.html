@@ -6498,8 +6498,6 @@ const WEB_SWEEP_LAYERS = [
   { layer: 1, count: 8, color: '#ffffff', thickRatio: 0.014, threshold: 1.0, sparkleColor: '#e8e8ff' },
   { layer: 2, count: 8, color: '#fff6c8', thickRatio: 0.008, threshold: 0.9, sparkleColor: '#ffe89a' },
 ];
-const LAYER_SPRING_DRAG = [6.5, 8.5, 10.5];
-const LAYER_SPRING_REST = [8.5, 10.5, 12.5];
 const WEB_SWEEP_BUTTERFLY_SRC = '../assets/images/quizland/illust/choice/chocho.png';
 const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
   const out = [];
@@ -6507,7 +6505,12 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
   const cy = 0.5;
   const rx = 0.42;        // elliptical perimeter half-width
   const ry = 0.36;        // elliptical perimeter half-height
-  const hubClear = 0.05;  // clear zone around spider sprite (0.05 of perimeter rx/ry → ~0.021×0.018 canvas units; keep spider sprite ≤ that band)
+  // NOTE: hubClear protects the GEOMETRIC hub at (cx=0.5, cy=0.5) where all 8 spokes
+  // converge — NOT the spider sprite. The spider is drawn at (0.83, 0.23) as a
+  // corner character (see _drawWebSpider) and reads to a child as "spider next to
+  // its big web" rather than "spider sitting in the center". The center clearance
+  // simply prevents the spokes from collapsing into a visual blob at the hub.
+  const hubClear = 0.05;
   const SPOKES = 8;
   const OUTER_RING_R = 0.80; // outer sticky ring radius (fraction of perimeter)
   const INNER_RING_R = 0.46; // inner sticky ring radius
@@ -6672,21 +6675,38 @@ function _showWebSweepGame() {
     lastVibrateAt: 0,
     pointerTrail: [],
     finishStartedAt: 0,
-    broom: { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0, angle: -0.35 },
+    broom: { x: 0, y: 0, tx: 0, ty: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, angle: -0.35 },
+    activeGrabs: 0,
+    _hasPath2D: (typeof Path2D !== 'undefined'),
     threads: WEB_SWEEP_THREAD_BLUEPRINTS.map(function(def, i) {
       return {
         index: i,
         def: def,
-        ax: 0, ay: 0, bx: 0, by: 0, cx: 0, cy: 0,
-        pullX: 0, pullY: 0, vx: 0, vy: 0,
-        sweep: 0,
+        layer: def.layer,
+        color: def.color,
+        thickness: 0,
+        threshold: def.threshold,
+        phase: def.phase || i,
+        // Verlet rope state
+        points: [],          // length 7, populated by _layoutWebSweepThreads
+        constraints: [],     // length 6
+        restTotal: 0,
+        currentTotal: 0,
+        stretchRatio: 1,
         tension: 0,
+        grabbedIdx: -1,
+        broken: 0,
+        frozenLayout: 0,
+        parentIndex: -1,
+        flashAt: 0,
+        flashX: 0,
+        flashY: 0,
+        // SFX/draw compat
         stick: 0,
         detached: false,
         detachAge: 0,
-        layerFadeStart: 0,
         opacity: 1,
-        phase: def.phase || i,
+        layerFadeStart: 0,
       };
     }),
     particles: [],
@@ -6718,6 +6738,8 @@ function _showWebSweepGame() {
     gs.lastPointer = { x: p.x, y: p.y, t: performance.now() };
     gs.broom.x = gs.broom.tx = p.x;
     gs.broom.y = gs.broom.ty = p.y;
+    gs.broom.prevX = gs.broom.x;
+    gs.broom.prevY = gs.broom.y;
     stageEl.classList.add('is-dragging');
     try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
     _setWebSweepStatus(gs, 'クモさんの まわりを やさしく はらってね');
@@ -6729,27 +6751,35 @@ function _showWebSweepGame() {
     const now = performance.now();
     const p = _webSweepPointer(canvasEl, e);
     const prev = gs.lastPointer || { x: p.x, y: p.y, t: now };
-    const dt = Math.max(16, now - prev.t);
     const dx = p.x - prev.x;
     const dy = p.y - prev.y;
-    const currentDir = dx > 0.3 ? 1 : dx < -0.3 ? -1 : 0;
-    if (currentDir !== 0 && gs.lastDirX !== null && currentDir !== gs.lastDirX) {
-      gs.strokeCounter[gs.currentLayer] = (gs.strokeCounter[gs.currentLayer] || 0) + 1;
-      if (gs.strokeCounter[gs.currentLayer] >= 5) _onWebSweepLayerCleared(gs);
-    }
-    if (currentDir !== 0) gs.lastDirX = currentDir;
     gs.strokeDistance += Math.hypot(dx, dy);
     gs.broom.tx = p.x;
     gs.broom.ty = p.y;
-    gs.broom.vx = dx / dt * 16;
-    gs.broom.vy = dy / dt * 16;
     if (!_webSweepReducedMotion()) {
       gs.pointerTrail.push({ x: p.x, y: p.y, t: now });
       if (gs.pointerTrail.length > 12) gs.pointerTrail.shift();
     }
     if (Math.hypot(dx, dy) > 1.2) {
       gs.broom.angle = Math.atan2(dy, dx) + 0.72;
-      _applyWebBroomSweep(gs, p.x, p.y, dx, dy, dt);
+    }
+    if (_webSweepReducedMotion()) {
+      // Reduced-motion: instant detach on proximity to any current-layer thread point
+      const R = Math.max(36, Math.min(gs.w, gs.h) * 0.09);
+      const R2 = R * R;
+      gs.threads.forEach(function(t) {
+        if (t.detached || t.broken) return;
+        if (t.def.layer !== gs.currentLayer) return;
+        for (let i = 0; i < t.points.length; i++) {
+          const pp = t.points[i];
+          const d2 = (pp.x - p.x) * (pp.x - p.x) + (pp.y - p.y) * (pp.y - p.y);
+          if (d2 <= R2) {
+            _detachWebThread(gs, t, pp.x, pp.y, dx, dy);
+            break;
+          }
+        }
+      });
+      _checkWebSweepLayerClear(gs, gs.currentLayer);
     }
     gs.lastPointer = { x: p.x, y: p.y, t: now };
   });
@@ -6766,6 +6796,7 @@ function _showWebSweepGame() {
     gs.dragging = false;
     gs.pointerId = null;
     gs.lastPointer = null;
+    _releaseAllRopeGrabs(gs);
     stageEl.classList.remove('is-dragging');
   }
   stageEl.addEventListener('pointerup', endDrag);
@@ -6802,22 +6833,97 @@ function _resizeWebSweepCanvas(gs) {
   _layoutWebSweepThreads(gs);
 }
 
+// ── SilkChain constants (see designer spec) ──
+const WEB_CHAIN_N = 7;
+const WEB_CONSTRAINT_ITERS = 4;
+const WEB_CONSTRAINT_ITERS_LOW_FPS = 5;
+const WEB_LINEAR_DAMP = 0.985;
+const WEB_MICRO_GRAVITY = 6;
+const WEB_GRAB_BLEND_K = 0.35;
+const WEB_GRAB_WEIGHT = 0.15;
+const WEB_FREE_WEIGHT = 0.5;
+const WEB_GRAB_RADIUS_MIN_PX = 36;
+const WEB_GRAB_RADIUS_FACTOR = 0.09;
+const WEB_GRAB_RELEASE_HYSTERESIS = 1.6;
+const WEB_GRAB_MAX_CONCURRENT = 4;
+const WEB_BREAK_STRETCH_RATIO = 1.6;
+const WEB_BREAK_SUSTAIN_MS = 1400;
+const WEB_BREAK_FAST_SPEED_FACTOR = 2.4;
+const WEB_BREAK_FAST_STRETCH = 1.2;
+const WEB_SNAPBACK_IMPULSE_PX = 16;
+const WEB_FLASH_MS = 60;
+const WEB_DT_CLAMP_MIN_MS = 8;
+const WEB_DT_CLAMP_MAX_MS = 33;
+const WEB_VIBRATE_SNAP_MS = 14;
+const WEB_VIBRATE_SOFT_MS = 8;
+
 function _layoutWebSweepThreads(gs) {
+  // Resize/relayout invalidates per-point grab state. Without this, mid-drag
+  // orientation/DPR changes silently clear t.grabbedIdx but leave gs.activeGrabs
+  // bumped, eventually reaching WEB_GRAB_MAX_CONCURRENT and locking _captureRopeGrabs
+  // out forever (broom goes inert). Reset the counter alongside the rebuild.
+  _releaseAllRopeGrabs(gs);
   gs.threads.forEach(function(t) {
     const def = t.def;
     if (!Number.isFinite(def.layer)) {
       def.layer = t.index < 8 ? 0 : (t.index < 16 ? 1 : 2);
     }
     const layerDef = WEB_SWEEP_LAYERS[def.layer] || WEB_SWEEP_LAYERS[0];
-    t.ax = def.a[0] * gs.w;
-    t.ay = def.a[1] * gs.h;
-    t.bx = def.b[0] * gs.w;
-    t.by = def.b[1] * gs.h;
-    t.cx = def.c[0] * gs.w;
-    t.cy = def.c[1] * gs.h;
     t.thickness = Math.max(1.1, Math.min(gs.w, gs.h) * (def.thickRatio || layerDef.thickRatio));
     t.threshold = def.threshold || layerDef.threshold;
     t.color = def.color || layerDef.color;
+    t.layer = def.layer;
+
+    // Sub-chains (created by break split) skip rest re-sampling.
+    if (t.frozenLayout === 1) return;
+
+    // Sample the existing quadratic bezier (def.a, def.c, def.b) at t=i/(N-1) for i=0..6.
+    const ax = def.a[0] * gs.w, ay = def.a[1] * gs.h;
+    const bx = def.b[0] * gs.w, by = def.b[1] * gs.h;
+    const cx = (def.c ? def.c[0] : (def.a[0] + def.b[0]) / 2) * gs.w;
+    const cy = (def.c ? def.c[1] : (def.a[1] + def.b[1]) / 2) * gs.h;
+    const points = new Array(WEB_CHAIN_N);
+    for (let i = 0; i < WEB_CHAIN_N; i++) {
+      const q = i / (WEB_CHAIN_N - 1);
+      const u = 1 - q;
+      const px = u * u * ax + 2 * u * q * cx + q * q * bx;
+      const py = u * u * ay + 2 * u * q * cy + q * q * by;
+      points[i] = {
+        x: px, y: py,
+        prevX: px, prevY: py,
+        restX: px, restY: py,
+        pinned: (i === 0 || i === WEB_CHAIN_N - 1) ? 1 : 0,
+        grabbed: 0,
+        grabStartAt: 0,
+        taper: 1,
+      };
+    }
+    t.points = points;
+    // Build 6 segments. End segments unbreakable so anchors never fly off.
+    const constraints = new Array(WEB_CHAIN_N - 1);
+    let restTotal = 0;
+    for (let i = 0; i < WEB_CHAIN_N - 1; i++) {
+      const a = points[i], b = points[i + 1];
+      const r = Math.hypot(b.x - a.x, b.y - a.y);
+      restTotal += r;
+      constraints[i] = {
+        i: i,
+        j: i + 1,
+        rest: r,
+        unbreakable: (i === 0 || i === WEB_CHAIN_N - 2) ? 1 : 0,
+        broken: 0,
+      };
+    }
+    t.constraints = constraints;
+    t.restTotal = restTotal;
+    t.currentTotal = restTotal;
+    t.stretchRatio = 1;
+    t.tension = 0;
+    t.grabbedIdx = -1;
+    t.broken = 0;
+    t.flashAt = 0;
+    t.flashX = 0;
+    t.flashY = 0;
   });
 }
 
@@ -6844,33 +6950,123 @@ function _startWebSweepLoop(gs) {
 }
 
 function _updateWebSweepPhysics(gs, dt) {
-  const sec = dt / 1000;
-  gs.broom.x += (gs.broom.tx - gs.broom.x) * Math.min(1, dt / 62);
-  gs.broom.y += (gs.broom.ty - gs.broom.y) * Math.min(1, dt / 62);
-  gs.threads.forEach(function(t) {
-    if (t.detached) {
-      t.detachAge += dt;
-      t.pullX += t.vx * sec;
-      t.pullY += t.vy * sec;
-      t.vx *= Math.pow(0.86, dt / 16);
-      t.vy = t.vy * Math.pow(0.88, dt / 16) + 22 * sec;
-      t.opacity = Math.max(0, 1 - t.detachAge / 900);
-      return;
+  // Reduced-motion: skip Verlet entirely; points stay at rest.
+  if (_webSweepReducedMotion()) {
+    // Particles/ripples still tick so VFX spawned by reduced-motion detach can finish.
+    const sec0 = dt / 1000;
+    gs.particles.forEach(function(p) {
+      p.age += dt;
+      p.x += p.vx * sec0;
+      p.y += p.vy * sec0;
+      p.vx *= Math.pow(0.84, dt / 16);
+      p.vy = p.vy * Math.pow(0.86, dt / 16) + 26 * sec0;
+    });
+    gs.particles = gs.particles.filter(function(p) { return p.age < p.life; });
+    gs.ripples.forEach(function(r) { r.age += dt; });
+    gs.ripples = gs.ripples.filter(function(r) { return r.age < r.life; });
+    gs.threads.forEach(function(t) {
+      if (t.detached) {
+        t.detachAge += dt;
+        t.opacity = Math.max(0, 1 - t.detachAge / 900);
+      }
+      if (t.layerFadeStart) {
+        t.opacity = Math.max(0, 1 - (performance.now() - t.layerFadeStart) / 300);
+      }
+      t.stick = Math.max(0, t.stick - sec0 * 1.8);
+    });
+    return;
+  }
+
+  const sec = Math.min(WEB_DT_CLAMP_MAX_MS / 1000, dt / 1000);
+
+  // 1) Capture broom prev/spring lerp, derive vx/vy/speed.
+  const bx0 = gs.broom.x, by0 = gs.broom.y;
+  gs.broom.prevX = bx0;
+  gs.broom.prevY = by0;
+  const lerp = Math.min(1, dt / 62);
+  gs.broom.x += (gs.broom.tx - gs.broom.x) * lerp;
+  gs.broom.y += (gs.broom.ty - gs.broom.y) * lerp;
+  gs.broom.vx = (gs.broom.x - bx0) / (sec || 0.0001);
+  gs.broom.vy = (gs.broom.y - by0) / (sec || 0.0001);
+  const broomSpeed = Math.hypot(gs.broom.vx, gs.broom.vy);
+  gs.speed = broomSpeed / 1000;
+  const minDim = Math.min(gs.w, gs.h);
+
+  // 2) Acquire/release rope grabs every tick from the up-to-date broom position.
+  _captureRopeGrabs(gs);
+
+  for (const t of gs.threads) {
+    if (t.detached || t.broken) {
+      _updateDetachedThread(t, sec, dt);
+      continue;
     }
     if (t.layerFadeStart) {
       t.opacity = Math.max(0, 1 - (performance.now() - t.layerFadeStart) / 300);
     }
-    const layer = Math.max(0, Math.min(2, gs.currentLayer || 0));
-    const spring = gs.dragging ? LAYER_SPRING_DRAG[layer] : LAYER_SPRING_REST[layer];
-    t.vx += -t.pullX * spring * sec;
-    t.vy += -t.pullY * spring * sec;
-    t.vx *= Math.pow(0.72, dt / 16);
-    t.vy *= Math.pow(0.72, dt / 16);
-    t.pullX += t.vx * sec;
-    t.pullY += t.vy * sec;
-    t.tension *= Math.pow(0.965, dt / 16);
+
+    const pts = t.points;
+    if (!pts || pts.length !== WEB_CHAIN_N) continue;
+
+    // 3) Verlet integrate free, non-grabbed points.
+    for (let i = 1; i <= WEB_CHAIN_N - 2; i++) {
+      const p = pts[i];
+      if (p.pinned) {
+        p.x = p.restX; p.y = p.restY;
+        p.prevX = p.x; p.prevY = p.y;
+        continue;
+      }
+      if (p.grabbed) {
+        const blend = 1 - Math.pow(1 - WEB_GRAB_BLEND_K, dt / 16);
+        const nx = p.x + (gs.broom.x - p.x) * blend;
+        const ny = p.y + (gs.broom.y - p.y) * blend;
+        p.prevX = p.x; p.prevY = p.y;
+        p.x = nx; p.y = ny;
+      } else {
+        const vx = (p.x - p.prevX) * WEB_LINEAR_DAMP;
+        const vy = (p.y - p.prevY) * WEB_LINEAR_DAMP;
+        p.prevX = p.x; p.prevY = p.y;
+        p.x += vx;
+        p.y += vy + WEB_MICRO_GRAVITY * sec * sec;
+      }
+    }
+
+    // 4) Constraint relaxation.
+    const iters = (dt > 26) ? WEB_CONSTRAINT_ITERS_LOW_FPS : WEB_CONSTRAINT_ITERS;
+    for (let it = 0; it < iters; it++) {
+      for (const c of t.constraints) {
+        if (c.broken) continue;
+        const pi = pts[c.i], pj = pts[c.j];
+        const dx = pj.x - pi.x, dy = pj.y - pi.y;
+        const d = Math.hypot(dx, dy) || 0.0001;
+        const diff = (d - c.rest) / d;
+        const wi = pi.pinned ? 0 : (pi.grabbed ? WEB_GRAB_WEIGHT : WEB_FREE_WEIGHT);
+        const wj = pj.pinned ? 0 : (pj.grabbed ? WEB_GRAB_WEIGHT : WEB_FREE_WEIGHT);
+        const wsum = wi + wj;
+        if (wsum === 0) continue;
+        pi.x += dx * diff * (wi / wsum);
+        pi.y += dy * diff * (wi / wsum);
+        pj.x -= dx * diff * (wj / wsum);
+        pj.y -= dy * diff * (wj / wsum);
+      }
+    }
+
+    // 5) Recompute totals + stretch.
+    let total = 0;
+    for (let i = 0; i < WEB_CHAIN_N - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      total += Math.hypot(b.x - a.x, b.y - a.y);
+    }
+    t.currentTotal = total;
+    t.stretchRatio = t.restTotal > 0 ? total / t.restTotal : 1;
+    t.tension = Math.max(0, Math.min(1, t.stretchRatio - 1));
+
+    // 6) Stick decay (SFX/draw compat).
     t.stick = Math.max(0, t.stick - sec * 1.8);
-  });
+
+    // 7) Break evaluation.
+    _evaluateBreak(gs, t, broomSpeed, minDim);
+  }
+
   gs.particles.forEach(function(p) {
     p.age += dt;
     p.x += p.vx * sec;
@@ -6883,85 +7079,256 @@ function _updateWebSweepPhysics(gs, dt) {
   gs.ripples = gs.ripples.filter(function(r) { return r.age < r.life; });
 }
 
-function _webThreadCoords(t, now) {
-  const free = t.detached ? Math.min(1, t.detachAge / 420) : 0;
-  const wob = Math.sin(now / 170 + t.phase) * (t.thickness * (0.45 + t.tension * 0.5));
-  return {
-    ax: t.ax + t.pullX * free * 0.52,
-    ay: t.ay + t.pullY * free * 0.52,
-    bx: t.bx + t.pullX * free * 0.42,
-    by: t.by + t.pullY * free * 0.42,
-    cx: t.cx + t.pullX + wob,
-    cy: t.cy + t.pullY + Math.abs(wob) * 0.38,
-  };
-}
-
-function _webQuadPoint(c, q) {
-  const u = 1 - q;
-  return {
-    x: u * u * c.ax + 2 * u * q * c.cx + q * q * c.bx,
-    y: u * u * c.ay + 2 * u * q * c.cy + q * q * c.by,
-  };
-}
-
-function _webDistanceToThread(t, x, y) {
-  const c = _webThreadCoords(t, performance.now());
-  let best = Infinity;
-  let bestPoint = { x: c.cx, y: c.cy };
-  for (let i = 0; i <= 18; i++) {
-    const p = _webQuadPoint(c, i / 18);
-    const d = Math.hypot(p.x - x, p.y - y);
-    if (d < best) {
-      best = d;
-      bestPoint = p;
+function _updateDetachedThread(t, sec, dt) {
+  t.detachAge += dt;
+  // Free-flight Verlet: each point integrates its own velocity (x - prevX) * damp.
+  if (t.points && t.points.length) {
+    for (let i = 0; i < t.points.length; i++) {
+      const p = t.points[i];
+      const vx = (p.x - p.prevX) * 0.9;
+      const vy = (p.y - p.prevY) * 0.9;
+      p.prevX = p.x; p.prevY = p.y;
+      p.x += vx;
+      p.y += vy + 18 * sec * sec; // light gravity so detached silk drifts down
     }
   }
-  return { distance: best, point: bestPoint };
+  t.opacity = Math.max(0, 1 - t.detachAge / 900);
 }
 
-function _applyWebBroomSweep(gs, x, y, dx, dy, dt) {
-  if (!gs || gs.locked) return;
-  const drag = Math.hypot(dx, dy);
-  if (drag < 1.4) return;
-  const speed = drag / Math.max(16, dt) * 1000;
-  gs.speed = speed / 1000;
-  const radius = Math.max(34, Math.min(gs.w, gs.h) * 0.13);
-  let hitAny = false;
-  const targets = gs.threads.filter(function(t) {
-    return !t.detached && t.def.layer === gs.currentLayer;
-  });
-  targets.forEach(function(t) {
-    if (t.detached) return;
-    const hit = _webDistanceToThread(t, x, y);
-    const reach = radius + t.thickness * 4.5;
-    if (hit.distance > reach) return;
-    const weight = Math.max(0.06, 1 - hit.distance / reach);
-    hitAny = true;
-    t.pullX += (dx * 0.46 + (x - hit.point.x) * 0.1) * weight;
-    t.pullY += (dy * 0.46 + (y - hit.point.y) * 0.1) * weight;
-    const maxPull = Math.min(gs.w, gs.h) * 0.22;
-    const pullLen = Math.hypot(t.pullX, t.pullY);
-    if (pullLen > maxPull) {
-      t.pullX = t.pullX / pullLen * maxPull;
-      t.pullY = t.pullY / pullLen * maxPull;
+function _captureRopeGrabs(gs) {
+  if (!gs.dragging || gs.locked) return;
+  const R = Math.max(WEB_GRAB_RADIUS_MIN_PX, Math.min(gs.w, gs.h) * WEB_GRAB_RADIUS_FACTOR);
+  const R2 = R * R;
+  const RELEASE = R * WEB_GRAB_RELEASE_HYSTERESIS;
+  const RELEASE2 = RELEASE * RELEASE;
+  const bx = gs.broom.x, by = gs.broom.y;
+
+  // (a) Maintain existing grabs: release if broom drifts beyond hysteresis.
+  for (const t of gs.threads) {
+    if (t.grabbedIdx < 0 || t.detached || t.broken) continue;
+    const p = t.points[t.grabbedIdx];
+    if (!p) { t.grabbedIdx = -1; continue; }
+    const dxg = p.x - bx, dyg = p.y - by;
+    const d2 = dxg * dxg + dyg * dyg;
+    if (d2 > RELEASE2) {
+      p.grabbed = 0; p.grabStartAt = 0;
+      t.grabbedIdx = -1;
+      gs.activeGrabs = Math.max(0, gs.activeGrabs - 1);
     }
-    t.vx += dx * 5.4 * weight;
-    t.vy += dy * 5.4 * weight;
-    t.tension = Math.min(1.8, t.tension + (drag / 82 + speed / 6200) * weight);
-    t.sweep += Math.min(0.055, (drag / 190 + speed / 9300) * weight);
+  }
+
+  // (b) Acquire new grabs from current-layer chains, max 4 total, 1 per chain.
+  if (gs.activeGrabs >= WEB_GRAB_MAX_CONCURRENT) return;
+  const candidates = [];
+  for (let ti = 0; ti < gs.threads.length; ti++) {
+    const t = gs.threads[ti];
+    if (t.detached || t.broken) continue;
+    if (t.def.layer !== gs.currentLayer) continue;
+    if (t.grabbedIdx >= 0) continue;
+    if (!t.points || t.points.length !== WEB_CHAIN_N) continue;
+    let bestI = -1, bestD2 = R2;
+    for (let i = 1; i <= WEB_CHAIN_N - 2; i++) {
+      const p = t.points[i];
+      const d2 = (p.x - bx) * (p.x - bx) + (p.y - by) * (p.y - by);
+      if (d2 < bestD2) { bestD2 = d2; bestI = i; }
+    }
+    if (bestI >= 0) candidates.push({ ti: ti, i: bestI, d2: bestD2 });
+  }
+  candidates.sort(function(a, b) { return a.d2 - b.d2; });
+  const now = performance.now();
+  for (const c of candidates) {
+    if (gs.activeGrabs >= WEB_GRAB_MAX_CONCURRENT) break;
+    const t = gs.threads[c.ti];
+    t.grabbedIdx = c.i;
+    t.points[c.i].grabbed = 1;
+    t.points[c.i].grabStartAt = now;
     t.stick = 1;
-    if (Math.random() < 0.1) _spawnWebGlob(gs, hit.point.x, hit.point.y, dx, dy, weight);
-    if (gs.vibrate) gs.vibrate(8);
-  });
-  if (hitAny) {
-    if (performance.now() - gs.lastSfxAt > 120) {
-      _playWebStickySfx('stretch');
-      gs.lastSfxAt = performance.now();
+    gs.activeGrabs++;
+    if (now - (gs.lastSfxAt || 0) > 120) {
+      _playWebStickySfx('soft');
+      gs.lastSfxAt = now;
     }
+    if (gs.vibrate) gs.vibrate(WEB_VIBRATE_SOFT_MS);
     if (gs.currentLayer === 0) _setWebSweepStatus(gs, 'クモさんの まわりを やさしく はらってね');
     else if (gs.currentLayer === 1) _setWebSweepStatus(gs, 'もう ちょっと! キラキラ のこってる');
     else _setWebSweepStatus(gs, 'そう、 そのちょうし! いとが ゆるんできた');
   }
+}
+
+function _releaseAllRopeGrabs(gs) {
+  if (!gs) return;
+  for (const t of gs.threads) {
+    if (t.grabbedIdx < 0) continue;
+    const p = t.points && t.points[t.grabbedIdx];
+    if (p) { p.grabbed = 0; p.grabStartAt = 0; }
+    t.grabbedIdx = -1;
+  }
+  gs.activeGrabs = 0;
+}
+
+function _evaluateBreak(gs, t, broomSpeed, minDim) {
+  if (t.grabbedIdx < 0 || t.broken || t.detached) return;
+  const now = performance.now();
+  const p = t.points[t.grabbedIdx];
+  if (!p) return;
+  const condA = t.stretchRatio > WEB_BREAK_STRETCH_RATIO;
+  const condB = p.grabStartAt > 0 && (now - p.grabStartAt) > WEB_BREAK_SUSTAIN_MS;
+  const condC = broomSpeed > minDim * WEB_BREAK_FAST_SPEED_FACTOR && t.stretchRatio > WEB_BREAK_FAST_STRETCH;
+  if (!(condA || condB || condC)) return;
+
+  // Find weakest (most stretched) breakable segment.
+  let breakIdx = -1, worstStretch = -Infinity;
+  for (let k = 0; k < t.constraints.length; k++) {
+    const c = t.constraints[k];
+    if (c.unbreakable || c.broken) continue;
+    const a = t.points[c.i], b = t.points[c.j];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const s = len - c.rest;
+    if (s > worstStretch) { worstStretch = s; breakIdx = k; }
+  }
+  if (breakIdx < 0) {
+    // Fallback: pick segment adjacent to the grabbed point (interior side).
+    breakIdx = Math.max(1, Math.min(t.constraints.length - 2, t.grabbedIdx - 1));
+  }
+
+  const cseg = t.constraints[breakIdx];
+  const pa = t.points[cseg.i], pb = t.points[cseg.j];
+  const bx = (pa.x + pb.x) / 2;
+  const by = (pa.y + pb.y) / 2;
+
+  // SPLIT in-place: parent becomes broken+detached; spawn two sub-chains.
+  const subA = _makeSubChain(t, 0, cseg.i);              // points[0..cseg.i]
+  const subB = _makeSubChain(t, cseg.j, WEB_CHAIN_N - 1); // points[cseg.j..6]
+
+  // Snap-back impulse via Verlet prev injection (recoil away from the break point).
+  const dx = pb.x - pa.x, dy = pb.y - pa.y;
+  const dlen = Math.hypot(dx, dy) || 1;
+  const ux = dx / dlen, uy = dy / dlen;
+  if (subA && subA.points.length) {
+    const endA = subA.points[subA.points.length - 1];
+    endA.prevX = endA.x + ux * WEB_SNAPBACK_IMPULSE_PX;
+    endA.prevY = endA.y + uy * WEB_SNAPBACK_IMPULSE_PX;
+  }
+  if (subB && subB.points.length) {
+    const endB = subB.points[0];
+    endB.prevX = endB.x - ux * WEB_SNAPBACK_IMPULSE_PX;
+    endB.prevY = endB.y - uy * WEB_SNAPBACK_IMPULSE_PX;
+  }
+  if (subA) {
+    subA.flashAt = now; subA.flashX = bx; subA.flashY = by;
+    // Mark sub-chains detached so _updateDetachedThread integrates them and the
+    // snap-back impulse (encoded into prev positions above) actually produces
+    // visible recoil/falling silk VFX. The main physics loop skips them due
+    // to the WEB_CHAIN_N length guard, so without this flag they freeze.
+    subA.detached = true; subA.detachAge = 0;
+  }
+  if (subB) {
+    subB.flashAt = now; subB.flashX = bx; subB.flashY = by;
+    subB.detached = true; subB.detachAge = 0;
+  }
+
+  // Mark original broken + scheduled for removal via opacity fade.
+  t.broken = 1;
+  t.opacity = 0;
+  t.detached = true;
+  t.detachAge = 0;
+  if (subA) gs.threads.push(subA);
+  if (subB) gs.threads.push(subB);
+
+  // Release the grab on the parent.
+  if (t.grabbedIdx >= 0) {
+    const gp = t.points[t.grabbedIdx];
+    if (gp) { gp.grabbed = 0; gp.grabStartAt = 0; }
+    t.grabbedIdx = -1;
+    gs.activeGrabs = Math.max(0, gs.activeGrabs - 1);
+  }
+
+  // VFX + SFX.
+  const dxv = gs.broom.vx || 0;
+  const dyv = gs.broom.vy || 0;
+  for (let i = 0; i < 6; i++) _spawnWebGlob(gs, bx, by, dxv * 0.02, dyv * 0.02, 1.4);
+  _spawnWebRipple(gs, bx, by);
+  _playWebStickySfx('snap');
+  if (gs.vibrate) gs.vibrate(WEB_VIBRATE_SNAP_MS);
+
+  // Layer-clear check.
+  _checkWebSweepLayerClear(gs, t.def.layer);
+}
+
+function _makeSubChain(parent, startIdx, endIdx) {
+  if (!parent || !parent.points) return null;
+  const n = endIdx - startIdx + 1;
+  if (n < 2) return null;
+  const points = new Array(n);
+  let restTotal = 0;
+  for (let k = 0; k < n; k++) {
+    const src = parent.points[startIdx + k];
+    points[k] = {
+      x: src.x, y: src.y,
+      prevX: src.prevX, prevY: src.prevY,
+      restX: src.restX, restY: src.restY,
+      pinned: 0,
+      grabbed: 0,
+      grabStartAt: 0,
+      taper: 1,
+    };
+  }
+  // The sub-chain keeps the original anchor end pinned (if it includes index 0
+  // or WEB_CHAIN_N-1 of the parent). The break-side end stays free.
+  if (startIdx === 0) points[0].pinned = 1;
+  if (endIdx === WEB_CHAIN_N - 1) points[n - 1].pinned = 1;
+
+  const constraints = new Array(n - 1);
+  for (let k = 0; k < n - 1; k++) {
+    const a = points[k], b = points[k + 1];
+    const srcConstraint = parent.constraints[startIdx + k];
+    const rest = srcConstraint ? srcConstraint.rest : Math.hypot(b.x - a.x, b.y - a.y);
+    restTotal += rest;
+    constraints[k] = {
+      i: k, j: k + 1, rest: rest,
+      unbreakable: 1, // sub-chains do not split further
+      broken: 0,
+    };
+  }
+
+  return {
+    index: parent.index, // diagnostic
+    def: parent.def,
+    layer: parent.def.layer,
+    color: parent.color,
+    thickness: parent.thickness,
+    threshold: parent.threshold,
+    phase: parent.phase,
+    points: points,
+    constraints: constraints,
+    restTotal: restTotal,
+    currentTotal: restTotal,
+    stretchRatio: 1,
+    tension: 0,
+    grabbedIdx: -1,
+    broken: 0,
+    frozenLayout: 1,
+    parentIndex: parent.index,
+    flashAt: 0,
+    flashX: 0,
+    flashY: 0,
+    stick: 0,
+    detached: false,
+    detachAge: 0,
+    opacity: 1,
+    layerFadeStart: 0,
+  };
+}
+
+function _checkWebSweepLayerClear(gs, layer) {
+  if (!gs || gs.locked) return;
+  if (gs.currentLayer !== layer) return;
+  // Exclude frozen sub-chains (frozenLayout=1) — they are post-break visual remnants,
+  // not original "to be cleared" chains. Counting them would softlock the layer.
+  const remaining = gs.threads.filter(function(x) {
+    return x.def.layer === layer && !x.broken && !x.detached && !x.frozenLayout && x.opacity > 0.02;
+  });
+  if (remaining.length === 0) _onWebSweepLayerCleared(gs);
 }
 
 function _detachWebThread(gs, t, x, y, dx, dy) {
@@ -6969,33 +7336,63 @@ function _detachWebThread(gs, t, x, y, dx, dy) {
   t.detached = true;
   t.detachAge = 0;
   t.opacity = 1;
-  t.vx += dx * 22 + (Math.random() - 0.5) * 120;
-  t.vy += dy * 22 - 70 + (Math.random() - 0.5) * 90;
+  // Inject a Verlet velocity snapshot per point in the broom direction so
+  // _updateDetachedThread carries the silk away naturally.
+  if (t.points && t.points.length) {
+    for (let i = 0; i < t.points.length; i++) {
+      const p = t.points[i];
+      const jx = Math.sin(t.phase + i * 0.91) * 18;
+      const jy = Math.sin(t.phase * 1.3 + i * 1.27) * 14;
+      p.prevX = p.x - (dx * 0.6 + jx);
+      p.prevY = p.y - (dy * 0.6 + jy - 6);
+      p.pinned = 0;
+      p.grabbed = 0;
+    }
+  }
   gs.detachedCount++;
   gs.strokeDetachCount = (gs.strokeDetachCount || 0) + 1;
   _spawnWebRipple(gs, x, y);
   for (let i = 0; i < 7; i++) _spawnWebGlob(gs, x, y, dx, dy, 1.2);
   _playWebStickySfx('snap');
-  if (gs.vibrate) gs.vibrate(8);
+  if (gs.vibrate) gs.vibrate(WEB_VIBRATE_SOFT_MS);
+}
+
+function _applyWebBroomSweep(gs, x, y, dx, dy, dt) {
+  // Now a thin coordinator. Physics loop handles grab capture/break via _captureRopeGrabs/_evaluateBreak.
+  // Kept as a stable export point for legacy callers; current pointermove no longer calls it.
+  if (!gs || gs.locked) return;
+  _captureRopeGrabs(gs);
 }
 
 function _onWebSweepLayerCleared(gs) {
   if (!gs || gs.locked || gs.currentLayer >= WEB_SWEEP_LAYERS.length) return;
   const layer = gs.currentLayer;
+  // Guard against re-entry while a fade is in progress for the same layer.
+  if (gs.layerClearAt[layer]) return;
   const now = performance.now();
   gs.layerClearAt[layer] = now;
   gs.strokeCounter[layer] = 0;
   gs.lastDirX = null;
   gs.threads.forEach(function(t) {
-    if (t.def.layer !== layer || t.detached) return;
+    if (t.def.layer !== layer || t.detached || t.broken) return;
     t.layerFadeStart = now;
-    t.vx += (Math.random() - 0.5) * 70;
-    t.vy += -34 + Math.random() * 42;
+    // Deterministic recoil per-point via Verlet prev injection (no Math.random).
+    if (t.points && t.points.length) {
+      for (let i = 0; i < t.points.length; i++) {
+        const p = t.points[i];
+        const jx = Math.sin(t.phase + i * 0.71) * 9;
+        const jy = -4 + Math.sin(t.phase * 1.3 + i * 0.91) * 6;
+        p.prevX = p.x - jx;
+        p.prevY = p.y - jy;
+        p.pinned = 0;
+      }
+    }
   });
   _spawnLayerSparkle(gs, layer);
   gs.spiderEmotion = Math.min(2, gs.spiderEmotion + 1);
   _playMzSePitch('correct', 2 * layer);
   if (gs.vibrate) gs.vibrate(30);
+  _releaseAllRopeGrabs(gs);
   _webGimmickSetTimeout(function() {
     if (gs !== _webGameState) return;
     gs.threads.forEach(function(t) {
@@ -7016,14 +7413,21 @@ function _onWebSweepLayerCleared(gs) {
 
 function _spawnWebGlob(gs, x, y, dx, dy, weight) {
   if (_webSweepReducedMotion()) return;
+  // Deterministic jitter via Math.sin on a monotonic counter (per project rule: no Math.random).
+  gs._globSeed = (gs._globSeed || 0) + 1;
+  const s = gs._globSeed;
+  const j1 = Math.sin(s * 12.9898) - Math.floor(Math.sin(s * 12.9898));
+  const j2 = Math.sin(s * 78.233) - Math.floor(Math.sin(s * 78.233));
+  const j3 = Math.sin(s * 43.5453) - Math.floor(Math.sin(s * 43.5453));
+  const j4 = Math.sin(s * 31.7) - Math.floor(Math.sin(s * 31.7));
   gs.particles.push({
-    x: x + (Math.random() - 0.5) * 12,
-    y: y + (Math.random() - 0.5) * 12,
-    vx: dx * (2.2 + Math.random() * 2.4) + (Math.random() - 0.5) * 85,
-    vy: dy * (2.2 + Math.random() * 2.4) + (Math.random() - 0.5) * 70,
-    r: Math.max(2.2, 4.5 * (weight || 1) * (0.55 + Math.random())),
+    x: x + (j1 - 0.5) * 12,
+    y: y + (j2 - 0.5) * 12,
+    vx: dx * (2.2 + j3 * 2.4) + (j1 - 0.5) * 85,
+    vy: dy * (2.2 + j4 * 2.4) + (j2 - 0.5) * 70,
+    r: Math.max(2.2, 4.5 * (weight || 1) * (0.55 + j3)),
     age: 0,
-    life: 620 + Math.random() * 360,
+    life: 620 + j4 * 360,
     color: 'rgba(240,255,246,0.82)',
   });
   if (gs.particles.length > 80) gs.particles.splice(0, gs.particles.length - 80);
@@ -7048,12 +7452,14 @@ function _spawnLayerSparkle(gs, layerIdx) {
   const y = gs.h * 0.5;
   for (let i = 0; i < 8; i++) {
     const a = i / 8 * Math.PI * 2;
+    // Deterministic per-spoke radius variance via Math.sin (no Math.random).
+    const jitter = (Math.sin(i * 12.9898 + (layerIdx + 1) * 7.7) + 1) * 0.5; // [0..1]
     gs.particles.push({
       x: x,
       y: y,
       vx: Math.cos(a) * 210,
       vy: Math.sin(a) * 210,
-      r: 4 + Math.random() * 2.5,
+      r: 4 + jitter * 2.5,
       age: 0,
       life: 600,
       color: _webSweepColorToRgba(layer.sparkleColor, 0.85),
@@ -7063,7 +7469,9 @@ function _spawnLayerSparkle(gs, layerIdx) {
 }
 
 function _spawnWebRipple(gs, x, y) {
-  gs.ripples.push({ x: x, y: y, age: 0, life: 520, maxR: Math.min(gs.w, gs.h) * (0.16 + Math.random() * 0.08) });
+  gs._rippleSeed = (gs._rippleSeed || 0) + 1;
+  const j = (Math.sin(gs._rippleSeed * 12.9898) + 1) * 0.5; // [0..1]
+  gs.ripples.push({ x: x, y: y, age: 0, life: 520, maxR: Math.min(gs.w, gs.h) * (0.16 + j * 0.08) });
 }
 
 function _drawWebSweepGame(gs, now) {
@@ -7136,61 +7544,205 @@ function _drawWebSweepGame(gs, now) {
   _drawWebBroom(g, gs.broom.x, gs.broom.y, gs.broom.angle, Math.min(w, h));
 }
 
+// Build a Catmull-Rom (tension 0.5) curve through `pts` and stroke. If `offset` is given,
+// translates the entire path by (offset.dx, offset.dy). Uses Path2D if available.
+function _buildSilkPath(pts, hasPath2D, offset) {
+  const ox = offset ? offset.dx : 0;
+  const oy = offset ? offset.dy : 0;
+  const path = hasPath2D ? new Path2D() : null;
+  if (!path) return null; // caller falls back to ctx path
+  const n = pts.length;
+  if (n < 2) return path;
+  path.moveTo(pts[0].x + ox, pts[0].y + oy);
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = i === 0 ? pts[0] : pts[i - 1];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = (i + 2 < n) ? pts[i + 2] : pts[n - 1];
+    // Catmull-Rom → cubic bezier (tension = 0.5 ⇒ standard formulation).
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    path.bezierCurveTo(cp1x + ox, cp1y + oy, cp2x + ox, cp2y + oy, p2.x + ox, p2.y + oy);
+  }
+  return path;
+}
+
+function _strokeSilkFallback(g, pts, offset) {
+  const ox = offset ? offset.dx : 0;
+  const oy = offset ? offset.dy : 0;
+  const n = pts.length;
+  if (n < 2) return;
+  g.beginPath();
+  g.moveTo(pts[0].x + ox, pts[0].y + oy);
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = i === 0 ? pts[0] : pts[i - 1];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = (i + 2 < n) ? pts[i + 2] : pts[n - 1];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    g.bezierCurveTo(cp1x + ox, cp1y + oy, cp2x + ox, cp2y + oy, p2.x + ox, p2.y + oy);
+  }
+  g.stroke();
+}
+
 function _drawWebSweepThread(g, t, now, gs) {
   if (t.opacity <= 0.02) return;
-  const c = _webThreadCoords(t, now);
+  if (t.broken) return; // parent shells render nothing after split
+  const pts = t.points;
+  if (!pts || pts.length < 2) return;
   const alpha = t.opacity;
-  const extra = 1 + t.stick * 0.5 + t.tension * 0.22;
+  const tension = Math.max(0, Math.min(1, t.tension || 0));
+  const thickness = t.thickness || 1.1;
+
+  // Reduced-motion: single-pass polyline (no Catmull-Rom, no highlight, no dew).
+  if (_webSweepReducedMotion()) {
+    g.save();
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.globalAlpha = alpha;
+    g.shadowColor = 'rgba(104, 136, 144, 0.28)';
+    g.shadowBlur = 5;
+    g.strokeStyle = t.def.layer === 0 ? 'rgba(72, 72, 80, 0.33)' : 'rgba(54, 80, 98, 0.2)';
+    g.lineWidth = Math.max(1.7, thickness * 1.75);
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
+    g.stroke();
+    g.shadowBlur = 0;
+    g.strokeStyle = t.color || 'rgba(250, 255, 248, 0.94)';
+    g.lineWidth = Math.max(0.85, thickness * 0.9);
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
+    g.stroke();
+    g.restore();
+    return;
+  }
+
+  const hasPath2D = gs ? gs._hasPath2D : (typeof Path2D !== 'undefined');
+  const mainPath = hasPath2D ? _buildSilkPath(pts, true, null) : null;
+  const offsetPath = hasPath2D ? _buildSilkPath(pts, true, { dx: 1, dy: -1 }) : null;
+
   g.save();
   g.lineCap = 'round';
   g.lineJoin = 'round';
   g.globalCompositeOperation = 'source-over';
   g.globalAlpha = alpha;
+
+  // PASS 1: shadow halo (blur capped at 8px per perf budget — high tension still
+  // pushes width via lineWidth below, so the visual punch is preserved without
+  // the shadow blur radius blowing past the cap on low-end Android tablets).
   g.shadowColor = 'rgba(104, 136, 144, 0.28)';
-  g.shadowBlur = 5 + t.tension * 10;
-  g.strokeStyle = t.def.layer === 0 ? 'rgba(72, 72, 80, 0.33)' : 'rgba(54, 80, 98, 0.2)';
-  g.lineWidth = Math.max(1.7, t.thickness * 1.75 * extra);
-  g.beginPath();
-  g.moveTo(c.ax, c.ay);
-  g.quadraticCurveTo(c.cx, c.cy, c.bx, c.by);
-  g.stroke();
+  g.shadowBlur = Math.min(8, 5 + tension * 3);
+  g.strokeStyle = t.def.layer === 0 ? 'rgba(72, 72, 80, 0.33)' : 'rgba(54, 80, 98, 0.20)';
+  g.lineWidth = Math.max(1.7, thickness * 1.75 * (1 + tension * 0.4));
+  if (mainPath) g.stroke(mainPath); else _strokeSilkFallback(g, pts, null);
+
+  // PASS 2: main silk (tension-driven width taper + pale-white blend at high tension)
   g.shadowBlur = 0;
-  g.strokeStyle = t.color || 'rgba(250, 255, 248, 0.94)';
-  g.lineWidth = Math.max(0.85, t.thickness * 0.9 * extra);
-  g.beginPath();
-  g.moveTo(c.ax, c.ay);
-  g.quadraticCurveTo(c.cx, c.cy, c.bx, c.by);
-  g.stroke();
-  g.strokeStyle = 'rgba(159, 212, 226, 0.58)';
-  g.lineWidth = Math.max(0.55, t.thickness * 0.26);
-  g.beginPath();
-  g.moveTo(c.ax + 1, c.ay - 1);
-  g.quadraticCurveTo(c.cx + 2, c.cy - 2, c.bx + 1, c.by - 1);
-  g.stroke();
-  if (!t.detached && t.stick > 0.08 && gs && gs.dragging) {
-    const stickAlpha = Math.min(0.45, t.stick * 0.42);
-    g.globalAlpha = alpha * stickAlpha;
-    g.strokeStyle = 'rgba(250, 255, 248, 0.9)';
-    g.lineWidth = Math.max(0.65, t.thickness * 0.42);
-    g.beginPath();
-    g.moveTo(c.cx, c.cy);
-    g.quadraticCurveTo((c.cx + gs.broom.x) / 2, (c.cy + gs.broom.y) / 2 - t.thickness * 5, gs.broom.x, gs.broom.y);
-    g.stroke();
-    g.globalAlpha = alpha;
+  const baseColor = t.color || 'rgba(250,255,248,0.94)';
+  let stroke = baseColor;
+  if (tension > 0.5) {
+    // Blend toward 'rgba(255,255,255,0.9)' — pale silk under tension.
+    const k = Math.min(1, (tension - 0.5) * 2);
+    const rgba = _webBlendColorToWhite(baseColor, k);
+    if (rgba) stroke = rgba;
   }
-  if (!t.detached) {
-    for (let i = 0; i < 1; i++) {
-      const p = _webQuadPoint(c, 0.32 + i * 0.28 + Math.sin(now / 700 + t.phase + i) * 0.03);
+  g.strokeStyle = stroke;
+  g.lineWidth = Math.max(0.55, thickness * 0.9 * (1 - tension * 0.55));
+  if (mainPath) g.stroke(mainPath); else _strokeSilkFallback(g, pts, null);
+
+  // PASS 3: highlight (offset +1,-1)
+  g.strokeStyle = 'rgba(159, 212, 226, 0.58)';
+  g.lineWidth = Math.max(0.55, thickness * 0.26);
+  if (offsetPath) g.stroke(offsetPath); else _strokeSilkFallback(g, pts, { dx: 1, dy: -1 });
+
+  // Dewdrops at points[2] and points[4]; hidden when tense.
+  if (!t.detached && pts.length === WEB_CHAIN_N && tension <= 0.4) {
+    const dewIdxs = [2, 4];
+    for (let k = 0; k < dewIdxs.length; k++) {
+      const idx = dewIdxs[k];
+      if (idx >= pts.length) continue;
+      const pp = pts[idx];
+      const wob = Math.sin(t.phase + idx) * 0.6 + Math.sin(t.phase * 1.7 + idx * 0.3) * 0.3;
       g.fillStyle = 'rgba(244, 255, 241, 0.74)';
       g.shadowColor = 'rgba(189, 241, 227, 0.42)';
       g.shadowBlur = 3;
       g.beginPath();
-      g.ellipse(p.x, p.y, t.thickness * 0.72, t.thickness * 0.42, Math.sin(now / 400 + i), 0, Math.PI * 2);
+      g.ellipse(pp.x, pp.y + wob, thickness * 0.72, thickness * 0.42, Math.sin(t.phase + idx), 0, Math.PI * 2);
       g.fill();
       g.shadowBlur = 0;
     }
   }
+
+  // Grab drool: quadratic from grabbed point to broom.
+  if (!t.detached && t.grabbedIdx >= 0 && gs && gs.dragging) {
+    const gp = pts[t.grabbedIdx];
+    if (gp) {
+      const midX = (gp.x + gs.broom.x) / 2;
+      const midY = (gp.y + gs.broom.y) / 2;
+      const dxg = gs.broom.x - gp.x;
+      const dyg = gs.broom.y - gp.y;
+      const dlen = Math.hypot(dxg, dyg) || 1;
+      const perpX = -dyg / dlen;
+      const perpY = dxg / dlen;
+      const sag = thickness * 4 * (1 + tension * 0.6);
+      g.strokeStyle = 'rgba(250, 255, 248, 0.9)';
+      g.lineWidth = Math.max(0.65, thickness * 0.42 * (1 + tension * 0.6));
+      g.beginPath();
+      g.moveTo(gp.x, gp.y);
+      g.quadraticCurveTo(midX + perpX * sag * 0.3, midY + perpY * sag * 0.3 + sag, gs.broom.x, gs.broom.y);
+      g.stroke();
+    }
+  }
+
+  // Flash overlay on fresh break.
+  if (t.flashAt && (now - t.flashAt) < WEB_FLASH_MS) {
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    g.strokeStyle = 'rgba(255,255,255,0.85)';
+    g.lineWidth = thickness * 1.2;
+    if (mainPath) g.stroke(mainPath); else _strokeSilkFallback(g, pts, null);
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.beginPath();
+    g.arc(t.flashX, t.flashY, 12, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  }
+
   g.restore();
+}
+
+// Cached named-color → rgb triple for stretch tension blend.
+function _webBlendColorToWhite(color, k) {
+  if (typeof color !== 'string') return null;
+  const map = {
+    '#bbb': [187,187,187],
+    '#e8e8ff': [232,232,255],
+    '#ffe89a': [255,232,154],
+    '#ffffff': [255,255,255],
+    '#fff6c8': [255,246,200],
+    '#8a8a8a': [138,138,138],
+  };
+  let rgb = map[color];
+  if (!rgb) {
+    // crude rgba(r,g,b,a) parse fallback
+    const m = color.match(/rgba?\(([^)]+)\)/);
+    if (m) {
+      const parts = m[1].split(',').map(function(x) { return parseFloat(x); });
+      if (parts.length >= 3) rgb = [parts[0]|0, parts[1]|0, parts[2]|0];
+    }
+  }
+  if (!rgb) return null;
+  const r = Math.round(rgb[0] + (255 - rgb[0]) * k);
+  const g = Math.round(rgb[1] + (255 - rgb[1]) * k);
+  const b = Math.round(rgb[2] + (255 - rgb[2]) * k);
+  return 'rgba(' + r + ',' + g + ',' + b + ',0.9)';
 }
 
 function _drawWebButterflies(g, gs, now) {
@@ -7382,11 +7934,21 @@ function _finishWebSweepGame(gs) {
   gs.spiderEmotion = 2;
   if (gs.stageEl) gs.stageEl.classList.remove('is-dragging');
   _setWebSweepStatus(gs, 'クモさん、 でられたよ！');
+  _releaseAllRopeGrabs(gs);
   gs.threads.forEach(function(t) {
     if (!t.detached) {
       t.layerFadeStart = t.layerFadeStart || performance.now();
-      t.vx += (Math.random() - 0.5) * 160;
-      t.vy += -80 + Math.random() * 70;
+      // Deterministic recoil per-point via Verlet prev injection.
+      if (t.points && t.points.length) {
+        for (let i = 0; i < t.points.length; i++) {
+          const p = t.points[i];
+          const jx = Math.sin(t.phase + i * 0.61) * 20;
+          const jy = -10 + Math.sin(t.phase * 1.7 + i * 0.83) * 9;
+          p.prevX = p.x - jx;
+          p.prevY = p.y - jy;
+          p.pinned = 0;
+        }
+      }
     }
   });
   _webGimmickSetTimeout(function() {
