@@ -6841,24 +6841,45 @@ const WEB_CONSTRAINT_ITERS = 4;
 const WEB_CONSTRAINT_ITERS_LOW_FPS = 5;
 const WEB_LINEAR_DAMP = 0.985;
 const WEB_MICRO_GRAVITY = 6;
-// v1044: lowered blend so grabbed point catches up to broom over ~17 frames (~280ms)
-// instead of 2-3 frames. Chain visibly bows BEHIND broom during pull — "pulling through honey".
-const WEB_GRAB_BLEND_K = 0.18;
+// v1045: blend lowered 0.18 → 0.06. Catch-up time constant ~50 frames (~830ms).
+// Grabbed point trails throughout an entire 1s sweep — visible silk stretched behind
+// broom the whole way, not only for the first ~150ms. Reads as 粘り (viscosity).
+const WEB_GRAB_BLEND_K = 0.06;
 // v1044: raised to 0.70 (vs WEB_FREE_WEIGHT=0.85) so the grabbed point resists the
 // constraint solver more — chain stays stretched in broom direction instead of snapping back.
 const WEB_GRAB_WEIGHT = 0.70;
 const WEB_FREE_WEIGHT = 0.85;
+// v1045: weight for the two chain points immediately adjacent to grabbedIdx during
+// constraint relaxation. Lower than WEB_FREE_WEIGHT=0.85 so neighbors yield LESS —
+// they pull back on the grabbed point, producing chain-tension drag (糸が引っ張り返す).
+const WEB_GRAB_NEIGHBOR_WEIGHT = 0.55;
+// v1045: viscous coupling between broom velocity and grabbed-point velocity. After
+// per-frame BLEND_K catch-up, applies extra trailing offset proportional to the
+// differential vs broom velocity. Fast sweeps stretch the strand farther than slow
+// sweeps — signature 'honey' behavior.
+const WEB_GRAB_VISCOUS_DRAG = 0.22;
 const WEB_GRAB_RADIUS_MIN_PX = 36;
 // Larger capture (~0.13*minDim) + larger release hysteresis (~2.1) for toddler-sized
 // imprecise sweeps; grabs hang on through hand wobble so condD path accumulator fires.
 const WEB_GRAB_RADIUS_FACTOR = 0.13;
-const WEB_GRAB_RELEASE_HYSTERESIS = 2.1;
+// v1045: hysteresis raised 2.1 → 3.5. Release radius ~245px on minDim=540. Silk holds
+// through a child's full sweep gesture instead of detaching mid-motion.
+const WEB_GRAB_RELEASE_HYSTERESIS = 3.5;
+// v1045: time-based stickiness. After distance first exceeds RELEASE2, grab is NOT
+// released until grace expires OR distance exceeds R * RELEASE_HARD. Gives the
+// 'stretching to the breaking limit' feel before detach.
+const WEB_GRAB_RELEASE_GRACE_MS = 220;
+// v1045: absolute release radius (R*4.5 ≈ 315px). Even mid-grace, if broom drifts
+// this far the grab dies immediately — safety against soft-locked grabs on
+// pointerup-lost edge cases.
+const WEB_GRAB_RELEASE_HARD = 4.5;
 // v1044: halved to 2 to prevent cascade — paired with WEB_BREAK_COOLDOWN_MS the wipe
 // band holds at most 2 chains, and serializes break events 1-per-~220ms.
 const WEB_GRAB_MAX_CONCURRENT = 2;
-// v1044: raised condA/condC stretch thresholds to compensate for higher GRAB_WEIGHT
-// (which inflates stretchRatio during pulls). condD remains the primary break path.
-const WEB_BREAK_STRETCH_RATIO = 1.32;
+// v1045: raised stretch threshold 1.32 → 1.45. Lower BLEND_K + lower neighbor weight
+// inflate stretchRatio earlier; raise condA threshold so v1044's gentler-recoil /
+// no-cascade win is preserved. condD remains the dominant break path.
+const WEB_BREAK_STRETCH_RATIO = 1.45;
 const WEB_BREAK_SUSTAIN_MS = 1100;
 const WEB_BREAK_FAST_SPEED_FACTOR = 1.2;
 const WEB_BREAK_FAST_STRETCH = 1.14;
@@ -6872,11 +6893,27 @@ const WEB_BREAK_COOLDOWN_MS = 220;
 // NEW: within this window a re-grab of the same point preserves grabStartAt and
 // grabPathPx so micro-releases from hand wobble don't reset the accumulator.
 const WEB_REGRAB_CONTINUITY_MS = 250;
-// NEW: adjacent-wake (issue #3) — non-grabbed mid-points within R sway from broom motion.
-const WEB_WAKE_RADIUS_FACTOR = 0.16;
-// v1044: gentler sympathy-sway (2.4 → 1.6) so neighborhood reads calmer when cap=2 break.
-const WEB_WAKE_PUSH_PX = 1.6;
+// v1045: wake radius widened 0.16 → 0.22. Brush-past radius ~119px. Threads within
+// ~1.4× grab radius now register a sticky-touch reaction — communicates that the
+// broom is COVERED in sticky silk.
+const WEB_WAKE_RADIUS_FACTOR = 0.22;
+// v1045: wake magnitude reduced 1.6 → 1.1. With L6 changing the inner-zone push to
+// TOWARD broom (sticky reach) instead of in motion direction (wind push), each px
+// reads stronger; smaller value keeps the outer wake gentle.
+const WEB_WAKE_PUSH_PX = 1.1;
 const WEB_WAKE_SPEED_REF_FACTOR = 0.8;
+// v1045: sticky-tag inner zone (within outer wake). Points crossing this radius
+// briefly lerp TOWARD broom, get whitened on render, and emit one dewdrop.
+const WEB_STICKY_TAG_RADIUS_FACTOR = 0.2;
+const WEB_STICKY_TAG_MS = 250;
+const WEB_STICKY_TAG_LERP_K = 0.04;
+// v1045: sustained 'stretch' SFX throttle while a grab has lag > WEB_STRETCH_SFX_LAG_PX.
+const WEB_STRETCH_SFX_INTERVAL_MS = 320;
+const WEB_STRETCH_SFX_LAG_PX = 28;
+// v1045: mochi-bounce impulse magnitude applied on hysteresis/pointerup release.
+// Injects inward velocity toward chain-interpolated rest position so the freed point
+// overshoots rest by ~20% and oscillates once with damping.
+const WEB_RELEASE_MOCHI_IMPULSE_PX = 5;
 // NEW: absolute upper clamp on per-thread thickness for consistent silk look on tablet/desktop.
 const WEB_MAX_THICKNESS_PX = 7;
 // NEW: detached silk (issue #5) — gently floats down over a longer window.
@@ -7062,9 +7099,26 @@ function _updateWebSweepPhysics(gs, dt) {
         continue;
       }
       if (p.grabbed) {
+        // v1045: viscous coupling on TOP of catch-up blend.
+        // Step 1: exponential catch-up (much slower than v1044 — see WEB_GRAB_BLEND_K=0.06).
         const blend = 1 - Math.pow(1 - WEB_GRAB_BLEND_K, dt / 16);
-        const nx = p.x + (gs.broom.x - p.x) * blend;
-        const ny = p.y + (gs.broom.y - p.y) * blend;
+        let nx = p.x + (gs.broom.x - p.x) * blend;
+        let ny = p.y + (gs.broom.y - p.y) * blend;
+        // Step 2: viscous drag — point trails MORE when broom moves fast. We
+        // approximate the point's own velocity from the would-be displacement this
+        // frame; the differential vs broom velocity is applied as an opposing offset.
+        // Fast wipe = bigger stretch.
+        const dtScale = dt / 16;
+        if (dtScale > 0) {
+          const pointVx = (nx - p.x) / dtScale;
+          const pointVy = (ny - p.y) / dtScale;
+          const broomVx = gs.broom.vx || 0;
+          const broomVy = gs.broom.vy || 0;
+          const dragX = (broomVx - pointVx) * WEB_GRAB_VISCOUS_DRAG * dtScale * (dt / 16);
+          const dragY = (broomVy - pointVy) * WEB_GRAB_VISCOUS_DRAG * dtScale * (dt / 16);
+          nx -= dragX;
+          ny -= dragY;
+        }
         p.prevX = p.x; p.prevY = p.y;
         p.x = nx; p.y = ny;
       } else {
