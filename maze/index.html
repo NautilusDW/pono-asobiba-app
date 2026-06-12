@@ -6523,10 +6523,10 @@ const BOWL_FLIGHT_MS         = 1600;   // donguri max lifetime
 const BOWL_PIN_FALL_MS       = 380;
 const BOWL_PIN_R_REL         = 0.052;  // pin radius (relative to min(w,h))
 const BOWL_HIT_R_REL         = 0.046;  // collision radius, kept close to the visible body
-const BOWL_CHAIN_R_REL       = 0.105;  // nearby pins receive weakened impact, not instant fall
-const BOWL_CHAIN_DOT_MIN     = 0.08;
-const BOWL_CHAIN_MAX_DEPTH   = 3;
-const BOWL_CHAIN_DELAY_MS    = 90;
+const BOWL_CHAIN_R_REL       = 0.145;  // nearby pins receive weakened impact, not instant fall
+const BOWL_CHAIN_DOT_MIN     = -0.04;
+const BOWL_CHAIN_MAX_DEPTH   = 4;
+const BOWL_CHAIN_DELAY_MS    = 76;
 const BOWL_DONGURI_R_REL     = 0.052;
 const BOWL_DONGURI_SPEED_REL = 1.05;   // travel distance per second, relative to min(w,h)
 const BOWL_SWIPE_MIN_REL     = 0.095;
@@ -6535,13 +6535,17 @@ const BOWL_SWIPE_START_Y_REL = 0.52;
 const BOWL_BOUNCE_RESTITUTION = 0.84;
 const BOWL_BOUNCE_TANGENT_KICK = 0.18;
 const BOWL_HEDGE_RESTITUTION  = 0.88;
-const BOWL_BALL_MAX_HITS      = 6;
+const BOWL_BALL_MAX_HITS      = 7;
 const BOWL_BUMP_MS            = 260;
-const BOWL_PIN_TILT_FALL_RAD  = 0.78;
-const BOWL_PIN_TILT_SPRING    = 18;
-const BOWL_PIN_TILT_DAMPING   = 0.88;
-const BOWL_PIN_ENERGY_DECAY   = 0.982;
-const BOWL_PIN_IMPACT_TILT    = 0.38;
+const BOWL_PIN_TILT_FALL_RAD  = 0.72;
+const BOWL_PIN_TILT_SPRING    = 25;
+const BOWL_PIN_TILT_DAMPING   = 0.91;
+const BOWL_PIN_ENERGY_DECAY   = 0.987;
+const BOWL_PIN_IMPACT_TILT    = 0.58;
+const BOWL_PIN_JOLT_SPRING    = 30;
+const BOWL_PIN_JOLT_DAMPING   = 0.84;
+const BOWL_PIN_JOLT_REL       = 0.052;
+const BOWL_PIN_SHAKE_DECAY    = 0.90;
 const BOWL_BOSS_PHASE_MS      = 8500;
 const BOWL_BOSS_INTRO_MS      = 560;
 const BOWL_BOSS_THROW_COOLDOWN_MS = 85;
@@ -6663,9 +6667,9 @@ function _bowlPinMassForKind(kind) {
 
 function _bowlPinStability(kind, idx, yRatio) {
   const mass = _bowlPinMassForKind(kind);
-  const backBrace = yRatio <= 0.30 ? 0.12 : 0;
-  const deterministic = ((idx * 37) % 5) * 0.045;
-  return 0.82 + mass * 0.26 + backBrace + deterministic;
+  const backBrace = yRatio <= 0.30 ? 0.09 : 0;
+  const deterministic = ((idx * 37) % 5) * 0.038;
+  return 0.74 + mass * 0.22 + backBrace + deterministic;
 }
 
 function _bowlBugImg(kind) {
@@ -6828,6 +6832,15 @@ function _layoutBowlPins(gs, layoutId) {
       tilt: 0,
       tiltVelocity: 0,
       tiltDirX: 0,
+      joltX: 0,
+      joltY: 0,
+      joltVx: 0,
+      joltVy: 0,
+      squash: 0,
+      shakePower: 0,
+      shakePhase: idx * 1.37 + layoutOffset * 0.91,
+      lastImpactEffective: 0,
+      lastImpactAt: 0,
       wobbleUntil: 0,
       lastWobbleTextAt: 0,
       swayAmpLane: swayAmpLane,
@@ -7285,6 +7298,7 @@ function _updateBowlPhysics(gs, dt, now) {
           const repeatLoss = Math.max(0.58, 1 - (d.hitCount || 0) * 0.11);
           const impulse = speedRel * (0.36 + approach * 0.76) * repeatLoss;
           _bowlApplyPinImpact(gs, pin, impulse, knockX, knockY, 0, now);
+          _bowlShockNearbyPins(gs, pin, knockX, knockY, impulse, now);
           if (d.hitPins) d.hitPins[pin.id] = true;
           d.hitCount = (d.hitCount || 0) + 1;
 
@@ -7334,6 +7348,15 @@ function _updateBowlPhysics(gs, dt, now) {
       pin.tiltVelocity = ((pin.tiltVelocity || 0) + spring * dt) * Math.pow(BOWL_PIN_TILT_DAMPING, dt * 60);
       pin.tilt = _bowlClamp((pin.tilt || 0) + pin.tiltVelocity * dt, -BOWL_PIN_TILT_FALL_RAD * 1.34, BOWL_PIN_TILT_FALL_RAD * 1.34);
       pin.impactEnergy = (pin.impactEnergy || 0) * Math.pow(BOWL_PIN_ENERGY_DECAY, dt * 60);
+      const joltAx = -(pin.joltX || 0) * BOWL_PIN_JOLT_SPRING;
+      const joltAy = -(pin.joltY || 0) * BOWL_PIN_JOLT_SPRING;
+      pin.joltVx = ((pin.joltVx || 0) + joltAx * dt) * Math.pow(BOWL_PIN_JOLT_DAMPING, dt * 60);
+      pin.joltVy = ((pin.joltVy || 0) + joltAy * dt) * Math.pow(BOWL_PIN_JOLT_DAMPING, dt * 60);
+      const joltLimit = Math.min(gs.w, gs.h) * 0.055;
+      pin.joltX = _bowlClamp((pin.joltX || 0) + pin.joltVx * dt, -joltLimit, joltLimit);
+      pin.joltY = _bowlClamp((pin.joltY || 0) + pin.joltVy * dt, -joltLimit * 0.52, joltLimit * 0.52);
+      pin.squash = (pin.squash || 0) * Math.pow(0.82, dt * 60);
+      pin.shakePower = (pin.shakePower || 0) * Math.pow(BOWL_PIN_SHAKE_DECAY, dt * 60);
       if (Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD) {
         const dir = pin.tilt >= 0 ? 1 : -1;
         _bowlFellPin(gs, pin, dir, Math.max(0.2, Math.abs(pin.tiltVelocity || 0)), 0, now);
@@ -7360,33 +7383,75 @@ function _updateBowlPhysics(gs, dt, now) {
   }
 }
 
-function _bowlApplyPinImpact(gs, pin, impulse, knockDirX, knockDirY, depth, now) {
+function _bowlApplyPinImpact(gs, pin, impulse, knockDirX, knockDirY, depth, now, quiet) {
   if (!pin || pin.fallen) return false;
+  now = now || performance.now();
   const mass = Math.max(0.5, pin.mass || 1);
   const stability = Math.max(0.45, pin.stability || 1);
   const dir = Math.abs(knockDirX || 0) > 0.08
     ? (knockDirX > 0 ? 1 : -1)
     : (Math.sin((pin.id + 1) * 2.17) >= 0 ? 1 : -1);
   const effective = Math.max(0, impulse) / mass;
+  const strength = _bowlClamp(effective / Math.max(0.1, stability), 0, 1.65);
+  const minDim = Math.min(gs.w, gs.h);
+  const kx = Number.isFinite(knockDirX) ? knockDirX : dir;
+  const ky = Number.isFinite(knockDirY) ? knockDirY : -0.2;
   pin.impactEnergy = Math.min(stability * 1.8, (pin.impactEnergy || 0) + effective);
+  pin.lastImpactEffective = effective;
+  pin.lastImpactAt = now;
   pin.tiltDirX = dir;
   pin.tiltVelocity = (pin.tiltVelocity || 0) + dir * effective * BOWL_PIN_IMPACT_TILT * (1 + depth * 0.10);
-  pin.tilt = _bowlClamp((pin.tilt || 0) + dir * effective * 0.12, -BOWL_PIN_TILT_FALL_RAD * 1.25, BOWL_PIN_TILT_FALL_RAD * 1.25);
-  pin.wobbleUntil = now + 620;
+  pin.tilt = _bowlClamp((pin.tilt || 0) + dir * effective * 0.16, -BOWL_PIN_TILT_FALL_RAD * 1.25, BOWL_PIN_TILT_FALL_RAD * 1.25);
+  const jolt = minDim * BOWL_PIN_JOLT_REL * (0.36 + strength * 0.92);
+  pin.joltVx = (pin.joltVx || 0) + kx * jolt * (7.0 + strength * 3.2);
+  pin.joltVy = (pin.joltVy || 0) + ky * jolt * (3.2 + strength * 1.4);
+  pin.joltX = _bowlClamp((pin.joltX || 0) + kx * jolt * 0.16, -minDim * 0.06, minDim * 0.06);
+  pin.joltY = _bowlClamp((pin.joltY || 0) + ky * jolt * 0.09, -minDim * 0.035, minDim * 0.035);
+  pin.squash = Math.min(0.22, (pin.squash || 0) + 0.08 + strength * 0.09);
+  pin.shakePower = Math.min(1.2, Math.max(pin.shakePower || 0, 0.26 + strength * 0.62));
+  pin.shakePhase = (pin.shakePhase || 0) + 0.9 + depth * 0.37;
+  pin.wobbleUntil = now + 680 + strength * 260;
 
-  const shouldFall = effective >= stability || pin.impactEnergy >= stability * 1.34 || Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD;
+  const fallThreshold = stability * (depth > 0 ? 0.90 : 0.95);
+  const shouldFall = effective >= fallThreshold || pin.impactEnergy >= stability * 1.18 || Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD;
   if (shouldFall) {
     _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now);
     return true;
   }
 
   _spawnBowlGlob(gs, pin.x, pin.y, true);
-  if (!pin.lastWobbleTextAt || now - pin.lastWobbleTextAt > 760) {
+  if (!quiet && (!pin.lastWobbleTextAt || now - pin.lastWobbleTextAt > 760)) {
     pin.lastWobbleTextAt = now;
     _bowlFloatText(gs, 'ぐらっ', pin.x, pin.y - Math.min(gs.w, gs.h) * 0.035);
   }
-  try { _playMzSePitch('wrong', -2); } catch (_) {}
+  if (!quiet) {
+    try { _playMzSePitch('wrong', -2); } catch (_) {}
+  }
   return false;
+}
+
+function _bowlShockNearbyPins(gs, sourcePin, knockDirX, knockDirY, sourceImpulse, now) {
+  if (!gs || !sourcePin || !gs.pins) return;
+  const minDim = Math.min(gs.w, gs.h);
+  const shockR = BOWL_CHAIN_R_REL * minDim * 1.05;
+  const shockR2 = shockR * shockR;
+  for (let i = 0; i < gs.pins.length; i++) {
+    const p2 = gs.pins[i];
+    if (!p2 || p2 === sourcePin || p2.fallen) continue;
+    const dx = p2.x - sourcePin.x;
+    const dy = p2.y - sourcePin.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 <= 0 || d2 > shockR2) continue;
+    const dist = Math.sqrt(d2);
+    const ux = dx / dist;
+    const uy = dy / dist;
+    const dot = ux * knockDirX + uy * knockDirY;
+    if (dot < -0.18) continue;
+    const distanceLoss = 1 - _bowlClamp(dist / shockR, 0, 1);
+    const dotBoost = 0.76 + _bowlClamp(dot, -0.18, 1) * 0.28;
+    const impulse = Math.max(0.12, sourceImpulse * (0.30 + distanceLoss * 0.44) * dotBoost);
+    _bowlApplyPinImpact(gs, p2, impulse, ux * 0.7 + knockDirX * 0.3, uy * 0.7 + knockDirY * 0.3, 1, now, true);
+  }
 }
 
 // ピンを倒し、方向ベクトル沿いに半径 / dot ゲート内の他ピンへ弱い衝撃を伝播させる。
@@ -7402,6 +7467,10 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
   pin.tilt = _bowlClamp((pin.tilt || 0) + ((knockDirX || pin.tiltDirX || 1) >= 0 ? 1 : -1) * 0.24, -1.2, 1.2);
   pin.tiltVelocity = 0;
   pin.impactEnergy = 0;
+  pin.shakePower = Math.max(pin.shakePower || 0, 0.55);
+  pin.squash = Math.max(pin.squash || 0, 0.12);
+  pin.joltVx = (pin.joltVx || 0) + (knockDirX || 0) * Math.min(gs.w, gs.h) * 0.38;
+  pin.joltVy = (pin.joltVy || 0) + (knockDirY || 0) * Math.min(gs.w, gs.h) * 0.16;
   _spawnBowlGlob(gs, pin.x, pin.y, false);
   if (depth === 0) {
     try { _playMzSePitch('correct', 0); } catch (_) { try { playTap(); } catch (__) {} }
@@ -7433,9 +7502,12 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
       let nky = knockDirY * 0.4 + uy * 0.6;
       const nm = Math.max(0.001, Math.sqrt(nkx * nkx + nky * nky));
       nkx /= nm; nky /= nm;
-      const distanceLoss = 1 - _bowlClamp(dist / chainR, 0, 1) * 0.38;
-      const impulse = Math.max(0.18, (pin.stability || 1) * Math.pow(0.58, depth + 1) * distanceLoss);
-      _bowlApplyPinImpact(gs, p2, impulse, nkx, nky, depth + 1, inner);
+      const distanceLoss = 1 - _bowlClamp(dist / chainR, 0, 1) * 0.42;
+      const depthLoss = depth === 0 ? 1 : Math.pow(0.62, depth);
+      const dotBoost = 0.90 + _bowlClamp(dot, 0, 1) * 0.18;
+      const targetMass = Math.max(1, p2.mass || 1);
+      const impulse = Math.max(0.22, (p2.stability || 1) * targetMass * 1.12 * depthLoss * distanceLoss * dotBoost);
+      _bowlApplyPinImpact(gs, p2, impulse, nkx, nky, depth + 1, inner, true);
     }
   }, BOWL_CHAIN_DELAY_MS);
 }
@@ -7878,10 +7950,15 @@ function _drawBowlPin(gs, pin, now) {
   const r = metrics.r;
   const img = _bowlBugImg(pin.kind);
   const fp = pin.fallProgress;
-  const standingTilt = pin.fallen ? 0 : _bowlClamp(pin.tilt || 0, -0.95, 0.95);
-  const wobbling = !pin.fallen && (Math.abs(standingTilt) > 0.015 || now < (pin.wobbleUntil || 0));
+  const shakePower = pin.fallen ? 0 : _bowlClamp(pin.shakePower || 0, 0, 1.2);
+  const shakeWave = pin.fallen ? 0 : Math.sin(now * 0.045 + (pin.shakePhase || 0)) * shakePower;
+  const standingTilt = pin.fallen ? 0 : _bowlClamp((pin.tilt || 0) + shakeWave * 0.16, -1.05, 1.05);
+  const visualJoltX = pin.fallen ? 0 : (pin.joltX || 0) + shakeWave * r * 0.28;
+  const visualJoltY = pin.fallen ? 0 : (pin.joltY || 0) + Math.abs(shakeWave) * r * 0.055;
+  const squash = pin.fallen ? 0 : _bowlClamp(pin.squash || 0, 0, 0.24);
+  const wobbling = !pin.fallen && (Math.abs(standingTilt) > 0.015 || shakePower > 0.035 || now < (pin.wobbleUntil || 0));
   ctx.save();
-  ctx.translate(pin.x, pin.y);
+  ctx.translate(pin.x + visualJoltX, pin.y + visualJoltY);
 
   // Shadow
   ctx.save();
@@ -7905,10 +7982,10 @@ function _drawBowlPin(gs, pin, now) {
     ctx.translate(fallShiftX, fallShiftY);
     ctx.rotate(dir * fp * 1.18);
     ctx.scale(fallScale, fallScale);
-  } else if (Math.abs(standingTilt) > 0.001) {
-    ctx.translate(standingTilt * r * 0.18, Math.abs(standingTilt) * r * 0.06);
+  } else if (Math.abs(standingTilt) > 0.001 || squash > 0.01) {
+    ctx.translate(standingTilt * r * 0.18, Math.abs(standingTilt) * r * 0.06 + squash * r * 0.05);
     ctx.rotate(standingTilt);
-    ctx.scale(1 + Math.abs(standingTilt) * 0.03, 1 - Math.abs(standingTilt) * 0.018);
+    ctx.scale(1 + Math.abs(standingTilt) * 0.03 + squash * 0.16, 1 - Math.abs(standingTilt) * 0.018 - squash * 0.10);
   }
 
   if (img && img.complete && img.naturalWidth) {
