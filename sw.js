@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1036; // v1036: puzzle drop bond/Lv system, fix kitsune hint count + housekeeping (dead CSS / stale comments / unused fn cleanup, behavior unchanged)
+const CACHE_VERSION = 1037; // v1037: redesign kumo-rescue spider web to real spokes+concentric rings shape
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
