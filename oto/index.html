@@ -1938,7 +1938,7 @@
     /* Absolutely positioned so it never gets clipped by the
        .rhythm-ranking-name ellipsis (overflow:hidden) on long names. */
     position: absolute;
-    top: -8px;
+    top: -2px;
     right: 8px;
     padding: 2px 8px;
     border-radius: 10px;
@@ -6221,7 +6221,7 @@ function _renderRhythmLeaderboard(key, currentId, options) {
   // "keep going" message instead.
   if (outside) {
     if (options.outsideRank && options.outsideRank > 10) {
-      outside.textContent = 'あと すこし! 10いに のこせるよ';
+      outside.textContent = 'もう ちょっとで 10いに はいるよ!';
       outside.classList.add('show');
     } else {
       outside.textContent = '';
