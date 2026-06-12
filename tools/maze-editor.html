@@ -448,6 +448,7 @@ html, body { height: 100vh; overflow: hidden;
       <option value="">— ステージを選択 —</option>
     </select>
     <button class="mode-btn" id="loadServerStageBtn" style="width:100%; background:#2a5a3a; color:#cfd; font-size:0.78rem;">📥 読込</button>
+    <button class="mode-btn" id="forceReloadServerStageBtn" style="width:100%; margin-top:4px; background:#5a3a2a; color:#fda; font-size:0.78rem;" title="現在の下書き (localStorage draft) を破棄してサーバー版で上書きします">🔄 サーバから再読込 (下書きを破棄)</button>
     <div id="serverStageStatus" style="margin-top:4px; font-size:11px; color:#9bb;"></div>
 
     <details style="margin-top:10px; padding:8px; background:#1b2620; border:1px solid #2a4435; border-radius:6px; font-size:11px; color:#abd;">
@@ -3800,6 +3801,56 @@ pairWarnEl.id = 'pairWarnLine';
 pairWarnEl.style.cssText = 'display:none; font-size:0.75rem; color:#d33; font-weight:bold; margin-top:2px;';
 pairWarnEl.textContent = '⚠ 2画面ステージ: 本番画像2枚 (_L/_R) が未読込 — 読み込み直すまで JSONダウンロード / commit はブロックされます';
 if (statusContainer) statusContainer.appendChild(pairWarnEl);
+
+// 起動時に draft 復元したら、 ユーザーに「サーバー版を再読込するか／このまま続けるか」を選ばせる。
+// showBanner は 2.5 秒で消えてしまうため、 別に消えない簡易バナーを用意する。
+const draftRestoreBannerEl = document.createElement('div');
+draftRestoreBannerEl.id = 'draftRestoreBanner';
+draftRestoreBannerEl.style.cssText = 'display:none; font-size:0.78rem; color:#fda; background:#3a2e16; border:1px solid #6a5a1a; padding:6px 8px; margin-top:4px; border-radius:4px;';
+draftRestoreBannerEl.innerHTML =
+  '<span id="draftRestoreBannerMsg">📝 前回の編集内容 (下書き) を復元しました。</span> ' +
+  '<button type="button" id="draftRestoreReloadServerBtn" style="margin-left:6px; font-size:0.75rem; padding:2px 6px; background:#2a5a3a; color:#cfd; border:1px solid #3a6a4a; border-radius:3px; cursor:pointer;">🔄 サーバー版を読込</button> ' +
+  '<button type="button" id="draftRestoreKeepBtn" style="margin-left:4px; font-size:0.75rem; padding:2px 6px; background:#444; color:#cfd; border:1px solid #666; border-radius:3px; cursor:pointer;">✅ そのまま続ける</button>';
+if (statusContainer) statusContainer.appendChild(draftRestoreBannerEl);
+
+function _hideDraftRestoreBanner() {
+  if (draftRestoreBannerEl) draftRestoreBannerEl.style.display = 'none';
+}
+function _showDraftRestoreBanner(stageName) {
+  if (!draftRestoreBannerEl) return;
+  const msgEl = document.getElementById('draftRestoreBannerMsg');
+  if (msgEl) {
+    msgEl.textContent = stageName
+      ? '📝 前回の編集内容 (下書き: ' + stageName + ') を復元しました。'
+      : '📝 前回の編集内容 (下書き) を復元しました。';
+  }
+  draftRestoreBannerEl.style.display = '';
+}
+// ボタン: サーバー版を読込 → 現在の stageName を serverStageSelect に合わせて loadServerStage を呼ぶ。
+// 該当 stage が dropdown に無い場合は警告のみ。
+const _draftReloadBtn = document.getElementById('draftRestoreReloadServerBtn');
+if (_draftReloadBtn) {
+  _draftReloadBtn.addEventListener('click', function() {
+    const name = (stageNameInput && stageNameInput.value || '').trim();
+    const sel = document.getElementById('serverStageSelect');
+    if (!sel || !name) {
+      showBanner('現在の ステージ名 が空です — サーバー stage を特定できません');
+      return;
+    }
+    let found = false;
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === name) { sel.selectedIndex = i; found = true; break; }
+    }
+    if (!found) {
+      showBanner('サーバーに ' + name + ' という stage が見つかりません');
+      return;
+    }
+    _hideDraftRestoreBanner();
+    loadServerStage();
+  });
+}
+const _draftKeepBtn = document.getElementById('draftRestoreKeepBtn');
+if (_draftKeepBtn) _draftKeepBtn.addEventListener('click', _hideDraftRestoreBanner);
 function _updatePairWarning() {
   const need = !!state.wasMultiScreen && !(state.sourceImages && state.sourceImages.length === 2);
   pairWarnEl.style.display = need ? '' : 'none';
@@ -3875,7 +3926,9 @@ function _restoreDraft() {
     _setCameraModeSelect(draft.cameraMode);
     state.nodes = Array.isArray(draft.nodes) ? draft.nodes : [];
     state.edges = Array.isArray(draft.edges) ? draft.edges : [];
-    state.obstacles = Array.isArray(draft.obstacles) ? draft.obstacles : [];
+    // _normalizeObstacles を通すことで size 欠落 / kind 異常 / 旧 schema (web obstacle 周辺) の
+    // 不整合を draft 復元時にも吸収する。 loadServerStage と同じ正規化フローに合わせる。
+    state.obstacles = _normalizeObstacles(Array.isArray(draft.obstacles) ? draft.obstacles : []);
     state.creatures = Array.isArray(draft.creatures) ? draft.creatures : [];
     _copyGimmickStateFromSnapshot(draft);
     // 念のため: obstacles[] と proxy gimmickItems の整合を取り直す (古い draft で proxy 未生成のケースに備える)
@@ -3908,6 +3961,8 @@ function _restoreDraft() {
     showBanner(state.wasMultiScreen
       ? '💾 前回の編集状態を復元 (約 ' + ago + ' 分前) — ⚠ 2画面の画像2枚は復元できません。 本番画像2枚 (_L/_R) を読み込み直してください'
       : '💾 前回の編集状態を復元 (約 ' + ago + ' 分前)');
+    // 消えない drafts 復元バナー (サーバー版を読込 / そのまま続ける)
+    try { _showDraftRestoreBanner(draft.stageName || ''); } catch (_) {}
     return true;
   } catch (e) {
     console.warn('draft restore failed:', e);
@@ -4300,6 +4355,12 @@ function _restoreFromServerDef(def, fname, stageOrder) {
   updateStatus();
   showBanner('🌲 サーバー読込: ' + (def.name || fname) + ' (ノード ' + state.nodes.length + '・道 ' + state.edges.length + ')');
   _serverStageSetStatus('読込完了: ' + (def.name || fname), false);
+  // サーバから明示再読込した直後に draft も同じ内容で即時上書き保存する。
+  // これで次回 reload 時に「古い draft が _restoreDraft によって新しい server stage を覆す」
+  // 現象 (web obstacle が乗らない / proxy リング非表示) を確実に防ぐ。
+  // 画像 fetch は async なので、 即時 + 遅延の二段で保存し、 画像つき draft も担保する。
+  try { _doAutoSave(); } catch (_) {}
+  setTimeout(function() { try { _doAutoSave(); } catch (_) {} }, 1500);
 }
 // 2画面ステージのサーバー読込: imageUrls の 2枚を fetch → loadImagePair と同じ
 // 横並び合成で state.image を作り、 各画像の dataURL を state.sourceImages に復元する
@@ -4374,6 +4435,32 @@ function loadServerStage() {
     .catch(function(err) { _serverStageSetStatus('読込失敗: ' + err.message, true); });
 }
 document.getElementById('loadServerStageBtn').addEventListener('click', loadServerStage);
+// 「サーバから再読込 (下書きを破棄)」: 現在の serverStageSelect の値で loadServerStage を呼ぶ。
+// loadServerStage の末尾で _doAutoSave() を呼ぶので、 draft も同じ内容で即時上書きされる。
+// 作者が画像/JSON を maze/imageStages/ に直接コミットした後、 このボタン 1 つで
+// draft override を排除して最新版に追従できる。
+const _forceReloadBtn = document.getElementById('forceReloadServerStageBtn');
+if (_forceReloadBtn) {
+  _forceReloadBtn.addEventListener('click', function() {
+    const sel = document.getElementById('serverStageSelect');
+    // dropdown が未選択なら、 現在の stageName から逆引きしてセットする
+    if (sel && !sel.value) {
+      const cur = (stageNameInput && stageNameInput.value || '').trim();
+      if (cur) {
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === cur) { sel.selectedIndex = i; break; }
+        }
+      }
+    }
+    if (!sel || !sel.value) {
+      _serverStageSetStatus('サーバから再読込するステージを選択してください (上のドロップダウン)', true);
+      return;
+    }
+    if (!confirm('現在の下書き (localStorage) を破棄してサーバー版で上書きします。 よろしいですか?')) return;
+    _hideDraftRestoreBanner();
+    loadServerStage();
+  });
+}
 fetchServerStageList();
 
 // ── 比較ペイン (上下分割表示) ──
