@@ -1234,7 +1234,7 @@ function _updateGimmickItemSidePanels() {
     if (showWebControls) {
       const proxyItem = (state.gimmickItems || []).find(function(it) { return it && it.kind === state.gimmickItemKind; });
       if (proxyItem) {
-        hintEl.textContent = '🕸️ クモの巣本体を任意の場所にドラッグして移動できるよ。 サイズは下のスライダーで調整。';
+        hintEl.textContent = '🕸️ クモの巣を動かすモード: 黄色いリングだけドラッグで動かせるよ (他の要素はロック中)。 サイズは下のスライダーで調整。';
       } else {
         hintEl.textContent = '🕸️ クモの巣本体が見つからないよ。 まず「🌳 障害物」モードで 🕸️ クモの巣 を 1 つ配置してね。';
       }
@@ -2104,7 +2104,8 @@ function findObstacleAt(p) {
   return best;
 }
 
-function findGimmickItemAt(p) {
+function findGimmickItemAt(p, opts) {
+  const onlyProxy = !!(opts && opts.onlyProxy);
   const r = Math.max(36 / canvasScale, state.imgH / 24);
   const r2 = r * r;
   let best = null, bestD2 = Infinity;
@@ -2112,6 +2113,7 @@ function findGimmickItemAt(p) {
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
     if (!item || !Number.isFinite(item.x) || !Number.isFinite(item.y)) continue;
+    if (onlyProxy && !item.isObstacleProxy) continue;
     const dx = p.x - item.x, dy = p.y - item.y;
     const rr = Math.max(r, (item.radius || 80) * 0.7);
     const d2 = dx*dx + dy*dy;
@@ -2241,6 +2243,25 @@ cv.addEventListener('pointerdown', function(e) {
     }
     // move モードで何も hit しなければ何もしない (選択解除のみ)
     if (state.selectedNodeId) { state.selectedNodeId = null; draw(); }
+    return;
+  }
+
+  // === gimmick-item モード × kind=web : proxy リング以外を drag ロック ===
+  // 「🕸️ クモの巣を動かす」 選択中はゴール node / 中継 stop / obstacle / creature 等を
+  // 誤って掴んでしまわないよう、 proxy リング (黄色い破線) のみ drag 可能にする。
+  // proxy がヒットしなかった場合は何も grab せず return (click ハンドラで warp 移動が動く)。
+  if (state.mode === 'gimmick-item' && state.gimmickItemKind === 'web') {
+    const proxyHit = findGimmickItemAt(p, { onlyProxy: true });
+    if (proxyHit) {
+      pushHistory();
+      state.draggingGimmickItem = proxyHit;
+      _grabbedItemOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+    }
+    // proxy にヒットしなくても他要素を grab させない (drag ロック)
     return;
   }
 
@@ -2449,6 +2470,17 @@ cv.addEventListener('pointermove', function(e) {
       return;
     }
     cv.style.cursor = findAnchorAt(p) ? 'grab' : 'crosshair';
+    return;
+  }
+  // === gimmick-item モード × kind=web : proxy 以外の hover を無効化 ===
+  // proxy リング上のみ 'grab'、 それ以外は 'crosshair' (warp 用) でノード hover も出さない
+  if (state.mode === 'gimmick-item' && state.gimmickItemKind === 'web') {
+    if (state.hoveringNodeId !== null) {
+      state.hoveringNodeId = null;
+      draw();
+    }
+    const proxyHover = findGimmickItemAt(p, { onlyProxy: true });
+    cv.style.cursor = proxyHover ? 'grab' : 'crosshair';
     return;
   }
   // それ以外のモード: ノードホバー検出 (hovering 状態 + grab カーソル)
