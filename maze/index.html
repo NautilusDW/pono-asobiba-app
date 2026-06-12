@@ -6523,10 +6523,10 @@ const BOWL_FLIGHT_MS         = 1600;   // donguri max lifetime
 const BOWL_PIN_FALL_MS       = 380;
 const BOWL_PIN_R_REL         = 0.052;  // pin radius (relative to min(w,h))
 const BOWL_HIT_R_REL         = 0.046;  // collision radius, kept close to the visible body
-const BOWL_CHAIN_R_REL       = 0.13;   // domino chain radius
-const BOWL_CHAIN_DOT_MIN     = -0.20;  // chain dot-gate (more permissive for shortform play)
-const BOWL_CHAIN_MAX_DEPTH   = 5;
-const BOWL_CHAIN_DELAY_MS    = 70;
+const BOWL_CHAIN_R_REL       = 0.105;  // nearby pins receive weakened impact, not instant fall
+const BOWL_CHAIN_DOT_MIN     = 0.08;
+const BOWL_CHAIN_MAX_DEPTH   = 3;
+const BOWL_CHAIN_DELAY_MS    = 90;
 const BOWL_DONGURI_R_REL     = 0.052;
 const BOWL_DONGURI_SPEED_REL = 1.05;   // travel distance per second, relative to min(w,h)
 const BOWL_SWIPE_MIN_REL     = 0.095;
@@ -6537,6 +6537,11 @@ const BOWL_BOUNCE_TANGENT_KICK = 0.18;
 const BOWL_HEDGE_RESTITUTION  = 0.88;
 const BOWL_BALL_MAX_HITS      = 6;
 const BOWL_BUMP_MS            = 260;
+const BOWL_PIN_TILT_FALL_RAD  = 0.78;
+const BOWL_PIN_TILT_SPRING    = 18;
+const BOWL_PIN_TILT_DAMPING   = 0.88;
+const BOWL_PIN_ENERGY_DECAY   = 0.982;
+const BOWL_PIN_IMPACT_TILT    = 0.38;
 const BOWL_BOSS_PHASE_MS      = 8500;
 const BOWL_BOSS_INTRO_MS      = 560;
 const BOWL_BOSS_THROW_COOLDOWN_MS = 85;
@@ -6646,6 +6651,21 @@ function _bowlPinMetrics(gs, pin) {
     hitRx: Math.max(minHit, drawW * 0.34),
     hitRy: Math.max(minHit * 0.92, drawH * 0.38),
   };
+}
+
+function _bowlPinMassForKind(kind) {
+  if (kind === 'kabuto') return 1.24;
+  if (kind === 'pyon') return 0.88;
+  if (kind === 'hachi') return 0.93;
+  if (kind === 'odoke') return 1.05;
+  return 0.98;
+}
+
+function _bowlPinStability(kind, idx, yRatio) {
+  const mass = _bowlPinMassForKind(kind);
+  const backBrace = yRatio <= 0.30 ? 0.12 : 0;
+  const deterministic = ((idx * 37) % 5) * 0.045;
+  return 0.82 + mass * 0.26 + backBrace + deterministic;
 }
 
 function _bowlBugImg(kind) {
@@ -6791,6 +6811,8 @@ function _layoutBowlPins(gs, layoutId) {
     const isBackMover = p.y <= 0.36 && ((idx + layoutOffset) % 3 === 0 || layout.id === 'DOUBLE_ROW');
     const isMidMover = p.y <= 0.28 && ((idx + layoutOffset) % 4 === 1);
     const swayAmpLane = isBackMover ? 0.13 : (isMidMover ? 0.085 : 0);
+    const kind = p.kind || BOWL_BUG_PIN_KINDS[(idx + layoutOffset) % BOWL_BUG_PIN_KINDS.length];
+    const mass = _bowlPinMassForKind(kind);
     return {
       id: idx,
       x: baseX,
@@ -6799,7 +6821,15 @@ function _layoutBowlPins(gs, layoutId) {
       baseY: baseY,
       laneX: baseLaneX,
       baseLaneX: baseLaneX,
-      kind: p.kind || BOWL_BUG_PIN_KINDS[(idx + layoutOffset) % BOWL_BUG_PIN_KINDS.length],
+      kind: kind,
+      mass: mass,
+      stability: _bowlPinStability(kind, idx + layoutOffset, p.y),
+      impactEnergy: 0,
+      tilt: 0,
+      tiltVelocity: 0,
+      tiltDirX: 0,
+      wobbleUntil: 0,
+      lastWobbleTextAt: 0,
       swayAmpLane: swayAmpLane,
       swayPhase: idx * 0.83 + layoutOffset * 0.57,
       swaySpeed: BOWL_SWAY_SPEED_MS + ((idx + layoutOffset) % 5) * 130,
@@ -6972,7 +7002,7 @@ function _stepBowlReducedMotion(gs) {
   }
   if (nearest) {
     const len = Math.max(0.001, Math.sqrt(bestD2));
-    _bowlFellPin(gs, nearest, (nearest.x - d.x) / len, (nearest.y - d.y) / len, 0, now);
+    _bowlApplyPinImpact(gs, nearest, nearest.stability * Math.max(1, nearest.mass || 1) * 1.12, (nearest.x - d.x) / len, (nearest.y - d.y) / len, 0, now);
     // pin tween を飛ばし、倒れた pin は fallProgress を即 1 に
     for (let i = 0; i < gs.pins.length; i++) {
       const p = gs.pins[i];
@@ -7248,7 +7278,13 @@ function _updateBowlPhysics(gs, dt, now) {
             ny = -d.vy / speed;
           }
 
-          _bowlFellPin(gs, pin, d.vx / speed, d.vy / speed, 0, now);
+          const knockX = d.vx / speed;
+          const knockY = d.vy / speed;
+          const approach = _bowlClamp(-(knockX * nx + knockY * ny), 0.18, 1);
+          const speedRel = speed / Math.max(1, Math.min(gs.w, gs.h));
+          const repeatLoss = Math.max(0.58, 1 - (d.hitCount || 0) * 0.11);
+          const impulse = speedRel * (0.36 + approach * 0.76) * repeatLoss;
+          _bowlApplyPinImpact(gs, pin, impulse, knockX, knockY, 0, now);
           if (d.hitPins) d.hitPins[pin.id] = true;
           d.hitCount = (d.hitCount || 0) + 1;
 
@@ -7288,11 +7324,20 @@ function _updateBowlPhysics(gs, dt, now) {
       }
     }
   }
-  // pin fall tween
+  // pin wobble/fall tween
   for (let i = 0; i < gs.pins.length; i++) {
     const pin = gs.pins[i];
     if (pin.fallen && pin.fallProgress < 1) {
       pin.fallProgress = Math.min(1, (now - pin.fallStart) / BOWL_PIN_FALL_MS);
+    } else if (!pin.fallen) {
+      const spring = -(pin.tilt || 0) * BOWL_PIN_TILT_SPRING;
+      pin.tiltVelocity = ((pin.tiltVelocity || 0) + spring * dt) * Math.pow(BOWL_PIN_TILT_DAMPING, dt * 60);
+      pin.tilt = _bowlClamp((pin.tilt || 0) + pin.tiltVelocity * dt, -BOWL_PIN_TILT_FALL_RAD * 1.34, BOWL_PIN_TILT_FALL_RAD * 1.34);
+      pin.impactEnergy = (pin.impactEnergy || 0) * Math.pow(BOWL_PIN_ENERGY_DECAY, dt * 60);
+      if (Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD) {
+        const dir = pin.tilt >= 0 ? 1 : -1;
+        _bowlFellPin(gs, pin, dir, Math.max(0.2, Math.abs(pin.tiltVelocity || 0)), 0, now);
+      }
     }
   }
   // particle decay
@@ -7315,7 +7360,36 @@ function _updateBowlPhysics(gs, dt, now) {
   }
 }
 
-// ピンを倒し、方向ベクトル沿いに半径 / dot ゲート内の他ピンへ連鎖伝播させる。
+function _bowlApplyPinImpact(gs, pin, impulse, knockDirX, knockDirY, depth, now) {
+  if (!pin || pin.fallen) return false;
+  const mass = Math.max(0.5, pin.mass || 1);
+  const stability = Math.max(0.45, pin.stability || 1);
+  const dir = Math.abs(knockDirX || 0) > 0.08
+    ? (knockDirX > 0 ? 1 : -1)
+    : (Math.sin((pin.id + 1) * 2.17) >= 0 ? 1 : -1);
+  const effective = Math.max(0, impulse) / mass;
+  pin.impactEnergy = Math.min(stability * 1.8, (pin.impactEnergy || 0) + effective);
+  pin.tiltDirX = dir;
+  pin.tiltVelocity = (pin.tiltVelocity || 0) + dir * effective * BOWL_PIN_IMPACT_TILT * (1 + depth * 0.10);
+  pin.tilt = _bowlClamp((pin.tilt || 0) + dir * effective * 0.12, -BOWL_PIN_TILT_FALL_RAD * 1.25, BOWL_PIN_TILT_FALL_RAD * 1.25);
+  pin.wobbleUntil = now + 620;
+
+  const shouldFall = effective >= stability || pin.impactEnergy >= stability * 1.34 || Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD;
+  if (shouldFall) {
+    _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now);
+    return true;
+  }
+
+  _spawnBowlGlob(gs, pin.x, pin.y, true);
+  if (!pin.lastWobbleTextAt || now - pin.lastWobbleTextAt > 760) {
+    pin.lastWobbleTextAt = now;
+    _bowlFloatText(gs, 'ぐらっ', pin.x, pin.y - Math.min(gs.w, gs.h) * 0.035);
+  }
+  try { _playMzSePitch('wrong', -2); } catch (_) {}
+  return false;
+}
+
+// ピンを倒し、方向ベクトル沿いに半径 / dot ゲート内の他ピンへ弱い衝撃を伝播させる。
 // depth は 0 から始まり BOWL_CHAIN_MAX_DEPTH で停止。
 // jitter は決定論的 (sin(pin.id + depth)) — Math.random 不使用。
 function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
@@ -7325,6 +7399,9 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
   pin.fallRotDirY = knockDirY;
   pin.fallStart = now;
   pin.fallProgress = 0;
+  pin.tilt = _bowlClamp((pin.tilt || 0) + ((knockDirX || pin.tiltDirX || 1) >= 0 ? 1 : -1) * 0.24, -1.2, 1.2);
+  pin.tiltVelocity = 0;
+  pin.impactEnergy = 0;
   _spawnBowlGlob(gs, pin.x, pin.y, false);
   if (depth === 0) {
     try { _playMzSePitch('correct', 0); } catch (_) { try { playTap(); } catch (__) {} }
@@ -7336,7 +7413,7 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
 
   const chainR = BOWL_CHAIN_R_REL * Math.min(gs.w, gs.h);
   const chainR2 = chainR * chainR;
-  // 全条件マッチピンに 70ms 遅延で連鎖 (最近接 1 本のみではなく、全方向ファン)
+  // 倒れた虫は周囲を押すだけ。衝撃は depth ごとに弱まり、安定した虫はぐらつくだけで戻る。
   _webGimmickSetTimeout(function() {
     if (gs !== _bowlGameState) return;
     const inner = performance.now();
@@ -7356,7 +7433,9 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
       let nky = knockDirY * 0.4 + uy * 0.6;
       const nm = Math.max(0.001, Math.sqrt(nkx * nkx + nky * nky));
       nkx /= nm; nky /= nm;
-      _bowlFellPin(gs, p2, nkx, nky, depth + 1, inner);
+      const distanceLoss = 1 - _bowlClamp(dist / chainR, 0, 1) * 0.38;
+      const impulse = Math.max(0.18, (pin.stability || 1) * Math.pow(0.58, depth + 1) * distanceLoss);
+      _bowlApplyPinImpact(gs, p2, impulse, nkx, nky, depth + 1, inner);
     }
   }, BOWL_CHAIN_DELAY_MS);
 }
@@ -7799,6 +7878,8 @@ function _drawBowlPin(gs, pin, now) {
   const r = metrics.r;
   const img = _bowlBugImg(pin.kind);
   const fp = pin.fallProgress;
+  const standingTilt = pin.fallen ? 0 : _bowlClamp(pin.tilt || 0, -0.95, 0.95);
+  const wobbling = !pin.fallen && (Math.abs(standingTilt) > 0.015 || now < (pin.wobbleUntil || 0));
   ctx.save();
   ctx.translate(pin.x, pin.y);
 
@@ -7807,7 +7888,8 @@ function _drawBowlPin(gs, pin, now) {
   ctx.globalAlpha = 0.34 * (1 - fp * 0.65);
   ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(2, r * 0.42, r * 1.32, r * 0.38, 0, 0, Math.PI * 2);
+  const shadowLean = pin.fallen ? (pin.fallRotDirX || 0) * r * 0.26 * fp : standingTilt * r * 0.42;
+  ctx.ellipse(2 + shadowLean, r * 0.42, r * (1.32 + Math.min(0.18, Math.abs(standingTilt) * 0.18)), r * 0.38, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
@@ -7815,19 +7897,31 @@ function _drawBowlPin(gs, pin, now) {
   let fallShiftY = 0;
   if (pin.fallen) {
     const fallScale = 1 - 0.42 * fp;
-    const alpha = 1 - fp;
+    const alpha = 1 - fp * 0.38;
     const dir = (pin.fallRotDirX || 0) >= 0 ? 1 : -1;
     fallShiftX = (pin.fallRotDirX || 0) * r * 0.55 * fp;
     fallShiftY = Math.abs(pin.fallRotDirY || 0) * r * 0.22 * fp;
-    ctx.globalAlpha = Math.max(0, alpha);
+    ctx.globalAlpha = Math.max(0.58, alpha);
     ctx.translate(fallShiftX, fallShiftY);
     ctx.rotate(dir * fp * 1.18);
     ctx.scale(fallScale, fallScale);
+  } else if (Math.abs(standingTilt) > 0.001) {
+    ctx.translate(standingTilt * r * 0.18, Math.abs(standingTilt) * r * 0.06);
+    ctx.rotate(standingTilt);
+    ctx.scale(1 + Math.abs(standingTilt) * 0.03, 1 - Math.abs(standingTilt) * 0.018);
   }
 
   if (img && img.complete && img.naturalWidth) {
     const drawH = metrics.drawH;
     const drawW = metrics.drawW;
+    if (!pin.fallen) {
+      ctx.save();
+      ctx.globalAlpha = 0.24;
+      ctx.filter = 'brightness(0.46) saturate(0.82)';
+      ctx.translate(-(pin.tiltDirX || 1) * r * 0.12, r * 0.11);
+      ctx.drawImage(img, -drawW / 2, -drawH, drawW, drawH);
+      ctx.restore();
+    }
     ctx.drawImage(img, -drawW / 2, -drawH, drawW, drawH);
     ctx.save();
     ctx.globalCompositeOperation = 'source-atop';
@@ -7839,6 +7933,12 @@ function _drawBowlPin(gs, pin, now) {
     ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   } else {
+    if (!pin.fallen) {
+      ctx.fillStyle = 'rgba(42, 71, 24, 0.28)';
+      ctx.beginPath();
+      ctx.ellipse(-(pin.tiltDirX || 1) * r * 0.12, -r * 0.82 + r * 0.10, r * 0.9, r * 1.05, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = '#7AB540';
     ctx.beginPath();
     ctx.ellipse(0, -r * 0.9, r * 0.9, r * 1.05, 0, 0, Math.PI * 2);
@@ -7846,6 +7946,14 @@ function _drawBowlPin(gs, pin, now) {
     ctx.fillStyle = '#f7fff2';
     ctx.beginPath(); ctx.arc(-r * 0.28, -r * 1.1, r * 0.14, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(r * 0.28, -r * 1.1, r * 0.14, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (wobbling) {
+    ctx.strokeStyle = 'rgba(255, 199, 78, 0.66)';
+    ctx.lineWidth = Math.max(1.4, r * 0.06);
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.10, r * (0.56 + Math.min(0.18, Math.abs(standingTilt) * 0.28)), r * 0.13, 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   if (!pin.fallen && pin.swayAmpLane) {
