@@ -6493,10 +6493,12 @@ function _resolveStrengthPushGame() {
 
 // ── ほうき: クモの巣はらい ──
 // Spider-web topology: 8 spokes drive geometry; each ring has 8 segments (one per spoke gap) so chords land exactly on spoke tips. Total = 24 threads.
+// Playtest feedback v1043: halved thickness for silk-like delicacy.
+// Per-blueprint thickRatio overrides removed below so this array is the single source of truth.
 const WEB_SWEEP_LAYERS = [
-  { layer: 0, count: 8, color: '#8a8a8a', thickRatio: 0.020, threshold: 1.1, sparkleColor: '#bbb' },
-  { layer: 1, count: 8, color: '#ffffff', thickRatio: 0.014, threshold: 1.0, sparkleColor: '#e8e8ff' },
-  { layer: 2, count: 8, color: '#fff6c8', thickRatio: 0.008, threshold: 0.9, sparkleColor: '#ffe89a' },
+  { layer: 0, count: 8, color: '#8a8a8a', thickRatio: 0.013,  threshold: 1.1, sparkleColor: '#bbb' },
+  { layer: 1, count: 8, color: '#ffffff', thickRatio: 0.0085, threshold: 1.0, sparkleColor: '#e8e8ff' },
+  { layer: 2, count: 8, color: '#fff6c8', thickRatio: 0.0050, threshold: 0.9, sparkleColor: '#ffe89a' },
 ];
 const WEB_SWEEP_BUTTERFLY_SRC = '../assets/images/quizland/illust/choice/chocho.png';
 const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
@@ -6554,7 +6556,7 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
       c: [mx + perpX * wob, my + perpY * wob],
       layer: 0,
       color: '#8a8a8a',
-      thickRatio: 0.020,
+      // thickRatio intentionally omitted — falls back to WEB_SWEEP_LAYERS[0].thickRatio (single source of truth, v1043).
       threshold: 1.1,
       phase: i * 0.71,
     });
@@ -6581,7 +6583,7 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
       c: c,
       layer: 1,
       color: '#ffffff',
-      thickRatio: 0.014,
+      // thickRatio intentionally omitted — falls back to WEB_SWEEP_LAYERS[1].thickRatio (single source of truth, v1043).
       threshold: 1.0,
       phase: 10 + i * 0.57,
     });
@@ -6607,7 +6609,7 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
       c: c,
       layer: 2,
       color: '#fff6c8',
-      thickRatio: 0.008,
+      // thickRatio intentionally omitted — falls back to WEB_SWEEP_LAYERS[2].thickRatio (single source of truth, v1043).
       threshold: 0.9,
       phase: 20 + i * 0.83,
     });
@@ -6840,16 +6842,39 @@ const WEB_CONSTRAINT_ITERS_LOW_FPS = 5;
 const WEB_LINEAR_DAMP = 0.985;
 const WEB_MICRO_GRAVITY = 6;
 const WEB_GRAB_BLEND_K = 0.35;
-const WEB_GRAB_WEIGHT = 0.15;
-const WEB_FREE_WEIGHT = 0.5;
+// Playtest feedback v1043: increased so grabbed point holds broom position firmly
+// and the rope actually stretches instead of being yanked back by free neighbors.
+const WEB_GRAB_WEIGHT = 0.55;
+const WEB_FREE_WEIGHT = 0.85;
 const WEB_GRAB_RADIUS_MIN_PX = 36;
-const WEB_GRAB_RADIUS_FACTOR = 0.09;
-const WEB_GRAB_RELEASE_HYSTERESIS = 1.6;
+// Larger capture (~0.13*minDim) + larger release hysteresis (~2.1) for toddler-sized
+// imprecise sweeps; grabs hang on through hand wobble so condD path accumulator fires.
+const WEB_GRAB_RADIUS_FACTOR = 0.13;
+const WEB_GRAB_RELEASE_HYSTERESIS = 2.1;
 const WEB_GRAB_MAX_CONCURRENT = 4;
-const WEB_BREAK_STRETCH_RATIO = 1.6;
-const WEB_BREAK_SUSTAIN_MS = 1400;
-const WEB_BREAK_FAST_SPEED_FACTOR = 2.4;
-const WEB_BREAK_FAST_STRETCH = 1.2;
+// Lowered so a single short sweep can break a thread — original 1.6/1400/2.4 were
+// physically unreachable for a 2-6 year old's hand. condD (grabPath) is the new
+// primary break path; condA/B/C are now also reachable as safety nets.
+const WEB_BREAK_STRETCH_RATIO = 1.22;
+const WEB_BREAK_SUSTAIN_MS = 850;
+const WEB_BREAK_FAST_SPEED_FACTOR = 1.2;
+const WEB_BREAK_FAST_STRETCH = 1.08;
+// NEW (condD): cumulative broom-to-grabbed-point displacement / minDim. 0.22 on a
+// 540 minDim = ~118px — one short lateral wipe. Unaffected by constraint solver.
+const WEB_BREAK_GRAB_PATH_RATIO = 0.22;
+// NEW: within this window a re-grab of the same point preserves grabStartAt and
+// grabPathPx so micro-releases from hand wobble don't reset the accumulator.
+const WEB_REGRAB_CONTINUITY_MS = 250;
+// NEW: adjacent-wake (issue #3) — non-grabbed mid-points within R sway from broom motion.
+const WEB_WAKE_RADIUS_FACTOR = 0.16;
+const WEB_WAKE_PUSH_PX = 2.4;
+const WEB_WAKE_SPEED_REF_FACTOR = 0.8;
+// NEW: absolute upper clamp on per-thread thickness for consistent silk look on tablet/desktop.
+const WEB_MAX_THICKNESS_PX = 7;
+// NEW: detached silk (issue #5) — gently floats down over a longer window.
+const WEB_DETACH_HOLD_MS = 1100;
+const WEB_DETACH_FADE_MS = 2200;
+const WEB_DETACH_GRAVITY = 140;
 const WEB_SNAPBACK_IMPULSE_PX = 16;
 const WEB_FLASH_MS = 60;
 const WEB_DT_CLAMP_MIN_MS = 8;
@@ -6869,7 +6894,8 @@ function _layoutWebSweepThreads(gs) {
       def.layer = t.index < 8 ? 0 : (t.index < 16 ? 1 : 2);
     }
     const layerDef = WEB_SWEEP_LAYERS[def.layer] || WEB_SWEEP_LAYERS[0];
-    t.thickness = Math.max(1.1, Math.min(gs.w, gs.h) * (def.thickRatio || layerDef.thickRatio));
+    // v1043: clamp to WEB_MAX_THICKNESS_PX so tablet/desktop don't get rope-like silk.
+    t.thickness = Math.max(1.1, Math.min(WEB_MAX_THICKNESS_PX, Math.min(gs.w, gs.h) * (def.thickRatio || layerDef.thickRatio)));
     t.threshold = def.threshold || layerDef.threshold;
     t.color = def.color || layerDef.color;
     t.layer = def.layer;
@@ -6967,7 +6993,7 @@ function _updateWebSweepPhysics(gs, dt) {
     gs.threads.forEach(function(t) {
       if (t.detached) {
         t.detachAge += dt;
-        t.opacity = Math.max(0, 1 - t.detachAge / 900);
+        t.opacity = _detachedOpacity(t.detachAge);
       }
       if (t.layerFadeStart) {
         t.opacity = Math.max(0, 1 - (performance.now() - t.layerFadeStart) / 300);
@@ -6995,9 +7021,14 @@ function _updateWebSweepPhysics(gs, dt) {
   // 2) Acquire/release rope grabs every tick from the up-to-date broom position.
   _captureRopeGrabs(gs);
 
+  // v1043: adjacent-wake — sway non-grabbed mid-points on ALL layers from broom motion.
+  // Runs BEFORE the per-thread integration so the constraint relaxation later partially
+  // restores rest (transient sway, not permanent drift). Skip when broom is idle.
+  _applyAdjacentWake(gs, dt);
+
   for (const t of gs.threads) {
     if (t.detached || t.broken) {
-      _updateDetachedThread(t, sec, dt);
+      _updateDetachedThread(t, sec, dt, gs);
       continue;
     }
     if (t.layerFadeStart) {
@@ -7029,6 +7060,10 @@ function _updateWebSweepPhysics(gs, dt) {
         p.y += vy + WEB_MICRO_GRAVITY * sec * sec;
       }
     }
+
+    // v1043: accumulate grab-path BEFORE constraint relaxation so we measure the
+    // raw broom-to-point displacement, not the constraint-corrected position.
+    _accumulateGrabPath(gs, t, dt);
 
     // 4) Constraint relaxation.
     const iters = (dt > 26) ? WEB_CONSTRAINT_ITERS_LOW_FPS : WEB_CONSTRAINT_ITERS;
@@ -7079,20 +7114,105 @@ function _updateWebSweepPhysics(gs, dt) {
   gs.ripples = gs.ripples.filter(function(r) { return r.age < r.life; });
 }
 
-function _updateDetachedThread(t, sec, dt) {
+function _updateDetachedThread(t, sec, dt, gs) {
   t.detachAge += dt;
-  // Free-flight Verlet: each point integrates its own velocity (x - prevX) * damp.
+  // v1043: gentler damp (0.985) preserves snap-back impulse so gravity has time to
+  // pull the silk visibly downward. Stronger gravity (WEB_DETACH_GRAVITY=140) over
+  // the extended fade window (2.2s) yields ~338px of fall — the "fuwatto yukkuri
+  // shita ni ochiteiku" feel requested in playtest.
   if (t.points && t.points.length) {
+    const yClamp = (gs && gs.h) ? (gs.h + 60) : Number.POSITIVE_INFINITY;
     for (let i = 0; i < t.points.length; i++) {
       const p = t.points[i];
-      const vx = (p.x - p.prevX) * 0.9;
-      const vy = (p.y - p.prevY) * 0.9;
+      const vx = (p.x - p.prevX) * WEB_LINEAR_DAMP;
+      const vy = (p.y - p.prevY) * WEB_LINEAR_DAMP;
       p.prevX = p.x; p.prevY = p.y;
       p.x += vx;
-      p.y += vy + 18 * sec * sec; // light gravity so detached silk drifts down
+      p.y += vy + WEB_DETACH_GRAVITY * sec * sec;
+      if (p.y > yClamp) { p.y = yClamp; p.prevY = yClamp; }
     }
   }
-  t.opacity = Math.max(0, 1 - t.detachAge / 900);
+  t.opacity = _detachedOpacity(t.detachAge);
+}
+
+// v1043: two-phase opacity — silk stays fully visible for WEB_DETACH_HOLD_MS
+// (the "falling" phase) then linearly fades over the remaining window.
+function _detachedOpacity(detachAge) {
+  if (detachAge < WEB_DETACH_HOLD_MS) return 1;
+  const fadeWindow = WEB_DETACH_FADE_MS - WEB_DETACH_HOLD_MS;
+  if (fadeWindow <= 0) return 0;
+  return Math.max(0, 1 - (detachAge - WEB_DETACH_HOLD_MS) / fadeWindow);
+}
+
+// v1043: adjacent-wake (issue #3). Walks ALL non-detached/broken threads and
+// nudges non-pinned, non-grabbed interior points within R toward the broom's
+// MOTION direction. Writes p.x/p.y only (NOT prevX/prevY) so the constraint
+// solver later partially restores rest — produces a transient sway, not a
+// permanent displacement. Rings on non-current layers stay unbreakable (the
+// layer gate in _captureRopeGrabs is preserved), they just visibly react now.
+function _applyAdjacentWake(gs, dt) {
+  if (!gs || !gs.broom) return;
+  if (_webSweepReducedMotion()) return;
+  const minDim = Math.min(gs.w, gs.h);
+  if (minDim <= 0) return;
+  const broomSpeed = Math.hypot(gs.broom.vx || 0, gs.broom.vy || 0);
+  const speedRef = minDim * WEB_WAKE_SPEED_REF_FACTOR;
+  const speedNorm = speedRef > 0 ? Math.min(1, broomSpeed / speedRef) : 0;
+  // Early-exit when broom is nearly still — child holding finger to think shouldn't
+  // wake adjacent rings, and this saves the per-point loop entirely.
+  if (speedNorm < 0.05) return;
+  const R = minDim * WEB_WAKE_RADIUS_FACTOR;
+  if (R <= 0) return;
+  const R2 = R * R;
+  const invSpeed = broomSpeed > 0.0001 ? 1 / broomSpeed : 0;
+  const ux = (gs.broom.vx || 0) * invSpeed;
+  const uy = (gs.broom.vy || 0) * invSpeed;
+  const bx = gs.broom.x, by = gs.broom.y;
+  const baseMag = WEB_WAKE_PUSH_PX * speedNorm;
+  const threads = gs.threads;
+  for (let ti = 0; ti < threads.length; ti++) {
+    const t = threads[ti];
+    if (!t || t.detached || t.broken) continue;
+    if (t.frozenLayout === 1) continue;
+    const pts = t.points;
+    if (!pts || pts.length < 3) continue;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p = pts[i];
+      if (p.pinned || p.grabbed) continue;
+      const dx = bx - p.x;
+      if (dx > R || dx < -R) continue;
+      const dy = by - p.y;
+      if (dy > R || dy < -R) continue;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > R2) continue;
+      const d = Math.sqrt(d2);
+      const falloff = 1 - d / R;
+      const mag = baseMag * falloff;
+      // Push in the direction the broom is MOVING (not toward the broom). Constraint
+      // relaxation will pull the point back next pass, leaving only a brief ripple.
+      p.x += ux * mag;
+      p.y += uy * mag;
+    }
+  }
+}
+
+// v1043: accumulate per-tick |broom - grabbed point| distance into p.grabPathPx.
+// This is the basis for condD in _evaluateBreak — a sweep distance threshold that
+// IS reachable for small hands, unlike the original stretch/sustain/speed conditions.
+function _accumulateGrabPath(gs, t, dt) {
+  if (!gs || !t || t.grabbedIdx < 0) return;
+  const p = t.points && t.points[t.grabbedIdx];
+  if (!p) return;
+  if (p._lastGrabBroomX === undefined) {
+    p._lastGrabBroomX = gs.broom.x;
+    p._lastGrabBroomY = gs.broom.y;
+  }
+  const dx = gs.broom.x - p._lastGrabBroomX;
+  const dy = gs.broom.y - p._lastGrabBroomY;
+  const step = Math.hypot(dx, dy);
+  p.grabPathPx = (p.grabPathPx || 0) + step;
+  p._lastGrabBroomX = gs.broom.x;
+  p._lastGrabBroomY = gs.broom.y;
 }
 
 function _captureRopeGrabs(gs) {
@@ -7103,6 +7223,7 @@ function _captureRopeGrabs(gs) {
   const RELEASE2 = RELEASE * RELEASE;
   const bx = gs.broom.x, by = gs.broom.y;
 
+  const nowRelease = performance.now();
   // (a) Maintain existing grabs: release if broom drifts beyond hysteresis.
   for (const t of gs.threads) {
     if (t.grabbedIdx < 0 || t.detached || t.broken) continue;
@@ -7111,7 +7232,14 @@ function _captureRopeGrabs(gs) {
     const dxg = p.x - bx, dyg = p.y - by;
     const d2 = dxg * dxg + dyg * dyg;
     if (d2 > RELEASE2) {
-      p.grabbed = 0; p.grabStartAt = 0;
+      // v1043: remember release timestamp + index so a quick re-grab within
+      // WEB_REGRAB_CONTINUITY_MS preserves grabStartAt + grabPathPx — forgiveness
+      // for the micro-releases produced by toddler hand wobble.
+      t.lastGrabReleaseAt = nowRelease;
+      t.lastGrabIdx = t.grabbedIdx;
+      p.grabbed = 0;
+      // Intentionally do NOT zero p.grabStartAt / p.grabPathPx / p._lastGrabBroomX
+      // here — they're consulted by the continuity branch in section (b).
       t.grabbedIdx = -1;
       gs.activeGrabs = Math.max(0, gs.activeGrabs - 1);
     }
@@ -7140,8 +7268,24 @@ function _captureRopeGrabs(gs) {
     if (gs.activeGrabs >= WEB_GRAB_MAX_CONCURRENT) break;
     const t = gs.threads[c.ti];
     t.grabbedIdx = c.i;
-    t.points[c.i].grabbed = 1;
-    t.points[c.i].grabStartAt = now;
+    const gp = t.points[c.i];
+    gp.grabbed = 1;
+    // v1043: regrab-continuity. If the SAME point was released < WEB_REGRAB_CONTINUITY_MS
+    // ago, preserve grabStartAt and grabPathPx so condB/condD keep accumulating across
+    // the wobble. Otherwise initialize fresh per-grab state (incl. broom-path cache).
+    const continuous =
+      t.lastGrabIdx === c.i &&
+      t.lastGrabReleaseAt > 0 &&
+      (now - t.lastGrabReleaseAt) <= WEB_REGRAB_CONTINUITY_MS;
+    if (!continuous) {
+      gp.grabStartAt = now;
+      gp.grabPathPx = 0;
+      gp._lastGrabBroomX = gs.broom.x;
+      gp._lastGrabBroomY = gs.broom.y;
+    }
+    // Clear continuity bookkeeping either way so it isn't reused twice.
+    t.lastGrabReleaseAt = 0;
+    t.lastGrabIdx = -1;
     t.stick = 1;
     gs.activeGrabs++;
     if (now - (gs.lastSfxAt || 0) > 120) {
@@ -7158,10 +7302,21 @@ function _captureRopeGrabs(gs) {
 function _releaseAllRopeGrabs(gs) {
   if (!gs) return;
   for (const t of gs.threads) {
-    if (t.grabbedIdx < 0) continue;
-    const p = t.points && t.points[t.grabbedIdx];
-    if (p) { p.grabbed = 0; p.grabStartAt = 0; }
-    t.grabbedIdx = -1;
+    if (t.grabbedIdx >= 0) {
+      const p = t.points && t.points[t.grabbedIdx];
+      if (p) {
+        p.grabbed = 0;
+        p.grabStartAt = 0;
+        // v1043: clear path accumulator so a fresh drag after pointerup starts from 0.
+        p.grabPathPx = 0;
+        p._lastGrabBroomX = undefined;
+        p._lastGrabBroomY = undefined;
+      }
+      t.grabbedIdx = -1;
+    }
+    // v1043: full release also clears regrab-continuity bookkeeping.
+    t.lastGrabReleaseAt = 0;
+    t.lastGrabIdx = -1;
   }
   gs.activeGrabs = 0;
 }
@@ -7174,7 +7329,11 @@ function _evaluateBreak(gs, t, broomSpeed, minDim) {
   const condA = t.stretchRatio > WEB_BREAK_STRETCH_RATIO;
   const condB = p.grabStartAt > 0 && (now - p.grabStartAt) > WEB_BREAK_SUSTAIN_MS;
   const condC = broomSpeed > minDim * WEB_BREAK_FAST_SPEED_FACTOR && t.stretchRatio > WEB_BREAK_FAST_STRETCH;
-  if (!(condA || condB || condC)) return;
+  // v1043 condD: cumulative grab-path displacement. This is the dominant break
+  // path for toddlers — a single lateral wipe of ~118px on a 540 minDim trips it,
+  // unaffected by the constraint solver yanking the grabbed point back to rest.
+  const condD = (p.grabPathPx || 0) > minDim * WEB_BREAK_GRAB_PATH_RATIO;
+  if (!(condA || condB || condC || condD)) return;
 
   // Find weakest (most stretched) breakable segment.
   let breakIdx = -1, worstStretch = -Infinity;
@@ -7238,8 +7397,17 @@ function _evaluateBreak(gs, t, broomSpeed, minDim) {
   // Release the grab on the parent.
   if (t.grabbedIdx >= 0) {
     const gp = t.points[t.grabbedIdx];
-    if (gp) { gp.grabbed = 0; gp.grabStartAt = 0; }
+    if (gp) {
+      gp.grabbed = 0;
+      gp.grabStartAt = 0;
+      gp.grabPathPx = 0;
+      gp._lastGrabBroomX = undefined;
+      gp._lastGrabBroomY = undefined;
+    }
     t.grabbedIdx = -1;
+    // v1043: parent is broken, don't bridge continuity to a sub-chain.
+    t.lastGrabReleaseAt = 0;
+    t.lastGrabIdx = -1;
     gs.activeGrabs = Math.max(0, gs.activeGrabs - 1);
   }
 
@@ -7640,7 +7808,7 @@ function _drawWebSweepThread(g, t, now, gs) {
   g.shadowColor = 'rgba(104, 136, 144, 0.28)';
   g.shadowBlur = Math.min(8, 5 + tension * 3);
   g.strokeStyle = t.def.layer === 0 ? 'rgba(72, 72, 80, 0.33)' : 'rgba(54, 80, 98, 0.20)';
-  g.lineWidth = Math.max(1.7, thickness * 1.75 * (1 + tension * 0.4));
+  g.lineWidth = Math.max(1.7, thickness * 1.45 * (1 + tension * 0.4)); // v1043: 1.75→1.45 for thinner silk halo
   if (mainPath) g.stroke(mainPath); else _strokeSilkFallback(g, pts, null);
 
   // PASS 2: main silk (tension-driven width taper + pale-white blend at high tension)

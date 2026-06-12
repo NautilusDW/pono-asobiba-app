@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1042; // v1042: tap-intro redesign — restored 🐻 emoji as main tap area, separated Amazon banner into clearly-labeled PR ad zone with stopPropagation so banner tap opens Amazon only (no game start)
+const CACHE_VERSION = 1043; // v1043: maze spider-web playtest feedback — layer-clear unstuck via grab-path break condition (condD), stronger stretch feel (grab/free weight rebalance), ring response on all layers (adjacent-wake), thinner silk (halved thickRatios + halo 1.75→1.45 + 7px clamp), slow silk fall after break (damp 0.985 + gravity 140 + 2.2s two-phase fade)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
