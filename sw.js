@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1058; // v1058: maze donguri bowl uses alpha ojama gate, acorn bag, and transparent boss assets
+const CACHE_VERSION = 1059; // v1059: donguri bowling modal art, hedge lane bounce, and forgiving bug hitboxes
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
