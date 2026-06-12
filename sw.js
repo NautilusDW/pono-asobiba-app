@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1037; // v1037: redesign kumo-rescue spider web to real spokes+concentric rings shape
+const CACHE_VERSION = 1038; // v1038: replace tap-intro 🐻 with Amazon banner link on play.html splash
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

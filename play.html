@@ -1283,6 +1283,23 @@
       animation: tapIntroBounce 1.6s ease-in-out infinite;
       filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
     }
+    .tap-intro-banner {
+      display: inline-block;
+      width: min(78vw, 420px);
+      margin-bottom: 18px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      animation: tapIntroBounce 1.6s ease-in-out infinite;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tap-intro-banner picture,
+    .tap-intro-banner img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
     .tap-intro-title {
       font-size: clamp(36px, 6vw, 64px);
       font-weight: 900;
@@ -1428,7 +1445,14 @@
        user has already entered the title in this browser session. -->
   <div class="tap-intro" id="tapIntro" hidden role="button" tabindex="0" aria-label="タップしてはじめる">
     <div class="tap-intro-card">
-      <div class="tap-intro-pono" aria-hidden="true">🐻</div>
+      <a class="tap-intro-banner" href="https://www.amazon.co.jp/dp/B0FFTBS9TM" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本を見る">
+        <picture>
+          <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
+          <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
+          <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.png">
+          <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" loading="eager">
+        </picture>
+      </a>
       <div class="tap-intro-title">ポノのあそびば</div>
       <div class="tap-intro-sub">タップして はじめよう</div>
     </div>

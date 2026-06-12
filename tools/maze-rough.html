@@ -245,7 +245,7 @@ input[type="file"]::file-selector-button {
     </div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:2px;">🔗 つなぐ は 2 つの マーカー を 順にクリックで 黒線で結びます (AI への ヒント)</div>
-    <div style="font-size:0.72rem; color:#cfa; margin-top:2px;">※ 既存の黒線の中点付近をクリックすると 削除できます。</div>
+    <div style="font-size:0.72rem; color:#cfa; margin-top:2px;">※ 「🔗 つなぐ」 モード中に 既存の 黒線の 中点 (×印) を クリックで 削除します</div>
 
     <!-- Phase 3.5: お邪魔虫の種類 (creature モード時のみ表示) -->
     <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
@@ -572,6 +572,7 @@ const state = {
   hoverTile: null,        // { x, y } currently hovered tile (for brush preview)
   draggingMarker: null,   // 'start' | 'goal' | { type:'creature', index:N } | null
   connectAnchor: null,    // 🔗 つなぐ モード: 1 つ目に選ばれたマーカー { type, index?, tileX, tileY } | null
+  hoveringConnectorIdx: null, // 🔗 つなぐ モード中、中点マーカー上にカーソルがある connector の index | null
   history: [],            // snapshots for undo
   refImage: null,         // HTMLImageElement: 参考用に下絵として表示する画像 (drag-drop で読込)
 };
@@ -1021,7 +1022,7 @@ function draw() {
   // Connectors (🔗 つなぐ で引いた 2 マーカー間の黒線アノテーション)
   if (Array.isArray(state.connectors)) {
     for (let i = 0; i < state.connectors.length; i++) {
-      drawConnector(state.connectors[i]);
+      drawConnector(state.connectors[i], i);
     }
   }
   // Obstacles (障害物) — waypoint より下、edges より上
@@ -1039,6 +1040,20 @@ function draw() {
   // Brush hover preview — show exactly which tiles will be affected
   if (state.hoverTile) drawBrushPreview();
   drawSelectionHighlight();
+  // 修正3: connector 端点の黒丸を マーカーの上 (top layer) に再描画。
+  // connectors は marker より下のレイヤーで描かれるため、 端点 dot を上に重ねて
+  // 「接続中」 を視覚的に示す (drawConnector 内では描かないようにした)。
+  if (Array.isArray(state.connectors) && state.connectors.length) {
+    ctx.save();
+    ctx.fillStyle = '#1a1a1a';
+    for (const c of state.connectors) {
+      const eps = _connectorEndpointsPx(c);
+      if (!eps) continue;
+      ctx.beginPath(); ctx.arc(eps.fromPx.x, eps.fromPx.y, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(eps.toPx.x,   eps.toPx.y,   6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
   drawConnectAnchorHighlight();
 }
 
@@ -1155,53 +1170,97 @@ function drawEdge(e) {
   ctx.restore();
 }
 
+// 🔗 つなぐ: connector の 1 endpoint (side='from'|'to') を現在座標として解決。
+// 参照先のマーカーが存在しなければ null。 修正5 の GC で参照不可は除去されるため、
+// タイル座標フォールバックは廃止 (現状未到達)。
+function _resolveConnectorEndpoint(c, side) {
+  if (!c) return null;
+  const type  = (side === 'from') ? c.fromType  : c.toType;
+  const index = (side === 'from') ? c.fromIndex : c.toIndex;
+  if (type === 'start') return state.start ? { x: state.start.x, y: state.start.y } : null;
+  if (type === 'goal')  return state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null;
+  if (type === 'creature') {
+    const m = state.creatures[index]; return m ? { x: m.x, y: m.y } : null;
+  }
+  if (type === 'waypoint') {
+    const m = state.waypoints[index]; return m ? { x: m.x, y: m.y } : null;
+  }
+  if (type === 'obstacle') {
+    const m = state.obstacles[index]; return m ? { x: m.x, y: m.y } : null;
+  }
+  return null;
+}
+
 // 🔗 つなぐ: connector の現在座標を返す ({fromPx, toPx} or null)。
 // from/to が指すマーカーが削除されていたら null を返し、 描画/ヒット判定をスキップ。
 function _connectorEndpointsPx(c) {
   if (!c) return null;
-  function _epPx(type, index, tx, ty) {
-    if (type === 'start') return state.start ? { x: state.start.x, y: state.start.y } : null;
-    if (type === 'goal')  return state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null;
-    if (type === 'creature') {
-      const m = state.creatures[index]; return m ? { x: m.x, y: m.y } : null;
-    }
-    if (type === 'waypoint') {
-      const m = state.waypoints[index]; return m ? { x: m.x, y: m.y } : null;
-    }
-    if (type === 'obstacle') {
-      const m = state.obstacles[index]; return m ? { x: m.x, y: m.y } : null;
-    }
-    // フォールバック: マーカーが消えていてもタイル中心で線を引いておく (削除後の整合性)
-    if (Number.isFinite(tx) && Number.isFinite(ty)) {
-      return { x: tx * CELL + CELL / 2, y: ty * CELL + CELL / 2 };
-    }
-    return null;
-  }
-  const fromPx = _epPx(c.fromType, c.fromIndex, c.fromTileX, c.fromTileY);
-  const toPx   = _epPx(c.toType,   c.toIndex,   c.toTileX,   c.toTileY);
+  const fromPx = _resolveConnectorEndpoint(c, 'from');
+  const toPx   = _resolveConnectorEndpoint(c, 'to');
   if (!fromPx || !toPx) return null;
   return { fromPx: fromPx, toPx: toPx };
 }
 
-// 🔗 つなぐ で引いた 黒線 connector を描画。 端点に小さな黒丸を打って強調。
-function drawConnector(c) {
+// 🔗 つなぐ で引いた 黒線 connector を描画。
+// 修正4: 線は マーカー外縁から外縁までクリップ (中心まで突き刺さらない)。
+// 修正3: 端点黒丸は draw() の最後で マーカー上層に再描画するため、 ここでは描かない。
+// 修正1: connect モード中のみ 中点に削除用マーカー (白丸+✕) を描画。
+//        index 引数は state.hoveringConnectorIdx と比較して hover 状態を出すために必要。
+function drawConnector(c, index) {
   const eps = _connectorEndpointsPx(c);
   if (!eps) return;
+  const margin = CELL * 0.32; // マーカー半径相当 (修正4)
+  const dx = eps.toPx.x - eps.fromPx.x;
+  const dy = eps.toPx.y - eps.fromPx.y;
+  const len = Math.hypot(dx, dy);
   ctx.save();
   ctx.strokeStyle = '#1a1a1a';
   ctx.lineWidth = 5;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(eps.fromPx.x, eps.fromPx.y);
-  ctx.lineTo(eps.toPx.x, eps.toPx.y);
-  ctx.stroke();
-  // endpoint の強調用 黒丸
-  ctx.fillStyle = '#1a1a1a';
-  const r = 4;
-  ctx.beginPath(); ctx.arc(eps.fromPx.x, eps.fromPx.y, r, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(eps.toPx.x,   eps.toPx.y,   r, 0, Math.PI * 2); ctx.fill();
+  if (len >= margin * 2) {
+    const ux = dx / len, uy = dy / len;
+    const sx = eps.fromPx.x + ux * margin;
+    const sy = eps.fromPx.y + uy * margin;
+    const ex = eps.toPx.x - ux * margin;
+    const ey = eps.toPx.y - uy * margin;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+  }
   ctx.restore();
+  // 修正1: connect モード中のみ 中点に削除マーカーを描く
+  if (state.mode === 'connect') {
+    const mx = (eps.fromPx.x + eps.toPx.x) / 2;
+    const my = (eps.fromPx.y + eps.toPx.y) / 2;
+    const isHover = (state.hoveringConnectorIdx === index);
+    ctx.save();
+    if (isHover) {
+      // hover 強調: 黄色背景 + ラベル
+      ctx.fillStyle = '#FFE57A';
+      ctx.beginPath(); ctx.arc(mx, my, 13, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(mx, my, 11, 0, Math.PI * 2); ctx.fill();
+    }
+    // ✕ 印 (2 本の線、±6px)
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(mx - 6, my - 6); ctx.lineTo(mx + 6, my + 6);
+    ctx.moveTo(mx + 6, my - 6); ctx.lineTo(mx - 6, my + 6);
+    ctx.stroke();
+    if (isHover) {
+      ctx.fillStyle = '#222';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('クリックで削除', mx, my + 16);
+    }
+    ctx.restore();
+  }
 }
 
 // connector の中点が (px, py) からどれだけ近いか。 最近接 connector index と距離を返す。
@@ -1842,17 +1901,38 @@ cv.addEventListener('pointermove', function(e) {
   } else if (state.mode === 'delete-edge') {
     // ✂️ 道を消す: マーカー上でも常に not-allowed (= 削除専用) で他モードに誤発火させない
     cv.style.cursor = 'not-allowed';
+  } else if (state.mode === 'connect') {
+    // 修正2: connect モード時、 1 つ目未選択 かつ 中点 24px 内にカーソルがあれば
+    // pointer + 中点マーカー hover 状態を出す (削除可インジケーター)。
+    let midHit = null;
+    if (!state.connectAnchor) {
+      midHit = _hitConnectorMidpoint(p.x, p.y, 24);
+    }
+    const prevHoverIdx = state.hoveringConnectorIdx;
+    state.hoveringConnectorIdx = midHit ? midHit.index : null;
+    if (midHit) {
+      cv.style.cursor = 'pointer';
+    } else {
+      const baseCursor = state.connectAnchor ? 'crosshair' : 'cell';
+      cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : baseCursor;
+    }
+    // hover index が変わったときだけ追加 draw (draw() は下で常に呼ぶ)
+    if (prevHoverIdx !== state.hoveringConnectorIdx) {
+      // no-op: draw() 下で反映される
+    }
   } else {
     // Cursor hint when hovering over a draggable marker
     const baseCursor = (state.mode === 'select') ? 'default'
-      : (state.mode === 'connect') ? (state.connectAnchor ? 'crosshair' : 'cell')
       : 'crosshair';
     cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : baseCursor;
+    // 修正2: connect モード以外では hover index をクリア
+    if (state.hoveringConnectorIdx !== null) state.hoveringConnectorIdx = null;
   }
   draw();
 });
 cv.addEventListener('pointerleave', function() {
   state.hoverTile = null;
+  state.hoveringConnectorIdx = null;
   draw();
 });
 cv.addEventListener('pointerup', function(e) {
@@ -1923,7 +2003,19 @@ cv.addEventListener('pointerup', function(e) {
   }
 });
 
+// 修正5: 孤立 connector (参照先 marker が消えたもの) を自動 GC。
+// afterEdit() の冒頭で呼ぶ。 _resolveConnectorEndpoint が null を返す側があれば除去。
+function _gcOrphanedConnectors() {
+  if (!Array.isArray(state.connectors) || !state.connectors.length) return;
+  state.connectors = state.connectors.filter(function(c) {
+    const fromOk = _resolveConnectorEndpoint(c, 'from') !== null;
+    const toOk   = _resolveConnectorEndpoint(c, 'to')   !== null;
+    return fromOk && toOk;
+  });
+}
+
 function afterEdit() {
+  _gcOrphanedConnectors();
   draw();
   recomputeStats();
   scheduleAutoSave();
@@ -1956,10 +2048,15 @@ document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
       state.selection = null;
       draw();
     }
-    // 🔗 つなぐモード以外に切り替えたら、 進行中のアンカーをクリア
-    if (state.mode !== 'connect' && state.connectAnchor !== null) {
-      state.connectAnchor = null;
-      _stopConnectPulse();
+    // 🔗 つなぐモード以外に切り替えたら、 進行中のアンカーと hover をクリア
+    if (state.mode !== 'connect') {
+      if (state.connectAnchor !== null) {
+        state.connectAnchor = null;
+        _stopConnectPulse();
+      }
+      if (state.hoveringConnectorIdx !== null) {
+        state.hoveringConnectorIdx = null;
+      }
       draw();
     }
     _updateKindPanelVisibility();
@@ -2224,12 +2321,12 @@ function _findConnectorByAnchors(a, b) {
 
 // 🔗 つなぐモードのクリック処理。 マーカーに当たれば true、 外れなら false。
 // 新仕様: 2 マーカーを順にクリックすると黒線 connector を 1 本追加する。
-// 1 つ目クリックで既存 connector の中点付近 (8px 以内) をヒットしたら、 その connector を
-// 削除して anchor は設定しない (シンプルな削除手段)。
+// 1 つ目クリックで既存 connector の中点付近 (24px = CELL の 40%) をヒットしたら、
+// その connector を削除して anchor は設定しない (シンプルな削除手段)。
 function _handleConnectClick(p) {
   // 1 つ目未選択時のみ midpoint-hit を削除トリガにする (2 つ目はマーカー必須)
   if (!state.connectAnchor) {
-    const mid = _hitConnectorMidpoint(p.x, p.y, 8);
+    const mid = _hitConnectorMidpoint(p.x, p.y, 24);
     if (mid) {
       pushHistory();
       state.connectors.splice(mid.index, 1);
