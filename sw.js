@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1043; // v1043: maze spider-web playtest feedback — layer-clear unstuck via grab-path break condition (condD), stronger stretch feel (grab/free weight rebalance), ring response on all layers (adjacent-wake), thinner silk (halved thickRatios + halo 1.75→1.45 + 7px clamp), slow silk fall after break (damp 0.985 + gravity 140 + 2.2s two-phase fade)
+const CACHE_VERSION = 1044; // v1044: resistance tuning - harder per-thread break, global cooldown, slower grab follow, gentler recoil
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

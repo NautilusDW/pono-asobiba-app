@@ -6841,41 +6841,56 @@ const WEB_CONSTRAINT_ITERS = 4;
 const WEB_CONSTRAINT_ITERS_LOW_FPS = 5;
 const WEB_LINEAR_DAMP = 0.985;
 const WEB_MICRO_GRAVITY = 6;
-const WEB_GRAB_BLEND_K = 0.35;
-// Playtest feedback v1043: increased so grabbed point holds broom position firmly
-// and the rope actually stretches instead of being yanked back by free neighbors.
-const WEB_GRAB_WEIGHT = 0.55;
+// v1044: lowered blend so grabbed point catches up to broom over ~17 frames (~280ms)
+// instead of 2-3 frames. Chain visibly bows BEHIND broom during pull — "pulling through honey".
+const WEB_GRAB_BLEND_K = 0.18;
+// v1044: raised to 0.70 (vs WEB_FREE_WEIGHT=0.85) so the grabbed point resists the
+// constraint solver more — chain stays stretched in broom direction instead of snapping back.
+const WEB_GRAB_WEIGHT = 0.70;
 const WEB_FREE_WEIGHT = 0.85;
 const WEB_GRAB_RADIUS_MIN_PX = 36;
 // Larger capture (~0.13*minDim) + larger release hysteresis (~2.1) for toddler-sized
 // imprecise sweeps; grabs hang on through hand wobble so condD path accumulator fires.
 const WEB_GRAB_RADIUS_FACTOR = 0.13;
 const WEB_GRAB_RELEASE_HYSTERESIS = 2.1;
-const WEB_GRAB_MAX_CONCURRENT = 4;
-// Lowered so a single short sweep can break a thread — original 1.6/1400/2.4 were
-// physically unreachable for a 2-6 year old's hand. condD (grabPath) is the new
-// primary break path; condA/B/C are now also reachable as safety nets.
-const WEB_BREAK_STRETCH_RATIO = 1.22;
-const WEB_BREAK_SUSTAIN_MS = 850;
+// v1044: halved to 2 to prevent cascade — paired with WEB_BREAK_COOLDOWN_MS the wipe
+// band holds at most 2 chains, and serializes break events 1-per-~220ms.
+const WEB_GRAB_MAX_CONCURRENT = 2;
+// v1044: raised condA/condC stretch thresholds to compensate for higher GRAB_WEIGHT
+// (which inflates stretchRatio during pulls). condD remains the primary break path.
+const WEB_BREAK_STRETCH_RATIO = 1.32;
+const WEB_BREAK_SUSTAIN_MS = 1100;
 const WEB_BREAK_FAST_SPEED_FACTOR = 1.2;
-const WEB_BREAK_FAST_STRETCH = 1.08;
-// NEW (condD): cumulative broom-to-grabbed-point displacement / minDim. 0.22 on a
-// 540 minDim = ~118px — one short lateral wipe. Unaffected by constraint solver.
-const WEB_BREAK_GRAB_PATH_RATIO = 0.22;
+const WEB_BREAK_FAST_STRETCH = 1.14;
+// v1044 condD: cumulative broom-to-grabbed-point displacement / minDim. Raised from
+// 0.22 → 0.38 so a deliberate ~1.0-1.2s sweep on the SAME thread is required (vs
+// ~600ms before). Combined with cooldown, breaks become a rhythmic "pop, pop, pop".
+const WEB_BREAK_GRAB_PATH_RATIO = 0.38;
+// v1044 NEW: global per-gs break lockout. After ANY thread breaks, no other thread can
+// break for 220ms. Single most impactful fix for the "one sweep = cascade" problem.
+const WEB_BREAK_COOLDOWN_MS = 220;
 // NEW: within this window a re-grab of the same point preserves grabStartAt and
 // grabPathPx so micro-releases from hand wobble don't reset the accumulator.
 const WEB_REGRAB_CONTINUITY_MS = 250;
 // NEW: adjacent-wake (issue #3) — non-grabbed mid-points within R sway from broom motion.
 const WEB_WAKE_RADIUS_FACTOR = 0.16;
-const WEB_WAKE_PUSH_PX = 2.4;
+// v1044: gentler sympathy-sway (2.4 → 1.6) so neighborhood reads calmer when cap=2 break.
+const WEB_WAKE_PUSH_PX = 1.6;
 const WEB_WAKE_SPEED_REF_FACTOR = 0.8;
 // NEW: absolute upper clamp on per-thread thickness for consistent silk look on tablet/desktop.
 const WEB_MAX_THICKNESS_PX = 7;
 // NEW: detached silk (issue #5) — gently floats down over a longer window.
 const WEB_DETACH_HOLD_MS = 1100;
 const WEB_DETACH_FADE_MS = 2200;
-const WEB_DETACH_GRAVITY = 140;
-const WEB_SNAPBACK_IMPULSE_PX = 16;
+// v1044: reduced from 140 → 95 so sub-chain drifts rather than ballistic-falls.
+const WEB_DETACH_GRAVITY = 95;
+// v1044: reduced from 16 → 7 (~420 px/s vs 960 px/s) — visible recoil, no fireworks.
+const WEB_SNAPBACK_IMPULSE_PX = 7;
+// v1044 NEW: per-break particle constants. Replaces hard-coded 6/85/70 in _evaluateBreak
+// and _spawnWebGlob. Lower count + lower jitter = tighter, gentler puff.
+const WEB_BREAK_GLOB_COUNT = 3;
+const WEB_BREAK_GLOB_JITTER_X = 55;
+const WEB_BREAK_GLOB_JITTER_Y = 45;
 const WEB_FLASH_MS = 60;
 const WEB_DT_CLAMP_MIN_MS = 8;
 const WEB_DT_CLAMP_MAX_MS = 33;
@@ -7324,6 +7339,11 @@ function _releaseAllRopeGrabs(gs) {
 function _evaluateBreak(gs, t, broomSpeed, minDim) {
   if (t.grabbedIdx < 0 || t.broken || t.detached) return;
   const now = performance.now();
+  // v1044: global per-gs break cooldown. Prevents "one sweep = cascade of breaks"
+  // by serializing break events. Other threads continue accumulating grabPathPx,
+  // stretchRatio, etc. during the lockout, so a thread that's "ready to break"
+  // will trip the instant the cooldown expires — no missed input.
+  if (gs._lastBreakAt && (now - gs._lastBreakAt) < WEB_BREAK_COOLDOWN_MS) return;
   const p = t.points[t.grabbedIdx];
   if (!p) return;
   const condA = t.stretchRatio > WEB_BREAK_STRETCH_RATIO;
@@ -7414,10 +7434,14 @@ function _evaluateBreak(gs, t, broomSpeed, minDim) {
   // VFX + SFX.
   const dxv = gs.broom.vx || 0;
   const dyv = gs.broom.vy || 0;
-  for (let i = 0; i < 6; i++) _spawnWebGlob(gs, bx, by, dxv * 0.02, dyv * 0.02, 1.4);
+  for (let i = 0; i < WEB_BREAK_GLOB_COUNT; i++) _spawnWebGlob(gs, bx, by, dxv * 0.02, dyv * 0.02, 1.4);
   _spawnWebRipple(gs, bx, by);
   _playWebStickySfx('snap');
   if (gs.vibrate) gs.vibrate(WEB_VIBRATE_SNAP_MS);
+
+  // v1044: stamp the cooldown clock so subsequent _evaluateBreak calls within
+  // WEB_BREAK_COOLDOWN_MS bail at the gate above.
+  gs._lastBreakAt = now;
 
   // Layer-clear check.
   _checkWebSweepLayerClear(gs, t.def.layer);
@@ -7591,8 +7615,8 @@ function _spawnWebGlob(gs, x, y, dx, dy, weight) {
   gs.particles.push({
     x: x + (j1 - 0.5) * 12,
     y: y + (j2 - 0.5) * 12,
-    vx: dx * (2.2 + j3 * 2.4) + (j1 - 0.5) * 85,
-    vy: dy * (2.2 + j4 * 2.4) + (j2 - 0.5) * 70,
+    vx: dx * (2.2 + j3 * 2.4) + (j1 - 0.5) * WEB_BREAK_GLOB_JITTER_X,
+    vy: dy * (2.2 + j4 * 2.4) + (j2 - 0.5) * WEB_BREAK_GLOB_JITTER_Y,
     r: Math.max(2.2, 4.5 * (weight || 1) * (0.55 + j3)),
     age: 0,
     life: 620 + j4 * 360,
