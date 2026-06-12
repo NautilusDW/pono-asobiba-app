@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1049; // v1049: oto/index.html - 16:9 layout fixes + top-10 high score list
+const CACHE_VERSION = 1050; // v1050: oto/index.html - high-score fixes (tie-break, badge, outside label, empty rows) on top of 16:9 layout
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
