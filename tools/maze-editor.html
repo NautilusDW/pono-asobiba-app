@@ -767,6 +767,13 @@ function _syncObstacleProxyItems() {
     });
   });
   try { _updateGimmickItemSidePanels(); } catch (_) {}
+  // デバッグ: stage ロード時に web obstacle が認識されているか確認するためのログ
+  try {
+    console.log('[maze-editor] _syncObstacleProxyItems: web obstacles found =',
+      state.obstacles.filter(function(o) { return o && o.kind === 'web'; }).length,
+      ', proxy items now =',
+      state.gimmickItems.filter(function(g) { return g && g.isObstacleProxy; }).length);
+  } catch (_) {}
 }
 
 function _copyGimmickStateFromSnapshot(snap) {
@@ -2848,6 +2855,18 @@ function drawObstacle(o) {
   }
   if (o.kind === 'web') {
     _drawEditorSpiderWeb(o.x, o.y, r, eventOn);
+    // 暗背景に埋もれても "ここに web がある" と明示するラベル
+    ctx.save();
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.lineWidth = Math.max(2, 3 / canvasScale);
+    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillStyle = 'rgba(255,245,180,0.95)';
+    const labelY = o.y - r - 18 / canvasScale;
+    ctx.strokeText('🕸️ クモの巣 (web obstacle)', o.x, labelY);
+    ctx.fillText('🕸️ クモの巣 (web obstacle)', o.x, labelY);
+    ctx.restore();
   } else {
     ctx.font = (sz * 0.85) + 'px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -2869,9 +2888,13 @@ function drawObstacle(o) {
 
 function _drawEditorSpiderWeb(x, y, r, eventOn) {
   ctx.save();
-  ctx.strokeStyle = eventOn ? 'rgba(40,70,55,0.95)' : 'rgba(45,45,58,0.9)';
-  ctx.lineWidth = Math.max(2.5, r * 0.035);
+  // editor 用なので eventOn と無関係に常に明るいクリーム色で描画して暗背景でも視認できるようにする
+  ctx.strokeStyle = 'rgba(255, 245, 180, 0.95)';
+  ctx.lineWidth = Math.max(3.5, r * 0.05);
   ctx.lineCap = 'round';
+  // 暗背景に対するコントラスト確保のため shadow ガイドを設定
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 4;
   for (let i = 0; i < 8; i++) {
     const a = (Math.PI * 2 * i) / 8;
     ctx.beginPath();
@@ -2891,9 +2914,11 @@ function _drawEditorSpiderWeb(x, y, r, eventOn) {
     }
     ctx.stroke();
   }
-  ctx.fillStyle = eventOn ? '#24410f' : '#2d2d3a';
+  // 中心は鮮やかな赤でドラッグ目標を明示
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255, 80, 80, 1)';
   ctx.beginPath();
-  ctx.arc(x, y, Math.max(5, r * 0.08), 0, Math.PI * 2);
+  ctx.arc(x, y, Math.max(6, r * 0.1), 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -2905,13 +2930,23 @@ function drawGimmickItem(item) {
     const isDragging = !!(state.draggingGimmickItem && state.draggingGimmickItem === item);
     const rProxy = (item.radius || meta.radius || (state.imgH / 12));
     ctx.save();
-    ctx.lineWidth = Math.max(3, rProxy * 0.05);
-    ctx.setLineDash([14 / canvasScale, 9 / canvasScale]);
-    ctx.strokeStyle = isDragging ? 'rgba(255, 224, 102, 0.95)' : 'rgba(255, 224, 102, 0.65)';
+    ctx.lineWidth = Math.max(5, rProxy * 0.08);
+    ctx.setLineDash([20 / canvasScale, 12 / canvasScale]);
+    // 半透明はやめてオレンジ寄りの濃い黄色に。暗背景でもしっかり浮かび上がる
+    ctx.strokeStyle = isDragging ? 'rgba(255, 220, 80, 1)' : 'rgba(255, 200, 60, 0.95)';
+    // 暗背景に対する縁取り効果
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 5;
     ctx.beginPath();
     ctx.arc(item.x, item.y, rProxy + 18 / canvasScale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+    // 中心 anchor として小さい赤丸 — ドラッグ目標を明示
+    ctx.fillStyle = 'rgba(255, 80, 80, 1)';
+    ctx.beginPath();
+    ctx.arc(item.x, item.y, 6 / canvasScale, 0, Math.PI * 2);
+    ctx.fill();
     // 小さなラベル: アイテムモード時のみ表示
     if (state.mode === 'gimmick-item' && state.gimmickItemKind === item.kind) {
       ctx.fillStyle = 'rgba(255, 224, 102, 0.95)';
