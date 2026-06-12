@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:433-maze-donguri-bowl-3d] Codex: 既存 `maze/index.html` のどんぐりボウリングを重複新規実装せず、OtoTouch 3D寄りの奥行き視点・丸いどんぐりボール・既存お邪魔虫スプライトのピン化・左右移動する妨害虫へ改修開始。過去成果物は `bowling/` と maze 内 `web_sweep` で確認済み。 (by Codex)
+- 2026-06-12 - [batch:433-maze-donguri-bowl-3d] DONE - Codex: `maze/index.html` の web_sweep/どんぐりボーリングを Canvas 2.5D レーン、丸いどんぐりボール、既存 `assets/images/maze/creatures/*.png` のお邪魔虫ピン、奥側ピンの左右移動つきに変更。`sw.js` は v1055。Node inline script parse、`git diff --check`、UTF-8/LF、Playwright desktop/低横画面で canvas 非空・横overflowなし・移動ピン・投球ヒット・スクショ目視を確認。クロスレビュー代替として実装者セルフレビュー + Playwright視覚/挙動検証を実施。 (by Codex)
 - 2026-06-12 - [batch:432-maze-kumo-rescue-game] DONE - Codex: `docs/maze-codex-prompts/kumo-rescue-game-20260612.md` に従い、web_sweep を「クモさん救出」物語へリメイク。クモムシ/とおせんぼ文言を撤去し、3層構造の絡まり糸、層ごとの左右スワイプ進行、クモ表情3段階、sparkle、スワイプ軌跡、蝶3匹の迎え演出、結果モーダル三段構造、reduced-motion 対応を追加。実装本体は自動コミット `a23204d` に入り、`sw.js` は v1035。Node構文、旧語/旧定数/失敗語 grep、Playwrightで3層進行・結果表示・reduced-motion・低横画面overflowなしを確認。 (by Codex)
 - 2026-06-12 - [batch:431-oto-rhythm-note-angle-fix] DONE - Codex: OtoTouchリズムの移動ノード上面を床水平からカメラ側へ起こす角度補正へ変更。奥のノードほど少し強く起こし、薄い線ではなく参考画像寄りのメダル面が見えるよう調整。`sw.js` / `PAGE_CACHE_VERSION` は v1034。Node inline script parse、`git diff --check`、Playwright desktop WebGL smoke + スクショ目視を確認。 (by Codex)
 - 2026-06-12 - [batch:430-maze-web-sweep-fine-physics] DONE - Codex: ユーザー指摘を受け、クモの巣はらいミニゲームの画面比率を縦方向に拡大し、低い横画面でも横長の帯になりにくい幅へ調整。クモの巣は66本の細い放射/輪状ラインで再構成し、1ストローク最大2本までしか外れないため最低8回、実測では10ストローク程度でクリアする粘る操作に変更。ドラッグ中は糸がほうきへ伸び、物理的に揺れ戻るよう pull/tension/stick 表現を強化。`sw.js` は v1033。Node inline script parse、Playwrightでタップ非クリア/複数ストローククリア/desktop 720x537表示/低横画面overflowなしを確認。 (by Codex)

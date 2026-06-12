@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1054; // v1054: Donguri Bowl strike overhaul - pono shrunk to corner, pins spread wide+deep, straight-rolling donguri, domino chain, dense layouts
+const CACHE_VERSION = 1055; // v1055: kumo encounter switched to 2.5D Bikkuri Bowling lane (perspective horizon, depth-scaled bug-sprite pins, tap-to-roll donguri, deterministic layouts)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

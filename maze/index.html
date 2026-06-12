@@ -1726,38 +1726,41 @@ body.image-stage-mode .game-wrap {
   }
 }
 
+/* ===== Bikkuri Bowling Mini-Game (kumo encounter, 2.5D lane) v1055 ===== */
 .bowl-game {
   display: grid;
-  grid-template-rows: auto minmax(320px, 1fr) auto;
-  gap: 10px;
+  grid-template-rows: auto minmax(300px, 1fr) auto;
   align-items: center;
   justify-self: center;
-  width: min(92vw, 720px);
+  gap: 8px;
+  width: min(94vw, 760px);
   max-width: 100%;
   min-height: min(76dvh, 560px);
   overflow: hidden;
 }
 .bowl-game__title {
-  min-height: 1.7em;
+  min-height: 1.55em;
   display: grid;
   place-items: center;
-  font-size: clamp(1.15rem, 3vw, 1.75rem);
+  font-size: clamp(1.05rem, 2.6vw, 1.55rem);
   font-weight: 900;
   color: #5D4E37;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 .bowl-game__stage {
   position: relative;
-  min-height: 320px;
-  aspect-ratio: 1.55 / 1;
-  border: 4px solid #BFD88A;
-  border-radius: 20px;
-  background: linear-gradient(180deg, #2a1f17 0%, #4a3422 8%, #6b4628 100%);
+  width: 100%;
+  min-height: 300px;
+  aspect-ratio: 1.6 / 1;
+  border: 4px solid #8FC56B;
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.68), 0 4px 14px rgba(0,0,0,0.12);
+  background: linear-gradient(180deg, #bde6f5 0%, #5b8f56 28%, #8a6534 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.72), 0 5px 16px rgba(0,0,0,0.14);
   touch-action: none;
-  cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
+  cursor: pointer;
 }
 .bowl-game__canvas {
   position: absolute;
@@ -1777,10 +1780,10 @@ body.image-stage-mode .game-wrap {
   transform: translateX(-50%);
   padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(255, 251, 235, 0.88);
-  border: 2px solid rgba(191, 216, 138, 0.8);
-  color: #6A5A40;
-  font-size: clamp(0.78rem, 2vw, 0.95rem);
+  background: rgba(255, 251, 235, 0.92);
+  border: 2px solid rgba(143, 197, 107, 0.82);
+  color: #5F563C;
+  font-size: clamp(0.76rem, 2vw, 0.92rem);
   font-weight: 900;
   line-height: 1.1;
   box-shadow: 0 3px 9px rgba(82, 72, 46, 0.12);
@@ -1803,13 +1806,13 @@ body.image-stage-mode .game-wrap {
   100% { opacity: 0; transform: translate(-50%, -120%) scale(1); }
 }
 .bowl-game__status {
-  min-height: 1.8em;
+  min-height: 1.5em;
   display: grid;
   place-items: center;
-  font-size: clamp(0.98rem, 2.4vw, 1.25rem);
+  font-size: clamp(0.9rem, 2.2vw, 1.1rem);
   font-weight: 900;
   color: #6C8E3F;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 @media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
@@ -1991,31 +1994,30 @@ body.image-stage-mode .game-wrap {
     font-size: 0.82rem;
   }
   .bowl-game {
-    grid-template-rows: 1.45em minmax(180px, 1fr) 1.3em;
-    gap: 5px;
-    width: min(78vw, 360px);
-    min-height: min(82dvh, 300px);
+    grid-template-rows: 1.35em minmax(170px, 1fr) 1.1em;
+    gap: 4px;
+    width: min(88vw, 620px);
+    min-height: min(82dvh, 285px);
   }
   .bowl-game__title {
-    min-height: 1.4em;
-    font-size: clamp(1rem, 4vw, 1.28rem);
+    min-height: 1.3em;
+    font-size: clamp(0.92rem, 3.4vw, 1.12rem);
   }
   .bowl-game__stage {
-    min-height: 200px;
-    height: min(58dvh, 240px);
-    aspect-ratio: auto;
+    min-height: 170px;
+    height: min(58dvh, 230px);
+    aspect-ratio: 1.7 / 1;
     border-width: 3px;
-    border-radius: 14px;
+    border-radius: 12px;
   }
   .bowl-game__stage-note {
-    left: 7px;
     bottom: 6px;
-    padding: 4px 8px;
-    font-size: 0.72rem;
+    padding: 4px 9px;
+    font-size: 0.7rem;
   }
   .bowl-game__status {
-    min-height: 1.3em;
-    font-size: 0.82rem;
+    min-height: 1.2em;
+    font-size: 0.78rem;
   }
   .flag-ladder-stage {
     height: min(42dvh, 145px);
@@ -3871,7 +3873,7 @@ const CREATURE_KIND_DATA = {
   },
   kumo: {
     emoji: '🕷️', color: '#5C5D78', name: 'クモさん',
-    dialog: 'あ、 みちが キノコで ふさがって<br>クモさんが こまってる！<br>どんぐりを なげて キノコを たおして、 たすけてあげよう。',
+    dialog: 'あ、 おじゃま虫が みちを ふさいで<br>クモさんが こまってる！<br>どんぐりを ころがして、 みちを あけよう。',
     defeatDialog: 'たすけてくれて ありがとう！\nちょうど さんぽに いきたかったの！',
     defaultGame: 'donguri_bowl'
   },
@@ -3931,7 +3933,7 @@ const MAZE_ITEM_HINTS = {
   },
   broom: {
     title: 'どんぐりぶくろを てにいれた！',
-    body: 'みちを ふさぐ キノコに\nどんぐりを なげて たおせるかも。\nクモさんを さがしてみよう。',
+    body: 'みちを ふさぐ おじゃま虫に\nどんぐりを ころがして\nたおせるかも。',
   },
 };
 
@@ -4679,7 +4681,7 @@ function _checkWebBroomPickup(px, py) {
   _updateFlagInventoryHud();
   playApple();
   imgShowBubble('どんぐりぶくろを ひろったよ！', { x: cfg.broom.x, y: cfg.broom.y }, 1900);
-  showHint('🌰 どんぐりぶくろを ひろったよ。クモさんの まえの キノコを たおせるかも！', 3000);
+  showHint('🌰 どんぐりぶくろを ひろったよ。おじゃま虫を どかせるかも！', 3000);
   _showItemHintModal('broom');
   return true;
 }
@@ -4946,8 +4948,8 @@ function _handleWebGimmickObstacle(o, px, py) {
   if (!st.broomCollected) {
     _bounceFromFlagTunnelObstacle(
       o, px, py,
-      'みちが キノコで ふさがって クモさんが こまってる！',
-      '🌰 どんぐりぶくろが あれば キノコを たおせるかも。'
+      'おじゃま虫が みちを ふさいでいるよ！',
+      '🌰 どんぐりぶくろが あれば どかせるかも。'
     );
     return true;
   }
@@ -5098,8 +5100,8 @@ function _triggerWebGimmickEncounter(obstacle) {
     minigame: 'web_sweep',
     x: obstacle.x,
     y: obstacle.y,
-    dialog: 'みちが キノコで ふさがっちゃった！<br>どんぐりを なげて たおして、<br>クモさんを たすけよう！',
-    defeatDialog: 'たすけてくれて ありがとう！<br>みちが ひらいたよ！'
+    dialog: 'おじゃま虫が みちを ふさいでいるよ！<br>どんぐりを ころがして<br>みちを あけよう！',
+    defeatDialog: 'おじゃま虫が どいてくれた！<br>みちが ひらいたよ！'
   };
   _triggerEncounter(c);
 }
@@ -5205,8 +5207,8 @@ const _GAME_LABELS = {
   flag:       '旗あげ',
   water_bridge: 'いたならべ',
   strength_push: 'いわくだき',
-  web_sweep: 'どんぐり ボウリング',
-  donguri_bowl: 'どんぐり ボウリング',
+  web_sweep: 'びっくり ボーリング',
+  donguri_bowl: 'びっくり ボーリング',
 };
 
 const _GAME_DIALOGS = {
@@ -5218,8 +5220,8 @@ const _GAME_DIALOGS = {
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
   water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
   strength_push: 'ちからを あわせて！<br>いわを れんだして くだこう',
-  web_sweep: 'クモさんを たすけよう！<br>どんぐりを なげて キノコを たおしてね',
-  donguri_bowl: 'クモさんを たすけよう！<br>どんぐりを なげて キノコを たおしてね',
+  web_sweep: '奥へ ころがそう！<br>どんぐりで おじゃま虫を たおしてね',
+  donguri_bowl: '奥へ ころがそう！<br>どんぐりで おじゃま虫を たおしてね',
 };
 
 // 'donguri_bowl' は新しい記述的トークン、'web_sweep' は旧名の互換エイリアス。
@@ -6487,115 +6489,63 @@ function _resolveStrengthPushGame() {
   }, 1300);
 }
 
-// ── どんぐりボウリング (Donguri Bowl) ──
-// v1054: ストライク感重視のオーバーホール。
-// - ポノを左下隅に縮小 (視界確保)
-// - ピンを画面の y=0.30..0.80 / x=0.22..0.82 に広く奥に拡散
-// - どんぐりは arc を止めて地面を直進転がし、軌跡上の全ピンに衝突
-// - 連鎖は倒れた方向ベクトル + 半径 + dot-gate でドミノ式 (最大 6 段)
-// - レイアウトはピン数増 / 間隔縮で 1 投 3-6 本倒れる密度に再設計
-const BOWL_THROW_COOLDOWN_MS  = 700;
-const BOWL_DONGURI_FLIGHT_MS  = 600;
-const BOWL_PIN_FALL_MS        = 520;
-const BOWL_PIN_R_REL          = 0.058;   // pin base radius as fraction of short side
-const BOWL_HIT_R_REL          = 0.055;   // donguri vs pin collision radius (tighter, pinwise)
-const BOWL_CHAIN_R_REL        = 0.16;    // domino-chain reach (large enough to bridge ~0.10-0.13 gap between pin rows)
-const BOWL_CHAIN_DOT_MIN      = -0.10;   // directional gate for cascade (negative allows lateral spread; only backward < -0.10 blocked)
-const BOWL_CHAIN_MAX_DEPTH    = 6;       // recursion cap for chain
-const BOWL_CHAIN_DELAY_MS     = 80;      // per-hop delay
-const BOWL_TARGET_DEPTH_MIN   = 0.32;    // tap near top of canvas → roll deeper
-const BOWL_TARGET_DEPTH_MAX   = 0.55;    // tap near bottom of canvas → stop shallower
-const BOWL_DONGURI_R_REL      = 0.034;
-const BOWL_DONGURI_END_SCALE  = 0.55;    // donguri shrinks as it rolls into depth
-const BOWL_PONO_HEIGHT_REL    = 0.12;    // small pono in corner
-const BOWL_PONO_X_PAD_REL     = 0.04;    // distance from left edge
-const BOWL_PONO_Y_PAD_REL     = 0.015;   // distance from bottom edge
-const BOWL_PONO_SIDE          = 'left';
-const BOWL_GROUND_HORIZON_Y   = 0.08;    // top strip = treetop band only
+// ── びっくりボーリング (Bikkuri Bowling) — kumo encounter ──
+// v1055: 2.5D lane. 手前中央から奥へ丸いどんぐりを転がし、
+//        既存のお邪魔虫スプライトをピンとして倒す shortform。
+// - 視点: OtoTouch 3D寄りの奥行きがあるレーン (Canvas 2.5D)
+// - 操作: タップした奥方向へどんぐりが転がる
+// - ピン: 既存 maze/creatures PNG をビルボード表示
+// - 難度: 手前は静止、奥の一部だけ左右に動く
+const BOWL_THROW_COOLDOWN_MS = 600;
+const BOWL_FLIGHT_MS         = 1600;   // donguri max lifetime
+const BOWL_PIN_FALL_MS       = 380;
+const BOWL_PIN_R_REL         = 0.052;  // pin radius (relative to min(w,h))
+const BOWL_HIT_R_REL         = 0.062;  // collision radius (forgiving)
+const BOWL_CHAIN_R_REL       = 0.13;   // domino chain radius
+const BOWL_CHAIN_DOT_MIN     = -0.20;  // chain dot-gate (more permissive for shortform play)
+const BOWL_CHAIN_MAX_DEPTH   = 5;
+const BOWL_CHAIN_DELAY_MS    = 70;
+const BOWL_DONGURI_R_REL     = 0.038;
+const BOWL_DONGURI_SPEED_REL = 1.05;   // travel distance per second, relative to min(w,h)
+const BOWL_PONO_HEIGHT_REL   = 0.16;
+const BOWL_PONO_Y_REL        = 0.88;   // bottom-center launcher
+const BOWL_PONO_X_REL        = 0.50;
+const BOWL_HORIZON_REL       = 0.16;
+const BOWL_BUG_PIN_KINDS     = ['mayoi', 'odoke', 'pyon', 'kabuto', 'hachi'];
+const BOWL_SWAY_SPEED_MS     = 1700;
 
+// レイアウト座標は (x, y) 共に 0..1 比率 (0,0)=左上, (1,1)=右下。
+// y が小さいほど奥側として描画される。
 const BOWL_PIN_LAYOUTS = [
-  // CLASSIC — real bowling triangle, 10 pins, 1-2-3-4
-  {
-    id: 'CLASSIC', label: '10本三角',
-    pins: [
-      // back row (farthest, y=0.32) — 4 pins (wide spread, x=0.18..0.82)
-      { x: 0.18, y: 0.32, sway: 0, swayPhase: 0 },
-      { x: 0.39, y: 0.32, sway: 0, swayPhase: 0 },
-      { x: 0.61, y: 0.32, sway: 0, swayPhase: 0 },
-      { x: 0.82, y: 0.32, sway: 0, swayPhase: 0 },
-      // row 3 (y=0.46) — 3 pins
-      { x: 0.32, y: 0.46, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.46, sway: 0, swayPhase: 0 },
-      { x: 0.68, y: 0.46, sway: 0, swayPhase: 0 },
-      // row 2 (y=0.60) — 2 pins
-      { x: 0.42, y: 0.60, sway: 0, swayPhase: 0 },
-      { x: 0.58, y: 0.60, sway: 0, swayPhase: 0 },
-      // head pin (y=0.74) — 1 pin
-      { x: 0.50, y: 0.74, sway: 0, swayPhase: 0 },
-    ],
-  },
-  // DIAMOND — 13 pins, 1-3-5-3-1 (wide spread, x=0.18..0.82)
-  {
-    id: 'DIAMOND', label: 'ダイヤ13',
-    pins: [
-      { x: 0.50, y: 0.30, sway: 0, swayPhase: 0 },
-      { x: 0.34, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.66, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.18, y: 0.55, sway: 0, swayPhase: 0 },
-      { x: 0.34, y: 0.55, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.55, sway: 0, swayPhase: 0 },
-      { x: 0.66, y: 0.55, sway: 0, swayPhase: 0 },
-      { x: 0.82, y: 0.55, sway: 0, swayPhase: 0 },
-      { x: 0.34, y: 0.68, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.68, sway: 0, swayPhase: 0 },
-      { x: 0.66, y: 0.68, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.80, sway: 0, swayPhase: 0 },
-    ],
-  },
-  // V_SHAPE — 7 pins, head deep, wings forward (wide spread, x=0.18..0.82)
-  {
-    id: 'V_SHAPE', label: 'Vの字',
-    pins: [
-      { x: 0.50, y: 0.34, sway: 0, swayPhase: 0 },
-      { x: 0.39, y: 0.45, sway: 0, swayPhase: 0 },
-      { x: 0.61, y: 0.45, sway: 0, swayPhase: 0 },
-      { x: 0.285, y: 0.56, sway: 0, swayPhase: 0 },
-      { x: 0.715, y: 0.56, sway: 0, swayPhase: 0 },
-      { x: 0.18, y: 0.68, sway: 0, swayPhase: 0 },
-      { x: 0.82, y: 0.68, sway: 0, swayPhase: 0 },
-    ],
-  },
-  // WALL — 8 pins, single back row, wide spread (x=0.18..0.82)
-  {
-    id: 'WALL', label: '横一列',
-    pins: [
-      { x: 0.180, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.271, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.363, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.454, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.546, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.637, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.729, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.820, y: 0.42, sway: 0, swayPhase: 0 },
-    ],
-  },
-  // DOUBLE_LINE — 10 pins, 5+5 staggered (wide spread, x=0.18..0.82)
-  {
-    id: 'DOUBLE_LINE', label: '二列',
-    pins: [
-      { x: 0.18, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.34, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.66, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.82, y: 0.42, sway: 0, swayPhase: 0 },
-      { x: 0.18, y: 0.62, sway: 0, swayPhase: 0 },
-      { x: 0.34, y: 0.62, sway: 0, swayPhase: 0 },
-      { x: 0.50, y: 0.62, sway: 0, swayPhase: 0 },
-      { x: 0.66, y: 0.62, sway: 0, swayPhase: 0 },
-      { x: 0.82, y: 0.62, sway: 0, swayPhase: 0 },
-    ],
-  },
+  { id: 'TRIANGLE', pins: [
+    { x: 0.50, y: 0.18 },
+    { x: 0.42, y: 0.27 }, { x: 0.58, y: 0.27 },
+    { x: 0.34, y: 0.36 }, { x: 0.50, y: 0.36 }, { x: 0.66, y: 0.36 },
+    { x: 0.26, y: 0.46 }, { x: 0.42, y: 0.46 }, { x: 0.58, y: 0.46 }, { x: 0.74, y: 0.46 },
+  ]},
+  { id: 'DIAMOND', pins: [
+    { x: 0.50, y: 0.14 },
+    { x: 0.36, y: 0.24 }, { x: 0.50, y: 0.24 }, { x: 0.64, y: 0.24 },
+    { x: 0.22, y: 0.34 }, { x: 0.40, y: 0.34 }, { x: 0.60, y: 0.34 }, { x: 0.78, y: 0.34 },
+    { x: 0.36, y: 0.44 }, { x: 0.50, y: 0.44 }, { x: 0.64, y: 0.44 },
+    { x: 0.50, y: 0.54 },
+  ]},
+  { id: 'V_WALL', pins: [
+    { x: 0.22, y: 0.20 }, { x: 0.78, y: 0.20 },
+    { x: 0.30, y: 0.30 }, { x: 0.70, y: 0.30 },
+    { x: 0.38, y: 0.40 }, { x: 0.62, y: 0.40 },
+    { x: 0.50, y: 0.50 },
+  ]},
+  { id: 'CLUSTER', pins: [
+    { x: 0.40, y: 0.22 }, { x: 0.60, y: 0.22 },
+    { x: 0.32, y: 0.32 }, { x: 0.50, y: 0.32 }, { x: 0.68, y: 0.32 },
+    { x: 0.40, y: 0.42 }, { x: 0.60, y: 0.42 },
+    { x: 0.50, y: 0.52 },
+  ]},
+  { id: 'DOUBLE_ROW', pins: [
+    { x: 0.20, y: 0.28 }, { x: 0.36, y: 0.28 }, { x: 0.52, y: 0.28 }, { x: 0.68, y: 0.28 }, { x: 0.84, y: 0.28 },
+    { x: 0.28, y: 0.42 }, { x: 0.44, y: 0.42 }, { x: 0.60, y: 0.42 }, { x: 0.76, y: 0.42 },
+  ]},
 ];
 
 let _bowlEncounterCount = 0;
@@ -6604,6 +6554,57 @@ function _bowlReducedMotion() {
   try {
     return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch (_) { return false; }
+}
+
+function _bowlClamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function _bowlBugImg(kind) {
+  const data = CREATURE_KIND_DATA[kind] || CREATURE_KIND_DATA.mayoi;
+  if (!data || !data.imageUrl) return null;
+  return _creatureImg(data.imageUrl);
+}
+
+function _preloadBowlBugPins(gs) {
+  // _bowlBugImg() / _creatureImg() returns null while the Image is still loading
+  // (it guards on complete && naturalWidth>0), so we cannot use its return value
+  // to attach a 'load' listener. Reach into _creatureImgCache directly to get the
+  // underlying Image regardless of completion state. v1055: previously the load
+  // listener never attached, so reducedMotion users saw only fallback ellipses.
+  BOWL_BUG_PIN_KINDS.forEach(function(kind) {
+    const data = CREATURE_KIND_DATA[kind] || CREATURE_KIND_DATA.mayoi;
+    const url = data && data.imageUrl;
+    if (!url) return;
+    // Ensure cache entry exists (kicks off the request if first time).
+    _creatureImg(url);
+    const img = _creatureImgCache[url];
+    if (!img) return;
+    if (img.complete && img.naturalWidth > 0) return; // already loaded
+    img.addEventListener('load', function() {
+      if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
+    }, { once: true });
+  });
+  // Safety net for prefers-reduced-motion: there is no rAF repaint loop in
+  // reducedMotion mode, so if a sprite finishes decoding after the modal opens
+  // but the 'load' event fires before the listener above is attached (rare race
+  // on warm caches) or the addEventListener path is otherwise missed, force a
+  // single repaint shortly after open so cached sprites surface.
+  if (gs && gs.reducedMotion) {
+    setTimeout(function() {
+      if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
+    }, 400);
+  }
+}
+
+function _updateBowlPinMotion(gs, now) {
+  if (!gs || gs.reducedMotion) return;
+  for (let i = 0; i < gs.pins.length; i++) {
+    const p = gs.pins[i];
+    if (!p || p.fallen || !p.swayAmp) continue;
+    const phase = (now / (p.swaySpeed || BOWL_SWAY_SPEED_MS)) * Math.PI * 2 + (p.swayPhase || 0);
+    p.x = _bowlClamp(p.baseX + Math.sin(phase) * p.swayAmp, gs.w * 0.11, gs.w * 0.89);
+  }
 }
 
 // 他のミニゲーム (flag/water) と揃え、リスナー解除を明示的に行う。
@@ -6624,12 +6625,11 @@ function _detachBowlListeners(gs) {
 }
 
 // _clearBowlGimmickTimers は _clearWebGimmickTimers に統合済み (v1052)。
-// 既存の spawn-side / encounter-close フローと共通の名前を使うことで、
-// 漏れがないように 1 関数にまとめている。
 
 function _pickBowlLayoutId(creature) {
   // 決定論的: encounter 計数 + creature.id のハッシュを使う (Math.random 不使用)
   const ids = BOWL_PIN_LAYOUTS.map(function(l){ return l.id; });
+  if (_bowlEncounterCount <= 1) return 'TRIANGLE';
   let seed = _bowlEncounterCount | 0;
   const key = (creature && creature.id) || '';
   for (let i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) | 0;
@@ -6660,16 +6660,39 @@ function _resizeBowlCanvas(gs) {
   gs.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+function _syncBowlCanvasSize(gs) {
+  if (!gs || !gs.stageEl) return;
+  const r = gs.stageEl.getBoundingClientRect();
+  if (Math.abs(r.width - gs.w) <= 1 && Math.abs(r.height - gs.h) <= 1) return;
+  _resizeBowlCanvas(gs);
+  if (gs.layoutId) _layoutBowlPins(gs, gs.layoutId);
+}
+
 function _layoutBowlPins(gs, layoutId) {
   const layout = BOWL_PIN_LAYOUTS.find(function(l){ return l.id === layoutId; }) || BOWL_PIN_LAYOUTS[0];
   gs.layoutId = layout.id;
+  const layoutOffset = Math.max(0, BOWL_PIN_LAYOUTS.findIndex(function(l){ return l.id === layout.id; }));
   gs.pins = layout.pins.map(function(p, idx) {
+    const baseX = p.x * gs.w;
+    const baseY = p.y * gs.h;
+    const isBackMover = p.y <= 0.36 && ((idx + layoutOffset) % 3 === 0 || layout.id === 'DOUBLE_ROW');
+    const isMidMover = p.y <= 0.28 && ((idx + layoutOffset) % 4 === 1);
+    const swayAmp = (isBackMover ? 0.045 : (isMidMover ? 0.03 : 0)) * gs.w;
     return {
       id: idx,
-      x: p.x, y: p.y,
-      sway: p.sway || 0, swayPhase: p.swayPhase || 0,
-      isDown: false, fallStartAt: null, fallProgress: 0,
-      knockDirX: 0, knockDirY: 0,
+      x: baseX,
+      y: baseY,
+      baseX: baseX,
+      baseY: baseY,
+      kind: p.kind || BOWL_BUG_PIN_KINDS[(idx + layoutOffset) % BOWL_BUG_PIN_KINDS.length],
+      swayAmp: swayAmp,
+      swayPhase: idx * 0.83 + layoutOffset * 0.57,
+      swaySpeed: BOWL_SWAY_SPEED_MS + ((idx + layoutOffset) % 5) * 130,
+      fallen: false,
+      fallStart: 0,
+      fallProgress: 0,
+      fallRotDirX: 0,
+      fallRotDirY: 0,
     };
   });
 }
@@ -6683,12 +6706,11 @@ function _showBowlGame(c) {
   const wrap = document.createElement('div');
   wrap.className = 'bowl-game';
   wrap.innerHTML =
-    '<div class="bowl-game__title">どんぐり ボウリング</div>' +
+    '<div class="bowl-game__title">びっくり ボーリング</div>' +
     '<div class="bowl-game__stage" id="bowlStage">' +
-      '<canvas class="bowl-game__canvas" id="bowlCanvas" aria-label="どんぐりを なげて キノコを たおすゲーム"></canvas>' +
-      '<div class="bowl-game__stage-note">がめんを タップして どんぐりを なげよう！</div>' +
+      '<canvas class="bowl-game__canvas" id="bowlCanvas" aria-label="どんぐりを ころがして おじゃま虫を たおすゲーム"></canvas>' +
     '</div>' +
-    '<div class="bowl-game__status" id="bowlStatus"></div>';
+    '<div class="bowl-game__stage-note">奥のおじゃま虫を ねらおう！</div>';
   encStageEl.innerHTML = '';
   encStageEl.appendChild(wrap);
 
@@ -6701,16 +6723,20 @@ function _showBowlGame(c) {
     layoutId: null, pins: [], donguris: [],
     particles: [],
     lastThrowAt: 0, locked: false,
-    pono: { throwT: 0 },
     rafId: null, lastTs: 0,
-    statusEl: wrap.querySelector('#bowlStatus'),
     bgSeed: (_bowlEncounterCount * 1013904223) | 0,
     reducedMotion: reducedMotion,
   };
   _bowlGameState = gs;
 
   _resizeBowlCanvas(gs);
+  _preloadBowlBugPins(gs);
   _layoutBowlPins(gs, _pickBowlLayoutId(c));
+  requestAnimationFrame(function() {
+    if (gs !== _bowlGameState) return;
+    _syncBowlCanvasSize(gs);
+    _drawBowlScene(gs, performance.now());
+  });
 
   const onPointerDown = function(e) {
     if (gs !== _bowlGameState || gs.locked) return;
@@ -6728,6 +6754,7 @@ function _showBowlGame(c) {
   const onResize = function() {
     if (gs !== _bowlGameState) { window.removeEventListener('resize', onResize); return; }
     _resizeBowlCanvas(gs);
+    _layoutBowlPins(gs, gs.layoutId);
     if (gs.reducedMotion) _drawBowlScene(gs, performance.now());
   };
   window.addEventListener('resize', onResize);
@@ -6741,38 +6768,31 @@ function _showBowlGame(c) {
   }
 }
 
-// prefers-reduced-motion 用: タップ毎に呼び出され、donguri 軌跡上の全衝突と
-// 連鎖を即時解決する。rAF を回さず、最後に 1 パス描画して終了する。
+// prefers-reduced-motion 用: タップ毎に呼び出され、軌道上の最近接ピンを即解決し
+// 1 パス描画する。rAF を回さない。
 function _stepBowlReducedMotion(gs) {
   if (gs !== _bowlGameState) return;
   const now = performance.now();
-  // 全 donguri について、軌跡上のピンを線形サンプリングで即解決
-  for (let i = gs.donguris.length - 1; i >= 0; i--) {
-    const d = gs.donguris[i];
-    const steps = 24;
-    let hits = 0;
-    for (let s = 1; s <= steps && hits < (d.maxHits || 2); s++) {
-      const tt = s / steps;
-      const sx = d.x0 + (d.targetX - d.x0) * tt;
-      const sy = d.y0 + (d.targetY - d.y0) * tt;
-      for (let pi = 0; pi < gs.pins.length; pi++) {
-        const p = gs.pins[pi];
-        if (p.isDown) continue;
-        const dx = p.x - sx, dy = p.y - sy;
-        if (dx * dx + dy * dy < (BOWL_HIT_R_REL + 0.025) * (BOWL_HIT_R_REL + 0.025)) {
-          _bowlFellPin(gs, p, d.knockDirX, d.knockDirY, 0, now);
-          hits++;
-          if (hits >= (d.maxHits || 2)) break;
-        }
-      }
-    }
-    gs.donguris.splice(i, 1);
-  }
-  // pin tween を飛ばし、倒れた pin は fallProgress を即 1 に
+  if (!gs.donguris.length) return;
+  const d = gs.donguris[gs.donguris.length - 1];
+  let nearest = null, bestD2 = Infinity;
   for (let i = 0; i < gs.pins.length; i++) {
     const p = gs.pins[i];
-    if (p.isDown) { p.fallProgress = 1; p.fallStartAt = now; }
+    if (p.fallen) continue;
+    const dx = p.x - d.x, dy = p.y - d.y;
+    const dd = dx * dx + dy * dy;
+    if (dd < bestD2) { bestD2 = dd; nearest = p; }
   }
+  if (nearest) {
+    const len = Math.max(0.001, Math.sqrt(bestD2));
+    _bowlFellPin(gs, nearest, (nearest.x - d.x) / len, (nearest.y - d.y) / len, 0, now);
+    // pin tween を飛ばし、倒れた pin は fallProgress を即 1 に
+    for (let i = 0; i < gs.pins.length; i++) {
+      const p = gs.pins[i];
+      if (p.fallen) p.fallProgress = 1;
+    }
+  }
+  gs.donguris.length = 0;
   gs.particles.length = 0;
   _drawBowlScene(gs, now);
   if (!gs.locked && _checkBowlCleared(gs)) {
@@ -6781,100 +6801,99 @@ function _stepBowlReducedMotion(gs) {
   }
 }
 
-// ポノ右手 (投擲腕の付け根) を取得 — _applyBowlSweep が軌道の出発点として使う
-function _bowlPonoThrowOrigin(gs) {
-  const h = gs.h * BOWL_PONO_HEIGHT_REL;
-  const w = h;
-  const x = gs.w * BOWL_PONO_X_PAD_REL + w * 0.85;
-  const yBase = gs.h - h - gs.h * BOWL_PONO_Y_PAD_REL + h * 0.45;
-  return { xNorm: x / Math.max(1, gs.w), yNorm: yBase / Math.max(1, gs.h) };
-}
-
 function _applyBowlSweep(gs, tapX, tapY) {
-  const origin = _bowlPonoThrowOrigin(gs);
-  const targetX = Math.max(0.06, Math.min(0.94, tapX / Math.max(1, gs.w)));
-  // tapY を [DEPTH_MAX..DEPTH_MIN] に反転マップ:
-  //   画面上端タップ (tapYNorm=0) → 奥 (DEPTH_MIN, 小さい y)
-  //   画面下端タップ (tapYNorm=1) → 手前 (DEPTH_MAX, 大きい y)
-  const tapYNorm = Math.max(0, Math.min(1, tapY / Math.max(1, gs.h)));
-  const targetY = BOWL_TARGET_DEPTH_MAX
-                + (BOWL_TARGET_DEPTH_MIN - BOWL_TARGET_DEPTH_MAX) * (1 - tapYNorm);
-  const dx = targetX - origin.xNorm;
-  const dy = targetY - origin.yNorm;
-  const m = Math.hypot(dx, dy) || 1;
+  const ponoX = BOWL_PONO_X_REL * gs.w;
+  const ponoY = BOWL_PONO_Y_REL * gs.h;
+  const dx = tapX - ponoX;
+  const dy = tapY - ponoY;
+  const len = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
+  let nx = dx / len;
+  let ny = dy / len;
+  // Bikkuri-style: clamp to upward hemisphere (no downward shots toward pono)
+  if (ny > -0.05) ny = -0.05;
+  const renorm = Math.max(0.001, Math.sqrt(nx * nx + ny * ny));
+  nx /= renorm; ny /= renorm;
+  const speed = BOWL_DONGURI_SPEED_REL * Math.min(gs.w, gs.h);
   const now = performance.now();
   gs.donguris.push({
-    x0: origin.xNorm, y0: origin.yNorm,
-    x:  origin.xNorm, y:  origin.yNorm,
-    targetX: targetX, targetY: targetY,
-    t: 0,
-    spawnT: now,
-    flightMs: BOWL_DONGURI_FLIGHT_MS,
-    knockDirX: dx / m, knockDirY: dy / m,
-    alive: true, hits: 0, maxHits: 2,
+    x: ponoX,
+    y: ponoY - BOWL_PONO_HEIGHT_REL * gs.h * 0.4, // launch from pono's hand
+    vx: nx * speed,
+    vy: ny * speed,
+    r: BOWL_DONGURI_R_REL * Math.min(gs.w, gs.h),
+    bornAt: now,
+    deadAt: now + BOWL_FLIGHT_MS,
+    theta: 0,
     spin: ((gs.donguris.length + (gs.bgSeed | 0)) % 2 === 0) ? 1 : -1,
   });
   gs.lastThrowAt = now;
-  gs.pono.throwT = now;
   try { playTap(); } catch (_) {}
 }
 
 function _startBowlLoop(gs) {
   const tick = function(ts) {
     if (gs !== _bowlGameState) return;
+    _syncBowlCanvasSize(gs);
     const last = gs.lastTs || ts;
-    const dt = Math.min(50, Math.max(8, ts - last));
+    const dt = Math.min(0.05, Math.max(0.008, (ts - last) / 1000));
     gs.lastTs = ts;
     _updateBowlPhysics(gs, dt, ts);
     _drawBowlScene(gs, ts);
-    gs.rafId = requestAnimationFrame(tick);
+    if (!gs.locked) gs.rafId = requestAnimationFrame(tick);
   };
   gs.rafId = requestAnimationFrame(tick);
 }
 
 function _updateBowlPhysics(gs, dt, now) {
-  // Donguri 直進転がし — 軌跡上のピンを sweep collision で処理
+  _updateBowlPinMotion(gs, now);
+  // donguri movement + pin collision (canvas-space circle-circle)
+  const hitR = BOWL_HIT_R_REL * Math.min(gs.w, gs.h);
+  const hitR2 = hitR * hitR;
   for (let i = gs.donguris.length - 1; i >= 0; i--) {
     const d = gs.donguris[i];
-    if (!d.alive) {
-      // 余韻 (砂塵) のために 220ms 残す
-      if ((now - (d.endT || now)) > 220) gs.donguris.splice(i, 1);
-      continue;
-    }
-    const elapsed = now - d.spawnT;
-    d.t = Math.max(0, Math.min(1, elapsed / d.flightMs));
-    d.x = d.x0 + (d.targetX - d.x0) * d.t;
-    d.y = d.y0 + (d.targetY - d.y0) * d.t;
-
-    // sweep collision: 進行先のピン全てチェック (HIT_R は深さ scale 影響なし、平面距離)
-    const reach2 = (BOWL_HIT_R_REL + 0.025) * (BOWL_HIT_R_REL + 0.025);
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.theta += 8 * dt * (d.spin || 1);
+    // wall bounce (cheerful)
+    const pad = d.r;
+    if (d.x < pad)        { d.x = pad; d.vx = Math.abs(d.vx) * 0.85; }
+    if (d.x > gs.w - pad) { d.x = gs.w - pad; d.vx = -Math.abs(d.vx) * 0.85; }
+    if (d.y < pad)        { d.y = pad; d.vy = Math.abs(d.vy) * 0.85; }
+    // bottom: remove donguri (off stage)
+    if (d.y > gs.h + pad) { gs.donguris.splice(i, 1); continue; }
+    // timeout
+    if (now > d.deadAt) { gs.donguris.splice(i, 1); continue; }
+    // pin collision
     for (let pi = 0; pi < gs.pins.length; pi++) {
-      const p = gs.pins[pi];
-      if (p.isDown) continue;
-      const dx = p.x - d.x, dy = p.y - d.y;
-      if (dx * dx + dy * dy < reach2) {
-        _bowlFellPin(gs, p, d.knockDirX, d.knockDirY, 0, now);
-        d.hits++;
-        if (d.hits >= d.maxHits) { d.alive = false; d.endT = now; break; }
+      const pin = gs.pins[pi];
+      if (pin.fallen) continue;
+      const ddx = pin.x - d.x;
+      const ddy = pin.y - d.y;
+      if (ddx * ddx + ddy * ddy < hitR2) {
+        const inv = 1 / Math.max(0.001, Math.sqrt(ddx * ddx + ddy * ddy));
+        _bowlFellPin(gs, pin, ddx * inv, ddy * inv, 0, now);
+        // donguri deflects, slows
+        d.vx = d.vx * 0.4 + ddx * inv * 80;
+        d.vy = d.vy * 0.4 + ddy * inv * 80;
+        break;
       }
     }
-    if (d.alive && d.t >= 1) { d.alive = false; d.endT = now; }
   }
-  // Pin 倒れアニメーション
+  // pin fall tween
   for (let i = 0; i < gs.pins.length; i++) {
-    const p = gs.pins[i];
-    if (p.isDown && p.fallStartAt != null) {
-      p.fallProgress = Math.min(1, Math.max(0, (now - p.fallStartAt) / BOWL_PIN_FALL_MS));
+    const pin = gs.pins[i];
+    if (pin.fallen && pin.fallProgress < 1) {
+      pin.fallProgress = Math.min(1, (now - pin.fallStart) / BOWL_PIN_FALL_MS);
     }
   }
-  // Particle decay
+  // particle decay
   for (let i = gs.particles.length - 1; i >= 0; i--) {
     const p = gs.particles[i];
     p.age += dt;
-    p.x  += p.vx * (dt / 1000);
-    p.y  += p.vy * (dt / 1000);
-    p.vx *= Math.pow(0.86, dt / 16);
-    p.vy  = p.vy * Math.pow(0.88, dt / 16) + 110 * (dt / 1000);
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= Math.pow(0.86, dt * 60);
+    p.vy = p.vy * Math.pow(0.88, dt * 60) + 90 * dt;
     if (p.age >= p.life) gs.particles.splice(i, 1);
   }
   // Clear check
@@ -6888,42 +6907,42 @@ function _updateBowlPhysics(gs, dt, now) {
 // depth は 0 から始まり BOWL_CHAIN_MAX_DEPTH で停止。
 // jitter は決定論的 (sin(pin.id + depth)) — Math.random 不使用。
 function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
-  if (!pin || pin.isDown) return;
-  pin.isDown = true;
-  pin.knockDirX = knockDirX;
-  pin.knockDirY = knockDirY;
-  pin.fallStartAt = now;
-  _spawnBowlGlob(gs, pin.x * gs.w, pin.y * gs.h, false);
+  if (!pin || pin.fallen) return;
+  pin.fallen = true;
+  pin.fallRotDirX = knockDirX;
+  pin.fallRotDirY = knockDirY;
+  pin.fallStart = now;
+  pin.fallProgress = 0;
+  _spawnBowlGlob(gs, pin.x, pin.y, false);
   if (depth === 0) {
     try { _playMzSePitch('correct', 0); } catch (_) { try { playTap(); } catch (__) {} }
   } else {
     try { _playMzSePitch('correct', Math.min(4, depth)); } catch (_) {}
-    if (depth >= 2) _bowlFloatText(gs, 'コンボ！', pin.x * gs.w, pin.y * gs.h);
+    if (depth >= 2) _bowlFloatText(gs, 'スゴイ！', pin.x, pin.y);
   }
   if (depth >= BOWL_CHAIN_MAX_DEPTH) return;
 
-  const cr = BOWL_CHAIN_R_REL;
-  const cr2 = cr * cr;
-  const dotMin = BOWL_CHAIN_DOT_MIN;
-  // 全条件マッチピンに 80ms 遅延で連鎖 (最近接 1 本のみではなく、全方向ファン)
+  const chainR = BOWL_CHAIN_R_REL * Math.min(gs.w, gs.h);
+  const chainR2 = chainR * chainR;
+  // 全条件マッチピンに 70ms 遅延で連鎖 (最近接 1 本のみではなく、全方向ファン)
   _webGimmickSetTimeout(function() {
     if (gs !== _bowlGameState) return;
     const inner = performance.now();
     for (let i = 0; i < gs.pins.length; i++) {
       const p2 = gs.pins[i];
-      if (p2.isDown || p2 === pin) continue;
+      if (p2.fallen || p2 === pin) continue;
       const dx = p2.x - pin.x, dy = p2.y - pin.y;
       const d2 = dx * dx + dy * dy;
-      if (d2 === 0 || d2 > cr2) continue;
+      if (d2 === 0 || d2 > chainR2) continue;
       const dist = Math.sqrt(d2);
       const ux = dx / dist, uy = dy / dist;
       const dot = ux * knockDirX + uy * knockDirY;
-      if (dot < dotMin) continue;
+      if (dot < BOWL_CHAIN_DOT_MIN) continue;
       // 決定論的 jitter (Math.random 禁止)
       const jit = Math.sin((p2.id + depth) * 1.7) * 0.15;
       let nkx = knockDirX * 0.4 + ux * 0.6 + jit;
       let nky = knockDirY * 0.4 + uy * 0.6;
-      const nm = Math.hypot(nkx, nky) || 1;
+      const nm = Math.max(0.001, Math.sqrt(nkx * nkx + nky * nky));
       nkx /= nm; nky /= nm;
       _bowlFellPin(gs, p2, nkx, nky, depth + 1, inner);
     }
@@ -6937,13 +6956,13 @@ function _spawnBowlGlob(gs, x, y, isMiss) {
     // deterministic jitter via sin (no Math.random)
     const seed = (gs.particles.length + i + 1) * 13.37 + (gs.bgSeed & 0xff);
     const ang = (i / n) * Math.PI * 2 + Math.sin(seed) * 0.4;
-    const sp  = 80 + Math.abs(Math.sin(seed * 1.7)) * 90;
+    const sp  = 60 + Math.abs(Math.sin(seed * 1.7)) * 80;
     gs.particles.push({
       x: x, y: y,
       vx: Math.cos(ang) * sp,
-      vy: Math.sin(ang) * sp - 70,
+      vy: Math.sin(ang) * sp - 40,
       r: 3 + (i % 3),
-      age: 0, life: isMiss ? 360 : 620,
+      age: 0, life: isMiss ? 0.36 : 0.62,
       color: isMiss ? 'rgba(220,200,160,0.85)' : 'rgba(255,220,90,0.95)',
     });
   }
@@ -6965,55 +6984,85 @@ function _bowlFloatText(gs, text, x, y) {
 
 function _checkBowlCleared(gs) {
   if (!gs.pins.length) return false;
-  for (let i = 0; i < gs.pins.length; i++) if (!gs.pins[i].isDown) return false;
+  for (let i = 0; i < gs.pins.length; i++) if (!gs.pins[i].fallen) return false;
   return true;
 }
 
-// ─── drawing ───
+// ─── drawing (2.5D lane) ───
 function _drawBowlScene(gs, now) {
   const ctx = gs.ctx, W = gs.w, H = gs.h;
-  // 背景: 樹冠帯 (0..8%) + 地面 (8%..100%) でほぼ全面が地面
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0.00, '#2a1f17');
-  bg.addColorStop(0.08, '#4a3422');
-  bg.addColorStop(1.00, '#6b4628');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-  // 地面メイン (台形透視) — 上端 (vanishing line) は y=8%、横は中央 16% 幅まで絞る
-  const horizonY = H * BOWL_GROUND_HORIZON_Y;
-  const groundGrad = ctx.createLinearGradient(0, horizonY, 0, H);
-  groundGrad.addColorStop(0, '#a98255');
-  groundGrad.addColorStop(0.55, '#caa56b');
-  groundGrad.addColorStop(1, '#8a6534');
-  ctx.fillStyle = groundGrad;
+  const horizonY = H * BOWL_HORIZON_REL;
+
+  const sky = ctx.createLinearGradient(0, 0, 0, horizonY);
+  sky.addColorStop(0, '#9fdaf0');
+  sky.addColorStop(1, '#d8f3f0');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, horizonY);
+
+  const grass = ctx.createLinearGradient(0, horizonY, 0, H);
+  grass.addColorStop(0, '#6b9b4d');
+  grass.addColorStop(0.62, '#436f38');
+  grass.addColorStop(1, '#2f4e2b');
+  ctx.fillStyle = grass;
+  ctx.fillRect(0, horizonY, W, H - horizonY);
+
+  // Forest and lane side depth.
+  _drawBowlForestBorder(gs);
+
+  const laneGrad = ctx.createLinearGradient(0, horizonY, 0, H);
+  laneGrad.addColorStop(0, '#d8bd7d');
+  laneGrad.addColorStop(0.48, '#bd9257');
+  laneGrad.addColorStop(1, '#7a5128');
+  ctx.fillStyle = laneGrad;
   ctx.beginPath();
-  ctx.moveTo(-W * 0.05, H);
+  ctx.moveTo(W * 0.04, H * 0.98);
   ctx.lineTo(W * 0.42, horizonY);
   ctx.lineTo(W * 0.58, horizonY);
-  ctx.lineTo(W * 1.05, H);
+  ctx.lineTo(W * 0.96, H * 0.98);
   ctx.closePath();
   ctx.fill();
-  // lane grooves — vanishing point から手前隅へ 3 本広がる
+
   ctx.save();
-  ctx.strokeStyle = 'rgba(60, 35, 18, 0.22)';
-  ctx.lineWidth = Math.max(1, Math.min(W, H) * 0.005);
-  ctx.beginPath();
-  const vx = W * 0.50, vy = horizonY;
-  ctx.moveTo(vx, vy); ctx.lineTo(W * 0.10, H);
-  ctx.moveTo(vx, vy); ctx.lineTo(W * 0.50, H);
-  ctx.moveTo(vx, vy); ctx.lineTo(W * 0.90, H);
-  ctx.stroke();
+  ctx.globalAlpha = 0.22;
+  ctx.strokeStyle = '#fff4bc';
+  ctx.lineWidth = Math.max(1, Math.min(W, H) * 0.006);
+  for (let i = 1; i <= 5; i++) {
+    const t = i / 6;
+    const topX = W * (0.42 + (0.58 - 0.42) * t);
+    const bottomX = W * (0.04 + (0.96 - 0.04) * t);
+    ctx.beginPath();
+    ctx.moveTo(topX, horizonY);
+    ctx.lineTo(bottomX, H * 0.98);
+    ctx.stroke();
+  }
   ctx.restore();
-  // 樹冠帯 (0..8%) — シルエット
-  _drawBowlTreetop(gs);
-  // side logs (procedural)
-  _drawBowlSideLogs(gs);
-  // pins back-to-front (奥のピンから先に描画)
-  const sorted = gs.pins.slice().sort(function(a,b){ return a.y - b.y; });
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(77, 47, 23, 0.28)';
+  ctx.lineWidth = Math.max(1, Math.min(W, H) * 0.0045);
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    const y = horizonY + Math.pow(t, 1.65) * (H * 0.96 - horizonY);
+    const left = W * (0.42 + (0.04 - 0.42) * Math.pow(t, 0.9));
+    const right = W * (0.58 + (0.96 - 0.58) * Math.pow(t, 0.9));
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.quadraticCurveTo(W * 0.5, y + H * 0.012, right, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Pins (sort back-to-front by y for shadow stacking)
+  const sorted = gs.pins.slice().sort(function(a, b){ return a.y - b.y; });
   for (let i = 0; i < sorted.length; i++) _drawBowlPin(gs, sorted[i], now);
-  // donguris in flight
+
+  // Donguris in flight
   for (let i = 0; i < gs.donguris.length; i++) _drawBowlDonguri(gs, gs.donguris[i], now);
-  // particles
+
+  // Pono (bottom-center launcher)
+  _drawBowlPono(gs, now);
+
+  // Particles
   ctx.save();
   for (let i = 0; i < gs.particles.length; i++) {
     const p = gs.particles[i];
@@ -7024,222 +7073,159 @@ function _drawBowlScene(gs, now) {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
-  // pono (左下隅)
-  _drawBowlPono(gs, now);
 }
 
-function _drawBowlTreetop(gs) {
+function _drawBowlForestBorder(gs) {
   const ctx = gs.ctx, W = gs.w, H = gs.h;
   const seed = gs.bgSeed | 0;
   ctx.save();
-  ctx.fillStyle = '#1f3520';
-  // 連続した低い樹冠ライン
-  ctx.fillRect(0, 0, W, H * BOWL_GROUND_HORIZON_Y * 0.6);
-  // 3 つのブロブで森の頭をシルエット
-  ctx.fillStyle = '#274a2a';
-  for (let i = 0; i < 4; i++) {
-    const cx = W * (0.15 + i * 0.22 + Math.sin(seed + i) * 0.02);
-    const cy = H * (BOWL_GROUND_HORIZON_Y * 0.55);
-    const rx = W * (0.10 + Math.abs(Math.sin(seed + i * 1.3)) * 0.04);
-    const ry = H * (BOWL_GROUND_HORIZON_Y * 0.5);
+  ctx.fillStyle = '#0e3a1e';
+  // Top forest band — circular tree-tops
+  for (let i = 0; i < 12; i++) {
+    const cx = (i + 0.5) * (W / 12);
+    const cy = H * 0.06 + Math.sin((i + (seed & 0xff)) * 1.7) * 6;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.arc(cx, cy, Math.max(W, H) * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Left/right tree edges
+  ctx.fillStyle = '#10421f';
+  for (let i = 0; i < 8; i++) {
+    const cy = H * 0.14 + (i / 8) * H * 0.78;
+    const wobL = Math.sin((i + seed) * 1.3) * 4;
+    const wobR = Math.cos((i + seed) * 1.1) * 4;
+    ctx.beginPath();
+    ctx.arc(W * 0.04 + wobL, cy, W * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(W * 0.96 - wobR, cy, W * 0.05, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 }
 
-function _drawBowlSideLogs(gs) {
-  const ctx = gs.ctx, W = gs.w, H = gs.h;
-  const seed = gs.bgSeed | 0;
-  ctx.save();
-  // 縦のログ (画面端を縁取る形で、地面上端 8% から手前 95% まで伸びる)
-  // 左ログ
-  ctx.fillStyle = '#5a4022';
-  ctx.beginPath();
-  ctx.moveTo(0, H * 0.95);
-  ctx.lineTo(W * 0.06, H * 0.95);
-  ctx.lineTo(W * 0.03, H * 0.10);
-  ctx.lineTo(0, H * 0.10);
-  ctx.closePath();
-  ctx.fill();
-  // 右ログ
-  ctx.beginPath();
-  ctx.moveTo(W, H * 0.95);
-  ctx.lineTo(W * 0.94, H * 0.95);
-  ctx.lineTo(W * 0.97, H * 0.10);
-  ctx.lineTo(W, H * 0.10);
-  ctx.closePath();
-  ctx.fill();
-  // 苔 (deterministic sin jitter)
-  ctx.fillStyle = 'rgba(110, 170, 90, 0.7)';
-  for (let i = 0; i < 8; i++) {
-    const ph = Math.sin(seed + i * 1.7);
-    const lx = W * (0.005 + 0.04 * ((ph + 1) / 2));
-    const ly = H * (0.15 + i * 0.10 + 0.02 * Math.sin(seed + i * 0.9));
-    ctx.beginPath(); ctx.arc(lx, ly, W * 0.012, 0, Math.PI * 2); ctx.fill();
-  }
-  for (let i = 0; i < 7; i++) {
-    const ph = Math.sin(seed * 0.7 + i * 2.1);
-    const rx = W * (0.95 + 0.04 * ((ph + 1) / 2));
-    const ry = H * (0.20 + i * 0.10 + 0.018 * Math.sin(seed * 0.5 + i));
-    ctx.beginPath(); ctx.arc(rx, ry, W * 0.011, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
-}
-
-function _drawBowlPin(gs, p, now) {
+function _drawBowlPin(gs, pin, now) {
   const ctx = gs.ctx;
-  const px = p.x * gs.w;
-  const baseY = p.y * gs.h;
-  // depth scale (奥ほど小さく)。 0.30 → 0.80 を 0..1 の depthT に正規化
-  const depthT = (p.y - 0.30) / Math.max(0.001, 0.80 - 0.30);
-  const scale = 0.55 + 0.80 * Math.max(0, Math.min(1, depthT));
-  const baseR = Math.min(gs.w, gs.h) * BOWL_PIN_R_REL * scale;
-  // shadow on ground
+  const minDim = Math.min(gs.w, gs.h);
+  const depthT = _bowlClamp((pin.y / Math.max(1, gs.h) - 0.14) / 0.44, 0, 1);
+  const scale = 0.48 + depthT * 0.92;
+  const r = BOWL_PIN_R_REL * minDim * scale;
+  const img = _bowlBugImg(pin.kind);
+  const fp = pin.fallProgress;
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.translate(pin.x, pin.y);
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.34 * (1 - fp * 0.65);
+  ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(px, baseY + baseR * 0.55, baseR * 1.15, baseR * 0.35, 0, 0, Math.PI * 2);
+  ctx.ellipse(2, r * 0.42, r * 1.32, r * 0.38, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-  // 倒れ方向アニメ: knockDirX (画面 X 方向) でロール、knockDirY で高さ圧縮 (奥方向に倒れたら短く見える)
-  let rot = 0, opacity = 1, yScale = 1;
-  if (p.isDown) {
-    const kx = p.knockDirX || 0;
-    const ky = p.knockDirY || 0;
-    rot = p.fallProgress * (Math.PI / 2.1) * kx;
-    opacity = 1 - p.fallProgress * 0.55;
-    yScale = 1 - p.fallProgress * Math.abs(ky) * 0.4;
+
+  let fallShiftX = 0;
+  let fallShiftY = 0;
+  if (pin.fallen) {
+    const fallScale = 1 - 0.42 * fp;
+    const alpha = 1 - fp;
+    const dir = (pin.fallRotDirX || 0) >= 0 ? 1 : -1;
+    fallShiftX = (pin.fallRotDirX || 0) * r * 0.55 * fp;
+    fallShiftY = Math.abs(pin.fallRotDirY || 0) * r * 0.22 * fp;
+    ctx.globalAlpha = Math.max(0, alpha);
+    ctx.translate(fallShiftX, fallShiftY);
+    ctx.rotate(dir * fp * 1.18);
+    ctx.scale(fallScale, fallScale);
   }
-  ctx.save();
-  ctx.translate(px, baseY);
-  ctx.rotate(rot);
-  ctx.scale(1, yScale);
-  ctx.globalAlpha = opacity;
-  // stem
-  ctx.fillStyle = '#f6efdc';
-  ctx.beginPath();
-  ctx.moveTo(-baseR * 0.4, baseR * 0.2);
-  ctx.quadraticCurveTo(-baseR * 0.5, -baseR * 0.6, -baseR * 0.32, -baseR * 0.7);
-  ctx.lineTo(baseR * 0.32, -baseR * 0.7);
-  ctx.quadraticCurveTo(baseR * 0.5, -baseR * 0.6, baseR * 0.4, baseR * 0.2);
-  ctx.closePath();
-  ctx.fill();
-  // stem shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.10)';
-  ctx.fillRect(baseR * 0.1, -baseR * 0.7, baseR * 0.3, baseR * 0.9);
-  // cap (red dome)
-  ctx.fillStyle = '#d24a3a';
-  ctx.beginPath();
-  ctx.arc(0, -baseR * 0.7, baseR, Math.PI, 0);
-  ctx.lineTo(baseR, -baseR * 0.55);
-  ctx.lineTo(-baseR, -baseR * 0.55);
-  ctx.closePath();
-  ctx.fill();
-  // cap highlight
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.beginPath();
-  ctx.ellipse(-baseR * 0.3, -baseR * 0.95, baseR * 0.35, baseR * 0.18, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // white dots
-  ctx.fillStyle = '#fff';
-  const dots = [[-0.4,-0.85,0.18],[0.3,-1.05,0.16],[0.55,-0.78,0.14],[-0.05,-1.00,0.18],[0.15,-0.72,0.12]];
-  for (let i = 0; i < dots.length; i++) {
-    const d = dots[i];
-    ctx.beginPath(); ctx.arc(d[0]*baseR, d[1]*baseR, d[2]*baseR, 0, Math.PI * 2); ctx.fill();
+
+  if (img && img.complete && img.naturalWidth) {
+    const naturalAspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+    const aspect = _bowlClamp(naturalAspect, 0.66, 1.28);
+    const drawH = minDim * 0.18 * scale;
+    const drawW = drawH * aspect;
+    ctx.drawImage(img, -drawW / 2, -drawH, drawW, drawH);
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-atop';
+    const light = ctx.createLinearGradient(-drawW * 0.35, -drawH, drawW * 0.45, -drawH * 0.15);
+    light.addColorStop(0, 'rgba(255,255,255,0.20)');
+    light.addColorStop(0.52, 'rgba(255,255,255,0.04)');
+    light.addColorStop(1, 'rgba(0,0,0,0.13)');
+    ctx.fillStyle = light;
+    ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#7AB540';
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.9, r * 0.9, r * 1.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f7fff2';
+    ctx.beginPath(); ctx.arc(-r * 0.28, -r * 1.1, r * 0.14, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.28, -r * 1.1, r * 0.14, 0, Math.PI * 2); ctx.fill();
   }
+
+  if (!pin.fallen && pin.swayAmp) {
+    ctx.fillStyle = 'rgba(255,255,255,0.56)';
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.08, r * 0.54, r * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 
 function _drawBowlDonguri(gs, d, now) {
   const ctx = gs.ctx;
-  const t = Math.max(0, Math.min(1, d.t || 0));
-  const minDim = Math.min(gs.w, gs.h);
-  const x = d.x * gs.w;
-  const yLine = d.y * gs.h;
-  // 地面に張り付いた直進ロール: 弧無し、わずかな上下バウンド (約 0.8%) で転がり感
-  const bobY = -minDim * 0.008 * Math.abs(Math.sin(t * Math.PI * 4));
-  const y = yLine + bobY;
-  // landing predictor shadow — まだ alive のときだけ薄く表示
-  if (d.alive && t < 1) {
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    const sx = d.targetX * gs.w, sy = d.targetY * gs.h;
-    const sr = minDim * 0.040;
-    ctx.beginPath(); ctx.ellipse(sx, sy + sr * 0.35, sr, sr * 0.42, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  }
-  // depth scale (奥に行くほど小さく) — 1.0 → END_SCALE
-  const scale = 1 - (1 - BOWL_DONGURI_END_SCALE) * t;
-  const r = minDim * BOWL_DONGURI_R_REL * scale;
-  // 高速スピン (転がりの回転感)
-  const theta = t * Math.PI * 6 * (d.spin || 1);
-  // body shadow on ground
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.translate(d.x, d.y);
+  ctx.rotate(d.theta || 0);
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(x, yLine + r * 0.45, r * 1.0, r * 0.30, 0, 0, Math.PI * 2);
+  ctx.ellipse(2, 3, d.r * 1.0, d.r * 0.55, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-  // donguri body
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(theta);
-  ctx.fillStyle = '#7a4a22';
-  ctx.beginPath(); ctx.ellipse(0, 0, r * 0.9, r * 1.05, 0, 0, Math.PI * 2); ctx.fill();
-  // cap
-  ctx.fillStyle = '#4d2f15';
-  ctx.beginPath(); ctx.arc(0, -r * 0.45, r * 0.95, Math.PI, 0); ctx.fill();
-  // cap texture line
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  ctx.lineWidth = Math.max(1, r * 0.08);
+
+  // Body (golden brown radial)
+  const grad = ctx.createRadialGradient(-d.r * 0.3, -d.r * 0.3, d.r * 0.1, 0, 0, d.r);
+  grad.addColorStop(0, '#d9a55c');
+  grad.addColorStop(1, '#7a4a1c');
+  ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.moveTo(-r * 0.6, -r * 0.45); ctx.lineTo(r * 0.6, -r * 0.45);
-  ctx.stroke();
-  // stem on top
-  ctx.fillStyle = '#3a2410';
-  ctx.fillRect(-r * 0.08, -r * 1.40, r * 0.16, r * 0.35);
+  ctx.arc(0, 0, d.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cap stripe (darker inner ring, viewed from above)
+  ctx.fillStyle = '#4a2a0a';
+  ctx.beginPath();
+  ctx.arc(0, 0, d.r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath();
+  ctx.arc(-d.r * 0.25, -d.r * 0.25, d.r * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
 }
 
 function _drawBowlPono(gs, now) {
   const ctx = gs.ctx;
-  const h = gs.h * BOWL_PONO_HEIGHT_REL;
-  const w = h;
-  const x = gs.w * BOWL_PONO_X_PAD_REL;
-  const yBase = gs.h - h - gs.h * BOWL_PONO_Y_PAD_REL;
-  const throwAge = gs.pono.throwT ? (now - gs.pono.throwT) : 9999;
-  const throwT = Math.max(0, 1 - throwAge / 350); // 0..1, decays
-  const dy = -throwT * h * 0.04; // 微妙な踏み込み
-  // body — 左下隅に固定 (中央には移動しない)
+  const cx = BOWL_PONO_X_REL * gs.w;
+  const cy = BOWL_PONO_Y_REL * gs.h;
+  const ph = BOWL_PONO_HEIGHT_REL * gs.h;
+  const pw = ph;
   if (imgPono && imgPono.complete && imgPono.naturalWidth) {
-    ctx.drawImage(imgPono, x, yBase + dy, w, h);
+    ctx.drawImage(imgPono, cx - pw / 2, cy - ph / 2, pw, ph);
   } else {
     ctx.save();
-    ctx.font = (h * 0.8) + 'px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText('🐻', x + w / 2, yBase + h + dy);
-    ctx.restore();
-  }
-  // 投擲腕 (Canvas 描画) — 肩 (右上付け根) から画面奥中央寄りへ伸びる
-  if (throwT > 0) {
-    const shoulderX = x + w * 0.85;
-    const shoulderY = yBase + h * 0.45;
-    const reachX = shoulderX + (gs.w * 0.35 - shoulderX) * throwT;
-    const reachY = shoulderY + (yBase - h * 0.10 - shoulderY) * throwT;
-    ctx.save();
-    ctx.strokeStyle = '#6b3a1a';
-    ctx.lineWidth = Math.max(3, h * 0.10);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(shoulderX, shoulderY);
-    ctx.lineTo(reachX, reachY);
-    ctx.stroke();
-    ctx.fillStyle = '#8a4e22';
-    ctx.beginPath();
-    ctx.arc(reachX, reachY, h * 0.09, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.font = (ph * 0.85) + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🐻', cx, cy);
     ctx.restore();
   }
 }
@@ -7265,9 +7251,9 @@ function _resolveBowlGame() {
   _bowlGameState = null;
   encStageEl.innerHTML =
     '<div class="enc-result win">' +
-      '<div class="enc-result-title">クモさん、たすかった！</div>' +
-      '<div class="enc-result-emoji">🕷️</div>' +
-      '<div class="enc-result-body">「どんぐり、ありがとう！<br>みちが ひらいたよ！」</div>' +
+      '<div class="enc-result-title">みちが ひらいた！</div>' +
+      '<div class="enc-result-emoji">🌰</div>' +
+      '<div class="enc-result-body">おじゃま虫が どいてくれたよ！</div>' +
     '</div>';
   _webGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
