@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1038; // v1038: replace tap-intro 🐻 with Amazon banner link on play.html splash
+const CACHE_VERSION = 1039; // v1039: remove dead .tap-intro-pono CSS, improve Amazon banner alt text
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
