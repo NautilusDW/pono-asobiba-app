@@ -6507,7 +6507,7 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
   const cy = 0.5;
   const rx = 0.42;        // elliptical perimeter half-width
   const ry = 0.36;        // elliptical perimeter half-height
-  const hubClear = 0.05;  // clear zone around spider sprite (fraction of perimeter)
+  const hubClear = 0.05;  // clear zone around spider sprite (0.05 of perimeter rx/ry → ~0.021×0.018 canvas units; keep spider sprite ≤ that band)
   const SPOKES = 8;
   const OUTER_RING_R = 0.80; // outer sticky ring radius (fraction of perimeter)
   const INNER_RING_R = 0.46; // inner sticky ring radius
@@ -6563,8 +6563,8 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
     const ang1 = angles[i];
     const ang2 = angles[i2];
     // small per-spoke radius jitter so chords don't form a perfect circle
-    const rA = OUTER_RING_R + jitter(i,  2.0) * 0.04;
-    const rB = OUTER_RING_R + jitter(i2, 2.0) * 0.04;
+    const rA = OUTER_RING_R + jitter(i,  2.0) * 0.025;
+    const rB = OUTER_RING_R + jitter(i2, 2.0) * 0.025;
     const A = ept(ang1, rA);
     const B = ept(ang2, rB);
     const midAng = ang1 + (Math.PI * 2 / SPOKES) / 2;
@@ -6589,8 +6589,8 @@ const WEB_SWEEP_THREAD_BLUEPRINTS = (function() {
     const i2 = (i + 1) % SPOKES;
     const ang1 = angles[i];
     const ang2 = angles[i2];
-    const rA = INNER_RING_R + jitter(i,  4.0) * 0.03;
-    const rB = INNER_RING_R + jitter(i2, 4.0) * 0.03;
+    const rA = INNER_RING_R + jitter(i,  4.0) * 0.02;
+    const rB = INNER_RING_R + jitter(i2, 4.0) * 0.02;
     const A = ept(ang1, rA);
     const B = ept(ang2, rB);
     const midAng = ang1 + (Math.PI * 2 / SPOKES) / 2;
@@ -6806,7 +6806,7 @@ function _layoutWebSweepThreads(gs) {
   gs.threads.forEach(function(t) {
     const def = t.def;
     if (!Number.isFinite(def.layer)) {
-      def.layer = t.index < 8 ? 0 : (t.index < 14 ? 1 : 2);
+      def.layer = t.index < 8 ? 0 : (t.index < 16 ? 1 : 2);
     }
     const layerDef = WEB_SWEEP_LAYERS[def.layer] || WEB_SWEEP_LAYERS[0];
     t.ax = def.a[0] * gs.w;
