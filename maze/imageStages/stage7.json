@@ -22,28 +22,18 @@
       "y": 210
     },
     {
-      "id": "stage7-web-gate",
       "kind": "web",
-      "x": 3690,
-      "y": 750,
+      "x": 85,
+      "y": 581,
+      "id": "web-1",
       "size": 170,
       "eventEnabled": true
     }
   ],
-  "webGimmick": {
-    "id": "stage7-spider-web",
-    "obstacleId": "stage7-web-gate",
-    "broom": {
-      "x": 330,
-      "y": 930,
-      "radius": 105
-    },
-    "encounterRadius": 84
-  },
   "creatures": [
     {
       "id": "c1",
-      "kind": "mayoi",
+      "kind": "odoke",
       "x": 1470,
       "y": 90
     },
@@ -2549,5 +2539,15 @@
         "shape": "polyline"
       }
     }
-  ]
+  ],
+  "webGimmick": {
+    "id": "web-gate",
+    "obstacleId": "web-1",
+    "encounterRadius": 84,
+    "broom": {
+      "x": 165,
+      "y": 929,
+      "radius": 90
+    }
+  }
 }
