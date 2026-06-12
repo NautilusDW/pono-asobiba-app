@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1033; // v1033: maze spider-web sweep proportions and fine-thread physics
+const CACHE_VERSION = 1034; // v1034: OtoTouch リズムの移動ノード角度補正
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

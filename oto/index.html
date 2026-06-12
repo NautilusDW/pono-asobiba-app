@@ -5435,6 +5435,13 @@ function _gh3DDrawOneNote(note, mvp) {
   var topVerts = [];
   var baseY = _gh3DRoadYForNote(z) + yLift;
   var topY = baseY + h;
+  var noteTilt = 0.72 - Math.min(1, p) * 0.26;
+  function noteTopYAt(pointZ) {
+    return topY + (z - pointZ) * noteTilt;
+  }
+  function noteBaseYAt(pointZ) {
+    return baseY + (z - pointZ) * noteTilt;
+  }
   var topCenter = [centerX, topY, z];
   var segments = 36;
   _gh3DPushHoldTail(sideVerts, centerX, z - radiusZ * 0.92, radiusX * 2.1, note.beatLen || 1, yLift, rgb, a);
@@ -5447,10 +5454,10 @@ function _gh3DDrawOneNote(note, mvp) {
     var x1 = centerX + c1 * radiusX;
     var z0 = z + s0 * radiusZ;
     var z1 = z + s1 * radiusZ;
-    var p0b = [x0, baseY, z0];
-    var p1b = [x1, baseY, z1];
-    var p0t = [x0, topY, z0];
-    var p1t = [x1, topY, z1];
+    var p0b = [x0, noteBaseYAt(z0), z0];
+    var p1b = [x1, noteBaseYAt(z1), z1];
+    var p0t = [x0, noteTopYAt(z0), z0];
+    var p1t = [x1, noteTopYAt(z1), z1];
     var mid = (a0 + a1) * 0.5;
     var light = 0.62 + 0.32 * Math.max(0, Math.cos(mid - Math.PI * 0.35));
     var sideC = _gh3DShadeRgb(rgb, light, a * 0.78);
