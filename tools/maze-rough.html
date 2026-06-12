@@ -244,8 +244,8 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="delete-edge" style="background:#5a3030; color:#fcc;">✂️ 道を消す</button>
     </div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
-    <div style="font-size:0.75rem; color:#9aa; margin-top:2px;">🔗 つなぐ モードで、 マーカー A → B の順にクリックすると、 間に道を 自動で 引きます</div>
-    <div style="font-size:0.72rem; color:#cfa; margin-top:2px;">※ 「🔗 つなぐ」 は 途中の 壁タイル も 道に 変えます (Undo 可)。</div>
+    <div style="font-size:0.75rem; color:#9aa; margin-top:2px;">🔗 つなぐ は 2 つの マーカー を 順にクリックで 黒線で結びます (AI への ヒント)</div>
+    <div style="font-size:0.72rem; color:#cfa; margin-top:2px;">※ 既存の黒線の中点付近をクリックすると 削除できます。</div>
 
     <!-- Phase 3.5: お邪魔虫の種類 (creature モード時のみ表示) -->
     <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
@@ -542,6 +542,9 @@ const state = {
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
   edges: [],              // [{ polyline: [{x,y},{x,y},...] }] ノード間の道筋 (PIXEL coords)
                           // ラフ→エディタ統合 Phase 2: maze runtime に渡すグラフ情報の出口
+  connectors: [],         // [{ fromType, fromIndex?, fromTileX, fromTileY, toType, toIndex?, toTileX, toTileY }]
+                          // 🔗 つなぐ で引いた 2 マーカー間の黒線アノテーション (AI への配置ヒント)。
+                          // edges とは別概念 — 線はエディタの補助、runtime には渡さない。
   obstacles: [],          // [{ x, y, kind:'rock'|'tree'|'stump'|'hole'|'pond' }] 障害物 (PIXEL coords)
                           // Phase 3: maze runtime の obstacles[] に対応
   selectedCreatureKind: 'mayoi',  // Phase 3.5: お邪魔虫モードでの配置時の種類
@@ -877,6 +880,8 @@ canvasWrap.addEventListener('drop', function(e) {
           ? _loadObstacles(def.obstacles) : [];
         state.edges = (typeof _loadEdges === 'function')
           ? _loadEdges(def.edges) : [];
+        state.connectors = (typeof _loadConnectors === 'function')
+          ? _loadConnectors(def.connectors) : [];
         state.cellLayout = (typeof _validateCellLayout === 'function')
           ? _validateCellLayout(def.cellLayout) : null;
         state.snapMode = _loadSnapMode(def.snapMode);
@@ -1013,6 +1018,12 @@ function draw() {
   for (let i = 0; i < state.edges.length; i++) {
     drawEdge(state.edges[i]);
   }
+  // Connectors (🔗 つなぐ で引いた 2 マーカー間の黒線アノテーション)
+  if (Array.isArray(state.connectors)) {
+    for (let i = 0; i < state.connectors.length; i++) {
+      drawConnector(state.connectors[i]);
+    }
+  }
   // Obstacles (障害物) — waypoint より下、edges より上
   for (let i = 0; i < state.obstacles.length; i++) {
     drawObstacleMarker(state.obstacles[i]);
@@ -1142,6 +1153,74 @@ function drawEdge(e) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+// 🔗 つなぐ: connector の現在座標を返す ({fromPx, toPx} or null)。
+// from/to が指すマーカーが削除されていたら null を返し、 描画/ヒット判定をスキップ。
+function _connectorEndpointsPx(c) {
+  if (!c) return null;
+  function _epPx(type, index, tx, ty) {
+    if (type === 'start') return state.start ? { x: state.start.x, y: state.start.y } : null;
+    if (type === 'goal')  return state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null;
+    if (type === 'creature') {
+      const m = state.creatures[index]; return m ? { x: m.x, y: m.y } : null;
+    }
+    if (type === 'waypoint') {
+      const m = state.waypoints[index]; return m ? { x: m.x, y: m.y } : null;
+    }
+    if (type === 'obstacle') {
+      const m = state.obstacles[index]; return m ? { x: m.x, y: m.y } : null;
+    }
+    // フォールバック: マーカーが消えていてもタイル中心で線を引いておく (削除後の整合性)
+    if (Number.isFinite(tx) && Number.isFinite(ty)) {
+      return { x: tx * CELL + CELL / 2, y: ty * CELL + CELL / 2 };
+    }
+    return null;
+  }
+  const fromPx = _epPx(c.fromType, c.fromIndex, c.fromTileX, c.fromTileY);
+  const toPx   = _epPx(c.toType,   c.toIndex,   c.toTileX,   c.toTileY);
+  if (!fromPx || !toPx) return null;
+  return { fromPx: fromPx, toPx: toPx };
+}
+
+// 🔗 つなぐ で引いた 黒線 connector を描画。 端点に小さな黒丸を打って強調。
+function drawConnector(c) {
+  const eps = _connectorEndpointsPx(c);
+  if (!eps) return;
+  ctx.save();
+  ctx.strokeStyle = '#1a1a1a';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(eps.fromPx.x, eps.fromPx.y);
+  ctx.lineTo(eps.toPx.x, eps.toPx.y);
+  ctx.stroke();
+  // endpoint の強調用 黒丸
+  ctx.fillStyle = '#1a1a1a';
+  const r = 4;
+  ctx.beginPath(); ctx.arc(eps.fromPx.x, eps.fromPx.y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(eps.toPx.x,   eps.toPx.y,   r, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// connector の中点が (px, py) からどれだけ近いか。 最近接 connector index と距離を返す。
+// 該当無しなら null。 threshold より遠いものは除外。
+function _hitConnectorMidpoint(px, py, threshold) {
+  if (!Array.isArray(state.connectors)) return null;
+  let best = null;
+  for (let i = 0; i < state.connectors.length; i++) {
+    const eps = _connectorEndpointsPx(state.connectors[i]);
+    if (!eps) continue;
+    const mx = (eps.fromPx.x + eps.toPx.x) / 2;
+    const my = (eps.fromPx.y + eps.toPx.y) / 2;
+    const dx = px - mx, dy = py - my;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d <= threshold && (!best || d < best.dist)) {
+      best = { index: i, dist: d };
+    }
+  }
+  return best;
 }
 
 // polyline 頂点がノード (start/goal/waypoint) と座標的に一致しているか。
@@ -2037,6 +2116,8 @@ function bfsShortest(from, to) {
 // 🔗 つなぐモード専用 BFS: wall を含む全タイルを通過可能として最短経路を返す。
 // 既存 bfsShortest は path タイルのみを通る (= 接続判定用)。 こちらは
 // 「マーカー A → B を結ぶ路線を新規に引きたい」 ためのバリアント。
+// [現状未使用] 旧「🔗 つなぐ」(タイル塗り) で使っていた。 新仕様では黒線アノテーション
+// に置換したため呼び出し無し。 将来別用途で再利用する可能性があるので残置。
 function bfsShortestIgnoreWalls(from, to) {
   if (!from || !to) return null;
   if (from.x < 0 || from.x >= GRID_W || from.y < 0 || from.y >= GRID_H) return null;
@@ -2100,6 +2181,8 @@ function _markerHitToAnchor(hit) {
 }
 
 // 🔗 つなぐ用タイル塗装: ブラシサイズ (1/2/3) を反映して path を置く。
+// [現状未使用] 旧「🔗 つなぐ」(タイル塗り) で使っていた。 新仕様では黒線アノテーション
+// に置換したため呼び出し無し。 将来別用途で再利用する可能性があるので残置。
 function _paintConnectTile(tx, ty, size) {
   const sz = Math.max(1, size | 0);
   const half = Math.floor(sz / 2);
@@ -2114,8 +2197,47 @@ function _paintConnectTile(tx, ty, size) {
   }
 }
 
+// 2 つの connector anchor が同じマーカー (type + index) を指しているかを判定。
+function _sameAnchorMarker(a, b) {
+  if (!a || !b) return false;
+  if (a.type !== b.type) return false;
+  if (a.type === 'creature' || a.type === 'waypoint' || a.type === 'obstacle') {
+    return a.index === b.index;
+  }
+  return true; // start / goal はインデックス無し
+}
+
+// 既存 connector を anchor a→b で検索 (向きは無視)。 ヒット時 index、無しは -1。
+function _findConnectorByAnchors(a, b) {
+  if (!Array.isArray(state.connectors)) return -1;
+  for (let i = 0; i < state.connectors.length; i++) {
+    const c = state.connectors[i];
+    const ca = { type: c.fromType, index: c.fromIndex };
+    const cb = { type: c.toType,   index: c.toIndex };
+    if ((_sameAnchorMarker(ca, a) && _sameAnchorMarker(cb, b)) ||
+        (_sameAnchorMarker(ca, b) && _sameAnchorMarker(cb, a))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 // 🔗 つなぐモードのクリック処理。 マーカーに当たれば true、 外れなら false。
+// 新仕様: 2 マーカーを順にクリックすると黒線 connector を 1 本追加する。
+// 1 つ目クリックで既存 connector の中点付近 (8px 以内) をヒットしたら、 その connector を
+// 削除して anchor は設定しない (シンプルな削除手段)。
 function _handleConnectClick(p) {
+  // 1 つ目未選択時のみ midpoint-hit を削除トリガにする (2 つ目はマーカー必須)
+  if (!state.connectAnchor) {
+    const mid = _hitConnectorMidpoint(p.x, p.y, 8);
+    if (mid) {
+      pushHistory();
+      state.connectors.splice(mid.index, 1);
+      afterEdit();
+      showBanner('線を 消したよ');
+      return true;
+    }
+  }
   const hit = _markerHitAt(p.x, p.y);
   if (!hit) return false;
   // edgePoint (= ライン上の中間点) はマーカーとは別物なので除外
@@ -2132,33 +2254,37 @@ function _handleConnectClick(p) {
   }
   // 同じマーカーをもう一度 → キャンセル
   const a = state.connectAnchor;
-  if (a.type === anchor.type && a.index === anchor.index && a.tileX === anchor.tileX && a.tileY === anchor.tileY) {
+  if (_sameAnchorMarker(a, anchor)) {
     state.connectAnchor = null;
     _stopConnectPulse();
     draw();
     showBanner('キャンセルしました');
     return true;
   }
-  // 2 つ目の選択 → BFS (wall 無視) で経路計算 → path で塗装
-  const fromTile = { x: a.tileX, y: a.tileY };
-  const toTile   = { x: anchor.tileX, y: anchor.tileY };
-  const path = bfsShortestIgnoreWalls(fromTile, toTile);
-  if (!path) {
-    showBanner('ここまで 道を つくれないよ');
+  // 重複防止: 既に同じ 2 マーカー間に connector があれば追加しない
+  if (_findConnectorByAnchors(a, anchor) >= 0) {
     state.connectAnchor = null;
     _stopConnectPulse();
     draw();
+    showBanner('もう つながっています');
     return true;
   }
+  // 2 つ目の選択 → 黒線 connector を 1 本追加
   pushHistory();
-  const brush = state.brushSize || 1;
-  for (const tile of path) {
-    _paintConnectTile(tile.x, tile.y, brush);
-  }
+  state.connectors.push({
+    fromType:  a.type,
+    fromIndex: (a.index != null) ? a.index : null,
+    fromTileX: a.tileX,
+    fromTileY: a.tileY,
+    toType:    anchor.type,
+    toIndex:   (anchor.index != null) ? anchor.index : null,
+    toTileX:   anchor.tileX,
+    toTileY:   anchor.tileY,
+  });
   state.connectAnchor = null;
   _stopConnectPulse();
   afterEdit();
-  showBanner('つながったよ！ ' + path.length + ' マス');
+  showBanner('黒線で つないだよ！');
   return true;
 }
 
@@ -2256,6 +2382,7 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
   const prevWaypoints = state.waypoints;
   const prevObstacles = state.obstacles;
   const prevEdges = state.edges;
+  const prevConnectors = state.connectors;
   state.showGrid = false;
   state.showSolution = false;
   state.hoverTile = null;
@@ -2263,6 +2390,7 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
   state.waypoints = [];
   state.obstacles = [];
   state.edges = [];
+  state.connectors = [];
   draw();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const stageName = (document.getElementById('saveNameInput').value || '').trim();
@@ -2276,6 +2404,7 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
     state.waypoints = prevWaypoints;
     state.obstacles = prevObstacles;
     state.edges = prevEdges;
+    state.connectors = prevConnectors;
     draw();
   };
   const _singleToggle = document.getElementById('pngSingleToggle');
@@ -2337,6 +2466,12 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     obstacles: state.obstacles.map(function(o) { return { x: o.x, y: o.y, kind: o.kind }; }),
     edges: state.edges.map(function(e) {
       return { polyline: e.polyline.map(function(p) { return { x: p.x, y: p.y }; }) };
+    }),
+    connectors: (state.connectors || []).map(function(c) {
+      return {
+        fromType: c.fromType, fromIndex: c.fromIndex, fromTileX: c.fromTileX, fromTileY: c.fromTileY,
+        toType:   c.toType,   toIndex:   c.toIndex,   toTileX:   c.toTileX,   toTileY:   c.toTileY,
+      };
     }),
     cellStride: state.cellStride,
     cellLayout: state.cellLayout,
@@ -2708,6 +2843,7 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
       state.waypoints = _loadWaypoints(def.waypoints);
       state.obstacles = _loadObstacles(def.obstacles);
       state.edges = _loadEdges(def.edges);
+      state.connectors = _loadConnectors(def.connectors);
       state.cellLayout = _validateCellLayout(def.cellLayout);
       state.snapMode = _loadSnapMode(def.snapMode);
       _syncSnapButtons();
@@ -2776,6 +2912,32 @@ function _loadEdges(arr) {
       poly.push({ x: x, y: y });
     }
     if (poly.length >= 2) out.push({ polyline: poly });
+  }
+  return out;
+}
+
+// Validate connectors array — each entry references 2 markers by type+index+tile coords.
+// 🔗 つなぐ で引いた黒線アノテーション。 不正な type / 範囲外 tile 座標は弾く。
+function _loadConnectors(arr) {
+  if (!Array.isArray(arr)) return [];
+  const validTypes = { start: 1, goal: 1, creature: 1, waypoint: 1, obstacle: 1 };
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const c = arr[i];
+    if (!c || typeof c !== 'object') continue;
+    if (!validTypes[c.fromType] || !validTypes[c.toType]) continue;
+    if (!Number.isFinite(c.fromTileX) || !Number.isFinite(c.fromTileY)) continue;
+    if (!Number.isFinite(c.toTileX)   || !Number.isFinite(c.toTileY))   continue;
+    const fx = Math.max(0, Math.min(GRID_W - 1, Math.floor(c.fromTileX)));
+    const fy = Math.max(0, Math.min(GRID_H - 1, Math.floor(c.fromTileY)));
+    const tx = Math.max(0, Math.min(GRID_W - 1, Math.floor(c.toTileX)));
+    const ty = Math.max(0, Math.min(GRID_H - 1, Math.floor(c.toTileY)));
+    const fi = Number.isInteger(c.fromIndex) ? c.fromIndex : null;
+    const ti = Number.isInteger(c.toIndex)   ? c.toIndex   : null;
+    out.push({
+      fromType: c.fromType, fromIndex: fi, fromTileX: fx, fromTileY: fy,
+      toType:   c.toType,   toIndex:   ti, toTileX:   tx, toTileY:   ty,
+    });
   }
   return out;
 }
@@ -2854,6 +3016,7 @@ function pushHistory() {
     waypoints: state.waypoints,
     obstacles: state.obstacles,
     edges: state.edges,
+    connectors: state.connectors,
     panels: state.panels,
     gridW: GRID_W,
     cellLayout: state.cellLayout,
@@ -2882,6 +3045,8 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     ? _loadObstacles(prev.obstacles) : [];
   state.edges = (typeof _loadEdges === 'function')
     ? _loadEdges(prev.edges) : [];
+  state.connectors = (typeof _loadConnectors === 'function')
+    ? _loadConnectors(prev.connectors) : [];
   state.cellLayout = (typeof _validateCellLayout === 'function')
     ? _validateCellLayout(prev.cellLayout) : null;
   state.snapMode = _loadSnapMode(prev.snapMode);
@@ -2913,6 +3078,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.waypoints = [];
   state.obstacles = [];
   state.edges = [];
+  state.connectors = [];
   state.cellLayout = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   afterEdit();
@@ -2939,6 +3105,7 @@ function _doAutoSave() {
       waypoints: state.waypoints,
       obstacles: state.obstacles,
       edges: state.edges,
+      connectors: state.connectors,
       panels: state.panels,
       gridW: GRID_W,
       cellStride: state.cellStride,
@@ -3335,6 +3502,8 @@ function restoreDraft() {
       ? _loadObstacles(data.obstacles) : [];
     state.edges = (typeof _loadEdges === 'function')
       ? _loadEdges(data.edges) : [];
+    state.connectors = (typeof _loadConnectors === 'function')
+      ? _loadConnectors(data.connectors) : [];
     if (data.cellStride === 2 || data.cellStride === 3 || data.cellStride === 4) {
       state.cellStride = data.cellStride;
     }
@@ -3391,6 +3560,7 @@ function saveAs(rawName) {
     waypoints: state.waypoints.slice(),
     obstacles: state.obstacles.slice(),
     edges: state.edges.slice(),
+    connectors: (state.connectors || []).slice(),
     panels: state.panels,
     gridW: GRID_W,
     cellStride: state.cellStride,
@@ -3416,6 +3586,7 @@ function libOverwriteSlot(name) {
     waypoints: state.waypoints.slice(),
     obstacles: state.obstacles.slice(),
     edges: state.edges.slice(),
+    connectors: (state.connectors || []).slice(),
     panels: state.panels,
     gridW: GRID_W,
     cellStride: state.cellStride,
@@ -3615,6 +3786,7 @@ function loadSaveByName(name) {
   state.waypoints = _loadWaypoints(s.waypoints);
   state.obstacles = _loadObstacles(s.obstacles);
   state.edges = _loadEdges(s.edges);
+  state.connectors = _loadConnectors(s.connectors);
   if (s.cellStride === 2 || s.cellStride === 3 || s.cellStride === 4) {
     state.cellStride = s.cellStride;
   }
@@ -3728,6 +3900,7 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
         waypoints: _loadWaypoints(def.waypoints),
         obstacles: _loadObstacles(def.obstacles),
         edges: _loadEdges(def.edges),
+        connectors: _loadConnectors(def.connectors),
         cellLayout: _validateCellLayout(def.cellLayout),
         panels: (def.panels === 2 || def.width >= 64) ? 2 : 1,
         gridW: (def.panels === 2 || def.width >= 64) ? 64 : 32,
@@ -3842,6 +4015,7 @@ function _importFromPngImage(img) {
   state.waypoints = [];
   state.obstacles = [];
   state.edges = [];
+  state.connectors = [];
   state.cellLayout = null;
 
   afterEdit();
@@ -4985,6 +5159,7 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
   state.waypoints = _loadWaypoints(_snap.waypoints);
   state.obstacles = _loadObstacles(_snap.obstacles);
   state.edges = _loadEdges(_snap.edges);
+  state.connectors = _loadConnectors(_snap.connectors);
   if (_snap.cellStride === 2 || _snap.cellStride === 3 || _snap.cellStride === 4) {
     state.cellStride = _snap.cellStride;
   }
