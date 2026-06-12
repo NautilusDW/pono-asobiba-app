@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1041; // v1041: kumo-rescue fixes — layer-clear softlock (frozen sub-chains excluded), sub-chain physics (detached=true), halo shadowBlur cap, hub-vs-spider spec clarification, activeGrabs resize leak
+const CACHE_VERSION = 1042; // v1042: tap-intro redesign — restored 🐻 emoji as main tap area, separated Amazon banner into clearly-labeled PR ad zone with stopPropagation so banner tap opens Amazon only (no game start)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
