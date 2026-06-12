@@ -20,6 +20,14 @@
       "kind": "hole",
       "x": 2490,
       "y": 210
+    },
+    {
+      "kind": "web",
+      "x": 85,
+      "y": 581,
+      "id": "web-1",
+      "size": 170,
+      "eventEnabled": true
     }
   ],
   "creatures": [
@@ -2531,5 +2539,15 @@
         "shape": "polyline"
       }
     }
-  ]
+  ],
+  "webGimmick": {
+    "id": "web-gate",
+    "obstacleId": "web-1",
+    "encounterRadius": 84,
+    "broom": {
+      "x": 165,
+      "y": 929,
+      "radius": 90
+    }
+  }
 }
