@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-12 - [batch:437-maze-donguri-bowl-icons-v2-raw] Codex: user 指摘「虫のバリケードにどんぐりが付いているのはおかしい。転がすので丸めのどんぐりが良い」を受領。batch 436 の修正版として、左=どんぐり要素なしのお邪魔虫ゲート、右=丸い転がせるどんぐり入りのどんぐりぶくろ raw シートを GPT Image 2 built-in imagegen で再生成予定。アルファ抜き・切り抜きはしない。 (by Codex)
+- 2026-06-12 - [batch:437-maze-donguri-bowl-icons-v2-raw] DONE - Codex: GPT Image 2 built-in imagegen で修正版 raw シート `tmp/alpha_pending/437_maze_donguri_bowl_icons_v2_raw/donguri_bowl_event_item_icons_sheet_v2_raw.png` を生成。左=どんぐり要素なしの小さいお邪魔虫+葉/丸太バリケード、右=丸く転がせるどんぐり入りのどんぐりぶくろ。RGB 1690x931 / 1.55MB、白背景、テキストなし、アルファ抜き・切り抜きなし。Pillow寸法/容量確認、目視で左パネルにどんぐり印なし・右パネルのどんぐり丸めを確認。 (by Codex)
 - 2026-06-12 - [batch:436-maze-donguri-bowl-icons-raw] Codex: user 依頼「迷路上のイベントアイコンとどんぐりぶくろアイコンを画像生成」を受領。HANDOFF/git log/tmp で同用途の既存 raw は見当たらず。GPT Image 2 built-in imagegen で2パネルの raw アセットシートを生成し、`tmp/alpha_pending/436_maze_donguri_bowl_icons_raw/` に納品予定。アルファ抜き・切り抜きはしない。 (by Codex)
 - 2026-06-12 - [batch:436-maze-donguri-bowl-icons-raw] DONE - Codex: GPT Image 2 built-in imagegen で2パネル raw シート `tmp/alpha_pending/436_maze_donguri_bowl_icons_raw/donguri_bowl_event_item_icons_sheet_raw.png` を生成。左=小さいお邪魔虫2〜3匹+葉/丸太バリケード+どんぐり印のイベントゲート、右=どんぐりぶくろ。RGB 1774x887 / 1.6MB、白背景、テキストなし、アルファ抜き・切り抜きなし。目視・Pillow寸法/容量確認済み。 (by Codex)
 - 2026-06-12 - [batch:435-maze-donguri-bowl-boss] Codex: user 依頼「全員倒した後にボスが出て、連打で何発当てられるか。ボス画像も生成して実装」を受領。既存ボス素材なしを確認し、GPT Image 2 built-in imagegen でボスっぽい大きいお邪魔虫 raw を生成。`assets/images/maze/creatures/ojama_boss.png` に配置し、`maze/index.html` のどんぐりボウリングへボス連打フェーズを追加する。 (by Codex)
