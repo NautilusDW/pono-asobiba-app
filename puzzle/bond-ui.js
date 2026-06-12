@@ -1,67 +1,24 @@
-// PonoBondUI — なかよし度の画面表示モジュール。
-// 「もりのなかよし」MVP の UI 層。
+// PonoBondUI — 選択中パートナーの画面表示モジュール (簡素化版)
+// 仲良し度システム廃止後の最小UI層。
 // 依存: window.PonoPartners, window.PonoBond, window.PonoAssistRegister
 //
 // 機能:
-//   1. 右下ハートバッジ: [partner image] ★★ (現在選択中パートナーの Lv 表示)
-//   2. Lv 昇格カットイン: addHeart() の結果が leveledUp === true なら
-//        Lv2 → 「○○と なかよし になったよ！」
-//        Lv3 → 「○○と だいすき になったよ！」
-//      を 3 秒間オーバーレイで表示。
-//   3. クリアサマリー強化: afterShowSuccess hook で別 div を append し、
-//      パートナー名 / ハート数 / Lv / クリア時間 (前回比) /
-//      ヒント使用 / 連続スナップ最大数 を表示。
-//
-// localStorage keys (prefix: 'pono_bond_'):
-//   pono_bond_last_time_<stageId>_<partnerId>   - 直近クリア時間 (ms)
-//   pono_bond_hints_used_<stageId>_<partnerId>  - ヒント使用回数 (MVP 常に 0)
-//   pono_bond_max_combo_<stageId>_<partnerId>   - 連続スナップ最大数
+//   1. 右下バッジ: [partner image] + 名前 + 「がんばれ!」吹き出し
+//      Lv 星 (★★☆) 表示は廃止。
+//   2. クリアサマリー: 「<name> と クリアしたよ！」の 1 行のみ。
+//      Lv 昇格カットイン / なかよし ★★☆ 表示は廃止。
+//   3. playPartnerPanelAction(ability/celebrate) は維持 (cutin 用)。
 //
 // Public API:
 //   window.PonoBondUI.init()
-//   window.PonoBondUI.showLevelUpCutIn(partner, level)
 //   window.PonoBondUI.refreshBadge(partner, stageId)
+//   window.PonoBondUI.playPartnerPanelAction(partner, opts)
 window.PonoBondUI = (function () {
   'use strict';
 
-  var PREFIX = 'pono_bond_';
-  var LEVEL_LABELS = ['', 'はじめまして', 'なかよし', 'だいすき'];
   var BADGE_ID = 'pono-bond-badge';
-  var CUTIN_ID = 'pono-bond-cutin';
   var SUMMARY_ID = 'pono-bond-summary';
   var panelActionTimer = null;
-
-  // 計測ステート (ステージ開始 → クリア間で保持)
-  var stageStartMs = null;
-  var stageHintsUsed = 0;
-  var stageMaxCombo = 0;
-  var stageCurCombo = 0;
-  var trackedStageId = null;
-  var trackedPartnerId = null;
-
-  // localStorage 安全ラッパ
-  function lsGet(key) {
-    try { return window.localStorage.getItem(key); } catch (_) { return null; }
-  }
-  function lsSet(key, val) {
-    try { window.localStorage.setItem(key, String(val)); } catch (_) {}
-  }
-  function readNumber(key) {
-    var raw = lsGet(key);
-    if (raw == null) return 0;
-    var n = parseInt(raw, 10);
-    return isFinite(n) && n >= 0 ? n : 0;
-  }
-
-  function lastTimeKey(stageId, partnerId) {
-    return PREFIX + 'last_time_' + String(stageId) + '_' + String(partnerId);
-  }
-  function hintsKey(stageId, partnerId) {
-    return PREFIX + 'hints_used_' + String(stageId) + '_' + String(partnerId);
-  }
-  function comboKey(stageId, partnerId) {
-    return PREFIX + 'max_combo_' + String(stageId) + '_' + String(partnerId);
-  }
 
   // ===== Badge =====
   function ensureBadge() {
@@ -70,44 +27,30 @@ window.PonoBondUI = (function () {
     el = document.createElement('div');
     el.id = BADGE_ID;
     el.className = 'pono-bond-badge hidden';
+    // 旧 .pono-bond-badge__stars span は削除。 (CSS は残置だが空 DOM)
     el.innerHTML =
       '<div class="pono-bond-badge__sparkles" aria-hidden="true"></div>' +
       '<div class="pono-bond-badge__bubble" aria-hidden="true">' +
         '<span class="pono-bond-badge__bubble-main">がんばれ!</span>' +
-        '<span class="pono-bond-badge__bubble-sub"></span>' +
+        '<span class="pono-bond-badge__bubble-sub hidden"></span>' +
       '</div>' +
       '<div class="pono-bond-badge__portrait">' +
         '<img class="pono-bond-badge__img" alt="">' +
-      '</div>' +
-      '<span class="pono-bond-badge__stars" aria-label="なかよし度"></span>';
+      '</div>';
     document.body.appendChild(el);
     return el;
   }
 
-  function starsForLevel(level) {
-    var n = Math.max(0, Math.min(3, level | 0));
-    var filled = '';
-    for (var i = 0; i < n; i++) filled += '★';
-    var empty = '';
-    for (var j = n; j < 3; j++) empty += '☆';
-    return filled + empty;
-  }
-
-  // Phase 3b Step 3 新仕様:
-  // ヒントボタンはパートナー有無に関わらず常に表示する。
-  // 旧仕様では partner 選択時は assist がヒント役を果たすので非表示にしていたが、
-  // 新仕様ではヒントボタンが「選択ピース → 金色星」演出を提供する独立機能となり、
-  // パートナー有無に依らず常時利用可能とする。 残回数は main.js 側で localStorage 管理。
+  // Phase 3b Step 3 (継続): ヒントボタンは常に表示
   function syncHintBtnVisibility(_hasPartner) {
     try {
       var hintBtn = document.getElementById('btn-hint');
       if (!hintBtn) return;
-      // 常に表示 (display プロパティをクリア)
       hintBtn.style.display = '';
     } catch (_) {}
   }
 
-  function refreshBadge(partner, stageId) {
+  function refreshBadge(partner, _stageId) {
     var el = ensureBadge();
     if (partner && window.PonoPartners && typeof window.PonoPartners.isUnlocked === 'function'
         && !window.PonoPartners.isUnlocked(partner)) {
@@ -119,22 +62,14 @@ window.PonoBondUI = (function () {
       return;
     }
     var imgEl = el.querySelector('.pono-bond-badge__img');
-    var starsEl = el.querySelector('.pono-bond-badge__stars');
     if (imgEl && partner.image) {
       if (imgEl.getAttribute('src') !== partner.image) {
         imgEl.src = partner.image;
       }
       imgEl.alt = partner.name || '';
     }
-    var level = 0;
-    try {
-      if (stageId != null && window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
-        level = window.PonoBond.getLevel(partner.id, stageId);
-      }
-    } catch (_) {}
-    if (starsEl) starsEl.textContent = starsForLevel(level);
     el.setAttribute('data-partner-id', partner.id || '');
-    setBadgeSpeech(el, 'がんばれ!', LEVEL_LABELS[level] || '');
+    setBadgeSpeech(el, 'がんばれ!', '');
     el.classList.remove('hidden');
     syncHintBtnVisibility(true);
   }
@@ -176,72 +111,7 @@ window.PonoBondUI = (function () {
     return true;
   }
 
-  // ===== Level-Up Cut-In =====
-  function ensureCutIn() {
-    var el = document.getElementById(CUTIN_ID);
-    if (el) return el;
-    el = document.createElement('div');
-    el.id = CUTIN_ID;
-    el.className = 'pono-bond-cutin hidden';
-    el.setAttribute('aria-live', 'polite');
-    el.innerHTML =
-      '<div class="pono-bond-cutin__inner">' +
-        '<img class="pono-bond-cutin__img" alt="">' +
-        '<div class="pono-bond-cutin__text"></div>' +
-      '</div>';
-    document.body.appendChild(el);
-    return el;
-  }
-
-  var cutInTimer = null;
-  function showLevelUpCutIn(partner, level) {
-    if (!partner) return;
-    var lv = level | 0;
-    if (lv < 2) return; // Lv2/Lv3 のみ演出対象
-    var label = lv >= 3 ? 'だいすき' : 'なかよし';
-    var name = partner.name || '';
-    var msg = name + 'と ' + label + ' になったよ！';
-    var el = ensureCutIn();
-    var imgEl = el.querySelector('.pono-bond-cutin__img');
-    var textEl = el.querySelector('.pono-bond-cutin__text');
-    if (imgEl && partner.image) {
-      imgEl.src = partner.image;
-      imgEl.alt = name;
-    }
-    if (textEl) textEl.textContent = msg;
-    el.classList.remove('hidden');
-    // CSS アニメーションを再スタート
-    el.classList.remove('is-active');
-    void el.offsetWidth;
-    el.classList.add('is-active');
-    if (cutInTimer) { clearTimeout(cutInTimer); cutInTimer = null; }
-    cutInTimer = setTimeout(function () {
-      el.classList.add('hidden');
-      el.classList.remove('is-active');
-      cutInTimer = null;
-    }, 3000);
-  }
-
-  function showLevelUpCutInAfterSuccessModal(partner, level) {
-    if (typeof window.PonoPuzzleRunAfterSuccessModalClosed === 'function') {
-      window.PonoPuzzleRunAfterSuccessModalClosed(function () {
-        showLevelUpCutIn(partner, level);
-      });
-      return;
-    }
-    showLevelUpCutIn(partner, level);
-  }
-
   // ===== Clear Summary =====
-  function buildSummaryHtml(opts) {
-    var partner = opts.partner;
-    var level = opts.level;
-
-    var line1 = (partner.name || '') + 'と なかよし ' + starsForLevel(level);
-
-    return '<p class="pono-bond-summary__line1">' + escapeHtml(line1) + '</p>';
-  }
-
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, '&amp;')
@@ -257,10 +127,9 @@ window.PonoBondUI = (function () {
     el = document.createElement('div');
     el.id = SUMMARY_ID;
     el.className = 'pono-bond-summary';
-    // モーダル内に差し込む。 modal-content の末尾。
+    // モーダル内に差し込む (success-modal の「つぎへ」ボタン直前)。
     var modalContent = document.querySelector('#success-modal .modal-content');
     if (modalContent) {
-      // 「つぎへ」ボタンの直前に挿入したい
       var nextBtn = document.getElementById('btn-next-stage');
       if (nextBtn && nextBtn.parentNode === modalContent) {
         modalContent.insertBefore(el, nextBtn);
@@ -275,49 +144,16 @@ window.PonoBondUI = (function () {
 
   function renderSummary(ctx) {
     if (!ctx || !ctx.partner) return;
-    var stage = ctx.stage || {};
     var partner = ctx.partner;
-    var bondResult = ctx.bondResult || {};
+    var stage = ctx.stage || {};
     var stageId = stage.id != null ? stage.id : (ctx.stageIndex + 1);
-    var stageNum = (typeof ctx.stageIndex === 'number') ? (ctx.stageIndex + 1) : stageId;
-    var hearts = bondResult.hearts != null ? bondResult.hearts : 0;
-    var level = bondResult.level != null ? bondResult.level
-      : (window.PonoBond ? window.PonoBond.getLevel(partner.id, stageId) : 0);
-
-    // 経過時間の計測値を確定
-    var elapsedMs = 0;
-    if (stageStartMs && trackedStageId === stageId && trackedPartnerId === partner.id) {
-      elapsedMs = Math.max(0, Math.round(performance.now() - stageStartMs));
-    }
-    var prevKey = lastTimeKey(stageId, partner.id);
-    var prevMs = readNumber(prevKey);
-
-    // 永続化
-    if (elapsedMs > 0) lsSet(prevKey, elapsedMs);
-    lsSet(hintsKey(stageId, partner.id), stageHintsUsed | 0);
-    var prevCombo = readNumber(comboKey(stageId, partner.id));
-    var newCombo = Math.max(prevCombo, stageMaxCombo | 0);
-    lsSet(comboKey(stageId, partner.id), newCombo);
 
     var el = ensureSummary();
-    el.innerHTML = buildSummaryHtml({
-      partner: partner,
-      stageNum: stageNum,
-      hearts: hearts,
-      level: level,
-      elapsedMs: elapsedMs,
-      prevMs: prevMs,
-      hints: stageHintsUsed,
-      maxCombo: newCombo,
-    });
+    var line = (partner.name || '') + 'と クリアしたよ！';
+    el.innerHTML = '<p class="pono-bond-summary__line1">' + escapeHtml(line) + '</p>';
     el.classList.remove('hidden');
 
-    // Lv 昇格カットイン
-    if (bondResult.leveledUp && level >= 2) {
-      showLevelUpCutInAfterSuccessModal(partner, level);
-    }
-
-    // バッジ更新
+    // バッジ celebrate 演出
     refreshBadge(partner, stageId);
     playPartnerPanelAction(partner, {
       type: 'celebrate',
@@ -327,36 +163,13 @@ window.PonoBondUI = (function () {
     });
   }
 
-  // ===== Stage tracking (時間 / コンボ計測) =====
+  // ===== Stage tracking (バッジ表示更新のみ) =====
   function onStageStart(ctx) {
     var partner = ctx && ctx.partner;
     var stage = ctx && ctx.stage;
-    if (!partner || !stage) {
-      stageStartMs = null;
-      trackedStageId = null;
-      trackedPartnerId = null;
-      return;
-    }
+    if (!partner || !stage) return;
     var stageId = stage.id != null ? stage.id : ((ctx.stageIndex | 0) + 1);
-    stageStartMs = performance.now();
-    stageHintsUsed = 0;
-    stageMaxCombo = 0;
-    stageCurCombo = 0;
-    trackedStageId = stageId;
-    trackedPartnerId = partner.id;
     refreshBadge(partner, stageId);
-  }
-
-  function onAfterSnap(ctx) {
-    if (!ctx) return;
-    stageCurCombo = (stageCurCombo | 0) + 1;
-    if (stageCurCombo > stageMaxCombo) stageMaxCombo = stageCurCombo;
-  }
-
-  function onHintUsed() {
-    stageHintsUsed = (stageHintsUsed | 0) + 1;
-    // ヒント使用でコンボリセット
-    stageCurCombo = 0;
   }
 
   // ===== init =====
@@ -364,18 +177,10 @@ window.PonoBondUI = (function () {
   function init() {
     if (inited) return;
     inited = true;
-    // DOM 構築 (バッジは hidden 状態で待機)
     ensureBadge();
-    // hook 登録 (PonoAssistRegister が無い場合は静かにスキップ)
     if (typeof window.PonoAssistRegister === 'function') {
       window.PonoAssistRegister('afterStageReady', onStageStart);
-      window.PonoAssistRegister('afterSnap', onAfterSnap);
       window.PonoAssistRegister('afterShowSuccess', renderSummary);
-    }
-    // ヒントボタンがあれば計測対象に
-    var hintBtn = document.getElementById('btn-hint');
-    if (hintBtn) {
-      hintBtn.addEventListener('click', onHintUsed);
     }
     // 初期バッジ: 既に選択済みパートナーがあれば描画
     try {
@@ -387,17 +192,14 @@ window.PonoBondUI = (function () {
     } catch (_) {}
   }
 
-  // DOMContentLoaded 後に init
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
-    // 既に DOM 構築済みなら同期で
     setTimeout(init, 0);
   }
 
   return {
     init: init,
-    showLevelUpCutIn: showLevelUpCutIn,
     refreshBadge: refreshBadge,
     playPartnerPanelAction: playPartnerPanelAction,
   };

@@ -58,18 +58,10 @@
     return el;
   }
 
-  // ---------- Stars rendering ----------
-  function levelStars(level) {
-    var lv = Math.max(0, Math.min(3, level | 0));
-    var filled = '★'.repeat(lv);
-    var empty = '☆'.repeat(3 - lv);
-    return filled + empty;
-  }
-
   // ---------- Build grid ----------
   function renderGrid() {
     var partners = (window.PonoPartners && window.PonoPartners.list) || [];
-    var bondReady = !!(window.PonoBond && typeof window.PonoBond.getLevel === 'function');
+    var bondReady = !!(window.PonoBond && typeof window.PonoBond.isCleared === 'function');
     var fukurouUnlocked = bondReady && window.PonoBond.isFukurouUnlocked();
 
     // Header row
@@ -86,8 +78,8 @@
     var body = $('album-grid-body');
     body.innerHTML = '';
 
-    var lv3Total = 0;
-    var lv3Possible = 0;
+    var clearedTotal = 0;
+    var clearedPossible = 0;
 
     for (var p = 0; p < partners.length; p++) {
       var partner = partners[p];
@@ -118,21 +110,19 @@
 
       // Cells
       for (var stageId = 1; stageId <= STAGE_COUNT; stageId++) {
-        lv3Possible++;
-        var hearts = locked || !bondReady ? 0 : window.PonoBond.getHearts(partner.id, stageId);
-        var level = locked || !bondReady ? 0 : window.PonoBond.getLevel(partner.id, stageId);
-        if (level >= 3) lv3Total++;
+        clearedPossible++;
+        var cleared = !locked && bondReady && window.PonoBond.isCleared(partner.id, stageId);
+        if (cleared) clearedTotal++;
 
         var btn = createEl('button', {
-          cls: 'album-cell album-cell--lv' + level,
+          cls: 'album-cell ' + (cleared ? 'album-cell--cleared' : 'album-cell--uncleared'),
           attrs: {
             type: 'button',
             'data-partner-id': partner.id,
             'data-stage-id': String(stageId),
-            'data-hearts': String(hearts),
-            'data-level': String(level),
+            'data-cleared': cleared ? '1' : '0',
             'data-locked': locked ? '1' : '0',
-            'aria-label': partner.name + ' ステージ' + stageId + ' Lv' + level,
+            'aria-label': partner.name + ' ステージ' + stageId + (cleared ? ' クリア済み' : ' 未クリア'),
           },
         });
 
@@ -145,10 +135,10 @@
     }
 
     // Summary
-    $('album-summary-current').textContent = String(lv3Total);
-    $('album-summary-total').textContent = String(lv3Possible);
+    $('album-summary-current').textContent = String(clearedTotal);
+    $('album-summary-total').textContent = String(clearedPossible);
     var bar = $('album-summary-bar');
-    var pct = lv3Possible > 0 ? (lv3Total / lv3Possible) * 100 : 0;
+    var pct = clearedPossible > 0 ? (clearedTotal / clearedPossible) * 100 : 0;
     // Slight delay so the transition animates from 0%
     requestAnimationFrame(function () {
       bar.style.width = pct.toFixed(1) + '%';
@@ -158,9 +148,12 @@
   // ---------- Popup ----------
   function showPopup(opts) {
     $('album-popup-partner').textContent = opts.partnerName + ' と';
-    $('album-popup-stage').textContent = '「' + opts.stageTitle + '」で ' + opts.hearts + 'かい あそんだよ';
-    $('album-popup-hearts').textContent = '♥ ' + opts.hearts;
-    $('album-popup-level').textContent = 'Lv: ' + levelStars(opts.level);
+    var status = opts.cleared
+      ? '「' + opts.stageTitle + '」を クリアしたよ'
+      : '「' + opts.stageTitle + '」は まだ';
+    $('album-popup-stage').textContent = status;
+    $('album-popup-status').textContent = opts.cleared ? '✨ クリア済み' : '— 未クリア';
+    $('album-popup-status-sub').textContent = '';
     var popup = $('album-popup');
     popup.classList.remove('hidden');
     // focus the close button for keyboard a11y
@@ -170,8 +163,8 @@
   function showLockedPopup(partnerName) {
     $('album-popup-partner').textContent = partnerName;
     $('album-popup-stage').textContent = 'まだ あえないよ\nぜんステージ クリアで あえるかも？';
-    $('album-popup-hearts').textContent = '🔒 ひみつ';
-    $('album-popup-level').textContent = '';
+    $('album-popup-status').textContent = '🔒 ひみつ';
+    $('album-popup-status-sub').textContent = '';
     $('album-popup').classList.remove('hidden');
   }
 
@@ -199,14 +192,12 @@
       return;
     }
 
-    var hearts = parseInt(t.getAttribute('data-hearts'), 10) || 0;
-    var level = parseInt(t.getAttribute('data-level'), 10) || 0;
+    var cleared = t.getAttribute('data-cleared') === '1';
     var stageTitle = STAGE_TITLES[stageId] || ('ステージ ' + stageId);
     showPopup({
       partnerName: partner.name,
       stageTitle: stageTitle,
-      hearts: hearts,
-      level: level,
+      cleared: cleared,
     });
   }
 

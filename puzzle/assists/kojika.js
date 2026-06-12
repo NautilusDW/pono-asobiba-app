@@ -1,40 +1,23 @@
-// assists/kojika.js — コジカ「そうっとガイド」(soft-magnet) — Phase 3c
+// assists/kojika.js — コジカ「そうっとガイド」(soft-magnet)
 //
 // パートナー 'kojika' を選択しているときだけ動作する、ピースのドラッグ補助アシスト。
 //
-// === Phase 3c 仕様 ===
-// 1. **新しいステージで使えないバグ修正**:
-//    - currentStageId が beforeStageStart で取得失敗するケース (ctx.stage が
-//      未定義 / id 欠落) があり得たため、 drawOverlay/duringDrag 側でも
-//      フォールバック取得 (window.PonoBond.getSelectedPartner と組み合わせ) を行う。
-//    - Lv 取得時に partner.id ではなく PARTNER_ID 定数を直接使う (取り違え防止)。
-//    - ステージ別なかよし度が未記録でも、 こじか選択中なら Lv1 として能力を出す。
-//    - rotation が 0 でないピース (Stage 9+ challenge mode) でも glow は出すが、
-//      magnetic snap は rotation === 0 のときのみ (main.js trySnap と整合)。
-//
-// 2. **緑光 → 青光**:
-//    - メインカラー #3B82F6 (R59, G130, B246)
-//    - 副カラー   #60A5FA (R96, G165, B250)
-//    - 枠線上書き色も青系へ統一。
-//
-// 3. **青ガイドを通常スナップより先に表示 + 最近接スロットのみ反応**:
-//    - Lv1: 通常 snapDist × 1.25 以上
-//    - Lv2: 通常 snapDist × 1.45 以上
-//    - Lv3: 通常 snapDist × 1.65 以上
+// === 仕様 (仲良し度システム廃止後の固定挙動) ===
+// 1. **青ガイドを通常スナップより先に表示 + 最近接スロットのみ反応**:
+//    - 反応範囲: 通常 snapDist × 1.45 (固定)
 //    - ドラッグ中ピース自身のホームが「全未スナップピースのホームのうち最近接」で
 //      ある場合のみ glow を出す (他のスロットが近い時は反応しない)。
 //
-// 4. **離した時の magnetic snap (吸い付き)**:
-//    - kojika 装備時は pointerup 時点でホーム距離が拡張閾値内なら強制 snap。
-//    - Lv1: SNAP_DIST × 1.45
-//    - Lv2: SNAP_DIST × 1.65
-//    - Lv3: SNAP_DIST × 1.85
+// 2. **離した時の magnetic snap (吸い付き)**:
+//    - kojika 装備時は pointerup 時点でホーム距離が拡張閾値 (SNAP_DIST × 1.65) 内なら強制 snap。
 //    - 実装: afterStageReady で puzzleCanvas を取得し、 我々の pointerup を
 //      main.js のものより後に登録する。 main.js の trySnap が距離超過で失敗した後、
 //      我々が距離をチェックし window.PonoPuzzleForceSnapPiece(piece) を呼ぶ。
 //    - main.js の SNAP_DIST 定数本体は不変。
+//    - rotation が 0 でないピース (Stage 9+ challenge mode) では magnetic snap は無効
+//      (main.js trySnap と整合)。
 //
-// 5. **既存の枠線色変更ロジック維持** (緑 → 青)。
+// 3. **青グロー + 枠線上書き** (#3B82F6 / #60A5FA)。
 //
 // 既存 PonoAssistRegister のフック契約は維持。 partner.id !== 'kojika' なら no-op。
 (function () {
@@ -42,15 +25,11 @@
 
   var PARTNER_ID = 'kojika';
 
-  // Lv (1〜3) → { guideMul, alpha, magnetMul } 設定。 Lv0 は no-op。
-  // guideMul:   glow 反応範囲 (= 通常 snapDist * guideMul)
-  // alpha:      glow 不透明度の基準
-  // magnetMul:  pointerup 時の吸い付き拡張倍率 (= SNAP_DIST * magnetMul)
-  var LV_PROFILE = {
-    1: { guideMul: 1.25, alpha: 0.58, magnetMul: 1.45 },
-    2: { guideMul: 1.45, alpha: 0.72, magnetMul: 1.65 },
-    3: { guideMul: 1.65, alpha: 0.88, magnetMul: 1.85 },
-  };
+  // 仲良し度システム廃止後の固定プロファイル (旧 Lv2 相当, 中庸値):
+  //   guideMul:   glow 反応範囲 (= 通常 snapDist * guideMul)
+  //   alpha:      glow 不透明度の基準
+  //   magnetMul:  pointerup 時の吸い付き拡張倍率 (= SNAP_DIST * magnetMul)
+  var FIXED_PROFILE = { guideMul: 1.45, alpha: 0.72, magnetMul: 1.65 };
 
   // main.js drawPiece 側のピース枠線設定 (参考値):
   //   dragPiece の strokeStyle = '#F2915A' (オレンジ), lineWidth = 2.5
@@ -107,19 +86,9 @@
     return false;
   }
 
-  // 現在の bond レベル (0〜3)。 失敗時は 0。
-  // 注意: partner.id を引数経由で取らない (取り違え防止)。 PARTNER_ID を直接使う。
-  function currentLevel() {
-    try {
-      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function' && currentStageId != null) {
-        var lv = window.PonoBond.getLevel(PARTNER_ID, currentStageId);
-        if (lv >= 1 && lv <= 3) return lv;
-      }
-    } catch (_) {}
-    // 仲良し度はステージ別に保存されるため、初めてのステージでは lv=0 になる。
-    // パートナー選択中なら能力自体は Lv1 として出し、仲良し度は強さだけに使う。
-    if (isKojika(null)) return 1;
-    return 0;
+  // 仲良し度システム廃止: kojika 選択中なら常に有効、未選択なら無効。
+  function isActive() {
+    return isKojika(null);
   }
 
   // ctx.stage が来た時に currentStageId / currentSnapRatio を更新する共通処理。
@@ -212,9 +181,6 @@
     if (!ctx || !ctx.ctx) return;
     if (!isKojika(ctx.partner)) return;
 
-    // currentStageId == null は beforeStageStart 取り損ね時のみ発生。
-    // その場合 currentLevel() が 0 になり、 下の lv チェックで no-op になる。
-
     var piece = dragState.piece;
     if (!piece) return;
     // 注意: 「ドラッグ停止 400ms 経過」での glow 非表示は維持するが、
@@ -223,10 +189,8 @@
     var isStale = (Date.now() - dragState.lastTs > DRAG_STALE_MS);
     if (piece.snapped) return;
 
-    var lv = currentLevel();
-    if (lv < 1) return;
-    var profile = LV_PROFILE[lv];
-    if (!profile) return;
+    if (!isActive()) return;
+    var profile = FIXED_PROFILE;
 
     var cctx = ctx.ctx;
     var canvas = cctx.canvas;
@@ -286,7 +250,8 @@
     var alpha = profile.alpha * (0.40 + 0.60 * nearness);
 
     var canvasW = canvas.width || 0;
-    var rawRadius = pieceW * 0.6 * (1 + lv * 0.2);
+    // 旧 Lv2 相当の倍率 (1 + 2 * 0.2 = 1.4) で固定
+    var rawRadius = pieceW * 0.6 * 1.4;
     var radius = canvasW > 0 ? Math.min(rawRadius, canvasW * 0.15) : rawRadius;
 
     cctx.save();
@@ -398,10 +363,8 @@
       if (!piece || piece.snapped) return;
       if (piece.rotation) return; // 回転中ピースは snap 不可
 
-      var lv = currentLevel();
-      if (lv < 1) return;
-      var profile = LV_PROFILE[lv];
-      if (!profile) return;
+      if (!isActive()) return;
+      var profile = FIXED_PROFILE;
 
       var pieceW = dragState.lastPieceW;
       if (!pieceW || pieceW <= 0) return;
@@ -449,7 +412,7 @@
     _state: dragState,
     _currentStageId: function () { return currentStageId; },
     _currentSnapRatio: function () { return currentSnapRatio; },
-    _level: currentLevel,
-    _LV_PROFILE: LV_PROFILE,
+    _isActive: isActive,
+    _PROFILE: FIXED_PROFILE,
   };
 })();

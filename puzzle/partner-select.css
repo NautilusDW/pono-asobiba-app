@@ -346,7 +346,7 @@
   text-wrap: balance;
 }
 
-/* --- カード: 星 + ハート --- */
+/* --- カード: クリア進捗 --- */
 .pono-pselect__stats {
   display: flex;
   flex-direction: column;
@@ -358,20 +358,11 @@
   width: 100%;
 }
 
-.pono-pselect__stars {
-  font-size: 1.0rem;
-  letter-spacing: 1px;
-  line-height: 1;
-}
-
-.pono-pselect__stars-empty {
-  opacity: 0.3;
-}
-
-.pono-pselect__hearts {
-  font-size: 0.82rem;
+.pono-pselect__progress {
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #C84A4A;
+  color: #5D3A00;
+  line-height: 1.2;
 }
 
 /* --- ロック理由 --- */
@@ -611,14 +602,6 @@
     gap: 1px;
     margin-top: 2px;
     padding-top: 2px;
-  }
-
-  .pono-pselect__stars {
-    font-size: 0.74rem;
-  }
-
-  .pono-pselect__hearts {
-    font-size: 0.68rem;
   }
 
   .pono-pselect__difficulty {

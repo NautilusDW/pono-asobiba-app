@@ -19,7 +19,7 @@
     </header>
 
     <section class="album-summary" id="album-summary">
-      <div class="album-summary__label">ぜんマス Lv3 たっせい</div>
+      <div class="album-summary__label">クリア たっせい</div>
       <div class="album-summary__value">
         <span id="album-summary-current">0</span>
         <span class="album-summary__sep"> / </span>
@@ -30,22 +30,14 @@
       </div>
     </section>
 
-    <section class="album-legend" aria-label="なかよし度の凡例">
+    <section class="album-legend" aria-label="クリア状況の凡例">
       <div class="album-legend__item">
-        <span class="album-legend__swatch album-cell--lv0"></span>
-        <span class="album-legend__label">Lv0 まだ</span>
+        <span class="album-legend__swatch album-cell--uncleared"></span>
+        <span class="album-legend__label">未クリア</span>
       </div>
       <div class="album-legend__item">
-        <span class="album-legend__swatch album-cell--lv1"></span>
-        <span class="album-legend__label">Lv1 はじめまして</span>
-      </div>
-      <div class="album-legend__item">
-        <span class="album-legend__swatch album-cell--lv2"></span>
-        <span class="album-legend__label">Lv2 なかよし</span>
-      </div>
-      <div class="album-legend__item">
-        <span class="album-legend__swatch album-cell--lv3"></span>
-        <span class="album-legend__label">Lv3 だいすき</span>
+        <span class="album-legend__swatch album-cell--cleared"></span>
+        <span class="album-legend__label">クリア済み</span>
       </div>
     </section>
 
@@ -68,8 +60,8 @@
       <button type="button" id="album-popup-close" class="album-popup__close" aria-label="とじる">×</button>
       <div class="album-popup__partner" id="album-popup-partner"></div>
       <div class="album-popup__stage" id="album-popup-stage"></div>
-      <div class="album-popup__hearts" id="album-popup-hearts"></div>
-      <div class="album-popup__level" id="album-popup-level"></div>
+      <div class="album-popup__status" id="album-popup-status"></div>
+      <div class="album-popup__status-sub" id="album-popup-status-sub"></div>
     </div>
   </div>
 

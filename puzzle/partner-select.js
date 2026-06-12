@@ -55,28 +55,12 @@ window.PonoPartnerSelect = (function () {
     document.head.appendChild(link);
   }
 
-  /** 星表示 (現在ステージでの Lv 0〜3) — DOM 要素を返す (XSS 防止) */
-  function renderStars(level) {
-    var max = 3;
-    var filled = Math.max(0, Math.min(max, level | 0));
-    var s = '';
-    for (var i = 0; i < filled; i++) s += '★';
-    var empty = '';
-    for (var j = 0; j < max - filled; j++) empty += '☆';
-
+  /** 進捗テキスト (クリア済み: N/20) — DOM 要素を返す (XSS 防止) */
+  function renderClearProgress(clearedCount) {
+    var n = Math.max(0, clearedCount | 0);
     var wrap = document.createElement('span');
-    wrap.className = 'pono-pselect__stars';
-
-    var filledEl = document.createElement('span');
-    filledEl.className = 'pono-pselect__stars-filled';
-    filledEl.textContent = s;
-    wrap.appendChild(filledEl);
-
-    var emptyEl = document.createElement('span');
-    emptyEl.className = 'pono-pselect__stars-empty';
-    emptyEl.textContent = empty;
-    wrap.appendChild(emptyEl);
-
+    wrap.className = 'pono-pselect__progress';
+    wrap.textContent = 'クリア済み: ' + n + '/20';
     return wrap;
   }
 
@@ -173,11 +157,9 @@ window.PonoPartnerSelect = (function () {
       ? window.PonoPartners.getUnlockLabel(p)
       : '🔒 まだ';
 
-    var level = 0;
-    var total = 0;
+    var clearedCount = 0;
     if (Bond && !locked) {
-      try { level = Bond.getLevel(p.id, stageId) | 0; } catch (_) { level = 0; }
-      try { total = Bond.getTotal(p.id) | 0; } catch (_) { total = 0; }
+      try { clearedCount = Bond.getClearedCount(p.id) | 0; } catch (_) { clearedCount = 0; }
     }
 
     var currentSel = (Bond && typeof Bond.getSelectedPartner === 'function')
@@ -258,14 +240,10 @@ window.PonoPartnerSelect = (function () {
       reason.textContent = lockLabel;
       card.appendChild(reason);
     } else {
-      // 星 + ハート合計 — innerHTML を使わず DOM 要素で構築 (XSS 防止)
+      // クリア進捗のみ表示 (Lv 星 / ハート合計は廃止)
       var stats = document.createElement('div');
       stats.className = 'pono-pselect__stats';
-      stats.appendChild(renderStars(level));
-      var heartsEl = document.createElement('span');
-      heartsEl.className = 'pono-pselect__hearts';
-      heartsEl.textContent = '❤ ' + (total | 0);
-      stats.appendChild(heartsEl);
+      stats.appendChild(renderClearProgress(clearedCount));
       card.appendChild(stats);
     }
 
@@ -517,16 +495,6 @@ window.PonoPartnerSelect = (function () {
   }
 
   function isOpen() { return _open; }
-
-  /** 簡易 HTML escape (ステージID表示用) */
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
 
   return {
     show: show,

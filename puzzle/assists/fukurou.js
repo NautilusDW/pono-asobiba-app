@@ -47,13 +47,9 @@
   var LABEL_BG_COLOR     = 'rgba(255, 255, 255, 0.92)';
   var DASH_PATTERN       = [10, 6];          // Lv3 連結線
 
-  // Lv 別「最大ハイライト隣接数」
-  function maxNeighborsForLevel(lv) {
-    if (lv >= 3) return 3;
-    if (lv === 2) return 2;
-    if (lv === 1) return 1;
-    return 0;
-  }
+  // 仲良し度システム廃止後の固定値 (旧 Lv2 相当): 最大ハイライト隣接数 = 2
+  var FIXED_MAX_NEIGHBORS = 2;
+  var FIXED_LEVEL = 2;
 
   // ────────────────────────────────────────────────
   // モジュール状態
@@ -73,8 +69,7 @@
     showEnd:       0,
     rafId:         0,
 
-    // 現ステージ Lv (afterStageReady でキャッシュ、 毎フレーム再計算回避)
-    currentLevel:  0,
+    // ステージ情報 (afterStageReady でキャッシュ)
     currentStageId: null,
 
     // パートナーアクティブ判定 (afterStageReady で確定)
@@ -96,15 +91,7 @@
       ? performance.now() : Date.now();
   }
 
-  function resolveLevel(stageId) {
-    try {
-      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
-        var lv = window.PonoBond.getLevel(PARTNER_ID, stageId);
-        if (typeof lv === 'number' && isFinite(lv) && lv >= 0) return lv;
-      }
-    } catch (_) {}
-    return 0;
-  }
+  // 仲良し度システム廃止: Lv 取得は不要 (FIXED_LEVEL で固定)。
 
   function pickStageId(ctx) {
     try {
@@ -407,13 +394,11 @@
     state.pressPointerId = null;
     if (!piece || piece.snapped) return;
     if (!state.partnerActive) return;
-    if (state.currentLevel <= 0) return;
 
     var ctx = state.lastCtx;
     if (!ctx || !ctx.pieces || !ctx.pieceSize) return;
 
-    var cap = maxNeighborsForLevel(state.currentLevel);
-    var neighbors = collectNeighbors(piece, ctx.pieces, cap);
+    var neighbors = collectNeighbors(piece, ctx.pieces, FIXED_MAX_NEIGHBORS);
     if (!neighbors.length) return; // 角ピースで隣接 0 (理論上は起こらないが安全側)
 
     try {
@@ -437,7 +422,7 @@
 
   function onPointerDown(e) {
     try {
-      if (!state.partnerActive || state.currentLevel <= 0) return;
+      if (!state.partnerActive) return;
       var canvas = state.boundCanvas;
       if (!canvas) return;
       var ctx = state.lastCtx;
@@ -508,7 +493,6 @@
     clearHighlight();
     state.partnerActive = false;
     state.currentStageId = null;
-    state.currentLevel = 0;
     state.lastCtx = null;
   }
 
@@ -518,7 +502,6 @@
       state.partnerActive = !!(partner && partner.id === PARTNER_ID);
       var sid = pickStageId(ctx);
       state.currentStageId = sid;
-      state.currentLevel   = state.partnerActive ? resolveLevel(sid) : 0;
       // ctx.pieces / ctx.pieceSize / ctx.board が来る (main.js initPuzzle 末尾)
       state.lastCtx = {
         pieces:    (ctx && ctx.pieces) || null,
@@ -526,7 +509,7 @@
         board:     (ctx && ctx.board) || null,
       };
       // canvas が新しく差し替わっているのでイベントを再バインド
-      if (state.partnerActive && state.currentLevel > 0) {
+      if (state.partnerActive) {
         bindCanvasIfNeeded();
       }
     } catch (_) {}
@@ -570,7 +553,7 @@
     if (ctx.pieceSize) state.lastCtx.pieceSize = ctx.pieceSize;
     if (ctx.board)     state.lastCtx.board     = ctx.board;
 
-    if (!state.partnerActive || state.currentLevel <= 0) return;
+    if (!state.partnerActive) return;
     if (!state.activeTarget || !state.activeNeighbors.length) return;
 
     var pw = (ctx.pieceSize && ctx.pieceSize.w) || 0;
@@ -585,7 +568,7 @@
     var a = fadeAlpha(t);
     if (a <= 0) return;
 
-    drawSpotlight(ctx.ctx, pw, ph, a, state.currentLevel);
+    drawSpotlight(ctx.ctx, pw, ph, a, FIXED_LEVEL);
   }
 
   function onBeforeShowSuccess(_ctx) {
@@ -642,7 +625,6 @@
           firePressNow();
         },
         clear: clearHighlight,
-        setLevel: function (lv) { state.currentLevel = lv; state.partnerActive = true; },
       },
     };
   }

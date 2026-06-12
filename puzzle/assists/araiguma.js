@@ -33,7 +33,7 @@
 //
 // 依存:
 //   window.PonoAssistRegister
-//   window.PonoBond.getLevel(partnerId, stageId)
+//   (仲良し度システム廃止: 固定プロファイルで動作)
 //   window.PonoPuzzleForceSnapPiece / GetUnsnappedPieces / RequestRedraw
 //   ctx.canvas / ctx.pieceSize / ctx.pieces (drawOverlay context)
 // =============================================================================
@@ -47,21 +47,11 @@
   var PARTNER_ID = 'araiguma';
   var BTN_ID = 'pono-araiguma-btn';
 
-  // Lv 別パラメータ
+  // 仲良し度システム廃止後の固定プロファイル (旧 Lv2 相当, 中庸値):
   //   uses  : 1ステージあたりの使用可能回数
   //   pct   : 押下 1 回で助けるピース割合 (未スナップピース数に対して)
-  //   stepMs: 各ピース演出の間隔 (Lv3 は短く・テンポ良く)
-  var LV_PROFILES = {
-    1: { uses: 1, pct: 0.05, stepMs: 320 },
-    2: { uses: 2, pct: 0.12, stepMs: 280 },
-    3: { uses: 2, pct: 0.20, stepMs: 180 },
-  };
-  // Lv0 (なかよし度ゼロ) は Lv1 と同じ扱い (最低限の救済を必ず提供)
-  function profileFor(lv) {
-    if (lv >= 3) return LV_PROFILES[3];
-    if (lv >= 2) return LV_PROFILES[2];
-    return LV_PROFILES[1];
-  }
+  //   stepMs: 各ピース演出の間隔
+  var FIXED_PROFILE = { uses: 2, pct: 0.12, stepMs: 280 };
 
   // ---------------------------------------------------------------------------
   // State
@@ -70,7 +60,7 @@
     active: false,           // アライグマ選択中 + 環境 OK
     stageId: null,
     usesLeft: 0,
-    profile: LV_PROFILES[1],
+    profile: FIXED_PROFILE,
     // overlay 演出用キュー: 残った "光らせ中" のピース描画情報
     // [{ piece, untilTs, peakTs }]
     glowQueue: [],
@@ -79,24 +69,6 @@
     // 最新の overlay 描画コンテキスト保持 (canvas size / ctx)
     lastDrawCtx: null,
   };
-
-  // ---------------------------------------------------------------------------
-  // Bond Lv 取得
-  // ---------------------------------------------------------------------------
-  function resolveLevel(stage) {
-    try {
-      if (!stage) return 0;
-      var sid = stage.id != null ? stage.id : null;
-      if (sid == null) return 0;
-      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
-        var lv = window.PonoBond.getLevel(PARTNER_ID, sid) || 0;
-        if (lv < 0) lv = 0;
-        if (lv > 3) lv = 3;
-        return lv;
-      }
-    } catch (_) {}
-    return 0;
-  }
 
   function isAraiguma(partner) {
     if (partner && partner.id === PARTNER_ID) return true;
@@ -469,8 +441,7 @@
     }
     state.stageId = stage.id != null ? stage.id : null;
 
-    var lv = resolveLevel(stage);
-    state.profile = profileFor(lv);
+    state.profile = FIXED_PROFILE;
     state.usesLeft = state.profile.uses;
     state.active = true;
     // Phase 4 修正: タイトル/オープニング/prestart/scatter 等の表示状態を継続監視し

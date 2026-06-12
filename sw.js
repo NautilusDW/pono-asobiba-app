@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1035; // v1035: maze web_sweep rescue story remake
+const CACHE_VERSION = 1036; // v1036: puzzle drop bond/Lv system, fix kitsune hint count + housekeeping (dead CSS / stale comments / unused fn cleanup, behavior unchanged)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

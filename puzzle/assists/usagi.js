@@ -11,7 +11,7 @@
 //
 // 依存:
 //   window.PonoAssistRegister(hookName, fn)  - main.js が用意するフック登録 API
-//   window.PonoBond.getLevel(partnerId, stageId) - 現ステージのなかよしLv取得
+//   (仲良し度システム廃止: Lv 取得は不要 / 固定値で動作)
 //
 // このファイルは index.html から <script src="assists/usagi.js"> で読み込まれる前提。
 // 既存 main.js / index.html / style.css への変更は最小限に保ち、
@@ -47,7 +47,6 @@
   var pivot = null;       // 両耳を載せる回転ピボット <div>
   var fadeTimer = 0;      // setTimeout id (drag end debounce)
   var injectedCSS = false;
-  var currentLevel = 3;   // 既定: 最高精度 (なかよし情報が取れなかった時の安全側)
   var currentStageId = null;
   // 角度の指数平滑化用 (フレーム間ジッタ抑制)
   // state.lastAngle: 前フレームで適用した最終角度 (degrees, -180..180)
@@ -240,16 +239,8 @@
     return 'hsl(' + h.toFixed(1) + ',' + s.toFixed(1) + '%,' + l.toFixed(1) + '%)';
   }
 
-  /** なかよしレベル -> 角度ノイズ振幅 (度)
-   *  Phase 2 改善: ノイズを大幅削減 + updateEarsForPiece 側で指数平滑化を併用する。
-   *  Lv0/Lv1: 8° (旧 15°) — 「ふらつくけど方向は分かる」レベル
-   *  Lv2:     3° (旧 5°)
-   *  Lv3:     0° (現状維持) */
-  function noiseAmplitudeForLevel(level) {
-    if (level >= 3) return 0;
-    if (level === 2) return 3;
-    return 8; // Lv0/Lv1
-  }
+  /** 角度ノイズ振幅 (度) — 仲良し度システム廃止後、旧 Lv2 相当 (3°) で固定。 */
+  var FIXED_NOISE_AMP = 3;
 
   /** ノイズ加算 (ランダム ±amp) */
   function applyAngleNoise(angleDeg, amp) {
@@ -262,7 +253,7 @@
     if (piece && piece.stageId != null) return piece.stageId;
     try {
       // main.js の currentStage は外部公開されていないため、 BASE_STAGES[ stageIndex ] から推測
-      // 既知のグローバルが無くても致命的ではない (Lv 不明なら currentLevel=3 にフォールバック)。
+      // 既知のグローバルが無くても致命的ではない (固定ノイズ振幅で動作するため)。
       if (typeof window.currentStageIndex === 'number' && Array.isArray(window.BASE_STAGES)) {
         var s = window.BASE_STAGES[window.currentStageIndex];
         if (s && s.id != null) return s.id;
@@ -271,16 +262,7 @@
     return null;
   }
 
-  /** PonoBond からなかよしLvを取得 (取れなければ既定 3) */
-  function resolveLevel(stageId) {
-    try {
-      if (window.PonoBond && typeof window.PonoBond.getLevel === 'function') {
-        var lv = window.PonoBond.getLevel(PARTNER_ID, stageId);
-        if (typeof lv === 'number' && isFinite(lv)) return lv;
-      }
-    } catch (_) {}
-    return 3;
-  }
+  // 仲良し度システム廃止: Lv 取得は不要 (FIXED_NOISE_AMP で固定)。
 
   // ───────────────────────────────────────────────
   // 表示 / 更新
@@ -316,8 +298,8 @@
     while (angleDeg > 180) angleDeg -= 360;
     while (angleDeg < -180) angleDeg += 360;
 
-    // なかよしレベルに応じてノイズを乗せた raw 角度
-    var rawAngle = applyAngleNoise(angleDeg, noiseAmplitudeForLevel(currentLevel));
+    // 固定ノイズ振幅 (旧 Lv2 相当) を乗せた raw 角度
+    var rawAngle = applyAngleNoise(angleDeg, FIXED_NOISE_AMP);
 
     // 指数平滑化 (EMA): smoothed = 0.7 * lastAngle + 0.3 * rawAngle
     // ※ 角度の循環性 (例: +179° と -179° は隣接) を扱うため、差分を -180..180 に正規化してから補間
@@ -396,7 +378,6 @@
       if (!partner || partner.id !== PARTNER_ID) return;
       var stageId = (ctx && ctx.stage && ctx.stage.id != null) ? ctx.stage.id : null;
       currentStageId = stageId;
-      currentLevel = resolveLevel(stageId);
     } catch (_) {}
   }
 
@@ -407,7 +388,6 @@
       if (!partner || partner.id !== PARTNER_ID) return;
       var stageId = (ctx && ctx.stage && ctx.stage.id != null) ? ctx.stage.id : currentStageId;
       currentStageId = stageId;
-      currentLevel = resolveLevel(stageId);
       ensureDom();
     } catch (_) {}
   }
@@ -423,7 +403,6 @@
       // ステージ情報がまだ無ければここで補完
       if (currentStageId == null) {
         currentStageId = pickStageId(piece);
-        currentLevel = resolveLevel(currentStageId);
       }
       var wasActive = !!(root && root.classList.contains('is-active'));
       show();
@@ -506,7 +485,6 @@
     _debug: {
       show: show,
       hide: function () { if (root) root.classList.remove('is-active'); },
-      setLevel: function (lv) { currentLevel = lv; },
       updateEarsForPiece: updateEarsForPiece,
     },
   };

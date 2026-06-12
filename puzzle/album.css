@@ -1,6 +1,6 @@
 /* ===== もりのアルバム =====
  * 5×20 ヒートマップ (縦=パートナー5名 / 横=ステージ20枚)
- * Lv0=灰 / Lv1=薄ピンク / Lv2=ピンク / Lv3=濃ピンク+輝き
+ * 表示は「クリア済み / 未クリア」の 2 値 (旧 Lv0-3 の段階表示は廃止)
  */
 
 .album-body {
@@ -249,10 +249,8 @@
 
 .album-cell:active { transform: scale(0.92); }
 
-.album-cell--lv0 { background: #E8E0D6; }
-.album-cell--lv1 { background: #FBD7E1; }
-.album-cell--lv2 { background: #F291B0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5); }
-.album-cell--lv3 {
+.album-cell--uncleared { background: #E8E0D6; }
+.album-cell--cleared {
   background: linear-gradient(135deg, #E14B7A, #C2326A);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
@@ -261,7 +259,7 @@
   animation: albumCellShine 2.4s ease-in-out infinite;
 }
 
-.album-cell--lv3::after {
+.album-cell--cleared::after {
   content: '★';
   position: absolute;
   top: 50%;
@@ -372,14 +370,14 @@
   line-height: 1.4;
 }
 
-.album-popup__hearts {
+.album-popup__status {
   font-family: 'DotGothic16', monospace;
   font-size: 1.05rem;
   color: #C44A2A;
   margin-bottom: 8px;
 }
 
-.album-popup__level {
+.album-popup__status-sub {
   font-size: 1.4rem;
   color: #E14B7A;
   letter-spacing: 0.1em;
