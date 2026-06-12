@@ -2107,8 +2107,10 @@ function _paintConnectTile(tx, ty, size) {
   const y0 = Math.max(0, ty - half);
   const x1 = Math.min(GRID_W, x0 + sz);
   const y1 = Math.min(GRID_H, y0 + sz);
-  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
-    state.tiles[y][x] = 'path';
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      state.tiles[y][x] = 'path';
+    }
   }
 }
 
