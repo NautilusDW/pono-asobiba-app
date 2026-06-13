@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:464-oto-rhythm-left-ui-bubble-clip] Codex: user 指摘「OtoTouchリズムの左側UIが被っている / ポノの連続・フィーバー吹き出しが切れる」を受領。HANDOFF / git log / 対象CSSを確認し、既存 batch 448 以降の追加レイアウト調整として、左パネルの縦配置と吹き出しの画面内クランプを修正する。 (by Codex)
+- 2026-06-13 - [batch:464-oto-rhythm-left-ui-bubble-clip] DONE - Codex: OtoTouchリズムの `ばんそう` を横画面では上基準配置へ変更し、低背画面では `ねいろ` / `ばんそう` の高さを詰めて縦の重なりと下端はみ出しを解消。連続/フィーバー吹き出しは上端と右端をクランプし、低背時のサイズも調整。`sw.js` / `PAGE_CACHE_VERSION` は v1092。Node inline script parse、`node --check sw.js`、`git diff --check`、UTF-8/LF/BOMなし、Playwright 844x390 / 1664x422 / 1664x900 で左UIの非重なり・吹き出し画面内・スクショ目視を確認。レビュー観点: 自己クロスチェックで「左UIの縦食い込み」「吹き出し切れ」「低背/PC幅の副作用」を重点確認。 (by Codex)
 - 2026-06-13 - [batch:463-maze-water-complete-fullscreen-choppy] Codex: user 指摘「橋を渡る歩きが早すぎる / ヌルヌル動いてリアルすぎる / 完成画面が細長いのでフル画面寄りに」を受領。HANDOFF / git log / 対象CSSを確認し、既存完了演出への追加調整として、水渡り完了シーンを大きく表示し、歩行速度とコマ数を落とす。 (by Codex)
 - 2026-06-13 - [batch:463-maze-water-complete-fullscreen-choppy] DONE - Codex: 既存35コマ横歩き素材から12コマ派生シート `assets/images/characters/pono/pono_walk_side_sheet_12f.png` を作成し、水渡り完了シーンへ適用。ポノの横移動を 4.2s に遅くし、歩行コマ送りを `steps(11)` + 1.45s、上下揺れも `steps(2)` にしてヌルヌル感を抑制。`is-water-complete` 専用カードクラスを追加し、低横画面/desktop とも完成画面をほぼ全画面の大きさに拡大。`sw.js` は v1089。Node inline script parse、`node --check sw.js`、`git diff --check`、UTF-8/LF/BOMなし、Playwright 844x390 / 1100x760 でカード/ステージ寸法、12コマsprite参照、4.2s linear、横overflowなし、スクショ目視を確認。レビュー観点: 自己クロスチェックで「細長さ解消」「歩きの怖い滑らかさ低減」「既存水ゲームへの影響」を重点確認。 (by Codex)
 - 2026-06-13 - [batch:462-maze-walk-punch-timing] Codex: user 指摘「橋を渡る歩きの最初が速く最後が遅い / 力の手袋連打時にグローブが移動しないことがある」を受領。HANDOFF / git log / 対象CSS/JSを確認し、同一修正は未実装と判断。水渡り横移動を一定速度化し、岩くだき高速連打時の古いパンチタイマー干渉を修正する。 (by Codex)
