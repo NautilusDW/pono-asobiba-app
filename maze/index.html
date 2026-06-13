@@ -690,6 +690,153 @@ body.image-stage-mode .game-wrap {
   .rescue-scene .rescue-btn { justify-self: center; }
 }
 
+/* ── Stage3 teaser panel (polaroid collage of upcoming forest) ── */
+/* stage3 クリア後に1枚のパネル内で3枚のカードをコラージュ表示する。 */
+/* お邪魔虫名や仕掛け名を直接呼ばず、「ふしぎ」「あたらしい」「みたい」のトーンで予告する。 */
+.stage-teaser {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 9060;
+  padding: max(10px, env(safe-area-inset-top))
+           max(10px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom))
+           max(10px, env(safe-area-inset-left));
+}
+.stage-teaser.show { display: flex; animation: rescueFade 0.4s ease-out; }
+.stage-teaser .teaser-panel {
+  position: relative;
+  width: min(96vw, 880px);
+  height: min(82dvh, 560px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: rescueCardPop 0.5s ease-out;
+}
+.stage-teaser .teaser-lead {
+  position: absolute;
+  top: 4px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.55);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.stage-teaser .teaser-stack {
+  position: relative;
+  width: min(92vw, 820px);
+  height: min(64dvh, 420px);
+  margin-top: 16px;
+}
+.stage-teaser .teaser-card {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: clamp(180px, 28vw, 260px);
+  background: #fffdf6;
+  padding: 10px 10px 14px;
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform-origin: center center;
+  transition: transform 0.2s ease-out;
+}
+.stage-teaser .teaser-card .teaser-img-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #f0e8d6;
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.stage-teaser .teaser-card .teaser-img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.stage-teaser .teaser-card .teaser-img-wrap.is-mini img {
+  /* creature collage: 中央寄せの小ぶり表示 */
+  object-fit: contain;
+  padding: 8%;
+  background: linear-gradient(180deg, #fff9e8 0%, #ffeec0 100%);
+}
+.stage-teaser .teaser-card .teaser-img-wrap.is-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  padding: 6px;
+  background: linear-gradient(180deg, #fff9e8 0%, #ffeec0 100%);
+}
+.stage-teaser .teaser-card .teaser-img-wrap.is-collage img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  background: #fffaf0;
+  border-radius: 4px;
+}
+.stage-teaser .teaser-card .teaser-img-wrap.is-collage img:first-child {
+  grid-column: 1 / 3;
+}
+.stage-teaser .teaser-card .teaser-caption {
+  font-family: 'Klee One', 'Hiragino Maru Gothic ProN', system-ui, sans-serif;
+  font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+  font-weight: 900;
+  color: #5a3a18;
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+}
+/* 3枚のレイアウト: 左寄り(-7deg) / 中央前面(+4deg) / 右寄り(-5deg) */
+.stage-teaser .teaser-card.tc-1 {
+  transform: translate(-78%, -50%) rotate(-7deg);
+  z-index: 1;
+}
+.stage-teaser .teaser-card.tc-2 {
+  transform: translate(-50%, -52%) rotate(4deg);
+  z-index: 3;
+}
+.stage-teaser .teaser-card.tc-3 {
+  transform: translate(-22%, -48%) rotate(-5deg);
+  z-index: 2;
+}
+.stage-teaser .teaser-btn {
+  margin-top: 10px;
+  padding: 12px 32px;
+  font-size: clamp(1rem, 2.4vw, 1.15rem);
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, #f0a040, #c95a1a);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.stage-teaser .teaser-btn:active { transform: scale(0.96); }
+@media (orientation: portrait), (max-width: 540px) {
+  .stage-teaser .teaser-card {
+    width: clamp(150px, 38vw, 210px);
+  }
+  .stage-teaser .teaser-card.tc-1 {
+    transform: translate(-86%, -56%) rotate(-7deg);
+  }
+  .stage-teaser .teaser-card.tc-2 {
+    transform: translate(-50%, -50%) rotate(4deg);
+  }
+  .stage-teaser .teaser-card.tc-3 {
+    transform: translate(-14%, -54%) rotate(-5deg);
+  }
+}
+
 /* ── Encounter modal (creature mini-game) ── */
 /* エンカウンター紹介: キャラを主役にした縦積み。ミニゲーム中は .is-janken 側で上書き。 */
 .encounter-modal {
@@ -1489,9 +1636,9 @@ body.image-stage-mode .game-wrap {
 .water-complete-pono-track {
   position: absolute;
   left: 12%;
-  top: 42%;
+  top: 50%;
   width: clamp(42px, 6vw, 74px);
-  aspect-ratio: 50 / 57;
+  aspect-ratio: 40 / 57;
   z-index: 4;
   transform: translate(-50%, -50%);
   animation: waterPonoCross 2.35s cubic-bezier(0.22, 0.68, 0.28, 1) 0.24s forwards;
@@ -1500,10 +1647,11 @@ body.image-stage-mode .game-wrap {
   display: block;
   width: 100%;
   height: 100%;
-  background: url('../assets/images/characters/pono/pono_walk_side_sheet.png') 0 0 / 2400% 100% no-repeat;
+  background: url('../assets/images/characters/pono/pono_walk_side_sheet_35f.png') 0 0 / 3500% 100% no-repeat;
   filter: drop-shadow(0 5px 7px rgba(0,0,0,0.22));
+  will-change: background-position, transform;
   animation:
-    waterPonoWalkFrames 0.82s steps(23) infinite,
+    waterPonoWalkFrames 1.1s steps(34) infinite,
     waterPonoStepBob 0.42s ease-in-out infinite;
 }
 .water-complete-status {
@@ -2172,7 +2320,7 @@ body.image-stage-mode .game-wrap {
   }
   .water-complete-pono-track {
     width: clamp(34px, 8vw, 48px);
-    top: 39%;
+    top: 50%;
   }
   .water-complete-status {
     min-height: 1.45em;
@@ -2605,6 +2753,29 @@ body.image-stage-mode .game-wrap {
         <p id="rescueAcornText" class="rescue-acorn"></p>
       </div>
       <button class="rescue-btn" id="rescueBtn">つぎへ ▶</button>
+    </div>
+  </div>
+
+  <!-- Stage3 teaser (1パネル内で 3 枚のポラロイド風カードをコラージュ表示する予告ビート) -->
+  <!-- カードは creature/障害物/世界拡張をぼんやり示すのみ。種別名や戦闘語は使わない。 -->
+  <div class="stage-teaser" id="stageTeaser" aria-hidden="true">
+    <div class="teaser-panel">
+      <p class="teaser-lead" id="teaserLead">つぎは こんな かんじ だよ</p>
+      <div class="teaser-stack">
+        <div class="teaser-card tc-1">
+          <div class="teaser-img-wrap is-collage" id="teaserImg1Wrap"></div>
+          <p class="teaser-caption" id="teaserCap1"></p>
+        </div>
+        <div class="teaser-card tc-2">
+          <div class="teaser-img-wrap" id="teaserImg2Wrap"></div>
+          <p class="teaser-caption" id="teaserCap2"></p>
+        </div>
+        <div class="teaser-card tc-3">
+          <div class="teaser-img-wrap is-collage" id="teaserImg3Wrap"></div>
+          <p class="teaser-caption" id="teaserCap3"></p>
+        </div>
+      </div>
+      <button class="teaser-btn" id="teaserBtn">つぎへ ▶</button>
     </div>
   </div>
 
@@ -9611,6 +9782,9 @@ function onClear() {
           } else {
             _showMazeFinalOverlay();
           }
+        } else if (_shouldShowStage3Teaser()) {
+          // stage3 クリア後の予告ビート (free tier のみ)。1 枚パネル内に 3 枚のコラージュ。
+          _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
         } else {
           loadStage(stageIdx + 1);
         }
@@ -9641,9 +9815,94 @@ function showStageClearOverlay() {
     ovTitle.textContent = 'ステージ クリア！';
     ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
     ovBtn.textContent = 'つぎへ ▶';
-    ovBtn.onclick = function() { hideOverlay(); loadStage(stageIdx + 1); };
+    ovBtn.onclick = function() {
+      hideOverlay();
+      if (_shouldShowStage3Teaser()) {
+        _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+      } else {
+        loadStage(stageIdx + 1);
+      }
+    };
     _setOverlayAnimalIcon(stage && stage.story);
     showOverlay();
+  }
+}
+
+// stage3 クリア後の「予告ビート」: 3枚のポラロイド風カードを 1 枚のパネル内にコラージュ表示。
+// カードごとにタップを要求せず、まとめて見せて「つぎへ ▶」で進む。
+// 文言ポリシー: 種別名・戦闘語を使わない。「ふしぎ」「あたらしい」「みたい」の同調トーンで。
+function _showStage3TeaserPanel(onDone) {
+  const panel = document.getElementById('stageTeaser');
+  if (!panel) { if (onDone) onDone(); return; }
+  const img1Wrap = document.getElementById('teaserImg1Wrap');
+  const img2Wrap = document.getElementById('teaserImg2Wrap');
+  const img3Wrap = document.getElementById('teaserImg3Wrap');
+  const cap1 = document.getElementById('teaserCap1');
+  const cap2 = document.getElementById('teaserCap2');
+  const cap3 = document.getElementById('teaserCap3');
+  const btn  = document.getElementById('teaserBtn');
+  if (!img1Wrap || !img2Wrap || !img3Wrap || !btn) { if (onDone) onDone(); return; }
+
+  // カード1: 「あたらしい おともだち」予告 — creature 画像 3 体を集合配置 (種別名は出さない)
+  // 既存 CREATURE_KIND_DATA の imageUrl を流用。
+  const c1 = (CREATURE_KIND_DATA.pyon   && CREATURE_KIND_DATA.pyon.imageUrl)   || '';
+  const c2 = (CREATURE_KIND_DATA.kabuto && CREATURE_KIND_DATA.kabuto.imageUrl) || '';
+  const c3 = (CREATURE_KIND_DATA.hachi  && CREATURE_KIND_DATA.hachi.imageUrl)  || '';
+  img1Wrap.innerHTML = '';
+  [c1, c2, c3].forEach(function(src) {
+    if (!src) return;
+    const im = document.createElement('img');
+    im.src = src;
+    im.alt = '';
+    img1Wrap.appendChild(im);
+  });
+  cap1.textContent = 'あたらしい おともだち が いる みたい';
+
+  // カード2: 「ふしぎな しかけ」予告 — stage4 の背景写真をそのまま使い、世界の雰囲気で示唆。
+  // 障害物単体の rock.png ではなくステージ写真にすることで「具体名を呼ばない」原則を強化。
+  img2Wrap.innerHTML = '';
+  const stageBgEarly = document.createElement('img');
+  stageBgEarly.src = 'imageStages/stage4.jpg';
+  stageBgEarly.alt = '';
+  img2Wrap.appendChild(stageBgEarly);
+  cap2.textContent = 'ふしぎな みち が まってる';
+
+  // カード3: 「もりの おく」予告 — stage5 と stage6 の救出動物アイコンをコラージュ。
+  // 動物名は出さず「まだ あえてない こ」というトーン。
+  const a1 = 'imageStages/animals/shika_goal.png';
+  const a2 = 'imageStages/animals/lesser_panda_goal.png';
+  const a3 = 'imageStages/animals/ahiru_goal.png';
+  img3Wrap.innerHTML = '';
+  [a1, a2, a3].forEach(function(src) {
+    const im = document.createElement('img');
+    im.src = src;
+    im.alt = '';
+    img3Wrap.appendChild(im);
+  });
+  cap3.textContent = 'まだ あえてない こ が いる ね';
+
+  // ボタンは 1 回限りで再バインド (リスナー二重登録を防ぐ)
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', function() {
+    panel.classList.remove('show');
+    panel.setAttribute('aria-hidden', 'true');
+    if (onDone) onDone();
+  });
+  panel.classList.add('show');
+  panel.setAttribute('aria-hidden', 'false');
+}
+
+// stage3 クリア時に予告パネルを差し込むかの判定。
+// 方針: free tier は次の もり (stage4) が未解放なので「次への予告」として表示する。
+// book/sub は実物を遊べるので冗長になるため非表示。tier 判定が取れない場合は安全側で非表示。
+function _shouldShowStage3Teaser() {
+  if (stageIdx !== 3) return false;
+  if (!window.PonoTier || typeof window.PonoTier.isFree !== 'function') return false;
+  try {
+    return !!window.PonoTier.isFree();
+  } catch (e) {
+    return false;
   }
 }
 
