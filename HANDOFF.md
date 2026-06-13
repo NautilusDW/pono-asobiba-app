@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:453-maze-bowl-boss-effect-image2-raw] DONE - Codex: user 指摘「生成して=Image 2で生成」の取り違えを受け、ボス戦用のトゲトゲ/ダメージ/飛び去りエフェクト raw シートを GPT Image 2 built-in imagegen で生成。`tmp/alpha_pending/453_maze_bowl_boss_effects_image2_raw/boss_damage_effects_sheet_image2_raw.png` に納品。白背景、未透過、未切り抜き、8種入り、Format24bppRgb 1717x916 / 1.23MB。現行 in-game の Canvas エフェクトはまだ未差し替え。 (by Codex)
 - 2026-06-12 - [batch:439-maze-donguri-alpha-assets-implement] Codex: user が `D:\ポノのおへや\Maze\New\asset\お邪魔虫` に配置したアルファ付きお邪魔虫/どんぐり素材を実装。実パスは指定の「お邪魔虫　アルファ付き」ではなく `お邪魔虫` フォルダ。`ojama_boss.png` を透過版で上書きし、`ojama_gate.png` / `acorn_bag.png` を `assets/images/maze/gimmicks/donguri/` に配置、迷路上の webGimmick 表示をお邪魔虫ゲート/どんぐりぶくろ画像へ差し替える。`sw.js` v1058予定。 (by Codex)
 - 2026-06-12 - [batch:439-maze-donguri-alpha-assets-implement] DONE - Codex: `ojama_boss.png` をユーザー納品の透過ボスに差し替え、`ojama_gate.png` / `acorn_bag.png` を `assets/images/maze/gimmicks/donguri/` に配置。`maze/index.html` はステージ7の迷路上イベント表示をお邪魔虫ゲート/どんぐりぶくろ画像へ変更し、所持HUDもどんぐりぶくろ画像に更新。`sw.js` は v1058。画像寸法/alpha、Node inline script parse、`git diff --check`、UTF-8/LF、Playwright stage7 + boss phase smoke を確認。 (by Codex)
 - 2026-06-12 - [batch:440-maze-donguri-bowl-3d-hedge-tuning] Codex: user 指摘「モーダル内のイラスト差し替え、マップ上のお邪魔虫が大きい、ボーリング当たり判定が影寄り、背景/壁を擬似ではなく3Dレーン+生垣反射に」を受領。既存 batch 439 の素材を再利用し、`maze/index.html` の donguri_bowl 表示/物理を調整予定。 (by Codex)
