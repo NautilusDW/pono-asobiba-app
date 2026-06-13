@@ -1789,6 +1789,61 @@ body.image-stage-mode .game-wrap {
   box-shadow: 0 3px 9px rgba(82, 72, 46, 0.12);
   pointer-events: none;
 }
+.bowl-game__boss-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 238, 156, 0.34), rgba(45, 64, 37, 0.50) 48%, rgba(22, 31, 21, 0.68) 100%);
+}
+.bowl-game__boss-intro[hidden] {
+  display: none;
+}
+.bowl-game__boss-intro-panel {
+  width: min(92%, 420px);
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  border: 3px solid rgba(255, 210, 58, 0.92);
+  background: rgba(255, 250, 230, 0.96);
+  box-shadow: 0 12px 28px rgba(35, 26, 15, 0.28);
+  color: #5D4E37;
+  text-align: center;
+}
+.bowl-game__boss-intro-title {
+  font-size: clamp(1.08rem, 3vw, 1.45rem);
+  font-weight: 900;
+  line-height: 1.18;
+  margin: 0 0 8px;
+}
+.bowl-game__boss-intro-body {
+  font-size: clamp(0.84rem, 2.2vw, 1.02rem);
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 0 0 14px;
+}
+.bowl-game__boss-intro-btn {
+  min-height: 44px;
+  min-width: min(100%, 230px);
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #F8D956 0%, #E9A536 100%);
+  color: #5B3A12;
+  font: inherit;
+  font-size: clamp(0.9rem, 2.3vw, 1.05rem);
+  font-weight: 900;
+  line-height: 1.1;
+  box-shadow: 0 5px 0 #A5661B, 0 8px 16px rgba(79, 51, 18, 0.20);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.bowl-game__boss-intro-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #A5661B, 0 5px 10px rgba(79, 51, 18, 0.18);
+}
 .bowl-game__combo {
   position: absolute;
   z-index: 4;
@@ -6753,12 +6808,24 @@ function _detachBowlListeners(gs) {
     }
   } catch (_) {}
   try {
+    if (gs._onBossIntroPointerDown && gs.bossIntroBtn) {
+      gs.bossIntroBtn.removeEventListener('pointerdown', gs._onBossIntroPointerDown);
+    }
+  } catch (_) {}
+  try {
+    if (gs._onBossIntroStart && gs.bossIntroBtn) {
+      gs.bossIntroBtn.removeEventListener('click', gs._onBossIntroStart);
+    }
+  } catch (_) {}
+  try {
     if (gs._onResize) window.removeEventListener('resize', gs._onResize);
   } catch (_) {}
   gs._onPointerDown = null;
   gs._onPointerMove = null;
   gs._onPointerUp = null;
   gs._onPointerCancel = null;
+  gs._onBossIntroPointerDown = null;
+  gs._onBossIntroStart = null;
   gs._onResize = null;
   if (gs.rafId) { try { cancelAnimationFrame(gs.rafId); } catch (_) {} gs.rafId = null; }
 }
@@ -6804,7 +6871,7 @@ function _syncBowlCanvasSize(gs) {
   const r = gs.stageEl.getBoundingClientRect();
   if (Math.abs(r.width - gs.w) <= 1 && Math.abs(r.height - gs.h) <= 1) return;
   _resizeBowlCanvas(gs);
-  if (gs.layoutId && gs.phase !== 'boss') {
+  if (gs.layoutId && gs.phase === 'pins') {
     _layoutBowlPins(gs, gs.layoutId);
   } else if (gs.phase === 'boss') {
     _updateBowlBossMotion(gs, performance.now());
@@ -6874,6 +6941,13 @@ function _showBowlGame(c) {
     '<div class="bowl-game__title">びっくり ボーリング</div>' +
     '<div class="bowl-game__stage" id="bowlStage">' +
       '<canvas class="bowl-game__canvas" id="bowlCanvas" aria-label="どんぐりを ころがして おじゃま虫を たおすゲーム"></canvas>' +
+      '<div class="bowl-game__boss-intro" id="bowlBossIntro" hidden>' +
+        '<div class="bowl-game__boss-intro-panel">' +
+          '<p class="bowl-game__boss-intro-title">ボスが あらわれた！</p>' +
+          '<p class="bowl-game__boss-intro-body">ボタンを れんだして<br>どんぐりを いっぱい あてよう！</p>' +
+          '<button class="bowl-game__boss-intro-btn" id="bowlBossIntroBtn" type="button">れんだ スタート ▶</button>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
     '<div class="bowl-game__stage-note">下から上へ なぞって はなそう！</div>';
   encStageEl.innerHTML = '';
@@ -6885,6 +6959,8 @@ function _showBowlGame(c) {
   const gs = {
     stageEl: stageEl, canvas: canvasEl, ctx: ctx,
     noteEl: wrap.querySelector('.bowl-game__stage-note'),
+    bossIntroEl: wrap.querySelector('#bowlBossIntro'),
+    bossIntroBtn: wrap.querySelector('#bowlBossIntroBtn'),
     w: 0, h: 0, dpr: 1,
     layoutId: null, pins: [], donguris: [],
     particles: [],
@@ -6939,7 +7015,7 @@ function _showBowlGame(c) {
       } else {
         _applyBowlBossShot(gs, p.x, p.y);
       }
-    } else {
+    } else if (gs.phase === 'pins') {
       if (p.y < gs.h * BOWL_SWIPE_START_Y_REL) {
         if (gs.noteEl) gs.noteEl.textContent = '手前から なぞって はなそう！';
         return;
@@ -6989,10 +7065,25 @@ function _showBowlGame(c) {
   gs._onPointerUp = onPointerUp;
   gs._onPointerCancel = onPointerCancel;
 
+  const onBossIntroStart = function(e) {
+    if (gs !== _bowlGameState || gs.phase !== 'boss_intro') return;
+    try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+    _startBowlBossPhase(gs, performance.now());
+  };
+  if (gs.bossIntroBtn) {
+    const onBossIntroPointerDown = function(e) {
+      try { e.stopPropagation(); } catch (_) {}
+    };
+    gs.bossIntroBtn.addEventListener('pointerdown', onBossIntroPointerDown);
+    gs.bossIntroBtn.addEventListener('click', onBossIntroStart);
+    gs._onBossIntroPointerDown = onBossIntroPointerDown;
+  }
+  gs._onBossIntroStart = onBossIntroStart;
+
   const onResize = function() {
     if (gs !== _bowlGameState) { window.removeEventListener('resize', onResize); return; }
     _resizeBowlCanvas(gs);
-    if (gs.phase !== 'boss') {
+    if (gs.phase === 'pins') {
       _layoutBowlPins(gs, gs.layoutId);
     } else {
       _updateBowlBossMotion(gs, performance.now());
@@ -7038,7 +7129,7 @@ function _stepBowlReducedMotion(gs) {
   gs.particles.length = 0;
   _drawBowlScene(gs, now);
   if (!gs.locked && _checkBowlCleared(gs)) {
-    _startBowlBossPhase(gs, now);
+    _showBowlBossIntro(gs, now);
   }
 }
 
@@ -7046,7 +7137,7 @@ function _finishBowlSwipe(gs, cancelled) {
   const drag = gs && gs.aimDrag;
   if (!drag) return;
   gs.aimDrag = null;
-  if (cancelled || gs.phase === 'boss') return;
+  if (cancelled || gs.phase !== 'pins') return;
   const dx = drag.currentX - drag.startX;
   const dy = drag.currentY - drag.startY;
   const minDim = Math.min(gs.w, gs.h);
@@ -7138,8 +7229,28 @@ function _applyBowlBossShot(gs, tapX, tapY) {
   try { playTap(); } catch (_) {}
 }
 
+function _showBowlBossIntro(gs, now) {
+  if (!gs || gs.phase === 'boss' || gs.phase === 'boss_intro') return;
+  gs.phase = 'boss_intro';
+  gs.locked = true;
+  gs.aimDrag = null;
+  gs.donguris.length = 0;
+  for (let i = 0; i < gs.pins.length; i++) {
+    if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
+  }
+  if (gs.noteEl) gs.noteEl.textContent = 'ボスが あらわれた！';
+  if (gs.bossIntroEl) gs.bossIntroEl.hidden = false;
+  if (gs.bossIntroBtn) {
+    try { gs.bossIntroBtn.focus({ preventScroll: true }); } catch (_) {}
+  }
+  _bowlFloatText(gs, 'ボスだ！', gs.w * 0.5, gs.h * 0.28);
+  try { _playMzSePitch('correct', 2); } catch (_) { try { playTap(); } catch (__) {} }
+  _drawBowlScene(gs, now || performance.now());
+}
+
 function _startBowlBossPhase(gs, now) {
   if (!gs || gs.phase === 'boss') return;
+  if (gs.bossIntroEl) gs.bossIntroEl.hidden = true;
   gs.phase = 'boss';
   gs.locked = false;
   gs.donguris.length = 0;
@@ -7401,8 +7512,8 @@ function _updateBowlPhysics(gs, dt, now) {
     if (p.age >= p.life) gs.particles.splice(i, 1);
   }
   // Clear check
-  if (gs.phase !== 'boss' && !gs.locked && _checkBowlCleared(gs)) {
-    _startBowlBossPhase(gs, now);
+  if (gs.phase === 'pins' && !gs.locked && _checkBowlCleared(gs)) {
+    _showBowlBossIntro(gs, now);
   }
   if (gs.phase === 'boss' && gs.boss && now >= gs.boss.endsAt && !gs.locked) {
     gs.locked = true;
