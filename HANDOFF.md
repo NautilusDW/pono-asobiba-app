@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:475-bento-shop-plush-pono-no-shirt] DONE - Codex: user 指摘「獣感がある、なで肩にしたい、首肩が強そう、白いシャツはいらない」を受け、GPT Image 2 built-in imagegen で店内背景 raw 2案を生成。ポノは白シャツ/襟/袖なし、なで肩、首を立てない丸いぬいぐるみ体型、カウンターに柔らかく腕を乗せる方向へ調整。`tmp/alpha_pending/475_bento_shop_plush_pono_no_shirt_raw/` に保存。推奨は `shop_interior_plush_pono_no_shirt_variant02_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:474-bento-shop-soft-pono-counter-short] DONE - Codex: user 指摘「毛が硬そう、黄色い服の1枚目の方が柔らかそう、またカウンターが伸びすぎ」を受け、GPT Image 2 built-in imagegen で店内背景 raw 1案を生成。`473` の黄色い服案の柔らかい毛印象を基準に、針状/硬い毛束を避け、丸い毛束と淡い水彩ぼかしを優先。カウンターは女の子右側の支え付き収納で止め、右通路まで伸びない構造へ修正。`tmp/alpha_pending/474_bento_shop_soft_pono_counter_short_raw/shop_interior_soft_pono_counter_short_variant01_raw.png` に保存。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:473-bento-shop-pono-fur-ref-fix] DONE - Codex: user 指摘「ポノの頭身もおかしい、本来もっと毛が長い。スクショを見て作り直し」を受け、GPT Image 2 built-in imagegen で店内背景 raw 2案を生成。添付スクショ寄せでポノは帽子なし、長い毛束・白い口元/お腹・短い手足の比率を優先。`tmp/alpha_pending/473_bento_shop_pono_fur_ref_fix_raw/` に保存。推奨は `shop_interior_pono_fur_ref_fix_variant02_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:472-bento-shop-counter-support-fix] DONE - Codex: user 指摘「カウンターの長さに無理がある、宙に浮いている」を受け、GPT Image 2 built-in imagegen で店内背景修正版 raw 1案を生成。女の子右側でカウンターが自然に終わるようにし、右端に収納台/側板/支えを追加、右側平積み棚とは分離して通路を維持。`tmp/alpha_pending/472_bento_shop_counter_support_fix_raw/shop_interior_counter_support_fix_variant01_raw.png` に保存。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
