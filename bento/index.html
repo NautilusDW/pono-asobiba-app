@@ -6335,14 +6335,48 @@ function onFreePaletteDragMove(e) {
   updateFreePaletteDragGhost(e);
   const point = e ? eventToFreePoint(e) : null;
   if (!point) return;
+  let justCreated = false;
   if (!freePaletteDragState.uid) {
     const item = createFreePaletteDragItem(freePaletteDragState.def, point);
     if (!item) return;
     freePaletteDragState.uid = item.uid;
     freeSelectedItemUid = item.uid;
+    justCreated = true;
   }
   setFreeItemPosition(freePaletteDragState.uid, point.x, point.y);
-  renderFreeLayoutStage();
+  if (justCreated) {
+    renderFreeLayoutStage();
+    return;
+  }
+  const item = placedItems.find(i => i.uid === freePaletteDragState.uid);
+  if (!item) return;
+  const el = document.querySelector(`[data-free-uid="${freePaletteDragState.uid}"]`);
+  if (el) {
+    el.style.left = toPctX(item.x);
+    el.style.top = toPctY(item.y);
+  }
+  if (item.type === 'rice') {
+    placedItems.forEach(child => {
+      if (child.parentId === item.uid) {
+        const cel = document.querySelector(`[data-free-uid="${child.uid}"]`);
+        if (cel) {
+          cel.style.left = toPctX(child.x);
+          cel.style.top = toPctY(child.y);
+        }
+      }
+    });
+  }
+  if (item.snapTarget) {
+    placedItems.forEach(child => {
+      if (child.parentCupId === item.uid) {
+        const cel = document.querySelector(`[data-free-uid="${child.uid}"]`);
+        if (cel) {
+          cel.style.left = toPctX(child.x);
+          cel.style.top = toPctY(child.y);
+        }
+      }
+    });
+  }
 }
 function finishFreePaletteDrag(shouldFinalize) {
   if (!freePaletteDragState) return;
