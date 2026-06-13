@@ -2764,6 +2764,8 @@
     transform: translate(-50%, 0) rotateX(42deg) translateY(5px) scale(0.98) !important;
   }
   body.rhythm-layout.webgl-rhythm .instr-btn {
+    --btn-w: clamp(86px, 10.4vw, 190px);
+    --btn-h: clamp(82px, 8.4vw, 148px);
     background: transparent !important;
     border-color: transparent !important;
     box-shadow: none !important;
@@ -2794,6 +2796,14 @@
   body.rhythm-layout .instr-btn[data-idx="5"] { left: 75.625%; --key-hi:#BFDBFE; --key-mid:#60A5FA; --key-lo:#1D4ED8; --key-glow:rgba(96,165,250,0.46); }
   body.rhythm-layout .instr-btn[data-idx="6"] { left: 85.375%; --key-hi:#DDD6FE; --key-mid:#A78BFA; --key-lo:#6D28D9; --key-glow:rgba(167,139,250,0.44); }
   body.rhythm-layout .instr-btn[data-idx="7"] { left: 95.125%; --key-hi:#FBCFE8; --key-mid:#F472B6; --key-lo:#BE185D; --key-glow:rgba(244,114,182,0.44); }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="0"] { left: 29.264%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="1"] { left: 38.331%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="2"] { left: 47.399%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="3"] { left: 56.466%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="4"] { left: 65.534%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="5"] { left: 74.601%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="6"] { left: 83.669%; }
+  body.rhythm-layout.webgl-rhythm .instr-btn[data-idx="7"] { left: 92.736%; }
   @media (max-width: 420px) {
     body.rhythm-layout .instr-btn {
       --sz: 66px;
@@ -2822,6 +2832,10 @@
     }
     /* 横向き低背端末ではノートをさらに縮小 */
     body.rhythm-layout #rhythm-lanes { --gh-sz: 56px; }
+    body.rhythm-layout.webgl-rhythm .instr-btn {
+      --btn-w: 86px;
+      --btn-h: 82px;
+    }
   }
 
   /* ──────────────────────────────────────────────────────────────
@@ -5665,10 +5679,12 @@ function _gh3DDrawOneKey(lane, mvp) {
   var label = _rhythmNoteLabel(lane);
   var tex = _gh3DKeyTextureFor(lane, label);
   var rgb = _gh3DLaneRgb(lane);
-  var centerX = -GH3D_HALF_W + (lane + 0.5) * GH3D_LANE_W;
+  var keyHalfW = GH3D_HALF_W - 0.28;
+  var keyLaneW = (keyHalfW * 2) / 8;
+  var centerX = -keyHalfW + (lane + 0.5) * keyLaneW;
   var centerZ = GH3D_NEAR_Z + 0.03;
-  var w = 0.84;
-  var d = 0.96;
+  var w = 0.78;
+  var d = 0.92;
   var h = pressed ? 0.07 : 0.14;
   var topY = pressed ? 0.58 : 0.7;
   var tilt = 0.46;
