@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1090; // v1090: stage3 teaser panel v3 (shrink pyon, viewport-fit, silhouettes, tilt)
+const CACHE_VERSION = 1091; // v1091: stage3 teaser v3.1 — safer silhouette (kumo→strengthRock), align fix, headline polish
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

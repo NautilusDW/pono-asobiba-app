@@ -692,7 +692,8 @@ body.image-stage-mode .game-wrap {
 
 /* ── Stage3 teaser poster v3 (絵本のオビ風 / 紙質感 + 微小傾き + シルエット透かし) ── */
 /* v3 では: pyon 突出廃止 (3 体均等)、要素を 2/3 縮小、button 必ず viewport 内、 */
-/* 未配置 creature (hatahata/amenbo/kumo) を薄いシルエットで watermark 配置、 */
+/* 未配置 creature (hatahata/amenbo/strengthRock) を薄いシルエットで watermark 配置、 */
+/* (v1091: 元は kumo だったが 3-6 歳児への怖さ配慮で岩=strengthRock に差替) */
 /* 各 cluster を ±2°〜3° の微小角度で「手で並べた」風に。文言ポリシーは従来通り。 */
 .stage-teaser {
   position: fixed; inset: 0;
@@ -783,7 +784,8 @@ body.image-stage-mode .game-wrap {
   filter: brightness(0) saturate(100%) opacity(0.18);
 }
 .stage-teaser .teaser-silhouettes img.sil-c {
-  top: 8%; right: 38%;
+  /* v1091: ヘッドライン真下と被るのを避け、右上隅に退避 */
+  top: 4%; right: 8%;
   width: 44px; height: 44px;
   transform: rotate(8deg);
   filter: brightness(0) saturate(100%) opacity(0.15);
@@ -798,10 +800,8 @@ body.image-stage-mode .game-wrap {
   font-size: clamp(1.0rem, 2.8vw, 1.35rem);
   font-weight: 900;
   color: #5a3a18;
-  text-shadow:
-    0 1px 0 #fff,
-    0 2px 4px rgba(120,80,30,0.20),
-    0 0 12px rgba(255,235,180,0.6);
+  /* v1091: 12px グロウを削除して紙印刷物感を純化。残るのは紙押し感のための白い 1px のみ。 */
+  text-shadow: 0 1px 0 #fff;
   letter-spacing: 0.04em;
   margin: 2px 0 0;
   line-height: 1.3;
@@ -844,12 +844,14 @@ body.image-stage-mode .game-wrap {
   opacity: 0.85;
 }
 /* creature / animal 集合 — 3 体を均等に横並び (上段ワイドの突出を撤廃) */
+/* v1091: align-items を end → center に変更。縦横アスペクト差で底揃えだとバラつくため、 */
+/* 「均等プレート」感を出すために中央揃えに統一する。 */
 .stage-teaser .teaser-cluster {
   width: 100%;
   max-width: 180px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  align-items: end;
+  align-items: center;
   gap: 2px;
   padding: 4px;
 }
@@ -10030,15 +10032,16 @@ function _showStage3TeaserPanel(onDone) {
     slot3.appendChild(im);
   });
 
-  // シルエット透かし: 未配置 creature (hatahata / amenbo / kumo) を panel 余白に小さく配置
+  // シルエット透かし: 未配置 creature (hatahata / amenbo / strengthRock) を panel 余白に小さく配置
+  // ※sil-c は当初 kumo (8本足影) を使っていたが、3-6歳児への怖さ配慮で strengthRock (岩) に差替 (v1091)
   // CSS の filter: brightness(0) opacity(...) で純黒シルエット化、装飾のみ。
   const silWrap = document.getElementById('teaserSilhouettes');
   if (silWrap) {
     silWrap.innerHTML = '';
     const silDefs = [
-      { src: (CREATURE_KIND_DATA.hatahata && CREATURE_KIND_DATA.hatahata.imageUrl) || '', cls: 'sil-a' },
-      { src: (CREATURE_KIND_DATA.amenbo   && CREATURE_KIND_DATA.amenbo.imageUrl)   || '', cls: 'sil-b' },
-      { src: (CREATURE_KIND_DATA.kumo     && CREATURE_KIND_DATA.kumo.imageUrl)     || '', cls: 'sil-c' }
+      { src: (CREATURE_KIND_DATA.hatahata     && CREATURE_KIND_DATA.hatahata.imageUrl)     || '', cls: 'sil-a' },
+      { src: (CREATURE_KIND_DATA.amenbo       && CREATURE_KIND_DATA.amenbo.imageUrl)       || '', cls: 'sil-b' },
+      { src: (CREATURE_KIND_DATA.strengthRock && CREATURE_KIND_DATA.strengthRock.imageUrl) || '', cls: 'sil-c' }
     ];
     silDefs.forEach(function(def) {
       if (!def.src) return;
