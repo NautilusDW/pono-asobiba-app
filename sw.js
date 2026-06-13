@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1083; // v1083: add water bridge completion walk scene
+const CACHE_VERSION = 1084; // v1084: enlarge strength rock game and improve hints
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
