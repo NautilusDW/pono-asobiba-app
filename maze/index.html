@@ -1533,6 +1533,13 @@ body.image-stage-mode .game-wrap {
   pointer-events: none;
   z-index: 7;
 }
+.strength-effect-layer {
+  position: absolute;
+  inset: -18%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 8;
+}
 .strength-chip {
   position: absolute;
   left: calc(50% + var(--ox, 0px));
@@ -1545,6 +1552,18 @@ body.image-stage-mode .game-wrap {
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.24));
   transform: translate(-50%, -50%) scale(0.55) rotate(0deg);
   animation: strengthChipFly var(--dur, 560ms) cubic-bezier(0.14, 0.74, 0.32, 1) forwards;
+}
+.strength-hit-effect {
+  position: absolute;
+  left: calc(50% + var(--x, 0px));
+  top: calc(50% + var(--y, 0px));
+  width: var(--w, 118px);
+  height: auto;
+  object-fit: contain;
+  opacity: 0;
+  filter: drop-shadow(0 5px 7px rgba(0,0,0,0.20));
+  transform: translate(-50%, -50%) scale(0.55) rotate(var(--rot, 0deg));
+  animation: strengthHitEffect var(--dur, 360ms) ease-out forwards;
 }
 .strength-rock-btn.is-hit .strength-game__glove {
   opacity: 0.72;
@@ -1713,6 +1732,20 @@ body.image-stage-mode .game-wrap {
       translate(var(--dx, 90px), var(--dy, -90px))
       scale(var(--scale, 0.92))
       rotate(var(--rot, 180deg));
+  }
+}
+@keyframes strengthHitEffect {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.46) rotate(var(--rot, 0deg));
+  }
+  30% {
+    opacity: 0.96;
+    transform: translate(-50%, -50%) translate(var(--mx, 0px), var(--my, 0px)) scale(0.95) rotate(var(--rot, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, -16px)) scale(var(--scale, 1.18)) rotate(var(--rot-end, 8deg));
   }
 }
 
@@ -6472,6 +6505,7 @@ function _showStrengthPushGame() {
         '<div class="strength-game__impact-zone">' +
           '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
           '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
+          '<div class="strength-effect-layer" id="strengthEffectLayer" aria-hidden="true"></div>' +
           '<img class="strength-game__spark" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="ちから">' +
           '<span class="strength-game__glove strength-game__glove--left" aria-hidden="true">' +
             '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_punch_left.png" alt="">' +
@@ -6558,6 +6592,48 @@ function _spawnStrengthDebrisBurst(finalHit) {
   }
 }
 
+function _spawnStrengthImpactEffect(finalHit, punchHand, tapCount) {
+  const layer = document.getElementById('strengthEffectLayer');
+  if (!layer) return;
+  const base = MAZE_DONGURI_EFFECT_ASSET_BASE;
+  const version = BOWL_EFFECT_ASSET_VERSION;
+  const normal = [
+    'damage_slash.png',
+    'damage_shock_ring.png',
+    'damage_sparkles.png',
+  ];
+  const files = finalHit
+    ? ['damage_hit_flash.png', 'damage_poof.png']
+    : [normal[Math.abs(tapCount || 0) % normal.length]];
+  const fromRight = punchHand === 'right';
+  for (let i = 0; i < files.length; i++) {
+    const img = document.createElement('img');
+    img.className = 'strength-hit-effect';
+    img.src = base + files[i] + version;
+    img.alt = '';
+    const seed = (tapCount || 1) * 19 + i * 31;
+    const x = (fromRight ? 20 : -20) + Math.sin(seed) * 16 + i * 10;
+    const y = -18 + Math.cos(seed * 1.4) * 10 - i * 6;
+    const dx = (fromRight ? -20 : 20) + Math.sin(seed * 1.7) * 14;
+    const dy = -24 - i * 14;
+    const size = finalHit ? (i === 0 ? 168 : 134) : 112;
+    const dur = finalHit ? 520 : 340;
+    img.style.setProperty('--x', x.toFixed(1) + 'px');
+    img.style.setProperty('--y', y.toFixed(1) + 'px');
+    img.style.setProperty('--mx', (x * 0.28).toFixed(1) + 'px');
+    img.style.setProperty('--my', (y * 0.20).toFixed(1) + 'px');
+    img.style.setProperty('--dx', dx.toFixed(1) + 'px');
+    img.style.setProperty('--dy', dy.toFixed(1) + 'px');
+    img.style.setProperty('--w', size + 'px');
+    img.style.setProperty('--dur', dur + 'ms');
+    img.style.setProperty('--scale', finalHit ? '1.36' : '1.16');
+    img.style.setProperty('--rot', ((fromRight ? -1 : 1) * (8 + i * 13)).toFixed(1) + 'deg');
+    img.style.setProperty('--rot-end', ((fromRight ? -1 : 1) * (20 + i * 18)).toFixed(1) + 'deg');
+    layer.appendChild(img);
+    setTimeout(function() { try { img.remove(); } catch (_) {} }, dur + 90);
+  }
+}
+
 function _onStrengthRockTap() {
   const gs = _strengthGameState;
   if (!gs || gs.locked) return;
@@ -6571,6 +6647,7 @@ function _onStrengthRockTap() {
     : (damageRatio >= 0.7 ? 'あと もうすこし！' : (damageRatio >= 0.4 ? 'ひびが はいってきた！' : 'れんだして くだこう！'));
   playRockHit(finalHit);
   _spawnStrengthDebrisBurst(finalHit);
+  _spawnStrengthImpactEffect(finalHit, punchHand, gs.tapCount);
   const btn = document.getElementById('strengthRockBtn');
   if (btn) {
     btn.classList.remove('is-hit', 'is-hit-left', 'is-hit-right');
@@ -6582,7 +6659,12 @@ function _onStrengthRockTap() {
     }, 260);
   }
   _renderStrengthPushGame();
-  if (gs.tapCount >= gs.required) _resolveStrengthPushGame();
+  if (gs.tapCount >= gs.required) {
+    gs.locked = true;
+    _strengthGimmickSetTimeout(function() {
+      if (_strengthGameState === gs) _resolveStrengthPushGame();
+    }, 420);
+  }
 }
 
 function _failStrengthPushGame() {
@@ -7722,6 +7804,7 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
   pin.joltVx = (pin.joltVx || 0) + (knockDirX || 0) * Math.min(gs.w, gs.h) * 0.38;
   pin.joltVy = (pin.joltVy || 0) + (knockDirY || 0) * Math.min(gs.w, gs.h) * 0.16;
   _spawnBowlGlob(gs, pin.x, pin.y, false);
+  _spawnBowlPinFallEffect(gs, pin, depth, now);
   if (depth === 0) {
     try { _playMzSePitch('correct', 0); } catch (_) { try { playTap(); } catch (__) {} }
   } else {
@@ -7781,6 +7864,43 @@ function _spawnBowlGlob(gs, x, y, isMiss) {
   }
 }
 
+function _limitBowlEffects(gs, group, maxCount) {
+  if (!gs || !gs.effects || !group || !maxCount) return;
+  let count = 0;
+  for (let i = gs.effects.length - 1; i >= 0; i--) {
+    if (gs.effects[i].group === group) count++;
+  }
+  for (let i = 0; i < gs.effects.length && count >= maxCount; i++) {
+    if (gs.effects[i].group === group) {
+      gs.effects.splice(i, 1);
+      i--;
+      count--;
+    }
+  }
+}
+
+function _spawnBowlPinFallEffect(gs, pin, depth, now) {
+  if (!gs || !pin || _bowlReducedMotion()) return;
+  if (!gs.effects) gs.effects = [];
+  const minDim = Math.min(gs.w, gs.h);
+  const metrics = _bowlPinMetrics(gs, pin);
+  const seed = ((pin.id || 0) * 29 + depth * 17 + (gs.bgSeed & 255)) | 0;
+  const kinds = ['slash', 'ring', 'spark', 'burst'];
+  const kind = kinds[Math.abs(seed) % kinds.length];
+  _limitBowlEffects(gs, 'pin', 7);
+  gs.effects.push({
+    group: 'pin',
+    kind: kind,
+    x: metrics.hitX + Math.sin(seed * 1.3) * minDim * 0.018,
+    y: metrics.hitY + Math.cos(seed * 1.7) * minDim * 0.014,
+    r: Math.max(18, minDim * (0.040 + Math.min(2, depth) * 0.004)),
+    rot: Math.sin(seed) * 0.75,
+    bornAt: now,
+    endsAt: now + 720,
+    seed: seed,
+  });
+}
+
 function _spawnBowlBossDamageEffect(gs, now, x, y) {
   if (!gs || _bowlReducedMotion()) return;
   if (!gs.effects) gs.effects = [];
@@ -7789,14 +7909,16 @@ function _spawnBowlBossDamageEffect(gs, now, x, y) {
   const seed = (bossHits * 37 + (gs.bgSeed & 255)) | 0;
   const dx = Math.sin(seed * 1.91) * minDim * 0.050;
   const dy = Math.cos(seed * 1.37) * minDim * 0.038;
+  _limitBowlEffects(gs, 'boss', 2);
   gs.effects.push({
-    kind: ['burst', 'poof', 'slash', 'ring', 'spark', 'flash'][bossHits % 6],
+    group: 'boss',
+    kind: ['poof', 'flash'][bossHits % 2],
     x: x + dx,
     y: y + dy - minDim * 0.015,
-    r: Math.max(34, minDim * (0.076 + (bossHits % 3) * 0.012)),
+    r: Math.max(28, minDim * (0.058 + (bossHits % 2) * 0.008)),
     rot: Math.sin(seed) * 0.65,
     bornAt: now,
-    endsAt: now + 1040,
+    endsAt: now + 680,
     seed: seed,
   });
 }

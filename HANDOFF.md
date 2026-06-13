@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:456-maze-effect-balance] Codex: user 指摘「ボスの効果が一度に多すぎる。ボスは煙+もう1種程度、他は雑魚撃破とボクシンググローブ岩崩しへ」を受領。ボスHIT演出を絞り、通常ピン転倒/岩パンチへ既存エフェクト画像を再配分予定。 (by Codex)
+- 2026-06-13 - [batch:456-maze-effect-balance] DONE - Codex: どんぐりボスHITの画像効果を `poof` + `flash` の2種に限定し、同時表示も最大2個へ制限。通常お邪魔虫ピン転倒時に `slash/ring/spark/burst` を小さめに出す処理を追加し、岩割りゲームのパンチ時にも `damage_*` 画像エフェクトを重ねるよう実装。最後の岩破壊は420msだけ演出を見せてから結果へ遷移。`sw.js` は v1078。Node parse、`git diff --check`、Playwright desktop/低横画面でボス効果数・通常ピン効果・岩パンチ効果・横overflowなしを確認。 (by Codex)
 - 2026-06-13 - [batch:455-maze-strength-water-bg-image2] Codex: user 依頼「岩を壊すゲームの背景を生成、アメンボゲームも背景/全体を作り直し」を受領。既存同用途の生成背景は HANDOFF/git log/assets で見当たらず。GPT Image 2 built-in imagegen で `strength` / `water` 背景を生成し、既存ミニゲームUIへ実装予定。 (by Codex)
 - 2026-06-13 - [batch:455-maze-strength-water-bg-image2] DONE - Codex: GPT Image 2 built-in imagegen で岩割り背景 `assets/images/maze/gimmicks/strength/strength_stage_bg.png` とアメンボ背景 `assets/images/maze/gimmicks/water/water_bridge_bg.png` を生成・最適化して実装。岩割り/アメンボのstage背景を画像優先へ変更し、アメンボ側は旧CSS水たまり/岸疑似描画を外して半透明ルート/スロットを重ねる構成へ更新。`sw.js` は v1077。Node parse、`git diff --check`、画像寸法/容量、Playwright desktop/低横画面で背景ロード・操作物表示・横overflowなしを確認。 (by Codex)
 - 2026-06-13 - [batch:454-maze-bowl-effect-alpha-implement] DONE - Codex: user 納品 `D:\ポノのおへや\Maze\New\asset\エフェクト` のalpha付き8枚を `assets/images/maze/gimmicks/donguri/effects/` に用途名で配置し、どんぐりボーリングのボス戦に実装。ボス戦中の点滅トゲトゲ、HIT時の6種循環ダメージ画像、撃破時の渦画像をCanvas描画から画像アセット優先へ変更し、未ロード時のみ旧Canvas描画へフォールバック。`sw.js` は v1076。Node inline script parse、`git diff --check`、画像alpha/サイズ、Playwright desktop/低横画面で画像ロード・HITエフェクト・撃破飛び去り・横overflowなしを確認。 (by Codex)
