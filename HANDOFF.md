@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:472-bento-shop-counter-support-fix] DONE - Codex: user 指摘「カウンターの長さに無理がある、宙に浮いている」を受け、GPT Image 2 built-in imagegen で店内背景修正版 raw 1案を生成。女の子右側でカウンターが自然に終わるようにし、右端に収納台/側板/支えを追加、右側平積み棚とは分離して通路を維持。`tmp/alpha_pending/472_bento_shop_counter_support_fix_raw/shop_interior_counter_support_fix_variant01_raw.png` に保存。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:471-bento-shop-pono-design-walkway-fix] DONE - Codex: user 指摘「ポノのキャラデザ/等身がおかしい、そこにお弁当箱を置くと出入りできない」を受け、GPT Image 2 built-in imagegen で店内背景修正版 raw 1案を生成。既存Bento用ポノ参照に寄せて丸い短胴マスコット比率にし、右側平積み棚を壁寄りへ離して通路を確保。`tmp/alpha_pending/471_bento_shop_pono_design_walkway_fix_raw/shop_interior_pono_design_walkway_fix_variant01_raw.png` に保存。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:470-bento-shop-pono-hat-rug] DONE - Codex: user 指定「テイストはこの案が良いのでポノを出す、左下の黄色ラグ/テーブルクロス感を変更、帽子は白いふくらみのある店員帽寄り」を受け、GPT Image 2 built-in imagegen で修正版 raw 1案を生成。`tmp/alpha_pending/470_bento_shop_pono_hat_rug_raw/shop_interior_pono_hat_rug_variant01_raw.png` に保存。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:469-bento-shop-extra-box-shapes] DONE - Codex: user 要望「今後増やす予定のお弁当箱の形と蓋を3-4種類、ショーケース/後ろ棚/右平積みに混ぜる」を受け、GPT Image 2 built-in imagegen で店内背景 raw 3案を生成。`tmp/alpha_pending/469_bento_shop_extra_box_shapes_raw/` に保存。推奨は `shop_interior_extra_box_shapes_variant03_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
