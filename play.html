@@ -1195,10 +1195,9 @@
     /* MVP: hide acorn / thankyou / stamp UI if any module tries to show it */
     .acorn-badge-play, .thankyou-badge-play { display: none !important; }
     /* Web MVP: 開発用 UI は ?dev=1 のときだけ表示 */
-    .dev-link, .dev-section, #passwordUnlockReset { display: none; }
+    .dev-link, .dev-section { display: none; }
     body.dev-mode .dev-link,
     body.dev-mode .dev-section { display: block; }
-    body.dev-mode #passwordUnlockReset { display: inline-block; }
 
     /* ===== Portrait warning overlay =====
        Shown when the viewport is taller than wide. Tells user to rotate.
@@ -2095,25 +2094,40 @@
     // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
     // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
     // パスワード検証は common/tier.js の PonoTier.verifyBookPassword に集約。
+    // モーダル open 時の解錠 state スナップショット (close 時の reload 判定に使う)
+    let pwSnapshot = null;
     const fpBtn = document.getElementById('forParentsBtn');
     if (fpBtn) {
       fpBtn.addEventListener('click', () => {
-        // 既に解錠済みなら成功画面で開く、 未解錠なら入力画面で開く
+        // 既に解錠済みなら成功メッセージを表示しつつ、 入力欄も常に表示して
+        // 上書き (例: 管理用 abcd → sub_active 付与) を可能にする
         const already = (function() {
           try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
         })();
         const errEl = document.getElementById('passwordUnlockError');
         const successEl = document.getElementById('passwordUnlockSuccess');
         const inputEl = document.getElementById('passwordUnlockInput');
-        const submitEl = document.getElementById('passwordUnlockSubmit');
         const helpEl = document.querySelector('.password-modal-help');
+        const pwSubmitEl = document.getElementById('passwordUnlockSubmit');
         if (errEl) errEl.hidden = true;
         if (successEl) successEl.hidden = !already;
-        // 入力欄+ボタンを成功時は隠す
-        if (inputEl) inputEl.style.display = already ? 'none' : '';
-        if (submitEl) submitEl.style.display = already ? 'none' : '';
         if (helpEl) helpEl.style.display = already ? 'none' : '';
-        if (!already && inputEl) inputEl.value = '';
+        // submit 成功時に input/submit を display:none にしているので、
+        // 再 open 時 (reload が走らないパス含む) は必ず可視化 + value クリア。
+        if (inputEl) {
+          inputEl.style.display = '';
+          inputEl.value = '';
+        }
+        if (pwSubmitEl) pwSubmitEl.style.display = '';
+        // close 時に「このセッション中に state が変わったか」を判定するため snapshot
+        try {
+          pwSnapshot = {
+            premium: localStorage.getItem('pono_premium'),
+            sub: localStorage.getItem('pono_sub_active'),
+          };
+        } catch (e) {
+          pwSnapshot = null;
+        }
         openModal('passwordUnlockModal');
       });
     }
@@ -2167,16 +2181,27 @@
       });
     }
 
-    // パスワード解錠モーダルを閉じた時に、 解錠済みならリロードして
-    // メニューを book ティア状態で再描画する (カード一覧の表示更新のため)
+    // パスワード解錠モーダルを閉じた時に、 「このモーダルセッション中に
+    // 解錠 state が変わった」場合だけリロードしてメニューを再描画する。
+    // (毎回 reload すると既解錠状態で開閉するだけでもリロードされてしまう)
+    // 閉じパス ([data-close] / backdrop click) のどちらでも同じ処理を走らせるため
+    // ヘルパに切り出して、 pwSnapshot と同じ IIFE モジュールスコープで 1 度だけ宣言。
+    function handlePasswordModalClose() {
+      try {
+        if (pwSnapshot) {
+          const curPremium = localStorage.getItem('pono_premium');
+          const curSub = localStorage.getItem('pono_sub_active');
+          if (curPremium !== pwSnapshot.premium || curSub !== pwSnapshot.sub) {
+            setTimeout(() => location.reload(), 100);
+          }
+        }
+      } catch (e) {}
+      pwSnapshot = null;
+    }
     document.addEventListener('click', (e) => {
       const closer = e.target.closest('[data-close="passwordUnlockModal"]');
       if (closer) {
-        try {
-          if (localStorage.getItem('pono_premium') === '1' || localStorage.getItem('pono_sub_active') === '1') {
-            setTimeout(() => location.reload(), 100);
-          }
-        } catch (e) {}
+        handlePasswordModalClose();
         // 注: 汎用 [data-close] ハンドラが closeModal を呼ぶのは別 listener なので
         // return しても event 伝播は止まらない。 ただし本 listener 内の早期離脱として明示。
         return;
@@ -2200,6 +2225,12 @@
       }
       // Click on backdrop closes
       if (e.target.classList && e.target.classList.contains('modal')) {
+        // passwordUnlockModal を backdrop で閉じた場合も snapshot 比較 + reload を走らせる。
+        // (data-close 経由ではなくこのパスを通る場合、 別途定義の handlePasswordModalClose
+        // ハンドラには到達しないので、 ここで明示的に呼ぶ)
+        if (e.target.id === 'passwordUnlockModal' && typeof handlePasswordModalClose === 'function') {
+          handlePasswordModalClose();
+        }
         e.target.hidden = true;
       }
     });
