@@ -144,6 +144,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-13T06:38:31Z - stage3 teaser panel v3 redesign (pyon shrink, viewport-fit, silhouettes, micro-tilt)
+- **タスク**: stage3 teaser panel v3 redesign (pyon shrink, viewport-fit, silhouettes, micro-tilt)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 46
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 14, "Bash": 10, "Workflow": 6, "Agent": 1, "Edit": 13, "ToolSearch": 1, "Write": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-13T05:30:30Z - stage3クリア後にポラロイド風3枚コラージュ予告パネル実装 (free tier限定、互い違い回転、間接表現文言、既存アセット流用)
 - **タスク**: stage3クリア後にポラロイド風3枚コラージュ予告パネル実装 (free tier限定、互い違い回転、間接表現文言、既存アセット流用)
 - **結果**: 成功
@@ -245,19 +258,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Grep": 17, "Read": 23, "ToolSearch": 1, "Workflow": 16, "Bash": 14, "Write": 2, "Edit": 13, "Agent": 1}
-- **サマリ**: 成功タスク: 5個の有効パターンを検出。
-
-
-### 2026-06-12T08:27:20Z - kumo encounter を silk物理 → Donguri Bowl に置換 (sw1053). 5 レイアウト configurable, 将来 moving pins 拡張用に sway/swayPhase 予約済み, 9エージェント並列で Research→Plan→Execute→Cross-review→Fix→Verify, allFixed=true
-- **タスク**: kumo encounter を silk物理 → Donguri Bowl に置換 (sw1053). 5 レイアウト configurable, 将来 moving pins 拡張用に sway/swayPhase 予約済み, 9エージェント並列で Research→Plan→Execute→Cross-review→Fix→Verify, allFixed=true
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 79
-- **エラー数**: 2
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Grep": 16, "Read": 22, "ToolSearch": 1, "Workflow": 15, "Bash": 12, "Write": 2, "Edit": 11}
 - **サマリ**: 成功タスク: 5個の有効パターンを検出。
 
 
