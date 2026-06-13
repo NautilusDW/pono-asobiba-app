@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1088; // v1088: redesign stage3 teaser as single unified poster (drop polaroid stack)
+const CACHE_VERSION = 1090; // v1090: stage3 teaser panel v3 (shrink pyon, viewport-fit, silhouettes, tilt)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

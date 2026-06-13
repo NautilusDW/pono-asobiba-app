@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:463-maze-water-complete-fullscreen-choppy] Codex: user 指摘「橋を渡る歩きが早すぎる / ヌルヌル動いてリアルすぎる / 完成画面が細長いのでフル画面寄りに」を受領。HANDOFF / git log / 対象CSSを確認し、既存完了演出への追加調整として、水渡り完了シーンを大きく表示し、歩行速度とコマ数を落とす。 (by Codex)
+- 2026-06-13 - [batch:463-maze-water-complete-fullscreen-choppy] DONE - Codex: 既存35コマ横歩き素材から12コマ派生シート `assets/images/characters/pono/pono_walk_side_sheet_12f.png` を作成し、水渡り完了シーンへ適用。ポノの横移動を 4.2s に遅くし、歩行コマ送りを `steps(11)` + 1.45s、上下揺れも `steps(2)` にしてヌルヌル感を抑制。`is-water-complete` 専用カードクラスを追加し、低横画面/desktop とも完成画面をほぼ全画面の大きさに拡大。`sw.js` は v1089。Node inline script parse、`node --check sw.js`、`git diff --check`、UTF-8/LF/BOMなし、Playwright 844x390 / 1100x760 でカード/ステージ寸法、12コマsprite参照、4.2s linear、横overflowなし、スクショ目視を確認。レビュー観点: 自己クロスチェックで「細長さ解消」「歩きの怖い滑らかさ低減」「既存水ゲームへの影響」を重点確認。 (by Codex)
 - 2026-06-13 - [batch:462-maze-walk-punch-timing] Codex: user 指摘「橋を渡る歩きの最初が速く最後が遅い / 力の手袋連打時にグローブが移動しないことがある」を受領。HANDOFF / git log / 対象CSS/JSを確認し、同一修正は未実装と判断。水渡り横移動を一定速度化し、岩くだき高速連打時の古いパンチタイマー干渉を修正する。 (by Codex)
 - 2026-06-13 - [batch:462-maze-walk-punch-timing] DONE - Codex: 水渡り完了シーンのポノ横移動を `linear` にして一定速度化。岩くだきは高速連打時に古い `setTimeout` が新しいパンチ表示を消さないよう、`punchSeq` / `punchTimer` で最新パンチだけをクリアする処理へ変更。`sw.js` は v1088。Node inline script parse、`node --check sw.js`、`git diff --check`、UTF-8/LF/BOMなし、Playwright低横画面で water timing `linear` と 5連打後の `is-hit` 維持/最新タイマー終了後クリアを確認。レビュー観点: 自己クロスチェックで速度ムラ原因と高速連打タイマー競合を重点確認。 (by Codex)
 - 2026-06-13 - [batch:456-maze-effect-balance] Codex: user 指摘「ボスの効果が一度に多すぎる。ボスは煙+もう1種程度、他は雑魚撃破とボクシンググローブ岩崩しへ」を受領。ボスHIT演出を絞り、通常ピン転倒/岩パンチへ既存エフェクト画像を再配分予定。 (by Codex)
