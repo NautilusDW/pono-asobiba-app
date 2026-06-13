@@ -6618,6 +6618,8 @@ const BOWL_LANE_TOP_LEFT_REL = 0.42;
 const BOWL_LANE_TOP_RIGHT_REL = 0.58;
 const BOWL_LANE_BOTTOM_LEFT_REL = 0.12;
 const BOWL_LANE_BOTTOM_RIGHT_REL = 0.88;
+const BOWL_PIN_FIELD_TOP_REL = 0.28;
+const BOWL_PIN_FIELD_BOTTOM_REL = 0.56;
 const BOWL_BUG_PIN_KINDS     = ['mayoi', 'odoke', 'pyon', 'kabuto', 'hachi'];
 const BOWL_SWAY_SPEED_MS     = 1700;
 
@@ -6689,6 +6691,13 @@ function _bowlLaneBoundsAt(gs, y) {
 function _bowlLanePoint(gs, laneX, y) {
   const b = _bowlLaneBoundsAt(gs, y);
   return b.left + _bowlClamp(laneX, 0, 1) * b.width;
+}
+
+function _bowlPinLayoutYRel(yRel) {
+  const sourceMin = 0.14;
+  const sourceMax = 0.54;
+  const t = _bowlClamp((yRel - sourceMin) / Math.max(0.001, sourceMax - sourceMin), 0, 1);
+  return BOWL_PIN_FIELD_TOP_REL + t * (BOWL_PIN_FIELD_BOTTOM_REL - BOWL_PIN_FIELD_TOP_REL);
 }
 
 function _bowlPinMetrics(gs, pin) {
@@ -6808,12 +6817,8 @@ function _detachBowlListeners(gs) {
     }
   } catch (_) {}
   try {
-    if (gs._onBossIntroPointerDown && gs.bossIntroBtn) {
-      gs.bossIntroBtn.removeEventListener('pointerdown', gs._onBossIntroPointerDown);
-    }
-  } catch (_) {}
-  try {
     if (gs._onBossIntroStart && gs.bossIntroBtn) {
+      gs.bossIntroBtn.removeEventListener('pointerdown', gs._onBossIntroStart);
       gs.bossIntroBtn.removeEventListener('click', gs._onBossIntroStart);
     }
   } catch (_) {}
@@ -6824,7 +6829,6 @@ function _detachBowlListeners(gs) {
   gs._onPointerMove = null;
   gs._onPointerUp = null;
   gs._onPointerCancel = null;
-  gs._onBossIntroPointerDown = null;
   gs._onBossIntroStart = null;
   gs._onResize = null;
   if (gs.rafId) { try { cancelAnimationFrame(gs.rafId); } catch (_) {} gs.rafId = null; }
@@ -6884,7 +6888,8 @@ function _layoutBowlPins(gs, layoutId) {
   const layoutOffset = Math.max(0, BOWL_PIN_LAYOUTS.findIndex(function(l){ return l.id === layout.id; }));
   gs.pins = layout.pins.map(function(p, idx) {
     const baseLaneX = _bowlClamp(p.x, 0.06, 0.94);
-    const baseY = Math.max(gs.h * (BOWL_HORIZON_REL + 0.025), p.y * gs.h);
+    const baseYRel = _bowlPinLayoutYRel(p.y);
+    const baseY = Math.max(gs.h * (BOWL_HORIZON_REL + 0.025), baseYRel * gs.h);
     const baseX = _bowlLanePoint(gs, baseLaneX, baseY);
     const isBackMover = p.y <= 0.36 && ((idx + layoutOffset) % 3 === 0 || layout.id === 'DOUBLE_ROW');
     const isMidMover = p.y <= 0.28 && ((idx + layoutOffset) % 4 === 1);
@@ -7071,12 +7076,8 @@ function _showBowlGame(c) {
     _startBowlBossPhase(gs, performance.now());
   };
   if (gs.bossIntroBtn) {
-    const onBossIntroPointerDown = function(e) {
-      try { e.stopPropagation(); } catch (_) {}
-    };
-    gs.bossIntroBtn.addEventListener('pointerdown', onBossIntroPointerDown);
+    gs.bossIntroBtn.addEventListener('pointerdown', onBossIntroStart);
     gs.bossIntroBtn.addEventListener('click', onBossIntroStart);
-    gs._onBossIntroPointerDown = onBossIntroPointerDown;
   }
   gs._onBossIntroStart = onBossIntroStart;
 
@@ -7262,7 +7263,7 @@ function _startBowlBossPhase(gs, now) {
     x: gs.w * 0.5,
     y: gs.h * 0.28,
     r: BOWL_BOSS_R_REL * minDim,
-    startAt: now,
+    startAt: now - BOWL_BOSS_INTRO_MS,
     endsAt: now + BOWL_BOSS_PHASE_MS,
     lastHitAt: 0,
     flashUntil: 0,
@@ -7275,6 +7276,8 @@ function _startBowlBossPhase(gs, now) {
   _bowlFloatText(gs, 'ボスだ！', gs.w * 0.5, gs.h * 0.32);
   try { _playMzSePitch('correct', 3); } catch (_) { try { playTap(); } catch (__) {} }
   _updateBowlBossMotion(gs, now);
+  _drawBowlScene(gs, now);
+  if (!gs.reducedMotion && !gs.rafId) _startBowlLoop(gs);
 }
 
 function _updateBowlBossMotion(gs, now) {
@@ -7330,7 +7333,11 @@ function _startBowlLoop(gs) {
     gs.lastTs = ts;
     _updateBowlPhysics(gs, dt, ts);
     _drawBowlScene(gs, ts);
-    if (!gs.locked) gs.rafId = requestAnimationFrame(tick);
+    if (!gs.locked) {
+      gs.rafId = requestAnimationFrame(tick);
+    } else {
+      gs.rafId = null;
+    }
   };
   gs.rafId = requestAnimationFrame(tick);
 }
