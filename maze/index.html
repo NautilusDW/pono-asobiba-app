@@ -1391,12 +1391,12 @@ body.image-stage-mode .game-wrap {
 .water-amenbo {
   position: absolute;
   z-index: 3;
-  top: 12%;
+  top: 50%;
   left: 50%;
   width: min(28vw, 150px);
   max-height: min(22dvh, 110px) !important;
   object-fit: contain;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   transition: left 0.28s ease-in-out, top 0.18s ease;
   filter: drop-shadow(0 5px 8px rgba(0,0,0,0.2));
   pointer-events: none;
@@ -1414,9 +1414,9 @@ body.image-stage-mode .game-wrap {
   line-height: 1.2;
 }
 @keyframes waterBugSplash {
-  0%, 100% { transform: translateX(-50%) rotate(0deg) scale(1); }
-  42%      { transform: translateX(-50%) rotate(-8deg) scale(1.08); }
-  70%      { transform: translateX(-50%) rotate(8deg) scale(1.04); }
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  42%      { transform: translate(-50%, -50%) rotate(-8deg) scale(1.08); }
+  70%      { transform: translate(-50%, -50%) rotate(8deg) scale(1.04); }
 }
 
 .strength-game {
@@ -1997,7 +1997,8 @@ body.image-stage-mode .game-wrap {
     right: 6%;
     top: 50%;
     bottom: auto;
-    height: 34%;
+    height: 58px;
+    max-height: calc(100% - 16px);
     transform: translateY(-50%);
     gap: 6px;
   }
