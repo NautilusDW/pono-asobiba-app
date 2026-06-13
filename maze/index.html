@@ -3661,6 +3661,8 @@ function imgDraw(now) {
   imgDrawFlagTunnelGimmick(stage, now);
   // Creatures (お邪魔虫 — block path until defeated via mini-game)
   if (stage.creatures && stage.creatures.length) imgDrawCreatures(stage, now);
+  // Boss-teaser silhouette (stage6 only — guarded by presence of stage.teaser)
+  if (stage.teaser) imgDrawBossTeaser(stage, now, px, py);
   ctx.restore();
 
   // Lantern overlay (in screen space — applied AFTER image, BEFORE pono so
@@ -4828,6 +4830,58 @@ function imgDrawObstacles(stage) {
       ctx.font = (sz * 0.8) + 'px serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(fallbackEmoji, o.x, o.y);
+    }
+  }
+}
+
+// Soft silhouette teaser used to hint at "what awaits past this stage".
+// World-space draw (called inside the camera transform). Shape is intentionally
+// vague (blurred radial gradient ellipse) — no eyes, no creature outline.
+// Pono dialog fires once on first approach within stage.teaser.approachRadius.
+function imgDrawBossTeaser(stage, now, px, py) {
+  const t = stage.teaser;
+  if (!t) return;
+  // Pulse (slow breathing). Deterministic — Math.sin only.
+  const pulseSec = (typeof t.pulseSec === 'number' && t.pulseSec > 0) ? t.pulseSec : 2.6;
+  const oMin = (typeof t.opacityMin === 'number') ? t.opacityMin : 0.35;
+  const oMax = (typeof t.opacityMax === 'number') ? t.opacityMax : 0.45;
+  const phase = Math.sin((now / 1000) * (Math.PI * 2 / pulseSec));
+  const alpha = oMin + (oMax - oMin) * (0.5 + 0.5 * phase);
+  const rx = (typeof t.rx === 'number') ? t.rx : 320;
+  const ry = (typeof t.ry === 'number') ? t.ry : 240;
+  const color = t.color || '#1a1230';
+  ctx.save();
+  // Soft radial gradient — center opaque, edge transparent (faux blur).
+  const grad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, Math.max(rx, ry));
+  // Parse color into rgba(...) for gradient stops
+  let r=26,g=18,b=48;
+  const m = /^#([0-9a-f]{6})$/i.exec(color);
+  if (m) {
+    const v = parseInt(m[1], 16);
+    r = (v >> 16) & 0xff; g = (v >> 8) & 0xff; b = v & 0xff;
+  }
+  grad.addColorStop(0.0, 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(3) + ')');
+  grad.addColorStop(0.55, 'rgba(' + r + ',' + g + ',' + b + ',' + (alpha * 0.55).toFixed(3) + ')');
+  grad.addColorStop(1.0, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+  ctx.fillStyle = grad;
+  // Ellipse via scaled arc (no blur filter dependency — works on all canvas)
+  ctx.translate(t.x, t.y);
+  ctx.scale(1, ry / rx);
+  ctx.beginPath();
+  ctx.arc(0, 0, rx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  // One-shot approach dialog. Guarded by stage._teaserSpoken flag — only fires
+  // once per stage load, and only when the speech bubble is idle so we don't
+  // step on existing hints (e.g. obstacle bonk lines).
+  if (!stage._teaserSpoken && t.dialog) {
+    const ax = (t.approachAnchor && typeof t.approachAnchor.x === 'number') ? t.approachAnchor.x : t.x;
+    const ay = (t.approachAnchor && typeof t.approachAnchor.y === 'number') ? t.approachAnchor.y : t.y;
+    const ar = (typeof t.approachRadius === 'number') ? t.approachRadius : 700;
+    const dx = px - ax, dy = py - ay;
+    if (dx*dx + dy*dy < ar * ar && !_imgBubble && !_encounterActive) {
+      imgShowBubble(t.dialog, 'pono', 2600);
+      stage._teaserSpoken = true;
     }
   }
 }
