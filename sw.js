@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1078; // v1078: rebalance maze hit effects
+const CACHE_VERSION = 1079; // v1079: replace strength rock stage with path background
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
