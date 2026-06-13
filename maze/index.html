@@ -2492,6 +2492,8 @@ const MAZE_FLAG_ASSET_BASE = '../assets/images/maze/flag/';
 const MAZE_WATER_ASSET_BASE = '../assets/images/maze/gimmicks/water/';
 const MAZE_STRENGTH_ASSET_BASE = '../assets/images/maze/gimmicks/strength/';
 const MAZE_DONGURI_ASSET_BASE = '../assets/images/maze/gimmicks/donguri/';
+const MAZE_DONGURI_EFFECT_ASSET_BASE = MAZE_DONGURI_ASSET_BASE + 'effects/';
+const BOWL_EFFECT_ASSET_VERSION = '?v=1076';
 function _mazeLoadImage(src) {
   const img = new Image();
   img.src = src;
@@ -2528,6 +2530,14 @@ const MAZE_STRENGTH_ASSETS = {
 const MAZE_DONGURI_ASSETS = {
   ojamaGate: _mazeLoadImage(MAZE_DONGURI_ASSET_BASE + 'ojama_gate.png'),
   acornBag: _mazeLoadImage(MAZE_DONGURI_ASSET_BASE + 'acorn_bag.png'),
+  bossTapBurst: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'boss_tap_burst.png' + BOWL_EFFECT_ASSET_VERSION),
+  bossFlyawaySwirl: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'boss_flyaway_swirl.png' + BOWL_EFFECT_ASSET_VERSION),
+  damagePoof: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_poof.png' + BOWL_EFFECT_ASSET_VERSION),
+  damageBurst: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_burst_halftone.png' + BOWL_EFFECT_ASSET_VERSION),
+  damageSlash: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_slash.png' + BOWL_EFFECT_ASSET_VERSION),
+  damageShockRing: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_shock_ring.png' + BOWL_EFFECT_ASSET_VERSION),
+  damageSparkles: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_sparkles.png' + BOWL_EFFECT_ASSET_VERSION),
+  damageHitFlash: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_hit_flash.png' + BOWL_EFFECT_ASSET_VERSION),
 };
 const MAZE_STRENGTH_CHIP_SRCS = Array.from({ length: 12 }, function(_, i) {
   return MAZE_STRENGTH_ASSET_BASE + 'rock_chip_' + i + '.png';
@@ -6725,6 +6735,41 @@ function _bowlClamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
+function _bowlImageReady(img) {
+  return !!(img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0);
+}
+
+function _drawBowlEffectSprite(ctx, img, x, y, h, rot, alpha) {
+  if (!_bowlImageReady(img)) return false;
+  const drawH = Math.max(1, h);
+  const drawW = drawH * (img.naturalWidth / Math.max(1, img.naturalHeight));
+  ctx.save();
+  ctx.translate(x, y);
+  if (rot) ctx.rotate(rot);
+  ctx.globalAlpha = _bowlClamp(alpha == null ? 1 : alpha, 0, 1);
+  ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+  ctx.restore();
+  return true;
+}
+
+function _bowlDamageEffectImage(kind) {
+  if (kind === 'poof') return MAZE_DONGURI_ASSETS.damagePoof;
+  if (kind === 'ring') return MAZE_DONGURI_ASSETS.damageShockRing;
+  if (kind === 'slash') return MAZE_DONGURI_ASSETS.damageSlash;
+  if (kind === 'spark') return MAZE_DONGURI_ASSETS.damageSparkles;
+  if (kind === 'flash') return MAZE_DONGURI_ASSETS.damageHitFlash;
+  return MAZE_DONGURI_ASSETS.damageBurst;
+}
+
+function _bowlDamageEffectSizeScale(kind) {
+  if (kind === 'slash') return 3.15;
+  if (kind === 'ring') return 2.90;
+  if (kind === 'spark') return 2.55;
+  if (kind === 'poof') return 2.80;
+  if (kind === 'flash') return 2.95;
+  return 2.72;
+}
+
 function _bowlLaneTFromY(gs, y) {
   const top = gs.h * BOWL_HORIZON_REL;
   const bottom = gs.h * BOWL_LANE_BOTTOM_REL;
@@ -7040,16 +7085,24 @@ function _showBowlGame(c) {
 
   _resizeBowlCanvas(gs);
   _preloadBowlBugPins(gs);
-  if (imgBowlBoss && !(imgBowlBoss.complete && imgBowlBoss.naturalWidth > 0)) {
-    imgBowlBoss.addEventListener('load', function() {
-      if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
-    }, { once: true });
-  }
-  if (imgBowlLaneBg && !(imgBowlLaneBg.complete && imgBowlLaneBg.naturalWidth > 0)) {
-    imgBowlLaneBg.addEventListener('load', function() {
-      if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
-    }, { once: true });
-  }
+  [
+    imgBowlBoss,
+    imgBowlLaneBg,
+    MAZE_DONGURI_ASSETS.bossTapBurst,
+    MAZE_DONGURI_ASSETS.bossFlyawaySwirl,
+    MAZE_DONGURI_ASSETS.damagePoof,
+    MAZE_DONGURI_ASSETS.damageBurst,
+    MAZE_DONGURI_ASSETS.damageSlash,
+    MAZE_DONGURI_ASSETS.damageShockRing,
+    MAZE_DONGURI_ASSETS.damageSparkles,
+    MAZE_DONGURI_ASSETS.damageHitFlash,
+  ].forEach(function(img) {
+    if (img && !(img.complete && img.naturalWidth > 0)) {
+      img.addEventListener('load', function() {
+        if (gs === _bowlGameState) _drawBowlScene(gs, performance.now());
+      }, { once: true });
+    }
+  });
   _layoutBowlPins(gs, _pickBowlLayoutId(c));
   requestAnimationFrame(function() {
     if (gs !== _bowlGameState) return;
@@ -7747,10 +7800,10 @@ function _spawnBowlBossDamageEffect(gs, now, x, y) {
   const dx = Math.sin(seed * 1.91) * minDim * 0.050;
   const dy = Math.cos(seed * 1.37) * minDim * 0.038;
   gs.effects.push({
-    kind: ['burst', 'ring', 'slash', 'spark'][bossHits % 4],
+    kind: ['burst', 'poof', 'slash', 'ring', 'spark', 'flash'][bossHits % 6],
     x: x + dx,
     y: y + dy - minDim * 0.015,
-    r: Math.max(22, minDim * (0.055 + (bossHits % 3) * 0.010)),
+    r: Math.max(34, minDim * (0.076 + (bossHits % 3) * 0.012)),
     rot: Math.sin(seed) * 0.65,
     bornAt: now,
     endsAt: now + 1040,
@@ -8173,6 +8226,19 @@ function _drawBowlBoss(gs, now) {
 
   ctx.save();
   ctx.translate(x, y);
+  if (boss.defeatAt) {
+    const swirlSize = boss.r * (2.10 + defeatT * 0.52);
+    const swirlAlpha = Math.max(0, 0.74 - defeatT * 0.20);
+    _drawBowlEffectSprite(
+      ctx,
+      MAZE_DONGURI_ASSETS.bossFlyawaySwirl,
+      -boss.r * 0.06,
+      boss.r * 0.10,
+      swirlSize,
+      -defeatT * Math.PI * 5.4,
+      swirlAlpha
+    );
+  }
   if (spin) ctx.rotate(spin);
   if (boss.defeatAt) ctx.globalAlpha = 1 - Math.max(0, defeatT - 0.72) / 0.28;
 
@@ -8293,44 +8359,46 @@ function _drawBowlBossTapBurst(gs, now) {
   ctx.scale(scalePulse, scalePulse);
   ctx.globalAlpha = alpha;
 
-  ctx.save();
-  ctx.translate(4, 5);
-  ctx.fillStyle = 'rgba(44, 31, 28, 0.28)';
-  _bowlSpikeBurstPath(ctx, points, r * 1.04, r * 0.72);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.translate(3, -2);
-  ctx.strokeStyle = 'rgba(193, 71, 181, 0.86)';
-  ctx.lineWidth = Math.max(3, r * 0.055);
-  ctx.lineJoin = 'round';
-  _bowlSpikeBurstPath(ctx, points, r * 1.02, r * 0.70);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.fillStyle = '#FFD84D';
-  ctx.strokeStyle = '#1F1A1A';
-  ctx.lineWidth = Math.max(4, r * 0.062);
-  ctx.lineJoin = 'round';
-  _bowlSpikeBurstPath(ctx, points, r, r * 0.69);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.save();
-  ctx.globalAlpha = 0.20;
-  ctx.fillStyle = '#FFF7B8';
-  for (let i = 0; i < 26; i++) {
-    const col = i % 7;
-    const row = Math.floor(i / 7);
-    const px = (col - 3) * r * 0.19 + (row % 2) * r * 0.08;
-    const py = (row - 1.5) * r * 0.20;
-    if (px * px + py * py > r * r * 0.46) continue;
-    ctx.beginPath();
-    ctx.arc(px, py, Math.max(2, r * 0.025), 0, Math.PI * 2);
+  if (!_drawBowlEffectSprite(ctx, MAZE_DONGURI_ASSETS.bossTapBurst, 0, 0, r * 1.95, 0, 1)) {
+    ctx.save();
+    ctx.translate(4, 5);
+    ctx.fillStyle = 'rgba(44, 31, 28, 0.28)';
+    _bowlSpikeBurstPath(ctx, points, r * 1.04, r * 0.72);
     ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(3, -2);
+    ctx.strokeStyle = 'rgba(193, 71, 181, 0.86)';
+    ctx.lineWidth = Math.max(3, r * 0.055);
+    ctx.lineJoin = 'round';
+    _bowlSpikeBurstPath(ctx, points, r * 1.02, r * 0.70);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = '#FFD84D';
+    ctx.strokeStyle = '#1F1A1A';
+    ctx.lineWidth = Math.max(4, r * 0.062);
+    ctx.lineJoin = 'round';
+    _bowlSpikeBurstPath(ctx, points, r, r * 0.69);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalAlpha = 0.20;
+    ctx.fillStyle = '#FFF7B8';
+    for (let i = 0; i < 26; i++) {
+      const col = i % 7;
+      const row = Math.floor(i / 7);
+      const px = (col - 3) * r * 0.19 + (row % 2) * r * 0.08;
+      const py = (row - 1.5) * r * 0.20;
+      if (px * px + py * py > r * r * 0.46) continue;
+      ctx.beginPath();
+      ctx.arc(px, py, Math.max(2, r * 0.025), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
   ctx.fillStyle = '#4C3313';
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.74)';
@@ -8355,8 +8423,14 @@ function _drawBowlEffects(gs, now) {
     const t = _bowlClamp((now - fx.bornAt) / life, 0, 1);
     const alpha = Math.sin((1 - t) * Math.PI * 0.5);
     const scale = 0.62 + t * 0.72;
+    const img = _bowlDamageEffectImage(fx.kind);
+    const spriteSize = fx.r * scale * _bowlDamageEffectSizeScale(fx.kind);
+    const spriteRot = fx.rot + (fx.kind === 'ring' ? t * 0.55 : (fx.kind === 'spark' ? t * 0.22 : t * 0.12));
+    if (_drawBowlEffectSprite(gs.ctx, img, fx.x, fx.y, spriteSize, spriteRot, alpha)) continue;
     if (fx.kind === 'burst') {
       _drawBowlHitBurstMark(gs, fx.x, fx.y, fx.r * scale, fx.rot + t * 0.18, alpha, 'ドン!');
+    } else if (fx.kind === 'poof') {
+      _drawBowlHitBurstMark(gs, fx.x, fx.y, fx.r * scale, fx.rot + t * 0.10, alpha, '');
     } else if (fx.kind === 'ring') {
       _drawBowlHitRingMark(gs, fx.x, fx.y, fx.r * scale, fx.rot, alpha);
     } else if (fx.kind === 'slash') {

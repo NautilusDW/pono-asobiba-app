@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1075; // v1075: stage6 boss-teaser silhouette + approach dialog
+const CACHE_VERSION = 1076; // v1076: donguri boss effect image assets
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
