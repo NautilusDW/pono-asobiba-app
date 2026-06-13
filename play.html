@@ -1194,8 +1194,6 @@
 
     /* MVP: hide acorn / thankyou / stamp UI if any module tries to show it */
     .acorn-badge-play, .thankyou-badge-play { display: none !important; }
-    /* Web MVP: 絵本パスワード解錠導線を一時的に休眠 (BOOK_PASSWORDS=[] と整合) */
-    .for-parents, #forParentsBtn { display: none !important; }
     /* Web MVP: 開発用 UI は ?dev=1 のときだけ表示 */
     .dev-link, .dev-section, #passwordUnlockReset { display: none; }
     body.dev-mode .dev-link,
@@ -1661,7 +1659,7 @@
         peekPos: '50% 50%',
         comingSoon: true,
         debugPlayable: true,
-        tier: 'free'
+        tier: 'sub'
       },
       {
         id: 'zukan',
@@ -1676,7 +1674,7 @@
         thumb: 'assets/ui/thumb_maze.webp',
         comingSoon: true,
         debugPlayable: true,
-        tier: 'free'
+        tier: 'sub'
       },
       // ----- Hidden from menu (filtered out by MENU_GAMES) -----
       {
