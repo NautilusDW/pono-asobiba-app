@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:467-bento-shop-interior-counter-redo] DONE - Codex: user 指摘「店外ではなく店内、ポノ/男の子/女の子はカウンターの向こう、ショーケースと山積みのお弁当、差し色が欲しい」を受け、GPT Image 2 built-in imagegen で店内カウンター越し背景 raw 3案を生成。`tmp/alpha_pending/467_bento_shop_interior_counter_redo_raw/` に保存。推奨は `shop_interior_counter_bento_staff_variant03_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:464-oto-rhythm-left-ui-bubble-clip] Codex: user 指摘「OtoTouchリズムの左側UIが被っている / ポノの連続・フィーバー吹き出しが切れる」を受領。HANDOFF / git log / 対象CSSを確認し、既存 batch 448 以降の追加レイアウト調整として、左パネルの縦配置と吹き出しの画面内クランプを修正する。 (by Codex)
 - 2026-06-13 - [batch:464-oto-rhythm-left-ui-bubble-clip] DONE - Codex: OtoTouchリズムの `ばんそう` を横画面では上基準配置へ変更し、低背画面では `ねいろ` / `ばんそう` の高さを詰めて縦の重なりと下端はみ出しを解消。連続/フィーバー吹き出しは上端と右端をクランプし、低背時のサイズも調整。`sw.js` / `PAGE_CACHE_VERSION` は v1092。Node inline script parse、`node --check sw.js`、`git diff --check`、UTF-8/LF/BOMなし、Playwright 844x390 / 1664x422 / 1664x900 で左UIの非重なり・吹き出し画面内・スクショ目視を確認。レビュー観点: 自己クロスチェックで「左UIの縦食い込み」「吹き出し切れ」「低背/PC幅の副作用」を重点確認。 (by Codex)
 - 2026-06-13 - [batch:463-maze-water-complete-fullscreen-choppy] Codex: user 指摘「橋を渡る歩きが早すぎる / ヌルヌル動いてリアルすぎる / 完成画面が細長いのでフル画面寄りに」を受領。HANDOFF / git log / 対象CSSを確認し、既存完了演出への追加調整として、水渡り完了シーンを大きく表示し、歩行速度とコマ数を落とす。 (by Codex)
