@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1086; // v1086: fix Pono water bridge walk sprite + stage3 clear digest teaser panel
+const CACHE_VERSION = 1088; // v1088: redesign stage3 teaser as single unified poster (drop polaroid stack)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
