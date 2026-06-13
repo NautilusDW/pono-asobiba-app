@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1068; // v1068: fix password modal — always show input, restore reset button, snapshot-based reload
+const CACHE_VERSION = 1069; // v1069: tune donguri bowling back-lane hit detection and impact feel
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -6525,10 +6525,10 @@ const BOWL_FLIGHT_MS         = 1600;   // donguri max lifetime
 const BOWL_PIN_FALL_MS       = 380;
 const BOWL_PIN_R_REL         = 0.052;  // pin radius (relative to min(w,h))
 const BOWL_HIT_R_REL         = 0.046;  // collision radius, kept close to the visible body
-const BOWL_CHAIN_R_REL       = 0.145;  // nearby pins receive weakened impact, not instant fall
-const BOWL_CHAIN_DOT_MIN     = -0.04;
-const BOWL_CHAIN_MAX_DEPTH   = 4;
-const BOWL_CHAIN_DELAY_MS    = 76;
+const BOWL_CHAIN_R_REL       = 0.165;  // nearby pins receive weakened impact, not instant fall
+const BOWL_CHAIN_DOT_MIN     = -0.16;
+const BOWL_CHAIN_MAX_DEPTH   = 5;
+const BOWL_CHAIN_DELAY_MS    = 64;
 const BOWL_DONGURI_R_REL     = 0.052;
 const BOWL_DONGURI_SPEED_REL = 1.05;   // travel distance per second, relative to min(w,h)
 const BOWL_SWIPE_MIN_REL     = 0.095;
@@ -6539,7 +6539,7 @@ const BOWL_BOUNCE_TANGENT_KICK = 0.18;
 const BOWL_HEDGE_RESTITUTION  = 0.88;
 const BOWL_BALL_MAX_HITS      = 7;
 const BOWL_BUMP_MS            = 260;
-const BOWL_PIN_TILT_FALL_RAD  = 0.72;
+const BOWL_PIN_TILT_FALL_RAD  = 0.66;
 const BOWL_PIN_TILT_SPRING    = 25;
 const BOWL_PIN_TILT_DAMPING   = 0.91;
 const BOWL_PIN_ENERGY_DECAY   = 0.987;
@@ -6659,6 +6659,11 @@ function _bowlPinMetrics(gs, pin) {
   };
 }
 
+function _bowlDonguriHitRadius(gs, d, y) {
+  const depthScale = _bowlDepthScaleAt(gs, Number.isFinite(y) ? y : d.y);
+  return Math.max(3, (d.r || 0) * depthScale * 0.62);
+}
+
 function _bowlPinMassForKind(kind) {
   if (kind === 'kabuto') return 1.24;
   if (kind === 'pyon') return 0.88;
@@ -6669,9 +6674,9 @@ function _bowlPinMassForKind(kind) {
 
 function _bowlPinStability(kind, idx, yRatio) {
   const mass = _bowlPinMassForKind(kind);
-  const backBrace = yRatio <= 0.30 ? 0.09 : 0;
-  const deterministic = ((idx * 37) % 5) * 0.038;
-  return 0.74 + mass * 0.22 + backBrace + deterministic;
+  const backBrace = yRatio <= 0.30 ? 0.05 : 0;
+  const deterministic = ((idx * 37) % 5) * 0.030;
+  return 0.66 + mass * 0.18 + backBrace + deterministic;
 }
 
 function _bowlBugImg(kind) {
@@ -7225,6 +7230,8 @@ function _updateBowlPhysics(gs, dt, now) {
   const horizonPad = gs.h * BOWL_HORIZON_REL;
   for (let i = gs.donguris.length - 1; i >= 0; i--) {
     const d = gs.donguris[i];
+    const prevX = d.x;
+    const prevY = d.y;
     d.x += d.vx * dt;
     d.y += d.vy * dt;
     const speedNow = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
@@ -7279,10 +7286,21 @@ function _updateBowlPhysics(gs, dt, now) {
         if (pin.fallen) continue;
         if (d.hitPins && d.hitPins[pin.id]) continue;
         const metrics = _bowlPinMetrics(gs, pin);
-        const fromPinX = d.x - metrics.hitX;
-        const fromPinY = d.y - metrics.hitY;
-        const ellX = fromPinX / Math.max(1, metrics.hitRx + d.r * 0.12);
-        const ellY = fromPinY / Math.max(1, metrics.hitRy + d.r * 0.12);
+        let testX = d.x;
+        let testY = d.y;
+        const segX = d.x - prevX;
+        const segY = d.y - prevY;
+        const segLen2 = segX * segX + segY * segY;
+        if (segLen2 > 1) {
+          const segT = _bowlClamp(((metrics.hitX - prevX) * segX + (metrics.hitY - prevY) * segY) / segLen2, 0, 1);
+          testX = prevX + segX * segT;
+          testY = prevY + segY * segT;
+        }
+        const ballHitR = _bowlDonguriHitRadius(gs, d, testY);
+        const fromPinX = testX - metrics.hitX;
+        const fromPinY = testY - metrics.hitY;
+        const ellX = fromPinX / Math.max(1, metrics.hitRx + ballHitR);
+        const ellY = fromPinY / Math.max(1, metrics.hitRy + ballHitR * 0.82);
         if (ellX * ellX + ellY * ellY <= 1) {
           const speed = Math.max(1, Math.sqrt(d.vx * d.vx + d.vy * d.vy));
           let nx = 0;
@@ -7302,16 +7320,18 @@ function _updateBowlPhysics(gs, dt, now) {
           const knockY = d.vy / speed;
           const approach = _bowlClamp(-(knockX * nx + knockY * ny), 0.18, 1);
           const speedRel = speed / Math.max(1, Math.min(gs.w, gs.h));
-          const repeatLoss = Math.max(0.58, 1 - (d.hitCount || 0) * 0.11);
-          const impulse = speedRel * (0.36 + approach * 0.76) * repeatLoss;
-          _bowlApplyPinImpact(gs, pin, impulse, knockX, knockY, 0, now);
-          _bowlShockNearbyPins(gs, pin, knockX, knockY, impulse, now);
+          const repeatLoss = Math.max(0.64, 1 - (d.hitCount || 0) * 0.09);
+          const depthT = _bowlLaneTFromY(gs, metrics.hitY);
+          const backBoost = 1 + (1 - depthT) * 0.18;
+          const impulse = speedRel * (0.46 + approach * 0.86) * repeatLoss * backBoost;
+          const fell = _bowlApplyPinImpact(gs, pin, impulse, knockX, knockY, 0, now);
+          _bowlShockNearbyPins(gs, pin, knockX, knockY, impulse * (fell ? 1.18 : 1), now);
           if (d.hitPins) d.hitPins[pin.id] = true;
           d.hitCount = (d.hitCount || 0) + 1;
 
           // Move the ball outside the visual hit shape before applying the reflected
           // velocity, preventing repeated overlap from looking like a straight pass.
-          const separateR = Math.max(metrics.hitRx, metrics.hitRy) + d.r * 0.24;
+          const separateR = Math.max(metrics.hitRx, metrics.hitRy) + ballHitR * 0.72;
           d.x = metrics.hitX + nx * separateR;
           d.y = metrics.hitY + ny * separateR;
 
@@ -7419,8 +7439,8 @@ function _bowlApplyPinImpact(gs, pin, impulse, knockDirX, knockDirY, depth, now,
   pin.shakePhase = (pin.shakePhase || 0) + 0.9 + depth * 0.37;
   pin.wobbleUntil = now + 680 + strength * 260;
 
-  const fallThreshold = stability * (depth > 0 ? 0.90 : 0.95);
-  const shouldFall = effective >= fallThreshold || pin.impactEnergy >= stability * 1.18 || Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD;
+  const fallThreshold = stability * (depth > 0 ? 0.76 : 0.82);
+  const shouldFall = effective >= fallThreshold || pin.impactEnergy >= stability * 1.02 || Math.abs(pin.tilt) >= BOWL_PIN_TILT_FALL_RAD;
   if (shouldFall) {
     _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now);
     return true;
@@ -7440,7 +7460,7 @@ function _bowlApplyPinImpact(gs, pin, impulse, knockDirX, knockDirY, depth, now,
 function _bowlShockNearbyPins(gs, sourcePin, knockDirX, knockDirY, sourceImpulse, now) {
   if (!gs || !sourcePin || !gs.pins) return;
   const minDim = Math.min(gs.w, gs.h);
-  const shockR = BOWL_CHAIN_R_REL * minDim * 1.05;
+  const shockR = BOWL_CHAIN_R_REL * minDim * 1.14;
   const shockR2 = shockR * shockR;
   for (let i = 0; i < gs.pins.length; i++) {
     const p2 = gs.pins[i];
@@ -7456,7 +7476,7 @@ function _bowlShockNearbyPins(gs, sourcePin, knockDirX, knockDirY, sourceImpulse
     if (dot < -0.18) continue;
     const distanceLoss = 1 - _bowlClamp(dist / shockR, 0, 1);
     const dotBoost = 0.76 + _bowlClamp(dot, -0.18, 1) * 0.28;
-    const impulse = Math.max(0.12, sourceImpulse * (0.30 + distanceLoss * 0.44) * dotBoost);
+    const impulse = Math.max(0.16, sourceImpulse * (0.42 + distanceLoss * 0.58) * dotBoost);
     _bowlApplyPinImpact(gs, p2, impulse, ux * 0.7 + knockDirX * 0.3, uy * 0.7 + knockDirY * 0.3, 1, now, true);
   }
 }
@@ -7509,11 +7529,11 @@ function _bowlFellPin(gs, pin, knockDirX, knockDirY, depth, now) {
       let nky = knockDirY * 0.4 + uy * 0.6;
       const nm = Math.max(0.001, Math.sqrt(nkx * nkx + nky * nky));
       nkx /= nm; nky /= nm;
-      const distanceLoss = 1 - _bowlClamp(dist / chainR, 0, 1) * 0.42;
-      const depthLoss = depth === 0 ? 1 : Math.pow(0.62, depth);
-      const dotBoost = 0.90 + _bowlClamp(dot, 0, 1) * 0.18;
+      const distanceLoss = 1 - _bowlClamp(dist / chainR, 0, 1) * 0.34;
+      const depthLoss = depth === 0 ? 1 : Math.pow(0.70, depth);
+      const dotBoost = 0.94 + _bowlClamp(dot, 0, 1) * 0.22;
       const targetMass = Math.max(1, p2.mass || 1);
-      const impulse = Math.max(0.22, (p2.stability || 1) * targetMass * 1.12 * depthLoss * distanceLoss * dotBoost);
+      const impulse = Math.max(0.24, (p2.stability || 1) * targetMass * 1.26 * depthLoss * distanceLoss * dotBoost);
       _bowlApplyPinImpact(gs, p2, impulse, nkx, nky, depth + 1, inner, true);
     }
   }, BOWL_CHAIN_DELAY_MS);
