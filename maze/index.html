@@ -6605,6 +6605,7 @@ const BOWL_PIN_JOLT_REL       = 0.052;
 const BOWL_PIN_SHAKE_DECAY    = 0.90;
 const BOWL_BOSS_PHASE_MS      = 8500;
 const BOWL_BOSS_INTRO_MS      = 560;
+const BOWL_BOSS_DEFEAT_MS     = 1320;
 const BOWL_BOSS_THROW_COOLDOWN_MS = 85;
 const BOWL_BOSS_R_REL         = 0.205;
 const BOWL_BOSS_HIT_R_REL     = 0.145;
@@ -6969,7 +6970,7 @@ function _showBowlGame(c) {
     bossIntroBtn: wrap.querySelector('#bowlBossIntroBtn'),
     w: 0, h: 0, dpr: 1,
     layoutId: null, pins: [], donguris: [],
-    particles: [],
+    particles: [], effects: [],
     phase: 'pins',
     boss: null,
     bossHits: 0,
@@ -7315,6 +7316,7 @@ function _registerBowlBossHit(gs, now, x, y) {
   boss.lastHitAt = now;
   boss.flashUntil = now + 130;
   _spawnBowlGlob(gs, x, y, false);
+  _spawnBowlBossDamageEffect(gs, now, x, y);
   if (gs.bossHits % 10 === 0) {
     _bowlFloatText(gs, gs.bossHits + ' HIT!', x, y - boss.r * 0.35);
     try { _playMzSePitch('correct', 4); } catch (_) {}
@@ -7519,12 +7521,17 @@ function _updateBowlPhysics(gs, dt, now) {
     p.vy = p.vy * Math.pow(0.88, dt * 60) + 90 * dt;
     if (p.age >= p.life) gs.particles.splice(i, 1);
   }
+  // transient boss damage/comic effects
+  if (gs.effects) {
+    for (let i = gs.effects.length - 1; i >= 0; i--) {
+      if (now >= gs.effects[i].endsAt) gs.effects.splice(i, 1);
+    }
+  }
   // Clear check
   if (gs.phase === 'pins' && !gs.locked && _checkBowlCleared(gs)) {
     _showBowlBossIntro(gs, now);
   }
   if (gs.phase === 'boss' && gs.boss && now >= gs.boss.endsAt && !gs.locked) {
-    gs.locked = true;
     _finishBowlGame(gs);
   }
 }
@@ -7677,6 +7684,26 @@ function _spawnBowlGlob(gs, x, y, isMiss) {
   }
 }
 
+function _spawnBowlBossDamageEffect(gs, now, x, y) {
+  if (!gs || _bowlReducedMotion()) return;
+  if (!gs.effects) gs.effects = [];
+  const bossHits = gs.bossHits || 0;
+  const minDim = Math.min(gs.w, gs.h);
+  const seed = (bossHits * 37 + (gs.bgSeed & 255)) | 0;
+  const dx = Math.sin(seed * 1.91) * minDim * 0.050;
+  const dy = Math.cos(seed * 1.37) * minDim * 0.038;
+  gs.effects.push({
+    kind: ['burst', 'ring', 'slash', 'spark'][bossHits % 4],
+    x: x + dx,
+    y: y + dy - minDim * 0.015,
+    r: Math.max(22, minDim * (0.055 + (bossHits % 3) * 0.010)),
+    rot: Math.sin(seed) * 0.65,
+    bornAt: now,
+    endsAt: now + 1040,
+    seed: seed,
+  });
+}
+
 function _bowlFloatText(gs, text, x, y) {
   if (_bowlReducedMotion()) return;
   if (!gs.stageEl) return;
@@ -7706,7 +7733,7 @@ function _drawBowlScene(gs, now) {
   const sorted = gs.pins.slice().sort(function(a, b){ return a.y - b.y; });
   for (let i = 0; i < sorted.length; i++) _drawBowlPin(gs, sorted[i], now);
 
-  if (gs.phase === 'boss') _drawBowlBoss(gs, now);
+  if (gs.phase === 'boss' || gs.phase === 'boss_defeat') _drawBowlBoss(gs, now);
 
   // Donguris in flight
   for (let i = 0; i < gs.donguris.length; i++) _drawBowlDonguri(gs, gs.donguris[i], now);
@@ -7727,6 +7754,8 @@ function _drawBowlScene(gs, now) {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
+
+  _drawBowlEffects(gs, now);
 
   if (gs.phase === 'boss') _drawBowlBossHud(gs, now);
   if (gs.phase === 'boss') _drawBowlBossTapBurst(gs, now);
@@ -8071,16 +8100,27 @@ function _drawBowlBoss(gs, now) {
   const boss = gs.boss;
   if (!boss) return;
   const ctx = gs.ctx;
-  const r = boss.r;
+  const defeatT = boss.defeatAt ? _bowlClamp((now - boss.defeatAt) / BOWL_BOSS_DEFEAT_MS, 0, 1) : 0;
+  const flyEase = 1 - Math.pow(1 - defeatT, 3);
+  const shrink = boss.defeatAt ? (1 - flyEase * 0.78) : 1;
+  const r = boss.r * shrink;
   const hitT = boss.lastHitAt ? _bowlClamp(1 - (now - boss.lastHitAt) / 220, 0, 1) : 0;
   const flash = boss.flashUntil && now < boss.flashUntil;
   const shakeX = hitT > 0 ? Math.sin(now * 0.13) * r * 0.055 * hitT : 0;
   const shakeY = hitT > 0 ? Math.cos(now * 0.11) * r * 0.035 * hitT : 0;
-  const x = boss.x + shakeX;
-  const y = boss.y + shakeY;
+  const fromX = Number.isFinite(boss.defeatFromX) ? boss.defeatFromX : boss.x;
+  const fromY = Number.isFinite(boss.defeatFromY) ? boss.defeatFromY : boss.y;
+  const farX = gs.w * 0.52 + Math.sin((boss.wobbleSeed || 0) * 2.4) * gs.w * 0.10;
+  const farY = gs.h * 0.11;
+  const arcLift = Math.sin(defeatT * Math.PI) * gs.h * 0.11;
+  const x = (boss.defeatAt ? (fromX + (farX - fromX) * flyEase) : boss.x) + shakeX;
+  const y = (boss.defeatAt ? (fromY + (farY - fromY) * flyEase - arcLift) : boss.y) + shakeY;
+  const spin = boss.defeatAt ? (defeatT * Math.PI * 7.2) : 0;
 
   ctx.save();
   ctx.translate(x, y);
+  if (spin) ctx.rotate(spin);
+  if (boss.defeatAt) ctx.globalAlpha = 1 - Math.max(0, defeatT - 0.72) / 0.28;
 
   ctx.save();
   ctx.globalAlpha = 0.34;
@@ -8250,6 +8290,139 @@ function _drawBowlBossTapBurst(gs, now) {
   ctx.strokeText('おして!', 0, r * 0.20);
   ctx.fillText('おして!', 0, r * 0.20);
 
+  ctx.restore();
+}
+
+function _drawBowlEffects(gs, now) {
+  if (!gs.effects || !gs.effects.length) return;
+  for (let i = 0; i < gs.effects.length; i++) {
+    const fx = gs.effects[i];
+    const life = Math.max(1, fx.endsAt - fx.bornAt);
+    const t = _bowlClamp((now - fx.bornAt) / life, 0, 1);
+    const alpha = Math.sin((1 - t) * Math.PI * 0.5);
+    const scale = 0.62 + t * 0.72;
+    if (fx.kind === 'burst') {
+      _drawBowlHitBurstMark(gs, fx.x, fx.y, fx.r * scale, fx.rot + t * 0.18, alpha, 'ドン!');
+    } else if (fx.kind === 'ring') {
+      _drawBowlHitRingMark(gs, fx.x, fx.y, fx.r * scale, fx.rot, alpha);
+    } else if (fx.kind === 'slash') {
+      _drawBowlHitSlashMark(gs, fx.x, fx.y, fx.r * scale, fx.rot, alpha);
+    } else {
+      _drawBowlHitSparkMark(gs, fx.x, fx.y, fx.r * scale, fx.rot, alpha);
+    }
+  }
+}
+
+function _drawBowlHitBurstMark(gs, x, y, r, rot, alpha, text) {
+  const ctx = gs.ctx;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot || 0);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#FFE86A';
+  ctx.strokeStyle = '#2B1D20';
+  ctx.lineWidth = Math.max(3, r * 0.12);
+  ctx.lineJoin = 'round';
+  _bowlSpikeBurstPath(ctx, 13, r, r * 0.62);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(190, 62, 170, 0.82)';
+  ctx.lineWidth = Math.max(2, r * 0.06);
+  ctx.translate(r * 0.07, -r * 0.05);
+  _bowlSpikeBurstPath(ctx, 13, r * 0.96, r * 0.58);
+  ctx.stroke();
+  if (text) {
+    ctx.rotate(-(rot || 0));
+    ctx.fillStyle = '#6E4214';
+    ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+    ctx.lineWidth = Math.max(2, r * 0.07);
+    ctx.font = '900 ' + Math.max(13, r * 0.38) + 'px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeText(text, -r * 0.06, r * 0.02);
+    ctx.fillText(text, -r * 0.06, r * 0.02);
+  }
+  ctx.restore();
+}
+
+function _drawBowlHitRingMark(gs, x, y, r, rot, alpha) {
+  const ctx = gs.ctx;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot || 0);
+  ctx.globalAlpha = alpha;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#FFF36D';
+  ctx.lineWidth = Math.max(4, r * 0.15);
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.68, -0.18, Math.PI * 1.58);
+  ctx.stroke();
+  ctx.strokeStyle = '#2B1D20';
+  ctx.lineWidth = Math.max(2, r * 0.052);
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2;
+    const x1 = Math.cos(a) * r * 0.82;
+    const y1 = Math.sin(a) * r * 0.82;
+    const x2 = Math.cos(a) * r * 1.12;
+    const y2 = Math.sin(a) * r * 1.12;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _drawBowlHitSlashMark(gs, x, y, r, rot, alpha) {
+  const ctx = gs.ctx;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate((rot || 0) - 0.42);
+  ctx.globalAlpha = alpha;
+  ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i++) {
+    const off = i * r * 0.28;
+    ctx.strokeStyle = '#2B1D20';
+    ctx.lineWidth = Math.max(7, r * 0.17);
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.90, off + r * 0.22);
+    ctx.lineTo(r * 0.92, off - r * 0.18);
+    ctx.stroke();
+    ctx.strokeStyle = i === 0 ? '#FFE15A' : '#FF7EB3';
+    ctx.lineWidth = Math.max(4, r * 0.095);
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.86, off + r * 0.20);
+    ctx.lineTo(r * 0.88, off - r * 0.16);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _drawBowlHitSparkMark(gs, x, y, r, rot, alpha) {
+  const ctx = gs.ctx;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot || 0);
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = '#2B1D20';
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 10; i++) {
+    const a = i / 10 * Math.PI * 2 + Math.sin(i * 2.1) * 0.18;
+    const inner = r * (0.20 + (i % 2) * 0.08);
+    const outer = r * (0.74 + (i % 3) * 0.12);
+    ctx.lineWidth = Math.max(4, r * 0.10);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+    ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+    ctx.stroke();
+    ctx.strokeStyle = i % 2 ? '#FF7EB3' : '#FFE15A';
+    ctx.lineWidth = Math.max(2, r * 0.055);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+    ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+    ctx.stroke();
+    ctx.strokeStyle = '#2B1D20';
+  }
   ctx.restore();
 }
 
@@ -8509,12 +8682,29 @@ function _drawBowlPono(gs, now) {
 
 function _finishBowlGame(gs) {
   if (gs !== _bowlGameState) return;
-  if (gs.noteEl) gs.noteEl.textContent = 'ボスも びっくり！';
+  if (gs.phase === 'boss_defeat') return;
+  const now = performance.now();
+  gs.phase = 'boss_defeat';
+  gs.locked = false;
+  gs.aimDrag = null;
+  gs.donguris.length = 0;
+  gs.effects.length = 0;
+  if (gs.boss) {
+    _updateBowlBossMotion(gs, now);
+    gs.boss.defeatAt = now;
+    gs.boss.defeatFromX = gs.boss.x;
+    gs.boss.defeatFromY = gs.boss.y;
+    gs.boss.flashUntil = now + BOWL_BOSS_DEFEAT_MS * 0.45;
+  }
+  if (gs.noteEl) gs.noteEl.textContent = 'ボスが とんでいった！';
+  _bowlFloatText(gs, 'やった！', gs.w * 0.5, gs.h * 0.28);
   try { _playMzSePitch('correct', 2); } catch (_) {}
+  _drawBowlScene(gs, now);
+  if (!gs.reducedMotion && !gs.rafId) _startBowlLoop(gs);
   _webGimmickSetTimeout(function() {
     if (gs !== _bowlGameState) return;
     _resolveBowlGame();
-  }, 900);
+  }, gs.reducedMotion ? 360 : BOWL_BOSS_DEFEAT_MS);
 }
 
 function _resolveBowlGame() {
