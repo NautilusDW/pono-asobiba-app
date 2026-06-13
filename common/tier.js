@@ -326,6 +326,20 @@
     return false;
   }
 
+  // 管理用マスターパスワード。book + sub 両方を解放
+  var ADMIN_PASSWORDS = ['abcd'];
+  function verifyAdminPassword(val) {
+    if (val == null) return false;
+    var raw = String(val).trim();
+    if (!raw) return false;
+    var upper = raw.toUpperCase();
+    for (var i = 0; i < ADMIN_PASSWORDS.length; i++) {
+      var p = ADMIN_PASSWORDS[i];
+      if (p === raw || p === upper || p.toUpperCase() === upper) return true;
+    }
+    return false;
+  }
+
   // ---- サブスク誘導モーダル ("伸びしろ" の見せ方) ----
   // opts: { title, body, onClose }
   function showSubscribePromo(opts) {
@@ -423,6 +437,7 @@
     isRoomItemUnlocked: isRoomItemUnlocked,
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
+    verifyAdminPassword: verifyAdminPassword,
     showSubscribePromo: showSubscribePromo,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
     BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS,

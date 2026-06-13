@@ -2124,14 +2124,20 @@
       pwSubmit.addEventListener('click', () => {
         const input = document.getElementById('passwordUnlockInput');
         const val = (input && input.value) || '';
-        const ok = !!(window.PonoTier
-          && typeof window.PonoTier.verifyBookPassword === 'function'
-          && window.PonoTier.verifyBookPassword(val));
+        const tier = window.PonoTier || {};
+        const bookOk = typeof tier.verifyBookPassword === 'function' && tier.verifyBookPassword(val);
+        const adminOk = !bookOk
+          && typeof tier.verifyAdminPassword === 'function'
+          && tier.verifyAdminPassword(val);
+        const ok = bookOk || adminOk;
         const errEl = document.getElementById('passwordUnlockError');
         const successEl = document.getElementById('passwordUnlockSuccess');
         const helpEl = document.querySelector('.password-modal-help');
         if (ok) {
-          try { localStorage.setItem('pono_premium', '1'); } catch (e) {}
+          try {
+            localStorage.setItem('pono_premium', '1');
+            if (adminOk) localStorage.setItem('pono_sub_active', '1');
+          } catch (e) {}
           if (errEl) errEl.hidden = true;
           if (input) input.style.display = 'none';
           pwSubmit.style.display = 'none';
@@ -2167,7 +2173,7 @@
       const closer = e.target.closest('[data-close="passwordUnlockModal"]');
       if (closer) {
         try {
-          if (localStorage.getItem('pono_premium') === '1') {
+          if (localStorage.getItem('pono_premium') === '1' || localStorage.getItem('pono_sub_active') === '1') {
             setTimeout(() => location.reload(), 100);
           }
         } catch (e) {}

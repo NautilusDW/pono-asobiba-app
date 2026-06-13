@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1066; // v1066: restore tier system (free/book/sub) for IAP gating
+const CACHE_VERSION = 1067; // v1067: add admin master password (abcd) for book+sub unlock
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
