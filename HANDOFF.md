@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-13 - [batch:469-bento-shop-extra-box-shapes] DONE - Codex: user 要望「今後増やす予定のお弁当箱の形と蓋を3-4種類、ショーケース/後ろ棚/右平積みに混ぜる」を受け、GPT Image 2 built-in imagegen で店内背景 raw 3案を生成。`tmp/alpha_pending/469_bento_shop_extra_box_shapes_raw/` に保存。推奨は `shop_interior_extra_box_shapes_variant03_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:468-bento-shop-interior-no-noren-flatstack] DONE - Codex: user 指摘「のれん不要、ショーケース内は8個くらい、右側に腰下高さで弁当を平積み」を受け、GPT Image 2 built-in imagegen で店内カウンター背景 raw 2案を生成。`tmp/alpha_pending/468_bento_shop_interior_no_noren_flatstack_raw/` に保存。推奨は `shop_interior_no_noren_flatstack_variant01_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:467-bento-shop-interior-counter-redo] DONE - Codex: user 指摘「店外ではなく店内、ポノ/男の子/女の子はカウンターの向こう、ショーケースと山積みのお弁当、差し色が欲しい」を受け、GPT Image 2 built-in imagegen で店内カウンター越し背景 raw 3案を生成。`tmp/alpha_pending/467_bento_shop_interior_counter_redo_raw/` に保存。推奨は `shop_interior_counter_bento_staff_variant03_raw.png`。alpha抜き/最終配置/実装反映は未実施。 (by Codex)
 - 2026-06-13 - [batch:464-oto-rhythm-left-ui-bubble-clip] Codex: user 指摘「OtoTouchリズムの左側UIが被っている / ポノの連続・フィーバー吹き出しが切れる」を受領。HANDOFF / git log / 対象CSSを確認し、既存 batch 448 以降の追加レイアウト調整として、左パネルの縦配置と吹き出しの画面内クランプを修正する。 (by Codex)
