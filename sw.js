@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1072; // v1072: fix donguri bowling pin grounding and boss intro start
+const CACHE_VERSION = 1073; // v1073: add donguri boss tap burst prompt
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

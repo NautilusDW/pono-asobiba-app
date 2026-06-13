@@ -6609,6 +6609,7 @@ const BOWL_BOSS_THROW_COOLDOWN_MS = 85;
 const BOWL_BOSS_R_REL         = 0.205;
 const BOWL_BOSS_HIT_R_REL     = 0.145;
 const BOWL_BOSS_DONGURI_SPEED_REL = 1.55;
+const BOWL_BOSS_PROMPT_BLINK_MS = 620;
 const BOWL_PONO_HEIGHT_REL   = 0.16;
 const BOWL_PONO_Y_REL        = 0.88;   // bottom-center launcher
 const BOWL_PONO_X_REL        = 0.50;
@@ -6949,8 +6950,8 @@ function _showBowlGame(c) {
       '<div class="bowl-game__boss-intro" id="bowlBossIntro" hidden>' +
         '<div class="bowl-game__boss-intro-panel">' +
           '<p class="bowl-game__boss-intro-title">ボスが あらわれた！</p>' +
-          '<p class="bowl-game__boss-intro-body">ボタンを れんだして<br>どんぐりを いっぱい あてよう！</p>' +
-          '<button class="bowl-game__boss-intro-btn" id="bowlBossIntroBtn" type="button">れんだ スタート ▶</button>' +
+          '<p class="bowl-game__boss-intro-body">ボタンを なんども おして<br>どんぐりを いっぱい あてよう！</p>' +
+          '<button class="bowl-game__boss-intro-btn" id="bowlBossIntroBtn" type="button">タップ スタート ▶</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -7272,7 +7273,7 @@ function _startBowlBossPhase(gs, now) {
   for (let i = 0; i < gs.pins.length; i++) {
     if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
   }
-  if (gs.noteEl) gs.noteEl.textContent = 'れんだで ボスに あてよう！';
+  if (gs.noteEl) gs.noteEl.textContent = 'なんども おして ボスに あてよう！';
   _bowlFloatText(gs, 'ボスだ！', gs.w * 0.5, gs.h * 0.32);
   try { _playMzSePitch('correct', 3); } catch (_) { try { playTap(); } catch (__) {} }
   _updateBowlBossMotion(gs, now);
@@ -7318,7 +7319,7 @@ function _registerBowlBossHit(gs, now, x, y) {
     _bowlFloatText(gs, gs.bossHits + ' HIT!', x, y - boss.r * 0.35);
     try { _playMzSePitch('correct', 4); } catch (_) {}
   } else if (gs.bossHitCombo >= 4) {
-    _bowlFloatText(gs, 'れんだ！', x, y - boss.r * 0.28);
+    _bowlFloatText(gs, 'タップ！', x, y - boss.r * 0.28);
   } else {
     _bowlFloatText(gs, '+1', x, y - boss.r * 0.18);
   }
@@ -7728,6 +7729,7 @@ function _drawBowlScene(gs, now) {
   ctx.restore();
 
   if (gs.phase === 'boss') _drawBowlBossHud(gs, now);
+  if (gs.phase === 'boss') _drawBowlBossTapBurst(gs, now);
 }
 
 function _drawBowlAimGuide(gs) {
@@ -8177,6 +8179,93 @@ function _drawBowlBossHud(gs, now) {
   const sec = Math.max(0, Math.ceil((boss.endsAt - now) / 1000));
   ctx.fillText('ボスに ' + (gs.bossHits || 0) + ' HIT  /  あと ' + sec + 'びょう', W * 0.5, y + boxH * 0.31);
   ctx.restore();
+}
+
+function _drawBowlBossTapBurst(gs, now) {
+  const ctx = gs.ctx;
+  const W = gs.w;
+  const H = gs.h;
+  const minDim = Math.min(W, H);
+  const blink = 0.5 + 0.5 * Math.sin((now / BOWL_BOSS_PROMPT_BLINK_MS) * Math.PI * 2);
+  const scalePulse = 1 + blink * 0.055;
+  const alpha = 0.84 + blink * 0.16;
+  const r = Math.max(48, Math.min(minDim * 0.21, 92));
+  const x = _bowlClamp(W * 0.75, r + 14, W - r - 14);
+  const y = _bowlClamp(H * 0.39, r + 48, H - r - 36);
+  const points = 22;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scalePulse, scalePulse);
+  ctx.globalAlpha = alpha;
+
+  ctx.save();
+  ctx.translate(4, 5);
+  ctx.fillStyle = 'rgba(44, 31, 28, 0.28)';
+  _bowlSpikeBurstPath(ctx, points, r * 1.04, r * 0.72);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(3, -2);
+  ctx.strokeStyle = 'rgba(193, 71, 181, 0.86)';
+  ctx.lineWidth = Math.max(3, r * 0.055);
+  ctx.lineJoin = 'round';
+  _bowlSpikeBurstPath(ctx, points, r * 1.02, r * 0.70);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = '#FFD84D';
+  ctx.strokeStyle = '#1F1A1A';
+  ctx.lineWidth = Math.max(4, r * 0.062);
+  ctx.lineJoin = 'round';
+  _bowlSpikeBurstPath(ctx, points, r, r * 0.69);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.save();
+  ctx.globalAlpha = 0.20;
+  ctx.fillStyle = '#FFF7B8';
+  for (let i = 0; i < 26; i++) {
+    const col = i % 7;
+    const row = Math.floor(i / 7);
+    const px = (col - 3) * r * 0.19 + (row % 2) * r * 0.08;
+    const py = (row - 1.5) * r * 0.20;
+    if (px * px + py * py > r * r * 0.46) continue;
+    ctx.beginPath();
+    ctx.arc(px, py, Math.max(2, r * 0.025), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = '#4C3313';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.74)';
+  ctx.lineWidth = Math.max(3, r * 0.045);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 ' + Math.max(18, r * 0.27) + 'px system-ui, sans-serif';
+  ctx.strokeText('なんども', 0, -r * 0.13);
+  ctx.fillText('なんども', 0, -r * 0.13);
+  ctx.font = '900 ' + Math.max(20, r * 0.32) + 'px system-ui, sans-serif';
+  ctx.strokeText('おして!', 0, r * 0.20);
+  ctx.fillText('おして!', 0, r * 0.20);
+
+  ctx.restore();
+}
+
+function _bowlSpikeBurstPath(ctx, points, outerR, innerR) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const isOuter = i % 2 === 0;
+    const jitter = isOuter ? 1 + Math.sin(i * 1.91) * 0.08 : 1 + Math.cos(i * 2.17) * 0.06;
+    const radius = (isOuter ? outerR : innerR) * jitter;
+    const angle = -Math.PI / 2 + (i / (points * 2)) * Math.PI * 2;
+    const px = Math.cos(angle) * radius;
+    const py = Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
 }
 
 function _drawBowlPin(gs, pin, now) {
