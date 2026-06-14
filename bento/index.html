@@ -1818,12 +1818,11 @@ html, body {
   overflow: visible;
   background: transparent;
 }
-.complete-bento.free-complete-stack.free-complete-side-by-side .free-layout-stage,
 .complete-bento.free-complete-stack.free-complete-side-by-side .free-layout-mask-frame {
   overflow: hidden;
 }
 .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
-  --complete-stage-content-scale: 1.08;
+  --complete-stage-content-scale: 1.32;
 }
 .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage > .free-bento-shape,
 .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage > .free-layout-mask-frame,
@@ -2522,6 +2521,14 @@ html, body {
   overflow: hidden;
 }
 .complete-overlay.hidden { display: none; }
+body.bento-complete-open .pono-menu-toggle {
+  left: calc(var(--bento-complete-card-left, 0px) + clamp(12px, 2.2vmin, 20px)) !important;
+  top: calc(var(--bento-complete-card-top, 0px) + clamp(8px, 1.8vmin, 16px)) !important;
+}
+body.bento-complete-open .pono-dropdown {
+  left: calc(var(--bento-complete-card-left, 0px) + clamp(12px, 2.2vmin, 20px)) !important;
+  top: calc(var(--bento-complete-card-top, 0px) + clamp(58px, 9vmin, 72px)) !important;
+}
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ===== NPC requester intro / reaction overlays =====
@@ -3257,7 +3264,7 @@ html, body {
     height: clamp(520px, 76dvh, 620px);
   }
   .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
-    --complete-stage-content-scale: 1.14;
+    --complete-stage-content-scale: 1.36;
   }
 }
 @media (max-width: 520px) {
@@ -3315,7 +3322,7 @@ html, body {
     width: clamp(176px, 20vw, 202px);
   }
   .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
-    --complete-stage-content-scale: 1.1;
+    --complete-stage-content-scale: 1.3;
   }
   .complete-right .balance-item {
     min-height: 24px;
@@ -9913,6 +9920,29 @@ function flyFood(from, to, src, cb) {
 
 function showToast(m) { const t = document.getElementById('wrong-toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); }
 
+function syncCompleteChromeSafeArea() {
+  const overlay = document.getElementById('complete-overlay');
+  const card = overlay && overlay.querySelector('.complete-card-wide');
+  if (!overlay || overlay.classList.contains('hidden') || !card) {
+    document.body.classList.remove('bento-complete-open');
+    document.body.style.removeProperty('--bento-complete-card-left');
+    document.body.style.removeProperty('--bento-complete-card-top');
+    return;
+  }
+  const rect = card.getBoundingClientRect();
+  document.body.style.setProperty('--bento-complete-card-left', `${Math.max(0, rect.left)}px`);
+  document.body.style.setProperty('--bento-complete-card-top', `${Math.max(0, rect.top)}px`);
+  document.body.classList.add('bento-complete-open');
+}
+function queueCompleteChromeSafeAreaSync() {
+  syncCompleteChromeSafeArea();
+  requestAnimationFrame(syncCompleteChromeSafeArea);
+  setTimeout(syncCompleteChromeSafeArea, 80);
+  setTimeout(syncCompleteChromeSafeArea, 240);
+  setTimeout(syncCompleteChromeSafeArea, 520);
+  setTimeout(syncCompleteChromeSafeArea, 900);
+}
+
 function stageComplete() {
   const completionData = freeLayoutMode
     ? syncFreeLayoutSelectionState()
@@ -10054,6 +10084,7 @@ function stageComplete() {
     const rightEl = document.getElementById('complete-right');
     if (rightEl) rightEl.classList.remove('flashing','gloomy');
     document.getElementById('complete-overlay').classList.add('hidden');
+    syncCompleteChromeSafeArea();
     if (freeLayoutMode) {
       loadStage();
       return;
@@ -10072,10 +10103,12 @@ function stageComplete() {
   // 自由モード (currentRequester == null) の時は従来通りすぐ完成画面。
   const _showCompleteOverlay = () => {
     document.getElementById('complete-overlay').classList.remove('hidden');
+    queueCompleteChromeSafeAreaSync();
     if (freeLayoutMode) {
       requestAnimationFrame(() => {
         const completeBento = document.getElementById('complete-bento');
         if (completeBento) renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId, { hideLid: true, sideBySideTiers: true });
+        queueCompleteChromeSafeAreaSync();
       });
     }
     revealReactionWithDrama(reaction);
@@ -10597,8 +10630,16 @@ function updateNotice() {
   n.style.pointerEvents = (portrait && touch) ? 'auto' : 'none';
 }
 updateNotice();
-window.addEventListener('orientationchange', () => { setTimeout(updateNotice, 100); setTimeout(updateNotice, 500); });
-window.addEventListener('resize', updateNotice);
+window.addEventListener('orientationchange', () => {
+  setTimeout(updateNotice, 100);
+  setTimeout(updateNotice, 500);
+  setTimeout(syncCompleteChromeSafeArea, 100);
+  setTimeout(syncCompleteChromeSafeArea, 500);
+});
+window.addEventListener('resize', () => {
+  updateNotice();
+  syncCompleteChromeSafeArea();
+});
 window.addEventListener('resize', () => {
   const stage = document.getElementById('free-layout-stage');
   if (!stage || !document.getElementById('app')?.classList.contains('free-layout-active')) return;
