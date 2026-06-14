@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1104; // v1104: bento result larger boxes and safe menu button
+const CACHE_VERSION = 1105; // v1105: bento next customer order loop
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

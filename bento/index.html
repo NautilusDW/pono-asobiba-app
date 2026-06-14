@@ -4871,8 +4871,7 @@ let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 
 // ===== NPC 依頼者モード state =====
-// セッション開始時にランダム選定された NPC が入る (URL ?npc=0 の時だけ自由モード)。
-// 一度設定されたらタブ閉じるまで保持され、 完成画面 → 次ステージでも同じ依頼者が居続ける。
+// セッション中の現在の依頼者。完成後は次の依頼者に切り替えて注文シーンから再開する。
 // セッションキー: bento_npc_id (sessionStorage)
 let currentRequester = null;
 const NPC_SESSION_KEY = 'bento_npc_id';
@@ -4903,6 +4902,40 @@ function getEligibleNpcRequesters() {
   return eligible.length > 0 ? eligible : NPC_REQUESTERS.slice();
 }
 
+function setCurrentNpcRequester(req) {
+  currentRequester = req || null;
+  try {
+    sessionStorage.setItem(NPC_DECIDED_KEY, '1');
+    if (currentRequester) sessionStorage.setItem(NPC_SESSION_KEY, currentRequester.id);
+    else sessionStorage.removeItem(NPC_SESSION_KEY);
+  } catch (_) {}
+  return currentRequester;
+}
+
+function pickRandomNpcRequester(excludeId) {
+  const pool = getEligibleNpcRequesters();
+  const candidates = pool.length > 1 && excludeId
+    ? pool.filter(r => r.id !== excludeId)
+    : pool;
+  return candidates[Math.floor(Math.random() * candidates.length)] || null;
+}
+
+function selectNextNpcRequester() {
+  try {
+    const sp = new URLSearchParams(location.search);
+    const force = sp.get('npc');
+    if (force !== null) {
+      if (force === '0' || force === 'free' || force === 'off') return setCurrentNpcRequester(null);
+      if (force !== '1' && force !== 'random' && force !== 'on') {
+        const found = NPC_REQUESTERS.find(r => r.id === force);
+        if (found) return setCurrentNpcRequester(found);
+      }
+    }
+  } catch (_) {}
+  if (Math.random() >= NPC_REQUEST_RATE) return setCurrentNpcRequester(null);
+  return setCurrentNpcRequester(pickRandomNpcRequester(currentRequester && currentRequester.id));
+}
+
 function decideNpcMode() {
   // ----- テスト用 URL パラメータ (?npc=...) -----
   // ?npc=0           → 強制 自由モード (動物来ない)
@@ -4914,16 +4947,15 @@ function decideNpcMode() {
     const force = sp.get('npc');
     if (force !== null) {
       if (force === '0' || force === 'free' || force === 'off') {
-        currentRequester = null;
+        setCurrentNpcRequester(null);
         return;
       }
       if (force === '1' || force === 'random' || force === 'on') {
-        const pool = getEligibleNpcRequesters();
-        currentRequester = pool[Math.floor(Math.random() * pool.length)];
+        setCurrentNpcRequester(pickRandomNpcRequester());
         return;
       }
       const found = NPC_REQUESTERS.find(r => r.id === force);
-      if (found) { currentRequester = found; return; }
+      if (found) { setCurrentNpcRequester(found); return; }
       // 不明な id → フォールスルーして通常判定
     }
   } catch (_) {}
@@ -4939,12 +4971,9 @@ function decideNpcMode() {
   } catch (_) { /* private mode 等で sessionStorage 不可 → 一回限り判定 */ }
 
   if (Math.random() < NPC_REQUEST_RATE) {
-    const pool = getEligibleNpcRequesters();
-    currentRequester = pool[Math.floor(Math.random() * pool.length)];
-    try { sessionStorage.setItem(NPC_SESSION_KEY, currentRequester.id); } catch (_) {}
+    setCurrentNpcRequester(pickRandomNpcRequester());
   } else {
-    currentRequester = null;
-    try { sessionStorage.removeItem(NPC_SESSION_KEY); } catch (_) {}
+    setCurrentNpcRequester(null);
   }
 }
 
@@ -5108,7 +5137,7 @@ function renderShopOpeningLine(lineEl, step, req) {
   }
 }
 
-function showShopOpening(req, onDone) {
+function showShopOpening(req, onDone, options = {}) {
   if (!req) { if (onDone) onDone(); return; }
   const ov = document.getElementById('shop-opening');
   const bg = document.getElementById('shop-opening-bg');
@@ -5121,7 +5150,7 @@ function showShopOpening(req, onDone) {
     return;
   }
 
-  const steps = [
+  const allSteps = [
     {
       bg: SHOP_OPENING_STAFF_BG,
       customer: false,
@@ -5148,6 +5177,7 @@ function showShopOpening(req, onDone) {
       next: 'おべんとうを つくる',
     },
   ];
+  const steps = options.skipIntro ? allSteps.slice(1) : allSteps;
 
   let stepIndex = 0;
   let renderToken = 0;
@@ -5201,6 +5231,15 @@ function showShopOpening(req, onDone) {
   };
   render();
   ov.classList.remove('hidden');
+}
+
+function startNextBentoOrderRound() {
+  const req = selectNextNpcRequester();
+  if (!req) {
+    loadStage();
+    return;
+  }
+  showShopOpening(req, loadStage, { skipIntro: true });
 }
 
 function getRequesterReactionMessage(req, finalEval) {
@@ -10086,7 +10125,7 @@ function stageComplete() {
     document.getElementById('complete-overlay').classList.add('hidden');
     syncCompleteChromeSafeArea();
     if (freeLayoutMode) {
-      loadStage();
+      startNextBentoOrderRound();
       return;
     }
     if (inChallengeMode) {
