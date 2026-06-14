@@ -1474,6 +1474,7 @@
     pointer-events: auto;
   }
   .rhythm-menu.show { display: flex; }
+  body.oto-modal-open .pono-menu-toggle { display: none !important; }
   .rhythm-menu-panel {
     width: min(86vw, 520px);
     max-height: calc(100vh - 32px);
@@ -1482,11 +1483,11 @@
     border: 3px solid rgba(255,255,255,0.82);
     background: rgba(18,35,86,0.94);
     box-shadow: 0 16px 36px rgba(0,0,0,0.34);
-    padding: 24px 26px 22px;
+    padding: 18px 22px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     text-align: center;
   }
   .rhythm-menu-title {
@@ -1793,6 +1794,36 @@
   .rhythm-score-breakdown b {
     color: #0F3A5C;
     font-size: 1rem;
+  }
+  .rhythm-score-details { width: 100%; }
+  .rhythm-score-details summary {
+    cursor: pointer; list-style: none;
+    font-size: 14px; color: rgba(255,255,255,0.8);
+    padding: 6px 12px; border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    display: inline-block;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rhythm-score-details summary::-webkit-details-marker { display: none; }
+  .rhythm-score-details[open] summary { background: rgba(255,255,255,0.16); }
+  .rhythm-score-details[open] summary::before { content: '▲ '; }
+  .rhythm-score-details:not([open]) summary::before { content: '▼ '; }
+  .rhythm-result-ranking-view.hidden { display: none; }
+  .rhythm-result-main-actions.hidden { display: none; }
+  .rhythm-score-summary.hidden { display: none; }
+  .rhythm-complete-btn.ranking { background: linear-gradient(135deg, #FCD34D, #F59E0B); color: #5C3A06; }
+  .rhythm-back-to-result {
+    margin-top: 12px;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 14px;
+    background: linear-gradient(135deg, #E0E7FF, #818CF8);
+    color: #1E1B4B;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
   .rhythm-name-form {
     margin-top: 12px;
@@ -2215,22 +2246,14 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: center / cover no-repeat url('../assets/images/oto/title_back.jpg');
+    background: #FFF6E0;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
   }
-  .intro::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(180deg, rgba(26, 32, 54, 0.16) 0%, rgba(26, 32, 54, 0.42) 100%),
-      radial-gradient(circle at 50% 32%, rgba(255, 244, 209, 0.16) 0%, rgba(255, 244, 209, 0) 42%);
-  }
   .intro__content {
     position: absolute;
-    top: 50%;
+    top: 42%;
     right: clamp(8px, 3vw, 40px);
     transform: translateY(-50%);
     z-index: 1;
@@ -2267,7 +2290,7 @@
   }
   @media (max-width: 900px) {
     .intro__content {
-      top: 50%;
+      top: 42%;
       left: 50%;
       right: auto;
       transform: translate(-50%, -50%);
@@ -3091,8 +3114,6 @@
     <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
       <div class="rhythm-menu-panel">
         <div class="rhythm-menu-title">リズムでえんそう</div>
-        <div class="rhythm-menu-text">ブロックが したの ラインに きたら タッチ。</div>
-        <div class="rhythm-menu-cue"><span class="rhythm-cue-dot"></span><span>おくから くる ブロックを みて おそう</span></div>
         <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
         <div class="rhythm-song-list" id="rhythm-song-list"></div>
         <div class="rhythm-practice" id="rhythm-practice">
@@ -3122,26 +3143,35 @@
         <div class="rhythm-complete-text" id="rhythm-complete-text">リズムだけ きいてね</div>
         <div class="rhythm-score-summary" id="rhythm-score-summary">
           <div class="rhythm-score-main"><span>スコア</span><strong id="rhythm-score-value">0</strong></div>
-          <div class="rhythm-score-breakdown" id="rhythm-score-breakdown"></div>
+          <details class="rhythm-score-details" id="rhythm-score-details">
+            <summary class="rhythm-score-details-toggle">くわしくみる</summary>
+            <div class="rhythm-score-breakdown" id="rhythm-score-breakdown"></div>
+          </details>
         </div>
-        <form class="rhythm-name-form hidden" id="rhythm-name-form">
-          <label class="rhythm-name-label" for="rhythm-name-input" id="rhythm-name-label">10いに はいったよ</label>
-          <div class="rhythm-name-row">
-            <input class="rhythm-name-input" id="rhythm-name-input" type="text" maxlength="8" autocomplete="off" inputmode="text" placeholder="なまえ">
-            <button class="rhythm-name-save" type="submit">のこす</button>
+        <div class="rhythm-result-ranking-view hidden" id="rhythm-result-ranking-view">
+          <form class="rhythm-name-form hidden" id="rhythm-name-form">
+            <label class="rhythm-name-label" for="rhythm-name-input" id="rhythm-name-label">10いに はいったよ</label>
+            <div class="rhythm-name-row">
+              <input class="rhythm-name-input" id="rhythm-name-input" type="text" maxlength="8" autocomplete="off" inputmode="text" placeholder="なまえ">
+              <button class="rhythm-name-save" type="submit">のこす</button>
+            </div>
+          </form>
+          <div class="rhythm-ranking" id="rhythm-ranking">
+            <div class="rhythm-ranking-title" id="rhythm-ranking-title">ハイスコア</div>
+            <div class="rhythm-ranking-outside" id="rhythm-ranking-outside"></div>
+            <div class="rhythm-ranking-list" id="rhythm-ranking-list"></div>
           </div>
-        </form>
-        <div class="rhythm-ranking" id="rhythm-ranking">
-          <div class="rhythm-ranking-title" id="rhythm-ranking-title">ハイスコア</div>
-          <div class="rhythm-ranking-outside" id="rhythm-ranking-outside"></div>
-          <div class="rhythm-ranking-list" id="rhythm-ranking-list"></div>
+          <button class="rhythm-back-to-result" type="button" id="rhythm-back-to-result">けっかにもどる</button>
         </div>
-        <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
-          <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
-          <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
-          <button class="rhythm-complete-btn demo" id="rhythm-complete-demo">おてほん</button>
-          <button class="rhythm-complete-btn select" id="rhythm-complete-select">きょくをえらぶ</button>
-          <button class="rhythm-complete-btn next hidden" id="rhythm-complete-next">つぎのパート</button>
+        <div class="rhythm-result-main-actions" id="rhythm-result-main-actions">
+          <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
+            <button class="rhythm-complete-btn ranking" id="rhythm-show-ranking">ハイスコア</button>
+            <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
+            <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
+            <button class="rhythm-complete-btn demo" id="rhythm-complete-demo">おてほん</button>
+            <button class="rhythm-complete-btn select" id="rhythm-complete-select">きょくをえらぶ</button>
+            <button class="rhythm-complete-btn next hidden" id="rhythm-complete-next">つぎのパート</button>
+          </div>
         </div>
       </div>
     </div>
@@ -4465,7 +4495,7 @@ function _rhythmStageSummary() {
   var unlocked = Math.min(total, Math.max(1, progress.unlockedStage || 1));
   var current = _rhythmSongStage(RHYTHM_BASE_SONG);
   var clearedCount = RHYTHM_SONGS.filter(function(song) { return _rhythmSongCleared(song, progress); }).length;
-  return 'ステージ ' + current + ' / ' + total + '　クリア ' + clearedCount + ' / ' + total + '　あそべる ' + unlocked + ' まで';
+  return 'ステージ ' + current + ' / ' + total + '　クリア ' + clearedCount;
 }
 
 function _rhythmSections(song) {
@@ -7100,10 +7130,12 @@ function _showRhythmMenu() {
   _setModeButtons('rhythm');
   var menu = document.getElementById('rhythm-menu');
   if (menu) menu.classList.add('show');
+  if (document.body) document.body.classList.add('oto-modal-open');
 }
 function _hideRhythmMenu() {
   var menu = document.getElementById('rhythm-menu');
   if (menu) menu.classList.remove('show');
+  if (document.body) document.body.classList.remove('oto-modal-open');
 }
 function _stopRhythmMode() {
   _clearRhythmCountdown();
@@ -7319,6 +7351,38 @@ if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
   _hideRhythmMenu();
   setPlayMode('free');
 });
+(function() {
+  var showRankingBtn = document.getElementById('rhythm-show-ranking');
+  var backToResultBtn = document.getElementById('rhythm-back-to-result');
+  var rankingView = document.getElementById('rhythm-result-ranking-view');
+  var mainActions = document.getElementById('rhythm-result-main-actions');
+  var mainStuff = document.querySelector('.rhythm-score-summary');
+  if (showRankingBtn && rankingView && mainActions) {
+    showRankingBtn.addEventListener('click', function() {
+      rankingView.classList.remove('hidden');
+      mainActions.classList.add('hidden');
+      if (mainStuff) mainStuff.classList.add('hidden');
+    });
+  }
+  if (backToResultBtn && rankingView && mainActions) {
+    backToResultBtn.addEventListener('click', function() {
+      rankingView.classList.add('hidden');
+      mainActions.classList.remove('hidden');
+      if (mainStuff) mainStuff.classList.remove('hidden');
+    });
+  }
+  var modal = document.getElementById('rhythm-complete');
+  if (modal) {
+    var observer = new MutationObserver(function() {
+      if (modal.classList.contains('show')) {
+        if (rankingView) rankingView.classList.add('hidden');
+        if (mainActions) mainActions.classList.remove('hidden');
+        if (mainStuff) mainStuff.classList.remove('hidden');
+      }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  }
+})();
 var rhythmCompleteAgain = document.getElementById('rhythm-complete-again');
 if (rhythmCompleteAgain) rhythmCompleteAgain.addEventListener('click', function(e) {
   e.preventDefault();
