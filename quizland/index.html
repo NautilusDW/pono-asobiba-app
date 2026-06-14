@@ -3300,6 +3300,15 @@ body.layout-editor-on .op-skip {
 .qno-plate-overlay.hidden { display: none; }
 .qno-plate-overlay.is-tap-skip { pointer-events: auto; cursor: pointer; }
 body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
+/* v1098: バルーン (最終問題のみ) + plate を縦に積む中央寄せコンテナ。
+   バルーン非表示時 (Q1-Q4) は plate 単独で従来通り中央に配置される。 */
+.qno-plate-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.5vh, 18px);
+}
 .qno-plate-img {
   max-width: 70vw;
   max-height: 50vh;
@@ -3327,6 +3336,32 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   .qno-plate-img {
     max-width: 86vw;
     max-height: 38vh;
+  }
+}
+/* v1098: 「さいごの もんだい！」バルーン。 plate の上に banner として表示。
+   plate より一回り小さく (46vw/30vh)。 .show が付いた最終問題のみ表示され、
+   pop-in / fade-out は plate と同じ is-impact / is-fadeout 駆動で完全同期する。 */
+#qno-final-balloon-img {
+  max-width: 46vw;
+  max-height: 30vh;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.22));
+  transform: scale(0);
+  opacity: 0;
+  transition: opacity 0.22s ease-out;
+}
+#qno-final-balloon-img:not(.show) { display: none; }
+.qno-plate-overlay.is-impact #qno-final-balloon-img.show {
+  animation: qnoImpact 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+.qno-plate-overlay.is-fadeout #qno-final-balloon-img {
+  opacity: 0;
+}
+@media (max-width: 540px) {
+  #qno-final-balloon-img {
+    max-width: 64vw;
+    max-height: 22vh;
   }
 }
 </style>
@@ -3547,7 +3582,11 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
      (v960 仕様、 旧 1.6s 自動消去から延長)。 fallback: kurumi audio 取得失敗時
      は 6 秒で強制 hide。 -->
 <div id="qno-plate-overlay" class="qno-plate-overlay hidden" aria-hidden="true">
-  <img class="qno-plate-img" id="qno-plate-img" src="" alt="">
+  <!-- v1098: バルーン (最終問題のみ表示) を plate の上に縦積み。 plate 単独時 (Q1-Q4) は従来通り中央配置。 -->
+  <div class="qno-plate-stack">
+    <img id="qno-final-balloon-img" src="" alt="">
+    <img class="qno-plate-img" id="qno-plate-img" src="" alt="">
+  </div>
 </div>
 
 <script>
@@ -7802,6 +7841,20 @@ async function playQuestionNumberPlate(qIdx) {
   const plateNum = qIdx + 1;
   img.src = '../assets/images/quizland/qno_plate_' + plateNum + '.png';
 
+  // v1098: 最終問題 (qIdx === totalQuestions - 1) のみ「さいごの もんだい！」
+  //   バルーンを plate の上に同時表示。 QZ_DEBUG_ALL (169問) では qIdx 4 は
+  //   最終問題ではないので、 totalQuestions を真値として参照し誤表示を防ぐ。
+  const balloonImg = document.getElementById('qno-final-balloon-img');
+  if (balloonImg) {
+    if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
+      balloonImg.src = '../assets/images/quizland/final_q_balloon.webp';
+      balloonImg.classList.add('show');
+    } else {
+      balloonImg.classList.remove('show');
+      balloonImg.src = '';
+    }
+  }
+
   // タップで「即フェードアウト」させる (旧仕様: cancelled で即座に hide)
   function onTap() {
     root.removeEventListener('click', onTap);
@@ -7850,6 +7903,9 @@ function hideQuestionNumberPlate() {
     root.classList.add('hidden');
     root.setAttribute('aria-hidden', 'true');
     if (img) img.src = '';
+    // v1098: バルーンも plate と同様に hide + src クリア (次問へ持ち越さない)。
+    const balloonImg = document.getElementById('qno-final-balloon-img');
+    if (balloonImg) { balloonImg.classList.remove('show'); balloonImg.src = ''; }
     _qnoRunning = false;
   }, 240); // CSS transition (0.22s) と一致 (R2: 早めの fade out + 多少 OL)
 }
@@ -7877,7 +7933,8 @@ document.getElementById('start-screen').addEventListener('click', function() {
       '../assets/images/quizland/qno_plate_2.png',
       '../assets/images/quizland/qno_plate_3.png',
       '../assets/images/quizland/qno_plate_4.png',
-      '../assets/images/quizland/qno_plate_5.png'
+      '../assets/images/quizland/qno_plate_5.png',
+      '../assets/images/quizland/final_q_balloon.webp'
     ];
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
