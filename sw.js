@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1098; // v1098: quizland 最終問題に「さいごの もんだい！」バルーンを追加
+const CACHE_VERSION = 1099; // v1099: bento delayed customer entry and NPC result reaction
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

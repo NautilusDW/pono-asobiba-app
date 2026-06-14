@@ -162,7 +162,7 @@ html, body {
   opacity: 1;
 }
 .shop-opening.is-entering .shop-opening__customer {
-  animation: shopCustomerEnter 0.85s cubic-bezier(0.18, 0.85, 0.22, 1.05) both;
+  animation: shopCustomerEnter 1.02s cubic-bezier(0.18, 0.85, 0.22, 1.05) both;
 }
 @keyframes shopCustomerEnter {
   from { transform: translateX(72vw); opacity: 0; }
@@ -2907,6 +2907,15 @@ html, body {
   object-fit: contain;
   display: block;
   transform-origin: top center;
+  object-position: center bottom;
+}
+.complete-pono-slot.is-npc {
+  height: 86px;
+  align-items: flex-end;
+}
+.complete-pono-slot.is-npc .complete-pono-big {
+  width: 104px;
+  height: 104px;
 }
 @keyframes ponoFloat {
   0%, 100% { transform: translateY(0); }
@@ -3125,6 +3134,8 @@ html, body {
   .complete-checklist { grid-template-columns: 1fr; width: 96%; }
   .complete-pono-slot { width: 126px; height: 92px; }
   .complete-pono-big { width: 126px; height: 126px; }
+  .complete-pono-slot.is-npc { height: 100px; }
+  .complete-pono-slot.is-npc .complete-pono-big { width: 134px; height: 134px; }
   .complete-bento.free-complete-stack,
   .free-complete-build-stage { min-height: 360px; }
 }
@@ -3181,6 +3192,13 @@ html, body {
   .complete-pono-big {
     width: 78px;
     height: 78px;
+  }
+  .complete-pono-slot.is-npc {
+    height: 66px;
+  }
+  .complete-pono-slot.is-npc .complete-pono-big {
+    width: 86px;
+    height: 86px;
   }
   .complete-pono-bubble {
     padding: 4px 8px;
@@ -4806,6 +4824,35 @@ function showRequesterIntro(req) {
 
 const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/shop_staff_counter.png';
 const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.png';
+const SHOP_CUSTOMER_ENTER_DELAY_MS = 420;
+
+function waitForImageReady(img, src) {
+  if (!img || !src) return Promise.resolve();
+  img.src = src;
+  const decodeReady = () => (
+    img.decode
+      ? img.decode().catch(() => {})
+      : Promise.resolve()
+  );
+  if (img.complete && img.naturalWidth > 0) return decodeReady();
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      img.removeEventListener('load', finish);
+      img.removeEventListener('error', finish);
+      decodeReady().then(resolve);
+    };
+    img.addEventListener('load', finish);
+    img.addEventListener('error', finish);
+    setTimeout(finish, 3200);
+  });
+}
+
+function waitMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function showShopOpening(req, onDone) {
   if (!req) { if (onDone) onDone(); return; }
@@ -4848,20 +4895,31 @@ function showShopOpening(req, onDone) {
   ];
 
   let stepIndex = 0;
+  let renderToken = 0;
   const render = () => {
+    const token = ++renderToken;
     const step = steps[stepIndex];
-    bg.src = step.bg;
+    const bgReady = waitForImageReady(bg, step.bg);
     bg.alt = step.name;
     name.textContent = step.name;
     line.textContent = step.line;
     next.textContent = step.next;
-    ov.classList.toggle('has-customer', !!step.customer);
     ov.classList.toggle('is-customer-step', !!step.customer);
+    const keepVisibleCustomer = !!(step.customer && !step.enter && ov.classList.contains('has-customer'));
+    ov.classList.toggle('has-customer', keepVisibleCustomer);
     ov.classList.remove('is-entering');
     if (step.customer) {
-      customer.src = getRequesterPortrait(req, step.mood || 'normal');
+      const customerReady = waitForImageReady(customer, getRequesterPortrait(req, step.mood || 'normal'));
       customer.alt = req.name;
-      if (step.enter) requestAnimationFrame(() => ov.classList.add('is-entering'));
+      Promise.all([bgReady, customerReady])
+        .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80))
+        .then(() => {
+          if (token !== renderToken || !step.customer || ov.classList.contains('hidden')) return;
+          ov.classList.add('has-customer');
+          if (step.enter) requestAnimationFrame(() => {
+            if (token === renderToken && !ov.classList.contains('hidden')) ov.classList.add('is-entering');
+          });
+        });
     } else {
       customer.removeAttribute('src');
       customer.alt = '';
@@ -5134,6 +5192,19 @@ function chooseCombinedPonoReaction(finalEval, fallbackReaction) {
   };
 }
 
+function withRequesterCompleteReaction(req, finalEval, reaction) {
+  if (!req || !finalEval || !finalEval.requestEval || !finalEval.requestEval.enabled) return reaction;
+  const mood = finalEval.npcMood || 'sad';
+  return {
+    ...reaction,
+    img: getRequesterPortrait(req, mood),
+    pendingImg: getRequesterPortrait(req, 'request') || getRequesterPortrait(req, 'normal'),
+    actorAlt: req.name,
+    actorType: 'npc',
+    msg: getRequesterReactionMessage(req, finalEval),
+  };
+}
+
 function renderBalanceSummary(el, balanceEval) {
   if (!el || !balanceEval) return;
   el.innerHTML = '';
@@ -5236,9 +5307,11 @@ function revealReactionWithDrama(reaction) {
 
   // Pre-reveal: ふつうの顔でそわそわ
   slot.classList.remove('reveal', 'droopy');
+  slot.classList.toggle('is-npc', reaction.actorType === 'npc');
   slot.classList.add('thinking');
   if (right) right.classList.remove('gloomy');
-  ponoBig.src = PONO_BASE + 'pono_001.png';
+  ponoBig.src = reaction.pendingImg || PONO_BASE + 'pono_001.png';
+  ponoBig.alt = reaction.actorAlt || 'ポノ';
   bubble.textContent = 'うーん…';
   bubble.classList.add('hidden-pre');
   if (trivia) trivia.classList.add('hidden-pre');
@@ -5272,6 +5345,7 @@ function revealReactionWithDrama(reaction) {
   _revealTimers.push(setTimeout(() => {
     slot.classList.remove('thinking');
     ponoBig.src = reaction.img;
+    ponoBig.alt = reaction.actorAlt || 'ポノ';
     void slot.offsetWidth; // reflow to restart animation
     slot.classList.add('reveal');
     bubble.classList.add('hidden-pre');
@@ -6187,7 +6261,9 @@ function refreshFreeCompletionMaskViews() {
   if (!freeLayoutMode) return;
   const completeBento = document.getElementById('complete-bento');
   if (completeBento && completeBento.classList.contains('free-complete-bento')) {
-    renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId);
+    renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId, {
+      hideLid: completeBento.dataset.hideLid === '1',
+    });
   }
   document.querySelectorAll('.free-complete-editor-preview-slot.free-complete-bento').forEach(slot => {
     const box = getSelectedBentoBox();
@@ -9255,6 +9331,8 @@ function renderFreeCompleteBento(host, items, boxId, options = {}) {
     + (keepPreviewSlotClass ? ' free-complete-editor-preview-slot' : '')
     + (keepMainStageClass ? ' free-layout-stage free-mask-main-complete-preview' : '')
     + (noStackDropShadow ? ' no-stack-drop-shadow' : '');
+  if (options.hideLid) host.dataset.hideLid = '1';
+  else delete host.dataset.hideLid;
   applyFreeCompletePreviewScale(host, isPreview, box, tierCount);
   host.innerHTML = '';
   if (tierCount > 1) {
@@ -9606,7 +9684,7 @@ function stageComplete() {
   // お弁当箱の中身をクローンして完成表示
   const cb = document.getElementById('complete-bento');
   if (freeLayoutMode) {
-    renderFreeCompleteBento(cb, placedItems, selectedBentoBoxId);
+    renderFreeCompleteBento(cb, placedItems, selectedBentoBoxId, { hideLid: true });
   } else {
     cb.className = 'complete-bento';
     cb.innerHTML = '';
@@ -9669,7 +9747,11 @@ function stageComplete() {
   // ポノ表情＋セリフ（バランスに応じた演出） ※ 演出は revealReactionWithDrama で実行
   const okazuNames = completionData.okazuNames;
   const balanceReaction = choosePonoReaction(rCount, yCount, gCount, okazuNames);
-  const reaction = chooseCombinedPonoReaction(finalEval, balanceReaction);
+  const reaction = withRequesterCompleteReaction(
+    currentRequester,
+    finalEval,
+    chooseCombinedPonoReaction(finalEval, balanceReaction)
+  );
 
   // 豆知識（テキストだけ先にセット、表示は reveal 時）
   const triviaEl = document.getElementById('complete-trivia');
@@ -9734,7 +9816,7 @@ function stageComplete() {
     if (freeLayoutMode) {
       requestAnimationFrame(() => {
         const completeBento = document.getElementById('complete-bento');
-        if (completeBento) renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId);
+        if (completeBento) renderFreeCompleteBento(completeBento, placedItems, selectedBentoBoxId, { hideLid: true });
       });
     }
     revealReactionWithDrama(reaction);
