@@ -4,6 +4,7 @@
 # Bento NPC Risu Original Eye White Removed Raw
 
 - Batch: `490_bento_npc_risu_original_eye_white_removed_raw`
+- 状態: **非推奨**。目を黒くしすぎたため、リスの採用版は batch 492 を使う。
 - 目的: user 指摘「白目の部分だけ無くしてって言ったの」を反映。
 - 元画像: `tmp/alpha_pending/487_bento_npc_counter_order_expressions_white_raw/npc_risu_counter_5expressions_white_raw.png`
 - 後処理: 元画像の顔、体、表情、構図、しっぽ、耳は維持。目の白いハイライト部分のみ除去。
@@ -20,4 +21,7 @@
 
 - `npc_risu_counter_5expressions_original_eye_white_removed_raw.png`
 - `review_contact_sheet.jpg`
-- `detected_eye_regions_review.jpg`
+
+## 採用版
+
+- `tmp/alpha_pending/492_bento_npc_risu_original_sparkle_kept_clean_raw/npc_risu_counter_5expressions_original_sparkle_kept_clean_raw.png`
