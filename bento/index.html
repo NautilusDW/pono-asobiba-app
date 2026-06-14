@@ -1813,6 +1813,10 @@ html, body {
   overflow: visible;
   background: transparent;
 }
+.complete-bento.free-complete-stack.free-complete-side-by-side .free-layout-stage,
+.complete-bento.free-complete-stack.free-complete-side-by-side .free-layout-mask-frame {
+  overflow: hidden;
+}
 .free-complete-editor-preview {
   margin-top: 8px;
   padding: 5px;
@@ -2494,10 +2498,11 @@ html, body {
 
 /* ===== Complete page (別ページ扱い: モーダルではなくフルスクリーン) ===== */
 .complete-overlay {
+  --complete-frame-inset: clamp(4px, 1.2vmin, 12px);
   position: fixed; inset: 0; z-index: 60;
   background: linear-gradient(135deg, #FFF8F0 0%, #FFEEDD 55%, #FFE0C2 100%);
-  display: flex; align-items: flex-start; justify-content: center;
-  padding: 10px;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--complete-frame-inset);
   animation: fadeIn 0.35s;
   overflow: hidden;
 }
@@ -2878,11 +2883,30 @@ html, body {
 
 /* ===== Redesigned complete card (2-column) ===== */
 .complete-card-wide {
+  aspect-ratio: 16 / 9;
   max-width: min(98vw, 1120px);
-  width: 98%;
-  min-height: min(94dvh, 520px);
+  width: calc(100vw - (var(--complete-frame-inset) * 2));
+  height: auto;
+  min-height: 0;
   padding: 8px 14px 12px;
   gap: 4px;
+}
+@media (min-aspect-ratio: 16/9) {
+  .complete-card-wide {
+    width: auto;
+    height: calc(100dvh - (var(--complete-frame-inset) * 2));
+  }
+}
+@media (max-aspect-ratio: 4/3) {
+  .complete-card-wide {
+    aspect-ratio: 4 / 3;
+    width: calc(100vw - (var(--complete-frame-inset) * 2));
+    height: auto;
+  }
+  .complete-right {
+    flex-basis: clamp(248px, 26vw, 270px);
+    width: clamp(248px, 26vw, 270px);
+  }
 }
 .complete-main {
   position: relative;
@@ -3220,11 +3244,6 @@ html, body {
     padding: 2px 6px;
   }
   .complete-card-wide {
-    width: calc(100vw - 12px);
-    max-width: none;
-    height: calc(100dvh - 4px);
-    min-height: 0;
-    max-height: calc(100dvh - 4px);
     padding: 2px 8px 4px;
     gap: 2px;
   }
@@ -3259,11 +3278,19 @@ html, body {
     min-height: 0;
     padding: 6px 8px;
     gap: 5px;
-    flex-basis: clamp(238px, 27vw, 270px);
-    width: clamp(238px, 27vw, 270px);
+    flex-basis: clamp(200px, 21vw, 220px);
+    width: clamp(200px, 21vw, 220px);
   }
   .complete-right .balance-item {
-    padding: 3px 4px;
+    min-height: 24px;
+    padding: 2px 3px;
+    gap: 3px;
+    font-size: 0.49rem;
+    line-height: 1.04;
+  }
+  .complete-right .balance-dot {
+    width: 11px;
+    height: 11px;
   }
   .complete-right .balance-item-role,
   .complete-check-desc {
@@ -3272,6 +3299,10 @@ html, body {
   .complete-check {
     min-height: 30px;
     padding: 4px 5px;
+  }
+  .complete-check-title {
+    font-size: 0.55rem;
+    line-height: 1.08;
   }
   .complete-check-mark {
     flex-basis: 20px;

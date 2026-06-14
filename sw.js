@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1101; // v1101: bento result bento scale and taller customer panel
+const CACHE_VERSION = 1102; // v1102: bento result fixed aspect frames and clipped contents
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
