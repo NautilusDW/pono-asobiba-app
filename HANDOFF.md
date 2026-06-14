@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-14 - [batch:505-pono-space-starbrain-boss] Codex: user 指摘「ボスはスターブレイン風で」を受領。IP丸写しではなく、星型シルエット + 脳/知性コア + 機械要塞パネルの文法を使った、怖すぎない大型ボスとして3スタイル分を追加生成する。 (by Codex)
+- 2026-06-14 - [batch:505-pono-space-starbrain-boss] DONE - Codex: GPT Image 2 built-in imagegen でボス3スタイルを生成。`boss_starbrain_homage_style_{a,b,c}_raw.png` は各 1254x1254 RGB raw の白背景。星型機械要塞シルエット、中央の抽象的な知性/星雲コア、やさしめの顔印象でスターブレイン風の大型ボス文法に寄せた。`contact_sheet_starbrain_boss.jpg` で3案比較し、怖すぎない、非生物/非生々しい、IP丸写しでないことを確認。 (by Codex)
 - 2026-06-14 - [batch:504-pono-space-midboss-split-face] Codex: user 指摘「中ボスはスターソルジャーのラザロ風に顔が4つに分かれてて、最終的にくっついて顔になる」を受領。IP丸写しではなく、4つの機械/超自然的マスク片が合体して1つの顔になる中ボスとして、3スタイル分のアセットシートを追加生成する。 (by Codex)
 - 2026-06-14 - [batch:504-pono-space-midboss-split-face] DONE - Codex: GPT Image 2 built-in imagegen で中ボス3スタイルを生成。`midboss_split_face_style_{a,b,c}_raw.png` は各 1536x1024 RGB raw の白背景アセットシートで、2x3配置に「上左/上右/下左/下右の4パーツ + 合体後の顔」を収録。`contact_sheet_midboss_split_face.jpg` で3案を比較し、4分割パーツが合体して1つの機械/超自然的マスク顔になる構成、怖すぎない表情、IP丸写しでないことを確認。 (by Codex)
 - 2026-06-14 - [batch:503-pono-space-mechanical-enemy] Codex: user 指摘「敵キャラは生物っぽい物はNG。機械的なものか超自然的なものにして」を受領。既存 `zako_enemy_style_{a,b,c}_raw.png` は目・丸胴体で生物寄りのため、3スタイル分を機械的な小型メカドローンへ追加生成し、一覧シートを更新する。 (by Codex)
