@@ -249,6 +249,189 @@ html, body {
   }
 }
 
+/* ===== Bento delivery result scene ===== */
+.bento-delivery {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: #f4cf91;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: fadeIn 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.bento-delivery.hidden { display: none !important; }
+.bento-delivery.is-closing { animation: fadeOut 0.32s ease forwards; pointer-events: none; }
+.bento-delivery__frame {
+  position: relative;
+  width: min(100vw, calc(100dvh * 1.77778));
+  height: min(100dvh, calc(100vw / 1.77778));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f4cf91;
+}
+.bento-delivery__bg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.bento-delivery__customer {
+  position: absolute;
+  left: 58%;
+  bottom: 17%;
+  height: 42%;
+  max-width: 38%;
+  object-fit: contain;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 12px rgba(70, 40, 16, 0.18));
+  animation: npcBob 2.4s ease-in-out infinite;
+}
+.bento-delivery__handoff {
+  position: absolute;
+  left: 43%;
+  bottom: 4%;
+  width: min(26vw, 280px);
+  height: min(17vw, 184px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#bento-delivery-bento.complete-bento {
+  width: 100%;
+  max-width: 100%;
+  transform: rotate(-2deg);
+  box-shadow: 0 13px 20px rgba(70, 38, 12, 0.28);
+}
+#bento-delivery-bento.free-complete-bento {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+#bento-delivery-bento.free-complete-stack {
+  transform: scale(0.72) rotate(-2deg);
+  transform-origin: center bottom;
+}
+.bento-delivery__dialog {
+  position: absolute;
+  left: 50%;
+  top: clamp(12px, 3vh, 28px);
+  width: min(72vw, 900px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+  padding: clamp(9px, 1.55vw, 15px) clamp(14px, 2.2vw, 22px);
+  border: 3px solid #f1b65c;
+  border-radius: 17px;
+  background: rgba(255, 248, 226, 0.94);
+  box-shadow: 0 10px 22px rgba(80, 42, 14, 0.24);
+}
+.bento-delivery__name {
+  margin-bottom: 4px;
+  font-size: clamp(0.74rem, 1.35vw, 0.95rem);
+  font-weight: 900;
+  color: #9b5b1b;
+}
+.bento-delivery__line {
+  font-size: clamp(0.95rem, 2vw, 1.32rem);
+  font-weight: 900;
+  line-height: 1.36;
+  color: #5c3514;
+  white-space: pre-line;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.7);
+}
+.bento-delivery__next {
+  min-width: clamp(104px, 14vw, 168px);
+  border: 3px solid #ef915c;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff0c8 0%, #ffd38d 100%);
+  color: #7a3c13;
+  font-family: inherit;
+  font-size: clamp(0.82rem, 1.5vw, 1rem);
+  font-weight: 900;
+  padding: 8px 14px;
+  box-shadow: 0 4px 0 #c67934;
+  cursor: pointer;
+}
+.bento-delivery__next:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #c67934;
+}
+.bento-delivery.is-super-happy .bento-delivery__dialog,
+.bento-delivery.is-happy .bento-delivery__dialog {
+  border-color: #f6bd43;
+  box-shadow: 0 10px 24px rgba(230, 154, 24, 0.34);
+}
+.bento-delivery.is-sad .bento-delivery__frame {
+  filter: saturate(0.82);
+}
+.bento-delivery__sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.bento-delivery.is-super-happy .bento-delivery__sparkles,
+.bento-delivery.is-happy .bento-delivery__sparkles {
+  opacity: 1;
+}
+.bento-delivery__sparkles::before,
+.bento-delivery__sparkles::after {
+  content: '✦  ✨  ✦';
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  transform: translateX(-50%);
+  color: #ffd85a;
+  font-size: clamp(1.2rem, 4vw, 2.8rem);
+  text-shadow: 0 2px 0 rgba(120, 70, 12, 0.18);
+  animation: deliverySparkle 1.05s ease-in-out infinite;
+}
+.bento-delivery__sparkles::after {
+  top: 45%;
+  font-size: clamp(0.9rem, 3vw, 2.1rem);
+  animation-delay: 0.28s;
+}
+@keyframes deliverySparkle {
+  0%, 100% { opacity: 0.35; transform: translateX(-50%) scale(0.95); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+}
+@media (max-width: 900px) {
+  .bento-delivery__customer {
+    bottom: 16%;
+    height: 39%;
+    max-width: 42%;
+  }
+  .bento-delivery__handoff {
+    left: 43%;
+    width: min(26vw, 220px);
+    height: min(17vw, 145px);
+  }
+  .bento-delivery__dialog {
+    width: min(76vw, 690px);
+    gap: 7px;
+    padding: 9px 14px;
+  }
+  .bento-delivery__next {
+    min-width: 104px;
+    padding: 8px 14px;
+  }
+}
+@media (max-width: 620px) {
+  .bento-delivery__dialog {
+    grid-template-columns: 1fr;
+  }
+  .bento-delivery__next {
+    justify-self: end;
+  }
+}
+
 /* ===== タイトル ===== */
 .game-title {
   position: fixed;
@@ -3206,6 +3389,24 @@ html, body {
   </div>
 </div>
 
+<div class="bento-delivery hidden" id="bento-delivery" aria-live="polite">
+  <div class="bento-delivery__frame">
+    <img class="bento-delivery__bg" src="../assets/images/bento/story/shop_order_counter.png" alt="">
+    <div class="bento-delivery__sparkles"></div>
+    <img class="bento-delivery__customer" id="bento-delivery-customer" alt="">
+    <div class="bento-delivery__handoff">
+      <div id="bento-delivery-bento" class="complete-bento"></div>
+    </div>
+    <div class="bento-delivery__dialog">
+      <div>
+        <div class="bento-delivery__name" id="bento-delivery-name"></div>
+        <div class="bento-delivery__line" id="bento-delivery-line"></div>
+      </div>
+      <button type="button" class="bento-delivery__next" id="bento-delivery-next">つぎへ</button>
+    </div>
+  </div>
+</div>
+
 <div class="complete-overlay hidden" id="complete-overlay">
   <div class="complete-card complete-card-wide">
     <button class="complete-close" id="complete-btn">&times;</button>
@@ -3449,7 +3650,7 @@ function npcPortraits(id) {
   return {
     portraitRequest: base + 'request.png',
     portraitNormal: base + 'normal.png',
-    portraitHappy: base + 'super_happy.png',
+    portraitHappy: base + 'normal.png',
     portraitSuperHappy: base + 'super_happy.png',
     portraitAlmost: base + 'almost.png',
     portraitSad: base + 'sad.png',
@@ -4542,6 +4743,69 @@ function showRequesterReaction(req, finalEval, onDone) {
   };
   ov.onclick = advance;
   setTimeout(advance, mood === 'super_happy' ? 2900 : 2450);
+}
+
+function renderDeliveryBento(host) {
+  if (!host) return;
+  if (freeLayoutMode) {
+    renderFreeCompleteBento(host, placedItems, selectedBentoBoxId, {
+      preview: true,
+      hideLid: true,
+    });
+    return;
+  }
+  const source = document.getElementById('complete-bento');
+  if (!source) return;
+  host.className = source.className || 'complete-bento';
+  host.innerHTML = source.innerHTML;
+}
+
+function showBentoDelivery(req, finalEval, onDone) {
+  if (!req) { if (onDone) onDone(); return; }
+  const ov = document.getElementById('bento-delivery');
+  const img = document.getElementById('bento-delivery-customer');
+  const bento = document.getElementById('bento-delivery-bento');
+  const name = document.getElementById('bento-delivery-name');
+  const line = document.getElementById('bento-delivery-line');
+  const next = document.getElementById('bento-delivery-next');
+  if (!ov || !img || !bento || !name || !line || !next) {
+    if (onDone) onDone();
+    return;
+  }
+
+  const mood = (finalEval && finalEval.npcMood) || 'sad';
+  img.src = getRequesterPortrait(req, mood);
+  img.alt = req.name;
+  name.textContent = req.name + ' に おべんとうを わたしたよ';
+  line.textContent = getRequesterReactionMessage(req, finalEval);
+  next.textContent = 'けっかを みる';
+  renderDeliveryBento(bento);
+
+  ov.classList.remove('hidden', 'is-closing', 'is-super-happy', 'is-happy', 'is-almost', 'is-sad');
+  ov.classList.add(
+    mood === 'super_happy' ? 'is-super-happy' :
+    mood === 'happy' ? 'is-happy' :
+    mood === 'almost' ? 'is-almost' : 'is-sad'
+  );
+
+  let advanced = false;
+  const advance = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (advanced) return;
+    advanced = true;
+    ov.classList.add('is-closing');
+    setTimeout(() => {
+      ov.classList.add('hidden');
+      ov.classList.remove('is-closing', 'is-super-happy', 'is-happy', 'is-almost', 'is-sad');
+      if (onDone) onDone();
+    }, 340);
+  };
+  next.onclick = advance;
+  ov.onclick = (e) => {
+    if (e.target === next) return;
+    advance(e);
+  };
+  setTimeout(advance, mood === 'super_happy' ? 4600 : 3600);
 }
 
 // ===== Favorites（お気に入り お弁当、最大5件） =====
@@ -9248,7 +9512,7 @@ function stageComplete() {
       loadStage();
     }
   };
-  // NPC 依頼者モード時は、 完成画面の前に「NPC 反応 (~2.2 秒)」 を挟む。
+  // NPC 依頼者モード時は、 完成画面の前に「お弁当を渡す」演出を挟む。
   // 自由モード (currentRequester == null) の時は従来通りすぐ完成画面。
   const _showCompleteOverlay = () => {
     document.getElementById('complete-overlay').classList.remove('hidden');
@@ -9261,7 +9525,7 @@ function stageComplete() {
     revealReactionWithDrama(reaction);
   };
   if (currentRequester) {
-    showRequesterReaction(currentRequester, finalEval, _showCompleteOverlay);
+    showBentoDelivery(currentRequester, finalEval, _showCompleteOverlay);
   } else {
     _showCompleteOverlay();
   }

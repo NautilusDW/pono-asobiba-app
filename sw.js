@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1094; // v1094: adjust bento shop opening dialog and squirrel assets
+const CACHE_VERSION = 1095; // v1095: add bento delivery result scene
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
