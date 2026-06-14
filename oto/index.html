@@ -23,8 +23,8 @@
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
-    /* 水底っぽい背景 (JS で時間変化) */
-    background: linear-gradient(180deg, hsl(200,55%,55%) 0%, hsl(215,60%,25%) 100%);
+    /* 水底っぽい背景 (JS で時間変化) — v1108: より青寄り (H 200→212) */
+    background: linear-gradient(180deg, hsl(212,55%,55%) 0%, hsl(220,60%,25%) 100%);
     color: #fff;
   }
 
@@ -1475,6 +1475,10 @@
   }
   .rhythm-menu.show { display: flex; }
   body.oto-modal-open .pono-menu-toggle { display: none !important; }
+  /* v1108: 2ステップ表示切替 */
+  .rhythm-step { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  .rhythm-menu[data-step="song"] .rhythm-step[data-step-view="song"] { display: flex; }
+  .rhythm-menu[data-step="mode"] .rhythm-step[data-step-view="mode"] { display: flex; }
   .rhythm-menu-panel {
     width: min(86vw, 520px);
     max-height: calc(100vh - 32px);
@@ -1716,9 +1720,9 @@
        stage が 16:9 に圧縮されていてもモーダルが stage 内に確実に収まる。 */
     width: min(92%, 560px);
     max-width: min(92vw, 560px);
-    max-height: calc(100% - 48px);
+    max-height: calc(100% - 24px); /* v1108: 縦スクロール回避を優先 */
     overflow: auto;
-    padding: 20px 24px 22px;
+    padding: 12px 20px 14px; /* v1108: 詰める */
     border: 3px solid rgba(255,255,255,0.88);
     border-radius: 20px;
     background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(226,244,255,0.94));
@@ -1738,24 +1742,70 @@
     animation: rhythmClearPanelPop 620ms cubic-bezier(0.28, 1.55, 0.5, 1) both;
   }
   .rhythm-complete-title {
-    min-height: 2.5rem;
-    font-size: clamp(2rem, 7vw, 3rem);
+    /* v1108: 「よくできたね」を大幅縮小 (旧 2rem-3rem → 1.2rem-1.7rem) */
+    min-height: 1.6rem;
+    font-size: clamp(1.2rem, 4vw, 1.7rem);
     font-weight: 900;
     line-height: 1.05;
     color: #0F3A5C;
     text-shadow: 0 2px 0 rgba(255,255,255,0.7);
   }
+  /* v1108: 「つぎのパートへ いけるよ」を ★ の右横に小さな吹き出しで出す。
+     縦に伸ばさないため、.rhythm-result-stars を flex 中央寄せにし
+     .rhythm-complete-text を吹き出し化して inline 配置する。 */
+  .rhythm-result-stars {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
   .rhythm-complete-text {
-    min-height: 1.7rem;
-    margin-top: 10px;
-    font-size: clamp(1.05rem, 3.4vw, 1.35rem);
+    /* 吹き出し: ★ の右側に inline-flex で並ぶ */
+    display: none;
+    align-self: center;
+    margin: 0 0 0 6px;
+    padding: 6px 10px 7px;
+    max-width: 9.5rem;
+    font-size: clamp(0.7rem, 2vw, 0.86rem);
     font-weight: 900;
-    color: #31506F;
+    line-height: 1.18;
+    color: #0F3A5C;
+    background: #FFF9E0;
+    border: 2px solid #FBBF24;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    position: relative;
+  }
+  .rhythm-complete-text.show { display: inline-block; }
+  /* 左向きの尖り (★ から出ている吹き出し風) */
+  .rhythm-complete-text::before,
+  .rhythm-complete-text::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-style: solid;
+  }
+  .rhythm-complete-text::before {
+    left: -10px;
+    transform: translateY(-50%);
+    border-width: 7px 10px 7px 0;
+    border-color: transparent #FBBF24 transparent transparent;
+  }
+  .rhythm-complete-text::after {
+    left: -7px;
+    transform: translateY(-50%);
+    border-width: 6px 8px 6px 0;
+    border-color: transparent #FFF9E0 transparent transparent;
   }
   .rhythm-score-summary {
-    margin-top: 12px;
+    /* v1108: 縦の間隔を詰める (旧 12px / 8px → 6px / 4px) */
+    margin-top: 6px;
     display: grid;
-    gap: 8px;
+    gap: 4px;
   }
   .rhythm-score-main {
     display: flex;
@@ -1995,9 +2045,11 @@
   .rhythm-result-stars {
     display: flex;
     justify-content: center;
-    gap: 8px;
-    min-height: 48px;
-    margin-top: 10px;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-top: 6px;
+    flex-wrap: nowrap;
   }
   .rhythm-result-star {
     width: 44px;
@@ -2035,9 +2087,9 @@
   .rhythm-complete-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
-    margin-top: 14px;
+    margin-top: 8px; /* v1108: 詰める */
   }
   .rhythm-complete-actions.hidden {
     visibility: hidden;
@@ -2118,6 +2170,35 @@
     top: max(12px, env(safe-area-inset-top));
     right: max(16px, env(safe-area-inset-right));
     z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* v1108: 共通の「せってい」(.pono-menu-toggle, common/menu.js が左上に配置) を
+     oto では非表示にして、右上♪に統合する。代わりに ⚙️ ボタンを sets-collapsed 内に追加し、
+     既存 .pono-menu-toggle を click() でプロキシ起動する。 */
+  .pono-menu-toggle { display: none !important; }
+  .oto-settings-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.72);
+    background: rgba(0,0,0,0.36);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.28);
+    transition: transform 0.1s, filter 0.1s;
+    padding: 0;
+  }
+  .oto-settings-btn:active { transform: scale(0.92); filter: brightness(0.92); }
+  /* v1108: 共通 dropdown は左上前提なので、oto では右上に再配置 */
+  .pono-dropdown {
+    top: calc(max(12px, env(safe-area-inset-top)) + 56px) !important;
+    left: auto !important;
+    right: max(16px, env(safe-area-inset-right)) !important;
   }
   .set-trigger {
     width: 52px; height: 52px;
@@ -2499,29 +2580,36 @@
       font-size: 1.2rem;
     }
 
-    /* 伴奏 ばんそう: 左パネル中心 (24%) に揃える */
+    /* 伴奏 ばんそう: 左端基準で配置する。
+       v1108: iPhone SE 横 (667x375) で左端切れが起きていた。
+       v1108 (追加修正): translateX(-50%) を残すと safe-area 拡大時に再度切れるため
+       landscape では translateX を外し、left を safe-area + 8px の単純な左端基準に統一。
+       max-width で画面内に必ず収める。 */
     .band-group {
       bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
-      left: 24%;
-      transform: translateX(-50%);
-      padding: 6px 14px 10px;
+      left: calc(env(safe-area-inset-left, 0px) + 8px);
+      transform: none;
+      padding: 6px 10px 10px; /* 左右 padding 詰める */
       gap: 6px;
-      max-width: none;
+      max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 16px);
     }
     .band-group-label { font-size: 0.7rem; }
     .band-group .song-btn {
-      min-width: 56px; height: 42px;
-      padding: 3px 8px;
+      min-width: 50px; height: 40px;
+      padding: 3px 6px;
     }
     .band-group .song-btn-cap { font-size: 0.55rem; }
     .band-group .song-btn-val { font-size: 0.78rem; }
     .band-group .speed-btn {
-      padding: 7px 14px;
-      font-size: 0.8rem;
+      padding: 5px 10px 5px 4px; /* 左右コンパクト化 */
+      font-size: 0.74rem;
       border-width: 2px;
     }
-    .band-row { gap: 7px; }
-    .speed-row { gap: 7px; }
+    .band-group .speed-btn .btn-img {
+      width: 28px; height: 28px;
+    }
+    .band-row { gap: 5px; }
+    .speed-row { gap: 5px; }
 
     /* ループ進行バー (録音 UI 撤去後も rec-progress 自体の base styles は残置) */
     .rec-progress {
@@ -3053,6 +3141,8 @@
 
     <!-- スケール 折りたたみ (右上、popover でふつう/ペンタのみ) -->
     <div class="sets-collapsed" id="sets">
+      <!-- v1108: せってい (旧 左上 .pono-menu-toggle) を ♪ の左隣に統合 -->
+      <button class="oto-settings-btn" id="oto-settings-btn" type="button" aria-label="せってい">⚙</button>
       <button class="set-trigger" id="set-trigger" aria-label="スケール"><img class="btn-img" src="../assets/images/oto/buttons/btn_ui_scale.png" alt=""></button>
       <div class="set-popover" id="set-popover">
         <div class="scale-row">
@@ -3111,22 +3201,36 @@
     <div class="rhythm-special-bubble" id="rhythm-special-bubble" aria-live="polite"></div>
     <div class="rhythm-fever-bubble" id="rhythm-fever-bubble" aria-live="polite"></div>
 
-    <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう">
+    <!-- v1108: 2ステップ化。 step1=曲えらび / step2=モードえらび。
+         data-step 属性で表示切替。HTML 構造は崩さないので既存 _renderRhythmSongMenu /
+         _renderRhythmPracticeControls はそのまま動く。 -->
+    <div class="rhythm-menu" id="rhythm-menu" role="dialog" aria-modal="true" aria-label="リズムでえんそう" data-step="song">
       <div class="rhythm-menu-panel">
-        <div class="rhythm-menu-title">リズムでえんそう</div>
-        <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
-        <div class="rhythm-song-list" id="rhythm-song-list"></div>
-        <div class="rhythm-practice" id="rhythm-practice">
-          <div class="rhythm-practice-row">
-            <button class="rhythm-practice-btn active" data-practice="block">ブロック</button>
-            <button class="rhythm-practice-btn" data-practice="full">ぜんぶ</button>
+        <!-- Step 1: 曲えらび -->
+        <div class="rhythm-step rhythm-step-song" data-step-view="song">
+          <div class="rhythm-menu-title">きょくを えらぼう</div>
+          <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
+          <div class="rhythm-song-list" id="rhythm-song-list"></div>
+          <div class="rhythm-menu-actions">
+            <button class="rhythm-menu-btn cancel" id="rhythm-menu-cancel">もどる</button>
+            <button class="rhythm-menu-btn start" id="rhythm-menu-next">つぎへ</button>
           </div>
-          <div class="rhythm-block-list" id="rhythm-block-list"></div>
         </div>
-        <div class="rhythm-menu-actions">
-          <button class="rhythm-menu-btn cancel" id="rhythm-menu-cancel">もどる</button>
-          <button class="rhythm-menu-btn demo hidden" id="rhythm-menu-demo">おてほん</button>
-          <button class="rhythm-menu-btn start" id="rhythm-menu-start">はじめる</button>
+        <!-- Step 2: モードえらび (ぜんぶ/ブロック + おてほん/はじめる) -->
+        <div class="rhythm-step rhythm-step-mode" data-step-view="mode">
+          <div class="rhythm-menu-title" id="rhythm-mode-title">あそびかたを えらぼう</div>
+          <div class="rhythm-practice" id="rhythm-practice">
+            <div class="rhythm-practice-row">
+              <button class="rhythm-practice-btn active" data-practice="block">ブロック</button>
+              <button class="rhythm-practice-btn" data-practice="full">ぜんぶ</button>
+            </div>
+            <div class="rhythm-block-list" id="rhythm-block-list"></div>
+          </div>
+          <div class="rhythm-menu-actions">
+            <button class="rhythm-menu-btn cancel" id="rhythm-menu-back">きょくえらびへ</button>
+            <button class="rhythm-menu-btn demo hidden" id="rhythm-menu-demo">おてほん</button>
+            <button class="rhythm-menu-btn start" id="rhythm-menu-start">はじめる</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3139,8 +3243,9 @@
           <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
           <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
           <img class="rhythm-result-star" src="../assets/images/bento/ui/decor_star_yellow.png" alt="">
+          <!-- v1108: ★の右横に小さな吹き出しとして配置する -->
+          <div class="rhythm-complete-text" id="rhythm-complete-text">リズムだけ きいてね</div>
         </div>
-        <div class="rhythm-complete-text" id="rhythm-complete-text">リズムだけ きいてね</div>
         <div class="rhythm-score-summary" id="rhythm-score-summary">
           <div class="rhythm-score-main"><span>スコア</span><strong id="rhythm-score-value">0</strong></div>
           <details class="rhythm-score-details" id="rhythm-score-details">
@@ -6437,7 +6542,10 @@ function _showRhythmComplete(result) {
   }
   _renderRhythmLeaderboard(scoreEntry.key, null, { outsideRank: outsideRank });
   _prepareRhythmNameForm(scoreEntry);
-  if (text) text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
+  if (text) {
+    text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
+    text.classList.remove('show'); // v1108: 初期 (900ms 経過まで) は非表示。下の setTimeout で .show
+  }
   if (actions) actions.classList.add('hidden');
   if (next) {
     next.textContent = hasNextPart ? 'つぎのパート' : 'つぎのステージ';
@@ -6452,6 +6560,7 @@ function _showRhythmComplete(result) {
       text.textContent = hasNextPart
         ? 'つぎのパートへ いけるよ'
         : (nextStageSong ? 'つぎのステージも あそべるよ' : 'べつのきょくも えらべるよ');
+      text.classList.add('show'); // v1108: 吹き出しを表示
     }
     if (actions) actions.classList.remove('hidden');
   }, 900));
@@ -7129,8 +7238,23 @@ function _showRhythmMenu() {
   _updateRhythmMenuActions();
   _setModeButtons('rhythm');
   var menu = document.getElementById('rhythm-menu');
-  if (menu) menu.classList.add('show');
+  if (menu) {
+    menu.setAttribute('data-step', 'song'); // v1108: 開く度に step1 (曲えらび) から
+    menu.classList.add('show');
+  }
   if (document.body) document.body.classList.add('oto-modal-open');
+}
+// v1108: 2ステップ切替ヘルパ
+function _setRhythmMenuStep(step) {
+  var menu = document.getElementById('rhythm-menu');
+  if (!menu) return;
+  menu.setAttribute('data-step', step === 'mode' ? 'mode' : 'song');
+  // step2 を出すときは選択済みの曲名をタイトルに反映 (子供が現在の選曲を確認できるように)
+  if (step === 'mode') {
+    var titleEl = document.getElementById('rhythm-mode-title');
+    var songName = (typeof RHYTHM_BASE_SONG !== 'undefined' && RHYTHM_BASE_SONG && RHYTHM_BASE_SONG.name) ? RHYTHM_BASE_SONG.name : '';
+    if (titleEl) titleEl.textContent = songName ? (songName + ' であそぶ') : 'あそびかたを えらぼう';
+  }
 }
 function _hideRhythmMenu() {
   var menu = document.getElementById('rhythm-menu');
@@ -7350,6 +7474,20 @@ if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
   e.stopPropagation();
   _hideRhythmMenu();
   setPlayMode('free');
+});
+// v1108: 2ステップ: 曲えらび → モードえらび
+var rhythmMenuNext = document.getElementById('rhythm-menu-next');
+if (rhythmMenuNext) rhythmMenuNext.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  _setRhythmMenuStep('mode');
+});
+// v1108: 2ステップ: モードえらびから曲えらびへ戻る
+var rhythmMenuBack = document.getElementById('rhythm-menu-back');
+if (rhythmMenuBack) rhythmMenuBack.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  _setRhythmMenuStep('song');
 });
 (function() {
   var showRankingBtn = document.getElementById('rhythm-show-ranking');
@@ -7886,10 +8024,11 @@ function drawAmbientBubbles() {
 
 // ─ 背景グラデーション (時間で色変化) ─
 function drawBG(now) {
-  var h = 210 + Math.sin(now / 30000) * 40; // 170〜250
+  // v1108: 青寄りに振り直し。中心 205°、振幅 ±25 (旧 210±40)。
+  var h = 205 + Math.sin(now / 30000) * 25; // 180〜230 (青〜空青)
   var grad = bgCtx.createLinearGradient(0, 0, 0, bgH);
   grad.addColorStop(0, 'hsl(' + h + ', 55%, 55%)');
-  grad.addColorStop(1, 'hsl(' + (h - 25) + ', 60%, 22%)');
+  grad.addColorStop(1, 'hsl(' + (h - 20) + ', 60%, 22%)');
   bgCtx.fillStyle = grad;
   bgCtx.fillRect(0, 0, bgW, bgH);
 }
@@ -8870,6 +9009,21 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
 // (録音 UI は削除されたため、関連ハンドラ・モーダル・保存リストのレンダリングコードは全て撤去)
 // 録音状態機械 (recordEvent / startRecording / _finishRecording / _curRec / _saved 等) は
 // 内部的に残っているが、トリガーする UI が無いため事実上 dead code。
+
+// ════════════════════════════════════════════════════════════
+// v1108: せってい (右上 ⚙ ボタン) → 共通 .pono-menu-toggle へプロキシ
+// 旧 左上のセッティングボタンは非表示 (CSS で display:none) のため、
+// oto-settings-btn が押されたら .pono-menu-toggle を click() で代理発火する。
+// menu.js 側の初期化が遅れても拾えるよう、ボタン本体でなく document に委譲する。
+// ════════════════════════════════════════════════════════════
+document.addEventListener('click', function(e) {
+  var btn = e.target && (e.target.closest ? e.target.closest('#oto-settings-btn') : null);
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var hostBtn = document.querySelector('.pono-menu-toggle');
+  if (hostBtn) hostBtn.click();
+}, true);
 
 // ════════════════════════════════════════════════════════════
 // 音色 折りたたみ (右上 popover) + ペンタトニック切替

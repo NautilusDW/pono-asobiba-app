@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1107; // v1107: maze OP dialog text wrapping fix (lineHeight 1.5, keep-all, beat1 line break)
+const CACHE_VERSION = 1108; // v1108: oto UI overhaul — result modal compact + speech bubble, ⚙ moved into right-top ♪, free-mode band-group no-cutoff, bluer BG, 2-step song-then-mode select
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

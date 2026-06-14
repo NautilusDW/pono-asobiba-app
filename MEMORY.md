@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-14T23:42:07Z - oto/index.html 5点UI改修 (リザルト圧縮+吹き出し化、設定→右上♪統合、自由モード左下切れ修正、背景青寄り、リズム曲選択2ステップ化) + クロスレビュー指摘の display:flex/translateX修正
+- **タスク**: oto/index.html 5点UI改修 (リザルト圧縮+吹き出し化、設定→右上♪統合、自由モード左下切れ修正、背景青寄り、リズム曲選択2ステップ化) + クロスレビュー指摘の display:flex/translateX修正
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 11
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 8, "Bash": 3}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-14T23:36:36Z - oto UI: result modal compact + speech bubble / settings⚙ merged into right-top ♪ / band-group no-cutoff / bluer BG / 2-step song-then-mode select / CACHE_VERSION 1108
+- **タスク**: oto UI: result modal compact + speech bubble / settings⚙ merged into right-top ♪ / band-group no-cutoff / bluer BG / 2-step song-then-mode select / CACHE_VERSION 1108
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 8
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 6, "Bash": 2}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-14T22:51:03Z - 迷路OPダイアログのテキスト折り返し不具合修正 (op-layout.json lineHeight 1.5化+beat1 3行化, index.html word-break/line-break/text-wrap追加, sw.js 1106→1107)
 - **タスク**: 迷路OPダイアログのテキスト折り返し不具合修正 (op-layout.json lineHeight 1.5化+beat1 3行化, index.html word-break/line-break/text-wrap追加, sw.js 1106→1107)
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 6, "Glob": 1, "Grep": 5, "Read": 7, "Agent": 2}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-13T06:38:31Z - stage3 teaser panel v3 redesign (pyon shrink, viewport-fit, silhouettes, micro-tilt)
-- **タスク**: stage3 teaser panel v3 redesign (pyon shrink, viewport-fit, silhouettes, micro-tilt)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 46
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 14, "Bash": 10, "Workflow": 6, "Agent": 1, "Edit": 13, "ToolSearch": 1, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-13T05:30:30Z - stage3クリア後にポラロイド風3枚コラージュ予告パネル実装 (free tier限定、互い違い回転、間接表現文言、既存アセット流用)
-- **タスク**: stage3クリア後にポラロイド風3枚コラージュ予告パネル実装 (free tier限定、互い違い回転、間接表現文言、既存アセット流用)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 34
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 10, "Bash": 10, "Workflow": 4, "Agent": 1, "Edit": 7, "ToolSearch": 1, "Write": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
