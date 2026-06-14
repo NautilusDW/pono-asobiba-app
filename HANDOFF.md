@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-14 - [batch:503-pono-space-mechanical-enemy] Codex: user 指摘「敵キャラは生物っぽい物はNG。機械的なものか超自然的なものにして」を受領。既存 `zako_enemy_style_{a,b,c}_raw.png` は目・丸胴体で生物寄りのため、3スタイル分を機械的な小型メカドローンへ追加生成し、一覧シートを更新する。 (by Codex)
+- 2026-06-14 - [batch:503-pono-space-mechanical-enemy] DONE - Codex: GPT Image 2 built-in imagegen で敵キャラ3スタイルを機械系へ再生成。`zako_enemy_mech_style_{a,b,c}_raw.png` を追加し、`contact_sheet.jpg` / `contact_sheet_mech_enemy.jpg` を更新。顔・目・口・手足のある生物系を避け、装甲パネル、六角エネルギーコア、サイドエンジン、後部ノズルの小型メカドローンに変更。3枚とも 1254x1254 RGB raw、白背景、コンタクトシートで生物感が消えていることを確認。 (by Codex)
 - 2026-06-14 - [batch:502-pono-fighter-caesar-homage] Codex: user 指摘「自キャラはポノの顔が機体に描かれているように、コックピットは見えないように、機体形状をスターソルジャーのシーザー風オマージュへ」を受領。既存 `tmp/files/space_assets/style_test/` のポノ自機3案を確認し、3スタイル分の自機だけ追加生成・一覧更新する。IP丸写しではなく、細長いノーズ/左右ポッド/後部ノズル等の1980年代縦シュー機体文法としてオリジナル化する。 (by Codex)
 - 2026-06-14 - [batch:502-pono-fighter-caesar-homage] DONE - Codex: GPT Image 2 built-in imagegen でポノ自機3スタイルを再生成。`pono_fighter_caesar_homage_style_{a,b,c}_raw.png` を追加し、`contact_sheet.jpg` / `contact_sheet_caesar_homage.jpg` を更新。ポノはコックピット内キャラではなく機体上面に描かれた顔マークへ変更し、長いノーズ・左右ポッド・後部2連ノズルでシーザー風の縦シュー機体文法に寄せた。3枚とも 1254x1254 RGB raw、白背景、コックピット/窓なしをコンタクトシートで確認。 (by Codex)
 - 2026-06-14 - [batch:501-pono-space-style-test] Codex: `tmp/files/CODEX_INSTRUCTIONS.md` を受領。`tmp/files/space_assets/` と `pono_game.html` 関連の既存成果物/直近コミットなしを確認済み。宇宙ステージ用の3スタイル試作12枚を `tmp/files/space_assets/style_test/` に生成する。HTML統合はユーザーのスタイル採用後に確認してから実施。 (by Codex)
