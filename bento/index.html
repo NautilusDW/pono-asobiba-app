@@ -149,8 +149,8 @@ html, body {
 .shop-opening__customer {
   position: absolute;
   left: 50%;
-  bottom: 16%;
-  height: 43%;
+  bottom: 23%;
+  height: 40%;
   max-width: 38%;
   object-fit: contain;
   transform: translateX(-50%);
@@ -222,8 +222,8 @@ html, body {
 }
 @media (max-width: 900px) {
   .shop-opening__customer {
-    bottom: 15%;
-    height: 39%;
+    bottom: 24%;
+    height: 37%;
     max-width: 42%;
   }
   .shop-opening__dialog {
@@ -281,8 +281,8 @@ html, body {
 .bento-delivery__customer {
   position: absolute;
   left: 58%;
-  bottom: 17%;
-  height: 42%;
+  bottom: 23%;
+  height: 40%;
   max-width: 38%;
   object-fit: contain;
   transform: translateX(-50%);
@@ -404,8 +404,8 @@ html, body {
 }
 @media (max-width: 900px) {
   .bento-delivery__customer {
-    bottom: 16%;
-    height: 39%;
+    bottom: 24%;
+    height: 37%;
     max-width: 42%;
   }
   .bento-delivery__handoff {
@@ -2072,6 +2072,9 @@ html, body {
 #app.free-layout-active > .free-bottom-guide {
   display: flex;
 }
+#app.free-layout-active > .free-bottom-guide.has-reminder {
+  gap: 8px;
+}
 .free-bottom-pono {
   width: 94px;
   height: 78px;
@@ -2123,6 +2126,108 @@ html, body {
   border-width: 9px 15px 9px 0;
   border-color: transparent rgba(255, 253, 238, 0.94) transparent transparent;
   transform: translateY(-50%);
+}
+.bento-reminder {
+  flex: 0 1 224px;
+  min-width: 176px;
+  max-width: 232px;
+  padding: 7px 9px 8px;
+  border: 2px solid rgba(242, 174, 82, 0.9);
+  border-radius: 16px;
+  background: rgba(255, 250, 230, 0.94);
+  box-shadow: 0 5px 12px rgba(120, 80, 45, 0.14);
+  color: #694016;
+  font-weight: 900;
+  pointer-events: none;
+}
+.bento-reminder.hidden {
+  display: none;
+}
+.bento-reminder__title {
+  margin-bottom: 3px;
+  font-size: 0.62rem;
+  letter-spacing: 0;
+  color: #a76523;
+}
+.bento-reminder__row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 23px;
+}
+.bento-reminder__label {
+  flex: 0 0 auto;
+  font-size: 0.58rem;
+  color: #8a5721;
+}
+.bento-reminder__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 2px solid #f3bd68;
+  border-radius: 999px;
+  background: rgba(255, 244, 203, 0.92);
+  font-size: 0.66rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.bento-reminder__chip.is-on {
+  border-color: #f49a45;
+  background: #fff0b8;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.55) inset;
+}
+.bento-reminder__chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bento-reminder__groups {
+  display: flex;
+  gap: 4px;
+}
+.bento-reminder__group {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(156, 105, 45, 0.32);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.55);
+  font-size: 0.8rem;
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+.bento-reminder__group.is-on {
+  border-style: solid;
+  border-color: #f2b357;
+  background: #fff4c8;
+  filter: none;
+  opacity: 1;
+}
+@media (max-width: 900px) {
+  #app.free-layout-active > .free-bottom-guide.has-reminder .free-bottom-speech {
+    flex: 1 1 180px;
+    max-width: min(300px, calc(100% - 302px));
+    padding-left: 14px;
+    padding-right: 14px;
+    font-size: 0.76rem;
+  }
+  .bento-reminder {
+    flex-basis: 200px;
+    min-width: 168px;
+  }
+}
+@media (max-width: 680px) {
+  #app.free-layout-active > .free-bottom-guide.has-reminder .free-bottom-speech {
+    display: none;
+  }
+  .bento-reminder {
+    flex: 1 1 auto;
+    max-width: calc(100% - 106px);
+  }
 }
 
 /* question removed — ポノの吹き出しで指示 */
@@ -3360,6 +3465,7 @@ html, body {
   <div class="free-bottom-guide" id="free-bottom-guide" aria-live="polite">
     <img src="../assets/images/bento/ui/decor_pono_peek.png" class="free-bottom-pono" id="free-pono-img" alt="ポノ">
     <div class="free-bottom-speech" id="free-speech">おなか すいたなー</div>
+    <div class="bento-reminder hidden" id="bento-reminder" aria-live="polite"></div>
   </div>
 </div>
 
@@ -3745,6 +3851,109 @@ const SK_GROUP_INFO = {
   y: { label: 'きいろの グループ', role: 'あそぶ ちから', foods: 'ごはん・めん・じゃがいも' },
   g: { label: 'みどりの グループ', role: 'ちょうしを ととのえる', foods: 'やさい・くだもの' },
 };
+
+const BENTO_REMINDER_FOOD_ICONS = [
+  ['やきざけ', '🐟'],
+  ['エビフライ', '🍤'],
+  ['たまご', '🥚'],
+  ['ハンバーグ', '🍖'],
+  ['からあげ', '🍖'],
+  ['ミートボール', '🍖'],
+  ['タコウインナー', '🐙'],
+  ['コロッケ', '🥔'],
+  ['ポテト', '🥔'],
+  ['ナポリタン', '🍝'],
+  ['ごはん', '🍚'],
+  ['ブロッコリー', '🥦'],
+  ['えだまめ', '🟢'],
+  ['プチトマト', '🍅'],
+  ['トマト', '🍅'],
+  ['キャベツ', '🥬'],
+  ['にんじん', '🥕'],
+  ['いんげん', '🥕'],
+  ['きんぴら', '🥕'],
+  ['コーン', '🌽'],
+  ['ほうれんそう', '🥬'],
+];
+const BENTO_REMINDER_GROUP_DEFAULT_ICONS = { r: '🍖', y: '🍚', g: '🥦' };
+
+function getBentoReminderFoodIcon(name) {
+  const text = String(name || '');
+  const hit = BENTO_REMINDER_FOOD_ICONS.find(([key]) => text.includes(key));
+  return hit ? hit[1] : '🍱';
+}
+
+function getBentoReminderGroupIcon(groupKey, foodItems) {
+  const items = (foodItems || []).filter(i => i.sk === groupKey);
+  if (!items.length) return BENTO_REMINDER_GROUP_DEFAULT_ICONS[groupKey] || '🍱';
+  const priority = {
+    r: ['やきざけ', 'エビフライ', 'たまご', 'ハンバーグ', 'からあげ', 'ミートボール', 'タコウインナー'],
+    y: ['ごはん', 'ナポリタン', 'コロッケ', 'ポテト'],
+    g: ['ブロッコリー', 'プチトマト', 'トマト', 'えだまめ', 'キャベツ', 'にんじん', 'きんぴら', 'コーン', 'ほうれんそう'],
+  }[groupKey] || [];
+  const matched = priority
+    .map(key => items.find(i => String(i.name || '').includes(key)))
+    .find(Boolean);
+  return getBentoReminderFoodIcon((matched || items[0]).name);
+}
+
+function renderBentoReminder() {
+  const reminder = document.getElementById('bento-reminder');
+  const guide = document.getElementById('free-bottom-guide');
+  if (!reminder || !guide) return;
+  const show = !!(freeLayoutMode && currentRequester && !freeMaskEditorMode);
+  reminder.classList.toggle('hidden', !show);
+  guide.classList.toggle('has-reminder', show);
+  if (!show) {
+    reminder.replaceChildren();
+    return;
+  }
+
+  const data = getFreeLayoutCompletionData();
+  const foodItems = (data.foods || []).filter(f => f.name);
+  const requestEval = evaluateRequest(currentRequester, data.foodNames || []);
+  const chipFood = requestEval.matchedFoods[0] || (currentRequester.wantedFoods || [])[0] || requestEval.label;
+
+  const title = document.createElement('div');
+  title.className = 'bento-reminder__title';
+  title.textContent = 'おもいだし';
+
+  const requestRow = document.createElement('div');
+  requestRow.className = 'bento-reminder__row';
+  const requestLabel = document.createElement('span');
+  requestLabel.className = 'bento-reminder__label';
+  requestLabel.textContent = 'おねがい';
+  const requestChip = document.createElement('span');
+  requestChip.className = 'bento-reminder__chip' + (requestEval.hit ? ' is-on' : '');
+  requestChip.setAttribute('aria-label', requestEval.label);
+  const requestIcon = document.createElement('span');
+  requestIcon.textContent = getBentoReminderFoodIcon(chipFood);
+  const requestText = document.createElement('span');
+  requestText.className = 'bento-reminder__chip-text';
+  requestText.textContent = requestEval.label;
+  requestChip.append(requestIcon, requestText);
+  requestRow.append(requestLabel, requestChip);
+
+  const balanceRow = document.createElement('div');
+  balanceRow.className = 'bento-reminder__row';
+  const balanceLabel = document.createElement('span');
+  balanceLabel.className = 'bento-reminder__label';
+  balanceLabel.textContent = 'バランス';
+  const groups = document.createElement('span');
+  groups.className = 'bento-reminder__groups';
+  ['r', 'y', 'g'].forEach(key => {
+    const group = document.createElement('span');
+    const active = (data.balance && data.balance[key] > 0);
+    group.className = 'bento-reminder__group' + (active ? ' is-on' : '');
+    group.textContent = getBentoReminderGroupIcon(key, foodItems);
+    const info = SK_GROUP_INFO[key];
+    group.setAttribute('aria-label', `${info ? info.label : key}: ${active ? 'あり' : 'まだ'}`);
+    groups.appendChild(group);
+  });
+  balanceRow.append(balanceLabel, groups);
+
+  reminder.replaceChildren(title, requestRow, balanceRow);
+}
 
 // ===== 豆知識（4-5さい向け食育トリビア） =====
 const TRIVIA = {
@@ -7813,7 +8022,10 @@ function renderFreeLayoutInto(host, opts = {}) {
 }
 function renderFreeLayoutStage() {
   const stage = document.getElementById('free-layout-stage');
-  if (!stage) return;
+  if (!stage) {
+    renderBentoReminder();
+    return;
+  }
   if (freeMaskEditorMode) {
     const box = getSelectedBentoBox();
     const view = getActiveFreeMaskEditorView(box);
@@ -7831,6 +8043,7 @@ function renderFreeLayoutStage() {
         maskVariant: getFreeCompleteMaskLayoutKey(box, completeTier),
         maskPreview: true,
       });
+      renderBentoReminder();
       return;
     }
     if (view === 'complete' && (completeTier > 1 || (box && box.lidImage))) {
@@ -7839,12 +8052,14 @@ function renderFreeLayoutStage() {
         forceTierCount: Math.min(completeTier, getBoxTierCount(box)),
         preview: true,
       });
+      renderBentoReminder();
       return;
     }
   }
   stage.className = 'free-layout-stage';
   fitMainFreeLayoutStage(stage);
   renderFreeLayoutInto(stage, { interactive: true });
+  renderBentoReminder();
 }
 function createPaletteVisual(def) {
   const wrap = document.createElement('div');
@@ -10005,7 +10220,8 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     if (bgmEnabled) tryPlayBgm();
     // NPC モード判定 + お店の導入から注文までのオープニング演出
     decideNpcMode();
-    if (currentRequester) showShopOpening(currentRequester);
+    if (currentRequester) showShopOpening(currentRequester, renderBentoReminder);
+    else renderBentoReminder();
   });
 })();
 
