@@ -1817,6 +1817,16 @@ html, body {
 .complete-bento.free-complete-stack.free-complete-side-by-side .free-layout-mask-frame {
   overflow: hidden;
 }
+.complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
+  --complete-stage-content-scale: 1.12;
+}
+.complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage > .free-bento-shape,
+.complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage > .free-layout-mask-frame,
+.complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage > .free-layout-items,
+.complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage > .free-mask-preview {
+  scale: var(--complete-stage-content-scale);
+  transform-origin: center center;
+}
 .free-complete-editor-preview {
   margin-top: 8px;
   padding: 5px;
@@ -2904,8 +2914,21 @@ html, body {
     height: auto;
   }
   .complete-right {
-    flex-basis: clamp(248px, 26vw, 270px);
-    width: clamp(248px, 26vw, 270px);
+    align-self: center;
+    flex-basis: clamp(236px, 24vw, 252px);
+    width: clamp(236px, 24vw, 252px);
+    min-height: 0;
+    height: clamp(500px, 72dvh, 620px);
+  }
+  .complete-left {
+    transform: translateY(-18px);
+  }
+  .complete-left .complete-bento.free-complete-stack.free-complete-side-by-side {
+    width: min(100%, 900px);
+    max-width: 900px;
+  }
+  .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
+    --complete-stage-content-scale: 1.2;
   }
 }
 .complete-main {
@@ -3262,8 +3285,8 @@ html, body {
     min-height: 300px;
   }
   .complete-left .complete-bento.free-complete-stack.free-complete-side-by-side {
-    width: min(100%, 680px);
-    max-width: 680px;
+    width: min(100%, 760px);
+    max-width: 760px;
     min-height: 0;
   }
   .free-complete-build-stage {
@@ -3278,8 +3301,11 @@ html, body {
     min-height: 0;
     padding: 6px 8px;
     gap: 5px;
-    flex-basis: clamp(200px, 21vw, 220px);
-    width: clamp(200px, 21vw, 220px);
+    flex-basis: clamp(176px, 20vw, 202px);
+    width: clamp(176px, 20vw, 202px);
+  }
+  .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
+    --complete-stage-content-scale: 1.18;
   }
   .complete-right .balance-item {
     min-height: 24px;
