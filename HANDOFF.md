@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-14 - [batch:506-pono-space-starbrain-researched-redo] Codex: user 指摘「ちゃんと調べてから生成して」を受領。Webで Star Brain / Big Star Brain の公開情報とスクショを確認し、前回の星型ボスは外して、中央に脳/コアを持つ巨大な浮遊機械要塞（複雑な機械フレーム、左右エネルギーノード、砲台/突起）として3スタイル分を再生成する。IP丸写しは避け、構成要素だけをオリジナル化する。 (by Codex)
+- 2026-06-14 - [batch:506-pono-space-starbrain-researched-redo] DONE - Codex: 生成前に Star Soldier Wiki/Fandom、ja.wikipedia、Nintendo VC、GAME Watch 等で Star Brain / Big Star Brain を調査。特徴を「中央に脳/コアを持つ浮遊要塞」「Big は巨大で中心部を4砲台が守る」「ステージ末ボス」と整理し、前回の星型案を非推奨にして、`boss_starbrain_researched_style_{a,b,c}_raw.png` を追加生成。各 1254x1254 RGB raw、白背景。`contact_sheet_starbrain_researched_boss.jpg` で、四角/八角の機械要塞フレーム、左右大型ノード、中央の抽象的な知性コア、非生々しい表現を確認。 (by Codex)
 - 2026-06-14 - [batch:505-pono-space-starbrain-boss] Codex: user 指摘「ボスはスターブレイン風で」を受領。IP丸写しではなく、星型シルエット + 脳/知性コア + 機械要塞パネルの文法を使った、怖すぎない大型ボスとして3スタイル分を追加生成する。 (by Codex)
 - 2026-06-14 - [batch:505-pono-space-starbrain-boss] DONE - Codex: GPT Image 2 built-in imagegen でボス3スタイルを生成。`boss_starbrain_homage_style_{a,b,c}_raw.png` は各 1254x1254 RGB raw の白背景。星型機械要塞シルエット、中央の抽象的な知性/星雲コア、やさしめの顔印象でスターブレイン風の大型ボス文法に寄せた。`contact_sheet_starbrain_boss.jpg` で3案比較し、怖すぎない、非生物/非生々しい、IP丸写しでないことを確認。 (by Codex)
 - 2026-06-14 - [batch:504-pono-space-midboss-split-face] Codex: user 指摘「中ボスはスターソルジャーのラザロ風に顔が4つに分かれてて、最終的にくっついて顔になる」を受領。IP丸写しではなく、4つの機械/超自然的マスク片が合体して1つの顔になる中ボスとして、3スタイル分のアセットシートを追加生成する。 (by Codex)
