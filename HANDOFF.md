@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-14 - [batch:504-pono-space-midboss-split-face] Codex: user 指摘「中ボスはスターソルジャーのラザロ風に顔が4つに分かれてて、最終的にくっついて顔になる」を受領。IP丸写しではなく、4つの機械/超自然的マスク片が合体して1つの顔になる中ボスとして、3スタイル分のアセットシートを追加生成する。 (by Codex)
 - 2026-06-14 - [batch:503-pono-space-mechanical-enemy] Codex: user 指摘「敵キャラは生物っぽい物はNG。機械的なものか超自然的なものにして」を受領。既存 `zako_enemy_style_{a,b,c}_raw.png` は目・丸胴体で生物寄りのため、3スタイル分を機械的な小型メカドローンへ追加生成し、一覧シートを更新する。 (by Codex)
 - 2026-06-14 - [batch:503-pono-space-mechanical-enemy] DONE - Codex: GPT Image 2 built-in imagegen で敵キャラ3スタイルを機械系へ再生成。`zako_enemy_mech_style_{a,b,c}_raw.png` を追加し、`contact_sheet.jpg` / `contact_sheet_mech_enemy.jpg` を更新。顔・目・口・手足のある生物系を避け、装甲パネル、六角エネルギーコア、サイドエンジン、後部ノズルの小型メカドローンに変更。3枚とも 1254x1254 RGB raw、白背景、コンタクトシートで生物感が消えていることを確認。 (by Codex)
 - 2026-06-14 - [batch:502-pono-fighter-caesar-homage] Codex: user 指摘「自キャラはポノの顔が機体に描かれているように、コックピットは見えないように、機体形状をスターソルジャーのシーザー風オマージュへ」を受領。既存 `tmp/files/space_assets/style_test/` のポノ自機3案を確認し、3スタイル分の自機だけ追加生成・一覧更新する。IP丸写しではなく、細長いノーズ/左右ポッド/後部ノズル等の1980年代縦シュー機体文法としてオリジナル化する。 (by Codex)
