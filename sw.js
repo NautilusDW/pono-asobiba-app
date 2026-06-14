@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1092; // v1092: fix Oto rhythm left menu overlap and fever bubble clipping
+const CACHE_VERSION = 1093; // v1093: add bento shop opening customer order flow
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

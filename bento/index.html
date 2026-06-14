@@ -112,6 +112,127 @@ html, body {
   }
 }
 
+/* ===== Shop opening story ===== */
+.shop-opening {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: #f4cf91;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.shop-opening.hidden { display: none !important; }
+.shop-opening__frame {
+  position: relative;
+  width: min(100vw, calc(100dvh * 1.77778));
+  height: min(100dvh, calc(100vw / 1.77778));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f4cf91;
+}
+.shop-opening__bg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.shop-opening__shade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(80,45,18,0) 0%, rgba(80,45,18,0.26) 100%);
+  pointer-events: none;
+}
+.shop-opening__customer {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  height: 43%;
+  max-width: 38%;
+  object-fit: contain;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 12px rgba(70, 40, 16, 0.18));
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-opening.has-customer .shop-opening__customer {
+  opacity: 1;
+}
+.shop-opening.is-entering .shop-opening__customer {
+  animation: shopCustomerEnter 0.85s cubic-bezier(0.18, 0.85, 0.22, 1.05) both;
+}
+@keyframes shopCustomerEnter {
+  from { transform: translateX(72vw); opacity: 0; }
+  to   { transform: translateX(-50%); opacity: 1; }
+}
+.shop-opening__dialog {
+  position: absolute;
+  left: clamp(14px, 3vw, 42px);
+  right: clamp(14px, 3vw, 42px);
+  bottom: clamp(14px, 3vh, 34px);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
+  padding: clamp(12px, 2.2vw, 22px) clamp(16px, 3vw, 30px);
+  border: 4px solid #f1b65c;
+  border-radius: 24px;
+  background: rgba(255, 248, 226, 0.94);
+  box-shadow: 0 10px 22px rgba(80, 42, 14, 0.24);
+}
+.shop-opening__name {
+  margin-bottom: 5px;
+  font-size: clamp(0.82rem, 1.8vw, 1.05rem);
+  font-weight: 900;
+  color: #9b5b1b;
+}
+.shop-opening__line {
+  font-size: clamp(1.05rem, 2.7vw, 1.7rem);
+  font-weight: 900;
+  line-height: 1.42;
+  color: #5c3514;
+  white-space: pre-line;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.7);
+}
+.shop-opening__next {
+  min-width: clamp(128px, 18vw, 210px);
+  border: 3px solid #ef915c;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff0c8 0%, #ffd38d 100%);
+  color: #7a3c13;
+  font-family: inherit;
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  font-weight: 900;
+  padding: 12px 20px;
+  box-shadow: 0 4px 0 #c67934;
+  cursor: pointer;
+}
+.shop-opening__next:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #c67934;
+}
+@media (max-width: 900px) {
+  .shop-opening__customer {
+    bottom: 15%;
+    height: 39%;
+    max-width: 42%;
+  }
+  .shop-opening__dialog {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    border-width: 3px;
+    border-radius: 18px;
+  }
+  .shop-opening__next {
+    justify-self: end;
+    min-width: 118px;
+    padding: 9px 16px;
+  }
+}
+
 /* ===== タイトル ===== */
 .game-title {
   position: fixed;
@@ -2060,17 +2181,15 @@ html, body {
 }
 .npc-portrait-wrap {
   flex: 0 0 auto;
-  width: 168px;
-  height: 168px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.5);
-  border: 3px solid #C7894A;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(40,20,8,0.25), inset 0 2px 6px rgba(255,255,255,0.6);
+  width: 190px;
+  height: 178px;
+  background: transparent;
+  overflow: visible;
   display: flex; align-items: center; justify-content: center;
 }
 .npc-portrait-wrap img {
-  width: 100%; height: 100%; object-fit: cover;
+  width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(70, 40, 16, 0.18));
   animation: npcBob 2.4s ease-in-out infinite;
 }
 @keyframes npcBob {
@@ -2948,6 +3067,21 @@ html, body {
   </div>
 </div>
 
+<div class="shop-opening hidden" id="shop-opening" aria-live="polite">
+  <div class="shop-opening__frame">
+    <img class="shop-opening__bg" id="shop-opening-bg" src="../assets/images/bento/story/shop_staff_counter.png" alt="">
+    <img class="shop-opening__customer" id="shop-opening-customer" alt="">
+    <div class="shop-opening__shade"></div>
+    <div class="shop-opening__dialog">
+      <div>
+        <div class="shop-opening__name" id="shop-opening-name"></div>
+        <div class="shop-opening__line" id="shop-opening-line"></div>
+      </div>
+      <button type="button" class="shop-opening__next" id="shop-opening-next">つぎへ</button>
+    </div>
+  </div>
+</div>
+
 <div id="portrait-notice">
   <div class="rotate-icon">📱</div>
   <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
@@ -3163,9 +3297,11 @@ html, body {
     function waitForReadyThenTutorial() {
       const titleScreen = document.getElementById('title-screen');
       const npcIntro = document.getElementById('npc-intro');
+      const shopOpening = document.getElementById('shop-opening');
       const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
       const npcVisible   = npcIntro && !npcIntro.classList.contains('hidden') && !npcIntro.hidden;
-      if (titleVisible || npcVisible || window.innerWidth <= window.innerHeight) {
+      const shopVisible  = shopOpening && !shopOpening.classList.contains('hidden') && !shopOpening.hidden;
+      if (titleVisible || npcVisible || shopVisible || window.innerWidth <= window.innerHeight) {
         setTimeout(waitForReadyThenTutorial, 500);
         return;
       }
@@ -3289,17 +3425,33 @@ const FREE_MAIN_OKAZU_NAMES = ['タコウインナー', 'ハンバーグ', 'か�
 const FREE_SIDE_OKAZU_NAMES = ['キャベツ', 'プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'ブロッコリー', 'ミートボール', 'コーンほうれんそう', 'えだまめ', 'ポテトサラダ'];
 
 // ===== NPC requesters (依頼者モード用) =====
-// セッション開始時 30% の確率で 1 体ランダム選定。 入れた食材の name が
-// wantedFoods / perfectCombos と三色グループの両方で最終リアクションを決める。
-// 立ち絵が専用5表情化されるまでは、既存の normal / goal / sad を mood に応じて使い分ける。
-// 立ち絵は迷路ゲームのキャラ素材を再利用。
-const NPC_PORTRAIT_BASE = '../maze/imageStages/animals/';
+// タイトル後に 1 体ランダム選定。 入れた食材の name が wantedFoods / perfectCombos と
+// 三色グループの両方で最終リアクションを決める。
+const NPC_PORTRAIT_BASE = '../assets/images/bento/npc/';
+function npcPortraits(id) {
+  const base = NPC_PORTRAIT_BASE + id + '_';
+  return {
+    portraitRequest: base + 'request.png',
+    portraitNormal: base + 'normal.png',
+    portraitHappy: base + 'super_happy.png',
+    portraitSuperHappy: base + 'super_happy.png',
+    portraitAlmost: base + 'almost.png',
+    portraitSad: base + 'sad.png',
+  };
+}
+function getRequesterPortrait(req, mood) {
+  if (!req) return '';
+  if (mood === 'request') return req.portraitRequest || req.portraitNormal || '';
+  if (mood === 'super_happy') return req.portraitSuperHappy || req.portraitHappy || req.portraitNormal || '';
+  if (mood === 'happy') return req.portraitHappy || req.portraitSuperHappy || req.portraitNormal || '';
+  if (mood === 'almost') return req.portraitAlmost || req.portraitNormal || '';
+  if (mood === 'sad') return req.portraitSad || req.portraitNormal || '';
+  return req.portraitNormal || req.portraitRequest || '';
+}
 const NPC_REQUESTERS = [
   {
     id: 'risu', name: 'りすちゃん',
-    portraitNormal: NPC_PORTRAIT_BASE + 'risu_01.png',
-    portraitHappy:  NPC_PORTRAIT_BASE + 'risu_goal.png',
-    portraitSad:    NPC_PORTRAIT_BASE + 'risu_02.png',
+    ...npcPortraits('risu'),
     requestLabel: 'コロッケか ポテトサラダ',
     wantedFoods: ['コロッケ', 'ポテトサラダ', 'たまごやき'],
     perfectCombos: [['コロッケ', 'ポテトサラダ'], ['コロッケ', 'たまごやき']],
@@ -3311,9 +3463,7 @@ const NPC_REQUESTERS = [
   },
   {
     id: 'inu', name: 'わんちゃん',
-    portraitNormal: NPC_PORTRAIT_BASE + 'inu_01.png',
-    portraitHappy:  NPC_PORTRAIT_BASE + 'inu_goal.png',
-    portraitSad:    NPC_PORTRAIT_BASE + 'inu_02.png',
+    ...npcPortraits('inu'),
     requestLabel: 'ハンバーグか からあげ',
     wantedFoods: ['ハンバーグ', 'からあげ', 'ミートボール', 'タコウインナー'],
     perfectCombos: [['ハンバーグ', 'ミートボール'], ['からあげ', 'ミートボール'], ['ハンバーグ', 'からあげ']],
@@ -3325,9 +3475,7 @@ const NPC_REQUESTERS = [
   },
   {
     id: 'ahiru', name: 'あひるさん',
-    portraitNormal: NPC_PORTRAIT_BASE + 'ahiru_01.png',
-    portraitHappy:  NPC_PORTRAIT_BASE + 'ahiru_goal.png',
-    portraitSad:    NPC_PORTRAIT_BASE + 'ahiru_02.png',
+    ...npcPortraits('ahiru'),
     requestLabel: 'たまごやき',
     wantedFoods: ['たまごやき', 'コーンほうれんそう', 'コロッケ'],
     perfectCombos: [['たまごやき', 'コーンほうれんそう'], ['たまごやき', 'コロッケ']],
@@ -3339,9 +3487,7 @@ const NPC_REQUESTERS = [
   },
   {
     id: 'shika', name: 'しかさん',
-    portraitNormal: NPC_PORTRAIT_BASE + 'shika_01.png',
-    portraitHappy:  NPC_PORTRAIT_BASE + 'shika_goal.png',
-    portraitSad:    NPC_PORTRAIT_BASE + 'shika_02.png',
+    ...npcPortraits('shika'),
     requestLabel: 'ブロッコリーか えだまめ',
     wantedFoods: ['ブロッコリー', 'えだまめ', 'にんじんいんげん', 'キャベツ', 'コーンほうれんそう'],
     perfectCombos: [['ブロッコリー', 'えだまめ'], ['ブロッコリー', 'にんじんいんげん'], ['キャベツ', 'えだまめ']],
@@ -3352,10 +3498,8 @@ const NPC_REQUESTERS = [
     sadMsg:   'こんどは やさいの おかずを いれてね',
   },
   {
-    id: 'lesser_panda', name: 'パンダちゃん',
-    portraitNormal: NPC_PORTRAIT_BASE + 'lesser_panda_01.png',
-    portraitHappy:  NPC_PORTRAIT_BASE + 'lesser_panda_goal.png',
-    portraitSad:    NPC_PORTRAIT_BASE + 'lesser_panda_02.png',
+    id: 'araiguma', name: 'アライグマくん',
+    ...npcPortraits('araiguma'),
     requestLabel: 'タコウインナーか プチトマト',
     wantedFoods: ['タコウインナー', 'プチトマト', 'にんじんいんげん'],
     perfectCombos: [['タコウインナー', 'プチトマト'], ['タコウインナー', 'にんじんいんげん']],
@@ -3367,9 +3511,7 @@ const NPC_REQUESTERS = [
   },
   {
     id: 'neko', name: 'ねこさん',
-    portraitNormal: NPC_PORTRAIT_BASE + 'neko_01.png',
-    portraitHappy:  NPC_PORTRAIT_BASE + 'neko_goal.png',
-    portraitSad:    NPC_PORTRAIT_BASE + 'neko_02.png',
+    ...npcPortraits('neko'),
     requestLabel: 'やきざけ',
     wantedFoods: ['やきざけ', 'きんぴらごぼう', 'たまごやき'],
     perfectCombos: [['やきざけ', 'きんぴらごぼう'], ['やきざけ', 'たまごやき']],
@@ -4071,13 +4213,13 @@ let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 
 // ===== NPC 依頼者モード state =====
-// セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
+// セッション開始時にランダム選定された NPC が入る (URL ?npc=0 の時だけ自由モード)。
 // 一度設定されたらタブ閉じるまで保持され、 完成画面 → 次ステージでも同じ依頼者が居続ける。
 // セッションキー: bento_npc_id (sessionStorage)
 let currentRequester = null;
 const NPC_SESSION_KEY = 'bento_npc_id';
 const NPC_DECIDED_KEY = 'bento_npc_decided';
-const NPC_REQUEST_RATE = 0.30;
+const NPC_REQUEST_RATE = 1.00;
 
 function getFreeMaskEditRequest() {
   try {
@@ -4107,7 +4249,7 @@ function decideNpcMode() {
   // ----- テスト用 URL パラメータ (?npc=...) -----
   // ?npc=0           → 強制 自由モード (動物来ない)
   // ?npc=1           → 強制 依頼モード (ランダム動物)
-  // ?npc=<id>        → 特定の動物を指名 (risu / inu / ahiru / shika / lesser_panda / neko)
+  // ?npc=<id>        → 特定の動物を指名 (risu / inu / ahiru / shika / araiguma / neko)
   // どれも sessionStorage より優先 (= リロードしても URL に乗せ続ければ固定)
   try {
     const sp = new URLSearchParams(location.search);
@@ -4133,7 +4275,7 @@ function decideNpcMode() {
     if (sessionStorage.getItem(NPC_DECIDED_KEY) === '1') {
       const id = sessionStorage.getItem(NPC_SESSION_KEY);
       currentRequester = id ? (NPC_REQUESTERS.find(r => r.id === id) || null) : null;
-      return;
+      if (currentRequester) return;
     }
     sessionStorage.setItem(NPC_DECIDED_KEY, '1');
   } catch (_) { /* private mode 等で sessionStorage 不可 → 一回限り判定 */ }
@@ -4219,7 +4361,7 @@ function showRequesterIntro(req) {
   const line = document.getElementById('npc-intro-line');
   const cta  = document.getElementById('npc-intro-cta');
   if (!ov || !img || !nm || !line || !cta) return;
-  img.src = req.portraitNormal;
+  img.src = getRequesterPortrait(req, 'request');
   img.alt = req.name;
   nm.textContent  = req.name + ' が きたよ！';
   line.textContent = req.intro;
@@ -4234,6 +4376,90 @@ function showRequesterIntro(req) {
   cta.onclick = (e) => { e.stopPropagation(); dismiss(); };
   // 背景タップでも進める (子供が CTA を見落としても困らないよう)
   ov.onclick = dismiss;
+}
+
+const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/shop_staff_counter.png';
+const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.png';
+
+function showShopOpening(req, onDone) {
+  if (!req) { if (onDone) onDone(); return; }
+  const ov = document.getElementById('shop-opening');
+  const bg = document.getElementById('shop-opening-bg');
+  const customer = document.getElementById('shop-opening-customer');
+  const name = document.getElementById('shop-opening-name');
+  const line = document.getElementById('shop-opening-line');
+  const next = document.getElementById('shop-opening-next');
+  if (!ov || !bg || !customer || !name || !line || !next) {
+    if (onDone) onDone();
+    return;
+  }
+
+  const steps = [
+    {
+      bg: SHOP_OPENING_STAFF_BG,
+      customer: false,
+      name: 'ポノの おべんとうやさん',
+      line: 'ここは ポノたちの おべんとうやさん。\nポノと ふたりの こどもが、どうぶつたちの おべんとうを つくるよ。',
+      next: 'つぎへ',
+    },
+    {
+      bg: SHOP_OPENING_ORDER_BG,
+      customer: true,
+      mood: 'normal',
+      enter: true,
+      name: req.name + ' が きたよ',
+      line: 'きょうの おきゃくさんが おみせに やってきたよ。',
+      next: 'ちゅうもんを きく',
+    },
+    {
+      bg: SHOP_OPENING_ORDER_BG,
+      customer: true,
+      mood: 'request',
+      name: req.name + ' の おねがい',
+      line: req.intro,
+      next: 'おべんとうを つくる',
+    },
+  ];
+
+  let stepIndex = 0;
+  const render = () => {
+    const step = steps[stepIndex];
+    bg.src = step.bg;
+    bg.alt = step.name;
+    name.textContent = step.name;
+    line.textContent = step.line;
+    next.textContent = step.next;
+    ov.classList.toggle('has-customer', !!step.customer);
+    ov.classList.remove('is-entering');
+    if (step.customer) {
+      customer.src = getRequesterPortrait(req, step.mood || 'normal');
+      customer.alt = req.name;
+      if (step.enter) requestAnimationFrame(() => ov.classList.add('is-entering'));
+    } else {
+      customer.removeAttribute('src');
+      customer.alt = '';
+    }
+  };
+
+  const advance = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    stepIndex += 1;
+    if (stepIndex >= steps.length) {
+      ov.classList.add('hidden');
+      ov.classList.remove('has-customer', 'is-entering');
+      if (onDone) onDone();
+      return;
+    }
+    render();
+  };
+
+  next.onclick = advance;
+  ov.onclick = (e) => {
+    if (e.target === next) return;
+    advance(e);
+  };
+  render();
+  ov.classList.remove('hidden');
 }
 
 function getRequesterReactionMessage(req, finalEval) {
@@ -4274,7 +4500,7 @@ function showRequesterReaction(req, finalEval, onDone) {
   const detail = document.getElementById('npc-reaction-detail');
   if (!ov || !img || !nm || !line) { if (onDone) onDone(); return; }
   const mood = (finalEval && finalEval.npcMood) || 'sad';
-  img.src = mood === 'sad' ? req.portraitSad : mood === 'almost' ? req.portraitNormal : req.portraitHappy;
+  img.src = getRequesterPortrait(req, mood);
   img.alt = req.name;
   nm.textContent  = req.name;
   line.textContent = getRequesterReactionMessage(req, finalEval);
@@ -9496,9 +9722,9 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}
     if (bgmEnabled) tryPlayBgm();
-    // NPC モード判定 + 訪問演出 (currentRequester があれば intro モーダルを出す)
+    // NPC モード判定 + お店の導入から注文までのオープニング演出
     decideNpcMode();
-    if (currentRequester) showRequesterIntro(currentRequester);
+    if (currentRequester) showShopOpening(currentRequester);
   });
 })();
 
