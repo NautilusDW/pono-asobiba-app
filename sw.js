@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1117; // v1117: maze creatures — smaller base, depth scale, bob only when ≤4 alive
+const CACHE_VERSION = 1118; // v1118: maze creatures — depth-scaled hit radius (drawR×1.3), reset _defeatedCreatures per stage
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

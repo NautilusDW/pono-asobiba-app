@@ -3752,6 +3752,11 @@ function imgLoadStage(def) {
     clearTimeout(_creatureDefeatTimer);
     _creatureDefeatTimer = null;
   }
+  // 倒した creature の記録はステージごとにリセット。c.id が他ステージと
+  // 衝突する (c3, c4 等の汎用ID) ケースで「次ステージで虫が最初から消えている」
+  // 事故を防ぐ。また aliveCount (creatures.length - _defeatedCreatures.size) が
+  // 負になって bob ロジックが誤動作するのも防ぐ。
+  _defeatedCreatures.clear();
   // Switch body to image-stage layout (full viewport landscape, hide grid UI)
   document.body.classList.add('image-stage-mode');
   stage = window.MazeImage.buildStage(def);
@@ -5469,12 +5474,20 @@ function imgDrawCreatures(stage, now) {
 // Returns true if walk should pause for an encounter.
 function _checkCreatureCollision(px, py) {
   if (!stage || !stage.creatures || _encounterActive) return false;
-  const TRIGGER_R2 = (stage.viewBox.h / 16) * (stage.viewBox.h / 16); // tuned with creature size
+  // 描画 (imgDrawCreatures) と同じ baseSize / depthScale を再計算し、
+  // 描画半径 × 1.3 を当たり判定にする。奥の小さな虫で「届いてないのに当たった」
+  // 感が出ないように、各 creature 個別にスケールを連動させる。
+  const baseSize = stage.viewBox.h / 14;
   for (const c of stage.creatures) {
     const id = c.id || (c.x + ',' + c.y);
     if (_defeatedCreatures.has(id)) continue;
+    const depthT = Math.max(0, Math.min(1, c.y / stage.viewBox.h));
+    const depthScale = 0.65 + depthT * 0.35;
+    const drawRadius = (baseSize * depthScale) / 2;
+    const triggerR = drawRadius * 1.3; // タップしやすさ用の少し外側マージン
+    const triggerR2 = triggerR * triggerR;
     const dx = px - c.x, dy = py - c.y;
-    if (dx*dx + dy*dy < TRIGGER_R2) {
+    if (dx*dx + dy*dy < triggerR2) {
       _triggerEncounter(c);
       return true;
     }
